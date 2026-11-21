@@ -21,7 +21,7 @@ constraints: zip +disable-bzip2 +disable-zstd
 source-repository-package
     type: git
     location: https://github.com/simplex-chat/simplexmq.git
-    tag: a0eec7104c706ab0dab2ad604f280a7130f7a22c
+    tag: d38bcf50131d59f027d170731e4ea22031650611
 
 source-repository-package
     type: git
@@ -36,7 +36,7 @@ source-repository-package
 source-repository-package
     type: git
     location: https://github.com/simplex-chat/sqlcipher-simple.git
-    tag: a46bd361a19376c5211f1058908fc0ae6bf42446
+    tag: 6bf2796de625dca678c70e98560010c6ec7ed635
 
 source-repository-package
     type: git

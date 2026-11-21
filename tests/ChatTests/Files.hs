@@ -1,4 +1,5 @@
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PostfixOperators #-}
 {-# OPTIONS_GHC -fno-warn-ambiguous-fields #-}
@@ -11,6 +12,7 @@ import ChatTests.Profiles (addTestBadge, futureDate, issueTestBadge, issueTestBa
 import ChatTests.Utils
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_)
+import Control.Concurrent.STM (atomically, check, modifyTVar', newTVarIO, readTVar, readTVarIO, writeTVar)
 import Control.Logger.Simple
 import Control.Monad.Except (runExceptT)
 import Control.Monad.Reader (runReaderT)
@@ -22,13 +24,13 @@ import qualified Data.Text as T
 import Network.HTTP.Types.URI (urlEncode)
 import Data.Time.Clock (addUTCTime, getCurrentTime, nominalDay)
 import Simplex.Chat.Badges (BadgeProof, BadgeStatus (..), BadgeType (..), FileSizeLimits (..), ProofPresHeader (..), badgeProof, defaultFileSizeLimits)
-import Simplex.Chat.Controller (ChatCommand (APIGetChat), ChatConfig (..), ChatPagination (CPLast), ChatResponse (CRApiChat, CRNewChatItems))
+import Simplex.Chat.Controller (ChatCommand (APIGetChat), ChatConfig (..), ChatEvent (CEvtChatItemUpdated, CEvtRcvFileDescrReady), ChatHooks (..), ChatPagination (CPLast), ChatResponse (CRApiChat, CRNewChatItems), defaultChatHooks)
 import Simplex.Chat.Core (sendChatCmdStr)
 import Simplex.Chat.Library.Commands (execChatCommand')
 import Simplex.Chat.Library.Internal (badgeProofStatus, roundedFDCount)
 import Simplex.Chat.Markdown (parseMaybeMarkdownList)
-import Simplex.Chat.Messages (AChat (..), AChatItem (..), CChatItem (..), CIQuote (CIQuote, content, formattedText), Chat (..), ChatItem (..), ChatRef (..), ChatType (..))
-import Simplex.Chat.Messages.CIContent (ciMsgContent)
+import Simplex.Chat.Messages (AChat (..), AChatItem (..), AChatItemUpdate (..), CChatItem (..), CIFile (..), CIQuote (CIQuote, content, formattedText), Chat (..), ChatItem (..), ChatRef (..), ChatType (..))
+import Simplex.Chat.Messages.CIContent (MsgDirectionI, ciMsgContent)
 import Simplex.Chat.Mobile.File
 import Simplex.Chat.Options (ChatOpts (..))
 import Simplex.Chat.Protocol (MsgContent (MCImage, MCText))
@@ -39,6 +41,7 @@ import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
 import Simplex.Messaging.Encoding.String
 import System.Directory (copyFile, createDirectoryIfMissing, doesFileExist, getFileSize)
 import System.FilePath ((</>))
+import System.Timeout (timeout)
 import Test.Hspec hiding (it)
 
 chatFileTests :: SpecWith TestParams
@@ -67,10 +70,11 @@ chatFileTests = do
     it "delete uploaded file" testXFTPDeleteUploadedFile
     it "delete uploaded file in group" testXFTPDeleteUploadedFileGroup
     it "with relative paths: send and receive file" testXFTPWithRelativePaths
-    xit' "continue receiving file after restart" testXFTPContinueRcv
+    it "continue receiving file after restart" testXFTPContinueRcv
     it "receive file marked to receive on chat start" testXFTPMarkToReceive
     it "error receiving file" testXFTPRcvError
     it "cancel receiving file, repeat receive" testXFTPCancelRcvRepeat
+    it "receiving file from unknown relays resets it, the event has the previous item" testXFTPRcvRelaysNotApproved
     it "should accept file automatically with CLI option" testAutoAcceptFile
     it "should prohibit file transfers in groups based on preference" testProhibitFiles
   describe "file transfer over XFTP without chat items" $ do
@@ -79,7 +83,7 @@ chatFileTests = do
     it "send and receive large standalone file" testXFTPStandaloneLarge
     it "send and receive large standalone file with extra information" testXFTPStandaloneLargeInfo
     it "send and receive large standalone file using relative paths" testXFTPStandaloneRelativePaths
-    xit "removes sent file from server" testXFTPStandaloneCancelSnd -- no error shown in tests
+    it "removes sent file from server" testXFTPStandaloneCancelSnd
     it "removes received temporary files" testXFTPStandaloneCancelRcv
   describe "send larger files with badges" $ do
     it "send and receive file with badge proof" testXFTPFileBadgeProof
@@ -1278,6 +1282,36 @@ testXFTPCancelRcvRepeat =
   where
     cfg = testCfg {xftpDescrPartSize = 200}
 
+testXFTPRcvRelaysNotApproved :: HasCallStack => TestParams -> IO ()
+testXFTPRcvRelaysNotApproved ps = do
+  descrReady <- newTVarIO False
+  updates <- newTVarIO []
+  let hook _ evt = do
+        case evt of
+          Right CEvtRcvFileDescrReady {} -> atomically $ writeTVar descrReady True
+          Right (CEvtChatItemUpdated _ (AChatItemUpdate _ _ _ ci prevCi)) -> atomically $ modifyTVar' updates (<> [(fileStatus' ci, fileStatus' prevCi)])
+          _ -> pure ()
+        pure evt
+      fileStatus' :: MsgDirectionI d => ChatItem c d -> Maybe B.ByteString
+      fileStatus' ChatItem {file} = (\CIFile {fileStatus} -> strEncode fileStatus) <$> file
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatCfg ps testCfg {chatHooks = defaultChatHooks {eventHook = Just hook}} "bob" bobProfile $ \bob -> withXFTPServer ps $ do
+      connectUsers alice bob
+      bob #$> ("/xftp xftp://1234-w==@xftp1.example.im", id, "ok")
+      alice #> "/f @bob ./tests/fixtures/test.pdf"
+      alice <## "use /fc 1 to cancel sending"
+      bob <# "alice> sends file test.pdf (266.0 KiB / 272376 bytes)"
+      bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+      alice <## "completed uploading file 1 (test.pdf) for bob"
+      timeout 10000000 (atomically $ readTVar descrReady >>= check) `shouldReturn` Just ()
+      bob ##> ("/fr 1 " <> tmpDir ps)
+      bob
+        <### [ "file 1 aborted, unknwon XFTP servers:",
+               StartsWith "ProtocolServer {scheme = SPXFTP, host = THDomainName \"localhost\" :| []",
+               WithTime "alice>"
+             ]
+      readTVarIO updates `shouldReturn` [(Just "rcv_invitation", Just "rcv_accepted")]
+
 testAutoAcceptFile :: HasCallStack => TestParams -> IO ()
 testAutoAcceptFile =
   testChatOpts2 opts aliceProfile bobProfile $ \alice bob -> withXFTPServer alice $ do
@@ -1469,9 +1503,8 @@ testXFTPStandaloneCancelSnd = testChat2 aliceProfile aliceDesktopProfile $ \src 
     dst ##> ("/_download 1 " <> uri <> " " <> tmpFile dst "should.not.extist")
     dst <## "started standalone receiving file 1 (should.not.extist)"
     threadDelay 100000
-    logWarn "no error?"
-    dst <## "error receiving file 1 (should.not.extist)"
-    dst <## "INTERNAL {internalErr = \"XFTP {xftpErr = AUTH}\"}"
+    dst <## "error standalone receiving file 1 (should.not.extist)"
+    dst .<## ", xftpErr = AUTH}"
 
 testXFTPStandaloneRelativePaths :: HasCallStack => TestParams -> IO ()
 testXFTPStandaloneRelativePaths = testChat2 aliceProfile aliceDesktopProfile $ \src dst -> do

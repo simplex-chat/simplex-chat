@@ -48,7 +48,7 @@ import Numeric.Natural (Natural)
 import Simplex.Chat.PaymentService.Types (InvoiceStatus (..), PaymentProvider (..))
 import Simplex.Messaging.Agent.Store.Common (DBStore)
 import Simplex.Messaging.Encoding.String (textEncode)
-import Simplex.Messaging.Util (tshow)
+import Simplex.Messaging.Util (stateTVar', tshow)
 
 -- | Allows for our clock running ahead of the provider's; an expired invoice can still be marked paid.
 expiryGrace :: NominalDiffTime
@@ -262,7 +262,7 @@ uncancelled :: PollerEnv -> UTCTime -> OverdueInvoice -> Text -> IO Bool
 uncancelled env@PollerEnv {peCancelFailed} now OverdueInvoice {oiProvider, oiProviderRef = ref, oiCreatedAt} e
   | diffUTCTime now oiCreatedAt <= settleWindow = keepOpen "it stays open until a cancel succeeds or it settles"
   | otherwise = do
-      firstFailed <- atomically $ stateTVar peCancelFailed $ \failed -> (M.lookup ref failed, M.insertWith (\_ first -> first) ref now failed)
+      firstFailed <- atomically $ stateTVar' peCancelFailed $ \failed -> (M.lookup ref failed, M.insertWith (\_ first -> first) ref now failed)
       case firstFailed of
         Just at | diffUTCTime now at >= cancelGiveUpDelay -> do
           logError ("badge poller: overdue " <> tshow oiProvider <> " invoice " <> ref <> " could not be cancelled at the provider, so it was expired here only; check it in the provider's dashboard: " <> e)

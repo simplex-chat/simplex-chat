@@ -1,9 +1,25 @@
+import {execFileSync} from "child_process"
+import {readFileSync} from "fs"
+import {tmpdir} from "os"
+import {join} from "path"
 import {ChatResponse, T} from "@simplex-chat/types"
+import {Server} from "http"
 import {api, core} from "simplex-chat"
-import {Actions, ActionHooks} from "../../src/actions"
+import {Readable, Writable} from "stream"
+import {Action, Actions, ActionHooks, Mode, NewAction} from "../../src/actions"
 import {ToolCall} from "../../src/messages"
 
 export const user = {userId: 1, profile: {displayName: "agent", peerType: "agent", profileId: 1}} as unknown as T.User
+
+const recordedRuns: {[field: string]: string | number | null}[] = readFileSync(join(__dirname, "claude-p-runs.jsonl"), "utf8").trim().split("\n").map(line => JSON.parse(line))
+
+export function recordedRun(entrypoint: string, kind: string): {ppid: number; env: NodeJS.ProcessEnv} {
+  const record = recordedRuns.find(entry => entry.CLAUDE_CODE_ENTRYPOINT === entrypoint && entry.kind === kind)!
+  const env = Object.fromEntries(Object.entries(record).filter((entry): entry is [string, string] => entry[0].startsWith("CLAUDE") && typeof entry[1] === "string"))
+  return {ppid: record.ppid as number, env}
+}
+
+export const data = join(tmpdir(), `simplex-mcp-unit-${process.pid}`)
 
 export function contact(contactId: number, displayName: string, extra: object = {}): T.Contact {
   return {
@@ -55,6 +71,12 @@ export function item(itemId: number, text: string, chatDir: T.CIDirection = {typ
   } as unknown as T.ChatItem
 }
 
+export function fileItem(itemId: number, msgContent: object, fileStatus: object, extra: {chatDir?: T.CIDirection; fileSource?: object; fileId?: number} = {}): T.ChatItem {
+  const chatItem = item(itemId, "", extra.chatDir)
+  const file = {fileId: extra.fileId ?? 7, fileName: "report.pdf", fileSize: 2400000, fileStatus, fileProtocol: "xftp", ...(extra.fileSource === undefined ? {} : {fileSource: extra.fileSource})}
+  return {...chatItem, content: {...chatItem.content, msgContent}, file} as unknown as T.ChatItem
+}
+
 export function event(chatInfo: T.ChatInfo, chatItem: T.ChatItem): T.AChatItem {
   return {chatInfo, chatItem}
 }
@@ -99,8 +121,29 @@ export function actionsWith(mode: "requests" | "host", fake: FakeHooks, next = 1
   return new Actions(mode, expireHours, next, fake.hooks)
 }
 
+export function createIn(actions: Actions, session: number, mode: Mode, key: string, fields: NewAction, approvedBy?: string): Action {
+  return actions.create(key, fields, approvedBy, session, mode)
+}
+
+export function closeServer(server: Server): Promise<void> {
+  const closed = new Promise<void>(resolve => server.close(() => resolve()))
+  server.closeAllConnections()
+  return closed
+}
+
 export async function settled(): Promise<void> {
   for (let i = 0; i < 10; i++) await Promise.resolve()
+}
+
+export async function until(condition: () => boolean): Promise<void> {
+  for (let i = 0; i < 200 && !condition(); i++) await new Promise(resolve => setTimeout(resolve, 5))
+  expect(condition()).toBe(true)
+}
+
+export function descendants(pid: number): number[] {
+  const parents = execFileSync("ps", ["-A", "-o", "pid=,ppid="], {encoding: "utf8"}).trim().split("\n").map(line => line.trim().split(/\s+/).map(Number))
+  const children = (parent: number): number[] => parents.flatMap(([child, ppid]) => (ppid === parent ? [child, ...children(child)] : []))
+  return children(pid)
 }
 
 interface FakeChatData {
@@ -108,15 +151,40 @@ interface FakeChatData {
   items: T.ChatItem[]
 }
 
+const library = api.ChatApi.prototype
+
 export class FakeChat {
+  apiGetChat = library.apiGetChat
+  apiChatItemsRead = library.apiChatItemsRead
+  apiGetChats = library.apiGetChats
+  apiContactInfo = library.apiContactInfo
+  apiConnectPlan = library.apiConnectPlan
+  apiPrepareContact = library.apiPrepareContact
+  apiPrepareGroup = library.apiPrepareGroup
+  apiConnectPreparedContact = library.apiConnectPreparedContact
+  apiConnectPreparedGroup = library.apiConnectPreparedGroup
+  apiConnectContactViaAddress = library.apiConnectContactViaAddress
+  apiConnectPreparedLink = library.apiConnectPreparedLink
+  apiReceiveFile = library.apiReceiveFile
+  apiCancelFile = library.apiCancelFile
+  apiGetChatItemInfo = library.apiGetChatItemInfo
+  apiGetUserServers = library.apiGetUserServers
   commands: string[] = []
-  sent: {chat: [T.ChatType, number]; messages: T.ComposedMessage[]}[] = []
-  updates: {chatId: number; itemId: number; text: string}[] = []
+  sent: {chat: [T.ChatType, number]; messages: T.ComposedMessage[]; live?: true}[] = []
+  updates: {chatId: number; itemId: number; text: string; live?: true}[] = []
+  updatePriorities: {itemId: number; priority?: number}[] = []
   replies: string[] = []
   deleted: {chatType: T.ChatType; chatId: number; mode?: T.ChatDeleteMode}[] = []
+  deletedItems: {chatType: T.ChatType; chatId: number; itemIds: number[]; deleteMode: T.CIDeleteMode}[] = []
   left: number[] = []
   customData: {chat: string; customData?: object}[] = []
   profiles: {groupId: number; groupProfile: T.GroupProfile}[] = []
+  roles: {groupId: number; members: number[]; role: T.GroupMemberRole}[] = []
+  links: {groupId: number; role: T.GroupMemberRole}[] = []
+  groupLinks = new Set<number>()
+  newGroups: {userId: number; groupProfile: T.GroupProfile}[] = []
+  invitations: {groupId: number; viaGroupId: number; groupMemberId: number; memberRole: T.GroupMemberRole}[] = []
+  removed: {groupId: number; memberIds: number[]}[] = []
   members = new Map<number, T.GroupMember[]>()
   chats = new Map<string, FakeChatData>()
   responses = new Map<string, object>()
@@ -129,12 +197,20 @@ export class FakeChat {
     const getChat = /^\/_get chat ([@#]\d+) (.+)$/.exec(cmd)
     if (getChat) return this.getChat(getChat[1], getChat[2])
     if (cmd.startsWith("/_get chats ")) {
-      const [, before, count] = /(?: before=(\S+))? count=(\d+)$/.exec(cmd)!
+      const [, before, count] = /(?: before=(\S+))? count=(\d+) /.exec(cmd)!
       const chats = [...this.chats.values()]
         .filter(({chatInfo}) => before === undefined || chatTs(chatInfo) < before)
         .slice(0, Number(count))
         .map(({chatInfo, items}) => ({chatInfo, chatItems: [], chatStats: chatStats(items)}))
       return structuredClone({type: "apiChats", user, chats}) as unknown as ChatResponse
+    }
+    const update = /^\/_update item ([@#])(\d+) (\d+)( live=on)? json (.+)$/.exec(cmd)
+    if (update) {
+      const {msgContent, priority} = JSON.parse(update[5]) as {msgContent: T.MsgContent; priority?: number}
+      this.updatePriorities.push({itemId: Number(update[3]), priority})
+      const chatType = update[1] === "@" ? T.ChatType.Direct : T.ChatType.Group
+      const chatItem = await this.apiUpdateChatItem(chatType, Number(update[2]), Number(update[3]), msgContent, update[4] !== undefined)
+      return {type: "chatItemUpdated", user, chatItem: {chatInfo: groupChat(group(Number(update[2]), "control")), chatItem}} as unknown as ChatResponse
     }
     if (cmd.startsWith("/_read chat items ")) {
       const [, ref, ids] = /^\/_read chat items ([@#]\d+) (.+)$/.exec(cmd)!
@@ -148,16 +224,21 @@ export class FakeChat {
     return {type: "cmdOk"}
   }
 
-  async apiSendMessages(chat: [T.ChatType, number], messages: T.ComposedMessage[]): Promise<T.AChatItem[]> {
-    this.sent.push({chat, messages})
+  async apiSendMessages(chat: [T.ChatType, number], messages: T.ComposedMessage[], liveMessage?: boolean): Promise<T.AChatItem[]> {
+    this.sent.push({chat, messages, ...(liveMessage === true ? {live: true} : {})})
     const ref = `${chat[0] === T.ChatType.Direct ? "@" : "#"}${chat[1]}`
     const chatInfo = this.chats.get(ref)?.chatInfo ?? groupChat(group(chat[1], "control"))
     return messages.map(({msgContent}) => event(chatInfo, item(this.nextItemId++, msgContent.text, chatInfo.type === "direct" ? {type: "directSnd"} : {type: "groupSnd"})))
   }
 
-  async apiUpdateChatItem(_type: T.ChatType, chatId: number, itemId: number, msgContent: T.MsgContent): Promise<T.ChatItem> {
-    this.updates.push({chatId, itemId, text: msgContent.text})
+  async apiUpdateChatItem(_type: T.ChatType, chatId: number, itemId: number, msgContent: T.MsgContent, liveMessage?: boolean): Promise<T.ChatItem> {
+    this.updates.push({chatId, itemId, text: msgContent.text, ...(liveMessage === true ? {live: true} : {})})
     return item(itemId, msgContent.text, {type: "groupSnd"})
+  }
+
+  async apiDeleteChatItems(chatType: T.ChatType, chatId: number, itemIds: number[], deleteMode: T.CIDeleteMode): Promise<T.ChatItemDeletion[]> {
+    this.deletedItems.push({chatType, chatId, itemIds, deleteMode})
+    return []
   }
 
   async apiSendTextReply(_ci: T.AChatItem, text: string): Promise<T.AChatItem[]> {
@@ -189,12 +270,63 @@ export class FakeChat {
     this.setCustomData(`#${groupId}`, customData)
   }
 
-  async apiDeleteGroupLink(): Promise<void> {}
+  async apiDeleteGroupLink(groupId: number): Promise<void> {
+    this.groupLinks.delete(groupId)
+  }
+
+  async apiCreateGroupLink(groupId: number, role: T.GroupMemberRole): Promise<string> {
+    this.links.push({groupId, role})
+    this.groupLinks.add(groupId)
+    return "https://simplex.chat/g#link"
+  }
+
+  async apiGetGroupLinkStr(groupId: number): Promise<string> {
+    if (!this.groupLinks.has(groupId)) throw new core.ChatAPIError("Chat command error", {type: "errorStore", storeError: {type: "groupLinkNotFound"}} as unknown as T.ChatError)
+    return "https://simplex.chat/g#link"
+  }
+
+  async apiSetMembersRole(groupId: number, members: number[], role: T.GroupMemberRole): Promise<void> {
+    this.roles.push({groupId, members, role})
+    this.members.set(groupId, (this.members.get(groupId) ?? []).map(m => (members.includes(m.groupMemberId) ? {...m, memberRole: role} : m)))
+  }
+
+  async apiNewGroup(userId: number, groupProfile: T.GroupProfile): Promise<T.GroupInfo> {
+    this.newGroups.push({userId, groupProfile})
+    const groupId = 19 + this.newGroups.length
+    const created = {...group(groupId, groupProfile.displayName), groupProfile}
+    this.chats.set(`#${groupId}`, {chatInfo: groupChat(created), items: []})
+    return created
+  }
+
+  async apiAddMemberViaGroup(groupId: number, viaGroupId: number, groupMemberId: number, memberRole: T.GroupMemberRole): Promise<T.GroupMember> {
+    this.invitations.push({groupId, viaGroupId, groupMemberId, memberRole})
+    return member(1000 + groupMemberId, `invited ${groupMemberId}`, memberRole, T.GroupMemberStatus.Invited)
+  }
+
+  async apiListContacts(): Promise<T.Contact[]> {
+    return [...this.chats.values()].flatMap(({chatInfo}) => (chatInfo.type === "direct" ? [chatInfo.contact] : []))
+  }
+
+  async apiAddMember(groupId: number, contactId: number, memberRole: T.GroupMemberRole): Promise<T.GroupMember> {
+    this.invitations.push({groupId, viaGroupId: 0, groupMemberId: contactId, memberRole})
+    return member(2000 + contactId, `contact ${contactId}`, memberRole, T.GroupMemberStatus.Invited)
+  }
+
+  async apiRemoveMembers(groupId: number, memberIds: number[]): Promise<T.GroupMember[]> {
+    this.removed.push({groupId, memberIds})
+    return []
+  }
 
   async apiUpdateGroupProfile(groupId: number, groupProfile: T.GroupProfile): Promise<T.GroupInfo> {
     this.profiles.push({groupId, groupProfile})
-    return {...group(groupId, groupProfile.displayName), groupProfile}
+    const stored = (this.chats.get(`#${groupId}`)?.chatInfo as T.ChatInfo.Group | undefined)?.groupInfo
+    if (stored !== undefined) stored.groupProfile = groupProfile
+    const {customData} = stored ?? {}
+    await new Promise(resolve => setImmediate(resolve))
+    return {...group(groupId, groupProfile.displayName), groupProfile, ...(customData === undefined ? {} : {customData})}
   }
+
+  async close(): Promise<void> {}
 
   api(): api.ChatApi {
     return this as unknown as api.ChatApi
@@ -218,14 +350,17 @@ export class FakeChat {
     if (data === undefined) throw storeError(ref)
     const around = /^around=(\d+) count=0$/.exec(pagination)
     const after = /^after=(\d+) count=(\d+)$/.exec(pagination)
+    const before = /^before=(\d+) count=(\d+)$/.exec(pagination)
     const last = /^count=(\d+)$/.exec(pagination)
     const chatItems = around
       ? data.items.filter(({meta}) => meta.itemId === Number(around[1]))
       : after
         ? data.items.filter(({meta}) => meta.itemId > Number(after[1])).slice(0, Number(after[2]))
-        : last && Number(last[1]) > 0
-          ? data.items.slice(-Number(last[1]))
-          : []
+        : before
+          ? data.items.filter(({meta}) => meta.itemId < Number(before[1])).slice(-Number(before[2]))
+          : last && Number(last[1]) > 0
+            ? data.items.slice(-Number(last[1]))
+            : []
     if (around && chatItems.length === 0) throw storeError(ref)
     return structuredClone({type: "apiChat", chat: {chatInfo: data.chatInfo, chatItems, chatStats: chatStats(data.items)}}) as unknown as ChatResponse
   }
@@ -242,4 +377,40 @@ function chatStats(items: T.ChatItem[]): T.ChatStats {
 
 function storeError(ref: string): Error {
   return new core.ChatAPIError("Chat command error", {type: "errorStore", storeError: {type: "contactNotFound", contactId: Number(ref.slice(1))}})
+}
+
+export class LineClient {
+  private nextId = 1
+  private buffer = ""
+  private readonly waiting = new Map<number, (message: any) => void>()
+  readonly notifications: any[] = []
+
+  constructor(private readonly input: Writable, output: Readable) {
+    output.on("data", chunk => {
+      this.buffer += chunk
+      for (let i = this.buffer.indexOf("\n"); i >= 0; i = this.buffer.indexOf("\n")) {
+        const message = JSON.parse(this.buffer.slice(0, i))
+        this.buffer = this.buffer.slice(i + 1)
+        if (message.id !== undefined && this.waiting.has(message.id)) this.waiting.get(message.id)!(message)
+        else this.notifications.push(message)
+      }
+    })
+  }
+
+  request(method: string, params: object = {}): Promise<any> {
+    const id = this.nextId++
+    const reply = new Promise<any>(resolve => this.waiting.set(id, resolve))
+    this.input.write(`${JSON.stringify({jsonrpc: "2.0", id, method, params})}\n`)
+    return reply
+  }
+
+  notify(method: string, params: object = {}): void {
+    this.input.write(`${JSON.stringify({jsonrpc: "2.0", method, params})}\n`)
+  }
+
+  async initialize(): Promise<any> {
+    const reply = await this.request("initialize", {protocolVersion: "2025-11-25", capabilities: {}, clientInfo: {name: "test", version: "1"}})
+    this.notify("notifications/initialized")
+    return reply.result
+  }
 }

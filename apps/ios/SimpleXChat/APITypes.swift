@@ -262,7 +262,7 @@ public struct NetCfg: Codable, Equatable {
     var socksMode: SocksMode = .always
     public var hostMode: HostMode = .publicHost
     public var requiredHostMode = true
-    public var sessionMode = TransportSessionMode.user
+    public var sessionMode = TransportSessionMode.session
     public var smpProxyMode: SMPProxyMode = .always
     public var smpProxyFallback: SMPProxyFallback = .allowProtected
     public var smpWebPortServers: SMPWebPortServers = .preset

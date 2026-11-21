@@ -5,7 +5,7 @@ import {Actions, Mode} from "../../src/actions"
 import {startHttp, stopHttp} from "../../src/http"
 import {ChatItemsWatch} from "../../src/messages"
 import {AgentTools} from "../../src/tools"
-import {FakeChat, actionsWith, contact, direct, fakeHooks, user} from "./fixtures"
+import {FakeChat, actionsWith, contact, data, direct, fakeHooks, user} from "./fixtures"
 
 const token = "secret-token"
 
@@ -19,7 +19,7 @@ async function start(mode: Mode = "requests"): Promise<void> {
   const chat = new FakeChat()
   chat.chats.set("@4", {chatInfo: direct(contact(4, "SimpleX Directory")), items: []})
   actions = actionsWith(mode, fakeHooks())
-  const tools = new AgentTools({chat: chat.api(), user, actions, watch: new ChatItemsWatch(), controlChat: () => "#10", standingApprover: () => undefined}, mode)
+  const tools = new AgentTools({chat: chat.api(), user, actions, watch: new ChatItemsWatch(), controlChat: () => "#10", standingApprover: () => undefined, refusedFile: () => undefined, data}, mode)
   const factory = (): McpServer => {
     const mcp = new McpServer({name: "simplex-mcp", version: "0.1.0"}, {instructions: "Use the tools."})
     tools.register(mcp)
@@ -128,11 +128,11 @@ describe("MCP", () => {
     expect((await body(response)).result).toMatchObject({protocolVersion: "2025-06-18", serverInfo: {name: "simplex-mcp", version: "0.1.0"}, instructions: "Use the tools."})
   })
 
-  it("lists the five tools with their schemas and caching fields", async () => {
+  it("lists the six tools with their schemas and caching fields", async () => {
     await start()
     const {result} = await body(await post(modern("tools/list"), modernHeaders("tools/list")))
     expect(result).toMatchObject({ttlMs: 0, cacheScope: "private"})
-    expect(result.tools.map(({name}: {name: string}) => name)).toEqual(["connect", "send", "receive", "list", "leave"])
+    expect(result.tools.map(({name}: {name: string}) => name)).toEqual(["connect", "send", "receive", "download", "list", "leave"])
     const send = result.tools.find(({name}: {name: string}) => name === "send")
     expect(send.inputSchema.properties.idle).toEqual({type: "number", minimum: 1, maximum: 300, description: "Seconds without a new response that end the wait once a response arrived. Default 30."})
     expect(send.outputSchema.required).toEqual(["action", "status"])
@@ -146,6 +146,7 @@ describe("MCP", () => {
       connect: {"anthropic/requiresUserInteraction": true},
       send: {"anthropic/requiresUserInteraction": true},
       receive: undefined,
+      download: {"anthropic/requiresUserInteraction": true},
       list: undefined,
       leave: {"anthropic/requiresUserInteraction": true},
     })
@@ -164,6 +165,8 @@ describe("MCP", () => {
     expect(await text({chat: "@4", text: "x", wait: -1})).toMatch(/data\/wait must be >= 0$/)
     expect(await text({chat: "@4", text: "x", colour: "red"})).toMatch(/data must NOT have additional properties$/)
     expect(await text({text: "x"})).toMatch(/data must have required property 'chat'$/)
+    const {result} = await body(await post(modern("tools/call", {name: "receive", arguments: {chat: "@4", history: 51}}), modernHeaders("tools/call", "receive")))
+    expect(result).toMatchObject({isError: true, content: [{type: "text", text: "Input validation error: Invalid arguments for tool receive: data/history must be <= 50"}]})
     expect(actions.all()).toHaveLength(0)
   })
 

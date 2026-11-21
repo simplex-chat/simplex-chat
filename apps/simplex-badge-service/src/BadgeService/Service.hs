@@ -91,7 +91,7 @@ import qualified Simplex.Messaging.Agent.Store.DB as DB
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.BBS (bbsPublicKey)
 import Simplex.Messaging.Encoding.String (strEncode)
-import Simplex.Messaging.Util (catchOwn', raceAny_, safeDecodeUtf8, tshow)
+import Simplex.Messaging.Util (catchOwn', raceAny_, safeDecodeUtf8, stateTVar', tshow)
 import Simplex.Messaging.Version (isCompatible)
 import System.Directory (getAppUserDataDirectory)
 import System.Exit (exitFailure)
@@ -1101,7 +1101,7 @@ newPurchaseChecks = PurchaseChecks <$> newTVarIO M.empty <*> newTVarIO M.empty <
 -- | How long a claim waits before its store is asked again; Nothing records a check at now. A claim that finds
 -- the table full of checks inside the interval is asked without being recorded, so a full table refuses no one.
 purchaseCheckWait :: ClaimChecks -> UTCTime -> ClaimKey -> STM (Maybe NominalDiffTime)
-purchaseCheckWait checks now key = stateTVar checks $ \m ->
+purchaseCheckWait checks now key = stateTVar' checks $ \m ->
   let live = M.filter (\t -> diffUTCTime now t < subscriptionCheckInterval) m
    in case M.lookup key live of
         Just t -> (Just $ subscriptionCheckInterval - diffUTCTime now t, live)
@@ -1118,7 +1118,7 @@ data SubscriptionAsk = AskStore | ClaimHeld NominalDiffTime | NoPlayRead Nominal
 
 -- | How long until the purchase path may read Play again; Nothing takes one of this minute's reads.
 playReadWait :: PlayReads -> UTCTime -> STM (Maybe NominalDiffTime)
-playReadWait taken now = stateTVar taken $ \b_ -> either (\wait -> (Just wait, b_)) (\b -> (Nothing, Just b)) (takeFrom maxPlayPurchaseReads now b_)
+playReadWait taken now = stateTVar' taken $ \b_ -> either (\wait -> (Just wait, b_)) (\b -> (Nothing, Just b)) (takeFrom maxPlayPurchaseReads now b_)
 
 -- | A tenth of Play's default Subscriptions quota of 3,000 reads a minute, which renewal checks share: any token in the
 -- accepted grammar costs a read, so this caps what made-up tokens can spend; far above a minute of genuine purchases.
