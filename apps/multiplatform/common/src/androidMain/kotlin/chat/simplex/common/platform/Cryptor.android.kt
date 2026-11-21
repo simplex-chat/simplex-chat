@@ -5,11 +5,11 @@ import android.os.Build
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyInfo
 import android.security.keystore.KeyProperties
-import android.security.keystore.StrongBoxUnavailableException
 import chat.simplex.common.views.helpers.AlertManager
 import chat.simplex.common.views.helpers.generalGetString
 import chat.simplex.res.*
 import java.security.KeyStore
+import java.security.ProviderException
 import javax.crypto.*
 import javax.crypto.spec.GCMParameterSpec
 
@@ -94,8 +94,8 @@ internal class Cryptor: CryptorInterface {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
       try {
         return generateKey(keySpec(alias).setIsStrongBoxBacked(true))
-      } catch (e: StrongBoxUnavailableException) {
-        Log.i(TAG, "StrongBox is unavailable, using default keystore: ${e.message}")
+      } catch (e: ProviderException) {
+        Log.i(TAG, "StrongBox key generation failed, using default keystore: ${e.message}")
       }
     }
     return generateKey(keySpec(alias))
