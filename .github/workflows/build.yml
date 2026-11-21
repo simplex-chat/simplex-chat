@@ -666,7 +666,7 @@ jobs:
 
       - name: Build badge web app for tests
         if: matrix.should_run == true && matrix.arch == 'x86_64'
-        working-directory: apps/simplex-badge-service/web
+        working-directory: apps/simplex-store-service/web
         run: |
           npm ci
           npm run build
