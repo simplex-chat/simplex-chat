@@ -4,7 +4,6 @@
 
 module PostgresSchemaDump (postgresSchemaDumpTest) where
 
-import ChatTests.Utils hiding (it)
 import Control.Concurrent (threadDelay)
 import Control.DeepSeq
 import Control.Monad (unless, void)
@@ -17,6 +16,7 @@ import qualified Simplex.Messaging.Agent.Store.Postgres.Migrations as Migrations
 import Simplex.Messaging.Agent.Store.Shared (Migration (..), MigrationConfig (..), MigrationConfirmation (..), MigrationsToRun (..), toDownMigration)
 import Simplex.Messaging.Util (ifM, whenM)
 import System.Directory (doesFileExist, removeFile)
+import System.Info (os)
 import System.Process (readCreateProcess, shell)
 import Test.Hspec
 
@@ -61,15 +61,14 @@ postgresSchemaDumpTest migrations testDBOpts@DBOpts {connstr, schema = testDBSch
 
     getSchema :: FilePath -> IO String
     getSchema schemaPath = do
-      ci <- envCI
       let cmd =
-            ("pg_dump " <> B.unpack connstr <> " --schema " <> B.unpack testDBSchema)
+            ("PGTZ=UTC pg_dump " <> B.unpack connstr <> " --schema " <> B.unpack testDBSchema)
               <> " --schema-only --no-owner --no-privileges --no-acl --no-subscriptions --no-tablespaces > "
               <> schemaPath
       void $ readCreateProcess (shell cmd) ""
       threadDelay 20000
-      let sed = (if ci then "sed -i" else "sed -i ''")
-      void $ readCreateProcess (shell $ sed <> " '/^--/d' " <> schemaPath) ""
+      let sed = (if os == "linux" then "sed -i" else "sed -i ''")
+      void $ readCreateProcess (shell $ sed <> " '/^--/d; /^\\\\restrict/d; /^\\\\unrestrict/d' " <> schemaPath) ""
       sch <- readFile schemaPath
       sch `deepseq` pure sch
 
