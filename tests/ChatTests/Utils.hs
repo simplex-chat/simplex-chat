@@ -12,7 +12,7 @@ import APIDocs (testGenerate)
 import ChatClient
 import ChatTests.DBUtils
 import Control.Concurrent (newEmptyMVar, putMVar, takeMVar, threadDelay)
-import Control.Concurrent.Async (concurrently_, mapConcurrently_, wait, withAsync)
+import Control.Concurrent.Async (concurrently_, mapConcurrently_, race_, wait, withAsync)
 import Control.Concurrent.STM
 import Control.Monad (join, unless, when)
 import Control.Monad.Except (runExceptT)
@@ -679,7 +679,7 @@ holdDuring hold action = do
   held <- newEmptyMVar
   release <- newEmptyMVar
   withAsync (hold $ putMVar held () >> takeMVar release) $ \holder -> do
-    takeMVar held
+    timeout 30000000 (race_ (takeMVar held) (wait holder)) `shouldReturn` Just ()
     action <* (putMVar release () >> wait holder)
 
 checkPendingInvitations :: HasCallStack => TestCC -> Int -> IO ()
