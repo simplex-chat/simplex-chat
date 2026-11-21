@@ -100,33 +100,31 @@ data StepFailure
   | SFException Text
   deriving (Eq, Show)
 
-data FailureClass = FCTemporary | FCOperator | FCPermanent
+data FailureClass = FCTemporary | FCPermanent
   deriving (Eq, Show)
 
 revertClass :: RevertReason -> FailureClass
 revertClass = \case
   RRNamed n
     | n `elem` [RNInvalidSignature, RNDurationTooLong, RNDurationTooShort, RNResolverRequiredWhenDataSupplied, RNReverseRecordNotSupported, RNNameTooShort, RNLabelTooLong, RNReentrantCall] -> FCPermanent
-  _ -> FCOperator
+  _ -> FCTemporary
 
 stepClass :: StepFailure -> FailureClass
 stepClass = \case
   SFChain e -> chainClass e
   SFSend (SEChain e) -> chainClass e
-  SFSend SEInFlight -> FCTemporary
-  SFSend _ -> FCOperator
+  SFSend _ -> FCTemporary
   SFWrite _ -> FCTemporary
   SFUnread -> FCTemporary
-  SFAllowanceUsedUp -> FCOperator
+  SFAllowanceUsedUp -> FCTemporary
   SFTakenAboveDepth -> FCTemporary
   SFGoneButAvailable -> FCTemporary
-  SFRefused _ reason -> maybe FCOperator revertClass reason
-  SFException _ -> FCOperator
+  SFRefused _ reason -> maybe FCTemporary revertClass reason
+  SFException _ -> FCTemporary
   where
     chainClass = \case
-      ChainUnavailable _ -> FCTemporary
       ChainReverted reason -> revertClass reason
-      _ -> FCOperator
+      _ -> FCTemporary
 
 reportAfter :: NominalDiffTime
 reportAfter = 600

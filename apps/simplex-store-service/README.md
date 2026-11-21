@@ -1469,7 +1469,7 @@ A dry run that reverts while the name is available is retried every 15 seconds. 
   `[names] max_dry_run_failures` (default 5) for the order's commitment;
 - any other reason, a revert without data and `Error(string)` are retried with no count, logged at
   error at their first time in a row and posted in the managed group after 10 minutes of
-  consecutive failures for the operator, as
+  consecutive failures, as
   `names worker: registration <id> waits: the register reverts while the name is available, <reason>, failing for 10 minutes`.
 
 A commit, relay or register mined with status 0 counts toward `[names] max_sent_failures` (default 5) for the
@@ -1480,7 +1480,7 @@ at its dry run, last: <reason>`, and support closes it with `//close` (see
 [Closing a failed order](#closing-a-failed-order)). A move starts both counts again. Any other
 failure after which the order's phase is kept, such as a node that does not answer, funds, the fee
 cap, the allowance or an exception in its step, is posted in the group after 10 minutes of
-consecutive failures, of any classes, with the latest reason; an exception is logged at error
+consecutive failures, of any reasons, with the latest reason; an exception is logged at error
 at its first time in a row, and its step is run again in 15 seconds.
 `CommitmentNotFound` commits the order again, and `CommitmentTooOld` past the commitment's lapse
 commits it again, posted in the group as `names worker: registration <id> is committed again: its

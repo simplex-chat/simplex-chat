@@ -109,8 +109,8 @@ workerTests = describe "StoreService names: worker" $ do
     it "keeps the phase when a read of the final check fails" testCheckUnread
     it "waits a second when the dry run reverts CommitmentTooNew" testCommitmentTooNew
     it "commits again with its reveal when the dry run reverts CommitmentNotFound, and when it reverts CommitmentTooOld past the lapse, reporting that" testCommitAgain
-    it "classes the contracts' errors as permanent, or temporary with an operator alert" testRevertClasses
-    it "reports failures in a row, of any classes mixed, once they have failed for 10 minutes, with the latest reason, and a permanent one never" testFailureNotice
+    it "classes the contracts' errors as permanent or temporary" testRevertClasses
+    it "reports temporary failures in a row, of any reasons mixed, once they have failed for 10 minutes, with the latest reason, and a permanent one never" testFailureNotice
     it "ends a register mined with status 0 taken while the name is not available, releasing a code" testMinedRevertTaken
     it "sends a register again only once none can still be mined, and writes registered when the owner holds the name" testFailedOnlySettled
   describe "terms acceptance" $ do
@@ -986,7 +986,7 @@ testRevertClasses = do
   let permanent = [RNDurationTooLong, RNDurationTooShort, RNInvalidSignature, RNLabelTooLong, RNNameTooShort, RNReentrantCall, RNResolverRequiredWhenDataSupplied, RNReverseRecordNotSupported]
   [n | n <- actedReverts, revertClass (RRNamed n) == FCPermanent] `shouldBe` permanent
   map revertClass [RRNamed (RNOther "NotSponsor"), RRNamed (RNOther "NotController"), RRNamed (RNOther "NotProxy"), RRNamed RNInsufficientAllowance, RRWithoutData, RRUnnamed "ERC721: invalid token ID"]
-    `shouldBe` replicate 6 FCOperator
+    `shouldBe` replicate 6 FCTemporary
 
 testFailureNotice :: IO ()
 testFailureNotice = do
