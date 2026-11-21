@@ -22,7 +22,7 @@ import StoreService.Catalog (PricedOffer (..), priceOffer)
 import StoreService.Config (ChainConfig (..), ListenerConfig (..), NamesConfig (..), ServiceConfig (..), StripeConfig (..), isLoopbackHost)
 import StoreService.Names.Balances (reverseOrder, warnOfFraud)
 import StoreService.Names.Env (NamesEnv)
-import StoreService.Names.Orders (OrdersEnv (..), jsonField, noteRead, ordersEnv, textWith)
+import StoreService.Names.Orders (OrdersEnv (..), noteRead, ordersEnv, textWith)
 import StoreService.Names.Phases (RegistrationId, awaitChange)
 import StoreService.Names.Registration (tldLabel)
 import StoreService.Names.Store (NamePhase (..), NameRegistration (..), getRegistration, namePhase)
@@ -436,10 +436,10 @@ createdInvoice (InvoiceId invId) PricedOffer {poBadgeType, poMonths, poAmount, p
 
 parseCreateRequest :: J.Object -> JT.Parser CreateRequest
 parseCreateRequest o = do
-  crPriceId <- BadgePriceId <$> jsonField o "priceId" nonEmpty
+  crPriceId <- BadgePriceId <$> JT.explicitParseField nonEmpty o "priceId"
   crOfferId <- fmap BadgeOfferId <$> JT.explicitParseFieldMaybe nonEmpty o "offerId"
-  crMethod <- jsonField o "method" paymentMethod
-  crCodeHash <- jsonField o "codeHash" $ textWith $ maybe (Left "not a code hash") Right . parseCodeHash
+  crMethod <- JT.explicitParseField paymentMethod o "method"
+  crCodeHash <- JT.explicitParseField (textWith $ maybe (Left "not a code hash") Right . parseCodeHash) o "codeHash"
   pure CreateRequest {crPriceId, crOfferId, crMethod, crCodeHash}
   where
     nonEmpty = textWith $ \t -> if T.null t then Left "empty" else Right t

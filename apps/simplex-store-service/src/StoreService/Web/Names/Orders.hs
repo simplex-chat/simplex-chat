@@ -40,7 +40,7 @@ import Simplex.Chat.Badges.Code (parseNameCode)
 import Simplex.Chat.PaymentService.Types (CurrencyAmount (..), InvoiceId (..), InvoiceStatus (..), ServicePaymentMethod (..))
 import Simplex.Messaging.Agent.Store.Common (withTransaction)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
-import Simplex.Messaging.Encoding.String (strEncode, textDecode)
+import Simplex.Messaging.Encoding.String (strEncode, textParseJSON)
 import Simplex.Messaging.Names.Record (USDCents)
 import Simplex.Messaging.Parsers (defaultJSON)
 import Simplex.Messaging.Util (isAsyncCancellation, safeDecodeUtf8, tshow)
@@ -82,13 +82,13 @@ data SpendRequest = SpendRequest
 $(JQ.deriveFromJSON defaultJSON ''CodeOrder)
 
 instance J.FromJSON InvoiceOrder where
-  parseJSON = J.withObject "order" $ \o -> InvoiceOrder <$> o .: "order" <*> jsonField o "method" paymentMethod <*> o .: "price" <*> o .: "reveal"
+  parseJSON = J.withObject "order" $ \o -> InvoiceOrder <$> o .: "order" <*> JT.explicitParseField paymentMethod o "method" <*> o .: "price" <*> o .: "reveal"
 
 instance J.FromJSON SpendRequest where
   parseJSON = J.withObject "spend" $ \o -> SpendRequest <$> o .: "signed" <*> o .: "price" <*> o .: "balance" <*> JT.explicitParseFieldMaybe paymentMethod o "method" <*> o .: "reveal"
 
 paymentMethod :: J.Value -> JT.Parser ServicePaymentMethod
-paymentMethod = textWith $ maybe (Left "not a payment method") Right . textDecode
+paymentMethod = textParseJSON "payment method"
 
 -- | An order's answer and the work its commit leaves, both done after the name's turn, so a slow client holds no turn.
 data Answer = Answer {aResponse :: Either NameRefusal Response, aAfter :: IO ()}

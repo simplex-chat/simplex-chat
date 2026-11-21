@@ -12,6 +12,7 @@ import Control.Logger.Simple (logError, logNote)
 import Control.Monad.Except (ExceptT (..), runExceptT)
 import qualified Data.Aeson as J
 import qualified Data.Aeson.TH as JQ
+import qualified Data.Aeson.Types as JT
 import Data.Bifunctor (first)
 import Data.Int (Int64)
 import Data.Text (Text)
@@ -49,7 +50,7 @@ data FindRequest = FindRequest
   }
 
 instance J.FromJSON FindRequest where
-  parseJSON = J.withObject "find request" $ \o -> FindRequest <$> jsonField o "owner" (textWith $ first show . parseAnyCaseAddress) <*> o J..: "timestamp" <*> o J..: "signature"
+  parseJSON = J.withObject "find request" $ \o -> FindRequest <$> JT.explicitParseField (textWith $ first show . parseAnyCaseAddress) o "owner" <*> o J..: "timestamp" <*> o J..: "signature"
 
 newtype FindAnswer = FindAnswer {registrations :: [FoundOrder]}
 

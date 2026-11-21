@@ -23,7 +23,6 @@ module StoreService.Names.Orders
     orderRequest,
     signedFields,
     parseBody,
-    jsonField,
     textWith,
     checkSigner,
     existingOrder,
@@ -182,7 +181,7 @@ $(JQ.deriveFromJSON defaultJSON {J.fieldLabelModifier = dropPrefix "sf"} ''SentF
 $(JQ.deriveFromJSON defaultJSON ''SignedFields)
 
 instance J.FromJSON SentOrder where
-  parseJSON = J.withObject "order" $ \o -> SentOrder <$> jsonField o "owner" (textWith $ first show . parseChecksumAddress) <*> J.parseJSON (J.Object o)
+  parseJSON = J.withObject "order" $ \o -> SentOrder <$> JT.explicitParseField (textWith $ first show . parseChecksumAddress) o "owner" <*> J.parseJSON (J.Object o)
 
 orderRequest :: SentOrder -> Either OrderRefusal OrderRequest
 orderRequest SentOrder {soOwner, soSigned} = (\(orFields, orTimestamp, orSignature) -> OrderRequest {orOwner = soOwner, orFields, orTimestamp, orSignature}) <$> signedFields soSigned
@@ -197,9 +196,6 @@ signedFields SignedFields {fields = SentFields {sfLabelHash, sfLength, sfDuratio
 
 parseBody :: J.FromJSON a => Text -> J.Value -> Either OrderRefusal a
 parseBody what = first (\e -> ORBadRequest $ "a malformed " <> what <> ": " <> T.pack e) . JT.parseEither J.parseJSON
-
-jsonField :: J.Object -> J.Key -> (J.Value -> JT.Parser a) -> JT.Parser a
-jsonField o k p = JT.explicitParseField p o k
 
 textWith :: (Text -> Either String a) -> J.Value -> JT.Parser a
 textWith f = J.withText "string" $ either fail pure . f
