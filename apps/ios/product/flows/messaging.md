@@ -33,7 +33,7 @@ Complete message lifecycle in SimpleX Chat iOS: composing, sending, receiving, e
 7. Internally dispatches `ChatCommand.apiSendMessages(...)` to the Haskell core.
 8. Core encrypts, queues via SMP, and returns `ChatResponse1.newChatItems(user, aChatItems)`.
 9. `processSendMessageCmd` extracts `[ChatItem]` from response.
-10. For direct chats, a background task tracks delivery via `chatModel.messageDelivery`.
+10. For direct chats, a background task tracks delivery via `chatModel.messageDelivery`. For each XFTP file, in direct and group chats, a background task tracks the upload via `chatModel.fileUploads`.
 11. `ChatModel` updates, UI refreshes to show the new message.
 
 ### 2. Send Media (Image/Video/File)

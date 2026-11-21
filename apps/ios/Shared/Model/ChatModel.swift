@@ -467,6 +467,8 @@ final class ChatModel: ObservableObject {
 
     var messageDelivery: Dictionary<Int64, () -> Void> = [:]
 
+    var fileUploads: Dictionary<Int64, () -> Void> = [:]
+
     var filesToDelete: Set<URL> = []
 
     // the banner kind the chat list showed this app session: it keeps the slot until restart, so dismissing it never puts
