@@ -1,3 +1,4 @@
+{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -106,7 +107,7 @@ data RegistrationView = RegistrationView
   }
   deriving (Eq, Show)
 
-data AttemptView = AttemptView {avTransaction :: RegistrationTx, avStage :: AttemptStage, avReason :: Text, avAt :: UTCTime}
+data AttemptView = AttemptView {transaction :: RegistrationTx, stage :: AttemptStage, reason :: Text, at :: UTCTime}
   deriving (Eq, Show)
 
 $(JQ.deriveToJSON (taggedObjectJSON $ dropPrefix "PW") ''PaidWith)
@@ -119,24 +120,24 @@ $(JQ.deriveToJSON (taggedObjectJSON $ dropPrefix "S") ''Signing)
 
 $(JQ.deriveToJSON (taggedObjectJSON $ dropPrefix "PV") ''PhaseView)
 
-$(JQ.deriveToJSON defaultJSON {J.fieldLabelModifier = dropPrefix "av"} ''AttemptView)
+$(JQ.deriveToJSON defaultJSON ''AttemptView)
 
 $(JQ.deriveToJSON defaultJSON {J.omitNothingFields = False, J.fieldLabelModifier = dropPrefix "vw"} ''RegistrationView)
 
 data NameRefusal
   = NRBadRequest
   | NRInvalidName
-  | NRInvalidLink {rfKind :: Maybe LinkKind}
+  | NRInvalidLink {kind :: Maybe LinkKind}
   | NRNotFound
   | NRMethodNotAllowed
   | NRInternal
   | NROrderExists
   | NRNameTaken
   | NRNameCheckUnavailable
-  | NRCatalogChanged {rfPrice :: USDCents}
-  | NRPriceTooHigh {rfPrice :: USDCents}
-  | NRBalanceChanged {rfBalance :: Maybe BalanceView}
-  | NRTermsChanged {rfTerms :: TermsLink, rfCommunity :: Maybe Community}
+  | NRCatalogChanged {price :: USDCents}
+  | NRPriceTooHigh {price :: USDCents}
+  | NRBalanceChanged {balance :: Maybe BalanceView}
+  | NRTermsChanged {terms :: TermsLink, community :: Maybe Community}
   | NRCodesOnly
   | NRCodeInvalid
   | NRCodeUsed
@@ -144,18 +145,18 @@ data NameRefusal
   | NRCodeExpired
   | NRCodeNotCovering
   | NRPaymentPending
-  | NRMoveLimit {rfRegistration :: RegistrationView}
-  | NRRegistrationChanged {rfRegistration :: RegistrationView}
+  | NRMoveLimit {registration :: RegistrationView}
+  | NRRegistrationChanged {registration :: RegistrationView}
   | NRStaleNonce
   | NRRecordReverted
-  | NREditLimit {rfNextAt :: UTCTime}
-  | NRRateLimited {rfRetryAfter :: Int}
+  | NREditLimit {nextAt :: UTCTime}
+  | NRRateLimited {retryAfter :: Int}
   | NRProviderUnavailable
-  | NRTermsUnavailable {rfWait :: Maybe Int}
+  | NRTermsUnavailable {wait :: Maybe Int}
   | NREditPending
   deriving (Eq, Show)
 
-$(JQ.deriveToJSON (taggedObjectJSON $ J.camelTo2 '_' . dropPrefix "NR") {J.omitNothingFields = False, J.fieldLabelModifier = dropPrefix "rf"} ''NameRefusal)
+$(JQ.deriveToJSON (taggedObjectJSON $ J.camelTo2 '_' . dropPrefix "NR") {J.omitNothingFields = False} ''NameRefusal)
 
 -- | The balance as it reads at the given time, when a hold may have become overdue, and what a closed order's late money waits on.
 registrationView :: DBStore -> NamesConfig -> Contracts -> UTCTime -> NameRegistration -> IO RegistrationView
@@ -217,9 +218,9 @@ toRegistrationView cfg r balance late attempt phase =
       vwLatePayment = late,
       vwCommitTx = thCommitTx,
       vwRegisterTx = thRegisterTx,
-      vwCommunity = communityOf cfg (nrLabelHash r) (atCommunityName nrAgreedTerms),
+      vwCommunity = communityOf cfg (nrLabelHash r) (communityName nrAgreedTerms),
       vwTerms = nrAgreedTerms,
-      vwLastAttempt = (\NameAttempt {naTx, naStage, naReason, naAt} -> AttemptView {avTransaction = naTx, avStage = naStage, avReason = naReason, avAt = naAt}) <$> attempt
+      vwLastAttempt = (\NameAttempt {naTx, naStage, naReason, naAt} -> AttemptView {transaction = naTx, stage = naStage, reason = naReason, at = naAt}) <$> attempt
     }
   where
     NameRegistration {nrId = RegistrationId rid, nrVersion, nrMoves, nrLabelHash = LabelHash lh, nrReveal, nrOwner, nrCommitment, nrSealed} = r

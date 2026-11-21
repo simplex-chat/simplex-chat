@@ -125,8 +125,8 @@ testTermsFor = do
       listed = "community/" <> hexDigits
   textEncode (termsFor False terms) `shouldBe` hexDigits
   textEncode (termsFor True terms) `shouldBe` listed
-  textDecode listed `shouldBe` Just AgreedTerms {atCommunityName = True, atTermsHash = h}
-  textDecode hexDigits `shouldBe` Just AgreedTerms {atCommunityName = False, atTermsHash = h}
+  textDecode listed `shouldBe` Just AgreedTerms {communityName = True, termsHash = h}
+  textDecode hexDigits `shouldBe` Just AgreedTerms {communityName = False, termsHash = h}
   mapM_ (\t -> (t, textDecode t :: Maybe AgreedTerms) `shouldBe` (t, Nothing)) ["community", "2026-10-23", "community/" <> T.toUpper hexDigits, T.toUpper hexDigits, "community/community/" <> hexDigits]
 
 testStartupCheck :: TVar ChaChaDRG -> IO ()

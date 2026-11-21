@@ -114,7 +114,7 @@ A1-10, A1-11 (core): `newtype NameLength` with `nameLength :: Int -> Maybe NameL
 
 A1-12: synonyms CodeId, RecordEditId, Commitment, OrderHash, CodeHash, BodyHash, TermsHash; setTermsText takes the text as Text.
 
-A1-13: `AgreedTerms {atCommunityName :: Bool, atTermsHash :: TermsHash}` in Signatures.hs, parsed in parseOrderFields, encoded as today's text, stored by its field instances; terms of another format answer bad_request.
+A1-13: `AgreedTerms {communityName :: Bool, termsHash :: TermsHash}` in Signatures.hs, parsed in parseOrderFields, encoded as today's text, stored by its field instances; terms of another format answer bad_request.
 
 A1-14: cents as simplexmq's `USDCents` (escalated: its numeric and database instances belong in simplexmq).
 

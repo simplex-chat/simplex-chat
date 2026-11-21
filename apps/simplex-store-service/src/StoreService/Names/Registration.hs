@@ -1,4 +1,5 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
@@ -62,7 +63,6 @@ import Control.Applicative ((<|>))
 import Control.Monad (unless, when)
 import Control.Monad.Except (ExceptT (..), runExceptT, throwError)
 import Crypto.Number.Serialize (os2ip)
-import qualified Data.Aeson as J
 import qualified Data.Aeson.TH as JQ
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import Data.Bifunctor (first)
@@ -171,9 +171,9 @@ policyDomain edChainId edVerifyingContract = Eip712Domain {edName = "SimplexName
 -- | The owner's acceptance of the terms of the name's kind for a commitment, relayed to the name policy before the register.
 -- Its deadline is the reveal's.
 data TermsAcceptance = TermsAcceptance
-  { taTermsHash :: TermsHash,
-    taNonce :: Word64,
-    taSignature :: RecoverableSignature
+  { termsHash :: TermsHash,
+    nonce :: Word64,
+    signature :: RecoverableSignature
   }
   deriving (Eq, Show)
 
@@ -241,20 +241,20 @@ acceptanceDigest domain TermsKind {tkAcceptType} (Hex32 commitment) (Hex32 terms
     [bytes32 commitment, bytes32 termsHash, VUint $ fromIntegral nonce, VUint $ fromIntegral $ roundedSeconds deadline]
 
 verifyAcceptance :: Eip712Domain -> TermsKind -> Address -> Commitment -> SystemSeconds -> TermsAcceptance -> IO (Either String ())
-verifyAcceptance domain kind owner commitment deadline TermsAcceptance {taTermsHash, taNonce, taSignature} = runExceptT $ do
-  signer <- ExceptT $ recoverAddress taSignature $ acceptanceDigest domain kind commitment taTermsHash taNonce deadline
+verifyAcceptance domain kind owner commitment deadline TermsAcceptance {termsHash, nonce, signature} = runExceptT $ do
+  signer <- ExceptT $ recoverAddress signature $ acceptanceDigest domain kind commitment termsHash nonce deadline
   unless (signer == owner) $ throwError "acceptance is not signed by the owner"
 
 acceptCalldata :: TermsKind -> Commitment -> Address -> SystemSeconds -> TermsAcceptance -> ByteString
-acceptCalldata TermsKind {tkRelayFunction} (Hex32 commitment) owner deadline TermsAcceptance {taTermsHash = Hex32 termsHash, taNonce, taSignature} =
+acceptCalldata TermsKind {tkRelayFunction} (Hex32 commitment) owner deadline TermsAcceptance {termsHash = Hex32 termsHash, nonce, signature} =
   selector tkRelayFunction
     <> abiTuple
       [ Static commitment,
         Static termsHash,
         Static $ addressWord owner,
-        Static $ uint256 taNonce,
+        Static $ uint256 nonce,
         Static $ uint256 $ roundedSeconds deadline,
-        Dynamic $ abiBytes $ smpEncode taSignature
+        Dynamic $ abiBytes $ smpEncode signature
       ]
 
 setTextDigest :: Eip712Domain -> Node -> LinkKind -> Text -> Word64 -> SystemSeconds -> ByteString
@@ -339,12 +339,12 @@ data OrderFields = OrderFields
   deriving (Eq)
 
 -- | The hash of the terms an order agreed to, the community terms for a name the policy lists.
-data AgreedTerms = AgreedTerms {atCommunityName :: CommunityName, atTermsHash :: TermsHash}
+data AgreedTerms = AgreedTerms {communityName :: CommunityName, termsHash :: TermsHash}
   deriving (Eq, Show)
 
 -- | As the order signs it: the hash in 64 lowercase hex digits, after communityTermsPrefix for the community terms.
 instance TextEncoding AgreedTerms where
-  textEncode AgreedTerms {atCommunityName, atTermsHash} = (if atCommunityName then communityTermsPrefix else "") <> T.drop 2 (decodeLatin1 $ strEncode atTermsHash)
+  textEncode AgreedTerms {communityName, termsHash} = (if communityName then communityTermsPrefix else "") <> T.drop 2 (decodeLatin1 $ strEncode termsHash)
   textDecode = eitherToMaybe . parseText (AgreedTerms <$> (True <$ A.string (encodeUtf8 communityTermsPrefix) <|> pure False) <*> (Hex32 <$> lowerHexP abiWordSize))
 
 instance FromField AgreedTerms where fromField = fromTextField_ textDecode
@@ -396,6 +396,6 @@ parseAnyCaseAddress t
 
 $(JQ.deriveJSON (enumJSON $ dropPrefix "LK") ''LinkKind)
 
-$(JQ.deriveFromJSON defaultJSON {J.fieldLabelModifier = dropPrefix "ta"} ''TermsAcceptance)
+$(JQ.deriveFromJSON defaultJSON ''TermsAcceptance)
 
-$(JQ.deriveJSON defaultJSON {J.fieldLabelModifier = dropPrefix "at"} ''AgreedTerms)
+$(JQ.deriveJSON defaultJSON ''AgreedTerms)

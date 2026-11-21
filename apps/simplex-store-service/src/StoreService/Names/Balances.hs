@@ -208,7 +208,7 @@ orderEvidence db InvoiceRow {irProviderRef, irAmount = CurrencyAmount amount, ir
       "; "
       [ "payment " <> irProviderRef <> " of " <> tshow amount <> " cents, invoice " <> textEncode irStatus <> maybe ", payment time not recorded" ((", paid at " <>) . tshow) nrPaidAt,
         "ordered by " <> addressText nrOwner <> ", order hash " <> encoded nrOrderHash,
-        maybe "its signed registration is no longer stored" (\NameReveal {rvSignature, rvAcceptance = TermsAcceptance {taTermsHash}} -> "registration signed " <> encoded rvSignature <> " with terms " <> encoded taTermsHash) nrReveal,
+        maybe "its signed registration is no longer stored" (\NameReveal {rvSignature, rvAcceptance = TermsAcceptance {termsHash}} -> "registration signed " <> encoded rvSignature <> " with terms " <> encoded termsHash) nrReveal,
         transactions "commit" RTCommit txs,
         transactions "register" RTRegister txs
       ]

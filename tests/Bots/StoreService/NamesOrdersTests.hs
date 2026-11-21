@@ -1,3 +1,4 @@
+{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -332,10 +333,10 @@ revealOf :: TVar ChaChaDRG -> Order -> IO J.Value
 revealOf g o@Order {oKey, oTerms, oAcceptanceNonce} = do
   let r@Registration {rLabel, rSecret = Hex32 secret, rContactLink, rChannelLink} = orderRegistration o
       deadline = revealDeadline o
-      AgreedTerms {atCommunityName, atTermsHash = Hex32 termsHash} = agreed oTerms
+      AgreedTerms {communityName, termsHash = Hex32 termsHash} = agreed oTerms
       sign digest = either error id <$> signRecoverable g oKey digest
   intent <- sign $ registerIntentDigest (sponsorDomain fakeChainId fakeSponsor) r 0 deadline
-  acceptance <- sign $ acceptanceDigest (policyDomain fakeChainId fakeNamePolicy) (termsKind atCommunityName) (makeCommitment r) (Hex32 termsHash) oAcceptanceNonce deadline
+  acceptance <- sign $ acceptanceDigest (policyDomain fakeChainId fakeNamePolicy) (termsKind communityName) (makeCommitment r) (Hex32 termsHash) oAcceptanceNonce deadline
   pure $
     J.object
       [ "label" .= rLabel,
@@ -365,14 +366,14 @@ unsignedBody o@Order {oOwner, oMethod, oPrice, oTimestamp} =
     ]
 
 fieldsJSON :: OrderFields -> J.Value
-fieldsJSON OrderFields {ofLabelHash = LabelHash lh, ofLength, ofDuration, ofCommitment, ofSealed, ofAgreedTerms = AgreedTerms {atCommunityName, atTermsHash}} =
+fieldsJSON OrderFields {ofLabelHash = LabelHash lh, ofLength, ofDuration, ofCommitment, ofSealed, ofAgreedTerms = AgreedTerms {communityName, termsHash}} =
   J.object
     [ "labelHash" J..= hex lh,
       "length" J..= nameLengthInt ofLength,
       "duration" J..= ofDuration,
       "commitment" J..= ofCommitment,
       "sealed" J..= ofSealed,
-      "terms" J..= J.object ["communityName" J..= atCommunityName, "termsHash" J..= atTermsHash]
+      "terms" J..= J.object ["communityName" J..= communityName, "termsHash" J..= termsHash]
     ]
 
 withSignature :: Text -> J.Object -> J.Object
@@ -1793,7 +1794,7 @@ testViewFields = withServiceStore $ \st -> withFakeEthNode $ \node -> do
       }
   vwLabel (toRegistrationView (testNamesConfig node) r {nrPaidAt = Just t0} Nothing Nothing Nothing PVTaken) `shouldBe` Just "alicebakery"
   map (\w -> J.toJSON (vwLatePayment $ viewWith (Just w) PVUnpaid)) [LWConfirming, LWCrediting, LWSupport] `shouldBe` ["confirming", "crediting", "support"]
-  let acceptance community h = AcceptanceAsked {acCommunity = community, acPolicy = fakeNamePolicy, acTermsHash = Hex32 h, acNonce = 2}
+  let acceptance c h = AcceptanceAsked {community = c, policy = fakeNamePolicy, termsHash = Hex32 h, nonce = 2}
       committed = PVCommitted (RoundedSystemTime 1) (RoundedSystemTime 2)
       awaiting a = committed $ SAwaiting $ TSRead 4 a
       phaseJSON :: Bool -> ByteString -> J.Value
@@ -1895,10 +1896,10 @@ testViewReads = withServiceStore $ \st -> withFakeEthNode $ \node -> do
   committed <- inPhase $ OCommitted commitFixture
   answerCall node fakeNamePolicy noncesCall $ Returns $ uint256 (2 :: Int)
   let awaiting = PVCommitted (cmRevealAfter commitFixture) (cmRevealBefore commitFixture) . SAwaiting
-  phaseView ct t0 committed `shouldReturn` awaiting (TSRead 4 AcceptanceAsked {acCommunity = False, acPolicy = fakeNamePolicy, acTermsHash = Hex32 fakeGeneralTerms, acNonce = 2})
+  phaseView ct t0 committed `shouldReturn` awaiting (TSRead 4 AcceptanceAsked {community = False, policy = fakeNamePolicy, termsHash = Hex32 fakeGeneralTerms, nonce = 2})
   -- the policy lists the name: the page signs the community terms' acceptance with the policy's nonce
   listCommunityName node $ labelHash "alicebakery"
-  readToSignOf ct committed `shouldReturn` TSRead 4 AcceptanceAsked {acCommunity = True, acPolicy = fakeNamePolicy, acTermsHash = Hex32 fakeCommunityTerms, acNonce = 2}
+  readToSignOf ct committed `shouldReturn` TSRead 4 AcceptanceAsked {community = True, policy = fakeNamePolicy, termsHash = Hex32 fakeCommunityTerms, nonce = 2}
   -- before the policy has terms of the name's kind there are none to sign, so the page waits
   setCommunityTerms node ""
   readToSignOf ct committed `shouldReturn` TSUnread

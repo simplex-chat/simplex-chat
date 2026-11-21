@@ -945,7 +945,7 @@ toRegistration
       (Nothing, Nothing, Nothing, Nothing, Nothing) -> Right Nothing
       (Just rvLabel, Just rvSecret, Just nonce, Just deadline, Just rvSignature) -> do
         rvAcceptance <- case (acceptTerms_, acceptNonce_, acceptSignature_) of
-          (Just taTermsHash, Just n, Just taSignature) -> Right TermsAcceptance {taTermsHash, taNonce = word64 n, taSignature}
+          (Just termsHash, Just n, Just signature) -> Right TermsAcceptance {termsHash, nonce = word64 n, signature}
           _ -> Left $ "name_registrations acceptance: " <> rid
         Right $ Just NameReveal {rvLabel, rvSecret, rvContactLink = nrContactLink, rvChannelLink = nrChannelLink, rvNonce = word64 nonce, rvDeadline = RoundedSystemTime deadline, rvSignature, rvAcceptance}
       _ -> Left $ "name_registrations reveal: " <> rid
@@ -1113,7 +1113,7 @@ type RevealRow = (Maybe Text, Maybe Hex32, Maybe Text, Maybe Text, Maybe Int64, 
 revealRow :: Maybe NameReveal -> RevealRow
 revealRow rv =
   (rvLabel <$> rv, rvSecret <$> rv, rvContactLink =<< rv, rvChannelLink =<< rv, int64 . rvNonce <$> rv, roundedSeconds . rvDeadline <$> rv, rvSignature <$> rv)
-    :. (taTermsHash <$> acceptance, int64 . taNonce <$> acceptance, taSignature <$> acceptance)
+    :. (termsHash <$> acceptance, int64 . nonce <$> acceptance, signature <$> acceptance)
   where
     acceptance = rvAcceptance <$> rv
 

@@ -31,7 +31,7 @@ import Simplex.Messaging.Names.Record (USDCents)
 import Simplex.Messaging.SimplexName (labelHash)
 import Simplex.Messaging.SystemTime (RoundedSystemTime (..))
 import StoreService.Names.Chain (Hex32 (..), RevertName (..), TxHash (..))
-import StoreService.Names.Registration (AgreedTerms (..), LinkKind (..), OrderFields (..), RegistrationId (..), TermsAcceptance (..), communityTermsPrefix, parseSignature)
+import StoreService.Names.Registration (AgreedTerms (..), LinkKind (..), OrderFields (..), RegistrationId (..), TermsAcceptance (TermsAcceptance), communityTermsPrefix, parseSignature)
 import StoreService.Names.Store
 import StoreService.Providers (Uncreditable (..))
 import StoreService.Store (RevokeResult (..))
@@ -313,7 +313,7 @@ testOrderHashFields = do
           ("owner", orderHash ownerB o paid),
           ("commitment", orderHash ownerA o {ofCommitment = hashFixture 2} paid),
           ("sealed", orderHash ownerA o {ofSealed = ofSealed o <> "x"} paid),
-          ("terms", orderHash ownerA o {ofAgreedTerms = (ofAgreedTerms o) {atCommunityName = True}} paid),
+          ("terms", orderHash ownerA o {ofAgreedTerms = (ofAgreedTerms o) {communityName = True}} paid),
           ("method", orderHash ownerA o (OTInvoice (SPMCard CPStripe) price)),
           ("price", orderHash ownerA o (OTInvoice btc (price + 1))),
           ("code instead of invoice", orderHash ownerA o (OTCode $ hashFixture 3)),
@@ -456,7 +456,7 @@ reveal =
       rvNonce = 3,
       rvDeadline = RoundedSystemTime 1792915140,
       rvSignature = signature,
-      rvAcceptance = TermsAcceptance {taTermsHash = hashFixture 11, taNonce = 0, taSignature = signature}
+      rvAcceptance = TermsAcceptance (hashFixture 11) 0 signature
     }
 
 commitFixture :: Commit
@@ -488,7 +488,7 @@ testRoundTrip = withServiceStore $ \st -> do
   let changed =
         r
           { nrPhase = OFailed (at 2) FRSignatureRefused,
-            nrReveal = Just reveal {rvChannelLink = Just "simplex:/c#xyz", rvAcceptance = TermsAcceptance {taTermsHash = hashFixture 10, taNonce = 4, taSignature = signature}},
+            nrReveal = Just reveal {rvChannelLink = Just "simplex:/c#xyz", rvAcceptance = TermsAcceptance (hashFixture 10) 4 signature},
             nrLinksRefused = Just (at 4, LKChannel),
             nrHistory = TxHistory {thCommitTx = Just $ TxHash $ hashFixture 8, thRegisterTx = Just $ TxHash $ hashFixture 9},
             nrMoves = 2,

@@ -169,16 +169,16 @@ data SentFields = SentFields
   }
 
 data SignedFields = SignedFields
-  { sgFields :: SentFields,
-    sgTimestamp :: Word64,
-    sgSignature :: RecoverableSignature
+  { fields :: SentFields,
+    timestamp :: Word64,
+    signature :: RecoverableSignature
   }
 
 data SentOrder = SentOrder {soOwner :: Address, soSigned :: SignedFields}
 
 $(JQ.deriveFromJSON defaultJSON {J.fieldLabelModifier = dropPrefix "sf"} ''SentFields)
 
-$(JQ.deriveFromJSON defaultJSON {J.fieldLabelModifier = dropPrefix "sg"} ''SignedFields)
+$(JQ.deriveFromJSON defaultJSON ''SignedFields)
 
 instance J.FromJSON SentOrder where
   parseJSON = J.withObject "order" $ \o -> SentOrder <$> jsonField o "owner" (textWith $ first show . parseChecksumAddress) <*> J.parseJSON (J.Object o)
@@ -188,10 +188,10 @@ orderRequest SentOrder {soOwner, soSigned} = (\(orFields, orTimestamp, orSignatu
 
 -- | Every format check; the length's range refuses after the formats a kind of order adds.
 signedFields :: SignedFields -> Either OrderRefusal SignedOrderFields
-signedFields SignedFields {sgFields = SentFields {sfLabelHash, sfLength, sfDuration, sfCommitment, sfSealed, sfTerms}, sgTimestamp, sgSignature}
+signedFields SignedFields {fields = SentFields {sfLabelHash, sfLength, sfDuration, sfCommitment, sfSealed, sfTerms}, timestamp, signature}
   | T.length sfSealed > maxSealedChars = Left $ ORBadRequest "a malformed order: the sealed name is longer than its limit"
   | otherwise = case nameLength sfLength of
-      Just ofLength -> Right (OrderFields {ofLabelHash = LabelHash $ unHex32 sfLabelHash, ofLength, ofDuration = sfDuration, ofCommitment = sfCommitment, ofSealed = sfSealed, ofAgreedTerms = sfTerms}, sgTimestamp, sgSignature)
+      Just ofLength -> Right (OrderFields {ofLabelHash = LabelHash $ unHex32 sfLabelHash, ofLength, ofDuration = sfDuration, ofCommitment = sfCommitment, ofSealed = sfSealed, ofAgreedTerms = sfTerms}, timestamp, signature)
       Nothing -> Left ORInvalidName
 
 parseBody :: J.FromJSON a => Text -> J.Value -> Either OrderRefusal a
@@ -287,7 +287,7 @@ checkDuration NamesConfig {nTermStart, nTermSlackSeconds} now years duration = d
 -- | The years the payment covers, or communityYears for an order signing community terms; 'checkTerms' refuses those terms
 -- for any other name.
 orderYears :: OrderFields -> Int -> Int
-orderYears OrderFields {ofAgreedTerms = AgreedTerms {atCommunityName}} = yearsFor atCommunityName
+orderYears OrderFields {ofAgreedTerms = AgreedTerms {communityName}} = yearsFor communityName
 
 -- | The terms the order signed must be the current ones for its name, the community terms for a name the policy lists,
 -- which cannot be ordered while a buyer cannot read them.

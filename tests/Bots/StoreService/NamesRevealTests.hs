@@ -1,3 +1,4 @@
+{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -228,11 +229,11 @@ signAcceptance ctx key community terms nonce = acceptanceOf ctx key alice commun
 acceptanceOf :: Ctx -> Secp256k1PrivateKey -> Registration -> Bool -> B.ByteString -> Word64 -> Word64 -> IO TermsAcceptance
 acceptanceOf Ctx {cRandom} key r community terms nonce deadline = do
   sig <- either error id <$> signRecoverable cRandom key (acceptanceDigest (policyDomain fakeChainId fakeNamePolicy) (termsKind community) (makeCommitment r) (Hex32 terms) nonce $ RoundedSystemTime $ fromIntegral deadline)
-  pure TermsAcceptance {taTermsHash = Hex32 terms, taNonce = nonce, taSignature = sig}
+  pure TermsAcceptance {termsHash = Hex32 terms, nonce, signature = sig}
 
 withAcceptance :: TermsAcceptance -> J.Object -> J.Object
-withAcceptance TermsAcceptance {taTermsHash, taNonce, taSignature} =
-  KM.insert "acceptance" $ J.object ["termsHash" .= hex (unHex32 taTermsHash), "nonce" .= taNonce, "signature" .= hex (smpEncode taSignature)]
+withAcceptance TermsAcceptance {termsHash, nonce, signature} =
+  KM.insert "acceptance" $ J.object ["termsHash" .= hex (unHex32 termsHash), "nonce" .= nonce, "signature" .= hex (smpEncode signature)]
 
 testAcceptanceStored :: IO ()
 testAcceptanceStored = withListedReveals $ \Fx {fCtx = ctx} -> do
@@ -280,8 +281,8 @@ testAcceptanceFields = do
   sig <- either error id <$> signRecoverable g keyA (C.keccak256 "acceptance")
   let fields = KM.fromList ["termsHash" .= hex fakeCommunityTerms, "nonce" .= (2 :: Int), "signature" .= hex (smpEncode sig)]
       replaced k v = J.Object $ KM.insert k v fields
-      acceptanceRead a = rqAcceptance <$> JT.parseMaybe J.parseJSON (J.Object $ KM.insert "acceptance" a $ bodyOf sig alice 0 revealBefore)
-  acceptanceRead (J.Object fields) `shouldBe` Just TermsAcceptance {taTermsHash = Hex32 fakeCommunityTerms, taNonce = 2, taSignature = sig}
+      acceptanceRead a = acceptance <$> JT.parseMaybe J.parseJSON (J.Object $ KM.insert "acceptance" a $ bodyOf sig alice 0 revealBefore)
+  acceptanceRead (J.Object fields) `shouldBe` Just TermsAcceptance {termsHash = Hex32 fakeCommunityTerms, nonce = 2, signature = sig}
   forM_
     [ J.String "acceptance",
       replaced "termsHash" $ J.String $ "0x" <> T.toUpper (T.drop 2 $ hex fakeCommunityTerms),

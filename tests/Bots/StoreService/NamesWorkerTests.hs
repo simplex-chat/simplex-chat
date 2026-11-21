@@ -227,7 +227,7 @@ signedReveal :: Ctx -> Secp256k1PrivateKey -> NameReveal -> NameRegistration -> 
 signedReveal Ctx {cRandom, cOrders, cNode} key rv r@NameRegistration {nrCommitment, nrOwner} = do
   let RegisterIntent {riRegistration} = intentOf (oeConfig cOrders) nrOwner (nrDuration r) rv
   sig <- either (error . show) id <$> signRecoverable cRandom key (registerIntentDigest (sponsorDomain fakeChainId fakeSponsor) riRegistration (rvNonce rv) (rvDeadline rv))
-  answerCall cNode fakeNamePolicy (selector "acceptedTerms(bytes32,address)" <> unHex32 nrCommitment <> addressWord nrOwner) $ Returns $ unHex32 $ taTermsHash $ rvAcceptance rv
+  answerCall cNode fakeNamePolicy (selector "acceptedTerms(bytes32,address)" <> unHex32 nrCommitment <> addressWord nrOwner) $ Returns $ unHex32 $ termsHash $ rvAcceptance rv
   pure rv {rvSignature = sig}
 
 -- | The registration with the page's reveal of the label accepted.
@@ -518,7 +518,7 @@ testIntentAcrossCommits = withWorker $ \w@W {wCtx = ctx} -> do
   (nrPhase x, nrReveal x, nrVersion x) `shouldBe` (OCommitting commitTx, Just reveal, nrVersion r + 2)
   -- requeued with its intent while a third party's commit of the commitment is live: not ours, so only our commit goes
   r2 <- paidIn ctx (byB dynamisOrder) {oSecret = secretOf 2} $ \o -> o {nrPhase = OQueued, nrHistory = oldCommit, nrReveal = Just reveal}
-  answerAccepted w r2 $ Returns $ unHex32 $ taTermsHash $ rvAcceptance reveal
+  answerAccepted w r2 $ Returns $ unHex32 $ termsHash $ rvAcceptance reveal
   answerCommitment w r2 (orderSeconds - 30)
   steps w r2 >>= waitingUntil >>= (`shouldBe` at (orderSeconds - 30 + minAge))
   x2 <- stored ctx r2
@@ -820,7 +820,7 @@ acceptedRevealFor :: Address -> Bool -> ByteString -> Ctx -> NameRegistration ->
 acceptedRevealFor policy community terms ctx@Ctx {cRandom} r = do
   rv <- signedReveal ctx keyA reveal {rvLabel = "alicebakery"} r
   sig <- either (error . show) id <$> signRecoverable cRandom keyA (acceptanceDigest (policyDomain fakeChainId policy) (termsKind community) (nrCommitment r) (Hex32 terms) 0 (rvDeadline rv))
-  rewrite ctx r (\o -> o {nrReveal = Just rv {rvAcceptance = TermsAcceptance {taTermsHash = Hex32 terms, taNonce = 0, taSignature = sig}}})
+  rewrite ctx r (\o -> o {nrReveal = Just rv {rvAcceptance = TermsAcceptance {termsHash = Hex32 terms, nonce = 0, signature = sig}}})
 
 -- | The terms hash the policy holds as accepted for the registration's commitment by its owner.
 answerAccepted :: W -> NameRegistration -> CallAnswer -> IO ()

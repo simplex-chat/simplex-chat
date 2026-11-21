@@ -357,14 +357,14 @@ unlapsed now Commit {cmRevealBefore} = now <= roundedToUTCTime cmRevealBefore
 -- reveal for the page to sign again; the relay's dry run's revert is judged as a register's is, unless the policy holds the
 -- acceptance, which another sent first.
 relayAcceptance :: Worker -> UTCTime -> NameRegistration -> Commit -> NameReveal -> IO (Maybe Next)
-relayAcceptance w@Worker {wkOrders = OrdersEnv {oeContracts, oeConfig = NamesConfig {nChain = ChainConfig {cChainId}}}, wkSender} now r@NameRegistration {nrId = regId@(RegistrationId rid), nrOwner, nrCommitment, nrLabelHash} c rv@NameReveal {rvDeadline = deadline, rvAcceptance = a@TermsAcceptance {taTermsHash}} =
+relayAcceptance w@Worker {wkOrders = OrdersEnv {oeContracts, oeConfig = NamesConfig {nChain = ChainConfig {cChainId}}}, wkSender} now r@NameRegistration {nrId = regId@(RegistrationId rid), nrOwner, nrCommitment, nrLabelHash} c rv@NameReveal {rvDeadline = deadline, rvAcceptance = a@TermsAcceptance {termsHash}} =
   inFlightTransaction wkSender (TxRegistration RTAccept regId) >>= \case
     Just p -> pure $ Just $ Await p
     Nothing ->
       runExceptT ((,,) <$> ExceptT (namePolicy oeContracts) <*> ExceptT (communityName oeContracts nrLabelHash) <*> ExceptT held) >>= \case
         Left e -> pure $ Just $ failure r $ SFChain e
         Right (policy, community, accepted)
-          | accepted == taTermsHash -> pure Nothing
+          | accepted == termsHash -> pure Nothing
           | otherwise -> Just <$> relay policy (termsKind community)
   where
     held = acceptedTerms oeContracts nrCommitment nrOwner
@@ -385,7 +385,7 @@ relayAcceptance w@Worker {wkOrders = OrdersEnv {oeContracts, oeConfig = NamesCon
             Left SEInFlight -> pure Again
             Left (SEChain (ChainReverted reason)) ->
               held >>= \case
-                Right accepted | accepted == taTermsHash -> pure Again
+                Right accepted | accepted == termsHash -> pure Again
                 _ -> judge w now r c RTAccept $ Just reason
             Left e -> pure $ failure r $ SFSend e
 

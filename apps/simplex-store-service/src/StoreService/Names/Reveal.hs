@@ -1,3 +1,4 @@
+{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -19,7 +20,6 @@ where
 import Control.Logger.Simple (logWarn)
 import Control.Monad (unless)
 import Control.Monad.Except (ExceptT (..), liftEither, runExceptT)
-import qualified Data.Aeson as J
 import qualified Data.Aeson.TH as JQ
 import Data.Bifunctor (first)
 import Data.Functor ((<&>))
@@ -31,7 +31,7 @@ import Data.Word (Word64)
 import Simplex.Chat.Badges.Code (nameLengthInt)
 import Simplex.Messaging.Crypto.Secp256k1 (RecoverableSignature)
 import Simplex.Messaging.Eth.Address (Address)
-import Simplex.Messaging.Parsers (defaultJSON, dropPrefix)
+import Simplex.Messaging.Parsers (defaultJSON)
 import Simplex.Messaging.SimplexName (labelHash)
 import Simplex.Messaging.SystemTime (SystemSeconds, roundedToUTCTime)
 import Simplex.Messaging.Util (tshow)
@@ -47,23 +47,23 @@ data RevealRefusal = RVBadRequest Text | RVInvalidLink LinkKind | RVChainUnavail
   deriving (Eq, Show)
 
 data RevealRequest = RevealRequest
-  { rqLabel :: Text,
-    rqSignature :: RecoverableSignature,
-    rqSecret :: Hex32,
-    rqRecords :: RevealLinks,
-    rqNonce :: Word64,
-    rqDeadline :: SystemSeconds,
-    rqAcceptance :: TermsAcceptance
+  { label :: Text,
+    signature :: RecoverableSignature,
+    secret :: Hex32,
+    records :: RevealLinks,
+    nonce :: Word64,
+    deadline :: SystemSeconds,
+    acceptance :: TermsAcceptance
   }
 
-data RevealLinks = RevealLinks {rlContact :: Maybe Text, rlChannel :: Maybe Text}
+data RevealLinks = RevealLinks {contact :: Maybe Text, channel :: Maybe Text}
 
-$(JQ.deriveFromJSON defaultJSON {J.fieldLabelModifier = dropPrefix "rl"} ''RevealLinks)
+$(JQ.deriveFromJSON defaultJSON ''RevealLinks)
 
-$(JQ.deriveFromJSON defaultJSON {J.fieldLabelModifier = dropPrefix "rq"} ''RevealRequest)
+$(JQ.deriveFromJSON defaultJSON ''RevealRequest)
 
 isRepeat :: RevealRequest -> NameReveal -> Bool
-isRepeat RevealRequest {rqLabel, rqSignature} NameReveal {rvLabel, rvSignature} = rqLabel == rvLabel && rqSignature == rvSignature
+isRepeat RevealRequest {label, signature} NameReveal {rvLabel, rvSignature} = label == rvLabel && signature == rvSignature
 
 checkReveal :: NamesConfig -> Contracts -> UTCTime -> Address -> OrderFields -> UTCTime -> RevealRequest -> IO (Either RevealRefusal NameReveal)
 checkReveal cfg ct now owner fields earliest request = runExceptT $ do
@@ -81,10 +81,10 @@ orderReveal cfg ct now owner fields request =
     Left RVChainUnavailable -> Left ORNameCheckUnavailable
 
 committedReveal :: NamesConfig -> Address -> OrderFields -> RevealRequest -> Either RevealRefusal NameReveal
-committedReveal cfg@NamesConfig {nTLD} owner OrderFields {ofLabelHash, ofLength, ofDuration, ofCommitment} RevealRequest {rqLabel, rqSignature, rqSecret, rqRecords = RevealLinks {rlContact, rlChannel}, rqNonce, rqDeadline, rqAcceptance} = do
-  label <- first (RVBadRequest . ("the label is not a name: " <>) . tshow) $ validLabel nTLD rqLabel
+committedReveal cfg@NamesConfig {nTLD} owner OrderFields {ofLabelHash, ofLength, ofDuration, ofCommitment} RevealRequest {label = sentLabel, signature, secret, records = RevealLinks {contact, channel}, nonce, deadline, acceptance} = do
+  label <- first (RVBadRequest . ("the label is not a name: " <>) . tshow) $ validLabel nTLD sentLabel
   unless (labelHash label == ofLabelHash && T.length label == nameLengthInt ofLength) $ Left $ RVBadRequest "the label is not the order's"
-  let rv = NameReveal {rvLabel = label, rvSecret = rqSecret, rvContactLink = rlContact, rvChannelLink = rlChannel, rvNonce = rqNonce, rvDeadline = rqDeadline, rvSignature = rqSignature, rvAcceptance = rqAcceptance}
+  let rv = NameReveal {rvLabel = label, rvSecret = secret, rvContactLink = contact, rvChannelLink = channel, rvNonce = nonce, rvDeadline = deadline, rvSignature = signature, rvAcceptance = acceptance}
   unless (makeCommitment (riRegistration $ intentOf cfg owner ofDuration rv) == ofCommitment) $ Left $ RVBadRequest "the reveal is not the order's commitment"
   pure rv
 
@@ -105,11 +105,11 @@ checkIntent NamesConfig {nChain = ChainConfig {cChainId, cSponsor}} ct now earli
 -- | After the intent, so only a signed request reads the policy. Every name needs its owner's signature of the acceptance
 -- its view returns, with the intent's deadline.
 checkAcceptance :: NamesConfig -> Contracts -> Address -> OrderFields -> NameReveal -> IO (Either RevealRefusal ())
-checkAcceptance NamesConfig {nChain = ChainConfig {cChainId}} ct owner OrderFields {ofLabelHash, ofCommitment} NameReveal {rvDeadline, rvAcceptance = a@TermsAcceptance {taTermsHash, taNonce}} =
+checkAcceptance NamesConfig {nChain = ChainConfig {cChainId}} ct owner OrderFields {ofLabelHash, ofCommitment} NameReveal {rvDeadline, rvAcceptance = a@TermsAcceptance {termsHash = signedHash, nonce = signedNonce}} =
   currentAcceptance ct ofLabelHash owner >>= \case
     Left e -> Left RVChainUnavailable <$ logWarn ("names: a reveal's terms acceptance could not be read: " <> tshow e)
-    Right AcceptanceAsked {acCommunity, acPolicy, acTermsHash, acNonce}
-      | taTermsHash == acTermsHash && taNonce == acNonce -> first (RVBadRequest . T.pack) <$> verifyAcceptance (policyDomain cChainId acPolicy) (termsKind acCommunity) owner ofCommitment rvDeadline a
+    Right AcceptanceAsked {community, policy, termsHash, nonce}
+      | signedHash == termsHash && signedNonce == nonce -> first (RVBadRequest . T.pack) <$> verifyAcceptance (policyDomain cChainId policy) (termsKind community) owner ofCommitment rvDeadline a
       | otherwise -> pure $ Left $ RVBadRequest "the acceptance is not of the terms and nonce the policy asks"
 
 signatureSeconds :: Integer

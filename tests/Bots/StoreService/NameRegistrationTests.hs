@@ -1,3 +1,4 @@
+{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
@@ -189,7 +190,7 @@ testAcceptanceDigest = do
 testAcceptCalldata :: IO ()
 testAcceptCalldata = do
   sig <- either (fail . show) pure $ parseSignature $ "0x" <> T.replicate 32 "11" <> T.replicate 32 "22" <> "1b"
-  let acceptance = TermsAcceptance {taTermsHash = acceptedHash, taNonce = 3, taSignature = sig}
+  let acceptance = TermsAcceptance {termsHash = acceptedHash, nonce = 3, signature = sig}
       calldata community = toHex (acceptCalldata (termsKind community) acceptedCommitment (address "0x14dC79964da2C08b23698B3D3cc7Ca32193d9955") acceptanceDeadline acceptance)
       args =
         "26d4dc807322bcdc1f68a2459b580919c4e6c5629d07cb20c38a31f7b72b7e5deed23f946d290583f5f55c2ae8255db70adac4fc4c5de714a920d35eed9c7dac\
@@ -205,7 +206,7 @@ testVerifyAcceptance g = do
   owner <- newEphemeralWallet g
   other <- newEphemeralWallet g
   sig <- signRecoverable g (ewKey owner) (acceptanceDigest acceptanceDomain (termsKind True) acceptedCommitment acceptedHash 3 acceptanceDeadline) >>= either fail pure
-  let acceptance = TermsAcceptance {taTermsHash = acceptedHash, taNonce = 3, taSignature = sig}
+  let acceptance = TermsAcceptance {termsHash = acceptedHash, nonce = 3, signature = sig}
       verify community w = verifyAcceptance acceptanceDomain (termsKind community) (ewAddress w) acceptedCommitment
   verify True owner acceptanceDeadline acceptance `shouldReturn` Right ()
   verify True other acceptanceDeadline acceptance `shouldReturn` Left "acceptance is not signed by the owner"

@@ -42,7 +42,7 @@ import Simplex.Messaging.Agent.Store.Common (withTransaction)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Encoding.String (strEncode, textDecode)
 import Simplex.Messaging.Names.Record (USDCents)
-import Simplex.Messaging.Parsers (defaultJSON, dropPrefix)
+import Simplex.Messaging.Parsers (defaultJSON)
 import Simplex.Messaging.Util (isAsyncCancellation, safeDecodeUtf8, tshow)
 import StoreService.Catalog (catalogCurrency)
 import StoreService.Config (NamesConfig (..), ServiceConfig)
@@ -68,7 +68,7 @@ data InvoiceOrder = InvoiceOrder
     ioReveal :: RevealRequest
   }
 
-data CodeOrder = CodeOrder {coOrder :: SentOrder, coCode :: Text, coReveal :: RevealRequest}
+data CodeOrder = CodeOrder {order :: SentOrder, code :: Text, reveal :: RevealRequest}
 
 data SpendRequest = SpendRequest
   { srSigned :: SignedFields,
@@ -78,7 +78,7 @@ data SpendRequest = SpendRequest
     srReveal :: RevealRequest
   }
 
-$(JQ.deriveFromJSON defaultJSON {J.fieldLabelModifier = dropPrefix "co"} ''CodeOrder)
+$(JQ.deriveFromJSON defaultJSON ''CodeOrder)
 
 instance J.FromJSON InvoiceOrder where
   parseJSON = J.withObject "order" $ \o -> InvoiceOrder <$> o .: "order" <*> jsonField o "method" paymentMethod <*> o .: "price" <*> o .: "reveal"
@@ -135,8 +135,8 @@ refusalResponse r = responseLBS status (retryAfterHeader <> apiHeaders) (J.encod
       NRTermsUnavailable {} -> status503
       NREditPending -> status504
     retryAfterHeader = case r of
-      NRRateLimited {rfRetryAfter} -> [("Retry-After", B.pack $ show rfRetryAfter)]
-      NRTermsUnavailable {rfWait = Just seconds} -> [("Retry-After", B.pack $ show seconds)]
+      NRRateLimited {retryAfter} -> [("Retry-After", B.pack $ show retryAfter)]
+      NRTermsUnavailable {wait = Just seconds} -> [("Retry-After", B.pack $ show seconds)]
       _ -> []
 
 -- | POST /api/invoice for a name, its body already read and its kind checked.
@@ -270,7 +270,7 @@ codeOrderHandler env@OrdersEnv {oeStore, oeConfig, oeContracts} providers waiter
   where
     what = "POST /api/name/register"
     ordered = \case
-      Just body | Just v <- J.decode body -> either refuse withCode (parseBody "code order" v >>= \CodeOrder {coOrder, coCode, coReveal} -> (,coCode,coReveal) <$> orderRequest coOrder)
+      Just body | Just v <- J.decode body -> either refuse withCode (parseBody "code order" v >>= \CodeOrder {order, code, reveal} -> (,code,reveal) <$> orderRequest order)
       _ -> refuse $ ORBadRequest notObject
     refuse = refused what
     withCode (order, codeText, reveal) =

@@ -26,7 +26,6 @@ import Control.Logger.Simple (logError, logWarn)
 import Control.Monad (forM, forM_, forever, unless, void, when)
 import Control.Monad.Except (ExceptT (..), runExceptT)
 import Control.Monad.IO.Class (liftIO)
-import qualified Data.Aeson as J
 import qualified Data.Aeson.TH as JQ
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
@@ -45,7 +44,7 @@ import Simplex.Messaging.Crypto (sha256Hash)
 import Simplex.Messaging.Encoding (Encoding (..))
 import Simplex.Messaging.Eth.Address (Address, recoverAddress)
 import Simplex.Messaging.Eth.EIP712 (Eip712Domain)
-import Simplex.Messaging.Parsers (defaultJSON, dropPrefix)
+import Simplex.Messaging.Parsers (defaultJSON)
 import Simplex.Messaging.SimplexName (LabelHash, SimplexTLD)
 import Simplex.Messaging.SystemTime (RoundedSystemTime (..), SystemSeconds)
 import Simplex.Messaging.Util (catchOwn', tshow)
@@ -97,10 +96,10 @@ data EditAnswer
   deriving (Eq, Show)
 
 -- | The edits a name has left in its window, and when the next one returns; Nothing while none counts.
-data EditsLeft = EditsLeft {elLeft :: Int, elNextAt :: Maybe UTCTime}
+data EditsLeft = EditsLeft {left :: Int, nextAt :: Maybe UTCTime}
   deriving (Eq, Show)
 
-$(JQ.deriveToJSON defaultJSON {J.fieldLabelModifier = dropPrefix "el"} ''EditsLeft)
+$(JQ.deriveToJSON defaultJSON ''EditsLeft)
 
 -- | What the chain shows of an edit none of whose transactions mined.
 data Judgment
@@ -150,13 +149,13 @@ nameEditsLeft db perYear lh now = editsLeft perYear <$> relayedEditTimes db lh (
 editsLeft :: Int -> [UTCTime] -> EditsLeft
 editsLeft perYear times =
   -- the oldest edit returns one, unless a lowered limit is overrun and later ones must go too
-  EditsLeft {elLeft = max 0 $ perYear - counted, elNextAt = addUTCTime editLimitWindow <$> listToMaybe (drop (counted - perYear) times)}
+  EditsLeft {left = max 0 $ perYear - counted, nextAt = addUTCTime editLimitWindow <$> listToMaybe (drop (counted - perYear) times)}
   where
     counted = length times
 
 -- | When the name's yearly limit is used up, the time the next edit fits.
 usedUpUntil :: EditsLeft -> Maybe UTCTime
-usedUpUntil EditsLeft {elLeft, elNextAt} = if elLeft == 0 then elNextAt else Nothing
+usedUpUntil EditsLeft {left, nextAt} = if left == 0 then nextAt else Nothing
 
 -- | An identical repeat of a sent edit is answered from it, and the yearly limit is checked, before any chain read.
 -- The wait for an outcome is bounded from the request's arrival, so the checks and the send count toward it.

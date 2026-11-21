@@ -17,7 +17,7 @@ import Data.Text (Text)
 import Data.Word (Word64)
 import Network.HTTP.Types (status200)
 import Network.Wai (Request, Response, ResponseReceived)
-import Simplex.Messaging.Parsers (defaultJSON, dropPrefix)
+import Simplex.Messaging.Parsers (defaultJSON)
 import Simplex.Messaging.SimplexName (LabelHash (..))
 import Simplex.Messaging.SystemTime (SystemSeconds)
 import StoreService.Names.Chain (Hex32 (..), revertText)
@@ -32,13 +32,13 @@ data EditInvalid = EIBadRequest | EIInvalidLink
   deriving (Eq, Show)
 
 -- | An edit as sent, before its link and signature are checked.
-data SentEdit = SentEdit {seKey :: LinkKind, seValue :: Text, seNonce :: Word64, seDeadline :: SystemSeconds, seSignature :: Text}
+data SentEdit = SentEdit {key :: LinkKind, value :: Text, nonce :: Word64, deadline :: SystemSeconds, signature :: Text}
 
-data SentRequest = SentRequest {srLabelHash :: Hex32, srEdits :: [SentEdit]}
+data SentRequest = SentRequest {labelHash :: Hex32, edits :: [SentEdit]}
 
-$(JQ.deriveFromJSON defaultJSON {J.fieldLabelModifier = dropPrefix "se"} ''SentEdit)
+$(JQ.deriveFromJSON defaultJSON ''SentEdit)
 
-$(JQ.deriveFromJSON defaultJSON {J.fieldLabelModifier = dropPrefix "sr"} ''SentRequest)
+$(JQ.deriveFromJSON defaultJSON ''SentRequest)
 
 recordsHandler :: Records -> Request -> Respond -> IO ResponseReceived
 recordsHandler rs req respond =
@@ -61,18 +61,18 @@ maxEdits = 2
 -- | Every edit's format and key, then every link, then every signature's format and low s, as the page's checks run.
 editRequest :: J.Object -> Either EditInvalid EditRequest
 editRequest o = do
-  SentRequest {srLabelHash = Hex32 lh, srEdits = edits} <- maybe (Left EIBadRequest) Right $ JT.parseMaybe J.parseJSON $ J.Object o
+  SentRequest {labelHash = Hex32 lh, edits} <- maybe (Left EIBadRequest) Right $ JT.parseMaybe J.parseJSON $ J.Object o
   sent <- maybe (Left EIBadRequest) Right $ L.nonEmpty edits
   unless (length edits <= maxEdits && keysOnce edits && consecutive edits) $ Left EIBadRequest
-  forM_ edits $ \SentEdit {seKey, seValue} -> unless (seValue == "" || (fst <$> nameLink seValue) == Just seKey) $ Left EIInvalidLink
+  forM_ edits $ \SentEdit {key, value} -> unless (value == "" || (fst <$> nameLink value) == Just key) $ Left EIInvalidLink
   erChanges <- mapM signedChange sent
   pure EditRequest {erLabelHash = LabelHash lh, erChanges}
   where
-    keysOnce edits = let keys = map seKey edits in length keys == length (nub keys)
-    consecutive edits = and $ zipWith (\a b -> seNonce b == seNonce a + 1) edits (drop 1 edits)
-    signedChange SentEdit {seKey, seValue, seNonce, seDeadline, seSignature} = do
-      scSignature <- either (const $ Left EIBadRequest) Right $ parseSignature seSignature
-      pure SignedChange {scChange = RCSetText seKey seValue, scNonce = seNonce, scDeadline = seDeadline, scSignature}
+    keysOnce edits = let keys = map key edits in length keys == length (nub keys)
+    consecutive edits = and $ zipWith (\a b -> nonce b == nonce a + 1) edits (drop 1 edits)
+    signedChange SentEdit {key, value, nonce, deadline, signature} = do
+      scSignature <- either (const $ Left EIBadRequest) Right $ parseSignature signature
+      pure SignedChange {scChange = RCSetText key value, scNonce = nonce, scDeadline = deadline, scSignature}
 
 editResponse :: EditAnswer -> Response
 editResponse = \case

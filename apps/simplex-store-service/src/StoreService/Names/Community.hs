@@ -19,19 +19,18 @@ module StoreService.Names.Community
 where
 
 import Control.Monad.Except (ExceptT (..), runExceptT, throwError)
-import qualified Data.Aeson as J
 import qualified Data.Aeson.TH as JQ
 import Data.Bifunctor (bimap)
 import qualified Data.Map.Strict as M
 import Data.Text (Text)
 import Data.Word (Word64)
 import Simplex.Messaging.Eth.Address (Address)
-import Simplex.Messaging.Parsers (defaultJSON, dropPrefix)
+import Simplex.Messaging.Parsers (defaultJSON)
 import Simplex.Messaging.SimplexName (LabelHash)
 import StoreService.Config (NamesConfig (..))
 import StoreService.Names.Chain (ChainError (..))
 import StoreService.Names.Contracts (Contracts, Terms (..), TermsRefusal (..), communityName, concurrent, kindTerms, namePolicy, policyNonce, termsLinks, termsText, together)
-import StoreService.Names.Registration (AgreedTerms (..), CommunityName, TermsHash)
+import StoreService.Names.Registration (AgreedTerms (AgreedTerms), CommunityName, TermsHash)
 
 data Community = Community {for :: Maybe Text, years :: Int}
   deriving (Eq, Show)
@@ -47,7 +46,7 @@ communityFor :: NamesConfig -> LabelHash -> Maybe Text
 communityFor NamesConfig {nCommunity} lh = M.lookup lh nCommunity
 
 termsFor :: CommunityName -> Terms -> AgreedTerms
-termsFor community Terms {tmHash} = AgreedTerms {atCommunityName = community, atTermsHash = tmHash}
+termsFor community Terms {tmHash} = AgreedTerms community tmHash
 
 -- | Nothing for plain terms.
 communityOf :: NamesConfig -> LabelHash -> CommunityName -> Maybe Community
@@ -74,15 +73,15 @@ readableTerms ct = maybe (pure $ Left Nothing) $ \t -> bimap waitOf (const t) <$
     waitOf (TRWait seconds) = Just seconds
 
 -- | What the page signs to accept the terms of the name's kind.
-data AcceptanceAsked = AcceptanceAsked {acCommunity :: CommunityName, acPolicy :: Address, acTermsHash :: TermsHash, acNonce :: Word64}
+data AcceptanceAsked = AcceptanceAsked {community :: CommunityName, policy :: Address, termsHash :: TermsHash, nonce :: Word64}
   deriving (Eq, Show)
 
 currentAcceptance :: Contracts -> LabelHash -> Address -> IO (Either ChainError AcceptanceAsked)
 currentAcceptance ct lh owner = runExceptT $ do
-  (acCommunity, terms) <- ExceptT $ nameTerms ct lh
-  Terms {tmHash = acTermsHash} <- maybe (throwError $ ChainUnavailable "the name policy has no terms of this kind that the service takes") pure terms
-  acPolicy <- ExceptT $ namePolicy ct
-  acNonce <- ExceptT $ policyNonce ct owner
-  pure AcceptanceAsked {acCommunity, acPolicy, acTermsHash, acNonce}
+  (community, terms) <- ExceptT $ nameTerms ct lh
+  Terms {tmHash = termsHash} <- maybe (throwError $ ChainUnavailable "the name policy has no terms of this kind that the service takes") pure terms
+  policy <- ExceptT $ namePolicy ct
+  nonce <- ExceptT $ policyNonce ct owner
+  pure AcceptanceAsked {community, policy, termsHash, nonce}
 
-$(JQ.deriveToJSON defaultJSON {J.fieldLabelModifier = dropPrefix "ac"} ''AcceptanceAsked)
+$(JQ.deriveToJSON defaultJSON ''AcceptanceAsked)
