@@ -545,8 +545,7 @@ function payTotal(): string {
   return total === undefined ? "" : money(total.amount, price?.currency ?? "usd");
 }
 
-// A coin that is down falls back to another coin, and the card to the first coin: a buyer who
-// chose a coin is not moved to a card.
+// A buyer who chose a coin is offered another coin, never the card.
 const FALLBACK_METHOD: Readonly<Record<Method, Method>> = { card: "btc", btc: "xmr", ln: "btc", xmr: "btc" };
 
 let cancelNotice: { orderId: string; epoch: number; message: string } | undefined;

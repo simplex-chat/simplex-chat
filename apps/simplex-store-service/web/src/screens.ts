@@ -56,7 +56,7 @@ export class CancelRefused extends Error {}
 export const PAID_IN_FULL_TITLE = "The full amount has arrived";
 export const LIGHTNING_DO_NOT_PAY = "Do not pay its Lightning invoice: a wallet can pay it until it expires, and such a payment is refunded by hand.";
 const SORT_IT_OUT = "Quote the reference below and we will sort it out.";
-export const CANCEL_NOT_OPEN ="This invoice is no longer open, so there is nothing to cancel.";
+export const CANCEL_NOT_OPEN = "This invoice is no longer open, so there is nothing to cancel.";
 export const CANCEL_HAS_FUNDS = "This invoice has a payment on it, so it cannot be cancelled.";
 export const CANCEL_STILL_OPEN = "This invoice was cancelled, but the service still shows it open. Do not pay it.";
 export const CANCEL_INVOICE = "Cancel this invoice";
@@ -965,12 +965,11 @@ const ENTRY_STATES: Readonly<Record<HistoryRow["kind"], { text: string; tone: st
   open: { text: "waiting for payment", tone: "pending" },
   partPaid: { text: "part of the amount received", tone: "pending" },
   processing: { text: "payment received, waiting to confirm", tone: "pending" },
+  settling: { text: "payment received, waiting to settle", tone: "pending" },
   canceled: { text: "canceled", tone: "lost" },
   canceledPaid: { text: "canceled, then paid", tone: "lost" },
   expired: { text: "this invoice expired", tone: "lost" },
 };
-
-const LIGHTNING_PROCESSING: { text: string; tone: string } = { text: "payment received, waiting to settle", tone: "pending" };
 
 function entryMeta(o: UnpaidOrder): HTMLElement {
   const meta = el("div", { class: "meta" });
@@ -990,7 +989,7 @@ function entryLine(row: HistoryRow, onOpen: (orderId: string) => void): HTMLElem
   const head = el("div", { class: "entry-head" });
   if (hasBadgeArt(o.badgeType)) head.append(badgeIcon(o.badgeType));
   const main = el("div", { class: "entry-main" });
-  const state = row.kind === "processing" && o.method === "ln" ? LIGHTNING_PROCESSING : ENTRY_STATES[row.kind];
+  const state = ENTRY_STATES[row.kind];
 
   const titleRow = el("div", { class: "entry-row" });
   const title = orderTitle(o.badgeType, o.months);

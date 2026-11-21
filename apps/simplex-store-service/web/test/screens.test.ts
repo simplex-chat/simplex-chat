@@ -607,7 +607,7 @@ domTest("screens: a Lightning row still settling is labelled so in Your codes, a
     record({ orderId: "inv_btc", method: "btc", ...funded }),
     record({ orderId: "inv_ln_open", method: "ln" }),
   ]);
-  assert.deepEqual(rows.map((r) => r.kind), ["processing", "processing", "open"]);
+  assert.deepEqual(rows.map((r) => r.kind), ["settling", "processing", "open"]);
   const p = render(screens.purchaseHistory({ rows, keepsNewCodes: true, onOpen: noop, onStart: noop, onForget: noop }));
   const statuses = p.all("span.status").map((s) => s.textContent);
   assert.deepEqual(statuses, ["payment received, waiting to settle", "payment received, waiting to confirm", "waiting for payment"]);
