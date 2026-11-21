@@ -1,6 +1,6 @@
 # SimpleX Chat Security Audit by Trail of Bits and Our Security Process
 
-**To be published:** Nov 21, 2026
+**To be published:** early next week, pending some minor (and positive) corrections in the report from Trail of Bits.
 
 This is a permalink for a blog post about:
 
