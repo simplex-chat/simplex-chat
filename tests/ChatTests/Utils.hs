@@ -1026,6 +1026,9 @@ eventsFixture fixture events steps = do
   readTVarIO events >>= writeFixture fixture . stableJSON . J.toJSON
 
 writeFixture :: String -> J.Value -> IO ()
+#if defined(dbPostgres)
+writeFixture _ _ = pure ()
+#else
 writeFixture fixture = testGenerate ("tests/fixtures/api/" <> fixture <> ".json") . prettyJSON
   where
     prettyJSON = (<> "\n") . pretty ""
@@ -1035,6 +1038,7 @@ writeFixture fixture = testGenerate ("tests/fixtures/api/" <> fixture <> ".json"
       v -> jsonText v
     block indent open close items = open <> "\n" <> T.intercalate ",\n" (map ((indent <> "  ") <>) items) <> "\n" <> indent <> close
     jsonText = safeDecodeUtf8 . LB.toStrict . J.encode
+#endif
 
 stableJSON :: J.Value -> J.Value
 stableJSON = \case
