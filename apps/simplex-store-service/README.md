@@ -195,8 +195,8 @@ then the header is whatever the caller wrote. The last entry is the one read, wh
 proxy appends.
 An IPv6 client is counted by its /64, since one host gets a whole /64, and an IPv4-mapped address
 by its IPv4 address.
-Checkouts that reach the provider (`POST /api/invoice` and `POST /api/registration/:id/spend` with a
-difference to pay, each a provider invoice or card PaymentIntent) are also capped at 5 a minute for
+Checkouts that reach the provider (`POST /api/invoice`, each a provider invoice or card
+PaymentIntent) are also capped at 5 a minute for
 each IPv4 /24 or IPv6 /48, and at 60 card and 30 BTCPay checkouts a minute for all clients together.
 A call to BTCPay or Stripe, its body read included, fails as a provider error after 10 seconds, and
 after 30 seconds when it creates a checkout's invoice or card payment, which a buyer waits on; the
@@ -331,15 +331,12 @@ The endpoint's events in the Dashboard are `payment_intent.succeeded`,
 A dispute or a refund of a name order's payment is acted on at its delivery, as no read finds it:
 - an order paid and live, of which no register transaction was saved, is closed with
   `closedBy` `reversed`, its name released and nothing credited to its balance, also after support
-  refunded part of its balance; the cents it paid from another order's balance are returned to
-  that balance;
+  refunded part of its balance;
 - an order whose payment is not recorded yet is closed the same way when its payment settles,
-  instead of being queued, its held balance released;
+  instead of being queued;
 - any other order is kept, and the reversed cents are taken back from its balance, as far as the
   balance and the invoice's amount hold them; an order whose refund support recorded is kept as
   it is;
-- before its balance is taken back, the open invoice of another order that holds that balance is
-  cancelled at its provider and then here, and the alert names that order;
 - an order with a recorded dispute or refund is credited nothing more, its price included when
   it is taken or its month ends, and a late credit concurrent with a dispute of its order is
   written after it.
@@ -644,7 +641,7 @@ from some contacts. Before the service starts on it:
    service numbers a new transaction after the key's mined transactions and the ones the copy saved,
    so a transaction in the pool that the copy does not hold can have the same nonce.
 2. Record again, with `//record_refund` in `--run-cli` or `/record_refund` in the group, each refund recorded after the copy: the copy holds
-   those balances unrefunded, so their buyers could spend them. The service logged each as
+   those balances unrefunded, so they could be refunded twice. The service logged each as
    `names: recorded a refund of <cents> cents for order <registration id>`.
 3. Revoke with `//revoke` each code spent or revoked after the copy, which the copy holds unspent, and
    issue again each code issued after it, which the copy does not hold, so it answers `code_invalid`.
@@ -971,12 +968,10 @@ warning. When the metrics port cannot be listened on, the failure is logged as a
 | `simplex_store_badges_codes_open` | badge codes paid or free, not revoked or expired, with redemptions left |
 | `simplex_store_names_orders{phase,reason}` | name orders in the phase: `unpaid`, `closed`, `queued`, `committing`, `committed`, `registering`, `registered`, `taken` or `failed`; the queue is `queued` to `registering`, while `closed` counts unpaid orders closed with their invoice, kept for 30 days, and `failed` every failed order not tried again, by `reason`: `registry_refused`, `signature_refused`, `month_ended` or `unread`, each 0 when it has none |
 | `simplex_store_names_queue_oldest_change_timestamp_seconds` | the last change, in Unix seconds, of the order unchanged longest among those the service moves on: `queued`, `committing`, `registering`, and `committed` with the page's reveal stored; absent when there is none |
-| `simplex_store_names_unregistered_oldest_paid_timestamp_seconds` | when the live order paid longest ago among those `queued`, `committing`, `committed`, `registering` or `failed` was paid, a month-ended order not counted, a code order or an order paid from a balance at its placement; absent when there is none |
+| `simplex_store_names_unregistered_oldest_paid_timestamp_seconds` | when the live order paid longest ago among those `queued`, `committing`, `committed`, `registering` or `failed` was paid, a month-ended order not counted, a code order at its placement; absent when there is none |
 | `simplex_store_names_transactions_pending` | registrar transactions sent and not settled, one per nonce, so a fee replacement counts once |
 | `simplex_store_names_transactions_oldest_pending_timestamp_seconds` | when the oldest of them was first signed; absent when none is pending |
 | `simplex_store_names_invoices_open` | open invoices of name orders |
-| `simplex_store_names_balances_held` | balances reserved by an order paying the difference, until that order is paid or closed |
-| `simplex_store_names_balances_held_cents` | the cents of those balances |
 | `simplex_store_names_record_edits_pending` | record edits relayed and not settled |
 | `simplex_store_names_record_edits_oldest_pending_timestamp_seconds` | when the oldest of them was made; absent when none is pending |
 | `simplex_store_names_registrar_balance_wei` | the registrar key's ETH balance, as last read |
@@ -1117,7 +1112,7 @@ does not take, and meanwhile `503 terms_unavailable` with `Retry-After` for a te
 
 The terms of a name's kind are unavailable while their link is not set, is not a link the service
 takes, or has a text the service cannot fetch now. An available name's search answer then carries
-`"terms": null`, and an order, a code order, a move or a spend of such a name answers
+`"terms": null`, and an order, a code order or a move of such a name answers
 `503 terms_unavailable` before any payment, with `Retry-After` while the fetch waits. The service
 logs both links and their hashes at startup, and warns for each that is not set or not a link it
 takes. A names lane reads or fetches both texts at the start and then every hour. A search reads the links only for an available name, and
@@ -1156,7 +1151,7 @@ value answers `409 terms_changed` with the current terms of the name's kind, `{"
 the name's community entry, and the page asks again; an order signed with a terms version, as pages
 before signed, meets it once. An exact resend is still answered after the terms changed.
 
-**Upgrading:** a page that sends no `terms` gets `bad_request` on every order, spend and move, so the
+**Upgrading:** a page that sends no `terms` gets `bad_request` on every order and move, so the
 page and the service are deployed together.
 
 On chain the order is the same for every name: the service commits, the page signs the reveal, the
@@ -1179,8 +1174,8 @@ who hold them before anyone can pay. It is `off` by default. While it is on:
 
 - `GET /api/config` answers `"mode": "codes"` in place of `"open"`, and the names page then offers
   only codes. The badges site ignores the mode;
-- `POST /api/invoice` for a name and `POST /api/registration/:id/spend` answer
-  `403 {"type": "codes_only"}`, before they read the order,
+- `POST /api/invoice` for a name answers
+  `403 {"type": "codes_only"}`, before it reads the order,
   so no order takes money for a name;
 - search, the signing read, link previews, code checks, code orders (`POST /api/name/register`),
   the registration view, `find`, the reveal, `/retry`, another name and record edits work as before. Webhooks and the
@@ -1199,7 +1194,7 @@ cents a year, at which the service sells a name. A chain price under it for the 
 fails the price read, and the service logs a warning with the price:
 
 - a search answers `503 provider_unavailable`;
-- an order or a spend answers `503 name_check_unavailable` before any payment;
+- an order answers `503 name_check_unavailable` before any payment;
 - a move answers `503 name_check_unavailable` and credits nothing.
 
 Code orders and their moves read no price, so the floor does not apply to them. The default is the
@@ -1785,7 +1780,7 @@ A paid name order keeps its money as a balance when it ends `taken` (another buy
 name first, or support closed the failed order with `//close`, which also records the refund; see
 [Closing a failed order](#closing-a-failed-order)), when it moves to a cheaper name (the difference), when a payment reaches its invoice
 after the invoice closed, and when its invoice was paid more crypto than it asked (the extra). The
-buyer spends a balance on another name from Your names, or asks for it back: the page tells them to
+buyer asks for a balance back: the page tells them to
 write to chat@simplex.chat with the order's reference, which is its invoice id, or its registration
 id for an order without an invoice. Nothing is refunded automatically, and the service never learns
 where to send money. A reference is not proof of who paid: a registration id is in the service's
@@ -1811,38 +1806,19 @@ group](#balances-and-failed-orders-in-the-group)):
    Order <id>: balance $100.00 (credited $100.00, refunded $0.00). Paid by: order <id> of <owner>: $100.00 by btc on invoice <invoice id> (provider reference <provider reference>). To record its refund: //record_refund <reference> 10000
    ```
 
-   `Paid by` starts at this order and follows every balance the money came through back to the
-   first order: each order with its owner, the address that signed it, what its invoice paid and by
-   which method (`card`, `btc` or `xmr`), the part paid from the balance of the next order listed,
-   and money credited from its invoice later: marked `late` when it arrived after the invoice
-   closed, and `overpaid` when it is the extra of an invoice that paid the order. The provider
+   `Paid by` names this order with its owner, the address that signed it, what its invoice paid and
+   by which method (`card`, `btc` or `xmr`), and money credited from its invoice later: marked
+   `late` when it arrived after the invoice closed, and `overpaid` when it is the extra of an
+   invoice that paid the order. The provider
    reference is the BTCPay invoice id or the Stripe PaymentIntent id, which finds the payment in the
    provider's Dashboard.
 2. Run the command the answer ends with. The cents must equal the whole balance: a refund zeroes it,
    and part of a balance is never refunded. Other cents record nothing, and the answer gives the
    balance.
-3. The answer, `Recorded a refund of $100.00 for order <id>. Refund it now, by: …`, repeats the
-   chain. Pay the balance's amount in US dollars back now, by the methods it lists. The refund is
-   recorded first so that the buyer cannot spend the money while it is paid
-   back. The service logs each recorded refund at note with the order's registration id and the
-   cents.
-
-A balance that an open order holds is never refunded: that order is buying another name with it and
-its invoice is waiting for the difference. The command names the order instead, with its invoice's
-expiry unless money reached the invoice:
-
-- `its invoice open until <time>`: if the buyer pays it, the balance is spent; if not, it is released
-  once the invoice expires and the poller, in service mode, closes the order. Run the command again
-  then.
-- `its invoice expired at <time>; start the service so the poller closes that order, 10 minutes
-  after the expiry at the earliest, then stop it and run the command again`: the poller runs only in
-  service mode. Its first pass from 10 minutes after the expiry closes the order and releases the
-  hold; a card order closes only once Stripe accepts the cancel. In the group, where the service
-  runs, the answer is `its invoice expired at <time>; the poller closes that order 10 minutes after
-  the expiry at the earliest; run the command again then`.
-- `whose invoice holds money`: a payment reached the invoice, before or after its expiry; the hold
-  stays until that payment settles, which spends the balance, or the provider closes the invoice,
-  which releases it.
+3. The answer, `Recorded a refund of $100.00 for order <id>. Refund it now, by: …`, repeats what
+   paid. Pay the balance's amount in US dollars back now, by the method it lists. The refund is
+   recorded before the money is paid back. The service logs each recorded refund at note with the
+   order's registration id and the cents.
 
 The commands also answer when the reference matches no order, when the order has no balance, and
 when the cents are not the balance. A refunded balance shows `amount` 0 and its `refunded` total in
@@ -1854,7 +1830,7 @@ A failed paid order, after its attempts reached a cap, stays live, holds its nam
 name again. So does a paid order whose commitment lapsed before its page signed it, until the page
 asks for a new commitment. A calendar month after its payment, clipped to the last day of a shorter
 month, an order that is still `queued`, `committed` or `failed` fails with the reason `monthEnded`:
-the money paid for an order paid by invoice or balance is added to its balance, a code order's code is
+the money paid for an order paid by invoice is added to its balance, a code order's code is
 released, its name is released, and the order is final. A pass every 5 minutes does it, logging each order at note; an order sending its commit, or with a
 register transaction sent and not settled, is ended at the first pass after that transaction settles. Support closes a failed or lapsed
 order before then in `--run-cli` mode with the service stopped, or with `/close` in the group while
@@ -1884,21 +1860,19 @@ note with its registration id and the cents.
 
 Before the first version with `//close` is deployed, list the failed paid orders, with the committed
 ones past their signing deadline, which can be closed too, and find at the provider,
-by the provider reference listed, each one already refunded by hand. An order paid from a balance
-also lists the order whose balance paid it, and one paid wholly from it lists no invoice. After the deploy, close
+by the provider reference listed, each one already refunded by hand. After the deploy, close
 the orders refunded by hand with `//close` and pay nothing, so that their records match the money:
 
 ```
-psql "$BADGE_DB_CONN" -Atc "SELECT r.registration_id, r.phase, r.failed_at, r.reveal_before, ni.invoice_id, i.provider_ref, r.balance_source FROM simplex_v1_chat_schema.sx_badge_service_name_registrations r LEFT JOIN simplex_v1_chat_schema.sx_badge_service_name_invoices ni ON ni.registration_id = r.registration_id LEFT JOIN simplex_v1_chat_schema.sx_badge_service_invoices i ON i.invoice_id = ni.invoice_id WHERE r.name_prepaid_code_id IS NULL AND (r.phase = 'failed' OR (r.phase = 'committed' AND r.label IS NULL AND r.reveal_before < EXTRACT(EPOCH FROM now()))) ORDER BY r.created_at"
+psql "$BADGE_DB_CONN" -Atc "SELECT r.registration_id, r.phase, r.failed_at, r.reveal_before, ni.invoice_id, i.provider_ref FROM simplex_v1_chat_schema.sx_badge_service_name_registrations r LEFT JOIN simplex_v1_chat_schema.sx_badge_service_name_invoices ni ON ni.registration_id = r.registration_id LEFT JOIN simplex_v1_chat_schema.sx_badge_service_invoices i ON i.invoice_id = ni.invoice_id WHERE r.name_prepaid_code_id IS NULL AND (r.phase = 'failed' OR (r.phase = 'committed' AND r.label IS NULL AND r.reveal_before < EXTRACT(EPOCH FROM now()))) ORDER BY r.created_at"
 ```
 
 A closed order reads `taken` in Your names, with its refund. `/retry` and a move answer
 `400 bad_request`, `//balance` finds nothing to refund, and the wallet can order the name again.
 
 The command records nothing for an order that is neither failed nor lapsed unsigned, or was paid with
-a prepaid code, whose code is released when the month from its reservation ends; for a failed chain read; for a balance an order
-holds, worded as for `//record_refund`; and for an order or a balance that changed meanwhile. Run the
-command again after the last three.
+a prepaid code, whose code is released when the month from its reservation ends; for a failed chain read;
+and for an order or a balance that changed meanwhile. Run the command again after the last two.
 
 ## Balances and failed orders in the group
 
@@ -1912,16 +1886,14 @@ slash:
 ```
 
 The service answers each in the group with the console's answer, which names `/record_refund` and
-`/close` in place of `//record_refund` and `//close`, and says that the running poller closes an
-overdue holder rather than asking to start the service. A command takes the same per-name and
-per-balance locks as Try again, moves and spends, and writes a balance only while it still holds the
-amount read and no order holds it, so a payment settled or an invoice cancelled meanwhile makes it
-refuse rather than write. The group's commands run one at a time, so a `/close` waiting on a slow
+`/close` in place of `//record_refund` and `//close`. A command takes the same per-name and
+per-balance locks as Try again and moves, and writes a balance only while it still holds the
+amount read, so a late credit meanwhile makes it refuse rather than write. The group's commands run one at a time, so a `/close` waiting on a slow
 chain node delays the group's other replies by up to its three reads' timeouts. `/close` reads the chain through the client the console uses, made at
 start with `[names]`, and without `[names]` answers that names are not enabled.
 
 A member below owner gets no reply and nothing runs; a malformed command from an owner gets the usage
-reply. The reference and the answer, with the orders and invoice ids that paid, are read by every
+reply. The reference and the answer, with the order and invoice id that paid, are read by every
 member and kept in the service's chat database, as codes are, so the group's members must be people
 who may see them. A command the service received but had not run when it stopped is dropped with no
 reply; run it again.

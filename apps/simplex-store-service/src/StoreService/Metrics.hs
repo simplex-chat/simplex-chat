@@ -174,7 +174,7 @@ subscriptionStates :: [SubscriptionState]
 subscriptionStates = [SSRenewing, SSCancelled, SSBillingRetry, SSEnded]
 
 namesText :: Word64 -> NamesCounts -> ChainRead -> PassTimes -> Text
-namesText maxFeePerGas NamesCounts {ncPhases, ncQueueOldestChange, ncPendingTransactions, ncOldestPending, ncOpenInvoices, ncHeldBalances, ncHeldCents, ncPendingEdits, ncOldestEdit, ncOldestUnregisteredPaid} ChainRead {crFunds, crHead, crTerms, crReadAt, crOk} PassTimes {ptMonthPass, ptCreditPass} =
+namesText maxFeePerGas NamesCounts {ncPhases, ncQueueOldestChange, ncPendingTransactions, ncOldestPending, ncOpenInvoices, ncPendingEdits, ncOldestEdit, ncOldestUnregisteredPaid} ChainRead {crFunds, crHead, crTerms, crReadAt, crOk} PassTimes {ptMonthPass, ptCreditPass} =
   T.concat
     [ gauge "simplex_store_names_orders" "Name orders by phase, and failed orders by reason" $
         [labelled "phase" (textEncode p) (value $ sum [n | (p', _, n) <- ncPhases, p' == p]) | p <- [minBound .. maxBound], p /= PFailed]
@@ -184,8 +184,6 @@ namesText maxFeePerGas NamesCounts {ncPhases, ncQueueOldestChange, ncPendingTran
       gauge "simplex_store_names_transactions_pending" "Registrar transactions sent and not settled, one per nonce" (Just $ value ncPendingTransactions),
       gauge "simplex_store_names_transactions_oldest_pending_timestamp_seconds" "When the oldest pending registrar transaction was first signed" (timestamp <$> ncOldestPending),
       gauge "simplex_store_names_invoices_open" "Open invoices of name orders" (Just $ value ncOpenInvoices),
-      gauge "simplex_store_names_balances_held" "Balances reserved by an order paying the difference, until that order is paid or closed" (Just $ value ncHeldBalances),
-      gauge "simplex_store_names_balances_held_cents" "Cents of the balances orders hold" (Just $ value ncHeldCents),
       gauge "simplex_store_names_record_edits_pending" "Record edits relayed and not settled" (Just $ value ncPendingEdits),
       gauge "simplex_store_names_record_edits_oldest_pending_timestamp_seconds" "When the oldest pending record edit was made" (timestamp <$> ncOldestEdit),
       gauge "simplex_store_names_registrar_balance_wei" "The registrar key's ETH balance, as last read" (value . rfBalanceWei <$> crFunds),

@@ -13,7 +13,6 @@ module StoreService.Web.Names.Orders
     refused,
     nameInvoiceHandler,
     codeOrderHandler,
-    spendHandler,
     nameInvoiceView,
     orderRefusal,
     paymentMethod,
@@ -24,13 +23,12 @@ import Control.Concurrent.STM (atomically)
 import qualified Control.Exception as E
 import Control.Logger.Simple (logError, logNote, logWarn)
 import Control.Monad (forM_, unless)
-import Control.Monad.Except (ExceptT (..), liftEither, runExceptT)
+import Control.Monad.Except (ExceptT (..), runExceptT)
 import Data.Aeson ((.:), (.=))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.TH as JQ
 import qualified Data.Aeson.Types as JT
 import qualified Data.ByteString.Char8 as B
-import Data.Maybe (isJust, maybeToList)
 import Data.Text (Text)
 import Data.Time.Clock (UTCTime, addUTCTime)
 import Data.Word (Word32)
@@ -46,21 +44,20 @@ import Simplex.Messaging.Parsers (defaultJSON)
 import Simplex.Messaging.Util (isAsyncCancellation, safeDecodeUtf8, tshow)
 import StoreService.Catalog (catalogCurrency)
 import StoreService.Config (NamesConfig (..), ServiceConfig)
-import StoreService.Names.Balances (Spend (..), checkSpendBalance, coveredOrderInsert, differenceOrderInsert)
 import StoreService.Names.Codes (CodeRefusal (..), readPrepaidCode)
 import StoreService.Names.Community (termsLink)
 import StoreService.Names.Orders
 import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Reveal (RevealRequest, orderReveal)
-import StoreService.Names.Signatures (OrderFields (..), orderMessage, spendMessage)
-import StoreService.Names.Store (BalanceInsertRefused (..), BrokenInvariant (..), NameRegistration (..), NameReveal, NewRegistration (..), OrderHash, OrderPayment (..), OrderTerms (..), PaidOrder (..), PrepaidCode (..), createPaidRegistration, getRegistration, newRegistrationId, orderHash, paymentInvoice)
-import StoreService.Names.Turns (withBalanceTurn, withLabelTurn)
-import StoreService.Names.View (NameRefusal (..), balanceView, registrationView)
+import StoreService.Names.Signatures (OrderFields (..), orderMessage)
+import StoreService.Names.Store (BrokenInvariant (..), NameRegistration (..), NameReveal, NewRegistration (..), OrderHash, OrderPayment (..), OrderTerms (..), PaidOrder (..), PrepaidCode (..), createPaidRegistration, getRegistration, newRegistrationId, orderHash, paymentInvoice)
+import StoreService.Names.Turns (withLabelTurn)
+import StoreService.Names.View (NameRefusal (..), registrationView)
 import StoreService.Orders (cancelNameInvoices, publishRegistration)
 import StoreService.Providers (OrderDraft (..), Provider (..), ProviderInvoice (..), expiresItself, providerErrorText, providerNamed)
 import StoreService.Store.Invoices (InvoiceRow (..), NewNameInvoice (..), getInvoice, insertNameInvoice, newInvoiceId)
 import StoreService.Waiters (Waiters, publish)
-import StoreService.Web.Http (CheckoutClient, HttpEnv, Respond, apiHeaders, checkoutClient, confirmationsFor, invoiceAt, invoicePairs, invoiceWindow, jsonResponse, limitedCheckout, nameBodyBytes, providerFor, readBoundedBody)
+import StoreService.Web.Http (CheckoutClient, HttpEnv, Respond, apiHeaders, confirmationsFor, invoiceAt, invoicePairs, invoiceWindow, jsonResponse, limitedCheckout, nameBodyBytes, providerFor, readBoundedBody)
 
 data InvoiceOrder = InvoiceOrder
   { ioOrder :: SentOrder,
@@ -71,21 +68,10 @@ data InvoiceOrder = InvoiceOrder
 
 data CodeOrder = CodeOrder {order :: SentOrder, code :: Text, reveal :: RevealRequest}
 
-data SpendRequest = SpendRequest
-  { srSigned :: SignedFields,
-    srPrice :: Word32,
-    srBalance :: Word32,
-    srMethod :: Maybe ServicePaymentMethod,
-    srReveal :: RevealRequest
-  }
-
 $(JQ.deriveFromJSON defaultJSON ''CodeOrder)
 
 instance J.FromJSON InvoiceOrder where
   parseJSON = J.withObject "order" $ \o -> InvoiceOrder <$> o .: "order" <*> JT.explicitParseField paymentMethod o "method" <*> o .: "price" <*> o .: "reveal"
-
-instance J.FromJSON SpendRequest where
-  parseJSON = J.withObject "spend" $ \o -> SpendRequest <$> o .: "signed" <*> o .: "price" <*> o .: "balance" <*> JT.explicitParseFieldMaybe paymentMethod o "method" <*> o .: "reveal"
 
 paymentMethod :: J.Value -> JT.Parser ServicePaymentMethod
 paymentMethod = textParseJSON "payment method"
@@ -116,7 +102,6 @@ refusalResponse r = responseLBS status (retryAfterHeader <> apiHeaders) (J.encod
       NRNameCheckUnavailable -> status503
       NRCatalogChanged {} -> status409
       NRPriceTooHigh {} -> status409
-      NRBalanceChanged {} -> status409
       NRTermsChanged {} -> status409
       NRCodesOnly -> status403
       NRCodeInvalid -> status400
@@ -161,37 +146,33 @@ nameInvoiceHandler env@OrdersEnv {oeStore} http client cfg providers waiters bod
               checkPrice (oeContracts env) ofLength years price
             ]
           insert new paid db at =
-            createPaidRegistration db new Nothing paid at >>= \case
-              Right () -> pure $ Right ()
-              Left BIRLiveOrder -> pure $ Left OROrderExists
-              Left BIRBalanceChanged -> E.throwIO $ BrokenInvariant "an order holding no balance was refused at a balance"
+            createPaidRegistration db new paid at >>= \case
+              True -> pure $ Right ()
+              False -> pure $ Left OROrderExists
       runExceptT (mapM_ ExceptT checks >> ExceptT (orderReveal (oeConfig env) (oeContracts env) now orOwner fields Nothing reveal)) >>= \case
         Left refusal -> refuse refusal
-        Right rv -> createAtProvider env http client cfg providers waiters what now InvoicedOrder {ivRequest = req, ivReveal = rv, ivOrderHash = hash, ivHolders = [], ivMethod = method, ivPrice = price, ivAmount = price, ivInsert = insert}
+        Right rv -> createAtProvider env http client cfg providers waiters what now InvoicedOrder {ivRequest = req, ivReveal = rv, ivOrderHash = hash, ivMethod = method, ivPrice = price, ivInsert = insert}
 
--- | An order paid by invoice: its order hash, the holders its transaction closes, the order's price, what its invoice asks
--- (less than the price when a balance paid the rest), and its insert after the invoice row's.
+-- | An order paid by invoice: its order hash, the order's price, which its invoice asks, and its insert after the invoice row's.
 data InvoicedOrder = InvoicedOrder
   { ivRequest :: OrderRequest,
     ivReveal :: NameReveal,
     ivOrderHash :: OrderHash,
-    ivHolders :: [NameRegistration],
     ivMethod :: ServicePaymentMethod,
     ivPrice :: USDCents,
-    ivAmount :: USDCents,
     ivInsert :: NewRegistration -> PaidOrder -> DB.Connection -> UTCTime -> IO (Either OrderRefusal ())
   }
 
 -- | The invoice is made at the provider first, then the order is written with its invoice row; an order not written has its invoice cancelled there.
 createAtProvider :: OrdersEnv -> HttpEnv -> CheckoutClient -> ServiceConfig -> [Provider] -> Waiters -> Text -> UTCTime -> InvoicedOrder -> IO Answer
-createAtProvider env@OrdersEnv {oeStore, oeConfig} http client cfg providers waiters what now InvoicedOrder {ivRequest = req@OrderRequest {orOwner, orFields}, ivReveal, ivOrderHash, ivHolders, ivMethod, ivPrice, ivAmount, ivInsert} =
+createAtProvider env@OrdersEnv {oeStore, oeConfig} http client cfg providers waiters what now InvoicedOrder {ivRequest = req@OrderRequest {orOwner, orFields}, ivReveal, ivOrderHash, ivMethod, ivPrice, ivInsert} =
   case providerFor providers ivMethod of
     Nothing -> do
       logNote (what <> " refused: no provider configured for " <> tshow ivMethod)
       pure $ refusalAnswer NRProviderUnavailable
     Just provider -> limitedCheckout http client ivMethod (pure . refusalAnswer . NRRateLimited) $ do
       invId <- newInvoiceId
-      let amount = CurrencyAmount $ fromIntegral ivAmount
+      let amount = CurrencyAmount $ fromIntegral ivPrice
       pCreateInvoice provider ivMethod OrderDraft {odAmount = amount, odCurrency = catalogCurrency, odReference = "name:" <> safeDecodeUtf8 (strEncode ivOrderHash)} >>= \case
         Left e -> do
           logError (what <> " failed at the provider: " <> providerErrorText e)
@@ -201,7 +182,7 @@ createAtProvider env@OrdersEnv {oeStore, oeConfig} http client cfg providers wai
           let invoice = NewNameInvoice {nniInvoiceId = invId, nniProvider = pProvider provider, nniProviderRef = piProviderRef, nniAmount = amount, nniCurrency = catalogCurrency, nniDestination = piDestination, nniExpiresAt = addUTCTime (invoiceWindow cfg ivMethod) now, nniCreatedAt = now}
               registration = NewRegistration {nrgId = rid, nrgOwner = orOwner, nrgOrder = orFields, nrgReveal = ivReveal, nrgYears = nYears oeConfig, nrgOrderHash = ivOrderHash}
               paid = PaidOrder {poMethod = ivMethod, poPrice = ivPrice, poInvoiceId = invId}
-          placeOrder env now req ivHolders (\db at -> insertNameInvoice db invoice >> ivInsert registration paid db at)
+          placeOrder env now req (\db at -> insertNameInvoice db invoice >> ivInsert registration paid db at)
             `E.catch` strandedBy provider piProviderRef
             >>= \case
             Left refusal -> do
@@ -225,12 +206,10 @@ createAtProvider env@OrdersEnv {oeStore, oeConfig} http client cfg providers wai
 
 -- | An exact resend, answered with its order as it reads now: the invoice view, or the id of an order without an invoice.
 resentOrder :: OrdersEnv -> ServiceConfig -> UTCTime -> NameRegistration -> IO Answer
-resentOrder env@OrdersEnv {oeStore} cfg now r@NameRegistration {nrId = rid@(RegistrationId ridText), nrPayment} = case nrPayment of
+resentOrder env@OrdersEnv {oeStore} cfg now r@NameRegistration {nrId = RegistrationId ridText, nrPayment} = case nrPayment of
   OPInvoice _ invId -> invoiceAnswer invId
-  OPDifference _ _ invId -> invoiceAnswer invId
-  OPBalance _ -> pure $ answerNow $ registrationAnswer rid
-  -- the hash of an invoice or spend order never matches a code order's
-  OPCode _ -> E.throwIO $ BrokenInvariant $ "an invoice or spend order's hash matched code order " <> ridText
+  -- the hash of an invoice order never matches a code order's
+  OPCode _ -> E.throwIO $ BrokenInvariant $ "an invoice order's hash matched code order " <> ridText
   where
     invoiceAnswer invId = getInvoice oeStore invId >>= maybe (E.throwIO $ BrokenInvariant $ "the invoice of order " <> ridText <> " is missing") (fmap answerNow . invoiceViewResponse env cfg r . invoiceAt now)
 
@@ -250,7 +229,7 @@ answerOrder :: OrdersEnv -> Text -> OrderRequest -> OrderTerms -> (UTCTime -> Na
 answerOrder OrdersEnv {oeStore, oeTurns, oeNow} what order@OrderRequest {orOwner, orFields, orTimestamp, orSignature} terms resent new =
   checkSigner orOwner message orSignature >>= \case
     Left refusal -> refused what refusal
-    Right () -> withLabelTurn oeTurns (ofLabelHash orFields) $ inTurns $ do
+    Right () -> withLabelTurn oeTurns (ofLabelHash orFields) $ do
       now <- oeNow
       withTransaction oeStore (\db -> existingOrder db order hash now) >>= \case
         EOResent r -> resent now r
@@ -258,10 +237,7 @@ answerOrder OrdersEnv {oeStore, oeTurns, oeNow} what order@OrderRequest {orOwner
         EONew -> new hash now
   where
     hash = orderHash orOwner orFields terms
-    (message, inTurns) = case terms of
-      OTInvoice {} -> (orderMessage orFields orTimestamp, id)
-      OTCode _ -> (orderMessage orFields orTimestamp, id)
-      OTBalance Spend {spSource} -> (spendMessage spSource orFields orTimestamp, withBalanceTurn oeTurns spSource)
+    message = orderMessage orFields orTimestamp
 
 -- | POST /api/name/register, an order paid with a prepaid code, in the contract's order of checks.
 codeOrderHandler :: OrdersEnv -> [Provider] -> Waiters -> Request -> Respond -> IO ResponseReceived
@@ -293,58 +269,6 @@ codeOrderHandler env@OrdersEnv {oeStore, oeConfig, oeContracts} providers waiter
           placeCodeOrder env order rv hash rid code >>= \case
             Left refusal -> refuse refusal
             Right closed -> pure Answer {aResponse = Right $ registrationAnswer rid, aAfter = announceHeld env providers waiters closed rid}
-
--- | POST /api/registration/:id/spend, another name paid from this order's balance, in the contract's order of checks,
--- under the new name's turn and then the balance's.
-spendHandler :: OrdersEnv -> HttpEnv -> ServiceConfig -> [Provider] -> Waiters -> RegistrationId -> Request -> Respond -> IO ResponseReceived
-spendHandler env@OrdersEnv {oeStore, oeConfig, oeContracts} http cfg providers waiters source req respond
-  | nCodesOnly oeConfig = sendAnswer respond =<< refuse ORCodesOnly
-  | otherwise = readBoundedBody nameBodyBytes req >>= requested >>= sendAnswer respond
-  where
-    what = "POST /api/registration/:id/spend"
-    refuse = refused what
-    requested = \case
-      Just body | Just v <- J.decode body -> either refuse paying (parseBody "spend" v >>= spendOf source)
-      _ -> refuse $ ORBadRequest notObject
-    paying ((fields, timestamp, signature), spend, reveal) =
-      withTransaction oeStore (`getRegistration` source) >>= \case
-        Nothing -> pure $ refusalAnswer NRNotFound
-        Just NameRegistration {nrOwner} -> do
-          let order = OrderRequest {orOwner = nrOwner, orFields = fields, orTimestamp = timestamp, orSignature = signature}
-          answerOrder env what order (OTBalance spend) (resentOrder env cfg) $ \hash now ->
-            runExceptT (checked now order spend reveal) >>= either refuse (place now order hash spend)
-    checked now OrderRequest {orOwner, orFields = fields@OrderFields {ofLabelHash, ofLength, ofDuration}, orTimestamp} spend@Spend {spPrice} reveal = do
-      let years = orderYears fields $ nYears oeConfig
-      liftEither $ checkTimestamp now orTimestamp
-      liftEither $ checkDuration oeConfig now years ofDuration
-      ExceptT $ checkTerms oeConfig oeContracts fields
-      holder <- ExceptT $ checkSpendBalance oeStore spend now
-      ExceptT $ checkNameFree oeContracts oeStore Nothing ofLabelHash
-      ExceptT $ checkPrice oeContracts ofLength years spPrice
-      (holder,) <$> ExceptT (orderReveal oeConfig oeContracts now orOwner fields Nothing reveal)
-    place now order@OrderRequest {orOwner, orFields} hash spend@Spend {spPrice, spBalance, spMethod} (holder, rv) = case spMethod of
-      Nothing -> do
-        rid <- newRegistrationId
-        let new = NewRegistration {nrgId = rid, nrgOwner = orOwner, nrgOrder = orFields, nrgReveal = rv, nrgYears = nYears oeConfig, nrgOrderHash = hash}
-        placeOrder env now order (maybeToList holder) (coveredOrderInsert spend new) >>= \case
-          Left refusal -> refuse refusal
-          Right closed -> pure Answer {aResponse = Right $ registrationAnswer rid, aAfter = announceHeld env providers waiters closed rid}
-      Just (SPMCard _)
-        | spPrice - spBalance < minCardChargeCents -> refuse $ ORBadRequest "a card difference under the card minimum"
-      Just method ->
-        createAtProvider env http (checkoutClient http req) cfg providers waiters what now $
-          InvoicedOrder {ivRequest = order, ivReveal = rv, ivOrderHash = hash, ivHolders = maybeToList holder, ivMethod = method, ivPrice = spPrice, ivAmount = spPrice - spBalance, ivInsert = differenceOrderInsert spend}
-
--- | Stripe refuses a USD charge under 50 cents, so the page offers only crypto for a smaller difference.
-minCardChargeCents :: USDCents
-minCardChargeCents = 50
-
--- | Every format check, the method present exactly for a difference, then the length's range.
-spendOf :: RegistrationId -> SpendRequest -> Either OrderRefusal (SignedOrderFields, Spend, RevealRequest)
-spendOf spSource SpendRequest {srSigned, srPrice, srBalance, srMethod, srReveal}
-  | srPrice == 0 || srBalance == 0 = Left $ ORBadRequest "a malformed spend: a price or balance not above 0"
-  | isJust srMethod /= (srPrice > srBalance) = Left $ ORBadRequest "a malformed spend: the method is present exactly when the price is above the balance"
-  | otherwise = (,Spend {spSource, spPrice = fromIntegral srPrice, spBalance = fromIntegral srBalance, spMethod = srMethod},srReveal) <$> signedFields srSigned
 
 -- | After the commit, the closed orders' invoices and versions are published, and their invoices cancelled at the provider,
 -- best effort, as the poller's sweep would cancel them.
@@ -391,7 +315,6 @@ orderRefusal = \case
     CRPaymentPending -> NRPaymentPending
     CRNotCovering -> NRCodeNotCovering
   ORPriceTooHigh price -> NRPriceTooHigh price
-  ORBalanceChanged balance -> NRBalanceChanged $ balanceView <$> balance
   ORTermsChanged terms community -> NRTermsChanged (termsLink terms) community
   ORTermsUnavailable wait -> NRTermsUnavailable wait
   ORCodesOnly -> NRCodesOnly

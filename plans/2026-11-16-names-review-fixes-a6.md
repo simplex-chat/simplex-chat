@@ -23,8 +23,8 @@ A1-14: USDCents for every cent amount of an order, a balance and a refund.
 
 | Where | Cents as USDCents |
 |---|---|
-| Names/Store.hs | nrPrice, buUsed, poPrice, OTInvoice, spPrice, spBalance, blAmount, blCredited, blRefunded, lkPaid, lkFromBalance, CACard, caCents, lsReceivedCents, lsInvoiceAmount, lsCreditedCents, lfConfirmedCents, the balance writes |
-| requests | the invoice order's price, the spend's price and balance, the refund command's cents |
+| Names/Store.hs | nrPrice, poPrice, OTInvoice, blAmount, blCredited, blRefunded, lkPaid, CACard, caCents, lsReceivedCents, lsInvoiceAmount, lsCreditedCents, lfConfirmedCents, the balance writes |
+| requests | the invoice order's price, the refund command's cents |
 | checks | chainPriceCents, checkPrice, ORCatalogChanged, ORPriceTooHigh |
 | refunds | rdCents, RefundAmount |
 
@@ -75,7 +75,7 @@ A6-5, wider margins:
 - testSharedHostLookup: "at once" is below fetchTimeout.
 - testConcurrentReads: the deadline 4 s.
 
-A6-6: NamesPhasesTests' held, woken and prompt stay; NamesOwnerTests' held, woken and within, NamesRecordsTests' within and NamesSpendTests' heldPoll and pollSeconds go; their bounded waits use WebTests' bounded.
+A6-6: NamesPhasesTests' held, woken and prompt stay; NamesOwnerTests' held, woken and within, NamesRecordsTests' within, and the spend tests' heldPoll and pollSeconds go; their bounded waits use WebTests' bounded.
 
 A6-7, each fixture once:
 - FakeEthNode: unhex and address.
@@ -89,7 +89,7 @@ A6-8, each JSON answer helper once, in WebTests:
 - refusedWith, errorOnly inlined; the refused copies go.
 - NamesSearchTests' answers are objects.
 
-A6-9: coveredSpend and credit from NamesBalancesTests; stubRate from WebTests; invoice status by WebTests' invoiceStatus, as InvoiceStatus.
+A6-9: credit from NamesBalancesTests; stubRate from WebTests; invoice status by WebTests' invoiceStatus, as InvoiceStatus.
 
 A6-10: dropped, as proposed.
 
@@ -99,4 +99,4 @@ A6-12:
 - LateWait's ToJSON by textToJSON of its TextEncoding.
 - testViewFields compares the view with an expected record; the invoice view keeps its key test.
 - The other records of the page's requests and answers have selectors named as their JSON keys, derived by `defaultJSON`, with DuplicateRecordFields where a module repeats a name: AcceptanceAsked, AgreedTerms, CodeOrder, EditsLeft, FindAnswer, FoundOrder, NameRefusal's fields, RevealLinks, RevealRequest, SentEdit, SentRequest, SignedFields and TermsAcceptance. RegistrationView and SentFields keep `dropPrefix`, as selectors named by their keys `id` and `length` would shadow Prelude's `id` and `length`.
-- Nothing fields are sent as null in BalanceView, RegistrationView, NameRefusal and FoundOrder (omitNothingFields off), and in SiteConfig (`J.defaultOptions`). The page (simplex.domains webapp/src) rejects a missing key: `nullable` (api.ts) for BalanceView's hold, RegistrationView's label, balance, latePayment, commitTx and registerTx, NameRefusal's balance, and FoundOrder's invoiceId, balanceSource and heldBy; `isCommunity` for RegistrationView's and NameRefusal's community; and configOf (config.ts) for both SiteConfig keys.
+- Nothing fields are sent as null in BalanceView, RegistrationView, NameRefusal and FoundOrder (omitNothingFields off), and in SiteConfig (`J.defaultOptions`). The page (simplex.domains webapp/src) rejects a missing key: `nullable` (api.ts) for RegistrationView's label, balance, latePayment, commitTx and registerTx, and FoundOrder's invoiceId; `isCommunity` for RegistrationView's and NameRefusal's community; and configOf (config.ts) for both SiteConfig keys.

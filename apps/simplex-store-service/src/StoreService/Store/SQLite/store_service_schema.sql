@@ -184,8 +184,6 @@ CREATE TABLE sx_badge_service_name_registrations(
   price INTEGER NOT NULL,
   method TEXT,
   name_prepaid_code_id INTEGER REFERENCES sx_badge_service_name_prepaid_codes(name_prepaid_code_id),
-  balance_source TEXT REFERENCES sx_badge_service_name_registrations(registration_id),
-  balance_used INTEGER NOT NULL,
   label TEXT,
   secret BLOB,
   contact_link TEXT,
@@ -227,7 +225,6 @@ CREATE TABLE sx_badge_service_name_balances(
   amount INTEGER NOT NULL CHECK(amount >= 0),
   credited INTEGER NOT NULL DEFAULT 0 CHECK(credited >= 0),
   refunded INTEGER NOT NULL DEFAULT 0 CHECK(refunded >= 0),
-  reserved_by TEXT REFERENCES sx_badge_service_name_registrations(registration_id),
   refunded_at TEXT,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL
@@ -388,12 +385,6 @@ CREATE INDEX sx_badge_service_idx_name_registrations_order_hash ON sx_badge_serv
 );
 CREATE INDEX sx_badge_service_idx_name_registrations_prepaid_code ON sx_badge_service_name_registrations(
   name_prepaid_code_id
-);
-CREATE INDEX sx_badge_service_idx_name_registrations_balance_source ON sx_badge_service_name_registrations(
-  balance_source
-);
-CREATE UNIQUE INDEX sx_badge_service_idx_name_balances_reserved_by ON sx_badge_service_name_balances(
-  reserved_by
 );
 CREATE UNIQUE INDEX sx_badge_service_idx_name_invoices_registration ON sx_badge_service_name_invoices(
   registration_id

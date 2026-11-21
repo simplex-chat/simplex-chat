@@ -39,7 +39,7 @@ import StoreService.Names.Codes (issueNameCode)
 import StoreService.Names.Store (Balance (..), CmdSource (..), LatePending (..), balanceByReference, latePending)
 import StoreService.Options (storeServiceOpts)
 import StoreService.Service (ServiceState (..), newServiceState, storeService)
-import StoreService.Store.Invoices (InvoicePayment (..), InvoiceRow (..), currentSecond, getInvoice)
+import StoreService.Store.Invoices (InvoicePayment (..), InvoiceRow (..), getInvoice)
 import System.Environment (lookupEnv)
 import System.FilePath ((</>))
 import Test.Hspec (Spec, describe, it, pendingWith)
@@ -128,9 +128,8 @@ codeControl PageControls {pcService} o = case JT.parseEither fields o of
 refundControl :: PageControls -> Text -> J.Object -> IO ControlAnswer
 refundControl PageControls {pcService} ref o = case JT.parseEither (J..:? "cents") o of
   Left e -> pure $ Left (badRequest400, T.pack e)
-  Right cents_ -> do
-    now <- currentSecond
-    withTransaction (chatStore pcService) (\db -> balanceByReference db ref now) >>= \case
+  Right cents_ ->
+    withTransaction (chatStore pcService) (`balanceByReference` ref) >>= \case
       Nothing -> pure $ Left (notFound404, "no order " <> ref)
       Just (_, balance) -> do
         let cents = fromMaybe (maybe 0 (\Balance {blAmount = USDCents c} -> c) balance) cents_

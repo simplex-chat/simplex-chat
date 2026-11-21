@@ -6,8 +6,8 @@
 
 module Bots.StoreService.NamesLateCreditTests (namesLateCreditTests) where
 
-import Bots.StoreService.NamesBalancesTests (coveredSpend, figures, holder, invariantHolds, placeOrderRow, source)
-import Bots.StoreService.NamesStoreTests (at, ownerA, reg, t0)
+import Bots.StoreService.NamesBalancesTests (figures, invariantHolds, placeOrderRow, source)
+import Bots.StoreService.NamesStoreTests (at, reg)
 import Bots.StoreService.WebTests (StubCall (..), StubState (..), capturingStderr, newStubState, renameTable, sampleProviderInvoice, setSignals, stubCalls, stubProvider, stubRate, withServiceStore)
 import qualified Control.Exception as E
 import Control.Monad (void)
@@ -51,12 +51,10 @@ import Database.SQLite.Simple (Only (..))
 namesLateCreditTests :: Spec
 namesLateCreditTests = describe "StoreService names: balance life" $ do
   describe "settlement" $ do
-    it "queues a difference order funded before its expiry and settled after it, still open in the database, spending its hold, the source's amount down by fromBalance" testFundedThenSettledLate
-    it "queues an order whose hold was removed by hand and alerts naming the order and the balance's order" testHoldNotSpent
+    it "queues an order funded before its expiry and settled after it, still open in the database" testFundedThenSettledLate
     it "closes an order meeting another live order at settlement, alerts, and credits its payment after" testLiveOrderExists
-    it "releases a difference order's hold in that settlement's transaction and credits its own balance after, by the credit step" testLiveOrderExistsHolder
   describe "late credits" $ do
-    it "credits a late payment to the closed order's balance at the lower rate, the released source's balance untouched, logged at info" testLateCredited
+    it "credits a late payment to the closed order's balance at the lower rate, logged at info" testLateCredited
     it "credits a payment confirming over two reports by its increase, and a repeated report once" testGrowingReports
     it "credits a confirmed part payment the provider's close meets, and a cancel's at the pass, the cancel reading no rate" testCloseAndCancel
     it "credits nothing for unconfirmed money, logged as pending, then once when it reads Settled with the totals unchanged" testUnconfirmedThenSettled
@@ -84,13 +82,10 @@ namesLateCreditTests = describe "StoreService names: balance life" $ do
     it "alerts the extra of an overpaid HighSpeed invoice to support, naming the invoiced units, and nothing for an exact one" testOverpaidHighSpeed
     it "alerts money a paid invoice receives after its settlement once an hour, crediting none of it" testMoneyAfterPaid
   describe "balances with late credits" $ do
-    it "keeps a credit made while the balance is held, the held spend settling" testCreditWhileHeld
     it "sums the refunds over credit, refund, late credit, refund" testCreditRefundTwice
   describe "the view" $ do
-    it "shows a funded holder past its expiry held with no end time, and an unfunded one before it with its expiry" testHeldUntil
-    it "shows a balance spent to 0 and a refunded one as objects with amount 0" testZeroBalances
+    it "shows a refunded balance as an object with amount 0, and none before a credit" testZeroBalances
     it "waits confirming, crediting, or support for each reason, on nothing once all is credited, and on support for good below the rate floor" testLateWaits
-    it "finds the order a balance paid and the order holding a balance, none for an overdue unfunded holder" testFindLinks
 #if defined(dbPostgres)
   describe "two connections" $ do
     it "credits once of two credit steps on one invoice, cleanly, where a step reading before the lock is refused" testConcurrentCredits
@@ -200,7 +195,7 @@ alertsAt Late {lStore} r now = withLateOn lStore $ \l@Late {lPoller} -> setRate 
 
 -- | Amount, credited and refunded of the order's balance.
 balanceOf :: DBStore -> Text -> IO (Maybe (USDCents, USDCents, USDCents))
-balanceOf st r = fmap (\(amount, credited, refunded, _) -> (amount, credited, refunded)) <$> figures st r t0
+balanceOf = figures
 
 -- | Units, the invoice's, current and used rates, and cents of each credit of the order's invoice.
 creditsOf :: DBStore -> Text -> IO [(Maybe Int64, Maybe Text, Maybe Text, Maybe Text, Int)]
@@ -233,24 +228,10 @@ pastWindow createdAt by = addUTCTime (settleWindow + fromInteger by) createdAt
 
 testFundedThenSettledLate :: IO ()
 testFundedThenSettledLate = withLate $ \l@Late {lStore = st} -> do
-  source st "s" 10000
-  holder st "h" "s" 10000 (at 60) `shouldReturn` Right ()
+  placeOrderRow st "h" False 30000 (at 60)
   settleAt l "h" (SigFunded (btcPaidOf 480000 480000 0) PaidInFull) (at 50) `shouldReturn` ISOpen
   settleAt l "h" (SigSettled (btcPaidOf 480000 480000 480000) (at 120)) (at 120) `shouldReturn` ISPaid
-  NameRegistration {nrPhase, nrPayment} <- reg st "h"
-  (nrPhase, buUsed <$> paymentBalance nrPayment) `shouldBe` (OQueued, Just 10000)
-  figures st "s" (at 120) `shouldReturn` Just (0, 10000, 0, Nothing)
-  invariantHolds st "s"
-
-testHoldNotSpent :: IO ()
-testHoldNotSpent = withLate $ \l@Late {lStore = st} -> do
-  source st "unspentsrc" 10000
-  holder st "unspent" "unspentsrc" 10000 (at 60) `shouldReturn` Right ()
-  withTransaction st $ \db -> DB.execute db "UPDATE sx_badge_service_name_balances SET reserved_by = NULL WHERE registration_id = ?" (Only ("unspentsrc" :: Text))
-  logs <- capturingStderr $ settleAt l "unspent" (SigSettled (btcPaidOf 480000 480000 480000) (at 10)) (at 10) `shouldReturn` ISPaid
-  logs `shouldSatisfy` logged "ERROR" "invoice ref-inv-unspent queued its order as paid, but the balance of registration unspentsrc it held could not be spent"
-  nrPhase <$> reg st "unspent" `shouldReturn` OQueued
-  balanceOf st "unspentsrc" `shouldReturn` Just (10000, 10000, 0)
+  nrPhase <$> reg st "h" `shouldReturn` OQueued
 
 -- | The unique index keeping one live order per commitment is dropped, so a second live order can meet the first at settlement.
 meetsLiveOrder :: DBStore -> Text -> IO ()
@@ -269,34 +250,17 @@ testLiveOrderExists = withLate $ \l@Late {lStore = st} -> do
   nrPhase <$> reg st "a" `shouldReturn` OClosed ICExpired
   balanceOf st "a" `shouldReturn` Just (19200, 19200, 0)
 
-testLiveOrderExistsHolder :: IO ()
-testLiveOrderExistsHolder = withLate $ \l@Late {lStore = st} -> do
-  source st "s" 10000
-  holder st "aheld" "s" 10000 (at 60) `shouldReturn` Right ()
-  meetsLiveOrder st "aheld"
-  setRate l (Left $ ProviderError "rates down")
-  void $ readSignal l "aheld" (SigSettled (btcPaidOf 480000 lateUnits lateUnits) (at 10))
-  figures st "s" t0 `shouldReturn` Just (10000, 10000, 0, Nothing)
-  balanceOf st "aheld" `shouldReturn` Nothing
-  setRate l (Right stubRate)
-  void $ passAt l (at 20)
-  balanceOf st "aheld" `shouldReturn` Just (19200, 19200, 0)
-  invariantHolds st "s"
-
 -- late credits
 
 testLateCredited :: IO ()
 testLateCredited = withLate $ \l@Late {lStore = st} -> do
-  source st "paid" 10000
-  holder st "credited" "paid" 10000 (at 60) `shouldReturn` Right ()
+  placeOrderRow st "credited" False 30000 (at 60)
   settleAt l "credited" (SigClosed nothingPaid PaidInPart) (at 61) `shouldReturn` ISExpired
-  figures st "paid" t0 `shouldReturn` Just (10000, 10000, 0, Nothing)
   logs <- readSignal l "credited" (SigClosed (btcPaidOf 480000 lateUnits lateUnits) PaidInPart)
   logs `shouldSatisfy` logged "NOTE" "invoice ref-inv-credited credited 19200 cents to its order's balance for 320000 units at 60000.5 (invoice 62500, current 60000.5)"
   logs `shouldNotSatisfy` logged "ERROR" "inv-credited"
   balanceOf st "credited" `shouldReturn` Just (19200, 19200, 0)
   creditsOf st "credited" `shouldReturn` [(Just lateUnits, Just "62500", Just "60000.5", Just "60000.5", 19200)]
-  figures st "paid" t0 `shouldReturn` Just (10000, 10000, 0, Nothing)
 
 testGrowingReports :: IO ()
 testGrowingReports = withLate $ \l@Late {lStore = st} -> do
@@ -646,17 +610,6 @@ testOverpaidHighSpeed = withLate $ \l@Late {lStore = st} -> do
 
 -- balances with late credits
 
-testCreditWhileHeld :: IO ()
-testCreditWhileHeld = withLate $ \l@Late {lStore = st} -> do
-  closedOrder l "x" False
-  void $ readSignal l "x" (SigClosed (btcPaid lateUnits lateUnits) PaidInPart)
-  holder st "h" "x" 19200 (at 60) `shouldReturn` Right ()
-  void $ readSignal l "x" (SigClosed (btcPaid 400000 400000) PaidInPart)
-  figures st "x" (at 10) `shouldReturn` Just (24000, 24000, 0, Just BalanceHold {bhHolder = RegistrationId "h", bhState = HSOpen (at 60)})
-  settleAt l "h" (SigSettled (btcPaidOf 332800 330000 330000) (at 10)) (at 10) `shouldReturn` ISPaid
-  figures st "x" (at 10) `shouldReturn` Just (4800, 24000, 0, Nothing)
-  invariantHolds st "x"
-
 testCreditRefundTwice :: IO ()
 testCreditRefundTwice = withLate $ \l@Late {lStore = st} -> do
   turns <- newTurns
@@ -670,42 +623,20 @@ testCreditRefundTwice = withLate $ \l@Late {lStore = st} -> do
 
 -- the view
 
-balanceAt :: DBStore -> Text -> UTCTime -> IO (Maybe J.Value)
-balanceAt st r now = fmap (J.toJSON . balanceView) <$> withTransaction st (\db -> getBalance db (RegistrationId r) now)
+balanceAt :: DBStore -> Text -> IO (Maybe J.Value)
+balanceAt st r = fmap (J.toJSON . balanceView) <$> withTransaction st (\db -> getBalance db (RegistrationId r))
 
-balanceObject :: Int -> Maybe J.Value -> Int -> J.Value
-balanceObject amount hold refunded = J.object ["amount" J..= amount, "hold" J..= hold, "refunded" J..= refunded]
-
-openHold :: UTCTime -> Maybe J.Value
-openHold t = Just $ J.object ["type" J..= ("open" :: Text), "heldUntil" J..= t]
-
-fundedHold :: Maybe J.Value
-fundedHold = Just $ J.object ["type" J..= ("funded" :: Text)]
-
-testHeldUntil :: IO ()
-testHeldUntil = withLate $ \l@Late {lStore = st} -> do
-  source st "funded" 10000
-  holder st "fh" "funded" 10000 (at 60) `shouldReturn` Right ()
-  source st "unfunded" 10000
-  holder st "uh" "unfunded" 10000 (at 60) `shouldReturn` Right ()
-  balanceAt st "funded" (at 30) `shouldReturn` Just (balanceObject 10000 (openHold $ at 60) 0)
-  settleAt l "fh" (SigFunded (btcPaid 100 0) PaidInPart) (at 30) `shouldReturn` ISOpen
-  balanceAt st "funded" (at 30) `shouldReturn` Just (balanceObject 10000 fundedHold 0)
-  balanceAt st "funded" (at 120) `shouldReturn` Just (balanceObject 10000 fundedHold 0)
-  balanceAt st "unfunded" (at 30) `shouldReturn` Just (balanceObject 10000 (openHold $ at 60) 0)
-  balanceAt st "unfunded" (at 120) `shouldReturn` Just (balanceObject 10000 Nothing 0)
+balanceObject :: Int -> Int -> J.Value
+balanceObject amount refunded = J.object ["amount" J..= amount, "refunded" J..= refunded]
 
 testZeroBalances :: IO ()
 testZeroBalances = withLate $ \Late {lStore = st} -> do
   turns <- newTurns
-  source st "spent" 10000
-  coveredSpend st "c" "spent" 10000 10000 `shouldReturn` Right ()
-  balanceAt st "spent" t0 `shouldReturn` Just (balanceObject 0 Nothing 0)
   source st "refunded" 10000
   void (recordRefund turns st "refunded" 10000 (at 5) >>= either (fail . show) pure)
-  balanceAt st "refunded" t0 `shouldReturn` Just (balanceObject 0 Nothing 10000)
+  balanceAt st "refunded" `shouldReturn` Just (balanceObject 0 10000)
   placeOrderRow st "none" False 20000 (at 60)
-  balanceAt st "none" t0 `shouldReturn` Nothing
+  balanceAt st "none" `shouldReturn` Nothing
 
 testLateWaits :: IO ()
 testLateWaits = withLate $ \l@Late {lStore = st} -> do
@@ -734,17 +665,6 @@ testLateWaits = withLate $ \l@Late {lStore = st} -> do
   void $ readSignal l "alerted" (SigClosed (btcPaid lateUnits lateUnits) PaidInPart)
   void $ passAt l (at 71)
   waits ["crediting", "floor", "alerted"] `shouldReturn` [("crediting", Nothing), ("floor", Just LWSupport), ("alerted", Nothing)]
-
-testFindLinks :: IO ()
-testFindLinks = withLate $ \Late {lStore = st} -> do
-  source st "paying" 10000
-  coveredSpend st "spend" "paying" 10000 10000 `shouldReturn` Right ()
-  source st "held" 10000
-  holder st "holder" "held" 10000 (at 60) `shouldReturn` Right ()
-  let links now = map (\(NameRegistration {nrId = RegistrationId r, nrPayment}, heldBy') -> (r, buSource <$> paymentBalance nrPayment, heldBy')) <$> withTransaction st (\db -> findRegistrations db ownerA now)
-      linked rows = filter (\(_, src, h) -> src /= Nothing || h /= Nothing) rows
-  linked <$> links (at 30) `shouldReturn` [("holder", Just (RegistrationId "held"), Nothing), ("held", Nothing, Just (RegistrationId "holder")), ("spend", Just (RegistrationId "paying"), Nothing)]
-  linked <$> links (at 120) `shouldReturn` [("holder", Just (RegistrationId "held"), Nothing), ("spend", Just (RegistrationId "paying"), Nothing)]
 
 #if defined(dbPostgres)
 -- | Each thread waits here until both arrive, after its unlocked read and before its locked transaction.

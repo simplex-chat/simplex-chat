@@ -57,7 +57,7 @@ import Data.Bifunctor (first)
 import Data.ByteString (ByteString)
 import Data.Functor ((<&>))
 import Data.Int (Int64)
-import Data.Maybe (catMaybes, isJust)
+import Data.Maybe (isJust)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime, diffUTCTime)
@@ -82,7 +82,7 @@ import StoreService.Names.Phases (Phases, RegistrationId (..))
 import StoreService.Names.Chain (Hex32 (..), TxHash)
 import StoreService.Names.Registration (Commitment, LinkKind)
 import StoreService.Names.Signatures (AgreedTerms (..), OrderFields (..), parseChecksumAddress, personalDigest)
-import StoreService.Names.Store (Balance, BalanceUse (..), CodeInsertRefused (..), FailReason (..), LiveOrder (..), NameRegistration (..), NameReveal, NewRegistration (..), OrderHash, OrderPayment (..), OrderPhase (..), PrepaidCode (..), TxHistory (..), paymentBalance, NameTransaction (..), RegistrationTx (..), TxFor (..), TxSettlement (..), TxState (..), VersionWrite (..), closeOverdue, createCodeRegistration, creditBalance, getBalance, getLiveOrders, getPrepaidCode, getPrepaidCodeById, getRegistration, getRegistrationByOrderHash, labelHolder, markRead, orderLive, registrationTransactions, retargetRegistration, updateRegistration)
+import StoreService.Names.Store (CodeInsertRefused (..), FailReason (..), LiveOrder (..), NameRegistration (..), NameReveal, NewRegistration (..), OrderHash, OrderPayment (..), OrderPhase (..), PrepaidCode (..), TxHistory (..), NameTransaction (..), RegistrationTx (..), TxFor (..), TxSettlement (..), TxState (..), VersionWrite (..), closeOverdue, createCodeRegistration, creditBalance, getLiveOrders, getPrepaidCode, getPrepaidCodeById, getRegistrationByOrderHash, labelHolder, markRead, registrationTransactions, retargetRegistration, updateRegistration)
 import StoreService.Names.Turns (Turns, withBalanceTurn, withCodeTurn)
 import StoreService.Names.View (lapsedAt)
 import StoreService.Store.Invoices (currentSecond)
@@ -119,7 +119,6 @@ data OrderRefusal
   | ORCatalogChanged USDCents
   | ORCode CodeRefusal
   | ORPriceTooHigh USDCents
-  | ORBalanceChanged (Maybe Balance)
   | -- | the current terms and the name's community entry
     ORTermsChanged Terms (Maybe Community)
   | ORTermsUnavailable (Maybe Int)
@@ -223,33 +222,22 @@ overdueOrdersMet db OrderRequest {orOwner, orFields = OrderFields {ofLabelHash, 
     closable LiveOrder {loRegistration = NameRegistration {nrOwner, nrLabelHash}, loOverdue} =
       loOverdue && nrOwner == orOwner && nrLabelHash == ofLabelHash
 
--- | In one transaction, the overdue orders the request meets and the balance holders the caller names are closed, then the order is inserted.
--- A named holder no longer live is skipped, and one still live that cannot be closed refuses with the balance it holds.
+-- | In one transaction, the overdue orders the request meets are closed, then the order is inserted.
 -- Refused, changing nothing, when it meets an order it cannot close, or the insert refuses.
-placeOrder :: OrdersEnv -> UTCTime -> OrderRequest -> [NameRegistration] -> (DB.Connection -> UTCTime -> IO (Either OrderRefusal ())) -> IO (Either OrderRefusal [ClosedOrder])
-placeOrder OrdersEnv {oeStore} now req holders insert =
+placeOrder :: OrdersEnv -> UTCTime -> OrderRequest -> (DB.Connection -> UTCTime -> IO (Either OrderRefusal ())) -> IO (Either OrderRefusal [ClosedOrder])
+placeOrder OrdersEnv {oeStore} now req insert =
   first (\(OrderRefused refusal) -> refusal) <$> E.try (withTransaction oeStore $ \db -> transaction db)
   where
     transaction db =
       overdueOrdersMet db req now >>= \case
         Just overdue -> do
           closed <- mapM (close db) overdue
-          closedHolders <- catMaybes <$> mapM (closeHolder db) holders
-          insert db now >>= either (E.throwIO . OrderRefused) (const $ pure $ closed <> closedHolders)
+          insert db now >>= either (E.throwIO . OrderRefused) (const $ pure closed)
         Nothing -> E.throwIO $ OrderRefused OROrderExists
     close db r =
       closeOverdue db r now >>= \case
         Just v -> pure ClosedOrder {coRegistration = r, coVersion = v}
         Nothing -> E.throwIO $ OrderRefused OROrderExists
-    -- read again here, since another order of its own name may have closed it meanwhile
-    closeHolder db NameRegistration {nrId} =
-      getRegistration db nrId >>= \case
-        Just holder@NameRegistration {nrPayment}
-          | orderLive holder ->
-              closeOverdue db holder now >>= \case
-                Just v -> pure $ Just ClosedOrder {coRegistration = holder, coVersion = v}
-                Nothing -> E.throwIO . OrderRefused . ORBalanceChanged =<< maybe (pure Nothing) (\BalanceUse {buSource} -> getBalance db buSource now) (paymentBalance nrPayment)
-        _ -> pure Nothing
 
 -- | In the code's turn, the code as it reads there must pay for the name; the order's insert then reserves it.
 placeCodeOrder :: OrdersEnv -> OrderRequest -> NameReveal -> OrderHash -> RegistrationId -> PrepaidCode -> IO (Either OrderRefusal [ClosedOrder])
@@ -260,7 +248,7 @@ placeCodeOrder env@OrdersEnv {oeStore, oeTurns, oeNow} req@OrderRequest {orOwner
       Nothing -> pure $ Left $ ORCode CRInvalid
       Just code
         | Just refusal <- codeRefusal now rid ofLength code -> pure $ Left $ ORCode refusal
-        | otherwise -> placeOrder env now req [] $ codeOrderInsert NewRegistration {nrgId = rid, nrgOwner = orOwner, nrgOrder = fields, nrgReveal = reveal, nrgYears = pcYears, nrgOrderHash = hash} code
+        | otherwise -> placeOrder env now req $ codeOrderInsert NewRegistration {nrgId = rid, nrgOwner = orOwner, nrgOrder = fields, nrgReveal = reveal, nrgYears = pcYears, nrgOrderHash = hash} code
 
 -- | The code was checked in its turn, so only a writer outside this process can make its reservation fail.
 codeOrderInsert :: NewRegistration -> PrepaidCode -> DB.Connection -> UTCTime -> IO (Either OrderRefusal ())
@@ -366,8 +354,6 @@ retargetOrder OrdersEnv {oeStore, oeContracts, oeTurns, oeNow} r@NameRegistratio
             | otherwise -> withTransaction oeStore (write price)
   case nrPayment of
     OPInvoice {} -> paidMove
-    OPDifference {} -> paidMove
-    OPBalance _ -> paidMove
     OPCode codeId -> do
       PrepaidCode {pcCodeHash} <- withTransaction oeStore (`getPrepaidCodeById` codeId)
       either (Left . WRRefused . ORCode) id <$> reserveCode oeTurns oeStore now pcCodeHash nrId ofLength (write nrPrice)
@@ -410,8 +396,6 @@ checkLanded st ct turns clock r@NameRegistration {nrId, nrOwner, nrLabelHash, nr
           write db = versionWritten <$> updateRegistration db registered now
       case nrPayment of
         OPInvoice {} -> withTransaction st write
-        OPDifference {} -> withTransaction st write
-        OPBalance _ -> withTransaction st write
         OPCode codeId -> spendLandedCode turns st now codeId nrId write >>= traverse (paidWith codeId)
     paidWith codeId (v, spent) = do
       unless spent $ do

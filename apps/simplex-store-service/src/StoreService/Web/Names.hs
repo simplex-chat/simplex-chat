@@ -7,7 +7,6 @@ module StoreService.Web.Names (Route (..), namesRoutes, namesApp) where
 import Data.Text (Text)
 import Network.HTTP.Types (Method)
 import Network.Wai (Request, ResponseReceived, pathInfo)
-import StoreService.Config (ServiceConfig)
 import StoreService.Names.Env (NamesEnv (..))
 import StoreService.Names.Orders (ordersEnv)
 import StoreService.Names.Phases (RegistrationId (..))
@@ -15,7 +14,7 @@ import StoreService.Store.Invoices (currentSecond)
 import StoreService.Names.View (NameRefusal (..))
 import StoreService.Web.Http (HttpEnv, Limit, Respond, codeLimit, createLimit, findLimit, holdMicros, limitedWith, only, previewLimit, readLimit, recordsLimit, searchLimit)
 import StoreService.Web.Names.Codes (codeCheckHandler)
-import StoreService.Web.Names.Orders (codeOrderHandler, refusalResponse, spendHandler)
+import StoreService.Web.Names.Orders (codeOrderHandler, refusalResponse)
 import StoreService.Web.Names.Owner (findHandler, retargetHandler)
 import StoreService.Web.Names.Records (recordsHandler)
 import StoreService.Web.Names.Registration (registrationHandler, retryHandler, revealHandler)
@@ -27,8 +26,8 @@ data Route = Route
     rHandler :: Request -> Respond -> IO ResponseReceived
   }
 
-namesRoutes :: ServiceConfig -> HttpEnv -> NamesEnv -> [Text] -> Maybe Route
-namesRoutes cfg http env@NamesEnv {neConfig, neStore, neContracts, neProfiles, neRecords, neWaiters, neProviders} = \case
+namesRoutes :: HttpEnv -> NamesEnv -> [Text] -> Maybe Route
+namesRoutes http env@NamesEnv {neConfig, neStore, neContracts, neProfiles, neRecords, neWaiters, neProviders} = \case
   ["api", "name", "records"] -> Just Route {rMethod = "POST", rLimit = recordsLimit, rHandler = recordsHandler neRecords}
   ["api", "name", "register"] -> Just Route {rMethod = "POST", rLimit = codeLimit, rHandler = codeOrderHandler (ordersEnv env) neProviders neWaiters}
   ["api", "code", "check"] -> Just Route {rMethod = "POST", rLimit = codeLimit, rHandler = codeCheckHandler neStore}
@@ -43,7 +42,6 @@ namesRoutes cfg http env@NamesEnv {neConfig, neStore, neContracts, neProfiles, n
   ["api", "registration", rid, "name"] -> Just Route {rMethod = "POST", rLimit = createLimit, rHandler = retargetHandler (ordersEnv env) neProviders neWaiters (RegistrationId rid)}
   ["api", "registration", rid, "reveal"] -> Just Route {rMethod = "POST", rLimit = readLimit, rHandler = revealHandler (ordersEnv env) (RegistrationId rid)}
   ["api", "registration", rid, "retry"] -> Just Route {rMethod = "POST", rLimit = createLimit, rHandler = retryHandler (ordersEnv env) (RegistrationId rid)}
-  ["api", "registration", rid, "spend"] -> Just Route {rMethod = "POST", rLimit = createLimit, rHandler = spendHandler (ordersEnv env) http cfg neProviders neWaiters (RegistrationId rid)}
   _ -> Nothing
 
 -- | Nothing for a path no route knows. The limit is taken only once the route and the method match.

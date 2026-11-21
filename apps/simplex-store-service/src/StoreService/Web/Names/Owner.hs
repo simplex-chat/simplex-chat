@@ -33,7 +33,7 @@ import StoreService.Names.Orders
 import StoreService.Names.Phases (RegistrationId (..), publish)
 import StoreService.Names.Reveal (RevealRequest, orderReveal)
 import StoreService.Names.Signatures (OrderFields (..), findMessage, parseAnyCaseAddress, retargetMessage)
-import StoreService.Names.Store (BalanceUse (..), NamePhase (..), NameRegistration (..), findRegistrations, getRegistration, namePhase, paymentBalance, paymentInvoice)
+import StoreService.Names.Store (NamePhase (..), NameRegistration (..), findRegistrations, getRegistration, namePhase, paymentInvoice)
 import StoreService.Names.Turns (withRegistrationTurns)
 import StoreService.Names.View (NameRefusal (..), registrationView)
 import StoreService.Web.Http (Respond, jsonResponse, maxBodyBytes, nameBodyBytes, readBoundedBody)
@@ -60,9 +60,7 @@ data FoundOrder = FoundOrder
     phase :: NamePhase,
     createdAt :: UTCTime,
     labelHash :: Hex32,
-    sealed :: Text,
-    balanceSource :: Maybe RegistrationId,
-    heldBy :: Maybe RegistrationId
+    sealed :: Text
   }
 
 $(JQ.deriveToJSON defaultJSON {J.omitNothingFields = False} ''FoundOrder)
@@ -87,22 +85,19 @@ findHandler OrdersEnv {oeStore, oeNow} req respond =
       runExceptT (mapM_ ExceptT [checkSigner frOwner (findMessage frOwner frTimestamp) frSignature, pure $ checkTimestamp now frTimestamp]) >>= \case
         Left refusal -> refuse refusal
         Right () -> do
-          rs <- withTransaction oeStore (\db -> findRegistrations db frOwner now)
-          pure $ answerNow $ jsonResponse status200 $ J.toJSON FindAnswer {registrations = map (uncurry foundOrder) rs}
+          rs <- withTransaction oeStore (`findRegistrations` frOwner)
+          pure $ answerNow $ jsonResponse status200 $ J.toJSON FindAnswer {registrations = map foundOrder rs}
     refuse = refused "POST /api/registration/find"
 
--- | balanceSource: the order whose balance paid this one; heldBy: the order whose invoice holds this one's balance.
-foundOrder :: NameRegistration -> Maybe RegistrationId -> FoundOrder
-foundOrder NameRegistration {nrId, nrPayment, nrPhase, nrCreatedAt, nrLabelHash = LabelHash lh, nrSealed} holder =
+foundOrder :: NameRegistration -> FoundOrder
+foundOrder NameRegistration {nrId, nrPayment, nrPhase, nrCreatedAt, nrLabelHash = LabelHash lh, nrSealed} =
   FoundOrder
     { registrationId = nrId,
       invoiceId = paymentInvoice nrPayment,
       phase = namePhase nrPhase,
       createdAt = nrCreatedAt,
       labelHash = Hex32 lh,
-      sealed = nrSealed,
-      balanceSource = buSource <$> paymentBalance nrPayment,
-      heldBy = holder
+      sealed = nrSealed
     }
 
 -- | POST /api/registration/:id/name, another name or other links, under the turns of both names.

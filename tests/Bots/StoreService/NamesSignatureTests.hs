@@ -143,22 +143,6 @@ messageVectors =
       "simplex.domains name t2Jk8RmQ4vXw9NcP3yLb6g 0xbcc46b7948ff6be55bc3ff4db5bc4be16638f29e818a89244dae11caaed7c9c6 11 69292800 0x5e62a4cb7da596cb38169a6a552b5f69db2acee279b53be6693a78e03c3dfaa5 0x22709445157a2a1f7cb7e284e3ccf6c7ebc3b4d857002af452853c4a65907fe2 community/bbc52157d9b12f23af62ae8a7eacf2ea11e7db311fa2ed5bd48ea9ba01f77c4d 1792828800",
       "0x5a798c69de346efc5ede90d1b4ff30854ab0eb326539ba9b60eddea1ab08005f",
       "0xdd8794dd1c65c8e11955127408e44cd63cfc8d4b7050d5fee05b65d5abfb8a3b62f6648c2a337183adc822d129b2aba3030c8812cf87b7e969c690fb160a805f1c"
-    ),
-    ( "a spend from an order's balance with the general terms' hash",
-      "spend",
-      Just termsOrder,
-      spendMessage registrationId termsOrder termsTimestamp,
-      "simplex.domains spend t2Jk8RmQ4vXw9NcP3yLb6g 0xbcc46b7948ff6be55bc3ff4db5bc4be16638f29e818a89244dae11caaed7c9c6 11 69292800 0x5e62a4cb7da596cb38169a6a552b5f69db2acee279b53be6693a78e03c3dfaa5 0x22709445157a2a1f7cb7e284e3ccf6c7ebc3b4d857002af452853c4a65907fe2 67b989cccc7ae150142daa4029304c7b7e78ab0a4ccebeba2ec1ef8a30f8147e 1792828800",
-      "0xf643f32bd75923423f92eeee3dc46c6503f4969ad37b66bddfab5587b7e7d62e",
-      "0x584dfddcbd6f5a1ccaa0dd60b8f2929f629da471aa4ecae270bd429243f2853c77eff724a4820e95765ca006302c834fdb247d3b1c69c5db4074045c89957f541c"
-    ),
-    ( "a spend from an order's balance with the community terms' hash",
-      "spend",
-      Just communityOrder,
-      spendMessage registrationId communityOrder termsTimestamp,
-      "simplex.domains spend t2Jk8RmQ4vXw9NcP3yLb6g 0xbcc46b7948ff6be55bc3ff4db5bc4be16638f29e818a89244dae11caaed7c9c6 11 69292800 0x5e62a4cb7da596cb38169a6a552b5f69db2acee279b53be6693a78e03c3dfaa5 0x22709445157a2a1f7cb7e284e3ccf6c7ebc3b4d857002af452853c4a65907fe2 community/bbc52157d9b12f23af62ae8a7eacf2ea11e7db311fa2ed5bd48ea9ba01f77c4d 1792828800",
-      "0x1c02a90eaa2073c155b816d9597ddbe694dfa5ded03caafeb88feb9ed9a077e1",
-      "0x61f25926cf4250e6924cfbc63748cc60e01486434984988e8904a655c893afd22f9efabc4587890f522ec91a124f066ba0d9b8acfbba9c836009d8a41609624a1b"
     )
   ]
 

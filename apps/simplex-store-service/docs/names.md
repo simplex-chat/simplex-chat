@@ -1,6 +1,6 @@
 # SimpleX names in the store service: architecture and flows
 
-> With the names part of the SimpleX store service, added by [PR 7979](https://github.com/simplex-chat/simplex-chat/pull/7979), SimpleX names are sold on simplex.domains and registered on chain. A name is paid by card (Stripe), by Bitcoin or Monero (BTCPay), with a prepaid code, or from the balance of an earlier order. Each order is checked against the names contracts; the service then commits the order's commitment, relays the owner's acceptance of the terms and registers the name. Every transaction is signed with the service's registrar key, and the owner signs messages that the service verifies. One process per database runs the web API, the payment poller, the names worker, the transaction sender, the record edits lane and the chat core. The badge sale existed before this PR and is shown only where parts are shared with it.
+> With the names part of the SimpleX store service, added by [PR 7979](https://github.com/simplex-chat/simplex-chat/pull/7979), SimpleX names are sold on simplex.domains and registered on chain. A name is paid by card (Stripe), by Bitcoin or Monero (BTCPay), or with a prepaid code. Each order is checked against the names contracts; the service then commits the order's commitment, relays the owner's acceptance of the terms and registers the name. Every transaction is signed with the service's registrar key, and the owner signs messages that the service verifies. One process per database runs the web API, the payment poller, the names worker, the transaction sender, the record edits lane and the chat core. The badge sale existed before this PR and is shown only where parts are shared with it.
 >
 > Related docs: [README](../README.md) | [Names overview](../../../docs/protocol/names-overview.md) | [Deployment](../../../scripts/store-service/README.md)
 
@@ -20,12 +20,11 @@
    5. [A register transaction that fails](#35-a-register-transaction-that-fails)
    6. [A lapsed order queued again, or an order moved](#36-a-lapsed-order-queued-again-or-an-order-moved)
    7. [An owner's orders found](#37-an-owners-orders-found)
-   8. [A balance spent on another name](#38-a-balance-spent-on-another-name)
-   9. [Late crypto credited](#39-late-crypto-credited)
-   10. [A balance refunded by support](#310-a-balance-refunded-by-support)
-   11. [A registered name's links edited](#311-a-registered-names-links-edited)
-   12. [Service start](#312-service-start)
-   13. [A card dispute or a refund](#313-a-card-dispute-or-a-refund)
+   8. [Late crypto credited](#38-late-crypto-credited)
+   9. [A balance refunded by support](#39-a-balance-refunded-by-support)
+   10. [A registered name's links edited](#310-a-registered-names-links-edited)
+   11. [Service start](#311-service-start)
+   12. [A card dispute or a refund](#312-a-card-dispute-or-a-refund)
 4. [The life of an order](#4-the-life-of-an-order)
 
 ---
@@ -96,7 +95,7 @@ How a request flows:
 |---|---|---|
 | Startup | `store_service.ini` is parsed, the database lock taken, and the node's chain id and the issuer key checked; then the chat core is started. In its callback the providers, the names environment and the web environment are built, the managed group resolved, and all lanes started together. Without `--service-config` only the chat side and the badge request lanes run. | [`Main.hs:16-29`](../Main.hs#L16-L29), [`Service.hs:259-347`](../src/StoreService/Service.hs#L259-L347) |
 | Web API | Warp listeners on `[listener] host`: `badges_port` (8080) always, `names_port` (8081) with `[names]` and `serve_webapp = on`; with `metrics_port`, a listener on `127.0.0.1` for `/metrics` alone. `/api/*` and both webhooks are answered on every port but the metrics one. Per-client limits a minute: read 60, search 30, preview 20, code 10, records 10, create 5, find 5. Checkouts that reach a provider: 5 a minute per IPv4 /24 or IPv6 /48, and 60 card and 30 BTCPay a minute for all clients together. At most 500 long polls are held at once, each up to 30 s. | [`Web/Server.hs:121-151`](../src/StoreService/Web/Server.hs#L121-L151), [`Web/Server.hs:563-586`](../src/StoreService/Web/Server.hs#L563-L586), [`Config.hs:511-520`](../src/StoreService/Config.hs#L511-L520), [`Web/Names.hs:28-51`](../src/StoreService/Web/Names.hs#L28-L51), [`Web/Http.hs:111-161`](../src/StoreService/Web/Http.hs#L111-L161), [`Web/Http.hs:227-230`](../src/StoreService/Web/Http.hs#L227-L230) |
-| Order handlers | An order is placed in one of three ways: a paid invoice, a prepaid code, a spend of another order's balance. The owner's signature, the timestamp, the duration, the terms and an available name are checked, then the chain price for a paid or spent order and the balance for a spend, then the owner's signed registration and terms acceptance. The order is written with them in one transaction, in which the same wallet's overdue orders for that name are closed. | [`Web/Names/Orders.hs:86-306`](../src/StoreService/Web/Names/Orders.hs#L86-L306), [`Names/Orders.hs:201-310`](../src/StoreService/Names/Orders.hs#L201-L310), [`Names/Balances.hs:79-106`](../src/StoreService/Names/Balances.hs#L79-L106) |
+| Order handlers | An order is placed in one of two ways: a paid invoice or a prepaid code. The owner's signature, the timestamp, the duration, the terms and an available name are checked, then the chain price for a paid order, then the owner's signed registration and terms acceptance. The order is written with them in one transaction, in which the same wallet's overdue orders for that name are closed. | [`Web/Names/Orders.hs`](../src/StoreService/Web/Names/Orders.hs) `nameInvoiceHandler`, `codeOrderHandler`, [`Names/Orders.hs`](../src/StoreService/Names/Orders.hs) `placeOrder` |
 | Registration and owner handlers | The registration view, held on its version; the reveal; `/retry`; find by the owner's signature; a move to another name. | [`Web/Names/Registration.hs:45-140`](../src/StoreService/Web/Names/Registration.hs#L45-L140), [`Web/Names/Owner.hs:44-152`](../src/StoreService/Web/Names/Owner.hs#L44-L152), [`Names/Reveal.hs:103-145`](../src/StoreService/Names/Reveal.hs#L103-L145), [`Names/View.hs:81-176`](../src/StoreService/Names/View.hs#L81-L176) |
 | Search handlers | Name status, price, terms, and records with link profiles; the terms text; the link preview; what an owner signs with an order. These handlers only read, except that a terms text fetched for the first time is stored. | [`Web/Names/Search.hs:53-154`](../src/StoreService/Web/Names/Search.hs#L53-L154), [`Names/Profiles.hs:221-271`](../src/StoreService/Names/Profiles.hs#L221-L271) |
 | Poller | One loop. A pass is run every `waiting_seconds` (3) while a page holds an invoice poll, else every `idle_seconds` (60), and webhook read hints are served between passes. Invoices are settled, overdue ones expired 10 minutes past their window, late money credited, and unpaid orders deleted daily, 30 days after their invoice expired. | [`Poller.hs:62-76`](../src/StoreService/Poller.hs#L62-L76), [`Poller.hs:148-168`](../src/StoreService/Poller.hs#L148-L168), [`Poller.hs:559-598`](../src/StoreService/Poller.hs#L559-L598), [`Orders.hs:95-275`](../src/StoreService/Orders.hs#L95-L275), [`Names/LateCredits.hs:50-72`](../src/StoreService/Names/LateCredits.hs#L50-L72) |
@@ -148,7 +147,7 @@ Terms used in the diagrams:
 - A lock is held in the process: one request or lane at a time per name (its label hash), prepaid code or balance ([`Names/Turns.hs:3-69`](../src/StoreService/Names/Turns.hs#L3-L69)).
 - A read hint asks the poller to read one invoice at the provider before its next pass ([`Poller.hs:88-108`](../src/StoreService/Poller.hs#L88-L108)).
 - A lane is a thread that runs for the whole life of the process ([`Service.hs:301-313`](../src/StoreService/Service.hs#L301-L313), [`Service.hs:366-370`](../src/StoreService/Service.hs#L366-L370)).
-- `ID` is a registration or invoice id, `SOURCE` the registration id of the order whose balance pays, `LABELHASH` the keccak256 of the label, `REFERENCE` an invoice id or a registration id. A signed order is `owner`, `fields` (`labelHash`, `length`, `duration`, `commitment`, `sealed` and `terms`, which is `communityName` and `termsHash`), `timestamp` and `signature`. `POST /api/invoice` sends it as `order`, with `kind` `name`, `method` (`card`, `btc` or `xmr`, as the badge page sends it) and `price`; `POST /api/name/register` as `order`, with `code`. A move sends `fields`, `timestamp` and `signature`; a spend sends them as `signed`, with `price`, `balance` and, for a difference, `method` ([`Names/Orders.hs:157-190`](../src/StoreService/Names/Orders.hs#L157-L190), [`Web/Names/Orders.hs:61-82`](../src/StoreService/Web/Names/Orders.hs#L61-L82)). All four also send `reveal`: `label`, `secret`, `records` (`contact` and `channel`), the owner's `RegisterName` signature with its `nonce` and `deadline`, and `acceptance` (`termsHash`, `nonce` and `signature`), signed with what `GET /api/name/LABELHASH/sign?owner=OWNER` answers ([`Names/Reveal.hs`](../src/StoreService/Names/Reveal.hs) `orderReveal`, [`Web/Names/Search.hs`](../src/StoreService/Web/Names/Search.hs) `signHandler`).
+- `ID` is a registration or invoice id, `LABELHASH` the keccak256 of the label, `REFERENCE` an invoice id or a registration id. A signed order is `owner`, `fields` (`labelHash`, `length`, `duration`, `commitment`, `sealed` and `terms`, which is `communityName` and `termsHash`), `timestamp` and `signature`. `POST /api/invoice` sends it as `order`, with `kind` `name`, `method` (`card`, `btc` or `xmr`, as the badge page sends it) and `price`; `POST /api/name/register` as `order`, with `code`. A move sends `fields`, `timestamp` and `signature` ([`Names/Orders.hs`](../src/StoreService/Names/Orders.hs) `SignedFields`, [`Web/Names/Orders.hs`](../src/StoreService/Web/Names/Orders.hs) `InvoiceOrder`, `CodeOrder`). All three also send `reveal`: `label`, `secret`, `records` (`contact` and `channel`), the owner's `RegisterName` signature with its `nonce` and `deadline`, and `acceptance` (`termsHash`, `nonce` and `signature`), signed with what `GET /api/name/LABELHASH/sign?owner=OWNER` answers ([`Names/Reveal.hs`](../src/StoreService/Names/Reveal.hs) `orderReveal`, [`Web/Names/Search.hs`](../src/StoreService/Web/Names/Search.hs) `signHandler`).
 
 ---
 
@@ -193,7 +192,7 @@ sequenceDiagram
 Notes:
 
 - The checks are run in the contract's order: timestamp within 600 s, duration (paid years plus the free days until `term_start`), current terms, a name available on chain and held by no paid order here, then the chain price, at least `min_price_cents_per_year` times the paid years and equal to the order's, then the reveal as 3.2 lists, with its deadline not before the service's clock ([`Web/Names/Orders.hs:104-118`](../src/StoreService/Web/Names/Orders.hs#L104-L118), [`Names/Orders.hs:266-310`](../src/StoreService/Names/Orders.hs#L266-L310), [`Names/Contracts.hs:190-202`](../src/StoreService/Names/Contracts.hs#L190-L202)). Refusals are listed in [`Web/Names/Orders.hs:344-357`](../src/StoreService/Web/Names/Orders.hs#L344-L357).
-- A reveal whose link is not a short link of its record's kind is answered `400 {"type": "invalid_link", "kind": "contact" | "channel"}`, naming the first such link, contact before channel, before any invoice, code reservation or balance hold. A chain read of the reveal's checks that fails is answered `503 name_check_unavailable` (`orderReveal` in [`Names/Reveal.hs`](../src/StoreService/Names/Reveal.hs)).
+- A reveal whose link is not a short link of its record's kind is answered `400 {"type": "invalid_link", "kind": "contact" | "channel"}`, naming the first such link, contact before channel, before any invoice or code reservation. A chain read of the reveal's checks that fails is answered `503 name_check_unavailable` (`orderReveal` in [`Names/Reveal.hs`](../src/StoreService/Names/Reveal.hs)).
 - The reveal is stored with the order and cleared when the order is closed (`closeOrder` in [`Orders.hs`](../src/StoreService/Orders.hs), `closeOverdue` in [`Names/Store.hs`](../src/StoreService/Names/Store.hs)).
 - The terms text is read from the database, or fetched from git.simplex.chat or GitHub on the first use of its hash and stored; either is checked against the sha256 in its link when the link has one. While it cannot be read, the order is answered `503 terms_unavailable` ([`Names/Orders.hs:284-291`](../src/StoreService/Names/Orders.hs#L284-L291), [`Names/Contracts.hs:239-290`](../src/StoreService/Names/Contracts.hs#L239-L290), [`Web/Names/Orders.hs:356`](../src/StoreService/Web/Names/Orders.hs#L356)).
 - The name lock is held across the provider call, and the answer is sent after it. Overdue unpaid orders of the same wallet and name are closed in the order's transaction ([`Web/Names/Orders.hs:76-100`](../src/StoreService/Web/Names/Orders.hs#L76-L100), [`Names/Orders.hs:217-256`](../src/StoreService/Names/Orders.hs#L217-L256)).
@@ -254,7 +253,7 @@ Notes:
 - The links are set by `setText` calls for `simplex.contact` and `simplex.channel` in the register's data ([`Names/Registration.hs:212-235`](../src/StoreService/Names/Registration.hs#L212-L235)).
 - The stored reveal is cleared when its deadline passes, on `InvalidNonce`, `TermsNotAccepted` or `TermsMismatch` (3.5), and when its acceptance is refused for another policy or kind of terms. Without a reveal by `revealBefore` the order waits, and its view's signature reads `lapsed`; the page with the code then sends `POST /api/registration/ID/retry`, which queues it to be committed again (3.6) ([`Names/Worker.hs:255-264`](../src/StoreService/Names/Worker.hs#L255-L264), [`Names/View.hs:127-143`](../src/StoreService/Names/View.hs#L127-L143)).
 - An order waiting for its owner, committed without a reveal, fails with the reason `unread` once its page has not read it for 3 days. A read is `GET /api/registration/ID` or the order's `GET /api/invoice/ID`, stored in `read_at` at most once an hour; an order starts read at its placement (`noteRead` in [`Names/Orders.hs`](../src/StoreService/Names/Orders.hs), `committed` in [`Names/Worker.hs`](../src/StoreService/Names/Worker.hs)). A reveal of such an order, checked as at an order (3.1), is stored and queues the order to be committed again (`revealHandler` in [`Web/Names/Registration.hs`](../src/StoreService/Web/Names/Registration.hs)).
-- The view of a failed order that still holds its name gives `heldUntil` in its phase: a calendar month after its payment, or its code's or balance's placement (`phaseView` in [`Names/View.hs`](../src/StoreService/Names/View.hs)).
+- The view of a failed order that still holds its name gives `heldUntil` in its phase: a calendar month after its payment, or its code's placement (`phaseView` in [`Names/View.hs`](../src/StoreService/Names/View.hs)).
 - The view gives the name of its stored reveal in `label` only once the order is paid (`toRegistrationView` in [`Names/View.hs`](../src/StoreService/Names/View.hs)).
 - After a restart every phase is resumed from the stored order and the sender's saved transactions ([`Names/Sender.hs:123-131`](../src/StoreService/Names/Sender.hs#L123-L131), [`Names/Worker.hs:6-8`](../src/StoreService/Names/Worker.hs#L6-L8)).
 
@@ -303,7 +302,7 @@ Notes:
 - The code is spent when the name is registered, released when the order is set `taken`, and kept with a failed order for a move, or with a lapsed unsigned one for `/retry` or a move, until a calendar month after its reservation, when the month pass fails the order `monthEnded` and releases the code in the same write (`endOrder` and `endMonths` in [`Names/Worker.hs`](../src/StoreService/Names/Worker.hs)).
 - A name code is issued valid for 3 calendar months, and the answer names its expiry: `Code: SN6-…. Valid until <time> UTC.` (`issueNameCode` in [`Names/Codes.hs`](../src/StoreService/Names/Codes.hs)).
 - A name code is withdrawn by `//revoke` unless it is spent; a code an order already holds stays usable by that order ([`Names/Codes.hs:162-173`](../src/StoreService/Names/Codes.hs#L162-L173), [`Names/Codes.hs:78-88`](../src/StoreService/Names/Codes.hs#L78-L88)).
-- Under `codes_only = on`, `GET /api/config` answers `names.codesOnly` true, which the page reads, and paid orders and spends are answered `403 codes_only` (`siteConfig` in [`Web/Server.hs`](../src/StoreService/Web/Server.hs), [`Web/Names/Orders.hs:88`](../src/StoreService/Web/Names/Orders.hs#L88), [`Web/Names/Orders.hs:240`](../src/StoreService/Web/Names/Orders.hs#L240)).
+- Under `codes_only = on`, `GET /api/config` answers `names.codesOnly` true, which the page reads, and paid orders are answered `403 codes_only` (`siteConfig` in [`Web/Server.hs`](../src/StoreService/Web/Server.hs), `nameInvoiceHandler` in [`Web/Names/Orders.hs`](../src/StoreService/Web/Names/Orders.hs)).
 
 ---
 
@@ -441,7 +440,7 @@ Notes:
 
 ### 3.7 An owner's orders found
 
-An owner without an order's link finds their orders by signing with their wallet; the ids found are used for `/retry`, a move, a spend or a refund.
+An owner without an order's link finds their orders by signing with their wallet; the ids found are used for `/retry`, a move or a refund.
 
 ```mermaid
 sequenceDiagram
@@ -451,7 +450,7 @@ sequenceDiagram
   P->>P: owner signs "simplex.domains find OWNER TIMESTAMP" (EIP-191)
   P->>W: POST /api/registration/find: owner, timestamp, signature
   W->>D: the 50 newest orders, and older ones with a balance
-  W-->>P: 200: registrations with ids, phase, labelHash, sealed, heldBy
+  W-->>P: 200: registrations with ids, phase, labelHash, sealed
 ```
 
 Notes:
@@ -461,54 +460,7 @@ Notes:
 
 ---
 
-### 3.8 A balance spent on another name
-
-Another name of the same owner is paid from an order's balance, wholly or with an invoice for the difference.
-
-```mermaid
-sequenceDiagram
-  participant P as Names page
-  participant W as Web API
-  participant D as PostgreSQL
-  participant E as Ethereum node
-  participant V as BTCPay or Stripe
-  participant L as Poller
-  P->>W: GET /api/registration/SOURCE, answered with its balance
-  P->>W: GET /api/name/LABELHASH/sign?owner=OWNER, as in 3.1
-  P->>W: POST /api/registration/SOURCE/spend: signed order, reveal
-  W->>D: source order read
-  W->>W: its owner's signature checked, name and balance locks taken
-  W->>E: terms of the name's kind
-  W->>D: balance equal to the amount read and not held
-  W->>E: name status, rentPriceUSD at least the floor and equal to the price
-  W->>E: reveal: sponsor nonce, current terms, policy nonce
-  alt balance covers the price, no method sent
-    W->>D: one transaction: registration queued with its reveal, balance lowered by the price
-    W-->>P: 200: registrationId
-  else a difference to pay, method sent
-    W->>V: invoice for the price minus the balance
-    W->>D: one transaction: invoice open, registration unpaid with its reveal, balance held
-    W-->>P: 200: invoice view of the new order, paid by the difference and the balance's part
-    alt paid
-      L->>D: settlement: registration queued, held balance spent
-    else unpaid past the expiry
-      L->>D: invoice expired, order closed, hold released
-    end
-  end
-```
-
-Notes:
-
-- `method` is present exactly when the price is above the balance, and a card difference under 50 cents is refused ([`Web/Names/Orders.hs:280-306`](../src/StoreService/Web/Names/Orders.hs#L280-L306)).
-- The chain price is checked as an order's: a price under `min_price_cents_per_year` times the paid years is answered `503 name_check_unavailable` before any payment ([`Names/Contracts.hs:190-202`](../src/StoreService/Names/Contracts.hs#L190-L202)).
-- The spend is signed `simplex.domains spend SOURCE ...` by the source order's owner, who owns the new order ([`Web/Names/Orders.hs:249-257`](../src/StoreService/Web/Names/Orders.hs#L249-L257), [`Names/Signatures.hs:95-97`](../src/StoreService/Names/Signatures.hs#L95-L97)).
-- A balance amount other than the one read, or a hold, is answered `409 balance_changed`. A hold by an overdue order is treated as none, and that order is closed in the spend's transaction ([`Names/Balances.hs:79-87`](../src/StoreService/Names/Balances.hs#L79-L87), [`Names/Orders.hs:236-243`](../src/StoreService/Names/Orders.hs#L236-L243)).
-- The whole balance read is held by the difference order. At settlement the hold is spent; when it cannot be spent, the order is kept `queued` and an error is logged ([`Names/Store.hs:514-532`](../src/StoreService/Names/Store.hs#L514-L532), [`Orders.hs:200-204`](../src/StoreService/Orders.hs#L200-L204), [`Orders.hs:232-236`](../src/StoreService/Orders.hs#L232-L236)).
-- Balances are credited when a paid order is set `taken` (its whole price), when a paid order moves to a cheaper name (the difference), and with late or extra money ([`Names/Worker.hs:359-368`](../src/StoreService/Names/Worker.hs#L359-L368), [`Names/Orders.hs:341-349`](../src/StoreService/Names/Orders.hs#L341-L349), [`Names/LateCredits.hs:66-72`](../src/StoreService/Names/LateCredits.hs#L66-L72)).
-
----
-
-### 3.9 Late crypto credited
+### 3.8 Late crypto credited
 
 Crypto paid to an invoice whose order has closed is credited to that order's balance.
 
@@ -538,7 +490,7 @@ Notes:
 
 ---
 
-### 3.10 A balance refunded by support
+### 3.9 A balance refunded by support
 
 Support records the refund of a balance in the console and pays it back by hand.
 
@@ -551,20 +503,21 @@ sequenceDiagram
   B--)O: asks for a refund with the order's reference (outside the service)
   Note over O,C: the service is stopped, then run with --run-cli
   O->>C: //balance REFERENCE
-  C->>D: order, balance, hold, the orders its money came through
+  C->>D: order, balance, the money paid for it
   C-->>O: balance, credited, refunded, paid by, the command to record it
   O->>C: //record_refund REFERENCE CENTS
   C->>D: under the balance's lock: amount 0, refunded raised by the cents
-  C-->>O: Recorded a refund ... Refund it now, by: ORDERS.
+  C-->>O: Recorded a refund ... Refund it now, by: PAYMENT.
   O--)B: money paid back by hand (outside the service)
 ```
 
 Notes:
 
-- The refund must equal the whole balance, and a held balance is refused, overdue or not. `//record_refund` closes no holder: its answer asks support to start the service, whose poller closes an overdue holder 10 minutes after its expiry, then to run the command again ([`Names/Balances.hs:40-65`](../src/StoreService/Names/Balances.hs#L40-L65), [`Names/Store.hs:1046-1056`](../src/StoreService/Names/Store.hs#L1046-L1056), [`Service.hs:487-499`](../src/StoreService/Service.hs#L487-L499)).
+- The refund must equal the whole balance ([`Names/Balances.hs`](../src/StoreService/Names/Balances.hs) `recordRefund`, [`Names/Store.hs`](../src/StoreService/Names/Store.hs) `refundBalance`).
+- A balance is credited when a paid order is set `taken` or fails at the end of its month (its whole price), when support closes a failed order, and with late or extra money; it is spent by no other order ([`Names/Worker.hs`](../src/StoreService/Names/Worker.hs) `endOrder`, `refundTaken`, [`Names/LateCredits.hs`](../src/StoreService/Names/LateCredits.hs)).
 - The provider interface offers create, read, cancel, list, rate and webhook verification, so the money is paid back by hand ([`Providers.hs:120-130`](../src/StoreService/Providers.hs#L120-L130)). The buyer's email to chat@simplex.chat is described in the README; the page code is in the submodule ([`README.md:1371-1411`](../README.md#L1371-L1411)).
 - The console starts only while the service is stopped, as the database lock is held by one process ([`Store/Migrate.hs:46-54`](../src/StoreService/Store/Migrate.hs#L46-L54)).
-- While the service runs, a group owner sends the same commands with one slash, `/balance`, `/record_refund` and `/close`. The group lane runs the console's handlers in the service's per-name and per-balance locks and answers in the group; the answers name the one-slash commands, and a held balance's answer names the running poller ([`Service.hs:414-418`](../src/StoreService/Service.hs#L414-L418), [`Group.hs:311`](../src/StoreService/Group.hs#L311)).
+- While the service runs, a group owner sends the same commands with one slash, `/balance`, `/record_refund` and `/close`. The group lane runs the console's handlers in the service's per-name and per-balance locks and answers in the group; the answers name the one-slash commands ([`Service.hs`](../src/StoreService/Service.hs) `runMoneyCmd`, [`Group.hs`](../src/StoreService/Group.hs)).
 
 A failed paid order, and one whose commitment lapsed unsigned, has no balance until it is closed. Support closes it with `//close`, which checks the chain first and records the refund in the same transaction that ends the order.
 
@@ -585,17 +538,17 @@ sequenceDiagram
     C-->>O: Nothing refunded: the register of order ID went through
   else not registered
     C->>D: under the balance's lock, one transaction: order set taken, its stored reveal cleared, price credited, the whole balance recorded as refunded
-    C-->>O: Closed order ID, failed or lapsed unsigned at TIME ... Check at the provider ...; if not, refund it now, by: ORDERS.
+    C-->>O: Closed order ID, failed or lapsed unsigned at TIME ... Check at the provider ...; if not, refund it now, by: PAYMENT.
     O--)B: money paid back by hand, unless refunded before (outside the service)
   end
 ```
 
-- Only a failed or lapsed unsigned order paid by invoice or balance is closed. A balance an order holds refuses the close and writes nothing ([`Names/Worker.hs:502-542`](../src/StoreService/Names/Worker.hs#L502-L542), [`Names/Worker.hs:402-406`](../src/StoreService/Names/Worker.hs#L402-L406), [`Names/Orders.hs:366-412`](../src/StoreService/Names/Orders.hs#L366-L412)).
+- Only a failed or lapsed unsigned order paid by invoice is closed ([`Names/Worker.hs`](../src/StoreService/Names/Worker.hs) `closeRegistration`, `refundTaken`, [`Names/Orders.hs`](../src/StoreService/Names/Orders.hs) `checkLanded`).
 - The answer names the time of the failure or the lapse, as failed orders were refunded at the provider by hand before `//close` existed ([`Service.hs:463-485`](../src/StoreService/Service.hs#L463-L485), [`README.md:1491-1536`](../README.md#L1491-L1536)).
 
 ---
 
-### 3.11 A registered name's links edited
+### 3.10 A registered name's links edited
 
 The owner's signed link changes are relayed to the resolver as one transaction, its gas paid by the registrar key.
 
@@ -631,7 +584,7 @@ Notes:
 
 ---
 
-### 3.12 Service start
+### 3.11 Service start
 
 The production container starts one process, which checks its configuration, the database lock and the node, starts the chat core, then starts all lanes.
 
@@ -668,7 +621,7 @@ Notes:
 
 ---
 
-### 3.13 A card dispute or a refund
+### 3.12 A card dispute or a refund
 
 Stripe reports a dispute, a refund or an early fraud warning on a name order's payment; the order is cancelled while no register transaction of it was sent, and the operators are alerted with its evidence.
 
@@ -685,15 +638,11 @@ sequenceDiagram
   else a dispute or a refund, its event recorded before
     W->>D: nothing written
   else a dispute or a refund
-    opt the order's balance is taken back, and another order's open invoice holds it
-      W->>V: cancel that invoice
-      W->>D: that invoice expired, its order closed cancelled, the hold released
-    end
     W->>D: under the name's lock, one transaction: the event recorded, the order's row locked
     alt unpaid, its payment not recorded yet
-      W->>D: nothing more written; its settlement later closes it as reversed, its held balance released
+      W->>D: nothing more written; its settlement later closes it as reversed
     else live past unpaid, no register transaction of it saved
-      W->>D: order set closed, reversed; its reveal cleared; the cents it paid from another order's balance returned there; its own balance taken back
+      W->>D: order set closed, reversed; its reveal cleared; its own balance taken back
     else support recorded the order's refund
       W->>D: nothing more written
     else otherwise
@@ -709,7 +658,6 @@ Notes:
 - The events are read by `stripeEvent` in [`Providers/Stripe.hs`](../src/StoreService/Providers/Stripe.hs): a dispute's `amount`, a refund's `amount_refunded`, and the `payment_intent` of each. A badge invoice's event changes nothing ([`Web/Server.hs`](../src/StoreService/Web/Server.hs) `onNameOrder`).
 - Each dispute or refund is counted on the order's invoice row, which keeps the total reversed and the last event's id and cents; a repeated delivery of the last event changes nothing, and a refund counts the rise of `amount_refunded` over the total reversed on the invoice ([`Names/Store.hs`](../src/StoreService/Names/Store.hs) `recordReversal`).
 - The cents taken back from the order's own balance are the reversed cents, at most the balance's amount and the invoice's amount less what earlier reversals of it reversed (`takeBackBalance`).
-- A balance that another order's open invoice holds is released first: that invoice is cancelled at its provider, then here, which closes its order as cancelled. The alert names that order. A failed cancel at the provider fails the handling, so Stripe delivers the event again ([`Names/Balances.hs`](../src/StoreService/Names/Balances.hs) `reverseOrder`).
 - A support refund of part of a live order's balance does not keep the order from being cancelled; an order not cancelled whose refund support recorded is only alerted (`reversalCase`).
 - A late credit writes the order's next version before it credits, which locks the order's row, as the reversal's lock does, so a credit and a concurrent reversal of the same order run one after the other; a reversal that read the order before the credit fails its lock, and the provider delivers it again (`creditLatePayment` in [`Names/Store.hs`](../src/StoreService/Names/Store.hs)).
 - A payment that settles after a reversal of it was recorded closes its unpaid order as reversed, logged at error, instead of queuing it (`nameSettled` in [`Orders.hs`](../src/StoreService/Orders.hs)).
@@ -721,7 +669,7 @@ Notes:
 
 ## 4. The life of an order
 
-Every state of a name order and every transition between them. An order is held from `queued` to `registering`, and while `failed` within its month: no other order through the service can be placed for its name, and a payment for the name is settled as `taken`. The month is one calendar month from `paid_at`, the payment's settlement or the placement of a code or balance order.
+Every state of a name order and every transition between them. An order is held from `queued` to `registering`, and while `failed` within its month: no other order through the service can be placed for its name, and a payment for the name is settled as `taken`. The month is one calendar month from `paid_at`, the payment's settlement or the placement of a code order.
 
 ```mermaid
 stateDiagram-v2
@@ -773,13 +721,13 @@ stateDiagram-v2
 
 | | From → to | Trigger | Effect |
 |---|---|---|---|
-| T1 | start → unpaid | An invoice order by card, BTC or XMR, or a balance order with an invoice for the difference. | An invoice is opened at the provider. It holds only its price; a difference order holds the balance it spends. A held name is refused `name_taken` (`placeOrder`). |
-| T2 | start → queued | A code order, or an order paid wholly from a balance. | The name is held and the month starts. The code is reserved, or the balance spent. Other buyers' open invoices of the name are cancelled at their providers, then here (`announceHeld`). |
-| T3 | unpaid → queued | The invoice is paid in full, and no other order holds the name. | The name is held; `paid_at` is the settlement's time. A held balance is spent. Other buyers' open invoices of the name are cancelled (`settleOrder`, `cancelNameInvoices`). |
+| T1 | start → unpaid | An invoice order by card, BTC or XMR. | An invoice is opened at the provider. It holds only its price. A held name is refused `name_taken` (`placeOrder`). |
+| T2 | start → queued | A code order. | The name is held and the month starts. The code is reserved. Other buyers' open invoices of the name are cancelled at their providers, then here (`announceHeld`). |
+| T3 | unpaid → queued | The invoice is paid in full, and no other order holds the name. | The name is held; `paid_at` is the settlement's time. Other buyers' open invoices of the name are cancelled (`settleOrder`, `cancelNameInvoices`). |
 | T4 | unpaid → taken | The invoice is paid in full while another order holds the name. | The order's price is credited to its balance (`takenAtSettlement`). |
-| T5 | unpaid → closed, expired | Nothing is paid by the invoice's expiry, or a new order of the same wallet and name is placed after it. | The order is no longer live; a balance it held is released (`expireOverdue`, `closeOverdue`). |
-| T6 | unpaid → closed, cancelled | The buyer cancels the invoice; another order's payment holds the name; or a dispute of the order whose balance it holds takes that balance back (section 3.13). | As T5 (`cancelOpenInvoice`). |
-| T7 | unpaid → closed, reversed | The payment is settled after a reversal of it was recorded. | Nothing is credited; a balance it held is released (`reversedAtSettlement`). |
+| T5 | unpaid → closed, expired | Nothing is paid by the invoice's expiry, or a new order of the same wallet and name is placed after it. | The order is no longer live (`expireOverdue`, `closeOverdue`). |
+| T6 | unpaid → closed, cancelled | The buyer cancels the invoice, or another order's payment holds the name. | As T5 (`cancelOpenInvoice`). |
+| T7 | unpaid → closed, reversed | The payment is settled after a reversal of it was recorded. | Nothing is credited (`reversedAtSettlement`). |
 | T8 | closed → closed | Money is received on the closed invoice. | Once confirmed, it is credited to the order's balance, unless the order has a reversal (`creditLateInvoice`). |
 | T9 | queued → committing | The node accepts the commit's dry run. | The commit is sent (`sendCommit`). |
 | T10 | queued or committing → committed | The commitment is on chain, with the reveal margin left of its window. | The window's times are stored (`toCommitted`). |
@@ -799,8 +747,8 @@ stateDiagram-v2
 | T24 | failed (registry refused or unread), or committed past its window → queued | The owner moves the order to another name or other links, at most 3 times. | A new commitment; the month is unchanged; a cheaper name's difference is credited to the balance; other buyers' open invoices of the new name are cancelled (`retargetOrder`). |
 | T25 | failed → registered | At a move or support's close, the service finds the order's register mined with status 1, or the owner holding the name. | As T16 (`checkFailedOrder`, `closeRegistration`). |
 | T26 | failed, or committed past its window → taken | Support's `//close` of a paid order. | The price is credited to the balance, then recorded as refunded (`closeRegistration`). |
-| T27 | queued, committing, committed or failed → closed, reversed | A dispute or refund of the payment while no register transaction of the order was saved. | The hold is released; nothing is credited; a part paid from another order's balance is returned there (`reverseOrder`). |
+| T27 | queued, committing, committed or failed → closed, reversed | A dispute or refund of the payment while no register transaction of the order was saved. | The hold is released; nothing is credited (`reverseOrder`). |
 
 The functions named are in [`Names/Worker.hs`](../src/StoreService/Names/Worker.hs), [`Names/Orders.hs`](../src/StoreService/Names/Orders.hs), [`Orders.hs`](../src/StoreService/Orders.hs), [`Web/Names/Orders.hs`](../src/StoreService/Web/Names/Orders.hs), [`Names/Store.hs`](../src/StoreService/Names/Store.hs), [`Names/Balances.hs`](../src/StoreService/Names/Balances.hs) and [`Names/LateCredits.hs`](../src/StoreService/Names/LateCredits.hs).
 
-The page offers another name only for an order whose name was taken; the service accepts a move (T24) for every failed order but a month-ended or signature-refused one (`movable` in [`Names/Orders.hs`](../src/StoreService/Names/Orders.hs)). A dispute or refund of an order not cancelled (a register sent, taken, month ended or registered) takes the reversed cents back from its balance, as section 3.13 says. Every paid order not registered 3 hours after `paid_at` is alerted once, failed orders included; only live orders are counted in the gauge `simplex_store_names_unregistered_oldest_paid_timestamp_seconds`.
+The page offers another name only for an order whose name was taken; the service accepts a move (T24) for every failed order but a month-ended or signature-refused one (`movable` in [`Names/Orders.hs`](../src/StoreService/Names/Orders.hs)). A dispute or refund of an order not cancelled (a register sent, taken, month ended or registered) takes the reversed cents back from its balance, as section 3.12 says. Every paid order not registered 3 hours after `paid_at` is alerted once, failed orders included; only live orders are counted in the gauge `simplex_store_names_unregistered_oldest_paid_timestamp_seconds`.

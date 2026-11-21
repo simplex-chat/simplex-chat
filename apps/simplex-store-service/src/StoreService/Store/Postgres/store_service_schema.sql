@@ -200,7 +200,6 @@ CREATE TABLE test_store_service_schema.sx_badge_service_name_balances (
     amount integer NOT NULL,
     credited integer DEFAULT 0 NOT NULL,
     refunded integer DEFAULT 0 NOT NULL,
-    reserved_by text,
     refunded_at timestamp with time zone,
     created_at timestamp with time zone NOT NULL,
     updated_at timestamp with time zone NOT NULL,
@@ -333,8 +332,6 @@ CREATE TABLE test_store_service_schema.sx_badge_service_name_registrations (
     price integer NOT NULL,
     method text,
     name_prepaid_code_id bigint,
-    balance_source text,
-    balance_used integer NOT NULL,
     label text,
     secret bytea,
     contact_link text,
@@ -671,10 +668,6 @@ CREATE INDEX sx_badge_service_idx_invoices_status_expires_at ON test_store_servi
 
 
 
-CREATE UNIQUE INDEX sx_badge_service_idx_name_balances_reserved_by ON test_store_service_schema.sx_badge_service_name_balances USING btree (reserved_by);
-
-
-
 CREATE UNIQUE INDEX sx_badge_service_idx_name_invoices_registration ON test_store_service_schema.sx_badge_service_name_invoices USING btree (registration_id);
 
 
@@ -696,10 +689,6 @@ CREATE INDEX sx_badge_service_idx_name_record_edits_label_created ON test_store_
 
 
 CREATE UNIQUE INDEX sx_badge_service_idx_name_record_edits_owner_nonce ON test_store_service_schema.sx_badge_service_name_record_edits USING btree (owner, nonce) WHERE (state = ANY (ARRAY['pending'::text, 'mined'::text]));
-
-
-
-CREATE INDEX sx_badge_service_idx_name_registrations_balance_source ON test_store_service_schema.sx_badge_service_name_registrations USING btree (balance_source);
 
 
 
@@ -834,11 +823,6 @@ ALTER TABLE ONLY test_store_service_schema.sx_badge_service_name_balances
 
 
 
-ALTER TABLE ONLY test_store_service_schema.sx_badge_service_name_balances
-    ADD CONSTRAINT sx_badge_service_name_balances_reserved_by_fkey FOREIGN KEY (reserved_by) REFERENCES test_store_service_schema.sx_badge_service_name_registrations(registration_id);
-
-
-
 ALTER TABLE ONLY test_store_service_schema.sx_badge_service_name_invoices
     ADD CONSTRAINT sx_badge_service_name_invoices_invoice_id_fkey FOREIGN KEY (invoice_id) REFERENCES test_store_service_schema.sx_badge_service_invoices(invoice_id) ON DELETE CASCADE;
 
@@ -866,11 +850,6 @@ ALTER TABLE ONLY test_store_service_schema.sx_badge_service_name_prepaid_codes
 
 ALTER TABLE ONLY test_store_service_schema.sx_badge_service_name_record_changes
     ADD CONSTRAINT sx_badge_service_name_record_changes_name_record_edit_id_fkey FOREIGN KEY (name_record_edit_id) REFERENCES test_store_service_schema.sx_badge_service_name_record_edits(name_record_edit_id) ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY test_store_service_schema.sx_badge_service_name_registrations
-    ADD CONSTRAINT sx_badge_service_name_registrations_balance_source_fkey FOREIGN KEY (balance_source) REFERENCES test_store_service_schema.sx_badge_service_name_registrations(registration_id);
 
 
 

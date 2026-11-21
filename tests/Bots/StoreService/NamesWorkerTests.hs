@@ -11,7 +11,7 @@ import Bots.StoreService.NamesContractsTests (availableCall, maxCommitmentAgeCal
 import Bots.StoreService.NamesOrdersTests
 import Bots.StoreService.NamesOwnerTests (answerExpiry, answerFree, answerOwner, answerUnowned, byB, codeIn, committedPhase, dynamisOrder, failedPhase, labelBytes, move, moveTo, ownerOfSelector, paidIn, rewrite, sentRegister, stored)
 import Bots.StoreService.NamesPhasesTests (held, prompt, registrationPath, woken)
-import Bots.StoreService.NamesStoreTests (btc, hashFixture, insertInvoiceRow, ownerA, paidOrder, reveal)
+import Bots.StoreService.NamesStoreTests (hashFixture, reveal)
 import Bots.StoreService.WebTests (answerOf, capturingStderr, fieldOf, jsonObject, lengthOf, phaseOf, phaseValue, refusedWith, renameTable, statusOf, stubCalls, webGet, withApp)
 import Control.Applicative ((<|>))
 import Control.Arrow ((&&&))
@@ -42,7 +42,6 @@ import Simplex.Messaging.Eth.Transaction (Eip1559Tx (..))
 import Simplex.Messaging.Names.Record (USDCents)
 import Simplex.Messaging.SimplexName (labelHash)
 import Simplex.Messaging.SystemTime (RoundedSystemTime (..), SystemSeconds)
-import Simplex.Messaging.Util (tshow)
 import StoreService.Config (ChainConfig (..), NamesConfig (..))
 import StoreService.Names.Abi (AbiValue (..), abiBytes, abiTuple, addressWord, selector, uint256)
 import StoreService.Names.Balances (RefundRecord (..), RefundRefusal (..), recordRefund)
@@ -54,7 +53,6 @@ import StoreService.Names.Registration (RegisterIntent (..), TermsAcceptance (..
 import StoreService.Names.Reveal (intentOf)
 import StoreService.Names.Revert (RevertName (..), RevertReason (..), actedReverts)
 import StoreService.Names.Sender
-import StoreService.Names.Signatures (OrderFields (..))
 import StoreService.Names.Store
 import StoreService.Names.Turns (labelTurnCount, turnsCount, withLabelTurn)
 import StoreService.Names.Worker
@@ -72,7 +70,6 @@ namesWorkerTests = workerTests >> takenBalanceTests
 
 takenBalanceTests :: Spec
 takenBalanceTests = describe "StoreService names: balance life" $ describe "taken" $ do
-  it "credits a taken order paid wholly from a balance, and one paid partly, its whole price as a balance of its own, the source's left as it was" testTakenFromBalance
   it "leaves the order as it was when the taken write's credit is refused, in one transaction" testTakenCreditRefused
   it "wakes a held poll with the taken write, and not with a change of the order's balance" testTakenWakesPoll
 
@@ -150,11 +147,10 @@ workerTests = describe "StoreService names: worker" $ do
   describe "close" $ do
     it "closes a failed paid order taken, not live, its price credited and refunded, its reveal cleared, then refuses /retry, a move and a second refund, and accepts a new order for the name" testCloseFailed
     it "closes a lapsed unsigned committed order, naming its lapse as its end" testCloseLapsed
-    it "closes a failed order paid from a balance, its chain naming the paying order" testCloseFromBalance
     it "registers a failed order whose owner holds the name, and one whose register row mined while the owner no longer holds it, refunding nothing" testCloseLanded
     it "refuses an unknown reference, an order not failed, a failed code order and a failed chain read, changing nothing" testCloseRefused
     it "refuses an order changed during its chain check as changed, writing nothing" testCloseLostRace
-    it "refuses a balance another order holds, writing nothing, and refunds the whole balance once released" testCloseHeld
+    it "refunds the whole balance, its earlier credits included" testCloseWhole
     it "rolls back the taken write and the credit when the refund is refused" testCloseRollback
 
 -- fixtures
@@ -599,16 +595,9 @@ testInNameTurn = withWorker $ \w@W {wCtx = ctx@Ctx {cOrders}} -> do
       timeout prompt (wait stepping) >>= maybe (fail "the step did not finish") done
   namePhase . nrPhase <$> stored ctx r `shouldReturn` PFailed
 
--- | The order of alicebakery, by owner A, with this commitment.
-aliceFields :: Int -> OrderFields
-aliceFields n = fieldsOf aliceOrder {oSecret = secretOf n, oSealed = "sealed-alicebakery-" <> tshow n}
-
-aliceRegistration :: Text -> Int -> NewRegistration
-aliceRegistration rid n = NewRegistration {nrgId = RegistrationId rid, nrgOwner = ownerA, nrgOrder = aliceFields n, nrgReveal = reveal, nrgYears = 2, nrgOrderHash = orderHash ownerA (aliceFields n) (OTInvoice btc $ oPrice aliceOrder)}
-
 -- | The amount and credited of the order's balance.
 balanceFigures :: Ctx -> RegistrationId -> IO (Maybe (USDCents, USDCents))
-balanceFigures Ctx {cStore} rid = fmap (\Balance {blAmount, blCredited} -> (blAmount, blCredited)) <$> withTransaction cStore (\db -> getBalance db rid orderTime)
+balanceFigures Ctx {cStore} rid = fmap (\Balance {blAmount, blCredited} -> (blAmount, blCredited)) <$> withTransaction cStore (`getBalance` rid)
 
 -- | The register's dry run reverts on a name someone else holds, so the registration ends taken.
 endsTaken :: W -> NameRegistration -> IO ()
@@ -616,30 +605,6 @@ endsTaken w@W {wCtx = Ctx {cNode}} r = do
   answerAvailable w False
   setFault cNode "eth_estimateGas" $ RpcError 3 "execution reverted: ERC721: invalid token ID" Nothing
   published w r (steps w r) >>= done
-
-testTakenFromBalance :: IO ()
-testTakenFromBalance = withWorker $ \w@W {wCtx = ctx@Ctx {cStore}} -> do
-  let price = oPrice aliceOrder
-  wholly <- paidIn ctx (byB dynamisOrder) failedPhase
-  answerFree ctx "carolbakery"
-  partly <- paidIn ctx (byB aliceOrder) {oLabel = "carolbakery", oSecret = secretOf 5} failedPhase
-  withTransaction cStore $ \db -> creditBalance db (nrId wholly) 30000 orderTime >> creditBalance db (nrId partly) 4000 orderTime
-  withTransaction cStore (\db -> createBalanceRegistration db (aliceRegistration "covered" 1) BalanceUse {buSource = nrId wholly, buUsed = price} 30000 orderTime) `shouldReturn` Right ()
-  covered <- registrationById ctx (RegistrationId "covered") >>= \r -> rewrite ctx r openPhase >>= revealed ctx keyA "alicebakery"
-  endsTaken w covered
-  (\x -> (namePhase $ nrPhase x, nrPayment x)) <$> stored ctx covered `shouldReturn` (PTaken, OPBalance BalanceUse {buSource = nrId wholly, buUsed = price})
-  balanceFigures ctx (nrId covered) `shouldReturn` Just (price, price)
-  balanceFigures ctx (nrId wholly) `shouldReturn` Just (30000 - price, 30000)
-  withTransaction cStore $ \db -> do
-    insertInvoiceRow db "inv-diff" (addUTCTime 3600 orderTime) "open"
-    createPaidRegistration db (aliceRegistration "diff" 2) (Just BalanceUse {buSource = nrId partly, buUsed = 4000}) (paidOrder "inv-diff") {poPrice = price} orderTime `shouldReturn` Right ()
-  settleNow ctx (InvoiceId "inv-diff") settled `shouldReturn` ISPaid
-  balanceFigures ctx (nrId partly) `shouldReturn` Just (0, 4000)
-  diff <- registrationById ctx (RegistrationId "diff") >>= \r -> rewrite ctx r openPhase >>= revealed ctx keyA "alicebakery"
-  endsTaken w diff
-  namePhase . nrPhase <$> stored ctx diff `shouldReturn` PTaken
-  balanceFigures ctx (nrId diff) `shouldReturn` Just (price, price)
-  balanceFigures ctx (nrId partly) `shouldReturn` Just (0, 4000)
 
 -- | A price the balance's CHECK refuses makes the credit fail inside the taken write's transaction.
 testTakenCreditRefused :: IO ()
@@ -1453,11 +1418,11 @@ testRetryInNameTurn = withWorker $ \W {wCtx = ctx@Ctx {cOrders}} -> do
 closeOf :: Ctx -> NameRegistration -> IO Closed
 closeOf Ctx {cOrders = OrdersEnv {oeStore, oeContracts, oeTurns, oeNow}} NameRegistration {nrId = RegistrationId rid} = closeRegistration oeStore oeContracts oeTurns oeNow rid
 
-figuresOf :: Ctx -> NameRegistration -> IO (Maybe (USDCents, USDCents, USDCents, Maybe BalanceHold))
-figuresOf Ctx {cStore} NameRegistration {nrId = RegistrationId rid} = figures cStore rid orderTime
+figuresOf :: Ctx -> NameRegistration -> IO (Maybe (USDCents, USDCents, USDCents))
+figuresOf Ctx {cStore} NameRegistration {nrId = RegistrationId rid} = figures cStore rid
 
 refundedWhole :: Ctx -> NameRegistration -> USDCents -> IO RefundRecord
-refundedWhole ctx r price = (\ref -> RefundRecord {rdRegistration = nrId r, rdCents = price, rdChain = [BalanceLink {lkRegistration = nrId r, lkOwner = nrOwner r, lkPayment = nrPayment r, lkProviderRef = Just ref, lkPaid = price, lkFromBalance = 0, lkLateCredits = []}]}) <$> paidRef ctx r
+refundedWhole ctx r price = (\ref -> RefundRecord {rdRegistration = nrId r, rdCents = price, rdLink = Just BalanceLink {lkRegistration = nrId r, lkOwner = nrOwner r, lkPayment = nrPayment r, lkProviderRef = Just ref, lkPaid = price, lkLateCredits = []}}) <$> paidRef ctx r
 
 paidRef :: Ctx -> NameRegistration -> IO Text
 paidRef Ctx {cStore} r = case paymentInvoice (nrPayment r) of
@@ -1475,7 +1440,7 @@ testCloseFailed = withWorker $ \W {wCtx = ctx@Ctx {cStore, cOrders}} -> do
   closeOf ctx r `shouldReturn` CLRefunded orderTime refunded
   x <- stored ctx r
   (nrPhase x, nrReveal x, nrVersion x) `shouldBe` (OTaken, Nothing, nrVersion r + 1)
-  figuresOf ctx r `shouldReturn` Just (0, price, price, Nothing)
+  figuresOf ctx r `shouldReturn` Just (0, price, price)
   turnsCount (oeTurns cOrders) `shouldReturn` 0
   recordRefund (oeTurns cOrders) cStore rid price orderTime `shouldReturn` Left (RefundAmount 0)
   retryOf ctx x `shouldReturn` refusedWith 400 "bad_request"
@@ -1484,7 +1449,7 @@ testCloseFailed = withWorker $ \W {wCtx = ctx@Ctx {cStore, cOrders}} -> do
   move ctx keyA x to `shouldReturn` refusedWith 400 "bad_request"
   closeOf ctx x `shouldReturn` CLRefused CFNotFailedPaid
   stored ctx r `shouldReturn` x
-  figuresOf ctx r `shouldReturn` Just (0, price, price, Nothing)
+  figuresOf ctx r `shouldReturn` Just (0, price, price)
   fst <$> placeOrder ctx again `shouldReturn` 200
 
 testCloseLapsed :: IO ()
@@ -1495,29 +1460,6 @@ testCloseLapsed = withWorker $ \W {wCtx = ctx} -> do
   closeOf ctx r `shouldReturn` CLRefunded (addUTCTime day orderTime) refunded
   x <- stored ctx r
   (nrPhase x, nrHistory x) `shouldBe` (OTaken, nrHistory r)
-
-testCloseFromBalance :: IO ()
-testCloseFromBalance = withWorker $ \W {wCtx = ctx@Ctx {cStore}} -> do
-  paying <- paidIn ctx (byB dynamisOrder) failedPhase
-  let price = oPrice aliceOrder
-  withTransaction cStore $ \db -> creditBalance db (nrId paying) 30000 orderTime
-  withTransaction cStore (\db -> createBalanceRegistration db (aliceRegistration "covered" 1) BalanceUse {buSource = nrId paying, buUsed = price} 30000 orderTime) `shouldReturn` Right ()
-  covered <- registrationById ctx (RegistrationId "covered") >>= \r -> rewrite ctx r failedPhase
-  payingRef <- paidRef ctx paying
-  closeOf ctx covered
-    `shouldReturn` CLRefunded
-      orderTime
-      RefundRecord
-        { rdRegistration = nrId covered,
-          rdCents = price,
-          rdChain =
-            [ BalanceLink {lkRegistration = nrId covered, lkOwner = nrOwner covered, lkPayment = OPBalance BalanceUse {buSource = nrId paying, buUsed = price}, lkProviderRef = Nothing, lkPaid = 0, lkFromBalance = price, lkLateCredits = []},
-              BalanceLink {lkRegistration = nrId paying, lkOwner = nrOwner paying, lkPayment = nrPayment paying, lkProviderRef = Just payingRef, lkPaid = oPrice dynamisOrder, lkFromBalance = 0, lkLateCredits = []}
-            ]
-        }
-  nrPhase <$> stored ctx covered `shouldReturn` OTaken
-  figuresOf ctx covered `shouldReturn` Just (0, price, price, Nothing)
-  figuresOf ctx paying `shouldReturn` Just (30000 - price, 30000, 0, Nothing)
 
 testCloseLanded :: IO ()
 testCloseLanded = withWorker $ \W {wCtx = ctx} -> do
@@ -1568,24 +1510,14 @@ testCloseRollback = withWorker $ \W {wCtx = ctx} -> do
   stored ctx r `shouldReturn` r
   figuresOf ctx r `shouldReturn` Nothing
 
-testCloseHeld :: IO ()
-testCloseHeld = withWorker $ \W {wCtx = ctx@Ctx {cStore}} -> do
+testCloseWhole :: IO ()
+testCloseWhole = withWorker $ \W {wCtx = ctx@Ctx {cStore}} -> do
   r <- paidIn ctx dynamisOrder failedPhase
   answerUnowned ctx "dynamis"
-  let diffPrice = oPrice aliceOrder
-      expiresAt = addUTCTime 3600 orderTime
-      hold = BalanceHold {bhHolder = RegistrationId "diff", bhState = HSOpen expiresAt}
-      whole = 4000 + oPrice dynamisOrder
-  withTransaction cStore $ \db -> do
-    creditBalance db (nrId r) 4000 orderTime
-    insertInvoiceRow db "inv-diff" expiresAt "open"
-    createPaidRegistration db (aliceRegistration "diff" 2) (Just BalanceUse {buSource = nrId r, buUsed = 4000}) (paidOrder "inv-diff") {poPrice = diffPrice} orderTime `shouldReturn` Right ()
-  closeOf ctx r `shouldReturn` CLRefused (CFHeld hold)
-  stored ctx r `shouldReturn` r
-  figuresOf ctx r `shouldReturn` Just (4000, 4000, 0, Just hold)
-  withTransaction cStore (\db -> releaseHeldBalance db (RegistrationId "diff") orderTime) `shouldReturn` True
+  let whole = 4000 + oPrice dynamisOrder
+  withTransaction cStore $ \db -> creditBalance db (nrId r) 4000 orderTime
   closeOf ctx r >>= \case
     CLRefunded _ RefundRecord {rdCents} -> rdCents `shouldBe` whole
     other -> expectationFailure $ "not refunded: " <> show other
   nrPhase <$> stored ctx r `shouldReturn` OTaken
-  figuresOf ctx r `shouldReturn` Just (0, whole, whole, Nothing)
+  figuresOf ctx r `shouldReturn` Just (0, whole, whole)

@@ -23,22 +23,16 @@ module StoreService.Names.Store
     noHistory,
     FailReason (..),
     OrderPayment (..),
-    BalanceUse (..),
     paymentInvoice,
-    paymentBalance,
     NameReveal (..),
     NameRegistration (..),
     NewRegistration (..),
     PaidOrder (..),
     CodeInsertRefused (..),
-    BalanceInsertRefused (..),
     VersionWrite (..),
     LiveOrder (..),
     OrderTerms (..),
-    Spend (..),
     Balance (..),
-    BalanceHold (..),
-    HoldState (..),
     BalanceLink (..),
     LateCredit (..),
     CreditAmount (..),
@@ -76,7 +70,6 @@ module StoreService.Names.Store
     newRegistrationId,
     createPaidRegistration,
     createCodeRegistration,
-    createBalanceRegistration,
     getRegistration,
     getRegistrationByOrderHash,
     getLiveOrders,
@@ -97,22 +90,17 @@ module StoreService.Names.Store
     activeRegistrations,
     unpaidCleanupCandidates,
     deleteUnpaidRegistration,
-    heldBy,
     getBalance,
     balanceByReference,
-    balanceChain,
+    balanceLink,
     creditBalance,
-    spendHeldBalance,
-    releaseHeldBalance,
     refundBalance,
     recordReversal,
     takeBackBalance,
-    returnBalance,
     lockRegistration,
     reversalRecorded,
     registerTxSent,
     registerTxPending,
-    reversalEventRecorded,
     lateCreditState,
     creditLatePayment,
     latePending,
@@ -174,7 +162,7 @@ import Simplex.Messaging.Encoding (Encoding (..), Large (..))
 import Simplex.Messaging.Encoding.String (TextEncoding (..), textToJSON)
 import Simplex.Messaging.Eth.Address (Address, unAddress)
 import Simplex.Messaging.Names.Record (USDCents)
-import Simplex.Messaging.Parsers (dropPrefix, enumJSON, taggedObjectJSON)
+import Simplex.Messaging.Parsers (dropPrefix, enumJSON)
 import Simplex.Messaging.SimplexName (LabelHash (..))
 import Simplex.Messaging.SystemTime (RoundedSystemTime (..), SystemSeconds)
 import Simplex.Messaging.Util (maybeFirstRow, maybeFirstRow', tshow)
@@ -328,30 +316,14 @@ instance FromField FailReason where fromField = fromTextField_ textDecode
 
 instance ToField FailReason where toField = toField . textEncode
 
--- | OPDifference: an invoice of the price above the balance the order holds. OPBalance: wholly from a balance, with neither invoice nor code.
 data OrderPayment
   = OPInvoice ServicePaymentMethod InvoiceId
-  | OPDifference BalanceUse ServicePaymentMethod InvoiceId
-  | OPBalance BalanceUse
   | OPCode CodeId
-  deriving (Eq, Show)
-
--- | The order whose balance pays, and the cents it pays.
-data BalanceUse = BalanceUse {buSource :: RegistrationId, buUsed :: USDCents}
   deriving (Eq, Show)
 
 paymentInvoice :: OrderPayment -> Maybe InvoiceId
 paymentInvoice = \case
   OPInvoice _ invId -> Just invId
-  OPDifference _ _ invId -> Just invId
-  OPBalance _ -> Nothing
-  OPCode _ -> Nothing
-
-paymentBalance :: OrderPayment -> Maybe BalanceUse
-paymentBalance = \case
-  OPInvoice {} -> Nothing
-  OPDifference use _ _ -> Just use
-  OPBalance use -> Just use
   OPCode _ -> Nothing
 
 -- | The name, links and owner's intent, all set by an accepted reveal and cleared together.
@@ -413,10 +385,6 @@ data PaidOrder = PaidOrder
 data CodeInsertRefused = CIRLiveOrder | CIRCodeNotReservable
   deriving (Eq, Show)
 
--- | BIRBalanceChanged: the source's balance no longer has the amount seen, or another order holds it.
-data BalanceInsertRefused = BIRLiveOrder | BIRBalanceChanged
-  deriving (Eq, Show)
-
 -- | NotLive: the write would make a closed order live. LiveOrderExists: another live order holds its commitment, or its owner and label hash.
 data VersionWrite = Written Int64 | VersionChanged | NotLive | LiveOrderExists
   deriving (Eq, Show)
@@ -429,16 +397,7 @@ data LiveOrder = LiveOrder
   deriving (Eq, Show)
 
 -- | What an order pays with, as its hash covers it.
-data OrderTerms = OTInvoice ServicePaymentMethod USDCents | OTCode CodeHash | OTBalance Spend
-
--- | A new order paid from a balance. Its hash covers the paying order, the price, the balance the page read,
--- and the method, present exactly when the price is more than that balance.
-data Spend = Spend
-  { spSource :: RegistrationId,
-    spPrice :: USDCents,
-    spBalance :: USDCents,
-    spMethod :: Maybe ServicePaymentMethod
-  }
+data OrderTerms = OTInvoice ServicePaymentMethod USDCents | OTCode CodeHash
 
 -- | Cents left to spend, and over the balance's life the cents credited and refunded.
 data Balance = Balance
@@ -446,31 +405,17 @@ data Balance = Balance
     blAmount :: USDCents,
     blCredited :: USDCents,
     blRefunded :: USDCents,
-    blHold :: Maybe BalanceHold,
     blRefundedAt :: Maybe UTCTime
   }
   deriving (Eq, Show)
 
--- | The order whose open invoice holds a balance, until that invoice expires; overdue past it with no money received.
--- Funded once money reached it: it then holds until its payment settles or the provider closes it, whatever the time.
-data BalanceHold = BalanceHold
-  { bhHolder :: RegistrationId,
-    bhState :: HoldState
-  }
-  deriving (Eq, Show)
-
-data HoldState = HSOpen {heldUntil :: UTCTime} | HSFunded | HSOverdue {heldUntil :: UTCTime}
-  deriving (Eq, Show)
-
--- | An order the money of a balance came through. lkPaid and lkFromBalance count only an order that went past unpaid,
--- since closing an unpaid one released its source's balance.
+-- | The order of a balance and the money paid for it. lkPaid counts only an order that went past unpaid.
 data BalanceLink = BalanceLink
   { lkRegistration :: RegistrationId,
     lkOwner :: Address,
     lkPayment :: OrderPayment,
     lkProviderRef :: Maybe Text,
     lkPaid :: USDCents,
-    lkFromBalance :: USDCents,
     lkLateCredits :: [LateCredit]
   }
   deriving (Eq, Show)
@@ -601,8 +546,8 @@ data LateAlert = LateAlert
   }
   deriving (Eq, Show)
 
--- | Why the cleanup deletes no unpaid order: a payment was recorded for it, it holds the balance of the given order, or it is gone.
-data CleanupKept = CKPaid | CKHolder RegistrationId | CKGone
+-- | Why the cleanup deletes no unpaid order: a payment was recorded for it, or it is gone.
+data CleanupKept = CKPaid | CKGone
   deriving (Eq, Show)
 
 newtype BrokenInvariant = BrokenInvariant Text
@@ -777,8 +722,6 @@ data NamesCounts = NamesCounts
     ncPendingTransactions :: Int,
     ncOldestPending :: Maybe UTCTime,
     ncOpenInvoices :: Int,
-    ncHeldBalances :: Int,
-    ncHeldCents :: Int,
     ncPendingEdits :: Int,
     ncOldestEdit :: Maybe UTCTime,
     ncOldestUnregisteredPaid :: Maybe UTCTime
@@ -799,33 +742,28 @@ orderHash owner OrderFields {ofLabelHash = LabelHash lh, ofLength, ofDuration, o
     (tag, payment) = case terms of
       OTInvoice method price -> ("name-invoice" :: ByteString, smpEncode (textEncode method, num price))
       OTCode (Hex32 codeHash) -> ("name-code", smpEncode codeHash)
-      OTBalance Spend {spSource = RegistrationId source, spPrice, spBalance, spMethod} -> ("name-balance", smpEncode (source, num spPrice, num spBalance, textEncode <$> spMethod))
     num :: Integral a => a -> Int64
     num = fromIntegral
 
 newRegistrationId :: IO RegistrationId
 newRegistrationId = (\(InvoiceId t) -> RegistrationId t) <$> newInvoiceId
 
--- | A difference order holds all of the balance seen while its invoice is open. The hold is written after the registration,
--- so the registration's row is locked before the balance's. A refusal leaves its writes for the caller to roll back.
-createPaidRegistration :: DB.Connection -> NewRegistration -> Maybe BalanceUse -> PaidOrder -> UTCTime -> IO (Either BalanceInsertRefused ())
-createPaidRegistration db new@NewRegistration {nrgId = regId@(RegistrationId rid)} held PaidOrder {poMethod, poPrice, poInvoiceId = InvoiceId invId} now = do
-  inserted <- insertRegistration db new PUnpaid poPrice (Just poMethod) Nothing held now
-  if not inserted
-    then pure $ Left BIRLiveOrder
-    else do
-      DB.execute
-        db
-        (mkQuery "INSERT INTO @name_invoices (invoice_id, registration_id, created_at) VALUES (?,?,?)")
-        (invId, rid, now)
-      held' <- maybe (pure True) (\BalanceUse {buSource, buUsed} -> holdBalance db buSource buUsed regId now) held
-      pure $ if held' then Right () else Left BIRBalanceChanged
+-- | False when the registration would be a second live one. A refusal leaves its writes for the caller to roll back.
+createPaidRegistration :: DB.Connection -> NewRegistration -> PaidOrder -> UTCTime -> IO Bool
+createPaidRegistration db new@NewRegistration {nrgId = RegistrationId rid} PaidOrder {poMethod, poPrice, poInvoiceId = InvoiceId invId} now = do
+  inserted <- insertRegistration db new PUnpaid poPrice (Just poMethod) Nothing now
+  when inserted $
+    DB.execute
+      db
+      (mkQuery "INSERT INTO @name_invoices (invoice_id, registration_id, created_at) VALUES (?,?,?)")
+      (invId, rid, now)
+  pure inserted
 
 -- | Reserving the code is the conditional update of the transaction that creates the registration. A refusal leaves its writes for
 -- the caller to roll back.
 createCodeRegistration :: DB.Connection -> NewRegistration -> PrepaidCode -> UTCTime -> IO (Either CodeInsertRefused ())
 createCodeRegistration db new@NewRegistration {nrgId = regId} PrepaidCode {pcId} now = do
-  inserted <- insertRegistration db new PQueued 0 Nothing (Just pcId) Nothing now
+  inserted <- insertRegistration db new PQueued 0 Nothing (Just pcId) now
   if not inserted
     then pure $ Left CIRLiveOrder
     else
@@ -833,21 +771,9 @@ createCodeRegistration db new@NewRegistration {nrgId = regId} PrepaidCode {pcId}
         True -> pure $ Right ()
         False -> pure $ Left CIRCodeNotReservable
 
--- | A queued order whose price is spent from the source's balance in the same transaction, where its amount is the one seen and nothing holds it.
--- A refusal leaves its writes for the caller to roll back.
-createBalanceRegistration :: DB.Connection -> NewRegistration -> BalanceUse -> USDCents -> UTCTime -> IO (Either BalanceInsertRefused ())
-createBalanceRegistration db new use@BalanceUse {buSource, buUsed} seen now = do
-  inserted <- insertRegistration db new PQueued buUsed Nothing Nothing (Just use) now
-  if not inserted
-    then pure $ Left BIRLiveOrder
-    else
-      spendBalance db buSource buUsed seen now >>= \case
-        True -> pure $ Right ()
-        False -> pure $ Left BIRBalanceChanged
-
 -- | False when the registration would be a second live one for its commitment, or for its owner and label hash.
-insertRegistration :: DB.Connection -> NewRegistration -> NamePhase -> USDCents -> Maybe ServicePaymentMethod -> Maybe CodeId -> Maybe BalanceUse -> UTCTime -> IO Bool
-insertRegistration db NewRegistration {nrgId = RegistrationId rid, nrgOwner, nrgOrder, nrgReveal, nrgYears, nrgOrderHash} phase price method codeId fromBalance now =
+insertRegistration :: DB.Connection -> NewRegistration -> NamePhase -> USDCents -> Maybe ServicePaymentMethod -> Maybe CodeId -> UTCTime -> IO Bool
+insertRegistration db NewRegistration {nrgId = RegistrationId rid, nrgOwner, nrgOrder, nrgReveal, nrgYears, nrgOrderHash} phase price method codeId now =
   (> 0)
     <$> executeChanging
       db
@@ -855,14 +781,14 @@ insertRegistration db NewRegistration {nrgId = RegistrationId rid, nrgOwner, nrg
           [sql|
         INSERT INTO @name_registrations
           (registration_id, version, label_hash, length, duration, owner, commitment, sealed, phase, years,
-           price, method, name_prepaid_code_id, live, order_hash, moves, created_at, updated_at, balance_source, balance_used, agreed_terms, paid_at, read_at,
+           price, method, name_prepaid_code_id, live, order_hash, moves, created_at, updated_at, agreed_terms, paid_at, read_at,
            label, secret, contact_link, channel_link, intent_nonce, intent_deadline, intent_signature, accept_terms, accept_nonce, accept_signature)
-        VALUES (?,?,?,?,?,?,?,?,?,?, ?,?,?,?,?,?,?,?,?,?, ?,?,?, ?,?,?,?,?,?,?,?,?,?)
+        VALUES (?,?,?,?,?,?,?,?,?,?, ?,?,?,?,?,?,?,?, ?,?,?, ?,?,?,?,?,?,?,?,?,?)
         ON CONFLICT DO NOTHING
       |]
       )
       ( (rid, initialVersion, ofLabelHash, nameLengthInt ofLength, int64 ofDuration, nrgOwner, ofCommitment, ofSealed, phase, nrgYears)
-          :. (price, method, codeId, BI True, nrgOrderHash, 0 :: Int, now, now, (\BalanceUse {buSource = RegistrationId s} -> s) <$> fromBalance, maybe 0 buUsed fromBalance)
+          :. (price, method, codeId, BI True, nrgOrderHash, 0 :: Int, now, now)
           :. (ofAgreedTerms, if phase == PQueued then Just now else Nothing, now)
           :. revealRow (Just nrgReveal)
       )
@@ -875,7 +801,7 @@ registrationColumns =
     SELECT r.registration_id, r.version, r.label_hash, r.length, r.duration, r.owner, r.commitment, r.sealed, r.phase, r.years,
       r.price, r.method, ni.invoice_id, r.name_prepaid_code_id, r.label, r.secret, r.contact_link, r.channel_link, r.intent_nonce, r.intent_deadline,
       r.intent_signature, r.commit_tx, r.commit_block, r.register_tx, r.reveal_after, r.reveal_before, r.expires_at, r.registered_at, r.failed_at, r.fail_reason,
-      r.closed_by, r.order_hash, r.moves, r.created_at, r.updated_at, r.balance_source, r.balance_used, r.agreed_terms, r.accept_terms,
+      r.closed_by, r.order_hash, r.moves, r.created_at, r.updated_at, r.agreed_terms, r.accept_terms,
       r.accept_nonce, r.accept_signature, r.read_at, r.paid_at, r.last_attempt_tx, r.last_attempt_stage, r.last_attempt_reason, r.last_attempt_at
   |]
 
@@ -895,7 +821,7 @@ type RegistrationRow =
   (Text, Int64, LabelHash, Int, Int64, Address, Commitment, Text, NamePhase, Int)
     :. (USDCents, Maybe ServicePaymentMethod, Maybe Text, Maybe Int64, Maybe Text, Maybe Hex32, Maybe Text, Maybe Text, Maybe Int64, Maybe Int64)
     :. (Maybe RecoverableSignature, Maybe TxHash, Maybe Int64, Maybe TxHash, Maybe Int64, Maybe Int64, Maybe Int64, Maybe UTCTime, Maybe UTCTime, Maybe FailReason)
-    :. (Maybe InvoiceClose, OrderHash, Int, UTCTime, UTCTime, Maybe Text, USDCents, AgreedTerms, Maybe TermsHash)
+    :. (Maybe InvoiceClose, OrderHash, Int, UTCTime, UTCTime, AgreedTerms, Maybe TermsHash)
     :. (Maybe Int64, Maybe RecoverableSignature, UTCTime, Maybe UTCTime, Maybe RegistrationTx, Maybe AttemptStage, Maybe Text, Maybe UTCTime)
 
 toRegistration :: RegistrationRow -> Either Text NameRegistration
@@ -903,7 +829,7 @@ toRegistration
   ( (rid, nrVersion, nrLabelHash, len, duration, nrOwner, nrCommitment, nrSealed, phase, nrYears)
       :. (nrPrice, method_, invoiceId_, codeId_, label_, secret_, nrContactLink, nrChannelLink, nonce_, deadline_)
       :. (signature_, commitTx, commitBlock, registerTx, revealAfter, revealBefore, expiresAt, registeredAt, failedAt, failReason)
-      :. (closedBy, nrOrderHash, nrMoves, nrCreatedAt, nrUpdatedAt, source_, used, nrAgreedTerms, acceptTerms_)
+      :. (closedBy, nrOrderHash, nrMoves, nrCreatedAt, nrUpdatedAt, nrAgreedTerms, acceptTerms_)
       :. (acceptNonce_, acceptSignature_, nrReadAt, nrPaidAt, attemptTx_, attemptStage_, attemptReason_, attemptAt_)
     ) = do
     nrLength <- note ("name_registrations.length: " <> rid) $ nameLength len
@@ -932,12 +858,9 @@ toRegistration
       PFailed -> case (failedAt, failReason) of
         (Just at, Just reason) -> fitting (OFailed at reason) (noCommit && noRegistered && noClose)
         _ -> Left $ "name_registrations failed without failed_at or fail_reason: " <> rid
-    let balanceUse source = BalanceUse {buSource = RegistrationId source, buUsed = used}
-    nrPayment <- case (method_, invoiceId_, codeId_, source_) of
-      (Just m, Just invId, Nothing, Nothing) -> Right $ OPInvoice m (InvoiceId invId)
-      (Just m, Just invId, Nothing, Just source) -> Right $ OPDifference (balanceUse source) m (InvoiceId invId)
-      (Nothing, Nothing, Just codeId, Nothing) -> Right $ OPCode codeId
-      (Nothing, Nothing, Nothing, Just source) -> Right $ OPBalance $ balanceUse source
+    nrPayment <- case (method_, invoiceId_, codeId_) of
+      (Just m, Just invId, Nothing) -> Right $ OPInvoice m (InvoiceId invId)
+      (Nothing, Nothing, Just codeId) -> Right $ OPCode codeId
       _ -> Left $ "name_registrations payment: " <> rid
     nrReveal <- case (label_, secret_, nonce_, deadline_, signature_) of
       (Nothing, Nothing, Nothing, Nothing, Nothing) -> Right Nothing
@@ -1011,9 +934,9 @@ unfunded = unfundedQuery "i.invoice_id"
 
 -- | Run in the transaction that inserts the next order, so the unique constraints let it in; the registration's new version.
 -- Nothing when the order changed since it was read, or its invoice is no longer open, not past its expiry, or holds money: the caller rolls back,
--- since the invoice is written before the registration, as settlement, cancel and the sweep write them. A balance it held is released.
+-- since the invoice is written before the registration, as settlement, cancel and the sweep write them.
 closeOverdue :: DB.Connection -> NameRegistration -> UTCTime -> IO (Maybe Int64)
-closeOverdue db r@NameRegistration {nrId = regId@(RegistrationId rid), nrVersion, nrPayment} now = do
+closeOverdue db r@NameRegistration {nrId = RegistrationId rid, nrVersion, nrPayment} now = do
   -- locked first, so the funding check below, a later statement, sees a payment a concurrent settlement committed
   mapM_ (\invId -> lockInvoice db invId now) $ paymentInvoice nrPayment
   expired <-
@@ -1035,7 +958,7 @@ closeOverdue db r@NameRegistration {nrId = regId@(RegistrationId rid), nrVersion
   if expired > 0
     then
       updateRegistration db r {nrPhase = OClosed ICExpired, nrReveal = Nothing} now >>= \case
-        Written v -> Just v <$ releaseHeldBalance db regId now
+        Written v -> pure $ Just v
         _ -> pure Nothing
     else pure Nothing
 
@@ -1140,28 +1063,12 @@ retargetRegistration db r@NameRegistration {nrId = RegistrationId rid} OrderFiel
       w -> pure w
 
 -- | Newest first: findLimit of them, then every older one holding a balance above 0, since a balance never expires.
--- Each with the order holding its balance, as getBalance reads the hold at the given time.
-findRegistrations :: DB.Connection -> Address -> UTCTime -> IO [(NameRegistration, Maybe RegistrationId)]
-findRegistrations db owner now = do
-  newest <- DB.query db (selectHeld <> " WHERE r.owner = ?" <> newestFirst <> " LIMIT ?") (holdParams :. (owner, findLimit)) >>= decodeAll found
-  holding <- DB.query db (selectHeld <> " WHERE r.owner = ?" <> withBalance <> newestFirst) (holdParams :. Only owner) >>= decodeAll found
-  pure $ newest <> filter ((`notElem` map (nrId . fst) newest) . nrId . fst) holding
+findRegistrations :: DB.Connection -> Address -> IO [NameRegistration]
+findRegistrations db owner = do
+  newest <- DB.query db (selectRegistrations <> " WHERE r.owner = ?" <> newestFirst <> " LIMIT ?") (owner, findLimit) >>= decodeAll toRegistration
+  holding <- DB.query db (selectRegistrations <> " WHERE r.owner = ?" <> withBalance <> newestFirst) (Only owner) >>= decodeAll toRegistration
+  pure $ newest <> filter ((`notElem` map nrId newest) . nrId) holding
   where
-    selectHeld =
-      registrationColumns
-        <> mkQuery
-          ( ", (SELECT b.reserved_by FROM @name_balances b"
-              <> " JOIN @name_registrations h ON h.registration_id = b.reserved_by"
-              <> " JOIN @name_invoices hni ON hni.registration_id = b.reserved_by"
-              <> " JOIN @invoices i ON i.invoice_id = hni.invoice_id"
-          )
-        <> " WHERE b.registration_id = r.registration_id AND NOT ("
-        <> overdueOrder "h"
-        <> "))"
-        <> registrationFrom
-    holdParams = (PUnpaid, ISPaid, now)
-    found :: RegistrationRow :. Only (Maybe Text) -> Either Text (NameRegistration, Maybe RegistrationId)
-    found (row :. Only holder) = (\r -> (r, RegistrationId <$> holder)) <$> toRegistration row
     newestFirst = " ORDER BY r.created_at DESC, r.name_registration_id DESC"
     withBalance = mkQuery " AND EXISTS (SELECT 1 FROM @name_balances b WHERE b.registration_id = r.registration_id AND b.amount > 0)"
 
@@ -1256,103 +1163,63 @@ unpaidCleanupCandidates db expiredBefore =
       )
       (PUnpaid, PClosed, expiredBefore)
 
--- | Deletes an unpaid registration and its invoice, unless a payment was recorded for it or it holds a balance.
+-- | Deletes an unpaid registration and its invoice, unless a payment was recorded for it.
 deleteUnpaidRegistration :: DB.Connection -> RegistrationId -> IO (Either CleanupKept ())
 deleteUnpaidRegistration db (RegistrationId rid) =
-  DB.query db (mkQuery "SELECT registration_id FROM @name_balances WHERE reserved_by = ?") (Only rid) >>= \case
-    Only source : _ -> pure $ Left $ CKHolder $ RegistrationId source
-    [] ->
-      DB.query db (mkQuery "SELECT ni.invoice_id FROM @name_registrations r LEFT JOIN @name_invoices ni ON ni.registration_id = r.registration_id WHERE r.registration_id = ?") (Only rid) >>= \case
-        [] -> pure $ Left CKGone
-        invoiceIds -> do
-          deleted <-
-            executeChanging
-              db
-              ( prefixQuery
-                  [sql|
-                DELETE FROM @name_registrations
-                WHERE registration_id = ? AND phase IN (?, ?)
-                  AND NOT EXISTS (
-                    SELECT 1 FROM @name_invoices ni
-                    JOIN @payments p ON p.invoice_id = ni.invoice_id
-                    WHERE ni.registration_id = ?
-                  )
-              |]
+  DB.query db (mkQuery "SELECT ni.invoice_id FROM @name_registrations r LEFT JOIN @name_invoices ni ON ni.registration_id = r.registration_id WHERE r.registration_id = ?") (Only rid) >>= \case
+    [] -> pure $ Left CKGone
+    invoiceIds -> do
+      deleted <-
+        executeChanging
+          db
+          ( prefixQuery
+              [sql|
+            DELETE FROM @name_registrations
+            WHERE registration_id = ? AND phase IN (?, ?)
+              AND NOT EXISTS (
+                SELECT 1 FROM @name_invoices ni
+                JOIN @payments p ON p.invoice_id = ni.invoice_id
+                WHERE ni.registration_id = ?
               )
-              (rid, PUnpaid, PClosed, rid)
-          if deleted > 0
-            then Right () <$ mapM_ (DB.execute db (mkQuery "DELETE FROM @invoices WHERE invoice_id = ?") . Only) [invId | Only (Just invId) <- invoiceIds :: [Only (Maybe Text)]]
-            else pure $ Left CKPaid
-
--- | The hold, unless it is overdue, which reads as none.
-heldBy :: Balance -> Maybe BalanceHold
-heldBy Balance {blHold} = case blHold of
-  Just BalanceHold {bhState = HSOverdue _} -> Nothing
-  _ -> blHold
+          |]
+          )
+          (rid, PUnpaid, PClosed, rid)
+      if deleted > 0
+        then Right () <$ mapM_ (DB.execute db (mkQuery "DELETE FROM @invoices WHERE invoice_id = ?") . Only) [invId | Only (Just invId) <- invoiceIds :: [Only (Maybe Text)]]
+        else pure $ Left CKPaid
 
 -- | The order of the alias with invoice i is overdue: unpaid, its invoice past its expiry, not paid, and holding no money.
 -- Takes the unpaid phase, the paid status and the time.
 overdueOrder :: Query -> Query
 overdueOrder alias = " " <> alias <> ".phase = ? AND i.status <> ? AND i.expires_at < ?" <> unfunded
 
-getBalance :: DB.Connection -> RegistrationId -> UTCTime -> IO (Maybe Balance)
-getBalance db (RegistrationId rid) now =
-  firstDecoded toBalance $
-    DB.query
-      db
-      ( "SELECT b.registration_id, b.amount, b.credited, b.refunded, b.reserved_by, i.expires_at,"
-          <> " CASE WHEN"
-          <> overdueOrder "h"
-          <> " THEN 1 ELSE 0 END, CASE WHEN i.invoice_id IS NOT NULL"
-          <> unfunded
-          <> " THEN 0 ELSE 1 END, b.refunded_at"
-          <> mkQuery
-            ( " FROM @name_balances b"
-                <> " LEFT JOIN @name_registrations h ON h.registration_id = b.reserved_by"
-                <> " LEFT JOIN @name_invoices ni ON ni.registration_id = b.reserved_by"
-                <> " LEFT JOIN @invoices i ON i.invoice_id = ni.invoice_id"
-            )
-          <> " WHERE b.registration_id = ?"
-      )
-      (PUnpaid, ISPaid, now, rid)
-
-toBalance :: (Text, USDCents, USDCents, USDCents, Maybe Text, Maybe UTCTime, BoolInt, BoolInt, Maybe UTCTime) -> Either Text Balance
-toBalance (rid, blAmount, blCredited, blRefunded, holder_, until_, BI overdue, BI funded, blRefundedAt) = do
-  blHold <- case (holder_, until_) of
-    (Nothing, _) -> Right Nothing
-    (Just holder, Just t) -> Right $ Just BalanceHold {bhHolder = RegistrationId holder, bhState = holdState t}
-    (Just _, Nothing) -> Left $ "name_balances holder without an invoice: " <> rid
-  pure Balance {blRegistration = RegistrationId rid, blAmount, blCredited, blRefunded, blHold, blRefundedAt}
+getBalance :: DB.Connection -> RegistrationId -> IO (Maybe Balance)
+getBalance db (RegistrationId rid) =
+  maybeFirstRow toBalance $
+    DB.query db (mkQuery "SELECT registration_id, amount, credited, refunded, refunded_at FROM @name_balances WHERE registration_id = ?") (Only rid)
   where
-    holdState t
-      | overdue = HSOverdue t
-      | funded = HSFunded
-      | otherwise = HSOpen t
+    toBalance (registration, blAmount, blCredited, blRefunded, blRefundedAt) = Balance {blRegistration = RegistrationId registration, blAmount, blCredited, blRefunded, blRefundedAt}
 
 -- | The order a support reference names, by its registration id or its name invoice's id, with its balance.
-balanceByReference :: DB.Connection -> Text -> UTCTime -> IO (Maybe (RegistrationId, Maybe Balance))
-balanceByReference db ref now =
+balanceByReference :: DB.Connection -> Text -> IO (Maybe (RegistrationId, Maybe Balance))
+balanceByReference db ref =
   DB.query
     db
     (mkQuery "SELECT registration_id FROM @name_registrations WHERE registration_id = ? UNION ALL SELECT registration_id FROM @name_invoices WHERE invoice_id = ?")
     (ref, ref)
     >>= \case
-      Only rid : _ -> (\balance -> Just (RegistrationId rid, balance)) <$> getBalance db (RegistrationId rid) now
+      Only rid : _ -> (\balance -> Just (RegistrationId rid, balance)) <$> getBalance db (RegistrationId rid)
       [] -> pure Nothing
 
--- | From the order back along balance_source to the first, following it only from orders past unpaid.
-balanceChain :: DB.Connection -> RegistrationId -> IO [BalanceLink]
-balanceChain db rid =
-  getRegistration db rid >>= \case
-    Nothing -> pure []
-    Just NameRegistration {nrPhase, nrOwner, nrPayment} -> do
+balanceLink :: DB.Connection -> RegistrationId -> IO (Maybe BalanceLink)
+balanceLink db rid = getRegistration db rid >>= mapM paidBy
+  where
+    paidBy NameRegistration {nrPhase, nrOwner, nrPayment} = do
       let pastUnpaid = namePhase nrPhase `notElem` [PUnpaid, PClosed]
-          used = if pastUnpaid then paymentBalance nrPayment else Nothing
       (lkPaid, lkProviderRef, lkLateCredits) <- case paymentInvoice nrPayment of
         Just invId -> (,,) <$> (if pastUnpaid then invoiceAmount db invId else pure 0) <*> providerRef db invId <*> lateCredits db invId
         Nothing -> pure (0, Nothing, [])
-      let link = BalanceLink {lkRegistration = rid, lkOwner = nrOwner, lkPayment = nrPayment, lkProviderRef, lkPaid, lkFromBalance = maybe 0 buUsed used, lkLateCredits}
-      (link :) <$> maybe (pure []) (balanceChain db . buSource) used
+      pure BalanceLink {lkRegistration = rid, lkOwner = nrOwner, lkPayment = nrPayment, lkProviderRef, lkPaid, lkLateCredits}
 
 invoiceAmount :: DB.Connection -> InvoiceId -> IO USDCents
 invoiceAmount db (InvoiceId invId) =
@@ -1397,42 +1264,7 @@ creditBalance db (RegistrationId rid) cents now =
     )
     (rid, cents, cents, now, now, rid)
 
--- | The price, above 0, spent at once, where the amount is the one seen and nothing holds it.
-spendBalance :: DB.Connection -> RegistrationId -> USDCents -> USDCents -> UTCTime -> IO Bool
-spendBalance db (RegistrationId rid) price seen now =
-  (> 0)
-    <$> executeChanging
-      db
-      (mkQuery "UPDATE @name_balances SET amount = amount - ?, updated_at = ? WHERE registration_id = ? AND amount = ? AND amount >= ? AND ? > 0 AND reserved_by IS NULL")
-      (price, now, rid, seen, price, price)
-
--- | Held by a difference order, where the amount is the one seen, above 0, and nothing holds it.
-holdBalance :: DB.Connection -> RegistrationId -> USDCents -> RegistrationId -> UTCTime -> IO Bool
-holdBalance db (RegistrationId rid) seen (RegistrationId holder) now =
-  (> 0)
-    <$> executeChanging
-      db
-      (mkQuery "UPDATE @name_balances SET reserved_by = ?, updated_at = ? WHERE registration_id = ? AND amount = ? AND ? > 0 AND reserved_by IS NULL")
-      (holder, now, rid, seen, seen)
-
--- | The holder's hold spent and cleared, where this holder holds the balance and it still has the cents, above 0.
-spendHeldBalance :: DB.Connection -> RegistrationId -> USDCents -> UTCTime -> IO Bool
-spendHeldBalance db (RegistrationId holder) used now =
-  (> 0)
-    <$> executeChanging
-      db
-      (mkQuery "UPDATE @name_balances SET amount = amount - ?, reserved_by = NULL, updated_at = ? WHERE reserved_by = ? AND amount >= ? AND ? > 0")
-      (used, now, holder, used, used)
-
-releaseHeldBalance :: DB.Connection -> RegistrationId -> UTCTime -> IO Bool
-releaseHeldBalance db (RegistrationId holder) now =
-  (> 0)
-    <$> executeChanging
-      db
-      (mkQuery "UPDATE @name_balances SET reserved_by = NULL, updated_at = ? WHERE reserved_by = ?")
-      (now, holder)
-
--- | All of the balance, where it is the cents given, above 0, and nothing holds it; refunded counts every refund.
+-- | All of the balance, where it is the cents given and above 0; refunded counts every refund.
 refundBalance :: DB.Connection -> RegistrationId -> USDCents -> UTCTime -> IO Bool
 refundBalance db (RegistrationId rid) cents now =
   (> 0)
@@ -1441,7 +1273,7 @@ refundBalance db (RegistrationId rid) cents now =
       ( prefixQuery
           [sql|
         UPDATE @name_balances SET amount = 0, refunded = refunded + ?, refunded_at = ?, updated_at = ?
-        WHERE registration_id = ? AND amount = ? AND amount > 0 AND reserved_by IS NULL
+        WHERE registration_id = ? AND amount = ? AND amount > 0
       |]
       )
       (cents, now, now, rid, cents)
@@ -1470,17 +1302,9 @@ takeBackBalance db invId@(InvoiceId inv) (RegistrationId rid) cents now = do
   when (taken > 0) $ DB.execute db (mkQuery "UPDATE @name_balances SET amount = amount - ?, updated_at = ? WHERE registration_id = ?") (taken, now, rid)
   pure taken
 
-returnBalance :: DB.Connection -> RegistrationId -> USDCents -> UTCTime -> IO Bool
-returnBalance db (RegistrationId source) cents now =
-  (> 0) <$> executeChanging db (mkQuery "UPDATE @name_balances SET amount = amount + ?, updated_at = ? WHERE registration_id = ?") (cents, now, source)
-
 lockRegistration :: DB.Connection -> NameRegistration -> IO Bool
 lockRegistration db NameRegistration {nrId = RegistrationId rid, nrVersion} =
   (> 0) <$> executeChanging db (mkQuery "UPDATE @name_registrations SET version = version WHERE registration_id = ? AND version = ?") (rid, nrVersion)
-
-reversalEventRecorded :: DB.Connection -> InvoiceId -> Text -> IO Bool
-reversalEventRecorded db (InvoiceId invId) event =
-  not . null <$> (DB.query db (mkQuery "SELECT 1 FROM @name_invoices WHERE invoice_id = ? AND last_reversal_event = ?") (invId, event) :: IO [Only Int])
 
 reversalRecorded :: DB.Connection -> RegistrationId -> IO Bool
 reversalRecorded db (RegistrationId rid) =
@@ -2046,8 +1870,6 @@ namesCounts db = do
         (SELECT COUNT(DISTINCT registrar_nonce) FROM @name_transactions WHERE status = ?),
         (SELECT MIN(sent_at) FROM @name_transactions WHERE status = ?),
         (SELECT COUNT(*) FROM @name_invoices ni JOIN @invoices i ON i.invoice_id = ni.invoice_id WHERE i.status = ?),
-        (SELECT COUNT(*) FROM @name_balances WHERE reserved_by IS NOT NULL),
-        (SELECT COALESCE(SUM(amount), 0) FROM @name_balances WHERE reserved_by IS NOT NULL),
         (SELECT COUNT(*) FROM @name_record_edits WHERE state = ?),
         (SELECT MIN(created_at) FROM @name_record_edits WHERE state = ?),
         (SELECT MIN(paid_at) FROM @name_registrations WHERE phase IN (?,?,?,?,?) AND live = 1)
@@ -2055,8 +1877,8 @@ namesCounts db = do
     )
     ((PQueued, PCommitting, PRegistering, PCommitted, TSPending, TSPending, ISOpen, ETPending, ETPending) :. (PQueued, PCommitting, PCommitted, PRegistering, PFailed))
     >>= \case
-      [(ncQueueOldestChange, ncPendingTransactions, ncOldestPending, ncOpenInvoices, ncHeldBalances, ncHeldCents, ncPendingEdits, ncOldestEdit) :. Only ncOldestUnregisteredPaid] ->
-        pure NamesCounts {ncPhases, ncQueueOldestChange, ncPendingTransactions, ncOldestPending, ncOpenInvoices, ncHeldBalances, ncHeldCents, ncPendingEdits, ncOldestEdit, ncOldestUnregisteredPaid}
+      [(ncQueueOldestChange, ncPendingTransactions, ncOldestPending, ncOpenInvoices, ncPendingEdits, ncOldestEdit) :. Only ncOldestUnregisteredPaid] ->
+        pure NamesCounts {ncPhases, ncQueueOldestChange, ncPendingTransactions, ncOldestPending, ncOpenInvoices, ncPendingEdits, ncOldestEdit, ncOldestUnregisteredPaid}
       _ -> E.throwIO $ StoreDecodeError "names counts: not one row"
 
 int64 :: Word64 -> Int64
@@ -2080,5 +1902,3 @@ $(JQ.deriveToJSON (enumJSON $ dropPrefix "FR") ''FailReason)
 $(JQ.deriveToJSON (enumJSON $ dropPrefix "RT") ''RegistrationTx)
 
 $(JQ.deriveToJSON (enumJSON $ dropPrefix "AS") ''AttemptStage)
-
-$(JQ.deriveToJSON (taggedObjectJSON $ dropPrefix "HS") ''HoldState)

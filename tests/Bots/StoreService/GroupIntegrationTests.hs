@@ -21,14 +21,12 @@ import StoreService.Names.Store (CmdSource (..), FailReason (..), NameRegistrati
 import StoreService.Names.Turns (codeTurnCount, newTurns, withCodeTurn)
 import StoreService.Names.View (addressText)
 import StoreService.Options (StoreServiceOpts (..))
-import StoreService.Orders (cancelOpenInvoice)
 import StoreService.Service (ServiceState (..), checkNodeChain, checkUnverifiedReceipts, newServiceState, requireDevKeys, serviceRequest, storeService, trustDevKeys)
 import StoreService.Store (ManagedGroup (..), getManagedGroup)
 import StoreService.Store.Migrate (withInstanceLock)
-import StoreService.Waiters (newWaiters)
 import Bots.StoreService.BotTests (badgeBotName, badgeCmdUsage, badgeProfile, consoleIssueUsage, badgeTypeOf, credentialOf, devKeysIni, entryOf, issueCode, issueRaw, mkStoreServiceOpts, newPurchaseKeys, operatorCmd, redeemWithQueue, requestObject, revokeNamed, revokeRaw, serviceDbPrefix, shouldAnswerError, statementOf, stopStoreService, testIssuerKeyIdx, withStoreService)
 import Bots.StoreService.ConfigTests (chainSection, controllerAddr, namesSection, registrarAddr, withRpcUrl)
-import Bots.StoreService.FakeEthNode (CallAnswer (..), FakeEthNode (..), Fault (..), address, answerCall, awaitSent, fakeNamePolicy, linkTermsOnNode, plainTerms, setFault, withFakeEthNode)
+import Bots.StoreService.FakeEthNode (CallAnswer (..), FakeEthNode (..), Fault (..), address, answerCall, awaitSent, fakeNamePolicy, linkTermsOnNode, setFault, withFakeEthNode)
 import Bots.StoreService.NamesContractsTests (nameExpiresCall, rentPriceAnswer, rentPriceCall, reservedNamesCall)
 import Bots.StoreService.WebTests (answerOf, capturingStderr, digestFixture, refusedWith, siteConfigJson, statusOf)
 import Bots.StoreService.NamesSearchTests (aliceHex)
@@ -73,7 +71,6 @@ import Simplex.Chat.Controller (ChatCommand (APIDeleteChatItem, APIGroupInfo), C
 import Simplex.Chat.Core (sendChatCmd, sendChatCmdStr)
 import Simplex.Chat.Messages (ChatRef (ChatRef), ChatType (CTGroup))
 import Simplex.Chat.Messages.CIContent (CIDeleteMode (CIDMInternal))
-import Simplex.Chat.PaymentService.Types (InvoiceId (..))
 import Simplex.Chat.Store.Profiles (GroupLinkInfo (..))
 import Simplex.Chat.Types (AgentInvId (..), GroupInfo, GroupMemberAdmission (..), MemberCriteria (..))
 import Simplex.Chat.Types.Preferences (ChatBotCommand (..), FullDeleteGroupPreference (..), GroupFeatureEnabled (..), GroupFeatureI (..), GroupPreferences (..), HistoryGroupPreference (..), SGroupFeature (..), commands_, emptyGroupPrefs, getGroupPreference)
@@ -169,7 +166,7 @@ namesBootTests = do
   it "refuses a second instance on the same Postgres database until the first ends, exits when the lock's connection fails, and takes no lock on SQLite" testInstanceLock
   it "exits before the chat core starts while a pending transaction was signed by another key" testOtherKeyPendingStops
   it "boots codes-only, refusing paid name orders 403 codes_only and answering code orders and code checks, the badges shell as built and /api/config in codes mode" testNamesBootCodesOnly
-  it "boots with [names] and [chain], routing fixed /api/name paths ahead of a search, find ahead of registrations, the community terms, the signing read and registrations to GET, another name, a reveal, a spend and a retry to POST, a path no route knows and a taken order's code to 404, and each route under its limit, shared by the routes of that limit" testNamesBoot
+  it "boots with [names] and [chain], routing fixed /api/name paths ahead of a search, find ahead of registrations, the community terms, the signing read and registrations to GET, another name, a reveal and a retry to POST, a path no route knows and a taken order's code to 404, and each route under its limit, shared by the routes of that limit" testNamesBoot
   it "searches with the configured price floor, answering a price at it and 503 to one cent under it" testNamesBootPriceFloor
 
 testDevKeysWarned :: HasCallStack => TestParams -> IO ()
@@ -301,38 +298,6 @@ testNamesBoot ps = do
     answer revealed {method = "POST", requestBody = RequestBodyLBS "{}"} `shouldReturn` refusedWith 404 "not_found"
     revealedByGet <- httpLbs revealed mgr
     (statusOf revealedByGet, lookup "Allow" $ responseHeaders revealedByGet) `shouldBe` (405, Just "POST")
-    spent <- request "/api/registration/t2Jk8RmQ4vXw9NcP3yLb6g/spend"
-    -- formats are checked before the order, so only a well-formed body reaches the 404
-    let spendFields =
-          J.object
-            [ "labelHash" J..= aliceHex,
-              "length" J..= (11 :: Int),
-              "duration" J..= (69292800 :: Int),
-              "commitment" J..= aliceHex,
-              "sealed" J..= ("sealed" :: Text),
-              "terms" J..= J.object ["communityName" J..= False, "termsHash" J..= ("0x" <> plainTerms)]
-            ]
-        signature = "0x" <> T.replicate 32 "11" <> T.replicate 32 "22" <> "1b" :: Text
-        revealBody =
-          J.object
-            [ "label" J..= ("alicebakery" :: Text),
-              "secret" J..= aliceHex,
-              "records" J..= J.object ["contact" J..= J.Null, "channel" J..= J.Null],
-              "nonce" J..= (0 :: Int),
-              "deadline" J..= (1792574100 :: Int),
-              "signature" J..= signature,
-              "acceptance" J..= J.object ["termsHash" J..= aliceHex, "nonce" J..= (0 :: Int), "signature" J..= signature]
-            ]
-        spendBody =
-          J.object
-            [ "signed" J..= J.object ["fields" J..= spendFields, "timestamp" J..= (1792574100 :: Int), "signature" J..= signature],
-              "price" J..= (10000 :: Int),
-              "balance" J..= (10000 :: Int),
-              "reveal" J..= revealBody
-            ]
-    answer spent {method = "POST", requestBody = RequestBodyLBS $ J.encode spendBody} `shouldReturn` refusedWith 404 "not_found"
-    spentByGet <- httpLbs spent mgr
-    (statusOf spentByGet, lookup "Allow" $ responseHeaders spentByGet) `shouldBe` (405, Just "POST")
     retried <- request "/api/registration/t2Jk8RmQ4vXw9NcP3yLb6g/retry"
     answer retried {method = "POST"} `shouldReturn` refusedWith 404 "not_found"
     retriedByGet <- httpLbs retried mgr
@@ -340,7 +305,7 @@ testNamesBoot ps = do
     -- each limit's routes share one client's minute, whatever they answer; a client of its own per limit
     let rid = "/api/registration/t2Jk8RmQ4vXw9NcP3yLb6g"
         limits =
-          [ ("create", 5, [("POST", rid <> "/name"), ("POST", rid <> "/retry"), ("POST", rid <> "/spend")]),
+          [ ("create", 5, [("POST", rid <> "/name"), ("POST", rid <> "/retry")]),
             ("code", 10, [("POST", "/api/name/register"), ("POST", "/api/code/check")]),
             ("read", 60, [("GET", rid), ("POST", rid <> "/reveal")]),
             ("search", 30, [("GET", "/api/name/" <> T.unpack aliceHex <> "?length=5"), ("GET", "/api/name/" <> T.unpack aliceHex <> "/sign?owner=0x014f9c09"), ("GET", "/api/terms/0x12")]),
@@ -370,7 +335,6 @@ testNamesBootCodesOnly ps = do
           req <- parseRequest $ "http://127.0.0.1:" <> show port <> path
           answerOf <$> httpLbs req {method = "POST", requestBody = RequestBodyLBS body} mgr
     posted "/api/invoice" "{\"kind\":\"name\"}" `shouldReturn` refusedWith 403 "codes_only"
-    posted "/api/registration/t2Jk8RmQ4vXw9NcP3yLb6g/spend" "{}" `shouldReturn` refusedWith 403 "codes_only"
     posted "/api/name/register" "{}" `shouldReturn` refusedWith 400 "bad_request"
     posted "/api/code/check" "{}" `shouldReturn` refusedWith 400 "bad_request"
     badgesShell <- parseRequest ("http://127.0.0.1:" <> show port <> "/") >>= (`httpLbs` mgr)
@@ -529,7 +493,6 @@ namesRefundChatTests :: SpecWith TestParams
 namesRefundChatTests = describe "StoreService names: operator refund" $ do
   it "shows a balance with what paid for it, and records refunds by registration or invoice id, adding them up" testRefundRecorded
   it "refuses an unknown reference, an order without a balance and another amount, and answers the usage to a malformed command" testRefundRefusals
-  it "refuses a balance held by an open order, naming it and its expiry, and records it once that order's invoice is cancelled" testRefundOpenHolder
   it "answers an owner's /balance, /record_refund and /close in the group, worded for the group, refusing as the console does" testGroupMoneyCmds
   it "closes a failed paid order by its invoice id, recording the refund of its price, and refuses an unknown reference and an order no longer failed" testCloseRecorded
   it "refuses //close and //issue name without [names], and answers the usage to a malformed //close" testCloseNamesOff
@@ -566,8 +529,8 @@ testCloseRecorded ps = withFakeEthNode $ \node@FakeEthNode {fnUrl} -> do
               <> "."
           )
     logs `shouldSatisfy` T.isInfixOf "names: closed order f and recorded a refund of 10000 cents"
-    closeRaw cc "f" `shouldReturn` Left "Nothing recorded: the order of f is not a failed or lapsed unsigned order paid by invoice or balance."
-    Balances.figures st "f" t0 `shouldReturn` Just (0, 10000, 10000, Nothing)
+    closeRaw cc "f" `shouldReturn` Left "Nothing recorded: the order of f is not a failed or lapsed unsigned order paid by invoice."
+    Balances.figures st "f" `shouldReturn` Just (0, 10000, 10000)
     balanceRaw cc "f" `shouldReturn` Right ("Order f: balance $0.00 (credited $100.00, refunded $100.00). Paid by: " <> paidBy <> ". Nothing to refund.")
     Balances.placeOrderRow st "g" False 10000 (addUTCTime 3600 now)
     unpaidG <- reg st "g"
@@ -576,7 +539,7 @@ testCloseRecorded ps = withFakeEthNode $ \node@FakeEthNode {fnUrl} -> do
     answerCall node registrar (selector "nameExpires(uint256)" <> labelBytes "g") $ Returns $ uint256 (2000000000 :: Int)
     registeredLogs <- capturingStderr $ closeRaw cc "inv-g" `shouldReturn` Left "Nothing refunded: the register of order g went through, so the order is registered now."
     registeredLogs `shouldSatisfy` T.isInfixOf "names: order g set registered by //close, as its register went through"
-    Balances.figures st "g" t0 `shouldReturn` Nothing
+    Balances.figures st "g" `shouldReturn` Nothing
 
 testGroupMoneyCmds :: HasCallStack => TestParams -> IO ()
 testGroupMoneyCmds ps = withFakeEthNode $ \node@FakeEthNode {fnUrl} -> do
@@ -597,7 +560,7 @@ testGroupMoneyCmds ps = withFakeEthNode $ \node@FakeEthNode {fnUrl} -> do
       `shouldReturn` ("Order s: balance $25.05 (credited $125.05, refunded $100.00). Paid by: " <> paidByBtc "s" <> ". To record its refund: /record_refund s 2505")
     replyTo cc alice "/record_refund inv-s 2500" `shouldReturn` "Nothing recorded: the balance is $25.05 now, not $25.00."
     replyTo cc alice "/record_refund inv-s 2505" `shouldReturn` ("Recorded a refund of $25.05 for order s. Refund it now, by: " <> paidByBtc "s" <> ".")
-    Balances.figures st "s" t0 `shouldReturn` Just (0, 12505, 12505, Nothing)
+    Balances.figures st "s" `shouldReturn` Just (0, 12505, 12505)
 
 testCloseNamesOff :: HasCallStack => TestParams -> IO ()
 testCloseNamesOff ps = withStoreService ps $ \_ _ cc -> do
@@ -605,7 +568,7 @@ testCloseNamesOff ps = withStoreService ps $ \_ _ cc -> do
   closeRaw cc "s" `shouldReturn` Left "Names are not enabled on this service."
   issueRaw cc "name 6" `shouldReturn` Left "Names are not enabled on this service, so name codes cannot be issued."
   forM_ ["", "s junk"] $ \args -> (args,) <$> closeRaw cc args `shouldReturn` (args, Left "Usage: //close <reference>")
-  Balances.figures (chatStore cc) "s" t0 `shouldReturn` Just (10000, 10000, 0, Nothing)
+  Balances.figures (chatStore cc) "s" `shouldReturn` Just (10000, 10000, 0)
 
 minuteText :: UTCTime -> Text
 minuteText = T.pack . formatTime defaultTimeLocale "%Y-%m-%d %H:%M UTC"
@@ -618,11 +581,11 @@ testRefundRecorded ps = withStoreService ps $ \_ _ cc -> do
   balanceRaw cc "inv-s" `shouldReturn` Right ("Order s: balance $100.00 (credited $100.00, refunded $0.00). Paid by: " <> paidBy <> ". To record its refund: //record_refund inv-s 10000")
   logs <- capturingStderr $ recordRefundRaw cc "inv-s 10000" `shouldReturn` Right ("Recorded a refund of $100.00 for order s. Refund it now, by: " <> paidBy <> ".")
   T.lines logs `shouldSatisfy` any (T.isSuffixOf "names: recorded a refund of 10000 cents for order s")
-  Balances.figures st "s" t0 `shouldReturn` Just (0, 10000, 10000, Nothing)
+  Balances.figures st "s" `shouldReturn` Just (0, 10000, 10000)
   balanceRaw cc "inv-s" `shouldReturn` Right ("Order s: balance $0.00 (credited $100.00, refunded $100.00). Paid by: " <> paidBy <> ". Nothing to refund.")
   Balances.credit st "s" 2505
   recordRefundRaw cc "s 2505" `shouldReturn` Right ("Recorded a refund of $25.05 for order s. Refund it now, by: " <> paidBy <> ".")
-  Balances.figures st "s" t0 `shouldReturn` Just (0, 12505, 12505, Nothing)
+  Balances.figures st "s" `shouldReturn` Just (0, 12505, 12505)
 
 testRefundRefusals :: HasCallStack => TestParams -> IO ()
 testRefundRefusals ps = withStoreService ps $ \_ _ cc -> do
@@ -639,32 +602,10 @@ testRefundRefusals ps = withStoreService ps $ \_ _ cc -> do
     (args,) <$> recordRefundRaw cc args `shouldReturn` (args, Left "Usage: //record_refund <reference> <cents>")
   forM_ ["", "s 10000"] $ \args -> (args,) <$> balanceRaw cc args `shouldReturn` (args, Left "Usage: //balance <reference>")
   operatorCmd cc "//refund s 10000" `shouldReturn` Left badgeCmdUsage
-  Balances.figures st "s" t0 `shouldReturn` Just (10000, 10000, 0, Nothing)
-
--- | The source with a balance of $100.00 and the holder holding it, whose invoice expires at the given time.
-heldSource :: ChatController -> Text -> Text -> UTCTime -> IO ()
-heldSource cc src holder expiry = do
-  Balances.source (chatStore cc) src 10000
-  Balances.holder (chatStore cc) holder src 10000 expiry `shouldReturn` Right ()
-
-heldRefusals :: HasCallStack => ChatController -> Text -> Text -> IO ()
-heldRefusals cc src held = do
-  balanceRaw cc src `shouldReturn` Right ("Order " <> src <> ": balance $100.00 (credited $100.00, refunded $0.00). Paid by: " <> paidByBtc src <> ". It cannot be refunded now: " <> held <> ".")
-  recordRefundRaw cc ("inv-" <> src <> " 10000") `shouldReturn` Left ("Nothing recorded: " <> held <> ".")
-  Balances.figures (chatStore cc) src t0 >>= (`shouldSatisfy` \case Just (10000, 10000, 0, Just _) -> True; _ -> False)
+  Balances.figures st "s" `shouldReturn` Just (10000, 10000, 0)
 
 paidByBtc :: Text -> Text
 paidByBtc r = "order " <> r <> " of " <> addressText ownerA <> ": $100.00 by btc on invoice inv-" <> r <> " (provider reference ref-inv-" <> r <> ")"
-
-testRefundOpenHolder :: HasCallStack => TestParams -> IO ()
-testRefundOpenHolder ps = withStoreService ps $ \_ _ cc -> do
-  now <- getCurrentTime
-  let expiry = addUTCTime 3600 now
-  heldSource cc "held" "h" expiry
-  heldRefusals cc "held" $ "held by order h, its invoice open until " <> minuteText expiry <> "; run the command again then"
-  waiters <- newWaiters
-  cancelOpenInvoice (chatStore cc) waiters Nothing (InvoiceId "inv-h") now `shouldReturn` True
-  recordRefundRaw cc "held 10000" `shouldReturn` Right ("Recorded a refund of $100.00 for order held. Refund it now, by: " <> paidByBtc "held" <> ".")
 
 data TurnHolder a = TurnHolder {thAction :: Async a, thRelease :: MVar ()}
 

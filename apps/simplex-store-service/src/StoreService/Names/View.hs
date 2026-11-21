@@ -8,7 +8,6 @@ module StoreService.Names.View
   ( RegistrationView (..),
     PaidWith (..),
     BalanceView (..),
-    HoldView (..),
     PhaseView (..),
     Signing (..),
     ToSign (..),
@@ -52,20 +51,14 @@ import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Profiles (deadlineIn, withSlot)
 import StoreService.Names.Registration (LinkKind)
 import StoreService.Names.Signatures (AgreedTerms (..))
-import StoreService.Names.Store (Balance (..), BalanceHold (..), BalanceUse (..), Commit (..), FailReason, HoldState (..), InvoiceClose, LateWait, NameRegistration (..), NameReveal (..), OrderPayment (..), OrderPhase (..), TxHistory (..), getBalance, getRegistration, lateWait, orderLive, paymentInvoice)
+import StoreService.Names.Store (Balance (..), Commit (..), FailReason, InvoiceClose, LateWait, NameRegistration (..), NameReveal (..), OrderPayment (..), OrderPhase (..), TxHistory (..), getBalance, getRegistration, lateWait, orderLive, paymentInvoice)
 
 data PaidWith
   = PWInvoice {method :: Text}
-  | PWDifference {method :: Text, fromBalance :: USDCents}
-  | PWBalance {fromBalance :: USDCents}
   | PWCode
   deriving (Eq, Show)
 
--- | The holder is not named, so an order's link discloses no other order. An overdue hold reads as none.
-data BalanceView = BalanceView {amount :: USDCents, hold :: Maybe HoldView, refunded :: USDCents}
-  deriving (Eq, Show)
-
-data HoldView = HVOpen {heldUntil :: UTCTime} | HVFunded
+data BalanceView = BalanceView {amount :: USDCents, refunded :: USDCents}
   deriving (Eq, Show)
 
 data PhaseView
@@ -112,8 +105,6 @@ data RegistrationView = RegistrationView
 
 $(JQ.deriveToJSON (taggedObjectJSON $ dropPrefix "PW") ''PaidWith)
 
-$(JQ.deriveToJSON (taggedObjectJSON $ dropPrefix "HV") ''HoldView)
-
 $(JQ.deriveToJSON defaultJSON {J.omitNothingFields = False} ''BalanceView)
 
 $(JQ.deriveToJSON (taggedObjectJSON $ dropPrefix "TS") ''ToSign)
@@ -135,7 +126,6 @@ data NameRefusal
   | NRNameCheckUnavailable
   | NRCatalogChanged {price :: USDCents}
   | NRPriceTooHigh {price :: USDCents}
-  | NRBalanceChanged {balance :: Maybe BalanceView}
   | NRTermsChanged {terms :: TermsLink, community :: Maybe Community}
   | NRCodesOnly
   | NRCodeInvalid
@@ -157,11 +147,11 @@ data NameRefusal
 
 $(JQ.deriveToJSON (taggedObjectJSON $ J.camelTo2 '_' . dropPrefix "NR") {J.omitNothingFields = False} ''NameRefusal)
 
--- | The balance as it reads at the given time, when a hold may have become overdue, and what a closed order's late money waits on.
+-- | The balance, and what a closed order's late money waits on.
 registrationView :: DBStore -> NamesConfig -> Contracts -> UTCTime -> NameRegistration -> IO RegistrationView
 registrationView st cfg ct now r = do
   (balance, late) <- withTransaction st $ \db -> do
-    balance <- getBalance db (nrId r) now
+    balance <- getBalance db (nrId r)
     late <- maybe (pure Nothing) (lateWait db) (paymentInvoice $ nrPayment r)
     pure (balance, late)
   toRegistrationView cfg r balance late <$> phaseView ct now r
@@ -225,17 +215,10 @@ toRegistrationView cfg r balance late phase =
 paidWith :: OrderPayment -> PaidWith
 paidWith = \case
   OPInvoice m _ -> PWInvoice {method = textEncode m}
-  OPDifference BalanceUse {buUsed} m _ -> PWDifference {method = textEncode m, fromBalance = buUsed}
-  OPBalance BalanceUse {buUsed} -> PWBalance {fromBalance = buUsed}
   OPCode _ -> PWCode
 
 balanceView :: Balance -> BalanceView
-balanceView Balance {blAmount, blRefunded, blHold} = BalanceView {amount = blAmount, hold = blHold >>= holdView . bhState, refunded = blRefunded}
-  where
-    holdView = \case
-      HSOpen t -> Just $ HVOpen t
-      HSFunded -> Just HVFunded
-      HSOverdue _ -> Nothing
+balanceView Balance {blAmount, blRefunded} = BalanceView {amount = blAmount, refunded = blRefunded}
 
 -- | EIP-55, as the page compares owners.
 addressText :: Address -> Text

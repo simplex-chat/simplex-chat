@@ -41,8 +41,6 @@ A6-2, every asserted text names its test's identifier:
 | testLoadedCount | presence of 2, then 0 names | 3 names, which no other test configures |
 | testNodeChain | presence | with its error, `ChainUnavailable "HTTP 502"` |
 | testCurrentTermsFetched | presence | with its error, `ChainReverted` |
-| testRefundOpenHolder | the same refund line as testRefundRecorded | source `held` |
-| testLiveOrderExistsHolder | the same line as testLiveOrderExists | holder `aheld` |
 | testUnconfirmedThenSettled | the same line as testGrowingReports | order `unconfirmed` |
 | testMoneyAfterPaid | absence of any "was paid" alert | of its own ref's |
 
@@ -92,13 +90,12 @@ stateDiagram-v2
 Built: the failure reason `sends used up` was replaced by the attempt caps of plans/2026-11-18-names-order-rules.md 2.5, which fail an order `registryRefused`; nothing sets it, and it was removed. The implemented states and transitions are in apps/simplex-store-service/docs/names.md section 4.
 
 A1-2, one payment sum, stored and hashed:
-- `data OrderPayment = OPInvoice ServicePaymentMethod InvoiceId | OPDifference BalanceUse ServicePaymentMethod InvoiceId | OPBalance BalanceUse | OPCode CodeId`.
-- `data BalanceUse = BalanceUse {buSource :: RegistrationId, buUsed :: cents}`.
-- Replaces RegistrationPayment, nrBalanceSource and nrBalanceUsed; `createPaidRegistration` takes `Maybe BalanceUse`; OrderTerms' OTBalance contains the existing Spend.
+- `data OrderPayment = OPInvoice ServicePaymentMethod InvoiceId | OPCode CodeId`.
+- Replaces RegistrationPayment, nrBalanceSource and nrBalanceUsed; an order's balance pays no other order.
 
-A1-3, refusals per creator: `CodeInsertRefused = CIRLiveOrder | CIRCodeNotReservable`, `BalanceInsertRefused = BIRLiveOrder | BIRBalanceChanged`; resentOrder throws on an invariant break.
+A1-3, refusals per creator: `CodeInsertRefused = CIRLiveOrder | CIRCodeNotReservable`; `createPaidRegistration` answers False for a live order met; resentOrder throws on an invariant break.
 
-A1-4: `data HoldState = HSOpen UTCTime | HSFunded | HSOverdue UTCTime` in BalanceHold, decoded in toBalance.
+A1-4: balance holds were removed with the spends.
 
 A1-5: `LateFigures` (card or crypto) in LateCreditState, `CreditAmount` (card or crypto) in LateCredit, `type Units = Int64`; one dispatch in lateCreditOf. LFCrypto's invoice rate stays Maybe, as its invoiced units are, for CONoInvoiceFigures.
 
@@ -108,7 +105,7 @@ A1-7: `Rate` with FromField and ToField over the stored text, in place of Maybe 
 
 A1-8: `data ProviderError = ProviderError Text | ProviderTimeout Text`; isTimeout matches the constructor.
 
-A1-9: aeson parsers (`explicitParseField` for a field with its own parser) run by `parseBody`, `JT.parseEither` with the refusal naming the failing field, for the order, invoice order, code order, spend, move and find bodies; `type SignedOrderFields = (OrderFields, Word64, RecoverableSignature)`.
+A1-9: aeson parsers (`explicitParseField` for a field with its own parser) run by `parseBody`, `JT.parseEither` with the refusal naming the failing field, for the order, invoice order, code order, move and find bodies; `type SignedOrderFields = (OrderFields, Word64, RecoverableSignature)`.
 
 A1-10, A1-11 (core): `newtype NameLength` with `nameLength :: Int -> Maybe NameLength` in Badges/Code.hs, in NamePrepaidCode, randomNamePrepaidCode, the console parser and issueNameCode; StrEncoding for NamePrepaidCode with an attoparsec grammar that reads the canonical and the shown form; prepaidCodeP is strP; parseNameCode removes separators and case before it; the range checks go to `nameLength`. OrderFields.ofLength, NameRegistration.nrLength, chainPriceCents and the search's length are NameLength; an order's length outside the range answers invalid_name after the formats.
 
@@ -129,13 +126,13 @@ A1-15: BTCPay invoice, payment and additional statuses as sums with an unknown c
 - A1-21: ToField and FromField for TxHash; those of Address, LabelHash and RecoverableSignature belong beside the types in simplexmq (escalated).
 - A1-22: each `textDecode` by its own cases, as the core's `StoreServiceErrorCode`; TextEncoding with field instances for ServicePaymentMethod, CryptoCurrency and InvoiceStatus in the core, `EditTag` and `TxKind` for the edit state and the transaction kind; TextEncoding for CodeState and LateWait.
 - A1-23: `EONew` without the list.
-- A1-24: one function for the signer, turn and existingOrder pipeline of the three order handlers; codeOrderHandler uses refused.
+- A1-24: one function for the signer, turn and existingOrder pipeline of the two order handlers; codeOrderHandler uses refused.
 - A1-25: `paymentInvoice` at the five sites.
 - A1-26: retargetOrder reads the move's price in its paid branch; moveChecked dispatches no more.
 - A1-27: the move uses retry's shared check and its wire answers.
 - A1-28: `ORBadRequest Text`, the same 400 answer.
 - A1-29: dropped.
-- A1-30: checkSpendBalance reads the holder from the balance it read.
+- A1-30: removed with the spends.
 - A1-31: revokePrepaidCode returns its PrepaidCode read with the result.
 - A1-32: recordRefund reads again once after a refused update; a second refusal that passes the checks throws an error naming the race.
 - A1-33: `CKGone` for a missing row.

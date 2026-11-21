@@ -152,7 +152,7 @@ siteApp env@WebEnv {weHttp} served req respond = case pathInfo req of
   ["webhooks", "stripe"] -> only "POST" req respond $ webhookHandler env PPStripe "POST /webhooks/stripe" req respond
   _ -> fromMaybe (respond notFound) names
   where
-    names = weNames env >>= \n -> namesApp weHttp (namesRoutes (weConfig env) weHttp n) req respond
+    names = weNames env >>= \n -> namesApp weHttp (namesRoutes weHttp n) req respond
 
 -- | The names build keeps files at its root, so every path outside the API and the webhooks is the site's.
 sitePath :: [Text] -> Bool
@@ -470,7 +470,7 @@ webhookHandler env@WebEnv {weStore, weHints} provider route req respond =
                 case event_ of
                   Nothing -> ignore body "nothing this service acts on"
                   Just (WEPayment ref) -> resolve body ref
-                  Just WEReversal {weEvent, weProviderRef, weReversal} -> onNameOrder body weProviderRef $ \oe row rid -> reverseOrder oe (weProviders env) (weWaiters env) row rid weEvent weReversal
+                  Just WEReversal {weEvent, weProviderRef, weReversal} -> onNameOrder body weProviderRef $ \oe row rid -> reverseOrder oe row rid weEvent weReversal
                   Just WEFraudWarning {weProviderRef, weWarning} -> onNameOrder body weProviderRef $ \oe row rid -> warnOfFraud oe row rid weWarning
     refuse :: Text -> IO ResponseReceived
     refuse why = logRefusal logNote (route <> " refused: " <> why) >> respond webhookRefused

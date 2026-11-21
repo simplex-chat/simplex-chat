@@ -275,7 +275,7 @@ DROP TABLE @subscription_charges;
 
 -- A registration is live as Names.Store's orderLive decides.
 -- reserved_by is added after the registrations table, which references the codes table.
--- A balance's amount = credited - spent - refunded, spent being the balance_used of the orders it paid for that went past unpaid.
+-- A balance's amount = credited - refunded, less the cents taken back at reversals.
 -- Crypto is counted in integer units (satoshi, piconero), so every sum is exact; rates are decimal text, never summed.
 -- invoiced_units is the crypto a payment's invoice asks, network fee included, which late and overpaid crypto is a price share of.
 m20261013_names :: Text
@@ -314,8 +314,6 @@ CREATE TABLE @name_registrations(
   price INTEGER NOT NULL,
   method TEXT,
   name_prepaid_code_id BIGINT REFERENCES @name_prepaid_codes(name_prepaid_code_id),
-  balance_source TEXT REFERENCES @name_registrations(registration_id),
-  balance_used INTEGER NOT NULL,
   label TEXT,
   secret BYTEA,
   contact_link TEXT,
@@ -373,20 +371,15 @@ CREATE INDEX @idx_name_registrations_order_hash ON @name_registrations(order_has
 
 CREATE INDEX @idx_name_registrations_prepaid_code ON @name_registrations(name_prepaid_code_id);
 
-CREATE INDEX @idx_name_registrations_balance_source ON @name_registrations(balance_source);
-
 CREATE TABLE @name_balances(
   registration_id TEXT NOT NULL PRIMARY KEY REFERENCES @name_registrations(registration_id),
   amount INTEGER NOT NULL CHECK (amount >= 0),
   credited INTEGER NOT NULL DEFAULT 0 CHECK (credited >= 0),
   refunded INTEGER NOT NULL DEFAULT 0 CHECK (refunded >= 0),
-  reserved_by TEXT REFERENCES @name_registrations(registration_id),
   refunded_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ NOT NULL,
   updated_at TIMESTAMPTZ NOT NULL
 );
-
-CREATE UNIQUE INDEX @idx_name_balances_reserved_by ON @name_balances(reserved_by);
 
 -- late_support says why a closed order's late money will not be credited by itself:
 -- high_speed, units, rate_floor, unconfirmed or no_confirmation. It is never cleared.
@@ -543,10 +536,8 @@ DELETE FROM @invoices WHERE invoice_id IN (
 DROP INDEX @idx_name_invoices_registration;
 DROP TABLE @name_invoices;
 
-DROP INDEX @idx_name_balances_reserved_by;
 DROP TABLE @name_balances;
 
-DROP INDEX @idx_name_registrations_balance_source;
 DROP INDEX @idx_name_registrations_prepaid_code;
 DROP INDEX @idx_name_registrations_order_hash;
 DROP INDEX @idx_name_registrations_phase;

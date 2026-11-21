@@ -488,12 +488,9 @@ taken Worker {wkOrders} now r = written r <$> endOrder wkOrders now r {nrPhase =
 
 endOrder :: OrdersEnv -> UTCTime -> NameRegistration -> (DB.Connection -> IO Bool) -> IO (Either WriteRefusal Int64)
 endOrder OrdersEnv {oeStore, oeTurns} now r@NameRegistration {nrId, nrPayment} mayEnd = case nrPayment of
-  OPInvoice {} -> credited
-  OPDifference {} -> credited
-  OPBalance _ -> credited
+  OPInvoice {} -> withBalanceTurn oeTurns nrId (withTransaction oeStore $ ending $ creditedWrite now r)
   OPCode codeId -> fmap fst <$> releaseCode oeTurns oeStore codeId nrId (ending $ \db -> versionWritten <$> updateRegistration db r now)
   where
-    credited = withBalanceTurn oeTurns nrId (withTransaction oeStore $ ending $ creditedWrite now r)
     ending write db =
       mayEnd db >>= \case
         True -> write db
@@ -587,7 +584,7 @@ reasonText = \case
 data Closed = CLRegistered RegistrationId | CLRefunded UTCTime RefundRecord | CLRefused CloseRefusal
   deriving (Eq, Show)
 
-data CloseRefusal = CFNoOrder | CFNotFailedPaid | CFMonthEnded | CFUnread | CFChanged | CFHeld BalanceHold | CFBalanceChanged
+data CloseRefusal = CFNoOrder | CFNotFailedPaid | CFMonthEnded | CFUnread | CFChanged | CFBalanceChanged
   deriving (Eq, Show)
 
 newtype CloseRefused = CloseRefused CloseRefusal
@@ -598,7 +595,7 @@ instance E.Exception CloseRefused
 closeRegistration :: DBStore -> Contracts -> Turns -> IO UTCTime -> Text -> IO Closed
 closeRegistration st ct turns clock ref = do
   now <- clock
-  withTransaction st (\db -> balanceByReference db ref now $>>= getRegistration db . fst) >>= \case
+  withTransaction st (\db -> balanceByReference db ref $>>= getRegistration db . fst) >>= \case
     Nothing -> refused CFNoOrder
     Just r ->
       withRegistrationTurn st turns r (closeFailed now) <&> \case
@@ -624,17 +621,14 @@ refundTaken st turns now r@NameRegistration {nrId} =
   withBalanceTurn turns nrId $ either (\(CloseRefused refusal) -> Left refusal) id <$> E.try (withTransaction st refund)
   where
     refund db =
-      getBalance db nrId now >>= \case
-        Just Balance {blHold = Just hold} -> pure $ Left $ CFHeld hold
-        _ ->
-          creditedTaken now r db >>= \case
-            Left WRChanged -> pure $ Left CFChanged
-            Left (WRRefused refusal) -> E.throwIO $ BrokenInvariant $ "the taken write of order " <> ridText <> " was refused as " <> tshow refusal <> ", while a write that closes an order is refused only as changed"
-            Right _ -> Right <$> refundAll db
+      creditedTaken now r db >>= \case
+        Left WRChanged -> pure $ Left CFChanged
+        Left (WRRefused refusal) -> E.throwIO $ BrokenInvariant $ "the taken write of order " <> ridText <> " was refused as " <> tshow refusal <> ", while a write that closes an order is refused only as changed"
+        Right _ -> Right <$> refundAll db
     refundAll db = do
-      cents <- maybe 0 blAmount <$> getBalance db nrId now
+      cents <- maybe 0 blAmount <$> getBalance db nrId
       refundBalance db nrId cents now >>= \case
-        True -> RefundRecord nrId cents <$> balanceChain db nrId
+        True -> RefundRecord nrId cents <$> balanceLink db nrId
         False -> E.throwIO $ CloseRefused CFBalanceChanged
     RegistrationId ridText = nrId
 

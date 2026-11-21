@@ -27,7 +27,7 @@ stateDiagram-v2
   state "failed: registry refused, signature refused or unread" as failed
   state "failed: month ended" as monthEnded
   [*] --> unpaid: one request with the commitment, the signed registration and the terms acceptance; invoice opened, holds its price only
-  [*] --> queued: a code order, or an order paid wholly from a balance
+  [*] --> queued: a code order
   unpaid --> queued: payment settled, the name held, other buyers' open invoices of the name cancelled
   unpaid --> taken: payment settled while another paid order holds the name
   unpaid --> closed: invoice expired or cancelled; payment settled after a recorded reversal
@@ -77,10 +77,10 @@ stateDiagram-v2
 ### 1.4 Card disputes and payment reversals
 - **names:** the service acts on three Stripe events only: succeeded, failed, cancelled (`Providers/Stripe.hs:104`); a dispute changes nothing and nobody is told.
 - **Final:** every dispute and reversal alerts the operators in the log and the group, with the order's evidence (payment, signed order, registration transaction) for the answer to Stripe, whatever the order's state. In addition:
-  - an order of which no register transaction was ever sent is cancelled: the hold released, nothing credited, a part paid from a balance returned to its source balance; a support refund of part of its balance does not prevent it;
+  - an order of which no register transaction was ever sent is cancelled: the hold released, nothing credited; a support refund of part of its balance does not prevent it;
   - an order of which a register transaction was sent is treated as registered for the dispute: not cancelled, its registration continues;
   - a disputed order's price is never credited to its balance, a late credit concurrent with the dispute included; an order whose price is already in its balance (taken, month ended) has it taken back from the balance, as far as the balance holds it; an order not cancelled whose refund support recorded is alerted only;
-  - a balance that another order's open invoice holds is released first: that invoice is cancelled at its provider and in the service, and the alert names its order.
+  - a balance pays no other order, so disputed money pays for no other name.
   - Events: `charge.dispute.created` and `charge.refunded` as reversals, `radar.early_fraud_warning.created` alerted only; badge card payments unchanged.
   - Records: the order's invoice row counts the reversals and keeps the total reversed and the last event's Stripe id and cents; a repeated delivery of the last event changes nothing; single events are read in Stripe.
 - **Facts from Stripe's documentation:**
@@ -104,7 +104,7 @@ stateDiagram-v2
 
 ### 1.7 One request before the invoice
 - **names:** the order request holds the name's hash, the commitment and a copy of the name and links sealed with the owner's key (page `flow.ts:67-71`); the name, links and signature come at the signing step, after the commit has aged (page `screens/order.ts:300`), so the page must be open then.
-- **Final:** the order request, for paid, code and balance orders alike, holds the name, links, commitment, the owner's signed registration and the terms acceptance; links are checked before the invoice. After payment the service commits, and registers once the commitment is 60 s old, with no page online. The page polls the order's state. The owner signs again only in the rare cases of 2.2.
+- **Final:** the order request, for paid and code orders alike, holds the name, links, commitment, the owner's signed registration and the terms acceptance; links are checked before the invoice. After payment the service commits, and registers once the commitment is 60 s old, with no page online. The page polls the order's state. The owner signs again only in the rare cases of 2.2.
 - **Why:** the page cannot check the chain itself, so a second request protects nothing against the service, while it creates every waiting state; third parties stay unable to front-run, as the chain sequence (commit, at least 60 s, register) is unchanged. The service learns the names of unpaid orders too; the privacy policy's amendment states it.
 
 ## 2. Failures and retries: wait only for what can resolve
@@ -195,8 +195,8 @@ Answers are the service's types encoded as derived JSON, and the page reads thos
 |---|---|
 | Search | one case per name state: available, taken (held by a paid order), reserved, registered with the store resolver's records or "other" |
 | Refusals | every endpoint answers a refusal as `{"type": "<code>"}` with flat snake_case codes, such as `{"type": "order_exists"}`, and data beside the code, such as `{"type": "catalog_changed", "price": 1500}`; prepaid-code refusals flat, such as `{"type": "code_used"}`; a `bad_request` reason is logged, not sent (the user's A1-28: the reason as text); `edit_limit` is 409 with an ISO time. On `names`: `{"error": "<code>"}` |
-| Order view | one shape per phase, the payment kind, the balance hold, the terms as a record, the failure reason, the last failed attempt; the name only once the order is paid |
-| Order requests | order, code order, move and spend nest their fields, terms as a record; the payment method stays the text the badge request sends |
+| Order view | one shape per phase, the payment kind, the balance, the terms as a record, the failure reason; the name only once the order is paid |
+| Order requests | order, code order and move nest their fields, terms as a record; the payment method stays the text the badge request sends |
 | Find, link edits, signing | decoded by derived types; find answers an empty list for an owner with no orders, and each order's phase as stored |
 | Replaced orders | as `names`: an order's view names no other order; the browser holding the name code finds the newer order through find |
 | Links | one link per kind in a signing request; edits name their record as contact or channel; the clear-records edit goes |

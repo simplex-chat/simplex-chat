@@ -64,7 +64,7 @@ import Bots.StoreService.FakeBTCPay (FakeBTCPay (..), setInvoiceState, withFakeB
 import Bots.StoreService.FakeEthNode
 import Bots.StoreService.FakeHttp (nextFakeId)
 import Bots.StoreService.NamesContractsTests (alice, answerRegistered, answerRegistrar, minPriceCentsPerYear, nameExpiresCall, noncesCall, registrarOf, rentPriceAnswer, rentPriceCall, reservedNamesCall)
-import Bots.StoreService.NamesStoreTests (btc, codeReg, commitFixture, hashFixture, insertInvoiceRow, newReg, order, ownerA, ownerB, paidOrder, placeCode, placePaid, reveal, t0)
+import Bots.StoreService.NamesStoreTests (btc, codeReg, commitFixture, hashFixture, order, ownerA, ownerB, placeCode, placePaid, reveal, t0)
 import Bots.StoreService.WebTests
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (async, concurrently, wait)
@@ -223,7 +223,7 @@ namesOrdersTests = describe "StoreService names: orders" $ do
     it "has the terms the order signed" testViewTerms
     it "reads the intent nonce and the acceptance of the terms of the name's kind only while a committed order awaits its signature, unread when either read fails" testViewReads
     it "reads the chain only in a free view slot and within one deadline, else answers unread" testViewReadsBounded
-    it "reads the order's balance, held until its holder's invoice expires and free past it, and the cents its order took from another's" testViewBalance
+    it "reads the order's balance, none before its first credit, and its refunded cents after a refund" testViewBalance
 
 -- fixtures
 
@@ -540,7 +540,7 @@ advance :: Ctx -> NominalDiffTime -> IO ()
 advance Ctx {cClock} by = modifyIORef' cClock (addUTCTime by)
 
 registrationsOf :: Ctx -> Address -> IO [NameRegistration]
-registrationsOf Ctx {cStore, cClock} owner = readIORef cClock >>= \now -> map fst <$> withTransaction cStore (\db -> findRegistrations db owner now)
+registrationsOf Ctx {cStore} owner = withTransaction cStore (`findRegistrations` owner)
 
 invoiceRegistration :: Ctx -> InvoiceId -> IO NameRegistration
 invoiceRegistration Ctx {cStore} invId =
@@ -1298,7 +1298,7 @@ testCodeNotReservable = withOrders $ \ctx@Ctx {cStore} -> do
   req <- either (error . show) id . (\body -> Orders.parseBody "order" (fromMaybe J.Null $ KM.lookup "order" body) >>= Orders.orderRequest) <$> signedBody (cRandom ctx) aliceOrder
   forM_ [(reservedLate, CRReserved), (revokedLate, CRInvalid)] $ \(stale, refusal) -> do
     let new = codeReg "late" ownerA (fieldsOf aliceOrder) stale
-    placedOrder <- Orders.placeOrder (cOrders ctx) orderTime req [] (Orders.codeOrderInsert new stale)
+    placedOrder <- Orders.placeOrder (cOrders ctx) orderTime req (Orders.codeOrderInsert new stale)
     either Just (const Nothing) placedOrder `shouldBe` Just (Orders.ORCode refusal)
   length <$> registrationsOf ctx ownerA `shouldReturn` 0
 
@@ -1589,7 +1589,7 @@ testSettledWhileHeld = withOrders $ \ctx@Ctx {cStore = st} -> do
   nrPhase <$> invoiceRegistration ctx aliceInv `shouldReturn` OQueued
   NameRegistration {nrId, nrPhase} <- invoiceRegistration ctx bobInv
   nrPhase `shouldBe` OTaken
-  fmap blAmount <$> withTransaction st (\db -> getBalance db nrId orderTime) `shouldReturn` Just alicePrice
+  fmap blAmount <$> withTransaction st (`getBalance` nrId) `shouldReturn` Just alicePrice
 
 testFailedHoldsName :: IO ()
 testFailedHoldsName = withOrders $ \ctx@Ctx {cStore = st} -> do
@@ -1843,7 +1843,7 @@ testViewStates = withServiceStore $ \st -> withFakeEthNode $ \node -> do
   viewOf requeued `shouldReturn` view [("version", J.Number 3), ("phase", J.object ["type" .= ("queued" :: Text)]), ("registerTx", J.Null), ("balance", J.Null)]
   taken <- written $ \r -> r {nrPhase = OTaken}
   withTransaction st $ \db -> creditBalance db rid 20000 t0
-  viewOf taken `shouldReturn` view [("version", J.Number 4), ("phase", J.object ["type" .= ("taken" :: Text)]), ("registerTx", J.Null), ("balance", J.object ["amount" .= (20000 :: Int), "hold" .= J.Null, "refunded" .= (0 :: Int)])]
+  viewOf taken `shouldReturn` view [("version", J.Number 4), ("phase", J.object ["type" .= ("taken" :: Text)]), ("registerTx", J.Null), ("balance", J.object ["amount" .= (20000 :: Int), "refunded" .= (0 :: Int)])]
   where
     o = order "alicebakery" 1
     rid = RegistrationId "r1"
@@ -1933,28 +1933,21 @@ testViewBalance :: IO ()
 testViewBalance = withServiceStore $ \st -> withFakeEthNode $ \node -> do
   g <- C.newRandom
   ct <- newContracts st TLDSimplex minPriceCentsPerYear =<< fakeChainClient g node
-  let holderExpiry = addUTCTime 3600 t0
-      viewOf :: Text -> UTCTime -> IO J.Object
+  let viewOf :: Text -> UTCTime -> IO J.Object
       viewOf rid now = do
         r <- withTransaction st $ \db -> fromJust <$> getRegistration db (RegistrationId rid)
         objectOf . J.toJSON <$> registrationView st (testNamesConfig node) ct now r
       balanceOf :: J.Object -> (Maybe J.Value, Maybe J.Value)
       balanceOf v = (fieldOf v "balance", fieldOf v "payment")
-      balance :: Int -> Maybe UTCTime -> Int -> J.Value
-      balance amount heldTill refunded = J.object ["amount" .= amount, "hold" .= ((\t -> J.object ["type" .= ("open" :: Text), "heldUntil" .= t]) <$> heldTill), "refunded" .= refunded]
+      balance :: Int -> Int -> J.Value
+      balance amount refunded = J.object ["amount" .= amount, "refunded" .= refunded]
       invoicePaid = J.object ["type" .= ("invoice" :: Text), "method" .= ("btc" :: Text)]
-  Right () <- placePaid st "source" ownerA (order "alicebakery" 1) holderExpiry
+  Right () <- placePaid st "source" ownerA (order "alicebakery" 1) (addUTCTime 3600 t0)
+  balanceOf <$> viewOf "source" t0 `shouldReturn` (Just J.Null, Just invoicePaid)
   withTransaction st $ \db -> creditBalance db (RegistrationId "source") 15000 t0
-  balanceOf <$> viewOf "source" t0 `shouldReturn` (Just $ balance 15000 Nothing 0, Just invoicePaid)
-  Right () <- withTransaction st $ \db -> do
-    insertInvoiceRow db "inv-holder" holderExpiry "open"
-    createPaidRegistration db (newReg "holder" ownerA (order "bobsbakery" 2)) (Just BalanceUse {buSource = RegistrationId "source", buUsed = 15000}) (paidOrder "inv-holder") t0
-  balanceOf <$> viewOf "source" t0 `shouldReturn` (Just $ balance 15000 (Just holderExpiry) 0, Just invoicePaid)
-  balanceOf <$> viewOf "source" (addUTCTime 1 holderExpiry) `shouldReturn` (Just $ balance 15000 Nothing 0, Just invoicePaid)
-  balanceOf <$> viewOf "holder" t0 `shouldReturn` (Just J.Null, Just $ J.object ["type" .= ("difference" :: Text), "method" .= ("btc" :: Text), "fromBalance" .= (15000 :: Int)])
+  balanceOf <$> viewOf "source" t0 `shouldReturn` (Just $ balance 15000 0, Just invoicePaid)
   version <- nrVersion <$> withTransaction st (\db -> fromJust <$> getRegistration db (RegistrationId "source"))
-  withTransaction st (\db -> releaseHeldBalance db (RegistrationId "holder") t0) `shouldReturn` True
   withTransaction st (\db -> refundBalance db (RegistrationId "source") 15000 t0) `shouldReturn` True
   v <- viewOf "source" t0
-  balanceOf v `shouldBe` (Just $ balance 0 Nothing 15000, Just invoicePaid)
+  balanceOf v `shouldBe` (Just $ balance 0 15000, Just invoicePaid)
   fieldOf v "version" `shouldBe` Just (J.toJSON version)

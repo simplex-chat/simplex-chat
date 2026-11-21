@@ -153,10 +153,10 @@ insertProviderInvoice db provider invId expiresAt status =
     ((invId, provider, "ref-" <> invId, "name" :: Text, price, price, "usd" :: Text, "bc1qexampleaddress" :: Text, "btc" :: Text, "0.00312" :: Text) :. (expiresAt, status, t0, t0))
 
 -- | A paid order whose invoice, named after the registration, expires at the given time.
-placePaid :: DBStore -> Text -> Address -> OrderFields -> UTCTime -> IO (Either BalanceInsertRefused ())
+placePaid :: DBStore -> Text -> Address -> OrderFields -> UTCTime -> IO (Either () ())
 placePaid st rid owner o expiresAt = withTransaction st $ \db -> insertOrRollBack db $ do
   insertInvoiceRow db ("inv-" <> rid) expiresAt "open"
-  createPaidRegistration db (newReg rid owner o) Nothing (paidOrder $ "inv-" <> rid) t0
+  (\inserted -> if inserted then Right () else Left ()) <$> createPaidRegistration db (newReg rid owner o) (paidOrder $ "inv-" <> rid) t0
 
 insertOrRollBack :: DB.Connection -> IO (Either e a) -> IO (Either e a)
 insertOrRollBack db insert = do
@@ -371,8 +371,8 @@ testLiveUnique :: IO ()
 testLiveUnique = withServiceStore $ \st -> do
   let o = order "alicebakery" 1
   placePaid st "r1" ownerA o (at 60) `shouldReturn` Right ()
-  placePaid st "r2" ownerA o {ofCommitment = hashFixture 2} (at 60) `shouldReturn` Left BIRLiveOrder
-  placePaid st "r3" ownerB o (at 60) `shouldReturn` Left BIRLiveOrder
+  placePaid st "r2" ownerA o {ofCommitment = hashFixture 2} (at 60) `shouldReturn` Left ()
+  placePaid st "r3" ownerB o (at 60) `shouldReturn` Left ()
   code <- issue st 9 usable
   placeCode st "r4" ownerA (order "alicebakery" 3) code `shouldReturn` Left CIRLiveOrder
   placePaid st "r5" ownerB (order "alicebakery" 5) (at 60) `shouldReturn` Right ()
@@ -426,8 +426,8 @@ testCloseOverdue = withServiceStore $ \st -> do
     [LiveOrder {loRegistration, loOverdue = True}] <- getLiveOrders db (ofCommitment o') ownerA (ofLabelHash o') (at 61)
     void $ closeOverdue db loRegistration (at 61)
     insertInvoiceRow db "inv-r2" (at 120) "open"
-    createPaidRegistration db (newReg "r2" ownerA o') Nothing (paidOrder "inv-r2") (at 61)
-  placed `shouldBe` Right ()
+    createPaidRegistration db (newReg "r2" ownerA o') (paidOrder "inv-r2") (at 61)
+  placed `shouldBe` True
   old <- reg st "r1"
   (nrPhase old, nrVersion old) `shouldBe` (OClosed ICExpired, 2)
   invoiceStatus st (InvoiceId "inv-r1") `shouldReturn` ISExpired
@@ -611,7 +611,7 @@ testSameSecondOrder = withServiceStore $ \st -> do
     placePaid st rid ownerA (order ("alicebakery" <> rid) n) (at 60) `shouldReturn` Right ()
     r <- reg st rid
     write st r {nrPhase = OQueued} `shouldReturn` Written 2
-  map (nrId . fst) <$> withTransaction st (\db -> findRegistrations db ownerA t0) `shouldReturn` map RegistrationId ["r1", "r3", "r2"]
+  map nrId <$> withTransaction st (`findRegistrations` ownerA) `shouldReturn` map RegistrationId ["r1", "r3", "r2"]
   withTransaction st activeRegistrations `shouldReturn` map RegistrationId ["r1", "r2", "r3"]
   forM_ ["r5", "r4"] $ \rid -> do
     placePaid st rid ownerB o (at 60) `shouldReturn` Right ()

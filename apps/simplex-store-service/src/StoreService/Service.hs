@@ -37,8 +37,7 @@ module StoreService.Service
     NotGranted (..),
     shownServiceRequest,
     survive,
-    heldText,
-    chainText,
+    linkText,
   )
 where
 
@@ -55,12 +54,12 @@ import StoreService.Names.Orders (ordersEnv)
 import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Records (runRecordEdits)
 import StoreService.Names.Sender (checkPendingSignatures, runSender)
-import StoreService.Names.Store (Balance (..), BalanceHold (..), BalanceLink (..), BrokenInvariant (..), CmdSource (..), HoldState (..), LateCredit (..), OrderPayment (..), balanceByReference, balanceChain, creditCents)
+import StoreService.Names.Store (Balance (..), BalanceLink (..), BrokenInvariant (..), CmdSource (..), LateCredit (..), OrderPayment (..), balanceByReference, balanceLink, creditCents)
 import StoreService.Names.Turns (Turns, newTurns)
 import StoreService.Names.View (addressText)
 import StoreService.Names.Worker (CloseRefusal (..), Closed (..), closeRegistration, newWorker, runMonthEnds, runUnregisteredAlerts, runWorkers)
 import StoreService.Options
-import StoreService.Poller (PollerEnv (peCreditPassAt, peListedOk), expiryGrace, newPollerEnv, newReadHints, runPoller)
+import StoreService.Poller (PollerEnv (peCreditPassAt, peListedOk), newPollerEnv, newReadHints, runPoller)
 import StoreService.Providers (Provider (pProvider), minorDecimal)
 import StoreService.Providers.BTCPay (btcpayProvider)
 import StoreService.Providers.Stripe (stripeProvider)
@@ -405,38 +404,35 @@ runBadgeCmd turns chain_ cc cmd = case consoleCmd (safeDecodeUtf8 cmd) of
 runMoneyCmd :: CmdSource -> Turns -> Maybe (SimplexTLD, Int, ChainClient) -> ChatController -> MoneyCmd -> IO (Either T.Text T.Text)
 runMoneyCmd source turns chain_ cc = \case
   MCBalance ref -> showRefund source cc ref
-  MCRecordRefund ref cents -> refundBalanceCmd source turns cc ref cents
+  MCRecordRefund ref cents -> refundBalanceCmd turns cc ref cents
   MCClose ref -> maybe (pure $ Left "Names are not enabled on this service.") (\chain -> closeOrderCmd source turns chain cc ref) chain_
 
 -- | Left is a refusal or a failure; both sides are the text to show the operator.
 showRefund :: CmdSource -> ChatController -> T.Text -> IO (Either T.Text T.Text)
-showRefund source cc ref = do
-  now <- currentSecond
-  withDB' "showRefund" cc (\db -> balanceByReference db ref now >>= mapM (withChain db)) <&> \case
+showRefund source cc ref =
+  withDB' "showRefund" cc (\db -> balanceByReference db ref >>= mapM (withLink db)) <&> \case
     Right Nothing -> Left $ "No order has the reference " <> ref <> "."
     Right (Just (RegistrationId rid, Nothing)) -> Left $ "Order " <> rid <> " has no balance."
-    Right (Just (RegistrationId rid, Just (balance@Balance {blAmount, blCredited, blRefunded}, chain))) ->
+    Right (Just (RegistrationId rid, Just (balance@Balance {blAmount, blCredited, blRefunded}, link))) ->
       Right $
         "Order " <> rid <> ": balance " <> dollars blAmount <> " (credited " <> dollars blCredited <> ", refunded " <> dollars blRefunded
-          <> "). Paid by: " <> chainText chain <> ". " <> nextStep balance
+          <> "). Paid by: " <> linkText link <> ". " <> nextStep balance
     Left _ -> Left "The balance could not be read."
   where
-    withChain db (rid, balance_) = (rid,) <$> mapM (\balance -> (balance,) <$> balanceChain db rid) balance_
-    nextStep Balance {blAmount, blHold} = case blHold of
-      Just hold -> "It cannot be refunded now: " <> heldText source hold <> "."
-      Nothing
-        | blAmount > 0 -> "To record its refund: " <> spelledCmd source "record_refund" <> " " <> ref <> " " <> tshow (toInteger blAmount)
-        | otherwise -> "Nothing to refund."
+    withLink db (rid, balance_) = (rid,) <$> mapM (\balance -> (balance,) <$> balanceLink db rid) balance_
+    nextStep Balance {blAmount}
+      | blAmount > 0 = "To record its refund: " <> spelledCmd source "record_refund" <> " " <> ref <> " " <> tshow (toInteger blAmount)
+      | otherwise = "Nothing to refund."
 
 -- | The refund is recorded before support pays it, so the balance cannot be spent meanwhile.
-refundBalanceCmd :: CmdSource -> Turns -> ChatController -> T.Text -> USDCents -> IO (Either T.Text T.Text)
-refundBalanceCmd source turns ChatController {chatStore} ref cents = do
+refundBalanceCmd :: Turns -> ChatController -> T.Text -> USDCents -> IO (Either T.Text T.Text)
+refundBalanceCmd turns ChatController {chatStore} ref cents = do
   now <- currentSecond
   ((Right <$> recordRefund turns chatStore ref cents now) `catchOwn` (pure . Left)) >>= \case
-    Right (Right RefundRecord {rdRegistration = RegistrationId rid, rdCents, rdChain}) -> do
+    Right (Right RefundRecord {rdRegistration = RegistrationId rid, rdCents, rdLink}) -> do
       -- The registration id, not the reference, since an invoice id is kept out of the logs.
       logNote $ "names: recorded a refund of " <> tshow (toInteger rdCents) <> " cents for order " <> rid
-      pure $ Right $ "Recorded a refund of " <> dollars rdCents <> " for order " <> rid <> ". Refund it now, by: " <> chainText rdChain <> "."
+      pure $ Right $ "Recorded a refund of " <> dollars rdCents <> " for order " <> rid <> ". Refund it now, by: " <> linkText rdLink <> "."
     Right (Left refusal) -> pure $ Left $ "Nothing recorded: " <> refusalText refusal <> "."
     Left e -> Left "The refund could not be recorded." <$ logError ("names: recording a refund failed: " <> tshow e)
   where
@@ -444,7 +440,6 @@ refundBalanceCmd source turns ChatController {chatStore} ref cents = do
       RefundNoOrder -> "no order has the reference " <> ref
       RefundNoBalance -> "the order of " <> ref <> " has no balance"
       RefundAmount amount -> "the balance is " <> dollars amount <> " now, not " <> dollars cents
-      RefundHeld hold -> heldText source hold
 
 newConsoleChain :: NamesConfig -> IO (SimplexTLD, Int, ChainClient)
 newConsoleChain NamesConfig {nTLD, nMinPriceCentsPerYear, nChain} = do
@@ -455,11 +450,11 @@ closeOrderCmd :: CmdSource -> Turns -> (SimplexTLD, Int, ChainClient) -> ChatCon
 closeOrderCmd source turns (tld, minPriceCentsPerYear, chain) ChatController {chatStore} ref = do
   ct <- newContracts chatStore tld minPriceCentsPerYear chain
   ((Right <$> closeRegistration chatStore ct turns currentSecond ref) `catchOwn` (pure . Left)) >>= \case
-    Right (CLRefunded endedAt RefundRecord {rdRegistration = RegistrationId rid, rdCents, rdChain}) -> do
+    Right (CLRefunded endedAt RefundRecord {rdRegistration = RegistrationId rid, rdCents, rdLink}) -> do
       logNote $ "names: closed order " <> rid <> " and recorded a refund of " <> tshow (toInteger rdCents) <> " cents"
       pure $ Right $
         "Closed order " <> rid <> ", failed or lapsed unsigned at " <> fmtTime endedAt <> ", as taken and recorded a refund of " <> dollars rdCents
-          <> ". Check at the provider that it was not refunded by hand before; if not, refund it now, by: " <> chainText rdChain <> "."
+          <> ". Check at the provider that it was not refunded by hand before; if not, refund it now, by: " <> linkText rdLink <> "."
     Right (CLRegistered (RegistrationId rid)) -> do
       logNote $ "names: order " <> rid <> " set registered by " <> spelledCmd source "close" <> ", as its register went through"
       pure $ Left $ "Nothing refunded: the register of order " <> rid <> " went through, so the order is registered now."
@@ -468,41 +463,23 @@ closeOrderCmd source turns (tld, minPriceCentsPerYear, chain) ChatController {ch
   where
     refusalText = \case
       CFNoOrder -> "no order has the reference " <> ref
-      CFNotFailedPaid -> "the order of " <> ref <> " is not a failed or lapsed unsigned order paid by invoice or balance"
+      CFNotFailedPaid -> "the order of " <> ref <> " is not a failed or lapsed unsigned order paid by invoice"
       CFMonthEnded -> "the order of " <> ref <> " failed at the end of the month from its payment, and the money paid for it has been added to its balance; record its refund with " <> spelledCmd source "record_refund"
       CFUnread -> "the chain could not be read; " <> again
       CFChanged -> "the order of " <> ref <> " changed meanwhile; " <> again
-      CFHeld hold -> heldText source hold
       CFBalanceChanged -> "the balance of the order of " <> ref <> " changed meanwhile; " <> again
     again = "run " <> spelledCmd source "close" <> " again"
 
-heldText :: CmdSource -> BalanceHold -> T.Text
-heldText source BalanceHold {bhHolder = RegistrationId holder, bhState} = case bhState of
-  HSOverdue t -> heldBy <> "its invoice expired at " <> fmtTime t <> "; " <> closedByPoller
-  HSFunded -> heldBy <> "whose invoice holds money; it holds until that payment settles or the invoice closes; run the command again then"
-  HSOpen t -> heldBy <> "its invoice open until " <> fmtTime t <> "; run the command again then"
+-- | The balance's order and the money paid for it.
+linkText :: Maybe BalanceLink -> T.Text
+linkText = maybe "" $ \BalanceLink {lkRegistration = RegistrationId rid, lkOwner, lkPayment, lkProviderRef, lkPaid, lkLateCredits} ->
+  "order " <> rid <> " of " <> addressText lkOwner <> ": " <> case paid lkPayment lkProviderRef lkPaid lkLateCredits of
+    [] -> "no payment recorded"
+    parts -> T.intercalate ", " parts
   where
-    heldBy = "held by order " <> holder <> ", "
-    closedByPoller = case source of
-      FromConsole -> "start the service so the poller closes that order, " <> afterGrace <> ", then stop it and run the command again"
-      FromGroup -> "the poller closes that order " <> afterGrace <> "; run the command again then"
-    afterGrace = tshow graceMinutes <> " minutes after the expiry at the earliest"
-    graceMinutes = round (expiryGrace / minute) :: Int
-    minute = 60 :: NominalDiffTime
-
--- | From the balance's own order back to the first; a part paid from a balance names the next order, whose balance paid it.
-chainText :: [BalanceLink] -> T.Text
-chainText chain = T.intercalate "; " $ zipWith linkText chain (map (Just . lkRegistration) (drop 1 chain) <> [Nothing])
-  where
-    linkText BalanceLink {lkRegistration = RegistrationId rid, lkOwner, lkPayment, lkProviderRef, lkPaid, lkFromBalance, lkLateCredits} source_ =
-      "order " <> rid <> " of " <> addressText lkOwner <> ": " <> case paid lkPayment lkProviderRef lkPaid lkLateCredits <> fromBalance lkFromBalance source_ of
-        [] -> "no payment recorded"
-        parts -> T.intercalate ", " parts
     paid payment providerRef_ cents lateCredits = case payment of
       OPInvoice method invId -> byInvoice method invId
-      OPDifference _ method invId -> byInvoice method invId
       OPCode _ -> ["a prepaid code"]
-      OPBalance _ -> []
       where
         byInvoice method (InvoiceId invId) =
           let by = " by " <> textEncode method <> " on invoice " <> invId <> maybe "" (\ref -> " (provider reference " <> ref <> ")") providerRef_
@@ -510,9 +487,6 @@ chainText chain = T.intercalate "; " $ zipWith linkText chain (map (Just . lkReg
               -- an order its invoice paid is credited only the extra of an overpayment
               kind = if cents > 0 then " overpaid" else " late"
            in [dollars cents <> by | cents > 0] <> [dollars late <> kind <> by | late > 0]
-    fromBalance cents = \case
-      Just (RegistrationId source) | cents > 0 -> [dollars cents <> " from the balance of order " <> source]
-      _ -> []
 
 dollars :: USDCents -> T.Text
 dollars = ("$" <>) . minorDecimal

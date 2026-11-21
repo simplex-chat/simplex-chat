@@ -238,14 +238,14 @@ testServiceCounts = withServiceStore $ \st -> do
 
 testNamesCounts :: IO ()
 testNamesCounts = withServiceStore $ \st -> do
-  let placedAs status rid n held = withTransaction st $ \db -> do
+  let placedAs status rid n = withTransaction st $ \db -> do
         insertInvoiceRow db ("inv-" <> rid) (at 60) status
-        createPaidRegistration db (newReg rid ownerA $ order (rid <> "bakery") n) held (paidOrder $ "inv-" <> rid) t0 `shouldReturn` Right ()
+        createPaidRegistration db (newReg rid ownerA $ order (rid <> "bakery") n) (paidOrder $ "inv-" <> rid) t0 `shouldReturn` True
       moved rid minute change = withTransaction st $ \db -> do
         Just r <- getRegistration db (RegistrationId rid)
         updateRegistration db (change r) (at minute) `shouldReturn` Written 2
-  placedAs "open" "u" 1 Nothing
-  mapM_ (\(rid, n) -> placedAs "paid" rid n Nothing) [("src", 2), ("q", 3), ("c1", 4), ("c2", 5), ("rg", 6), ("f", 7), ("me", 10)]
+  placedAs "open" "u" 1
+  mapM_ (\(rid, n) -> placedAs "paid" rid n) [("src", 2), ("q", 3), ("c1", 4), ("c2", 5), ("rg", 6), ("f", 7), ("me", 10)]
   moved "src" 1 $ \r -> r {nrPhase = OTaken}
   moved "f" 1 $ \r -> r {nrPhase = OFailed (at 1) FRRegistryRefused}
   moved "me" 1 $ \r -> r {nrPhase = OFailed (at 1) FRMonthEnded}
@@ -257,7 +257,7 @@ testNamesCounts = withServiceStore $ \st -> do
     creditBalance db (RegistrationId "src") 6000 t0
     creditBalance db (RegistrationId "f") 2500 t0
     insertInvoiceRow db "inv-badge" (at 60) "open"
-  placedAs "open" "h" 8 (Just BalanceUse {buSource = RegistrationId "src", buUsed = 6000})
+  placedAs "open" "h" 8
   withTransaction st $ \db -> do
     forM_ [(40, 0, 6), (41, 1, 7), (42, 1, 8), (43, 2, 9)] $ \(n, nonce, minute) ->
       insertTransaction db (TxRegistration RTCommit $ RegistrationId "q") NewTransaction {ntxRaw = "raw", ntxHash = TxHash $ hashFixture n, ntxNonce = nonce} (at minute)
@@ -285,8 +285,6 @@ testNamesCounts = withServiceStore $ \st -> do
                  "simplex_store_names_transactions_pending 2",
                  "simplex_store_names_transactions_oldest_pending_timestamp_seconds " <> seconds (at 7),
                  "simplex_store_names_invoices_open 2",
-                 "simplex_store_names_balances_held 1",
-                 "simplex_store_names_balances_held_cents 6000",
                  "simplex_store_names_record_edits_pending 1",
                  "simplex_store_names_record_edits_oldest_pending_timestamp_seconds " <> seconds (at 9),
                  "simplex_store_names_max_fee_per_gas_wei 100000000000",
@@ -375,7 +373,7 @@ chainSamples :: ChainRead -> [Text]
 chainSamples = filter (\l -> any (`T.isPrefixOf` l) ["simplex_store_names_registrar_", "simplex_store_names_sponsor_", "simplex_store_names_chain_", "simplex_store_names_terms_"]) . typedSamples . (\cr -> namesText fakeMaxFeePerGas noCounts cr noPasses)
   where
     noPasses = PassTimes {ptMonthPass = t0, ptCreditPass = t0}
-    noCounts = NamesCounts {ncPhases = [], ncQueueOldestChange = Nothing, ncPendingTransactions = 0, ncOldestPending = Nothing, ncOpenInvoices = 0, ncHeldBalances = 0, ncHeldCents = 0, ncPendingEdits = 0, ncOldestEdit = Nothing, ncOldestUnregisteredPaid = Nothing}
+    noCounts = NamesCounts {ncPhases = [], ncQueueOldestChange = Nothing, ncPendingTransactions = 0, ncOldestPending = Nothing, ncOpenInvoices = 0, ncPendingEdits = 0, ncOldestEdit = Nothing, ncOldestUnregisteredPaid = Nothing}
 
 seconds :: UTCTime -> Text
 seconds t = tshow (floor $ utcTimeToPOSIXSeconds t :: Integer)
