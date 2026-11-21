@@ -13,9 +13,10 @@ from pathlib import Path
 
 import pyautogui
 import pytesseract
-from PIL import ImageOps
+from PIL import ImageChops, ImageFilter, ImageOps
 
 OCR_SCALE = 2
+STROKE_FILTER = 9
 OCR_CONFIG = "--psm 11"
 FIRST_SCREEN_WAIT = 180
 STEP_WAIT = 10
@@ -68,8 +69,10 @@ class App:
     def phrases(self):
         shot = pyautogui.screenshot()
         gray = ImageOps.grayscale(shot).resize((shot.width * OCR_SCALE, shot.height * OCR_SCALE))
+        opened = gray.filter(ImageFilter.MinFilter(STROKE_FILTER)).filter(ImageFilter.MaxFilter(STROKE_FILTER))
+        light_text = ImageOps.invert(ImageOps.autocontrast(ImageChops.subtract(gray, opened)))
         found = {}
-        for image in (ImageOps.autocontrast(gray), ImageOps.invert(gray)):
+        for image in (ImageOps.autocontrast(gray), light_text):
             data = pytesseract.image_to_data(image, config=OCR_CONFIG, output_type=pytesseract.Output.DICT)
             lines = {}
             for i, word in enumerate(data["text"]):
