@@ -560,13 +560,18 @@ retryRegistration OrdersEnv {oeStore, oeNow} r@NameRegistration {nrId = Registra
         Left (WRRefused refusal) -> E.throwIO $ BrokenInvariant $ "registration " <> rid <> " is live while committed, yet its requeue was refused: " <> tshow refusal
 
 failedAttempt :: Worker -> UTCTime -> NameRegistration -> RegistrationTx -> AttemptStage -> Maybe RevertReason -> IO (Maybe Int64, Next) -> IO (Maybe Int64, Next)
-failedAttempt w@Worker {wkOrders = OrdersEnv {oeStore, oeConfig = NamesConfig {nMaxDryRunFailures, nMaxSentFailures}}} now r@NameRegistration {nrId} tx stage reason underCap = do
-  failures <- withTransaction oeStore $ \db -> recordAttempt db nrId counted attempt
-  if counted && failures >= cap
-    then failOrder w now r FRRegistryRefused $ "its " <> textEncode tx <> " failed " <> tshow failures <> " times at its " <> stageText <> ", last: " <> why
-    else underCap
+failedAttempt w@Worker {wkOrders = OrdersEnv {oeStore, oeConfig = NamesConfig {nMaxDryRunFailures, nMaxSentFailures}}} now r@NameRegistration {nrId, nrLastAttempt} tx stage reason underCap
+  | counted = do
+      failures <- withTransaction oeStore $ \db -> recordAttempt db nrId True attempt
+      if failures >= cap
+        then failOrder w now r FRRegistryRefused $ "its " <> textEncode tx <> " failed " <> tshow failures <> " times at its " <> stageText <> ", last: " <> why
+        else underCap
+  | otherwise = do
+      when newReason $ void $ withTransaction oeStore $ \db -> recordAttempt db nrId False attempt
+      underCap
   where
     counted = stage == ASSent || maybe False ((== FCPermanent) . revertClass) reason
+    newReason = maybe True (\NameAttempt {naTx, naStage, naReason} -> (naTx, naStage, naReason) /= (tx, stage, why)) nrLastAttempt
     why = maybe "mined with status 0" reasonText reason
     attempt = NameAttempt {naTx = tx, naStage = stage, naReason = why, naAt = now}
     (cap, stageText) = case stage of

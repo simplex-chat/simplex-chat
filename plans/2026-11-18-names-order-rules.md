@@ -172,7 +172,7 @@ Contracts: brenzi/simplex-namespace-contract e3ba0a5, `ens-contracts/contracts`.
 
 ### 3.2 Failure reasons are stored
 - **names:** the transactions table keeps the signed transaction, hash, nonce, send time, mined block and status, without a reason; a dry run leaves no record.
-- **Final:** the order's row counts its counted dry-run failures and its sent failures, and keeps its last failed attempt: its kind, whether a dry run or a sent transaction failed, its decoded reason and its time, for the caps, the logs and the reports; the order's view does not show it. A move, which gives the order a new commitment, clears the counts and the last attempt in the same transaction.
+- **Final:** the order's row counts its counted dry-run failures and its sent failures, and keeps its last failed attempt: its kind, whether a dry run or a sent transaction failed, its decoded reason and its time, for the caps, the logs and the reports; the order's view does not show it. A failure not counted toward a cap is written only when its kind, stage or reason changes. A move, which gives the order a new commitment, clears the counts and the last attempt in the same transaction.
 
 ### 3.3 Metrics never stop the service
 - **names:** a failing metrics listener leaves the service running (`Metrics.hs:266-267`).

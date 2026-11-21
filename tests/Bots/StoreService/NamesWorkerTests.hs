@@ -731,10 +731,12 @@ testRevertFailed = withWorker $ \w@W {wCtx = ctx@Ctx {cNode}} -> do
   answerUnowned ctx "dynamis"
   setFault cNode "eth_estimateGas" $ RpcError (-32000) "execution reverted" Nothing
   replicateM_ 3 $ steps w p >>= stalled
+  firstAt <- nowOf ctx
   advance ctx $ fromIntegral (roundedSeconds (cmRevealBefore openCommit) + 1 - fromIntegral orderSeconds)
   void $ steps w p >>= stalled
   namePhase . nrPhase <$> stored ctx p `shouldReturn` PCommitted
   (\(dryRuns, sends, attempt) -> (dryRuns, sends, (\(_, stage, _) -> stage) <$> attempt)) <$> attemptsOf ctx p `shouldReturn` (0, 0, Just ASDryRun)
+  fmap naAt . nrLastAttempt <$> stored ctx p `shouldReturn` Just firstAt
   sent w `shouldReturn` []
 
 attemptsOf :: Ctx -> NameRegistration -> IO (Int, Int, Maybe (RegistrationTx, AttemptStage, Text))
@@ -766,9 +768,9 @@ testAllowanceAcrossLapse = withWorker $ \w@W {wCtx = ctx@Ctx {cNode, cOrders}} -
   answerCommitment w r (lapse - maxAge)
   revertDryRun cNode registerCall $ Just $ selector "InsufficientAllowance(uint256,uint256)"
   void $ steps w r >>= stalled
+  stalledAt <- nowOf ctx
   advance ctx 11
   void $ steps w r >>= stalled
-  stalledAt <- nowOf ctx
   stored ctx r `shouldReturn` r {nrLastAttempt = Just NameAttempt {naTx = RTRegister, naStage = ASDryRun, naReason = "InsufficientAllowance", naAt = stalledAt}}
   revertDryRun cNode registerCall $ Just $ selector "CommitmentTooOld(bytes32,uint256,uint256)"
   void $ steps w r >>= awaiting
