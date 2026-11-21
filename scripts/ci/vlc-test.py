@@ -28,6 +28,7 @@ STATE_ENDED = 6
 STATE_ERROR = 7
 TRACK_AUDIO = 0
 TRACK_VIDEO = 1
+ORIENT_SWAP = 4
 VIDEO_SOURCE = f"testsrc2=size=320x240:rate=25:duration={SECONDS}"
 AUDIO_SOURCE = f"sine=frequency=440:sample_rate=48000:duration={SECONDS}"
 STEREO = ("-ac", "2")
@@ -74,6 +75,40 @@ class Track(Structure):
 
 class AudioTrack(Structure):
     _fields_ = [("channels", c_uint), ("rate", c_uint)]
+
+
+class VideoTrack(Structure):
+    _fields_ = [
+        ("height", c_uint),
+        ("width", c_uint),
+        ("sar_num", c_uint),
+        ("sar_den", c_uint),
+        ("frame_rate_num", c_uint),
+        ("frame_rate_den", c_uint),
+        ("orientation", c_int),
+    ]
+
+
+@dataclass(frozen=True)
+class TrackInfo:
+    type: int
+    codec: str
+    channels: int = 0
+    rate: int = 0
+    orientation: int = 0
+
+
+@dataclass(frozen=True)
+class Parsed:
+    status: int
+    duration: int
+    tracks: list[TrackInfo]
+
+
+@dataclass(frozen=True)
+class Playback:
+    state: int
+    tracks: list[TrackInfo]
 
 
 LOCK = CFUNCTYPE(c_void_p, c_void_p, POINTER(c_void_p))
@@ -209,32 +244,36 @@ class Player:
             self.libvlc.libvlc_media_add_option(media, option.encode())
         return media
 
-    def parse(self, path: Path) -> tuple[int, list[tuple[int, str, int, int]]]:
-        media = self.media(path)
-        self.libvlc.libvlc_media_parse_with_options(media, PARSE_LOCAL, PARSE_TIMEOUT_MS)
-        deadline = time.monotonic() + PARSE_TIMEOUT_MS / 1000
-        while self.libvlc.libvlc_media_get_parsed_status(media) == 0 and time.monotonic() < deadline:
-            time.sleep(POLL_SECONDS)
-        status = self.libvlc.libvlc_media_get_parsed_status(media)
-        duration = self.libvlc.libvlc_media_get_duration(media) if status == PARSED_DONE else -1
+    def tracks(self, media: int) -> list[TrackInfo]:
         tracks = POINTER(POINTER(Track))()
         count = self.libvlc.libvlc_media_tracks_get(media, byref(tracks))
         found = []
         for i in range(count):
             track = tracks[i].contents
-            channels, rate = 0, 0
+            info = TrackInfo(track.type, fourcc(track.codec))
             if track.type == TRACK_AUDIO and track.details:
                 audio = ctypes.cast(track.details, POINTER(AudioTrack)).contents
-                channels, rate = audio.channels, audio.rate
-            found.append((track.type, fourcc(track.codec), channels, rate))
+                info = TrackInfo(track.type, info.codec, channels=audio.channels, rate=audio.rate)
+            elif track.type == TRACK_VIDEO and track.details:
+                video = ctypes.cast(track.details, POINTER(VideoTrack)).contents
+                info = TrackInfo(track.type, info.codec, orientation=video.orientation)
+            found.append(info)
         if count:
             self.libvlc.libvlc_media_tracks_release(tracks, count)
-        self.libvlc.libvlc_media_release(media)
-        return duration, found
+        return found
 
-    def play(self, media: int, frames: Frames | None = None) -> int:
-        player = self.libvlc.libvlc_media_player_new_from_media(media)
+    def parse(self, path: Path) -> Parsed:
+        media = self.media(path)
+        self.libvlc.libvlc_media_parse_with_options(media, PARSE_LOCAL, PARSE_TIMEOUT_MS)
+        deadline = time.monotonic() + PARSE_TIMEOUT_MS / 1000
+        while self.libvlc.libvlc_media_get_parsed_status(media) == 0 and time.monotonic() < deadline:
+            time.sleep(POLL_SECONDS)
+        parsed = Parsed(self.libvlc.libvlc_media_get_parsed_status(media), self.libvlc.libvlc_media_get_duration(media), self.tracks(media))
         self.libvlc.libvlc_media_release(media)
+        return parsed
+
+    def play(self, media: int, frames: Frames | None = None) -> Playback:
+        player = self.libvlc.libvlc_media_player_new_from_media(media)
         if frames is not None:
             self.libvlc.libvlc_video_set_callbacks(player, frames.lock, frames.unlock, frames.display, None)
             self.libvlc.libvlc_video_set_format_callbacks(player, frames.setup, frames.cleanup)
@@ -244,43 +283,54 @@ class Player:
         while state not in (STATE_ENDED, STATE_ERROR) and time.monotonic() < deadline and (frames is None or frames.count < FRAMES):
             time.sleep(POLL_SECONDS)
             state = self.libvlc.libvlc_media_player_get_state(player)
+        playback = Playback(state, self.tracks(media))
         self.libvlc.libvlc_media_player_stop(player)
         self.libvlc.libvlc_media_player_release(player)
-        return state
+        self.libvlc.libvlc_media_release(media)
+        return playback
 
-    def show_frames(self, path: Path) -> Frames:
+    def show_frames(self, path: Path) -> tuple[Playback, Frames]:
         frames = Frames()
-        self.play(self.media(path, ":no-audio"), frames)
-        return frames
+        return self.play(self.media(path, ":no-audio"), frames), frames
 
-    def record_voice(self, path: Path, voice: Path) -> int:
+    def record_voice(self, path: Path, voice: Path) -> Playback:
         return self.play(self.media(path, ":sout=" + VOICE_SOUT % voice.as_posix(), ":sout-avcodec-strict=-2", ":no-sout-video", ":no-sout-spu"))
+
+
+def is_swapped(orientation: int) -> bool:
+    return orientation & ORIENT_SWAP != 0
 
 
 def check_media(player: Player, path: Path, media: Media, out_dir: Path) -> list[str]:
     failures = []
-    duration, tracks = player.parse(path)
-    types = {track[0] for track in tracks}
-    expected = {TRACK_AUDIO, TRACK_VIDEO} if media.video else {TRACK_AUDIO}
-    print(f"{media.name}: duration {duration} ms, tracks {tracks}", flush=True)
-    if duration <= 0:
-        failures.append(f"{media.name}: not parsed, duration {duration}")
-    if types != expected:
-        failures.append(f"{media.name}: track types {sorted(types)}, expected {sorted(expected)}")
+    parsed = player.parse(path)
+    print(f"{media.name}: parsed with status {parsed.status}, duration {parsed.duration} ms, tracks {parsed.tracks}", flush=True)
+    if parsed.status != PARSED_DONE:
+        failures.append(f"{media.name}: parse status {parsed.status}")
+    tracks = list(parsed.tracks)
     if media.video:
-        frames = player.show_frames(path)
+        shown, frames = player.show_frames(path)
         width, height = frames.size
-        print(f"{media.name}: {frames.count} frames of {width}x{height}", flush=True)
+        tracks += shown.tracks
+        orientations = {track.orientation for track in shown.tracks if track.type == TRACK_VIDEO}
+        print(f"{media.name}: {frames.count} frames of {width}x{height}, state {shown.state}, tracks {shown.tracks}", flush=True)
         if frames.count < FRAMES:
             failures.append(f"{media.name}: {frames.count} frames shown, expected {FRAMES}")
+        if not orientations or any(is_swapped(orientation) != media.portrait for orientation in orientations):
+            failures.append(f"{media.name}: video orientation {sorted(orientations)}")
         if frames.count and (height > width) != media.portrait:
             failures.append(f"{media.name}: frames of {width}x{height}, expected {'portrait' if media.portrait else 'landscape'}")
     voice = out_dir / f"{path.name}.m4a"
-    state = player.record_voice(path, voice)
-    voice_duration, voice_tracks = player.parse(voice) if voice.exists() else (-1, [])
-    print(f"{media.name}: voice recording state {state}, duration {voice_duration} ms, tracks {voice_tracks}", flush=True)
-    if voice_tracks != [(TRACK_AUDIO, "mp4a", VOICE_CHANNELS, VOICE_RATE)] or voice_duration <= 0:
-        failures.append(f"{media.name}: voice recording has duration {voice_duration} and tracks {voice_tracks}")
+    recorded = player.record_voice(path, voice)
+    tracks += recorded.tracks
+    recording = player.parse(voice) if voice.exists() else Parsed(0, -1, [])
+    print(f"{media.name}: voice recording state {recorded.state}, duration {recording.duration} ms, tracks {recording.tracks}", flush=True)
+    if recording.tracks != [TrackInfo(TRACK_AUDIO, "mp4a", VOICE_CHANNELS, VOICE_RATE)] or recording.duration <= 0:
+        failures.append(f"{media.name}: voice recording has duration {recording.duration} and tracks {recording.tracks}")
+    types = {track.type for track in tracks}
+    expected = {TRACK_AUDIO, TRACK_VIDEO} if media.video else {TRACK_AUDIO}
+    if types != expected:
+        failures.append(f"{media.name}: track types {sorted(types)}, expected {sorted(expected)}")
     return failures
 
 
