@@ -390,6 +390,7 @@ var platform: PlatformInterface = object : PlatformInterface {}
 | `androidLockPortraitOrientation()` | no-op | Lock to `SCREEN_ORIENTATION_PORTRAIT` |
 | `androidAskToAllowBackgroundCalls()` | `true` | Show battery restriction dialog |
 | `desktopShowAppUpdateNotice()` | no-op | Show update notice (Desktop only) |
+| `desktopSetupUpdateChecker()` | no-op | Restart the update checker for the current channel (Desktop only) |
 
 ---
 

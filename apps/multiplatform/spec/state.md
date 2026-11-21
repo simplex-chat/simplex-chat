@@ -482,13 +482,14 @@ val appPrefs: AppPreferences by lazy { AppPreferences() }
 | `migrationToStage` | `String?` | null | Migration-to-device progress |
 | `migrationFromStage` | `String?` | null | Migration-from-device progress |
 
-#### Updates and Versioning (lines 184-186, 235-237)
+#### Updates and Versioning (lines 209-212, 262-264)
 
 | Key | Type | Default | Purpose |
 |---|---|---|---|
-| `appUpdateChannel` | `AppUpdatesChannel` | `DISABLED` | DISABLED / STABLE / BETA |
+| `appUpdateChannel` | `AppUpdatesChannel` | `DISABLED` | DISABLED / STABLE / BETA / INTERNAL |
 | `appSkippedUpdate` | `String` | `""` | Skipped update version |
 | `appUpdateNoticeShown` | `Boolean` | `false` | Update notice shown |
+| `allowInternalBuilds` | `Boolean` | `false` | INTERNAL offered in the update channels (desktop) |
 | `whatsNewVersion` | `String?` | null | Last "What's New" version seen |
 | `lastMigratedVersionCode` | `Int` | `0` | Last app version code for data migrations |
 | `customDisappearingMessageTime` | `Int` | `300` | Custom disappearing message time (seconds) |

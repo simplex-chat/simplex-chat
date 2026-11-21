@@ -1,7 +1,9 @@
 #!/bin/bash
 
 # Starts the desktop app on a virtual display and runs the scripted UI cases with the ui helper: onboarding to the
-# chat list, a local group, then the chat list with the toolbar at the bottom (the default) and at the top, then
+# chat list, a local group, then the chat list with the toolbar at the bottom (the default), the update channels in
+# Settings with "Allow internal builds" off and on, Internal selected and reset to Stable by the toggle turned off,
+# the chat list with the toolbar at the top, then
 # tests/fixtures/test.jpg and logo-large-rgba.png picked in the file dialog and sent in the group.
 # Usage: scripts/ci/desktop-linux/smoke-test.sh <app dir> <output dir> [start|onboarding|layouts|setup|backend]
 # With "start" it stops at the first screen, for an agent to go on from; with "onboarding", at the chat list.
@@ -118,11 +120,11 @@ left_pane_position() {
 }
 
 on_screen() {
-  left_pane_position "$1" > /dev/null
+  left_pane_position "$1" "${2:-}" > /dev/null
 }
 
 not_on_screen() {
-  ! left_pane_position "$1" > /dev/null
+  ! left_pane_position "$1" "${2:-}" > /dev/null
 }
 
 y_of() {
@@ -378,6 +380,81 @@ send_images() {
   send_image logo-large-rgba.png png
 }
 
+open_update_channels() {
+  local x y
+  read -r x y < <(left_pane_position "$1" exact) || fail "no update channel $1 in Settings > app version"
+  "$ui" click "$x" "$y"
+  "$ui" wait Beta 10 || fail "no update channel menu"
+}
+
+switch_internal_builds() {
+  local y
+  "$ui" click-text "Developer tools" 10
+  "$ui" wait "Show developer options" 10
+  scroll_to "Allow internal builds" || fail "no \"Allow internal builds\" in Developer tools"
+  "$ui" shot "internal-builds-before-$1"
+  y=$(y_of "Allow internal builds")
+  "$ui" click "$switch_x" "$y"
+  "$ui" shot "internal-builds-$1"
+}
+
+update_check_lines() {
+  grep -cE "Failed to get the latest release|Skipping update|No assets to download" "$UI_OUT/app.log" || true
+}
+
+end_update_check() {
+  for _ in $(seq 30); do
+    if "$ui" find "Remind later" > /dev/null 2>&1; then
+      "$ui" click-text "Remind later" 10
+      return 0
+    fi
+    [ "$(update_check_lines)" -gt "$1" ] && return 0
+    sleep 1
+  done
+  return 1
+}
+
+check_internal_builds() {
+  local version x y lines settings=$state/config/simplex/settings.properties
+  version=$(sed -n 's/^desktop.version_name=//p' "$(dirname "$0")/../../../apps/multiplatform/gradle.properties")
+  open_settings
+  scroll_to "$version" || fail "no app version $version in Settings"
+  read -r x y < <(left_pane_position "$version") || fail "no app version $version in Settings"
+  "$ui" click "$x" "$y"
+  "$ui" wait "Check for updates" 10
+  open_update_channels Disabled
+  "$ui" shot update-channels
+  check "the update channels lack Internal while internal builds are not allowed" not_on_screen Internal exact
+  "$ui" click-text "App version" 10
+  switch_internal_builds on
+  check "\"Allow internal builds\" is saved on" grep -qx AllowInternalBuilds=true "$settings"
+  "$ui" key Escape
+  "$ui" wait "Check for updates" 10
+  open_update_channels Disabled
+  "$ui" shot update-channels-internal
+  check "the update channels list Internal while internal builds are allowed" on_screen Internal exact
+  lines=$(update_check_lines)
+  "$ui" click-text Internal 10
+  check "the update check started by selecting Internal logs its end or offers an update, closed with Remind later" end_update_check "$lines"
+  "$ui" shot update-channel-internal
+  check "Internal is saved as the update channel" grep -qx AppUpdateChannel=INTERNAL "$settings"
+  check "Internal is shown as the update channel" in_line_with Internal "Check for updates"
+  lines=$(update_check_lines)
+  switch_internal_builds off
+  check "the update check started by the reset to Stable logs its end or offers an update, closed with Remind later" end_update_check "$lines"
+  check "\"Allow internal builds\" is saved off" grep -qx AllowInternalBuilds=false "$settings"
+  check "the update channel is saved as Stable after internal builds are not allowed" grep -qx AppUpdateChannel=STABLE "$settings"
+  "$ui" key Escape
+  "$ui" wait "Check for updates" 10
+  "$ui" shot update-channel-stable
+  check "Stable is shown as the update channel after internal builds are not allowed" in_line_with Stable "Check for updates"
+  open_update_channels Stable
+  "$ui" shot update-channels-reset
+  check "the update channels lack Internal after internal builds are not allowed" not_on_screen Internal exact
+  "$ui" click-text "App version" 10
+  back_to_chat_list || fail "no chat list after the update channels"
+}
+
 # private routing to unknown servers only: the preset servers that would proxy name lookups can't reach the test SMP
 # server on 127.0.0.1; developer tools at the debug level put the app's debug log in app.log
 "$ui" start "$app_dir" NetworkSMPProxyMode=Unknown DeveloperTools=true LogLevel=DEBUG
@@ -433,6 +510,7 @@ if [ "$cases" = setup ] || [ "$cases" = backend ]; then
 fi
 
 check_layout bottom
+check_internal_builds
 use_top_toolbar
 check_layout top
 send_images

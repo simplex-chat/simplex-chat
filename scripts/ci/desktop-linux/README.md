@@ -1,6 +1,6 @@
 # Desktop app CI on Linux
 
-`.github/workflows/desktop-linux.yml` builds the desktop app from the branch on a GitHub runner (Ubuntu 24.04), runs its JVM tests (`:common:desktopTest`), and drives the app on a virtual display: onboarding to the chat list, then the chat list with the toolbar at the bottom (the default) and at the top. On request it also runs Claude Code driving the same path, a test backend, and the latest release as a baseline.
+`.github/workflows/desktop-linux.yml` builds the desktop app from the branch on a GitHub runner (Ubuntu 24.04), runs its JVM tests (`:common:desktopTest`), and drives the app on a virtual display: onboarding to the chat list, then the chat list with the toolbar at the bottom (the default), the update channels with internal builds allowed and not, the chat list with the toolbar at the top, and two images sent in a group. On request it also runs Claude Code driving the same path, a test backend, and the latest release as a baseline.
 
 ## Running it
 
@@ -14,7 +14,7 @@ Every run builds the core library, and the backend when it's asked for, from the
 |---|---|---|
 | `plan` | chooses the jobs, finds earlier core and backend builds | 10 s |
 | `core` | `scripts/desktop/build-lib-linux.sh` via `build-core.sh` | skipped when reused, about 24 min not |
-| `app` | the app (`:desktop:createDistributable`), desktopTest with the snapshots, `smoke-test.sh` | about 12 min: build 4.5, desktopTest 0.7, smoke test 3.5 |
+| `app` | the app (`:desktop:createDistributable`), desktopTest with the snapshots, `smoke-test.sh` | about 13 min: build 4.5, desktopTest 0.7, smoke test 7 |
 | `claude` (opt-in) | after `app` passed: its distributable at the first screen, then Claude Code drives it | about 4 min, Claude 3 |
 | `backend` (opt-in) | `build-backend.sh`: `simplex-chat`, `simplex-directory-service`, and `smp-server` from the simplexmq commit `cabal.project` pins | about 30 min, skipped when reused |
 | `release` (opt-in) | the latest release's .deb for this Ubuntu, onboarding only, to tell a branch's failure from the runner's | 1.5 min |
@@ -24,7 +24,7 @@ Queueing for a runner adds from under a minute to 20 minutes. Results are artifa
 ## Scripts
 
 - `ui`: the UI driver. Compose for Desktop has no accessibility tree on Linux, so it finds text on screenshots by OCR (tesseract) and acts with xdotool on an Xvfb display. `ui` alone prints its commands: start (with app settings), shot, text, find, wait, click, right-click, click-text, scroll, type, key, avatar (a profile image's colour), ink (a text's height), do (several in a row), stop. `screen-text.py`, `screen-colour.py` and `screen-ink.py` are its helpers.
-- `smoke-test.sh <app dir> <out dir> [start|onboarding|setup|backend]`: the scripted cases; the default is onboarding, a local group, both layouts, and `tests/fixtures/test.jpg` and `logo-large-rgba.png` picked in the file dialog, resized by the core, previewed and sent in the group. `setup` also creates a local group and makes the test SMP server the app's only names server; `backend` does that, connects to the seeded name, and checks both layouts.
+- `smoke-test.sh <app dir> <out dir> [start|onboarding|setup|backend]`: the scripted cases; the default is onboarding, a local group, the update channels in Settings with Developer tools' "Allow internal builds" off and on, Internal selected and reset to Stable by the toggle turned off, both layouts, and `tests/fixtures/test.jpg` and `logo-large-rgba.png` picked in the file dialog, resized by the core, previewed and sent in the group. `setup` also creates a local group and makes the test SMP server the app's only names server; `backend` does that, connects to the seeded name, and goes on as the default case after the local group. Selecting Internal requests the releases of simplex-chat/simplex-chat-test; until the internal release workflow creates that repository, GitHub answers 404 and the app logs "Failed to get the latest release"; once it has releases, the app can offer one, and the case closes that alert with "Remind later"; it does the same for the check that the reset to Stable starts, when a newer stable release exists.
 - `backend.sh start <tar.gz> <dir>` / `stop <dir>`: the test backend, below.
 - `claude-test.sh`, `claude-test.md` (the prompt), `claude-scope` (whether the prompt uses the test backend, and optionally the session's turns and budget), `claude-guard.py`, `claude-usage.py`: the Claude job.
 - `build-core.sh`, `install-core.sh`, `build-backend.sh`, `earlier-run.sh`, `release-app.sh`, `test-summary.py`: builds, reuse and reports.

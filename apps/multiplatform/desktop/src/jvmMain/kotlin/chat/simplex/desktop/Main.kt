@@ -96,6 +96,10 @@ private fun initHaskell() {
         }
       }
     }
+
+    override fun desktopSetupUpdateChecker() {
+      setupUpdateChecker()
+    }
   }
 }
 
