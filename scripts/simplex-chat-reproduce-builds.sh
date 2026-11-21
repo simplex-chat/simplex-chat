@@ -70,6 +70,7 @@ for os_pair in ${oses}; do
         --device /dev/fuse \
         --cap-add SYS_ADMIN \
         --security-opt apparmor:unconfined \
+        -e CABAL_DIR=/home/builder/.cabal \
         -v "${tempdir}/${repo_name}:/project" \
         "${image_name}"
 

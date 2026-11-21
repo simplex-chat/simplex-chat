@@ -1,18 +1,22 @@
 package chat.simplex.common.views.chat.item
 
 import SectionBottomSpacer
+import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.painter.BitmapPainter
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.UriHandler
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -25,6 +29,7 @@ import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.DEFAULT_PADDING
+import chat.simplex.common.ui.theme.SimpleXTheme
 import chat.simplex.common.ui.theme.WarningOrange
 import chat.simplex.common.views.chat.topPaddingToContent
 import chat.simplex.common.views.helpers.*
@@ -41,6 +46,7 @@ import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import org.intellij.markdown.MarkdownElementTypes
 import org.intellij.markdown.ast.ASTNode
@@ -56,6 +62,8 @@ import java.util.Base64
 private const val DATA_IMAGE = "data:image/"
 private val IMAGE_TYPES = listOf(ImageFileType.JPEG, ImageFileType.PNG)
 private const val MAX_MARKDOWN_VIEW_SIZE: Long = 1_048_576
+private const val MAX_MARKDOWN_COPY_SIZE = 131_072
+private const val MAX_ANDROID_COPY_SIZE = 524_288
 private const val MAX_MARKDOWN_LINE_LENGTH = 15_000
 private const val MAX_MARKDOWN_DEPTH = 32
 private const val MAX_MARKDOWN_TABLE_ROWS = 200
@@ -67,7 +75,9 @@ private val bidiControlChar = Regex("[\\u061C\\u200E\\u200F\\u202A-\\u202E\\u206
 
 private val invisibleCharMarkerStyle = SpanStyle(color = WarningOrange)
 
-private class MarkdownDocument(val lines: List<String>, val formatted: State.Success?, val hasBidiControls: Boolean)
+internal class MarkdownLine(val text: String, val lineBreak: Boolean)
+
+internal class MarkdownDocument(val text: String, val lines: List<MarkdownLine>, val formatted: State.Success?, val hasBidiControls: Boolean)
 
 fun isMarkdownFile(file: CIFile): Boolean =
   file.fileSize <= MAX_MARKDOWN_VIEW_SIZE && file.fileName.substringAfterLast('.', "").lowercase() in listOf("md", "markdown")
@@ -90,24 +100,29 @@ fun showMarkdownFile(file: CIFile) {
       AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error), e.message)
       return@withLongRunningApi
     }
-    val text = decodedText(bytes)
-    val lines = text.lines()
-    val formatted = if (lines.all { it.length <= MAX_MARKDOWN_LINE_LENGTH }) formattedWithinLimits(text) else null
-    val document = MarkdownDocument(
-      lines.flatMap { line -> line.chunked(MAX_MARKDOWN_LINE_LENGTH).ifEmpty { listOf("") } },
-      formatted,
-      bidiControlChar.containsMatchIn(text)
-    )
+    val document = markdownDocument(bytes)
     withContext(Dispatchers.Main) {
       if (appPlatform.isDesktop && ModalManager.center.isTopModalOpen(ModalViewId.MARKDOWN_FILE)) ModalManager.center.closeModal()
-      ModalManager.center.showModal(id = ModalViewId.MARKDOWN_FILE, endButtons = {
-        if (formatted != null) MarkdownViewSwitch()
-        MarkdownFileSaveButton(file, bytes)
-      }) {
+      ModalManager.center.showModal(id = ModalViewId.MARKDOWN_FILE, endButtons = { MarkdownFileButtons(file, bytes, document) }) {
         key(this) { MarkdownFileView(file.fileName, document) }
       }
     }
   }
+}
+
+internal suspend fun markdownDocument(bytes: ByteArray): MarkdownDocument {
+  val text = decodedText(bytes)
+  val lines = text.lines()
+  val formatted = if (lines.all { it.length <= MAX_MARKDOWN_LINE_LENGTH }) formattedWithinLimits(text) else null
+  return MarkdownDocument(
+    text,
+    lines.flatMapIndexed { i, line ->
+      val chunks = line.chunked(MAX_MARKDOWN_LINE_LENGTH).ifEmpty { listOf("") }
+      chunks.mapIndexed { j, chunk -> MarkdownLine(chunk, lineBreak = i < lines.lastIndex && j == chunks.lastIndex) }
+    },
+    formatted,
+    bidiControlChar.containsMatchIn(text)
+  )
 }
 
 private fun decodedText(bytes: ByteArray): String =
@@ -146,6 +161,39 @@ private fun MarkdownViewSwitch() {
 }
 
 @Composable
+private fun MarkdownFileButtons(file: CIFile, bytes: ByteArray, document: MarkdownDocument) {
+  MarkdownFileCopyButton(document.text, bytes.size, if (appPlatform.isAndroid) MAX_ANDROID_COPY_SIZE else null)
+  if (document.formatted != null) MarkdownViewSwitch()
+  MarkdownFileSaveButton(file, bytes)
+}
+
+@Composable
+internal fun MarkdownFileCopyButton(text: String, fileSize: Int, maxSize: Int?) {
+  val clipboard = LocalClipboardManager.current
+  IconButton({
+    val copy = {
+      clipboard.setText(AnnotatedString(text))
+      showToast(generalGetString(MR.strings.copied))
+    }
+    when {
+      maxSize != null && fileSize > maxSize -> AlertManager.shared.showAlertMsg(
+        generalGetString(MR.strings.markdown_file_too_large),
+        String.format(generalGetString(MR.strings.markdown_file_copy_limit), formatBytes(maxSize.toLong()))
+      )
+      fileSize > MAX_MARKDOWN_COPY_SIZE -> AlertManager.shared.showAlertDialog(
+        title = generalGetString(MR.strings.markdown_file_too_large),
+        text = String.format(generalGetString(MR.strings.markdown_file_copy_large), formatBytes(fileSize.toLong())),
+        confirmText = generalGetString(MR.strings.copy_verb),
+        onConfirm = copy
+      )
+      else -> copy()
+    }
+  }) {
+    Icon(painterResource(MR.images.ic_content_copy), stringResource(MR.strings.copy_verb), tint = MaterialTheme.colors.primary)
+  }
+}
+
+@Composable
 private fun MarkdownFileSaveButton(file: CIFile, bytes: ByteArray) {
   val saveFileLauncher = rememberFileChooserLauncher(false, bytes) { to: URI? ->
     if (to != null) copyBytesToFile(ByteArrayInputStream(bytes), to) {}
@@ -156,20 +204,28 @@ private fun MarkdownFileSaveButton(file: CIFile, bytes: ByteArray) {
 }
 
 @Composable
-private fun MarkdownFileView(fileName: String, document: MarkdownDocument) {
+internal fun MarkdownFileView(fileName: String, document: MarkdownDocument) {
   val textView = remember { appPrefs.markdownFileTextView.state }
   val formatted = document.formatted
   if (textView.value || formatted == null) {
     SelectionContainer {
       MarkdownFileColumn(fileName, document.hasBidiControls) {
         items(document.lines) { line ->
-          Text(remember(line) { withInvisibleCharMarkers(line) }, Modifier.padding(horizontal = DEFAULT_PADDING), fontFamily = FontFamily.Monospace)
+          Box(Modifier.padding(horizontal = DEFAULT_PADDING)) {
+            Text(remember(line) { withInvisibleCharMarkers(line.text) }, fontFamily = FontFamily.Monospace)
+            if (line.lineBreak) SelectableLineBreak()
+          }
         }
       }
     }
   } else {
     FormattedMarkdown(fileName, formatted, document.hasBidiControls)
   }
+}
+
+@Composable
+private fun BoxScope.SelectableLineBreak() {
+  Text("\n", Modifier.align(Alignment.BottomEnd).height(1.dp).clearAndSetSemantics {})
 }
 
 private fun withInvisibleCharMarkers(line: String): AnnotatedString = buildAnnotatedString {
@@ -293,4 +349,16 @@ private class DataImageTransformer : ImageTransformer {
 private fun hasImageSignature(base64: String): Boolean {
   val header = runCatching { Base64.getDecoder().decode(base64.take(12)) }.getOrNull() ?: return false
   return IMAGE_TYPES.any { it.matches(header) }
+}
+
+@Preview
+@Composable
+fun PreviewMarkdownFileView() {
+  val bytes = remember { "# Release notes\n\n- markdown files in chats\n- a button to copy the file\n".encodeToByteArray() }
+  val document = remember { runBlocking { markdownDocument(bytes) } }
+  SimpleXTheme {
+    ModalView(close = {}, endButtons = { MarkdownFileButtons(CIFile.getSample(fileName = "notes.md"), bytes, document) }) {
+      MarkdownFileView("notes.md", document)
+    }
+  }
 }
