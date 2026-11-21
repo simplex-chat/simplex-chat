@@ -8,6 +8,7 @@ module StoreService.Names.View
   ( RegistrationView (..),
     PaidWith (..),
     BalanceView (..),
+    HoldView (..),
     PhaseView (..),
     Signing (..),
     ToSign (..),
@@ -52,7 +53,7 @@ import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Profiles (deadlineIn, withSlot)
 import StoreService.Names.Registration (LinkKind)
 import StoreService.Names.Signatures (AgreedTerms (..))
-import StoreService.Names.Store (AttemptStage, Balance (..), BalanceHold (..), BalanceUse (..), Commit (..), FailReason, HoldState, InvoiceClose, LateWait, NameAttempt (..), NameRegistration (..), NameReveal (..), OrderPayment (..), OrderPhase (..), RegistrationTx, TxHistory (..), getBalance, getRegistration, heldBy, lateWait, orderLive, paymentInvoice)
+import StoreService.Names.Store (AttemptStage, Balance (..), BalanceHold (..), BalanceUse (..), Commit (..), FailReason, HoldState (..), InvoiceClose, LateWait, NameAttempt (..), NameRegistration (..), NameReveal (..), OrderPayment (..), OrderPhase (..), RegistrationTx, TxHistory (..), getBalance, getRegistration, lateWait, orderLive, paymentInvoice)
 
 data PaidWith
   = PWInvoice {method :: Text}
@@ -62,7 +63,10 @@ data PaidWith
   deriving (Eq, Show)
 
 -- | The holder is not named, so an order's link discloses no other order. An overdue hold reads as none.
-data BalanceView = BalanceView {amount :: USDCents, hold :: Maybe HoldState, refunded :: USDCents}
+data BalanceView = BalanceView {amount :: USDCents, hold :: Maybe HoldView, refunded :: USDCents}
+  deriving (Eq, Show)
+
+data HoldView = HVOpen {heldUntil :: UTCTime} | HVFunded
   deriving (Eq, Show)
 
 data PhaseView
@@ -113,6 +117,8 @@ data AttemptView = AttemptView {transaction :: RegistrationTx, stage :: AttemptS
   deriving (Eq, Show)
 
 $(JQ.deriveToJSON (taggedObjectJSON $ dropPrefix "PW") ''PaidWith)
+
+$(JQ.deriveToJSON (taggedObjectJSON $ dropPrefix "HV") ''HoldView)
 
 $(JQ.deriveToJSON defaultJSON {J.omitNothingFields = False} ''BalanceView)
 
@@ -234,7 +240,12 @@ paidWith = \case
   OPCode _ -> PWCode
 
 balanceView :: Balance -> BalanceView
-balanceView b@Balance {blAmount, blRefunded} = BalanceView {amount = blAmount, hold = bhState <$> heldBy b, refunded = blRefunded}
+balanceView Balance {blAmount, blRefunded, blHold} = BalanceView {amount = blAmount, hold = blHold >>= holdView . bhState, refunded = blRefunded}
+  where
+    holdView = \case
+      HSOpen t -> Just $ HVOpen t
+      HSFunded -> Just HVFunded
+      HSOverdue _ -> Nothing
 
 -- | EIP-55, as the page compares owners.
 addressText :: Address -> Text
