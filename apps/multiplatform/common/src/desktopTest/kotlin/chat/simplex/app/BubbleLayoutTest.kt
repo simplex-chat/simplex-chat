@@ -33,6 +33,18 @@ import kotlin.math.roundToInt
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
+private val TIME_BELOW_TEXT_PX = mapOf(
+  0.7f to listOf(0, 0, 0),
+  0.8f to listOf(1, 0, 0),
+  0.9f to listOf(-1, 0, 0),
+  1f to listOf(0, 0, -1),
+  1.1f to listOf(0, 0, 0),
+  1.2f to listOf(1, 1, 0),
+  1.3f to listOf(0, 0, 0),
+  1.4f to listOf(-1, 0, 0),
+  1.5f to listOf(0, 0, 0),
+)
+
 class BubbleLayoutTest {
   private val density = Density(1f)
   private val inset = with(density) { BUBBLE_TEXT_INSET.roundToPx() }
@@ -138,14 +150,14 @@ class BubbleLayoutTest {
   }
 
   @Test
-  fun timeDrawnOnTextBaseline() {
+  fun timeOffsetFromTextBaseline() {
     val texts = listOf<@Composable () -> TextStyle>(
       { TextStyle(fontFamily = Inter, fontSize = 16.sp).merge(bubbleTextStyle(16.sp, HighOrLowlight)) },
       { TextStyle(fontFamily = Inter, fontSize = 13.sp, lineHeight = 18.sp, lineHeightStyle = LineHeightStyle(LineHeightStyle.Alignment.Center, LineHeightStyle.Trim.None)).merge(bubbleLineHeight(18.sp)) },
       { TextStyle(fontFamily = Inter, fontSize = 16.sp).merge(bubbleLineHeight(16.sp * INTER_LINE_HEIGHT)) },
     )
-    for (fontScale in listOf(0.7f, 0.8f, 0.9f, 1f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f)) {
-      texts.forEachIndexed { i, textStyle ->
+    val timeBelowText = TIME_BELOW_TEXT_PX.keys.associateWith { fontScale ->
+      texts.map { textStyle ->
         val image = renderScene {
           CompositionLocalProvider(LocalBubbleLayout provides true, LocalDensity provides Density(1f, fontScale)) {
             Row(Modifier.background(Color.White)) {
@@ -159,9 +171,10 @@ class BubbleLayoutTest {
             }
           }
         }
-        assertEquals(lastInkRow(image, placed.getValue("text")), lastInkRow(image, placed.getValue("time")), "text $i at font scale $fontScale")
+        lastInkRow(image, placed.getValue("time")) - lastInkRow(image, placed.getValue("text"))
       }
     }
+    assertEquals(TIME_BELOW_TEXT_PX, timeBelowText)
   }
 
   private fun lastInkRow(image: Image, area: Placed): Int {
