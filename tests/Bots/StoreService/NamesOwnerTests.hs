@@ -402,7 +402,9 @@ testMoveMonth :: IO ()
 testMoveMonth = withOwner $ \ctx -> do
   forM_ ["alicebakers", "carolbakery", "dianabakery"] $ answerFree ctx
   r <- takenIn ctx aliceOrder id
-  (codeTaken, _) <- codeIn ctx 8 aliceOrder {oLabel = "carolbakery", oSecret = secretOf 2, oSealed = "sealed-carolbakery-2"} takenPhase
+  (codeText, _) <- issueCode ctx 8 2 id
+  codeOrder <- registrationById ctx =<< registered ctx codeText aliceOrder {oLabel = "carolbakery", oSecret = secretOf 2, oSealed = "sealed-carolbakery-2"}
+  codeTaken <- rewrite ctx codeOrder takenPhase
   let heldPhase = Just (phaseValue "taken" [("heldUntil", J.toJSON $ addUTCTime (31 * 86400) orderTime)])
   v <- getView ctx r
   fieldOf v "phase" `shouldBe` heldPhase
