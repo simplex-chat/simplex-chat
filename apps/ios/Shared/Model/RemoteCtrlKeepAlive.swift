@@ -1,10 +1,3 @@
-//
-//  RemoteCtrlKeepAlive.swift
-//  SimpleX (iOS)
-//
-//  Copyright © 2026 SimpleX Chat. All rights reserved.
-//
-
 import ActivityKit
 import AVFoundation
 import Combine
@@ -25,20 +18,22 @@ private struct AudioSessionConfig {
     var prefersNoInterruptionsFromSystemAlerts: Bool
 }
 
+protocol RemoteCtrlKeepAliveServices: AnyObject {
+    func startAudio(onFailure: @escaping (String) -> Void) -> Bool
+    func stopAudio()
+    func showIndicator(_ desktopName: String?)
+    func endIndicator()
+}
+
 final class RemoteCtrlKeepAlive: ObservableObject {
     static let shared = RemoteCtrlKeepAlive()
 
     @Published private(set) var running = false
+    var services: RemoteCtrlKeepAliveServices = RemoteCtrlSystemServices()
     private var sessionSubscription: AnyCancellable?
-    private var savedAudioSession: AudioSessionConfig?
-    private var audioEngine: AVAudioEngine?
-    private var engineObserver: NSObjectProtocol?
-    private var audioSessionObservers: [NSObjectProtocol] = []
-    private var activityStateTask: Task<Void, Never>?
 
     func observeSession() {
-        // a previous process could be terminated while connected, without ending its indicator
-        endIndicator()
+        services.endIndicator()
         sessionSubscription = ChatModel.shared.$remoteCtrlSession
             .map { session -> RemoteCtrlInfo? in
                 if case let .connected(remoteCtrl, _) = session?.sessionState { remoteCtrl } else { nil }
@@ -64,15 +59,14 @@ final class RemoteCtrlKeepAlive: ObservableObject {
     func stop() {
         guard running else { return }
         running = false
-        stopAudio()
-        endIndicator()
+        services.stopAudio()
+        services.endIndicator()
     }
 
     private func sessionConnected(_ remoteCtrl: RemoteCtrlInfo) {
-        // a call owns the audio session and keeps the app running until it ends
-        if ChatModel.shared.activeCall == nil && startAudio() {
+        if ChatModel.shared.activeCall == nil && services.startAudio(onFailure: { [weak self] reason in self?.audioFailed(reason) }) {
             running = true
-            showIndicator(ChatModel.shared.notificationPreview == .hidden ? nil : remoteCtrl.deviceViewName)
+            services.showIndicator(ChatModel.shared.notificationPreview == .hidden ? nil : remoteCtrl.deviceViewName)
         }
         AppDelegate.keepScreenOn(!running)
     }
@@ -82,7 +76,6 @@ final class RemoteCtrlKeepAlive: ObservableObject {
         guard running else { return }
         stop()
         if UIApplication.shared.applicationState == .background {
-            // runs after the ended session is published, so the local session is loaded before the chat is suspended
             DispatchQueue.main.async {
                 switchToLocalSession()
                 if AppChatState.shared.value.canSuspend {
@@ -92,7 +85,26 @@ final class RemoteCtrlKeepAlive: ObservableObject {
         }
     }
 
-    private func startAudio() -> Bool {
+    private func audioFailed(_ reason: String) {
+        guard running else { return }
+        logger.error("RemoteCtrlKeepAlive audio stopped: \(reason)")
+        let endTask = beginBGTask()
+        Task {
+            await disconnect()
+            endTask()
+        }
+    }
+}
+
+final class RemoteCtrlSystemServices: RemoteCtrlKeepAliveServices {
+    private var savedAudioSession: AudioSessionConfig?
+    private var audioEngine: AVAudioEngine?
+    private var engineObserver: NSObjectProtocol?
+    private var audioSessionObservers: [NSObjectProtocol] = []
+    private var audioFailed: ((String) -> Void)?
+    private var activityStateTask: Task<Void, Never>?
+
+    func startAudio(onFailure: @escaping (String) -> Void) -> Bool {
         let session = AVAudioSession.sharedInstance()
         savedAudioSession = AudioSessionConfig(
             category: session.category,
@@ -110,94 +122,21 @@ final class RemoteCtrlKeepAlive: ObservableObject {
             stopAudio()
             return false
         }
+        audioFailed = onFailure
         let nc = NotificationCenter.default
         audioSessionObservers = [
             nc.addObserver(forName: AVAudioSession.interruptionNotification, object: session, queue: .main) { [weak self] notification in
                 self?.audioInterrupted(notification)
             },
             nc.addObserver(forName: AVAudioSession.mediaServicesWereResetNotification, object: session, queue: .main) { [weak self] _ in
-                self?.audioFailed("media services were reset")
+                self?.audioFailed?("media services were reset")
             }
         ]
         return true
     }
 
-    private func playSilence() throws {
-        guard let format = AVAudioFormat(standardFormatWithSampleRate: silenceSampleRate, channels: 1),
-              let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: silenceFrames) else {
-            throw RemoteCtrlKeepAliveError.silenceBuffer
-        }
-        buffer.frameLength = silenceFrames
-        // a new buffer is not guaranteed to be zero-filled
-        for channel in UnsafeMutableAudioBufferListPointer(buffer.mutableAudioBufferList) {
-            if let data = channel.mData {
-                memset(data, 0, Int(channel.mDataByteSize))
-            }
-        }
-        let engine = AVAudioEngine()
-        let player = AVAudioPlayerNode()
-        engine.attach(player)
-        engine.connect(player, to: engine.mainMixerNode, format: format)
-        player.scheduleBuffer(buffer, at: nil, options: .loops)
-        try engine.start()
-        player.play()
-        audioEngine = engine
-        // the engine stops itself when the output route changes its format
-        engineObserver = NotificationCenter.default.addObserver(forName: .AVAudioEngineConfigurationChange, object: engine, queue: .main) { [weak self] _ in
-            self?.restartAudio()
-        }
-    }
-
-    private func audioInterrupted(_ notification: Notification) {
-        guard let info = notification.userInfo,
-              let typeValue = info[AVAudioSessionInterruptionTypeKey] as? UInt,
-              let type = AVAudioSession.InterruptionType(rawValue: typeValue) else { return }
-        switch type {
-        case .began:
-            // posted only when the app runs again after the system suspended it and deactivated its session
-            if let reasonValue = info[AVAudioSessionInterruptionReasonKey] as? UInt,
-               AVAudioSession.InterruptionReason(rawValue: reasonValue) == .appWasSuspended {
-                restartAudio()
-            }
-        case .ended:
-            // silent mixable audio does not compete with other audio, so it resumes without the shouldResume option
-            restartAudio()
-        @unknown default:
-            break
-        }
-    }
-
-    private func restartAudio() {
-        guard running else { return }
-        stopEngine()
-        do {
-            try AVAudioSession.sharedInstance().setActive(true)
-            try playSilence()
-        } catch let error {
-            audioFailed(error.localizedDescription)
-        }
-    }
-
-    private func audioFailed(_ reason: String) {
-        guard running else { return }
-        logger.error("RemoteCtrlKeepAlive audio stopped: \(reason)")
-        let endTask = beginBGTask()
-        Task {
-            await disconnect()
-            endTask()
-        }
-    }
-
-    private func stopEngine() {
-        if let engineObserver {
-            NotificationCenter.default.removeObserver(engineObserver)
-        }
-        engineObserver = nil
-        audioEngine?.stop()
-        audioEngine = nil
-    }
-
-    private func stopAudio() {
+    func stopAudio() {
+        audioFailed = nil
         audioSessionObservers.forEach { NotificationCenter.default.removeObserver($0) }
         audioSessionObservers = []
         stopEngine()
@@ -213,9 +152,93 @@ final class RemoteCtrlKeepAlive: ObservableObject {
         }
     }
 
-    private func showIndicator(_ desktopName: String?) {
+    func showIndicator(_ desktopName: String?) {
         if #available(iOS 16.1, *), startLiveActivity(desktopName) { return }
         NtfManager.shared.notifyRemoteCtrlConnected(desktopName)
+    }
+
+    func endIndicator() {
+        NtfManager.shared.removeRemoteCtrlNotification()
+        activityStateTask?.cancel()
+        activityStateTask = nil
+        if #available(iOS 16.1, *) {
+            let activities = Activity<RemoteCtrlActivityAttributes>.activities
+            if !activities.isEmpty {
+                let endTask = beginBGTask()
+                Task {
+                    for activity in activities {
+                        await activity.end(using: nil, dismissalPolicy: .immediate)
+                    }
+                    endTask()
+                }
+            }
+        }
+    }
+
+    private func playSilence() throws {
+        guard let format = AVAudioFormat(standardFormatWithSampleRate: silenceSampleRate, channels: 1),
+              let buffer = zeroFilledBuffer(format) else {
+            throw RemoteCtrlKeepAliveError.silenceBuffer
+        }
+        let engine = AVAudioEngine()
+        let player = AVAudioPlayerNode()
+        engine.attach(player)
+        engine.connect(player, to: engine.mainMixerNode, format: format)
+        player.scheduleBuffer(buffer, at: nil, options: .loops)
+        try engine.start()
+        player.play()
+        audioEngine = engine
+        engineObserver = NotificationCenter.default.addObserver(forName: .AVAudioEngineConfigurationChange, object: engine, queue: .main) { [weak self] _ in
+            self?.restartAudio()
+        }
+    }
+
+    private func zeroFilledBuffer(_ format: AVAudioFormat) -> AVAudioPCMBuffer? {
+        guard let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: silenceFrames) else { return nil }
+        buffer.frameLength = silenceFrames
+        for channel in UnsafeMutableAudioBufferListPointer(buffer.mutableAudioBufferList) {
+            if let data = channel.mData {
+                memset(data, 0, Int(channel.mDataByteSize))
+            }
+        }
+        return buffer
+    }
+
+    private func audioInterrupted(_ notification: Notification) {
+        guard let info = notification.userInfo,
+              let typeValue = info[AVAudioSessionInterruptionTypeKey] as? UInt,
+              let type = AVAudioSession.InterruptionType(rawValue: typeValue) else { return }
+        switch type {
+        case .began:
+            if let reasonValue = info[AVAudioSessionInterruptionReasonKey] as? UInt,
+               AVAudioSession.InterruptionReason(rawValue: reasonValue) == .appWasSuspended {
+                restartAudio()
+            }
+        case .ended:
+            restartAudio()
+        @unknown default:
+            break
+        }
+    }
+
+    private func restartAudio() {
+        guard let audioFailed else { return }
+        stopEngine()
+        do {
+            try AVAudioSession.sharedInstance().setActive(true)
+            try playSilence()
+        } catch let error {
+            audioFailed(error.localizedDescription)
+        }
+    }
+
+    private func stopEngine() {
+        if let engineObserver {
+            NotificationCenter.default.removeObserver(engineObserver)
+        }
+        engineObserver = nil
+        audioEngine?.stop()
+        audioEngine = nil
     }
 
     @available(iOS 16.1, *)
@@ -227,7 +250,6 @@ final class RemoteCtrlKeepAlive: ObservableObject {
                 contentState: RemoteCtrlActivityAttributes.ContentState(),
                 pushType: nil
             )
-            // the system ends the activity after 8 hours, and the user can remove it
             activityStateTask = Task {
                 for await state in activity.activityStateUpdates where state == .ended || state == .dismissed {
                     await MainActor.run {
@@ -242,25 +264,6 @@ final class RemoteCtrlKeepAlive: ObservableObject {
         } catch let error {
             logger.error("RemoteCtrlKeepAlive Live Activity error: \(error.localizedDescription)")
             return false
-        }
-    }
-
-    private func endIndicator() {
-        NtfManager.shared.removeRemoteCtrlNotification()
-        activityStateTask?.cancel()
-        activityStateTask = nil
-        if #available(iOS 16.1, *) {
-            // read now, so that an activity started for the next session is not ended
-            let activities = Activity<RemoteCtrlActivityAttributes>.activities
-            if !activities.isEmpty {
-                let endTask = beginBGTask()
-                Task {
-                    for activity in activities {
-                        await activity.end(using: nil, dismissalPolicy: .immediate)
-                    }
-                    endTask()
-                }
-            }
         }
     }
 }

@@ -34,7 +34,23 @@ stateDiagram-v2
 
 ### Keepalive
 
-`RemoteCtrlKeepAlive` subscribes to `ChatModel.remoteCtrlSession` at launch and alone starts and stops the keepalive.
+`RemoteCtrlKeepAlive` subscribes to `ChatModel.remoteCtrlSession` at launch and alone starts and stops the keepalive. The audio session, playback and indicator are behind the protocol `RemoteCtrlKeepAliveServices`, set in `RemoteCtrlKeepAlive.services`:
+
+| Member | `RemoteCtrlSystemServices` |
+|---|---|
+| `startAudio(onFailure:) -> Bool` | audio session set, silence played, interruptions observed; `onFailure` called on a failed restart or a media services reset |
+| `stopAudio()` | playback stopped, audio session settings restored |
+| `showIndicator(_ desktopName: String?)` | Live Activity or notification |
+| `endIndicator()` | Live Activities ended, notification removed |
+
+```mermaid
+flowchart LR
+  M["ChatModel.remoteCtrlSession"] --> K["RemoteCtrlKeepAlive"]
+  K --> P["RemoteCtrlKeepAliveServices"]
+  P --> S["RemoteCtrlSystemServices<br>AVAudioSession, AVAudioEngine<br>ActivityKit, NtfManager"]
+  P --> R["RecordingServices<br>SimpleX Unit Tests"]
+  K -->|"onFailure"| D["stopRemoteCtrlSession()"]
+```
 
 Audio session while KeptAlive:
 
@@ -90,17 +106,23 @@ Interruptions:
 
 App fixtures (docs/contributing/TESTS.md, "App fixtures"):
 
-- A remote session test records the events `remoteCtrlConnected` and `remoteCtrlStopped` of the mobile side with `eventsFixture` in `tests/fixtures/api/remote/`.
-- `RemoteCtrlKeepAliveTests` in SimpleX Unit Tests passes the recorded events to `processReceivedMsg`, with the audio session, playback and indicator behind a protocol and replaced by a recorder:
+- `/sends session events to mobile app/` in tests/RemoteTests.hs records, on the mobile side:
+  - `remote/session`, with `eventsFixture`:
+    - event `remoteCtrlSessionCode`
+    - response `remoteCtrlConnected` to `/verify remote ctrl`, with `recordResponse`
+    - event `remoteCtrlStopped`, after the desktop stops the session
+  - `remote/stop-response`, with `apiFixture`: the response to `/stop remote ctrl` in a session with the stored pairing.
+  - `sessionCode` is replaced by `stableJSON`.
+- `RemoteCtrlKeepAliveTests` in SimpleX Unit Tests passes the recorded events to `processReceivedMsg`, after a `.connecting` session as `ConnectDesktopView` creates it. `services` is a recorder; `sendSimpleXCmdStr` returns the recorded response to `/stop remote ctrl` and records each command:
 
 | Case | Expected |
 |---|---|
-| connected event | keepalive started, indicator shown with the desktop name |
+| connected event | keepalive started, indicator shown with the desktop name, screen not kept on |
 | connected event, previews hidden | indicator shown without the name |
 | connected event, active call | keepalive not started, screen kept on |
-| stopped event | playback stopped, settings restored, indicator ended |
-| chat suspended while connected | session cleared, keepalive stopped |
-| playback restart failure | `stopRemoteCtrlSession` requested |
+| stopped event | playback stopped, settings restored, indicator ended, local session loaded |
+| chat suspended while connected | `/_app suspend` sent, session cleared, keepalive stopped |
+| playback restart failure | `/stop remote ctrl` sent, session cleared, keepalive stopped |
 | launch with an indicator left | indicator ended |
 
 Checked on a device only:
