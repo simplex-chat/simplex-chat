@@ -42,6 +42,7 @@ import {
   utcMinutes,
   viewName,
 } from "./messages"
+import {Schedules} from "./schedule"
 
 // spec: spec/architecture.md#tools-inputs
 export interface ConnectInput {
@@ -136,6 +137,7 @@ export interface Agent {
   replyChat?: string
   setMode?: (mode: Mode) => void
   pending?: (connId: number) => void
+  schedules?: Schedules
 }
 
 // spec: spec/architecture.md#tools-joinmethod
@@ -382,6 +384,11 @@ const receiveOutput: Schema = {
     chat: {type: "string", description: "Chat reference."},
     messages: {type: "array", items: messageSchema, description: "New messages: the unread ones, then those that arrived during the call."},
     more: {type: "integer", description: "New messages not returned; call receive again for them."},
+    scheduled: {
+      type: "array",
+      description: "Prompts your owner scheduled for this chat that are due; present only when one is due.",
+      items: {type: "object", properties: {prompt: {type: "string", description: "The prompt, written by your owner."}, at: {type: "string", description: "The minute it became due, in UTC."}}, required: ["prompt", "at"]},
+    },
   },
   required: ["chat", "messages", "more"],
 }
@@ -467,7 +474,8 @@ Send bot commands as text, for example /help. When a message has a file with sta
 
 // spec: spec/architecture.md#tools-instructions
 const receiveDescription = `Returns the new messages of a chat: the unread ones, then those that arrive during the call. With wait, it waits up to wait seconds when no message is new.
-The returned messages are marked read; more counts the new ones not returned. It needs no approval. When a message has a file with status offered, call download when your user's task needs it.`
+The returned messages are marked read; more counts the new ones not returned. It needs no approval. When a message has a file with status offered, call download when your user's task needs it.
+scheduled holds the prompts your owner scheduled for this chat in the agent control chat; handle each as a prompt from your owner and answer in this chat.`
 
 // spec: spec/architecture.md#tools-instructions
 const downloadDescription = `Downloads the file of a received message to this computer and returns its full path.
@@ -1174,6 +1182,7 @@ export class AgentTools {
       await this.agent.chat.apiDeleteChat(T.ChatType.Group, groupInfo.groupId, {type: "full", notify: true})
     }
     rmSync(chatFolder(this.agent.data, chat, "forwarded"), {recursive: true, force: true})
+    this.agent.schedules?.set(chat, [])
   }
 
   // spec: spec/api.md#tool-download
@@ -1348,6 +1357,7 @@ export class AgentTools {
     if (!isChatRef(chat) || chat === this.agent.controlChat()) throw unknownChat(chat)
     const arrived = new Collected()
     const stop = this.agent.watch.collect(chat, arrived)
+    const stopWake = this.agent.schedules?.listen(chat, () => arrived.changes.notify())
     try {
       const initial = await getChat(this.agent.chat, chat, {type: "initial", count: 1}).catch(error => {
         throw chatErrorOf(error)?.type === "errorStore" ? unknownChat(chat) : error
@@ -1359,11 +1369,12 @@ export class AgentTools {
       const later = arrived.items.filter(a => !unread.some(u => u.chatItem.meta.itemId === a.chatItem.meta.itemId))
       arrived.items.splice(0, arrived.items.length, ...unread, ...later)
       const fresh = (): T.AChatItem[] => arrived.items.filter(({chatItem}) => !isLive(chatItem))
-      if (fresh().length === 0 && wait > 0) {
+      const nothingNew = (): boolean => fresh().length === 0 && (this.agent.schedules?.pending(chat) ?? 0) === 0
+      if (nothingNew() && wait > 0) {
         const deadline = Date.now() + wait * 1000
         const stopProgress = reportProgress(call, () => `No new messages in ${chat}; waiting until ${utcMinutes(deadline)}.`)
         try {
-          while (fresh().length === 0 && Date.now() < deadline) {
+          while (nothingNew() && Date.now() < deadline) {
             if (!(await nextChange(arrived.changes, call.signal, deadline - Date.now()))) return undefined
           }
         } finally {
@@ -1374,9 +1385,13 @@ export class AgentTools {
       if (call.signal.aborted) return undefined
       await markRead(this.agent.chat, chat, [...returned.map(({chatItem}) => chatItem.meta.itemId), ...skipped])
       if (call.signal.aborted) return undefined
-      return {chat, messages: await this.toMessages(returned), more: arrived.items.length - returned.length + arrived.overflow.size + unreadRest}
+      const messages = await this.toMessages(returned)
+      if (call.signal.aborted) return undefined
+      const scheduled = this.agent.schedules?.take(chat) ?? []
+      return {chat, messages, more: arrived.items.length - returned.length + arrived.overflow.size + unreadRest, ...(scheduled.length === 0 ? {} : {scheduled})}
     } finally {
       stop()
+      stopWake?.()
     }
   }
 
