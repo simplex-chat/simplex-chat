@@ -889,7 +889,7 @@ export class AgentTools {
       if (chatError?.type === "error" && chatError.errorType.type === "invalidConnReq") throw new ToolError(`Not a SimpleX link or name: ${target}`)
       throw new ToolError(errorText(error))
     }
-    const plan = classifyPlan(r, input)
+    const plan = classifyPlan(r, input, chatInfo => this.owns(chatInfo))
     if (!("lapsed" in plan)) return plan
     const chat = plan.chat === undefined ? undefined : chatRef(await this.ownChat(plan.chat, target))
     throw new ToolError(chat === undefined ? plan.lapsed : `${plan.lapsed} Your chat: ${chat}.`)
@@ -1520,7 +1520,7 @@ function connRef(response: JoinResponse): ConnRef {
 }
 
 // spec: spec/architecture.md#tools-classifyplan
-export function classifyPlan(r: ConnectionPlan, {target, message}: ConnectInput): Plan | LapsedName {
+export function classifyPlan(r: ConnectionPlan, {target, message}: ConnectInput, owns: (chatInfo: T.ChatInfo) => boolean): Plan | LapsedName {
   const [plan, connLink, planSimplexName] = r
   const named = target.startsWith("@") || target.startsWith("#") || target.startsWith("simplex:/name")
   const nameChange = plan.type === "contactAddress" || plan.type === "groupLink" ? plan.nameChange : undefined
@@ -1528,7 +1528,7 @@ export function classifyPlan(r: ConnectionPlan, {target, message}: ConnectInput)
     const {own, chat} = planChat(plan)
     return {lapsed: nameWarningText(fullDomainName(nameChange.nameDomain), nameChange.nameWarning, {own, knownChat: chat !== undefined}), chat}
   }
-  const names = defined({simplexName: named ? target : undefined, movedFrom: nameChange?.type === "moved" ? chatRef(nameChange.knownChat) : undefined})
+  const names = defined({simplexName: named ? target : undefined, movedFrom: nameChange?.type === "moved" && owns(nameChange.knownChat) ? chatRef(nameChange.knownChat) : undefined})
   const domain = planSimplexName === undefined ? undefined : fullDomainName(planSimplexName.nameDomain)
   const connect: JoinMethod = {type: "connect", connLink}
   const notJoinable = (planType: string): ToolError => new ToolError(`${target} can't be joined now: ${planType}.`)

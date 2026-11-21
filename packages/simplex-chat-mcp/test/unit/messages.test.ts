@@ -928,7 +928,7 @@ describe("connect", () => {
   it("joins a known prepared contact whose connection is unset or prepared", () => {
     const known = (activeConn: object | undefined): object => {
       const prepared = {...contact(7, "Ridgeline"), activeConn, preparedContact: {}}
-      return classifyPlan([{type: "contactAddress", contactAddressPlan: {type: "known", contact: prepared}} as T.ConnectionPlan, {connFullLink: link}], {target: link})
+      return classifyPlan([{type: "contactAddress", contactAddressPlan: {type: "known", contact: prepared}} as T.ConnectionPlan, {connFullLink: link}], {target: link}, () => true)
     }
     expect(known(undefined)).toMatchObject({join: {takesMessage: true}, method: {type: "prepared", conn: {contact: 7}}})
     expect(known({connId: 207, connStatus: {type: "prepared"}})).toMatchObject({join: {takesMessage: true}, method: {type: "prepared", conn: {contact: 7}}})
@@ -974,10 +974,12 @@ describe("connect", () => {
     expect(await lapsed(ownChannel, expired)).toBe("Your name has expired: Your name ridgeline.simplex expired on 2026-01-01. Renew it before 2099-01-01. Your chat: #9.")
   })
 
-  it("reports the chat that had a SimpleX name before the name was moved", () => {
-    const connectionPlan = {type: "contactAddress", contactAddressPlan: {type: "ok"}, nameChange: {type: "moved", knownChat: direct(contact(7, "Ridgeline"))}} as T.ConnectionPlan
-    const moved = classifyPlan([connectionPlan, {connFullLink: link}], {target: "@ridgeline.simplex"})
-    expect(moved).toMatchObject({join: {simplexName: "@ridgeline.simplex", movedFrom: "@7"}})
+  it("reports the session's chat that had a SimpleX name before the name was moved", () => {
+    const knownChat = direct(contact(7, "Ridgeline"))
+    const connectionPlan = {type: "contactAddress", contactAddressPlan: {type: "ok"}, nameChange: {type: "moved", knownChat}} as T.ConnectionPlan
+    const moved = (owns: boolean) => classifyPlan([connectionPlan, {connFullLink: link}], {target: "@ridgeline.simplex"}, chatInfo => chatInfo === knownChat && owns)
+    expect(moved(true)).toMatchObject({join: {simplexName: "@ridgeline.simplex", movedFrom: "@7"}})
+    expect((moved(false) as {join: object}).join).not.toHaveProperty("movedFrom")
   })
 
   it("names a chat by its SimpleX name only while the name is verified", () => {
