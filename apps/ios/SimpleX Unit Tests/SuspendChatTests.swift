@@ -79,7 +79,8 @@ final class SuspendChatTests: XCTestCase {
         }
         let start = Date.now
         await prepareToStartChat()
-        XCTAssertNoThrow(try delivered.result.get())
+        let delivery = await delivered.result
+        XCTAssertNoThrow(try delivery.get())
         XCTAssertLessThan(Date.now.timeIntervalSince(start), 1.5)
         XCTAssertEqual(seStateGroupDefault.get(), .sendingMessage)
         XCTAssertEqual(AppChatState.shared.value, .suspended)
