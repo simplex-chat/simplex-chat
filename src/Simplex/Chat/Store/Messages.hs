@@ -35,11 +35,8 @@ module Simplex.Chat.Store.Messages
     getPendingGroupMessages,
     deletePendingGroupMessage,
     deleteOldMessages,
-    getHandledRcvMsg,
-    createHandledRcvMsg,
-    setHandledRcvMsgRcpt,
-    deleteHandledRcvMsg,
-    deleteOldHandledRcvMsgs,
+    getRcvMsgDeliveryRcpt,
+    setRcvMsgDeliveryRcpt,
     MemberAttention (..),
     updateChatTsStats,
     setSupportChatTs,
@@ -401,30 +398,14 @@ deleteOldMessages :: DB.Connection -> UTCTime -> IO ()
 deleteOldMessages db createdAtCutoff = do
   DB.execute db "DELETE FROM messages WHERE created_at <= ?" (Only createdAtCutoff)
 
-getHandledRcvMsg :: DB.Connection -> Int64 -> AgentMsgId -> IO (Maybe Bool)
-getHandledRcvMsg db connId agentMsgId =
+getRcvMsgDeliveryRcpt :: DB.Connection -> Int64 -> AgentMsgId -> IO (Maybe Bool)
+getRcvMsgDeliveryRcpt db connId agentMsgId =
   maybeFirstRow (\(Only (BI rcpt)) -> rcpt) $
-    DB.query db "SELECT rcpt FROM handled_rcv_msgs WHERE connection_id = ? AND agent_msg_id = ?" (connId, agentMsgId)
+    DB.query db "SELECT rcpt FROM msg_deliveries WHERE connection_id = ? AND agent_msg_id = ? LIMIT 1" (connId, agentMsgId)
 
-createHandledRcvMsg :: DB.Connection -> Int64 -> AgentMsgId -> IO ()
-createHandledRcvMsg db connId agentMsgId = do
-  currentTs <- getCurrentTime
-  DB.execute
-    db
-    "INSERT INTO handled_rcv_msgs (connection_id, agent_msg_id, rcpt, created_at) VALUES (?,?,0,?) ON CONFLICT DO NOTHING"
-    (connId, agentMsgId, currentTs)
-
-setHandledRcvMsgRcpt :: DB.Connection -> Int64 -> AgentMsgId -> IO ()
-setHandledRcvMsgRcpt db connId agentMsgId =
-  DB.execute db "UPDATE handled_rcv_msgs SET rcpt = 1 WHERE connection_id = ? AND agent_msg_id = ?" (connId, agentMsgId)
-
-deleteHandledRcvMsg :: DB.Connection -> Int64 -> AgentMsgId -> IO ()
-deleteHandledRcvMsg db connId agentMsgId =
-  DB.execute db "DELETE FROM handled_rcv_msgs WHERE connection_id = ? AND agent_msg_id = ?" (connId, agentMsgId)
-
-deleteOldHandledRcvMsgs :: DB.Connection -> UTCTime -> IO ()
-deleteOldHandledRcvMsgs db createdAtCutoff =
-  DB.execute db "DELETE FROM handled_rcv_msgs WHERE created_at <= ?" (Only createdAtCutoff)
+setRcvMsgDeliveryRcpt :: DB.Connection -> Int64 -> AgentMsgId -> IO ()
+setRcvMsgDeliveryRcpt db connId agentMsgId =
+  DB.execute db "UPDATE msg_deliveries SET rcpt = 1 WHERE connection_id = ? AND agent_msg_id = ?" (connId, agentMsgId)
 
 type NewQuoteRow = (Maybe SharedMsgId, Maybe UTCTime, Maybe MsgContent, Maybe Bool, Maybe MemberId)
 
