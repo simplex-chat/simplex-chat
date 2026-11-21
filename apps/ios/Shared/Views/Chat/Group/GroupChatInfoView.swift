@@ -340,14 +340,13 @@ struct GroupChatInfoView: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
             groupSimplexNameView(groupInfo) { groupInfo = $0 }
-            if let webPage = groupInfo.groupProfile.publicGroup?.publicGroupAccess?.groupWebPage,
-               let url = URL(string: webPage) {
-                Link(destination: url) {
-                    Text(webPage)
-                        .font(.subheadline)
-                        .lineLimit(1)
-                        .truncationMode(.tail)
-                }
+            if let webPage = groupInfo.groupProfile.publicGroup?.publicGroupAccess?.groupWebPage {
+                Text(webPage)
+                    .font(.subheadline)
+                    .foregroundColor(theme.colors.primary)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+                    .onTapGesture { openBrowserAlert(uri: webPage) }
             }
             if groupInfo.useRelays,
                let count = groupInfo.groupSummary.publicMemberCount,

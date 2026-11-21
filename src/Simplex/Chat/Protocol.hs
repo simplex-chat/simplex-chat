@@ -37,6 +37,7 @@ import Data.ByteString.Internal (c2w, w2c)
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Either (fromRight)
 import Data.Int (Int64)
+import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.List.NonEmpty as L
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
@@ -809,6 +810,25 @@ isMedia = \case
   MCVideo {} -> True
   MCFile {} -> True
   _ -> False
+
+mediaFileExtensions :: MsgContent -> Maybe (NonEmpty String)
+mediaFileExtensions = \case
+  MCImage {} -> Just $ ".jpg" :| [".jpeg", ".png", ".gif", ".webp", ".heic", ".heif", ".hif", ".avif"]
+  MCVideo {} ->
+    Just $
+      ".mp4"
+        :| [ ".3g2", ".3gp", ".3gp2", ".3gpp", ".3gpp2", ".asf", ".avi", ".axv", ".divx", ".dl", ".dv", ".f4v",
+             ".fli", ".flv", ".gl", ".lsf", ".m1v", ".m2t", ".m2ts", ".m2v", ".m4v", ".mkv", ".mng", ".mov",
+             ".movie", ".mp1v", ".mp2v", ".mp4v", ".mpe", ".mpeg", ".mpeg1", ".mpeg2", ".mpeg4", ".mpg", ".mpv",
+             ".mpv1", ".mpv2", ".mts", ".ogv", ".qt", ".rm", ".rmvb", ".ts", ".vob", ".webm", ".wm", ".wmv", ".yt"
+           ]
+  MCVoice {} -> Just $ ".m4a" :| []
+  MCText {} -> Nothing
+  MCLink {} -> Nothing
+  MCFile {} -> Nothing
+  MCReport {} -> Nothing
+  MCChat {} -> Nothing
+  MCUnknown {} -> Nothing
 
 isReport :: MsgContent -> Bool
 isReport = \case

@@ -20,13 +20,16 @@ import Data.List (find, isPrefixOf)
 import qualified Data.Map.Strict as M
 import Data.Word (Word32)
 import Simplex.Chat.Controller (ChatCommand (..), ChatConfig (..), versionNumber)
-import Simplex.Chat.Files (safeFileNameStr)
+import Simplex.Chat.Files (mediaFileName, safeFileNameStr)
+import Simplex.Chat.Messages (CIFile (..), CIFileStatus (..), FileProtocol (..), allowedContentUpdate)
 import Simplex.Chat.Library.Commands (parseChatCommand)
 import qualified Simplex.Chat.Controller as Controller
 import Simplex.Chat.Mobile.File
+import Simplex.Chat.Protocol (MsgContent (MCFile, MCImage, MCText, MCVideo, MCVoice))
 import Simplex.Chat.Remote (remoteFilesFolder, validRemoteFileName)
 import Simplex.Chat.Remote.Protocol (encryptEncodeHTTP2Body, parseDecryptHTTP2Body, remoteStoreFile)
 import Simplex.Chat.Remote.Types
+import Simplex.Chat.Types (ImageData (..))
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFileArgs (..))
 import Simplex.Messaging.Encoding (smpEncode)
@@ -61,6 +64,47 @@ remoteTests = describe "Remote" $ do
       filter (not . sanitized) fileNames `shouldBe` []
     it "sanitizes to a name with no directory components" $ \_ ->
       filter (not . bareName) fileNames `shouldBe` []
+    it "replaces control and text direction characters" $ \_ ->
+      map safeFileNameStr ["a\nx.txt", "a\r\nx.txt", "a\x85x.txt", "a\x2028x.txt", "a\x202Ex.txt", "a\x2067x\x2069.txt", "a\x1F468\x200D\x1F469.txt"]
+        `shouldBe` ["a_x.txt", "a__x.txt", "a_x.txt", "a_x.txt", "a_x.txt", "a_x_.txt", "a\x1F468\x200D\x1F469.txt"]
+    it "gives media files the extension of their content type" $ \_ ->
+      map
+        (uncurry mediaFileName)
+        [ (image, "IMG_1.jpg"),
+          (image, "IMG_1.WEBP"),
+          (image, "IMG_1.heic"),
+          (image, "test.pdf"),
+          (image, "test.pdf.jpg"),
+          (image, "test"),
+          (video, "video_1.3gp"),
+          (video, "video_1.mkv"),
+          (video, "video_1.divx"),
+          (video, "test.txt"),
+          (video, "test.txt.mp4"),
+          (video, "VIDEO_1.MP4"),
+          (video, "test.dif"),
+          (voice, "voice_1.m4a"),
+          (voice, "test.pdf"),
+          (voice, "test.pdf.m4a"),
+          (image, "test.pdf."),
+          (image, safeFileNameStr "x/"),
+          (MCFile "", "test.pdf")
+        ]
+        `shouldBe` ["IMG_1.jpg", "IMG_1.WEBP", "IMG_1.heic", "test.pdf.jpg", "test.pdf.jpg", "test.jpg", "video_1.3gp", "video_1.mkv", "video_1.divx", "test.txt.mp4", "test.txt.mp4", "VIDEO_1.MP4", "test.dif.mp4", "voice_1.m4a", "test.pdf.m4a", "test.pdf.m4a", "test.pdf..jpg", "_.jpg", "test.pdf"]
+    it "accepts media file extensions in ASCII only" $ \_ ->
+      map (uncurry mediaFileName) [(video, "test.m\x212Av"), (image, "test.g\x130\&f")]
+        `shouldBe` ["test.m\x212Av.mp4", "test.g\x130\&f.jpg"]
+    it "allows items with files to change content type only to a type without media" $ \_ -> do
+      map
+        (\(oldMC, mc) -> allowedContentUpdate oldMC mc (Just $ rcvFile "test.jpg"))
+        [ (image, MCImage "edited" (ImageData "")),
+          (MCFile "", image),
+          (image, MCText "edited"),
+          (image, MCFile "edited"),
+          (video, voice)
+        ]
+        `shouldBe` [True, False, True, True, False]
+      allowedContentUpdate (MCText "") image Nothing `shouldBe` True
   describe "skipped keys" $ do
     it "keeps the most recent skipped keys" $ \_ -> do
       (_, pk) <- atomically . C.generateKeyPair =<< C.newRandom
@@ -105,6 +149,10 @@ remoteTests = describe "Remote" $ do
     fileNames = ["", ".", "..", "...", "../x", "../../etc/passwd", "/etc/cron.d/x", "a/b", "x/", "test.pdf", ".hidden", "a b.tar.gz"]
     sanitized n = let n' = safeFileNameStr n in n' /= "" && n' /= "." && n' /= ".."
     bareName n = let n' = safeFileNameStr n in n' == takeFileName n'
+    image = MCImage "" (ImageData "")
+    video = MCVideo "" (ImageData "") 10
+    voice = MCVoice "" 10
+    rcvFile n = CIFile {fileId = 1, fileName = n, fileSize = 1, fileSource = Nothing, fileStatus = CIFSRcvInvitation, fileProtocol = FPXFTP, fileExpires = Nothing, fileProhibited = Nothing}
 
 runRemoteTests :: SpecWith ((Bool, Bool), TestParams)
 runRemoteTests = do

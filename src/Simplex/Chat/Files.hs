@@ -3,15 +3,29 @@
 
 module Simplex.Chat.Files where
 
+import Data.Char (isAscii, isControl, toLower)
+import Data.List.NonEmpty (NonEmpty (..))
 import Simplex.Chat.Controller
+import Simplex.Chat.Protocol (MsgContent, mediaFileExtensions)
 import Simplex.Messaging.Util (ifM)
-import System.FilePath (combine, makeValid, splitExtensions, takeFileName)
+import System.FilePath (combine, makeValid, splitExtensions, takeExtension, takeFileName, (<.>))
 import UnliftIO.Directory (doesDirectoryExist, doesFileExist, getHomeDirectory, getTemporaryDirectory)
 
 safeFileNameStr :: String -> String
-safeFileNameStr = notDots . makeValid . takeFileName
+safeFileNameStr = notDots . map safeChar . makeValid . takeFileName
   where
     notDots n = if n == "." || n == ".." then "_" else n
+    safeChar c
+      | isControl c || (c >= '\x2028' && c <= '\x202E') || (c >= '\x2066' && c <= '\x2069') = '_'
+      | otherwise = c
+
+mediaFileName :: MsgContent -> String -> String
+mediaFileName mc name = maybe name ensureExtension $ mediaFileExtensions mc
+  where
+    ensureExtension exts@(ext :| _)
+      | all isAscii nameExt && map toLower nameExt `elem` exts = name
+      | otherwise = name <.> ext
+    nameExt = takeExtension name
 
 -- | The file name is sanitized, so the combined path cannot escape the folder.
 uniqueCombine :: FilePath -> String -> IO FilePath

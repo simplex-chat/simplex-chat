@@ -39,8 +39,9 @@ struct CIFileView: View {
                 if let file = file {
                     let prettyFileSize = ByteCountFormatter.string(fromByteCount: file.fileSize, countStyle: .binary)
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(file.fileName)
+                        Text(shownFileName(file.fileName))
                             .lineLimit(1)
+                            .truncationMode(.middle)
                             .multilineTextAlignment(.leading)
                             .foregroundColor(theme.colors.onBackground)
                         (Text(prettyFileSize) + metaReserve)
@@ -246,6 +247,18 @@ func fileSizeValid(_ file: CIFile?) -> Bool {
         return file.fileProhibited == nil
     }
     return false
+}
+
+private func shownFileName(_ fileName: String) -> String {
+    var shown = ""
+    for s in fileName.unicodeScalars {
+        if s.properties.generalCategory == .control || (0x2028...0x202E).contains(s.value) || (0x2066...0x2069).contains(s.value) {
+            shown += unicodeMarker(s)
+        } else {
+            shown.unicodeScalars.append(s)
+        }
+    }
+    return shown
 }
 
 func showProhibitedFileAlert(_ file: CIFile, _ prohibited: FileProhibited) {
