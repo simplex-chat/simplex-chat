@@ -1902,6 +1902,7 @@ testRejectContactAndDeleteUserContact = testChat3 aliceProfile bobProfile cathPr
     alice ##> "/_delete_address 1"
     alice <## "Your chat address is deleted - accepted contacts will remain connected."
     alice <## "To create a new chat address use /ad"
+    (withCCAgentTransaction alice $ \db -> DB.query_ db "SELECT count(1) FROM connections" :: IO [[Int]]) `shouldEventuallyReturn` [[0]]
 
     cath ##> ("/c " <> cLink)
     cath <## "error: connection authorization failed - this could happen if connection was deleted, secured with different credentials, or due to a bug - please re-create the connection"
@@ -4475,6 +4476,7 @@ testShortLinkDeletedInvitation = testChat2 aliceProfile bobProfile test
       alice @@@ [(":1","")]
       alice ##> "/_delete :1"
       alice <## "connection :1 deleted"
+      (withCCAgentTransaction alice $ \db -> DB.query_ db "SELECT count(1) FROM connections" :: IO [[Int]]) `shouldEventuallyReturn` [[0]]
       bob ##> "/_connect contact @2"
       bob <##. "error: connection authorization failed"
       bob ##> "/_connect contact @2"
@@ -4494,6 +4496,7 @@ testShortLinkDeletedAddress = testChat2 aliceProfile bobProfile test
       alice ##> "/da"
       alice <## "Your chat address is deleted - accepted contacts will remain connected."
       alice <## "To create a new chat address use /ad"
+      (withCCAgentTransaction alice $ \db -> DB.query_ db "SELECT count(1) FROM connections" :: IO [[Int]]) `shouldEventuallyReturn` [[0]]
       bob ##> "/_connect contact @2"
       bob <##. "error: connection authorization failed"
       bob ##> "/_connect contact @2"
