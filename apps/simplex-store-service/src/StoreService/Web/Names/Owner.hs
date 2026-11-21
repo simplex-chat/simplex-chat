@@ -33,7 +33,7 @@ import StoreService.Names.Orders
 import StoreService.Names.Phases (RegistrationId (..), publish)
 import StoreService.Names.Reveal (RevealRequest, orderReveal)
 import StoreService.Names.Signatures (OrderFields (..), findMessage, parseAnyCaseAddress, retargetMessage)
-import StoreService.Names.Store (BalanceUse (..), FailReason (..), NamePhase (..), NameRegistration (..), OrderPhase (..), findRegistrations, getRegistration, namePhase, paymentBalance, paymentInvoice)
+import StoreService.Names.Store (BalanceUse (..), NamePhase (..), NameRegistration (..), findRegistrations, getRegistration, namePhase, paymentBalance, paymentInvoice)
 import StoreService.Names.Turns (withRegistrationTurns)
 import StoreService.Names.View (NameRefusal (..), registrationView)
 import StoreService.Web.Http (Respond, jsonResponse, maxBodyBytes, nameBodyBytes, readBoundedBody)
@@ -129,7 +129,6 @@ retargetHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oeNow, o
       now <- oeNow
       moveTo now stored fields timestamp reveal
     moveTo now r@NameRegistration {nrPhase} fields timestamp reveal
-      | OFailed _ FRSignatureRefused <- nrPhase = refuse $ ORBadRequest "the order failed with its signature refused, so support settles it"
       | orderFieldsOf r == fields = answerNow . jsonResponse status200 . J.toJSON <$> registrationView oeStore oeConfig oeContracts now r
       | Left refusal <- checkTimestamp now timestamp = refuse refusal
       | not (movable now r) = refuse $ ORBadRequest "the order is not movable"
