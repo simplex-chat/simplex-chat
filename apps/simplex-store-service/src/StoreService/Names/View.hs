@@ -164,7 +164,7 @@ registrationView st cfg ct now r = do
   (balance, late, attempt) <- withTransaction st $ \db -> do
     balance <- getBalance db (nrId r) now
     late <- maybe (pure Nothing) (lateWait db) (paymentInvoice $ nrPayment r)
-    attempt <- lastAttempt db (nrId r) (nrCommitment r)
+    attempt <- lastAttempt db (nrId r)
     pure (balance, late, attempt)
   toRegistrationView cfg r balance late attempt <$> phaseView ct now r
 

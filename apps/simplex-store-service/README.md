@@ -344,8 +344,9 @@ A dispute or a refund of a name order's payment is acted on at its delivery, as 
   it is taken or its month ends, and a late credit concurrent with a dispute of its order is
   written after it.
 
-Each is recorded once in `name_reversals` by its event id, a refund as the rise of
-`amount_refunded`. Every dispute, refund and early fraud warning of a name order is logged at
+The order's invoice row counts them and keeps the total reversed and the last one's event id, kind,
+time and cents, a refund as the rise of `amount_refunded`; a repeated delivery of the last event
+changes nothing. Every dispute, refund and early fraud warning of a name order is logged at
 error and posted in the managed group as `names: <event> on payment <pi_...> of order <id>:
 <outcome>. Evidence: <payment>; <owner and order hash>; <signed registration>; <commit and register
 transactions>`, the evidence for the answer to Stripe. A delivery whose handling fails is answered
@@ -703,10 +704,9 @@ from `scripts/store-service/`. The database `badge_service`,
 `simplex_badge_service` are unchanged.
 
 A badge-service database upgrades in place: the store's own migrations run after every badge
-migration, `20261012_badge_subscriptions` included; `20261118_invoice_product` marks each existing
-invoice `badge`, or `name` when a name order's invoice row refers to it, and copies each invoice's
-provider reference into the invoices table, which holds every invoice's reference from then on: a
-badge invoice's stays in its badge row too, and a name invoice's moves, its rollback moving it back. A database that ran the names migrations of
+migration, `20261012_badge_subscriptions` included; `20261013_names` marks each existing
+invoice `badge` and copies its provider reference into the invoices table, which holds every
+invoice's reference from then on; a badge invoice's stays in its badge row too. A database that ran the names migrations of
 an earlier draft (`20261010_names`, or that draft's steps dated after `20261013_names`) does not start, as
 the service refuses to roll back migrations it does not list. A database that ran `20261013_names`
 before it created `sx_badge_service_name_terms` starts without that table, and every terms read
@@ -726,8 +726,7 @@ in a shape this service does not read. It is upgraded in two steps:
    and the columns that migration added to the payments table are dropped, and the badge tables
    and their rows stay. With `--yes-migrate` it refuses the rollback and exits. Stop it once it
    runs.
-2. Deploy this service as [Deployment](#deployment) says. It applies `20261013_names` and the
-   migrations after it.
+2. Deploy this service as [Deployment](#deployment) says. It applies `20261013_names`.
 
 ### Two sites
 
@@ -1460,10 +1459,10 @@ With `metrics_port` set, both are exported before they run out (see [Metrics](#m
   of their own once it is old enough. The order then ends `taken`: a paid order keeps its price as a
   balance, and a code order keeps its code.
 
-Every failed attempt of a commit, a terms acceptance or a register is stored in `name_attempts` with its
-transaction, its stage (`dry_run`, or `sent` for a transaction mined with status 0), its decoded
-reason and its time; an attempt repeating the last one of its commitment, uncounted, updates that
-one's time. The order's view gives that last attempt in `lastAttempt`.
+The order's row keeps the count of its counted dry-run failures and of its sent failures, and its last
+failed attempt of a commit, a terms acceptance or a register: the transaction, the stage (`dry_run`, or
+`sent` for a transaction mined with status 0), the decoded reason and the time. The order's view gives
+that last attempt in `lastAttempt`.
 A dry run that reverts while the name is available is retried every 15 seconds. Its reason decides:
 - `InvalidSignature`, `DurationTooLong`, `DurationTooShort`, `ResolverRequiredWhenDataSupplied`,
   `ReverseRecordNotSupported`, `NameTooShort`, `LabelTooLong` and `ReentrantCall` count toward

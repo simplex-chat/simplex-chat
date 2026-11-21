@@ -92,11 +92,8 @@ module StoreService.Names.Store
     claimUnregisteredAlert,
     AttemptStage (..),
     NameAttempt (..),
-    insertAttempt,
-    touchAttempt,
-    countedAttempts,
+    recordAttempt,
     lastAttempt,
-    registrationAttempts,
     openInvoicesOfHeldName,
     activeRegistrations,
     unpaidCleanupCandidates,
@@ -159,7 +156,7 @@ import Data.ByteString (ByteString)
 import Data.Int (Int64)
 import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.List.NonEmpty as L
-import Data.Maybe (isJust, isNothing, listToMaybe)
+import Data.Maybe (isJust, isNothing, listToMaybe, mapMaybe)
 import Data.String (fromString)
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -682,7 +679,6 @@ data NameAttempt = NameAttempt
   { naTx :: RegistrationTx,
     naStage :: AttemptStage,
     naReason :: Text,
-    naCounted :: Bool,
     naAt :: UTCTime
   }
   deriving (Eq, Show)
@@ -1117,10 +1113,10 @@ revealRow rv =
   where
     acceptance = rvAcceptance <$> rv
 
--- | Another name, or other links, with the terms agreed for it and its reveal: queued again with the transactions, reveal times and link refusal cleared.
+-- | Another name, or other links, with the terms agreed for it and its reveal: queued again with the transactions, reveal times, link refusal and failed attempts cleared.
 -- The order hash stays the original order's, so a resend of that order still finds it.
 retargetRegistration :: DB.Connection -> NameRegistration -> OrderFields -> NameReveal -> USDCents -> UTCTime -> IO VersionWrite
-retargetRegistration db r OrderFields {ofLabelHash, ofLength, ofDuration, ofCommitment, ofSealed, ofAgreedTerms} reveal price =
+retargetRegistration db r@NameRegistration {nrId = RegistrationId rid} OrderFields {ofLabelHash, ofLength, ofDuration, ofCommitment, ofSealed, ofAgreedTerms} reveal price now =
   updateRegistration
     db
     r
@@ -1137,6 +1133,10 @@ retargetRegistration db r OrderFields {ofLabelHash, ofLength, ofDuration, ofComm
         nrLinksRefused = Nothing,
         nrHistory = noHistory
       }
+    now
+    >>= \case
+      w@(Written _) -> w <$ DB.execute db (mkQuery "UPDATE @name_registrations SET failed_dry_runs = 0, failed_sends = 0, last_attempt_tx = NULL, last_attempt_stage = NULL, last_attempt_reason = NULL, last_attempt_at = NULL WHERE registration_id = ?") (Only rid)
+      w -> pure w
 
 -- | Newest first: findLimit of them, then every older one holding a balance above 0, since a balance never expires.
 -- Each with the order holding its balance, as getBalance reads the hold at the given time.
@@ -1204,36 +1204,26 @@ claimUnregisteredAlert :: DB.Connection -> RegistrationId -> UTCTime -> IO Bool
 claimUnregisteredAlert db (RegistrationId rid) now =
   (> 0) <$> executeChanging db (mkQuery "UPDATE @name_registrations SET unregistered_alerted_at = ? WHERE registration_id = ? AND unregistered_alerted_at IS NULL") (now, rid)
 
-insertAttempt :: DB.Connection -> RegistrationId -> Commitment -> NameAttempt -> IO ()
-insertAttempt db (RegistrationId rid) commitment NameAttempt {naTx, naStage, naReason, naCounted, naAt} =
-  DB.execute
-    db
-    (mkQuery "INSERT INTO @name_attempts (registration_id, commitment, tx_kind, stage, reason, counted, attempted_at) VALUES (?,?,?,?,?,?,?)")
-    (rid, commitment, naTx, naStage, naReason, BI naCounted, naAt)
-
-countedAttempts :: DB.Connection -> RegistrationId -> Commitment -> AttemptStage -> IO Int
-countedAttempts db (RegistrationId rid) commitment stage =
+recordAttempt :: DB.Connection -> RegistrationId -> Bool -> NameAttempt -> IO Int
+recordAttempt db (RegistrationId rid) counted NameAttempt {naTx, naStage, naReason, naAt} =
   maybeFirstRow' 0 fromOnly $
-    DB.query db (mkQuery "SELECT COUNT(*) FROM @name_attempts WHERE registration_id = ? AND commitment = ? AND stage = ? AND counted = 1") (rid, commitment, stage)
+    DB.query
+      db
+      (mkQuery $ "UPDATE @name_registrations SET " <> failures <> " = " <> failures <> " + ?, last_attempt_tx = ?, last_attempt_stage = ?, last_attempt_reason = ?, last_attempt_at = ? WHERE registration_id = ? RETURNING " <> failures)
+      (if counted then 1 else 0 :: Int, naTx, naStage, naReason, naAt, rid)
+  where
+    failures = case naStage of
+      ASDryRun -> "failed_dry_runs"
+      ASSent -> "failed_sends"
 
-touchAttempt :: DB.Connection -> RegistrationId -> Commitment -> UTCTime -> IO ()
-touchAttempt db (RegistrationId rid) commitment now =
-  DB.execute
-    db
-    (mkQuery "UPDATE @name_attempts SET attempted_at = ? WHERE name_attempt_id = (SELECT MAX(name_attempt_id) FROM @name_attempts WHERE registration_id = ? AND commitment = ?)")
-    (now, rid, commitment)
-
-lastAttempt :: DB.Connection -> RegistrationId -> Commitment -> IO (Maybe NameAttempt)
-lastAttempt db (RegistrationId rid) commitment =
-  maybeFirstRow toAttempt $
-    DB.query db (mkQuery "SELECT tx_kind, stage, reason, counted, attempted_at FROM @name_attempts WHERE registration_id = ? AND commitment = ? ORDER BY name_attempt_id DESC LIMIT 1") (rid, commitment)
-
-registrationAttempts :: DB.Connection -> RegistrationId -> IO [NameAttempt]
-registrationAttempts db (RegistrationId rid) =
-  map toAttempt <$> DB.query db (mkQuery "SELECT tx_kind, stage, reason, counted, attempted_at FROM @name_attempts WHERE registration_id = ? ORDER BY name_attempt_id") (Only rid)
-
-toAttempt :: (RegistrationTx, AttemptStage, Text, BoolInt, UTCTime) -> NameAttempt
-toAttempt (naTx, naStage, naReason, BI naCounted, naAt) = NameAttempt {naTx, naStage, naReason, naCounted, naAt}
+lastAttempt :: DB.Connection -> RegistrationId -> IO (Maybe NameAttempt)
+lastAttempt db (RegistrationId rid) =
+  maybeFirstRow id $
+    mapMaybe toAttempt <$> DB.query db (mkQuery "SELECT last_attempt_tx, last_attempt_stage, last_attempt_reason, last_attempt_at FROM @name_registrations WHERE registration_id = ?") (Only rid)
+  where
+    toAttempt = \case
+      (Just naTx, Just naStage, Just naReason, Just naAt) -> Just NameAttempt {naTx, naStage, naReason, naAt}
+      _ -> Nothing
 
 openInvoicesOfHeldName :: DB.Connection -> RegistrationId -> IO [(InvoiceId, PaymentProvider, Text)]
 openInvoicesOfHeldName db (RegistrationId rid) =
@@ -1411,9 +1401,8 @@ creditBalance db (RegistrationId rid) cents now =
       INSERT INTO @name_balances (registration_id, amount, credited, refunded, created_at, updated_at)
       SELECT ?, ?, ?, 0, ?, ?
       WHERE NOT EXISTS (
-        SELECT 1 FROM @name_reversals v
-        JOIN @name_invoices ni ON ni.invoice_id = v.invoice_id
-        WHERE ni.registration_id = ?
+        SELECT 1 FROM @name_invoices ni
+        WHERE ni.registration_id = ? AND ni.reversal_count > 0
       )
       ON CONFLICT (registration_id) DO UPDATE SET
         amount = @name_balances.amount + excluded.amount,
@@ -1473,34 +1462,32 @@ refundBalance db (RegistrationId rid) cents now =
       (cents, now, now, rid, cents)
 
 recordReversal :: DB.Connection -> Text -> InvoiceId -> Reversal -> UTCTime -> IO (Maybe USDCents)
-recordReversal db event (InvoiceId invId) reversal now = do
-  cents <- case reversal of
-    RVDispute _ (CurrencyAmount amount) -> pure $ fromIntegral amount
-    RVRefund _ (CurrencyAmount total) -> do
-      refunded <- maybeFirstRow' 0 fromOnly $ DB.query db ("SELECT " <> integerSum "COALESCE(SUM(cents), 0)" <> mkQuery " FROM @name_reversals WHERE invoice_id = ? AND kind = ?") (invId, kind)
-      pure $ max 0 $ fromIntegral total - refunded
-  inserted <-
-    executeChanging
-      db
-      (mkQuery "INSERT INTO @name_reversals (provider_event, invoice_id, kind, cents, taken_back, created_at) VALUES (?,?,?,?,0,?) ON CONFLICT DO NOTHING")
-      (event, invId, kind, cents, now)
-  pure $ if inserted > 0 then Just cents else Nothing
+recordReversal db event (InvoiceId invId) reversal now =
+  DB.query db (mkQuery "SELECT last_reversal_event, reversed_cents FROM @name_invoices WHERE invoice_id = ?") (Only invId) >>= \case
+    [(lastEvent, reversedBefore)] | lastEvent /= Just event -> do
+      let cents = case reversal of
+            RVDispute _ (CurrencyAmount amount) -> fromIntegral amount
+            RVRefund _ (CurrencyAmount total) -> max 0 $ fromIntegral total - reversedBefore
+      DB.execute
+        db
+        (mkQuery "UPDATE @name_invoices SET reversal_count = reversal_count + 1, last_reversal_event = ?, last_reversal_kind = ?, last_reversal_at = ?, last_reversal_cents = ?, reversed_cents = reversed_cents + ? WHERE invoice_id = ?")
+        (event, kind, now, cents, cents, invId)
+      pure $ Just cents
+    _ -> pure Nothing
   where
     kind :: Text
     kind = case reversal of
       RVDispute {} -> "dispute"
       RVRefund {} -> "refund"
 
-takeBackBalance :: DB.Connection -> Text -> InvoiceId -> RegistrationId -> USDCents -> UTCTime -> IO USDCents
-takeBackBalance db event invId@(InvoiceId inv) (RegistrationId rid) cents now = do
+takeBackBalance :: DB.Connection -> InvoiceId -> RegistrationId -> USDCents -> UTCTime -> IO USDCents
+takeBackBalance db invId@(InvoiceId inv) (RegistrationId rid) cents now = do
   invoiced <- invoiceAmount db invId
-  takenBefore <- maybeFirstRow' 0 fromOnly $ DB.query db ("SELECT " <> integerSum "COALESCE(SUM(taken_back), 0)" <> mkQuery " FROM @name_reversals WHERE invoice_id = ?") (Only inv)
+  reversed <- maybeFirstRow' 0 fromOnly $ DB.query db (mkQuery "SELECT reversed_cents FROM @name_invoices WHERE invoice_id = ?") (Only inv)
   DB.execute db (mkQuery "UPDATE @name_balances SET amount = amount WHERE registration_id = ?") (Only rid)
   amount <- maybeFirstRow' 0 fromOnly $ DB.query db (mkQuery "SELECT amount FROM @name_balances WHERE registration_id = ?") (Only rid)
-  let taken = max 0 $ minimum [cents, invoiced - takenBefore, amount]
-  when (taken > 0) $ do
-    DB.execute db (mkQuery "UPDATE @name_balances SET amount = amount - ?, updated_at = ? WHERE registration_id = ?") (taken, now, rid)
-    DB.execute db (mkQuery "UPDATE @name_reversals SET taken_back = ? WHERE provider_event = ?") (taken, event)
+  let taken = max 0 $ minimum [cents, invoiced - (reversed - cents), amount]
+  when (taken > 0) $ DB.execute db (mkQuery "UPDATE @name_balances SET amount = amount - ?, updated_at = ? WHERE registration_id = ?") (taken, now, rid)
   pure taken
 
 returnBalance :: DB.Connection -> RegistrationId -> USDCents -> UTCTime -> IO Bool
@@ -1511,13 +1498,13 @@ lockRegistration :: DB.Connection -> NameRegistration -> IO Bool
 lockRegistration db NameRegistration {nrId = RegistrationId rid, nrVersion} =
   (> 0) <$> executeChanging db (mkQuery "UPDATE @name_registrations SET version = version WHERE registration_id = ? AND version = ?") (rid, nrVersion)
 
-reversalEventRecorded :: DB.Connection -> Text -> IO Bool
-reversalEventRecorded db event =
-  not . null <$> (DB.query db (mkQuery "SELECT 1 FROM @name_reversals WHERE provider_event = ?") (Only event) :: IO [Only Int])
+reversalEventRecorded :: DB.Connection -> InvoiceId -> Text -> IO Bool
+reversalEventRecorded db (InvoiceId invId) event =
+  not . null <$> (DB.query db (mkQuery "SELECT 1 FROM @name_invoices WHERE invoice_id = ? AND last_reversal_event = ?") (invId, event) :: IO [Only Int])
 
 reversalRecorded :: DB.Connection -> RegistrationId -> IO Bool
 reversalRecorded db (RegistrationId rid) =
-  not . null <$> (DB.query db (mkQuery "SELECT 1 FROM @name_reversals v JOIN @name_invoices ni ON ni.invoice_id = v.invoice_id WHERE ni.registration_id = ? LIMIT 1") (Only rid) :: IO [Only Int])
+  not . null <$> (DB.query db (mkQuery "SELECT 1 FROM @name_invoices WHERE registration_id = ? AND reversal_count > 0 LIMIT 1") (Only rid) :: IO [Only Int])
 
 registerTxSent :: DB.Connection -> RegistrationId -> IO Bool
 registerTxSent db (RegistrationId rid) =

@@ -130,7 +130,7 @@ reverseOrder oe@OrdersEnv {oeNow, oeStore, oePhases} providers waiters row@Invoi
     releaseHold = do
       now <- oeNow
       holder <- withTransaction oeStore $ \db ->
-        reversalEventRecorded db event >>= \case
+        reversalEventRecorded db irInvoiceId event >>= \case
           True -> pure Nothing
           False ->
             getRegistration db rid >>= \case
@@ -161,7 +161,7 @@ reverseOrder oe@OrdersEnv {oeNow, oeStore, oePhases} providers waiters row@Invoi
       unless locked $ E.throwIO $ RegistrationChanged nrId
       sent <- registerTxSent db nrId
       refunded <- maybe False ((> 0) . blRefunded) <$> getBalance db nrId now
-      let takeBack = takeBackBalance db event irInvoiceId nrId cents now
+      let takeBack = takeBackBalance db irInvoiceId nrId cents now
           takenText taken = if taken > 0 then "; " <> centsText taken <> " taken back from its balance" else ""
       case reversalCase r sent refunded of
         RCUnpaid -> pure (Nothing, "its payment is not recorded yet, so it is closed as reversed when it is")

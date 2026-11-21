@@ -1838,11 +1838,9 @@ testViewStates = withServiceStore $ \st -> withFakeEthNode $ \node -> do
         }
   viewOf failed `shouldReturn` view [("version", J.Number 2), ("phase", J.object ["type" .= ("failed" :: Text), "reason" .= ("signatureRefused" :: Text)]), ("registerTx", txText 9), ("balance", J.Null), ("label", J.Null)]
   paidFailed <- withTransaction st $ \db -> setPaidAt db rid t0 >> fromJust <$> getRegistration db rid
-  withTransaction st $ \db -> do
-    insertAttempt db rid (nrCommitment failed) NameAttempt {naTx = RTRegister, naStage = ASSent, naReason = "mined with status 0", naCounted = True, naAt = t0}
-    insertAttempt db rid (hashFixture 7) NameAttempt {naTx = RTCommit, naStage = ASDryRun, naReason = "InsufficientAllowance", naCounted = False, naAt = t0}
+  void $ withTransaction st $ \db -> recordAttempt db rid True NameAttempt {naTx = RTRegister, naStage = ASSent, naReason = "mined with status 0", naAt = t0}
   viewOf paidFailed `shouldReturn` view [("version", J.Number 2), ("phase", J.object ["type" .= ("failed" :: Text), "reason" .= ("signatureRefused" :: Text), "heldUntil" .= addMonths 1 t0]), ("registerTx", txText 9), ("balance", J.Null), ("lastAttempt", J.object ["transaction" .= ("register" :: Text), "stage" .= ("sent" :: Text), "reason" .= ("mined with status 0" :: Text), "at" .= t0])]
-  withTransaction st $ \db -> insertAttempt db rid (nrCommitment failed) NameAttempt {naTx = RTAccept, naStage = ASDryRun, naReason = "InvalidSignature", naCounted = True, naAt = t0}
+  void $ withTransaction st $ \db -> recordAttempt db rid True NameAttempt {naTx = RTAccept, naStage = ASDryRun, naReason = "InvalidSignature", naAt = t0}
   let refused = ("lastAttempt", J.object ["transaction" .= ("accept" :: Text), "stage" .= ("dryRun" :: Text), "reason" .= ("InvalidSignature" :: Text), "at" .= t0])
   viewOf paidFailed `shouldReturn` view [("version", J.Number 2), ("phase", J.object ["type" .= ("failed" :: Text), "reason" .= ("signatureRefused" :: Text), "heldUntil" .= addMonths 1 t0]), ("registerTx", txText 9), ("balance", J.Null), refused]
   requeued <- written $ \r -> r {nrPhase = OQueued, nrHistory = (nrHistory r) {thRegisterTx = Nothing}}

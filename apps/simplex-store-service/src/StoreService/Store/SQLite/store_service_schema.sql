@@ -212,6 +212,12 @@ CREATE TABLE sx_badge_service_name_registrations(
   links_refused_kind TEXT,
   paid_at TEXT,
   unregistered_alerted_at TEXT,
+  failed_dry_runs INTEGER NOT NULL DEFAULT 0,
+  failed_sends INTEGER NOT NULL DEFAULT 0,
+  last_attempt_tx TEXT,
+  last_attempt_stage TEXT,
+  last_attempt_reason TEXT,
+  last_attempt_at TEXT,
   read_at TEXT NOT NULL,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL
@@ -232,6 +238,12 @@ CREATE TABLE sx_badge_service_name_invoices(
   late_alerted_at TEXT,
   late_alerted_units INTEGER,
   late_support TEXT,
+  reversal_count INTEGER NOT NULL DEFAULT 0,
+  last_reversal_event TEXT,
+  last_reversal_kind TEXT,
+  last_reversal_at TEXT,
+  last_reversal_cents INTEGER,
+  reversed_cents INTEGER NOT NULL DEFAULT 0,
   created_at TEXT NOT NULL
 ) STRICT;
 CREATE TABLE sx_badge_service_name_late_credits(
@@ -284,24 +296,6 @@ CREATE TABLE sx_badge_service_name_transactions(
 CREATE TABLE sx_badge_service_name_terms(
   terms_hash BLOB NOT NULL PRIMARY KEY,
   terms_text BLOB NOT NULL
-) STRICT;
-CREATE TABLE sx_badge_service_name_attempts(
-  name_attempt_id INTEGER PRIMARY KEY AUTOINCREMENT,
-  registration_id TEXT NOT NULL REFERENCES sx_badge_service_name_registrations,
-  commitment BLOB NOT NULL,
-  tx_kind TEXT NOT NULL,
-  stage TEXT NOT NULL,
-  reason TEXT NOT NULL,
-  counted INTEGER NOT NULL,
-  attempted_at TEXT NOT NULL
-) STRICT;
-CREATE TABLE sx_badge_service_name_reversals(
-  provider_event TEXT NOT NULL PRIMARY KEY,
-  invoice_id TEXT NOT NULL REFERENCES sx_badge_service_invoices,
-  kind TEXT NOT NULL,
-  cents INTEGER NOT NULL CHECK(cents >= 0),
-  taken_back INTEGER NOT NULL CHECK(taken_back >= 0),
-  created_at TEXT NOT NULL
 ) STRICT;
 CREATE INDEX sx_badge_service_idx_payments_invoice ON sx_badge_service_payments(
   invoice_id
@@ -438,11 +432,4 @@ CREATE INDEX sx_badge_service_idx_name_transactions_status ON sx_badge_service_n
 );
 CREATE UNIQUE INDEX sx_badge_service_idx_invoices_provider_ref ON sx_badge_service_invoices(
   provider_ref
-);
-CREATE INDEX sx_badge_service_idx_name_attempts_registration ON sx_badge_service_name_attempts(
-  registration_id,
-  commitment
-);
-CREATE INDEX sx_badge_service_idx_name_reversals_invoice ON sx_badge_service_name_reversals(
-  invoice_id
 );

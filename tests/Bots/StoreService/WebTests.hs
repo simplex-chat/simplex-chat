@@ -475,7 +475,7 @@ testMigrationOrder = do
   [(a, b) | (a, b) <- zip declared (drop 1 declared), a >= b] `shouldBe` []
   let (badges, ours) = span (`elem` badgeMigrations) (map name storeServiceSchemaMigrations)
   badges `shouldBe` badgeMigrations
-  ours `shouldBe` ["20261013_names", "20261118_invoice_product", "20261119_name_attempts", "20261120_name_reversals"]
+  ours `shouldBe` ["20261013_names"]
   length (mapMaybe toDownMigration storeServiceSchemaMigrations) `shouldBe` length storeServiceSchemaMigrations
   where
     badgeMigrations = ["20260915_badge_service_schema", "20260918_badge_group_ops", "20260925_badge_store_receipts", "20261012_badge_subscriptions"]

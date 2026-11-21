@@ -49,8 +49,8 @@ import StoreService.Store.SQLite.Migrations (storeServiceSchemaMigrations)
 namesStoreTests :: Spec
 namesStoreTests = describe "StoreService names: store" $ do
   describe "migration" $ do
-    it "rolls back and re-applies only the names migrations, with rows in them, leaving the badge tables and paid invoices as they were" testNamesDownUp
-    it "names each invoice's product, badge for the existing rows and name for those a name invoice refers to, moves each invoice's provider ref into invoices and back, and reads a name row marked badge as no product" testInvoiceProduct
+    it "rolls back and re-applies only the names migration, with rows in it, leaving the badge tables and paid invoices as they were and moving the badge invoices' provider refs into invoices and back" testNamesDownUp
+    it "names each invoice's product, badge for a badge invoice and name for a name invoice, keeps each provider ref in invoices only, and reads a name row marked badge as no product" testInvoiceProduct
     it "refuses a stored reveal whose acceptance columns are unset or set only in part" testPartialAcceptance
     it "refuses a stored commitment, secret or accepted terms hash that is not 32 bytes" testShortHashes
     it "refuses a stored length outside the name lengths" testStoredLength
@@ -74,7 +74,7 @@ namesStoreTests = describe "StoreService names: store" $ do
     it "is live while an order can still progress to a registration for its name" testOrderLive
     it "refuses to queue a closed order, also when a newer live order holds its name" testLatePayment
     it "refuses a write that would meet another live order, writing nothing" testWriteMeetsLiveOrder
-    it "retargets to the new fields and reveal, clearing the transactions, reveal times and refusal" testRetarget
+    it "retargets to the new fields and reveal, clearing the transactions, reveal times, refusal and failed attempts" testRetarget
     it "finds registrations made in the same second, and an exact resend's newest order, newest first, and orders the rest by their id" testSameSecondOrder
     it "names the order holding a label from queued to registering and failed, one at a time, and none for an unpaid, taken or registered one" testLabelRegistering
     it "lists the registrations a worker moves on" testActive
@@ -189,15 +189,17 @@ namesTables = map ("sx_badge_service_name_" <>) ["prepaid_codes", "registrations
 balancePaymentColumns :: [Text]
 balancePaymentColumns = ["confirmed_amount", "received_units", "confirmed_units", "invoice_rate", "invoiced_units"]
 
+invoiceProductColumns :: [Text]
+invoiceProductColumns = ["product", "provider_ref"]
+
 badgeTables :: [Text]
 badgeTables = map ("sx_badge_service_" <>) ["invoices", "payments", "badge_prices", "badge_offers", "badge_purchases", "badge_ledger", "badge_issuances", "badge_codes", "badge_code_invoices", "group"]
 
 testNamesDownUp :: IO ()
 testNamesDownUp = withServiceStore $ \st -> do
-  let (names, later) = span ((/= productMigration) . name) $ dropWhile ((/= "20261013_names") . name) storeServiceSchemaMigrations
+  let names = dropWhile ((/= "20261013_names") . name) storeServiceSchemaMigrations
       badgeColumns = mapM (fmap sort . columnsOf st) badgeTables
   map name names `shouldBe` ["20261013_names"]
-  map name later `shouldBe` [productMigration, "20261119_name_attempts", "20261120_name_reversals"]
   seedBadgePrice st "price1"
   createInvoiceRows st sampleInvoice `shouldReturn` Right ()
   let NewInvoice {niInvoiceId = InvoiceId badgeInvoice, niProviderRef = badgeRef} = sampleInvoice
@@ -207,31 +209,22 @@ testNamesDownUp = withServiceStore $ \st -> do
   placePaid st "r3" ownerB (order "carolsbakery" 3) (at 60) `shouldReturn` Right ()
   withTransaction st $ \db -> insertPayment db "inv-r3"
   withTransaction st $ \db -> setTermsText db (hashFixture 1) "terms"
-  runMigrations st $ MTRDown (mapMaybe toDownMigration later)
   badgeBefore <- badgeColumns
   runMigrations st $ MTRDown (mapMaybe toDownMigration names)
   mapM (columnsOf st) namesTables `shouldReturn` map (const []) namesTables
   mapM (invoiceCount st) ["inv-r2", "inv-r3"] `shouldReturn` [0, 1]
-  badgeColumns `shouldReturn` map (filter (`notElem` balancePaymentColumns)) badgeBefore
+  badgeColumns `shouldReturn` zipWith (\t -> filter (`notElem` if t == "sx_badge_service_invoices" then invoiceProductColumns else balancePaymentColumns)) badgeTables badgeBefore
   withTransaction st (\db -> DB.query db "SELECT provider_ref FROM sx_badge_service_badge_code_invoices WHERE invoice_id = ?" (Only badgeInvoice)) `shouldReturn` [Only badgeRef]
   runMigrations st $ MTRUp names
   mapM (fmap null . columnsOf st) namesTables `shouldReturn` map (const False) namesTables
   badgeColumns `shouldReturn` badgeBefore
-  runMigrations st $ MTRUp later
   (fmap irInvoiceId <$> getInvoiceByProviderRef st badgeRef) `shouldReturn` Just (InvoiceId badgeInvoice)
-
-productMigration :: String
-productMigration = "20261118_invoice_product"
 
 testInvoiceProduct :: IO ()
 testInvoiceProduct = withServiceStore $ \st -> do
-  let migration = filter ((== productMigration) . name) storeServiceSchemaMigrations
   seedBadgePrice st "price1"
   createInvoiceRows st sampleInvoice `shouldReturn` Right ()
   placePaid st "r1" ownerA (order "alicebakery" 1) (at 60) `shouldReturn` Right ()
-  runMigrations st $ MTRDown (mapMaybe toDownMigration migration)
-  withTransaction st (\db -> DB.query db "SELECT provider_ref FROM sx_badge_service_name_invoices WHERE invoice_id = ?" (Only ("inv-r1" :: Text))) `shouldReturn` [Only ("ref-inv-r1" :: Text)]
-  runMigrations st $ MTRUp migration
   let NewInvoice {niInvoiceId = InvoiceId badgeInvoice, niProviderRef = badgeRef} = sampleInvoice
       productOf invId = withTransaction st $ \db -> DB.query db "SELECT product FROM sx_badge_service_invoices WHERE invoice_id = ?" (Only invId)
   mapM productOf [badgeInvoice, "inv-r1"] `shouldReturn` [[Only ("badge" :: Text)], [Only "name"]]
@@ -584,7 +577,14 @@ testRetarget = withServiceStore $ \st -> do
           }
   write st failed `shouldReturn` Written 2
   let moved = reveal {rvLabel = "alicebakers", rvSecret = hashFixture 12}
+      attempt = NameAttempt {naTx = RTRegister, naStage = ASSent, naReason = "mined with status 0", naAt = at 5}
+      failedSend = withTransaction st $ \db -> recordAttempt db (RegistrationId "r1") True attempt
+  failedSend `shouldReturn` 1
+  failedSend `shouldReturn` 2
   withTransaction st (\db -> retargetRegistration db failed {nrVersion = 2} o' moved 10000 (at 6)) `shouldReturn` Written 3
+  withTransaction st (\db -> lastAttempt db (RegistrationId "r1")) `shouldReturn` Nothing
+  failedSend `shouldReturn` 1
+  withTransaction st (\db -> lastAttempt db (RegistrationId "r1")) `shouldReturn` Just attempt
   r' <- reg st "r1"
   r'
     `shouldBe` r

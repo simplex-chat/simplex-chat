@@ -470,19 +470,19 @@ testCommitOutOfGas = withWorker $ \w@W {wCtx = ctx} -> do
   txNonce <$> either error pure (decodeSignedTx raw) `shouldReturn` 1
   x <- stored ctx r
   nrPhase x `shouldBe` OCommitting second
-  attemptsOf ctx r `shouldReturn` [(RTCommit, ASSent, "mined with status 0", True)]
+  attemptsOf ctx r `shouldReturn` (0, 1, Just (RTCommit, ASSent, "mined with status 0"))
 
 testCommitsCapped :: IO ()
 testCommitsCapped = withWorker $ \w@W {wCtx = ctx@Ctx {cStore}} -> do
   r <- paidIn ctx aliceOrder id
-  withTransaction cStore $ \db -> replicateM_ 4 $ insertAttempt db (nrId r) (nrCommitment r) NameAttempt {naTx = RTCommit, naStage = ASSent, naReason = "mined with status 0", naCounted = True, naAt = orderTime}
+  withTransaction cStore $ \db -> replicateM_ 4 $ recordAttempt db (nrId r) True NameAttempt {naTx = RTCommit, naStage = ASSent, naReason = "mined with status 0", naAt = orderTime}
   answerCommitment w r 0
   void $ steps w r >>= awaiting
   void $ mineNewest w False
   steps w r >>= done
   now <- nowOf ctx
   nrPhase <$> stored ctx r `shouldReturn` OFailed now FRRegistryRefused
-  attemptsOf ctx r `shouldReturn` replicate 5 (RTCommit, ASSent, "mined with status 0", True)
+  attemptsOf ctx r `shouldReturn` (0, 5, Just (RTCommit, ASSent, "mined with status 0"))
   length <$> sent w `shouldReturn` 1
 
 testLapseSecond :: IO ()
@@ -715,7 +715,7 @@ testRevertFailed = withWorker $ \w@W {wCtx = ctx@Ctx {cNode}} -> do
   dryRunsRevert w "InvalidSignature()" ""
   replicateM_ 4 $ steps w r >>= stalled >>= (`shouldBe` SFRefused RTRegister (Just $ RRNamed RNInvalidSignature))
   stored ctx r `shouldReturn` r
-  attemptsOf ctx r `shouldReturn` replicate 4 (RTRegister, ASDryRun, "InvalidSignature", True)
+  attemptsOf ctx r `shouldReturn` (4, 0, Just (RTRegister, ASDryRun, "InvalidSignature"))
   steps w r >>= done
   now <- nowOf ctx
   x <- stored ctx r
@@ -729,12 +729,13 @@ testRevertFailed = withWorker $ \w@W {wCtx = ctx@Ctx {cNode}} -> do
   advance ctx $ fromIntegral (roundedSeconds (cmRevealBefore openCommit) + 1 - fromIntegral orderSeconds)
   void $ steps w p >>= stalled
   namePhase . nrPhase <$> stored ctx p `shouldReturn` PCommitted
-  map (\(_, stage, _, counted) -> (stage, counted)) <$> attemptsOf ctx p `shouldReturn` [(ASDryRun, False)]
+  (\(dryRuns, sends, attempt) -> (dryRuns, sends, (\(_, stage, _) -> stage) <$> attempt)) <$> attemptsOf ctx p `shouldReturn` (0, 0, Just ASDryRun)
   sent w `shouldReturn` []
 
-attemptsOf :: Ctx -> NameRegistration -> IO [(RegistrationTx, AttemptStage, Text, Bool)]
-attemptsOf Ctx {cStore} NameRegistration {nrId} =
-  map (\NameAttempt {naTx, naStage, naReason, naCounted} -> (naTx, naStage, naReason, naCounted)) <$> withTransaction cStore (`registrationAttempts` nrId)
+attemptsOf :: Ctx -> NameRegistration -> IO (Int, Int, Maybe (RegistrationTx, AttemptStage, Text))
+attemptsOf Ctx {cStore} NameRegistration {nrId = rid@(RegistrationId ridText)} = withTransaction cStore $ \db -> do
+  [(dryRuns, sends)] <- DB.query db "SELECT failed_dry_runs, failed_sends FROM sx_badge_service_name_registrations WHERE registration_id = ?" [ridText]
+  (dryRuns,sends,) . fmap (\NameAttempt {naTx, naStage, naReason} -> (naTx, naStage, naReason)) <$> lastAttempt db rid
 
 testAllowanceUsedUp :: IO ()
 testAllowanceUsedUp = withWorker $ \w@W {wCtx = ctx@Ctx {cNode}} -> do
@@ -782,14 +783,14 @@ testSendsCapped = withWorker $ \w@W {wCtx = ctx@Ctx {cStore}} -> do
   r <- paidIn ctx aliceOrder openPhase >>= revealed ctx keyA "alicebakery"
   answerAvailable w True
   answerUnowned ctx "alicebakery"
-  withTransaction cStore $ \db -> replicateM_ 4 $ insertAttempt db (nrId r) (nrCommitment r) NameAttempt {naTx = RTRegister, naStage = ASSent, naReason = "mined with status 0", naCounted = True, naAt = orderTime}
+  withTransaction cStore $ \db -> replicateM_ 4 $ recordAttempt db (nrId r) True NameAttempt {naTx = RTRegister, naStage = ASSent, naReason = "mined with status 0", naAt = orderTime}
   h <- sentRegister ctx r 5 $ TSRevertedAt 120
   registering <- rewrite ctx r $ \o -> o {nrPhase = ORegistering openCommit h}
   steps w registering >>= done
   now <- nowOf ctx
   x <- stored ctx r
   nrPhase x `shouldBe` OFailed now FRRegistryRefused
-  attemptsOf ctx r `shouldReturn` replicate 5 (RTRegister, ASSent, "mined with status 0", True)
+  attemptsOf ctx r `shouldReturn` (0, 5, Just (RTRegister, ASSent, "mined with status 0"))
   sent w `shouldReturn` []
   fst <$> retryOf ctx x `shouldReturn` 400
   answerFree ctx "alicebakers"
@@ -891,13 +892,13 @@ testAcceptanceMinedFailed = withWorker $ \w@W {wCtx = ctx} -> do
 testRelaysCapped :: IO ()
 testRelaysCapped = withWorker $ \w@W {wCtx = ctx@Ctx {cStore}} -> do
   r <- paidIn ctx aliceOrder openPhase >>= acceptedReveal ctx
-  withTransaction cStore $ \db -> replicateM_ 4 $ insertAttempt db (nrId r) (nrCommitment r) NameAttempt {naTx = RTAccept, naStage = ASSent, naReason = "mined with status 0", naCounted = True, naAt = addUTCTime (-60) orderTime}
+  withTransaction cStore $ \db -> replicateM_ 4 $ recordAttempt db (nrId r) True NameAttempt {naTx = RTAccept, naStage = ASSent, naReason = "mined with status 0", naAt = addUTCTime (-60) orderTime}
   void $ steps w r >>= awaiting
   void $ mineNewest w False
   steps w r >>= done
   now <- nowOf ctx
   nrPhase <$> stored ctx r `shouldReturn` OFailed now FRRegistryRefused
-  attemptsOf ctx r `shouldReturn` replicate 5 (RTAccept, ASSent, "mined with status 0", True)
+  attemptsOf ctx r `shouldReturn` (0, 5, Just (RTAccept, ASSent, "mined with status 0"))
   length <$> sent w `shouldReturn` 1
 
 testAcceptanceUnread :: IO ()

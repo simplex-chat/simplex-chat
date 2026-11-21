@@ -21,10 +21,7 @@ schemaMigrations =
     ("20260918_badge_group_ops", m20260918_badge_group_ops, Just down_m20260918_badge_group_ops),
     ("20260925_badge_store_receipts", m20260925_badge_store_receipts, Just down_m20260925_badge_store_receipts),
     ("20261012_badge_subscriptions", m20261012_badge_subscriptions, Just down_m20261012_badge_subscriptions),
-    ("20261013_names", m20261013_names, Just down_m20261013_names),
-    ("20261118_invoice_product", m20261118_invoice_product, Just down_m20261118_invoice_product),
-    ("20261119_name_attempts", m20261119_name_attempts, Just down_m20261119_name_attempts),
-    ("20261120_name_reversals", m20261120_name_reversals, Just down_m20261120_name_reversals)
+    ("20261013_names", m20261013_names, Just down_m20261013_names)
   ]
 
 -- | The client tables share this database, so the service tables are the same names behind a prefix.
@@ -345,6 +342,12 @@ CREATE TABLE @name_registrations(
   links_refused_kind TEXT,
   paid_at TIMESTAMPTZ,
   unregistered_alerted_at TIMESTAMPTZ,
+  failed_dry_runs INTEGER NOT NULL DEFAULT 0,
+  failed_sends INTEGER NOT NULL DEFAULT 0,
+  last_attempt_tx TEXT,
+  last_attempt_stage TEXT,
+  last_attempt_reason TEXT,
+  last_attempt_at TIMESTAMPTZ,
   read_at TIMESTAMPTZ NOT NULL,
   created_at TIMESTAMPTZ NOT NULL,
   updated_at TIMESTAMPTZ NOT NULL,
@@ -391,16 +394,19 @@ CREATE UNIQUE INDEX @idx_name_balances_reserved_by ON @name_balances(reserved_by
 CREATE TABLE @name_invoices(
   invoice_id TEXT NOT NULL PRIMARY KEY REFERENCES @invoices ON DELETE CASCADE,
   registration_id TEXT NOT NULL REFERENCES @name_registrations ON DELETE CASCADE,
-  provider_ref TEXT NOT NULL,
   late_alerted_at TIMESTAMPTZ,
   late_alerted_units BIGINT,
   late_support TEXT,
+  reversal_count INTEGER NOT NULL DEFAULT 0,
+  last_reversal_event TEXT,
+  last_reversal_kind TEXT,
+  last_reversal_at TIMESTAMPTZ,
+  last_reversal_cents INTEGER,
+  reversed_cents INTEGER NOT NULL DEFAULT 0,
   created_at TIMESTAMPTZ NOT NULL
 );
 
 CREATE UNIQUE INDEX @idx_name_invoices_registration ON @name_invoices(registration_id);
-
-CREATE UNIQUE INDEX @idx_name_invoices_provider_ref ON @name_invoices(provider_ref);
 
 ALTER TABLE @payments ADD COLUMN confirmed_amount INTEGER NOT NULL DEFAULT 0;
 
@@ -486,6 +492,16 @@ CREATE TABLE @name_terms(
   terms_hash BYTEA NOT NULL PRIMARY KEY,
   terms_text BYTEA NOT NULL
 );
+
+ALTER TABLE @invoices ADD COLUMN product TEXT NOT NULL DEFAULT 'badge';
+
+ALTER TABLE @invoices ADD COLUMN provider_ref TEXT NOT NULL DEFAULT '';
+
+UPDATE @invoices i SET provider_ref = ci.provider_ref FROM @badge_code_invoices ci WHERE ci.invoice_id = i.invoice_id;
+
+ALTER TABLE @invoices ALTER COLUMN provider_ref DROP DEFAULT;
+
+CREATE UNIQUE INDEX @idx_invoices_provider_ref ON @invoices(provider_ref);
 |]
 
 -- A table another table's foreign key references cannot be dropped, so reserved_by goes first.
@@ -495,6 +511,10 @@ down_m20261013_names =
   withPrefix
     servicePrefix
     [r|
+DROP INDEX @idx_invoices_provider_ref;
+ALTER TABLE @invoices DROP COLUMN provider_ref;
+ALTER TABLE @invoices DROP COLUMN product;
+
 DROP TABLE @name_terms;
 
 DROP INDEX @idx_name_transactions_status;
@@ -523,7 +543,6 @@ DELETE FROM @invoices WHERE invoice_id IN (
   SELECT ni.invoice_id FROM @name_invoices ni
   WHERE NOT EXISTS (SELECT 1 FROM @payments p WHERE p.invoice_id = ni.invoice_id)
 );
-DROP INDEX @idx_name_invoices_provider_ref;
 DROP INDEX @idx_name_invoices_registration;
 DROP TABLE @name_invoices;
 
@@ -544,106 +563,6 @@ ALTER TABLE @name_prepaid_codes DROP COLUMN reserved_by;
 DROP TABLE @name_registrations;
 
 DROP TABLE @name_prepaid_codes;
-|]
-
-m20261118_invoice_product :: Text
-m20261118_invoice_product =
-  withPrefix
-    servicePrefix
-    [r|
-ALTER TABLE @invoices ADD COLUMN product TEXT NOT NULL DEFAULT 'badge';
-
-ALTER TABLE @invoices ADD COLUMN provider_ref TEXT NOT NULL DEFAULT '';
-
-UPDATE @invoices SET product = 'name' WHERE invoice_id IN (SELECT invoice_id FROM @name_invoices);
-
-UPDATE @invoices i SET provider_ref = ci.provider_ref FROM @badge_code_invoices ci WHERE ci.invoice_id = i.invoice_id;
-
-UPDATE @invoices i SET provider_ref = ni.provider_ref FROM @name_invoices ni WHERE ni.invoice_id = i.invoice_id;
-
-ALTER TABLE @invoices ALTER COLUMN provider_ref DROP DEFAULT;
-
-CREATE UNIQUE INDEX @idx_invoices_provider_ref ON @invoices(provider_ref);
-
-DROP INDEX @idx_name_invoices_provider_ref;
-
-ALTER TABLE @name_invoices DROP COLUMN provider_ref;
-|]
-
-down_m20261118_invoice_product :: Text
-down_m20261118_invoice_product =
-  withPrefix
-    servicePrefix
-    [r|
-ALTER TABLE @name_invoices ADD COLUMN provider_ref TEXT;
-
-UPDATE @name_invoices ni SET provider_ref = i.provider_ref FROM @invoices i WHERE i.invoice_id = ni.invoice_id;
-
-ALTER TABLE @name_invoices ALTER COLUMN provider_ref SET NOT NULL;
-
-CREATE UNIQUE INDEX @idx_name_invoices_provider_ref ON @name_invoices(provider_ref);
-
-DROP INDEX @idx_invoices_provider_ref;
-
-ALTER TABLE @invoices DROP COLUMN provider_ref;
-
-ALTER TABLE @invoices DROP COLUMN product;
-|]
-
-m20261119_name_attempts :: Text
-m20261119_name_attempts =
-  withPrefix
-    servicePrefix
-    [r|
-CREATE TABLE @name_attempts(
-  name_attempt_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  registration_id TEXT NOT NULL REFERENCES @name_registrations,
-  commitment BYTEA NOT NULL,
-  tx_kind TEXT NOT NULL,
-  stage TEXT NOT NULL,
-  reason TEXT NOT NULL,
-  counted SMALLINT NOT NULL,
-  attempted_at TIMESTAMPTZ NOT NULL
-);
-
-CREATE INDEX @idx_name_attempts_registration ON @name_attempts(registration_id, commitment);
-|]
-
-down_m20261119_name_attempts :: Text
-down_m20261119_name_attempts =
-  withPrefix
-    servicePrefix
-    [r|
-DROP INDEX @idx_name_attempts_registration;
-
-DROP TABLE @name_attempts;
-|]
-
-m20261120_name_reversals :: Text
-m20261120_name_reversals =
-  withPrefix
-    servicePrefix
-    [r|
-CREATE TABLE @name_reversals(
-  provider_event TEXT NOT NULL PRIMARY KEY,
-  invoice_id TEXT NOT NULL REFERENCES @invoices,
-  kind TEXT NOT NULL,
-  cents INTEGER NOT NULL CHECK (cents >= 0),
-  taken_back INTEGER NOT NULL CHECK (taken_back >= 0),
-  created_at TIMESTAMPTZ NOT NULL
-);
-
-CREATE INDEX @idx_name_reversals_invoice ON @name_reversals(invoice_id);
-|]
-
-down_m20261120_name_reversals :: Text
-down_m20261120_name_reversals =
-  withPrefix
-    servicePrefix
-    [r|
-DROP INDEX @idx_name_reversals_invoice;
-
-DROP TABLE @name_reversals;
 |]
 
 {- TODO [badges] deferred with the draft in M20260915_user_badges, service only.

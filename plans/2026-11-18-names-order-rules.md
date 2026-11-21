@@ -82,6 +82,7 @@ stateDiagram-v2
   - a disputed order's price is never credited to its balance, a late credit concurrent with the dispute included; an order whose price is already in its balance (taken, month ended) has it taken back from the balance, as far as the balance holds it; an order not cancelled whose refund support recorded is alerted only;
   - a balance that another order's open invoice holds is released first: that invoice is cancelled at its provider and in the service, and the alert names its order.
   - Events: `charge.dispute.created` and `charge.refunded` as reversals, `radar.early_fraud_warning.created` alerted only; badge card payments unchanged.
+  - Records: the order's invoice row counts the reversals and keeps the total reversed and the last event's Stripe id, kind, time and cents; a repeated delivery of the last event changes nothing; single events are read in Stripe.
 - **Facts from Stripe's documentation:**
   - a buyer can usually dispute within 120 days of the payment; card networks allow longer in some cases, and for a future event or service the window starts at its date;
   - when a dispute opens, Stripe takes the disputed amount and a dispute fee from the balance at once; outside Mexico the fee is not refunded;
@@ -171,7 +172,7 @@ Contracts: brenzi/simplex-namespace-contract e3ba0a5, `ens-contracts/contracts`.
 
 ### 3.2 Failure reasons are stored
 - **names:** the transactions table keeps the signed transaction, hash, nonce, send time, mined block and status, without a reason; a dry run leaves no record.
-- **Final:** every failed attempt is stored with its kind, whether a dry run or a sent transaction failed, its decoded reason and its time; the order shows the last one.
+- **Final:** the order's row counts its counted dry-run failures and its sent failures, and keeps its last failed attempt: its kind, whether a dry run or a sent transaction failed, its decoded reason and its time; the order shows it. A move, which gives the order a new commitment, clears the counts and the last attempt in the same transaction.
 
 ### 3.3 Metrics never stop the service
 - **names:** a failing metrics listener leaves the service running (`Metrics.hs:266-267`).
@@ -214,11 +215,11 @@ Answers are the service's types encoded as derived JSON, and the page reads thos
 - **Times:** one whole-second clock for every time names reads, in place of truncations at 25 writes; one time per order request.
 - **Schema boundaries:** the names product uses the generic tables and its own, never a badge table.
   - **names:** names code reads and writes the generic `invoices` and `payments` and its own `name_*` tables (`Names/Store.hs`); none of the names modules mentions a badge table. The names migration creates only `name_*` tables and adds five columns to the generic `payments` (`confirmed_amount`, `received_units`, `confirmed_units`, `invoiced_units`, `invoice_rate`: a payment's crypto amounts and rate). The generic invoice read joins both products' tables to tell an invoice's product (`Store/Invoices.hs:212-222`). Every table carries the badge service's prefix `sx_badge_service_`, the names tables included.
-  - **Final:** as `names`: the names migration changes no badge table.
+  - **Final:** as `names`: the names migration changes no badge table. It also adds `product` and `provider_ref` to the generic `invoices`, the reference copied from `badge_code_invoices`; it creates only names' own tables and is the service's only names migration.
 - **Invoice product:** the generic `invoices` table names its product.
   - **names:** the generic invoice read left-joins both products' tables, `badge_code_invoices` and `name_invoices`, and reads `badge_type`, `months` and `registration_id` to tell an invoice's product and its product data (`Store/Invoices.hs:212-222`).
-  - **Final:** `invoices` gets a `product` column, `badge` or `name`, NOT NULL; the migration sets `badge` as the default for existing rows and `name` for the rows `name_invoices` refers to. Code that does not know the product reads the invoice first, cases on its product, and reads the product's own table, two reads in one transaction; code that knows the product reads the invoice joined with that product's table, one read. No query reads both product tables. Precedent: a connection and the entity tables it points to (`getConnectionEntityKeys`, `src/Simplex/Chat/Store/Connections.hs:84-97`).
-- **Provider reference:** in the generic `invoices` table, NOT NULL with a unique index, added by the invoice-product migration and filled for existing badge and name invoices; the payment events, the poller and the overdue close find an invoice by it in `invoices` alone. `badge_code_invoices.provider_ref` stays as deployed, so new badge invoices write the reference in both tables; `name_invoices` holds none.
+  - **Final:** `invoices` gets a `product` column, `badge` or `name`, NOT NULL; the names migration adds it with `badge` as the default for existing rows, and a name invoice is written with `name`. Code that does not know the product reads the invoice first, cases on its product, and reads the product's own table, two reads in one transaction; code that knows the product reads the invoice joined with that product's table, one read. No query reads both product tables. Precedent: a connection and the entity tables it points to (`getConnectionEntityKeys`, `src/Simplex/Chat/Store/Connections.hs:84-97`).
+- **Provider reference:** in the generic `invoices` table, NOT NULL with a unique index, added by the names migration and filled for existing badge invoices from `badge_code_invoices`; the payment events, the poller and the overdue close find an invoice by it in `invoices` alone. `badge_code_invoices.provider_ref` stays as deployed, so new badge invoices write the reference in both tables; `name_invoices` holds none.
 
 ## 7. Operators: commands and configuration
 

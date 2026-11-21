@@ -41,7 +41,7 @@ A4-16 (serviceKey): A2-16's hex parser covers it.
 A4-1: settleOrder returns the invoice status and throws BrokenInvariant for a missing invoice, code hash or registration; the poller counts that invoice as unread, and the cleanup keeps its order.
 
 A4-3, one provider reference per invoice:
-- The names migration, edited in place, adds `@invoices.provider_ref` with one unique index, filled from `@badge_code_invoices`, whose column and index it drops; `@name_invoices` has none. The down migration restores the badge column.
+- The names migration, edited in place, adds `@invoices.product` and `@invoices.provider_ref` with one unique index, the reference filled from `@badge_code_invoices`, whose column stays; `@name_invoices` has none. The down migration drops both columns.
 - Reads and the lookup by reference read `i.provider_ref`; providerRefColumn, the UNION ALL and ProviderRefConflict go.
 - The invoice inserts write the reference: NewNameInvoice gains it, PaidOrder loses it.
 

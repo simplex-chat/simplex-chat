@@ -103,9 +103,7 @@ main = do
             [ -- the down restores the code index as not unique
               "20260918_badge_group_ops",
               -- the columns are re-added last
-              "20261012_badge_subscriptions",
-              -- the column is re-added last
-              "20261118_invoice_product"
+              "20261012_badge_subscriptions"
             ]
             serviceSchemaDumpDBOpts
             "apps/simplex-store-service/src/StoreService/Store/Postgres/store_service_schema.sql"
@@ -122,9 +120,7 @@ main = do
               -- the index is re-created last
               "20260925_badge_store_receipts",
               -- the columns are re-added last
-              "20261012_badge_subscriptions",
-              -- the column is re-added last, with DEFAULT ''
-              "20261118_invoice_product"
+              "20261012_badge_subscriptions"
             ]
             serviceSchemaDumpDBOpts
             "apps/simplex-store-service/src/StoreService/Store/SQLite/store_service_schema.sql"

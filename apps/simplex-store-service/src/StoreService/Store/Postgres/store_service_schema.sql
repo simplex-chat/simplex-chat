@@ -195,30 +195,6 @@ CREATE TABLE test_store_service_schema.sx_badge_service_invoices (
 
 
 
-CREATE TABLE test_store_service_schema.sx_badge_service_name_attempts (
-    name_attempt_id bigint NOT NULL,
-    registration_id text NOT NULL,
-    commitment bytea NOT NULL,
-    tx_kind text NOT NULL,
-    stage text NOT NULL,
-    reason text NOT NULL,
-    counted smallint NOT NULL,
-    attempted_at timestamp with time zone NOT NULL
-);
-
-
-
-ALTER TABLE test_store_service_schema.sx_badge_service_name_attempts ALTER COLUMN name_attempt_id ADD GENERATED ALWAYS AS IDENTITY (
-    SEQUENCE NAME test_store_service_schema.sx_badge_service_name_attempts_name_attempt_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1
-);
-
-
-
 CREATE TABLE test_store_service_schema.sx_badge_service_name_balances (
     registration_id text NOT NULL,
     amount integer NOT NULL,
@@ -241,6 +217,12 @@ CREATE TABLE test_store_service_schema.sx_badge_service_name_invoices (
     late_alerted_at timestamp with time zone,
     late_alerted_units bigint,
     late_support text,
+    reversal_count integer DEFAULT 0 NOT NULL,
+    last_reversal_event text,
+    last_reversal_kind text,
+    last_reversal_at timestamp with time zone,
+    last_reversal_cents integer,
+    reversed_cents integer DEFAULT 0 NOT NULL,
     created_at timestamp with time zone NOT NULL
 );
 
@@ -381,6 +363,12 @@ CREATE TABLE test_store_service_schema.sx_badge_service_name_registrations (
     links_refused_kind text,
     paid_at timestamp with time zone,
     unregistered_alerted_at timestamp with time zone,
+    failed_dry_runs integer DEFAULT 0 NOT NULL,
+    failed_sends integer DEFAULT 0 NOT NULL,
+    last_attempt_tx text,
+    last_attempt_stage text,
+    last_attempt_reason text,
+    last_attempt_at timestamp with time zone,
     read_at timestamp with time zone NOT NULL,
     created_at timestamp with time zone NOT NULL,
     updated_at timestamp with time zone NOT NULL,
@@ -396,19 +384,6 @@ ALTER TABLE test_store_service_schema.sx_badge_service_name_registrations ALTER 
     NO MINVALUE
     NO MAXVALUE
     CACHE 1
-);
-
-
-
-CREATE TABLE test_store_service_schema.sx_badge_service_name_reversals (
-    provider_event text NOT NULL,
-    invoice_id text NOT NULL,
-    kind text NOT NULL,
-    cents integer NOT NULL,
-    taken_back integer NOT NULL,
-    created_at timestamp with time zone NOT NULL,
-    CONSTRAINT sx_badge_service_name_reversals_cents_check CHECK ((cents >= 0)),
-    CONSTRAINT sx_badge_service_name_reversals_taken_back_check CHECK ((taken_back >= 0))
 );
 
 
@@ -548,11 +523,6 @@ ALTER TABLE ONLY test_store_service_schema.sx_badge_service_invoices
 
 
 
-ALTER TABLE ONLY test_store_service_schema.sx_badge_service_name_attempts
-    ADD CONSTRAINT sx_badge_service_name_attempts_pkey PRIMARY KEY (name_attempt_id);
-
-
-
 ALTER TABLE ONLY test_store_service_schema.sx_badge_service_name_balances
     ADD CONSTRAINT sx_badge_service_name_balances_pkey PRIMARY KEY (registration_id);
 
@@ -595,11 +565,6 @@ ALTER TABLE ONLY test_store_service_schema.sx_badge_service_name_record_edits
 
 ALTER TABLE ONLY test_store_service_schema.sx_badge_service_name_registrations
     ADD CONSTRAINT sx_badge_service_name_registrations_pkey PRIMARY KEY (registration_id);
-
-
-
-ALTER TABLE ONLY test_store_service_schema.sx_badge_service_name_reversals
-    ADD CONSTRAINT sx_badge_service_name_reversals_pkey PRIMARY KEY (provider_event);
 
 
 
@@ -705,10 +670,6 @@ CREATE INDEX sx_badge_service_idx_invoices_status_expires_at ON test_store_servi
 
 
 
-CREATE INDEX sx_badge_service_idx_name_attempts_registration ON test_store_service_schema.sx_badge_service_name_attempts USING btree (registration_id, commitment);
-
-
-
 CREATE UNIQUE INDEX sx_badge_service_idx_name_balances_reserved_by ON test_store_service_schema.sx_badge_service_name_balances USING btree (reserved_by);
 
 
@@ -770,10 +731,6 @@ CREATE INDEX sx_badge_service_idx_name_registrations_phase ON test_store_service
 
 
 CREATE INDEX sx_badge_service_idx_name_registrations_prepaid_code ON test_store_service_schema.sx_badge_service_name_registrations USING btree (name_prepaid_code_id);
-
-
-
-CREATE INDEX sx_badge_service_idx_name_reversals_invoice ON test_store_service_schema.sx_badge_service_name_reversals USING btree (invoice_id);
 
 
 
@@ -871,11 +828,6 @@ ALTER TABLE ONLY test_store_service_schema.sx_badge_service_badge_purchases
 
 
 
-ALTER TABLE ONLY test_store_service_schema.sx_badge_service_name_attempts
-    ADD CONSTRAINT sx_badge_service_name_attempts_registration_id_fkey FOREIGN KEY (registration_id) REFERENCES test_store_service_schema.sx_badge_service_name_registrations(registration_id);
-
-
-
 ALTER TABLE ONLY test_store_service_schema.sx_badge_service_name_balances
     ADD CONSTRAINT sx_badge_service_name_balances_registration_id_fkey FOREIGN KEY (registration_id) REFERENCES test_store_service_schema.sx_badge_service_name_registrations(registration_id);
 
@@ -923,11 +875,6 @@ ALTER TABLE ONLY test_store_service_schema.sx_badge_service_name_registrations
 
 ALTER TABLE ONLY test_store_service_schema.sx_badge_service_name_registrations
     ADD CONSTRAINT sx_badge_service_name_registrations_name_prepaid_code_id_fkey FOREIGN KEY (name_prepaid_code_id) REFERENCES test_store_service_schema.sx_badge_service_name_prepaid_codes(name_prepaid_code_id);
-
-
-
-ALTER TABLE ONLY test_store_service_schema.sx_badge_service_name_reversals
-    ADD CONSTRAINT sx_badge_service_name_reversals_invoice_id_fkey FOREIGN KEY (invoice_id) REFERENCES test_store_service_schema.sx_badge_service_invoices(invoice_id);
 
 
 

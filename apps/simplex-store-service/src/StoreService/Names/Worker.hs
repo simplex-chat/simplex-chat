@@ -252,15 +252,15 @@ commitReverted Worker {wkOrders = OrdersEnv {oeStore}} NameRegistration {nrId} h
   let nonces = [ntNonce | NameTransaction {ntHash, ntNonce} <- txs, ntHash == h]
   pure $ or [True | NameTransaction {ntNonce, ntState = TxSettled TSRevertedAt {}} <- txs, ntNonce `elem` nonces]
 
--- | The newest relay, by its signature's nonce, mined with status 0 and stored as no attempt since it was sent.
+-- | The newest relay, by its signature's nonce, mined with status 0 and with no failed attempt stored since it was sent.
 relayReverted :: Worker -> NameRegistration -> IO Bool
 relayReverted Worker {wkOrders = OrdersEnv {oeStore}} NameRegistration {nrId} = withTransaction oeStore $ \db -> do
   relays <- filter (\NameTransaction {ntFor} -> ntFor == TxRegistration RTAccept nrId) <$> registrationTransactions db nrId
-  attempts <- registrationAttempts db nrId
+  attempt <- lastAttempt db nrId
   let newest = [ntNonce | NameTransaction {ntNonce} <- take 1 $ reverse relays]
       group = [t | t@NameTransaction {ntNonce} <- relays, ntNonce `elem` newest]
       reverted = or [True | NameTransaction {ntState = TxSettled TSRevertedAt {}} <- group]
-      stored sentAt = or [True | NameAttempt {naTx = RTAccept, naStage = ASSent, naAt} <- attempts, naAt >= sentAt]
+      stored sentAt = maybe False (\NameAttempt {naAt} -> naAt >= sentAt) attempt
   pure $ case [ntSentAt | NameTransaction {ntSentAt} <- group] of
     [] -> False
     sent -> reverted && not (stored $ maximum sent)
@@ -575,19 +575,15 @@ checkFailedOrder oe r =
     LNotLanded -> pure $ Right ()
 
 failedAttempt :: Worker -> UTCTime -> NameRegistration -> RegistrationTx -> AttemptStage -> Maybe RevertReason -> IO (Maybe Int64, Next) -> IO (Maybe Int64, Next)
-failedAttempt w@Worker {wkOrders = OrdersEnv {oeStore, oeConfig = NamesConfig {nMaxDryRunFailures, nMaxSentFailures}}} now r@NameRegistration {nrId, nrCommitment} tx stage reason underCap = do
-  failures <- withTransaction oeStore $ \db -> do
-    lastAttempt db nrId nrCommitment >>= \case
-      Just a | not counted && a {naAt = now} == attempt -> touchAttempt db nrId nrCommitment now
-      _ -> insertAttempt db nrId nrCommitment attempt
-    countedAttempts db nrId nrCommitment stage
+failedAttempt w@Worker {wkOrders = OrdersEnv {oeStore, oeConfig = NamesConfig {nMaxDryRunFailures, nMaxSentFailures}}} now r@NameRegistration {nrId} tx stage reason underCap = do
+  failures <- withTransaction oeStore $ \db -> recordAttempt db nrId counted attempt
   if counted && failures >= cap
     then failOrder w now r FRRegistryRefused $ "its " <> textEncode tx <> " failed " <> tshow failures <> " times at its " <> stageText <> ", last: " <> why
     else underCap
   where
     counted = stage == ASSent || maybe False ((== FCPermanent) . revertClass) reason
     why = maybe "mined with status 0" reasonText reason
-    attempt = NameAttempt {naTx = tx, naStage = stage, naReason = why, naCounted = counted, naAt = now}
+    attempt = NameAttempt {naTx = tx, naStage = stage, naReason = why, naAt = now}
     (cap, stageText) = case stage of
       ASDryRun -> (nMaxDryRunFailures, "dry run")
       ASSent -> (nMaxSentFailures, "sending")
