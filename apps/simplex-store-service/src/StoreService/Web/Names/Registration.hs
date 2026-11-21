@@ -31,15 +31,15 @@ import Simplex.Messaging.Parsers (parseAll)
 import Simplex.Messaging.SystemTime (roundedToUTCTime)
 import Simplex.Messaging.Util (eitherToMaybe, tshow)
 import StoreService.Config (boundedDecimal)
-import StoreService.Names.Orders (OrdersEnv (..), WriteRefusal (..), noteRead, orderFieldsOf, versionWritten)
+import StoreService.Names.Orders (OrderRefusal (..), OrdersEnv (..), WriteRefusal (..), noteRead, orderFieldsOf, versionWritten)
 import StoreService.Names.Phases (RegistrationId (..), awaitChange, publish)
-import StoreService.Names.Reveal (RevealRefusal (..), checkReveal, isRepeat, refusedLink)
+import StoreService.Names.Reveal (checkReveal, isRepeat, refusedLink)
 import StoreService.Names.Store (BrokenInvariant (..), Commit (..), FailReason (..), NameRegistration (..), OrderPhase (..), getRegistration, noHistory, updateRegistration)
 import StoreService.Names.Turns (withRegistrationTurn)
 import StoreService.Names.View (NameRefusal (..), RegistrationView, lapseMoment, lapsedAt, registrationVersion, registrationView)
 import StoreService.Names.Worker (Retried (..), RetryRefusal (..), retryRegistration)
 import StoreService.Web.Http (HttpEnv, Respond, holdsFullSeconds, jsonResponse, maxBodyBytes, readBoundedBody, withHoldSlot)
-import StoreService.Web.Names.Orders (refusalResponse)
+import StoreService.Web.Names.Orders (orderRefusal, refusalResponse)
 
 -- | GET /api/registration/:id, held while its version is seenVersion.
 registrationHandler :: OrdersEnv -> HttpEnv -> Int -> RegistrationId -> Request -> Respond -> IO ResponseReceived
@@ -58,7 +58,7 @@ registrationHandler OrdersEnv {oeStore, oeConfig, oeContracts, oePhases, oeNow} 
 -- | What a reveal decided in the name's turn, with the version it wrote; the publish and the answer come after the turn.
 data RevealDecision
   = RDAccepted (Maybe Int64)
-  | RDRefused RevealRefusal (Maybe Int64)
+  | RDRefused OrderRefusal (Maybe Int64)
   | RDChanged
   | RDGone
 
@@ -72,18 +72,18 @@ revealHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oePhases, 
         Just body -> case J.eitherDecode body of
           Right request -> withRegistrationTurn oeStore oeTurns r (decide request) >>= answer . maybe RDGone (either (const RDChanged) id)
           Left e -> logNote ("POST /api/registration/:id/reveal refused: a malformed reveal: " <> T.pack e) >> respond (refusalResponse NRBadRequest)
-        Nothing -> answer $ RDRefused (RVBadRequest "the body is over its size limit") Nothing
+        Nothing -> answer $ RDRefused (ORBadRequest "the body is over its size limit") Nothing
   where
     decide request r@NameRegistration {nrReveal, nrLinksRefused} = do
       now <- oeNow
       case nrReveal of
-        Just stored -> pure $ if isRepeat request stored then RDAccepted Nothing else RDRefused (RVBadRequest "another reveal is stored") Nothing
+        Just stored -> pure $ if isRepeat request stored then RDAccepted Nothing else RDRefused (ORBadRequest "another reveal is stored") Nothing
         Nothing -> case nrPhase r of
           OCommitted Commit {cmRevealBefore}
-            | lapsedAt now r -> pure $ RDRefused (RVBadRequest "the commitment lapsed") Nothing
+            | lapsedAt now r -> pure $ RDRefused (ORBadRequest "the commitment lapsed") Nothing
             | otherwise -> signed now (roundedToUTCTime cmRevealBefore) $ \rv -> r {nrReveal = Just rv}
           OFailed _ FRUnread -> signed now now $ \rv -> r {nrPhase = OQueued, nrHistory = noHistory, nrReveal = Just rv}
-          _ -> pure $ RDRefused (RVBadRequest "the order is not committed") Nothing
+          _ -> pure $ RDRefused (ORBadRequest "the order is not committed") Nothing
       where
         signed now earliest accept =
           checkReveal oeConfig oeContracts now (nrOwner r) (orderFieldsOf r) earliest request >>= \case
@@ -91,8 +91,8 @@ revealHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oePhases, 
             Right rv -> case refusedLink rv of
               Nothing -> write now (RDAccepted . Just) (accept rv)
               Just kind
-                | (snd <$> nrLinksRefused) == Just kind -> pure $ RDRefused (RVInvalidLink kind) Nothing
-                | otherwise -> write now (RDRefused (RVInvalidLink kind) . Just) r {nrLinksRefused = Just (now, kind)}
+                | (snd <$> nrLinksRefused) == Just kind -> pure $ RDRefused (ORInvalidLink kind) Nothing
+                | otherwise -> write now (RDRefused (ORInvalidLink kind) . Just) r {nrLinksRefused = Just (now, kind)}
     write now decided r =
       withTransaction oeStore (\db -> versionWritten <$> updateRegistration db r now) >>= \case
         Right v -> pure $ decided v
@@ -104,15 +104,14 @@ revealHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oePhases, 
         published v
         logNote ("POST /api/registration/:id/reveal refused: " <> tshow refusal)
         case (refusal, v) of
-          (RVInvalidLink kind, Just _) -> do
+          (ORInvalidLink kind, Just _) -> do
             let alert = "names: registration " <> ridText <> ": its " <> textEncode kind <> " link was refused at its reveal, so its owner is asked to replace or remove it"
             logWarn alert
             oeReport alert
           _ -> pure ()
         respond $ refusalResponse $ case refusal of
-          RVBadRequest _ -> NRBadRequest
-          RVInvalidLink kind -> NRInvalidLink $ Just kind
-          RVChainUnavailable -> NRProviderUnavailable
+          ORNameCheckUnavailable -> NRProviderUnavailable
+          _ -> orderRefusal refusal
       RDChanged -> respond . refusalResponse =<< registrationChanged env rid
       RDGone -> respond $ refusalResponse NRNotFound
     published = mapM_ (atomically . publish oePhases rid)

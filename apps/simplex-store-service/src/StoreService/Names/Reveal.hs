@@ -7,8 +7,7 @@
 -- | The reveal's checks, in the contract's order: the signed label, the order's own label and links,
 -- the commitment, the owner's intent, the terms acceptance, and the links' kinds last.
 module StoreService.Names.Reveal
-  ( RevealRefusal (..),
-    RevealRequest (..),
+  ( RevealRequest (..),
     isRepeat,
     checkReveal,
     orderReveal,
@@ -45,9 +44,6 @@ import StoreService.Names.Registration (LinkKind (..), RegisterIntent (..), Regi
 import StoreService.Names.Signatures (OrderFields (..))
 import StoreService.Names.Store (NameReveal (..))
 
-data RevealRefusal = RVBadRequest Text | RVInvalidLink LinkKind | RVChainUnavailable
-  deriving (Eq, Show)
-
 data RevealRequest = RevealRequest
   { label :: Text,
     signature :: RecoverableSignature,
@@ -67,7 +63,7 @@ $(JQ.deriveFromJSON defaultJSON ''RevealRequest)
 isRepeat :: RevealRequest -> NameReveal -> Bool
 isRepeat RevealRequest {label, signature} NameReveal {rvLabel, rvSignature} = label == rvLabel && signature == rvSignature
 
-checkReveal :: NamesConfig -> Contracts -> UTCTime -> Address -> OrderFields -> UTCTime -> RevealRequest -> IO (Either RevealRefusal NameReveal)
+checkReveal :: NamesConfig -> Contracts -> UTCTime -> Address -> OrderFields -> UTCTime -> RevealRequest -> IO (Either OrderRefusal NameReveal)
 checkReveal cfg ct now owner fields earliest request = runExceptT $ do
   rv <- liftEither $ committedReveal cfg owner fields request
   ExceptT $ checkIntent cfg ct now earliest (intentOf cfg owner (ofDuration fields) rv)
@@ -76,43 +72,39 @@ checkReveal cfg ct now owner fields earliest request = runExceptT $ do
 
 orderReveal :: NamesConfig -> Contracts -> UTCTime -> Address -> OrderFields -> RevealRequest -> IO (Either OrderRefusal NameReveal)
 orderReveal cfg ct now owner fields request =
-  checkReveal cfg ct now owner fields now request <&> \case
-    Right rv -> maybe (Right rv) (Left . ORInvalidLink) (refusedLink rv)
-    Left (RVBadRequest reason) -> Left $ ORBadRequest reason
-    Left (RVInvalidLink kind) -> Left $ ORInvalidLink kind
-    Left RVChainUnavailable -> Left ORNameCheckUnavailable
+  checkReveal cfg ct now owner fields now request <&> (>>= \rv -> maybe (Right rv) (Left . ORInvalidLink) (refusedLink rv))
 
-committedReveal :: NamesConfig -> Address -> OrderFields -> RevealRequest -> Either RevealRefusal NameReveal
+committedReveal :: NamesConfig -> Address -> OrderFields -> RevealRequest -> Either OrderRefusal NameReveal
 committedReveal cfg@NamesConfig {nTLD} owner OrderFields {ofLabelHash, ofLength, ofDuration, ofCommitment} RevealRequest {label = sentLabel, signature, secret, records = RevealLinks {contact, channel}, nonce, deadline, acceptance} = do
-  label <- first (RVBadRequest . ("the label is not a name: " <>) . tshow) $ validLabel nTLD sentLabel
-  unless (labelHash label == ofLabelHash && T.length label == nameLengthInt ofLength) $ Left $ RVBadRequest "the label is not the order's"
+  label <- first (ORBadRequest . ("the label is not a name: " <>) . tshow) $ validLabel nTLD sentLabel
+  unless (labelHash label == ofLabelHash && T.length label == nameLengthInt ofLength) $ Left $ ORBadRequest "the label is not the order's"
   let rv = NameReveal {rvLabel = label, rvSecret = secret, rvContactLink = contact, rvChannelLink = channel, rvNonce = nonce, rvDeadline = deadline, rvSignature = signature, rvAcceptance = acceptance}
-  unless (makeCommitment (riRegistration $ intentOf cfg owner ofDuration rv) == ofCommitment) $ Left $ RVBadRequest "the reveal is not the order's commitment"
+  unless (makeCommitment (riRegistration $ intentOf cfg owner ofDuration rv) == ofCommitment) $ Left $ ORBadRequest "the reveal is not the order's commitment"
   pure rv
 
 -- | The deadline and the owner's signature first, so a request nobody signed reads nothing from the chain.
 -- A deadline before revealBefore would expire while the commitment can still register.
-checkIntent :: NamesConfig -> Contracts -> UTCTime -> UTCTime -> RegisterIntent -> IO (Either RevealRefusal ())
+checkIntent :: NamesConfig -> Contracts -> UTCTime -> UTCTime -> RegisterIntent -> IO (Either OrderRefusal ())
 checkIntent NamesConfig {nChain = ChainConfig {cChainId, cSponsor}} ct now earliest intent@RegisterIntent {riRegistration = Registration {rOwner}, riNonce, riDeadline}
-  | roundedToUTCTime riDeadline < earliest = pure $ Left $ RVBadRequest "the intent's deadline is before revealBefore"
-  | roundedToUTCTime riDeadline > addUTCTime (fromInteger $ signatureSeconds + signedRequestSeconds) now = pure $ Left $ RVBadRequest "the intent's deadline is more than a week ahead"
+  | roundedToUTCTime riDeadline < earliest = pure $ Left $ ORBadRequest "the intent's deadline is before revealBefore"
+  | roundedToUTCTime riDeadline > addUTCTime (fromInteger $ signatureSeconds + signedRequestSeconds) now = pure $ Left $ ORBadRequest "the intent's deadline is more than a week ahead"
   | otherwise =
       verifyRegisterIntent (sponsorDomain cChainId cSponsor) now intent >>= \case
-        Left e -> pure $ Left $ RVBadRequest $ T.pack e
+        Left e -> pure $ Left $ ORBadRequest $ T.pack e
         Right () ->
           sponsorNonce ct rOwner >>= \case
-            Left e -> Left RVChainUnavailable <$ logWarn ("names: a reveal's nonce read failed: " <> tshow e)
-            Right nonce -> pure $ if nonce == riNonce then Right () else Left $ RVBadRequest "the intent's nonce is not the sponsor's next"
+            Left e -> Left ORNameCheckUnavailable <$ logWarn ("names: a reveal's nonce read failed: " <> tshow e)
+            Right nonce -> pure $ if nonce == riNonce then Right () else Left $ ORBadRequest "the intent's nonce is not the sponsor's next"
 
 -- | After the intent, so only a signed request reads the policy. Every name needs its owner's signature of the acceptance
 -- its view returns, with the intent's deadline.
-checkAcceptance :: NamesConfig -> Contracts -> Address -> OrderFields -> NameReveal -> IO (Either RevealRefusal ())
+checkAcceptance :: NamesConfig -> Contracts -> Address -> OrderFields -> NameReveal -> IO (Either OrderRefusal ())
 checkAcceptance NamesConfig {nChain = ChainConfig {cChainId}} ct owner OrderFields {ofLabelHash, ofCommitment} NameReveal {rvDeadline, rvAcceptance = a@TermsAcceptance {termsHash = signedHash, nonce = signedNonce}} =
   currentAcceptance ct ofLabelHash owner >>= \case
-    Left e -> Left RVChainUnavailable <$ logWarn ("names: a reveal's terms acceptance could not be read: " <> tshow e)
+    Left e -> Left ORNameCheckUnavailable <$ logWarn ("names: a reveal's terms acceptance could not be read: " <> tshow e)
     Right AcceptanceAsked {community, policy, termsHash, nonce}
-      | signedHash == termsHash && signedNonce == nonce -> first (RVBadRequest . T.pack) <$> verifyAcceptance (policyDomain cChainId policy) (termsKind community) owner ofCommitment rvDeadline a
-      | otherwise -> pure $ Left $ RVBadRequest "the acceptance is not of the terms and nonce the policy asks"
+      | signedHash == termsHash && signedNonce == nonce -> first (ORBadRequest . T.pack) <$> verifyAcceptance (policyDomain cChainId policy) (termsKind community) owner ofCommitment rvDeadline a
+      | otherwise -> pure $ Left $ ORBadRequest "the acceptance is not of the terms and nonce the policy asks"
 
 signatureSeconds :: Integer
 signatureSeconds = 7 * 86400

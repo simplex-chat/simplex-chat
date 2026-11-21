@@ -115,7 +115,7 @@ A2-36: namehash uses simplexmq's labelHash; `tldLabel` serves labelNode and the 
 - A2-12: `RevealRequest` with FromJSON, decoded once before the name's turn; SignedLabel, RevealFields, textField and integerField go.
 - A2-13: intentOf is the one builder of a Registration; committedRegistration builds the NameReveal.
 - A2-14: `checkReveal` returns the NameReveal its checks passed; the acceptance is required in the request and in NameReveal.
-  - `RVBadRequest Text`: each refusal states its reason, logged with the refused request; the HTTP answer is unchanged.
+  - `checkReveal` refuses with `OrderRefusal`; `ORBadRequest Text` states each refusal's reason, logged with the refused request; `/reveal` answers a failed chain read `provider_unavailable`.
   - The retry logs why it clears a stored reveal: the intent's check, the reveal margin or a moved sponsor nonce.
 - A2-15: toRegistration checks the 32-byte columns; verifyRegisterIntent's length check goes.
 - A2-16: `hexP` and `lowerHexP` in Abi read every 0x hash, the secret, the signature, the service key, the terms digest and AgreedTerms; Orders' `hexHash` and `hexSignature` serve the order, the reveal and the find. The node's JSON-RPC data and quantities keep their any-case rule.
