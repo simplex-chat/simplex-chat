@@ -35,9 +35,8 @@ import Simplex.Chat.Terminal (terminalChatConfig)
 import Simplex.Messaging.Agent.Store.Common (withTransaction)
 import Simplex.Messaging.Names.Record (USDCents (..))
 import StoreService.Config (BTCPayConfig (..), ListenerConfig (..), ServiceConfig (..), StripeConfig (..), readServiceConfig)
-import StoreService.Names.Codes (issueNameCode, revokeNameCode)
+import StoreService.Names.Codes (issueNameCode)
 import StoreService.Names.Store (Balance (..), CmdSource (..), LatePending (..), balanceByReference, latePending)
-import StoreService.Names.Turns (Turns, newTurns)
 import StoreService.Options (storeServiceOpts)
 import StoreService.Service (ServiceState (..), newServiceState, storeService)
 import StoreService.Store.Invoices (InvoicePayment (..), InvoiceRow (..), currentSecond, getInvoice)
@@ -61,7 +60,6 @@ data PageControls = PageControls
   { pcService :: ChatController,
     pcBTCPay :: FakeBTCPay,
     pcStripe :: FakeStripe,
-    pcTurns :: Turns,
     pcManager :: HTTP.Manager,
     pcWebhooks :: String
   }
@@ -80,12 +78,11 @@ serveNamesPage dir controlPort =
     opts <- handleParseResult $ execParserPure defaultPrefs (info (storeServiceOpts dir "db") mempty) args
     setLogLevel (serviceLogLevel cfg')
     env <- newServiceState
-    pcTurns <- newTurns
     pcManager <- HTTP.newManager HTTP.defaultManagerSettings
     race_ (storeService opts (Just cfg') terminalChatConfig env) $ do
       pcService <- atomically $ readTMVar (serviceCC env)
       Warp.runSettings (Warp.setHost "127.0.0.1" $ Warp.setPort controlPort Warp.defaultSettings) $
-        controlApp PageControls {pcService, pcBTCPay, pcStripe, pcTurns, pcManager, pcWebhooks}
+        controlApp PageControls {pcService, pcBTCPay, pcStripe, pcManager, pcWebhooks}
 
 controlApp :: PageControls -> Application
 controlApp pc req respond = do
@@ -110,7 +107,7 @@ withObject body act = case J.decode body of
   _ -> pure $ Left (badRequest400, "a control takes a JSON object")
 
 codeControl :: PageControls -> J.Object -> IO ControlAnswer
-codeControl PageControls {pcService, pcTurns} o = case JT.parseEither fields o of
+codeControl PageControls {pcService} o = case JT.parseEither fields o of
   Left e -> pure $ Left (badRequest400, T.pack e)
   Right (minLength, years, state) -> case nameLength minLength of
     Nothing -> pure $ Left (badRequest400, "no names of " <> T.pack (show minLength) <> " letters")
@@ -119,7 +116,10 @@ codeControl PageControls {pcService, pcTurns} o = case JT.parseEither fields o o
         Left e -> pure $ Left (internalServerError500, T.pack e)
         Right (code, _) -> case fromMaybe "unused" state of
           "unused" -> pure $ answered code
-          "revoked" -> either (\e -> Left (internalServerError500, e)) (const $ answered code) <$> revokeNameCode pcTurns pcService code
+          "revoked" ->
+            sendChatCmdStr pcService ("//revoke " <> T.unpack (formatNameCode code)) >>= \case
+              Right CRCustomChatResponse {} -> pure $ answered code
+              r -> pure $ Left (internalServerError500, T.pack (show (() <$ r)))
           other -> pure $ Left (status501, "the service's runner makes no " <> other <> " code")
   where
     fields v = (,,) <$> v J..: "minLength" <*> v J..:? "years" <*> v J..:? "state"
