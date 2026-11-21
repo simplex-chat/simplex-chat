@@ -106,7 +106,7 @@ reverseOrder oe@OrdersEnv {oeNow} row@InvoiceRow {irInvoiceId} rid event reversa
               Written v -> pure v
               _ -> E.throwIO $ RegistrationChanged nrId
           taken <- takeBack
-          pure (Just v, "it is cancelled, as no register transaction of it was sent, and its name is released" <> takenText taken)
+          pure (Just v, "it is cancelled, as no register transaction of its current name was sent, and its name is released" <> takenText taken)
         RCRefunded -> pure (Nothing, "support recorded its refund, so nothing changed")
         RCTakeBack -> do
           taken <- takeBack

@@ -87,6 +87,7 @@ namesBalancesTests = describe "StoreService names: balances" $ do
     it "cancels a paid order of which no register was sent, releasing its name and crediting nothing, once per event" testReversalCancels
     it "records a reversal of an order not yet paid, and closes the order as reversed when its payment settles" testReversalBeforePayment
     it "keeps an order whose register was sent, naming the transaction" testReversalKeepsSent
+    it "cancels an order whose only register is a settled one of another name, as after a move, and keeps one with a register mined or recorded" testReversalCurrentName
     it "takes the reversed cents back from a taken order's balance, as far as it and the invoice's amount hold them, a refund as the rise of its total" testReversalTakesBack
     it "changes nothing for an order whose refund support recorded, and for an early fraud warning" testReversalAlertsOnly
     it "cancels a live order of which no register was sent, also after support refunded part of its balance" testReversalCancelsRefunded
@@ -512,7 +513,7 @@ testReversalCancels = withReversals $ \Ctx {cStore = st} env alerts -> do
   cancelled <- reg st "a"
   (nrPhase cancelled, nrVersion cancelled, nrReveal cancelled) `shouldBe` (OClosed ICReversed, 3, Nothing)
   holderOf `shouldReturn` Nothing
-  alertsWith alerts ["names: card dispute dp_1 of 20000 cents on payment ref-inv-a of order a: it is cancelled, as no register transaction of it was sent, and its name is released. Evidence: payment ref-inv-a of 20000 cents"]
+  alertsWith alerts ["names: card dispute dp_1 of 20000 cents on payment ref-inv-a of order a: it is cancelled, as no register transaction of its current name was sent, and its name is released. Evidence: payment ref-inv-a of 20000 cents"]
   reverseWith env "a" "evt_1" $ RVDispute "dp_1" $ CurrencyAmount 20000
   length <$> readIORef alerts `shouldReturn` 1
   nrVersion <$> reg st "a" `shouldReturn` 3
@@ -542,6 +543,23 @@ testReversalKeepsSent = withReversals $ \Ctx {cStore = st} env alerts -> do
   nrPhase <$> reg st "b" `shouldReturn` OQueued
   alertsWith alerts ["names: refund of charge ch_1 to 20000 cents in all on payment ref-inv-b of order b: it is not cancelled, as its register transaction was sent. Evidence"]
   readIORef alerts >>= (`shouldSatisfy` all (("no commit transaction sent; register " <> strText (TxHash $ hashFixture 9) <> " pending") `T.isInfixOf`))
+
+testReversalCurrentName :: IO ()
+testReversalCurrentName = withReversals $ \Ctx {cStore = st} env alerts -> do
+  let sent r n settlement = withTransaction st $ \db -> do
+        let h = TxHash $ hashFixture n
+        _ <- insertTransaction db (TxRegistration RTRegister $ RegistrationId r) NewTransaction {ntxRaw = "raw", ntxHash = h, ntxNonce = fromIntegral n} t0
+        recordTransactionOutcome db h TSPending settlement
+  _ <- queuedOrder st "v"
+  sent "v" 9 (TSRevertedAt 100) `shouldReturn` True
+  _ <- queuedOrder st "n"
+  sent "n" 10 (TSMinedAt 100) `shouldReturn` True
+  recorded <- queuedOrder st "c"
+  sent "c" 11 (TSRevertedAt 100) `shouldReturn` True
+  write st recorded {nrHistory = (nrHistory recorded) {thRegisterTx = Just $ TxHash $ hashFixture 11}} `shouldReturn` Written 3
+  forM_ ["v", "n", "c"] $ \r -> reverseWith env r "evt_1" $ RVDispute "dp_1" $ CurrencyAmount 20000
+  mapM (fmap nrPhase . reg st) ["v", "n", "c"] `shouldReturn` [OClosed ICReversed, OQueued, OQueued]
+  alertsWith alerts ["of order v: it is cancelled, as no register transaction of its current name was sent", "of order n: it is not cancelled, as its register transaction was sent", "of order c: it is not cancelled, as its register transaction was sent"]
 
 testReversalTakesBack :: IO ()
 testReversalTakesBack = withReversals $ \Ctx {cStore = st} env alerts -> do
@@ -578,7 +596,7 @@ testReversalCancelsPartial = withReversals $ \Ctx {cStore = st} env alerts -> do
   reverseWith env "p" "evt_1" $ RVDispute "dp_1" $ CurrencyAmount 5000
   nrPhase <$> reg st "p" `shouldReturn` OClosed ICReversed
   figures st "p" `shouldReturn` Nothing
-  alertsWith alerts ["names: card dispute dp_1 of 5000 cents on payment ref-inv-p of order p: it is cancelled, as no register transaction of it was sent, and its name is released. Evidence"]
+  alertsWith alerts ["names: card dispute dp_1 of 5000 cents on payment ref-inv-p of order p: it is cancelled, as no register transaction of its current name was sent, and its name is released. Evidence"]
 
 testReversalCancelsRefunded :: IO ()
 testReversalCancelsRefunded = withReversals $ \Ctx {cStore = st} env alerts -> do
@@ -588,7 +606,7 @@ testReversalCancelsRefunded = withReversals $ \Ctx {cStore = st} env alerts -> d
   reverseWith env "m" "evt_1" $ RVDispute "dp_1" $ CurrencyAmount 20000
   nrPhase <$> reg st "m" `shouldReturn` OClosed ICReversed
   figures st "m" `shouldReturn` Just (0, 800, 800)
-  alertsWith alerts ["of order m: it is cancelled, as no register transaction of it was sent, and its name is released. Evidence"]
+  alertsWith alerts ["of order m: it is cancelled, as no register transaction of its current name was sent, and its name is released. Evidence"]
 
 testDisputeWebhook :: IO ()
 testDisputeWebhook = withFakeStripe $ \fake -> do

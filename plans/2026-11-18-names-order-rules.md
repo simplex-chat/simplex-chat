@@ -54,10 +54,10 @@ stateDiagram-v2
   queued --> monthEnded: 1 month from payment, no register pending, money to the balance
   committed --> monthEnded: 1 month from payment, no register pending, money to the balance
   failed --> monthEnded: 1 month from payment, money to the balance
-  queued --> closed: dispute or reversal, no register ever sent
-  committing --> closed: dispute or reversal, no register ever sent
-  committed --> closed: dispute or reversal, no register ever sent
-  failed --> closed: dispute or reversal, no register ever sent
+  queued --> closed: dispute or reversal, no register of the current name sent
+  committing --> closed: dispute or reversal, no register of the current name sent
+  committed --> closed: dispute or reversal, no register of the current name sent
+  failed --> closed: dispute or reversal, no register of the current name sent
 ```
 
 ### 1.1 Payment holds the name
@@ -77,8 +77,8 @@ stateDiagram-v2
 ### 1.4 Card disputes and payment reversals
 - **names:** the service acts on three Stripe events only: succeeded, failed, cancelled (`Providers/Stripe.hs:104`); a dispute changes nothing and nobody is told.
 - **Final:** every dispute and reversal alerts the operators in the log and the group, with the order's evidence (payment, signed order, registration transaction) for the answer to Stripe, whatever the order's state. In addition:
-  - an order of which no register transaction was ever sent is cancelled: the hold released, nothing credited; a support refund of part of its balance does not prevent it;
-  - an order of which a register transaction was sent is treated as registered for the dispute: not cancelled, its registration continues;
+  - an order of which no register transaction of its current name was sent is cancelled: the hold released, nothing credited; a support refund of part of its balance does not prevent it, nor a register of a moved order's earlier name;
+  - an order of which a register transaction of its current name was sent is treated as registered for the dispute: not cancelled, its registration continues;
   - a disputed order's price is never credited to its balance, a late credit concurrent with the dispute included; an order whose price is already in its balance (taken, month ended) has it taken back from the balance, as far as the balance holds it; an order not cancelled whose refund support recorded is alerted only;
   - a balance pays no other order, so disputed money pays for no other name.
   - Events: `charge.dispute.created` and `charge.refunded` as reversals, `radar.early_fraud_warning.created` alerted only; badge card payments unchanged.

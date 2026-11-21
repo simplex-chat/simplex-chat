@@ -1323,7 +1323,7 @@ reversalRecorded db (RegistrationId rid) =
 
 registerTxSent :: DB.Connection -> RegistrationId -> IO Bool
 registerTxSent db (RegistrationId rid) =
-  not . null <$> (DB.query db (mkQuery "SELECT 1 FROM @name_transactions WHERE registration_id = ? AND kind = ? LIMIT 1") (rid, TKRegistration RTRegister) :: IO [Only Int])
+  not . null <$> (DB.query db (mkQuery "SELECT 1 FROM @name_registrations r WHERE r.registration_id = ? AND (r.register_tx IS NOT NULL OR EXISTS (SELECT 1 FROM @name_transactions t WHERE t.registration_id = r.registration_id AND t.kind = ? AND t.status IN (?,?)))") (rid, TKRegistration RTRegister, TSPending, TSMined) :: IO [Only Int])
 
 registerTxPending :: DB.Connection -> RegistrationId -> IO Bool
 registerTxPending db (RegistrationId rid) =

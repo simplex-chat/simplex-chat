@@ -329,9 +329,10 @@ The endpoint's events in the Dashboard are `payment_intent.succeeded`,
 `charge.dispute.created`, `charge.refunded` and `radar.early_fraud_warning.created`.
 
 A dispute or a refund of a name order's payment is acted on at its delivery, as no read finds it:
-- an order paid and live, of which no register transaction was saved, is closed with
-  `closedBy` `reversed`, its name released and nothing credited to its balance, also after support
-  refunded part of its balance;
+- an order paid and live, of which no register transaction of its current name was saved, is
+  closed with `closedBy` `reversed`, its name released and nothing credited to its balance, also
+  after support refunded part of its balance; a register of a moved order's earlier name does not
+  keep it;
 - an order whose payment is not recorded yet is closed the same way when its payment settles,
   instead of being queued;
 - any other order is kept, and the reversed cents are taken back from its balance, as far as the

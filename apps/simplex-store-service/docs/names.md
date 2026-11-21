@@ -625,7 +625,7 @@ Notes:
 
 ### 3.12 A card dispute or a refund
 
-Stripe reports a dispute, a refund or an early fraud warning on a name order's payment; the order is cancelled while no register transaction of it was sent, and the operators are alerted with its evidence.
+Stripe reports a dispute, a refund or an early fraud warning on a name order's payment; the order is cancelled while no register transaction of its current name was sent, and the operators are alerted with its evidence.
 
 ```mermaid
 sequenceDiagram
@@ -643,7 +643,7 @@ sequenceDiagram
     W->>D: under the name's lock, one transaction: the event recorded, the order's row locked
     alt unpaid, its payment not recorded yet
       W->>D: nothing more written; its settlement later closes it as reversed
-    else live past unpaid, no register transaction of it saved
+    else live past unpaid, no register transaction of its current name saved
       W->>D: order set closed, reversed; its reveal cleared; its own balance taken back
     else support recorded the order's refund
       W->>D: nothing more written
@@ -661,6 +661,7 @@ Notes:
 - Each dispute or refund is counted on the order's invoice row, which keeps the total reversed and the last event's id and cents; a repeated delivery of the last event changes nothing, and a refund counts the rise of `amount_refunded` over the total reversed on the invoice ([`Names/Store.hs`](../src/StoreService/Names/Store.hs) `recordReversal`).
 - The cents taken back from the order's own balance are the reversed cents, at most the balance's amount and the invoice's amount less what earlier reversals of it reversed (`takeBackBalance`).
 - A support refund of part of a live order's balance does not keep the order from being cancelled; an order not cancelled whose refund support recorded is only alerted (`reversalCase`).
+- A register of the order's current name is the one its row records, or a saved one pending or mined with status 1. A move clears the first, and a taken order has none of the others, so a register of a moved order's earlier name does not keep it from being cancelled (`registerTxSent` in [`Names/Store.hs`](../src/StoreService/Names/Store.hs)).
 - A late credit writes the order's next version before it credits, which locks the order's row, as the reversal's lock does, so a credit and a concurrent reversal of the same order run one after the other; a reversal that read the order before the credit fails its lock, and the provider delivers it again (`creditLatePayment` in [`Names/Store.hs`](../src/StoreService/Names/Store.hs)).
 - A payment that settles after a reversal of it was recorded closes its unpaid order as reversed, logged at error, instead of queuing it (`nameSettled` in [`Orders.hs`](../src/StoreService/Orders.hs)).
 - An order with a reversal is credited nothing more: `creditBalance` adds nothing to it, so a taken write, the month's end and late money credit none of its price. A reversed order is not counted as a closed order's late money (`closedUnpaid`).
@@ -749,7 +750,7 @@ stateDiagram-v2
 | T24 | taken → queued | The owner moves an order paid by invoice to another name of its price, within the month from its payment, at most 3 times. | A new commitment; the month is unchanged; the order's price is spent from its balance; other buyers' open invoices of the new name are cancelled (`retargetOrder`). |
 | T25 | failed → registered | At support's close, the service finds the order's register mined with status 1, or the owner holding the name. | As T16 (`closeRegistration`). |
 | T26 | failed, or committed past its window → taken | Support's `//close` of a paid order. | The price is credited to the balance, then recorded as refunded (`closeRegistration`). |
-| T27 | queued, committing, committed or failed → closed, reversed | A dispute or refund of the payment while no register transaction of the order was saved. | The hold is released; nothing is credited (`reverseOrder`). |
+| T27 | queued, committing, committed or failed → closed, reversed | A dispute or refund of the payment while no register transaction of the order's current name was saved. | The hold is released; nothing is credited (`reverseOrder`). |
 
 The functions named are in [`Names/Worker.hs`](../src/StoreService/Names/Worker.hs), [`Names/Orders.hs`](../src/StoreService/Names/Orders.hs), [`Orders.hs`](../src/StoreService/Orders.hs), [`Web/Names/Orders.hs`](../src/StoreService/Web/Names/Orders.hs), [`Names/Store.hs`](../src/StoreService/Names/Store.hs), [`Names/Balances.hs`](../src/StoreService/Names/Balances.hs) and [`Names/LateCredits.hs`](../src/StoreService/Names/LateCredits.hs).
 
