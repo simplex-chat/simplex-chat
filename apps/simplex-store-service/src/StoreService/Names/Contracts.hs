@@ -13,9 +13,6 @@ module StoreService.Names.Contracts
     Terms (..),
     TermsRefusal (..),
     RegistrarFunds (..),
-    RecordsSet (..),
-    NameEntry (..),
-    RegisteredNames (..),
     newContracts,
     secondsPerYear,
     nameStatus,
@@ -46,14 +43,14 @@ module StoreService.Names.Contracts
     together,
     concurrent,
     callAt,
-    recordsLabel,
-    registeredNames,
+    textRecordAt,
+    isZeroAddress,
   )
 where
 
 import Control.Applicative (optional, (<|>))
 import Control.Concurrent (threadDelay)
-import Control.Concurrent.Async (Concurrently (..), mapConcurrently)
+import Control.Concurrent.Async (Concurrently (..))
 import Control.Concurrent.MVar (MVar, newMVar, withMVar)
 import Control.Concurrent.STM (TVar, atomically, newTVarIO, readTVarIO)
 import Control.Exception (try)
@@ -71,7 +68,6 @@ import Data.Functor ((<&>))
 import Data.Functor.Compose (Compose (..))
 import Data.IORef (IORef, atomicModifyIORef', newIORef, readIORef, writeIORef)
 import Data.Int (Int64)
-import qualified Data.List.NonEmpty as L
 import qualified Data.Map.Strict as M
 import Data.Maybe (catMaybes, fromMaybe, isNothing)
 import Data.Text (Text)
@@ -91,11 +87,11 @@ import Simplex.Messaging.SimplexName (LabelHash (..), SimplexTLD)
 import Simplex.Messaging.SystemTime (RoundedSystemTime (..), SystemSeconds)
 import Simplex.Messaging.TMap (TMap)
 import qualified Simplex.Messaging.TMap as TM
-import Simplex.Messaging.Util (catchOwn', catchThrow, eitherToMaybe, toChunks, tshow)
+import Simplex.Messaging.Util (catchOwn', catchThrow, eitherToMaybe, tshow)
 import StoreService.Config (ChainConfig (..), boundedDecimal, localChainId)
-import StoreService.Names.Abi (AbiError (..), AbiValue (..), abiBytes, abiTuple, abiWordSize, addressWord, decodeAddress, decodeBool, decodeBytes32, decodeLabels, decodeSeconds, decodeString, decodeUint256, decodeWord64, lowerHexP, parseText, selector, uint256)
+import StoreService.Names.Abi (AbiError (..), AbiValue (..), abiBytes, abiTuple, abiWordSize, addressWord, decodeAddress, decodeBool, decodeBytes32, decodeSeconds, decodeString, decodeUint256, decodeWord64, lowerHexP, parseText, selector, uint256)
 import StoreService.Names.Chain (Block (..), BlockTag (..), ChainClient (..), ChainError (..), Hex32 (..), confirmedNumber, ethCallAt, httpFailure, latestBlock, nodeChainId, registrarBalance)
-import StoreService.Names.Registration (Commitment, CommunityName, LinkKind (..), TermsHash, childNode, labelNode, nodeBytes, recordKey, termsKindText)
+import StoreService.Names.Registration (Commitment, CommunityName, LinkKind (..), TermsHash, labelNode, nodeBytes, recordKey, termsKindText)
 import StoreService.Names.Revert (RevertReason (..))
 import StoreService.Names.Store (getTermsText, setTermsText)
 import System.Timeout (timeout)
@@ -148,25 +144,6 @@ data TermsRefusal = TRWait Int
 
 data RegistrarFunds = RegistrarFunds {rfBalanceWei :: Integer, rfAllowanceCents :: Integer}
   deriving (Eq, Show)
-
-data RecordsSet = RNone | RContact | RChannel | RBoth | ROtherResolver
-  deriving (Eq, Ord, Show, Enum, Bounded)
-
--- | Level 2 is a name such as alice.simplex, 3 its subname; the length is in characters.
-data NameEntry = NameEntry {enLevel :: Int, enLength :: Int, enRecords :: RecordsSet}
-  deriving (Eq, Show)
-
-data RegisteredNames = RegisteredNames {rgBlock :: Word64, rgNames :: [NameEntry]}
-  deriving (Eq, Show)
-
-data ReadsAt = ReadsAt
-  { raContracts :: Contracts,
-    raAt :: BlockTag,
-    raRegistry :: Address,
-    raSubnames :: Address
-  }
-
-type Node = (ByteString, Text)
 
 secondsPerYear :: Integer
 secondsPerYear = 31536000
@@ -504,77 +481,3 @@ controller, resolver, baseRegistrar :: Contracts -> Address
 controller = cController . chainConfig
 resolver = cResolver . chainConfig
 baseRegistrar = cBaseRegistrar . chainConfig
-
-recordsLabel :: RecordsSet -> Text
-recordsLabel r = case r of
-  RNone -> "none"
-  RContact -> "contact"
-  RChannel -> "channel"
-  RBoth -> "both"
-  ROtherResolver -> "other_resolver"
-
-readsAtOnce :: Int
-readsAtOnce = 16
-
-childrenPage :: Integer
-childrenPage = 100
-
--- | Every live name and subname at the latest block: names while nameExpires is after the block's time, subnames while
--- the subname registrar names an owner. A name whose resolver is not the configured one is counted without its records.
-registeredNames :: Contracts -> IO (Either ChainError RegisteredNames)
-registeredNames ct@Contracts {ctChain} = runExceptT $ do
-  Block {blockNumber, blockTimestamp} <- ExceptT $ latestBlock ctChain
-  let at = AtBlock blockNumber
-  registry <- ExceptT $ callAt ct at (baseRegistrar ct) ("ens()", "") decodeAddress
-  subnames <- ExceptT $ callAt ct at (baseRegistrar ct) ("subnameHook()", "") decodeAddress
-  base <- ExceptT $ callAt ct at (baseRegistrar ct) ("baseNode()", "") decodeBytes32
-  total <- ExceptT $ callAt ct at (baseRegistrar ct) ("totalSupply()", "") decodeUint256
-  let env = ReadsAt {raContracts = ct, raAt = at, raRegistry = registry, raSubnames = subnames}
-      registrar :: ByteString -> Integer -> (ByteString -> Either AbiError a) -> IO (Either ChainError a)
-      registrar signature i = readAt env (baseRegistrar ct) signature (uint256 i)
-  ids <- readAll [registrar "tokenByIndex(uint256)" i decodeUint256 | i <- [0 .. total - 1]]
-  expiries <- readAll [registrar "nameExpires(uint256)" i decodeUint256 | i <- ids]
-  let live = [i | (i, expiry) <- zip ids expiries, expiry > toInteger (roundedSeconds blockTimestamp)]
-  labels <- readAll [registrar "labelOf(uint256)" i decodeString | i <- live]
-  RegisteredNames blockNumber <$> levels env 2 [(childNode base (LabelHash $ uint256 i), label) | (i, label) <- zip live labels]
-
-levels :: ReadsAt -> Int -> [Node] -> ExceptT ChainError IO [NameEntry]
-levels env level nodes
-  | null nodes = pure []
-  | otherwise = do
-      records <- recordsOf env nodes
-      children <- childrenOf env nodes
-      (zipWith (\(_, label) r -> NameEntry level (T.length label) r) nodes records <>) <$> levels env (level + 1) children
-
-recordsOf :: ReadsAt -> [Node] -> ExceptT ChainError IO [RecordsSet]
-recordsOf env@ReadsAt {raContracts = ct, raAt, raRegistry} nodes = do
-  resolvers <- readAll [readAt env raRegistry "resolver(bytes32)" node decodeAddress | (node, _) <- nodes]
-  readAll [if r == resolver ct then textsOf node else pure (Right ROtherResolver) | ((node, _), r) <- zip nodes resolvers]
-  where
-    textsOf node = do
-      contact <- textRecordAt ct raAt node $ recordKey LKContact
-      channel <- textRecordAt ct raAt node $ recordKey LKChannel
-      pure $ recordsOfTexts <$> contact <*> channel
-
-recordsOfTexts :: Text -> Text -> RecordsSet
-recordsOfTexts contact channel = case (T.null contact, T.null channel) of
-  (True, True) -> RNone
-  (False, True) -> RContact
-  (True, False) -> RChannel
-  (False, False) -> RBoth
-
--- | A subname the subname registrar no longer names an owner of, as of a lapsed name or a previous owner, is left out.
-childrenOf :: ReadsAt -> [Node] -> ExceptT ChainError IO [Node]
-childrenOf env@ReadsAt {raSubnames} parents = do
-  counts <- readAll [readAt env raSubnames "childrenLength(bytes32)" node decodeUint256 | (node, _) <- parents]
-  let pages = [(node, start) | ((node, _), count) <- zip parents counts, start <- [0, childrenPage .. count - 1]]
-  listed <- readAll [readAt env raSubnames "getChildren(bytes32,uint256,uint256)" (node <> uint256 start <> uint256 childrenPage) decodeLabels | (node, start) <- pages]
-  let found = [(childNode node (LabelHash labelHash), label) | ((node, _), children) <- zip pages listed, (labelHash, label) <- children]
-  owners <- readAll [readAt env raSubnames "ownerOf(uint256)" node decodeAddress | (node, _) <- found]
-  pure [child | (child, owner) <- zip found owners, not (isZeroAddress owner)]
-
-readAt :: ReadsAt -> Address -> ByteString -> ByteString -> (ByteString -> Either AbiError a) -> IO (Either ChainError a)
-readAt ReadsAt {raContracts, raAt} to signature args = callAt raContracts raAt to (signature, args)
-
-readAll :: [IO (Either ChainError a)] -> ExceptT ChainError IO [a]
-readAll calls = concatMap L.toList <$> mapM (ExceptT . fmap sequence . mapConcurrently id) (toChunks readsAtOnce calls)

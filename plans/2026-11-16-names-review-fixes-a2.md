@@ -146,15 +146,15 @@ sequenceDiagram
 
 ## Census
 
-A2-27, A2-28: Census.hs goes; its code is in Contracts.
+A2-27, A2-28: Census.hs stays a module of its own.
 
 - `registeredNames`, `RegisteredNames {rgBlock, rgNames}`, `NameEntry {enLevel, enLength, enRecords}`, `RecordsSet`.
-- It reads the record keys, the text record (`textRecordAt`), the child node (`childNode` in Registration) and the zero address (`isZeroAddress`) as the other reads do.
+- It reads the record keys, the text record (`textRecordAt`), the child node (`childNode` in Registration) and the zero address (`isZeroAddress`) as the reads of Contracts do; Contracts exports `textRecordAt` and `isZeroAddress`.
 - Chunks by simplexmq's toChunks. Metrics keeps its metric names and output.
 
 ## Modules
 
-A2-29: Abi, Revert and Signatures stay modules of their own.
+A2-29: Abi, Revert, Signatures and Census stay modules of their own.
 
 - ChainConfig is defined in Chain; Config re-exports it.
 - A UTCTime is converted to seconds where it is used, by `systemSeconds $ utcToSystemTime t`, as simplexmq does.
@@ -186,6 +186,10 @@ graph LR
   Contracts --> Registration
   Contracts --> Revert
   Contracts --> Store
+  Census --> Abi
+  Census --> Chain
+  Census --> Contracts
+  Census --> Registration
 ```
 
 ## Gaps recorded after the review
