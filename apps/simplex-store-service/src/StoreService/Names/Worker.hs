@@ -3,8 +3,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TupleSections #-}
 
--- | Each registration from queued to registered, taken or failed: its commit, the wait for the page's reveal, its acceptance relay, and its register;
--- and Try again, which queues a failed one again. A step starts from the stored registration, the sender's transactions in flight
+-- | Each registration from queued to registered, ended, taken or failed: its commit, the wait for the page's reveal, its acceptance relay, and its register;
+-- Try again, which queues a failed one again; and the hourly sweep, which sets a registered one ended once unregistered. A step starts from the stored registration, the sender's transactions in flight
 -- and the chain, so a restart resumes any phase.
 module StoreService.Names.Worker
   ( Worker,
@@ -22,6 +22,8 @@ module StoreService.Names.Worker
     closeRegistration,
     maxSendsPerKind,
     sendsUsedUp,
+    sweepEndedRegistrations,
+    runEndedSweep,
   )
 where
 
@@ -32,13 +34,16 @@ import Control.Concurrent.STM
 import Control.Exception (finally, mask_)
 import qualified Control.Exception as E
 import Control.Logger.Simple (logError, logNote, logWarn)
-import Control.Monad (forM, forM_, forever, void, when)
+import Control.Monad (forM, forM_, forever, unless, void, when)
 import Control.Monad.Except (ExceptT (..), runExceptT)
+import Data.Bifunctor (first)
 import Data.Containers.ListUtils (nubOrd)
+import Data.Either (lefts)
 import Data.Functor ((<&>))
 import Data.Int (Int64)
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
+import Data.Maybe (fromMaybe, isJust)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime, diffUTCTime)
@@ -49,12 +54,12 @@ import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Util (tshow, ($>>=))
 import StoreService.Config (ChainConfig (..), NamesConfig (..))
 import StoreService.Names.Balances (RefundRecord (..))
-import StoreService.Names.Chain (Block (..), BlockTag (..), ChainClient, ChainError (..), TxHash, blockAt)
+import StoreService.Names.Chain (Block (..), BlockTag (..), ChainError (..), TxHash)
 import StoreService.Names.Codes (CodeRefusal (..), codeRefusal, releaseCode, reserveCode)
-import StoreService.Names.Contracts (CommitmentAges (..), Contracts, acceptedTerms, commitmentAges, commitmentTime, communityName, confirmedTag, controllerAvailable, forgetNamePolicy, namePolicy, sponsorNonce)
+import StoreService.Names.Contracts (CommitmentAges (..), Contracts, acceptedTerms, blockTimeAt, commitmentAges, commitmentTime, communityName, confirmedBlock, confirmedTag, controllerAvailable, disputeUntil, forgetNamePolicy, namePolicy, sponsorNonce)
 import StoreService.Names.Orders (Landing (..), OrderRefusal, OrdersEnv (..), WriteRefusal (..), checkLanded, confirmLanded, unixSeconds, versionWritten)
 import StoreService.Names.Phases (RegistrationId (..), awaitChange, publish)
-import StoreService.Names.Registration (TermsAcceptance (..), acceptCalldata, commitCalldata, policyDomain, registerWithCreditCalldata, sponsorDomain, termsKind, verifyAcceptance, verifyRegisterIntent)
+import StoreService.Names.Registration (TermsAcceptance (..), acceptCalldata, commitCalldata, disputeSeconds, policyDomain, registerWithCreditCalldata, sponsorDomain, termsKind, verifyAcceptance, verifyRegisterIntent)
 import StoreService.Names.Reveal (intentOf)
 import StoreService.Names.Revert (RevertName (..))
 import StoreService.Names.Sender (PendingTx, SendError (..), Sender, awaitOutcome, inFlightTransaction, ptHash, submitTransaction)
@@ -65,7 +70,6 @@ import StoreService.Safely (safely, safelyWith)
 
 data Worker = Worker
   { wkOrders :: OrdersEnv,
-    wkChain :: ChainClient,
     wkSender :: Sender,
     -- | the thread following each registration, kept by the scan
     wkThreads :: TVar (Map RegistrationId (Async ()))
@@ -115,8 +119,8 @@ sweepInterval = 86400 * 1000000
 notRegistered :: Text
 notRegistered = "The name could not be registered"
 
-newWorker :: OrdersEnv -> ChainClient -> Sender -> IO Worker
-newWorker wkOrders wkChain wkSender = Worker wkOrders wkChain wkSender <$> newTVarIO M.empty
+newWorker :: OrdersEnv -> Sender -> IO Worker
+newWorker wkOrders wkSender = Worker wkOrders wkSender <$> newTVarIO M.empty
 
 -- | A thread for each registration in the worker's phases, started by a scan every scanInterval; they stop with it.
 runWorkers :: Worker -> IO ()
@@ -226,12 +230,12 @@ toCommitted w now r CommitmentAges {caMin, caMax} t =
 
 -- | Among the signatures of the commit last sent, the one mined with status 1 at the commitment's time.
 ourCommit :: Worker -> NameRegistration -> Word64 -> IO (Either ChainError (Maybe (TxHash, Word64)))
-ourCommit Worker {wkOrders = OrdersEnv {oeStore}, wkChain} NameRegistration {nrId, nrCommitTx} t = do
+ourCommit Worker {wkOrders = OrdersEnv {oeStore, oeContracts}} NameRegistration {nrId, nrCommitTx} t = do
   txs <- withTransaction oeStore (`registrationTransactions` nrId)
   let commits = [tx | tx@NameTransaction {ntFor = TxCommit _} <- txs]
       lastSent = [ntNonce | NameTransaction {ntHash, ntNonce} <- commits, Just ntHash == nrCommitTx]
   case [(ntHash, block) | NameTransaction {ntHash, ntNonce, ntStatus = TSMined, ntMinedBlock = Just block} <- commits, ntNonce `elem` lastSent] of
-    (h, block) : _ -> fmap (\Block {blockTimestamp} -> if blockTimestamp == t then Just (h, block) else Nothing) <$> blockAt wkChain block
+    (h, block) : _ -> fmap (\blockTime -> if blockTime == t then Just (h, block) else Nothing) <$> blockTimeAt oeContracts block
     [] -> pure $ Right Nothing
 
 sendCommit :: Worker -> UTCTime -> NameRegistration -> IO Next
@@ -338,8 +342,9 @@ judge w@Worker {wkOrders = oe@OrdersEnv {oeContracts}} now r@NameRegistration {n
   inTurn w r $
     confirmLanded oe r >>= \case
       LRegistered v -> pure (Just v, Again)
+      LEnded v -> pure (Just v, Again)
       LChanged -> pure (Nothing, Again)
-      LUnread -> pure (Nothing, Retry (nrVersion r) "the register check's chain read failed")
+      LUnread -> pure (Nothing, Retry (nrVersion r) "its register could not be checked at the confirmed block")
       LNotLanded -> case reason of
         Just e | e `elem` [RNInvalidNonce, RNTermsNotAccepted, RNTermsMismatch] -> do
           when (e == RNTermsNotAccepted) $ forgetNamePolicy oeContracts
@@ -432,6 +437,7 @@ retryRegistration oe@OrdersEnv {oeNow} current = do
     r@NameRegistration {nrPhase = PFailed} ->
       confirmLanded oe r >>= \case
         LRegistered v -> pure $ RTWritten v
+        LEnded v -> pure $ RTWritten v
         LChanged -> pure RTChanged
         LUnread -> pure $ RTRefused RFUnread
         LNotLanded ->
@@ -509,7 +515,7 @@ servingReveal OrdersEnv {oeConfig = cfg@NamesConfig {nChain = ChainConfig {cChai
       Right () | reusable cfg now (toInteger rvDeadline) -> fmap (\nonce -> if nonce == rvNonce then Just rv else Nothing) <$> sponsorNonce oeContracts nrOwner
       _ -> pure $ Right Nothing
 
-data Closed = CLRegistered RegistrationId | CLRefunded (Maybe UTCTime) RefundRecord | CLRefused CloseRefusal
+data Closed = CLRegistered RegistrationId | CLEnded RegistrationId | CLRefunded (Maybe UTCTime) RefundRecord | CLRefused CloseRefusal
   deriving (Eq, Show)
 
 data CloseRefusal = CFNoOrder | CFNotFailedPaid | CFUnread | CFChanged | CFWriteRefused OrderRefusal | CFHeld BalanceHold | CFBalanceChanged
@@ -537,6 +543,7 @@ closeRegistration st ct turns clock ref = do
       r@NameRegistration {nrId, nrPhase = PFailed} ->
         checkLanded st ct turns clock r >>= \case
           LRegistered _ -> pure $ CLRegistered nrId
+          LEnded _ -> pure $ CLEnded nrId
           LChanged -> refused CFChanged
           LUnread -> refused CFUnread
           LNotLanded -> either CLRefused (CLRefunded $ nrFailedAt current <|> lapseMoment current) <$> refundTaken st turns now r
@@ -580,3 +587,33 @@ sweepFailedCodes Worker {wkOrders = OrdersEnv {oeStore, oeTurns, oeNow}} = do
 
 runCodeSweep :: Worker -> IO ()
 runCodeSweep w = forever $ safely "names code sweep" (sweepFailedCodes w) >> threadDelay sweepInterval
+
+sweepEndedRegistrations :: Worker -> IO ()
+sweepEndedRegistrations w@Worker {wkOrders = OrdersEnv {oeStore, oeContracts, oeNow}} = do
+  now <- oeNow
+  disputable <- withTransaction oeStore (`disputableRegistrations` fromInteger (unixSeconds now - disputeReadMargin))
+  unless (null disputable) $
+    confirmedBlock oeContracts >>= \case
+      Left e -> logWarn $ "names ended sweep: a chain read failed, the pass is stopped: " <> tshow e
+      Right confirmed -> mapM (\rid -> first (rid,) <$> endIfUnregistered now confirmed rid) disputable >>= mapM_ unread . take 1 . lefts
+  where
+    unread (RegistrationId ridText, e) = logWarn $ "names ended sweep: registration " <> ridText <> ": a chain read failed, read again at the next pass: " <> tshow e
+    endIfUnregistered now Block {blockNumber, blockTimestamp} rid@(RegistrationId ridText) =
+      safelyWith ("names ended sweep: registration " <> ridText) (Right ()) $
+        withTransaction oeStore (`getRegistration` rid) >>= \case
+          Just r@NameRegistration {nrPhase = PRegistered, nrLabelHash, nrDisputeDays, nrDisputeUntil = ours@(Just disputeEnd)}
+            | disputeEnd < blockTimestamp + disputeSeconds nrDisputeDays ->
+                disputeUntil oeContracts (AtBlock blockNumber) nrLabelHash >>= traverse (\current -> when (current /= ours) $ void $ inTurn w r $ do
+                  outcome@(v, _) <- store w now r {nrPhase = PEnded}
+                  when (isJust v) $ logNote $ "names ended sweep: registration " <> ridText <> " set ended: disputeUntil(id) read at block " <> tshow blockNumber <> " is " <> tshow (fromMaybe 0 current) <> ", not " <> tshow disputeEnd
+                  pure outcome)
+          _ -> pure $ Right ()
+
+runEndedSweep :: Worker -> IO ()
+runEndedSweep w = forever $ safely "names ended sweep" (sweepEndedRegistrations w) >> threadDelay endedSweepInterval
+
+disputeReadMargin :: Integer
+disputeReadMargin = 7 * 86400
+
+endedSweepInterval :: Int
+endedSweepInterval = 3600 * 1000000

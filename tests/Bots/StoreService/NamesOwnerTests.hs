@@ -5,6 +5,7 @@
 
 module Bots.StoreService.NamesOwnerTests
   ( namesOwnerTests,
+    answerDisputeUntil,
     answerExpiry,
     answerFree,
     answerOwner,
@@ -15,6 +16,7 @@ module Bots.StoreService.NamesOwnerTests
     dynamisOrder,
     failedPhase,
     findBody,
+    genesisDisputeEnd,
     labelBytes,
     move,
     moveBody,
@@ -64,7 +66,7 @@ import Simplex.Messaging.Eth.EIP712 (serializeSignature)
 import Simplex.Messaging.SimplexName (LabelHash (..), labelHash)
 import Simplex.Messaging.Util (tshow)
 import StoreService.Config (NamesConfig (..))
-import StoreService.Names.Abi (addressWord, hex, uint256)
+import StoreService.Names.Abi (addressWord, hex, selector, uint256)
 import StoreService.Names.Chain (TxHash (..))
 import StoreService.Names.Orders (OrdersEnv (..), movable, signedRequestSeconds)
 import StoreService.Names.Phases (RegistrationId (..), phasesWaiting)
@@ -97,7 +99,7 @@ namesOwnerTests = describe "StoreService names: owner" $ do
     it "answers the fourth move move_limit with the current view, changing nothing" testMoveLimit
     it "refuses a move meeting another live order of the wallet's or the commitment with a bare order_exists, before the price" testMoveMeetsOrder
     it "runs the order checks on the new fields: invalid_name, the duration, name_taken, name_check_unavailable" testMoveOrderChecks
-    it "registers a failed order whose register went through, by its mined register or by ownerOf, answering registration_changed and spending a code" testMoveLanded
+    it "registers a failed order whose register went through, by its mined register or by ownerOf, answering registration_changed and spending a code, and ends one whose mined registration was ended" testMoveLanded
     it "spends a released code still unused when its failed order turns out registered, and alerts once when it was spent elsewhere meanwhile" testMoveLandedReleasedCode
     it "answers a dearer name price_too_high with its price, one priced under the floor name_check_unavailable crediting nothing, and moves to a cheaper one at its price, crediting the difference to its balance" testMovePrice
     it "keeps fromBalance through a move to a cheaper name" testMoveKeepsFromBalance
@@ -175,12 +177,18 @@ answerOwner Ctx {cNode} label owner = answerCall cNode (registrarOf cNode) (owne
 answerExpiry :: Ctx -> Text -> Word64 -> IO ()
 answerExpiry Ctx {cNode} label expiry = answerCall cNode (registrarOf cNode) (nameExpiresSelector <> labelBytes label) $ Returns $ uint256 expiry
 
+answerDisputeUntil :: Ctx -> Text -> Word64 -> IO ()
+answerDisputeUntil Ctx {cNode} label t = answerCall cNode (registrarOf cNode) (selector "disputeUntil(uint256)" <> labelBytes label) $ Returns $ uint256 t
+
+genesisDisputeEnd :: Word64
+genesisDisputeEnd = genesisTime + 14 * 86400
+
 -- | A register transaction of the order as the sender saves it, then moved to this outcome.
 sentRegister :: Ctx -> NameRegistration -> Word8 -> TxStatus -> IO TxHash
 sentRegister Ctx {cStore} NameRegistration {nrId} n status = withTransaction cStore $ \db -> do
   let h = TxHash $ digestFixture n
   void $ insertTransaction db (TxRegister nrId) NewTransaction {ntxRaw = "raw", ntxHash = h, ntxNonce = fromIntegral n} orderTime
-  recordTransactionOutcome db h TSPending status (Just 120) `shouldReturn` True
+  recordTransactionOutcome db h TSPending status (Just 1) `shouldReturn` True
   pure h
 
 -- | The chain answers the name as available and held by nobody.
@@ -589,6 +597,7 @@ testMoveLanded = withOwner $ \ctx -> do
   let expiry = seconds orderTime + 2 * 31536000
   forM_ ["alicebakery", "dynamis"] $ \label -> answerExpiry ctx label expiry
   TxHash minedHash <- sentRegister ctx minedOrder 1 TSMined
+  answerDisputeUntil ctx "alicebakery" genesisDisputeEnd
   answerOwner ctx "dynamis" (nrOwner ownedOrder)
   void $ sentRegister ctx notLanded 2 TSReverted
   answerOwner ctx "alicebakery" (nrOwner minedOrder)
@@ -602,6 +611,18 @@ testMoveLanded = withOwner $ \ctx -> do
     fieldsIn view [("phase", "registered"), ("expiresAt", J.toJSON expiry), ("moves", J.Number 0), ("error", J.Null), ("registerTx", maybe J.Null (J.String . hex) hash)]
     written <- stored ctx r
     (nrPhase written, nrLive written, nrVersion written, nrLabelHash written) `shouldBe` (PRegistered, False, nrVersion r + 1, nrLabelHash r)
+  answerFree ctx "dynamic"
+  endedOrder <- paidIn ctx dynamisOrder {oLabel = "dynamic", oCommitment = commitmentOf 6, oSealed = "sealed-dynamic-6"} failedPhase
+  void $ sentRegister ctx endedOrder 3 TSMined
+  poll <- held ctx endedOrder
+  endedTo <- moveTo ctx "alicebakers" 12
+  answer <- move ctx keyA endedOrder endedTo
+  view <- getView ctx endedOrder
+  answer `shouldBe` refusedWithView "registration_changed" view
+  woken poll `shouldReturn` (200, view)
+  fieldsIn view [("phase", "ended"), ("expiresAt", J.Null), ("disputeUntil", J.Null), ("moves", J.Number 0)]
+  ended <- stored ctx endedOrder
+  (nrPhase ended, nrExpiresAt ended, nrDisputeUntil ended, nrLabelHash ended) `shouldBe` (PEnded, Just $ genesisTime + nrDuration endedOrder, Just genesisDisputeEnd, nrLabelHash endedOrder)
   pcSpentAt <$> codeRow ctx code `shouldReturn` Just orderTime
   to <- moveTo ctx "alicebakers" 11
   v <- moved ctx keyB notLanded to
@@ -653,7 +674,7 @@ testMovePrice = withOwner $ \ctx -> do
   balanceOf ctx dear `shouldReturn` Nothing
   v <- moved ctx keyB dear toCheaper
   (field "price" v, field "phase" v, field "fromBalance" v) `shouldBe` (Just (J.Number 10000), Just "queued", Just (J.Number 0))
-  field "balance" v `shouldBe` Just (J.object ["amount" J..= (10000 :: Int), "held" J..= False, "heldUntil" J..= J.Null, "refunded" J..= (0 :: Int)])
+  field "balance" v `shouldBe` Just (J.object ["amount" J..= (10000 :: Int), "held" J..= False, "heldUntil" J..= J.Null, "refunded" J..= (0 :: Int), "disputeDays" J..= (14 :: Int)])
   nrPrice <$> stored ctx dear `shouldReturn` 10000
   balanceOf ctx dear `shouldReturn` Just (10000, 10000)
 

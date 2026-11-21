@@ -1,9 +1,20 @@
+{-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module StoreService.Names.Registration
   ( Registration (..),
     RegisterIntent (..),
+    DisputeDays,
+    mkDisputeDays,
+    unDisputeDays,
+    disputeSeconds,
+    minDisputeDays,
+    maxDisputeDays,
+    cardDisputeDays,
+    cryptoDisputeDays,
+    codeDisputeDays,
     TermsAcceptance (..),
     TermsKind (..),
     termsKind,
@@ -19,6 +30,7 @@ module StoreService.Names.Registration
     makeCommitment,
     commitCalldata,
     registerWithCreditCalldata,
+    registerNameType,
     registerIntentDigest,
     verifyRegisterIntent,
     acceptanceDigest,
@@ -35,6 +47,7 @@ where
 import Control.Monad (unless, when)
 import Control.Monad.Except (ExceptT (..), runExceptT, throwError)
 import Crypto.Number.Serialize (os2ip)
+import Data.Aeson (ToJSON)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
 import Data.Maybe (catMaybes)
@@ -72,10 +85,37 @@ channelRecordKey = "simplex.channel"
 
 data RegisterIntent = RegisterIntent
   { riRegistration :: Registration,
+    riDisputeDays :: DisputeDays,
     riNonce :: Word64,
     riDeadline :: Word64,
     riSignature :: RecoverableSignature
   }
+
+newtype DisputeDays = DisputeDays Int
+  deriving (Eq, Ord, Show)
+  deriving newtype (ToJSON)
+
+mkDisputeDays :: Int -> Maybe DisputeDays
+mkDisputeDays n
+  | minDisputeDays <= days && days <= maxDisputeDays = Just days
+  | otherwise = Nothing
+  where
+    days = DisputeDays n
+
+unDisputeDays :: DisputeDays -> Int
+unDisputeDays (DisputeDays n) = n
+
+disputeSeconds :: DisputeDays -> Word64
+disputeSeconds (DisputeDays n) = fromIntegral n * 86400
+
+minDisputeDays, maxDisputeDays :: DisputeDays
+minDisputeDays = DisputeDays 14
+maxDisputeDays = DisputeDays 120
+
+cardDisputeDays, cryptoDisputeDays, codeDisputeDays :: DisputeDays
+cardDisputeDays = DisputeDays 120
+cryptoDisputeDays = DisputeDays 14
+codeDisputeDays = DisputeDays 14
 
 sponsorDomain :: Word64 -> Address -> Eip712Domain
 sponsorDomain edChainId edVerifyingContract = Eip712Domain {edName = "SimplexSponsor", edVersion = "1", edChainId, edVerifyingContract}
@@ -117,34 +157,39 @@ commitCalldata :: ByteString -> ByteString
 commitCalldata commitment = selector "commit(bytes32)" <> commitment
 
 registerWithCreditCalldata :: RegisterIntent -> ByteString
-registerWithCreditCalldata RegisterIntent {riRegistration, riNonce, riDeadline, riSignature} =
-  selector "registerWithCredit((string,address,uint256,bytes32,address,bytes[],uint8,bytes32),uint256,uint256,bytes)"
+registerWithCreditCalldata RegisterIntent {riRegistration, riDisputeDays, riNonce, riDeadline, riSignature} =
+  selector "registerWithCredit((string,address,uint256,bytes32,address,bytes[],uint8,bytes32),uint256,uint256,uint256,bytes)"
     <> abiTuple
       [ Dynamic $ registrationTuple riRegistration,
+        Static $ uint256 $ unDisputeDays riDisputeDays,
         Static $ uint256 riNonce,
         Static $ uint256 riDeadline,
         Dynamic $ abiBytes $ serializeSignature riSignature
       ]
 
-registerIntentDigest :: Eip712Domain -> Registration -> Word64 -> Word64 -> ByteString
-registerIntentDigest domain r@Registration {rLabel, rOwner, rDuration, rResolver} nonce deadline =
+registerNameType :: ByteString
+registerNameType = "RegisterName(string label,address owner,uint256 duration,address resolver,bytes[] data,uint256 disputeDays,uint256 nonce,uint256 deadline)"
+
+registerIntentDigest :: Eip712Domain -> Registration -> DisputeDays -> Word64 -> Word64 -> ByteString
+registerIntentDigest domain r@Registration {rLabel, rOwner, rDuration, rResolver} days nonce deadline =
   hashTypedData
     domain
-    "RegisterName(string label,address owner,uint256 duration,address resolver,bytes[] data,uint256 nonce,uint256 deadline)"
+    registerNameType
     [ VBytes $ encodeUtf8 rLabel,
       VAddress rOwner,
       VUint $ fromIntegral rDuration,
       VAddress rResolver,
       VArray $ map VBytes $ recordCalls r,
+      VUint $ fromIntegral $ unDisputeDays days,
       VUint $ fromIntegral nonce,
       VUint $ fromIntegral deadline
     ]
 
 verifyRegisterIntent :: Eip712Domain -> Word64 -> RegisterIntent -> IO (Either String ())
-verifyRegisterIntent domain now RegisterIntent {riRegistration = r@Registration {rOwner, rSecret}, riNonce, riDeadline, riSignature} = runExceptT $ do
+verifyRegisterIntent domain now RegisterIntent {riRegistration = r@Registration {rOwner, rSecret}, riDisputeDays, riNonce, riDeadline, riSignature} = runExceptT $ do
   unless (B.length rSecret == 32) $ throwError "secret: expected 32 bytes"
   when (now > riDeadline) $ throwError "intent expired"
-  signer <- ExceptT $ recoverAddress riSignature $ registerIntentDigest domain r riNonce riDeadline
+  signer <- ExceptT $ recoverAddress riSignature $ registerIntentDigest domain r riDisputeDays riNonce riDeadline
   unless (signer == rOwner) $ throwError "intent is not signed by the owner"
 
 acceptanceDigest :: Eip712Domain -> TermsKind -> ByteString -> ByteString -> Word64 -> Word64 -> ByteString

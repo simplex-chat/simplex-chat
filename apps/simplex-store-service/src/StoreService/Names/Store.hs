@@ -61,6 +61,7 @@ module StoreService.Names.Store
     unpaidCleanupCandidates,
     deleteUnpaidRegistration,
     failedCodeOrdersBefore,
+    disputableRegistrations,
     heldBy,
     getBalance,
     overdueHolder,
@@ -134,7 +135,7 @@ import Simplex.Messaging.Util (maybeFirstRow, tshow)
 import StoreService.Names.Abi (addressFromBytes, hex)
 import StoreService.Names.Chain (TxHash (..))
 import StoreService.Names.Phases (RegistrationId (..))
-import StoreService.Names.Registration (TermsAcceptance (..))
+import StoreService.Names.Registration (DisputeDays, TermsAcceptance (..), cardDisputeDays, codeDisputeDays, cryptoDisputeDays, mkDisputeDays, unDisputeDays)
 import StoreService.Names.Signatures (OrderFields (..), parseSignature)
 import StoreService.Store (RevokeResult (..))
 import StoreService.Store.Invoices (StoreDecodeError (..), executeChanging, invoiceStatusText, lockInvoice, newInvoiceId, note, textToCryptoCurrency, truncateToSecond, unfundedQuery)
@@ -156,6 +157,7 @@ data NamePhase
   | PRegistered
   | PTaken
   | PFailed
+  | PEnded
   deriving (Eq, Show, Enum, Bounded)
 
 instance TextEncoding NamePhase where
@@ -168,6 +170,7 @@ instance TextEncoding NamePhase where
     PRegistered -> "registered"
     PTaken -> "taken"
     PFailed -> "failed"
+    PEnded -> "ended"
   textDecode t = lookup t [(textEncode p, p) | p <- [minBound .. maxBound]]
 
 instance FromField NamePhase where fromField = fromTextField_ textDecode
@@ -220,6 +223,8 @@ data NameRegistration = NameRegistration
     nrRevealAfter :: Maybe Word64,
     nrRevealBefore :: Maybe Word64,
     nrExpiresAt :: Maybe Word64,
+    nrDisputeDays :: DisputeDays,
+    nrDisputeUntil :: Maybe Word64,
     nrRegisteredAt :: Maybe UTCTime,
     nrFailedAt :: Maybe UTCTime,
     nrError :: Maybe Text,
@@ -272,7 +277,8 @@ data Balance = Balance
     blCredited :: Int,
     blRefunded :: Int,
     blHold :: Maybe BalanceHold,
-    blRefundedAt :: Maybe UTCTime
+    blRefundedAt :: Maybe UTCTime,
+    blDisputeDays :: DisputeDays
   }
   deriving (Eq, Show)
 
@@ -545,7 +551,8 @@ createPaidRegistration db new@NewRegistration {nrgId = regId@(RegistrationId rid
         OTBalance source _ seen _ -> Just (source, seen)
         OTInvoice {} -> Nothing
         OTCode _ -> Nothing
-  inserted <- insertRegistration db new PUnpaid poPrice (Just poMethod) Nothing held (orderHash nrgOwner nrgOrder terms) now
+  days <- orderDisputeDays db now terms
+  inserted <- insertRegistration db new PUnpaid poPrice (Just poMethod) Nothing held days (orderHash nrgOwner nrgOrder terms) now
   if not inserted
     then pure $ Left RRLiveOrder
     else do
@@ -560,7 +567,9 @@ createPaidRegistration db new@NewRegistration {nrgId = regId@(RegistrationId rid
 createCodeRegistration :: DB.Connection -> NewRegistration -> PrepaidCode -> UTCTime -> IO (Either RegistrationRefused ())
 createCodeRegistration db new@NewRegistration {nrgId = regId, nrgOwner, nrgOrder} PrepaidCode {pcId, pcCodeHash} now' = do
   let now = truncateToSecond now'
-  inserted <- insertRegistration db new PQueued 0 Nothing (Just pcId) Nothing (orderHash nrgOwner nrgOrder (OTCode pcCodeHash)) now
+      terms = OTCode pcCodeHash
+  days <- orderDisputeDays db now terms
+  inserted <- insertRegistration db new PQueued 0 Nothing (Just pcId) Nothing days (orderHash nrgOwner nrgOrder terms) now
   if not inserted
     then pure $ Left RRLiveOrder
     else
@@ -572,7 +581,9 @@ createCodeRegistration db new@NewRegistration {nrgId = regId, nrgOwner, nrgOrder
 createBalanceRegistration :: DB.Connection -> NewRegistration -> RegistrationId -> Int -> Int -> UTCTime -> IO (Either RegistrationRefused ())
 createBalanceRegistration db new@NewRegistration {nrgId, nrgOwner, nrgOrder} source price seen now' = do
   let now = truncateToSecond now'
-  inserted <- insertRegistration db new PQueued price Nothing Nothing (Just (source, price)) (orderHash nrgOwner nrgOrder (OTBalance source price seen Nothing)) now
+      terms = OTBalance source price seen Nothing
+  days <- orderDisputeDays db now terms
+  inserted <- insertRegistration db new PQueued price Nothing Nothing (Just (source, price)) days (orderHash nrgOwner nrgOrder terms) now
   if not inserted
     then pure $ Left RRLiveOrder
     else
@@ -584,23 +595,42 @@ createBalanceRegistration db new@NewRegistration {nrgId, nrgOwner, nrgOrder} sou
 deleteRegistration :: DB.Connection -> RegistrationId -> IO ()
 deleteRegistration db (RegistrationId rid) = DB.execute db "DELETE FROM sx_badge_service_name_registrations WHERE registration_id = ?" (Only rid)
 
+methodDisputeDays :: ServicePaymentMethod -> DisputeDays
+methodDisputeDays = \case
+  SPMCard _ -> cardDisputeDays
+  SPMCrypto _ -> cryptoDisputeDays
+
+orderDisputeDays :: DB.Connection -> UTCTime -> OrderTerms -> IO DisputeDays
+orderDisputeDays db now = \case
+  OTInvoice method _ -> pure $ methodDisputeDays method
+  OTCode _ -> pure codeDisputeDays
+  OTBalance source@(RegistrationId rid) _ _ method ->
+    getBalance db source now >>= \case
+      Just Balance {blDisputeDays} -> pure $ maybe id (max . methodDisputeDays) method blDisputeDays
+      Nothing -> E.throwIO $ StoreDecodeError $ "name_balances balance source: " <> rid
+
+balanceDisputeDays :: NamePhase -> Maybe ServicePaymentMethod -> DisputeDays -> DisputeDays
+balanceDisputeDays phase method days = case (phase, method) of
+  (PUnpaid, Just paidBy) -> methodDisputeDays paidBy
+  _ -> days
+
 -- | False when the registration would be a second live one for its commitment, or for its owner and label hash.
 -- fromBalance: the order whose balance pays, and the cents it pays.
-insertRegistration :: DB.Connection -> NewRegistration -> NamePhase -> Int -> Maybe ServicePaymentMethod -> Maybe Int64 -> Maybe (RegistrationId, Int) -> ByteString -> UTCTime -> IO Bool
-insertRegistration db NewRegistration {nrgId = RegistrationId rid, nrgOwner, nrgOrder, nrgYears} phase price method codeId fromBalance hash now =
+insertRegistration :: DB.Connection -> NewRegistration -> NamePhase -> Int -> Maybe ServicePaymentMethod -> Maybe Int64 -> Maybe (RegistrationId, Int) -> DisputeDays -> ByteString -> UTCTime -> IO Bool
+insertRegistration db NewRegistration {nrgId = RegistrationId rid, nrgOwner, nrgOrder, nrgYears} phase price method codeId fromBalance days hash now =
   (> 0)
     <$> executeChanging
       db
       [sql|
         INSERT INTO sx_badge_service_name_registrations
           (registration_id, version, label_hash, length, duration, owner, commitment, sealed, phase, years,
-           price, method, name_prepaid_code_id, live, order_hash, moves, created_at, updated_at, balance_source, balance_used, agreed_terms)
-        VALUES (?,?,?,?,?,?,?,?,?,?, ?,?,?,?,?,?,?,?,?,?, ?)
+           price, method, name_prepaid_code_id, live, order_hash, moves, created_at, updated_at, balance_source, balance_used, agreed_terms, dispute_days)
+        VALUES (?,?,?,?,?,?,?,?,?,?, ?,?,?,?,?,?,?,?,?,?, ?,?)
         ON CONFLICT DO NOTHING
       |]
       ( (rid, initialVersion, Binary lh, ofLength, int64 ofDuration, Binary $ unAddress nrgOwner, Binary ofCommitment, ofSealed, phase, nrgYears)
           :. (price, methodText <$> method, codeId, BI True, Binary hash, 0 :: Int, now, now, (\(RegistrationId s, _) -> s) <$> fromBalance, maybe 0 snd fromBalance)
-          :. Only ofAgreedTerms
+          :. (ofAgreedTerms, unDisputeDays days)
       )
   where
     OrderFields {ofLabelHash = LabelHash lh, ofLength, ofDuration, ofCommitment, ofSealed, ofAgreedTerms} = nrgOrder
@@ -612,7 +642,7 @@ registrationColumns =
       r.price, r.method, ni.invoice_id, r.name_prepaid_code_id, r.label, r.secret, r.contact_link, r.channel_link, r.intent_nonce, r.intent_deadline,
       r.intent_signature, r.commit_tx, r.commit_block, r.register_tx, r.register_block, r.reveal_after, r.reveal_before, r.expires_at, r.registered_at,
       r.failed_at, r.error, r.live, r.order_hash, r.moves, r.links_refused_at, r.created_at, r.updated_at, r.balance_source, r.balance_used,
-      r.agreed_terms, r.accept_terms, r.accept_nonce, r.accept_signature
+      r.agreed_terms, r.accept_terms, r.accept_nonce, r.accept_signature, r.dispute_days, r.dispute_until
   |]
 
 registrationFrom :: Query
@@ -631,7 +661,7 @@ type RegistrationRow =
     :. (Int, Maybe Text, Maybe Text, Maybe Int64, Maybe Text, Maybe (Binary ByteString), Maybe Text, Maybe Text, Maybe Int64, Maybe Int64)
     :. (Maybe (Binary ByteString), Maybe (Binary ByteString), Maybe Int64, Maybe (Binary ByteString), Maybe Int64, Maybe Int64, Maybe Int64, Maybe Int64, Maybe UTCTime)
     :. (Maybe UTCTime, Maybe Text, BoolInt, Binary ByteString, Int, Maybe UTCTime, UTCTime, UTCTime, Maybe Text, Int)
-    :. (Text, Maybe (Binary ByteString), Maybe Int64, Maybe (Binary ByteString))
+    :. (Text, Maybe (Binary ByteString), Maybe Int64, Maybe (Binary ByteString), Int, Maybe Int64)
 
 toRegistration :: RegistrationRow -> Either Text NameRegistration
 toRegistration
@@ -639,9 +669,10 @@ toRegistration
       :. (nrPrice, method_, invoiceId_, codeId_, label_, secret_, nrContactLink, nrChannelLink, nonce_, deadline_)
       :. (signature_, commitTx, commitBlock, registerTx, registerBlock, revealAfter, revealBefore, expiresAt, nrRegisteredAt)
       :. (nrFailedAt, nrError, BI nrLive, Binary nrOrderHash, nrMoves, nrLinksRefusedAt, nrCreatedAt, nrUpdatedAt, source_, nrBalanceUsed)
-      :. (nrAgreedTerms, acceptTerms_, acceptNonce_, acceptSignature_)
+      :. (nrAgreedTerms, acceptTerms_, acceptNonce_, acceptSignature_, disputeDays, disputeUntil)
     ) = do
     nrOwner <- decodeAddress owner
+    nrDisputeDays <- note ("name_registrations.dispute_days: " <> tshow disputeDays) $ mkDisputeDays disputeDays
     nrPayment <- case (method_, invoiceId_, codeId_) of
       (Just m, Just invId, Nothing) -> (`RPInvoice` InvoiceId invId) <$> note ("name_registrations.method: " <> m) (textMethod m)
       (Nothing, Nothing, Just codeId) -> Right $ RPCode codeId
@@ -682,6 +713,8 @@ toRegistration
           nrRevealAfter = word64 <$> revealAfter,
           nrRevealBefore = word64 <$> revealBefore,
           nrExpiresAt = word64 <$> expiresAt,
+          nrDisputeDays,
+          nrDisputeUntil = word64 <$> disputeUntil,
           nrRegisteredAt,
           nrFailedAt,
           nrError,
@@ -770,6 +803,7 @@ orderLive NameRegistration {nrPhase, nrLive} = case nrPhase of
   PFailed -> True
   PTaken -> False
   PRegistered -> False
+  PEnded -> False
 
 -- | Writes every changeable field of a registration read at its nrVersion, unless it changed since, with live as orderLive decides.
 -- A closed order is never made live again, and a write that would make the order meet another live one changes nothing.
@@ -783,7 +817,7 @@ updateRegistration db r now = do
         SET version = version + 1, label_hash = ?, length = ?, duration = ?, commitment = ?, sealed = ?, agreed_terms = ?, phase = ?, price = ?,
           label = ?, secret = ?, contact_link = ?, channel_link = ?, intent_nonce = ?, intent_deadline = ?, intent_signature = ?,
           accept_terms = ?, accept_nonce = ?, accept_signature = ?, commit_tx = ?, commit_block = ?, register_tx = ?, register_block = ?, reveal_after = ?, reveal_before = ?, expires_at = ?,
-          registered_at = ?, failed_at = ?, error = ?, live = ?, moves = ?, links_refused_at = ?, updated_at = ?
+          dispute_until = ?, registered_at = ?, failed_at = ?, error = ?, live = ?, moves = ?, links_refused_at = ?, updated_at = ?
         WHERE registration_id = ? AND version = ?
           AND (? = 0 OR (live = 1 AND NOT EXISTS (
             SELECT 1 FROM sx_badge_service_name_registrations o
@@ -794,14 +828,14 @@ updateRegistration db r now = do
           :. (rvLabel <$> nrReveal, Binary . rvSecret <$> nrReveal, rvContactLink =<< nrReveal, rvChannelLink =<< nrReveal, int64 . rvNonce <$> nrReveal, int64 . rvDeadline <$> nrReveal, Binary . serializeSignature . rvSignature <$> nrReveal)
           :. (Binary . taTermsHash <$> acceptance, int64 . taNonce <$> acceptance, Binary . serializeSignature . taSignature <$> acceptance)
           :. (txHashField <$> nrCommitTx, int64 <$> nrCommitBlock, txHashField <$> nrRegisterTx, int64 <$> nrRegisterBlock, int64 <$> nrRevealAfter, int64 <$> nrRevealBefore, int64 <$> nrExpiresAt)
-          :. (truncateToSecond <$> nrRegisteredAt, truncateToSecond <$> nrFailedAt, nrError, BI live, nrMoves, truncateToSecond <$> nrLinksRefusedAt, truncateToSecond now)
+          :. (int64 <$> nrDisputeUntil, truncateToSecond <$> nrRegisteredAt, truncateToSecond <$> nrFailedAt, nrError, BI live, nrMoves, truncateToSecond <$> nrLinksRefusedAt, truncateToSecond now)
           :. (rid, nrVersion, BI live, rid, Binary nrCommitment, Binary $ unAddress nrOwner, Binary lh)
       )
   if changed > 0 then pure $ Written (nrVersion + 1) else refusal
   where
     NameRegistration {nrId = RegistrationId rid, nrVersion, nrLabelHash = LabelHash lh, nrLength, nrDuration, nrOwner, nrCommitment, nrSealed, nrAgreedTerms, nrPhase, nrPrice, nrReveal} = r
     NameRegistration {nrCommitTx, nrCommitBlock, nrRegisterTx, nrRegisterBlock, nrRevealAfter, nrRevealBefore, nrExpiresAt} = r
-    NameRegistration {nrRegisteredAt, nrFailedAt, nrError, nrMoves, nrLinksRefusedAt} = r
+    NameRegistration {nrDisputeUntil, nrRegisteredAt, nrFailedAt, nrError, nrMoves, nrLinksRefusedAt} = r
     acceptance = rvAcceptance =<< nrReveal
     live = orderLive r
     refusal =
@@ -933,6 +967,14 @@ failedCodeOrdersBefore db cutoff =
       |]
       (PFailed, truncateToSecond cutoff)
 
+disputableRegistrations :: DB.Connection -> Word64 -> IO [RegistrationId]
+disputableRegistrations db endedAfter =
+  map (RegistrationId . fromOnly)
+    <$> DB.query
+      db
+      "SELECT registration_id FROM sx_badge_service_name_registrations WHERE phase = ? AND dispute_until > ? ORDER BY dispute_until, registration_id"
+      (PRegistered, int64 endedAfter)
+
 -- | The hold, unless it is overdue, which reads as none.
 heldBy :: Balance -> Maybe BalanceHold
 heldBy Balance {blHold} = case blHold of
@@ -954,8 +996,9 @@ getBalance db (RegistrationId rid) now =
           <> holdOverdue
           <> " THEN 1 ELSE 0 END, CASE WHEN i.invoice_id IS NOT NULL"
           <> unfunded
-          <> " THEN 0 ELSE 1 END, b.refunded_at"
+          <> " THEN 0 ELSE 1 END, b.refunded_at, o.phase, o.method, o.dispute_days"
           <> " FROM sx_badge_service_name_balances b"
+          <> " JOIN sx_badge_service_name_registrations o ON o.registration_id = b.registration_id"
           <> " LEFT JOIN sx_badge_service_name_registrations h ON h.registration_id = b.reserved_by"
           <> " LEFT JOIN sx_badge_service_name_invoices ni ON ni.registration_id = b.reserved_by"
           <> " LEFT JOIN sx_badge_service_invoices i ON i.invoice_id = ni.invoice_id"
@@ -963,13 +1006,15 @@ getBalance db (RegistrationId rid) now =
       )
       (PUnpaid, invoiceStatusText ISPaid, truncateToSecond now, rid)
 
-toBalance :: (Text, Int, Int, Int, Maybe Text, Maybe UTCTime, BoolInt, BoolInt, Maybe UTCTime) -> Either Text Balance
-toBalance (rid, blAmount, blCredited, blRefunded, holder_, until_, BI bhOverdue, BI bhFunded, blRefundedAt) = do
+toBalance :: (Text, Int, Int, Int, Maybe Text, Maybe UTCTime, BoolInt, BoolInt, Maybe UTCTime) :. (NamePhase, Maybe Text, Int) -> Either Text Balance
+toBalance ((rid, blAmount, blCredited, blRefunded, holder_, until_, BI bhOverdue, BI bhFunded, blRefundedAt) :. (phase, method_, days_)) = do
   blHold <- case (holder_, until_) of
     (Nothing, _) -> Right Nothing
     (Just holder, Just bhUntil) -> Right $ Just BalanceHold {bhHolder = RegistrationId holder, bhUntil, bhOverdue, bhFunded}
     (Just _, Nothing) -> Left $ "name_balances holder without an invoice: " <> rid
-  pure Balance {blRegistration = RegistrationId rid, blAmount, blCredited, blRefunded, blHold, blRefundedAt}
+  method <- mapM (\m -> note ("name_registrations.method: " <> m) $ textMethod m) method_
+  days <- note ("name_registrations.dispute_days: " <> tshow days_) $ mkDisputeDays days_
+  pure Balance {blRegistration = RegistrationId rid, blAmount, blCredited, blRefunded, blHold, blRefundedAt, blDisputeDays = balanceDisputeDays phase method days}
 
 -- | The order holding the balance, when its hold is overdue, for the next spend to close.
 overdueHolder :: DB.Connection -> RegistrationId -> UTCTime -> IO (Maybe NameRegistration)

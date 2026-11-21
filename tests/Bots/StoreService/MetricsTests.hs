@@ -256,6 +256,7 @@ testNamesCounts = withServiceStore $ \st -> do
                  "simplex_store_names_orders{phase=\"registered\"} 0",
                  "simplex_store_names_orders{phase=\"taken\"} 1",
                  "simplex_store_names_orders{phase=\"failed\"} 1",
+                 "simplex_store_names_orders{phase=\"ended\"} 0",
                  "simplex_store_names_queue_oldest_change_timestamp_seconds " <> seconds (at 3),
                  "simplex_store_names_transactions_pending 2",
                  "simplex_store_names_transactions_oldest_pending_timestamp_seconds " <> seconds (at 7),

@@ -46,7 +46,7 @@ import Simplex.Messaging.SimplexName (LabelHash, SimplexTLD)
 import Simplex.Messaging.Util (tshow)
 import StoreService.Config (ChainConfig (..))
 import StoreService.Names.Chain
-import StoreService.Names.Contracts (Contracts, NameStatus (..), RegisteredName (..), nameStatus, resolverNonce, textRecord)
+import StoreService.Names.Contracts (Contracts, NameStatus (..), RegisteredName (..), blockTimeAt, nameStatus, resolverNonce, textRecord)
 import StoreService.Names.Registration (Node, channelRecordKey, clearRecordsDigest, clearRecordsWithSigCalldata, contactRecordKey, labelNode, multicallCalldata, resolverDomain, setTextDigest, setTextWithSigCalldata)
 import StoreService.Names.Revert (RevertName (..), revertText)
 import StoreService.Names.Sender (SendError (..), Sender, submitTransaction)
@@ -276,17 +276,9 @@ recordsRound rs@Records {rsChain} = void $ safely "names records: the round" $ d
       Right (tip, deep) -> forM_ editIds $ \editId ->
         safely ("names records: edit " <> tshow editId) $ withClaim rs editId () $ withStore rs (`getRecordEdit` editId) >>= mapM_ (follow rs tip deep)
 
--- | The newest block at the configured confirmation depth, as the sender counts it.
-deepBlock :: ChainClient -> Block -> IO (Either ChainError Block)
-deepBlock c tip@Block {blockNumber}
-  | deep == blockNumber = pure $ Right tip
-  | otherwise = blockAt c deep
-  where
-    deep = confirmedNumber c blockNumber
-
 -- | One step for a pending edit, from its transactions' statuses as the sender settled them.
 follow :: Records -> Block -> Block -> RecordEdit -> IO ()
-follow rs@Records {rsChain} Block {blockTimestamp} Block {blockTimestamp = deepTime} edit@RecordEdit {reId, reChanges} = do
+follow rs@Records {rsContracts} Block {blockTimestamp} Block {blockTimestamp = deepTime} edit@RecordEdit {reId, reChanges} = do
   txs <- withStore rs (`editTransactions` reId)
   case txs of
     [] -> if ahead then sendUnsent else forget rs reId
@@ -295,9 +287,9 @@ follow rs@Records {rsChain} Block {blockTimestamp} Block {blockTimestamp = deepT
       | any ((== TSPending) . ntStatus) txs -> if deepTime > reDeadline then expire else unstall rs reId
       -- a mined revert carries no data: past the deadline it is SignatureExpired, else unnamed
       | block : _ <- [b | NameTransaction {ntStatus = TSReverted, ntMinedBlock = Just b} <- txs] ->
-          blockAt rsChain block >>= \case
+          blockTimeAt rsContracts block >>= \case
             Left e -> stall rs reId e
-            Right Block {blockTimestamp = minedTime} -> judged rs edit $ settle rs reId $ ESReverted $ if minedTime > reDeadline then signatureExpired else Nothing
+            Right minedTime -> judged rs edit $ settle rs reId $ ESReverted $ if minedTime > reDeadline then signatureExpired else Nothing
       -- every transaction dropped: its registrar nonce went to another one
       | otherwise -> judged rs edit $ if ahead then resend else expire
   where

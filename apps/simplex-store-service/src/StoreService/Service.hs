@@ -64,7 +64,7 @@ import StoreService.Names.Sender (checkPendingSignatures, runSender)
 import StoreService.Names.Store (Balance (..), BalanceHold (..), BalanceLink (..), CodeIssuer (..), LateCredit (..), RegistrationPayment (..), balanceByReference, balanceChain, methodText)
 import StoreService.Names.Turns (Turns, newTurns)
 import StoreService.Names.View (addressText)
-import StoreService.Names.Worker (CloseRefusal (..), Closed (..), closeRegistration, newWorker, runCodeSweep, runWorkers)
+import StoreService.Names.Worker (CloseRefusal (..), Closed (..), closeRegistration, newWorker, runCodeSweep, runEndedSweep, runWorkers)
 import StoreService.Options
 import StoreService.Poller (PollerEnv (peListedOk), expiryGrace, newPollerEnv, newReadHints, runPoller)
 import StoreService.Providers (Provider (pProvider))
@@ -370,11 +370,11 @@ logNamePolicy NamesConfig {nCommunity} ct =
           False -> logWarn $ "names: the name policy's " <> what <> " are not a link the service takes, so " <> sold <> " cannot be ordered: " <> link
 
 -- | The workers resume every registration in their phases, the code sweep runs at the start and then daily, and the
--- terms fetch at the start and then hourly.
+-- ended sweep and the terms fetch at the start and then hourly.
 namesLanes :: NamesEnv -> IO [IO ()]
-namesLanes ne@NamesEnv {neChain, neContracts, neSender, neRecords} = do
-  worker <- newWorker (ordersEnv ne) neChain neSender
-  pure [runSender neSender, runRecordEdits neRecords, runWorkers worker, runCodeSweep worker, runTermsFetch neContracts]
+namesLanes ne@NamesEnv {neContracts, neSender, neRecords} = do
+  worker <- newWorker (ordersEnv ne) neSender
+  pure [runSender neSender, runRecordEdits neRecords, runWorkers worker, runCodeSweep worker, runEndedSweep worker, runTermsFetch neContracts]
 
 seedServiceCatalog :: DBStore -> IO ()
 seedServiceCatalog st = do
@@ -524,6 +524,8 @@ closeOrderCmd source turns (tld, minPriceCentsPerYear, chain) ChatController {ch
     Right (CLRegistered (RegistrationId rid)) -> do
       logNote $ "names: order " <> rid <> " set registered by " <> spelledCmd source "close" <> ", as its register went through"
       pure $ Left $ "Nothing refunded: the register of order " <> rid <> " went through, so the order is registered now."
+    Right (CLEnded (RegistrationId rid)) ->
+      pure $ Left $ "Nothing refunded: the register of order " <> rid <> " went through and its registration was ended in its dispute period, so the order is ended now."
     Right (CLRefused refusal) -> pure $ Left $ "Nothing recorded: " <> refusalText refusal <> "."
     Left e -> Left "The order could not be closed." <$ logError ("names: closing an order failed: " <> tshow e)
   where

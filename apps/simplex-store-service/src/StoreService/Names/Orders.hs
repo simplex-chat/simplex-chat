@@ -45,9 +45,9 @@ module StoreService.Names.Orders
 where
 
 import qualified Control.Exception as E
-import Control.Logger.Simple (logError, logWarn)
+import Control.Logger.Simple (logError, logNote, logWarn)
 import Control.Monad (forM, unless, when)
-import Control.Monad.Except (ExceptT (..), runExceptT)
+import Control.Monad.Except (ExceptT (..), runExceptT, throwError, withExceptT)
 import qualified Data.Aeson as J
 import qualified Data.Aeson.KeyMap as KM
 import Data.Bifunctor (first)
@@ -55,7 +55,7 @@ import Data.ByteString (ByteString)
 import Data.Char (isAsciiLower, isAsciiUpper, isDigit)
 import Data.Functor ((<&>))
 import Data.Int (Int64)
-import Data.Maybe (catMaybes, isJust)
+import Data.Maybe (catMaybes, fromMaybe, isJust)
 import Data.Scientific (toBoundedInteger)
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -70,11 +70,13 @@ import Simplex.Messaging.Eth.Address (Address, recoverAddress)
 import Simplex.Messaging.SimplexName (LabelHash (..))
 import Simplex.Messaging.Util (eitherToMaybe, tshow)
 import StoreService.Config (NamesConfig (..))
+import StoreService.Names.Chain (BlockTag (..))
 import StoreService.Names.Codes (CodeRefusal (..), codeRefusal, reserveCode, reserveRefusal, spendLandedCode)
 import StoreService.Names.Community (agreedTermsHash, communityJSON, communityTermsPrefix, nameTerms, readableTerms, termsFor, termsJSON, yearsFor)
-import StoreService.Names.Contracts (Contracts, NameStatus (..), chainPriceCents, confirmedTag, nameExpires, nameStatus, ownerOfToken, secondsPerYear)
+import StoreService.Names.Contracts (Contracts, NameStatus (..), blockTimeAt, chainPriceCents, confirmedBlockNumber, disputeUntil, nameExpires, nameStatus, ownerOfToken, secondsPerYear)
 import StoreService.Names.Env (NamesEnv (..))
 import StoreService.Names.Phases (Phases, RegistrationId (..))
+import StoreService.Names.Registration (disputeSeconds)
 import StoreService.Names.Abi (abiWordSize, bytes32FromHex, hex)
 import StoreService.Names.Signatures (OrderFields (..), orderMessage, parseChecksumAddress, parseSignature, personalDigest)
 import StoreService.Names.Store (Balance, LiveOrder (..), NamePhase (..), NameRegistration (..), NewRegistration (..), PrepaidCode (..), RegistrationPayment (..), RegistrationRefused (..), NameTransaction (..), TxFor (..), TxStatus (..), VersionWrite (..), closeOverdue, createCodeRegistration, creditBalance, getBalance, getLiveOrders, getPrepaidCode, getPrepaidCodeById, getRegistration, getRegistrationByOrderHash, isLabelRegistering, registrationTransactions, retargetRegistration, updateRegistration)
@@ -134,8 +136,10 @@ data WriteRefusal = WRChanged | WRRefused OrderRefusal
 
 -- | What /retry's first check found on the order's current name: no register through, the order registered at a new version,
 -- the order changed since it was read, or a failed chain read.
-data Landing = LNotLanded | LRegistered Int64 | LChanged | LUnread
+data Landing = LNotLanded | LRegistered Int64 | LEnded Int64 | LChanged | LUnread
   deriving (Eq, Show)
+
+data Landed = LandedRegistered Word64 (Maybe Word64) | LandedEnded Word64 (Maybe Word64)
 
 maxSealedChars :: Int
 maxSealedChars = 11095
@@ -370,34 +374,47 @@ confirmLanded OrdersEnv {oeStore, oeContracts, oeTurns, oeNow} = checkLanded oeS
 -- went through with only its confirmation lost. The order then becomes registered by a compare-and-set on the version read, a code order spending its code.
 -- The caller holds the turn of the order's label hash and passes the order as registrationAt reads it.
 checkLanded :: DBStore -> Contracts -> Turns -> IO UTCTime -> NameRegistration -> IO Landing
-checkLanded st ct turns clock r@NameRegistration {nrId, nrOwner, nrLabelHash, nrPayment} = do
+checkLanded st ct turns clock r@NameRegistration {nrId, nrOwner, nrLabelHash, nrPayment, nrDuration, nrDisputeDays} = do
   txs <- withTransaction st (`registrationTransactions` nrId)
   let mined = [(ntHash, ntMinedBlock) | NameTransaction {ntFor = TxRegister _, ntStatus = TSMined, ntHash, ntMinedBlock} <- txs]
   runExceptT (landed mined) >>= \case
-    Left e -> LUnread <$ logWarn ("names: a register check's chain read failed: " <> tshow e)
+    Left warning -> LUnread <$ logWarn warning
     Right Nothing -> pure LNotLanded
-    Right (Just (tx, expiry)) -> either (const LChanged) LRegistered <$> markRegistered tx expiry
+    Right (Just (tx, LandedRegistered expiry disputeEnd)) -> either (const LChanged) LRegistered <$> markLanded tx PRegistered expiry disputeEnd
+    Right (Just (tx, LandedEnded registerTime disputeEnd)) ->
+      markLanded tx PEnded (registerTime + nrDuration) (Just $ registerEnd registerTime) >>= \case
+        Right v -> LEnded v <$ logNote ("names: registration " <> ridText nrId <> " set ended: disputeUntil(id) read at the confirmed block is " <> tshow (fromMaybe 0 disputeEnd) <> ", not its register's end " <> tshow (registerEnd registerTime))
+        Left _ -> pure LChanged
   where
     landed mined = do
-      confirmed <- ExceptT $ confirmedTag ct
+      confirmed <- chainRead $ confirmedBlockNumber ct
       registerTx <- case mined of
+        (_, Just block) : _ | block > confirmed -> throwError $ "names: a register check waits for confirmation: the register's block " <> tshow block <> " is above the confirmed block " <> tshow confirmed
         tx : _ -> pure $ Just $ Just tx
-        [] -> (\holder -> if holder == Just nrOwner then Just Nothing else Nothing) <$> ExceptT (ownerOfToken ct confirmed nrLabelHash)
-      forM registerTx $ \tx -> (tx,) <$> ExceptT (nameExpires ct confirmed nrLabelHash)
-    markRegistered tx expiry = do
+        [] -> (\holder -> if holder == Just nrOwner then Just Nothing else Nothing) <$> chainRead (ownerOfToken ct (AtBlock confirmed) nrLabelHash)
+      forM registerTx $ \tx -> do
+        disputeEnd <- chainRead $ disputeUntil ct (AtBlock confirmed) nrLabelHash
+        registerTime <- forM (snd =<< tx) $ chainRead . blockTimeAt ct
+        (tx,) <$> case registerTime of
+          Just t | disputeEnd /= Just (registerEnd t) -> pure $ LandedEnded t disputeEnd
+          _ -> (\expiry -> LandedRegistered expiry disputeEnd) <$> chainRead (nameExpires ct (AtBlock confirmed) nrLabelHash)
+    registerEnd t = t + disputeSeconds nrDisputeDays
+    chainRead = withExceptT (("names: a register check's chain read failed: " <>) . tshow) . ExceptT
+    markLanded tx phase expiry disputeEnd = do
       now <- clock
-      let registered =
+      let marked =
             r
-              { nrPhase = PRegistered,
+              { nrPhase = phase,
                 -- judged by ownerOf alone, no hash is known to have mined: none is shown (contract section 6)
                 nrRegisterTx = fst <$> tx,
                 nrRegisterBlock = snd =<< tx,
                 nrExpiresAt = Just expiry,
+                nrDisputeUntil = disputeEnd,
                 nrRegisteredAt = Just now,
                 nrFailedAt = Nothing,
                 nrError = Nothing
               }
-          write db = versionWritten <$> updateRegistration db registered now
+          write db = versionWritten <$> updateRegistration db marked now
       case nrPayment of
         RPInvoice {} -> withTransaction st write
         RPBalance -> withTransaction st write

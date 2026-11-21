@@ -34,8 +34,12 @@ module StoreService.Names.Contracts
     policyNonce,
     acceptedTerms,
     confirmedTag,
+    confirmedBlockNumber,
+    confirmedBlock,
+    blockTimeAt,
     ownerOfToken,
     nameExpires,
+    disputeUntil,
     commitmentTime,
     controllerAvailable,
     commitmentAges,
@@ -76,7 +80,7 @@ import Simplex.Messaging.SimplexName (LabelHash (..), SimplexTLD)
 import Simplex.Messaging.Util (catchOwn', tshow)
 import StoreService.Config (ChainConfig (..), localChainId)
 import StoreService.Names.Abi
-import StoreService.Names.Chain (Block (..), BlockTag (..), ChainClient (..), ChainError (..), confirmedNumber, ethCallAt, fetchText, latestBlock, nodeChainId, registrarBalance)
+import StoreService.Names.Chain (Block (..), BlockTag (..), ChainClient (..), ChainError (..), blockAt, confirmedNumber, deepBlock, ethCallAt, fetchText, latestBlock, nodeChainId, registrarBalance)
 import StoreService.Names.Registration (channelRecordKey, contactRecordKey, labelNode, nodeBytes)
 import StoreService.Names.Revert (RevertName (..))
 import StoreService.Names.Store (getTermsText, setTermsText)
@@ -368,7 +372,16 @@ policyCall ct args decode = runExceptT $ do
 
 -- | The newest block at the configured confirmation depth, so a read there sees only what a reorg cannot undo.
 confirmedTag :: Contracts -> IO (Either ChainError BlockTag)
-confirmedTag Contracts {ctChain} = fmap (AtBlock . confirmedNumber ctChain . blockNumber) <$> latestBlock ctChain
+confirmedTag ct = fmap AtBlock <$> confirmedBlockNumber ct
+
+confirmedBlockNumber :: Contracts -> IO (Either ChainError Word64)
+confirmedBlockNumber Contracts {ctChain} = fmap (confirmedNumber ctChain . blockNumber) <$> latestBlock ctChain
+
+confirmedBlock :: Contracts -> IO (Either ChainError Block)
+confirmedBlock Contracts {ctChain} = runExceptT $ ExceptT (latestBlock ctChain) >>= ExceptT . deepBlock ctChain
+
+blockTimeAt :: Contracts -> Word64 -> IO (Either ChainError Word64)
+blockTimeAt Contracts {ctChain} n = fmap blockTimestamp <$> blockAt ctChain n
 
 -- | Nothing when nobody holds the name: @ownerOf@ then fails the registrar's bare @require@ on the expiry,
 -- a revert without data. Any other revert is a failed read.
@@ -381,11 +394,15 @@ ownerOfToken ct tag lh =
 nameExpires :: Contracts -> BlockTag -> LabelHash -> IO (Either ChainError Word64)
 nameExpires ct tag lh = callAt ct tag (baseRegistrar ct) ("nameExpires(uint256)", labelHashArg lh) decodeWord64
 
+disputeUntil :: Contracts -> BlockTag -> LabelHash -> IO (Either ChainError (Maybe Word64))
+disputeUntil ct tag lh = fmap unlessZero <$> callAt ct tag (baseRegistrar ct) ("disputeUntil(uint256)", labelHashArg lh) decodeWord64
+
 -- | The block time of the commitment, Nothing when the controller holds none.
 commitmentTime :: Contracts -> ByteString -> IO (Either ChainError (Maybe Word64))
-commitmentTime ct commitment = fmap nonZero <$> call ct (controller ct) ("commitments(bytes32)", commitment) decodeWord64
-  where
-    nonZero t = if t == 0 then Nothing else Just t
+commitmentTime ct commitment = fmap unlessZero <$> call ct (controller ct) ("commitments(bytes32)", commitment) decodeWord64
+
+unlessZero :: Word64 -> Maybe Word64
+unlessZero t = if t == 0 then Nothing else Just t
 
 controllerAvailable :: Contracts -> BlockTag -> Text -> IO (Either ChainError Bool)
 controllerAvailable ct tag label = callAt ct tag (controller ct) ("available(string)", abiTuple [Dynamic $ abiBytes $ encodeUtf8 label]) decodeBool

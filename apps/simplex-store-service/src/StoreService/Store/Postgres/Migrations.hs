@@ -21,7 +21,8 @@ schemaMigrations =
     ("20260918_badge_group_ops", m20260918_badge_group_ops, Just down_m20260918_badge_group_ops),
     ("20260925_badge_store_receipts", m20260925_badge_store_receipts, Just down_m20260925_badge_store_receipts),
     ("20261012_badge_subscriptions", m20261012_badge_subscriptions, Just down_m20261012_badge_subscriptions),
-    ("20261013_names", m20261013_names, Just down_m20261013_names)
+    ("20261013_names", m20261013_names, Just down_m20261013_names),
+    ("20261120_names_dispute_days", m20261120_names_dispute_days, Just down_m20261120_names_dispute_days)
   ]
 
 -- | The client tables share this database, so the service tables are the same names behind a prefix.
@@ -533,6 +534,38 @@ ALTER TABLE @name_prepaid_codes DROP COLUMN reserved_by;
 DROP TABLE @name_registrations;
 
 DROP TABLE @name_prepaid_codes;
+|]
+
+m20261120_names_dispute_days :: Text
+m20261120_names_dispute_days =
+  withPrefix
+    servicePrefix
+    [r|
+ALTER TABLE @name_registrations ADD COLUMN dispute_days INTEGER NOT NULL DEFAULT 120;
+
+ALTER TABLE @name_registrations ADD COLUMN dispute_until BIGINT;
+
+WITH RECURSIVE funding(registration_id, source, days) AS (
+  SELECT registration_id, balance_source, CASE WHEN method = 'card' THEN 120 ELSE 14 END
+  FROM @name_registrations
+  UNION ALL
+  SELECT f.registration_id, CASE WHEN s.phase <> 'unpaid' THEN s.balance_source END, CASE WHEN s.method = 'card' THEN 120 ELSE 14 END
+  FROM funding f JOIN @name_registrations s ON s.registration_id = f.source
+)
+UPDATE @name_registrations
+SET dispute_days = (SELECT MAX(f.days) FROM funding f WHERE f.registration_id = @name_registrations.registration_id);
+|]
+
+down_m20261120_names_dispute_days :: Text
+down_m20261120_names_dispute_days =
+  withPrefix
+    servicePrefix
+    [r|
+UPDATE @name_registrations SET phase = 'registered' WHERE phase = 'ended';
+
+ALTER TABLE @name_registrations DROP COLUMN dispute_until;
+
+ALTER TABLE @name_registrations DROP COLUMN dispute_days;
 |]
 
 {- TODO [badges] deferred with the draft in M20260915_user_badges, service only.

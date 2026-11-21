@@ -150,7 +150,7 @@ revealOf RegisterIntent {riRegistration = Registration {rLabel, rSecret, rContac
 
 -- | The intent an accepted reveal stored, as the register sends it.
 intentOf :: NamesConfig -> NameRegistration -> NameReveal -> RegisterIntent
-intentOf NamesConfig {nTLD, nChain = ChainConfig {cResolver}} NameRegistration {nrOwner, nrDuration} NameReveal {rvLabel, rvSecret, rvContactLink, rvChannelLink, rvNonce, rvDeadline, rvSignature} =
-  RegisterIntent {riRegistration = registration, riNonce = rvNonce, riDeadline = rvDeadline, riSignature = rvSignature}
+intentOf NamesConfig {nTLD, nChain = ChainConfig {cResolver}} NameRegistration {nrOwner, nrDuration, nrDisputeDays} NameReveal {rvLabel, rvSecret, rvContactLink, rvChannelLink, rvNonce, rvDeadline, rvSignature} =
+  RegisterIntent {riRegistration = registration, riDisputeDays = nrDisputeDays, riNonce = rvNonce, riDeadline = rvDeadline, riSignature = rvSignature}
   where
     registration = Registration {rLabel = rvLabel, rTLD = nTLD, rOwner = nrOwner, rDuration = nrDuration, rSecret = rvSecret, rResolver = cResolver, rContactLink = rvContactLink, rChannelLink = rvChannelLink}

@@ -46,7 +46,7 @@ import StoreService.Names.Abi (hex, uint256)
 import StoreService.Names.Links (linkMaxBytes)
 import StoreService.Names.Orders (OrdersEnv (..))
 import StoreService.Names.Phases (RegistrationId (..))
-import StoreService.Names.Registration (Registration (..), TermsAcceptance (..), acceptanceDigest, makeCommitment, policyDomain, registerIntentDigest, sponsorDomain, termsKind)
+import StoreService.Names.Registration (DisputeDays, Registration (..), TermsAcceptance (..), acceptanceDigest, makeCommitment, maxDisputeDays, minDisputeDays, policyDomain, registerIntentDigest, sponsorDomain, termsKind)
 import StoreService.Names.Reveal (RevealFields (..), parseRevealFields)
 import StoreService.Names.Store (NamePhase (..), NameRegistration (..), NameReveal (..), getRegistration)
 import StoreService.Names.Turns (labelTurnCount)
@@ -69,6 +69,7 @@ namesRevealTests = describe "StoreService names: reveal" $ do
     it "answers after the name's turn, so a slow reader of one answer holds no other reveal" testAnswersAfterTurn
   describe "refused" $ do
     it "refuses a high-s intent, a wrong signer, a stale nonce, and a deadline past or before revealBefore, writing nothing" testIntentRefusals
+    it "refuses an intent signed over other dispute days than the order's, writing nothing" testOtherDisputeDays
     it "refuses a label not of the order, another secret or other links, writing nothing" testCommitmentRefusals
     it "refuses a commitment of another duration than the order's" testWrongDuration
     it "refuses a second link for one key with invalid_link, recording nothing" testSecondLink
@@ -166,8 +167,11 @@ paidOrder ctx o = do
   invoiceRegistration ctx inv
 
 signIntent :: Ctx -> Secp256k1PrivateKey -> Registration -> Word64 -> Word64 -> IO RecoverableSignature
-signIntent Ctx {cRandom} key r nonce deadline =
-  either error id <$> signRecoverable cRandom key (registerIntentDigest (sponsorDomain fakeChainId fakeSponsor) r nonce deadline)
+signIntent ctx key r = signIntentOver ctx key r minDisputeDays
+
+signIntentOver :: Ctx -> Secp256k1PrivateKey -> Registration -> DisputeDays -> Word64 -> Word64 -> IO RecoverableSignature
+signIntentOver Ctx {cRandom} key r days nonce deadline =
+  either error id <$> signRecoverable cRandom key (registerIntentDigest (sponsorDomain fakeChainId fakeSponsor) r days nonce deadline)
 
 bodyOf :: RecoverableSignature -> Registration -> Word64 -> Word64 -> J.Object
 bodyOf sig Registration {rLabel, rSecret, rContactLink, rChannelLink} nonce deadline =
@@ -361,7 +365,7 @@ testWithoutLinks = withReveals $ \Fx {fCtx = ctx} -> do
 testViemReveal :: IO ()
 testViemReveal = withReveals $ \Fx {fCtx = ctx} -> do
   let page = dynamis {rSecret = B.replicate 32 0x11, rContactLink = Just "https://smp8.simplex.im/a#contact", rChannelLink = Nothing}
-      viemSignature = "0xed92eb1e37a191cb270651b57fd132eb652357a90aa602e8c29ed1dfabe0a14738f0bfe38fc2d9687ad5e0820cad2f5af386f00087cb91b4eb6577c2ec2869641c"
+      viemSignature = "0xe4e98c38e568bddc234db14f7166fbc1a8c70a7b05e41316d7bec221ac56ae55770c94685678d89d9371c391c09a965e2dede2e3e10f1ce31e46ff5fac614e471b"
       viemAcceptance = "0x7c7dc4d7631f5325eddf2af595b524b6f7aaad7854aac7aaf748d6f116b56ad961c97acd616fcb60e0f43545ea2fa5f7bb7f96235f476c6abcc68295f93e36071c"
       body =
         KM.fromList
@@ -433,6 +437,17 @@ testIntentRefusals = withReveals $ \Fx {fCtx = ctx@Ctx {cNode}} -> do
   unwritten <$> stored ctx rid `shouldReturn` unchanged
   answerCall cNode fakeSponsor noncesCall $ Returns $ uint256 (0 :: Int)
   reveal ctx rid (withAcceptance acceptance $ bodyOf sig alice 0 revealBefore) `shouldReturn` accepted
+
+testOtherDisputeDays :: IO ()
+testOtherDisputeDays = withReveals $ \Fx {fCtx = ctx} -> do
+  rid <- committed ctx (orderOf alice)
+  unchanged <- unwritten <$> stored ctx rid
+  nrDisputeDays <$> stored ctx rid `shouldReturn` minDisputeDays
+  acceptance <- acceptanceOf ctx keyA alice False fakeGeneralTerms 0 revealBefore
+  sig <- signIntentOver ctx keyA alice maxDisputeDays 0 revealBefore
+  reveal ctx rid (withAcceptance acceptance $ bodyOf sig alice 0 revealBefore) `shouldReturn` badRequest
+  unwritten <$> stored ctx rid `shouldReturn` unchanged
+  ownerReveal ctx rid alice `shouldReturn` accepted
 
 testCommitmentRefusals :: IO ()
 testCommitmentRefusals = withReveals $ \Fx {fCtx = ctx} -> do
