@@ -8,7 +8,6 @@
 module Broadcast.Bot where
 
 import Control.Concurrent (forkIO)
-import Control.Concurrent.Async
 import Control.Concurrent.STM
 import Control.Monad
 import qualified Data.Text as T
@@ -36,7 +35,7 @@ welcomeGetOpts = do
 broadcastBot :: BroadcastBotOpts -> User -> ChatController -> IO ()
 broadcastBot BroadcastBotOpts {publishers, welcomeMessage, prohibitedMessage} _user cc = do
   initializeBotAddress cc
-  race_ (forever $ void getLine) . forever $ do
+  forever $ do
     (_, evt) <- atomically . readTBQueue $ outputQ cc
     case evt of
       Right (CEvtContactConnected _ ct _) -> do
