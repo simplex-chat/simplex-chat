@@ -268,8 +268,8 @@ chatGroupTests = do
     it "replies of blocked member are not mentions" testBlockedMemberReplyNotMention
     it "timed block ends at the end time" testBlockForAllTimed
     it "blocked member rejoins via group link unblocked" testBlockedMemberRejoinsUnblocked
-    it "member who set the block sends unblock after the end time" $
-      runTestCfg3 blockCleanupCfg testCfg testCfgVPrev testBlockForAllExpiryCleanup
+    it "member who blocked sends unblock after the end time" $
+      runTestCfg3 fastCleanupCfg testCfg testCfgVPrev testBlockForAllAutomaticUnblock
     it "blocked pending member can't be accepted" testBlockPendingMember
     it "block of member pending review is sent to moderators only" testBlockPendingReviewMember
     it "late automatic unblock doesn't cancel a newer block" testBlockForAllLateAutomaticUnblock
@@ -8636,8 +8636,8 @@ testBlockedMemberRejoinsUnblocked =
       bob #> "#team hi"
       alice <# "#team bob_1> hi"
 
-testBlockForAllExpiryCleanup :: HasCallStack => TestCC -> TestCC -> TestCC -> IO ()
-testBlockForAllExpiryCleanup alice bob cath = do
+testBlockForAllAutomaticUnblock :: HasCallStack => TestCC -> TestCC -> TestCC -> IO ()
+testBlockForAllAutomaticUnblock alice bob cath = do
   createGroup3' "team" alice (bob, GRMember) (cath, GRMember)
   threadDelay 1000000
 
@@ -8765,8 +8765,8 @@ rcvMsgCountFrom cc name = do
         (Only name)
   pure n
 
-blockCleanupCfg :: ChatConfig
-blockCleanupCfg = testCfg {initialCleanupManagerDelay = 0, cleanupManagerInterval = 1, cleanupManagerStepDelay = 0}
+fastCleanupCfg :: ChatConfig
+fastCleanupCfg = testCfg {initialCleanupManagerDelay = 0, cleanupManagerInterval = 1, cleanupManagerStepDelay = 0}
 
 rcvRestrictCount :: TestCC -> IO Int
 rcvRestrictCount cc = do

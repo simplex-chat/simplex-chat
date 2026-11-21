@@ -6682,7 +6682,7 @@ cleanupManager = do
       liftIO $ threadDelay' stepDelay
       cleanupRemovedMembers user `catchAllErrors` eToView
       liftIO $ threadDelay' stepDelay
-      cleanupExpiredBlocks user `catchAllErrors` eToView
+      unblockMembers user `catchAllErrors` eToView
       liftIO $ threadDelay' stepDelay
     cleanupTimedItems cleanupInterval user = do
       ts <- liftIO getCurrentTime
@@ -6717,14 +6717,14 @@ cleanupManager = do
       removedMembers <- withStore' $ \db -> getRemovedMembersToCleanup db cxt user cutoffTs
       forM_ removedMembers $ \m ->
         withStore' (\db -> deleteGroupMember db user m) `catchAllErrors` eToView
-    cleanupExpiredBlocks user = do
+    unblockMembers user = do
       cxt <- chatStoreCxt
       ts <- liftIO getCurrentTime
-      expiredBlocks <- withStore' $ \db -> getExpiredBlocks db user ts
-      forM_ expiredBlocks $ \(groupId, gmId, byUser) ->
-        withGroupLock "blockForAll" groupId (unblockExpired cxt ts groupId gmId byUser) `catchAllErrors` eToView
+      members <- withStore' $ \db -> getMembersToUnblock db user ts
+      forM_ members $ \(groupId, gmId, byUser) ->
+        withGroupLock "blockForAll" groupId (unblockMember cxt ts groupId gmId byUser) `catchAllErrors` eToView
       where
-        unblockExpired cxt ts groupId gmId byUser = do
+        unblockMember cxt ts groupId gmId byUser = do
           (gInfo@GroupInfo {membership}, m) <- withStore $ \db -> (,) <$> getGroupInfo db cxt user groupId <*> getGroupMember db cxt user groupId gmId
           when (maybe False (<= ts) (blockedUntil m)) $ do
             let mrs = MemberRestrictions {restriction = MRSUnrestricted, expiresAt = blockedUntil m}

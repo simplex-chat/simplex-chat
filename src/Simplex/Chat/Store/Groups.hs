@@ -79,7 +79,7 @@ module Simplex.Chat.Store.Groups
     getGroupRelayMembers,
     getGroupMembersForExpiration,
     getRemovedMembersToCleanup,
-    getExpiredBlocks,
+    getMembersToUnblock,
     deleteGroupChatItems,
     deleteGroupMembers,
     cleanupHostGroupLinkConn,
@@ -1385,8 +1385,8 @@ getRemovedMembersToCleanup db cxt user@User {userId} cutoffTs = do
       (groupMemberQuery <> " WHERE m.user_id = ? AND m.removed_at < ?")
       (userId, cutoffTs)
 
-getExpiredBlocks :: DB.Connection -> User -> UTCTime -> IO [(GroupId, GroupMemberId, Bool)]
-getExpiredBlocks db User {userId} now =
+getMembersToUnblock :: DB.Connection -> User -> UTCTime -> IO [(GroupId, GroupMemberId, Bool)]
+getMembersToUnblock db User {userId} now =
   map (\(groupId, groupMemberId, BI byUser) -> (groupId, groupMemberId, byUser))
     <$> DB.query
       db
@@ -2553,7 +2553,7 @@ createNewMember_
         memberPubKey = (\(MemberKey k) -> k) <$> memKey
         memberProof = verifiedProof badgeVerified badge
         restriction_ = restriction <$> memRestriction
-        blockedUntil = memRestriction >>= blockExpiry
+        blockedUntil = memRestriction >>= mrsBlockedUntil
     indexInGroup <- getUpdateNextIndexInGroup_ db groupId
     liftIO $
       DB.execute
@@ -3265,7 +3265,7 @@ updateGroupMemberSettings db User {userId} gId gMemberId GroupMemberSettings {sh
 updateGroupMemberBlocked :: DB.Connection -> User -> GroupInfo -> MemberRestrictions -> Bool -> GroupMember -> IO GroupMember
 updateGroupMemberBlocked db User {userId} GroupInfo {groupId} mrs@MemberRestrictions {restriction} byUser m@GroupMember {groupMemberId} = do
   currentTs <- getCurrentTime
-  let blockedUntil = blockExpiry mrs
+  let blockedUntil = mrsBlockedUntil mrs
   DB.execute
     db
     [sql|

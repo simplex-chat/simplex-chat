@@ -42,7 +42,7 @@
 | PC30 | Member Support Chat |
 | PC31 | Channels (Relays) |
 | PC32 | Terminal Chat Layout |
-| PC33 | Blocks and Link Notices |
+| PC33 | Blocking Members and Link Notices |
 | PC34 | Chat Deletion, Archive and Delete and Block |
 | PC35 | Chat List Actions |
 

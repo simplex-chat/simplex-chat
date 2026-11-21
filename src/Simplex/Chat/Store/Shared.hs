@@ -1022,8 +1022,8 @@ capExpiry = fmap (max minExpiry) . mfilter (< maxExpiry)
     minExpiry = UTCTime (fromGregorian 1970 1 1) 0
     maxExpiry = UTCTime (fromGregorian 10000 1 1) 0
 
-blockExpiry :: MemberRestrictions -> Maybe UTCTime
-blockExpiry MemberRestrictions {restriction, expiresAt}
+mrsBlockedUntil :: MemberRestrictions -> Maybe UTCTime
+mrsBlockedUntil MemberRestrictions {restriction, expiresAt}
   | mrsBlocked restriction = capExpiry expiresAt
   | otherwise = Nothing
 
