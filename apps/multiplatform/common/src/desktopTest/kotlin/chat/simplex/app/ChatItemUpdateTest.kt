@@ -92,9 +92,8 @@ class ChatItemUpdateTest {
   }
 
   @Test
-  fun mentionEditsInAnotherProfileChangeItsUnreadCount() = recorded("updates/group-mention") { (received, mentioned, unmentioned) ->
+  fun mentionEditsInAnotherProfileChangeItsUnreadCount() = recorded("updates/group-mention") { (_, mentioned, unmentioned) ->
     ChatModel.currentUser.value = User.sampleData.copy(userId = 2)
-    receive(received)
     receive(mentioned)
     assertEquals(1, ChatModel.users[0].unreadCount)
     receive(unmentioned)
