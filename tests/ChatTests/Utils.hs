@@ -11,7 +11,7 @@ module ChatTests.Utils where
 import APIDocs (testGenerate)
 import ChatClient
 import ChatTests.DBUtils
-import Control.Concurrent (MVar, newEmptyMVar, threadDelay, tryPutMVar)
+import Control.Concurrent (newEmptyMVar, readMVar, threadDelay, tryPutMVar)
 import Control.Concurrent.Async (concurrently_, mapConcurrently_)
 import Control.Concurrent.STM
 import Control.Monad (forever, join, unless, when)
@@ -1053,7 +1053,7 @@ stableJSON = \case
       | k == "groupRelays", J.Array a <- v = J.Array $ J.String "groupRelay" <$ a
       | otherwise = stableJSON v
 
-blockFirstEventCfg :: (ChatEvent -> Bool) -> IO (MVar (), ChatConfig)
+blockFirstEventCfg :: (ChatEvent -> Bool) -> IO (IO (), ChatConfig)
 blockFirstEventCfg blocks = do
   blocked <- newEmptyMVar
   let hook _ ev = case ev of
@@ -1062,7 +1062,7 @@ blockFirstEventCfg blocks = do
           when isFirst $ forever $ threadDelay 1000000
           pure ev
         _ -> pure ev
-  pure (blocked, testCfg {chatHooks = defaultChatHooks {eventHook = Just hook}})
+  pure (timeout 20000000 (readMVar blocked) `shouldReturn` Just (), testCfg {chatHooks = defaultChatHooks {eventHook = Just hook}})
 
 newItemText :: (T.Text -> Bool) -> ChatEvent -> Bool
 newItemText p (CEvtNewChatItems _ [AChatItem _ _ _ ChatItem {meta = CIMeta {itemText}}]) = p itemText

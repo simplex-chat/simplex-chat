@@ -14,7 +14,7 @@ module ChatTests.Direct where
 import ChatClient
 import ChatTests.DBUtils
 import ChatTests.Utils
-import Control.Concurrent (readMVar, threadDelay)
+import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_, poll, wait)
 import qualified Control.Exception as E
 import Control.Monad (forM_, void, (>=>))
@@ -1535,7 +1535,7 @@ testRedeliveredHandledMessage ps = do
     withNewTestChatCfg ps cfg "bob" bobProfile $ \bob -> do
       connectUsers alice bob
       alice #> "@bob hello"
-      readMVar received
+      received
       bob ##> "/_stop"
       bob <## "chat stopped"
       bob ##> "/_start"
@@ -1553,7 +1553,7 @@ testRedeliveredBatch ps = do
       alice ##> "/_send @2 json [{\"msgContent\": {\"type\": \"text\", \"text\": \"hello\"}}, {\"msgContent\": {\"type\": \"text\", \"text\": \"hey\"}}]"
       alice <# "@bob hello"
       alice <# "@bob hey"
-      readMVar received
+      received
       bob ##> "/_stop"
       bob <## "chat stopped"
       bob ##> "/_start"
@@ -1571,7 +1571,7 @@ testRedeliveredReceiptIntegrity ps = do
       withCCAgentTransaction bob (`DB.execute_` "UPDATE connections SET last_external_snd_msg_id = last_external_snd_msg_id - 1")
       bob #> "@alice hi"
       alice <# "bob> hi"
-      readMVar received
+      received
       bob ##> "/_stop"
       bob <## "chat stopped"
       bob ##> "/_start"
@@ -1589,7 +1589,7 @@ testRedeliveredHandledIntegrity ps = do
       withCCAgentTransaction bob (`DB.execute_` "UPDATE connections SET last_external_snd_msg_id = last_external_snd_msg_id - 1")
       alice #> "@bob hello"
       bob <#. "alice> skipped message ID "
-      readMVar received
+      received
       bob ##> "/_stop"
       bob <## "chat stopped"
       bob ##> "/_start"

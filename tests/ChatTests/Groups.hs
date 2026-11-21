@@ -16,7 +16,7 @@ import ChatClient
 import ChatTests.DBUtils
 import ChatTests.Profiles (addTestBadge, futureDate, invalidLink, issueTestBadge, setLinkType, setTestGroupLinkData, testBadgeKeys)
 import ChatTests.Utils
-import Control.Concurrent (readMVar, threadDelay)
+import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_)
 import Control.Concurrent.STM (TVar, atomically, modifyTVar', newTVarIO, readTVarIO, writeTVar)
 import Control.Monad (forM_, void, when)
@@ -6153,7 +6153,7 @@ testGroupRedeliveredHandledMessage ps = do
     withNewTestChatCfg ps cfg "bob" bobProfile $ \bob -> do
       createGroup2 "team" alice bob
       alice #> "#team hello"
-      readMVar received
+      received
       bob ##> "/_stop"
       bob <## "chat stopped"
       bob ##> "/_start"
@@ -6172,7 +6172,7 @@ testGroupRedeliveredForwardedMessage ps = do
         setupGroupForwarding alice bob cath
         bob #> "#team hi there"
         alice <# "#team bob> hi there"
-        readMVar received
+        received
         cath ##> "/_stop"
         cath <## "chat stopped"
         cath ##> "/_start"

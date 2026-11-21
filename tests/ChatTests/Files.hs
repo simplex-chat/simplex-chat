@@ -10,7 +10,7 @@ import ChatClient
 import ChatTests.DBUtils
 import ChatTests.Profiles (addTestBadge, futureDate, issueTestBadge, issueTestBadgeType, testBadgeKeys)
 import ChatTests.Utils
-import Control.Concurrent (readMVar, threadDelay)
+import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_)
 import Control.Concurrent.STM (atomically, check, modifyTVar', newTVarIO, readTVar, readTVarIO, writeTVar)
 import Control.Logger.Simple
@@ -1214,7 +1214,7 @@ testXFTPRedeliveredDescription ps = do
         bob <# "alice> sends file test.pdf (266.0 KiB / 272376 bytes)"
         bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
         alice <## "completed uploading file 1 (test.pdf) for bob"
-        readMVar received
+        received
         bob ##> "/_stop"
         bob <## "chat stopped"
         bob ##> "/_start"
