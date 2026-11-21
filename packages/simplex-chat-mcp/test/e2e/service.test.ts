@@ -255,17 +255,17 @@ test("the Main group shows every session in one list, the running ones with thei
   await until(() => attached.length === 1)
   const owner = await client.request<OwnerState>("GET", "/link")
   const invitations = joinSessionGroups(alice, ["1 · one", "2 · two"])
-  const working = received(alice.chat, ({chatItem}) => chatItem.meta.itemText === "🟠 1 · one: working\n⚪ Not running: 2 · two")
+  const working = received(alice.chat, ({chatItem}) => chatItem.meta.itemText === "🟢 1 · one: working\n⚪ Not running: 2 · two")
   const mainGroupId = await joinByLink(alice, owner.link!)
   const list = await working
   expect(list.chatInfo).toMatchObject({type: "group", groupInfo: {groupId: mainGroupId}})
   await invitations
   const edited = (text: string): Promise<T.AChatItem> => updated(alice.chat, inGroup(mainGroupId, ({chatItem}) => chatItem.meta.itemId === list.chatItem.meta.itemId && chatItem.meta.itemText === text))
-  const waiting = edited("🔵 1 · one: waiting for you, 1 approval\n⚪ Not running: 2 · two")
+  const waiting = edited("🟠 1 · one: waiting for you, 1 approval\n⚪ Not running: 2 · two")
   writeFileSync(record, JSON.stringify({status: "waiting", waitingFor: "permission prompt"}))
   await client.request("POST", "/permission", {id: one, requestId: "abcde", toolName: "Bash", description: "Run shell command", inputPreview: "ls"})
   await waiting
-  const idle = edited("🟢 1 · one: idle\n⚪ Not running: 2 · two")
+  const idle = edited("🔴 1 · one: idle\n⚪ Not running: 2 · two")
   writeFileSync(record, JSON.stringify({status: "idle"}))
   await idle
   const ended = edited("⚪ Not running: 2 · two, 1 · one")

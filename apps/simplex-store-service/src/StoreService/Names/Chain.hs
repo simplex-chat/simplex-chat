@@ -63,8 +63,9 @@ import Network.HTTP.Types (hContentType, methodPost, statusCode, statusIsSuccess
 import Numeric (readHex, showHex)
 import Simplex.Messaging.Crypto (keccak256)
 import Simplex.Messaging.Crypto.Secp256k1 (RecoverableSignature (..))
+import Simplex.Messaging.Encoding (Encoding (..))
 import Simplex.Messaging.Eth.Address (Address, addressFromPrivateKey, recoverAddress)
-import Simplex.Messaging.Eth.RLP (RLPItem (..), rlpEncode)
+import Simplex.Messaging.Eth.RLP (RLPItem (..))
 import Simplex.Messaging.Eth.Transaction (Eip1559Tx (..), signEip1559Tx)
 import Simplex.Messaging.Util (tshow)
 import StoreService.Config (ChainConfig (..))
@@ -255,7 +256,7 @@ transactionSigner raw = case signedTxItems raw of
   Right (fields@(chainIdItem : _), (RLPBytes yParity, RLPBytes r, RLPBytes s))
     | B.length yParity <= 1,
       Right chainId <- scalar chainIdItem ->
-        fmap (chainId,) <$> recoverAddress RecoverableSignature {rsR = scalarBytes r, rsS = scalarBytes s, rsRecId = fromInteger $ os2ip yParity} (keccak256 $ B.cons eip1559TxType $ rlpEncode $ RLPList fields)
+        fmap (chainId,) <$> recoverAddress RecoverableSignature {rsR = scalarBytes r, rsS = scalarBytes s, rsRecId = fromInteger $ os2ip yParity} (keccak256 $ B.cons eip1559TxType $ smpEncode $ RLPList fields)
   Right _ -> pure $ Left "transaction: not a chain id and signature"
   Left e -> pure $ Left e
   where

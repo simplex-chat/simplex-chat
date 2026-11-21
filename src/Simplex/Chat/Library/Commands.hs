@@ -218,7 +218,7 @@ loadImageData path = case map toLower (takeExtension path) of
           bs <- B.readFile path
           if B.null bs
             then pure $ Left $ "image file is empty: " <> path
-            else first (\e -> "image file cannot be resized: " <> path <> " (" <> e <> ")") <$> (runExceptT (resize bs) `catchAll` (pure . Left . show))
+            else first (\e -> "image file cannot be resized: " <> path <> " (" <> e <> ")") <$> (runExceptT (resize bs) `catchOwn'` (pure . Left . show))
     resize bs = do
       (img, profile) <- ExceptT $ decodeResizable bs
       ImageData . safeDecodeUtf8 . LB.toStrict <$> ExceptT (resizeImageDataUri (fromIntegral maxProfileImageSize) (cropToSquare img) profile)
@@ -230,7 +230,7 @@ fixedImagePreview :: ImageData
 fixedImagePreview = ImageData "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAAAXNSR0IArs4c6QAAAKVJREFUeF7t1kENACEUQ0FQhnVQ9lfGO+xggITQdvbMzArPey+8fa3tAfwAEdABZQspQStgBssEcgAIkSAJkiAJljtEgiRIgmUCSZAESZAESZAEyx0iQRIkwTKBJEiCv5fgvTd1wDmn7QAP4AeIgA4oW0gJWgEzWCZwbQ7gAA7ggLKFOIADOKBMIAeAEAmSIAmSYLlDJEiCJFgmkARJkARJ8N8S/ADTZUewBvnTOQAAAABJRU5ErkJggg=="
 
 imagePreview :: CryptoFile -> IO ImageData
-imagePreview f = either (const fixedImagePreview) (ImageData . safeDecodeUtf8 . LB.toStrict) <$> (runExceptT preview `catchAll` (pure . Left . show))
+imagePreview f = either (const fixedImagePreview) (ImageData . safeDecodeUtf8 . LB.toStrict) <$> (runExceptT preview `catchOwn'` (pure . Left . show))
   where
     preview = do
       s <- withExceptT show $ CF.readFile f
@@ -1741,11 +1741,9 @@ processChatCommand cxt nm = \case
     r <- tryAllErrors $ getShortLinkConnReq nm user address
     case r of
       Left e -> failAt RTSGetLink e
-      Right (FixedLinkData {rootKey}, cData, cReq) -> do
-        relayProfile_ <- liftIO $ decodeLinkUserData cData
-        case relayProfile_ of
-          Nothing -> failAt RTSDecodeLink (ChatError $ CERelayTestError "no relay address link data")
-          Just RelayAddressLinkData {relayProfile} -> do
+      Right (FixedLinkData {rootKey}, _, cReq, sLinkData_) ->
+        case sLinkData_ of
+          Just (SLDRelayAddress RelayAddressLinkData {relayProfile}) -> do
             let failWithProfile step e =
                   pure $ CRChatRelayTestResult user (Just relayProfile) (Just $ RelayTestFailure step e)
             lift (withAgent' (`connRequestAgentVersion` cReq)) >>= \case
@@ -1774,6 +1772,7 @@ processChatCommand cxt nm = \case
                   Right Nothing -> failWithProfile RTSWaitResponse (ChatError $ CERelayTestError "timeout")
                   Right (Just Nothing) -> pure $ CRChatRelayTestResult user (Just relayProfile) Nothing
                   Right (Just (Just failure)) -> pure $ CRChatRelayTestResult user (Just relayProfile) (Just failure)
+          _ -> failAt RTSDecodeLink (ChatError $ CERelayTestError "no relay address link data")
   TestChatRelay address -> withUser $ \User {userId} ->
     processChatCommand cxt nm $ APITestChatRelay userId address
   APIAllowRelayGroup groupId -> withUser $ \user -> do
@@ -1986,10 +1985,9 @@ processChatCommand cxt nm = \case
     gInfo@GroupInfo {groupProfile = p} <- withFastStore $ \db -> getGroupInfo db cxt user groupId
     case p of
       GroupProfile {publicGroup = Just PublicGroupProfile {groupLink = sLnk, publicGroupId}} | useRelays' gInfo -> do
-        (FixedLinkData {linkEntityId}, cData@(ContactLinkData _ UserContactData {relays = currentRelayLinks}), _) <- getShortLinkConnReq' nm user sLnk
+        (FixedLinkData {linkEntityId}, ContactLinkData _ UserContactData {relays = currentRelayLinks}, _, sLinkData_) <- getShortLinkConnReq' nm user sLnk
         unless ((B64UrlByteString <$> linkEntityId) == Just publicGroupId) $ throwChatError CEInvalidConnReq
-        groupSLinkData_ <- liftIO $ decodeLinkUserData cData
-        gInfo' <- case groupSLinkData_ of
+        gInfo' <- case shortLinkGroupData =<< sLinkData_ of
           Just sLinkData -> (\(g, _, _) -> g) <$> updateGroupFromLinkData user gInfo sLinkData Nothing
           _ -> pure gInfo
         when (memberRole' (membership gInfo) /= GROwner && memberCurrent (membership gInfo)) $
@@ -2352,8 +2350,8 @@ processChatCommand cxt nm = \case
         sLnk <- case connShortLink' connLinkToConnect of
           Just sl -> pure sl
           Nothing -> throwChatError $ CEException "failed to retrieve relays: no short link"
-        (FixedLinkData {linkEntityId, rootKey}, cData@(ContactLinkData _ UserContactData {owners, relays}), mainCReq@(CRContactUri crData e2e)) <- getShortLinkConnReq nm user sLnk
-        groupSLinkData_ <- liftIO $ decodeLinkUserData cData
+        (FixedLinkData {linkEntityId, rootKey}, ContactLinkData _ UserContactData {owners, relays}, mainCReq@(CRContactUri crData e2e), sLinkData_) <- getShortLinkConnReq nm user sLnk
+        let groupSLinkData_ = shortLinkGroupData =<< sLinkData_
         -- Validate link entity ID matches group profile's publicGroupId (relay groups must have both)
         case groupSLinkData_ of
           Just sLinkData@GroupShortLinkData {groupProfile = GroupProfile {publicGroup = Just PublicGroupProfile {publicGroupId}}}
@@ -2407,9 +2405,7 @@ processChatCommand cxt nm = \case
             forM_ activeConn $ \conn -> do
               deleteAgentConnectionAsync $ aConnId conn
               withStore' $ \db -> deleteConnectionRecord db user (dbConnId conn)
-            subMode <- chatReadVar subscriptionMode
-            newConnIds <- getAgentConnShortLinkAsync user CFGetRelayDataJoin Nothing relayLink
-            withStore' $ \db -> createRelayMemberConnectionAsync db user gInfo' relayMember relayLink newConnIds subMode
+            createRelayConnectionAsync user gInfo' relayMember relayLink
       GroupInfo {preparedGroup = Just PreparedGroup {connLinkToConnect, welcomeSharedMsgId, requestSharedMsgId}} -> do
         hostMember <- withFastStore $ \db -> getHostMember db cxt user groupId
         msg_ <- forM msgContent_ $ \mc -> case requestSharedMsgId of
@@ -2490,9 +2486,10 @@ processChatCommand cxt nm = \case
     when (isJust groupDirectInv) $ throwCmdError "contact is a member contact request"
     ccLink <- case contactLink of
       Just (CLFull cReq) -> pure $ CCLink cReq Nothing
-      Just (CLShort sLnk) -> do
-        (_, _, cReq) <- getShortLinkConnReq nm user sLnk
+      Just (CLShort sLnk@(CSLContact _ CCTContact _ _)) -> do
+        (_, _, cReq, _) <- getShortLinkConnReq nm user sLnk
         pure $ CCLink cReq $ Just sLnk
+      Just (CLShort _) -> throwChatError CEInvalidConnReq
       Nothing -> throwCmdError "no address in contact profile"
     connectContactViaAddress user incognito ct ccLink `catchAllErrors` \e -> do
       -- get updated contact, in case connection was started - in UI it would lock ability to change incognito choice
@@ -3642,7 +3639,7 @@ processChatCommand cxt nm = \case
               Just XFTPRcvFile {agentRcvFileId} -> do
                 forM_ (liveRcvFileTransferPath ftr) $ \filePath -> do
                   fsFilePath <- lift $ toFSFilePath filePath
-                  liftIO $ removeFile fsFilePath `catchAll_` pure ()
+                  liftIO $ removeFile fsFilePath `catchOwn'` \_ -> pure ()
                 lift . forM_ agentRcvFileId $ \(AgentRcvFileId aFileId) ->
                   withAgent' (`xftpDeleteRcvFile` aFileId)
                 aci_ <- fmap updatedAChatItem <$> resetRcvCIFileStatus user fileId CIFSRcvInvitation
@@ -4045,10 +4042,9 @@ processChatCommand cxt nm = \case
       -- Save relayLink to re-use relay member record on retry (check by relayLink)
       relayMember <- withFastStore $ \db -> getCreateRelayForMember db cxt gVar user gInfo relayLink
       r <- tryAllErrors $ do
-        (FixedLinkData {rootKey = relayKey, linkEntityId}, cData, cReq) <- getShortLinkConnReq nm user relayLink
-        relayLinkData_ <- liftIO $ decodeLinkUserData cData
-        relayMemberId <- case (relayLinkData_, linkEntityId) of
-          (Just RelayShortLinkData {relayProfile = p}, Just entityId) -> do
+        (FixedLinkData {rootKey = relayKey, linkEntityId}, _, cReq, sLinkData_) <- getShortLinkConnReq nm user relayLink
+        relayMemberId <- case (sLinkData_, linkEntityId) of
+          (Just (SLDRelayLink RelayShortLinkData {relayProfile = p}), Just entityId) -> do
             withFastStore $ \db -> updateRelayMemberData db cxt user relayMember (MemberId entityId) (MemberKey relayKey) p
             pure $ MemberId entityId
           _ -> throwChatError $ CEException "relay link: no relay link data or entity id"
@@ -4453,7 +4449,7 @@ processChatCommand cxt nm = \case
       where
         addRelay :: UserChatRelay -> CM (UserChatRelay, Either ChatError GroupRelay)
         addRelay relay@UserChatRelay {address} = fmap (relay,) . tryAllErrors $ do
-          (_, _, cReq) <- getShortLinkConnReq nm user address
+          (_, _, cReq, _) <- getShortLinkConnReq nm user address
           lift (withAgent' (`connRequestAgentVersion` cReq)) >>= \case
             Nothing -> throwChatError CEInvalidConnReq
             Just _ -> do
@@ -4555,8 +4551,8 @@ processChatCommand cxt nm = \case
         knownLinkPlans l' >>= \case
           Just (createdLink, p) -> pure (createdLink, Nothing, Nothing, p)
           Nothing -> do
-            (FixedLinkData {rootKey}, cData, cReq) <- getShortLinkConnReq nm user l'
-            contactSLinkData_ <- mapM (linkDataBadge $ linkPresHeader l') =<< liftIO (decodeLinkUserData cData)
+            (FixedLinkData {rootKey}, _, cReq, sLinkData_) <- getShortLinkConnReq nm user l'
+            contactSLinkData_ <- mapM (linkDataBadge $ linkPresHeader l') $ shortLinkContactData =<< sLinkData_
             let ov = verifyLinkOwner rootKey [] l sig_
             invitationReqAndPlan cReq (Just l') contactSLinkData_ ov
       where
@@ -4611,9 +4607,9 @@ processChatCommand cxt nm = \case
                 resolveSLink >>= contactLinkPlan Nothing
             where
               contactLinkPlan knownChat_ l' = do
-                (FixedLinkData {rootKey}, cData, cReq) <- getShortLinkConnReq nm user l'
+                (FixedLinkData {rootKey}, cData, cReq, sLinkData_) <- getShortLinkConnReq nm user l'
                 let presHeader = linkPresHeader l'
-                contactSLinkData_ <- mapM (linkDataBadge presHeader) =<< liftIO (decodeLinkUserData cData)
+                contactSLinkData_ <- mapM (linkDataBadge presHeader) $ shortLinkContactData =<< sLinkData_
                 let linkProfile_ = (\ContactShortLinkData {profile} -> profile) <$> contactSLinkData_
                     linkDomain_ = linkProfile_ >>= \Profile {contactDomain} -> claimDomain <$> contactDomain
                     planDomain = case nl of CTName ni -> Just (nameDomain ni); _ -> Nothing
@@ -4680,9 +4676,9 @@ processChatCommand cxt nm = \case
                 resolveSLink >>= groupLinkPlan Nothing
             where
               groupLinkPlan knownChat_ l' = do
-                (fd, cData@(ContactLinkData _ UserContactData {direct, owners, relays}), cReq) <- getShortLinkConnReq' nm user l'
-                groupSLinkData_ <- liftIO $ decodeLinkUserData cData
-                let planDomain = case nl of CTName ni -> Just (nameDomain ni); _ -> Nothing
+                (fd, ContactLinkData _ UserContactData {direct, owners, relays}, cReq, sLinkData_) <- getShortLinkConnReq' nm user l'
+                let groupSLinkData_ = shortLinkGroupData =<< sLinkData_
+                    planDomain = case nl of CTName ni -> Just (nameDomain ni); _ -> Nothing
                     nc_ = NCMoved <$> knownChat_
                     knownMoved moved = NCMoved . movedChat moved <$> knownChat_
                 plan <- if
@@ -4726,8 +4722,8 @@ processChatCommand cxt nm = \case
                   Nothing -> (gPlan =<<) <$> getGroupToConnect db cxt user nl'
               resolveKnownGroup g = do
                 l' <- resolveSLink
-                (FixedLinkData {rootKey = rk}, cData@(ContactLinkData _ UserContactData {owners}), cReq) <- getShortLinkConnReq' nm user l'
-                groupSLinkData_ <- liftIO $ decodeLinkUserData cData
+                (FixedLinkData {rootKey = rk}, ContactLinkData _ UserContactData {owners}, cReq, sLinkData_) <- getShortLinkConnReq' nm user l'
+                let groupSLinkData_ = shortLinkGroupData =<< sLinkData_
                 let ov = verifyLinkOwner rk owners l' sig_
                     glOwners = map (\OwnerAuth {ownerId, ownerKey} -> GroupLinkOwner {memberId = MemberId ownerId, memberKey = ownerKey}) owners
                 (g', updated, _) <- case groupSLinkData_ of
@@ -5348,7 +5344,7 @@ verifyEntityDomain user nm nameType SimplexDomainClaim {domain = StrJSON domain,
   where
     verifyDomainProof :: SimplexDomainProof -> ShortLinkContact -> CM Bool
     verifyDomainProof SimplexDomainProof {linkOwnerId, presHeader, signature} sLnk@(CSLContact _ ct srv key) = do
-      (FixedLinkData {rootKey}, ContactLinkData _ UserContactData {owners}, _) <- getShortLinkConnReq nm user sLnk
+      (FixedLinkData {rootKey}, ContactLinkData _ UserContactData {owners}, _, _) <- getShortLinkConnReq nm user sLnk
       let ownerKey_ = case linkOwnerId of
             Nothing -> Just rootKey
             Just (StrJSON oid) -> ownerKey <$> find (\OwnerAuth {ownerId} -> ownerId == oid) owners
@@ -6502,7 +6498,7 @@ sendServiceRequestBytes nm user sendTarget requestTimeout signKey request = do
       case firstNameLink CCTContact (nrSimplexContact nr) of
         Just sLnk -> resolveShortLink sLnk
         Nothing -> throwChatError $ CESimplexDomainNotReady d SDENoValidLink
-    resolveShortLink sLnk = (\(_, _, cReq) -> cReq) <$> getShortLinkConnReq nm user sLnk
+    resolveShortLink sLnk = (\(_, _, cReq, _) -> cReq) <$> getShortLinkConnReq nm user sLnk
 
 assertDirectAllowed :: User -> MsgDirection -> Contact -> CMEventTag e -> CM ()
 assertDirectAllowed user dir ct event =
@@ -6697,7 +6693,7 @@ runRelayGroupLinkChecks user = do
       forM_ relayGroups $ \g@(GIK gInfo@GroupInfo {groupProfile = gp} _) -> flip catchAllErrors eToView $ do
         case publicGroup gp of
           Just PublicGroupProfile {groupLink = sLnk} -> do
-            (_, ContactLinkData _ UserContactData {relays = relayLinks}, _) <-
+            (_, ContactLinkData _ UserContactData {relays = relayLinks}, _, _) <-
               getShortLinkConnReq' NRMBackground user sLnk
             gLink_ <- withStore' $ \db -> runExceptT $ getGroupLink db user gInfo
             case gLink_ of

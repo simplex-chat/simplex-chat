@@ -2606,7 +2606,7 @@ describe("Main group", () => {
     expect(chat.invitations.at(-1)).toEqual({groupId: 21, viaGroupId: 10, groupMemberId: 3, memberRole: T.GroupMemberRole.Owner})
   })
 
-  it("posts the list of every session after the greeting, silent, and edits it as Claude Code's records and the cards change: working, waiting for you, waiting for you in Claude Code, idle, and the ⚪ line after an exit", async () => {
+  it("posts the list of every session after the greeting, silent, and edits it as Claude Code's records and the cards change: working, waiting for you, waiting for you in Claude Code, idle, working in the background, and the ⚪ line after an exit", async () => {
     const chat = new FakeChat()
     const hub = await hubWith(chat, [self])
     const one = await openSession(hub, id1, stored(1, "one"))
@@ -2631,15 +2631,15 @@ describe("Main group", () => {
       await hub.showSessions()
       return chat.updates.length === edits ? undefined : chat.updates.at(-1)!.text
     }
-    expect(await shows("busy")).toBe("🟠 1 · one: working\n⚪ Not running: 2 · two")
+    expect(await shows("busy")).toBe("🟢 1 · one: working\n⚪ Not running: 2 · two")
     expect(chat.updates.at(-1)).toMatchObject({chatId: 10, itemId: list})
     expect(await shows("busy")).toBeUndefined()
-    expect(await shows("waiting")).toBe("🔵 1 · one: waiting for you in Claude Code\n⚪ Not running: 2 · two")
+    expect(await shows("waiting")).toBe("⛔️ 1 · one: waiting for you in Claude Code\n⚪ Not running: 2 · two")
     one.permission({id: id1, requestId: "abcde", toolName: "Bash", description: "Run shell command", inputPreview: "ls"})
-    expect(await shows("waiting")).toBe("🔵 1 · one: waiting for you, 1 approval\n⚪ Not running: 2 · two")
-    expect(await shows("busy")).toBe("🟠 1 · one: working\n⚪ Not running: 2 · two")
-    expect(await shows("idle")).toBe("🟢 1 · one: idle\n⚪ Not running: 2 · two")
-    expect(await shows("shell")).toBeUndefined()
+    expect(await shows("waiting")).toBe("🟠 1 · one: waiting for you, 1 approval\n⚪ Not running: 2 · two")
+    expect(await shows("busy")).toBe("🟢 1 · one: working\n⚪ Not running: 2 · two")
+    expect(await shows("idle")).toBe("🔴 1 · one: idle\n⚪ Not running: 2 · two")
+    expect(await shows("shell")).toBe("⚙️ 1 · one: working in the background\n⚪ Not running: 2 · two")
     one.endPermissions()
     one.onLine = undefined
     expect(await shows("idle")).toBe("⚪ Not running: 2 · two, 1 · one")
@@ -2656,18 +2656,18 @@ describe("Main group", () => {
     one.onLine = () => undefined
     one.permission({id: id1, requestId: "abcde", toolName: "Bash", description: "Run shell command", inputPreview: "ls"})
     two.requestMode("host")
-    expect(hub.sessionsText()).toBe("🔵 1 · one: waiting for you, 1 approval\n🔵 2 · two: waiting for you, 1 approval")
+    expect(hub.sessionsText()).toBe("🟠 1 · one: waiting for you, 1 approval\n🟠 2 · two: waiting for you, 1 approval")
     one.record = join(root, "claude-1.json")
     writeFileSync(one.record, JSON.stringify({status: "busy"}))
     await hub.showSessions()
-    expect(hub.sessionsText()).toBe("🟠 1 · one: working\n🔵 2 · two: waiting for you, 1 approval")
+    expect(hub.sessionsText()).toBe("🟢 1 · one: working\n🟠 2 · two: waiting for you, 1 approval")
     writeFileSync(one.record, JSON.stringify({status: "compacting"}))
     await hub.showSessions()
-    expect(hub.sessionsText()).toBe("🔵 1 · one: waiting for you, 1 approval\n🔵 2 · two: waiting for you, 1 approval")
+    expect(hub.sessionsText()).toBe("🟠 1 · one: waiting for you, 1 approval\n🟠 2 · two: waiting for you, 1 approval")
     one.permission({id: id1, requestId: "fghij", toolName: "Write", description: "Write a file", inputPreview: "a.txt"})
     writeFileSync(one.record, JSON.stringify({status: "waiting"}))
     await hub.showSessions()
-    expect(hub.sessionsText()).toBe("🔵 1 · one: waiting for you, 2 approvals\n🔵 2 · two: waiting for you, 1 approval")
+    expect(hub.sessionsText()).toBe("🟠 1 · one: waiting for you, 2 approvals\n🟠 2 · two: waiting for you, 1 approval")
     let stopped = false
     const stopping = hub.stop().then(() => (stopped = true))
     await until(() => chat.updates.filter(({chatId}) => chatId === 10).at(-1)?.text === "⚪ Not running: 2 · two, 1 · one")
@@ -2688,10 +2688,10 @@ describe("Main group", () => {
     expect(hub.sessionsText()).toBe("▶️ 1 · one: running")
     writeFileSync(one.record, JSON.stringify({status: "busy"}))
     await hub.showSessions()
-    expect(hub.sessionsText()).toBe("🟠 1 · one: working")
+    expect(hub.sessionsText()).toBe("🟢 1 · one: working")
     writeFileSync(one.record, '{"pid": 100, "sta')
     await hub.showSessions()
-    expect(hub.sessionsText()).toBe("🟠 1 · one: working")
+    expect(hub.sessionsText()).toBe("🟢 1 · one: working")
     writeFileSync(one.record, JSON.stringify({status: "compacting"}))
     await hub.showSessions()
     expect(hub.sessionsText()).toBe("▶️ 1 · one: running")
@@ -2720,7 +2720,7 @@ describe("Main group", () => {
     await hub.showSessions()
     expect(Date.now() - started).toBeLessThan(3_000)
     expect(opened).toHaveBeenCalledTimes(1)
-    expect(hub.sessionsText()).toBe("🟠 1 · one: working")
+    expect(hub.sessionsText()).toBe("🟢 1 · one: working")
   })
 
   it("deletes a new list whose item it could not save and posts it again at the next render, and does not send a text the core refused as too large again until the text changes", async () => {

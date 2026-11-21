@@ -40,7 +40,7 @@ import Simplex.Chat.PaymentService.Types (InvoiceStatus (..))
 import Simplex.Messaging.Agent.Store.Common (withTransaction)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.Secp256k1 (RecoverableSignature (..), Secp256k1PrivateKey, signRecoverable)
-import Simplex.Messaging.Eth.EIP712 (serializeSignature)
+import Simplex.Messaging.Encoding (Encoding (..))
 import Simplex.Messaging.SimplexName (LabelHash (..), SimplexTLD (..), labelHash)
 import StoreService.Names.Abi (hex, uint256)
 import StoreService.Names.Links (linkMaxBytes)
@@ -177,7 +177,7 @@ bodyOf sig Registration {rLabel, rSecret, rContactLink, rChannelLink} nonce dead
       ("records", J.object ["contact" .= maybeToList rContactLink, "channel" .= maybeToList rChannelLink]),
       ("nonce", J.toJSON nonce),
       ("deadline", J.toJSON deadline),
-      ("signature", J.String $ hex $ serializeSignature sig)
+      ("signature", J.String $ hex $ smpEncode sig)
     ]
 
 -- | As the page sends it: the owner's intent for the chain's nonce 0, until the commitment's revealBefore, and the owner's
@@ -234,7 +234,7 @@ acceptanceOf Ctx {cRandom} key r community terms nonce deadline = do
 
 withAcceptance :: TermsAcceptance -> J.Object -> J.Object
 withAcceptance TermsAcceptance {taTermsHash, taNonce, taSignature} =
-  KM.insert "acceptance" $ J.object ["termsHash" .= hex taTermsHash, "nonce" .= taNonce, "signature" .= hex (serializeSignature taSignature)]
+  KM.insert "acceptance" $ J.object ["termsHash" .= hex taTermsHash, "nonce" .= taNonce, "signature" .= hex (smpEncode taSignature)]
 
 testAcceptanceStored :: IO ()
 testAcceptanceStored = withListedReveals $ \Fx {fCtx = ctx} -> do
@@ -280,7 +280,7 @@ testAcceptanceFields :: IO ()
 testAcceptanceFields = do
   g <- C.newRandom
   sig <- either error id <$> signRecoverable g keyA (C.keccak256 "acceptance")
-  let fields = KM.fromList ["termsHash" .= hex fakeCommunityTerms, "nonce" .= (2 :: Int), "signature" .= hex (serializeSignature sig)]
+  let fields = KM.fromList ["termsHash" .= hex fakeCommunityTerms, "nonce" .= (2 :: Int), "signature" .= hex (smpEncode sig)]
       replaced k v = J.Object $ KM.insert k v fields
       acceptanceRead a = rfAcceptance <$> parseRevealFields (KM.insert "acceptance" a $ bodyOf sig alice 0 revealBefore)
   acceptanceRead (J.Object fields) `shouldBe` Just (Just TermsAcceptance {taTermsHash = fakeCommunityTerms, taNonce = 2, taSignature = sig})
