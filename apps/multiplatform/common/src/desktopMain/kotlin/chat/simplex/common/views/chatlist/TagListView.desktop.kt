@@ -13,6 +13,7 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import chat.simplex.common.platform.platformTextFieldStyle
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.ui.theme.ThemeManager.colorFromReadableHex
 import chat.simplex.common.views.chat.item.isHeartEmoji
@@ -41,6 +42,7 @@ private fun SingleEmojiInput(
     unfocusedIndicatorColor = CurrentColors.value.colors.secondary.copy(alpha = 0.3f),
     cursorColor = MaterialTheme.colors.secondary,
   )
+  val field = platformTextFieldStyle(state.value.text, LocalTextStyle.current.copy(fontFamily = EmojiFont, textAlign = TextAlign.Center))
   TextField(
     value = state.value,
     onValueChange = { newValue ->
@@ -57,7 +59,8 @@ private fun SingleEmojiInput(
     modifier = Modifier
       .padding(4.dp)
       .size(width = TextFieldDefaults.MinHeight.value.sp.toDp(), height = TextFieldDefaults.MinHeight),
-    textStyle = LocalTextStyle.current.copy(fontFamily = EmojiFont, textAlign = TextAlign.Center),
+    textStyle = field.style,
+    visualTransformation = field.visualTransformation,
     placeholder = {
       Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Icon(

@@ -3,6 +3,7 @@ package chat.simplex.common.views.newchat
 import SectionItemView
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
+import chat.simplex.common.platform.Text
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier

@@ -3,6 +3,7 @@ package chat.simplex.common.views.chat.item
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
+import chat.simplex.common.platform.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier

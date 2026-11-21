@@ -3,6 +3,7 @@ package chat.simplex.common.views.chatlist
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
+import chat.simplex.common.platform.Text
 import dev.icerock.moko.resources.compose.painterResource
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment

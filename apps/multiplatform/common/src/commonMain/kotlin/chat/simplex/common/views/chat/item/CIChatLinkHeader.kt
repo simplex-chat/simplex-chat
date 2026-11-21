@@ -2,6 +2,7 @@ package chat.simplex.common.views.chat.item
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
+import chat.simplex.common.platform.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight

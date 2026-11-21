@@ -3,6 +3,7 @@ package chat.simplex.common.model
 import SectionItemView
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
+import chat.simplex.common.platform.Text
 import chat.simplex.common.views.helpers.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.Saver

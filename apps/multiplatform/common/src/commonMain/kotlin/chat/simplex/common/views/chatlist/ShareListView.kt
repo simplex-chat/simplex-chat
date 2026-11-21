@@ -3,6 +3,7 @@ package chat.simplex.common.views.chatlist
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.*
+import chat.simplex.common.platform.Text
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment

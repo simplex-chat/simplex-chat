@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.ZeroCornerSize
 import androidx.compose.foundation.text.*
 import androidx.compose.material.*
+import chat.simplex.common.platform.Text
 import androidx.compose.material.TextFieldDefaults.indicatorLine
 import androidx.compose.material.TextFieldDefaults.textFieldWithLabelPadding
 import androidx.compose.runtime.*
@@ -84,6 +85,7 @@ fun SearchTextField(
   // sizing is done differently on Android and desktop in order to have the same height of search and compose view on desktop
   // see PlatformTextField.desktop + SendMsgView
   val padding = if (appPlatform.isAndroid) PaddingValues() else PaddingValues(top = 3.dp, bottom = 4.dp)
+  val field = platformTextFieldStyle(searchText.value.text, textStyle)
   BasicTextField(
     value = searchText.value,
     modifier = modifier
@@ -101,10 +103,10 @@ fun SearchTextField(
     },
     enabled = rememberUpdatedState(enabled).value,
     cursorBrush = SolidColor(colors.cursorColor(false).value),
-    visualTransformation = VisualTransformation.None,
+    visualTransformation = field.visualTransformation,
     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
     singleLine = true,
-    textStyle = textStyle,
+    textStyle = field.style,
     interactionSource = interactionSource,
     decorationBox = @Composable { innerTextField ->
       TextFieldDefaults.TextFieldDecorationBox(

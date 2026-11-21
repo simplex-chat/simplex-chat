@@ -8,6 +8,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.*
+import chat.simplex.common.platform.Text
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
@@ -63,12 +64,14 @@ fun TextEditor(
       .onFocusChanged { focused = it.isFocused }
       .padding(10.dp)
 
+    val field = platformTextFieldStyle(value.value, MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onBackground, lineHeight = 22.sp))
     BasicTextField(
       value = value.value,
       onValueChange = { value.value = it },
       modifier = if (focusRequester == null) textFieldModifier else textFieldModifier.focusRequester(focusRequester),
       enabled = enabled,
-      textStyle = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onBackground, lineHeight = 22.sp),
+      textStyle = field.style,
+      visualTransformation = field.visualTransformation,
       keyboardOptions = KeyboardOptions(
         capitalization = KeyboardCapitalization.None,
         autoCorrect = false
@@ -112,13 +115,15 @@ fun PlainTextEditor(
   contentPadding: PaddingValues = PaddingValues(horizontal = DEFAULT_PADDING, vertical = 12.dp),
   focusRequester: FocusRequester? = null
 ) {
+  val field = platformTextFieldStyle(value.value, MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onBackground))
   BasicTextField(
     value = value.value,
     onValueChange = { value.value = it },
     modifier = Modifier.fillMaxWidth()
       .then(if (focusRequester != null) Modifier.focusRequester(focusRequester) else Modifier)
       .padding(contentPadding),
-    textStyle = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onBackground),
+    textStyle = field.style,
+    visualTransformation = field.visualTransformation,
     singleLine = singleLine,
     cursorBrush = SolidColor(MaterialTheme.colors.secondary),
     decorationBox = { innerTextField ->

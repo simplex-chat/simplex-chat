@@ -2,6 +2,7 @@ package chat.simplex.common.views.chat.item
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
+import chat.simplex.common.platform.Text
 import androidx.compose.ui.graphics.painter.Painter
 import dev.icerock.moko.resources.compose.painterResource
 import androidx.compose.runtime.Composable

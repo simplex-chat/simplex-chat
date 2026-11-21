@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.ZeroCornerSize
 import androidx.compose.foundation.text.*
 import androidx.compose.material.*
+import chat.simplex.common.platform.Text
 import androidx.compose.material.TextFieldDefaults.indicatorLine
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -361,6 +362,15 @@ fun PassphraseField(
   val shape = MaterialTheme.shapes.small.copy(bottomEnd = ZeroCornerSize, bottomStart = ZeroCornerSize)
   val interactionSource = remember { MutableInteractionSource() }
   val focusRequester = remember { FocusRequester() }
+  val field = platformTextFieldStyle(
+    state.value.text,
+    TextStyle.Default.copy(
+      color = color,
+      fontWeight = FontWeight.Normal,
+      fontSize = 16.sp
+    ),
+    if (showKey) VisualTransformation.None else PasswordVisualTransformation('*')
+  )
   BasicTextField(
     value = state.value,
     modifier = modifier
@@ -379,21 +389,14 @@ fun PassphraseField(
       valid = isValid(it.text)
     },
     cursorBrush = SolidColor(colors.cursorColor(false).value),
-    visualTransformation = if (showKey)
-      VisualTransformation.None
-    else
-      PasswordVisualTransformation('*'),
+    visualTransformation = field.visualTransformation,
     keyboardOptions = keyboardOptions,
     keyboardActions = KeyboardActions(onDone = {
       keyboard?.hide()
       keyboardActions.onDone?.invoke(this)
     }),
     singleLine = true,
-    textStyle = TextStyle.Default.copy(
-      color = color,
-      fontWeight = FontWeight.Normal,
-      fontSize = 16.sp
-    ),
+    textStyle = field.style,
     interactionSource = interactionSource,
     decorationBox = @Composable { innerTextField ->
       TextFieldDefaults.TextFieldDecorationBox(

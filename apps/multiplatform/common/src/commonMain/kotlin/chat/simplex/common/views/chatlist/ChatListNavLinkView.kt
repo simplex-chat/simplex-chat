@@ -3,6 +3,7 @@ package chat.simplex.common.views.chatlist
 import SectionItemView
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
+import chat.simplex.common.platform.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.platform.LocalDensity
 import dev.icerock.moko.resources.compose.painterResource

@@ -11,6 +11,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.*
+import chat.simplex.common.platform.Text
 import androidx.compose.material.MaterialTheme.colors
 import androidx.compose.material.TextFieldDefaults.indicatorLine
 import androidx.compose.runtime.*
@@ -365,6 +366,7 @@ fun TagListNameTextField(name: MutableState<String>, showError: State<Boolean>) 
     unfocusedIndicatorColor = CurrentColors.value.colors.secondary.copy(alpha = 0.3f),
     cursorColor = MaterialTheme.colors.secondary,
   )
+  val field = platformTextFieldStyle(name.value, TextStyle(fontSize = 18.sp, color = MaterialTheme.colors.onBackground))
   BasicTextField(
     value = name.value,
     onValueChange = { name.value = it },
@@ -375,7 +377,8 @@ fun TagListNameTextField(name: MutableState<String>, showError: State<Boolean>) 
       .heightIn(min = TextFieldDefaults.MinHeight)
       .onFocusChanged { focused = it.isFocused }
       .focusRequester(focusRequester),
-    textStyle = TextStyle(fontSize = 18.sp, color = MaterialTheme.colors.onBackground),
+    textStyle = field.style,
+    visualTransformation = field.visualTransformation,
     singleLine = true,
     cursorBrush = SolidColor(MaterialTheme.colors.secondary),
     decorationBox = @Composable { innerTextField ->

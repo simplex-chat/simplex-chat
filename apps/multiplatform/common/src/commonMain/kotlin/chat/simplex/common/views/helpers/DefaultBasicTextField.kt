@@ -6,6 +6,8 @@ import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.shape.ZeroCornerSize
 import androidx.compose.foundation.text.*
 import androidx.compose.material.*
+import chat.simplex.common.platform.Text
+import chat.simplex.common.platform.platformTextFieldStyle
 import androidx.compose.material.TextFieldDefaults.indicatorLine
 import androidx.compose.runtime.*
 import androidx.compose.ui.ExperimentalComposeUiApi
@@ -58,6 +60,11 @@ fun DefaultBasicTextField(
   )
   val shape = MaterialTheme.shapes.small.copy(bottomEnd = ZeroCornerSize, bottomStart = ZeroCornerSize)
   val interactionSource = remember { MutableInteractionSource() }
+  val field = platformTextFieldStyle(state.value.text, textStyle.copy(
+    color = color,
+    fontWeight = FontWeight.Normal,
+    fontSize = 16.sp
+  ))
   BasicTextField(
     value = state.value,
     modifier = modifier
@@ -80,18 +87,14 @@ fun DefaultBasicTextField(
       onValueChange(it)
     },
     cursorBrush = SolidColor(colors.cursorColor(false).value),
-    visualTransformation = VisualTransformation.None,
+    visualTransformation = field.visualTransformation,
     keyboardOptions = keyboardOptions,
     keyboardActions = KeyboardActions(onDone = {
       keyboard?.hide()
       keyboardActions.onDone?.invoke(this)
     }),
     singleLine = true,
-    textStyle = textStyle.copy(
-      color = color,
-      fontWeight = FontWeight.Normal,
-      fontSize = 16.sp
-    ),
+    textStyle = field.style,
     interactionSource = interactionSource,
     decorationBox = @Composable { innerTextField ->
       TextFieldDefaults.TextFieldDecorationBox(
@@ -147,6 +150,18 @@ fun DefaultConfigurableTextField(
   val color = MaterialTheme.colors.onBackground
   val shape = MaterialTheme.shapes.small.copy(bottomEnd = ZeroCornerSize, bottomStart = ZeroCornerSize)
   val interactionSource = remember { MutableInteractionSource() }
+  val field = platformTextFieldStyle(
+    state.value.text,
+    TextStyle.Default.copy(
+      color = color,
+      fontWeight = FontWeight.Normal,
+      fontSize = fontSize
+    ),
+    if (showKey || keyboardType != KeyboardType.Password)
+      VisualTransformation.None
+    else
+      VisualTransformation { TransformedText(AnnotatedString(it.text.map { "*" }.joinToString(separator = "")), OffsetMapping.Identity) }
+  )
   BasicTextField(
     value = state.value,
     modifier = modifier
@@ -160,21 +175,14 @@ fun DefaultConfigurableTextField(
       state.value = it
     },
     cursorBrush = SolidColor(colors.cursorColor(false).value),
-    visualTransformation = if (showKey || keyboardType != KeyboardType.Password)
-      VisualTransformation.None
-    else
-      VisualTransformation { TransformedText(AnnotatedString(it.text.map { "*" }.joinToString(separator = "")), OffsetMapping.Identity) },
+    visualTransformation = field.visualTransformation,
     keyboardOptions = keyboardOptions,
     keyboardActions = KeyboardActions(onDone = {
       keyboard?.hide()
       keyboardActions.onDone?.invoke(this)
     }),
     singleLine = true,
-    textStyle = TextStyle.Default.copy(
-      color = color,
-      fontWeight = FontWeight.Normal,
-      fontSize = fontSize
-    ),
+    textStyle = field.style,
     interactionSource = interactionSource,
     decorationBox = @Composable { innerTextField ->
       TextFieldDefaults.TextFieldDecorationBox(
