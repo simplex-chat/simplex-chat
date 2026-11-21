@@ -53,6 +53,26 @@ export interface PermissionRequest {
   inputPreview: string
 }
 
+// spec: spec/architecture.md#protocol-askrequest
+export interface AskRequest {
+  id: string
+  pid?: number
+  at?: number
+  tool: string
+  description: string
+  preview: string
+  agent?: string
+  terminalOnly?: boolean
+}
+
+// spec: spec/architecture.md#protocol-askrequest
+export type Decision = {behavior: "allow"} | {behavior: "deny"; message: string}
+
+// spec: spec/architecture.md#protocol-askrequest
+export interface AskLine {
+  decision?: Decision
+}
+
 // spec: spec/architecture.md#protocol-permissionrequest
 export interface TurnRequest {
   id: string

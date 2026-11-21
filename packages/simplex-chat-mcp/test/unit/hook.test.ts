@@ -2,7 +2,7 @@ import {appendFileSync, mkdtempSync, rmSync, truncateSync, writeFileSync} from "
 import {tmpdir} from "os"
 import {join} from "path"
 import {ServiceClient} from "../../src/client"
-import {HookDeps, sessionStart, turn} from "../../src/hook"
+import {HookDeps, ask, sessionStart, turn} from "../../src/hook"
 import {linkText, resetOwners, resetOwnersText, showLink} from "../../src/owner"
 import {qrCodeText} from "../../src/qr"
 import {SocketError} from "../../src/socket"
@@ -120,6 +120,48 @@ describe("SessionStart hook", () => {
   it("reports other service errors with their text", async () => {
     const {client} = fakeClient({owners: []}, new Error("spawn failed"))
     expect(await sessionStart(input, {}, {client, nodeVersion: "22.1.0"})).toEqual({systemMessage: "SimpleX MCP: spawn failed"})
+  })
+})
+
+describe("PermissionRequest hook", () => {
+  const id = "11111111-1111-4111-8111-111111111111"
+
+  function askClient(lines: unknown[]) {
+    const requests: unknown[] = []
+    const client = {
+      ensureService: async () => undefined,
+      stream: async (route: string, body: unknown, onLine: (line: unknown) => void) => {
+        requests.push({route, body})
+        lines.forEach(onLine)
+      },
+    } as unknown as HookDeps["client"]
+    return {client, requests}
+  }
+
+  const prompt = (tool: string, fields: object, extra: object = {}) => JSON.stringify({session_id: id, hook_event_name: "PermissionRequest", tool_name: tool, tool_input: fields, ...extra})
+
+  it("sends a tool prompt with its preview to the service and prints the decision of the stream", async () => {
+    const deny = {behavior: "deny", message: "Alice rejected this in the SimpleX group."}
+    const {client, requests} = askClient([{decision: deny}])
+    const bash = prompt("Bash", {command: "npm test", description: "Run the unit tests"}, {agent_id: "a1", agent_type: "reviewer"})
+    expect(await ask(bash, {CLAUDE_PID: "4321"}, client, 5)).toEqual({hookSpecificOutput: {hookEventName: "PermissionRequest", decision: deny}})
+    await ask(prompt("Artifact", {action: "read", url: "https://claude.ai/artifact/abc"}), {}, client, 6)
+    expect(requests).toEqual([
+      {route: "/ask", body: {id, pid: 4321, at: 5, tool: "Bash", description: "Run the unit tests", preview: "npm test", agent: "reviewer"}},
+      {route: "/ask", body: {id, at: 6, tool: "Artifact", description: "", preview: "action: read\nurl: https://claude.ai/artifact/abc", terminalOnly: true}},
+    ])
+  })
+
+  it("prints nothing without a decision, in a run that is not interactive, for the plugin's tools, questions, plans and a subagent's artifact, and on a failure", async () => {
+    const errors = captureStderr()
+    const {client, requests} = askClient([{}])
+    expect(await ask(prompt("Bash", {command: "ls"}), {}, client)).toBeUndefined()
+    expect(await ask(prompt("Bash", {command: "ls"}), {CLAUDE_CODE_ENTRYPOINT: "sdk-ts"}, client)).toBeUndefined()
+    for (const tool of ["mcp__plugin_simplex_simplex__send", "AskUserQuestion", "ExitPlanMode"]) expect(await ask(prompt(tool, {}), {}, client)).toBeUndefined()
+    expect(await ask(prompt("WebFetch", {url: "https://claude.ai/code/artifact/abc"}, {agent_id: "a1", agent_type: "reviewer"}), {}, client)).toBeUndefined()
+    expect(requests).toHaveLength(1)
+    expect(await ask("not json", {}, client)).toBeUndefined()
+    expect(errors).toEqual([expect.stringMatching(/^SimpleX MCP ask: /)])
   })
 })
 

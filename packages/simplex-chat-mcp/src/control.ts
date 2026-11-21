@@ -319,6 +319,7 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
       case "approveTool": {
         const action = this.actions.get(request.action)
         if (action === undefined || action.state !== "pending" || action.card === undefined) return `Action ${request.action} is not pending.`
+        if (action.tool === "permission" && action.input.terminalOnly && request.type !== "reject") return `Action ${request.action} is approved only in Claude Code's terminal.`
         if (request.type === "approveTool") return action.tool === "permission" ? this.approveTool(sender, action) : `Action ${request.action} is not a tool use.`
         if (request.chat !== undefined && (action.tool === "connect" || action.chat !== request.chat)) return `Action ${request.action} is not for ${request.chat}.`
         const approver = safeName(sender.memberProfile.displayName)
@@ -819,9 +820,12 @@ function requestLines(action: Action): string[] {
   const done = action.state === "done"
   if (action.tool === "mode") return [`${done ? "I run" : "I want to run"} in mode ${action.input.mode}: Claude Code asks you before each of my actions, and they are performed without approval here.`]
   if (action.tool === "permission") {
-    const {toolName, description, inputPreview} = action.input
-    const approved = action.toolApproved ? [`${codeSpan(oneLine(toolName))} is approved for this session, and Claude Code still asks for this use.`] : []
-    return [`I want to use ${codeSpan(oneLine(toolName))}: ${codeSpan(oneLine(description))}`, ...fittedLines(codeLines(inputPreview), action.previewBytes), ...approved]
+    const {toolName, description, inputPreview, agent, terminalOnly} = action.input
+    const tool = codeSpan(oneLine(toolName))
+    const asks = agent === undefined ? `I want to use ${tool}` : `Subagent ${codeSpan(oneLine(agent))} asks to use ${tool}`
+    const first = terminalOnly ? `${asks}, and Claude Code takes its approval only in its terminal:` : description === "" ? `${asks}:` : `${asks}: ${codeSpan(oneLine(description))}`
+    const approved = action.toolApproved ? [`${tool} is approved for this session, and Claude Code still asks for this use.`] : []
+    return [first, ...fittedLines(codeLines(inputPreview), action.previewBytes), ...approved]
   }
   const subject = subjectText(action.subject, safeName)
   switch (action.tool) {
@@ -858,6 +862,7 @@ function commandsLine(action: Action): string {
     case "mode":
       return `/'approve ${action.n}' or /'reject ${action.n}'`
     case "permission":
+      if (action.input.terminalOnly) return `Approve it there, or /'reject ${action.n}' here.`
       return action.toolApproved ? `/'approve ${action.n}' or /'reject ${action.n}'` : `/'approve ${action.n}', /'approve ${action.n} all' or /'reject ${action.n}'`
     case "send":
       return `/'approve ${action.chat} ${action.n}', /'approve ${action.chat} all' or /'reject ${action.chat} ${action.n}'`

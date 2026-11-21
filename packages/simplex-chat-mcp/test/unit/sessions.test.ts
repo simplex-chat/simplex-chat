@@ -595,6 +595,46 @@ describe("session channel", () => {
     expect(sentTo(chat, 20)).toHaveLength(3)
   })
 
+  it("posts a card for a subagent's tool prompt from the PermissionRequest hook, returns the verdict, and keeps the card pending at the turn's end", async () => {
+    const chat = new FakeChat()
+    const {session} = await channel(chat)
+    const prompt = {id: id1, tool: "Bash", description: "Run the unit tests", preview: "npm test", agent: "reviewer"}
+    const approved = session.ask(prompt, new AbortController().signal)
+    const rejected = session.ask(prompt, new AbortController().signal)
+    await until(() => sentTo(chat, 20).length === 2)
+    const card = "Subagent `reviewer` asks to use `Bash`: `Run the unit tests`\n`npm test`"
+    expect(sentTo(chat, 20)).toEqual([1, 2].map(n => `${card}\n/'approve ${n}', /'approve ${n} all' or /'reject ${n}'`))
+    await session.turn({id: id1, answer: ""})
+    expect(session.actions.pending()).toHaveLength(2)
+    await session.control.ownerCommand(invitedAlice, {keyword: "approve", params: "1"})
+    await session.control.ownerCommand(invitedAlice, {keyword: "reject", params: "2"})
+    expect([await approved, await rejected]).toEqual([{behavior: "allow"}, {behavior: "deny", message: "Alice rejected this in the SimpleX group."}])
+  })
+
+  it("links the PermissionRequest hook of a main-conversation prompt to the channel's card of its tool, without a second card or a decision", async () => {
+    const chat = new FakeChat()
+    const {session} = await channel(chat)
+    session.permission({id: id1, requestId: "abcde", toolName: "Bash", description: "Run shell command", inputPreview: "ls"})
+    expect(await session.ask({id: id1, at: Date.now(), tool: "Bash", description: "", preview: "ls"}, new AbortController().signal)).toBeUndefined()
+    await until(() => sentTo(chat, 20).length === 1)
+    expect(session.actions.all()).toHaveLength(1)
+  })
+
+  it("posts a reject-only card for an Artifact prompt of the main conversation 3 s after no channel request came, and ends it at the turn's end", async () => {
+    const chat = new FakeChat()
+    const {session} = await channel(chat)
+    const asked = session.ask({id: id1, at: Date.now(), tool: "Artifact", description: "", preview: "action: read\nurl: https://claude.ai/artifact/abc", terminalOnly: true}, new AbortController().signal)
+    await new Promise(resolve => setTimeout(resolve, 3_000))
+    await until(() => sentTo(chat, 20).length === 1)
+    const card = "I want to use `Artifact`, and Claude Code takes its approval only in its terminal:\n`action: read`\n`url: https://claude.ai/artifact/abc`"
+    expect(sentTo(chat, 20)).toEqual([`${card}\nApprove it there, or /'reject 1' here.`])
+    expect(await session.control.ownerCommand(invitedAlice, {keyword: "approve", params: "1"})).toBe("Action 1 is approved only in Claude Code's terminal.")
+    await session.turn({id: id1, answer: ""})
+    expect(await asked).toBeUndefined()
+    await until(() => chat.updates.length === 1)
+    expect(chat.updates[0].text).toBe(`${card}\nEnded.`)
+  }, 10_000)
+
   it("leaves the tool-use and mode cards out of the actions that list returns to the session", async () => {
     const chat = new FakeChat()
     const {session} = await channel(chat)

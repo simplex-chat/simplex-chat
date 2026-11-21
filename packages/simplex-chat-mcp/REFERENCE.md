@@ -391,6 +391,7 @@ Usage:
   simplex-mcp service                  the shared SimpleX service of the plugin (started on demand)
   simplex-mcp hook session-start       Claude Code SessionStart hook (run by the plugin)
   simplex-mcp hook turn                Claude Code hooks of prompts, answers, model changes, tool uses and compactions (run by the plugin)
+  simplex-mcp hook ask                 Claude Code PermissionRequest hook (run by the plugin)
   simplex-mcp link                     show the Main group link, or its owners
   simplex-mcp reset-owners             replace the Main group and its owners
 
@@ -489,7 +490,7 @@ Prompts from SimpleX and approvals of tool use in the group need the plugin's ch
 | After the listing | `claude --channels plugin:simplex@simplex-chat` |
 | Team and Enterprise plans | An admin adds `simplex@simplex-chat` to `allowedChannelPlugins`. |
 
-The development flag works only in interactive sessions. Without a channel, the plugin still works, but prompts from SimpleX and approvals of tool use in the group don't. Channels need Anthropic authentication through claude.ai or a Console API key.
+The development flag works only in interactive sessions. Without a channel, the plugin still works, and tool prompts get cards from its PermissionRequest hook, but prompts from SimpleX don't reach the session. Channels need Anthropic authentication through claude.ai or a Console API key.
 
 The plugin adds:
 
@@ -501,6 +502,7 @@ The plugin adds:
 | UserPromptSubmit, Stop, PostModelSwitch and PostCompact hooks | Post your terminal prompts, Claude's answers, the usage of each turn and a line for each summary of the session's context in the session's group, keep the model and effort in its description, and post their switches. They run in the background. |
 | PreToolUse, PostToolUse and PostToolUseFailure hooks of every tool | Post a line for each step of Claude's work when it starts, and complete it when it ends. They run in the background. |
 | PreToolUse hook of every tool, of type `mcp_tool` | Calls the tool `pre_tool_use` of the session's MCP server, which allows a tool approved for the rest of the session, see [Tool use](#tool-use). It waits up to 5 seconds. |
+| PermissionRequest hook | Posts the tool prompts that the channel doesn't relay as cards, and answers them with the decision in the group, see [Tool use](#tool-use). It waits for the decision up to 24 hours. |
 
 The server and hooks run `node ${CLAUDE_PLUGIN_ROOT}/dist/cli.js`. The PreToolUse hook of the plugin's tools runs `node ${CLAUDE_PLUGIN_ROOT}/plugin/allow.js` instead. The package, a 4 MB download, bundles its dependencies and has no lockfile, so Claude Code installs nothing after unpacking it. Node.js loads the modules from the plugin's folder, so a project's `node_modules` can't replace them. The first session start downloads the SimpleX core library. Claude Code waits up to 600 seconds for the SessionStart hook.
 
@@ -709,6 +711,23 @@ Claude: I want to use `Bash`: `List files`
 ```
 
 `/approve 5` allows the tool use, and `/reject 5` denies it. The dialog in the terminal stays open, and the first answer, in the terminal or in the group, applies. A card that is still pending gets `Ended.` when its turn ends, when a prompt starts the next turn, or when the session ends. A prompt that Claude Code adds to the running turn leaves the card pending. The preview of the tool's input is shortened to fit the card.
+
+The plugin's PermissionRequest hook posts the prompts that the channel doesn't relay, with the same commands:
+
+- A prompt of a subagent or a teammate: ``Subagent `reviewer` asks to use `Bash`: `Run the unit tests` ``. Claude Code shows its dialog in the terminal only after the card ends without a decision. The card stays pending until its decision or its expiry.
+- A prompt of the main conversation that the channel doesn't relay, as without the channel: the card follows 3 seconds after the dialog.
+- A prompt of the `Artifact` tool, or of WebFetch for a claude.ai artifact, which Claude Code shows only in its terminal:
+
+  ```
+  Claude: I want to use `Artifact`, and Claude Code takes its approval only in its terminal:
+          `action: read`
+          `url: https://claude.ai/artifact/…`
+          Approve it there, or /reject 13 here.
+  ```
+
+  `/reject 13` denies it, and the dialog closes. Claude Code takes the approval of reading a public artifact from outside your organization only from the terminal. In a subagent, such a prompt gets no card.
+
+Claude's questions and plan approvals get no card yet.
 
 `/approve 5 all` allows the tool use and approves its tool for the rest of the session. Claude replies `` Approved `Bash` for the rest of this session by Alice. /revoke Bash ``.
 

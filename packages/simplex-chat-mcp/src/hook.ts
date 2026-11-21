@@ -5,7 +5,7 @@ import {interactive, interactiveEntrypoint, readConfig} from "./config"
 import {dataRoot} from "./files"
 import {errorText, logError, oneLine} from "./log"
 import {duration} from "./messages"
-import {Step, TitleReply, TurnRequest} from "./protocol"
+import {AskLine, AskRequest, Decision, Step, TitleReply, TurnRequest} from "./protocol"
 import {qrCodeText} from "./qr"
 import {claudePid} from "./service-request"
 import {SocketError, isNotRunning} from "./socket"
@@ -47,6 +47,12 @@ const teammatePrompt = /^Another Claude session sent a message[^:\n]*:\n<teammat
 const teammateMessage = /<teammate-message teammate_id="([^"]*)"([^>]*)>\n([\s\S]*?)\n<\/teammate-message>/g
 const pluginTools = "mcp__plugin_simplex_simplex__"
 const stepFields = ["description", "query", "url", "file_path", "path", "pattern", "command"]
+// spec: spec/architecture.md#hook-ask
+const maxPreview = 15_000
+// spec: spec/architecture.md#hook-ask
+const artifactUrl = /^https:\/\/claude\.ai\/(?:code\/)?artifact\//
+// spec: spec/architecture.md#hook-ask
+const questionTools = ["AskUserQuestion", "ExitPlanMode"]
 
 // spec: spec/api.md#plugin-options
 interface SessionStartInput {
@@ -74,6 +80,15 @@ interface TurnInput {
   tool_use_id?: string
   duration_ms?: number
   is_interrupt?: boolean
+}
+
+// spec: spec/api.md#plugin-options
+interface AskInput {
+  session_id: string
+  tool_name?: string
+  tool_input?: {[field: string]: unknown}
+  agent_id?: string
+  agent_type?: string
 }
 
 // spec: spec/api.md#plugin-options
@@ -131,8 +146,13 @@ export interface HookOutput {
   systemMessage?: string
 }
 
+// spec: spec/api.md#plugin-options
+export interface PermissionOutput {
+  hookSpecificOutput: {hookEventName: "PermissionRequest"; decision: Decision}
+}
+
 export interface HookDeps {
-  client: Pick<ServiceClient, "ensureService" | "request">
+  client: Pick<ServiceClient, "ensureService" | "request" | "stream">
   nodeVersion: string
 }
 
@@ -193,6 +213,52 @@ export async function turn(stdin: string, env: NodeJS.ProcessEnv = process.env, 
     logError("SimpleX MCP turn", error)
   }
   return {}
+}
+
+// spec: spec/architecture.md#hook-ask
+export async function ask(stdin: string, env: NodeJS.ProcessEnv = process.env, client: HookDeps["client"] = ServiceClient.forRoot(dataRoot(env)), at = performance.timeOrigin): Promise<PermissionOutput | undefined> {
+  if (!interactive(env)) return undefined
+  try {
+    const input = JSON.parse(stdin) as AskInput
+    const request = askRequest(input)
+    if (request === undefined) return undefined
+    await client.ensureService(version)
+    let decision: Decision | undefined
+    await client.stream("/ask", {id: input.session_id, pid: claudePid(env), at, ...request}, line => (decision = (line as AskLine).decision))
+    return decision === undefined ? undefined : {hookSpecificOutput: {hookEventName: "PermissionRequest", decision}}
+  } catch (error) {
+    logError("SimpleX MCP ask", error)
+    return undefined
+  }
+}
+
+// spec: spec/architecture.md#hook-ask
+function askRequest({tool_name: tool, tool_input: fields = {}, agent_id: agentId, agent_type: agentType}: AskInput): Omit<AskRequest, "id" | "pid" | "at"> | undefined {
+  if (tool === undefined || tool.startsWith(pluginTools) || questionTools.includes(tool)) return undefined
+  const agent = agentId === undefined ? undefined : (agentType ?? agentId)
+  const terminalOnly = tool === "Artifact" || (tool === "WebFetch" && artifactUrl.test(stringOf(fields.url) ?? ""))
+  if (terminalOnly && agent !== undefined) return undefined
+  return {tool, description: stringOf(fields.description) ?? "", preview: cut(inputPreview(tool, fields), maxPreview), ...(agent === undefined ? {} : {agent}), ...(terminalOnly ? {terminalOnly} : {})}
+}
+
+// spec: spec/architecture.md#hook-ask
+function inputPreview(tool: string, fields: {[field: string]: unknown}): string {
+  switch (tool) {
+    case "Bash":
+    case "PowerShell":
+      return stringOf(fields.command) ?? ""
+    case "Read":
+    case "Write":
+    case "Edit":
+      return stringOf(fields.file_path) ?? ""
+    case "NotebookEdit":
+      return stringOf(fields.notebook_path) ?? ""
+    default:
+      return Object.entries(fields)
+        .filter(([field]) => field !== "description")
+        .map(([field, value]) => `${field}: ${stringOf(value) ?? JSON.stringify(value)}`)
+        .join("\n")
+  }
 }
 
 // spec: spec/architecture.md#hook-turn
@@ -529,6 +595,8 @@ function textOf(content: unknown): string {
 }
 
 // spec: spec/api.md#plugin-commands
-function cut(text: string | undefined): string | undefined {
-  return text === undefined || text.length <= maxText ? text : `${text.slice(0, maxText).replace(/[\ud800-\udbff]$/, "")}…`
+function cut(text: string, max?: number): string
+function cut(text: string | undefined, max?: number): string | undefined
+function cut(text: string | undefined, max = maxText): string | undefined {
+  return text === undefined || text.length <= max ? text : `${text.slice(0, max).replace(/[\ud800-\udbff]$/, "")}…`
 }

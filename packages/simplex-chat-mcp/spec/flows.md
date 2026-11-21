@@ -1,6 +1,6 @@
 # SimpleX MCP server: flows
 
-> Sequence diagrams of the main flows of `@simplex-chat/mcp` 0.3.0, each with notes and source locations. `serve` is shown in flows 1-16, and the Claude Code plugin in flows 17-39.
+> Sequence diagrams of the main flows of `@simplex-chat/mcp` 0.3.0, each with notes and source locations. `serve` is shown in flows 1-16, and the Claude Code plugin in flows 17-40.
 >
 > Related specs: [README](README.md) | [Architecture](architecture.md) | [API](api.md)
 
@@ -66,6 +66,7 @@ Claude Code plugin ([participants](#claude-code-plugin-flows)):
 37. [The texts of a turn](#37-the-texts-of-a-turn)
 38. [The status line command](#38-the-status-line-command)
 39. [An edit and a live message in the session group](#39-an-edit-and-a-live-message-in-the-session-group)
+40. [A tool prompt of the PermissionRequest hook](#40-a-tool-prompt-of-the-permissionrequest-hook)
 
 ---
 
@@ -1876,3 +1877,45 @@ Notes:
 - A live message deleted before it is sent passes nothing, unless the member sends another message first.
 
 Source: [`Session.onMessage`, `onUpdate`, `pass`, `keepLive`, `passLive`, `replyTo`, `prompt`, `deliver`, `bounded`, `Hub.onEvent`](../src/hub.ts), [`channelNotification`](../src/session.ts).
+
+---
+
+## 40. A tool prompt of the PermissionRequest hook
+
+```mermaid
+sequenceDiagram
+  participant CC as Claude Code
+  participant HK as PermissionRequest hook
+  participant D as Service
+  participant N as Session N
+  participant O as Owner
+  alt a subagent's prompt
+    CC->>HK: tool_name, tool_input, agent_id, agent_type, before the dialog
+  else a prompt of the main conversation
+    CC->>D: the channel's POST /permission, when the channel relays it (flow 22)
+    CC->>HK: tool_name, tool_input, beside the dialog
+  end
+  HK->>D: POST /ask {id, pid, at, tool, description, preview, agent?, terminalOnly?}, stream held
+  D->>N: ask
+  alt main conversation, a channel request of the tool from 5 s before the hook's start, waited for up to 3 s
+    N->>D: no decision
+    D->>HK: {}
+    HK->>CC: nothing; the channel's card answers
+  else
+    N->>O: card in #35;G
+    O->>N: /approve N, or /reject N
+    N->>D: allow, or deny: NAME rejected this in the SimpleX group.
+    D->>HK: {decision}
+    HK->>CC: hookSpecificOutput {hookEventName: PermissionRequest, decision}
+    N->>O: card edited: ... Approved by NAME. or Rejected by NAME.
+  end
+```
+
+Notes:
+
+- A subagent's card starts ``Subagent `TYPE` asks to use `TOOL`: `DESCRIPTION` ``, and the main conversation's ``I want to use `TOOL`: `DESCRIPTION` ``; the line ends with `:` for an input without `description`. The preview follows: the command, the file path, or a line `FIELD: VALUE` per field ([`inputPreview`](../src/hook.ts), [`requestLines`](../src/control.ts)).
+- A prompt of `Artifact`, or of `WebFetch` for a claude.ai artifact, in the main conversation gets a card ``I want to use `Artifact`, and Claude Code takes its approval only in its terminal:``, the preview and `Approve it there, or /'reject N' here.` Another request for it gets `Action N is approved only in Claude Code's terminal.` In a subagent, the hook returns at once, and Claude Code shows its dialog ([`askRequest`](../src/hook.ts), [`commandsLine`, `Control.ownerCommand`](../src/control.ts)).
+- A card of the main conversation ends as a channel's card does, at an answer, at a prompt that is not mid-turn and at the last detach; the hook then exits without a decision, and the terminal's answer applies. A subagent's card ends only at its decision, its expiry, the end of the hook's stream or a stop of the service ([`Session.endPermissions`, `ask`](../src/hub.ts)).
+- The hook prints nothing for AskUserQuestion, ExitPlanMode and the plugin's own tools.
+
+Source: [`ask`, `askRequest`, `inputPreview`](../src/hook.ts), [`Service.onAsk`, `streamed`](../src/service.ts), [`Session.ask`, `relayed`, `endPermissions`](../src/hub.ts), [`requestLines`, `commandsLine`](../src/control.ts).

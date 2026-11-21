@@ -140,7 +140,7 @@ export interface ModeAction extends ActionRecord {
 // spec: spec/architecture.md#actions-modeaction
 export interface PermissionAction extends ActionRecord {
   readonly tool: "permission"
-  readonly input: {requestId: string; toolName: string; description: string; inputPreview: string}
+  readonly input: {requestId?: string; toolName: string; description: string; inputPreview: string; agent?: string; terminalOnly?: boolean}
   readonly subject?: undefined
   readonly chat?: undefined
   readonly toolApproved: boolean

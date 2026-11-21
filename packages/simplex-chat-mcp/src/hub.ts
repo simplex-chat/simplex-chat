@@ -3,7 +3,7 @@ import {open} from "fs/promises"
 import {dirname, join} from "path"
 import {CC, CEvt, ChatEvent, T} from "@simplex-chat/types"
 import {api} from "simplex-chat"
-import {Action, Actions, HostTexts, Mode, isDecided, maxPending} from "./actions"
+import {Action, Actions, HostTexts, Mode, ToolError, isDecided, maxPending} from "./actions"
 import {Config} from "./config"
 import {Control, canSend, controlCommands, controlDataOf, createGroup, isControlEvent, isGroupMessage, parseCommand, rightsText, safeName, sessionApproverRoles} from "./control"
 import {openCore} from "./core"
@@ -11,7 +11,7 @@ import {SessionFile, hubFolder, readSessionFile, sessionFolder, writeSessionFile
 import {chatErrorOf, errorText, log, logError, oneLine} from "./log"
 import {MainGroup, SessionGroups, createMainGroup, findMainGroup} from "./main-group"
 import {Changes, ChatItemsWatch, ReplyTo, ToolCall, duration, getChat, isLive, nextChange, quoteLine, storedName, toReplyTo, validName} from "./messages"
-import {AttachLine, LimitWindow, Limits, OwnerState, PermissionRequest, ResetReply, Step, TextBatch, TurnRequest} from "./protocol"
+import {AskRequest, AttachLine, Decision, LimitWindow, Limits, OwnerState, PermissionRequest, ResetReply, Step, TextBatch, TurnRequest} from "./protocol"
 import {waitForCancelledCards} from "./serve"
 import {Machine, limitParts, machineParts, machineState} from "./status-line"
 import {AgentTools, ToolName, featureOff, fitsMessage, maxMessageLength, ownerOf, refusedFeature} from "./tools"
@@ -59,6 +59,10 @@ const textEndMs = 10_000
 const maxRecentTexts = 20
 // spec: spec/architecture.md#hub-constants
 const stoppedLine = "⏹️ Stopped"
+// spec: spec/architecture.md#hub-constants
+const relayWait = 3_000
+// spec: spec/architecture.md#hub-constants
+const relayAge = 5_000
 // spec: spec/api.md#list-of-sessions
 const listCheckMs = 2_000
 // spec: spec/api.md#list-of-sessions
@@ -172,6 +176,8 @@ export class Session {
   private liveOrder: Promise<void> = Promise.resolve()
   private claudeStatus?: string
   private recordRead?: Promise<void>
+  private readonly relays = new Changes()
+  private readonly linked = new WeakSet<Action>()
 
   constructor(
     private readonly hub: Hub,
@@ -379,6 +385,7 @@ export class Session {
   permission({requestId, toolName, description, inputPreview}: PermissionRequest): void {
     const toolApproved = this.control.approvedTools().some(({tool}) => tool === toolName)
     const action = this.actions.create(`permission ${requestId}`, {tool: "permission", input: {requestId, toolName, description, inputPreview}, toolApproved}, undefined, this.number, "requests")
+    this.relays.notify()
     const unsubscribe = action.changes.subscribe(() => {
       const behavior = action.state === "performing" ? "allow" : action.state === "rejected" ? "deny" : undefined
       if (behavior !== undefined) this.onLine?.({permission: {requestId, behavior}})
@@ -386,6 +393,49 @@ export class Session {
       unsubscribe()
       this.actions.remove(action)
     })
+  }
+
+  // spec: spec/architecture.md#hub-session-ask
+  async ask({at, tool, description, preview, agent, terminalOnly}: AskRequest, signal: AbortSignal): Promise<Decision | undefined> {
+    if (agent === undefined && (await this.relayed(tool, at ?? Date.now(), signal))) return undefined
+    if (signal.aborted) return undefined
+    const toolApproved = this.control.approvedTools().some(approved => approved.tool === tool)
+    let action: Action
+    try {
+      action = this.actions.create(`ask ${tool}`, {tool: "permission", input: {toolName: tool, description, inputPreview: preview, agent, terminalOnly}, toolApproved}, undefined, this.number, "requests")
+    } catch (error) {
+      if (error instanceof ToolError) return undefined
+      throw error
+    }
+    return new Promise(resolve => {
+      const end = (): void => {
+        if (action.state === "pending") this.actions.end(action)
+      }
+      const unsubscribe = action.changes.subscribe(() => {
+        if (action.state === "performing") resolve({behavior: "allow"})
+        if (action.state === "rejected") resolve({behavior: "deny", message: `${action.decidedBy} rejected this in the SimpleX group.`})
+        if (!isDecided(action.state)) return
+        unsubscribe()
+        signal.removeEventListener("abort", end)
+        this.actions.remove(action)
+        resolve(undefined)
+      })
+      signal.addEventListener("abort", end, {once: true})
+    })
+  }
+
+  // spec: spec/architecture.md#hub-session-ask
+  private async relayed(tool: string, at: number, signal: AbortSignal): Promise<boolean> {
+    const until = Date.now() + relayWait
+    for (;;) {
+      const relay = this.actions.all().find(action => action.tool === "permission" && action.input.requestId !== undefined && action.input.toolName === tool && action.created >= at - relayAge && !this.linked.has(action))
+      if (relay !== undefined) {
+        this.linked.add(relay)
+        return true
+      }
+      const left = until - Date.now()
+      if (left <= 0 || !(await nextChange(this.relays, signal, left))) return false
+    }
   }
 
   // spec: spec/architecture.md#hub-session-turn
@@ -437,7 +487,7 @@ export class Session {
   // spec: spec/architecture.md#hub-session-endpermissions
   endPermissions(before = Infinity): void {
     for (const action of this.actions.pending()) {
-      if (action.tool === "permission" && action.created < before) this.actions.end(action)
+      if (action.tool === "permission" && action.input.agent === undefined && action.created < before) this.actions.end(action)
     }
   }
 
