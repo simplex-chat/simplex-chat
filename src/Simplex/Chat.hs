@@ -265,7 +265,8 @@ newChatController
               tempDirectory,
               assetsDirectory,
               logFilePath = logFile,
-              contactMergeEnabled
+              contactMergeEnabled,
+              storeTx = Nothing
             }
       presetServers' :: PresetServers
       presetServers' = presetServers {operators = operators', netCfg = netCfg'}

@@ -1132,9 +1132,9 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
               BFileChunk sharedMsgId chunk -> Nothing <$ bFileChunkGroup (GIK gInfo' gks) m'' sharedMsgId chunk msgMeta
               _ -> Nothing <$ messageError ("unsupported message: " <> tshow event)
             forM (if memberStatus m'' == GSMemPendingApproval then Nothing else deliveryTaskContext_) $ \taskContext -> do
-              let contentChanged :: CM ()
+              let contentChanged :: CM' ()
                   contentChanged = atomically $ channelContentChanged cc groupId
-              case event of
+              lift . afterCommit $ case event of
                 XMsgNew {} -> contentChanged
                 XMsgUpdate {} -> contentChanged
                 XMsgDel {} -> contentChanged
@@ -1172,7 +1172,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                   deleteGroupDeliveryJobs db gInfo'
                   createMsgDeliveryTask db gInfo' m' relayRemovedTask
                 pure [relayRemovedTask]
-            lift $ forM_ (uniqueWorkerScopes createdDeliveryTasks) $ \workerScope ->
+            lift . afterCommit . forM_ (uniqueWorkerScopes createdDeliveryTasks) $ \workerScope ->
               getDeliveryTaskWorker True (gId, workerScope)
             pure $ isJust relayRemovedTask_
             where
@@ -1822,7 +1822,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
       withAckMessage label cId msgMeta False Nothing $ \_ -> action $> (False, False)
 
     withAckMessage :: Text -> ConnId -> MsgMeta -> Bool -> Maybe (TVar [Text]) -> (Text -> CM (Bool, ShouldDeleteGroupConns)) -> CM ()
-    withAckMessage label cId msgMeta showCritical tags action = do
+    withAckMessage label cId msgMeta@MsgMeta {recipient = (aMsgId, _), redelivered} showCritical tags action = do
       -- [async agent commands] command should be asynchronous
       -- TODO catching error and sending ACK after an error, particularly if it is a database error, will result in the message not processed (and no notification to the user).
       -- Possible solutions are:
@@ -1831,16 +1831,31 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
       -- 3) show screen of death to the user asking to restart
       eInfo <- eventInfo
       logInfo $ label <> ": " <> eInfo
-      tryAllErrors (action eInfo) >>= \case
+      tryAllErrors (withStoreTx criticalErr $ handleOnce eInfo) >>= \case
         Right (withRcpt, shouldDelConns) ->
-          unless shouldDelConns $ withLog (eInfo <> " ok") $ ackMsg msgMeta $ if withRcpt then Just "" else Nothing
+          unless shouldDelConns $ withLog (eInfo <> " ok") $ ackHandledMsg $ if withRcpt then Just "" else Nothing
         -- If showCritical is True, then these errors don't result in ACK and show user visible alert
         -- This prevents losing the message that failed to be processed.
         Left (ChatErrorStore SEDBBusyError {message}) | showCritical -> throwError $ chatErrorAgent $ CRITICAL True message
         Left e -> do
-          withLog (eInfo <> " error: " <> tshow e) $ ackMsg msgMeta Nothing
+          withLog (eInfo <> " error: " <> tshow e) $ ackHandledMsg Nothing
           throwError e
       where
+        Connection {connId = handledConnId} = entityConnection entity
+        criticalErr = \case
+          ChatErrorStore SEDBBusyError {} -> showCritical
+          _ -> False
+        handleOnce eInfo =
+          (if redelivered then withStore' (\db -> getHandledRcvMsg db handledConnId aMsgId) else pure Nothing) >>= \case
+            Just handledRcpt -> pure (handledRcpt, False)
+            Nothing -> do
+              withStore' $ \db -> createHandledRcvMsg db handledConnId aMsgId
+              r@(withRcpt, _) <- liftEither =<< tryAllErrors (action eInfo)
+              when withRcpt $ withStore' $ \db -> setHandledRcvMsgRcpt db handledConnId aMsgId
+              pure r
+        ackHandledMsg rcpt = do
+          ackMsg msgMeta rcpt
+          withStore' (\db -> deleteHandledRcvMsg db handledConnId aMsgId) `catchAllErrors` eToView
         eventInfo = do
           v <- asks eventSeq
           eId <- atomically $ stateTVar' v $ \i -> (i + 1, i + 1)

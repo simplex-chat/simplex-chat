@@ -14,9 +14,13 @@ module ChatTests.Direct where
 import ChatClient
 import ChatTests.DBUtils
 import ChatTests.Utils
-import Control.Concurrent (threadDelay)
+import Control.Concurrent (readMVar, threadDelay)
 import Control.Concurrent.Async (concurrently_, poll, wait)
+import qualified Control.Exception as E
 import Control.Monad (forM_, void, (>=>))
+import Control.Monad.Except (runExceptT)
+import Control.Monad.Reader (runReaderT)
+import Data.Either (isLeft, isRight)
 import Data.Aeson (ToJSON)
 import qualified Data.Aeson as J
 import qualified Data.Aeson.KeyMap as KM
@@ -30,7 +34,7 @@ import GHC.Conc (ThreadStatus (..), threadStatus)
 import Simplex.Chat.AppSettings (defaultAppSettings)
 import qualified Simplex.Chat.AppSettings as AS
 import Simplex.Chat.Call
-import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), ChatEvent (CEvtChatItemUpdated), ChatHooks (..), PresetServers (..), defaultChatHooks)
+import Simplex.Chat.Controller (CM, ChatConfig (..), ChatController (..), ChatError, ChatErrorType (..), ChatEvent (..), ChatHooks (..), PresetServers (..), defaultChatHooks, throwChatError, toView, withStore', withStoreTx)
 import Simplex.Chat.Messages (AChatItemUpdate (..), CIMeta (CIMeta, itemText), ChatItem (ChatItem, meta), ChatItemId)
 import Simplex.Chat.Options
 import Simplex.Chat.Protocol (supportedChatVRange)
@@ -44,7 +48,7 @@ import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String (strEncode)
 import Simplex.Messaging.Server.Env.STM hiding (subscriptions)
 import Simplex.Messaging.Transport
-import Simplex.Messaging.Util (safeDecodeUtf8)
+import Simplex.Messaging.Util (catchAllErrors, safeDecodeUtf8)
 import Simplex.Messaging.Version
 import System.Directory (copyFile, doesDirectoryExist, doesFileExist)
 import System.Mem.Weak (deRefWeak)
@@ -81,6 +85,13 @@ chatDirectTests = do
     it "should send multiline message" testMultilineMessage
     it "send large message" testLargeMessage
     it "initial chat pagination" testChatPaginationInitial
+    it "skip handled message redelivered after failed acknowledgement" testRedeliveredMessage
+    it "skip handled message redelivered after chat stop" testRedeliveredHandledMessage
+    it "skip handled batch redelivered after chat stop" testRedeliveredBatch
+    it "skip integrity error of redelivered receipt" testRedeliveredReceiptIntegrity
+    it "skip integrity error of handled message redelivered after chat stop" testRedeliveredHandledIntegrity
+    it "roll back writes and events of a failed store transaction" testStoreTxRollback
+    it "commit store transaction without the writes of a failed store call" testStoreTxSavepoint
   describe "batch send messages" $ do
     it "send multiple messages api" testSendMulti
     it "send multiple timed messages" testSendMultiTimed
@@ -1499,6 +1510,125 @@ testMissedCall ps = do
         bob <## "call with alice ended"
         (length <$> readTVarIO events) `shouldEventuallyReturn` 2
       bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "incoming call: missed")])
+
+testRedeliveredMessage :: HasCallStack => TestParams -> IO ()
+testRedeliveredMessage =
+  testChat2 aliceProfile bobProfile $ \alice bob -> do
+    connectUsers bob alice
+    withCCAgentTransaction bob (`DB.execute_` "ALTER TABLE commands RENAME TO commands_")
+    alice #> "@bob hello"
+    bob <# "alice> hello"
+    bob <##. "internal error: "
+    withCCAgentTransaction bob (`DB.execute_` "ALTER TABLE commands_ RENAME TO commands")
+    bob ##> "/_stop"
+    bob <## "chat stopped"
+    bob ##> "/_start"
+    bob <### ["chat started", "subscribed 1 connections on server localhost"]
+    alice #> "@bob hi"
+    bob <# "alice> hi"
+    bob #$> ("/_get chat @2 count=2", chat, [(0, "hello"), (0, "hi")])
+
+testRedeliveredHandledMessage :: HasCallStack => TestParams -> IO ()
+testRedeliveredHandledMessage ps = do
+  (received, cfg) <- blockFirstEventCfg $ newItemText ("hello" ==)
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatCfg ps cfg "bob" bobProfile $ \bob -> do
+      connectUsers alice bob
+      alice #> "@bob hello"
+      readMVar received
+      bob ##> "/_stop"
+      bob <## "chat stopped"
+      bob ##> "/_start"
+      bob <### ["chat started", "subscribed 1 connections on server localhost"]
+      alice #> "@bob hi"
+      bob <# "alice> hi"
+      bob #$> ("/_get chat @2 count=2", chat, [(0, "hello"), (0, "hi")])
+
+testRedeliveredBatch :: HasCallStack => TestParams -> IO ()
+testRedeliveredBatch ps = do
+  (received, cfg) <- blockFirstEventCfg $ newItemText ("hello" ==)
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatCfg ps cfg "bob" bobProfile $ \bob -> do
+      connectUsers alice bob
+      alice ##> "/_send @2 json [{\"msgContent\": {\"type\": \"text\", \"text\": \"hello\"}}, {\"msgContent\": {\"type\": \"text\", \"text\": \"hey\"}}]"
+      alice <# "@bob hello"
+      alice <# "@bob hey"
+      readMVar received
+      bob ##> "/_stop"
+      bob <## "chat stopped"
+      bob ##> "/_start"
+      bob <### ["chat started", "subscribed 1 connections on server localhost"]
+      alice #> "@bob hi"
+      bob <# "alice> hi"
+      bob #$> ("/_get chat @2 count=3", chat, [(0, "hello"), (0, "hey"), (0, "hi")])
+
+testRedeliveredReceiptIntegrity :: HasCallStack => TestParams -> IO ()
+testRedeliveredReceiptIntegrity ps = do
+  (received, cfg) <- blockFirstEventCfg $ newItemText ("skipped message" `T.isPrefixOf`)
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatCfg ps cfg "bob" bobProfile $ \bob -> do
+      connectUsers bob alice
+      withCCAgentTransaction bob (`DB.execute_` "UPDATE connections SET last_external_snd_msg_id = last_external_snd_msg_id - 1")
+      bob #> "@alice hi"
+      alice <# "bob> hi"
+      readMVar received
+      bob ##> "/_stop"
+      bob <## "chat stopped"
+      bob ##> "/_start"
+      bob <### ["chat started", "subscribed 1 connections on server localhost"]
+      alice #> "@bob hey"
+      bob <# "alice> hey"
+      withCCTransaction bob (\db -> DB.query_ db "SELECT count(1) FROM chat_items WHERE item_content LIKE '%rcvIntegrityError%'") `shouldReturn` [Only (1 :: Int)]
+
+testRedeliveredHandledIntegrity :: HasCallStack => TestParams -> IO ()
+testRedeliveredHandledIntegrity ps = do
+  (received, cfg) <- blockFirstEventCfg $ newItemText ("hello" ==)
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatCfg ps cfg "bob" bobProfile $ \bob -> do
+      connectUsers alice bob
+      withCCAgentTransaction bob (`DB.execute_` "UPDATE connections SET last_external_snd_msg_id = last_external_snd_msg_id - 1")
+      alice #> "@bob hello"
+      bob <#. "alice> skipped message ID "
+      readMVar received
+      bob ##> "/_stop"
+      bob <## "chat stopped"
+      bob ##> "/_start"
+      bob <### ["chat started", "subscribed 1 connections on server localhost"]
+      alice #> "@bob hey"
+      bob <# "alice> hey"
+      withCCTransaction bob (\db -> DB.query_ db "SELECT count(1) FROM chat_items WHERE item_content LIKE '%rcvIntegrityError%'") `shouldReturn` [Only (1 :: Int)]
+
+testStoreTxRollback :: HasCallStack => TestParams -> IO ()
+testStoreTxRollback =
+  testChat2 aliceProfile bobProfile $ \alice bob -> do
+    connectUsers alice bob
+    r <- runInStoreTx bob True $ do
+      withStore' (`DB.execute_` "UPDATE contact_profiles SET local_alias = 'changed' WHERE display_name = 'alice'")
+      toView CEvtChatSuspended
+      throwChatError $ CEInternalError "rollback"
+    isLeft r `shouldBe` True
+    aliceAlias bob `shouldReturn` [Only ("" :: T.Text)]
+    bob <// 100000
+
+testStoreTxSavepoint :: HasCallStack => TestParams -> IO ()
+testStoreTxSavepoint =
+  testChat2 aliceProfile bobProfile $ \alice bob -> do
+    connectUsers alice bob
+    r <- runInStoreTx bob False $ do
+      withStore' (`DB.execute_` "UPDATE contact_profiles SET local_alias = 'kept' WHERE display_name = 'alice'")
+      withStore' (\db -> DB.execute_ db "UPDATE contact_profiles SET local_alias = 'undone' WHERE display_name = 'alice'" >> E.throwIO (userError "store call failed"))
+        `catchAllErrors` \_ -> pure ()
+      toView CEvtChatSuspended
+    isRight r `shouldBe` True
+    aliceAlias bob `shouldReturn` [Only ("kept" :: T.Text)]
+    bob <## "chat suspended"
+
+runInStoreTx :: TestCC -> Bool -> CM a -> IO (Either ChatError a)
+runInStoreTx TestCC {chatController = cc} rollback action =
+  runReaderT (runExceptT $ withStoreTx (const rollback) action) cc
+
+aliceAlias :: TestCC -> IO [Only T.Text]
+aliceAlias cc = withCCTransaction cc (\db -> DB.query_ db "SELECT local_alias FROM contact_profiles WHERE display_name = 'alice'")
 
 testStopStartChat :: HasCallStack => TestParams -> IO ()
 testStopStartChat ps =
