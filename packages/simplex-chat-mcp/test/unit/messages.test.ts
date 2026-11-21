@@ -949,16 +949,29 @@ describe("connect", () => {
     expect(textOf(await tools.call("connect", {target: "@nobody.simplex"}, signal().call))).toBe("Name not found: This SimpleX name is not registered. Please check the name.")
   })
 
-  it("refuses a known chat's lapsed SimpleX name as the apps word it", async () => {
-    const lapsed = async (nameWarning: object): Promise<string> => {
-      const chat = new FakeChat()
-      const nameChange = {type: "lapsed", nameDomain: {nameTLD: "simplex", domain: "ridgeline", subDomain: []}, nameWarning}
-      chat.responses.set("/_connect plan 1 @ridgeline.simplex", plan({type: "contactAddress", contactAddressPlan: {type: "known", contact: contact(7, "Ridgeline")}, nameChange}))
-      const {tools} = connectTools(chat)
-      return textOf(await tools.call("connect", {target: "@ridgeline.simplex"}, signal().call))
-    }
-    expect(await lapsed({type: "expired", expiredAt: "2026-01-01T12:00:00Z"})).toBe("Name expired: ridgeline.simplex expired on 2026-01-01.")
-    expect(await lapsed({type: "available", price: {amount: 2000, years: 2}})).toBe("Name no longer registered: ridgeline.simplex is available for registration for $20 for 2 years.")
+  const lapsed = async (connectionPlan: object, nameWarning: object): Promise<string> => {
+    const chat = new FakeChat()
+    const nameChange = {type: "lapsed", nameDomain: {nameTLD: "simplex", domain: "ridgeline", subDomain: []}, nameWarning}
+    chat.responses.set("/_connect plan 1 @ridgeline.simplex", plan({...connectionPlan, nameChange}))
+    const {tools} = connectTools(chat)
+    return textOf(await tools.call("connect", {target: "@ridgeline.simplex"}, signal().call))
+  }
+
+  it("refuses a known chat's lapsed SimpleX name as the apps word it, with the chat", async () => {
+    const known = {type: "contactAddress", contactAddressPlan: {type: "known", contact: contact(7, "Ridgeline")}}
+    expect(await lapsed(known, {type: "expired", expiredAt: "2026-01-01T12:00:00Z"})).toBe("Name expired: ridgeline.simplex expired on 2026-01-01. Your chat: @7.")
+    expect(await lapsed(known, {type: "available", price: {amount: 2000, years: 2}})).toBe("Name no longer registered: ridgeline.simplex is available for registration for $20 for 2 years. Your chat: @7.")
+  })
+
+  it("refuses the agent's own lapsed SimpleX name as the apps word it", async () => {
+    const ownAddress = {type: "contactAddress", contactAddressPlan: {type: "ownLink"}}
+    const ownChannel = {type: "groupLink", groupLinkPlan: {type: "ownLink", groupInfo: group(9, "Ridgeline")}}
+    const expired = {type: "expired", expiredAt: "2026-01-01T12:00:00Z", graceUntil: "2099-01-01T12:00:00Z"}
+    expect(await lapsed(ownAddress, expired)).toBe("Your name has expired: Your name ridgeline.simplex expired on 2026-01-01. Renew it before 2099-01-01.")
+    expect(await lapsed(ownAddress, {type: "available", price: {amount: 2050, years: 2}})).toBe(
+      "Your name has expired: Your name ridgeline.simplex is no longer registered. It is available for registration for $20.50 for 2 years.",
+    )
+    expect(await lapsed(ownChannel, expired)).toBe("Your name has expired: Your name ridgeline.simplex expired on 2026-01-01. Renew it before 2099-01-01. Your chat: #9.")
   })
 
   it("reports the chat that had a SimpleX name before the name was moved", () => {

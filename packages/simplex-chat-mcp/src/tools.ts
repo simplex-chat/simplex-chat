@@ -152,6 +152,8 @@ type ConnectionPlan = Awaited<ReturnType<api.ChatApi["apiConnectPlan"]>>
 
 type Plan = {join: PlanSummary; method: JoinMethod} | {known: T.ChatInfo; summary: PlanSummary}
 
+type LapsedName = {lapsed: string; chat?: T.ChatInfo}
+
 type Schema = {[key: string]: unknown}
 
 type Quoted = {from: string; text: string; content: T.MsgContent; fileName?: string}
@@ -887,7 +889,10 @@ export class AgentTools {
       if (chatError?.type === "error" && chatError.errorType.type === "invalidConnReq") throw new ToolError(`Not a SimpleX link or name: ${target}`)
       throw new ToolError(errorText(error))
     }
-    return classifyPlan(r, input)
+    const plan = classifyPlan(r, input)
+    if (!("lapsed" in plan)) return plan
+    const chat = plan.chat === undefined ? undefined : chatRef(await this.ownChat(plan.chat, target))
+    throw new ToolError(chat === undefined ? plan.lapsed : `${plan.lapsed} Your chat: ${chat}.`)
   }
 
   // spec: spec/api.md#tool-connect
@@ -1515,11 +1520,14 @@ function connRef(response: JoinResponse): ConnRef {
 }
 
 // spec: spec/architecture.md#tools-classifyplan
-export function classifyPlan(r: ConnectionPlan, {target, message}: ConnectInput): Plan {
+export function classifyPlan(r: ConnectionPlan, {target, message}: ConnectInput): Plan | LapsedName {
   const [plan, connLink, planSimplexName] = r
   const named = target.startsWith("@") || target.startsWith("#") || target.startsWith("simplex:/name")
   const nameChange = plan.type === "contactAddress" || plan.type === "groupLink" ? plan.nameChange : undefined
-  if (nameChange?.type === "lapsed") throw new ToolError(nameWarningText(fullDomainName(nameChange.nameDomain), nameChange.nameWarning, true))
+  if (nameChange?.type === "lapsed") {
+    const {own, chat} = planChat(plan)
+    return {lapsed: nameWarningText(fullDomainName(nameChange.nameDomain), nameChange.nameWarning, {own, knownChat: chat !== undefined}), chat}
+  }
   const names = defined({simplexName: named ? target : undefined, movedFrom: nameChange?.type === "moved" ? chatRef(nameChange.knownChat) : undefined})
   const domain = planSimplexName === undefined ? undefined : fullDomainName(planSimplexName.nameDomain)
   const connect: JoinMethod = {type: "connect", connLink}
@@ -1579,6 +1587,22 @@ export function classifyPlan(r: ConnectionPlan, {target, message}: ConnectInput)
           throw notJoinable(`groupLink ${p.type}`)
       }
     }
+  }
+}
+
+function planChat(plan: T.ConnectionPlan): {own: boolean; chat?: T.ChatInfo} {
+  switch (plan.type) {
+    case "contactAddress": {
+      const p = plan.contactAddressPlan
+      return p.type === "known" || p.type === "contactViaAddress" || p.type === "connectingProhibit" ? {own: false, chat: {type: "direct", contact: p.contact}} : {own: p.type === "ownLink"}
+    }
+    case "groupLink": {
+      const p = plan.groupLinkPlan
+      const groupInfo = p.type === "known" || p.type === "ownLink" ? p.groupInfo : p.type === "connectingProhibit" ? p.groupInfo_ : undefined
+      return {own: p.type === "ownLink", chat: groupInfo === undefined ? undefined : {type: "group", groupInfo}}
+    }
+    default:
+      return {own: false}
   }
 }
 

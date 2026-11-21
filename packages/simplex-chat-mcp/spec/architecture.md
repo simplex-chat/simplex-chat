@@ -172,7 +172,7 @@ Tool definitions, call handlers, connect plans, perform steps, files.
 | <a id="tools-agenttools-startdownload"></a>`startDownload`, `checkDownload`, `currentFile`, `settleFile`, `settleReceived`, `moveReceived` | a download's steps |
 | <a id="tools-agenttools-agentchats"></a>`agentChats`, `knownChat` | the agent's chats; a checked chat reference |
 | <a id="tools-agenttools-selfsender"></a>`selfSender`, `toMessages` | the agent's name and peer type in a chat, its incognito name in an incognito chat, or its profile name when the incognito name can't be read; the items of one chat as messages with that name, for the results of `connect`, `send` and `receive` |
-| <a id="tools-classifyplan"></a>`classifyPlan` | `apiConnectPlan` response to a join plan or a known chat; a lapsed name to a tool error |
+| <a id="tools-classifyplan"></a>`classifyPlan`, `planChat` | `apiConnectPlan` response to a join plan or a known chat; a lapsed name to the text of a tool error and the plan's chat, the agent's own wording for an `ownLink` plan |
 | <a id="tools-chatsubject"></a>`chatSubject`, `isConnected`, `isActive`, `memberCurrent`, `memberCurrentOrPending` | chat and member predicates shared with `control.ts` and `hub.ts` |
 | <a id="tools-customdataof"></a>`customDataOf`, `setChatData`, `ownerOf` | a chat's custom data; the plugin's owner key `simplexMcpOwner` |
 | <a id="tools-fitsmessage"></a>`tooLongText`, `fitsMessage`, `quoteContent` | the refusal text of `send` and `reply` for a message that is too long. `fitsMessage` checks that the message as the core sends it, with its quote, is within `maxMessageLength`, 15602 bytes. The check is used for `send`, `reply`, the post of `/forward`, and the parts and quotes of the plugin's posts. |
@@ -306,7 +306,7 @@ Hooks are bound in [`startAgent`](../src/serve.ts), where `actions` is created: 
 | <a id="log-log"></a>`log`, `logError` | stdout lines; stderr lines |
 | <a id="log-errortext"></a>`errorText`, `chatErrorText` | error text, folded to one line: the apps' wording for known error shapes, otherwise the type chain |
 | <a id="log-apperrortext"></a>`appErrorText` | wording of the apps' alerts for chat, agent and store errors |
-| <a id="log-namewarningtext"></a>`nameWarningText` | wording of the apps' alerts for a name warning to another user, the title of an available name by whether a chat with the name is known |
+| <a id="log-namewarningtext"></a>`nameWarningText` | wording of the apps' alerts for a name warning, for the agent's own name or another user's, the title of another user's available name by whether a chat with the name is known |
 | <a id="log-fileerror"></a>`fileError` | the error of a received file: the apps' words for its status, or the size limit of its sender |
 | <a id="log-serverhostname"></a>`serverHostname` | host of a server address |
 | <a id="log-chaintext"></a>`chainText`, `errorChain` | `SimpleX error: <type chain>: <scalar fields>`, details at most 500 characters |
