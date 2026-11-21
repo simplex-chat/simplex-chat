@@ -115,6 +115,7 @@ module StoreService.Names.Store
     groupNameCodesIssuedSince,
     getPrepaidCodeById,
     reservePrepaidCode,
+    reserveOwnPrepaidCode,
     releasePrepaidCode,
     spendLandedPrepaidCode,
     revokePrepaidCode,
@@ -1597,6 +1598,14 @@ reservePrepaidCode db codeId (RegistrationId rid) now =
       |]
       )
       (rid, now, codeId, CPSUnpaid, now)
+
+reserveOwnPrepaidCode :: DB.Connection -> CodeId -> RegistrationId -> UTCTime -> IO Bool
+reserveOwnPrepaidCode db codeId (RegistrationId rid) now =
+  (> 0)
+    <$> executeChanging
+      db
+      (mkQuery "UPDATE @name_prepaid_codes SET reserved_by = ?, reserved_at = ? WHERE name_prepaid_code_id = ? AND reserved_by IS NULL AND spent_at IS NULL")
+      (rid, now, codeId)
 
 releasePrepaidCode :: DB.Connection -> CodeId -> RegistrationId -> IO Bool
 releasePrepaidCode db codeId (RegistrationId rid) =

@@ -52,7 +52,7 @@ namesCodesTests = describe "StoreService names: prepaid codes" $ do
     it "answers bad_request to a body that is not an object with a code text" testCheckBadBody
   describe "reservations" $ do
     it "reserves an unused code after the registration's write, in its transaction" testReserve
-    it "refuses each unusable code with its tag, a code spent by the reserving registration itself as used, before the write runs" testReserveRefusals
+    it "refuses a code spent, reserved by another registration, unknown or not covering with its tag before the write runs, and reserves one revoked or expired as the registration's own" testReserveRefusals
     it "keeps a code its registration holds even if revoked or expired since, still checking the length" testReserveHeld
     it "reserves nothing when the write refuses" testReserveWriteRefused
     it "rolls the write back when the code's reservation is refused after it" testReserveRollsBack
@@ -196,13 +196,12 @@ testReserve = withOrders $ \turns st -> do
 
 testReserveRefusals :: IO ()
 testReserveRefusals = withOrders $ \turns st -> do
-  [reserved, used, own, revoked, expired, unpaid, unknown, short] <- mapM newCode [8, 8, 8, 8, 8, 8, 8, 8]
+  [reserved, used, own, revoked, expired, unknown, short] <- mapM newCode [8, 8, 8, 8, 8, 8, 8]
   reservedRow <- issueAs st reserved usable
   usedRow <- issueAs st used usable
   ownRow <- issueAs st own usable
   revokedRow <- issueAs st revoked usable
   expiredRow <- issueAs st expired usable {npcExpiresAt = Just tNow}
-  unpaidRow <- issueAs st unpaid usable {npcPaymentStatus = CPSUnpaid}
   shortRow <- issueAs st short usable
   placeCode st "r5" ownerA (order "erinsbakery" 5) reservedRow `shouldReturn` Right ()
   placeCode st "r3" ownerB (order "carolsbakery" 4) usedRow `shouldReturn` Right ()
@@ -213,19 +212,19 @@ testReserveRefusals = withOrders $ \turns st -> do
   wrote <- newIORef False
   let reserveFor rid hash len = reserveCode turns st tNow hash rid (lengthOf len) (\_ -> Right () <$ writeIORef wrote True :: IO (Either Text ()))
       reserve = reserveFor r1
-      rows = [reservedRow, usedRow, ownRow, revokedRow, expiredRow, unpaidRow, shortRow]
+      rows = [reservedRow, usedRow, ownRow, revokedRow, expiredRow, shortRow]
   rowsBefore <- mapM (readCode st) rows
   reserve (pcCodeHash reservedRow) 8 `shouldReturn` Left CRReserved
   reserve (pcCodeHash usedRow) 8 `shouldReturn` Left CRUsed
   reserveFor (RegistrationId "r6") (pcCodeHash ownRow) 8 `shouldReturn` Left CRUsed
-  reserve (pcCodeHash revokedRow) 8 `shouldReturn` Left CRInvalid
-  reserve (pcCodeHash expiredRow) 8 `shouldReturn` Left CRExpired
-  reserve (pcCodeHash unpaidRow) 8 `shouldReturn` Left CRPaymentPending
   reserve (prepaidCodeHash unknown) 8 `shouldReturn` Left CRInvalid
   reserve (pcCodeHash shortRow) 7 `shouldReturn` Left CRNotCovering
-  reserve (pcCodeHash revokedRow) 7 `shouldReturn` Left CRInvalid
+  reserve (pcCodeHash revokedRow) 7 `shouldReturn` Left CRNotCovering
   readIORef wrote `shouldReturn` False
   mapM (readCode st) rows `shouldReturn` rowsBefore
+  reserve (pcCodeHash revokedRow) 8 `shouldReturn` Right (Right ())
+  reserveFor r2 (pcCodeHash expiredRow) 8 `shouldReturn` Right (Right ())
+  mapM (fmap (pcReservedBy =<<) . readCode st) [revokedRow, expiredRow] `shouldReturn` [Just r1, Just r2]
   map (J.toJSON . orderRefusal . ORCode) [CRInvalid, CRUsed, CRReserved, CRExpired, CRPaymentPending, CRNotCovering]
     `shouldBe` map (\t -> J.object ["type" J..= (t :: Text)]) ["code_invalid", "code_used", "code_reserved", "code_expired", "payment_pending", "code_not_covering"]
 
@@ -240,7 +239,7 @@ testReserveHeld = withOrders $ \turns st -> do
   held <- readCode st row
   reserveCode turns st tNow pcCodeHash r3 (lengthOf 9) writeOk `shouldReturn` Right (Right ())
   reserveCode turns st tNow pcCodeHash r3 (lengthOf 7) writeOk `shouldReturn` Left CRNotCovering
-  reserveCode turns st tNow pcCodeHash r1 (lengthOf 9) writeOk `shouldReturn` Left CRInvalid
+  reserveCode turns st tNow pcCodeHash r1 (lengthOf 9) writeOk `shouldReturn` Left CRReserved
   readCode st row `shouldReturn` held
 
 testReserveWriteRefused :: IO ()

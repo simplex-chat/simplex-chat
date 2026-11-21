@@ -71,7 +71,7 @@ stateDiagram-v2
 
 ### 1.3 One month from payment
 - **names:** a failed order holds its place with no end; it stays live, refusing only orders of the same owner code (`Names/Store.hs:760-772`).
-- **Final:** the name stays reserved for the buyer for 1 month from payment acceptance. Only an order whose name was taken moves to another name, as the same order, within the month from payment or its code's placement, up to `max_order_moves`; the view gives the month's end in the taken phase's `heldUntil`. A paid order moves at exactly its price, its balance spent on it; each take credits its price again, so it moves again after another take. A dearer or a cheaper name is refused `409 price_too_high` with the name's price. A code order moves on the same name code: its code is released at the take and reserved again by the move, which a code another order reserved meanwhile refuses `409 code_reserved`, and a name the code does not cover `409 code_not_covering`. Failed and lapsed orders are refunded by support. An order not registered by then fails, the name returns to sale, and the price goes to the order's balance; refunds from the balance are manual. An order with a register transaction sent and not settled is ended only after it settles.
+- **Final:** the name stays reserved for the buyer for 1 month from payment acceptance. Only an order whose name was taken moves to another name, as the same order, within the month from payment or its code's placement, up to `max_order_moves`; the view gives the month's end in the taken phase's `heldUntil`. A paid order moves at exactly its price, its balance spent on it; each take credits its price again, so it moves again after another take. A dearer or a cheaper name is refused `409 price_too_high` with the name's price. A code order moves on the same name code: its code is released at the take and reserved again by the move as a code the order holds, which a code another order reserved meanwhile refuses `409 code_reserved`, a spent one `409 code_used`, and a name the code does not cover `409 code_not_covering`; the code's expiry and revocation do not refuse it. Failed and lapsed orders are refunded by support. An order not registered by then fails, the name returns to sale, and the price goes to the order's balance; refunds from the balance are manual. An order with a register transaction sent and not settled is ended only after it settles.
 - **Why:** a hold extends the name's registration period; a month resolves every case that can be resolved.
 
 ### 1.4 Card disputes and payment reversals
@@ -99,7 +99,7 @@ stateDiagram-v2
 
 ### 1.6 Prepaid codes expire
 - **names:** codes never expire: the expiry is stored and checked, but every code is issued without one (`Names/Codes.hs`, `issueNameCode`). No code has been issued yet.
-- **Final:** a code can reserve a name for 3 months from its issue.
+- **Final:** a code can reserve a name for 3 months from its issue. A taken order's move reserves its own code again, which is not a new reservation, so the code's expiry does not refuse it (1.3).
 - **Why:** some time pressure; it bounds how long an old price stays valid.
 
 ### 1.7 One request before the invoice
