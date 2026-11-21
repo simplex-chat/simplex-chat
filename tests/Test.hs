@@ -41,7 +41,6 @@ import Bots.DirectoryTests
 import ChatClient
 import ChatTests
 import ChatTests.DBUtils
-import ChatTests.Utils (xdescribe'')
 import Control.Logger.Simple
 import Data.Time.Clock.System
 import BadgeTests
@@ -72,6 +71,7 @@ import ChatTests.Names (chatNamesTests)
 import qualified Simplex.Messaging.TMap as TM
 import MobileTests
 import SchemaDump
+import System.Info (os)
 import WebRTCTests
 #endif
 
@@ -157,7 +157,7 @@ main = do
           describe "Mobile API Tests" mobileTests
 #endif
           describe "SimpleX chat client" chatTests
-          xdescribe'' "SimpleX Broadcast bot" broadcastBotTests
+          describe "SimpleX Broadcast bot" broadcastBotTests
           describe "SimpleX Directory service bot" directoryServiceTests
           describe "SimpleX store service e2e" $ do
             storeServiceTests
@@ -170,7 +170,7 @@ main = do
           namesProfilesChatTests
           describe "Remote session" remoteTests
 #if !defined(dbPostgres)
-          sequential $ xdescribe'' "Save query plans" saveQueryPlans
+          sequential $ (if os == "linux" then describe else xdescribe) "Save query plans" saveQueryPlans
 #endif
   where
 #if defined(dbPostgres)

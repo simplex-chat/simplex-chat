@@ -60,7 +60,7 @@ import Simplex.Messaging.Agent.Store.Common (withTransaction)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Crypto.Secp256k1 (Secp256k1PrivateKey, signRecoverable)
 import Simplex.Messaging.Eth.Address (Address)
-import Simplex.Messaging.Eth.EIP712 (serializeSignature)
+import Simplex.Messaging.Encoding (Encoding (..))
 import Simplex.Messaging.SimplexName (LabelHash (..), labelHash)
 import Simplex.Messaging.Util (tshow)
 import StoreService.Config (NamesConfig (..))
@@ -137,7 +137,7 @@ ownerRoutes orders http = \case
   _ -> Nothing
 
 signWith :: Ctx -> Secp256k1PrivateKey -> ByteString -> IO Text
-signWith Ctx {cRandom} key msg = hex . serializeSignature . either (error . show) id <$> signRecoverable cRandom key (personalDigest msg)
+signWith Ctx {cRandom} key msg = hex . smpEncode . either (error . show) id <$> signRecoverable cRandom key (personalDigest msg)
 
 clockSeconds :: Ctx -> IO Word64
 clockSeconds Ctx {cClock} = seconds <$> readIORef cClock

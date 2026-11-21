@@ -43,9 +43,10 @@ import Data.Text.Encoding (encodeUtf8)
 import Data.Word (Word64)
 import Simplex.Messaging.Crypto (keccak256)
 import Simplex.Messaging.Crypto.Secp256k1 (RecoverableSignature)
+import Simplex.Messaging.Encoding (Encoding (..))
 import Simplex.Messaging.Encoding.String (strEncode)
 import Simplex.Messaging.Eth.Address (Address, recoverAddress)
-import Simplex.Messaging.Eth.EIP712 (Eip712Domain (..), Eip712Value (..), hashTypedData, serializeSignature)
+import Simplex.Messaging.Eth.EIP712 (Eip712Domain (..), Eip712Value (..), hashTypedData)
 import Simplex.Messaging.SimplexName (LabelHash (..), SimplexTLD)
 import StoreService.Names.Abi (AbiValue (..), abiArray, abiBytes, abiTuple, addressWord, selector, uint256)
 
@@ -123,7 +124,7 @@ registerWithCreditCalldata RegisterIntent {riRegistration, riNonce, riDeadline, 
       [ Dynamic $ registrationTuple riRegistration,
         Static $ uint256 riNonce,
         Static $ uint256 riDeadline,
-        Dynamic $ abiBytes $ serializeSignature riSignature
+        Dynamic $ abiBytes $ smpEncode riSignature
       ]
 
 registerIntentDigest :: Eip712Domain -> Registration -> Word64 -> Word64 -> ByteString
@@ -168,7 +169,7 @@ acceptCalldata TermsKind {tkRelayFunction} commitment owner deadline TermsAccept
         Static $ addressWord owner,
         Static $ uint256 taNonce,
         Static $ uint256 deadline,
-        Dynamic $ abiBytes $ serializeSignature taSignature
+        Dynamic $ abiBytes $ smpEncode taSignature
       ]
 
 setTextDigest :: Eip712Domain -> Node -> Text -> Text -> Word64 -> Word64 -> ByteString
@@ -194,13 +195,13 @@ setTextWithSigCalldata (Node node) key value nonce deadline sig =
         Dynamic $ abiBytes $ encodeUtf8 value,
         Static $ uint256 nonce,
         Static $ uint256 deadline,
-        Dynamic $ abiBytes $ serializeSignature sig
+        Dynamic $ abiBytes $ smpEncode sig
       ]
 
 clearRecordsWithSigCalldata :: Node -> Word64 -> Word64 -> RecoverableSignature -> ByteString
 clearRecordsWithSigCalldata (Node node) nonce deadline sig =
   selector "clearRecordsWithSig(bytes32,uint256,uint256,bytes)"
-    <> abiTuple [Static node, Static $ uint256 nonce, Static $ uint256 deadline, Dynamic $ abiBytes $ serializeSignature sig]
+    <> abiTuple [Static node, Static $ uint256 nonce, Static $ uint256 deadline, Dynamic $ abiBytes $ smpEncode sig]
 
 -- | The resolver runs each call on itself in order, and reverts all of them when one fails.
 multicallCalldata :: [ByteString] -> ByteString
