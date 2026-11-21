@@ -19,6 +19,7 @@ import Network.HTTP.Types (status200)
 import Network.Wai (Request, Response, ResponseReceived)
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix)
 import Simplex.Messaging.SimplexName (LabelHash (..))
+import Simplex.Messaging.SystemTime (SystemSeconds)
 import StoreService.Names.Chain (Hex32 (..), revertText)
 import StoreService.Names.Records (EditAnswer (..), EditRequest (..), Records, relayEdit)
 import StoreService.Names.Registration (LinkKind, nameLink, parseSignature)
@@ -30,7 +31,7 @@ data EditInvalid = EIBadRequest | EIInvalidLink
   deriving (Eq, Show)
 
 -- | An edit as sent, before its link and signature are checked.
-data SentEdit = SentEdit {seKey :: LinkKind, seValue :: Text, seNonce :: Word64, seDeadline :: Word64, seSignature :: Text}
+data SentEdit = SentEdit {seKey :: LinkKind, seValue :: Text, seNonce :: Word64, seDeadline :: SystemSeconds, seSignature :: Text}
 
 data SentRequest = SentRequest {srLabelHash :: Hex32, srEdits :: [SentEdit]}
 

@@ -29,6 +29,7 @@ import Simplex.Messaging.Encoding.String (TextEncoding (..))
 import Simplex.Messaging.Eth.Address (Address)
 import Simplex.Messaging.Names.Record (USDCents)
 import Simplex.Messaging.SimplexName (labelHash)
+import Simplex.Messaging.SystemTime (RoundedSystemTime (..))
 import StoreService.Group.Command (CmdSource (..))
 import StoreService.Names.Chain (Hex32 (..), RevertName (..), TxHash (..))
 import StoreService.Names.Registration (AgreedTerms (..), LinkKind (..), OrderFields (..), RegistrationId (..), TermsAcceptance (..), communityTermsPrefix, parseSignature)
@@ -454,13 +455,13 @@ reveal =
       rvContactLink = Just "https://smp8.simplex.im/a#abc",
       rvChannelLink = Nothing,
       rvNonce = 3,
-      rvDeadline = 1792915140,
+      rvDeadline = RoundedSystemTime 1792915140,
       rvSignature = signature,
       rvAcceptance = TermsAcceptance {taTermsHash = hashFixture 11, taNonce = 0, taSignature = signature}
     }
 
 commitFixture :: Commit
-commitFixture = Commit {cmTx = Just $ TxRef (TxHash $ hashFixture 8) 100, cmRevealAfter = 1792828800, cmRevealBefore = 1792915140}
+commitFixture = Commit {cmTx = Just $ TxRef (TxHash $ hashFixture 8) 100, cmRevealAfter = RoundedSystemTime 1792828800, cmRevealBefore = RoundedSystemTime 1792915140}
 
 hashFixture :: Word8 -> Hex32
 hashFixture = Hex32 . digestFixture
@@ -494,7 +495,7 @@ testRoundTrip = withServiceStore $ \st -> do
             nrMoves = 2,
             nrAgreedTerms = agreed (communityTermsPrefix <> plainTerms)
           }
-      registered = changed {nrPhase = ORegistered 1861833600 (at 3)}
+      registered = changed {nrPhase = ORegistered (RoundedSystemTime 1861833600) (at 3)}
   write st changed `shouldReturn` Written 2
   reg st "r1" `shouldReturn` changed {nrVersion = 2, nrUpdatedAt = at 1}
   write st registered {nrVersion = 2} `shouldReturn` Written 3
@@ -530,7 +531,7 @@ testOrderLive = withServiceStore $ \st -> do
   paid <- reg st "r1"
   let code = paid {nrPayment = OPCode 1}
       liveIn r phase = (namePhase phase, orderLive r {nrPhase = phase})
-      registered = ORegistered 1861833600 (at 3)
+      registered = ORegistered (RoundedSystemTime 1861833600) (at 3)
       failed = OFailed (at 2) FRRegistryRefused
       taken = OTaken
   map (liveIn paid) [OUnpaid (InvoiceId "inv-r1"), OClosed ICExpired, OQueued, OCommitting (TxHash $ hashFixture 8), OCommitted commitFixture, ORegistering commitFixture (TxHash $ hashFixture 9), registered, taken, failed]
@@ -633,14 +634,14 @@ testLabelRegistering = withServiceStore $ \st -> do
     holder `shouldReturn` Just (RegistrationId "r1")
     r2 <- reg st "r2"
     write st r2 {nrPhase = OQueued} `shouldThrow` anyException
-  forM_ [OTaken, ORegistered 1861833600 (at 4)] $ \phase -> do
+  forM_ [OTaken, ORegistered (RoundedSystemTime 1861833600) (at 4)] $ \phase -> do
     r <- reg st "r1"
     write st r {nrPhase = phase} `shouldNotReturn` VersionChanged
     holder `shouldReturn` Nothing
 
 testActive :: IO ()
 testActive = withServiceStore $ \st -> do
-  let phases = [OUnpaid (InvoiceId "inv-r1"), OQueued, OCommitting (TxHash $ hashFixture 8), OCommitted commitFixture, ORegistering commitFixture (TxHash $ hashFixture 9), ORegistered 1861833600 (at 3), OTaken, OFailed (at 2) FRRegistryRefused, OClosed ICExpired]
+  let phases = [OUnpaid (InvoiceId "inv-r1"), OQueued, OCommitting (TxHash $ hashFixture 8), OCommitted commitFixture, ORegistering commitFixture (TxHash $ hashFixture 9), ORegistered (RoundedSystemTime 1861833600) (at 3), OTaken, OFailed (at 2) FRRegistryRefused, OClosed ICExpired]
   forM_ (zip [1 ..] phases) $ \(i, phase) -> do
     let rid = "r" <> T.pack (show i)
     placePaid st rid ownerA (order ("alicebakery" <> T.pack (show i)) i) (at 60) `shouldReturn` Right ()
@@ -789,7 +790,7 @@ atNonce :: Word64 -> NewRecordEdit -> NewRecordEdit
 atNonce nonce edit@NewRecordEdit {nreChanges = change :| _} = edit {nreChanges = change {scNonce = nonce} :| []}
 
 signedAt :: Word64 -> RecordChange -> SignedChange
-signedAt scNonce scChange = SignedChange {scChange, scNonce, scDeadline = 1792832400, scSignature = signature}
+signedAt scNonce scChange = SignedChange {scChange, scNonce, scDeadline = RoundedSystemTime 1792832400, scSignature = signature}
 
 setChannel, setContact :: RecordChange
 setChannel = RCSetText LKChannel "https://smp9.simplex.im/c#abc"
@@ -869,7 +870,7 @@ testSettleEdit = withServiceStore $ \st -> do
 testTwoChangeEdit :: IO ()
 testTwoChangeEdit = withServiceStore $ \st -> do
   let run action = withTransaction st action
-      changes = signedAt 4 setContact :| [(signedAt 5 setChannel) {scDeadline = 1792832460}]
+      changes = signedAt 4 setContact :| [(signedAt 5 setChannel) {scDeadline = RoundedSystemTime 1792832460}]
   Just editId <- run $ \db -> insertRecordEdit db (newEdit ownerA 1 setContact) {nreChanges = changes} t0
   fmap reChanges <$> run (\db -> getRecordEdit db editId) `shouldReturn` Just changes
   fmap reChanges <$> run (\db -> getRecordEditByBody db (hashFixture 1)) `shouldReturn` Just changes

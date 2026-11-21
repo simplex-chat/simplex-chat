@@ -43,7 +43,6 @@ import StoreService.Providers
     WebhookError (..),
     WebhookEvent (..),
   )
-import StoreService.Store.Invoices (unixSeconds)
 import Control.Logger.Simple (logError, logNote, logWarn)
 import Control.Monad (unless, (<=<))
 import Crypto.Hash (Digest, SHA256)
@@ -66,6 +65,7 @@ import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
 import Data.Time.Clock (UTCTime, addUTCTime, getCurrentTime)
 import Data.Time.Clock.POSIX (posixSecondsToUTCTime)
+import Data.Time.Clock.System (systemSeconds, utcToSystemTime)
 import Data.Word (Word32)
 import Network.HTTP.Client (Manager, Request (..), RequestBody (..))
 import Network.HTTP.Client.TLS (newTlsManager)
@@ -410,7 +410,7 @@ listOpen :: BTCPayEnv -> IO (Either ProviderError ListPass)
 listOpen env@BTCPayEnv {beCfg} = do
   now <- getCurrentTime
   let oldest = addUTCTime (negate (settleWindow + fromIntegral (60 * bExpiryMinutes beCfg))) now
-  fetch now (B8.pack (show (unixSeconds oldest))) 0 maxListPages (ListPass {lpMoved = [], lpSkipped = []})
+  fetch now (B8.pack (show (systemSeconds $ utcToSystemTime oldest))) 0 maxListPages (ListPass {lpMoved = [], lpSkipped = []})
   where
     query startDate skip =
       [ ("includePaymentMethods", Just "true"),

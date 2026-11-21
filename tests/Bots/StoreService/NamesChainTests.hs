@@ -20,6 +20,7 @@ import qualified Network.HTTP.Client as HTTP
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String (TextEncoding (..))
 import Simplex.Messaging.Eth.Transaction (Eip1559Tx (..))
+import Simplex.Messaging.SystemTime (RoundedSystemTime (..))
 import StoreService.Names.Chain
 import Test.Hspec
 
@@ -212,8 +213,8 @@ testBlockAt :: TVar ChaChaDRG -> IO ()
 testBlockAt g = withChain g $ \node c -> do
   setBlock node 100 1798761600
   mined <- mine node []
-  blockAt c 100 `shouldReturn` Right Block {blockNumber = 100, blockTimestamp = 1798761600, blockBaseFee = fakeBaseFee}
-  blockAt c mined `shouldReturn` Right Block {blockNumber = 101, blockTimestamp = 1798761612, blockBaseFee = fakeBaseFee}
+  blockAt c 100 `shouldReturn` Right Block {blockNumber = 100, blockTimestamp = RoundedSystemTime 1798761600, blockBaseFee = fakeBaseFee}
+  blockAt c mined `shouldReturn` Right Block {blockNumber = 101, blockTimestamp = RoundedSystemTime 1798761612, blockBaseFee = fakeBaseFee}
   blockAt c 102 >>= (`shouldSatisfy` \case Left (ChainUnavailable _) -> True; _ -> False)
 
 testFollowTransaction :: TVar ChaChaDRG -> IO ()

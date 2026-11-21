@@ -47,6 +47,7 @@ import Simplex.Messaging.Eth.Address (Address, recoverAddress)
 import Simplex.Messaging.Eth.EIP712 (Eip712Domain)
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix)
 import Simplex.Messaging.SimplexName (LabelHash, SimplexTLD)
+import Simplex.Messaging.SystemTime (RoundedSystemTime (..), SystemSeconds)
 import Simplex.Messaging.Util (catchOwn', tshow)
 import StoreService.Names.Chain
 import StoreService.Names.Contracts (Contracts (ctChain), NameStatus (..), RegisteredName (..), nameStatus, resolverNonce, textRecord)
@@ -193,7 +194,7 @@ newEdit rs timer req signer bodyHash =
 chainAccepts :: Records -> EditRequest -> Address -> IO (Either ChainError (Maybe EditAnswer))
 chainAccepts rs@Records {rsContracts} EditRequest {erLabelHash, erChanges} signer = runExceptT $ do
   Block {blockTimestamp} <- ExceptT $ latestBlock $ rsChain rs
-  if earliestDeadline erChanges <= blockTimestamp + editDeadlineMargin
+  if roundedSeconds (earliestDeadline erChanges) <= roundedSeconds blockTimestamp + fromIntegral editDeadlineMargin
     then refused "the deadline is too close to the latest block"
     else
       ExceptT (nameStatus rsContracts erLabelHash) >>= \case
@@ -414,7 +415,7 @@ firstNonce = scNonce . L.head
 lastNonce = scNonce . L.last
 
 -- | Past it the edit cannot land whole, so it is SignatureExpired.
-earliestDeadline :: NonEmpty SignedChange -> Word64
+earliestDeadline :: NonEmpty SignedChange -> SystemSeconds
 earliestDeadline = minimum . L.map scDeadline
 
 nodeOf :: Records -> LabelHash -> Node

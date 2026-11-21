@@ -33,9 +33,10 @@ import Simplex.Messaging.Eth.Address (Address)
 import Simplex.Messaging.Names.Record (USDCents)
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, parseAll, taggedObjectJSON)
 import Simplex.Messaging.SimplexName (LabelHash (..))
+import Simplex.Messaging.SystemTime (SystemSeconds)
 import Simplex.Messaging.Util (eitherToMaybe, tshow)
 import StoreService.Config (NamesConfig (..), boundedDecimal)
-import StoreService.Names.Chain (ChainSeconds, Hex32 (..))
+import StoreService.Names.Chain (Hex32 (..))
 import StoreService.Names.Community (Community, TermsLink, communityOf, readableTerms, termsLink, yearsFor)
 import StoreService.Names.Contracts
 import StoreService.Names.Profiles (Entity, Profiles, linkEntity, linkPreview)
@@ -58,7 +59,7 @@ data NameFound
   = NFAvailable {price :: USDCents, years :: Int, terms :: Maybe TermsLink}
   | NFTaken
   | NFReserved
-  | NFRegistered {owner :: Address, resolver :: Address, expiresAt :: ChainSeconds, gracePeriod :: Integer, entities :: [Entity], records :: ResolverRecords}
+  | NFRegistered {owner :: Address, resolver :: Address, expiresAt :: SystemSeconds, gracePeriod :: Integer, entities :: [Entity], records :: ResolverRecords}
 
 data ResolverRecords
   = RROwn {contact :: Text, channel :: Text, nonce :: Word64, edits :: EditsLeft}

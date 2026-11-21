@@ -73,6 +73,7 @@ import Data.Maybe (catMaybes, isNothing)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeLatin1, encodeUtf8)
+import Data.Time.Clock (UTCTime)
 import Data.Word (Word64)
 import Simplex.Chat.Badges.Code (NameLength, nameLength, nameLengthInt)
 import Simplex.Messaging.Agent.Protocol (ConnShortLink (..), ConnectionMode (..), ContactConnType (..))
@@ -85,8 +86,9 @@ import Simplex.Messaging.Eth.Address (Address, recoverAddress, unAddress)
 import Simplex.Messaging.Eth.EIP712 (Eip712Domain (..), Eip712Value (..), hashTypedData)
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON)
 import Simplex.Messaging.SimplexName (LabelHash (..), SimplexDomain (..), SimplexTLD (..), labelHash)
+import Simplex.Messaging.SystemTime (RoundedSystemTime (..), SystemSeconds, roundedToUTCTime)
 import Simplex.Messaging.Util (eitherToMaybe, tshow)
-import StoreService.Names.Chain (AbiValue (..), ChainSeconds, Hex32 (..), abiArray, abiBytes, abiTuple, abiWordSize, addressWord, hex, lowerHexP, parseText, selector, uint256)
+import StoreService.Names.Chain (AbiValue (..), Hex32 (..), abiArray, abiBytes, abiTuple, abiWordSize, addressWord, hex, lowerHexP, parseText, selector, uint256)
 
 newtype RegistrationId = RegistrationId Text
   deriving (Eq, Ord, Show)
@@ -153,7 +155,7 @@ nameLink link
 data RegisterIntent = RegisterIntent
   { riRegistration :: Registration,
     riNonce :: Word64,
-    riDeadline :: ChainSeconds,
+    riDeadline :: SystemSeconds,
     riSignature :: RecoverableSignature
   }
 
@@ -207,11 +209,11 @@ registerWithCreditCalldata RegisterIntent {riRegistration, riNonce, riDeadline, 
     <> abiTuple
       [ Dynamic $ registrationTuple riRegistration,
         Static $ uint256 riNonce,
-        Static $ uint256 riDeadline,
+        Static $ uint256 $ roundedSeconds riDeadline,
         Dynamic $ abiBytes $ smpEncode riSignature
       ]
 
-registerIntentDigest :: Eip712Domain -> Registration -> Word64 -> ChainSeconds -> ByteString
+registerIntentDigest :: Eip712Domain -> Registration -> Word64 -> SystemSeconds -> ByteString
 registerIntentDigest domain r@Registration {rLabel, rOwner, rDuration, rResolver} nonce deadline =
   hashTypedData
     domain
@@ -222,28 +224,28 @@ registerIntentDigest domain r@Registration {rLabel, rOwner, rDuration, rResolver
       VAddress rResolver,
       VArray $ map VBytes $ recordCalls r,
       VUint $ fromIntegral nonce,
-      VUint $ fromIntegral deadline
+      VUint $ fromIntegral $ roundedSeconds deadline
     ]
 
-verifyRegisterIntent :: Eip712Domain -> ChainSeconds -> RegisterIntent -> IO (Either String ())
+verifyRegisterIntent :: Eip712Domain -> UTCTime -> RegisterIntent -> IO (Either String ())
 verifyRegisterIntent domain now RegisterIntent {riRegistration = r@Registration {rOwner}, riNonce, riDeadline, riSignature} = runExceptT $ do
-  when (now > riDeadline) $ throwError "intent expired"
+  when (now > roundedToUTCTime riDeadline) $ throwError "intent expired"
   signer <- ExceptT $ recoverAddress riSignature $ registerIntentDigest domain r riNonce riDeadline
   unless (signer == rOwner) $ throwError "intent is not signed by the owner"
 
-acceptanceDigest :: Eip712Domain -> TermsKind -> Commitment -> TermsHash -> Word64 -> ChainSeconds -> ByteString
+acceptanceDigest :: Eip712Domain -> TermsKind -> Commitment -> TermsHash -> Word64 -> SystemSeconds -> ByteString
 acceptanceDigest domain TermsKind {tkAcceptType} (Hex32 commitment) (Hex32 termsHash) nonce deadline =
   hashTypedData
     domain
     tkAcceptType
-    [bytes32 commitment, bytes32 termsHash, VUint $ fromIntegral nonce, VUint $ fromIntegral deadline]
+    [bytes32 commitment, bytes32 termsHash, VUint $ fromIntegral nonce, VUint $ fromIntegral $ roundedSeconds deadline]
 
-verifyAcceptance :: Eip712Domain -> TermsKind -> Address -> Commitment -> ChainSeconds -> TermsAcceptance -> IO (Either String ())
+verifyAcceptance :: Eip712Domain -> TermsKind -> Address -> Commitment -> SystemSeconds -> TermsAcceptance -> IO (Either String ())
 verifyAcceptance domain kind owner commitment deadline TermsAcceptance {taTermsHash, taNonce, taSignature} = runExceptT $ do
   signer <- ExceptT $ recoverAddress taSignature $ acceptanceDigest domain kind commitment taTermsHash taNonce deadline
   unless (signer == owner) $ throwError "acceptance is not signed by the owner"
 
-acceptCalldata :: TermsKind -> Commitment -> Address -> ChainSeconds -> TermsAcceptance -> ByteString
+acceptCalldata :: TermsKind -> Commitment -> Address -> SystemSeconds -> TermsAcceptance -> ByteString
 acceptCalldata TermsKind {tkRelayFunction} (Hex32 commitment) owner deadline TermsAcceptance {taTermsHash = Hex32 termsHash, taNonce, taSignature} =
   selector tkRelayFunction
     <> abiTuple
@@ -251,18 +253,18 @@ acceptCalldata TermsKind {tkRelayFunction} (Hex32 commitment) owner deadline Ter
         Static termsHash,
         Static $ addressWord owner,
         Static $ uint256 taNonce,
-        Static $ uint256 deadline,
+        Static $ uint256 $ roundedSeconds deadline,
         Dynamic $ abiBytes $ smpEncode taSignature
       ]
 
-setTextDigest :: Eip712Domain -> Node -> LinkKind -> Text -> Word64 -> ChainSeconds -> ByteString
+setTextDigest :: Eip712Domain -> Node -> LinkKind -> Text -> Word64 -> SystemSeconds -> ByteString
 setTextDigest domain node kind value nonce deadline =
   hashTypedData
     domain
     "SetText(bytes32 node,string key,string value,uint256 nonce,uint256 deadline)"
-    [bytes32 $ nodeBytes node, VBytes $ recordKey kind, VBytes $ encodeUtf8 value, VUint $ fromIntegral nonce, VUint $ fromIntegral deadline]
+    [bytes32 $ nodeBytes node, VBytes $ recordKey kind, VBytes $ encodeUtf8 value, VUint $ fromIntegral nonce, VUint $ fromIntegral $ roundedSeconds deadline]
 
-setTextWithSigCalldata :: Node -> LinkKind -> Text -> Word64 -> ChainSeconds -> RecoverableSignature -> ByteString
+setTextWithSigCalldata :: Node -> LinkKind -> Text -> Word64 -> SystemSeconds -> RecoverableSignature -> ByteString
 setTextWithSigCalldata (Node node) kind value nonce deadline sig =
   selector "setTextWithSig(bytes32,string,string,uint256,uint256,bytes)"
     <> abiTuple
@@ -270,7 +272,7 @@ setTextWithSigCalldata (Node node) kind value nonce deadline sig =
         Dynamic $ abiBytes $ recordKey kind,
         Dynamic $ abiBytes $ encodeUtf8 value,
         Static $ uint256 nonce,
-        Static $ uint256 deadline,
+        Static $ uint256 $ roundedSeconds deadline,
         Dynamic $ abiBytes $ smpEncode sig
       ]
 

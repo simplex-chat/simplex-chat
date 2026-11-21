@@ -88,11 +88,12 @@ import Simplex.Messaging.Eth.Address (Address, unAddress)
 import Simplex.Messaging.Names.Record (USDCents)
 import Simplex.Messaging.Parsers (parseAll)
 import Simplex.Messaging.SimplexName (LabelHash (..), SimplexTLD)
+import Simplex.Messaging.SystemTime (RoundedSystemTime (..), SystemSeconds)
 import Simplex.Messaging.TMap (TMap)
 import qualified Simplex.Messaging.TMap as TM
 import Simplex.Messaging.Util (catchOwn', catchThrow, eitherToMaybe, toChunks, tshow)
 import StoreService.Config (ChainConfig (..), boundedDecimal, localChainId)
-import StoreService.Names.Chain (AbiError (..), AbiValue (..), Block (..), BlockTag (..), ChainClient (..), ChainError (..), ChainSeconds, Hex32 (..), RevertReason (..), abiBytes, abiTuple, abiWordSize, addressWord, confirmedNumber, decodeAddress, decodeBool, decodeBytes32, decodeLabels, decodeString, decodeUint256, decodeWord64, ethCallAt, httpFailure, latestBlock, lowerHexP, nodeChainId, parseText, registrarBalance, selector, uint256)
+import StoreService.Names.Chain (AbiError (..), AbiValue (..), Block (..), BlockTag (..), ChainClient (..), ChainError (..), Hex32 (..), RevertReason (..), abiBytes, abiTuple, abiWordSize, addressWord, confirmedNumber, decodeAddress, decodeBool, decodeBytes32, decodeLabels, decodeSeconds, decodeString, decodeUint256, decodeWord64, ethCallAt, httpFailure, latestBlock, lowerHexP, nodeChainId, parseText, registrarBalance, selector, uint256)
 import StoreService.Names.Registration (Commitment, CommunityName, LinkKind (..), TermsHash, childNode, labelNode, nodeBytes, recordKey, termsKindText)
 import StoreService.Names.Store (getTermsText, setTermsText)
 import System.Timeout (timeout)
@@ -125,7 +126,7 @@ data NameStatus = NSAvailable | NSReserved | NSRegistered RegisteredName
 data RegisteredName = RegisteredName
   { rnOwner :: Address,
     rnResolver :: Address,
-    rnExpiresAt :: ChainSeconds,
+    rnExpiresAt :: SystemSeconds,
     rnGracePeriod :: Integer
   }
   deriving (Eq, Show)
@@ -134,7 +135,7 @@ data RegisteredName = RegisteredName
 data NameRecords = NameRecords {rdContact :: Text, rdChannel :: Text, rdNonce :: Word64}
   deriving (Eq, Show)
 
-data CommitmentAges = CommitmentAges {caMin :: ChainSeconds, caMax :: ChainSeconds}
+data CommitmentAges = CommitmentAges {caMin :: Word64, caMax :: Word64}
   deriving (Eq, Show)
 
 data Terms = Terms {tmLink :: Text, tmHash :: TermsHash, tmFetch :: (String, Maybe ByteString)}
@@ -210,7 +211,7 @@ nameStatus ct@Contracts {ctChain} lh = withinDeadline ct "name status" $ runExce
     ExceptT $ together $ (,) <$> concurrent (registrarConstants ct) <*> concurrent (latestBlock ctChain)
   let at = AtBlock blockNumber
   expires <- ExceptT $ nameExpires ct at lh
-  if toInteger expires + rcGracePeriod >= toInteger blockTimestamp
+  if toInteger (roundedSeconds expires) + rcGracePeriod >= toInteger (roundedSeconds blockTimestamp)
     then do
       let node = nodeArg ct lh
           registryRead signature = concurrent $ callAt ct at rcRegistry (signature, node) decodeAddress
@@ -434,14 +435,14 @@ ownerOfToken ct tag lh =
     Left (ChainReverted RRWithoutData) -> pure $ Right Nothing
     r -> pure $ Just <$> r
 
-nameExpires :: Contracts -> BlockTag -> LabelHash -> IO (Either ChainError ChainSeconds)
-nameExpires ct tag lh = callAt ct tag (baseRegistrar ct) ("nameExpires(uint256)", labelHashArg lh) decodeWord64
+nameExpires :: Contracts -> BlockTag -> LabelHash -> IO (Either ChainError SystemSeconds)
+nameExpires ct tag lh = callAt ct tag (baseRegistrar ct) ("nameExpires(uint256)", labelHashArg lh) decodeSeconds
 
 -- | The block time of the commitment, Nothing when the controller holds none.
-commitmentTime :: Contracts -> Commitment -> IO (Either ChainError (Maybe ChainSeconds))
-commitmentTime ct (Hex32 commitment) = fmap nonZero <$> call ct (controller ct) ("commitments(bytes32)", commitment) decodeWord64
+commitmentTime :: Contracts -> Commitment -> IO (Either ChainError (Maybe SystemSeconds))
+commitmentTime ct (Hex32 commitment) = fmap nonZero <$> call ct (controller ct) ("commitments(bytes32)", commitment) decodeSeconds
   where
-    nonZero t = if t == 0 then Nothing else Just t
+    nonZero t = if t == RoundedSystemTime 0 then Nothing else Just t
 
 controllerAvailable :: Contracts -> BlockTag -> Text -> IO (Either ChainError Bool)
 controllerAvailable ct tag label = callAt ct tag (controller ct) ("available(string)", abiTuple [Dynamic $ abiBytes $ encodeUtf8 label]) decodeBool
@@ -531,7 +532,7 @@ registeredNames ct@Contracts {ctChain} = runExceptT $ do
       registrar signature i = readAt env (baseRegistrar ct) signature (uint256 i)
   ids <- readAll [registrar "tokenByIndex(uint256)" i decodeUint256 | i <- [0 .. total - 1]]
   expiries <- readAll [registrar "nameExpires(uint256)" i decodeUint256 | i <- ids]
-  let live = [i | (i, expiry) <- zip ids expiries, expiry > toInteger blockTimestamp]
+  let live = [i | (i, expiry) <- zip ids expiries, expiry > toInteger (roundedSeconds blockTimestamp)]
   labels <- readAll [registrar "labelOf(uint256)" i decodeString | i <- live]
   RegisteredNames blockNumber <$> levels env 2 [(childNode base (LabelHash $ uint256 i), label) | (i, label) <- zip live labels]
 

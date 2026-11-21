@@ -21,7 +21,6 @@ where
 import StoreService.Catalog (PricedOffer (..), priceOffer)
 import StoreService.Config (ChainConfig (..), ListenerConfig (..), NamesConfig (..), ServiceConfig (..), StripeConfig (..), isLoopbackHost)
 import StoreService.Names.Balances (reverseOrder, warnOfFraud)
-import StoreService.Names.Chain (ChainSeconds, chainSeconds)
 import StoreService.Names.Env (NamesEnv)
 import StoreService.Names.Orders (OrdersEnv (..), jsonField, noteRead, ordersEnv, textWith)
 import StoreService.Names.Phases (awaitChange)
@@ -58,6 +57,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeUtf8')
 import Data.Time.Clock (UTCTime, addUTCTime, getCurrentTime)
+import Data.Time.Clock.System (systemSeconds, utcToSystemTime)
 import Data.Word (Word64, Word8)
 import Network.HTTP.Types (Header, Status, hCacheControl, hContentType, status200, status400, status409, status413, status500)
 import Network.Wai
@@ -69,6 +69,7 @@ import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import Simplex.Messaging.Encoding.String (textDecode, textEncode)
 import Simplex.Messaging.Eth.Address (Address)
 import Simplex.Messaging.Parsers (defaultJSON)
+import Simplex.Messaging.SystemTime (RoundedSystemTime (..), SystemSeconds)
 import Simplex.Messaging.TMap (TMap)
 import qualified Simplex.Messaging.TMap as TM
 import Simplex.Messaging.Util (catchOwn', raceAny_, tshow)
@@ -86,7 +87,7 @@ data NamesSite = NamesSite
     resolver :: Address,
     sponsor :: Address,
     tld :: Text,
-    termStart :: ChainSeconds
+    termStart :: SystemSeconds
   }
 
 $(JQ.deriveToJSON defaultJSON ''NamesSite)
@@ -176,7 +177,7 @@ siteConfig ServiceConfig {names, stripe} =
     }
   where
     namesSite NamesConfig {nCodesOnly, nTLD, nTermStart, nChain = ChainConfig {cChainId, cResolver, cSponsor}} =
-      NamesSite {codesOnly = nCodesOnly, chainId = cChainId, resolver = cResolver, sponsor = cSponsor, tld = tldLabel nTLD, termStart = chainSeconds nTermStart}
+      NamesSite {codesOnly = nCodesOnly, chainId = cChainId, resolver = cResolver, sponsor = cSponsor, tld = tldLabel nTLD, termStart = RoundedSystemTime $ systemSeconds $ utcToSystemTime nTermStart}
 
 resolveInside :: FilePath -> [Text] -> IO (Maybe (FilePath, FilePath))
 resolveInside dir segments = either ioFailed id <$> E.try attempt

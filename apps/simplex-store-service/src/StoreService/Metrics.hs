@@ -36,6 +36,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Data.Time.Clock (UTCTime, addUTCTime, getCurrentTime)
+import Data.Time.Clock.System (systemSeconds, utcToSystemTime)
 import Data.Word (Word64)
 import Network.HTTP.Types (hContentType, status200)
 import Network.Wai (Application, pathInfo, responseLBS)
@@ -45,6 +46,7 @@ import Simplex.Chat.Badges.Types (BadgePurchaseStatus (..), SubscriptionState (.
 import Simplex.Chat.PaymentService.Types (PaymentProvider)
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import Simplex.Messaging.Encoding.String (textEncode)
+import Simplex.Messaging.SystemTime (RoundedSystemTime (..))
 import Simplex.Messaging.TMap (TMap)
 import Simplex.Messaging.Util (catchOwn', raceAny_, tshow)
 import StoreService.Config (ListenerConfig)
@@ -53,7 +55,7 @@ import StoreService.Names.Contracts (Contracts (..), NameEntry (..), RegisteredN
 import StoreService.Names.Store (FailReason, NamePhase (..), NamesCounts (..), namesCounts)
 import StoreService.Poller (expiryGrace)
 import StoreService.Store (BadgeCounts (..), badgeCounts)
-import StoreService.Store.Invoices (openInvoiceCounts, unixSeconds)
+import StoreService.Store.Invoices (openInvoiceCounts)
 import StoreService.Web.Http (notFound, only)
 import StoreService.Web.Server (webSettings)
 
@@ -188,7 +190,7 @@ namesText maxFeePerGas NamesCounts {ncPhases, ncQueueOldestChange, ncPendingTran
       gauge "simplex_store_names_registrar_balance_wei" "The registrar key's ETH balance, as last read" (value . rfBalanceWei <$> crFunds),
       gauge "simplex_store_names_sponsor_allowance_cents" "The registrar key's allowance left on the sponsor, as last read" (value . rfAllowanceCents <$> crFunds),
       gauge "simplex_store_names_chain_head_block" "The node's latest block number, as last read" (value . blockNumber <$> crHead),
-      gauge "simplex_store_names_chain_head_timestamp_seconds" "The node's latest block time, as last read" (value . blockTimestamp <$> crHead),
+      gauge "simplex_store_names_chain_head_timestamp_seconds" "The node's latest block time, as last read" (value . roundedSeconds . blockTimestamp <$> crHead),
       gauge "simplex_store_names_chain_base_fee_wei" "The node's latest block base fee per gas, as last read" (value . blockBaseFee <$> crHead),
       gauge "simplex_store_names_max_fee_per_gas_wei" "The fee cap, [chain] max_fee_per_gas" (Just $ value maxFeePerGas),
       gauge "simplex_store_names_terms_held" "1 when the service holds the text of the terms the name policy links, by kind, as last read" [labelled "kind" k (value $ fromEnum held) | (k, held) <- crTerms],
@@ -202,7 +204,7 @@ value :: Show a => a -> (Text, Text)
 value n = ("", tshow n)
 
 timestamp :: UTCTime -> (Text, Text)
-timestamp t = value (unixSeconds t)
+timestamp t = value (systemSeconds $ utcToSystemTime t)
 
 labelled :: Text -> Text -> (Text, Text) -> (Text, Text)
 labelled name v = withLabels [(name, v)]

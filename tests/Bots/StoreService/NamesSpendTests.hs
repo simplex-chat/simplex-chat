@@ -46,6 +46,7 @@ import Simplex.Messaging.Crypto.Secp256k1 (signRecoverable)
 import Simplex.Messaging.Encoding (Encoding (..))
 import Simplex.Messaging.Names.Record (USDCents)
 import Simplex.Messaging.SimplexName (labelHash)
+import Simplex.Messaging.SystemTime (RoundedSystemTime (..))
 import StoreService.Config (BTCPayConfig (..), ServiceConfig (..))
 import StoreService.Names.Balances (RefundRefusal (..), recordRefund)
 import StoreService.Names.Chain (Hex32 (..), hex, uint256)
@@ -326,7 +327,7 @@ testSpendResend = withSpend $ \ctx@Ctx {cStore, cClock} -> do
   (200, answer) <- postSpend ctx other coveredBody
   r <- registrationById ctx $ registrationAnswer answer
   spend ctx other paid {sbOrder = (sbOrder paid) {oTimestamp = seconds now + 1}} `shouldReturn` (200, answer)
-  Written _ <- withTransaction cStore $ \db -> updateRegistration db r {nrPhase = OCommitted Commit {cmTx = Nothing, cmRevealAfter = seconds now, cmRevealBefore = seconds now + 86400}} now
+  Written _ <- withTransaction cStore $ \db -> updateRegistration db r {nrPhase = OCommitted Commit {cmTx = Nothing, cmRevealAfter = RoundedSystemTime $ fromIntegral $ seconds now, cmRevealBefore = RoundedSystemTime $ fromIntegral $ seconds now + 86400}} now
   advance ctx 3600
   postSpend ctx other coveredBody `shouldReturn` (200, answer)
   length <$> stubCalls (cStub ctx) `shouldReturn` 1

@@ -42,6 +42,7 @@ import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.Secp256k1 (RecoverableSignature (..), Secp256k1PrivateKey, signRecoverable)
 import Simplex.Messaging.Encoding (Encoding (..))
 import Simplex.Messaging.SimplexName (LabelHash (..), SimplexTLD (..), labelHash)
+import Simplex.Messaging.SystemTime (RoundedSystemTime (..))
 import StoreService.Names.Chain (Hex32 (..), TxHash (..), hex, uint256)
 import StoreService.Names.Orders (OrdersEnv (..))
 import StoreService.Names.Registration (LinkKind (..), Registration (..), RegistrationId (..), TermsAcceptance (..), acceptanceDigest, linkMaxBytes, makeCommitment, policyDomain, registerIntentDigest, sponsorDomain, termsKind)
@@ -115,7 +116,7 @@ revealAfter = orderSeconds - 60
 revealBefore = orderSeconds + 86400
 
 openWindow :: Commit
-openWindow = Commit {cmTx = Nothing, cmRevealAfter = revealAfter, cmRevealBefore = revealBefore}
+openWindow = Commit {cmTx = Nothing, cmRevealAfter = RoundedSystemTime $ fromIntegral revealAfter, cmRevealBefore = RoundedSystemTime $ fromIntegral revealBefore}
 
 contactLink, channelLink :: Text
 contactLink = "https://smp8.simplex.im/a#Y8m3qT0vLw2Ab7cD9eF1gH3jK5mN7pQ9rSAAAAAAAAA"
@@ -170,7 +171,7 @@ paidOrder ctx o = do
 
 signIntent :: Ctx -> Secp256k1PrivateKey -> Registration -> Word64 -> Word64 -> IO RecoverableSignature
 signIntent Ctx {cRandom} key r nonce deadline =
-  either error id <$> signRecoverable cRandom key (registerIntentDigest (sponsorDomain fakeChainId fakeSponsor) r nonce deadline)
+  either error id <$> signRecoverable cRandom key (registerIntentDigest (sponsorDomain fakeChainId fakeSponsor) r nonce $ RoundedSystemTime $ fromIntegral deadline)
 
 bodyOf :: RecoverableSignature -> Registration -> Word64 -> Word64 -> J.Object
 bodyOf sig Registration {rLabel, rSecret, rContactLink, rChannelLink} nonce deadline =
@@ -226,7 +227,7 @@ signAcceptance ctx key community terms nonce = acceptanceOf ctx key alice commun
 -- | The acceptance signed with the given deadline, which must be the intent's.
 acceptanceOf :: Ctx -> Secp256k1PrivateKey -> Registration -> Bool -> B.ByteString -> Word64 -> Word64 -> IO TermsAcceptance
 acceptanceOf Ctx {cRandom} key r community terms nonce deadline = do
-  sig <- either error id <$> signRecoverable cRandom key (acceptanceDigest (policyDomain fakeChainId fakeNamePolicy) (termsKind community) (makeCommitment r) (Hex32 terms) nonce deadline)
+  sig <- either error id <$> signRecoverable cRandom key (acceptanceDigest (policyDomain fakeChainId fakeNamePolicy) (termsKind community) (makeCommitment r) (Hex32 terms) nonce $ RoundedSystemTime $ fromIntegral deadline)
   pure TermsAcceptance {taTermsHash = Hex32 terms, taNonce = nonce, taSignature = sig}
 
 withAcceptance :: TermsAcceptance -> J.Object -> J.Object
@@ -342,7 +343,7 @@ testWithLinks = bounded "with links" $ withReveals $ \Fx {fCtx = ctx} -> do
   NameRegistration {nrVersion, nrPhase, nrReveal} <- stored ctx rid
   (nrVersion, nrPhase) `shouldBe` (v + 1, OCommitted openWindow)
   nrReveal
-    `shouldBe` Just NameReveal {rvLabel = "alicebakery", rvSecret = rSecret alice, rvContactLink = Just contactLink, rvChannelLink = Just channelLink, rvNonce = 0, rvDeadline = revealBefore, rvSignature = sig, rvAcceptance = acceptance}
+    `shouldBe` Just NameReveal {rvLabel = "alicebakery", rvSecret = rSecret alice, rvContactLink = Just contactLink, rvChannelLink = Just channelLink, rvNonce = 0, rvDeadline = RoundedSystemTime $ fromIntegral revealBefore, rvSignature = sig, rvAcceptance = acceptance}
   (status, view) <- woken "registration poll" poll
   (status, fieldOf view "version", fieldOf view "label") `shouldBe` (200, Just (J.toJSON $ v + 1), Just "alicebakery")
 
@@ -579,7 +580,7 @@ testLostRace = bounded "lost race" $ withReveals $ \Fx {fCtx = ctx} -> do
     rid <- committedUnchecked ctx r
     body <- ownerBody ctx r
     (inFlight, gate) <- pausedAtChainRead ctx (reveal ctx rid body)
-    v <- change ctx rid $ \x -> x {nrPhase = OCommitted openWindow {cmRevealAfter = revealAfter + 60, cmRevealBefore = revealBefore + 60}}
+    v <- change ctx rid $ \x -> x {nrPhase = OCommitted openWindow {cmRevealAfter = RoundedSystemTime $ fromIntegral $ revealAfter + 60, cmRevealBefore = RoundedSystemTime $ fromIntegral $ revealBefore + 60}}
     releaseGate gate
     (status, answer) <- wait inFlight
     let view = registrationOf $ fromJust answer

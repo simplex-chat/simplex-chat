@@ -29,9 +29,9 @@ import Network.Wai (Request, ResponseReceived, queryString)
 import Simplex.Messaging.Agent.Store.Common (withTransaction)
 import Simplex.Messaging.Encoding.String (textEncode)
 import Simplex.Messaging.Parsers (parseAll)
+import Simplex.Messaging.SystemTime (roundedToUTCTime)
 import Simplex.Messaging.Util (eitherToMaybe, tshow)
 import StoreService.Config (boundedDecimal)
-import StoreService.Names.Chain (chainSeconds)
 import StoreService.Names.Orders (OrdersEnv (..), WriteRefusal (..), noteRead, orderFieldsOf, versionWritten)
 import StoreService.Names.Phases (awaitChange, publish)
 import StoreService.Names.Registration (RegistrationId (..))
@@ -82,8 +82,8 @@ revealHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oePhases, 
         Nothing -> case nrPhase r of
           OCommitted Commit {cmRevealBefore}
             | lapsedAt now r -> pure $ RDRefused (RVBadRequest "the commitment lapsed") Nothing
-            | otherwise -> signed now cmRevealBefore $ \rv -> r {nrReveal = Just rv}
-          OFailed _ FRUnread -> signed now (chainSeconds now) $ \rv -> r {nrPhase = OQueued, nrHistory = noHistory, nrReveal = Just rv}
+            | otherwise -> signed now (roundedToUTCTime cmRevealBefore) $ \rv -> r {nrReveal = Just rv}
+          OFailed _ FRUnread -> signed now now $ \rv -> r {nrPhase = OQueued, nrHistory = noHistory, nrReveal = Just rv}
           _ -> pure $ RDRefused (RVBadRequest "the order is not committed") Nothing
       where
         signed now earliest accept =

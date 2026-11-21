@@ -30,7 +30,6 @@ import StoreService.Providers
     WebhookError (..),
     WebhookEvent (..),
   )
-import StoreService.Store.Invoices (unixSeconds)
 import Control.Logger.Simple (logWarn)
 import Control.Monad (unless)
 import Crypto.Hash (Digest, SHA256)
@@ -53,6 +52,7 @@ import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
 import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime, diffUTCTime, getCurrentTime)
 import Data.Time.Clock.POSIX (POSIXTime, posixSecondsToUTCTime)
+import Data.Time.Clock.System (systemSeconds, utcToSystemTime)
 import Data.Word (Word32)
 import Network.HTTP.Client (Manager, Request (..), RequestBody (..), applyBasicAuth)
 import Network.HTTP.Client.TLS (newTlsManager)
@@ -122,7 +122,7 @@ listOpen :: StripeEnv -> IO (Either ProviderError ListPass)
 listOpen env@StripeEnv {seCfg} = do
   now <- getCurrentTime
   let oldest = addUTCTime (negate (settleWindow + fromIntegral (sSessionMinutes seCfg * secondsPerMinute))) now
-      createdGte = B8.pack (show (unixSeconds oldest))
+      createdGte = B8.pack (show (systemSeconds $ utcToSystemTime oldest))
   go now createdGte Nothing maxListPages (ListPass [] [])
   where
     go now createdGte after pagesLeft acc

@@ -24,6 +24,8 @@ import Simplex.Messaging.Eth.Address (Address)
 import Simplex.Messaging.Eth.EIP712 (Eip712Domain)
 import Simplex.Messaging.Eth.Transaction (Eip1559Tx (..), signEip1559Tx)
 import Simplex.Messaging.SimplexName (SimplexTLD (..))
+import Simplex.Messaging.SystemTime (RoundedSystemTime (..), SystemSeconds, roundedToUTCTime)
+import Data.Time.Clock (addUTCTime)
 import Test.Hspec
 
 badgeNameRegistrationTests :: Spec
@@ -65,12 +67,12 @@ testVerifyOtherSigner :: TVar ChaChaDRG -> IO ()
 testVerifyOtherSigner g = do
   other <- newEphemeralWallet g
   intent <- signRegisterIntent g domain other knownRegistration deadline
-  verifyRegisterIntent domain deadline intent `shouldReturn` Left "intent is not signed by the owner"
+  verifyRegisterIntent domain (roundedToUTCTime deadline) intent `shouldReturn` Left "intent is not signed by the owner"
 
 testVerifyExpired :: TVar ChaChaDRG -> IO ()
 testVerifyExpired g = do
   intent <- knownIntent g knownRegistration
-  verifyRegisterIntent domain (deadline + 1) intent `shouldReturn` Left "intent expired"
+  verifyRegisterIntent domain (addUTCTime 1 $ roundedToUTCTime deadline) intent `shouldReturn` Left "intent expired"
 
 testRevertedDryRun :: TVar ChaChaDRG -> IO ()
 testRevertedDryRun g = withFakeEthNode $ \node -> do
@@ -90,7 +92,7 @@ testCommitThenRegister g = withFakeEthNode $ \node -> do
   commitTx <- expectedTransaction g 0 fakeController commitCall
   send g c fakeController commitCall `shouldReturn` SignedTx commitTx (TxHash $ Hex32 $ C.keccak256 commitTx)
   intent <- signRegisterIntent g domain w registration deadline
-  verifyRegisterIntent domain deadline intent `shouldReturn` Right ()
+  verifyRegisterIntent domain (roundedToUTCTime deadline) intent `shouldReturn` Right ()
   let registerCall = registerWithCreditCalldata intent
   registerTx <- expectedTransaction g 1 fakeSponsor registerCall
   send g c fakeSponsor registerCall `shouldReturn` SignedTx registerTx (TxHash $ Hex32 $ C.keccak256 registerTx)
@@ -136,8 +138,8 @@ knownCode = "SN-00000-00000-00000-00000-00000-0VME2"
 domain :: Eip712Domain
 domain = sponsorDomain fakeChainId fakeSponsor
 
-deadline :: Word64
-deadline = 4102444800
+deadline :: SystemSeconds
+deadline = RoundedSystemTime 4102444800
 
 expectedTransaction :: TVar ChaChaDRG -> Word64 -> Address -> ByteString -> IO ByteString
 expectedTransaction g nonce to calldata =
@@ -164,8 +166,8 @@ acceptedHash, acceptedCommitment :: Hex32
 acceptedHash = Hex32 $ unhex "eed23f946d290583f5f55c2ae8255db70adac4fc4c5de714a920d35eed9c7dac"
 acceptedCommitment = Hex32 $ unhex "26d4dc807322bcdc1f68a2459b580919c4e6c5629d07cb20c38a31f7b72b7e5d"
 
-acceptanceDeadline :: Word64
-acceptanceDeadline = 1767315600
+acceptanceDeadline :: SystemSeconds
+acceptanceDeadline = RoundedSystemTime 1767315600
 
 testAcceptanceDigest :: IO ()
 testAcceptanceDigest = do
@@ -207,7 +209,7 @@ testVerifyAcceptance g = do
       verify community w = verifyAcceptance acceptanceDomain (termsKind community) (ewAddress w) acceptedCommitment
   verify True owner acceptanceDeadline acceptance `shouldReturn` Right ()
   verify True other acceptanceDeadline acceptance `shouldReturn` Left "acceptance is not signed by the owner"
-  verify True owner (acceptanceDeadline + 1) acceptance `shouldReturn` Left "acceptance is not signed by the owner"
+  verify True owner (RoundedSystemTime $ roundedSeconds acceptanceDeadline + 1) acceptance `shouldReturn` Left "acceptance is not signed by the owner"
   verify False owner acceptanceDeadline acceptance `shouldReturn` Left "acceptance is not signed by the owner"
 
 toHex :: ByteString -> ByteString

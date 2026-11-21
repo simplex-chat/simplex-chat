@@ -45,9 +45,10 @@ import Simplex.Messaging.Eth.Address (Address)
 import Simplex.Messaging.Names.Record (USDCents)
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, taggedObjectJSON)
 import Simplex.Messaging.SimplexName (LabelHash (..))
+import Simplex.Messaging.SystemTime (SystemSeconds, roundedToUTCTime)
 import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
 import StoreService.Config (NamesConfig (..))
-import StoreService.Names.Chain (ChainSeconds, Hex32 (..), TxHash (..), chainTime)
+import StoreService.Names.Chain (Hex32 (..), TxHash (..))
 import StoreService.Names.Community (AcceptanceAsked, Community, TermsLink, communityOf, currentAcceptance)
 import StoreService.Names.Contracts (Contracts (ctDeadline, ctViewSlots), sponsorNonce)
 import StoreService.Names.Profiles (deadlineIn, withSlot)
@@ -71,9 +72,9 @@ data PhaseView
   | PVClosed {closedBy :: InvoiceClose}
   | PVQueued
   | PVCommitting
-  | PVCommitted {revealAfter :: ChainSeconds, revealBefore :: ChainSeconds, signature :: Signing}
+  | PVCommitted {revealAfter :: SystemSeconds, revealBefore :: SystemSeconds, signature :: Signing}
   | PVRegistering
-  | PVRegistered {expiresAt :: ChainSeconds}
+  | PVRegistered {expiresAt :: SystemSeconds}
   | PVTaken
   | PVFailed {reason :: FailReason, heldUntil :: Maybe UTCTime}
   deriving (Eq, Show)
@@ -291,5 +292,5 @@ lapsedAt now = maybe False (now >) . lapseMoment
 
 lapseMoment :: NameRegistration -> Maybe UTCTime
 lapseMoment = \case
-  NameRegistration {nrPhase = OCommitted Commit {cmRevealBefore}, nrReveal = Nothing} -> Just $ chainTime cmRevealBefore
+  NameRegistration {nrPhase = OCommitted Commit {cmRevealBefore}, nrReveal = Nothing} -> Just $ roundedToUTCTime cmRevealBefore
   _ -> Nothing

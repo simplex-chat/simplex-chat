@@ -179,9 +179,10 @@ import Simplex.Messaging.Eth.Address (Address, unAddress)
 import Simplex.Messaging.Names.Record (USDCents)
 import Simplex.Messaging.Parsers (dropPrefix, enumJSON, taggedObjectJSON)
 import Simplex.Messaging.SimplexName (LabelHash (..))
+import Simplex.Messaging.SystemTime (RoundedSystemTime (..), SystemSeconds)
 import Simplex.Messaging.Util (maybeFirstRow, maybeFirstRow', tshow)
 import StoreService.Group.Command (CmdSource (..))
-import StoreService.Names.Chain (ChainSeconds, Hex32 (..), RevertName, TxHash (..))
+import StoreService.Names.Chain (Hex32 (..), RevertName, TxHash (..))
 import StoreService.Names.Registration (AgreedTerms, Commitment, LinkKind, OrderFields (..), RegistrationId (..), TermsAcceptance (..), TermsHash)
 import StoreService.Providers (Rate, Reversal (..), Uncreditable (..), Units)
 import StoreService.Store (RevokeResult (..))
@@ -249,8 +250,8 @@ data TxRef = TxRef {txHash :: TxHash, txBlock :: Word64}
 
 data Commit = Commit
   { cmTx :: Maybe TxRef,
-    cmRevealAfter :: ChainSeconds,
-    cmRevealBefore :: ChainSeconds
+    cmRevealAfter :: SystemSeconds,
+    cmRevealBefore :: SystemSeconds
   }
   deriving (Eq, Show)
 
@@ -279,7 +280,7 @@ data OrderPhase
   | OCommitting TxHash
   | OCommitted Commit
   | ORegistering Commit TxHash
-  | ORegistered ChainSeconds UTCTime
+  | ORegistered SystemSeconds UTCTime
   | OTaken
   | OFailed UTCTime FailReason
   deriving (Eq, Show)
@@ -361,7 +362,7 @@ data NameReveal = NameReveal
     rvContactLink :: Maybe Text,
     rvChannelLink :: Maybe Text,
     rvNonce :: Word64,
-    rvDeadline :: ChainSeconds,
+    rvDeadline :: SystemSeconds,
     rvSignature :: RecoverableSignature,
     -- | the owner's acceptance of the terms of the name's kind
     rvAcceptance :: TermsAcceptance
@@ -745,7 +746,7 @@ data EditState = ESPending | ESSettled EditOutcome
 data SignedChange = SignedChange
   { scChange :: RecordChange,
     scNonce :: Word64,
-    scDeadline :: ChainSeconds,
+    scDeadline :: SystemSeconds,
     scSignature :: RecoverableSignature
   }
   deriving (Eq, Show)
@@ -905,7 +906,7 @@ toRegistration
       :. (acceptNonce_, acceptSignature_, nrReadAt, linksRefusedKind_, nrPaidAt)
     ) = do
     nrLength <- note ("name_registrations.length: " <> rid) $ nameLength len
-    let commitOf after before = Commit {cmTx = TxRef <$> commitTx <*> (word64 <$> commitBlock), cmRevealAfter = word64 after, cmRevealBefore = word64 before}
+    let commitOf after before = Commit {cmTx = TxRef <$> commitTx <*> (word64 <$> commitBlock), cmRevealAfter = RoundedSystemTime after, cmRevealBefore = RoundedSystemTime before}
         noCommit = isNothing revealAfter && isNothing revealBefore && isNothing commitBlock
         noRegistered = isNothing expiresAt && isNothing registeredAt
         noFailure = isNothing failedAt && isNothing failReason
@@ -924,7 +925,7 @@ toRegistration
         (Just after, Just before, Just tx) -> fitting (ORegistering (commitOf after before) tx) (ownCommit && noRegistered && noFailure && noClose)
         _ -> Left $ "name_registrations registering without reveal times or register_tx: " <> rid
       PRegistered -> case (expiresAt, registeredAt) of
-        (Just expiry, Just at) -> fitting (ORegistered (word64 expiry) at) (noCommit && noFailure && noClose)
+        (Just expiry, Just at) -> fitting (ORegistered (RoundedSystemTime expiry) at) (noCommit && noFailure && noClose)
         _ -> Left $ "name_registrations registered without expires_at or registered_at: " <> rid
       PTaken -> fitting OTaken (noCommit && noRegistered && noFailure && noClose)
       PFailed -> case (failedAt, failReason) of
@@ -943,7 +944,7 @@ toRegistration
         rvAcceptance <- case (acceptTerms_, acceptNonce_, acceptSignature_) of
           (Just taTermsHash, Just n, Just taSignature) -> Right TermsAcceptance {taTermsHash, taNonce = word64 n, taSignature}
           _ -> Left $ "name_registrations acceptance: " <> rid
-        Right $ Just NameReveal {rvLabel, rvSecret, rvContactLink = nrContactLink, rvChannelLink = nrChannelLink, rvNonce = word64 nonce, rvDeadline = word64 deadline, rvSignature, rvAcceptance}
+        Right $ Just NameReveal {rvLabel, rvSecret, rvContactLink = nrContactLink, rvChannelLink = nrChannelLink, rvNonce = word64 nonce, rvDeadline = RoundedSystemTime deadline, rvSignature, rvAcceptance}
       _ -> Left $ "name_registrations reveal: " <> rid
     nrLinksRefused <- case (linksRefusedAt_, linksRefusedKind_) of
       (Nothing, Nothing) -> Right Nothing
@@ -1076,7 +1077,7 @@ updateRegistration db r now = do
       )
       ( (nrLabelHash, nameLengthInt nrLength, int64 nrDuration, nrCommitment, nrSealed, nrAgreedTerms, namePhase nrPhase, nrPrice)
           :. revealRow nrReveal
-          :. (commitTx, int64 <$> commitBlock, registerTx, int64 <$> revealAfter, int64 <$> revealBefore, int64 <$> expiresAt)
+          :. (commitTx, int64 <$> commitBlock, registerTx, roundedSeconds <$> revealAfter, roundedSeconds <$> revealBefore, roundedSeconds <$> expiresAt)
           :. (registeredAt, failedAt, failReason, closedBy, BI live, nrMoves, fst <$> nrLinksRefused, textEncode . snd <$> nrLinksRefused :: Maybe Text, now)
           :. (rid, nrVersion, BI live, rid, nrCommitment, nrOwner, nrLabelHash)
       )
@@ -1108,7 +1109,7 @@ type RevealRow = (Maybe Text, Maybe Hex32, Maybe Text, Maybe Text, Maybe Int64, 
 
 revealRow :: Maybe NameReveal -> RevealRow
 revealRow rv =
-  (rvLabel <$> rv, rvSecret <$> rv, rvContactLink =<< rv, rvChannelLink =<< rv, int64 . rvNonce <$> rv, int64 . rvDeadline <$> rv, rvSignature <$> rv)
+  (rvLabel <$> rv, rvSecret <$> rv, rvContactLink =<< rv, rvChannelLink =<< rv, int64 . rvNonce <$> rv, roundedSeconds . rvDeadline <$> rv, rvSignature <$> rv)
     :. (taTermsHash <$> acceptance, int64 . taNonce <$> acceptance, taSignature <$> acceptance)
   where
     acceptance = rvAcceptance <$> rv
@@ -1968,7 +1969,7 @@ insertRecordEdit db NewRecordEdit {nreLabelHash, nreOwner, nreChanges, nreBodyHa
       DB.execute
         db
         (mkQuery "INSERT INTO @name_record_changes (name_record_edit_id, nonce, record_key, record_value, deadline, signature) VALUES (?,?,?,?,?,?)")
-        (editId, int64 scNonce, textEncode key, value, int64 scDeadline, scSignature)
+        (editId, int64 scNonce, textEncode key, value, roundedSeconds scDeadline, scSignature)
 
 recordEditColumns :: Query
 recordEditColumns =
@@ -1999,7 +2000,7 @@ toRecordEdit (reId, reLabelHash, reOwner, reBodyHash, state, revert, minedTx, re
   where
     toChange (nonce, key, value, deadline, scSignature) = do
       kind <- note ("name_record_changes record: " <> tshow reId) $ textDecode key
-      pure SignedChange {scChange = RCSetText kind value, scNonce = word64 nonce, scDeadline = word64 deadline, scSignature}
+      pure SignedChange {scChange = RCSetText kind value, scNonce = word64 nonce, scDeadline = RoundedSystemTime deadline, scSignature}
 
 firstRecordEdit :: DB.Connection -> IO [RecordEditRow] -> IO (Maybe RecordEdit)
 firstRecordEdit db rows = rows >>= mapM (readRecordEdit db) . listToMaybe

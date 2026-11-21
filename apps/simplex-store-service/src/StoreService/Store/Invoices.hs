@@ -36,7 +36,6 @@ module StoreService.Store.Invoices
     seedCatalog,
     truncateToSecond,
     currentSecond,
-    unixSeconds,
     settlementInvoice,
     settlementCodeHash,
     upsertPayment,
@@ -59,7 +58,7 @@ import Data.Maybe (catMaybes, listToMaybe)
 import Data.String (fromString)
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Time.Clock (UTCTime, getCurrentTime)
+import Data.Time.Clock (UTCTime)
 import Data.Time.Clock.POSIX (posixSecondsToUTCTime, utcTimeToPOSIXSeconds)
 import Data.Word (Word8, Word32)
 import Simplex.Chat.Badges (BadgeType (..))
@@ -71,8 +70,8 @@ import Simplex.Messaging.Agent.Store.Common (DBStore, withConnection, withTransa
 import Simplex.Messaging.Agent.Store.DB (FromField (..), ToField (..), fromTextField_)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Encoding.String (TextEncoding (..))
+import Simplex.Messaging.SystemTime (getSystemSeconds, roundedToUTCTime)
 import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
-import StoreService.Names.Chain (unixSeconds)
 import StoreService.Names.Registration (RegistrationId (..))
 import StoreService.Providers (Confirmed (..), CryptoReceived (..), Received (..), Units, receivedAmount, receivedConfirmed)
 
@@ -183,7 +182,7 @@ truncateToSecond :: UTCTime -> UTCTime
 truncateToSecond = posixSecondsToUTCTime . fromInteger . truncate . utcTimeToPOSIXSeconds
 
 currentSecond :: IO UTCTime
-currentSecond = truncateToSecond <$> getCurrentTime
+currentSecond = roundedToUTCTime <$> getSystemSeconds
 
 #if defined(dbPostgres)
 mkQuery :: Text -> Query

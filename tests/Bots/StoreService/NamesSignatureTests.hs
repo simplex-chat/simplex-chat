@@ -23,6 +23,7 @@ import Simplex.Messaging.Crypto.Secp256k1 (RecoverableSignature (..))
 import Simplex.Messaging.Encoding.String (TextEncoding (..), strDecode)
 import Simplex.Messaging.Eth.Address (Address, recoverAddress)
 import Simplex.Messaging.SimplexName (LabelHash (..), SimplexTLD (..), labelHash)
+import Simplex.Messaging.SystemTime (RoundedSystemTime (..))
 import StoreService.Names.Chain (AbiError (..), AbiValue (..), Hex32 (..), abiBytes, abiTuple, decodeAddress, decodeBool, decodeBytes, decodeBytes32, decodeLabels, decodeString, decodeUint256, uint256)
 import StoreService.Names.Registration
 import Test.Hspec
@@ -35,9 +36,9 @@ namesSignatureTests = describe "StoreService names: signatures" $ do
     it "commits to a registration with one contact link" $
       makeCommitment dynamis `shouldBe` commitment
     it "hashes RegisterName" $
-      registerIntentDigest (sponsorDomain chainId sponsor) dynamis 0 1800000000 `shouldBe` hx "0x4b0bcc282db581446f6c25e0e3fbe2839409acbc011bb3e082523dd9eab85a6a"
+      registerIntentDigest (sponsorDomain chainId sponsor) dynamis 0 (RoundedSystemTime 1800000000) `shouldBe` hx "0x4b0bcc282db581446f6c25e0e3fbe2839409acbc011bb3e082523dd9eab85a6a"
     it "hashes SetText" $
-      setTextDigest (resolverDomain chainId resolver) (namehash TLDSimplex "dynamis") LKContact "https://x" 3 99 `shouldBe` hx "0xa62d4320889eed3713462d725dc298cd96885572b8e6b424e93a205a96b96fb5"
+      setTextDigest (resolverDomain chainId resolver) (namehash TLDSimplex "dynamis") LKContact "https://x" 3 (RoundedSystemTime 99) `shouldBe` hx "0xa62d4320889eed3713462d725dc298cd96885572b8e6b424e93a205a96b96fb5"
   describe "EIP-191 messages" $ do
     -- the contract's Appendix C, which the webapp computed with viem; the page's tests read them from the recorded vectors
     forM_ messageVectors $ \(what, _, _, built, text, digest, signature) -> it ("signs " <> what) $ testMessage built text digest signature
@@ -194,7 +195,7 @@ testVectorsFixture =
               "commitment" .= makeCommitment dynamis,
               "nonce" .= (0 :: Int),
               "deadline" .= (1800000000 :: Word64),
-              "digest" .= Hex32 (registerIntentDigest (sponsorDomain chainId sponsor) dynamis 0 1800000000)
+              "digest" .= Hex32 (registerIntentDigest (sponsorDomain chainId sponsor) dynamis 0 (RoundedSystemTime 1800000000))
             ],
         "setText"
           .= J.object
@@ -205,7 +206,7 @@ testVectorsFixture =
               "value" .= ("https://x" :: Text),
               "nonce" .= (3 :: Int),
               "deadline" .= (99 :: Int),
-              "digest" .= Hex32 (setTextDigest (resolverDomain chainId resolver) (namehash TLDSimplex "dynamis") LKContact "https://x" 3 99)
+              "digest" .= Hex32 (setTextDigest (resolverDomain chainId resolver) (namehash TLDSimplex "dynamis") LKContact "https://x" 3 (RoundedSystemTime 99))
             ]
       ]
   where

@@ -26,6 +26,7 @@ import Network.HTTP.Client (defaultManagerSettings, newManager)
 import qualified Network.Wai.Handler.Warp as Warp
 import Simplex.Chat.PaymentService.Types (CurrencyAmount (..), InvoiceId (..), InvoiceStatus (..))
 import Simplex.Messaging.Agent.Store.Common (withTransaction)
+import Simplex.Messaging.SystemTime (RoundedSystemTime (..))
 import StoreService.Config (ServiceConfig (..))
 import StoreService.Names.Chain (TxHash (..))
 import StoreService.Names.Orders (OrdersEnv (..))
@@ -285,7 +286,7 @@ testLapseReadsFailed = bounded "lapse" $ withPolls holdMicros $ \Polls {pCtx = c
   let revealBefore = seconds now + 600
       lapsedAt = posixSecondsToUTCTime (fromIntegral revealBefore)
   pSetNow $ addUTCTime (negate shortOfMoment) lapsedAt
-  let committed = OCommitted Commit {cmTx = Nothing, cmRevealAfter = revealBefore - 3600, cmRevealBefore = revealBefore}
+  let committed = OCommitted Commit {cmTx = Nothing, cmRevealAfter = RoundedSystemTime $ fromIntegral $ revealBefore - 3600, cmRevealBefore = RoundedSystemTime $ fromIntegral revealBefore}
   v <- change ctx nrId $ \r -> r {nrPhase = committed, nrReveal = Nothing}
   (_, r) <- get ctx (registrationPath nrId)
   phaseOf r `shouldBe` Just "committed"

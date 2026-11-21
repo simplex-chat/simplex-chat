@@ -56,6 +56,7 @@ import qualified Simplex.Messaging.Agent.Store.DB as DB
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Eth.Address (Address)
 import Simplex.Messaging.SimplexName (LabelHash, SimplexTLD (..), labelHash)
+import Simplex.Messaging.SystemTime (RoundedSystemTime (..))
 import Simplex.Messaging.Util (tshow)
 import StoreService.Names.Chain
 import StoreService.Names.Community (currentAcceptance)
@@ -547,7 +548,7 @@ testCommitmentTime g = withContracts g $ \node ct -> do
   answerCall node fakeController commitmentsCall $ Returns $ uint256 (0 :: Int)
   commitmentTime ct commitment `shouldReturn` Right Nothing
   answerCall node fakeController commitmentsCall $ Returns $ uint256 now
-  commitmentTime ct commitment `shouldReturn` Right (Just now)
+  commitmentTime ct commitment `shouldReturn` Right (Just $ RoundedSystemTime $ fromIntegral now)
 
 testAvailability :: TVar ChaChaDRG -> IO ()
 testAvailability g = withContracts g $ \node ct -> do
@@ -556,7 +557,7 @@ testAvailability g = withContracts g $ \node ct -> do
   answerCall node fakeController availableCall $ Returns $ uint256 (0 :: Int)
   controllerAvailable ct Latest "alicebakery" `shouldReturn` Right False
   answerCall node (registrarOf node) nameExpiresCall $ Returns $ uint256 (now + year)
-  nameExpires ct Latest alice `shouldReturn` Right (now + year)
+  nameExpires ct Latest alice `shouldReturn` Right (RoundedSystemTime $ fromIntegral $ now + year)
 
 testCommitmentAges :: TVar ChaChaDRG -> IO ()
 testCommitmentAges g = withContracts g $ \node ct -> do
@@ -659,7 +660,7 @@ answerRegistered node resolver = do
   answerCall node registry registryResolverCall $ Returns $ addressWord resolver
 
 registeredAlice :: Address -> Word64 -> RegisteredName
-registeredAlice rnResolver rnExpiresAt = RegisteredName {rnOwner = owner, rnResolver, rnExpiresAt, rnGracePeriod = toInteger gracePeriod}
+registeredAlice rnResolver expires = RegisteredName {rnOwner = owner, rnResolver, rnExpiresAt = RoundedSystemTime $ fromIntegral expires, rnGracePeriod = toInteger gracePeriod}
 
 registrarOf, resolverOf :: FakeEthNode -> Address
 registrarOf = cBaseRegistrar . fakeChainConfig

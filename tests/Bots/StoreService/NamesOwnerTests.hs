@@ -61,6 +61,7 @@ import Simplex.Messaging.Eth.Address (Address, addressFromPrivateKey)
 import Simplex.Messaging.Encoding (Encoding (..))
 import Simplex.Messaging.Names.Record (USDCents)
 import Simplex.Messaging.SimplexName (LabelHash (..), labelHash)
+import Simplex.Messaging.SystemTime (RoundedSystemTime (..))
 import Simplex.Messaging.Util (tshow)
 import StoreService.Config (NamesConfig (..))
 import StoreService.Names.Chain (Hex32 (..), TxHash (..), addressWord, hex, uint256)
@@ -227,12 +228,12 @@ stored ctx = registrationById ctx . nrId
 
 failedPhase, registeredPhase, committedPhase, linksRefusedPhase :: NameRegistration -> NameRegistration
 failedPhase r = r {nrPhase = OFailed orderTime FRRegistryRefused}
-registeredPhase r = r {nrPhase = ORegistered (seconds orderTime + 3 * 31536000) orderTime}
+registeredPhase r = r {nrPhase = ORegistered (RoundedSystemTime $ fromIntegral $ seconds orderTime + 3 * 31536000) orderTime}
 committedPhase r = r {nrPhase = OCommitted committedCommit}
 linksRefusedPhase r = r {nrPhase = OCommitted committedCommit, nrLinksRefused = Just (orderTime, LKContact)}
 
 committedCommit :: Commit
-committedCommit = Commit {cmTx = Just $ TxRef (TxHash $ hashFixture 8) 100, cmRevealAfter = seconds orderTime + 60, cmRevealBefore = seconds orderTime + 86400}
+committedCommit = Commit {cmTx = Just $ TxRef (TxHash $ hashFixture 8) 100, cmRevealAfter = RoundedSystemTime $ fromIntegral $ seconds orderTime + 60, cmRevealBefore = RoundedSystemTime $ fromIntegral $ seconds orderTime + 86400}
 
 -- | Another name's order, with the page's duration for 2 years at the service's clock.
 moveTo :: Ctx -> Text -> Int -> IO Order
@@ -306,7 +307,7 @@ testFind = withOwner $ \ctx@Ctx {cStore} -> do
   (InvoiceId invId, _) <- placed ctx aliceOrder
   paid <- invoiceRegistration ctx (InvoiceId invId)
   advance ctx 1
-  lapsed <- paidIn ctx dynamisOrder $ \r -> r {nrPhase = OCommitted committedCommit {cmRevealBefore = seconds orderTime}}
+  lapsed <- paidIn ctx dynamisOrder $ \r -> r {nrPhase = OCommitted committedCommit {cmRevealBefore = RoundedSystemTime $ fromIntegral $ seconds orderTime}}
   findBody ctx keyA (T.toLower ownerAText) (seconds orderTime) >>= postFind ctx >>= \case
     (200, Just v) | Just (J.Array found) <- KM.lookup "registrations" v -> do
       let entries = map objectEntry $ toList found
@@ -429,7 +430,7 @@ testMoveAccepted = withOwner $ \ctx -> do
   fieldsIn v2 [("phase", phaseValue "queued" []), ("labelHash", labelHashText "alicebakery"), ("linksRefused", J.Null), ("commitTx", J.Null), ("moves", J.Number 1)]
   nrPhase <$> stored ctx refusedOrder `shouldReturn` OQueued
   -- a committed order with no reveal past revealBefore reads failed
-  lapsed <- paidIn ctx dynamisOrder $ \r -> r {nrPhase = OCommitted committedCommit {cmRevealBefore = seconds orderTime - 1}}
+  lapsed <- paidIn ctx dynamisOrder $ \r -> r {nrPhase = OCommitted committedCommit {cmRevealBefore = RoundedSystemTime $ fromIntegral $ seconds orderTime - 1}}
   heldName <- moveTo ctx "alicebakery" 12
   move ctx keyA lapsed heldName `shouldReturn` refusedWith 409 "name_taken"
   sameLapsed <- moveTo ctx "dynamis" 12

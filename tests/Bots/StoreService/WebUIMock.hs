@@ -25,7 +25,6 @@ import Data.Char (isAlphaNum, toUpper)
 import Data.List (elemIndex, foldl')
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Word (Word64)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.BIP32 (masterKey, xkKey)
 import Simplex.Messaging.Crypto.BIP39 (EntropyStrength (..), WalletEntropy, entropySeed, mkEntropy, randomEntropy, unEntropy)
@@ -34,6 +33,7 @@ import Simplex.Messaging.Crypto.BIP44 (CoinType (..), bip44Path, mkAccountIndex)
 import Simplex.Messaging.Crypto.Secp256k1 (Secp256k1PrivateKey, signRecoverable)
 import Simplex.Messaging.Eth.Address (Address, deriveAddress)
 import Simplex.Messaging.Eth.EIP712 (Eip712Domain)
+import Simplex.Messaging.SystemTime (SystemSeconds)
 
 data EphemeralWallet = EphemeralWallet
   { ewCode :: NameOwnerCode,
@@ -50,7 +50,7 @@ redemptionCode = formatNameOwnerCode . ewCode
 walletFromCode :: TVar ChaChaDRG -> Text -> IO EphemeralWallet
 walletFromCode g = maybe (fail "invalid name code") (walletFromNameOwnerCode g) . parseNameOwnerCode
 
-signRegisterIntent :: TVar ChaChaDRG -> Eip712Domain -> EphemeralWallet -> Registration -> Word64 -> IO RegisterIntent
+signRegisterIntent :: TVar ChaChaDRG -> Eip712Domain -> EphemeralWallet -> Registration -> SystemSeconds -> IO RegisterIntent
 signRegisterIntent g domain EphemeralWallet {ewKey} r deadline =
   RegisterIntent r nonce deadline <$> (signRecoverable g ewKey (registerIntentDigest domain r nonce deadline) >>= either fail pure)
   where

@@ -106,10 +106,11 @@ import Simplex.Messaging.Eth.Address (Address)
 import Simplex.Messaging.Encoding (Encoding (..))
 import Simplex.Messaging.Names.Record (USDCents)
 import Simplex.Messaging.SimplexName (LabelHash (..), SimplexTLD (..), labelHash)
+import Simplex.Messaging.SystemTime (RoundedSystemTime (..), SystemSeconds, roundedToUTCTime)
 import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
 import StoreService.Config (ChainConfig (..), NamesConfig (..), ServiceConfig (..))
 import StoreService.Group.Command (CmdSource (..))
-import StoreService.Names.Chain (AbiValue (..), Hex32 (..), TxHash (..), abiBytes, abiTuple, chainTime, hex, selector, uint256)
+import StoreService.Names.Chain (AbiValue (..), Hex32 (..), TxHash (..), abiBytes, abiTuple, hex, selector, uint256)
 import StoreService.Names.Contracts (Contracts (ctDeadline, ctViewSlots), newContracts)
 import StoreService.Names.Codes (CodeRefusal (..), prepaidCodeHash)
 import StoreService.Names.Community (AcceptanceAsked (..))
@@ -325,8 +326,8 @@ fieldsOf o@Order {oLabel, oCommitment, oSealed, oDuration, oTerms} =
 aliceCommitment :: Hex32
 aliceCommitment = ofCommitment $ fieldsOf aliceOrder
 
-revealDeadline :: Order -> Word64
-revealDeadline Order {oTimestamp} = oTimestamp + 7 * 86400
+revealDeadline :: Order -> SystemSeconds
+revealDeadline Order {oTimestamp} = RoundedSystemTime $ fromIntegral $ oTimestamp + 7 * 86400
 
 revealOf :: TVar ChaChaDRG -> Order -> IO J.Value
 revealOf g o@Order {oKey, oTerms, oAcceptanceNonce} = do
@@ -642,8 +643,8 @@ testResendReadsTime = do
     settleNow ctx invId settled `shouldReturn` ISPaid
     r <- invoiceRegistration ctx invId
     now <- readIORef cClock
-    let lapse = seconds now + 600
-        lapsing = OCommitted Commit {cmTx = Nothing, cmRevealAfter = lapse - 3600, cmRevealBefore = lapse}
+    let lapse = fromIntegral $ seconds now + 600
+        lapsing = OCommitted Commit {cmTx = Nothing, cmRevealAfter = RoundedSystemTime $ lapse - 3600, cmRevealBefore = RoundedSystemTime lapse}
     Written version <- withTransaction cStore $ \db ->
       updateRegistration db r {nrPhase = lapsing, nrReveal = Nothing} now
     let signingOf v = case phaseFieldOf v "signature" of
@@ -1088,7 +1089,7 @@ testCodeResend = withOrders $ \ctx -> do
   r <- registrationById ctx rid
   now <- readIORef (cClock ctx)
   withTransaction (cStore ctx) $ \db -> do
-    updateRegistration db r {nrPhase = ORegistered (seconds now + 31536000) now} now `shouldReturn` Written 2
+    updateRegistration db r {nrPhase = ORegistered (RoundedSystemTime $ fromIntegral $ seconds now + 31536000) now} now `shouldReturn` Written 2
     spendLandedPrepaidCode db pcId rid now `shouldReturn` True
   advance ctx 3600
   setFault (cNode ctx) "eth_call" HttpFailure
@@ -1794,7 +1795,8 @@ testViewFields = withServiceStore $ \st -> withFakeEthNode $ \node -> do
   vwLabel (toRegistrationView (testNamesConfig node) r {nrPaidAt = Just t0} Nothing Nothing Nothing PVTaken) `shouldBe` Just "alicebakery"
   map (\w -> J.toJSON (vwLatePayment $ viewWith (Just w) PVUnpaid)) [LWConfirming, LWCrediting, LWSupport] `shouldBe` ["confirming", "crediting", "support"]
   let acceptance community h = AcceptanceAsked {acCommunity = community, acPolicy = fakeNamePolicy, acTermsHash = Hex32 h, acNonce = 2}
-      awaiting a = PVCommitted 1 2 $ SAwaiting $ TSRead 4 a
+      committed = PVCommitted (RoundedSystemTime 1) (RoundedSystemTime 2)
+      awaiting a = committed $ SAwaiting $ TSRead 4 a
       phaseJSON :: Bool -> ByteString -> J.Value
       phaseJSON community h =
         J.object
@@ -1805,7 +1807,7 @@ testViewFields = withServiceStore $ \st -> withFakeEthNode $ \node -> do
           ]
   J.toJSON (awaiting $ acceptance False fakeGeneralTerms) `shouldBe` phaseJSON False fakeGeneralTerms
   J.toJSON (awaiting $ acceptance True fakeCommunityTerms) `shouldBe` phaseJSON True fakeCommunityTerms
-  map J.toJSON [PVCommitted 1 2 (SAwaiting TSUnread), PVCommitted 1 2 SSigned, PVCommitted 1 2 SLapsed, PVClosed ICCancelled, PVRegistered 3, PVFailed FRRegistryRefused Nothing, PVFailed FRUnread (Just t0)]
+  map J.toJSON [committed (SAwaiting TSUnread), committed SSigned, committed SLapsed, PVClosed ICCancelled, PVRegistered (RoundedSystemTime 3), PVFailed FRRegistryRefused Nothing, PVFailed FRUnread (Just t0)]
     `shouldBe` [ J.object ["type" .= ("committed" :: Text), "revealAfter" .= (1 :: Int), "revealBefore" .= (2 :: Int), "signature" .= J.object ["type" .= ("awaiting" :: Text), "toSign" .= J.object ["type" .= ("unread" :: Text)]]],
                  J.object ["type" .= ("committed" :: Text), "revealAfter" .= (1 :: Int), "revealBefore" .= (2 :: Int), "signature" .= J.object ["type" .= ("signed" :: Text)]],
                  J.object ["type" .= ("committed" :: Text), "revealAfter" .= (1 :: Int), "revealBefore" .= (2 :: Int), "signature" .= J.object ["type" .= ("lapsed" :: Text)]],
@@ -1905,7 +1907,7 @@ testViewReads = withServiceStore $ \st -> withFakeEthNode $ \node -> do
   taken <- inPhase OTaken
   setFault node "eth_call" HttpFailure
   phaseView ct t0 committed {nrReveal = Just reveal} `shouldReturn` PVCommitted (cmRevealAfter commitFixture) (cmRevealBefore commitFixture) SSigned
-  phaseView ct (addUTCTime 1 $ chainTime $ cmRevealBefore commitFixture) committed `shouldReturn` PVCommitted (cmRevealAfter commitFixture) (cmRevealBefore commitFixture) SLapsed
+  phaseView ct (addUTCTime 1 $ roundedToUTCTime $ cmRevealBefore commitFixture) committed `shouldReturn` PVCommitted (cmRevealAfter commitFixture) (cmRevealBefore commitFixture) SLapsed
   phaseView ct t0 taken `shouldReturn` PVTaken
   phaseView ct t0 committed `shouldReturn` awaiting TSUnread
 

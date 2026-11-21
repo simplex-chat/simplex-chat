@@ -26,16 +26,17 @@ import Data.Functor ((<&>))
 import Data.Maybe (listToMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Time.Clock (UTCTime)
+import Data.Time.Clock (UTCTime, addUTCTime)
 import Data.Word (Word64)
 import Simplex.Chat.Badges.Code (nameLengthInt)
 import Simplex.Messaging.Crypto.Secp256k1 (RecoverableSignature)
 import Simplex.Messaging.Eth.Address (Address)
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix)
 import Simplex.Messaging.SimplexName (labelHash)
+import Simplex.Messaging.SystemTime (SystemSeconds, roundedToUTCTime)
 import Simplex.Messaging.Util (tshow)
 import StoreService.Config (ChainConfig (..), NamesConfig (..))
-import StoreService.Names.Chain (ChainSeconds, Hex32, chainSeconds, unixSeconds)
+import StoreService.Names.Chain (Hex32)
 import StoreService.Names.Orders (OrderRefusal (..), signedRequestSeconds)
 import StoreService.Names.Community (AcceptanceAsked (..), currentAcceptance)
 import StoreService.Names.Contracts (Contracts, sponsorNonce)
@@ -51,7 +52,7 @@ data RevealRequest = RevealRequest
     rqSecret :: Hex32,
     rqRecords :: RevealLinks,
     rqNonce :: Word64,
-    rqDeadline :: ChainSeconds,
+    rqDeadline :: SystemSeconds,
     rqAcceptance :: TermsAcceptance
   }
 
@@ -64,7 +65,7 @@ $(JQ.deriveFromJSON defaultJSON {J.fieldLabelModifier = dropPrefix "rq"} ''Revea
 isRepeat :: RevealRequest -> NameReveal -> Bool
 isRepeat RevealRequest {rqLabel, rqSignature} NameReveal {rvLabel, rvSignature} = rqLabel == rvLabel && rqSignature == rvSignature
 
-checkReveal :: NamesConfig -> Contracts -> UTCTime -> Address -> OrderFields -> ChainSeconds -> RevealRequest -> IO (Either RevealRefusal NameReveal)
+checkReveal :: NamesConfig -> Contracts -> UTCTime -> Address -> OrderFields -> UTCTime -> RevealRequest -> IO (Either RevealRefusal NameReveal)
 checkReveal cfg ct now owner fields earliest request = runExceptT $ do
   rv <- liftEither $ committedReveal cfg owner fields request
   ExceptT $ checkIntent cfg ct now earliest (intentOf cfg owner (ofDuration fields) rv)
@@ -73,7 +74,7 @@ checkReveal cfg ct now owner fields earliest request = runExceptT $ do
 
 orderReveal :: NamesConfig -> Contracts -> UTCTime -> Address -> OrderFields -> RevealRequest -> IO (Either OrderRefusal NameReveal)
 orderReveal cfg ct now owner fields request =
-  checkReveal cfg ct now owner fields (chainSeconds now) request <&> \case
+  checkReveal cfg ct now owner fields now request <&> \case
     Right rv -> maybe (Right rv) (Left . ORInvalidLink) (refusedLink rv)
     Left (RVBadRequest reason) -> Left $ ORBadRequest reason
     Left (RVInvalidLink kind) -> Left $ ORInvalidLink kind
@@ -89,12 +90,12 @@ committedReveal cfg@NamesConfig {nTLD} owner OrderFields {ofLabelHash, ofLength,
 
 -- | The deadline and the owner's signature first, so a request nobody signed reads nothing from the chain.
 -- A deadline before revealBefore would expire while the commitment can still register.
-checkIntent :: NamesConfig -> Contracts -> UTCTime -> ChainSeconds -> RegisterIntent -> IO (Either RevealRefusal ())
+checkIntent :: NamesConfig -> Contracts -> UTCTime -> UTCTime -> RegisterIntent -> IO (Either RevealRefusal ())
 checkIntent NamesConfig {nChain = ChainConfig {cChainId, cSponsor}} ct now earliest intent@RegisterIntent {riRegistration = Registration {rOwner}, riNonce, riDeadline}
-  | riDeadline < earliest = pure $ Left $ RVBadRequest "the intent's deadline is before revealBefore"
-  | toInteger riDeadline > unixSeconds now + signatureSeconds + signedRequestSeconds = pure $ Left $ RVBadRequest "the intent's deadline is more than a week ahead"
+  | roundedToUTCTime riDeadline < earliest = pure $ Left $ RVBadRequest "the intent's deadline is before revealBefore"
+  | roundedToUTCTime riDeadline > addUTCTime (fromInteger $ signatureSeconds + signedRequestSeconds) now = pure $ Left $ RVBadRequest "the intent's deadline is more than a week ahead"
   | otherwise =
-      verifyRegisterIntent (sponsorDomain cChainId cSponsor) (chainSeconds now) intent >>= \case
+      verifyRegisterIntent (sponsorDomain cChainId cSponsor) now intent >>= \case
         Left e -> pure $ Left $ RVBadRequest $ T.pack e
         Right () ->
           sponsorNonce ct rOwner >>= \case

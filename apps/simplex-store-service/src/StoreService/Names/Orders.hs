@@ -72,6 +72,7 @@ import Simplex.Messaging.Eth.Address (Address, recoverAddress)
 import Simplex.Messaging.Names.Record (USDCents)
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix)
 import Simplex.Messaging.SimplexName (LabelHash (..))
+import Simplex.Messaging.SystemTime (RoundedSystemTime (..), roundedToUTCTime)
 import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
 import StoreService.Config (NamesConfig (..))
 import StoreService.Names.Codes (CodeRefusal (..), codeRefusal, reserveCode, reserveRefusal, spendLandedCode)
@@ -84,7 +85,7 @@ import StoreService.Names.Registration (AgreedTerms (..), Commitment, LinkKind, 
 import StoreService.Names.Store (Balance, BalanceUse (..), CodeInsertRefused (..), FailReason (..), LiveOrder (..), NameRegistration (..), NameReveal, NewRegistration (..), OrderHash, OrderPayment (..), OrderPhase (..), PrepaidCode (..), TxHistory (..), paymentBalance, NameTransaction (..), RegistrationTx (..), TxFor (..), TxSettlement (..), TxState (..), VersionWrite (..), closeOverdue, createCodeRegistration, creditBalance, getBalance, getLiveOrders, getPrepaidCode, getPrepaidCodeById, getRegistration, getRegistrationByOrderHash, labelHolder, markRead, orderLive, registrationTransactions, retargetRegistration, updateRegistration)
 import StoreService.Names.Turns (Turns, withBalanceTurn, withCodeTurn)
 import StoreService.Names.View (lapsedAt)
-import StoreService.Store.Invoices (currentSecond, unixSeconds)
+import StoreService.Store.Invoices (currentSecond)
 
 data OrdersEnv = OrdersEnv
   { oeStore :: DBStore,
@@ -274,13 +275,13 @@ codeOrderInsert new@NewRegistration {nrgId, nrgOrder = OrderFields {ofLength}} c
 
 checkTimestamp :: UTCTime -> Word64 -> Either OrderRefusal ()
 checkTimestamp now timestamp =
-  unless (abs (toInteger timestamp - unixSeconds now) <= signedRequestSeconds) $ Left $ ORBadRequest "the timestamp is outside the window"
+  unless (abs (diffUTCTime (roundedToUTCTime $ RoundedSystemTime $ fromIntegral timestamp) now) <= fromInteger signedRequestSeconds) $ Left $ ORBadRequest "the timestamp is outside the window"
 
 -- | The paid years plus the free days until the term starts, by the service's clock, within the slack.
 checkDuration :: NamesConfig -> UTCTime -> Int -> Word64 -> Either OrderRefusal ()
 checkDuration NamesConfig {nTermStart, nTermSlackSeconds} now years duration = do
   let free = toInteger duration - toInteger years * secondsPerYear
-      expected = max 0 (unixSeconds nTermStart - unixSeconds now)
+      expected = max 0 (floor $ diffUTCTime nTermStart now)
   when (free < 0 || abs (free - expected) > toInteger nTermSlackSeconds) $ Left $ ORBadRequest "the duration is not the paid years with the free days"
 
 -- | The years the payment covers, or communityYears for an order signing community terms; 'checkTerms' refuses those terms

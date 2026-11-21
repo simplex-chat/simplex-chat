@@ -53,6 +53,7 @@ import Simplex.Chat.Types (ChatPeerType (..), ImageData (..), Profile (..))
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String (strEncode)
+import Simplex.Messaging.SystemTime (RoundedSystemTime (..))
 import Simplex.Messaging.Transport.Client (TransportHost (..))
 import Simplex.Messaging.Util (safeDecodeUtf8)
 import StoreService.Config (ListenerConfig (..), NamesConfig (..))
@@ -326,7 +327,7 @@ testTaken g = withSearch g id id $ \s@Search {node, store} -> do
   setPhase store $ OFailed t0 FRMonthEnded
   answerCall node fakeController (rentPriceCall 12) $ Returns $ rentPriceAnswer 10000
   searchAlice s 12 `shouldReturn` availableAnswer 10000
-  setPhase store $ ORegistered 1861833600 t0
+  setPhase store $ ORegistered (RoundedSystemTime 1861833600) t0
   answerCall node fakeController (rentPriceCall 12) $ Returns $ rentPriceAnswer 10000
   searchAlice s 12 `shouldReturn` availableAnswer 10000
 
@@ -370,7 +371,7 @@ testCommunity g = withSearch g listAlice id $ \s@Search {node, store} -> do
   -- new terms on chain: the available answer carries them; a listing that cannot be read: no answer
   available node
   setCommunityTerms node fakeNewCommunityTermsText
-  setPhase store $ ORegistered 1861833600 t0
+  setPhase store $ ORegistered (RoundedSystemTime 1861833600) t0
   searchAlice s 12 `shouldReturn` listedUnder fakeNewCommunityTermsText (availableAnswer 10000)
   answerListing node alice $ Reverts ""
   searchAlice s 12 `shouldReturn` refusedWith 503 "provider_unavailable"

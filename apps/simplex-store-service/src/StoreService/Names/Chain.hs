@@ -16,10 +16,6 @@ module StoreService.Names.Chain
     TxHash (..),
     SignedTx (..),
     Block (..),
-    ChainSeconds,
-    chainTime,
-    chainSeconds,
-    unixSeconds,
     Receipt (..),
     BlockTag (..),
     newChainClient,
@@ -54,6 +50,7 @@ module StoreService.Names.Chain
     parseText,
     decodeUint256,
     decodeWord64,
+    decodeSeconds,
     decodeAddress,
     decodeBool,
     decodeBytes32,
@@ -94,8 +91,6 @@ import Data.Maybe (fromMaybe, isJust)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeLatin1, decodeUtf8', encodeUtf8)
-import Data.Time.Clock (UTCTime)
-import Data.Time.Clock.POSIX (posixSecondsToUTCTime, utcTimeToPOSIXSeconds)
 import Data.Word (Word64)
 import Network.HTTP.Client (Manager)
 import qualified Network.HTTP.Client as HTTP
@@ -110,6 +105,7 @@ import Simplex.Messaging.Encoding.String (StrEncoding (..), StrJSON (..), TextEn
 import Simplex.Messaging.Eth.Address (Address, addressFromPrivateKey, recoverAddress, unAddress)
 import Simplex.Messaging.Eth.Transaction (Eip1559Tx (..), decodeEip1559Tx, eip1559SigningHash, signEip1559Tx)
 import Simplex.Messaging.Parsers (parseAll)
+import Simplex.Messaging.SystemTime (RoundedSystemTime (..), SystemSeconds)
 import Simplex.Messaging.Util (AnyError (..), tryAllOwnErrors', tshow)
 import System.Timeout (timeout)
 
@@ -172,9 +168,7 @@ newtype TxHash = TxHash Hex32
 data SignedTx = SignedTx {stRaw :: ByteString, stHash :: TxHash}
   deriving (Eq, Show)
 
-type ChainSeconds = Word64
-
-data Block = Block {blockNumber :: Word64, blockTimestamp :: ChainSeconds, blockBaseFee :: Word64}
+data Block = Block {blockNumber :: Word64, blockTimestamp :: SystemSeconds, blockBaseFee :: Word64}
   deriving (Eq, Show)
 
 data Receipt = Receipt {receiptSuccess :: Bool, receiptBlock :: Word64}
@@ -203,15 +197,6 @@ underfundedMessage = "insufficient funds"
 maxQuantityLength :: Int
 maxQuantityLength = 66
 
-chainTime :: ChainSeconds -> UTCTime
-chainTime = posixSecondsToUTCTime . fromIntegral
-
-chainSeconds :: UTCTime -> ChainSeconds
-chainSeconds = fromInteger . unixSeconds
-
-unixSeconds :: UTCTime -> Integer
-unixSeconds = floor . utcTimeToPOSIXSeconds
-
 newChainClient :: TVar ChaChaDRG -> ChainConfig -> IO ChainClient
 newChainClient g ccConfig@ChainConfig {cServiceKey} = do
   ccManager <- newTlsManager
@@ -238,7 +223,7 @@ confirmedNumber ChainClient {ccConfig = ChainConfig {cConfirmations}} latest = l
 blockByNumber :: ChainClient -> BlockTag -> IO (Either ChainError Block)
 blockByNumber c tag =
   rpc c "eth_getBlockByNumber" [blockTagParam tag, J.Bool False] $ J.withObject "block" $ \b ->
-    Block <$> (quantity =<< b .: "number") <*> (quantity =<< b .: "timestamp") <*> (quantity =<< b .: "baseFeePerGas")
+    Block <$> (quantity =<< b .: "number") <*> (RoundedSystemTime <$> (quantity =<< b .: "timestamp")) <*> (quantity =<< b .: "baseFeePerGas")
 
 -- | Nothing while the transaction is not mined, or after the node pruned its receipt.
 transactionReceipt :: ChainClient -> TxHash -> IO (Either ChainError (Maybe Receipt))
@@ -455,9 +440,15 @@ decodeUint256 :: ByteString -> Either AbiError Integer
 decodeUint256 = uintAt 0
 
 decodeWord64 :: ByteString -> Either AbiError Word64
-decodeWord64 ret = do
+decodeWord64 = decodeBounded
+
+decodeSeconds :: ByteString -> Either AbiError SystemSeconds
+decodeSeconds = fmap RoundedSystemTime . decodeBounded
+
+decodeBounded :: forall a. (Integral a, Bounded a) => ByteString -> Either AbiError a
+decodeBounded ret = do
   n <- decodeUint256 ret
-  if n <= toInteger (maxBound :: Word64) then Right (fromInteger n) else Left AERange
+  if n <= toInteger (maxBound :: a) then Right (fromInteger n) else Left AERange
 
 decodeAddress :: ByteString -> Either AbiError Address
 decodeAddress ret = do

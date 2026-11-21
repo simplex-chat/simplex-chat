@@ -48,12 +48,13 @@ import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import Simplex.Messaging.Encoding.String (textEncode)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Chat.Badges.Ledger (addMonths)
+import Simplex.Messaging.SystemTime (RoundedSystemTime (..), SystemSeconds, roundedToUTCTime)
 import Simplex.Messaging.TMap (TMap)
 import qualified Simplex.Messaging.TMap as TM
 import Simplex.Messaging.Util (catchOwn', tshow, ($>>=))
 import StoreService.Config (ChainConfig (..), NamesConfig (..))
 import StoreService.Names.Balances (RefundRecord (..))
-import StoreService.Names.Chain (Block (..), BlockTag (..), ChainError (..), ChainSeconds, RevertName (..), RevertReason (..), TxHash, blockAt, chainSeconds, chainTime, revertText)
+import StoreService.Names.Chain (Block (..), BlockTag (..), ChainError (..), RevertName (..), RevertReason (..), TxHash, blockAt, revertText)
 import StoreService.Names.Codes (releaseCode)
 import StoreService.Names.Contracts (CommitmentAges (..), Contracts (..), acceptedTerms, commitmentAges, commitmentTime, communityName, confirmedTag, controllerAvailable, forgetNamePolicy, namePolicy)
 import StoreService.Names.Orders (Landing (..), OrderRefusal, OrdersEnv (..), WriteRefusal (..), checkLanded, confirmLanded, versionWritten)
@@ -266,20 +267,22 @@ relayReverted Worker {wkOrders = OrdersEnv {oeStore}} NameRegistration {nrId} = 
 
 -- | At the lapse second a commitment can neither register nor be committed again, so the worker waits a second past it,
 -- then commits again with the stale fields cleared.
-fromCommitment :: Worker -> UTCTime -> NameRegistration -> CommitmentAges -> ChainSeconds -> IO Next
+fromCommitment :: Worker -> UTCTime -> NameRegistration -> CommitmentAges -> SystemSeconds -> IO Next
 fromCommitment w@Worker {wkOrders = OrdersEnv {oeConfig}} now r CommitmentAges {caMin, caMax} t = case (,) <$> after caMin <*> after caMax of
-  Nothing -> pure $ failure r $ SFChain $ ChainUnavailable "commitments: the reveal window passes 2^64 seconds"
+  Nothing -> pure $ failure r $ SFChain $ ChainUnavailable "commitments: the reveal window passes 2^63 seconds"
   Just window@(_, lapse)
     | reusable oeConfig now lapse -> toCommitted w now r window t
-    | lapse >= chainSeconds now -> pure $ waitUntil r $ addUTCTime chainSecond $ chainTime lapse
+    | roundedToUTCTime lapse >= now -> pure $ waitUntil r $ addUTCTime chainSecond $ roundedToUTCTime lapse
     | lapsedFields r /= r -> save w now $ lapsedFields r
     | otherwise -> sendCommit w now r
   where
-    after age = if age <= maxBound - t then Just (t + age) else Nothing
+    after age
+      | toInteger age <= toInteger (maxBound :: Int64) - toInteger (roundedSeconds t) = Just $ RoundedSystemTime $ roundedSeconds t + fromIntegral age
+      | otherwise = Nothing
 
 -- | A live commitment, or a stored intent, is reused while revealMargin is left before its end, time for the page's reveal and the register to mine.
-reusable :: NamesConfig -> UTCTime -> ChainSeconds -> Bool
-reusable NamesConfig {nRevealMarginSeconds} now end = end >= chainSeconds now + fromIntegral nRevealMarginSeconds
+reusable :: NamesConfig -> UTCTime -> SystemSeconds -> Bool
+reusable NamesConfig {nRevealMarginSeconds} now end = roundedToUTCTime end >= addUTCTime (fromIntegral nRevealMarginSeconds) now
 
 -- | The old commitment's transactions; the reveal stays for the next commitment.
 lapsedFields :: NameRegistration -> NameRegistration
@@ -290,14 +293,14 @@ lapsedFields r = case nrPhase r of
 
 -- | The reveal times come from the commitment's time. When that is not the block of our commit mined with status 1,
 -- someone committed it again after a lapse, so our commit is cleared.
-toCommitted :: Worker -> UTCTime -> NameRegistration -> (ChainSeconds, ChainSeconds) -> ChainSeconds -> IO Next
+toCommitted :: Worker -> UTCTime -> NameRegistration -> (SystemSeconds, SystemSeconds) -> SystemSeconds -> IO Next
 toCommitted w now r (revealAfter, revealBefore) t =
   ourCommit w r t >>= \case
     Left e -> pure $ failure r $ SFChain e
     Right ours -> save w now r {nrPhase = OCommitted Commit {cmTx = ours, cmRevealAfter = revealAfter, cmRevealBefore = revealBefore}}
 
 -- | Among the signatures of the commit last sent, the one mined with status 1 at the commitment's time.
-ourCommit :: Worker -> NameRegistration -> ChainSeconds -> IO (Either ChainError (Maybe TxRef))
+ourCommit :: Worker -> NameRegistration -> SystemSeconds -> IO (Either ChainError (Maybe TxRef))
 ourCommit Worker {wkOrders = OrdersEnv {oeStore, oeContracts}} NameRegistration {nrId} t = do
   txs <- withTransaction oeStore (`registrationTransactions` nrId)
   let commits = [tx | tx@NameTransaction {ntFor = TxRegistration RTCommit _} <- txs]
@@ -338,7 +341,7 @@ committed w@Worker {wkSender} now r@NameRegistration {nrId = regId, nrReveal, nr
         (if unlapsed now c then relayAcceptance w now r c rv else pure Nothing) >>= \case
           Just next -> pure next
           Nothing
-            | now < chainTime cmRevealAfter -> pure $ waitUntil r $ chainTime cmRevealAfter
+            | now < roundedToUTCTime cmRevealAfter -> pure $ waitUntil r $ roundedToUTCTime cmRevealAfter
             | otherwise -> sendRegister w now r c rv
   where
     unreadAt = addUTCTime (unreadDays * 86400) nrReadAt
@@ -347,7 +350,7 @@ unreadDays :: NominalDiffTime
 unreadDays = 3
 
 unlapsed :: UTCTime -> Commit -> Bool
-unlapsed now Commit {cmRevealBefore} = now <= chainTime cmRevealBefore
+unlapsed now Commit {cmRevealBefore} = now <= roundedToUTCTime cmRevealBefore
 
 -- | The relay of the reveal's acceptance to the name policy, sent without waiting for revealAfter; Nothing once the policy
 -- stores that acceptance. One signed for another policy, before a setNamePolicy, or for the other kind of terms, clears the
@@ -369,7 +372,7 @@ relayAcceptance w@Worker {wkOrders = OrdersEnv {oeContracts, oeConfig = NamesCon
       relayReverted w r >>= \case
         True -> inTurn w r $ failedAttempt w now r RTAccept ASSent Nothing $ pure (Nothing, Again)
         False
-          | chainSeconds now > deadline -> verifyRelay policy kind
+          | now > roundedToUTCTime deadline -> verifyRelay policy kind
           | otherwise -> intentRefused w now r rv >>= maybe (verifyRelay policy kind) pure
     verifyRelay policy kind =
       verifyAcceptance (policyDomain cChainId policy) kind nrOwner nrCommitment deadline a >>= \case
@@ -389,7 +392,7 @@ relayAcceptance w@Worker {wkOrders = OrdersEnv {oeContracts, oeConfig = NamesCon
 -- | The stored intent is checked before its dry run, whose revert decides at once; no label turn is held across the send.
 sendRegister :: Worker -> UTCTime -> NameRegistration -> Commit -> NameReveal -> IO Next
 sendRegister w@Worker {wkOrders = OrdersEnv {oeConfig = cfg@NamesConfig {nChain = ChainConfig {cSponsor}}}, wkSender} now r@NameRegistration {nrId = regId@(RegistrationId rid)} c rv@NameReveal {rvDeadline}
-  | chainSeconds now > rvDeadline = do
+  | now > roundedToUTCTime rvDeadline = do
       logWarn $ "names worker: registration " <> rid <> ": its stored signature's deadline passed, so its page signs again"
       save w now r {nrReveal = Nothing}
   | otherwise =
@@ -405,7 +408,7 @@ sendRegister w@Worker {wkOrders = OrdersEnv {oeConfig = cfg@NamesConfig {nChain 
 
 intentRefused :: Worker -> UTCTime -> NameRegistration -> NameReveal -> IO (Maybe Next)
 intentRefused w@Worker {wkOrders = OrdersEnv {oeConfig = cfg@NamesConfig {nChain = ChainConfig {cChainId, cSponsor}}}} now r rv =
-  verifyRegisterIntent (sponsorDomain cChainId cSponsor) (chainSeconds now) (intentOf cfg (nrOwner r) (nrDuration r) rv) >>= \case
+  verifyRegisterIntent (sponsorDomain cChainId cSponsor) now (intentOf cfg (nrOwner r) (nrDuration r) rv) >>= \case
     Left refusal -> Just <$> inTurn w r (failOrder w now r FRSignatureRefused $ "its stored signature is refused under the service's current configuration, " <> T.pack refusal)
     Right () -> pure Nothing
 

@@ -44,6 +44,7 @@ import Simplex.Messaging.Encoding (Encoding (..))
 import Simplex.Messaging.Eth.EIP712 (Eip712Domain)
 import Simplex.Messaging.Eth.Transaction (Eip1559Tx (..))
 import Simplex.Messaging.SimplexName (LabelHash (..), SimplexTLD (..))
+import Simplex.Messaging.SystemTime (RoundedSystemTime (..), SystemSeconds)
 import StoreService.Names.Chain
 import StoreService.Names.Contracts (newContracts)
 import StoreService.Names.Records
@@ -175,7 +176,8 @@ setRecord Setup {node} key value =
     Returns $ abiTuple [Dynamic $ abiBytes $ encodeUtf8 value]
 
 signChange :: Setup -> EphemeralWallet -> RecordChange -> Word64 -> Word64 -> IO SignedChange
-signChange Setup {random} EphemeralWallet {ewKey} scChange scNonce scDeadline = do
+signChange Setup {random} EphemeralWallet {ewKey} scChange scNonce dl = do
+  let scDeadline = RoundedSystemTime $ fromIntegral dl
   scSignature <- signRecoverable random ewKey (digestOf scChange scNonce scDeadline) >>= either fail pure
   pure SignedChange {scChange, scNonce, scDeadline, scSignature}
 
@@ -258,8 +260,8 @@ testViemVectors g = withSetup g $ \s@Setup {owner = EphemeralWallet {ewAddress}}
   ewAddress `shouldBe` viemAddress
   SignedChange {scSignature = setSig} <- signChange s (owner s) (channel viemChannelLink) 0 deadline
   setSig `shouldBe` viemSetSignature
-  recoverAddress setSig (digestOf (channel viemChannelLink) 0 deadline) `shouldReturn` Right viemAddress
-  setTextWithSigCalldata aliceNode LKChannel viemChannelLink 0 deadline setSig `shouldBe` viemSetCall
+  recoverAddress setSig (digestOf (channel viemChannelLink) 0 deadlineSeconds) `shouldReturn` Right viemAddress
+  setTextWithSigCalldata aliceNode LKChannel viemChannelLink 0 deadlineSeconds setSig `shouldBe` viemSetCall
 
 testViemMulticall :: TVar ChaChaDRG -> IO ()
 testViemMulticall g = withSetup g $ \s -> do
@@ -267,8 +269,8 @@ testViemMulticall g = withSetup g $ \s -> do
   [second] <- pure rest
   (scSignature first, scSignature second) `shouldBe` (viemContactSignature, viemChannelSignature)
   multicallCalldata
-    [ setTextWithSigCalldata aliceNode LKContact viemContactLink 0 deadline (scSignature first),
-      setTextWithSigCalldata aliceNode LKChannel viemChannelLink 1 deadline (scSignature second)
+    [ setTextWithSigCalldata aliceNode LKContact viemContactLink 0 deadlineSeconds (scSignature first),
+      setTextWithSigCalldata aliceNode LKChannel viemChannelLink 1 deadlineSeconds (scSignature second)
     ]
     `shouldBe` viemMulticall
 
@@ -964,9 +966,9 @@ editFields :: [(J.Key, J.Value)] -> J.Object
 editFields extra = KM.union (KM.fromList extra) $ KM.delete "key" $ KM.delete "value" $ changeJson viemChange
 
 viemChange :: SignedChange
-viemChange = SignedChange {scChange = channel viemChannelLink, scNonce = 0, scDeadline = deadline, scSignature = viemSetSignature}
+viemChange = SignedChange {scChange = channel viemChannelLink, scNonce = 0, scDeadline = deadlineSeconds, scSignature = viemSetSignature}
 
-digestOf :: RecordChange -> Word64 -> Word64 -> ByteString
+digestOf :: RecordChange -> Word64 -> SystemSeconds -> ByteString
 digestOf (RCSetText key value) nonce dl = setTextDigest resolverDomain' aliceNode key value nonce dl
 
 resolverDomain' :: Eip712Domain
@@ -992,6 +994,9 @@ channelKind = "channel"
 -- | An hour after the fake node's first block.
 deadline :: Word64
 deadline = 1767229200
+
+deadlineSeconds :: SystemSeconds
+deadlineSeconds = RoundedSystemTime $ fromIntegral deadline
 
 nameExpiry :: Word64
 nameExpiry = 1861833600
