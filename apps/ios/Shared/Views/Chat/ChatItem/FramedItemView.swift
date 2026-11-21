@@ -229,7 +229,7 @@ struct FramedItemView: View {
                 ciMsgContentView(chatItem)
             case let .chat(text, chatLink, ownerSig):
                 let hasText = text != chatLink.connLinkStr
-                CIChatLinkHeader(chatItem: chatItem, chatLink: chatLink, ownerSig: ownerSig, hasText: hasText)
+                CIChatLinkHeader(chatItem: chatItem, chatLink: chatLink, hasText: hasText)
                     .overlay(DetermineWidth())
                     .simultaneousGesture(TapGesture().onEnded {
                         planAndConnect(chatLink.connLinkStr, linkOwnerSig: ownerSig, theme: theme, dismiss: false)
