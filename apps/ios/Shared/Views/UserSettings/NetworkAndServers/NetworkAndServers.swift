@@ -31,13 +31,41 @@ private enum NetworkAndServersSheet: Identifiable {
 }
 
 struct NetworkAndServers: View {
+    @EnvironmentObject var ss: SaveableSettings
+    @State private var justOpened = true
+
+    var body: some View {
+        NetworkAndServersLayout()
+            .task {
+                // this condition is needed to prevent re-setting the servers when exiting single server view
+                if justOpened {
+                    do {
+                        ss.servers.currUserServers = try await getUserServers()
+                        ss.servers.userServers = ss.servers.currUserServers
+                        ss.servers.serverErrors = []
+                        ss.servers.serverWarnings = []
+                        validateServers_($ss.servers.userServers, $ss.servers.serverErrors, $ss.servers.serverWarnings)
+                    } catch let error {
+                        await MainActor.run {
+                            showAlert(
+                                NSLocalizedString("Error loading servers", comment: "alert title"),
+                                message: responseError(error)
+                            )
+                        }
+                    }
+                    justOpened = false
+                }
+            }
+    }
+}
+
+struct NetworkAndServersLayout: View {
     @Environment(\.dismiss) var dismiss: DismissAction
     @EnvironmentObject var m: ChatModel
     @Environment(\.colorScheme) var colorScheme: ColorScheme
     @EnvironmentObject var theme: AppTheme
     @EnvironmentObject var ss: SaveableSettings
     @State private var sheetItem: NetworkAndServersSheet? = nil
-    @State private var justOpened = true
     @State private var showSaveDialog = false
 
     var body: some View {
@@ -131,26 +159,6 @@ struct NetworkAndServers: View {
                         Image(systemName: "circle.fill").foregroundColor(m.networkInfo.online ? .green : .red)
                     }
                 }
-            }
-        }
-        .task {
-            // this condition is needed to prevent re-setting the servers when exiting single server view
-            if justOpened {
-                do {
-                    ss.servers.currUserServers = try await getUserServers()
-                    ss.servers.userServers = ss.servers.currUserServers
-                    ss.servers.serverErrors = []
-                    ss.servers.serverWarnings = []
-                    validateServers_($ss.servers.userServers, $ss.servers.serverErrors, $ss.servers.serverWarnings)
-                } catch let error {
-                    await MainActor.run {
-                        showAlert(
-                            NSLocalizedString("Error loading servers", comment: "alert title"),
-                            message: responseError(error)
-                        )
-                    }
-                }
-                justOpened = false
             }
         }
         .modifier(BackButton(disabled: Binding.constant(false)) {
@@ -513,7 +521,29 @@ func updateOperatorsConditionsAcceptance(_ usvs: Binding<[UserOperatorServers]>,
 
 struct NetworkServersView_Previews: PreviewProvider {
     static var previews: some View {
-        NetworkAndServers()
-            .environmentObject(SaveableSettings())
+        let ss = SaveableSettings()
+        let servers = [
+            UserOperatorServers.sampleData1,
+            UserOperatorServers(
+                operator: ServerOperator(
+                    operatorId: 2,
+                    operatorTag: .flux,
+                    tradeName: "Flux",
+                    legalName: "InFlux Technologies Limited",
+                    serverDomains: ["simplexonflux.com"],
+                    conditionsAcceptance: .accepted(acceptedAt: nil, autoAccepted: false),
+                    enabled: true,
+                    smpRoles: ServerRoles(storage: false, proxy: true, names: true),
+                    xftpRoles: ServerRoles(storage: true, proxy: true, names: true)
+                ),
+                smpServers: [UserServer.sampleData.preset],
+                xftpServers: [UserServer.sampleData.xftpPreset],
+                chatRelays: []
+            ),
+            UserOperatorServers.sampleDataNilOperator
+        ]
+        ss.servers = ServerSettings(currUserServers: servers, userServers: servers, serverErrors: [], serverWarnings: [])
+        return NetworkAndServersLayout()
+            .environmentObject(ss)
     }
 }
