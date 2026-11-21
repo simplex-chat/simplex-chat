@@ -353,7 +353,8 @@ testCreatePaid = withServiceStore $ \st -> do
         nrCreatedAt = t0,
         nrUpdatedAt = t0,
         nrReadAt = t0,
-        nrPaidAt = Nothing
+        nrPaidAt = Nothing,
+        nrLastAttempt = Nothing
       }
 
 testCreateCode :: IO ()
@@ -585,9 +586,9 @@ testRetarget = withServiceStore $ \st -> do
   failedSend `shouldReturn` 1
   failedSend `shouldReturn` 2
   withTransaction st (\db -> retargetRegistration db failed {nrVersion = 2} o' moved 10000 (at 6)) `shouldReturn` Written 3
-  withTransaction st (\db -> lastAttempt db (RegistrationId "r1")) `shouldReturn` Nothing
+  nrLastAttempt <$> reg st "r1" `shouldReturn` Nothing
   failedSend `shouldReturn` 1
-  withTransaction st (\db -> lastAttempt db (RegistrationId "r1")) `shouldReturn` Just attempt
+  nrLastAttempt <$> reg st "r1" `shouldReturn` Just attempt
   r' <- reg st "r1"
   r'
     `shouldBe` r

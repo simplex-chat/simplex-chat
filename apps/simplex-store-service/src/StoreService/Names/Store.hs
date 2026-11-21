@@ -93,7 +93,6 @@ module StoreService.Names.Store
     AttemptStage (..),
     NameAttempt (..),
     recordAttempt,
-    lastAttempt,
     openInvoicesOfHeldName,
     activeRegistrations,
     unpaidCleanupCandidates,
@@ -156,7 +155,7 @@ import Data.ByteString (ByteString)
 import Data.Int (Int64)
 import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.List.NonEmpty as L
-import Data.Maybe (isJust, isNothing, listToMaybe, mapMaybe)
+import Data.Maybe (isJust, isNothing, listToMaybe)
 import Data.String (fromString)
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -391,7 +390,8 @@ data NameRegistration = NameRegistration
     nrCreatedAt :: UTCTime,
     nrUpdatedAt :: UTCTime,
     nrReadAt :: UTCTime,
-    nrPaidAt :: Maybe UTCTime
+    nrPaidAt :: Maybe UTCTime,
+    nrLastAttempt :: Maybe NameAttempt
   }
   deriving (Eq, Show)
 
@@ -877,7 +877,7 @@ registrationColumns =
       r.price, r.method, ni.invoice_id, r.name_prepaid_code_id, r.label, r.secret, r.contact_link, r.channel_link, r.intent_nonce, r.intent_deadline,
       r.intent_signature, r.commit_tx, r.commit_block, r.register_tx, r.reveal_after, r.reveal_before, r.expires_at, r.registered_at, r.failed_at, r.fail_reason,
       r.closed_by, r.order_hash, r.moves, r.links_refused_at, r.created_at, r.updated_at, r.balance_source, r.balance_used, r.agreed_terms, r.accept_terms,
-      r.accept_nonce, r.accept_signature, r.read_at, r.links_refused_kind, r.paid_at
+      r.accept_nonce, r.accept_signature, r.read_at, r.links_refused_kind, r.paid_at, r.last_attempt_tx, r.last_attempt_stage, r.last_attempt_reason, r.last_attempt_at
   |]
 
 registrationFrom :: Query
@@ -897,7 +897,7 @@ type RegistrationRow =
     :. (USDCents, Maybe ServicePaymentMethod, Maybe Text, Maybe Int64, Maybe Text, Maybe Hex32, Maybe Text, Maybe Text, Maybe Int64, Maybe Int64)
     :. (Maybe RecoverableSignature, Maybe TxHash, Maybe Int64, Maybe TxHash, Maybe Int64, Maybe Int64, Maybe Int64, Maybe UTCTime, Maybe UTCTime, Maybe FailReason)
     :. (Maybe InvoiceClose, OrderHash, Int, Maybe UTCTime, UTCTime, UTCTime, Maybe Text, USDCents, AgreedTerms, Maybe TermsHash)
-    :. (Maybe Int64, Maybe RecoverableSignature, UTCTime, Maybe Text, Maybe UTCTime)
+    :. (Maybe Int64, Maybe RecoverableSignature, UTCTime, Maybe Text, Maybe UTCTime, Maybe RegistrationTx, Maybe AttemptStage, Maybe Text, Maybe UTCTime)
 
 toRegistration :: RegistrationRow -> Either Text NameRegistration
 toRegistration
@@ -905,7 +905,7 @@ toRegistration
       :. (nrPrice, method_, invoiceId_, codeId_, label_, secret_, nrContactLink, nrChannelLink, nonce_, deadline_)
       :. (signature_, commitTx, commitBlock, registerTx, revealAfter, revealBefore, expiresAt, registeredAt, failedAt, failReason)
       :. (closedBy, nrOrderHash, nrMoves, linksRefusedAt_, nrCreatedAt, nrUpdatedAt, source_, used, nrAgreedTerms, acceptTerms_)
-      :. (acceptNonce_, acceptSignature_, nrReadAt, linksRefusedKind_, nrPaidAt)
+      :. (acceptNonce_, acceptSignature_, nrReadAt, linksRefusedKind_, nrPaidAt, attemptTx_, attemptStage_, attemptReason_, attemptAt_)
     ) = do
     nrLength <- note ("name_registrations.length: " <> rid) $ nameLength len
     let commitOf after before = Commit {cmTx = TxRef <$> commitTx <*> (word64 <$> commitBlock), cmRevealAfter = RoundedSystemTime after, cmRevealBefore = RoundedSystemTime before}
@@ -952,6 +952,10 @@ toRegistration
       (Nothing, Nothing) -> Right Nothing
       (Just at, Just kind) -> (\k -> Just (at, k)) <$> note ("name_registrations links_refused_kind: " <> rid) (textDecode kind)
       _ -> Left $ "name_registrations links refused: " <> rid
+    nrLastAttempt <- case (attemptTx_, attemptStage_, attemptReason_, attemptAt_) of
+      (Nothing, Nothing, Nothing, Nothing) -> Right Nothing
+      (Just naTx, Just naStage, Just naReason, Just naAt) -> Right $ Just NameAttempt {naTx, naStage, naReason, naAt}
+      _ -> Left $ "name_registrations last attempt: " <> rid
     pure
       NameRegistration
         { nrId = RegistrationId rid,
@@ -975,7 +979,8 @@ toRegistration
           nrCreatedAt,
           nrUpdatedAt,
           nrReadAt,
-          nrPaidAt
+          nrPaidAt,
+          nrLastAttempt
         }
 
 getRegistration :: DB.Connection -> RegistrationId -> IO (Maybe NameRegistration)
@@ -1211,15 +1216,6 @@ recordAttempt db (RegistrationId rid) counted NameAttempt {naTx, naStage, naReas
     failures = case naStage of
       ASDryRun -> "failed_dry_runs"
       ASSent -> "failed_sends"
-
-lastAttempt :: DB.Connection -> RegistrationId -> IO (Maybe NameAttempt)
-lastAttempt db (RegistrationId rid) =
-  maybeFirstRow id $
-    mapMaybe toAttempt <$> DB.query db (mkQuery "SELECT last_attempt_tx, last_attempt_stage, last_attempt_reason, last_attempt_at FROM @name_registrations WHERE registration_id = ?") (Only rid)
-  where
-    toAttempt = \case
-      (Just naTx, Just naStage, Just naReason, Just naAt) -> Just NameAttempt {naTx, naStage, naReason, naAt}
-      _ -> Nothing
 
 openInvoicesOfHeldName :: DB.Connection -> RegistrationId -> IO [(InvoiceId, PaymentProvider, Text)]
 openInvoicesOfHeldName db (RegistrationId rid) =

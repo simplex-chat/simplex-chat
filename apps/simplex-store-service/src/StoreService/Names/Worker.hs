@@ -253,13 +253,12 @@ commitReverted Worker {wkOrders = OrdersEnv {oeStore}} NameRegistration {nrId} h
 
 -- | The newest relay, by its signature's nonce, mined with status 0 and with no failed attempt stored since it was sent.
 relayReverted :: Worker -> NameRegistration -> IO Bool
-relayReverted Worker {wkOrders = OrdersEnv {oeStore}} NameRegistration {nrId} = withTransaction oeStore $ \db -> do
+relayReverted Worker {wkOrders = OrdersEnv {oeStore}} NameRegistration {nrId, nrLastAttempt} = withTransaction oeStore $ \db -> do
   relays <- filter (\NameTransaction {ntFor} -> ntFor == TxRegistration RTAccept nrId) <$> registrationTransactions db nrId
-  attempt <- lastAttempt db nrId
   let newest = [ntNonce | NameTransaction {ntNonce} <- take 1 $ reverse relays]
       group = [t | t@NameTransaction {ntNonce} <- relays, ntNonce `elem` newest]
       reverted = or [True | NameTransaction {ntState = TxSettled TSRevertedAt {}} <- group]
-      stored sentAt = maybe False (\NameAttempt {naAt} -> naAt >= sentAt) attempt
+      stored sentAt = maybe False (\NameAttempt {naAt} -> naAt >= sentAt) nrLastAttempt
   pure $ case [ntSentAt | NameTransaction {ntSentAt} <- group] of
     [] -> False
     sent -> reverted && not (stored $ maximum sent)

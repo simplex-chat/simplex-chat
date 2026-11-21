@@ -738,7 +738,7 @@ testRevertFailed = withWorker $ \w@W {wCtx = ctx@Ctx {cNode}} -> do
 attemptsOf :: Ctx -> NameRegistration -> IO (Int, Int, Maybe (RegistrationTx, AttemptStage, Text))
 attemptsOf Ctx {cStore} NameRegistration {nrId = rid@(RegistrationId ridText)} = withTransaction cStore $ \db -> do
   [(dryRuns, sends)] <- DB.query db "SELECT failed_dry_runs, failed_sends FROM sx_badge_service_name_registrations WHERE registration_id = ?" [ridText]
-  (dryRuns,sends,) . fmap (\NameAttempt {naTx, naStage, naReason} -> (naTx, naStage, naReason)) <$> lastAttempt db rid
+  (dryRuns,sends,) . (>>= fmap (\NameAttempt {naTx, naStage, naReason} -> (naTx, naStage, naReason)) . nrLastAttempt) <$> getRegistration db rid
 
 testAllowanceUsedUp :: IO ()
 testAllowanceUsedUp = withWorker $ \w@W {wCtx = ctx@Ctx {cNode}} -> do

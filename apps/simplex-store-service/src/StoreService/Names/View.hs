@@ -52,7 +52,7 @@ import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Profiles (deadlineIn, withSlot)
 import StoreService.Names.Registration (LinkKind)
 import StoreService.Names.Signatures (AgreedTerms (..))
-import StoreService.Names.Store (AttemptStage, Balance (..), BalanceHold (..), BalanceUse (..), Commit (..), FailReason, HoldState, InvoiceClose, LateWait, NameAttempt (..), NameRegistration (..), NameReveal (..), OrderPayment (..), OrderPhase (..), RegistrationTx, TxHistory (..), getBalance, getRegistration, heldBy, lateWait, lastAttempt, orderLive, paymentInvoice)
+import StoreService.Names.Store (AttemptStage, Balance (..), BalanceHold (..), BalanceUse (..), Commit (..), FailReason, HoldState, InvoiceClose, LateWait, NameAttempt (..), NameRegistration (..), NameReveal (..), OrderPayment (..), OrderPhase (..), RegistrationTx, TxHistory (..), getBalance, getRegistration, heldBy, lateWait, orderLive, paymentInvoice)
 
 data PaidWith
   = PWInvoice {method :: Text}
@@ -162,12 +162,11 @@ $(JQ.deriveToJSON (taggedObjectJSON $ J.camelTo2 '_' . dropPrefix "NR") {J.omitN
 -- | The balance as it reads at the given time, when a hold may have become overdue, and what a closed order's late money waits on.
 registrationView :: DBStore -> NamesConfig -> Contracts -> UTCTime -> NameRegistration -> IO RegistrationView
 registrationView st cfg ct now r = do
-  (balance, late, attempt) <- withTransaction st $ \db -> do
+  (balance, late) <- withTransaction st $ \db -> do
     balance <- getBalance db (nrId r) now
     late <- maybe (pure Nothing) (lateWait db) (paymentInvoice $ nrPayment r)
-    attempt <- lastAttempt db (nrId r)
-    pure (balance, late, attempt)
-  toRegistrationView cfg r balance late attempt <$> phaseView ct now r
+    pure (balance, late)
+  toRegistrationView cfg r balance late <$> phaseView ct now r
 
 -- | The chain is read only while a committed order awaits its owner's signature.
 phaseView :: Contracts -> UTCTime -> NameRegistration -> IO PhaseView
@@ -198,8 +197,8 @@ readToSign ct what owner lh = do
   where
     unread reason = logWarn $ "names: " <> what <> " " <> reason
 
-toRegistrationView :: NamesConfig -> NameRegistration -> Maybe Balance -> Maybe LateWait -> Maybe NameAttempt -> PhaseView -> RegistrationView
-toRegistrationView cfg r balance late attempt phase =
+toRegistrationView :: NamesConfig -> NameRegistration -> Maybe Balance -> Maybe LateWait -> PhaseView -> RegistrationView
+toRegistrationView cfg r balance late phase =
   RegistrationView
     { vwId = rid,
       vwVersion = nrVersion,
@@ -221,11 +220,11 @@ toRegistrationView cfg r balance late attempt phase =
       vwRegisterTx = thRegisterTx,
       vwCommunity = communityOf cfg (nrLabelHash r) (communityName nrAgreedTerms),
       vwTerms = nrAgreedTerms,
-      vwLastAttempt = (\NameAttempt {naTx, naStage, naReason, naAt} -> AttemptView {transaction = naTx, stage = naStage, reason = naReason, at = naAt}) <$> attempt
+      vwLastAttempt = (\NameAttempt {naTx, naStage, naReason, naAt} -> AttemptView {transaction = naTx, stage = naStage, reason = naReason, at = naAt}) <$> nrLastAttempt
     }
   where
     NameRegistration {nrId = RegistrationId rid, nrVersion, nrMoves, nrLabelHash = LabelHash lh, nrReveal, nrOwner, nrCommitment, nrSealed} = r
-    NameRegistration {nrYears, nrDuration, nrPrice, nrPayment, nrAgreedTerms, nrLinksRefused, nrHistory = TxHistory {thCommitTx, thRegisterTx}, nrPaidAt} = r
+    NameRegistration {nrYears, nrDuration, nrPrice, nrPayment, nrAgreedTerms, nrLinksRefused, nrHistory = TxHistory {thCommitTx, thRegisterTx}, nrPaidAt, nrLastAttempt} = r
 
 paidWith :: OrderPayment -> PaidWith
 paidWith = \case

@@ -1769,7 +1769,7 @@ testViewFields :: IO ()
 testViewFields = withServiceStore $ \st -> withFakeEthNode $ \node -> do
   Right () <- placePaid st "r1" ownerA (order "alicebakery" 1) (addUTCTime 3600 t0)
   r <- withTransaction st $ \db -> fromJust <$> getRegistration db (RegistrationId "r1")
-  let viewWith late phase = toRegistrationView (testNamesConfig node) r Nothing late Nothing phase
+  let viewWith late phase = toRegistrationView (testNamesConfig node) r Nothing late phase
   viewWith Nothing PVUnpaid
     `shouldBe` RegistrationView
       { vwId = "r1",
@@ -1794,7 +1794,7 @@ testViewFields = withServiceStore $ \st -> withFakeEthNode $ \node -> do
         vwTerms = agreed plainTerms,
         vwLastAttempt = Nothing
       }
-  vwLabel (toRegistrationView (testNamesConfig node) r {nrPaidAt = Just t0} Nothing Nothing Nothing PVTaken) `shouldBe` Just "alicebakery"
+  vwLabel (toRegistrationView (testNamesConfig node) r {nrPaidAt = Just t0} Nothing Nothing PVTaken) `shouldBe` Just "alicebakery"
   map (\w -> J.toJSON (vwLatePayment $ viewWith (Just w) PVUnpaid)) [LWConfirming, LWCrediting, LWSupport] `shouldBe` ["confirming", "crediting", "support"]
   let acceptance c h = AcceptanceAsked {community = c, policy = fakeNamePolicy, termsHash = Hex32 h, nonce = 2}
       committed = PVCommitted (RoundedSystemTime 1) (RoundedSystemTime 2)
@@ -1881,7 +1881,7 @@ testViewTerms :: IO ()
 testViewTerms = withServiceStore $ \st -> withFakeEthNode $ \node -> do
   Right () <- placePaid st "r1" ownerA (order "alicebakery" 1) {ofAgreedTerms = agreed communityTerms} (addUTCTime 3600 t0)
   r <- withTransaction st $ \db -> fromJust <$> getRegistration db (RegistrationId "r1")
-  vwTerms (toRegistrationView (testNamesConfig node) r Nothing Nothing Nothing PVUnpaid) `shouldBe` agreed communityTerms
+  vwTerms (toRegistrationView (testNamesConfig node) r Nothing Nothing PVUnpaid) `shouldBe` agreed communityTerms
 
 testViewReads :: IO ()
 testViewReads = withServiceStore $ \st -> withFakeEthNode $ \node -> do
