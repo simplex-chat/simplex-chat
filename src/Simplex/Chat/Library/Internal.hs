@@ -3261,7 +3261,7 @@ agentXFTPDeleteRcvFiles :: [(XFTPRcvFile, FileTransferId)] -> CM' ()
 agentXFTPDeleteRcvFiles rcvFiles = do
   let rcvFiles' = filter (not . agentRcvFileDeleted . fst) rcvFiles
       rfIds = mapMaybe fileIds rcvFiles'
-  withAgent' $ \a -> xftpDeleteRcvFiles a (map fst rfIds)
+  unless (null rfIds) $ withAgent' $ \a -> xftpDeleteRcvFiles a (map fst rfIds)
   void . withStoreBatch' $ \db -> map (setRcvFTAgentDeleted db . snd) rfIds
   where
     fileIds :: (XFTPRcvFile, FileTransferId) -> Maybe (RcvFileId, FileTransferId)
@@ -3282,8 +3282,8 @@ agentXFTPDeleteSndFilesRemote user sndFiles = do
   -- this partitions files into those with and without descriptions -
   -- files with description are deleted remotely, files without description are deleted internally
   (sfsNoDescr, sfsWithDescr) <- partitionSndDescr sndFilesAll' [] []
-  withAgent' $ \a -> xftpDeleteSndFilesInternal a sfsNoDescr
-  withAgent' $ \a -> xftpDeleteSndFilesRemote a (aUserId user) sfsWithDescr
+  unless (null sfsNoDescr) $ withAgent' $ \a -> xftpDeleteSndFilesInternal a sfsNoDescr
+  unless (null sfsWithDescr) $ withAgent' $ \a -> xftpDeleteSndFilesRemote a (aUserId user) sfsWithDescr
   void . withStoreBatch' $ \db -> map (setSndFTAgentDeleted db user . snd) sndFilesAll'
   where
     mapRedirectMeta :: FileTransferMeta -> Maybe (XFTPSndFile, FileTransferId)
