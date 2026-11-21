@@ -379,7 +379,10 @@ agentFileError = \case
 
 processAgentMsgRcvFile :: ACorrId -> RcvFileId -> AEvent 'AERcvFile -> CM ()
 processAgentMsgRcvFile _corrId aFileId msg = do
-  (cRef_, fileId) <- withStore (`getXFTPRcvFileDBIds` AgentRcvFileId aFileId)
+  (cRef_, fileId) <-
+    withStore (`getXFTPRcvFileDBIds` AgentRcvFileId aFileId) `catchAllErrors` \case
+      e@(ChatErrorStore SERcvFileNotFoundXFTP {}) -> lift (withAgent' (`xftpDeleteRcvFile` aFileId)) >> throwError e
+      e -> throwError e
   withEntityLock_ cRef_ . withFileLock "processAgentMsgRcvFile" fileId $
     withStore' (`getUserByARcvFileId` AgentRcvFileId aFileId) >>= \case
       Just user -> process user fileId `catchAllErrors` eToView

@@ -79,6 +79,7 @@ chatFileTests = do
     it "continue receiving file after restart" testXFTPContinueRcv
     it "receive file marked to receive on chat start" testXFTPMarkToReceive
     it "receive file whose description was redelivered after chat stop" testXFTPRedeliveredDescription
+    it "delete download started by a description handling that failed to commit" testXFTPUncommittedDescriptionDownload
     it "error receiving file" testXFTPRcvError
     it "cancel receiving file, repeat receive" testXFTPCancelRcvRepeat
     it "receiving file from unknown relays resets it, the event has the previous item" testXFTPRcvRelaysNotApproved
@@ -1238,6 +1239,33 @@ testXFTPRedeliveredDescription ps = do
   where
     descrReady CEvtRcvFileDescrReady {} = True
     descrReady _ = False
+
+testXFTPUncommittedDescriptionDownload :: HasCallStack => TestParams -> IO ()
+testXFTPUncommittedDescriptionDownload =
+  testChatOpts2 opts aliceProfile bobProfile $ \alice bob -> withXFTPServer alice $ do
+    connectUsers alice bob
+    let bobFiles = tmpFile bob "bob_files"
+    bob ##> ("/_files_folder " <> bobFiles)
+    bob <## "ok"
+    withFailingCommits bob "messages" "NEW.chat_msg_event = 'x.msg.file.descr'" $ do
+      alice #> "/f @bob ./tests/fixtures/test.jpg"
+      alice <## "use /fc 1 to cancel sending"
+      alice <## "completed uploading file 1 (test.jpg) for bob"
+      bob <# "alice> sends file test.jpg (136.5 KiB / 139737 bytes)"
+      bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+      bob <## "saving file 1 from alice to test.jpg"
+      bob <##. "critical error: "
+      bob <## "please restart the app"
+      agentRcvFiles bob `shouldEventuallyReturn` [[0]]
+    bob `send` "/_stop"
+    bob `send` "/_start"
+    (withCCTransaction bob (`DB.query_` "SELECT file_status FROM rcv_files WHERE file_id = 1") :: IO [[T.Text]]) `shouldEventuallyReturn` [["complete"]]
+    agentRcvFiles bob `shouldEventuallyReturn` [[0]]
+    src <- B.readFile "./tests/fixtures/test.jpg"
+    B.readFile (bobFiles </> "test.jpg") `shouldReturn` src
+  where
+    opts = (testOpts :: ChatOpts) {autoAcceptFileSize = 200000}
+    agentRcvFiles cc = withCCAgentTransaction cc (`DB.query_` "SELECT count(1) FROM rcv_files WHERE deleted = 0") :: IO [[Int]]
 
 testRedeliveredUncommittedInlineChunk :: HasCallStack => TestParams -> IO ()
 testRedeliveredUncommittedInlineChunk =
