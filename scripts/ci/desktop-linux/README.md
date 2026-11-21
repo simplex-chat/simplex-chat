@@ -69,6 +69,7 @@ With the input `e2e`, the job `packages` builds the deb and the AppImage with `s
 - the window: a native Wayland surface under `wayland`, an X11 window under `xwayland`, and its app_id or WM_CLASS equal to the installation's desktop entry ID (`simplex-simplex` for the deb, `chat.simplex.app` for the AppImage);
 - no `gsettings` process;
 - the OpenGL renderer in the app's log;
+- file dialogs through the portal's file chooser (`file chooser: portal` in the app's log); the smoke test outside `e2e` runs without xdg-desktop-portal and so uses GTK's own dialog;
 - the database passphrase in `settings.properties` only as ciphertext, its key in the keyring (`secret-tool`; for the Flatpak, the Secret portal's keyring file in the sandbox), and the config directory with mode 700;
 - the tray item registered with the watcher;
 - dark mode: the light window's mean brightness is above 0.6; it drops by 0.25 after `gsettings set org.gnome.desktop.interface color-scheme prefer-dark`, which the portal's Settings report, and returns within 0.05 after `default`;

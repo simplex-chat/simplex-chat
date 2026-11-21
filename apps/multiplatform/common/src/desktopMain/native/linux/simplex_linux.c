@@ -19,6 +19,16 @@
 #define ABSENT_EXCEPTION "chat/simplex/common/platform/SecretServiceAbsentException"
 #define FAILURE_EXCEPTION "chat/simplex/common/platform/SecretServiceException"
 
+#define GTK_USE_PORTAL_ENV "GTK_USE_PORTAL"
+#define GTK_USE_PORTAL_ON "1"
+#define PORTAL_BUS_NAME "org.freedesktop.portal.Desktop"
+#define PORTAL_OBJECT_PATH "/org/freedesktop/portal/desktop"
+#define PROPERTIES_INTERFACE "org.freedesktop.DBus.Properties"
+#define PROPERTIES_GET "Get"
+#define FILE_CHOOSER_INTERFACE "org.freedesktop.portal.FileChooser"
+#define VERSION_PROPERTY "version"
+#define PORTAL_PROBE_TIMEOUT_MS 2000
+
 #define LIBEGL "libEGL.so.1"
 #define GL_RENDERER_NAME 0x1F01
 #define EGL_PLATFORM_SURFACELESS_MESA 0x31DD
@@ -112,6 +122,38 @@ static void on_response(GtkNativeDialog *dialog, gint response, gpointer data) {
     g_object_unref(dialog);
 }
 
+static gboolean portal_probed = FALSE;
+
+static void on_file_chooser_version(GObject *source, GAsyncResult *result, gpointer dialog) {
+    GError *error = NULL;
+    GVariant *reply = g_dbus_connection_call_finish(G_DBUS_CONNECTION(source), result, &error);
+    if (reply != NULL) {
+        g_setenv(GTK_USE_PORTAL_ENV, GTK_USE_PORTAL_ON, FALSE);
+        g_message("file chooser: portal");
+        g_variant_unref(reply);
+    } else {
+        g_message("file chooser: GTK dialog, %s", error->message);
+        g_error_free(error);
+    }
+    portal_probed = TRUE;
+    gtk_native_dialog_show(GTK_NATIVE_DIALOG(dialog));
+}
+
+static void show_chooser(GtkFileChooserNative *dialog) {
+    GDBusConnection *bus = NULL;
+    if (!portal_probed && g_getenv(GTK_USE_PORTAL_ENV) == NULL) {
+        bus = g_bus_get_sync(G_BUS_TYPE_SESSION, NULL, NULL);
+    }
+    if (bus == NULL) {
+        gtk_native_dialog_show(GTK_NATIVE_DIALOG(dialog));
+        return;
+    }
+    g_dbus_connection_call(bus, PORTAL_BUS_NAME, PORTAL_OBJECT_PATH, PROPERTIES_INTERFACE, PROPERTIES_GET,
+                           g_variant_new("(ss)", FILE_CHOOSER_INTERFACE, VERSION_PROPERTY), G_VARIANT_TYPE("(v)"),
+                           G_DBUS_CALL_FLAGS_NONE, PORTAL_PROBE_TIMEOUT_MS, NULL, on_file_chooser_version, dialog);
+    g_object_unref(bus);
+}
+
 static char *java_to_utf8(JNIEnv *env, jstring value) {
     if (value == NULL) return NULL;
     const char *chars = (*env)->GetStringUTFChars(env, value, NULL);
@@ -169,7 +211,7 @@ Java_chat_simplex_common_platform_LinuxNative_nativeChooseFiles(
     }
     request->callback = (*env)->NewGlobalRef(env, callback);
     g_signal_connect(dialog, "response", G_CALLBACK(on_response), request);
-    gtk_native_dialog_show(GTK_NATIVE_DIALOG(dialog));
+    show_chooser(dialog);
 }
 
 JNIEXPORT jstring JNICALL

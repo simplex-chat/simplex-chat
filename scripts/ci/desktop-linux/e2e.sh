@@ -341,6 +341,7 @@ esac
 
 check "the app starts no gsettings process" bash -c '! pgrep -x gsettings'
 check "the app writes the renderer to its log" grep -q "OpenGL renderer:" "$out/app.log"
+check "file dialogs open through the portal's file chooser" grep -q "file chooser: portal" "$out/app.log"
 
 settings=$UI_STATE/config/simplex/settings.properties
 passphrase=$(sed -n 's/^EncryptedDBPassphrase=//p' "$settings")

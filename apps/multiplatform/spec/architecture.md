@@ -439,7 +439,7 @@ var platform: PlatformInterface = object : PlatformInterface {}
 | SingleInstance.kt | [`common/src/desktopMain/kotlin/chat/simplex/common/SingleInstance.kt`](../common/src/desktopMain/kotlin/chat/simplex/common/SingleInstance.kt) | `acquireSingleInstance()`, `startShowFileWatcher()`, signal file hand-over |
 | DesktopTaoApp.kt | [`common/src/desktopMain/kotlin/chat/simplex/common/DesktopTaoApp.kt`](../common/src/desktopMain/kotlin/chat/simplex/common/DesktopTaoApp.kt) | `showTaoApp()`: the Linux window on Nucleus Tao, GTK file dialogs |
 | LinuxTray.kt | [`common/src/desktopMain/kotlin/chat/simplex/common/LinuxTray.kt`](../common/src/desktopMain/kotlin/chat/simplex/common/LinuxTray.kt) | `LinuxTray()`: StatusNotifierItem through ComposeNativeTray |
-| LinuxNative.desktop.kt | [`common/src/desktopMain/kotlin/chat/simplex/common/platform/LinuxNative.desktop.kt`](../common/src/desktopMain/kotlin/chat/simplex/common/platform/LinuxNative.desktop.kt) | JNI to `libsimplex_linux.so`: GTK file chooser and confirmation, GTK theme name, GL renderer, Secret Service; `prepareLinuxRuntime()` |
+| LinuxNative.desktop.kt | [`common/src/desktopMain/kotlin/chat/simplex/common/platform/LinuxNative.desktop.kt`](../common/src/desktopMain/kotlin/chat/simplex/common/platform/LinuxNative.desktop.kt) | JNI to `libsimplex_linux.so`: GTK file chooser (through the portal when `org.freedesktop.portal.FileChooser` answers before the first dialog) and confirmation, GTK theme name, GL renderer, Secret Service; `prepareLinuxRuntime()` |
 
 ### Theme
 

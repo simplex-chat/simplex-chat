@@ -252,10 +252,17 @@ sequenceDiagram
   - save a file, with the suggested name and overwrite confirmation;
   - choose a folder.
 
+- Portal choice, before the first dialog, unless `GTK_USE_PORTAL` is already set: the helper reads `org.freedesktop.portal.FileChooser` `version` on the session bus, timeout 2 s; an answer sets `GTK_USE_PORTAL=1`. The portal publishes the interface only when a back-end implements it.
+
 ```mermaid
 flowchart LR
-  Req[file request] --> Native[GtkFileChooserNative]
-  Native -->|Flatpak or portal present| Portal[FileChooser portal dialog]
+  Req[file request] --> Set{GTK_USE_PORTAL set}
+  Set -->|no, first dialog| Probe{FileChooser version answers}
+  Probe -->|yes| Env[GTK_USE_PORTAL=1]
+  Probe -->|no| Native
+  Env --> Native
+  Set -->|yes| Native[GtkFileChooserNative]
+  Native -->|Flatpak or GTK_USE_PORTAL=1| Portal[FileChooser portal dialog]
   Native -->|otherwise| GtkDlg[GTK dialog]
   Portal --> Uri[file URIs]
   GtkDlg --> Uri
@@ -448,7 +455,7 @@ flowchart LR
 
 | Need | Path in the sandbox |
 |---|---|
-| file pick and save | GTK FileChooser portal, used by GTK in Flatpak and where the session sets `GTK_USE_PORTAL`; GTK's own dialog elsewhere |
+| file pick and save | GTK FileChooser portal, used by GTK in Flatpak and wherever the portal offers a file chooser; GTK's own dialog elsewhere |
 | open a file or folder | `xdg-open` → OpenURI portal |
 | notifications | Notification portal, avatar as bytes |
 | dark mode | Settings portal |
