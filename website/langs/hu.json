@@ -259,8 +259,8 @@
     "index-hero-h1": "<div class=\"medium\">Legyen<br>szabad</div>",
     "index-hero-p1": "<span class=\"nowrap\">Az egyetlen üzenetváltó hálózat</span> <span class=\"nowrap\">felhasználói azonosítók nélkül.</span><br>A saját partnerei, csoportjai és csatornái felett csak Ön rendelkezik.",
     "index-hero-own-part": "Legyen résztulajdonos.",
-    "index-hero-downloads": "Letöltések",
-    "index-hero-monthly-users": "Havi felhasználók",
+    "index-hero-downloads": "Letöltés",
+    "index-hero-monthly-users": "Havi felhasználó",
     "index-hero-countdown-lead": "A SimpleX domainek indulása",
     "index-hero-countdown-done": "Szerezzen SimpleX domaint",
     "index-hero-download-desktop-btn-title": "SimpleX számítógépes alkalmazásának letöltése",
@@ -405,5 +405,14 @@
     "downloads-advanced-h2": "Tapasztalt felhasználóknak",
     "downloads-github": "Minden kiadás megtalálható a GitHubon",
     "downloads-mirror": "Tükör: git.simplex.chat",
-    "downloads-fdroid-repo": "F-Droid-tároló"
+    "downloads-fdroid-repo": "F-Droid-tároló",
+    "guide-dropdown-2": "Üzenetek és média",
+    "guide-dropdown-3": "Csoportok",
+    "guide-dropdown-6": "Hang- és videohívások",
+    "guide-dropdown-10": "Csatornák",
+    "guide-dropdown-11": "Csatorna weboldala",
+    "guide-dropdown-12": "SimpleX-név regisztrálása",
+    "guide-dropdown-13": "Társított eszközök",
+    "guide-dropdown-14": "Értesítések",
+    "guide-dropdown-15": "Támogatói kitűzők"
 }
