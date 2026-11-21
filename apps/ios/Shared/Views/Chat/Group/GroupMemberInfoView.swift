@@ -23,11 +23,11 @@ struct GroupMemberInfoView: View {
     var groupRelay: GroupRelay? = nil
     @State private var connectionStats: ConnectionStats? = nil
     @State private var connectionCode: String? = nil
-    @State private var connectionLoaded: Bool = false
+    @State var connectionLoaded: Bool = false
     @State private var knownContactChat: Chat? = nil
     @State private var knownContact: Contact? = nil
     @State private var knownContactConnectionStats: ConnectionStats? = nil
-    @State private var newRole: GroupMemberRole = .member
+    @State var newRole: GroupMemberRole = .member
     @State private var alert: GroupMemberInfoViewAlert?
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
     @State private var justOpened = true
@@ -291,6 +291,7 @@ struct GroupMemberInfoView: View {
             }
             .navigationBarHidden(true)
             .task {
+                if justOpened && connectionLoaded { return }
                 if #unavailable(iOS 16) {
                     // this condition prevents re-setting picker
                     if !justOpened { return }
@@ -925,7 +926,9 @@ struct GroupMemberInfoView_Previews: PreviewProvider {
             groupInfo: GroupInfo.sampleData,
             chat: Chat.sampleData,
             groupMember: GMember.sampleData,
-            scrollToItemId: Binding.constant(nil)
+            scrollToItemId: Binding.constant(nil),
+            connectionLoaded: true,
+            newRole: .admin
         )
     }
 }
