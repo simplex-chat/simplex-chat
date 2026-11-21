@@ -76,6 +76,7 @@ chatFileTests = do
     it "delete agent file when item is marked deleted during upload" testXFTPMarkDeletedDuringUpload
     it "delete agent file when file user is missing during upload" testXFTPMissingUserDuringUpload
     it "complete upload before chat is suspended" testXFTPSuspendDuringUpload
+    it "suspend chat instantly during upload" testXFTPSuspendInstantlyDuringUpload
     it "show agent file error without file ID" testXFTPAgentErrorWithoutFileId
     it "with relative paths: send and receive file" testXFTPWithRelativePaths
     xit' "continue receiving file after restart" testXFTPContinueRcv
@@ -1192,6 +1193,18 @@ testXFTPSuspendDuringUpload =
       bob <## "completed receiving file 1 (test.pdf) from alice"
       src <- B.readFile "./tests/fixtures/test.pdf"
       B.readFile testPdf `shouldReturn` src
+
+testXFTPSuspendInstantlyDuringUpload :: HasCallStack => TestParams -> IO ()
+testXFTPSuspendInstantlyDuringUpload =
+  testChat2 aliceProfile bobProfile $ \alice bob -> do
+    connectUsers alice bob
+    alice #> "/f @bob ./tests/fixtures/test.pdf"
+    alice <## "use /fc 1 to cancel sending"
+    bob <# "alice> sends file test.pdf (266.0 KiB / 272376 bytes)"
+    bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+    alice ##> "/_app suspend 60000000"
+    alice <## "ok"
+    apiFixture "suspend/suspend-instantly" alice [] FixtureRequests {frMarkdown = [], frUris = [], frCommands = ["/_app suspend 0"]}
 
 testXFTPAgentErrorWithoutFileId :: HasCallStack => TestParams -> IO ()
 testXFTPAgentErrorWithoutFileId =

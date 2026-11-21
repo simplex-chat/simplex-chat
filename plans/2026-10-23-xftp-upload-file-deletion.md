@@ -125,7 +125,9 @@ Agent side: https://github.com/simplex-chat/simplexmq/pull/2010
 - `apps/ios/spec/services/files.md` (:274), "Sending": the text.
 - `apps/ios/spec/architecture.md` (:263), "Share Extension (SE)": the signal at setup and before sending; the wait at setup when the app state read at setup is `.suspending`, and before sending in any app state; the NSE, which does not act on the signal; the end of the wait at the first check at which both stored states equal `.suspended`; the cases in which `.created` is stored, and the full 2 s wait in this state; the instant suspension of the app in `.suspending`, with the conditions `ChatModel.ok` and `chatRunning == true`.
 - `apps/ios/spec/database.md` (:79) and `apps/ios/spec/architecture.md` (:8): the `AppDelegate.swift` line ranges.
-- `apps/ios/SimpleX SE/ShareModel.swift`, `setup(with:)` (:97-100): `SEChatState.shared.set(.sendingMessage)`, then `await waitForOtherProcessesToSuspend()` when `appStateGroupDefault.get() == .suspending`, before `initChat`.
+- `apps/ios/SimpleX SE/SEChatState.swift`, new: `prepareToStartChat` (:41-46): `SEChatState.shared.set(.sendingMessage)`, then `await waitForOtherProcessesToSuspend()` when `appStateGroupDefault.get() == .suspending`.
+- `apps/ios/SimpleX SE/ShareModel.swift`, `setup(with:)` (:97): `await prepareToStartChat()`, before `initChat`.
+- `apps/ios/SimpleXChat/API.swift`, `chatCloseStore` (:94): a `var` holding the closure, replaced by the app tests.
 - `apps/ios/Shared/AppDelegate.swift`, `application(_:didFinishLaunchingWithOptions:)` (:22): `_ = seSubscriber`.
 - `apps/ios/Shared/Model/SuspendChat.swift`:
   - `seSubscriber` (:39-53):
@@ -178,6 +180,19 @@ Agent side: https://github.com/simplex-chat/simplexmq/pull/2010
 `tests/ChatTests/Files.hs`, "file transfer over XFTP without chat items":
 - "send and receive small standalone file" (:1404): `checkNoAgentSndFiles src` after the upload (:1418).
 - "send and receive large standalone file" (:1460): `checkNoAgentSndFiles src` after the upload and its redirect upload (:1477).
+
+`tests/ChatTests/Files.hs`, "suspend chat instantly during upload": during the 60 s suspension with an upload pending, the response to `/_app suspend 0` is recorded in `tests/fixtures/api/suspend/suspend-instantly.json`.
+
+`apps/ios/SimpleX Unit Tests/SuspendChatTests.swift`, with `sendSimpleXCmdStr` replaced by the recorded response and `chatCloseStore` by a counter; the share extension's message is written to its shared file and passed to the file presenter registered at launch:
+
+| Test | App state | Asserted |
+|---|---|---|
+| `testShareWhileSuspendingSuspendsAtOnce` | `.suspending`, `.sendingMessage` | `/_app suspend 0` sent in `.suspending`; `.suspended`; stores closed once |
+| `testShareWhileActiveIsIgnored` | `.active`, `.sendingMessage` | no command; `.active`; stores open |
+| `testShareEndWhileSuspendingIsIgnored` | `.suspending`, `.inactive` | no command; `.suspending`; stores open |
+| `testTerminateWhileSuspendingSuspendsCoreFirst` | `.suspending`, `terminateChat` | `/_app suspend 0` sent in `.suspending`; `.suspended`; stores closed once |
+| `testShareSetupWaitsForSuspendingApp` | `.suspending`, NSE `.suspended`, `prepareToStartChat` | `.sendingMessage` stored; the app suspended before it returns |
+| `testShareSetupDoesNotWaitForActiveApp` | `.active`, NSE `.active`, `prepareToStartChat` | `.sendingMessage` stored; returns within 1 s |
 
 Device tests, run by the user:
 - During a 20 MB upload, the app leaves the foreground; within 15 s, a link is shared through the share sheet; then the app is opened:

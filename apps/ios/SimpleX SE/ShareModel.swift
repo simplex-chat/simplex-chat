@@ -94,10 +94,7 @@ class ShareModel: ObservableObject {
     func setup(with dbKey: String? = nil) {
         // Init Chat
         Task {
-            SEChatState.shared.set(.sendingMessage)
-            if appStateGroupDefault.get() == .suspending {
-                await waitForOtherProcessesToSuspend()
-            }
+            await prepareToStartChat()
             if let e = initChat(with: dbKey) {
                 await MainActor.run { errorAlert = e }
             } else {

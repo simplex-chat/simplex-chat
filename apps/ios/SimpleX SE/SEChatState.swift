@@ -37,3 +37,10 @@ func waitForOtherProcessesToSuspend() async {
         }
     }
 }
+
+func prepareToStartChat() async {
+    SEChatState.shared.set(.sendingMessage)
+    if appStateGroupDefault.get() == .suspending {
+        await waitForOtherProcessesToSuspend()
+    }
+}
