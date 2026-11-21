@@ -12,11 +12,12 @@ A2-2: reverts as one type, ChainReverted's payload.
 data RevertReason = RRWithoutData | RRNamed RevertName | RRUnnamed Text
 ```
 
-- RNWithoutData goes; `revertSignature` and `revertText` are total.
-- `decodeRevert`: empty data, a known selector, Error(string) by its message, any other selector in hex.
+- RNWithoutData goes; `revertSignature` is total.
+- RevertName has a constructor for each contract error the code acts on (18), and `RNOther Text` for every other error of the contracts, by its name; those errors' signatures are the plain list `otherRevertSignatures`. TextEncoding gives the bare name for both, and its textDecode reads back every name the revert column can hold.
+- `decodeRevert`: empty data, a known selector (an acted error or `otherRevertSignatures`), Error(string) by its message, any other selector in hex.
 - A node message without data: "execution reverted" alone is RRWithoutData; its suffix is RRUnnamed.
 - Data that is present but not hex: RRUnnamed with the node's message.
-- `revertReasonText :: RevertReason -> Maybe Text` renders the revert column and the answer's revert field.
+- `revertName :: RevertReason -> Maybe RevertName` gives an edit's revert, stored in the revert column by its textEncode.
 
 A2-33: requeue and the reveal's write fail on a refused write as a BrokenInvariant; only a changed version answers registration_changed.
 

@@ -50,59 +50,60 @@ namesChainTests = describe "StoreService names: chain" $ do
 -- | The custom errors the service tells apart, from the contracts' compiled ABIs, with viem's encodeErrorResult selectors.
 viemSelectors :: [(ByteString, RevertName)]
 viemSelectors =
-  [ ("5289653e", RNAlreadyFrozen),
+  [ ("5289653e", RNOther "AlreadyFrozen"),
     ("836588c9", RNCommitmentNotFound),
     ("74480cc9", RNCommitmentTooNew),
     ("256e2216", RNCommitmentTooOld),
     ("b666aeb7", RNDurationTooLong),
     ("9a71997b", RNDurationTooShort),
-    ("a8cab3d1", RNFrozen),
+    ("a8cab3d1", RNOther "Frozen"),
     ("2a1b2dd8", RNInsufficientAllowance),
-    ("11011294", RNInsufficientValue),
-    ("8d666f60", RNInvalidEVMAddress),
+    ("11011294", RNOther "InsufficientValue"),
+    ("8d666f60", RNOther "InvalidEVMAddress"),
     ("756688fe", RNInvalidNonce),
     ("8baa579f", RNInvalidSignature),
     ("21134988", RNLabelTooLong),
-    ("2d0c6794", RNMaxCommitmentAgeTooHigh),
-    ("3e5aa838", RNMaxCommitmentAgeTooLow),
-    ("ace8f2ce", RNMinCharLengthCanOnlyDecrease),
-    ("ce47b48d", RNMinCharLengthZero),
-    ("6357b884", RNMinCommitmentAgeZero),
+    ("2d0c6794", RNOther "MaxCommitmentAgeTooHigh"),
+    ("3e5aa838", RNOther "MaxCommitmentAgeTooLow"),
+    ("ace8f2ce", RNOther "MinCharLengthCanOnlyDecrease"),
+    ("ce47b48d", RNOther "MinCharLengthZero"),
+    ("6357b884", RNOther "MinCommitmentAgeZero"),
     ("477707e8", RNNameNotAvailable),
-    ("d17ee357", RNNameNotReserved),
+    ("d17ee357", RNOther "NameNotReserved"),
     ("e1bf11bf", RNNameReserved),
     ("c4295eb6", RNNameTooShort),
-    ("70f8a4c9", RNNftGateCanOnlyBeDisabled),
-    ("6b1578c1", RNNftRequired),
-    ("c30734cc", RNNodeNotOwnedByRegistrar),
-    ("644d871f", RNNotBeneficiary),
-    ("23019e67", RNNotController),
-    ("42f058b4", RNNotNameOwner),
-    ("ff43b88f", RNNotOffered),
-    ("4632a8bf", RNNotOwnerOrBeneficiary),
-    ("bf10dd3a", RNNotProxy),
-    ("df4795c7", RNNotSponsor),
-    ("9a0aeacd", RNNotSubnameRegistrar),
-    ("8a3c1cfb", RNOffsetOutOfBoundsError),
-    ("a9efcc18", RNOwnerMustBeCaller),
-    ("40866499", RNPublicSalesClosed),
-    ("bc7fd331", RNReasonRequired),
-    ("2bea818f", RNRecipientMustBeCaller),
+    ("70f8a4c9", RNOther "NftGateCanOnlyBeDisabled"),
+    ("6b1578c1", RNOther "NftRequired"),
+    ("c30734cc", RNOther "NodeNotOwnedByRegistrar"),
+    ("644d871f", RNOther "NotBeneficiary"),
+    ("23019e67", RNOther "NotController"),
+    ("42f058b4", RNOther "NotNameOwner"),
+    ("ff43b88f", RNOther "NotOffered"),
+    ("4632a8bf", RNOther "NotOwnerOrBeneficiary"),
+    ("bf10dd3a", RNOther "NotProxy"),
+    ("df4795c7", RNOther "NotSponsor"),
+    ("9a0aeacd", RNOther "NotSubnameRegistrar"),
+    ("8a3c1cfb", RNOther "OffsetOutOfBoundsError"),
+    ("a9efcc18", RNOther "OwnerMustBeCaller"),
+    ("40866499", RNOther "PublicSalesClosed"),
+    ("bc7fd331", RNOther "ReasonRequired"),
+    ("2bea818f", RNOther "RecipientMustBeCaller"),
     ("37ed32e8", RNReentrantCall),
     ("d3f605c4", RNResolverRequiredWhenDataSupplied),
     ("27af646c", RNReverseRecordNotSupported),
     ("0819bdcd", RNSignatureExpired),
     ("c4f189e2", RNTermsMismatch),
     ("bcdf753d", RNTermsNotAccepted),
-    ("90b8ec18", RNTransferFailed),
-    ("bf2f44f5", RNTransferToSelf),
-    ("0a059d71", RNUnexpiredCommitmentExists),
-    ("d92e233d", RNZeroAddress)
+    ("90b8ec18", RNOther "TransferFailed"),
+    ("bf2f44f5", RNOther "TransferToSelf"),
+    ("0a059d71", RNOther "UnexpiredCommitmentExists"),
+    ("d92e233d", RNOther "ZeroAddress")
   ]
 
 testRevertSelectors :: IO ()
 testRevertSelectors = do
-  map snd viemSelectors `shouldBe` [minBound .. maxBound]
+  length actedReverts + length otherRevertSignatures `shouldBe` length viemSelectors
+  filter (`elem` actedReverts) (map snd viemSelectors) `shouldBe` actedReverts
   [(n, decodeRevert $ unhex sel <> uint256 (0 :: Int)) | (sel, n) <- viemSelectors] `shouldBe` [(n, RRNamed n) | (_, n) <- viemSelectors]
   decodeRevert (B.take 3 $ unhex "74480cc9") `shouldBe` RRUnnamed "0x74480c"
   decodeRevert "" `shouldBe` RRWithoutData
@@ -111,11 +112,13 @@ testRevertSelectors = do
 
 testRevertText :: IO ()
 testRevertText = do
-  revertText RNInvalidNonce `shouldBe` "InvalidNonce"
-  revertText RNSignatureExpired `shouldBe` "SignatureExpired"
+  textEncode RNInvalidNonce `shouldBe` "InvalidNonce"
+  textEncode RNSignatureExpired `shouldBe` "SignatureExpired"
+  textEncode (RNOther "NotSponsor") `shouldBe` "NotSponsor"
   map revertName [RRWithoutData, RRNamed RNInvalidNonce, RRUnnamed "ERC721: invalid token ID"] `shouldBe` [Nothing, Just RNInvalidNonce, Nothing]
-  let names = [minBound .. maxBound] :: [RevertName]
+  let names = map snd viemSelectors
   map (textDecode . textEncode) names `shouldBe` map Just names
+  (textDecode "Unlisted" :: Maybe RevertName) `shouldBe` Nothing
 
 testDryRunRevertNamed :: TVar ChaChaDRG -> IO ()
 testDryRunRevertNamed g = withChain g $ \node c -> do

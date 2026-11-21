@@ -58,10 +58,11 @@ module StoreService.Names.Chain
     decodeString,
     decodeLabels,
     RevertName (..),
+    actedReverts,
+    otherRevertSignatures,
     RevertReason (..),
     maxNodeMessageLength,
     decodeRevert,
-    revertText,
     revertName,
   )
 where
@@ -504,169 +505,138 @@ bytesAt ret o = do
   let start = o + abiWordSize
   if start + n <= B.length ret then Right $ B.take n $ B.drop start ret else Left AEShort
 
--- | The custom errors of SimplexController, SimplexSponsor, BaseRegistrarImplementation and SimplexResolver, and the reservation and terms errors of SimplexNamePolicy, that the service tells apart.
+-- | The custom errors of SimplexController, SimplexSponsor, BaseRegistrarImplementation and SimplexResolver, and the reservation and terms errors of SimplexNamePolicy, that the service acts on, and RNOther for the others.
 -- The sponsor passes the controller's and the base registrar's reverts through, so any call can revert with any of them.
 data RevertName
-  = RNAlreadyFrozen
-  | RNCommitmentNotFound
+  = RNCommitmentNotFound
   | RNCommitmentTooNew
   | RNCommitmentTooOld
   | RNDurationTooLong
   | RNDurationTooShort
-  | RNFrozen
   | RNInsufficientAllowance
-  | RNInsufficientValue
-  | RNInvalidEVMAddress
   | RNInvalidNonce
   | RNInvalidSignature
   | RNLabelTooLong
-  | RNMaxCommitmentAgeTooHigh
-  | RNMaxCommitmentAgeTooLow
-  | RNMinCharLengthCanOnlyDecrease
-  | RNMinCharLengthZero
-  | RNMinCommitmentAgeZero
   | RNNameNotAvailable
-  | RNNameNotReserved
   | RNNameReserved
   | RNNameTooShort
-  | RNNftGateCanOnlyBeDisabled
-  | RNNftRequired
-  | RNNodeNotOwnedByRegistrar
-  | RNNotBeneficiary
-  | RNNotController
-  | RNNotNameOwner
-  | RNNotOffered
-  | RNNotOwnerOrBeneficiary
-  | RNNotProxy
-  | RNNotSponsor
-  | RNNotSubnameRegistrar
-  | RNOffsetOutOfBoundsError
-  | RNOwnerMustBeCaller
-  | RNPublicSalesClosed
-  | RNReasonRequired
-  | RNRecipientMustBeCaller
   | RNReentrantCall
   | RNResolverRequiredWhenDataSupplied
   | RNReverseRecordNotSupported
   | RNSignatureExpired
   | RNTermsMismatch
   | RNTermsNotAccepted
-  | RNTransferFailed
-  | RNTransferToSelf
-  | RNUnexpiredCommitmentExists
-  | RNZeroAddress
-  deriving (Eq, Show, Enum, Bounded)
+  | RNOther Text
+  deriving (Eq, Show)
 
 data RevertReason = RRWithoutData | RRNamed RevertName | RRUnnamed Text
   deriving (Eq, Show)
 
 revertSignature :: RevertName -> ByteString
 revertSignature = \case
-  RNAlreadyFrozen -> "AlreadyFrozen()"
   RNCommitmentNotFound -> "CommitmentNotFound(bytes32)"
   RNCommitmentTooNew -> "CommitmentTooNew(bytes32,uint256,uint256)"
   RNCommitmentTooOld -> "CommitmentTooOld(bytes32,uint256,uint256)"
   RNDurationTooLong -> "DurationTooLong(uint256)"
   RNDurationTooShort -> "DurationTooShort(uint256)"
-  RNFrozen -> "Frozen()"
   RNInsufficientAllowance -> "InsufficientAllowance(uint256,uint256)"
-  RNInsufficientValue -> "InsufficientValue()"
-  RNInvalidEVMAddress -> "InvalidEVMAddress(bytes)"
   RNInvalidNonce -> "InvalidNonce()"
   RNInvalidSignature -> "InvalidSignature()"
   RNLabelTooLong -> "LabelTooLong(uint256,uint256)"
-  RNMaxCommitmentAgeTooHigh -> "MaxCommitmentAgeTooHigh()"
-  RNMaxCommitmentAgeTooLow -> "MaxCommitmentAgeTooLow()"
-  RNMinCharLengthCanOnlyDecrease -> "MinCharLengthCanOnlyDecrease()"
-  RNMinCharLengthZero -> "MinCharLengthZero()"
-  RNMinCommitmentAgeZero -> "MinCommitmentAgeZero()"
   RNNameNotAvailable -> "NameNotAvailable(string)"
-  RNNameNotReserved -> "NameNotReserved(string)"
   RNNameReserved -> "NameReserved(string)"
   RNNameTooShort -> "NameTooShort(string,uint8)"
-  RNNftGateCanOnlyBeDisabled -> "NftGateCanOnlyBeDisabled()"
-  RNNftRequired -> "NftRequired()"
-  RNNodeNotOwnedByRegistrar -> "NodeNotOwnedByRegistrar()"
-  RNNotBeneficiary -> "NotBeneficiary()"
-  RNNotController -> "NotController()"
-  RNNotNameOwner -> "NotNameOwner()"
-  RNNotOffered -> "NotOffered()"
-  RNNotOwnerOrBeneficiary -> "NotOwnerOrBeneficiary()"
-  RNNotProxy -> "NotProxy()"
-  RNNotSponsor -> "NotSponsor()"
-  RNNotSubnameRegistrar -> "NotSubnameRegistrar()"
-  RNOffsetOutOfBoundsError -> "OffsetOutOfBoundsError(uint256,uint256)"
-  RNOwnerMustBeCaller -> "OwnerMustBeCaller()"
-  RNPublicSalesClosed -> "PublicSalesClosed()"
-  RNReasonRequired -> "ReasonRequired()"
-  RNRecipientMustBeCaller -> "RecipientMustBeCaller()"
   RNReentrantCall -> "ReentrantCall()"
   RNResolverRequiredWhenDataSupplied -> "ResolverRequiredWhenDataSupplied()"
   RNReverseRecordNotSupported -> "ReverseRecordNotSupported()"
   RNSignatureExpired -> "SignatureExpired()"
   RNTermsMismatch -> "TermsMismatch(bytes32,bytes32)"
   RNTermsNotAccepted -> "TermsNotAccepted(string)"
-  RNTransferFailed -> "TransferFailed()"
-  RNTransferToSelf -> "TransferToSelf()"
-  RNUnexpiredCommitmentExists -> "UnexpiredCommitmentExists(bytes32)"
-  RNZeroAddress -> "ZeroAddress()"
+  RNOther name -> encodeUtf8 name
 
--- | The error's name as the contracts declare it.
-revertText :: RevertName -> Text
-revertText = decodeLatin1 . BC.takeWhile (/= '(') . revertSignature
+actedReverts :: [RevertName]
+actedReverts =
+  [ RNCommitmentNotFound,
+    RNCommitmentTooNew,
+    RNCommitmentTooOld,
+    RNDurationTooLong,
+    RNDurationTooShort,
+    RNInsufficientAllowance,
+    RNInvalidNonce,
+    RNInvalidSignature,
+    RNLabelTooLong,
+    RNNameNotAvailable,
+    RNNameReserved,
+    RNNameTooShort,
+    RNReentrantCall,
+    RNResolverRequiredWhenDataSupplied,
+    RNReverseRecordNotSupported,
+    RNSignatureExpired,
+    RNTermsMismatch,
+    RNTermsNotAccepted
+  ]
+
+otherRevertSignatures :: [ByteString]
+otherRevertSignatures =
+  [ "AlreadyFrozen()",
+    "Frozen()",
+    "InsufficientValue()",
+    "InvalidEVMAddress(bytes)",
+    "MaxCommitmentAgeTooHigh()",
+    "MaxCommitmentAgeTooLow()",
+    "MinCharLengthCanOnlyDecrease()",
+    "MinCharLengthZero()",
+    "MinCommitmentAgeZero()",
+    "NameNotReserved(string)",
+    "NftGateCanOnlyBeDisabled()",
+    "NftRequired()",
+    "NodeNotOwnedByRegistrar()",
+    "NotBeneficiary()",
+    "NotController()",
+    "NotNameOwner()",
+    "NotOffered()",
+    "NotOwnerOrBeneficiary()",
+    "NotProxy()",
+    "NotSponsor()",
+    "NotSubnameRegistrar()",
+    "OffsetOutOfBoundsError(uint256,uint256)",
+    "OwnerMustBeCaller()",
+    "PublicSalesClosed()",
+    "ReasonRequired()",
+    "RecipientMustBeCaller()",
+    "TransferFailed()",
+    "TransferToSelf()",
+    "UnexpiredCommitmentExists(bytes32)",
+    "ZeroAddress()"
+  ]
+
+signatureName :: ByteString -> Text
+signatureName = decodeLatin1 . BC.takeWhile (/= '(')
 
 instance TextEncoding RevertName where
-  textEncode = revertText
+  textEncode = signatureName . revertSignature
   textDecode = \case
-    "AlreadyFrozen" -> Just RNAlreadyFrozen
     "CommitmentNotFound" -> Just RNCommitmentNotFound
     "CommitmentTooNew" -> Just RNCommitmentTooNew
     "CommitmentTooOld" -> Just RNCommitmentTooOld
     "DurationTooLong" -> Just RNDurationTooLong
     "DurationTooShort" -> Just RNDurationTooShort
-    "Frozen" -> Just RNFrozen
     "InsufficientAllowance" -> Just RNInsufficientAllowance
-    "InsufficientValue" -> Just RNInsufficientValue
-    "InvalidEVMAddress" -> Just RNInvalidEVMAddress
     "InvalidNonce" -> Just RNInvalidNonce
     "InvalidSignature" -> Just RNInvalidSignature
     "LabelTooLong" -> Just RNLabelTooLong
-    "MaxCommitmentAgeTooHigh" -> Just RNMaxCommitmentAgeTooHigh
-    "MaxCommitmentAgeTooLow" -> Just RNMaxCommitmentAgeTooLow
-    "MinCharLengthCanOnlyDecrease" -> Just RNMinCharLengthCanOnlyDecrease
-    "MinCharLengthZero" -> Just RNMinCharLengthZero
-    "MinCommitmentAgeZero" -> Just RNMinCommitmentAgeZero
     "NameNotAvailable" -> Just RNNameNotAvailable
-    "NameNotReserved" -> Just RNNameNotReserved
     "NameReserved" -> Just RNNameReserved
     "NameTooShort" -> Just RNNameTooShort
-    "NftGateCanOnlyBeDisabled" -> Just RNNftGateCanOnlyBeDisabled
-    "NftRequired" -> Just RNNftRequired
-    "NodeNotOwnedByRegistrar" -> Just RNNodeNotOwnedByRegistrar
-    "NotBeneficiary" -> Just RNNotBeneficiary
-    "NotController" -> Just RNNotController
-    "NotNameOwner" -> Just RNNotNameOwner
-    "NotOffered" -> Just RNNotOffered
-    "NotOwnerOrBeneficiary" -> Just RNNotOwnerOrBeneficiary
-    "NotProxy" -> Just RNNotProxy
-    "NotSponsor" -> Just RNNotSponsor
-    "NotSubnameRegistrar" -> Just RNNotSubnameRegistrar
-    "OffsetOutOfBoundsError" -> Just RNOffsetOutOfBoundsError
-    "OwnerMustBeCaller" -> Just RNOwnerMustBeCaller
-    "PublicSalesClosed" -> Just RNPublicSalesClosed
-    "ReasonRequired" -> Just RNReasonRequired
-    "RecipientMustBeCaller" -> Just RNRecipientMustBeCaller
     "ReentrantCall" -> Just RNReentrantCall
     "ResolverRequiredWhenDataSupplied" -> Just RNResolverRequiredWhenDataSupplied
     "ReverseRecordNotSupported" -> Just RNReverseRecordNotSupported
     "SignatureExpired" -> Just RNSignatureExpired
     "TermsMismatch" -> Just RNTermsMismatch
     "TermsNotAccepted" -> Just RNTermsNotAccepted
-    "TransferFailed" -> Just RNTransferFailed
-    "TransferToSelf" -> Just RNTransferToSelf
-    "UnexpiredCommitmentExists" -> Just RNUnexpiredCommitmentExists
-    "ZeroAddress" -> Just RNZeroAddress
-    _ -> Nothing
+    name
+      | name `elem` map signatureName otherRevertSignatures -> Just $ RNOther name
+      | otherwise -> Nothing
 
 revertName :: RevertReason -> Maybe RevertName
 revertName = \case
@@ -674,7 +644,7 @@ revertName = \case
   _ -> Nothing
 
 revertSelectors :: Map ByteString RevertName
-revertSelectors = M.fromList [(selector $ revertSignature n, n) | n <- [minBound .. maxBound]]
+revertSelectors = M.fromList $ [(selector $ revertSignature n, n) | n <- actedReverts] <> [(selector s, RNOther $ signatureName s) | s <- otherRevertSignatures]
 
 -- | A node's error message is cut to this many characters.
 maxNodeMessageLength :: Int

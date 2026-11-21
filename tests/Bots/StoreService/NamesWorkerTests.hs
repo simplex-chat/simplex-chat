@@ -45,7 +45,7 @@ import Simplex.Messaging.SystemTime (RoundedSystemTime (..), SystemSeconds)
 import Simplex.Messaging.Util (tshow)
 import StoreService.Config (ChainConfig (..), NamesConfig (..))
 import StoreService.Names.Balances (RefundRecord (..), RefundRefusal (..), recordRefund)
-import StoreService.Names.Chain (AbiValue (..), Block (..), ChainClient, ChainError (..), Hex32 (..), RevertName (..), RevertReason (..), TxHash (..), abiBytes, abiTuple, addressWord, blockAt, decodeSignedTx, newChainClient, selector, uint256)
+import StoreService.Names.Chain (AbiValue (..), Block (..), ChainClient, ChainError (..), Hex32 (..), RevertName (..), RevertReason (..), TxHash (..), abiBytes, abiTuple, actedReverts, addressWord, blockAt, decodeSignedTx, newChainClient, selector, uint256)
 import StoreService.Names.Contracts (namePolicy)
 import StoreService.Names.Orders (Landing (..), OrdersEnv (..), confirmLanded)
 import StoreService.Names.Phases (awaitChange, phasesWaiting, publish)
@@ -981,8 +981,8 @@ testCommitAgain = withWorker $ \w@W {wCtx = ctx@Ctx {cOrders}, wSender} -> do
 testRevertClasses :: IO ()
 testRevertClasses = do
   let permanent = [RNDurationTooLong, RNDurationTooShort, RNInvalidSignature, RNLabelTooLong, RNNameTooShort, RNReentrantCall, RNResolverRequiredWhenDataSupplied, RNReverseRecordNotSupported]
-  [n | n <- [minBound .. maxBound], revertClass (RRNamed n) == FCPermanent] `shouldBe` permanent
-  map revertClass [RRNamed RNNotSponsor, RRNamed RNNotController, RRNamed RNNotProxy, RRNamed RNInsufficientAllowance, RRWithoutData, RRUnnamed "ERC721: invalid token ID"]
+  [n | n <- actedReverts, revertClass (RRNamed n) == FCPermanent] `shouldBe` permanent
+  map revertClass [RRNamed (RNOther "NotSponsor"), RRNamed (RNOther "NotController"), RRNamed (RNOther "NotProxy"), RRNamed RNInsufficientAllowance, RRWithoutData, RRUnnamed "ERC721: invalid token ID"]
     `shouldBe` replicate 6 FCOperator
 
 testFailureNotice :: IO ()

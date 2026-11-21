@@ -54,7 +54,7 @@ import qualified Simplex.Messaging.TMap as TM
 import Simplex.Messaging.Util (catchOwn', tshow, ($>>=))
 import StoreService.Config (ChainConfig (..), NamesConfig (..))
 import StoreService.Names.Balances (RefundRecord (..))
-import StoreService.Names.Chain (Block (..), BlockTag (..), ChainError (..), RevertName (..), RevertReason (..), TxHash, blockAt, revertText)
+import StoreService.Names.Chain (Block (..), BlockTag (..), ChainError (..), RevertName (..), RevertReason (..), TxHash, blockAt)
 import StoreService.Names.Codes (releaseCode)
 import StoreService.Names.Contracts (CommitmentAges (..), Contracts (..), acceptedTerms, commitmentAges, commitmentTime, communityName, confirmedTag, controllerAvailable, forgetNamePolicy, namePolicy)
 import StoreService.Names.Orders (Landing (..), OrderRefusal, OrdersEnv (..), WriteRefusal (..), checkLanded, confirmLanded, versionWritten)
@@ -590,7 +590,7 @@ failedAttempt w@Worker {wkOrders = OrdersEnv {oeStore, oeConfig = NamesConfig {n
 
 reasonText :: RevertReason -> Text
 reasonText = \case
-  RRNamed n -> revertText n
+  RRNamed n -> textEncode n
   RRUnnamed t -> t
   RRWithoutData -> "without data"
 

@@ -355,7 +355,7 @@ Notes:
 
 ### 3.5 A register transaction that fails
 
-After a register or terms acceptance fails, the order is judged from chain state and the revert's reason: its reveal is cleared for the page to sign again, it waits, its transaction is sent again, it is committed again with its reveal, it is set `taken` with its price kept as a balance, or, at an attempt cap, it is set `failed`. A failed commit is stored and counted the same way.
+After a register or terms acceptance fails, the order is judged from chain state and the revert's reason: its reveal is cleared for the page to sign again, it waits, its transaction is sent again, it is committed again with its reveal, it is set `taken` with its price kept as a balance, or, at an attempt cap, it is set `failed`. A failed commit is stored and counted the same way. The revert's reason is one of the 18 contract errors the worker acts on, another contract error by its name, the message of `Error(string)`, an unknown selector in hex, or none (`RevertName` and `decodeRevert` in [`Names/Chain.hs`](../src/StoreService/Names/Chain.hs)).
 
 ```mermaid
 sequenceDiagram

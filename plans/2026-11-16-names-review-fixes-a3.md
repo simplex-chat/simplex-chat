@@ -54,7 +54,7 @@ A3-9, A3-12: one outcome type.
 - `data EditOutcome = EOApplied (Maybe TxHash) | EOReverted (Maybe Text)`; `EditState = ESPending | ESSettled EditOutcome`; `EditAnswer`'s `EASettled EditOutcome` replaces `EAApplied` and `EAReverted`.
 - `settleRecordEdit` and `settle` take `EditOutcome`.
 - `judge` returns `Judgment`, kept as it is. One `judgmentOutcome :: Judgment -> Maybe EditOutcome`, Nothing for `NonceFree`, replaces its two mappings. The request answers `fromMaybe (EOReverted name)`, the lane `maybe whenFree (settle …)`.
-- A3-12 is superseded by A2-2: the revert is rendered to `Maybe Text` once at the settle sites, by `revertText` until A2-2's `revertReasonText` replaces it; the column keeps text.
+- A3-12 is superseded by A2-2: the revert is kept as `Maybe RevertName` (A2-2's `revertName`) and written to the column by its textEncode; the column keeps text.
 
 ```mermaid
 stateDiagram-v2
