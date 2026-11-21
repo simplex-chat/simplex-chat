@@ -370,6 +370,17 @@ function isNewMessage(item: T.ChatItem): boolean {
   return item.content.type === "rcvMsgContent" && isNew(item) && !isLive(item)
 }
 
+// spec: spec/architecture.md#messages-historyitems
+export async function historyItems(chat: api.ChatApi, ref: string, before: number | undefined, count: number): Promise<T.ChatItem[]> {
+  const items: T.ChatItem[] = []
+  for (let pagination: T.ChatPagination = before === undefined ? {type: "last", count: pageSize} : {type: "before", chatItemId: before, count: pageSize}; ; ) {
+    const page: T.ChatItem[] = (await getChat(chat, ref, pagination)).chatItems
+    items.unshift(...page.filter(item => isMessageItem(item) && !isNew(item) && !isLive(item) && item.meta.itemDeleted === undefined))
+    if (items.length >= count || page.length < pageSize) return items.slice(-count)
+    pagination = {type: "before", chatItemId: page[0].meta.itemId, count: pageSize}
+  }
+}
+
 // spec: spec/architecture.md#messages-reportprogress
 export function reportProgress(call: ToolCall, message: () => string): () => void {
   call.progress(message())
@@ -407,6 +418,17 @@ export async function awaitResponses(collected: Collected, deadline: number, idl
 
 export function utcMinutes(time: number): string {
   return `${new Date(time).toISOString().slice(0, 16).replace("T", " ")} UTC`
+}
+
+// spec: spec/architecture.md#messages-duration
+export function duration(exact: number): string {
+  const ms = Math.round(exact)
+  const seconds = Math.floor(ms / 1000)
+  if (ms < 1000) return `${ms} ms`
+  if (ms < 10_000) return `${(Math.floor(ms / 100) / 10).toFixed(1)} s`
+  if (seconds < 60) return `${seconds} s`
+  if (seconds < 3600) return `${Math.floor(seconds / 60)} min ${seconds % 60} s`
+  return `${Math.floor(seconds / 3600)} h ${Math.floor(seconds / 60) % 60} min`
 }
 
 // spec: spec/architecture.md#messages-validname

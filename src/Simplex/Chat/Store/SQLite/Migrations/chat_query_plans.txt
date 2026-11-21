@@ -496,7 +496,7 @@ Query:
               FROM user_contact_links ucl
               JOIN groups g ON g.group_id = ucl.group_id
               JOIN group_profiles gp ON gp.group_profile_id = g.group_profile_id
-              WHERE ucl.user_id = ? AND gp.group_domain = ?
+              WHERE ucl.user_id = ? AND gp.group_domain = ? AND g.group_domain_verified IS DISTINCT FROM 2
             
 Plan:
 SEARCH ucl USING INDEX sqlite_autoindex_user_contact_links_1 (user_id=?)
@@ -3881,6 +3881,15 @@ SEARCH ct USING INDEX idx_contacts_chat_ts (user_id=?)
 SEARCH cp USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
+        SELECT ct.contact_id, ct.contact_profile_id FROM contacts ct
+        JOIN contact_profiles cp ON cp.contact_profile_id = ct.contact_profile_id
+        WHERE ct.user_id = ? AND ct.contact_id IS DISTINCT FROM ? AND cp.contact_domain = ? AND cp.contact_domain_verified = 1
+      
+Plan:
+SEARCH ct USING COVERING INDEX sqlite_autoindex_contacts_2 (user_id=?)
+SEARCH cp USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: 
         SELECT d.file_descr_id, d.file_descr_text, d.file_descr_part_no, d.file_descr_complete
         FROM xftp_file_descriptions d
         JOIN rcv_files f ON f.file_descr_id = d.file_descr_id
@@ -4531,6 +4540,26 @@ Plan:
 SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
+        UPDATE groups SET group_domain_verified = 2
+        WHERE user_id = ? AND group_domain_verified = 1 AND group_id IS DISTINCT FROM ?
+          AND group_profile_id IN (SELECT group_profile_id FROM group_profiles WHERE user_id = ? AND group_domain = ?)
+       AND business_chat IS NOT NULL RETURNING group_id
+Plan:
+SEARCH groups USING INDEX sqlite_autoindex_groups_2 (user_id=? AND group_profile_id=?)
+LIST SUBQUERY 1
+SEARCH group_profiles USING INDEX idx_group_profiles_user_id (user_id=?)
+
+Query: 
+        UPDATE groups SET group_domain_verified = 2
+        WHERE user_id = ? AND group_domain_verified = 1 AND group_id IS DISTINCT FROM ?
+          AND group_profile_id IN (SELECT group_profile_id FROM group_profiles WHERE user_id = ? AND group_domain = ?)
+       AND business_chat IS NULL RETURNING group_id
+Plan:
+SEARCH groups USING INDEX sqlite_autoindex_groups_2 (user_id=? AND group_profile_id=?)
+LIST SUBQUERY 1
+SEARCH group_profiles USING INDEX idx_group_profiles_user_id (user_id=?)
+
+Query: 
         WITH user_groups AS MATERIALIZED (
           SELECT g.group_id
           FROM groups g
@@ -5079,6 +5108,13 @@ Query:
       INSERT INTO calls
         (contact_id, shared_call_id, call_uuid, chat_item_id, call_state, call_ts, user_id, created_at, updated_at)
       VALUES (?,?,?,?,?,?,?,?,?)
+    
+Plan:
+
+Query: 
+      INSERT INTO chat_item_moderations
+        (group_id, moderator_member_id, item_member_id, shared_msg_id, created_by_msg_id, moderated_at)
+        VALUES (?,?,?,?,?,?)
     
 Plan:
 
@@ -6031,6 +6067,68 @@ SEARCH pu USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
     SELECT
+      -- GroupInfo
+      g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.short_descr, g.local_alias, gp.description, gp.image, gp.group_type, gp.group_link, gp.public_group_id,
+      gp.group_web_page, gp.group_domain, gp.domain_web_page, gp.allow_embedding, gp.group_domain_proof,
+      g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences, gp.preferences_json, gp.member_admission, gp.chat_layout,
+      g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at,
+      g.conn_full_link_to_connect, g.conn_short_link_to_connect, g.conn_link_prepared_connection, g.conn_link_started_connection, g.welcome_shared_msg_id, g.request_shared_msg_id,
+      g.business_chat, g.business_member_id, g.customer_member_id,
+      g.use_relays, g.relay_own_status,
+      g.ui_themes, g.summary_current_members_count, g.public_member_count, g.roster_version, g.custom_data, g.chat_item_ttl, g.members_require_attention, g.via_group_link_uri, g.group_domain_verified,
+      g.root_priv_key, g.root_pub_key, g.member_priv_key,
+      -- GroupMember - membership
+      mu.group_member_id, mu.group_id, mu.index_in_group, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category,
+      mu.member_status, mu.show_messages, mu.member_restriction, mu.invited_by, mu.invited_by_group_member_id, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
+      pu.display_name, pu.full_name, pu.short_descr, pu.description, pu.image, pu.contact_link, pu.chat_peer_type, pu.local_alias, pu.preferences, pu.preferences_json,
+      pu.badge_proof, pu.badge_pres_header, pu.badge_expiry, pu.badge_type, pu.badge_verified, pu.badge_extra, pu.badge_master_key, pu.badge_signature, pu.badge_key_idx, pu.contact_domain, pu.contact_domain_proof, pu.contact_domain_verified,
+      mu.created_at, mu.updated_at,
+      mu.support_chat_ts, mu.support_chat_items_unread, mu.support_chat_items_member_attention, mu.support_chat_items_mentions, mu.support_chat_last_msg_from_member_ts, mu.member_pub_key, mu.relay_link, mu.member_security_code, mu.member_security_code_verified_at
+   
+    FROM groups g
+    JOIN group_profiles gp ON gp.group_profile_id = g.group_profile_id
+    JOIN group_members mu ON mu.group_id = g.group_id
+    JOIN contact_profiles pu ON pu.contact_profile_id = COALESCE(mu.member_profile_id, mu.contact_profile_id)
+   WHERE g.user_id = ? AND mu.contact_id = ? AND g.relay_own_status = ? AND g.relay_inactive_at IS NOT NULL AND g.relay_inactive_at <= ?
+Plan:
+SEARCH mu USING INDEX idx_group_members_contact_id (contact_id=?)
+SEARCH g USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH gp USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH pu USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: 
+    SELECT
+      -- GroupInfo
+      g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.short_descr, g.local_alias, gp.description, gp.image, gp.group_type, gp.group_link, gp.public_group_id,
+      gp.group_web_page, gp.group_domain, gp.domain_web_page, gp.allow_embedding, gp.group_domain_proof,
+      g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences, gp.preferences_json, gp.member_admission, gp.chat_layout,
+      g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at,
+      g.conn_full_link_to_connect, g.conn_short_link_to_connect, g.conn_link_prepared_connection, g.conn_link_started_connection, g.welcome_shared_msg_id, g.request_shared_msg_id,
+      g.business_chat, g.business_member_id, g.customer_member_id,
+      g.use_relays, g.relay_own_status,
+      g.ui_themes, g.summary_current_members_count, g.public_member_count, g.roster_version, g.custom_data, g.chat_item_ttl, g.members_require_attention, g.via_group_link_uri, g.group_domain_verified,
+      g.root_priv_key, g.root_pub_key, g.member_priv_key,
+      -- GroupMember - membership
+      mu.group_member_id, mu.group_id, mu.index_in_group, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category,
+      mu.member_status, mu.show_messages, mu.member_restriction, mu.invited_by, mu.invited_by_group_member_id, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
+      pu.display_name, pu.full_name, pu.short_descr, pu.description, pu.image, pu.contact_link, pu.chat_peer_type, pu.local_alias, pu.preferences, pu.preferences_json,
+      pu.badge_proof, pu.badge_pres_header, pu.badge_expiry, pu.badge_type, pu.badge_verified, pu.badge_extra, pu.badge_master_key, pu.badge_signature, pu.badge_key_idx, pu.contact_domain, pu.contact_domain_proof, pu.contact_domain_verified,
+      mu.created_at, mu.updated_at,
+      mu.support_chat_ts, mu.support_chat_items_unread, mu.support_chat_items_member_attention, mu.support_chat_items_mentions, mu.support_chat_last_msg_from_member_ts, mu.member_pub_key, mu.relay_link, mu.member_security_code, mu.member_security_code_verified_at
+   
+    FROM groups g
+    JOIN group_profiles gp ON gp.group_profile_id = g.group_profile_id
+    JOIN group_members mu ON mu.group_id = g.group_id
+    JOIN contact_profiles pu ON pu.contact_profile_id = COALESCE(mu.member_profile_id, mu.contact_profile_id)
+   WHERE g.user_id = ? AND mu.contact_id = ? AND g.relay_own_status IN (?, ?, ?)
+Plan:
+SEARCH mu USING INDEX idx_group_members_contact_id (contact_id=?)
+SEARCH g USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH gp USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH pu USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: 
+    SELECT
       cr.contact_request_id, cr.local_display_name, cr.agent_invitation_id,
       cr.contact_id, cr.business_group_id, cr.user_contact_link_id, cr.rejection_supported,
       cr.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.description, p.image, p.contact_link, p.chat_peer_type, p.local_alias, cr.xcontact_id,
@@ -6786,6 +6884,13 @@ SEARCH user_contact_links USING INDEX sqlite_autoindex_user_contact_links_1 (use
 Query: 
     SELECT user_contact_link_id, conn_req_contact, short_link_contact, short_link_data_set, short_link_large_data_set, business_address, auto_accept, auto_accept_incognito, auto_reply_msg_content, chat_layout
     FROM user_contact_links
+   WHERE user_id = ? AND group_id IS NULL AND short_link_contact IS NOT NULL
+Plan:
+SEARCH user_contact_links USING INDEX idx_user_contact_links_group_id (group_id=?)
+
+Query: 
+    SELECT user_contact_link_id, conn_req_contact, short_link_contact, short_link_data_set, short_link_large_data_set, business_address, auto_accept, auto_accept_incognito, auto_reply_msg_content, chat_layout
+    FROM user_contact_links
    WHERE user_id = ? AND local_display_name = '' AND group_id IS NULL
 Plan:
 SEARCH user_contact_links USING INDEX sqlite_autoindex_user_contact_links_1 (user_id=? AND local_display_name=?)
@@ -6920,6 +7025,10 @@ SEARCH calls USING INDEX idx_calls_contact_id (contact_id=?)
 Query: DELETE FROM chat_item_mentions WHERE chat_item_id = ?
 Plan:
 SEARCH chat_item_mentions USING COVERING INDEX idx_chat_item_mentions_chat_item_id (chat_item_id=?)
+
+Query: DELETE FROM chat_item_moderations WHERE group_id = ? AND item_member_id = ? AND shared_msg_id = ?
+Plan:
+SEARCH chat_item_moderations USING COVERING INDEX idx_chat_item_moderations_group (group_id=? AND item_member_id=? AND shared_msg_id=?)
 
 Query: DELETE FROM chat_item_reactions WHERE contact_id = ?
 Plan:
@@ -7709,6 +7818,11 @@ Plan:
 SCAN m USING COVERING INDEX idx_group_members_user_id_local_display_name
 SEARCH c USING INDEX idx_connections_group_member_id (group_member_id=?)
 
+Query: SELECT c.agent_conn_id FROM connections c JOIN user_contact_links l ON l.user_contact_link_id = c.user_contact_link_id WHERE l.group_id IS NOT NULL
+Plan:
+SCAN c
+SEARCH l USING INTEGER PRIMARY KEY (rowid=?)
+
 Query: SELECT chat_item_id FROM chat_items WHERE group_scope_tag = 'member_support' ORDER BY chat_item_id DESC LIMIT 1
 Plan:
 SCAN chat_items
@@ -7967,6 +8081,10 @@ Query: SELECT item_content FROM chat_items WHERE group_id = 1 ORDER BY chat_item
 Plan:
 SEARCH chat_items USING INDEX idx_chat_items_group_id (group_id=?)
 
+Query: SELECT item_status FROM chat_items WHERE item_text = ?
+Plan:
+SCAN chat_items
+
 Query: SELECT last_insert_rowid()
 Plan:
 SCAN CONSTANT ROW
@@ -8091,6 +8209,10 @@ SCAN badge_code_redemptions
 Query: SELECT quota_err_counter FROM connections WHERE user_id = ? AND connection_id = ?
 Plan:
 SEARCH connections USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: SELECT relay_own_status FROM groups
+Plan:
+SCAN groups
 
 Query: SELECT relay_own_status FROM groups WHERE group_id = ?
 Plan:
@@ -8228,6 +8350,10 @@ Query: SELECT via_contact_uri, via_contact_uri_hash FROM connections WHERE conne
 Plan:
 SEARCH connections USING INTEGER PRIMARY KEY (rowid=?)
 
+Query: SELECT xcontact_id FROM contacts WHERE local_display_name = 'bob'
+Plan:
+SCAN contacts
+
 Query: SELECT xgrplinkmem_received FROM group_members WHERE group_member_id = ?
 Plan:
 SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
@@ -8330,6 +8456,10 @@ Query: UPDATE chat_items SET timed_delete_at = ? WHERE user_id = ? AND group_id 
 Plan:
 SEARCH chat_items USING INTEGER PRIMARY KEY (rowid=?)
 
+Query: UPDATE chat_items SET user_mention = ? WHERE user_id = ? AND chat_item_id = ?
+Plan:
+SEARCH chat_items USING INTEGER PRIMARY KEY (rowid=?)
+
 Query: UPDATE chat_items SET via_proxy = ? WHERE user_id = ? AND contact_id = ? AND chat_item_id = ?
 Plan:
 SEARCH chat_items USING INTEGER PRIMARY KEY (rowid=?)
@@ -8379,6 +8509,10 @@ Plan:
 SCAN contact_profiles
 
 Query: UPDATE contact_profiles SET contact_domain = ?, updated_at = ? WHERE user_id = ? AND contact_profile_id = ?
+Plan:
+SEARCH contact_profiles USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: UPDATE contact_profiles SET contact_domain_verified = 2 WHERE contact_profile_id = ?
 Plan:
 SEARCH contact_profiles USING INTEGER PRIMARY KEY (rowid=?)
 
@@ -8601,6 +8735,10 @@ Plan:
 SCAN group_profiles
 
 Query: UPDATE group_profiles SET short_descr = 'earlier copy'
+Plan:
+SCAN group_profiles
+
+Query: UPDATE group_profiles SET short_descr = 'local copy'
 Plan:
 SCAN group_profiles
 

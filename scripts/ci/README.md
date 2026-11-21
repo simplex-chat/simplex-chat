@@ -27,15 +27,16 @@ Endpoint: https://docs.github.com/en/rest/actions/workflows#create-a-workflow-di
 | `tests` | empty | hspec match patterns, one per line (`\n` in JSON); `/` runs the whole suite, and an empty value builds without tests |
 | `base` | `master` | the branch that the changes are compared with:<br>`stable` for a branch cut from stable<br>the parent branch for a stacked branch |
 
-When a newer dispatch on the same branch starts build-linux or build-ios, GitHub cancels the unfinished job of the older one (`cancel-in-progress`).
+When a newer dispatch on the same branch starts build-linux, test-postgres or build-ios, GitHub cancels the unfinished job of the older one (`cancel-in-progress`).
 
 Results:
 - Run and jobs: `GET /repos/<owner>/simplex-chat/actions/runs?head_sha=<commit>&event=workflow_dispatch` returns the run id; `GET /repos/<owner>/simplex-chat/actions/runs/<run id>/jobs` returns each step with its start, end and conclusion.
 - Job log: `GET /repos/<owner>/simplex-chat/actions/jobs/<job id>/logs` returns a redirect to a text file, valid for 1 minute (https://docs.github.com/en/rest/actions/workflow-jobs#download-job-logs-for-a-workflow-run). The test summary is printed as "Finished in N seconds" and "N examples, N failures".
+- Generated files: `GET /repos/<owner>/simplex-chat/actions/runs/<run id>/artifacts` lists an artifact `generated-files-<job>` for each job in which a test changed a tracked file (step "Check generated files"). It holds generated-files.patch, which `git apply` applies to the tested commit.
 
 ### Scopes
 
-The reduced build runs one Linux job, build-linux (ubuntu-22.04 x86_64), for every scope except ios, and one macOS job, build-ios (macos-latest), for ios.
+The reduced build runs the Linux job build-linux (ubuntu-22.04 x86_64) for every scope except ios, the Linux job test-postgres (ubuntu-22.04 x86_64) for core, and the macOS job build-ios (macos-latest) for ios.
 
 #### core
 
@@ -44,7 +45,17 @@ The reduced build runs one Linux job, build-linux (ubuntu-22.04 x86_64), for eve
   - Docker image (step "Build and cache Docker image");
   - caches (the steps "Restore ... from cache");
   - `cabal build -j --enable-tests --ghc-options=-O0` (step "Build CLI");
-  - simplex-chat-test with the selected tests (step "Run tests"), each attempt limited to 35 minutes by `timeout`; an attempt that reaches the limit fails, and "Attempt <n> timed out." is printed.
+  - the badge service web app, `npm ci` and `npm run build` in apps/simplex-badge-service/web with Node.js 22, for the test "serves the built web app" (step "Build badge web app for tests");
+  - simplex-chat-test with the selected tests (step "Run tests"), each attempt limited to 35 minutes by `timeout`; an attempt that reaches the limit fails, and "Attempt <n> timed out." is printed;
+  - step "Check generated files": it fails if a test changed a tracked file, and uploads the change as artifact `generated-files-<job>`. The tests "verify and overwrite schema dump", "verify and overwrite query plans" and the "generate ..." tests of the API docs overwrite their files, so a stale file fails here even when the test passes on retry.
+- App test fixtures: core tests write the core's responses and events that the app tests use to tests/fixtures/api (`/names tests/` to tests/fixtures/api/names; `/contact via address/`, `/should validate link type/` and `/reject contact and notify the sender/` to tests/fixtures/api/connect; `/updated item event has the previous item/`, `/should send updated item with mentions added and removed by edit/` and `/mark call invitation missed when the caller ends the call/` to tests/fixtures/api/updates), and fail when a recording differs from the committed file; the rewritten files are committed, and the kotlin and ios scopes run for them.
+- CI, in test-postgres, except on stable and v* tags: the steps of build-linux with the matrix parameter `postgres` and these job settings:
+  - the Docker image and dependency cache of build-linux, and its own build directory cache `dist-postgres-<target>`;
+  - simplex-chat-test built with `--constraint 'simplexmq +client_postgres' --constraint 'simplex-chat +client_postgres'` at -O0 (step "Build CLI");
+  - PostgreSQL 15 in Docker, with trust authentication and `max_connections=3000`, and postgresql-client-15 for pg_dump;
+  - the selected tests with `PGHOST=localhost`, each attempt limited to 60 minutes; `ALLOW_EMPTY=true` omits `--fail-on=empty`, so a selection of SQLite-only tests runs nothing here;
+  - step "Check generated files", artifact `generated-files-ubuntu-22.04-ghc<version>-postgres`.
+- Query plans: the test "verify and overwrite query plans" runs on Linux only. It explains the queries recorded in the run and the queries of the saved files (src/Simplex/Chat/Store/SQLite/Migrations/*_query_plans.txt), writes each query once, and fails when a file changed: a recorded query was missing, a plan changed, or a merge left two entries of one query. Saved queries that the run did not record are kept, except those whose plan became an error. Queries that run only on retries or other timing-dependent paths are added by the first run that records them.
 - Local:
   ```sh
   cp scripts/cabal.project.local.linux cabal.project.local
@@ -58,6 +69,13 @@ The reduced build runs one Linux job, build-linux (ubuntu-22.04 x86_64), for eve
   ```
   `--ghc-options=-O0` matches the reduced build; the library and test-suite stanzas of simplex-chat.cabal set -O2. Test directories are created under tests/tmp (`tmpBracket` in tests/Test.hs).
 
+  On PostgreSQL, with pg_dump 15 or newer on PATH:
+  ```sh
+  docker run -d -p 5432:5432 -e POSTGRES_HOST_AUTH_METHOD=trust postgres:15 -c max_connections=3000
+  cabal build --enable-tests --ghc-options=-O0 --constraint 'simplexmq +client_postgres' --constraint 'simplex-chat +client_postgres' test:simplex-chat-test
+  PGHOST=localhost ALLOW_EMPTY=true TESTS='/SimpleX chat client/group tests/' scripts/ci/run-tests.sh "$(cabal list-bin --enable-tests --ghc-options=-O0 --constraint 'simplexmq +client_postgres' --constraint 'simplex-chat +client_postgres' test:simplex-chat-test)"
+  ```
+
 #### kotlin
 
 - Globs: `BUILD_CHANGES["kotlin"]` in packages_release.py.
@@ -67,15 +85,16 @@ The reduced build runs one Linux job, build-linux (ubuntu-22.04 x86_64), for eve
   cd apps/multiplatform
   ./gradlew --no-daemon --max-workers=1 :common:desktopTest :desktop:compileKotlinJvm -x :desktop:cmakeBuildAndCopy :android:compileGoogleDebugKotlin :android:testFossDebugUnitTest
   ```
-  JDK 17 and an Android SDK in ANDROID_HOME are required, as installed by Dockerfile.build.
+  JDK 17 and an Android SDK in ANDROID_HOME are required, and on Linux fontconfig's `fc-cache` for `FallbackFontTest`, as installed by Dockerfile.build.
 
 #### ios
 
 - Globs:
   - apps/ios/**
+  - tests/fixtures/api/**
   - scripts/ci/ios-stub-libs.sh
-- CI: build-ios: stub libraries, then xcodebuild for the iOS Simulator without signing.
-- Local, on macOS: `scripts/ci/ios-stub-libs.sh`, then the xcodebuild command of the step "Build iOS app" of build-ios.
+- CI: build-ios: stub libraries, then xcodebuild for the iOS Simulator without signing (step "Build iOS app"), then the target SimpleX Unit Tests, hosted by the app, in a new simulator (step "Run iOS unit tests"). The stubs of `chat_migrate_init` and `chat_migrate_init_key` return an empty string, so the app opens its database error screen and calls the core no more.
+- Local, on macOS: `scripts/ci/ios-stub-libs.sh`, then the commands of the steps "Build iOS app" and "Run iOS unit tests" of build-ios.
 
 #### packages
 
@@ -132,17 +151,13 @@ The reduced build runs one Linux job, build-linux (ubuntu-22.04 x86_64), for eve
 
 #### mcp
 
-- Globs:
-  - packages/simplex-chat-mcp/**
-  - packages/simplex-chat-nodejs/**
-  - packages/simplex-chat-client/types/typescript/**
+- Globs: packages/simplex-chat-mcp/**.
 - CI:
-  - in build-linux: `scope-tests.sh mcp` (step "Test changed scopes"):
-    - the types package and the Node.js library built from the branch without the add-on, as package-tests.sh builds them;
-    - `npm ci`, then both installed into the MCP package with `npm install --no-save`;
+  - in build-linux: `scope-tests.sh mcp` (step "Test changed scopes"), with the published `simplex-chat` and `@simplex-chat/types` of package-lock.json:
+    - `npm ci`;
     - `npx tsc` and `npx tsc -p test/tsconfig.json --noEmit`;
     - `npm test`, the unit tests;
-    - `npm run test:e2e`, the end-to-end tests. They download libsimplex and the add-on pinned in packages/simplex-chat-nodejs/src/release.ts, and smp-server and xftp-server of the simplexmq release in test/e2e/smpServer.ts;
+    - `npm run test:e2e`, the end-to-end tests. They download libsimplex and the add-on pinned by the installed `simplex-chat`, and smp-server and xftp-server of the simplexmq release in test/e2e/smpServer.ts;
   - before a publication: the package with its published dependencies, type-checked and unit tested in job `publish` of build.yml (docs/contributing/RELEASES.md, "MCP server release").
 - Local: `scripts/ci/scope-tests.sh mcp`.
 
@@ -165,7 +180,6 @@ The reduced build runs one Linux job, build-linux (ubuntu-22.04 x86_64), for eve
 
 | Scope | Paths | CI |
 |---|---|---|
-| ios | apps/ios/** | compile only |
 | types package | packages/simplex-chat-client/types/typescript/** | compile only |
 | ts-client | packages/simplex-chat-client/typescript/** | - |
 | webrtc | packages/simplex-chat-webrtc/** | - |

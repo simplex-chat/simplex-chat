@@ -1,0 +1,137 @@
+{
+  "commands": {
+    "/_connect plan 1 @alice.simplex": {
+      "result": {
+        "connLink": {
+          "connFullLink": "connFullLink",
+          "connShortLink": "connShortLink"
+        },
+        "connectionPlan": {
+          "contactAddressPlan": {
+            "type": "ownLink"
+          },
+          "nameChange": {
+            "nameWarning": {
+              "expiredAt": "2026-01-01T12:00:00Z",
+              "graceUntil": "2099-01-01T12:00:00Z",
+              "type": "expired"
+            },
+            "type": "lapsed"
+          },
+          "type": "contactAddress"
+        },
+        "planSimplexName": {
+          "nameDomain": {
+            "domain": "alice",
+            "nameTLD": "simplex",
+            "subDomain": []
+          },
+          "nameType": "contact"
+        },
+        "type": "connectionPlan",
+        "user": {
+          "activeOrder": 1,
+          "activeUser": true,
+          "agentUserId": "1",
+          "autoAcceptGroupInvitations": false,
+          "autoAcceptMemberContacts": false,
+          "clientService": false,
+          "fullPreferences": {
+            "calls": {
+              "allow": "yes"
+            },
+            "commands": [],
+            "files": {
+              "allow": "always"
+            },
+            "fullDelete": {
+              "allow": "no"
+            },
+            "reactions": {
+              "allow": "yes"
+            },
+            "sessions": {
+              "allow": "no"
+            },
+            "timedMessages": {
+              "allow": "yes"
+            },
+            "voice": {
+              "allow": "yes"
+            }
+          },
+          "localDisplayName": "alice",
+          "profile": {
+            "contactDomain": {
+              "domain": "alice.simplex"
+            },
+            "contactLink": "contactLink",
+            "displayName": "alice",
+            "fullName": "",
+            "localAlias": "",
+            "preferences": {
+              "calls": {
+                "allow": "yes"
+              },
+              "commands": [],
+              "files": {
+                "allow": "always"
+              },
+              "fullDelete": {
+                "allow": "no"
+              },
+              "reactions": {
+                "allow": "yes"
+              },
+              "sessions": {
+                "allow": "no"
+              },
+              "timedMessages": {
+                "allow": "yes"
+              },
+              "voice": {
+                "allow": "yes"
+              }
+            },
+            "profileId": 1,
+            "shortDescr": "Alice"
+          },
+          "sendRcptsContacts": true,
+          "sendRcptsSmallGroups": true,
+          "showNtfs": true,
+          "userChatRelay": false,
+          "userContactId": 1,
+          "userId": 1
+        }
+      }
+    }
+  },
+  "markdown": {
+    "@alice.simplex": {
+      "formattedText": [
+        {
+          "format": {
+            "nameInfo": {
+              "nameDomain": {
+                "domain": "alice",
+                "nameTLD": "simplex",
+                "subDomain": []
+              },
+              "nameType": "contact"
+            },
+            "type": "simplexName"
+          },
+          "text": "@alice.simplex"
+        }
+      ]
+    }
+  },
+  "uris": {
+    "https://simplex.domains/#testing": {
+      "parseError": "",
+      "uriInfo": {
+        "scheme": "https"
+      }
+    }
+  }
+}

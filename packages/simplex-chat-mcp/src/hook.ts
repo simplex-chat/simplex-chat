@@ -4,8 +4,10 @@ import {ServiceClient} from "./client"
 import {interactive, interactiveEntrypoint, readConfig} from "./config"
 import {dataRoot} from "./files"
 import {errorText, logError, oneLine} from "./log"
-import {Step, TitleReply} from "./protocol"
+import {duration} from "./messages"
+import {Step, TitleReply, TurnRequest} from "./protocol"
 import {qrCodeText} from "./qr"
+import {claudePid} from "./service-request"
 import {SocketError, isNotRunning} from "./socket"
 import {version} from "./version"
 
@@ -21,15 +23,29 @@ const answerReads = 20
 // spec: spec/api.md#plugin-options
 const promptReads = 600
 // spec: spec/api.md#plugin-options
+const compactionReads = 120
+// spec: spec/api.md#plugin-options
+const compactionReadFactor = 10
+// spec: spec/api.md#plugin-options
+const compactionAge = 60_000
+// spec: spec/api.md#plugin-options
+const compactionSkew = 5_000
+// spec: spec/api.md#plugin-options
 const transcriptReadMs = 100
 const transcriptTailBytes = 1_048_576
+const usageTailBytes = [4, 16, 64].map(mebibytes => mebibytes * 1_048_576)
+// spec: spec/api.md#plugin-options
+const compactionTailBytes = 4 * transcriptTailBytes
+// spec: spec/api.md#plugin-options
+const boundaryMarker = '"compact_boundary"'
+// spec: spec/api.md#plugin-options
+const tokenCount = new Intl.NumberFormat("en", {notation: "compact"})
 const syntheticModel = "<synthetic>"
 const maxNote = 200
 const statusEmoji = new Map([["completed", "✅"], ["failed", "❌"], ["stopped", "⏹️"], ["killed", "⏹️"]])
 const teammatePrompt = /^Another Claude session sent a message[^:\n]*:\n<teammate-message /
 const teammateMessage = /<teammate-message teammate_id="([^"]*)"([^>]*)>\n([\s\S]*?)\n<\/teammate-message>/g
 const pluginTools = "mcp__plugin_simplex_simplex__"
-const toolEvents = ["PreToolUse", "PostToolUse", "PostToolUseFailure"]
 const stepFields = ["description", "query", "url", "file_path", "path", "pattern", "command"]
 
 // spec: spec/api.md#plugin-options
@@ -38,6 +54,7 @@ interface SessionStartInput {
   session_title?: string
   cwd: string
   model?: string
+  source?: string
 }
 
 // spec: spec/api.md#plugin-options
@@ -72,6 +89,9 @@ interface Origin {
 // spec: spec/api.md#plugin-options
 interface TranscriptEntry {
   type?: unknown
+  subtype?: unknown
+  timestamp?: unknown
+  compactMetadata?: {trigger?: unknown; preTokens?: unknown; postTokens?: unknown}
   isSidechain?: unknown
   promptId?: unknown
   origin?: Origin | null
@@ -79,7 +99,26 @@ interface TranscriptEntry {
   operation?: unknown
   content?: unknown
   attachment?: {type?: unknown; prompt?: unknown; origin?: Origin | null; commandMode?: unknown}
-  message?: {model?: unknown; content?: unknown}
+  message?: {id?: unknown; model?: unknown; content?: unknown; usage?: Usage}
+}
+
+// spec: spec/api.md#plugin-options
+interface Usage {
+  input_tokens?: unknown
+  cache_creation_input_tokens?: unknown
+  cache_read_input_tokens?: unknown
+  output_tokens?: unknown
+}
+
+interface Answer {
+  text: string
+  model?: string
+  entry: TranscriptEntry
+}
+
+interface AnswerUsage {
+  at: number
+  usage: Usage
 }
 
 interface PromptKind {
@@ -110,7 +149,7 @@ export async function sessionStart(stdin: string, env: NodeJS.ProcessEnv = proce
     const config = readConfig(env)
     const client = deps?.client ?? ServiceClient.forRoot(dataRoot(env))
     await client.ensureService(version)
-    const {mainGroup, owner} = await client.request<TitleReply>("POST", "/title", {id: input.session_id, pid: claudePid(env), at, name: input.session_title, project: input.cwd, model: input.model, config})
+    const {mainGroup, owner} = await client.request<TitleReply>("POST", "/title", {id: input.session_id, pid: claudePid(env), at, name: input.session_title, project: input.cwd, model: input.source === "compact" ? undefined : input.model, config})
     const {link, owners} = owner
     if (owners.length > 0 || link === undefined) return {}
     return {systemMessage: `SimpleX MCP: scan this QR code with the SimpleX app and tap Join to supervise your agents in "${mainGroup}":\n${qrCodeText(link, "plain")}\n${link}`}
@@ -137,12 +176,9 @@ export async function turn(stdin: string, env: NodeJS.ProcessEnv = process.env, 
   if (!interactive(env)) return {}
   try {
     const input = JSON.parse(stdin) as TurnInput
-    const toolUse = toolEvents.includes(input.hook_event_name ?? "")
-    const step = toolUse ? stepOf(input) : undefined
-    if (toolUse && step === undefined) return {}
-    const model = input.to_model ?? (input.hook_event_name === "Stop" ? await answerModel(input, readMs) : undefined)
-    const kind = input.hook_event_name === "UserPromptSubmit" ? await promptKind(input, readMs) : undefined
-    const request = {id: input.session_id, pid: claudePid(env), at, prompt: cut(input.prompt), ...kind, answer: cut(input.last_assistant_message), model, effort: input.effort?.level, step}
+    const event = await eventFields(input, at, readMs)
+    if (event === undefined) return {}
+    const request = {id: input.session_id, pid: claudePid(env), at, prompt: cut(input.prompt), answer: cut(input.last_assistant_message), model: input.to_model, switched: input.to_model === undefined ? undefined : true, effort: input.effort?.level, ...event}
     await client.ensureService(version)
     for (let attempt = 1; ; attempt++) {
       try {
@@ -159,29 +195,116 @@ export async function turn(stdin: string, env: NodeJS.ProcessEnv = process.env, 
   return {}
 }
 
+// spec: spec/architecture.md#hook-turn
+async function eventFields(input: TurnInput, at: number, readMs: number): Promise<Partial<TurnRequest> | undefined> {
+  switch (input.hook_event_name) {
+    case "Stop": {
+      const {model, usage} = await answerRecord(input, readMs)
+      return {model: input.to_model ?? model, usage}
+    }
+    case "UserPromptSubmit":
+      return promptKind(input, readMs)
+    case "PreToolUse":
+    case "PostToolUse":
+    case "PostToolUseFailure": {
+      const step = stepOf(input)
+      return step === undefined ? undefined : {step}
+    }
+    case "PostCompact": {
+      const note = await compactionNote(input, at, readMs)
+      return note === undefined ? undefined : {note}
+    }
+    default:
+      return {}
+  }
+}
+
 // spec: spec/architecture.md#hook-answermodel
-async function answerModel({transcript_path: path, last_assistant_message: message}: TurnInput, readMs: number): Promise<string | undefined> {
+async function answerRecord({transcript_path: path, prompt_id: id, last_assistant_message: message}: TurnInput, readMs: number): Promise<{model?: string; usage?: string}> {
   const answer = message?.trim()
-  if (!path || !answer) return undefined
+  if (!path || !answer) return {}
   const last = await findInTranscript(path, answer, answerReads, readMs, tail => {
-    const entry = lastAnswer(tail)
-    return entry?.text === answer ? entry : undefined
+    const text = tail.toString()
+    const entry = lastAnswer(text)
+    return entry?.text === answer ? {...entry, tail: text} : undefined
   })
-  return last?.model
+  if (last?.model === undefined) return {}
+  const {usage} = last.entry.message ?? {}
+  const answeredAt = timeOf(last.entry)
+  const measured = id !== undefined && usage !== undefined && !Number.isNaN(answeredAt)
+  return {model: last.model, usage: measured ? await turnUsage(path, id, {at: answeredAt, usage}, last.tail) : undefined}
+}
+
+// spec: spec/architecture.md#hook-turnusage
+async function turnUsage(path: string, promptId: string, answer: AnswerUsage, tail: string): Promise<string | undefined> {
+  let usage = usageOf(tail, promptId, answer)
+  for (const bytes of usageTailBytes) {
+    if (usage !== undefined) return usage
+    usage = usageOf((await readTail(path, bytes).catch(() => Buffer.alloc(0))).toString(), promptId, answer)
+  }
+  return usage
+}
+
+// spec: spec/architecture.md#hook-turnusage
+function usageOf(tail: string, promptId: string, {at, usage}: AnswerUsage): string | undefined {
+  const lines = tail.split("\n")
+  const first = lines.findIndex(line => line.includes(promptId) && startsTurn(transcriptEntry(line), promptId))
+  const ms = first === -1 ? NaN : at - timeOf(transcriptEntry(lines[first]))
+  if (Number.isNaN(ms)) return undefined
+  const output = new Map<unknown, number>()
+  for (const line of lines.slice(first + 1)) {
+    const entry = line.includes('"type":"assistant"') ? transcriptEntry(line) : undefined
+    if (entry?.type === "assistant" && entry.isSidechain !== true && entry.message?.model !== syntheticModel) output.set(entry.message?.id, count(entry.message?.usage?.output_tokens))
+  }
+  const written = [...output.values()].reduce((sum, tokens) => sum + tokens, 0)
+  const context = count(usage.input_tokens) + count(usage.cache_creation_input_tokens) + count(usage.cache_read_input_tokens)
+  return `${duration(ms)} · ${tokenCount.format(written)} output tokens · ${tokenCount.format(context)} tokens in context`
+}
+
+// spec: spec/architecture.md#hook-turnusage
+function startsTurn(entry: TranscriptEntry | undefined, promptId: string): boolean {
+  return entry !== undefined && isPrompt(entry) && entry.promptId === promptId
+}
+
+// spec: spec/architecture.md#hook-turnusage
+function timeOf(entry: TranscriptEntry | undefined): number {
+  return typeof entry?.timestamp === "string" ? Date.parse(entry.timestamp) : NaN
+}
+
+// spec: spec/architecture.md#hook-turnusage
+function count(value: unknown): number {
+  return typeof value === "number" ? value : 0
 }
 
 // spec: spec/architecture.md#hook-answermodel
 async function promptKind({transcript_path: path, prompt_id: id, prompt}: TurnInput, readMs: number): Promise<PromptKind> {
   const text = prompt?.trim()
   if (!path || !text) return {typed: false}
-  return (await findInTranscript(path, text, promptReads, readMs, (tail, last) => promptRecord(tail, id, text, last))) ?? {typed: false}
+  return (await findInTranscript(path, text, promptReads, readMs, (tail, last) => promptRecord(tail.toString(), id, text, last))) ?? {typed: false}
+}
+
+// spec: spec/architecture.md#hook-compactionnote
+async function compactionNote({transcript_path: path, agent_id: agent}: TurnInput, at: number, readMs: number): Promise<string | undefined> {
+  if (!path || agent !== undefined) return undefined
+  const boundary = await findInTranscript(path, "", compactionReads, compactionReadFactor * readMs, tail => (tail.includes(boundaryMarker) ? recentBoundary(tail.toString(), at) : undefined), compactionTailBytes)
+  if (boundary === undefined) return undefined
+  const {trigger, preTokens, postTokens} = boundary.compactMetadata ?? {}
+  const counts = typeof preTokens === "number" && typeof postTokens === "number" ? `: ${tokenCount.format(preTokens)} → ${tokenCount.format(postTokens)} tokens` : ""
+  return `⚙️ Context summarised ${trigger === "manual" ? "on request" : "automatically"}${counts}`
+}
+
+// spec: spec/architecture.md#hook-compactionnote
+function recentBoundary(tail: string, at: number): TranscriptEntry | undefined {
+  const boundaries = tail.split("\n").flatMap(line => (line.includes(boundaryMarker) ? (transcriptEntry(line) ?? []) : []))
+  const created = (entry: TranscriptEntry): number => Date.parse(String(entry.timestamp))
+  return boundaries.filter(entry => entry.type === "system" && entry.subtype === "compact_boundary" && entry.isSidechain !== true && created(entry) >= at - compactionAge && created(entry) <= at + compactionSkew).at(-1)
 }
 
 // spec: spec/architecture.md#hook-answermodel
-async function findInTranscript<T>(path: string, text: string, reads: number, readMs: number, find: (tail: string, last: boolean) => T | undefined): Promise<T | undefined> {
-  const bytes = transcriptTailBytes + 2 * Buffer.byteLength(text)
+async function findInTranscript<T>(path: string, text: string, reads: number, readMs: number, find: (tail: Buffer, last: boolean) => T | undefined, tailBytes = transcriptTailBytes): Promise<T | undefined> {
+  const bytes = tailBytes + 2 * Buffer.byteLength(text)
   for (let read = 1; ; read++) {
-    const tail = await readTail(path, bytes).catch(() => "")
+    const tail = await readTail(path, bytes).catch(() => Buffer.alloc(0))
     const found = find(tail, read === reads)
     if (found !== undefined || read === reads) return found
     await new Promise(resolve => setTimeout(resolve, readMs))
@@ -189,27 +312,27 @@ async function findInTranscript<T>(path: string, text: string, reads: number, re
 }
 
 // spec: spec/architecture.md#hook-answermodel
-async function readTail(path: string, bytes: number): Promise<string> {
+async function readTail(path: string, bytes: number): Promise<Buffer> {
   const file = await open(path, "r")
   try {
     const {size} = await file.stat()
     const length = Math.min(size, bytes)
     const buffer = Buffer.alloc(length)
     const {bytesRead} = await file.read(buffer, 0, length, size - length)
-    return buffer.toString("utf8", 0, bytesRead)
+    return buffer.subarray(0, bytesRead)
   } finally {
     await file.close()
   }
 }
 
 // spec: spec/architecture.md#hook-answermodel
-function lastAnswer(tail: string): {text: string; model?: string} | undefined {
+function lastAnswer(tail: string): Answer | undefined {
   const lines = tail.split("\n")
   for (let i = lines.length - 1; i >= 0; i--) {
     const entry = transcriptEntry(lines[i])
     if (entry?.type !== "assistant" || entry.isSidechain === true) continue
     const {model, content} = entry.message ?? {}
-    return {text: textOf(content), model: typeof model === "string" && model !== syntheticModel ? model : undefined}
+    return {text: textOf(content), model: typeof model === "string" && model !== syntheticModel ? model : undefined, entry}
   }
   return undefined
 }
@@ -252,7 +375,7 @@ function recordKind(record: TranscriptEntry, id: string | undefined, text: strin
   const origin = record.type === "attachment" ? (record.attachment?.origin ?? (record.attachment?.commandMode === "task-notification" ? {kind: "task-notification"} : undefined)) : record.origin
   const note = noteOf(origin, record.turnOrigin, text)
   const midTurn = record.type !== "user" || (id !== undefined && record.promptId !== id)
-  return {typed: origin?.kind === "human", ...(note === undefined ? {} : {note: shortened(note)}), ...(midTurn ? {midTurn} : {})}
+  return {typed: origin?.kind === "human", ...(note === undefined ? {} : {note: small(shortened(note))}), ...(midTurn ? {midTurn} : {})}
 }
 
 // spec: spec/architecture.md#hook-noteof
@@ -315,10 +438,15 @@ function peerName(origin: Origin): string {
 function stepOf({tool_use_id: id, tool_name: tool, agent_id: agent, hook_event_name: event, tool_input: fields = {}, cwd, is_interrupt: interrupted, duration_ms: ms}: TurnInput): Step | undefined {
   if (id === undefined || tool === undefined || agent !== undefined || tool.startsWith(pluginTools)) return undefined
   const text = shortened(stepText(tool, fields, cwd))
-  if (event === "PreToolUse") return {id, text}
-  if (event === "PostToolUse" && fields.run_in_background === true) return {id, text: `${text} (in background)`, end: true}
-  const outcome = event === "PostToolUse" ? "✅" : interrupted === true ? "⏹️" : "❌"
-  return {id, text: `${text} ${outcome}${ms === undefined ? "" : ` ${duration(ms)}`}`, end: true}
+  if (event === "PreToolUse") return {id, text: small(text)}
+  if (event === "PostToolUse" && fields.run_in_background === true) return {id, text: small(`${text} (in background)`), end: true}
+  const outcome = event === "PostToolUse" ? "" : interrupted === true ? " ⏹️" : " ❌"
+  return {id, text: small(`${text}${outcome}${ms === undefined ? "" : ` ${duration(ms)}`}`), end: true}
+}
+
+// spec: spec/architecture.md#hook-stepof
+function small(text: string): string {
+  return `!- ${text.replaceAll("!", "ǃ")}!`
 }
 
 // spec: spec/architecture.md#hook-stepof
@@ -333,7 +461,9 @@ function stepText(tool: string, fields: {[field: string]: unknown}, cwd: string 
     case "Edit":
       return `✏️ Edit ${path("file_path")}`
     case "Write":
-      return `📝 Write ${path("file_path")}`
+      return `✏️ Write ${path("file_path")}`
+    case "NotebookEdit":
+      return `✏️ Edit ${path("notebook_path")}`
     case "Grep":
     case "Glob": {
       const where = path("path")
@@ -342,12 +472,13 @@ function stepText(tool: string, fields: {[field: string]: unknown}, cwd: string 
     case "WebFetch":
       return `🌐 Fetch ${field("url")}`
     case "WebSearch":
-      return `🔎 Search ${field("query")}`
+      return `🔍 Search ${field("query")}`
     case "Agent":
       return `🤖 Agent: ${field("description")}`
     default: {
       const value = stepFields.map(field).find(text => text !== "")
-      return `🔧 ${oneLine(tool)}${value === undefined ? "" : `: ${value}`}`
+      const icon = /search/i.test(tool.split("__").at(-1) ?? "") ? "🔍" : "🔧"
+      return `${icon} ${oneLine(tool)}${value === undefined ? "" : `: ${value}`}`
     }
   }
 }
@@ -357,17 +488,6 @@ function displayPath(path: string, cwd: string | undefined): string {
   if (cwd === undefined || path === "") return path
   const inside = relative(cwd, path)
   return isAbsolute(inside) || inside.startsWith("..") ? path : inside
-}
-
-// spec: spec/architecture.md#hook-stepof
-function duration(exact: number): string {
-  const ms = Math.round(exact)
-  const seconds = Math.floor(ms / 1000)
-  if (ms < 1000) return `${ms} ms`
-  if (ms < 10_000) return `${(Math.floor(ms / 100) / 10).toFixed(1)} s`
-  if (seconds < 60) return `${seconds} s`
-  if (seconds < 3600) return `${Math.floor(seconds / 60)} min ${seconds % 60} s`
-  return `${Math.floor(seconds / 3600)} h ${Math.floor(seconds / 60) % 60} min`
 }
 
 // spec: spec/architecture.md#hook-noteof
@@ -411,9 +531,4 @@ function textOf(content: unknown): string {
 // spec: spec/api.md#plugin-commands
 function cut(text: string | undefined): string | undefined {
   return text === undefined || text.length <= maxText ? text : `${text.slice(0, maxText).replace(/[\ud800-\udbff]$/, "")}…`
-}
-
-function claudePid(env: NodeJS.ProcessEnv): number | undefined {
-  const pid = Number(env.CLAUDE_PID)
-  return Number.isInteger(pid) && pid > 0 ? pid : undefined
 }

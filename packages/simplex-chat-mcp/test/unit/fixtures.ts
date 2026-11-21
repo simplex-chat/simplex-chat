@@ -172,8 +172,10 @@ export class FakeChat {
   commands: string[] = []
   sent: {chat: [T.ChatType, number]; messages: T.ComposedMessage[]; live?: true}[] = []
   updates: {chatId: number; itemId: number; text: string; live?: true}[] = []
+  updatePriorities: {itemId: number; priority?: number}[] = []
   replies: string[] = []
   deleted: {chatType: T.ChatType; chatId: number; mode?: T.ChatDeleteMode}[] = []
+  deletedItems: {chatType: T.ChatType; chatId: number; itemIds: number[]; deleteMode: T.CIDeleteMode}[] = []
   left: number[] = []
   customData: {chat: string; customData?: object}[] = []
   profiles: {groupId: number; groupProfile: T.GroupProfile}[] = []
@@ -202,6 +204,14 @@ export class FakeChat {
         .map(({chatInfo, items}) => ({chatInfo, chatItems: [], chatStats: chatStats(items)}))
       return structuredClone({type: "apiChats", user, chats}) as unknown as ChatResponse
     }
+    const update = /^\/_update item ([@#])(\d+) (\d+)( live=on)? json (.+)$/.exec(cmd)
+    if (update) {
+      const {msgContent, priority} = JSON.parse(update[5]) as {msgContent: T.MsgContent; priority?: number}
+      this.updatePriorities.push({itemId: Number(update[3]), priority})
+      const chatType = update[1] === "@" ? T.ChatType.Direct : T.ChatType.Group
+      const chatItem = await this.apiUpdateChatItem(chatType, Number(update[2]), Number(update[3]), msgContent, update[4] !== undefined)
+      return {type: "chatItemUpdated", user, chatItem: {chatInfo: groupChat(group(Number(update[2]), "control")), chatItem}} as unknown as ChatResponse
+    }
     if (cmd.startsWith("/_read chat items ")) {
       const [, ref, ids] = /^\/_read chat items ([@#]\d+) (.+)$/.exec(cmd)!
       const data = this.chats.get(ref)!
@@ -224,6 +234,11 @@ export class FakeChat {
   async apiUpdateChatItem(_type: T.ChatType, chatId: number, itemId: number, msgContent: T.MsgContent, liveMessage?: boolean): Promise<T.ChatItem> {
     this.updates.push({chatId, itemId, text: msgContent.text, ...(liveMessage === true ? {live: true} : {})})
     return item(itemId, msgContent.text, {type: "groupSnd"})
+  }
+
+  async apiDeleteChatItems(chatType: T.ChatType, chatId: number, itemIds: number[], deleteMode: T.CIDeleteMode): Promise<T.ChatItemDeletion[]> {
+    this.deletedItems.push({chatType, chatId, itemIds, deleteMode})
+    return []
   }
 
   async apiSendTextReply(_ci: T.AChatItem, text: string): Promise<T.AChatItem[]> {
