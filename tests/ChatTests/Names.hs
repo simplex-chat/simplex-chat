@@ -35,6 +35,7 @@ chatNamesTests = do
   it "connect by unregistered name reports it is available" testConnectByNameNotFound
   it "set name not resolving to own address is rejected" testSetNameNotOwnAddress
   it "set expired name is rejected, as own when its record has the address" testSetNameExpired
+  it "set expired channel name is rejected, as own when its record has the channel link" testSetChannelNameExpired
   it "channel name is not verified just by joining via link" testChannelDomainLinkJoinUnverified
   it "verify channel name, fail on re-point, retain status on refresh" testChannelDomainVerify
   it "connect by channel name" testConnectByChannelName
@@ -300,6 +301,16 @@ testSetNameExpired ps = withSmpServerAndNames ps $ \reg ->
     alice ##> "/_set domain 1 alice.simplex"
     alice <##. "your SimpleX name alice.simplex expired on "
     apiFixture "names/set-own-expired" alice [] FixtureRequests {frMarkdown = [], frUris = [], frCommands = ["/_set domain 1 alice.simplex"]}
+
+testSetChannelNameExpired :: HasCallStack => TestParams -> IO ()
+testSetChannelNameExpired = withChannelChats $ \reg alice cath _bob -> do
+  (shortLink, _) <- prepareChannel1Relay "team" alice cath
+  registerExpiredName reg teamSimplexName (channelNameRecord "team.simplex" "https://simplex.chat/other")
+  alice ##> "/public group access #team domain=team.simplex"
+  alice <##. "SimpleX name team.simplex expired on "
+  registerExpiredName reg teamSimplexName (channelNameRecord "team.simplex" (T.pack shortLink))
+  alice ##> "/public group access #team domain=team.simplex"
+  alice <##. "your SimpleX name team.simplex expired on "
 
 -- a self-claimed name is never auto-verified from link data: the claim is not proof of ownership
 testChannelDomainLinkJoinUnverified :: HasCallStack => TestParams -> IO ()
