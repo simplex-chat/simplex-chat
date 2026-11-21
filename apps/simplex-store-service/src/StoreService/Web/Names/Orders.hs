@@ -238,7 +238,7 @@ invoiceViewResponse :: OrdersEnv -> ServiceConfig -> NameRegistration -> Invoice
 invoiceViewResponse env cfg r row = jsonResponse status200 <$> nameInvoiceView env (confirmationsFor cfg) row r
 
 registrationAnswer :: RegistrationId -> Response
-registrationAnswer (RegistrationId rid) = jsonResponse status200 $ J.object ["registrationId" .= rid]
+registrationAnswer rid = jsonResponse status200 $ J.object ["registrationId" .= rid]
 
 refused :: Text -> OrderRefusal -> IO Answer
 refused what refusal = refusalAnswer (orderRefusal refusal) <$ logNote (what <> " refused: " <> tshow refusal)

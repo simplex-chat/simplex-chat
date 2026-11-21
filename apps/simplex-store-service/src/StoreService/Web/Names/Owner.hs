@@ -55,14 +55,14 @@ instance J.FromJSON FindRequest where
 newtype FindAnswer = FindAnswer {registrations :: [FoundOrder]}
 
 data FoundOrder = FoundOrder
-  { registrationId :: Text,
+  { registrationId :: RegistrationId,
     invoiceId :: Maybe InvoiceId,
     phase :: NamePhase,
     createdAt :: UTCTime,
     labelHash :: Hex32,
     sealed :: Text,
-    balanceSource :: Maybe Text,
-    heldBy :: Maybe Text
+    balanceSource :: Maybe RegistrationId,
+    heldBy :: Maybe RegistrationId
   }
 
 $(JQ.deriveToJSON defaultJSON {J.omitNothingFields = False} ''FoundOrder)
@@ -93,19 +93,17 @@ findHandler OrdersEnv {oeStore, oeNow} req respond =
 
 -- | balanceSource: the order whose balance paid this one; heldBy: the order whose invoice holds this one's balance.
 foundOrder :: NameRegistration -> Maybe RegistrationId -> FoundOrder
-foundOrder NameRegistration {nrId = RegistrationId rid, nrPayment, nrPhase, nrCreatedAt, nrLabelHash = LabelHash lh, nrSealed} holder =
+foundOrder NameRegistration {nrId, nrPayment, nrPhase, nrCreatedAt, nrLabelHash = LabelHash lh, nrSealed} holder =
   FoundOrder
-    { registrationId = rid,
+    { registrationId = nrId,
       invoiceId = paymentInvoice nrPayment,
       phase = namePhase nrPhase,
       createdAt = nrCreatedAt,
       labelHash = Hex32 lh,
       sealed = nrSealed,
-      balanceSource = idText . buSource <$> paymentBalance nrPayment,
-      heldBy = idText <$> holder
+      balanceSource = buSource <$> paymentBalance nrPayment,
+      heldBy = holder
     }
-  where
-    idText (RegistrationId t) = t
 
 -- | POST /api/registration/:id/name, another name or other links, under the turns of both names.
 retargetHandler :: OrdersEnv -> [Provider] -> Waiters -> RegistrationId -> Request -> Respond -> IO ResponseReceived

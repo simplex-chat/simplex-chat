@@ -1,3 +1,5 @@
+{-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 
@@ -5,6 +7,7 @@ module StoreService.Names.Phases (Phases, RegistrationId (..), newPhases, publis
 
 import Control.Concurrent.STM
 import Control.Exception (bracket)
+import qualified Data.Aeson as J
 import Data.Int (Int64)
 import qualified Data.Map.Strict as Map
 import Data.Text (Text)
@@ -13,6 +16,7 @@ import qualified Simplex.Messaging.TMap as TM
 
 newtype RegistrationId = RegistrationId Text
   deriving (Eq, Ord, Show)
+  deriving newtype (J.ToJSON, J.FromJSON)
 
 -- | wVersion only grows, so a publish that arrives after a newer one cannot wake anyone.
 data Watch = Watch {wVersion :: TVar Int64, wRefs :: TVar Int}
