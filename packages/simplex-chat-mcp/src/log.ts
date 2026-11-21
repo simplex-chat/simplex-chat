@@ -81,7 +81,7 @@ function chatErrorTypeText(error: T.ChatErrorType): string | undefined {
       return "Unsupported connection link: This link requires a newer app version. Please upgrade the app or ask your contact to send a compatible link."
     case "simplexDomainNotReady": {
       const name = fullDomainName(error.simplexDomain)
-      if (error.simplexDomainError.type === "nameWarning") return nameWarningText(name, error.simplexDomainError.nameWarning as unknown as T.NameWarning, {own: false, knownChat: false})
+      if (error.simplexDomainError.type === "nameWarning") return nameWarningText(name, error.simplexDomainError.nameWarning, {own: false, knownChat: false})
       return error.simplexDomainError.type === "noValidLink"
         ? `No valid link: The SimpleX name ${name} is registered, but it has no valid link.`
         : `Unconfirmed name: The SimpleX name ${name} is registered, but not added to profile. Please add it to your address or channel profile, if you are the owner.`
