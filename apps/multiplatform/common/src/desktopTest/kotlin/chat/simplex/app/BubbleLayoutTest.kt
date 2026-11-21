@@ -150,7 +150,7 @@ class BubbleLayoutTest {
   }
 
   @Test
-  fun timeDrawnOnTextBaseline() {
+  fun timeOffsetFromTextBaseline() {
     val texts = listOf<@Composable () -> TextStyle>(
       { TextStyle(fontFamily = Inter, fontSize = 16.sp).merge(bubbleTextStyle(16.sp, HighOrLowlight)) },
       { TextStyle(fontFamily = Inter, fontSize = 13.sp, lineHeight = 18.sp, lineHeightStyle = LineHeightStyle(LineHeightStyle.Alignment.Center, LineHeightStyle.Trim.None)).merge(bubbleLineHeight(18.sp)) },

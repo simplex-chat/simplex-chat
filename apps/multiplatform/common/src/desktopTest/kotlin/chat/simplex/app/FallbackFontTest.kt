@@ -5,7 +5,9 @@ import org.jetbrains.skia.paragraph.FontCollection
 import org.jetbrains.skia.paragraph.ParagraphBuilder
 import org.jetbrains.skia.paragraph.ParagraphStyle
 import org.jetbrains.skia.paragraph.TextStyle
+import org.junit.Assume.assumeNoException
 import org.junit.Assume.assumeTrue
+import java.io.IOException
 import java.nio.file.Files
 import java.nio.file.Path
 import java.util.concurrent.TimeUnit
@@ -52,7 +54,12 @@ class FallbackFontTest {
     Files.createDirectory(dir.resolve("fonts"))
     Files.writeString(dir.resolve("fonts/snowman.bdf"), SNOWMAN_BDF)
     Files.writeString(dir.resolve("fonts.conf"), "<fontconfig><dir>$dir/fonts</dir><cachedir>$dir/cache</cachedir></fontconfig>")
-    val fcCache = runCatching { startWithFonts(dir, "fc-cache").waitFor() }.getOrNull()
+    val fcCache = try {
+      startWithFonts(dir, "fc-cache").waitFor()
+    } catch (e: IOException) {
+      assumeNoException("fc-cache is not installed", e)
+      return@withTempDir
+    }
     assumeTrue("fc-cache indexes the font, as it does for installed fonts", fcCache == 0)
     val java = Path.of(System.getProperty("java.home"), "bin", "java").toString()
     val layout = startWithFonts(dir, java, "-cp", System.getProperty("java.class.path"), LayOutSnowman::class.java.name)
