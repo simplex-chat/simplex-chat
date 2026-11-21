@@ -21,6 +21,8 @@ cd tmp
 curl --tlsv1.2 "${vlc_url}" -L -o appimage
 chmod +x appimage
 ./appimage --appimage-extract
+"$root_dir/scripts/desktop/keep-vlc-plugins.sh" squashfs-root/usr/lib/vlc/plugins
+rm -rf squashfs-root/usr/lib/vlc/lua
 cp -r squashfs-root/usr/lib/* $vlc_dir
 cd ../
 rm -rf tmp
