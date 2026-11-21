@@ -1832,14 +1832,14 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
       eInfo <- eventInfo
       logInfo $ label <> ": " <> eInfo
       tryAllErrors (withStoreTx criticalErr $ handleOnce eInfo) >>= \case
-        Right (withRcpt, shouldDelConns) ->
+        Right (Right (withRcpt, shouldDelConns)) ->
           unless shouldDelConns $ withLog (eInfo <> " ok") $ ackHandledMsg $ if withRcpt then Just "" else Nothing
+        Right (Left e) -> ackError eInfo e
         -- If showCritical is True, then these errors don't result in ACK and show user visible alert
         -- This prevents losing the message that failed to be processed.
         Left (ChatErrorStore SEDBBusyError {message}) | showCritical -> throwError $ chatErrorAgent $ CRITICAL True message
-        Left e -> do
-          withLog (eInfo <> " error: " <> tshow e) $ ackHandledMsg Nothing
-          throwError e
+        Left (ChatErrorStore SEDBException {message}) | showCritical -> throwError $ chatErrorAgent $ CRITICAL True message
+        Left e -> ackError eInfo e
       where
         Connection {connId = handledConnId} = entityConnection entity
         criticalErr = \case
@@ -1856,6 +1856,9 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
         ackHandledMsg rcpt = do
           ackMsg msgMeta rcpt
           withStore' (\db -> deleteHandledRcvMsg db handledConnId aMsgId) `catchAllErrors` eToView
+        ackError eInfo e = do
+          withLog (eInfo <> " error: " <> tshow e) $ ackHandledMsg Nothing
+          throwError e
         eventInfo = do
           v <- asks eventSeq
           eId <- atomically $ stateTVar' v $ \i -> (i + 1, i + 1)

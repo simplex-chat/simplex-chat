@@ -92,6 +92,10 @@ chatDirectTests = do
     it "skip integrity error of handled message redelivered after chat stop" testRedeliveredHandledIntegrity
     it "roll back writes and events of a failed store transaction" testStoreTxRollback
     it "commit store transaction without the writes of a failed store call" testStoreTxSavepoint
+    it "receive message again after its handling failed to commit" testRedeliveredUncommittedMessage
+#if !defined(dbPostgres)
+    it "roll back store transaction after a failed savepoint rollback" testStoreTxAborted
+#endif
   describe "batch send messages" $ do
     it "send multiple messages api" testSendMulti
     it "send multiple timed messages" testSendMultiTimed
@@ -1623,7 +1627,36 @@ testStoreTxSavepoint =
     aliceAlias bob `shouldReturn` [Only ("kept" :: T.Text)]
     bob <## "chat suspended"
 
-runInStoreTx :: TestCC -> Bool -> CM a -> IO (Either ChatError a)
+testRedeliveredUncommittedMessage :: HasCallStack => TestParams -> IO ()
+testRedeliveredUncommittedMessage =
+  testChat2 aliceProfile bobProfile $ \alice bob -> do
+    connectUsers alice bob
+    withFailingCommits bob "handled_rcv_msgs" "TRUE" $ do
+      alice #> "@bob hello"
+      bob <##. "critical error: "
+      bob <## "please restart the app"
+    bob ##> "/_stop"
+    bob <## "chat stopped"
+    bob ##> "/_start"
+    bob <### ["chat started", "subscribed 1 connections on server localhost", WithTime "alice> hello"]
+    alice #> "@bob hi"
+    bob <# "alice> hi"
+    bob #$> ("/_get chat @2 count=2", chat, [(0, "hello"), (0, "hi")])
+
+#if !defined(dbPostgres)
+testStoreTxAborted :: HasCallStack => TestParams -> IO ()
+testStoreTxAborted =
+  testChat2 aliceProfile bobProfile $ \alice bob -> do
+    connectUsers alice bob
+    withCCTransaction bob (`DB.execute_` "CREATE TRIGGER abort_tx BEFORE UPDATE OF local_alias ON contact_profiles WHEN NEW.local_alias = 'undone' BEGIN SELECT RAISE(ROLLBACK, 'abort'); END")
+    r <- runInStoreTx bob False $ do
+      withStore' (`DB.execute_` "UPDATE contact_profiles SET local_alias = 'undone' WHERE display_name = 'alice'") `catchAllErrors` \_ -> pure ()
+      withStore' (`DB.execute_` "UPDATE contact_profiles SET local_alias = 'changed' WHERE display_name = 'alice'")
+    isLeft r `shouldBe` True
+    aliceAlias bob `shouldReturn` [Only ("" :: T.Text)]
+#endif
+
+runInStoreTx :: TestCC -> Bool -> CM a -> IO (Either ChatError (Either ChatError a))
 runInStoreTx TestCC {chatController = cc} rollback action =
   runReaderT (runExceptT $ withStoreTx (const rollback) action) cc
 

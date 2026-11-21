@@ -1067,3 +1067,24 @@ blockFirstEventCfg blocks = do
 newItemText :: (T.Text -> Bool) -> ChatEvent -> Bool
 newItemText p (CEvtNewChatItems _ [AChatItem _ _ _ ChatItem {meta = CIMeta {itemText}}]) = p itemText
 newItemText _ _ = False
+
+withFailingCommits :: TestCC -> String -> String -> IO () -> IO ()
+withFailingCommits cc table condition action = do
+  withCCTransaction cc $ \db -> mapM_ (DB.execute_ db . fromString) createTrigger
+  action
+  withCCTransaction cc (`DB.execute_` fromString dropTrigger)
+  where
+#if defined(dbPostgres)
+    createTrigger =
+      [ "CREATE TABLE IF NOT EXISTS fail_commit (user_id BIGINT REFERENCES users DEFERRABLE INITIALLY DEFERRED)",
+        "CREATE OR REPLACE FUNCTION fail_commit() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN INSERT INTO fail_commit VALUES (0); RETURN NULL; END $$",
+        "CREATE TRIGGER fail_commit AFTER INSERT ON " <> table <> " FOR EACH ROW WHEN (" <> condition <> ") EXECUTE FUNCTION fail_commit()"
+      ]
+    dropTrigger = "DROP TRIGGER fail_commit ON " <> table
+#else
+    createTrigger =
+      [ "CREATE TABLE IF NOT EXISTS fail_commit (user_id INTEGER REFERENCES users DEFERRABLE INITIALLY DEFERRED)",
+        "CREATE TRIGGER fail_commit AFTER INSERT ON " <> table <> " WHEN " <> condition <> " BEGIN INSERT INTO fail_commit VALUES (0); END"
+      ]
+    dropTrigger = "DROP TRIGGER fail_commit"
+#endif
