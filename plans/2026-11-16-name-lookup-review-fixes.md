@@ -2,7 +2,7 @@
 
 Repository: simplex-chat/simplex-chat.
 Branch: `ep/name-lookup-review-fixes`.
-Base: `ep/name-alert-fixtures-2`, on master `88767bbc3` (#8220).
+Base: master.
 
 ## Findings
 
@@ -13,7 +13,7 @@ Base: `ep/name-alert-fixtures-2`, on master `88767bbc3` (#8220).
 | A5-5 | name warnings as values in the connection plan |
 | A5-7 | `NCLapsed` includes the name's domain |
 | A5-8 | one name lookup; an expired name refused everywhere |
-| A5-9, A5-14, A5-15, A5-16 | the store writes of a verified chat mark the other chats moved, under a lock per user and name |
+| A5-9, A5-14, A5-15, A5-16 | the other chats of a verified chat's name marked moved in the same store transaction, under a lock per user and name |
 | A5-10 | expiry compared with the registry's block time |
 | A5-18 | one function for the name claimed by a group profile |
 | A5-19 | the plan's name domain and the moved known chat bound once |
@@ -22,8 +22,8 @@ Base: `ep/name-alert-fixtures-2`, on master `88767bbc3` (#8220).
 | A5-26 | one check of the badge service address |
 | 326cff68c | cherry-picked: a name warning matched in the same case |
 
-Not changed: A5-1, A5-3, A5-6, A5-20, A5-21, A5-23, A5-25 (master has `BadgeServiceErrorCode` in all languages).
-Not in this pull request: A5-13.
+Not changed: A5-1, A5-3, A5-6, A5-20, A5-21, A5-23.
+In #8243, as their code is only on `names`: A5-13, A5-25.
 
 ## Name lookup
 
@@ -108,7 +108,7 @@ flowchart LR
 | 2 | moved |
 
 - `ToField DomainVerification` beside `FromField`.
-- SQL compares `*_domain_verified` with `DVVerified` and `DVMoved` as parameters.
+- `*_domain_verified` compared with `DVVerified` and `DVMoved` as SQL parameters.
 
 Store.Direct:
 ```haskell
@@ -136,7 +136,7 @@ Store functions that call `setOtherNameChatsMoved`, with `MovedChats` in the res
 - `updatePreparedContactUser`
 - `updatePreparedGroupUser`
 
-`withNameLock user domain_ action :: CM (a, MovedChats)`, in Library.Internal:
+`withNameLockMovedToView user domain_ action :: CM (a, MovedChats)`, in Library.Internal:
 - lock: `CLSimplexName userId (fullDomainName domain)` of `ChatLockEntity`, for a domain
 - `CEvtNameMoved` for non-empty `MovedChats`
 
@@ -147,7 +147,7 @@ Callers:
 | APIPrepareContact | user | the verified domain |
 | APIPrepareGroup | user | the verified domain |
 | APIChangePreparedContactUser | new user | the contact's claim |
-| APIChangePreparedGroupUser | new user | the group's claim |
+| APIChangePreparedGroupUser | new user | a business chat's domain, or the group's claim |
 | APIVerifyContactDomain | user | the claim |
 | APIVerifyGroupDomain | user | the claim |
 | runUpdateGroupProfile | user | the new profile's claim |
@@ -158,7 +158,7 @@ Callers:
 ```mermaid
 sequenceDiagram
   participant C as caller
-  participant L as withNameLock
+  participant L as withNameLockMovedToView
   participant S as store transaction
   C->>L: user, domain, action
   L->>L: lock CLSimplexName user domain
@@ -183,23 +183,97 @@ sequenceDiagram
 - `requestBadgeIssue`: `requireBadgeService`.
 - docs/guide/register-simplex-name.md: the moved indicator, the name warning alerts.
 
+## Apps
+
+- iOS `SimplexNameView`: the verified name and the cross of a failed or moved name as buttons, in place of tap gestures.
+- iOS `ConnectByNameRow`: a button, in place of a tap gesture.
+- The cross colour of a SimpleX name by its verification state, in one function:
+  - iOS `SimplexNameView.crossColor`
+  - Kotlin `simplexNameCrossColor`
+
 ## MCP server
 
-packages/simplex-chat-mcp, built and tested with the repository's types (scope `mcp` of scripts/ci):
+packages/simplex-chat-mcp. Scope `mcp` of scripts/ci/scope-tests.sh runs `npm ci`, then `npx tsc` against `@simplex-chat/types` 7.1.3 of its package-lock.json.
 
 | Function | Change |
 |---|---|
 | `simplexNameOf` | a name for `DomainVerification.Verified` only |
 | `chatErrorTypeText` | `nameWarning`: `nameWarningText` |
-| `nameWarningText` | the apps' words of the alerts to another user; an available name of a known chat: "Name no longer registered" |
-| `classifyPlan` | `lapsed`: a tool error with `nameWarningText` |
+| `nameWarningText` | the apps' words of the alerts, for the agent's own name or another user's; another user's available name of a known chat: "Name no longer registered" |
+| `classifyPlan`, `planChat` | `lapsed`: the text of `nameWarningText`, own for an `ownLink` plan, and the plan's chat |
+| `AgentTools.plan` | `lapsed`: a tool error, with ` Your chat: CHAT.` for the plan's chat after `ownChat` |
 | `classifyPlan` | `moved`: `movedFrom`, the reference of the known chat |
 | `planFields` | `moved_from` in the result of `connect` |
 
+```mermaid
+flowchart LR
+  P["apiConnectPlan"] --> C["classifyPlan"]
+  C -->|lapsed| T["nameWarningText<br>own: ownLink plan"]
+  T --> H{"plan's chat"}
+  H -->|none| E1["tool error"]
+  H -->|chat| O["ownChat"]
+  O -->|this session or no owner| E2["tool error<br>Your chat: CHAT."]
+  O -->|another session| E3["tool error<br>belongs to another session"]
+```
+
 ## Tests
 
+Core, tests/ChatTests/Names.hs:
 - `testNameRecordOrWarning`: the block time before and after `expires`.
 - `testChannelDomainVerify`: an expired name not verified.
 - `testSetNameExpired`: an expired name not set.
-- Fixtures of a lapsed name in tests/fixtures/api/names: `nameDomain` in `nameChange`; the Kotlin and iOS name tests unchanged.
-- mcp: name warning texts, a lapsed name refused, `movedFrom`, `simplexName` of a verified chat only.
+- New plans, recorded as fixtures:
+  - `testPlanNameChannelUpdateRequired`
+  - `testPlanOwnNameOtherKind`
+  - `testPlanContactConnecting`
+- Fixtures added to existing tests:
+  - `testPlanKnownNameNewChatOpened`
+  - `testPlanKnownNameMovedToKnownChat`
+  - `testPlanLocalChats`
+- `apiFixture`: a `/_prepare` command recorded without its JSON argument; `pccAgentConnId` replaced by its key.
+- chat_query_plans.txt: the plans of the changed queries, from the save step of the full suite run outside CI.
+
+Fixtures, tests/fixtures/api/names:
+- Changed, with `nameDomain` in `nameChange`:
+  - plan-known-available
+  - plan-known-expired
+  - plan-known-expired-no-grace
+  - plan-known-reserved
+  - plan-own-available
+  - plan-own-channel-expired
+  - plan-own-expired
+  - plan-own-expired-no-grace
+- Added:
+  - plan-connecting-contact
+  - plan-known-moved-prepared
+  - plan-own-address-other-kind
+  - plan-own-channel-other-kind
+  - plan-update-required
+  - search-moved-known
+
+iOS, NameAlertsTests, added; a `/_prepare` command looked up in the mock without its JSON argument:
+- testOnOpenAfterPrepareWithoutCheckingItsJSON
+- testChannelUpdateRequired
+- testOwnChannelOffersOtherKind
+- testOwnAddressOffersOtherKind
+- testContactConnecting
+- testChatListRowShowsChatsOfName
+- testConnectByNameRowShowsLocalChats
+- testVerifiedNameIsCopied
+- testFailedNameIsVerifiedAgain
+- testMovedNameIsVerifiedAgain
+- testCrossColorOfNameState
+
+Android and desktop, NameAlertsTest, added:
+- channelUpdateRequired
+- contactConnecting
+- chatListRowShowsChatsOfName
+- crossColorOfNameState
+
+mcp:
+- name warning texts
+- a lapsed name refused, with the known chat
+- the agent's own lapsed name, of its address and of its channel
+- the chat of a lapsed name claimed without an owner, refused of another session
+- `movedFrom`
+- `simplexName` of a verified chat only
