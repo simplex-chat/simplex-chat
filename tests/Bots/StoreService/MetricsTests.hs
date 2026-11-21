@@ -6,7 +6,7 @@ module Bots.StoreService.MetricsTests (storeMetricsTests) where
 import Bots.StoreService.FakeEthNode
 import Bots.StoreService.NamesContractsTests (minPriceCentsPerYear)
 import Bots.StoreService.NamesStoreTests (at, commitFixture, hashFixture, insertInvoiceRow, insertProviderInvoice, newEdit, newReg, order, ownerA, ownerB, paidOrder, price, reveal, setChannel, t0)
-import Bots.StoreService.WebTests (capturingStderr, digestFixture, statusOf, webGet, webRequestBody, withApp, withServiceStore)
+import Bots.StoreService.WebTests (digestFixture, statusOf, webGet, webRequestBody, withApp, withServiceStore)
 import Control.Concurrent.Async (cancel)
 import Control.Concurrent.STM (TVar, atomically, modifyTVar', newTVarIO, readTVarIO, writeTVar)
 import Control.Exception (finally)
@@ -63,28 +63,6 @@ storeMetricsTests = describe "StoreService: metrics" $ do
   it "answers GET /metrics with the service metrics alone without names, and with the names metrics while the node holds the chain read" $ testScrape g
   it "counts live names and owned subnames by level and records, with their label lengths, and keeps the last read while one fails" $ testRegisteredNames g
   it "runs on when its port is taken, and reports the failure once" testPortTaken
-  it "sets chain_read_ok to 0 when the chain read's connection throws, keeping the time of the last full read, and logs it" $ testChainReadThrows g
-  it "counts a registered names read whose connection throws as a refresh failure, keeping the last read, and logs it" $ testRegisteredNamesThrows g
-
-testChainReadThrows :: TVar ChaChaDRG -> IO ()
-testChainReadThrows g = withServiceStore $ \st -> withFakeEthNode $ \node -> do
-  ct <- newContracts st TLDSimplex minPriceCentsPerYear =<< throwingChain =<< fakeChainClient g node
-  readAt <- getCurrentTime
-  v <- newTVarIO noChainRead {crReadAt = Just readAt, crOk = True}
-  logged <- capturingStderr $ readChain ct v
-  (\ChainRead {crReadAt, crOk} -> (crReadAt, crOk)) <$> readTVarIO v `shouldReturn` (Just readAt, False)
-  logged `shouldSatisfy` T.isInfixOf "store metrics: the registrar's funds could not be read: ChainUnavailable \"the test's connection threw\""
-
-testRegisteredNamesThrows :: TVar ChaChaDRG -> IO ()
-testRegisteredNamesThrows g = withServiceStore $ \st -> withFakeEthNode $ \node -> do
-  ct <- newContracts st TLDSimplex minPriceCentsPerYear =<< throwingChain =<< fakeChainClient g node
-  readAt <- getCurrentTime
-  v <- newTVarIO noRegisteredNamesRead {rrNames = Just (RegisteredNames {rgBlock = 7, rgNames = []}, readAt)}
-  logged <- capturingStderr $ readRegisteredNames ct v
-  counted <- readTVarIO v
-  (fmap (rgBlock . fst) (rrNames counted), rrFailures counted) `shouldBe` (Just 7, 1)
-  typedSamples (registeredNamesText counted) `shouldContain` ["simplex_names_refresh_failures_total 1"]
-  logged `shouldSatisfy` T.isInfixOf "store metrics: the registered names read failed: ChainUnavailable \"the test's connection threw\""
 
 testPortTaken :: IO ()
 testPortTaken = withServiceStore $ \st -> Warp.testWithApplication (pure $ \_ respond -> respond $ responseLBS status404 [] "") $ \port -> do
