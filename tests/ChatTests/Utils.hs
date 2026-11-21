@@ -109,25 +109,13 @@ it name test =
   where
     t = 180 * 1000000
 
-xit' :: HasCallStack => String -> (ps -> Expectation) -> SpecWith (Arg (ps -> Expectation))
-xit' = if os == "linux" then xit else it
-
-xit'' :: (HasCallStack, Example a) => String -> a -> SpecWith (Arg a)
-xit'' = ifCI xit Hspec.it
-
 xitMacCI :: HasCallStack => String -> (ps -> Expectation) -> SpecWith (Arg (ps -> Expectation))
 xitMacCI = ifCI (if os == "darwin" then xit else it) it
-
-xdescribe'' :: HasCallStack => String -> SpecWith a -> SpecWith a
-xdescribe'' = ifCI xdescribe describe
 
 ifCI :: HasCallStack => (HasCallStack => String -> a -> SpecWith b) -> (HasCallStack => String -> a -> SpecWith b) -> String -> a -> SpecWith b
 ifCI xrun run d t = do
   ci <- runIO $ lookupEnv "CI"
   (if ci == Just "true" then xrun else run) d t
-
-envCI :: IO Bool
-envCI = (Just "true" ==) <$> lookupEnv "CI"
 
 skip :: String -> SpecWith a -> SpecWith a
 skip = before_ . pendingWith
