@@ -775,7 +775,7 @@ Data flow of a tool prompt of the PermissionRequest hook:
 
 1. Claude Code runs the hook beside the dialog of a prompt of the main conversation, and before the dialog of a subagent's prompt. The hook sends `POST /ask` with the tool, its preview and the subagent, and holds the stream ([`ask`](../src/hook.ts)).
 2. The service runs `Session.ask` with a signal tied to the request ([`Service.onAsk`, `streamed`](../src/service.ts)). A prompt of the main conversation that the channel relayed gets no decision; any other gets a card ([`Session.ask`, `relayed`](../src/hub.ts)).
-3. An approver's `/approve N` or `/reject N` ends the stream with the decision, which the hook prints for Claude Code ([flow 40](flows.md#40-a-tool-prompt-of-the-permissionrequest-hook)).
+3. An approver's `/approve N` or `/reject N` ends the stream with the decision, which the hook prints for Claude Code ([flow 41](flows.md#41-a-tool-prompt-of-the-permissionrequest-hook)).
 
 ```mermaid
 flowchart LR

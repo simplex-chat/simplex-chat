@@ -606,6 +606,7 @@ describe("session channel", () => {
     expect(sentTo(chat, 20)).toEqual([1, 2].map(n => `${card}\n/'approve ${n}', /'approve ${n} all' or /'reject ${n}'`))
     await session.turn({id: id1, answer: ""})
     expect(session.actions.pending()).toHaveLength(2)
+    expect(session.stateLine()).toBe("🟠 1 · auth: waiting for you, 2 approvals")
     await session.control.ownerCommand(invitedAlice, {keyword: "approve", params: "1"})
     await session.control.ownerCommand(invitedAlice, {keyword: "reject", params: "2"})
     expect([await approved, await rejected]).toEqual([{behavior: "allow"}, {behavior: "deny", message: "Alice rejected this in the SimpleX group."}])
