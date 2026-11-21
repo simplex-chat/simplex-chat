@@ -48,7 +48,7 @@ import StoreService.Group (GroupEvent, ensureManagedGroup, fmtTime, groupEvent, 
 import StoreService.Group.Command (MoneyCmd (..), consoleCmd, spelledCmd)
 import StoreService.Metrics (MetricsEnv (..), runMetrics)
 import StoreService.Names.Balances (RefundRecord (..), RefundRefusal (..), recordRefund)
-import StoreService.Names.Chain (newChainClient, nodeChainId)
+import StoreService.Names.Chain (ChainClient, newChainClient, nodeChainId)
 import StoreService.Names.Contracts (Contracts, Terms (..), communityName, namePolicy, newContracts, runTermsFetch, termsLinks)
 import StoreService.Names.Env (NamesEnv (..), newNamesEnv)
 import StoreService.Names.Orders (ordersEnv)
@@ -112,6 +112,7 @@ import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.BBS (bbsPublicKey)
 import Simplex.Messaging.Encoding.String (strEncode, textEncode)
 import Simplex.Messaging.Names.Record (USDCents)
+import Simplex.Messaging.SimplexName (SimplexTLD)
 import Simplex.Messaging.Util (catchOwn, catchOwn', raceAny_, safeDecodeUtf8, stateTVar', tshow)
 import Simplex.Messaging.Version (isCompatible)
 import System.Directory (getAppUserDataDirectory)
@@ -260,8 +261,7 @@ storeService opts serviceCfg baseCfg env = do
   -- The hooks' //revoke takes a prepaid code's turn, so the turns exist before the chat starts.
   turns <- newTurns
   startedCC <- newEmptyTMVarIO
-  let names_ = serviceCfg >>= names
-  contracts_ <- mapM (const newEmptyTMVarIO) names_
+  consoleChain <- mapM newConsoleChain (serviceCfg >>= names)
   requestEnv <- configureStoreVerifier serviceCfg env
   let groupCfg = serviceCfg >>= \ServiceConfig {group} -> group
       trackerQ_ = groupEventQ env <$ groupCfg
@@ -276,16 +276,15 @@ storeService opts serviceCfg baseCfg env = do
       startLanes cc = do
         lanes <- maybe (pure []) (serviceLanes waiters turns (reportToGroup trackerQ_) cc) serviceCfg
         -- The group is resolved before the other lanes start, so a failed lookup exits at once rather than waiting for them to end.
-        groupLane_ <- forM groupCfg $ \gc -> runGroupLane cc turns (gNameCodesPerDay gc <$ names_) (runMoneyCmd FromGroup turns contracts_ cc) (groupEventQ env) <$> ensureManagedGroup cc gc
+        groupLane_ <- forM groupCfg $ \gc -> runGroupLane cc turns (gNameCodesPerDay gc <$ consoleChain) (runMoneyCmd FromGroup turns consoleChain cc) (groupEventQ env) <$> ensureManagedGroup cc gc
         raceAny_ $ processQueuedRequests key trackerQ_ requestEnv : maybeToList groupLane_ <> lanes
       chatHooks =
         defaultChatHooks
-          { preStartHook = Just $ \cc -> badgePreStartHook opts names_ startedCC cc >> withContracts cc,
+          { preStartHook = Just $ badgePreStartHook opts (serviceCfg >>= names) startedCC,
             postStartHook = Just $ badgePostStartHook opts env,
-            preCmdHook = Just $ badgeCmdHook turns contracts_,
+            preCmdHook = Just $ badgeCmdHook turns consoleChain,
             acceptMember = Just $ joinerAcceptance startedCC
           }
-      withContracts cc = sequence_ $ consoleContracts <$> names_ <*> contracts_ <*> pure cc
   -- The reader runs from the start and must not block, since outputQ carries every chat event and a full queue stalls the core.
   simplexChatCore cfg {chatHooks} (mkChatOpts opts) $ \_ cc -> raceAny_ [readEvents cc, startLanes cc]
   where
@@ -363,8 +362,7 @@ storeServiceCLI opts serviceCfg = do
   -- This mode runs no names lanes, so only its own //revoke takes these turns.
   turns <- newTurns
   startedCC <- newEmptyTMVarIO
-  let names_ = serviceCfg >>= names
-  contracts_ <- mapM (const newEmptyTMVarIO) names_
+  consoleChain <- mapM newConsoleChain (serviceCfg >>= names)
   let eventHook _cc = \case
         Right (CEvtServiceRequest u reqId sigKey reqData) -> do
           let req_ = serviceRequest sigKey reqData
@@ -373,9 +371,9 @@ storeServiceCLI opts serviceCfg = do
         ev -> pure ev
       chatHooks =
         defaultChatHooks
-          { preStartHook = Just $ \cc -> badgePreStartHook opts Nothing startedCC cc >> sequence_ (consoleContracts <$> names_ <*> contracts_ <*> pure cc),
+          { preStartHook = Just $ badgePreStartHook opts Nothing startedCC,
             postStartHook = Just $ badgePostStartHook opts env,
-            preCmdHook = Just $ badgeCmdHook turns contracts_,
+            preCmdHook = Just $ badgeCmdHook turns consoleChain,
             eventHook = Just eventHook,
             acceptMember = Just $ joinerAcceptance startedCC
           }
@@ -390,25 +388,25 @@ shownServiceRequest = \case
   Right StoreServiceRequest {request} -> KM.singleton "request" $ J.object ["type" J..= commandName request]
   Left _ -> KM.empty
 
-badgeCmdHook :: Turns -> Maybe (TMVar Contracts) -> ChatController -> ChatCommand -> IO (Either (Either ChatError ChatResponse) ChatCommand)
-badgeCmdHook turns contracts_ cc = \case
-  CustomChatCommand cmd -> Left <$> runBadgeCmd turns contracts_ cc cmd
+badgeCmdHook :: Turns -> Maybe (SimplexTLD, Int, ChainClient) -> ChatController -> ChatCommand -> IO (Either (Either ChatError ChatResponse) ChatCommand)
+badgeCmdHook turns chain_ cc = \case
+  CustomChatCommand cmd -> Left <$> runBadgeCmd turns chain_ cc cmd
   cmd -> pure $ Right cmd
 
-runBadgeCmd :: Turns -> Maybe (TMVar Contracts) -> ChatController -> ByteString -> IO (Either ChatError ChatResponse)
-runBadgeCmd turns contracts_ cc cmd = case consoleCmd (safeDecodeUtf8 cmd) of
-  Right c -> textReply <$> runCmd FromConsole cc turns (isJust contracts_) (runMoneyCmd FromConsole turns contracts_ cc) c
+runBadgeCmd :: Turns -> Maybe (SimplexTLD, Int, ChainClient) -> ChatController -> ByteString -> IO (Either ChatError ChatResponse)
+runBadgeCmd turns chain_ cc cmd = case consoleCmd (safeDecodeUtf8 cmd) of
+  Right c -> textReply <$> runCmd FromConsole cc turns (isJust chain_) (runMoneyCmd FromConsole turns chain_ cc) c
   Left usage -> pure $ chatCmdError $ T.unpack usage
   where
     textReply = \case
       Right response -> Right CRCustomChatResponse {user_ = Nothing, response}
       Left e -> chatCmdError (T.unpack e)
 
-runMoneyCmd :: CmdSource -> Turns -> Maybe (TMVar Contracts) -> ChatController -> MoneyCmd -> IO (Either T.Text T.Text)
-runMoneyCmd source turns contracts_ cc = \case
+runMoneyCmd :: CmdSource -> Turns -> Maybe (SimplexTLD, Int, ChainClient) -> ChatController -> MoneyCmd -> IO (Either T.Text T.Text)
+runMoneyCmd source turns chain_ cc = \case
   MCBalance ref -> showRefund source cc ref
   MCRecordRefund ref cents -> refundBalanceCmd source turns cc ref cents
-  MCClose ref -> maybe (pure $ Left "Names are not enabled on this service.") (\v -> atomically (readTMVar v) >>= \ct -> closeOrderCmd source turns ct cc ref) contracts_
+  MCClose ref -> maybe (pure $ Left "Names are not enabled on this service.") (\chain -> closeOrderCmd source turns chain cc ref) chain_
 
 -- | Left is a refusal or a failure; both sides are the text to show the operator.
 showRefund :: CmdSource -> ChatController -> T.Text -> IO (Either T.Text T.Text)
@@ -448,14 +446,14 @@ refundBalanceCmd source turns ChatController {chatStore} ref cents = do
       RefundAmount amount -> "the balance is " <> dollars amount <> " now, not " <> dollars cents
       RefundHeld hold -> heldText source hold
 
-consoleContracts :: NamesConfig -> TMVar Contracts -> ChatController -> IO ()
-consoleContracts NamesConfig {nTLD, nMinPriceCentsPerYear, nChain} v ChatController {chatStore} = do
+newConsoleChain :: NamesConfig -> IO (SimplexTLD, Int, ChainClient)
+newConsoleChain NamesConfig {nTLD, nMinPriceCentsPerYear, nChain} = do
   chain <- C.newRandom >>= (`newChainClient` nChain)
-  ct <- newContracts chatStore nTLD nMinPriceCentsPerYear chain
-  void $ atomically $ tryPutTMVar v ct
+  pure (nTLD, nMinPriceCentsPerYear, chain)
 
-closeOrderCmd :: CmdSource -> Turns -> Contracts -> ChatController -> T.Text -> IO (Either T.Text T.Text)
-closeOrderCmd source turns ct ChatController {chatStore} ref =
+closeOrderCmd :: CmdSource -> Turns -> (SimplexTLD, Int, ChainClient) -> ChatController -> T.Text -> IO (Either T.Text T.Text)
+closeOrderCmd source turns (tld, minPriceCentsPerYear, chain) ChatController {chatStore} ref = do
+  ct <- newContracts chatStore tld minPriceCentsPerYear chain
   ((Right <$> closeRegistration chatStore ct turns currentSecond ref) `catchOwn` (pure . Left)) >>= \case
     Right (CLRefunded endedAt RefundRecord {rdRegistration = RegistrationId rid, rdCents, rdChain}) -> do
       logNote $ "names: closed order " <> rid <> " and recorded a refund of " <> tshow (toInteger rdCents) <> " cents"
