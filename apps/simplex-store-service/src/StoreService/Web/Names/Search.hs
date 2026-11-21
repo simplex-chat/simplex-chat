@@ -49,12 +49,6 @@ import StoreService.Web.Http (HttpEnv, Respond, jsonResponse, maxBodyBytes, read
 import StoreService.Web.Names.Orders (refusalResponse)
 import System.Timeout (timeout)
 
-data Found
-  = FAvailable USDCents (Maybe Terms)
-  | FTaken
-  | FReserved
-  | FRegistered RegisteredName (Maybe NameRecords)
-
 data SearchAnswer = SearchAnswer {found :: NameFound, community :: Maybe Community}
 
 data NameFound
@@ -94,12 +88,14 @@ searchHandler cfg@NamesConfig {nYears} http st ct ps clock hashText req respond 
   where
     found lh len held = do
       (status, community) <- ExceptT $ together $ (,) <$> concurrent (nameStatus ct lh) <*> concurrent (communityName ct lh)
+      let years = yearsFor community nYears
+          available price readable = Left NFAvailable {price, years, terms = termsLink <$> readable}
       (,community) <$> case status of
         NSAvailable
-          | held -> pure FTaken
-          | otherwise -> ExceptT $ together $ FAvailable <$> concurrent (chainPriceCents ct len (yearsFor community nYears)) <*> concurrent (readableNow community)
-        NSReserved -> pure FReserved
-        NSRegistered name -> FRegistered name <$> ExceptT (nameRecords ct lh name)
+          | held -> pure $ Left NFTaken
+          | otherwise -> ExceptT $ together $ available <$> concurrent (chainPriceCents ct len years) <*> concurrent (readableNow community)
+        NSReserved -> pure $ Left NFReserved
+        NSRegistered name -> Right . (name,) <$> ExceptT (nameRecords ct lh name)
     readableNow community = termsLinks ct >>= traverse (\links -> eitherToMaybe <$> (wait =<< async (readableTerms ct $ kindTerms community links)))
     unavailable :: Text -> IO ResponseReceived
     unavailable why = logWarn ("GET /api/name: a chain read failed: " <> why) >> respond (refusalResponse NRProviderUnavailable)
@@ -118,21 +114,18 @@ signHandler ct hashText req respond = case (LabelHash . unHex32 <$> strDecode (e
 queryLength :: Request -> Maybe NameLength
 queryLength req = join (lookup "length" $ queryString req) >>= eitherToMaybe . parseAll (boundedDecimal 0 maxBound) >>= nameLength
 
-searchAnswer :: NamesConfig -> DBStore -> Profiles -> IO UTCTime -> LabelHash -> CommunityName -> Found -> IO Response
-searchAnswer cfg@NamesConfig {nYears, nRecordEditsPerYear} st ps clock lh community f = do
-  found <- case f of
-    FAvailable price readable -> pure NFAvailable {price, years = yearsFor community nYears, terms = termsLink <$> readable}
-    FTaken -> pure NFTaken
-    FReserved -> pure NFReserved
-    FRegistered RegisteredName {rnOwner, rnResolver, rnExpiresAt, rnGracePeriod} records_ -> do
+searchAnswer :: NamesConfig -> DBStore -> Profiles -> IO UTCTime -> LabelHash -> CommunityName -> Either NameFound (RegisteredName, Maybe NameRecords) -> IO Response
+searchAnswer cfg@NamesConfig {nRecordEditsPerYear} st ps clock lh community f = do
+  found <- either pure registered f
+  pure $ jsonResponse status200 SearchAnswer {found, community = communityOf cfg lh community}
+  where
+    registered (RegisteredName {rnOwner, rnResolver, rnExpiresAt, rnGracePeriod}, records_) = do
       entities <- maybe (pure []) (recordEntities ps) records_
       -- only a name on the default resolver is edited here
       records <- case records_ of
         Just NameRecords {rdContact, rdChannel, rdNonce} -> (\edits -> RROwn {contact = rdContact, channel = rdChannel, nonce = rdNonce, edits}) <$> editsLeft
         Nothing -> pure RROther
       pure NFRegistered {owner = rnOwner, resolver = rnResolver, expiresAt = rnExpiresAt, gracePeriod = rnGracePeriod, entities, records}
-  pure $ jsonResponse status200 SearchAnswer {found, community = communityOf cfg lh community}
-  where
     editsLeft = clock >>= \now -> withTransaction st $ \db -> nameEditsLeft db nRecordEditsPerYear lh now
 
 -- | Contact entities first. A record may hold several links joined as the app joins them; a value that is not
