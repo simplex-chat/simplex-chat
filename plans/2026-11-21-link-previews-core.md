@@ -73,7 +73,8 @@ flowchart LR
 | WebP, GIF or ICO image | decoded on Android and desktop | Q4 |
 | Page without `og:image` | Android and desktop: the site icon at full width; iOS: no preview | no preview |
 | Description | never sent | `og:description`, else `<meta name="description">`; shown in the chat item on all platforms |
-| Failed preview | no card, no alert | the same; with developer tools on, an alert with the raw error |
+| Failed preview | no card, no alert | the same; with the developer option "Show link preview errors" on, an alert with the raw error |
+| Developer options | — | new toggle "Show link preview errors", off by default, shown only with "Show developer options" on |
 
 The user guide section "Send Link Previews" (docs/guide/app-settings.md:219-227) is rewritten in the app PRs.
 
@@ -352,7 +353,9 @@ The returned `uri` is the string the app sent, because the apps send `MCLink` on
 | Syntax | `/_link preview <uri>`, the rest of the line |
 | Response | `CRLinkPreview {linkPreview :: LinkPreview}` |
 | Error | `CELinkPreview {message :: String}` in `ChatErrorType` (Controller.hs:1545), raw text, as `CEInternalError {message :: String}` (Controller.hs:1625) |
-| Apps on error | no card, no alert, as today; with developer tools on, the raw message in an alert: Kotlin under `developerTools` and `showInternalErrors`, as agent `INTERNAL` errors (SimpleXAPI.kt:3690); iOS under "Show developer options" (DeveloperView.swift:14, 46) |
+| Apps on error | no card, no alert, as today; the raw message in an alert only when "Show developer options" and the new "Show link preview errors" are both on, as Kotlin gates agent `INTERNAL` errors by `developerTools` and `showInternalErrors` (SimpleXAPI.kt:3690) |
+| New preference | Kotlin `showLinkPreviewErrors`, key `ShowLinkPreviewErrors`, beside `showInternalErrors` (SimpleXAPI.kt:157, 456); iOS `DEFAULT_SHOW_LINK_PREVIEW_ERRORS`; default off |
+| Toggle | Kotlin DeveloperView.kt, after "Show slow API calls" (line 62); iOS DeveloperView.swift, section "Developer options" (lines 56-69) |
 | User | not required |
 | `allowRemoteCommand` | `False` (Controller.hs:749-788), so a desktop that controls a phone fetches itself, as today |
 | CLI view | one line: `link preview: <title>` |
@@ -388,7 +391,8 @@ Kotlin (android, desktop):
 |---|---|
 | Kt:views/helpers/LinkPreviews.kt:33-149, 231-261 | `getLinkPreview(url)` calls `apiGetLinkPreview(url)`; Jsoup, proxy, `Authenticator`, mutex and `normalizeImageUri` removed |
 | apps/multiplatform/common/build.gradle.kts:74 | `org.jsoup:jsoup` removed |
-| Kt:model/SimpleXAPI.kt | `CC.ApiGetLinkPreview`, `CR.LinkPreview`, `apiGetLinkPreview` with `rh = null`; on error, the raw message in an alert only under `developerTools` and `showInternalErrors` (section 3.12) |
+| Kt:model/SimpleXAPI.kt | `CC.ApiGetLinkPreview`, `CR.LinkPreview`, `apiGetLinkPreview` with `rh = null`; on error, the raw message in an alert only under `developerTools` and `showLinkPreviewErrors` (section 3.12); preference `showLinkPreviewErrors` |
+| Kt:views/usersettings/DeveloperView.kt:62; base strings.xml | toggle "Show link preview errors" |
 | Kt:views/chat/ComposeView.kt:508-539, 1871-1903 | alert branch and `showLinkPreviewsConfirmAlert` removed (Q1 a) |
 | Kt:model/SimpleXAPI.kt:132, 303, 426 | `privacyLinkPreviewsShowAlert`, its hint entry and key removed (Q1 a) |
 | Kt:views/usersettings/PrivacySettings.kt:70 | `onChange` removed (Q1 a) |
@@ -399,7 +403,8 @@ iOS:
 | Site | Change |
 |---|---|
 | apps/ios/SimpleXChat/ImageUtils.swift:13, 455-489 | `getLinkPreview` and `import LinkPresentation` removed |
-| apps/ios/Shared/Model/AppAPITypes.swift, SimpleXAPI.swift | `apiGetLinkPreview` command, response case, function; on error, the raw message in an alert only under "Show developer options" (section 3.12) |
+| apps/ios/Shared/Model/AppAPITypes.swift, SimpleXAPI.swift | `apiGetLinkPreview` command, response case, function; on error, the raw message in an alert only under "Show developer options" and "Show link preview errors" (section 3.12) |
+| apps/ios/Shared/Views/UserSettings/DeveloperView.swift:56-69 | toggle "Show link preview errors", default `DEFAULT_SHOW_LINK_PREVIEW_ERRORS` off |
 | apps/ios/Shared/Views/Chat/ChatItem/CILinkView.swift:36 | description under the title when not empty, as Kotlin (LinkPreviews.kt:223-225) |
 | apps/ios/Shared/Views/Chat/ComposeMessage/ComposeView.swift:414, 1956-2006 | `linkPreviewsShowAlert`, alert and `DEFAULT_PRIVACY_LINK_PREVIEWS` write in the alert path removed; `fetchLinkPreview` awaits `apiGetLinkPreview` (Q1 a) |
 | apps/ios/Shared/Views/UserSettings/PrivacySettings.swift:83 | the alert default write removed (Q1 a) |
@@ -499,7 +504,7 @@ App tests on tests/fixtures/api/previews/link_preview.json:
 | Test | Checked | Apps |
 |---|---|---|
 | `LinkPreviewTest.kt`, `LinkPreviewTests.swift` | `getLinkPreview("LINK_URL")` sends `/_link preview LINK_URL` and returns the recorded preview | both |
-| same | the recorded error returns no preview and no alert; with developer tools on, an alert with the raw message | both |
+| same | the recorded error returns no preview and no alert, also with only "Show developer options" on; with both toggles on, an alert with the raw message | both |
 | `CILinkView` preview | description shown under the title (snapshot) | iOS |
 | SE | `apiGetLinkPreview` of the share extension decodes the recorded response | iOS |
 
