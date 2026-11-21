@@ -90,17 +90,20 @@ jobs:
         env:
           RELEASE: ${{ inputs.libraries || env.LIBRARIES_RELEASE }}
           ASSET: ${{ matrix.asset }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           url=$GITHUB_SERVER_URL/simplex-chat/simplex-chat/releases/download/$RELEASE
           mkdir -p "$RUNNER_TEMP/release"
           cd "$RUNNER_TEMP/release"
           curl -fsSL -o "$ASSET" "$url/$ASSET"
-          curl -fsSL -o _sha256sums "$url/_sha256sums"
+          digest=$(gh api "repos/simplex-chat/simplex-chat/releases/tags/$RELEASE" --jq ".assets[] | select(.name == \"$ASSET\") | .digest")
           if command -v sha256sum > /dev/null; then
-            grep " $ASSET\$" _sha256sums | sha256sum -c -
+            actual=$(sha256sum "$ASSET" | cut -d ' ' -f 1)
           else
-            grep " $ASSET\$" _sha256sums | shasum -a 256 -c -
+            actual=$(shasum -a 256 "$ASSET" | cut -d ' ' -f 1)
           fi
+          echo "$ASSET: expected $digest, downloaded sha256:$actual"
+          [ "$digest" = "sha256:$actual" ]
 
       - name: Extract the release's native libraries (macOS)
         if: runner.os == 'macOS'
