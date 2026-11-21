@@ -814,7 +814,6 @@ private func renderScene(_ scene: SnapshotScene, _ theme: AppTheme, dark: Bool, 
         .environmentObject(ChatModel.shared)
         .environmentObject(theme)
         .environment(\.fixedQRCode, fixedQRCode)
-        .environment(\.fixedCameraAuthorization, .notDetermined)
         .frame(width: width, height: scene.height)
     let host = UIHostingController(rootView: AnyView(root))
     if #available(iOS 16.4, *) {
