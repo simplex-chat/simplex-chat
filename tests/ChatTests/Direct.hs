@@ -13,6 +13,7 @@ module ChatTests.Direct where
 
 import ChatClient
 import ChatTests.DBUtils
+import ChatTests.Groups (agentSendBody, contactAgentConnId, itemSharedMsgId)
 import ChatTests.Utils
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_, poll, wait)
@@ -26,6 +27,7 @@ import Data.List (intercalate, isPrefixOf, stripPrefix)
 import qualified Data.Map.Strict as M
 import Data.Maybe (isJust, isNothing)
 import qualified Data.Text as T
+import Data.Time (getCurrentTime)
 import GHC.Conc (ThreadStatus (..), threadStatus)
 import Simplex.Chat.AppSettings (defaultAppSettings)
 import qualified Simplex.Chat.AppSettings as AS
@@ -33,8 +35,8 @@ import Simplex.Chat.Call
 import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), ChatEvent (CEvtChatItemUpdated), ChatHooks (..), PresetServers (..), defaultChatHooks)
 import Simplex.Chat.Messages (AChatItemUpdate (..), CIMeta (CIMeta, itemText), ChatItem (ChatItem, meta), ChatItemId)
 import Simplex.Chat.Options
-import Simplex.Chat.Protocol (supportedChatVRange)
-import Simplex.Chat.Types (ContactId, VersionRangeChat, authErrDisableCount, sameVerificationCode, verificationCode, pattern VersionChat)
+import Simplex.Chat.Protocol (ChatMessage (ChatMessage), ChatMsgEvent (XMsgNew), MsgContent (MCText), MsgRef (..), QuotedMsg (..), chatMsgToBody, mcQuote, supportedChatVRange)
+import Simplex.Chat.Types (ContactId, SharedMsgId (..), VersionRangeChat, authErrDisableCount, chatInitialVRange, sameVerificationCode, verificationCode, pattern VersionChat)
 import Simplex.Messaging.Agent.Env.SQLite
 import Simplex.Messaging.Agent.RetryInterval
 import qualified Simplex.Messaging.Agent.Store.DB as DB
@@ -69,6 +71,7 @@ chatDirectTests = do
     it "delete contact keeping conversation" testDeleteContactKeepConversation
     it "delete conversation keeping contact" testDeleteConversationKeepContact
     it "direct message quoted replies" testDirectMessageQuotedReply
+    it "direct message quote shows the quoted message as received" testDirectQuoteReceivedContent
     it "direct message update" testDirectMessageUpdate
     it "updated item event has the previous item" testDirectMessageUpdatePrevItem
     it "direct message edit history" testDirectMessageEditHistory
@@ -170,6 +173,7 @@ chatDirectTests = do
 #endif
   describe "message reactions" $ do
     it "set message reactions" testSetMessageReactions
+    it "ignore reaction to message not found" testReactionNoItem
   describe "delivery receipts" $ do
     it "should send delivery receipts" testSendDeliveryReceipts
     it "should send delivery receipts depending on configuration" testConfigureDeliveryReceipts
@@ -652,6 +656,37 @@ testDirectMessageQuotedReply =
       alice <## "      will tell more"
       bob #$> ("/_get chat @2 count=1", chat', [((1, "will tell more"), Just (1, "all good - you?"))])
       alice #$> ("/_get chat @2 count=1", chat', [((0, "will tell more"), Just (0, "all good - you?"))])
+
+testDirectQuoteReceivedContent :: HasCallStack => TestParams -> IO ()
+testDirectQuoteReceivedContent =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      connectUsers alice bob
+      alice ##> "/receipts @bob off"
+      alice <## "ok"
+      alice #> "@bob hello"
+      bob <# "alice> hello"
+      helloMsgId <- itemSharedMsgId bob
+      bob #> "@alice hi"
+      alice <# "bob> hi"
+      connId <- contactAgentConnId bob "alice"
+      sentAt <- getCurrentTime
+      let sendReply replyId quotedId quotedSent =
+            agentSendBody bob connId $ chatMsgToBody $ ChatMessage chatInitialVRange (Just $ SharedMsgId replyId) $ XMsgNew $
+              mcQuote QuotedMsg {msgRef = MsgRef {msgId = quotedId, sentAt, sent = quotedSent, memberId = Nothing}, content = MCText "quoted text"} (MCText "reply")
+      sendReply "reply_1" (Just helloMsgId) False
+      alice <# "bob> > hello"
+      alice <## "      reply"
+      sendReply "reply_2" (Just $ SharedMsgId "unknown") False
+      alice <# "bob> > quoted text"
+      alice <## "      reply"
+      sendReply "reply_3" (Just helloMsgId) True
+      alice <# "bob> > hello"
+      alice <## "      reply"
+      sendReply "reply_4" Nothing False
+      alice <# "bob> > quoted text"
+      alice <## "      reply"
+      alice #$> ("/_get chat @2 count=4", chat', [((0, "reply"), Just (1, "hello")), ((0, "reply"), Just (1, "quoted text")), ((0, "reply"), Just (1, "hello")), ((0, "reply"), Just (1, "quoted text"))])
 
 testDirectMessageUpdate :: HasCallStack => TestParams -> IO ()
 testDirectMessageUpdate =
@@ -3438,6 +3473,21 @@ testSetMessageReactions =
       bob ##> "/tail @alice 1"
       bob <# "alice> hi"
       bob <## "      👍 1"
+
+testReactionNoItem :: HasCallStack => TestParams -> IO ()
+testReactionNoItem =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      connectUsers alice bob
+      alice #> "@bob hi"
+      bob <# "alice> hi"
+      msgItemId <- lastItemId alice
+      alice #$> ("/_delete item @2 " <> msgItemId <> " internal", id, "message deleted")
+      bob ##> "+1 alice hi"
+      bob <## "added 👍"
+      bob #> "@alice hello"
+      alice <# "bob> hello"
+      withCCTransaction alice (\db -> DB.query_ db "SELECT COUNT(1) FROM chat_item_reactions") `shouldReturn` [Only (0 :: Int)]
 
 testSendDeliveryReceipts :: HasCallStack => TestParams -> IO ()
 testSendDeliveryReceipts ps =

@@ -2162,9 +2162,8 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
     directMsgReaction ct sharedMsgId reaction add RcvMessage {msgId} MsgMeta {broker = (_, brokerTs)} = do
       when (featureAllowed SCFReactions forContact ct) $ do
         rs <- withStore' $ \db -> getDirectReactions db ct sharedMsgId False
-        when (reactionAllowed add reaction rs) $ do
-          updateChatItemReaction `catchCINotFound` \_ ->
-            withStore' $ \db -> setDirectReaction db ct sharedMsgId False reaction add msgId brokerTs
+        when (reactionAllowed add reaction rs) $
+          updateChatItemReaction `catchCINotFound` \_ -> pure ()
       where
         updateChatItemReaction = do
           cEvt_ <- withStore $ \db -> do
@@ -2185,7 +2184,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
           rs <- withStore' $ \db -> getGroupReactions db g m itemMemberId sharedMsgId False
           if reactionAllowed add reaction rs
             then
-              updateChatItemReaction `catchCINotFound` \_ -> case scope_ of
+              updateChatItemReaction `catchCINotFound` \_ -> ifM ignoreNoItemReaction (pure Nothing) $ case scope_ of
                 Just (MSMember scopeMemberId)
                   | memberRole' m >= GRModerator || scopeMemberId == memberId' m -> do
                       djScope <- withStore $ \db -> do
@@ -2199,6 +2198,10 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
             else pure Nothing
       | otherwise = pure Nothing
       where
+        ignoreNoItemReaction
+          | useRelays' g = pure True
+          | add = (>= maxRcvNoItemReactions) <$> withStore' (\db -> getGroupNoItemReactionCount db g m)
+          | otherwise = pure False
         updateChatItemReaction = do
           (CChatItem md ci, scopeInfo) <- withStore $ \db -> do
             cci <- case itemMemberId of
@@ -2236,7 +2239,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
     isChannelDir _ = False
 
     newGroupContentMessage :: GroupInfo -> Maybe GroupMember -> MsgContainer -> RcvMessage -> UTCTime -> Bool -> CM (Maybe DeliveryTaskContext)
-    newGroupContentMessage gInfo m_ mc msg@RcvMessage {sharedMsgId_} brokerTs forwarded = case m_ of
+    newGroupContentMessage gInfo m_ mc msg@RcvMessage {sharedMsgId_, signedMsg_} brokerTs forwarded = case m_ of
       Nothing -> do
         createContentItem gInfo Nothing Nothing
         -- no delivery task - message already forwarded by relay
@@ -2245,6 +2248,8 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
         -- only an owner may post as the channel; a non-owner's signed asGroup post (e.g. relay-injected) must not render as the channel
         | sentAsGroup && memberRole' m < GROwner ->
             messageError "x.msg.new: member is not allowed to send as group" $> Nothing
+        | not forwarded && isJust itemTTL && isJust signedMsg_ && not (groupFeatureAllowed SGFTimedMessages gInfo) ->
+            messageError ("x.msg.new: feature not allowed " <> groupFeatureNameText GFTimedMessages) $> Nothing
         | otherwise -> do
             (gInfo', m', scopeInfo) <- mkGetMessageChatScope cxt user gInfo m content msgScope_
             if blockedByAdmin m'

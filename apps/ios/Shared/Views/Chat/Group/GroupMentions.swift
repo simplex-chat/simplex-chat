@@ -14,6 +14,10 @@ let QUOTE: Character = "'"
 let MEMBER_ROW_SIZE: CGFloat = 60
 let MAX_VISIBLE_MEMBER_ROWS: CGFloat = 4.8
 
+func memberMentionName(_ displayName: String) -> String {
+    String(displayName.filter { $0 != QUOTE }.map { $0.isWhitespace ? " " : $0 })
+}
+
 struct GroupMentionsView: View {
     @EnvironmentObject var m: ChatModel
     @EnvironmentObject var theme: AppTheme
@@ -205,7 +209,7 @@ struct GroupMentionsView: View {
         if let mm = mentions.first(where: { $0.value.memberId == member.wrapped.memberId }) {
             newName = mm.key
         } else {
-            newName = composeState.mentionMemberName(member.wrapped.memberProfile.displayName)
+            newName = composeState.mentionMemberName(memberMentionName(member.wrapped.memberProfile.displayName))
         }
         mentions[newName] = CIMention(groupMember: member.wrapped)
         var msgMention = newName.contains(" ") || newName.last?.isPunctuation == true

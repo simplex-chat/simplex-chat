@@ -633,11 +633,6 @@ instance Encoding InlineFileChunk where
 data QuotedMsg = QuotedMsg {msgRef :: MsgRef, content :: MsgContent}
   deriving (Eq, Show)
 
-cmToQuotedMsg :: AChatMsgEvent -> Maybe QuotedMsg
-cmToQuotedMsg = \case
-  ACME _ (XMsgNew MsgContainer {quote = Just quotedMsg}) -> Just quotedMsg
-  _ -> Nothing
-
 data MsgContentTag
   = MCText_
   | MCLink_

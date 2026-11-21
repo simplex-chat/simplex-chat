@@ -270,6 +270,7 @@
 		E5AEC0AB2F91A6EB00270665 /* CIChatLinkHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5AEC0AA2F91A6EA00270665 /* CIChatLinkHeader.swift */; };
 		E5AEC0B22F9C000100270665 /* TerminalItemView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5AEC0B12F9C000100270665 /* TerminalItemView.swift */; };
 		E5AEC0C22F9C000100270665 /* SnapshotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5AEC0C12F9C000100270665 /* SnapshotTests.swift */; };
+		4E57A1E7000000008214A002 /* MemberMentionNameTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E57A1E7000000008214A001 /* MemberMentionNameTests.swift */; };
 		4E57A1E70000000000000006 /* NameAlertsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E57A1E70000000000000005 /* NameAlertsTests.swift */; };
 		4E57A1E70000000000000014 /* ChatItemUpdateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E57A1E70000000000000013 /* ChatItemUpdateTests.swift */; };
 		6D4F1C2A9B3E000000000002 /* MarkdownFileTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6D4F1C2A9B3E000000000001 /* MarkdownFileTests.swift */; };
@@ -683,6 +684,7 @@
 		E5AEC0B12F9C000100270665 /* TerminalItemView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TerminalItemView.swift; sourceTree = "<group>"; };
 		E5AEC0C12F9C000100270665 /* SnapshotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnapshotTests.swift; sourceTree = "<group>"; };
 		E5AEC0C32F9C000100270665 /* SimpleX Snapshots.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "SimpleX Snapshots.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
+		4E57A1E7000000008214A001 /* MemberMentionNameTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemberMentionNameTests.swift; sourceTree = "<group>"; };
 		4E57A1E70000000000000005 /* NameAlertsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NameAlertsTests.swift; sourceTree = "<group>"; };
 		4E57A1E70000000000000013 /* ChatItemUpdateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatItemUpdateTests.swift; sourceTree = "<group>"; };
 		6D4F1C2A9B3E000000000001 /* MarkdownFileTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownFileTests.swift; sourceTree = "<group>"; };
@@ -1038,6 +1040,7 @@
 		4E57A1E70000000000000009 /* SimpleX Unit Tests */ = {
 			isa = PBXGroup;
 			children = (
+				4E57A1E7000000008214A001 /* MemberMentionNameTests.swift */,
 				4E57A1E70000000000000005 /* NameAlertsTests.swift */,
 				4E57A1E70000000000000013 /* ChatItemUpdateTests.swift */,
 				6D4F1C2A9B3E000000000001 /* MarkdownFileTests.swift */,
@@ -1927,6 +1930,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				4E57A1E7000000008214A002 /* MemberMentionNameTests.swift in Sources */,
 				4E57A1E70000000000000006 /* NameAlertsTests.swift in Sources */,
 				4E57A1E70000000000000014 /* ChatItemUpdateTests.swift in Sources */,
 				6D4F1C2A9B3E000000000002 /* MarkdownFileTests.swift in Sources */,

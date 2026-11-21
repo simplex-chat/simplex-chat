@@ -30,6 +30,9 @@ val punctuation = setOf(
   CONNECTOR_PUNCTUATION, OTHER_PUNCTUATION
 )
 
+fun memberMentionName(displayName: String): String =
+  displayName.filter { it != '\'' }.map { if (it.isWhitespace()) ' ' else it }.joinToString("")
+
 private val PICKER_ROW_SIZE = MEMBER_ROW_AVATAR_SIZE + (MEMBER_ROW_VERTICAL_PADDING * 2f)
 private val MAX_PICKER_HEIGHT = (PICKER_ROW_SIZE * 4) + (MEMBER_ROW_AVATAR_SIZE + MEMBER_ROW_VERTICAL_PADDING - 4.dp)
 
@@ -149,7 +152,7 @@ fun GroupMentions(
     val existingMention = mentions.entries.firstOrNull {
       it.value.memberId == member.memberId
     }
-    val newName = existingMention?.key ?: composeState.value.mentionMemberName(member.memberProfile.displayName)
+    val newName = existingMention?.key ?: composeState.value.mentionMemberName(memberMentionName(member.memberProfile.displayName))
     mentions[newName] = CIMention(member)
     var msgMention = if (newName.contains(" ") || (newName.lastOrNull()?.category in punctuation))
                       "@'$newName'"

@@ -29,6 +29,7 @@ import Data.List (foldl', isPrefixOf, isSuffixOf)
 import Data.Maybe (fromMaybe)
 import Data.String
 import qualified Data.Text as T
+import Data.Time.Clock (UTCTime)
 import Simplex.Chat.Badges (BadgeProof (..), BadgeStatus, LocalBadge (..), ProofPresHeader (..))
 import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), ChatError, ChatEvent (CEvtChatItemUpdated, CEvtNameMoved, CEvtNewChatItems), storeCxt)
 import Simplex.Chat.Library.Commands (maxProfileImageSize)
@@ -1051,3 +1052,10 @@ stableJSON = \case
       | k `elem` ["agentConnId", "xContactId", "connFullLink", "connShortLink", "contactLink", "groupLink", "viaGroupLinkUri", "simplexUri", "memberId", "memberPubKey", "publicGroupId", "businessId", "customerId", "itemSharedMsgId", "fileDescrText"] = J.String $ JK.toText k
       | k == "groupRelays", J.Array a <- v = J.Array $ J.String "groupRelay" <$ a
       | otherwise = stableJSON v
+
+quotedMsgBody :: SharedMsgId -> SharedMsgId -> Maybe MemberId -> UTCTime -> MsgContent -> MsgContent -> ByteString
+quotedMsgBody msgId quotedMsgId memberId sentAt quotedContent content =
+  chatMsgToBody $ ChatMessage chatInitialVRange (Just msgId) $ XMsgNew $ mcQuote QuotedMsg {msgRef = MsgRef {msgId = Just quotedMsgId, sentAt, sent = False, memberId}, content = quotedContent} content
+
+reactionMsgBody :: SharedMsgId -> Maybe MemberId -> ByteString
+reactionMsgBody msgId memberId = chatMsgToBody $ ChatMessage chatInitialVRange Nothing $ XMsgReact msgId memberId Nothing (MREmoji $ MREmojiChar '👍') True
