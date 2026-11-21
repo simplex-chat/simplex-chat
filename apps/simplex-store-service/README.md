@@ -1179,10 +1179,13 @@ An order whose register landed while none of its register transactions is record
 `sx_badge_service_name_transactions`, as when each was marked `dropped` after its nonce was used, is
 judged by `ownerOf` alone. Once its name is unregistered, `ownerOf` reverts, and the order is read as
 not registered: the worker sets it `failed`, its Try again registers the name again at the sponsor's
-cost, and `//close` records a refund of a payment that was disputed. Before Try again or `//close`
-of such an order, read the registrar's `NameRegistered` and `NameUnregistered` events of its name,
-whose id is the order's `label_hash`, from the order's creation on, as in a block explorer or with
-`cast logs`.
+cost, and `//close` records a refund of a payment that was disputed. When another registration of
+the name is at the confirmation depth by then, the worker sets the order `taken` instead: a paid
+order's price is credited to its balance, which its owner can spend on another name or ask back, and
+a code order's code is released. Before Try again or `//close` of such a `failed` order, and before
+`//record_refund` of such a `taken` order's balance, read the registrar's `NameRegistered` and
+`NameUnregistered` events of its name, whose id is the order's `label_hash`, from the order's
+creation on, as in a block explorer or with `cast logs`.
 
 This version runs against the contracts with the dispute period (ens-contracts #51): the service
 calls the sponsor's `registerWithCredit` with `disputeDays` and the registrar's `disputeUntil`.
@@ -1364,8 +1367,9 @@ reads, clears and logs its acceptance, as a community name's did:
 - The figures predate the dispute period (ens-contracts #51), whose `registerWithCredit` also writes
   the name's `disputeUntil`. That write is estimated, not measured, at about 22,100 gas for a name
   registered for the first time: a storage slot set from zero, 20,000 gas, and its first access in
-  the transaction, 2,100 (EIP-2200, EIP-2929). Each register's figures are then about 22,100 higher,
-  the two-link register's limit about 6,813,500.
+  the transaction, 2,100 (EIP-2200, EIP-2929). Each register's estimate is then about 22,100 gas
+  higher, the two-link register's about 6,813,500, and the gas limit the service sets, a fifth above
+  the estimate, about 26,500 higher.
 - The service sets each transaction's gas limit a fifth above its estimate, within `gas_limit_cap`,
   and its max fee to at most `max_fee_per_gas` (default 5 gwei) and at most 0.01 ETH divided by its
   gas limit, so no transaction can cost more than 0.01 ETH. The node accepts a transaction only while
@@ -1376,8 +1380,8 @@ reads, clears and logs its acceptance, as a community name's did:
   `eth_maxPriorityFeePerGas` sample each block's cheapest transactions and answer near zero.
 - An order is one commit, one acceptance relay and one register: 0.0108 ETH at the cap with two
   links, 0.0036 ETH with none, and with none about 0.00013 ETH more for the dispute period's write,
-  its 22,100 gas and a fifth at 5 gwei. The expected orders × 0.0108 ETH, plus 0.01 ETH per expected Save of
-  one or both links, pays for all of them even at the cap. A name's link edits are at most
+  its 26,500 more gas limit at 5 gwei. The expected orders × 0.0108 ETH, plus 0.01 ETH per expected
+  Save of one or both links, pays for all of them even at the cap. A name's link edits are at most
   `record_edits_per_year` (3) a year, see [Link edits](#link-edits). Below 0.01 ETH the figures scale
   with `max_fee_per_gas`.
 - A Save of both links in one `multicall` uses 26,906 gas less than the same two edits sent as two
