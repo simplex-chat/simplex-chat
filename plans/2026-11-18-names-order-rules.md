@@ -134,8 +134,8 @@ stateDiagram-v2
 | `InvalidSignature` | `:163-164` | permanent: code error | failed |
 | `DurationTooLong` (not in the service's list) | `SimplexController.sol:484, 612-616` | permanent | failed |
 | `DurationTooShort`, `ResolverRequiredWhenDataSupplied`, `ReverseRecordNotSupported` | `:377-388, 406` | permanent: code error | failed |
-| `NameTooShort` | `:377-388, 406` | permanent; the page offers another name for the order | failed |
-| `LabelTooLong` | `BaseRegistrarImplementation.sol:151-152` | permanent unless operators raise the limit; the page offers another name for the order | failed |
+| `NameTooShort` | `:377-388, 406` | permanent | failed |
+| `LabelTooLong` | `BaseRegistrarImplementation.sol:151-152` | permanent unless operators raise the limit | failed |
 | `NotSponsor`, policy `NotController`, `NotProxy` | `SimplexController.sol:169`; `SimplexNamePolicy.sol:400-401` | temporary, operator alert: wiring | failed |
 | `ReentrantCall` | `SimplexController.sol:183` | permanent: a contract bug | failed |
 | `Error(string)`, unknown code, no data | — | temporary, operator alert | failed |
@@ -172,7 +172,7 @@ Contracts: brenzi/simplex-namespace-contract e3ba0a5, `ens-contracts/contracts`.
 
 ### 3.2 Failure reasons are stored
 - **names:** the transactions table keeps the signed transaction, hash, nonce, send time, mined block and status, without a reason; a dry run leaves no record.
-- **Final:** the order's row counts its counted dry-run failures and its sent failures, and keeps its last failed attempt: its kind, whether a dry run or a sent transaction failed, its decoded reason and its time; the order shows it. A move, which gives the order a new commitment, clears the counts and the last attempt in the same transaction.
+- **Final:** the order's row counts its counted dry-run failures and its sent failures, and keeps its last failed attempt: its kind, whether a dry run or a sent transaction failed, its decoded reason and its time, for the caps, the logs and the reports; the order's view does not show it. A move, which gives the order a new commitment, clears the counts and the last attempt in the same transaction.
 
 ### 3.3 Metrics never stop the service
 - **names:** a failing metrics listener leaves the service running (`Metrics.hs:266-267`).

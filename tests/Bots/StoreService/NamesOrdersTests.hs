@@ -1790,8 +1790,7 @@ testViewFields = withServiceStore $ \st -> withFakeEthNode $ \node -> do
         vwCommitTx = Nothing,
         vwRegisterTx = Nothing,
         vwCommunity = Nothing,
-        vwTerms = agreed plainTerms,
-        vwLastAttempt = Nothing
+        vwTerms = agreed plainTerms
       }
   vwLabel (toRegistrationView (testNamesConfig node) r {nrPaidAt = Just t0} Nothing Nothing PVTaken) `shouldBe` Just "alicebakery"
   map (\w -> J.toJSON (vwLatePayment $ viewWith (Just w) PVUnpaid)) [LWConfirming, LWCrediting, LWSupport] `shouldBe` ["confirming", "crediting", "support"]
@@ -1838,18 +1837,13 @@ testViewStates = withServiceStore $ \st -> withFakeEthNode $ \node -> do
           nrHistory = TxHistory {thCommitTx = Just $ TxHash $ hashFixture 8, thRegisterTx = Just $ TxHash $ hashFixture 9}
         }
   viewOf failed `shouldReturn` view [("version", J.Number 2), ("phase", J.object ["type" .= ("failed" :: Text), "reason" .= ("signatureRefused" :: Text)]), ("registerTx", txText 9), ("balance", J.Null), ("label", J.Null)]
-  let current = withTransaction st $ \db -> fromJust <$> getRegistration db rid
-  withTransaction st $ \db -> setPaidAt db rid t0
-  void $ withTransaction st $ \db -> recordAttempt db rid True NameAttempt {naTx = RTRegister, naStage = ASSent, naReason = "mined with status 0", naAt = t0}
-  (viewOf =<< current) `shouldReturn` view [("version", J.Number 2), ("phase", J.object ["type" .= ("failed" :: Text), "reason" .= ("signatureRefused" :: Text), "heldUntil" .= addMonths 1 t0]), ("registerTx", txText 9), ("balance", J.Null), ("lastAttempt", J.object ["transaction" .= ("register" :: Text), "stage" .= ("sent" :: Text), "reason" .= ("mined with status 0" :: Text), "at" .= t0])]
-  void $ withTransaction st $ \db -> recordAttempt db rid True NameAttempt {naTx = RTAccept, naStage = ASDryRun, naReason = "InvalidSignature", naAt = t0}
-  let refused = ("lastAttempt", J.object ["transaction" .= ("accept" :: Text), "stage" .= ("dryRun" :: Text), "reason" .= ("InvalidSignature" :: Text), "at" .= t0])
-  (viewOf =<< current) `shouldReturn` view [("version", J.Number 2), ("phase", J.object ["type" .= ("failed" :: Text), "reason" .= ("signatureRefused" :: Text), "heldUntil" .= addMonths 1 t0]), ("registerTx", txText 9), ("balance", J.Null), refused]
+  paidFailed <- withTransaction st $ \db -> setPaidAt db rid t0 >> fromJust <$> getRegistration db rid
+  viewOf paidFailed `shouldReturn` view [("version", J.Number 2), ("phase", J.object ["type" .= ("failed" :: Text), "reason" .= ("signatureRefused" :: Text), "heldUntil" .= addMonths 1 t0]), ("registerTx", txText 9), ("balance", J.Null)]
   requeued <- written $ \r -> r {nrPhase = OQueued, nrHistory = (nrHistory r) {thRegisterTx = Nothing}}
-  viewOf requeued `shouldReturn` view [("version", J.Number 3), ("phase", J.object ["type" .= ("queued" :: Text)]), ("registerTx", J.Null), ("balance", J.Null), refused]
+  viewOf requeued `shouldReturn` view [("version", J.Number 3), ("phase", J.object ["type" .= ("queued" :: Text)]), ("registerTx", J.Null), ("balance", J.Null)]
   taken <- written $ \r -> r {nrPhase = OTaken}
   withTransaction st $ \db -> creditBalance db rid 20000 t0
-  viewOf taken `shouldReturn` view [("version", J.Number 4), ("phase", J.object ["type" .= ("taken" :: Text)]), ("registerTx", J.Null), ("balance", J.object ["amount" .= (20000 :: Int), "hold" .= J.Null, "refunded" .= (0 :: Int)]), refused]
+  viewOf taken `shouldReturn` view [("version", J.Number 4), ("phase", J.object ["type" .= ("taken" :: Text)]), ("registerTx", J.Null), ("balance", J.object ["amount" .= (20000 :: Int), "hold" .= J.Null, "refunded" .= (0 :: Int)])]
   where
     o = order "alicebakery" 1
     rid = RegistrationId "r1"
@@ -1872,8 +1866,7 @@ testViewStates = withServiceStore $ \st -> withFakeEthNode $ \node -> do
               ("latePayment", J.Null),
               ("commitTx", txText 8),
               ("community", J.Null),
-              ("terms", J.toJSON $ agreed plainTerms),
-              ("lastAttempt", J.Null)
+              ("terms", J.toJSON $ agreed plainTerms)
             ]
 
 testViewTerms :: IO ()

@@ -1461,8 +1461,8 @@ With `metrics_port` set, both are exported before they run out (see [Metrics](#m
 
 The order's row keeps the count of its counted dry-run failures and of its sent failures, and its last
 failed attempt of a commit, a terms acceptance or a register: the transaction, the stage (`dry_run`, or
-`sent` for a transaction mined with status 0), the decoded reason and the time. The order's view gives
-that last attempt in `lastAttempt`.
+`sent` for a transaction mined with status 0), the decoded reason and the time, for the caps, the logs
+and the reports; the order's view does not show it.
 A dry run that reverts while the name is available is retried every 15 seconds. Its reason decides:
 - `InvalidSignature`, `DurationTooLong`, `DurationTooShort`, `ResolverRequiredWhenDataSupplied`,
   `ReverseRecordNotSupported`, `NameTooShort`, `LabelTooLong` and `ReentrantCall` count toward

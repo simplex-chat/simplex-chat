@@ -12,7 +12,6 @@ module StoreService.Names.View
     PhaseView (..),
     Signing (..),
     ToSign (..),
-    AttemptView (..),
     NameRefusal (..),
     registrationView,
     phaseView,
@@ -53,7 +52,7 @@ import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Profiles (deadlineIn, withSlot)
 import StoreService.Names.Registration (LinkKind)
 import StoreService.Names.Signatures (AgreedTerms (..))
-import StoreService.Names.Store (AttemptStage, Balance (..), BalanceHold (..), BalanceUse (..), Commit (..), FailReason, HoldState (..), InvoiceClose, LateWait, NameAttempt (..), NameRegistration (..), NameReveal (..), OrderPayment (..), OrderPhase (..), RegistrationTx, TxHistory (..), getBalance, getRegistration, lateWait, orderLive, paymentInvoice)
+import StoreService.Names.Store (Balance (..), BalanceHold (..), BalanceUse (..), Commit (..), FailReason, HoldState (..), InvoiceClose, LateWait, NameRegistration (..), NameReveal (..), OrderPayment (..), OrderPhase (..), TxHistory (..), getBalance, getRegistration, lateWait, orderLive, paymentInvoice)
 
 data PaidWith
   = PWInvoice {method :: Text}
@@ -107,12 +106,8 @@ data RegistrationView = RegistrationView
     vwCommitTx :: Maybe TxHash,
     vwRegisterTx :: Maybe TxHash,
     vwCommunity :: Maybe Community,
-    vwTerms :: AgreedTerms,
-    vwLastAttempt :: Maybe AttemptView
+    vwTerms :: AgreedTerms
   }
-  deriving (Eq, Show)
-
-data AttemptView = AttemptView {transaction :: RegistrationTx, stage :: AttemptStage, reason :: Text, at :: UTCTime}
   deriving (Eq, Show)
 
 $(JQ.deriveToJSON (taggedObjectJSON $ dropPrefix "PW") ''PaidWith)
@@ -126,8 +121,6 @@ $(JQ.deriveToJSON (taggedObjectJSON $ dropPrefix "TS") ''ToSign)
 $(JQ.deriveToJSON (taggedObjectJSON $ dropPrefix "S") ''Signing)
 
 $(JQ.deriveToJSON (taggedObjectJSON $ dropPrefix "PV") ''PhaseView)
-
-$(JQ.deriveToJSON defaultJSON ''AttemptView)
 
 $(JQ.deriveToJSON defaultJSON {J.omitNothingFields = False, J.fieldLabelModifier = dropPrefix "vw"} ''RegistrationView)
 
@@ -223,12 +216,11 @@ toRegistrationView cfg r balance late phase =
       vwCommitTx = thCommitTx,
       vwRegisterTx = thRegisterTx,
       vwCommunity = communityOf cfg (nrLabelHash r) (communityName nrAgreedTerms),
-      vwTerms = nrAgreedTerms,
-      vwLastAttempt = (\NameAttempt {naTx, naStage, naReason, naAt} -> AttemptView {transaction = naTx, stage = naStage, reason = naReason, at = naAt}) <$> nrLastAttempt
+      vwTerms = nrAgreedTerms
     }
   where
     NameRegistration {nrId = RegistrationId rid, nrVersion, nrMoves, nrLabelHash = LabelHash lh, nrReveal, nrOwner, nrCommitment, nrSealed} = r
-    NameRegistration {nrYears, nrDuration, nrPrice, nrPayment, nrAgreedTerms, nrHistory = TxHistory {thCommitTx, thRegisterTx}, nrPaidAt, nrLastAttempt} = r
+    NameRegistration {nrYears, nrDuration, nrPrice, nrPayment, nrAgreedTerms, nrHistory = TxHistory {thCommitTx, thRegisterTx}, nrPaidAt} = r
 
 paidWith :: OrderPayment -> PaidWith
 paidWith = \case
