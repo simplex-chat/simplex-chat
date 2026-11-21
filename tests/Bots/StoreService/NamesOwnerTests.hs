@@ -16,7 +16,6 @@ module Bots.StoreService.NamesOwnerTests
     failedPhase,
     findBody,
     labelBytes,
-    linksRefusedPhase,
     move,
     moveBody,
     moveTo,
@@ -68,7 +67,6 @@ import StoreService.Names.Abi (addressWord, hex, uint256)
 import StoreService.Names.Chain (Hex32 (..), TxHash (..))
 import StoreService.Names.Orders (OrdersEnv (..), movable, signedRequestSeconds)
 import StoreService.Names.Phases (RegistrationId (..))
-import StoreService.Names.Registration (LinkKind (..))
 import StoreService.Names.Signatures (OrderFields (..), findMessage, parseAnyCaseAddress, personalDigest, retargetMessage)
 import StoreService.Names.Store hiding (findLimit)
 import StoreService.Names.Turns (labelTurnCount, withLabelTurn)
@@ -88,8 +86,8 @@ namesOwnerTests = describe "StoreService names: owner" $ do
     it "lists the owner's orders newest first, a moved, an unpaid and a lapsed one included, at most 50, and none for an owner of none" testFind
     it "refuses another signer's signature, a stale timestamp and a malformed body" testFindRefused
   describe "another name" $ do
-    it "refuses a move from registered, queued, taken, and committed without a refused reveal" testMoveRefusedPhases
-    it "moves a failed order, a lapsed one, and a committed one whose links were refused, to the same name with other links too, and to no name another paid order holds" testMoveAccepted
+    it "refuses a move from registered, queued, taken, and committed before its lapse" testMoveRefusedPhases
+    it "moves a failed order and a lapsed one, to the same name with other links too, and to no name another paid order holds" testMoveAccepted
     it "cancels another buyer's open invoice for the name once a moved order holds it" testMoveHoldsName
     it "answers a body equal to the current fields with the view unchanged, counting no move, whatever its timestamp" testMoveRepeat
     it "moves an order by a body differing only in terms, storing them" testMoveTermsOnly
@@ -229,11 +227,10 @@ balanceOf Ctx {cStore} NameRegistration {nrId} = fmap (\Balance {blAmount, blCre
 stored :: Ctx -> NameRegistration -> IO NameRegistration
 stored ctx = registrationById ctx . nrId
 
-failedPhase, registeredPhase, committedPhase, linksRefusedPhase :: NameRegistration -> NameRegistration
+failedPhase, registeredPhase, committedPhase :: NameRegistration -> NameRegistration
 failedPhase r = r {nrPhase = OFailed orderTime FRRegistryRefused}
 registeredPhase r = r {nrPhase = ORegistered (RoundedSystemTime $ fromIntegral $ seconds orderTime + 3 * 31536000) orderTime}
 committedPhase r = r {nrPhase = OCommitted committedCommit}
-linksRefusedPhase r = r {nrPhase = OCommitted committedCommit, nrLinksRefused = Just (orderTime, LKContact)}
 
 committedCommit :: Commit
 committedCommit = Commit {cmTx = Just $ TxRef (TxHash $ hashFixture 8) 100, cmRevealAfter = RoundedSystemTime $ fromIntegral $ seconds orderTime + 60, cmRevealBefore = RoundedSystemTime $ fromIntegral $ seconds orderTime + 86400}
@@ -388,10 +385,9 @@ testMoveRefusedPhases = withOwner $ \ctx -> do
   move ctx keyA r to `shouldReturn` refusedWith 400 "bad_request"
   stored ctx r `shouldReturn` r
   let phases = [OUnpaid (InvoiceId "inv"), OClosed ICExpired, OQueued, OCommitting (TxHash $ hashFixture 8), OCommitted committedCommit, ORegistering committedCommit (TxHash $ hashFixture 9), nrPhase r, OTaken, nrPhase (failedPhase r)]
-      movableWith at refused = [namePhase p | p <- phases, movable at r {nrPhase = p, nrLinksRefused = refused}]
-  movableWith orderTime Nothing `shouldBe` [PFailed]
-  movableWith orderTime (Just (orderTime, LKContact)) `shouldBe` [PCommitted, PFailed]
-  movableWith (addUTCTime (86400 + 1) orderTime) Nothing `shouldBe` [PCommitted, PFailed]
+      movableAt at = [namePhase p | p <- phases, movable at r {nrPhase = p}]
+  movableAt orderTime `shouldBe` [PFailed]
+  movableAt (addUTCTime (86400 + 1) orderTime) `shouldBe` [PCommitted, PFailed]
 
 testMoveHoldsName :: IO ()
 testMoveHoldsName = withOwner $ \ctx@Ctx {cStore, cStub} -> do
@@ -420,18 +416,12 @@ testMoveAccepted = withOwner $ \ctx -> do
       ("price", J.Number 10000),
       ("moves", J.Number 1),
       ("version", J.toJSON $ nrVersion failedOrder + 1),
-      ("linksRefused", J.Null),
       ("label", J.String "alicebakers"),
       ("commitTx", J.Null)
     ]
   written <- stored ctx failedOrder
   (nrPhase written, nrMoves written, nrOrderHash written) `shouldBe` (OQueued, 1, nrOrderHash failedOrder)
-  -- the same name with other links, after a reveal refused for its links
-  refusedOrder <- paidIn ctx (byB aliceOrder) {oSecret = secretOf 2} linksRefusedPhase
-  sameName <- moveTo ctx "alicebakery" 11
-  v2 <- moved ctx keyB refusedOrder sameName
-  fieldsIn v2 [("phase", phaseValue "queued" []), ("labelHash", labelHashText "alicebakery"), ("linksRefused", J.Null), ("commitTx", J.Null), ("moves", J.Number 1)]
-  nrPhase <$> stored ctx refusedOrder `shouldReturn` OQueued
+  void $ paidIn ctx (byB aliceOrder) {oSecret = secretOf 2} id
   -- a committed order with no reveal past revealBefore reads failed
   lapsed <- paidIn ctx dynamisOrder $ \r -> r {nrPhase = OCommitted committedCommit {cmRevealBefore = RoundedSystemTime $ fromIntegral $ seconds orderTime - 1}}
   heldName <- moveTo ctx "alicebakery" 12

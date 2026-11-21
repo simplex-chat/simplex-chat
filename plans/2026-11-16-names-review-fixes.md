@@ -84,7 +84,7 @@ stateDiagram-v2
   Queued --> Failed: sends used up
   Committing --> Failed: sends used up
   Failed --> Queued: retry, move
-  Committed --> Queued: move after refused links
+  Committed --> Queued: move past the window
   Failed --> Registered: landed check
   Failed --> Taken: close
 ```

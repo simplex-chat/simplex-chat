@@ -23,7 +23,7 @@ The implemented states and transitions; apps/simplex-store-service/docs/names.md
 ```mermaid
 stateDiagram-v2
   state "closed: expired, cancelled or reversed" as closed
-  state "committed: awaiting, signed or lapsed; links refused" as committed
+  state "committed: awaiting, signed or lapsed" as committed
   state "failed: registry refused, signature refused or unread" as failed
   state "failed: month ended" as monthEnded
   [*] --> unpaid: one request with the commitment, the signed registration and the terms acceptance; invoice opened, holds its price only
@@ -35,7 +35,7 @@ stateDiagram-v2
   committing --> queued: commitment lapsed, or commit mined with status 0 below its cap
   queued --> committed: commitment on chain
   committing --> committed: commit mined, signing window 60 s to 24 h
-  committed --> committed: signature stored or cleared, window passed unsigned, a link refused
+  committed --> committed: signature stored or cleared, window passed unsigned
   committed --> queued: the page asks to commit again past the window; CommitmentTooOld or CommitmentNotFound
   committed --> registering: commitment 60 s old, acceptance held, register sent with the stored signature
   registering --> committed: register mined with status 0 below its cap, the name free
@@ -48,7 +48,7 @@ stateDiagram-v2
   committed --> failed: permanent reason at its cap; signature refused by the configuration; no read by its page for 3 days
   registering --> failed: permanent reason at its cap
   failed --> queued: a move; Continue of an unread order
-  committed --> queued: a move of an order with a refused link or past its window
+  committed --> queued: a move of an order past its window
   failed --> registered: a move or a close finds the register landed
   failed --> taken: support's close of a paid order
   queued --> monthEnded: 1 month from payment, no register pending, money to the balance
@@ -154,7 +154,7 @@ Contracts: brenzi/simplex-namespace-contract e3ba0a5, `ens-contracts/contracts`.
 
 ### 2.4 Refused links
 - **names:** a link that is not a short link of its key's kind, or a second link for one key, is refused with `invalid_link`, without saying which (`Names/Reveal.hs:107-116, 142-145`; `Names/Links.hs:32-47`); the order fails "not signed in time" at the window's end; the page offers another name, or none of the links.
-- **Final:** links are checked at the order request, before the invoice (1.7), which names the refused link. A link refused when the owner signs again: the buyer is told which link was refused, contact or channel, and asked to replace or remove it; the name stays held; the operators are alerted in the log and the group.
+- **Final:** links are checked at the order request, before the invoice (1.7), which names the refused link. The commitment fixes the links, so the owner's signing again checks no link.
 
 ### 2.5 Counting attempts
 - **names:** only sent transactions count, 5 per kind; a dry run that always reverts is retried forever.

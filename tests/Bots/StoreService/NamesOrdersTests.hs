@@ -1775,7 +1775,6 @@ testViewFields = withServiceStore $ \st -> withFakeEthNode $ \node -> do
       { vwId = "r1",
         vwVersion = 1,
         vwMoves = 0,
-        vwLinksRefused = Nothing,
         vwPhase = PVUnpaid,
         vwLabelHash = Hex32 $ (\(LabelHash h) -> h) alice,
         vwLabel = Nothing,
@@ -1861,7 +1860,6 @@ testViewStates = withServiceStore $ \st -> withFakeEthNode $ \node -> do
           <> KM.fromList
             [ ("id", "r1"),
               ("moves", J.Number 0),
-              ("linksRefused", J.Null),
               ("labelHash", J.String $ hex $ (\(LabelHash h) -> h) $ ofLabelHash o),
               ("label", "alicebakery"),
               ("owner", J.String ownerAText),

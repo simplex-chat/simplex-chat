@@ -77,7 +77,7 @@ namesStoreTests = describe "StoreService names: store" $ do
     it "is live while an order can still progress to a registration for its name" testOrderLive
     it "refuses to queue a closed order, also when a newer live order holds its name" testLatePayment
     it "refuses a write that would meet another live order, writing nothing" testWriteMeetsLiveOrder
-    it "retargets to the new fields and reveal, clearing the transactions, reveal times, refusal and failed attempts" testRetarget
+    it "retargets to the new fields and reveal, clearing the transactions, reveal times and failed attempts" testRetarget
     it "finds registrations made in the same second, and an exact resend's newest order, newest first, and orders the rest by their id" testSameSecondOrder
     it "names the order holding a label from queued to registering and failed, one at a time, and none for an unpaid, taken or registered one" testLabelRegistering
     it "lists the registrations a worker moves on" testActive
@@ -346,7 +346,6 @@ testCreatePaid = withServiceStore $ \st -> do
         nrPrice = price,
         nrPayment = OPInvoice btc (InvoiceId "inv-r1"),
         nrReveal = Just reveal,
-        nrLinksRefused = Nothing,
         nrHistory = noHistory,
         nrOrderHash = orderHash ownerA o (OTInvoice btc price),
         nrMoves = 0,
@@ -472,7 +471,7 @@ testVersionBumps = withServiceStore $ \st -> do
   write st r2 {nrPhase = OCommitted commitFixture} `shouldReturn` Written 3
   r3 <- reg st "r1"
   write st r3 {nrReveal = Just reveal} `shouldReturn` Written 4
-  write st r3 {nrLinksRefused = Just (at 5, LKContact)} `shouldReturn` VersionChanged
+  write st r3 {nrMoves = 1} `shouldReturn` VersionChanged
   write st r1 {nrPhase = OFailed (at 5) FRRegistryRefused} `shouldReturn` VersionChanged
   r4 <- reg st "r1"
   (nrVersion r4, nrPhase r4, nrReveal r4) `shouldBe` (4, OCommitted commitFixture, Just reveal)
@@ -486,7 +485,6 @@ testRoundTrip = withServiceStore $ \st -> do
         r
           { nrPhase = OFailed (at 2) FRSignatureRefused,
             nrReveal = Just reveal {rvChannelLink = Just "simplex:/c#xyz", rvAcceptance = TermsAcceptance (hashFixture 10) 4 signature},
-            nrLinksRefused = Just (at 4, LKChannel),
             nrHistory = TxHistory {thCommitTx = Just $ TxHash $ hashFixture 8, thRegisterTx = Just $ TxHash $ hashFixture 9},
             nrMoves = 2,
             nrAgreedTerms = agreed (communityTermsPrefix <> plainTerms)
@@ -576,7 +574,6 @@ testRetarget = withServiceStore $ \st -> do
         r
           { nrPhase = OFailed (at 5) FRRegistryRefused,
             nrReveal = Just reveal,
-            nrLinksRefused = Just (at 4, LKChannel),
             nrHistory = TxHistory {thCommitTx = Just $ TxHash $ hashFixture 8, thRegisterTx = Just $ TxHash $ hashFixture 9}
           }
   write st failed `shouldReturn` Written 2

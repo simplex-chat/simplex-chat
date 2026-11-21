@@ -316,13 +316,13 @@ checkPrice ct len years price =
       | chainPrice /= price -> pure $ Left $ ORCatalogChanged chainPrice
       | otherwise -> pure $ Right ()
 
--- | A failed order, one whose reveal was refused for its links, and one whose commitment lapsed unsigned can move to another name.
+-- | A failed order and one whose commitment lapsed unsigned can move to another name.
 movable :: UTCTime -> NameRegistration -> Bool
-movable now r@NameRegistration {nrPhase, nrLinksRefused} = case nrPhase of
+movable now r@NameRegistration {nrPhase} = case nrPhase of
   OFailed _ FRMonthEnded -> False
   OFailed _ FRSignatureRefused -> False
   OFailed {} -> True
-  OCommitted _ -> isJust nrLinksRefused || lapsedAt now r
+  OCommitted _ -> lapsedAt now r
   _ -> False
 
 readNoteSeconds :: NominalDiffTime

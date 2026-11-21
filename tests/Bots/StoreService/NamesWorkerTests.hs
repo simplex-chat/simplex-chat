@@ -9,7 +9,7 @@ import Bots.StoreService.FakeEthNode
 import Bots.StoreService.NamesBalancesTests (figures)
 import Bots.StoreService.NamesContractsTests (availableCall, maxCommitmentAgeCall, minCommitmentAgeCall, newPolicy, registrarOf)
 import Bots.StoreService.NamesOrdersTests
-import Bots.StoreService.NamesOwnerTests (answerExpiry, answerFree, answerOwner, answerUnowned, byB, codeIn, committedPhase, dynamisOrder, failedPhase, labelBytes, linksRefusedPhase, move, moveTo, ownerOfSelector, paidIn, rewrite, sentRegister, stored)
+import Bots.StoreService.NamesOwnerTests (answerExpiry, answerFree, answerOwner, answerUnowned, byB, codeIn, committedPhase, dynamisOrder, failedPhase, labelBytes, move, moveTo, ownerOfSelector, paidIn, rewrite, sentRegister, stored)
 import Bots.StoreService.NamesPhasesTests (held, prompt, registrationPath, woken)
 import Bots.StoreService.NamesStoreTests (btc, hashFixture, insertInvoiceRow, ownerA, paidOrder, reveal)
 import Bots.StoreService.WebTests (answerOf, capturingStderr, fieldOf, jsonObject, lengthOf, phaseOf, phaseValue, refusedWith, renameTable, statusOf, stubCalls, webGet, withApp)
@@ -125,7 +125,7 @@ workerTests = describe "StoreService names: worker" $ do
     it "clears the reveal when a dry run reverts SignatureExpired, for the page to sign again" testAcceptanceExpired
     it "relays no acceptance once the commitment lapsed, so the policy commits nothing again" testAcceptanceLapsed
   describe "lapse" $ do
-    it "keeps a committed order not revealed by revealBefore waiting, for /retry, or for a move when its links were refused, keeping its code" testLapseFailed
+    it "keeps a committed order not revealed by revealBefore waiting, for /retry or a move, keeping its code" testLapseFailed
   describe "restart" $ do
     it "resumes every phase after a restart, a commit saved but not recorded included" testRestart
     it "waits for a register saved but not recorded before a restart, sending no other" testRestartRegisterSaved
@@ -139,13 +139,12 @@ workerTests = describe "StoreService names: worker" $ do
     it "fails each order queued, committed or failed a calendar month after its payment or its code's reservation, once, reporting it, its name released, the money paid for a paid order added to its balance and a code order's code released" testMonthEnds
     it "ends the month on the last day of a shorter month" testMonthClipped
     it "ends no month of an order whose register is sent and not settled, and ends it once the register reverted" testMonthRegisterInFlight
-    it "fails an order waiting for a refused link to be replaced once its page has not read it for 3 days, logging and reporting it, holding its name" testLinksRefusedUnread
+    it "fails an order waiting for its owner once its page has not read it for 3 days, logging and reporting it, holding its name" testUnreadReported
     it "fails an order waiting for its owner once its page has not read it for 3 days, a read of the order or its invoice stored at most hourly" testUnreadFails
   describe "confirmation depth" $
     it "judges a register landed by ownerOf only once the owner holds the name at the confirmation depth" testLandedAtDepth
   describe "retry" $ do
     it "refuses /retry of any order but a lapsed unsigned one with bad_request, a failed or signed one included, changing nothing, and answers an unknown order 404" testRetryNotFailed
-    it "refuses /retry of a lapsed order whose links were refused with bad_request, changing nothing" testRetryLinksRefused
     it "requeues a lapsed committed order, whose view says it lapsed, answering an old version at once after it and keeping its code" testRetryLapsed
     it "runs in the name's turn, answering registration_changed for an order moved to another name meanwhile" testRetryInNameTurn
   describe "close" $ do
@@ -1125,15 +1124,12 @@ testFailedOnlySettled = withWorker $ \w@W {wCtx = ctx@Ctx {cNode}, wSender} -> d
 testLapseFailed :: IO ()
 testLapseFailed = withWorker $ \w@W {wCtx = ctx} -> do
   (r, code) <- codeIn ctx 8 aliceOrder committedPhase
-  refused <- paidIn ctx dynamisOrder linksRefusedPhase
   steps w r >>= waitingUntil >>= (`shouldBe` at (orderSeconds + maxAge + 1))
   advance ctx $ day + 1
   now <- nowOf ctx
   steps w r >>= waitingUntil >>= (`shouldBe` addUTCTime 60 now)
   stored ctx r `shouldReturn` r
   pcReservedBy <$> codeOf ctx code `shouldReturn` Just (nrId r)
-  steps w refused >>= waitingUntil >>= (`shouldBe` addUTCTime 60 now)
-  stored ctx refused `shouldReturn` refused
   sent w `shouldReturn` []
 
 testRestart :: IO ()
@@ -1314,11 +1310,11 @@ testUnreadFails = withWorker $ \w@W {wCtx = ctx@Ctx {cClient}} -> do
   now <- nowOf ctx
   nrPhase <$> stored ctx r `shouldReturn` OFailed now FRUnread
 
-testLinksRefusedUnread :: IO ()
-testLinksRefusedUnread = withWorker $ \W {wCtx = ctx@Ctx {cStore, cOrders}, wSender} -> do
+testUnreadReported :: IO ()
+testUnreadReported = withWorker $ \W {wCtx = ctx@Ctx {cStore, cOrders}, wSender} -> do
   reports <- newTVarIO []
   worker <- newWorker cOrders {oeReport = \t -> atomically $ modifyTVar' reports (t :)} wSender
-  r <- paidIn ctx aliceOrder linksRefusedPhase
+  r <- paidIn ctx aliceOrder committedPhase
   advance ctx $ 3 * day
   void $ stepRegistration worker (nrId r)
   stored ctx r `shouldReturn` r
@@ -1405,13 +1401,6 @@ testRetryNotFailed = withWorker $ \W {wCtx = ctx} -> do
     (nrPhase r,) <$> retryOf ctx r `shouldReturn` (nrPhase r, refusedWith 400 "bad_request")
     stored ctx r `shouldReturn` r
   retryOf ctx queued {nrId = RegistrationId "t2Jk8RmQ4vXw9NcP3yLb6g"} `shouldReturn` refusedWith 404 "not_found"
-
-testRetryLinksRefused :: IO ()
-testRetryLinksRefused = withWorker $ \W {wCtx = ctx} -> do
-  r <- paidIn ctx aliceOrder linksRefusedPhase
-  advance ctx $ day + 1
-  retryOf ctx r `shouldReturn` refusedWith 400 "bad_request"
-  stored ctx r `shouldReturn` r
 
 testRetryLapsed :: IO ()
 testRetryLapsed = withWorker $ \w@W {wCtx = ctx@Ctx {cClient}} -> do

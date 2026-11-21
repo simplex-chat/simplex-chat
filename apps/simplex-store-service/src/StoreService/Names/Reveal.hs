@@ -11,7 +11,6 @@ module StoreService.Names.Reveal
     isRepeat,
     checkReveal,
     orderReveal,
-    refusedLink,
     intentOf,
   )
 where

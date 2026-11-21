@@ -340,8 +340,6 @@ CREATE TABLE @name_registrations(
   live INTEGER NOT NULL,
   order_hash BLOB NOT NULL,
   moves INTEGER NOT NULL DEFAULT 0,
-  links_refused_at TEXT,
-  links_refused_kind TEXT,
   paid_at TEXT,
   unregistered_alerted_at TEXT,
   failed_dry_runs INTEGER NOT NULL DEFAULT 0,

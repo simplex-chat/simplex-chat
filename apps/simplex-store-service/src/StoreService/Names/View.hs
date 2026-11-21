@@ -92,7 +92,6 @@ data RegistrationView = RegistrationView
   { vwId :: Text,
     vwVersion :: Int64,
     vwMoves :: Int,
-    vwLinksRefused :: Maybe LinkKind,
     vwPhase :: PhaseView,
     vwLabelHash :: Hex32,
     vwLabel :: Maybe Text,
@@ -209,7 +208,6 @@ toRegistrationView cfg r balance late phase =
     { vwId = rid,
       vwVersion = nrVersion,
       vwMoves = nrMoves,
-      vwLinksRefused = snd <$> nrLinksRefused,
       vwPhase = phase,
       vwLabelHash = Hex32 lh,
       vwLabel = if isJust nrPaidAt then rvLabel <$> nrReveal else Nothing,
@@ -230,7 +228,7 @@ toRegistrationView cfg r balance late phase =
     }
   where
     NameRegistration {nrId = RegistrationId rid, nrVersion, nrMoves, nrLabelHash = LabelHash lh, nrReveal, nrOwner, nrCommitment, nrSealed} = r
-    NameRegistration {nrYears, nrDuration, nrPrice, nrPayment, nrAgreedTerms, nrLinksRefused, nrHistory = TxHistory {thCommitTx, thRegisterTx}, nrPaidAt, nrLastAttempt} = r
+    NameRegistration {nrYears, nrDuration, nrPrice, nrPayment, nrAgreedTerms, nrHistory = TxHistory {thCommitTx, thRegisterTx}, nrPaidAt, nrLastAttempt} = r
 
 paidWith :: OrderPayment -> PaidWith
 paidWith = \case

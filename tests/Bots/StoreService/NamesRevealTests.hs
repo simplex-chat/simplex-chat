@@ -13,7 +13,7 @@ import Bots.StoreService.NamesOrdersTests (Ctx (..), Order (..), aliceOrder, com
 import Bots.StoreService.NamesOwnerTests (answerFree, moveBody, moveTo, postMove)
 import Bots.StoreService.NamesPhasesTests (change, held, prompt, registrationPath, seenVersion, woken)
 import Bots.StoreService.NamesStoreTests (hashFixture, ownerA)
-import Bots.StoreService.WebTests (bounded, capturingStderr, fieldOf, jsonObject, refusedWith, phaseFieldOf, phaseOf, statusOf, webGet, webRequestBody)
+import Bots.StoreService.WebTests (bounded, fieldOf, refusedWith, phaseFieldOf, statusOf, webRequestBody)
 import Control.Concurrent.Async (Async, async, wait)
 import Control.Concurrent.MVar (newEmptyMVar, putMVar, takeMVar)
 import Control.Concurrent.STM
@@ -28,7 +28,7 @@ import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as LB
 import Data.IORef (writeIORef)
 import Data.Int (Int64)
-import Data.Maybe (fromJust, fromMaybe, isJust)
+import Data.Maybe (fromJust, fromMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock.POSIX (posixSecondsToUTCTime)
@@ -48,7 +48,7 @@ import StoreService.Names.Abi (hex, uint256)
 import StoreService.Names.Chain (Hex32 (..), TxHash (..))
 import StoreService.Names.Orders (OrdersEnv (..))
 import StoreService.Names.Phases (RegistrationId (..))
-import StoreService.Names.Registration (LinkKind (..), Registration (..), TermsAcceptance (..), acceptanceDigest, linkMaxBytes, makeCommitment, policyDomain, registerIntentDigest, sponsorDomain, termsKind)
+import StoreService.Names.Registration (Registration (..), TermsAcceptance (..), acceptanceDigest, linkMaxBytes, makeCommitment, policyDomain, registerIntentDigest, sponsorDomain, termsKind)
 import StoreService.Names.Reveal (RevealRequest (..))
 import StoreService.Names.Store (Commit (..), FailReason (..), NameRegistration (..), NameReveal (..), OrderPhase (..), TxHistory (..), getRegistration, noHistory)
 import StoreService.Names.Turns (labelTurnCount)
@@ -65,7 +65,7 @@ namesRevealTests = describe "StoreService names: reveal" $ do
   describe "accepted" $ do
     it "accepts a reveal with links, setting the label at a new version and waking a held poll" testWithLinks
     it "accepts a reveal without links" testWithoutLinks
-    it "checks the reveal the page signs, as viem signs it, through to its link, which the chat core cannot read" testViemReveal
+    it "accepts the reveal the page signs, as viem signs it" testViemReveal
     it "accepts a reveal with two records at the link bound, within the body cap" testRecordsAtBound
     it "answers an identical repeat in a later phase, and refuses a different one" testRepeats
     it "answers after the name's turn, so a slow reader of one answer holds no other reveal" testAnswersAfterTurn
@@ -77,9 +77,6 @@ namesRevealTests = describe "StoreService names: reveal" $ do
     it "refuses a list of links for a key as bad_request, recording nothing" testSecondLink
     it "refuses an unknown id, a registration not committed or lapsed, and malformed bodies" testStateAndFormat
     it "answers provider_unavailable when the nonce read fails, writing nothing" testNonceUnavailable
-  describe "links refusal" $ do
-    it "records invalid_link for a committed link one byte over the bound, waking a held poll, once" testLinksRefused
-    it "records no refusal for links that do not rebuild the commitment, or for another signer" testNoRefusalRecorded
   describe "terms acceptance" $ do
     it "stores the owner's acceptance of the policy's current community terms, at the intent's deadline, with a listed name's reveal" testAcceptanceStored
     it "refuses a reveal without an acceptance, or by another signer, for other terms, of the other kind or at another nonce, a listed name's and a plain one's" testAcceptanceRefusals
@@ -316,11 +313,8 @@ testAcceptanceUnavailable = withListedReveals $ \Fx {fCtx = ctx@Ctx {cNode}} -> 
   reveal ctx rid body `shouldReturn` accepted
 
 -- | The fields a refused reveal must leave as they were.
-unwritten :: NameRegistration -> (Int64, Maybe NameReveal, Bool)
-unwritten NameRegistration {nrVersion, nrReveal, nrLinksRefused} = (nrVersion, nrReveal, isJust nrLinksRefused)
-
-contactRefused :: (Int, Maybe J.Object)
-contactRefused = (400, Just $ KM.fromList [("type", "invalid_link"), ("kind", "contact")])
+unwritten :: NameRegistration -> (Int64, Maybe NameReveal)
+unwritten NameRegistration {nrVersion, nrReveal} = (nrVersion, nrReveal)
 
 -- | The same signature with s mirrored to n - s, which recovers the same signer.
 highS :: RecoverableSignature -> RecoverableSignature
@@ -389,7 +383,7 @@ testViemReveal = withReveals $ \Fx {fCtx = ctx} -> do
   hex (unHex32 $ makeCommitment page) `shouldBe` "0x9cf04ddef2eedfb02e6e7ba58f879c0636c584b6acc67ffe9f97a06bfb016ac1"
   ownerBody ctx page `shouldReturn` body
   rid <- committedUnchecked ctx page
-  reveal ctx rid body `shouldReturn` contactRefused
+  reveal ctx rid body `shouldReturn` accepted
 
 testRecordsAtBound :: IO ()
 testRecordsAtBound = withReveals $ \Fx {fCtx = ctx} -> do
@@ -536,60 +530,19 @@ testNonceUnavailable = withReveals $ \Fx {fCtx = ctx@Ctx {cNode}} -> do
   unwritten <$> stored ctx rid `shouldReturn` unchanged
   reveal ctx rid body `shouldReturn` accepted
 
-testLinksRefused :: IO ()
-testLinksRefused = bounded "links refused" $ withReveals $ \Fx {fCtx = ctx@Ctx {cClient}} -> do
-  let overBound = alice {rContactLink = Just $ padded "a" (linkMaxBytes + 1)}
-  rid <- committedUnchecked ctx overBound
-  NameRegistration {nrVersion = v} <- stored ctx rid
-  poll <- held ctx (0, 1) $ registrationPath rid <> seenVersion v
-  body <- ownerBody ctx overBound
-  let RegistrationId ridText = rid
-      alerted = length . filter (T.isInfixOf $ "names: registration " <> ridText <> ": its simplex.contact link was refused at its reveal") . T.lines
-  firstLogs <- capturingStderr $ reveal ctx rid body `shouldReturn` contactRefused
-  alerted firstLogs `shouldBe` 1
-  (status, view) <- woken "registration poll" poll
-  (status, fieldOf view "version", fieldOf view "linksRefused", fieldOf view "label") `shouldBe` (200, Just (J.toJSON $ v + 1), Just "contact", Just J.Null)
-  NameRegistration {nrVersion, nrReveal, nrLinksRefused} <- stored ctx rid
-  (nrVersion, nrReveal, nrLinksRefused) `shouldBe` (v + 1, Nothing, Just (orderTime, LKContact))
-  -- another browser, holding only the order link
-  r <- webGet cClient (registrationPath rid)
-  other <- jsonObject r
-  (statusOf r, fieldOf other "linksRefused") `shouldBe` (200, Just "contact")
-  repeatLogs <- capturingStderr $ reveal ctx rid body `shouldReturn` contactRefused
-  alerted repeatLogs `shouldBe` 0
-  unwritten <$> stored ctx rid `shouldReturn` (v + 1, Nothing, True)
-
-testNoRefusalRecorded :: IO ()
-testNoRefusalRecorded = withReveals $ \Fx {fCtx = ctx} -> do
-  committedGood <- committed ctx (orderOf alice)
-  goodBefore <- unwritten <$> stored ctx committedGood
-  ownerReveal ctx committedGood alice {rContactLink = Just "hello"} `shouldReturn` badRequest
-  unwritten <$> stored ctx committedGood `shouldReturn` goodBefore
-  let overBound = dynamis {rContactLink = Just $ padded "a" (linkMaxBytes + 1)}
-  committedBad <- committedUnchecked ctx overBound
-  badBefore <- unwritten <$> stored ctx committedBad
-  other <- signIntent ctx fakeRegistrarKey overBound 0 revealBefore
-  acceptance <- acceptanceOf ctx keyA overBound False fakeGeneralTerms 0 revealBefore
-  reveal ctx committedBad (withAcceptance acceptance $ bodyOf other overBound 0 revealBefore) `shouldReturn` badRequest
-  unwritten <$> stored ctx committedBad `shouldReturn` badBefore
-  ownerReveal ctx committedBad overBound `shouldReturn` contactRefused
-  isJust . nrLinksRefused <$> stored ctx committedBad `shouldReturn` True
-
 -- | A writer that takes no turn, as the worker re-committing, moves the version while the reveal reads the nonce.
 testLostRace :: IO ()
 testLostRace = bounded "lost race" $ withReveals $ \Fx {fCtx = ctx} -> do
-  let overBound = dynamis {rContactLink = Just $ padded "a" (linkMaxBytes + 1)}
-  forM_ [(alice, "accepted"), (overBound, "links refused")] $ \(r, what :: String) -> do
-    rid <- committedUnchecked ctx r
-    body <- ownerBody ctx r
-    (inFlight, gate) <- pausedAtChainRead ctx (reveal ctx rid body)
-    v <- change ctx rid $ \x -> x {nrPhase = OCommitted openWindow {cmRevealAfter = RoundedSystemTime $ fromIntegral $ revealAfter + 60, cmRevealBefore = RoundedSystemTime $ fromIntegral $ revealBefore + 60}}
-    releaseGate gate
-    (status, answer) <- wait inFlight
-    let view = registrationOf $ fromJust answer
-    (what, status, (`fieldOf` "type") =<< answer, fieldOf view "version", fieldOf view "label", fieldOf view "linksRefused", phaseFieldOf view "revealBefore")
-      `shouldBe` (what, 409, Just "registration_changed", Just (J.toJSON v), Just J.Null, Just J.Null, Just (J.toJSON $ revealBefore + 60))
-    (what,) . unwritten <$> stored ctx rid `shouldReturn` (what, (v, Nothing, False))
+  rid <- committed ctx (orderOf alice)
+  body <- ownerBody ctx alice
+  (inFlight, gate) <- pausedAtChainRead ctx (reveal ctx rid body)
+  v <- change ctx rid $ \x -> x {nrPhase = OCommitted openWindow {cmRevealAfter = RoundedSystemTime $ fromIntegral $ revealAfter + 60, cmRevealBefore = RoundedSystemTime $ fromIntegral $ revealBefore + 60}}
+  releaseGate gate
+  (status, answer) <- wait inFlight
+  let view = registrationOf $ fromJust answer
+  (status, (`fieldOf` "type") =<< answer, fieldOf view "version", fieldOf view "label", phaseFieldOf view "revealBefore")
+    `shouldBe` (409, Just "registration_changed", Just (J.toJSON v), Just J.Null, Just (J.toJSON $ revealBefore + 60))
+  unwritten <$> stored ctx rid `shouldReturn` (v, Nothing)
 
 testRacesName :: IO ()
 testRacesName = bounded "races /name" $ withReveals $ \Fx {fCtx = ctx} -> do
@@ -605,22 +558,3 @@ testRacesName = bounded "races /name" $ withReveals $ \Fx {fCtx = ctx} -> do
   wait move `shouldReturn` badRequest
   NameRegistration {nrLabelHash, nrReveal, nrMoves} <- stored ctx rid
   (nrLabelHash, rvLabel <$> nrReveal, nrMoves) `shouldBe` (labelHash "alicebakery", Just "alicebakery", 0)
-  -- /name holds the turns of a reveal refused for its links while it checks the name, so the reveal waits and then finds the order moved
-  answerFree ctx "dynamit"
-  let overBound = dynamis {rContactLink = Just $ padded "a" (linkMaxBytes + 1)}
-  refusedRid <- committedUnchecked ctx overBound
-  body <- ownerBody ctx overBound
-  reveal ctx refusedRid body `shouldReturn` contactRefused
-  toDynamit <- moveTo ctx "dynamit" 2
-  (move', gate') <- pausedAtChainRead ctx (postMove ctx refusedRid =<< moveBody ctx keyA refusedRid toDynamit)
-  late <- async $ reveal ctx refusedRid body
-  queuedOn ctx (labelHash "dynamis") 2
-  releaseGate gate'
-  (200, Just movedView) <- wait move'
-  (status, answer) <- wait late
-  let view = registrationOf $ fromJust answer
-      LabelHash dynamit = labelHash "dynamit"
-  (status, (`fieldOf` "type") =<< answer, fieldOf view "version", phaseOf view, fieldOf view "labelHash", fieldOf view "moves")
-    `shouldBe` (409, Just "registration_changed", fieldOf movedView "version", Just "queued", Just (J.String $ hex dynamit), Just (J.Number 1))
-  NameRegistration {nrLabelHash = movedHash, nrReveal = movedReveal, nrLinksRefused = movedRefusedAt} <- stored ctx refusedRid
-  (movedHash, rvLabel <$> movedReveal, movedRefusedAt) `shouldBe` (labelHash "dynamit", Just "dynamit", Nothing)

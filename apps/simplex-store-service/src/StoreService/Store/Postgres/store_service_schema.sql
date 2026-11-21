@@ -358,8 +358,6 @@ CREATE TABLE test_store_service_schema.sx_badge_service_name_registrations (
     live smallint NOT NULL,
     order_hash bytea NOT NULL,
     moves integer DEFAULT 0 NOT NULL,
-    links_refused_at timestamp with time zone,
-    links_refused_kind text,
     paid_at timestamp with time zone,
     unregistered_alerted_at timestamp with time zone,
     failed_dry_runs integer DEFAULT 0 NOT NULL,

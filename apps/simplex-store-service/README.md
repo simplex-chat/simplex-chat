@@ -1486,10 +1486,7 @@ at its first time in a row, and its step is run again in 15 seconds.
 commits it again, posted in the group as `names worker: registration <id> is committed again: its
 commitment lapsed`. An order whose stored signature was cleared, and whose
 commitment lapses before its page signed again, waits, and its page asks for a new commitment with
-`POST /api/registration/:id/retry`; one whose
-links were refused waits for its owner to replace or remove the refused link by a move, and the
-first refusal of a link is logged at warning and posted in the managed group as
-`names: registration <id>: its simplex.contact link was refused at its reveal, so its owner is asked to replace or remove it`.
+`POST /api/registration/:id/retry`.
 An order waiting for its owner
 fails with the reason `unread` once its page has not read it for 3 days, logged at error and posted
 in the managed group as
@@ -1852,7 +1849,7 @@ Your names; a later late payment credits it again, and a second refund adds to `
 
 ## Closing a failed order
 
-A failed paid order, after its attempts reached a cap or with refused links, stays live, holds its name and keeps its money uncredited, so its wallet cannot order the
+A failed paid order, after its attempts reached a cap, stays live, holds its name and keeps its money uncredited, so its wallet cannot order the
 name again. So does a paid order whose commitment lapsed before its page signed it, until the page
 asks for a new commitment. A calendar month after its payment, clipped to the last day of a shorter
 month, an order that is still `queued`, `committed` or `failed` fails with the reason `monthEnded`:

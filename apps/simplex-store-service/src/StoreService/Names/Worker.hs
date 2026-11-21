@@ -320,7 +320,7 @@ commitSent w now r@NameRegistration {nrPhase} p
   | nrPhase == OCommitting (ptHash p) = pure $ Await p
   | otherwise = save w now r {nrPhase = OCommitting $ ptHash p}
 
--- | Waits for the page's reveal, past the lapse for /retry unless the links were refused, has its acceptance held by the name
+-- | Waits for the page's reveal, past the lapse for /retry or a move, has its acceptance held by the name
 -- policy, waits for revealAfter, then registers.
 committed :: Worker -> UTCTime -> NameRegistration -> Commit -> IO Next
 committed w@Worker {wkSender} now r@NameRegistration {nrId = regId, nrReveal, nrReadAt} c@Commit {cmRevealAfter} =
@@ -543,24 +543,21 @@ waitUntil r = WaitUntil (nrVersion r)
 -- | What /retry did: the version it wrote, the order changed since it was read, or a refusal.
 data Retried = RTWritten Int64 | RTChanged | RTRefused RetryRefusal
 
-data RetryRefusal = RFNotLapsed | RFLinksRefused
+data RetryRefusal = RFNotLapsed
   deriving (Eq, Show)
 
 -- | /retry, in the caller's turn of the order's name: an order whose commitment lapsed unsigned is queued to be committed again,
 -- keeping its payment and its code.
 retryRegistration :: OrdersEnv -> NameRegistration -> IO Retried
-retryRegistration OrdersEnv {oeStore, oeNow} r@NameRegistration {nrId = RegistrationId rid, nrLinksRefused} = do
+retryRegistration OrdersEnv {oeStore, oeNow} r@NameRegistration {nrId = RegistrationId rid} = do
   now <- oeNow
   if not (lapsedAt now r)
     then pure $ RTRefused RFNotLapsed
-    else case nrLinksRefused of
-      -- its commitment fixes the refused links, so only another name can register
-      Just _ -> pure $ RTRefused RFLinksRefused
-      Nothing ->
-        withTransaction oeStore (\db -> versionWritten <$> updateRegistration db r {nrPhase = OQueued, nrHistory = noHistory} now) >>= \case
-          Right v -> pure $ RTWritten v
-          Left WRChanged -> pure RTChanged
-          Left (WRRefused refusal) -> E.throwIO $ BrokenInvariant $ "registration " <> rid <> " is live while committed, yet its requeue was refused: " <> tshow refusal
+    else
+      withTransaction oeStore (\db -> versionWritten <$> updateRegistration db r {nrPhase = OQueued, nrHistory = noHistory} now) >>= \case
+        Right v -> pure $ RTWritten v
+        Left WRChanged -> pure RTChanged
+        Left (WRRefused refusal) -> E.throwIO $ BrokenInvariant $ "registration " <> rid <> " is live while committed, yet its requeue was refused: " <> tshow refusal
 
 failedAttempt :: Worker -> UTCTime -> NameRegistration -> RegistrationTx -> AttemptStage -> Maybe RevertReason -> IO (Maybe Int64, Next) -> IO (Maybe Int64, Next)
 failedAttempt w@Worker {wkOrders = OrdersEnv {oeStore, oeConfig = NamesConfig {nMaxDryRunFailures, nMaxSentFailures}}} now r@NameRegistration {nrId} tx stage reason underCap = do
