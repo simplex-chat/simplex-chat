@@ -1,0 +1,34 @@
+[
+  {
+    "result": {
+      "sessionCode": "sessionCode",
+      "type": "remoteCtrlSessionCode"
+    }
+  },
+  {
+    "result": {
+      "compression": true,
+      "remoteCtrl": {
+        "ctrlDeviceName": "My desktop",
+        "remoteCtrlId": 1,
+        "sessionState": {
+          "sessionCode": "sessionCode",
+          "type": "connected"
+        }
+      },
+      "type": "remoteCtrlConnected"
+    }
+  },
+  {
+    "result": {
+      "rcStopReason": {
+        "type": "disconnected"
+      },
+      "rcsState": {
+        "sessionCode": "sessionCode",
+        "type": "connected"
+      },
+      "type": "remoteCtrlStopped"
+    }
+  }
+]

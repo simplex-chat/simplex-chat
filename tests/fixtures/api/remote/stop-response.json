@@ -1,0 +1,11 @@
+{
+  "commands": {
+    "/stop remote ctrl": {
+      "result": {
+        "type": "cmdOk"
+      }
+    }
+  },
+  "markdown": {},
+  "uris": {}
+}
