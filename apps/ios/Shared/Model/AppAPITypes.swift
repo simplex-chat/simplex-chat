@@ -1241,12 +1241,13 @@ indirect enum ChatEvent: Decodable, ChatAPIResult {
     case contactSndReady(user: UserRef, contact: Contact)
     case receivedContactRequest(user: UserRef, contactRequest: UserContactRequest, chat_: ChatData?)
     case contactUpdated(user: UserRef, toContact: Contact)
+    case nameMoved(user: UserRef, contactIds: [Int64], groupIds: [Int64])
     case groupMemberUpdated(user: UserRef, groupInfo: GroupInfo, fromMember: GroupMember, toMember: GroupMember)
     case subscriptionStatus(subscriptionStatus: SubscriptionStatus, connections: [String])
     case chatInfoUpdated(user: UserRef, chatInfo: ChatInfo)
     case newChatItems(user: UserRef, chatItems: [AChatItem])
     case chatItemsStatusesUpdated(user: UserRef, chatItems: [AChatItem])
-    case chatItemUpdated(user: UserRef, chatItem: AChatItem)
+    case chatItemUpdated(user: UserRef, chatItemUpdate: AChatItemUpdate)
     case chatItemReaction(user: UserRef, added: Bool, reaction: ACIReaction)
     case chatItemsDeleted(user: UserRef, chatItemDeletions: [ChatItemDeletion], byUser: Bool)
     // group events
@@ -1326,6 +1327,7 @@ indirect enum ChatEvent: Decodable, ChatAPIResult {
         case .contactSndReady: "contactSndReady"
         case .receivedContactRequest: "receivedContactRequest"
         case .contactUpdated: "contactUpdated"
+        case .nameMoved: "nameMoved"
         case .groupMemberUpdated: "groupMemberUpdated"
         case .subscriptionStatus: "subscriptionStatus"
         case .chatInfoUpdated: "chatInfoUpdated"
@@ -1405,6 +1407,7 @@ indirect enum ChatEvent: Decodable, ChatAPIResult {
         case let .contactSndReady(u, contact): return withUser(u, String(describing: contact))
         case let .receivedContactRequest(u, contactRequest, chat_): return withUser(u, "contactRequest: \(String(describing: contactRequest))\nchat_: \(String(describing: chat_))")
         case let .contactUpdated(u, toContact): return withUser(u, String(describing: toContact))
+        case let .nameMoved(u, contactIds, groupIds): return withUser(u, "contactIds: \(contactIds)\ngroupIds: \(groupIds)")
         case let .groupMemberUpdated(u, groupInfo, fromMember, toMember): return withUser(u, "groupInfo: \(groupInfo)\nfromMember: \(fromMember)\ntoMember: \(toMember)")
         case let .subscriptionStatus(status, conns): return "subscriptionStatus: \(String(describing: status))\nconnections: \(String(describing: conns))"
         case let .chatInfoUpdated(u, chatInfo): return withUser(u, String(describing: chatInfo))
@@ -1414,7 +1417,7 @@ indirect enum ChatEvent: Decodable, ChatAPIResult {
         case let .chatItemsStatusesUpdated(u, chatItems):
             let itemsString = chatItems.map { chatItem in String(describing: chatItem) }.joined(separator: "\n")
             return withUser(u, itemsString)
-        case let .chatItemUpdated(u, chatItem): return withUser(u, String(describing: chatItem))
+        case let .chatItemUpdated(u, chatItemUpdate): return withUser(u, String(describing: chatItemUpdate))
         case let .chatItemReaction(u, added, reaction): return withUser(u, "added: \(added)\n\(String(describing: reaction))")
         case let .chatItemsDeleted(u, items, byUser):
             let itemsString = items.map { item in
@@ -1529,9 +1532,49 @@ enum PlanResolveMode: String {
 
 enum ConnectionPlan: Decodable, Hashable {
     case invitationLink(invitationLinkPlan: InvitationLinkPlan)
-    case contactAddress(contactAddressPlan: ContactAddressPlan)
-    case groupLink(groupLinkPlan: GroupLinkPlan)
+    case contactAddress(contactAddressPlan: ContactAddressPlan, nameChange: NameChange?)
+    case groupLink(groupLinkPlan: GroupLinkPlan, nameChange: NameChange?)
     case error(chatError: ChatError)
+
+    var localChats: [ChatInfo] {
+        [planChat, knownChat].compactMap { $0 }
+    }
+
+    var planChat: ChatInfo? {
+        switch self {
+        case let .contactAddress(.connectingProhibit(contact), _), let .contactAddress(.known(contact), _), let .contactAddress(.contactViaAddress(contact), _):
+            .direct(contact: contact)
+        case let .groupLink(.ownLink(groupInfo), _), let .groupLink(.known(groupInfo), _), let .groupLink(.connectingProhibit(.some(groupInfo)), _):
+            .group(groupInfo: groupInfo, groupChatScope: nil)
+        default: nil
+        }
+    }
+
+    var nameChange: NameChange? {
+        switch self {
+        case let .contactAddress(_, nameChange), let .groupLink(_, nameChange): nameChange
+        default: nil
+        }
+    }
+
+    var knownChat: ChatInfo? {
+        switch nameChange {
+        case let .some(.moved(chat)): chat
+        default: nil
+        }
+    }
+
+    var isOwnLink: Bool {
+        switch self {
+        case .contactAddress(.ownLink, _), .groupLink(.ownLink, _): true
+        default: false
+        }
+    }
+}
+
+enum NameChange: Decodable, Hashable {
+    case lapsed(nameWarning: NameWarning)
+    case moved(knownChat: ChatInfo)
 }
 
 enum InvitationLinkPlan: Decodable, Hashable {

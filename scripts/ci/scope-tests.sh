@@ -3,7 +3,6 @@
 set -euo pipefail
 
 cd "$(dirname "$0")/../.."
-npm_install=$PWD/scripts/ci/npm-install.sh
 
 case "${1:-}" in
   badge-web)
@@ -16,11 +15,8 @@ case "${1:-}" in
     (cd website && npm test)
     ;;
   mcp)
-    (cd packages/simplex-chat-client/types/typescript && "$npm_install" && npx tsc)
-    (cd packages/simplex-chat-nodejs && "$npm_install" --ignore-scripts --no-save ../simplex-chat-client/types/typescript && npx tsc && cp src/simplex.* dist)
     cd packages/simplex-chat-mcp
     npm ci --no-audit --no-fund
-    "$npm_install" --no-save ../simplex-chat-nodejs ../simplex-chat-client/types/typescript
     npx tsc
     npx tsc -p test/tsconfig.json --noEmit
     npm test

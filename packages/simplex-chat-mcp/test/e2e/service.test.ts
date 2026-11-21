@@ -255,17 +255,17 @@ test("the Main group shows every session in one list, the running ones with thei
   await until(() => attached.length === 1)
   const owner = await client.request<OwnerState>("GET", "/link")
   const invitations = joinSessionGroups(alice, ["1 · one", "2 · two"])
-  const working = received(alice.chat, ({chatItem}) => chatItem.meta.itemText === "🟠 1 · one: working\n⚪ Not running: 2 · two")
+  const working = received(alice.chat, ({chatItem}) => chatItem.meta.itemText === "🟢 1 · one: working\n⚪ Not running: 2 · two")
   const mainGroupId = await joinByLink(alice, owner.link!)
   const list = await working
   expect(list.chatInfo).toMatchObject({type: "group", groupInfo: {groupId: mainGroupId}})
   await invitations
   const edited = (text: string): Promise<T.AChatItem> => updated(alice.chat, inGroup(mainGroupId, ({chatItem}) => chatItem.meta.itemId === list.chatItem.meta.itemId && chatItem.meta.itemText === text))
-  const waiting = edited("🔵 1 · one: waiting for you, 1 approval\n⚪ Not running: 2 · two")
+  const waiting = edited("🟠 1 · one: waiting for you, 1 approval\n⚪ Not running: 2 · two")
   writeFileSync(record, JSON.stringify({status: "waiting", waitingFor: "permission prompt"}))
   await client.request("POST", "/permission", {id: one, requestId: "abcde", toolName: "Bash", description: "Run shell command", inputPreview: "ls"})
   await waiting
-  const idle = edited("🟢 1 · one: idle\n⚪ Not running: 2 · two")
+  const idle = edited("🔴 1 · one: idle\n⚪ Not running: 2 · two")
   writeFileSync(record, JSON.stringify({status: "idle"}))
   await idle
   const ended = edited("⚪ Not running: 2 · two, 1 · one")
@@ -495,7 +495,16 @@ test("the hooks post a prompt typed in the terminal as User, also the session's 
   await react("🚀")
   await until(() => attached.length === 6)
   expect((attached[5] as {prompt: {text: string}}).prompt.text).toBe("> Tests pass.\n🚀")
-  const bash = {tool_name: "Bash", tool_input: {command: "npm test", description: "Run the tests"}, tool_use_id: "toolu_1"}
+  const lintItem = (attached[2] as {prompt: {item: number}}).prompt.item
+  await alice.chat.apiUpdateChatItem(T.ChatType.Group, groupId, lint.chatItem.meta.itemId, {type: "text", text: "Run the linter twice"})
+  await until(() => attached.length === 7)
+  expect(attached[6]).toEqual({prompt: {text: "Run the linter twice", from: "Alice", item: lintItem, edited: true}})
+  const [live] = await alice.chat.apiSendMessages([T.ChatType.Group, groupId], [{msgContent: {type: "text", text: "Run"}, mentions: {}}], true)
+  await alice.chat.apiUpdateChatItem(T.ChatType.Group, groupId, live.chatItem.meta.itemId, {type: "text", text: "Run the"}, true)
+  await alice.chat.apiUpdateChatItem(T.ChatType.Group, groupId, live.chatItem.meta.itemId, {type: "text", text: "Run the build"}, false)
+  await until(() => attached.length === 8)
+  expect(attached[7]).toEqual({prompt: {text: "Run the build", from: "Alice", item: expect.any(Number)}})
+  const bash ={tool_name: "Bash", tool_input: {command: "npm test", description: "Run the tests"}, tool_use_id: "toolu_1"}
   const started = received(alice.chat, message("!- 💻 Run the tests!", "Claude"))
   await hook({hook_event_name: "PreToolUse", cwd: "/p", ...bash})
   expect((await started).chatItem.meta.itemLive).toBe(true)
@@ -505,7 +514,7 @@ test("the hooks post a prompt typed in the terminal as User, also the session's 
   expect([finalized.itemLive, finalized.itemEdited]).toEqual([false, false])
 
   const [summarize] = await alice.chat.apiSendTextMessage([T.ChatType.Group, groupId], "Summarize")
-  await until(() => attached.length === 7)
+  await until(() => attached.length === 9)
   const opened = received(alice.chat, message("", "Claude", summarize.chatItem.meta.itemId))
   await hook({hook_event_name: "UserPromptSubmit", prompt: "Summarize"})
   expect((await opened).chatItem.meta.itemLive).toBe(true)

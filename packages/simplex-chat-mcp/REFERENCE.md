@@ -299,7 +299,7 @@ Six tools:
 |---|---|
 | `connect` | Joins a contact, bot, business, group or channel by a link or a SimpleX name, as the agent's profile or incognito. Returns the chat, its profile, welcome message, the commands a bot advertises, and the messages so far. |
 | `send` | Sends a message, with a file of this computer when asked, and returns every message received in that chat after it, until none arrives for `idle` seconds (30 by default). A directory bot's search results arrive this way. |
-| `receive` | Returns the chat's unread messages and those that arrive while it waits, waiting for one when asked. |
+| `receive` | Returns the chat's unread messages and those that arrive while it waits, waiting for one when asked. With `history`, it also returns up to 50 messages before the new ones, the agent's own included. |
 | `download` | Downloads the file of a received message to the data folder and returns its full path. |
 | `list` | Lists the agent's chats with unread counts and `approved: true` for chats approved for all messages, and its actions without a result. |
 | `leave` | Deletes a contact, or leaves a group, business chat or channel, and deletes the chat; the contact or the members are notified. |
@@ -348,6 +348,8 @@ answer each one in that chat, and call receive again after every answer, until I
 
 Approve the connection in "My Agent", and accept the request in the app if it asks. On the card of the agent's first answer, tap `all`: its later answers to you need no approval.
 
+In a new Claude Code session, give the same prompt again. The agent can recall the conversation: `receive` with `history` returns up to 50 earlier messages of that chat, its own answers included.
+
 ## Several agents
 
 Each agent is its own process, with its own data folder, port, agent control chat and Claude Code server:
@@ -367,6 +369,7 @@ Add an entry with the URL `http://127.0.0.1:5226/mcp` and the header `Authorizat
 |---|---|
 | The server was not running when Claude Code started | Start the server, then run `/mcp reconnect all` in Claude Code (2.1.284 or later). |
 | The server restarted while Claude Code was running | Claude Code reconnects up to five times within about 30 seconds. After that, in an interactive session, run `/mcp reconnect all`; `claude -p` runs and Agent SDK sessions keep retrying for about half an hour. Open calls fail, and pending actions are cancelled; the agent's repeated call creates a new request. |
+| The Claude Code session ended or was compacted | Ask the agent to recall the chat: `receive` with `history` returns up to 50 messages before the new ones, the agent's own included. |
 | A second server was started on the same data folder | It exits with `Another server uses <folder> (PID N). If no server runs, remove <folder>/lock.` |
 | Every owner left the agent control chat or was removed | `connect`, `send`, `download` and `leave` fail. Without `--owners`, the server logs `No owners in the agent control chat.` and prints a new link; join with it. With an `--owners` list, the agent posts and the server logs `No owners remain: restart the server with --reset-owners --owners`. |
 | The agent was removed from the agent control chat, the chat was deleted, or the agent lost its owner role | `connect`, `send`, `download` and `leave` fail, and the server logs `The agent lost its control chat. Restart the server with --reset-owners.` |
@@ -576,18 +579,20 @@ Only you see this link: it never enters Claude's context or tool results. Scan t
 After the first owner joins, Claude posts the list of sessions in the Main group, after its greeting:
 
 ```
-🟠 3 · simplex-chat: working
-🔵 6 · website: waiting for you, 2 approvals
-🔵 7 · docs: waiting for you in Claude Code
-🟢 8 · app: idle
+🟢 3 · simplex-chat: working
+🟠 6 · website: waiting for you, 2 approvals
+⛔️ 7 · docs: waiting for you in Claude Code
+🔴 8 · app: idle
+⚙️ 9 · api: working in the background
 ⚪ Not running: 5 · bio, 4 · notes, 2 · openclaw, 1 · first
 ```
 
-- A session is running while its Claude Code runs, or while cards wait for a decision in its group. Each running session has a line, by number:
-  - `🔵 N · NAME: waiting for you, K approvals`: K cards wait in the session's group. A tool-use card counts only while Claude Code shows its permission dialog, or while Claude Code's state can't be read.
-  - `🔵 N · NAME: waiting for you in Claude Code`: Claude Code waits for an answer in its own window, such as a dialog.
-  - `🟠 N · NAME: working`: Claude Code works on a turn, or a subagent works for it.
-  - `🟢 N · NAME: idle`: Claude Code waits for the next prompt, also while a background command runs.
+- A session is running while its Claude Code runs, or while cards wait for a decision in its group. Each running session has a line, by number. Green is the state to keep:
+  - `🟢 N · NAME: working`: Claude Code works on a turn, or a subagent works for it.
+  - `🟠 N · NAME: waiting for you, K approvals`: K cards wait in the session's group, for a decision in the chat. A tool-use card counts only while Claude Code shows its permission dialog, or while Claude Code's state can't be read.
+  - `⛔️ N · NAME: waiting for you in Claude Code`: Claude Code waits for an answer in its own window, such as a dialog, which the chat can't give.
+  - `⚙️ N · NAME: working in the background`: Claude Code waits for the next prompt while a background command runs. The command's end starts a turn without a prompt.
+  - `🔴 N · NAME: idle`: Claude Code waits for the next prompt, and nothing runs.
   - `▶️ N · NAME: running`: Claude Code's state can't be read.
 - The last line names every other session of the data folder, newest first. Without any session, the list is `No sessions.`
 - The states are Claude Code's own: the plugin reads them from Claude Code's record of its process, `sessions/PID.json` in `CLAUDE_CONFIG_DIR` or `~/.claude`.
@@ -638,6 +643,8 @@ With the channel, a message from a member of a session's group, other than `User
 - A file attached to the message is saved without approval to `_sessions/<session ID>/files/group/` in the data folder, and Claude gets its path. When the file fails or doesn't arrive within 10 minutes, Claude replies `The file of this message was not received: ERROR`, and the session gets the text.
 - When you reply to a message, Claude gets your text after a line `> ` with the quoted message: its type when it is not a text (link, image, video, voice, file, report or chat), such as `> image: IMG_2041.jpg` or `> video`, and the first line of its text, up to 200 characters, with `…` when it continues. The quote of Claude's answer leaves out its line with the turn's usage. Claude also gets the quoted message's ID and sender, and takes that line as data, not as your prompt.
 - When you react to a message, Claude gets your emoji as a reply to that message: after its quote line, with its ID and sender, as for a reply. Claude gets the eight emoji of the apps: 👍 👎 😀 😂 😢 ❤ 🚀 ✅. To any other reaction, Claude replies `This reaction is not supported.` once for each member and message, and the session gets nothing. A video or a voice message without text is quoted with its file name, such as `> video: ride.mp4`. Claude answers as for any prompt, with the reacted message in place of the prompt. A reaction is never a command or an approval: a 👍 on a card leaves the card pending. Reactions of observers, a removed reaction and reactions in the Main group reach no session. Owners turn reactions off with the group's preference "Message reactions".
+- When you edit a prompt, Claude gets the new text as a new prompt with the same ID, marked edited, and takes it in place of the earlier text. Only an edit of one of the newest 100 prompts since the service started reaches Claude, and only when its text changed. An edit into a `/` command reaches neither the commands nor Claude.
+- A message you type in live mode reaches Claude once, when you send it, not at its first words. When your app closes before you send it, Claude gets its last text before your next message.
 - Prompts reach the session in the order they were sent. A later prompt waits for the file of an earlier one.
 - Every message from a member who can send is a prompt, including one that starts with `!`. Only one-line messages that start with `/` are not prompts, see below. Claude Code runs no command from a prompt. Claude gets the text, and runs shell commands only as tool use, such as Bash, under Claude Code's permissions, see [Tool use](#tool-use).
 - A one-line message that starts with `/` is a command of the group, such as `/approve 5` or `/list`. From an admin or owner, an unknown command gets `Unknown command.` From a moderator, member or author, any such message gets `Only admins and owners of this group can send / commands.`, and it reaches neither the commands nor Claude.
@@ -662,11 +669,11 @@ With the channel, a message from a member of a session's group, other than `User
 - When Claude Code summarises the session's conversation, Claude posts one line without a quote, once the summary has replaced the conversation. A summary made by Claude Code at the context limit or in an idle session gets `⚙️ Context summarised automatically: 968K → 35K tokens`, and one after `/compact` or "Summarize from here" gets `⚙️ Context summarised on request: 399K → 25K tokens`. The numbers are the size of the context before and after the summary. The summary of a subagent's conversation posts nothing. Claude Code writes a summary made during a turn to the transcript with its next request, so the line can follow such a summary by a few seconds. It writes the summary of `/compact` and of an idle session at once.
 - Claude posts one line for each step of its work, a tool use of the main conversation, when the step starts:
   - Bash: `💻 ` and the command's description, or its first line without one, such as `💻 Run the tests`;
-  - Read, Edit and Write: `📖 Read PATH`, `✏️ Edit PATH` and `📝 Write PATH`, with PATH relative to the session's folder when it is inside it;
+  - Read, Edit, NotebookEdit and Write: `📖 Read PATH`, `✏️ Edit PATH` for a file or a notebook, and `✏️ Write PATH`, with PATH relative to the session's folder when it is inside it;
   - Grep and Glob: `🔍 Grep PATTERN in PATH` and `🔍 Glob PATTERN in PATH`, with PATH as for Read, and without ` in PATH` when the search has no path;
-  - WebFetch and WebSearch: `🌐 Fetch URL` and `🔎 Search QUERY`;
+  - WebFetch and WebSearch: `🌐 Fetch URL` and `🔍 Search QUERY`;
   - Agent: `🤖 Agent: ` and the agent's description;
-  - another tool: `🔧 TOOL`, and `: ` with the first of its description, query, URL, file path, path, pattern and command that is not blank.
+  - another tool: `🔧 TOOL`, and `: ` with the first of its description, query, URL, file path, path, pattern and command that is not blank. A tool whose name has `search`, such as ToolSearch or an MCP tool `search_threads`, gets `🔍` in place of `🔧`.
 
   The line is a live message while the step runs. The whole line is in small print. When the step ends, Claude completes it with the step's duration, after ❌ for a failure or ⏹️ for an interruption, such as `!- 💻 Run the tests 2.0 s!`. A `!` in the text of a step is shown as `ǃ`, which looks the same, because `!` would end the small print. Claude Code reports the end of a command or an agent run in the background when it is started, so its line is completed with `(in background)`, such as `!- 💻 Run the tests (in background)!`; its completion is posted later as the line of its notification. The completed line has no edited mark. A step refused at approval has no end; its line is completed without an outcome when the turn ends, when a prompt starts the next turn, or when the session ends. A line still live 23 hours after its start is completed without an outcome, because SimpleX allows edits of a message for 24 hours; the step's later end is posted as a new line. The text of a step is cut at 200 characters. Tool uses of subagents and of this plugin get no line.
 - Claude marks the turn's empty live message, its texts and answers, the lines of steps, and the lines of Claude Code's own prompts, of summaries of the context and of model and effort switches as silent. The answer's last message, with its line, is important, so a turn alerts once, at its end. When the line completes a live message or the turn's empty live message, the edit marks it important; SimpleX apps alert for such an edit once they support it. A SimpleX app that supports silent messages shows them without an alert; other apps alert for them as for any message.
