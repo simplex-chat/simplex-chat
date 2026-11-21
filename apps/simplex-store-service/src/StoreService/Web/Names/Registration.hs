@@ -9,7 +9,6 @@ module StoreService.Web.Names.Registration
     retryHandler,
     registrationChanged,
     registrationRefusal,
-    retryRefusal,
     heldFor,
     versionParam,
   )
@@ -138,7 +137,6 @@ retryRefusal :: RetryRefusal -> NameRefusal
 retryRefusal = \case
   RFNotLapsed -> NRBadRequest
   RFLinksRefused -> NRBadRequest
-  RFUnread -> NRProviderUnavailable
 
 -- | The registration's current view, for a request that lost the race to change it.
 registrationChanged :: OrdersEnv -> RegistrationId -> IO NameRefusal

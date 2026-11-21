@@ -20,7 +20,6 @@ module StoreService.Names.Worker
     Retried (..),
     RetryRefusal (..),
     retryRegistration,
-    checkFailedOrder,
     Closed (..),
     CloseRefusal (..),
     closeRegistration,
@@ -547,7 +546,7 @@ waitUntil r = WaitUntil (nrVersion r)
 -- | What /retry did: the version it wrote, the order changed since it was read, or a refusal.
 data Retried = RTWritten Int64 | RTChanged | RTRefused RetryRefusal
 
-data RetryRefusal = RFNotLapsed | RFLinksRefused | RFUnread
+data RetryRefusal = RFNotLapsed | RFLinksRefused
   deriving (Eq, Show)
 
 -- | /retry, in the caller's turn of the order's name: an order whose commitment lapsed unsigned is queued to be committed again,
@@ -565,14 +564,6 @@ retryRegistration OrdersEnv {oeStore, oeNow} r@NameRegistration {nrId = Registra
           Right v -> pure $ RTWritten v
           Left WRChanged -> pure RTChanged
           Left (WRRefused refusal) -> E.throwIO $ BrokenInvariant $ "registration " <> rid <> " is live while committed, yet its requeue was refused: " <> tshow refusal
-
-checkFailedOrder :: OrdersEnv -> NameRegistration -> IO (Either Retried ())
-checkFailedOrder oe r =
-  confirmLanded oe r >>= \case
-    LRegistered v -> pure $ Left $ RTWritten v
-    LChanged -> pure $ Left RTChanged
-    LUnread -> pure $ Left $ RTRefused RFUnread
-    LNotLanded -> pure $ Right ()
 
 failedAttempt :: Worker -> UTCTime -> NameRegistration -> RegistrationTx -> AttemptStage -> Maybe RevertReason -> IO (Maybe Int64, Next) -> IO (Maybe Int64, Next)
 failedAttempt w@Worker {wkOrders = OrdersEnv {oeStore, oeConfig = NamesConfig {nMaxDryRunFailures, nMaxSentFailures}}} now r@NameRegistration {nrId} tx stage reason underCap = do

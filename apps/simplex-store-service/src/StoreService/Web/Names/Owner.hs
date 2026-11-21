@@ -26,7 +26,6 @@ import Simplex.Messaging.Crypto.Secp256k1 (RecoverableSignature)
 import Simplex.Messaging.Eth.Address (Address)
 import Simplex.Messaging.Parsers (defaultJSON)
 import Simplex.Messaging.SimplexName (LabelHash (..))
-import Simplex.Messaging.Util (tshow)
 import StoreService.Config (NamesConfig (..))
 import StoreService.Names.Chain (Hex32 (..))
 import StoreService.Names.Orders
@@ -37,12 +36,11 @@ import StoreService.Names.Store (BalanceUse (..), NamePhase (..), NameRegistrati
 import StoreService.Names.Turns (withRegistrationTurns)
 import StoreService.Names.View (NameRefusal (..), registrationView)
 import StoreService.Web.Http (Respond, jsonResponse, maxBodyBytes, nameBodyBytes, readBoundedBody)
-import StoreService.Names.Worker (Retried (..), checkFailedOrder)
 import StoreService.Orders (cancelNameInvoices)
 import StoreService.Providers (Provider)
 import StoreService.Waiters (Waiters)
 import StoreService.Web.Names.Orders (Answer (..), answerNow, refusalAnswer, refused, sendAnswer)
-import StoreService.Web.Names.Registration (registrationChanged, registrationRefusal, retryRefusal)
+import StoreService.Web.Names.Registration (registrationChanged, registrationRefusal)
 
 data FindRequest = FindRequest
   { frOwner :: Address,
@@ -133,11 +131,11 @@ retargetHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oeNow, o
       | Left refusal <- checkTimestamp now timestamp = refuse refusal
       | not (movable now r) = refuse $ ORBadRequest "the order is not movable"
       | namePhase nrPhase == PFailed =
-          checkFailedOrder env r >>= \case
-            Right () -> moveChecked now r fields reveal
-            Left (RTWritten v) -> written env rid v . refusalAnswer <$> registrationChanged env rid
-            Left RTChanged -> changed
-            Left (RTRefused refusal) -> refusalAnswer (retryRefusal refusal) <$ logNote (what <> " refused: " <> tshow refusal)
+          confirmLanded env r >>= \case
+            LNotLanded -> moveChecked now r fields reveal
+            LRegistered v -> written env rid v . refusalAnswer <$> registrationChanged env rid
+            LChanged -> changed
+            LUnread -> refusalAnswer NRProviderUnavailable <$ logNote (what <> " refused: the register check's chain read failed")
       | otherwise = moveChecked now r fields reveal
     moveChecked now r@NameRegistration {nrOwner, nrMoves, nrYears} fields@OrderFields {ofLabelHash, ofDuration} reveal
       | nrMoves >= nMaxOrderMoves oeConfig = refusalAnswer <$> registrationRefusal env NRMoveLimit rid
