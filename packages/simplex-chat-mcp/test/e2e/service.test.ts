@@ -238,7 +238,7 @@ test("an owner joins the Main group and each session's group, whose profile sets
   expect(await mainProfile()).toMatchObject(edited)
 }, 600_000)
 
-test("the Main group shows every session in one list, the running ones with their states from Claude Code's record and the cards, edited in place, and /sessions replies with its text", async () => {
+test("the Main group shows a message of each running session with its state from Claude Code's record and the cards, and a summary, edited in place, and /sessions replies with the list of sessions", async () => {
   const root = join(dir, "list", "root")
   await prepareRoot(smpServer.address, root)
   const alice = await personIn("list", "Alice")
@@ -255,20 +255,22 @@ test("the Main group shows every session in one list, the running ones with thei
   await until(() => attached.length === 1)
   const owner = await client.request<OwnerState>("GET", "/link")
   const invitations = joinSessionGroups(alice, ["1 · one", "2 · two"])
-  const working = received(alice.chat, ({chatItem}) => chatItem.meta.itemText === "🟢 1 · one: working\n⚪ Not running: 2 · two")
+  const working = received(alice.chat, ({chatItem}) => chatItem.meta.itemText === "🟢 1 · one: working")
+  const summarized = received(alice.chat, ({chatItem}) => chatItem.meta.itemText === "1 session 🟢")
   const mainGroupId = await joinByLink(alice, owner.link!)
-  const list = await working
-  expect(list.chatInfo).toMatchObject({type: "group", groupInfo: {groupId: mainGroupId}})
+  const message = await working
+  const summary = await summarized
+  expect(message.chatInfo).toMatchObject({type: "group", groupInfo: {groupId: mainGroupId}})
   await invitations
-  const edited = (text: string): Promise<T.AChatItem> => updated(alice.chat, inGroup(mainGroupId, ({chatItem}) => chatItem.meta.itemId === list.chatItem.meta.itemId && chatItem.meta.itemText === text))
-  const waiting = edited("🟠 1 · one: waiting for you, 1 approval\n⚪ Not running: 2 · two")
+  const edited = (item: T.AChatItem, text: string): Promise<T.AChatItem> => updated(alice.chat, inGroup(mainGroupId, ({chatItem}) => chatItem.meta.itemId === item.chatItem.meta.itemId && chatItem.meta.itemText === text))
+  const waiting = Promise.all([edited(message, "🟠 1 · one: waiting for you, 1 approval"), edited(summary, "1 session 🟠")])
   writeFileSync(record, JSON.stringify({status: "waiting", waitingFor: "permission prompt"}))
   await client.request("POST", "/permission", {id: one, requestId: "abcde", toolName: "Bash", description: "Run shell command", inputPreview: "ls"})
   await waiting
-  const idle = edited("🔴 1 · one: idle\n⚪ Not running: 2 · two")
+  const idle = edited(message, "🔴 1 · one: idle")
   writeFileSync(record, JSON.stringify({status: "idle"}))
   await idle
-  const ended = edited("⚪ Not running: 2 · two, 1 · one")
+  const ended = Promise.all([edited(message, "⚪ 1 · one: stopped"), edited(summary, "1 session ⚪")])
   controller.abort()
   await ended
   const replied = received(alice.chat, sessionsReply(mainGroupId, "⚪ Not running: 2 · two, 1 · one"))

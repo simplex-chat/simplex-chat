@@ -153,8 +153,8 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
   }
 
   // spec: spec/api.md#session-group-profile
-  async describe(shortDescr: string): Promise<void> {
-    await this.updateProfile(profile => (profile.shortDescr === shortDescr ? undefined : {...profile, shortDescr}))
+  async describe(shortDescr: string, description?: string): Promise<void> {
+    await this.updateProfile(profile => (profile.shortDescr === shortDescr && profile.description === description ? undefined : {...profile, shortDescr, description}))
   }
 
   // spec: spec/api.md#group-profile

@@ -731,9 +731,23 @@ Posts:
 |---|---|---|
 | the first owner joined | `I'm Claude. Each Claude Code session has its own group, and you get its invitation here. /sessions lists the sessions; /join N joins the group of session N.` | [`greeting`, `MainGroup.ownerJoined`](../src/main-group.ts) |
 | each `joinedGroupMember` or `connectedToGroupMember` of a human who is found among the members read again. For the first owner, it is posted after the greeting | `NAME joined. They can join the group of any Claude Code session here, prompt Claude and approve its actions.` | [`joinRights`, `MainGroup.handleEvent`](../src/main-group.ts) |
-| the first render of the list of sessions while the group has an owner, so after the greeting; a list 23 hours old, or one whose edit the core refuses with `invalidChatItemUpdate` or `chatItemNotFound` | the list of sessions, below, with `priority: -1`. A new list replaces an old one, which is then deleted for everyone; a refused deletion is logged as `old list of sessions: ERROR` | [`MainGroup.showList`, `replaceList`, `postList`](../src/main-group.ts) |
+| a running session without a message on the board, while the group has an owner, so after the greeting; a message whose edit the core refuses with `invalidChatItemUpdate` or `chatItemNotFound` | the session's message of the board, below, with `priority: -1` | [`MainGroup.showBoard`, `renderEntry`, `postEntry`](../src/main-group.ts) |
+| the first render with a session message while the group has an owner; a summary whose edit the core refuses | the summary of the board, below, with `priority: -1` | [`MainGroup.showBoard`, `renderSummary`](../src/main-group.ts) |
 
-<a id="list-of-sessions"></a>The list of sessions ([`Hub.sessionsText`, `Hub.showSessions`, `Session.stateLine`](../src/hub.ts)):
+<a id="session-board"></a>The board of sessions ([`Hub.showSessions`, `Session.boardSession`, `stoppedState`](../src/hub.ts), [`MainGroup.showBoard`, `BoardSession`, `summaryText`, `boardAge`](../src/main-group.ts)):
+
+- Each running session has one message, and each session that stopped keeps its message until the message is 23 hours old, when it is deleted for everyone. A session is running while it has a line in the list of sessions below.
+- The message of a session has these lines, the unknown ones left out:
+  - the state: the session's line of the list of sessions below, or `⚪ N · NAME: stopped`;
+  - the title: `*TITLE*`, Claude Code's title of the conversation, when it differs from NAME; without the bold marks when it has `*`;
+  - the details: the short description of the session group ([4.3](#43-session-groups));
+  - the recap: the description of the session group.
+- The summary is `N sessions` and the state emoji of each session with a message, by number, separated by spaces, as `4 sessions 🟠 🟢 ⛔️ ⚪`; `1 session` for one; `No sessions.` without a message.
+- Every 2 s, and once at the service's stop before the wait for the cancelled cards, the hub renders the board by session number. A message or the summary is edited only when its text differs from its text last posted or edited; the first render after a start edits each once. A message whose edit is refused is deleted for everyone and, for a running session, posted again; a refused summary is deleted and posted again. The summary is never posted again for another reason, so posts that follow it, such as a new session's message, an invitation or a reply, leave it above them. A refused deletion is logged as `old message of the board: ERROR` or `old summary of the board: ERROR`.
+- The items and their post times are kept in the Main group's custom data as `simplexMcpBoard`. When they can't be saved, the messages posted in that render are deleted for everyone, the failure is logged as `board of sessions: ERROR`, and the next render tries again. A message of a session the hub does not have is deleted.
+- The list of the earlier version, `simplexMcpList`, is deleted for everyone at the first render, and its key is removed with the save of the board.
+
+<a id="list-of-sessions"></a>The list of sessions, the reply to `/sessions` ([`Hub.sessionsText`, `Session.stateLine`](../src/hub.ts)):
 
 | Part | Text | Condition |
 |---|---|---|
@@ -749,9 +763,6 @@ Posts:
 - A session is attached while its session server is attached and the service does not stop. Its state is the `status` of Claude Code's record of the session server's parent, `CLAUDE_CONFIG_DIR` or `~/.claude`, then `sessions/PID.json`, read every 2 s for each attached session. A record that does not parse keeps the last state read; a path that is not a regular file, such as a FIFO, gives no state. A render waits at most 1 s for a read; a read that takes longer keeps the last state, and no new read of that record starts until it ends ([`Session.readRecord`, `recordStatus`](../src/hub.ts)). A status other than `busy`, `waiting`, `idle` and `shell` is unknown.
 - The lines of running sessions come by number, then the line of the other sessions. Lines are joined by line breaks.
 - The text fits one message, by `fitsMessage`. The lines of running sessions are kept whole. The last line keeps the most names, newest first, for which the text, with `, K older sessions` for the K left out (`1 older session` for one), still fits. When no name fits, it is `⚪ Not running: K older sessions`.
-- Every 2 s, and once at the service's stop before the wait for the cancelled cards, the hub renders the text, and Claude edits the list when the text differs from the text last posted or edited. The first render after a start always edits.
-- A text that the core refuses as too large, `errorStore largeMsg`, as with more lines of running sessions than one message holds, is logged as `list of sessions: ERROR` once, and not sent again until the text changes; the list keeps its last text.
-- When the item of a new list can't be saved in the Main group's custom data, the new list is deleted for everyone, the old one stays, and the next render tries again.
 
 The session groups stay as they are when the membership or a role in the Main group is changed, and when the Main group is replaced by a reset of the owners. Members invited through the old Main group keep their roles in the session groups, with the rights of those roles ([`MainGroup.handleEvent`, `replace`](../src/main-group.ts), [`Session.approves`](../src/hub.ts)).
 
@@ -765,7 +776,7 @@ The session groups stay as they are when the membership or a role in the Main gr
 | history | on |
 | direct messages | on for the role `owner` |
 | command menu | `/sessions` "Claude Code sessions"<br>`/join` "Join the group of a session", params `<session number>` |
-| custom data | `{simplexMcpMain: true}`, and `simplexMcpList: {item, at}`, the list of sessions and the time it was posted |
+| custom data | `{simplexMcpMain: true}`, and `simplexMcpBoard: {summary?: {item, at}, sessions: [{session, item, at}]}`, the items of the board and the times they were posted |
 
 Claude updates only the display name and the command menu, starting each time from the group's current profile in the chat database. So the short description, the description and the preferences that owners set stay ([`MainGroup.load`](../src/main-group.ts), [`updateGroupProfile`, `changeGroupProfile`](../src/control.ts)).
 
@@ -925,8 +936,8 @@ at = performance.timeOrigin of the hook process; absent: Infinity for an answer'
 | Field | Value |
 |---|---|
 | display name | `N · NAME`, folded to a valid display name, renamed at a new title |
-| description | `The Claude Code session N. Members send it prompts; admins and owners also send the group's commands and approve tool use.`, set only when the group is created |
-| short description | `MODEL · effort LEVEL`, the parts known so far |
+| description | the latest recap of Claude Code, none before the first; a group is created without one |
+| short description | `ACCOUNT · MODEL · effort LEVEL · goal STATE`, the parts known so far: ACCOUNT the email of Claude Code's OAuth account, STATE `set`, `met` or `failed`, none without a goal |
 | history | on |
 | direct messages | off |
 | command menu | as in [2.5](#25-group-profile) |
@@ -934,7 +945,9 @@ at = performance.timeOrigin of the hook process; absent: Infinity for an answer'
 | members | `Claude`, the members invited through the Main group, the members others added directly, `User` |
 | peer types | `Claude` `agent`; `User` `human`, set at each service start ([`User.open`](../src/user.ts), [`updatedUser`](../src/core.ts)). A member who joined while `User` had `agent`, as in 0.3.0, gets `human` with `User`'s next post in the group, with the event `updated profile`: the core sends a member's profile to a group before the next message after a change of its name, full name, short description, description, image or peer type |
 
-Claude makes the profile updates one at a time. It starts each from the group's current profile in the chat database and changes only the display name, the short description or the command menu. So a rename and a model change that overlap both stay.
+Claude makes the profile updates one at a time. It starts each from the group's current profile in the chat database and changes only the display name, the short description, the description or the command menu. So a rename and a model change that overlap both stay. The short description and the description are set together, when the model, the effort level, the account, the goal state or the recap changes; so a description an owner wrote, or the one of an earlier version, is replaced then.
+
+The hub reads the account, the goal state, the recap and the title of each attached session every 2 s, with its record, by `AccountReader` and `TranscriptReader` ([architecture](architecture.md#claude-code-transcriptreader)), and keeps them in the session's `session.json` ([`Session.readClaudeCode`](../src/hub.ts)).
 
 The hub takes the model and the effort level of a `/turn` only when its `at` is not older than the `at` of the value it took last. It keeps the two times apart, one for the model and one for the effort level. The model of a `/title` comes with the `at` of its SessionStart hook, as described in [4.6](#46-socket-protocol). A request without `at` counts as the current time. So when a Stop request that waited for its transcript entry arrives after a later model switch, the model of the switch stays ([`Session.turn`, `newer`](../src/hub.ts)). The model of a request with an answer that equals the shown model without a final `[1m]` counts as the shown model, because the transcript names the 1M context variant without that suffix ([`Session.turn`](../src/hub.ts)).
 

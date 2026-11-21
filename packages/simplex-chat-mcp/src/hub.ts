@@ -4,12 +4,13 @@ import {dirname, join} from "path"
 import {CC, CEvt, ChatEvent, T} from "@simplex-chat/types"
 import {api} from "simplex-chat"
 import {Action, Actions, HostTexts, Mode, isDecided, maxPending} from "./actions"
+import {AccountReader, TranscriptReader, TranscriptState} from "./claude-code"
 import {Config} from "./config"
 import {Control, canSend, controlCommands, controlDataOf, createGroup, isControlEvent, isGroupMessage, parseCommand, rightsText, safeName, sessionApproverRoles} from "./control"
 import {openCore} from "./core"
 import {SessionFile, hubFolder, readSessionFile, sessionFolder, writeSessionFile} from "./files"
 import {chatErrorOf, errorText, log, logError, oneLine} from "./log"
-import {MainGroup, SessionGroups, createMainGroup, findMainGroup} from "./main-group"
+import {BoardSession, MainGroup, SessionGroups, createMainGroup, findMainGroup} from "./main-group"
 import {Changes, ChatItemsWatch, ReplyTo, ToolCall, duration, getChat, isLive, nextChange, quoteLine, storedName, toReplyTo, validName} from "./messages"
 import {AttachLine, LimitWindow, Limits, OwnerState, PermissionRequest, ResetReply, Step, TextBatch, TurnRequest} from "./protocol"
 import {waitForCancelledCards} from "./serve"
@@ -72,6 +73,8 @@ const claudeStates = new Map<string, [string, string]>([
 ])
 // spec: spec/api.md#list-of-sessions
 const unknownState: [string, string] = ["▶️", "running"]
+// spec: spec/api.md#session-board
+const stoppedState: [string, string] = ["⚪", "stopped"]
 
 // spec: spec/architecture.md#hub-hubtexts
 export const hubTexts: HostTexts = {lost: "The group of this session is lost. Start a new Claude Code session.", stopping: "The SimpleX service is stopping.", pending: `${maxPending} actions are pending; wait for the approvers' decisions.`}
@@ -86,6 +89,11 @@ interface SessionGroupData {
   session: number
   pending?: {connId: number; at: number}[]
   mode?: Mode
+}
+
+// spec: spec/architecture.md#hub-session-readclaudecode
+interface ClaudeState extends TranscriptState {
+  account?: string
 }
 
 interface Part {
@@ -174,6 +182,9 @@ export class Session {
   private liveOrder: Promise<void> = Promise.resolve()
   private claudeStatus?: string
   private recordRead?: Promise<void>
+  private claude: ClaudeState
+  private readonly accountReader: AccountReader
+  private readonly transcriptReader: TranscriptReader
 
   constructor(
     private readonly hub: Hub,
@@ -183,10 +194,14 @@ export class Session {
     private data: SessionGroupData,
   ) {
     const {chat, profile: user, root} = hub
-    const {number, name, model, effort, hostDeclined = false} = stored
+    const {number, name, model, effort, hostDeclined = false, account, transcript, goal, recap, title} = stored
     this.number = number
     this.name = name
     this.description = {model, effort}
+    this.transcript = transcript
+    this.claude = {account, goal, recap, title}
+    this.accountReader = new AccountReader(account)
+    this.transcriptReader = new TranscriptReader(transcript, {goal, recap, title})
     this.hostDeclined = hostDeclined
     this.actions = new Actions(data.mode ?? "requests", hub.expireHours, controlDataOf(group.customData)?.nextAction ?? firstAction, {
       refusal: action => this.control.refusal(action),
@@ -243,32 +258,80 @@ export class Session {
 
   // spec: spec/architecture.md#hub-session-readrecord
   async readRecord(): Promise<void> {
-    if (!this.attached || this.record === undefined) {
+    if (!this.attached) {
       this.claudeStatus = undefined
       return
     }
-    this.recordRead ??= recordStatus(this.record)
-      .then(
-        status => {
-          this.claudeStatus = status
-        },
-        error => {
-          if ((error as NodeJS.ErrnoException).code === "ENOENT") this.claudeStatus = undefined
-        },
-      )
+    this.recordRead ??= Promise.all([this.readStatus(), this.readClaudeCode()])
+      .then(() => undefined)
       .finally(() => (this.recordRead = undefined))
     await withinTime(this.recordRead, recordReadMs)
   }
 
   // spec: spec/architecture.md#hub-session-readrecord
+  private async readStatus(): Promise<void> {
+    if (this.record === undefined) {
+      this.claudeStatus = undefined
+      return
+    }
+    await recordStatus(this.record).then(
+      status => {
+        this.claudeStatus = status
+      },
+      error => {
+        if ((error as NodeJS.ErrnoException).code === "ENOENT") this.claudeStatus = undefined
+      },
+    )
+  }
+
+  // spec: spec/architecture.md#hub-session-readclaudecode
+  private async readClaudeCode(): Promise<void> {
+    const account = this.globalConfig === undefined ? this.claude.account : await this.accountReader.read(this.globalConfig)
+    const {goal, recap, title} = this.transcript === undefined ? this.claude : await this.transcriptReader.read(this.transcript)
+    const {claude} = this
+    if (account === claude.account && goal === claude.goal && recap === claude.recap && title === claude.title) return
+    const read = {account, goal, recap, title}
+    this.claude = read
+    this.store({...read, transcript: this.transcript})
+    await this.describe().catch(error => logError(`description of session ${this.number}`, error))
+  }
+
+  // spec: spec/architecture.md#hub-session-readrecord
   stateLine(): string | undefined {
+    const state = this.state()
+    return state === undefined ? undefined : `${state[0]} ${this.displayName}: ${state[1]}`
+  }
+
+  // spec: spec/api.md#session-board
+  boardSession(): BoardSession {
+    const state = this.state()
+    const [emoji, text] = state ?? stoppedState
+    const {title, recap} = this.claude
+    const titled = title === undefined || title === this.name ? undefined : title.includes("*") ? title : `*${title}*`
+    const lines = [`${emoji} ${this.displayName}: ${text}`, titled, this.details() || undefined, recap]
+    return {session: this.number, running: state !== undefined, emoji, text: lines.filter(line => line !== undefined).join("\n")}
+  }
+
+  // spec: spec/architecture.md#hub-session-readrecord
+  private state(): [string, string] | undefined {
     const state = claudeStates.get(this.claudeStatus ?? "")
     const dialog = state === undefined || this.claudeStatus === "waiting"
     const cards = this.actions.pending().filter(({tool, interrupted}) => !interrupted && (dialog || tool !== "permission")).length
-    if (cards > 0) return `🟠 ${this.displayName}: waiting for you, ${cards} approval${cards === 1 ? "" : "s"}`
+    if (cards > 0) return ["🟠", `waiting for you, ${cards} approval${cards === 1 ? "" : "s"}`]
     if (!this.attached) return undefined
-    const [emoji, text] = state ?? unknownState
-    return `${emoji} ${this.displayName}: ${text}`
+    return state ?? unknownState
+  }
+
+  // spec: spec/api.md#session-group-profile
+  private details(): string {
+    const {model, effort} = this.description
+    const {account, goal} = this.claude
+    return [account, model, effort === undefined ? undefined : `effort ${effort}`, goal === undefined ? undefined : `goal ${goal}`].filter(part => part !== undefined).join(" · ")
+  }
+
+  // spec: spec/api.md#session-group-profile
+  private describe(): Promise<void> {
+    return this.control.describe(this.details(), this.claude.recap)
   }
 
   // spec: spec/architecture.md#hub-session-readrecord
@@ -431,8 +494,7 @@ export class Session {
       await userPost
       if (answer !== undefined && end !== undefined) await this.answer(answer, quoted, at ?? Date.now(), (await streamed) === true, end)
     } finally {
-      const {model: shown, effort: level} = this.description
-      if (described) await this.control.describe([shown, level === undefined ? undefined : `effort ${level}`].filter(part => part !== undefined).join(" · "))
+      if (described) await this.describe()
     }
   }
 
@@ -1104,8 +1166,8 @@ export class Hub implements SessionGroups {
   // spec: spec/architecture.md#hub-hub-showsessions
   showSessions(): Promise<void> {
     this.listing ??= Promise.all([...this.sessions.values()].map(session => session.readRecord()))
-      .then(() => this.main.showList(this.sessionsText()))
-      .catch(error => logError("list of sessions", error))
+      .then(() => this.main.showBoard([...this.sessions.values()].sort((a, b) => a.number - b.number).map(session => session.boardSession())))
+      .catch(error => logError("board of sessions", error))
       .finally(() => (this.listing = undefined))
     return this.listing
   }
@@ -1166,7 +1228,6 @@ export class Hub implements SessionGroups {
     const group = await createGroup(this.chat, this.profile.userId, {
       displayName,
       fullName: "",
-      description: `The Claude Code session ${number}. Members send it prompts; admins and owners also send the group's commands and approve tool use.`,
       groupPreferences: {history: {enable: T.GroupFeatureEnabled.On}, directMessages: {enable: T.GroupFeatureEnabled.Off}, commands: controlCommands},
       chatLayout: T.ChatLayout.Terminal,
     }, {[sessionKey]: {session: number}})
