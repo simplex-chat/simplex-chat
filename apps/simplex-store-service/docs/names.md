@@ -545,7 +545,7 @@ sequenceDiagram
   end
 ```
 
-- Only a failed or lapsed unsigned order paid by invoice is closed ([`Names/Worker.hs`](../src/StoreService/Names/Worker.hs) `closeRegistration`, `refundTaken`, [`Names/Orders.hs`](../src/StoreService/Names/Orders.hs) `checkLanded`).
+- Only a failed or lapsed unsigned order paid by invoice is closed ([`Names/Worker.hs`](../src/StoreService/Names/Worker.hs) `closeRegistration`, `refundTaken`, [`Names/Orders.hs`](../src/StoreService/Names/Orders.hs) `checkLanded`). An order with a recorded dispute or refund of its payment is refused, writing nothing, as nothing is refunded (`reversalRecorded` in [`Names/Store.hs`](../src/StoreService/Names/Store.hs)).
 - The answer names the time of the failure or the lapse, as failed orders were refunded at the provider by hand before `//close` existed ([`Service.hs:463-485`](../src/StoreService/Service.hs#L463-L485), [`README.md:1491-1536`](../README.md#L1491-L1536)).
 
 ---

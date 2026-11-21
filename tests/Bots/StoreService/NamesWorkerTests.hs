@@ -32,7 +32,7 @@ import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime, diffUTCTime)
 import Simplex.Chat.Badges.Ledger (addMonths)
 import Data.Time.Clock.POSIX (posixSecondsToUTCTime)
 import Data.Word (Word8, Word64)
-import Simplex.Chat.PaymentService.Types (InvoiceId (..), InvoiceStatus (..))
+import Simplex.Chat.PaymentService.Types (CurrencyAmount (..), InvoiceId (..), InvoiceStatus (..))
 import Simplex.Messaging.Agent.Store.Common (withTransaction)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Crypto (keccak256)
@@ -56,6 +56,7 @@ import StoreService.Names.Sender
 import StoreService.Names.Store
 import StoreService.Names.Turns (labelTurnCount, turnsCount, withLabelTurn)
 import StoreService.Names.Worker
+import StoreService.Providers (Reversal (..))
 import StoreService.Store.Invoices (InvoiceRow (..), getInvoice)
 import StoreService.Web.Http (createLimit, holdMicros, readLimit)
 import StoreService.Web.Names (Route (..), namesApp)
@@ -153,6 +154,7 @@ workerTests = describe "StoreService names: worker" $ do
     it "refuses an order changed during its chain check as changed, writing nothing" testCloseLostRace
     it "refunds the whole balance, its earlier credits included" testCloseWhole
     it "rolls back the taken write and the credit when the refund is refused" testCloseRollback
+    it "refuses to close an order with a recorded reversal of its payment, changing nothing" testCloseReversed
 
 -- fixtures
 
@@ -1517,6 +1519,14 @@ testCloseRollback :: IO ()
 testCloseRollback = withWorker $ \W {wCtx = ctx} -> do
   r <- paidIn ctx aliceOrder $ \o -> (failedPhase o) {nrPrice = 0}
   closeOf ctx r `shouldReturn` CLRefused CFBalanceChanged
+  stored ctx r `shouldReturn` r
+  figuresOf ctx r `shouldReturn` Nothing
+
+testCloseReversed :: IO ()
+testCloseReversed = withWorker $ \W {wCtx = ctx@Ctx {cStore}} -> do
+  r <- paidIn ctx aliceOrder failedPhase
+  withTransaction cStore (\db -> recordReversal db "evt_1" (fromJust $ paymentInvoice $ nrPayment r) (RVDispute "dp_1" $ CurrencyAmount 10000)) `shouldReturn` Just 10000
+  closeOf ctx r `shouldReturn` CLRefused CFReversed
   stored ctx r `shouldReturn` r
   figuresOf ctx r `shouldReturn` Nothing
 

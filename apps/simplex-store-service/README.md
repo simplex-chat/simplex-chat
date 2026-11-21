@@ -1879,8 +1879,9 @@ does a move, as the balance no longer holds the price; `//balance` finds nothing
 wallet can order the name again.
 
 The command records nothing for an order that is neither failed nor lapsed unsigned, or was paid with
-a prepaid code, whose code is released when the month from its reservation ends; for a failed chain read;
-and for an order or a balance that changed meanwhile. Run the command again after the last two.
+a prepaid code, whose code is released when the month from its reservation ends; for an order with a
+recorded dispute or refund of its payment, as nothing is refunded; for a failed chain read; and for an
+order or a balance that changed meanwhile. Run the command again after the last two.
 
 ## Balances and failed orders in the group
 

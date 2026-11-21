@@ -587,7 +587,7 @@ reasonText = \case
 data Closed = CLRegistered RegistrationId | CLRefunded UTCTime RefundRecord | CLRefused CloseRefusal
   deriving (Eq, Show)
 
-data CloseRefusal = CFNoOrder | CFNotFailedPaid | CFMonthEnded | CFUnread | CFChanged | CFBalanceChanged
+data CloseRefusal = CFNoOrder | CFNotFailedPaid | CFMonthEnded | CFUnread | CFChanged | CFBalanceChanged | CFReversed
   deriving (Eq, Show)
 
 newtype CloseRefused = CloseRefused CloseRefusal
@@ -624,10 +624,13 @@ refundTaken st turns now r@NameRegistration {nrId} =
   withBalanceTurn turns nrId $ either (\(CloseRefused refusal) -> Left refusal) id <$> E.try (withTransaction st refund)
   where
     refund db =
-      creditedTaken now r db >>= \case
-        Left WRChanged -> pure $ Left CFChanged
-        Left (WRRefused refusal) -> E.throwIO $ BrokenInvariant $ "the taken write of order " <> ridText <> " was refused as " <> tshow refusal <> ", while a write that closes an order is refused only as changed"
-        Right _ -> Right <$> refundAll db
+      reversalRecorded db nrId >>= \case
+        True -> pure $ Left CFReversed
+        False ->
+          creditedTaken now r db >>= \case
+            Left WRChanged -> pure $ Left CFChanged
+            Left (WRRefused refusal) -> E.throwIO $ BrokenInvariant $ "the taken write of order " <> ridText <> " was refused as " <> tshow refusal <> ", while a write that closes an order is refused only as changed"
+            Right _ -> Right <$> refundAll db
     refundAll db = do
       cents <- maybe 0 blAmount <$> getBalance db nrId
       refundBalance db nrId cents now >>= \case

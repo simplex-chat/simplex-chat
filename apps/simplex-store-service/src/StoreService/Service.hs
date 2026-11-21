@@ -468,6 +468,7 @@ closeOrderCmd source turns (tld, minPriceCentsPerYear, chain) ChatController {ch
       CFUnread -> "the chain could not be read; " <> again
       CFChanged -> "the order of " <> ref <> " changed meanwhile; " <> again
       CFBalanceChanged -> "the balance of the order of " <> ref <> " changed meanwhile; " <> again
+      CFReversed -> "a reversal of the payment of the order of " <> ref <> " was recorded, so nothing is refunded"
     again = "run " <> spelledCmd source "close" <> " again"
 
 -- | The balance's order and the money paid for it.
