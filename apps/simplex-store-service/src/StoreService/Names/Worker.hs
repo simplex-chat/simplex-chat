@@ -58,7 +58,7 @@ import StoreService.Names.Chain (Block (..), BlockTag (..), ChainError (..), TxH
 import StoreService.Names.Codes (releaseCode)
 import StoreService.Names.Contracts (CommitmentAges (..), Contracts (..), acceptedTerms, commitmentAges, commitmentTime, communityName, confirmedTag, controllerAvailable, forgetNamePolicy, namePolicy)
 import StoreService.Names.Orders (Landing (..), OrderRefusal, OrdersEnv (..), WriteRefusal (..), checkLanded, confirmLanded, versionWritten)
-import StoreService.Names.Phases (RegistrationId (..), awaitChange, awaitPublish, publish)
+import StoreService.Names.Phases (RegistrationId (..), awaitChange, publish)
 import StoreService.Names.Registration (TermsAcceptance (..), acceptCalldata, commitCalldata, policyDomain, registerWithCreditCalldata, sponsorDomain, termsKind, verifyAcceptance, verifyRegisterIntent)
 import StoreService.Names.Reveal (intentOf)
 import StoreService.Names.Revert (RevertName (..), RevertReason (..))
@@ -184,27 +184,28 @@ work w rid@(RegistrationId ridText) = follow w rid Nothing `catchOwn'` \e -> log
 follow :: Worker -> RegistrationId -> Maybe FailureStreak -> IO ()
 follow w@Worker {wkOrders = OrdersEnv {oeStore, oePhases, oeNow, oeReport}} rid@(RegistrationId ridText) streak =
   ((Right <$> stepRegistration w rid) `catchOwn'` (pure . Left)) >>= \case
-    Left e -> waitAgain logError Nothing (SFException $ tshow e)
+    Left e -> waitAgain logError (SFException $ tshow e) $ \_ -> threadDelay $ ceiling $ retryInterval * 1000000
     Right next -> case next of
       Done -> pure ()
       Again -> follow w rid Nothing
-      WaitUntil v t -> waitFor (Just v) t >> follow w rid Nothing
-      Retry v reason -> waitAgain logWarn (Just v) reason
-      Stalled v reason -> waitAgain logError (Just v) reason
+      WaitUntil v t -> waitFor v t >> follow w rid Nothing
+      Retry v reason -> waitAgain logWarn reason $ waitFor v
+      Stalled v reason -> waitAgain logError reason $ waitFor v
       Await p -> awaitOutcome outcomeWait p >> follow w rid Nothing
   where
-    waitAgain logAt v reason = do
+    waitAgain :: (Text -> IO ()) -> StepFailure -> (UTCTime -> IO ()) -> IO ()
+    waitAgain logAt reason wait = do
       now <- oeNow
       let (streak', logged, reported) = failureNotice now streak reason
           waits = "names worker: registration " <> ridText <> " waits: " <> stepFailureText reason
       when logged $ logAt waits
       when reported $ oeReport $ waits <> ", failing for 10 minutes"
-      waitFor v $ addUTCTime retryInterval now
+      wait $ addUTCTime retryInterval now
       follow w rid $ Just streak'
     waitFor v t = do
       now <- oeNow
       let micros = max 0 $ ceiling $ min maxWait (diffUTCTime t now) * 1000000
-      void $ maybe (awaitPublish oePhases rid) (awaitChange oePhases rid (registrationVersion oeStore rid)) v micros
+      void $ awaitChange oePhases rid (registrationVersion oeStore rid) v micros
     stepFailureText = \case
       SFChain e -> tshow e
       SFSend e -> tshow e

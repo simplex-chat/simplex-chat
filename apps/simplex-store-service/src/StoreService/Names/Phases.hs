@@ -1,7 +1,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 
-module StoreService.Names.Phases (Phases, RegistrationId (..), newPhases, publish, awaitChange, awaitPublish, phasesCount, phasesWaiting) where
+module StoreService.Names.Phases (Phases, RegistrationId (..), newPhases, publish, awaitChange, phasesCount, phasesWaiting) where
 
 import Control.Concurrent.STM
 import Control.Exception (bracket)
@@ -60,16 +60,8 @@ awaitChange phases rid readVersion seen micros =
     atomically $ modifyTVar' wVersion (max current)
     if current /= seen
       then pure True
-      else awaitAbove wVersion seen micros
-
-awaitPublish :: Phases -> RegistrationId -> Int -> IO Bool
-awaitPublish phases rid micros =
-  bracket (atomically $ subscribe phases rid >>= \watch@Watch {wVersion} -> (,) watch <$> readTVar wVersion) (const . atomically $ release phases rid) $ \(Watch {wVersion}, seen) ->
-    awaitAbove wVersion seen micros
-
-awaitAbove :: TVar Int64 -> Int64 -> Int -> IO Bool
-awaitAbove wVersion seen micros = do
-  timer <- registerDelay micros
-  atomically $
-    (readTVar wVersion >>= \v -> if v > seen then pure True else retry)
-      `orElse` (False <$ (readTVar timer >>= check))
+      else do
+        timer <- registerDelay micros
+        atomically $
+          (readTVar wVersion >>= \v -> if v > seen then pure True else retry)
+            `orElse` (False <$ (readTVar timer >>= check))
