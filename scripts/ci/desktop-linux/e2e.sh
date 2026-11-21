@@ -86,6 +86,10 @@ pane_right_offset=390
 peer_online=15
 delivery_wait=90
 connect_wait=180
+keyring_state=$UI_STATE-keyring
+keyring_out=$out/keyring
+keyring_bus=
+first_start_wait=180
 
 eventually() {
   local secs=$1 deadline
@@ -239,6 +243,76 @@ notify_messages() {
   "$ui" shot chat-read
   check "reading the chat in the app withdraws its notification" eventually 20 closed_after "third message"
 }
+
+keyring_ui() {
+  DBUS_SESSION_BUS_ADDRESS=$keyring_bus UI_STATE=$keyring_state UI_OUT=$keyring_out "$ui" "$@"
+}
+
+keyring_record() {
+  sed -n "s/^$1=//p" "$keyring_state/config/simplex/settings.properties" 2> /dev/null
+}
+
+passphrase_in_plaintext() {
+  local data
+  data=$(keyring_record EncryptedDBPassphrase)
+  [ -n "$data" ] && [ "$data" = "$(keyring_record InitializationVectorDBPassphrase)" ]
+}
+
+passphrase_in_ciphertext() {
+  local data
+  data=$(keyring_record EncryptedDBPassphrase)
+  [ -n "$data" ] && [ "$data" != "$(keyring_record InitializationVectorDBPassphrase)" ]
+}
+
+secret_service_on() {
+  DBUS_SESSION_BUS_ADDRESS=$1 gdbus call --session --dest org.freedesktop.DBus --object-path /org/freedesktop/DBus \
+    --method org.freedesktop.DBus.NameHasOwner org.freedesktop.secrets | grep -q true
+}
+
+key_stored_on() {
+  DBUS_SESSION_BUS_ADDRESS=$1 secret-tool lookup application chat.simplex.app alias databasePassword | grep -q .
+}
+
+keyring_absent_then_migrated() {
+  local daemon_pid
+  mkdir -p "$keyring_state/run" "$keyring_state/keyring-data" "$keyring_out"
+  chmod 700 "$keyring_state/run"
+  printf '%s\n' '<busconfig>' '<type>session</type>' '<listen>unix:tmpdir=/tmp</listen>' \
+    '<policy context="default">' '<allow send_destination="*" eavesdrop="true"/>' '<allow eavesdrop="true"/>' '<allow own="*"/>' '</policy>' \
+    '</busconfig>' > "$keyring_state/bus.conf"
+  dbus-daemon --config-file="$keyring_state/bus.conf" --fork --print-address=3 --print-pid=4 \
+    3> "$keyring_state/bus-address" 4> "$keyring_state/bus.pid"
+  keyring_bus=$(cat "$keyring_state/bus-address")
+
+  keyring_ui start "$target" DeveloperTools=true LogLevel=DEBUG || true
+  check "the app starts without a Secret Service" keyring_ui wait "Create your profile" "$first_start_wait"
+  keyring_ui shot keyring-absent || true
+  check "without a Secret Service, settings hold the database passphrase unencrypted" passphrase_in_plaintext
+  check "the app logs that the Secret Service is absent" grep -q "Secret Service is absent" "$keyring_out/app.log"
+  keyring_ui stop || true
+
+  printf '\n' | env DBUS_SESSION_BUS_ADDRESS="$keyring_bus" XDG_RUNTIME_DIR="$keyring_state/run" XDG_DATA_HOME="$keyring_state/keyring-data" \
+    gnome-keyring-daemon --foreground --unlock --components=secrets > "$keyring_out/gnome-keyring.log" 2>&1 &
+  daemon_pid=$!
+  check "gnome-keyring provides the Secret Service" eventually 20 secret_service_on "$keyring_bus"
+
+  keyring_ui start "$target" || true
+  check "the next start with a Secret Service tells that the passphrase is protected" keyring_ui wait "Passphrase protected" 60
+  keyring_ui shot keyring-migrated || true
+  check "after the migration, settings hold the database passphrase only as ciphertext" passphrase_in_ciphertext
+  check "after the migration, the keyring holds the key of the database passphrase" key_stored_on "$keyring_bus"
+  keyring_ui click-text "OK" 10 || true
+  check "the database opens with the migrated passphrase" keyring_ui wait "Create your profile" 30
+  keyring_ui shot keyring-migrated-opened || true
+  keyring_ui stop || true
+
+  kill "$daemon_pid" || true
+  kill "$(cat "$keyring_state/bus.pid")" || true
+}
+
+if [ "$kind" != flatpak ]; then
+  keyring_absent_then_migrated
+fi
 
 eval "$(printf '\n' | gnome-keyring-daemon --unlock --components=secrets)"
 export GNOME_KEYRING_CONTROL

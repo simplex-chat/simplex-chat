@@ -525,6 +525,7 @@ Checks per cell (`e2e.sh`):
 | GL renderer | "OpenGL renderer:" in `app.log` |
 | no `gsettings` process | `pgrep -x gsettings` |
 | keyring | `settings.properties` holds the passphrase as ciphertext; `secret-tool lookup` finds the key; config directory mode 700 |
+| keyring absent, then migration (deb, AppImage) | first start on a session bus without service activation: passphrase record with `data == iv`, "Secret Service is absent" in `app.log`; next start with gnome-keyring on that bus: "Passphrase protected", ciphertext record, `secret-tool lookup` finds the key, the database opens |
 | tray | `RegisterStatusNotifierItem` in the services log |
 | dark mode | light window above 0.6 mean brightness; 0.25 darker after `color-scheme prefer-dark`; back within 0.05 after `default` |
 | tray activation | window hidden after a close request, shown after `Activate` |
@@ -533,7 +534,7 @@ Checks per cell (`e2e.sh`):
 Later iterations:
 
 - call notifications;
-- keyring absent and migration;
+- keyring absent and migration in the Flatpak;
 - clipboard image paste, file drop, video, voice;
 - second-launch links, crash recovery, dead keys and non-Latin layouts;
 - Debian, Fedora and Arch containers.
