@@ -112,7 +112,7 @@ stateDiagram-v2
 ### 2.1 One rule per failure reason
 - **names:** four places decide. Errors without a revert, and every commit error, are retried every 15 s with no end (`Names/Worker.hs:178, 237-243, 300, 315`). A register or relay revert goes to `judge`, which fails the order at once for any reason it does not name (`:336-362`). The service's own signature check fails it the same way (`:305-309`). 5 sends of one kind fail it (`:449-458`).
 - **Final:** one function classifies every reason. Permanent is what the operators cannot fix without the owner signing again or without a code change; every code error is permanent.
-  - Temporary: retried, logged, reported to the group once, after 10 minutes of consecutive failures of its class, temporary or operator, until the month from payment ends (1.3). An exception in a step is an operator failure; the step is run again in 15 s or once the order is changed.
+  - Temporary: retried, logged, reported to the group once, with the latest reason, after 10 minutes of consecutive failures of any classes, temporary and operator mixed, until the month from payment ends (1.3); progress ends the streak. An exception in a step is an operator failure; the step is run again in 15 s or once the order is changed.
   - Permanent: retried up to its cap (2.5), then the order fails, keeps its commit and register transactions, and is logged as an error, reported to the group and counted in Prometheus by reason.
   - Waiting for the owner: what the owner's page resolves (2.2).
 - **Why:** retrying a lost cause hides it; failing a fixable one loses a sale.

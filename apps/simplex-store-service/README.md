@@ -1480,7 +1480,7 @@ at its dry run, last: <reason>`, and support closes it with `//close` (see
 [Closing a failed order](#closing-a-failed-order)). A move starts both counts again. Any other
 failure after which the order's phase is kept, such as a node that does not answer, funds, the fee
 cap, the allowance or an exception in its step, is posted in the group after 10 minutes of
-consecutive failures of its class, temporary or for the operator; an exception is logged at error
+consecutive failures, of any classes, with the latest reason; an exception is logged at error
 at its first time in a row, and its step is run again in 15 seconds, or once the order is changed.
 `CommitmentNotFound` commits the order again, and `CommitmentTooOld` past the commitment's lapse
 commits it again, posted in the group as `names worker: registration <id> is committed again: its

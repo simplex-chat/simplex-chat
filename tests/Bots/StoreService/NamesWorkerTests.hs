@@ -107,7 +107,7 @@ workerTests = describe "StoreService names: worker" $ do
     it "waits a second when the dry run reverts CommitmentTooNew" testCommitmentTooNew
     it "commits again with its reveal when the dry run reverts CommitmentNotFound, and when it reverts CommitmentTooOld past the lapse, reporting that" testCommitAgain
     it "classes the contracts' errors as permanent, or temporary with an operator alert" testRevertClasses
-    it "reports failures of one class, temporary or for the operator, an exception for the operator, once they have failed in a row for 10 minutes, and a permanent one never" testFailureNotice
+    it "reports failures in a row, of any classes mixed, once they have failed for 10 minutes, with the latest reason, and a permanent one never" testFailureNotice
     it "ends a register mined with status 0 taken while the name is not available, releasing a code" testMinedRevertTaken
     it "sends a register again only once none can still be mined, and writes registered when the owner holds the name" testFailedOnlySettled
   describe "terms acceptance" $ do
@@ -997,7 +997,8 @@ testFailureNotice = do
   notices (zip everyRetry $ cycle [SFAllowanceUsedUp, thrown]) `shouldBe` (replicate 45 True, atTenMinutes)
   notices (map (,timedOut) everyRetry) `shouldBe` (True : replicate 44 False, atTenMinutes)
   notices (map (,labelTooLong) everyRetry) `shouldBe` (True : replicate 44 False, replicate 45 False)
-  failureNotice (sinceStart 600) (Just (timedOut, t0, False)) SFAllowanceUsedUp `shouldBe` ((SFAllowanceUsedUp, sinceStart 600, False), True, False)
+  notices (zip everyRetry $ cycle [timedOut, SFAllowanceUsedUp]) `shouldBe` (replicate 45 True, atTenMinutes)
+  failureNotice (sinceStart 600) (Just (timedOut, t0, False)) SFAllowanceUsedUp `shouldBe` ((SFAllowanceUsedUp, t0, True), True, True)
   failureNotice (sinceStart 900) (Just (thrown, t0, True)) SFAllowanceUsedUp `shouldBe` ((SFAllowanceUsedUp, t0, True), True, False)
   where
     t0 = posixSecondsToUTCTime 1795000000

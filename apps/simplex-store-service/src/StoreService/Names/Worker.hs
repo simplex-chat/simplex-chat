@@ -136,9 +136,7 @@ type FailureStreak = (StepFailure, UTCTime, Bool)
 failureNotice :: UTCTime -> Maybe FailureStreak -> StepFailure -> (FailureStreak, Bool, Bool)
 failureNotice now streak reason = ((reason, since, reported || report), logged, report)
   where
-    (since, reported) = case streak of
-      Just (lastReason, at, done) | stepClass lastReason == stepClass reason -> (at, done)
-      _ -> (now, False)
+    (since, reported) = maybe (now, False) (\(_, at, done) -> (at, done)) streak
     logged = maybe True (\(lastReason, _, _) -> lastReason /= reason) streak
     report = not reported && stepClass reason /= FCPermanent && diffUTCTime now since >= reportAfter
 
