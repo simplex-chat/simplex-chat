@@ -165,7 +165,7 @@ nameInvoiceHandler env@OrdersEnv {oeStore} http client cfg providers waiters bod
               Right () -> pure $ Right ()
               Left BIRLiveOrder -> pure $ Left OROrderExists
               Left BIRBalanceChanged -> E.throwIO $ BrokenInvariant "an order holding no balance was refused at a balance"
-      runExceptT (mapM_ ExceptT checks >> ExceptT (orderReveal (oeConfig env) (oeContracts env) now orOwner fields reveal)) >>= \case
+      runExceptT (mapM_ ExceptT checks >> ExceptT (orderReveal (oeConfig env) (oeContracts env) now orOwner fields Nothing reveal)) >>= \case
         Left refusal -> refuse refusal
         Right rv -> createAtProvider env http client cfg providers waiters what now InvoicedOrder {ivRequest = req, ivReveal = rv, ivOrderHash = hash, ivHolders = [], ivMethod = method, ivPrice = price, ivAmount = price, ivInsert = insert}
 
@@ -286,7 +286,7 @@ codeOrderHandler env@OrdersEnv {oeStore, oeConfig, oeContracts} providers waiter
               checkTerms oeConfig oeContracts fields,
               checkNameFree oeContracts oeStore Nothing ofLabelHash
             ]
-      runExceptT (mapM_ ExceptT checks >> ExceptT (orderReveal oeConfig oeContracts now orOwner fields reveal)) >>= \case
+      runExceptT (mapM_ ExceptT checks >> ExceptT (orderReveal oeConfig oeContracts now orOwner fields Nothing reveal)) >>= \case
         Left refusal -> refuse refusal
         Right rv -> do
           rid <- newRegistrationId
@@ -321,7 +321,7 @@ spendHandler env@OrdersEnv {oeStore, oeConfig, oeContracts} http cfg providers w
       holder <- ExceptT $ checkSpendBalance oeStore spend now
       ExceptT $ checkNameFree oeContracts oeStore Nothing ofLabelHash
       ExceptT $ checkPrice oeContracts ofLength years spPrice
-      (holder,) <$> ExceptT (orderReveal oeConfig oeContracts now orOwner fields reveal)
+      (holder,) <$> ExceptT (orderReveal oeConfig oeContracts now orOwner fields Nothing reveal)
     place now order@OrderRequest {orOwner, orFields} hash spend@Spend {spPrice, spBalance, spMethod} (holder, rv) = case spMethod of
       Nothing -> do
         rid <- newRegistrationId

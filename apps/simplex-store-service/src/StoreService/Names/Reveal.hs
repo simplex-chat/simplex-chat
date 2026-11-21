@@ -69,9 +69,9 @@ checkReveal cfg ct now owner fields earliest request = runExceptT $ do
   ExceptT $ checkAcceptance cfg ct owner fields rv
   pure rv
 
-orderReveal :: NamesConfig -> Contracts -> UTCTime -> Address -> OrderFields -> RevealRequest -> IO (Either OrderRefusal NameReveal)
-orderReveal cfg ct now owner fields request =
-  checkReveal cfg ct now owner fields now request <&> (>>= \rv -> maybe (Right rv) (Left . ORInvalidLink) (refusedLink rv))
+orderReveal :: NamesConfig -> Contracts -> UTCTime -> Address -> OrderFields -> Maybe NameReveal -> RevealRequest -> IO (Either OrderRefusal NameReveal)
+orderReveal cfg ct now owner fields accepted request =
+  checkReveal cfg ct now owner fields now request <&> (>>= \rv -> maybe (Right rv) (Left . ORInvalidLink) (refusedLink accepted rv))
 
 committedReveal :: NamesConfig -> Address -> OrderFields -> RevealRequest -> Either OrderRefusal NameReveal
 committedReveal cfg@NamesConfig {nTLD} owner OrderFields {ofLabelHash, ofLength, ofDuration, ofCommitment} RevealRequest {label = sentLabel, signature, secret, records = RevealLinks {contact, channel}, nonce, deadline, acceptance} = do
@@ -108,9 +108,9 @@ checkAcceptance NamesConfig {nChain = ChainConfig {cChainId}} ct owner OrderFiel
 signatureSeconds :: Integer
 signatureSeconds = 7 * 86400
 
-refusedLink :: NameReveal -> Maybe LinkKind
-refusedLink NameReveal {rvContactLink, rvChannelLink} =
-  listToMaybe [kind | (kind, Just link) <- [(LKContact, rvContactLink), (LKChannel, rvChannelLink)], (fst <$> nameLink link) /= Just kind]
+refusedLink :: Maybe NameReveal -> NameReveal -> Maybe LinkKind
+refusedLink accepted rv =
+  listToMaybe [kind | (kind, link_) <- [(LKContact, rvContactLink), (LKChannel, rvChannelLink)], Just link <- [link_ rv], (link_ =<< accepted) /= Just link, (fst <$> nameLink link) /= Just kind]
 
 intentOf :: NamesConfig -> Address -> Word64 -> NameReveal -> RegisterIntent
 intentOf NamesConfig {nTLD, nChain = ChainConfig {cResolver}} owner duration NameReveal {rvLabel, rvSecret, rvContactLink, rvChannelLink, rvNonce, rvDeadline, rvSignature} =

@@ -136,10 +136,10 @@ retargetHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oeNow, o
             LChanged -> changed
             LUnread -> refusalAnswer NRProviderUnavailable <$ logNote (what <> " refused: the register check's chain read failed")
       | otherwise = moveChecked now r fields reveal
-    moveChecked now r@NameRegistration {nrOwner, nrMoves, nrYears} fields@OrderFields {ofLabelHash, ofDuration} reveal
+    moveChecked now r@NameRegistration {nrOwner, nrMoves, nrYears, nrReveal} fields@OrderFields {ofLabelHash, ofDuration} reveal
       | nrMoves >= nMaxOrderMoves oeConfig = refusalAnswer <$> registrationRefusal env NRMoveLimit rid
       | otherwise =
-          runExceptT (mapM_ ExceptT [checkMoveMeets oeStore r fields now, pure $ checkDuration oeConfig now years ofDuration, checkTerms oeConfig oeContracts fields, checkNameFree oeContracts oeStore (Just rid) ofLabelHash] >> ExceptT (orderReveal oeConfig oeContracts now nrOwner fields reveal)) >>= \case
+          runExceptT (mapM_ ExceptT [checkMoveMeets oeStore r fields now, pure $ checkDuration oeConfig now years ofDuration, checkTerms oeConfig oeContracts fields, checkNameFree oeContracts oeStore (Just rid) ofLabelHash] >> ExceptT (orderReveal oeConfig oeContracts now nrOwner fields nrReveal reveal)) >>= \case
             Left refusal -> refuse refusal
             Right rv -> write now r fields rv
       where

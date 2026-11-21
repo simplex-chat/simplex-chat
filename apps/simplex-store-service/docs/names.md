@@ -435,6 +435,7 @@ Notes:
 - Both names' locks are taken in hash order, and the first order's hash is kept. A paid order moved to a cheaper name is credited the difference; a code order is moved at price 0, its code reserved again ([`Names/Turns.hs:27-32`](../src/StoreService/Names/Turns.hs#L27-L32), [`Web/Names/Owner.hs:128-135`](../src/StoreService/Web/Names/Owner.hs#L128-L135), [`Names/Orders.hs:340-356`](../src/StoreService/Names/Orders.hs#L340-L356), [`Names/Store.hs:787-813`](../src/StoreService/Names/Store.hs#L787-L813)).
 - A paid order's move reads the new name's price as an order does: a price under `min_price_cents_per_year` times the paid years is answered `503 name_check_unavailable`, and nothing is credited ([`Names/Contracts.hs:190-202`](../src/StoreService/Names/Contracts.hs#L190-L202)).
 - The move's reveal is checked last, as an order's (3.1), for the order's owner; a repeat of the order's current fields is answered with its view before any check ([`Web/Names/Owner.hs`](../src/StoreService/Web/Names/Owner.hs) `moveChecked`).
+- A link equal to the order's stored link of its kind is accepted as stored, without the link check; a stored link is parsed nowhere else ([`Names/Reveal.hs`](../src/StoreService/Names/Reveal.hs) `refusedLink`).
 
 ---
 

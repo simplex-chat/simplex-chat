@@ -40,7 +40,7 @@ import Control.Arrow ((&&&))
 import Control.Concurrent.Async (async, wait)
 import Control.Concurrent.MVar (newEmptyMVar, putMVar, takeMVar)
 import Control.Concurrent.STM (atomically, check)
-import Control.Monad (forM, forM_, void)
+import Control.Monad (forM, forM_, void, (<=<))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.KeyMap as KM
 import Data.ByteString (ByteString)
@@ -88,6 +88,7 @@ namesOwnerTests = describe "StoreService names: owner" $ do
   describe "another name" $ do
     it "refuses a move from registered, queued, taken, and committed before its lapse" testMoveRefusedPhases
     it "moves a failed order and a lapsed one, to the same name with other links too, and to no name another paid order holds" testMoveAccepted
+    it "takes a stored link the link check now refuses, as accepted at the order, and refuses another such link" testMoveStoredLink
     it "cancels another buyer's open invoice for the name once a moved order holds it" testMoveHoldsName
     it "answers a body equal to the current fields with the view unchanged, counting no move, whatever its timestamp" testMoveRepeat
     it "moves an order by a body differing only in terms, storing them" testMoveTermsOnly
@@ -400,6 +401,18 @@ testMoveHoldsName = withOwner $ \ctx@Ctx {cStore, cStub} -> do
   calls <- stubCalls cStub
   [r | StubCancel r <- calls] `shouldBe` [aliceRef]
   nrPhase <$> invoiceRegistration ctx aliceInv `shouldReturn` OClosed ICCancelled
+
+testMoveStoredLink :: IO ()
+testMoveStoredLink = withOwner $ \ctx -> do
+  answerFree ctx "alicebakers"
+  let refusedNow = "https://smp6.simplex.im/a#" <> T.replicate 1024 "a"
+  r <- paidIn ctx aliceOrder $ \x -> (failedPhase x) {nrReveal = Just reveal {rvContactLink = Just refusedNow}}
+  to <- moveTo ctx "alicebakers" 10
+  move ctx keyA r to {oContact = Just $ refusedNow <> "b"} `shouldReturn` (400, Just $ KM.fromList [("type", "invalid_link"), ("kind", "contact")])
+  stored ctx r `shouldReturn` r
+  v <- moved ctx keyA r to {oContact = Just refusedNow}
+  fieldsIn v [("phase", phaseValue "queued" []), ("labelHash", labelHashText "alicebakers")]
+  (rvContactLink <=< nrReveal) <$> stored ctx r `shouldReturn` Just refusedNow
 
 testMoveAccepted :: IO ()
 testMoveAccepted = withOwner $ \ctx -> do

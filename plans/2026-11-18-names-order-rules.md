@@ -154,7 +154,7 @@ Contracts: brenzi/simplex-namespace-contract e3ba0a5, `ens-contracts/contracts`.
 
 ### 2.4 Refused links
 - **names:** a link that is not a short link of its key's kind, or a second link for one key, is refused with `invalid_link`, without saying which (`Names/Reveal.hs:107-116, 142-145`; `Names/Links.hs:32-47`); the order fails "not signed in time" at the window's end; the page offers another name, or none of the links.
-- **Final:** links are checked at the order request, before the invoice (1.7), which names the refused link. The commitment fixes the links, so the owner's signing again checks no link.
+- **Final:** links are checked at the order request, before the invoice (1.7), which names the refused link. The commitment fixes the links, so the owner's signing again checks no link. A link accepted at the order is accepted as stored wherever it is read again: a move's link equal to the stored link of its kind is not checked again.
 
 ### 2.5 Counting attempts
 - **names:** only sent transactions count, 5 per kind; a dry run that always reverts is retried forever.
