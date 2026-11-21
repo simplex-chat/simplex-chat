@@ -92,7 +92,7 @@ namesBalancesTests = describe "StoreService names: balances" $ do
     it "changes nothing for an order whose refund support recorded, and for an early fraud warning" testReversalAlertsOnly
     it "cancels a live order of which no register was sent, also after support refunded part of its balance" testReversalCancelsRefunded
     it "cancels a live order of which no register was sent for a dispute of part of its payment" testReversalCancelsPartial
-    it "cancels an order by a signed dispute delivered to the Stripe webhook" testDisputeWebhook
+    it "cancels an order by a signed dispute delivered to the Stripe webhook, and answers 500 to one whose invoice cannot be read, so Stripe delivers it again" testDisputeWebhook
     it "locks an order only at its version" testLockRegistration
 #if defined(dbPostgres)
   describe "two connections" $ do
@@ -613,13 +613,18 @@ testDisputeWebhook = withFakeStripe $ \fake -> do
   real <- stripeProvider (fsConfig fake)
   withOrdersVia (\p -> p {pVerifyWebhook = pVerifyWebhook real}) $ \Ctx {cStore = st, cClient} -> do
     _ <- queuedOrder st "a"
+    _ <- queuedOrder st "b"
     t <- round . utcTimeToPOSIXSeconds <$> getCurrentTime
-    let body = stripeObjectEvent "evt_1" "charge.dispute.created" ["id" J..= ("dp_1" :: Text), "amount" J..= (20000 :: Int), "payment_intent" J..= ("ref-inv-a" :: Text)]
-        deliver = statusOf <$> webRequestBody cClient "POST" "/webhooks/stripe" (stripeSigHeader (sWebhookSecret $ fsConfig fake) t body) body
+    let body ref = stripeObjectEvent "evt_1" "charge.dispute.created" ["id" J..= ("dp_1" :: Text), "amount" J..= (20000 :: Int), "payment_intent" J..= (ref :: Text)]
+        deliverOf ref = statusOf <$> webRequestBody cClient "POST" "/webhooks/stripe" (stripeSigHeader (sWebhookSecret $ fsConfig fake) t (body ref)) (body ref)
+        deliver = deliverOf "ref-inv-a"
     deliver `shouldReturn` 200
     nrPhase <$> reg st "a" `shouldReturn` OClosed ICReversed
     deliver `shouldReturn` 200
     nrVersion <$> reg st "a" `shouldReturn` 3
+    withTransaction st $ \db -> DB.execute db "UPDATE sx_badge_service_invoices SET provider = ? WHERE invoice_id = ?" ("unknown" :: Text, "inv-b" :: Text)
+    deliverOf "ref-inv-b" `shouldReturn` 500
+    nrPhase <$> reg st "b" `shouldReturn` OQueued
 
 testLockRegistration :: IO ()
 testLockRegistration = withServiceStore $ \st -> do

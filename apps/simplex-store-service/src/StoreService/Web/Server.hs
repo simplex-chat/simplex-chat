@@ -494,15 +494,18 @@ webhookHandler env@WebEnv {weStore, weHints} provider route req respond =
           | otherwise -> queue body ref
     onNameOrder :: LB.ByteString -> Text -> (OrdersEnv -> InvoiceRow -> RegistrationId -> IO ()) -> IO ResponseReceived
     onNameOrder body ref act =
-      getInvoiceByProviderRef weStore ref >>= \case
-        Just row@InvoiceRow {irProvider, irProduct = IPName rid}
-          | irProvider == provider, Just oe <- weOrders env ->
-              ((Right <$> act oe row rid) `catchOwn'` (pure . Left)) >>= \case
-                Right () -> logEvent body ("handled for " <> ref) >> respond webhookOk
-                Left e -> do
-                  logError (route <> ": " <> fromMaybe noEventType (eventTypeOf body) <> " of " <> ref <> " failed, so the provider delivers it again: " <> tshow e)
-                  respond webhookFailed
-        _ -> ignore body ("no name order's invoice holds provider_ref " <> ref)
+      ((Right <$> handled) `catchOwn'` (pure . Left)) >>= \case
+        Right (Just ()) -> logEvent body ("handled for " <> ref) >> respond webhookOk
+        Right Nothing -> ignore body ("no name order's invoice holds provider_ref " <> ref)
+        Left e -> do
+          logError (route <> ": " <> fromMaybe noEventType (eventTypeOf body) <> " of " <> ref <> " failed, so the provider delivers it again: " <> tshow e)
+          respond webhookFailed
+      where
+        handled =
+          getInvoiceByProviderRef weStore ref >>= \case
+            Just row@InvoiceRow {irProvider, irProduct = IPName rid}
+              | irProvider == provider, Just oe <- weOrders env -> Just <$> act oe row rid
+            _ -> pure Nothing
     queue :: LB.ByteString -> Text -> IO ResponseReceived
     queue body ref = do
       queued <- queueReadHint weHints ref
