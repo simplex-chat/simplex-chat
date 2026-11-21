@@ -1,6 +1,6 @@
 # Updates that move a message to the bottom
 
-Status: proposed; questions U1-U4 open, and the recommended answers are planned below. Code references: master `20ee7cb14`.
+Status: proposed; questions U1, U2 and U4 open, and the recommended answers are planned below; U3 decided. Code references: master `20ee7cb14`.
 
 The user's words:
 
@@ -98,7 +98,7 @@ store      after updateDirectChatItem' / updateGroupChatItem / updateLocalChatIt
 response   CRChatItemUpdated with the moved item
 ```
 
-- `editable` (Messages.hs:552) and the window of deletion for everyone (`assertDeletable`, Commands.hs:957) are computed from `createdAt` for sent items, so a move keeps the windows of the original send (U3). `mkCIMeta` already has `createdAt`.
+- A move is an edit for the limits of `2026-11-21-edit-window-preference.md`. `setChatItemTs` also sets `item_original_ts = COALESCE(item_original_ts, item_ts)`, and the limits are measured from it, so a move keeps the windows of the original send.
 
 ## 5. Core: receiving
 
@@ -173,8 +173,7 @@ replies to a moved item     resolved by shared_msg_id (:702-748)                
 forward of a moved item     a new item with the content                              none
 expiration by chat TTL      item_ts <= cutoff AND created_at <= cutoff (:3662): kept a TTL after the move   none
 disappearing messages       deleteAt unchanged                                       none
-edit window (sender)        from createdAt (U3)                                      Messages.hs:552, Commands.hs:957
-delete window (receiver)    78 h from item_ts (Subscriber.hs:2159): restarts with the move   none
+edit and delete limits      from item_original_ts, kept across moves                 2026-11-21-edit-window-preference.md
 item info                   "sent at" shows the move time; versions keep the earlier texts and times   none
 terminal view               viewItemUpdate (View.hs:870) as for an edit                none
 ```
@@ -267,8 +266,6 @@ tests/ChatTests/Direct.hs  "update to bottom moves the item below later items"
                              alice and bob: /_get chat @2 count=2 -> "hi", "status 2"
                              recorded: eventsFixture "updates/direct-move", alice with markRead = False
                            "update to bottom without a change of text": not marked edited; last for both
-                           "update to bottom keeps the edit window of the send": created_at of bob's item set 25 h back by SQL
-                             after a move; /_update item -> "cannot update this item"
 tests/ChatTests/Groups.hs  "update to bottom in a group": alice, bob, cath; bob moves his message; last for all three
                            "update to bottom of a blocked member": cath blocks bob; bob's update applied in place for cath
 tests/ChatTests/ChatRelays.hs
@@ -312,6 +309,6 @@ U1. What users see after a move: the item is last, alerts nobody, keeps its read
 
 U2. Who may move: the sender of the message, in every chat type where it may edit; receivers apply a move of a blocked member or of a deleted item in place. Recommended: yes. Alternative: a group preference with a role, as planned for message priority (`2026-10-13-message-priority.md`, section 3).
 
-U3. Edit and delete windows of the sender, with the role-based unlimited edits planned separately: measured from the original send, so that only the role policy permits edits after 24 hours. Recommended: from the original send. Alternative: each move restarts the windows: any member keeps a message editable by moving it within each 24 hours.
+U3. Decided by the user on 2026-11-21: the edit and delete limits and their role exception are a group preference, planned in `2026-11-21-edit-window-preference.md`; the limits are measured from the original send across moves.
 
 U4. "Hidden": the apps have no control for it; the option is documented in the protocol docs and the bot API with its clients. Recommended: yes. Alternative: undocumented, and the TypeScript and Python clients without it.
