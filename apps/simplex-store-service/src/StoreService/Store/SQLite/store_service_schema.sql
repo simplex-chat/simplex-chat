@@ -367,7 +367,7 @@ CREATE UNIQUE INDEX sx_badge_service_idx_name_registrations_live_owner_label ON 
 ) WHERE live = 1;
 CREATE UNIQUE INDEX sx_badge_service_idx_name_registrations_held_label ON sx_badge_service_name_registrations(
   label_hash
-) WHERE CASE WHEN live = 1 THEN phase <> 'unpaid' END;
+) WHERE live = 1 AND phase <> 'unpaid';
 CREATE INDEX sx_badge_service_idx_name_registrations_label_phase ON sx_badge_service_name_registrations(
   label_hash,
   phase
@@ -398,7 +398,10 @@ CREATE INDEX sx_badge_service_idx_name_late_credits_registration ON sx_badge_ser
 CREATE UNIQUE INDEX sx_badge_service_idx_name_record_edits_owner_nonce ON sx_badge_service_name_record_edits(
   owner,
   nonce
-) WHERE state <> 'reverted';
+) WHERE state IN(
+  'pending',
+  'mined'
+);
 CREATE INDEX sx_badge_service_idx_name_record_edits_body_hash ON sx_badge_service_name_record_edits(
   body_hash
 );
