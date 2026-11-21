@@ -12,6 +12,8 @@ import SimpleXChat
 
 struct GroupMemberInfoView: View {
     @EnvironmentObject var chatModel: ChatModel
+    @EnvironmentObject var theme: AppTheme
+    @Environment(\.dismiss) var dismiss: DismissAction
     @State var groupInfo: GroupInfo
     @ObservedObject var chat: Chat
     @ObservedObject var groupMember: GMember
@@ -26,101 +28,9 @@ struct GroupMemberInfoView: View {
     @State private var knownContact: Contact? = nil
     @State private var knownContactConnectionStats: ConnectionStats? = nil
     @State private var newRole: GroupMemberRole = .member
-    @State private var justOpened = true
-
-    var body: some View {
-        if navigation {
-            NavigationView { groupMemberInfoView() }
-        } else {
-            groupMemberInfoView()
-        }
-    }
-
-    private func knownDirectChat(_ contactId: Int64) -> (Chat, Contact)? {
-        if let chat = chatModel.getContactChat(contactId),
-           let contact = chat.chatInfo.contact,
-           contact.directOrUsed == true {
-            return (chat, contact)
-        } else {
-            return nil
-        }
-    }
-
-    private func groupMemberInfoView() -> some View {
-        let member = groupMember.wrapped
-        return GroupMemberInfoLayout(
-            groupInfo: $groupInfo,
-            chat: chat,
-            groupMember: groupMember,
-            scrollToItemId: $scrollToItemId,
-            openedFromSupportChat: openedFromSupportChat,
-            groupRelay: groupRelay,
-            connectionStats: $connectionStats,
-            connectionCode: $connectionCode,
-            connectionLoaded: connectionLoaded,
-            knownContactChat: knownContactChat,
-            knownContact: knownContact,
-            knownContactConnectionStats: $knownContactConnectionStats,
-            newRole: $newRole
-        )
-            .task {
-                if #unavailable(iOS 16) {
-                    // this condition prevents re-setting picker
-                    if !justOpened { return }
-                }
-                justOpened = false
-                newRole = member.memberRole
-                do {
-                    let (_, stats) = try await apiGroupMemberInfo(groupInfo.apiId, member.groupMemberId)
-                    let getCode = (member.memberActive || (groupInfo.useRelays && member.memberCurrent)) && member.memberRole != .relay
-                    let (mem, code) = getCode ? try await apiGetGroupMemberCode(groupInfo.apiId, member.groupMemberId) : (member, nil)
-                    await MainActor.run {
-                        _ = chatModel.upsertGroupMember(groupInfo, mem)
-                        connectionStats = stats
-                        connectionCode = code
-                        connectionLoaded = true
-                    }
-                } catch let error {
-                    await MainActor.run {
-                        connectionLoaded = true
-                    }
-                    logger.error("apiGroupMemberInfo or apiGetGroupMemberCode error: \(responseError(error))")
-                }
-                if let contactId = member.memberContactId, let (contactChat, contact) = knownDirectChat(contactId) {
-                    knownContactChat = contactChat
-                    knownContact = contact
-                    do {
-                        let (stats, _) = try await apiContactInfo(contactChat.chatInfo.apiId)
-                        await MainActor.run {
-                            knownContactConnectionStats = stats
-                        }
-                    } catch let error {
-                        logger.error("apiContactInfo error: \(responseError(error))")
-                    }
-                }
-            }
-    }
-}
-
-struct GroupMemberInfoLayout: View {
-    @EnvironmentObject var chatModel: ChatModel
-    @EnvironmentObject var theme: AppTheme
-    @Environment(\.dismiss) var dismiss: DismissAction
-    @Binding var groupInfo: GroupInfo
-    @ObservedObject var chat: Chat
-    @ObservedObject var groupMember: GMember
-    @Binding var scrollToItemId: ChatItem.ID?
-    var openedFromSupportChat: Bool = false
-    var groupRelay: GroupRelay? = nil
-    @Binding var connectionStats: ConnectionStats?
-    @Binding var connectionCode: String?
-    let connectionLoaded: Bool
-    let knownContactChat: Chat?
-    let knownContact: Contact?
-    @Binding var knownContactConnectionStats: ConnectionStats?
-    @Binding var newRole: GroupMemberRole
     @State private var alert: GroupMemberInfoViewAlert?
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
+    @State private var justOpened = true
     @State private var progressIndicator = false
 
     private var channelMemberSectionHeader: LocalizedStringKey {
@@ -176,6 +86,24 @@ struct GroupMemberInfoLayout: View {
     }
 
     var body: some View {
+        if navigation {
+            NavigationView { groupMemberInfoView() }
+        } else {
+            groupMemberInfoView()
+        }
+    }
+
+    private func knownDirectChat(_ contactId: Int64) -> (Chat, Contact)? {
+        if let chat = chatModel.getContactChat(contactId),
+           let contact = chat.chatInfo.contact,
+           contact.directOrUsed == true {
+            return (chat, contact)
+        } else {
+            return nil
+        }
+    }
+
+    private func groupMemberInfoView() -> some View {
         ZStack {
             let member = groupMember.wrapped
             List {
@@ -362,6 +290,42 @@ struct GroupMemberInfoLayout: View {
                 }
             }
             .navigationBarHidden(true)
+            .task {
+                if #unavailable(iOS 16) {
+                    // this condition prevents re-setting picker
+                    if !justOpened { return }
+                }
+                justOpened = false
+                newRole = member.memberRole
+                do {
+                    let (_, stats) = try await apiGroupMemberInfo(groupInfo.apiId, member.groupMemberId)
+                    let getCode = (member.memberActive || (groupInfo.useRelays && member.memberCurrent)) && member.memberRole != .relay
+                    let (mem, code) = getCode ? try await apiGetGroupMemberCode(groupInfo.apiId, member.groupMemberId) : (member, nil)
+                    await MainActor.run {
+                        _ = chatModel.upsertGroupMember(groupInfo, mem)
+                        connectionStats = stats
+                        connectionCode = code
+                        connectionLoaded = true
+                    }
+                } catch let error {
+                    await MainActor.run {
+                        connectionLoaded = true
+                    }
+                    logger.error("apiGroupMemberInfo or apiGetGroupMemberCode error: \(responseError(error))")
+                }
+                if let contactId = member.memberContactId, let (contactChat, contact) = knownDirectChat(contactId) {
+                    knownContactChat = contactChat
+                    knownContact = contact
+                    do {
+                        let (stats, _) = try await apiContactInfo(contactChat.chatInfo.apiId)
+                        await MainActor.run {
+                            knownContactConnectionStats = stats
+                        }
+                    } catch let error {
+                        logger.error("apiContactInfo error: \(responseError(error))")
+                    }
+                }
+            }
             .onChange(of: newRole) { newRole in
                 if newRole != member.memberRole {
                     alert = .changeMemberRoleAlert(mem: member, role: newRole)
@@ -957,18 +921,11 @@ func blockMemberForAll(_ gInfo: GroupInfo, _ member: GroupMember, _ blocked: Boo
 
 struct GroupMemberInfoView_Previews: PreviewProvider {
     static var previews: some View {
-        GroupMemberInfoLayout(
-            groupInfo: Binding.constant(GroupInfo.sampleData),
+        GroupMemberInfoView(
+            groupInfo: GroupInfo.sampleData,
             chat: Chat.sampleData,
             groupMember: GMember.sampleData,
-            scrollToItemId: Binding.constant(nil),
-            connectionStats: Binding.constant(nil),
-            connectionCode: Binding.constant(nil),
-            connectionLoaded: true,
-            knownContactChat: nil,
-            knownContact: nil,
-            knownContactConnectionStats: Binding.constant(nil),
-            newRole: Binding.constant(.admin)
+            scrollToItemId: Binding.constant(nil)
         )
     }
 }
