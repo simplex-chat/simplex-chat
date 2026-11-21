@@ -782,7 +782,7 @@ data NamesCounts = NamesCounts
     ncHeldCents :: Int,
     ncPendingEdits :: Int,
     ncOldestEdit :: Maybe UTCTime,
-    ncOldestUnregisteredPaid :: [(NamePhase, UTCTime)]
+    ncOldestUnregisteredPaid :: Maybe UTCTime
   }
   deriving (Eq, Show)
 
@@ -2057,21 +2057,14 @@ namesCounts db = do
         (SELECT COALESCE(SUM(amount), 0) FROM @name_balances WHERE reserved_by IS NOT NULL),
         (SELECT COUNT(*) FROM @name_record_edits WHERE state = ?),
         (SELECT MIN(created_at) FROM @name_record_edits WHERE state = ?),
-        (SELECT MIN(paid_at) FROM @name_registrations WHERE phase = ? AND live = 1),
-        (SELECT MIN(paid_at) FROM @name_registrations WHERE phase = ? AND live = 1),
-        (SELECT MIN(paid_at) FROM @name_registrations WHERE phase = ? AND live = 1),
-        (SELECT MIN(paid_at) FROM @name_registrations WHERE phase = ? AND live = 1),
-        (SELECT MIN(paid_at) FROM @name_registrations WHERE phase = ? AND live = 1)
+        (SELECT MIN(paid_at) FROM @name_registrations WHERE phase IN (?,?,?,?,?) AND live = 1)
     |]
     )
-    ((PQueued, PCommitting, PRegistering, PCommitted, TSPending, TSPending, ISOpen, ETPending, ETPending) :. unregisteredPhases)
+    ((PQueued, PCommitting, PRegistering, PCommitted, TSPending, TSPending, ISOpen, ETPending, ETPending) :. (PQueued, PCommitting, PCommitted, PRegistering, PFailed))
     >>= \case
-      [(ncQueueOldestChange, ncPendingTransactions, ncOldestPending, ncOpenInvoices, ncHeldBalances, ncHeldCents, ncPendingEdits, ncOldestEdit) :. (q, cg, cd, rg, f)] ->
-        let ncOldestUnregisteredPaid = [(p, t) | (p, Just t) <- zip [PQueued, PCommitting, PCommitted, PRegistering, PFailed] [q, cg, cd, rg, f]]
-         in pure NamesCounts {ncPhases, ncQueueOldestChange, ncPendingTransactions, ncOldestPending, ncOpenInvoices, ncHeldBalances, ncHeldCents, ncPendingEdits, ncOldestEdit, ncOldestUnregisteredPaid}
+      [(ncQueueOldestChange, ncPendingTransactions, ncOldestPending, ncOpenInvoices, ncHeldBalances, ncHeldCents, ncPendingEdits, ncOldestEdit) :. Only ncOldestUnregisteredPaid] ->
+        pure NamesCounts {ncPhases, ncQueueOldestChange, ncPendingTransactions, ncOldestPending, ncOpenInvoices, ncHeldBalances, ncHeldCents, ncPendingEdits, ncOldestEdit, ncOldestUnregisteredPaid}
       _ -> E.throwIO $ StoreDecodeError "names counts: not one row"
-  where
-    unregisteredPhases = (PQueued, PCommitting, PCommitted, PRegistering, PFailed)
 
 int64 :: Word64 -> Int64
 int64 = fromIntegral
