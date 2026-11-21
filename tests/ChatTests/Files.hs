@@ -10,8 +10,8 @@ import ChatClient
 import ChatTests.DBUtils
 import ChatTests.Profiles (addTestBadge, futureDate, issueTestBadge, issueTestBadgeType, testBadgeKeys)
 import ChatTests.Utils
-import Control.Concurrent (threadDelay)
-import Control.Concurrent.Async (concurrently_)
+import Control.Concurrent (newEmptyMVar, putMVar, takeMVar, threadDelay)
+import Control.Concurrent.Async (concurrently_, wait, withAsync)
 import Control.Concurrent.STM (atomically, check, modifyTVar', newTVarIO, readTVar, readTVarIO, writeTVar)
 import Control.Logger.Simple
 import Control.Monad.Except (runExceptT)
@@ -23,11 +23,12 @@ import Data.Int (Int64)
 import qualified Data.Text as T
 import Network.HTTP.Types.URI (urlEncode)
 import Data.Time.Clock (addUTCTime, getCurrentTime, nominalDay)
+import GHC.IO.Handle.Internals (withHandle_)
 import Simplex.Chat.Badges (BadgeProof, BadgeStatus (..), BadgeType (..), FileSizeLimits (..), ProofPresHeader (..), badgeProof, defaultFileSizeLimits)
-import Simplex.Chat.Controller (ChatCommand (APIGetChat), ChatConfig (..), ChatEvent (CEvtChatItemUpdated, CEvtRcvFileDescrReady), ChatHooks (..), ChatPagination (CPLast), ChatResponse (CRApiChat, CRNewChatItems), defaultChatHooks)
+import Simplex.Chat.Controller (ChatCommand (APIGetChat), ChatConfig (..), ChatController (rcvFiles), ChatEvent (CEvtChatItemUpdated, CEvtRcvFileDescrReady), ChatHooks (..), ChatPagination (CPLast), ChatResponse (CRApiChat, CRNewChatItems), defaultChatHooks)
 import Simplex.Chat.Core (sendChatCmdStr)
 import Simplex.Chat.Library.Commands (execChatCommand')
-import Simplex.Chat.Library.Internal (badgeProofStatus, roundedFDCount)
+import Simplex.Chat.Library.Internal (badgeProofStatus, closeFileHandle, getFileHandle, roundedFDCount)
 import Simplex.Chat.Markdown (parseMaybeMarkdownList)
 import Simplex.Chat.Messages (AChat (..), AChatItem (..), AChatItemUpdate (..), CChatItem (..), CIFile (..), CIQuote (CIQuote, content, formattedText), Chat (..), ChatItem (..), ChatRef (..), ChatType (..))
 import Simplex.Chat.Messages.CIContent (MsgDirectionI, ciMsgContent)
@@ -41,6 +42,7 @@ import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
 import Simplex.Messaging.Encoding.String
 import System.Directory (copyFile, createDirectoryIfMissing, doesFileExist, getFileSize)
 import System.FilePath ((</>))
+import System.IO (IOMode (..), hClose)
 import System.Timeout (timeout)
 import Test.Hspec hiding (it)
 
@@ -93,6 +95,8 @@ chatFileTests = do
     it "sending file above the limit the badge allows fails" testXFTPSndFileBadgeLimit
     it "sending file with a badge expired past the send grace fails" testXFTPSndFileBadgeGrace
     it "file proof is rejected under another binding, size or expired badge" testFileBadgeProofStatus
+  describe "file handles" $ do
+    it "should stop closing a file at its time limit" testCloseFileTimeLimit
 
 runTestMessageWithFile :: HasCallStack => TestParams -> IO ()
 runTestMessageWithFile = testChat2 aliceProfile bobProfile $ \alice bob -> withXFTPServer alice $ do
@@ -1567,3 +1571,15 @@ testXFTPStandaloneCancelRcv = testChat2 aliceProfile aliceDesktopProfile $ \src 
     dst <## "cancelled receiving file 1 (testfile.out)"
     threadDelay 25000
     doesFileExist dstFile `shouldReturn` False
+
+testCloseFileTimeLimit :: HasCallStack => TestParams -> IO ()
+testCloseFileTimeLimit ps =
+  withNewTestChat ps "alice" aliceProfile $ \TestCC {chatController = cc} -> do
+    Right h <- runReaderT (runExceptT $ getFileHandle 1 (tmpFile ps "test.txt") rcvFiles AppendMode) cc
+    held <- newEmptyMVar
+    release <- newEmptyMVar
+    withAsync (withHandle_ "testCloseFileTimeLimit" h $ \_ -> putMVar held () >> takeMVar release) $ \holder -> do
+      takeMVar held
+      r <- timeout 100000 $ runReaderT (closeFileHandle 1 rcvFiles) cc
+      putMVar release () >> wait holder >> hClose h
+      r `shouldBe` Nothing
