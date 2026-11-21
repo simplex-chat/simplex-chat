@@ -52,6 +52,7 @@ const stepFields = ["description", "query", "url", "file_path", "path", "pattern
 interface SessionStartInput {
   session_id: string
   session_title?: string
+  transcript_path?: string
   cwd: string
   model?: string
   source?: string
@@ -149,7 +150,7 @@ export async function sessionStart(stdin: string, env: NodeJS.ProcessEnv = proce
     const config = readConfig(env)
     const client = deps?.client ?? ServiceClient.forRoot(dataRoot(env))
     await client.ensureService(version)
-    const {mainGroup, owner} = await client.request<TitleReply>("POST", "/title", {id: input.session_id, pid: claudePid(env), at, name: input.session_title, project: input.cwd, model: input.source === "compact" ? undefined : input.model, config})
+    const {mainGroup, owner} = await client.request<TitleReply>("POST", "/title", {id: input.session_id, pid: claudePid(env), at, name: input.session_title, project: input.cwd, model: input.source === "compact" ? undefined : input.model, transcript: input.transcript_path, config})
     const {link, owners} = owner
     if (owners.length > 0 || link === undefined) return {}
     return {systemMessage: `SimpleX MCP: scan this QR code with the SimpleX app and tap Join to supervise your agents in "${mainGroup}":\n${qrCodeText(link, "plain")}\n${link}`}

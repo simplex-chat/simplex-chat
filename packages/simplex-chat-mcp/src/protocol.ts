@@ -30,6 +30,7 @@ export interface SessionRequest {
   name?: string
   config: Config
   record?: string
+  globalConfig?: string
 }
 
 // spec: spec/architecture.md#protocol-sessionrequest
@@ -40,6 +41,7 @@ export interface TitleRequest {
   name?: string
   project: string
   model?: string
+  transcript?: string
   config: Config
   unattended?: boolean
 }

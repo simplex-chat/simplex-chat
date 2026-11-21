@@ -140,7 +140,7 @@ Facts:
 Choices:
 9. The service reads the account, the goal, the recap and the title of each attached session every 2 s, with the record status (`Session.readRecord`, renamed `readState`).
 10. Account: the session server sends `globalConfig`, the absolute path of fact 1 without the legacy file, in `POST /session`, next to `record`. The service reads the file when its modification time differs from the last read, and takes `oauthAccount.emailAddress`; a missing file, a missing field or a file that does not parse leaves the account unknown, and a partial write keeps the last value.
-11. Transcript: the hooks send `transcript`, the hook's `transcript_path`, in `/turn` and `/title`. The session keeps the latest. The service reads only the bytes appended since its last read, from the last line break read; at a new path, and when more than 4 MiB were appended, it reads the last 4 MiB and drops the first partial line. Only lines that contain `"goal_status"`, `"away_summary"` or `"ai-title"` are parsed, and entries with `isSidechain: true` are skipped. A file shorter than the offset is read again from its last 4 MiB.
+11. Transcript: the SessionStart hook sends `transcript`, its `transcript_path`, in `/title`; SessionStart runs at a start, a resume, `/clear` and a compaction. The session keeps the latest. The service reads only the bytes appended since its last read, from the last line break read; at a new path, and when more than 4 MiB were appended, it reads the last 4 MiB and drops the first partial line. Only lines that contain `"goal_status"`, `"away_summary"` or `"ai-title"` are parsed, and entries with `isSidechain: true` are skipped. A file shorter than the offset is read again from its last 4 MiB.
 12. Goal state, from the last goal entry read (fact 2): `met: true` with `sentinel` → none; `met: true` → met; `failed: true` → failed; else → set. At a new transcript path the goal, the recap and the title are cleared.
 13. Recap: the content of the last recap read, without the suffix of fact 3, trimmed, cut to 1,000 characters with `…`.
 14. The account, the goal, the recap, the title and the transcript path are stored in `session.json`, as the model and the effort level are, so a restarted service shows them before the session attaches.
@@ -191,7 +191,7 @@ sequenceDiagram
   participant G as session group
   participant M as Main group
   SS->>S: POST /session record, globalConfig
-  K->>S: POST /title, /turn with transcript
+  K->>S: POST /title with transcript
   CC->>F: status, oauthAccount, goal_status, away_summary, ai-title
   S->>F: read status; config when changed; transcript appended bytes
   S->>G: details or recap changed: short description, description
@@ -235,11 +235,11 @@ changed     → store in session.json; control.describe(details, recap)
 Changes:
 ```
 file                 change
-src/protocol.ts      SessionRequest + globalConfig?; TurnRequest, TitleRequest + transcript?
+src/protocol.ts      SessionRequest + globalConfig?; TitleRequest + transcript?
 src/session.ts       startSession: globalConfig
-src/hook.ts          turn, sessionStart: transcript
-src/service.ts       SessionLike + globalConfig?; onSession, applyTitle pass them
-src/claude-code.ts   new: readAccount, TranscriptReader (goal, recap, title)
+src/hook.ts          sessionStart: transcript
+src/service.ts       SessionLike + globalConfig?, transcript?; onSession, applyTitle set them
+src/claude-code.ts   new: AccountReader, TranscriptReader (goal, recap, title)
 src/files.ts         SessionFile + account, goal, recap, title, transcript
 src/hub.ts           Session.readState, details, boardText; Hub.showSessions: main.showBoard; summaryText
 src/main-group.ts    showBoard replaces showList; simplexMcpBoard; the old list deleted
@@ -249,7 +249,7 @@ src/control.ts       describe(shortDescr, description)
 ## 6. Compatibility
 
 - Older session servers send no `globalConfig`: the account is unknown until Claude Code restarts.
-- Older hooks send no `transcript`: goal, recap and title stay unknown until a hook of the new plugin runs.
+- Sessions started before the update send no `transcript`: goal, recap and title stay unknown until their next SessionStart.
 - Older Claude Code without goals or recaps: those parts are left out.
 - Older data folders: the old list is deleted; the board is posted at the first render with an owner.
 
@@ -261,8 +261,8 @@ src/control.ts       describe(shortDescr, description)
     write keeps the last value
 2   goal state from the last goal entry: set, met, failed, none after clear     unit: claude-code
 3   recap without the suffix; only appended bytes are read; a new path clears   unit: claude-code
-4   session server sends globalConfig with and without CLAUDE_CONFIG_DIR;       unit: session, hook
-    hooks send transcript
+4   session server sends globalConfig with and without CLAUDE_CONFIG_DIR;       unit: session, hook, service
+    SessionStart sends transcript; the service passes both to the session
 5   short description and description follow details and recap                  unit: sessions
 6   one message per session and the summary last; edits on change               unit: sessions; e2e
 7   re-post at 23 h or a refused edit, the summary after it; a stopped          unit: sessions

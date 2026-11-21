@@ -50,6 +50,12 @@ describe("SessionStart hook", () => {
     ])
   })
 
+  it("starts the session with the path of its transcript", async () => {
+    const {client, requests} = fakeClient({owners: ["Alice"]})
+    await sessionStart(JSON.stringify({...JSON.parse(input), transcript_path: "/c/projects/p/1.jsonl"}), {}, {client, nodeVersion: "22.1.0"})
+    expect(requests).toMatchObject([{route: "/title", body: {transcript: "/c/projects/p/1.jsonl"}}])
+  })
+
   it("shows the link of the service's Main group with a QR code to the person only, while it has no owner", async () => {
     const link = "https://simplex.chat/g#link"
     const {client} = fakeClient({owners: [], link}, undefined, "Agents")

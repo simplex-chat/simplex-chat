@@ -139,6 +139,8 @@ const answerLines: LineKind = {refused: "Claude's answer was not posted", log: "
 export class Session {
   open = false
   record?: string
+  globalConfig?: string
+  transcript?: string
   readonly actions: Actions
   readonly tools: AgentTools
   readonly control: Control
