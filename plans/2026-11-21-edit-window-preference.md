@@ -1,6 +1,6 @@
 # Edit and delete window, with a role exception
 
-Status: proposed; the user's decisions of 2026-11-21 below are applied, questions E1-E3 open. Code references: master `20ee7cb14`. Companion of `2026-11-21-update-to-bottom.md`, in the same 7.2 core change.
+Status: proposed; the user's decisions of 2026-11-21 below are applied, questions E1-E3 open. Code references: master `20ee7cb14`. Companion of `2026-11-21-update-as-new.md`, in the same 7.2 core pull request.
 
 The user's words:
 
@@ -20,7 +20,7 @@ Decisions of the user:
 
 ## 1. What users see
 
-- A bot or the plugin sets the preference with `/_group_profile`. In a group with the exception for owners, an owner edits, moves (`to_bottom=on`) and deletes its messages at any age, so a status message is never posted again.
+- A bot or the plugin sets the preference with `/_group_profile`. In a group with the exception for owners, an owner edits, updates as new (`as_new=on`) and deletes its messages at any age, so a status message is never posted again.
 - A member below the exception role edits and deletes within W, as within 24 h today. The apps show Edit and Delete for everyone by the core's `editable` and `deletable`, so an exempt member sees them on old messages too.
 - A receiver of 7.2 ignores an edit older than 78 h, or older than W + 54 h in a group with the preference, unless the sender is exempt.
 
@@ -76,7 +76,7 @@ time of the update    broker time of the update; fwdBrokerTs when forwarded by a
 base                  COALESCE(item_original_ts, item_ts) of the item in that core
                         sender: its local send time, rounded to the second
                         receiver: broker time of x.msg.new, or fwdBrokerTs when forwarded, or the item time of history
-                        a move (to_bottom) sets item_original_ts once, so a move keeps the window of the send
+                        an update as new sets item_original_ts once, so it keeps the window of the send
 no limit              items created without a message: created_by_msg_id IS NULL
                         the welcome message of an address and of a business address, updated on acceptance
                         (Commands.hs:1500; Subscriber.hs:772, :1344), possibly days after the item
@@ -155,11 +155,11 @@ bots before 7.2            their core edits within 24 h, so their edits reach re
 apps before 7.2            the preference unseen; editable and deletable from their own core
 ```
 
-## 5. Interaction with to_bottom
+## 5. Interaction with as_new
 
-- A move is an edit: the sender's core and the receivers apply the limits of section 3 to it, from the base.
-- `item_original_ts` keeps the base of the send across moves; this replaces the `createdAt` rule of question U3 of the companion plan.
-- The plugin creates its groups with `"edits": {"enable": "on", "role": "owner"}`, and updates its list with `to_bottom=on` at any age (a later pull request). Receivers on earlier releases apply the edits at any age.
+- An update as new is an edit: the sender's core and the receivers apply the limits of section 3 to it, from the base.
+- `item_original_ts` keeps the base of the send across updates as new.
+- The plugin creates its groups with `"edits": {"enable": "on", "role": "owner"}`, and updates its list with `as_new=on` and priority -1 at any age (a later pull request). Receivers on earlier releases apply the edits at any age, in place.
 
 ## 6. Tests
 
@@ -178,7 +178,7 @@ receiver drops a deletion after W + 54 h              W = 1 h; bob's item aged 5
                                                        bob deletes for everyone
 welcome message updated after 78 h                    business address; the request item aged 80 h;        -
                                                        the address accepts: the welcome text updated
-moved item keeps the window of the send               bob moves, then item_original_ts aged 31 h;          to_bottom unparsed
+update as new keeps the window of the send            bob updates as new, then item_original_ts aged 31 h; as_new unparsed
                                                        bob edits: "cannot update this item"
 hidden preference                                     /_group_profile with edits: no feature items         the key unparsed
                                                        for alice and bob; then a profile JSON without
