@@ -1137,7 +1137,7 @@ days is set when the order is made, by how the order is paid:
 The days of a balance are the days of its order. The balance of an order closed unpaid contains only
 money paid late on its invoice, so the days of its invoice method are used for it. Crypto paid in
 excess of an order's price is kept in its balance with the order's days, also when these are the 120
-days of a card payment that funded the order: a balance is given at least the days of each payment
+days of a card payment by which the order was funded: a balance is given at least the days of each payment
 in it. A balance's days are returned in the registration view's `balance` as `disputeDays`,
 the days of an order paid from that balance alone.
 
@@ -1165,10 +1165,10 @@ registration id, and a failed block read with the pass stopped. Each order set
 `disputeUntil(id)` read and the end it was compared with.
 
 When an order's register is found mined, by the worker, Try again, a move or `//close`,
-`disputeUntil(id)` at the confirmed block is compared with the end the register set, its block's
+`disputeUntil(id)` at the confirmed block is compared with the end set by its register, its block's
 timestamp plus the order's days; when the two differ, the registration was ended before the
 confirmed block, possibly followed by another, and the order is set `ended` at once, with the expiry
-and the dispute end its register set stored: its block's timestamp plus the order's duration, and
+and the dispute end set by its register stored: its block's timestamp plus the order's duration, and
 plus its days. While the register's block is above the confirmed block, a warning naming both
 blocks is logged and the order is left as it is. Then, as after a failed chain read, the worker
 checks the order again 15 seconds later, Try again is answered `503 provider_unavailable`, a move

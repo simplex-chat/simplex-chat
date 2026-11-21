@@ -129,8 +129,8 @@ workerTests = describe "StoreService names: worker" $ do
     it "ends an order only once its unregister is at the confirmation depth" testEndedAtDepth
     it "changes nothing when the block or every order's dispute end cannot be read, logging once the stopped pass or an order read again" testEndedSweepUnread
     it "reads the orders after one whose dispute end cannot be read, logging that order's failed read once" testEndedSweepPastUnread
-    it "ends an order unregistered within the confirmation depth once its mined register is judged, storing the expiry and dispute end its register set" testEndedWithinDepth
-    it "ends an order whose name was unregistered and registered again by another before the confirmed block, storing the expiry and dispute end its register set, not the other registration's" testEndedByOtherRegistration
+    it "ends an order unregistered within the confirmation depth once its mined register is judged, storing the expiry and dispute end set by its register" testEndedWithinDepth
+    it "ends an order whose name was unregistered and registered again by another before the confirmed block, storing the expiry and dispute end set by its register, not the other registration's" testEndedByOtherRegistration
   describe "retry" $ do
     it "refuses Try again outside failed with bad_request, changing nothing, and answers an unknown order 404" testRetryNotFailed
     it "refuses Try again of a failed order whose links were refused with bad_request, changing nothing" testRetryLinksRefused
