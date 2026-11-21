@@ -70,7 +70,17 @@ final class SuspendChatTests: XCTestCase {
     func testShareSetupWaitsForSuspendingApp() async {
         AppChatState.shared.set(.suspending)
         nseStateGroupDefault.set(.suspended)
+        try? FileManager.default.removeItem(at: seMessagesSharedFile)
+        let delivered = Task { @MainActor in
+            for _ in 0..<100 where !FileManager.default.fileExists(atPath: seMessagesSharedFile.path) {
+                try await Task.sleep(nanoseconds: 10 * NSEC_PER_MSEC)
+            }
+            try deliver()
+        }
+        let start = Date.now
         await prepareToStartChat()
+        XCTAssertNoThrow(try delivered.result.get())
+        XCTAssertLessThan(Date.now.timeIntervalSince(start), 1.5)
         XCTAssertEqual(seStateGroupDefault.get(), .sendingMessage)
         XCTAssertEqual(AppChatState.shared.value, .suspended)
     }
@@ -95,6 +105,10 @@ final class SuspendChatTests: XCTestCase {
 
     private func receive(_ state: SEState) throws {
         try jsonEncoder.encode(ProcessMessage(message: SEProcessMessage.state(state: state))).write(to: seMessagesSharedFile, options: .atomic)
+        try deliver()
+    }
+
+    private func deliver() throws {
         let subscriber = try XCTUnwrap(NSFileCoordinator.filePresenters.first { $0.presentedItemURL == seMessagesSharedFile }, "share extension subscriber not created at launch")
         subscriber.presentedItemDidChange?()
     }
