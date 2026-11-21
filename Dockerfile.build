@@ -54,6 +54,7 @@ RUN apt-get update --error-on=any && \
                        wget \
                        fuse3 \
                        file \
+                       fontconfig \
                        appstream \
                        gpg \
                        zipalign \

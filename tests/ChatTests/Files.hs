@@ -85,7 +85,7 @@ chatFileTests = do
     it "record upload: delete" testXFTPRecordDelete
     it "show agent file error without file ID" testXFTPAgentErrorWithoutFileId
     it "with relative paths: send and receive file" testXFTPWithRelativePaths
-    xit' "continue receiving file after restart" testXFTPContinueRcv
+    it "continue receiving file after restart" testXFTPContinueRcv
     it "receive file marked to receive on chat start" testXFTPMarkToReceive
     it "error receiving file" testXFTPRcvError
     it "cancel receiving file, repeat receive" testXFTPCancelRcvRepeat
@@ -98,7 +98,7 @@ chatFileTests = do
     it "send and receive large standalone file" testXFTPStandaloneLarge
     it "send and receive large standalone file with extra information" testXFTPStandaloneLargeInfo
     it "send and receive large standalone file using relative paths" testXFTPStandaloneRelativePaths
-    xit "removes sent file from server" testXFTPStandaloneCancelSnd -- no error shown in tests
+    it "removes sent file from server" testXFTPStandaloneCancelSnd
     it "removes received temporary files" testXFTPStandaloneCancelRcv
   describe "send larger files with badges" $ do
     it "send and receive file with badge proof" testXFTPFileBadgeProof
@@ -1683,9 +1683,8 @@ testXFTPStandaloneCancelSnd = testChat2 aliceProfile aliceDesktopProfile $ \src 
     dst ##> ("/_download 1 " <> uri <> " " <> tmpFile dst "should.not.extist")
     dst <## "started standalone receiving file 1 (should.not.extist)"
     threadDelay 100000
-    logWarn "no error?"
-    dst <## "error receiving file 1 (should.not.extist)"
-    dst <## "INTERNAL {internalErr = \"XFTP {xftpErr = AUTH}\"}"
+    dst <## "error standalone receiving file 1 (should.not.extist)"
+    dst .<## ", xftpErr = AUTH}"
 
 testXFTPStandaloneRelativePaths :: HasCallStack => TestParams -> IO ()
 testXFTPStandaloneRelativePaths = testChat2 aliceProfile aliceDesktopProfile $ \src dst -> do
