@@ -970,6 +970,10 @@ setPreparedGroupLinkInfo_ db GroupInfo {groupId, membership} cReq cReqHash custo
       "UPDATE group_members SET member_profile_id = ?, updated_at = ? WHERE group_member_id = ?"
       (customUserProfileId, currentTs, groupMemberId' membership)
 
+resetConnGroupLinkId :: DB.Connection -> Int64 -> IO ()
+resetConnGroupLinkId db connId =
+  DB.execute db "UPDATE connections SET group_link_id = NULL WHERE connection_id = ?" (Only connId)
+
 setViaGroupLinkUri :: DB.Connection -> GroupId -> Int64 -> IO ()
 setViaGroupLinkUri db groupId connId = do
   r <-

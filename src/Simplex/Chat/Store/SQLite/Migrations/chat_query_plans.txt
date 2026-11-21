@@ -8488,6 +8488,14 @@ Query: UPDATE connections SET contact_id = ?, updated_at = ? WHERE connection_id
 Plan:
 SEARCH connections USING INTEGER PRIMARY KEY (rowid=?)
 
+Query: UPDATE connections SET group_link_id = ? WHERE connection_id = ?
+Plan:
+SEARCH connections USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: UPDATE connections SET group_link_id = NULL WHERE connection_id = ?
+Plan:
+SEARCH connections USING INTEGER PRIMARY KEY (rowid=?)
+
 Query: UPDATE connections SET quota_err_counter = ?, updated_at = ? WHERE user_id = ? AND connection_id = ?
 Plan:
 SEARCH connections USING INTEGER PRIMARY KEY (rowid=?)

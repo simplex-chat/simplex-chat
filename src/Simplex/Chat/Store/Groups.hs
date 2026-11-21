@@ -465,6 +465,7 @@ createGroupInvitation db cxt user@User {userId} inviter peerChatVRange GroupInvi
     Nothing -> createGroupInvitation_
     Just gId -> do
       GIK gInfo@GroupInfo {membership, groupProfile = p'} gks <- getGroupInfoKeys db cxt user gId
+      when (memberStatus membership /= GSMemInvited) $ throwError SEGroupAlreadyJoined
       hostId <- getHostMemberId_ db user gId
       let GroupMember {groupMemberId, memberId, memberRole} = membership
           MemberIdRole {memberId = invMemberId, memberRole = invMemberRole} = invitedMember

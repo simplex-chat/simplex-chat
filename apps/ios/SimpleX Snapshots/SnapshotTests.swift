@@ -214,6 +214,16 @@ final class SnapshotTests: XCTestCase {
         XCTAssertEqual(scaledMemberImageSize(.large, terminalMemberImageBaseSize), 30)
     }
 
+    func testMemberRoleDecoding() throws {
+        let roles = ["relay", "observer", "author", "member", "moderator", "admin", "owner", "vip"]
+        let decoded = try JSONDecoder().decode([GroupMemberRole].self, from: Data("[\"\(roles.joined(separator: "\",\""))\"]".utf8))
+        XCTAssertEqual(decoded.map(\.rawValue), roles)
+        XCTAssertEqual(decoded.last?.text(isChannel: false), "vip")
+        XCTAssertEqual(decoded.sorted().map(\.rawValue), ["vip"] + roles.dropLast())
+        let encoded = try JSONEncoder().encode(decoded)
+        XCTAssertEqual(try JSONDecoder().decode([GroupMemberRole].self, from: encoded), decoded)
+    }
+
     func testVoiceMessageTimeFormatting() {
         XCTAssertEqual(voiceMessageTime(90), "01:30")
         XCTAssertEqual(voiceMessageTime(3600), "01:00:00")

@@ -3656,7 +3656,7 @@ public struct GroupMemberIds: Decodable, Hashable {
     var groupId: Int64
 }
 
-public enum GroupMemberRole: String, Identifiable, CaseIterable, Comparable, Codable, Hashable {
+public enum GroupMemberRole: Identifiable, Comparable, Hashable {
     case relay
     case observer
     case author
@@ -3664,6 +3664,7 @@ public enum GroupMemberRole: String, Identifiable, CaseIterable, Comparable, Cod
     case moderator
     case admin
     case owner
+    case unknown(String)
 
     public var id: Self { self }
 
@@ -3682,11 +3683,13 @@ public enum GroupMemberRole: String, Identifiable, CaseIterable, Comparable, Cod
         case .moderator: return NSLocalizedString("moderator", comment: "member role")
         case .admin: return NSLocalizedString("admin", comment: "member role")
         case .owner: return NSLocalizedString("owner", comment: "member role")
+        case let .unknown(s): return s
         }
     }
 
     private var comparisonValue: Int {
         switch self {
+        case .unknown: -1
         case .relay: 0
         case .observer: 1
         case .author: 2
@@ -3699,6 +3702,45 @@ public enum GroupMemberRole: String, Identifiable, CaseIterable, Comparable, Cod
 
     public static func < (lhs: Self, rhs: Self) -> Bool {
         return lhs.comparisonValue < rhs.comparisonValue
+    }
+}
+
+extension GroupMemberRole: RawRepresentable {
+    public init(rawValue: String) {
+        switch rawValue {
+        case "relay": self = .relay
+        case "observer": self = .observer
+        case "author": self = .author
+        case "member": self = .member
+        case "moderator": self = .moderator
+        case "admin": self = .admin
+        case "owner": self = .owner
+        default: self = .unknown(rawValue)
+        }
+    }
+
+    public var rawValue: String {
+        switch self {
+        case .relay: "relay"
+        case .observer: "observer"
+        case .author: "author"
+        case .member: "member"
+        case .moderator: "moderator"
+        case .admin: "admin"
+        case .owner: "owner"
+        case let .unknown(s): s
+        }
+    }
+}
+
+extension GroupMemberRole: Codable {
+    public init(from decoder: Decoder) throws {
+        self.init(rawValue: try decoder.singleValueContainer().decode(String.self))
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var c = encoder.singleValueContainer()
+        try c.encode(rawValue)
     }
 }
 

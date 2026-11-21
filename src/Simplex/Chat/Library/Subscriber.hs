@@ -639,6 +639,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
               void $ withStore' $ \db -> resetMemberContactFields db ct'
             XGrpLinkInv glInv -> do
               -- XGrpLinkInv here means we are connecting via business contact card, so we replace contact with group
+              checkConnViaAddress conn'' connInfo "x.grp.link.inv"
               when (isPublicGroupInv glInv) $ throwChatError $ CEInvalidChatMessage conn'' Nothing (safeDecodeUtf8 connInfo) "x.grp.link.inv: publicGroup not allowed in p2p groups"
               memberKeys <- atomically . C.generateKeyPair =<< asks random
               (gInfo, host) <- withStore $ \db -> do
@@ -1083,14 +1084,14 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
             deliveryTaskContext_ <- case event of
               XMsgNew mc ->
                 checkSendAsGroup asGroup $
-                  memberCanSend (Just m'') scope $ newGroupContentMessage gInfo' (Just m'') mc msg brokerTs False
+                  memberCanSend gInfo' (Just m'') scope $ newGroupContentMessage gInfo' (Just m'') mc msg brokerTs False
                 where
                   MsgContainer {scope, asGroup} = mc
               -- file description is always allowed, to allow sending files to support scope
               XMsgFileDescr sharedMsgId fileDescr fileExpires fileBadge -> groupMessageFileDescription gInfo' (Just m'') sharedMsgId fileDescr fileExpires fileBadge
               XMsgUpdate sharedMsgId mContent mentions ttl live msgScope asGroup_ ->
                 checkSendAsGroup asGroup_ $
-                  memberCanSend (Just m'') msgScope $
+                  memberCanSend gInfo' (Just m'') msgScope $
                     groupMessageUpdate gInfo' (Just m'') sharedMsgId mContent mentions msgScope msg brokerTs ttl live asGroup_
               XMsgDel sharedMsgId memberId_ scope_ onlyHistory ->
                 groupMessageDelete gInfo' (Just m'') sharedMsgId memberId_ scope_ onlyHistory msg brokerTs
@@ -1124,7 +1125,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
               XGrpRosterRequest reqVer -> Nothing <$ xGrpRosterRequest (GIK gInfo' gks) m'' reqVer
               XGrpInv gInv -> Nothing <$ xGrpInv gInfo' m'' conn' gInv msg brokerTs
               -- TODO [knocking] why don't we forward these messages?
-              XGrpDirectInv connReq mContent_ msgScope -> memberCanSend (Just m'') msgScope $ Nothing <$ xGrpDirectInv gInfo' m'' conn' connReq mContent_ msg brokerTs
+              XGrpDirectInv connReq mContent_ msgScope -> memberCanSend gInfo' (Just m'') msgScope $ Nothing <$ xGrpDirectInv gInfo' m'' conn' connReq mContent_ msg brokerTs
               XGrpMsgForward fwd msg' -> Nothing <$ xGrpMsgForward (GIK gInfo' gks) Nothing m'' fwd (ParsedMsg Nothing Nothing msg') brokerTs
               XInfoProbe probe -> Nothing <$ xInfoProbe (COMGroupMember m'') probe
               XInfoProbeCheck probeHash -> Nothing <$ xInfoProbeCheck (COMGroupMember m'') probeHash
@@ -1754,15 +1755,17 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
         && memberRole' membership < GRModerator
         && memberRole' m < GRModerator
 
-    memberCanSend :: Maybe GroupMember -> Maybe MsgScope -> CM (Maybe DeliveryTaskContext) -> CM (Maybe DeliveryTaskContext)
-    memberCanSend Nothing _ a = a -- channel message - was previously checked and allowed by relay
-    memberCanSend (Just m@GroupMember {memberRole}) msgScope a = case msgScope of
+    memberCanSend :: GroupInfo -> Maybe GroupMember -> Maybe MsgScope -> CM (Maybe DeliveryTaskContext) -> CM (Maybe DeliveryTaskContext)
+    memberCanSend _ Nothing _ a = a -- channel message - was previously checked and allowed by relay
+    memberCanSend GroupInfo {membership} (Just m@GroupMember {memberRole}) msgScope a = case msgScope of
       Just (MSMember mId)
-        | sameMemberId mId m || memberRole >= GRModerator -> a
+        | (sameMemberId mId m || memberRole >= GRModerator) && userInSupportChat mId -> a
         | otherwise -> messageError "member is not allowed to send to this support chat" $> Nothing
       Nothing
         | memberRole > GRObserver || memberPending m -> a
         | otherwise -> messageError "member is not allowed to send messages" $> Nothing
+      where
+        userInSupportChat mId = sameMemberId mId membership || memberRole' membership >= GRModerator || isRelay membership
 
     processConnMERR :: ConnectionEntity -> Connection -> AgentErrorType -> CM ()
     processConnMERR connEntity conn err = do
@@ -2434,7 +2437,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
               -- moderation (not limited by time)
               Just _
                 | isAuthor && msgMemberId == memberId ->
-                    delete cci False (Just m)
+                    checkRole (memberRole' m) mem $ delete cci False (Just m)
                 | otherwise -> moderate m mem cci
           (CIChannelRcv, _)
             | isNothing sndMemberId_ && isOwner ->
@@ -2758,7 +2761,9 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
       dm <- encodeXGrpAcpt user (GIK gInfo gks) peerChatVRange
       (connIds@(cmdId, acId), _) <- prepareAgentJoin user True connRequest
       withStore' $ \db -> do
-        when sameLink $ setViaGroupLinkUri db groupId connId
+        when sameLink $ do
+          setViaGroupLinkUri db groupId connId
+          resetConnGroupLinkId db connId
         createMemberConnectionAsync db user hostId connIds connChatVersion peerChatVRange subMode
         updateGroupMemberStatusById db userId hostId GSMemAccepted
         updateGroupMemberStatus db userId membership GSMemAccepted
@@ -2881,10 +2886,13 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
       -- same rule as role change (moderators grant up to member); pending member's role is a stand-in, so treat it as member
       | memberRole' m < roleRequiredToChange GRMember role =
           messageError "x.grp.link.acpt with insufficient member permissions"
-      | sameMemberId memberId membership = processUserAccepted
+      | sameMemberId memberId membership =
+          if memberPending membership then processUserAccepted else messageError "x.grp.link.acpt: member is not pending"
       | otherwise =
           withStore' (\db -> runExceptT $ getGroupMemberByMemberId db cxt user gInfo memberId) >>= \case
             Left _ -> messageError "x.grp.link.acpt error: referenced member does not exist"
+            Right referencedMember
+              | not (memberPending referencedMember) -> messageError "x.grp.link.acpt: member is not pending"
             Right referencedMember -> do
               (referencedMember', gInfo') <- withStore' $ \db -> do
                 referencedMember' <- updateGroupMemberAccepted db user referencedMember (newMemberStatus referencedMember) role
@@ -3226,12 +3234,14 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
           toView $ CEvtContactConnecting user ct
           pure (conn', Nothing)
         XGrpLinkInv glInv -> do
+          checkConnViaAddress conn' connInfo "x.grp.link.inv"
           when (isPublicGroupInv glInv) $ throwChatError $ CEInvalidChatMessage conn' Nothing (safeDecodeUtf8 connInfo) "x.grp.link.inv: publicGroup not allowed in p2p groups"
           memberKeys <- atomically . C.generateKeyPair =<< asks random
           (gInfo, host) <- withStore $ \db -> createGroupInvitedViaLink db cxt user conn' memberKeys glInv
           toView $ CEvtGroupLinkConnecting user gInfo host
           pure (conn', Just $ GIK gInfo GKGroup {memberPrivKey = snd memberKeys})
         XGrpLinkReject glRjct@GroupLinkRejection {rejectionReason} -> do
+          checkConnViaAddress conn' connInfo "x.grp.link.reject"
           memberKeys <- atomically . C.generateKeyPair =<< asks random
           (gInfo, host) <- withStore $ \db -> createGroupRejectedViaLink db cxt user conn' memberKeys glRjct
           toView $ CEvtGroupLinkConnecting user gInfo host
@@ -3240,12 +3250,18 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
         -- TODO show/log error, other events in SMP confirmation
         _ -> pure (conn', Nothing)
 
+    checkConnViaAddress :: Connection -> ConnInfo -> String -> CM ()
+    checkConnViaAddress conn@Connection {xContactId} connInfo event =
+      when (isNothing xContactId) $ throwChatError $ CEInvalidChatMessage conn Nothing (safeDecodeUtf8 connInfo) (event <> ": connection not requested via address")
+
     isPublicGroupInv :: GroupLinkInvitation -> Bool
     isPublicGroupInv GroupLinkInvitation {groupProfile = GroupProfile {publicGroup}} = isJust publicGroup
 
     xGrpMemNew :: GroupInfoKeys -> GroupMember -> MemberInfo -> Maybe MsgScope -> RcvMessage -> UTCTime -> CM (Maybe DeliveryJobScope)
-    xGrpMemNew (GIK gInfo gks) m memInfo@(MemberInfo memId memRole _ _ assertedKey_) msgScope_ msg brokerTs = do
-      unless (useRelays' gInfo) $ checkHostRole m memRole
+    xGrpMemNew (GIK gInfo gks) m@GroupMember {localDisplayName = c} memInfo@(MemberInfo memId memRole _ _ assertedKey_) msgScope_ msg brokerTs = do
+      if useRelays' gInfo
+        then unless (isRelay m && memRole /= GRRelay) $ throwChatError (CEGroupContactRole c)
+        else checkHostRole m memRole
       let presHeader_ = memberInfoPresHeader gInfo memInfo
       if sameMemberId memId (membership gInfo)
         then pure Nothing
@@ -3717,6 +3733,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
       msg@RcvMessage {msgSigned}
       brokerTs
         | membershipMemId == memId = pure Nothing -- ignore - XGrpMemRestrict can be sent to restricted member for efficiency
+        | senderRole < GRModerator = messageError "x.grp.mem.restrict with insufficient member permissions" $> Nothing
         | otherwise = do
             unknownRole <- unknownMemberRole gInfo
             withStore (\db -> getCreateUnknownGMByMemberId db cxt user gInfo memId "" unknownRole True) >>= \case
@@ -4045,7 +4062,9 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                   void $ withVerifiedMsg gInfo scopeInfo author parsedMsg msgTs $
                     (`processForwardedMsg` Just author)
             Nothing -> pure ()
-        FwdChannel -> processForwardedMsg (VMUnsigned chatMsg) Nothing
+        FwdChannel
+          | useRelays' gInfo || memberRole' m == GROwner -> processForwardedMsg (VMUnsigned chatMsg) Nothing
+          | otherwise -> messageError "x.grp.msg.forward: member is not allowed to forward as group"
       where
         -- Forwards are only expected from the member that introduced us to the author: our host, or
         -- the author's inviter. Unknown members have no such record, so any admin may forward theirs.
@@ -4060,13 +4079,13 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
           rcvMsg_ <- saveGroupFwdRcvMsg user gInfo m author_ verifiedMsg brokerTs
           forM_ rcvMsg_ $ \rcvMsg@RcvMessage {sharedMsgId_, chatMsgEvent = ACME _ event} -> case event of
             XMsgNew mc ->
-              void $ memberCanSend author_ scope $ newGroupContentMessage gInfo author_ mc rcvMsg msgTs True
+              void $ memberCanSend gInfo author_ scope $ newGroupContentMessage gInfo author_ mc rcvMsg msgTs True
               where
                 MsgContainer {scope} = mc
             -- file description is always allowed, to allow sending files to support scope
             XMsgFileDescr sharedMsgId fileDescr fileExpires fileBadge -> void $ groupMessageFileDescription gInfo author_ sharedMsgId fileDescr fileExpires fileBadge
             XMsgUpdate sharedMsgId mContent mentions ttl live msgScope asGroup_ ->
-              void $ memberCanSend author_ msgScope $ groupMessageUpdate gInfo author_ sharedMsgId mContent mentions msgScope rcvMsg msgTs ttl live asGroup_
+              void $ memberCanSend gInfo author_ msgScope $ groupMessageUpdate gInfo author_ sharedMsgId mContent mentions msgScope rcvMsg msgTs ttl live asGroup_
             XMsgDel sharedMsgId memId scope_ _ -> void $ groupMessageDelete gInfo author_ sharedMsgId memId scope_ False rcvMsg msgTs
             XMsgReact sharedMsgId memId scope_ reaction add -> withAuthor XMsgReact_ $ \author -> void $ groupMsgReaction gInfo author sharedMsgId memId scope_ reaction add rcvMsg msgTs
             XFileCancel sharedMsgId -> void $ xFileCancelGroup gInfo author_ sharedMsgId
