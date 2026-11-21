@@ -23,6 +23,7 @@ Citations: `mq:` is simplexmq at `d38bcf50`; other paths are in this repository 
 5. One link gets a preview on Android and none on iOS, or the reverse, because each platform has its own rules.
 6. On Android and desktop, a slow site delays the preview of the next link by the time-outs of its own fetch: 10 s for the page, 20 s to connect and 20 s to read the image.
 7. Bots and the CLI cannot make link previews.
+8. A preview never shows the page's description: both apps send it empty, and iOS does not show it.
 
 Today, in code:
 
@@ -70,6 +71,9 @@ flowchart LR
 | Same link, two platforms | different rules | one rule set (section 3.8) |
 | `http://` link | fetched over HTTP on Android and desktop | Q2 |
 | WebP, GIF or ICO image | decoded on Android and desktop | Q4 |
+| Page without `og:image` | Android and desktop: the site icon at full width; iOS: no preview | no preview |
+| Description | never sent | `og:description`, else `<meta name="description">`; shown in the chat item on all platforms |
+| Failed preview | no card, no alert | the same; with developer tools on, an alert with the raw error |
 
 The user guide section "Send Link Previews" (docs/guide/app-settings.md:219-227) is rewritten in the app PRs.
 
@@ -159,44 +163,20 @@ data LinkPreviewConfig = LinkPreviewConfig
 
 data AddressPolicy = APPublic | APPublicAndLoopback
 
-data LinkPreviewError
-  = LPEInvalidUri
-  | LPEProhibitedAddress
-  | LPEConnection {connectionError :: Text}
-  | LPEHttpStatus {status :: Int}
-  | LPETooManyRedirects
-  | LPEUnsupportedContent {contentType :: Text}
-  | LPEUnsupportedEncoding {contentEncoding :: Text}
-  | LPEUnsupportedCharset {charset :: Text}
-  | LPENoTitle
-  | LPENoImage
-  | LPEImage {imageError :: Text}
-  | LPETimeout
-
 data PageMeta = PageMeta
-  { ogTitle :: First Text,
-    title :: First Text,
-    ogImage :: First Text,
-    icon :: First Text,
-    charset :: First Text
-  }
-
-data PageContent
-  = PCPage PageMeta
-  | PCImage ByteString
-
-data HttpResponse = HttpResponse
-  { status :: Status,
-    headers :: ResponseHeaders,
-    readBody :: IO ByteString
+  { title :: Maybe Text,
+    description :: Maybe Text,
+    image :: Maybe Text
   }
 ```
 
+- The card shows what the existing `LinkPreview` holds (Protocol.hs:246): `title`, `description`, `image`, `uri`. `PageMeta` has the same fields, read from the page; `image` is the URL that the core fetches and resizes into `ImageData`.
+- Card in the apps: compose shows image, title and link (LinkPreviews.kt:152-191; ComposeLinkView.swift:43-52); the chat item shows image, title, description when not empty, and link on Kotlin (LinkPreviews.kt:203-226); iOS shows image and title only (CILinkView.swift:22, 36).
+- Description: both apps send `""` today (LinkPreviews.kt:129-134, commented out "TODO add once supported in iOS"; ImageUtils.swift:471). The core fills it, Kotlin shows it with no change, and PR 3 adds it to CILinkView as Kotlin shows it.
+- `image` is required in `LinkPreview`, so a page without an image has no preview, as today on both platforms (LinkPreviews.kt:121-139; ImageUtils.swift:461-479).
+- `content = Nothing`, as both apps send it (LinkPreviews.kt:134; ImageUtils.swift:471).
 - `LinkPreviewConfig` is a field of `ChatConfig`; `rootCerts` is parsed once from the embedded bundle; `APPublicAndLoopback` is used by tests only.
-- `PageMeta` is a `Monoid` by fields: the first value of each field is kept, as the apps keep the first tag (LinkPreviews.kt:116-118). Laws: associativity and identity of `First`.
-- `PageMeta` fields hold raw bytes decoded once, after `charset` is known (section 3.9).
-- `Status` and `ResponseHeaders` are of `http-types` (simplex-chat.cabal:389).
-- The response is the existing `LinkPreview` (Protocol.hs:246), with `description = ""` and `content = Nothing`, as both apps send it (LinkPreviews.kt:134; ImageUtils.swift:471).
+- Failures: `ExceptT String IO`, as `decodeResizable` returns `Either String` (Image.hs:69). The apps show no alert for a failed preview (ComposeView.kt:503-505; ComposeView.swift:1986-1989), so failures carry no type: the message is raw text for developers (section 3.12).
 
 ### 3.6 Connection
 
@@ -204,7 +184,7 @@ data HttpResponse = HttpResponse
 flowchart TD
   U["https URI"] --> H{"host"}
   H -->|"IP literal"| L{"allowed by AddressPolicy?"}
-  L -->|no| X["LPEProhibitedAddress"]
+  L -->|no| X["prohibited address"]
   H -->|"name"| S
   L -->|yes| S{"socksProxy of transportClientConfig"}
   S -->|"Just proxy"| SP["socksConnectAuth or socksConnect, SocksAddrDomainName"]
@@ -215,7 +195,7 @@ flowchart TD
   SP --> TLS["T.contextNew, T.handshake"]
   TC --> TLS
   TLS --> V{"chain valid for host?"}
-  V -->|no| E["LPEConnection"]
+  V -->|no| E["TLS error"]
   V -->|yes| R["request"]
 ```
 
@@ -249,9 +229,9 @@ Connection: close
 
 - UA: one fixed browser string for all users; for host `x.com`, the string of LinkPreviews.kt:108, as today.
 - Cookies, `Referer` and `Accept-Language` are not sent.
-- Response head: at most MAX_HEADER_BYTES and MAX_HEADERS, else `LPEConnection`.
+- Response head: at most MAX_HEADER_BYTES and MAX_HEADERS, else a failure.
 - Body framing: `Transfer-Encoding: chunked`, `Content-Length`, or until close. Chunk sizes above the remaining budget end the fetch.
-- `Content-Encoding` other than `identity`: `LPEUnsupportedEncoding`.
+- `Content-Encoding` other than `identity`: a failure.
 - Reads: `T.recvData` with READ_TIMEOUT each; the budget counts body bytes after decoding of chunks.
 - Close: `T.bye`, then `T.contextClose`, in `bracket`, also on timeout and on the stop condition.
 
@@ -260,20 +240,20 @@ Redirects:
 | Status | Action |
 |---|---|
 | 301, 302, 303, 307, 308 with `Location` | `Location` resolved against the current URI (RFC 3986, 5.2), then fetched |
-| other 3xx, 4xx, 5xx | `LPEHttpStatus` |
+| other 3xx, 4xx, 5xx | a failure with the status |
 | 2xx | content by `Content-Type` |
 
-- A redirect to a scheme other than `https`: `LPEInvalidUri`.
-- More than MAX_REDIRECTS: `LPETooManyRedirects`.
+- A redirect to a scheme other than `https`: a failure.
+- More than MAX_REDIRECTS: a failure.
 - Reference resolution is a function of this module over `uri-bytestring` types (simplex-chat.cabal:411): `uri-bytestring` 0.3.3.1 exports `toAbsolute`, which takes a scheme, and no base-URI resolution.
 
 Content by type:
 
 | `Content-Type` | Content |
 |---|---|
-| `text/html`, `application/xhtml+xml` | `PCPage` from the head scanner |
-| `image/jpeg`, `image/png` | `PCImage`, titled by the last path segment of the requested URI (LinkPreviews.kt:93-95) |
-| other | `LPEUnsupportedContent` |
+| `text/html`, `application/xhtml+xml` | `PageMeta` from the head scanner |
+| `image/jpeg`, `image/png` | the image itself, titled by the last path segment of the requested URI, without description (LinkPreviews.kt:93-95) |
+| other | a failure with the type |
 
 ### 3.8 Head scanner and metadata rules
 
@@ -289,51 +269,51 @@ stateDiagram-v2
   Tag --> Title: "<title"
   Title --> Text: "</title"
   Tag --> Done: "</head" or "<body"
-  Text --> Done: ogTitle and ogImage set
+  Text --> Done: og:title, og:description and og:image read
   Text --> Done: MAX_HEAD_BYTES
 ```
 
 - The scanner is an incremental `attoparsec` parser fed with body chunks; tag and attribute names are compared case-insensitively; attribute values are unquoted, single- or double-quoted.
 - Law: the scan of a body equals the scan of any split of it into chunks. A QuickCheck property tests it.
-- Tags read, with the same selectors as LinkPreviews.kt:41-42, 115-118:
+- Fields, first tag of each kind:
 
-  | Tag | Field |
+  | Field | Tags, in priority |
   |---|---|
-  | `<meta property="og:title" content>` | `ogTitle` |
-  | `<meta property="og:image" content>` | `ogImage` |
-  | `<title>` text | `title` |
-  | `<link rel href>`, `rel` starting with `icon`, `apple-touch-icon` or `shortcut icon` | `icon` |
-  | `<meta charset>`, `<meta http-equiv="content-type" content>` | `charset` |
+  | `title` | `<meta property="og:title" content>`, else `<title>` text |
+  | `description` | `<meta property="og:description" content>`, else `<meta name="description" content>` |
+  | `image` | `<meta property="og:image" content>` |
 
-- Values: whitespace trimmed and collapsed; named entities `amp lt gt quot apos nbsp` and numeric references decoded.
-- Title: `ogTitle`, else `title`, else `LPENoTitle`.
-- Image candidates in order: `ogImage`, then `icon`; each resolved against the final URI of the page; the first that is fetched and resized is used; none: `LPENoImage`, as both apps return no preview without an image (LinkPreviews.kt:121-139; ImageUtils.swift:461-479).
+- `<meta charset>` and `<meta http-equiv="content-type" content>` are read for decoding only (section 3.9).
+- Values: whitespace trimmed and collapsed; named entities `amp lt gt quot apos nbsp` and numeric references decoded; `description` cut to 500 characters.
+- No `title`: a failure. No `image`, or the image fails: a failure.
+- `image` is resolved against the final URI of the page.
+- Site icons (`<link rel="icon">`), which Kotlin uses when `og:image` is absent (LinkPreviews.kt:42, 117-118), are not read: the chat item shows the image at full width (LinkPreviews.kt:206-219), where a small square icon is upscaled; iOS requires the page image and uses no icon (ImageUtils.swift:462).
 - Tags after `</head>` or `<body` are not read; Jsoup reads the whole document (LinkPreviews.kt:114).
 
 ### 3.9 Character sets
 
 1. `charset` of `Content-Type`.
-2. Else the `charset` field of `PageMeta`.
+2. Else the `<meta>` charset of the head.
 3. Else UTF-8.
 
 | Charset | Decoding |
 |---|---|
-| `utf-8`, `us-ascii` | `decodeUtf8'`; invalid bytes: `LPEUnsupportedCharset` |
+| `utf-8`, `us-ascii` | `decodeUtf8'`; invalid bytes: a failure |
 | `iso-8859-1`, `windows-1252` | `windows-1252` table for 0x80-0x9F, Latin-1 otherwise |
-| other | `LPEUnsupportedCharset` |
+| other | a failure with the charset |
 
 Tags are scanned as bytes, as both supported families are supersets of ASCII; only the field values are decoded.
 
 ### 3.10 Image
 
-- Bytes: at most MAX_IMAGE_BYTES, else the candidate fails.
+- Bytes: at most MAX_IMAGE_BYTES, else a failure.
 - `imagePreview` (Library/Commands.hs:232-238) is split: its decode and resize steps become `imageDataPreview :: ByteString -> IO (Either String ImageData)`, used by `imagePreview` and by the link preview.
 - Decoding limits of `decodeResizable`: JPEG scaled by halvings to at most 4320 per side, at most 2^28 pixels and `maxDecodeMemoryMB`; PNG decoded by spng within half of `maxDecodeMemoryMB` (src/Simplex/Chat/Image.hs:69-93, 309-323).
 - Formats: JPEG and PNG (Image.hs:74-77); others: Q4.
 
 ### 3.11 Timeouts, concurrency, cancellation
 
-- The whole preview runs in `timeout PREVIEW_DEADLINE`; expiry: `LPETimeout`. Sockets and TLS contexts are released by `bracket`.
+- The whole preview runs in `timeout PREVIEW_DEADLINE`; expiry: a failure. Sockets and TLS contexts are released by `bracket`.
 - Commands run in the calling thread of `chat_send_cmd` (Library/Commands.hs:434-458); the preview command takes no `chatLock`, so previews run concurrently with each other and with other commands.
 - A fetch for a link that the user has since edited runs to its end or to PREVIEW_DEADLINE; the apps discard its result, as today (ComposeView.kt:500-506; ComposeView.swift:1984-1991).
 - The Kotlin mutex is removed with the Jsoup code (LinkPreviews.kt:48), so a slow site no longer delays the next preview.
@@ -343,21 +323,23 @@ getLinkPreview cfg netCfg uriText:
   uri   <- parseUri uriText; require https (Q2)
   creds <- previewCredentials netCfg
   timeout previewDeadline:
-    (finalUri, content) <- fetchFollowing creds uri
-    case content of
-      PCImage bytes -> preview uriText (lastSegment uri) bytes
-      PCPage meta   ->
-        title <- pageTitle meta
-        image <- firstImage [resolve finalUri c | c <- imageCandidates meta]
-        pure LinkPreview {uri = uriText, title, description = "", image, content = Nothing}
+    (finalUri, resp) <- fetchFollowing creds uri
+    case contentType resp of
+      image -> preview (lastSegment uri) "" <$> resizedImage resp
+      html  ->
+        PageMeta {title, description, image} <- scanHead resp
+        title' <- maybe (throwError "no title") pure title
+        imgUri <- maybe (throwError "no image") (pure . resolve finalUri) image
+        img    <- resizedImage =<< fetchFollowing creds imgUri
+        pure LinkPreview {uri = uriText, title = title', description = fromMaybe "" description, image = img, content = Nothing}
 
 fetchFollowing creds uri, n:
   resp <- withConnection creds uri (sendRequest uri)
   case status resp of
     redirect, n < maxRedirects -> fetchFollowing creds (resolve uri location) (n + 1)
-    redirect                   -> LPETooManyRedirects
+    redirect                   -> throwError "too many redirects"
     2xx                        -> (uri, readContent resp)
-    s                          -> LPEHttpStatus s
+    s                          -> throwError ("HTTP " <> show s)
 ```
 
 The returned `uri` is the string the app sent, because the apps send `MCLink` only when it equals the link in the text (ComposeView.kt:656-658; ComposeView.swift:1262-1267).
@@ -369,11 +351,12 @@ The returned `uri` is the string the app sent, because the apps send `MCLink` on
 | Command | `APIGetLinkPreview {uri :: Text}` |
 | Syntax | `/_link preview <uri>`, the rest of the line |
 | Response | `CRLinkPreview {linkPreview :: LinkPreview}` |
-| Error | `CELinkPreview {linkPreviewError :: LinkPreviewError}` in `ChatErrorType` (Controller.hs:1545) |
+| Error | `CELinkPreview {message :: String}` in `ChatErrorType` (Controller.hs:1545), raw text, as `CEInternalError {message :: String}` (Controller.hs:1625) |
+| Apps on error | no card, no alert, as today; with developer tools on, the raw message in an alert: Kotlin under `developerTools` and `showInternalErrors`, as agent `INTERNAL` errors (SimpleXAPI.kt:3690); iOS under "Show developer options" (DeveloperView.swift:14, 46) |
 | User | not required |
 | `allowRemoteCommand` | `False` (Controller.hs:749-788), so a desktop that controls a phone fetches itself, as today |
 | CLI view | one line: `link preview: <title>` |
-| Bot API docs | "Message commands" (bots/src/API/Docs/Commands.hs:95-111): description "Get link preview of a web page.", responses `CRLinkPreview`, `CRChatCmdError`, error `CELinkPreview`, network `UNInteractive`; `LinkPreviewError` in Docs/Types.hs |
+| Bot API docs | "Message commands" (bots/src/API/Docs/Commands.hs:95-111): description "Get link preview of a web page.", responses `CRLinkPreview`, `CRChatCmdError`, error `CELinkPreview`, network `UNInteractive` |
 | Generated | bots/api/*.md, TypeScript and Python types (TESTS.md, "Checks against committed files") |
 
 ### 3.13 Dependencies and mobile builds
@@ -405,7 +388,7 @@ Kotlin (android, desktop):
 |---|---|
 | Kt:views/helpers/LinkPreviews.kt:33-149, 231-261 | `getLinkPreview(url)` calls `apiGetLinkPreview(url)`; Jsoup, proxy, `Authenticator`, mutex and `normalizeImageUri` removed |
 | apps/multiplatform/common/build.gradle.kts:74 | `org.jsoup:jsoup` removed |
-| Kt:model/SimpleXAPI.kt | `CC.ApiGetLinkPreview`, `CR.LinkPreview`, `apiGetLinkPreview` with `rh = null` and without an error alert |
+| Kt:model/SimpleXAPI.kt | `CC.ApiGetLinkPreview`, `CR.LinkPreview`, `apiGetLinkPreview` with `rh = null`; on error, the raw message in an alert only under `developerTools` and `showInternalErrors` (section 3.12) |
 | Kt:views/chat/ComposeView.kt:508-539, 1871-1903 | alert branch and `showLinkPreviewsConfirmAlert` removed (Q1 a) |
 | Kt:model/SimpleXAPI.kt:132, 303, 426 | `privacyLinkPreviewsShowAlert`, its hint entry and key removed (Q1 a) |
 | Kt:views/usersettings/PrivacySettings.kt:70 | `onChange` removed (Q1 a) |
@@ -416,7 +399,8 @@ iOS:
 | Site | Change |
 |---|---|
 | apps/ios/SimpleXChat/ImageUtils.swift:13, 455-489 | `getLinkPreview` and `import LinkPresentation` removed |
-| apps/ios/Shared/Model/AppAPITypes.swift, SimpleXAPI.swift | `apiGetLinkPreview` command, response case, function |
+| apps/ios/Shared/Model/AppAPITypes.swift, SimpleXAPI.swift | `apiGetLinkPreview` command, response case, function; on error, the raw message in an alert only under "Show developer options" (section 3.12) |
+| apps/ios/Shared/Views/Chat/ChatItem/CILinkView.swift:36 | description under the title when not empty, as Kotlin (LinkPreviews.kt:223-225) |
 | apps/ios/Shared/Views/Chat/ComposeMessage/ComposeView.swift:414, 1956-2006 | `linkPreviewsShowAlert`, alert and `DEFAULT_PRIVACY_LINK_PREVIEWS` write in the alert path removed; `fetchLinkPreview` awaits `apiGetLinkPreview` (Q1 a) |
 | apps/ios/Shared/Views/UserSettings/PrivacySettings.swift:83 | the alert default write removed (Q1 a) |
 | apps/ios/SimpleXChat/AppGroup.swift:30, 99, 231; Shared/Views/UserSettings/SettingsView.swift:179-181 | the alert group default and its hint entry removed (Q1 a) |
@@ -472,7 +456,7 @@ flowchart TD
 | Q1 | The alert "Enable link previews?" | (a) removed on all platforms; the toggle keeps its default (on); Privacy settings footer "Without a SOCKS proxy, the website sees your IP address."; (b) shown only when no SOCKS proxy is set; (c) kept | (a) |
 | Q2 | `http://` links | (a) fetched as `https://` on the same host, without plain HTTP; (b) plain HTTP as on Android and desktop today | (a) |
 | Q3 | Root certificates | (a) the Mozilla bundle embedded in the core, refreshed by a script each release; (b) the system store where `crypton-x509-system` reads one, the bundle on iOS; (c) roots passed by each app | (a) |
-| Q4 | Images other than JPEG and PNG | (a) skipped, the next candidate tried; WebP with the WebP PR named in plans/2026-10-23-core-image-resizing.md:369; (b) GIF first frame (JuicyPixels) and PNG entries of ICO added now | (a) |
+| Q4 | `og:image` other than JPEG and PNG | (a) no preview; WebP with the WebP PR named in plans/2026-10-23-core-image-resizing.md:369; (b) the first GIF frame added now (JuicyPixels) | (a) |
 
 Decided as details: concurrent fetches without a cancel command (3.11); the desktop fetches while it controls a phone (3.12); one browser UA with the `x.com` exception (3.7).
 
@@ -482,9 +466,8 @@ Core, unit, `tests/LinkPreviewTests.hs` (new, registered in tests/Test.hs), patt
 
 | Case | Checked |
 |---|---|
-| head scanner | `og:*`, `<title>`, icons, quotes, entities, comments, `<meta>` inside `<script>` ignored, stop at `</head>` and `<body` |
+| head scanner | `og:title`, `og:description`, `og:image`, `<title>`, `<meta name="description">`, priority of `og:`, quotes, entities, comments, `<meta>` inside `<script>` ignored, stop at `</head>`, at `<body` and after the three `og:` tags |
 | chunk law | QuickCheck: scan of a body equals scan of any chunk split |
-| `PageMeta` | `Monoid` laws |
 | reference resolution | RFC 3986 5.4.1 and 5.4.2 examples; `//cdn/...`; port kept |
 | address policy | each prohibited range, its IPv4-mapped form, public addresses |
 | HTTP framing | chunked, `Content-Length`, close; header limits; oversized chunk |
@@ -495,17 +478,14 @@ Core, scenario, `tests/ChatTests/LinkPreviews.hs` (new, in ChatTests.hs), patter
 
 | Test | Checked |
 |---|---|
-| og page | title and PNG image in the response |
-| title and relative icon | icon resolved against the final URI after a redirect |
-| image URL | `image/png` response titled by the file name |
-| no image | `LPENoImage` |
-| redirects | 5 followed; 6: `LPETooManyRedirects`; to `https://10.0.0.1`: `LPEProhibitedAddress` without a connection; to `http`: `LPEInvalidUri` |
+| og page | title, description and PNG image in the response |
+| relative `og:image` | resolved against the final URI after a redirect |
+| image URL | `image/png` response titled by the file name, empty description |
+| no `og:image`, icon present | `CELinkPreview`, no request for the icon |
+| redirects | 5 followed; 6, to `https://10.0.0.1` without a connection, and to `http`: `CELinkPreview` |
 | endless body after the og tags | response before PREVIEW_DEADLINE; bytes sent by the server below MAX_HEAD_BYTES plus one TLS record |
 | head beyond MAX_HEAD_BYTES | the server sees the connection closed |
-| slow server | `LPETimeout` with a test deadline of 2 s |
-| gzip | `LPEUnsupportedEncoding` |
-| certificate of another CA | `LPEConnection` |
-| oversized image dimensions | `LPEImage` |
+| slow server, gzip, certificate of another CA, oversized image dimensions | `CELinkPreview`; slow server with a test deadline of 2 s |
 | SOCKS, isolate | domain address type; two previews with two usernames; page and image with one |
 | SOCKS, username | the configured credentials |
 | fixture | `apiFixture "previews/link_preview"` of a success and a failure, placeholder `LINK_URL` for the server URL |
@@ -519,7 +499,8 @@ App tests on tests/fixtures/api/previews/link_preview.json:
 | Test | Checked | Apps |
 |---|---|---|
 | `LinkPreviewTest.kt`, `LinkPreviewTests.swift` | `getLinkPreview("LINK_URL")` sends `/_link preview LINK_URL` and returns the recorded preview | both |
-| same | the recorded error returns no preview and no alert | both |
+| same | the recorded error returns no preview and no alert; with developer tools on, an alert with the raw message | both |
+| `CILinkView` preview | description shown under the title (snapshot) | iOS |
 | SE | `apiGetLinkPreview` of the share extension decodes the recorded response | iOS |
 
 The iOS test file is added to project.pbxproj (TESTS.md, "iOS app"). Compose flows: a case in `claude-test.md` of desktop-linux and android-emu and `device-test-plan.md` of ios-sim, with `backend: yes`: type a link, see a card, without an alert.
@@ -545,6 +526,6 @@ flowchart LR
 | 0 | docs | this plan, first commit of `ep/link-previews` |
 | 1 | core | `Simplex.Chat.LinkPreview`, `LinkPreviewConfig` in `ChatConfig`, root bundle and its script, `imageDataPreview`, command, response, error, view, API docs, unit and scenario tests, fixture |
 | 2 | android, desktop | `apiGetLinkPreview`; Jsoup removed; alert, preference and strings per Q1; app tests; guide |
-| 3 | ios | app and share extension commands; `LPMetadataProvider` removed; alert and defaults per Q1; app tests; spec; guide |
+| 3 | ios | app and share extension commands; `LPMetadataProvider` removed; description in `CILinkView`; alert and defaults per Q1; app tests; spec; guide |
 
 Each PR adds its tests in the same PR. PRs 2 and 3 are developed in parallel on the fixture of PR 1.
