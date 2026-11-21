@@ -1259,15 +1259,20 @@ testXFTPUncommittedDescriptionDownload ps =
           bob <##. "critical error: "
           bob <## "please restart the app"
           agentRcvFiles bob `shouldEventuallyReturn` [[0]]
-        bob `send` "/_stop"
-        bob `send` "/_start"
-        (withCCTransaction bob (`DB.query_` "SELECT file_status FROM rcv_files WHERE file_id = 1") :: IO [[T.Text]]) `shouldEventuallyReturn` [["complete"]]
+          skipDeletedDownloadErrors bob
+        bob ##> "/_stop"
+        bob <## "chat stopped"
+        bob ##> "/_start"
+        bob <### ["chat started", "subscribed 1 connections on server localhost", "started receiving file 1 (test.jpg) from alice", "completed receiving file 1 (test.jpg) from alice"]
+        (withCCTransaction bob (`DB.query_` "SELECT file_status FROM rcv_files WHERE file_id = 1") :: IO [[T.Text]]) `shouldReturn` [["complete"]]
         agentRcvFiles bob `shouldEventuallyReturn` [[0]]
         src <- B.readFile "./tests/fixtures/test.jpg"
         B.readFile (bobFiles </> "test.jpg") `shouldReturn` src
   where
     opts = (testOpts :: ChatOpts) {autoAcceptFileSize = 200000}
     agentRcvFiles cc = withCCAgentTransaction cc (`DB.query_` "SELECT count(1) FROM rcv_files WHERE deleted = 0") :: IO [[Int]]
+    skipDeletedDownloadErrors cc =
+      timeout 1000000 (getTermLine cc) >>= mapM_ (\l -> l `shouldStartWith` "chat db error: SERcvFileNotFoundXFTP" >> skipDeletedDownloadErrors cc)
 
 testRedeliveredUncommittedInlineChunk :: HasCallStack => TestParams -> IO ()
 testRedeliveredUncommittedInlineChunk =
