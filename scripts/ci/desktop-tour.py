@@ -210,12 +210,14 @@ class App:
         return title.value
 
     def type_into(self, x, y, text):
-        for _ in range(TYPE_ATTEMPTS):
+        for attempt in range(TYPE_ATTEMPTS):
             self.window_rect()
             self.click(x, y)
             time.sleep(SETTLE)
             self.click(x, y)
             time.sleep(SETTLE)
+            if attempt > 0:
+                self.press("tab")
             self.log(f"foreground window: {self.foreground_title()}")
             self.type(text)
             if self.wait(text, LABEL_WAIT):
