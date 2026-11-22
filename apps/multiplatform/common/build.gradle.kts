@@ -70,8 +70,6 @@ kotlin {
         //Barcode
         api("org.boofcv:boofcv-core:1.1.3")
         implementation("com.godaddy.android.colorpicker:compose-color-picker-jvm:0.7.0")
-        // Link Previews
-        implementation("org.jsoup:jsoup:1.17.2")
         // Resources
         api("dev.icerock.moko:resources:0.27.1")
         api("dev.icerock.moko:resources-compose:0.27.1")

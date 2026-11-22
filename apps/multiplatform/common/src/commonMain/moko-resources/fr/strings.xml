@@ -2698,7 +2698,6 @@
     <string name="v7_0_channels_relays">Gérez vos relais.</string>
     <string name="v7_0_channels_contributors">Ajoutez des contributeurs.</string>
     <string name="v7_0_channels_wider_messages">Plus facile à lire.</string>
-    <string name="link_previews_alert_desc">L\'envoi d\'un aperçu de lien peut révéler votre adresse IP au site web. Vous pourrez modifier cela dans les paramètres de confidentialité plus tard.</string>
     <string name="max_group_mentions_per_message_reached">Vous pouvez mentionner jusqu\'à %1$s membres par message !</string>
     <string name="channel_members_title_subscribers">Abonnés</string>
     <string name="channel_subscriber_count_singular">%1$d abonné</string>
@@ -2793,10 +2792,6 @@
     <string name="connect_plan_open_channel">Ouvrir le canal</string>
     <string name="connect_plan_this_is_your_link_for_channel_vName"><![CDATA[Voici votre lien pour le canal <b>%1$s</b> !]]></string>
     <string name="unblock_subscriber_for_all_question">Débloquer l\'abonné pour tout le monde ?</string>
-    <string name="link_previews_alert_title">Activer les aperçus de liens ?</string>
-    <string name="link_previews_alert_desc_socks">L’aperçu du lien sera demandé via le proxy SOCKS. La résolution DNS peut néanmoins toujours être effectuée localement via votre résolveur DNS.</string>
-    <string name="link_previews_alert_enable">Activer</string>
-    <string name="link_previews_alert_disable">Désactiver</string>
     <string name="close_behavior_dialog_title">Réduire dans la zone de notification ?</string>
     <string name="close_behavior_dialog_text">Si vous choisissez Fermer, les messages ne seront pas reçus.\nVous pouvez modifier ce choix ultérieurement dans les paramètres d’apparence.</string>
     <string name="close_behavior_dialog_close">Fermer l\'application</string>

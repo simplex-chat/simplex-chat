@@ -1,4 +1,4 @@
-# Test: channel message signing, channel moderators and sending images in the SimpleX Chat desktop app
+# Test: channel message signing, channel moderators, sending images and link previews in the SimpleX Chat desktop app
 
 You are testing the SimpleX Chat desktop app, which runs on a virtual display on this machine. Drive it only with the `ui` helper, through Bash, one command per call: `ui <command> [args]`. Anything else is refused; don't look for ways around that, and if something blocks the test, report it. The commands are listed at the end.
 
@@ -65,7 +65,12 @@ The parts build on each other: run them in this order. cisub must join only afte
 3. (I3) Press Return or click the send button at the right end of the message field. Check: the chat shows the sent test card. Click the image: it opens larger, and "1080" and "TVB" are sharp and readable. Take a shot, then close the image with Escape.
 4. (I4) Repeat I2 and I3 with `images/simplex-logo.png`. Check: the preview and the sent image show the whole logo, and the area around its letters shows the chat's background, not black or grey.
 
-You have at most 330 turns, and the whole test fits in about 170 if you chain steps whose outcome you can predict with `ui do` and look at the screen after each chain. For example:
+**L. Link previews (as citester, in "image notes").** The chat core loads the page over the runner's network.
+
+1. (L1) Click the message field, `ui type "https://github.com/simplex-chat/simplex-chat"`, and wait up to 30 s for a card above the field. Take a shot. Check: the card shows an image, the page's title and the link; no alert is shown.
+2. (L2) Press Return. Check: the chat shows the message with the page's image, its title, a description under the title, and the link.
+
+You have at most 330 turns, and the whole test fits in about 180 if you chain steps whose outcome you can predict with `ui do` and look at the screen after each chain. For example:
 
 - `ui do click-text "Create your profile" -- wait "Enter profile name" -- click-text "Enter profile name" -- type citester -- shot profile`
 - `ui do click 363 730 -- click-text "Create public channel" 10 -- wait "Channel name" -- shot new-channel`
@@ -76,6 +81,6 @@ You have at most 330 turns, and the whole test fits in about 170 if you chain st
 
 ## Report
 
-Write `report.md` in your working directory as you go, so a session that is cut short still leaves its results: one row per step (S1 to S3, A1 to A5, J1, J2, A6, B1 to B3, J3 to J5, B4 to B7, I1 to I4), each check you ran as PASS or FAIL with its evidence (the text OCR read, screenshot names), and anything else unexpected. End your final message with one line: `CLAUDE-TEST: PASS` if every check you ran passed, otherwise `CLAUDE-TEST: FAIL` followed by the steps that failed.
+Write `report.md` in your working directory as you go, so a session that is cut short still leaves its results: one row per step (S1 to S3, A1 to A5, J1, J2, A6, B1 to B3, J3 to J5, B4 to B7, I1 to I4, L1, L2), each check you ran as PASS or FAIL with its evidence (the text OCR read, screenshot names), and anything else unexpected. End your final message with one line: `CLAUDE-TEST: PASS` if every check you ran passed, otherwise `CLAUDE-TEST: FAIL` followed by the steps that failed.
 
 ## The ui helper

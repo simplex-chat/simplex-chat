@@ -2593,13 +2593,9 @@
     <string name="owner_verification_failed">⚠️ Verifica della firma fallita: %s.</string>
     <string name="tap_to_open">Tocca per aprire</string>
     <string name="chat_link_one_time">Link una tantum</string>
-    <string name="link_previews_alert_disable">Disattiva</string>
-    <string name="link_previews_alert_enable">Attiva</string>
-    <string name="link_previews_alert_title">Attivare le anteprime dei link?</string>
     <string name="error_prefix">Errore</string>
     <string name="network_error">Errore di rete</string>
     <string name="relay_results">Risultati relay:</string>
-    <string name="link_previews_alert_desc">L\'invio di un\'anteprima del link può rivelare il tuo indirizzo IP al sito. Puoi modificarlo nelle impostazioni di Privacy più tardi.</string>
     <string name="connection_reached_limit_of_undelivered_messages">La connessione ha raggiunto il limite di messaggi non consegnati</string>
     <string name="channel_preferences">Preferenze del canale</string>
     <string name="only_channel_owners_can_change_prefs">Solo i proprietari del canale possono modificarne le preferenze.</string>
@@ -2684,7 +2680,6 @@
     <string name="onboarding_your_profile">Il tuo profilo</string>
     <string name="get_started">Cominciamo</string>
     <string name="one_hand_ui_bottom_bar">Barra inferiore</string>
-    <string name="link_previews_alert_desc_socks">L\'anteprima del link verrà richiesta via proxy SOCKS. La ricerca DNS può ancora accadere localmente tramite il tuo risolutore DNS.</string>
     <string name="one_hand_ui_top_bar">Barra superiore</string>
     <string name="cancel_channel_alert_msg">Il tuo nuovo canale %1$s è connesso a %2$d di %3$d relay.\nSe annulli, il canale verrà eliminato. Potrai crearlo di nuovo.</string>
     <string name="add_relay_button">Aggiungi relay</string>

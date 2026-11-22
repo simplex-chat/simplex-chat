@@ -2371,7 +2371,6 @@
     <string name="button_delete_member_messages_question">Xoá các tin nhắn của thành viên?</string>
     <string name="delete_member_messages_confirmation">Xoá các tin nhắn</string>
     <string name="button_edit_channel_profile">Sửa hồ sơ kênh</string>
-    <string name="link_previews_alert_enable">Cho phép</string>
     <string name="enable_chats_with_admins">Cho phép</string>
     <string name="enter_profile_name">Nhập tên hồ sơ…</string>
     <string name="error_prefix">Lỗi</string>

@@ -2578,8 +2578,6 @@
     <string name="chat_link_channel">Ссылка канала</string>
     <string name="channel_profile_is_stored_on_subscribers_devices">Профиль канала хранится на устройствах подписчиков и на чат-релеях.</string>
     <string name="channel_temporarily_unavailable">Канал временно недоступен</string>
-    <string name="link_previews_alert_disable">Выключить</string>
-    <string name="link_previews_alert_enable">Включить</string>
     <string name="error_prefix">Ошибка</string>
     <string name="chat_link_business_address">Бизнес-адрес</string>
     <string name="cant_broadcast_message">нельзя публиковать</string>
@@ -2598,7 +2596,6 @@
     <string name="relay_bar_relays_removed">%1$d релеев удалено</string>
     <string name="relay_bar_no_active_relays">Нет активных релеев</string>
     <string name="channel_no_active_relays_try_later">У канала нет активных релеев. Попробуйте подключиться позже.</string>
-    <string name="link_previews_alert_title">Включить картинки ссылок?</string>
     <string name="chat_list_channels">Каналы</string>
     <string name="rcv_channel_event_channel_deleted">удалил(а) канал</string>
     <string name="chat_link_contact_address">Адрес контакта</string>
@@ -2620,7 +2617,6 @@
     <string name="button_remove_subscriber_question">Удалить подписчика?</string>
     <string name="save_and_notify_channel_subscribers">Сохранить и уведомить подписчиков канала</string>
     <string name="save_channel_profile">Сохранить профиль канала</string>
-    <string name="link_previews_alert_desc">Отправка картинки ссылки может раскрыть Ваш IP-адрес веб-сайту. Вы можете изменить это в настройках безопасности позже.</string>
     <string name="onboarding_send_1_time_link">Отправьте ссылку через любой мессенджер - это безопасно. Попросите вставить её в SimpleX.</string>
     <string name="error_relay_test_server_auth">Для подключения к релею требуется авторизация, проверьте пароль.</string>
     <string name="server_warning">Предупреждение сервера</string>
@@ -2766,7 +2762,6 @@
     <string name="connect_plan_this_is_your_link_for_channel">Ваш канал</string>
     <string name="unblock_subscriber_for_all_question">Разблокировать подписчика для всех?</string>
     <string name="one_hand_ui_bottom_bar">Нижнее меню</string>
-    <string name="link_previews_alert_desc_socks">Картинка ссылки будет загружена через SOCKS-прокси. DNS-запрос может быть локальным через Ваш резолвер.</string>
     <string name="one_hand_ui_top_bar">Верхнее меню</string>
     <string name="add_relay_button">Добавить релей</string>
     <string name="add_relays_title">Добавить релеи</string>

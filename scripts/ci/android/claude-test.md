@@ -1,4 +1,4 @@
-# Test: onboarding, the chat list and sending images in the SimpleX Chat Android app
+# Test: onboarding, the chat list, sending images and a link preview in the SimpleX Chat Android app
 
 You are testing the SimpleX Chat Android app, which runs in an Android emulator on this machine. Drive it only with the `ui` helper, through Bash, one command per call: `ui <command> [args]`. Anything else is refused; don't look for ways around that, and if something blocks the test, report it. The commands are listed at the end.
 
@@ -47,7 +47,12 @@ Your working directory is where your output goes. `ui shot <name>` saves `screen
 4. Repeat 1 to 3 with `simplex-logo.png`. Check: the preview and the sent image show the whole logo, and the area around its letters shows the chat's background, not black or grey.
 5. Check that the chat shows both images after `ui relaunch` and opening "seeded notes" again.
 
-You have at most 90 turns, and the whole test fits in about 45 if you chain steps whose outcome you can predict with `ui do` and look at the screen after each chain. For example:
+**E. A link preview in "seeded notes".** The chat core loads the page over the runner's network.
+
+1. Click the message field, type `https://github.com/simplex-chat/simplex-chat`, and wait up to 30 s for a card above the field. Take a shot. Check: the card shows an image, the page's title and the link; no alert is shown.
+2. Click "Send Message". Check: the chat shows the message with the page's image, its title, a description under the title, and the link.
+
+You have at most 90 turns, and the whole test fits in about 50 if you chain steps whose outcome you can predict with `ui do` and look at the screen after each chain. For example:
 
 - `ui do click-text "Get started" -- click-text "Enter profile name" 30 -- type citester -- shot profile`
 - `ui do click-text "Create profile" -- wait Continue 60 -- shot your-network`
@@ -58,6 +63,6 @@ You have at most 90 turns, and the whole test fits in about 45 if you chain step
 
 ## Report
 
-Write `report.md` in your working directory: for each of A, B, C and D, each check you ran as PASS or FAIL with its evidence, and anything else unexpected. End your final message with one line: `CLAUDE-TEST: PASS` if every check you ran passed, otherwise `CLAUDE-TEST: FAIL` followed by the checks that failed.
+Write `report.md` in your working directory: for each of A, B, C, D and E, each check you ran as PASS or FAIL with its evidence, and anything else unexpected. End your final message with one line: `CLAUDE-TEST: PASS` if every check you ran passed, otherwise `CLAUDE-TEST: FAIL` followed by the checks that failed.
 
 ## The ui helper

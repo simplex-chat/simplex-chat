@@ -2666,9 +2666,6 @@
     <string name="chat_link_business_address">Geschäftliche Adresse</string>
     <string name="chat_link_channel">Kanallink</string>
     <string name="chat_link_contact_address">Kontaktadresse</string>
-    <string name="link_previews_alert_disable">Deaktivieren</string>
-    <string name="link_previews_alert_enable">Aktivieren</string>
-    <string name="link_previews_alert_title">Linkvorschau aktivieren?</string>
     <string name="error_prefix">Fehler</string>
     <string name="error_sharing_channel">Fehler beim Teilen des Kanals</string>
     <string name="chat_link_from_owner">(vom Eigentümer)</string>
@@ -2677,7 +2674,6 @@
     <string name="network_error">Netzwerk-Fehler</string>
     <string name="chat_link_one_time">Einmal-Link</string>
     <string name="relay_results">Relay‑Status:</string>
-    <string name="link_previews_alert_desc">Das Senden einer Link-Vorschau kann Ihre IP‑Adresse an die Website übermitteln. Sie können dies später in den Datenschutzeinstellungen ändern.</string>
     <string name="share_channel">Kanal teilen…</string>
     <string name="share_via_chat">Per Chat teilen</string>
     <string name="owner_verification_failed">⚠️ Signaturüberprüfung fehlgeschlagen: %s.</string>
@@ -2766,7 +2762,6 @@
     <string name="onboarding_your_network">Ihr Netzwerk</string>
     <string name="onboarding_your_profile">Ihr Profil</string>
     <string name="one_hand_ui_bottom_bar">Untere Leiste</string>
-    <string name="link_previews_alert_desc_socks">Die Linkvorschau wird über einen SOCKS-Proxy angefordert. DNS-Abfragen können dennoch lokal über Ihren DNS-Resolver erfolgen.</string>
     <string name="one_hand_ui_top_bar">Obere Leiste</string>
     <string name="cancel_channel_alert_msg">Ihr neuer Kanal %1$s ist mit %2$d von %3$d Relais verbunden.\nBei Abbruch, wird der Kanal gelöscht. Sie können ihn später neu erstellen.</string>
     <string name="add_relay_button">Relais hinzufügen</string>

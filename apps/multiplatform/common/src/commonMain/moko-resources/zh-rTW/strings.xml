@@ -2774,11 +2774,6 @@
     <string name="connect_plan_this_is_your_link_for_channel">你的頻道</string>
     <string name="connect_plan_this_is_your_link_for_channel_vName"><![CDATA[這是你用於頻道 <b>%1$s</b> 的連結！]]></string>
     <string name="unblock_subscriber_for_all_question">要對全部解除封鎖訂閱者嗎？</string>
-    <string name="link_previews_alert_title">要啟用連結預覽嗎？</string>
-    <string name="link_previews_alert_desc">傳送連結預覽可能會向網站透露你的 IP 地址。你可以稍後在「私隱」設定中變更此設定。</string>
-    <string name="link_previews_alert_desc_socks">連結預覽將透過 SOCKS 代理請求。DNS 查詢仍可能透過你的 DNS 解析器在本機發生。</string>
-    <string name="link_previews_alert_enable">啟用</string>
-    <string name="link_previews_alert_disable">停用</string>
     <string name="close_behavior_dialog_title">要最小化到系統匣嗎？</string>
     <string name="close_behavior_dialog_text">如果選擇「關閉」，將無法接收訊息。\n你可以稍後在「外觀」設定中變更。</string>
     <string name="close_behavior_dialog_close">關閉應用程式</string>

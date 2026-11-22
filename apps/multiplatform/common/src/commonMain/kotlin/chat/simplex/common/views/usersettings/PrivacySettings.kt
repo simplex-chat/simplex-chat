@@ -5,6 +5,7 @@ import SectionItemView
 import SectionDividerSpaced
 import SectionTextFooter
 import SectionView
+import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
@@ -66,8 +67,7 @@ fun PrivacySettingsView(
       SettingsPreferenceItem(
         painterResource(MR.images.ic_travel_explore),
         stringResource(MR.strings.send_link_previews),
-        chatModel.controller.appPrefs.privacyLinkPreviews,
-        onChange = { _ -> chatModel.controller.appPrefs.privacyLinkPreviewsShowAlert.set(false) } // to avoid showing alert to current users, show alert in v6.5
+        chatModel.controller.appPrefs.privacyLinkPreviews
       )
       SettingsPreferenceItem(
         painterResource(MR.images.ic_link),
@@ -75,6 +75,7 @@ fun PrivacySettingsView(
         chatModel.controller.appPrefs.privacySanitizeLinks
       )
     }
+    SectionTextFooter(stringResource(MR.strings.without_socks_proxy_website_sees_ip_address))
     SectionDividerSpaced()
 
     SectionView(stringResource(MR.strings.settings_section_title_files)) {
@@ -878,3 +879,11 @@ fun laUnavailableTurningOffAlert() = AlertManager.shared.showAlertMsg(
   generalGetString(MR.strings.auth_unavailable),
   generalGetString(MR.strings.auth_device_authentication_is_disabled_turning_off)
 )
+
+@Preview
+@Composable
+fun PreviewPrivacySettingsView() {
+  SimpleXTheme {
+    PrivacySettingsView(ChatModel, showSettingsModal = { {} }, setPerformLA = {})
+  }
+}

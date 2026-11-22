@@ -439,6 +439,7 @@ val appPrefs: AppPreferences by lazy { AppPreferences() }
 | `logLevel` | `LogLevel` | `WARNING` | Log level |
 | `showInternalErrors` | `Boolean` | `false` | Show internal errors to user |
 | `showSlowApiCalls` | `Boolean` | `false` | Alert on slow API calls |
+| `showLinkPreviewErrors` | `Boolean` | `false` | Alert with the core's error of a failed link preview, with `developerTools` |
 | `terminalAlwaysVisible` | `Boolean` | `false` | Floating terminal window (desktop) |
 
 #### Database (lines 188-208)

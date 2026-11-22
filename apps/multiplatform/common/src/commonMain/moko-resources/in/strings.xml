@@ -2538,17 +2538,14 @@
     <string name="channel_link">Tautan saluran</string>
     <string name="delete_relay">Hapus relai</string>
     <string name="direct_messages_are_prohibited_channel">Pesan pribadi antar pelanggan dilarang.</string>
-    <string name="link_previews_alert_disable">Matikan</string>
     <string name="disable_sending_recent_history_channel">Jangan kirim riwayat ke pelanggan baru.</string>
     <string name="num_relays_selected">%d relai dipilih</string>
     <string name="rcv_msg_error_dropped">dijatuhkan (%1$d upaya)</string>
     <string name="v6_5_invite_friends">Lebih mudah untuk mengundang teman Anda 👋</string>
     <string name="button_edit_channel_profile">Edit profil saluran</string>
-    <string name="link_previews_alert_enable">Aktifkan</string>
     <string name="enable_chats_with_admins">Aktifkan</string>
     <string name="enable_at_least_one_chat_relay">Aktifkan setidaknya satu relai obrolan untuk membuat saluran.</string>
     <string name="enable_chats_with_admins_question">Aktifkan obrolan dengan admin?</string>
-    <string name="link_previews_alert_title">Aktifkan pratinjau tautan?</string>
     <string name="enter_profile_name">Masukkan nama profil…</string>
     <string name="enter_relay_name">Masukkan nama relai…</string>
     <string name="enter_webpage_url">Masukkan URL halaman web</string>
@@ -2588,7 +2585,6 @@
     <string name="leave_channel_question">Keluar dari saluran?</string>
     <string name="let_someone_connect_to_you">Izinkan seseorang terhubung dengan Anda</string>
     <string name="action_button_channel_link">Tautan</string>
-    <string name="link_previews_alert_desc_socks">Pratinjau tautan akan diminta melalui proksi SOCKS. Pencarian DNS mungkin masih terjadi secara lokal melalui penyelesai DNS Anda.</string>
     <string name="content_filter_links">Tautan</string>
     <string name="owner_verification_passed">Tanda tangan tautan diverifikasi.</string>
     <string name="members_can_chat_with_admins">Anggota dapat mengobrol dengan admin.</string>

@@ -81,6 +81,8 @@ Organized in sections:
 | Show last messages | `privacyShowChatPreviews` | Show message previews in chat list |
 | Message draft | `privacySaveLastDraft` | Save unsent message draft for each chat |
 
+Footer of the Chats section: "Without a SOCKS proxy, the website sees your IP address."
+
 **Files Section**:
 
 | Setting | Preference Key | Description |
@@ -140,6 +142,7 @@ Platform-specific section (expect/actual composable):
 | App updates (Desktop) | App update checker and installer |
 | Developer tools | Toggle developer mode |
 | Storage (developer options) | Opens `StorageView`: size of each top-level entry in the app's data, config and temp folders |
+| Show link preview errors (developer options) | `showLinkPreviewErrors`, off by default: the app shows the core's error of a failed link preview in an alert |
 | Chat console | Opens `ChatConsoleView` terminal |
 | Terminal always visible (Desktop) | Keep terminal window open |
 | Install terminal app | Link to CLI app on GitHub |

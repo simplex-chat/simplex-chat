@@ -124,6 +124,8 @@ private val previewScenes = listOf(
   SnapshotScene("HelpView.PreviewHelpView") { PreviewHelpView() },
   SnapshotScene("MarkdownHelpView.PreviewMarkdownHelpView") { PreviewMarkdownHelpView() },
   SnapshotScene("SettingsView.PreviewSettingsLayout") { PreviewSettingsLayout() },
+  SnapshotScene("PrivacySettings.PreviewPrivacySettingsView") { PreviewPrivacySettingsView() },
+  SnapshotScene("DeveloperView.PreviewDeveloperView") { PreviewDeveloperView() },
   SnapshotScene("UserAddressView.PreviewUserAddressLayoutNoAddress") { PreviewUserAddressLayoutNoAddress() },
   SnapshotScene("UserAddressView.PreviewUserAddressLayoutAddressCreated") { PreviewUserAddressLayoutAddressCreated() },
   SnapshotScene("AdvancedNetworkSettings.PreviewAdvancedNetworkSettingsLayout") { PreviewAdvancedNetworkSettingsLayout() },
