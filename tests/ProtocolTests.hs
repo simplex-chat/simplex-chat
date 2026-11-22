@@ -248,12 +248,9 @@ decodeChatMessageTest = describe "Chat message encoding/decoding" $ do
     map (eventHasNotification . msgNew) priorities `shouldBe` [False, True, True]
     map (allowedPriority False) priorities `shouldBe` [MPSilent, MPNormal, MPNormal]
     map (allowedPriority True) priorities `shouldBe` priorities
-  it "x.msg.update priority is limited to low, normal and high" $ do
+  it "x.msg.update priority sets no notification flag" $ do
     let msgUpdate p = XMsgUpdate (SharedMsgId "\1\2\3\4") (MCText "hello") [] Nothing Nothing Nothing Nothing p Nothing
-    map (eventHasNotification . msgUpdate) [MPSilent, MPNormal, MPHigh] `shouldBe` [False, False, True]
-  it "x.msg.update as new has the priority of a new message" $ do
-    let msgUpdate p = XMsgUpdate (SharedMsgId "\1\2\3\4") (MCText "hello") [] Nothing Nothing Nothing Nothing p (Just True)
-    map (eventHasNotification . msgUpdate) [MPSilent, MPNormal, MPHigh] `shouldBe` [False, True, True]
+    map (eventHasNotification . msgUpdate) [MPSilent, MPNormal, MPHigh] `shouldBe` [False, False, False]
   it "x.grp.msg.forward has the notification of the forwarded message" $ do
     let fwd p = XGrpMsgForward (GrpMsgForward (FwdMember (MemberId "\1\2\3\4") "alice") (systemToUTCTime $ MkSystemTime 1 0)) $ ChatMessage chatInitialVRange Nothing $ XMsgNew ((mcSimple (MCText "hello")) {priority = p})
     map (eventHasNotification . fwd) [MPSilent, MPNormal, MPHigh] `shouldBe` [False, True, True]

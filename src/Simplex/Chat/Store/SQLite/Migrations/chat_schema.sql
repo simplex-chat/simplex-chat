@@ -796,6 +796,8 @@ CREATE TABLE delivery_tasks(
   failed INTEGER DEFAULT 0,
   created_at TEXT NOT NULL DEFAULT(datetime('now')),
   updated_at TEXT NOT NULL DEFAULT(datetime('now'))
+  ,
+  update_notification INTEGER NOT NULL DEFAULT 0
 ) STRICT;
 CREATE TABLE delivery_jobs(
   delivery_job_id INTEGER PRIMARY KEY AUTOINCREMENT,

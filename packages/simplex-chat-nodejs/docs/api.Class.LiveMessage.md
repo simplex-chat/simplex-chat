@@ -58,12 +58,13 @@ Error handler for sending, updating and deleting messages. Errors are logged whe
 
 ### end()
 
-> **end**(`text?`): `Promise`\<`void`\>
+> **end**(`text?`, `priority?`): `Promise`\<`void`\>
 
-Defined in: [src/api.ts:1181](../api.ts#L1181)
+Defined in: [src/api.ts:1182](../api.ts#L1182)
 
 Finalize the live message with the text, or with the last text when omitted.
 A message without text is deleted. The next update starts a new live message.
+`priority`: the priority of the final message, -1 silent, 0 or omitted normal, 1 high (groups only, for roles allowed by the group preference).
 The returned promise resolves after all queued commands complete.
 
 #### Parameters
@@ -71,6 +72,10 @@ The returned promise resolves after all queued commands complete.
 ##### text?
 
 `string` = `...`
+
+##### priority?
+
+`number`
 
 #### Returns
 

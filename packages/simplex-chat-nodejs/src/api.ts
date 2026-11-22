@@ -1177,41 +1177,42 @@ export class LiveMessage {
   /**
    * Finalize the live message with the text, or with the last text when omitted.
    * A message without text is deleted. The next update starts a new live message.
+   * `priority`: the priority of the final message, -1 silent, 0 or omitted normal, 1 high (groups only, for roles allowed by the group preference).
    * The returned promise resolves after all queued commands complete.
    */
-  end(text = this.text): Promise<void> {
+  end(text = this.text, priority?: number): Promise<void> {
     clearTimeout(this.timer)
     this.timer = undefined
     this.text = ""
     this.writing = false
-    this.queueText(text, false)
+    this.queueText(text, false, priority)
     return this.tasks
   }
 
-  private queueText(text: string, live: boolean): void {
-    this.tasks = this.tasks.then(() => this.showText(text, live)).catch(this.onError)
+  private queueText(text: string, live: boolean, priority?: number): void {
+    this.tasks = this.tasks.then(() => this.showText(text, live, priority)).catch(this.onError)
   }
 
-  private async showText(text: string, live: boolean): Promise<void> {
+  private async showText(text: string, live: boolean, priority?: number): Promise<void> {
     try {
-      await this.showMessage(text, live)
+      await this.showMessage(text, live, priority)
     } finally {
       if (!live) this.item = undefined
     }
   }
 
-  private async showMessage(text: string, live: boolean): Promise<void> {
+  private async showMessage(text: string, live: boolean, priority?: number): Promise<void> {
     const item = this.item
     if (item === undefined) {
       if (live || text !== "") {
-        const [{chatItem}] = await this.chat.apiSendMessages([this.chatType, this.chatId], [{msgContent: {type: "text", text}, mentions: {}}], live)
+        const [{chatItem}] = await this.chat.apiSendMessages([this.chatType, this.chatId], [{msgContent: {type: "text", text}, mentions: {}, priority}], live)
         this.item = live ? {itemId: chatItem.meta.itemId, text} : undefined
       }
     } else if (!live && text === "") {
       await this.chat.apiDeleteChatItems(this.chatType, this.chatId, [item.itemId], T.CIDeleteMode.Broadcast)
       this.item = undefined
     } else if (!live || text !== item.text) {
-      await this.chat.apiUpdateChatItem(this.chatType, this.chatId, item.itemId, {type: "text", text}, live)
+      await this.chat.apiUpdateChatItem(this.chatType, this.chatId, item.itemId, {type: "text", text}, live, priority)
       this.item = live ? {itemId: item.itemId, text} : undefined
     }
   }

@@ -15,6 +15,8 @@ CREATE INDEX idx_chat_items_contacts_silent ON chat_items(user_id, item_status, 
 
 CREATE INDEX idx_chat_items_groups_priority ON chat_items(user_id, item_status, group_id, group_scope_tag, group_scope_group_member_id, item_priority) WHERE item_priority <> 0;
 
+ALTER TABLE delivery_tasks ADD COLUMN update_notification SMALLINT NOT NULL DEFAULT 0;
+
 ALTER TABLE chat_items ADD COLUMN item_original_ts TIMESTAMPTZ;
 
 ALTER TABLE group_members ADD COLUMN member_via BYTEA;
@@ -35,6 +37,8 @@ WHERE item_sent = 1 AND group_member_id IS NOT NULL;
 ALTER TABLE group_members DROP COLUMN member_via;
 
 ALTER TABLE chat_items DROP COLUMN item_original_ts;
+
+ALTER TABLE delivery_tasks DROP COLUMN update_notification;
 
 DROP INDEX idx_chat_items_groups_priority;
 

@@ -1,6 +1,5 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DuplicateRecordFields #-}
-{-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -48,7 +47,8 @@ instance TextEncoding DeliveryWorkerScope where
 -- so jobs don't need this flag.
 data DeliveryTaskContext = DeliveryTaskContext
   { jobScope :: DeliveryJobScope,
-    sentAsGroup :: ShowGroupAsSender
+    sentAsGroup :: ShowGroupAsSender,
+    updateNotification :: Bool
   }
   deriving (Show)
 
@@ -105,7 +105,7 @@ jobSpecImpliedPending = \case
   DJRelayRemoved -> True
 
 infoToDeliveryContext :: GroupInfo -> Maybe GroupChatScopeInfo -> ShowGroupAsSender -> DeliveryTaskContext
-infoToDeliveryContext GroupInfo {membership} scopeInfo sentAsGroup = DeliveryTaskContext {jobScope, sentAsGroup}
+infoToDeliveryContext GroupInfo {membership} scopeInfo sentAsGroup = DeliveryTaskContext {jobScope, sentAsGroup, updateNotification = False}
   where
     jobScope = case scopeInfo of
       Nothing -> DJSGroup {jobSpec = DJDeliveryJob {includePending = False}}
@@ -133,18 +133,14 @@ data MessageDeliveryTask = MessageDeliveryTask
     fwdSender :: FwdSender,
     brokerTs :: UTCTime,
     verifiedMsg :: VerifiedMsg 'Json,
-    itemPriority :: MsgPriority
+    updateNotification :: Bool
   }
 
 deliveryTaskId :: MessageDeliveryTask -> Int64
 deliveryTaskId = taskId
 
 taskHasNotification :: MessageDeliveryTask -> Bool
-taskHasNotification MessageDeliveryTask {verifiedMsg, itemPriority} = case chatMsgEvent of
-  ev@XMsgUpdate {} -> priorityHasNotification itemPriority (ntfEventTag ev)
-  ev -> eventHasNotification ev
-  where
-    ChatMessage {chatMsgEvent} = verifiedChatMsg verifiedMsg
+taskHasNotification MessageDeliveryTask {verifiedMsg, updateNotification} = updateNotification || msgHasNotification verifiedMsg
 
 data DeliveryTaskStatus
   = DTSNew -- created for delivery task worker to pick up and convert into a delivery job
