@@ -8,7 +8,6 @@ final class LinkPreviewTests: XCTestCase {
     private let sendCmd = sendSimpleXCmdStr
     private let parseMarkdown = parseSimpleXMarkdownText
     private let lock = NSLock()
-    private var commands: [String: [String: Any]] = [:]
     private var requested: [String] = []
     private var unrecorded: [String] = []
     private var window: UIWindow?
@@ -17,10 +16,9 @@ final class LinkPreviewTests: XCTestCase {
     override func setUp() async throws {
         UserDefaults.standard.set(false, forKey: DEFAULT_DEVELOPER_TOOLS)
         UserDefaults.standard.set(false, forKey: DEFAULT_SHOW_LINK_PREVIEW_ERRORS)
-        let recording = try XCTUnwrap(try fixtureJSON("previews/link_preview") as? [String: Any])
-        let commands = try XCTUnwrap(recording["commands"] as? [String: [String: Any]])
-        let markdown = recording["markdown"] as? [String: Any] ?? [:]
-        self.commands = commands
+        let recording = try XCTUnwrap(try fixtureJSON("previews/link_preview") as? [String: [String: Any]])
+        let commands = recording["commands"] ?? [:]
+        let markdown = recording["markdown"] ?? [:]
         sendSimpleXCmdStr = { [unowned self] cmd, _, _ in
             guard let response = commands[cmd] else { self.locked { self.unrecorded.append(cmd) }; return nil }
             self.locked { self.requested.append(cmd) }
@@ -50,21 +48,18 @@ final class LinkPreviewTests: XCTestCase {
 
     @MainActor
     func testPreviewIsRecordedResponse() async throws {
-        let (uri, preview) = try recordedPreview()
-        XCTAssertFalse(preview.description.isEmpty)
-        let linkPreview = await apiGetLinkPreview(uri)
-        XCTAssertEqual(linkPreview, preview)
-        XCTAssertEqual(requests(), ["/_link preview \(uri)"])
+        let linkPreview = await apiGetLinkPreview("LINK_URL/page")
+        assertRecordedPreview(linkPreview)
+        XCTAssertEqual(requests(), ["/_link preview LINK_URL/page"])
         XCTAssertNil(shownAlert())
     }
 
     @MainActor
     func testFailureShowsNoAlertWithoutBothToggles() async throws {
-        let (uri, _) = try recordedError()
         for (developerTools, showLinkPreviewErrors) in [(false, false), (true, false), (false, true)] {
             UserDefaults.standard.set(developerTools, forKey: DEFAULT_DEVELOPER_TOOLS)
             UserDefaults.standard.set(showLinkPreviewErrors, forKey: DEFAULT_SHOW_LINK_PREVIEW_ERRORS)
-            let linkPreview = await apiGetLinkPreview(uri)
+            let linkPreview = await apiGetLinkPreview("LINK_URL/no-image")
             XCTAssertNil(linkPreview)
             XCTAssertNil(shownAlert(), "developer options \(developerTools), link preview errors \(showLinkPreviewErrors)")
         }
@@ -72,65 +67,49 @@ final class LinkPreviewTests: XCTestCase {
 
     @MainActor
     func testFailureShowsCoreErrorWithBothToggles() async throws {
-        let (uri, message) = try recordedError()
         UserDefaults.standard.set(true, forKey: DEFAULT_DEVELOPER_TOOLS)
         UserDefaults.standard.set(true, forKey: DEFAULT_SHOW_LINK_PREVIEW_ERRORS)
-        let linkPreview = await apiGetLinkPreview(uri)
+        let linkPreview = await apiGetLinkPreview("LINK_URL/no-image")
         XCTAssertNil(linkPreview)
         try await waitFor { self.shownAlert()?.isBeingPresented == false }
         let alert = try XCTUnwrap(shownAlert())
-        XCTAssertEqual([alert.title, alert.message], ["Link preview error", message])
+        XCTAssertEqual([alert.title, alert.message], ["Link preview error", "no image"])
         XCTAssertEqual(alert.actions.map(\.title), ["Ok"])
     }
 
     @MainActor
     func testShareExtensionDecodesRecordedResponses() throws {
-        let (uri, preview) = try recordedPreview()
-        XCTAssertEqual(try apiGetLinkPreview(uri: uri), preview)
-        let (failingUri, message) = try recordedError()
-        XCTAssertThrowsError(try apiGetLinkPreview(uri: failingUri)) { error in
-            XCTAssertEqual(error as? ChatError, .error(errorType: .linkPreview(message: message)))
+        assertRecordedPreview(try apiGetLinkPreview(uri: "LINK_URL/page"))
+        XCTAssertThrowsError(try apiGetLinkPreview(uri: "LINK_URL/no-image")) { error in
+            XCTAssertEqual(error as? ChatError, .error(errorType: .linkPreview(message: "no image")))
         }
-        XCTAssertEqual(requests(), ["/_link preview \(uri)", "/_link preview \(failingUri)"])
+        XCTAssertEqual(requests(), ["/_link preview LINK_URL/page", "/_link preview LINK_URL/no-image"])
     }
 
     @MainActor
     func testComposeShowsRecordedPreview() async throws {
-        let (uri, preview) = try recordedPreview()
         let compose = try await showCompose()
-        compose.composeState.message = uri
-        try await waitFor { compose.composeState.linkPreview == preview }
-        XCTAssertEqual(requests(), ["/_link preview \(uri)"])
+        compose.composeState.message = "LINK_URL/page"
+        try await waitFor { compose.composeState.linkPreview != nil }
+        assertRecordedPreview(compose.composeState.linkPreview)
+        XCTAssertEqual(requests(), ["/_link preview LINK_URL/page"])
         XCTAssertNil(shownAlert())
     }
 
     @MainActor
     func testComposeShowsNoPreviewOnFailure() async throws {
-        let (uri, _) = try recordedError()
         let compose = try await showCompose()
-        compose.composeState.message = uri
-        try await waitFor { self.requests() == ["/_link preview \(uri)"] }
+        compose.composeState.message = "LINK_URL/no-image"
+        try await waitFor { self.requests() == ["/_link preview LINK_URL/no-image"] }
         try await waitFor { compose.composeState.noPreview }
         XCTAssertNil(shownAlert())
     }
 
-    private func recordedPreview() throws -> (uri: String, preview: LinkPreview) {
-        let (uri, result) = try recorded("result")
-        let preview: LinkPreview = try decodeObject(XCTUnwrap(result["linkPreview"]))
-        return (uri, preview)
-    }
-
-    private func recordedError() throws -> (uri: String, message: String) {
-        let (uri, error) = try recorded("error")
-        let errorType = try XCTUnwrap(error["errorType"] as? [String: Any])
-        XCTAssertEqual(errorType["type"] as? String, "linkPreview")
-        return (uri, try XCTUnwrap(errorType["message"] as? String))
-    }
-
-    private func recorded(_ outcome: String) throws -> (uri: String, response: [String: Any]) {
-        let prefix = "/_link preview "
-        let (cmd, response) = try XCTUnwrap(commands.first { $0.key.hasPrefix(prefix) && $0.value[outcome] != nil }, "no recorded \(outcome)")
-        return (String(cmd.dropFirst(prefix.count)), try XCTUnwrap(response[outcome] as? [String: Any]))
+    private func assertRecordedPreview(_ linkPreview: LinkPreview?, file: StaticString = #filePath, line: UInt = #line) {
+        XCTAssertEqual(linkPreview?.uri, "LINK_URL/page", file: file, line: line)
+        XCTAssertEqual(linkPreview?.title, "Link preview title", file: file, line: line)
+        XCTAssertEqual(linkPreview?.description, "Link preview description", file: file, line: line)
+        XCTAssertNotNil(linkPreview.flatMap { imageFromBase64($0.image) }, "image not decoded", file: file, line: line)
     }
 
     private func requests() -> [String] {
