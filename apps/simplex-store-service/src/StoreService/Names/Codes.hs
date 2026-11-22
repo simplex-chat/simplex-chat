@@ -75,11 +75,11 @@ data CodeRefusal = CRInvalid | CRUsed | CRReserved | CRExpired | CRPaymentPendin
   deriving (Eq, Show)
 
 -- | Why the registration's name of this length cannot be registered with the code. A code the registration
--- already holds stays good for it until spent, even if revoked or expired since.
+-- already holds stays good for it until spent, even if expired since, unless revoked.
 codeRefusal :: UTCTime -> RegistrationId -> NameLength -> PrepaidCode -> Maybe CodeRefusal
-codeRefusal now rid len code@PrepaidCode {pcReservedBy, pcSpentAt, pcMinLength}
+codeRefusal now rid len code@PrepaidCode {pcReservedBy, pcSpentAt, pcRevokedAt, pcMinLength}
   | isJust pcSpentAt = Just CRUsed
-  | pcReservedBy == Just rid = covering
+  | pcReservedBy == Just rid = (CRInvalid <$ pcRevokedAt) <|> covering
   | otherwise = stateRefusal (codeState now code) <|> covering
   where
     covering

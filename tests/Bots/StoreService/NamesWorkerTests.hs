@@ -93,7 +93,7 @@ workerTests = describe "StoreService names: worker" $ do
     it "writes nothing when the registration changed since it was read" testLostRace
     it "writes in the name's turn" testInNameTurn
   describe "register" $ do
-    it "ends taken on any revert while the name is not available, releasing a code and keeping no balance" testRevertTaken
+    it "ends taken on any revert while the name is not available, keeping a code reserved and no balance" testRevertTaken
     it "logs and reports an order taken on chain once, and none taken at settlement, alerting neither 3 hours after payment" testTakeReported
     it "waits while the name reads taken only above the confirmation depth, and ends taken once it reads so at the depth" testTakenAtDepth
     it "keeps the phase on NameNotAvailable while the name still reads available, as for a pending competitor" testPendingCompetitor
@@ -110,7 +110,7 @@ workerTests = describe "StoreService names: worker" $ do
     it "commits again with its reveal when the dry run reverts CommitmentNotFound, and when it reverts CommitmentTooOld past the lapse, reporting that" testCommitAgain
     it "classes the contracts' errors as permanent or temporary" testRevertClasses
     it "reports temporary failures in a row, of any reasons mixed, once they have failed for 10 minutes, with the latest reason, and a permanent one never" testFailureNotice
-    it "ends a register mined with status 0 taken while the name is not available, releasing a code" testMinedRevertTaken
+    it "ends a register mined with status 0 taken while the name is not available, keeping a code reserved" testMinedRevertTaken
     it "sends a register again only once none can still be mined, and writes registered when the owner holds the name" testFailedOnlySettled
   describe "terms acceptance" $ do
     it "relays the reveal's acceptance of the terms of the name's kind to the name policy as soon as it is stored, and registers once the policy holds it" testAcceptanceRelayed
@@ -661,7 +661,7 @@ testRevertTaken = withWorker $ \w@W {wCtx = ctx@Ctx {cNode}} -> do
   x <- stored ctx r
   namePhase (nrPhase x) `shouldBe` PTaken
   PrepaidCode {pcReservedBy, pcSpentAt} <- codeOf ctx code
-  (pcReservedBy, pcSpentAt) `shouldBe` (Nothing, Nothing)
+  (pcReservedBy, pcSpentAt) `shouldBe` (Just (nrId r), Nothing)
   balanceFigures ctx (nrId r) `shouldReturn` Nothing
   sent w `shouldReturn` []
 
@@ -1046,7 +1046,7 @@ testMinedRevertTaken = withWorker $ \w@W {wCtx = ctx} -> do
   steps w r >>= done
   x <- stored ctx r
   namePhase (nrPhase x) `shouldBe` PTaken
-  pcReservedBy <$> codeOf ctx code `shouldReturn` Nothing
+  pcReservedBy <$> codeOf ctx code `shouldReturn` Just (nrId r)
 
 testExpiredIntent :: IO ()
 testExpiredIntent = withWorker $ \w@W {wCtx = ctx} -> do

@@ -40,6 +40,8 @@ module Bots.StoreService.NamesOrdersTests
     yearsDuration,
     codeRoutes,
     issueCode,
+    signedCodeBody,
+    postRegister,
     registered,
     registrationById,
     registrationsOf,

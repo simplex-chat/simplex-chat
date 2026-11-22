@@ -1581,7 +1581,7 @@ getPrepaidCodeById db codeId =
   maybeFirstRow toPrepaidCode (DB.query db (prepaidCodeColumns <> " WHERE name_prepaid_code_id = ?") (Only codeId))
     >>= maybe (E.throwIO $ BrokenInvariant $ "the prepaid code " <> tshow codeId <> " of an order is missing") pure
 
--- | Only an unused code: not reserved, spent or revoked, paid or free, and not expired.
+-- | An unused code, paid or free and not expired, or the code the registration holds; never a spent or revoked one.
 reservePrepaidCode :: DB.Connection -> CodeId -> RegistrationId -> UTCTime -> IO Bool
 reservePrepaidCode db codeId (RegistrationId rid) now =
   (> 0)
@@ -1590,11 +1590,11 @@ reservePrepaidCode db codeId (RegistrationId rid) now =
       ( prefixQuery
           [sql|
         UPDATE @name_prepaid_codes SET reserved_by = ?, reserved_at = ?
-        WHERE name_prepaid_code_id = ? AND reserved_by IS NULL AND spent_at IS NULL AND revoked_at IS NULL
-          AND code_payment_status <> ? AND (expires_at IS NULL OR expires_at > ?)
+        WHERE name_prepaid_code_id = ? AND spent_at IS NULL AND revoked_at IS NULL
+          AND (reserved_by = ? OR (reserved_by IS NULL AND code_payment_status <> ? AND (expires_at IS NULL OR expires_at > ?)))
       |]
       )
-      (rid, now, codeId, CPSUnpaid, now)
+      (rid, now, codeId, rid, CPSUnpaid, now)
 
 releasePrepaidCode :: DB.Connection -> CodeId -> RegistrationId -> IO Bool
 releasePrepaidCode db codeId (RegistrationId rid) =

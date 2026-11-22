@@ -87,7 +87,7 @@ namesStoreTests = describe "StoreService names: store" $ do
     it "issues one code per hash" testIssueCode
     it "stores a code's origin as issued_in_group, counting a group code written before as the group's" testIssuerStored
     it "reserves only an unused code, releases and spends it only for its holder" testReserveReleaseSpend
-    it "refuses an unpaid, revoked or expired code" testReserveRefused
+    it "refuses an unpaid, revoked or expired code, and reserves the code a registration holds again past its expiry, never once revoked" testReserveRefused
     it "lets a registration hold one code" testOneCodePerRegistration
     it "revokes an unspent code, reserved or not, never a spent one" testRevoke
   describe "transactions" $ do
@@ -747,6 +747,12 @@ testReserveRefused = withServiceStore $ \st -> do
   let reserve code = withTransaction st $ \db -> reservePrepaidCode db (pcId code) (RegistrationId "r1") (at 20)
   mapM reserve [unpaid, expired, revoked] `shouldReturn` [False, False, False]
   reserve free `shouldReturn` True
+  placePaid st "r2" ownerB (order "bobsbakery" 2) (at 60) `shouldReturn` Right ()
+  held <- issue st 5 usable {npcExpiresAt = Just (at 30)}
+  let reserveHeld n = withTransaction st $ \db -> reservePrepaidCode db (pcId held) (RegistrationId "r2") (at n)
+  mapM reserveHeld [20, 40] `shouldReturn` [True, True]
+  fst <$> withTransaction st (\db -> revokePrepaidCode db (pcCodeHash held) (at 41)) `shouldReturn` Revoked (pcId held)
+  reserveHeld 42 `shouldReturn` False
 
 testOneCodePerRegistration :: IO ()
 testOneCodePerRegistration = withServiceStore $ \st -> do

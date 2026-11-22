@@ -485,7 +485,7 @@ judge w@Worker {wkOrders = oe@OrdersEnv {oeContracts, oeReport}} now r@NameRegis
           pure $ if atDepth then TakenOnlyAboveDepth else TakenAtDepth
 
 -- | A paid order keeps its whole price as a balance of its own, credited in the taken write's transaction, registration before balance,
--- in the balance's turn after the name's; a code order's code is released.
+-- in the balance's turn after the name's; a code order keeps its code reserved.
 taken :: Worker -> UTCTime -> NameRegistration -> IO (Maybe Int64, Next)
 taken Worker {wkOrders = oe@OrdersEnv {oeReport}} now r@NameRegistration {nrId = RegistrationId rid} = do
   result@(v, _) <- written r <$> endOrder oe now r {nrPhase = OTaken} (\_ -> pure True)
@@ -496,10 +496,12 @@ taken Worker {wkOrders = oe@OrdersEnv {oeReport}} now r@NameRegistration {nrId =
   pure result
 
 endOrder :: OrdersEnv -> UTCTime -> NameRegistration -> (DB.Connection -> IO Bool) -> IO (Either WriteRefusal Int64)
-endOrder OrdersEnv {oeStore, oeTurns} now r@NameRegistration {nrId, nrPayment} mayEnd = case nrPayment of
+endOrder OrdersEnv {oeStore, oeTurns} now r@NameRegistration {nrId, nrPayment, nrPhase} mayEnd = case nrPayment of
   OPInvoice {} -> withBalanceTurn oeTurns nrId (withTransaction oeStore $ ending $ creditedWrite now r)
-  OPCode codeId -> fmap fst <$> releaseCode oeTurns oeStore codeId nrId (ending $ \db -> versionWritten <$> updateRegistration db r now)
+  OPCode _ | OTaken <- nrPhase -> withTransaction oeStore $ ending updated
+  OPCode codeId -> fmap fst <$> releaseCode oeTurns oeStore codeId nrId (ending updated)
   where
+    updated db = versionWritten <$> updateRegistration db r now
     ending write db =
       mayEnd db >>= \case
         True -> write db

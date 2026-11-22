@@ -102,7 +102,7 @@ namesOwnerTests = describe "StoreService names: owner" $ do
     it "runs the order checks on the new fields: invalid_name, the duration, name_taken and name_check_unavailable" testSelectOrderChecks
     it "answers a name of another price catalog_changed with its price, one priced under the floor name_check_unavailable, a balance short of the price bad_request, and selects at the order's price, spent from its balance" testSelectPrice
     it "checks a code order's code as a new code order's: code_not_covering for a shorter name, and reserves it for the name selected" testSelectCodeOrder
-    it "refuses a code expired, revoked or reserved by another order since the reset with its tag, changing nothing" testSelectRefusedCode
+    it "accepts the code the order holds past its expiry, refuses it once revoked with code_invalid, changing nothing, and keeps it from other code orders" testSelectRefusedCode
     it "refuses sealed over 11095 characters, a body over 16384 bytes and malformed fields, accepting the longest" testSelectSizes
     it "refuses another signer's signature and a stale timestamp, and answers an unknown order 404" testSelectRefusedSigner
     it "answers registration_changed with the current view when the order changed during the checks, writing nothing" testSelectLostRace
@@ -241,7 +241,7 @@ retaken ctx@Ctx {cStore} r = do
   t <- rewrite ctx r takenPhase
   t <$ withTransaction cStore (\db -> case nrPayment t of
     OPInvoice {} -> creditBalance db (nrId t) (nrPrice t) orderTime
-    OPCode codeId -> void $ releasePrepaidCode db codeId (nrId t))
+    OPCode _ -> pure ())
 
 committedCommit :: Commit
 committedCommit = Commit {cmTx = Just $ TxRef (TxHash $ hashFixture 8) 100, cmRevealAfter = RoundedSystemTime $ fromIntegral $ seconds orderTime + 60, cmRevealBefore = RoundedSystemTime $ fromIntegral $ seconds orderTime + 86400}
@@ -638,33 +638,29 @@ testSelectCodeOrder = withOwner $ \ctx -> do
 
 testSelectRefusedCode :: IO ()
 testSelectRefusedCode = withOwner $ \ctx@Ctx {cStore} -> do
-  answerFree ctx "alicebakers"
   let takenCodeIn n = do
         let label = "codeorder" <> tshow n
         answerFree ctx label
         (r, code) <- codeIn ctx 8 aliceOrder {oLabel = label, oSecret = secretOf (30 + n)} id >>= \(placedOrder, code) -> (,code) <$> retaken ctx placedOrder
         to <- selectionOf ctx label (40 + n)
         pure (r, code, to)
-      refusedUnchanged r code to tag = do
-        row <- codeRow ctx code
-        answer <- select ctx keyA r to
-        answer `shouldBe` tag
-        stored ctx r `shouldReturn` r
-        codeRow ctx code `shouldReturn` row
-        pure answer
   (expiredOrder, expired@PrepaidCode {pcCodeHash = expiredHash}, toExpired) <- takenCodeIn 1
   withTransaction cStore $ \db -> DB.execute db "UPDATE sx_badge_service_name_prepaid_codes SET expires_at = ? WHERE code_hash = ?" (orderTime, expiredHash)
-  refusedUnchanged expiredOrder expired toExpired (refusedWith 409 "code_expired") >>= answerFixture "select-code-expired"
+  phaseOf <$> selected ctx keyA expiredOrder toExpired `shouldReturn` Just "queued"
+  pcReservedBy <$> codeRow ctx expired `shouldReturn` Just (nrId expiredOrder)
   (revokedOrder, revoked@PrepaidCode {pcCodeHash = revokedHash}, toRevoked) <- takenCodeIn 2
   fst <$> withTransaction cStore (\db -> revokePrepaidCode db revokedHash orderTime) `shouldReturn` Revoked (pcId revoked)
-  refusedUnchanged revokedOrder revoked toRevoked (refusedWith 400 "code_invalid") >>= answerFixture "select-code-invalid"
+  row <- codeRow ctx revoked
+  answer <- select ctx keyA revokedOrder toRevoked
+  answer `shouldBe` refusedWith 400 "code_invalid"
+  answerFixture "select-code-invalid" answer
+  stored ctx revokedOrder `shouldReturn` revokedOrder
+  codeRow ctx revoked `shouldReturn` row
   forM_ ["codeorder8", "codeorder9"] $ answerFree ctx
-  (reusedText, reused) <- issueCode ctx 8 2 id
-  firstTaken <- registered ctx reusedText aliceOrder {oLabel = "codeorder8", oSecret = secretOf 38} >>= registrationById ctx >>= retaken ctx
-  reusing <- registered ctx reusedText (byB aliceOrder) {oLabel = "codeorder9", oSecret = secretOf 39}
-  toReserved <- selectionOf ctx "alicebakers" 48
-  refusedUnchanged firstTaken reused toReserved (refusedWith 409 "code_reserved") >>= answerFixture "select-code-reserved"
-  pcReservedBy <$> codeRow ctx reused `shouldReturn` Just reusing
+  (keptText, kept) <- issueCode ctx 8 2 id
+  holder <- registered ctx keptText aliceOrder {oLabel = "codeorder8", oSecret = secretOf 38} >>= registrationById ctx >>= retaken ctx
+  (signedCodeBody ctx keptText (byB aliceOrder) {oLabel = "codeorder9", oSecret = secretOf 39} >>= postRegister ctx) `shouldReturn` refusedWith 409 "code_reserved"
+  pcReservedBy <$> codeRow ctx kept `shouldReturn` Just (nrId holder)
 
 testSelectSizes :: IO ()
 testSelectSizes = withOwner $ \ctx -> do

@@ -34,7 +34,7 @@ stateDiagram-v2
     state "payment or code" as pay {
       state "unpaid: invoice open" as unpaidPart
       state "paid: the price held, as a balance after a reset" as paidPart
-      state "code provided: reserved while a name is selected" as codePart
+      state "code provided: reserved until a name is registered with it, or its month ends" as codePart
       [*] --> unpaidPart: an invoice order
       [*] --> codePart: a code order
       unpaidPart --> paidPart: payment settled
@@ -66,8 +66,8 @@ stateDiagram-v2
   registering --> committed: register mined with status 0 below its cap, the name free
   committed --> registered: register landed
   registering --> registered: register landed
-  committed --> taken: reset, as the name is gone at the confirmation depth, the price to the balance or the code released
-  registering --> taken: reset, as the name is gone at the confirmation depth, the price to the balance or the code released
+  committed --> taken: reset, as the name is gone at the confirmation depth, the price to the balance or the code kept
+  registering --> taken: reset, as the name is gone at the confirmation depth, the price to the balance or the code kept
   queued --> failed: permanent reason at its cap
   committing --> failed: permanent reason at its cap
   committed --> failed: permanent reason at its cap; signature refused by the configuration; no read by its page for 3 days
@@ -97,11 +97,11 @@ stateDiagram-v2
 ### 1.3 One month from each selection of a name
 - **names:** a failed order holds its place with no end; it stays live, refusing only orders of the same owner code (`Names/Store.hs:760-772`).
 - **Final:** the name stays reserved for the buyer for 1 month from `selected_at` (6). A selection also clears `unregistered_alerted_at` (3.1). The month pass reads `selected_at` again in the order's turn.
-  - **Reset:** a take, by another buyer's paid order at settlement or on chain (2.1), resets the order's name part: phase `taken`, name not selected; not live, its name free for other orders, a paid order's price credited to its balance, a code order's code released. The order keeps its id, its owner, its payment or code, and the taken name's fields, which its view shows. The view's `taken` phase has no other field.
+  - **Reset:** a take, by another buyer's paid order at settlement or on chain (2.1), resets the order's name part: phase `taken`, name not selected; not live, its name free for other orders, a paid order's price credited to its balance, a code order's code kept reserved. The order keeps its id, its owner, its payment or code, and the taken name's fields, which its view shows. The view's `taken` phase has no other field.
   - **Payment held:** for a paid order, the selection's spend needs `balance.amount` at least `price`, both in the view (`spendBalance`); the page offers a selection only then. A balance refunded by support (`//close`, `//record_refund`) or taken back at a dispute holds less.
   - **Selection:** `POST /api/registration/ID/name`, signed by the owner as before, selects a name for an order whose name is not selected; any other order is answered `400 bad_request`, and a body equal to the order's current fields with its current view. A new order's checks are run, by their functions: the timestamp, the duration for the order's years, the terms, the name free, and the reveal, with the stored links accepted (2.4); then, in one transaction, other live orders of the commitment or of the owner and name as a new order meets them (an overdue order of the same wallet and name closed, any other answered `409 order_exists`), and the write: phase `queued`, the new fields and reveal, transactions and attempts cleared (3.2), `selected_at` set to the selection's time.
   - **A paid order:** the name's price for the order's years is checked against the order's price as a new order's against the price it saw, `409 catalog_changed` with the name's price; the price is spent from the order's balance in the write's transaction, `400 bad_request` when the balance no longer holds it.
-  - **A code order:** in the code's turn, the code is checked and reserved as a new code order's: `400 code_invalid` for a revoked code, `409 code_expired`, `409 code_used`, `409 code_reserved`, `409 payment_pending` and `409 code_not_covering`.
+  - **A code order:** a free name code accepted for an order stays valid for that order until a name is registered with it. In the code's turn, the code the order holds is checked and reserved again: an expired code is accepted, a revoked one is answered `400 code_invalid`, and a name shorter than the code allows `409 code_not_covering`.
   - `max_order_moves`, the order's `moves` and the refusals `move_limit` and `price_too_high` are removed.
   - Failed and lapsed orders are refunded by support. An order not registered within the month fails, the name returns to sale, and the price goes to the order's balance; refunds from the balance are manual. An order with a register transaction sent and not settled is ended only after it settles.
 - **Why:** a hold extends the name's registration period; a month resolves every case that can be resolved.
@@ -131,7 +131,7 @@ stateDiagram-v2
 
 ### 1.6 Prepaid codes expire
 - **names:** codes never expire: the expiry is stored and checked, but every code is issued without one (`Names/Codes.hs`, `issueNameCode`). No code has been issued yet.
-- **Final:** a name can be reserved with a code for 3 months from the code's issue. When a name is selected for a code order after a reset, its code is reserved as for a new code order, so an expired or revoked code is refused (1.3).
+- **Final:** a name can be reserved with a code for 3 months from the code's issue. An order that holds a code keeps it past its expiry: when a name is selected for a code order after a reset, its code is accepted after its expiry and refused once revoked (1.3).
 - **Why:** some time pressure; it bounds how long an old price stays valid.
 
 ### 1.7 One request before the invoice
