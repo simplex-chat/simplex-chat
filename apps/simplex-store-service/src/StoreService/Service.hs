@@ -11,6 +11,7 @@ module StoreService.Service
     welcomeGetOpts,
     trustDevKeys,
     checkNodeChain,
+    redactPassword,
     checkUnverifiedReceipts,
     logNamePolicy,
     requireDevKeys,
@@ -83,6 +84,7 @@ import Data.ByteString.Char8 (ByteString)
 import Data.Either (fromRight, isRight)
 import Data.Functor (($>), (<&>))
 import Data.Int (Int64)
+import Data.List (findIndex, isPrefixOf, tails)
 import qualified Data.Map.Strict as M
 import Data.Maybe (fromMaybe, isJust, isNothing, maybeToList)
 import qualified Data.Text as T
@@ -98,6 +100,8 @@ import Simplex.Chat.Bot (initializeBotAddress')
 import Simplex.Chat.Bot.Store (withDB, withDB')
 import Simplex.Chat.Controller
 import Simplex.Chat.Core (sendChatCmd, simplexChatCore)
+import Simplex.Chat.Options (CoreChatOpts (..))
+import Simplex.Chat.Options.DB (dbString)
 import Simplex.Chat.PaymentService (AppleTransactionFacts (..), ServicePayment (..), appleTransactionFacts)
 import Simplex.Chat.PaymentService.Types (InvoiceId (..), PaymentProvider (..), StoreTransactionRef (..))
 import Simplex.Chat.Terminal (terminalChatConfig)
@@ -134,9 +138,10 @@ newServiceState = do
 welcomeGetOpts :: IO StoreServiceOpts
 welcomeGetOpts = do
   appDir <- getAppUserDataDirectory "simplex"
-  opts@StoreServiceOpts {testing, serviceName} <- getStoreServiceOpts appDir "simplex_badge_service"
+  opts@StoreServiceOpts {coreOptions, testing, serviceName} <- getStoreServiceOpts appDir "simplex_badge_service"
   unless testing $ do
     putStrLn $ "SimpleX Store Service v" ++ versionNumber
+    putStrLn $ "db: " <> redactPassword (dbString $ dbOptions coreOptions)
     putStrLn $ "Service name: " ++ T.unpack serviceName
   pure opts
 
@@ -168,6 +173,19 @@ checkNodeChain = \case
         | null devIssuerKeys -> pure $ Left $ "chain.chain_id " <> show cChainId <> " is refused: the node's chain id could not be read"
         | otherwise -> pure $ Left "issuer.dev_keys is refused: the node's chain id could not be read"
   _ -> pure $ Right ()
+
+-- | The connection string with its password masked, as the start line reaches the logs: in a URI's user info or as a
+-- password= keyword.
+redactPassword :: String -> String
+redactPassword s = case (\i -> (take i s, drop (i + 3) s)) <$> findIndex ("://" `isPrefixOf`) (tails s) of
+  Just (scheme, rest) -> let (authority, path) = break (== '/') rest in scheme <> "://" <> maskUserInfo authority <> path
+  Nothing -> unwords $ map maskKeyword $ words s
+  where
+    maskUserInfo authority = case break (== '@') (reverse authority) of
+      (hostRev, _ : infoRev)
+        | (user, _ : _) <- break (== ':') (reverse infoRev) -> user <> ":***@" <> reverse hostRev
+      _ -> authority
+    maskKeyword w = if "password=" `isPrefixOf` w then "password=***" else w
 
 checkIssuerKey :: StoreServiceOpts -> Maybe ServiceConfig -> ChatConfig -> IO (Either String BadgeIssuerKey)
 checkIssuerKey StoreServiceOpts {issuerKey} serviceCfg cfg = case issuerKey of
@@ -212,6 +230,9 @@ readConfigOrExit path =
     Left e -> putStrLn (path <> ": " <> e) >> exitFailure
     Right sc -> pure sc
 
+-- | Only one of the mock and the real verifiers applies: the config refuses
+-- accept_unverified_store_receipts beside [apple] or [google]. The other two dev settings,
+-- credit_test_purchases and check_store_during_coverage, are meant to sit beside a real verifier.
 configureStoreVerifier :: Maybe ServiceConfig -> ServiceState -> IO ServiceState
 configureStoreVerifier serviceCfg env@ServiceState {serviceCC, storeVerifier = v} = case serviceCfg of
   Just ServiceConfig {devAcceptUnverifiedStoreReceipts = True, devCheckStoreDuringCoverage} -> do

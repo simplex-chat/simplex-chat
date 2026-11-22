@@ -21,7 +21,7 @@ import StoreService.Names.Store (CmdSource (..), FailReason (..), NameRegistrati
 import StoreService.Names.Turns (newTurns, withCodeTurn)
 import StoreService.Names.View (addressText)
 import StoreService.Options (StoreServiceOpts (..))
-import StoreService.Service (ServiceState (..), checkNodeChain, checkUnverifiedReceipts, newServiceState, requireDevKeys, storeService, trustDevKeys)
+import StoreService.Service (ServiceState (..), checkNodeChain, checkUnverifiedReceipts, newServiceState, redactPassword, requireDevKeys, storeService, trustDevKeys)
 import StoreService.Store (ManagedGroup (..), getManagedGroup)
 import StoreService.Store.Migrate (withInstanceLock)
 import Bots.StoreService.BotTests (badgeBotName, badgeCmdUsage, badgeProfile, consoleIssueUsage, badgeTypeOf, credentialOf, devKeysIni, entryOf, issueCode, issueRaw, mkStoreServiceOpts, newPurchaseKeys, operatorCmd, redeemWithQueue, requestObject, revokeNamed, revokeRaw, serviceDbPrefix, shouldAnswerError, statementOf, stopStoreService, testIssuerKeyIdx, withStoreService)
@@ -162,6 +162,7 @@ namesBootTests :: SpecWith TestParams
 namesBootTests = do
   it "warns naming the indexes of trusted dev_keys, and says nothing without them" testDevKeysWarned
   it "refuses a node serving another chain than chain_id, and dev_keys or chain_id 31337 unless the node answers, only warning without both" testNodeChain
+  it "masks the database password in the start line, in a URI or as a keyword" testRedactPassword
   it "refuses unverified store receipts with an issuer key clients trust, and takes them with a dev key" testUnverifiedReceiptsKey
   it "refuses a second instance on the same Postgres database until the first ends, exits when the lock's connection fails, and takes no lock on SQLite" testInstanceLock
   it "exits before the chat core starts while a pending transaction was signed by another key" testOtherKeyPendingStops
@@ -236,6 +237,13 @@ testUnverifiedReceiptsKey _ = do
     `shouldBe` Left ("[dev] accept_unverified_store_receipts is refused: issuer key index " <> show testIssuerKeyIdx <> " is one clients trust, so any receipt would mint badges they accept")
   checkUnverifiedReceipts unverified cfg BadgeIssuerKey {keyIdx = 9, secretKey = sk} `shouldBe` Right ()
   checkUnverifiedReceipts (Just withDev) cfg BadgeIssuerKey {keyIdx = testIssuerKeyIdx, secretKey = sk} `shouldBe` Right ()
+
+testRedactPassword :: HasCallStack => TestParams -> IO ()
+testRedactPassword _ = do
+  redactPassword "postgresql://simplex:s3cr@t:x@127.0.0.1:5432/badge_service" `shouldBe` "postgresql://simplex:***@127.0.0.1:5432/badge_service"
+  redactPassword "postgresql://simplex@127.0.0.1:5432/badge_service" `shouldBe` "postgresql://simplex@127.0.0.1:5432/badge_service"
+  redactPassword "host=127.0.0.1 user=simplex password=s3cret dbname=badge_service" `shouldBe` "host=127.0.0.1 user=simplex password=*** dbname=badge_service"
+  redactPassword "/var/opt/simplex_badge_service" `shouldBe` "/var/opt/simplex_badge_service"
 
 testNodeChain :: HasCallStack => TestParams -> IO ()
 testNodeChain _ = withFakeEthNode $ \node@FakeEthNode {fnUrl} -> do
