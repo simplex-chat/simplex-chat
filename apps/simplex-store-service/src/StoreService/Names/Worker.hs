@@ -54,6 +54,7 @@ import Simplex.Messaging.Util (catchOwn', tshow, ($>>=))
 import StoreService.Config (ChainConfig (..), NamesConfig (..))
 import StoreService.Names.Balances (RefundRecord (..))
 import StoreService.Names.Chain (Block (..), BlockTag (..), ChainError (..), TxHash, blockAt)
+import StoreService.Names.Codes (releaseCode)
 import StoreService.Names.Contracts (CommitmentAges (..), Contracts (..), acceptedTerms, commitmentAges, commitmentTime, communityName, confirmedTag, controllerAvailable, forgetNamePolicy, namePolicy)
 import StoreService.Names.Orders (Landing (..), OrderRefusal, OrdersEnv (..), WriteRefusal (..), checkLanded, confirmLanded, versionWritten)
 import StoreService.Names.Phases (RegistrationId (..), awaitChange, publish)
@@ -495,10 +496,12 @@ taken Worker {wkOrders = oe@OrdersEnv {oeReport}} now r@NameRegistration {nrId =
   pure result
 
 endOrder :: OrdersEnv -> UTCTime -> NameRegistration -> (DB.Connection -> IO Bool) -> IO (Either WriteRefusal Int64)
-endOrder OrdersEnv {oeStore, oeTurns} now r@NameRegistration {nrId, nrPayment} mayEnd = case nrPayment of
+endOrder OrdersEnv {oeStore, oeTurns} now r@NameRegistration {nrId, nrPayment, nrPhase} mayEnd = case nrPayment of
   OPInvoice {} -> withBalanceTurn oeTurns nrId (withTransaction oeStore $ ending $ creditedWrite now r)
-  OPCode _ -> withTransaction oeStore $ ending $ \db -> versionWritten <$> updateRegistration db r now
+  OPCode _ | OTaken <- nrPhase -> withTransaction oeStore $ ending updated
+  OPCode codeId -> fmap fst <$> releaseCode oeTurns oeStore codeId nrId (ending updated)
   where
+    updated db = versionWritten <$> updateRegistration db r now
     ending write db =
       mayEnd db >>= \case
         True -> write db
@@ -677,9 +680,9 @@ endMonths Worker {wkOrders = oe@OrdersEnv {oeStore, oeTurns, oePhases, oeNow, oe
     ( withTransaction oeStore (`getRegistration` rid)
         >>= traverse (\r -> withRegistrationTurn oeStore oeTurns r (monthEnded now))
         >>= \case
-          Just (Just (Right (Right (v, outcome)))) -> do
+          Just (Just (Right (Right (v, kept)))) -> do
             atomically $ publish oePhases rid v
-            let failed = "names: order " <> ridText <> " was not registered within a month of its name's selection, so " <> outcome
+            let failed = "names: order " <> ridText <> " was not registered within a month of its name's selection, so it failed, " <> kept
             logError failed
             oeReport failed
           _ -> pure ()
@@ -687,16 +690,16 @@ endMonths Worker {wkOrders = oe@OrdersEnv {oeStore, oeTurns, oePhases, oeNow, oe
       `catchOwn'` \e -> logError ("names month pass: registration " <> ridText <> " failed; the next pass tries it again: " <> tshow e)
   where
     monthEnded now r@NameRegistration {nrId, nrPayment, nrSelectedAt}
-      | orderLive r && namePhase (nrPhase r) `elem` [PQueued, PCommitted, PFailed] && maybe False ((<= now) . addMonths 1) nrSelectedAt = fmap (,outcome) <$> endOrder oe now r {nrPhase = ended} registerUnsent
+      | orderLive r && namePhase (nrPhase r) `elem` [PQueued, PCommitted, PFailed] && maybe False ((<= now) . addMonths 1) nrSelectedAt = fmap (,kept) <$> endOrder oe now r {nrPhase = OFailed now FRMonthEnded} registerUnsent
       | otherwise = pure $ Left WRChanged
       where
         registerUnsent db =
           lockRegistration db r >>= \case
             True -> not <$> registerTxPending db nrId
             False -> pure False
-        (ended, outcome) = case nrPayment of
-          OPCode _ -> (OTaken, "its name is released, and its code kept for a name selected for it")
-          _ -> (OFailed now FRMonthEnded, "it failed, the money paid for it added to its balance")
+        kept = case nrPayment of
+          OPCode _ -> "its code released"
+          _ -> "the money paid for it added to its balance"
 
 runMonthEnds :: TVar UTCTime -> Worker -> IO ()
 runMonthEnds passAt w@Worker {wkOrders = OrdersEnv {oeNow}} =

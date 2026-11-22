@@ -136,7 +136,7 @@ workerTests = describe "StoreService names: worker" $ do
     it "logs a failed check of orders whose name is not registered 3 hours after its selection, claiming no alert, so the next check alerts" testUnregisteredAlertsFail
     it "logs a month pass that fails, so a pass failing from the start keeps the start's time past the alert's age, until a pass completes" testMonthPassFails
     it "reports once each order whose name is not registered 3 hours after its selection, a failed one included" testUnregisteredAlert
-    it "ends each order queued, committed or failed a calendar month after its payment or its code's reservation, once, reporting it, its name released: a paid order failed, the money paid for it added to its balance, and a code order reset to name not selected, its code kept and accepted past its expiry for a name selected for it" testMonthEnds
+    it "fails each order queued, committed or failed a calendar month after its payment or its code's reservation, once, reporting it, its name released, the money paid for a paid order added to its balance and a code order's code released" testMonthEnds
     it "counts the month and the 3-hour alert from the latest selection of a name, not from the payment" testMonthFromSelection
     it "ends the month on the last day of a shorter month" testMonthClipped
     it "ends no month of an order whose register is sent and not settled, and ends it once the register reverted" testMonthRegisterInFlight
@@ -1279,21 +1279,16 @@ testMonthEnds = withWorker $ \W {wCtx = ctx@Ctx {cStore, cOrders}, wSender} -> d
   now <- nowOf ctx
   endMonths wWorker
   endMonths wWorker
-  map nrPhase <$> mapM (stored ctx) ended `shouldReturn` [OFailed now FRMonthEnded, OFailed now FRMonthEnded, OTaken]
+  map nrPhase <$> mapM (stored ctx) ended `shouldReturn` replicate 3 (OFailed now FRMonthEnded)
   stored ctx committing `shouldReturn` committing
   mapM (balanceFigures ctx . nrId) ended `shouldReturn` [Just (nrPrice queued, nrPrice queued), Just (nrPrice failed, nrPrice failed), Nothing]
-  pcReservedBy <$> codeOf ctx prepaid `shouldReturn` Just (nrId code)
+  pcReservedBy <$> codeOf ctx prepaid `shouldReturn` Nothing
   holders `shouldReturn` [Nothing, Nothing, Nothing]
   map orderLive <$> mapM (stored ctx) ended `shouldReturn` [False, False, False]
   closeOf ctx failed `shouldReturn` CLRefused CFMonthEnded
   sent' <- readTVarIO reports
   map (\NameRegistration {nrId = RegistrationId rid} -> length $ filter (T.isInfixOf $ "order " <> rid <> " was not registered within a month") sent') ended `shouldBe` [1, 1, 1]
   length sent' `shouldBe` 3
-  withTransaction cStore $ \db -> DB.execute db "UPDATE sx_badge_service_name_prepaid_codes SET expires_at = ? WHERE name_prepaid_code_id = ?" (orderTime, pcId prepaid)
-  to <- selectionOf ctx "carolbakery" 20
-  fst <$> select ctx keyB code to `shouldReturn` 200
-  namePhase . nrPhase <$> stored ctx code `shouldReturn` PQueued
-  pcReservedBy <$> codeOf ctx prepaid `shouldReturn` Just (nrId code)
 
 testMonthFromSelection :: IO ()
 testMonthFromSelection = withWorker $ \W {wCtx = ctx@Ctx {cStore, cOrders}, wSender} -> do

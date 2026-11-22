@@ -11,6 +11,7 @@ module StoreService.Names.Codes
     reserveRefusal,
     readPrepaidCode,
     prepaidCodeHash,
+    releaseCode,
     spendLandedCode,
     issueNameCode,
     revokeNameCode,
@@ -35,7 +36,7 @@ import Simplex.Messaging.Encoding.String (TextEncoding (..))
 import StoreService.Group.Command (maxNameYears)
 import StoreService.Names.Chain (Hex32 (..))
 import StoreService.Names.Phases (RegistrationId)
-import StoreService.Names.Store (CmdSource, CodeHash, CodeHashTaken (..), CodeId, NewPrepaidCode (..), PrepaidCode (..), getPrepaidCode, getPrepaidCodeById, insertPrepaidCode, revokePrepaidCode, spendLandedPrepaidCode)
+import StoreService.Names.Store (CmdSource, CodeHash, CodeHashTaken (..), CodeId, NewPrepaidCode (..), PrepaidCode (..), getPrepaidCode, getPrepaidCodeById, insertPrepaidCode, releasePrepaidCode, revokePrepaidCode, spendLandedPrepaidCode)
 import StoreService.Names.Turns (Turns, withCodeTurn)
 import StoreService.Store (RevokeResult (..))
 import StoreService.Store.Invoices (currentSecond)
@@ -103,6 +104,10 @@ readPrepaidCode st code = withTransaction st (`getPrepaidCode` prepaidCodeHash c
 
 prepaidCodeHash :: NamePrepaidCode -> CodeHash
 prepaidCodeHash = Hex32 . namePrepaidCodeHash
+
+-- | The write runs first, and the code is released only if it succeeds. False when the registration did not hold the code.
+releaseCode :: Turns -> DBStore -> CodeId -> RegistrationId -> (DB.Connection -> IO (Either e a)) -> IO (Either e (a, Bool))
+releaseCode turns st codeId rid = afterWrite turns st codeId (\db -> releasePrepaidCode db codeId rid)
 
 -- | The write runs first, and the code is spent only if it succeeds: the code the registration holds, or one it no longer holds
 -- while still usable, as its register went through. False when the code was released and then spent, revoked or expired meanwhile.
