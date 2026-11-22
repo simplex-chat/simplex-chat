@@ -1926,7 +1926,8 @@ of the service's tests in place of the payment providers. CI runs it in the `nam
 
 1. starts anvil on `RPC_PORT`, mining a block for each transaction and one a second, deploys the
    contracts with the webapp's `dev/deploy.ts` with a commitment age of 5 seconds, which the cases
-   that watch the wait need, into the webapp's `dev/local-chain-0.json`, which the cases read, and starts the
+   that watch the wait need, into the webapp's `dev/local-chain-0.json`, which the cases read, stops
+   when `EXCLUDED` names a title that `playwright test --list` does not list, and starts the
    webapp's `dev/serve-terms.ts` on 8098, which serves the texts of the terms' links that the deploy sets;
 2. builds the names site (`vite build`) into the run's folder;
 3. writes an ini for that deployment with `[names]`, `[chain]` with 1 confirmation, and no `[btcpay]`

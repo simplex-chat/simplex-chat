@@ -384,6 +384,18 @@ escape_regex() {
   sed 's/[][\\.*+?^${}()|/]/\\&/g' <<< "$1"
 }
 
+check_excluded() {
+  local listed i missing=()
+  listed="$(cd "$WEBAPP_DIR" && MOCK_URL="$MOCK_URL" SLOTS=1 npx playwright test --project=chromium --list)"
+  for ((i = 0; i < ${#EXCLUDED[@]}; i += 2)); do
+    if [[ $'\n'"$listed"$'\n' != *" ${EXCLUDED[i]}"$'\n'* ]]; then missing+=("${EXCLUDED[i]}"); fi
+  done
+  if [ "${#missing[@]}" -gt 0 ]; then
+    printf 'EXCLUDED names a case the webapp does not have: %s\n' "${missing[@]}" >&2
+    exit 1
+  fi
+}
+
 run_cases() {
   if [ "$#" -gt 0 ]; then
     (cd "$WEBAPP_DIR" && MOCK_URL="$MOCK_URL" SLOTS=1 npx playwright test --project=chromium --output "$RUN_DIR/test-results" "$@")
@@ -400,6 +412,7 @@ run_cases() {
 
 refuse_taken_ports
 start_chain
+check_excluded
 start_terms
 build_site
 write_ini
