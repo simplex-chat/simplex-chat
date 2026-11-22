@@ -42,7 +42,7 @@ import Simplex.Messaging.Agent.Protocol (AConnectionLink (..), ConnReqUriData (.
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, fstToLower, sumTypeJSON)
 import Simplex.Messaging.Protocol (ProtocolServer (..))
-import Simplex.Messaging.Util (decodeJSON, safeDecodeUtf8, tshow, (<$?>))
+import Simplex.Messaging.Util (decodeJSON, eitherToMaybe, safeDecodeUtf8, tshow, (<$?>))
 import System.Console.ANSI.Types
 import qualified Text.Email.Validate as Email
 import qualified URI.ByteString as U
@@ -63,6 +63,7 @@ data Format
   | HyperLink {showText :: Maybe Text, linkUri :: Text}
   | SimplexLink {showText :: Maybe Text, linkType :: SimplexLinkType, simplexUri :: AConnectionLink, smpHosts :: NonEmpty Text}
   | SimplexName {nameInfo :: SimplexNameInfo}
+  | MessageLink {showText :: Maybe Text, msgLinkType :: MsgLinkType, msgLink :: MsgLink}
   | Command {commandStr :: Text}
   | Mention {memberName :: Text}
   | Email
@@ -117,7 +118,23 @@ mentionedNames = mapMaybe (\(FormattedText f _) -> mentionedName =<< f)
       Mention name -> Just name
       _ -> Nothing
 
-data SimplexLinkType = XLContact | XLInvitation | XLGroup | XLChannel | XLRelay
+linkedLabels :: MarkdownList -> [Text]
+linkedLabels = mapMaybe $ \case
+  FormattedText (Just MessageLink {showText = Just label}) _ -> Just label
+  _ -> Nothing
+
+segmentMsgLink :: FormattedText -> Maybe (Maybe Text, MsgLink)
+segmentMsgLink = \case
+  FormattedText (Just MessageLink {showText, msgLink}) _ -> Just (showText, msgLink)
+  _ -> Nothing
+
+msgLinkSegment :: Text -> MsgLink -> FormattedText
+msgLinkSegment label ml = FormattedText (Just $ MessageLink (Just label) (toMsgLinkType ml) ml) $ T.concat ["[", label, "](", safeDecodeUtf8 (strEncode ml), ")"]
+
+msgLinkLabel :: Text -> Text
+msgLinkLabel t = let label = T.filter (\c -> c /= '[' && c /= ']') t in if T.null label then "…" else label
+
+data SimplexLinkType = XLContact | XLInvitation | XLGroup | XLChannel | XLRelay | XLPublicGroup | XLSite
   deriving (Eq, Show)
 
 colored :: Color -> Format
@@ -315,6 +332,7 @@ parseMarkdown s = fromRight (unmarked s) $ A.parseOnly (markdownP <* A.endOfInpu
 isSimplexLink :: Format -> Bool
 isSimplexLink = \case
   SimplexLink {} -> True
+  MessageLink {msgLink = MLPublicGroup {}} -> True
   _ -> False
 
 isLink :: Format -> Bool
@@ -323,6 +341,7 @@ isLink = \case
   HyperLink {} -> True
   SimplexLink {} -> True
   SimplexName {} -> True
+  MessageLink {} -> True
   _ -> False
 
 hasLinks :: MarkdownList -> Bool
@@ -450,14 +469,21 @@ markdownP = joinMarkdown <$> A.many' fragmentP
     sowLinkP = do
       t <- enclosedP '[' ']' (\c -> c == '[' || c == '\n')
       l <- enclosedP '(' ')' isSpace
-      let hasPunct = T.any (\c -> isPunctuation c && c /= '-' && c /= '_') t
-      when (hasPunct && t /= l && ("https://" <> t) /= l) $ fail "punctuation in hyperlink text"
-      f <- hyperLinkFormat t l
+      f <- case msgLinkFormat (Just t) l of
+        Just f'
+          | hasLinks (parseMarkdownList t) -> fail "link in message link text"
+          | otherwise -> pure f'
+        Nothing -> do
+          let hasPunct = T.any (\c -> isPunctuation c && c /= '-' && c /= '_') t
+          when (hasPunct && t /= l && ("https://" <> t) /= l) $ fail "punctuation in hyperlink text"
+          hyperLinkFormat t l
       pure $ markdown f $ T.concat ["[", t, "](", l, ")"]
     autolinkP = do
       l <- enclosedP '<' '>' (\c -> c == '<' || isSpace c)
-      f <-if isEmail l then pure (HyperLink (Just l) ("mailto:" <> l)) else hyperLinkFormat l l
+      f <-if isEmail l then pure (HyperLink (Just l) ("mailto:" <> l)) else maybe (hyperLinkFormat l l) pure (msgLinkFormat Nothing l)
       pure $ markdown f $ "<" <> l <> ">"
+    msgLinkFormat :: Maybe Text -> Text -> Maybe Format
+    msgLinkFormat showText l = (\ml -> MessageLink showText (toMsgLinkType ml) ml) <$> eitherToMaybe (strDecode $ encodeUtf8 l)
     hyperLinkFormat t l = case strDecode $ encodeUtf8 l of
       Right lnk@(ACL _ cLink) -> case cLink of
         CLShort _ -> pure $ simplexUriFormat (Just t) lnk
@@ -505,6 +531,8 @@ markdownP = joinMarkdown <$> A.many' fragmentP
           _ -> Nothing
     linkMD :: Text -> Maybe Markdown
     linkMD s
+      | isUri s, Just f <- msgLinkFormat Nothing s = Just $ markdown f s
+      | isUri s', Just f <- msgLinkFormat Nothing s' = Just $ res $ markdown f s'
       | isUri s' = case strDecode $ encodeUtf8 s' of
           Right cLink -> Just $ res $ markdown (simplexUriFormat Nothing cLink) s'
           Left _ -> case parseUri $ encodeUtf8 s' of
@@ -565,6 +593,8 @@ markdownP = joinMarkdown <$> A.many' fragmentP
             CCTChannel -> XLChannel
             CCTContact -> XLContact
             CCTRelay -> XLRelay
+            CCTPublicGroup -> XLPublicGroup
+            CCTSite -> XLSite
     strEncodeText :: StrEncoding a => a -> Text
     strEncodeText = safeDecodeUtf8 . strEncode
 
@@ -977,6 +1007,7 @@ markdownText (FormattedText f_ t) = case f_ of
     HyperLink {} -> t
     SimplexLink {} -> t
     SimplexName {} -> t
+    MessageLink {} -> t
     Mention _ -> t
     Command _ -> t
     Email -> t

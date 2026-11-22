@@ -29,7 +29,7 @@
 
 module Simplex.Chat.Types where
 
-import Control.Applicative ((<|>))
+import Control.Applicative (optional, (<|>))
 import Control.Concurrent.STM (TVar)
 import Crypto.Number.Serialize (os2ip)
 import Crypto.Random (ChaChaDRG)
@@ -40,6 +40,7 @@ import qualified Data.Aeson.TH as JQ
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import Data.Attoparsec.Combinator (lookAhead)
 import qualified Data.ByteString.Base64 as B64
+import qualified Data.ByteString.Base64.URL as U
 import Data.ByteString.Char8 (ByteString, pack, unpack)
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy as LB
@@ -63,6 +64,7 @@ import Simplex.Chat.Types.UITheme
 import Simplex.FileTransfer.Description (FileDigest)
 import Simplex.FileTransfer.Types (RcvFileId, SndFileId)
 import Simplex.Messaging.Agent.Protocol (ACorrId, ACreatedConnLink, AConnectionLink (..), AEventTag (..), AEvtTag (..), ConnId, ConnShortLink (..), ConnectionLink (..), ConnectionMode (..), ConnectionModeI, ConnectionRequestUri, ContactConnType (..), CreatedConnLink (..), InvitationId, SAEntity (..), SConnectionMode (..), SimplexDomain, SimplexNameInfo (..), UserId, sConnectionMode)
+import Simplex.Messaging.Agent.QueryString (queryParam, queryParamParser, queryParam_)
 import Simplex.Messaging.Agent.Store.DB (Binary (..), blobFieldDecoder, fromTextField_)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFileArgs (..))
@@ -70,7 +72,7 @@ import Simplex.Messaging.Crypto.Ratchet (PQEncryption (..), PQSupport, pattern P
 import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, sumTypeJSON)
-import Simplex.Messaging.Util (decodeJSON, encodeJSON, safeDecodeUtf8)
+import Simplex.Messaging.Util (decodeJSON, encodeJSON, safeDecodeUtf8, (<$?>))
 import Simplex.Messaging.Version
 import Simplex.Messaging.Version.Internal
 #if defined(dbPostgres)
@@ -1936,6 +1938,65 @@ aConnectTarget (ACL SCMContact cl) = ACTarget SCMContact $ case cl of
   CLFull cr -> CTFullContact cr
   CLShort sl -> CTShortContact (CTLink sl)
 
+data MsgLink
+  = MLPublicGroup ContactNameOrLink (Maybe MemberId) SharedMsgId
+  | MLGroup MemberId SharedMsgId
+  | MLDirect SharedMsgId
+  | MLNote NoteFolderId Int64
+  | MLUnknownSource
+  | MLUnsupported Text
+  deriving (Eq, Show)
+  deriving (ToJSON, FromJSON) via (StrJSON "MsgLink" MsgLink)
+
+data MsgLinkType = MLTPublicGroup | MLTGroup | MLTDirect | MLTNote | MLTUnknownSource | MLTUnsupported
+  deriving (Eq, Show)
+
+toMsgLinkType :: MsgLink -> MsgLinkType
+toMsgLinkType = \case
+  MLPublicGroup {} -> MLTPublicGroup
+  MLGroup {} -> MLTGroup
+  MLDirect {} -> MLTDirect
+  MLNote {} -> MLTNote
+  MLUnknownSource -> MLTUnknownSource
+  MLUnsupported {} -> MLTUnsupported
+
+instance StrEncoding MsgLink where
+  strEncode = \case
+    MLPublicGroup chat author_ (SharedMsgId msgId) ->
+      let uri = case chat of
+            CTLink sl -> strEncode sl
+            CTName ni -> "simplex:/name" <> strEncode ni
+          sep = if B.elem '?' uri then "&" else "?"
+       in uri <> sep <> "m=" <> U.encodeUnpadded msgId <> maybe "" (\(MemberId a) -> "&a=" <> U.encodeUnpadded a) author_
+    MLGroup (MemberId author) (SharedMsgId msgId) -> "simplex:/m#g/" <> U.encodeUnpadded msgId <> "?a=" <> U.encodeUnpadded author
+    MLDirect (SharedMsgId msgId) -> "simplex:/m#d/" <> U.encodeUnpadded msgId
+    MLNote folderId itemId -> "simplex:/m#n/" <> B.pack (show itemId) <> "?f=" <> B.pack (show folderId)
+    MLUnknownSource -> "simplex:/m"
+    MLUnsupported t -> encodeUtf8 t
+  strP = localLinkP <|> nameLinkP <|> shortLinkP
+    where
+      schemeP = "simplex:" *> optional (A.char '/')
+      queryP = A.char '?' *> strP
+      localLinkP = do
+        (prefix, kind_) <- A.match $ schemeP *> A.char 'm' *> optional (A.char '#' *> A.anyChar)
+        case kind_ of
+          Nothing -> MLUnknownSource <$ (A.endOfInput <|> (() <$ lookAhead (A.satisfy A.isSpace)))
+          Just 'g' -> A.char '/' *> (flip MLGroup <$> strP <*> (queryP >>= queryParam "a"))
+          Just 'd' -> A.char '/' *> (MLDirect <$> strP) <* optional queryP
+          Just 'n' -> A.char '/' *> (flip MLNote <$> A.decimal <*> (queryP >>= queryParamParser A.decimal "f"))
+          Just _ -> MLUnsupported . safeDecodeUtf8 . (prefix <>) <$> A.takeTill A.isSpace
+      nameLinkP = do
+        ni <- schemeP *> "name" *> (strDecode . ("#" <>) <$?> (A.char '#' *> A.takeTill (\c -> c == '?' || A.isSpace c)))
+        q <- queryP
+        MLPublicGroup (CTName ni) <$> queryParam_ "a" q <*> queryParam "m" q
+      shortLinkP = do
+        sl <- lookAhead strP
+        case sl of
+          CSLContact _ ct _ _ | ct == CCTChannel || ct == CCTPublicGroup -> pure ()
+          _ -> fail "not a public chat link"
+        q <- A.takeTill (== '?') *> queryP
+        MLPublicGroup (CTLink sl) <$> queryParam_ "a" q <*> queryParam "m" q
+
 type CreatedLinkInvitation = CreatedConnLink 'CMInvitation
 
 type CreatedLinkContact = CreatedConnLink 'CMContact
@@ -2472,3 +2533,5 @@ $(JQ.deriveJSON defaultJSON ''ContactRef)
 $(JQ.deriveJSON defaultJSON ''NoteFolder)
 
 $(JQ.deriveJSON defaultJSON ''ChatTag)
+
+$(JQ.deriveJSON (enumJSON $ dropPrefix "MLT") ''MsgLinkType)

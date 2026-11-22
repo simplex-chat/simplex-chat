@@ -124,6 +124,12 @@ maxRcvMentions = 5
 maxSndMentions :: Int
 maxSndMentions = 3
 
+maxRcvLinks :: Int
+maxRcvLinks = 30
+
+maxSndLinks :: Int
+maxSndLinks = 20
+
 withChatLock :: Text -> CM a -> CM a
 withChatLock name action = asks chatLock >>= \l -> withLock l name action
 
@@ -211,8 +217,8 @@ toggleNtf m ntfOn =
     forM_ (memberConnId m) $ \connId ->
       withAgent (\a -> toggleConnectionNtfs a connId ntfOn) `catchAllErrors` eToView
 
-prepareGroupMsg :: DB.Connection -> User -> GroupInfo -> Maybe MsgScope -> ShowGroupAsSender -> MsgContent -> Map MemberName MsgMention -> Maybe ChatItemId -> Maybe CIForwardedFrom -> Maybe FileInvitation -> Maybe CITimed -> Bool -> ExceptT StoreError IO (ChatMsgEvent 'Json, Maybe (CIQuote 'CTGroup))
-prepareGroupMsg db user g@GroupInfo {membership} msgScope showGroupAsSender mc mentions quotedItemId_ itemForwarded fInv_ timed_ live = do
+prepareGroupMsg :: DB.Connection -> User -> GroupInfo -> Maybe MsgScope -> ShowGroupAsSender -> MsgContent -> Map MemberName MsgMention -> Map LinkLabel MsgLinkEntry -> Maybe ChatItemId -> Maybe CIForwardedFrom -> Maybe FileInvitation -> Maybe CITimed -> Bool -> ExceptT StoreError IO (ChatMsgEvent 'Json, Maybe (CIQuote 'CTGroup))
+prepareGroupMsg db user g@GroupInfo {membership} msgScope showGroupAsSender mc mentions links quotedItemId_ itemForwarded fInv_ timed_ live = do
   (mc', quotedItem_) <- case (quotedItemId_, itemForwarded) of
     (Nothing, Nothing) -> pure (mcSimple mc, Nothing)
     (Nothing, Just ciff) -> do
@@ -229,7 +235,7 @@ prepareGroupMsg db user g@GroupInfo {membership} msgScope showGroupAsSender mc m
           quotedItem = CIQuote {chatDir = qd, itemId = Just quotedItemId, sharedMsgId = itemSharedMsgId, sentAt = itemTs, content = qmc', formattedText = ft', markdownBlocks}
       pure (mcQuote QuotedMsg {msgRef, content = qmc'} mc, Just quotedItem)
     (Just _, Just _) -> throwError SEInvalidQuote
-  let mc'' = mc' {mentions = MsgMentions mentions, file = fInv_, ttl = ttl' <$> timed_, live = justTrue live, scope = msgScope, asGroup = justTrue showGroupAsSender}
+  let mc'' = mc' {mentions = MsgMentions mentions, links = MsgLinks links, file = fInv_, ttl = ttl' <$> timed_, live = justTrue live, scope = msgScope, asGroup = justTrue showGroupAsSender}
   pure (XMsgNew mc'', quotedItem_)
   where
     quoteData :: ChatItem c d -> GroupMember -> ExceptT StoreError IO (MsgContent, CIQDirection 'CTGroup, Bool, Maybe GroupMember)
@@ -274,7 +280,7 @@ forwardLinkCIFF db user ForwardLink {displayName, groupLink, publicGroupId, memb
   getGroupViaPublicGroupId db user publicGroupId >>= \case
     Just (gId, Just storedLink)
       | sameShortLinkContact groupLink storedLink -> do
-          ciId_ <- itemId_ gId
+          ciId_ <- getGroupItemIdByAuthor_ db user gId memberId msgId
           pure $ CIFFGroup displayName MDRcv (Just gId) ciId_ memberId (Just msgId) linkGroupType
     _ -> pure $ CIFFGroupLink displayName MDRcv groupLink publicGroupId memberId msgId linkGroupType
   where
@@ -282,14 +288,6 @@ forwardLinkCIFF db user ForwardLink {displayName, groupLink, publicGroupId, memb
       CSLContact _ CCTChannel _ _ -> Just GTChannel
       CSLContact _ CCTGroup _ _ -> Just GTGroup
       _ -> Nothing
-    itemId_ gId = case memberId of
-      Nothing -> getGroupChatItemBySharedMsgId_ db user gId Nothing msgId
-      Just mId ->
-        getGroupMemberViaMemberId_ db user gId mId >>= \case
-          Just (gmId, category) ->
-            let scope = if category == GCUserMember then Nothing else Just gmId
-             in getGroupChatItemBySharedMsgId_ db user gId scope msgId
-          Nothing -> pure Nothing
 
 updatedMentionNames :: MsgContent -> Maybe MarkdownList -> Map MemberName CIMention -> (MsgContent, Maybe MarkdownList, Map MemberName CIMention)
 updatedMentionNames mc ft_ mentions = case ft_ of
@@ -364,6 +362,20 @@ getMessageMentions db user gId msg = case parseMaybeMarkdownList msg of
     get name =
       fmap (name,) . eitherToMaybe
         <$> runExceptT (getGroupMemberIdByName db user gId name)
+
+msgEventLinks :: AChatMsgEvent -> Map LinkLabel MsgLinkEntry
+msgEventLinks = \case
+  ACME _ (XMsgNew MsgContainer {links = MsgLinks links}) -> links
+  ACME _ XMsgUpdate {links} -> links
+  _ -> M.empty
+
+rcvCILinks :: Map LinkLabel MsgLinkEntry -> Maybe MarkdownList -> Map LinkLabel CILink
+rcvCILinks entries ft_ = M.fromList $ take maxRcvLinks $ mapMaybe linkEntry $ nubOrd $ maybe [] linkedLabels ft_
+  where
+    linkEntry label = (\MsgLinkEntry {text} -> (label, CILink {text = shortLinkText text, target = Nothing})) <$> M.lookup label entries
+
+ciLinkEntries :: Map LinkLabel CILink -> Map LinkLabel MsgLinkEntry
+ciLinkEntries = M.map $ \CILink {text} -> MsgLinkEntry {text}
 
 msgContentTexts :: MsgContent -> (Text, ParsedMarkdown)
 msgContentTexts mc = (msgContentText mc, parsedMsgContent mc)
@@ -1533,7 +1545,7 @@ sendHistory user gInfo@GroupInfo {membership} m@GroupMember {activeConn = Just c
                in Just (fInv, fileDescrText, fileExpires, descrBadge)
           | otherwise = Nothing
         processContentItem :: Maybe GroupMember -> ChatItem 'CTGroup d -> MsgContent -> Maybe HistoryFile -> CM [(GrpMsgForward, VerifiedMsg 'Json)]
-        processContentItem member_ ChatItem {formattedText, meta, quotedItem, mentions} mc fInvDescr_ =
+        processContentItem member_ ChatItem {formattedText, meta, quotedItem, mentions, links} mc fInvDescr_ =
           if isNothing fInvDescr_ && not (msgContentHasText mc)
             then pure []
             else do
@@ -1555,7 +1567,7 @@ sendHistory user gInfo@GroupInfo {membership} m@GroupMember {activeConn = Just c
                       pure $ VMSigned MSSVerified sm chatMsg
                 _ -> do
                   -- TODO [knocking] send history to other scopes too?
-                  (chatMsgEvent, _) <- withStore $ \db -> prepareGroupMsg db user gInfo Nothing showGroupAsSender mc' mentions'' quotedItemId_ Nothing fInv_ itemTimed False
+                  (chatMsgEvent, _) <- withStore $ \db -> prepareGroupMsg db user gInfo Nothing showGroupAsSender mc' mentions'' (ciLinkEntries links) quotedItemId_ Nothing fInv_ itemTimed False
                   pure $ VMUnsigned ChatMessage {chatVRange = senderVRange, msgId = itemSharedMsgId, chatMsgEvent}
               fileDescrEvents <- case (fInvDescr_, itemSharedMsgId) of
                 (Just (_, fileDescrText, fileExpires, descrBadge), Just msgId) -> do
@@ -1744,6 +1756,8 @@ shortLinkDataP l v = case l of
     CCTGroup -> optionalData $ group notChannel <|> relayLink
     CCTChannel -> Just <$> group isJust
     CCTRelay -> optionalData $ relayAddress <|> contact
+    CCTPublicGroup -> (Just <$> group (const True)) <|> pure Nothing
+    CCTSite -> pure Nothing
   where
     optionalData :: JT.Parser ShortLinkData -> JT.Parser (Maybe ShortLinkData)
     optionalData p = if v == J.Null then pure Nothing else Just <$> p
@@ -3045,7 +3059,7 @@ saveSndChatItem user cd msg content = saveSndChatItem' user cd msg content Nothi
 saveSndChatItem' :: ChatTypeI c => User -> ChatDirection c 'MDSnd -> SndMessage -> CIContent 'MDSnd -> Maybe (CIFile 'MDSnd) -> Maybe (CIQuote c) -> Maybe CIForwardedFrom -> Maybe CITimed -> Bool -> CM (ChatItem c 'MDSnd)
 saveSndChatItem' user cd msg content ciFile quotedItem itemForwarded itemTimed live = do
   let itemTexts = ciContentTexts content
-  saveSndChatItems user cd False [Right NewSndChatItemData {msg, content, itemTexts, itemMentions = M.empty, ciFile, quotedItem, itemForwarded}] itemTimed live >>= \case
+  saveSndChatItems user cd False [Right NewSndChatItemData {msg, content, itemTexts, itemMentions = M.empty, itemLinks = M.empty, ciFile, quotedItem, itemForwarded}] itemTimed live >>= \case
     [Right ci] -> pure ci
     _ -> throwChatError $ CEInternalError "saveSndChatItem': expected 1 item"
 
@@ -3054,6 +3068,7 @@ data NewSndChatItemData c = NewSndChatItemData
     content :: CIContent 'MDSnd,
     itemTexts :: (Text, ParsedMarkdown),
     itemMentions :: Map MemberName CIMention,
+    itemLinks :: Map LinkLabel CILink,
     ciFile :: Maybe (CIFile 'MDSnd),
     quotedItem :: Maybe (CIQuote c),
     itemForwarded :: Maybe CIForwardedFrom
@@ -3077,15 +3092,16 @@ saveSndChatItems user cd showGroupAsSender itemsData itemTimed live = do
   lift $ withStoreBatch (\db -> map (bindRight $ createItem db createdAt) itemsData)
   where
     createItem :: DB.Connection -> UTCTime -> NewSndChatItemData c -> IO (Either ChatError (ChatItem c 'MDSnd))
-    createItem db createdAt NewSndChatItemData {msg = msg@SndMessage {sharedMsgId, signedMsg_}, content, itemTexts = itemTexts@(_, ParsedMarkdown ft_ _), itemMentions, ciFile, quotedItem, itemForwarded} = do
+    createItem db createdAt NewSndChatItemData {msg = msg@SndMessage {sharedMsgId, signedMsg_}, content, itemTexts = itemTexts@(_, ParsedMarkdown ft_ _), itemMentions, itemLinks, ciFile, quotedItem, itemForwarded} = do
       let hasLink_ = ciContentHasLink content ft_
           itemTs = roundDownToSecond createdAt
       ciId <- createNewSndChatItem db user cd showGroupAsSender msg content quotedItem itemForwarded itemTimed live hasLink_ itemTs createdAt
       forM_ ciFile $ \CIFile {fileId} -> updateFileTransferChatItemId db fileId ciId createdAt
       let ci = mkChatItem_ cd showGroupAsSender ciId content itemTexts ciFile quotedItem (Just sharedMsgId) itemForwarded itemTimed live False hasLink_ itemTs Nothing (toMsgVerified (signMessagesRequired cd) (MSSVerified <$ signedMsg_)) createdAt
-      Right <$> case cd of
+      ci' <- case cd of
         CDGroupSnd g _scope | not (null itemMentions) -> createGroupCIMentions db g ci itemMentions
         _ -> pure ci
+      Right <$> if null itemLinks then pure ci' else createCILinks db ci' itemLinks
 
 roundDownToSecond :: UTCTime -> UTCTime
 roundDownToSecond t@UTCTime {utctDayTime} = t {utctDayTime = fromInteger (floor utctDayTime)}
@@ -3121,7 +3137,9 @@ saveRcvChatItem' user cd msg@RcvMessage {chatMsgEvent, msgSigned, forwardedByMem
     ci' <- case toChatInfo cd of
       GroupChat g _ | not (null mentions') -> createGroupCIMentions db g ci mentions'
       _ -> pure ci
-    pure (ci', cInfo')
+    let links = rcvCILinks (msgEventLinks chatMsgEvent) ft_
+    ci'' <- if null links then pure ci' else createCILinks db ci' links
+    pure (ci'', cInfo')
   where
     groupMentions db g membership = do
       mentions' <- getRcvCIMentions db user g ft_ mentions
@@ -3154,7 +3172,7 @@ mkChatItem_ :: (ChatTypeI c, MsgDirectionI d) => ChatDirection c d -> ShowGroupA
 mkChatItem_ cd showGroupAsSender ciId content (itemText, ParsedMarkdown formattedText markdownBlocks) file quotedItem sharedMsgId itemForwarded itemTimed live userMention hasLink_ itemTs forwardedByMember msgVerified currentTs =
   let itemStatus = ciCreateStatus content
       meta = mkCIMeta ciId content itemText itemStatus Nothing sharedMsgId itemForwarded Nothing False itemTimed (justTrue live) userMention hasLink_ currentTs itemTs forwardedByMember showGroupAsSender msgVerified currentTs currentTs
-   in ChatItem {chatDir = toCIDirection cd, meta, content, mentions = M.empty, formattedText, markdownBlocks, quotedItem, reactions = [], file}
+   in ChatItem {chatDir = toCIDirection cd, meta, content, mentions = M.empty, links = M.empty, formattedText, markdownBlocks, quotedItem, reactions = [], file}
 
 ciContentHasLink :: CIContent d -> Maybe MarkdownList -> Bool
 ciContentHasLink content ft_ = case ciMsgContent content of
@@ -3467,7 +3485,7 @@ memberAttentionChange unread brokerTs_ rcvMem_ = \case
 createLocalChatItems ::
   User ->
   ChatDirection 'CTLocal 'MDSnd ->
-  NonEmpty (CIContent 'MDSnd, Maybe (CIFile 'MDSnd), Maybe CIForwardedFrom, (Text, ParsedMarkdown)) ->
+  NonEmpty (CIContent 'MDSnd, Maybe (CIFile 'MDSnd), Maybe CIForwardedFrom, (Text, ParsedMarkdown), Map LinkLabel CILink) ->
   UTCTime ->
   CM [ChatItem 'CTLocal 'MDSnd]
 createLocalChatItems user cd itemsData createdAt = do
@@ -3477,13 +3495,14 @@ createLocalChatItems user cd itemsData createdAt = do
   unless (null errs) $ toView $ CEvtChatErrors errs
   pure items
   where
-    createItem :: DB.Connection -> (CIContent 'MDSnd, Maybe (CIFile 'MDSnd), Maybe CIForwardedFrom, (Text, ParsedMarkdown)) -> IO (ChatItem 'CTLocal 'MDSnd)
-    createItem db (content, ciFile, itemForwarded, ts@(_, ParsedMarkdown ft_ _)) = do
+    createItem :: DB.Connection -> (CIContent 'MDSnd, Maybe (CIFile 'MDSnd), Maybe CIForwardedFrom, (Text, ParsedMarkdown), Map LinkLabel CILink) -> IO (ChatItem 'CTLocal 'MDSnd)
+    createItem db (content, ciFile, itemForwarded, ts@(_, ParsedMarkdown ft_ _), links) = do
       let hasLink_ = ciContentHasLink content ft_
           itemTs = roundDownToSecond createdAt
       ciId <- createNewChatItem_ db user cd False Nothing Nothing content (Nothing, Nothing, Nothing, Nothing, Nothing) itemForwarded Nothing False False hasLink_ itemTs Nothing Nothing Nothing Nothing createdAt
       forM_ ciFile $ \CIFile {fileId} -> updateFileTransferChatItemId db fileId ciId createdAt
-      pure $ mkChatItem_ cd False ciId content ts ciFile Nothing Nothing itemForwarded Nothing False False hasLink_ itemTs Nothing Nothing createdAt
+      let ci = mkChatItem_ cd False ciId content ts ciFile Nothing Nothing itemForwarded Nothing False False hasLink_ itemTs Nothing Nothing createdAt
+      if null links then pure ci else createCILinks db ci links
 
 withUser' :: (User -> CM ChatResponse) -> CM ChatResponse
 withUser' action =

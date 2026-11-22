@@ -106,6 +106,8 @@ chatCommandsDocsData =
         ("APIDeleteChatItem", [], "Delete message.", ["CRChatItemsDeleted", "CRChatCmdError"], [], Just UNBackground, "/_delete item " <> Param "chatRef" <> " " <> Join ',' "chatItemIds" <> " " <> Param "deleteMode"),
         ("APIDeleteMemberChatItem", [], "Moderate message. Requires Moderator role (and higher than message author's).", ["CRChatItemsDeleted", "CRChatCmdError"], [], Just UNBackground, "/_delete member item #" <> Param "groupId" <> " " <> Join ',' "chatItemIds"),
         ("APIChatItemReaction", [], "Add/remove message reaction.", ["CRChatItemReaction", "CRChatCmdError"], [], Just UNBackground, "/_reaction " <> Param "chatRef" <> " " <> Param "chatItemId" <> " " <> OnOff "add" <> " " <> Json "reaction"),
+        ("APIGetChatItemLink", [], "Get message link: global for a public chat, local otherwise. Message links are sent in texts as [label](link).", ["CRChatItemLink", "CRChatCmdError"], [], Nothing, "/_get item link " <> Param "chatRef" <> " " <> Param "chatItemId"),
+        ("APIMsgLinkPlan", [], "Get the message of a link, its chat when the message is absent, or the public chat to join.", ["CRMsgLinkPlan", "CRChatCmdError"], [], Nothing, "/_msg link plan " <> Param "userId" <> " " <> Param "msgLink" <> Optional "" (" chat=" <> Param "$0") "chatRef_"),
         ("APIShareMyAddress", [], "Share user address card", ["CRChatMsgContent"], [], Nothing, "/_share address " <> Param "toSendRef"),
         ("APIShareChatMsgContent", [], "Share channel address", ["CRChatMsgContent"], [], Nothing, "/_share chat content " <> Param "shareChatRef" <> " " <> Param "toSendRef")
       ]
@@ -331,6 +333,7 @@ cliCommands =
     "SharePublicGroup",
     "ShowChatItem",
     "ShowChatItemInfo",
+    "ShowChatItemLink",
     "ShowGroupDescription",
     "ShowGroupInfo",
     "ShowGroupLink",

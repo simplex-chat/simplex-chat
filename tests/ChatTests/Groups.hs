@@ -14098,7 +14098,7 @@ testChannelMemberUpdateEnforcement ps =
             connId <- relayConnIdToMember bob "dan"
             ts <- getCurrentTime
             let ChatController {smpAgent = bobAgent} = chatController bob
-                chatMsg = ChatMessage chatInitialVRange Nothing (XMsgUpdate sharedId (MCText "forged") M.empty Nothing Nothing Nothing Nothing)
+                chatMsg = ChatMessage chatInitialVRange Nothing (XMsgUpdate sharedId (MCText "forged") M.empty M.empty Nothing Nothing Nothing Nothing)
                 fwd = GrpMsgForward (FwdMember cathMemId "cath") ts
                 body = encodeBinaryBatch [encodeFwdElement fwd (VMUnsigned chatMsg)]
             sent <- runExceptT $ sendMessages bobAgent [(connId, PQEncOff, MsgFlags False, vrValue body)]

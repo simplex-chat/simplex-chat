@@ -255,6 +255,8 @@ chatTypesDocsData =
     (sti @CIForwardedFrom, STUnion, "CIFF", [], "", ""),
     (sti @CIGroupInvitation, STRecord, "", [], "", ""),
     (sti @CIGroupInvitationStatus, STEnum, "CIGIS", [], "", ""),
+    (sti @CILink, STRecord, "", [], "", "Short text of a message link, by its label in the message text. The target is the linked message, only in the sender's or forwarder's copy of a link sent as simplex:/m."),
+    (sti @CILinkTarget, STRecord, "", [], "", ""),
     (sti @CIMention, STRecord, "", [], "", ""),
     (sti @CIMentionMember, STRecord, "", [], "", ""),
     (sti @CIReactionCount, STRecord, "", [], "", ""),
@@ -345,6 +347,8 @@ chatTypesDocsData =
     (sti @MsgDirection, STEnum, "MD", [], "", ""),
     (sti @MsgErrorType, STUnion, "", [], "", ""), -- check, may be correct?
     (sti @MsgFilter, STEnum, "MF", [], "", ""),
+    (sti @MsgLinkPlan, STUnion, "MLP", [], "", ""),
+    (sti @MsgLinkType, STEnum, "MLT", [], "", ""),
     (sti @MsgReaction, STUnion, "MR", [], "", ""),
     (sti @MsgReceiptStatus, STEnum, "MR", [], "", ""),
     (sti @MsgSigStatus, STEnum, "MSS", [], "", ""),
@@ -516,6 +520,8 @@ deriving instance Generic CIDeleteMode
 deriving instance Generic CIForwardedFrom
 deriving instance Generic CIGroupInvitation
 deriving instance Generic CIGroupInvitationStatus
+deriving instance Generic CILink
+deriving instance Generic CILinkTarget
 deriving instance Generic CIMention
 deriving instance Generic CIMentionMember
 deriving instance Generic CIReactionCount
@@ -613,6 +619,8 @@ deriving instance Generic MsgDecryptError
 deriving instance Generic MsgDirection
 deriving instance Generic MsgErrorType
 deriving instance Generic MsgFilter
+deriving instance Generic MsgLinkPlan
+deriving instance Generic MsgLinkType
 deriving instance Generic MsgReaction
 deriving instance Generic MsgReceiptStatus
 deriving instance Generic MsgSigStatus
