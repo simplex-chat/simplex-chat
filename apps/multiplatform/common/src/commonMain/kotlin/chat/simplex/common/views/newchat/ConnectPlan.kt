@@ -48,6 +48,11 @@ suspend fun planAndConnect(
         return CompletableDeferred(false)
       }
     }
+    is ConnectTarget.MsgLink -> {
+      openMsgLink(rhId, null, target.link, null, close)
+      cleanup?.invoke()
+      return CompletableDeferred(true)
+    }
     // A SimplexName falls through to apiConnectPlan, which resolves it on the
     // core (the /_connect plan command accepts a name target, not only a link).
     is ConnectTarget.Name, null -> {}
@@ -77,15 +82,19 @@ fun msgLinkAction(plan: MsgLinkPlan, target: CILinkTarget?): MsgLinkAction = whe
   MsgLinkPlan.UnknownLink -> MsgLinkAction.Alert(MR.strings.app_link_not_supported)
 }
 
-suspend fun openMsgLink(rhId: Long?, chatInfo: ChatInfo?, link: Format.MessageLink, target: CILinkTarget?) {
+suspend fun openMsgLink(rhId: Long?, chatInfo: ChatInfo?, link: Format.MessageLink, target: CILinkTarget?, close: (() -> Unit)? = null) {
   val plan = if (link.msgLinkType == MsgLinkType.unknownSource) MsgLinkPlan.UnknownSource else chatModel.controller.apiMsgLinkPlan(rhId, link.msgLink, chatInfo) ?: return
   when (val action = msgLinkAction(plan, target)) {
-    is MsgLinkAction.OpenItem -> openChat(secondaryChatsCtx = null, rhId, action.target.chatType, action.target.chatId, action.target.chatItemId)
+    is MsgLinkAction.OpenItem -> {
+      close?.invoke()
+      openChat(secondaryChatsCtx = null, rhId, action.target.chatType, action.target.chatId, action.target.chatItemId)
+    }
     is MsgLinkAction.OpenChat -> {
+      close?.invoke()
       openChat(secondaryChatsCtx = null, rhId, action.chatInfo)
       showQuotedItemDoesNotExistAlert()
     }
-    is MsgLinkAction.Connect -> planAndConnect(rhId, action.connTarget, close = null)
+    is MsgLinkAction.Connect -> planAndConnect(rhId, action.connTarget, close = close)
     is MsgLinkAction.Alert -> AlertManager.shared.showAlertMsg(action.title)
   }
 }

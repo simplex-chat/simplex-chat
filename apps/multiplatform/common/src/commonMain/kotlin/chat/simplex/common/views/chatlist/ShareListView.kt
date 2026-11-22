@@ -47,7 +47,7 @@ fun ShareListView(chatModel: ChatModel, stopped: Boolean) {
           if (mc != null) {
             isMediaOrFileAttachment = isMediaOrFileAttachment || mc.isMediaOrFileAttachment
             isVoice = isVoice || mc.isVoice
-            hasSimplexLink = hasSimplexLink || hasSimplexLink(mc.text)
+            hasSimplexLink = hasSimplexLink || parseToMarkdown(mc.text)?.any { it.format is Format.SimplexLink } == true
           }
         }
       }
@@ -80,7 +80,7 @@ fun ShareListView(chatModel: ChatModel, stopped: Boolean) {
 
 private fun hasSimplexLink(msg: String): Boolean {
   val parsedMsg = parseToMarkdown(msg) ?: return false
-  return parsedMsg.any { ft -> ft.format is Format.SimplexLink }
+  return parsedMsg.any { ft -> ft.format?.isSimplexLink == true }
 }
 
 @Composable

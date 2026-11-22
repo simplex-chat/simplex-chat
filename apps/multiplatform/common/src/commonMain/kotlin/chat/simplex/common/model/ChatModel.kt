@@ -5450,7 +5450,7 @@ sealed class Format {
     is Unknown -> SpanStyle()
   }
 
-  val isSimplexLink = this is SimplexLink
+  val isSimplexLink: Boolean get() = this is SimplexLink || (this is MessageLink && msgLinkType == MsgLinkType.publicGroup)
 
   companion object {
     val linkStyle @Composable get() = SpanStyle(color = MaterialTheme.colors.primary, textDecoration = TextDecoration.Underline)

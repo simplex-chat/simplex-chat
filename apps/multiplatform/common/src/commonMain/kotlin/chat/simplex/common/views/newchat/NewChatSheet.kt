@@ -550,6 +550,14 @@ private fun ContactsSearchBar(
               close = close,
               cleanup = { searchText.value = TextFieldValue() }
             )
+          } else if (target is ConnectTarget.MsgLink) {
+            hideKeyboard(view)
+            connect(
+              link = target.text,
+              searchChatFilteredBySimplexLink = searchChatFilteredBySimplexLink,
+              close = close,
+              cleanup = { searchText.value = TextFieldValue() }
+            )
           } else {
             // A name is resolved only when its "Connect to …" row is tapped, not on every keystroke. The
             // simplex-name filter is chat-list only: this contacts/deleted view is a scoped subset, so a

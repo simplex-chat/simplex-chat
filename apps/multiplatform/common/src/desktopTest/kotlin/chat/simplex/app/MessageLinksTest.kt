@@ -107,6 +107,25 @@ class MessageLinksTest {
   }
 
   @Test
+  fun pastedPostOfChannelNotJoinedStartsConnectionToChannel() = recorded("links/channel") {
+    planAndConnect(rhId = null, "CHANNEL_MSG_LINK", close = null)
+    synchronized(unrecorded) {
+      assertEquals(listOf("markdown CHANNEL_LINK", "/_connect plan 1 CHANNEL_LINK"), unrecorded.toList())
+      unrecorded.clear()
+    }
+  }
+
+  @Test
+  fun linkToPostOfPublicChatIsSimplexLink() = recorded("links/channel") {
+    assertEquals(true, parseToMarkdown("CHANNEL_MSG_LINK")?.single()?.format?.isSimplexLink)
+  }
+
+  @Test
+  fun linkToMessageOfGroupIsNotSimplexLink() = recorded("links/same-group") {
+    assertEquals(false, parseToMarkdown("see [q](GROUP_MSG_LINK)")?.last()?.format?.isSimplexLink)
+  }
+
+  @Test
   fun siteLinkAsksForUpdate() = runComposeUiTest {
     useRecording("links/channel")
     setContent {
