@@ -274,7 +274,7 @@ sequenceDiagram
   participant E as Ethereum node
   alt console, with the service stopped
     O->>C: //issue name 6 years 5
-  else managed group, admins only
+  else managed group, moderators and above
     O->>C: /issue name 6, a group message
   end
   C->>D: random code, only its SHA-256 stored with length and years
