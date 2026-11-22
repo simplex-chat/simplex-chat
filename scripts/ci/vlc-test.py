@@ -41,12 +41,13 @@ class Media:
     video: bool
     portrait: bool
     ffmpeg: tuple[str, ...]
+    copy_of: str | None = None
 
 
 GENERATED = (
     Media("voice.m4a", False, False, ("-c:a", "aac", "-ac", "1", "-ar", "16000", "-b:a", "32k")),
     Media("h264.mp4", True, False, (*H264, "-c:a", "aac", *STEREO)),
-    Media("rotated.mp4", True, True, (*H264, "-metadata:s:v:0", "rotate=90", "-c:a", "aac", *STEREO)),
+    Media("rotated.mp4", True, True, ("-c", "copy", "-metadata:s:v:0", "rotate=90"), copy_of="h264.mp4"),
     Media("hevc.mp4", True, False, ("-c:v", "libx265", "-tag:v", "hvc1", "-pix_fmt", "yuv420p", "-c:a", "aac", *STEREO)),
     Media("av1.mp4", True, False, ("-c:v", "libaom-av1", "-cpu-used", "8", "-crf", "50", "-b:v", "0", "-pix_fmt", "yuv420p", "-c:a", "aac", *STEREO)),
     Media("h264.mov", True, False, (*H264, "-c:a", "aac", *STEREO)),
@@ -154,9 +155,12 @@ def is_plugin(file: Path) -> bool:
 def make_media(directory: Path) -> None:
     directory.mkdir(parents=True, exist_ok=True)
     for media in GENERATED:
-        sources = ["-f", "lavfi", "-i", AUDIO_SOURCE]
-        if media.video:
-            sources = ["-f", "lavfi", "-i", VIDEO_SOURCE, *sources]
+        if media.copy_of:
+            sources = ["-i", str(directory / media.copy_of)]
+        elif media.video:
+            sources = ["-f", "lavfi", "-i", VIDEO_SOURCE, "-f", "lavfi", "-i", AUDIO_SOURCE]
+        else:
+            sources = ["-f", "lavfi", "-i", AUDIO_SOURCE]
         command = ["ffmpeg", "-hide_banner", "-loglevel", "error", "-y", *sources, *media.ffmpeg, str(directory / media.name)]
         print(" ".join(command), flush=True)
         subprocess.run(command, check=True)
