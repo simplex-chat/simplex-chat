@@ -571,6 +571,7 @@ data PrepaidCode = PrepaidCode
     pcPaymentStatus :: BadgeCodePaymentStatus,
     pcReservedBy :: Maybe RegistrationId,
     pcReservedAt :: Maybe UTCTime,
+    pcHolderTakenAt :: Maybe UTCTime,
     pcSpentAt :: Maybe UTCTime,
     pcRevokedAt :: Maybe UTCTime,
     pcExpiresAt :: Maybe UTCTime,
@@ -1587,26 +1588,27 @@ prepaidCodeColumns :: Query
 prepaidCodeColumns =
   prefixQuery
     [sql|
-    SELECT name_prepaid_code_id, code_hash, min_length, years, code_payment_status, reserved_by, reserved_at, spent_at, revoked_at, expires_at, created_at
-    FROM @name_prepaid_codes
+    SELECT c.name_prepaid_code_id, c.code_hash, c.min_length, c.years, c.code_payment_status, c.reserved_by, c.reserved_at, c.spent_at, c.revoked_at, c.expires_at, c.created_at, r.taken_at
+    FROM @name_prepaid_codes c
+    LEFT JOIN @name_registrations r ON r.registration_id = c.reserved_by
   |]
 
-type PrepaidCodeRow = (Int64, CodeHash, Int, Int, BadgeCodePaymentStatus, Maybe Text, Maybe UTCTime, Maybe UTCTime, Maybe UTCTime, Maybe UTCTime) :. Only UTCTime
+type PrepaidCodeRow = (Int64, CodeHash, Int, Int, BadgeCodePaymentStatus, Maybe Text, Maybe UTCTime, Maybe UTCTime, Maybe UTCTime, Maybe UTCTime) :. (UTCTime, Maybe UTCTime)
 
 toPrepaidCode :: PrepaidCodeRow -> PrepaidCode
-toPrepaidCode ((pcId, pcCodeHash, pcMinLength, pcYears, pcPaymentStatus, reservedBy, pcReservedAt, pcSpentAt, pcRevokedAt, pcExpiresAt) :. Only pcCreatedAt) =
-  PrepaidCode {pcId, pcCodeHash, pcMinLength, pcYears, pcPaymentStatus, pcReservedBy = RegistrationId <$> reservedBy, pcReservedAt, pcSpentAt, pcRevokedAt, pcExpiresAt, pcCreatedAt}
+toPrepaidCode ((pcId, pcCodeHash, pcMinLength, pcYears, pcPaymentStatus, reservedBy, pcReservedAt, pcSpentAt, pcRevokedAt, pcExpiresAt) :. (pcCreatedAt, pcHolderTakenAt)) =
+  PrepaidCode {pcId, pcCodeHash, pcMinLength, pcYears, pcPaymentStatus, pcReservedBy = RegistrationId <$> reservedBy, pcReservedAt, pcHolderTakenAt, pcSpentAt, pcRevokedAt, pcExpiresAt, pcCreatedAt}
 
 groupNameCodesIssuedSince :: DB.Connection -> UTCTime -> IO Int
 groupNameCodesIssuedSince db since = maybeFirstRow' 0 fromOnly (DB.query db (mkQuery "SELECT COUNT(*) FROM @name_prepaid_codes WHERE created_at >= ? AND issued_in_group = 1") (Only since))
 
 getPrepaidCode :: DB.Connection -> CodeHash -> IO (Maybe PrepaidCode)
 getPrepaidCode db codeHash =
-  maybeFirstRow toPrepaidCode $ DB.query db (prepaidCodeColumns <> " WHERE code_hash = ?") (Only codeHash)
+  maybeFirstRow toPrepaidCode $ DB.query db (prepaidCodeColumns <> " WHERE c.code_hash = ?") (Only codeHash)
 
 getPrepaidCodeById :: DB.Connection -> CodeId -> IO PrepaidCode
 getPrepaidCodeById db codeId =
-  maybeFirstRow toPrepaidCode (DB.query db (prepaidCodeColumns <> " WHERE name_prepaid_code_id = ?") (Only codeId))
+  maybeFirstRow toPrepaidCode (DB.query db (prepaidCodeColumns <> " WHERE c.name_prepaid_code_id = ?") (Only codeId))
     >>= maybe (E.throwIO $ BrokenInvariant $ "the prepaid code " <> tshow codeId <> " of an order is missing") pure
 
 -- | An unused code, paid or free and not expired, or the code the registration holds; never a spent or revoked one.

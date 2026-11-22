@@ -46,13 +46,15 @@ data CodeState = CSUnused | CSReserved | CSUsed | CSRevoked | CSExpired | CSUnpa
 
 -- | A code revoked while its order held it can still be spent by that order, so a spent code reads as used.
 codeState :: UTCTime -> PrepaidCode -> CodeState
-codeState now PrepaidCode {pcReservedBy, pcSpentAt, pcRevokedAt, pcPaymentStatus, pcExpiresAt}
+codeState now PrepaidCode {pcReservedBy, pcHolderTakenAt, pcSpentAt, pcRevokedAt, pcPaymentStatus, pcExpiresAt}
   | isJust pcSpentAt = CSUsed
   | isJust pcRevokedAt = CSRevoked
-  | isJust pcReservedBy = CSReserved
+  | isJust pcReservedBy && not (expired && maybe False ((<= now) . addMonths 1) pcHolderTakenAt) = CSReserved
   | CPSUnpaid <- pcPaymentStatus = CSUnpaid
-  | maybe False (<= now) pcExpiresAt = CSExpired
+  | expired = CSExpired
   | otherwise = CSUnused
+  where
+    expired = maybe False (<= now) pcExpiresAt
 
 instance TextEncoding CodeState where
   textEncode = \case

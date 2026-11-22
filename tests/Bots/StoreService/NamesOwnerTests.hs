@@ -65,6 +65,7 @@ import Simplex.Messaging.Util (tshow)
 import StoreService.Config (NamesConfig (..))
 import StoreService.Names.Abi (addressWord, hex, uint256)
 import StoreService.Names.Chain (TxHash (..))
+import StoreService.Names.Codes (CodeState (..), codeState)
 import StoreService.Names.Orders (OrdersEnv (..), signedRequestSeconds)
 import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Signatures (OrderFields (..), findMessage, parseAnyCaseAddress, personalDigest, selectionMessage)
@@ -102,7 +103,7 @@ namesOwnerTests = describe "StoreService names: owner" $ do
     it "runs the order checks on the new fields: invalid_name, the duration, name_taken and name_check_unavailable" testSelectOrderChecks
     it "answers a name of another price catalog_changed with its price, one priced under the floor name_check_unavailable, a balance short of the price bad_request, and selects at the order's price, spent from its balance" testSelectPrice
     it "checks a code order's code as a new code order's: code_not_covering for a shorter name, and reserves it for the name selected" testSelectCodeOrder
-    it "accepts the code the order holds past its expiry until a month after the take, then refuses it with code_expired, refuses it once revoked with code_invalid, changing nothing, and keeps it from other code orders" testSelectRefusedCode
+    it "accepts the code the order holds past its expiry until a month after the take, then refuses it with code_expired, refuses it once revoked with code_invalid, changing nothing, and keeps it from other code orders, checked as expired once refused" testSelectRefusedCode
     it "refuses sealed over 11095 characters, a body over 16384 bytes and malformed fields, accepting the longest" testSelectSizes
     it "refuses another signer's signature and a stale timestamp, and answers an unknown order 404" testSelectRefusedSigner
     it "answers registration_changed with the current view when the order changed during the checks, writing nothing" testSelectLostRace
@@ -676,6 +677,8 @@ testSelectRefusedCode = withOwner $ \ctx@Ctx {cStore} -> do
   answerFixture "select-code-expired" lateAnswer
   stored ctx lateOrder `shouldReturn` lateOrder
   codeRow ctx late `shouldReturn` lateRow
+  now <- readIORef (cClock ctx)
+  mapM (fmap (codeState now) . codeRow ctx) [late, inMonth] `shouldReturn` [CSExpired, CSReserved]
 
 testSelectSizes :: IO ()
 testSelectSizes = withOwner $ \ctx -> do
