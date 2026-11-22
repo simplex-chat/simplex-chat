@@ -288,7 +288,7 @@ chatGroupTests = do
     it "raise priority by update" testGroupRaisePriority
     it "raise priority of live message" testGroupRaisePriorityLive
     it "raise priority below role and in support chat is ignored" testGroupRaisePriorityIgnored
-    it "update with priority of deleted item creates normal item" testGroupRaisePriorityDeletedItem
+    it "update of deleted item creates item with its priority" testGroupUpdatePriorityDeletedItem
     it "silent, high priority and raised messages recorded for the apps" testGroupPriorityRecordings
   describe "update as new" $ do
     it "update as new shows the item last and unread" testGroupUpdateAsNew
@@ -6538,12 +6538,27 @@ testGroupRaisePriorityIgnored =
       alice ##> ("/_update item #1(_support:2) " <> laterId <> " json {\"msgContent\": {\"type\": \"text\", \"text\": \"later\"}, \"mentions\": {}, \"priority\": 1}")
       alice <## "message didn't change"
 
-testGroupRaisePriorityDeletedItem :: HasCallStack => TestParams -> IO ()
-testGroupRaisePriorityDeletedItem =
+testGroupUpdatePriorityDeletedItem :: HasCallStack => TestParams -> IO ()
+testGroupUpdatePriorityDeletedItem =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       createGroup3 "team" alice bob cath
       threadDelay 1000000
+
+      alice ##> "/_send #1 json [{\"msgContent\": {\"type\": \"text\", \"text\": \"working\"}, \"priority\": -1}]"
+      alice <# "#team working"
+      bob <# "#team alice> working"
+      cath <# "#team alice> working"
+      workingId <- lastItemId alice
+      cathWorkingId <- lastItemId cath
+      cath #$> ("/_delete item #1 " <> cathWorkingId <> " internal", id, "message deleted")
+      alice ##> ("/_update item #1 " <> workingId <> " text still working")
+      alice <# "#team [edited] still working"
+      bob <# "#team alice> [edited] still working"
+      cath <# "#team alice> still working"
+      lastSndEventPriority alice "x.msg.update" `shouldReturn` Just (-1)
+      forM_ [alice, bob, cath] $ \cc ->
+        itemPriority cc "/_get chat #1 count=1" `shouldReturn` Just (-1)
 
       alice #> "#team done"
       bob <# "#team alice> done"
@@ -6554,8 +6569,8 @@ testGroupRaisePriorityDeletedItem =
       alice ##> ("/_update item #1 " <> doneId <> " json {\"msgContent\": {\"type\": \"text\", \"text\": \"done\"}, \"mentions\": {}, \"priority\": 1}")
       alice <# "#team !! done"
       bob <# "#team alice!!> done"
-      cath <# "#team alice> done"
-      itemPriority cath "/_get chat #1 count=1" `shouldReturn` Nothing
+      cath <# "#team alice!!> done"
+      itemPriority cath "/_get chat #1 count=1" `shouldReturn` Just 1
 
 testGroupPriorityRecordings :: HasCallStack => TestParams -> IO ()
 testGroupPriorityRecordings ps = do

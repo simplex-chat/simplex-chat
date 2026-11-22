@@ -248,10 +248,10 @@ decodeChatMessageTest = describe "Chat message encoding/decoding" $ do
     map (eventHasNotification . msgNew) priorities `shouldBe` [False, False, True, True, True, True]
     map (sndPriority False) priorities `shouldBe` [Just (-1), Just (-1), Nothing, Nothing, Nothing, Nothing]
     map (sndPriority True) priorities `shouldBe` [Just (-1), Just (-1), Nothing, Nothing, Just 1, Just 1]
-  it "x.msg.update priority raises to high only" $ do
+  it "x.msg.update priority is limited to low, normal and high" $ do
     let priorities = [Just (-5), Just (-1), Nothing, Just 0, Just 1, Just 5]
         msgUpdate p = XMsgUpdate (SharedMsgId "\1\2\3\4") (MCText "hello") [] Nothing Nothing Nothing Nothing p Nothing
-    map (eventPriority . msgUpdate) priorities `shouldBe` [0, 0, 0, 0, 0, 0]
+    map (eventPriority . msgUpdate) priorities `shouldBe` [-1, -1, 0, 0, 1, 1]
     map (eventHasNotification . msgUpdate) priorities `shouldBe` [False, False, False, False, True, True]
   it "x.msg.update as new has the priority of a new message" $ do
     let priorities = [Just (-5), Just (-1), Nothing, Just 0, Just 1, Just 5]

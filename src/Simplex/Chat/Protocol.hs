@@ -647,7 +647,7 @@ sndPriority highAllowed = mfilter (\p -> p < 0 || (p > 0 && highAllowed)) . fmap
 eventPriority :: ChatMsgEvent e -> Int
 eventPriority = \case
   XMsgNew MsgContainer {priority = Just p} -> limitPriority p
-  XMsgUpdate {asNew = Just True, priority = Just p} -> limitPriority p
+  XMsgUpdate {priority = Just p} -> limitPriority p
   _ -> 0
 
 isAsNew :: ChatMsgEvent e -> Bool
@@ -657,11 +657,6 @@ isAsNew = \case
 
 requestsHighPriority :: Maybe Int -> Bool
 requestsHighPriority = maybe False (>= 1)
-
-raisesPriority :: ChatMsgEvent e -> Bool
-raisesPriority = \case
-  XMsgUpdate {priority} -> requestsHighPriority priority
-  _ -> False
 
 cmPriority :: AChatMsgEvent -> Int
 cmPriority (ACME _ ev) = eventPriority ev
@@ -1380,7 +1375,7 @@ hasNotification = \case
 eventHasNotification :: ChatMsgEvent e -> Bool
 eventHasNotification ev = case compare (eventPriority ev) 0 of
   LT -> False
-  EQ -> raisesPriority ev || isAsNew ev || hasNotification (toCMEventTag ev)
+  EQ -> isAsNew ev || hasNotification (toCMEventTag ev)
   GT -> True
 
 msgHasNotification :: VerifiedMsg e -> Bool

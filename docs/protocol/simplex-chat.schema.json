@@ -488,7 +488,7 @@
             "live": {"type": "boolean"},
             "priority": {
               "type": "integer",
-              "metadata": {"comment": "1 or above: raises the item to high priority, sent by its author in the main scope of a group; other values do not change the item; with asNew: the priority of the new message"}
+              "metadata": {"comment": "1 or above: raises the item to high priority, sent by its author in the main scope of a group; -1: an update of a silent message; other values do not change the item; an item created for a missing message has this priority, as in msgContainer; with asNew: the priority of the new message"}
             },
             "asNew": {
               "type": "boolean",

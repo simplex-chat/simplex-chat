@@ -1,6 +1,6 @@
 # Silent messages
 
-Status: Q1, Q2 and Q3 answered A by the user on 2026-11-12; Q4, the two tiers of unread items asked for in the note on Q3, and Q5, the look of a silent-only count, answered B on 2026-11-13. On 2026-11-14 the user replaced Q2: silent and high priority ship together, as one message priority feature; section 11 is the delta to the approved priority plan; Q6 and Q7 were decided A by the lead on 2026-11-14. Code references: master `9d3241b06`. simplexmq at the commit of `cabal.project`, `71179c4d4`. Related plans: `2026-10-13-message-priority.md` (approved on 2026-10-13, not implemented), `2026-10-13-forwarded-notification-flag.md` (implemented by #7706).
+Status: Q1, Q2 and Q3 answered A by the user on 2026-11-12; Q4, the two tiers of unread items asked for in the note on Q3, and Q5, the look of a silent-only count, answered B on 2026-11-13. On 2026-11-14 the user replaced Q2: silent and high priority ship together, as one message priority feature; section 11 is the delta to the approved priority plan; Q6 and Q7 were decided A by the lead on 2026-11-14. On 2026-11-21 the user decided that an item created by an update of a missing message has the priority of the update (11.3). Code references: master `9d3241b06`. simplexmq at the commit of `cabal.project`, `71179c4d4`. Related plans: `2026-10-13-message-priority.md` (approved on 2026-10-13, not implemented), `2026-10-13-forwarded-notification-flag.md` (implemented by #7706).
 
 ## 1. Goal
 
@@ -293,7 +293,8 @@ approved text                                      becomes
 8     unreadTags, priorityTags                     unreadTags, priorityTags, silentTags
 10    Output.hs: notification for a raise          kept; the built silent checks stay; a raised item is no longer silent
 11    "1 or above ... received as normal" (doc)    the receiver rules and the preference of the approved plan
-5     item created by x.msg.update: its priority   normal priority: eventPriority of x.msg.update is 0 (5a9677981)
+5     item created by x.msg.update: its priority   unchanged: eventPriority of x.msg.update is its priority, and an update of a silent item
+                                                   has -1 (decided by the user on 2026-11-21; replaces normal priority of 5a9677981)
 4, 5  raise conditions                             also an item that is not deleted (receiver) and in the main scope (sender) (5a9677981)
 5     history: the priority of the stored item     silent kept, high dropped by the member that sends history; live forwards keep it (c2ccb6775)
 ```
@@ -305,9 +306,9 @@ The NSE decisions of this plan stay. A raise reaches the NSE as `.messageReceive
 Item priority:
 ```mermaid
 stateDiagram-v2
-  [*] --> silent: x.msg.new, priority -1, any sender
-  [*] --> normal: x.msg.new, priority 0 or absent, or 1 in a direct chat or from a sender who is not allowed
-  [*] --> high: x.msg.new, priority 1, allowed sender, group
+  [*] --> silent: x.msg.new or x.msg.update of a missing item, priority -1, any sender
+  [*] --> normal: x.msg.new or x.msg.update of a missing item, priority 0 or absent, or 1 in a direct chat or from a sender who is not allowed
+  [*] --> high: x.msg.new or x.msg.update of a missing item, priority 1, allowed sender, group
   silent --> high: x.msg.update priority 1 by the author, allowed, main scope
   normal --> high: x.msg.update priority 1 by the author, allowed, main scope
 ```
