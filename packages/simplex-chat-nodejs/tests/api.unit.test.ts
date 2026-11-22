@@ -52,6 +52,16 @@ describe("documented success responses", () => {
     expect(sentCommands()).toEqual(['/_update item #1 2 as_new=on json {"msgContent":{"type":"text","text":"status"},"mentions":{},"priority":-1}'])
   })
 
+  it("apiSendTextMessage sends the priority in the composed message", async () => {
+    const chat = await chatWithResponse({type: "newChatItems", user, chatItems: []})
+    await expect(chat.apiSendTextMessage([T.ChatType.Group, 1], "hi", undefined, -1)).resolves.toEqual([])
+    await chat.apiSendTextMessage([T.ChatType.Group, 1], "hi")
+    expect(sentCommands()).toEqual([
+      '/_send #1 json [{"msgContent":{"type":"text","text":"hi"},"mentions":{},"priority":-1}]',
+      '/_send #1 json [{"msgContent":{"type":"text","text":"hi"},"mentions":{}}]',
+    ])
+  })
+
   it("apiSetProfileAddress accepts userProfileNoChange", async () => {
     const chat = await chatWithResponse({type: "userProfileNoChange", user})
     await expect(chat.apiSetProfileAddress(1, true)).resolves.toEqual({updateSuccesses: 0, updateFailures: 0, changedContacts: []})
