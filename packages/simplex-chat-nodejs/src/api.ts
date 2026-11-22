@@ -485,15 +485,16 @@ export class ChatApi {
   /**
    * Update message.
    * A live message stays live with `liveMessage = true` and is finalized with `liveMessage = false`.
-   * `priority = 1` raises the message to high priority (groups only, for roles allowed by the group preference).
+   * `priority = 1` raises the message to high priority (groups only, for roles allowed by the group preference); `asNew = true` makes it new in a group: last, unread and notified by `priority`.
    * Network usage: background.
    */
-  async apiUpdateChatItem(chatType: T.ChatType, chatId: number, chatItemId: number, msgContent: T.MsgContent, liveMessage = false, priority?: number): Promise<T.ChatItem> {
+  async apiUpdateChatItem(chatType: T.ChatType, chatId: number, chatItemId: number, msgContent: T.MsgContent, liveMessage = false, priority?: number, asNew = false): Promise<T.ChatItem> {
     const r = await this.sendChatCmd(
       CC.APIUpdateChatItem.cmdString({
         chatRef: {chatType, chatId},
         chatItemId,
         liveMessage,
+        asNew,
         updatedMessage: {msgContent, mentions: {}, priority},
       })
     )

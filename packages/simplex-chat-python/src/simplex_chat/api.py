@@ -251,6 +251,7 @@ class ChatApi:
         msg_content: T.MsgContent,
         live_message: bool = False,
         priority: int | None = None,
+        as_new: bool = False,
     ) -> T.ChatItem:
         updated_message: T.UpdatedMessage = {"msgContent": msg_content, "mentions": {}}
         if priority is not None:
@@ -261,6 +262,7 @@ class ChatApi:
                     "chatRef": {"chatType": chat_type, "chatId": chat_id},
                     "chatItemId": chat_item_id,
                     "liveMessage": live_message,
+                    "asNew": as_new,
                     "updatedMessage": updated_message,
                 }
             )

@@ -45,6 +45,13 @@ describe("documented success responses", () => {
     ])
   })
 
+  it("apiUpdateChatItem updates a message as new", async () => {
+    const chatItem = {meta: {itemId: 2}}
+    const chat = await chatWithResponse({type: "chatItemUpdated", user, chatItem: {chatItem}})
+    await expect(chat.apiUpdateChatItem(T.ChatType.Group, 1, 2, {type: "text", text: "status"}, false, -1, true)).resolves.toEqual(chatItem)
+    expect(sentCommands()).toEqual(['/_update item #1 2 as_new=on json {"msgContent":{"type":"text","text":"status"},"mentions":{},"priority":-1}'])
+  })
+
   it("apiSetProfileAddress accepts userProfileNoChange", async () => {
     const chat = await chatWithResponse({type: "userProfileNoChange", user})
     await expect(chat.apiSetProfileAddress(1, true)).resolves.toEqual({updateSuccesses: 0, updateFailures: 0, changedContacts: []})

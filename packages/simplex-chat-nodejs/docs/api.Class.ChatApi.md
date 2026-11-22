@@ -1687,13 +1687,13 @@ Defined in: [src/api.ts:433](../api.ts#L433)
 
 ### apiUpdateChatItem()
 
-> **apiUpdateChatItem**(`chatType`, `chatId`, `chatItemId`, `msgContent`, `liveMessage?`, `priority?`): `Promise`\<`ChatItem`\>
+> **apiUpdateChatItem**(`chatType`, `chatId`, `chatItemId`, `msgContent`, `liveMessage?`, `priority?`, `asNew?`): `Promise`\<`ChatItem`\>
 
 Defined in: [src/api.ts:491](../api.ts#L491)
 
 Update message.
 A live message stays live with `liveMessage = true` and is finalized with `liveMessage = false`.
-`priority = 1` raises the message to high priority (groups only, for roles allowed by the group preference).
+`priority = 1` raises the message to high priority (groups only, for roles allowed by the group preference); `asNew = true` makes it new in a group: last, unread and notified by `priority`.
 Network usage: background.
 
 #### Parameters
@@ -1721,6 +1721,10 @@ Network usage: background.
 ##### priority?
 
 `number`
+
+##### asNew?
+
+`boolean` = `false`
 
 #### Returns
 
