@@ -106,7 +106,7 @@ The reduced build runs the Linux job build-linux (ubuntu-22.04 x86_64) for every
 - CI, in build-linux:
   - Node 22 and Python 3.12 (steps "Setup Node.js" and "Setup Python");
   - libsimplex, when `CORE_SOURCES` of packages_release.py also changed (step "Build library");
-  - `package-tests.sh build linux-x86_64` and `package-tests.sh test` (step "Package tests (pull request)").
+  - `package-tests.sh build linux-x86_64` and `package-tests.sh test` (step "Package tests (pull request)"). `package-tests.sh build` without a platform builds the TypeScript of both packages without the add-on.
 - With libsimplex built, SIMPLEX_LIBS_DIR is set to it for the nodejs tests; the python tests run with it unset (package-tests.sh). Without SIMPLEX_LIBS_DIR, the pinned release libraries are downloaded (packages/simplex-chat-nodejs/src/libs.ts).
 - Local:
   ```sh
@@ -155,11 +155,12 @@ The reduced build runs the Linux job build-linux (ubuntu-22.04 x86_64) for every
 - CI:
   - in build-linux: `scope-tests.sh mcp` (step "Test changed scopes"), with the published `simplex-chat` and `@simplex-chat/types` of package-lock.json:
     - `npm ci`;
+    - when `CORE_SOURCES` of packages_release.py also changed: libsimplex of the branch (step "Build library"), passed as SIMPLEX_LIBS_DIR, and the branch's `@simplex-chat/types` and `simplex-chat`, built by `package-tests.sh build` and installed over the published ones with `npm install --no-save`;
     - `npx tsc` and `npx tsc -p test/tsconfig.json --noEmit`;
     - `npm test`, the unit tests;
-    - `npm run test:e2e`, the end-to-end tests. They download libsimplex and the add-on pinned by the installed `simplex-chat`, and smp-server and xftp-server of the simplexmq release in test/e2e/smpServer.ts;
+    - `npm run test:e2e`, the end-to-end tests. They download the add-on pinned by the installed `simplex-chat`, libsimplex too without SIMPLEX_LIBS_DIR, and smp-server and xftp-server of the simplexmq release in test/e2e/smpServer.ts;
   - before a publication: the package with its published dependencies, type-checked and unit tested in job `publish` of build.yml (docs/contributing/RELEASES.md, "MCP server release").
-- Local: `scripts/ci/scope-tests.sh mcp`.
+- Local: `scripts/ci/scope-tests.sh mcp`; with `SIMPLEX_LIBS_DIR` set to a folder with libsimplex of the branch, against the branch's packages.
 
 #### support-bot
 

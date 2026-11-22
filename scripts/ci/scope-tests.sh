@@ -17,6 +17,10 @@ case "${1:-}" in
   mcp)
     cd packages/simplex-chat-mcp
     npm ci --no-audit --no-fund
+    if [ -n "${SIMPLEX_LIBS_DIR:-}" ]; then
+      ../../scripts/ci/package-tests.sh build
+      npm install --no-audit --no-fund --no-save ../simplex-chat-client/types/typescript ../simplex-chat-nodejs
+    fi
     npx tsc
     npx tsc -p test/tsconfig.json --noEmit
     npm test
