@@ -61,7 +61,8 @@ import Simplex.Chat.Options.DB
 #endif
 #if defined(test_hooks)
 import Control.Concurrent.Async (async)
-import Control.Concurrent.STM (swapTVar, writeTVar)
+import Control.Concurrent.STM (check, readTVar, swapTVar, writeTVar)
+import Simplex.Chat.Core (sendChatCmdStr)
 import Simplex.Messaging.Agent (getConnectionsVerifyCodes)
 import Simplex.Messaging.Util (whenM)
 import System.Timeout (timeout)
@@ -107,6 +108,7 @@ chatDirectTests = do
 #endif
 #if defined(test_hooks)
     it "suspend chat after the open message transaction ends" testSuspendDuringHandling
+    it "receive messages after activation during the suspension wait" testActivateDuringSuspension
 #endif
   describe "batch send messages" $ do
     it "send multiple messages api" testSendMulti
@@ -1712,22 +1714,14 @@ testStoreTxAborted =
 #if defined(test_hooks)
 testSuspendDuringHandling :: HasCallStack => TestParams -> IO ()
 testSuspendDuringHandling ps = do
-  armed <- newTVarIO False
-  entered <- newEmptyMVar
-  release <- newEmptyMVar
-  let hook ChatController {smpAgent} = whenM (atomically $ swapTVar armed False) $ do
-        putMVar entered ()
-        readMVar release
-        void . runExceptT $ getConnectionsVerifyCodes smpAgent []
+  (holdHandling, releaseHandling, cfg) <- holdStoreTxCfg $ \ChatController {smpAgent} -> void . runExceptT $ getConnectionsVerifyCodes smpAgent []
   withNewTestChat ps "alice" aliceProfile $ \alice ->
-    withNewTestChatCfg ps testCfg {chatHooks = defaultChatHooks {storeTxHook = Just hook}} "bob" bobProfile $ \bob -> do
+    withNewTestChatCfg ps cfg "bob" bobProfile $ \bob -> do
       connectUsers bob alice
-      atomically $ writeTVar armed True
-      alice #> "@bob hello"
-      timeout 20000000 (readMVar entered) `shouldReturn` Just ()
+      holdHandling $ alice #> "@bob hello"
       bob ##> "/_app suspend 0"
       bob <// 500000
-      putMVar release ()
+      releaseHandling
       bob <### ["ok", WithTime "alice> hello"]
       handling <- async $ runInStoreTx bob False (pure ())
       threadDelay 500000
@@ -1738,6 +1732,36 @@ testSuspendDuringHandling ps = do
       alice #> "@bob hi"
       bob <# "alice> hi"
       bob #$> ("/_get chat @2 count=2", chat, [(0, "hello"), (0, "hi")])
+
+testActivateDuringSuspension :: HasCallStack => TestParams -> IO ()
+testActivateDuringSuspension ps = do
+  (holdHandling, releaseHandling, cfg) <- holdStoreTxCfg $ \_ -> pure ()
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatCfg ps cfg "bob" bobProfile $ \bob@TestCC {chatController = cc} -> do
+      connectUsers bob alice
+      holdHandling $ alice #> "@bob hello"
+      bob ##> "/_app suspend 0"
+      atomically $ readTVar (chatActivated cc) >>= check . not
+      (isRight <$> sendChatCmdStr cc "/_app activate restore=off") `shouldReturn` True
+      releaseHandling
+      bob <### ["ok", WithTime "alice> hello"]
+      alice #> "@bob hi"
+      bob <# "alice> hi"
+
+holdStoreTxCfg :: (ChatController -> IO ()) -> IO (IO () -> IO (), IO (), ChatConfig)
+holdStoreTxCfg afterRelease = do
+  armed <- newTVarIO False
+  entered <- newEmptyMVar
+  release <- newEmptyMVar
+  let hook cc = whenM (atomically $ swapTVar armed False) $ do
+        putMVar entered ()
+        readMVar release
+        afterRelease cc
+      hold action = do
+        atomically $ writeTVar armed True
+        action
+        timeout 20000000 (readMVar entered) `shouldReturn` Just ()
+  pure (hold, putMVar release (), testCfg {chatHooks = defaultChatHooks {storeTxHook = Just hook}})
 #endif
 
 runInStoreTx :: TestCC -> Bool -> CM a -> IO (Either ChatError (Either ChatError a))
