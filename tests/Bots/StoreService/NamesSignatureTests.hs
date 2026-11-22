@@ -128,7 +128,7 @@ messageVectors =
       "0x08a989fbf0457984c062b44d7237be9c7948f2cf23d48410609777a09b515646",
       "0xfa0908260c3f21c8e47bd37e2c3cf3bd6bc62966591ab1a2c4e31695646548f47d2e79b34413be27b4b07330682de642f48a8f5e641449d7d79728eeb4ab14da1c"
     ),
-    ( "another name for an order with the general terms' hash",
+    ( "a name selected for an order with the general terms' hash",
       "name",
       Just termsOrder,
       selectionMessage registrationId termsOrder termsTimestamp,
@@ -136,7 +136,7 @@ messageVectors =
       "0x9545b17da4a1fcc96d66f53b8358629c5987ec2a67d16e44f4e0a298194dc0e9",
       "0xa1ae312f7178440aaf5a04789d7ed388af7215624b214ea7aa98d43209f0c98e10b64a1c553053e88c3ecd6d21769d34ff9b6a3485e04e2d23bd4b0faabb1dc01c"
     ),
-    ( "another name for an order with the community terms' hash",
+    ( "a name selected for an order with the community terms' hash",
       "name",
       Just communityOrder,
       selectionMessage registrationId communityOrder termsTimestamp,

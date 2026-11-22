@@ -91,7 +91,7 @@ namesRevealTests = describe "StoreService names: reveal" $ do
 
 data Fx = Fx {fCtx :: Ctx, fApp :: Application}
 
--- | The registration routes as namesRoutes registers them, the reveal's and another name's included.
+-- | The registration routes as namesRoutes registers them, the reveal's and the selection's included.
 withReveals :: (Fx -> IO a) -> IO a
 withReveals action = withOrders $ \ctx@Ctx {cNode, cOrders, cWeb} -> do
   answerCall cNode fakeSponsor noncesCall $ Returns $ uint256 (0 :: Int)

@@ -110,8 +110,6 @@ idle_seconds = 60
 ;term_slack_seconds = 3600
 ; a commitment, or a signed reveal on Try again, with less than this left before its deadline is not reused
 ;reveal_margin_seconds = 900
-; how many times one order may move to another name
-;max_order_moves = 3
 ; on: only prepaid codes register names, and every paid name order answers 403 codes_only
 ;codes_only = off
 ; the owner's link edits relayed for one name in any 365 days, each a transaction whose gas the
@@ -119,7 +117,7 @@ idle_seconds = 60
 ;record_edits_per_year = 3
 ; the lowest price a name is sold at, in cents a year, at least 1. Prices come from the chain, and
 ; this floor is the one exception: a chain price under it for a name's paid years answers 503 to the
-; search, order, spend or move. Lower it before lowering prices on chain below it
+; search, order or selection of a name. Lower it before lowering prices on chain below it
 ;min_price_cents_per_year = 5000
 ;
 ; what each community name is for, with [names] only (the name policy on chain lists the names):

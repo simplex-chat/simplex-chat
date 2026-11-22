@@ -166,7 +166,7 @@ namesBootTests = do
   it "refuses a second instance on the same Postgres database until the first ends, exits when the lock's connection fails, and takes no lock on SQLite" testInstanceLock
   it "exits before the chat core starts while a pending transaction was signed by another key" testOtherKeyPendingStops
   it "boots codes-only, refusing paid name orders 403 codes_only and answering code orders and code checks, the badges shell as built and /api/config in codes mode" testNamesBootCodesOnly
-  it "boots with [names] and [chain], routing fixed /api/name paths ahead of a search, find ahead of registrations, the community terms, the signing read and registrations to GET, another name, a reveal and a retry to POST, a path no route knows and a taken order's code to 404, and each route under its limit, shared by the routes of that limit" testNamesBoot
+  it "boots with [names] and [chain], routing fixed /api/name paths ahead of a search, find ahead of registrations, the community terms, the signing read and registrations to GET, the selection of a name, a reveal and a retry to POST, a path no route knows and a taken order's code to 404, and each route under its limit, shared by the routes of that limit" testNamesBoot
   it "searches with the configured price floor, answering a price at it and 503 to one cent under it" testNamesBootPriceFloor
 
 testDevKeysWarned :: HasCallStack => TestParams -> IO ()

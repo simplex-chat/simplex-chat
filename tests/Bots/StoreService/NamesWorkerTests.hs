@@ -147,7 +147,7 @@ workerTests = describe "StoreService names: worker" $ do
   describe "retry" $ do
     it "refuses /retry of any order but a lapsed unsigned one with bad_request, a failed or signed one included, changing nothing, and answers an unknown order 404" testRetryNotFailed
     it "requeues a lapsed committed order, whose view says it lapsed, answering an old version at once after it and keeping its code" testRetryLapsed
-    it "runs in the name's turn, answering registration_changed for an order given another name meanwhile" testRetryInNameTurn
+    it "runs in the name's turn, answering registration_changed for an order whose name was selected meanwhile" testRetryInNameTurn
   describe "close" $ do
     it "closes a failed paid order taken, not live, its price credited and refunded, its reveal cleared, then refuses /retry, a selection of a name and a second refund, and accepts a new order for the name" testCloseFailed
     it "closes a lapsed unsigned committed order, naming its lapse as its end" testCloseLapsed
@@ -167,7 +167,7 @@ data W = W
     wWorker :: Worker
   }
 
--- | The worker over the orders' store and fake node, with the registration poll, Try again and another name as namesRoutes registers them.
+-- | The worker over the orders' store and fake node, with the registration poll, Try again and the selection of a name as namesRoutes registers them.
 withWorker :: (W -> IO a) -> IO a
 withWorker = withWorkerAs id
 
@@ -1470,7 +1470,7 @@ testRetryInNameTurn = withWorker $ \W {wCtx = ctx@Ctx {cOrders}} -> do
             timeout prompt (wait requesting) >>= maybe (fail "the retry did not finish") pure
   (status, v) <- whileHeld r (retryOf ctx r) (stored ctx r `shouldReturn` r)
   (status, phaseOf =<< v) `shouldBe` (200, Just "queued")
-  -- given another name while the retry waited for the old name's turn
+  -- a name selected for it while the retry waited for the old name's turn
   (status', v') <- whileHeld renamed (retryOf ctx renamed) (void $ rewrite ctx renamed $ \o -> o {nrLabelHash = labelHash "alicebakers", nrLength = lengthOf 11})
   (status', (`fieldOf` "type") =<< v') `shouldBe` (409, Just "registration_changed")
   nrPhase <$> stored ctx renamed `shouldReturn` nrPhase renamed

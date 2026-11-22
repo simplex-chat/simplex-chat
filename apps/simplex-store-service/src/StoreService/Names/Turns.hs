@@ -4,7 +4,7 @@
 
 -- | A thread that takes a turn it already holds waits forever. Label turns are taken before a code turn or a balance turn,
 -- and a balance turn is never taken with a code turn.
-module StoreService.Names.Turns (Turns, Moved, newTurns, withLabelTurn, withLabelTurns, withRegistrationTurn, withRegistrationTurns, withCodeTurn, withBalanceTurn, turnsCount, labelTurnCount, codeTurnCount, balanceTurnCount) where
+module StoreService.Names.Turns (Turns, NameSelected, newTurns, withLabelTurn, withLabelTurns, withRegistrationTurn, withRegistrationTurns, withCodeTurn, withBalanceTurn, turnsCount, labelTurnCount, codeTurnCount, balanceTurnCount) where
 
 import Control.Concurrent.STM
 import Control.Exception (bracket)
@@ -26,19 +26,19 @@ newTurns = Turns <$> TM.emptyIO <*> TM.emptyIO <*> TM.emptyIO
 withLabelTurn :: Turns -> LabelHash -> IO a -> IO a
 withLabelTurn Turns {labelTurns} = withTurn labelTurns
 
--- | Taken in hash order, so two requests moving between the same names cannot each hold one and wait for the other.
+-- | Taken in hash order, so two requests for the same two names cannot each hold one and wait for the other.
 withLabelTurns :: Turns -> LabelHash -> LabelHash -> IO a -> IO a
 withLabelTurns turns a b action
   | a == b = withLabelTurn turns a action
   | a < b = withLabelTurn turns a $ withLabelTurn turns b action
   | otherwise = withLabelTurn turns b $ withLabelTurn turns a action
 
-type Moved = ()
+type NameSelected = ()
 
-withRegistrationTurn :: DBStore -> Turns -> NameRegistration -> (NameRegistration -> IO a) -> IO (Maybe (Either Moved a))
+withRegistrationTurn :: DBStore -> Turns -> NameRegistration -> (NameRegistration -> IO a) -> IO (Maybe (Either NameSelected a))
 withRegistrationTurn st turns r = withRegistrationTurns st turns r $ nrLabelHash r
 
-withRegistrationTurns :: DBStore -> Turns -> NameRegistration -> LabelHash -> (NameRegistration -> IO a) -> IO (Maybe (Either Moved a))
+withRegistrationTurns :: DBStore -> Turns -> NameRegistration -> LabelHash -> (NameRegistration -> IO a) -> IO (Maybe (Either NameSelected a))
 withRegistrationTurns st turns NameRegistration {nrId, nrLabelHash = held} other action =
   withLabelTurns turns held other $
     withTransaction st (`getRegistration` nrId) >>= traverse inTurns
