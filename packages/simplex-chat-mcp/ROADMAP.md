@@ -27,7 +27,7 @@ What comes next for Claude Code in SimpleX Chat.
 - Start a new session from the desktop app, in a folder you choose.
 - Send voice messages to Claude.
 - Delete your latest prompt, and Claude knows you withdrew it.
-- Answer from the chat almost every time Claude Code waits for you.
+- ✅ Answer from the chat almost every time Claude Code waits for you, and see a line for the rest.
 
 ## More agents
 

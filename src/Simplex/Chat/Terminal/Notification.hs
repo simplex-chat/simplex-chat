@@ -4,12 +4,12 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
-module Simplex.Chat.Terminal.Notification (Notification (..), initializeNotifications) where
+module Simplex.Chat.Terminal.Notification (Notification (..), hideException, initializeNotifications) where
 
 import Data.List (isInfixOf)
 import Data.Maybe (isJust)
 import qualified Data.Text as T
-import Simplex.Messaging.Util (catchAll_)
+import Simplex.Messaging.Util (catchOwn')
 import System.Directory (createDirectoryIfMissing, doesFileExist, findExecutable, getAppUserDataDirectory)
 import System.FilePath (combine)
 import System.Info (os)
@@ -36,7 +36,7 @@ noNotifications :: Notification -> IO ()
 noNotifications _ = pure ()
 
 hideException :: (a -> IO ()) -> (a -> IO ())
-hideException f a = f a `catchAll_` pure ()
+hideException f a = f a `catchOwn'` \_ -> pure ()
 
 initLinuxNotify :: IO (Notification -> IO ())
 initLinuxNotify = do

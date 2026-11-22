@@ -1,10 +1,10 @@
 import {CEvt, ChatEvent, T} from "@simplex-chat/types"
 import {api, core} from "simplex-chat"
-import {Action, ActionHooks, Actions, DownloadAction, PermissionAction, Standing, State, Subject, ToolError, hasUnknownServers, leaveVerbs, subjectText, summary} from "./actions"
+import {Action, ActionHooks, Actions, Answer, DownloadAction, PermissionAction, PlanAction, QuestionAction, Standing, State, Subject, ToolError, hasUnknownServers, leaveVerbs, subjectText, summary} from "./actions"
 import {ExitError, chatErrorOf, errorText, fileError, log, logError, oneLine, serverHostname, shellWord} from "./log"
 import {chatRef, fileContent, isChatRef, utcMinutes, validName, viewName} from "./messages"
 import {linkCommand} from "./owner"
-import type {ApprovedTool} from "./protocol"
+import type {ApprovedTool, Question} from "./protocol"
 import {qrCodeText} from "./qr"
 import type {OwnerEntry, QrCodeSize} from "./serve"
 import {AgentTools, chatSubject, customDataOf, featureOff, fitsMessage, isActive, isConnected, memberCurrent, memberCurrentOrPending, refusedFeature, refusedFileReason, setChatData} from "./tools"
@@ -96,6 +96,7 @@ type OwnerRequest =
   | {type: "approve" | "reject" | "receive" | "forward"; action: number; chat?: string}
   | {type: "receiveAll"; action: number; chat: string}
   | {type: "approveTool"; action: number}
+  | {type: "answer"; action: number; option: number}
   | {type: "revokeTool"; tool: string}
   | {type: "approveChat" | "revoke"; chat: string; standing: Standing}
   | {type: "leave" | "deleteFiles"; chat: string}
@@ -153,8 +154,13 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
   }
 
   // spec: spec/api.md#session-group-profile
-  async describe(shortDescr: string): Promise<void> {
-    await this.updateProfile(profile => (profile.shortDescr === shortDescr ? undefined : {...profile, shortDescr}))
+  async describe(shortDescr: string | undefined, description?: string): Promise<boolean> {
+    let changed = false
+    await this.updateProfile(profile => {
+      changed = profile.shortDescr !== shortDescr || profile.description !== description
+      return changed ? {...profile, shortDescr, description} : undefined
+    })
+    return changed
   }
 
   // spec: spec/api.md#group-profile
@@ -182,7 +188,7 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
     const approver = this.longestApproverName()
     if (action.tool === "connect") action.linkTextBytes = maxCardLength - largestCard({...action, linkTextBytes: 0}, mode, approver)
     if (action.tool === "permission") action.previewBytes = maxCardLength - largestCard({...action, previewBytes: 0}, mode, approver)
-    if (action.tool !== "leave" && action.tool !== "mode" && action.tool !== "permission" && largestCard(action, mode, approver) > maxCardLength) return cardTooLong[action.tool]
+    if ((action.tool === "send" || action.tool === "connect" || action.tool === "download") && largestCard(action, mode, approver) > maxCardLength) return cardTooLong[action.tool]
     if (this.approvers().length > 0) return undefined
     if (this.options.session !== undefined) return noSessionApprover
     return this.options.owners === undefined
@@ -316,9 +322,13 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
       case "receive":
       case "forward":
       case "receiveAll":
-      case "approveTool": {
+      case "approveTool":
+      case "answer": {
         const action = this.actions.get(request.action)
         if (action === undefined || action.state !== "pending" || action.card === undefined) return `Action ${request.action} is not pending.`
+        if (action.tool === "permission" && action.input.terminalOnly && request.type !== "reject") return `Action ${request.action} is approved only in Claude Code's terminal.`
+        if (request.type === "answer") return this.answer(sender, action, request.option)
+        if (action.tool === "question" && request.type !== "reject") return `Action ${request.action} is a question; reply to its card to answer it.`
         if (request.type === "approveTool") return action.tool === "permission" ? this.approveTool(sender, action) : `Action ${request.action} is not a tool use.`
         if (request.chat !== undefined && (action.tool === "connect" || action.chat !== request.chat)) return `Action ${request.action} is not for ${request.chat}.`
         const approver = safeName(sender.memberProfile.displayName)
@@ -333,6 +343,22 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
         return undefined
       }
     }
+  }
+
+  // spec: spec/api.md#session-groups
+  private answer(sender: T.GroupMember, action: Action, option: number): string | undefined {
+    const [question, ...more] = action.tool === "question" ? action.input.questions : []
+    const label = question === undefined || more.length > 0 || question.multiSelect ? undefined : question.options[option - 1]?.label
+    if (action.tool !== "question" || label === undefined) return `Action ${action.n} has no option ${option}.`
+    action.answer = {option: label}
+    this.actions.approve(action, safeName(sender.memberProfile.displayName))
+    return undefined
+  }
+
+  // spec: spec/api.md#session-groups
+  reply(sender: T.GroupMember, action: QuestionAction | PlanAction, text: string): void {
+    action.answer = {reply: text}
+    this.actions.approve(action, safeName(sender.memberProfile.displayName))
   }
 
   // spec: spec/api.md#control-commands
@@ -618,7 +644,7 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
   // spec: spec/api.md#cards
   private async postCardContent(action: Action, msgContent: T.MsgContent): Promise<number> {
     try {
-      return await this.postMessage({msgContent, mentions: {}})
+      return await this.postMessage({msgContent, mentions: {}, quotedItemId: action.tool === "plan" ? action.quote : undefined})
     } catch (error) {
       const feature = this.sessionRefusal(error)
       if (feature === undefined) throw error
@@ -804,7 +830,7 @@ export function cardText(action: Action, mode: Actions["mode"]): string {
     case "performing":
       return [...request, `${approval}; interrupted: the server stopped.`].join("\n")
     case "done":
-      return [...request, action.standing ? `${approval}. /'revoke ${action.chat}'` : `${approval}.`].join("\n")
+      return [...request, (action.tool === "question" || action.tool === "plan") && action.answer !== undefined ? answeredLine(action.answer, action.decidedBy) : action.standing ? `${approval}. /'revoke ${action.chat}'` : `${approval}.`].join("\n")
     case "failed":
       return [...request, `${approval}; failed: ${codeSpan(oneLine(action.error ?? ""))}.`].join("\n")
     case "rejected":
@@ -819,9 +845,18 @@ function requestLines(action: Action): string[] {
   const done = action.state === "done"
   if (action.tool === "mode") return [`${done ? "I run" : "I want to run"} in mode ${action.input.mode}: Claude Code asks you before each of my actions, and they are performed without approval here.`]
   if (action.tool === "permission") {
-    const {toolName, description, inputPreview} = action.input
-    const approved = action.toolApproved ? [`${codeSpan(oneLine(toolName))} is approved for this session, and Claude Code still asks for this use.`] : []
-    return [`I want to use ${codeSpan(oneLine(toolName))}: ${codeSpan(oneLine(description))}`, ...fittedLines(codeLines(inputPreview), action.previewBytes), ...approved]
+    const {toolName, description, inputPreview, agent, terminalOnly} = action.input
+    const tool = codeSpan(oneLine(toolName))
+    const asks = agent === undefined ? `I want to use ${tool}` : `Subagent ${codeSpan(oneLine(agent))} asks to use ${tool}`
+    const first = terminalOnly ? `${asks}, and Claude Code takes its approval only in its terminal:` : description === "" ? `${asks}:` : `${asks}: ${codeSpan(oneLine(description))}`
+    const approved = action.toolApproved ? [`${tool} is approved for this session, and Claude Code still asks for this use.`] : []
+    return [first, ...fittedLines(codeLines(inputPreview), action.previewBytes), ...approved]
+  }
+  if (action.tool === "question") return questionLines(action)
+  if (action.tool === "plan") return ["📋 Claude Code asks to approve this plan."]
+  if (action.tool === "link") {
+    const {server, message, url} = action.input
+    return [`🔗 MCP server ${codeSpan(oneLine(server))} asks you to open: ${oneLine(url)}`, ...(message.trim() === "" ? [] : [oneLine(message)])]
   }
   const subject = subjectText(action.subject, safeName)
   switch (action.tool) {
@@ -852,12 +887,38 @@ function requestLines(action: Action): string[] {
 }
 
 // spec: spec/api.md#cards
+function answeredLine(answer: Answer, by: string | undefined): string {
+  return "option" in answer ? `Answered by ${by}: ${oneLine(answer.option)}.` : `Answered by ${by} in a reply.`
+}
+
+// spec: spec/api.md#cards
+function questionLines({n, input: {questions}}: QuestionAction): string[] {
+  const option = ({label, description}: {label: string; description: string}): string => oneLine(description === "" ? label : `${label}: ${description}`)
+  const asked = ({question, multiSelect}: Question): string => `${oneLine(question)}${multiSelect ? " (any of them)" : ""}`
+  const tappable = oneChoice(questions)
+  if (questions.length === 1) return [`❓ ${asked(questions[0])}`, ...questions[0].options.map((choice, i) => `${i + 1}. ${option(choice)}${tappable ? ` /'answer ${n} ${i + 1}'` : ""}`)]
+  return [`❓ Claude Code asks ${questions.length} questions:`, ...questions.flatMap((question, i) => [`${i + 1}. ${asked(question)}`, ...question.options.map(choice => `   ${option(choice)}`)])]
+}
+
+// spec: spec/api.md#cards
+function oneChoice(questions: Question[]): boolean {
+  return questions.length === 1 && !questions[0].multiSelect
+}
+
+// spec: spec/api.md#cards
 function commandsLine(action: Action): string {
   switch (action.tool) {
     case "connect":
     case "mode":
       return `/'approve ${action.n}' or /'reject ${action.n}'`
+    case "question":
+      return oneChoice(action.input.questions) ? `Reply to this message to answer in your own words, or /'reject ${action.n}'.` : `Reply to this message with your answers, or /'reject ${action.n}'.`
+    case "plan":
+      return `/'approve ${action.n}' to start, or reply to this message to keep planning with your changes; /'reject ${action.n}'`
+    case "link":
+      return `Open it, then /'approve ${action.n}', or /'reject ${action.n}' to decline.`
     case "permission":
+      if (action.input.terminalOnly) return `Approve it there, or /'reject ${action.n}' here.`
       return action.toolApproved ? `/'approve ${action.n}' or /'reject ${action.n}'` : `/'approve ${action.n}', /'approve ${action.n} all' or /'reject ${action.n}'`
     case "send":
       return `/'approve ${action.chat} ${action.n}', /'approve ${action.chat} all' or /'reject ${action.chat} ${action.n}'`
@@ -990,6 +1051,7 @@ function ownerRequest({keyword, params}: Command, session: boolean): OwnerReques
   if (session && keyword === "give" && chat !== undefined && value !== undefined && /^\d+$/.test(value)) return {type: keyword, chat, session: Number(value)}
   if (session && keyword === "observer" && chat?.startsWith("#") && value !== undefined && /^\d+$/.test(value)) return {type: "observer", group: chat, member: Number(value)}
   if (session && keyword === "approve" && words.length === 2 && /^\d+$/.test(words[0]) && words[1] === "all") return {type: "approveTool", action: Number(words[0])}
+  if (session && keyword === "answer" && words.length === 2 && words.every(word => /^\d+$/.test(word))) return {type: "answer", action: Number(words[0]), option: Number(words[1])}
   if (session && keyword === "revoke" && chat === undefined && value !== undefined && /^[\w-]+$/.test(value)) return {type: "revokeTool", tool: value}
   if ((keyword === "pending" || keyword === "list") && words.length === 0) return {type: keyword}
   return undefined
