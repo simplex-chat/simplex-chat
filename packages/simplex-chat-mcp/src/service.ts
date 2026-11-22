@@ -12,7 +12,7 @@ import {LockedError, SessionFile, acquireLock, createDataFolder, dataRoot, logFi
 import {Hub, StoredSession, hubTexts} from "./hub"
 import {ExitError, errorText, log, logError} from "./log"
 import {ToolCall, validName} from "./messages"
-import {AttachLine, AttachRequest, CallRequest, OwnerState, PermissionRequest, ResetReply, SessionReply, SessionRequest, StatusReply, TitleReply, TitleRequest, TurnRequest, protocolVersion, unattendedStatus} from "./protocol"
+import {AskRequest, AttachLine, AttachRequest, CallRequest, Decision, OwnerState, PermissionRequest, ResetReply, SessionReply, SessionRequest, StatusReply, TitleReply, TitleRequest, TurnRequest, protocolVersion, unattendedStatus} from "./protocol"
 import {Handler, SocketError, isNotRunning, listen, requestJson, sendJson, startLines} from "./socket"
 import {ToolName} from "./tools"
 import {version} from "./version"
@@ -45,12 +45,15 @@ export interface SessionLike {
   readonly displayName: string
   open: boolean
   record?: string
+  globalConfig?: string
+  transcript?: string
   onLine?: (line: AttachLine) => void
   busy(): boolean
   rename(name: string): Promise<void>
   requestMode(mode: Mode): void
   call(tool: ToolName, input: unknown, call: ToolCall): Promise<CallToolResult | undefined>
   permission(request: PermissionRequest): void
+  ask(request: AskRequest, signal: AbortSignal): Promise<Decision | undefined>
   turn(request: TurnRequest): Promise<void>
   endPermissions(): void
   endLive(): Promise<void>
@@ -164,6 +167,7 @@ export class Service {
       "POST /title": this.expiring(async (body, res) => sendJson(res, 200, await this.onTitle(body as TitleRequest))),
       "POST /attach": this.expiring((body, res) => this.onAttach(body as AttachRequest, res)),
       "POST /call": this.expiring((body, res) => this.onCall(body as CallRequest, res)),
+      "POST /ask": this.expiring((body, res) => this.onAsk(body as AskRequest, res)),
       "POST /permission": this.expiring(async (body, res) => {
         const request = body as PermissionRequest
         ;(await this.entry(this.canonical(request.id)).opening).permission(request)
@@ -241,6 +245,7 @@ export class Service {
     if (request.pid !== undefined) this.registered.emit(String(request.pid))
     const agent = await entry.opening
     agent.record = request.record
+    agent.globalConfig = request.globalConfig
     if (previous.pid !== undefined && (previous.pid !== request.pid || started === undefined || previous.started !== started)) agent.endToolApprovals()
     if (entry.attached === 0) this.scheduleIdle(id, entry)
     await this.hub.configure(request.config)
@@ -284,7 +289,7 @@ export class Service {
   }
 
   // spec: spec/api.md#socket-protocol
-  private async applyTitle({id: given, pid, at, name, project, model, config}: TitleRequest): Promise<void> {
+  private async applyTitle({id: given, pid, at, name, project, model, transcript, config}: TitleRequest): Promise<void> {
     const id = await this.resolve(given, pid)
     const title = name?.trim() || undefined
     const entry = this.entry(id, {id, project, name: title, config})
@@ -293,6 +298,7 @@ export class Service {
       this.titled.emit(String(pid))
     }
     const agent = await entry.opening
+    if (transcript !== undefined) agent.transcript = transcript
     await this.hub.configure(config)
     if (title !== undefined) await this.rename(this.folder(id), agent, title)
     if (model !== undefined) await agent.turn({id, at, model})
@@ -369,9 +375,20 @@ export class Service {
   }
 
   // spec: spec/api.md#socket-protocol
-  private async onCall(request: CallRequest, res: ServerResponse): Promise<void> {
-    const {tool, input} = request
-    const id = this.canonical(request.id)
+  private async onCall({id, tool, input}: CallRequest, res: ServerResponse): Promise<void> {
+    await this.streamed(this.canonical(id), res, async (agent, signal, write) => ({result: (await agent.call(tool, input, {signal, progress: progress => write({progress})})) ?? null}))
+  }
+
+  // spec: spec/api.md#socket-protocol
+  private async onAsk(request: AskRequest, res: ServerResponse): Promise<void> {
+    await this.streamed(await this.resolve(request.id, request.pid), res, async (agent, signal) => {
+      const decision = await agent.ask(request, signal)
+      return decision === undefined ? {} : {decision}
+    })
+  }
+
+  // spec: spec/architecture.md#service-service-onattach
+  private async streamed(id: string, res: ServerResponse, work: (agent: SessionLike, signal: AbortSignal, write: (line: unknown) => void) => Promise<unknown>): Promise<void> {
     const entry = this.entry(id)
     const agent = await entry.opening
     if (!this.hold(res)) return
@@ -382,8 +399,8 @@ export class Service {
     const write = startLines(res)
     entry.calls++
     try {
-      const result = await agent.call(tool, input, {signal: controller.signal, progress: progress => write({progress})})
-      if (!controller.signal.aborted) res.end(`${JSON.stringify({result: result ?? null})}\n`)
+      const last = await work(agent, controller.signal, write)
+      if (!controller.signal.aborted) res.end(`${JSON.stringify(last)}\n`)
     } finally {
       entry.calls--
       if (entry.attached === 0 && entry.calls === 0) this.scheduleIdle(id, entry)

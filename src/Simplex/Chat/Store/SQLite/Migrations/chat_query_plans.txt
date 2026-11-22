@@ -8081,6 +8081,12 @@ Query: SELECT item_content FROM chat_items WHERE group_id = 1 ORDER BY chat_item
 Plan:
 SEARCH chat_items USING INDEX idx_chat_items_group_id (group_id=?)
 
+Query: SELECT item_status FROM chat_items WHERE chat_item_id IN (SELECT chat_item_id FROM files)
+Plan:
+SEARCH chat_items USING INTEGER PRIMARY KEY (rowid=?)
+LIST SUBQUERY 1
+SCAN files USING COVERING INDEX idx_files_chat_item_id
+
 Query: SELECT item_status FROM chat_items WHERE item_text = ?
 Plan:
 SCAN chat_items
@@ -8547,6 +8553,12 @@ SEARCH contacts USING INTEGER PRIMARY KEY (rowid=?)
 Query: UPDATE contacts SET contact_grp_inv_sent = ?, updated_at = ? WHERE contact_id = ?
 Plan:
 SEARCH contacts USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: UPDATE contacts SET contact_profile_id = NULL WHERE contact_id = (SELECT contact_id FROM users WHERE user_id = 1)
+Plan:
+SEARCH contacts USING INTEGER PRIMARY KEY (rowid=?)
+SCALAR SUBQUERY 1
+SEARCH users USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: UPDATE contacts SET contact_used = ? WHERE user_id = ? AND contact_id = ?
 Plan:
