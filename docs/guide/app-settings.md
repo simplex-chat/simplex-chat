@@ -221,8 +221,8 @@ without asking – it is enabled by default.
 With this option, the app sends a preview of the first link in your message: the
 title, description and image of the page. The app loads the preview from the
 website through your network settings, so the website sees your IP address
-unless you use a [SOCKS proxy](#use-socks-proxy). The option is enabled by
-default.
+unless you use a [SOCKS proxy](#use-socks-proxy) or a VPN. The option is
+enabled by default.
 
 - [Open the app settings](#opening-the-app-settings).
 - Tap on "Your privacy".
@@ -320,5 +320,5 @@ errors](#show-link-preview-errors) and other options.
 ### Show link preview errors
 
 This option is shown when [Show developer options](#show-developer-options) is
-enabled, and it is off by default. When both options are on, a link preview
-that fails shows an alert with the error of the chat core.
+enabled, and it is off by default. When both options are on and the chat core
+cannot make a link preview, the app shows the error of the core in an alert.
