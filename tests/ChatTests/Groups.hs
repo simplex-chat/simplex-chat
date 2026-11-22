@@ -15828,7 +15828,7 @@ testViaMemberRefused =
 createViaSignedGroup :: HasCallStack => TestCC -> TestCC -> IO ()
 createViaSignedGroup alice bob = do
   connectUsers alice bob
-  alice ##> "/_group 1 {\"displayName\": \"team\", \"fullName\": \"\", \"groupPreferences\": {\"signMessages\": {\"enable\": \"on\"}}}"
+  alice ##> "/_group 1 {\"displayName\": \"team\", \"fullName\": \"\", \"groupPreferences\": {\"directMessages\": {\"enable\": \"on\"}, \"history\": {\"enable\": \"on\"}, \"signMessages\": {\"enable\": \"on\"}}}"
   alice <## "group #team is created"
   alice <## "to add members use /a team <name> or /create link #team"
   addMember "team" alice bob GRAdmin
