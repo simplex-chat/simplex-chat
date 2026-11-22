@@ -28,6 +28,7 @@ import qualified Data.Aeson.Types as JT
 import Data.Bifunctor (second)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as B
+import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Maybe (fromMaybe, isJust, maybeToList)
 import Data.Time (UTCTime, getCurrentTime)
 import Data.Int (Int64)
@@ -288,6 +289,8 @@ chatGroupTests = do
     it "raise priority of live message" testGroupRaisePriorityLive
     it "raise priority below role and in support chat is ignored" testGroupRaisePriorityIgnored
     it "update of deleted item creates item with its priority" testGroupUpdatePriorityDeletedItem
+    it "update without priority makes item normal, a later raise notifies once" testGroupUpdateWithoutPriority
+    it "forward update with notification flag of its accepted priority" testGroupMsgForwardAcceptedPriority
     it "silent, high priority and raised messages recorded for the apps" testGroupPriorityRecordings
   describe "group scoped messages" $ do
     it "should send scoped messages to support (single moderator)" testScopedSupportSingleModerator
@@ -6557,6 +6560,58 @@ testGroupUpdatePriorityDeletedItem =
       cath <# "#team alice!!> done"
       itemPriority cath "/_get chat #1 count=1" `shouldReturn` Just 1
 
+testGroupUpdateWithoutPriority :: HasCallStack => TestParams -> IO ()
+testGroupUpdateWithoutPriority ps = do
+  (raised, cfg) <- priorityRaisedCfg
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatCfgOpts ps cfg testOpts {markRead = False} "bob" bobProfile $ \bob -> do
+      createGroup2 "team" alice bob
+      threadDelay 1000000
+
+      alice ##> "/_send #1 json [{\"msgContent\": {\"type\": \"text\", \"text\": \"done\"}, \"priority\": 1}]"
+      alice <# "#team !! done"
+      bob <# "#team alice!!> done"
+      doneId <- lastItemId alice
+      alice ##> ("/_update item #1 " <> doneId <> " text done!")
+      alice <# "#team [edited] done!"
+      bob <# "#team alice> [edited] done!"
+      priorityCounts bob "#1" `shouldReturn` (1, 0, 0, 0)
+      alice ##> ("/_update item #1 " <> doneId <> " json {\"msgContent\": {\"type\": \"text\", \"text\": \"done!\"}, \"mentions\": {}, \"priority\": 1}")
+      alice <# "#team !! [edited] done!"
+      bob <# "#team alice!!> [edited] done!"
+      readTVarIO raised `shouldReturn` [("done!", True, False)]
+
+testGroupMsgForwardAcceptedPriority :: HasCallStack => TestParams -> IO ()
+testGroupMsgForwardAcceptedPriority =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3' "team" alice (bob, GRMember) (cath, GRMember)
+      setupGroupForwarding alice bob cath
+      cath ##> "/set receipts all off"
+      cath <## "ok"
+      aliceConnId <- relayConnIdToMember bob "alice"
+      cathConnId <- relayConnIdToMember alice "cath"
+
+      bob #> "#team hi"
+      alice <# "#team bob> hi"
+      cath <# "#team bob> hi [>>]"
+      hiId <- itemSharedMsgId bob
+      let sendHighUpdate t =
+            agentSendBody bob aliceConnId . LB.toStrict . J.encode $
+              J.object
+                [ "v" J..= ChatVersionRange supportedChatVRange,
+                  "event" J..= ("x.msg.update" :: T.Text),
+                  "params" J..= J.object ["msgId" J..= hiId, "content" J..= MCText t, "priority" J..= (1 :: Int)]
+                ]
+      sendHighUpdate "hi"
+      bob #> "#team hello"
+      alice <# "#team bob> hello"
+      cath <# "#team bob> hello [>>]"
+      sendHighUpdate "hi there"
+      alice <# "#team bob> [edited] hi there"
+      cath <# "#team bob> [edited] hi there"
+      lastSndMsgFlags alice cathConnId 1 `shouldReturn` ["F"]
+
 testGroupPriorityRecordings :: HasCallStack => TestParams -> IO ()
 testGroupPriorityRecordings ps = do
   events <- newTVarIO []
@@ -6596,6 +6651,21 @@ testGroupPriorityRecordings ps = do
         raise alice compilingId "compiled"
         alice <# "#team !! [edited] compiled"
         bob <# "#team alice!!> [edited] compiled"
+      eventsFixture "priority/lower" events $ do
+        sendWithPriority alice "answer" 1
+        alice <# "#team !! answer"
+        bob <# "#team alice!!> answer"
+        answerId <- lastItemId alice
+        alice ##> ("/_update item #1 " <> answerId <> " text answer!")
+        alice <# "#team [edited] answer!"
+        bob <# "#team alice> [edited] answer!"
+        sendWithPriority alice "alert" 1
+        alice <# "#team !! alert"
+        bob <# "#team alice!!> alert"
+        alertId <- lastItemId alice
+        alice ##> ("/_update item #1 " <> alertId <> " json {\"msgContent\": {\"type\": \"text\", \"text\": \"alert\"}, \"mentions\": {}, \"priority\": -1}")
+        alice <# "#team alert"
+        bob <# "#team alice> alert"
   where
     sendWithPriority cc t p = cc ##> ("/_send #1 json [{\"msgContent\": {\"type\": \"text\", \"text\": \"" <> t <> "\"}, \"priority\": " <> show (p :: Int) <> "}]")
     raise cc ciId t = cc ##> ("/_update item #1 " <> ciId <> " json {\"msgContent\": {\"type\": \"text\", \"text\": \"" <> t <> "\"}, \"mentions\": {}, \"priority\": 1}")

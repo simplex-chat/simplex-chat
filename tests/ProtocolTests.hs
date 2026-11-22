@@ -324,6 +324,12 @@ decodeChatMessageTest = describe "Chat message encoding/decoding" $ do
   it "x.msg.update - high priority" $
     "{\"v\":\"9\",\"event\":\"x.msg.update\",\"params\":{\"msgId\":\"AQIDBA==\",\"content\":{\"text\":\"hello\",\"type\":\"text\"},\"priority\":1}}"
       #==# XMsgUpdate (SharedMsgId "\1\2\3\4") (MCText "hello") [] Nothing Nothing Nothing Nothing (Just 1)
+  it "x.msg.update priority is encoded as -1, absent or 1" $ do
+    let msgUpdate p = "{\"v\":\"9\",\"event\":\"x.msg.update\",\"params\":{\"msgId\":\"AQIDBA==\",\"content\":{\"text\":\"hello\",\"type\":\"text\"}" <> p <> "}}"
+        reencoded (p, p') = case parseChatMessages (msgUpdate $ ",\"priority\":" <> p) of
+          [Right (APMsg _ (ParsedMsg _ _ msg))] -> msgUpdate p' ##== msg
+          _ -> expectationFailure "parse error"
+    mapM_ reencoded ([("-5", ",\"priority\":-1"), ("0", ""), ("5", ",\"priority\":1")] :: [(ByteString, ByteString)])
   it "x.msg.del" $
     "{\"v\":\"9\",\"event\":\"x.msg.del\",\"params\":{\"msgId\":\"AQIDBA==\"}}"
       #==# XMsgDel (SharedMsgId "\1\2\3\4") Nothing Nothing False
