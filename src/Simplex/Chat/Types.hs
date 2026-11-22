@@ -29,7 +29,7 @@
 
 module Simplex.Chat.Types where
 
-import Control.Applicative ((<|>))
+import Control.Applicative (optional, (<|>))
 import Control.Concurrent.STM (TVar)
 import Crypto.Number.Serialize (os2ip)
 import Crypto.Random (ChaChaDRG)
@@ -1917,7 +1917,7 @@ instance StrEncoding AConnectTarget where
       <|> (aConnectTarget <$> strP)
       <|> (ACTarget SCMContact . CTDomain <$> strP)
     where
-      nameStart = "@" <|> "#" <|> "simplex:/name"
+      nameStart = "@" <|> "#" <|> "simplex:" *> optional (A.char '/') *> "name"
 
 instance ConnectionModeI m => StrEncoding (ConnectTarget m) where
   strEncode t = strEncode $ ACTarget sConnectionMode t

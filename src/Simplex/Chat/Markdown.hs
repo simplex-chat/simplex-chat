@@ -530,7 +530,7 @@ markdownP = joinMarkdown <$> A.many' fragmentP
       '_' -> False
       '!' -> False
       c -> isPunctuation c
-    isUri s = T.length s >= 10 && any (`T.isPrefixOf` s) ["http://", "https://", "simplex:/"]
+    isUri s = T.length s >= 10 && any (`T.isPrefixOf` s) ["http://", "https://", "simplex:"]
     -- matches what is likely to be a domain, not all valid domain names
     isDomain s = case T.splitOn "." s of
       [name, tld] -> isDomain_ name tld
