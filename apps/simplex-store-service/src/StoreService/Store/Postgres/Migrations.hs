@@ -337,7 +337,6 @@ CREATE TABLE @name_registrations(
   live SMALLINT NOT NULL,
   order_hash BYTEA NOT NULL,
   paid_at TIMESTAMPTZ,
-  selected_at TIMESTAMPTZ,
   unregistered_alerted_at TIMESTAMPTZ,
   failed_dry_runs INTEGER NOT NULL DEFAULT 0,
   failed_sends INTEGER NOT NULL DEFAULT 0,

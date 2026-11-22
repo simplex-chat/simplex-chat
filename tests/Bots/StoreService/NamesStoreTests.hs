@@ -352,7 +352,6 @@ testCreatePaid = withServiceStore $ \st -> do
         nrUpdatedAt = t0,
         nrReadAt = t0,
         nrPaidAt = Nothing,
-        nrSelectedAt = Nothing,
         nrLastAttempt = Nothing
       }
 
@@ -597,7 +596,7 @@ testSelectRegistration = withServiceStore $ \st -> do
         nrPhase = OQueued,
         nrReveal = Just selected,
         nrUpdatedAt = at 6,
-        nrSelectedAt = Just (at 6),
+        nrPaidAt = Just (at 6),
         nrLastAttempt = Just attempt
       }
   withTransaction st (\db -> selectRegistration db failed {nrVersion = 2} o reveal (at 7)) `shouldReturn` VersionChanged
@@ -691,7 +690,7 @@ testMonthCandidates = withServiceStore $ \st -> do
   phaseAs "committing" $ OCommitting $ TxHash $ hashFixture 8
   phaseAs "ended" $ OFailed (at 2) FRMonthEnded
   phaseAs "taken" OTaken
-  withTransaction st $ \db -> DB.execute db "UPDATE sx_badge_service_name_registrations SET selected_at = ? WHERE registration_id = ?" (at 100, "recent" :: Text)
+  withTransaction st $ \db -> DB.execute db "UPDATE sx_badge_service_name_registrations SET paid_at = ? WHERE registration_id = ?" (at 100, "recent" :: Text)
   withTransaction st (\db -> monthCandidates db (at 10)) `shouldReturn` [(RegistrationId "failed", t0), (RegistrationId "queued", t0)]
 
 testIssueCode :: IO ()

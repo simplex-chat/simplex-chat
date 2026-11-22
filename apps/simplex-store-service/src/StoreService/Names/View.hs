@@ -164,7 +164,7 @@ phaseView ct now r@NameRegistration {nrPhase, nrReveal} = case nrPhase of
   ORegistering {} -> pure PVRegistering
   ORegistered expiry _ -> pure PVRegistered {expiresAt = expiry}
   OTaken -> pure PVTaken
-  OFailed _ why -> pure PVFailed {reason = why, heldUntil = if orderLive r then addMonths 1 <$> nrSelectedAt r else Nothing}
+  OFailed _ why -> pure PVFailed {reason = why, heldUntil = if orderLive r then addMonths 1 <$> nrPaidAt r else Nothing}
   where
     signing
       | isJust nrReveal = pure SSigned

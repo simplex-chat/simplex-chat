@@ -355,7 +355,6 @@ CREATE TABLE test_store_service_schema.sx_badge_service_name_registrations (
     live smallint NOT NULL,
     order_hash bytea NOT NULL,
     paid_at timestamp with time zone,
-    selected_at timestamp with time zone,
     unregistered_alerted_at timestamp with time zone,
     failed_dry_runs integer DEFAULT 0 NOT NULL,
     failed_sends integer DEFAULT 0 NOT NULL,
