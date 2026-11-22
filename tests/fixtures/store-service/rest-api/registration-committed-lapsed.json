@@ -1,0 +1,36 @@
+{
+  "body": {
+    "balance": null,
+    "commitTx": null,
+    "commitment": "0x8788898a8b8c8d8e8f909192939495969798999a9b9c9d9e9fa0a1a2a3a4a5a6",
+    "community": null,
+    "duration": 69292800,
+    "id": "r1",
+    "label": null,
+    "labelHash": "0xbcc46b7948ff6be55bc3ff4db5bc4be16638f29e818a89244dae11caaed7c9c6",
+    "latePayment": null,
+    "owner": "0x014f9c09CcEeDEF1B713110d04D3a07d5B5D9b73",
+    "payment": {
+      "method": "btc",
+      "type": "invoice"
+    },
+    "phase": {
+      "revealAfter": 1,
+      "revealBefore": 2,
+      "signature": {
+        "type": "lapsed"
+      },
+      "type": "committed"
+    },
+    "price": 20000,
+    "registerTx": null,
+    "sealed": "sealed-alicebakery-1",
+    "terms": {
+      "communityName": false,
+      "termsHash": "0x67b989cccc7ae150142daa4029304c7b7e78ab0a4ccebeba2ec1ef8a30f8147e"
+    },
+    "version": 1,
+    "years": 2
+  },
+  "status": 200
+}

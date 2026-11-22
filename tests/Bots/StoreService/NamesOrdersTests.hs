@@ -146,7 +146,7 @@ import UnliftIO.Temporary (withTempDirectory)
 namesOrdersTests :: Spec
 namesOrdersTests = describe "StoreService names: orders" $ do
   describe "paid orders" $ do
-    it "places an order as an unpaid live registration and answers the name invoice view" testPaidOrder
+    it "places an order as an unpaid live registration and answers the name invoice view, recorded for the page" testPaidOrder
     it "answers an exact resend with its invoice, also with a new timestamp and signature, and after the timestamp window" testExactResend
     it "answers an exact resend after its order went past unpaid, before any chain read" testResendPastUnpaid
     it "reads an exact resend's unpaid invoice past its expiry as expired, and its lapsed commitment as lapsed, writing neither" testResendReadsTime
@@ -222,7 +222,7 @@ namesOrdersTests = describe "StoreService names: orders" $ do
     it "reads and sweeps name invoices with the badge ones" testPollerQueries
     it "agrees between the sweep and the overdue close on which invoices hold money" testFundedAgreement
   describe "registration view" $ do
-    it "has the contract's fields" testViewFields
+    it "has the contract's fields, its view in each phase recorded for the page" testViewFields
     it "answers every field of a failed, a requeued and a taken order" testViewStates
     it "has the terms the order signed" testViewTerms
     it "reads the intent nonce and the acceptance of the terms of the name's kind only while a committed order awaits its signature, unread when either read fails" testViewReads
@@ -601,6 +601,7 @@ testPaidOrder = withOrders $ \ctx -> do
   (nrPhase reg, nrVersion reg, nrYears reg, nrPrice reg, nrPayment reg) `shouldBe` (OUnpaid invId, 1, 2, 10000, OPInvoice (SPMCrypto CCBtc) invId)
   nrOrderHash reg `shouldBe` orderHash ownerA (fieldsOf aliceOrder) (OTInvoice (SPMCrypto CCBtc) 10000)
   nrAgreedTerms reg `shouldBe` agreed plainTerms
+  answerFixture "invoice-view-btc" (200, Just $ KM.insert "invoiceId" "invoice" v)
 
 -- | Appendix C's order: alicebakery with no links, signed with the general terms' hash.
 vectorOrder :: Order
@@ -1829,6 +1830,19 @@ testViewFields = withServiceStore $ \st -> withFakeEthNode $ \node -> do
   map J.toJSON [FRSignatureRefused, FRMonthEnded, FRUnread] `shouldBe` ["signatureRefused", "monthEnded", "unread"]
   map J.toJSON [ICExpired, ICCancelled, ICReversed] `shouldBe` ["expired", "cancelled", "reversed"]
   map J.toJSON [PUnpaid, PClosed, PRegistered] `shouldBe` ["unpaid", "closed", "registered"]
+  forM_
+    [ ("unpaid", PVUnpaid),
+      ("committed-awaiting", awaiting $ acceptance False fakeGeneralTerms),
+      ("committed-awaiting-community", awaiting $ acceptance True fakeCommunityTerms),
+      ("committed-unread", committed $ SAwaiting TSUnread),
+      ("committed-signed", committed SSigned),
+      ("committed-lapsed", committed SLapsed),
+      ("closed-cancelled", PVClosed ICCancelled),
+      ("registered", PVRegistered (RoundedSystemTime 3)),
+      ("failed", PVFailed FRRegistryRefused Nothing),
+      ("failed-held", PVFailed FRUnread (Just t0))
+    ]
+    $ \(name, phase) -> storeFixture ("registration-" <> name) 200 (Just $ J.toJSON $ viewWith Nothing phase) Nothing
 
 testViewStates :: IO ()
 testViewStates = withServiceStore $ \st -> withFakeEthNode $ \node -> do
