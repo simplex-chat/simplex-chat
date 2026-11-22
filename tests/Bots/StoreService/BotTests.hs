@@ -616,12 +616,12 @@ testRedeemSameCodeOtherProfile ps =
 
 serviceCmd :: HasCallStack => StoreServiceEnv -> C.PublicKeyEd25519 -> StoreServiceCommand -> IO StoreServiceResponse
 serviceCmd StoreServiceEnv {bsIssuerKey, bsController, bsVerifier, bsPurchaseChecks} purchaseKey request =
-  storeServiceResponse bsIssuerKey bsVerifier bsPurchaseChecks bsController Nothing (serviceRequest (Just purchaseKey) (requestObject purchaseKey request))
+  storeServiceResponse bsIssuerKey bsVerifier bsPurchaseChecks bsController Nothing (Just purchaseKey) (requestObject purchaseKey request)
 
 serviceCmdWith :: HasCallStack => BadgeIssuerKey -> ChatController -> Maybe (TQueue GroupEvent) -> C.PublicKeyEd25519 -> StoreServiceCommand -> IO StoreServiceResponse
 serviceCmdWith key cc trackerQ_ purchaseKey request = do
   checks <- newPurchaseChecks
-  storeServiceResponse key noStoreVerifier checks cc trackerQ_ (serviceRequest (Just purchaseKey) (requestObject purchaseKey request))
+  storeServiceResponse key noStoreVerifier checks cc trackerQ_ (Just purchaseKey) (requestObject purchaseKey request)
 
 requestObject :: HasCallStack => C.PublicKeyEd25519 -> StoreServiceCommand -> J.Object
 requestObject purchaseKey request = case J.toJSON StoreServiceRequest {version = currentStoreServiceVersion, purchaseKey = Just purchaseKey, request} of
@@ -2820,7 +2820,7 @@ testUpgradeRequestRefused ps =
     let appleTip = last $ fst $ statementOf apple
         refused key cmd = refusalOf <$> serviceCmd env key cmd
     -- signed by another key than the purchase it names
-    refusalOf <$> storeServiceResponse bsIssuerKey bsVerifier bsPurchaseChecks cc Nothing (serviceRequest (Just playKey) (requestObject appleKey $ upgradeCmdWith appleLegendSubscriptionJWS appleTip))
+    refusalOf <$> storeServiceResponse bsIssuerKey bsVerifier bsPurchaseChecks cc Nothing (Just playKey) (requestObject appleKey $ upgradeCmdWith appleLegendSubscriptionJWS appleTip)
       `shouldReturn` (STEBadRequest, Nothing)
     refused unknownKey (upgradeCmdWith appleLegendSubscriptionJWS appleTip) `shouldReturn` (STEUnknownPurchaseKey, Nothing)
     -- another purchase's subscription, and another subscription for this purchase
@@ -4052,7 +4052,7 @@ testAnnualAsksBeforeEachMonth ps =
   withStoreServiceEnv ps $ \env@StoreServiceEnv {bsClock, bsController = cc, bsStore = store} -> do
     (purchaseKey, firstStart, purchased) <- subscribedTo env "subscr-badge-supporter-year-01" 12
     let issue = STCIssueBadge {balance = BadgeBalance {lastEntry = last purchased}}
-        routedAt t = setClockAt bsClock t >> requestLane ChecksAfterCoverage cc (serviceRequest (Just purchaseKey) (requestObject purchaseKey issue))
+        routedAt t = setClockAt bsClock t >> requestLane ChecksAfterCoverage cc (Just purchaseKey) (requestObject purchaseKey issue)
     checks <- subscriptionChecks store
     -- inside the issued month no month is due, so the store is not asked
     routedAt (addUTCTime (10 * nominalDay) firstStart) `shouldReturn` MainLane
@@ -5970,7 +5970,7 @@ testStoreChecksConfigured _ = do
 testStoreRouting :: HasCallStack => TestParams -> IO ()
 testStoreRouting ps =
   withStoreServiceEnv ps $ \env@StoreServiceEnv {bsClock, bsController = cc, bsStore = store@FakeStore {appleSubscriptionJWS, appleLegendSubscriptionJWS, appleSupporterJWS}} -> do
-    let routedAs signer key cmd = requestLane ChecksAfterCoverage cc (serviceRequest (Just signer) (requestObject key cmd))
+    let routedAs signer key cmd = requestLane ChecksAfterCoverage cc (Just signer) (requestObject key cmd)
         routed key = routedAs key key
     (purchaseKey, masterKey) <- newPurchaseKeys
     let purchase payment = routed purchaseKey $ purchaseCmd masterKey payment

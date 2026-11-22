@@ -11,7 +11,7 @@ module BadgeTests (badgeTests) where
 
 import Bots.StoreService.WebTests (lengthOf)
 import Bots.StoreService.WebUIMock (formatNameOwnerCode, nameOwnerCodeEntropy, parseNameOwnerCode, randomNameOwnerCode)
-import StoreService.Service (NotGranted (..), badgeErrorRetryAfter, grantableCharge, serviceRequest, shownServiceRequest, survive)
+import StoreService.Service (NotGranted (..), badgeErrorRetryAfter, grantableCharge, shownServiceRequest, survive)
 import StoreService.StoreReceipts (StoreCharge (..), StoreChecks (..), StoreReceipt (..), StoreRefusal (..), StoreVerifier (..), SubscriptionCheck (..), VerifiedStoreTransaction (..), toStoreReceipt)
 import StoreService.StoreReceipts.Mock (newMockStoreVerifier)
 import ChatTests.Utils (writeFixture)
@@ -140,7 +140,7 @@ badgeTests = do
     it "reads an Apple transaction's id, purchase and expiry dates, revocation and type from its unverified payload" testAppleTransactionFacts
     it "resumes a retired subscription only with an Apple charge whose paid period runs, dated less than a day ahead" testResumableCharge
     it "refuses a store charge once its period has ended, as a sandbox's five-minute one does" testChargePeriodOver
-    it "shows a service request in the terminal as its command's name alone, and a refused one as nothing" testShownServiceRequest
+    it "shows a service request in the terminal as its type alone" testShownServiceRequest
     it "refuses for good a Play product id that could name another purchase, before any verifier" testGoogleProductIdPath
     it "does not send a Play token that could name another purchase, and leaves it retryable" testGoogleTokenPath
     it "has the dev mock vouch for the transaction its claim names, as a production purchase" testMockVouchesForClaim
@@ -1346,13 +1346,12 @@ testShownServiceRequest = do
   mk <- generateMasterKey drg
   (k, _) <- atomically $ C.generateKeyPair drg :: IO (C.KeyPair 'C.Ed25519)
   let shown request = case J.toJSON StoreServiceRequest {version = Version 1, purchaseKey = Just k, request} of
-        J.Object o -> J.Object (shownServiceRequest (serviceRequest (Just k) o))
+        J.Object o -> J.Object (shownServiceRequest o)
         _ -> J.Null
       typeOnly t = J.object ["request" J..= J.object ["type" J..= (t :: T.Text)]]
-  shown STCPurchaseBadge {masterKey = mk, payment = SPApple {jws = "a.b.c"}, upgrade = Nothing} `shouldBe` typeOnly "purchaseBadge (App Store)"
+  shown STCPurchaseBadge {masterKey = mk, payment = SPApple {jws = "a.b.c"}, upgrade = Nothing} `shouldBe` typeOnly "purchaseBadge"
   shown STCRedeemBadgeCode {masterKey = mk, code = "SB-00000-00000-00000-00001"} `shouldBe` typeOnly "redeemBadgeCode"
-  shown STCTransferBadge {masterKey = mk, payment = SPApple {jws = "a.b.c"}} `shouldBe` typeOnly "transferBadge (App Store)"
-  J.Object (shownServiceRequest (serviceRequest Nothing (KM.singleton "request" (J.String "redeemBadgeCode")))) `shouldBe` J.object []
+  shown STCTransferBadge {masterKey = mk, payment = SPApple {jws = "a.b.c"}} `shouldBe` typeOnly "transferBadge"
 
 testGoogleProductIdPath :: IO ()
 testGoogleProductIdPath = do

@@ -18,7 +18,6 @@ module StoreService.Service
     readConfigOrExit,
     storeService,
     storeServiceCLI,
-    serviceRequest,
     storeServiceResponse,
     RequestLane (..),
     requestLane,
@@ -54,7 +53,7 @@ import StoreService.Names.Orders (ordersEnv)
 import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Records (runRecordEdits)
 import StoreService.Names.Sender (checkPendingSignatures, runSender)
-import StoreService.Names.Store (Balance (..), BalanceLink (..), BrokenInvariant (..), CmdSource (..), LateCredit (..), OrderPayment (..), balanceByReference, balanceLink, creditCents)
+import StoreService.Names.Store (Balance (..), BalanceLink (..), CmdSource (..), LateCredit (..), OrderPayment (..), balanceByReference, balanceLink, creditCents)
 import StoreService.Names.Turns (Turns, newTurns)
 import StoreService.Names.View (addressText)
 import StoreService.Names.Worker (CloseRefusal (..), Closed (..), closeRegistration, newWorker, runMonthEnds, runUnregisteredAlerts, runWorkers)
@@ -74,7 +73,6 @@ import StoreService.Waiters (Waiters, newWaiters)
 import StoreService.Web.Http (Bucket, takeFrom)
 import StoreService.Web.Server (WebEnv (weWebhookAt), checkSiteDirs, newWebEnv, runWebListeners)
 import Control.Concurrent.STM
-import qualified Control.Exception as E
 import Control.Logger.Simple (logError, logNote, logWarn)
 import Control.Monad
 import Control.Monad.IO.Class (liftIO)
@@ -119,7 +117,7 @@ import System.Exit (exitFailure)
 
 data ServiceState = ServiceState
   { serviceCC :: TMVar ChatController,
-    serviceRequestQ :: TQueue (User, AgentInvId, Either StoreServiceErrorCode StoreServiceRequest),
+    serviceRequestQ :: TQueue (User, AgentInvId, Maybe C.PublicKeyEd25519, J.Object),
     groupEventQ :: TQueue GroupEvent,
     storeVerifier :: StoreVerifier
   }
@@ -269,7 +267,7 @@ storeService opts serviceCfg baseCfg env = do
         forever $
           atomically (readTBQueue $ outputQ cc) >>= \case
             (_, Right (CEvtServiceRequest u reqId sigKey reqData)) ->
-              atomically $ writeTQueue (serviceRequestQ env) (u, reqId, serviceRequest sigKey reqData)
+              atomically $ writeTQueue (serviceRequestQ env) (u, reqId, sigKey, reqData)
             (_, Right ev)
               | isJust groupCfg -> forM_ (groupEvent ev) $ atomically . writeTQueue (groupEventQ env)
             _ -> pure ()
@@ -365,9 +363,8 @@ storeServiceCLI opts serviceCfg = do
   consoleChain <- mapM newConsoleChain (serviceCfg >>= names)
   let eventHook _cc = \case
         Right (CEvtServiceRequest u reqId sigKey reqData) -> do
-          let req_ = serviceRequest sigKey reqData
-          atomically $ writeTQueue (serviceRequestQ env) (u, reqId, req_)
-          pure $ Right $ CEvtServiceRequest u reqId sigKey (shownServiceRequest req_)
+          atomically $ writeTQueue (serviceRequestQ env) (u, reqId, sigKey, reqData)
+          pure $ Right $ CEvtServiceRequest u reqId sigKey (shownServiceRequest reqData)
         ev -> pure ev
       chatHooks =
         defaultChatHooks
@@ -383,10 +380,10 @@ storeServiceCLI opts serviceCfg = do
     ]
 
 -- | The terminal prints each request, and requests carry codes and store receipts, which are bearer secrets.
-shownServiceRequest :: Either StoreServiceErrorCode StoreServiceRequest -> J.Object
-shownServiceRequest = \case
-  Right StoreServiceRequest {request} -> KM.singleton "request" $ J.object ["type" J..= commandName request]
-  Left _ -> KM.empty
+shownServiceRequest :: J.Object -> J.Object
+shownServiceRequest reqData = case KM.lookup "request" reqData of
+  Just (J.Object cmd) | Just t <- KM.lookup "type" cmd -> KM.singleton "request" $ J.object ["type" J..= t]
+  _ -> KM.empty
 
 badgeCmdHook :: Turns -> Maybe (SimplexTLD, Int, ChainClient) -> ChatController -> ChatCommand -> IO (Either (Either ChatError ChatResponse) ChatCommand)
 badgeCmdHook turns chain_ cc = \case
@@ -500,14 +497,14 @@ processQueuedRequests key trackerQ_ env = do
   purchaseQ <- newTQueueIO
   renewalQ <- newTQueueIO
   checks <- newPurchaseChecks
-  let answer (u, reqId, req_) = handleServiceRequest key (storeVerifier env) checks cc trackerQ_ u reqId req_
-      route req@(_, _, req_) =
-        requestLane (storeChecks $ storeVerifier env) cc req_ >>= \case
+  let answer (u, reqId, sigKey, reqData) = handleServiceRequest key (storeVerifier env) checks cc trackerQ_ u reqId sigKey reqData
+      route req@(_, _, sigKey, reqData) =
+        requestLane (storeChecks $ storeVerifier env) cc sigKey reqData >>= \case
           MainLane -> answer req
           PurchaseLane -> atomically $ writeTQueue purchaseQ req
           RenewalLane -> atomically $ writeTQueue renewalQ req
       lane q act = forever $ do
-        req@(_, reqId, _) <- atomically $ readTQueue q
+        req@(_, reqId, _, _) <- atomically $ readTQueue q
         survive ("request " <> safeDecodeUtf8 (strEncode reqId)) $ act req
   raceAny_ [lane (serviceRequestQ env) route, lane purchaseQ answer, lane renewalQ answer]
 
@@ -516,30 +513,32 @@ data RequestLane = MainLane | PurchaseLane | RenewalLane
 
 -- | Store calls wait off the main lane, so appends to one ledger come from more than one lane: each takes its
 -- purchase's row lock before re-reading the tip, so the lanes may run concurrently at any --pool-size.
-requestLane :: StoreChecks -> ChatController -> Either StoreServiceErrorCode StoreServiceRequest -> IO RequestLane
-requestLane checks cc = \case
-  Right StoreServiceRequest {request = STCPurchaseBadge {payment = SPGoogle {}, upgrade = Nothing}} -> pure PurchaseLane
-  Right StoreServiceRequest {request = STCPurchaseBadge {payment = SPApple {jws}, upgrade = Nothing}}
+requestLane :: StoreChecks -> ChatController -> Maybe C.PublicKeyEd25519 -> J.Object -> IO RequestLane
+requestLane checks cc sigKey reqData = case J.fromJSON (J.Object reqData) of
+  J.Success StoreServiceRequest {request = STCPurchaseBadge {payment = SPGoogle {}, upgrade = Nothing}} -> pure PurchaseLane
+  J.Success StoreServiceRequest {request = STCPurchaseBadge {payment = SPApple {jws}, upgrade = Nothing}}
     | maybe False autoRenewable (appleTransactionFacts jws) -> pure PurchaseLane
-  Right StoreServiceRequest {request = STCTransferBadge {payment = SPApple {jws}}}
+  J.Success StoreServiceRequest {request = STCTransferBadge {payment = SPApple {jws}}}
     | maybe False autoRenewable (appleTransactionFacts jws) -> pure PurchaseLane
-  Right StoreServiceRequest {request = STCTransferBadge {payment = SPGoogle {}}} -> pure PurchaseLane
-  Right StoreServiceRequest {purchaseKey = Just k, request = STCIssueBadge {}} -> do
-    now <- badgeNow cc
-    withDB' "requestLane" cc (\db -> getIssuePurchase db k) <&> \case
-      -- a due month goes to the serial renewal lane even within the hour, so it queues behind a check still in flight
-      Right (Just (_, Just tip, Just _))
-        | checks == ChecksAtEveryRequest || balanceStartTs tip <= addUTCTime routeLookahead now -> RenewalLane
-      Right _ -> MainLane
-      -- a read that failed may hide a due check, and the main lane is what must not wait on a store
-      Left _ -> RenewalLane
-  Right StoreServiceRequest {purchaseKey = Just k, request = STCUpgradeBadgeSubscription {}} -> do
-    now <- badgeNow cc
-    withDB' "requestLane" cc (\db -> getIssuePurchase db k) <&> \case
-      Right (Just (_, Just _, Just subscription@PurchaseSubscription {subscriptionRef = SubscriptionApple _}))
-        | isNothing $ checkWait (addUTCTime routeLookahead now) subscription -> RenewalLane
-      Right _ -> MainLane
-      Left _ -> RenewalLane
+  J.Success StoreServiceRequest {request = STCTransferBadge {payment = SPGoogle {}}} -> pure PurchaseLane
+  J.Success StoreServiceRequest {purchaseKey = Just k, request = STCIssueBadge {}}
+    | sigKey == Just k -> do
+        now <- badgeNow cc
+        withDB' "requestLane" cc (\db -> getIssuePurchase db k) <&> \case
+          -- a due month goes to the serial renewal lane even within the hour, so it queues behind a check still in flight
+          Right (Just (_, Just tip, Just _))
+            | checks == ChecksAtEveryRequest || balanceStartTs tip <= addUTCTime routeLookahead now -> RenewalLane
+          Right _ -> MainLane
+          -- a read that failed may hide a due check, and the main lane is what must not wait on a store
+          Left _ -> RenewalLane
+  J.Success StoreServiceRequest {purchaseKey = Just k, request = STCUpgradeBadgeSubscription {}}
+    | sigKey == Just k -> do
+        now <- badgeNow cc
+        withDB' "requestLane" cc (\db -> getIssuePurchase db k) <&> \case
+          Right (Just (_, Just _, Just subscription@PurchaseSubscription {subscriptionRef = SubscriptionApple _}))
+            | isNothing $ checkWait (addUTCTime routeLookahead now) subscription -> RenewalLane
+          Right _ -> MainLane
+          Left _ -> RenewalLane
   _ -> pure MainLane
 
 -- | The router judges a minute ahead, so a handler reading the clock moments later finds due only what the router routed off the main lane.
@@ -568,24 +567,22 @@ badgePostStartHook StoreServiceOpts {noAddress, testing} env cc = do
       unless noAddress $ initializeBotAddress' (not testing) (Just True) False cc
       void $ atomically $ tryPutTMVar (serviceCC env) cc
 
-handleServiceRequest :: BadgeIssuerKey -> StoreVerifier -> PurchaseChecks -> ChatController -> Maybe (TQueue GroupEvent) -> User -> AgentInvId -> Either StoreServiceErrorCode StoreServiceRequest -> IO ()
-handleServiceRequest key verifier checks cc trackerQ_ User {userId} reqId req_ = do
+handleServiceRequest :: BadgeIssuerKey -> StoreVerifier -> PurchaseChecks -> ChatController -> Maybe (TQueue GroupEvent) -> User -> AgentInvId -> Maybe C.PublicKeyEd25519 -> J.Object -> IO ()
+handleServiceRequest key verifier checks cc trackerQ_ User {userId} reqId sigKey reqData = do
   let reqIdT = safeDecodeUtf8 (strEncode reqId)
   logNote $ "store service request " <> reqIdT
   resp <-
-    storeServiceResponse key verifier checks cc trackerQ_ req_ `catchOwn'` \_ ->
+    storeServiceResponse key verifier checks cc trackerQ_ sigKey reqData `catchOwn'` \_ ->
       logError ("store service request " <> reqIdT <> " failed") $> errorResponse STEInternal
   logNote $ "badge answer: " <> responseName resp
-  responseObject resp >>= sendChatCmd cc . APISendServiceResponse userId reqId >>= \case
+  sendChatCmd cc (APISendServiceResponse userId reqId (responseObject resp)) >>= \case
     Right _ -> pure ()
     Left e -> logError $ "store service response failed for " <> reqIdT <> ": " <> tshow e
 
-responseObject :: StoreServiceResponse -> IO J.Object
+responseObject :: StoreServiceResponse -> J.Object
 responseObject r = case J.toJSON r of
-  J.Object o -> pure o
-  _ -> logError broken >> E.throwIO (BrokenInvariant broken)
-  where
-    broken = "a store service response is encoded as JSON other than an object"
+  J.Object o -> o
+  _ -> KM.fromList [("type", J.String "error"), ("code", J.toJSON STEInternal)]
 
 errorResponse :: StoreServiceErrorCode -> StoreServiceResponse
 errorResponse code = STPError {code, message = Nothing, retryAfter = badgeErrorRetryAfter code}
@@ -598,50 +595,44 @@ badgeErrorRetryAfter = \case
   _ -> Nothing
 
 -- | The agent verified the signature, so sigKey is a key the sender holds; a differing purchaseKey would let a client claim a purchase it cannot sign for.
-serviceRequest :: Maybe C.PublicKeyEd25519 -> J.Object -> Either StoreServiceErrorCode StoreServiceRequest
-serviceRequest sigKey reqData = case J.fromJSON (J.Object reqData) of
-  J.Error _ -> Left STEBadRequest
-  J.Success req@StoreServiceRequest {version, purchaseKey}
-    | not (version `isCompatible` supportedStoreServiceVRange) -> Left STEUnsupportedVersion
-    | purchaseKey /= sigKey -> Left STEBadRequest
-    | otherwise -> Right req
-
-storeServiceResponse :: BadgeIssuerKey -> StoreVerifier -> PurchaseChecks -> ChatController -> Maybe (TQueue GroupEvent) -> Either StoreServiceErrorCode StoreServiceRequest -> IO StoreServiceResponse
-storeServiceResponse key verifier checks cc trackerQ_ = \case
-  Left code -> pure $ errorResponse code
-  Right StoreServiceRequest {purchaseKey, request} ->
-    logNote ("badge request: " <> commandName request) >> case request of
-      STCRedeemBadgeCode {masterKey, code} -> case purchaseKey of
-        Just k -> redeemCode key cc trackerQ_ k masterKey code
-        Nothing -> pure $ errorResponse STEBadRequest
-      STCPurchaseBadge {masterKey, payment, upgrade}
-        | Just receipt_ <- toStoreReceipt verifier payment -> case (purchaseKey, upgrade) of
-            (Just k, Nothing) -> either storeRefusalResponse (purchaseWithReceipt key cc verifier checks RUPurchase k masterKey) receipt_
-            -- store upgrades are not built, and ignoring one would credit its months at the discounted price
-            (Just _, Just _) -> pure $ errorResponse STEBadRequest
-            (Nothing, _) -> pure $ errorResponse STEBadRequest
-      STCIssueBadge {balance} -> case purchaseKey of
-        Just k -> issueBadgeCmd key cc verifier k Nothing balance
-        Nothing -> pure $ errorResponse STEBadRequest
-      -- only an App Store subscription changes tier on the same transaction; Play gives a change a new token
-      STCUpgradeBadgeSubscription {payment = payment@SPApple {}, balance}
-        | Just k <- purchaseKey,
-          Just receipt_ <- toStoreReceipt verifier payment ->
-            either storeRefusalResponse (upgradeSubscriptionCmd key cc verifier k balance) receipt_
-      STCUpgradeBadgeSubscription {} -> pure $ errorResponse STEBadRequest
-      STCTransferBadge {masterKey, payment}
-        | Just k <- purchaseKey,
-          Just receipt_ <- toStoreReceipt verifier payment ->
-            either storeRefusalResponse (purchaseWithReceipt key cc verifier checks (RUTransfer $ presentedTransaction payment) k masterKey) receipt_
-      STCTransferBadge {} -> pure $ errorResponse STEBadRequest
-      -- Every command but redeemBadgeCode and purchaseBadge from a store needs a key the service already knows; those two create the purchase, so their key is unknown on a first purchase.
-      _ -> case purchaseKey of
-        Nothing -> pure $ errorResponse STEUnsupportedVersion
-        Just k ->
-          withDB' "purchaseKeyExists" cc (`purchaseKeyExists` k) >>= \case
-            Right True -> pure $ errorResponse STEUnsupportedVersion
-            Right False -> pure $ errorResponse STEUnknownPurchaseKey
-            Left _ -> pure $ errorResponse STEInternal
+storeServiceResponse :: BadgeIssuerKey -> StoreVerifier -> PurchaseChecks -> ChatController -> Maybe (TQueue GroupEvent) -> Maybe C.PublicKeyEd25519 -> J.Object -> IO StoreServiceResponse
+storeServiceResponse key verifier checks cc trackerQ_ sigKey reqData = case J.fromJSON (J.Object reqData) of
+  J.Error _ -> pure $ errorResponse STEBadRequest
+  J.Success StoreServiceRequest {version, purchaseKey, request}
+    | not (version `isCompatible` supportedStoreServiceVRange) -> pure $ errorResponse STEUnsupportedVersion
+    | purchaseKey /= sigKey -> pure $ errorResponse STEBadRequest
+    | otherwise -> logNote ("badge request: " <> commandName request) >> case request of
+        STCRedeemBadgeCode {masterKey, code} -> case purchaseKey of
+          Just k -> redeemCode key cc trackerQ_ k masterKey code
+          Nothing -> pure $ errorResponse STEBadRequest
+        STCPurchaseBadge {masterKey, payment, upgrade}
+          | Just receipt_ <- toStoreReceipt verifier payment -> case (purchaseKey, upgrade) of
+              (Just k, Nothing) -> either storeRefusalResponse (purchaseWithReceipt key cc verifier checks RUPurchase k masterKey) receipt_
+              -- store upgrades are not built, and ignoring one would credit its months at the discounted price
+              (Just _, Just _) -> pure $ errorResponse STEBadRequest
+              (Nothing, _) -> pure $ errorResponse STEBadRequest
+        STCIssueBadge {balance} -> case purchaseKey of
+          Just k -> issueBadgeCmd key cc verifier k Nothing balance
+          Nothing -> pure $ errorResponse STEBadRequest
+        -- only an App Store subscription changes tier on the same transaction; Play gives a change a new token
+        STCUpgradeBadgeSubscription {payment = payment@SPApple {}, balance}
+          | Just k <- purchaseKey,
+            Just receipt_ <- toStoreReceipt verifier payment ->
+              either storeRefusalResponse (upgradeSubscriptionCmd key cc verifier k balance) receipt_
+        STCUpgradeBadgeSubscription {} -> pure $ errorResponse STEBadRequest
+        STCTransferBadge {masterKey, payment}
+          | Just k <- purchaseKey,
+            Just receipt_ <- toStoreReceipt verifier payment ->
+              either storeRefusalResponse (purchaseWithReceipt key cc verifier checks (RUTransfer $ presentedTransaction payment) k masterKey) receipt_
+        STCTransferBadge {} -> pure $ errorResponse STEBadRequest
+        -- Every command but redeemBadgeCode and purchaseBadge from a store needs a key the service already knows; those two create the purchase, so their key is unknown on a first purchase.
+        _ -> case purchaseKey of
+          Nothing -> pure $ errorResponse STEUnsupportedVersion
+          Just k ->
+            withDB' "purchaseKeyExists" cc (`purchaseKeyExists` k) >>= \case
+              Right True -> pure $ errorResponse STEUnsupportedVersion
+              Right False -> pure $ errorResponse STEUnknownPurchaseKey
+              Left _ -> pure $ errorResponse STEInternal
 
 badgeNow :: ChatController -> IO UTCTime
 badgeNow ChatController {config = ChatConfig {badgeCurrentTime}} = badgeCurrentTime

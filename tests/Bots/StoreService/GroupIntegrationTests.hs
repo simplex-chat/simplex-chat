@@ -21,7 +21,7 @@ import StoreService.Names.Store (CmdSource (..), FailReason (..), NameRegistrati
 import StoreService.Names.Turns (newTurns, withCodeTurn)
 import StoreService.Names.View (addressText)
 import StoreService.Options (StoreServiceOpts (..))
-import StoreService.Service (ServiceState (..), checkNodeChain, checkUnverifiedReceipts, newServiceState, requireDevKeys, serviceRequest, storeService, trustDevKeys)
+import StoreService.Service (ServiceState (..), checkNodeChain, checkUnverifiedReceipts, newServiceState, requireDevKeys, storeService, trustDevKeys)
 import StoreService.Store (ManagedGroup (..), getManagedGroup)
 import StoreService.Store.Migrate (withInstanceLock)
 import Bots.StoreService.BotTests (badgeBotName, badgeCmdUsage, badgeProfile, consoleIssueUsage, badgeTypeOf, credentialOf, devKeysIni, entryOf, issueCode, issueRaw, mkStoreServiceOpts, newPurchaseKeys, operatorCmd, redeemWithQueue, requestObject, revokeNamed, revokeRaw, serviceDbPrefix, shouldAnswerError, statementOf, stopStoreService, testIssuerKeyIdx, withStoreService)
@@ -1689,7 +1689,7 @@ queueRedemption cc env codeText = do
   user <- readTVarIO (currentUser cc) >>= maybe (error "no current user") pure
   (purchaseKey, masterKey) <- newPurchaseKeys
   let request = requestObject purchaseKey STCRedeemBadgeCode {masterKey, code = codeText}
-  atomically $ writeTQueue (serviceRequestQ env) (user, AgentInvId "test-request", serviceRequest (Just purchaseKey) request)
+  atomically $ writeTQueue (serviceRequestQ env) (user, AgentInvId "test-request", Just purchaseKey, request)
 
 redeemLosingRefresh :: HasCallStack => BadgeIssuerKey -> ChatController -> Text -> IO ()
 redeemLosingRefresh key cc codeText = newTQueueIO >>= \q -> redeemOkWith key cc (Just q) codeText
