@@ -338,11 +338,24 @@ def check_media(player: Player, path: Path, media: Media, out_dir: Path) -> list
     return failures
 
 
+def print_plugin_load_errors(vlc_dir: Path) -> None:
+    for file in sorted((vlc_dir / "vlc" / "plugins").rglob("*_plugin.*")):
+        if file.suffix in (".so", ".dll", ".dylib"):
+            try:
+                ctypes.CDLL(str(file))
+            except OSError as error:
+                print(f"cannot load {file.relative_to(vlc_dir)}: {error}", flush=True)
+
+
 def check(vlc_dir: Path, media_dir: Path) -> int:
     failures = check_bundle(vlc_dir)
     libvlc = load_libvlc(vlc_dir)
     print(f"libVLC {libvlc.libvlc_get_version().decode()}", flush=True)
-    player = Player(libvlc)
+    try:
+        player = Player(libvlc)
+    except RuntimeError:
+        print_plugin_load_errors(vlc_dir)
+        raise
     with tempfile.TemporaryDirectory() as out:
         for media in GENERATED:
             failures += check_media(player, media_dir / media.name, media, Path(out))
