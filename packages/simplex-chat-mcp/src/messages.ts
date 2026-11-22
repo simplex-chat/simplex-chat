@@ -8,6 +8,7 @@ const progressInterval = 60_000
 const maxTimer = 2_147_483_647
 const pageSize = 100
 const maxCollected = 100
+const maxKept = 100
 const prohibitedNameChars = ".,;/\\#@'\"`~"
 export const maxNameLength = 50
 const replyTextLength = 200
@@ -337,6 +338,12 @@ export async function getChat(chat: api.ChatApi, ref: string, pagination: T.Chat
   return chat.apiGetChat(chatType(ref), chatNumber(ref), pagination)
 }
 
+// spec: spec/architecture.md#messages-followed
+export async function followed(chat: api.ChatApi, ref: string, items: number[]): Promise<boolean> {
+  const last = (await getChat(chat, ref, {type: "last", count: items.length})).chatItems
+  return last.some(({meta}) => !items.includes(meta.itemId))
+}
+
 // spec: spec/architecture.md#messages-getchat
 export async function receivingFiles(chat: api.ChatApi, ref: string): Promise<number[]> {
   const fileIds: number[] = []
@@ -429,6 +436,13 @@ export function duration(exact: number): string {
   if (seconds < 60) return `${seconds} s`
   if (seconds < 3600) return `${Math.floor(seconds / 60)} min ${seconds % 60} s`
   return `${Math.floor(seconds / 3600)} h ${Math.floor(seconds / 60) % 60} min`
+}
+
+// spec: spec/architecture.md#messages-keeplast
+export function keepLast(ids: Set<string>, id: string): void {
+  ids.add(id)
+  const [oldest] = ids
+  if (ids.size > maxKept) ids.delete(oldest)
 }
 
 // spec: spec/architecture.md#messages-validname

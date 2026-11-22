@@ -97,6 +97,9 @@ function deps(root: string) {
         endToolApprovals: () => {
           agent.turns.push("tool approvals ended")
         },
+        endTeammates: async () => {
+          agent.turns.push("teammates ended")
+        },
         call: async (tool: string, _input: unknown, call: {signal: AbortSignal; progress: (m: string) => void}) => {
           agent.calls.push(tool)
           calling.resolve()
@@ -435,15 +438,15 @@ describe("service", () => {
     service = undefined
   })
 
-  it("closes a registered session that never attaches", async () => {
+  it("closes a registered session that never attaches, and ends its teammates", async () => {
     jest.useFakeTimers(fakeTimers)
     const {d, agents} = deps(root)
     service = await Service.start(d, readDefaultConfig)
     await register(id1)
     await jest.advanceTimersByTimeAsync(10 * minutes - 1)
-    expect(agents[0].open).toBe(true)
+    expect([agents[0].open, agents[0].turns.includes("teammates ended")]).toEqual([true, false])
     await jest.advanceTimersByTimeAsync(1)
-    expect(agents[0].open).toBe(false)
+    expect([agents[0].open, agents[0].turns.includes("teammates ended")]).toEqual([false, true])
   })
 
   it("stops 10 minutes after start when no session registers", async () => {

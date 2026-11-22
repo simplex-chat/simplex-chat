@@ -396,7 +396,7 @@ describe("turn hooks", () => {
   const notes = (requests: unknown[]) => requests.map(request => (request as {body: {note?: string; typed: boolean; midTurn?: boolean}}).body)
   const kinds = (requests: unknown[]) => notes(requests).map(({note, typed, midTurn}) => [note?.replace(/^!- ([\s\S]*)!$/, "$1"), typed, midTurn])
 
-  it("send a one-line note of each kind of Claude Code's own prompt, from the origin of its transcript entry, and none for a typed or a channel prompt", async () => {
+  it("send a one-line note of each kind of Claude Code's own prompt, from the origin of its transcript entry, with the sender of a message or a report of another agent as the copied name, and none for a typed or a channel prompt", async () => {
     const folder = mkdtempSync(join(tmpdir(), "simplex-mcp-transcript-"))
     try {
       const transcript = join(folder, "session.jsonl")
@@ -441,6 +441,8 @@ describe("turn hooks", () => {
       ])
       expect(notes(requests).flatMap(({note}) => (note === undefined ? [] : [note.startsWith("!- ") && note.endsWith("!")]))).toEqual(Array(12).fill(true))
       expect(notes(requests)[5].note).toBe("!- ✉️ Message from mcp-impl2: I read the evidence.!")
+      const copied = [undefined, undefined, undefined, undefined, undefined, "mcp-impl2", "general-purpose", "ios-terminal", undefined, undefined, undefined, undefined, undefined, undefined, "reviewer"]
+      expect(requests.map(request => (request as {body: {copyOf?: string}}).body.copyOf)).toEqual(copied)
     } finally {
       rmSync(folder, {recursive: true, force: true})
     }
@@ -486,7 +488,7 @@ describe("turn hooks", () => {
     }
   })
 
-  it("send a note of a teammate's message with its sender and summary, or the first line without a summary, from the first tag that is not an idle notification, and none for idle notifications only", async () => {
+  it("send a note of a teammate's message with its sender and summary, or the first line without a summary, from the first tag that is not an idle notification, as a copy of that sender's message, and none for idle notifications only", async () => {
     const folder = mkdtempSync(join(tmpdir(), "simplex-mcp-transcript-"))
     try {
       const transcript = join(folder, "session.jsonl")
@@ -510,6 +512,7 @@ describe("turn hooks", () => {
         ["✉️ Message from lookalikes-builder: Handles checked", false, undefined],
         [undefined, false, undefined],
       ])
+      expect(requests.map(request => (request as {body: {copyOf?: string}}).body.copyOf)).toEqual(["lookalikes-builder", "lookalikes-builder", undefined, "lookalikes-builder", undefined])
     } finally {
       rmSync(folder, {recursive: true, force: true})
     }
@@ -755,20 +758,91 @@ describe("turn hooks", () => {
     expect(ensured()).toBe(10)
   })
 
-  it("send the start of a subagent with its type, the description and tool use of its record and its transcript, and nothing for a teammate or without a record", async () => {
+  it("send the start of a subagent with its type, the description and tool use of its record and its transcript, the start of a named agent as a teammate with its name and the first line of its description, and nothing for a record with a task kind and no name or without a record", async () => {
     const folder = mkdtempSync(join(tmpdir(), "simplex-mcp-agents-"))
     try {
       const subagents = join(folder, "s1", "subagents")
       mkdirSync(subagents, {recursive: true})
       writeFileSync(join(subagents, "agent-a1.meta.json"), JSON.stringify({agentType: "general-purpose", description: "Audit the call stack", toolUseId: "toolu_9"}))
       writeFileSync(join(subagents, "agent-a2.meta.json"), JSON.stringify({agentType: "reviewer", description: "Review", taskKind: "in_process_teammate"}))
+      writeFileSync(join(subagents, "agent-areviewer-1.meta.json"), JSON.stringify({agentType: "reviewer", name: "reviewer", description: "Review the diff\nof #8308", taskKind: "in_process_teammate", teamName: "session-11111111"}))
       const {client, requests} = turnClient()
       const started = (agent: string) => turn(JSON.stringify({session_id: id, hook_event_name: "SubagentStart", transcript_path: join(folder, "s1.jsonl"), agent_id: agent, agent_type: "Explore"}), {}, client, 0, 1, 1)
-      for (const agent of ["a1", "a2", "a3"]) await started(agent)
-      expect(requests).toEqual([{method: "POST", route: "/turn", body: {id, at: 1, agent: {id: "a1", start: {type: "Explore", description: "Audit the call stack", toolUse: "toolu_9", transcript: join(subagents, "agent-a1.jsonl")}}}}])
+      for (const agent of ["a1", "a2", "a3", "areviewer-1"]) await started(agent)
+      expect(requests).toEqual([
+        {method: "POST", route: "/turn", body: {id, at: 1, agent: {id: "a1", start: {type: "Explore", description: "Audit the call stack", toolUse: "toolu_9", transcript: join(subagents, "agent-a1.jsonl")}}}},
+        {method: "POST", route: "/turn", body: {id, at: 1, teammate: {name: "reviewer", start: {description: "Review the diff"}}}},
+      ])
     } finally {
       rmSync(folder, {recursive: true, force: true})
     }
+  })
+
+  it("send a named agent's tool uses as its steps, its message to the lead or the main conversation as its message, its hand-back as its report, and its approved shutdown and the stop of its finished record as its end, without effort and answer; nothing for its other messages, its Agent calls and the stops of a teammate's turns", async () => {
+    const folder = mkdtempSync(join(tmpdir(), "simplex-mcp-agents-"))
+    try {
+      const subagents = join(folder, "s1", "subagents")
+      mkdirSync(subagents, {recursive: true})
+      const record = {agentType: "reviewer", name: "reviewer", description: "Review", taskKind: "in_process_teammate"}
+      writeFileSync(join(subagents, "agent-ar1.meta.json"), JSON.stringify(record))
+      const {client, requests} = turnClient()
+      const lead = join(folder, "s1.jsonl")
+      const used = (event: string, tool: string, input: object, extra: object = {}) => turn(toolUse(event, tool, input, {transcript_path: lead, agent_id: "ar1", agent_type: "reviewer", tool_response: {success: true}, ...extra}), {}, client, 0, 1)
+      const bash = {command: "npm test", description: "Run the tests"}
+      await used("PreToolUse", "Bash", bash, {tool_response: undefined})
+      await used("PostToolUse", "Bash", bash, {duration_ms: 2018})
+      await used("PostToolUse", "SendMessage", {to: "team-lead", summary: "Review done", message: "Reviewed: no defect.\nDetails."})
+      await used("PostToolUse", "SendMessage", {to: "main", message: "Also checked the docs."})
+      await used("PostToolUse", "SendMessage", {to: "tester", message: "Run the tests."})
+      await used("PostToolUse", "SendMessage", {to: "team-lead", message: "Lost."}, {tool_response: {success: false}})
+      await used("PostToolUse", "SendMessage", {to: "team-lead", message: " \n"})
+      await used("PreToolUse", "SendMessage", {to: "team-lead", message: "Early."})
+      await used("PreToolUse", "Agent", {description: "Search", prompt: "Search it."})
+      await used("PostToolUse", "SendMessage", {to: "team-lead", message: {type: "shutdown_response", request_id: "r1", approve: false}})
+      await used("PreToolUse", "SubagentHandback", {message: "The report.\nDetails."})
+      await used("PostToolUse", "SendMessage", {to: "team-lead", message: {type: "shutdown_response", request_id: "r2", approve: true}})
+      const stopped = () => turn(JSON.stringify({session_id: id, hook_event_name: "SubagentStop", transcript_path: lead, agent_id: "ar1", agent_type: "reviewer", last_assistant_message: "Waiting."}), {}, client, 0, 1, 1)
+      await stopped()
+      writeFileSync(join(subagents, "agent-ar1.meta.json"), JSON.stringify({...record, finished: true}))
+      await stopped()
+      await turn(toolUse("PreToolUse", "Bash", bash, {transcript_path: lead, agent_id: "a2", agent_type: "Explore"}), {}, client, 0, 1)
+      expect(requests.map(request => (request as {body: unknown}).body)).toEqual([
+        {id, at: 1, teammate: {name: "reviewer", step: {id: "toolu_Bash", text: "!- 💻 Run the tests!"}}},
+        {id, at: 1, teammate: {name: "reviewer", step: {id: "toolu_Bash", text: "!- 💻 Run the tests 2.0 s!", end: true}}},
+        {id, at: 1, teammate: {name: "reviewer", message: "Reviewed: no defect.\nDetails."}},
+        {id, at: 1, teammate: {name: "reviewer", message: "Also checked the docs."}},
+        {id, at: 1, teammate: {name: "reviewer", report: "The report.\nDetails."}},
+        {id, at: 1, teammate: {name: "reviewer", end: true}},
+        {id, at: 1, teammate: {name: "reviewer", end: true}},
+        {id, at: 1, agent: {id: "a2", step: {id: "toolu_Bash", text: "💻 Run the tests"}}},
+      ])
+    } finally {
+      rmSync(folder, {recursive: true, force: true})
+    }
+  })
+
+  it("send the lead's message to another agent with its step, and none for a message that is not a text", async () => {
+    const {client, requests} = turnClient()
+    await turn(toolUse("PreToolUse", "SendMessage", {to: "reviewer", summary: "Review", message: "Check the diff of #8308."}), {}, client, 0, 1)
+    await turn(toolUse("PostToolUse", "SendMessage", {to: "reviewer", message: "Check the diff of #8308."}, {tool_response: {success: true}, duration_ms: 3}), {}, client, 0, 1)
+    await turn(toolUse("PreToolUse", "SendMessage", {to: "reviewer", message: {type: "shutdown_request", reason: "Done."}}), {}, client, 0, 1)
+    expect(steps(requests)).toEqual([
+      {id: "toolu_SendMessage", text: "!- 🔧 SendMessage!", message: {to: "reviewer", text: "Check the diff of #8308."}},
+      {id: "toolu_SendMessage", text: "!- 🔧 SendMessage 3 ms!", end: true, message: {to: "reviewer", text: "Check the diff of #8308."}},
+      {id: "toolu_SendMessage", text: "!- 🔧 SendMessage!"},
+    ])
+  })
+
+  it("send the end of the session once, without starting the service, and stay quiet when the service does not run", async () => {
+    const errors = captureStderr()
+    const {client, requests, ensured} = turnClient()
+    await turn(JSON.stringify({session_id: id, hook_event_name: "SessionEnd", reason: "prompt_input_exit"}), {}, client, 0, 1)
+    expect([requests, ensured()]).toEqual([[{method: "POST", route: "/turn", body: {id, at: 1, sessionEnd: true}}], 0])
+    const stopped = {...client, request: async () => {
+      throw Object.assign(new Error("connect ENOENT"), {code: "ENOENT"})
+    }} as unknown as HookDeps["client"]
+    await turn(JSON.stringify({session_id: id, hook_event_name: "SessionEnd", reason: "other"}), {}, stopped, 0, 1)
+    expect(errors).toEqual([])
   })
 
   it("send a subagent's tool uses as its steps, its hand-back as its report and its stop with the first line of its answer, without effort and answer", async () => {

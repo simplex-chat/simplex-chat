@@ -101,6 +101,9 @@ export interface TurnRequest {
   failure?: Failure
   waiting?: Waiting
   agent?: AgentEvent
+  teammate?: TeammateEvent
+  copyOf?: string
+  sessionEnd?: boolean
   task?: TaskEnd
   workflow?: WorkflowRun
 }
@@ -129,6 +132,9 @@ export interface AgentStart {
   toolUse?: string
   transcript: string
 }
+
+// spec: spec/architecture.md#protocol-teammateevent
+export type TeammateEvent = {name: string} & ({start: {description: string}} | {step: Step} | {message: string} | {report: string} | {end: true})
 
 // spec: spec/architecture.md#protocol-agentevent
 export type TaskStatus = "completed" | "failed" | "killed" | "stopped"
@@ -167,6 +173,7 @@ export interface Step {
   id: string
   text: string
   end?: boolean
+  message?: {to: string; text: string}
 }
 
 // spec: spec/architecture.md#protocol-textbatch
@@ -179,7 +186,7 @@ export interface TextBatch {
 
 // spec: spec/architecture.md#protocol-attachline
 export interface AttachLine {
-  prompt?: {text: string; from: string; item: number; file?: string; replyTo?: {item?: number; from?: string}; edited?: boolean}
+  prompt?: {text: string; from: string; item: number; file?: string; replyTo?: {item?: number; from?: string}; edited?: boolean; to?: string}
   permission?: {requestId: string; behavior: "allow" | "deny"}
   tools?: ApprovedTool[]
 }

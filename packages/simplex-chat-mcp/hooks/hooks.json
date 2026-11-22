@@ -14,6 +14,7 @@
     "SubagentStart": [{"hooks": [{"type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/dist/cli.js\" hook turn", "async": true}]}],
     "SubagentStop": [{"hooks": [{"type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/dist/cli.js\" hook turn", "async": true}]}],
     "PostCompact": [{"hooks": [{"type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/dist/cli.js\" hook turn", "async": true}]}],
+    "SessionEnd": [{"hooks": [{"type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/dist/cli.js\" hook turn", "timeout": 5}]}],
     "MessageDisplay": [{"hooks": [{"type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/dist/display.js\"", "timeout": 2}]}]
   }
 }

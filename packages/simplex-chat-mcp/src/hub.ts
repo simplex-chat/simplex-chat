@@ -1,7 +1,7 @@
 import {constants, mkdirSync, rmSync} from "fs"
 import {open} from "fs/promises"
 import {dirname, join} from "path"
-import {CC, CEvt, ChatEvent, T} from "@simplex-chat/types"
+import {CEvt, ChatEvent, T} from "@simplex-chat/types"
 import {api} from "simplex-chat"
 import {Action, Actions, HostTexts, Mode, NewAction, PlanAction, QuestionAction, ToolError, isDecided, maxPending} from "./actions"
 import {Agent, Agents, Card, Workflow, agentsLine, applyJournal, cardText, journalPath, workflowAgentTranscript} from "./agents"
@@ -12,11 +12,12 @@ import {openCore} from "./core"
 import {SessionFile, hubFolder, readSessionFile, sessionFolder, writeSessionFile} from "./files"
 import {chatErrorOf, errorText, log, logError, oneLine} from "./log"
 import {BoardSession, MainGroup, SessionGroups, createMainGroup, findMainGroup} from "./main-group"
-import {Changes, ChatItemsWatch, ReplyTo, ToolCall, duration, getChat, isLive, nextChange, quoteLine, storedName, toReplyTo, validName} from "./messages"
-import {AgentEvent, AskRequest, AttachLine, Decision, Failure, LimitWindow, Limits, OwnerState, PermissionRequest, Prompt, ResetReply, Step, TaskEnd, TextBatch, TurnRequest, Waiting, WorkflowRun} from "./protocol"
+import {Changes, ChatItemsWatch, ReplyTo, ToolCall, duration, followed, getChat, isLive, keepLast, nextChange, quoteLine, storedName, toReplyTo, validName, viewName} from "./messages"
+import {AgentEvent, AskRequest, AttachLine, Decision, Failure, LimitWindow, Limits, OwnerState, PermissionRequest, Prompt, ResetReply, Step, TaskEnd, TeammateEvent, TextBatch, TurnRequest, Waiting, WorkflowRun} from "./protocol"
 import {waitForCancelledCards} from "./serve"
 import {Machine, limitParts, machineParts, machineState} from "./status-line"
-import {AgentTools, ToolName, featureOff, fitsMessage, maxMessageLength, ownerOf, refusedFeature, sessionKey} from "./tools"
+import {Teammates} from "./teammates"
+import {AgentTools, ToolName, featureOff, fitsMessage, maxMessageLength, memberEnvelope, ownerOf, refusedFeature, sessionKey} from "./tools"
 import {User, userContact} from "./user"
 
 // spec: spec/architecture.md#hub-constants
@@ -46,7 +47,6 @@ const reactionEmoji = ["👍", "👎", "😀", "😂", "😢", "❤", "🚀", "�
 // spec: spec/architecture.md#hub-constants
 const unsupportedReaction = "This reaction is not supported."
 const noteRefused = "Claude's note was not posted"
-const maxFinished = 100
 // spec: spec/api.md#session-groups
 const liveLineMs = 23 * 3_600_000
 // spec: spec/api.md#session-groups
@@ -59,6 +59,8 @@ const textEndMs = 10_000
 const maxRecentTexts = 20
 // spec: spec/architecture.md#hub-constants
 const stoppedLine = "⏹️ Stopped"
+// spec: spec/architecture.md#hub-constants
+const unattachedMs = 10 * 60_000
 // spec: spec/architecture.md#hub-constants
 const relayWait = 3_000
 // spec: spec/architecture.md#hub-constants
@@ -114,6 +116,7 @@ interface ClaudeState extends TranscriptState {
 interface Part {
   text: string
   priority?: number
+  mentions?: {[name: string]: number}
 }
 
 interface LiveStep {
@@ -167,6 +170,7 @@ export class Session {
   readonly actions: Actions
   readonly tools: AgentTools
   readonly control: Control
+  readonly teammates: Teammates
   readonly number: number
   private name: string
   private readonly pushed: {text: string; item: T.ChatItem; at: number; quoted?: boolean}[] = []
@@ -256,6 +260,7 @@ export class Session {
       toolsChanged: () => this.sendTools(),
     }
     this.control = new Control(chat, group, {displayName: group.groupProfile.displayName, session, registerHint: "", qrCode: "small"}, this.actions, this.tools)
+    this.teammates = new Teammates(chat, group, number)
   }
 
   get displayName(): string {
@@ -404,7 +409,14 @@ export class Session {
     await Promise.all(this.agents.live().map(card => (card.kind === "agent" ? this.readAgent(card) : this.readWorkflow(card))))
     const now = Date.now()
     for (const card of this.agents.live()) if (now - card.postedAt >= liveLineMs) card.end = {status: "stopped", at: now}
-    for (const card of this.agents.all()) void this.showCard(card, now)
+    const moved = this.agents.live().some(card => this.cardDue(card, now)) && (await this.cardsFollowed())
+    for (const card of this.agents.all()) void this.showCard(card, now, moved && card.end === undefined)
+  }
+
+  // spec: spec/architecture.md#hub-session-readagents
+  private async cardsFollowed(): Promise<boolean> {
+    const items = (await Promise.all(this.agents.live().map(({item}) => item))).filter(item => item !== undefined)
+    return items.length > 0 && followed(this.hub.chat, `#${this.control.groupId}`, items).catch(error => (logError(`agents of session ${this.number}`, error), false))
   }
 
   // spec: spec/architecture.md#hub-session-readagents
@@ -439,17 +451,22 @@ export class Session {
   }
 
   // spec: spec/architecture.md#hub-session-readagents
-  private showCard(card: Card, now: number): Promise<unknown> | undefined {
+  private showCard(card: Card, now: number, asNew = false): Promise<unknown> | undefined {
+    if (card.item === undefined || !(asNew || this.cardDue(card, now))) return undefined
     const text = cardText(card, now)
     const live = card.end === undefined
-    if (card.item === undefined || text === card.sent || (live && now - card.sentAt < cardEditMs)) return undefined
     card.sent = text
     card.sentAt = now
     card.item = card.item.then(async itemId => {
-      if (itemId !== undefined) await this.updateItem(itemId, text, live).catch(error => logError(`agents of session ${this.number}`, error))
+      if (itemId !== undefined) await this.updateItem(itemId, text, live, -1, asNew).catch(error => logError(`agents of session ${this.number}`, error))
       return itemId
     })
     return card.item
+  }
+
+  // spec: spec/architecture.md#hub-session-readagents
+  private cardDue(card: Card, now: number): boolean {
+    return card.item !== undefined && cardText(card, now) !== card.sent && (card.end !== undefined || now - card.sentAt >= cardEditMs)
   }
 
   // spec: spec/architecture.md#hub-session-readrecord
@@ -554,7 +571,8 @@ export class Session {
     const {content} = chatItem
     if (!added || chatDir.type !== "groupRcv" || !canSend(chatDir.groupMember.memberRole) || this.isUser(chatDir.groupMember) || (content.type !== "rcvMsgContent" && content.type !== "sndMsgContent")) return
     if (reaction.type !== "emoji" || !reactionEmoji.includes(reaction.emoji)) return this.refuseReaction(chatDir.groupMember, chatItem)
-    const replyTo = toReplyTo(chatInfo, {itemId: chatItem.meta.itemId, chatDir: chatItem.chatDir, content: withoutEndLine(content.msgContent, chatItem.chatDir), fileName: chatItem.file?.fileName}, {name: this.hub.profile.profile.displayName})
+    const sender = chatItem.meta.sentAsMember?.memberProfile.displayName ?? this.hub.profile.profile.displayName
+    const replyTo = toReplyTo(chatInfo, {itemId: chatItem.meta.itemId, chatDir: chatItem.chatDir, content: withoutEndLine(content.msgContent, chatItem.chatDir), fileName: chatItem.file?.fileName}, {name: sender})
     this.queue(() => this.prompt({chatInfo, chatItem}, reaction.emoji, chatDir.groupMember, undefined, replyTo, "reaction"))
   }
 
@@ -645,8 +663,8 @@ export class Session {
   }
 
   // spec: spec/architecture.md#hub-session-turn
-  async turn({at, prompt, typed, note, midTurn, answer, model, switched, effort, step, text, usage, limits, statusLine, agent, task, workflow, failure, waiting}: TurnRequest): Promise<void> {
-    const owned = this.onAgents(agent, task, workflow)
+  async turn({at, prompt, typed, note, copyOf, midTurn, answer, model, switched, effort, step, text, usage, limits, statusLine, agent, teammate, sessionEnd, task, workflow, failure, waiting}: TurnRequest): Promise<void> {
+    const owned = this.onAgents(agent, task, workflow) || (copyOf !== undefined && this.teammates.hadMember(copyOf))
     const startsTurn = prompt !== undefined && midTurn !== true
     if (answer !== undefined) this.failedText = undefined
     if (startsTurn || answer !== undefined || failure !== undefined) {
@@ -680,6 +698,8 @@ export class Session {
       if (switches.length > 0) await this.post(switches).catch(error => this.postRefusal(error, noteRefused, featureOff))
       if (text !== undefined) this.text(text, at ?? Date.now())
       if (step !== undefined) await this.step(step, at ?? Date.now())
+      if (teammate !== undefined) await this.teammate(teammate)
+      if (sessionEnd === true) await this.endTeammates()
       if (note !== undefined && !owned) await this.post([{text: note, priority: -1}]).catch(error => this.postRefusal(error, noteRefused, featureOff))
       const typedPrompt = prompt !== undefined && typed !== false && prompt.replace(channelPrompt, "").trim() !== "" && matched.length === 0 && parseCommand(prompt) === undefined
       const userPost = typedPrompt ? this.hub.user?.post(this.number, textParts(prompt)).catch(error => this.postRefusal(error, "User's prompt was not posted", notAllowedForUser)) : undefined
@@ -751,7 +771,23 @@ export class Session {
     this.closeOpenings(() => true)
     const now = Date.now()
     const cards = this.agents.endAll(now).map(card => this.showCard(card, now))
-    return Promise.all([this.endTexts(Infinity), ...cards]).then(() => this.finalizing)
+    return Promise.all([this.endTexts(Infinity), this.teammates.endLive(), ...cards]).then(() => this.finalizing)
+  }
+
+  // spec: spec/architecture.md#hub-session-teammate
+  endTeammates(): Promise<void> {
+    return this.teammates.endAll()
+  }
+
+  // spec: spec/architecture.md#hub-session-teammate
+  private async teammate(event: TeammateEvent): Promise<void> {
+    const {name} = event
+    if ("start" in event) return this.teammates.start(name, event.start.description)
+    if ("step" in event) return this.teammates.step(name, event.step)
+    if ("end" in event) return this.teammates.end(name)
+    const text = "message" in event ? event.message : event.report
+    if (text.trim() !== "") await this.teammates.post(name, textParts(text, undefined, memberEnvelope)).catch(error => this.postRefusal(error, `${name}'s message was not posted`, featureOff))
+    if ("report" in event) await this.teammates.end(name)
   }
 
   // spec: spec/architecture.md#hub-session-endpermissions
@@ -806,10 +842,19 @@ export class Session {
     }
     const promptText = replyTo === undefined ? text : `${quoteLine(replyTo)}\n${text}`
     if (this.pushed.push({text: promptText, item: chatItem, at: Date.now()}) > maxPushed) this.pushed.shift()
-    this.onLine({prompt: {text: promptText, from: member.memberProfile.displayName, item: chatItem.meta.itemId, ...(file === undefined ? {} : {file}), ...(replyTo === undefined ? {} : {replyTo: {item: replyTo.item, from: replyTo.from}}), ...(kind === "edit" ? {edited: true} : {})}})
+    const to = this.addressed(chatItem, kind)
+    this.onLine({prompt: {text: promptText, from: member.memberProfile.displayName, item: chatItem.meta.itemId, ...(file === undefined ? {} : {file}), ...(replyTo === undefined ? {} : {replyTo: {item: replyTo.item, from: replyTo.from}}), ...(kind === "edit" ? {edited: true} : {}), ...(to === undefined ? {} : {to})}})
     if (kind === "reaction") return
     this.prompted.delete(chatItem.meta.itemId)
     bounded(this.prompted.set(chatItem.meta.itemId, text))
+  }
+
+  // spec: spec/architecture.md#hub-session-deliver
+  private addressed({meta, quotedItem, mentions}: T.ChatItem, kind: PromptKind): string | undefined {
+    const quoted = quotedItem?.chatDir?.type === "groupRcv" ? quotedItem.chatDir.groupMember.groupMemberId : undefined
+    const members = kind === "reaction" ? [meta.sentAsMember?.groupMemberId] : [quoted, ...Object.values(mentions).map(({memberRef}) => memberRef?.groupMemberId)]
+    const names = [...new Set(members.flatMap(member => this.teammates.nameOf(member) ?? []))]
+    return names.length === 0 ? undefined : names.join(", ")
   }
 
   // spec: spec/architecture.md#hub-session-deliver
@@ -869,8 +914,15 @@ export class Session {
   }
 
   // spec: spec/architecture.md#hub-session-step
-  private async step({id, text, end}: Step, at: number): Promise<void> {
+  private async step({id, text, end, message}: Step, at: number): Promise<void> {
     if (this.finished.delete(id)) return
+    const teammate = message === undefined ? undefined : this.teammates.memberOf(message.to)
+    if (message !== undefined && teammate !== undefined) {
+      this.remember(id)
+      const [first, ...rest] = textParts(`@${viewName(teammate.name)} ${message.text}`)
+      await this.post([{text: first, priority: -1, mentions: {[teammate.name]: teammate.member}}, ...rest.map(part => ({text: part, priority: -1}))]).catch(error => this.postRefusal(error, noteRefused, featureOff))
+      return
+    }
     this.expireLive()
     const started = this.steps.get(id)
     if (end !== true) {
@@ -1134,12 +1186,8 @@ export class Session {
   }
 
   // spec: spec/architecture.md#hub-session-text
-  private async updateItem(itemId: number, text: string, live: boolean, priority?: number): Promise<T.ChatItem> {
-    if (priority === undefined) return this.hub.chat.apiUpdateChatItem(T.ChatType.Group, this.control.groupId, itemId, {type: "text", text}, live)
-    const updatedMessage: T.UpdatedMessage & {priority: number} = {msgContent: {type: "text", text}, mentions: {}, priority}
-    const r = await this.hub.chat.sendChatCmd(CC.APIUpdateChatItem.cmdString({chatRef: {chatType: T.ChatType.Group, chatId: this.control.groupId}, chatItemId: itemId, liveMessage: live, updatedMessage}))
-    if (r.type === "chatItemUpdated" || r.type === "chatItemNotChanged") return r.chatItem.chatItem
-    throw new api.ChatCommandError("error updating chat item", r)
+  private updateItem(itemId: number, text: string, live: boolean, priority = -1, asNew = false): Promise<T.ChatItem> {
+    return this.hub.chat.apiUpdateChatItem(T.ChatType.Group, this.control.groupId, itemId, {type: "text", text}, live, priority, asNew)
   }
 
   // spec: spec/architecture.md#hub-session-step
@@ -1278,6 +1326,7 @@ export class Hub implements SessionGroups {
   stopped = false
   private controlEvents: Promise<void> = Promise.resolve()
   private listTimer?: NodeJS.Timeout
+  private unattachedTimer?: NodeJS.Timeout
   private listing?: Promise<void>
 
   private constructor(
@@ -1306,6 +1355,7 @@ export class Hub implements SessionGroups {
       hub.promptsHeldUntil = Date.now() + attachWait
       await core.events(event => hub.onEvent(event))
       hub.listTimer = setInterval(() => hub.showSessions(), listCheckMs).unref()
+      hub.unattachedTimer = setTimeout(() => hub.endUnattached(), unattachedMs).unref()
       return hub
     } catch (error) {
       await core.chat.close().catch(() => undefined)
@@ -1352,6 +1402,8 @@ export class Hub implements SessionGroups {
     await session.control.load()
     if (known === undefined) {
       for (const owner of this.main.owners()) await session.invite(owner, T.GroupMemberRole.Owner).catch(error => logError(`invitation to session ${stored.number}`, error))
+    } else {
+      await session.teammates.adopt().catch(error => logError(`teammates of session ${stored.number}`, error))
     }
     return session
   }
@@ -1414,10 +1466,16 @@ export class Hub implements SessionGroups {
     for (const {actions} of this.sessions.values()) actions.expireDue()
   }
 
+  // spec: spec/architecture.md#hub-hub-endunattached
+  endUnattached(): void {
+    for (const session of this.sessions.values()) if (!session.open) session.endTeammates().catch(error => logError(`teammates of session ${session.number}`, error))
+  }
+
   // spec: spec/architecture.md#hub-hub-stop
   async stop(): Promise<Action[]> {
     this.stopped = true
     clearInterval(this.listTimer)
+    clearTimeout(this.unattachedTimer)
     const sessions = [...this.sessions.values()]
     const stopped = await Promise.all(sessions.map(async ({actions}) => ({lost: actions.lost, cancelled: await actions.stop()})))
     await this.controlEvents
@@ -1557,12 +1615,12 @@ function notRunningLine(names: string[], shown: number): string {
 }
 
 // spec: spec/architecture.md#hub-textparts
-function textParts(text: string, quote?: Parameters<typeof fitsMessage>[2]): string[] {
+function textParts(text: string, quote?: Parameters<typeof fitsMessage>[2], envelope?: number): string[] {
   const chars = [...text]
   const parts: string[] = []
   let start = 0
   do {
-    const fits = (end: number): boolean => fitsMessage({type: "text", text: chars.slice(start, end).join("")}, undefined, parts.length === 0 ? quote : undefined)
+    const fits = (end: number): boolean => fitsMessage({type: "text", text: chars.slice(start, end).join("")}, undefined, parts.length === 0 ? quote : undefined, undefined, envelope)
     let low = start + 1
     let high = Math.min(chars.length, start + maxMessageLength)
     while (low < high) {
@@ -1576,8 +1634,8 @@ function textParts(text: string, quote?: Parameters<typeof fitsMessage>[2]): str
   return parts
 }
 
-function message({text, priority}: Part, quotedItemId?: number): T.ComposedMessage & {priority?: number} {
-  return {msgContent: {type: "text", text}, quotedItemId, mentions: {}, priority}
+function message({text, priority, mentions = {}}: Part, quotedItemId?: number): T.ComposedMessage & {priority?: number} {
+  return {msgContent: {type: "text", text}, quotedItemId, mentions, priority}
 }
 
 // spec: spec/architecture.md#hub-quoteof
@@ -1612,13 +1670,6 @@ function withLine(parts: string[], line: string | undefined, quote?: Parameters<
 // spec: spec/architecture.md#hub-quoteof
 function small(text: string): string {
   return text.includes("!") ? text : `!- ${text}!`
-}
-
-// spec: spec/architecture.md#hub-quoteof
-function keepLast(ids: Set<string>, id: string): void {
-  ids.add(id)
-  const [oldest] = ids
-  if (ids.size > maxFinished) ids.delete(oldest)
 }
 
 // spec: spec/architecture.md#hub-isrefusedquote

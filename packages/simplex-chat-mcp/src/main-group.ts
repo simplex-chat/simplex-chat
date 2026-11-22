@@ -2,6 +2,7 @@ import {ChatEvent, T} from "@simplex-chat/types"
 import {api} from "simplex-chat"
 import {Command, createGroup, deleteGroup, isLost, joinedText, losesControl, parseCommand, safeName, updateGroupProfile} from "./control"
 import {chatErrorOf, log, logError, oneLine} from "./log"
+import {followed} from "./messages"
 import {resetCommand} from "./owner"
 import {isActive, mainKey} from "./tools"
 
@@ -170,25 +171,34 @@ export class MainGroup {
       if (this.lost) return
       if (this.oldList !== undefined) await this.deleteItem(this.oldList, "old list of sessions")
       const owned = this.owners().length > 0
+      const changed = this.board.sessions.some(entry => sessions.some(session => session.session === entry.session && session.text !== this.shown.get(entry.session)))
+      const moved = changed && (await this.boardFollowed())
       const posted: number[] = []
       const entries: BoardEntry[] = []
       for (const session of sessions) {
         const entry = this.board.sessions.find(known => known.session === session.session)
-        const kept = entry === undefined ? (session.running && owned ? await this.postEntry(session, posted) : undefined) : await this.renderEntry(entry, session, posted)
+        const kept = entry === undefined ? (session.running && owned ? await this.postEntry(session, posted) : undefined) : await this.renderEntry(entry, session, posted, moved)
         if (kept !== undefined) entries.push(kept)
       }
       for (const entry of this.board.sessions) if (!sessions.some(({session}) => session === entry.session)) await this.deleteEntry(entry)
       const shown = sessions.filter(({session}) => entries.some(entry => entry.session === session))
-      const summary = await this.renderSummary(summaryText(shown), owned && entries.length > 0, posted)
+      const summary = await this.renderSummary(summaryText(shown), owned && entries.length > 0, posted, moved)
       await this.saveBoard({...(summary === undefined ? {} : {summary}), sessions: entries}, posted)
     })
   }
 
   // spec: spec/architecture.md#main-group-maingroup-showboard
-  private async renderEntry(entry: BoardEntry, session: BoardSession, posted: number[]): Promise<BoardEntry | undefined> {
+  private async boardFollowed(): Promise<boolean> {
+    const {summary, sessions} = this.board
+    const items = [...sessions.map(({item}) => item), ...(summary === undefined ? [] : [summary.item])]
+    return followed(this.chat, `#${this.groupId}`, items).catch(error => (logError("board of sessions", error), false))
+  }
+
+  // spec: spec/architecture.md#main-group-maingroup-showboard
+  private async renderEntry(entry: BoardEntry, session: BoardSession, posted: number[], moved: boolean): Promise<BoardEntry | undefined> {
     if (!session.running && entry.at <= Date.now() - boardAge) return this.deleteEntry(entry)
-    if (session.text === this.shown.get(entry.session)) return entry
-    if (await this.edited(entry.item, session.text)) {
+    if (!moved && session.text === this.shown.get(entry.session)) return entry
+    if (await this.edited(entry.item, session.text, moved)) {
       this.shown.set(entry.session, session.text)
       return entry
     }
@@ -211,9 +221,9 @@ export class MainGroup {
   }
 
   // spec: spec/architecture.md#main-group-maingroup-showboard
-  private async renderSummary(text: string, postable: boolean, posted: number[]): Promise<BoardItem | undefined> {
+  private async renderSummary(text: string, postable: boolean, posted: number[], moved: boolean): Promise<BoardItem | undefined> {
     const {summary} = this.board
-    if (summary !== undefined && (text === this.shownSummary || (await this.edited(summary.item, text)))) {
+    if (summary !== undefined && ((!moved && text === this.shownSummary) || (await this.edited(summary.item, text, moved)))) {
       this.shownSummary = text
       return summary
     }
@@ -224,9 +234,9 @@ export class MainGroup {
   }
 
   // spec: spec/architecture.md#main-group-maingroup-showboard
-  private async edited(item: number, text: string): Promise<boolean> {
+  private async edited(item: number, text: string, asNew: boolean): Promise<boolean> {
     try {
-      await this.chat.apiUpdateChatItem(T.ChatType.Group, this.groupId, item, {type: "text", text})
+      await this.chat.apiUpdateChatItem(T.ChatType.Group, this.groupId, item, {type: "text", text}, false, -1, asNew)
       return true
     } catch (error) {
       if (!isRefusedEdit(error)) throw error

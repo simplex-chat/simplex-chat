@@ -173,6 +173,8 @@ const messagesOnConnect = 50
 const mediaTimeout = 30_000
 export const maxMessageLength = 15_602
 const messageEnvelope = 600
+// spec: spec/architecture.md#tools-fitsmessage
+export const memberEnvelope = 800
 const quotesAsText: T.MsgContent["type"][] = ["link", "image", "video", "chat", "unknown"]
 const maxOutputBytes = 64 * 1024 * 1024
 // spec: spec/api.md#file-types
@@ -1737,9 +1739,9 @@ function tooLongText(file: Attachment | undefined): string {
 }
 
 // spec: spec/architecture.md#tools-fitsmessage
-export function fitsMessage(content: T.MsgContent, fileName: string | undefined, quoted: Pick<Quoted, "content" | "fileName"> | undefined, mentions: {name: string}[] = []): boolean {
+export function fitsMessage(content: T.MsgContent, fileName: string | undefined, quoted: Pick<Quoted, "content" | "fileName"> | undefined, mentions: {name: string}[] = [], envelope = messageEnvelope): boolean {
   const quote = quoted === undefined ? undefined : quoteContent(content, quoted)
-  return messageEnvelope + Buffer.byteLength(JSON.stringify([content, fileName, quote, mentions.map(({name}) => name)])) <= maxMessageLength
+  return envelope + Buffer.byteLength(JSON.stringify([content, fileName, quote, mentions.map(({name}) => name)])) <= maxMessageLength
 }
 
 // spec: spec/architecture.md#tools-fitsmessage

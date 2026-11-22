@@ -33,6 +33,7 @@ export function contact(contactId: number, displayName: string, extra: object = 
 export function member(groupMemberId: number, displayName: string, role: T.GroupMemberRole = T.GroupMemberRole.Member, status: T.GroupMemberStatus = T.GroupMemberStatus.Connected): T.GroupMember {
   return {
     groupMemberId,
+    memberId: `m${groupMemberId}`,
     memberRole: role,
     memberStatus: status,
     memberProfile: {displayName, fullName: "", profileId: 300 + groupMemberId, localAlias: ""},
@@ -170,9 +171,11 @@ export class FakeChat {
   apiGetChatItemInfo = library.apiGetChatItemInfo
   apiGetUserServers = library.apiGetUserServers
   commands: string[] = []
-  sent: {chat: [T.ChatType, number]; messages: T.ComposedMessage[]; live?: true}[] = []
+  sent: {chat: [T.ChatType, number]; messages: T.ComposedMessage[]; live?: true; asMember?: number}[] = []
   updates: {chatId: number; itemId: number; text: string; live?: true}[] = []
-  updatePriorities: {itemId: number; priority?: number}[] = []
+  updatePriorities: {itemId: number; priority?: number; asNew?: true}[] = []
+  viaMembers: {groupId: number; role: string; profile: T.Profile}[] = []
+  nextMemberId = 5000
   replies: string[] = []
   deleted: {chatType: T.ChatType; chatId: number; mode?: T.ChatDeleteMode}[] = []
   deletedItems: {chatType: T.ChatType; chatId: number; itemIds: number[]; deleteMode: T.CIDeleteMode}[] = []
@@ -204,13 +207,19 @@ export class FakeChat {
         .map(({chatInfo, items}) => ({chatInfo, chatItems: [], chatStats: chatStats(items)}))
       return structuredClone({type: "apiChats", user, chats}) as unknown as ChatResponse
     }
-    const update = /^\/_update item ([@#])(\d+) (\d+)( live=on)? json (.+)$/.exec(cmd)
-    if (update) {
-      const {msgContent, priority} = JSON.parse(update[5]) as {msgContent: T.MsgContent; priority?: number}
-      this.updatePriorities.push({itemId: Number(update[3]), priority})
-      const chatType = update[1] === "@" ? T.ChatType.Direct : T.ChatType.Group
-      const chatItem = await this.apiUpdateChatItem(chatType, Number(update[2]), Number(update[3]), msgContent, update[4] !== undefined)
-      return {type: "chatItemUpdated", user, chatItem: {chatInfo: groupChat(group(Number(update[2]), "control")), chatItem}} as unknown as ChatResponse
+    const added = /^\/_add via #(\d+) (\w+) json (.+)$/.exec(cmd)
+    if (added) {
+      const profile = JSON.parse(added[3]) as T.Profile
+      this.viaMembers.push({groupId: Number(added[1]), role: added[2], profile})
+      const via = {...member(this.nextMemberId++, profile.displayName, added[2] as T.GroupMemberRole), memberVia: "m1", memberProfile: {...profile, profileId: 0, localAlias: ""}}
+      return {type: "viaMemberAdded", user, groupInfo: group(Number(added[1]), "control"), member: via} as unknown as ChatResponse
+    }
+    const sentAs = /^\/_send #(\d+)\(as_member=(\d+)\)( live=on)? json (.+)$/.exec(cmd)
+    if (sentAs) {
+      const messages = JSON.parse(sentAs[4]) as T.ComposedMessage[]
+      this.sent.push({chat: [T.ChatType.Group, Number(sentAs[1])], messages, ...(sentAs[3] === undefined ? {} : {live: true}), asMember: Number(sentAs[2])})
+      const chatInfo = groupChat(group(Number(sentAs[1]), "control"))
+      return {type: "newChatItems", user, chatItems: messages.map(({msgContent}) => event(chatInfo, item(this.nextItemId++, msgContent.text, {type: "groupSnd"})))} as unknown as ChatResponse
     }
     if (cmd.startsWith("/_read chat items ")) {
       const [, ref, ids] = /^\/_read chat items ([@#]\d+) (.+)$/.exec(cmd)!
@@ -231,8 +240,9 @@ export class FakeChat {
     return messages.map(({msgContent}) => event(chatInfo, item(this.nextItemId++, msgContent.text, chatInfo.type === "direct" ? {type: "directSnd"} : {type: "groupSnd"})))
   }
 
-  async apiUpdateChatItem(_type: T.ChatType, chatId: number, itemId: number, msgContent: T.MsgContent, liveMessage?: boolean): Promise<T.ChatItem> {
+  async apiUpdateChatItem(_type: T.ChatType, chatId: number, itemId: number, msgContent: T.MsgContent, liveMessage?: boolean, priority?: number, asNew?: boolean): Promise<T.ChatItem> {
     this.updates.push({chatId, itemId, text: msgContent.text, ...(liveMessage === true ? {live: true} : {})})
+    this.updatePriorities.push({itemId, priority, ...(asNew === true ? {asNew: true} : {})})
     return item(itemId, msgContent.text, {type: "groupSnd"})
   }
 
