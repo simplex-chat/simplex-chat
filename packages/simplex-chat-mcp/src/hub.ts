@@ -1525,7 +1525,7 @@ export class Hub implements SessionGroups {
       }
     }
     if (event.type === "chatItemReaction") sessions.find(({control}) => isGroupMessage(event.reaction, control.groupId))?.onReaction(event)
-    if (event.type === "chatItemUpdated") sessions.find(({control}) => isGroupMessage(event.chatItem, control.groupId))?.onUpdate(event.chatItem)
+    if (event.type === "chatItemUpdated") sessions.find(({control}) => isGroupMessage(event.chatItemUpdate, control.groupId))?.onUpdate(event.chatItemUpdate)
     const {file} = event.type === "rcvFileComplete" ? event.chatItem.chatItem : {}
     if (file !== undefined) sessions.forEach(session => session.fileDone(file.fileId))
     if (event.type === "rcvFileError") sessions.forEach(session => session.fileDone(event.rcvFileTransfer.fileId, errorText(event.agentError)))

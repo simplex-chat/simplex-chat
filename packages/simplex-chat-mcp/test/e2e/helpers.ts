@@ -111,9 +111,9 @@ export function received(chat: api.ChatApi, check: ItemCheck): Promise<T.AChatIt
 }
 
 export function updated(chat: api.ChatApi, check: ItemCheck): Promise<T.AChatItem> {
-  return chat.wait("chatItemUpdated", ({chatItem}) => check(chatItem), timeout).then(event => {
+  return chat.wait("chatItemUpdated", ({chatItemUpdate}) => check(chatItemUpdate), timeout).then(event => {
     if (event === undefined) throw new Error("no matching update")
-    return event.chatItem
+    return event.chatItemUpdate
   })
 }
 

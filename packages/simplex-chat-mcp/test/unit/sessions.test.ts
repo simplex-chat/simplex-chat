@@ -1063,7 +1063,7 @@ describe("session channel", () => {
   })
 
   const received = (...items: T.ChatItem[]): ChatEvent => ({type: "newChatItems", user, chatItems: items.map(ci => event(sessionGroup, ci))}) as unknown as ChatEvent
-  const updated = (ci: T.ChatItem, edited = true): ChatEvent => ({type: "chatItemUpdated", user, chatItem: event(sessionGroup, {...ci, meta: {...ci.meta, itemEdited: edited}})}) as unknown as ChatEvent
+  const updated = (ci: T.ChatItem, edited = true): ChatEvent => ({type: "chatItemUpdated", user, chatItemUpdate: {...event(sessionGroup, {...ci, meta: {...ci.meta, itemEdited: edited}}), prevChatItem: ci}}) as unknown as ChatEvent
 
   it("passes an edit of a passed prompt with the same item and edited, with the quote line of a reply, once per new text, and nothing for an edit to a command, of a message not passed, of User's message or an update with the same text", async () => {
     const chat = new FakeChat()

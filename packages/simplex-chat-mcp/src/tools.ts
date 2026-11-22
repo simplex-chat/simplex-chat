@@ -750,8 +750,8 @@ export class AgentTools {
         this.onNewItems(event.chatItems)
         return watch.deliver(event.chatItems)
       case "chatItemUpdated":
-        this.onFile(event.chatItem)
-        return watch.update(event.chatItem)
+        this.onFile(event.chatItemUpdate)
+        return watch.update(event.chatItemUpdate)
       case "chatItemsDeleted":
         return watch.remove(event.chatItemDeletions.map(({deletedChatItem}) => deletedChatItem))
       case "contactConnected":
