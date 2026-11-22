@@ -464,7 +464,7 @@ struct ContentView: View {
         // an app link must not tear down a redemption in flight
         if isAppLink(url) && isBadgeLinkIssuing() { return }
         dismissAllSheets() {
-            var path = url.path
+            var path = connectionLinkPath(url)
             if isAppLink(url) {
                 // branched on the scheme before the connection dispatch, which an app link must never reach
                 openAppLink(url)
@@ -509,6 +509,10 @@ private let badgeLinkPath = "/badge/code/"
 
 func isAppLink(_ url: URL) -> Bool {
     url.scheme?.lowercased() == appLinkScheme
+}
+
+func connectionLinkPath(_ url: URL) -> String {
+    url.path.hasPrefix("/") ? url.path : "/" + (URLComponents(url: url, resolvingAgainstBaseURL: false)?.path ?? "")
 }
 
 // a link type added in a later version reaches this build too, so an unknown path asks for an update
