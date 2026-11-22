@@ -50,6 +50,9 @@ class LinkPreviewTest {
   @AfterTest
   fun tearDown() {
     AlertManager.shared.hideAllAlerts()
+    ChatModel.chatId.value = null
+    ChatModel.draft.value = null
+    ChatModel.draftChatId.value = null
     chatSendCmdRetry = sendCmd
     chatParseMarkdown = parseMarkdown
     savedPrefs.forEach { (pref, value) -> pref.set(value) }
@@ -81,7 +84,7 @@ class LinkPreviewTest {
   fun failedLinkShowsNoPreview() = composeView { composeState ->
     val (request) = recorded("error")
     onNode(hasSetTextAction()).performTextInput(request.removePrefix(LINK_PREVIEW))
-    waitUntil(timeoutMillis = 10_000) { synchronized(requests) { requests.isNotEmpty() } && composeState.value.preview is ComposePreview.NoPreview }
+    awaitFailedFetches(composeState, 1)
     assertEquals(listOf(request), requests)
     assertFalse(AlertManager.shared.hasAlertsShown())
   }
@@ -91,10 +94,23 @@ class LinkPreviewTest {
     val (request) = recorded("error")
     val field = onNode(hasSetTextAction())
     field.performTextInput(request.removePrefix(LINK_PREVIEW))
-    waitUntil(timeoutMillis = 10_000) { synchronized(requests) { requests.isNotEmpty() } && composeState.value.preview is ComposePreview.NoPreview }
+    awaitFailedFetches(composeState, 1)
     field.performTextInputSelection(TextRange.Zero)
     runCatching { waitUntil(timeoutMillis = 3_000) { synchronized(requests) { requests.size > 1 } } }
     assertEquals(listOf(request), requests)
+  }
+
+  @Test
+  fun failedLinkIsFetchedAgainInAnotherChat() = composeView { composeState ->
+    val (request) = recorded("error")
+    val field = onNode(hasSetTextAction())
+    field.performTextInput(request.removePrefix(LINK_PREVIEW))
+    awaitFailedFetches(composeState, 1)
+    ChatModel.chatId.value = "@2"
+    waitForIdle()
+    field.performTextInput(request.removePrefix(LINK_PREVIEW))
+    awaitFailedFetches(composeState, 2)
+    assertEquals(listOf(request, request), requests)
   }
 
   @Test
@@ -127,6 +143,9 @@ class LinkPreviewTest {
     waitForIdle()
     test(recordedMessage(response))
   }
+
+  private fun ComposeUiTest.awaitFailedFetches(composeState: MutableState<ComposeState>, count: Int) =
+    waitUntil(timeoutMillis = 10_000) { synchronized(requests) { requests.size == count } && composeState.value.preview is ComposePreview.NoPreview }
 
   private fun ComposeUiTest.assertTexts(vararg texts: String) {
     val shown = onAllNodes(SemanticsMatcher.keyIsDefined(SemanticsProperties.Text), useUnmergedTree = true)

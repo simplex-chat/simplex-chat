@@ -1384,7 +1384,6 @@ fun ComposeView(
       // if that chat is gone there is nowhere to send it, and it must not be sent to the chat opened instead
       // cs is captured on this thread, before the compose state is replaced below
       if (liveMessageChat != null) sendMessage(null, toChat = liveMessageChat, composed = cs) else clearState()
-      resetLinkPreview()
       clearPrevDraft(prevChatId)
       deleteUnusedFiles()
       // the sent message belongs to the chat it was composed in; the chat opened next shows its own draft
@@ -1419,6 +1418,7 @@ fun ComposeView(
       clearPrevDraft(prevChatId)
       deleteUnusedFiles()
     }
+    resetLinkPreview()
     chatModel.removeLiveDummy()
     CIFile.cachedRemoteFileRequests.clear()
   }
