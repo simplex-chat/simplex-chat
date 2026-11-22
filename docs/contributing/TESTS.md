@@ -33,7 +33,7 @@ The hspec suite `simplex-chat-test` of simplex-chat.cabal, with the entry point 
 
 | Pattern | Module | Checked |
 |---|---|---|
-| `/SimpleX chat client/` | [ChatTests.hs](../../tests/ChatTests.hs) | [chat scenarios](#chat-scenario-tests): direct, forward, group, chat relay, local, file, profile and chat list tests |
+| `/SimpleX chat client/` | [ChatTests.hs](../../tests/ChatTests.hs) | [chat scenarios](#chat-scenario-tests): direct, forward, group, chat relay, local, file, profile, chat list and link preview tests; link previews are fetched from a local HTTPS server, directly and through a local SOCKS5 server |
 | `/names tests/` | ChatTests/Names.hs | SimpleX names, resolved by a local resolver ([NameResolver.hs](../../tests/NameResolver.hs)); SQLite only |
 | `/SimpleX chat protocol/` | ProtocolTests.hs | chat protocol messages, short link data, batch limits, preferences JSON |
 | `/JSON Tests/` | JSONTests.hs, JSONFixtures.hs | conversion of the Swift JSON form to the tagged form, with QuickCheck; JSON of markdown |
@@ -46,6 +46,7 @@ The hspec suite `simplex-chat-test` of simplex-chat.cabal, with the entry point 
 | `/Operators/` | OperatorTests.hs | server operators, usage conditions, validation of user servers |
 | `/Member relations/` | MemberRelationsTests.hs | member relation vectors |
 | `/Image resize/` | ImageTests.hs | image resizing |
+| `/Link preview/` | LinkPreviewTests.hs | link previews: the head scanner, URIs, the address policy, HTTP framing, charsets and the embedded root certificates |
 | `/Supporter badges/` | BadgeTests.hs | badge credentials and proofs |
 | `/WebRTC encryption/` | WebRTCTests.hs | encryption of call media frames; SQLite only |
 | `/Remote session/` | RemoteTests.hs | a desktop controlling a mobile: handshake, messages, files |

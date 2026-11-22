@@ -727,6 +727,7 @@ test-suite simplex-chat-test
       ChatTests.Files
       ChatTests.Forward
       ChatTests.Groups
+      ChatTests.LinkPreviews
       ChatTests.Local
       ChatTests.Names
       ChatTests.Profiles
@@ -734,6 +735,7 @@ test-suite simplex-chat-test
       ImageTests
       JSONFixtures
       JSONTests
+      LinkPreviewTests
       MarkdownTests
       MemberRelationsTests
       NameResolver
@@ -866,6 +868,7 @@ test-suite simplex-chat-test
     , uri-bytestring >=0.3.3.1 && <0.4
     , wai ==3.2.*
     , warp ==3.3.*
+    , warp-tls ==3.4.*
   default-language: Haskell2010
   if flag(client_postgres)
     other-modules:
