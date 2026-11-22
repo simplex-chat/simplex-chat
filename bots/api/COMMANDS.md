@@ -396,7 +396,7 @@ ChatCmdError: Command error (only used in WebSockets API).
 
 ### APIUpdateChatItem
 
-Update message.
+Update message. In groups, as_new=on makes the message new: last in the chat, unread and notified by its priority, with the time of the update set by each member; ignored in other chats.
 
 *Network usage*: background.
 
@@ -404,20 +404,21 @@ Update message.
 - chatRef: [ChatRef](./TYPES.md#chatref)
 - chatItemId: int64
 - liveMessage: bool
+- asNew: bool
 - updatedMessage: [UpdatedMessage](./TYPES.md#updatedmessage)
 
 **Syntax**:
 
 ```
-/_update item <str(chatRef)> <chatItemId>[ live=on] json <json(updatedMessage)>
+/_update item <str(chatRef)> <chatItemId>[ live=on][ as_new=on] json <json(updatedMessage)>
 ```
 
 ```javascript
-'/_update item ' + ChatRef.cmdString(chatRef) + ' ' + chatItemId + (liveMessage ? ' live=on' : '') + ' json ' + JSON.stringify(updatedMessage) // JavaScript
+'/_update item ' + ChatRef.cmdString(chatRef) + ' ' + chatItemId + (liveMessage ? ' live=on' : '') + (asNew ? ' as_new=on' : '') + ' json ' + JSON.stringify(updatedMessage) // JavaScript
 ```
 
 ```python
-'/_update item ' + ChatRef_cmd_string(chatRef) + ' ' + str(chatItemId) + (' live=on' if liveMessage else '') + ' json ' + json.dumps(updatedMessage) # Python
+'/_update item ' + ChatRef_cmd_string(chatRef) + ' ' + str(chatItemId) + (' live=on' if liveMessage else '') + (' as_new=on' if asNew else '') + ' json ' + json.dumps(updatedMessage) # Python
 ```
 
 **Responses**:

@@ -1797,6 +1797,11 @@ class E2EInfo(TypedDict):
     public: NotRequired[bool]
     pqEnabled: NotRequired[bool]
 
+class EditsGroupPreference(TypedDict):
+    enable: "GroupFeatureEnabled"
+    role: NotRequired["GroupMemberRole"]
+    duration: NotRequired[int]  # int
+
 class ErrorType_BLOCK(TypedDict):
     type: Literal["BLOCK"]
 
@@ -2070,6 +2075,7 @@ class FullGroupPreferences(TypedDict):
     comments: "CommentsGroupPreference"
     signMessages: "GroupPreference"
     msgPriority: "RoleGroupPreference"
+    edits: "EditsGroupPreference"
     commands: list["ChatBotCommand"]
 
 class FullPreferences(TypedDict):
@@ -2113,7 +2119,7 @@ class GroupDirectInvitation(TypedDict):
     fromGroupMemberConnId_: NotRequired[int]  # int64
     groupDirectInvStartedConnection: bool
 
-GroupFeature = Literal["timedMessages", "directMessages", "fullDelete", "reactions", "voice", "files", "simplexLinks", "reports", "history", "support", "sessions", "comments", "signMessages", "msgPriority"]
+GroupFeature = Literal["timedMessages", "directMessages", "fullDelete", "reactions", "voice", "files", "simplexLinks", "reports", "history", "support", "sessions", "comments", "signMessages", "msgPriority", "edits"]
 
 GroupFeatureEnabled = Literal["on", "off"]
 
@@ -2266,6 +2272,7 @@ class GroupPreferences(TypedDict):
     comments: NotRequired["CommentsGroupPreference"]
     signMessages: NotRequired["GroupPreference"]
     msgPriority: NotRequired["RoleGroupPreference"]
+    edits: NotRequired["EditsGroupPreference"]
     commands: NotRequired[list["ChatBotCommand"]]
 
 class GroupProfile(TypedDict):

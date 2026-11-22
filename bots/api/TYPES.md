@@ -92,6 +92,7 @@ This file is generated automatically.
 - [DomainVerification](#domainverification)
 - [DroppedMsg](#droppedmsg)
 - [E2EInfo](#e2einfo)
+- [EditsGroupPreference](#editsgrouppreference)
 - [ErrorType](#errortype)
 - [FeatureAllowed](#featureallowed)
 - [FileDescr](#filedescr)
@@ -2323,6 +2324,16 @@ Remote controller application info.
 
 ---
 
+## EditsGroupPreference
+
+**Record type**:
+- enable: [GroupFeatureEnabled](#groupfeatureenabled)
+- role: [GroupMemberRole](#groupmemberrole)?
+- duration: int?
+
+
+---
+
 ## ErrorType
 
 **Discriminated union type**:
@@ -2621,6 +2632,7 @@ Markup:
 - comments: [CommentsGroupPreference](#commentsgrouppreference)
 - signMessages: [GroupPreference](#grouppreference)
 - msgPriority: [RoleGroupPreference](#rolegrouppreference)
+- edits: [EditsGroupPreference](#editsgrouppreference)
 - commands: [[ChatBotCommand](#chatbotcommand)]
 
 
@@ -2715,6 +2727,7 @@ MemberSupport:
 - "comments"
 - "signMessages"
 - "msgPriority"
+- "edits"
 
 
 ---
@@ -2971,6 +2984,7 @@ contact=<contactId> owner=<memberId>
 - comments: [CommentsGroupPreference](#commentsgrouppreference)?
 - signMessages: [GroupPreference](#grouppreference)?
 - msgPriority: [RoleGroupPreference](#rolegrouppreference)?
+- edits: [EditsGroupPreference](#editsgrouppreference)?
 - commands: [[ChatBotCommand](#chatbotcommand)]?
 
 

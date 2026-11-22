@@ -2560,6 +2560,12 @@ export interface E2EInfo {
   pqEnabled?: boolean
 }
 
+export interface EditsGroupPreference {
+  enable: GroupFeatureEnabled
+  role?: GroupMemberRole
+  duration?: number // int
+}
+
 export type ErrorType = 
   | ErrorType.BLOCK
   | ErrorType.SESSION
@@ -2950,6 +2956,7 @@ export interface FullGroupPreferences {
   comments: CommentsGroupPreference
   signMessages: GroupPreference
   msgPriority: RoleGroupPreference
+  edits: EditsGroupPreference
   commands: ChatBotCommand[]
 }
 
@@ -3026,6 +3033,7 @@ export enum GroupFeature {
   Comments = "comments",
   SignMessages = "signMessages",
   MsgPriority = "msgPriority",
+  Edits = "edits",
 }
 
 export enum GroupFeatureEnabled {
@@ -3242,6 +3250,7 @@ export interface GroupPreferences {
   comments?: CommentsGroupPreference
   signMessages?: GroupPreference
   msgPriority?: RoleGroupPreference
+  edits?: EditsGroupPreference
   commands?: ChatBotCommand[]
 }
 

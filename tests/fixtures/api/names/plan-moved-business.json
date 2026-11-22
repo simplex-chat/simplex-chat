@@ -32,6 +32,9 @@
                 "directMessages": {
                   "enable": "off"
                 },
+                "edits": {
+                  "enable": "off"
+                },
                 "files": {
                   "enable": "on"
                 },

@@ -5435,6 +5435,12 @@ Query:
 Plan:
 
 Query: 
+      INSERT INTO chat_tags_chats (group_id, chat_tag_id)
+      VALUES (?,?)
+    
+Plan:
+
+Query: 
       INSERT INTO commands (connection_id, command_function, command_status, user_id, created_at, updated_at)
       VALUES (?,?,?,?,?,?)
     
@@ -7962,6 +7968,10 @@ Query: SELECT COALESCE(SUM(CASE WHEN item_priority < 0 THEN 1 ELSE 0 END), 0), C
 Plan:
 SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_priority (user_id=? AND item_status=? AND group_id=? AND group_scope_tag=? AND group_scope_group_member_id=?)
 
+Query: SELECT COALESCE(item_original_ts, item_ts) FROM chat_items WHERE chat_item_id = ?
+Plan:
+SEARCH chat_items USING INTEGER PRIMARY KEY (rowid=?)
+
 Query: SELECT COUNT(*) FROM badge_code_redemptions
 Plan:
 SCAN badge_code_redemptions USING COVERING INDEX idx_badge_code_redemptions_user
@@ -8367,6 +8377,10 @@ Query: SELECT group_id, relay_own_status FROM groups WHERE relay_own_status IS N
 Plan:
 SCAN groups
 
+Query: SELECT group_member_id FROM group_members WHERE local_display_name = ?
+Plan:
+SCAN group_members USING COVERING INDEX idx_group_members_user_id_local_display_name
+
 Query: SELECT group_member_id FROM group_members WHERE user_id = ? AND contact_profile_id = ? AND group_member_id != ? LIMIT 1
 Plan:
 SEARCH group_members USING INDEX idx_group_members_user_id (user_id=?)
@@ -8403,6 +8417,10 @@ Query: SELECT item_content FROM chat_items WHERE group_id = 1 ORDER BY chat_item
 Plan:
 SEARCH chat_items USING INDEX idx_chat_items_group_id (group_id=?)
 
+Query: SELECT item_deleted FROM chat_items WHERE chat_item_id = ?
+Plan:
+SEARCH chat_items USING INTEGER PRIMARY KEY (rowid=?)
+
 Query: SELECT item_status FROM chat_items WHERE chat_item_id IN (SELECT chat_item_id FROM files)
 Plan:
 SEARCH chat_items USING INTEGER PRIMARY KEY (rowid=?)
@@ -8412,6 +8430,10 @@ SCAN files USING COVERING INDEX idx_files_chat_item_id
 Query: SELECT item_status FROM chat_items WHERE item_text = ?
 Plan:
 SCAN chat_items
+
+Query: SELECT item_text FROM chat_items WHERE chat_item_id = ?
+Plan:
+SEARCH chat_items USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: SELECT last_insert_rowid()
 Plan:
@@ -8760,11 +8782,23 @@ Query: UPDATE badge_store_receipts SET user_id = ?, payment = ?, next_attempt_at
 Plan:
 SEARCH badge_store_receipts USING INTEGER PRIMARY KEY (rowid=?)
 
+Query: UPDATE chat_items SET created_at = ? WHERE chat_item_id = ?
+Plan:
+SEARCH chat_items USING INTEGER PRIMARY KEY (rowid=?)
+
 Query: UPDATE chat_items SET item_content = ?, item_text = ?, updated_at = ? WHERE chat_item_id = ?
 Plan:
 SEARCH chat_items USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: UPDATE chat_items SET item_msg_body = ?, item_chat_binding = ?, item_signatures = ?, item_signed_by_group_member_id = ? WHERE chat_item_id = ? AND include_in_history = 1
+Plan:
+SEARCH chat_items USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: UPDATE chat_items SET item_original_ts = ? WHERE chat_item_id = ?
+Plan:
+SEARCH chat_items USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: UPDATE chat_items SET item_original_ts = COALESCE(item_original_ts, item_ts), item_ts = ?, item_status = ?, item_viewed = 0 WHERE chat_item_id = ?
 Plan:
 SEARCH chat_items USING INTEGER PRIMARY KEY (rowid=?)
 
@@ -8777,6 +8811,14 @@ Plan:
 SEARCH chat_items USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: UPDATE chat_items SET item_status = ?, updated_at = ? WHERE user_id = ? AND group_id = ? AND chat_item_id = ?
+Plan:
+SEARCH chat_items USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: UPDATE chat_items SET item_ts = ? WHERE chat_item_id = ?
+Plan:
+SEARCH chat_items USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: UPDATE chat_items SET item_ts = ?, created_at = ? WHERE chat_item_id = ?
 Plan:
 SEARCH chat_items USING INTEGER PRIMARY KEY (rowid=?)
 
@@ -9021,6 +9063,10 @@ SCAN group_members
 Query: UPDATE group_members SET member_relations_vector = set_member_vector_new_relation(member_relations_vector, ?, ?, ?), updated_at = ? WHERE group_member_id = ?
 Plan:
 SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: UPDATE group_members SET member_role = ? WHERE local_display_name = ?
+Plan:
+SCAN group_members
 
 Query: UPDATE group_members SET member_role = ? WHERE user_id = ? AND group_member_id = ?
 Plan:
