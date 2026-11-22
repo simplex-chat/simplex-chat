@@ -155,6 +155,7 @@ class AppPreferences {
   val logLevel = mkEnumPreference(SHARED_PREFS_LOG_LEVEL, LogLevel.WARNING) { LogLevel.entries.firstOrNull { it.name == this } }
   val showInternalErrors = mkBoolPreference(SHARED_PREFS_SHOW_INTERNAL_ERRORS, false)
   val showSlowApiCalls = mkBoolPreference(SHARED_PREFS_SHOW_SLOW_API_CALLS, false)
+  val showLinkPreviewErrors = mkBoolPreference(SHARED_PREFS_SHOW_LINK_PREVIEW_ERRORS, false)
   val terminalAlwaysVisible = mkBoolPreference(SHARED_PREFS_TERMINAL_ALWAYS_VISIBLE, false)
   val networkUseSocksProxy = mkBoolPreference(SHARED_PREFS_NETWORK_USE_SOCKS_PROXY, false)
   val networkShowSubscriptionPercentage = mkBoolPreference(SHARED_PREFS_NETWORK_SHOW_SUBSCRIPTION_PERCENTAGE, false)
@@ -452,6 +453,7 @@ class AppPreferences {
     private const val SHARED_PREFS_LOG_LEVEL = "LogLevel"
     private const val SHARED_PREFS_SHOW_INTERNAL_ERRORS = "ShowInternalErrors"
     private const val SHARED_PREFS_SHOW_SLOW_API_CALLS = "ShowSlowApiCalls"
+    private const val SHARED_PREFS_SHOW_LINK_PREVIEW_ERRORS = "ShowLinkPreviewErrors"
     private const val SHARED_PREFS_TERMINAL_ALWAYS_VISIBLE = "TerminalAlwaysVisible"
     private const val SHARED_PREFS_NETWORK_USE_SOCKS_PROXY = "NetworkUseSocksProxy"
     private const val SHARED_PREFS_NETWORK_SHOW_SUBSCRIPTION_PERCENTAGE = "ShowSubscriptionPercentage"
@@ -1347,6 +1349,9 @@ object ChatController {
   suspend fun apiGetLinkPreview(uri: String): LinkPreview? {
     val r = sendCmd(null, CC.ApiGetLinkPreview(uri))
     if (r is API.Result && r.res is CR.CRLinkPreview) return r.res.linkPreview
+    if (appPrefs.developerTools.get() && appPrefs.showLinkPreviewErrors.get()) {
+      apiErrorAlert("apiGetLinkPreview", generalGetString(MR.strings.link_preview_error), r)
+    }
     return null
   }
 

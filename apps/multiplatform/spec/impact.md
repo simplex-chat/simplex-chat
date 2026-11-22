@@ -223,7 +223,7 @@ Path prefix: `common/src/commonMain/kotlin/chat/simplex/common/`
 | `views/usersettings/Preferences.kt` | PC2, PC3, PC8 | Medium | Chat feature preferences UI |
 | `views/usersettings/SetDeliveryReceiptsView.kt` | PC2 | Low | Delivery receipts toggle |
 | `views/usersettings/RTCServers.kt` | PC17, PC25 | Medium | WebRTC ICE server configuration |
-| `views/usersettings/DeveloperView.kt` | — | Low | Developer/debug settings |
+| `views/usersettings/DeveloperView.kt` | PC11 | Low | Developer/debug settings |
 | `views/usersettings/StorageView.kt` | — | Low | Storage breakdown (developer options) |
 | `views/usersettings/HelpView.kt` | — | Low | Help and support links |
 | `views/usersettings/MarkdownHelpView.kt` | PC4 | Low | Markdown formatting guide |

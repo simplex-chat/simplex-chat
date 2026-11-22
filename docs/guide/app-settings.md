@@ -314,4 +314,11 @@ mode](#transport-isolation-beta) option (on Android and desktop, its
 **Connection** mode) and also enables showing database IDs in contacts, groups
 and group members to simplify debugging via console commands. It also shows the
 section **Developer options**, with [Confirm database
-upgrades](#confirm-database-upgrades) and other options.
+upgrades](#confirm-database-upgrades), [Show link preview
+errors](#show-link-preview-errors) and other options.
+
+### Show link preview errors
+
+This option is shown when [Show developer options](#show-developer-options) is
+enabled, and it is off by default. When both options are on, a link preview
+that fails shows an alert with the error of the chat core.

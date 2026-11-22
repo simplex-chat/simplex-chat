@@ -343,7 +343,7 @@ When `privacyLinkPreviews` is enabled and the message contains a URL:
 1. `showLinkPreview` extracts first non-SimpleX, non-cancelled link from parsed markdown.
 2. Sets `ComposePreview.CLinkPreview(null)` (loading state).
 3. After 1.5s debounce, calls `apiGetLinkPreview(url)`: the core fetches the page through its network settings (`/_link preview <url>`).
-4. On success, updates to `CLinkPreview(linkPreview)`, otherwise to `NoPreview`.
+4. On success, updates to `CLinkPreview(linkPreview)`, otherwise to `NoPreview`; with `developerTools` and `showLinkPreviewErrors`, the core's error is shown in an alert.
 5. Cancel button adds the URL to `cancelledLinks` set.
 
 ---

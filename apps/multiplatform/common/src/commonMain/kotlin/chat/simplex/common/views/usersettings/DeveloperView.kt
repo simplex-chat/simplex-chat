@@ -4,11 +4,13 @@ import SectionBottomSpacer
 import SectionDividerSpaced
 import SectionTextFooter
 import SectionView
+import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.background
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalUriHandler
 import chat.simplex.common.model.ChatController.appPrefs
+import chat.simplex.common.model.SharedPreference
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.platform.*
 import dev.icerock.moko.resources.compose.painterResource
@@ -18,13 +20,13 @@ import chat.simplex.common.views.helpers.*
 import chat.simplex.res.*
 
 @Composable
-fun DeveloperView(withAuth: (title: String, desc: String, block: () -> Unit) -> Unit
+fun DeveloperView(withAuth: (title: String, desc: String, block: () -> Unit) -> Unit,
+  developerTools: SharedPreference<Boolean> = appPrefs.developerTools
 ) {
   val m = chatModel
   ColumnWithScrollBar {
     val uriHandler = LocalUriHandler.current
     AppBarTitle(stringResource(MR.strings.settings_developer_tools))
-    val developerTools = m.controller.appPrefs.developerTools
     val devTools = remember { developerTools.state }
     val unchangedHints = mutableStateOf(unchangedHintPreferences())
     SectionView {
@@ -60,6 +62,7 @@ fun DeveloperView(withAuth: (title: String, desc: String, block: () -> Unit) -> 
         }
         SettingsPreferenceItem(painterResource(MR.images.ic_report), stringResource(MR.strings.show_internal_errors), appPreferences.showInternalErrors)
         SettingsPreferenceItem(painterResource(MR.images.ic_avg_pace), stringResource(MR.strings.show_slow_api_calls), appPreferences.showSlowApiCalls)
+        SettingsPreferenceItem(painterResource(MR.images.ic_travel_explore), stringResource(MR.strings.show_link_preview_errors), appPreferences.showLinkPreviewErrors)
         SettingsActionItem(painterResource(MR.images.ic_folder_open), stringResource(MR.strings.storage), { ModalManager.start.showModal(cardScreen = true) { StorageView() } })
       }
     }
@@ -80,4 +83,12 @@ fun showInDevelopingAlert() {
     title = generalGetString(MR.strings.in_developing_title),
     text = generalGetString(MR.strings.in_developing_desc)
   )
+}
+
+@Preview
+@Composable
+fun PreviewDeveloperView() {
+  SimpleXTheme {
+    DeveloperView(withAuth = { _, _, _ -> }, developerTools = remember { SharedPreference(get = { true }, set = {}) })
+  }
 }

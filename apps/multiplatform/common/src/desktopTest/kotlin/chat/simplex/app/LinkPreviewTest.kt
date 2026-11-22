@@ -4,13 +4,16 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.ComposeUiTest
 import androidx.compose.ui.test.ExperimentalTestApi
+import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.runComposeUiTest
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.platform.chatParseMarkdown
 import chat.simplex.common.platform.chatSendCmdRetry
 import chat.simplex.common.views.chat.ComposePreview
@@ -25,11 +28,13 @@ import kotlin.test.*
 class LinkPreviewTest {
   private val sendCmd = chatSendCmdRetry
   private val parseMarkdown = chatParseMarkdown
+  private val savedPrefs = listOf(appPrefs.developerTools, appPrefs.showLinkPreviewErrors).associateWith { it.get() }
   private val requests = mutableListOf<String>()
   private val commands = Json.parseToJsonElement(fixtureText("previews/link_preview")).jsonObject.getValue("commands").jsonObject
 
   @BeforeTest
   fun setUp() {
+    savedPrefs.keys.forEach { it.set(false) }
     chatSendCmdRetry = { _, cmd, _ ->
       synchronized(requests) { requests += cmd }
       commands[cmd]?.toString() ?: "{}"
@@ -41,6 +46,7 @@ class LinkPreviewTest {
     AlertManager.shared.hideAllAlerts()
     chatSendCmdRetry = sendCmd
     chatParseMarkdown = parseMarkdown
+    savedPrefs.forEach { (pref, value) -> pref.set(value) }
   }
 
   @Test
@@ -70,6 +76,44 @@ class LinkPreviewTest {
     waitUntil(timeoutMillis = 10_000) { synchronized(requests) { requests.isNotEmpty() } && composeState.value.preview is ComposePreview.NoPreview }
     assertEquals(listOf(request), requests)
     assertFalse(AlertManager.shared.hasAlertsShown())
+  }
+
+  @Test
+  fun failureShowsNoAlert() = failedPreview(developerTools = false, showLinkPreviewErrors = false) {
+    assertTexts()
+  }
+
+  @Test
+  fun failureShowsNoAlertWithDeveloperOptionsOnly() = failedPreview(developerTools = true, showLinkPreviewErrors = false) {
+    assertTexts()
+  }
+
+  @Test
+  fun failureShowsNoAlertWithoutDeveloperOptions() = failedPreview(developerTools = false, showLinkPreviewErrors = true) {
+    assertTexts()
+  }
+
+  @Test
+  fun failureShowsCoreErrorWithBothOptions() = failedPreview(developerTools = true, showLinkPreviewErrors = true) { message ->
+    assertTexts("Link preview error", "error chat: error chat linkPreview $message", "OK")
+  }
+
+  private fun failedPreview(developerTools: Boolean, showLinkPreviewErrors: Boolean, test: ComposeUiTest.(message: String) -> Unit) = runComposeUiTest {
+    appPrefs.developerTools.set(developerTools)
+    appPrefs.showLinkPreviewErrors.set(showLinkPreviewErrors)
+    setContent { AlertManager.shared.showInView() }
+    val (request, response) = recorded("error")
+    assertNull(runBlocking { ChatController.apiGetLinkPreview(request.removePrefix(LINK_PREVIEW)) })
+    assertEquals(listOf(request), requests)
+    waitForIdle()
+    test(response.getValue("error").jsonObject.getValue("errorType").jsonObject.text("message"))
+  }
+
+  private fun ComposeUiTest.assertTexts(vararg texts: String) {
+    val shown = onAllNodes(SemanticsMatcher.keyIsDefined(SemanticsProperties.Text), useUnmergedTree = true)
+      .fetchSemanticsNodes()
+      .flatMap { node -> node.config[SemanticsProperties.Text].map { it.text } }
+    assertEquals(texts.toList(), shown)
   }
 
   private fun composeView(test: ComposeUiTest.(MutableState<ComposeState>) -> Unit) = runComposeUiTest {
