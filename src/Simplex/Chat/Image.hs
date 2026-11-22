@@ -12,6 +12,7 @@ module Simplex.Chat.Image
     ColourProfile (..),
     imageFormat,
     decodeResizable,
+    imageDataPreview,
     resizeImage,
     resizeImageDataUri,
     cropToSquare,
@@ -42,6 +43,8 @@ import Data.Word (Word8)
 import Foreign.Storable (Storable)
 import GHC.Float (double2Float, float2Double, int2Double, int2Float)
 import GHC.Float.RealFracMethods (floorDoubleInt)
+import Simplex.Chat.Types (ImageData (..))
+import Simplex.Messaging.Util (safeDecodeUtf8)
 
 data ImageFormat = IFJpeg | IFPng
 
@@ -218,6 +221,14 @@ resizeImage = fitImage ImageBytes
 
 resizeImageDataUri :: Int64 -> DynamicImage -> ColourProfile -> IO (Either String LB.ByteString)
 resizeImageDataUri maxSize img = fitImage ImageDataUri (imageFormat img) maxSize img
+
+maxImagePreviewSize :: Int64
+maxImagePreviewSize = 14000
+
+imageDataPreview :: ByteString -> IO (Either String ImageData)
+imageDataPreview s = runExceptT $ do
+  (img, profile) <- ExceptT $ decodeResizable s
+  ImageData . safeDecodeUtf8 . LB.toStrict <$> ExceptT (resizeImageDataUri maxImagePreviewSize img profile)
 
 fitImage :: ImageOutput -> ImageFormat -> Int64 -> DynamicImage -> ColourProfile -> IO (Either String LB.ByteString)
 fitImage output format maxSize img profile

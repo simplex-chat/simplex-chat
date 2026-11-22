@@ -32,6 +32,7 @@ import Simplex.Chat.Badges (badgeServerCredential, defaultFileSizeLimits)
 import Simplex.Chat.Call (supportedCallVRange)
 import Simplex.Chat.Controller
 import Simplex.Chat.Library.Commands
+import Simplex.Chat.LinkPreview (defaultLinkPreviewConfig)
 import Simplex.Chat.Operators
 import Simplex.Chat.Operators.Presets
 import Simplex.Chat.Options
@@ -133,6 +134,7 @@ defaultChatConfig =
       deliveryWorkerDelay = 0,
       deliveryBucketSize = 10000,
       webPreviewConfig = Nothing,
+      linkPreviewConfig = defaultLinkPreviewConfig,
       channelSubscriberRole = GRObserver,
       relayChecksInterval = 15 * 60, -- 15 minutes
       relayInactiveTTL = nominalDay,
