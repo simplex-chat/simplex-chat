@@ -694,10 +694,9 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
               withStore' (\db -> getContactRequest' db user connReqId) >>= \case
                 Just UserContactRequest {pqSupport} | CR.pqSupportToEnc pqSupport == pqEnc -> pure ()
                 _ -> createE2EItem
+          when (contactConnInitiated conn') $ withStore' $ \db -> resetContactConnInitiated db user conn'
           toView $ CEvtContactConnected user ct' (fmap fromLocalProfile incognitoProfile)
-          when (contactConnInitiated conn') $ do
-            probeMatchingMembers ct' (contactConnIncognito ct')
-            withStore' $ \db -> resetContactConnInitiated db user conn'
+          when (contactConnInitiated conn') $ probeMatchingMembers ct' (contactConnIncognito ct')
         SENT msgId proxy -> do
           void $ continueSending connEntity conn
           (fileEvent_, cis) <- withStore $ \db -> do
