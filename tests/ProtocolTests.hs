@@ -63,6 +63,13 @@ preferencesJSONTests = describe "preferences JSON" $ do
   it "reads the stored preferences when the received JSON does not parse" $
     groupPrefsFromRow (Just "{\"voice\":{\"enable\":\"on\"}}") (Just "{\"voice\":{\"enable\":\"sometimes\"}}")
       `shouldBe` groupPrefs_ "{\"voice\":{\"enable\":\"on\"}}"
+  it "encodes and decodes the message editing preference" $ do
+    ps <- groupPrefs "{\"edits\":{\"enable\":\"on\",\"role\":\"owner\",\"duration\":3600}}"
+    getGroupPreference SGFEdits ps `shouldBe` EditsGroupPreference {enable = FEOn, role = Just GROwner, duration = Just 3600}
+    storedJSON ps `shouldBe` Nothing
+  it "decodes group preferences without the message editing preference to its default" $ do
+    ps <- groupPrefs "{\"voice\":{\"enable\":\"on\"}}"
+    getGroupPreference SGFEdits ps `shouldBe` EditsGroupPreference {enable = FEOff, role = Nothing, duration = Nothing}
   where
     prefs :: ByteString -> IO Preferences
     prefs = either fail pure . J.eitherDecodeStrict'
@@ -189,7 +196,7 @@ testChatPreferences :: Maybe Preferences
 testChatPreferences = Just Preferences {voice = Just VoicePreference {allow = FAYes}, files = Nothing, fullDelete = Nothing, timedMessages = Nothing, calls = Nothing, reactions = Just ReactionsPreference {allow = FAYes}, sessions = Nothing, commands = Nothing, _json = NoJSON Nothing}
 
 testGroupPreferences :: Maybe GroupPreferences
-testGroupPreferences = Just GroupPreferences {timedMessages = Nothing, directMessages = Nothing, reactions = Just ReactionsGroupPreference {enable = FEOn}, voice = Just VoiceGroupPreference {enable = FEOn, role = Nothing}, files = Nothing, fullDelete = Nothing, simplexLinks = Nothing, history = Nothing, reports = Nothing, support = Nothing, sessions = Nothing, comments = Nothing, signMessages = Nothing, commands = Nothing, msgPriority = Nothing, _json = NoJSON Nothing}
+testGroupPreferences = Just GroupPreferences {timedMessages = Nothing, directMessages = Nothing, reactions = Just ReactionsGroupPreference {enable = FEOn}, voice = Just VoiceGroupPreference {enable = FEOn, role = Nothing}, files = Nothing, fullDelete = Nothing, simplexLinks = Nothing, history = Nothing, reports = Nothing, support = Nothing, sessions = Nothing, comments = Nothing, signMessages = Nothing, commands = Nothing, msgPriority = Nothing, edits = Nothing, _json = NoJSON Nothing}
 
 testProfile :: Profile
 testProfile = Profile {displayName = "alice", fullName = "Alice", shortDescr = Nothing, description = Nothing, image = Just (ImageData "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII="), peerType = Nothing, contactLink = Nothing, preferences = testChatPreferences, badge = Nothing, contactDomain = Nothing}
@@ -243,9 +250,14 @@ decodeChatMessageTest = describe "Chat message encoding/decoding" $ do
     map (sndPriority True) priorities `shouldBe` [Just (-1), Just (-1), Nothing, Nothing, Just 1, Just 1]
   it "x.msg.update priority raises to high only" $ do
     let priorities = [Just (-5), Just (-1), Nothing, Just 0, Just 1, Just 5]
-        msgUpdate = XMsgUpdate (SharedMsgId "\1\2\3\4") (MCText "hello") [] Nothing Nothing Nothing Nothing
+        msgUpdate p = XMsgUpdate (SharedMsgId "\1\2\3\4") (MCText "hello") [] Nothing Nothing Nothing Nothing p Nothing
     map (eventPriority . msgUpdate) priorities `shouldBe` [0, 0, 0, 0, 0, 0]
     map (eventHasNotification . msgUpdate) priorities `shouldBe` [False, False, False, False, True, True]
+  it "x.msg.update as new has the priority of a new message" $ do
+    let priorities = [Just (-5), Just (-1), Nothing, Just 0, Just 1, Just 5]
+        msgUpdate p = XMsgUpdate (SharedMsgId "\1\2\3\4") (MCText "hello") [] Nothing Nothing Nothing Nothing p (Just True)
+    map (eventPriority . msgUpdate) priorities `shouldBe` [-1, -1, 0, 0, 1, 1]
+    map (eventHasNotification . msgUpdate) priorities `shouldBe` [False, False, True, True, True, True]
   it "x.msg.new simple link" $
     "{\"v\":\"9\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"https://simplex.chat\",\"type\":\"link\",\"preview\":{\"description\":\"SimpleX Chat\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgA\",\"title\":\"SimpleX Chat\",\"uri\":\"https://simplex.chat\"}}}}"
       #==# XMsgNew (mcSimple (MCLink "https://simplex.chat" $ LinkPreview {uri = "https://simplex.chat", title = "SimpleX Chat", description = "SimpleX Chat", image = ImageData "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgA", content = Nothing}))
@@ -320,10 +332,16 @@ decodeChatMessageTest = describe "Chat message encoding/decoding" $ do
       ##==## ChatMessage chatInitialVRange (Just $ SharedMsgId "\1\2\3\4") (XMsgNew $ (mcForward Nothing (MCText "hello")) {file = Just FileInvitation {fileName = "photo.jpg", fileSize = 12345, fileDigest = Nothing, fileConnReq = Nothing, fileInline = Nothing, fileDescr = Nothing, fileBadge = Nothing}})
   it "x.msg.update" $
     "{\"v\":\"9\",\"event\":\"x.msg.update\",\"params\":{\"msgId\":\"AQIDBA==\", \"content\":{\"text\":\"hello\",\"type\":\"text\"}}}"
-      #==# XMsgUpdate (SharedMsgId "\1\2\3\4") (MCText "hello") [] Nothing Nothing Nothing Nothing Nothing
+      #==# XMsgUpdate (SharedMsgId "\1\2\3\4") (MCText "hello") [] Nothing Nothing Nothing Nothing Nothing Nothing
   it "x.msg.update - high priority" $
     "{\"v\":\"9\",\"event\":\"x.msg.update\",\"params\":{\"msgId\":\"AQIDBA==\",\"content\":{\"text\":\"hello\",\"type\":\"text\"},\"priority\":1}}"
-      #==# XMsgUpdate (SharedMsgId "\1\2\3\4") (MCText "hello") [] Nothing Nothing Nothing Nothing (Just 1)
+      #==# XMsgUpdate (SharedMsgId "\1\2\3\4") (MCText "hello") [] Nothing Nothing Nothing Nothing (Just 1) Nothing
+  it "x.msg.update - as new" $
+    "{\"v\":\"9\",\"event\":\"x.msg.update\",\"params\":{\"msgId\":\"AQIDBA==\",\"content\":{\"text\":\"hello\",\"type\":\"text\"},\"asNew\":true}}"
+      #==# XMsgUpdate (SharedMsgId "\1\2\3\4") (MCText "hello") [] Nothing Nothing Nothing Nothing Nothing (Just True)
+  it "x.msg.update - silent as new" $
+    "{\"v\":\"9\",\"event\":\"x.msg.update\",\"params\":{\"msgId\":\"AQIDBA==\",\"content\":{\"text\":\"hello\",\"type\":\"text\"},\"priority\":-1,\"asNew\":true}}"
+      #==# XMsgUpdate (SharedMsgId "\1\2\3\4") (MCText "hello") [] Nothing Nothing Nothing Nothing (Just (-1)) (Just True)
   it "x.msg.del" $
     "{\"v\":\"9\",\"event\":\"x.msg.del\",\"params\":{\"msgId\":\"AQIDBA==\"}}"
       #==# XMsgDel (SharedMsgId "\1\2\3\4") Nothing Nothing False
