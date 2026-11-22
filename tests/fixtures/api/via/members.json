@@ -98,7 +98,7 @@
                 },
                 "memberContactId": 1,
                 "memberContactProfileId": 1,
-                "memberId": "memberId",
+                "memberId": "memberVia",
                 "memberProfile": {
                   "displayName": "alice",
                   "fullName": "",
@@ -390,7 +390,7 @@
               },
               "memberContactId": 1,
               "memberContactProfileId": 1,
-              "memberId": "memberId",
+              "memberId": "memberVia",
               "memberProfile": {
                 "displayName": "alice",
                 "fullName": "",
