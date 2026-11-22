@@ -552,9 +552,9 @@ setSupportChatMemberAttention db cxt user g m memberAttention = do
       m_ <- runExceptT $ getGroupMemberById db cxt user (groupMemberId' m)
       pure $ either (const m) id m_ -- Left shouldn't happen, but types require it
 
-createNewSndChatItem :: DB.Connection -> User -> ChatDirection c 'MDSnd -> ShowGroupAsSender -> SndMessage -> CIContent 'MDSnd -> Maybe (CIQuote c) -> Maybe CIForwardedFrom -> Maybe CITimed -> Bool -> MsgPriority -> Bool -> UTCTime -> UTCTime -> IO ChatItemId
-createNewSndChatItem db user chatDirection showGroupAsSender SndMessage {msgId, sharedMsgId, signedMsg_} ciContent quotedItem itemForwarded timed live priority hasLink itemTs createdAt =
-  createNewChatItem_ db user chatDirection showGroupAsSender createdByMsgId (Just sharedMsgId) ciContent quoteRow itemForwarded timed live False priority hasLink itemTs Nothing (toMsgVerified (signMessagesRequired chatDirection) (MSSVerified <$ signedMsg_)) signedMsg_ Nothing createdAt
+createNewSndChatItem :: DB.Connection -> User -> ChatDirection c 'MDSnd -> SendAs GroupMemberId -> SndMessage -> CIContent 'MDSnd -> Maybe (CIQuote c) -> Maybe CIForwardedFrom -> Maybe CITimed -> Bool -> MsgPriority -> Bool -> UTCTime -> UTCTime -> IO ChatItemId
+createNewSndChatItem db user chatDirection sendAs SndMessage {msgId, sharedMsgId, signedMsg_} ciContent quotedItem itemForwarded timed live priority hasLink itemTs createdAt =
+  createNewChatItem_ db user chatDirection sendAs createdByMsgId (Just sharedMsgId) ciContent quoteRow itemForwarded timed live False priority hasLink itemTs Nothing (toMsgVerified (signMessagesRequired chatDirection) (MSSVerified <$ signedMsg_)) signedMsg_ Nothing createdAt
   where
     createdByMsgId = if msgId == 0 then Nothing else Just msgId
     quoteRow :: NewQuoteRow
@@ -571,7 +571,7 @@ createNewSndChatItem db user chatDirection showGroupAsSender SndMessage {msgId, 
 createNewRcvChatItem :: ChatTypeQuotable c => DB.Connection -> User -> ChatDirection c 'MDRcv -> RcvMessage -> Maybe SharedMsgId -> CIContent 'MDRcv -> Maybe CIForwardedFrom -> Maybe CITimed -> Bool -> Bool -> MsgPriority -> Bool -> UTCTime -> UTCTime -> IO (ChatItemId, Maybe (CIQuote c))
 createNewRcvChatItem db user chatDirection RcvMessage {msgId, chatMsgEvent, msgSigned, signedMsg_, signedByGMId_, forwardedByMember} sharedMsgId_ ciContent itemForwarded timed live userMention priority hasLink itemTs createdAt = do
   let showAsGroup = case chatDirection of CDChannelRcv {} -> True; _ -> False
-  ciId <- createNewChatItem_ db user chatDirection showAsGroup (Just msgId) sharedMsgId_ ciContent quoteRow itemForwarded timed live userMention priority hasLink itemTs forwardedByMember (toMsgVerified (signMessagesRequired chatDirection) msgSigned) signedMsg_ signedByGMId_ createdAt
+  ciId <- createNewChatItem_ db user chatDirection (sendAsGroupIf showAsGroup) (Just msgId) sharedMsgId_ ciContent quoteRow itemForwarded timed live userMention priority hasLink itemTs forwardedByMember (toMsgVerified (signMessagesRequired chatDirection) msgSigned) signedMsg_ signedByGMId_ createdAt
   quotedItem <- mapM (getChatItemQuote_ db user chatDirection) quotedMsg
   pure (ciId, quotedItem)
   where
@@ -589,13 +589,13 @@ createNewRcvChatItem db user chatDirection RcvMessage {msgId, chatMsgEvent, msgS
 
 createNewChatItemNoMsg :: forall c d. MsgDirectionI d => DB.Connection -> User -> ChatDirection c d -> ShowGroupAsSender -> CIContent d -> Maybe SharedMsgId -> Bool -> Maybe MsgVerified -> UTCTime -> UTCTime -> IO ChatItemId
 createNewChatItemNoMsg db user chatDirection showGroupAsSender ciContent sharedMsgId_ hasLink msgVerified itemTs =
-  createNewChatItem_ db user chatDirection showGroupAsSender Nothing sharedMsgId_ ciContent quoteRow Nothing Nothing False False MPNormal hasLink itemTs Nothing msgVerified Nothing Nothing
+  createNewChatItem_ db user chatDirection (sendAsGroupIf showGroupAsSender) Nothing sharedMsgId_ ciContent quoteRow Nothing Nothing False False MPNormal hasLink itemTs Nothing msgVerified Nothing Nothing
   where
     quoteRow :: NewQuoteRow
     quoteRow = (Nothing, Nothing, Nothing, Nothing, Nothing)
 
-createNewChatItem_ :: forall c d. MsgDirectionI d => DB.Connection -> User -> ChatDirection c d -> ShowGroupAsSender -> Maybe MessageId -> Maybe SharedMsgId -> CIContent d -> NewQuoteRow -> Maybe CIForwardedFrom -> Maybe CITimed -> Bool -> Bool -> MsgPriority -> Bool -> UTCTime -> Maybe GroupMemberId -> Maybe MsgVerified -> Maybe SignedMsg -> Maybe GroupMemberId -> UTCTime -> IO ChatItemId
-createNewChatItem_ db User {userId} chatDirection showGroupAsSender msgId_ sharedMsgId ciContent quoteRow itemForwarded timed live userMention priority hasLink itemTs forwardedByMember msgVerified signedMsg_ signedByGMId_ createdAt = do
+createNewChatItem_ :: forall c d. MsgDirectionI d => DB.Connection -> User -> ChatDirection c d -> SendAs GroupMemberId -> Maybe MessageId -> Maybe SharedMsgId -> CIContent d -> NewQuoteRow -> Maybe CIForwardedFrom -> Maybe CITimed -> Bool -> Bool -> MsgPriority -> Bool -> UTCTime -> Maybe GroupMemberId -> Maybe MsgVerified -> Maybe SignedMsg -> Maybe GroupMemberId -> UTCTime -> IO ChatItemId
+createNewChatItem_ db User {userId} chatDirection sendAs msgId_ sharedMsgId ciContent quoteRow itemForwarded timed live userMention priority hasLink itemTs forwardedByMember msgVerified signedMsg_ signedByGMId_ createdAt = do
   DB.execute
     db
     [sql|
@@ -618,7 +618,7 @@ createNewChatItem_ db User {userId} chatDirection showGroupAsSender msgId_ share
   pure ciId
   where
     itemRow :: (SMsgDirection d, UTCTime, CIContent d, Text, Text, CIStatus d, Maybe MsgContentTag, Maybe SharedMsgId, Maybe GroupMemberId, BoolInt) :. (UTCTime, UTCTime, Maybe BoolInt, BoolInt, MsgPriority, BoolInt, BoolInt, BoolInt, Maybe MsgVerified) :. (Maybe (DB.Binary ByteString), Maybe ChatBinding, Maybe (DB.Binary ByteString), Maybe GroupMemberId) :. (Maybe Int, Maybe UTCTime)
-    itemRow = (msgDirection @d, itemTs, ciContent, toCIContentTag ciContent, ciContentToText ciContent, ciCreateStatus ciContent, mcTag_, sharedMsgId, forwardedByMember, BI includeInHistory) :. (createdAt, createdAt, BI <$> justTrue live, BI userMention, priority, BI hasLink, BI itemViewed, BI showGroupAsSender, msgVerified) :. signedRow :. ciTimedRow timed
+    itemRow = (msgDirection @d, itemTs, ciContent, toCIContentTag ciContent, ciContentToText ciContent, ciCreateStatus ciContent, mcTag_, sharedMsgId, forwardedByMember, BI includeInHistory) :. (createdAt, createdAt, BI <$> justTrue live, BI userMention, priority, BI hasLink, BI itemViewed, BI (sendAs == SAGroup), msgVerified) :. signedRow :. ciTimedRow timed
     -- keep the signature and its author on history items so sendHistory can re-forward them signed and attributed
     signedRow :: (Maybe (DB.Binary ByteString), Maybe ChatBinding, Maybe (DB.Binary ByteString), Maybe GroupMemberId)
     signedRow = case signedMsg_ of
@@ -631,7 +631,7 @@ createNewChatItem_ db User {userId} chatDirection showGroupAsSender msgId_ share
       CDDirectRcv Contact {contactId} -> (Just contactId, Nothing, Nothing, Nothing)
       CDDirectSnd Contact {contactId} -> (Just contactId, Nothing, Nothing, Nothing)
       CDGroupRcv GroupInfo {groupId} _ GroupMember {groupMemberId} -> (Nothing, Just groupId, Just groupMemberId, Nothing)
-      CDGroupSnd GroupInfo {groupId} _ -> (Nothing, Just groupId, Nothing, Nothing)
+      CDGroupSnd GroupInfo {groupId} _ -> (Nothing, Just groupId, sendAsMember sendAs, Nothing)
       CDChannelRcv GroupInfo {groupId} _ -> (Nothing, Just groupId, Nothing, Nothing)
       CDLocalRcv NoteFolder {noteFolderId} -> (Nothing, Nothing, Nothing, Just noteFolderId)
       CDLocalSnd NoteFolder {noteFolderId} -> (Nothing, Nothing, Nothing, Just noteFolderId)
@@ -734,7 +734,7 @@ getChatItemQuote_ db User {userId, userContactId} chatDirection QuotedMsg {msgRe
               p.display_name, p.full_name, p.short_descr, p.description, p.image, p.contact_link, p.chat_peer_type, p.local_alias, p.preferences, p.preferences_json,
               p.badge_proof, p.badge_pres_header, p.badge_expiry, p.badge_type, p.badge_verified, p.badge_extra, p.badge_master_key, p.badge_signature, p.badge_key_idx, p.contact_domain, p.contact_domain_proof, p.contact_domain_verified,
               m.created_at, m.updated_at,
-              m.support_chat_ts, m.support_chat_items_unread, m.support_chat_items_member_attention, m.support_chat_items_mentions, m.support_chat_last_msg_from_member_ts, m.member_pub_key, m.relay_link, m.member_security_code, m.member_security_code_verified_at
+              m.support_chat_ts, m.support_chat_items_unread, m.support_chat_items_member_attention, m.support_chat_items_mentions, m.support_chat_last_msg_from_member_ts, m.member_pub_key, m.relay_link, m.member_security_code, m.member_security_code_verified_at, m.member_via
             FROM group_members m
             JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id)
             LEFT JOIN contacts c ON m.contact_id = c.contact_id
@@ -1153,7 +1153,7 @@ toLocalChatItem currentTs ((itemId, itemTs, AMsgDirection msgDir, itemContentTex
             _ -> Just (CIDeleted @'CTLocal deletedTs)
           itemEdited' = maybe False unBI itemEdited
           itemForwarded = toCIForwardedFrom forwardedFromRow
-       in mkCIMeta itemId content itemText status (unBI <$> sentViaProxy) sharedMsgId itemForwarded itemDeleted' itemEdited' ciTimed (unBI <$> itemLive) userMention itemPriority hasLink Nothing currentTs itemTs Nothing False msgSigned createdAt updatedAt
+       in mkCIMeta itemId content itemText status (unBI <$> sentViaProxy) sharedMsgId itemForwarded itemDeleted' itemEdited' ciTimed (unBI <$> itemLive) userMention itemPriority hasLink Nothing currentTs itemTs Nothing SAUser msgSigned createdAt updatedAt
     ciTimed :: Maybe CITimed
     ciTimed = timedTTL >>= \ttl -> Just CITimed {ttl, deleteAt = timedDeleteAt}
 
@@ -2369,7 +2369,7 @@ toDirectChatItem currentTs (((itemId, itemTs, AMsgDirection msgDir, itemContentT
             _ -> Just (CIDeleted @'CTDirect deletedTs)
           itemEdited' = maybe False unBI itemEdited
           itemForwarded = toCIForwardedFrom forwardedFromRow
-       in mkCIMeta itemId content itemText status (unBI <$> sentViaProxy) sharedMsgId itemForwarded itemDeleted' itemEdited' ciTimed (unBI <$> itemLive) userMention itemPriority hasLink directItemWindow currentTs itemTs Nothing False msgSigned createdAt updatedAt
+       in mkCIMeta itemId content itemText status (unBI <$> sentViaProxy) sharedMsgId itemForwarded itemDeleted' itemEdited' ciTimed (unBI <$> itemLive) userMention itemPriority hasLink directItemWindow currentTs itemTs Nothing SAUser msgSigned createdAt updatedAt
     ciTimed :: Maybe CITimed
     ciTimed = timedTTL >>= \ttl -> Just CITimed {ttl, deleteAt = timedDeleteAt}
 
@@ -2454,12 +2454,17 @@ toGroupChatItem
           _ -> Nothing
       cItem :: MsgDirectionI d => SMsgDirection d -> CIDirection 'CTGroup d -> CIStatus d -> CIContent d -> Maybe (CIFile d) -> CChatItem 'CTGroup
       cItem d chatDir ciStatus content file =
-        CChatItem d ChatItem {chatDir, meta = ciMeta content ciStatus, content, mentions = M.empty, formattedText, markdownBlocks, quotedItem = toGroupQuote quoteRow quotedMember_, reactions = [], file}
+        CChatItem d ChatItem {chatDir, meta = ciMeta content ciStatus sendAs, content, mentions = M.empty, formattedText, markdownBlocks, quotedItem = toGroupQuote quoteRow quotedMember_, reactions = [], file}
         where
           ParsedMarkdown formattedText markdownBlocks = parsedCIContent content itemText
+          sendAs :: SendAs GroupMember
+          sendAs
+            | showGroupAsSender = SAGroup
+            | CIGroupSnd <- chatDir = maybe SAUser SAMember member_
+            | otherwise = SAUser
       badItem = Left $ SEBadChatItem itemId (Just itemTs)
-      ciMeta :: CIContent d -> CIStatus d -> CIMeta 'CTGroup d
-      ciMeta content status =
+      ciMeta :: CIContent d -> CIStatus d -> SendAs GroupMember -> CIMeta 'CTGroup d
+      ciMeta content status sendAs =
         let itemDeleted' = case itemDeleted of
               DBCINotDeleted -> Nothing
               DBCIBlocked -> Just (CIBlocked deletedTs)
@@ -2467,7 +2472,7 @@ toGroupChatItem
               _ -> Just (maybe (CIDeleted @'CTGroup deletedTs) (CIModerated deletedTs) deletedByGroupMember_)
             itemEdited' = maybe False unBI itemEdited
             itemForwarded = toCIForwardedFrom forwardedFromRow
-         in mkCIMeta itemId content itemText status (unBI <$> sentViaProxy) sharedMsgId itemForwarded itemDeleted' itemEdited' ciTimed (unBI <$> itemLive) userMention itemPriority hasLink window currentTs itemTs forwardedByMember showGroupAsSender msgSigned createdAt updatedAt
+         in mkCIMeta itemId content itemText status (unBI <$> sentViaProxy) sharedMsgId itemForwarded itemDeleted' itemEdited' ciTimed (unBI <$> itemLive) userMention itemPriority hasLink window currentTs itemTs forwardedByMember sendAs msgSigned createdAt updatedAt
       ciTimed :: Maybe CITimed
       ciTimed = timedTTL >>= \ttl -> Just CITimed {ttl, deleteAt = timedDeleteAt}
 
@@ -3182,7 +3187,7 @@ getGroupChatItem db User {userId, userContactId} g@GroupInfo {groupId} itemId = 
             p.display_name, p.full_name, p.short_descr, p.description, p.image, p.contact_link, p.chat_peer_type, p.local_alias, p.preferences, p.preferences_json,
             p.badge_proof, p.badge_pres_header, p.badge_expiry, p.badge_type, p.badge_verified, p.badge_extra, p.badge_master_key, p.badge_signature, p.badge_key_idx, p.contact_domain, p.contact_domain_proof, p.contact_domain_verified,
             m.created_at, m.updated_at,
-            m.support_chat_ts, m.support_chat_items_unread, m.support_chat_items_member_attention, m.support_chat_items_mentions, m.support_chat_last_msg_from_member_ts, m.member_pub_key, m.relay_link, m.member_security_code, m.member_security_code_verified_at,
+            m.support_chat_ts, m.support_chat_items_unread, m.support_chat_items_member_attention, m.support_chat_items_mentions, m.support_chat_last_msg_from_member_ts, m.member_pub_key, m.relay_link, m.member_security_code, m.member_security_code_verified_at, m.member_via,
             -- quoted ChatItem
             ri.chat_item_id, i.quoted_shared_msg_id, i.quoted_sent_at, i.quoted_content, i.quoted_sent,
             -- quoted GroupMember
@@ -3191,14 +3196,14 @@ getGroupChatItem db User {userId, userContactId} g@GroupInfo {groupId} itemId = 
             rp.display_name, rp.full_name, rp.short_descr, rp.description, rp.image, rp.contact_link, rp.chat_peer_type, rp.local_alias, rp.preferences, rp.preferences_json,
             rp.badge_proof, rp.badge_pres_header, rp.badge_expiry, rp.badge_type, rp.badge_verified, rp.badge_extra, rp.badge_master_key, rp.badge_signature, rp.badge_key_idx, rp.contact_domain, rp.contact_domain_proof, rp.contact_domain_verified,
             rm.created_at, rm.updated_at,
-            rm.support_chat_ts, rm.support_chat_items_unread, rm.support_chat_items_member_attention, rm.support_chat_items_mentions, rm.support_chat_last_msg_from_member_ts, rm.member_pub_key, rm.relay_link, rm.member_security_code, rm.member_security_code_verified_at,
+            rm.support_chat_ts, rm.support_chat_items_unread, rm.support_chat_items_member_attention, rm.support_chat_items_mentions, rm.support_chat_last_msg_from_member_ts, rm.member_pub_key, rm.relay_link, rm.member_security_code, rm.member_security_code_verified_at, rm.member_via,
             -- deleted by GroupMember
             dbm.group_member_id, dbm.group_id, dbm.index_in_group, dbm.member_id, dbm.peer_chat_min_version, dbm.peer_chat_max_version, dbm.member_role, dbm.member_category,
             dbm.member_status, dbm.show_messages, dbm.member_restriction, dbm.invited_by, dbm.invited_by_group_member_id, dbm.local_display_name, dbm.contact_id, dbm.contact_profile_id, dbp.contact_profile_id,
             dbp.display_name, dbp.full_name, dbp.short_descr, dbp.description, dbp.image, dbp.contact_link, dbp.chat_peer_type, dbp.local_alias, dbp.preferences, dbp.preferences_json,
             dbp.badge_proof, dbp.badge_pres_header, dbp.badge_expiry, dbp.badge_type, dbp.badge_verified, dbp.badge_extra, dbp.badge_master_key, dbp.badge_signature, dbp.badge_key_idx, dbp.contact_domain, dbp.contact_domain_proof, dbp.contact_domain_verified,
             dbm.created_at, dbm.updated_at,
-            dbm.support_chat_ts, dbm.support_chat_items_unread, dbm.support_chat_items_member_attention, dbm.support_chat_items_mentions, dbm.support_chat_last_msg_from_member_ts, dbm.member_pub_key, dbm.relay_link, dbm.member_security_code, dbm.member_security_code_verified_at
+            dbm.support_chat_ts, dbm.support_chat_items_unread, dbm.support_chat_items_member_attention, dbm.support_chat_items_mentions, dbm.support_chat_last_msg_from_member_ts, dbm.member_pub_key, dbm.relay_link, dbm.member_security_code, dbm.member_security_code_verified_at, dbm.member_via
           FROM chat_items i
           LEFT JOIN files f ON f.chat_item_id = i.chat_item_id
           LEFT JOIN group_members m ON m.group_member_id = i.group_member_id

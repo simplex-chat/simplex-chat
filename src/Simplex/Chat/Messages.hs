@@ -1,5 +1,6 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DeriveTraversable #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE KindSignatures #-}
@@ -119,10 +120,21 @@ checkChatType x = case testEquality (chatTypeI @c) (chatTypeI @c') of
 data GroupChatScope = GCSMemberSupport {groupMemberId_ :: Maybe GroupMemberId} -- Nothing means own conversation with support
   deriving (Eq, Show, Ord)
 
-sendAsGroup' :: GroupInfo -> Maybe GroupChatScope -> Bool
+data SendAs m = SAUser | SAGroup | SAMember m
+  deriving (Eq, Show, Functor, Foldable, Traversable)
+
+sendAsMember :: SendAs m -> Maybe m
+sendAsMember = \case
+  SAMember m -> Just m
+  _ -> Nothing
+
+sendAsGroupIf :: ShowGroupAsSender -> SendAs m
+sendAsGroupIf asGroup = if asGroup then SAGroup else SAUser
+
+sendAsGroup' :: GroupInfo -> Maybe GroupChatScope -> SendAs m
 sendAsGroup' gInfo@GroupInfo {membership} scope = case scope of
-  Nothing -> useRelays' gInfo && memberRole' membership == GROwner
-  Just (GCSMemberSupport _) -> False
+  Nothing -> sendAsGroupIf $ useRelays' gInfo && memberRole' membership == GROwner
+  Just (GCSMemberSupport _) -> SAUser
 
 data GroupChatScopeTag
   = GCSTMemberSupport_
@@ -372,10 +384,10 @@ timedDeleteAt' :: CITimed -> Maybe UTCTime
 timedDeleteAt' CITimed {deleteAt} = deleteAt
 
 chatItemMember :: GroupInfo -> ChatItem 'CTGroup d -> Maybe GroupMember
-chatItemMember GroupInfo {membership} ChatItem {chatDir, meta = CIMeta {showGroupAsSender}} = case chatDir of
+chatItemMember GroupInfo {membership} ChatItem {chatDir, meta = CIMeta {showGroupAsSender, sentAsMember}} = case chatDir of
   CIGroupSnd
     | showGroupAsSender -> Nothing
-    | otherwise -> Just membership
+    | otherwise -> Just $ fromMaybe membership sentAsMember
   CIGroupRcv m -> Just m
   CIChannelRcv -> Nothing
 
@@ -541,6 +553,7 @@ data CIMeta (c :: ChatType) (d :: MsgDirection) = CIMeta
     editable :: Bool,
     forwardedByMember :: Maybe GroupMemberId,
     showGroupAsSender :: ShowGroupAsSender,
+    sentAsMember :: Maybe GroupMember,
     msgVerified :: Maybe MsgVerified,
     createdAt :: UTCTime,
     updatedAt :: UTCTime
@@ -552,12 +565,14 @@ type ShowGroupAsSender = Bool
 highPriority :: CIMeta c d -> Bool
 highPriority CIMeta {priority} = priority == MPHigh
 
-mkCIMeta :: ChatItemId -> CIContent d -> Text -> CIStatus d -> Maybe Bool -> Maybe SharedMsgId -> Maybe CIForwardedFrom -> Maybe (CIDeleted c) -> Bool -> Maybe CITimed -> Maybe Bool -> Bool -> MsgPriority -> Bool -> Maybe NominalDiffTime -> UTCTime -> ChatItemTs -> Maybe GroupMemberId -> Bool -> Maybe MsgVerified -> UTCTime -> UTCTime -> CIMeta c d
-mkCIMeta itemId itemContent itemText itemStatus sentViaProxy itemSharedMsgId itemForwarded itemDeleted itemEdited itemTimed itemLive userMention priority hasLink_ window currentTs itemTs forwardedByMember showGroupAsSender msgVerified createdAt updatedAt =
+mkCIMeta :: ChatItemId -> CIContent d -> Text -> CIStatus d -> Maybe Bool -> Maybe SharedMsgId -> Maybe CIForwardedFrom -> Maybe (CIDeleted c) -> Bool -> Maybe CITimed -> Maybe Bool -> Bool -> MsgPriority -> Bool -> Maybe NominalDiffTime -> UTCTime -> ChatItemTs -> Maybe GroupMemberId -> SendAs GroupMember -> Maybe MsgVerified -> UTCTime -> UTCTime -> CIMeta c d
+mkCIMeta itemId itemContent itemText itemStatus sentViaProxy itemSharedMsgId itemForwarded itemDeleted itemEdited itemTimed itemLive userMention priority hasLink_ window currentTs itemTs forwardedByMember sendAs msgVerified createdAt updatedAt =
   let deletable = deletable' itemContent itemDeleted window createdAt currentTs
       editable = deletable && isNothing itemForwarded
       hasLink = BoolDef hasLink_
-   in CIMeta {itemId, itemTs, itemText, itemStatus, sentViaProxy, itemSharedMsgId, itemForwarded, itemDeleted, itemEdited, itemTimed, itemLive, userMention, priority, hasLink, deletable, editable, forwardedByMember, showGroupAsSender, msgVerified, createdAt, updatedAt}
+      showGroupAsSender = sendAs == SAGroup
+      sentAsMember = sendAsMember sendAs
+   in CIMeta {itemId, itemTs, itemText, itemStatus, sentViaProxy, itemSharedMsgId, itemForwarded, itemDeleted, itemEdited, itemTimed, itemLive, userMention, priority, hasLink, deletable, editable, forwardedByMember, showGroupAsSender, sentAsMember, msgVerified, createdAt, updatedAt}
 
 deletable' :: CIContent d -> Maybe (CIDeleted c) -> Maybe NominalDiffTime -> UTCTime -> UTCTime -> Bool
 deletable' itemContent itemDeleted window createdAt currentTs =
@@ -613,6 +628,7 @@ dummyMeta itemId ts itemText =
       editable = False,
       forwardedByMember = Nothing,
       showGroupAsSender = False,
+      sentAsMember = Nothing,
       msgVerified = Nothing,
       createdAt = ts,
       updatedAt = ts

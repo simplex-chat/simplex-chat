@@ -258,6 +258,8 @@ Currently members can have one of four roles - `owner`, `admin`, `member` and `o
 
 `x.grp.mem.fwd` message is used by the inviting user to forward the invitations received from invited member in `x.grp.mem.inv` messages to all other members. This message can only be sent by the member who previously announced the new member, otherwise the recipients MUST ignore it.
 
+A member can be in the group via another member, without its own client and connections. Its member info in `x.grp.mem.new` and `x.grp.mem.intro` has `via` property with the member ID of the member it is via. `x.grp.mem.new` with `via` MUST only be sent by the member it is via, and `x.grp.mem.intro` with `via` MUST only reference a current member with `admin` or `owner` role and the role not lower than the role of the introduced member; receiving clients MUST ignore these messages otherwise, and in groups with chat relays. Clients create no connections with such members: `x.grp.mem.intro` with `via` is sent only to members of chat protocol version 23 or later, and is not followed by `x.grp.mem.inv`. The messages of such member are sent by the member it is via as `x.grp.msg.forward`, with the message ID in the forwarded message; its leaving is sent as forwarded `x.grp.leave`.
+
 `x.grp.mem.info` this message is sent as part of member connection handshake - it includes group member profile.
 
 `x.grp.mem.role` message is sent to update group member role - it is sent to all members by the member who updated the role of the member referenced in this message. This message MUST only be sent by members with `admin` or `owner` role. Receiving clients MUST ignore this message if it is received from member with role less than `admin`.

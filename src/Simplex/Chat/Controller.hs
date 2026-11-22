@@ -475,6 +475,7 @@ data ChatCommand
   | APIGetConnNtfMessages (NonEmpty ConnMsgReq)
   | APIAddMember {groupId :: GroupId, contactId :: ContactId, memberRole :: GroupMemberRole}
   | APIAddMemberViaGroup {groupId :: GroupId, viaGroupId :: GroupId, groupMemberId :: GroupMemberId, memberRole :: GroupMemberRole}
+  | APIAddViaMember {groupId :: GroupId, memberRole :: GroupMemberRole, profile :: Profile}
   | APIJoinGroup {groupId :: GroupId, enableNtfs :: MsgFilter}
   | APIAcceptMember {groupId :: GroupId, groupMemberId :: GroupMemberId, memberRole :: GroupMemberRole}
   | APIDeleteMemberSupportChat GroupId GroupMemberId
@@ -896,6 +897,7 @@ data ChatResponse
   | CRGroupsList {user :: User, groups :: [GroupInfo]}
   | CRSentGroupInvitation {user :: User, groupInfo :: GroupInfo, contact :: Contact, member :: GroupMember}
   | CRSentGroupInvitationViaGroup {user :: User, groupInfo :: GroupInfo, member :: GroupMember, viaGroupInfo :: GroupInfo, viaMember :: GroupMember}
+  | CRViaMemberAdded {user :: User, groupInfo :: GroupInfo, member :: GroupMember}
   | CRFileTransferStatus User (FileTransfer, [Integer]) -- TODO refactor this type to FileTransferStatus
   | CRFileTransferStatusXFTP User AChatItem
   | CRUserProfile {user :: User, profile :: Profile}
@@ -1144,7 +1146,7 @@ logEventToFile = \case
 
 data SendRef
   = SRDirect ContactId
-  | SRGroup GroupId (Maybe GroupChatScope) ShowGroupAsSender
+  | SRGroup GroupId (Maybe GroupChatScope) (SendAs GroupMemberId)
   deriving (Eq, Show)
 
 data ChatPagination

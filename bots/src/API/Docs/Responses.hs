@@ -117,6 +117,7 @@ chatResponsesDocsData =
     ("CRUserProfileNoChange", "User profile was not changed"),
     ("CRUserServers", "User servers and chat relays, grouped by operator"),
     ("CRUsersList", "Users"),
+    ("CRViaMemberAdded", "Member via bot added"),
     ("CRApiChats", "Chat previews (paginated). Use this instead of CRContactsList / CRGroupsList when scanning at scale.")
     -- ("CRChatCleared", ""),
     -- ("CRChatItems", "The most recent messages"),

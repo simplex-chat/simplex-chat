@@ -1063,7 +1063,8 @@ CREATE TABLE test_chat_schema.group_members (
     roster_served_version bigint,
     member_security_code text,
     member_security_code_verified_at timestamp with time zone,
-    invited_via_group_member_id bigint
+    invited_via_group_member_id bigint,
+    member_via bytea
 );
 
 

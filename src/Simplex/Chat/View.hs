@@ -22,7 +22,7 @@ import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Char (isSpace, toUpper)
 import Data.Function (on)
 import Data.Int (Int64)
-import Data.List (groupBy, intercalate, intersperse, nub, sortOn)
+import Data.List (find, groupBy, intercalate, intersperse, nub, sortOn)
 import Data.List.NonEmpty (NonEmpty (..))
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
@@ -211,6 +211,7 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, showFullLinks, te
   CRGroupsList u gs -> ttyUser u $ viewGroupsList gs
   CRSentGroupInvitation u g c _ -> ttyUser u $ viewSentGroupInvitation g c
   CRSentGroupInvitationViaGroup u g _ viaG viaM -> ttyUser u ["invitation to join the group " <> ttyGroup' g <> " sent to " <> ttyMember viaM <> " in " <> ttyGroup' viaG]
+  CRViaMemberAdded u g m -> ttyUser u [ttyGroup' g <> ": you added " <> ttyFullMember m <> " to the group"]
   CRFileTransferStatus u ftStatus -> ttyUser u $ viewFileTransferStatus ftStatus
   CRFileTransferStatusXFTP u ci -> ttyUser u $ viewFileTransferStatusXFTP ci
   CRUserProfile u@User {profile = LocalProfile {localBadge}} p -> ttyUser u $ viewUserProfile localBadge p
@@ -1400,6 +1401,7 @@ viewJoinedGroupMemberConnecting g@GroupInfo {groupId} host m@GroupMember {groupM
       <> ("use " <> highlight ("/_accept member #" <> show groupId <> " " <> show groupMemberId <> " <role>") <> " to accept member")
     ]
   _ | useRelays' g -> [ttyGroup' g <> ": " <> ttyMember host <> " introduced " <> ttyFullMember m <> " in the channel"]
+    | isJust (memberVia m) -> [ttyGroup' g <> ": " <> ttyMember host <> " added " <> ttyFullMember m <> " to the group (via " <> ttyMember host <> ")"]
     | otherwise -> [ttyGroup' g <> ": " <> ttyMember host <> " added " <> ttyFullMember m <> " to the group (connecting...)"]
 
 viewConnectedToGroupMember :: GroupInfo -> GroupMember -> [StyledString]
@@ -1460,11 +1462,15 @@ viewGroupMembers (Group GroupInfo {membership} members) = map groupMember . filt
     groupMember m = memIncognito m <> ttyFullMember m <> ": " <> plain (T.intercalate ", " $ [role m] <> category m <> status m <> muted m)
     role :: GroupMember -> Text
     role GroupMember {memberRole} = textEncode memberRole
-    category m = case memberCategory m of
-      GCUserMember -> ["you"]
-      GCInviteeMember -> ["invited"]
-      GCHostMember -> ["host"]
+    category m = case (memberVia m, memberCategory m) of
+      (Just viaId, _) -> ["via " <> viaName viaId]
+      (_, GCUserMember) -> ["you"]
+      (_, GCInviteeMember) -> ["invited"]
+      (_, GCHostMember) -> ["host"]
       _ -> []
+    viaName viaId
+      | sameMemberId viaId membership = "you"
+      | otherwise = maybe (nameFromMemberId viaId) (\GroupMember {localDisplayName} -> localDisplayName) $ find (sameMemberId viaId) members
     status m = case memberStatus m of
       GSMemRejected -> ["rejected"]
       GSMemRemoved -> ["removed"]

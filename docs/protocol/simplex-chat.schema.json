@@ -310,7 +310,8 @@
         "profile": {"ref": "profile"}
       },
       "optionalProperties": {
-        "v": {"ref": "chatVersionRange"}
+        "v": {"ref": "chatVersionRange"},
+        "via": {"ref": "base64url"}
       }
     },
     "memberRestrictions": {

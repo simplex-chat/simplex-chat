@@ -2451,7 +2451,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
     groupMessageDelete :: GroupInfo -> Maybe GroupMember -> SharedMsgId -> Maybe MemberId -> Maybe MsgScope -> Bool -> RcvMessage -> UTCTime -> CM (Maybe DeliveryTaskContext)
     groupMessageDelete gInfo@GroupInfo {membership} m_ sharedMsgId sndMemberId_ scope_ onlyHistory rcvMsg brokerTs =
       findItem >>= \case
-        Right (cci@(CChatItem _ ci@ChatItem {chatDir}), originalTs) -> requireVerifiedDelete cci $ case (chatDir, m_) of
+        Right (cci@(CChatItem _ ci@ChatItem {chatDir, meta = CIMeta {sentAsMember}}), originalTs) -> requireVerifiedDelete cci $ case (chatDir, m_) of
           (CIGroupRcv mem, Just m@GroupMember {memberId, memberRole}) ->
             let msgMemberId = fromMaybe memberId sndMemberId_
                 isAuthor = sameMemberId memberId mem
@@ -2476,7 +2476,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
             | isNothing sndMemberId_ && isOwner ->
                 (if onlyHistory then ($> Nothing) else id) $ delete cci True Nothing
             | otherwise -> messageError "x.msg.del: invalid channel message delete" $> Nothing
-          (CIGroupSnd, Just m) -> moderate m membership cci
+          (CIGroupSnd, Just m) -> moderate m (fromMaybe membership sentAsMember) cci
           _ -> messageError "x.msg.del: invalid message deletion" $> Nothing
         Left e -> case m_ of
           Just m@GroupMember {memberId, memberRole = senderRole} -> do
@@ -3281,12 +3281,13 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
     isPublicGroupInv GroupLinkInvitation {groupProfile = GroupProfile {publicGroup}} = isJust publicGroup
 
     xGrpMemNew :: GroupInfoKeys -> GroupMember -> MemberInfo -> Maybe MsgScope -> RcvMessage -> UTCTime -> CM (Maybe DeliveryJobScope)
-    xGrpMemNew (GIK gInfo gks) m memInfo@(MemberInfo memId memRole _ _ assertedKey_) msgScope_ msg brokerTs = do
+    xGrpMemNew (GIK gInfo gks) m memInfo@(MemberInfo memId memRole _ _ assertedKey_ via_) msgScope_ msg brokerTs = do
       unless (useRelays' gInfo) $ checkHostRole m memRole
       let presHeader_ = memberInfoPresHeader gInfo memInfo
-      if sameMemberId memId (membership gInfo)
-        then pure Nothing
-        else
+      if
+        | sameMemberId memId (membership gInfo) -> pure Nothing
+        | isJust via_ && (useRelays' gInfo || via_ /= Just (memberId' m)) -> messageError "x.grp.mem.new: member is not via the announcing member" $> Nothing
+        | otherwise ->
           withStore' (\db -> runExceptT $ getGroupMemberByMemberId db cxt user gInfo memId) >>= \case
             Right unknownMember@GroupMember {memberStatus = GSMemUnknown}
               -- roster-established privileged member: the relay may update the profile only,
@@ -3329,7 +3330,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
               | useRelays' gInfo && isPrivilegedRole memRole -> messageError "x.grp.mem.new: privileged member not established by roster" $> Nothing
               | otherwise -> do
                   (newMember, gInfo') <- withStore $ \db -> do
-                    newMember <- createNewGroupMember db cxt user gInfo m memInfo presHeader_ GCPostMember initialStatus
+                    newMember <- createNewGroupMember db cxt user gInfo m memInfo Nothing presHeader_ GCPostMember initialStatus
                     gInfo' <-
                       if memberPending newMember
                         then liftIO $ increaseGroupMembersRequireAttention db user gInfo
@@ -3341,7 +3342,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
       where
         initialStatus = case msgScope_ of
           Just (MSMember _) -> GSMemPendingReview
-          _ -> GSMemAnnounced
+          _ -> if isJust via_ then GSMemConnected else GSMemAnnounced
         deliveryJobScope GroupMember {groupMemberId, memberStatus}
           | memberStatus == GSMemPendingApproval = Nothing
           | memberStatus == GSMemPendingReview = Just $ DJSMemberSupport groupMemberId
@@ -3364,7 +3365,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
             pure (announcedMember', Just scopeInfo)
 
     xGrpMemIntro :: GroupInfo -> GroupMember -> MemberInfo -> Maybe MemberRestrictions -> CM ()
-    xGrpMemIntro gInfo@GroupInfo {chatSettings} m@GroupMember {memberRole, localDisplayName = c} memInfo@(MemberInfo memId _ memChatVRange _ _) memRestrictions = do
+    xGrpMemIntro gInfo@GroupInfo {chatSettings} m@GroupMember {memberRole, localDisplayName = c} memInfo@(MemberInfo memId memRole memChatVRange _ _ via_) memRestrictions = do
       case memberCategory m of
         GCHostMember ->
           withStore' (\db -> runExceptT $ getGroupMemberByMemberId db cxt user gInfo memId) >>= \case
@@ -3375,15 +3376,22 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
               | otherwise ->
                   messageError "x.grp.mem.intro ignored: member already exists"
             Left _
+              | useRelays' gInfo && isJust via_ -> messageError "x.grp.mem.intro: members via another member are not supported in channels"
               | useRelays' gInfo -> do
                   -- role + key are owner-authoritative (roster); an intro establishes neither - a privileged
                   -- claim is created at the channel default with no key until the owner-signed roster confirms it
                   defaultRole <- unknownMemberRole gInfo
                   let memInfo' = case memInfo of
-                        MemberInfo mId mRole v p _
-                          | mRole >= GRMember -> MemberInfo mId defaultRole v p Nothing
+                        MemberInfo mId mRole v p _ _
+                          | mRole >= GRMember -> MemberInfo mId defaultRole v p Nothing Nothing
                         _ -> memInfo
                   void $ withStore $ \db -> createIntroReMember db cxt user gInfo memInfo' (memberInfoPresHeader gInfo memInfo') memRestrictions
+              | Just viaId <- via_ -> do
+                  when (memberRole < GRAdmin || sameMemberId viaId (membership gInfo)) $ throwChatError (CEGroupContactRole c)
+                  viaMem <- withStore $ \db -> getGroupMemberByMemberId db cxt user gInfo viaId
+                  unless (memberCurrent viaMem) $ throwChatError CEGroupMemberNotActive
+                  checkHostRole viaMem memRole
+                  void $ withStore $ \db -> createNewGroupMember db cxt user gInfo viaMem memInfo memRestrictions (memberInfoPresHeader gInfo memInfo) GCPreMember GSMemConnected
               | otherwise -> do
                   when (memberRole < GRAdmin) $ throwChatError (CEGroupContactRole c)
                   case memChatVRange of
@@ -3415,7 +3423,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
         _ -> messageError "x.grp.mem.inv can be only sent by invitee member"
 
     xGrpMemFwd :: GroupInfoKeys -> GroupMember -> MemberInfo -> IntroInvitation -> CM ()
-    xGrpMemFwd g@(GIK gInfo@GroupInfo {membership, chatSettings} _) m@GroupMember {localDisplayName = c} memInfo@(MemberInfo memId memRole memChatVRange _ _) IntroInvitation {groupConnReq} = do
+    xGrpMemFwd g@(GIK gInfo@GroupInfo {membership, chatSettings} _) m@GroupMember {localDisplayName = c} memInfo@(MemberInfo memId memRole memChatVRange _ _ _) IntroInvitation {groupConnReq} = do
       let GroupMember {memberId = membershipMemId} = membership
       checkHostRole m memRole
       when (memId == membershipMemId) $ throwChatError CEGroupDuplicateMemberId
@@ -3427,9 +3435,9 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
             -- member receiving x.grp.mem.fwd should have also received x.grp.mem.new prior to that.
             -- For now, this branch compensates for the lack of delayed message delivery.
             `catchError` \case
-              SEGroupMemberNotFoundByMemberId _ -> createNewGroupMember db cxt user gInfo m memInfo (memberInfoPresHeader gInfo memInfo) GCPostMember GSMemAnnounced
+              SEGroupMemberNotFoundByMemberId _ -> createNewGroupMember db cxt user gInfo m memInfo Nothing (memberInfoPresHeader gInfo memInfo) GCPostMember GSMemAnnounced
               e -> throwError e
-        let fromAnnouncer = not (memberRemoved toMember) && (invitedByGroupMemberId toMember == Just (groupMemberId' m) || memberStatus toMember == GSMemUnknown)
+        let fromAnnouncer = not (memberRemoved toMember) && isNothing (memberVia toMember) && (invitedByGroupMemberId toMember == Just (groupMemberId' m) || memberStatus toMember == GSMemUnknown)
         -- TODO [knocking] separate pending statuses from GroupMemberStatus?
         -- TODO            add GSMemIntroInvitedPending, GSMemConnectedPending, etc.?
         -- TODO            keep as is? (GSMemIntroInvited has no purpose)
