@@ -66,6 +66,9 @@ import Simplex.Chat.Core (sendChatCmdStr)
 import Simplex.Messaging.Agent (getConnectionsVerifyCodes)
 import Simplex.Messaging.Util (whenM)
 import System.Timeout (timeout)
+#if !defined(dbPostgres)
+import qualified Database.SQLite.Simple as SQL
+#endif
 #endif
 
 chatDirectTests :: SpecWith TestParams
@@ -109,6 +112,9 @@ chatDirectTests = do
 #if defined(test_hooks)
     it "suspend chat after the open message transaction ends" testSuspendDuringHandling
     it "receive messages after activation during the suspension wait" testActivateDuringSuspension
+#if !defined(dbPostgres)
+    it "handle message once when its commit is retried" testRetriedCommit
+#endif
 #endif
   describe "batch send messages" $ do
     it "send multiple messages api" testSendMulti
@@ -1747,6 +1753,26 @@ testActivateDuringSuspension ps = do
       bob <### ["ok", WithTime "alice> hello"]
       alice #> "@bob hi"
       bob <# "alice> hi"
+
+#if !defined(dbPostgres)
+testRetriedCommit :: HasCallStack => TestParams -> IO ()
+testRetriedCommit ps = do
+  (holdHandling, releaseHandling, cfg) <- holdStoreTxCfg $ \_ -> pure ()
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatCfg ps cfg "bob" bobProfile $ \bob -> do
+      connectUsers bob alice
+      holdHandling $ alice #> "@bob hello"
+      SQL.withConnection (tmpPath ps </> ("bob" <> chatSuffix)) $ \db -> do
+        SQL.execute_ db "BEGIN"
+        void (SQL.query_ db "SELECT count(1) FROM users" :: IO [Only Int])
+        releaseHandling
+        threadDelay 1000000
+        SQL.execute_ db "COMMIT"
+      bob <# "alice> hello"
+      alice #> "@bob hi"
+      bob <# "alice> hi"
+      bob #$> ("/_get chat @2 count=2", chat, [(0, "hello"), (0, "hi")])
+#endif
 
 holdStoreTxCfg :: (ChatController -> IO ()) -> IO (IO () -> IO (), IO (), ChatConfig)
 holdStoreTxCfg afterRelease = do

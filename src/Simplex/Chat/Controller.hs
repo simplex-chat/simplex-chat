@@ -1921,6 +1921,7 @@ withStoreTx rollbackOn action = do
       aborted <- newTVarIO Nothing
       tId <- liftIO myThreadId
       let run db = do
+            atomically $ writeTVar afterCommitQ [] >> writeTVar aborted Nothing
 #if defined(test_hooks)
             mapM_ ($ cc) $ storeTxHook $ chatHooks $ config cc
 #endif
