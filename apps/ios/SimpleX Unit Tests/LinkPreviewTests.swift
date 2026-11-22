@@ -97,12 +97,18 @@ final class LinkPreviewTests: XCTestCase {
     }
 
     @MainActor
-    func testComposeShowsNoPreviewOnFailure() async throws {
+    func testComposeShowsNoPreviewOnFailureAndDoesNotFetchItAgain() async throws {
         let compose = try await showCompose()
         compose.composeState.message = "LINK_URL/no-image"
         try await waitFor { self.requests() == ["/_link preview LINK_URL/no-image"] }
         try await waitFor { compose.composeState.noPreview }
         XCTAssertNil(shownAlert())
+        compose.composeState.message = "LINK_URL/page"
+        try await waitFor { compose.composeState.linkPreview != nil }
+        compose.composeState.message = "LINK_URL/no-image"
+        try await Task.sleep(nanoseconds: 2_000_000_000)
+        XCTAssertTrue(compose.composeState.noPreview)
+        XCTAssertEqual(requests(), ["/_link preview LINK_URL/no-image", "/_link preview LINK_URL/page"])
     }
 
     private func assertRecordedPreview(_ linkPreview: LinkPreview?, file: StaticString = #filePath, line: UInt = #line) {

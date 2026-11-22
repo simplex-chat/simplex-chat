@@ -315,7 +315,7 @@ Optional feature where the recipient sees typing in real-time.
 | [`isSimplexLink()`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L1940) | L1940 | Checks if URL is a SimpleX link |
 | [`cancelLinkPreview()`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L1944) | L1944 | Cancels pending preview |
 | [`loadLinkPreview()`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L1956) | L1956 | Requests the preview from the core |
-| [`resetLinkPreview()`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L1975) | L1975 | Resets preview state |
+| [`resetLinkPreview()`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L1977) | L1977 | Resets preview state |
 | [`apiGetLinkPreview()`](../../Shared/Model/SimpleXAPI.swift#L527) | L527 | Sends `/_link preview <uri>`; on failure returns no preview |
 
 ### Behavior
@@ -324,6 +324,7 @@ Optional feature where the recipient sees typing in real-time.
 - Link preview data is included in the `ComposedMessage` sent to the core
 - Toggle in privacy settings to disable auto-preview generation
 - A failed preview shows no card and no alert; with **Show developer options** and **Show link preview errors** on, an alert shows the error of the core
+- A link whose preview failed is added to `cancelledLinks`, so it is not requested again until the compose is cleared
 - The share extension requests the preview of a shared link from the core when the toggle is on
 
 ---

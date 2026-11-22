@@ -1959,9 +1959,11 @@ struct ComposeView: View {
             Task {
                 let linkPreview = await apiGetLinkPreview(urlStr)
                 await MainActor.run {
-                    if let linkPreview, pendingLinkUrl == urlStr {
+                    let pending = pendingLinkUrl == urlStr
+                    if pending, let linkPreview {
                         composeState = composeState.copy(preview: .linkPreview(linkPreview: linkPreview))
                     } else {
+                        if pending { cancelledLinks.insert(urlStr) }
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                             composeState = composeState.copy(preview: .noPreview)
                         }
