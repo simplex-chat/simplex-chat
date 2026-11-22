@@ -419,9 +419,11 @@ data Balance = Balance
 data BalanceLink = BalanceLink
   { lkRegistration :: RegistrationId,
     lkOwner :: Address,
+    lkPhase :: NamePhase,
     lkPayment :: OrderPayment,
     lkProviderRef :: Maybe Text,
     lkPaid :: USDCents,
+    lkReversedCents :: USDCents,
     lkLateCredits :: [LateCredit]
   }
   deriving (Eq, Show)
@@ -1239,19 +1241,21 @@ balanceLink :: DB.Connection -> RegistrationId -> IO (Maybe BalanceLink)
 balanceLink db rid = getRegistration db rid >>= mapM paidBy
   where
     paidBy NameRegistration {nrPhase, nrOwner, nrPayment} = do
-      let pastUnpaid = namePhase nrPhase `notElem` [PUnpaid, PClosed]
-      (lkPaid, lkProviderRef, lkLateCredits) <- case paymentInvoice nrPayment of
-        Just invId -> (,,) <$> (if pastUnpaid then invoiceAmount db invId else pure 0) <*> providerRef db invId <*> lateCredits db invId
-        Nothing -> pure (0, Nothing, [])
-      pure BalanceLink {lkRegistration = rid, lkOwner = nrOwner, lkPayment = nrPayment, lkProviderRef, lkPaid, lkLateCredits}
+      let lkPhase = namePhase nrPhase
+          pastUnpaid = lkPhase `notElem` [PUnpaid, PClosed]
+      (lkPaid, (lkProviderRef, lkReversedCents), lkLateCredits) <- case paymentInvoice nrPayment of
+        Just invId -> (,,) <$> (if pastUnpaid then invoiceAmount db invId else pure 0) <*> referenceAndReversed db invId <*> lateCredits db invId
+        Nothing -> pure (0, (Nothing, 0), [])
+      pure BalanceLink {lkRegistration = rid, lkOwner = nrOwner, lkPhase, lkPayment = nrPayment, lkProviderRef, lkPaid, lkReversedCents, lkLateCredits}
 
 invoiceAmount :: DB.Connection -> InvoiceId -> IO USDCents
 invoiceAmount db (InvoiceId invId) =
   maybeFirstRow' 0 fromOnly $ DB.query db (mkQuery "SELECT amount FROM @invoices WHERE invoice_id = ?") (Only invId)
 
-providerRef :: DB.Connection -> InvoiceId -> IO (Maybe Text)
-providerRef db (InvoiceId invId) =
-  maybeFirstRow fromOnly $ DB.query db (mkQuery "SELECT provider_ref FROM @invoices WHERE invoice_id = ?") (Only invId)
+referenceAndReversed :: DB.Connection -> InvoiceId -> IO (Maybe Text, USDCents)
+referenceAndReversed db (InvoiceId invId) =
+  maybeFirstRow' (Nothing, 0) (\(ref, reversed) -> (Just ref, reversed)) $
+    DB.query db (mkQuery "SELECT i.provider_ref, COALESCE(ni.reversed_cents, 0) FROM @invoices i LEFT JOIN @name_invoices ni ON ni.invoice_id = i.invoice_id WHERE i.invoice_id = ?") (Only invId)
 
 lateCredits :: DB.Connection -> InvoiceId -> IO [LateCredit]
 lateCredits db (InvoiceId invId) =

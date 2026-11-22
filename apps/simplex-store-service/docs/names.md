@@ -508,8 +508,8 @@ sequenceDiagram
   B--)O: asks for a refund with the order's reference (outside the service)
   Note over O,C: the service is stopped, then run with --run-cli
   O->>C: //balance REFERENCE
-  C->>D: order, balance, the money paid for it
-  C-->>O: balance, credited, refunded, paid by, the command to record it
+  C->>D: order, balance, the money paid for it and reversed
+  C-->>O: phase, balance, credited, refunded, reversed, paid by, the command to record it
   O->>C: //record_refund REFERENCE CENTS
   C->>D: under the balance's lock: amount 0, refunded raised by the cents
   C-->>O: Recorded a refund ... Refund it now, by: PAYMENT.
@@ -519,7 +519,7 @@ sequenceDiagram
 Notes:
 
 - The refund must equal the whole balance ([`Names/Balances.hs`](../src/StoreService/Names/Balances.hs) `recordRefund`, [`Names/Store.hs`](../src/StoreService/Names/Store.hs) `refundBalance`).
-- A balance is credited when a paid order is set `taken` or fails at the end of its month (its whole price), when support closes a failed order, and with late or extra money; it is spent only on a name selected for its own order after a reset (3.6), and on no other order ([`Names/Worker.hs`](../src/StoreService/Names/Worker.hs) `endOrder`, `refundTaken`, [`Names/LateCredits.hs`](../src/StoreService/Names/LateCredits.hs), [`Names/Orders.hs`](../src/StoreService/Names/Orders.hs) `selectName`).
+- A balance is credited when a paid order is set `taken` or fails at the end of its month (its whole price), when support closes a failed order, and with late or extra money; it is spent only on a name selected for its own order after a reset (3.6), and on no other order ([`Names/Worker.hs`](../src/StoreService/Names/Worker.hs) `endOrder`, `refundTaken`, [`Names/LateCredits.hs`](../src/StoreService/Names/LateCredits.hs), [`Names/Orders.hs`](../src/StoreService/Names/Orders.hs) `selectName`). A dispute or refund of its card payment takes cents back from it, and `//balance` answers the total reversed with the order's phase ([`Names/Balances.hs`](../src/StoreService/Names/Balances.hs) `reverseOrder`, [`Service.hs`](../src/StoreService/Service.hs) `showRefund`).
 - The provider interface offers create, read, cancel, list, rate and webhook verification, so the money is paid back by hand ([`Providers.hs:120-130`](../src/StoreService/Providers.hs#L120-L130)). The buyer's email to chat@simplex.chat is described in the README; the page code is in the submodule ([`README.md:1371-1411`](../README.md#L1371-L1411)).
 - The console starts only while the service is stopped, as the database lock is held by one process ([`Store/Migrate.hs:46-54`](../src/StoreService/Store/Migrate.hs#L46-L54)).
 - While the service runs, a group owner sends the same commands with one slash, `/balance`, `/record_refund` and `/close`. The group lane runs the console's handlers in the service's per-name and per-balance locks and answers in the group; the answers name the one-slash commands ([`Service.hs`](../src/StoreService/Service.hs) `runMoneyCmd`, [`Group.hs`](../src/StoreService/Group.hs)).

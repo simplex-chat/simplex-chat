@@ -1491,7 +1491,7 @@ figuresOf :: Ctx -> NameRegistration -> IO (Maybe (USDCents, USDCents, USDCents)
 figuresOf Ctx {cStore} NameRegistration {nrId = RegistrationId rid} = figures cStore rid
 
 refundedWhole :: Ctx -> NameRegistration -> USDCents -> IO RefundRecord
-refundedWhole ctx r price = (\ref -> RefundRecord {rdRegistration = nrId r, rdCents = price, rdLink = Just BalanceLink {lkRegistration = nrId r, lkOwner = nrOwner r, lkPayment = nrPayment r, lkProviderRef = Just ref, lkPaid = price, lkLateCredits = []}}) <$> paidRef ctx r
+refundedWhole ctx r price = (\ref -> RefundRecord {rdRegistration = nrId r, rdCents = price, rdLink = Just BalanceLink {lkRegistration = nrId r, lkOwner = nrOwner r, lkPhase = PTaken, lkPayment = nrPayment r, lkProviderRef = Just ref, lkPaid = price, lkReversedCents = 0, lkLateCredits = []}}) <$> paidRef ctx r
 
 paidRef :: Ctx -> NameRegistration -> IO Text
 paidRef Ctx {cStore} r = case paymentInvoice (nrPayment r) of

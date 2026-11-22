@@ -87,7 +87,7 @@ namesBalancesTests = describe "StoreService names: balances" $ do
     it "records a reversal of an order not yet paid, and closes the order as reversed when its payment settles" testReversalBeforePayment
     it "keeps an order whose register was sent, naming the transaction" testReversalKeepsSent
     it "cancels an order whose only register is a settled one of another name, as after a reset and a selection, and keeps one with a register mined or recorded" testReversalCurrentName
-    it "takes the reversed cents back from a taken order's balance, as far as it and the invoice's amount hold them, a refund as the rise of its total" testReversalTakesBack
+    it "takes the reversed cents back from a taken order's balance, as far as it and the invoice's amount hold them, a refund as the rise of its total, and links the order with the cents reversed" testReversalTakesBack
     it "changes nothing for an order whose refund support recorded, and for an early fraud warning" testReversalAlertsOnly
     it "cancels a live order of which no register was sent, also after support refunded part of its balance" testReversalCancelsRefunded
     it "cancels a live order of which no register was sent for a dispute of part of its payment" testReversalCancelsPartial
@@ -278,7 +278,7 @@ testLinkOfClosed = withServiceStore $ \st -> do
   let late = lateCredit "d" 1 (Just 40000) 2400
   creditLate st late `shouldReturn` True
   withTransaction st (\db -> balanceLink db (RegistrationId "d"))
-    `shouldReturn` Just BalanceLink {lkRegistration = RegistrationId "d", lkOwner = ownerA, lkPayment = OPInvoice btc (InvoiceId "inv-d"), lkProviderRef = Just "ref-inv-d", lkPaid = 0, lkLateCredits = [late]}
+    `shouldReturn` Just BalanceLink {lkRegistration = RegistrationId "d", lkOwner = ownerA, lkPhase = PClosed, lkPayment = OPInvoice btc (InvoiceId "inv-d"), lkProviderRef = Just "ref-inv-d", lkPaid = 0, lkReversedCents = 0, lkLateCredits = [late]}
 
 testLinkOfOverpaid :: IO ()
 testLinkOfOverpaid = withServiceStore $ \st -> do
@@ -288,7 +288,7 @@ testLinkOfOverpaid = withServiceStore $ \st -> do
   let late = lateCredit "o" 1 (Just 40000) 2400
   creditLate st late `shouldReturn` True
   withTransaction st (\db -> balanceLink db (RegistrationId "o"))
-    `shouldReturn` Just BalanceLink {lkRegistration = RegistrationId "o", lkOwner = ownerA, lkPayment = OPInvoice btc (InvoiceId "inv-o"), lkProviderRef = Just "ref-inv-o", lkPaid = 20000, lkLateCredits = [late]}
+    `shouldReturn` Just BalanceLink {lkRegistration = RegistrationId "o", lkOwner = ownerA, lkPhase = PQueued, lkPayment = OPInvoice btc (InvoiceId "inv-o"), lkProviderRef = Just "ref-inv-o", lkPaid = 20000, lkReversedCents = 0, lkLateCredits = [late]}
 
 testFindBalances :: IO ()
 testFindBalances = withServiceStore $ \st -> do
@@ -315,7 +315,7 @@ testRecordRefund = withServiceStore $ \st -> do
   refundOf "plain" 20000 t0 `shouldReturn` Left RefundNoBalance
   refundOf "s" 9000 t0 `shouldReturn` Left (RefundAmount 10000)
   link <- withTransaction st $ \db -> balanceLink db (RegistrationId "s")
-  link `shouldBe` Just BalanceLink {lkRegistration = RegistrationId "s", lkOwner = ownerA, lkPayment = OPInvoice btc (InvoiceId "inv-s"), lkProviderRef = Just "ref-inv-s", lkPaid = 10000, lkLateCredits = []}
+  link `shouldBe` Just BalanceLink {lkRegistration = RegistrationId "s", lkOwner = ownerA, lkPhase = PTaken, lkPayment = OPInvoice btc (InvoiceId "inv-s"), lkProviderRef = Just "ref-inv-s", lkPaid = 10000, lkReversedCents = 0, lkLateCredits = []}
   refundOf "inv-s" 10000 t0 `shouldReturn` Right RefundRecord {rdRegistration = RegistrationId "s", rdCents = 10000, rdLink = link}
   figures st "s" `shouldReturn` Just (0, 10000, 10000)
   refundOf "s" 10000 t0 `shouldReturn` Left (RefundAmount 0)
@@ -324,7 +324,7 @@ testRecordRefund = withServiceStore $ \st -> do
 testLinkText :: IO ()
 testLinkText = do
   let link rid (pay, ref_) paid lateCents =
-        Just BalanceLink {lkRegistration = RegistrationId rid, lkOwner = ownerA, lkPayment = pay, lkProviderRef = ref_, lkPaid = paid, lkLateCredits = map (lateCredit rid 1 Nothing) lateCents}
+        Just BalanceLink {lkRegistration = RegistrationId rid, lkOwner = ownerA, lkPhase = PTaken, lkPayment = pay, lkProviderRef = ref_, lkPaid = paid, lkReversedCents = 0, lkLateCredits = map (lateCredit rid 1 Nothing) lateCents}
       byBtc r = (OPInvoice btc (InvoiceId $ "inv-" <> r), Just $ "ref-" <> r)
       unbilled pay = (pay, Nothing)
       order r = "order " <> r <> " of " <> addressText ownerA <> ": "
@@ -572,6 +572,7 @@ testReversalTakesBack = withReversals $ \Ctx {cStore = st} env alerts -> do
   reverseWith env "t" "evt_3" $ RVDispute "dp_1" $ CurrencyAmount 20000
   amount `shouldReturn` Just 5000
   nrPhase <$> reg st "t" `shouldReturn` OTaken t0
+  fmap (\BalanceLink {lkPhase, lkReversedCents} -> (lkPhase, lkReversedCents)) <$> withTransaction st (\db -> balanceLink db (RegistrationId "t")) `shouldReturn` Just (PTaken, 22000)
   alertsWith alerts ["it is not cancelled, as it is taken; 500 cents taken back", "it is not cancelled, as it is taken; 1500 cents taken back", "it is not cancelled, as it is taken; 18000 cents taken back"]
 
 testReversalAlertsOnly :: IO ()

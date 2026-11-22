@@ -504,7 +504,7 @@ testRevokeTakesCodeTurn ps = do
 
 namesRefundChatTests :: SpecWith TestParams
 namesRefundChatTests = describe "StoreService names: operator refund" $ do
-  it "shows a balance with what paid for it, and records refunds by registration or invoice id, adding them up" testRefundRecorded
+  it "shows a balance with its order's phase, the cents reversed and what paid for it, and records refunds by registration or invoice id, adding them up" testRefundRecorded
   it "refuses an unknown reference, an order without a balance and another amount, and answers the usage to a malformed command" testRefundRefusals
   it "answers an owner's /balance, /record_refund and /close in the group, worded for the group, refusing as the console does" testGroupMoneyCmds
   it "closes a failed paid order by its invoice id, recording the refund of its price, and refuses an unknown reference and an order no longer failed" testCloseRecorded
@@ -544,7 +544,7 @@ testCloseRecorded ps = withFakeEthNode $ \node@FakeEthNode {fnUrl} -> do
     logs `shouldSatisfy` T.isInfixOf "names: closed order f and recorded a refund of 10000 cents"
     closeRaw cc "f" `shouldReturn` Left "Nothing recorded: the order of f is not a failed or lapsed unsigned order paid by invoice."
     Balances.figures st "f" `shouldReturn` Just (0, 10000, 10000)
-    balanceRaw cc "f" `shouldReturn` Right ("Order f: balance $0.00 (credited $100.00, refunded $100.00). Paid by: " <> paidBy <> ". Nothing to refund.")
+    balanceRaw cc "f" `shouldReturn` Right ("Order f, taken: balance $0.00 (credited $100.00, refunded $100.00, reversed $0.00). Paid by: " <> paidBy <> ". Nothing to refund.")
     Balances.placeOrderRow st "g" False 10000 (addUTCTime 3600 now)
     unpaidG <- reg st "g"
     write st unpaidG {nrPhase = OFailed t0 FRRegistryRefused} `shouldReturn` Written 2
@@ -570,7 +570,7 @@ testGroupMoneyCmds ps = withFakeEthNode $ \node@FakeEthNode {fnUrl} -> do
       `shouldReturn` ("Closed order s, failed or lapsed unsigned at " <> minuteText t0 <> ", as taken and recorded a refund of $100.00. Check at the provider that it was not refunded by hand before; if not, refund it now, by: " <> paidByBtc "s" <> ".")
     Balances.credit st "s" 2505
     replyTo cc alice "/balance s"
-      `shouldReturn` ("Order s: balance $25.05 (credited $125.05, refunded $100.00). Paid by: " <> paidByBtc "s" <> ". To record its refund: /record_refund s 2505")
+      `shouldReturn` ("Order s, taken: balance $25.05 (credited $125.05, refunded $100.00, reversed $0.00). Paid by: " <> paidByBtc "s" <> ". To record its refund: /record_refund s 2505")
     replyTo cc alice "/record_refund inv-s 2500" `shouldReturn` "Nothing recorded: the balance is $25.05 now, not $25.00."
     replyTo cc alice "/record_refund inv-s 2505" `shouldReturn` ("Recorded a refund of $25.05 for order s. Refund it now, by: " <> paidByBtc "s" <> ".")
     Balances.figures st "s" `shouldReturn` Just (0, 12505, 12505)
@@ -591,11 +591,11 @@ testRefundRecorded ps = withStoreService ps $ \_ _ cc -> do
   let st = chatStore cc
       paidBy = paidByBtc "s"
   Balances.source st "s" 10000
-  balanceRaw cc "inv-s" `shouldReturn` Right ("Order s: balance $100.00 (credited $100.00, refunded $0.00). Paid by: " <> paidBy <> ". To record its refund: //record_refund inv-s 10000")
+  balanceRaw cc "inv-s" `shouldReturn` Right ("Order s, taken: balance $100.00 (credited $100.00, refunded $0.00, reversed $0.00). Paid by: " <> paidBy <> ". To record its refund: //record_refund inv-s 10000")
   logs <- capturingStderr $ recordRefundRaw cc "inv-s 10000" `shouldReturn` Right ("Recorded a refund of $100.00 for order s. Refund it now, by: " <> paidBy <> ".")
   T.lines logs `shouldSatisfy` any (T.isSuffixOf "names: recorded a refund of 10000 cents for order s")
   Balances.figures st "s" `shouldReturn` Just (0, 10000, 10000)
-  balanceRaw cc "inv-s" `shouldReturn` Right ("Order s: balance $0.00 (credited $100.00, refunded $100.00). Paid by: " <> paidBy <> ". Nothing to refund.")
+  balanceRaw cc "inv-s" `shouldReturn` Right ("Order s, taken: balance $0.00 (credited $100.00, refunded $100.00, reversed $0.00). Paid by: " <> paidBy <> ". Nothing to refund.")
   Balances.credit st "s" 2505
   recordRefundRaw cc "s 2505" `shouldReturn` Right ("Recorded a refund of $25.05 for order s. Refund it now, by: " <> paidBy <> ".")
   Balances.figures st "s" `shouldReturn` Just (0, 12505, 12505)

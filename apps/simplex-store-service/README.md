@@ -1820,11 +1820,16 @@ group](#balances-and-failed-orders-in-the-group)):
 ```
 
 1. Run `//balance <reference>` with the reference the buyer sent. It records nothing and answers the
-   balance, what paid for it and the command that records its refund:
+   order's phase, the balance, what paid for it and the command that records its refund:
 
    ```
-   Order <id>: balance $100.00 (credited $100.00, refunded $0.00). Paid by: order <id> of <owner>: $100.00 by btc on invoice <invoice id> (provider reference <provider reference>). To record its refund: //record_refund <reference> 10000
+   Order <id>, taken: balance $100.00 (credited $100.00, refunded $0.00, reversed $0.00). Paid by: order <id> of <owner>: $100.00 by btc on invoice <invoice id> (provider reference <provider reference>). To record its refund: //record_refund <reference> 10000
    ```
+
+   Two writes lower the balance below `credited` minus `refunded`: a selection of a name spends the
+   price, and the order then reads the phase of its new name, such as `queued` or `registered`; a
+   dispute or refund at Stripe takes back cents, as far as the balance and the invoice's amount hold
+   them, and `reversed` is the total that Stripe reported for the order's payment.
 
    `Paid by` names this order with its owner, the address that signed it, what its invoice paid and
    by which method (`card`, `btc` or `xmr`), and money credited from its invoice later: marked
