@@ -1783,6 +1783,7 @@ holdStoreTxCfg afterRelease = do
         putMVar entered ()
         readMVar release
         afterRelease cc
+      hold :: IO () -> IO ()
       hold action = do
         atomically $ writeTVar armed True
         action
