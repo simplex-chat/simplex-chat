@@ -67,7 +67,7 @@ CI, build.yml, when `maybe-release.outputs.vlc` is true (`BUILD_CHANGES["vlc"]` 
 sequenceDiagram
   participant MR as maybe-release
   participant VM as vlc-media (ubuntu-22.04)
-  participant V as vlc (ubuntu-22.04, macos-latest, macos-15-intel, windows-latest)
+  participant V as vlc (ubuntu-24.04, macos-latest, macos-15-intel, windows-latest)
   MR->>VM: vlc=true
   VM->>VM: vlc-test.py media
   VM->>V: artifact vlc-media

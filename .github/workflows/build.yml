@@ -1440,7 +1440,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: ubuntu-22.04
+          - os: ubuntu-24.04
             libs: linux-x86_64
             prepare: scripts/desktop/prepare-vlc-linux.sh
           - os: macos-latest
@@ -1480,7 +1480,7 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y libdrm2 libx11-6 libx11-xcb1 libxcb1 libxcb-dri3-0 libfontconfig1 libfreetype6 libfribidi0 libharfbuzz0b
+          sudo apt-get install -y libdrm2 libx11-6 libx11-xcb1 libxcb1 libxcb-dri3-0 libfontconfig1 libfreetype6 libfribidi0 libharfbuzz0b libegl1 libgl1
 
       - name: Setup Python
         uses: actions/setup-python@v7
