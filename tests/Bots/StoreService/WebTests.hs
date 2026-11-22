@@ -3533,10 +3533,10 @@ testSweepSkipsPastTheWindowWhileReadsFail = bounded "sweep skips past the window
   stubCalls ref `shouldReturn` [StubRead "p-now"]
 
 testSweepGivesUpAnUnreadableInvoice :: IO ()
-testSweepGivesUpAnUnreadableInvoice = bounded "sweep gives up an unreadable invoice" $ withStubPollerOf unreadableBad raceHold $ \ref poller env _ -> do
+testSweepGivesUpAnUnreadableInvoice = bounded "sweep gives up an unreadable invoice" $ withStubPollerOf (unreadableBad "p-bad-given-up") raceHold $ \ref poller env _ -> do
   passListing ref poller
   seedBadgePrice (weStore env) "price1"
-  bad <- seedPastWindow (weStore env) 1 "p-bad" PPCrypto
+  bad <- seedPastWindow (weStore env) 1 "p-bad-given-up" PPCrypto
   old <- seedPastWindow (weStore env) 2 "p-old" PPCrypto
   runOnePass poller
   mapM (invoiceStatus (weStore env)) [bad, old] `shouldReturn` [ISOpen, ISOpen]
@@ -3544,43 +3544,43 @@ testSweepGivesUpAnUnreadableInvoice = bounded "sweep gives up an unreadable invo
   mapM (invoiceStatus (weStore env)) [bad, old] `shouldReturn` [ISOpen, ISExpired]
   newer <- seedPastWindow (weStore env) 3 "p-new" PPCrypto
   dayAgo <- addUTCTime (negate readGiveUpDelay) <$> currentSecond
-  readFailedAt poller "p-bad" ReadFailure {rfLast = dayAgo, rfAnswered = Just dayAgo}
+  readFailedAt poller "p-bad-given-up" ReadFailure {rfLast = dayAgo, rfAnswered = Just dayAgo}
   logged <- capturingStderr (runOnePass poller)
   mapM (invoiceStatus (weStore env)) [bad, newer] `shouldReturn` [ISExpired, ISExpired]
-  loggedError "invoice p-bad could not be read for 24 hours while its provider answered" logged `shouldBe` True
+  loggedError "invoice p-bad-given-up could not be read for 24 hours while its provider answered" logged `shouldBe` True
   runOnePass poller
-  TM.memberIO "p-bad" (peReadFailed poller) `shouldReturn` False
+  TM.memberIO "p-bad-given-up" (peReadFailed poller) `shouldReturn` False
 
 testSweepExpiresAGivenUpInvoiceAgain :: IO ()
-testSweepExpiresAGivenUpInvoiceAgain = bounded "sweep expires a given-up invoice again" $ withStubPollerOf unreadableBad raceHold $ \ref poller env _ -> do
+testSweepExpiresAGivenUpInvoiceAgain = bounded "sweep expires a given-up invoice again" $ withStubPollerOf (unreadableBad "p-bad-again") raceHold $ \ref poller env _ -> do
   passListing ref poller
   seedBadgePrice (weStore env) "price1"
-  bad <- seedPastWindow (weStore env) 1 "p-bad" PPCrypto
+  bad <- seedPastWindow (weStore env) 1 "p-bad-again" PPCrypto
   first <- seedPastWindow (weStore env) 2 "p-old" PPCrypto
   dayAgo <- addUTCTime (negate readGiveUpDelay) <$> currentSecond
-  readFailedAt poller "p-bad" ReadFailure {rfLast = dayAgo, rfAnswered = Just dayAgo}
+  readFailedAt poller "p-bad-again" ReadFailure {rfLast = dayAgo, rfAnswered = Just dayAgo}
   runOnePass poller
   mapM (invoiceStatus (weStore env)) [bad, first] `shouldReturn` [ISExpired, ISExpired]
   reopenRow (weStore env) bad
   next <- seedPastWindow (weStore env) 3 "p-new" PPCrypto
   logged <- capturingStderr (runOnePass poller)
   mapM (invoiceStatus (weStore env)) [bad, next] `shouldReturn` [ISExpired, ISExpired]
-  loggedError "invoice p-bad could not be read for 24 hours while its provider answered" logged `shouldBe` True
+  loggedError "invoice p-bad-again could not be read for 24 hours while its provider answered" logged `shouldBe` True
 
 testSweepLogsAGivenUpInvoiceOnceExpired :: IO ()
-testSweepLogsAGivenUpInvoiceOnceExpired = bounded "sweep logs a given-up invoice once expired" $ withStubPollerOf unreadableBad raceHold $ \ref poller env _ -> do
+testSweepLogsAGivenUpInvoiceOnceExpired = bounded "sweep logs a given-up invoice once expired" $ withStubPollerOf (unreadableBad "p-bad-once") raceHold $ \ref poller env _ -> do
   passListing ref poller
   seedBadgePrice (weStore env) "price1"
-  bad@(InvoiceId badId) <- seedPastWindow (weStore env) 1 "p-bad" PPCrypto
+  bad@(InvoiceId badId) <- seedPastWindow (weStore env) 1 "p-bad-once" PPCrypto
   first <- seedPastWindow (weStore env) 2 "p-old" PPCrypto
   dayAgo <- addUTCTime (negate readGiveUpDelay) <$> currentSecond
-  readFailedAt poller "p-bad" ReadFailure {rfLast = dayAgo, rfAnswered = Just dayAgo}
+  readFailedAt poller "p-bad-once" ReadFailure {rfLast = dayAgo, rfAnswered = Just dayAgo}
   withConnection (weStore env) $ \db -> DB.execute db "DELETE FROM sx_badge_service_badge_code_invoices WHERE invoice_id = ?" (Only badId)
   logged <- capturingStderr (runOnePass poller)
   independentStatus (weStore env) bad `shouldReturn` Just "open"
   invoiceStatus (weStore env) first `shouldReturn` ISExpired
-  loggedError "expiring invoice p-bad failed; the next pass tries it again" logged `shouldBe` True
-  loggedError "invoice p-bad could not be read for 24 hours" logged `shouldBe` False
+  loggedError "expiring invoice p-bad-once failed; the next pass tries it again" logged `shouldBe` True
+  loggedError "invoice p-bad-once could not be read for 24 hours" logged `shouldBe` False
 
 testPassFailureLogged :: IO ()
 testPassFailureLogged = bounded "a failed pass" $ withStubPoller raceHold $ \_ poller env _ -> do
@@ -3614,7 +3614,7 @@ testListResetPassRuns = bounded "a list reset" $ withFakeBTCPay $ \fake -> withR
   logged `shouldSatisfy` T.isInfixOf "list failed; every invoice waits for the next pass"
 
 testSweepCountsAnsweredFailures :: IO ()
-testSweepCountsAnsweredFailures = bounded "sweep counts answered failures" $ withStubPollerOf unreadableBad raceHold $ \ref poller env _ -> do
+testSweepCountsAnsweredFailures = bounded "sweep counts answered failures" $ withStubPollerOf (unreadableBad "p-bad") raceHold $ \ref poller env _ -> do
   passListing ref poller
   seedBadgePrice (weStore env) "price1"
   longAgo <- addUTCTime (negate $ readGiveUpDelay + 3600) <$> getCurrentTime
@@ -3629,7 +3629,7 @@ testSweepCountsAnsweredFailures = bounded "sweep counts answered failures" $ wit
   isJust . (rfAnswered =<<) <$> TM.lookupIO "p-bad" (peReadFailed poller) `shouldReturn` True
 
 testSweepReadsOldestFailureFirst :: IO ()
-testSweepReadsOldestFailureFirst = bounded "sweep reads the oldest failure first" $ withStubPollerOf unreadableBad raceHold $ \ref poller env _ -> do
+testSweepReadsOldestFailureFirst = bounded "sweep reads the oldest failure first" $ withStubPollerOf (unreadableBad "p-bad") raceHold $ \ref poller env _ -> do
   passListing ref poller
   seedBadgePrice (weStore env) "price1"
   now <- getCurrentTime
@@ -3641,8 +3641,8 @@ testSweepReadsOldestFailureFirst = bounded "sweep reads the oldest failure first
   runOnePass poller
   mapM (invoiceStatus (weStore env)) invoices `shouldReturn` [ISOpen, ISExpired, ISExpired]
 
-unreadableBad :: IORef StubState -> Provider
-unreadableBad ref = stub {pReadInvoice = \r -> if r == "p-bad" then pure (Left (ProviderError "gone")) else pReadInvoice stub r}
+unreadableBad :: Text -> IORef StubState -> Provider
+unreadableBad bad ref = stub {pReadInvoice = \r -> if r == bad then pure (Left (ProviderError "gone")) else pReadInvoice stub r}
   where
     stub = stubProvider ref
 
@@ -3666,11 +3666,11 @@ testUnpaidUnknownProviderWarnedHourly :: IO ()
 testUnpaidUnknownProviderWarnedHourly = bounded "unpaid invoice of an unknown provider" $ withStubPoller raceHold $ \_ poller env _ -> do
   now <- getCurrentTime
   seedBadgePrice (weStore env) "price1"
-  InvoiceId unknownId <- seedOpenRef (weStore env) 1 "p-unknown" (addUTCTime 3600 now)
+  InvoiceId unknownId <- seedOpenRef (weStore env) 1 "p-unknown-unpaid" (addUTCTime 3600 now)
   withConnection (weStore env) $ \db ->
     DB.execute db "UPDATE sx_badge_service_invoices SET provider = ? WHERE invoice_id = ?" ("nonsense" :: Text, unknownId)
   logged <- capturingStderr (runOnePass poller >> runOnePass poller)
-  length (filter (loggedError "badge poller: invoice p-unknown names provider nonsense") (T.lines logged)) `shouldBe` 1
+  length (filter (loggedError "badge poller: invoice p-unknown-unpaid names provider nonsense") (T.lines logged)) `shouldBe` 1
 
 testSweepKeepsFailuresBeyondTheCap :: IO ()
 testSweepKeepsFailuresBeyondTheCap = bounded "sweep keeps failures past the cap" $ withPayableStubPoller raceHold $ \ref poller env _ -> do
