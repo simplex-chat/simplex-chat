@@ -199,6 +199,10 @@ final class ChatItemUpdateTests: XCTestCase {
         XCTAssertEqual(try updates("updates/direct-edit").map(\.showNotification), [false, false])
     }
 
+    func testExtensionBadgeFollowsUnreadChangeOfRaise() throws {
+        XCTAssertEqual(try updates("priority/raise").map(\.userUnreadChange), [0, 1])
+    }
+
     @MainActor
     private func assertReadItemUpdatedAsNew(_ fixture: String, userUnread: Int) async throws {
         let events = try recordedEvents(fixture)

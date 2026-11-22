@@ -28,7 +28,7 @@ public enum NSENotificationData {
     case connectionEvent(_ user: User, _ connEntity: ConnectionEntity)
     case contactConnected(_ user: any UserLike, _ contact: Contact)
     case contactRequest(_ user: any UserLike, _ contactRequest: UserContactRequest)
-    case messageReceived(_ user: any UserLike, _ cInfo: ChatInfo, _ cItem: ChatItem)
+    case messageReceived(_ user: any UserLike, _ cInfo: ChatInfo, _ cItem: ChatItem, _ unreadChange: Int)
     case callInvitation(_ invitation: RcvCallInvitation)
     case msgInfo(NtfMsgAckInfo)
     case silentMsg
@@ -47,7 +47,7 @@ public enum NSENotificationData {
         case let .connectionEvent(user, connEntity): createConnectionEventNtf(user, connEntity, badgeCount)
         case let .contactConnected(user, contact): createContactConnectedNtf(user, contact, badgeCount)
         case let .contactRequest(user, contactRequest): createContactRequestNtf(user, contactRequest, badgeCount)
-        case let .messageReceived(user, cInfo, cItem): createMessageReceivedNtf(user, cInfo, cItem, badgeCount)
+        case let .messageReceived(user, cInfo, cItem, _): createMessageReceivedNtf(user, cInfo, cItem, badgeCount)
         case let .callInvitation(invitation): createCallInvitationNtf(invitation, badgeCount)
         case .msgInfo: UNMutableNotificationContent()
         case .silentMsg: UNMutableNotificationContent()
@@ -587,7 +587,9 @@ class NotificationService: UNNotificationServiceExtension {
         } else if ntfEntity.ntfConn.user.showNotifications {
             // This is the notification event for the user with enabled notifications.
             logger.debug("NotificationService processNtf: setting best attempt")
-            if ntf.notificationEvent != nil {
+            if case let .messageReceived(_, _, _, unreadChange) = ntf {
+                setBadgeCount(by: unreadChange)
+            } else if ntf.notificationEvent != nil {
                 setBadgeCount()
             }
             // If previous "best attempt" is not a call, or if the current notification is a call, replace best attempt.
@@ -611,8 +613,8 @@ class NotificationService: UNNotificationServiceExtension {
         deliverBestAttemptNtf()
     }
 
-    func setBadgeCount() {
-        badgeCount = ntfBadgeCountGroupDefault.get() + 1
+    func setBadgeCount(by change: Int = 1) {
+        badgeCount = ntfBadgeCountGroupDefault.get() + change
         ntfBadgeCountGroupDefault.set(badgeCount)
     }
 
@@ -772,7 +774,7 @@ class NotificationService: UNNotificationServiceExtension {
         var userId: Int64?
         for ntf in ntfs {
             switch ntf {
-            case let .messageReceived(user, chat, _):
+            case let .messageReceived(user, chat, _, _):
                 if seenChatIds.isEmpty { userId = user.userId }
                 if !seenChatIds.contains(chat.id) {
                     seenChatIds.insert(chat.id)
@@ -1046,7 +1048,7 @@ func receivedMsgNtf(_ res: NSEChatEvent) async -> (String, NSENotificationData)?
             let ntf: NSENotificationData = if cItem.meta.silent {
                 .silentMsg
             } else if cInfo.ntfsEnabled(chatItem: cItem) && cItem.showNotification {
-                .messageReceived(user, cInfo, cItem)
+                .messageReceived(user, cInfo, cItem, 1)
             } else {
                 .noNtf
             }
@@ -1058,7 +1060,7 @@ func receivedMsgNtf(_ res: NSEChatEvent) async -> (String, NSENotificationData)?
         let cInfo = update.chatInfo
         let cItem = update.chatItem
         let ntf: NSENotificationData = if update.showNotification {
-            .messageReceived(user, cInfo, cItem)
+            .messageReceived(user, cInfo, cItem, update.userUnreadChange)
         } else {
             .noNtf
         }

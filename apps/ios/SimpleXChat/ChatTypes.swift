@@ -3939,6 +3939,10 @@ public struct AChatItemUpdate: Decodable, Hashable {
     public var showNotification: Bool {
         (chatItem.isRaised(from: prevChatItem) || chatItem.isAsNew(from: prevChatItem)) && chatInfo.ntfsEnabled(chatItem: chatItem) && chatItem.showNotification
     }
+
+    public var userUnreadChange: Int {
+        1
+    }
 }
 
 public struct CIMentionMember: Decodable, Hashable {
