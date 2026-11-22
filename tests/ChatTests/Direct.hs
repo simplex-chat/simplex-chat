@@ -78,6 +78,8 @@ chatDirectTests = do
     it "direct message quoted replies" testDirectMessageQuotedReply
     it "direct message update" testDirectMessageUpdate
     it "updated item event has the previous item" testDirectMessageUpdatePrevItem
+    it "update as new is ignored in a direct chat" testDirectUpdateAsNewIgnored
+    it "receiver drops an edit after 78 hours" testDirectEditReceiverLimit
     it "direct message edit history" testDirectMessageEditHistory
     it "direct message delete" testDirectMessageDelete
     it "direct message delete multiple" testDirectMessageDeleteMultiple
@@ -842,6 +844,35 @@ testDirectMessageUpdatePrevItem ps = do
       readTVarIO updates `shouldReturn` [("hello there", "hello"), ("hello, alice", "hello there")]
       J.Object evt : _ <- readTVarIO encoded
       KM.member "chatItemUpdate" evt `shouldBe` True
+
+testDirectUpdateAsNewIgnored :: HasCallStack => TestParams -> IO ()
+testDirectUpdateAsNewIgnored =
+  testChat2 aliceProfile bobProfile $ \alice bob -> do
+    connectUsers alice bob
+    bob #> "@alice status"
+    alice <# "bob> status"
+    statusId <- lastItemId bob
+    alice #> "@bob hi"
+    bob <# "alice> hi"
+    bob ##> ("/_update item @2 " <> statusId <> " as_new=on text status 2")
+    bob <# "@alice [edited] status 2"
+    alice <# "bob> [edited] status 2"
+    alice #$> ("/_get chat @2 count=2", chat, [(0, "status 2"), (1, "hi")])
+    bob #$> ("/_get chat @2 count=2", chat, [(1, "status 2"), (0, "hi")])
+
+testDirectEditReceiverLimit :: HasCallStack => TestParams -> IO ()
+testDirectEditReceiverLimit =
+  testChat2 aliceProfile bobProfile $ \alice bob -> do
+    connectUsers alice bob
+    bob #> "@alice hello"
+    alice <# "bob> hello"
+    helloId <- lastItemId bob
+    aliceHelloId <- lastItemId alice
+    setItemAge alice aliceHelloId (79 * 3600)
+    bob ##> ("/_update item @2 " <> helloId <> " text hello there")
+    bob <# "@alice [edited] hello there"
+    alice <## "error: x.msg.update: edit too late"
+    getItemText alice aliceHelloId `shouldReturn` "hello"
 
 testDirectMessageDelete :: HasCallStack => TestParams -> IO ()
 testDirectMessageDelete =

@@ -215,6 +215,7 @@ shortLinkTests = do
   it "prepare contact via address and connect incognito with retry" testShortLinkAddressConnectRetryIncognito
   it "prepare business chat using address short link data and connect" testShortLinkAddressPrepareBusiness
   it "connect to business address with request message" testBusinessAddressRequestMessage
+  it "business welcome message is updated after 78 hours" testBusinessWelcomeUpdatedLate
   it "prepare group using group short link data and connect" testShortLinkPrepareGroup
   it "prepare group using group short link data and connect, host rejects" testShortLinkPrepareGroupReject
   it "connect to group with welcome message via short link" testGroupShortLinkWelcome
@@ -4926,6 +4927,32 @@ testBusinessAddressRequestMessage = testChat3 businessProfile aliceProfile {full
             bob <## "#biz: biz_1 added alice (Alice @ Biz) to the group (connecting...)"
             bob <## "#biz: new member alice is connected"
         ]
+
+testBusinessWelcomeUpdatedLate :: HasCallStack => TestParams -> IO ()
+testBusinessWelcomeUpdatedLate = testChat2 businessProfile bobProfile $ \biz bob -> do
+  biz ##> "/ad"
+  (shortLink, fullLink) <- getContactLinks biz True
+  biz ##> "/auto_accept on business text Welcome!"
+  biz <## "auto_accept on, business"
+  biz <## "auto reply:"
+  biz <## "Welcome!"
+  bob ##> ("/_connect plan 1 " <> shortLink)
+  bob <## "business address: ok to connect"
+  contactSLinkData <- getTermLine bob
+  bob ##> ("/_prepare contact 1 " <> fullLink <> " " <> shortLink <> " " <> contactSLinkData)
+  bob <## "#biz: group is prepared"
+  welcomeId <- lastItemId bob
+  setItemAge bob welcomeId (80 * 3600)
+  biz ##> "/auto_accept on business text Welcome again!"
+  biz <## "auto_accept on, business"
+  biz <## "auto reply:"
+  biz <## "Welcome again!"
+  bob ##> "/_connect group #1"
+  bob <## "#biz: connection started"
+  biz <## "#bob (Bob): accepting business address request..."
+  bob <### ["#biz: joining the group...", "#biz: you joined the group", WithTime "#biz biz_1> [edited] Welcome again!"]
+  biz <## "#bob: bob_1 joined the group"
+  getItemText bob welcomeId `shouldReturn` "Welcome again!"
 
 testShortLinkPrepareGroup :: HasCallStack => TestParams -> IO ()
 testShortLinkPrepareGroup = testChat3 aliceProfile bobProfile cathProfile test
