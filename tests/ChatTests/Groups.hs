@@ -8857,9 +8857,9 @@ testMsgLinkChannel ps =
           dan ##> ("/_connect plan 1 " <> withType "/s#")
           dan <## "this site requires a newer version of the app"
           apiFixture "links/channel" dan [(link, "CHANNEL_MSG_LINK"), (chatLink, "CHANNEL_LINK"), (withType "/s#", "SITE_LINK")] FixtureRequests
-            { frMarkdown = [link],
+            { frMarkdown = [link, chatLink],
               frUris = [],
-              frCommands = ["/_msg link plan 1 " <> link, "/_connect plan 1 " <> withType "/s#"]
+              frCommands = ["/_msg link plan 1 " <> link, "/_connect plan 1 " <> withType "/s#", "/_connect plan 1 " <> chatLink]
             }
 
 linkTargets :: TestCC -> IO [(T.Text, Maybe T.Text)]

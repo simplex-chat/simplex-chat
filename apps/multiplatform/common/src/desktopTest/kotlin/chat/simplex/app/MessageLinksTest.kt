@@ -107,12 +107,16 @@ class MessageLinksTest {
   }
 
   @Test
-  fun pastedPostOfChannelNotJoinedStartsConnectionToChannel() = recorded("links/channel") {
-    planAndConnect(rhId = null, "CHANNEL_MSG_LINK", close = null)
-    synchronized(unrecorded) {
-      assertEquals(listOf("markdown CHANNEL_LINK", "/_connect plan 1 CHANNEL_LINK"), unrecorded.toList())
-      unrecorded.clear()
+  fun pastedPostOfChannelNotJoinedStartsConnectionToChannel() = runComposeUiTest {
+    useRecording("links/channel")
+    setContent {
+      AlertManager.shared.showInView()
+      AlertManager.privacySensitive.showInView()
     }
+    runBlocking { planAndConnect(rhId = null, "CHANNEL_MSG_LINK", close = null) }
+    val texts = listOf("team", "Open channel")
+    runCatching { waitUntil(timeoutMillis = 5_000) { shownTexts().containsAll(texts) } }
+    assertTrue(shownTexts().containsAll(texts), "${shownTexts()}")
   }
 
   @Test
