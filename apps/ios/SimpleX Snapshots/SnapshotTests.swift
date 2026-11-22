@@ -694,6 +694,7 @@ private func previewScenes() -> [SnapshotScene] {
         SnapshotScene(ClassicOverviewDirect_Previews.self),
         SnapshotScene(ClassicOverviewGroup_Previews.self),
         SnapshotScene(ClassicParagraphs_Previews.self, allSizes: true),
+        SnapshotScene(ClassicViaMember_Previews.self, allSizes: true),
         SnapshotScene(ComposeVoiceView_Previews.self),
         SnapshotScene(ConnectDesktopView_Previews.self, device: true),
         SnapshotScene(ContactConnectionInfo_Previews.self),
@@ -721,8 +722,10 @@ private func previewScenes() -> [SnapshotScene] {
         SnapshotScene(FramedItemView_Previews.self, allSizes: true),
         SnapshotScene(GetStakeBanner_Previews.self),
         SnapshotScene(GroupChatInfoView_Previews.self, device: true),
+        SnapshotScene(GroupChatInfoView_ViaMember_Previews.self),
         SnapshotScene(GroupLinkView_Previews.self),
         SnapshotScene(GroupMemberInfoView_Previews.self, device: true),
+        SnapshotScene(GroupMemberInfoView_ViaMember_Previews.self, device: true),
         SnapshotScene(GroupPreferencesView_Previews.self, device: true),
         SnapshotScene(GroupProfileView_Previews.self, device: true),
         SnapshotScene(GroupWelcomeView_Previews.self),
@@ -785,6 +788,7 @@ private func previewScenes() -> [SnapshotScene] {
         SnapshotScene(TerminalRuleOnly_Previews.self, allSizes: true),
         SnapshotScene(TerminalSession_Previews.self),
         SnapshotScene(TerminalSpacing_Previews.self, allSizes: true),
+        SnapshotScene(TerminalViaMember_Previews.self, allSizes: true),
         SnapshotScene(UserAddressLearnMore_Previews.self),
         SnapshotScene(UserAddressView_Previews.self),
         SnapshotScene(UserPicker_Previews.self, fitting: true),
@@ -992,6 +996,18 @@ struct ClassicOverviewChannel_Previews: PreviewProvider {
 struct ClassicParagraphs_Previews: PreviewProvider {
     static var previews: some View {
         SnapshotFixtures().paragraphs()
+    }
+}
+
+struct TerminalViaMember_Previews: PreviewProvider {
+    static var previews: some View {
+        SnapshotFixtures().viaMember(terminal: true)
+    }
+}
+
+struct ClassicViaMember_Previews: PreviewProvider {
+    static var previews: some View {
+        SnapshotFixtures().viaMember(terminal: false)
     }
 }
 
@@ -1576,6 +1592,31 @@ private final class SnapshotFixtures {
             msg(.groupRcv(groupMember: claude), "Done: the answer now quotes its own prompt.\n544 of 544 pass.\nCommitted as 1f3c2a9.", -2 + 10.0 / 60),
             msg(.groupRcv(groupMember: claude), "Coverage after the fix", -2 + 30.0 / 60, content: .image(text: "Coverage after the fix", image: landscape), file: imageFile("coverage.jpg"))
         ], terminal: true)
+    }
+
+    func viaMember(terminal: Bool) -> some View {
+        var claude = Self.member(5, "Claude", .owner)
+        claude.memberProfile.peerType = .agent
+        var reviewer = Self.member(6, "reviewer", .member)
+        reviewer.memberProfile.peerType = .agent
+        reviewer.memberVia = claude.memberId
+        reviewer.activeConn = nil
+        var investigator = Self.member(7, "postgres-integration-test-investigator", .member)
+        investigator.memberProfile.peerType = .agent
+        investigator.memberVia = claude.memberId
+        investigator.activeConn = nil
+        let m = ChatModel()
+        m.groupMembers = [GMember(claude)]
+        let question = "Shall I fix them?"
+        return chatRows(teamChat, [
+            msg(.groupRcv(groupMember: claude), "reviewer is running the tests.", -9),
+            msg(.groupRcv(groupMember: reviewer), "Two tests fail on Postgres.", -6),
+            msg(.groupRcv(groupMember: reviewer), question, -6 + 10.0 / 60),
+            msg(.groupRcv(groupMember: bob), "Yes, please.", -4),
+            msg(.groupSnd, "Fix and push.", -3, quote: quote(.groupRcv(groupMember: reviewer), question)),
+            msg(.groupRcv(groupMember: investigator), "Both fail on a missing index.", -1)
+        ], terminal: terminal)
+        .environmentObject(m)
     }
 
     func paragraphs() -> some View {

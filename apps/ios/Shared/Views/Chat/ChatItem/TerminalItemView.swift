@@ -397,6 +397,7 @@ func terminalColumn(_ avatarSize: CGFloat) -> CGFloat {
 struct ChatItemSender {
     var name: Text
     var badge: LocalBadge?
+    var via: String?
     var role: String?
     var own: Bool
     var image: AnyView?
@@ -431,7 +432,8 @@ struct TerminalChatItemRow<Content: View>: View {
 
     private func senderNameAndRole(_ sender: ChatItemSender) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: 0) {
-            NameWithBadge(sender.name.font(.body.weight(.semibold)).foregroundColor(sender.own ? theme.colors.primary : theme.colors.secondary), sender.badge)
+            NameWithBadge(sender.name.font(.body.weight(.semibold)), sender.badge, via: sender.via)
+                .foregroundColor(sender.own ? theme.colors.primary : theme.colors.secondary)
                 .lineLimit(1)
             if let role = sender.role {
                 Text(role)

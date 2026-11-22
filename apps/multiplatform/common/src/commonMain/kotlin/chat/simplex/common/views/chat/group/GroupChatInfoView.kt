@@ -1121,7 +1121,7 @@ fun MemberRow(member: GroupMember, user: Boolean = false, infoPage: Boolean = tr
     } else if (member.activeConn?.connInactive == true) {
       generalGetString(MR.strings.member_info_member_inactive)
     } else {
-      member.memberStatus.shortText
+      chatModel.memberViaName(member)?.let { String.format(generalGetString(MR.strings.member_via), it) } ?: member.memberStatus.shortText
     }
   }
 
@@ -1483,5 +1483,18 @@ fun PreviewGroupChatInfoLayout() {
       setSimplexName = {},
       deletingItems = remember { mutableStateOf(true) }
     )
+  }
+}
+
+@Preview
+@Composable
+fun PreviewMemberRowsViaMember() = GroupMembersPreview(listOf(previewClaude)) {
+  SimpleXTheme {
+    Column(Modifier.padding(horizontal = DEFAULT_PADDING)) {
+      MemberRow(GroupInfo.sampleData.membership, user = true)
+      MemberRow(previewClaude)
+      MemberRow(GroupMember.sampleData.copy(groupMemberId = 2, memberId = "bob", localDisplayName = "bob", memberProfile = LocalProfile.sampleData.copy(profileId = 2, displayName = "bob", fullName = "")))
+      MemberRow(previewViaClaude(6, "reviewer"))
+    }
   }
 }

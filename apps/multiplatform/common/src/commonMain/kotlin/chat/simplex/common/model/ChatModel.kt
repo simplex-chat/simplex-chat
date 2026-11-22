@@ -432,6 +432,9 @@ object ChatModel {
     }
   }
 
+  fun memberViaName(member: GroupMember): String? =
+    member.memberVia?.let { via -> groupMembers.value.firstOrNull { it.memberId == via }?.displayName }
+
   suspend fun addSentChatItem(activeCtx: ChatsContext, rhId: Long?, cInfo: ChatInfo, cItem: ChatItem) {
     activeCtx.addChatItem(rhId, cInfo, cItem)
     if (activeCtx.secondaryContextFilter != null && cInfo.inMainChatList) {
@@ -4158,6 +4161,8 @@ sealed class CIDirection {
     is LocalSnd -> true
     is LocalRcv -> false
   }
+
+  val memberVia: String? get() = if (this is GroupRcv) groupMember.memberVia else null
 }
 
 @Serializable

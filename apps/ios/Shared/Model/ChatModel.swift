@@ -610,6 +610,10 @@ final class ChatModel: ObservableObject {
         return nil
     }
 
+    func memberViaName(_ member: GroupMember) -> String? {
+        member.memberVia.flatMap { via in groupMembers.first { $0.wrapped.memberId == via }?.wrapped.displayName }
+    }
+
     func loadGroupMembers(_ groupInfo: GroupInfo, updateView: @escaping () -> Void = {}) async {
         let groupMembers = await apiListMembers(groupInfo.groupId)
         await MainActor.run {

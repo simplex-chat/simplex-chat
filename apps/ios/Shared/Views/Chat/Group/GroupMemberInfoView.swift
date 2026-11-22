@@ -187,6 +187,9 @@ struct GroupMemberInfoView: View {
                         } else {
                             infoRow("Role", member.memberRole.text(isChannel: groupInfo.isChannel))
                         }
+                        if let via = chatModel.memberViaName(member) {
+                            infoRow("Via", via)
+                        }
                         if let link = member.relayLink {
                             infoRow("Relay link", String.localizedStringWithFormat(NSLocalizedString("via %@", comment: "relay hostname"), hostFromRelayLink(link)))
                         }
@@ -927,5 +930,30 @@ struct GroupMemberInfoView_Previews: PreviewProvider {
             groupMember: GMember.sampleData,
             scrollToItemId: Binding.constant(nil)
         )
+    }
+}
+
+struct GroupMemberInfoView_ViaMember_Previews: PreviewProvider {
+    static var previews: some View {
+        var claude = GroupMember.sampleData
+        claude.groupMemberId = 2
+        claude.memberId = "Claude"
+        claude.memberRole = .owner
+        claude.memberProfile = LocalProfile(profileId: 2, displayName: "Claude", fullName: "", localAlias: "")
+        var reviewer = GroupMember.sampleData
+        reviewer.memberRole = .member
+        reviewer.memberProfile = LocalProfile(profileId: 3, displayName: "reviewer", fullName: "", localAlias: "")
+        reviewer.memberProfile.peerType = .agent
+        reviewer.memberVia = claude.memberId
+        reviewer.activeConn = nil
+        let m = ChatModel()
+        m.groupMembers = [GMember(claude)]
+        return GroupMemberInfoView(
+            groupInfo: GroupInfo.sampleData,
+            chat: Chat.sampleData,
+            groupMember: GMember(reviewer),
+            scrollToItemId: Binding.constant(nil)
+        )
+        .environmentObject(m)
     }
 }

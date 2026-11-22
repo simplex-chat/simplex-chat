@@ -4489,6 +4489,10 @@ public enum CIDirection: Decodable, Hashable {
         if case let .groupRcv(groupMember) = self { groupMember.groupMemberId } else { nil }
     }
 
+    public var memberVia: String? {
+        if case let .groupRcv(groupMember) = self { groupMember.memberVia } else { nil }
+    }
+
     public func sameDirection(_ dir: CIDirection) -> Bool {
         switch (self, dir) {
         case let (.groupRcv(m1), .groupRcv(m2)): m1.groupMemberId == m2.groupMemberId

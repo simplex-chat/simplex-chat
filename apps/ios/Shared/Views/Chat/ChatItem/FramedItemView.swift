@@ -360,11 +360,17 @@ struct FramedItemView: View {
         Group {
             if let sender = qi.getSender(membership()) {
                 VStack(alignment: .leading, spacing: terminal ? 0 : 2) {
-                    Text(sender)
-                        .font(terminal ? .system(size: terminalNameSize) : .caption)
-                        .foregroundColor(qi.chatDir == .groupSnd ? .accentColor : theme.colors.secondary)
-                        .lineLimit(1)
-                        .if(terminal) { $0.modifier(terminalLineBox(UIFont.systemFont(ofSize: terminalNameSize), nil, theme)) }
+                    HStack(alignment: .firstTextBaseline, spacing: 0) {
+                        Text(sender)
+                            .font(terminal ? .system(size: terminalNameSize) : .caption)
+                            .foregroundColor(qi.chatDir == .groupSnd ? .accentColor : theme.colors.secondary)
+                            .lineLimit(1)
+                            .if(terminal) { $0.modifier(terminalLineBox(UIFont.systemFont(ofSize: terminalNameSize), nil, theme)) }
+                        if case let .groupRcv(member) = qi.chatDir, let via = m.memberViaName(member) {
+                            MemberVia(name: via, nameSize: terminal ? terminalNameSize : UIFont.preferredFont(forTextStyle: .caption1).pointSize)
+                                .foregroundColor(theme.colors.secondary)
+                        }
+                    }
                     ciQuotedMsgTextView(qi, lines: 2, stripLink: stripLink, prefix: prefix)
                 }
             } else {
