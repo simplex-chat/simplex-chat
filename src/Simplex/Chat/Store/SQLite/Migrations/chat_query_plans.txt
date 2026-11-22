@@ -5435,6 +5435,12 @@ Query:
 Plan:
 
 Query: 
+      INSERT INTO chat_tags_chats (group_id, chat_tag_id)
+      VALUES (?,?)
+    
+Plan:
+
+Query: 
       INSERT INTO commands (connection_id, command_function, command_status, user_id, created_at, updated_at)
       VALUES (?,?,?,?,?,?)
     
