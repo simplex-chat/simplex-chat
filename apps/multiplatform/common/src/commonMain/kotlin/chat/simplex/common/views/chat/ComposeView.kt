@@ -492,15 +492,21 @@ fun ComposeView(
   AttachmentSelection(composeState, attachmentOption, composeState::processPickedFile) { uris, text -> CoroutineScope(Dispatchers.IO).launch { composeState.processPickedMedia(uris, text) } }
 
   suspend fun fetchAndUpdateLinkPreview(url: String) {
-    composeState.value = composeState.value.copy(preview = ComposePreview.CLinkPreview(null))
-    val lp = chatModel.controller.apiGetLinkPreview(url)
-    if (lp != null && pendingLinkUrl.value == url) {
-      composeState.value = composeState.value.copy(preview = ComposePreview.CLinkPreview(lp))
-      pendingLinkUrl.value = null
-    } else if (pendingLinkUrl.value == url) {
-      withContext(Dispatchers.Main) { cancelledLinks.add(url) }
-      composeState.value = composeState.value.copy(preview = ComposePreview.NoPreview)
-      pendingLinkUrl.value = null
+    withContext(Dispatchers.Main) {
+      fun awaited() = pendingLinkUrl.value == url
+      if (awaited()) {
+        composeState.value = composeState.value.copy(preview = ComposePreview.CLinkPreview(null))
+        val lp = chatModel.controller.apiGetLinkPreview(url)
+        if (awaited()) {
+          if (lp != null) {
+            composeState.value = composeState.value.copy(preview = ComposePreview.CLinkPreview(lp))
+          } else {
+            cancelledLinks.add(url)
+            composeState.value = composeState.value.copy(preview = ComposePreview.NoPreview)
+          }
+        }
+      }
+      if (pendingLinkUrl.value == url) pendingLinkUrl.value = null
     }
   }
 
@@ -508,7 +514,6 @@ fun ComposeView(
     if (pendingLinkUrl.value == url) {
       withLongRunningApi(slow = 60_000) {
         if (wait != null) delay(wait)
-        if (pendingLinkUrl.value != url) return@withLongRunningApi
         fetchAndUpdateLinkPreview(url)
       }
     }
