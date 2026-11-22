@@ -600,7 +600,8 @@ carol@example.com · claude-opus-4-7 · effort xhigh · goal failed
 ```
 
 - A session's message shows its state, Claude Code's title of the conversation when it differs from the session's name, the Claude account, the model, the effort level, whether a goal is set, met or failed, a line such as `🤖 2 agents working · 1 stalled 2:10 · ⚙️ review-changes Verify 3/8` while subagents or workflows work, and Claude Code's latest recap. The account is the email of the login in Claude Code's global config, `CLAUDE_CONFIG_DIR/.claude.json` or `~/.claude.json`; the goal, the recap and the title come from the session's transcript.
-- The summary has the state of each session on the board, by number. Claude only edits it, so messages posted later, such as a new session's message or an invitation, follow it.
+- The summary has the state of each session on the board, by number. Claude only edits it, so messages posted later, such as a new session's message or an invitation, follow it until the board moves.
+- When other messages follow the board, such as an invitation or a reply to `/sessions`, the board moves to the bottom with the next change of a session's message: its messages and the summary come again as new messages, unread and without an alert, in their order.
 - A session is running while its Claude Code runs, or while cards wait for a decision in its group. Green is the state to keep:
   - `🟢 N · NAME: working`: Claude Code works on a turn, or a subagent works for it.
   - `🟠 N · NAME: waiting for you, K approvals`: K cards wait in the session's group, for a decision in the chat, whatever Claude Code's state. A tool-use card answered in the terminal stays until the turn ends.
@@ -625,7 +626,7 @@ VERSION is the plugin's version, as in `npx -y @simplex-chat/mcp@0.3.0 link`. Th
 
 - Each session has a number, starting at 1, which is kept across service restarts. Its group is named `N · NAME`. NAME is the session's name from `claude -n NAME` or `/rename`, otherwise the project folder's name, otherwise `Claude Code`. A new name shows from the next session start.
 - The group is created at the session start, and the Main group's owners are invited to it as owners. An owner who joins the Main group later is invited to the groups of the open sessions.
-- The group's members are Claude, the Main group's owners, members who joined with `/join`, people whom members added directly, and `User`. People added directly get the role that the adding member set. `User` is a second profile of the service that posts your terminal prompts.
+- The group's members are Claude, the Main group's owners, members who joined with `/join`, people whom members added directly, `User`, and the session's teammates, see [Teammates](#teammates). People added directly get the role that the adding member set. `User` is a second profile of the service that posts your terminal prompts.
 - Claude's profile has the peer type `agent`, so the app shows Claude with the agent placeholder. `User`'s profile has the peer type `human`, which the service sets at each start. In a session group that you joined while `User` had the peer type `agent`, as in 0.3.0, the new peer type reaches your app with `User`'s next post there, and the app shows `updated profile` from `User` once.
 - Rights follow the member's role in the group, however they joined:
 
@@ -675,6 +676,7 @@ With the channel, a message from a member of a session's group, other than `User
   - a message of another Claude session: `✉️ Message from NAME: ` and its first line;
   - a message of a teammate in an agent team: `✉️ Message from NAME: ` and its summary, or its first line without one. A prompt with several teammate messages gets the line of the first one that is not an idle notification, and a prompt of idle notifications only gets no line;
   - the report of a subagent: `📋 Report from subagent NAME: ` and its first line;
+  - none of these two lines for a teammate that is a member of the group, because it posts its messages and its report itself, see [Teammates](#teammates);
   - a scheduled prompt: `⏰ Scheduled prompt: ` and its first line;
   - an automatic prompt, such as the one after a usage limit resets: `🔄 Automatic prompt: ` and its first line;
   - another kind: `⚙️ Claude Code: ` and its first line.
@@ -695,10 +697,32 @@ With the channel, a message from a member of a session's group, other than `User
   🤖 Explore · find the suspend callers
   14 steps · 38.2k tokens · 1:05 · now: 📖 Read SuspendChat.swift
   ```
-  Each line is in small print, with `!` shown as `ǃ`, as in the lines of steps. A subagent with no step for 2 minutes, or 10 minutes while a step runs, shows `⚠️ no step for 2:10 · last: 💻 cabal build` instead of `now:`. When it ends, the message is completed with its time, steps and tokens and the first line of its result, such as `🤖 Explore · find the suspend callers · ✅ 2:40 · 22 steps · 61.5k tokens`, with ❌ for a failure and ⏹️ for a stop. A workflow shows its phases, done agents of all started: `⚙️ review-changes · Review 4/4 ✅ · Verify 3/8 · 2 working · 412k tokens · 6:30`, and ends as `⚙️ review-changes · ✅ 6:30 · Review 4/4 · Verify 8/8 · 412k tokens`. The notification of a finished subagent or workflow gets no line, because its message shows the end. Tokens are those of the agent's latest request, as the terminal shows them, read from its transcript every 2 seconds. Teammates of an agent team, the agents of a workflow and Claude Code's internal agents get no message of their own. A message keeps its place in the chat when it is edited. Live messages still live when the session ends are completed with ⏹️.
-- Claude marks the turn's empty live message, its texts and answers, the lines of steps, and the lines of Claude Code's own prompts, of summaries of the context and of model and effort switches as silent. The answer's last message, with its line, is important, so a turn alerts once, at its end. When the line completes a live message or the turn's empty live message, the edit marks it important; SimpleX apps alert for such an edit once they support it. A SimpleX app that supports silent messages shows them without an alert; other apps alert for them as for any message.
+  Each line is in small print, with `!` shown as `ǃ`, as in the lines of steps. A subagent with no step for 2 minutes, or 10 minutes while a step runs, shows `⚠️ no step for 2:10 · last: 💻 cabal build` instead of `now:`. When it ends, the message is completed with its time, steps and tokens and the first line of its result, such as `🤖 Explore · find the suspend callers · ✅ 2:40 · 22 steps · 61.5k tokens`, with ❌ for a failure and ⏹️ for a stop. A workflow shows its phases, done agents of all started: `⚙️ review-changes · Review 4/4 ✅ · Verify 3/8 · 2 working · 412k tokens · 6:30`, and ends as `⚙️ review-changes · ✅ 6:30 · Review 4/4 · Verify 8/8 · 412k tokens`. The notification of a finished subagent or workflow gets no line, because its message shows the end. Tokens are those of the agent's latest request, as the terminal shows them, read from its transcript every 2 seconds. Teammates, which are members of the group, the agents of a workflow and Claude Code's internal agents get no such message. While only live messages of subagents and workflows are last in the chat, their edits keep them in place. When other messages follow them, they move to the bottom together, in their order, with their next edit: they come again as new messages, unread and without an alert. A message that ends stays where it is. Live messages still live when the session ends are completed with ⏹️.
+- Claude marks the turn's empty live message, its texts and answers, the lines of steps, the lines of Claude Code's own prompts, of summaries of the context and of model and effort switches, and the messages and step lines of teammates as silent, and every edit keeps them silent. The answer's last message, with its line, is important, so a turn alerts once, at its end. When the line completes a live message or the turn's empty live message, the edit marks it important; SimpleX apps alert for such an edit once they support it. A SimpleX app that supports silent messages shows them without an alert; other apps alert for them as for any message.
 - A text too long for one message is posted as several messages, each as long as a message can be, measured as for `send`. The first part of an answer carries the quote. A part without a quote holds up to 14,962 Latin, 7,481 Cyrillic or 4,987 CJK characters. A prompt or an answer over 250,000 characters is cut there and ends with `…`.
 - The `reply` tool sends a file to the group at once, without approval, with its text as the caption, under the file rules of `send`. It returns the file's message as `item`. A caption too long for a message with the file's preview is refused with `text: too long for a message with this TYPE; shorten it.`
+
+### Teammates
+
+A teammate is an agent of the session with a name: a teammate of an agent team, or an agent that Claude started with a name. Each one is a member of the session's group via Claude: it has no connection of its own, and Claude sends its messages, which members see under its name.
+
+```
+Claude added reviewer
+reviewer: !- 💻 Run the unit tests 41 s!
+reviewer: Reviewed the diff of #8308: no defect in the core; two remarks on the tests.
+Claude: @reviewer Check the e2e test too.
+Claude removed reviewer
+```
+
+- When a teammate starts, Claude adds it to the group with its name, the agent avatar and the first line of its task, up to 160 characters, as its description. Members see `Claude added reviewer`.
+- Its messages to Claude, the lead of the team, and the report of a named agent are posted under its name, silent, in parts when they are longer than a message. Claude posts no `✉️ Message from` or `📋 Report from` line for them.
+- Its tool uses are its step lines, in small print under its name, live while the step runs and completed with the outcome and duration, as Claude's steps are. Its messages to other teammates get no line.
+- Claude's message to a teammate is Claude's message `@reviewer TEXT`, which mentions it, in place of the step line of `SendMessage`.
+- Reply to a teammate's message, mention a teammate, or react to its message, and Claude gets your message with the teammate's name, and forwards it to the teammate unchanged. The teammate's answer is posted under its name. A message for several teammates names them all.
+- Claude removes a teammate when it ends: when it approves its shutdown, when the run of a named agent finishes, when its session ends, when the session closes 10 minutes after Claude Code ends, and when Claude Code does not open the session again within 10 minutes after the service's start. Members see `Claude removed reviewer`, and its messages stay. A service restart keeps the teammates: the service finds them among the group's members.
+- At most 20 teammates are members at once. A teammate beyond them, or one that the core could not add, has no member: Claude posts the line of each of its messages, as for any agent.
+- A post of a teammate that a group preference refuses is replaced by `reviewer's message was not posted: ...` with the preference's name.
+- A SimpleX app with a core of an earlier release shows a teammate as a member that is connecting, and shows its messages.
 
 ### Group preferences
 
