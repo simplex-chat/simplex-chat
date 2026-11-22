@@ -18,7 +18,31 @@ Each item gives `names` (the base branch: service code of b13968b61, page 9a16ca
 
 ## 1. Paid orders: the name delivered, or the money returned
 
-The implemented states and transitions; apps/simplex-store-service/docs/names.md section 4 gives each transition's trigger and effect.
+An order has two parts, set independently, in either order: the name, selected or not, and the payment or the code. A take resets the name part only; the payment or the code stays with the order.
+
+```mermaid
+stateDiagram-v2
+  state "an order" as order {
+    state "name" as name {
+      state "selected" as selected
+      state "not selected" as notSelected
+      [*] --> selected: the order request
+      selected --> notSelected: reset by a take, or by support's close
+      notSelected --> selected: the owner selects a name, with a new order's checks
+    }
+    --
+    state "payment or code" as pay {
+      state "unpaid: invoice open" as unpaidPart
+      state "paid: the price held, as a balance after a reset" as paidPart
+      state "code provided: reserved while a name is selected" as codePart
+      [*] --> unpaidPart: an invoice order
+      [*] --> codePart: a code order
+      unpaidPart --> paidPart: payment settled
+    }
+  }
+```
+
+The implemented phases and transitions; apps/simplex-store-service/docs/names.md section 4 gives each transition's trigger and effect.
 
 ```mermaid
 stateDiagram-v2
@@ -30,7 +54,7 @@ stateDiagram-v2
   [*] --> unpaid: one request with the commitment, the signed registration and the terms acceptance; invoice opened, holds its price only
   [*] --> queued: a code order
   unpaid --> queued: payment settled, the name held, other buyers' open invoices of the name cancelled
-  unpaid --> taken: reset: payment settled while another paid order holds the name, the price to the balance
+  unpaid --> taken: reset, as payment settled while another paid order holds the name, the price to the balance
   unpaid --> closed: invoice expired or cancelled; payment settled after a recorded reversal
   queued --> committing: commit sent
   committing --> queued: commitment lapsed, or commit mined with status 0 below its cap
@@ -42,14 +66,14 @@ stateDiagram-v2
   registering --> committed: register mined with status 0 below its cap, the name free
   committed --> registered: register landed
   registering --> registered: register landed
-  committed --> taken: reset: the name gone at the confirmation depth, the price to the balance or the code released
-  registering --> taken: reset: the name gone at the confirmation depth, the price to the balance or the code released
+  committed --> taken: reset, as the name is gone at the confirmation depth, the price to the balance or the code released
+  registering --> taken: reset, as the name is gone at the confirmation depth, the price to the balance or the code released
   queued --> failed: permanent reason at its cap
   committing --> failed: permanent reason at its cap
   committed --> failed: permanent reason at its cap; signature refused by the configuration; no read by its page for 3 days
   registering --> failed: permanent reason at its cap
   failed --> queued: Continue of an unread order
-  taken --> queued: a name selected, with a purchase's checks; a paid order's price spent from its balance, a code order's code reserved; the month starts again
+  taken --> queued: a name selected, with a new order's checks; a paid order's price spent from its balance, a code order's code reserved; the month starts again
   failed --> registered: a close finds the register landed
   failed --> taken: reset by support's close of a paid order, the price credited and refunded
   queued --> monthEnded: 1 month from the name's selection, no register pending, money to the balance
@@ -63,7 +87,7 @@ stateDiagram-v2
 
 ### 1.1 Payment holds the name
 - **names:** another buyer's order is refused only while an order of the name has its register in flight (`Names/Orders.hs:295-302`, `Names/Store.hs:864-869`); search shows the name as available otherwise (`Web/Names/Search.hs:59, 69-70`). Two buyers can pay for one name; the loser ends `taken`, its price kept as a balance (`Names/Worker.hs:352-356, 369-383`).
-- **Final:** a paid order holds its name against every order through the service, from payment until it is registered, cancelled, or its month ends (1.3); a failure inside the month does not end the hold. Search answers such a name `taken`, and the page shows "Taken". An open invoice holds only its price. When a payment settles while another paid order holds the name, its own order is reset to `taken`, its price kept as its balance, spent on the next name its owner selects for that order (1.3), or refunded.
+- **Final:** a paid order holds its name against every order through the service, from payment until it is registered, cancelled, or its month ends (1.3); a failure inside the month does not end the hold. Search answers such a name `taken`, and the page shows "Taken". An open invoice holds only its price. When a payment settles while another paid order holds the name, its own order is reset to name not selected (phase `taken`), its price kept as its balance, spent on the next name its owner selects for that order (1.3), or refunded.
 - **Why:** money from a second buyer for a name already paid for must not be taken; opening an invoice costs nothing, so it cannot hold a name.
 
 ### 1.2 Other invoices of a paid name are cancelled
@@ -72,9 +96,10 @@ stateDiagram-v2
 
 ### 1.3 One month from each selection of a name
 - **names:** a failed order holds its place with no end; it stays live, refusing only orders of the same owner code (`Names/Store.hs:760-772`).
-- **Final:** the name stays reserved for the buyer for 1 month from its selection with the payment in place: a paid order's settlement, a code order's placement, or a later selection; `selected_at` stores that time, written with `paid_at` at the settlement and the placement and alone at a selection, which also clears `unregistered_alerted_at` (3.1); `paid_at` keeps the time of the payment, for the dispute evidence (1.4). The month pass reads `selected_at` again in the order's turn.
-  - **Reset:** a take, by another buyer's paid order at settlement or on chain (2.1), resets the order to `taken`, no name selected: not live, its name free for other orders, a paid order's price credited to its balance, a code order's code released. The order keeps its id, its owner, its payment or code, and the taken name's fields, which its view shows. The view's `taken` phase has no other field.
-  - **Selection:** `POST /api/registration/ID/name`, signed by the owner as before, selects a name for a `taken` order; any other order is answered `400 bad_request`, and a body equal to the order's current fields with its current view. The selection runs the checks of a purchase, by its functions: the timestamp, the duration for the order's years, the terms, the name free, and the reveal, with the stored links accepted (2.4); then, in one transaction, other live orders of the commitment or of the owner and name as a new order meets them (an overdue order of the same wallet and name closed, any other answered `409 order_exists`), and the write: phase `queued`, the new fields and reveal, transactions and attempts cleared (3.2), `selected_at` set to the selection's time.
+- **Final:** the name stays reserved for the buyer for 1 month from `paid_at` (6). A selection also clears `unregistered_alerted_at` (3.1). The month pass reads `paid_at` again in the order's turn.
+  - **Reset:** a take, by another buyer's paid order at settlement or on chain (2.1), resets the order's name part: phase `taken`, name not selected; not live, its name free for other orders, a paid order's price credited to its balance, a code order's code released. The order keeps its id, its owner, its payment or code, and the taken name's fields, which its view shows. The view's `taken` phase has no other field.
+  - **Payment held:** for a paid order, the selection's spend needs `balance.amount` at least `price`, both in the view (`spendBalance`); the page offers a selection only then. A balance refunded by support (`//close`, `//record_refund`) or taken back at a dispute holds less.
+  - **Selection:** `POST /api/registration/ID/name`, signed by the owner as before, selects a name for an order whose name is not selected; any other order is answered `400 bad_request`, and a body equal to the order's current fields with its current view. A new order's checks are run, by their functions: the timestamp, the duration for the order's years, the terms, the name free, and the reveal, with the stored links accepted (2.4); then, in one transaction, other live orders of the commitment or of the owner and name as a new order meets them (an overdue order of the same wallet and name closed, any other answered `409 order_exists`), and the write: phase `queued`, the new fields and reveal, transactions and attempts cleared (3.2), `paid_at` set to the selection's time.
   - **A paid order:** the name's price for the order's years is checked against the order's price as a new order's against the price it saw, `409 catalog_changed` with the name's price; the price is spent from the order's balance in the write's transaction, `400 bad_request` when the balance no longer holds it.
   - **A code order:** in the code's turn, the code is checked and reserved as a new code order's: `400 code_invalid` for a revoked code, `409 code_expired`, `409 code_used`, `409 code_reserved`, `409 payment_pending` and `409 code_not_covering`.
   - `max_order_moves`, the order's `moves` and the refusals `move_limit` and `price_too_high` are removed.
@@ -102,11 +127,11 @@ stateDiagram-v2
 
 ### 1.5 Prepaid-code orders
 - **names:** a code order failed for 30 days gives its code back; the order stays failed (`Names/Worker.hs:108-110, 564-579`).
-- **Final:** a code order not registered within the month from reservation releases its code and is closed, freeing the name, as paid orders.
+- **Final:** a code order not registered within the month from `paid_at` (6) releases its code and is closed, freeing the name, as paid orders.
 
 ### 1.6 Prepaid codes expire
 - **names:** codes never expire: the expiry is stored and checked, but every code is issued without one (`Names/Codes.hs`, `issueNameCode`). No code has been issued yet.
-- **Final:** a code can reserve a name for 3 months from its issue. A name selected for a taken code order reserves its code as a new code order does, so an expired or revoked code is refused (1.3).
+- **Final:** a name can be reserved with a code for 3 months from the code's issue. When a name is selected for a code order after a reset, its code is reserved as for a new code order, so an expired or revoked code is refused (1.3).
 - **Why:** some time pressure; it bounds how long an old price stays valid.
 
 ### 1.7 One request before the invoice
@@ -174,7 +199,7 @@ Contracts: brenzi/simplex-namespace-contract e3ba0a5, `ens-contracts/contracts`.
 
 ### 3.1 The 3-hour alert
 - **names:** the queue alert fires after 20 minutes, but only for queued, committing, registering and committed with a stored signature (`README.md:912, 951`); an order waiting for its owner is not covered.
-- **Final:** every paid order not registered within 3 hours of its name's selection with the payment in place (1.3), failed orders and orders waiting for the owner included, raises one alert in the log and the managed group. No alert is raised for a taken order: an order whose name is no longer available on chain is logged as an error and reported in the group once, as a failed order is, and one taken at settlement is logged as a note. The Prometheus gauge gives the oldest `selected_at` of a live order not registered, so a month-ended order leaves it. Badges: a later pull request.
+- **Final:** every paid order not registered within 3 hours of `paid_at` (6), failed orders and orders waiting for the owner included, raises one alert in the log and the managed group. No alert is raised for an order whose name is not selected: an order whose name is no longer available on chain is logged as an error and reported in the group once, as a failed order is, and one taken at settlement is logged as a note. The Prometheus gauge gives the oldest `paid_at` of a live order not registered, so a month-ended order leaves it. Badges: a later pull request.
 - **Why:** a customer once complained after a week, when the browser state needed to investigate was gone.
 
 ### 3.2 Failure reasons are stored
@@ -220,6 +245,7 @@ Answers are the service's types encoded as derived JSON, and the page reads thos
 - **Late credits:** the query computes the two values the code needs.
 - **Edit reverts:** the contract error's name, stored by its tag.
 - **Times:** one whole-second clock for every time names reads, in place of truncations at 25 writes; one time per order request.
+- **Paid time:** `paid_at` is the moment the order's current name was selected with its payment or code in place: the payment's settlement for the first name, a code order's placement, or a selection after a reset (1.3). The month (1.3), the 3-hour alert and its gauge (3.1) and the dispute evidence (1.4) read it.
 - **Registration keys:** `name_registration_id`, an integer primary key on both backends, and `registration_id`, the order's public id, TEXT NOT NULL UNIQUE, which the other tables reference. Orders of one second are listed, and an exact resend's order found, by `created_at DESC, name_registration_id DESC`. Every reference in the names migration names its column.
 - **Schema boundaries:** the names product uses the generic tables and its own, never a badge table.
   - **names:** names code reads and writes the generic `invoices` and `payments` and its own `name_*` tables (`Names/Store.hs`); none of the names modules mentions a badge table. The names migration creates only `name_*` tables and adds five columns to the generic `payments` (`confirmed_amount`, `received_units`, `confirmed_units`, `invoiced_units`, `invoice_rate`: a payment's crypto amounts and rate). The generic invoice read joins both products' tables to tell an invoice's product (`Store/Invoices.hs:212-222`). Every table carries the badge service's prefix `sx_badge_service_`, the names tables included.

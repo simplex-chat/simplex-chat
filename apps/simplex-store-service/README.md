@@ -1045,7 +1045,7 @@ threshold is above it. Every 5 minutes the service also logs an error and, with 
 the managed group, once for each order whose name was selected 3 hours ago or more, at its payment's
 settlement, its code's placement or a selection after a reset, and still `queued`, `committing`,
 `committed`, `registering` or `failed`: `names: order <id> had its name selected at <time> and is <phase>, not registered, 3
-hours later`. A taken order is not alerted, and the 3 hours are counted again from each later selection. When its name is no longer available on chain, the service logs an
+hours later`. An order whose name is not selected is not alerted, and the 3 hours are counted again from each later selection. When its name is no longer available on chain, the service logs an
 error and posts in the group once: `names worker: registration <id> was taken: its name is no longer
 available on chain`. An order taken at settlement, as another buyer paid for its name first, is logged
 as a note. The alert rule fires for any phase. Below 0.01 ETH the node refuses a register with links (see [Fund the key](#fund-the-key)),
@@ -1200,9 +1200,9 @@ fails the price read, and the service logs a warning with the price:
 
 - a search answers `503 provider_unavailable`;
 - an order answers `503 name_check_unavailable` before any payment;
-- a selection of a name for a taken order paid by invoice answers `503 name_check_unavailable`.
+- a selection of a name after a reset, for an order paid by invoice, answers `503 name_check_unavailable`.
 
-A name selected for a taken order paid by invoice must have the order's price, as an order's name
+A name selected after a reset, for an order paid by invoice, must have the order's price, as an order's name
 must have the price its page showed: a dearer or a cheaper one answers `409 catalog_changed` with the
 name's price. The price is spent from the order's balance, and a balance that no longer holds it,
 refunded or taken back at a dispute, answers `400 bad_request`.
@@ -1483,7 +1483,7 @@ commitment, and a commit's dry run that reverts for one of the reasons above tow
 `max_dry_run_failures`. At either cap the order fails with the reason `registryRefused`, logged at error and
 posted in the managed group as `names worker: registration <id> failed: its register failed <n> times
 at its dry run, last: <reason>`, and support closes it with `//close` (see
-[Closing a failed order](#closing-a-failed-order)). Both counts start again at a selection of a name for a taken order. Any other
+[Closing a failed order](#closing-a-failed-order)). Both counts start again at a selection of a name after a reset. Any other
 failure after which the order's phase is kept, such as a node that does not answer, funds, the fee
 cap, the allowance or an exception in its step, is posted in the group after 10 minutes of
 consecutive failures, of any reasons, with the latest reason; an exception is logged at error
@@ -1505,7 +1505,7 @@ that no longer verifies, as after a change of `[chain] chain_id`, `sponsor` or `
 `[names] tld`, fails the order before its acceptance relay or its register is sent, with the reason `signatureRefused`; the log line is
 `[ERROR …] names worker: registration <id> failed: its stored signature is refused under the service's current configuration, …`,
 and the same text is posted in the managed group. Its page asks the buyer to contact support. A
-name is selected again only for a taken order.
+name is selected again only after a reset.
 
 A close of a failed order, and the worker's judgment of a register that did not go
 through, first run `confirmLanded`. It marks the order registered when `ownerOf` at the confirmation
@@ -1654,7 +1654,7 @@ code row when the invoice is created, and settlement is what marks it paid.
 `//issue name` is answered that names are not enabled, and issues nothing. A name code reserves a
 name until 3 calendar months after its issue, and the answer says so: `Code: SN7-…. Valid until
 <time> UTC.` An order already holding the code keeps it past that time. The code is released at a take,
-so a name selected for the taken order afterwards is refused `code_expired` past that time and
+so a name selected for the order afterwards is refused `code_expired` past that time and
 `code_invalid` once the code is revoked. A code order not registered a calendar month after its name
 was selected, at its placement or after a reset, fails with the reason `monthEnded`, its code
 released and its name freed.
@@ -1792,7 +1792,7 @@ A paid name order keeps its money as a balance when it is reset to `taken` (anot
 name first, or support closed the failed order with `//close`, which also records the refund; see
 [Closing a failed order](#closing-a-failed-order)), when a payment reaches its invoice
 after the invoice closed, and when its invoice was paid more crypto than it asked (the extra). The
-balance of a taken order is spent only when a name of the order's price is selected for that order,
+balance of an order reset by a take is spent only when a name of the order's price is selected for that order,
 at any time, and on no other order. Otherwise the buyer asks for a balance back: the page tells them to
 write to chat@simplex.chat with the order's reference, which is its invoice id, or its registration
 id for an order without an invoice. Nothing is refunded automatically, and the service never learns
