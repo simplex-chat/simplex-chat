@@ -220,7 +220,8 @@ testReferenceResolution :: IO ()
 testReferenceResolution = do
   Right base <- pure $ linkUri "https://a/b/c/d;p?q"
   forM_ examples $ \(ref, expected) -> (ref, imageUri base ref) `shouldBe` (ref, linkUri expected)
-  imageUri base "g:h" `shouldBe` Left "unsupported scheme: g"
+  imageUri base "g:h" `shouldBe` Left "no host"
+  imageUri base "g://h" `shouldBe` Left "unsupported scheme: g"
   where
     examples =
       [ ("g", "https://a/b/c/g"),
