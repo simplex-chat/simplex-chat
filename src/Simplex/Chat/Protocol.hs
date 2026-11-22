@@ -860,6 +860,10 @@ instance ToJSON MsgMentions where
   toEncoding (MsgMentions m) = toEncoding $ toMaybeMap m
   omitField (MsgMentions m) = M.null m
 
+toMaybeMap :: Map k v -> Maybe (Map k v)
+toMaybeMap m = if M.null m then Nothing else Just m
+{-# INLINE toMaybeMap #-}
+
 $(JQ.deriveJSON defaultJSON ''MsgLinkEntry)
 
 instance FromJSON MsgLinks where
@@ -870,10 +874,6 @@ instance ToJSON MsgLinks where
   toJSON (MsgLinks m) = toJSON $ toMaybeMap m
   toEncoding (MsgLinks m) = toEncoding $ toMaybeMap m
   omitField (MsgLinks m) = M.null m
-
-toMaybeMap :: Map k v -> Maybe (Map k v)
-toMaybeMap m = if M.null m then Nothing else Just m
-{-# INLINE toMaybeMap #-}
 
 $(JQ.deriveJSON defaultJSON ''QuotedMsg)
 

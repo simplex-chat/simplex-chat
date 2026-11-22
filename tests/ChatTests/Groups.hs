@@ -271,6 +271,13 @@ chatGroupTests = do
     it "should send updated mentions in history" testGroupHistoryWithMentions
     describe "uniqueMsgMentions" testUniqueMsgMentions
     describe "updatedMentionNames" testUpdatedMentionNames
+  describe "message links" $ do
+    it "link to a message of the same group" testMsgLinkSameGroup
+    it "link to a message of another group is sent without its reference" testMsgLinkOtherGroup
+    it "link that is not in the sender's chats is refused" testMsgLinkRefused
+    it "edit keeps the target of a kept link and removes a changed link" testMsgLinkEdit
+    it "forward removes the reference and keeps the target in the forwarder's copy" testMsgLinkForward
+    it "global link to a channel post" testMsgLinkChannel
   describe "group scoped messages" $ do
     it "should send scoped messages to support (single moderator)" testScopedSupportSingleModerator
     it "should send scoped messages to support (many moderators)" testScopedSupportManyModerators
@@ -8711,6 +8718,131 @@ testUpdatedMentionNames = do
     mentionedMember name_ = CIMention {memberId = MemberId "abcd", memberRef = ciMentionMember <$> name_}
       where
         ciMentionMember name = CIMentionMember {groupMemberId = 1, displayName = name, localAlias = Nothing, memberRole = GRMember}
+
+testMsgLinkSameGroup :: HasCallStack => TestParams -> IO ()
+testMsgLinkSameGroup =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+      bob #> "#team Approve the deploy plan?"
+      [alice, cath] *<# "#team bob> Approve the deploy plan?"
+      alice ##> "/item link #team Approve"
+      link <- getTermLine alice
+      link `shouldStartWith` "simplex:/m#g/"
+      alice #> ("#team see [q](" <> link <> ")")
+      bob <# ("#team alice> see [q](" <> link <> ")")
+      bob <## "[q]: Approve the deploy plan?"
+      cath <# ("#team alice> see [q](" <> link <> ")")
+      cath <## "[q]: Approve the deploy plan?"
+      bob ##> ("/_msg link plan 1 " <> link <> " chat=#1")
+      bob <# "#team Approve the deploy plan?"
+      cath ##> ("/_msg link plan 1 " <> link <> " chat=#1")
+      cath <# "#team bob> Approve the deploy plan?"
+
+testMsgLinkOtherGroup :: HasCallStack => TestParams -> IO ()
+testMsgLinkOtherGroup =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+      createGroup2' "club" alice (cath, GRAdmin) False
+      bob #> "#team Approve the deploy plan?"
+      [alice, cath] *<# "#team bob> Approve the deploy plan?"
+      alice ##> "/item link #team Approve"
+      link <- getTermLine alice
+      alice `send` ("#club see [q](" <> link <> ")")
+      alice <# "#club see [q](simplex:/m)"
+      cath <# "#club alice> see [q](simplex:/m)"
+      cath <## "[q]: Approve the deploy plan?"
+      linkTargets alice `shouldReturn` [("q", Just "Approve the deploy plan?")]
+      linkTargets cath `shouldReturn` [("q", Nothing)]
+      cath ##> "/_msg link plan 1 simplex:/m chat=#2"
+      cath <## "message link: unknown source"
+
+testMsgLinkRefused :: HasCallStack => TestParams -> IO ()
+testMsgLinkRefused =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      createGroup2 "team" alice bob
+      alice ##> "#team see [q](simplex:/m#g/YWJjZGVmZ2hpamtsbW5vcA?a=MTIzNDU2Nzg5MDEyMzQ1Ng)"
+      alice <## "bad chat command: message link: not in your chats"
+      bob #> "#team hello"
+      alice <# "#team bob> hello"
+      alice ##> "/item link #team hello"
+      link <- getTermLine alice
+      alice ##> ("#team " <> unwords ["[q" <> show i <> "](" <> link <> ")" | i <- [1 .. 21 :: Int]])
+      alice <## "bad chat command: message link: too many links"
+
+testMsgLinkEdit :: HasCallStack => TestParams -> IO ()
+testMsgLinkEdit =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+      createGroup2' "club" alice (cath, GRAdmin) False
+      bob #> "#team Approve the deploy plan?"
+      [alice, cath] *<# "#team bob> Approve the deploy plan?"
+      alice ##> "/item link #team Approve"
+      link <- getTermLine alice
+      alice `send` ("#club see [q](" <> link <> ")")
+      alice <# "#club see [q](simplex:/m)"
+      cath <# "#club alice> see [q](simplex:/m)"
+      cath <## "[q]: Approve the deploy plan?"
+      alice ##> "! #club see [q](simplex:/m) and [p](simplex:/m)"
+      alice <# "#club [edited] see [q](simplex:/m) and [p](simplex:/m)"
+      cath <# "#club alice> [edited] see [q](simplex:/m) and [p](simplex:/m)"
+      linkTargets alice `shouldReturn` [("q", Just "Approve the deploy plan?")]
+      linkTargets cath `shouldReturn` [("q", Nothing)]
+      alice ##> "! #club see [r](simplex:/m)"
+      alice <# "#club [edited] see [r](simplex:/m)"
+      cath <# "#club alice> [edited] see [r](simplex:/m)"
+      linkTargets alice `shouldReturn` []
+      linkTargets cath `shouldReturn` []
+
+testMsgLinkForward :: HasCallStack => TestParams -> IO ()
+testMsgLinkForward =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+      bob #> "#team Approve the deploy plan?"
+      [alice, cath] *<# "#team bob> Approve the deploy plan?"
+      alice ##> "/item link #team Approve"
+      link <- getTermLine alice
+      alice #> ("#team see [q](" <> link <> ")")
+      bob <# ("#team alice> see [q](" <> link <> ")")
+      bob <## "[q]: Approve the deploy plan?"
+      cath <# ("#team alice> see [q](" <> link <> ")")
+      cath <## "[q]: Approve the deploy plan?"
+      cath `send` "@alice <- #team see"
+      cath <# "@alice <- #team"
+      cath <## "      see [q](simplex:/m)"
+      alice <# "cath> -> forwarded"
+      alice <## "      see [q](simplex:/m)"
+      alice <## "[q]: Approve the deploy plan?"
+      linkTargets cath `shouldReturn` [("q", Nothing), ("q", Just "Approve the deploy plan?")]
+
+testMsgLinkChannel :: HasCallStack => TestParams -> IO ()
+testMsgLinkChannel ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath ->
+        withNewTestChat ps "dan" danProfile $ \dan -> do
+          (shortLink, fullLink) <- prepareChannel1Relay "team" alice bob
+          memberJoinChannel "team" [bob] [alice] shortLink fullLink cath
+          alice #> "#team Release notes 7.2"
+          bob <# "#team> Release notes 7.2"
+          cath <# "#team> Release notes 7.2 [>>]"
+          alice ##> "/item link #team Release"
+          link <- getTermLine alice
+          link `shouldStartWith` "https://"
+          cath ##> ("/_msg link plan 1 " <> link)
+          cath <# "#team> Release notes 7.2 [>>]"
+          let chatLink = T.unpack . T.init . fst . T.breakOn "m=" $ T.pack link
+          dan ##> ("/_msg link plan 1 " <> link)
+          dan <## ("message link: connect with " <> chatLink)
+
+linkTargets :: TestCC -> IO [(T.Text, Maybe T.Text)]
+linkTargets cc =
+  withCCTransaction cc $ \db ->
+    DB.query_ db "SELECT l.label, t.item_text FROM chat_item_links l LEFT JOIN chat_items t ON t.chat_item_id = l.target_chat_item_id ORDER BY l.chat_item_link_id"
 
 testScopedSupportSingleModerator :: HasCallStack => TestParams -> IO ()
 testScopedSupportSingleModerator =

@@ -303,6 +303,12 @@ decodeChatMessageTest = describe "Chat message encoding/decoding" $ do
   it "x.msg.update" $
     "{\"v\":\"9\",\"event\":\"x.msg.update\",\"params\":{\"msgId\":\"AQIDBA==\", \"content\":{\"text\":\"hello\",\"type\":\"text\"}}}"
       #==# XMsgUpdate (SharedMsgId "\1\2\3\4") (MCText "hello") [] [] Nothing Nothing Nothing Nothing
+  it "x.msg.new with message links" $
+    "{\"v\":\"9\",\"msgId\":\"AQIDBA==\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"see [q](simplex:/m)\",\"type\":\"text\"},\"links\":{\"q\":{\"text\":\"Approve the plan?\"}}}}"
+      ##==## ChatMessage chatInitialVRange (Just $ SharedMsgId "\1\2\3\4") (XMsgNew (mcSimple (MCText "see [q](simplex:/m)")) {links = MsgLinks [("q", MsgLinkEntry "Approve the plan?")]})
+  it "x.msg.update with message links" $
+    "{\"v\":\"9\",\"event\":\"x.msg.update\",\"params\":{\"msgId\":\"AQIDBA==\", \"content\":{\"text\":\"see [q](simplex:/m)\",\"type\":\"text\"},\"links\":{\"q\":{\"text\":\"Approve the plan?\"}}}}"
+      #==# XMsgUpdate (SharedMsgId "\1\2\3\4") (MCText "see [q](simplex:/m)") [] [("q", MsgLinkEntry "Approve the plan?")] Nothing Nothing Nothing Nothing
   it "x.msg.del" $
     "{\"v\":\"9\",\"event\":\"x.msg.del\",\"params\":{\"msgId\":\"AQIDBA==\"}}"
       #==# XMsgDel (SharedMsgId "\1\2\3\4") Nothing Nothing False
