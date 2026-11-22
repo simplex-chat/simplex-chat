@@ -95,7 +95,7 @@ cmdArgsP :: CmdSource -> CmdTag -> A.Parser GroupCmd
 cmdArgsP source = \case
   CTIssue ->
     uncurry GCIssueName <$> nameCodeP <*> statusP (nameStatuses source)
-      <|> GCIssue <$> badgeTypeP <*> optP monthsOpt <*> maybe (pure $ optMin usesOpt) optP (issueUses source) <*> statusP (badgeStatuses source)
+      <|> GCIssue <$> badgeTypeP <*> issueMonthsP source <*> maybe (pure $ optMin usesOpt) optP (issueUses source) <*> statusP (badgeStatuses source)
   CTBulk -> GCBulk <$> badgeTypeP <*> optP monthsOpt <*> countP
   CTRevoke -> GCRevoke <$> codeP <|> GCRevokeName <$> prepaidCodeP
   CTBalance -> GCMoney <$> balanceArgsP
@@ -104,6 +104,11 @@ cmdArgsP source = \case
   where
     countP = A.space *> optValueP countOpt
     statusP statuses = A.option CPSFree (A.space *> mfilter (`elem` statuses) textTokenP)
+
+issueMonthsP :: CmdSource -> A.Parser Int
+issueMonthsP = \case
+  FromConsole -> fromMaybe (optMin monthsOpt) <$> optional (A.space *> (optValueP monthsOpt <|> boundedInt monthsOpt))
+  FromGroup -> optP monthsOpt
 
 issueUses :: CmdSource -> Maybe CmdOpt
 issueUses = \case

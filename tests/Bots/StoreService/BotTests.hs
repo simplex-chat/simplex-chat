@@ -450,7 +450,7 @@ operatorCmd cc cmd =
 
 issueCodeAs :: HasCallStack => ChatController -> BadgeType -> Int -> String -> IO BadgeCode
 issueCodeAs cc badgeType months status =
-  sendChatCmdStr cc ("//issue " <> T.unpack (textEncode badgeType) <> " months " <> show months <> " " <> status) >>= \case
+  sendChatCmdStr cc ("//issue " <> T.unpack (textEncode badgeType) <> " " <> show months <> " " <> status) >>= \case
     Right (CRCustomChatResponse _ response) -> case T.stripPrefix "Code: " response of
       Just c | Just code <- parseBadgeCode c -> pure code
       _ -> error $ "unexpected issue response: " <> T.unpack response
@@ -557,13 +557,17 @@ testIssueRejectsBadArguments ps =
   withStoreService ps $ \_ _ cc -> do
     let refuses arg = (arg,) <$> issueRaw cc arg `shouldReturn` (arg, Left consoleIssueUsage)
     refuses "suporter"
+    refuses "supporter 0"
+    refuses "supporter 13"
+    refuses "supporter 18446744073709551617"
+    refuses "supporter 1 gratis"
     refuses "supporter months 0"
     refuses "supporter months 13"
     refuses "supporter months 18446744073709551617"
     refuses "supporter months 1 gratis"
-    refuses "supporter 12"
     refuses "supporter uses 2"
     refuses ""
+    issueRaw cc "supporter 12 paid" >>= (`shouldSatisfy` isRight)
     issueRaw cc "supporter months 12 paid" >>= (`shouldSatisfy` isRight)
     operatorCmd cc "//issued supporter" `shouldReturn` Left badgeCmdUsage
 

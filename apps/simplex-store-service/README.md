@@ -1662,7 +1662,8 @@ was selected, at its placement or after a reset, fails with the reason `monthEnd
 released and its name freed.
 
 The console reads the commands by the group's grammar (see [From the group](#from-the-group)), with
-a payment status in place of `uses` and without `/bulk`. A malformed command is answered with its
+a payment status in place of `uses`, a badge's months also without `months` (`//issue supporter 12`),
+and without `/bulk`. A malformed command is answered with its
 usage, which for `//issue` also lists each kind's bounds and an example of each; an unknown one with
 the usage of every command.
 
