@@ -222,6 +222,7 @@ chatGroupTests = do
   describe "group message forwarding" $ do
     it "forward messages between invitee and introduced (x.msg.new)" testGroupMsgForwardMessage
     it "reject forwarded content attributed to own membership" testGroupMsgForwardOwnMembershipRejected
+    it "reject forwarded content of unknown member via own membership or from a forwarder that is neither host nor that member" testGroupMsgForwardViaRejected
     it "forward batched messages" testGroupMsgForwardBatched
     it "forward reports to moderators, don't forward to members (x.msg.new, MCReport)" testGroupMsgForwardReport
     it "deduplicate forwarded messages" testGroupMsgForwardDeduplicate
@@ -325,6 +326,7 @@ chatGroupTests = do
     it "host forwards messages of member via another member until its invitee connects to that member" testViaMemberOtherAdmin
     it "introduce member via another member after that member" testViaMemberIntroOrder
     it "reply to and mention of member via user resolve to that member" testViaMemberReply
+    it "priority and edit window of messages sent as member follow member role" testViaMemberRoleRules
     it "remove member via user" testViaMemberRemove
     it "refuse role above user role, member not via user and user below admin" testViaMemberRefused
     it "sign messages of member via user with user key" testViaMemberSigned
@@ -5940,6 +5942,27 @@ testGroupMsgForwardOwnMembershipRejected =
       bob ##> "/p"
       bob <## "user profile: bob (Bob)"
       bob <## "use /p <name> [<bio>] to change it"
+
+testGroupMsgForwardViaRejected :: HasCallStack => TestParams -> IO ()
+testGroupMsgForwardViaRejected =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+      threadDelay 1000000
+      bobMemId <- memberIdByName alice "bob"
+      aliceMemId <- memberIdByName bob "alice"
+      aliceConnId <- relayConnIdToMember alice "bob"
+      cathConnId <- relayConnIdToMember cath "bob"
+      ts <- getCurrentTime
+      let forged sharedId = ChatMessage chatInitialVRange (Just $ SharedMsgId sharedId) (XMsgNew $ mcSimple $ MCText "forged")
+          fwdVia memId name viaId = GrpMsgForward (FwdMemberVia (MemberId memId) name viaId) ts
+      agentSendBody alice aliceConnId $ encodeBinaryBatch [encodeFwdElement (fwdVia "unknown_1" "xavier" bobMemId) (VMUnsigned $ forged "forged_msg1")]
+      alice #> "#team hello"
+      [bob, cath] *<# "#team alice> hello"
+      agentSendBody cath cathConnId $ encodeBinaryBatch [encodeFwdElement (fwdVia "unknown_2" "yvonne" aliceMemId) (VMUnsigned $ forged "forged_msg2")]
+      cath #> "#team hey"
+      [alice, bob] *<# "#team cath> hey"
+      withCCTransaction bob (\db -> DB.query_ db "SELECT count(1) FROM group_members WHERE member_via IS NOT NULL" :: IO [[Int]]) `shouldReturn` [[0]]
 
 testGroupMsgForwardBatched :: HasCallStack => TestParams -> IO ()
 testGroupMsgForwardBatched =
@@ -15845,6 +15868,24 @@ testViaMemberReply =
         Right (CRApiChat _ (AChat _ Chat {chatItems = [CChatItem _ ChatItem {quotedItem = Just CIQuote {itemId = quotedId, chatDir = CIQGroupRcv (Just GroupMember {groupMemberId = quotedGMId})}, mentions}]}) _) ->
           pure (quotedId, quotedGMId, [gmId | CIMention {memberRef = Just CIMentionMember {groupMemberId = gmId}} <- M.elems mentions])
         _ -> fail $ show r
+
+testViaMemberRoleRules :: HasCallStack => TestParams -> IO ()
+testViaMemberRoleRules =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      createGroup2 "team" alice bob
+      threadDelay 1000000
+      setGroupEdits alice "{\"enable\": \"on\", \"role\": \"owner\"}"
+      addViaMember alice "member"
+      viaMemberAdded [bob]
+      alice ##> "/_send #1(as_member=3) json [{\"msgContent\": {\"type\": \"text\", \"text\": \"hi\"}, \"priority\": 1}]"
+      alice <# "#team hi"
+      bob <# "#team reviewer> hi [>>]"
+      itemPriority alice "/_get chat #1 count=1" `shouldReturn` MPNormal
+      hiId <- lastItemId alice
+      setItemAge alice hiId (100 * 3600)
+      alice ##> ("/_update item #1 " <> hiId <> " text hello")
+      alice <## "cannot update this item"
 
 testViaMemberRemove :: HasCallStack => TestParams -> IO ()
 testViaMemberRemove =
