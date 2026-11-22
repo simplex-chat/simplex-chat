@@ -647,21 +647,23 @@ testSelectRefusedCode = withOwner $ \ctx@Ctx {cStore} -> do
         pure (r, code, to)
       refusedUnchanged r code to tag = do
         row <- codeRow ctx code
-        select ctx keyA r to `shouldReturn` tag
+        answer <- select ctx keyA r to
+        answer `shouldBe` tag
         stored ctx r `shouldReturn` r
         codeRow ctx code `shouldReturn` row
+        pure answer
   (expiredOrder, expired@PrepaidCode {pcCodeHash = expiredHash}, toExpired) <- takenCodeIn 1
   withTransaction cStore $ \db -> DB.execute db "UPDATE sx_badge_service_name_prepaid_codes SET expires_at = ? WHERE code_hash = ?" (orderTime, expiredHash)
-  refusedUnchanged expiredOrder expired toExpired $ refusedWith 409 "code_expired"
+  refusedUnchanged expiredOrder expired toExpired (refusedWith 409 "code_expired") >>= answerFixture "select-code-expired"
   (revokedOrder, revoked@PrepaidCode {pcCodeHash = revokedHash}, toRevoked) <- takenCodeIn 2
   fst <$> withTransaction cStore (\db -> revokePrepaidCode db revokedHash orderTime) `shouldReturn` Revoked (pcId revoked)
-  refusedUnchanged revokedOrder revoked toRevoked $ refusedWith 400 "code_invalid"
+  refusedUnchanged revokedOrder revoked toRevoked (refusedWith 400 "code_invalid") >>= answerFixture "select-code-invalid"
   forM_ ["codeorder8", "codeorder9"] $ answerFree ctx
   (reusedText, reused) <- issueCode ctx 8 2 id
   firstTaken <- registered ctx reusedText aliceOrder {oLabel = "codeorder8", oSecret = secretOf 38} >>= registrationById ctx >>= retaken ctx
   reusing <- registered ctx reusedText (byB aliceOrder) {oLabel = "codeorder9", oSecret = secretOf 39}
   toReserved <- selectionOf ctx "alicebakers" 48
-  refusedUnchanged firstTaken reused toReserved $ refusedWith 409 "code_reserved"
+  refusedUnchanged firstTaken reused toReserved (refusedWith 409 "code_reserved") >>= answerFixture "select-code-reserved"
   pcReservedBy <$> codeRow ctx reused `shouldReturn` Just reusing
 
 testSelectSizes :: IO ()
