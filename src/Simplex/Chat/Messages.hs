@@ -128,7 +128,7 @@ sendAsMember = \case
   SAMember m -> Just m
   _ -> Nothing
 
-sendAsGroupIf :: ShowGroupAsSender -> SendAs m
+sendAsGroupIf :: Bool -> SendAs m
 sendAsGroupIf asGroup = if asGroup then SAGroup else SAUser
 
 sendAsGroup' :: GroupInfo -> Maybe GroupChatScope -> SendAs m
