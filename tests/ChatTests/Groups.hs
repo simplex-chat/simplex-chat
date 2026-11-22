@@ -6663,6 +6663,7 @@ testGroupUpdateAsNewHighPriority =
       forM_ [alice, bob, cath] $ \cc ->
         itemPriority cc "/_get chat #1 count=1" `shouldReturn` Just 1
       priorityCounts cath "#1" `shouldReturn` (2, 1, 0, 1)
+      threadDelay 1000000
       cath #> "#team ok"
       [alice, bob] *<# "#team cath> ok"
       okId <- lastItemId cath
