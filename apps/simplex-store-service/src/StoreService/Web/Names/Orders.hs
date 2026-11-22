@@ -13,6 +13,8 @@ module StoreService.Web.Names.Orders
     refused,
     nameInvoiceHandler,
     codeOrderHandler,
+    purchaseChecked,
+    announceHeld,
     nameInvoiceView,
     orderRefusal,
     paymentMethod,
@@ -29,6 +31,7 @@ import qualified Data.Aeson as J
 import qualified Data.Aeson.TH as JQ
 import qualified Data.Aeson.Types as JT
 import qualified Data.ByteString.Char8 as B
+import Data.Foldable (toList)
 import Data.Text (Text)
 import Data.Time.Clock (UTCTime, addUTCTime)
 import Data.Word (Word32)
@@ -101,7 +104,6 @@ refusalResponse r = responseLBS status (retryAfterHeader <> apiHeaders) (J.encod
       NRNameTaken -> status409
       NRNameCheckUnavailable -> status503
       NRCatalogChanged {} -> status409
-      NRPriceTooHigh {} -> status409
       NRTermsChanged {} -> status409
       NRCodesOnly -> status403
       NRCodeInvalid -> status400
@@ -110,7 +112,6 @@ refusalResponse r = responseLBS status (retryAfterHeader <> apiHeaders) (J.encod
       NRCodeExpired -> status409
       NRCodeNotCovering -> status409
       NRPaymentPending -> status409
-      NRMoveLimit {} -> status409
       NRRegistrationChanged {} -> status409
       NRStaleNonce -> status409
       NRRecordReverted -> status409
@@ -126,7 +127,7 @@ refusalResponse r = responseLBS status (retryAfterHeader <> apiHeaders) (J.encod
 
 -- | POST /api/invoice for a name, its body already read and its kind checked.
 nameInvoiceHandler :: OrdersEnv -> HttpEnv -> CheckoutClient -> ServiceConfig -> [Provider] -> Waiters -> J.Object -> Respond -> IO ResponseReceived
-nameInvoiceHandler env@OrdersEnv {oeStore} http client cfg providers waiters body respond
+nameInvoiceHandler env http client cfg providers waiters body respond
   | nCodesOnly (oeConfig env) = sendAnswer respond =<< refuse ORCodesOnly
   | otherwise = sendAnswer respond =<< case parseBody "order" (J.Object body) >>= invoiceOrder of
     Left refusal -> refuse refusal
@@ -136,20 +137,12 @@ nameInvoiceHandler env@OrdersEnv {oeStore} http client cfg providers waiters bod
     what = "POST /api/invoice (name)"
     refuse = refused what
     invoiceOrder InvoiceOrder {ioOrder, ioMethod, ioPrice, ioReveal} = (\req -> (req, ioMethod, fromIntegral ioPrice, ioReveal)) <$> orderRequest ioOrder
-    newOrder req@OrderRequest {orOwner, orFields = fields@OrderFields {ofLabelHash, ofLength, ofDuration}, orTimestamp} method price reveal hash now = do
-      let years = orderYears fields $ nYears $ oeConfig env
-          checks =
-            [ pure $ checkTimestamp now orTimestamp,
-              pure $ checkDuration (oeConfig env) now years ofDuration,
-              checkTerms (oeConfig env) (oeContracts env) fields,
-              checkNameFree (oeContracts env) oeStore Nothing ofLabelHash,
-              checkPrice (oeContracts env) ofLength years price
-            ]
-          insert new paid db at =
+    newOrder req@OrderRequest {orFields} method price reveal hash now = do
+      let insert new paid db at =
             createPaidRegistration db new paid at >>= \case
               True -> pure $ Right ()
               False -> pure $ Left OROrderExists
-      runExceptT (mapM_ ExceptT checks >> ExceptT (orderReveal (oeConfig env) (oeContracts env) now orOwner fields Nothing reveal)) >>= \case
+      purchaseChecked env now req (orderYears orFields $ nYears $ oeConfig env) (Just price) Nothing reveal >>= \case
         Left refusal -> refuse refusal
         Right rv -> createAtProvider env http client cfg providers waiters what now InvoicedOrder {ivRequest = req, ivReveal = rv, ivOrderHash = hash, ivMethod = method, ivPrice = price, ivInsert = insert}
 
@@ -241,7 +234,7 @@ answerOrder OrdersEnv {oeStore, oeTurns, oeNow} what order@OrderRequest {orOwner
 
 -- | POST /api/name/register, an order paid with a prepaid code, in the contract's order of checks.
 codeOrderHandler :: OrdersEnv -> [Provider] -> Waiters -> Request -> Respond -> IO ResponseReceived
-codeOrderHandler env@OrdersEnv {oeStore, oeConfig, oeContracts} providers waiters req respond =
+codeOrderHandler env@OrdersEnv {oeStore} providers waiters req respond =
   readBoundedBody nameBodyBytes req >>= ordered >>= sendAnswer respond
   where
     what = "POST /api/name/register"
@@ -255,20 +248,26 @@ codeOrderHandler env@OrdersEnv {oeStore, oeConfig, oeContracts} providers waiter
         Just code@PrepaidCode {pcCodeHash} ->
           answerOrder env what order (OTCode pcCodeHash) (\_ NameRegistration {nrId} -> pure $ answerNow $ registrationAnswer nrId) (\hash now -> newOrder now order reveal hash code)
     issuedCode = maybe (pure Nothing) (readPrepaidCode oeStore) . parseNameCode
-    newOrder now order@OrderRequest {orOwner, orFields = fields@OrderFields {ofLabelHash, ofDuration}, orTimestamp} reveal hash code@PrepaidCode {pcYears} = do
-      let checks =
-            [ pure $ checkTimestamp now orTimestamp,
-              pure $ checkDuration oeConfig now (orderYears fields pcYears) ofDuration,
-              checkTerms oeConfig oeContracts fields,
-              checkNameFree oeContracts oeStore Nothing ofLabelHash
-            ]
-      runExceptT (mapM_ ExceptT checks >> ExceptT (orderReveal oeConfig oeContracts now orOwner fields Nothing reveal)) >>= \case
+    newOrder now order@OrderRequest {orOwner, orFields} reveal hash code@PrepaidCode {pcYears} =
+      purchaseChecked env now order (orderYears orFields pcYears) Nothing Nothing reveal >>= \case
         Left refusal -> refuse refusal
         Right rv -> do
           rid <- newRegistrationId
-          placeCodeOrder env order rv hash rid code >>= \case
+          placeCodeOrder env order rid code (codeOrderInsert NewRegistration {nrgId = rid, nrgOwner = orOwner, nrgOrder = orFields, nrgReveal = rv, nrgYears = pcYears, nrgOrderHash = hash}) >>= \case
             Left refusal -> refuse refusal
             Right closed -> pure Answer {aResponse = Right $ registrationAnswer rid, aAfter = announceHeld env providers waiters closed rid}
+
+purchaseChecked :: OrdersEnv -> UTCTime -> OrderRequest -> Int -> Maybe USDCents -> Maybe NameReveal -> RevealRequest -> IO (Either OrderRefusal NameReveal)
+purchaseChecked OrdersEnv {oeStore, oeConfig, oeContracts} now OrderRequest {orOwner, orFields = fields@OrderFields {ofLabelHash, ofLength, ofDuration}, orTimestamp} years price accepted reveal =
+  runExceptT $ do
+    mapM_ ExceptT $
+      [ pure $ checkTimestamp now orTimestamp,
+        pure $ checkDuration oeConfig now years ofDuration,
+        checkTerms oeConfig oeContracts fields,
+        checkNameFree oeContracts oeStore ofLabelHash
+      ]
+        <> map (checkPrice oeContracts ofLength years) (toList price)
+    ExceptT $ orderReveal oeConfig oeContracts now orOwner fields accepted reveal
 
 -- | After the commit, the closed orders' invoices and versions are published, and their invoices cancelled at the provider,
 -- best effort, as the poller's sweep would cancel them.
@@ -314,7 +313,6 @@ orderRefusal = \case
     CRExpired -> NRCodeExpired
     CRPaymentPending -> NRPaymentPending
     CRNotCovering -> NRCodeNotCovering
-  ORPriceTooHigh price -> NRPriceTooHigh price
   ORTermsChanged terms community -> NRTermsChanged (termsLink terms) community
   ORTermsUnavailable wait -> NRTermsUnavailable wait
   ORCodesOnly -> NRCodesOnly

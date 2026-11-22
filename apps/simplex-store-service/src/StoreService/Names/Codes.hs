@@ -11,7 +11,6 @@ module StoreService.Names.Codes
     reserveRefusal,
     readPrepaidCode,
     prepaidCodeHash,
-    reserveCode,
     releaseCode,
     spendLandedCode,
     issueNameCode,
@@ -20,10 +19,9 @@ module StoreService.Names.Codes
 where
 
 import Control.Applicative ((<|>))
-import qualified Control.Exception as E
 import Control.Logger.Simple (logError, logWarn)
 import Data.Functor ((<&>))
-import Data.Maybe (fromMaybe, isJust, isNothing)
+import Data.Maybe (fromMaybe, isJust)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (UTCTime)
@@ -38,7 +36,7 @@ import Simplex.Messaging.Encoding.String (TextEncoding (..))
 import StoreService.Group.Command (maxNameYears)
 import StoreService.Names.Chain (Hex32 (..))
 import StoreService.Names.Phases (RegistrationId)
-import StoreService.Names.Store (CmdSource, CodeHash, CodeHashTaken (..), CodeId, NewPrepaidCode (..), PrepaidCode (..), getPrepaidCode, getPrepaidCodeById, insertPrepaidCode, releasePrepaidCode, reserveOwnPrepaidCode, revokePrepaidCode, spendLandedPrepaidCode)
+import StoreService.Names.Store (CmdSource, CodeHash, CodeHashTaken (..), CodeId, NewPrepaidCode (..), PrepaidCode (..), getPrepaidCode, getPrepaidCodeById, insertPrepaidCode, releasePrepaidCode, revokePrepaidCode, spendLandedPrepaidCode)
 import StoreService.Names.Turns (Turns, withCodeTurn)
 import StoreService.Store (RevokeResult (..))
 import StoreService.Store.Invoices (currentSecond)
@@ -76,7 +74,7 @@ instance TextEncoding CodeState where
 data CodeRefusal = CRInvalid | CRUsed | CRReserved | CRExpired | CRPaymentPending | CRNotCovering
   deriving (Eq, Show)
 
--- | Why the code cannot pay for the registration's name of this length. A code the registration
+-- | Why the registration's name of this length cannot be registered with the code. A code the registration
 -- already holds stays good for it until spent, even if revoked or expired since.
 codeRefusal :: UTCTime -> RegistrationId -> NameLength -> PrepaidCode -> Maybe CodeRefusal
 codeRefusal now rid len code@PrepaidCode {pcReservedBy, pcSpentAt, pcMinLength}
@@ -97,14 +95,6 @@ stateRefusal = \case
   CSExpired -> Just CRExpired
   CSUnpaid -> Just CRPaymentPending
 
-ownCodeRefusal :: RegistrationId -> NameLength -> PrepaidCode -> Maybe CodeRefusal
-ownCodeRefusal rid len PrepaidCode {pcReservedBy, pcSpentAt, pcRevokedAt, pcMinLength}
-  | isJust pcSpentAt = Just CRUsed
-  | maybe False (/= rid) pcReservedBy = Just CRReserved
-  | isNothing pcReservedBy && isJust pcRevokedAt = Just CRInvalid
-  | nameLengthInt len < pcMinLength = Just CRNotCovering
-  | otherwise = Nothing
-
 -- | Why a conditional reservation of the code refused it, as the code reads now.
 reserveRefusal :: DB.Connection -> UTCTime -> CodeHash -> RegistrationId -> NameLength -> IO CodeRefusal
 reserveRefusal db now codeHash rid len = maybe CRInvalid (fromMaybe CRReserved . codeRefusal now rid len) <$> getPrepaidCode db codeHash
@@ -114,33 +104,6 @@ readPrepaidCode st code = withTransaction st (`getPrepaidCode` prepaidCodeHash c
 
 prepaidCodeHash :: NamePrepaidCode -> CodeHash
 prepaidCodeHash = Hex32 . namePrepaidCodeHash
-
-newtype ReservationRefused = ReservationRefused CodeRefusal
-  deriving (Show)
-
-instance E.Exception ReservationRefused
-
--- | In the code's turn and one transaction, the registration's own code is checked, the write runs, then the code is reserved for the
--- registration again, so the registration's row is locked before the code's. As a held code, it stays good for its registration
--- even if expired since, and if revoked only while the registration holds it. A refused reservation rolls the write back.
-reserveCode :: Turns -> DBStore -> UTCTime -> CodeHash -> RegistrationId -> NameLength -> (DB.Connection -> IO (Either e a)) -> IO (Either CodeRefusal (Either e a))
-reserveCode turns st now codeHash rid len write =
-  withCodeTurn turns codeHash $ either (\(ReservationRefused refusal) -> Left refusal) id <$> E.try (withTransaction st reserve)
-  where
-    reserve db =
-      getPrepaidCode db codeHash >>= \case
-        Nothing -> pure $ Left CRInvalid
-        Just code@PrepaidCode {pcId, pcReservedBy}
-          | Just refusal <- ownCodeRefusal rid len code -> pure $ Left refusal
-          | otherwise ->
-              write db >>= \case
-                written@(Right _)
-                  | pcReservedBy /= Just rid ->
-                      reserveOwnPrepaidCode db pcId rid now >>= \case
-                        True -> pure $ Right written
-                        -- Only a writer outside this process, which takes no turn here, can refuse it.
-                        False -> E.throwIO . ReservationRefused . maybe CRInvalid (fromMaybe CRReserved . ownCodeRefusal rid len) =<< getPrepaidCode db codeHash
-                written -> pure $ Right written
 
 -- | The write runs first, and the code is released only if it succeeds. False when the registration did not hold the code.
 releaseCode :: Turns -> DBStore -> CodeId -> RegistrationId -> (DB.Connection -> IO (Either e a)) -> IO (Either e (a, Bool))

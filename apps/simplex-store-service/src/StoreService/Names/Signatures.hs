@@ -11,7 +11,7 @@ module StoreService.Names.Signatures
     personalDigest,
     orderMessage,
     findMessage,
-    retargetMessage,
+    selectionMessage,
     parseChecksumAddress,
     parseAnyCaseAddress,
   )
@@ -48,7 +48,7 @@ data AddressError
   | ADChecksum
   deriving (Eq, Show)
 
--- | The fields an owner signs in an order and in another name for it, with the terms the owner agreed to for that name.
+-- | The fields an owner signs in an order and in the selection of a name for it, with the terms the owner agreed to for that name.
 data OrderFields = OrderFields
   { ofLabelHash :: LabelHash,
     ofLength :: NameLength,
@@ -88,8 +88,8 @@ orderMessage order timestamp = message $ ["order"] <> orderWords order <> [tshow
 findMessage :: Address -> Word64 -> ByteString
 findMessage owner timestamp = message ["find", hex $ unAddress owner, tshow timestamp]
 
-retargetMessage :: RegistrationId -> OrderFields -> Word64 -> ByteString
-retargetMessage (RegistrationId rid) order timestamp = message $ ["name", rid] <> orderWords order <> [tshow timestamp]
+selectionMessage :: RegistrationId -> OrderFields -> Word64 -> ByteString
+selectionMessage (RegistrationId rid) order timestamp = message $ ["name", rid] <> orderWords order <> [tshow timestamp]
 
 message :: [Text] -> ByteString
 message = encodeUtf8 . T.unwords . ("simplex.domains" :)

@@ -13,11 +13,11 @@ module Bots.StoreService.GroupIntegrationTests (badgeGroupIntegrationTests, name
 import StoreService.Config (BadgeIssuerKey (..), ChainConfig (cChainId, cController, cServiceKey), GroupConfig (..), NamesConfig (nChain), ServiceConfig (devAcceptUnverifiedStoreReceipts, names), readServiceConfig)
 import StoreService.Group (GroupAction (..), GroupEvent (..), codeInTracker, ensureManagedGroup, fmtTime, joinerAcceptance)
 import StoreService.Group.Command (maxUses)
-import StoreService.Names.Codes (issueNameCode, prepaidCodeHash, reserveCode, revokeNameCode)
+import StoreService.Names.Codes (issueNameCode, prepaidCodeHash, revokeNameCode)
 import StoreService.Names.Abi (addressWord, selector, uint256)
 import StoreService.Names.Chain (SignedTx (..), newChainClient, signTransaction)
 import StoreService.Names.Phases (RegistrationId (..))
-import StoreService.Names.Store (CmdSource (..), FailReason (..), NameRegistration (nrPhase), NewTransaction (..), OrderPhase (OFailed), PrepaidCode (..), RegistrationTx (..), TxFor (..), VersionWrite (Written), getPrepaidCode, insertTransaction, spendLandedPrepaidCode)
+import StoreService.Names.Store (CmdSource (..), FailReason (..), NameRegistration (nrPhase), NewTransaction (..), OrderPhase (OFailed), PrepaidCode (..), RegistrationTx (..), TxFor (..), VersionWrite (Written), getPrepaidCode, insertTransaction, reservePrepaidCode, spendLandedPrepaidCode)
 import StoreService.Names.Turns (codeTurnCount, newTurns, withCodeTurn)
 import StoreService.Names.View (addressText)
 import StoreService.Options (StoreServiceOpts (..))
@@ -485,9 +485,10 @@ testRevokeTakesCodeTurn ps = do
     now <- getCurrentTime
     placePaid st "r1" ownerA (order "alicebakery" 1) (addUTCTime 3600 now) `shouldReturn` Right ()
     reserved <- issueNameRaw cc "name 8"
-    reserving <- holdTurn $ \body -> reserveCode turns st now (prepaidCodeHash reserved) (RegistrationId "r1") (fromJust $ nameLength 8) (\_ -> Right <$> body :: IO (Either Text ()))
+    Just PrepaidCode {pcId = reservedId} <- withTransaction st (`getPrepaidCode` prepaidCodeHash reserved)
+    reserving <- holdTurn $ \body -> withCodeTurn turns (prepaidCodeHash reserved) $ body >> withTransaction st (\db -> reservePrepaidCode db reservedId (RegistrationId "r1") now)
     revokeAfter reserved (releaseTurn reserving) `shouldReturn` Right "Revoked. The order holding it keeps it."
-    finished (thAction reserving) `shouldReturn` Right (Right ())
+    finished (thAction reserving) `shouldReturn` True
 
 namesRefundChatTests :: SpecWith TestParams
 namesRefundChatTests = describe "StoreService names: operator refund" $ do

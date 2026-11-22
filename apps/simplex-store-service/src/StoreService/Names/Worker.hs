@@ -323,7 +323,7 @@ commitSent w now r@NameRegistration {nrPhase} p
   | nrPhase == OCommitting (ptHash p) = pure $ Await p
   | otherwise = save w now r {nrPhase = OCommitting $ ptHash p}
 
--- | Waits for the page's reveal, past the lapse for /retry or a move, has its acceptance held by the name
+-- | Waits for the page's reveal, past the lapse for /retry, has its acceptance held by the name
 -- policy, waits for revealAfter, then registers.
 committed :: Worker -> UTCTime -> NameRegistration -> Commit -> IO Next
 committed w@Worker {wkSender} now r@NameRegistration {nrId = regId, nrReveal, nrReadAt} c@Commit {cmRevealAfter} =

@@ -241,7 +241,7 @@ testOpenWakesOnVersion = bounded "open wakes on version" $ withPolls holdMicros 
   -- a version the page has not seen answers at once
   (fst <$> answeredAtOnce ctx (invoicePath inv <> following ISOpen (nrVersion - 1) "" False)) `shouldReturn` 200
   poll <- held ctx (1, 1) $ invoicePath inv <> following ISOpen nrVersion "" False
-  v' <- change ctx nrId $ \r -> r {nrMoves = nrMoves r + 1}
+  v' <- change ctx nrId id
   (_, o) <- woken "open invoice poll" poll
   (fieldOf o "status", fieldOf (registrationOf o) "version") `shouldBe` (Just "open", Just (J.toJSON v'))
   -- a seenVersion that is no version leaves the hold on the status and payment alone

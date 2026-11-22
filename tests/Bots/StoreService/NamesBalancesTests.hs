@@ -87,7 +87,7 @@ namesBalancesTests = describe "StoreService names: balances" $ do
     it "cancels a paid order of which no register was sent, releasing its name and crediting nothing, once per event" testReversalCancels
     it "records a reversal of an order not yet paid, and closes the order as reversed when its payment settles" testReversalBeforePayment
     it "keeps an order whose register was sent, naming the transaction" testReversalKeepsSent
-    it "cancels an order whose only register is a settled one of another name, as after a move, and keeps one with a register mined or recorded" testReversalCurrentName
+    it "cancels an order whose only register is a settled one of another name, as after a reset and a selection, and keeps one with a register mined or recorded" testReversalCurrentName
     it "takes the reversed cents back from a taken order's balance, as far as it and the invoice's amount hold them, a refund as the rise of its total" testReversalTakesBack
     it "changes nothing for an order whose refund support recorded, and for an early fraud warning" testReversalAlertsOnly
     it "cancels a live order of which no register was sent, also after support refunded part of its balance" testReversalCancelsRefunded

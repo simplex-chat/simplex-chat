@@ -9,7 +9,7 @@ import Bots.StoreService.FakeEthNode
 import Bots.StoreService.NamesBalancesTests (figures)
 import Bots.StoreService.NamesContractsTests (availableCall, maxCommitmentAgeCall, minCommitmentAgeCall, newPolicy, registrarOf)
 import Bots.StoreService.NamesOrdersTests
-import Bots.StoreService.NamesOwnerTests (answerExpiry, answerFree, answerOwner, answerUnowned, byB, codeIn, committedPhase, dynamisOrder, failedPhase, labelBytes, move, moveTo, ownerOfSelector, paidIn, rewrite, sentRegister, stored)
+import Bots.StoreService.NamesOwnerTests (answerExpiry, answerFree, answerOwner, answerUnowned, byB, codeIn, committedPhase, dynamisOrder, failedPhase, labelBytes, ownerOfSelector, paidIn, rewrite, select, selectionOf, sentRegister, stored)
 import Bots.StoreService.NamesPhasesTests (held, prompt, registrationPath, woken)
 import Bots.StoreService.NamesStoreTests (hashFixture, reveal)
 import Bots.StoreService.WebTests (answerOf, capturingStderr, fieldOf, jsonObject, lengthOf, phaseOf, phaseValue, refusedWith, renameTable, statusOf, stubCalls, webGet, withApp)
@@ -60,7 +60,7 @@ import StoreService.Providers (Reversal (..))
 import StoreService.Store.Invoices (InvoiceRow (..), getInvoice)
 import StoreService.Web.Http (createLimit, holdMicros, readLimit)
 import StoreService.Web.Names (Route (..), namesApp)
-import StoreService.Web.Names.Owner (retargetHandler)
+import StoreService.Web.Names.Owner (selectNameHandler)
 import StoreService.Web.Names.Registration (registrationHandler, retryHandler)
 import StoreService.Web.Server (WebEnv (..), webApp)
 import System.Timeout (timeout)
@@ -100,10 +100,10 @@ workerTests = describe "StoreService names: worker" $ do
     it "stores each failed dry run, fails an order at the fifth for a permanent reason, keeping a code, and retries one without data past the lapse, storing it once" testRevertFailed
     it "keeps an order committed while the sponsor allowance is used up, and registers it after a top-up" testAllowanceUsedUp
     it "keeps an order waiting on the allowance past its commitment's lapse, sending nothing, then commits again and registers with its stored intent" testAllowanceAcrossLapse
-    it "fails an order at its fifth register mined with status 0 for its commitment, sending nothing, and refuses its Try again and a move" testSendsCapped
+    it "fails an order at its fifth register mined with status 0 for its commitment, sending nothing, and refuses its Try again and a selection of a name" testSendsCapped
     it "clears the reveal on InvalidNonce or TermsNotAccepted, staying committed, and reads the name policy again on TermsNotAccepted" testInvalidNonce
     it "relays no intent past its deadline, clearing the reveal and staying committed" testExpiredIntent
-    it "fails an order at once, logging and reporting it, when its stored signature is refused under another chain id, sending nothing, and refuses its move to any name" testSignatureUnderOtherConfig
+    it "fails an order at once, logging and reporting it, when its stored signature is refused under another chain id, sending nothing, and refuses a selection of any name for it" testSignatureUnderOtherConfig
     it "fails an order at once, before relaying its acceptance, when its stored signature is refused under another chain id, sending nothing" testRelayUnderOtherConfig
     it "keeps the phase when a read of the final check fails" testCheckUnread
     it "waits a second when the dry run reverts CommitmentTooNew" testCommitmentTooNew
@@ -119,13 +119,13 @@ workerTests = describe "StoreService names: worker" $ do
     it "registers, keeping the reveal, when the relay's dry run reverts while the policy holds the acceptance another sent first" testAcceptanceSentFirst
     it "registers, keeping the reveal, when the relay is mined with status 0 while the policy holds the acceptance another sent first" testAcceptanceMinedFailed
     it "fails an order at its fifth relay mined with status 0 for its commitment, sending nothing more" testRelaysCapped
-    it "counts no relay mined with status 0 before the commitment's newest commit, as an earlier commitment's after a move" testRelayOfEarlierCommitment
+    it "counts no relay mined with status 0 before the commitment's newest commit, as an earlier commitment's after a reset and a selection" testRelayOfEarlierCommitment
     it "retries the relay while the policy's acceptance for the commitment cannot be read, sending nothing" testAcceptanceUnread
     it "clears the reveal of an acceptance signed for another policy or for the other kind of terms, sending nothing, for the page to sign again" testAcceptanceOtherPolicy
     it "clears the reveal when a dry run reverts SignatureExpired, for the page to sign again" testAcceptanceExpired
     it "relays no acceptance once the commitment lapsed, so the policy commits nothing again" testAcceptanceLapsed
   describe "lapse" $ do
-    it "keeps a committed order not revealed by revealBefore waiting, for /retry or a move, keeping its code" testLapseFailed
+    it "keeps a committed order not revealed by revealBefore waiting, for /retry, keeping its code" testLapseFailed
   describe "restart" $ do
     it "resumes every phase after a restart, a commit saved but not recorded included" testRestart
     it "waits for a register saved but not recorded before a restart, sending no other" testRestartRegisterSaved
@@ -146,9 +146,9 @@ workerTests = describe "StoreService names: worker" $ do
   describe "retry" $ do
     it "refuses /retry of any order but a lapsed unsigned one with bad_request, a failed or signed one included, changing nothing, and answers an unknown order 404" testRetryNotFailed
     it "requeues a lapsed committed order, whose view says it lapsed, answering an old version at once after it and keeping its code" testRetryLapsed
-    it "runs in the name's turn, answering registration_changed for an order moved to another name meanwhile" testRetryInNameTurn
+    it "runs in the name's turn, answering registration_changed for an order given another name meanwhile" testRetryInNameTurn
   describe "close" $ do
-    it "closes a failed paid order taken, not live, its price credited and refunded, its reveal cleared, then refuses /retry, a move and a second refund, and accepts a new order for the name" testCloseFailed
+    it "closes a failed paid order taken, not live, its price credited and refunded, its reveal cleared, then refuses /retry, a selection of a name and a second refund, and accepts a new order for the name" testCloseFailed
     it "closes a lapsed unsigned committed order, naming its lapse as its end" testCloseLapsed
     it "registers a failed order whose owner holds the name, and one whose register row mined while the owner no longer holds it, refunding nothing" testCloseLanded
     it "refuses an unknown reference, an order not failed, a failed code order and a failed chain read, changing nothing" testCloseRefused
@@ -182,7 +182,7 @@ withWorkerAs settings action = withOrders $ \open -> do
       registrationRoute = \case
         ["api", "registration", rid] -> Just Route {rMethod = "GET", rLimit = readLimit, rHandler = registrationHandler cOrders (weHttp web) holdMicros (RegistrationId rid)}
         ["api", "registration", rid, "retry"] -> Just Route {rMethod = "POST", rLimit = createLimit, rHandler = retryHandler cOrders (RegistrationId rid)}
-        ["api", "registration", rid, "name"] -> Just Route {rMethod = "POST", rLimit = createLimit, rHandler = retargetHandler cOrders (weProviders web) (weWaiters web) (RegistrationId rid)}
+        ["api", "registration", rid, "name"] -> Just Route {rMethod = "POST", rLimit = createLimit, rHandler = selectNameHandler cOrders (weProviders web) (weWaiters web) (RegistrationId rid)}
         _ -> Nothing
       app req respond = fromMaybe (webApp web req respond) (namesApp (weHttp web) routes req respond)
   withApp app $ \client -> started ctx {cWeb = web, cClient = client} >>= action
@@ -578,7 +578,7 @@ testLostRace = withWorker $ \w@W {wCtx = ctx@Ctx {cNode}, wWorker} -> do
   answerCommitment w r2 $ orderSeconds - 60
   W {wWorker = fresh} <- started ctx
   (stepping', gate') <- pausedAt cNode "eth_call" $ stepRegistration fresh (nrId r2)
-  changed' <- rewrite ctx r2 $ \o -> o {nrMoves = nrMoves o + 1}
+  changed' <- rewrite ctx r2 id
   releaseGate gate'
   timeout prompt (wait stepping') >>= maybe (fail "the step did not finish") (pure . shape) >>= (`shouldBe` "Again")
   stored ctx r2 `shouldReturn` changed'
@@ -792,8 +792,8 @@ testSendsCapped = withWorker $ \w@W {wCtx = ctx@Ctx {cStore}} -> do
   sent w `shouldReturn` []
   fst <$> retryOf ctx x `shouldReturn` 400
   answerFree ctx "alicebakers"
-  to <- moveTo ctx "alicebakers" 10
-  move ctx keyA x to `shouldReturn` refusedWith 400 "bad_request"
+  to <- selectionOf ctx "alicebakers" 10
+  select ctx keyA x to `shouldReturn` refusedWith 400 "bad_request"
   stored ctx r `shouldReturn` x
 
 testInvalidNonce :: IO ()
@@ -1077,8 +1077,8 @@ testSignatureUnderOtherConfig = withWorker $ \W {wCtx = ctx@Ctx {cOrders}, wSend
   answerFree ctx "alicebakers"
   failedOrder <- stored ctx r
   forM_ (zip ["alicebakers", "alicebakery"] [20, 21]) $ \(label, n) -> do
-    to <- moveTo ctx label n
-    move ctx keyA failedOrder to `shouldReturn` refusedWith 400 "bad_request"
+    to <- selectionOf ctx label n
+    select ctx keyA failedOrder to `shouldReturn` refusedWith 400 "bad_request"
   stored ctx r `shouldReturn` failedOrder
 
 testRelayUnderOtherConfig :: IO ()
@@ -1428,7 +1428,7 @@ testRetryLapsed = withWorker $ \w@W {wCtx = ctx@Ctx {cClient}} -> do
 testRetryInNameTurn :: IO ()
 testRetryInNameTurn = withWorker $ \W {wCtx = ctx@Ctx {cOrders}} -> do
   r <- paidIn ctx aliceOrder committedPhase
-  moving <- paidIn ctx (byB dynamisOrder) {oSecret = secretOf 2} committedPhase
+  renamed <- paidIn ctx (byB dynamisOrder) {oSecret = secretOf 2} committedPhase
   advance ctx $ day + 1
   let turns = oeTurns cOrders
       whileHeld :: NameRegistration -> IO a -> IO () -> IO a
@@ -1444,10 +1444,10 @@ testRetryInNameTurn = withWorker $ \W {wCtx = ctx@Ctx {cOrders}} -> do
             timeout prompt (wait requesting) >>= maybe (fail "the retry did not finish") pure
   (status, v) <- whileHeld r (retryOf ctx r) (stored ctx r `shouldReturn` r)
   (status, phaseOf =<< v) `shouldBe` (200, Just "queued")
-  -- moved to another name while the retry waited for the old name's turn
-  (status', v') <- whileHeld moving (retryOf ctx moving) (void $ rewrite ctx moving $ \o -> o {nrLabelHash = labelHash "alicebakers", nrLength = lengthOf 11})
+  -- given another name while the retry waited for the old name's turn
+  (status', v') <- whileHeld renamed (retryOf ctx renamed) (void $ rewrite ctx renamed $ \o -> o {nrLabelHash = labelHash "alicebakers", nrLength = lengthOf 11})
   (status', (`fieldOf` "type") =<< v') `shouldBe` (409, Just "registration_changed")
-  nrPhase <$> stored ctx moving `shouldReturn` nrPhase moving
+  nrPhase <$> stored ctx renamed `shouldReturn` nrPhase renamed
 
 closeOf :: Ctx -> NameRegistration -> IO Closed
 closeOf Ctx {cOrders = OrdersEnv {oeStore, oeContracts, oeTurns, oeNow}} NameRegistration {nrId = RegistrationId rid} = closeRegistration oeStore oeContracts oeTurns oeNow rid
@@ -1479,8 +1479,8 @@ testCloseFailed = withWorker $ \W {wCtx = ctx@Ctx {cStore, cOrders}} -> do
   recordRefund (oeTurns cOrders) cStore rid price orderTime `shouldReturn` Left (RefundAmount 0)
   retryOf ctx x `shouldReturn` refusedWith 400 "bad_request"
   answerFree ctx "alicebakers"
-  to <- moveTo ctx "alicebakers" 10
-  move ctx keyA x to `shouldReturn` refusedWith 400 "bad_request"
+  to <- selectionOf ctx "alicebakers" 10
+  select ctx keyA x to `shouldReturn` refusedWith 400 "bad_request"
   closeOf ctx x `shouldReturn` CLRefused CFNotFailedPaid
   stored ctx r `shouldReturn` x
   figuresOf ctx r `shouldReturn` Just (0, price, price)

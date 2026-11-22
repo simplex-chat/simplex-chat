@@ -6,34 +6,32 @@
         "refunded": 0
       },
       "commitTx": null,
-      "commitment": "0x91dc01305cef64378da32af28e6034c0847fc14a0131927e37b7b84cf286aefb",
+      "commitment": "0xbd3ab23bccfdbcb0ac4f8445afd1b34eb67b0c8274b89e6870fa7e084ed4b184",
       "community": null,
       "duration": 69259500,
       "id": "registration",
-      "label": "alicebakers",
-      "labelHash": "0x31435c2a8c42d425eccac7b91f2674de61efc6d2ef7476e131c0f9ad5ed9ce5b",
+      "label": "alicebakery",
+      "labelHash": "0xbcc46b7948ff6be55bc3ff4db5bc4be16638f29e818a89244dae11caaed7c9c6",
       "latePayment": null,
-      "moves": 3,
       "owner": "0x014f9c09CcEeDEF1B713110d04D3a07d5B5D9b73",
       "payment": {
         "method": "btc",
         "type": "invoice"
       },
       "phase": {
-        "heldUntil": "2026-11-21T09:15:00Z",
         "type": "taken"
       },
       "price": 10000,
       "registerTx": null,
-      "sealed": "sealed-alicebakers-13",
+      "sealed": "sealed-alicebakery-1",
       "terms": {
         "communityName": false,
         "termsHash": "0x67b989cccc7ae150142daa4029304c7b7e78ab0a4ccebeba2ec1ef8a30f8147e"
       },
-      "version": 10,
+      "version": 4,
       "years": 2
     },
-    "type": "move_limit"
+    "type": "registration_changed"
   },
   "status": 409
 }

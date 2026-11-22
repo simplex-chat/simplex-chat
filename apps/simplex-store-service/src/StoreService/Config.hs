@@ -184,10 +184,9 @@ data NamesConfig = NamesConfig
     nTermStart :: UTCTime,
     nTermSlackSeconds :: Int,
     nRevealMarginSeconds :: Int,
-    nMaxOrderMoves :: Int,
     nMaxDryRunFailures :: Int,
     nMaxSentFailures :: Int,
-    -- | Only prepaid codes pay for names: every order that would take money for one is refused.
+    -- | Names are registered only with prepaid codes: every order that would take money for one is refused.
     nCodesOnly :: Bool,
     -- | The owner record edits relayed for one name in any 365 days, each a transaction whose gas the service pays.
     nRecordEditsPerYear :: Int,
@@ -407,7 +406,7 @@ knownSettings =
     ("dev", ["accept_unverified_store_receipts", "check_store_during_coverage", "credit_test_purchases"]),
     ("issuer", ["index", "private_key", "dev_keys"]),
     ("log", ["level"]),
-    ("names", ["tld", "years", "term_start", "term_slack_seconds", "reveal_margin_seconds", "max_order_moves", "max_dry_run_failures", "max_sent_failures", "codes_only", "record_edits_per_year", "min_price_cents_per_year"]),
+    ("names", ["tld", "years", "term_start", "term_slack_seconds", "reveal_margin_seconds", "max_dry_run_failures", "max_sent_failures", "codes_only", "record_edits_per_year", "min_price_cents_per_year"]),
     ("chain", ["rpc_url", "chain_id", "controller", "sponsor", "base_registrar", "resolver", "service_key", "confirmations", "gas_limit_cap", "max_fee_per_gas"])
   ]
 
@@ -649,7 +648,6 @@ parseConfig ini = do
           nTermStart <- termStart
           nTermSlackSeconds <- num "names" "term_slack_seconds" 0 maxBound 3600
           nRevealMarginSeconds <- num "names" "reveal_margin_seconds" 0 maxBound 900
-          nMaxOrderMoves <- num "names" "max_order_moves" 0 maxBound 3
           nMaxDryRunFailures <- num "names" "max_dry_run_failures" 1 maxBound 5
           nMaxSentFailures <- num "names" "max_sent_failures" 1 maxBound 5
           nCodesOnly <- bool "names" "codes_only" False
@@ -657,7 +655,7 @@ parseConfig ini = do
           nMinPriceCentsPerYear <- num "names" "min_price_cents_per_year" 1 maxBound defaultMinPriceCentsPerYear
           nCommunity <- communityList nTLD
           nChain <- chainSection
-          pure (Just NamesConfig {nTLD, nYears, nTermStart, nTermSlackSeconds, nRevealMarginSeconds, nMaxOrderMoves, nMaxDryRunFailures, nMaxSentFailures, nCodesOnly, nRecordEditsPerYear, nMinPriceCentsPerYear, nCommunity, nChain})
+          pure (Just NamesConfig {nTLD, nYears, nTermStart, nTermSlackSeconds, nRevealMarginSeconds, nMaxDryRunFailures, nMaxSentFailures, nCodesOnly, nRecordEditsPerYear, nMinPriceCentsPerYear, nCommunity, nChain})
     tldSetting =
       required "names" "tld" >>= \case
         "simplex" -> Right TLDSimplex

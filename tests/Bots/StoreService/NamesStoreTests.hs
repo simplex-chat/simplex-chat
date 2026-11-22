@@ -73,11 +73,11 @@ namesStoreTests = describe "StoreService names: store" $ do
     it "closes nothing from a stale version" testCloseOverdueStale
     it "bumps the version on every write and changes nothing for a stale one" testVersionBumps
     it "writes and reads back every changeable field, and clears the reveal" testRoundTrip
-    it "keeps live in step with the phase, a taken order live again only by a write that counts a move" testLiveFollowsPhase
+    it "keeps live in step with the phase, a taken order live again by the selection of a name" testLiveFollowsPhase
     it "is live while an order can still progress to a registration for its name" testOrderLive
     it "refuses to queue a closed order, also when a newer live order holds its name" testLatePayment
     it "refuses a write that would meet another live order, writing nothing" testWriteMeetsLiveOrder
-    it "retargets to the new fields and reveal, clearing the transactions, reveal times and failed attempts" testRetarget
+    it "writes a name selected, with its fields and reveal, clearing the transactions, reveal times and failed attempts" testSelectRegistration
     it "finds registrations made in the same second, and an exact resend's newest order, newest first, and orders the rest by their id" testSameSecondOrder
     it "names the order holding a label from queued to registering and failed, one at a time, and none for an unpaid, taken or registered one" testLabelRegistering
     it "lists the registrations a worker moves on" testActive
@@ -348,7 +348,6 @@ testCreatePaid = withServiceStore $ \st -> do
         nrReveal = Just reveal,
         nrHistory = noHistory,
         nrOrderHash = orderHash ownerA o (OTInvoice btc price),
-        nrMoves = 0,
         nrCreatedAt = t0,
         nrUpdatedAt = t0,
         nrReadAt = t0,
@@ -471,7 +470,7 @@ testVersionBumps = withServiceStore $ \st -> do
   write st r2 {nrPhase = OCommitted commitFixture} `shouldReturn` Written 3
   r3 <- reg st "r1"
   write st r3 {nrReveal = Just reveal} `shouldReturn` Written 4
-  write st r3 {nrMoves = 1} `shouldReturn` VersionChanged
+  write st r3 {nrReveal = Nothing} `shouldReturn` VersionChanged
   write st r1 {nrPhase = OFailed (at 5) FRRegistryRefused} `shouldReturn` VersionChanged
   r4 <- reg st "r1"
   (nrVersion r4, nrPhase r4, nrReveal r4) `shouldBe` (4, OCommitted commitFixture, Just reveal)
@@ -486,7 +485,6 @@ testRoundTrip = withServiceStore $ \st -> do
           { nrPhase = OFailed (at 2) FRSignatureRefused,
             nrReveal = Just reveal {rvChannelLink = Just "simplex:/c#xyz", rvAcceptance = TermsAcceptance (hashFixture 10) 4 signature},
             nrHistory = TxHistory {thCommitTx = Just $ TxHash $ hashFixture 8, thRegisterTx = Just $ TxHash $ hashFixture 9},
-            nrMoves = 2,
             nrAgreedTerms = agreed (communityTermsPrefix <> plainTerms)
           }
       registered = changed {nrPhase = ORegistered (RoundedSystemTime 1861833600) (at 3)}
@@ -511,8 +509,7 @@ testLiveFollowsPhase = withServiceStore $ \st -> do
   step "r1" failedPhase True
   step "r1" OTaken False
   r1 <- reg st "r1"
-  write st r1 {nrPhase = failedPhase} `shouldReturn` NotLive
-  write st r1 {nrPhase = OQueued, nrMoves = nrMoves r1 + 1} `shouldReturn` Written (nrVersion r1 + 1)
+  withTransaction st (\db -> selectRegistration db r1 (order "alicebakers" 4) reveal (at 2)) `shouldReturn` Written (nrVersion r1 + 1)
   orderLive <$> reg st "r1" `shouldReturn` True
   step "r2" (ORegistering commitFixture $ TxHash $ hashFixture 9) True
   step "r2" OTaken False
@@ -559,15 +556,15 @@ testWriteMeetsLiveOrder = withServiceStore $ \st -> do
   r1 <- reg st "r1"
   write st r1 {nrPhase = OFailed (at 1) FRRegistryRefused} `shouldReturn` Written 2
   failed <- reg st "r1"
-  let retarget o = withTransaction st $ \db -> retargetRegistration db failed o reveal 10000 (at 6)
-  retarget held {ofCommitment = hashFixture 4} `shouldReturn` LiveOrderExists
+  let select o = withTransaction st $ \db -> selectRegistration db failed o reveal (at 6)
+  select held {ofCommitment = hashFixture 4} `shouldReturn` LiveOrderExists
   r3 <- reg st "r3"
-  retarget (order "carolsbakery" 5) {ofCommitment = nrCommitment r3} `shouldReturn` LiveOrderExists
+  select (order "carolsbakery" 5) {ofCommitment = nrCommitment r3} `shouldReturn` LiveOrderExists
   reg st "r1" `shouldReturn` failed
-  retarget (order "davesbakery" 6) `shouldReturn` Written 3
+  select (order "davesbakery" 6) `shouldReturn` Written 3
 
-testRetarget :: IO ()
-testRetarget = withServiceStore $ \st -> do
+testSelectRegistration :: IO ()
+testSelectRegistration = withServiceStore $ \st -> do
   let o = order "alicebakery" 1
       o' = (order "alicebakers" 2) {ofAgreedTerms = agreed (communityTermsPrefix <> plainTerms)}
   placePaid st "r1" ownerA o (at 60) `shouldReturn` Right ()
@@ -579,12 +576,12 @@ testRetarget = withServiceStore $ \st -> do
             nrHistory = TxHistory {thCommitTx = Just $ TxHash $ hashFixture 8, thRegisterTx = Just $ TxHash $ hashFixture 9}
           }
   write st failed `shouldReturn` Written 2
-  let moved = reveal {rvLabel = "alicebakers", rvSecret = hashFixture 12}
+  let selected = reveal {rvLabel = "alicebakers", rvSecret = hashFixture 12}
       attempt = NameAttempt {naTx = RTRegister, naStage = ASSent, naReason = "mined with status 0", naAt = at 5}
       failedSend = withTransaction st $ \db -> recordAttempt db (RegistrationId "r1") True attempt
   failedSend `shouldReturn` 1
   failedSend `shouldReturn` 2
-  withTransaction st (\db -> retargetRegistration db failed {nrVersion = 2} o' moved 10000 (at 6)) `shouldReturn` Written 3
+  withTransaction st (\db -> selectRegistration db failed {nrVersion = 2} o' selected (at 6)) `shouldReturn` Written 3
   nrLastAttempt <$> reg st "r1" `shouldReturn` Nothing
   failedSend `shouldReturn` 1
   nrLastAttempt <$> reg st "r1" `shouldReturn` Just attempt
@@ -596,14 +593,12 @@ testRetarget = withServiceStore $ \st -> do
         nrCommitment = ofCommitment o',
         nrSealed = ofSealed o',
         nrAgreedTerms = ofAgreedTerms o',
-        nrPrice = 10000,
         nrPhase = OQueued,
-        nrReveal = Just moved,
-        nrMoves = 1,
+        nrReveal = Just selected,
         nrUpdatedAt = at 6,
         nrLastAttempt = Just attempt
       }
-  withTransaction st (\db -> retargetRegistration db failed {nrVersion = 2} o reveal 10000 (at 7)) `shouldReturn` VersionChanged
+  withTransaction st (\db -> selectRegistration db failed {nrVersion = 2} o reveal (at 7)) `shouldReturn` VersionChanged
 
 testSameSecondOrder :: IO ()
 testSameSecondOrder = withServiceStore $ \st -> do

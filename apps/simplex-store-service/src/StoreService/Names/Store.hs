@@ -75,7 +75,7 @@ module StoreService.Names.Store
     getLiveOrders,
     closeOverdue,
     updateRegistration,
-    retargetRegistration,
+    selectRegistration,
     findRegistrations,
     labelHolder,
     setPaidAt,
@@ -115,7 +115,6 @@ module StoreService.Names.Store
     groupNameCodesIssuedSince,
     getPrepaidCodeById,
     reservePrepaidCode,
-    reserveOwnPrepaidCode,
     releasePrepaidCode,
     spendLandedPrepaidCode,
     revokePrepaidCode,
@@ -359,7 +358,6 @@ data NameRegistration = NameRegistration
     nrReveal :: Maybe NameReveal,
     nrHistory :: TxHistory,
     nrOrderHash :: OrderHash,
-    nrMoves :: Int,
     nrCreatedAt :: UTCTime,
     nrUpdatedAt :: UTCTime,
     nrReadAt :: UTCTime,
@@ -783,14 +781,14 @@ insertRegistration db NewRegistration {nrgId = RegistrationId rid, nrgOwner, nrg
           [sql|
         INSERT INTO @name_registrations
           (registration_id, version, label_hash, length, duration, owner, commitment, sealed, phase, years,
-           price, method, name_prepaid_code_id, live, order_hash, moves, created_at, updated_at, agreed_terms, paid_at, read_at,
+           price, method, name_prepaid_code_id, live, order_hash, created_at, updated_at, agreed_terms, paid_at, read_at,
            label, secret, contact_link, channel_link, intent_nonce, intent_deadline, intent_signature, accept_terms, accept_nonce, accept_signature)
-        VALUES (?,?,?,?,?,?,?,?,?,?, ?,?,?,?,?,?,?,?, ?,?,?, ?,?,?,?,?,?,?,?,?,?)
+        VALUES (?,?,?,?,?,?,?,?,?,?, ?,?,?,?,?,?,?, ?,?,?, ?,?,?,?,?,?,?,?,?,?)
         ON CONFLICT DO NOTHING
       |]
       )
       ( (rid, initialVersion, ofLabelHash, nameLengthInt ofLength, int64 ofDuration, nrgOwner, ofCommitment, ofSealed, phase, nrgYears)
-          :. (price, method, codeId, BI True, nrgOrderHash, 0 :: Int, now, now)
+          :. (price, method, codeId, BI True, nrgOrderHash, now, now)
           :. (ofAgreedTerms, if phase == PQueued then Just now else Nothing, now)
           :. revealRow (Just nrgReveal)
       )
@@ -803,7 +801,7 @@ registrationColumns =
     SELECT r.registration_id, r.version, r.label_hash, r.length, r.duration, r.owner, r.commitment, r.sealed, r.phase, r.years,
       r.price, r.method, ni.invoice_id, r.name_prepaid_code_id, r.label, r.secret, r.contact_link, r.channel_link, r.intent_nonce, r.intent_deadline,
       r.intent_signature, r.commit_tx, r.commit_block, r.register_tx, r.reveal_after, r.reveal_before, r.expires_at, r.registered_at, r.failed_at, r.fail_reason,
-      r.closed_by, r.order_hash, r.moves, r.created_at, r.updated_at, r.agreed_terms, r.accept_terms,
+      r.closed_by, r.order_hash, r.created_at, r.updated_at, r.agreed_terms, r.accept_terms,
       r.accept_nonce, r.accept_signature, r.read_at, r.paid_at, r.last_attempt_tx, r.last_attempt_stage, r.last_attempt_reason, r.last_attempt_at
   |]
 
@@ -823,7 +821,7 @@ type RegistrationRow =
   (Text, Int64, LabelHash, Int, Int64, Address, Commitment, Text, NamePhase, Int)
     :. (USDCents, Maybe ServicePaymentMethod, Maybe Text, Maybe Int64, Maybe Text, Maybe Hex32, Maybe Text, Maybe Text, Maybe Int64, Maybe Int64)
     :. (Maybe RecoverableSignature, Maybe TxHash, Maybe Int64, Maybe TxHash, Maybe Int64, Maybe Int64, Maybe Int64, Maybe UTCTime, Maybe UTCTime, Maybe FailReason)
-    :. (Maybe InvoiceClose, OrderHash, Int, UTCTime, UTCTime, AgreedTerms, Maybe TermsHash)
+    :. (Maybe InvoiceClose, OrderHash, UTCTime, UTCTime, AgreedTerms, Maybe TermsHash)
     :. (Maybe Int64, Maybe RecoverableSignature, UTCTime, Maybe UTCTime, Maybe RegistrationTx, Maybe AttemptStage, Maybe Text, Maybe UTCTime)
 
 toRegistration :: RegistrationRow -> Either Text NameRegistration
@@ -831,7 +829,7 @@ toRegistration
   ( (rid, nrVersion, nrLabelHash, len, duration, nrOwner, nrCommitment, nrSealed, phase, nrYears)
       :. (nrPrice, method_, invoiceId_, codeId_, label_, secret_, nrContactLink, nrChannelLink, nonce_, deadline_)
       :. (signature_, commitTx, commitBlock, registerTx, revealAfter, revealBefore, expiresAt, registeredAt, failedAt, failReason)
-      :. (closedBy, nrOrderHash, nrMoves, nrCreatedAt, nrUpdatedAt, nrAgreedTerms, acceptTerms_)
+      :. (closedBy, nrOrderHash, nrCreatedAt, nrUpdatedAt, nrAgreedTerms, acceptTerms_)
       :. (acceptNonce_, acceptSignature_, nrReadAt, nrPaidAt, attemptTx_, attemptStage_, attemptReason_, attemptAt_)
     ) = do
     nrLength <- note ("name_registrations.length: " <> rid) $ nameLength len
@@ -894,7 +892,6 @@ toRegistration
           nrReveal,
           nrHistory = TxHistory {thCommitTx = commitTx, thRegisterTx = registerTx},
           nrOrderHash,
-          nrMoves,
           nrCreatedAt,
           nrUpdatedAt,
           nrReadAt,
@@ -966,7 +963,7 @@ closeOverdue db r@NameRegistration {nrId = RegistrationId rid, nrVersion, nrPaym
 
 -- | Whether an order can still progress to a registration for its name. The unique live indexes allow one such order per commitment,
 -- and one per owner and label hash, so a wallet can order a name again once its registration is done.
--- An unpaid order is live while its invoice is open; a taken order, its worth kept as a balance, is live again only by its move.
+-- An unpaid order is live while its invoice is open; a taken order, its worth kept as a balance, is live again only by a selection of a name.
 orderLive :: NameRegistration -> Bool
 orderLive NameRegistration {nrPhase} = case nrPhase of
   OUnpaid _ -> True
@@ -981,8 +978,7 @@ orderLive NameRegistration {nrPhase} = case nrPhase of
   ORegistered {} -> False
 
 -- | Writes every changeable field of a registration read at its nrVersion, unless it changed since, with live as orderLive decides.
--- A closed order is never made live again, a taken one only by a write that counts its move, and a write that would make the order meet
--- another live one changes nothing.
+-- A closed order is never made live again, and a write that would make the order meet another live one changes nothing.
 updateRegistration :: DB.Connection -> NameRegistration -> UTCTime -> IO VersionWrite
 updateRegistration db r now = do
   changed <-
@@ -994,9 +990,9 @@ updateRegistration db r now = do
         SET version = version + 1, label_hash = ?, length = ?, duration = ?, commitment = ?, sealed = ?, agreed_terms = ?, phase = ?, price = ?,
           label = ?, secret = ?, contact_link = ?, channel_link = ?, intent_nonce = ?, intent_deadline = ?, intent_signature = ?,
           accept_terms = ?, accept_nonce = ?, accept_signature = ?, commit_tx = ?, commit_block = ?, register_tx = ?, reveal_after = ?, reveal_before = ?, expires_at = ?,
-          registered_at = ?, failed_at = ?, fail_reason = ?, closed_by = ?, live = ?, moves = ?, updated_at = ?
+          registered_at = ?, failed_at = ?, fail_reason = ?, closed_by = ?, live = ?, updated_at = ?
         WHERE registration_id = ? AND version = ?
-          AND (? = 0 OR ((live = 1 OR (phase = ? AND moves < ?)) AND NOT EXISTS (
+          AND (? = 0 OR ((live = 1 OR phase = ?) AND NOT EXISTS (
             SELECT 1 FROM @name_registrations o
             WHERE o.live = 1 AND o.registration_id <> ? AND (o.commitment = ? OR (o.owner = ? AND o.label_hash = ?))
           )))
@@ -1005,13 +1001,13 @@ updateRegistration db r now = do
       ( (nrLabelHash, nameLengthInt nrLength, int64 nrDuration, nrCommitment, nrSealed, nrAgreedTerms, namePhase nrPhase, nrPrice)
           :. revealRow nrReveal
           :. (commitTx, int64 <$> commitBlock, registerTx, roundedSeconds <$> revealAfter, roundedSeconds <$> revealBefore, roundedSeconds <$> expiresAt)
-          :. (registeredAt, failedAt, failReason, closedBy, BI live, nrMoves, now)
-          :. (rid, nrVersion, BI live, PTaken, nrMoves, rid, nrCommitment, nrOwner, nrLabelHash)
+          :. (registeredAt, failedAt, failReason, closedBy, BI live, now)
+          :. (rid, nrVersion, BI live, PTaken, rid, nrCommitment, nrOwner, nrLabelHash)
       )
   if changed > 0 then pure $ Written (nrVersion + 1) else refusal
   where
     NameRegistration {nrId = RegistrationId rid, nrVersion, nrLabelHash, nrLength, nrDuration, nrOwner, nrCommitment, nrSealed, nrAgreedTerms, nrPhase, nrPrice, nrReveal} = r
-    NameRegistration {nrMoves, nrHistory = TxHistory {thCommitTx, thRegisterTx}} = r
+    NameRegistration {nrHistory = TxHistory {thCommitTx, thRegisterTx}} = r
     (commitBlock, revealAfter, revealBefore) = case phaseCommit nrPhase of
       Just Commit {cmTx, cmRevealAfter, cmRevealBefore} -> (txBlock <$> cmTx, Just cmRevealAfter, Just cmRevealBefore)
       Nothing -> (Nothing, Nothing, Nothing)
@@ -1028,8 +1024,8 @@ updateRegistration db r now = do
       _ -> (Nothing, Nothing, Nothing, Nothing, Nothing)
     live = orderLive r
     refusal =
-      DB.query db (mkQuery "SELECT version, live, phase, moves FROM @name_registrations WHERE registration_id = ?") (Only rid) >>= \case
-        [(version, BI storedLive, storedPhase, storedMoves)] | version == nrVersion -> pure $ if storedLive || (storedPhase == PTaken && storedMoves < nrMoves) then LiveOrderExists else NotLive
+      DB.query db (mkQuery "SELECT version, live, phase FROM @name_registrations WHERE registration_id = ?") (Only rid) >>= \case
+        [(version, BI storedLive, storedPhase)] | version == nrVersion -> pure $ if storedLive || storedPhase == PTaken then LiveOrderExists else NotLive
         _ -> pure VersionChanged
 
 type RevealRow = (Maybe Text, Maybe Hex32, Maybe Text, Maybe Text, Maybe Int64, Maybe Int64, Maybe RecoverableSignature) :. (Maybe TermsHash, Maybe Int64, Maybe RecoverableSignature)
@@ -1041,10 +1037,10 @@ revealRow rv =
   where
     acceptance = rvAcceptance <$> rv
 
--- | Another name, or other links, with the terms agreed for it and its reveal: queued again with the transactions, reveal times and failed attempts cleared.
+-- | A name selected for the order, with the terms agreed for it and its reveal: queued with the transactions, reveal times and failed attempts cleared.
 -- The order hash stays the original order's, so a resend of that order still finds it.
-retargetRegistration :: DB.Connection -> NameRegistration -> OrderFields -> NameReveal -> USDCents -> UTCTime -> IO VersionWrite
-retargetRegistration db r@NameRegistration {nrId = RegistrationId rid} OrderFields {ofLabelHash, ofLength, ofDuration, ofCommitment, ofSealed, ofAgreedTerms} reveal price now =
+selectRegistration :: DB.Connection -> NameRegistration -> OrderFields -> NameReveal -> UTCTime -> IO VersionWrite
+selectRegistration db r@NameRegistration {nrId = RegistrationId rid} OrderFields {ofLabelHash, ofLength, ofDuration, ofCommitment, ofSealed, ofAgreedTerms} reveal now =
   updateRegistration
     db
     r
@@ -1054,9 +1050,7 @@ retargetRegistration db r@NameRegistration {nrId = RegistrationId rid} OrderFiel
         nrCommitment = ofCommitment,
         nrSealed = ofSealed,
         nrAgreedTerms = ofAgreedTerms,
-        nrPrice = price,
         nrPhase = OQueued,
-        nrMoves = nrMoves r + 1,
         nrReveal = Just reveal,
         nrHistory = noHistory
       }
@@ -1598,14 +1592,6 @@ reservePrepaidCode db codeId (RegistrationId rid) now =
       |]
       )
       (rid, now, codeId, CPSUnpaid, now)
-
-reserveOwnPrepaidCode :: DB.Connection -> CodeId -> RegistrationId -> UTCTime -> IO Bool
-reserveOwnPrepaidCode db codeId (RegistrationId rid) now =
-  (> 0)
-    <$> executeChanging
-      db
-      (mkQuery "UPDATE @name_prepaid_codes SET reserved_by = ?, reserved_at = ? WHERE name_prepaid_code_id = ? AND reserved_by IS NULL AND spent_at IS NULL AND revoked_at IS NULL")
-      (rid, now, codeId)
 
 releasePrepaidCode :: DB.Connection -> CodeId -> RegistrationId -> IO Bool
 releasePrepaidCode db codeId (RegistrationId rid) =

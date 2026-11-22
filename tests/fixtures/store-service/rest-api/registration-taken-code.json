@@ -9,13 +9,11 @@
     "label": "carolbakery",
     "labelHash": "0xb4a2bb2579b4630a31c801c2f237348de8a0b210a7a3049167d8e567e6a543a5",
     "latePayment": null,
-    "moves": 0,
     "owner": "0x014f9c09CcEeDEF1B713110d04D3a07d5B5D9b73",
     "payment": {
       "type": "code"
     },
     "phase": {
-      "heldUntil": "2026-11-21T09:15:00Z",
       "type": "taken"
     },
     "price": 0,

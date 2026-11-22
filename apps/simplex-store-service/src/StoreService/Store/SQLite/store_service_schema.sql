@@ -206,7 +206,6 @@ CREATE TABLE sx_badge_service_name_registrations(
   closed_by TEXT,
   live INTEGER NOT NULL,
   order_hash BLOB NOT NULL,
-  moves INTEGER NOT NULL DEFAULT 0,
   paid_at TEXT,
   unregistered_alerted_at TEXT,
   failed_dry_runs INTEGER NOT NULL DEFAULT 0,

@@ -10,7 +10,7 @@ module Bots.StoreService.NamesRevealTests (namesRevealTests) where
 import Bots.StoreService.FakeEthNode
 import Bots.StoreService.NamesContractsTests (noncesCall)
 import Bots.StoreService.NamesOrdersTests (Ctx (..), Order (..), aliceOrder, communityTerms, invoiceRegistration, keyA, orderSeconds, orderTime, placed, post, registrationOf, settleNow, settled, withOrders)
-import Bots.StoreService.NamesOwnerTests (answerFree, moveBody, moveTo, postMove)
+import Bots.StoreService.NamesOwnerTests (answerFree, postSelection, selectionBody, selectionOf)
 import Bots.StoreService.NamesPhasesTests (change, held, prompt, registrationPath, seenVersion, woken)
 import Bots.StoreService.NamesStoreTests (hashFixture, ownerA)
 import Bots.StoreService.WebTests (bounded, fieldOf, refusedWith, phaseFieldOf, statusOf, webRequestBody)
@@ -54,7 +54,7 @@ import StoreService.Names.Store (Commit (..), FailReason (..), NameRegistration 
 import StoreService.Names.Turns (labelTurnCount)
 import StoreService.Web.Http (createLimit, holdMicros, maxBodyBytes, readLimit)
 import StoreService.Web.Names (Route (..), namesApp)
-import StoreService.Web.Names.Owner (retargetHandler)
+import StoreService.Web.Names.Owner (selectNameHandler)
 import StoreService.Web.Names.Registration (registrationHandler, revealHandler)
 import StoreService.Web.Server (WebEnv (..), webApp)
 import System.Timeout (timeout)
@@ -99,7 +99,7 @@ withReveals action = withOrders $ \ctx@Ctx {cNode, cOrders, cWeb} -> do
       routes = \case
         ["api", "registration", rid] -> Just Route {rMethod = "GET", rLimit = readLimit, rHandler = registrationHandler cOrders (weHttp web) holdMicros (RegistrationId rid)}
         ["api", "registration", rid, "reveal"] -> Just Route {rMethod = "POST", rLimit = readLimit, rHandler = revealHandler cOrders (RegistrationId rid)}
-        ["api", "registration", rid, "name"] -> Just Route {rMethod = "POST", rLimit = createLimit, rHandler = retargetHandler cOrders (weProviders web) (weWaiters web) (RegistrationId rid)}
+        ["api", "registration", rid, "name"] -> Just Route {rMethod = "POST", rLimit = createLimit, rHandler = selectNameHandler cOrders (weProviders web) (weWaiters web) (RegistrationId rid)}
         _ -> Nothing
       app req respond = fromMaybe (webApp web req respond) (namesApp (weHttp web) routes req respond)
   mgr <- newManager defaultManagerSettings
@@ -549,12 +549,12 @@ testRacesName = bounded "races /name" $ withReveals $ \Fx {fCtx = ctx} -> do
   -- the reveal holds the name's turn while it reads the nonce, so /name waits and then finds it revealed
   rid <- committed ctx (orderOf alice)
   answerFree ctx "alicebakers"
-  toAlicebakers <- moveTo ctx "alicebakers" 1
+  toAlicebakers <- selectionOf ctx "alicebakers" 1
   (inFlight, gate) <- pausedAtChainRead ctx (ownerReveal ctx rid alice)
-  move <- async $ postMove ctx rid =<< moveBody ctx keyA rid toAlicebakers
+  selection <- async $ postSelection ctx rid =<< selectionBody ctx keyA rid toAlicebakers
   queuedOn ctx (labelHash "alicebakery") 2
   releaseGate gate
   wait inFlight `shouldReturn` accepted
-  wait move `shouldReturn` badRequest
-  NameRegistration {nrLabelHash, nrReveal, nrMoves} <- stored ctx rid
-  (nrLabelHash, rvLabel <$> nrReveal, nrMoves) `shouldBe` (labelHash "alicebakery", Just "alicebakery", 0)
+  wait selection `shouldReturn` badRequest
+  NameRegistration {nrLabelHash, nrReveal} <- stored ctx rid
+  (nrLabelHash, rvLabel <$> nrReveal) `shouldBe` (labelHash "alicebakery", Just "alicebakery")

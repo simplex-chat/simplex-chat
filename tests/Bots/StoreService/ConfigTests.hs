@@ -776,13 +776,12 @@ parsedNames ns cs =
 
 testNamesDefaults :: IO ()
 testNamesDefaults = do
-  NamesConfig {nTLD, nYears, nTermStart, nTermSlackSeconds, nRevealMarginSeconds, nMaxOrderMoves, nChain} <- parsedNames namesSection chainSection
+  NamesConfig {nTLD, nYears, nTermStart, nTermSlackSeconds, nRevealMarginSeconds, nChain} <- parsedNames namesSection chainSection
   nTLD `shouldBe` TLDTesting
   nYears `shouldBe` 2
   nTermStart `shouldBe` UTCTime (fromGregorian 2027 1 1) 0
   nTermSlackSeconds `shouldBe` 3600
   nRevealMarginSeconds `shouldBe` 900
-  nMaxOrderMoves `shouldBe` 3
   let ChainConfig {cRpcUrl, cChainId, cController, cSponsor, cBaseRegistrar, cResolver, cServiceKey, cConfirmations, cGasLimitCap, cMaxFeePerGas} = nChain
   cRpcUrl `shouldBe` T.unpack rpcUrl
   cChainId `shouldBe` 31337
@@ -795,13 +794,13 @@ testNamesDefaults = do
 
 testNamesWrittenOut :: IO ()
 testNamesWrittenOut = do
-  let ns = ["[names]", "tld = simplex", "years = 5", "term_start = 2027-03-01T12:00:00Z", "term_slack_seconds = 60", "reveal_margin_seconds = 0", "max_order_moves = 0", "max_dry_run_failures = 2", "max_sent_failures = 3"]
+  let ns = ["[names]", "tld = simplex", "years = 5", "term_start = 2027-03-01T12:00:00Z", "term_slack_seconds = 60", "reveal_margin_seconds = 0", "max_dry_run_failures = 2", "max_sent_failures = 3"]
       cs = chainSection <> ["confirmations = 1", "gas_limit_cap = 500000", "max_fee_per_gas = 30000000000"]
-  NamesConfig {nTLD, nYears, nTermStart, nTermSlackSeconds, nRevealMarginSeconds, nMaxOrderMoves, nMaxDryRunFailures, nMaxSentFailures, nChain = ChainConfig {cConfirmations, cGasLimitCap, cMaxFeePerGas}} <- parsedNames ns cs
+  NamesConfig {nTLD, nYears, nTermStart, nTermSlackSeconds, nRevealMarginSeconds, nMaxDryRunFailures, nMaxSentFailures, nChain = ChainConfig {cConfirmations, cGasLimitCap, cMaxFeePerGas}} <- parsedNames ns cs
   nTLD `shouldBe` TLDSimplex
   nYears `shouldBe` 5
   nTermStart `shouldBe` UTCTime (fromGregorian 2027 3 1) (12 * 3600)
-  (nTermSlackSeconds, nRevealMarginSeconds, nMaxOrderMoves, nMaxDryRunFailures, nMaxSentFailures) `shouldBe` (60, 0, 0, 2, 3)
+  (nTermSlackSeconds, nRevealMarginSeconds, nMaxDryRunFailures, nMaxSentFailures) `shouldBe` (60, 0, 2, 3)
   NamesConfig {nMaxDryRunFailures = dryRuns, nMaxSentFailures = sent} <- parsedNames namesSection chainSection
   (dryRuns, sent) `shouldBe` (5, 5)
   namesRefusal (namesSection <> ["max_dry_run_failures = 0"]) chainSection `shouldReturn` "names.max_dry_run_failures must be a whole number of at least 1"
@@ -814,7 +813,6 @@ testNamesWrittenOut = do
   namesRefusal ns (filter (not . ("chain_id" `T.isPrefixOf`)) chainSection) `shouldReturn` "chain.chain_id is required"
   namesRefusal ns (withChainId "") `shouldReturn` "chain.chain_id is required"
   namesRefusal ns (withChainId "0") `shouldReturn` "chain.chain_id must be a whole number of at least 1"
-  namesRefusal (namesSection <> ["max_order_moves = -1"]) chainSection `shouldReturn` "names.max_order_moves must be a whole number of at least 0"
 
 testNamesListenerKeys :: IO ()
 testNamesListenerKeys = do

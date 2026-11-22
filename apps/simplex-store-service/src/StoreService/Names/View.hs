@@ -20,7 +20,6 @@ module StoreService.Names.View
     addressText,
     lapsedAt,
     lapseMoment,
-    movableUntil,
     registrationVersion,
   )
 where
@@ -70,7 +69,7 @@ data PhaseView
   | PVCommitted {revealAfter :: SystemSeconds, revealBefore :: SystemSeconds, signature :: Signing}
   | PVRegistering
   | PVRegistered {expiresAt :: SystemSeconds}
-  | PVTaken {heldUntil :: Maybe UTCTime}
+  | PVTaken
   | PVFailed {reason :: FailReason, heldUntil :: Maybe UTCTime}
   deriving (Eq, Show)
 
@@ -84,7 +83,6 @@ data ToSign = TSUnread | TSRead {intentNonce :: Word64, acceptance :: Acceptance
 data RegistrationView = RegistrationView
   { vwId :: Text,
     vwVersion :: Int64,
-    vwMoves :: Int,
     vwPhase :: PhaseView,
     vwLabelHash :: Hex32,
     vwLabel :: Maybe Text,
@@ -126,7 +124,6 @@ data NameRefusal
   | NRNameTaken
   | NRNameCheckUnavailable
   | NRCatalogChanged {price :: USDCents}
-  | NRPriceTooHigh {price :: USDCents}
   | NRTermsChanged {terms :: TermsLink, community :: Maybe Community}
   | NRCodesOnly
   | NRCodeInvalid
@@ -135,7 +132,6 @@ data NameRefusal
   | NRCodeExpired
   | NRCodeNotCovering
   | NRPaymentPending
-  | NRMoveLimit {registration :: RegistrationView}
   | NRRegistrationChanged {registration :: RegistrationView}
   | NRStaleNonce
   | NRRecordReverted
@@ -167,7 +163,7 @@ phaseView ct now r@NameRegistration {nrPhase, nrReveal} = case nrPhase of
   OCommitted Commit {cmRevealAfter, cmRevealBefore} -> PVCommitted cmRevealAfter cmRevealBefore <$> signing
   ORegistering {} -> pure PVRegistering
   ORegistered expiry _ -> pure PVRegistered {expiresAt = expiry}
-  OTaken -> pure PVTaken {heldUntil = movableUntil r}
+  OTaken -> pure PVTaken
   OFailed _ why -> pure PVFailed {reason = why, heldUntil = if orderLive r then addMonths 1 <$> nrPaidAt r else Nothing}
   where
     signing
@@ -191,7 +187,6 @@ toRegistrationView cfg r balance late phase =
   RegistrationView
     { vwId = rid,
       vwVersion = nrVersion,
-      vwMoves = nrMoves,
       vwPhase = phase,
       vwLabelHash = Hex32 lh,
       vwLabel = if isJust nrPaidAt then rvLabel <$> nrReveal else Nothing,
@@ -210,7 +205,7 @@ toRegistrationView cfg r balance late phase =
       vwTerms = nrAgreedTerms
     }
   where
-    NameRegistration {nrId = RegistrationId rid, nrVersion, nrMoves, nrLabelHash = LabelHash lh, nrReveal, nrOwner, nrCommitment, nrSealed} = r
+    NameRegistration {nrId = RegistrationId rid, nrVersion, nrLabelHash = LabelHash lh, nrReveal, nrOwner, nrCommitment, nrSealed} = r
     NameRegistration {nrYears, nrDuration, nrPrice, nrPayment, nrAgreedTerms, nrHistory = TxHistory {thCommitTx, thRegisterTx}, nrPaidAt} = r
 
 paidWith :: OrderPayment -> PaidWith
@@ -236,9 +231,4 @@ lapsedAt now = maybe False (now >) . lapseMoment
 lapseMoment :: NameRegistration -> Maybe UTCTime
 lapseMoment = \case
   NameRegistration {nrPhase = OCommitted Commit {cmRevealBefore}, nrReveal = Nothing} -> Just $ roundedToUTCTime cmRevealBefore
-  _ -> Nothing
-
-movableUntil :: NameRegistration -> Maybe UTCTime
-movableUntil = \case
-  NameRegistration {nrPhase = OTaken, nrPaidAt} -> addMonths 1 <$> nrPaidAt
   _ -> Nothing
