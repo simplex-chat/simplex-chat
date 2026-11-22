@@ -513,6 +513,7 @@ Core, tests/ChatTests/Groups.hs, `describe "members via another member"`, groups
 - `testViaMemberOtherAdmin`: cath is bob's invitee, not connected to alice → bob forwards reviewer's message to cath.
 - `testViaMemberIntroOrder`: bob adds assistant (admin) via bob; dan joins by alice's invitation → dan records assistant via bob.
 - `testViaMemberPrevVersionJoiner`: dan with chat version range up to 22 joins → reviewer is not introduced; dan creates it as an unknown member from history.
+- `testViaMemberReply`: bob replies to reviewer's message and mentions @reviewer → on alice and cath, the item's quotedItem has the item ID of reviewer's item and direction groupRcv reviewer, and its mention has reviewer's group member ID.
 - `testViaMemberRemove`: `/_remove #1 M` → bob and cath see "alice removed reviewer".
 - `testViaMemberRefused`: bob (admin) adds an owner via bob → refused; send as bob's group member ID → "member is not via you"; cath (member) adds → refused; in a channel → refused.
 - `testViaMemberSigned`: "sign messages" on → bob shows reviewer's message signed; a forward signed by another key → bad signature.
@@ -632,5 +633,5 @@ updatedMessage     {"msgContent": {...}, "mentions": {...}, "priority": <n>}
 - Errors: section 6.3.
 - With "sign messages" on, the core signs each message as the member with the user's key; `sign=on` is not needed.
 - Excluded: deletes as the member (broadcast delete of its item: CEInvalidChatItemDelete) and reactions as the member (APIChatItemReaction reacts as the user).
-- Replies to and mentions of a teammate (stage 3): a received item's quotedItem has the item ID of the item sent as M and direction groupRcv of M; mentions have M's group member ID (5.2). Core tests do not cover them (testViaMemberReply of section 8 is not written).
+- Replies to and mentions of a teammate (stage 3): a received item's quotedItem has the item ID of the item sent as M and direction groupRcv of M; mentions have M's group member ID (5.2; testViaMemberReply).
 - Display of `via` in the apps (Q2) is not built.

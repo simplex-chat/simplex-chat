@@ -40,7 +40,7 @@ import Simplex.Chat.Controller (ChatController (ChatController, smpAgent, subscr
 import Simplex.Chat.Core (sendChatCmdStr)
 import Simplex.Chat.Library.Internal (encodeConnInfo, getShortLinkConnReq, sendDirectMemberMessage, uniqueMsgMentions, updatedMentionNames)
 import Simplex.Chat.Markdown (parseMaybeMarkdownList)
-import Simplex.Chat.Messages (AChat (..), AChatItem (..), AChatItemUpdate (..), CChatItem (..), CIMention (..), CIMentionMember (..), CIMeta (CIMeta, priority, userMention), Chat (Chat, chatInfo, chatItems, chatStats), ChatInfo (GroupChat), ChatItem (ChatItem, content, mentions, meta), ChatItemId, ChatStats (..), ChatType (CTGroup), highPriority, isUserMention, toChatType)
+import Simplex.Chat.Messages (AChat (..), AChatItem (..), AChatItemUpdate (..), CChatItem (..), CIMention (..), CIMentionMember (..), CIMeta (CIMeta, priority, userMention), CIQDirection (..), CIQuote (CIQuote, chatDir, itemId), Chat (Chat, chatInfo, chatItems, chatStats), ChatInfo (GroupChat), ChatItem (ChatItem, content, mentions, meta, quotedItem), ChatItemId, ChatStats (..), ChatType (CTGroup), highPriority, isUserMention, toChatType)
 import Simplex.Chat.Messages.Batch (encodeBinaryBatch, encodeFwdElement)
 import Simplex.Chat.Messages.CIContent (MsgDirection (MDRcv), ciMsgContent, publicGroupNoE2EText, toMsgDirection)
 import Simplex.Chat.Options
@@ -324,6 +324,7 @@ chatGroupTests = do
     it "joiner of previous version creates unknown member" testViaMemberPrevVersionJoiner
     it "host forwards messages of member via another member until its invitee connects to that member" testViaMemberOtherAdmin
     it "introduce member via another member after that member" testViaMemberIntroOrder
+    it "reply to and mention of member via user resolve to that member" testViaMemberReply
     it "remove member via user" testViaMemberRemove
     it "refuse role above user role, member not via user and user below admin" testViaMemberRefused
     it "sign messages of member via user with user key" testViaMemberSigned
@@ -15801,6 +15802,47 @@ testViaMemberIntroOrder =
                "bob (Bob): admin, connected",
                "assistant: admin, via bob, connected"
              ]
+
+testViaMemberReply :: HasCallStack => TestParams -> IO ()
+testViaMemberReply =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+      addViaMember alice "member"
+      viaMemberAdded [bob, cath]
+      alice ##> "/_send #1(as_member=4) text hi"
+      alice <# "#team hi"
+      [bob, cath] *<# "#team reviewer> hi [>>]"
+      aliceHiId <- lastItemId alice
+      cathHiId <- lastItemId cath
+      bob `send` "> #team @reviewer (hi) @reviewer thanks"
+      bob <# "#team > reviewer hi"
+      bob <## "      @reviewer thanks"
+      concurrently_
+        ( do
+            alice <# "#team bob> > reviewer hi"
+            alice <## "      @reviewer thanks"
+        )
+        ( do
+            cath <# "#team bob> > reviewer hi"
+            cath <## "      @reviewer thanks"
+        )
+      aliceReviewerId <- reviewerGMId alice
+      cathReviewerId <- reviewerGMId cath
+      lastItemQuoteMentions alice `shouldReturn` (Just (read aliceHiId), aliceReviewerId, [aliceReviewerId])
+      lastItemQuoteMentions cath `shouldReturn` (Just (read cathHiId), cathReviewerId, [cathReviewerId])
+  where
+    reviewerGMId :: TestCC -> IO GroupMemberId
+    reviewerGMId cc = do
+      [Only gmId] <- withCCTransaction cc $ \db -> DB.query_ db "SELECT group_member_id FROM group_members WHERE local_display_name = 'reviewer'"
+      pure gmId
+    lastItemQuoteMentions :: TestCC -> IO (Maybe ChatItemId, GroupMemberId, [GroupMemberId])
+    lastItemQuoteMentions TestCC {chatController = cc} = do
+      r <- sendChatCmdStr cc "/_get chat #1 count=1"
+      case r of
+        Right (CRApiChat _ (AChat _ Chat {chatItems = [CChatItem _ ChatItem {quotedItem = Just CIQuote {itemId = quotedId, chatDir = CIQGroupRcv (Just GroupMember {groupMemberId = quotedGMId})}, mentions}]}) _) ->
+          pure (quotedId, quotedGMId, [gmId | CIMention {memberRef = Just CIMentionMember {groupMemberId = gmId}} <- M.elems mentions])
+        _ -> fail $ show r
 
 testViaMemberRemove :: HasCallStack => TestParams -> IO ()
 testViaMemberRemove =
