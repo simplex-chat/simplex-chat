@@ -989,7 +989,7 @@ warning. When the metrics port cannot be listened on, the failure is logged as a
 | `simplex_store_names_credit_pass_timestamp_seconds` | when the last late credit pass that completed started, every `idle_seconds`; the service's start until the first one completes |
 
 With `[names]`, the service also counts every name on chain, however it was registered, at start and
-then every 5 minutes, under the metric names of the former `simplex-names-exporter`. At the latest
+then every hour, under the metric names of the former `simplex-names-exporter`. At the latest
 block it reads the base registrar's names (`totalSupply`, `tokenByIndex`), keeps those whose
 `nameExpires` is after the block's time, takes each label from `labelOf`, then walks the subname
 registrar (`subnameHook()`) level by level with `getChildren`, keeping subnames whose `ownerOf` is
@@ -1024,14 +1024,14 @@ time() - simplex_store_names_chain_head_timestamp_seconds > 120
 simplex_store_names_terms_held == 0
 time() - simplex_store_provider_list_ok_timestamp_seconds > 600
 simplex_store_invoices_overdue > 0
-increase(simplex_names_refresh_failures_total[20m]) > 2
+increase(simplex_names_refresh_failures_total[3h]) > 1
 time() - simplex_store_names_month_pass_timestamp_seconds > 1200
 time() - simplex_store_names_credit_pass_timestamp_seconds > 600
 up == 0
 ```
 
 `up` is the scrape's own metric, for the job that scrapes the service. The names are counted every
-5 minutes, so more than 2 failures in 20 minutes means most counts failed. Until a month pass or late
+hour, so more than 1 failure in 3 hours means most counts failed. Until a month pass or late
 credit pass completes, its gauge is the service's start time, so its alert also fires when every pass
 fails from the start.
 

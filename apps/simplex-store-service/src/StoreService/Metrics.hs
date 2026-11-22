@@ -129,7 +129,7 @@ noRegisteredNamesRead :: RegisteredNamesRead
 noRegisteredNamesRead = RegisteredNamesRead {rrNames = Nothing, rrFailures = 0}
 
 registeredNamesInterval :: Int
-registeredNamesInterval = 300 * 1000000
+registeredNamesInterval = 3600 * 1000000
 
 readRegisteredNames :: Contracts -> TVar RegisteredNamesRead -> IO ()
 readRegisteredNames ct v = do
