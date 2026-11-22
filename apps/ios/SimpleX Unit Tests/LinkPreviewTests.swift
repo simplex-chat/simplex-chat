@@ -12,11 +12,18 @@ final class LinkPreviewTests: XCTestCase {
     private var unrecorded: [String] = []
     private var held: [String: DispatchSemaphore] = [:]
     private var window: UIWindow?
+    private let settings: [(defaults: UserDefaults, key: String, value: Bool)] = [
+        (UserDefaults.standard, DEFAULT_DEVELOPER_TOOLS, false),
+        (UserDefaults.standard, DEFAULT_SHOW_LINK_PREVIEW_ERRORS, false),
+        (groupDefaults, GROUP_DEFAULT_PRIVACY_LINK_PREVIEWS, true),
+        (groupDefaults, GROUP_DEFAULT_PRIVACY_SANITIZE_LINKS, false)
+    ]
+    private var savedSettings: [Any?] = []
 
     @MainActor
     override func setUp() async throws {
-        UserDefaults.standard.set(false, forKey: DEFAULT_DEVELOPER_TOOLS)
-        UserDefaults.standard.set(false, forKey: DEFAULT_SHOW_LINK_PREVIEW_ERRORS)
+        savedSettings = settings.map { $0.defaults.object(forKey: $0.key) }
+        for s in settings { s.defaults.set(s.value, forKey: s.key) }
         let recording = try XCTUnwrap(try fixtureJSON("previews/link_preview") as? [String: [String: Any]])
         let commands = recording["commands"] ?? [:]
         let markdown = recording["markdown"] ?? [:]
@@ -42,8 +49,7 @@ final class LinkPreviewTests: XCTestCase {
             try await waitFor { !alert.isBeingPresented }
             await withCheckedContinuation { done in alert.dismiss(animated: false) { done.resume() } }
         }
-        UserDefaults.standard.removeObject(forKey: DEFAULT_DEVELOPER_TOOLS)
-        UserDefaults.standard.removeObject(forKey: DEFAULT_SHOW_LINK_PREVIEW_ERRORS)
+        for (s, saved) in zip(settings, savedSettings) { s.defaults.set(saved, forKey: s.key) }
         sendSimpleXCmdStr = sendCmd
         parseSimpleXMarkdownText = parseMarkdown
         XCTAssertEqual(locked { unrecorded }, [], "requests without recorded responses")
@@ -112,6 +118,17 @@ final class LinkPreviewTests: XCTestCase {
         try await Task.sleep(nanoseconds: 2_000_000_000)
         XCTAssertTrue(compose.composeState.noPreview)
         XCTAssertEqual(requests(), ["/_link preview LINK_URL/no-image", "/_link preview LINK_URL/page"])
+    }
+
+    @MainActor
+    func testNewComposeFetchesFailedLinkAgain() async throws {
+        let compose = try await showCompose()
+        compose.composeState.message = "LINK_URL/no-image"
+        try await waitFor { self.requests() == ["/_link preview LINK_URL/no-image"] }
+        try await waitFor { compose.composeState.noPreview }
+        let newCompose = try await showCompose()
+        newCompose.composeState.message = "LINK_URL/no-image"
+        try await waitFor { self.requests() == ["/_link preview LINK_URL/no-image", "/_link preview LINK_URL/no-image"] }
     }
 
     @MainActor
@@ -187,6 +204,7 @@ final class LinkPreviewTests: XCTestCase {
     @MainActor
     private func showCompose() async throws -> ComposeHostState {
         let compose = ComposeHostState()
+        self.window?.isHidden = true
         let window = UIWindow(windowScene: try XCTUnwrap(UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first))
         window.rootViewController = UIHostingController(rootView: ComposeHost(state: compose))
         window.isHidden = false
