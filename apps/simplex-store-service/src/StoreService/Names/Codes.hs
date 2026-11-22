@@ -23,7 +23,7 @@ import Control.Applicative ((<|>))
 import qualified Control.Exception as E
 import Control.Logger.Simple (logError, logWarn)
 import Data.Functor ((<&>))
-import Data.Maybe (fromMaybe, isJust)
+import Data.Maybe (fromMaybe, isJust, isNothing)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (UTCTime)
@@ -98,9 +98,10 @@ stateRefusal = \case
   CSUnpaid -> Just CRPaymentPending
 
 ownCodeRefusal :: RegistrationId -> NameLength -> PrepaidCode -> Maybe CodeRefusal
-ownCodeRefusal rid len PrepaidCode {pcReservedBy, pcSpentAt, pcMinLength}
+ownCodeRefusal rid len PrepaidCode {pcReservedBy, pcSpentAt, pcRevokedAt, pcMinLength}
   | isJust pcSpentAt = Just CRUsed
   | maybe False (/= rid) pcReservedBy = Just CRReserved
+  | isNothing pcReservedBy && isJust pcRevokedAt = Just CRInvalid
   | nameLengthInt len < pcMinLength = Just CRNotCovering
   | otherwise = Nothing
 
@@ -121,7 +122,7 @@ instance E.Exception ReservationRefused
 
 -- | In the code's turn and one transaction, the registration's own code is checked, the write runs, then the code is reserved for the
 -- registration again, so the registration's row is locked before the code's. As a held code, it stays good for its registration
--- even if revoked or expired since. A refused reservation rolls the write back.
+-- even if expired since, and if revoked only while the registration holds it. A refused reservation rolls the write back.
 reserveCode :: Turns -> DBStore -> UTCTime -> CodeHash -> RegistrationId -> NameLength -> (DB.Connection -> IO (Either e a)) -> IO (Either CodeRefusal (Either e a))
 reserveCode turns st now codeHash rid len write =
   withCodeTurn turns codeHash $ either (\(ReservationRefused refusal) -> Left refusal) id <$> E.try (withTransaction st reserve)

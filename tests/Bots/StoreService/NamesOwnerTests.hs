@@ -102,7 +102,7 @@ namesOwnerTests = describe "StoreService names: owner" $ do
     it "runs the order checks on the new fields: invalid_name, the duration, name_taken and name_check_unavailable" testMoveOrderChecks
     it "answers a dearer or a cheaper name price_too_high with its price, one priced under the floor name_check_unavailable, a balance short of the price bad_request, and moves at the order's price, spent from its balance" testMovePrice
     it "checks a code order's code again: code_not_covering for a shorter name, a held code kept though revoked and expired since" testMoveCodeOrder
-    it "reserves its released code again, unused, expired or revoked since, and answers code_reserved for a code another order reserved meanwhile" testMoveReleasedCode
+    it "reserves its released code again, unused or expired since, answers code_invalid for one revoked since, changing nothing, and code_reserved for a code another order reserved meanwhile" testMoveReleasedCode
     it "refuses sealed over 11095 characters, a body over 16384 bytes and malformed fields, accepting the longest" testMoveSizes
     it "refuses another signer's signature and a stale timestamp, and answers an unknown order 404" testMoveRefusedSigner
     it "answers registration_changed with the current view when the order changed during the checks, writing nothing" testMoveLostRace
@@ -655,20 +655,23 @@ testMoveCodeOrder = withOwner $ \ctx@Ctx {cStore} -> do
 testMoveReleasedCode :: IO ()
 testMoveReleasedCode = withOwner $ \ctx@Ctx {cStore} -> do
   answerFree ctx "alicebakers"
-  let changes :: [PrepaidCode -> DB.Connection -> IO ()]
-      changes =
-        [ \PrepaidCode {pcCodeHash} db -> DB.execute db "UPDATE sx_badge_service_name_prepaid_codes SET expires_at = ? WHERE code_hash = ?" (orderTime, pcCodeHash),
-          \PrepaidCode {pcCodeHash} db -> void $ revokePrepaidCode db pcCodeHash orderTime
-        ]
-  forM_ (zip [1 :: Int ..] changes) $ \(n, change) -> do
-    let label = "codeorder" <> tshow n
-    answerFree ctx label
-    (r, code) <- codeIn ctx 8 aliceOrder {oLabel = label, oSecret = secretOf (30 + n)} takenPhase
-    withTransaction cStore (\db -> releasePrepaidCode db (pcId code) (nrId r)) `shouldReturn` True
-    withTransaction cStore $ change code
-    to <- moveTo ctx label (40 + n)
-    void $ moved ctx keyA r to
-    pcReservedBy <$> codeRow ctx code `shouldReturn` Just (nrId r)
+  let releasedIn n = do
+        let label = "codeorder" <> tshow n
+        answerFree ctx label
+        (r, code) <- codeIn ctx 8 aliceOrder {oLabel = label, oSecret = secretOf (30 + n)} takenPhase
+        withTransaction cStore (\db -> releasePrepaidCode db (pcId code) (nrId r)) `shouldReturn` True
+        to <- moveTo ctx label (40 + n)
+        pure (r, code, to)
+  (expiredOrder, expired@PrepaidCode {pcCodeHash = expiredHash}, toExpired) <- releasedIn 1
+  withTransaction cStore $ \db -> DB.execute db "UPDATE sx_badge_service_name_prepaid_codes SET expires_at = ? WHERE code_hash = ?" (orderTime, expiredHash)
+  void $ moved ctx keyA expiredOrder toExpired
+  pcReservedBy <$> codeRow ctx expired `shouldReturn` Just (nrId expiredOrder)
+  (revokedOrder, revoked@PrepaidCode {pcCodeHash = revokedHash}, toRevoked) <- releasedIn 2
+  fst <$> withTransaction cStore (\db -> revokePrepaidCode db revokedHash orderTime) `shouldReturn` Revoked (pcId revoked)
+  revokedRow <- codeRow ctx revoked
+  move ctx keyA revokedOrder toRevoked `shouldReturn` refusedWith 400 "code_invalid"
+  stored ctx revokedOrder `shouldReturn` revokedOrder
+  codeRow ctx revoked `shouldReturn` revokedRow
   forM_ ["codeorder8", "codeorder9"] $ answerFree ctx
   (reusedText, reused) <- issueCode ctx 8 2 id
   firstOrder <- registrationById ctx =<< registered ctx reusedText aliceOrder {oLabel = "codeorder8", oSecret = secretOf 38}

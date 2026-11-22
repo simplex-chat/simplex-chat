@@ -1604,7 +1604,7 @@ reserveOwnPrepaidCode db codeId (RegistrationId rid) now =
   (> 0)
     <$> executeChanging
       db
-      (mkQuery "UPDATE @name_prepaid_codes SET reserved_by = ?, reserved_at = ? WHERE name_prepaid_code_id = ? AND reserved_by IS NULL AND spent_at IS NULL")
+      (mkQuery "UPDATE @name_prepaid_codes SET reserved_by = ?, reserved_at = ? WHERE name_prepaid_code_id = ? AND reserved_by IS NULL AND spent_at IS NULL AND revoked_at IS NULL")
       (rid, now, codeId)
 
 releasePrepaidCode :: DB.Connection -> CodeId -> RegistrationId -> IO Bool

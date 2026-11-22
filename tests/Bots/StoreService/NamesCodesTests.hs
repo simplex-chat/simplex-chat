@@ -52,10 +52,10 @@ namesCodesTests = describe "StoreService names: prepaid codes" $ do
     it "answers bad_request to a body that is not an object with a code text" testCheckBadBody
   describe "reservations" $ do
     it "reserves an unused code after the registration's write, in its transaction" testReserve
-    it "refuses a code spent, reserved by another registration, unknown or not covering with its tag before the write runs, and reserves one revoked or expired as the registration's own" testReserveRefusals
+    it "refuses a code spent, reserved by another registration, revoked, unknown or not covering with its tag before the write runs, and reserves one expired as the registration's own" testReserveRefusals
     it "keeps a code its registration holds even if revoked or expired since, still checking the length" testReserveHeld
     it "reserves nothing when the write refuses" testReserveWriteRefused
-    it "rolls the write back when the code's reservation is refused after it" testReserveRollsBack
+    it "rolls the write back when the code's reservation is refused after it, as reserved or revoked meanwhile" testReserveRollsBack
     it "lets one of two concurrent reservations of a code win, the other answered code_reserved" testConcurrentReserve
     it "releases and spends a code only after the write, and only for its holder" testReleaseSpend
   describe "group commands" $ do
@@ -219,12 +219,11 @@ testReserveRefusals = withOrders $ \turns st -> do
   reserveFor (RegistrationId "r6") (pcCodeHash ownRow) 8 `shouldReturn` Left CRUsed
   reserve (prepaidCodeHash unknown) 8 `shouldReturn` Left CRInvalid
   reserve (pcCodeHash shortRow) 7 `shouldReturn` Left CRNotCovering
-  reserve (pcCodeHash revokedRow) 7 `shouldReturn` Left CRNotCovering
+  reserve (pcCodeHash revokedRow) 8 `shouldReturn` Left CRInvalid
   readIORef wrote `shouldReturn` False
   mapM (readCode st) rows `shouldReturn` rowsBefore
-  reserve (pcCodeHash revokedRow) 8 `shouldReturn` Right (Right ())
   reserveFor r2 (pcCodeHash expiredRow) 8 `shouldReturn` Right (Right ())
-  mapM (fmap (pcReservedBy =<<) . readCode st) [revokedRow, expiredRow] `shouldReturn` [Just r1, Just r2]
+  (pcReservedBy =<<) <$> readCode st expiredRow `shouldReturn` Just r2
   map (J.toJSON . orderRefusal . ORCode) [CRInvalid, CRUsed, CRReserved, CRExpired, CRPaymentPending, CRNotCovering]
     `shouldBe` map (\t -> J.object ["type" J..= (t :: Text)]) ["code_invalid", "code_used", "code_reserved", "code_expired", "payment_pending", "code_not_covering"]
 
@@ -258,6 +257,9 @@ testReserveRollsBack = withOrders $ \turns st -> do
   row@PrepaidCode {pcId, pcCodeHash} <- issueAs st code usable
   let takenMeanwhile db = Right () <$ reservePrepaidCode db pcId r2 tNow :: IO (Either Text ())
   reserveCode turns st tNow pcCodeHash r1 (lengthOf 8) takenMeanwhile `shouldReturn` Left CRReserved
+  readCode st row `shouldReturn` Just row
+  let revokedMeanwhile db = Right () <$ revokePrepaidCode db pcCodeHash tNow :: IO (Either Text ())
+  reserveCode turns st tNow pcCodeHash r1 (lengthOf 8) revokedMeanwhile `shouldReturn` Left CRInvalid
   readCode st row `shouldReturn` Just row
 
 testConcurrentReserve :: IO ()
