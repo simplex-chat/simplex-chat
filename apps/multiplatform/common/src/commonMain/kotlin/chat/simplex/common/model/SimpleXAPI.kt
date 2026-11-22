@@ -3103,7 +3103,7 @@ object ChatController {
               }
               chatModel.secondaryChatsContext.value?.addChatItem(rhId, cInfo, cItem)
             }
-          } else if (cItem.isRcvNew && cInfo.ntfsEnabled(cItem) && !(cItem.meta.silent && cInfo.silentNotCounted)) {
+          } else if (cInfo.ntfsEnabled(cItem) && cInfo.countedForUser(cItem)) {
             withContext(Dispatchers.Main) {
               chatModel.chatsContext.increaseUnreadCounter(rhId, r.user)
             }
@@ -3149,7 +3149,7 @@ object ChatController {
       is CR.ChatItemsDeleted -> {
         if (!active(r.user)) {
           r.chatItemDeletions.forEach { (deletedChatItem, toChatItem) ->
-            if (toChatItem == null && deletedChatItem.chatItem.isRcvNew && deletedChatItem.chatInfo.ntfsEnabled(deletedChatItem.chatItem) && !(deletedChatItem.chatItem.meta.silent && deletedChatItem.chatInfo.silentNotCounted)) {
+            if (toChatItem == null && deletedChatItem.chatInfo.ntfsEnabled(deletedChatItem.chatItem) && deletedChatItem.chatInfo.countedForUser(deletedChatItem.chatItem)) {
               withContext(Dispatchers.Main) {
                 chatModel.chatsContext.decreaseUnreadCounter(rhId, r.user)
               }
@@ -3850,7 +3850,7 @@ object ChatController {
     val prevItem = update.prevChatItem
     val notify = cItem.meta.highPriority && !prevItem.meta.highPriority || cItem.isAsNew(prevItem)
     if (!activeUser(rh, user)) {
-      val unreadChange = unreadCountChange(prevItem, cItem) { it.isRcvNew && cInfo.ntfsEnabled(it) && !(it.meta.silent && cInfo.silentNotCounted) }
+      val unreadChange = unreadCountChange(prevItem, cItem) { cInfo.ntfsEnabled(it) && cInfo.countedForUser(it) }
       if (unreadChange > 0) {
         withContext(Dispatchers.Main) { chatModel.chatsContext.increaseUnreadCounter(rh, user) }
       } else if (unreadChange < 0) {

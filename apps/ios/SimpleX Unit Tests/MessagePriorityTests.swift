@@ -118,6 +118,14 @@ final class MessagePriorityTests: XCTestCase {
         XCTAssertEqual(ChatModel.shared.users.first?.unreadCount, 2)
     }
 
+    func testSilentItemIsNotCountedForUserInModeAll() {
+        let cInfo = ChatInfo.direct(contact: Contact.sampleData)
+        let normal = ChatItem.getSample(1, .directRcv, .now, "hi", .rcvNew)
+        let silent = ChatItem.getSample(2, .directRcv, .now, "hi", .rcvNew, priority: -1)
+        XCTAssertEqual([cInfo.countedForUser(normal), cInfo.countedForUser(silent)], [true, false])
+        XCTAssertEqual(cInfo.countedForUser(unreadCount: 3, unreadSilent: 2), 1)
+    }
+
     @MainActor
     private func labels() -> [Int] {
         let tm = ChatTagsModel.shared

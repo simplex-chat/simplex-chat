@@ -2419,8 +2419,16 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable {
         }
     }
 
-    public var silentNotCounted: Bool {
+    private var silentNotCounted: Bool {
         chatSettings?.enableNtfs == .all
+    }
+
+    public func countedForUser(_ chatItem: ChatItem) -> Bool {
+        chatItem.isRcvNew && !(chatItem.meta.silent && silentNotCounted)
+    }
+
+    public func countedForUser(unreadCount: Int, unreadSilent: Int) -> Int {
+        silentNotCounted ? unreadCount - unreadSilent : unreadCount
     }
 
     public var chatSettings: ChatSettings? {
@@ -3941,7 +3949,7 @@ public struct AChatItemUpdate: Decodable, Hashable {
     }
 
     public var userUnreadChange: Int {
-        unreadCountChange(prevChatItem, chatItem) { $0.isRcvNew && chatInfo.ntfsEnabled(chatItem: $0) && !($0.meta.silent && chatInfo.silentNotCounted) }
+        unreadCountChange(prevChatItem, chatItem) { chatInfo.ntfsEnabled(chatItem: $0) && chatInfo.countedForUser($0) }
     }
 }
 

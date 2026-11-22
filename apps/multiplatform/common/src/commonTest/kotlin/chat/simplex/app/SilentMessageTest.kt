@@ -2,6 +2,7 @@ package chat.simplex.app
 
 import chat.simplex.common.model.*
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
@@ -22,5 +23,12 @@ class SilentMessageTest {
   @Test
   fun normalItemShowsNotification() {
     assertTrue(rcvItem("").showNotification)
+  }
+
+  @Test
+  fun silentItemIsNotCountedForUserInModeAll() {
+    val cInfo = ChatInfo.Direct(Contact.sampleData.copy(chatSettings = ChatSettings(enableNtfs = MsgFilter.All, sendRcpts = null, favorite = false)))
+    assertEquals(listOf(true, false), listOf(cInfo.countedForUser(rcvItem("")), cInfo.countedForUser(rcvItem(""""priority":-1,"""))))
+    assertEquals(1, cInfo.countedForUser(unreadCount = 3, unreadSilent = 2))
   }
 }

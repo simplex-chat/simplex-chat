@@ -330,7 +330,7 @@ struct ChatStats: Decodable, Hashable {
 }
 ```
 
-`unreadSilent` counts unread silent items. The user's unread counter leaves them out in mode "All" (`ChatInfo.silentNotCounted`); in mode "Mentions" a silent mention counts as a mention.
+`unreadSilent` counts unread silent items. The user's unread counter leaves them out in mode "All" (`ChatInfo.countedForUser`, for an item and for counts); in mode "Mentions" a silent mention counts as a mention.
 
 `unreadHighPriority` counts unread high priority items (`CIMeta.highPriority`, priority 1), groups only; they are also counted in `unreadMentions`. `ChatModel.applyChatItemUpdate` changes `unreadSilent` and `unreadHighPriority` by the difference between the previous and the new item, like `unreadCount` and `unreadMentions`; the user's counter changes by the silent delta in mode "All". In another profile, the profile total changes by the difference in the items counted with `ntfsEnabled`, without silent items in mode "All".
 

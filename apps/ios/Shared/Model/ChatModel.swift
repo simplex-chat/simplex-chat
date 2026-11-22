@@ -1233,7 +1233,7 @@ final class ChatModel: ObservableObject {
         chats[chatIndex].chatStats.unreadSilent = stats.unreadSilent + unreadSilent
         chats[chatIndex].chatStats.unreadHighPriority = stats.unreadHighPriority + unreadHighPriority
         ChatTagsModel.shared.updateChatTagRead(chats[chatIndex], wasUnread: wasUnread)
-        changeUnreadCounter(user: currentUser!, by: count - (chats[chatIndex].chatInfo.silentNotCounted ? unreadSilent : 0))
+        changeUnreadCounter(user: currentUser!, by: chats[chatIndex].chatInfo.countedForUser(unreadCount: count, unreadSilent: unreadSilent))
     }
 
     func increaseUnreadCounter(user: any UserLike) {
@@ -1243,7 +1243,7 @@ final class ChatModel: ObservableObject {
     func decreaseUnreadCounter(user: any UserLike, chat: Chat) {
         let by = chat.chatInfo.chatSettings?.enableNtfs == .mentions
                 ? chat.chatStats.unreadMentions
-                : chat.chatStats.unreadCount - (chat.chatInfo.silentNotCounted ? chat.chatStats.unreadSilent : 0)
+                : chat.chatInfo.countedForUser(unreadCount: chat.chatStats.unreadCount, unreadSilent: chat.chatStats.unreadSilent)
         decreaseUnreadCounter(user: user, by: by)
     }
 
