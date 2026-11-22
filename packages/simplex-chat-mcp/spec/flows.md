@@ -227,7 +227,7 @@ Notes:
 - The connection is matched by `contactConnected` or `userJoinedGroup`: by contact or group ID, or by the pending connection ID ([`AgentTools.onContactConnected`, `onUserJoinedGroup`, `completeConnect`](../src/tools.ts)). In the plugin, the pending connection ID is also recorded in the session group's custom data. When the connection completes after the call returned, within a day of the record, its chat becomes the session's ([`AgentTools.performConnect`](../src/tools.ts), [`Session.claimPending`, `Hub.onEvent`](../src/hub.ts)).
 - In the perform step the server waits for the other side until `startedAt + wait`, at most until `created + 23 h 50 min`, and then reports `connected: false` ([`editWindow`, `AgentTools.performConnect`](../src/tools.ts)).
 - Without `message`, the idle time is counted from the connection; with `message`, from the first reply ([`AgentTools.markConnected`](../src/tools.ts), [`awaitResponses`](../src/messages.ts)).
-- For a target the agent is connected to, the result is `status: known` with its chat fields, and no action is created ([`AgentTools.connect`](../src/tools.ts)). In the plugin, the chat becomes the session's when it has no owner ([`AgentTools.ownChat`](../src/tools.ts)).
+- For a target the agent is connected to, the result is `status: known` with its chat fields, and no action is created ([`AgentTools.connect`](../src/tools.ts)). In the plugin, the chat becomes the session's when it has no owner, and the Main group and the session groups are refused ([`AgentTools.ownChat`](../src/tools.ts)).
 - Exact progress texts: `Action N waits for an approver until TIME.`, then `Action N waits for the connection until TIME.`, then `K messages in CHAT; waiting until TIME.` ([`progressText`](../src/actions.ts), [`AgentTools.connectedChat`](../src/tools.ts)).
 
 Source: [`AgentTools.connect`, `action`, `ownChat`, `connectResult`, `actionResult`, `connectedChat`, `plan`, `performConnect`, `join`, `connectPrepared`, `completeConnect`, `markConnected`](../src/tools.ts), [`Actions.create`, `decided`, `approve`](../src/actions.ts), [`Control.postCard`, `outcome`](../src/control.ts).
@@ -1903,7 +1903,7 @@ sequenceDiagram
   K->>F: read subagents/agent-ID.meta.json
   K->>D: POST /turn agent.start {type, description, toolUse, transcript}
   D->>N: turn
-  N->>G: live 🤖 TYPE · DESCRIPTION, priority -1
+  N->>G: live !- 🤖 TYPE · DESCRIPTION!, priority -1
   loop each tool use of A
     A->>K: PreToolUse, PostToolUse with agent_id
     K->>D: POST /turn agent.step
@@ -1921,7 +1921,7 @@ sequenceDiagram
   N->>G: edit with the figures; the note not posted
   L->>K: PostToolUse Workflow {runId, workflowName, transcriptDir}
   K->>D: POST /turn workflow
-  N->>G: live ⚙️ NAME
+  N->>G: live !- ⚙️ NAME!
   loop every 2 s
     N->>F: journal.jsonl appended lines; tokens of its working agents
     N->>G: edit phases, working agents, tokens, time

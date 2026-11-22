@@ -174,13 +174,13 @@ function agentText(agent: Agent, now: number): string {
   const {end} = agent
   if (end !== undefined) {
     const figures = [`${statusEmoji[end.status]} ${clock(end.ms ?? end.at - agent.startedAt)}`, stepsText(end.steps ?? agent.steps), tokensText(end.tokens ?? agent.tokens)]
-    return [[title, ...figures].filter(part => part !== undefined).join(" · "), agent.result].filter(line => line !== undefined).join("\n")
+    return [[title, ...figures].filter(part => part !== undefined).join(" · "), agent.result].filter(line => line !== undefined).map(small).join("\n")
   }
   const stalled = stalledFor(agent, now)
   const open = [...agent.open.values()].at(-1)
   const activity = stalled !== undefined ? [`⚠️ no step for ${clock(fiveSeconds(stalled))}`, last(agent)] : open !== undefined ? [`now: ${open}`] : [last(agent)]
   const line = [stepsText(agent.steps), tokensText(agent.tokens), clock(fiveSeconds(now - agent.startedAt)), ...activity].filter(part => part !== undefined).join(" · ")
-  return `${title}\n${line}`
+  return `${small(title)}\n${small(line)}`
 }
 
 // spec: spec/architecture.md#agents-agenttext
@@ -195,9 +195,9 @@ function workflowText(workflow: Workflow, now: number): string {
   })
   const tokens = tokensText(workflow.tokens.size === 0 ? undefined : [...workflow.tokens.values()].reduce((sum, count) => sum + count, 0))
   const {end} = workflow
-  if (end !== undefined) return [`⚙️ ${workflow.name}`, `${statusEmoji[end.status]} ${clock(end.at - workflow.startedAt)}`, ...phases, tokens].filter(part => part !== undefined).join(" · ")
+  if (end !== undefined) return small([`⚙️ ${workflow.name}`, `${statusEmoji[end.status]} ${clock(end.at - workflow.startedAt)}`, ...phases, tokens].filter(part => part !== undefined).join(" · "))
   const working = entries.filter(({state}) => state === "started").length
-  return [`⚙️ ${workflow.name}`, ...phases, working === 0 ? undefined : `${working} working`, tokens, clock(fiveSeconds(now - workflow.startedAt))].filter(part => part !== undefined).join(" · ")
+  return small([`⚙️ ${workflow.name}`, ...phases, working === 0 ? undefined : `${working} working`, tokens, clock(fiveSeconds(now - workflow.startedAt))].filter(part => part !== undefined).join(" · "))
 }
 
 // spec: spec/architecture.md#agents-agentsline
@@ -232,6 +232,11 @@ function last(agent: Agent): string | undefined {
 
 function stepsText(steps: number): string {
   return `${steps} step${steps === 1 ? "" : "s"}`
+}
+
+// spec: spec/architecture.md#agents-agenttext
+function small(text: string): string {
+  return `!- ${text.replaceAll("!", "ǃ")}!`
 }
 
 // spec: spec/architecture.md#agents-agenttext
