@@ -3,15 +3,13 @@ import {api} from "simplex-chat"
 import {Command, createGroup, deleteGroup, isLost, joinedText, losesControl, parseCommand, safeName, updateGroupProfile} from "./control"
 import {chatErrorOf, log, logError, oneLine} from "./log"
 import {resetCommand} from "./owner"
-import {isActive} from "./tools"
+import {isActive, mainKey} from "./tools"
 
 // spec: spec/architecture.md#main-group-maincommands
 const mainCommands: T.ChatBotCommand[] = [
   {type: "command", keyword: "sessions", label: "Claude Code sessions"},
   {type: "command", keyword: "join", label: "Join the group of a session", params: "<session number>"},
 ]
-// spec: spec/architecture.md#main-group-maincommands
-const mainKey = "simplexMcpMain"
 // spec: spec/api.md#main-group-profile
 const listKey = "simplexMcpList"
 // spec: spec/api.md#main-group-profile
