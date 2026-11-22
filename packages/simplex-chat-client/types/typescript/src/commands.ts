@@ -118,12 +118,13 @@ export namespace APISendMessages {
   }
 }
 
-// Update message.
+// Update message. In groups, as_new=on makes the message new: last in the chat, unread and notified by its priority, with the time of the update set by each member; ignored in other chats.
 // Network usage: background.
 export interface APIUpdateChatItem {
   chatRef: T.ChatRef
   chatItemId: number // int64
   liveMessage: boolean
+  asNew: boolean
   updatedMessage: T.UpdatedMessage
 }
 
@@ -131,7 +132,7 @@ export namespace APIUpdateChatItem {
   export type Response = CR.ChatItemUpdated | CR.ChatItemNotChanged | CR.ChatCmdError
 
   export function cmdString(self: APIUpdateChatItem): string {
-    return '/_update item ' + T.ChatRef.cmdString(self.chatRef) + ' ' + self.chatItemId + (self.liveMessage ? ' live=on' : '') + ' json ' + JSON.stringify(self.updatedMessage)
+    return '/_update item ' + T.ChatRef.cmdString(self.chatRef) + ' ' + self.chatItemId + (self.liveMessage ? ' live=on' : '') + (self.asNew ? ' as_new=on' : '') + ' json ' + JSON.stringify(self.updatedMessage)
   }
 }
 
