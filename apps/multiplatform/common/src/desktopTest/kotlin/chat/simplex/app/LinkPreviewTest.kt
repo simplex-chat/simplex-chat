@@ -22,9 +22,13 @@ import chat.simplex.common.platform.chatSendCmdRetry
 import chat.simplex.common.views.chat.ComposePreview
 import chat.simplex.common.views.chat.ComposeState
 import chat.simplex.common.views.chat.ComposeView
+import chat.simplex.common.views.chat.processPickedFile
 import chat.simplex.common.views.helpers.AlertManager
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.*
+import java.nio.file.Path
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 import kotlin.test.*
 
 @OptIn(ExperimentalTestApi::class)
@@ -133,6 +137,39 @@ class LinkPreviewTest {
   }
 
   @Test
+  fun fileAttachedBeforeTheFetchKeepsItsPreview() = composeView { composeState ->
+    val (request) = recorded("result")
+    onNode(hasSetTextAction()).performTextInput(request.removePrefix(LINK_PREVIEW))
+    withTempDir { dir ->
+      composeState.attachFile(dir)
+      runCatching { waitUntil(timeoutMillis = 3_000) { synchronized(requests) { requests.isNotEmpty() } } }
+      waitForIdle()
+      assertTrue(composeState.value.preview is ComposePreview.FilePreview)
+      assertEquals(listOf(), requests)
+    }
+  }
+
+  @Test
+  fun fileAttachedDuringTheFetchKeepsItsPreview() = composeView { composeState ->
+    val (request) = recorded("result")
+    val release = CountDownLatch(1)
+    chatSendCmdRetry = { _, cmd, _ ->
+      synchronized(requests) { requests += cmd }
+      release.await(10, TimeUnit.SECONDS)
+      commands[cmd]?.toString() ?: unrecordedRequest(cmd)
+    }
+    onNode(hasSetTextAction()).performTextInput(request.removePrefix(LINK_PREVIEW))
+    waitUntil(timeoutMillis = 10_000) { synchronized(requests) { requests.isNotEmpty() } }
+    withTempDir { dir ->
+      composeState.attachFile(dir)
+      release.countDown()
+      runCatching { waitUntil(timeoutMillis = 3_000) { composeState.value.preview is ComposePreview.CLinkPreview } }
+      assertTrue(composeState.value.preview is ComposePreview.FilePreview)
+      assertEquals(listOf(request), requests)
+    }
+  }
+
+  @Test
   fun failureShowsNoAlert() = failedPreview(developerTools = false, showLinkPreviewErrors = false) {
     assertTexts()
   }
@@ -181,6 +218,9 @@ class LinkPreviewTest {
     }
     test(composeState)
   }
+
+  private fun MutableState<ComposeState>.attachFile(dir: Path) =
+    processPickedFile(dir.resolve("notes.txt").toFile().apply { writeText("notes") }.toURI(), null)
 
   private fun recorded(outcome: String): Pair<String, JsonObject> =
     commands.entries

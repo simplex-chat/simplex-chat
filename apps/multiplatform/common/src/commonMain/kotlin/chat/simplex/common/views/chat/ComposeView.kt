@@ -493,7 +493,7 @@ fun ComposeView(
 
   suspend fun fetchAndUpdateLinkPreview(url: String) {
     withContext(Dispatchers.Main) {
-      fun awaited() = pendingLinkUrl.value == url
+      fun awaited() = pendingLinkUrl.value == url && composeState.value.linkPreviewAllowed
       if (awaited()) {
         composeState.value = composeState.value.copy(preview = ComposePreview.CLinkPreview(null))
         val lp = chatModel.controller.apiGetLinkPreview(url)
