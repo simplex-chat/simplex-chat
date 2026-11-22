@@ -654,10 +654,10 @@ alertUnregisteredPaid :: Worker -> IO ()
 alertUnregisteredPaid Worker {wkOrders = OrdersEnv {oeStore, oeNow, oeReport}} = do
   now <- oeNow
   due <- withTransaction oeStore (`unregisteredPaidBefore` addUTCTime (negate unregisteredAlertAge) now)
-  forM_ due $ \(rid@(RegistrationId ridText), phase, paidAt) -> do
+  forM_ due $ \(rid@(RegistrationId ridText), phase, selectedAt) -> do
     claimed <- withTransaction oeStore $ \db -> claimUnregisteredAlert db rid now
     when claimed $ do
-      let alert = "names: order " <> ridText <> " had its name selected at " <> tshow paidAt <> " and is " <> textEncode phase <> ", not registered, 3 hours later"
+      let alert = "names: order " <> ridText <> " had its name selected at " <> tshow selectedAt <> " and is " <> textEncode phase <> ", not registered, 3 hours later"
       logError alert
       oeReport alert
 
@@ -674,7 +674,7 @@ endMonths :: Worker -> IO ()
 endMonths Worker {wkOrders = oe@OrdersEnv {oeStore, oeTurns, oePhases, oeNow, oeReport}} = do
   now <- oeNow
   due <- withTransaction oeStore (`monthCandidates` addUTCTime (negate shortestMonth) now)
-  forM_ [rid | (rid, paidAt) <- due, addMonths 1 paidAt <= now] $ \rid@(RegistrationId ridText) ->
+  forM_ [rid | (rid, selectedAt) <- due, addMonths 1 selectedAt <= now] $ \rid@(RegistrationId ridText) ->
     ( withTransaction oeStore (`getRegistration` rid)
         >>= traverse (\r -> withRegistrationTurn oeStore oeTurns r (monthEnded now))
         >>= \case
@@ -687,8 +687,8 @@ endMonths Worker {wkOrders = oe@OrdersEnv {oeStore, oeTurns, oePhases, oeNow, oe
     )
       `catchOwn'` \e -> logError ("names month pass: registration " <> ridText <> " failed; the next pass tries it again: " <> tshow e)
   where
-    monthEnded now r@NameRegistration {nrId, nrPayment, nrPaidAt}
-      | orderLive r && namePhase (nrPhase r) `elem` [PQueued, PCommitted, PFailed] && maybe False ((<= now) . addMonths 1) nrPaidAt = fmap (,kept) <$> endOrder oe now r {nrPhase = OFailed now FRMonthEnded} registerUnsent
+    monthEnded now r@NameRegistration {nrId, nrPayment, nrSelectedAt}
+      | orderLive r && namePhase (nrPhase r) `elem` [PQueued, PCommitted, PFailed] && maybe False ((<= now) . addMonths 1) nrSelectedAt = fmap (,kept) <$> endOrder oe now r {nrPhase = OFailed now FRMonthEnded} registerUnsent
       | otherwise = pure $ Left WRChanged
       where
         registerUnsent db =

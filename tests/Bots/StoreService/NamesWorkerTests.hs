@@ -137,7 +137,7 @@ workerTests = describe "StoreService names: worker" $ do
     it "logs a month pass that fails, so a pass failing from the start keeps the start's time past the alert's age, until a pass completes" testMonthPassFails
     it "reports once each paid or code order not registered 3 hours after its payment, a failed one included" testUnregisteredAlert
     it "fails each order queued, committed or failed a calendar month after its payment or its code's reservation, once, reporting it, its name released, the money paid for a paid order added to its balance and a code order's code released" testMonthEnds
-    it "counts the month and the 3-hour alert from the latest selection of a name, not from the first name's payment" testMonthFromSelection
+    it "counts the month and the 3-hour alert from the latest selection of a name, not from the payment" testMonthFromSelection
     it "ends the month on the last day of a shorter month" testMonthClipped
     it "ends no month of an order whose register is sent and not settled, and ends it once the register reverted" testMonthRegisterInFlight
     it "fails an order waiting for its owner once its page has not read it for 3 days, logging and reporting it, holding its name" testUnreadReported
@@ -1360,10 +1360,10 @@ testMonthClipped = withWorker $ \W {wCtx = ctx@Ctx {cStore, cClock}, wWorker} ->
   r <- paidIn ctx aliceOrder id
   let paidAt = posixSecondsToUTCTime 1801396800
       lastDay = posixSecondsToUTCTime 1803816000
-  withTransaction cStore $ \db -> DB.execute db "UPDATE sx_badge_service_name_registrations SET paid_at = ? WHERE registration_id = ?" (paidAt, (\(RegistrationId t) -> t) $ nrId r)
+  withTransaction cStore $ \db -> DB.execute db "UPDATE sx_badge_service_name_registrations SET selected_at = ? WHERE registration_id = ?" (paidAt, (\(RegistrationId t) -> t) $ nrId r)
   writeIORef cClock $ addUTCTime (-1) lastDay
   endMonths wWorker
-  stored ctx r `shouldReturn` r {nrPaidAt = Just paidAt}
+  stored ctx r `shouldReturn` r {nrSelectedAt = Just paidAt}
   writeIORef cClock lastDay
   endMonths wWorker
   nrPhase <$> stored ctx r `shouldReturn` OFailed lastDay FRMonthEnded
