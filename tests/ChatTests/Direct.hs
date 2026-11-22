@@ -37,6 +37,7 @@ import Simplex.Chat.Controller (CM, ChatConfig (..), ChatController (..), ChatEr
 import Simplex.Chat.Messages (AChatItemUpdate (..), CIMeta (CIMeta, itemText), ChatItem (ChatItem, meta), ChatItemId)
 import Simplex.Chat.Options
 import Simplex.Chat.Protocol (supportedChatVRange)
+import Simplex.Chat.Terminal.Notification (hideException)
 import Simplex.Chat.Types (ContactId, VersionRangeChat, authErrDisableCount, sameVerificationCode, verificationCode, pattern VersionChat)
 import Simplex.Messaging.Agent.Env.SQLite
 import Simplex.Messaging.Agent.RetryInterval
@@ -52,12 +53,16 @@ import Simplex.Messaging.Version
 import System.Directory (copyFile, doesDirectoryExist, doesFileExist)
 import System.Mem.Weak (deRefWeak)
 import System.FilePath ((</>))
+import System.Timeout (timeout)
 import Test.Hspec hiding (it)
 #if defined(dbPostgres)
 import Database.PostgreSQL.Simple (Only (..))
 #else
 import Database.SQLite.Simple (Only (..))
 import Simplex.Chat.Options.DB
+import Simplex.Chat.Terminal.Input (updateTermState)
+import Simplex.Chat.Terminal.Output (TerminalState (inputString), mkTermState)
+import System.Terminal (Key (TabKey))
 #endif
 #if defined(test_hooks)
 import Control.Concurrent.Async (async)
@@ -184,6 +189,12 @@ chatDirectTests = do
   describe "settings" $ do
     it "set chat item expiration TTL" testSetChatItemTTL
     it "save/get app settings" testAppSettings
+  describe "terminal" $ do
+    it "should stop a notification at its time limit" $ \_ ->
+      timeout 100000 (hideException (\_ -> threadDelay 1000000) ()) `shouldReturn` Nothing
+#if !defined(dbPostgres)
+    it "should stop a name completion at its time limit" testNameCompletionTimeLimit
+#endif
   describe "connection switch" $ do
     it "switch contact to a different queue" testSwitchContact
     it "stop switching contact to a different queue" testAbortSwitchContact
@@ -3383,6 +3394,15 @@ testAppSettings ps =
     -- read back
     alice ##> "/_get app settings"
     alice <## ("app settings: " <> settingsApp)
+
+#if !defined(dbPostgres)
+testNameCompletionTimeLimit :: HasCallStack => TestParams -> IO ()
+testNameCompletionTimeLimit ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice@TestCC {chatController = ChatController {chatStore}} ->
+    withCCUser alice $ \user -> do
+      let complete = updateTermState (Just user) chatStore "" False 80 (TabKey, mempty) mkTermState {inputString = "@a"}
+      holdDuring (withCCTransaction alice . const) (timeout 100000 $ void complete) `shouldReturn` Nothing
+#endif
 
 testSwitchContact :: HasCallStack => TestParams -> IO ()
 testSwitchContact =
