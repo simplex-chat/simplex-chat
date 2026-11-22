@@ -71,7 +71,7 @@ Failed claim, with every build job skipped:
 
 After a failed claim, a fix commit is pushed; the version is claimed by the next push.
 
-Incomplete draft: completed by a re-run of the failed jobs in the run of the claim. The version is skipped by later pushes, as it is recorded for another commit.
+Incomplete draft: completed by a re-run of the failed jobs in the run of the claim. The version is skipped by later pushes, as it is recorded for another commit. A re-run whose release was published meanwhile passes its upload step when the published release has its zip (scripts/ci/release-upload.sh).
 
 ## Add-on release
 
@@ -80,7 +80,7 @@ Run of `build.yml` on a push to master or stable with unreleased add-on sources:
 - build jobs, 5 platforms: add-on built, tested with the latest library release of the branch, uploaded
 - `releases`: release published
 
-Incomplete draft: completed by a re-run or by the next push with the same add-on sources. An upload refused because an earlier run published the release in the meantime passes, as the published release has every asset.
+Incomplete draft: completed by a re-run or by the next push with the same add-on sources. A run whose release was published meanwhile, by another run, passes its upload step when the published release has its add-on (scripts/ci/release-upload.sh).
 
 ## Package release
 

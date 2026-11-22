@@ -536,7 +536,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.NODEJS_REPO_TOKEN }}
           TAG: ${{ needs.maybe-release.outputs.libs_tag }}
-        run: gh release upload "$TAG" release-libs/*.zip --clobber --repo "${{ github.repository }}-libs"
+        run: scripts/ci/release-upload.sh "${{ github.repository }}-libs" "$TAG" release-libs/*.zip
 
       - name: Build CLI deb
         if: startsWith(github.ref, 'refs/tags/v') && matrix.should_run == true
@@ -1036,7 +1036,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.NODEJS_REPO_TOKEN }}
           TAG: ${{ needs.maybe-release.outputs.libs_tag }}
-        run: gh release upload "$TAG" postgres-libs/*.zip --clobber --repo "${{ github.repository }}-libs"
+        run: scripts/ci/release-upload.sh "${{ github.repository }}-libs" "$TAG" postgres-libs/*.zip
 
 # =================================
 #      Linux PostgreSQL Tests
@@ -1376,7 +1376,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.NODEJS_REPO_TOKEN }}
           TAG: ${{ needs.maybe-release.outputs.libs_tag }}
-        run: gh release upload "$TAG" release-libs/*.zip --clobber --repo "${{ github.repository }}-libs"
+        run: scripts/ci/release-upload.sh "${{ github.repository }}-libs" "$TAG" release-libs/*.zip
 
       - name: Setup Node.js
         id: setup-node
@@ -1705,7 +1705,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.NODEJS_REPO_TOKEN }}
           TAG: ${{ needs.maybe-release.outputs.libs_tag }}
-        run: gh release upload "$TAG" release-libs/*.zip --clobber --repo "${{ github.repository }}-libs"
+        run: scripts/ci/release-upload.sh "${{ github.repository }}-libs" "$TAG" release-libs/*.zip
 
       - name: Setup Node.js
         id: setup-node

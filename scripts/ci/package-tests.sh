@@ -51,8 +51,7 @@ case "${1:-}" in
     "$python" scripts/ci/packages_release.py download "$LIBS_RELEASE" "$zip" "$temp/libs"
     "$python" -m zipfile -e "$temp/libs/$zip" "$temp/libs"
     SIMPLEX_LIBS_DIR=$temp/libs/libs test_nodejs
-    gh release upload "$ADDON_TAG" "$nodejs/build/simplex-chat-nodejs-$2.node" --clobber --repo "$LIBS_REPOSITORY" \
-      || [ "$("$python" scripts/ci/packages_release.py release-status "$ADDON_TAG")" = status=published ]
+    scripts/ci/release-upload.sh "$LIBS_REPOSITORY" "$ADDON_TAG" "$nodejs/build/simplex-chat-nodejs-$2.node"
     ;;
   publish)
     [ $# -ge 2 ] || usage
