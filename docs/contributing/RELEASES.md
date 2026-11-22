@@ -80,7 +80,7 @@ Run of `build.yml` on a push to master or stable with unreleased add-on sources:
 - build jobs, 5 platforms: add-on built, tested with the latest library release of the branch, uploaded
 - `releases`: release published
 
-Incomplete draft: completed by a re-run or by the next push with the same add-on sources.
+Incomplete draft: completed by a re-run or by the next push with the same add-on sources. An upload refused because an earlier run published the release in the meantime passes, as the published release has every asset.
 
 ## Package release
 
