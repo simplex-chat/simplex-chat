@@ -22,6 +22,9 @@
                 "directMessages": {
                   "enable": "on"
                 },
+                "edits": {
+                  "enable": "off"
+                },
                 "files": {
                   "enable": "on"
                 },
@@ -354,6 +357,9 @@
               },
               "directMessages": {
                 "enable": "on"
+              },
+              "edits": {
+                "enable": "off"
               },
               "files": {
                 "enable": "on"
@@ -754,6 +760,9 @@
                 "directMessages": {
                   "enable": "on"
                 },
+                "edits": {
+                  "enable": "off"
+                },
                 "files": {
                   "enable": "on"
                 },
@@ -1087,6 +1096,9 @@
               },
               "directMessages": {
                 "enable": "on"
+              },
+              "edits": {
+                "enable": "off"
               },
               "files": {
                 "enable": "on"
