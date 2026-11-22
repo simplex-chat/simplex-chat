@@ -43,7 +43,6 @@ import Control.Concurrent.STM
 import Control.Exception (SomeException, bracket, mask_, try)
 import Control.Logger.Simple (logWarn)
 import Control.Monad (unless)
-import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (runReaderT)
 import qualified Data.Aeson.TH as JQ
 import Data.Bits (shiftL, shiftR, (.|.))
@@ -62,9 +61,9 @@ import qualified Data.Text as T
 import Data.Word (Word32, Word64, Word8)
 import GHC.Clock (getMonotonicTimeNSec)
 import Network.Socket (AddrInfo (..), HostName, SocketType (..), defaultHints, getAddrInfo)
-import Simplex.Chat.Controller (ChatController, ChatError (..))
-import Simplex.Chat.Library.Internal (decodeLinkUserData, getShortLinkConnReq')
-import Simplex.Chat.Protocol (ContactShortLinkData (..), GroupShortLinkData (..), PublicGroupData (..))
+import Simplex.Chat.Controller (ChatController, ChatError (..), ChatErrorType (..))
+import Simplex.Chat.Library.Internal (getShortLinkConnReq')
+import Simplex.Chat.Protocol (ContactShortLinkData (..), GroupShortLinkData (..), PublicGroupData (..), shortLinkContactData, shortLinkGroupData)
 import Simplex.Chat.Types (ChatPeerType (..), GroupProfile (..), ImageData (..), Profile (..), User)
 import Simplex.Messaging.Agent.Client (temporaryOrHostError)
 import Simplex.Messaging.Agent.Protocol (ConnShortLink (..), ConnectionMode (..), simplexShortLink)
@@ -252,6 +251,7 @@ boundedProfile ps@Profiles {limits = ProfileLimits {fetchTimeout, cacheSeconds, 
       Right Nothing -> pure ProfileUnavailable
       Left e -> unreadable e <$ logWarn ("names: a link's data could not be read: " <> tshow e)
     unreadable = \case
+      ChatError CEInvalidConnReq -> ProfileUnavailable
       ChatErrorAgent {agentError} | not (temporaryOrHostError agentError) -> ProfileUnavailable
       _ -> ProfileUnread
 
@@ -275,11 +275,11 @@ shortLinkHosts (CSLContact _ _ ProtocolServer {host} _) = host
 
 -- | Reads the link data without connecting.
 chatProfile :: ChatController -> User -> ProfileFetcher
-chatProfile cc user t sl = runReaderT (tryAllErrors' $ getShortLinkConnReq' NRMInteractive user sl >>= liftIO . linkData) cc
+chatProfile cc user t sl = runReaderT (tryAllErrors' $ linkData <$> getShortLinkConnReq' NRMInteractive user sl) cc
   where
-    linkData (_, cData, _, _) = case t of
-      LKContact -> fmap LDContact <$> decodeLinkUserData cData
-      LKChannel -> fmap LDChannel <$> decodeLinkUserData cData
+    linkData (_, _, _, sLinkData_) = case t of
+      LKContact -> LDContact <$> (shortLinkContactData =<< sLinkData_)
+      LKChannel -> LDChannel <$> (shortLinkGroupData =<< sLinkData_)
 
 data HostCheck = HostPublic | HostRefused | HostUnanswered
   deriving (Eq, Show)

@@ -10,6 +10,7 @@ module Bots.StoreService.NamesProfilesTests (namesProfilesTests, namesProfilesCh
 import ChatClient (TestCC (..), testChat2)
 import ChatTests.DBUtils (TestParams)
 import ChatTests.Groups (prepareChannel1Relay)
+import ChatTests.Profiles (setTestGroupLinkData)
 import ChatTests.Utils (aliceProfile, bobProfile, getContactLinks, withRelay, (##>))
 import qualified ChatTests.Utils as CU
 import Control.Concurrent (threadDelay)
@@ -35,7 +36,7 @@ import Data.Word (Word32, Word64)
 import Simplex.Chat.Controller (ChatController (..), ChatError (..), ChatErrorType (..))
 import Simplex.Chat.Protocol (ContactShortLinkData (..), GroupShortLinkData (..), PublicGroupData (..))
 import Simplex.Chat.Types (AgentConnId (..), B64UrlByteString (..), ChatPeerType (..), GroupProfile (..), GroupType (..), ImageData (..), Profile (..), PublicGroupProfile (..))
-import Simplex.Messaging.Agent.Protocol (AgentErrorType (BROKER, SMP), ConnShortLink (..), ConnectionMode (..), simplexShortLink)
+import Simplex.Messaging.Agent.Protocol (AgentErrorType (BROKER, SMP), ConnShortLink (..), ConnectionMode (..), UserLinkData (..), simplexShortLink)
 import Simplex.Messaging.Encoding.String (strDecode, strEncode)
 import Simplex.Messaging.Protocol (BrokerErrorType (TIMEOUT), ErrorType (AUTH), SMPServer)
 import Simplex.Messaging.Transport.Client (TransportHost (..))
@@ -75,7 +76,7 @@ namesProfilesTests = describe "StoreService names: profiles" $ do
 namesProfilesChatTests :: SpecWith TestParams
 namesProfilesChatTests =
   describe "StoreService names: profiles" $
-    CU.it "reads the link data of an address and a channel through the chat core, for another user and for their owner" testChatProfiles
+    CU.it "reads the link data of an address and a channel through the chat core, for another user and for their owner, and a channel link without data is unavailable" testChatProfiles
 
 -- Link data
 
@@ -549,3 +550,8 @@ testChatProfiles ps = testChat2 aliceProfile bobProfile test ps
       fetch alice' LKChannel channel >>= (`shouldSatisfy` newsData)
       fetch bob LKContact address >>= (`shouldSatisfy` bobData)
       fetch bob LKChannel channel >>= (`shouldSatisfy` newsData)
+      setTestGroupLinkData bob $ UserLinkData ""
+      let TestCC {chatController = cc@ChatController {currentUser}} = alice'
+      Just user <- readTVarIO currentUser
+      profiles <- newProfiles defaultProfileLimits monotonicSeconds (chatProfile cc user) publicResolver
+      linkPreview profiles LKChannel (parsed $ T.pack channel) `shouldReturn` Preview LKChannel ProfileUnavailable
