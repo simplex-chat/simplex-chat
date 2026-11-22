@@ -79,9 +79,17 @@ import Simplex.Chat.Library.Subscriber (processAgentMessage)
 import Simplex.Messaging.Agent.Protocol (AEvent (MERRS), AgentErrorType (INTERNAL))
 import System.Timeout (timeout)
 #else
+import Data.Maybe (mapMaybe)
 import Database.SQLite.Simple (Only (..))
 import Database.SQLite.Simple.QQ (sql)
 import Simplex.Chat.Options.DB
+import qualified Simplex.Chat.Store as Store
+import Simplex.Messaging.Agent.Store.Common (withConnection)
+import Simplex.Messaging.Agent.Store.DB (TrackQueries (..))
+import Simplex.Messaging.Agent.Store.Interface (DBOpts (DBOpts), closeDBStore)
+import qualified Simplex.Messaging.Agent.Store.SQLite.Migrations as Migrations
+import Simplex.Messaging.Agent.Store.Shared (MigrationConfig (MigrationConfig), MigrationConfirmation (MCError), MigrationsToRun (MTRDown), toDownMigration)
+import qualified Simplex.Messaging.Agent.Store.Shared as SM
 #endif
 
 chatGroupTests :: SpecWith TestParams
@@ -307,6 +315,19 @@ chatGroupTests = do
     it "receiver drops a deletion after the window of the preference" testGroupDeleteReceiverLimit
     it "own message deletion with member ID applies the window below moderator role" testGroupDeleteOwnMemberIdWindow
     it "message editing preference is hidden and kept by profile updates" testGroupEditsPreferenceHidden
+  describe "members via another member" $ do
+    it "announce member via user and send messages as member" testViaMemberMessages
+    it "update message sent as member" testViaMemberUpdate
+    it "introduce member via user to later joiner" testViaMemberLaterJoiner
+    it "joiner of previous version creates unknown member" testViaMemberPrevVersionJoiner
+    it "remove member via user as leaving" testViaMemberLeave
+    it "refuse role above moderator, member not via user and user below admin" testViaMemberRefused
+    it "refuse when messages are signed" testViaMemberRefusedSigned
+    it "refuse in channels" testViaMemberRefusedChannel
+    it "members via another member recorded for the apps" testViaMemberRecordings
+#if !defined(dbPostgres)
+    it "down migration removes members via user and announces members via another member" testViaMemberMigrationDown
+#endif
   describe "group scoped messages" $ do
     it "should send scoped messages to support (single moderator)" testScopedSupportSingleModerator
     it "should send scoped messages to support (many moderators)" testScopedSupportManyModerators
@@ -1862,7 +1883,7 @@ testGroupMemFwdInvalidMember =
         runExceptT (createConnection smpAgent NRMInteractive (aUserId user) True False SCMInvitation Nothing Nothing IKPQOff False SMSubscribe)
           >>= either (fail . show) (\(_, CCLink groupConnReq _) -> pure IntroInvitation {groupConnReq})
       connId <- relayConnIdToMember cc toName
-      agentSendBody cc connId $ chatMsgToBody $ ChatMessage supportedChatVRange Nothing (XGrpMemFwd (MemberInfo memId GRMember Nothing p Nothing) introInv)
+      agentSendBody cc connId $ chatMsgToBody $ ChatMessage supportedChatVRange Nothing (XGrpMemFwd (MemberInfo memId GRMember Nothing p Nothing Nothing) introInv)
     memberConnCount :: TestCC -> T.Text -> IO Int
     memberConnCount cc name = do
       [Only n] <- withCCTransaction cc $ \db ->
@@ -12445,7 +12466,8 @@ testChannelRelayCannotForgePrivilegedMember ps =
                   memberRole = GRAdmin,
                   v = Nothing,
                   profile = forgedProfile,
-                  memberKey = Just (MemberKey attackerPub)
+                  memberKey = Just (MemberKey attackerPub),
+                  via = Nothing
                 }
             chatMsg = ChatMessage chatInitialVRange Nothing (XGrpMemNew memInfo Nothing)
             fwd = GrpMsgForward (FwdMember ownerMemId "alice") ts
@@ -12480,7 +12502,7 @@ testChannelOwnMemberIntroKeepsProfile ps =
         cathMemId <- memberIdByName bob "cath"
         connId <- relayConnIdToMember bob "cath"
         let otherProfile = (cathProfile :: Profile) {displayName = "other", fullName = "Other"}
-            memInfo = MemberInfo {memberId = cathMemId, memberRole = GRObserver, v = Nothing, profile = otherProfile, memberKey = Nothing}
+            memInfo = MemberInfo {memberId = cathMemId, memberRole = GRObserver, v = Nothing, profile = otherProfile, memberKey = Nothing, via = Nothing}
         agentSendBody bob connId $ chatMsgToBody $ ChatMessage chatInitialVRange Nothing (XGrpMemIntro memInfo Nothing)
         cath <## "error: x.grp.mem.intro ignored: member already exists"
         ownMember cath `shouldReturn` [("cath", "connected")]
@@ -12511,7 +12533,7 @@ testChannelPromotionDifferentKeyKeepsRole ps =
           g <- C.newRandom
           kp <- atomically $ C.generateKeyPair g
           let relayKey = fst kp :: C.PublicKeyEd25519
-              memInfo = MemberInfo {memberId = danId, memberRole = GRObserver, v = Nothing, profile = danProfile, memberKey = Just (MemberKey relayKey)}
+              memInfo = MemberInfo {memberId = danId, memberRole = GRObserver, v = Nothing, profile = danProfile, memberKey = Just (MemberKey relayKey), via = Nothing}
           agentSendBody bob connId $ chatMsgToBody $ ChatMessage chatInitialVRange Nothing (XGrpMemNew memInfo Nothing)
           cath <## "#team: bob introduced dan (Daniel) in the channel"
           threadDelay 1000000
@@ -15568,3 +15590,197 @@ testGroupLinkContentFilter =
       cath ##> "/_get content types #1"
       cath <## "Chat content types: link, text"
       cath #$> ("/_get chat #1 content=link count=100", chat, [(0, "https://simplex.chat"), (0, "check out https://example.com")])
+
+addViaMember :: HasCallStack => TestCC -> String -> IO ()
+addViaMember cc role = do
+  cc ##> ("/_add via #1 " <> role <> " json {\"displayName\": \"reviewer\", \"fullName\": \"\"}")
+  cc <## "#team: you added reviewer to the group"
+
+viaMemberAdded :: HasCallStack => [TestCC] -> IO ()
+viaMemberAdded = mapM_ (<## "#team: alice added reviewer to the group (via alice)")
+
+testViaMemberMessages :: HasCallStack => TestParams -> IO ()
+testViaMemberMessages =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+      addViaMember alice "member"
+      viaMemberAdded [bob, cath]
+      alice ##> "/ms team"
+      alice
+        <### [ "alice (Alice): owner, you, created group",
+               "bob (Bob): admin, invited, connected",
+               "cath (Catherine): admin, invited, connected",
+               "reviewer: member, via you, connected"
+             ]
+      bob ##> "/ms team"
+      bob
+        <### [ "alice (Alice): owner, host, connected",
+               "bob (Bob): admin, you, connected",
+               "cath (Catherine): admin, connected",
+               "reviewer: member, via alice, connected"
+             ]
+      alice ##> "/_send #1(as_member=4) text hi"
+      alice <# "#team hi"
+      [bob, cath] *<# "#team reviewer> hi [>>]"
+
+testViaMemberUpdate :: HasCallStack => TestParams -> IO ()
+testViaMemberUpdate =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+      addViaMember alice "member"
+      viaMemberAdded [bob, cath]
+      alice ##> "/_send #1(as_member=4) text hi"
+      alice <# "#team hi"
+      [bob, cath] *<# "#team reviewer> hi [>>]"
+      ciId <- lastItemId alice
+      alice ##> ("/_update item #1 " <> ciId <> " text hello")
+      alice <# "#team [edited] hello"
+      [bob, cath] *<# "#team reviewer> [edited] hello"
+
+testViaMemberLaterJoiner :: HasCallStack => TestParams -> IO ()
+testViaMemberLaterJoiner =
+  testChat4 aliceProfile bobProfile cathProfile danProfile $
+    \alice bob cath dan -> do
+      createGroup3 "team" alice bob cath
+      addViaMember alice "member"
+      viaMemberAdded [bob, cath]
+      alice ##> "/_send #1(as_member=4) text hi"
+      alice <# "#team hi"
+      [bob, cath] *<# "#team reviewer> hi [>>]"
+      connectUsers alice dan
+      addMember "team" alice dan GRMember
+      dan ##> "/j team"
+      concurrentlyN_
+        [ alice <## "#team: dan joined the group",
+          dan
+            <### [ "#team: you joined the group",
+                   WithTime "#team reviewer> hi [>>]",
+                   "#team: member bob (Bob) is connected",
+                   "#team: member cath (Catherine) is connected"
+                 ],
+          do
+            bob <## "#team: alice added dan (Daniel) to the group (connecting...)"
+            bob <## "#team: new member dan is connected",
+          do
+            cath <## "#team: alice added dan (Daniel) to the group (connecting...)"
+            cath <## "#team: new member dan is connected"
+        ]
+      dan ##> "/ms team"
+      dan
+        <### [ "dan (Daniel): member, you, connected",
+               "alice (Alice): owner, host, connected",
+               "bob (Bob): admin, connected",
+               "cath (Catherine): admin, connected",
+               "reviewer: member, via alice, connected"
+             ]
+      alice ##> "/_send #1(as_member=4) text hello"
+      alice <# "#team hello"
+      [bob, cath, dan] *<# "#team reviewer> hello [>>]"
+
+testViaMemberPrevVersionJoiner :: HasCallStack => TestParams -> IO ()
+testViaMemberPrevVersionJoiner ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChat ps "bob" bobProfile $ \bob ->
+      withNewTestChatCfg ps testCfgVPrev "dan" danProfile $ \dan -> do
+        createGroup2 "team" alice bob
+        addViaMember alice "member"
+        viaMemberAdded [bob]
+        alice ##> "/_send #1(as_member=3) text hi"
+        alice <# "#team hi"
+        bob <# "#team reviewer> hi [>>]"
+        connectUsers alice dan
+        addMember "team" alice dan GRMember
+        dan ##> "/j team"
+        concurrentlyN_
+          [ alice <## "#team: dan joined the group",
+            dan
+              <### [ "#team: you joined the group",
+                     StartsWith "#team: alice forwarded a message from an unknown member, creating unknown member record",
+                     EndsWith "hi [>>]",
+                     "#team: member bob (Bob) is connected"
+                   ],
+            do
+              bob <## "#team: alice added dan (Daniel) to the group (connecting...)"
+              bob <## "#team: new member dan is connected"
+          ]
+
+testViaMemberLeave :: HasCallStack => TestParams -> IO ()
+testViaMemberLeave =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+      addViaMember alice "member"
+      viaMemberAdded [bob, cath]
+      alice ##> "/_remove #1 4"
+      alice <## "#team: you removed reviewer from the group"
+      mapM_ (<## "#team: reviewer left the group") [bob, cath]
+
+testViaMemberRefused :: HasCallStack => TestParams -> IO ()
+testViaMemberRefused =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      createGroup2' "team" alice (bob, GRMember) True
+      alice ##> "/_add via #1 admin json {\"displayName\": \"reviewer\", \"fullName\": \"\"}"
+      alice <## "bad chat command: role of a member via another member is at most moderator"
+      alice ##> "/_send #1(as_member=2) text hi"
+      alice <## "bad chat command: member is not via you"
+      bob ##> "/_add via #1 member json {\"displayName\": \"reviewer\", \"fullName\": \"\"}"
+      bob <## "#team: you have insufficient permissions for this action, the required role is admin"
+
+testViaMemberRefusedSigned :: HasCallStack => TestParams -> IO ()
+testViaMemberRefusedSigned ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice -> do
+    alice ##> "/_group 1 {\"displayName\": \"team\", \"fullName\": \"\", \"groupPreferences\": {\"signMessages\": {\"enable\": \"on\"}}}"
+    alice <## "group #team is created"
+    alice <## "to add members use /a team <name> or /create link #team"
+    alice ##> "/_add via #1 member json {\"displayName\": \"reviewer\", \"fullName\": \"\"}"
+    alice <## "bad chat command: members via another member are not supported when messages are signed"
+
+testViaMemberRefusedChannel :: HasCallStack => TestParams -> IO ()
+testViaMemberRefusedChannel ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob -> do
+      _ <- prepareChannel1Relay "team" alice bob
+      alice ##> "/_add via #1 member json {\"displayName\": \"reviewer\", \"fullName\": \"\"}"
+      alice <## "bad chat command: members via another member are not supported in channels"
+
+testViaMemberRecordings :: HasCallStack => TestParams -> IO ()
+testViaMemberRecordings =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      createGroup2 "team" alice bob
+      addViaMember alice "member"
+      viaMemberAdded [bob]
+      alice ##> "/_send #1(as_member=3) text hi"
+      alice <# "#team hi"
+      bob <# "#team reviewer> hi [>>]"
+      apiFixture "via/members" alice [] FixtureRequests {frMarkdown = [], frUris = [], frCommands = ["/_members #1", "/_get chat #1 count=1"]}
+
+#if !defined(dbPostgres)
+testViaMemberMigrationDown :: HasCallStack => TestParams -> IO ()
+testViaMemberMigrationDown ps = do
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChat ps "bob" bobProfile $ \bob -> do
+      createGroup2 "team" alice bob
+      addViaMember alice "member"
+      viaMemberAdded [bob]
+      alice ##> "/_send #1(as_member=3) text hi"
+      alice <# "#team hi"
+      bob <# "#team reviewer> hi [>>]"
+  migrateDown "alice" `shouldReturn` (["removed"], [0])
+  migrateDown "bob" `shouldReturn` (["announced"], [0])
+  where
+    migrateDown :: String -> IO ([T.Text], [Int])
+    migrateDown dbPrefix = do
+      Right st <- Store.createChatStore (DBOpts (tmpPath ps </> (dbPrefix <> "_chat.db")) chatDBFunctions "" False True TQOff) (MigrationConfig MCError Nothing)
+      Migrations.run st Nothing True . MTRDown . mapMaybe toDownMigration . reverse $ dropWhile ((< "20261113_item_priority") . SM.name) Store.migrations
+      r <-
+        withConnection st $ \db ->
+          (,)
+            <$> (map fromOnly <$> DB.query_ db "SELECT member_status FROM group_members WHERE local_display_name = 'reviewer'")
+            <*> (map fromOnly <$> DB.query_ db "SELECT count(1) FROM chat_items WHERE item_sent = 1 AND group_member_id IS NOT NULL")
+      closeDBStore st
+      pure r
+#endif
