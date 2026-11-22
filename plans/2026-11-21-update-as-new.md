@@ -1,6 +1,6 @@
 # Group updates that show a message as new
 
-Status: implemented on `ep/update-as-new`; U1-U4 and P1 decided by the user on 2026-11-21. One 7.2 core pull request with `2026-11-21-edit-window-preference.md`, stacked on message priority (#8195, `ep/message-priority` at `1f3fff669`). Code references: master `20ee7cb14`; priority code by name, from `ep/message-priority`.
+Status: implemented on `ep/update-as-new`; U1-U4 and P1 decided by the user on 2026-11-21. One 7.2 core pull request with `2026-11-21-edit-window-preference.md`, stacked on message priority (#8195, `ep/message-priority` at `4f7535458`). Code references: master `20ee7cb14`; priority code by name, from `ep/message-priority`.
 
 The user's words:
 
@@ -43,14 +43,12 @@ Protocol.hs
   XMsgUpdate                asNew :: Maybe Bool          new last field, after priority of #8195
   appJsonToCM, XMsgUpdate_  asNew <- opt "asNew"
   chatToAppMessage          "asNew" .=? asNew
-  eventPriority             XMsgUpdate {priority = Just p} -> limitPriority p, as in #8195
-  eventHasNotification      EQ -> isAsNew ev || hasNotification (toCMEventTag ev)
-  isAsNew                   new: ChatMsgEvent e -> Bool; XMsgUpdate {asNew = Just True}
+  eventHasNotification      unchanged, #8195: off for every x.msg.update; the flag of an update is set by section 4
   positional uses           Library/Commands.hs, Library/Subscriber.hs, tests/ProtocolTests.hs, tests/ChatTests/Groups.hs,
                             the sites of the priority field of #8195
 ```
 
-- SMP notification flag of an update as new: priority -1, unset; 0 or absent, set; 1, set.
+- SMP notification flag of an update as new that moves the item: priority -1, unset; 0 or absent, set; 1, set. An update that leaves the item in place has the flag of #8195: set only for a change to high priority.
 - The chat protocol version is unchanged. Parsers of earlier releases read optional parameters with `.:?` (`opt`, Protocol.hs:1422) and skip unknown keys.
 - In a signed update `asNew` is covered by the signature.
 - `docs/protocol/simplex-chat.md` (:185) and `docs/protocol/simplex-chat.schema.json` (:474): `asNew` with its receiver rule.
@@ -88,22 +86,35 @@ An update as new has the priority of the update, by the rule of every update of 
 
 ```
 every update, with or without asNew (#8195)
-  sender's item       allowedPriority (main scope && highAllowed) of UpdatedMessage.priority; absent: normal
-  receiver's item     allowedPriority (main scope && not deleted && rcvPriorityAllowed cd) of the update's priority
+  sender's item       allowedPriority highAllowed of UpdatedMessage.priority; absent: normal; support scopes included
+  receiver's item     deleted: its priority; otherwise allowedPriority (rcvPriorityAllowed cd) of the update's priority
   userMention         mention or reply of the updated content || high (updateGroupCIUserMention, #8219)
 
-                      update without asNew (#8195)        update as new
-  SMP flag            on for high only                    off for silent only
-  forward SMP flag    the same, by the forwarder's stored priority (taskHasNotification, Delivery.hs)
-  apps notify         when raised (isRaised)              when shown as new (isAsNew), unless silent
+                      update in place (#8195)                  update as new, the item moved (newTs_ set)
+  SMP flag            on for a change to high only             off for silent only
+  forward SMP flag    the same, by the forwarder's own item and its own newTs_
+  apps notify         when raised (isRaised)                   when shown as new (isAsNew), unless silent
 ```
 
 ```
-Protocol.hs
-  ntfEventTag             ChatMsgEvent e -> CMEventTag e; XMsgNew_ for XMsgUpdate {asNew = Just True}, toCMEventTag otherwise
-  eventHasNotification    priorityHasNotification (eventPriority ev) (ntfEventTag ev)
-Delivery.hs
-  taskHasNotification     XMsgUpdate: priorityHasNotification itemPriority (ntfEventTag ev)
+SMP flag            newTs_ set: priority' /= MPSilent; otherwise priority' == MPHigh && priority /= MPHigh (#8195)
+sender              Commands.hs, group branch: MsgFlags of sendGroupMessageFlags (#8195)
+forwarder           Subscriber.hs, updateCI: DeliveryTaskContext.updateNotification
+                    an item created for a missing message: the created item is high, as in #8195, also with asNew
+delivery task       Delivery.hs: priorityRaised of #8195 renamed updateNotification, in DeliveryTaskContext and MessageDeliveryTask
+                    delivery_tasks.priority_raised of #8195 renamed update_notification, in M20261113_item_priority
+                    taskHasNotification: updateNotification || msgHasNotification, as in #8195
+```
+
+```mermaid
+flowchart LR
+  U["x.msg.update applied<br>by the sender or a forwarder"] --> M{"item moved as new<br>(newTs_ set)"}
+  M -->|yes| S{priority'}
+  S -->|silent| OFF[SMP flag off]
+  S -->|normal or high| ON[SMP flag on]
+  M -->|no| R{"priority' high,<br>item priority not high"}
+  R -->|yes| ON
+  R -->|no| OFF
 ```
 
 - `highAllowed` is `groupFeatureUserAllowed SGFMsgPriority gInfo` of #8195; a silent priority is allowed to every member.
@@ -132,12 +143,11 @@ positional uses             Commands.hs:2747, :2751                        False
 Group branch of the handler (Commands.hs:850); the direct (:825) and note folder (:886) branches ignore `asNew`:
 
 ```
-mainScope  isNothing scope && isNothing itemScopeInfo
-newTs_     if asNew && mainScope then asNewItemTs (chatItemTs' ci) currentTs else Nothing
-priority'  allowedPriority (mainScope && groupFeatureUserAllowed SGFMsgPriority gInfo) priority_   -- #8195
+newTs_     if asNew && isNothing scope && isNothing itemScopeInfo then asNewItemTs (chatItemTs' ci) currentTs else Nothing
+priority'  allowedPriority (groupFeatureUserAllowed SGFMsgPriority gInfo) priority_   -- #8195
 condition  changed || itemLive == Just True || priority' /= priority || isJust newTs_
 event      XMsgUpdate ... priority' (justTrue (isJust newTs_))
-SMP flag   eventHasNotification of the event: off for silent only when newTs_ is set
+SMP flag   section 4, passed to sendGroupMessageFlags
 edited     changed && itemLive /= Just True                           -- as in #8195
 store      updateGroupChatItem with meta.priority = priority', updateGroupCIMentions, then for newTs_:
              updateChatTsStats db cxt user cd currentTs Nothing and setChatItemTs db ci'' newTs
@@ -160,7 +170,7 @@ sequenceDiagram
   B->>S: x.msg.update asNew, priority p<br>SMP flag unless p = -1
   S->>R: message, broker time t1
   R->>R: item time := asNewItemTs(itemTs, t1)
-  R->>S: forward, fwdBrokerTs t1, SMP flag unless the stored priority is silent
+  R->>S: forward, fwdBrokerTs t1, SMP flag when R moved its item, unless p = -1
   S->>C: forward, push to iOS when flagged
   C->>C: item time := asNewItemTs(itemTs, t1)<br>status rcv_new, priority, chat_ts := now
   C->>A: chatItemUpdated: chatItem, prevChatItem
@@ -176,7 +186,7 @@ newTs_     = if asNew_ == Just True
                 && not (memberBlocked sender)      -- as for mentions
              then asNewItemTs (chatItemTs' ci) brokerTs
              else Nothing
-priority'  allowedPriority (main scope && isNothing itemDeleted && rcvPriorityAllowed cd) priority_   -- #8195
+priority'  if isJust itemDeleted then priority else allowedPriority (rcvPriorityAllowed cd) priority_   -- #8195
 condition  changed || itemLive == Just True || priority' /= priority || isJust newTs_
            otherwise chatItemNotChanged and no delivery task
 edited     changed && itemLive /= Just True                                  -- as in #8195
@@ -185,8 +195,7 @@ store      updateGroupChatItem with meta.priority = priority', updateGroupCIMent
              setGroupChatItemAsNew db ci'' newTs
 event      CEvtChatItemUpdated: the item at its new time with status rcv_new, the previous item; the chat info returned by updateChatTsStats
 delivery   Just context when the condition holds: an update as new that moves the item is forwarded also without a change of text
-           SMP flag of the forward: taskHasNotification (Delivery.hs), the stored priority of the forwarder's item with ntfEventTag:
-             off for silent only
+           updateNotification of the context: the SMP flag of section 4, by priority', priority and newTs_ of the forwarder
 ```
 
 `Store/Messages.hs`, new:
@@ -201,7 +210,7 @@ setChatItemTs :: DB.Connection -> ChatItem c d -> UTCTime -> IO (ChatItem c d)
 getChatItemOriginalTs :: DB.Connection -> ChatItemId -> ExceptT StoreError IO UTCTime
   SELECT COALESCE(item_original_ts, item_ts) FROM chat_items WHERE chat_item_id = ?
 ```
-`item_priority` and `user_mention` are written by `updateGroupChatItem_` of #8195. `item_original_ts` is the column of `2026-11-21-edit-window-preference.md`, added by migration `M20261113_item_priority` of #8195, one migration for both features. The new queries are added to `tests/chat_query_plans.txt` by the query plan test.
+`item_priority` and `user_mention` are written by `updateGroupChatItem_` of #8195. `item_original_ts` is the column of `2026-11-21-edit-window-preference.md`, added by migration `M20261113_item_priority` of #8195, one migration for both features, after `delivery_tasks.update_notification` (section 4); the down migration drops them in reverse order. The new queries are added to `tests/chat_query_plans.txt` by the query plan test.
 
 State of a received group item, read from the last row; `-` is unchanged:
 
@@ -324,13 +333,16 @@ packages/simplex-chat-python/src/simplex_chat/api.py:241  api_update_chat_item: 
 flowchart LR
   API["/_update item #g ... as_new=on json {priority}"] --> CMD["Commands.hs APIUpdateChatItem, group branch"]
   CMD --> MT["Internal.hs asNewItemTs"]
-  CMD --> PR["Protocol.hs sndPriority, eventHasNotification"]
+  CMD --> PR["Protocol.hs allowedPriority"]
+  CMD --> SF["Internal.hs sendGroupMessageFlags<br>SMP flag of section 4"]
   CMD --> ST["Store/Messages.hs setChatItemTs<br>updateChatTsStats"]
   CMD --> P["Protocol.hs XMsgUpdate priority, asNew"]
   P --> SUB["Subscriber.hs groupMessageUpdate.updateCI"]
   SUB --> MT
   SUB --> RP["Internal.hs rcvPriorityAllowed"]
   SUB --> SN["Store/Messages.hs setGroupChatItemAsNew<br>updateChatTsStats"]
+  SUB --> DT["Delivery.hs updateNotification<br>delivery_tasks.update_notification"]
+  DT --> JOB["delivery job: SMP flag of the forward"]
   SUB --> EV["chatItemUpdated"]
   EV --> APPS["iOS and Kotlin applyChatItemUpdate, notifications"]
   EV --> NSE["iOS NSE receivedMsgNtf"]
@@ -354,8 +366,7 @@ Core, each failing on master and on `ep/message-priority`: the parser refuses `a
 ```
 tests/ProtocolTests.hs     x.msg.update with "asNew":true and with "asNew":true, "priority":-1 encoded and decoded;
                              without them decoded to Nothing
-                           "x.msg.update as new has the priority of a new message": eventHasNotification of
-                             MPSilent, MPNormal, MPHigh is False, True, True; without asNew False, False, True
+                           "x.msg.update priority sets no notification flag" of #8195, with asNew absent
 tests/ChatTests/Groups.hs  "update as new shows the item last and unread"
                              bob: "status"; alice: /_read chat items #1 <status>; cath: "hi"
                              bob: /_update item #1 <status> as_new=on text status 2, sent without a pause after "hi"
@@ -368,7 +379,9 @@ tests/ChatTests/Groups.hs  "update as new shows the item last and unread"
                              item_priority 1, user mention, not marked edited; a member below the priority role: item_priority 0
                            "update as new of a blocked member is applied in place": cath blocks bob; in place for cath
                            "forward update as new with notification flag of a new message": alice forwards bob's update
-                             as new without a change of text to cath; msg_flags of the forward: T
+                             as new without a change of text to cath; msg_flags from bob to alice and of the forward: T;
+                             a second later, the same update with priority -1: F
+                           "forward high priority message and its raise" of #8195: an edit that repeats high: F
                            "should update channel message as new": last and unread for a subscriber
 tests/ChatTests/Direct.hs  "update as new is ignored in a direct chat": bob "status", alice "hi", bob as_new=on;
                              both: /_get chat @2 -> "status 2", "hi"
