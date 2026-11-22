@@ -30,6 +30,10 @@
                   "history": {
                     "enable": "on"
                   },
+                  "msgPriority": {
+                    "enable": "on",
+                    "role": "admin"
+                  },
                   "reactions": {
                     "enable": "on"
                   },
