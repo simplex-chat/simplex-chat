@@ -332,7 +332,7 @@ updated     the same marks in viewItemUpdate (:864), at :892 and :901, also with
 - `bots/src/API/TypeInfo.hs`: `"IntDef" -> ST TInt []` (`:174`); `MsgPriorityGroupPreference` in `roleGroupPrefTypes` (`:248`).
 - Generated files are written by `tests/APIDocs.hs` (`testGenerate`, `:153`): `bots/api/TYPES.md`, `bots/api/EVENTS.md`, and the types and events files of `packages/simplex-chat-client/types/typescript/src` and `packages/simplex-chat-python/src/simplex_chat/types`.
 - New optional parameter `priority`, set in the composed or the updated message; `apiSendMessages` (`api.ts:443`) and `api_send_messages` (`api.py:196`) are unchanged:
-  - `packages/simplex-chat-nodejs/src/api.ts`: `apiSendTextMessage` (`:466`), `apiSendTextReply` (`:474`), `apiUpdateChatItem` (`:482`)
+  - `packages/simplex-chat-nodejs/src/api.ts`: `apiSendTextMessage` (`:466`), `apiSendTextReply` (`:474`), `apiUpdateChatItem` (`:482`), `LiveMessage.end` (the priority of the final message)
   - `packages/simplex-chat-python/src/simplex_chat/api.py`: `api_send_text_message` (`:225`), `api_send_text_reply` (`:236`), `api_update_chat_item` (`:241`)
   - `packages/simplex-chat-python/src/simplex_chat/client.py`: `Message.reply` (`:74`)
 - `bots/README.md`, new section "Message priority" before "How to create a bot" (`:87`): the field of a new message, the raise by an update, the group preference and its role, direct chats.

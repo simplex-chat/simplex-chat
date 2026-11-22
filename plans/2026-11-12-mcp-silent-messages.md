@@ -268,7 +268,7 @@ apps model                   8                   CIMeta.highPriority, unreadHigh
                                                  counters by previous vs new; NSE: a raise handled as newChatItems
 apps views                   9                   bell in the chat list badge, list label, item meta (both layouts), item info row
 terminal                     10                  marks "!!", notification for a raise
-libraries                    11                  optional priority in apiSendTextMessage, apiSendTextReply, apiUpdateChatItem (Node.js)
+libraries                    11                  optional priority in apiSendTextMessage, apiSendTextReply, apiUpdateChatItem, LiveMessage.end (Node.js)
                                                  and api_send_text_message, api_send_text_reply, api_update_chat_item, Message.reply (Python)
 docs                         11                  x.msg.update priority, receiver rules, preference; bots/README "Message priority"
 tests                        13                  the high priority cases of section 13 of the approved plan
