@@ -645,7 +645,10 @@ from some contacts. Before the service starts on it:
    so a transaction in the pool that the copy does not hold can have the same nonce.
 2. Record again, with `//record_refund` in `--run-cli` or `/record_refund` in the group, each refund recorded after the copy: the copy holds
    those balances unrefunded, so they could be refunded twice. The service logged each as
-   `names: recorded a refund of <cents> cents for order <registration id>`.
+   `names: recorded a refund of <cents> cents for order <registration id>`, and each that `//close`
+   or `/close` recorded as `names: closed order <registration id> and recorded a refund of <cents>
+   cents`. The copy holds such an order failed or lapsed unsigned, with no balance, so
+   `//record_refund` refuses it: run `//close` again.
 3. Revoke with `//revoke` each code spent or revoked after the copy, which the copy holds unspent, and
    issue again each code issued after it, which the copy does not hold, so it answers `code_invalid`.
    The service logs no code: a code issued in the group is in the group's history on the members'
@@ -654,6 +657,23 @@ from some contacts. Before the service starts on it:
    time. The service holds no row for them, so it records no payment to them: its poller's list
    skips them without a line, and a webhook naming one is logged at note with
    `no invoice holds provider_ref <ref>`. Support settles each paid one by hand.
+5. List the orders the copy holds `taken` with a balance:
+
+   ```
+   psql "$BADGE_DB_CONN" -Atc "SELECT r.registration_id, '0x' || encode(r.owner, 'hex'), b.amount FROM simplex_v1_chat_schema.sx_badge_service_name_registrations r JOIN simplex_v1_chat_schema.sx_badge_service_name_balances b ON b.registration_id = r.registration_id WHERE r.phase = 'taken' AND b.amount > 0"
+   ```
+
+   A name selected for such an order after the copy spent its balance, which the copy holds
+   unspent, so a second selection would register a second name for one payment. List the names
+   registered since the copy (see [Set up the shell](#set-up-the-shell)):
+
+   ```
+   cast logs --from-block $(cast find-block <the copy's Unix time>) --address $CONTROLLER 'NameRegistered(string label, bytes32 indexed labelhash, address indexed owner, uint256 baseCost, uint256 premium, uint256 expires, bytes32 referrer)'
+   ```
+
+   For each listed order whose owner registered a name there that no other order of the owner in
+   the copy holds, record its balance as refunded with `//record_refund`, and pay nothing back: the
+   balance was spent on that name.
 
 After the start, a contact or a group member whose messages no longer arrive is resynchronised in
 `--run-cli` with `/sync @<contact>` or `/sync #<group> @<member>`. The orders the copy holds resume
