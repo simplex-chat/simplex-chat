@@ -20,6 +20,9 @@
                 "directMessages": {
                   "enable": "on"
                 },
+                "edits": {
+                  "enable": "off"
+                },
                 "files": {
                   "enable": "on"
                 },
@@ -28,6 +31,10 @@
                 },
                 "history": {
                   "enable": "on"
+                },
+                "msgPriority": {
+                  "enable": "on",
+                  "role": "admin"
                 },
                 "reactions": {
                   "enable": "on"
@@ -345,6 +352,9 @@
               "directMessages": {
                 "enable": "on"
               },
+              "edits": {
+                "enable": "off"
+              },
               "files": {
                 "enable": "on"
               },
@@ -353,6 +363,10 @@
               },
               "history": {
                 "enable": "on"
+              },
+              "msgPriority": {
+                "enable": "on",
+                "role": "admin"
               },
               "reactions": {
                 "enable": "on"
@@ -758,6 +772,9 @@
               "directMessages": {
                 "enable": "on"
               },
+              "edits": {
+                "enable": "off"
+              },
               "files": {
                 "enable": "on"
               },
@@ -766,6 +783,10 @@
               },
               "history": {
                 "enable": "on"
+              },
+              "msgPriority": {
+                "enable": "on",
+                "role": "admin"
               },
               "reactions": {
                 "enable": "on"

@@ -97,11 +97,11 @@ chatCommandsDocsData =
       [ ("APISendMessages", [], "Send messages.", ["CRNewChatItems", "CRChatCmdError"], [], Just UNBackground, "/_send " <> Param "sendRef" <> OnOffParam "live" "liveMessage" (Just False) <> Optional "" (" ttl=" <> Param "$0") "ttl" <> OnOffParam "sign" "signMessages" (Just False) <> " json " <> Json "composedMessages"),
         ( "APIUpdateChatItem",
           [],
-          "Update message.",
+          "Update message. In groups, as_new=on makes the message new: last in the chat, unread and notified by its priority, with the time of the update set by each member; ignored in other chats.",
           ["CRChatItemUpdated", "CRChatItemNotChanged", "CRChatCmdError"],
           [TD "CEInvalidChatItemUpdate" "Not user's message or cannot be edited"],
           Just UNBackground,
-          "/_update item " <> Param "chatRef" <> " " <> Param "chatItemId" <> OnOffParam "live" "liveMessage" (Just False) <> " json " <> Json "updatedMessage"
+          "/_update item " <> Param "chatRef" <> " " <> Param "chatItemId" <> OnOffParam "live" "liveMessage" (Just False) <> OnOffParam "as_new" "asNew" (Just False) <> " json " <> Json "updatedMessage"
         ),
         ("APIDeleteChatItem", [], "Delete message.", ["CRChatItemsDeleted", "CRChatCmdError"], [], Just UNBackground, "/_delete item " <> Param "chatRef" <> " " <> Join ',' "chatItemIds" <> " " <> Param "deleteMode"),
         ("APIDeleteMemberChatItem", [], "Moderate message. Requires Moderator role (and higher than message author's).", ["CRChatItemsDeleted", "CRChatCmdError"], [], Just UNBackground, "/_delete member item #" <> Param "groupId" <> " " <> Join ',' "chatItemIds"),

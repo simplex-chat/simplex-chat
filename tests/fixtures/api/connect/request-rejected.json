@@ -232,7 +232,9 @@
               "reportsCount": 0,
               "unreadChat": false,
               "unreadCount": 0,
-              "unreadMentions": 0
+              "unreadHighPriority": 0,
+              "unreadMentions": 0,
+              "unreadSilent": 0
             }
           }
         ],

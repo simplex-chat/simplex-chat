@@ -2702,9 +2702,13 @@ fun BoxScope.FloatingButtons(
 
   val requestedTopScroll = remember { mutableStateOf(false) }
   val requestedBottomScroll = remember { mutableStateOf(false) }
+  val onlySilentUnread = remember { derivedStateOf {
+    chatsCtx.chats.value.firstOrNull { it.chatInfo.id == chatInfo.value.id }?.chatStats?.allUnreadSilent == true
+  } }
 
   BottomEndFloatingButton(
     bottomUnreadCount,
+    onlySilentUnread,
     showBottomButtonWithCounter,
     showBottomButtonWithArrow,
     requestedBottomScroll,
@@ -2752,6 +2756,7 @@ fun BoxScope.FloatingButtons(
   TopEndFloatingButton(
     Modifier.padding(end = DEFAULT_PADDING, top = 24.dp + topPaddingToContent).align(Alignment.TopEnd),
     topUnreadCount,
+    onlySilentUnread,
     requestedTopScroll,
     animatedScrollingInProgress,
     onClick = {
@@ -2889,6 +2894,7 @@ fun MemberImage(member: GroupMember, size: Dp, modifier: Modifier = Modifier) {
 private fun TopEndFloatingButton(
   modifier: Modifier = Modifier,
   unreadCount: State<Int>,
+  onlySilentUnread: State<Boolean>,
   requestedTopScroll: State<Boolean>,
   animatedScrollingInProgress: State<Boolean>,
   onClick: () -> Unit,
@@ -2908,7 +2914,7 @@ private fun TopEndFloatingButton(
       } else {
         Text(
           unreadCountStr(unreadCount.value),
-          color = MaterialTheme.colors.primary,
+          color = if (onlySilentUnread.value) MaterialTheme.colors.secondary else MaterialTheme.colors.primary,
           fontSize = 14.sp,
         )
       }
@@ -3303,6 +3309,7 @@ fun openGroupLink(groupInfo: GroupInfo, rhId: Long?, view: Any? = null, close: (
 @Composable
 private fun BoxScope.BottomEndFloatingButton(
   unreadCount: State<Int>,
+  onlySilentUnread: State<Boolean>,
   showButtonWithCounter: State<Boolean>,
   showButtonWithArrow: State<Boolean>,
   requestedBottomScroll: State<Boolean>,
@@ -3323,7 +3330,7 @@ private fun BoxScope.BottomEndFloatingButton(
         } else {
           Text(
             unreadCountStr(unreadCount.value),
-            color = MaterialTheme.colors.primary,
+            color = if (onlySilentUnread.value) MaterialTheme.colors.secondary else MaterialTheme.colors.primary,
             fontSize = 14.sp,
           )
         }

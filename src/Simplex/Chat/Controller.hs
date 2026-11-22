@@ -425,7 +425,7 @@ data ChatCommand
   | APICreateChatItems {noteFolderId :: NoteFolderId, composedMessages :: NonEmpty ComposedMessage}
   | APIReportMessage {groupId :: GroupId, chatItemId :: ChatItemId, reportReason :: ReportReason, reportText :: Text}
   | ReportMessage {groupName :: GroupName, contactName_ :: Maybe ContactName, reportReason :: ReportReason, reportedMessage :: Text}
-  | APIUpdateChatItem {chatRef :: ChatRef, chatItemId :: ChatItemId, liveMessage :: Bool, updatedMessage :: UpdatedMessage}
+  | APIUpdateChatItem {chatRef :: ChatRef, chatItemId :: ChatItemId, liveMessage :: Bool, asNew :: Bool, updatedMessage :: UpdatedMessage}
   | APIDeleteChatItem {chatRef :: ChatRef, chatItemIds :: NonEmpty ChatItemId, deleteMode :: CIDeleteMode}
   | APIDeleteMemberChatItem {groupId :: GroupId, chatItemIds :: NonEmpty ChatItemId}
   | APIArchiveReceivedReports GroupId
@@ -1380,13 +1380,15 @@ data ComposedMessage = ComposedMessage
   { fileSource :: Maybe CryptoFile,
     quotedItemId :: Maybe ChatItemId,
     msgContent :: MsgContent,
-    mentions :: Map MemberName GroupMemberId
+    mentions :: Map MemberName GroupMemberId,
+    priority :: MsgPriority
   }
   deriving (Show)
 
 data UpdatedMessage = UpdatedMessage
   { msgContent :: MsgContent,
-    mentions :: Map MemberName GroupMemberId
+    mentions :: Map MemberName GroupMemberId,
+    priority :: MsgPriority
   }
   deriving (Show)
 
@@ -1999,7 +2001,8 @@ instance FromJSON ComposedMessage where
     quotedItemId <- v .:? "quotedItemId"
     msgContent <- v .: "msgContent"
     mentions <- fromMaybe M.empty <$> v .:? "mentions"
-    pure ComposedMessage {fileSource, quotedItemId, msgContent, mentions}
+    priority <- fromMaybe MPNormal <$> v .:? "priority"
+    pure ComposedMessage {fileSource, quotedItemId, msgContent, mentions, priority}
   parseJSON invalid =
     JT.prependFailure "bad ComposedMessage, " (JT.typeMismatch "Object" invalid)
 

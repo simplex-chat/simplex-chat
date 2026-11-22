@@ -19,7 +19,7 @@
 module Simplex.Chat.Messages where
 
 import Control.Applicative ((<|>))
-import Control.Monad ((>=>))
+import Control.Monad (mfilter, (>=>))
 import Data.Aeson (FromJSON, ToJSON, (.:))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.Encoding as JE
@@ -463,6 +463,8 @@ deriving instance Show AChat
 data ChatStats = ChatStats
   { unreadCount :: Int, -- returned both in /_get chat initial API and in /_get chats API
     unreadMentions :: Int, -- returned both in /_get chat initial API and in /_get chats API
+    unreadSilent :: IntDef,
+    unreadHighPriority :: IntDef,
     reportsCount :: Int, -- returned both in /_get chat initial API and in /_get chats API
     minUnreadItemId :: ChatItemId,
     unreadChat :: Bool
@@ -470,7 +472,7 @@ data ChatStats = ChatStats
   deriving (Show)
 
 emptyChatStats :: ChatStats
-emptyChatStats = ChatStats 0 0 0 0 False
+emptyChatStats = ChatStats 0 0 (IntDef 0) (IntDef 0) 0 0 False
 
 data NavigationInfo = NavigationInfo
   { afterUnread :: Int,
@@ -533,6 +535,7 @@ data CIMeta (c :: ChatType) (d :: MsgDirection) = CIMeta
     itemTimed :: Maybe CITimed,
     itemLive :: Maybe Bool,
     userMention :: Bool, -- True for messages that mention user or reply to user messages
+    priority :: MsgPriority,
     hasLink :: BoolDef,
     deletable :: Bool,
     editable :: Bool,
@@ -546,21 +549,48 @@ data CIMeta (c :: ChatType) (d :: MsgDirection) = CIMeta
 
 type ShowGroupAsSender = Bool
 
-mkCIMeta :: forall c d. ChatTypeI c => ChatItemId -> CIContent d -> Text -> CIStatus d -> Maybe Bool -> Maybe SharedMsgId -> Maybe CIForwardedFrom -> Maybe (CIDeleted c) -> Bool -> Maybe CITimed -> Maybe Bool -> Bool -> Bool -> UTCTime -> ChatItemTs -> Maybe GroupMemberId -> Bool -> Maybe MsgVerified -> UTCTime -> UTCTime -> CIMeta c d
-mkCIMeta itemId itemContent itemText itemStatus sentViaProxy itemSharedMsgId itemForwarded itemDeleted itemEdited itemTimed itemLive userMention hasLink_ currentTs itemTs forwardedByMember showGroupAsSender msgVerified createdAt updatedAt =
-  let deletable = deletable' itemContent itemDeleted itemTs nominalDay currentTs
+highPriority :: CIMeta c d -> Bool
+highPriority CIMeta {priority} = priority == MPHigh
+
+mkCIMeta :: ChatItemId -> CIContent d -> Text -> CIStatus d -> Maybe Bool -> Maybe SharedMsgId -> Maybe CIForwardedFrom -> Maybe (CIDeleted c) -> Bool -> Maybe CITimed -> Maybe Bool -> Bool -> MsgPriority -> Bool -> Maybe NominalDiffTime -> UTCTime -> ChatItemTs -> Maybe GroupMemberId -> Bool -> Maybe MsgVerified -> UTCTime -> UTCTime -> CIMeta c d
+mkCIMeta itemId itemContent itemText itemStatus sentViaProxy itemSharedMsgId itemForwarded itemDeleted itemEdited itemTimed itemLive userMention priority hasLink_ window currentTs itemTs forwardedByMember showGroupAsSender msgVerified createdAt updatedAt =
+  let deletable = deletable' itemContent itemDeleted window createdAt currentTs
       editable = deletable && isNothing itemForwarded
       hasLink = BoolDef hasLink_
-   in CIMeta {itemId, itemTs, itemText, itemStatus, sentViaProxy, itemSharedMsgId, itemForwarded, itemDeleted, itemEdited, itemTimed, itemLive, userMention, hasLink, deletable, editable, forwardedByMember, showGroupAsSender, msgVerified, createdAt, updatedAt}
+   in CIMeta {itemId, itemTs, itemText, itemStatus, sentViaProxy, itemSharedMsgId, itemForwarded, itemDeleted, itemEdited, itemTimed, itemLive, userMention, priority, hasLink, deletable, editable, forwardedByMember, showGroupAsSender, msgVerified, createdAt, updatedAt}
 
-deletable' :: forall c d. ChatTypeI c => CIContent d -> Maybe (CIDeleted c) -> UTCTime -> NominalDiffTime -> UTCTime -> Bool
-deletable' itemContent itemDeleted itemTs allowedInterval currentTs =
+deletable' :: CIContent d -> Maybe (CIDeleted c) -> Maybe NominalDiffTime -> UTCTime -> UTCTime -> Bool
+deletable' itemContent itemDeleted window createdAt currentTs =
   case itemContent of
-    CISndMsgContent _ ->
-      case chatTypeI @c of
-        SCTLocal -> isNothing itemDeleted
-        _ -> diffUTCTime currentTs itemTs < allowedInterval && isNothing itemDeleted
+    CISndMsgContent _ -> withinItemWindow window createdAt currentTs && isNothing itemDeleted
     _ -> False
+
+withinItemWindow :: Maybe NominalDiffTime -> UTCTime -> UTCTime -> Bool
+withinItemWindow window sinceTs ts = maybe True (diffUTCTime ts sinceTs <) window
+
+userItemWindow :: ChatInfo c -> Maybe NominalDiffTime
+userItemWindow = \case
+  DirectChat _ -> directItemWindow
+  GroupChat g@GroupInfo {membership} _ -> groupItemWindow (memberRole' membership) g
+  _ -> Nothing
+
+directItemWindow :: Maybe NominalDiffTime
+directItemWindow = Just nominalDay
+
+groupItemWindow :: GroupMemberRole -> GroupInfo -> Maybe NominalDiffTime
+groupItemWindow role GroupInfo {fullGroupPreferences = prefs@FullGroupPreferences {edits = EditsGroupPreference {duration}}}
+  | groupFeatureMemberAllowed' SGFEdits role prefs = Nothing
+  | otherwise = Just $ maybe nominalDay fromIntegral $ mfilter (>= 1) duration
+
+sndItemEditable :: Maybe NominalDiffTime -> UTCTime -> ChatItem c d -> Bool
+sndItemEditable window currentTs ChatItem {content, meta = CIMeta {itemForwarded, itemDeleted, createdAt}} =
+  deletable' content itemDeleted (sndItemWindow window) createdAt currentTs && isNothing itemForwarded
+
+sndItemWindow :: Maybe NominalDiffTime -> Maybe NominalDiffTime
+sndItemWindow = fmap (+ 6 * 3600)
+
+rcvItemWindow :: Maybe NominalDiffTime -> Maybe NominalDiffTime
+rcvItemWindow = fmap (+ 54 * 3600)
 
 dummyMeta :: ChatItemId -> UTCTime -> Text -> CIMeta c 'MDSnd
 dummyMeta itemId ts itemText =
@@ -577,6 +607,7 @@ dummyMeta itemId ts itemText =
       itemTimed = Nothing,
       itemLive = Nothing,
       userMention = False,
+      priority = MPNormal,
       hasLink = BoolDef False,
       deletable = False,
       editable = False,

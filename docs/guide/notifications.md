@@ -134,8 +134,8 @@ chat list.
 In a direct chat, **Mute** turns notifications off and **Unmute** turns them on.
 In groups and channels, the same menu item switches between three states:
 
-- **Mute**: notifications only for messages that mention you or reply to your
-  messages.
+- **Mute**: notifications only for messages that mention you, reply to your
+  messages or have high priority.
 - **Mute all**: no notifications.
 - **Unmute**: notifications for all messages.
 
@@ -152,3 +152,23 @@ chat profiles](./chat-profiles.md#hiding-and-muting-chat-profiles).
 
 The design of notifications on iOS and Android is explained in [this
 post](../../blog/20220404-simplex-chat-instant-notifications.md).
+
+## Silent and high priority messages
+
+Bots and other programs can send a message as silent or with high priority. The
+apps send normal messages.
+
+A silent message is shown in the chat and counted as unread, without a
+notification or a sound. When all unread messages of a chat are silent, the
+chat list shows their count in a gray outline, the scroll button in the chat
+shows it in gray, and a list shows ○ next to its name. In chats with
+notifications for all messages, silent messages are not counted in the unread
+filter, the profile counts and, on iOS, the app icon badge.
+
+A high priority message notifies as a mention, also in a chat set to **Mute**.
+The chat list, the list name and the message show a bell, and the message info
+shows **High priority**. A message changed to high priority, for example when a
+bot finishes its answer, notifies once. High priority is available in groups,
+business chats and channels: by default to admins and owners, and the owner can
+change this with `/set priority #<group> on|off [<role>]` in the chat console.
+In direct chats, high priority messages are shown as normal.
