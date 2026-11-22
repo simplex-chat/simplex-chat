@@ -1044,7 +1044,10 @@ register waits about a minute after the commit. An order tried again can wait un
 threshold is above it. Every 5 minutes the service also logs an error and, with `[group]`, posts in
 the managed group, once for each order paid 3 hours ago or more and still `queued`, `committing`,
 `committed`, `registering` or `failed`: `names: order <id> was paid at <time> and is <phase>, not registered, 3
-hours later`. The alert rule fires for any phase. Below 0.01 ETH the node refuses a register with links (see [Fund the key](#fund-the-key)),
+hours later`. A taken order is not alerted. When its name is no longer available on chain, the service logs an
+error and posts in the group once: `names worker: registration <id> was taken: its name is no longer
+available on chain`. An order taken at settlement, as another buyer paid for its name first, is logged
+as a note. The alert rule fires for any phase. Below 0.01 ETH the node refuses a register with links (see [Fund the key](#fund-the-key)),
 and while the base fee is above the cap no transaction is signed; size a warning on the balance and the
 allowance to the orders expected before a top-up, with the figures there.
 

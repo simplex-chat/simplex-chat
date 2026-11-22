@@ -487,7 +487,13 @@ judge w@Worker {wkOrders = oe@OrdersEnv {oeContracts, oeReport}} now r@NameRegis
 -- | A paid order keeps its whole price as a balance of its own, credited in the taken write's transaction, registration before balance,
 -- in the balance's turn after the name's; a code order's code is released.
 taken :: Worker -> UTCTime -> NameRegistration -> IO (Maybe Int64, Next)
-taken Worker {wkOrders} now r = written r <$> endOrder wkOrders now r {nrPhase = OTaken} (\_ -> pure True)
+taken Worker {wkOrders = oe@OrdersEnv {oeReport}} now r@NameRegistration {nrId = RegistrationId rid} = do
+  result@(v, _) <- written r <$> endOrder oe now r {nrPhase = OTaken} (\_ -> pure True)
+  forM_ v $ \_ -> do
+    let lost = "names worker: registration " <> rid <> " was taken: its name is no longer available on chain"
+    logError lost
+    oeReport lost
+  pure result
 
 endOrder :: OrdersEnv -> UTCTime -> NameRegistration -> (DB.Connection -> IO Bool) -> IO (Either WriteRefusal Int64)
 endOrder OrdersEnv {oeStore, oeTurns} now r@NameRegistration {nrId, nrPayment} mayEnd = case nrPayment of

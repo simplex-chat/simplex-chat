@@ -94,6 +94,7 @@ workerTests = describe "StoreService names: worker" $ do
     it "writes in the name's turn" testInNameTurn
   describe "register" $ do
     it "ends taken on any revert while the name is not available, releasing a code and keeping no balance" testRevertTaken
+    it "logs and reports an order taken on chain once, and none taken at settlement, alerting neither 3 hours after payment" testTakeReported
     it "waits while the name reads taken only above the confirmation depth, and ends taken once it reads so at the depth" testTakenAtDepth
     it "keeps the phase on NameNotAvailable while the name still reads available, as for a pending competitor" testPendingCompetitor
     it "stores each failed dry run, fails an order at the fifth for a permanent reason, keeping a code, and retries one without data past the lapse, storing it once" testRevertFailed
@@ -662,6 +663,27 @@ testRevertTaken = withWorker $ \w@W {wCtx = ctx@Ctx {cNode}} -> do
   (pcReservedBy, pcSpentAt) `shouldBe` (Nothing, Nothing)
   balanceFigures ctx (nrId r) `shouldReturn` Nothing
   sent w `shouldReturn` []
+
+testTakeReported :: IO ()
+testTakeReported = withWorker $ \w@W {wCtx = ctx@Ctx {cOrders}, wSender} -> do
+  reports <- newTVarIO []
+  worker <- newWorker cOrders {oeReport = \t -> atomically $ modifyTVar' reports (t :)} wSender
+  (bobInv, _) <- placed ctx (byB aliceOrder) {oSecret = secretOf 2}
+  r <- paidIn ctx aliceOrder openPhase >>= revealed ctx keyA "alicebakery"
+  settleNow ctx bobInv settled `shouldReturn` ISPaid
+  atSettlement <- invoiceRegistration ctx bobInv
+  nrPhase atSettlement `shouldBe` OTaken
+  stepRegistration worker (nrId atSettlement) >>= done
+  readTVarIO reports `shouldReturn` []
+  logs <- capturingStderr $ endsTaken w {wWorker = worker} r
+  namePhase . nrPhase <$> stored ctx r `shouldReturn` PTaken
+  let RegistrationId rid = nrId r
+      lost = "names worker: registration " <> rid <> " was taken: its name is no longer available on chain"
+  readTVarIO reports `shouldReturn` [lost]
+  T.count lost logs `shouldBe` 1
+  advance ctx $ 3 * 3600 + 1
+  alertUnregisteredPaid worker
+  readTVarIO reports `shouldReturn` [lost]
 
 testTakenAtDepth :: IO ()
 testTakenAtDepth = withWorker $ \w@W {wCtx = ctx@Ctx {cNode}} -> do
