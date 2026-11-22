@@ -8738,6 +8738,17 @@ testMsgLinkSameGroup =
       bob <# "#team Approve the deploy plan?"
       cath ##> ("/_msg link plan 1 " <> link <> " chat=#1")
       cath <# "#team bob> Approve the deploy plan?"
+      apiFixture "links/same-group" cath [(link, "GROUP_MSG_LINK")] FixtureRequests
+        { frMarkdown = ["see [q](" <> link <> ")"],
+          frUris = [],
+          frCommands =
+            [ "/_msg link plan 1 " <> link <> " chat=#1",
+              "/_msg link plan 1 simplex:/m",
+              "/_msg link plan 1 simplex:/m#x/abc",
+              "/_msg link plan 1 simplex:/m#g/YWJjZGVmZ2hpamtsbW5vcA?a=MTIzNDU2Nzg5MDEyMzQ1Ng",
+              "/_get chat #1 count=1"
+            ]
+        }
 
 testMsgLinkOtherGroup :: HasCallStack => TestParams -> IO ()
 testMsgLinkOtherGroup =
@@ -8757,6 +8768,8 @@ testMsgLinkOtherGroup =
       linkTargets cath `shouldReturn` [("q", Nothing)]
       cath ##> "/_msg link plan 1 simplex:/m chat=#2"
       cath <## "message link: unknown source"
+      apiFixture "links/other-group-sender" alice [] FixtureRequests {frMarkdown = [], frUris = [], frCommands = ["/_get chat #2 count=1"]}
+      apiFixture "links/other-group-recipient" cath [] FixtureRequests {frMarkdown = [], frUris = [], frCommands = ["/_get chat #2 count=1"]}
 
 testMsgLinkRefused :: HasCallStack => TestParams -> IO ()
 testMsgLinkRefused =
@@ -8836,8 +8849,18 @@ testMsgLinkChannel ps =
           cath ##> ("/_msg link plan 1 " <> link)
           cath <# "#team> Release notes 7.2 [>>]"
           let chatLink = T.unpack . T.init . fst . T.breakOn "m=" $ T.pack link
+              withType t = T.unpack . T.replace "/c#" t $ T.pack chatLink
           dan ##> ("/_msg link plan 1 " <> link)
           dan <## ("message link: connect with " <> chatLink)
+          dan ##> ("/_connect plan 1 " <> withType "/p#")
+          dan <## "group link: this group requires a newer version of the app, please upgrade"
+          dan ##> ("/_connect plan 1 " <> withType "/s#")
+          dan <## "this site requires a newer version of the app"
+          apiFixture "links/channel" dan [(link, "CHANNEL_MSG_LINK"), (chatLink, "CHANNEL_LINK"), (withType "/s#", "SITE_LINK")] FixtureRequests
+            { frMarkdown = [],
+              frUris = [],
+              frCommands = ["/_msg link plan 1 " <> link, "/_connect plan 1 " <> withType "/s#"]
+            }
 
 linkTargets :: TestCC -> IO [(T.Text, Maybe T.Text)]
 linkTargets cc =
