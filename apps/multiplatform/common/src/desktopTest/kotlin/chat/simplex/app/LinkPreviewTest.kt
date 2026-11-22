@@ -11,7 +11,9 @@ import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.test.performTextInputSelection
 import androidx.compose.ui.test.runComposeUiTest
+import androidx.compose.ui.text.TextRange
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.platform.chatParseMarkdown
@@ -82,6 +84,17 @@ class LinkPreviewTest {
     waitUntil(timeoutMillis = 10_000) { synchronized(requests) { requests.isNotEmpty() } && composeState.value.preview is ComposePreview.NoPreview }
     assertEquals(listOf(request), requests)
     assertFalse(AlertManager.shared.hasAlertsShown())
+  }
+
+  @Test
+  fun failedLinkIsNotFetchedAgain() = composeView { composeState ->
+    val (request) = recorded("error")
+    val field = onNode(hasSetTextAction())
+    field.performTextInput(request.removePrefix(LINK_PREVIEW))
+    waitUntil(timeoutMillis = 10_000) { synchronized(requests) { requests.isNotEmpty() } && composeState.value.preview is ComposePreview.NoPreview }
+    field.performTextInputSelection(TextRange.Zero)
+    runCatching { waitUntil(timeoutMillis = 3_000) { synchronized(requests) { requests.size > 1 } } }
+    assertEquals(listOf(request), requests)
   }
 
   @Test
