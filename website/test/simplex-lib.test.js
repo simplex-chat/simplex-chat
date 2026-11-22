@@ -4,7 +4,7 @@ const path = require('node:path');
 const test = require('node:test');
 const vm = require('node:vm');
 
-const lib = { navigator: { userAgent: '' } };
+const lib = { navigator: { userAgent: '' }, URLSearchParams };
 vm.runInNewContext(fs.readFileSync(path.join(__dirname, '../src/js/simplex-lib.jsc'), 'utf8'), lib);
 const { escapeHtml, renderMarkdown, platformSimplexUri } = lib;
 
