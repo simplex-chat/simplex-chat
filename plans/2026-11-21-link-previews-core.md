@@ -62,7 +62,8 @@ flowchart LR
 | Place | Before | After |
 |---|---|---|
 | Compose, first link | alert "Enable link previews?" | none (Q1 a) |
-| Compose, any link | spinner, then card or nothing | the same; 1.5 s wait kept (ComposeView.kt:550; ComposeView.swift:1919) |
+| Compose, any link | spinner, then card or nothing | spinner from the selection of the link, during the 1.5 s wait (ComposeView.kt:550; ComposeView.swift:1919) and the fetch, then card or nothing (section 3.14.1) |
+| Compose, the preview of the first link failed or closed | the next link of the message gets its card after a keystroke | the next link gets its card without a keystroke (section 3.14.1) |
 | Privacy settings | toggle "Send link previews", default on (SimpleXAPI.kt:130; apps/ios/SimpleXChat/AppGroup.swift:98) | the same toggle; footer per Q1 |
 | iOS share extension | preview only after the alert was answered | preview when the toggle is on |
 | iOS with SOCKS | site sees the IP address | site sees the proxy's exit |
@@ -421,11 +422,11 @@ Kotlin (android, desktop):
 
 | Site | Change |
 |---|---|
-| Kt:views/helpers/LinkPreviews.kt:33-149, 231-261 | `getLinkPreview`, Jsoup, proxy, `Authenticator`, mutex and `normalizeImageUri` removed; `fetchAndUpdateLinkPreview` of Kt:views/chat/ComposeView.kt calls `apiGetLinkPreview(url)` |
+| Kt:views/helpers/LinkPreviews.kt:33-149, 231-261 | `getLinkPreview`, Jsoup, proxy, `Authenticator`, mutex and `normalizeImageUri` removed; the fetch effect of Kt:views/chat/ComposeView.kt calls `apiGetLinkPreview(url)` (section 3.14.1) |
 | apps/multiplatform/common/build.gradle.kts:74 | `org.jsoup:jsoup` removed |
 | Kt:model/SimpleXAPI.kt | `CC.ApiGetLinkPreview`, `CR.CRLinkPreview`, `ChatErrorType.CELinkPreview`, `apiGetLinkPreview` with `rh = null`; on error, the raw message in an alert only under `developerTools` and `showLinkPreviewErrors` (section 3.12); preference `showLinkPreviewErrors` |
 | Kt:views/usersettings/DeveloperView.kt:62; base strings.xml | toggle "Show link preview errors" |
-| Kt:views/chat/ComposeView.kt:508-539, 1871-1903 | alert branch and `showLinkPreviewsConfirmAlert` removed (Q1 a); a link whose preview failed is added to `cancelledLinks` |
+| Kt:views/chat/ComposeView.kt:508-539, 1871-1903 | alert branch and `showLinkPreviewsConfirmAlert` removed (Q1 a); the link preview state of section 3.14.1 |
 | Kt:model/SimpleXAPI.kt:132, 303, 426 | `privacyLinkPreviewsShowAlert`, its hint entry and key removed (Q1 a) |
 | Kt:views/usersettings/PrivacySettings.kt:70 | `onChange` removed (Q1 a) |
 | base strings.xml:3181-3185 and every locale | `link_previews_alert_*` removed; translations follow, as no locale has keys absent from base |
@@ -438,7 +439,7 @@ iOS:
 | apps/ios/Shared/Model/AppAPITypes.swift, SimpleXAPI.swift; SimpleXChat/APITypes.swift | `ChatCommand.apiGetLinkPreview`, `ChatResponse2.linkPreview`, `ChatErrorType.linkPreview`; `apiGetLinkPreview`, sent from a global dispatch queue; on error, the raw message in an alert only under "Show developer options" and "Show link preview errors" (section 3.12) |
 | apps/ios/Shared/Views/UserSettings/DeveloperView.swift:56-69 | toggle "Show link preview errors", default `DEFAULT_SHOW_LINK_PREVIEW_ERRORS` off |
 | apps/ios/Shared/Views/Chat/ChatItem/CILinkView.swift:36 | description under the title when not empty, as Kotlin (LinkPreviews.kt:223-225) |
-| apps/ios/Shared/Views/Chat/ComposeMessage/ComposeView.swift:414, 1956-2006 | `linkPreviewsShowAlert`, alert and `DEFAULT_PRIVACY_LINK_PREVIEWS` write in the alert path removed (Q1 a); `loadLinkPreview` awaits `apiGetLinkPreview` and applies a result only while its link is pending; a link whose preview failed is added to `cancelledLinks`; an attachment preview resets the link state |
+| apps/ios/Shared/Views/Chat/ComposeMessage/ComposeView.swift:414, 1956-2006 | `linkPreviewsShowAlert`, alert and `DEFAULT_PRIVACY_LINK_PREVIEWS` write in the alert path removed (Q1 a); the link preview state of section 3.14.1 |
 | apps/ios/Shared/Views/UserSettings/PrivacySettings.swift:83 | the alert default write removed (Q1 a) |
 | apps/ios/SimpleXChat/AppGroup.swift:30, 99, 231; Shared/Views/UserSettings/SettingsView.swift:179-181 | the alert group default and its hint entry removed (Q1 a) |
 | apps/ios/SimpleX SE/ShareAPI.swift, ShareModel.swift:484 | `SEChatCommand.apiGetLinkPreview`, `SEChatResponse.linkPreview`; the alert condition removed; the network config is already set before content is prepared (ShareModel.swift:197, before :126) |
@@ -454,6 +455,250 @@ Why removal of the alert is safe under Q1 a:
 | choice Enable/Disable | the toggle in Privacy settings is kept |
 
 The recipient never fetches: received previews are drawn from `linkPreview.image` (LinkPreviews.kt:204; ImageUtils.swift:428-443), and the core does not fetch on receipt.
+
+#### 3.14.1 Compose link preview state
+
+Line numbers are at `30b84f617` of this branch. "Kt" with a number is a line of Kt:views/chat/ComposeView.kt, "iOS" with a number a line of apps/ios/Shared/Views/Chat/ComposeMessage/ComposeView.swift. Other files: SendMsgView.kt, ChatView.kt and CommandsMenuView.kt in Kt:views/chat/; ChatItemView.kt in Kt:views/chat/item/; ChatView.swift in apps/ios/Shared/Views/Chat/.
+
+The link preview of the message in compose is a part of its `ComposeState` on both platforms. `updateLinkPreview` is its only transition. When `ComposeState` or its `preview` is replaced, a pending request is discarded by T8, without a call at that site.
+
+State:
+
+```
+ComposeState
+  preview :: ComposePreview
+  cancelledLinks :: Set String          -- not requested again in this message
+  loadingRequest :: Maybe Request       -- derived from preview
+
+ComposePreview
+  NoPreview
+  CLinkPreview
+    status :: LinkPreviewStatus
+  ChatLinkPreview                       -- unchanged
+  MediaPreview                          -- unchanged
+  VoicePreview                          -- unchanged
+  FilePreview                           -- unchanged
+
+LinkPreviewStatus
+  Loading
+    uri :: String
+    request :: Request
+  Shown
+    linkPreview :: LinkPreview
+
+LinkPreviewEvent
+  TextChanged
+  Fetched
+    request :: Request
+    linkPreview :: Maybe LinkPreview    -- Nothing on failure
+  Cancelled
+  ChatChanged
+
+Request
+  Kotlin :: Long
+  iOS :: Int64
+```
+
+| Kotlin, ComposeView.kt | iOS, ComposeView.swift |
+|---|---|
+| `ComposePreview.CLinkPreview(status)`, in place of `CLinkPreview(linkPreview: LinkPreview?)` (60) | `ComposePreview.linkPreview(status:)`, in place of `linkPreview(linkPreview: LinkPreview?)` (13) |
+| `LinkPreviewStatus.Loading(uri, request)` | `LinkPreviewStatus.loading(uri:request:)` |
+| `LinkPreviewStatus.Shown(linkPreview)` | `LinkPreviewStatus.shown(linkPreview:)` |
+| `ComposeState.cancelledLinks: Set<String> = emptySet()` | `ComposeState.cancelledLinks: Set<String> = []`, a parameter of `init` (58-74) and `copy` (103-121) |
+| `ComposeState.updateLinkPreview(event, previewsOn)` | `ComposeState.updateLinkPreview(_:previewsOn:)` |
+| `ComposeState.getMessageLinks`, moved from `ComposeView` (469-479) | `ComposeState.getMessageLinks`, moved from `ComposeView` (1933-1942) |
+| `ComposeState.isSimplexLink`, moved from `ComposeView` (466-467) | `ComposeState.isSimplexLink`, moved from `ComposeView` (1944-1946) |
+| `nextLinkRequest()`, in the companion of `ComposeState` | `ComposeState.nextLinkRequest()`, static |
+| `previewsOn`: `appPrefs.privacyLinkPreviews` | `previewsOn`: `useLinkPreviews` (413) |
+| `ComposeState.linkPreview`: the preview of `Shown` (191-196) | `ComposeState.linkPreview`: the preview of `Shown` (205-210) |
+
+Removed from `ComposeView`:
+
+| Removed | Kotlin | iOS |
+|---|---|---|
+| `cancelledLinks` | 463 | 392 |
+| `linkUrl` | 481 | 388 |
+| `prevLinkUrl` | 484 | 390 |
+| `pendingLinkUrl` | 485 | 391 |
+| `fetchAndUpdateLinkPreview` | 494-511 | — |
+| `loadLinkPreview` | 513-520 | 1960-1981 |
+| `showLinkPreview` | 522-537 | 1912-1930 |
+| `resetLinkPreview` | 539-544 | 1983-1988 |
+| calls of `resetLinkPreview` | 565<br>1066<br>1071<br>1422<br>1502<br>1506 | 602<br>607<br>615<br>721<br>1079<br>1083<br>1889 |
+| `.onChange(of: composeState.linkPreviewAllowed)` | — | 614-616 |
+| 0.5 s timer after a failure | — | 1971-1975 |
+
+Shown and sent:
+
+| `preview` | Compose | Sent as |
+|---|---|---|
+| `NoPreview` | text | `MCText` |
+| `CLinkPreview(Loading(L, r))` | spinner card of L with X, from the selection of L | `MCText` |
+| `CLinkPreview(Shown(P))` | card of P with X | `MCLink(P)` when `P.uri` is the selected link of the sent text |
+| `ChatLinkPreview`<br>`MediaPreview`<br>`VoicePreview`<br>`FilePreview` | the attachment | the attachment |
+
+`ComposeLinkView` is unchanged and is passed `null` for `Loading`, as for `CLinkPreview(null)` today. The selected link is `getMessageLinks(parsedMessage).first`: the first link of the text outside `cancelledLinks` and outside SimpleX links. `hasSimplexLink` is computed from `getMessageLinks`, as on the base branch.
+
+Transition:
+
+```
+updateLinkPreview(event, previewsOn):
+  case event of
+    Fetched(r, _) | loadingRequest /= Just r -> self
+    Fetched(_, Just p)                       -> self {preview = CLinkPreview(Shown(p))}
+    _ -> let s = self {cancelledLinks = cancelledAfter(event)}
+         in s {preview = s.selectedPreview(previewsOn)}
+
+cancelledAfter(event):
+  TextChanged -> {} for an empty text, else cancelledLinks
+  ChatChanged -> {}
+  Cancelled   -> cancelledLinks + previewLink
+  Fetched     -> cancelledLinks + previewLink
+
+selectedPreview(previewsOn):
+  link = getMessageLinks(parsedMessage).first
+  attachment preview                                     -> preview
+  link absent, or not (linkPreviewAllowed && previewsOn) -> NoPreview
+  link == previewLink                                    -> preview
+  link L                                                 -> CLinkPreview(Loading(L, nextLinkRequest()))
+
+previewLink     -- uri of Loading, linkPreview.uri of Shown
+loadingRequest  -- request of Loading
+```
+
+- `updateLinkPreview` returns a copy of its state with `preview` and `cancelledLinks` set: Kotlin `copy`, Swift `var s = self`. Other fields, `inProgress` included, are unchanged.
+- `nextLinkRequest()` increments one counter of the app process. Every transition runs on the main thread, so the number of a new request differs from every earlier number.
+- `cancelledLinks`: L is added by T7 and T9; the set is emptied by T1, T10, T13 and T15.
+
+Fetch effect, in `ComposeView`: Kotlin `LaunchedEffect(composeState.value.loadingRequest)`; iOS `.task(id: composeState.loadingRequest)`.
+
+```
+loadingRequest absent     -> return
+Loading(L, r) = preview
+wait 1.5 s                -- ends when the key changes
+p = apiGetLinkPreview(L)  -- null on failure
+composeState = composeState.updateLinkPreview(Fetched(r, p), previewsOn)   -- main thread
+```
+
+- The failure alert is shown by `apiGetLinkPreview`, as section 3.12 states (Kt:model/SimpleXAPI.kt:1349-1358; apps/ios/Shared/Model/SimpleXAPI.swift:527-542).
+- The response to a request of a cancelled Kotlin effect is dropped in `sendCmd` (`interruptIfCancelled`, SimpleXAPI.kt:999); an iOS response after a cancellation is discarded by T8.
+
+Transitions; r is the current request, r' a new one, L the selected link, M the next selected link:
+
+| # | Event | Site | Before | Fetch | After |
+|---|---|---|---|---|---|
+| T1 | TextChanged, empty text | Kt `onMessageChange` (1043-1076), for every text, a short emoji included<br>Kt `DeleteTextButton` (SendMsgView.kt:315-322), through `onMessageChange(ComposeMessage())`<br>iOS `.onChange(of: composeState.message)` (577-613) | any | r discarded | `cancelledLinks` = {}<br>link status: `NoPreview`<br>attachment unchanged |
+| T2 | TextChanged, L = `previewLink` | as T1 | `Loading(L, r)`<br>`Shown(P)`, `P.uri` = L | r kept | unchanged |
+| T3 | TextChanged, L ≠ `previewLink` | as T1 | `NoPreview`<br>`Loading(K, r)`<br>`Shown(P)` | wait of r ended; r' requested after 1.5 s | `Loading(L, r')` |
+| T4 | TextChanged, L absent, or "Send link previews" off | as T1 | `Loading(K, r)`<br>`Shown(P)` | r discarded | `NoPreview` |
+| T5 | TextChanged | as T1 | attachment | — | attachment<br>`cancelledLinks` unchanged, except T1 |
+| T6 | Fetched(r, P) | fetch effect | `Loading(L, r)` | — | `Shown(P)` |
+| T7 | Fetched(r, failure) | fetch effect | `Loading(L, r)` | r' requested after 1.5 s | `cancelledLinks` + L<br>`Loading(M, r')`, else `NoPreview` |
+| T8 | Fetched(r, any) | fetch effect | any state other than `Loading(_, r)` | response discarded | unchanged |
+| T9 | Cancelled | X of the card: Kt `cancelLinkPreview` (1091-1102); iOS `cancelLinkPreview` (1948-1957) | `Loading(L, r)`<br>`Shown(P)`, `P.uri` = L | r discarded; r' requested after 1.5 s | `cancelledLinks` + L<br>`Loading(M, r')`, else `NoPreview` |
+| T10 | ChatChanged | draft saved: Kt 1026, 1412, 1449, 1462; iOS `saveCurrentDraft` (1898-1901)<br>another chat opened: Kt end of `KeyChangeEffect`, in place of `resetLinkPreview()` (1422); iOS `.onChange(of: chatModel.chatId)` of `ComposeView`, new | any | as T2-T4 | `cancelledLinks` = {}<br>status as T2-T4 |
+| T11 | attachment shown: media, voice, file, chat link | the writes of `preview` today | any | r discarded by T8 | attachment<br>`cancelledLinks` unchanged |
+| T12 | attachment removed | the writes of `NoPreview` today | attachment | — | `NoPreview`; the link is selected by the next TextChanged |
+| T13 | message sent | `clearState()` after a successful send: Kt 665, 685, 730, 1010; iOS 1184, 1223, 1243, 1586 | any | r discarded by T8 | new `ComposeState`: `NoPreview`, `cancelledLinks` = {} |
+| T14 | send failed | Kt: the captured cs restored (1012, 1024), or saved as a draft (1026, T10)<br>iOS: `clearState` (1586) | any | `Loading(L, r)` of cs requested by its effect | Kt: cs<br>iOS: new `ComposeState` |
+| T15 | Edit<br>Reply while editing<br>report<br>bot command | Kt ChatItemView.kt:416, 472, 1027, 1033; `editPrevMessage` (1176); CommandsMenuView.kt:156, 158<br>iOS ChatView.swift:2321, 2539, 2696, 2895, 2897 | any | r discarded by T8 | new `ComposeState`: `Shown(P)` for an edited `MCLink`, else `NoPreview`; `cancelledLinks` = {}<br>report outside an edit (Kt 1033; iOS 2897): `preview` = `NoPreview` |
+| T16 | state restored: draft, draft after a forward, Android configuration change | Kt ChatView.kt:149-158; `KeyChangeEffect` (1392, 1403, 1417); 1017; `rememberSaveable`<br>iOS ChatView.swift:796-799; ComposeView.swift:1587-1591 | — | `Loading(L, r)` of the restored state requested by its effect | the restored state |
+| T17 | live message update | `sendLiveMessage`, `updateLiveMessage`, then `clearState(live)` (Kt 562; iOS 1886) | any | r kept | unchanged |
+
+```mermaid
+stateDiagram-v2
+  direction LR
+  [*] --> NoPreview: T13
+  [*] --> Shown: T15, edit of MCLink
+  NoPreview --> Loading: T3
+  Loading --> Loading: T3 another link, T7 or T9 next link
+  Shown --> Loading: T3 another link, T9 next link
+  Loading --> Shown: T6
+  Loading --> NoPreview: T1, T4, T7 or T9 without a next link
+  Shown --> NoPreview: T1, T4, T9 without a next link
+  NoPreview --> Attachment: T11
+  Loading --> Attachment: T11
+  Shown --> Attachment: T11
+  Attachment --> NoPreview: T12
+  note right of Loading
+    T8, a response of another request is discarded
+  end note
+```
+
+```mermaid
+sequenceDiagram
+  actor U as User
+  participant V as ComposeView
+  participant S as ComposeState
+  participant C as Core
+  U->>V: types link L
+  V->>S: updateLinkPreview(TextChanged)
+  S-->>V: Loading(L, r), spinner
+  Note over V: effect of r waits 1.5 s
+  U->>V: changes L to L2
+  V->>S: updateLinkPreview(TextChanged)
+  S-->>V: Loading(L2, r2), spinner
+  Note over V: effect of r ended, effect of r2 waits 1.5 s
+  V->>C: /_link preview L2
+  C-->>V: preview or error
+  V->>S: updateLinkPreview(Fetched(r2, result))
+  S-->>V: Shown(P), Loading of the next link, or NoPreview
+  U->>V: send
+  V->>V: checkLinkPreview(cs), cs read at the send
+```
+
+Send and edit:
+
+```
+checkLinkPreview(cs):
+  cs.preview == CLinkPreview(Shown(p))
+    && cs.getMessageLinks(parse(cs text)).first == p.uri -> MCLink(cs text, p)
+  otherwise                                              -> MCText(cs text)
+```
+
+| Send | State passed to `checkLinkPreview` |
+|---|---|
+| new message, Kt `sendMessageAsync` (891) | `cs`, read by `sendMessage` before its coroutine starts (1037-1041) |
+| new message, iOS `sendMessageAsync` (1546) | `cs`, read at its start (1516) |
+| edit and live update, `updateMsgContent` (Kt 790-793; iOS 1646-1651) | `cs` of the send |
+| message committed by a chat switch, Kt `KeyChangeEffect` (1387) | `cs`, read before the switch |
+| comment of a forward (Kt 868; iOS 1528) | Kt: `composeState.value`<br>iOS: `cs` |
+| connect sends (Kt 659, 673, 714; iOS 1179, 1218, 1235) | `composeState`, read once by the send |
+
+The send lambdas only call `sendMessage` (Kt 1500-1507; iOS 1077-1084). The share extension requests one preview when the shared content is prepared (apps/ios/SimpleX SE/ShareModel.swift:482-488); that request is outside this state.
+
+Visible changes:
+
+- The spinner card is shown from the selection of a link, during the 1.5 s wait. The card of a replaced link is replaced by the spinner at once, and the link is requested again when the user restores it.
+- After a failure or X, the next link of the message is selected without a keystroke.
+- iOS: the spinner of a failed link is removed at once, as on Kotlin.
+
+Findings of the review:
+
+| Finding | Defect | Prevented by | Test |
+|---|---|---|---|
+| F1 | send after a failed first link: `MCText` under the card of the second link (Kt 1500-1507; iOS 1077-1084, with the Task of 1508-1511) | send: `checkLinkPreview(cs)` reads `cs.cancelledLinks`; the send lambdas only call `sendMessage`; T13 | Kt, iOS: the request of the first link fails, the card of the second link is shown, the message is sent as `MCLink` with that card |
+| F2 | Kt: the user restores the link of the card, and the result of the replaced link is applied (529-532) | T3, T8 | Kt: card of L; x typed after L and deleted within 1.5 s: Lx not requested, card of L shown |
+| F3 | Kt: Edit chosen during a fetch, and the card of the edited message replaced by the result of the discarded text (ChatItemView.kt:472) | T15, T8 | Kt: Edit chosen during a fetch: the card of the edited message after the response |
+| F4 | desktop: the text emptied by the delete-text button outside `onMessageChange` (SendMsgView.kt:317) | T1 | Kt: delete-text button, the failed link typed again: requested again |
+| F5 | Kt: `cancelledLinks` emptied by a keystroke while an attachment is shown (1070-1071) | T5, T11 | Kt: failed link; file attached; text typed; file removed; text typed: one request |
+| F6 | the spinner of a restored draft or failed message without a fetch (1412-1422, 787, 1012) | T14, T16 | Kt: chat switched during a fetch and opened again: card shown |
+| F7 | Kt: two requests of a link changed and restored within 1.5 s (496, 513-519) | T3: the wait of r ends at r' | Kt: link typed, changed and restored within 1.5 s: one request |
+| F8 | iOS: `cancelledLinks` emptied when an attachment is shown (606-607, 614-616) | T5, T11 | iOS: failed link; file attached and removed; space typed: one request |
+| F9 | iOS: the user restores the link of the card, and the result of the replaced link is applied (1915-1925) | T3, T8 | iOS: as F2 |
+| F10 | iOS: the attachment replaced by a result written between the attachment write and the next view update (1961-1968) | T8, checked at the write; T5: the spinner is written only by T3 | iOS: `testComposeKeepsAttachmentChosenWhileLinkPreviewLoads` |
+| F11 | iOS: `inProgress` set to false by a result written through `copy` (103-121, 1968, 1973) | T6, T7: a copy of the state with `preview` and `cancelledLinks` set; the 0.5 s timer removed | iOS: `inProgress` set during a fetch, still set after the response |
+| F12 | untested: a failed link requested again after a send | T13 | Kt, iOS: failed link; message sent; link typed again: requested again; the recording of tests/ChatTests/LinkPreviews.hs adds a response to the send command of the test chat |
+| F13 | iOS: another chat opened in the same `ChatView`, with `cancelledLinks` of the previous message (ChatView.swift:368-379) | T10 | iOS: `chatModel.chatId` changed in the same `ComposeView`; the failed link typed again: requested again |
+| F14 | untested on Kotlin: a link replaced during its fetch | T3, T8 | Kt: A requested and held; B typed and its card shown; A released: card of B kept |
+
+Laws, tested in desktopTest and SimpleX Unit Tests on the recorded markdown:
+
+| Law |
+|---|
+| `s.updateLinkPreview(Fetched(r, x), previewsOn) == s` when `s.loadingRequest != r` |
+| `TextChanged` applied twice equals `TextChanged` applied once |
+| after any event of T1-T10, `checkLinkPreview(s)` is `MCLink(P)` exactly when `s.preview` is `CLinkPreview(Shown(P))` |
 
 ### 3.15 Threat model
 
@@ -550,6 +795,7 @@ App tests on tests/fixtures/api/previews/link_preview.json:
 | `CILinkView` preview | description shown under the title (snapshot) | iOS |
 | SE | `apiGetLinkPreview` of the share extension decodes the recorded response | iOS |
 | compose, `LinkPreviewTests.swift` | the recorded card without an alert; a failed link not requested again until a new compose; the result of a replaced link discarded; an attachment kept when a pending link responds | iOS |
+| compose state, `LinkPreviewTest.kt`, `LinkPreviewTests.swift` | the laws and the tests of section 3.14.1 | both |
 
 The iOS test file is added to project.pbxproj (TESTS.md, "iOS app"). Compose flows: a case in `claude-test.md` of desktop-linux and android-emu and `device-test-plan.md` of ios-sim: type a link, see a card, without an alert. The cases fetch a page of github.com over the runner's network, so claude-scope keeps `backend: no`.
 
