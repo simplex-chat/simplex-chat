@@ -924,16 +924,17 @@ Posts:
 | Claude | files sent by `reply`, at once | [`AgentTools.reply`, `sendFile`](../src/tools.ts), the `replyChat` of the [`Session`](../src/hub.ts) constructor |
 | Claude | the rights of the member's role, below. They are posted once for each join and each role change of a member other than `User`, at its `joinedGroupMember`, `connectedToGroupMember` or `memberRole` | [`Session.announceRights`, `Hub.onEvent`](../src/hub.ts), [`approverRights`, `senderRights`, `observerRights`, `sessionApproverRoles`, `canSend`, `rightsText`](../src/control.ts) |
 
-<a id="agent-messages"></a>Subagents and workflows ([`Session.onAgents`, `readAgents`, `showCard`, `cardEditMs`](../src/hub.ts), [`Agents`, `cardText`, `agentsLine`](../src/agents.ts), [`agentStart`, `agentStep`, `leadTask`, `taskOf`](../src/hook.ts)):
+<a id="agent-messages"></a>Subagents and workflows ([`Session.onAgents`, `readAgents`, `showCard`, `cardEditMs`](../src/hub.ts), [`Agents`, `cardText`, `agentsLine`, `small`](../src/agents.ts), [`agentStart`, `agentStep`, `leadTask`, `taskOf`](../src/hook.ts)):
 
 | State | Text | Live |
 |---|---|---|
-| a subagent working | `🤖 TYPE · DESCRIPTION`, then `N steps · X tokens · M:SS · now: STEP`, or `· last: STEP` with no open step | on |
-| stalled: no event for over 2 min with no open step, or 10 min with one | `🤖 TYPE · DESCRIPTION`, then `N steps · X tokens · M:SS · ⚠️ no step for M:SS · last: STEP` | on |
-| ended | `🤖 TYPE · DESCRIPTION · ✅ M:SS · N steps · X tokens`, then the first line of its hand-back or its answer; `❌` for a failure, `⏹️` for a kill, a stop, the last detach, the hub's stop or 23 hours | off |
-| a workflow working | `⚙️ NAME · PHASE d/t · … · K working · X tokens · M:SS`, d the ended agents of the phase and t its started ones, ` ✅` after a phase that is done when a later one started | on |
-| a workflow ended | `⚙️ NAME · ✅ M:SS · PHASE d/t · … · X tokens` | off |
+| a subagent working | `!- 🤖 TYPE · DESCRIPTION!`, then `!- N steps · X tokens · M:SS · now: STEP!`, or `· last: STEP` with no open step | on |
+| stalled: no event for over 2 min with no open step, or 10 min with one | `!- 🤖 TYPE · DESCRIPTION!`, then `!- N steps · X tokens · M:SS · ⚠️ no step for M:SS · last: STEP!` | on |
+| ended | `!- 🤖 TYPE · DESCRIPTION · ✅ M:SS · N steps · X tokens!`, then `!- RESULT!`, the first line of its hand-back or its answer; `❌` for a failure, `⏹️` for a kill, a stop, the last detach, the hub's stop or 23 hours | off |
+| a workflow working | `!- ⚙️ NAME · PHASE d/t · … · K working · X tokens · M:SS!`, d the ended agents of the phase and t its started ones, ` ✅` after a phase that is done when a later one started | on |
+| a workflow ended | `!- ⚙️ NAME · ✅ M:SS · PHASE d/t · … · X tokens!` | off |
 
+- Each line is its own small-print span, with each `!` of the line replaced with `ǃ` (`small`): one span over several lines is left unformatted when a later line starts a block, such as `- ` of a list item (`paragraphP` in [`Markdown.hs`](../../../src/Simplex/Chat/Markdown.hs)).
 - Each subagent that SubagentStart reports with its record, and each workflow that the lead starts, get one message, with priority -1, sent live. Teammates and workflow agents get none; the lead's `Agent` and `Workflow` tool uses get no step line.
 - TYPE is `agent_type`; DESCRIPTION the record's; steps the subagent's tool uses; X the input, cache and output tokens of its latest request in its transcript, read every 2 s, and at the end the figures of the lead's result or task notification; M:SS the time since its start, in 5 s steps while live.
 - A live message is edited at most every 5 s while its text changes; its end is edited at once with `liveMessage: false`, and again when the task's figures arrive. The note of a task notification of a known agent or workflow is not posted. A subagent resumed after its end gets a new message.
