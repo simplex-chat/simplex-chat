@@ -139,7 +139,7 @@ any member sending history    item of a member via V                          "V
 ```
 
 The receiver of a forward with `via` (xGrpMsgForward):
-- an unknown member created from the forward, or an unknown member without `via`, records `via` (setMemberVia);
+- an unknown member created from the forward, or an unknown member without `via`, records `via` (setMemberVia) when the forwarder is the member named as `via` or the receiver's host, and `via` is not the receiver's own member ID; otherwise the forward is ignored by the next rule;
 - the recorded `via` of a known member wins: a forward with a different `via` is ignored with a log, as a forward from an unexpected forwarder;
 - the key for signature verification is the key of the member recorded as `via` (memberSignerKey, withVerifiedMsgKey).
 
@@ -632,6 +632,7 @@ updatedMessage     {"msgContent": {...}, "mentions": {...}, "priority": <n>}
 
 - Errors: section 6.3.
 - With "sign messages" on, the core signs each message as the member with the user's key; `sign=on` is not needed.
+- Priority and the edit window of a message sent as the member follow the member's role, as at the receivers.
 - Excluded: deletes as the member (broadcast delete of its item: CEInvalidChatItemDelete) and reactions as the member (APIChatItemReaction reacts as the user).
 - Replies to and mentions of a teammate (stage 3): a received item's quotedItem has the item ID of the item sent as M and direction groupRcv of M; mentions have M's group member ID (5.2; testViaMemberReply).
 - Display of `via` in the apps (Q2) is not built.

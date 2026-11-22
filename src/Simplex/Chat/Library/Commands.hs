@@ -866,14 +866,14 @@ processChatCommand cxt nm = \case
           currentTs <- liftIO getCurrentTime
           case cci of
             CChatItem SMDSnd ci@ChatItem {meta = meta@CIMeta {itemSharedMsgId, itemTimed, itemLive, showGroupAsSender, sentAsMember, msgVerified, priority}, content = ciContent} -> do
-              case (ciContent, itemSharedMsgId, sndItemEditable (userItemWindow $ GroupChat gInfo Nothing) currentTs ci) of
+              case (ciContent, itemSharedMsgId, sndItemEditable (maybe (userItemWindow $ GroupChat gInfo Nothing) (\m -> groupItemWindow (memberRole' m) gInfo) sentAsMember) currentTs ci) of
                 (CISndMsgContent oldMC, Just itemSharedMId, True) -> do
                   forM_ sentAsMember $ assertSendAsMember gInfo
                   chatScopeInfo <- mapM (getChatScopeInfo cxt user) scope
                   recipients <- getGroupRecipients cxt user gInfo chatScopeInfo groupKnockingVersion
                   let changed = mc /= oldMC
                       newTs_ = if asNew && isNothing scope && isNothing itemScopeInfo then asNewItemTs (chatItemTs' ci) currentTs else Nothing
-                      priority' = allowedPriority (groupFeatureUserAllowed SGFMsgPriority gInfo) priority_
+                      priority' = allowedPriority (maybe (groupFeatureUserAllowed SGFMsgPriority gInfo) (\m -> groupFeatureMemberAllowed SGFMsgPriority m gInfo) sentAsMember) priority_
                   if changed || fromMaybe False itemLive || priority' /= priority || isJust newTs_
                     then do
                       ciMentions <- withFastStore $ \db -> getCIMentions db user gInfo ft_ mentions
@@ -5132,7 +5132,7 @@ processChatCommand cxt nm = \case
               startProximateTimedItemThread user (ChatRef CTGroup groupId scope, chatItemId' ci) deleteAt
           pure $ CRNewChatItems user (map (AChatItem SCTGroup SMDSnd (GroupChat gInfo chatScopeInfo)) cis)
           where
-            cmrs' = L.map (limitSndPriority $ groupFeatureUserAllowed SGFMsgPriority gInfo) cmrs
+            cmrs' = L.map (limitSndPriority $ maybe (groupFeatureUserAllowed SGFMsgPriority gInfo) (\m -> groupFeatureMemberAllowed SGFMsgPriority m gInfo) (sendAsMember sendAs)) cmrs
             setupSndFileTransfers :: Int -> CM (NonEmpty (Maybe FileInvitation, Maybe (CIFile 'MDSnd)))
             setupSndFileTransfers n =
               forM cmrs $ \(ComposedMessage {fileSource = file_}, _, _, _) -> case file_ of
