@@ -269,6 +269,17 @@ function renderSegments(fts, withBlocks) {
           html += `<a href="${safeHref(platformSimplexUri(simplexUri))}" target="_blank" rel="noopener">${linkText} <em>(${escapeHtml(viaHost(smpHosts))})</em></a>`;
           break;
         }
+        case 'messageLink': {
+          const { showText, msgLinkType, msgLink } = format;
+          const label = escapeHtml(showText ?? text);
+          if (msgLinkType === 'publicGroup') {
+            const href = /^simplex:\/name#/.test(msgLink) ? msgLink : platformSimplexUri(msgLink);
+            html += `<a href="${safeHref(href)}" target="_blank" rel="noopener">${label}</a>`;
+          } else {
+            html += label;
+          }
+          break;
+        }
         case 'command':
           html += `<span style="font-family: monospace;">${escapeHtml(text)}</span>`;
           break;
@@ -302,7 +313,7 @@ function renderSegments(fts, withBlocks) {
 
 const simplexAddressRegexp = /^simplex:\/([a-z]+)#(.+)/i;
 
-const simplexShortLinkTypes = ["a", "c", "g", "i", "r"];
+const simplexShortLinkTypes = ["a", "c", "g", "i", "r", "p", "s"];
 
 function platformSimplexUri(uri) {
   if (isMobile.any()) return uri;
