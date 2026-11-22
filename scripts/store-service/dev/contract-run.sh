@@ -39,8 +39,8 @@ COMMUNITY_TEXT="bakers and bakeries in Portugal"
 STATE="reads the mock's memory at /control/state or /control/mode"
 MODE="switches the mock to codes only at /control/mode; the service reads codes_only from its ini at start"
 SEARCH="injects a fault with /control/search: a chain down, a rate limit, a provider's refusal, an unsent transaction, an unread chain, a slow write or link read, or refused links"
-STALE="drops an order's signed reveal with /control/stale, which only the mock does"
 FAIL="fails an order's next commit or register with /control/fail, which only the mock does"
+RELAYED="expects the name policy's nonce unspent after /control/stale: the mock clears the reveal before the terms acceptance is relayed, while the service relays it before its register reverts on the spent sponsor nonce"
 COMMUNITY="lists a community name with what it is for at /control/community; the service reads that text from its ini at start"
 OVERDUE="ends an invoice's rate window at once with /control/overdue; the service's clock ends it"
 LATE="holds a late payment's credit with /control/late; the service credits it on its own"
@@ -99,7 +99,7 @@ EXCLUDED=(
   "a code check answers every state, revoked included, and an unknown code is code_invalid" "$CODE_STATE"
   "a taken code order's own code is accepted past its expiry within the month after the take, and refused once revoked" "$CODE_STATE"
   "a held poll wakes on a new version, and of two retries at once of a lapsed order one wins and the other is registration_changed with the view" "$SEARCH"
-  "a name is selected only for a paid order taken first, at its own price, again after each take with no limit; a repeat changes nothing" "$STALE"
+  "a name is selected only for a paid order taken first, at its own price, again after each take with no limit; a repeat changes nothing" "$FAIL"
   "support's refund takes the whole balance by invoice id or registration id, and refuses other cents or none left" "$REFUND_ANSWER"
   "a paid order taken first keeps its whole price as its balance until support refunds it, after which no name is selected for it" "$REFUND_ANSWER"
   "a late payment is credited once settled, each confirmed figure once, at the lower of its invoice's rate and the current one" "$AMOUNTS"
@@ -110,14 +110,13 @@ EXCLUDED=(
   "an order signs the terms of its name's kind: the other kind or other terms is terms_changed with the terms and community now, a malformed one bad_request" "$LIMIT"
   "a selection signs the new name's terms: a community name needs the community terms, which are stored; the same body again is a repeat, also after the terms changed" "$COMMUNITY"
   "a code order meets changed terms before the code's state" "$CODE_STATE"
-  "a committed community name's view asks for the owner's acceptance of the community terms on chain; its reveal without one, or with one for another nonce, terms, kind or policy, is bad_request, and with it the register records it" "$STALE"
-  "a plain name's committed view asks for the owner's acceptance of the general terms; its reveal without one or with the other kind is bad_request, and with it the register records it" "$STALE"
+  "a committed community name's view asks for the owner's acceptance of the community terms on chain; its reveal without one, or with one for another nonce, terms, kind or policy, is bad_request, and with it the register records it" "$COMMUNITY"
+  "a plain name's committed view asks for the owner's acceptance of the general terms; its reveal without one or with the other kind is bad_request, and with it the register records it" "$RELAYED"
   "a Bitcoin order pays in two parts, registers on chain, takes its links on Edit links, and the code owns it" "$EDITS"
   "a purchase walks the steps a buyer expects, and the links set before paying are on chain" "$PROFILES"
   "a link's late preview never fills the field once it holds another link, whose own preview it waits for" "$SEARCH"
   "a link's profile comes in the very box its place held while it was read, at a laptop's and a phone's width" "$SEARCH"
   "Continue pressed while a link is checked is busy where it stands, says so, and goes on once the check ends" "$SEARCH"
-  "the owner code restores an order in another browser, and a bad code is refused" "$STALE"
   "a part payment on a closed invoice, once credited, says so and gets an invoice for the whole price of the same name in the main button's place" "$AMOUNTS"
   "an invoice past its rate window that part of the payment reached stays open, asks for no more, and registers once paid" "$OVERDUE"
   "a browser restored before another browser made a new invoice carries on with that invoice" "$STATE"
@@ -276,7 +275,7 @@ const [guardian, rival] = [1, 4].map((addressIndex) => mnemonicToAccount(ANVIL_M
 const ALLOWANCE = 1_000_000n * 10n ** 18n
 const TAKE_SECONDS = 60
 const SEARCH_RESET = { chainDown: false, limitSeconds: 0, invoiceError: null, findLimitSeconds: 0 }
-const RUNNER_CONTROL = /^\/control\/(code|(settle|partial|confirming|expire|refund)\/[^/]+)$/
+const RUNNER_CONTROL = /^\/control\/(code|(settle|partial|confirming|expire|refund|stale|lapse)\/[^/]+)$/
 
 writeFileSync(rivalChainFile, JSON.stringify({ ...JSON.parse(readFileSync(chainFile, "utf8")), registrarKey: toHex(rival.getHdKey().privateKey) }))
 process.env.LOCAL_CHAIN_OUT = rivalChainFile

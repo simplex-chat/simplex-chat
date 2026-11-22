@@ -1966,6 +1966,8 @@ the Stripe key, so the dev server shows its stand-in card form. Its controls:
 | `/control/partial/<invoice>` | half the invoice's coin reaches it, unconfirmed |
 | `/control/confirming/<invoice>` | BTCPay processes the invoice paid in full; Stripe processes the card payment |
 | `/control/expire/<invoice>` | BTCPay expires the invoice; Stripe cancels the payment intent |
+| `/control/stale/<registration>` | anvil sets the owner's sponsor nonce one past the stored signature's, as another register of the owner spends it, so the order's register reverts `InvalidNonce` and its page signs again |
+| `/control/lapse/<registration>` | the runner sets a committed order's stored lapse a second ago, so the order reads lapsed until `/retry` |
 | `/control/take` `{"label"}` | the mock's own: the holder registers the name, through a registrar of its own |
 | `/control/general-terms` | the mock's own: the contracts' owner sets the terms |
 | `/control/search` with the reset that `search.spec.ts` sends after each case | answered as done |
