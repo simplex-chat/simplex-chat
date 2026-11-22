@@ -395,7 +395,8 @@ the service's operators.
 | `POST /webhooks/stripe` | Verifies `Stripe-Signature` over the bytes as received and queues a read. The card lane's equivalent of the row above, and a hint just the same: the poller carries authority, so an unverified or unreadable delivery costs nothing but a log line. A name order's dispute, refund or early fraud warning is acted on at once (see Stripe above). |
 
 Every refusal is `{"type": "<code>", …}`, with its data beside the code, such as
-`{"type": "catalog_changed", "price": 1500}`. Besides the codes above, any of them can answer
+`{"type": "catalog_changed", "price": 1500}`, and `rate_limited` gives the seconds of its
+`Retry-After` in `retryAfter`. Besides the codes above, any of them can answer
 `internal`, an unknown id answers `not_found`, and a wrong verb answers `method_not_allowed` —
 ten codes in all, which is what the browser's `WIRE_ERROR_CODES` lists. The two webhook routes are
 the exception: each answers 200, 400, 413 or, for a name order's dispute or refund not handled, 500 with an empty body, because its provider is the only
