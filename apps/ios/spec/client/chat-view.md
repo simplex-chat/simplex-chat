@@ -166,6 +166,21 @@ Key differences from `.groupRcv`:
 - [`showMemberImage()`](../../Shared/Views/Chat/ChatView.swift#L2116) returns `true` when previous item is `.channelRcv` (different sender type)
 - [`memberToModerate()`](../../SimpleXChat/ChatTypes.swift#L3297) returns `nil` for `.channelRcv` (no per-member moderation)
 
+### Members via another member
+
+A member with `memberVia` is shown with its host: the member whose `memberId` is `memberVia`, from the loaded `groupMembers` ([`ChatModel.memberViaName`](../../Shared/Model/ChatModel.swift#L613)).
+
+```
+place                   shown
+Flat and Classic names  "via <host>" after the name and badge of a single member: regular, italic, 0.84 of the name size,
+                        the name's colour (MemberVia, NameWithBadge via:)
+quotes                  "via <host>" after the quoted member's name (FramedItemView)
+member list             "via <host>" in place of the status (MemberRowView.memberConnStatus)
+member info             row "Via" with the host's name, after the role
+loading                 ChatView loads the members when an item or its quote is from a member via another member and the
+                        members are not loaded (viaHostsNotLoaded)
+```
+
 ---
 
 ## 4. Message Renderers
@@ -397,7 +412,7 @@ bottom padding     newest row: 8pt; above a date separator: terminalLevelStep; o
 | [`terminalCardBottomGap(item)`](../../Shared/Views/Chat/ChatItem/TerminalItemView.swift#L154) | `terminalParagraphGap` below a card that ends the item when reactions follow, otherwise 0 |
 | [`terminalTextTopGap(item)`](../../Shared/Views/Chat/ChatItem/TerminalItemView.swift#L158) | Above the text of `FramedItemView`: 0 at the item top; `terminalParagraphGap` below a quote or media, or when the text starts with a code block, table or rule (0 when the text starts with empty lines, which are at least as high: `startsWithEmptyLine`; block markdown: `leadingEmptyLines`; other text: a line break at its start, except in reports, whose reason is drawn first); `terminalLevelStep` below a header when the text starts with a heading; otherwise 0 |
 | [`terminalRowsSeparated(olderRow)`](../../Shared/Views/Chat/ChatView.swift#L2186) | The newest item of the older row is the chat banner, or its `getItemSeparation` has a date (against its newer item only for single and revealed rows) |
-| [`chatItemSender(ci, range)`](../../Shared/Views/Chat/ChatView.swift#L2193) | Images of the flat avatar size, `terminalImageSize`. Channel as sender: group name, role "channel", group image. Received direct: contact name and badge. Group member: `memberNames`, badge and role of a single member, member image (tap: member info). Own group items: membership name, badge, role, image. Other own items: user name and badge, or "Incognito" |
+| [`chatItemSender(ci, range)`](../../Shared/Views/Chat/ChatView.swift#L2193) | Images of the flat avatar size, `terminalImageSize`. Channel as sender: group name, role "channel", group image. Received direct: contact name and badge. Group member: `memberNames`, badge, host (`memberViaName`) and role of a single member, member image (tap: member info). Own group items: membership name, badge, role, image. Other own items: user name and badge, or "Incognito" |
 | `CIContent.hasTerminalSender` | Sent messages, deleted and moderated items, calls and group invitations; received content with `showMemberName` |
 
 `ChatView` passes `olderRow`, the row of the nearest shown older item (`MergedItems.olderShownRow`). `MergedItem.revealed`: true for `.single`, the flag of `.grouped`.

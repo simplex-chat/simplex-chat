@@ -134,6 +134,21 @@ The message list is a `LazyColumnWithScrollBar` with `reverseLayout = true`, mea
 - **Direct messages:** Symmetric padding (76dp opposite side).
 - **Terminal layout:** When `LocalTerminalLayout.current` is true, all chat types render through `TerminalChatItemRow`, which wraps `ChatItemView`, instead of the branches above (see section 10). The selection offset applies to sent items too.
 
+### Members via another member
+
+A member with `memberVia` is shown with its host: the member whose `memberId` is `memberVia`, from the loaded `groupMembers` ([`ChatModel.memberViaName`](../../common/src/commonMain/kotlin/chat/simplex/common/model/ChatModel.kt#L435-L436)).
+
+```
+place                   shown
+Flat and Classic names  "via <host>" after the name and badge of a single member: regular, italic, 0.84 of the name size,
+                        the name's colour (NameWithBadge via)
+quotes                  "via <host>" after the quoted member's name (FramedItemView)
+member list             "via <host>" in place of the status (MemberRow.memberConnStatus, member_via)
+member info             row "Via" (info_row_via) with the host's name, after the role
+loading                 ChatItemsList loads the members when an item or its quote is from a member via another member and
+                        the members are not loaded
+```
+
 ---
 
 <a id="ChatItemView"></a>
@@ -496,7 +511,7 @@ A date change does not repeat the sender row.
 |---|---|---|---|---|---|
 | `ChannelRcv`, `GroupSnd` with `showGroupAsSender` | Channel name | "channel" (`channel_role_label`) | `ProfileImage` of the group, `toEdge` | `showChatInfo` | For `GroupSnd` |
 | `DirectRcv` | Contact display name and badge | None | None | None | No |
-| `GroupRcv` | `memberNames` of the merged members; badge for one member | Member role when above `Member`, for one member | `MemberImage`, `toEdge` | `showMemberInfo` | No |
+| `GroupRcv` | `memberNames` of the merged members; badge and host (`memberViaName`) for one member | Member role when above `Member`, for one member | `MemberImage`, `toEdge` | `showMemberInfo` | No |
 | `GroupSnd` | `groupInfo.membership` display name and badge | Membership role when above `Member` | `MemberImage(membership)`, `toEdge` | None | Yes |
 | Other, incognito chat | "Incognito" | None | None | None | Yes |
 | Other (`DirectSnd`, `LocalSnd`, `LocalRcv`) | Current user display name and badge | None | None | None | Yes |
