@@ -4105,7 +4105,11 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
             recordFwdVia :: GroupMember -> CM GroupMember
             recordFwdVia author = case fwdVia_ of
               Just viaId
-                | not (useRelays' gInfo) && memberStatus author == GSMemUnknown && isNothing (memberVia author) ->
+                | not (useRelays' gInfo)
+                    && memberStatus author == GSMemUnknown
+                    && isNothing (memberVia author)
+                    && not (sameMemberId viaId membership)
+                    && (viaId == memberId' m || memberCategory m == GCHostMember) ->
                     withStore' (\db -> setMemberVia db author viaId) $> author {memberVia = Just viaId}
               _ -> pure author
         memberSignerKey :: GroupMember -> CM (Maybe C.PublicKeyEd25519)
