@@ -351,7 +351,7 @@ mkStoreServiceOpts ps secretKey =
       runCLI = False,
       consoleCommand = Nothing,
       serviceConfigFile = Nothing,
-      issuerKey = Just BadgeIssuerKey {keyIdx = testIssuerKeyIdx, secretKey},
+      issuerKey = Right (Just BadgeIssuerKey {keyIdx = testIssuerKeyIdx, secretKey}),
       testing = True
     }
   where
@@ -1753,12 +1753,8 @@ testIssuerKeyMustMatchConfig ps = do
   checkIssuerKey (optsFor sk) Nothing cfg >>= (`shouldSatisfy` isRight)
   checkIssuerKey (optsFor otherSk) Nothing cfg >>= (`shouldSatisfy` isLeft)
   checkIssuerKey (optsFor sk) Nothing testCfg {badgePublicKeys = M.empty} >>= (`shouldSatisfy` isLeft)
-  let parsed args = issuerKey <$> parsedOpts args
-      secret = B.unpack (strEncode sk)
-  parsed ["--issuer-key-idx", show testIssuerKeyIdx, "--issuer-secret", secret] `shouldBe` Just (Just BadgeIssuerKey {keyIdx = testIssuerKeyIdx, secretKey = sk})
-  parsed [] `shouldBe` Just Nothing
-  parsed ["--issuer-key-idx", show testIssuerKeyIdx] `shouldBe` Nothing
-  parsed ["--issuer-secret", secret] `shouldBe` Nothing
+  let halfGiven = (optsFor sk) {issuerKey = Left "--issuer-key-idx and --issuer-secret are given together or not at all"}
+  checkIssuerKey halfGiven Nothing cfg >>= (`shouldSatisfy` isLeft)
 
 parsedOpts :: [String] -> Maybe StoreServiceOpts
 parsedOpts = O.getParseResult . O.execParserPure O.defaultPrefs (O.info (storeServiceOpts "." "test") mempty)
@@ -1776,7 +1772,7 @@ testIssuerIniKeyMustBeTrusted ps = do
   Right (_, untrusted) <- bbsKeyGen
   let cfg = testCfg {badgePublicKeys = M.singleton testIssuerKeyIdx pk}
       fromCli = mkStoreServiceOpts ps sk
-      fromIni = fromCli {issuerKey = Nothing}
+      fromIni = fromCli {issuerKey = Right Nothing}
       iniWith idx k = withIssuer ["index = " <> tshow idx, "private_key = " <> safeDecodeUtf8 (strEncode k)] readServiceConfig
   Right trusted <- iniWith testIssuerKeyIdx sk
   checkIssuerKey fromIni (Just trusted) cfg `shouldReturn` Right (BadgeIssuerKey testIssuerKeyIdx sk)
@@ -1795,7 +1791,7 @@ testDevKeysTrusted ps = do
   Right (_, devSk) <- bbsKeyGen
   let cfg = testCfg {badgePublicKeys = M.singleton testIssuerKeyIdx pk}
       devIdx = testIssuerKeyIdx + 8
-      fromIni = (mkStoreServiceOpts ps sk) {issuerKey = Nothing}
+      fromIni = (mkStoreServiceOpts ps sk) {issuerKey = Right Nothing}
   Right withDev <- devKeysIni chainSection devIdx devSk [(devIdx, devSk)]
   checkIssuerKey fromIni (Just withDev) cfg >>= (`shouldSatisfy` isLeft)
   Right trusted <- trustDevKeys (Just withDev) cfg

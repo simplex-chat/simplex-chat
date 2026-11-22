@@ -171,8 +171,9 @@ checkNodeChain = \case
 
 checkIssuerKey :: StoreServiceOpts -> Maybe ServiceConfig -> ChatConfig -> IO (Either String BadgeIssuerKey)
 checkIssuerKey StoreServiceOpts {issuerKey} serviceCfg cfg = case issuerKey of
-  Just k -> checkOne cfg k
-  Nothing -> case serviceCfg >>= issuer of
+  Left e -> pure (Left e)
+  Right (Just k) -> checkOne cfg k
+  Right Nothing -> case serviceCfg >>= issuer of
     Nothing -> pure $ Left "an issuer key is required - pass --issuer-key-idx and --issuer-secret, or add an [issuer] section to store_service.ini (see `simplex-chat badge keygen`)"
     Just k -> checkOne cfg k
 
