@@ -1079,6 +1079,6 @@ getItemText cc i = do
   pure t
 
 setItemAge :: TestCC -> String -> NominalDiffTime -> IO ()
-setItemAge cc itemId age = do
+setItemAge cc ciId age = do
   ts <- addUTCTime (negate age) <$> getCurrentTime
-  withCCTransaction cc $ \db -> DB.execute db "UPDATE chat_items SET item_ts = ?, created_at = ? WHERE chat_item_id = ?" (ts, ts, read itemId :: Int64)
+  withCCTransaction cc $ \db -> DB.execute db "UPDATE chat_items SET item_ts = ?, created_at = ? WHERE chat_item_id = ?" (ts, ts, read ciId :: Int64)
