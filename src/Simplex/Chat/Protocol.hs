@@ -1393,14 +1393,10 @@ hasNotification = \case
   XCallInv_ -> True
   _ -> False
 
-priorityHasNotification :: MsgPriority -> CMEventTag e -> Bool
-priorityHasNotification = \case
-  MPSilent -> const False
-  MPNormal -> hasNotification
-  MPHigh -> const True
-
 eventHasNotification :: ChatMsgEvent e -> Bool
-eventHasNotification ev = priorityHasNotification (eventPriority ev) (toCMEventTag ev)
+eventHasNotification = \case
+  XMsgNew MsgContainer {priority} -> priority /= MPSilent
+  ev -> hasNotification $ toCMEventTag ev
 
 msgHasNotification :: VerifiedMsg e -> Bool
 msgHasNotification verifiedMsg = eventHasNotification chatMsgEvent

@@ -2670,8 +2670,13 @@ deliverMessagesB msgReqs = do
         updatePQ = updateConnPQSndEnabled db connId pqSndEnabled'
 
 sendGroupMessage :: MsgEncodingI e => User -> GroupInfoKeys -> Maybe GroupChatScope -> [GroupMember] -> Bool -> ChatMsgEvent e -> CM SndMessage
-sendGroupMessage user gInfo gcScope members sign chatMsgEvent = do
-  sendGroupMessages user gInfo gcScope False members sign (chatMsgEvent :| []) >>= \case
+sendGroupMessage user gInfo gcScope members sign chatMsgEvent =
+  sendGroupMessageFlags user gInfo gcScope members sign MsgFlags {notification = eventHasNotification chatMsgEvent} chatMsgEvent
+
+sendGroupMessageFlags :: MsgEncodingI e => User -> GroupInfoKeys -> Maybe GroupChatScope -> [GroupMember] -> Bool -> MsgFlags -> ChatMsgEvent e -> CM SndMessage
+sendGroupMessageFlags user gInfo@(GIK g _) gcScope members sign msgFlags chatMsgEvent = do
+  sendGroupProfileUpdate user gInfo gcScope False members
+  sendGroupSignedMessages_ g members msgFlags ((groupMsgSigning sign gInfo chatMsgEvent, chatMsgEvent) :| []) >>= \case
     ((Right msg) :| [], _) -> pure msg
     _ -> throwChatError $ CEInternalError "sendGroupMessage: expected 1 message"
 
@@ -2767,7 +2772,7 @@ sendGroupMessages user gInfo scope asGroup members sign events = do
 sendGroupSignedMessages :: MsgEncodingI e => User -> GroupInfoKeys -> Maybe GroupChatScope -> ShowGroupAsSender -> [GroupMember] -> NonEmpty (Maybe MsgSigning, ChatMsgEvent e) -> CM (NonEmpty (Either ChatError SndMessage), GroupSndResult)
 sendGroupSignedMessages user gInfo@(GIK g _) scope asGroup members signedEvents = do
   sendGroupProfileUpdate user gInfo scope asGroup members
-  sendGroupSignedMessages_ g members signedEvents
+  sendGroupSignedMessages_ g members MsgFlags {notification = any (eventHasNotification . snd) signedEvents} signedEvents
 
 sendGroupProfileUpdate :: User -> GroupInfoKeys -> Maybe GroupChatScope -> ShowGroupAsSender -> [GroupMember] -> CM ()
 sendGroupProfileUpdate user g@(GIK gInfo gks) scope asGroup members =
@@ -2801,19 +2806,18 @@ data GroupSndResult = GroupSndResult
 
 sendGroupMessages_ :: MsgEncodingI e => User -> GroupInfoKeys -> [GroupMember] -> Bool -> NonEmpty (ChatMsgEvent e) -> CM (NonEmpty (Either ChatError SndMessage), GroupSndResult)
 sendGroupMessages_ _user gInfo@(GIK g _) recipientMembers sign events =
-  sendGroupSignedMessages_ g recipientMembers $ L.map (\evt -> (groupMsgSigning sign gInfo evt, evt)) events
+  sendGroupSignedMessages_ g recipientMembers MsgFlags {notification = any eventHasNotification events} $ L.map (\evt -> (groupMsgSigning sign gInfo evt, evt)) events
 
-sendGroupSignedMessages_ :: MsgEncodingI e => GroupInfo -> [GroupMember] -> NonEmpty (Maybe MsgSigning, ChatMsgEvent e) -> CM (NonEmpty (Either ChatError SndMessage), GroupSndResult)
-sendGroupSignedMessages_ gInfo@GroupInfo {groupId} recipientMembers signedEvents = do
+sendGroupSignedMessages_ :: MsgEncodingI e => GroupInfo -> [GroupMember] -> MsgFlags -> NonEmpty (Maybe MsgSigning, ChatMsgEvent e) -> CM (NonEmpty (Either ChatError SndMessage), GroupSndResult)
+sendGroupSignedMessages_ gInfo@GroupInfo {groupId} recipientMembers msgFlags signedEvents = do
   sndMsgs_ <- lift $ createSndMessages idsEvts
   recipientMembers' <- liftIO $ shuffleMembers recipientMembers
-  let msgFlags = MsgFlags {notification = any eventHasNotification events}
-      (toSend, toPending, forwarded, _, dups) =
+  let (toSend, toPending, forwarded, _, dups) =
         foldr' (addMember recipientMembers') (([], []), [], [], S.empty, 0 :: Int) recipientMembers'
   when (dups /= 0) $ logError $ "sendGroupMessages_: " <> tshow dups <> " duplicate members"
   -- TODO PQ either somehow ensure that group members connections cannot have pqSupport/pqEncryption or pass Off's here
   -- Deliver to toSend members
-  let (sendToMemIds, msgReqs) = prepareMsgReqs msgFlags sndMsgs_ toSend
+  let (sendToMemIds, msgReqs) = prepareMsgReqs sndMsgs_ toSend
   delivered <- maybe (pure []) (fmap L.toList . deliverMessagesB) $ L.nonEmpty msgReqs
   when (length delivered /= length sendToMemIds) $ logError "sendGroupMessages_: sendToMemIds and delivered length mismatch"
   -- Save as pending for toPending members
@@ -2849,8 +2853,8 @@ sendGroupSignedMessages_ gInfo@GroupInfo {groupId} recipientMembers signedEvents
       where
         mId = groupMemberId' m
         mIds' = S.insert mId mIds
-    prepareMsgReqs :: MsgFlags -> NonEmpty (Either ChatError SndMessage) -> ([(GroupMember, Connection)], [(GroupMember, Connection)]) -> ([GroupMemberId], [Either ChatError ChatMsgReq])
-    prepareMsgReqs msgFlags msgs (toSendBin, toSendJson) =
+    prepareMsgReqs :: NonEmpty (Either ChatError SndMessage) -> ([(GroupMember, Connection)], [(GroupMember, Connection)]) -> ([GroupMemberId], [Either ChatError ChatMsgReq])
+    prepareMsgReqs msgs (toSendBin, toSendJson) =
       batchReqs 1 BMBinary toSendBin <> batchReqs 2 BMJson toSendJson
       where
         batchReqs _ _ [] = ([], [])

@@ -872,7 +872,8 @@ processChatCommand cxt nm = \case
                           mentions' = M.map (\CIMention {memberId} -> MsgMention {memberId}) ciMentions
                           event = XMsgUpdate itemSharedMId mc mentions' (ttl' <$> itemTimed) (justTrue . (live &&) =<< itemLive) msgScope (Just showGroupAsSender) priority'
                           reuseSign = case msgVerified of Just (MVSigned _) -> True; _ -> False
-                      SndMessage {msgId} <- sendGroupMessage user g scope recipients reuseSign event
+                          msgFlags = MsgFlags {notification = priority' == MPHigh && priority /= MPHigh}
+                      SndMessage {msgId} <- sendGroupMessageFlags user g scope recipients reuseSign msgFlags event
                       ci' <- withFastStore' $ \db -> do
                         currentTs <- liftIO getCurrentTime
                         when changed $
@@ -4290,7 +4291,7 @@ processChatCommand cxt nm = \case
       let msgMemIds = itemsMsgMemIds gInfo items
           -- moderation deletes always sign (attributable; avoids the catch-up-moderator divergence)
           signedEvents = L.nonEmpty $ map (\(msgId, memId) -> let evt = XMsgDel msgId memId (toMsgScope gInfo <$> chatScopeInfo) False in (groupMsgSigning True g evt, evt)) msgMemIds
-      mapM_ (sendGroupSignedMessages_ gInfo ms) signedEvents
+      mapM_ (sendGroupSignedMessages_ gInfo ms MsgFlags {notification = hasNotification XMsgDel_}) signedEvents
       delGroupChatItems user gInfo chatScopeInfo items True
       where
         assertDeletable :: GroupInfo -> [CChatItem 'CTGroup] -> CM ()

@@ -301,7 +301,9 @@ approved text                                      becomes
 1, 4, 5  update without priority: priority kept    every update sets the item priority by the rules of a new message, absent is normal (decided by the user on 2026-11-22)
 5     update with requested priority applied       an update is applied only when it changes the content, the live state or the accepted priority;
                                                    otherwise it is not forwarded (decided by the user on 2026-11-22)
-5     forwarded update: flag of the message        flag of the priority stored by the forwarding member or relay (decided by the user on 2026-11-22)
+4, 5  SMP flag of an update                        on only for a change to high priority, decided by the author and by each forwarding member or relay from
+                                                   its own item before and after the update; an edit that repeats high is sent without the flag
+                                                   ("switching from normal (or low) to high priority should send notification", the user on 2026-11-22)
 2     priority :: Maybe Int, limitPriority          MsgPriority = MPSilent | MPNormal | MPHigh, parsed at the protocol and API boundary
 ```
 
@@ -419,18 +421,21 @@ Decided by the user on 2026-11-22. `MsgPriority` is parsed from the integer of t
 sender      priority' = allowedPriority highAllowed (priority of the updated message), absent: normal
               contact: silent or normal; group: high when allowed, in every scope, as for a new message
             condition: changed || live || priority' /= item priority
+            SMP flag: priority' == high && item priority /= high
 receiver    priority' = item priority when the recipient deleted the item
               otherwise allowedPriority rcvPriorityAllowed (priority of x.msg.update), absent: normal, as for a new item
               direct: silent or normal
             condition: changed || live || priority' /= item priority; otherwise not applied and not forwarded
-forwarder   forwards the message bytes; SMP flag of x.msg.update by the stored priority of its item: on for high, off otherwise
+forwarder   forwards the message bytes
+            delivery_tasks.priority_raised = priority' == high && item priority /= high; an item created for a missing message: its priority == high
+            SMP flag of a delivery job: any task with priority_raised or with the flag of its message
 ```
 
 ```mermaid
 flowchart LR
-  U["x.msg.update from a member"] --> R["forwarding member or relay:<br>priority' by the author's role"]
+  U["x.msg.update from a member<br>flag: raise at the author"] --> R["forwarding member or relay:<br>priority' by the author's role"]
   R -->|"no change of content, live state or priority"| N["chatItemNotChanged<br>no delivery task"]
-  R -->|"changed"| S["item stored with priority'<br>delivery task"]
-  S --> J["delivery job: message bytes<br>SMP flag of the stored priority"]
+  R -->|"changed"| S["item stored with priority'<br>delivery task, priority_raised:<br>priority' high, item priority not high"]
+  S --> J["delivery job: message bytes<br>SMP flag: any task raised"]
   J --> M["each member: priority' by the author's role"]
 ```
