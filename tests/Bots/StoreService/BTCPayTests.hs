@@ -121,7 +121,7 @@ badgeBTCPayTests = describe "badge btcpay adapter" $ do
     it "creates a monero invoice and reads back where to pay" testFakeCreatesXmr
     it "sends the api key as `token <key>` on every call it makes" testFakeSendsApiKey
     it "is refused when the api key is wrong, rather than passing silently" testFakeWrongApiKey
-    it "sends the documented create body, and no redirectURL" testFakeCreateBody
+    it "sends the documented create body, the order's reference as metadata.orderId, and no redirectURL" testFakeCreateBody
     it "walks New to Processing to Settled, two calls per read" testFakeLifecycle
     it "closes on Expired and on Invalid, in full only once BTCPay's PaidLate says so" testFakeClosed
     it "names a status the provider invented" testFakeUnknownStatus
@@ -805,6 +805,7 @@ testFakeCreateBody = withProvider $ \fake p -> do
           ( J.object
               [ "amount" .= ("54.00" :: Text),
                 "currency" .= ("USD" :: Text),
+                "metadata" .= J.object ["orderId" .= ("badge:0x01" :: Text)],
                 "checkout"
                   .= J.object
                     [ "expirationMinutes" .= fakeExpiryMinutes,
