@@ -241,10 +241,10 @@ decodeChatMessageTest = describe "Chat message encoding/decoding" $ do
     map (eventHasNotification . msgNew) priorities `shouldBe` [False, False, True, True, True, True]
     map (sndPriority False) priorities `shouldBe` [Just (-1), Just (-1), Nothing, Nothing, Nothing, Nothing]
     map (sndPriority True) priorities `shouldBe` [Just (-1), Just (-1), Nothing, Nothing, Just 1, Just 1]
-  it "x.msg.update priority raises to high only" $ do
+  it "x.msg.update priority is limited to low, normal and high" $ do
     let priorities = [Just (-5), Just (-1), Nothing, Just 0, Just 1, Just 5]
         msgUpdate = XMsgUpdate (SharedMsgId "\1\2\3\4") (MCText "hello") [] Nothing Nothing Nothing Nothing
-    map (eventPriority . msgUpdate) priorities `shouldBe` [0, 0, 0, 0, 0, 0]
+    map (eventPriority . msgUpdate) priorities `shouldBe` [-1, -1, 0, 0, 1, 1]
     map (eventHasNotification . msgUpdate) priorities `shouldBe` [False, False, False, False, True, True]
   it "x.msg.new simple link" $
     "{\"v\":\"9\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"https://simplex.chat\",\"type\":\"link\",\"preview\":{\"description\":\"SimpleX Chat\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgA\",\"title\":\"SimpleX Chat\",\"uri\":\"https://simplex.chat\"}}}}"

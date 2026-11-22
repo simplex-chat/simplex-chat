@@ -1049,6 +1049,7 @@ testDirectSilentMessage ps = do
       alice ##> "! @bob hi there"
       alice <# "@bob [edited] hi there"
       bob <# "alice> [edited] hi there"
+      lastSndEventPriority alice "x.msg.update" `shouldReturn` Just (-1)
       forM_ [alice, bob] $ \cc -> itemPriority cc "/_get chat @2 count=1" `shouldReturn` Just (-1)
 
       sendWithPriority "hello again" 1 "T" Nothing
