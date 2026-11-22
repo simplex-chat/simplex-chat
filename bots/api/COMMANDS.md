@@ -16,6 +16,8 @@ This file is generated automatically.
 - [APIDeleteChatItem](#apideletechatitem)
 - [APIDeleteMemberChatItem](#apideletememberchatitem)
 - [APIChatItemReaction](#apichatitemreaction)
+- [APIGetChatItemLink](#apigetchatitemlink)
+- [APIMsgLinkPlan](#apimsglinkplan)
 - [APIShareMyAddress](#apisharemyaddress)
 - [APIShareChatMsgContent](#apisharechatmsgcontent)
 
@@ -556,6 +558,83 @@ ChatItemReaction: Message reaction.
 - user: [User](./TYPES.md#user)
 - added: bool
 - reaction: [ACIReaction](./TYPES.md#acireaction)
+
+ChatCmdError: Command error (only used in WebSockets API).
+- type: "chatCmdError"
+- chatError: [ChatError](./TYPES.md#chaterror)
+
+---
+
+
+### APIGetChatItemLink
+
+Get message link: global for a public chat, local otherwise. Message links are sent in texts as [label](link).
+
+*Network usage*: no.
+
+**Parameters**:
+- chatRef: [ChatRef](./TYPES.md#chatref)
+- chatItemId: int64
+
+**Syntax**:
+
+```
+/_get item link <str(chatRef)> <chatItemId>
+```
+
+```javascript
+'/_get item link ' + ChatRef.cmdString(chatRef) + ' ' + chatItemId // JavaScript
+```
+
+```python
+'/_get item link ' + ChatRef_cmd_string(chatRef) + ' ' + str(chatItemId) # Python
+```
+
+**Responses**:
+
+ChatItemLink: Message link.
+- type: "chatItemLink"
+- user: [User](./TYPES.md#user)
+- msgLink: string
+
+ChatCmdError: Command error (only used in WebSockets API).
+- type: "chatCmdError"
+- chatError: [ChatError](./TYPES.md#chaterror)
+
+---
+
+
+### APIMsgLinkPlan
+
+Get the message of a link, its chat when the message is absent, or the public chat to join.
+
+*Network usage*: no.
+
+**Parameters**:
+- userId: int64
+- msgLink: string
+- chatRef_: [ChatRef](./TYPES.md#chatref)?
+
+**Syntax**:
+
+```
+/_msg link plan <userId> <msgLink>[ chat=<str(chatRef_)>]
+```
+
+```javascript
+'/_msg link plan ' + userId + ' ' + msgLink + (chatRef_ ? ' chat=' + ChatRef.cmdString(chatRef_) : '') // JavaScript
+```
+
+```python
+'/_msg link plan ' + str(userId) + ' ' + msgLink + ((' chat=' + ChatRef_cmd_string(chatRef_)) if chatRef_ is not None else '') # Python
+```
+
+**Responses**:
+
+MsgLinkPlan: Message link plan.
+- type: "msgLinkPlan"
+- user: [User](./TYPES.md#user)
+- msgLinkPlan: [MsgLinkPlan](./TYPES.md#msglinkplan)
 
 ChatCmdError: Command error (only used in WebSockets API).
 - type: "chatCmdError"

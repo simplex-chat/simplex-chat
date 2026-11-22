@@ -8,6 +8,7 @@ export type ChatResponse =
   | CR.ActiveUser
   | CR.ApiChat
   | CR.ChatItemInfo
+  | CR.ChatItemLink
   | CR.ChatItemNotChanged
   | CR.ChatItemReaction
   | CR.ChatItemUpdated
@@ -47,6 +48,7 @@ export type ChatResponse =
   | CR.MemberAccepted
   | CR.MembersBlockedForAllUser
   | CR.MembersRoleUser
+  | CR.MsgLinkPlan
   | CR.NetworkConfig
   | CR.NewChatItems
   | CR.NewMemberContact
@@ -84,6 +86,7 @@ export namespace CR {
     | "activeUser"
     | "apiChat"
     | "chatItemInfo"
+    | "chatItemLink"
     | "chatItemNotChanged"
     | "chatItemReaction"
     | "chatItemUpdated"
@@ -123,6 +126,7 @@ export namespace CR {
     | "memberAccepted"
     | "membersBlockedForAllUser"
     | "membersRoleUser"
+    | "msgLinkPlan"
     | "networkConfig"
     | "newChatItems"
     | "newMemberContact"
@@ -181,6 +185,12 @@ export namespace CR {
     user: T.User
     chatItem: T.AChatItem
     chatItemInfo: T.ChatItemInfo
+  }
+
+  export interface ChatItemLink extends Interface {
+    type: "chatItemLink"
+    user: T.User
+    msgLink: string
   }
 
   export interface ChatItemNotChanged extends Interface {
@@ -438,6 +448,12 @@ export namespace CR {
     members: T.GroupMember[]
     toRole: T.GroupMemberRole
     msgSigned: boolean
+  }
+
+  export interface MsgLinkPlan extends Interface {
+    type: "msgLinkPlan"
+    user: T.User
+    msgLinkPlan: T.MsgLinkPlan
   }
 
   export interface NetworkConfig extends Interface {

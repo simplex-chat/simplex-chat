@@ -162,6 +162,33 @@ def APIChatItemReaction_cmd_string(self: APIChatItemReaction) -> str:
 APIChatItemReaction_Response = CR.ChatItemReaction | CR.ChatCmdError
 
 
+# Get message link: global for a public chat, local otherwise. Message links are sent in texts as [label](link).
+# Network usage: no.
+class APIGetChatItemLink(TypedDict):
+    chatRef: "T.ChatRef"
+    chatItemId: int  # int64
+
+
+def APIGetChatItemLink_cmd_string(self: APIGetChatItemLink) -> str:
+    return '/_get item link ' + T.ChatRef_cmd_string(self['chatRef']) + ' ' + str(self['chatItemId'])
+
+APIGetChatItemLink_Response = CR.ChatItemLink | CR.ChatCmdError
+
+
+# Get the message of a link, its chat when the message is absent, or the public chat to join.
+# Network usage: no.
+class APIMsgLinkPlan(TypedDict):
+    userId: int  # int64
+    msgLink: str
+    chatRef_: NotRequired["T.ChatRef"]
+
+
+def APIMsgLinkPlan_cmd_string(self: APIMsgLinkPlan) -> str:
+    return '/_msg link plan ' + str(self['userId']) + ' ' + self['msgLink'] + ((' chat=' + T.ChatRef_cmd_string(self.get('chatRef_'))) if self.get('chatRef_') is not None else '')
+
+APIMsgLinkPlan_Response = CR.MsgLinkPlan | CR.ChatCmdError
+
+
 # Share user address card
 # Network usage: no.
 class APIShareMyAddress(TypedDict):

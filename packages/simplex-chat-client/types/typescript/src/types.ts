@@ -1076,6 +1076,18 @@ export enum CIGroupInvitationStatus {
   Rejected = "rejected",
   Expired = "expired",
 }
+// Short text of a message link, by its label in the message text. The target is the linked message, only in the sender's or forwarder's copy of a link sent as simplex:/m.
+
+export interface CILink {
+  text: string
+  target?: CILinkTarget
+}
+
+export interface CILinkTarget {
+  chatType: ChatType
+  chatId: number // int64
+  chatItemId: number // int64
+}
 
 export interface CIMention {
   memberId: string
@@ -1881,6 +1893,7 @@ export interface ChatItem {
   meta: CIMeta
   content: CIContent
   mentions: {[key: string]: CIMention}
+  links: {[key: string]: CILink}
   formattedText?: FormattedText[]
   markdownBlocks?: MarkdownBlock[]
   quotedItem?: CIQuote
@@ -2341,10 +2354,11 @@ export type ConnectionPlan =
   | ConnectionPlan.InvitationLink
   | ConnectionPlan.ContactAddress
   | ConnectionPlan.GroupLink
+  | ConnectionPlan.UpdateRequired
   | ConnectionPlan.Error
 
 export namespace ConnectionPlan {
-  export type Tag = "invitationLink" | "contactAddress" | "groupLink" | "error"
+  export type Tag = "invitationLink" | "contactAddress" | "groupLink" | "updateRequired" | "error"
 
   interface Interface {
     type: Tag
@@ -2365,6 +2379,10 @@ export namespace ConnectionPlan {
     type: "groupLink"
     groupLinkPlan: GroupLinkPlan
     nameChange?: NameChange
+  }
+
+  export interface UpdateRequired extends Interface {
+    type: "updateRequired"
   }
 
   export interface Error extends Interface {
@@ -2814,6 +2832,7 @@ export type Format =
   | Format.HyperLink
   | Format.SimplexLink
   | Format.SimplexName
+  | Format.MessageLink
   | Format.Command
   | Format.Mention
   | Format.Email
@@ -2834,6 +2853,7 @@ export namespace Format {
     | "hyperLink"
     | "simplexLink"
     | "simplexName"
+    | "messageLink"
     | "command"
     | "mention"
     | "email"
@@ -2896,6 +2916,13 @@ export namespace Format {
   export interface SimplexName extends Interface {
     type: "simplexName"
     nameInfo: SimplexNameInfo
+  }
+
+  export interface MessageLink extends Interface {
+    type: "messageLink"
+    showText?: string
+    msgLinkType: MsgLinkType
+    msgLink: string
   }
 
   export interface Command extends Interface {
@@ -3732,6 +3759,59 @@ export enum MsgFilter {
   None = "none",
   All = "all",
   Mentions = "mentions",
+}
+
+export type MsgLinkPlan = 
+  | MsgLinkPlan.Item
+  | MsgLinkPlan.Chat
+  | MsgLinkPlan.Join
+  | MsgLinkPlan.NotFound
+  | MsgLinkPlan.UnknownSource
+  | MsgLinkPlan.UnknownLink
+
+export namespace MsgLinkPlan {
+  export type Tag = "item" | "chat" | "join" | "notFound" | "unknownSource" | "unknownLink"
+
+  interface Interface {
+    type: Tag
+  }
+
+  export interface Item extends Interface {
+    type: "item"
+    chatItem: AChatItem
+    linkText: string
+  }
+
+  export interface Chat extends Interface {
+    type: "chat"
+    chatInfo: ChatInfo
+  }
+
+  export interface Join extends Interface {
+    type: "join"
+    connTarget: string
+  }
+
+  export interface NotFound extends Interface {
+    type: "notFound"
+  }
+
+  export interface UnknownSource extends Interface {
+    type: "unknownSource"
+  }
+
+  export interface UnknownLink extends Interface {
+    type: "unknownLink"
+  }
+}
+
+export enum MsgLinkType {
+  PublicGroup = "publicGroup",
+  Group = "group",
+  Direct = "direct",
+  Note = "note",
+  UnknownSource = "unknownSource",
+  Unsupported = "unsupported",
 }
 
 export type MsgReaction = MsgReaction.Emoji | MsgReaction.Unknown
@@ -4850,6 +4930,8 @@ export enum SimplexLinkType {
   Group = "group",
   Channel = "channel",
   Relay = "relay",
+  PublicGroup = "publicGroup",
+  Site = "site",
 }
 
 export interface SimplexNameInfo {

@@ -35,6 +35,8 @@ This file is generated automatically.
 - [CIForwardedFrom](#ciforwardedfrom)
 - [CIGroupInvitation](#cigroupinvitation)
 - [CIGroupInvitationStatus](#cigroupinvitationstatus)
+- [CILink](#cilink)
+- [CILinkTarget](#cilinktarget)
 - [CIMention](#cimention)
 - [CIMentionMember](#cimentionmember)
 - [CIMeta](#cimeta)
@@ -157,6 +159,8 @@ This file is generated automatically.
 - [MsgDirection](#msgdirection)
 - [MsgErrorType](#msgerrortype)
 - [MsgFilter](#msgfilter)
+- [MsgLinkPlan](#msglinkplan)
+- [MsgLinkType](#msglinktype)
 - [MsgReaction](#msgreaction)
 - [MsgReceiptStatus](#msgreceiptstatus)
 - [MsgSigStatus](#msgsigstatus)
@@ -1067,6 +1071,27 @@ GroupLink:
 
 ---
 
+## CILink
+
+Short text of a message link, by its label in the message text. The target is the linked message, only in the sender's or forwarder's copy of a link sent as simplex:/m.
+
+**Record type**:
+- text: string
+- target: [CILinkTarget](#cilinktarget)?
+
+
+---
+
+## CILinkTarget
+
+**Record type**:
+- chatType: [ChatType](#chattype)
+- chatId: int64
+- chatItemId: int64
+
+
+---
+
 ## CIMention
 
 **Record type**:
@@ -1621,6 +1646,7 @@ ContactConnection:
 - meta: [CIMeta](#cimeta)
 - content: [CIContent](#cicontent)
 - mentions: {string : [CIMention](#cimention)}
+- links: {string : [CILink](#cilink)}
 - formattedText: [[FormattedText](#formattedtext)]?
 - markdownBlocks: [[MarkdownBlock](#markdownblock)]?
 - quotedItem: [CIQuote](#ciquote)?
@@ -2094,6 +2120,9 @@ GroupLink:
 - groupLinkPlan: [GroupLinkPlan](#grouplinkplan)
 - nameChange: [NameChange](#namechange)?
 
+UpdateRequired:
+- type: "updateRequired"
+
 Error:
 - type: "error"
 - chatError: [ChatError](#chaterror)
@@ -2566,6 +2595,12 @@ SimplexLink:
 SimplexName:
 - type: "simplexName"
 - nameInfo: [SimplexNameInfo](#simplexnameinfo)
+
+MessageLink:
+- type: "messageLink"
+- showText: string?
+- msgLinkType: [MsgLinkType](#msglinktype)
+- msgLink: string
 
 Command:
 - type: "command"
@@ -3444,6 +3479,48 @@ MsgDuplicate:
 - "none"
 - "all"
 - "mentions"
+
+
+---
+
+## MsgLinkPlan
+
+**Discriminated union type**:
+
+Item:
+- type: "item"
+- chatItem: [AChatItem](#achatitem)
+- linkText: string
+
+Chat:
+- type: "chat"
+- chatInfo: [ChatInfo](#chatinfo)
+
+Join:
+- type: "join"
+- connTarget: string
+
+NotFound:
+- type: "notFound"
+
+UnknownSource:
+- type: "unknownSource"
+
+UnknownLink:
+- type: "unknownLink"
+
+
+---
+
+## MsgLinkType
+
+**Enum type**:
+- "publicGroup"
+- "group"
+- "direct"
+- "note"
+- "unknownSource"
+- "unsupported"
 
 
 ---
@@ -4474,6 +4551,8 @@ NameWarning:
 - "group"
 - "channel"
 - "relay"
+- "publicGroup"
+- "site"
 
 
 ---
