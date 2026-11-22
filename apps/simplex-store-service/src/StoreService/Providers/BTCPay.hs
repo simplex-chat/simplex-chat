@@ -2,6 +2,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 module StoreService.Providers.BTCPay
   ( btcpayProvider,
@@ -9,6 +10,7 @@ module StoreService.Providers.BTCPay
     xmrMethodId,
     minorToDecimal,
     BTCPayStatus (..),
+    BTCPayPaymentStatus (..),
     AdditionalStatus (..),
     paymentMethodsSignal,
     listSignals,
@@ -49,6 +51,7 @@ import Crypto.Hash (Digest, SHA256)
 import Crypto.MAC.HMAC (HMAC, hmac, hmacGetDigest)
 import qualified Data.Aeson as J
 import qualified Data.Aeson.KeyMap as KM
+import qualified Data.Aeson.TH as JQ
 import qualified Data.Aeson.Types as JT
 import Data.ByteArray (constEq)
 import Data.ByteArray.Encoding (Base (Base16), convertFromBase)
@@ -78,7 +81,23 @@ import Simplex.Chat.PaymentService.Types
     ServicePaymentMethod (..),
   )
 import Simplex.Messaging.Encoding.String (TextEncoding (..))
+import Simplex.Messaging.Parsers (defaultJSON)
 import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
+
+data BTCPayStatus = BSNew | BSProcessing | BSSettled | BSExpired | BSInvalid | BSUnknown Text
+  deriving (Eq, Show)
+
+data BTCPayPaymentStatus = BPInvalid | BPProcessing | BPSettled | BPUnknown Text
+  deriving (Eq, Show)
+
+data AdditionalStatus = ASNone | ASPaidLate | ASPaidPartial | ASPaidOver | ASMarked | ASInvalid | ASUnknown Text
+  deriving (Eq, Show)
+
+$(JQ.deriveFromJSON (defaultJSON {J.sumEncoding = J.UntaggedValue, J.constructorTagModifier = drop 2}) ''BTCPayStatus)
+
+$(JQ.deriveFromJSON (defaultJSON {J.sumEncoding = J.UntaggedValue, J.constructorTagModifier = drop 2}) ''BTCPayPaymentStatus)
+
+$(JQ.deriveFromJSON (defaultJSON {J.sumEncoding = J.UntaggedValue, J.constructorTagModifier = drop 2}) ''AdditionalStatus)
 
 -- Shapes cited from BTCPay Server v2.4.5 (https://github.com/btcpayserver/btcpayserver/tree/v2.4.5):
 -- - payment methods, GET stores/{storeId}/invoices/{invoiceId}/payment-methods: BTCPayServer.Client/Models/InvoicePaymentMethodDataModel.cs,
@@ -165,41 +184,6 @@ maxExponent = 64
 
 wireDecimals :: Scientific -> Int
 wireDecimals = max 0 . negate . base10Exponent
-
-data BTCPayStatus = BSNew | BSProcessing | BSSettled | BSExpired | BSInvalid | BSUnknown Text
-  deriving (Eq, Show)
-
-instance J.FromJSON BTCPayStatus where
-  parseJSON = J.withText "invoice status" $ \case
-    "New" -> pure BSNew
-    "Processing" -> pure BSProcessing
-    "Settled" -> pure BSSettled
-    "Expired" -> pure BSExpired
-    "Invalid" -> pure BSInvalid
-    t -> pure $ BSUnknown t
-
-data BTCPayPaymentStatus = BPInvalid | BPProcessing | BPSettled | BPUnknown Text
-  deriving (Eq, Show)
-
-instance J.FromJSON BTCPayPaymentStatus where
-  parseJSON = J.withText "payment status" $ \case
-    "Invalid" -> pure BPInvalid
-    "Processing" -> pure BPProcessing
-    "Settled" -> pure BPSettled
-    t -> pure $ BPUnknown t
-
-data AdditionalStatus = ASNone | ASPaidLate | ASPaidPartial | ASPaidOver | ASMarked | ASInvalid | ASUnknown Text
-  deriving (Eq, Show)
-
-instance J.FromJSON AdditionalStatus where
-  parseJSON = J.withText "additional status" $ \case
-    "None" -> pure ASNone
-    "PaidLate" -> pure ASPaidLate
-    "PaidPartial" -> pure ASPaidPartial
-    "PaidOver" -> pure ASPaidOver
-    "Marked" -> pure ASMarked
-    "Invalid" -> pure ASInvalid
-    t -> pure $ ASUnknown t
 
 additionalStatusText :: AdditionalStatus -> Text
 additionalStatusText = \case

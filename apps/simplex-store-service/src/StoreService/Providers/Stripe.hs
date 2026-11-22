@@ -2,10 +2,12 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 module StoreService.Providers.Stripe
   ( stripeProvider,
     signalOf,
+    ChargeStatus (..),
     IntentStatus (..),
     IntentRead (..),
   )
@@ -36,6 +38,7 @@ import Crypto.Hash (Digest, SHA256)
 import Crypto.MAC.HMAC (HMAC, hmac, hmacGetDigest)
 import qualified Data.Aeson as J
 import qualified Data.Aeson.KeyMap as KM
+import qualified Data.Aeson.TH as JQ
 import qualified Data.Aeson.Types as JT
 import Data.ByteArray (constEq)
 import Data.ByteArray.Encoding (Base (Base16), convertFromBase)
@@ -64,7 +67,26 @@ import Simplex.Chat.PaymentService.Types
     ServicePaymentDestination (..),
     ServicePaymentMethod (..),
   )
+import Simplex.Messaging.Parsers (defaultJSON, dropPrefix)
 import Simplex.Messaging.Util (tshow)
+
+data ChargeStatus = CHSucceeded | CHPending | CHFailed | CHUnknown Text
+  deriving (Eq, Show)
+
+data IntentStatus
+  = PIRequiresPaymentMethod
+  | PIRequiresConfirmation
+  | PIRequiresAction
+  | PIProcessing
+  | PIRequiresCapture
+  | PICanceled
+  | PISucceeded
+  | PIUnknown Text
+  deriving (Eq, Show)
+
+$(JQ.deriveFromJSON (defaultJSON {J.sumEncoding = J.UntaggedValue, J.constructorTagModifier = dropPrefix "CH"}) ''ChargeStatus)
+
+$(JQ.deriveFromJSON (defaultJSON {J.sumEncoding = J.UntaggedValue, J.constructorTagModifier = J.camelTo2 '_' . dropPrefix "PI"}) ''IntentStatus)
 
 secondsPerMinute :: Int
 secondsPerMinute = 60
@@ -290,16 +312,6 @@ readInvoice env pid = do
       fmap (length . filter (== CHFailed) . clStatuses) . (>>= decodeAnswer "list charges")
         <$> stripeApi env "list charges" methodGet ["v1", "charges"] [("payment_intent", Just $ TE.encodeUtf8 pid), ("limit", Just $ B8.pack $ show maxDeclines)] Nothing
 
-data ChargeStatus = CHSucceeded | CHPending | CHFailed | CHUnknown Text
-  deriving (Eq)
-
-instance J.FromJSON ChargeStatus where
-  parseJSON = J.withText "charge status" $ \case
-    "succeeded" -> pure CHSucceeded
-    "pending" -> pure CHPending
-    "failed" -> pure CHFailed
-    s -> pure $ CHUnknown s
-
 newtype ChargeList = ChargeList {clStatuses :: [ChargeStatus]}
 
 instance J.FromJSON ChargeList where
@@ -331,27 +343,6 @@ amountFrom :: Int64 -> CurrencyAmount
 amountFrom n = CurrencyAmount (fromInteger (max 0 (min largestAmount (toInteger n))))
   where
     largestAmount = toInteger (maxBound :: Word32)
-
-data IntentStatus
-  = PIRequiresPaymentMethod
-  | PIRequiresConfirmation
-  | PIRequiresAction
-  | PIProcessing
-  | PIRequiresCapture
-  | PICanceled
-  | PISucceeded
-  | PIUnknown Text
-
-instance J.FromJSON IntentStatus where
-  parseJSON = J.withText "payment_intent status" $ \case
-    "requires_payment_method" -> pure PIRequiresPaymentMethod
-    "requires_confirmation" -> pure PIRequiresConfirmation
-    "requires_action" -> pure PIRequiresAction
-    "processing" -> pure PIProcessing
-    "requires_capture" -> pure PIRequiresCapture
-    "canceled" -> pure PICanceled
-    "succeeded" -> pure PISucceeded
-    s -> pure $ PIUnknown s
 
 data IntentRead = IntentRead
   { irId :: Text,

@@ -20,10 +20,12 @@ import StoreService.Providers
     WebhookError (..),
     WebhookEvent (..),
   )
-import StoreService.Providers.Stripe (IntentRead (..), IntentStatus (..), signalOf, stripeProvider)
+import StoreService.Providers.Stripe (ChargeStatus (..), IntentRead (..), IntentStatus (..), signalOf, stripeProvider)
 import Bots.StoreService.FakeStripe
 import Control.Monad (join)
 import Data.Aeson ((.=))
+import qualified Data.Aeson as J
+import qualified Data.Aeson.Types as JT
 import qualified Data.ByteString.Char8 as B8
 import qualified Data.ByteString.Lazy as LB
 import Data.Either (isLeft)
@@ -70,6 +72,8 @@ badgeStripeTests = describe "badge stripe adapter" $ do
     it "makes an unknown intent status a ProviderError, not a silent no-signal" testFakeReadUnknownStatus
     it "settles a succeeded intent with no charge at read time" testSettledNoChargeReadTime
     it "confirms only a succeeded intent's amount, and reads no rate" testConfirmedOnlySucceeded
+  describe "statuses" $
+    it "reads each intent and charge status Stripe sends by its exact name, any other text as unknown, and no other JSON" testStatusNames
   describe "listing intents to settle" $ do
     it "lists by a created window, never status=open" testFakeListWindow
     it "moves the settled and canceled intents, at read time, leaving the open one" testFakeListsOpen
@@ -324,6 +328,17 @@ testConfirmedOnlySucceeded = do
   read' PISucceeded `shouldBe` Right (Just (SigSettled (cardReceived 5400 5400) now))
   read' PICanceled `shouldBe` Right (Just (SigClosed (cardReceived 0 0) PaidInPart))
   withProvider $ \_ p -> isNothing (pCurrentRate p) `shouldBe` True
+
+testStatusNames :: IO ()
+testStatusNames = do
+  let parsed :: J.FromJSON a => J.Value -> Maybe a
+      parsed = JT.parseMaybe J.parseJSON
+      named :: J.FromJSON a => [Text] -> [Maybe a]
+      named = map (parsed . J.String)
+  named ["requires_payment_method", "requires_confirmation", "requires_action", "processing", "requires_capture", "canceled", "succeeded", "requiresAction", "Succeeded"]
+    `shouldBe` map Just [PIRequiresPaymentMethod, PIRequiresConfirmation, PIRequiresAction, PIProcessing, PIRequiresCapture, PICanceled, PISucceeded, PIUnknown "requiresAction", PIUnknown "Succeeded"]
+  named ["succeeded", "pending", "failed", "refunded"] `shouldBe` map Just [CHSucceeded, CHPending, CHFailed, CHUnknown "refunded"]
+  (parsed (J.Number 1) :: Maybe IntentStatus, parsed J.Null :: Maybe ChargeStatus) `shouldBe` (Nothing, Nothing)
 
 -- | A status=open query returns only open intents, which carry no signal, so the poll lists by
 -- creation time instead to catch a settlement the webhook missed. The window reaches back the

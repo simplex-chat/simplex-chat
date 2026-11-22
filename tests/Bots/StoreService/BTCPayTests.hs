@@ -27,7 +27,7 @@ import StoreService.Providers
     receivedAmount,
     settleWindow,
   )
-import StoreService.Providers.BTCPay (AdditionalStatus (..), BTCPayStatus (..), btcMethodId, btcpayProvider, listSignals, minorToDecimal, paymentMethodsSignal, verifyBTCPaySig, xmrMethodId)
+import StoreService.Providers.BTCPay (AdditionalStatus (..), BTCPayPaymentStatus (..), BTCPayStatus (..), btcMethodId, btcpayProvider, listSignals, minorToDecimal, paymentMethodsSignal, verifyBTCPaySig, xmrMethodId)
 import StoreService.Config (SpeedPolicy (..))
 import Bots.StoreService.FakeBTCPay
 import Bots.StoreService.FakeHttp (withResetServer)
@@ -37,6 +37,7 @@ import Control.Monad (forM_, join)
 import Data.Aeson ((.=))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.KeyMap as KM
+import qualified Data.Aeson.Types as JT
 import qualified Data.ByteString.Char8 as B8
 import qualified Data.ByteString.Lazy as LB
 import Data.Char (toUpper)
@@ -79,6 +80,7 @@ badgeBTCPayTests = describe "badge btcpay adapter" $ do
     it "refuses the same exponent sent as a JSON number, without formatting it" testAbsurdExponentAsANumberIsRefused
     it "accepts a rate written at full decimal scale" testLongRateIsAccepted
     it "names an unknown status rather than reporting no change" testUnknownStatus
+    it "reads each status BTCPay sends by its exact name, any other text as unknown, and no other JSON" testStatusNames
     it "does not know Complete, which is the legacy invoice API's name" testNoCompleteStatus
     it "names the payment methods it found when none is one of ours" testUnknownPaymentMethod
     it "names a response it cannot read" testUnreadableResponse
@@ -444,6 +446,19 @@ testLongRateIsAccepted =
 
 testUnknownStatus :: IO ()
 testUnknownStatus = signalOf (BSUnknown "Frobnicated") [btcPaid "0.00050000" []] `shouldSatisfy` namesInError "Frobnicated"
+
+testStatusNames :: IO ()
+testStatusNames = do
+  let parsed :: J.FromJSON a => J.Value -> Maybe a
+      parsed = JT.parseMaybe J.parseJSON
+      named :: J.FromJSON a => [Text] -> [Maybe a]
+      named = map (parsed . J.String)
+  named ["New", "Processing", "Settled", "Expired", "Invalid", "settled", "Complete"]
+    `shouldBe` map Just [BSNew, BSProcessing, BSSettled, BSExpired, BSInvalid, BSUnknown "settled", BSUnknown "Complete"]
+  named ["Invalid", "Processing", "Settled", "New"] `shouldBe` map Just [BPInvalid, BPProcessing, BPSettled, BPUnknown "New"]
+  named ["None", "PaidLate", "PaidPartial", "PaidOver", "Marked", "Invalid", "paidLate"]
+    `shouldBe` map Just [ASNone, ASPaidLate, ASPaidPartial, ASPaidOver, ASMarked, ASInvalid, ASUnknown "paidLate"]
+  (parsed (J.Number 1) :: Maybe BTCPayStatus, parsed J.Null :: Maybe BTCPayPaymentStatus, parsed (J.Bool True) :: Maybe AdditionalStatus) `shouldBe` (Nothing, Nothing, Nothing)
 
 testNoCompleteStatus :: IO ()
 testNoCompleteStatus =
