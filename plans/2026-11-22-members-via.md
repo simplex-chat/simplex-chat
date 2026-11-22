@@ -150,7 +150,7 @@ The receiver, with unchanged rules:
 - accepts the unsigned inner message: `signatureOptional = not (useRelays' gInfo) || not (requiresSignature tag)` (withVerifiedMsg, Subscriber.hs:4115-4118);
 - saves the item as received from the member, forwarded by V, at msgTs (processForwardedMsg, Subscriber.hs:4066-4078); deduplicates it by the inner msgId (saveGroupFwdRcvMsg, Internal.hs:3013-3036).
 
-Members without a ready connection to V get nothing from V, as for any x.grp.msg.forward (Internal.hs:2926). Their host, when it is an admin, forwards each x.msg.new and x.msg.update of a member via V that it receives from V to its members introduced to V and not yet connected to V (MRIntroduced in V's relation vector), one forward element per member (forwardViaMemberMsg, sendFwdMemberMessage); the header is chosen by the version of each member, so delivery tasks are not used.
+Members without a ready connection to V get nothing from V, as for any x.grp.msg.forward (Internal.hs:2926). Their host, when it is an admin, forwards each x.msg.new and x.msg.update of a member via V that it receives from V and accepts to its members introduced to V and not yet connected to V (MRIntroduced in V's relation vector), one forward element per member (forwardViaMemberMsg, sendFwdMemberMessageFlags), with the notification flag of a delivery task of that message; the header is chosen by the version of each member, so delivery tasks are not used.
 
 ```mermaid
 sequenceDiagram
@@ -590,3 +590,20 @@ Apps: unchanged in this pull request; the display of `via` follows Q2 with its r
 ## 11. Estimate
 
 About 500 changed lines of Haskell and 350 of core tests; about 450 lines of the plugin and 500 of its tests; generated docs; 3 reduced builds.
+
+## 12. Implementation compared with this plan
+
+Accepted by the maintainer, 2026-11-22.
+
+```
+area                       implementation
+send chain (6.1)           sendGroupMessages keeps the Bool showGroupAsSender; a pending profile update may be sent with a message sent as a member
+MemberInfo.v (5.5)         x.grp.mem.new of a member via V omits v: memberInfo takes v from the connection
+bot API (6.5)              SendRef is documented as before; nodejs and python helpers for sendAs and apiAddViaMember are absent
+send and update as member  require the user to be admin; files and quotes as a member are refused
+receivers                  refuse via in channels, an x.grp.mem.intro whose via is the receiver, and x.grp.mem.fwd of a member via another member
+restrictions               restrictions of x.grp.mem.intro are stored for a member via another member
+moderation                 deletion of an item sent as a member, by a moderator, is attributed to the member via V on V's side
+adding                     no chat item on V's side, as APIAddMember creates none in the group (only the invitation item in the direct chat)
+forwarding by the host     per member, without delivery tasks and a delivery_tasks column (4.4)
+```
