@@ -22,7 +22,7 @@ import StoreService.Catalog (PricedOffer (..), priceOffer)
 import StoreService.Config (ChainConfig (..), ListenerConfig (..), NamesConfig (..), ServiceConfig (..), StripeConfig (..), isLoopbackHost)
 import StoreService.Names.Balances (reverseOrder, warnOfFraud)
 import StoreService.Names.Env (NamesEnv)
-import StoreService.Names.Orders (OrdersEnv (..), noteRead, ordersEnv, textWith)
+import StoreService.Names.Orders (OrdersEnv (..), noteRead, ordersEnv)
 import StoreService.Names.Phases (RegistrationId, awaitChange)
 import StoreService.Names.Registration (tldLabel)
 import StoreService.Names.Store (NamePhase (..), NameRegistration (..), getRegistration, namePhase)
@@ -34,7 +34,7 @@ import StoreService.Store.Invoices (CreateError (..), InvoicePayment (..), Invoi
 import StoreService.Waiters (Seen, Waiters, awaitStatus)
 import StoreService.Web.Http
 import StoreService.Web.Names (namesApp, namesRoutes)
-import StoreService.Web.Names.Orders (nameInvoiceHandler, nameInvoiceView, paymentMethod, refusalResponse)
+import StoreService.Web.Names.Orders (nameInvoiceHandler, nameInvoiceView, refusalResponse)
 import StoreService.Web.Names.Registration (heldFor, registrationChanged, versionParam)
 import Control.Concurrent.Async (race)
 import Control.Concurrent.STM (atomically)
@@ -45,7 +45,6 @@ import Data.Aeson ((.=))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.KeyMap as KM
 import qualified Data.Aeson.TH as JQ
-import qualified Data.Aeson.Types as JT
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Lazy as LB
 import Data.Char (toLower)
@@ -365,7 +364,7 @@ createInvoiceHandler env@WebEnv {weStore, weConfig, weProviders, weWaiters} req 
       Just (J.Object o) -> case KM.lookup "kind" o of
         Nothing
           | LB.length body > fromIntegral maxBodyBytes -> refuse "body over the size limit" badRequest
-          | otherwise -> either (\e -> refuse ("a malformed badge order: " <> T.pack e) badRequest) badgeInvoice $ JT.parseEither parseCreateRequest o
+          | otherwise -> maybe (refuse "malformed body" badRequest) badgeInvoice (parseCreateRequest o)
         Just (J.String "name") | Just orders <- weOrders env -> nameInvoiceHandler orders (weHttp env) client weConfig weProviders weWaiters o respond
         Just kind -> refuse ("no order of kind " <> tshow kind) badRequest
       _ -> refuse "malformed body" badRequest
@@ -434,15 +433,22 @@ createdInvoice (InvoiceId invId) PricedOffer {poBadgeType, poMonths, poAmount, p
     ]
       <> destinationPairs Nothing destination
 
-parseCreateRequest :: J.Object -> JT.Parser CreateRequest
+parseCreateRequest :: J.Object -> Maybe CreateRequest
 parseCreateRequest o = do
-  crPriceId <- BadgePriceId <$> JT.explicitParseField nonEmpty o "priceId"
-  crOfferId <- fmap BadgeOfferId <$> JT.explicitParseFieldMaybe nonEmpty o "offerId"
-  crMethod <- JT.explicitParseField paymentMethod o "method"
-  crCodeHash <- JT.explicitParseField (textWith $ maybe (Left "not a code hash") Right . parseCodeHash) o "codeHash"
+  crPriceId <- BadgePriceId <$> textField "priceId"
+  crOfferId <- offerField
+  crMethod <- textDecode =<< textField "method"
+  crCodeHash <- parseCodeHash =<< textField "codeHash"
   pure CreateRequest {crPriceId, crOfferId, crMethod, crCodeHash}
   where
-    nonEmpty = textWith $ \t -> if T.null t then Left "empty" else Right t
+    textField k = case KM.lookup k o of
+      Just (J.String t) | not (T.null t) -> Just t
+      _ -> Nothing
+    offerField = case KM.lookup "offerId" o of
+      Nothing -> Just Nothing
+      Just J.Null -> Just Nothing
+      Just (J.String t) | not (T.null t) -> Just (Just (BadgeOfferId t))
+      _ -> Nothing
 
 -- | A provider retries a delivery it sees fail, so anything thrown below is caught and answered 200 anyway.
 webhookHandler :: WebEnv -> PaymentProvider -> Text -> Request -> Respond -> IO ResponseReceived

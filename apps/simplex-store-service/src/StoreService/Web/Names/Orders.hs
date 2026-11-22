@@ -17,7 +17,6 @@ module StoreService.Web.Names.Orders
     announceHeld,
     nameInvoiceView,
     orderRefusal,
-    paymentMethod,
   )
 where
 
