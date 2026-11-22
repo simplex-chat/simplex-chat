@@ -303,7 +303,7 @@ testLinkPreviewFixture ps = withSocksServer ps $ \_ -> do
     Right (CRLinkPreview preview) <- previewOf alice page
     createCCNoteFolder alice
     let note = J.encode [J.object ["msgContent" J..= MCLink {text = T.pack twoLinks, preview}, "mentions" J..= J.object []]]
-    apiFixture "previews/link_preview" alice [(origin, "LINK_URL")] FixtureRequests {frMarkdown = links <> [twoLinks, twoLinks <> " ", "text without a link"], frUris = [], frCommands = map ("/_link preview " <>) links <> ["/_create *1 json " <> LB.unpack note]}
+    apiFixture "previews/link_preview" alice [(origin, "LINK_URL")] FixtureRequests {frMarkdown = links <> [twoLinks, twoLinks <> " ", noImage <> "\n\n\n", "text without a link"], frUris = [], frCommands = map ("/_link preview " <>) links <> ["/_create *1 json " <> LB.unpack note]}
 
 isPreview :: Either ChatError ChatResponse -> Bool
 isPreview = \case
