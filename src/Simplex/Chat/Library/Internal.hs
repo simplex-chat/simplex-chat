@@ -1268,7 +1268,8 @@ introduceMember user gInfo@(GIK g _) toMember@GroupMember {activeConn = Just con
       updateToMemberVector reMembers
       updateReMembersVectors reMembers
       shuffledReMembers <- liftIO $ shuffleMembers reMembers
-      let events = map (memberIntroEvt g) $ filter introducedToMember shuffledReMembers
+      let (viaMembers, otherMembers) = partition (isJust . memberVia) $ filter introducedToMember shuffledReMembers
+          events = map (memberIntroEvt g) $ otherMembers <> viaMembers
       forM_ (L.nonEmpty events) $ \events' ->
         sendGroupMemberMessages user gInfo conn events'
     introducedToMember :: GroupMember -> Bool
@@ -1550,7 +1551,7 @@ sendHistory user gInfo@GroupInfo {membership} m@GroupMember {activeConn = Just c
                   senderVRange = maybe (memberChatVRange' membership) memberChatVRange' member_
                   -- member_ is Nothing only for as-group unsigned items -> FwdChannel; otherwise attribute to the member
                   -- (the author for signed as-group items), so the recipient can reconstruct the binding and verify
-                  fwdSender = maybe FwdChannel (\am -> FwdMember (memberId' am) (memberShortenedName am)) member_
+                  fwdSender = maybe FwdChannel (memberFwdSenderTo m) member_
                   fwd = GrpMsgForward {fwdSender, fwdBrokerTs = itemTs}
               -- signed items forward the author's original bytes so the signature stays valid; unsigned re-encode current content
               contentVM <- case signedMsg_ of
@@ -1573,11 +1574,20 @@ sendHistory user gInfo@GroupInfo {membership} m@GroupMember {activeConn = Just c
 memberShortenedName :: GroupMember -> ContactName
 memberShortenedName GroupMember {memberProfile = LocalProfile {displayName}} = fwdMemberName displayName
 
+memberFwdSender :: GroupMember -> FwdSender
+memberFwdSender m@GroupMember {memberVia} =
+  maybe (FwdMember (memberId' m) (memberShortenedName m)) (FwdMemberVia (memberId' m) (memberShortenedName m)) memberVia
+
+memberFwdSenderTo :: GroupMember -> GroupMember -> FwdSender
+memberFwdSenderTo recipient author
+  | recipient `supportsVersion` memberViaVersion = memberFwdSender author
+  | otherwise = FwdMember (memberId' author) (memberShortenedName author)
+
 memberFwdEvent :: GroupMember -> CM (ChatMsgEvent 'Json -> ChatMsgEvent 'Json)
 memberFwdEvent m = do
   vr <- chatVersionRange
   ts <- roundDownToSecond <$> liftIO getCurrentTime
-  let fwd = GrpMsgForward {fwdSender = FwdMember (memberId' m) (memberShortenedName m), fwdBrokerTs = ts}
+  let fwd = GrpMsgForward {fwdSender = memberFwdSender m, fwdBrokerTs = ts}
   pure $ \evt -> XGrpMsgForward fwd ChatMessage {chatVRange = vr, msgId = Nothing, chatMsgEvent = evt}
 
 -- the description proof travels on the last part, so that part leaves room for it
@@ -2419,9 +2429,19 @@ createSndMessages idsEvents = do
   withStoreBatch $ \db -> fmap (createMsg db g vr) idsEvents
   where
     createMsg :: DB.Connection -> TVar ChaChaDRG -> VersionRangeChat -> (ConnOrGroupId, Maybe MsgSigning, ChatMsgEvent e) -> IO (Either ChatError SndMessage)
-    createMsg db g vr (connOrGroupId, msgSigning_, evnt) = runExceptT $ do
-      withExceptT ChatErrorStore $ createNewSndMessage db g connOrGroupId evnt msgSigning_ encodeMessage
+    createMsg db g vr (connOrGroupId, msgSigning_, evnt) = runExceptT $ withExceptT ChatErrorStore createMsg_
       where
+        createMsg_ :: ExceptT StoreError IO SndMessage
+        createMsg_ = case evnt of
+          XGrpMsgForward fwd ChatMessage {chatVRange = fwdVRange, chatMsgEvent = fwdEvent} -> do
+            SndMessage {msgId, sharedMsgId, msgBody} <- createNewSndMessage db g connOrGroupId evnt Nothing encodeMessage
+            case encodeChatMessage maxEncodedMsgLength ChatMessage {chatVRange = fwdVRange, msgId = Just sharedMsgId, chatMsgEvent = fwdEvent} of
+              ECMEncoded fwdBody ->
+                let signedMsg_ = (`signChatMsgBody` fwdBody) <$> msgSigning_
+                    fwdElement_ = Just $ ">" <> smpEncode fwd <> encodeBatchElement signedMsg_ fwdBody
+                 in pure SndMessage {msgId, sharedMsgId, msgBody, signedMsg_, fwdElement_}
+              ECMLarge -> throwError SELargeMsg
+          _ -> createNewSndMessage db g connOrGroupId evnt msgSigning_ encodeMessage
         encodeMessage sharedMsgId =
           encodeChatMessage maxEncodedMsgLength $ sndChatMessage sharedMsgId
         sndChatMessage :: SharedMsgId -> ChatMessage e
@@ -2431,18 +2451,23 @@ createSndMessages idsEvents = do
           _ -> ChatMessage {chatVRange = vr, msgId = Just sharedMsgId, chatMsgEvent = evnt}
 
 groupMsgSigning :: Bool -> GroupInfoKeys -> ChatMsgEvent e -> Maybe MsgSigning
-groupMsgSigning sign (GIK gInfo@GroupInfo {membership = GroupMember {memberId}} gks) evt
-  | shouldSign = Just $ MsgSigning CBGroup bindingData KRMember memberPrivKey'
-  | otherwise = Nothing
+groupMsgSigning sign (GIK gInfo@GroupInfo {membership = GroupMember {memberId}} gks) = \case
+  XGrpMsgForward GrpMsgForward {fwdSender = FwdMemberVia authorId _ _} ChatMessage {chatMsgEvent} -> eventSigning authorId chatMsgEvent
+  evt -> eventSigning memberId evt
   where
     memberPrivKey' = memberPrivKey gks
-    tag = toCMEventTag evt
-    shouldSign = requiresSignature tag || (sign && signableContent tag) || badgePresented
-    badgePresented = case evt of
-      XGrpMemInfo _ Profile {badge} -> isJust badge
-      XGrpAcpt _ _ (Just Profile {badge}) -> isJust badge
-      _ -> False
-    bindingData = groupBindingData gInfo memberId (C.publicKey memberPrivKey')
+    eventSigning :: MemberId -> ChatMsgEvent e' -> Maybe MsgSigning
+    eventSigning bindingMemberId evt
+      | shouldSign = Just $ MsgSigning CBGroup bindingData KRMember memberPrivKey'
+      | otherwise = Nothing
+      where
+        tag = toCMEventTag evt
+        shouldSign = requiresSignature tag || (sign && signableContent tag) || badgePresented
+        badgePresented = case evt of
+          XGrpMemInfo _ Profile {badge} -> isJust badge
+          XGrpAcpt _ _ (Just Profile {badge}) -> isJust badge
+          _ -> False
+        bindingData = groupBindingData gInfo bindingMemberId (C.publicKey memberPrivKey')
 
 groupBindingData :: GroupInfo -> MemberId -> C.PublicKeyEd25519 -> ByteString
 groupBindingData gInfo memberId memberKey = case publicGroup' gInfo of
@@ -2824,8 +2849,9 @@ sendGroupSignedMessages_ gInfo@GroupInfo {groupId} recipientMembers signedEvents
   sndMsgs_ <- lift $ createSndMessages idsEvts
   recipientMembers' <- liftIO $ shuffleMembers recipientMembers
   let msgFlags = MsgFlags {notification = any eventHasNotification events}
+      fwdElements = any (either (const False) (\SndMessage {fwdElement_} -> isJust fwdElement_)) sndMsgs_
       (toSend, toPending, forwarded, _, dups) =
-        foldr' (addMember recipientMembers') (([], []), [], [], S.empty, 0 :: Int) recipientMembers'
+        foldr' (addMember fwdElements recipientMembers') (([], []), [], [], S.empty, 0 :: Int) recipientMembers'
   when (dups /= 0) $ logError $ "sendGroupMessages_: " <> tshow dups <> " duplicate members"
   -- TODO PQ either somehow ensure that group members connections cannot have pqSupport/pqEncryption or pass Off's here
   -- Deliver to toSend members
@@ -2849,13 +2875,16 @@ sendGroupSignedMessages_ gInfo@GroupInfo {groupId} recipientMembers signedEvents
       liftM2 (<>) (shuffle adminMs) (shuffle otherMs)
       where
         isAdmin GroupMember {memberRole} = memberRole >= GRAdmin
-    addMember members m acc@(toSend@(toSendBin, toSendJson), pending, forwarded, !mIds, !dups) =
+    addMember fwdElements members m acc@(toSend@(toSendBin, toSendJson), pending, forwarded, !mIds, !dups) =
       case memberSendAction gInfo events members m of
         Just a
           | mId `S.member` mIds -> (toSend, pending, forwarded, mIds, dups + 1)
           | otherwise -> case a of
               MSASend conn ->
-                let toSend' = case batchMode gInfo m of
+                let mode
+                      | fwdElements && not (m `supportsVersion` memberViaVersion) = BMJson
+                      | otherwise = batchMode gInfo m
+                    toSend' = case mode of
                       BMBinary -> ((m, conn) : toSendBin, toSendJson)
                       BMJson -> (toSendBin, (m, conn) : toSendJson)
                  in (toSend', pending, forwarded, mIds', dups)

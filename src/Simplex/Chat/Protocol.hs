@@ -352,6 +352,7 @@ data AParsedMsg = forall e. MsgEncodingI e => APMsg (SMsgEncoding e) (ParsedMsg 
 
 data FwdSender
   = FwdMember MemberId ContactName
+  | FwdMemberVia MemberId ContactName MemberId
   | FwdChannel
   deriving (Eq, Show)
 
@@ -395,10 +396,12 @@ instance Encoding RosterMember where
 instance Encoding FwdSender where
   smpEncode = \case
     FwdMember memberId memberName -> smpEncode ('M', memberId, memberName)
+    FwdMemberVia memberId memberName viaId -> smpEncode ('V', memberId, memberName, viaId)
     FwdChannel -> "C"
   smpP =
     A.anyChar >>= \case
       'M' -> uncurry FwdMember <$> smpP
+      'V' -> FwdMemberVia <$> smpP <*> smpP <*> smpP
       'C' -> pure FwdChannel
       c -> fail $ "invalid FwdSender tag: " <> show c
 
@@ -1556,7 +1559,9 @@ appJsonToCM fwdDepth AppMessageJson {v, msgId, event, params} = do
       XGrpMsgForward_ -> do
         when (fwdDepth >= maxFwdDepth) $ Left "forward depth exceeds limit"
         fwdSender <- opt "memberId" >>= \case
-          Just memberId -> FwdMember memberId . fromMaybe "" <$> opt "memberName"
+          Just memberId -> do
+            memberName <- fromMaybe "" <$> opt "memberName"
+            maybe (FwdMember memberId memberName) (FwdMemberVia memberId memberName) <$> opt "via"
           Nothing -> pure FwdChannel
         fwdBrokerTs <- p "msgTs"
         XGrpMsgForward (GrpMsgForward {fwdSender, fwdBrokerTs}) <$> (appJsonToCM (fwdDepth + 1) =<< p "msg")
@@ -1633,6 +1638,7 @@ chatToAppMessage chatMsg@ChatMessage {chatVRange, msgId, chatMsgEvent} = case en
         where
           encodeFwdSender = \case
             FwdMember memberId memberName -> (["memberId" .= memberId, "memberName" .= memberName] ++)
+            FwdMemberVia memberId memberName viaId -> (["memberId" .= memberId, "memberName" .= memberName, "via" .= viaId] ++)
             FwdChannel -> id
       XInfoProbe probe -> o ["probe" .= probe]
       XInfoProbeCheck probeHash -> o ["probeHash" .= probeHash]

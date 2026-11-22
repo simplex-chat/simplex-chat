@@ -2944,8 +2944,7 @@ processChatCommand cxt nm = \case
   APIAddViaMember groupId memRole profile -> withUser $ \user -> withGroupLock "addViaMember" groupId $ do
     (Group gInfo members, gks) <- withFastStore $ \db -> getGroupKeys_ db cxt user groupId
     assertViaAllowed gInfo
-    when (memRole > GRModerator) $ throwCmdError "role of a member via another member is at most moderator"
-    assertUserGroupRole gInfo GRAdmin
+    assertUserGroupRole gInfo $ max GRAdmin memRole
     when (incognitoMembership gInfo) $ throwChatError CEGroupIncognitoCantInvite
     gVar <- asks random
     member <- withFastStore $ \db -> createViaMember db gVar cxt user gInfo memRole profile
@@ -3214,17 +3213,15 @@ processChatCommand cxt nm = \case
       let doBumpRoster = useRelays' gInfo && memberRole' (membership gInfo) == GROwner && anyRosterRemoved
       -- roster (excluding the removed members) before the delta, so a relay stores the blob at this version before forwarding the delta
       rosterVer <- if doBumpRoster then Just <$> broadcastRoster user (GIK gInfo gks) (RDRemoved currentMems) else pure Nothing
-      let (viaUserMems, otherMems) = partition (memberViaUser gInfo) currentMems
-      (errs2, deleted2, acis2, signed2) <- deleteMemsSend user (GIK gInfo gks) Nothing (memberDelEvent rosterVer) recipients otherMems
+      (errs2, deleted2, acis2, signed2) <- deleteMemsSend user (GIK gInfo gks) Nothing rosterVer recipients currentMems
       (errs3, deleted3, acis3, signed3) <-
         foldM (\acc m -> deletePendingMember acc user (GIK gInfo gks) [m] m) ([], [], [], False) pendingApprvMems
       let moderators = filter (\GroupMember {memberRole} -> memberRole >= GRModerator) members
       (errs4, deleted4, acis4, signed4) <-
         foldM (\acc m -> deletePendingMember acc user (GIK gInfo gks) (m : moderators) m) ([], [], [], False) pendingRvwMems
-      (errs5, deleted5, acis5, _) <- deleteMemsSend user (GIK gInfo gks) Nothing (\m -> ($ XGrpLeave) <$> memberFwdEvent m) recipients viaUserMems
-      let acis = acis2 <> acis3 <> acis4 <> acis5
-          errs = errs1 <> errs2 <> errs3 <> errs4 <> errs5
-          deleted = deleted1 <> deleted2 <> deleted3 <> deleted4 <> deleted5
+      let acis = acis2 <> acis3 <> acis4
+          errs = errs1 <> errs2 <> errs3 <> errs4
+          deleted = deleted1 <> deleted2 <> deleted3 <> deleted4
           msgSigned = signed2 || signed3 || signed4
       -- Read group info with updated membersRequireAttention and publicMemberCount
       gInfo' <-
@@ -3266,16 +3263,14 @@ processChatCommand cxt nm = \case
       deletePendingMember :: ([ChatError], [GroupMember], [AChatItem], Bool) -> User -> GroupInfoKeys -> [GroupMember] -> GroupMember -> CM ([ChatError], [GroupMember], [AChatItem], Bool)
       deletePendingMember (accErrs, accDeleted, accACIs, accSigned) user gInfo recipients m = do
         (m', scopeInfo) <- mkMemberSupportChatInfo m
-        (errs, deleted, acis, signed) <- deleteMemsSend user gInfo (Just scopeInfo) (memberDelEvent Nothing) recipients [m']
+        (errs, deleted, acis, signed) <- deleteMemsSend user gInfo (Just scopeInfo) Nothing recipients [m']
         pure (errs <> accErrs, deleted <> accDeleted, acis <> accACIs, accSigned || signed)
-      memberDelEvent :: Maybe VersionRoster -> GroupMember -> CM (ChatMsgEvent 'Json)
-      memberDelEvent rosterVer GroupMember {memberId} = pure $ XGrpMemDel memberId withMessages rosterVer
-      deleteMemsSend :: User -> GroupInfoKeys -> Maybe GroupChatScopeInfo -> (GroupMember -> CM (ChatMsgEvent 'Json)) -> [GroupMember] -> [GroupMember] -> CM ([ChatError], [GroupMember], [AChatItem], Bool)
-      deleteMemsSend user g@(GIK gInfo _) chatScopeInfo memberEvent recipients memsToDelete = case L.nonEmpty memsToDelete of
+      deleteMemsSend :: User -> GroupInfoKeys -> Maybe GroupChatScopeInfo -> Maybe VersionRoster -> [GroupMember] -> [GroupMember] -> CM ([ChatError], [GroupMember], [AChatItem], Bool)
+      deleteMemsSend user g@(GIK gInfo _) chatScopeInfo rosterVer recipients memsToDelete = case L.nonEmpty memsToDelete of
         Nothing -> pure ([], [], [], False)
         Just memsToDelete' -> do
           let chatScope = toChatScope <$> chatScopeInfo
-          events <- mapM memberEvent memsToDelete'
+              events = L.map (\GroupMember {memberId} -> XGrpMemDel memberId withMessages rosterVer) memsToDelete'
           (msgs_, _gsr) <- sendGroupMessages user g chatScope False recipients False events
           let signed = any (either (const False) (\SndMessage {signedMsg_} -> isJust signedMsg_)) msgs_
               itemsData_ = zipWith (fmap . sndItemData) memsToDelete (L.toList msgs_)
@@ -4314,9 +4309,7 @@ processChatCommand cxt nm = \case
       when (memberRemoved membership) $ throwChatError CEGroupMemberUserRemoved
       unless (memberActive membership) $ throwChatError CEGroupMemberNotActive
     assertViaAllowed :: GroupInfo -> CM ()
-    assertViaAllowed g = do
-      when (useRelays' g) $ throwCmdError "members via another member are not supported in channels"
-      when (groupFeatureAllowed SGFSignMessages g) $ throwCmdError "members via another member are not supported when messages are signed"
+    assertViaAllowed g = when (useRelays' g) $ throwCmdError "members via another member are not supported in channels"
     assertSendAsMember :: GroupInfo -> GroupMember -> CM ()
     assertSendAsMember g m = do
       assertViaAllowed g

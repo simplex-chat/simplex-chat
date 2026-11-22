@@ -777,6 +777,9 @@
                 "format": "ISO8601 UTC time of the message"
               }
             }
+          },
+          "optionalProperties": {
+            "via": {"ref": "base64url"}
           }
         }
       }

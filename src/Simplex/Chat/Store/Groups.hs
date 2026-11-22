@@ -65,6 +65,7 @@ module Simplex.Chat.Store.Groups
     getGroupMemberByIndex,
     getGroupMemberByMemberId,
     getCreateUnknownGMByMemberId,
+    setMemberVia,
     getGroupMemberIdViaMemberId,
     getGroupMemberViaMemberId_,
     getScopeMemberIdViaMemberId,
@@ -1242,6 +1243,11 @@ getCreateUnknownGMByMemberId db cxt user gInfo memberId memberName unknownMember
           pure $ Just (m, True)
       | otherwise -> pure Nothing
     Left e -> throwError e
+
+setMemberVia :: DB.Connection -> GroupMember -> MemberId -> IO ()
+setMemberVia db GroupMember {groupMemberId} viaId = do
+  currentTs <- getCurrentTime
+  DB.execute db "UPDATE group_members SET member_via = ?, updated_at = ? WHERE group_member_id = ?" (viaId, currentTs, groupMemberId)
 
 getScopeMemberIdViaMemberId :: DB.Connection -> User -> GroupInfo -> GroupMember -> MemberId -> ExceptT StoreError IO GroupMemberId
 getScopeMemberIdViaMemberId db user g@GroupInfo {membership} sender scopeMemberId
