@@ -26,9 +26,9 @@ A3-18: the lowercase test goes; `domain == label` refuses an upper-case label, a
 
 A3-3, A3-4, A3-5, A3-6:
 - `data LinkData = LDContact ContactShortLinkData | LDChannel GroupShortLinkData`; `ChatKind`, `LinkProfile` and `planProfile` go.
-- `type ProfileFetcher = LinkKind -> ConnShortLink 'CMContact -> IO (Either ChatError (Maybe LinkData))`; Nothing for link data that does not decode. The kind is the one `nameLink` gave; `chatProfile` decodes by it.
-- `chatProfile cc user` reads the link data with `getShortLinkConnReq'` and `decodeLinkUserData`, in `CM` run by `runReaderT (tryAllErrors' …) cc`; the names env holds the bot's `User`.
-- `boundedProfile` logs a failed read once; a non-temporary agent error or undecodable data is `ProfileUnavailable`, any other failure `ProfileUnread`.
+- `type ProfileFetcher = LinkKind -> ConnShortLink 'CMContact -> IO (Either ChatError (Maybe LinkData))`; Nothing for a link without data of its kind. The kind is the one `nameLink` gave; `chatProfile` takes the data of that kind.
+- `chatProfile cc user` reads the link data with `getShortLinkConnReq'` and takes its `ShortLinkData` by `shortLinkContactData` or `shortLinkGroupData`, in `CM` run by `runReaderT (tryAllErrors' …) cc`; the names env holds the bot's `User`.
+- `boundedProfile` logs a failed read once; a non-temporary agent error, `CEInvalidConnReq` (data the core does not parse for the link's type) or a link without data of its kind is `ProfileUnavailable`, any other failure `ProfileUnread`.
 - Preview JSON: `type` and `profile` always; with `ok`, `displayName`, `fullName` and `image` (data:image/ only), and `peerType` and `business` for an address, `groupType` and `publicMemberCount` for a channel. `kind` and `subscribers` go.
 - Built in place of the two items above, after the text review: `ProfileOk` holds a `LinkProfile` of `kind` (`contact`, `business`, `bot` or `channel`), `displayName`, `fullName`, `image` (data:image/ only) and `subscribers` (a channel's `publicMemberCount`), made from the link data by `linkProfileOf`; the cache holds it, and the answer is `{"type": "ok", "linkProfile": …}`.
 - `ContactShortLinkData` and `GroupShortLinkData` derive `Eq` (core).
