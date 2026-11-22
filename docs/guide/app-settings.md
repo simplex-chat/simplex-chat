@@ -218,15 +218,13 @@ without asking – it is enabled by default.
 
 #### Send Link Previews
 
-With this option, the app sends a preview of the first link in your message: the
-title, description and image of the page. The app loads the preview from the
-website through your network settings, so the website sees your IP address
-unless you use a [SOCKS proxy](#use-socks-proxy) or a VPN. The option is
-enabled by default.
+Enabling sending link previews may reduce privacy – your app will be loading
+link preview from the website. The first time you type a link, the app asks
+**Enable link previews?**
 
 - [Open the app settings](#opening-the-app-settings).
 - Tap on "Your privacy".
-- Toggle "Send link previews".
+- Toggle on "Send link previews".
 
 #### SimpleX Links
 
@@ -314,11 +312,4 @@ mode](#transport-isolation-beta) option (on Android and desktop, its
 **Connection** mode) and also enables showing database IDs in contacts, groups
 and group members to simplify debugging via console commands. It also shows the
 section **Developer options**, with [Confirm database
-upgrades](#confirm-database-upgrades), [Show link preview
-errors](#show-link-preview-errors) and other options.
-
-### Show link preview errors
-
-This option is shown when [Show developer options](#show-developer-options) is
-enabled, and it is off by default. When both options are on and the chat core
-cannot make a link preview, the app shows the error of the core in an alert.
+upgrades](#confirm-database-upgrades) and other options.
