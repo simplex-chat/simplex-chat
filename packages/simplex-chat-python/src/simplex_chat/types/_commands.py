@@ -187,6 +187,18 @@ def APIShareChatMsgContent_cmd_string(self: APIShareChatMsgContent) -> str:
 APIShareChatMsgContent_Response = CR.ChatMsgContent
 
 
+# Get link preview of a web page.
+# Network usage: interactive.
+class APIGetLinkPreview(TypedDict):
+    uri: str
+
+
+def APIGetLinkPreview_cmd_string(self: APIGetLinkPreview) -> str:
+    return '/_link preview ' + self['uri']
+
+APIGetLinkPreview_Response = CR.LinkPreview | CR.ChatCmdError
+
+
 # File commands
 # Commands to receive and to cancel files. Files are sent as part of the message, there are no separate commands to send files.
 

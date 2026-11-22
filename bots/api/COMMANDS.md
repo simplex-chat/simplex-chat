@@ -18,6 +18,7 @@ This file is generated automatically.
 - [APIChatItemReaction](#apichatitemreaction)
 - [APIShareMyAddress](#apisharemyaddress)
 - [APIShareChatMsgContent](#apisharechatmsgcontent)
+- [APIGetLinkPreview](#apigetlinkpreview)
 
 [File commands](#file-commands)
 - [ReceiveFile](#receivefile)
@@ -627,6 +628,45 @@ ChatMsgContent: Chat card content that can be sent.
 - type: "chatMsgContent"
 - user: [User](./TYPES.md#user)
 - msgContent: [MsgContent](./TYPES.md#msgcontent)
+
+---
+
+
+### APIGetLinkPreview
+
+Get link preview of a web page.
+
+*Network usage*: interactive.
+
+**Parameters**:
+- uri: string
+
+**Syntax**:
+
+```
+/_link preview <uri>
+```
+
+```javascript
+'/_link preview ' + uri // JavaScript
+```
+
+```python
+'/_link preview ' + uri # Python
+```
+
+**Responses**:
+
+LinkPreview: Link preview of a web page.
+- type: "linkPreview"
+- linkPreview: [LinkPreview](./TYPES.md#linkpreview)
+
+ChatCmdError: Command error (only used in WebSockets API).
+- type: "chatCmdError"
+- chatError: [ChatError](./TYPES.md#chaterror)
+
+**Errors**:
+- LinkPreview: The page or its image cannot be fetched, or the page has no title or image.
 
 ---
 

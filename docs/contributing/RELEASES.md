@@ -44,12 +44,14 @@ pypi.<package>.<version>    commit of the publication
 1. On master or stable, after `git pull`:
 
    ```
+   scripts/update-link-preview-roots.sh
    python3 scripts/ci/packages_release.py core-release <version>
    ```
 
-   Checked: version higher than the highest version recorded for the branch.
+   Checked: SHA-256 of the root bundle against the one curl publishes; version higher than the highest version recorded for the branch.
 
    Written:
+   - `src/Simplex/Chat/LinkPreview/roots.pem`: the Mozilla root certificates of link previews, from curl's current bundle
    - `version` of `simplex-chat.cabal`
    - with types changed since the previous library release of the branch: types `version` (bumped), `simplexChatCore`, line `SimpleX Chat core:` of the types README
 

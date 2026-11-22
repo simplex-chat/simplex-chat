@@ -38,16 +38,19 @@ describe("plugin", () => {
     expect(read(".mcp.json").mcpServers.simplex.timeout).toBe((maxExpireHours + responseWaitHours) * 3_600_000 + marginMs)
   })
 
-  it("runs the hooks from the plugin's own build, allows the plugin's tools, runs the turn hook at the start and the end of every tool use and after each compaction, asks the session server before every tool use whether its tool is approved, and runs the display hook synchronously for MessageDisplay", () => {
+  it("runs the hooks from the plugin's own build, allows the plugin's tools, runs the turn hook at the start and the end of every tool use and after each compaction, asks the session server before every tool use whether its tool is approved, runs the display hook synchronously for MessageDisplay, lets the PermissionRequest and Elicitation hooks wait a day for a card, and runs the turn hook at a failed turn and at the notifications of a waiting Claude Code", () => {
     const {hooks} = read("hooks/hooks.json")
     expect(hooks.SessionStart[0].hooks[0]).toEqual({type: "command", command: cli("hook session-start"), timeout: 600})
     expect(hooks.PreToolUse[0].matcher).toBe("mcp__plugin_simplex_simplex__.*")
     expect(hooks.PreToolUse[0].hooks[0]).toEqual({type: "command", command: 'node "${CLAUDE_PLUGIN_ROOT}/plugin/allow.js"'})
-    for (const event of ["UserPromptSubmit", "Stop", "PostModelSwitch", "PostCompact"]) expect(hooks[event]).toEqual([{hooks: [{type: "command", command: cli("hook turn"), async: true}]}])
+    for (const event of ["UserPromptSubmit", "Stop", "PostModelSwitch", "PostCompact", "SubagentStart", "SubagentStop"]) expect(hooks[event]).toEqual([{hooks: [{type: "command", command: cli("hook turn"), async: true}]}])
     const steps = {matcher: "*", hooks: [{type: "command", command: cli("hook turn"), async: true}]}
     expect(hooks.PreToolUse[1]).toEqual({...steps, hooks: [...steps.hooks, {type: "mcp_tool", server: "plugin:simplex:simplex", tool: "pre_tool_use", input: {tool: "${tool_name}"}, timeout: 5}]})
     for (const event of ["PostToolUse", "PostToolUseFailure"]) expect(hooks[event]).toEqual([steps])
     expect(hooks.MessageDisplay).toEqual([{hooks: [{type: "command", command: 'node "${CLAUDE_PLUGIN_ROOT}/dist/display.js"', timeout: 2}]}])
+    for (const event of ["PermissionRequest", "Elicitation"]) expect(hooks[event]).toEqual([{hooks: [{type: "command", command: cli("hook ask"), timeout: 86400}]}])
+    expect(hooks.StopFailure).toEqual([{hooks: [{type: "command", command: cli("hook turn"), async: true}]}])
+    expect(hooks.Notification).toEqual([{matcher: "permission_prompt|worker_permission_prompt|elicitation_dialog|elicitation_url_dialog|agent_needs_input|quota_auto_resume_stale|quota_auto_resume_disabled", hooks: [{type: "command", command: cli("hook turn"), async: true}]}])
   })
 
   it("ships the build, its bundled dependencies and the plugin files in the package, without a lockfile", () => {

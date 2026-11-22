@@ -1561,6 +1561,10 @@ RelayTestError:
 - type: "relayTestError"
 - message: string
 
+LinkPreview:
+- type: "linkPreview"
+- message: string
+
 InternalError:
 - type: "internalError"
 - message: string

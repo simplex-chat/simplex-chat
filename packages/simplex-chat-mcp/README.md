@@ -24,7 +24,8 @@ With this package, Claude Code can join channels and groups, talk to bots, and e
 
 - Invite people to the Main group, and they join any session's group.
 - Only owners and admins can approve tool calls.
-- The Main group shows every session's state.
+- The Main group shows every session's state, Claude account, model, goal, working subagents and recap.
+- A session's group shows each subagent and workflow as it works, and when it stalls.
 - 🏗️ Each session as a topic in one group.
 - 🏗️ Agent teams: mention an agent to message it.
 
@@ -33,7 +34,8 @@ With this package, Claude Code can join channels and groups, talk to bots, and e
 - Agents ask before they act in other chats or use a tool such as Bash.
 - A live stream of agent's work: tasks, tool calls, etc.
 - Session and machine status.
-- 🏗️ Code diffs, almost every waiting state answered from the chat, etc.
+- Answer Claude's questions, plans and subagents' tool prompts in the chat, and see when Claude Code stops or waits in its terminal.
+- 🏗️ Code diffs, etc.
 
 ## Start
 

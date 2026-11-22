@@ -33,7 +33,7 @@ The hspec suite `simplex-chat-test` of simplex-chat.cabal, with the entry point 
 
 | Pattern | Module | Checked |
 |---|---|---|
-| `/SimpleX chat client/` | [ChatTests.hs](../../tests/ChatTests.hs) | [chat scenarios](#chat-scenario-tests): direct, forward, group, chat relay, local, file, profile and chat list tests |
+| `/SimpleX chat client/` | [ChatTests.hs](../../tests/ChatTests.hs) | [chat scenarios](#chat-scenario-tests): direct, forward, group, chat relay, local, file, profile, chat list and link preview tests; link previews are fetched from a local HTTPS server, directly and through a local SOCKS5 server, and onion pages from a local HTTP server through the SOCKS5 server |
 | `/names tests/` | ChatTests/Names.hs | SimpleX names, resolved by a local resolver ([NameResolver.hs](../../tests/NameResolver.hs)); SQLite only |
 | `/SimpleX chat protocol/` | ProtocolTests.hs | chat protocol messages, short link data, batch limits, preferences JSON |
 | `/JSON Tests/` | JSONTests.hs, JSONFixtures.hs | conversion of the Swift JSON form to the tagged form, with QuickCheck; JSON of markdown |
@@ -46,6 +46,7 @@ The hspec suite `simplex-chat-test` of simplex-chat.cabal, with the entry point 
 | `/Operators/` | OperatorTests.hs | server operators, usage conditions, validation of user servers |
 | `/Member relations/` | MemberRelationsTests.hs | member relation vectors |
 | `/Image resize/` | ImageTests.hs | image resizing |
+| `/Link preview/` | LinkPreviewTests.hs | link previews: the head scanner, the page and image limits, URIs, the address policy, HTTP framing and interim responses, charsets and the embedded root certificates |
 | `/Supporter badges/` | BadgeTests.hs | badge credentials and proofs |
 | `/WebRTC encryption/` | WebRTCTests.hs | encryption of call media frames; SQLite only |
 | `/Remote session/` | RemoteTests.hs | a desktop controlling a mobile: handshake, messages, files |
@@ -153,10 +154,10 @@ Helpers of [ChatTests/Utils.hs](../../tests/ChatTests/Utils.hs), called in a cha
 |---|---|
 | `apiFixture fixture cc placeholders FixtureRequests {frCommands, frMarkdown, frUris}` | an object with `commands`, `markdown` and `uris`, keyed by the request: the response to each command, encoded by `chatSendCmd` of the core library's API; `chatParseMarkdown` of each text; `chatParseUri` of each link |
 | `nameFixture fixture cc name` | `apiFixture` of `/_connect plan 1 <name>` and of the markdown of the name, in `names/` |
-| `eventsFixture fixture events steps` | an array of the events appended by `recordItemEvent events`, in `eventHook` of `chatHooks`, during `steps`: `newChatItems` and `chatItemUpdated`, encoded as `chatRecvMsg` encodes them |
+| `eventsFixture fixture events steps` | an array of the events appended by `recordItemEvent events`, in `eventHook` of `chatHooks`, during `steps`: `newChatItems` and `chatItemUpdated`, encoded as `chatRecvMsg` encodes them; with `recordSndFileEvent events`, `sndFileCompleteXFTP` and `sndFileError` |
 | `nameMovedFixture` | a `nameMoved` event, built from the IDs of the named contacts and groups |
 
-Examples: `testPlanKnownNameAvailable` in ChatTests/Names.hs, `testDirectMessageUpdatePrevItem` and `testMissedCall` in ChatTests/Direct.hs.
+Examples: `testPlanKnownNameAvailable` in ChatTests/Names.hs, `testDirectMessageUpdatePrevItem` and `testMissedCall` in ChatTests/Direct.hs, `testXFTPRecordUploadComplete` in ChatTests/Files.hs.
 
 Stable recordings:
 
@@ -165,7 +166,7 @@ Stable recordings:
   | Fields | Replaced by |
   |---|---|
   | `createdAt`<br>`updatedAt`<br>`chatTs`<br>`userMemberProfileSentAt`<br>`itemTs` | `1970-01-01T00:00:00Z` |
-  | `agentConnId`<br>`xContactId`<br>`connFullLink`<br>`connShortLink`<br>`contactLink`<br>`groupLink`<br>`viaGroupLinkUri`<br>`simplexUri`<br>`memberId`<br>`memberPubKey`<br>`publicGroupId`<br>`businessId`<br>`customerId`<br>`itemSharedMsgId` | the field name |
+  | `agentConnId`<br>`xContactId`<br>`connFullLink`<br>`connShortLink`<br>`contactLink`<br>`groupLink`<br>`viaGroupLinkUri`<br>`simplexUri`<br>`memberId`<br>`memberPubKey`<br>`publicGroupId`<br>`businessId`<br>`customerId`<br>`itemSharedMsgId`<br>`agentSndFileId`<br>`privateSndFileDescr`<br>`errorMessage` | the field name |
   | `groupRelays` | `"groupRelay"` per element |
 
   A field with a new value in each run is added to this list.
@@ -184,7 +185,7 @@ Stable recordings:
 | Events | `ChatController.processReceivedMsg`, model/SimpleXAPI.kt | `processReceivedMsg`, Shared/Model/SimpleXAPI.swift |
 | Notifications | `ntfManager`, platform/NtfManager.kt | `NtfManager.shared`, Shared/Model/NtfManager.swift |
 | Recording read by | `fixtureText` | `fixtureJSON`, then `singleFieldJSON` to the Swift JSON form |
-| Tests | [NameAlertsTest.kt](../../apps/multiplatform/common/src/desktopTest/kotlin/chat/simplex/app/NameAlertsTest.kt), [ChatItemUpdateTest.kt](../../apps/multiplatform/common/src/desktopTest/kotlin/chat/simplex/app/ChatItemUpdateTest.kt) | [NameAlertsTests.swift](../../apps/ios/SimpleX%20Unit%20Tests/NameAlertsTests.swift), [ChatItemUpdateTests.swift](../../apps/ios/SimpleX%20Unit%20Tests/ChatItemUpdateTests.swift) |
+| Tests | [NameAlertsTest.kt](../../apps/multiplatform/common/src/desktopTest/kotlin/chat/simplex/app/NameAlertsTest.kt), [ChatItemUpdateTest.kt](../../apps/multiplatform/common/src/desktopTest/kotlin/chat/simplex/app/ChatItemUpdateTest.kt) | [NameAlertsTests.swift](../../apps/ios/SimpleX%20Unit%20Tests/NameAlertsTests.swift), [ChatItemUpdateTests.swift](../../apps/ios/SimpleX%20Unit%20Tests/ChatItemUpdateTests.swift), [FileUploadTests.swift](../../apps/ios/SimpleX%20Unit%20Tests/FileUploadTests.swift) |
 
 - Pattern: `recorded(fixture)` in the NameAlerts tests sets the first three seams to lookups in the recording; the test fails at tear-down on a request without a recorded response, unless the request is checked with `assertRequested`. The ChatItemUpdate tests decode the recorded events, pass each to `processReceivedMsg` and compare `ChatModel`. Tear-down restores the seams and clears the model.
 - Run and CI: [Kotlin apps](#kotlin-apps), [SimpleX Unit Tests](#simplex-unit-tests). CI runs the kotlin and ios scopes for a change in tests/fixtures/api (`BUILD_CHANGES` in scripts/ci/packages_release.py). The recording tests are core tests, selected in the `ci-tests` block by the patterns of the [CI guide, core](../../scripts/ci/README.md#core).

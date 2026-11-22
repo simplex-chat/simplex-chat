@@ -44,6 +44,7 @@ export type ChatResponse =
   | CR.Invitation
   | CR.ItemsReadForChat
   | CR.LeftMemberUser
+  | CR.LinkPreview
   | CR.MemberAccepted
   | CR.MembersBlockedForAllUser
   | CR.MembersRoleUser
@@ -120,6 +121,7 @@ export namespace CR {
     | "invitation"
     | "itemsReadForChat"
     | "leftMemberUser"
+    | "linkPreview"
     | "memberAccepted"
     | "membersBlockedForAllUser"
     | "membersRoleUser"
@@ -413,6 +415,11 @@ export namespace CR {
     type: "leftMemberUser"
     user: T.User
     groupInfo: T.GroupInfo
+  }
+
+  export interface LinkPreview extends Interface {
+    type: "linkPreview"
+    linkPreview: T.LinkPreview
   }
 
   export interface MemberAccepted extends Interface {

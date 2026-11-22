@@ -23,6 +23,7 @@ import Data.Time.Clock.System
 import BadgeTests
 import ImageTests
 import JSONTests
+import LinkPreviewTests
 import MarkdownTests
 import MemberRelationsTests
 import MessageBatching
@@ -96,6 +97,7 @@ main = do
       describe "Operators" operatorTests
       describe "Random servers" randomServersTests
       describe "Image resize" imageTests
+      describe "Link preview" linkPreviewTests
 #if !defined(dbPostgres)
       around (tmpTestBracket chatQueryStats agentQueryStats portBases) $ describe "names tests" chatNamesTests
       around (tmpTestBracket chatQueryStats agentQueryStats portBases) $ describe "SimpleX Directory names" directoryNameTests
