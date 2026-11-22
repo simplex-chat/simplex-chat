@@ -55,7 +55,7 @@ batchingTests = describe "message batching tests" $ do
   it "shortens forwarded member names" testFwdMemberName
 
 instance IsString SndMessage where
-  fromString s = SndMessage {msgId, sharedMsgId = SharedMsgId "", msgBody = s', signedMsg_ = Nothing}
+  fromString s = SndMessage {msgId, sharedMsgId = SharedMsgId "", msgBody = s', signedMsg_ = Nothing, fwdElement_ = Nothing}
     where
       s' = encodeUtf8 $ T.pack s
       msgId = fromInteger $ os2ip s'
@@ -151,7 +151,7 @@ testImageFitsSingleBatch = do
 
   let xMsgNewStr = B.replicate xMsgNewRoundedSize 1
       descrStr = B.replicate descrRoundedSize 2
-      msg s = SndMessage {msgId = 0, sharedMsgId = SharedMsgId "", msgBody = s, signedMsg_ = Nothing}
+      msg s = SndMessage {msgId = 0, sharedMsgId = SharedMsgId "", msgBody = s, signedMsg_ = Nothing, fwdElement_ = Nothing}
       batched = "[" <> xMsgNewStr <> "," <> descrStr <> "]"
 
   runBatcherTest' BMJson maxEncodedMsgLength [msg xMsgNewStr, msg descrStr] [] [batched]

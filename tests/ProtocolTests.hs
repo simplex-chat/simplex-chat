@@ -26,7 +26,7 @@ import Simplex.Messaging.Agent.Protocol
 import Simplex.Messaging.Compression (compress1)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.Ratchet
-import Simplex.Messaging.Encoding (smpEncode)
+import Simplex.Messaging.Encoding (smpDecode, smpEncode)
 import Simplex.Messaging.Protocol (EntityId (..), supportedSMPClientVRange)
 import Simplex.Messaging.ServiceScheme
 import Simplex.Messaging.Version
@@ -463,6 +463,14 @@ decodeChatMessageTest = describe "Chat message encoding/decoding" $ do
       #==# XGrpMsgForward
         (GrpMsgForward (FwdMember (MemberId "\1\2\3\4") "alice") (systemToUTCTime $ MkSystemTime 1 1))
         (ChatMessage chatInitialVRange (Just $ SharedMsgId "\1\2\3\4") (XMsgNew (mcSimple (MCText "hello"))))
+  it "x.grp.msg.forward of member via another member" $
+    "{\"v\":\"9\",\"event\":\"x.grp.msg.forward\",\"params\":{\"memberId\":\"AQIDBA==\",\"memberName\":\"alice\",\"via\":\"BQYHCA==\",\"msg\":{\"v\":\"9\",\"msgId\":\"AQIDBA==\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello\",\"type\":\"text\"}}},\"msgTs\":\"1970-01-01T00:00:01.000000001Z\"}}"
+      #==# XGrpMsgForward
+        (GrpMsgForward (FwdMemberVia (MemberId "\1\2\3\4") "alice" (MemberId "\5\6\7\8")) (systemToUTCTime $ MkSystemTime 1 1))
+        (ChatMessage chatInitialVRange (Just $ SharedMsgId "\1\2\3\4") (XMsgNew (mcSimple (MCText "hello"))))
+  it "binary forward header of member via another member" $
+    let fwd = GrpMsgForward (FwdMemberVia (MemberId "\1\2\3\4") "alice" (MemberId "\5\6\7\8")) (systemToUTCTime $ MkSystemTime 1 0)
+     in smpDecode (smpEncode fwd) `shouldBe` Right fwd
   it "x.info.probe" $
     "{\"v\":\"9\",\"event\":\"x.info.probe\",\"params\":{\"probe\":\"AQIDBA==\"}}"
       #==# XInfoProbe (Probe "\1\2\3\4")
