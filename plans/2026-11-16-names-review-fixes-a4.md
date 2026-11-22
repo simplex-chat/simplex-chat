@@ -4,6 +4,8 @@ Branch `ep/names-fixes-a4`, from `ep/names-review-fixes` at 16114b784. Decisions
 
 Each finding is one commit, `store: <change>`, `core: <change>` for src/, `ios, android, desktop: <change>` for the apps.
 
+Reverted in #8243, for a later badges pull request: A4-2, A4-5, A4-12, A4-23, A4-24, A4-28, A4-29, and A4-10's months keyword, as the console accepts `//issue supporter 12` beside `//issue supporter months 12`.
+
 ## Configuration
 
 A4-4, the served sites:
