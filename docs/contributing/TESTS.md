@@ -242,6 +242,7 @@ A new test file is added to its target in project.pbxproj: a PBXBuildFile, a PBX
 
 - Checked: app code on [app fixtures](#app-fixtures) and other logic of the app.
 - Write: an `XCTestCase` in [apps/ios/SimpleX Unit Tests](../../apps/ios/SimpleX%20Unit%20Tests); `fixtureJSON`, `singleFieldJSON` and `waitFor` are at file scope of NameAlertsTests.swift.
+- The share extension's ShareAPI.swift and SEChatState.swift are also compiled into the target, so that its commands are tested on app fixtures (LinkPreviewTests.swift).
 - Run, on macOS: `scripts/ci/ios-stub-libs.sh`, then the `xcodebuild test` command of the step "Run iOS unit tests" of build-ios in build.yml; or Product > Test with the scheme SimpleX Unit Tests.
 - Pitfalls:
   - The stubs replace the libraries in apps/ios/Libraries/sim, where scripts/ios/prepare.sh puts the core built for the simulator.

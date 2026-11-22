@@ -1,4 +1,4 @@
-# Device test plan: channel message signing, channel moderators and sending images
+# Device test plan: channel message signing, channel moderators, sending images and link previews
 
 The app as the scripted smoke test leaves it: the profile "citester", without conversations. The cases run in the order of the tables and build on each other: one channel, "ci signing", owned by citester, and two more profiles in this app, "cimod" and "cisub", that join it by its link. Do not reorder them: cisub must join only after cimod has become a moderator (B2), so that cimod learns about cisub.
 
@@ -46,3 +46,12 @@ These cases run after the channel cases: first switch to citester and go back to
 | I2 | Tap the paperclip button, "Choose from library", the test card's thumbnail, then the picker's "Add" button; `ui shot I2-preview`; tap the send button; tap the sent image; `ui shot I2-full`; close the image | Before sending, the compose area shows the whole test card, upright and not stretched; after sending, the chat shows it; opened, it fills the screen width and "1080" and "TVB" are sharp and readable |
 | I3 | As I2, with the SimpleX logo | The preview and the sent image show the whole logo; the area around its letters shows the chat's background, not black or grey |
 | I4 | As I2, with the portrait test card; skipped when the library has no portrait test card | The preview and the sent image show the test card upright in portrait, as the picker's thumbnail does |
+
+## Link previews
+
+These cases run after the image cases, in the chat "image notes". The core loads the page over the runner's network.
+
+| ID | Do | Expect |
+|----|----|--------|
+| L1 | Tap the message field, `ui type "https://github.com/simplex-chat/simplex-chat"`, wait up to 30 s for a card above the field; `ui shot L1-compose` | The card shows an image, the page's title and the link; no alert is shown |
+| L2 | Tap the send button; `ui shot L2-sent` | The chat shows the message with the page's image, its title, a description under the title, and the link |
