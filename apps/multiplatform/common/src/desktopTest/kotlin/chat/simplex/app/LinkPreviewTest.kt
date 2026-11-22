@@ -10,6 +10,7 @@ import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTextInputSelection
 import androidx.compose.ui.test.runComposeUiTest
@@ -30,7 +31,13 @@ import kotlin.test.*
 class LinkPreviewTest {
   private val sendCmd = chatSendCmdRetry
   private val parseMarkdown = chatParseMarkdown
-  private val savedPrefs = listOf(appPrefs.developerTools, appPrefs.showLinkPreviewErrors).associateWith { it.get() }
+  private val testPrefs = mapOf(
+    appPrefs.privacyLinkPreviews to true,
+    appPrefs.privacySanitizeLinks to false,
+    appPrefs.developerTools to false,
+    appPrefs.showLinkPreviewErrors to false,
+  )
+  private val savedPrefs = testPrefs.keys.associateWith { it.get() }
   private val requests = mutableListOf<String>()
   private val unrecorded = mutableListOf<String>()
   private val recording = Json.parseToJsonElement(fixtureText("previews/link_preview")).jsonObject
@@ -39,7 +46,7 @@ class LinkPreviewTest {
 
   @BeforeTest
   fun setUp() {
-    savedPrefs.keys.forEach { it.set(false) }
+    testPrefs.forEach { (pref, value) -> pref.set(value) }
     chatSendCmdRetry = { _, cmd, _ ->
       synchronized(requests) { requests += cmd }
       commands[cmd]?.toString() ?: unrecordedRequest(cmd)
@@ -98,6 +105,18 @@ class LinkPreviewTest {
     field.performTextInputSelection(TextRange.Zero)
     runCatching { waitUntil(timeoutMillis = 3_000) { synchronized(requests) { requests.size > 1 } } }
     assertEquals(listOf(request), requests)
+  }
+
+  @Test
+  fun failedLinkIsFetchedAgainAfterTheTextIsCleared() = composeView { composeState ->
+    val (request) = recorded("error")
+    val field = onNode(hasSetTextAction())
+    field.performTextInput(request.removePrefix(LINK_PREVIEW))
+    awaitFailedFetches(composeState, 1)
+    field.performTextClearance()
+    field.performTextInput(request.removePrefix(LINK_PREVIEW))
+    awaitFailedFetches(composeState, 2)
+    assertEquals(listOf(request, request), requests)
   }
 
   @Test
