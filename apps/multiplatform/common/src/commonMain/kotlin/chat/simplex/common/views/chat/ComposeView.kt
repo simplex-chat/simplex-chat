@@ -492,15 +492,21 @@ fun ComposeView(
   AttachmentSelection(composeState, attachmentOption, composeState::processPickedFile) { uris, text -> CoroutineScope(Dispatchers.IO).launch { composeState.processPickedMedia(uris, text) } }
 
   suspend fun fetchAndUpdateLinkPreview(url: String) {
-    composeState.value = composeState.value.copy(preview = ComposePreview.CLinkPreview(null))
-    val lp = chatModel.controller.apiGetLinkPreview(url)
-    if (lp != null && pendingLinkUrl.value == url) {
-      composeState.value = composeState.value.copy(preview = ComposePreview.CLinkPreview(lp))
-      pendingLinkUrl.value = null
-    } else if (pendingLinkUrl.value == url) {
-      withContext(Dispatchers.Main) { cancelledLinks.add(url) }
-      composeState.value = composeState.value.copy(preview = ComposePreview.NoPreview)
-      pendingLinkUrl.value = null
+    withContext(Dispatchers.Main) {
+      fun awaited() = pendingLinkUrl.value == url && composeState.value.linkPreviewAllowed
+      if (awaited()) {
+        composeState.value = composeState.value.copy(preview = ComposePreview.CLinkPreview(null))
+        val lp = chatModel.controller.apiGetLinkPreview(url)
+        if (awaited()) {
+          if (lp != null) {
+            composeState.value = composeState.value.copy(preview = ComposePreview.CLinkPreview(lp))
+          } else {
+            cancelledLinks.add(url)
+            composeState.value = composeState.value.copy(preview = ComposePreview.NoPreview)
+          }
+        }
+      }
+      if (pendingLinkUrl.value == url) pendingLinkUrl.value = null
     }
   }
 
@@ -508,7 +514,6 @@ fun ComposeView(
     if (pendingLinkUrl.value == url) {
       withLongRunningApi(slow = 60_000) {
         if (wait != null) delay(wait)
-        if (pendingLinkUrl.value != url) return@withLongRunningApi
         fetchAndUpdateLinkPreview(url)
       }
     }
@@ -1379,7 +1384,6 @@ fun ComposeView(
       // if that chat is gone there is nowhere to send it, and it must not be sent to the chat opened instead
       // cs is captured on this thread, before the compose state is replaced below
       if (liveMessageChat != null) sendMessage(null, toChat = liveMessageChat, composed = cs) else clearState()
-      resetLinkPreview()
       clearPrevDraft(prevChatId)
       deleteUnusedFiles()
       // the sent message belongs to the chat it was composed in; the chat opened next shows its own draft
@@ -1414,6 +1418,7 @@ fun ComposeView(
       clearPrevDraft(prevChatId)
       deleteUnusedFiles()
     }
+    resetLinkPreview()
     chatModel.removeLiveDummy()
     CIFile.cachedRemoteFileRequests.clear()
   }

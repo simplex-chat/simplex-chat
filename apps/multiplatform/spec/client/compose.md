@@ -343,8 +343,9 @@ When `privacyLinkPreviews` is enabled and the message contains a URL:
 1. `showLinkPreview` extracts first non-SimpleX, non-cancelled link from parsed markdown.
 2. Sets `ComposePreview.CLinkPreview(null)` (loading state).
 3. After 1.5s debounce, calls `apiGetLinkPreview(url)`: the core fetches the page through its network settings (`/_link preview <url>`).
-4. On success, updates to `CLinkPreview(linkPreview)`, otherwise to `NoPreview`, and the link is added to `cancelledLinks`, so that further typing does not fetch it again until the compose state is reset; with `developerTools` and `showLinkPreviewErrors`, the core's error is shown in an alert.
+4. If the link is still `pendingLinkUrl` and no attachment replaced the link preview (`linkPreviewAllowed`), updates to `CLinkPreview(linkPreview)` on success, otherwise to `NoPreview`, and the link is added to `cancelledLinks`, so that further typing does not fetch it again until the compose state is reset; with `developerTools` and `showLinkPreviewErrors`, the core's error is shown in an alert. `fetchAndUpdateLinkPreview` checks `pendingLinkUrl` and writes the compose state on the main thread.
 5. Cancel button adds the URL to `cancelledLinks` set.
+6. On a chat switch (`KeyChangeEffect(chatModel.chatId.value)`), `resetLinkPreview()` clears the pending link and `cancelledLinks`, because the same `ComposeView` is reused for the chat opened next.
 
 ---
 
