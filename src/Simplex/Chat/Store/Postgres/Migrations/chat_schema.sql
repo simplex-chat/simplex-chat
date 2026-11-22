@@ -865,7 +865,7 @@ CREATE TABLE test_chat_schema.delivery_tasks (
     failed smallint DEFAULT 0,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
-    priority_raised smallint DEFAULT 0 NOT NULL
+    update_notification smallint DEFAULT 0 NOT NULL
 );
 
 

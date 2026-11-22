@@ -2381,7 +2381,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                       CDGroupRcv gi' _ m' -> blockedMemberCI gi' m' ci'
                       CDChannelRcv {} -> pure ci'
                     groupMsgToView cInfo ci''
-                    pure $ Just (infoToDeliveryContext gInfo' scopeInfo showGroupAsSender :: DeliveryTaskContext) {priorityRaised = highPriority meta}
+                    pure $ Just (infoToDeliveryContext gInfo' scopeInfo showGroupAsSender :: DeliveryTaskContext) {updateNotification = highPriority meta}
       where
         content = CIRcvMsgContent mc
         ts@(_, ParsedMarkdown ft_ _) = msgContentTexts mc
@@ -2441,7 +2441,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                       Nothing -> pure (GroupChat gInfo scopeInfo, ci'')
                   toView $ CEvtChatItemUpdated user (AChatItemUpdate SCTGroup SMDRcv cInfo ci' ci)
                   startUpdatedTimedItemThread user (ChatRef CTGroup groupId $ toChatScope <$> scopeInfo) ci ci'
-                  pure $ Just (infoToDeliveryContext gInfo scopeInfo showGroupAsSender :: DeliveryTaskContext) {priorityRaised = priority' == MPHigh && priority /= MPHigh}
+                  pure $ Just (infoToDeliveryContext gInfo scopeInfo showGroupAsSender :: DeliveryTaskContext) {updateNotification = if isJust newTs_ then priority' /= MPSilent else priority' == MPHigh && priority /= MPHigh}
                 else do
                   toView $ CEvtChatItemNotChanged user (AChatItem SCTGroup SMDRcv (GroupChat gInfo scopeInfo) ci)
                   pure Nothing
@@ -2495,10 +2495,10 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                     withStore $ \db -> do
                       liftIO $ createCIModeration db gInfo m msgMemberId sharedMsgId msgId brokerTs
                       supportGMId <- getScopeMemberIdViaMemberId db user gInfo m scopeMemberId
-                      pure $ Just $ DeliveryTaskContext {jobScope = DJSMemberSupport supportGMId, sentAsGroup = False, priorityRaised = False}
+                      pure $ Just $ DeliveryTaskContext {jobScope = DJSMemberSupport supportGMId, sentAsGroup = False, updateNotification = False}
                   Nothing -> do
                     withStore' $ \db -> createCIModeration db gInfo m msgMemberId sharedMsgId msgId brokerTs
-                    pure $ Just $ DeliveryTaskContext {jobScope = DJSGroup {jobSpec = DJDeliveryJob {includePending = False}}, sentAsGroup = False, priorityRaised = False}
+                    pure $ Just $ DeliveryTaskContext {jobScope = DJSGroup {jobSpec = DJDeliveryJob {includePending = False}}, sentAsGroup = False, updateNotification = False}
           Nothing ->
             messageError ("x.msg.del: channel message not found, " <> tshow e) $> Nothing
       where

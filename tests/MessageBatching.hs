@@ -20,7 +20,7 @@ import Data.Time.Clock.System (SystemTime (..), systemToUTCTime)
 import Simplex.Chat.Delivery
   ( DeliveryJobScope (DJSGroup, jobSpec),
     DeliveryJobSpec (DJDeliveryJob, includePending),
-    MessageDeliveryTask (MessageDeliveryTask, brokerTs, fwdSender, jobScope, priorityRaised, senderGMId, taskId, verifiedMsg),
+    MessageDeliveryTask (MessageDeliveryTask, brokerTs, fwdSender, jobScope, senderGMId, taskId, updateNotification, verifiedMsg),
     deliveryTaskId,
   )
 import Simplex.Chat.Messages.Batch
@@ -182,7 +182,7 @@ deliveryTask taskId text =
       verifiedMsg =
         VMUnsigned
           (ChatMessage chatInitialVRange Nothing $ XMsgNew $ mcSimple $ MCText text),
-      priorityRaised = False
+      updateNotification = False
     }
 
 testRelayBatchSingletonOverflow :: IO ()

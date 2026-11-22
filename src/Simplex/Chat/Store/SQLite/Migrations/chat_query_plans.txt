@@ -3808,7 +3808,7 @@ Query:
           t.delivery_task_id,
           t.worker_scope, t.job_scope_spec_tag, t.job_scope_include_pending, t.job_scope_support_gm_id,
           m.group_member_id, m.member_id, p.display_name, msg.broker_ts, msg.msg_body, msg.msg_chat_binding, msg.msg_signatures, t.message_from_channel,
-          t.priority_raised
+          t.update_notification
         FROM delivery_tasks t
         JOIN messages msg ON msg.message_id = t.message_id
         JOIN group_members m ON m.group_member_id = t.sender_group_member_id
@@ -5503,7 +5503,7 @@ Query:
       INSERT INTO delivery_tasks (
         group_id,
         worker_scope, job_scope_spec_tag, job_scope_include_pending, job_scope_support_gm_id,
-        sender_group_member_id, message_id, message_from_channel, priority_raised, task_status,
+        sender_group_member_id, message_id, message_from_channel, update_notification, task_status,
         created_at, updated_at
       ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
     

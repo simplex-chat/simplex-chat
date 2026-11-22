@@ -84,14 +84,14 @@ createMsgDeliveryTask db gInfo sender newTask = do
       INSERT INTO delivery_tasks (
         group_id,
         worker_scope, job_scope_spec_tag, job_scope_include_pending, job_scope_support_gm_id,
-        sender_group_member_id, message_id, message_from_channel, priority_raised, task_status,
+        sender_group_member_id, message_id, message_from_channel, update_notification, task_status,
         created_at, updated_at
       ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
     |]
-    ((Only groupId) :. jobScopeRow_ jobScope :. (groupMemberId' sender, messageId, BI sentAsGroup, BI priorityRaised, DTSNew, currentTs, currentTs))
+    ((Only groupId) :. jobScopeRow_ jobScope :. (groupMemberId' sender, messageId, BI sentAsGroup, BI updateNotification, DTSNew, currentTs, currentTs))
   where
     GroupInfo {groupId} = gInfo
-    NewMessageDeliveryTask {messageId, taskContext = DeliveryTaskContext {jobScope, sentAsGroup, priorityRaised}} = newTask
+    NewMessageDeliveryTask {messageId, taskContext = DeliveryTaskContext {jobScope, sentAsGroup, updateNotification}} = newTask
 
 deleteGroupDeliveryTasks :: DB.Connection -> GroupInfo -> IO ()
 deleteGroupDeliveryTasks db GroupInfo {groupId} =
@@ -144,7 +144,7 @@ getMsgDeliveryTask_ db taskId =
           t.delivery_task_id,
           t.worker_scope, t.job_scope_spec_tag, t.job_scope_include_pending, t.job_scope_support_gm_id,
           m.group_member_id, m.member_id, p.display_name, msg.broker_ts, msg.msg_body, msg.msg_chat_binding, msg.msg_signatures, t.message_from_channel,
-          t.priority_raised
+          t.update_notification
         FROM delivery_tasks t
         JOIN messages msg ON msg.message_id = t.message_id
         JOIN group_members m ON m.group_member_id = t.sender_group_member_id
@@ -154,7 +154,7 @@ getMsgDeliveryTask_ db taskId =
       (Only taskId)
   where
     toTask :: MessageDeliveryTaskRow -> Either StoreError MessageDeliveryTask
-    toTask ((Only taskId') :. jobScopeRow :. (senderGMId, senderMemberId, senderMemberName, brokerTs, Binary msgBody, chatBinding_, sigs_, BI showGroupAsSender) :. Only (BI priorityRaised)) =
+    toTask ((Only taskId') :. jobScopeRow :. (senderGMId, senderMemberId, senderMemberName, brokerTs, Binary msgBody, chatBinding_, sigs_, BI showGroupAsSender) :. Only (BI updateNotification)) =
       case (toJobScope_ jobScopeRow, J.eitherDecodeStrict' msgBody) of
         (Just jobScope, Right chatMsg) ->
           let fwdSender = if showGroupAsSender && isNothing chatBinding_ then FwdChannel else FwdMember senderMemberId (fwdMemberName senderMemberName)
@@ -164,7 +164,7 @@ getMsgDeliveryTask_ db taskId =
               verifiedMsg = case (chatBinding_, decodeSigs sigs_) of
                 (Just cb, Just sigs) -> VMSigned MSSVerified (SignedMsg cb sigs msgBody) chatMsg
                 _ -> VMUnsigned chatMsg
-           in Right $ MessageDeliveryTask {taskId = taskId', jobScope, senderGMId, fwdSender, brokerTs, verifiedMsg, priorityRaised}
+           in Right $ MessageDeliveryTask {taskId = taskId', jobScope, senderGMId, fwdSender, brokerTs, verifiedMsg, updateNotification}
         (Nothing, _) -> Left $ SEInvalidDeliveryTask taskId'
         (_, Left _) -> Left $ SEInvalidDeliveryTask taskId'
     decodeSigs :: Maybe (Binary ByteString) -> Maybe (L.NonEmpty MsgSignature)

@@ -874,7 +874,7 @@ processChatCommand cxt nm = \case
                           mentions' = M.map (\CIMention {memberId} -> MsgMention {memberId}) ciMentions
                           event = XMsgUpdate itemSharedMId mc mentions' (ttl' <$> itemTimed) (justTrue . (live &&) =<< itemLive) msgScope (Just showGroupAsSender) priority' (justTrue $ isJust newTs_)
                           reuseSign = case msgVerified of Just (MVSigned _) -> True; _ -> False
-                          msgFlags = MsgFlags {notification = priority' == MPHigh && priority /= MPHigh}
+                          msgFlags = MsgFlags {notification = if isJust newTs_ then priority' /= MPSilent else priority' == MPHigh && priority /= MPHigh}
                       SndMessage {msgId} <- sendGroupMessageFlags user g scope recipients reuseSign msgFlags event
                       ci' <- withFastStore' $ \db -> do
                         when changed $
