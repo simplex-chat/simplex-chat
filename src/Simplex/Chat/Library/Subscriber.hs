@@ -387,7 +387,10 @@ agentFileError = \case
 
 processAgentMsgRcvFile :: ACorrId -> RcvFileId -> AEvent 'AERcvFile -> CM ()
 processAgentMsgRcvFile _corrId aFileId msg = do
-  (cRef_, fileId) <- withStore (`getXFTPRcvFileDBIds` AgentRcvFileId aFileId)
+  (cRef_, fileId) <-
+    withStore (`getXFTPRcvFileDBIds` AgentRcvFileId aFileId) `catchAllErrors` \case
+      e@(ChatErrorStore SERcvFileNotFoundXFTP {}) -> lift (withAgent' (`xftpDeleteRcvFile` aFileId)) >> throwError e
+      e -> throwError e
   withEntityLock_ cRef_ . withFileLock "processAgentMsgRcvFile" fileId $
     withStore' (`getUserByARcvFileId` AgentRcvFileId aFileId) >>= \case
       Just user -> process user fileId `catchAllErrors` eToView
@@ -1140,9 +1143,9 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
               BFileChunk sharedMsgId chunk -> Nothing <$ bFileChunkGroup (GIK gInfo' gks) m'' sharedMsgId chunk msgMeta
               _ -> Nothing <$ messageError ("unsupported message: " <> tshow event)
             forM (if memberStatus m'' == GSMemPendingApproval then Nothing else deliveryTaskContext_) $ \taskContext -> do
-              let contentChanged :: CM ()
+              let contentChanged :: CM' ()
                   contentChanged = atomically $ channelContentChanged cc groupId
-              case event of
+              lift . afterCommit $ case event of
                 XMsgNew {} -> contentChanged
                 XMsgUpdate {} -> contentChanged
                 XMsgDel {} -> contentChanged
@@ -1180,7 +1183,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                   deleteGroupDeliveryJobs db gInfo'
                   createMsgDeliveryTask db gInfo' m' relayRemovedTask
                 pure [relayRemovedTask]
-            lift $ forM_ (uniqueWorkerScopes createdDeliveryTasks) $ \workerScope ->
+            lift . afterCommit . forM_ (uniqueWorkerScopes createdDeliveryTasks) $ \workerScope ->
               getDeliveryTaskWorker True (gId, workerScope)
             pure $ isJust relayRemovedTask_
             where
@@ -1830,7 +1833,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
       withAckMessage label cId msgMeta False Nothing $ \_ -> action $> (False, False)
 
     withAckMessage :: Text -> ConnId -> MsgMeta -> Bool -> Maybe (TVar [Text]) -> (Text -> CM (Bool, ShouldDeleteGroupConns)) -> CM ()
-    withAckMessage label cId msgMeta showCritical tags action = do
+    withAckMessage label cId msgMeta@MsgMeta {recipient = (aMsgId, _), redelivered} showCritical tags action = do
       -- [async agent commands] command should be asynchronous
       -- TODO catching error and sending ACK after an error, particularly if it is a database error, will result in the message not processed (and no notification to the user).
       -- Possible solutions are:
@@ -1839,16 +1842,31 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
       -- 3) show screen of death to the user asking to restart
       eInfo <- eventInfo
       logInfo $ label <> ": " <> eInfo
-      tryAllErrors (action eInfo) >>= \case
-        Right (withRcpt, shouldDelConns) ->
+      tryAllErrors (withStoreTx criticalErr $ handleOnce eInfo) >>= \case
+        Right (Right (withRcpt, shouldDelConns)) ->
           unless shouldDelConns $ withLog (eInfo <> " ok") $ ackMsg msgMeta $ if withRcpt then Just "" else Nothing
+        Right (Left e) -> ackError eInfo e
         -- If showCritical is True, then these errors don't result in ACK and show user visible alert
         -- This prevents losing the message that failed to be processed.
         Left (ChatErrorStore SEDBBusyError {message}) | showCritical -> throwError $ chatErrorAgent $ CRITICAL True message
-        Left e -> do
+        Left (ChatErrorStore SEDBException {message}) | showCritical -> throwError $ chatErrorAgent $ CRITICAL True message
+        Left e -> ackError eInfo e
+      where
+        Connection {connId = handledConnId} = entityConnection entity
+        criticalErr = \case
+          ChatErrorStore SEDBBusyError {} -> showCritical
+          _ -> False
+        handleOnce eInfo =
+          (if redelivered then withStore' (\db -> getHandledRcvMsg db handledConnId aMsgId) else pure Nothing) >>= \case
+            Just handledRcpt -> pure (handledRcpt, False)
+            Nothing -> do
+              withStore' $ \db -> createHandledRcvMsg db handledConnId aMsgId
+              r@(withRcpt, _) <- liftEither =<< tryAllErrors (action eInfo)
+              when withRcpt $ withStore' $ \db -> setHandledRcvMsgRcpt db handledConnId aMsgId
+              pure r
+        ackError eInfo e = do
           withLog (eInfo <> " error: " <> tshow e) $ ackMsg msgMeta Nothing
           throwError e
-      where
         eventInfo = do
           v <- asks eventSeq
           eId <- atomically $ stateTVar' v $ \i -> (i + 1, i + 1)
@@ -3366,7 +3384,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                       void $ withStore $ \db -> do
                         reMember <- createIntroReMember db cxt user gInfo memInfo (memberInfoPresHeader gInfo memInfo) memRestrictions
                         createIntroReMemberConn db user m reMember chatV memInfo groupConnIds subMode
-                      withAgent $ \a -> createConnectionAsync a (aCorrId cmdId) connId (chatHasNtfs chatSettings) SCMInvitation CR.IKPQOff True subMode
+                      afterCommitE $ withAgent $ \a -> createConnectionAsync a (aCorrId cmdId) connId (chatHasNtfs chatSettings) SCMInvitation CR.IKPQOff True subMode
         _ -> messageError "x.grp.mem.intro can be only sent by host member"
 
     sendXGrpMemInv :: Int64 -> XGrpMemIntroCont -> CM ()

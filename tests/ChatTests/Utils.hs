@@ -11,10 +11,10 @@ module ChatTests.Utils where
 import APIDocs (testGenerate)
 import ChatClient
 import ChatTests.DBUtils
-import Control.Concurrent (newEmptyMVar, putMVar, takeMVar, threadDelay)
+import Control.Concurrent (newEmptyMVar, putMVar, readMVar, takeMVar, threadDelay, tryPutMVar)
 import Control.Concurrent.Async (concurrently_, mapConcurrently_, race_, wait, withAsync)
 import Control.Concurrent.STM
-import Control.Monad (join, unless, when)
+import Control.Monad (forever, join, unless, when)
 import Control.Monad.Except (runExceptT)
 import qualified Data.Aeson as J
 import qualified Data.Aeson.Key as JK
@@ -30,9 +30,10 @@ import Data.Maybe (fromMaybe)
 import Data.String
 import qualified Data.Text as T
 import Simplex.Chat.Badges (BadgeProof (..), BadgeStatus, LocalBadge (..), ProofPresHeader (..))
-import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), ChatError, ChatEvent (CEvtChatItemUpdated, CEvtNameMoved, CEvtNewChatItems, CEvtSndFileCompleteXFTP, CEvtSndFileError), storeCxt)
+import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), ChatError, ChatEvent (CEvtChatItemUpdated, CEvtNameMoved, CEvtNewChatItems, CEvtSndFileCompleteXFTP, CEvtSndFileError), ChatHooks (..), defaultChatHooks, storeCxt)
 import Simplex.Chat.Library.Commands (maxProfileImageSize)
 import Simplex.Chat.Markdown (viewName)
+import Simplex.Chat.Messages (AChatItem (..), CIMeta (CIMeta, itemText), ChatItem (ChatItem, meta))
 import Simplex.Chat.Mobile (chatParseMarkdown, chatParseUri, chatSendCmd, eitherToResult)
 import Simplex.Chat.Messages.CIContent (e2eInfoNoPQText, e2eInfoPQText)
 import Simplex.Chat.Protocol
@@ -1066,3 +1067,42 @@ stableJSON = \case
       | k `elem` ["agentConnId", "xContactId", "connFullLink", "connShortLink", "contactLink", "groupLink", "viaGroupLinkUri", "simplexUri", "memberId", "memberPubKey", "publicGroupId", "businessId", "customerId", "itemSharedMsgId", "fileDescrText", "agentSndFileId", "privateSndFileDescr", "errorMessage"] = J.String $ JK.toText k
       | k == "groupRelays", J.Array a <- v = J.Array $ J.String "groupRelay" <$ a
       | otherwise = stableJSON v
+
+blockFirstEventCfg :: (ChatEvent -> Bool) -> IO (IO (), ChatConfig)
+blockFirstEventCfg = blockFirstEventUntilCfg $ forever $ threadDelay 1000000
+
+blockFirstEventUntilCfg :: IO () -> (ChatEvent -> Bool) -> IO (IO (), ChatConfig)
+blockFirstEventUntilCfg released blocks = do
+  blocked <- newEmptyMVar
+  let hook _ ev = case ev of
+        Right e | blocks e -> do
+          isFirst <- tryPutMVar blocked ()
+          when isFirst released
+          pure ev
+        _ -> pure ev
+  pure (timeout 20000000 (readMVar blocked) `shouldReturn` Just (), testCfg {chatHooks = defaultChatHooks {eventHook = Just hook}})
+
+newItemText :: (T.Text -> Bool) -> ChatEvent -> Bool
+newItemText p (CEvtNewChatItems _ [AChatItem _ _ _ ChatItem {meta = CIMeta {itemText}}]) = p itemText
+newItemText _ _ = False
+
+withFailingCommits :: TestCC -> String -> String -> IO () -> IO ()
+withFailingCommits cc table condition action = do
+  withCCTransaction cc $ \db -> mapM_ (DB.execute_ db . fromString) createTrigger
+  action
+  withCCTransaction cc (`DB.execute_` fromString dropTrigger)
+  where
+#if defined(dbPostgres)
+    createTrigger =
+      [ "CREATE TABLE IF NOT EXISTS fail_commit (user_id BIGINT REFERENCES users DEFERRABLE INITIALLY DEFERRED)",
+        "CREATE OR REPLACE FUNCTION fail_commit() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN INSERT INTO fail_commit VALUES (0); RETURN NULL; END $$",
+        "CREATE TRIGGER fail_commit AFTER INSERT ON " <> table <> " FOR EACH ROW WHEN (" <> condition <> ") EXECUTE FUNCTION fail_commit()"
+      ]
+    dropTrigger = "DROP TRIGGER fail_commit ON " <> table
+#else
+    createTrigger =
+      [ "CREATE TABLE IF NOT EXISTS fail_commit (user_id INTEGER REFERENCES users DEFERRABLE INITIALLY DEFERRED)",
+        "CREATE TRIGGER fail_commit AFTER INSERT ON " <> table <> " WHEN " <> condition <> " BEGIN INSERT INTO fail_commit VALUES (0); END"
+      ]
+    dropTrigger = "DROP TRIGGER fail_commit"
+#endif

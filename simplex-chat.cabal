@@ -35,6 +35,11 @@ flag client_postgres
   manual: True
   default: False
 
+flag test_hooks
+  description: Build the hooks that tests use to hold a store transaction open.
+  manual: True
+  default: False
+
 library
   exposed-modules:
       Simplex.Chat
@@ -177,6 +182,7 @@ library
           Simplex.Chat.Store.Postgres.Migrations.M20261016_badge_store_receipts
           Simplex.Chat.Store.Postgres.Migrations.M20261019_chat_layout
           Simplex.Chat.Store.Postgres.Migrations.M20261021_badge_subscriptions
+          Simplex.Chat.Store.Postgres.Migrations.M20261120_handled_rcv_msgs
   else
       exposed-modules:
           Simplex.Chat.Archive
@@ -361,6 +367,7 @@ library
           Simplex.Chat.Store.SQLite.Migrations.M20261018_autoincrement_ids
           Simplex.Chat.Store.SQLite.Migrations.M20261019_chat_layout
           Simplex.Chat.Store.SQLite.Migrations.M20261021_badge_subscriptions
+          Simplex.Chat.Store.SQLite.Migrations.M20261120_handled_rcv_msgs
   other-modules:
       Paths_simplex_chat
   hs-source-dirs:
@@ -418,6 +425,8 @@ library
     cpp-options: -DswiftJSON
   if flag(swift) || os(android)
     cpp-options: -DmobileBuild
+  if flag(test_hooks)
+    cpp-options: -Dtest_hooks
   if flag(client_postgres)
     build-depends:
         postgresql-libpq >=0.10.0.0
@@ -705,6 +714,8 @@ executable simplex-directory-service
 test-suite simplex-chat-test
   if flag(swift)
     cpp-options: -DswiftJSON
+  if flag(test_hooks)
+    cpp-options: -Dtest_hooks
   if flag(client_library)
       buildable: False
   type: exitcode-stdio-1.0

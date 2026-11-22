@@ -109,7 +109,7 @@ import qualified Simplex.Messaging.TMap as TM
 import Simplex.Messaging.Util
 import Simplex.Messaging.Version
 import System.FilePath (takeFileName, (</>))
-import System.IO (Handle, IOMode (..), hFlush)
+import System.IO (Handle, IOMode (..), hFlush, hSetFileSize)
 import UnliftIO.Concurrent (forkFinally, mkWeakThreadId)
 import UnliftIO.Directory
 import UnliftIO.IO (hClose, openFile)
@@ -1432,7 +1432,7 @@ sendHistory user gInfo@GroupInfo {membership} m@GroupMember {activeConn = Just c
   let (batches, dropped) = batchElements maxForwardBatchLength (fwdEls <> maybe [] (: []) welcomeEl)
   when (dropped > 0) $ toView $ CEvtChatErrors [ChatError $ CEInternalError ("sendHistory: dropped " <> show dropped <> " oversized history messages")]
   forM_ batches $ \body ->
-    void $ withAgent $ \a -> sendMessages a [(aConnId conn, PQEncOff, MsgFlags False, VRValue Nothing body)]
+    afterCommitE . void $ withAgent $ \a -> sendMessages a [(aConnId conn, PQEncOff, MsgFlags False, VRValue Nothing body)]
   where
     welcomeElement :: CM (Maybe ByteString)
     welcomeElement = case descrEvent_ of
@@ -2091,7 +2091,7 @@ mkMemberSupportChatInfo m@GroupMember {groupMemberId, supportChat} =
        in pure (m, scopeInfo)
 
 appendFileChunk :: RcvFileTransfer -> Integer -> ByteString -> Bool -> CM ()
-appendFileChunk ft@RcvFileTransfer {fileId, fileStatus, cryptoArgs, fileInvitation = FileInvitation {fileName}} chunkNo chunk final =
+appendFileChunk ft@RcvFileTransfer {fileId, fileStatus, cryptoArgs, chunkSize, fileInvitation = FileInvitation {fileName}} chunkNo chunk final =
   case fileStatus of
     RFSConnected filePath -> append_ filePath
     -- sometimes update of file transfer status to FSConnected
@@ -2104,21 +2104,22 @@ appendFileChunk ft@RcvFileTransfer {fileId, fileStatus, cryptoArgs, fileInvitati
     append_ filePath = do
       fsFilePath <- lift $ toFSFilePath filePath
       h <- getFileHandle fileId fsFilePath rcvFiles AppendMode
-      liftIO (B.hPut h chunk >> hFlush h) `catchThrow` (fileErr . show)
+      liftIO (hSetFileSize h ((chunkNo - 1) * chunkSize) >> B.hPut h chunk >> hFlush h) `catchThrow` (fileErr . show)
       withStore' $ \db -> updatedRcvFileChunkStored db ft chunkNo
       when final $ do
         lift $ closeFileHandle fileId rcvFiles
         forM_ cryptoArgs $ \cfArgs -> do
           tmpFile <- lift getChatTempDirectory >>= liftIO . (`uniqueCombine` fileName)
           tryAllErrors (liftError encryptErr $ encryptFile fsFilePath tmpFile cfArgs) >>= \case
-            Right () -> do
-              removeFile fsFilePath `catchAllErrors` \_ -> pure ()
-              renameFile tmpFile fsFilePath
+            Right () -> lift . afterCommit $ replaceFile tmpFile fsFilePath `catchAllErrors'` eToView'
             Left e -> do
               eToView e
               removeFile tmpFile `catchAllErrors` \_ -> pure ()
               withStore' (`removeFileCryptoArgs` fileId)
       where
+        replaceFile newFile oldFile = do
+          removeFile oldFile `catchAllErrors` \_ -> pure ()
+          renameFile newFile oldFile
         encryptErr e = fileErr $ e <> ", received file not encrypted"
         fileErr = ChatError . CEFileWrite filePath
 
@@ -2206,7 +2207,7 @@ cleanupRosterTransferById transferId = do
   file_ <- withStore' $ \db -> getRosterTransferFile db transferId
   forM_ file_ $ \(fileId, filePath_) -> do
     lift $ closeFileHandle fileId rcvFiles
-    forM_ filePath_ removeFsFile
+    lift . afterCommit $ mapM_ removeFsFile filePath_ `catchAllErrors'` eToView'
   withStore' $ \db -> do
     deleteRosterTransferFile db transferId
     deleteRosterTransfer db transferId
@@ -2632,10 +2633,23 @@ deliverMessages msgs = deliverMessagesB $ L.map Right msgs
 deliverMessagesB :: NonEmpty (Either ChatError ChatMsgReq) -> CM (NonEmpty (Either ChatError ([Int64], PQEncryption)))
 deliverMessagesB msgReqs = do
   msgReqs' <- liftIO compressBodies
-  sent <- L.zipWith prepareBatch msgReqs' <$> withAgent (`sendMessagesB` snd (mapAccumL toAgent Nothing msgReqs'))
-  lift . void $ withStoreBatch' $ \db -> map (updatePQSndEnabled db) (rights . L.toList $ sent)
-  lift . withStoreBatch $ \db -> L.map (bindRight $ createDelivery db) sent
+  lift ownStoreTx >>= \case
+    Nothing -> do
+      sent <- sendToAgent msgReqs'
+      lift . void $ withStoreBatch' $ \db -> map (updatePQSndEnabled db) (rights . L.toList $ sent)
+      lift . withStoreBatch $ \db -> L.map (bindRight $ createDelivery db) sent
+    Just _ -> do
+      pending <- lift . withStoreBatch $ \db -> L.map (bindRight $ createPendingDelivery db) msgReqs'
+      afterCommitE $ sendPending msgReqs' pending
+      pure pending
   where
+    sendToAgent reqs = L.zipWith prepareBatch reqs <$> withAgent (`sendMessagesB` snd (mapAccumL toAgent Nothing reqs))
+    sendPending reqs pending = do
+      sent <- L.toList . L.zip pending <$> sendToAgent reqs
+      let deliveries = [(deliveryId, agentMsgId) | (Right (deliveryIds, _), Right (_, (agentMsgId, _))) <- sent, deliveryId <- deliveryIds]
+          errs = [e | (Right _, Left e) <- sent]
+      lift . void . withStoreBatch' $ \db -> map (uncurry $ setSndMsgDeliveryAgentMsgId db) deliveries
+      unless (null errs) $ toView $ CEvtChatErrors errs
     -- group sends share bodies between connections via VRRef, so the smallest limit applies to the batch
     maxLen = if any connSupportsPQ msgReqs then maxEncodedMsgLengthPQ else maxEncodedMsgLength
     connSupportsPQ = \case
@@ -2659,7 +2673,10 @@ deliverMessagesB msgReqs = do
     prepareBatch _ (Left ae) = Left $ chatErrorAgent ae
     createDelivery :: DB.Connection -> (ChatMsgReq, (AgentMsgId, PQEncryption)) -> IO (Either ChatError ([Int64], PQEncryption))
     createDelivery db ((Connection {connId}, _, (_, msgIds)), (agentMsgId, pqEnc')) = do
-      Right . (,pqEnc') <$> mapM (createSndMsgDelivery db (SndMsgDelivery {connId, agentMsgId})) msgIds
+      Right . (,pqEnc') <$> mapM (createSndMsgDelivery db (SndMsgDelivery {connId, agentMsgId = Just agentMsgId})) msgIds
+    createPendingDelivery :: DB.Connection -> ChatMsgReq -> IO (Either ChatError ([Int64], PQEncryption))
+    createPendingDelivery db (Connection {connId, pqSndEnabled}, _, (_, msgIds)) =
+      Right . (,fromMaybe PQEncOff pqSndEnabled) <$> mapM (createSndMsgDelivery db SndMsgDelivery {connId, agentMsgId = Nothing}) msgIds
     updatePQSndEnabled :: DB.Connection -> (ChatMsgReq, (AgentMsgId, PQEncryption)) -> IO ()
     updatePQSndEnabled db ((Connection {connId, pqSndEnabled}, _, _), (_, pqSndEnabled')) =
       case (pqSndEnabled, pqSndEnabled') of
@@ -2962,7 +2979,7 @@ sendFwdMemberMessage :: GroupMember -> GrpMsgForward -> VerifiedMsg 'Json -> CM 
 sendFwdMemberMessage member fwd verifiedMsg =
   forM_ (readyMemberConn member) $ \(_, conn) -> do
     let body = encodeBinaryBatch [encodeFwdElement fwd verifiedMsg]
-    void $ withAgent $ \a -> sendMessages a [(aConnId conn, PQEncOff, MsgFlags {notification = msgHasNotification verifiedMsg}, VRValue Nothing body)]
+    afterCommitE . void $ withAgent $ \a -> sendMessages a [(aConnId conn, PQEncOff, MsgFlags {notification = msgHasNotification verifiedMsg}, VRValue Nothing body)]
 
 -- TODO ensure order - pending messages interleave with user input messages
 sendPendingGroupMessages :: User -> GroupInfo -> GroupMember -> Connection -> CM ()
@@ -3180,7 +3197,7 @@ prepareAgentJoin user enableNtfs cReqUri = do
 
 joinAgentConnectionAsync :: CommandId -> Bool -> ConnId -> Bool -> ConnectionRequestUri c -> ConnInfo -> SubscriptionMode -> CM ()
 joinAgentConnectionAsync cmdId updateConn connId enableNtfs cReqUri cInfo subMode =
-  withAgent $ \a -> joinConnectionAsync a (aCorrId cmdId) updateConn connId enableNtfs cReqUri cInfo PQSupportOff subMode
+  afterCommitE $ withAgent $ \a -> joinConnectionAsync a (aCorrId cmdId) updateConn connId enableNtfs cReqUri cInfo PQSupportOff subMode
 
 allowAgentConnectionAsync :: MsgEncodingI e => User -> Connection -> ConfirmationId -> Maybe GroupInfoKeys -> ChatMsgEvent e -> CM ()
 allowAgentConnectionAsync user conn@Connection {pqSupport} confId gInfo_ msg = do
@@ -3213,7 +3230,7 @@ deleteAgentConnectionAsync acId = deleteAgentConnectionAsync' acId False
 
 deleteAgentConnectionAsync' :: ConnId -> Bool -> CM ()
 deleteAgentConnectionAsync' acId waitDelivery = do
-  withAgent (\a -> deleteConnectionAsync a waitDelivery acId) `catchAllErrors` eToView
+  afterCommitE $ withAgent (\a -> deleteConnectionAsync a waitDelivery acId) `catchAllErrors` eToView
 
 deleteAgentConnectionsAsync :: [ConnId] -> CM ()
 deleteAgentConnectionsAsync acIds = deleteAgentConnectionsAsync' acIds False
@@ -3222,12 +3239,12 @@ deleteAgentConnectionsAsync acIds = deleteAgentConnectionsAsync' acIds False
 deleteAgentConnectionsAsync' :: [ConnId] -> Bool -> CM ()
 deleteAgentConnectionsAsync' [] _ = pure ()
 deleteAgentConnectionsAsync' acIds waitDelivery = do
-  withAgent (\a -> deleteConnectionsAsync a waitDelivery acIds) `catchAllErrors` eToView
+  afterCommitE $ withAgent (\a -> deleteConnectionsAsync a waitDelivery acIds) `catchAllErrors` eToView
 
 setAgentConnShortLinkAsync :: User -> Connection -> UserConnLinkData 'CMContact -> Maybe CRClientData -> CM ()
 setAgentConnShortLinkAsync user conn@Connection {connId} userLinkData crClientData_ = do
   cmdId <- withStore' $ \db -> createCommand db user (Just connId) CFSetShortLink
-  withAgent $ \a -> setConnShortLinkAsync a (aCorrId cmdId) (aConnId conn) userLinkData crClientData_
+  afterCommitE $ withAgent $ \a -> setConnShortLinkAsync a (aCorrId cmdId) (aConnId conn) userLinkData crClientData_
 
 getAgentConnShortLinkAsync :: User -> CommandFunction -> Connection -> ShortLinkContact -> CM ()
 getAgentConnShortLinkAsync user cmdFunc conn@Connection {connId} shortLink = do
@@ -3244,7 +3261,7 @@ agentXFTPDeleteRcvFiles :: [(XFTPRcvFile, FileTransferId)] -> CM' ()
 agentXFTPDeleteRcvFiles rcvFiles = do
   let rcvFiles' = filter (not . agentRcvFileDeleted . fst) rcvFiles
       rfIds = mapMaybe fileIds rcvFiles'
-  withAgent' $ \a -> xftpDeleteRcvFiles a (map fst rfIds)
+  unless (null rfIds) $ withAgent' $ \a -> xftpDeleteRcvFiles a (map fst rfIds)
   void . withStoreBatch' $ \db -> map (setRcvFTAgentDeleted db . snd) rfIds
   where
     fileIds :: (XFTPRcvFile, FileTransferId) -> Maybe (RcvFileId, FileTransferId)
@@ -3265,8 +3282,8 @@ agentXFTPDeleteSndFilesRemote user sndFiles = do
   -- this partitions files into those with and without descriptions -
   -- files with description are deleted remotely, files without description are deleted internally
   (sfsNoDescr, sfsWithDescr) <- partitionSndDescr sndFilesAll' [] []
-  withAgent' $ \a -> xftpDeleteSndFilesInternal a sfsNoDescr
-  withAgent' $ \a -> xftpDeleteSndFilesRemote a (aUserId user) sfsWithDescr
+  unless (null sfsNoDescr) $ withAgent' $ \a -> xftpDeleteSndFilesInternal a sfsNoDescr
+  unless (null sfsWithDescr) $ withAgent' $ \a -> xftpDeleteSndFilesRemote a (aUserId user) sfsWithDescr
   void . withStoreBatch' $ \db -> map (setSndFTAgentDeleted db user . snd) sndFilesAll'
   where
     mapRedirectMeta :: FileTransferMeta -> Maybe (XFTPSndFile, FileTransferId)

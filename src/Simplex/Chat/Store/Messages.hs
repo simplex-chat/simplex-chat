@@ -27,6 +27,7 @@ module Simplex.Chat.Store.Messages
     deleteGroupChatItemsMessages,
     createNewSndMessage,
     createSndMsgDelivery,
+    setSndMsgDeliveryAgentMsgId,
     createNewMessageAndRcvMsgDelivery,
     getLastRcvMsgInfo,
     createNewRcvMessage,
@@ -35,6 +36,10 @@ module Simplex.Chat.Store.Messages
     getPendingGroupMessages,
     deletePendingGroupMessage,
     deleteOldMessages,
+    getHandledRcvMsg,
+    createHandledRcvMsg,
+    setHandledRcvMsgRcpt,
+    deleteOldHandledRcvMsgs,
     MemberAttention (..),
     updateChatTsStats,
     setSupportChatTs,
@@ -273,8 +278,16 @@ createSndMsgDelivery db SndMsgDelivery {connId, agentMsgId} messageId = do
         (message_id, connection_id, agent_msg_id, chat_ts, created_at, updated_at, delivery_status)
       VALUES (?,?,?,?,?,?,?)
     |]
-    (messageId, connId, agentMsgId, currentTs, currentTs, currentTs, MDSSndAgent)
+    (messageId, connId, agentMsgId, currentTs, currentTs, currentTs, maybe MDSSndPending (const MDSSndAgent) agentMsgId)
   insertedRowId db
+
+setSndMsgDeliveryAgentMsgId :: DB.Connection -> Int64 -> AgentMsgId -> IO ()
+setSndMsgDeliveryAgentMsgId db msgDeliveryId agentMsgId = do
+  currentTs <- getCurrentTime
+  DB.execute
+    db
+    "UPDATE msg_deliveries SET agent_msg_id = ?, delivery_status = ?, updated_at = ? WHERE msg_delivery_id = ?"
+    (agentMsgId, MDSSndAgent, currentTs, msgDeliveryId)
 
 createNewMessageAndRcvMsgDelivery :: forall e. MsgEncodingI e => DB.Connection -> ConnOrGroupId -> NewRcvMessage e -> Maybe SharedMsgId -> RcvMsgDelivery -> Maybe GroupMemberId -> ExceptT StoreError IO RcvMessage
 createNewMessageAndRcvMsgDelivery db connOrGroupId newMessage sharedMsgId_ RcvMsgDelivery {connId, agentMsgId, agentMsgMeta} authorGroupMemberId_ = do
@@ -395,6 +408,28 @@ deletePendingGroupMessage db groupMemberId messageId =
 deleteOldMessages :: DB.Connection -> UTCTime -> IO ()
 deleteOldMessages db createdAtCutoff = do
   DB.execute db "DELETE FROM messages WHERE created_at <= ?" (Only createdAtCutoff)
+
+getHandledRcvMsg :: DB.Connection -> Int64 -> AgentMsgId -> IO (Maybe Bool)
+getHandledRcvMsg db connId agentMsgId =
+  maybeFirstRow (\(Only (BI rcpt)) -> rcpt) $
+    DB.query db "SELECT rcpt FROM handled_rcv_msgs WHERE connection_id = ? AND agent_msg_id = ?" (connId, agentMsgId)
+
+createHandledRcvMsg :: DB.Connection -> Int64 -> AgentMsgId -> IO ()
+createHandledRcvMsg db connId agentMsgId = do
+  currentTs <- getCurrentTime
+  DB.execute db "DELETE FROM handled_rcv_msgs WHERE connection_id = ? AND agent_msg_id < ?" (connId, agentMsgId)
+  DB.execute
+    db
+    "INSERT INTO handled_rcv_msgs (connection_id, agent_msg_id, rcpt, created_at) VALUES (?,?,0,?) ON CONFLICT DO NOTHING"
+    (connId, agentMsgId, currentTs)
+
+setHandledRcvMsgRcpt :: DB.Connection -> Int64 -> AgentMsgId -> IO ()
+setHandledRcvMsgRcpt db connId agentMsgId =
+  DB.execute db "UPDATE handled_rcv_msgs SET rcpt = 1 WHERE connection_id = ? AND agent_msg_id = ?" (connId, agentMsgId)
+
+deleteOldHandledRcvMsgs :: DB.Connection -> UTCTime -> IO ()
+deleteOldHandledRcvMsgs db createdAtCutoff =
+  DB.execute db "DELETE FROM handled_rcv_msgs WHERE created_at <= ?" (Only createdAtCutoff)
 
 type NewQuoteRow = (Maybe SharedMsgId, Maybe UTCTime, Maybe MsgContent, Maybe Bool, Maybe MemberId)
 

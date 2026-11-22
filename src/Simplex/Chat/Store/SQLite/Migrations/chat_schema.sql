@@ -1021,6 +1021,13 @@ CREATE TABLE badge_store_receipts(
   hold_kind TEXT NOT NULL DEFAULT 'purchase',
   UNIQUE(provider, transaction_ref)
 ) STRICT;
+CREATE TABLE handled_rcv_msgs(
+  connection_id INTEGER NOT NULL REFERENCES connections ON DELETE CASCADE,
+  agent_msg_id INTEGER NOT NULL,
+  rcpt INTEGER NOT NULL,
+  created_at TEXT NOT NULL,
+  PRIMARY KEY(connection_id, agent_msg_id)
+) STRICT;
 CREATE INDEX contact_profiles_index ON contact_profiles(
   display_name,
   full_name

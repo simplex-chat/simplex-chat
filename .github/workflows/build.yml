@@ -60,6 +60,7 @@ on:
 env:
   opt: ${{ github.event_name == 'push' && 'O2' || 'O0' }}
   ghc_options: ${{ github.event_name != 'push' && '--ghc-options=-O0' || '' }}
+  test_hooks: ${{ !startsWith(github.ref, 'refs/tags/v') && '--constraint ''simplex-chat +test_hooks''' || '' }}
   release: ${{ startsWith(github.ref, 'refs/tags/v') }}
   branch: ${{ github.base_ref || github.ref_name }}
   cache_o0: ${{ github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/stable') }}
@@ -462,7 +463,7 @@ jobs:
         run: |
           scripts/ci/prune-old-builds.sh dist-newstyle
           cabal update
-          cabal build -j --enable-tests ${{ env.ghc_options }} ${{ env.cabal_targets }}
+          cabal build -j --enable-tests ${{ env.ghc_options }} ${{ env.test_hooks }} ${{ env.cabal_targets }}
           mkdir -p /out
           for i in ${{ env.bins || 'simplex-chat simplex-chat-test' }}; do
             bin=$(find /project/dist-newstyle -name "$i" -type f -executable)
@@ -816,7 +817,7 @@ jobs:
         shell: docker exec -t builder sh -eu {0}
         run: |
           scripts/ci/prune-old-builds.sh dist-newstyle
-          cabal build -j --enable-tests --ghc-options=-O0
+          cabal build -j --enable-tests --ghc-options=-O0 ${{ env.test_hooks }}
 
       - name: Record source hashes for -O0 build (GHC 8.10.7)
         if: ${{ !cancelled() && matrix.ghc == '8.10.7' && steps.build-o0.outcome == 'success' }}

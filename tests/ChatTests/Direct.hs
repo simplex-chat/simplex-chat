@@ -14,9 +14,12 @@ module ChatTests.Direct where
 import ChatClient
 import ChatTests.DBUtils
 import ChatTests.Utils
-import Control.Concurrent (threadDelay)
+import Control.Concurrent (newEmptyMVar, putMVar, readMVar, threadDelay)
 import Control.Concurrent.Async (concurrently_, poll, wait)
 import Control.Monad (forM_, void, (>=>))
+import Control.Monad.Except (runExceptT)
+import Control.Monad.Reader (runReaderT)
+import Data.Either (isLeft, isRight)
 import Data.Aeson (ToJSON)
 import qualified Data.Aeson as J
 import qualified Data.Aeson.KeyMap as KM
@@ -30,7 +33,7 @@ import GHC.Conc (ThreadStatus (..), threadStatus)
 import Simplex.Chat.AppSettings (defaultAppSettings)
 import qualified Simplex.Chat.AppSettings as AS
 import Simplex.Chat.Call
-import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), ChatEvent (CEvtChatItemUpdated), ChatHooks (..), PresetServers (..), defaultChatHooks)
+import Simplex.Chat.Controller (CM, ChatConfig (..), ChatController (..), ChatError, ChatErrorType (..), ChatEvent (..), ChatHooks (..), PresetServers (..), defaultChatHooks, throwChatError, toView, withStore', withStoreTx)
 import Simplex.Chat.Messages (AChatItemUpdate (..), CIMeta (CIMeta, itemText), ChatItem (ChatItem, meta), ChatItemId)
 import Simplex.Chat.Options
 import Simplex.Chat.Protocol (supportedChatVRange)
@@ -45,7 +48,7 @@ import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String (strEncode)
 import Simplex.Messaging.Server.Env.STM hiding (subscriptions)
 import Simplex.Messaging.Transport
-import Simplex.Messaging.Util (safeDecodeUtf8)
+import Simplex.Messaging.Util (catchAllErrors, safeDecodeUtf8)
 import Simplex.Messaging.Version
 import System.Directory (copyFile, doesDirectoryExist, doesFileExist)
 import System.Mem.Weak (deRefWeak)
@@ -60,6 +63,17 @@ import Simplex.Chat.Options.DB
 import Simplex.Chat.Terminal.Input (updateTermState)
 import Simplex.Chat.Terminal.Output (TerminalState (inputString), mkTermState)
 import System.Terminal (Key (TabKey))
+#endif
+#if defined(test_hooks)
+import Control.Concurrent.Async (async)
+import Control.Concurrent.STM (check, readTVar, swapTVar, writeTVar)
+import Simplex.Chat.Core (sendChatCmdStr)
+import Simplex.Messaging.Agent (getConnectionsVerifyCodes)
+import Simplex.Messaging.Util (whenM)
+import System.Timeout (timeout)
+#if !defined(dbPostgres)
+import qualified Database.SQLite.Simple as SQL
+#endif
 #endif
 
 chatDirectTests :: SpecWith TestParams
@@ -86,6 +100,27 @@ chatDirectTests = do
     it "should send multiline message" testMultilineMessage
     it "send large message" testLargeMessage
     it "initial chat pagination" testChatPaginationInitial
+    it "skip handled message redelivered after failed acknowledgement" testRedeliveredMessage
+    it "skip handled message redelivered after chat stop" testRedeliveredHandledMessage
+    it "skip handled message redelivered after reconnection" testRedeliveredAfterReconnect
+    it "skip handled batch redelivered after chat stop" testRedeliveredBatch
+    it "skip integrity error of redelivered receipt" testRedeliveredReceiptIntegrity
+    it "skip integrity error of handled message redelivered after chat stop" testRedeliveredHandledIntegrity
+    it "roll back writes and events of a failed store transaction" testStoreTxRollback
+    it "commit store transaction without the writes of a failed store call" testStoreTxSavepoint
+    it "rethrow the error of a nested store transaction" testStoreTxNested
+    it "receive message again after its handling failed to commit" testRedeliveredUncommittedMessage
+    it "receive contact deletion again after its handling failed to commit" testRedeliveredUncommittedContactDeletion
+#if !defined(dbPostgres)
+    it "roll back store transaction after a failed savepoint rollback" testStoreTxAborted
+#endif
+#if defined(test_hooks)
+    it "suspend chat after the open message transaction ends" testSuspendDuringHandling
+    it "receive messages after activation during the suspension wait" testActivateDuringSuspension
+#if !defined(dbPostgres)
+    it "handle message once when its commit is retried" testRetriedCommit
+#endif
+#endif
   describe "batch send messages" $ do
     it "send multiple messages api" testSendMulti
     it "send multiple timed messages" testSendMultiTimed
@@ -1510,6 +1545,269 @@ testMissedCall ps = do
         bob <## "call with alice ended"
         (length <$> readTVarIO events) `shouldEventuallyReturn` 2
       bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "incoming call: missed")])
+
+testRedeliveredMessage :: HasCallStack => TestParams -> IO ()
+testRedeliveredMessage =
+  testChat2 aliceProfile bobProfile $ \alice bob -> do
+    connectUsers bob alice
+    withCCAgentTransaction bob (`DB.execute_` "ALTER TABLE commands RENAME TO commands_")
+    alice #> "@bob hello"
+    bob <# "alice> hello"
+    bob <##. "internal error: "
+    withCCAgentTransaction bob (`DB.execute_` "ALTER TABLE commands_ RENAME TO commands")
+    bob ##> "/_stop"
+    bob <## "chat stopped"
+    bob ##> "/_start"
+    bob <### ["chat started", "subscribed 1 connections on server localhost"]
+    alice #> "@bob hi"
+    bob <# "alice> hi"
+    bob #$> ("/_get chat @2 count=2", chat, [(0, "hello"), (0, "hi")])
+
+testRedeliveredHandledMessage :: HasCallStack => TestParams -> IO ()
+testRedeliveredHandledMessage ps = do
+  (received, cfg) <- blockFirstEventCfg $ newItemText ("hello" ==)
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatCfg ps cfg "bob" bobProfile $ \bob -> do
+      connectUsers alice bob
+      alice #> "@bob hello"
+      received
+      bob ##> "/_stop"
+      bob <## "chat stopped"
+      bob ##> "/_start"
+      bob <### ["chat started", "subscribed 1 connections on server localhost"]
+      alice #> "@bob hi"
+      bob <# "alice> hi"
+      bob #$> ("/_get chat @2 count=2", chat, [(0, "hello"), (0, "hi")])
+
+testRedeliveredAfterReconnect :: HasCallStack => TestParams -> IO ()
+testRedeliveredAfterReconnect ps = do
+  release <- newEmptyMVar
+  (received, cfg) <- blockFirstEventUntilCfg (readMVar release) $ newItemText ("hello" ==)
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatCfg ps cfg "bob" bobProfile $ \bob -> do
+      connectUsers alice bob
+      alice #> "@bob hello"
+      received
+      bob ##> "/reconnect"
+      bob <## "ok"
+      withCCAgentTransaction bob (`DB.query_` "SELECT count(1) FROM rcv_messages WHERE receive_attempts > 0") `shouldEventuallyReturn` [Only (1 :: Int)]
+      putMVar release ()
+      bob <# "alice> hello"
+      bob <### ["disconnected 1 connections on server localhost", "subscribed 1 connections on server localhost"]
+      alice #> "@bob hi"
+      bob <# "alice> hi"
+      bob #$> ("/_get chat @2 count=2", chat, [(0, "hello"), (0, "hi")])
+
+testRedeliveredBatch :: HasCallStack => TestParams -> IO ()
+testRedeliveredBatch ps = do
+  (received, cfg) <- blockFirstEventCfg $ newItemText ("hello" ==)
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatCfg ps cfg "bob" bobProfile $ \bob -> do
+      connectUsers alice bob
+      alice ##> "/_send @2 json [{\"msgContent\": {\"type\": \"text\", \"text\": \"hello\"}}, {\"msgContent\": {\"type\": \"text\", \"text\": \"hey\"}}]"
+      alice <# "@bob hello"
+      alice <# "@bob hey"
+      received
+      bob ##> "/_stop"
+      bob <## "chat stopped"
+      bob ##> "/_start"
+      bob <### ["chat started", "subscribed 1 connections on server localhost"]
+      alice #> "@bob hi"
+      bob <# "alice> hi"
+      bob #$> ("/_get chat @2 count=3", chat, [(0, "hello"), (0, "hey"), (0, "hi")])
+
+testRedeliveredReceiptIntegrity :: HasCallStack => TestParams -> IO ()
+testRedeliveredReceiptIntegrity ps = do
+  (received, cfg) <- blockFirstEventCfg $ newItemText ("skipped message" `T.isPrefixOf`)
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatCfg ps cfg "bob" bobProfile $ \bob -> do
+      connectUsers bob alice
+      withCCAgentTransaction bob (`DB.execute_` "UPDATE connections SET last_external_snd_msg_id = last_external_snd_msg_id - 1")
+      bob #> "@alice hi"
+      alice <# "bob> hi"
+      received
+      bob ##> "/_stop"
+      bob <## "chat stopped"
+      bob ##> "/_start"
+      bob <### ["chat started", "subscribed 1 connections on server localhost"]
+      alice #> "@bob hey"
+      bob <# "alice> hey"
+      withCCTransaction bob (\db -> DB.query_ db "SELECT count(1) FROM chat_items WHERE item_content LIKE '%rcvIntegrityError%'") `shouldReturn` [Only (1 :: Int)]
+
+testRedeliveredHandledIntegrity :: HasCallStack => TestParams -> IO ()
+testRedeliveredHandledIntegrity ps = do
+  (received, cfg) <- blockFirstEventCfg $ newItemText ("hello" ==)
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatCfg ps cfg "bob" bobProfile $ \bob -> do
+      connectUsers alice bob
+      withCCAgentTransaction bob (`DB.execute_` "UPDATE connections SET last_external_snd_msg_id = last_external_snd_msg_id - 1")
+      alice #> "@bob hello"
+      bob <#. "alice> skipped message ID "
+      received
+      bob ##> "/_stop"
+      bob <## "chat stopped"
+      bob ##> "/_start"
+      bob <### ["chat started", "subscribed 1 connections on server localhost"]
+      alice #> "@bob hey"
+      bob <# "alice> hey"
+      withCCTransaction bob (\db -> DB.query_ db "SELECT count(1) FROM chat_items WHERE item_content LIKE '%rcvIntegrityError%'") `shouldReturn` [Only (1 :: Int)]
+
+testStoreTxRollback :: HasCallStack => TestParams -> IO ()
+testStoreTxRollback =
+  testChat2 aliceProfile bobProfile $ \alice bob -> do
+    connectUsers alice bob
+    r <- runInStoreTx bob True $ do
+      withStore' (`DB.execute_` "UPDATE contact_profiles SET local_alias = 'changed' WHERE display_name = 'alice'")
+      toView CEvtChatSuspended
+      throwChatError $ CEInternalError "rollback"
+    isLeft r `shouldBe` True
+    aliceAlias bob `shouldReturn` [Only ("" :: T.Text)]
+    bob <// 100000
+
+testStoreTxSavepoint :: HasCallStack => TestParams -> IO ()
+testStoreTxSavepoint =
+  testChat2 aliceProfile bobProfile $ \alice bob -> do
+    connectUsers alice bob
+    r <- runInStoreTx bob False $ do
+      withStore' (`DB.execute_` "UPDATE contact_profiles SET local_alias = 'kept' WHERE display_name = 'alice'")
+      withStore' (\db -> DB.execute_ db "UPDATE contact_profiles SET local_alias = 'undone' WHERE display_name = 'alice'" >> DB.execute_ db "UPDATE contact_profiles SET local_alias = NULL WHERE display_name = 'alice'")
+        `catchAllErrors` \_ -> pure ()
+      toView CEvtChatSuspended
+    either (const False) isRight r `shouldBe` True
+    aliceAlias bob `shouldReturn` [Only ("kept" :: T.Text)]
+    bob <## "chat suspended"
+
+testStoreTxNested :: HasCallStack => TestParams -> IO ()
+testStoreTxNested ps =
+  withNewTestChat ps "bob" bobProfile $ \bob -> do
+    r <- runInStoreTx bob False $ withStoreTx (const False) (throwChatError (CEInternalError "nested") :: CM ())
+    either (const False) isLeft r `shouldBe` True
+
+testRedeliveredUncommittedMessage :: HasCallStack => TestParams -> IO ()
+testRedeliveredUncommittedMessage =
+  testChat2 aliceProfile bobProfile $ \alice bob -> do
+    connectUsers alice bob
+    withFailingCommits bob "handled_rcv_msgs" "TRUE" $ do
+      alice #> "@bob hello"
+      bob <##. "critical error: "
+      bob <## "please restart the app"
+    bob ##> "/_stop"
+    bob <## "chat stopped"
+    bob ##> "/_start"
+    bob <### ["chat started", "subscribed 1 connections on server localhost", WithTime "alice> hello"]
+    alice #> "@bob hi"
+    bob <# "alice> hi"
+    bob #$> ("/_get chat @2 count=2", chat, [(0, "hello"), (0, "hi")])
+
+testRedeliveredUncommittedContactDeletion :: HasCallStack => TestParams -> IO ()
+testRedeliveredUncommittedContactDeletion =
+  testChat2 aliceProfile bobProfile $ \alice bob -> do
+    connectUsers alice bob
+    alice <##> bob
+    withFailingCommits bob "messages" "NEW.chat_msg_event = 'x.direct.del'" $ do
+      alice ##> "/_delete @2 entity notify=on"
+      alice <## "bob: contact is deleted"
+      bob <##. "critical error: "
+      bob <## "please restart the app"
+    bob ##> "/_stop"
+    bob <## "chat stopped"
+    bob ##> "/_start"
+    bob <### ["chat started", "subscribed 1 connections on server localhost", "alice (Alice) deleted contact with you"]
+    bob @@@ [("@alice", "contact deleted")]
+
+#if !defined(dbPostgres)
+testStoreTxAborted :: HasCallStack => TestParams -> IO ()
+testStoreTxAborted =
+  testChat2 aliceProfile bobProfile $ \alice bob -> do
+    connectUsers alice bob
+    withCCTransaction bob (`DB.execute_` "CREATE TRIGGER abort_tx BEFORE UPDATE OF local_alias ON contact_profiles WHEN NEW.local_alias = 'undone' BEGIN SELECT RAISE(ROLLBACK, 'abort'); END")
+    r <- runInStoreTx bob False $ do
+      withStore' (`DB.execute_` "UPDATE contact_profiles SET local_alias = 'undone' WHERE display_name = 'alice'") `catchAllErrors` \_ -> pure ()
+      withStore' (`DB.execute_` "UPDATE contact_profiles SET local_alias = 'changed' WHERE display_name = 'alice'")
+    isLeft r `shouldBe` True
+    aliceAlias bob `shouldReturn` [Only ("" :: T.Text)]
+#endif
+
+#if defined(test_hooks)
+testSuspendDuringHandling :: HasCallStack => TestParams -> IO ()
+testSuspendDuringHandling ps = do
+  (holdHandling, releaseHandling, cfg) <- holdStoreTxCfg $ \ChatController {smpAgent} -> void . runExceptT $ getConnectionsVerifyCodes smpAgent []
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatCfg ps cfg "bob" bobProfile $ \bob -> do
+      connectUsers bob alice
+      holdHandling $ alice #> "@bob hello"
+      bob ##> "/_app suspend 0"
+      bob <// 500000
+      releaseHandling
+      bob <### ["ok", WithTime "alice> hello"]
+      handling <- async $ runInStoreTx bob False (pure ())
+      threadDelay 500000
+      (isNothing <$> poll handling) `shouldReturn` True
+      bob ##> "/_app activate"
+      bob <## "ok"
+      (either (const False) isRight <$> wait handling) `shouldReturn` True
+      alice #> "@bob hi"
+      bob <# "alice> hi"
+      bob #$> ("/_get chat @2 count=2", chat, [(0, "hello"), (0, "hi")])
+
+testActivateDuringSuspension :: HasCallStack => TestParams -> IO ()
+testActivateDuringSuspension ps = do
+  (holdHandling, releaseHandling, cfg) <- holdStoreTxCfg $ \_ -> pure ()
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatCfg ps cfg "bob" bobProfile $ \bob@TestCC {chatController = cc} -> do
+      connectUsers bob alice
+      holdHandling $ alice #> "@bob hello"
+      bob ##> "/_app suspend 0"
+      atomically $ readTVar (chatActivated cc) >>= check . not
+      (isRight <$> sendChatCmdStr cc "/_app activate restore=off") `shouldReturn` True
+      releaseHandling
+      bob <### ["ok", WithTime "alice> hello"]
+      alice #> "@bob hi"
+      bob <# "alice> hi"
+
+#if !defined(dbPostgres)
+testRetriedCommit :: HasCallStack => TestParams -> IO ()
+testRetriedCommit ps = do
+  (holdHandling, releaseHandling, cfg) <- holdStoreTxCfg $ \_ -> pure ()
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatCfg ps cfg "bob" bobProfile $ \bob -> do
+      connectUsers bob alice
+      holdHandling $ alice #> "@bob hello"
+      SQL.withConnection (tmpPath ps </> ("bob" <> chatSuffix)) $ \db -> do
+        SQL.execute_ db "BEGIN"
+        void (SQL.query_ db "SELECT count(1) FROM users" :: IO [Only Int])
+        releaseHandling
+        threadDelay 1000000
+        SQL.execute_ db "COMMIT"
+      bob <# "alice> hello"
+      alice #> "@bob hi"
+      bob <# "alice> hi"
+      bob #$> ("/_get chat @2 count=2", chat, [(0, "hello"), (0, "hi")])
+#endif
+
+holdStoreTxCfg :: (ChatController -> IO ()) -> IO (IO () -> IO (), IO (), ChatConfig)
+holdStoreTxCfg afterRelease = do
+  armed <- newTVarIO False
+  entered <- newEmptyMVar
+  release <- newEmptyMVar
+  let hook cc = whenM (atomically $ swapTVar armed False) $ do
+        putMVar entered ()
+        readMVar release
+        afterRelease cc
+      hold :: IO () -> IO ()
+      hold action = do
+        atomically $ writeTVar armed True
+        action
+        timeout 20000000 (readMVar entered) `shouldReturn` Just ()
+  pure (hold, putMVar release (), testCfg {chatHooks = defaultChatHooks {storeTxHook = Just hook}})
+#endif
+
+runInStoreTx :: TestCC -> Bool -> CM a -> IO (Either ChatError (Either ChatError a))
+runInStoreTx TestCC {chatController = cc} rollback action =
+  runReaderT (runExceptT $ withStoreTx (const rollback) action) cc
+
+aliceAlias :: TestCC -> IO [Only T.Text]
+aliceAlias cc = withCCTransaction cc (\db -> DB.query_ db "SELECT local_alias FROM contact_profiles WHERE display_name = 'alice'")
 
 testStopStartChat :: HasCallStack => TestParams -> IO ()
 testStopStartChat ps =

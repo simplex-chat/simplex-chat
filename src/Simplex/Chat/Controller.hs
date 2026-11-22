@@ -17,7 +17,7 @@
 
 module Simplex.Chat.Controller where
 
-import Control.Concurrent (ThreadId)
+import Control.Concurrent (ThreadId, myThreadId)
 import Control.Concurrent.Async (Async)
 import Control.Exception (Exception)
 import qualified Control.Exception as E
@@ -99,7 +99,7 @@ import Simplex.Messaging.Session (SessionVar)
 import Simplex.Messaging.TMap (TMap)
 import Simplex.Messaging.Transport (TLS, TransportPeer (..), simplexMQVersion)
 import Simplex.Messaging.Transport.Client (SocksProxyWithAuth, TransportHost)
-import Simplex.Messaging.Util (AnyError (..), catchAllErrors, catchOwn', (<$$>))
+import Simplex.Messaging.Util (AnyError (..), catchAllErrors, catchAllErrors', catchOwn', (<$$>))
 import Simplex.RemoteControl.Client
 import Simplex.RemoteControl.Invitation (RCSignedInvitation, RCVerifiedInvitation)
 import Simplex.RemoteControl.Types
@@ -265,10 +265,16 @@ data ChatHooks = ChatHooks
     eventHook :: Maybe (ChatController -> Either ChatError ChatEvent -> IO (Either ChatError ChatEvent)),
     -- acceptMember hook can be used to accept or reject member connecting via group link without API calls
     acceptMember :: Maybe (GroupInfo -> GroupLinkInfo -> Profile -> IO (Either GroupRejectionReason (GroupAcceptance, GroupMemberRole)))
+#if defined(test_hooks)
+    , storeTxHook :: Maybe (ChatController -> IO ())
+#endif
   }
 
 defaultChatHooks :: ChatHooks
 defaultChatHooks = ChatHooks Nothing Nothing Nothing Nothing Nothing
+#if defined(test_hooks)
+  Nothing
+#endif
 
 data PresetServers = PresetServers
   { operators :: NonEmpty PresetOperator,
@@ -346,14 +352,28 @@ data ChatController = ChatController
     expireCIFlags :: TMap UserId Bool,
     cleanupManagerAsync :: TVar (Maybe (Async ())),
     chatActivated :: TVar Bool,
+    openStoreTxs :: TVar Int,
     timedItemThreads :: TMap (ChatRef, ChatItemId) (TVar (Maybe (Weak ThreadId))),
     showLiveItems :: TVar Bool,
     encryptLocalFiles :: TVar Bool,
     tempDirectory :: TVar (Maybe FilePath),
     assetsDirectory :: TVar (Maybe FilePath),
     logFilePath :: Maybe FilePath,
-    contactMergeEnabled :: TVar Bool
+    contactMergeEnabled :: TVar Bool,
+    storeTx :: Maybe StoreTx
   }
+
+data StoreTx = StoreTx
+  { txThread :: ThreadId,
+    txConn :: DB.Connection,
+    txAfterCommit :: TVar [CM' ()],
+    txAborted :: TVar (Maybe E.SomeException)
+  }
+
+newtype StoreTxRollback = StoreTxRollback ChatError
+  deriving (Show)
+
+instance Exception StoreTxRollback
 
 data HelpSection = HSMain | HSFiles | HSGroups | HSContacts | HSMyAddress | HSIncognito | HSMarkdown | HSMessages | HSRemote | HSSettings | HSDatabase
   deriving (Show)
@@ -1817,7 +1837,28 @@ eToView' = toView_ . Left
 {-# INLINE eToView' #-}
 
 toView_ :: Either ChatError ChatEvent -> CM' ()
-toView_ ev = do
+toView_ = afterCommit . emitEvent
+
+afterCommit :: CM' () -> CM' ()
+afterCommit action =
+  ownStoreTx >>= \case
+    Just StoreTx {txAfterCommit} -> atomically $ modifyTVar' txAfterCommit (action :)
+    Nothing -> action
+
+afterCommitE :: CM () -> CM ()
+afterCommitE action =
+  lift ownStoreTx >>= \case
+    Just _ -> lift . afterCommit $ action `catchAllErrors'` eToView'
+    Nothing -> action
+
+ownStoreTx :: CM' (Maybe StoreTx)
+ownStoreTx =
+  asks storeTx >>= \case
+    Just tx@StoreTx {txThread} -> (\t -> if t == txThread then Just tx else Nothing) <$> liftIO myThreadId
+    Nothing -> pure Nothing
+
+emitEvent :: Either ChatError ChatEvent -> CM' ()
+emitEvent ev = do
   cc@ChatController {outputQ = localQ, remoteCtrlSession = session, config = ChatConfig {chatHooks}} <- ask
   event <- case eventHook chatHooks of
     Just hook -> liftIO $ hook cc ev
@@ -1848,17 +1889,66 @@ withFastStore = withStorePriority True
 withStorePriority :: Bool -> (DB.Connection -> ExceptT StoreError IO a) -> CM a
 withStorePriority priority action = do
   ChatController {chatStore} <- ask
-  liftIOEither $ withTransactionPriority chatStore priority (runExceptT . withExceptT ChatErrorStore . action) `catchOwn'` handleDBErrors
+  tx_ <- lift ownStoreTx
+  let run = runExceptT . withExceptT ChatErrorStore . action
+  liftIOEither $ case tx_ of
+    Just tx@StoreTx {txConn} -> inSavepoint tx (run txConn) `catchOwn'` handleDBErrors
+    Nothing -> withTransactionPriority chatStore priority run `catchOwn'` handleDBErrors
 
 withStoreIsolation' :: IsolationLevel -> (DB.Connection -> IO a) -> CM a
 withStoreIsolation' isolation action = do
   ChatController {chatStore} <- ask
-  liftIOEither $ withTransactionIsolation chatStore isolation (fmap Right . action) `catchOwn'` handleDBErrors
+  tx_ <- lift ownStoreTx
+  liftIOEither $ case tx_ of
+    Just tx@StoreTx {txConn} -> inSavepoint tx (Right <$> action txConn) `catchOwn'` handleDBErrors
+    Nothing -> withTransactionIsolation chatStore isolation (fmap Right . action) `catchOwn'` handleDBErrors
 
 withStoreBatch :: Traversable t => (DB.Connection -> t (IO (Either ChatError a))) -> CM' (t (Either ChatError a))
 withStoreBatch actions = do
   ChatController {chatStore} <- ask
-  liftIO $ withTransaction chatStore $ mapM (`catchOwn'` handleDBErrors) . actions
+  tx_ <- ownStoreTx
+  liftIO $ case tx_ of
+    Just tx@StoreTx {txConn} -> mapM ((`catchOwn'` handleDBErrors) . inSavepoint tx) $ actions txConn
+    Nothing -> withTransaction chatStore $ mapM (`catchOwn'` handleDBErrors) . actions
+
+withStoreTx :: (ChatError -> Bool) -> CM a -> CM (Either ChatError a)
+withStoreTx rollbackOn action = do
+  cc@ChatController {chatStore, chatActivated, openStoreTxs} <- ask
+  lift ownStoreTx >>= \case
+    Just _ -> Right <$> action
+    Nothing -> do
+      afterCommitQ <- newTVarIO []
+      aborted <- newTVarIO Nothing
+      tId <- liftIO myThreadId
+      let run db = do
+            atomically $ writeTVar afterCommitQ [] >> writeTVar aborted Nothing
+#if defined(test_hooks)
+            mapM_ ($ cc) $ storeTxHook $ chatHooks $ config cc
+#endif
+            r <- runReaderT (runExceptT action) cc {storeTx = Just StoreTx {txThread = tId, txConn = db, txAfterCommit = afterCommitQ, txAborted = aborted}}
+            readTVarIO aborted >>= mapM_ E.throwIO
+            case r of
+              Left e | rollbackOn e -> E.throwIO $ StoreTxRollback e
+              _ -> pure r
+          rolledBack (StoreTxRollback e) = pure $ Left e
+          beginStoreTx = atomically $ readTVar chatActivated >>= checkSTM >> modifyTVar' openStoreTxs (+ 1)
+          endStoreTx = atomically $ modifyTVar' openStoreTxs (subtract 1)
+      committed <- liftIO $ E.bracket_ beginStoreTx endStoreTx $ ((Right <$> withTransaction chatStore run) `E.catch` rolledBack) `catchOwn'` handleDBErrors
+      case committed of
+        Right r -> do
+          lift . sequence_ . reverse =<< readTVarIO afterCommitQ
+          pure r
+        Left e -> throwError e
+
+inSavepoint :: StoreTx -> IO a -> IO a
+inSavepoint StoreTx {txConn = db, txAborted} action = do
+  readTVarIO txAborted >>= mapM_ E.throwIO
+  DB.execute_ db "SAVEPOINT store_call"
+  r <- action `E.onException` rollback
+  DB.execute_ db "RELEASE SAVEPOINT store_call" `E.onException` rollback
+  pure r
+  where
+    rollback = (DB.execute_ db "ROLLBACK TO SAVEPOINT store_call" >> DB.execute_ db "RELEASE SAVEPOINT store_call") `catchOwn'` (atomically . writeTVar txAborted . Just)
 
 handleDBErrors :: E.SomeException -> IO (Either ChatError a)
 handleDBErrors e = pure $ Left $ ChatErrorStore $ case E.fromException e of

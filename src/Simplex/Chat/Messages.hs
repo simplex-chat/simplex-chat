@@ -1221,7 +1221,7 @@ data ConnOrGroupId = ConnectionId Int64 | GroupId Int64
 
 data SndMsgDelivery = SndMsgDelivery
   { connId :: Int64,
-    agentMsgId :: AgentMsgId
+    agentMsgId :: Maybe AgentMsgId
   }
   deriving (Show)
 

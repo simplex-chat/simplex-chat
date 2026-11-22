@@ -638,7 +638,9 @@ processChatCommand cxt nm = \case
     chatWriteVar chatActivated False
     lift $ setAllExpireCIFlags False
     stopRemoteCtrl
-    lift $ withAgent' (`suspendAgent` t)
+    ChatController {chatActivated, openStoreTxs} <- ask
+    suspend <- atomically $ ifM (readTVar chatActivated) (pure False) (True <$ (readTVar openStoreTxs >>= checkSTM . (0 ==)))
+    when suspend $ lift $ withAgent' (`suspendAgent` t)
     ok_
   ShowConnectionsDiff showIds -> do
     users <- withFastStore' getUsers
@@ -6652,6 +6654,7 @@ cleanupManager = do
       ts <- liftIO getCurrentTime
       let cutoffTs = addUTCTime (-(30 * nominalDay)) ts
       withStore' (`deleteOldMessages` cutoffTs)
+      withStore' (`deleteOldHandledRcvMsgs` cutoffTs)
     cleanupDeliveryTasks = do
       ts <- liftIO getCurrentTime
       let cutoffTs = addUTCTime (-(7 * nominalDay)) ts

@@ -212,6 +212,12 @@ chatGroupTests = do
     it "deduplicate forwarded messages" testGroupMsgForwardDeduplicate
     it "report duplicate when forwarded copy is received after direct copy" testGroupMsgForwardDuplicateEvent
     it "report duplicate when direct copy is received after forwarded copy" testGroupMsgDirectDuplicateEvent
+    it "skip handled message redelivered after failed acknowledgement" testGroupRedeliveredMessage
+    it "skip handled message redelivered after chat stop" testGroupRedeliveredHandledMessage
+    it "skip forwarded message redelivered after chat stop" testGroupRedeliveredForwardedMessage
+    it "forward member invitation once after its handling failed to commit" testGroupUncommittedMemberInvitation
+    it "join introduced member once after the handling failed to commit" testGroupUncommittedMemberForward
+    it "keep group deleted after chat stop following the deletion commit" testGroupDeletedStopAfterCommit
     it "forward message edit (x.msg.update)" testGroupMsgForwardEdit
     it "set notification flag of forwarded messages by the original event" testGroupMsgForwardNotification
     it "forward message reaction (x.msg.react)" testGroupMsgForwardReaction
@@ -6145,6 +6151,132 @@ testGroupMsgDirectDuplicateEvent ps = do
         agentSendBody bob bobConnId $ chatMsgToBody chatMsg
         cath <##. "duplicate group message, group id: 1"
         readTVarIO dups `shouldReturn` ["bob"]
+
+testGroupRedeliveredMessage :: HasCallStack => TestParams -> IO ()
+testGroupRedeliveredMessage =
+  testChat2 aliceProfile bobProfile $ \alice bob -> do
+    alice ##> "/set receipts all off"
+    alice <## "ok"
+    createGroup2 "team" bob alice
+    withCCAgentTransaction bob (`DB.execute_` "ALTER TABLE commands RENAME TO commands_")
+    alice #> "#team hello"
+    bob <# "#team alice> hello"
+    bob <##. "internal error: "
+    withCCAgentTransaction bob (`DB.execute_` "ALTER TABLE commands_ RENAME TO commands")
+    bob ##> "/_stop"
+    bob <## "chat stopped"
+    bob ##> "/_start"
+    bob <### ["chat started", "subscribed 2 connections on server localhost"]
+    alice #> "#team hi"
+    bob <# "#team alice> hi"
+    bob #$> ("/_get chat #1 count=2", chat, [(0, "hello"), (0, "hi")])
+
+testGroupRedeliveredHandledMessage :: HasCallStack => TestParams -> IO ()
+testGroupRedeliveredHandledMessage ps = do
+  (received, cfg) <- blockFirstEventCfg $ newItemText ("hello" ==)
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatCfg ps cfg "bob" bobProfile $ \bob -> do
+      createGroup2 "team" alice bob
+      alice #> "#team hello"
+      received
+      bob ##> "/_stop"
+      bob <## "chat stopped"
+      bob ##> "/_start"
+      bob <### ["chat started", "subscribed 2 connections on server localhost"]
+      alice #> "#team hi"
+      bob <# "#team alice> hi"
+      bob #$> ("/_get chat #1 count=2", chat, [(0, "hello"), (0, "hi")])
+
+testGroupRedeliveredForwardedMessage :: HasCallStack => TestParams -> IO ()
+testGroupRedeliveredForwardedMessage ps = do
+  (received, cfg) <- blockFirstEventCfg $ newItemText ("hi there" ==)
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChat ps "bob" bobProfile $ \bob ->
+      withNewTestChatCfg ps cfg "cath" cathProfile $ \cath -> do
+        createGroup3 "team" alice bob cath
+        setupGroupForwarding alice bob cath
+        bob #> "#team hi there"
+        alice <# "#team bob> hi there"
+        received
+        cath ##> "/_stop"
+        cath <## "chat stopped"
+        cath ##> "/_start"
+        cath <### ["chat started", StartsWith "subscribed "]
+        alice #> "#team hey"
+        bob <# "#team alice> hey"
+        cath <# "#team alice> hey"
+        cath #$> ("/_get chat #1 count=2", chat, [(0, "hi there"), (0, "hey")])
+
+testGroupUncommittedMemberInvitation :: HasCallStack => TestParams -> IO ()
+testGroupUncommittedMemberInvitation =
+  testChat3 aliceProfile bobProfile cathProfile $ \alice bob cath -> do
+    createGroup2 "team" alice bob
+    connectUsers alice cath
+    addMember "team" alice cath GRAdmin
+    withFailingCommits alice "messages" "NEW.chat_msg_event = 'x.grp.mem.inv'" $ do
+      cath ##> "/j team"
+      concurrentlyN_
+        [ do
+            alice <## "#team: cath joined the group"
+            alice <##. "critical error: "
+            alice <## "please restart the app",
+          cath <## "#team: you joined the group",
+          bob <## "#team: alice added cath (Catherine) to the group (connecting...)"
+        ]
+    alice ##> "/_stop"
+    alice <## "chat stopped"
+    alice ##> "/_start"
+    alice <### ["chat started", StartsWith "subscribed "]
+    concurrently_
+      (cath <## "#team: member bob (Bob) is connected")
+      (bob <## "#team: new member cath is connected")
+    alice #> "#team hi"
+    concurrently_
+      (bob <# "#team alice> hi")
+      (cath <# "#team alice> hi")
+    withCCTransaction bob (\db -> DB.query_ db "SELECT count(1) FROM messages WHERE chat_msg_event = 'x.grp.mem.fwd'") `shouldReturn` [Only (1 :: Int)]
+
+testGroupUncommittedMemberForward :: HasCallStack => TestParams -> IO ()
+testGroupUncommittedMemberForward =
+  testChat3 aliceProfile bobProfile cathProfile $ \alice bob cath -> do
+    createGroup2 "team" alice bob
+    connectUsers alice cath
+    addMember "team" alice cath GRAdmin
+    withFailingCommits bob "messages" "NEW.chat_msg_event = 'x.grp.mem.fwd'" $ do
+      cath ##> "/j team"
+      concurrentlyN_
+        [ alice <## "#team: cath joined the group",
+          cath <## "#team: you joined the group",
+          do
+            bob <## "#team: alice added cath (Catherine) to the group (connecting...)"
+            bob <##. "critical error: "
+            bob <## "please restart the app"
+        ]
+    bob ##> "/_stop"
+    bob <## "chat stopped"
+    bob ##> "/_start"
+    bob <### ["chat started", StartsWith "subscribed ", "#team: new member cath is connected"]
+    cath <## "#team: member bob (Bob) is connected"
+    cath #> "#team hi"
+    concurrently_
+      (alice <# "#team cath> hi")
+      (bob <# "#team cath> hi")
+
+testGroupDeletedStopAfterCommit :: HasCallStack => TestParams -> IO ()
+testGroupDeletedStopAfterCommit ps = do
+  (received, cfg) <- blockFirstEventCfg $ newItemText ("deleted group" ==)
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatCfg ps cfg "bob" bobProfile $ \bob -> do
+      createGroup2' "team" alice (bob, GRMember) True
+      alice ##> "/d #team"
+      alice <## "#team: you deleted the group (signed)"
+      received
+      bob ##> "/_stop"
+      bob <## "chat stopped"
+      bob ##> "/_start"
+      bob <### ["chat started", "subscribed 1 connections on server localhost"]
+      bob ##> "/d #team"
+      bob <## "#team: you deleted your local copy of the group"
 
 testGroupMsgForwardEdit :: HasCallStack => TestParams -> IO ()
 testGroupMsgForwardEdit =
