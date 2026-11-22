@@ -75,6 +75,7 @@ module StoreService.Names.Store
     getLiveOrders,
     closeOverdue,
     updateRegistration,
+    queueSettled,
     selectRegistration,
     findRegistrations,
     labelHolder,
@@ -155,6 +156,7 @@ import Simplex.Chat.Badges.Code (NameLength, nameLength, nameLengthInt)
 import Simplex.Chat.Badges.Types (BadgeCodePaymentStatus (..))
 import Simplex.Chat.PaymentService.Types (CryptoCurrency, CurrencyAmount (..), InvoiceId (..), InvoiceStatus (..), PaymentProvider, ServicePaymentMethod)
 import Simplex.Chat.Store.Shared (insertedRowId)
+import Simplex.Messaging.Agent.Store.Common (withSavepoint)
 import Simplex.Messaging.Agent.Store.DB (Binary (..), BoolInt (..), FromField (..), ToField (..), fromTextField_)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Crypto (sha256Hash)
@@ -177,10 +179,13 @@ import StoreService.Store (RevokeResult (..))
 import StoreService.Store.Invoices (StoreDecodeError (..), executeChanging, lockInvoice, mkQuery, newInvoiceId, note, prefixQuery, unfundedQuery)
 
 #if defined(dbPostgres)
+import qualified Data.ByteString as B
 import Database.PostgreSQL.Simple (Only (..), Query, ToRow, (:.) (..))
+import Database.PostgreSQL.Simple.Errors (ConstraintViolation (..), constraintViolation)
 import Database.PostgreSQL.Simple.SqlQQ (sql)
 #else
 import Database.SQLite.Simple (Only (..), Query, ToRow, (:.) (..))
+import qualified Database.SQLite.Simple as SQL
 import Database.SQLite.Simple.QQ (sql)
 #endif
 
@@ -1032,6 +1037,23 @@ updateRegistration db r now = do
       DB.query db (mkQuery "SELECT version, live, phase FROM @name_registrations WHERE registration_id = ?") (Only rid) >>= \case
         [(version, BI storedLive, storedPhase)] | version == nrVersion -> pure $ if storedLive || storedPhase == PTaken then LiveOrderExists else NotLive
         _ -> pure VersionChanged
+
+queueSettled :: DB.Connection -> NameRegistration -> UTCTime -> IO (Maybe VersionWrite)
+queueSettled db r now =
+  withSavepoint db "queue_settled" (updateRegistration db r {nrPhase = OQueued} now) >>= \case
+    Right w -> pure $ Just w
+    Left e
+      | heldLabelRefused e -> pure Nothing
+      | otherwise -> E.throwIO e
+
+heldLabelRefused :: DB.SQLError -> Bool
+#if defined(dbPostgres)
+heldLabelRefused e = case constraintViolation e of
+  Just (UniqueViolation index) -> "idx_name_registrations_held_label" `B.isSuffixOf` index
+  _ -> False
+#else
+heldLabelRefused e = SQL.sqlError e == SQL.ErrorConstraint && "name_registrations.label_hash" `T.isSuffixOf` SQL.sqlErrorDetails e
+#endif
 
 type RevealRow = (Maybe Text, Maybe Hex32, Maybe Text, Maybe Text, Maybe Int64, Maybe Int64, Maybe RecoverableSignature) :. (Maybe TermsHash, Maybe Int64, Maybe RecoverableSignature)
 

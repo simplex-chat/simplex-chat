@@ -18,7 +18,7 @@ where
 
 import StoreService.Names.Phases (Phases, RegistrationId (..))
 import qualified StoreService.Names.Phases as Phases
-import StoreService.Names.Store (BrokenInvariant (..), InvoiceClose (..), LateSupport (..), NamePhase (..), NameRegistration (..), OrderPhase (..), VersionWrite (..), creditBalance, getRegistration, labelHolder, namePhase, openInvoicesOfHeldName, reversalRecorded, setLateSupport, setSettledAt, updateRegistration)
+import StoreService.Names.Store (BrokenInvariant (..), InvoiceClose (..), LateSupport (..), NamePhase (..), NameRegistration (..), OrderPhase (..), VersionWrite (..), creditBalance, getRegistration, labelHolder, namePhase, openInvoicesOfHeldName, queueSettled, reversalRecorded, setLateSupport, setSettledAt, updateRegistration)
 import StoreService.Providers (Confirmation (..), Confirmed (..), CryptoReceived (..), Funded (..), PaymentSignal (..), Provider (..), Received (..), providerErrorText, providerNamed, receivedAmount, receivedConfirmed)
 import StoreService.Store.Invoices (InvoicePayment (..), InvoiceProduct (..), InvoiceRow (..), OverdueInvoice (..), currentSecond, expireOverdueInvoice, lockInvoice, markCodePaid, paymentHolds, paymentStatusText, settlementCodeHash, settlementInvoice, truncateToSecond, updateInvoiceStatus, upsertPayment)
 import StoreService.Waiters (Waiters, publish, publishPayment)
@@ -29,7 +29,7 @@ import Control.Logger.Simple (logError, logNote, logWarn)
 import Control.Monad (forM_, when)
 import Data.ByteString (ByteString)
 import Data.Int (Int64)
-import Data.Maybe (catMaybes, fromMaybe, isJust)
+import Data.Maybe (catMaybes, fromMaybe, isJust, isNothing)
 import Data.Text (Text)
 import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime)
 import Simplex.Chat.PaymentService.Types (CurrencyAmount (..), InvoiceId (..), InvoiceStatus (..), PaymentStatus (..))
@@ -212,11 +212,13 @@ nameSettled db ref before after money r@NameRegistration {nrId, nrLabelHash, nrP
                   _ -> E.throwIO (RegistrationChanged nrId)
               False -> do
                 held <- isJust <$> labelHolder db nrLabelHash
-                updateRegistration db r {nrPhase = if held then OTaken now else OQueued} now >>= \case
+                queued <- if held then pure Nothing else queueSettled db r now
+                let taken = isNothing queued
+                maybe (updateRegistration db r {nrPhase = OTaken now} now) pure queued >>= \case
                   Written v -> do
                     setSettledAt db nrId paidAt
-                    when held $ creditBalance db nrId nrPrice now
-                    pure $ NOWritten nrId v : [NOTaken ref | held]
+                    when taken $ creditBalance db nrId nrPrice now
+                    pure $ NOWritten nrId v : [NOTaken ref | taken]
                   NotLive -> pure [NOLate ref]
                   -- an invariant broke; left live, the order would keep its hold for ever, as no sweep closes a paid invoice
                   LiveOrderExists -> (<> [NOLate ref, NOLiveOrderExists ref]) <$> closed

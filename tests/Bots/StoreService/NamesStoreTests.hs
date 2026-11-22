@@ -76,6 +76,7 @@ namesStoreTests = describe "StoreService names: store" $ do
     it "keeps live in step with the phase, a taken order live again by the selection of a name" testLiveFollowsPhase
     it "is live while an order can still progress to a registration for its name" testOrderLive
     it "refuses to queue a closed order, also when a newer live order holds its name" testLatePayment
+    it "queues a settled order in a savepoint, and answers Nothing when another order holds its name, so the same transaction writes it taken" testQueueSettledHeld
     it "refuses a write that would meet another live order, writing nothing" testWriteMeetsLiveOrder
     it "writes a name selected, with its fields and reveal, clearing the transactions, reveal times and failed attempts, its month counted from the selection" testSelectRegistration
     it "finds registrations made in the same second, and an exact resend's newest order, newest first, and orders the rest by their id" testSameSecondOrder
@@ -533,6 +534,21 @@ testOrderLive = withServiceStore $ \st -> do
   map (liveIn paid) [OUnpaid (InvoiceId "inv-r1"), OClosed ICExpired, OQueued, OCommitting (TxHash $ hashFixture 8), OCommitted commitFixture, ORegistering commitFixture (TxHash $ hashFixture 9), registered, taken, failed]
     `shouldBe` [(PUnpaid, True), (PClosed, False), (PQueued, True), (PCommitting, True), (PCommitted, True), (PRegistering, True), (PRegistered, False), (PTaken, False), (PFailed, True)]
   map (liveIn code) [taken, failed, registered] `shouldBe` [(PTaken, False), (PFailed, True), (PRegistered, False)]
+
+testQueueSettledHeld :: IO ()
+testQueueSettledHeld = withServiceStore $ \st -> do
+  placePaid st "r1" ownerA (order "alicebakery" 1) (at 60) `shouldReturn` Right ()
+  r1 <- reg st "r1"
+  write st r1 {nrPhase = OQueued} `shouldReturn` Written 2
+  placePaid st "r2" ownerB (order "alicebakery" 2) (at 60) `shouldReturn` Right ()
+  r2 <- reg st "r2"
+  withTransaction st (\db -> (,) <$> queueSettled db r2 (at 1) <*> updateRegistration db r2 {nrPhase = OTaken (at 1)} (at 1))
+    `shouldReturn` (Nothing, Written 2)
+  nrPhase <$> reg st "r2" `shouldReturn` OTaken (at 1)
+  placePaid st "r3" ownerB (order "bobsbakery" 3) (at 60) `shouldReturn` Right ()
+  r3 <- reg st "r3"
+  withTransaction st (\db -> queueSettled db r3 (at 1)) `shouldReturn` Just (Written 2)
+  nrPhase <$> reg st "r3" `shouldReturn` OQueued
 
 testLatePayment :: IO ()
 testLatePayment = withServiceStore $ \st -> do
