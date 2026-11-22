@@ -1364,6 +1364,7 @@ export type ChatErrorType =
   | ChatErrorType.ConnectionUserChangeProhibited
   | ChatErrorType.PeerChatVRangeIncompatible
   | ChatErrorType.RelayTestError
+  | ChatErrorType.LinkPreview
   | ChatErrorType.InternalError
   | ChatErrorType.Exception
 
@@ -1444,6 +1445,7 @@ export namespace ChatErrorType {
     | "connectionUserChangeProhibited"
     | "peerChatVRangeIncompatible"
     | "relayTestError"
+    | "linkPreview"
     | "internalError"
     | "exception"
 
@@ -1811,6 +1813,11 @@ export namespace ChatErrorType {
 
   export interface RelayTestError extends Interface {
     type: "relayTestError"
+    message: string
+  }
+
+  export interface LinkPreview extends Interface {
+    type: "linkPreview"
     message: string
   }
 

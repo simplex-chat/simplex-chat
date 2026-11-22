@@ -107,7 +107,8 @@ chatCommandsDocsData =
         ("APIDeleteMemberChatItem", [], "Moderate message. Requires Moderator role (and higher than message author's).", ["CRChatItemsDeleted", "CRChatCmdError"], [], Just UNBackground, "/_delete member item #" <> Param "groupId" <> " " <> Join ',' "chatItemIds"),
         ("APIChatItemReaction", [], "Add/remove message reaction.", ["CRChatItemReaction", "CRChatCmdError"], [], Just UNBackground, "/_reaction " <> Param "chatRef" <> " " <> Param "chatItemId" <> " " <> OnOff "add" <> " " <> Json "reaction"),
         ("APIShareMyAddress", [], "Share user address card", ["CRChatMsgContent"], [], Nothing, "/_share address " <> Param "toSendRef"),
-        ("APIShareChatMsgContent", [], "Share channel address", ["CRChatMsgContent"], [], Nothing, "/_share chat content " <> Param "shareChatRef" <> " " <> Param "toSendRef")
+        ("APIShareChatMsgContent", [], "Share channel address", ["CRChatMsgContent"], [], Nothing, "/_share chat content " <> Param "shareChatRef" <> " " <> Param "toSendRef"),
+        ("APIGetLinkPreview", [], "Get link preview of a web page.", ["CRLinkPreview", "CRChatCmdError"], [TD "CELinkPreview" "The page or its image cannot be fetched, or the page has no title or image"], Just UNInteractive, "/_link preview " <> Param "uri")
       ]
     ),
     ( "File commands",

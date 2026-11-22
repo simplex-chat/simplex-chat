@@ -71,7 +71,7 @@ import Simplex.Chat.Call
 import Simplex.Chat.Controller
 import Simplex.Chat.Delivery (DeliveryJobScope (..), DeliveryJobSpec (..), DeliveryWorkerScope (..))
 import Simplex.Chat.Files
-import Simplex.Chat.Image (cropToSquare, decodeResizable, resizeImageDataUri)
+import Simplex.Chat.Image (cropToSquare, decodeResizable, imageDataPreview, maxImagePreviewSize, resizeImageDataUri)
 import Simplex.Chat.Markdown
 import Simplex.Chat.Messages
 import Simplex.Chat.Messages.Batch (BatchMode, encodeBatchElement)
@@ -86,6 +86,7 @@ import Simplex.Chat.Protocol
 import Simplex.Chat.Remote
 import Simplex.Chat.Remote.Types
 import Simplex.Chat.Library.Internal
+import Simplex.Chat.LinkPreview (getLinkPreview)
 import Simplex.Chat.Stats
 import Simplex.Chat.Store
 import Simplex.Chat.Store.AppSettings
@@ -176,9 +177,6 @@ maxImageSize = 261120 * 2 -- auto-receive on mobiles
 maxProfileImageSize :: Int
 maxProfileImageSize = 12500
 
-maxImagePreviewSize :: Int64
-maxImagePreviewSize = 14000
-
 checkProfileImageSize :: Maybe ImageData -> CM ()
 checkProfileImageSize = mapM_ $ \(ImageData t) ->
   let size = T.length t
@@ -218,7 +216,7 @@ loadImageData path = case map toLower (takeExtension path) of
           bs <- B.readFile path
           if B.null bs
             then pure $ Left $ "image file is empty: " <> path
-            else first (\e -> "image file cannot be resized: " <> path <> " (" <> e <> ")") <$> (runExceptT (resize bs) `catchAll` (pure . Left . show))
+            else first (\e -> "image file cannot be resized: " <> path <> " (" <> e <> ")") <$> (runExceptT (resize bs) `catchOwn'` (pure . Left . show))
     resize bs = do
       (img, profile) <- ExceptT $ decodeResizable bs
       ImageData . safeDecodeUtf8 . LB.toStrict <$> ExceptT (resizeImageDataUri (fromIntegral maxProfileImageSize) (cropToSquare img) profile)
@@ -230,12 +228,11 @@ fixedImagePreview :: ImageData
 fixedImagePreview = ImageData "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAAAXNSR0IArs4c6QAAAKVJREFUeF7t1kENACEUQ0FQhnVQ9lfGO+xggITQdvbMzArPey+8fa3tAfwAEdABZQspQStgBssEcgAIkSAJkiAJljtEgiRIgmUCSZAESZAESZAEyx0iQRIkwTKBJEiCv5fgvTd1wDmn7QAP4AeIgA4oW0gJWgEzWCZwbQ7gAA7ggLKFOIADOKBMIAeAEAmSIAmSYLlDJEiCJFgmkARJkARJ8N8S/ADTZUewBvnTOQAAAABJRU5ErkJggg=="
 
 imagePreview :: CryptoFile -> IO ImageData
-imagePreview f = either (const fixedImagePreview) (ImageData . safeDecodeUtf8 . LB.toStrict) <$> (runExceptT preview `catchAll` (pure . Left . show))
+imagePreview f = fromRight fixedImagePreview <$> (runExceptT preview `catchOwn'` (pure . Left . show))
   where
     preview = do
       s <- withExceptT show $ CF.readFile f
-      (img, profile) <- ExceptT $ decodeResizable $ LB.toStrict s
-      ExceptT $ resizeImageDataUri maxImagePreviewSize img profile
+      ExceptT $ imageDataPreview maxImagePreviewSize $ LB.toStrict s
 
 imageFilePrefix :: String
 imageFilePrefix = "IMG_"
@@ -1283,6 +1280,11 @@ processChatCommand cxt nm = \case
             profile = userProfileDirect user Nothing Nothing True
             text = safeDecodeUtf8 $ strEncode connLink
         pure $ CRChatMsgContent user MCChat {text, chatLink = MCLContact {connLink, profile, business}, ownerSig}
+  APIGetLinkPreview uri -> do
+    ChatConfig {linkPreviewConfig} <- asks config
+    netCfg <- lift getNetworkConfig
+    g <- asks random
+    liftIO (getLinkPreview linkPreviewConfig netCfg nm g uri) >>= either (throwChatError . CELinkPreview) (pure . CRLinkPreview)
   APIUserRead userId -> withUserId userId $ \user -> withFastStore' (`setUserChatsRead` user) >> ok user
   UserRead -> withUser $ \User {userId} -> processChatCommand cxt nm $ APIUserRead userId
   APIChatRead chatRef@(ChatRef cType chatId scope_) -> withUser $ \_ -> case cType of
@@ -3639,7 +3641,7 @@ processChatCommand cxt nm = \case
               Just XFTPRcvFile {agentRcvFileId} -> do
                 forM_ (liveRcvFileTransferPath ftr) $ \filePath -> do
                   fsFilePath <- lift $ toFSFilePath filePath
-                  liftIO $ removeFile fsFilePath `catchAll_` pure ()
+                  liftIO $ removeFile fsFilePath `catchOwn'` \_ -> pure ()
                 lift . forM_ agentRcvFileId $ \(AgentRcvFileId aFileId) ->
                   withAgent' (`xftpDeleteRcvFile` aFileId)
                 aci_ <- fmap updatedAChatItem <$> resetRcvCIFileStatus user fileId CIFSRcvInvitation
@@ -6880,6 +6882,7 @@ chatCommandP =
       "/_forward " *> (APIForwardChatItems <$> chatRefP <*> (" as_group=" *> onOffP <|> pure False) <* A.space <*> chatRefP <*> _strP <*> sendMessageTTLP),
       "/_share chat content " *> (APIShareChatMsgContent <$> chatRefP <* A.space <*> sendRefP),
       "/_share address " *> (APIShareMyAddress <$> sendRefP),
+      "/_link preview " *> (APIGetLinkPreview <$> textP),
       "/_read user " *> (APIUserRead <$> A.decimal),
       "/read user" $> UserRead,
       "/_read chat " *> (APIChatRead <$> chatRefP),
