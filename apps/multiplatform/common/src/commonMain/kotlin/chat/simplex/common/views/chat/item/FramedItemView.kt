@@ -24,6 +24,7 @@ import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.chatlist.openChat
+import chat.simplex.common.views.newchat.openMsgLink
 import chat.simplex.common.views.newchat.planAndConnect
 import chat.simplex.res.*
 import kotlinx.coroutines.Dispatchers
@@ -515,9 +516,10 @@ fun CIMarkdownText(
     MarkdownText(
       text, if (text.isEmpty()) emptyList() else ci.formattedText, if (text.isEmpty()) null else ci.markdownBlocks, toggleSecrets = true,
       sendCommandMsg = if (chatInfo.useCommands && chat.chatInfo.sndReady) { { msg -> sendCommandMsg(chatsCtx, chat, msg) } } else null,
+      onMsgLinkClick = { link -> withBGApi { openMsgLink(chat.remoteHostId, chatInfo, link, link.showText?.let { ci.links?.get(it) }?.target) } },
       meta = ci.meta, chatTTL = chatTTL, encrypted = ci.encryptedFile, signedFileVerified = ci.file?.loaded, linkMode = linkMode,
       style = MaterialTheme.typography.body1.copy(color = messageTextColor(), lineHeight = 22.sp).merge(chatTextStyle(MaterialTheme.typography.body1.fontSize)),
-      mentions = ci.mentions, userMemberId = when {
+      mentions = ci.mentions, links = ci.links, userMemberId = when {
         chatInfo is ChatInfo.Group -> chatInfo.groupInfo.membership.memberId
         else -> null
       },

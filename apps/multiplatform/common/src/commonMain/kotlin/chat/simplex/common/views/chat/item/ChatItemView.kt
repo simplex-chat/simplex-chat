@@ -453,6 +453,18 @@ fun ChatItemView(
                         showMenu.value = false
                       })
                     }
+                    if (cItem.meta.itemDeleted == null && !live) {
+                      ItemAction(stringResource(MR.strings.copy_link), painterResource(MR.images.ic_link), onClick = {
+                        withApi {
+                          val link = controller.apiGetChatItemLink(rhId, cInfo.chatType, cInfo.apiId, cInfo.groupChatScope(), cItem.id)
+                          if (link != null) {
+                            clipboard.setText(AnnotatedString(link))
+                            showToast(generalGetString(MR.strings.copied))
+                          }
+                        }
+                        showMenu.value = false
+                      })
+                    }
                     if (cItem.file != null && (getLoadedFilePath(cItem.file) != null || (chatModel.connectedToRemote() && cachedRemoteReqs[cItem.file.fileSource] != false && cItem.file.loaded))) {
                       SaveContentItemAction(cItem, saveFileLauncher, showMenu)
                     } else if (cItem.file != null && cItem.file.fileStatus is CIFileStatus.RcvInvitation && fileSizeValid(cItem.file)) {
@@ -1596,6 +1608,23 @@ fun PreviewChatItemViewEmptyLines() = PreviewChatItemView(
 fun PreviewChatItemViewEmptyLinesTerminal() = CompositionLocalProvider(LocalTerminalLayout provides true) {
   PreviewChatItemViewEmptyLines()
 }
+
+@Preview
+@Composable
+fun PreviewChatItemViewMessageLinks() = PreviewChatItemView(
+  ChatItem.getSampleData(1, CIDirection.DirectSnd(), previewDate, "Before the release: [Approve the deploy plan?](simplex:/m#d/UXhQdlR3WmNrTjhyRDFtYQ) and [the draft](simplex:/m)").copy(
+    formattedText = listOf(
+      FormattedText("Before the release: "),
+      FormattedText("[Approve the deploy plan?](simplex:/m#d/UXhQdlR3WmNrTjhyRDFtYQ)", Format.MessageLink("Approve the deploy plan?", MsgLinkType.direct, "simplex:/m#d/UXhQdlR3WmNrTjhyRDFtYQ")),
+      FormattedText(" and "),
+      FormattedText("[the draft](simplex:/m)", Format.MessageLink("the draft", MsgLinkType.unknownSource, "simplex:/m"))
+    ),
+    links = mapOf(
+      "Approve the deploy plan?" to CILink("Approve the deploy plan?"),
+      "the draft" to CILink("Draft of the 7.2 announcement")
+    )
+  )
+)
 
 @Preview
 @Composable

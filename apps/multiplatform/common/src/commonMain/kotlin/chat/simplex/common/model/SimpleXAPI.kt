@@ -1321,6 +1321,21 @@ object ChatController {
     return null
   }
 
+  suspend fun apiGetChatItemLink(rh: Long?, type: ChatType, id: Long, scope: GroupChatScope?, itemId: Long): String? {
+    val r = sendCmd(rh, CC.ApiGetChatItemLink(type, id, scope, itemId))
+    if (r is API.Result && r.res is CR.ChatItemLink) return r.res.msgLink
+    apiErrorAlert("apiGetChatItemLink", generalGetString(MR.strings.error_loading_details), r)
+    return null
+  }
+
+  suspend fun apiMsgLinkPlan(rh: Long?, msgLink: String, chatInfo: ChatInfo?): MsgLinkPlan? {
+    val userId = kotlin.runCatching { currentUserId("apiMsgLinkPlan") }.getOrElse { return null }
+    val r = sendCmd(rh, CC.ApiMsgLinkPlan(userId, msgLink, chatInfo))
+    if (r is API.Result && r.res is CR.CRMsgLinkPlan) return r.res.msgLinkPlan
+    apiErrorAlert("apiMsgLinkPlan", generalGetString(MR.strings.error_opening_link), r)
+    return null
+  }
+
   suspend fun apiForwardChatItems(rh: Long?, toChatType: ChatType, toChatId: Long, toScope: GroupChatScope?, sendAsGroup: Boolean = false, fromChatType: ChatType, fromChatId: Long, fromScope: GroupChatScope?, itemIds: List<Long>, ttl: Int?): List<ChatItem>? {
     val cmd = CC.ApiForwardChatItems(toChatType, toChatId, toScope, sendAsGroup, fromChatType, fromChatId, fromScope, itemIds, ttl)
     return processSendMessageCmd(rh, cmd)?.map { it.chatItem }
@@ -4067,6 +4082,8 @@ sealed class CC {
   class ApiGetChat(val type: ChatType, val id: Long, val scope: GroupChatScope?, val contentTag: MsgContentTag?, val pagination: ChatPagination, val search: String = ""): CC()
   class ApiGetChatContentTypes(val type: ChatType, val id: Long, val scope: GroupChatScope?): CC()
   class ApiGetChatItemInfo(val type: ChatType, val id: Long, val scope: GroupChatScope?, val itemId: Long): CC()
+  class ApiGetChatItemLink(val type: ChatType, val id: Long, val scope: GroupChatScope?, val itemId: Long): CC()
+  class ApiMsgLinkPlan(val userId: Long, val msgLink: String, val chatInfo: ChatInfo?): CC()
   class ApiSendMessages(val type: ChatType, val id: Long, val scope: GroupChatScope?, val sendAsGroup: Boolean, val live: Boolean, val ttl: Int?, val sign: Boolean, val composedMessages: List<ComposedMessage>): CC()
   class ApiCreateChatTag(val tag: ChatTagData): CC()
   class ApiSetChatTags(val type: ChatType, val id: Long, val tagIds: List<Long>): CC()
@@ -4272,6 +4289,8 @@ sealed class CC {
     }
     is ApiGetChatContentTypes -> "/_get content types ${chatRef(type, id, scope)}"
     is ApiGetChatItemInfo -> "/_get item info ${chatRef(type, id, scope)} $itemId"
+    is ApiGetChatItemLink -> "/_get item link ${chatRef(type, id, scope)} $itemId"
+    is ApiMsgLinkPlan -> "/_msg link plan $userId $msgLink" + (if (chatInfo != null) " chat=${chatRef(chatInfo.chatType, chatInfo.apiId, chatInfo.groupChatScope())}" else "")
     is ApiSendMessages -> {
       val msgs = json.encodeToString(composedMessages)
       val ttlStr = if (ttl != null) "$ttl" else "default"
@@ -4484,6 +4503,8 @@ sealed class CC {
     is ApiGetChat -> "apiGetChat"
     is ApiGetChatContentTypes -> "apiGetChatContentTypes"
     is ApiGetChatItemInfo -> "apiGetChatItemInfo"
+    is ApiGetChatItemLink -> "apiGetChatItemLink"
+    is ApiMsgLinkPlan -> "apiMsgLinkPlan"
     is ApiSendMessages -> "apiSendMessages"
     is ApiCreateChatTag -> "apiCreateChatTag"
     is ApiSetChatTags -> "apiSetChatTags"
@@ -6861,6 +6882,8 @@ sealed class CR {
   @Serializable @SerialName("chatContentTypes") class ChatContentTypes(val contentTypes: List<MsgContentTag>): CR()
   @Serializable @SerialName("chatTags") class ChatTags(val user: UserRef, val userTags: List<ChatTag>): CR()
   @Serializable @SerialName("chatItemInfo") class ApiChatItemInfo(val user: UserRef, val chatItem: AChatItem, val chatItemInfo: ChatItemInfo): CR()
+  @Serializable @SerialName("chatItemLink") class ChatItemLink(val user: UserRef, val msgLink: String): CR()
+  @Serializable @SerialName("msgLinkPlan") class CRMsgLinkPlan(val user: UserRef, val msgLinkPlan: MsgLinkPlan): CR()
   @Serializable @SerialName("serverTestResult") class ServerTestResult(val user: UserRef, val testServer: String, val testFailure: ProtocolTestFailure? = null): CR()
   @Serializable @SerialName("chatRelayTestResult") class ChatRelayTestResult(val user: UserRef, val relayProfile: RelayProfile? = null, val relayTestFailure: RelayTestFailure? = null): CR()
   @Serializable @SerialName("serverOperatorConditions") class ServerOperatorConditions(val conditions: ServerOperatorConditionsDetail): CR()
@@ -7068,6 +7091,8 @@ sealed class CR {
     is ChatContentTypes -> "chatContentTypes"
     is ChatTags -> "chatTags"
     is ApiChatItemInfo -> "chatItemInfo"
+    is ChatItemLink -> "chatItemLink"
+    is CRMsgLinkPlan -> "msgLinkPlan"
     is ServerTestResult -> "serverTestResult"
     is ChatRelayTestResult -> "chatRelayTestResult"
     is ServerOperatorConditions -> "serverOperatorConditions"
@@ -7265,6 +7290,8 @@ sealed class CR {
     is ChatContentTypes -> "content types: ${json.encodeToString(contentTypes)}"
     is ChatTags -> withUser(user, "userTags: ${json.encodeToString(userTags)}")
     is ApiChatItemInfo -> withUser(user, "chatItem: ${json.encodeToString(chatItem)}\n${json.encodeToString(chatItemInfo)}")
+    is ChatItemLink -> withUser(user, msgLink)
+    is CRMsgLinkPlan -> withUser(user, json.encodeToString(msgLinkPlan))
     is ServerTestResult -> withUser(user, "server: $testServer\nresult: ${json.encodeToString(testFailure)}")
     is ChatRelayTestResult -> withUser(user, "relayProfile: $relayProfile\ntestFailure: $relayTestFailure")
     is ServerOperatorConditions -> "conditions: ${json.encodeToString(conditions)}"
@@ -7684,7 +7711,18 @@ sealed class ConnectionPlan {
   @Serializable @SerialName("invitationLink") class InvitationLink(val invitationLinkPlan: InvitationLinkPlan): ConnectionPlan()
   @Serializable @SerialName("contactAddress") class ContactAddress(val contactAddressPlan: ContactAddressPlan, override val nameChange: NameChange? = null): ConnectionPlan()
   @Serializable @SerialName("groupLink") class GroupLink(val groupLinkPlan: GroupLinkPlan, override val nameChange: NameChange? = null): ConnectionPlan()
+  @Serializable @SerialName("updateRequired") object UpdateRequired: ConnectionPlan()
   @Serializable @SerialName("error") class Error(val chatError: ChatError): ConnectionPlan()
+}
+
+@Serializable
+sealed class MsgLinkPlan {
+  @Serializable @SerialName("item") class Item(val chatItem: AChatItem, val linkText: String): MsgLinkPlan()
+  @Serializable @SerialName("chat") class Chat(val chatInfo: ChatInfo): MsgLinkPlan()
+  @Serializable @SerialName("join") class Join(val connTarget: String): MsgLinkPlan()
+  @Serializable @SerialName("notFound") object NotFound: MsgLinkPlan()
+  @Serializable @SerialName("unknownSource") object UnknownSource: MsgLinkPlan()
+  @Serializable @SerialName("unknownLink") object UnknownLink: MsgLinkPlan()
 }
 
 @Serializable

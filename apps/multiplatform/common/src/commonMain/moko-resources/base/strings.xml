@@ -26,6 +26,8 @@
   <string name="error_parsing_uri_title">Invalid link</string>
   <string name="error_parsing_uri_desc">Please check that SimpleX link is correct.</string>
   <string name="app_link_not_supported">Update the app to open this link.</string>
+  <string name="msg_link_unknown_source">This link is from an unknown source.</string>
+  <string name="msg_link_not_found">This message is not in your chats.</string>
 
   <!-- MainActivity.kt -->
   <string name="opening_database">Opening database…</string>
@@ -112,6 +114,8 @@
   <string name="simplex_link_group">SimpleX group link</string>
   <string name="simplex_link_channel">SimpleX channel link</string>
   <string name="simplex_link_relay">SimpleX relay address</string>
+  <string name="simplex_link_public_group">SimpleX public group link</string>
+  <string name="simplex_link_site">SimpleX site link</string>
   <string name="simplex_link_connection">via %1$s</string>
   <string name="simplex_link_mode">SimpleX links</string>
   <string name="simplex_link_mode_description">Description</string>
@@ -179,6 +183,7 @@
   <string name="error_creating_message">Error creating message</string>
   <string name="error_creating_report">Error creating report</string>
   <string name="error_loading_details">Error loading details</string>
+  <string name="error_opening_link">Error opening link</string>
   <string name="error_adding_members">Error adding member(s)</string>
   <string name="error_joining_group">Error joining group</string>
   <string name="error_accepting_member">Error accepting member</string>
@@ -228,6 +233,7 @@
   <string name="channel_no_active_relays_try_later">Channel has no active relays. Please try to join later.</string>
   <string name="app_update_required">App update required</string>
   <string name="group_link_requires_newer_version">This group requires a newer version of the app. Please update the app to join.</string>
+  <string name="site_link_requires_newer_version">This site requires a newer version of the app. Please update the app to open it.</string>
   <string name="connection_error_auth">Connection link removed</string>
   <string name="connection_error_auth_desc">Your contact removed this link, or it was a one-time link that was already used.\nTo connect, ask your contact to create a new link.</string>
   <string name="connection_error_duplicate">Already connected?</string>
@@ -407,6 +413,7 @@
   <string name="reply_verb">Reply</string>
   <string name="share_verb">Share</string>
   <string name="copy_verb">Copy</string>
+  <string name="copy_link">Copy link</string>
   <string name="save_simplex_name_question">Save SimpleX name?</string>
   <string name="get_simplex_name_beta">Get SimpleX name (BETA)</string>
   <string name="channel_simplex_name">Channel SimpleX name</string>

@@ -1343,12 +1343,13 @@ data class ShowingInvitation(
   val conn: PendingContactConnection
 )
 
+@Serializable
 enum class ChatType(val type: String) {
-  Direct("@"),
-  Group("#"),
-  Local("*"),
-  ContactRequest("<@"),
-  ContactConnection(":");
+  @SerialName("direct") Direct("@"),
+  @SerialName("group") Group("#"),
+  @SerialName("local") Local("*"),
+  @SerialName("contactRequest") ContactRequest("<@"),
+  @SerialName("contactConnection") ContactConnection(":");
 }
 
 sealed class GroupChatScope {
@@ -3594,6 +3595,19 @@ data class CIMention(
 }
 
 @Serializable
+data class CILink(
+  val text: String,
+  val target: CILinkTarget? = null
+)
+
+@Serializable
+data class CILinkTarget(
+  val chatType: ChatType,
+  val chatId: Long,
+  val chatItemId: Long
+)
+
+@Serializable
 class CIReaction(
   val chatDir: CIDirection,
   val chatItem: ChatItem,
@@ -3609,6 +3623,7 @@ data class ChatItem (
   val formattedText: List<FormattedText>? = null,
   val markdownBlocks: List<MarkdownBlock>? = null,
   val mentions: Map<String, CIMention>? = null,
+  val links: Map<String, CILink>? = null,
   val quotedItem: CIQuote? = null,
   val reactions: List<CIReactionCount>,
   val file: CIFile? = null
@@ -5398,6 +5413,7 @@ sealed class Format {
       "(${String.format(generalGetString(MR.strings.simplex_link_connection), smpHosts.firstOrNull() ?: "?")})"
   }
   @Serializable @SerialName("simplexName") class SimplexName(val nameInfo: SimplexNameInfo): Format()
+  @Serializable @SerialName("messageLink") class MessageLink(val showText: String?, val msgLinkType: MsgLinkType, val msgLink: String): Format()
   @Serializable @SerialName("command") class Command(val commandStr: String): Format()
   @Serializable @SerialName("mention") class Mention(val memberName: String): Format()
   @Serializable @SerialName("modal") class Modal(val modalName: String, val text: String): Format() {
@@ -5423,6 +5439,7 @@ sealed class Format {
     is HyperLink -> linkStyle
     is SimplexLink -> linkStyle
     is SimplexName -> linkStyle
+    is MessageLink -> linkStyle
     is Command -> SpanStyle(color = MaterialTheme.colors.primary, fontFamily = FontFamily.Monospace)
     is Mention -> SpanStyle(fontWeight = FontWeight.Medium)
     is Email -> linkStyle
@@ -5527,7 +5544,9 @@ enum class SimplexLinkType(val linkType: String) {
   invitation("invitation"),
   group("group"),
   channel("channel"),
-  relay("relay");
+  relay("relay"),
+  publicGroup("publicGroup"),
+  site("site");
 
   val description: String get() = generalGetString(when (this) {
       contact -> MR.strings.simplex_link_contact
@@ -5535,7 +5554,19 @@ enum class SimplexLinkType(val linkType: String) {
       group -> MR.strings.simplex_link_group
       channel -> MR.strings.simplex_link_channel
       relay -> MR.strings.simplex_link_relay
+      publicGroup -> MR.strings.simplex_link_public_group
+      site -> MR.strings.simplex_link_site
   })
+}
+
+@Serializable
+enum class MsgLinkType {
+  @SerialName("publicGroup") publicGroup,
+  @SerialName("group") group,
+  @SerialName("direct") direct,
+  @SerialName("note") note,
+  @SerialName("unknownSource") unknownSource,
+  @SerialName("unsupported") unsupported
 }
 
 @Serializable

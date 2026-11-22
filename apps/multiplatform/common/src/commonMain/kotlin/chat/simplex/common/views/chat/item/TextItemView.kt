@@ -109,7 +109,7 @@ private fun typing(w: FontWeight = FontWeight.Light): AnnotatedString =
   AnnotatedString(".", SpanStyle(fontWeight = w))
 
 // Display text for a single formatted segment — must be coordinated with MarkdownText.
-fun segmentDisplayText(ft: FormattedText, mentions: Map<String, CIMention>?, linkMode: SimplexLinkMode): String =
+fun segmentDisplayText(ft: FormattedText, mentions: Map<String, CIMention>?, links: Map<String, CILink>?, linkMode: SimplexLinkMode): String =
   when (ft.format) {
     is Format.Mention -> {
       val mention = mentions?.get(ft.format.memberName)
@@ -127,18 +127,24 @@ fun segmentDisplayText(ft: FormattedText, mentions: Map<String, CIMention>?, lin
         ?: if (linkMode == SimplexLinkMode.DESCRIPTION) ft.format.linkType.description else null
       if (t != null) "$t ${ft.format.viaHosts}" else ft.text
     }
+    is Format.MessageLink -> msgLinkTexts(ft.text, ft.format, links).let { (label, shortText) -> if (shortText == null) label else "$label ($shortText)" }
     is Format.Command -> ft.text
     is Format.Escape -> ""
     is Format.Markup -> ft.format.token.drawnText
     else -> ft.text
   }
 
+private fun msgLinkTexts(text: String, link: Format.MessageLink, links: Map<String, CILink>?): Pair<String, String?> {
+  val label = link.showText ?: text
+  return label to link.showText?.let { links?.get(it)?.text }?.takeIf { it != label }
+}
+
 class ItemDisplay(val parts: List<Pair<String, String>>, val bases: List<Int>)
 
 fun itemDisplay(ci: ChatItem, linkMode: SimplexLinkMode): ItemDisplay? {
   val fts = ci.formattedText ?: return null
   val segment = { ft: FormattedText ->
-    val display = segmentDisplayText(ft, ci.mentions, linkMode)
+    val display = segmentDisplayText(ft, ci.mentions, ci.links, linkMode)
     display to if (ft.format is Format.Markup) display else ft.text
   }
   val blocks = ci.markdownBlocks ?: return ItemDisplay(fts.map(segment), listOf(0))
@@ -181,9 +187,11 @@ fun MarkdownText (
   encrypted: Boolean? = null,
   signedFileVerified: Boolean? = null,
   mentions: Map<String, CIMention>? = null,
+  links: Map<String, CILink>? = null,
   userMemberId: String? = null,
   toggleSecrets: Boolean,
   sendCommandMsg: ((String) -> Unit)? = null,
+  onMsgLinkClick: ((Format.MessageLink) -> Unit)? = null,
   style: TextStyle = MaterialTheme.typography.body1.copy(color = messageTextColor(), lineHeight = 22.sp),
   maxLines: Int = Int.MAX_VALUE,
   overflow: TextOverflow = TextOverflow.Clip,
@@ -228,7 +236,7 @@ fun MarkdownText (
           MarkdownText(
             text, formattedText, markdownBlocks, sender = if (index == 0) sender else null, meta = if (last) meta else null, chatTTL = chatTTL,
             encrypted = encrypted, signedFileVerified = signedFileVerified,
-            mentions = mentions, userMemberId = userMemberId, toggleSecrets = toggleSecrets, sendCommandMsg = sendCommandMsg, style = blockStyle,
+            mentions = mentions, links = links, userMemberId = userMemberId, toggleSecrets = toggleSecrets, sendCommandMsg = sendCommandMsg, onMsgLinkClick = onMsgLinkClick, style = blockStyle,
             uriHandler = uriHandler, senderBold = senderBold, modifier = blockModifier, linkMode = linkMode, onLinkLongClick = onLinkLongClick,
             showViaProxy = showViaProxy, showTimestamp = showTimestamp, prefix = if (index == 0) prefix else null,
             selection = selection, textIndex = index, range = r.from until r.to, softWrap = blockSoftWrap, parentDirection = direction
@@ -421,6 +429,20 @@ fun MarkdownText (
                 withStyle(ftStyle) { append(ft.text) }
               }
             }
+            is Format.MessageLink -> {
+              val ftStyle = Format.linkStyle
+              val (label, shortText) = msgLinkTexts(ft.text, ft.format, links)
+              val appendLink = {
+                withStyle(ftStyle) { append(label) }
+                if (shortText != null) withStyle(ftStyle.copy(fontStyle = FontStyle.Italic)) { append(" ($shortText)") }
+              }
+              if (onMsgLinkClick == null) {
+                appendLink()
+              } else {
+                hasLinks = true
+                withAnnotation(tag = "MESSAGE_LINK", annotation = i.toString()) { appendLink() }
+              }
+            }
             is Format.Email -> {
               hasLinks = true
               val ftStyle = Format.linkStyle
@@ -475,6 +497,7 @@ fun MarkdownText (
         })
       if ((hasLinks && uriHandler != null) || hasSecrets || (hasCommands && sendCommandMsg != null) || hasModals) {
         val icon = remember { mutableStateOf(PointerIcon.Text) }
+        val msgLinkAt = { a: Range<String> -> a.item.toIntOrNull()?.let { formattedText.getOrNull(it)?.format } as? Format.MessageLink }
         ClickableText(annotatedText, style = style, selectionRange = clampedRange, modifier = textModifier.pointerHoverIcon(icon.value), softWrap = softWrap, maxLines = maxLines, overflow = overflow,
           onLongClick = { offset ->
             if (hasLinks) {
@@ -484,6 +507,7 @@ fun MarkdownText (
               withAnnotation("WEB_URL") { a -> onLinkLongClick(a.item) }
               withAnnotation("SIMPLEX_URL") { a -> onLinkLongClick(a.item) }
               withAnnotation("OTHER_URL") { a -> onLinkLongClick(a.item) }
+              withAnnotation("MESSAGE_LINK") { a -> msgLinkAt(a)?.let { onLinkLongClick(it.msgLink) } }
             }
           },
           onClick = { offset ->
@@ -501,6 +525,7 @@ fun MarkdownText (
                 // link; planAndConnect resolves it on the core (name target).
                 if (nameText != null) uriHandler.openVerifiedSimplexUri(nameText)
               }
+              withAnnotation("MESSAGE_LINK") { a -> msgLinkAt(a)?.let { onMsgLinkClick?.invoke(it) } }
             }
             if (hasSecrets) {
               withAnnotation("SECRET") { a ->
@@ -519,7 +544,7 @@ fun MarkdownText (
           },
           onHover = { offset ->
             val hasAnnotation: (String) -> Boolean = { tag -> annotatedText.hasStringAnnotations(tag, start = offset, end = offset) }
-            val hand = hasAnnotation("WEB_URL") || hasAnnotation("SIMPLEX_URL") || hasAnnotation("OTHER_URL") || hasAnnotation("SIMPLEX_NAME") || hasAnnotation("SECRET") || hasAnnotation("COMMAND") || hasAnnotation("MODAL")
+            val hand = hasAnnotation("WEB_URL") || hasAnnotation("SIMPLEX_URL") || hasAnnotation("OTHER_URL") || hasAnnotation("SIMPLEX_NAME") || hasAnnotation("MESSAGE_LINK") || hasAnnotation("SECRET") || hasAnnotation("COMMAND") || hasAnnotation("MODAL")
             icon.value = if (hand) PointerIcon.Hand else PointerIcon.Text
           },
           onHoverExit = {
@@ -530,6 +555,7 @@ fun MarkdownText (
             annotatedText.hasStringAnnotations(tag = "WEB_URL", start = offset, end = offset)
                 || annotatedText.hasStringAnnotations(tag = "SIMPLEX_URL", start = offset, end = offset)
                 || annotatedText.hasStringAnnotations(tag = "OTHER_URL", start = offset, end = offset)
+                || annotatedText.hasStringAnnotations(tag = "MESSAGE_LINK", start = offset, end = offset)
                 || annotatedText.hasStringAnnotations(tag = "MODAL", start = offset, end = offset)
           },
           onTextLayout = onTextLayout

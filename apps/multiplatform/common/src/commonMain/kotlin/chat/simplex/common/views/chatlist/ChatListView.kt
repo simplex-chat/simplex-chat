@@ -807,13 +807,18 @@ fun connectIfOpenedViaUri(rhId: Long?, uri: String, chatModel: ChatModel) {
     if (!isBadgeLinkIssuing()) openAppLink(rhId, uri)
   } else {
     withBGApi {
-      chatModel.appOpenUrlConnecting.value = true
-      planAndConnect(rhId, uri, close = { ModalManager.closeAllModalsEverywhere() }, cleanup = { chatModel.appOpenUrlConnecting.value = false })
+      val msgLink = parseToMarkdown(uri)?.singleOrNull()?.format as? Format.MessageLink
+      if (msgLink != null) {
+        openMsgLink(rhId, null, msgLink, null)
+      } else {
+        chatModel.appOpenUrlConnecting.value = true
+        planAndConnect(rhId, uri, close = { ModalManager.closeAllModalsEverywhere() }, cleanup = { chatModel.appOpenUrlConnecting.value = false })
+      }
     }
   }
 }
 
-// the app's own scheme, for every link that is not a connection link, which stays on simplex:
+// simplexchat: is the scheme of app-specific deep links, and simplex: of URIs in the SimpleX network: connection links, SimpleX names, files and message links
 internal const val appLinkScheme = "simplexchat"
 internal const val connectionLinkScheme = "simplex"
 private const val badgeLinkPath = "/badge/code/"
