@@ -428,6 +428,32 @@ describe("session groups", () => {
     expect(textOf(await session.call("connect", {target: link}, signal().call))).toBe(`The chat of ${link} belongs to another session; an admin or owner of that session's group can give it to this session with /give.`)
   })
 
+  it("refuse a connect to the Main group and to a session's group as known chats, and set no owner of them", async () => {
+    const chat = new FakeChat()
+    const session = await openSession(await hubWith(chat), id1, stored(1, "auth"))
+    const link = "https://simplex.chat/g#control"
+    for (const ref of ["#10", "#20"]) {
+      const {groupInfo} = chat.chats.get(ref)!.chatInfo as T.ChatInfo.Group
+      chat.responses.set(`/_connect plan 1 ${link}`, {type: "connectionPlan", user, connLink: {connFullLink: link}, connectionPlan: {type: "groupLink", groupLinkPlan: {type: "known", groupInfo}}})
+      expect(textOf(await session.call("connect", {target: link}, signal().call))).toBe(`The chat of ${link} is the Main group or a session's group, not one of the agent's chats.`)
+    }
+    expect(chat.customData).toEqual([{chat: "#20", customData: {simplexMcpSession: {session: 1}}}])
+  })
+
+  it("leave the Main group and the session groups out of list, send and receive, also with an owner", async () => {
+    const chat = new FakeChat()
+    const session = await openSession(await hubWith(chat), id1, stored(1, "auth"))
+    for (const ref of ["#10", "#20"]) {
+      const {groupInfo} = chat.chats.get(ref)!.chatInfo as T.ChatInfo.Group
+      groupInfo.customData = {...groupInfo.customData, simplexMcpOwner: {session: id1}}
+    }
+    expect(await listed(session)).toEqual([])
+    for (const ref of ["#10", "#20"]) {
+      expect(textOf(await session.call("send", {chat: ref, text: "hi"}, signal().call))).toBe(`No chat ${ref}. list shows the agent's chats.`)
+      expect(textOf(await session.call("receive", {chat: ref}, signal().call))).toBe(`No chat ${ref}. list shows the agent's chats.`)
+    }
+  })
+
   it("claim a group joined after its connect call returned, and no chat of a connection pending for over a day", async () => {
     const chat = new FakeChat()
     const hub = await hubWith(chat)
