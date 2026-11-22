@@ -228,9 +228,10 @@ struct ChatPreviewView: View {
         let s = chat.chatStats
         if s.unreadCount > 0 || s.unreadChat {
             let mentionColor = mentionColor(chat)
+            let attentionSign = s.unreadHighPriority > 0 ? Text(Image(systemName: "bell.fill")) : Text("\(MENTION_START)")
             HStack(alignment: .center, spacing: 2) {
                 if s.unreadMentions > 0 && s.unreadCount > 1 {
-                    Text("\(MENTION_START)")
+                    attentionSign
                         .font(userFont <= .xxxLarge ? .body : .callout)
                         .foregroundColor(mentionColor)
                         .frame(minWidth: dynamicChatInfoSize, minHeight: dynamicChatInfoSize)
@@ -238,13 +239,17 @@ struct ChatPreviewView: View {
                         .padding(.bottom, 1)
                 }
                 let singleUnreadIsMention = s.unreadMentions > 0 && s.unreadCount == 1
-                (singleUnreadIsMention ? Text("\(MENTION_START)") : unreadCountText(s.unreadCount))
+                let onlySilent = !singleUnreadIsMention && s.allUnreadSilent && !s.unreadChat
+                (singleUnreadIsMention ? attentionSign : unreadCountText(s.unreadCount))
                     .font(userFont <= .xxxLarge ? .caption : .caption2)
-                    .foregroundColor(.white)
+                    .foregroundColor(onlySilent ? theme.colors.secondary : .white)
                     .padding(.horizontal, dynamicSize(userFont).unreadPadding)
                     .frame(minWidth: dynamicChatInfoSize, minHeight: dynamicChatInfoSize)
-                    .background(singleUnreadIsMention ? mentionColor : chat.chatInfo.ntfsEnabled(false) || chat.chatInfo.chatType == .local ? theme.colors.primary : theme.colors.secondary)
+                    .background(onlySilent ? Color.clear : singleUnreadIsMention ? mentionColor : chat.chatInfo.ntfsEnabled(false) || chat.chatInfo.chatType == .local ? theme.colors.primary : theme.colors.secondary)
                     .cornerRadius(dynamicSize(userFont).unreadCorner)
+                    .if(onlySilent) {
+                        $0.overlay(RoundedRectangle(cornerRadius: dynamicSize(userFont).unreadCorner).stroke(theme.colors.secondary))
+                    }
             }
             .frame(height: dynamicChatInfoSize)
         } else if let ntfMode = chat.chatInfo.chatSettings?.enableNtfs, ntfMode != .all {
@@ -593,6 +598,29 @@ struct ChatPreviewView_Previews: PreviewProvider {
                 chatInfo: ChatInfo.sampleData.group,
                 chatItems: [ChatItem.getSample(1, .directSnd, previewDate, "Lorem ipsum dolor sit amet, d. consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.")],
                 chatStats: ChatStats(unreadCount: 11, minUnreadItemId: 0)
+            ), progressByTimeout: Binding.constant(false))
+        }
+        .previewLayout(.fixed(width: 360, height: 78))
+    }
+}
+
+struct ChatPreviewView_Priority_Previews: PreviewProvider {
+    static var previews: some View {
+        Group {
+            ChatPreviewView(chat: Chat(
+                chatInfo: ChatInfo.sampleData.group,
+                chatItems: [ChatItem.getSample(1, .groupRcv(groupMember: GroupMember.sampleData), previewDate, "silent messages", .rcvNew)],
+                chatStats: ChatStats(unreadCount: 3, unreadSilent: 3)
+            ), progressByTimeout: Binding.constant(false))
+            ChatPreviewView(chat: Chat(
+                chatInfo: ChatInfo.sampleData.group,
+                chatItems: [ChatItem.getSample(1, .groupRcv(groupMember: GroupMember.sampleData), previewDate, "high priority message", .rcvNew)],
+                chatStats: ChatStats(unreadCount: 1, unreadMentions: 1, unreadHighPriority: 1)
+            ), progressByTimeout: Binding.constant(false))
+            ChatPreviewView(chat: Chat(
+                chatInfo: ChatInfo.sampleData.group,
+                chatItems: [ChatItem.getSample(1, .groupRcv(groupMember: GroupMember.sampleData), previewDate, "silent and high priority messages", .rcvNew)],
+                chatStats: ChatStats(unreadCount: 4, unreadMentions: 1, unreadSilent: 3, unreadHighPriority: 1)
             ), progressByTimeout: Binding.constant(false))
         }
         .previewLayout(.fixed(width: 360, height: 78))

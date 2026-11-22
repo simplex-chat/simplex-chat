@@ -182,11 +182,19 @@ Message content can be one of four types:
 
 See `/definition/msgContent` in [JTD schema](./simplex-chat.schema.json) for message container format.
 
+Optional `priority` property of the container is an integer set by the sender: -1 or below is silent, 0 or absent is normal, 1 or above is high. Receiving clients show a silent message and count it as unread, without a notification, a sound or a push. The sending client, and the members and relays that forward the message, send it with the SMP notification flag off, unless it is sent in one SMP message with a normal message, or as a pending message when a member connects. Silent messages are accepted from every sender in every chat.
+
+High priority is accepted in groups only, from a member whose role is allowed by the group preference `msgPriority`, by default admins and owners; a channel post is checked with the owner role. A high priority message of another sender, of a member blocked by the recipient, and every high priority message in a direct chat is received as normal. The member that sends group history to a new member sends high priority messages without the priority; a signed message is forwarded as its original bytes. Receiving clients treat a high priority message as a mention of the user: it notifies also in a chat set to notify about mentions only, and it is shown with a bell.
+
+Clients that do not support this property receive the message as normal.
+
 ### x.msg.update - update of the previously sent message
 
 This message is used to update previously created chat item. Its `params` property contains `msgId` of the previously sent message that this one is updating and `content` with the message content that the clients must use to replace the content of the original chat item.
 
 If the referenced message does not exist, the clients MUST create a new chat item with the ID of the referenced message. If the referenced message is not a content message, the clients MUST ignore this message.
+
+Optional `priority` property sets the priority of the chat item, with the values of `priority` of `x.msg.new`. An update without it makes the item normal, so the sending client repeats the priority in every update. High priority is accepted from the author, in the chats and from the roles where `x.msg.new` accepts it; otherwise the item becomes normal. An update leaves the priority of an item that the recipient deleted unchanged. Receiving clients notify once when an item changes to high priority, and an item already read stays read; a change to a lower priority is not notified. An update that changes neither the content, the live state nor the accepted priority of the item is not applied and is not forwarded. The SMP notification flag of an update is on only when the update changes the item to high priority, unless the update is sent in one SMP message with a message that has the flag on, or as a pending message when a member connects: the sending client compares the priority of its item before and after the update, and each member or relay that forwards the update compares the priority of its own item, so an edit that repeats high priority is sent without the flag; a member or relay that creates the item for a missing message sets the flag when the created item has high priority. A chat item created for a missing message has the priority of the update, accepted as `priority` of `x.msg.new`.
 
 ### x.msg.del - request to delete previously sent message
 

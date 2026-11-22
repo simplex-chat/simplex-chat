@@ -1380,13 +1380,15 @@ data ComposedMessage = ComposedMessage
   { fileSource :: Maybe CryptoFile,
     quotedItemId :: Maybe ChatItemId,
     msgContent :: MsgContent,
-    mentions :: Map MemberName GroupMemberId
+    mentions :: Map MemberName GroupMemberId,
+    priority :: MsgPriority
   }
   deriving (Show)
 
 data UpdatedMessage = UpdatedMessage
   { msgContent :: MsgContent,
-    mentions :: Map MemberName GroupMemberId
+    mentions :: Map MemberName GroupMemberId,
+    priority :: MsgPriority
   }
   deriving (Show)
 
@@ -1999,7 +2001,8 @@ instance FromJSON ComposedMessage where
     quotedItemId <- v .:? "quotedItemId"
     msgContent <- v .: "msgContent"
     mentions <- fromMaybe M.empty <$> v .:? "mentions"
-    pure ComposedMessage {fileSource, quotedItemId, msgContent, mentions}
+    priority <- fromMaybe MPNormal <$> v .:? "priority"
+    pure ComposedMessage {fileSource, quotedItemId, msgContent, mentions, priority}
   parseJSON invalid =
     JT.prependFailure "bad ComposedMessage, " (JT.typeMismatch "Object" invalid)
 

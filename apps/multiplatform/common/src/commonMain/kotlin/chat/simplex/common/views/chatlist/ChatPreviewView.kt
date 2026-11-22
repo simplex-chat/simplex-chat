@@ -464,6 +464,7 @@ fun ChatPreviewView(
             val showNtfsIcon = !chat.chatInfo.ntfsEnabled(false) && (chat.chatInfo is ChatInfo.Direct || chat.chatInfo is ChatInfo.Group)
             if (n > 0 || chat.chatStats.unreadChat) {
               val unreadMentions = chat.chatStats.unreadMentions
+              val attentionIcon = if (chat.chatStats.unreadHighPriority > 0) MR.images.ic_notifications else MR.images.ic_alternate_email
               Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.sp.toDp())) {
                 val mentionColor = when {
                   disabled -> MaterialTheme.colors.secondary
@@ -476,7 +477,7 @@ fun ChatPreviewView(
                 }
                 if (unreadMentions > 0 && n > 1) {
                   Icon(
-                    painterResource(MR.images.ic_alternate_email),
+                    painterResource(attentionIcon),
                     contentDescription = generalGetString(MR.strings.notifications),
                     tint = mentionColor,
                     modifier = Modifier.size(12.sp.toDp()).offset(y = 3.sp.toDp())
@@ -486,17 +487,19 @@ fun ChatPreviewView(
                 if (unreadMentions > 0 && n == 1) {
                   Box(modifier = Modifier.offset(y = 2.sp.toDp()).size(15.sp.toDp()).background(mentionColor, shape = CircleShape), contentAlignment = Alignment.Center) {
                     Icon(
-                      painterResource(MR.images.ic_alternate_email),
+                      painterResource(attentionIcon),
                       contentDescription = generalGetString(MR.strings.notifications),
                       tint = Color.White,
                       modifier = Modifier.size(9.sp.toDp())
                     )
                   }
                 } else {
+                  val onlySilent = chat.chatStats.allUnreadSilent && !chat.chatStats.unreadChat
                   UnreadBadge(
                     text = if (n > 0) unreadCountStr(n) else "",
-                    backgroundColor = if (disabled || showNtfsIcon) MaterialTheme.colors.secondary else MaterialTheme.colors.primaryVariant,
-                    yOffset = 3.dp
+                    backgroundColor = if (disabled || showNtfsIcon || onlySilent) MaterialTheme.colors.secondary else MaterialTheme.colors.primaryVariant,
+                    yOffset = 3.dp,
+                    outline = onlySilent
                   )
                 }
               }
@@ -592,16 +595,17 @@ private fun groupInvitationPreviewText(currentUserProfileDisplayName: String?, g
 fun UnreadBadge(
   text: String,
   backgroundColor: Color,
-  yOffset: Dp? = null
+  yOffset: Dp? = null,
+  outline: Boolean = false
 ) {
   Text(
     text,
-    color = Color.White,
+    color = if (outline) backgroundColor else Color.White,
     fontSize = 10.sp,
     style = TextStyle(textAlign = TextAlign.Center),
     modifier = Modifier
       .offset(y = yOffset ?: 0.dp)
-      .background(backgroundColor, shape = CircleShape)
+      .then(if (outline) Modifier.border(1.dp, backgroundColor, CircleShape) else Modifier.background(backgroundColor, shape = CircleShape))
       .badgeLayout()
       .padding(horizontal = 2.sp.toDp())
       .padding(vertical = 1.sp.toDp())
@@ -645,5 +649,22 @@ private data class ActiveVoicePreview(
 fun PreviewChatPreviewView() {
   SimpleXTheme {
     ChatPreviewView(Chat.sampleData.copy(chatItems = Chat.sampleData.chatItems.map(::previewDated)), true, null, null, "", disabled = false, linkMode = SimplexLinkMode.DESCRIPTION, inProgress = false, progressByTimeout = false, {})
+  }
+}
+
+@Preview
+@Composable
+fun PreviewChatPreviewViewPriority() {
+  SimpleXTheme {
+    Column(Modifier.padding(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+      listOf(
+        "silent messages" to Chat.ChatStats(unreadCount = 3, unreadSilent = 3),
+        "high priority message" to Chat.ChatStats(unreadCount = 1, unreadMentions = 1, unreadHighPriority = 1),
+        "silent and high priority messages" to Chat.ChatStats(unreadCount = 4, unreadMentions = 1, unreadSilent = 3, unreadHighPriority = 1)
+      ).forEach { (text, chatStats) ->
+        val chatItem = ChatItem.getSampleData(1, CIDirection.GroupRcv(GroupMember.sampleData), previewDate, text, CIStatus.RcvNew())
+        ChatPreviewView(Chat(remoteHostId = null, chatInfo = ChatInfo.Group.sampleData, chatItems = listOf(chatItem), chatStats = chatStats), true, null, null, "", disabled = false, linkMode = SimplexLinkMode.DESCRIPTION, inProgress = false, progressByTimeout = false, {})
+      }
+    }
   }
 }

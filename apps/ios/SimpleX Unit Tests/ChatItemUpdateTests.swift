@@ -147,30 +147,6 @@ final class ChatItemUpdateTests: XCTestCase {
         XCTAssertEqual(item.text, "hello there")
     }
 
-    private func recordedEvents(_ fixture: String) throws -> [ChatEvent] {
-        try XCTUnwrap(try fixtureJSON(fixture) as? [Any]).map { json in
-            let decoded: APIResult<ChatEvent> = decodeAPIResult(try JSONSerialization.data(withJSONObject: singleFieldJSON(json)))
-            let event: ChatEvent? = if case let .result(r) = decoded { r } else { nil }
-            return try XCTUnwrap(event, "event not decoded: \(decoded.responseType)")
-        }
-    }
-
-    private func otherUser() -> User {
-        var user = User.sampleData
-        user.userId = 2
-        return user
-    }
-
-    private func chatInfo(_ event: ChatEvent) throws -> ChatInfo {
-        let chatItems: [AChatItem]? = if case let .newChatItems(_, items) = event { items } else { nil }
-        return try XCTUnwrap(chatItems?.first?.chatInfo, "not a new item: \(event.responseType)")
-    }
-
-    @MainActor
-    private func listChat(_ event: ChatEvent) throws {
-        ChatModel.shared.addChat(Chat(chatInfo: try chatInfo(event), chatItems: []))
-    }
-
     @MainActor
     private func openChat(_ event: ChatEvent) throws {
         ChatModel.shared.chatId = try chatInfo(event).id
@@ -197,7 +173,31 @@ final class ChatItemUpdateTests: XCTestCase {
     }
 }
 
-private final class RecordingNtfManager: NtfManager {
+func recordedEvents(_ fixture: String) throws -> [ChatEvent] {
+    try XCTUnwrap(try fixtureJSON(fixture) as? [Any]).map { json in
+        let decoded: APIResult<ChatEvent> = decodeAPIResult(try JSONSerialization.data(withJSONObject: singleFieldJSON(json)))
+        let event: ChatEvent? = if case let .result(r) = decoded { r } else { nil }
+        return try XCTUnwrap(event, "event not decoded: \(decoded.responseType)")
+    }
+}
+
+func otherUser() -> User {
+    var user = User.sampleData
+    user.userId = 2
+    return user
+}
+
+func chatInfo(_ event: ChatEvent) throws -> ChatInfo {
+    let chatItems: [AChatItem]? = if case let .newChatItems(_, items) = event { items } else { nil }
+    return try XCTUnwrap(chatItems?.first?.chatInfo, "not a new item: \(event.responseType)")
+}
+
+@MainActor
+func listChat(_ event: ChatEvent) throws {
+    ChatModel.shared.addChat(Chat(chatInfo: try chatInfo(event), chatItems: []))
+}
+
+final class RecordingNtfManager: NtfManager {
     private let record: (String) -> Void
 
     init(record: @escaping (String) -> Void) {

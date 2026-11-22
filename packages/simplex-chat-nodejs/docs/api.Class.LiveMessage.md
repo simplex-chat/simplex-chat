@@ -6,7 +6,7 @@
 
 # Class: LiveMessage
 
-Defined in: [src/api.ts:1134](../api.ts#L1134)
+Defined in: [src/api.ts:1137](../api.ts#L1137)
 
 Text shown as a live message while it is written, e.g. a streamed reply.
 
@@ -16,7 +16,7 @@ Text shown as a live message while it is written, e.g. a streamed reply.
 
 > **new LiveMessage**(`chat`, `chatType`, `chatId`, `interval?`, `onError?`): `LiveMessage`
 
-Defined in: [src/api.ts:1148](../api.ts#L1148)
+Defined in: [src/api.ts:1151](../api.ts#L1151)
 
 #### Parameters
 
@@ -58,12 +58,13 @@ Error handler for sending, updating and deleting messages. Errors are logged whe
 
 ### end()
 
-> **end**(`text?`): `Promise`\<`void`\>
+> **end**(`text?`, `priority?`): `Promise`\<`void`\>
 
-Defined in: [src/api.ts:1178](../api.ts#L1178)
+Defined in: [src/api.ts:1182](../api.ts#L1182)
 
 Finalize the live message with the text, or with the last text when omitted.
 A message without text is deleted. The next update starts a new live message.
+`priority`: the priority of the final message, -1 silent, 0 or omitted normal, 1 high (groups only, for roles allowed by the group preference).
 The returned promise resolves after all queued commands complete.
 
 #### Parameters
@@ -71,6 +72,10 @@ The returned promise resolves after all queued commands complete.
 ##### text?
 
 `string` = `...`
+
+##### priority?
+
+`number`
 
 #### Returns
 
@@ -82,7 +87,7 @@ The returned promise resolves after all queued commands complete.
 
 > **update**(`text`): `void`
 
-Defined in: [src/api.ts:1160](../api.ts#L1160)
+Defined in: [src/api.ts:1163](../api.ts#L1163)
 
 Set the text of the live message.
 The first text is sent at once; later texts update the message at most once per interval.

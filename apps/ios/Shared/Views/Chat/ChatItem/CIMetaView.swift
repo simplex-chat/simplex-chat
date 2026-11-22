@@ -132,6 +132,9 @@ func ciMetaText(
         }
     }
     let resolved = colorMode.resolve(color)
+    if meta.highPriority {
+        r = r + statusIconText("bell.fill", colorMode.resolve(primaryColor)) + joiner
+    }
     if showEdited, meta.itemEdited {
         r = r + statusIconText("pencil", resolved) + joiner
     }
@@ -210,5 +213,12 @@ struct CIMetaView_Previews: PreviewProvider {
             CIMetaView(chat: Chat.sampleData, chatItem: ChatItem.getDeletedContentSample(1, previewDate), metaColor: metaColor)
         }
         .previewLayout(.fixed(width: 360, height: 100))
+    }
+}
+
+struct CIMetaView_HighPriority_Previews: PreviewProvider {
+    static var previews: some View {
+        CIMetaView(chat: Chat.sampleData, chatItem: ChatItem.getSample(1, .groupRcv(groupMember: GroupMember.sampleData), previewDate, "hello", .rcvRead, priority: 1), metaColor: .secondary)
+            .previewLayout(.fixed(width: 360, height: 100))
     }
 }

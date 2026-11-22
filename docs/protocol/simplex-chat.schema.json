@@ -119,6 +119,10 @@
         "file": {"ref": "fileInvitation"},
         "ttl": {"type": "integer"},
         "live": {"type": "boolean"},
+        "priority": {
+          "type": "integer",
+          "metadata": {"comment": "-1 or below: silent, receiving clients do not alert; 0 or absent: normal; 1 or above: high, in groups from members allowed by the preference msgPriority, otherwise received as normal"}
+        },
         "quote": {
           "properties": {
             "msgRef": {"ref": "msgRef"},
@@ -481,7 +485,11 @@
           },
           "optionalProperties": {
             "ttl": {"type": "integer"},
-            "live": {"type": "boolean"}
+            "live": {"type": "boolean"},
+            "priority": {
+              "type": "integer",
+              "metadata": {"comment": "the priority of the item after the update, as in msgContainer; absent: normal; 1 or above: high from its author, when allowed by the preference msgPriority, otherwise normal; an item deleted by the recipient keeps its priority; an item created for a missing message has this priority, as in msgContainer"}
+            }
           }
         }
       }

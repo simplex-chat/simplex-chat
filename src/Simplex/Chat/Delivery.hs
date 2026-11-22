@@ -47,7 +47,8 @@ instance TextEncoding DeliveryWorkerScope where
 -- so jobs don't need this flag.
 data DeliveryTaskContext = DeliveryTaskContext
   { jobScope :: DeliveryJobScope,
-    sentAsGroup :: ShowGroupAsSender
+    sentAsGroup :: ShowGroupAsSender,
+    priorityRaised :: Bool
   }
   deriving (Show)
 
@@ -104,7 +105,7 @@ jobSpecImpliedPending = \case
   DJRelayRemoved -> True
 
 infoToDeliveryContext :: GroupInfo -> Maybe GroupChatScopeInfo -> ShowGroupAsSender -> DeliveryTaskContext
-infoToDeliveryContext GroupInfo {membership} scopeInfo sentAsGroup = DeliveryTaskContext {jobScope, sentAsGroup}
+infoToDeliveryContext GroupInfo {membership} scopeInfo sentAsGroup = DeliveryTaskContext {jobScope, sentAsGroup, priorityRaised = False}
   where
     jobScope = case scopeInfo of
       Nothing -> DJSGroup {jobSpec = DJDeliveryJob {includePending = False}}
@@ -131,11 +132,15 @@ data MessageDeliveryTask = MessageDeliveryTask
     senderGMId :: GroupMemberId,
     fwdSender :: FwdSender,
     brokerTs :: UTCTime,
-    verifiedMsg :: VerifiedMsg 'Json
+    verifiedMsg :: VerifiedMsg 'Json,
+    priorityRaised :: Bool
   }
 
 deliveryTaskId :: MessageDeliveryTask -> Int64
 deliveryTaskId = taskId
+
+taskHasNotification :: MessageDeliveryTask -> Bool
+taskHasNotification MessageDeliveryTask {verifiedMsg, priorityRaised} = priorityRaised || msgHasNotification verifiedMsg
 
 data DeliveryTaskStatus
   = DTSNew -- created for delivery task worker to pick up and convert into a delivery job

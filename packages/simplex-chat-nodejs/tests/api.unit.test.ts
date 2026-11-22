@@ -274,13 +274,14 @@ describe("LiveMessage", () => {
     const calls: string[] = []
     let itemId = 0
     const ref = (chatType: T.ChatType, chatId: number) => T.ChatType.cmdString(chatType) + chatId
+    const withPriority = (priority?: number) => priority === undefined ? "" : ` priority=${priority}`
     const chat = {
-      apiSendMessages: async ([chatType, chatId]: [T.ChatType, number], [{msgContent}]: T.ComposedMessage[], live: boolean) => {
-        calls.push(`send ${ref(chatType, chatId)} ${json(msgContent.text)} live=${live}`)
+      apiSendMessages: async ([chatType, chatId]: [T.ChatType, number], [{msgContent, priority}]: T.ComposedMessage[], live: boolean) => {
+        calls.push(`send ${ref(chatType, chatId)} ${json(msgContent.text)} live=${live}${withPriority(priority)}`)
         return [{chatItem: {meta: {itemId: ++itemId}}}] as unknown as T.AChatItem[]
       },
-      apiUpdateChatItem: async (chatType: T.ChatType, chatId: number, chatItemId: number, msgContent: T.MsgContent, live: boolean) => {
-        calls.push(`update ${ref(chatType, chatId)} ${chatItemId} ${json(msgContent.text)} live=${live}`)
+      apiUpdateChatItem: async (chatType: T.ChatType, chatId: number, chatItemId: number, msgContent: T.MsgContent, live: boolean, priority?: number) => {
+        calls.push(`update ${ref(chatType, chatId)} ${chatItemId} ${json(msgContent.text)} live=${live}${withPriority(priority)}`)
         return {} as T.ChatItem
       },
       apiDeleteChatItems: async (chatType: T.ChatType, chatId: number, chatItemIds: number[], deleteMode: T.CIDeleteMode) => {
@@ -334,6 +335,14 @@ describe("LiveMessage", () => {
     await live.end()
     await live.end("Done")
     expect(calls).toEqual(['send #5 "Done" live=false'])
+  })
+
+  it("finalizes with the priority", async () => {
+    const {live, calls} = recordingLiveMessage()
+    live.update("")
+    await live.end("Done", 1)
+    await live.end("Next", 1)
+    expect(calls).toEqual(['send #5 "" live=true', 'update #5 1 "Done" live=false priority=1', 'send #5 "Next" live=false priority=1'])
   })
 
   it("finalizes the last text", async () => {

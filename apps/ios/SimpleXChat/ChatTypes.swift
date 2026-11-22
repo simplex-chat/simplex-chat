@@ -1779,6 +1779,7 @@ public struct FullGroupPreferences: Decodable, Equatable, Hashable {
     public var history: GroupPreference
     public var support: GroupPreference
     public var signMessages: GroupPreference
+    public var msgPriority: RoleGroupPreference?
     public var commands: [ChatBotCommand]
 
     public init(
@@ -1793,6 +1794,7 @@ public struct FullGroupPreferences: Decodable, Equatable, Hashable {
         history: GroupPreference,
         support: GroupPreference,
         signMessages: GroupPreference,
+        msgPriority: RoleGroupPreference? = nil,
         commands: [ChatBotCommand]
     ) {
         self.timedMessages = timedMessages
@@ -1806,6 +1808,7 @@ public struct FullGroupPreferences: Decodable, Equatable, Hashable {
         self.history = history
         self.support = support
         self.signMessages = signMessages
+        self.msgPriority = msgPriority
         self.commands = commands
     }
 
@@ -1837,6 +1840,7 @@ public struct GroupPreferences: Codable, Hashable {
     public var history: GroupPreference?
     public var support: GroupPreference?
     public var signMessages: GroupPreference?
+    public var msgPriority: RoleGroupPreference?
     public var commands: [ChatBotCommand]?
 
     public init(
@@ -1851,6 +1855,7 @@ public struct GroupPreferences: Codable, Hashable {
         history: GroupPreference? = nil,
         support: GroupPreference? = nil,
         signMessages: GroupPreference? = nil,
+        msgPriority: RoleGroupPreference? = nil,
         commands: [ChatBotCommand]? = nil
     ) {
         self.timedMessages = timedMessages
@@ -1864,6 +1869,7 @@ public struct GroupPreferences: Codable, Hashable {
         self.history = history
         self.support = support
         self.signMessages = signMessages
+        self.msgPriority = msgPriority
         self.commands = commands
     }
 
@@ -1895,6 +1901,7 @@ public func toGroupPreferences(_ fullPreferences: FullGroupPreferences) -> Group
         history: fullPreferences.history,
         support: fullPreferences.support,
         signMessages: fullPreferences.signMessages,
+        msgPriority: fullPreferences.msgPriority,
         commands: fullPreferences.commands
     )
 }
@@ -2412,6 +2419,10 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable {
         }
     }
 
+    public var silentNotCounted: Bool {
+        chatSettings?.enableNtfs == .all
+    }
+
     public var chatSettings: ChatSettings? {
         switch self {
         case let .direct(contact): return contact.chatSettings
@@ -2549,12 +2560,16 @@ public struct ChatStats: Decodable, Hashable {
     public init(
         unreadCount: Int = 0,
         unreadMentions: Int = 0,
+        unreadSilent: Int = 0,
+        unreadHighPriority: Int = 0,
         reportsCount: Int = 0,
         minUnreadItemId: Int64 = 0,
         unreadChat: Bool = false
     ) {
         self.unreadCount = unreadCount
         self.unreadMentions = unreadMentions
+        self.unreadSilent = unreadSilent
+        self.unreadHighPriority = unreadHighPriority
         self.reportsCount = reportsCount
         self.minUnreadItemId = minUnreadItemId
         self.unreadChat = unreadChat
@@ -2562,11 +2577,15 @@ public struct ChatStats: Decodable, Hashable {
 
     public var unreadCount: Int = 0
     public var unreadMentions: Int = 0
+    public var unreadSilent: Int = 0
+    public var unreadHighPriority: Int = 0
     // actual only via getChats() and getChat(.initial), otherwise, zero
     public var reportsCount: Int = 0
     public var minUnreadItemId: Int64 = 0
     // actual only via getChats(), otherwise, false
     public var unreadChat: Bool = false
+
+    public var allUnreadSilent: Bool { unreadCount > 0 && unreadCount == unreadSilent }
 }
 
 public enum GroupChatScope: Decodable {
@@ -4061,7 +4080,7 @@ public struct ChatItem: Identifiable, Decodable, Hashable {
     public var showNotification: Bool {
         switch content {
         case .sndMsgContent: return false
-        case .rcvMsgContent: return meta.itemDeleted == nil
+        case .rcvMsgContent: return meta.itemDeleted == nil && !meta.silent
         case .sndDeleted: return false
         case .rcvDeleted: return false
         case .sndCall: return false
@@ -4242,10 +4261,10 @@ public struct ChatItem: Identifiable, Decodable, Hashable {
         textAtItemTop && markdownBlocks == nil && !content.text.contains(where: \.isNewline)
     }
 
-    public static func getSample (_ id: Int64, _ dir: CIDirection, _ ts: Date, _ text: String, _ status: CIStatus = .sndNew, quotedItem: CIQuote? = nil, file: CIFile? = nil, itemDeleted: CIDeleted? = nil, itemEdited: Bool = false, itemLive: Bool = false, deletable: Bool = true, editable: Bool = true) -> ChatItem {
+    public static func getSample (_ id: Int64, _ dir: CIDirection, _ ts: Date, _ text: String, _ status: CIStatus = .sndNew, quotedItem: CIQuote? = nil, file: CIFile? = nil, itemDeleted: CIDeleted? = nil, itemEdited: Bool = false, itemLive: Bool = false, deletable: Bool = true, editable: Bool = true, priority: Int? = nil) -> ChatItem {
         ChatItem(
             chatDir: dir,
-            meta: CIMeta.getSample(id, ts, text, status, itemDeleted: itemDeleted, itemEdited: itemEdited, itemLive: itemLive, deletable: deletable, editable: editable),
+            meta: CIMeta.getSample(id, ts, text, status, itemDeleted: itemDeleted, itemEdited: itemEdited, itemLive: itemLive, deletable: deletable, editable: editable, priority: priority),
             content: .sndMsgContent(msgContent: .text(text)),
             quotedItem: quotedItem,
             file: file
@@ -4481,10 +4500,13 @@ public struct CIMeta: Decodable, Hashable {
     public var forwardedByMember: Int64?
     public var showGroupAsSender: Bool
     public var msgVerified: MsgVerified?
+    public var priority: Int?
 
     public var timestampText: Text { Text(formatTimestampMeta(itemTs)) }
     public var recent: Bool { updatedAt + 10 > .now }
     public var isLive: Bool { itemLive == true }
+    public var silent: Bool { (priority ?? 0) < 0 }
+    public var highPriority: Bool { (priority ?? 0) > 0 }
     public var disappearing: Bool { !isRcvNew && itemTimed?.deleteAt != nil }
 
     public var isRcvNew: Bool {
@@ -4492,7 +4514,7 @@ public struct CIMeta: Decodable, Hashable {
         return false
     }
 
-    public static func getSample(_ id: Int64, _ ts: Date, _ text: String, _ status: CIStatus = .sndNew, itemDeleted: CIDeleted? = nil, itemEdited: Bool = false, itemLive: Bool = false, deletable: Bool = true, editable: Bool = true) -> CIMeta {
+    public static func getSample(_ id: Int64, _ ts: Date, _ text: String, _ status: CIStatus = .sndNew, itemDeleted: CIDeleted? = nil, itemEdited: Bool = false, itemLive: Bool = false, deletable: Bool = true, editable: Bool = true, priority: Int? = nil) -> CIMeta {
         CIMeta(
             itemId: id,
             itemTs: ts,
@@ -4507,7 +4529,8 @@ public struct CIMeta: Decodable, Hashable {
             deletable: deletable,
             editable: editable,
             showGroupAsSender: false,
-            msgVerified: nil
+            msgVerified: nil,
+            priority: priority
         )
     }
 
@@ -4678,6 +4701,12 @@ public enum CIStatus: Decodable, Hashable {
 
 public func unreadCountChange(_ prevItem: ChatItem, _ cItem: ChatItem, _ counted: (ChatItem) -> Bool) -> Int {
     (counted(cItem) ? 1 : 0) - (counted(prevItem) ? 1 : 0)
+}
+
+extension ChatItem {
+    public func isRaised(from prevItem: ChatItem) -> Bool {
+        meta.highPriority && !prevItem.meta.highPriority
+    }
 }
 
 public func shouldKeepOldSndCIStatus(oldStatus: CIStatus, newStatus: CIStatus) -> Bool {

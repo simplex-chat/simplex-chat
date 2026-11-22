@@ -227,15 +227,20 @@ class ChatApi:
         chat: list | T.ChatRef | T.ChatInfo,
         text: str,
         in_reply_to: int | None = None,
+        priority: int | None = None,
     ) -> list[T.AChatItem]:
         msg: T.ComposedMessage = {"msgContent": {"type": "text", "text": text}, "mentions": {}}
         if in_reply_to is not None:
             msg["quotedItemId"] = in_reply_to
+        if priority is not None:
+            msg["priority"] = priority
         return await self.api_send_messages(chat, [msg])
 
-    async def api_send_text_reply(self, chat_item: T.AChatItem, text: str) -> list[T.AChatItem]:
+    async def api_send_text_reply(
+        self, chat_item: T.AChatItem, text: str, priority: int | None = None
+    ) -> list[T.AChatItem]:
         return await self.api_send_text_message(
-            chat_item["chatInfo"], text, chat_item["chatItem"]["meta"]["itemId"]
+            chat_item["chatInfo"], text, chat_item["chatItem"]["meta"]["itemId"], priority
         )
 
     async def api_update_chat_item(
@@ -245,14 +250,18 @@ class ChatApi:
         chat_item_id: int,
         msg_content: T.MsgContent,
         live_message: bool = False,
+        priority: int | None = None,
     ) -> T.ChatItem:
+        updated_message: T.UpdatedMessage = {"msgContent": msg_content, "mentions": {}}
+        if priority is not None:
+            updated_message["priority"] = priority
         r = await self.send_chat_cmd(
             CC.APIUpdateChatItem_cmd_string(
                 {
                     "chatRef": {"chatType": chat_type, "chatId": chat_id},
                     "chatItemId": chat_item_id,
                     "liveMessage": live_message,
-                    "updatedMessage": {"msgContent": msg_content, "mentions": {}},
+                    "updatedMessage": updated_message,
                 }
             )
         )

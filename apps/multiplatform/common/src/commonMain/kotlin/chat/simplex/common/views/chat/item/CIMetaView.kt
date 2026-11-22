@@ -95,6 +95,9 @@ private fun CIMetaText(
 ) {
   val showSignature = appPreferences.privacyShowSignature.state.value
   val showEncryption = appPreferences.privacyShowEncryption.state.value
+  if (meta.highPriority) {
+    StatusIconText(painterResource(MR.images.ic_notifications), MaterialTheme.colors.primary)
+  }
   if (showEdited && meta.itemEdited) {
     StatusIconText(painterResource(MR.images.ic_edit), color)
   }
@@ -182,6 +185,9 @@ private fun reserveSpaceForMeta(
     space = null
   }
 
+  if (meta.highPriority) {
+    spaces(iconSpace)
+  }
   if (showEdited && meta.itemEdited) {
     spaces(iconSpace)
   }
@@ -399,6 +405,21 @@ fun PreviewCIMetaViewEditedSent() = BubblePreview {
 fun PreviewCIMetaViewDeletedContent() = BubblePreview {
   CIMetaView(
     chatItem = ChatItem.getDeletedContentSampleData(ts = previewDate),
+    null,
+    showViaProxy = false,
+    showTimestamp = true
+  )
+}
+
+@Preview
+@Composable
+fun PreviewCIMetaViewHighPriority() = BubblePreview {
+  CIMetaView(
+    chatItem = ChatItem.getSampleData(
+      1, CIDirection.GroupRcv(GroupMember.sampleData), previewDate, "hello",
+      status = CIStatus.RcvRead(),
+      priority = 1
+    ),
     null,
     showViaProxy = false,
     showTimestamp = true
