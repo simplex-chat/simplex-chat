@@ -634,3 +634,9 @@ struct ChatItemInfoView_Previews: PreviewProvider {
         ChatItemInfoView(ci: ChatItem.getSample(1, .directSnd, previewDate, "hello"), userMemberId: Chat.sampleData.chatInfo.groupInfo?.membership.memberId, chatItemInfo: Binding.constant(nil))
     }
 }
+
+struct ChatItemInfoView_HighPriority_Previews: PreviewProvider {
+    static var previews: some View {
+        ChatItemInfoView(ci: ChatItem.getSample(1, .groupRcv(groupMember: GroupMember.sampleData), previewDate, "hello", .rcvRead, priority: 1), userMemberId: nil, chatItemInfo: Binding.constant(nil))
+    }
+}

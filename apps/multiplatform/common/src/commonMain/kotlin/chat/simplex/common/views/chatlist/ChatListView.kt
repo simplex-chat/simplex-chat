@@ -1,6 +1,7 @@
 package chat.simplex.common.views.chatlist
 
 import LocalCardScreen
+import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.*
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
@@ -1676,4 +1677,24 @@ private fun presetCanBeCollapsed(tag: PresetTagKind): Boolean = when (tag) {
 
 fun scrollToBottom(scope: CoroutineScope, listState: LazyListState) {
   scope.launch { try { listState.animateScrollToItem(0) } catch (e: Exception) { Log.e(TAG, e.stackTraceToString()) } }
+}
+
+@Preview
+@Composable
+fun PreviewTagsView() {
+  DisposableEffect(Unit) {
+    chatModel.userTags.value = listOf(ChatTag(1, "Work", null), ChatTag(2, "Friends", null), ChatTag(3, "News", null), ChatTag(4, "Family", null))
+    chatModel.unreadTags.putAll(mapOf(1L to 1, 2L to 1))
+    chatModel.priorityTags[1L] = 1
+    chatModel.silentTags[3L] = 1
+    onDispose {
+      chatModel.userTags.value = emptyList()
+      chatModel.unreadTags.clear()
+      chatModel.priorityTags.clear()
+      chatModel.silentTags.clear()
+    }
+  }
+  SimpleXTheme {
+    TagsView(remember { mutableStateOf(TextFieldValue()) })
+  }
 }

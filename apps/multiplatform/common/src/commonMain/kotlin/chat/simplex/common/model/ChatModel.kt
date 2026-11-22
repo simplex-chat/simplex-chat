@@ -3889,11 +3889,12 @@ data class ChatItem (
       itemTimed: CITimed? = null,
       itemLive: Boolean = false,
       deletable: Boolean = true,
-      editable: Boolean = true
+      editable: Boolean = true,
+      priority: Int? = null
     ) =
       ChatItem(
         chatDir = dir,
-        meta = CIMeta.getSample(id, ts, text, status, sentViaProxy, itemForwarded, itemDeleted, itemEdited, itemTimed, itemLive, deletable, editable),
+        meta = CIMeta.getSample(id, ts, text, status, sentViaProxy, itemForwarded, itemDeleted, itemEdited, itemTimed, itemLive, deletable, editable, priority),
         content = CIContent.SndMsgContent(msgContent = MsgContent.MCText(text)),
         quotedItem = quotedItem,
         reactions = listOf(),
@@ -4186,7 +4187,7 @@ data class CIMeta (
     fun getSample(
       id: Long, ts: Instant, text: String, status: CIStatus = CIStatus.SndNew(), sentViaProxy: Boolean? = null,
       itemForwarded: CIForwardedFrom? = null, itemDeleted: CIDeleted? = null, itemEdited: Boolean = false,
-      itemTimed: CITimed? = null, itemLive: Boolean = false, deletable: Boolean = true, editable: Boolean = true
+      itemTimed: CITimed? = null, itemLive: Boolean = false, deletable: Boolean = true, editable: Boolean = true, priority: Int? = null
     ): CIMeta =
       CIMeta(
         itemId = id,
@@ -4204,7 +4205,8 @@ data class CIMeta (
         deletable = deletable,
         editable = editable,
         userMention = false,
-        showGroupAsSender = false
+        showGroupAsSender = false,
+        priority = priority
       )
 
     fun invalidJSON(): CIMeta =

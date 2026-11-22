@@ -5,6 +5,7 @@ import SectionBottomSpacer
 import SectionDividerSpaced
 import SectionItemView
 import SectionView
+import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -649,4 +650,18 @@ fun itemInfoShareText(chatModel: ChatModel, ci: ChatItem, chatItemInfo: ChatItem
     }
   }
   return shareText.joinToString(separator = "\n")
+}
+
+@Preview
+@Composable
+fun PreviewChatItemInfoViewHighPriority() {
+  SimpleXTheme {
+    ChatItemInfoView(
+      chatRh = null,
+      ci = ChatItem.getSampleData(1, CIDirection.GroupRcv(GroupMember.sampleData), previewDate, "hello", status = CIStatus.RcvRead(), priority = 1),
+      ciInfo = ChatItemInfo(itemVersions = listOf(), memberDeliveryStatuses = null, forwardedFromChatItem = null),
+      devTools = false,
+      chatInfo = ChatInfo.Group.sampleData
+    )
+  }
 }
