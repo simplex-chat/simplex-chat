@@ -98,7 +98,7 @@
                   "localDisplayName": "bob",
                   "memberCategory": "user",
                   "memberChatVRange": {
-                    "maxVersion": 22,
+                    "maxVersion": 23,
                     "minVersion": 9
                   },
                   "memberContactId": 1,
@@ -165,7 +165,7 @@
                     "localDisplayName": "alice",
                     "memberCategory": "host",
                     "memberChatVRange": {
-                      "maxVersion": 22,
+                      "maxVersion": 23,
                       "minVersion": 9
                     },
                     "memberContactId": 2,
@@ -257,7 +257,7 @@
                 "activeConn": {
                   "agentConnId": "agentConnId",
                   "authErrCounter": 0,
-                  "connChatVersion": 22,
+                  "connChatVersion": 23,
                   "connId": 1,
                   "connLevel": 0,
                   "connStatus": {
@@ -269,7 +269,7 @@
                   "entityId": 2,
                   "localAlias": "",
                   "peerChatVRange": {
-                    "maxVersion": 22,
+                    "maxVersion": 23,
                     "minVersion": 9
                   },
                   "pqEncryption": true,
