@@ -11,8 +11,8 @@ module ChatTests.Utils where
 import APIDocs (testGenerate)
 import ChatClient
 import ChatTests.DBUtils
-import Control.Concurrent (threadDelay)
-import Control.Concurrent.Async (concurrently_, mapConcurrently_)
+import Control.Concurrent (newEmptyMVar, putMVar, takeMVar, threadDelay)
+import Control.Concurrent.Async (concurrently_, mapConcurrently_, race_, wait, withAsync)
 import Control.Concurrent.STM
 import Control.Monad (join, unless, when)
 import Control.Monad.Except (runExceptT)
@@ -673,6 +673,14 @@ withCCTransaction cc action =
 withCCAgentTransaction :: TestCC -> (DB.Connection -> IO a) -> IO a
 withCCAgentTransaction TestCC {chatController = ChatController {smpAgent}} action =
   withTransaction (agentClientStore smpAgent) $ \db -> action db
+
+holdDuring :: (IO () -> IO ()) -> IO a -> IO a
+holdDuring hold action = do
+  held <- newEmptyMVar
+  release <- newEmptyMVar
+  withAsync (hold $ putMVar held () >> takeMVar release) $ \holder -> do
+    timeout 30000000 (race_ (takeMVar held) (wait holder)) `shouldReturn` Just ()
+    action <* (putMVar release () >> wait holder)
 
 checkPendingInvitations :: HasCallStack => TestCC -> Int -> IO ()
 checkPendingInvitations cc n =
