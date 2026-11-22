@@ -338,7 +338,7 @@ chatGroupTests = do
     it "refuse role above user role, member not via user, user below admin and incognito membership" testViaMemberRefused
     it "refuse announcement against via rules and forward with another via" testViaMemberAnnounceRefused
     it "refuse introduction against via rules" testViaMemberIntroRefused
-    it "refuse support scope, files, quotes and broadcast delete as member, moderate as member" testViaMemberSendRefused
+    it "refuse support scope, files, quotes and broadcast delete as member; moderation names member" testViaMemberSendRefused
     it "sign messages and updates of member via user with user key" testViaMemberSigned
     it "deliver messages sent as member unsigned to members of previous version" testViaMemberSignedPrevVersion
     it "deliver pending messages sent as member unsigned" testViaMemberSignedPending
@@ -16176,6 +16176,13 @@ testViaMemberSendRefused =
       bob ##> ("/_delete member item #1 " <> bobHiId)
       bob <## "message marked deleted by you"
       [alice, cath] *<# "#team reviewer> [marked deleted by bob] hi"
+      alice ##> "/_send #1(as_member=4) text hey"
+      alice <# "#team hey"
+      [bob, cath] *<# "#team reviewer> hey [>>]"
+      heyId <- lastItemId alice
+      alice ##> ("/_delete member item #1 " <> heyId)
+      alice <## "message marked deleted by you"
+      [bob, cath] *<# "#team reviewer> [marked deleted by alice] hey"
 
 createViaSignedGroup :: HasCallStack => TestCC -> TestCC -> IO ()
 createViaSignedGroup alice bob = do

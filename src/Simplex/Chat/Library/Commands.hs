@@ -4341,10 +4341,10 @@ processChatCommand cxt nm = \case
         itemsMsgMemIds GroupInfo {membership = GroupMember {memberId = membershipMemId}} = mapMaybe itemMsgMemIds
           where
             itemMsgMemIds :: CChatItem 'CTGroup -> Maybe (SharedMsgId, Maybe MemberId)
-            itemMsgMemIds (CChatItem _ ChatItem {chatDir, meta = CIMeta {itemSharedMsgId}}) =
+            itemMsgMemIds (CChatItem _ ChatItem {chatDir, meta = CIMeta {itemSharedMsgId, sentAsMember}}) =
               join <$> forM itemSharedMsgId $ \msgId -> Just $ case chatDir of
                 CIGroupRcv GroupMember {memberId} -> (msgId, Just memberId)
-                CIGroupSnd -> (msgId, Just membershipMemId)
+                CIGroupSnd -> (msgId, Just $ maybe membershipMemId memberId' sentAsMember)
                 CIChannelRcv -> (msgId, Nothing)
 
     delGroupChatItems :: User -> GroupInfo -> Maybe GroupChatScopeInfo -> [CChatItem 'CTGroup] -> Bool -> CM [ChatItemDeletion]
