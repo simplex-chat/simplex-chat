@@ -164,9 +164,9 @@ Stable recordings:
 
   | Fields | Replaced by |
   |---|---|
-  | `createdAt`<br>`updatedAt`<br>`chatTs`<br>`userMemberProfileSentAt`<br>`itemTs` | `1970-01-01T00:00:00Z` |
+  | `createdAt`<br>`updatedAt`<br>`chatTs`<br>`userMemberProfileSentAt`<br>`sentAt`<br>`itemTs` | `1970-01-01T00:00:00Z` |
   | `memberId` equal to a `memberVia` of the recording | `memberVia` |
-  | `agentConnId`<br>`xContactId`<br>`connFullLink`<br>`connShortLink`<br>`contactLink`<br>`groupLink`<br>`viaGroupLinkUri`<br>`simplexUri`<br>`memberId`<br>`memberVia`<br>`memberPubKey`<br>`publicGroupId`<br>`businessId`<br>`customerId`<br>`itemSharedMsgId`<br>`agentSndFileId`<br>`privateSndFileDescr`<br>`errorMessage` | the field name |
+  | `agentConnId`<br>`xContactId`<br>`connFullLink`<br>`connShortLink`<br>`contactLink`<br>`groupLink`<br>`viaGroupLinkUri`<br>`simplexUri`<br>`memberId`<br>`memberVia`<br>`memberPubKey`<br>`publicGroupId`<br>`businessId`<br>`customerId`<br>`itemSharedMsgId`<br>`sharedMsgId`<br>`agentSndFileId`<br>`privateSndFileDescr`<br>`errorMessage` | the field name |
   | `groupRelays` | `"groupRelay"` per element |
 
   A field with a new value in each run is added to this list.

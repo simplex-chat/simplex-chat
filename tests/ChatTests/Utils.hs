@@ -1067,9 +1067,9 @@ stableJSON fixtureJSON = stable fixtureJSON
       v -> v
     stableField k v
       | k == "itemTs", J.String ts <- v = J.String $ "1970-01-01T00:00:00" <> secondFraction ts
-      | k `elem` ["createdAt", "updatedAt", "chatTs", "userMemberProfileSentAt", "deletedTs", "fileExpires"] = J.String "1970-01-01T00:00:00Z"
+      | k `elem` ["createdAt", "updatedAt", "chatTs", "userMemberProfileSentAt", "deletedTs", "fileExpires", "sentAt"] = J.String "1970-01-01T00:00:00Z"
       | k == "memberId", v `elem` hostIds = J.String "memberVia"
-      | k `elem` ["agentConnId", "xContactId", "connFullLink", "connShortLink", "contactLink", "groupLink", "viaGroupLinkUri", "simplexUri", "memberId", "memberVia", "memberPubKey", "publicGroupId", "businessId", "customerId", "itemSharedMsgId", "fileDescrText", "agentSndFileId", "privateSndFileDescr", "errorMessage"] = J.String $ JK.toText k
+      | k `elem` ["agentConnId", "xContactId", "connFullLink", "connShortLink", "contactLink", "groupLink", "viaGroupLinkUri", "simplexUri", "memberId", "memberVia", "memberPubKey", "publicGroupId", "businessId", "customerId", "itemSharedMsgId", "sharedMsgId", "fileDescrText", "agentSndFileId", "privateSndFileDescr", "errorMessage"] = J.String $ JK.toText k
       | k == "groupRelays", J.Array a <- v = J.Array $ J.String "groupRelay" <$ a
       | otherwise = stable v
     secondFraction ts = case T.breakOn "." ts of

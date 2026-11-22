@@ -283,8 +283,8 @@
                   "type": "text"
                 },
                 "itemId": 23,
-                "sentAt": "2026-11-22T23:39:07Z",
-                "sharedMsgId": "dXJPWFZ3TWhrcy8vR0tVcA=="
+                "sentAt": "1970-01-01T00:00:00Z",
+                "sharedMsgId": "sharedMsgId"
               },
               "reactions": []
             }
