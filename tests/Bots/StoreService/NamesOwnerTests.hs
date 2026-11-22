@@ -50,8 +50,9 @@ import Data.List (find, sort, sortOn)
 import Data.Maybe (fromJust, fromMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Time.Clock (addUTCTime)
+import Data.Time.Clock (addUTCTime, diffUTCTime)
 import Data.Word (Word64, Word8)
+import Simplex.Chat.Badges.Ledger (addMonths)
 import Simplex.Chat.PaymentService.Types (InvoiceId (..), InvoiceStatus (..))
 import Simplex.Messaging.Agent.Store.Common (withTransaction)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
@@ -102,7 +103,7 @@ namesOwnerTests = describe "StoreService names: owner" $ do
     it "runs the order checks on the new fields: invalid_name, the duration, name_taken and name_check_unavailable" testSelectOrderChecks
     it "answers a name of another price catalog_changed with its price, one priced under the floor name_check_unavailable, a balance short of the price bad_request, and selects at the order's price, spent from its balance" testSelectPrice
     it "checks a code order's code as a new code order's: code_not_covering for a shorter name, and reserves it for the name selected" testSelectCodeOrder
-    it "accepts the code the order holds past its expiry, refuses it once revoked with code_invalid, changing nothing, and keeps it from other code orders" testSelectRefusedCode
+    it "accepts the code the order holds past its expiry until a month after the take, then refuses it with code_expired, refuses it once revoked with code_invalid, changing nothing, and keeps it from other code orders" testSelectRefusedCode
     it "refuses sealed over 11095 characters, a body over 16384 bytes and malformed fields, accepting the longest" testSelectSizes
     it "refuses another signer's signature and a stale timestamp, and answers an unknown order 404" testSelectRefusedSigner
     it "answers registration_changed with the current view when the order changed during the checks, writing nothing" testSelectLostRace
@@ -230,7 +231,7 @@ failedPhase, registeredPhase, committedPhase, takenPhase :: NameRegistration -> 
 failedPhase r = r {nrPhase = OFailed orderTime FRRegistryRefused}
 registeredPhase r = r {nrPhase = ORegistered (RoundedSystemTime $ fromIntegral $ seconds orderTime + 3 * 31536000) orderTime}
 committedPhase r = r {nrPhase = OCommitted committedCommit}
-takenPhase r = r {nrPhase = OTaken}
+takenPhase r = r {nrPhase = OTaken orderTime}
 
 -- | A paid order reset to taken as the taken write sets it, its price credited to its balance.
 takenIn :: Ctx -> Order -> (NameRegistration -> NameRegistration) -> IO NameRegistration
@@ -644,8 +645,9 @@ testSelectRefusedCode = withOwner $ \ctx@Ctx {cStore} -> do
         (r, code) <- codeIn ctx 8 aliceOrder {oLabel = label, oSecret = secretOf (30 + n)} id >>= \(placedOrder, code) -> (,code) <$> retaken ctx placedOrder
         to <- selectionOf ctx label (40 + n)
         pure (r, code, to)
-  (expiredOrder, expired@PrepaidCode {pcCodeHash = expiredHash}, toExpired) <- takenCodeIn 1
-  withTransaction cStore $ \db -> DB.execute db "UPDATE sx_badge_service_name_prepaid_codes SET expires_at = ? WHERE code_hash = ?" (orderTime, expiredHash)
+      expire PrepaidCode {pcCodeHash} = withTransaction cStore $ \db -> DB.execute db "UPDATE sx_badge_service_name_prepaid_codes SET expires_at = ? WHERE code_hash = ?" (orderTime, pcCodeHash)
+  (expiredOrder, expired, toExpired) <- takenCodeIn 1
+  expire expired
   phaseOf <$> selected ctx keyA expiredOrder toExpired `shouldReturn` Just "queued"
   pcReservedBy <$> codeRow ctx expired `shouldReturn` Just (nrId expiredOrder)
   (revokedOrder, revoked@PrepaidCode {pcCodeHash = revokedHash}, toRevoked) <- takenCodeIn 2
@@ -661,6 +663,20 @@ testSelectRefusedCode = withOwner $ \ctx@Ctx {cStore} -> do
   holder <- registered ctx keptText aliceOrder {oLabel = "codeorder8", oSecret = secretOf 38} >>= registrationById ctx >>= retaken ctx
   (signedCodeBody ctx keptText (byB aliceOrder) {oLabel = "codeorder9", oSecret = secretOf 39} >>= postRegister ctx) `shouldReturn` refusedWith 409 "code_reserved"
   pcReservedBy <$> codeRow ctx kept `shouldReturn` Just (nrId holder)
+  (inMonthOrder, inMonth, _) <- takenCodeIn 3
+  (lateOrder, late, _) <- takenCodeIn 4
+  mapM_ expire [inMonth, late]
+  advance ctx $ diffUTCTime (addMonths 1 orderTime) orderTime - 1
+  toInMonth <- selectionOf ctx "codeorder3" 43
+  phaseOf <$> selected ctx keyA inMonthOrder toInMonth `shouldReturn` Just "queued"
+  advance ctx 1
+  toLate <- selectionOf ctx "codeorder4" 44
+  lateRow <- codeRow ctx late
+  lateAnswer <- select ctx keyA lateOrder toLate
+  lateAnswer `shouldBe` refusedWith 409 "code_expired"
+  answerFixture "select-code-expired" lateAnswer
+  stored ctx lateOrder `shouldReturn` lateOrder
+  codeRow ctx late `shouldReturn` lateRow
 
 testSelectSizes :: IO ()
 testSelectSizes = withOwner $ \ctx -> do

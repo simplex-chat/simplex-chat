@@ -212,7 +212,7 @@ nameSettled db ref before after money r@NameRegistration {nrId, nrLabelHash, nrP
                   _ -> E.throwIO (RegistrationChanged nrId)
               False -> do
                 held <- isJust <$> labelHolder db nrLabelHash
-                updateRegistration db r {nrPhase = if held then OTaken else OQueued} now >>= \case
+                updateRegistration db r {nrPhase = if held then OTaken now else OQueued} now >>= \case
                   Written v -> do
                     setSettledAt db nrId paidAt
                     when held $ creditBalance db nrId nrPrice now

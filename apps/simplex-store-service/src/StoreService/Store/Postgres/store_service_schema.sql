@@ -349,6 +349,7 @@ CREATE TABLE test_store_service_schema.sx_badge_service_name_registrations (
     reveal_before bigint,
     expires_at bigint,
     registered_at timestamp with time zone,
+    taken_at timestamp with time zone,
     failed_at timestamp with time zone,
     fail_reason text,
     closed_by text,

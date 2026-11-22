@@ -1589,7 +1589,7 @@ testSettledWhileHeld = withOrders $ \ctx@Ctx {cStore = st} -> do
   settleNow ctx bobInv settled `shouldReturn` ISPaid
   nrPhase <$> invoiceRegistration ctx aliceInv `shouldReturn` OQueued
   NameRegistration {nrId, nrPhase} <- invoiceRegistration ctx bobInv
-  nrPhase `shouldBe` OTaken
+  nrPhase `shouldBe` OTaken orderTime
   fmap blAmount <$> withTransaction st (`getBalance` nrId) `shouldReturn` Just alicePrice
 
 testFailedHoldsName :: IO ()
@@ -1600,7 +1600,7 @@ testFailedHoldsName = withOrders $ \ctx@Ctx {cStore = st} -> do
   holder <- invoiceRegistration ctx aliceInv
   Written _ <- withTransaction st $ \db -> updateRegistration db holder {nrPhase = OFailed orderTime FRRegistryRefused} orderTime
   settleNow ctx bobInv settled `shouldReturn` ISPaid
-  nrPhase <$> invoiceRegistration ctx bobInv `shouldReturn` OTaken
+  nrPhase <$> invoiceRegistration ctx bobInv `shouldReturn` OTaken orderTime
   placeOrder ctx (bobOrder 3) `shouldReturn` refusedWith 409 "name_taken"
 
 testCodeOrderHoldsName :: IO ()
@@ -1841,7 +1841,7 @@ testViewStates = withServiceStore $ \st -> withFakeEthNode $ \node -> do
   viewOf paidFailed `shouldReturn` view [("version", J.Number 2), ("phase", J.object ["type" .= ("failed" :: Text), "reason" .= ("signatureRefused" :: Text), "heldUntil" .= addMonths 1 t0]), ("registerTx", txText 9), ("balance", J.Null)]
   requeued <- written $ \r -> r {nrPhase = OQueued, nrHistory = (nrHistory r) {thRegisterTx = Nothing}}
   viewOf requeued `shouldReturn` view [("version", J.Number 3), ("phase", J.object ["type" .= ("queued" :: Text)]), ("registerTx", J.Null), ("balance", J.Null)]
-  taken <- written $ \r -> r {nrPhase = OTaken}
+  taken <- written $ \r -> r {nrPhase = OTaken t0}
   withTransaction st $ \db -> creditBalance db rid 20000 t0
   viewOf taken `shouldReturn` view [("version", J.Number 4), ("phase", J.object ["type" .= ("taken" :: Text)]), ("registerTx", J.Null), ("balance", J.object ["amount" .= (20000 :: Int), "refunded" .= (0 :: Int)])]
   where
@@ -1895,7 +1895,7 @@ testViewReads = withServiceStore $ \st -> withFakeEthNode $ \node -> do
   setCommunityTerms node ""
   readToSignOf ct committed `shouldReturn` TSUnread
   setCommunityTerms node fakeCommunityTermsText
-  taken <- inPhase OTaken
+  taken <- inPhase $ OTaken t0
   setFault node "eth_call" HttpFailure
   phaseView ct t0 committed {nrReveal = Just reveal} `shouldReturn` PVCommitted (cmRevealAfter commitFixture) (cmRevealBefore commitFixture) SSigned
   phaseView ct (addUTCTime 1 $ roundedToUTCTime $ cmRevealBefore commitFixture) committed `shouldReturn` PVCommitted (cmRevealAfter commitFixture) (cmRevealBefore commitFixture) SLapsed

@@ -246,7 +246,7 @@ testNamesCounts = withServiceStore $ \st -> do
         updateRegistration db (change r) (at minute) `shouldReturn` Written 2
   placedAs "open" "u" 1
   mapM_ (\(rid, n) -> placedAs "paid" rid n) [("src", 2), ("q", 3), ("c1", 4), ("c2", 5), ("rg", 6), ("f", 7), ("me", 10)]
-  moved "src" 1 $ \r -> r {nrPhase = OTaken}
+  moved "src" 1 $ \r -> r {nrPhase = OTaken (at 1)}
   moved "f" 1 $ \r -> r {nrPhase = OFailed (at 1) FRRegistryRefused}
   moved "me" 1 $ \r -> r {nrPhase = OFailed (at 1) FRMonthEnded}
   moved "c1" 2 $ \r -> r {nrPhase = OCommitted commitFixture, nrReveal = Nothing}

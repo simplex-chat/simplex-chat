@@ -269,7 +269,7 @@ data OrderPhase
   | OCommitted Commit
   | ORegistering Commit TxHash
   | ORegistered SystemSeconds UTCTime
-  | OTaken
+  | OTaken UTCTime
   | OFailed UTCTime FailReason
   deriving (Eq, Show)
 
@@ -282,7 +282,7 @@ namePhase = \case
   OCommitted _ -> PCommitted
   ORegistering {} -> PRegistering
   ORegistered {} -> PRegistered
-  OTaken -> PTaken
+  OTaken _ -> PTaken
   OFailed {} -> PFailed
 
 phaseCommit :: OrderPhase -> Maybe Commit
@@ -803,7 +803,7 @@ registrationColumns =
     SELECT r.registration_id, r.version, r.label_hash, r.length, r.duration, r.owner, r.commitment, r.sealed, r.phase, r.years,
       r.price, r.method, ni.invoice_id, r.name_prepaid_code_id, r.label, r.secret, r.contact_link, r.channel_link, r.intent_nonce, r.intent_deadline,
       r.intent_signature, r.commit_tx, r.commit_block, r.register_tx, r.reveal_after, r.reveal_before, r.expires_at, r.registered_at, r.failed_at, r.fail_reason,
-      r.closed_by, r.order_hash, r.created_at, r.updated_at, r.agreed_terms, r.accept_terms,
+      r.taken_at, r.closed_by, r.order_hash, r.created_at, r.updated_at, r.agreed_terms, r.accept_terms,
       r.accept_nonce, r.accept_signature, r.read_at, r.settled_at, r.selected_at, r.last_attempt_tx, r.last_attempt_stage, r.last_attempt_reason, r.last_attempt_at
   |]
 
@@ -823,7 +823,7 @@ type RegistrationRow =
   (Text, Int64, LabelHash, Int, Int64, Address, Commitment, Text, NamePhase, Int)
     :. (USDCents, Maybe ServicePaymentMethod, Maybe Text, Maybe Int64, Maybe Text, Maybe Hex32, Maybe Text, Maybe Text, Maybe Int64, Maybe Int64)
     :. (Maybe RecoverableSignature, Maybe TxHash, Maybe Int64, Maybe TxHash, Maybe Int64, Maybe Int64, Maybe Int64, Maybe UTCTime, Maybe UTCTime, Maybe FailReason)
-    :. (Maybe InvoiceClose, OrderHash, UTCTime, UTCTime, AgreedTerms, Maybe TermsHash)
+    :. (Maybe UTCTime, Maybe InvoiceClose, OrderHash, UTCTime, UTCTime, AgreedTerms, Maybe TermsHash)
     :. (Maybe Int64, Maybe RecoverableSignature, UTCTime, Maybe UTCTime, Maybe UTCTime, Maybe RegistrationTx, Maybe AttemptStage, Maybe Text, Maybe UTCTime)
 
 toRegistration :: RegistrationRow -> Either Text NameRegistration
@@ -831,34 +831,35 @@ toRegistration
   ( (rid, nrVersion, nrLabelHash, len, duration, nrOwner, nrCommitment, nrSealed, phase, nrYears)
       :. (nrPrice, method_, invoiceId_, codeId_, label_, secret_, nrContactLink, nrChannelLink, nonce_, deadline_)
       :. (signature_, commitTx, commitBlock, registerTx, revealAfter, revealBefore, expiresAt, registeredAt, failedAt, failReason)
-      :. (closedBy, nrOrderHash, nrCreatedAt, nrUpdatedAt, nrAgreedTerms, acceptTerms_)
+      :. (takenAt, closedBy, nrOrderHash, nrCreatedAt, nrUpdatedAt, nrAgreedTerms, acceptTerms_)
       :. (acceptNonce_, acceptSignature_, nrReadAt, nrSettledAt, nrSelectedAt, attemptTx_, attemptStage_, attemptReason_, attemptAt_)
     ) = do
     nrLength <- note ("name_registrations.length: " <> rid) $ nameLength len
     let commitOf after before = Commit {cmTx = TxRef <$> commitTx <*> (word64 <$> commitBlock), cmRevealAfter = RoundedSystemTime after, cmRevealBefore = RoundedSystemTime before}
         noCommit = isNothing revealAfter && isNothing revealBefore && isNothing commitBlock
         noRegistered = isNothing expiresAt && isNothing registeredAt
+        noTaken = isNothing takenAt
         noFailure = isNothing failedAt && isNothing failReason
         noClose = isNothing closedBy
         ownCommit = isJust commitTx == isJust commitBlock
         fitting p fits = if fits then Right p else Left $ "name_registrations " <> textEncode phase <> ": " <> rid
     nrPhase <- case phase of
-      PUnpaid -> maybe (Left $ "name_registrations unpaid without an invoice: " <> rid) (\invId -> fitting (OUnpaid $ InvoiceId invId) (noCommit && noRegistered && noFailure && noClose)) invoiceId_
-      PClosed -> maybe (Left $ "name_registrations closed without closed_by: " <> rid) (\c -> fitting (OClosed c) (noCommit && noRegistered && noFailure)) closedBy
-      PQueued -> fitting OQueued (noCommit && noRegistered && noFailure && noClose)
-      PCommitting -> maybe (Left $ "name_registrations committing without commit_tx: " <> rid) (\tx -> fitting (OCommitting tx) (noCommit && noRegistered && noFailure && noClose)) commitTx
+      PUnpaid -> maybe (Left $ "name_registrations unpaid without an invoice: " <> rid) (\invId -> fitting (OUnpaid $ InvoiceId invId) (noCommit && noRegistered && noTaken && noFailure && noClose)) invoiceId_
+      PClosed -> maybe (Left $ "name_registrations closed without closed_by: " <> rid) (\c -> fitting (OClosed c) (noCommit && noRegistered && noTaken && noFailure)) closedBy
+      PQueued -> fitting OQueued (noCommit && noRegistered && noTaken && noFailure && noClose)
+      PCommitting -> maybe (Left $ "name_registrations committing without commit_tx: " <> rid) (\tx -> fitting (OCommitting tx) (noCommit && noRegistered && noTaken && noFailure && noClose)) commitTx
       PCommitted -> case (revealAfter, revealBefore) of
-        (Just after, Just before) -> fitting (OCommitted $ commitOf after before) (ownCommit && noRegistered && noFailure && noClose)
+        (Just after, Just before) -> fitting (OCommitted $ commitOf after before) (ownCommit && noRegistered && noTaken && noFailure && noClose)
         _ -> Left $ "name_registrations committed without reveal times: " <> rid
       PRegistering -> case (revealAfter, revealBefore, registerTx) of
-        (Just after, Just before, Just tx) -> fitting (ORegistering (commitOf after before) tx) (ownCommit && noRegistered && noFailure && noClose)
+        (Just after, Just before, Just tx) -> fitting (ORegistering (commitOf after before) tx) (ownCommit && noRegistered && noTaken && noFailure && noClose)
         _ -> Left $ "name_registrations registering without reveal times or register_tx: " <> rid
       PRegistered -> case (expiresAt, registeredAt) of
-        (Just expiry, Just at) -> fitting (ORegistered (RoundedSystemTime expiry) at) (noCommit && noFailure && noClose)
+        (Just expiry, Just at) -> fitting (ORegistered (RoundedSystemTime expiry) at) (noCommit && noTaken && noFailure && noClose)
         _ -> Left $ "name_registrations registered without expires_at or registered_at: " <> rid
-      PTaken -> fitting OTaken (noCommit && noRegistered && noFailure && noClose)
+      PTaken -> maybe (Left $ "name_registrations taken without taken_at: " <> rid) (\at -> fitting (OTaken at) (noCommit && noRegistered && noFailure && noClose)) takenAt
       PFailed -> case (failedAt, failReason) of
-        (Just at, Just reason) -> fitting (OFailed at reason) (noCommit && noRegistered && noClose)
+        (Just at, Just reason) -> fitting (OFailed at reason) (noCommit && noRegistered && noTaken && noClose)
         _ -> Left $ "name_registrations failed without failed_at or fail_reason: " <> rid
     nrPayment <- case (method_, invoiceId_, codeId_) of
       (Just m, Just invId, Nothing) -> Right $ OPInvoice m (InvoiceId invId)
@@ -977,7 +978,7 @@ orderLive NameRegistration {nrPhase} = case nrPhase of
   ORegistering {} -> True
   OFailed _ FRMonthEnded -> False
   OFailed {} -> True
-  OTaken -> False
+  OTaken _ -> False
   ORegistered {} -> False
 
 -- | Writes every changeable field of a registration read at its nrVersion, unless it changed since, with live as orderLive decides.
@@ -993,7 +994,7 @@ updateRegistration db r now = do
         SET version = version + 1, label_hash = ?, length = ?, duration = ?, commitment = ?, sealed = ?, agreed_terms = ?, phase = ?, price = ?,
           label = ?, secret = ?, contact_link = ?, channel_link = ?, intent_nonce = ?, intent_deadline = ?, intent_signature = ?,
           accept_terms = ?, accept_nonce = ?, accept_signature = ?, commit_tx = ?, commit_block = ?, register_tx = ?, reveal_after = ?, reveal_before = ?, expires_at = ?,
-          registered_at = ?, failed_at = ?, fail_reason = ?, closed_by = ?, live = ?, updated_at = ?
+          registered_at = ?, taken_at = ?, failed_at = ?, fail_reason = ?, closed_by = ?, live = ?, updated_at = ?
         WHERE registration_id = ? AND version = ?
           AND (? = 0 OR ((live = 1 OR phase = ?) AND NOT EXISTS (
             SELECT 1 FROM @name_registrations o
@@ -1004,7 +1005,7 @@ updateRegistration db r now = do
       ( (nrLabelHash, nameLengthInt nrLength, int64 nrDuration, nrCommitment, nrSealed, nrAgreedTerms, namePhase nrPhase, nrPrice)
           :. revealRow nrReveal
           :. (commitTx, int64 <$> commitBlock, registerTx, roundedSeconds <$> revealAfter, roundedSeconds <$> revealBefore, roundedSeconds <$> expiresAt)
-          :. (registeredAt, failedAt, failReason, closedBy, BI live, now)
+          :. (registeredAt, takenAt, failedAt, failReason, closedBy, BI live, now)
           :. (rid, nrVersion, BI live, PTaken, rid, nrCommitment, nrOwner, nrLabelHash)
       )
   if changed > 0 then pure $ Written (nrVersion + 1) else refusal
@@ -1020,11 +1021,12 @@ updateRegistration db r now = do
     registerTx = case nrPhase of
       ORegistering _ tx -> Just tx
       _ -> thRegisterTx
-    (expiresAt, registeredAt, failedAt, failReason, closedBy) = case nrPhase of
-      ORegistered expiry at -> (Just expiry, Just at, Nothing, Nothing, Nothing)
-      OFailed at reason -> (Nothing, Nothing, Just at, Just reason, Nothing)
-      OClosed closed -> (Nothing, Nothing, Nothing, Nothing, Just closed)
-      _ -> (Nothing, Nothing, Nothing, Nothing, Nothing)
+    (expiresAt, registeredAt, takenAt, failedAt, failReason, closedBy) = case nrPhase of
+      ORegistered expiry at -> (Just expiry, Just at, Nothing, Nothing, Nothing, Nothing)
+      OTaken at -> (Nothing, Nothing, Just at, Nothing, Nothing, Nothing)
+      OFailed at reason -> (Nothing, Nothing, Nothing, Just at, Just reason, Nothing)
+      OClosed closed -> (Nothing, Nothing, Nothing, Nothing, Nothing, Just closed)
+      _ -> (Nothing, Nothing, Nothing, Nothing, Nothing, Nothing)
     live = orderLive r
     refusal =
       DB.query db (mkQuery "SELECT version, live, phase FROM @name_registrations WHERE registration_id = ?") (Only rid) >>= \case

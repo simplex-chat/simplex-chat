@@ -659,7 +659,7 @@ testRevertTaken = withWorker $ \w@W {wCtx = ctx@Ctx {cNode}} -> do
   setFault cNode "eth_estimateGas" $ RpcError 3 "execution reverted: ERC721: invalid token ID" Nothing
   published w r (steps w r) >>= done
   x <- stored ctx r
-  namePhase (nrPhase x) `shouldBe` PTaken
+  (nrPhase x `shouldBe`) . OTaken =<< nowOf ctx
   PrepaidCode {pcReservedBy, pcSpentAt} <- codeOf ctx code
   (pcReservedBy, pcSpentAt) `shouldBe` (Just (nrId r), Nothing)
   balanceFigures ctx (nrId r) `shouldReturn` Nothing
@@ -673,7 +673,7 @@ testTakeReported = withWorker $ \w@W {wCtx = ctx@Ctx {cOrders}, wSender} -> do
   r <- paidIn ctx aliceOrder openPhase >>= revealed ctx keyA "alicebakery"
   settleNow ctx bobInv settled `shouldReturn` ISPaid
   atSettlement <- invoiceRegistration ctx bobInv
-  nrPhase atSettlement `shouldBe` OTaken
+  (nrPhase atSettlement `shouldBe`) . OTaken =<< nowOf ctx
   stepRegistration worker (nrId atSettlement) >>= done
   readTVarIO reports `shouldReturn` []
   logs <- capturingStderr $ endsTaken w {wWorker = worker} r
@@ -1294,7 +1294,7 @@ testMonthFromSelection :: IO ()
 testMonthFromSelection = withWorker $ \W {wCtx = ctx@Ctx {cStore, cOrders}, wSender} -> do
   reports <- newTVarIO []
   wWorker <- newWorker cOrders {oeReport = \t -> atomically $ modifyTVar' reports (t :)} wSender
-  r <- paidIn ctx aliceOrder $ \o -> o {nrPhase = OTaken}
+  r <- paidIn ctx aliceOrder $ \o -> o {nrPhase = OTaken orderTime}
   withTransaction cStore $ \db -> creditBalance db (nrId r) (nrPrice r) orderTime
   answerFree ctx "alicebakers"
   advance ctx $ 20 * day
@@ -1417,7 +1417,7 @@ testRetryNotFailed :: IO ()
 testRetryNotFailed = withWorker $ \W {wCtx = ctx} -> do
   queued <- paidIn ctx aliceOrder id
   registeredOrder <- paidIn ctx dynamisOrder $ \o -> o {nrPhase = ORegistered expirySeconds orderTime}
-  taken <- paidIn ctx (byB dynamisOrder) {oSecret = secretOf 4} $ \o -> o {nrPhase = OTaken}
+  taken <- paidIn ctx (byB dynamisOrder) {oSecret = secretOf 4} $ \o -> o {nrPhase = OTaken orderTime}
   live <- paidIn ctx (byB dynamisOrder) {oSecret = secretOf 2} $ \o -> o {nrPhase = OCommitted openCommit {cmRevealBefore = RoundedSystemTime $ fromIntegral $ orderSeconds + 2 * maxAge}}
   answerFree ctx "alicebakers"
   failed <- paidIn ctx aliceOrder {oLabel = "alicebakers", oSecret = secretOf 5} failedPhase
@@ -1499,7 +1499,7 @@ testCloseFailed = withWorker $ \W {wCtx = ctx@Ctx {cStore, cOrders}} -> do
   refunded <- refundedWhole ctx r price
   closeOf ctx r `shouldReturn` CLRefunded orderTime refunded
   x <- stored ctx r
-  (nrPhase x, nrReveal x, nrVersion x) `shouldBe` (OTaken, Nothing, nrVersion r + 1)
+  (nrPhase x, nrReveal x, nrVersion x) `shouldBe` (OTaken orderTime, Nothing, nrVersion r + 1)
   figuresOf ctx r `shouldReturn` Just (0, price, price)
   turnsCount (oeTurns cOrders) `shouldReturn` 0
   recordRefund (oeTurns cOrders) cStore rid price orderTime `shouldReturn` Left (RefundAmount 0)
@@ -1519,7 +1519,7 @@ testCloseLapsed = withWorker $ \W {wCtx = ctx} -> do
   refunded <- refundedWhole ctx r (oPrice aliceOrder)
   closeOf ctx r `shouldReturn` CLRefunded (addUTCTime day orderTime) refunded
   x <- stored ctx r
-  (nrPhase x, nrHistory x) `shouldBe` (OTaken, nrHistory r)
+  (nrPhase x, nrHistory x) `shouldBe` (OTaken $ addUTCTime (2 * day) orderTime, nrHistory r)
 
 testCloseLanded :: IO ()
 testCloseLanded = withWorker $ \W {wCtx = ctx} -> do
@@ -1587,5 +1587,5 @@ testCloseWhole = withWorker $ \W {wCtx = ctx@Ctx {cStore}} -> do
   closeOf ctx r >>= \case
     CLRefunded _ RefundRecord {rdCents} -> rdCents `shouldBe` whole
     other -> expectationFailure $ "not refunded: " <> show other
-  nrPhase <$> stored ctx r `shouldReturn` OTaken
+  nrPhase <$> stored ctx r `shouldReturn` OTaken orderTime
   figuresOf ctx r `shouldReturn` Just (0, whole, whole)

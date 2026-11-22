@@ -38,6 +38,7 @@ stateDiagram-v2
       [*] --> unpaidPart: an invoice order
       [*] --> codePart: a code order
       unpaidPart --> paidPart: payment settled
+      codePart --> codePart: a take keeps it, good past its expiry until a month after the take
     }
   }
 ```
@@ -97,11 +98,11 @@ stateDiagram-v2
 ### 1.3 One month from each selection of a name
 - **names:** a failed order holds its place with no end; it stays live, refusing only orders of the same owner code (`Names/Store.hs:760-772`).
 - **Final:** the name stays reserved for the buyer for 1 month from `selected_at` (6). A selection also clears `unregistered_alerted_at` (3.1). The month pass reads `selected_at` again in the order's turn.
-  - **Reset:** a take, by another buyer's paid order at settlement or on chain (2.1), resets the order's name part: phase `taken`, name not selected; not live, its name free for other orders, a paid order's price credited to its balance, a code order's code kept reserved. The order keeps its id, its owner, its payment or code, and the taken name's fields, which its view shows. The view's `taken` phase has no other field.
+  - **Reset:** a take, by another buyer's paid order at settlement or on chain (2.1), resets the order's name part: phase `taken`, name not selected; not live, its name free for other orders, a paid order's price credited to its balance, a code order's code kept reserved, the take's time stored as `taken_at` (6). The order keeps its id, its owner, its payment or code, and the taken name's fields, which its view shows. The view's `taken` phase has no other field.
   - **Payment held:** for a paid order, the selection's spend needs `balance.amount` at least `price`, both in the view (`spendBalance`); the page offers a selection only then. A balance refunded by support (`//close`, `//record_refund`) or taken back at a dispute holds less.
   - **Selection:** `POST /api/registration/ID/name`, signed by the owner as before, selects a name for an order whose name is not selected; any other order is answered `400 bad_request`, and a body equal to the order's current fields with its current view. A new order's checks are run, by their functions: the timestamp, the duration for the order's years, the terms, the name free, and the reveal, with the stored links accepted (2.4); then, in one transaction, other live orders of the commitment or of the owner and name as a new order meets them (an overdue order of the same wallet and name closed, any other answered `409 order_exists`), and the write: phase `queued`, the new fields and reveal, transactions and attempts cleared (3.2), `selected_at` set to the selection's time.
   - **A paid order:** the name's price for the order's years is checked against the order's price as a new order's against the price it saw, `409 catalog_changed` with the name's price; the price is spent from the order's balance in the write's transaction, `400 bad_request` when the balance no longer holds it.
-  - **A code order:** a free name code accepted for an order stays valid for that order until a name is registered with it. In the code's turn, the code the order holds is checked and reserved again: an expired code is accepted, a revoked one is answered `400 code_invalid`, and a name shorter than the code allows `409 code_not_covering`.
+  - **A code order:** a free name code accepted for an order stays valid for that order until its own expiry or a calendar month after the take, `taken_at` (6), whichever is later. In the code's turn, the code the order holds is checked and reserved again: an expired code is accepted until that month ends and answered `409 code_expired` after it, a revoked one is answered `400 code_invalid` at any time, and a name shorter than the code allows `409 code_not_covering`.
   - `max_order_moves`, the order's `moves` and the refusals `move_limit` and `price_too_high` are removed.
   - Failed and lapsed orders are refunded by support. An order not registered within the month fails, the name returns to sale, and the price goes to the order's balance; refunds from the balance are manual. An order with a register transaction sent and not settled is ended only after it settles.
 - **Why:** a hold extends the name's registration period; a month resolves every case that can be resolved.
@@ -131,7 +132,7 @@ stateDiagram-v2
 
 ### 1.6 Prepaid codes expire
 - **names:** codes never expire: the expiry is stored and checked, but every code is issued without one (`Names/Codes.hs`, `issueNameCode`). No code has been issued yet.
-- **Final:** a name can be reserved with a code for 3 months from the code's issue. An order that holds a code keeps it past its expiry: when a name is selected for a code order after a reset, its code is accepted after its expiry and refused once revoked (1.3).
+- **Final:** a name can be reserved with a code for 3 months from the code's issue. An order that holds a code keeps it at a take: when a name is selected for the order after the take, its code is accepted past its expiry until a calendar month after the take, then refused `code_expired`, and refused `code_invalid` once revoked (1.3).
 - **Why:** some time pressure; it bounds how long an old price stays valid.
 
 ### 1.7 One request before the invoice
@@ -247,6 +248,7 @@ Answers are the service's types encoded as derived JSON, and the page reads thos
 - **Times:** one whole-second clock for every time names reads, in place of truncations at 25 writes; one time per order request.
 - **Settlement time:** `settled_at` is the payment's settlement, or a code order's placement, written once. The dispute evidence of a paid order (1.4) reads it as "paid at", and the view shows the order's name once it is set (5).
 - **Selection time:** `selected_at` is the latest selection of the order's name with its payment or code in place: written with `settled_at` at the settlement and the placement, and alone at a selection after a reset (1.3). The month pass and its recheck (1.3), the 3-hour alert with its `unregistered_alerted_at` reset and its gauge (3.1), and a failed order's `heldUntil` read it.
+- **Take time:** `taken_at` is the time of the order's take, stored with the phase `taken` and cleared with it, as `failed_at` with `failed`. The selection of a name for a code order reads it: the order's code is accepted past its expiry until a calendar month after it (1.3).
 - **Registration keys:** `name_registration_id`, an integer primary key on both backends, and `registration_id`, the order's public id, TEXT NOT NULL UNIQUE, which the other tables reference. Orders of one second are listed, and an exact resend's order found, by `created_at DESC, name_registration_id DESC`. Every reference in the names migration names its column.
 - **Schema boundaries:** the names product uses the generic tables and its own, never a badge table.
   - **names:** names code reads and writes the generic `invoices` and `payments` and its own `name_*` tables (`Names/Store.hs`); none of the names modules mentions a badge table. The names migration creates only `name_*` tables and adds five columns to the generic `payments` (`confirmed_amount`, `received_units`, `confirmed_units`, `invoiced_units`, `invoice_rate`: a payment's crypto amounts and rate). The generic invoice read joins both products' tables to tell an invoice's product (`Store/Invoices.hs:212-222`). Every table carries the badge service's prefix `sx_badge_service_`, the names tables included.

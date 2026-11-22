@@ -201,6 +201,7 @@ CREATE TABLE sx_badge_service_name_registrations(
   reveal_before INTEGER,
   expires_at INTEGER,
   registered_at TEXT,
+  taken_at TEXT,
   failed_at TEXT,
   fail_reason TEXT,
   closed_by TEXT,

@@ -1654,8 +1654,9 @@ code row when the invoice is created, and settlement is what marks it paid.
 `//issue name` is answered that names are not enabled, and issues nothing. A name code reserves a
 name until 3 calendar months after its issue, and the answer says so: `Code: SN7-…. Valid until
 <time> UTC.` An order already holding the code keeps it past that time, also at a take, so a name
-selected for the order afterwards is accepted with the code past that time and refused
-`code_invalid` once the code is revoked. A code order not registered a calendar month after its name
+selected for the order afterwards is accepted with the code until that time or a calendar month
+after the take, whichever is later, then refused `code_expired`, and refused `code_invalid` once
+the code is revoked. A code order not registered a calendar month after its name
 was selected, at its placement or after a reset, fails with the reason `monthEnded`, its code
 released and its name freed.
 

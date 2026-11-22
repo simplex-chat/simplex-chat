@@ -144,7 +144,7 @@ source :: DBStore -> Text -> USDCents -> IO ()
 source st r cents = do
   placeOrderRow st r False cents (at 60)
   taken <- reg st r
-  write st taken {nrPhase = OTaken} `shouldReturn` Written 2
+  write st taken {nrPhase = OTaken t0} `shouldReturn` Written 2
   credit st r cents
 
 credit :: DBStore -> Text -> USDCents -> IO ()
@@ -495,7 +495,7 @@ takenOrder :: DBStore -> Text -> USDCents -> IO ()
 takenOrder st r cents = do
   placeOrderRow st r True 20000 (at 60)
   open <- reg st r
-  write st open {nrPhase = OTaken} `shouldReturn` Written 2
+  write st open {nrPhase = OTaken t0} `shouldReturn` Written 2
   credit st r cents
 
 alertsWith :: IORef [Text] -> [Text] -> Expectation
@@ -573,7 +573,7 @@ testReversalTakesBack = withReversals $ \Ctx {cStore = st} env alerts -> do
   amount `shouldReturn` Just 23000
   reverseWith env "t" "evt_3" $ RVDispute "dp_1" $ CurrencyAmount 20000
   amount `shouldReturn` Just 5000
-  nrPhase <$> reg st "t" `shouldReturn` OTaken
+  nrPhase <$> reg st "t" `shouldReturn` OTaken t0
   alertsWith alerts ["it is not cancelled, as it is taken; 500 cents taken back", "it is not cancelled, as it is taken; 1500 cents taken back", "it is not cancelled, as it is taken; 18000 cents taken back"]
 
 testReversalAlertsOnly :: IO ()

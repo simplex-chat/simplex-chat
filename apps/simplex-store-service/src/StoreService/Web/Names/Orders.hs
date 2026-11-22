@@ -253,7 +253,7 @@ codeOrderHandler env@OrdersEnv {oeStore} providers waiters req respond =
         Left refusal -> refuse refusal
         Right rv -> do
           rid <- newRegistrationId
-          placeCodeOrder env order rid code (codeOrderInsert NewRegistration {nrgId = rid, nrgOwner = orOwner, nrgOrder = orFields, nrgReveal = rv, nrgYears = pcYears, nrgOrderHash = hash}) >>= \case
+          placeCodeOrder env order rid Nothing code (codeOrderInsert NewRegistration {nrgId = rid, nrgOwner = orOwner, nrgOrder = orFields, nrgReveal = rv, nrgYears = pcYears, nrgOrderHash = hash}) >>= \case
             Left refusal -> refuse refusal
             Right closed -> pure Answer {aResponse = Right $ registrationAnswer rid, aAfter = announceHeld env providers waiters closed rid}
 

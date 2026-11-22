@@ -488,7 +488,7 @@ judge w@Worker {wkOrders = oe@OrdersEnv {oeContracts, oeReport}} now r@NameRegis
 -- in the balance's turn after the name's; a code order keeps its code reserved.
 taken :: Worker -> UTCTime -> NameRegistration -> IO (Maybe Int64, Next)
 taken Worker {wkOrders = oe@OrdersEnv {oeReport}} now r@NameRegistration {nrId = RegistrationId rid} = do
-  result@(v, _) <- written r <$> endOrder oe now r {nrPhase = OTaken} (\_ -> pure True)
+  result@(v, _) <- written r <$> endOrder oe now r {nrPhase = OTaken now} (\_ -> pure True)
   forM_ v $ \_ -> do
     let lost = "names worker: registration " <> rid <> " was taken: its name is no longer available on chain"
     logError lost
@@ -498,7 +498,7 @@ taken Worker {wkOrders = oe@OrdersEnv {oeReport}} now r@NameRegistration {nrId =
 endOrder :: OrdersEnv -> UTCTime -> NameRegistration -> (DB.Connection -> IO Bool) -> IO (Either WriteRefusal Int64)
 endOrder OrdersEnv {oeStore, oeTurns} now r@NameRegistration {nrId, nrPayment, nrPhase} mayEnd = case nrPayment of
   OPInvoice {} -> withBalanceTurn oeTurns nrId (withTransaction oeStore $ ending $ creditedWrite now r)
-  OPCode _ | OTaken <- nrPhase -> withTransaction oeStore $ ending updated
+  OPCode _ | OTaken _ <- nrPhase -> withTransaction oeStore $ ending updated
   OPCode codeId -> fmap fst <$> releaseCode oeTurns oeStore codeId nrId (ending updated)
   where
     updated db = versionWritten <$> updateRegistration db r now
@@ -508,7 +508,7 @@ endOrder OrdersEnv {oeStore, oeTurns} now r@NameRegistration {nrId, nrPayment, n
         False -> pure $ Left WRChanged
 
 creditedTaken :: UTCTime -> NameRegistration -> DB.Connection -> IO (Either WriteRefusal Int64)
-creditedTaken now r = creditedWrite now r {nrPhase = OTaken}
+creditedTaken now r = creditedWrite now r {nrPhase = OTaken now}
 
 creditedWrite :: UTCTime -> NameRegistration -> DB.Connection -> IO (Either WriteRefusal Int64)
 creditedWrite now r@NameRegistration {nrId, nrPrice} db = versionWritten <$> updateRegistration db r now >>= traverse (\v -> v <$ creditBalance db nrId nrPrice now)

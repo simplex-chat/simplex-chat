@@ -75,13 +75,16 @@ data CodeRefusal = CRInvalid | CRUsed | CRReserved | CRExpired | CRPaymentPendin
   deriving (Eq, Show)
 
 -- | Why the registration's name of this length cannot be registered with the code. A code the registration
--- already holds stays good for it until spent, even if expired since, unless revoked.
-codeRefusal :: UTCTime -> RegistrationId -> NameLength -> PrepaidCode -> Maybe CodeRefusal
-codeRefusal now rid len code@PrepaidCode {pcReservedBy, pcSpentAt, pcRevokedAt, pcMinLength}
+-- already holds stays good for it until spent, unless revoked, and past its expiry until a month after the order's take.
+codeRefusal :: UTCTime -> RegistrationId -> Maybe UTCTime -> NameLength -> PrepaidCode -> Maybe CodeRefusal
+codeRefusal now rid takenAt len code@PrepaidCode {pcReservedBy, pcSpentAt, pcRevokedAt, pcExpiresAt, pcMinLength}
   | isJust pcSpentAt = Just CRUsed
-  | pcReservedBy == Just rid = (CRInvalid <$ pcRevokedAt) <|> covering
+  | pcReservedBy == Just rid = (CRInvalid <$ pcRevokedAt) <|> heldExpired <|> covering
   | otherwise = stateRefusal (codeState now code) <|> covering
   where
+    heldExpired
+      | maybe False (<= now) pcExpiresAt && maybe True ((<= now) . addMonths 1) takenAt = Just CRExpired
+      | otherwise = Nothing
     covering
       | nameLengthInt len < pcMinLength = Just CRNotCovering
       | otherwise = Nothing
@@ -96,8 +99,8 @@ stateRefusal = \case
   CSUnpaid -> Just CRPaymentPending
 
 -- | Why a conditional reservation of the code refused it, as the code reads now.
-reserveRefusal :: DB.Connection -> UTCTime -> CodeHash -> RegistrationId -> NameLength -> IO CodeRefusal
-reserveRefusal db now codeHash rid len = maybe CRInvalid (fromMaybe CRReserved . codeRefusal now rid len) <$> getPrepaidCode db codeHash
+reserveRefusal :: DB.Connection -> UTCTime -> CodeHash -> RegistrationId -> Maybe UTCTime -> NameLength -> IO CodeRefusal
+reserveRefusal db now codeHash rid takenAt len = maybe CRInvalid (fromMaybe CRReserved . codeRefusal now rid takenAt len) <$> getPrepaidCode db codeHash
 
 readPrepaidCode :: DBStore -> NamePrepaidCode -> IO (Maybe PrepaidCode)
 readPrepaidCode st code = withTransaction st (`getPrepaidCode` prepaidCodeHash code)

@@ -238,14 +238,14 @@ placeOrder OrdersEnv {oeStore} now req insert =
         Nothing -> E.throwIO $ OrderRefused OROrderExists
 
 -- | In the code's turn, the code as it reads there must cover the registration's name; the write then reserves it.
-placeCodeOrder :: OrdersEnv -> OrderRequest -> RegistrationId -> PrepaidCode -> (PrepaidCode -> DB.Connection -> UTCTime -> IO (Either OrderRefusal ())) -> IO (Either OrderRefusal [ClosedOrder])
-placeCodeOrder env@OrdersEnv {oeStore, oeTurns, oeNow} req@OrderRequest {orFields = OrderFields {ofLength}} rid PrepaidCode {pcCodeHash} write =
+placeCodeOrder :: OrdersEnv -> OrderRequest -> RegistrationId -> Maybe UTCTime -> PrepaidCode -> (PrepaidCode -> DB.Connection -> UTCTime -> IO (Either OrderRefusal ())) -> IO (Either OrderRefusal [ClosedOrder])
+placeCodeOrder env@OrdersEnv {oeStore, oeTurns, oeNow} req@OrderRequest {orFields = OrderFields {ofLength}} rid takenAt PrepaidCode {pcCodeHash} write =
   withCodeTurn oeTurns pcCodeHash $ do
     now <- oeNow
     withTransaction oeStore (`getPrepaidCode` pcCodeHash) >>= \case
       Nothing -> pure $ Left $ ORCode CRInvalid
       Just code
-        | Just refusal <- codeRefusal now rid ofLength code -> pure $ Left $ ORCode refusal
+        | Just refusal <- codeRefusal now rid takenAt ofLength code -> pure $ Left $ ORCode refusal
         | otherwise -> placeOrder env now req $ write code
 
 -- | The code was checked in its turn, so only a writer outside this process can make its reservation fail.
@@ -254,7 +254,7 @@ codeOrderInsert new@NewRegistration {nrgId, nrgOrder = OrderFields {ofLength}} c
   createCodeRegistration db new code now >>= \case
     Right () -> pure $ Right ()
     Left CIRLiveOrder -> pure $ Left OROrderExists
-    Left CIRCodeNotReservable -> Left . ORCode <$> reserveRefusal db now pcCodeHash nrgId ofLength
+    Left CIRCodeNotReservable -> Left . ORCode <$> reserveRefusal db now pcCodeHash nrgId Nothing ofLength
 
 checkTimestamp :: UTCTime -> Word64 -> Either OrderRefusal ()
 checkTimestamp now timestamp =
@@ -314,9 +314,10 @@ orderFieldsOf NameRegistration {nrLabelHash, nrLength, nrDuration, nrCommitment,
   OrderFields {ofLabelHash = nrLabelHash, ofLength = nrLength, ofDuration = nrDuration, ofCommitment = nrCommitment, ofSealed = nrSealed, ofAgreedTerms = nrAgreedTerms}
 
 -- | A name selected for a taken order, written as a new order is placed, a compare-and-set on the version read: a paid order's price
--- is spent from its own balance in the balance's turn, and a code order's code is checked and reserved as a new code order's, in the code's turn.
-selectName :: OrdersEnv -> OrderRequest -> NameRegistration -> NameReveal -> IO (Either WriteRefusal [ClosedOrder])
-selectName env@OrdersEnv {oeStore, oeTurns, oeNow} req@OrderRequest {orFields = fields@OrderFields {ofLength}} r@NameRegistration {nrId, nrPayment, nrPrice} reveal =
+-- is spent from its own balance in the balance's turn, and a code order's code is checked and reserved in the code's turn, good past its expiry
+-- until a month after the take.
+selectName :: OrdersEnv -> OrderRequest -> NameRegistration -> UTCTime -> NameReveal -> IO (Either WriteRefusal [ClosedOrder])
+selectName env@OrdersEnv {oeStore, oeTurns, oeNow} req@OrderRequest {orFields = fields@OrderFields {ofLength}} r@NameRegistration {nrId, nrPayment, nrPrice} takenAt reveal =
   E.handle (\(RegistrationChanged _) -> pure $ Left WRChanged) $
     first WRRefused <$> case nrPayment of
       OPInvoice {} -> do
@@ -324,7 +325,7 @@ selectName env@OrdersEnv {oeStore, oeTurns, oeNow} req@OrderRequest {orFields = 
         withBalanceTurn oeTurns nrId $ placeOrder env now req $ \db at -> write db at $>>= \() -> spent db at
       OPCode codeId -> do
         code <- withTransaction oeStore (`getPrepaidCodeById` codeId)
-        placeCodeOrder env req nrId code $ \PrepaidCode {pcId, pcCodeHash} db at -> write db at $>>= \() -> reserved db at pcId pcCodeHash
+        placeCodeOrder env req nrId (Just takenAt) code $ \PrepaidCode {pcId, pcCodeHash} db at -> write db at $>>= \() -> reserved db at pcId pcCodeHash
   where
     write db at = selectRegistration db r fields reveal at >>= either changed (\_ -> pure $ Right ()) . versionWritten
     changed = \case
@@ -337,7 +338,7 @@ selectName env@OrdersEnv {oeStore, oeTurns, oeNow} req@OrderRequest {orFields = 
     reserved db at pcId pcCodeHash =
       reservePrepaidCode db pcId nrId at >>= \case
         True -> pure $ Right ()
-        False -> Left . ORCode <$> reserveRefusal db at pcCodeHash nrId ofLength
+        False -> Left . ORCode <$> reserveRefusal db at pcCodeHash nrId (Just takenAt) ofLength
 
 versionWritten :: VersionWrite -> Either WriteRefusal Int64
 versionWritten = \case

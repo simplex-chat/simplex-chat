@@ -331,6 +331,7 @@ CREATE TABLE @name_registrations(
   reveal_before BIGINT,
   expires_at BIGINT,
   registered_at TIMESTAMPTZ,
+  taken_at TIMESTAMPTZ,
   failed_at TIMESTAMPTZ,
   fail_reason TEXT,
   closed_by TEXT,
