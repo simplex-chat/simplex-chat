@@ -1287,3 +1287,21 @@ struct ChatListView_Previews: PreviewProvider {
         }
     }
 }
+
+struct TagsView_Previews: PreviewProvider {
+    static var previews: some View {
+        let tagsModel = ChatTagsModel()
+        tagsModel.userTags = [
+            ChatTag(chatTagId: 1, chatTagText: "Work", chatTagEmoji: nil),
+            ChatTag(chatTagId: 2, chatTagText: "Friends", chatTagEmoji: nil),
+            ChatTag(chatTagId: 3, chatTagText: "News", chatTagEmoji: nil),
+            ChatTag(chatTagId: 4, chatTagText: "Family", chatTagEmoji: nil)
+        ]
+        tagsModel.unreadTags = [1: 1, 2: 1]
+        tagsModel.priorityTags = [1: 1]
+        tagsModel.silentTags = [3: 1]
+        return TagsView(parentSheet: .constant(nil), searchText: .constant(""))
+            .padding()
+            .environmentObject(tagsModel)
+    }
+}

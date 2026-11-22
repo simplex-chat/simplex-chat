@@ -603,3 +603,26 @@ struct ChatPreviewView_Previews: PreviewProvider {
         .previewLayout(.fixed(width: 360, height: 78))
     }
 }
+
+struct ChatPreviewView_Priority_Previews: PreviewProvider {
+    static var previews: some View {
+        Group {
+            ChatPreviewView(chat: Chat(
+                chatInfo: ChatInfo.sampleData.group,
+                chatItems: [ChatItem.getSample(1, .groupRcv(groupMember: GroupMember.sampleData), previewDate, "silent messages", .rcvNew)],
+                chatStats: ChatStats(unreadCount: 3, unreadSilent: 3)
+            ), progressByTimeout: Binding.constant(false))
+            ChatPreviewView(chat: Chat(
+                chatInfo: ChatInfo.sampleData.group,
+                chatItems: [ChatItem.getSample(1, .groupRcv(groupMember: GroupMember.sampleData), previewDate, "high priority message", .rcvNew)],
+                chatStats: ChatStats(unreadCount: 1, unreadMentions: 1, unreadHighPriority: 1)
+            ), progressByTimeout: Binding.constant(false))
+            ChatPreviewView(chat: Chat(
+                chatInfo: ChatInfo.sampleData.group,
+                chatItems: [ChatItem.getSample(1, .groupRcv(groupMember: GroupMember.sampleData), previewDate, "silent and high priority messages", .rcvNew)],
+                chatStats: ChatStats(unreadCount: 4, unreadMentions: 1, unreadSilent: 3, unreadHighPriority: 1)
+            ), progressByTimeout: Binding.constant(false))
+        }
+        .previewLayout(.fixed(width: 360, height: 78))
+    }
+}

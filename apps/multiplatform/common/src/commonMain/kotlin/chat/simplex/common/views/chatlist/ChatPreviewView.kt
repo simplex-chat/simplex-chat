@@ -651,3 +651,20 @@ fun PreviewChatPreviewView() {
     ChatPreviewView(Chat.sampleData.copy(chatItems = Chat.sampleData.chatItems.map(::previewDated)), true, null, null, "", disabled = false, linkMode = SimplexLinkMode.DESCRIPTION, inProgress = false, progressByTimeout = false, {})
   }
 }
+
+@Preview
+@Composable
+fun PreviewChatPreviewViewPriority() {
+  SimpleXTheme {
+    Column(Modifier.padding(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+      listOf(
+        "silent messages" to Chat.ChatStats(unreadCount = 3, unreadSilent = 3),
+        "high priority message" to Chat.ChatStats(unreadCount = 1, unreadMentions = 1, unreadHighPriority = 1),
+        "silent and high priority messages" to Chat.ChatStats(unreadCount = 4, unreadMentions = 1, unreadSilent = 3, unreadHighPriority = 1)
+      ).forEach { (text, chatStats) ->
+        val chatItem = ChatItem.getSampleData(1, CIDirection.GroupRcv(GroupMember.sampleData), previewDate, text, CIStatus.RcvNew())
+        ChatPreviewView(Chat(remoteHostId = null, chatInfo = ChatInfo.Group.sampleData, chatItems = listOf(chatItem), chatStats = chatStats), true, null, null, "", disabled = false, linkMode = SimplexLinkMode.DESCRIPTION, inProgress = false, progressByTimeout = false, {})
+      }
+    }
+  }
+}
