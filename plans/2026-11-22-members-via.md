@@ -605,5 +605,5 @@ receivers                  refuse via in channels, an x.grp.mem.intro whose via 
 restrictions               restrictions of x.grp.mem.intro are stored for a member via another member
 moderation                 deletion of an item sent as a member, by a moderator, is attributed to the member via V on V's side
 adding                     no chat item on V's side, as APIAddMember creates none in the group (only the invitation item in the direct chat)
-forwarding by the host     per member, without delivery tasks and a delivery_tasks column (4.4)
+forwarding by the host     per member (sendFwdMemberMessageFlags), without delivery tasks and a delivery_tasks column: a delivery job has one body for all its recipients, and the "V" header is sent only to recipients of version 23 (4.4)
 ```
