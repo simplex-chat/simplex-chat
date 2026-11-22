@@ -614,25 +614,9 @@ object ChatModel {
         chat = chats[i]
         // update preview (for chat from main scope to show new items for invitee in pending status)
         if (cInfo.inMainChatList) {
-          val newPreviewItem = when (cInfo) {
-            is ChatInfo.Group -> {
-              val currentPreviewItem = chat.chatItems.firstOrNull()
-              if (currentPreviewItem != null) {
-                if (cItem.meta.itemTs >= currentPreviewItem.meta.itemTs) {
-                  cItem
-                } else {
-                  currentPreviewItem
-                }
-              } else {
-                cItem
-              }
-            }
-
-            else -> cItem
-          }
           val wasUnread = chat.unreadTag
           chats[i] = chat.copy(
-            chatItems = arrayListOf(newPreviewItem),
+            chatItems = arrayListOf(previewItem(cInfo, chat, cItem)),
             chatStats =
             if (cItem.meta.itemStatus is CIStatus.RcvNew && secondaryContextFilter == null) {
               if (!(cItem.meta.silent && cInfo.silentNotCounted)) increaseUnreadCounter(rhId, currentUser.value!!)
@@ -660,13 +644,26 @@ object ChatModel {
         if (chatItemBelongsToScope(cInfo, cItem)) {
           // Prevent situation when chat item already in the list received from backend
           if (chatItems.value.none { it.id == cItem.id }) {
-            if (chatItems.value.lastOrNull()?.id == ChatItem.TEMP_LIVE_CHAT_ITEM_ID) {
-              addToChatItems(kotlin.math.max(0, chatItems.value.lastIndex), cItem)
-            } else {
-              addToChatItems(cItem)
-            }
+            addLastChatItem(cItem)
           }
         }
+      }
+    }
+
+    private fun previewItem(cInfo: ChatInfo, chat: Chat, cItem: ChatItem): ChatItem {
+      val currentPreviewItem = chat.chatItems.firstOrNull()
+      return if (cInfo is ChatInfo.Group && currentPreviewItem != null && cItem.meta.itemTs < currentPreviewItem.meta.itemTs) {
+        currentPreviewItem
+      } else {
+        cItem
+      }
+    }
+
+    private fun addLastChatItem(cItem: ChatItem) {
+      if (chatItems.value.lastOrNull()?.id == ChatItem.TEMP_LIVE_CHAT_ITEM_ID) {
+        addToChatItems(kotlin.math.max(0, chatItems.value.lastIndex), cItem)
+      } else {
+        addToChatItems(cItem)
       }
     }
 
@@ -719,6 +716,7 @@ object ChatModel {
 
     suspend fun applyChatItemUpdate(rhId: Long?, cInfo: ChatInfo, cItem: ChatItem, prevItem: ChatItem): Boolean {
       var itemAdded = false
+      val asNew = cItem.isAsNew(prevItem)
       if (cInfo.groupChatScope() == null) {
         val i = getChatIndex(rhId, cInfo.id)
         if (i >= 0) {
@@ -731,7 +729,7 @@ object ChatModel {
           val countersChanged = secondaryContextFilter == null && (unreadChange != 0 || mentionsChange != 0 || silentChange != 0 || highPriorityChange != 0)
           val wasUnread = chat.unreadTag
           chats[i] = chat.copy(
-            chatItems = if (chat.chatItems.lastOrNull()?.id == cItem.id) arrayListOf(cItem) else chat.chatItems,
+            chatItems = if (asNew) arrayListOf(previewItem(cInfo, chat, cItem)) else if (chat.chatItems.lastOrNull()?.id == cItem.id) arrayListOf(cItem) else chat.chatItems,
             chatStats = if (countersChanged) {
               chat.chatStats.copy(
                 unreadCount = maxOf(0, chat.chatStats.unreadCount + unreadChange),
@@ -747,6 +745,9 @@ object ChatModel {
             changeUnreadCounterInPrimaryContext(rhId, currentUser.value!!, userChange)
             updateChatTagReadInPrimaryContext(chats[i], wasUnread)
           }
+          if (asNew) {
+            popChatCollector.throttlePopChat(chat.remoteHostId, chat.id, currentPosition = i)
+          }
         } else {
           addChat(Chat(remoteHostId = rhId, chatInfo = cInfo, chatItems = arrayListOf(cItem)))
           itemAdded = true
@@ -754,7 +755,12 @@ object ChatModel {
       }
       withContext(Dispatchers.Main) {
         if (chatItemBelongsToScope(cInfo, cItem)) {
-          replaceLoadedChatItem(cItem)
+          if (asNew) {
+            chatItems.removeAllAndNotify { it.id == cItem.id }
+            addLastChatItem(cItem)
+          } else {
+            replaceLoadedChatItem(cItem)
+          }
         }
       }
       return itemAdded
@@ -3688,6 +3694,8 @@ data class ChatItem (
   }
 
   val isRcvNew: Boolean get() = meta.isRcvNew
+
+  fun isAsNew(prevItem: ChatItem): Boolean = meta.itemTs != prevItem.meta.itemTs
 
   val allowAddReaction: Boolean get() =
     meta.itemDeleted == null && !isLiveDummy && (reactions.count { it.userReacted } < 3)

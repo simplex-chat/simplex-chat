@@ -1057,7 +1057,7 @@ func receivedMsgNtf(_ res: NSEChatEvent) async -> (String, NSENotificationData)?
     case let .chatItemUpdated(user, update):
         let cInfo = update.chatInfo
         let cItem = update.chatItem
-        let ntf: NSENotificationData = if cItem.isRaised(from: update.prevChatItem) && cInfo.ntfsEnabled(chatItem: cItem) && cItem.showNotification {
+        let ntf: NSENotificationData = if update.showNotification {
             .messageReceived(user, cInfo, cItem)
         } else {
             .noNtf

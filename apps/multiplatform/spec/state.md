@@ -207,7 +207,7 @@ The secondary context is used for:
 - `addChat(chat)` -- adds chat at index 0, triggers pop animation
 - `reorderChat(chat, toIndex)` -- reorders chat list (e.g., when a chat receives a new message)
 - `updateChatInfo(rhId, cInfo)` -- updates chat metadata while preserving connection stats
-- `applyChatItemUpdate(rhId, cInfo, cItem, prevItem)` -- applies the `chatItemUpdated` event. The item is replaced if it is loaded and the preview if it is the last item; it is not inserted into the loaded items. The counters change by the difference between `prevItem` and `cItem` (unread: `isRcvNew`; mentions: `isRcvNew` and `userMention`). An update of a locally deleted message creates it again, and the core sends it in `newChatItems`.
+- `applyChatItemUpdate(rhId, cInfo, cItem, prevItem)` -- applies the `chatItemUpdated` event. The item is replaced if it is loaded and the preview if it is the last item; it is not inserted into the loaded items. An update as new (`ChatItem.isAsNew`: `itemTs` differs from `prevItem`) sets the preview by the rule of `addChatItem` and pops the chat; the item is removed from the loaded items and inserted last, before the live message. The counters change by the difference between `prevItem` and `cItem` (unread: `isRcvNew`; mentions: `isRcvNew` and `userMention`). An update of a locally deleted message creates it again, and the core sends it in `newChatItems`.
 - `hasChat(rhId, id)` / `getChat(id)` -- lookup methods
 
 ### ActiveChatState

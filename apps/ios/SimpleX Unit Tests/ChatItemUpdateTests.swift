@@ -148,6 +148,85 @@ final class ChatItemUpdateTests: XCTestCase {
     }
 
     @MainActor
+    func testItemUpdatedAsNewIsLast() async throws {
+        let events = try recordedEvents("updates/group-as-new")
+        try listChat(events[0])
+        try openChat(events[0])
+        await processReceivedMsg(events[0])
+        await processReceivedMsg(events[1])
+        XCTAssertEqual(loadedTexts(), ["status", "hi"])
+        await processReceivedMsg(events[2])
+        XCTAssertEqual(loadedTexts(), ["hi", "status 2"])
+        XCTAssertEqual(previewText(), "status 2")
+    }
+
+    @MainActor
+    func testItemNotLoadedIsInsertedLast() async throws {
+        let events = try recordedEvents("updates/group-as-new")
+        try listChat(events[0])
+        await processReceivedMsg(events[0])
+        try openChat(events[0])
+        await processReceivedMsg(events[1])
+        XCTAssertEqual(loadedTexts(), ["hi"])
+        await processReceivedMsg(events[2])
+        XCTAssertEqual(loadedTexts(), ["hi", "status 2"])
+    }
+
+    @MainActor
+    func testUpdateAsNewAlertsAsNewMessage() async throws {
+        try await assertReadItemUpdatedAsNew("updates/group-as-new", userUnread: 2)
+        XCTAssertEqual(notified, ["status", "hi", "status 2"])
+    }
+
+    @MainActor
+    func testSilentUpdateAsNewAlertsNobody() async throws {
+        try await assertReadItemUpdatedAsNew("updates/group-as-new-silent", userUnread: 1)
+        XCTAssertEqual(notified, ["status", "hi"])
+    }
+
+    @MainActor
+    func testUpdateAsNewInAnotherProfileAlertsAndCounts() async throws {
+        let events = try recordedEvents("updates/group-as-new")
+        ChatModel.shared.currentUser = otherUser()
+        for event in events { await processReceivedMsg(event) }
+        XCTAssertEqual(ChatModel.shared.users.first?.unreadCount, 3)
+        XCTAssertEqual(notified, ["status", "hi", "status 2"])
+    }
+
+    func testExtensionShowsUpdateAsNewNotEdit() throws {
+        XCTAssertEqual(try updates("updates/group-as-new").map(\.showNotification), [true])
+        XCTAssertEqual(try updates("updates/group-as-new-silent").map(\.showNotification), [false])
+        XCTAssertEqual(try updates("updates/direct-edit").map(\.showNotification), [false, false])
+    }
+
+    @MainActor
+    private func assertReadItemUpdatedAsNew(_ fixture: String, userUnread: Int) async throws {
+        let events = try recordedEvents(fixture)
+        let cInfo = try chatInfo(events[0])
+        let statusId = try XCTUnwrap(newItem(events[0])).id
+        try listChat(events[0])
+        try openChat(events[0])
+        await processReceivedMsg(events[0])
+        await processReceivedMsg(events[1])
+        try await assertCounts(2, 0, 2)
+        ChatModel.shared.markChatItemsRead(ChatModel.shared.im, cInfo, [statusId], 0, 0, 0)
+        try await assertCounts(1, 0, 1)
+        await processReceivedMsg(events[2])
+        try await assertCounts(2, 0, userUnread)
+    }
+
+    private func newItem(_ event: ChatEvent) -> ChatItem? {
+        if case let .newChatItems(_, items) = event { items.first?.chatItem } else { nil }
+    }
+
+    private func updates(_ fixture: String) throws -> [AChatItemUpdate] {
+        try recordedEvents(fixture).compactMap { event -> AChatItemUpdate? in
+            if case let .chatItemUpdated(_, update) = event { return update }
+            return nil
+        }
+    }
+
+    @MainActor
     private func openChat(_ event: ChatEvent) throws {
         ChatModel.shared.chatId = try chatInfo(event).id
     }

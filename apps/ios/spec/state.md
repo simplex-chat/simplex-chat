@@ -463,6 +463,10 @@ Haskell core generates ChatEvent.chatItemUpdated(user, chatItemUpdate: AChatItem
         2. Replace the preview if it is this item
         3. Replace the item in ItemsModel.reversedChatItems if it is loaded,
            never insert it
+    → An update as new (ChatItem.isAsNew(from:): itemTs differs from prevChatItem):
+        2. Set the preview by the group rule of addChatItem and pop the chat
+        3. Remove the item from ItemsModel.reversedChatItems if it is loaded,
+           and insert it last as a new item
     → Another user's event changes that user's unread counter by the same difference
     → An update of a locally deleted message creates it again: the core sends newChatItems
 ```

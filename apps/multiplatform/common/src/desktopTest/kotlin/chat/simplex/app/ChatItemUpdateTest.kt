@@ -151,6 +151,74 @@ class ChatItemUpdateTest {
     assertNull(event.chatItem)
   }
 
+  @Test
+  fun itemUpdatedAsNewIsLast() = recorded("updates/group-as-new") { (status, hi, updated) ->
+    listChat(status)
+    openChat(status)
+    receive(status)
+    assertNotified("status")
+    receive(hi)
+    assertNotified("status", "hi")
+    assertEquals(listOf("status", "hi"), loadedTexts())
+    receive(updated)
+    assertEquals(listOf("hi", "status 2"), loadedTexts())
+    assertEquals("status 2", previewText())
+  }
+
+  @Test
+  fun itemNotLoadedIsInsertedLast() = recorded("updates/group-as-new") { (status, hi, updated) ->
+    listChat(status)
+    receive(status)
+    assertNotified("status")
+    openChat(status)
+    receive(hi)
+    assertNotified("status", "hi")
+    assertEquals(listOf("hi"), loadedTexts())
+    receive(updated)
+    assertEquals(listOf("hi", "status 2"), loadedTexts())
+  }
+
+  @Test
+  fun updateAsNewAlertsAsNewMessage() = recorded("updates/group-as-new") { events ->
+    readItemUpdatedAsNew(events, Triple(2, 0, 2))
+    assertNotified("status", "hi", "status 2")
+  }
+
+  @Test
+  fun silentUpdateAsNewAlertsNobody() = recorded("updates/group-as-new-silent") { events ->
+    readItemUpdatedAsNew(events, Triple(2, 0, 1))
+    assertNotified("status", "hi")
+  }
+
+  @Test
+  fun updateAsNewInAnotherProfileAlertsAndCounts() = recorded("updates/group-as-new") { (status, hi, updated) ->
+    ChatModel.currentUser.value = User.sampleData.copy(userId = 2)
+    receive(status)
+    assertNotified("status")
+    receive(hi)
+    assertNotified("status", "hi")
+    receive(updated)
+    assertNotified("status", "hi", "status 2")
+    assertEquals(3, ChatModel.users[0].unreadCount)
+  }
+
+  private suspend fun readItemUpdatedAsNew(events: List<API>, expected: Triple<Int, Int, Int>) {
+    val (status, hi, updated) = events
+    listChat(status)
+    openChat(status)
+    receive(status)
+    assertNotified("status")
+    receive(hi)
+    assertNotified("status", "hi")
+    assertEquals(Triple(2, 0, 2), counts())
+    withContext(Dispatchers.Main) {
+      ChatModel.chatsContext.markChatItemsRead(null, chatInfo(status).id, listOf(newItem(status).id))
+    }
+    assertEquals(Triple(1, 0, 1), counts())
+    receive(updated)
+    assertEquals(expected, counts())
+  }
+
   private suspend fun listChat(event: API) = withContext(Dispatchers.Main) {
     ChatModel.chatsContext.updateChat(null, chatInfo(event))
   }
@@ -162,6 +230,8 @@ class ChatItemUpdateTest {
   private suspend fun receive(event: API) = ChatController.processReceivedMsg(event)
 
   private fun chatInfo(event: API): ChatInfo = (event.result as CR.NewChatItems).chatItems.single().chatInfo
+
+  private fun newItem(event: API): ChatItem = (event.result as CR.NewChatItems).chatItems.single().chatItem
 
   private fun loadedTexts(): List<String> = ChatModel.chatsContext.chatItems.value.map { it.text }
 

@@ -735,20 +735,7 @@ final class ChatModel: ObservableObject {
         if let i = getChatIndex(cInfo.id) {
             // update preview
             if cInfo.groupChatScope() == nil || cInfo.groupInfo?.membership.memberPending ?? false {
-                chats[i].chatItems = switch cInfo {
-                case .group:
-                    if let currentPreviewItem = chats[i].chatItems.first {
-                        if cItem.meta.itemTs >= currentPreviewItem.meta.itemTs {
-                            [cItem]
-                        } else {
-                            [currentPreviewItem]
-                        }
-                    } else {
-                        [cItem]
-                    }
-                default:
-                    [cItem]
-                }
+                chats[i].chatItems = previewItems(cInfo, chats[i].chatItems, cItem)
                 if case .rcvNew = cItem.meta.itemStatus {
                     unreadCollector.changeUnreadCounter(cInfo.id, by: 1, unreadMentions: cItem.meta.userMention ? 1 : 0, unreadSilent: cItem.meta.silent ? 1 : 0, unreadHighPriority: cItem.meta.highPriority ? 1 : 0)
                 }
@@ -765,6 +752,19 @@ final class ChatModel: ObservableObject {
         // add to current scope
         if let ciIM = getCIItemsModel(cInfo, cItem) {
             _ = _upsertChatItem(ciIM, cInfo, cItem)
+        }
+    }
+
+    private func previewItems(_ cInfo: ChatInfo, _ chatItems: [ChatItem], _ cItem: ChatItem) -> [ChatItem] {
+        switch cInfo {
+        case .group:
+            if let currentPreviewItem = chatItems.first, cItem.meta.itemTs < currentPreviewItem.meta.itemTs {
+                [currentPreviewItem]
+            } else {
+                [cItem]
+            }
+        default:
+            [cItem]
         }
     }
 
@@ -820,9 +820,14 @@ final class ChatModel: ObservableObject {
 
     func applyChatItemUpdate(_ cInfo: ChatInfo, _ cItem: ChatItem, _ prevItem: ChatItem) -> Bool {
         var chatAdded = false
+        let asNew = cItem.isAsNew(from: prevItem)
         if cInfo.groupChatScope() == nil {
-            if let chat = getChat(cInfo.id) {
-                if chat.chatItems.last?.id == cItem.id {
+            if let i = getChatIndex(cInfo.id) {
+                let chat = chats[i]
+                if asNew {
+                    chat.chatItems = previewItems(cInfo, chat.chatItems, cItem)
+                    popChatCollector.throttlePopChat(cInfo.id, currentPosition: i)
+                } else if chat.chatItems.last?.id == cItem.id {
                     chat.chatItems = [cItem]
                 }
                 let unread = unreadCountChange(prevItem, cItem) { $0.isRcvNew }
@@ -840,8 +845,17 @@ final class ChatModel: ObservableObject {
                 VoiceItemState.stopVoiceInChatView(cInfo, cItem)
             }
         }
-        if let ciIM = getCIItemsModel(cInfo, cItem), let i = getChatItemIndex(ciIM, cItem) {
-            _replaceChatItem(ciIM, at: i, with: cItem)
+        if let ciIM = getCIItemsModel(cInfo, cItem) {
+            let i = getChatItemIndex(ciIM, cItem)
+            if asNew {
+                if let i {
+                    let item = ciIM.reversedChatItems.remove(at: i)
+                    ciIM.chatState.itemsRemoved([(item.id, i, item.isRcvNew)], ciIM.reversedChatItems.reversed())
+                }
+                _ = _upsertChatItem(ciIM, cInfo, cItem)
+            } else if let i {
+                _replaceChatItem(ciIM, at: i, with: cItem)
+            }
         }
         return chatAdded
     }

@@ -3280,7 +3280,7 @@ func chatItemUpdate(_ user: any UserLike, _ update: AChatItemUpdate) async {
     let cInfo = update.chatInfo
     let cItem = update.chatItem
     let prevItem = update.prevChatItem
-    var notify = cItem.isRaised(from: prevItem)
+    var notify = cItem.isRaised(from: prevItem) || cItem.isAsNew(from: prevItem)
     if active(user) {
         if await MainActor.run(body: { m.applyChatItemUpdate(cInfo, cItem, prevItem) }) {
             notify = true

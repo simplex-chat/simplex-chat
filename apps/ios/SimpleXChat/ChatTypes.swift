@@ -3934,6 +3934,10 @@ public struct AChatItemUpdate: Decodable, Hashable {
     public var chatInfo: ChatInfo
     public var chatItem: ChatItem
     public var prevChatItem: ChatItem
+
+    public var showNotification: Bool {
+        (chatItem.isRaised(from: prevChatItem) || chatItem.isAsNew(from: prevChatItem)) && chatInfo.ntfsEnabled(chatItem: chatItem) && chatItem.showNotification
+    }
 }
 
 public struct CIMentionMember: Decodable, Hashable {
@@ -4705,6 +4709,10 @@ public func unreadCountChange(_ prevItem: ChatItem, _ cItem: ChatItem, _ counted
 extension ChatItem {
     public func isRaised(from prevItem: ChatItem) -> Bool {
         meta.highPriority && !prevItem.meta.highPriority
+    }
+
+    public func isAsNew(from prevItem: ChatItem) -> Bool {
+        meta.itemTs != prevItem.meta.itemTs
     }
 }
 

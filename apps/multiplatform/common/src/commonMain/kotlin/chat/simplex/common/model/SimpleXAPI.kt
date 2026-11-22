@@ -3848,7 +3848,7 @@ object ChatController {
     val cInfo = update.chatInfo
     val cItem = update.chatItem
     val prevItem = update.prevChatItem
-    val raised = cItem.meta.highPriority && !prevItem.meta.highPriority
+    val notify = cItem.meta.highPriority && !prevItem.meta.highPriority || cItem.isAsNew(prevItem)
     if (!activeUser(rh, user)) {
       val unreadChange = unreadCountChange(prevItem, cItem) { it.isRcvNew && cInfo.ntfsEnabled(it) && !(it.meta.silent && cInfo.silentNotCounted) }
       if (unreadChange > 0) {
@@ -3856,7 +3856,7 @@ object ChatController {
       } else if (unreadChange < 0) {
         withContext(Dispatchers.Main) { chatModel.chatsContext.decreaseUnreadCounter(rh, user) }
       }
-      if (raised) ntfManager.notifyMessageReceived(rh, user, cInfo, cItem)
+      if (notify) ntfManager.notifyMessageReceived(rh, user, cInfo, cItem)
     } else {
       val createdChat = withContext(Dispatchers.Main) {
         chatModel.chatsContext.applyChatItemUpdate(rh, cInfo, cItem, prevItem)
@@ -3864,7 +3864,7 @@ object ChatController {
       withContext(Dispatchers.Main) {
         chatModel.secondaryChatsContext.value?.applyChatItemUpdate(rh, cInfo, cItem, prevItem)
       }
-      if (createdChat || raised) ntfManager.notifyMessageReceived(rh, user, cInfo, cItem)
+      if (createdChat || notify) ntfManager.notifyMessageReceived(rh, user, cInfo, cItem)
     }
   }
 
