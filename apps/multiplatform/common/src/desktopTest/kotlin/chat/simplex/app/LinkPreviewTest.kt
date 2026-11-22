@@ -13,6 +13,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTextInputSelection
+import androidx.compose.ui.test.performTextReplacement
 import androidx.compose.ui.test.runComposeUiTest
 import androidx.compose.ui.text.TextRange
 import chat.simplex.common.model.*
@@ -152,12 +153,7 @@ class LinkPreviewTest {
   @Test
   fun fileAttachedDuringTheFetchKeepsItsPreview() = composeView { composeState ->
     val (request) = recorded("result")
-    val release = CountDownLatch(1)
-    chatSendCmdRetry = { _, cmd, _ ->
-      synchronized(requests) { requests += cmd }
-      release.await(10, TimeUnit.SECONDS)
-      commands[cmd]?.toString() ?: unrecordedRequest(cmd)
-    }
+    val release = heldResponses()
     onNode(hasSetTextAction()).performTextInput(request.removePrefix(LINK_PREVIEW))
     waitUntil(timeoutMillis = 10_000) { synchronized(requests) { requests.isNotEmpty() } }
     withTempDir { dir ->
@@ -167,6 +163,32 @@ class LinkPreviewTest {
       assertTrue(composeState.value.preview is ComposePreview.FilePreview)
       assertEquals(listOf(request), requests)
     }
+  }
+
+  @Test
+  fun linkDeletedBeforeTheFetchGetsNoPreview() = composeView { composeState ->
+    val (request) = recorded("result")
+    val field = onNode(hasSetTextAction())
+    field.performTextInput(request.removePrefix(LINK_PREVIEW))
+    field.performTextReplacement(TEXT_WITHOUT_LINK)
+    runCatching { waitUntil(timeoutMillis = 3_000) { synchronized(requests) { requests.isNotEmpty() } } }
+    waitForIdle()
+    assertTrue(composeState.value.preview is ComposePreview.NoPreview)
+    assertEquals(listOf(), requests)
+  }
+
+  @Test
+  fun linkDeletedDuringTheFetchGetsNoPreview() = composeView { composeState ->
+    val (request) = recorded("result")
+    val release = heldResponses()
+    val field = onNode(hasSetTextAction())
+    field.performTextInput(request.removePrefix(LINK_PREVIEW))
+    waitUntil(timeoutMillis = 10_000) { synchronized(requests) { requests.isNotEmpty() } }
+    field.performTextReplacement(TEXT_WITHOUT_LINK)
+    release.countDown()
+    runCatching { waitUntil(timeoutMillis = 3_000) { composeState.value.linkPreview != null } }
+    assertTrue(composeState.value.preview is ComposePreview.NoPreview)
+    assertEquals(listOf(request), requests)
   }
 
   @Test
@@ -219,6 +241,16 @@ class LinkPreviewTest {
     test(composeState)
   }
 
+  private fun heldResponses(): CountDownLatch {
+    val release = CountDownLatch(1)
+    chatSendCmdRetry = { _, cmd, _ ->
+      synchronized(requests) { requests += cmd }
+      release.await(10, TimeUnit.SECONDS)
+      commands[cmd]?.toString() ?: unrecordedRequest(cmd)
+    }
+    return release
+  }
+
   private fun MutableState<ComposeState>.attachFile(dir: Path) =
     processPickedFile(dir.resolve("notes.txt").toFile().apply { writeText("notes") }.toURI(), null)
 
@@ -245,5 +277,6 @@ class LinkPreviewTest {
 
   private companion object {
     const val LINK_PREVIEW = "/_link preview "
+    const val TEXT_WITHOUT_LINK = "text without a link"
   }
 }
