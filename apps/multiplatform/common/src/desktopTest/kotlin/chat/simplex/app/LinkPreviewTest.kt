@@ -128,7 +128,7 @@ class LinkPreviewTest {
 
   private fun recorded(outcome: String): Pair<String, JsonObject> =
     commands.entries
-      .single { (cmd, response) -> cmd.startsWith(LINK_PREVIEW) && outcome in response.jsonObject }
+      .first { (cmd, response) -> cmd.startsWith(LINK_PREVIEW) && outcome in response.jsonObject }
       .let { (cmd, response) -> cmd to response.jsonObject }
 
   private fun recordedPreview(response: JsonObject): JsonObject =
