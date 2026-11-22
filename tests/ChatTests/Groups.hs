@@ -6809,6 +6809,7 @@ testGroupMsgForwardUpdateAsNew =
       setupGroupForwarding alice bob cath
       cath ##> "/set receipts all off"
       cath <## "ok"
+      aliceConnId <- relayConnIdToMember bob "alice"
       cathConnId <- relayConnIdToMember alice "cath"
       bob #> "#team status"
       alice <# "#team bob> status"
@@ -6818,7 +6819,15 @@ testGroupMsgForwardUpdateAsNew =
       bob <# "#team status"
       alice <# "#team bob> status"
       cath <# "#team bob> status"
+      lastSndMsgFlags bob aliceConnId 1 `shouldReturn` ["T"]
       lastSndMsgFlags alice cathConnId 1 `shouldReturn` ["T"]
+      threadDelay 1000000
+      bob ##> ("/_update item #1 " <> statusId <> " as_new=on json {\"msgContent\": {\"type\": \"text\", \"text\": \"status\"}, \"mentions\": {}, \"priority\": -1}")
+      bob <# "#team status"
+      alice <# "#team bob> status"
+      cath <# "#team bob> status"
+      lastSndMsgFlags bob aliceConnId 1 `shouldReturn` ["F"]
+      lastSndMsgFlags alice cathConnId 1 `shouldReturn` ["F"]
 
 testGroupUpdateAsNewReceiverWindow :: HasCallStack => TestParams -> IO ()
 testGroupUpdateAsNewReceiverWindow =
