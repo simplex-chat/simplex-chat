@@ -1347,6 +1347,12 @@ object ChatController {
     return null
   }
 
+  suspend fun apiGetLinkPreview(uri: String): LinkPreview? {
+    val r = sendCmd(null, CC.ApiGetLinkPreview(uri))
+    if (r is API.Result && r.res is CR.CRLinkPreview) return r.res.linkPreview
+    return null
+  }
+
   suspend fun apiUpdateChatItem(rh: Long?, type: ChatType, id: Long, scope: GroupChatScope?, itemId: Long, updatedMessage: UpdatedMessage, live: Boolean = false): AChatItem? {
     val r = sendCmd(rh, CC.ApiUpdateChatItem(type, id, scope, itemId, updatedMessage, live))
     when {
@@ -4086,6 +4092,7 @@ sealed class CC {
   class ApiForwardChatItems(val toChatType: ChatType, val toChatId: Long, val toScope: GroupChatScope?, val sendAsGroup: Boolean, val fromChatType: ChatType, val fromChatId: Long, val fromScope: GroupChatScope?, val itemIds: List<Long>, val ttl: Int?): CC()
   class ApiShareChatMsgContent(val shareChatType: ChatType, val shareChatId: Long, val toChatType: ChatType, val toChatId: Long, val toScope: GroupChatScope?, val sendAsGroup: Boolean): CC()
   class ApiShareMyAddress(val toChatType: ChatType, val toChatId: Long, val toScope: GroupChatScope?, val sendAsGroup: Boolean): CC()
+  class ApiGetLinkPreview(val uri: String): CC()
   class ApiNewGroup(val userId: Long, val incognito: Boolean, val groupProfile: GroupProfile): CC()
   class ApiNewPublicGroup(val userId: Long, val incognito: Boolean, val relayIds: List<Long>, val groupProfile: GroupProfile): CC()
   class ApiGetGroupRelays(val groupId: Long): CC()
@@ -4305,6 +4312,7 @@ sealed class CC {
     is ApiPlanForwardChatItems -> {
       "/_forward plan ${chatRef(fromChatType, fromChatId, fromScope)} ${chatItemIds.joinToString(",")}"
     }
+    is ApiGetLinkPreview -> "/_link preview $uri"
     is ApiNewGroup -> "/_group $userId incognito=${onOff(incognito)} ${json.encodeToString(groupProfile)}"
     is ApiNewPublicGroup -> "/_public group $userId incognito=${onOff(incognito)} ${relayIds.joinToString(",")} ${json.encodeToString(groupProfile)}"
     is ApiGetGroupRelays -> "/_get relays #$groupId"
@@ -4503,6 +4511,7 @@ sealed class CC {
     is ApiShareChatMsgContent -> "apiShareChatMsgContent"
     is ApiShareMyAddress -> "apiShareMyAddress"
     is ApiPlanForwardChatItems -> "apiPlanForwardChatItems"
+    is ApiGetLinkPreview -> "apiGetLinkPreview"
     is ApiNewGroup -> "apiNewGroup"
     is ApiNewPublicGroup -> "apiNewPublicGroup"
     is ApiGetGroupRelays -> "apiGetGroupRelays"
@@ -6936,6 +6945,7 @@ sealed class CR {
   @Serializable @SerialName("chatItemsDeleted") class ChatItemsDeleted(val user: UserRef, val chatItemDeletions: List<ChatItemDeletion>, val byUser: Boolean): CR()
   @Serializable @SerialName("groupChatItemsDeleted") class GroupChatItemsDeleted(val user: UserRef, val groupInfo: GroupInfo, val chatItemIDs: List<Long>, val byUser: Boolean, val member_: GroupMember?): CR()
   @Serializable @SerialName("forwardPlan") class ForwardPlan(val user: UserRef, val itemsCount: Int, val chatItemIds: List<Long>, val forwardConfirmation: ForwardConfirmation? = null): CR()
+  @Serializable @SerialName("linkPreview") class CRLinkPreview(val linkPreview: LinkPreview): CR()
   // group events
   @Serializable @SerialName("groupCreated") class GroupCreated(val user: UserRef, val groupInfo: GroupInfo): CR()
   @Serializable @SerialName("publicGroupCreated") class PublicGroupCreated(val user: UserRef, val groupInfo: GroupInfo, val groupLink: GroupLink, val groupRelays: List<GroupRelay>): CR()
@@ -7143,6 +7153,7 @@ sealed class CR {
     is ChatItemsDeleted -> "chatItemsDeleted"
     is GroupChatItemsDeleted -> "groupChatItemsDeleted"
     is ForwardPlan -> "forwardPlan"
+    is CRLinkPreview -> "linkPreview"
     is GroupCreated -> "groupCreated"
     is PublicGroupCreated -> "publicGroupCreated"
     is PublicGroupCreationFailed -> "publicGroupCreationFailed"
@@ -7340,6 +7351,7 @@ sealed class CR {
     is ChatItemsDeleted -> withUser(user, "${chatItemDeletions.map { (deletedChatItem, toChatItem) -> "deletedChatItem: ${json.encodeToString(deletedChatItem)}\ntoChatItem: ${json.encodeToString(toChatItem)}" }} \nbyUser: $byUser")
     is GroupChatItemsDeleted -> withUser(user, "chatItemIDs: $chatItemIDs\nbyUser: $byUser\nmember_: $member_")
     is ForwardPlan -> withUser(user, "itemsCount: $itemsCount\nchatItemIds: ${json.encodeToString(chatItemIds)}\nforwardConfirmation: ${json.encodeToString(forwardConfirmation)}")
+    is CRLinkPreview -> json.encodeToString(linkPreview)
     is GroupCreated -> withUser(user, json.encodeToString(groupInfo))
     is PublicGroupCreated -> withUser(user, "groupInfo: $groupInfo\ngroupLink: $groupLink\ngroupRelays: $groupRelays")
     is PublicGroupCreationFailed -> withUser(user, "addRelayResults: $addRelayResults")
@@ -8094,6 +8106,7 @@ sealed class ChatErrorType {
       is ConnectionUserChangeProhibited -> "connectionUserChangeProhibited"
       is PeerChatVRangeIncompatible -> "peerChatVRangeIncompatible"
       is RelayTestError -> "relayTestError $message"
+      is CELinkPreview -> "linkPreview $message"
       is InternalError -> "internalError"
       is CEException -> "exception $message"
     }
@@ -8179,6 +8192,7 @@ sealed class ChatErrorType {
   @Serializable @SerialName("connectionUserChangeProhibited") object ConnectionUserChangeProhibited: ChatErrorType()
   @Serializable @SerialName("peerChatVRangeIncompatible") object PeerChatVRangeIncompatible: ChatErrorType()
   @Serializable @SerialName("relayTestError") class RelayTestError(val message: String): ChatErrorType()
+  @Serializable @SerialName("linkPreview") class CELinkPreview(val message: String): ChatErrorType()
   @Serializable @SerialName("internalError") class InternalError(val message: String): ChatErrorType()
   @Serializable @SerialName("exception") class CEException(val message: String): ChatErrorType()
 }

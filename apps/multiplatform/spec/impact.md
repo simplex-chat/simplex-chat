@@ -278,7 +278,7 @@ Path prefix: `common/src/commonMain/kotlin/chat/simplex/common/`
 | `views/helpers/ModalView.kt` | PC1 through PC32 | Medium | Modal navigation stack |
 | `views/helpers/Utils.kt` | PC1 through PC32 | Low | Shared formatting, clipboard, and utility functions |
 | `views/helpers/DatabaseUtils.kt` | PC23 | Medium | Keystore passphrase and database helpers |
-| `views/helpers/LinkPreviews.kt` | PC11 | Medium | Link preview fetching and rendering |
+| `views/helpers/LinkPreviews.kt` | PC11 | Medium | Link preview rendering |
 | `views/helpers/LocalAuthentication.kt` | PC22 | Medium | Biometric/passcode authentication expect |
 | `views/helpers/ChatWallpaper.kt` | PC24 | Low | Chat wallpaper rendering |
 | `views/helpers/ChatInfoImage.kt` | PC19 | Low | Profile image composable |

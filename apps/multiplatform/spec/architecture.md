@@ -89,7 +89,6 @@ Key dependencies (from `commonMain`):
 - `multiplatform-settings` (russhwolf) -- `SharedPreferences` abstraction
 - `kaml` -- YAML parsing (theme import/export)
 - `boofcv-core` -- QR code scanning
-- `jsoup` -- HTML parsing for link previews
 - `moko-resources` -- cross-platform string/image resources
 - `multiplatform-markdown-renderer` -- Markdown rendering in chat
 

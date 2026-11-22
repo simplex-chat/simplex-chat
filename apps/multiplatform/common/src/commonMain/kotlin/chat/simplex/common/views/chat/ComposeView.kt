@@ -496,7 +496,7 @@ fun ComposeView(
 
   suspend fun fetchAndUpdateLinkPreview(url: String) {
     composeState.value = composeState.value.copy(preview = ComposePreview.CLinkPreview(null))
-    val lp = getLinkPreview(url)
+    val lp = chatModel.controller.apiGetLinkPreview(url)
     if (lp != null && pendingLinkUrl.value == url) {
       composeState.value = composeState.value.copy(preview = ComposePreview.CLinkPreview(lp))
       pendingLinkUrl.value = null
