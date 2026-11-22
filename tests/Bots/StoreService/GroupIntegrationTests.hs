@@ -10,7 +10,7 @@
 -- Members' messages reach a console over separate connections in no fixed order, so gating is asserted from the bot's store.
 module Bots.StoreService.GroupIntegrationTests (badgeGroupIntegrationTests, namesBootTests, namesCodesChatTests, namesRefundChatTests, namesWorkerBootTests) where
 
-import StoreService.Config (BadgeIssuerKey (..), ChainConfig (cChainId, cController, cServiceKey), GroupConfig (..), NamesConfig (nChain), ServiceConfig (devAcceptUnverifiedStoreReceipts, names), readServiceConfig)
+import StoreService.Config (BadgeIssuerKey (..), ChainConfig (cChainId, cController, cServiceKey), GroupConfig (..), ListenerConfig (lBadgesPort), NamesConfig (nChain), ServiceConfig (devAcceptUnverifiedStoreReceipts, listener, names), readServiceConfig)
 import StoreService.Group (GroupAction (..), GroupEvent (..), codeInTracker, ensureManagedGroup, fmtTime, joinerAcceptance)
 import StoreService.Group.Command (maxUses)
 import StoreService.Names.Codes (issueNameCode, prepaidCodeHash, revokeNameCode)
@@ -61,7 +61,6 @@ import Data.Time.Clock (NominalDiffTime, UTCTime (..), addUTCTime, getCurrentTim
 import Data.Time.Format (defaultTimeLocale, formatTime)
 import Network.HTTP.Client (RequestBody (..), defaultManagerSettings, httpLbs, method, newManager, parseRequest, requestBody, requestHeaders, responseBody, responseHeaders)
 import Network.Socket (Family (..), SockAddr (..), SocketType (..), close, connect, defaultProtocol, socket, tupleToHostAddress)
-import Network.Wai.Handler.Warp (openFreePort)
 import Simplex.Chat.Badges (BadgeType (..))
 import Simplex.Chat.Badges.Ledger (addMonths)
 import Simplex.Chat.Badges.Code (NamePrepaidCode, formatBadgeCode, formatNameCode, nameLength, nameLengthInt, namePrepaidCodeLength, parseBadgeCode, parseNameCode, randomBadgeCode, randomNamePrepaidCode)
@@ -750,21 +749,18 @@ stopGroupService t cc = do
 stopChat :: ChatController -> IO ()
 stopChat cc = stopStoreService cc >> disposeAgentClient (smpAgent cc)
 
--- It writes the service's ini on free ports, the names site's too with [names]; Nothing omits the [group] section.
+-- It writes the service's ini on the test's ports, the names site's too with [names]; Nothing omits the [group] section.
 groupServiceOpts :: GroupSvc -> Maybe GroupConfig -> IO (StoreServiceOpts, ServiceConfig, Int)
 groupServiceOpts GroupSvc {gsKey = BadgeIssuerKey {secretKey}, gsStaticDir, gsIniSections, gsListener, gsPs = ps@TestParams {tmpPath}} groupCfg = do
-  (port, sock) <- openFreePort
-  (namesPort, namesSock) <- openFreePort
-  close sock >> close namesSock
   let iniPath = tmpPath </> "badge_group.ini"
       namesSite
-        | "[names]" `elem` gsIniSections = ["names_static_dir = " <> gsStaticDir, "names_port = " <> show namesPort]
+        | "[names]" `elem` gsIniSections = ["names_static_dir = " <> gsStaticDir, "names_port = " <> testPort 6 ps]
         | otherwise = []
   B.writeFile iniPath . encodeUtf8 . T.pack $
     unlines $
       [ "[listener]",
         "host = 127.0.0.1",
-        "badges_port = " <> show port,
+        "badges_port = " <> testPort 5 ps,
         "badges_static_dir = " <> gsStaticDir
       ]
         <> map T.unpack gsListener
@@ -772,7 +768,7 @@ groupServiceOpts GroupSvc {gsKey = BadgeIssuerKey {secretKey}, gsStaticDir, gsIn
         <> maybe [] groupSection groupCfg
         <> map T.unpack gsIniSections
   Right serviceCfg <- readServiceConfig iniPath
-  pure ((mkStoreServiceOpts ps secretKey) {noAddress = True}, serviceCfg, port)
+  pure ((mkStoreServiceOpts ps secretKey) {noAddress = True}, serviceCfg, lBadgesPort $ listener serviceCfg)
   where
     groupSection GroupConfig {gDisplayName, gDescription, gNameCodesPerDay} =
       ["", "[group]", "display_name = " <> T.unpack gDisplayName, "name_codes_per_day = " <> show gNameCodesPerDay]
