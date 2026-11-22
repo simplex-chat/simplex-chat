@@ -61,7 +61,7 @@ flowchart LR
 | Command | Does |
 |---|---|
 | `media <dir>` | makes 2-second test files with FFmpeg: the formats of the table above that the apps send, a video rotated by 90° and an FLV file |
-| `check <vlc dir> <media dir>` | fails on a plugin outside the allowlist, on another file in the plugins directory and on Lua scripts; then, with the bundled libVLC and the arguments of `vlcPreviewFactory`, for each test file and the app's call sounds: parses it, plays its video into frame callbacks in RV32 as the previews do, and records its audio with the voice message chain into M4A, whose AAC track is parsed; fails on a container or stream module outside the list of `VLC_DEMUX`, `filesystem`, `cache_read` and `skiptags`, read from the context of libVLC's log messages |
+| `check <vlc dir> <media dir>` | fails on a plugin outside the allowlist, on another file in the plugins directory and on Lua scripts; then, with the bundled libVLC and the arguments of `vlcPreviewFactory`, for each test file and the app's call sounds: parses it, plays its video into frame callbacks in RV32 as the previews do, and records its audio with the voice message chain into M4A, whose AAC track is parsed; fails on a container module outside the list of `VLC_DEMUX`, and on a stream module outside that list, `filesystem`, `cache_read` and `skiptags`, read from the context of libVLC's log messages |
 | `audio <vlc dir> <media dir>` | the plugin checks, then plays the voice message test file and the call sounds with the arguments of `vlcFactory` on the system audio output, and fails on a file without decoded and played audio |
 
 CI, build.yml, when `maybe-release.outputs.vlc` is true (`BUILD_CHANGES["vlc"]` in packages_release.py):

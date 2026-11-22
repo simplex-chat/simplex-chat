@@ -19,7 +19,8 @@ APP_PLAYER = ROOT / "apps/multiplatform/common/src/desktopMain/kotlin/chat/simpl
 APP_DEMUX = re.search(r'const val VLC_DEMUX = "(--demux=([^"]+))"', APP_PLAYER.read_text())
 PREVIEW_ARGS = ("--avcodec-hw=none", APP_DEMUX[1])
 PLAYER_ARGS = (APP_DEMUX[1],)
-ALLOWED_MODULES = {"demux": {"main", *APP_DEMUX[2].split(",")}, "stream": {"main", "filesystem", "cache_read", "skiptags"}}
+DEMUX_MODULES = {"main", *APP_DEMUX[2].split(",")}
+ALLOWED_MODULES = {"demux": DEMUX_MODULES, "stream": {*DEMUX_MODULES, "filesystem", "cache_read", "skiptags"}}
 LOG_WARNING = 3
 VOICE_SOUT = "#transcode{vcodec=none,acodec=mp4a,ab=32,channels=1,samplerate=16000}:std{access=file,mux=mp4,dst=%s}"
 VOICE_CHANNELS = 1
