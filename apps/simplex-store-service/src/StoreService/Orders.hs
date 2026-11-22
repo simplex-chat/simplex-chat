@@ -248,7 +248,7 @@ latePayment ref =
 
 takenAtSettlement :: Text -> IO ()
 takenAtSettlement ref =
-  logNote $ "names: invoice " <> ref <> " was paid while another paid order holds its name, so its order is taken and the money paid for it is added to its balance"
+  logNote $ "names: invoice " <> ref <> " was paid as someone has taken its name, so its order is taken and the money paid for it is added to its balance"
 
 reversedAtSettlement :: Text -> IO ()
 reversedAtSettlement ref =
