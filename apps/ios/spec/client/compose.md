@@ -303,31 +303,41 @@ Optional feature where the recipient sees typing in real-time.
 
 ### Auto-Detection
 - As user types, URLs in the text are detected
-- When a URL is found, `loadLinkPreview` requests the preview from the core with `/_link preview <uri>`; the core loads the page through the network settings
+- The first URL outside `cancelledLinks` and outside SimpleX links is selected; its card shows a spinner at once, and after 1.5 s `loadLinkPreview` requests the preview from the core with `/_link preview <uri>`; the core loads the page through the network settings
 - Preview card shows thumbnail image, title and link
+
+### Link Preview State
+
+The link preview is a part of `ComposeState`: `preview` is `.linkPreview(status:)`, with `LinkPreviewStatus` `.loading(uri:request:)` or `.shown(linkPreview:)`, and `cancelledLinks` holds the links that are not requested again in this message. `updateLinkPreview(_:previewsOn:)` is its only transition. `loadLinkPreview` runs in `.task(id: composeState.loadingRequest)`, so the wait of a request ends at the next request, and the pending result of a replaced state is discarded.
+
+| Event | Sent by | Result |
+|---|---|---|
+| `.textChanged` | `.onChange(of: composeState.message)` | for an empty text, `cancelledLinks` is emptied; the card of the selected link is kept, requested or removed; an attachment is kept |
+| `.fetched(request:linkPreview:)` | `loadLinkPreview` | applied only to the loading request; after a failure, the link is added to `cancelledLinks` and the next link is selected |
+| `.cancelled` | X of the card, `cancelLinkPreview` | the link is added to `cancelledLinks` and the next link is selected |
+| `.chatChanged` | `.onChange(of: chatModel.chatId)`, `saveCurrentDraft` | `cancelledLinks` is emptied and the link is selected again |
 
 ### Link Preview Functions
 
 | Function | Line | Description |
 |----------|------|-------------|
-| [`showLinkPreview()`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L1912) | L1912 | Triggers link preview loading |
-| [`getMessageLinks()`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L1933) | L1933 | Extracts URLs from formatted text |
-| [`isSimplexLink()`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L1944) | L1944 | Checks if URL is a SimpleX link |
-| [`cancelLinkPreview()`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L1948) | L1948 | Cancels pending preview |
-| [`loadLinkPreview()`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L1960) | L1960 | Requests the preview from the core |
-| [`resetLinkPreview()`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L1983) | L1983 | Resets preview state |
+| [`updateLinkPreview()`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L308) | L308 | Transition of the link preview state |
+| [`getMessageLinks()`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L341) | L341 | Returns the first URL outside `cancelledLinks` and SimpleX links |
+| [`checkLinkPreview()`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L356) | L356 | Content of the sent message: `.link` when the shown card is of the selected URL of the text |
+| [`cancelLinkPreview()`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L1960) | L1960 | Cancels the card |
+| [`loadLinkPreview()`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L1965) | L1965 | Requests the preview of the loading link from the core after 1.5 s |
 | [`apiGetLinkPreview()`](../../Shared/Model/SimpleXAPI.swift#L527) | L527 | Sends `/_link preview <uri>`; on failure returns no preview |
 
 ### Behavior
-- Only the first URL in the message generates a preview
+- Only the first URL in the message generates a preview; when its preview fails or is dismissed, the card of the next URL is shown
 - Preview can be dismissed by the user
-- Link preview data is included in the `ComposedMessage` sent to the core
+- Link preview data is included in the `ComposedMessage` sent to the core, from the state read when the send starts
 - Toggle in privacy settings to disable auto-preview generation
 - A failed preview shows no card and no alert; with **Show developer options** and **Show link preview errors** on, an alert shows the error of the core
-- A link whose preview failed is added to `cancelledLinks`, so it is not requested again until the compose is cleared
-- A result is applied only while its link is `pendingLinkUrl`; the result of a link replaced or removed from the text since then is discarded
-- An attachment, voice or chat link preview resets the link state (`resetLinkPreview`), so a pending link preview does not replace it
-- The share extension requests the preview of a shared link from the core when the toggle is on
+- A failed or dismissed link is not requested again in the same message; it is requested again after the text is cleared, the message is sent, the draft is saved or another chat is opened
+- A result is applied only while its request is loading; the result of a link replaced or removed from the text, or of a state replaced by an attachment, an edit or a reply, is discarded
+- An attachment, voice or chat link preview replaces the link preview and keeps `cancelledLinks`
+- The share extension requests the preview of a shared link from the core when the toggle is on, from a global dispatch queue
 
 ---
 

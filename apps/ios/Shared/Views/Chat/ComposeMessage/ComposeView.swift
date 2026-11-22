@@ -10,11 +10,23 @@ let MAX_NUMBER_OF_MENTIONS = 3
 // Spec: spec/client/compose.md#ComposePreview
 enum ComposePreview {
     case noPreview
-    case linkPreview(linkPreview: LinkPreview?)
+    case linkPreview(status: LinkPreviewStatus)
     case chatLinkPreview(chatLink: MsgChatLink, ownerSig: LinkOwnerSig?)
     case mediaPreviews(mediaPreviews: [(String, UploadContent?)])
     case voicePreview(recordingFileName: String, duration: Int)
     case filePreview(fileName: String, file: URL)
+}
+
+enum LinkPreviewStatus: Equatable {
+    case loading(uri: String, request: Int64)
+    case shown(linkPreview: LinkPreview)
+}
+
+enum LinkPreviewEvent {
+    case textChanged
+    case fetched(request: Int64, linkPreview: LinkPreview?)
+    case cancelled
+    case chatChanged
 }
 
 // Spec: spec/client/compose.md#ComposeContextItem
@@ -54,6 +66,7 @@ struct ComposeState {
     var progressByTimeout = false
     var useLinkPreviews = true
     var mentions: MentionedMembers = [:]
+    var cancelledLinks: Set<String> = []
 
     init(
         message: String = "",
@@ -62,7 +75,8 @@ struct ComposeState {
         preview: ComposePreview = .noPreview,
         contextItem: ComposeContextItem = .noContextItem,
         voiceMessageRecordingState: VoiceMessageRecordingState = .noRecording,
-        mentions: MentionedMembers = [:]
+        mentions: MentionedMembers = [:],
+        cancelledLinks: Set<String> = []
     ) {
         self.message = message
         self.parsedMessage = parsedMessage
@@ -71,6 +85,7 @@ struct ComposeState {
         self.contextItem = contextItem
         self.voiceMessageRecordingState = voiceMessageRecordingState
         self.mentions = mentions
+        self.cancelledLinks = cancelledLinks
     }
 
     init(editingItem: ChatItem) {
@@ -116,7 +131,8 @@ struct ComposeState {
             preview: preview ?? self.preview,
             contextItem: contextItem ?? self.contextItem,
             voiceMessageRecordingState: voiceMessageRecordingState ?? self.voiceMessageRecordingState,
-            mentions: mentions ?? self.mentions
+            mentions: mentions ?? self.mentions,
+            cancelledLinks: cancelledLinks
         )
     }
 
@@ -204,7 +220,22 @@ struct ComposeState {
 
     var linkPreview: LinkPreview? {
         switch preview {
-        case let .linkPreview(linkPreview): return linkPreview
+        case let .linkPreview(.shown(linkPreview)): return linkPreview
+        default: return nil
+        }
+    }
+
+    var loadingRequest: Int64? {
+        switch preview {
+        case let .linkPreview(.loading(_, request)): return request
+        default: return nil
+        }
+    }
+
+    private var previewLink: String? {
+        switch preview {
+        case let .linkPreview(.loading(uri, _)): return uri
+        case let .linkPreview(.shown(linkPreview)): return linkPreview.uri
         default: return nil
         }
     }
@@ -273,6 +304,62 @@ struct ComposeState {
     var whitespaceOnly: Bool {
         message.allSatisfy { $0.isWhitespace }
     }
+
+    func updateLinkPreview(_ event: LinkPreviewEvent, previewsOn: Bool) -> ComposeState {
+        var s = self
+        switch event {
+        case let .fetched(request, _) where request != loadingRequest:
+            return self
+        case let .fetched(_, linkPreview?):
+            s.preview = .linkPreview(status: .shown(linkPreview: linkPreview))
+            return s
+        case .fetched, .cancelled:
+            if let link = previewLink { s.cancelledLinks.insert(link) }
+        case .textChanged:
+            if message.isEmpty { s.cancelledLinks = [] }
+        case .chatChanged:
+            s.cancelledLinks = []
+        }
+        s.preview = s.selectedPreview(previewsOn: previewsOn)
+        return s
+    }
+
+    private func selectedPreview(previewsOn: Bool) -> ComposePreview {
+        guard linkPreviewAllowed else { return preview }
+        guard previewsOn, let link = getMessageLinks(parsedMessage).url else { return .noPreview }
+        return link == previewLink ? preview : .linkPreview(status: .loading(uri: link, request: ComposeState.nextLinkRequest()))
+    }
+
+    private static var lastLinkRequest: Int64 = 0
+
+    static func nextLinkRequest() -> Int64 {
+        lastLinkRequest += 1
+        return lastLinkRequest
+    }
+
+    // Spec: spec/client/compose.md#getMessageLinks
+    func getMessageLinks(_ parsedMsg: [FormattedText]?) -> (url: String?, hasSimplexLink: Bool) {
+        guard let parsedMsg else { return (nil, false) }
+        let simplexLink = parsedMsgHasSimplexLink(parsedMsg)
+        for ft in parsedMsg {
+            if let link = ft.linkUri, !cancelledLinks.contains(link) && !isSimplexLink(link) {
+                return (link, simplexLink)
+            }
+        }
+        return (nil, simplexLink)
+    }
+
+    private func isSimplexLink(_ link: String) -> Bool {
+        link.starts(with: "https://simplex.chat") || link.starts(with: "http://simplex.chat") || link.starts(with: "simplex:/")
+    }
+
+    func checkLinkPreview() -> MsgContent {
+        let msgText = message.trimmingCharacters(in: .whitespacesAndNewlines)
+        if let linkPreview, getMessageLinks(parseSimpleXMarkdown(msgText)).url == linkPreview.uri {
+            return .link(text: msgText, preview: linkPreview)
+        }
+        return .text(msgText)
+    }
 }
 
 // Spec: spec/client/compose.md#chatItemPreview
@@ -281,7 +368,7 @@ func chatItemPreview(chatItem: ChatItem) -> ComposePreview {
     case .text:
         return .noPreview
     case let .link(_, preview: preview):
-        return .linkPreview(linkPreview: preview)
+        return .linkPreview(status: .shown(linkPreview: preview))
     case let .image(_, image):
         return .mediaPreviews(mediaPreviews: [(image, nil)])
     case let .video(_, image, _):
@@ -385,11 +472,7 @@ struct ComposeView: View {
     @Binding var keyboardHiddenDate: Date
     @Binding var selectedRange: NSRange
 
-    @State var linkUrl: String? = nil
     @State var hasSimplexLink: Bool = false
-    @State var prevLinkUrl: String? = nil
-    @State var pendingLinkUrl: String? = nil
-    @State var cancelledLinks: Set<String> = []
 
     @Environment(\.colorScheme) private var colorScheme
     @State private var showChooseSource = false
@@ -595,24 +678,14 @@ struct ComposeView: View {
             } else {
                 composeState = composeState.copy(parsedMessage: parsedMsg ?? FormattedText.plain(msg))
             }
-            if composeState.linkPreviewAllowed && useLinkPreviews {
-                if !msg.isEmpty {
-                    showLinkPreview(parsedMsg)
-                } else {
-                    resetLinkPreview()
-                    hasSimplexLink = false
-                    composeState = composeState.copy(preview: .noPreview)
-                }
-            } else {
-                resetLinkPreview()
-                hasSimplexLink = !msg.isEmpty && !chat.groupFeatureEnabled(.simplexLinks) && getMessageLinks(parsedMsg).hasSimplexLink
-                if composeState.linkPreviewAllowed {
-                    composeState = composeState.copy(preview: .noPreview)
-                }
-            }
+            hasSimplexLink = composeState.getMessageLinks(parsedMsg).hasSimplexLink
+            composeState = composeState.updateLinkPreview(.textChanged, previewsOn: useLinkPreviews)
         }
-        .onChange(of: composeState.linkPreviewAllowed) { allowed in
-            if !allowed { resetLinkPreview() }
+        .onChange(of: chatModel.chatId) { _ in
+            composeState = composeState.updateLinkPreview(.chatChanged, previewsOn: useLinkPreviews)
+        }
+        .task(id: composeState.loadingRequest) {
+            await loadLinkPreview()
         }
         .onChange(of: chat.chatInfo.sendMsgEnabled) { sendEnabled in
             if !sendEnabled {
@@ -718,7 +791,6 @@ struct ComposeView: View {
                 cancelCurrentVoiceRecording()
                 clearCurrentDraft()
                 sendMessage(ttl: nil)
-                resetLinkPreview()
             } else if (composeState.inProgress) {
                 clearCurrentDraft()
             } else if !composeState.empty  {
@@ -1076,11 +1148,9 @@ struct ComposeView: View {
                 selectedRange: $selectedRange,
                 sendMessage: { ttl in
                     sendMessage(ttl: ttl)
-                    resetLinkPreview()
                 },
                 sendSignedMessage: {
                     sendMessage(ttl: nil, sign: true)
-                    resetLinkPreview()
                 },
                 sendLiveMessage: chat.chatInfo.chatType != .local ? sendLiveMessage : nil,
                 updateLiveMessage: updateLiveMessage,
@@ -1251,28 +1321,7 @@ struct ComposeView: View {
     @inline(__always)
     private func connectCheckLinkPreview() -> MsgContent? {
         let msgText = composeState.message.trimmingCharacters(in: .whitespacesAndNewlines)
-        return msgText.isEmpty ? nil : checkLinkPreview_(msgText)
-    }
-
-    @inline(__always)
-    private func checkLinkPreview() -> MsgContent {
-        checkLinkPreview_(composeState.message.trimmingCharacters(in: .whitespacesAndNewlines))
-    }
-
-    private func checkLinkPreview_(_ msgText: String) -> MsgContent {
-        switch (composeState.preview) {
-        case let .linkPreview(linkPreview: linkPreview):
-            if let parsedMsg = parseSimpleXMarkdown(msgText),
-               let url = getMessageLinks(parsedMsg).url,
-               let linkPreview = linkPreview,
-               url == linkPreview.uri {
-                return .link(text: msgText, preview: linkPreview)
-            } else {
-                return .text(msgText)
-            }
-        default:
-            return .text(msgText)
-        }
+        return msgText.isEmpty ? nil : composeState.checkLinkPreview()
     }
 
     // Spec: spec/client/compose.md#addMediaContent
@@ -1370,9 +1419,9 @@ struct ComposeView: View {
         switch composeState.preview {
         case .noPreview:
             EmptyView()
-        case let .linkPreview(linkPreview: preview):
+        case .linkPreview:
             ComposeLinkView(
-                linkPreview: preview,
+                linkPreview: composeState.linkPreview,
                 cancelPreview: cancelLinkPreview,
                 cancelEnabled: !composeState.inProgress
             )
@@ -1514,6 +1563,7 @@ struct ComposeView: View {
     // Spec: spec/client/compose.md#sendMessageAsync
     private func sendMessageAsync(_ text: String?, live: Bool, ttl: Int?, sign: Bool = false) async -> ChatItem? {
         var sent: ChatItem?
+        let cs = composeState
         let msgText = text ?? composeState.message
         let liveMessage = composeState.liveMessage
         let mentions = composeState.memberMentions
@@ -1525,7 +1575,7 @@ struct ComposeView: View {
             // Composed text is send as a reply to the last forwarded item
             sent = await forwardItems(chatItems, fromChatInfo, ttl).last
             if !composeState.message.isEmpty {
-                _ = await send(checkLinkPreview(), quoted: sent?.id, live: false, ttl: ttl, mentions: mentions, sign: sign)
+                _ = await send(cs.checkLinkPreview(), quoted: sent?.id, live: false, ttl: ttl, mentions: mentions, sign: sign)
             }
         } else if case let .editingItem(ci) = composeState.contextItem {
             sent = await updateMessage(ci, live: live)
@@ -1543,7 +1593,7 @@ struct ComposeView: View {
             case .noPreview:
                 sent = await send(.text(msgText), quoted: quoted, live: live, ttl: ttl, mentions: mentions, sign: sign)
             case .linkPreview:
-                sent = await send(checkLinkPreview(), quoted: quoted, live: live, ttl: ttl, mentions: mentions, sign: sign)
+                sent = await send(cs.checkLinkPreview(), quoted: quoted, live: live, ttl: ttl, mentions: mentions, sign: sign)
             case let .chatLinkPreview(chatLink, ownerSig):
                 let linkStr = chatLink.connLinkStr
                 let text = msgText.isEmpty ? linkStr : msgText + "\n" + linkStr
@@ -1646,9 +1696,9 @@ struct ComposeView: View {
         func updateMsgContent(_ msgContent: MsgContent) -> MsgContent {
             switch msgContent {
             case .text:
-                return checkLinkPreview()
+                return cs.checkLinkPreview()
             case .link:
-                return checkLinkPreview()
+                return cs.checkLinkPreview()
             case .image(_, let image):
                 return .image(text: msgText, image: image)
             case .video(_, let image, let duration):
@@ -1886,7 +1936,6 @@ struct ComposeView: View {
             composeState.inProgress = false
         } else {
             composeState = ComposeState()
-            resetLinkPreview()
         }
         chosenMedia = []
         audioRecorder = nil
@@ -1896,7 +1945,7 @@ struct ComposeView: View {
 
     // Spec: spec/client/compose.md#saveCurrentDraft
     private func saveCurrentDraft() {
-        chatModel.draft = composeState
+        chatModel.draft = composeState.updateLinkPreview(.chatChanged, previewsOn: useLinkPreviews)
         chatModel.draftChatId = draftChatId(chat.id, chat.chatInfo.groupChatScope())
     }
 
@@ -1908,83 +1957,18 @@ struct ComposeView: View {
         }
     }
 
-    // Spec: spec/client/compose.md#showLinkPreview
-    private func showLinkPreview(_ parsedMsg: [FormattedText]?) {
-        prevLinkUrl = linkUrl
-        (linkUrl, hasSimplexLink) = getMessageLinks(parsedMsg)
-        if let url = linkUrl {
-            if url != composeState.linkPreview?.uri && url != pendingLinkUrl {
-                pendingLinkUrl = url
-                if prevLinkUrl == url {
-                    loadLinkPreview(url)
-                } else {
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-                        loadLinkPreview(url)
-                    }
-                }
-            }
-        } else {
-            pendingLinkUrl = nil
-            composeState = composeState.copy(preview: .noPreview)
-        }
-    }
-
-    // Spec: spec/client/compose.md#getMessageLinks
-    private func getMessageLinks(_ parsedMsg: [FormattedText]?) -> (url: String?, hasSimplexLink: Bool) {
-        guard let parsedMsg else { return (nil, false) }
-        let simplexLink = parsedMsgHasSimplexLink(parsedMsg)
-        for ft in parsedMsg {
-            if let link = ft.linkUri, !cancelledLinks.contains(link) && !isSimplexLink(link) {
-                return (link, simplexLink)
-            }
-        }
-        return (nil, simplexLink)
-    }
-
-    private func isSimplexLink(_ link: String) -> Bool {
-        link.starts(with: "https://simplex.chat") || link.starts(with: "http://simplex.chat") || link.starts(with: "simplex:/")
-    }
-
     private func cancelLinkPreview() {
-        if let pendingLink = pendingLinkUrl {
-            cancelledLinks.insert(pendingLink)
-        }
-        if let uri = composeState.linkPreview?.uri {
-            cancelledLinks.insert(uri)
-        }
-        pendingLinkUrl = nil
-        composeState = composeState.copy(preview: .noPreview)
+        composeState = composeState.updateLinkPreview(.cancelled, previewsOn: useLinkPreviews)
     }
 
     // Spec: spec/client/compose.md#loadLinkPreview
-    private func loadLinkPreview(_ urlStr: String) {
-        if pendingLinkUrl == urlStr {
-            composeState = composeState.copy(preview: .linkPreview(linkPreview: nil))
-            Task {
-                let linkPreview = await apiGetLinkPreview(urlStr)
-                await MainActor.run {
-                    guard pendingLinkUrl == urlStr else { return }
-                    if let linkPreview {
-                        composeState = composeState.copy(preview: .linkPreview(linkPreview: linkPreview))
-                    } else {
-                        cancelledLinks.insert(urlStr)
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                            if case .linkPreview(.none) = composeState.preview {
-                                composeState = composeState.copy(preview: .noPreview)
-                            }
-                        }
-                    }
-                    pendingLinkUrl = nil
-                }
-            }
+    private func loadLinkPreview() async {
+        guard case let .linkPreview(.loading(uri, request)) = composeState.preview else { return }
+        do { try await Task.sleep(nanoseconds: 1_500_000_000) } catch { return }
+        let linkPreview = await apiGetLinkPreview(uri)
+        await MainActor.run {
+            composeState = composeState.updateLinkPreview(.fetched(request: request, linkPreview: linkPreview), previewsOn: useLinkPreviews)
         }
-    }
-
-    private func resetLinkPreview() {
-        linkUrl = nil
-        prevLinkUrl = nil
-        pendingLinkUrl = nil
-        cancelledLinks = []
     }
 }
 

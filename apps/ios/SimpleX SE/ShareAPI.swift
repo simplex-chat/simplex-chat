@@ -84,8 +84,12 @@ func apiSendMessages(
     }
 }
 
-func apiGetLinkPreview(uri: String) throws -> LinkPreview {
-    let r: APIResult<SEChatResponse> = sendSimpleXCmd(SEChatCommand.apiGetLinkPreview(uri: uri))
+func apiGetLinkPreview(uri: String) async throws -> LinkPreview {
+    let r: APIResult<SEChatResponse> = await withCheckedContinuation { cont in
+        DispatchQueue.global().async {
+            cont.resume(returning: sendSimpleXCmd(SEChatCommand.apiGetLinkPreview(uri: uri)))
+        }
+    }
     if case let .result(.linkPreview(linkPreview)) = r { return linkPreview }
     throw r.unexpected
 }
