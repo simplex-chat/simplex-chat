@@ -498,7 +498,7 @@ fun ComposeView(
       composeState.value = composeState.value.copy(preview = ComposePreview.CLinkPreview(lp))
       pendingLinkUrl.value = null
     } else if (pendingLinkUrl.value == url) {
-      cancelledLinks.add(url)
+      withContext(Dispatchers.Main) { cancelledLinks.add(url) }
       composeState.value = composeState.value.copy(preview = ComposePreview.NoPreview)
       pendingLinkUrl.value = null
     }
