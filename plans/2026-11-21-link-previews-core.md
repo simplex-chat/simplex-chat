@@ -156,22 +156,27 @@ sequenceDiagram
 data LinkPreviewConfig = LinkPreviewConfig
   { rootCerts :: XS.CertificateStore,
     addressPolicy :: AddressPolicy,
-    previewDeadline :: Int,
-    maxRedirects :: Int,
-    maxHeadBytes :: Int,
-    maxImageBytes :: Int
+    previewDeadline :: Int
   }
 
 data AddressPolicy = APPublic | APPublicAndLoopback
 
-data PageMeta = PageMeta
-  { title :: Maybe Text,
-    description :: Maybe Text,
-    image :: Maybe Text
+data HeadTags = HeadTags
+  { ogTitle :: Maybe ByteString,
+    ogDescription :: Maybe ByteString,
+    ogImage :: Maybe ByteString,
+    titleText :: Maybe ByteString,
+    nameDescription :: Maybe ByteString,
+    metaCharset :: Maybe ByteString
   }
+
+data Page
+  = HtmlPage {pageTitle :: Text, pageDescription :: Text, pageImage :: Uri}
+  | ImagePage ByteString
 ```
 
-- The card shows what the existing `LinkPreview` holds (Protocol.hs:246): `title`, `description`, `image`, `uri`. `PageMeta` has the same fields, read from the page; `image` is the URL that the core fetches and resizes into `ImageData`.
+- The card shows what the existing `LinkPreview` holds (Protocol.hs:246): `title`, `description`, `image`, `uri`. `HeadTags` holds the raw values of the first tag of each kind, a monoid of first values; `Page` holds the decoded values, and `pageImage` is the URL that the core fetches and resizes into `ImageData`.
+- MAX_REDIRECTS, MAX_HEADER_BYTES, MAX_HEADERS, MAX_HEAD_BYTES and MAX_IMAGE_BYTES are constants of the module; the tests change only the roots, the address policy and the deadline.
 - Card in the apps: compose shows image, title and link (LinkPreviews.kt:152-191; ComposeLinkView.swift:43-52); the chat item shows image, title, description when not empty, and link on Kotlin (LinkPreviews.kt:203-226); iOS shows image and title only (CILinkView.swift:22, 36).
 - Description: both apps send `""` today (LinkPreviews.kt:129-134, commented out "TODO add once supported in iOS"; ImageUtils.swift:471). The core fills it, Kotlin shows it with no change, and PR 3 adds it to CILinkView as Kotlin shows it.
 - `image` is required in `LinkPreview`, so a page without an image has no preview, as today on both platforms (LinkPreviews.kt:121-139; ImageUtils.swift:461-479).
@@ -192,7 +197,7 @@ flowchart TD
   S -->|"Nothing"| D["getAddrInfo"]
   D --> F["drop prohibited addresses"]
   F -->|none left| X
-  F --> TC["connect to the first, CONNECT_TIMEOUT"]
+  F --> TC["connect to each in order until one connects, CONNECT_TIMEOUT"]
   SP --> TLS["T.contextNew, T.handshake"]
   TC --> TLS
   TLS --> V{"chain valid for host?"}
@@ -210,8 +215,9 @@ flowchart TD
   | `SocksAuthNull` | none |
 
 - DNS: with a proxy, the host name is sent to the proxy as `SocksAddrDomainName`, as for SMP (mq:Messaging/Transport/Client.hs:191-195), and the device resolves nothing. Without a proxy, `getAddrInfo` uses the system resolver, as `connectTCPClient` does (mq:Messaging/Transport/Client.hs:197-206).
-- Prohibited addresses: loopback, unspecified, private (RFC 1918, ULA), link-local, shared (RFC 6598), multicast, broadcast, and IPv4-mapped IPv6 forms of these. `APPublicAndLoopback` also allows loopback. The check runs on resolved addresses without a proxy and on IP literals with one.
-- TLS: `T.defaultParamsClient host ""` with `sharedCAStore = rootCerts`, SNI on, and `defaultSupportedParamsHTTPS` (mq:Messaging/Transport.hs:399-417) with `P256` added to `supportedGroups`. The hostname check of `validateDefault` applies.
+- Prohibited addresses: loopback, 0.0.0.0/8 and `::`, private (RFC 1918, ULA), link-local, shared (RFC 6598), multicast, broadcast, and IPv4-mapped IPv6 forms of these. `APPublicAndLoopback` also allows loopback. The check runs on resolved addresses without a proxy and on IP literals with one.
+- An onion host without a proxy fails without a DNS query.
+- TLS: `T.defaultParamsClient host ""` with `sharedCAStore = rootCerts`, SNI on for host names, and `defaultSupportedParamsHTTPS` (mq:Messaging/Transport.hs:399-417) with `P256` and `P384` added to `supportedGroups`, which up to TLS 1.2 also limit the curves of ECDSA server keys (tls 1.9.0 Network/TLS/Parameters.hs, `supportedGroups`). The hostname check of `validateDefault` applies. CONNECT_TIMEOUT applies to the TCP or SOCKS connection and, again, to the TLS handshake.
 - The SimpleX transport (`runTLSTransportClient`) is not used: it connects through its own `connectTCPClient` (mq:Messaging/Transport/Client.hs:172-174), so resolved addresses cannot be checked, and its `getLn` reads a line without a length limit (mq:Messaging/Transport.hs:447-449; mq:Messaging/Transport/Buffer.hs:78-88).
 - Root certificates: Q3. Today the core loads no root store in client builds: `crypton-x509-system` is a dependency only without `client_library` (mq:simplexmq.cabal:432-435), and on iOS its `System.X509` reads the Unix paths, which are absent there (crypton-x509-system 1.6.7: modules `System.X509.MacOS` only under `os(OSX)`; `System.X509.Unix` paths `/etc/ssl/certs/`, `/system/etc/security/cacerts/`, `/usr/local/share/certs/`, `/etc/ssl/cert.pem`).
 
@@ -231,7 +237,7 @@ Connection: close
 - UA: one fixed browser string for all users; for host `x.com`, the string of LinkPreviews.kt:108, as today.
 - Cookies, `Referer` and `Accept-Language` are not sent.
 - Response head: at most MAX_HEADER_BYTES and MAX_HEADERS, else a failure.
-- Body framing: `Transfer-Encoding: chunked`, `Content-Length`, or until close. Chunk sizes above the remaining budget end the fetch.
+- Body framing: `Transfer-Encoding: chunked`, `Content-Length`, or until close. The reader of the body stops at the budget, also inside a chunk; a chunk-size line has at most 7 hex digits and 1024 bytes.
 - `Content-Encoding` other than `identity`: a failure.
 - Reads: `T.recvData` with READ_TIMEOUT each; the budget counts body bytes after decoding of chunks.
 - Close: `T.bye`, then `T.contextClose`, in `bracket`, also on timeout and on the stop condition.
@@ -246,7 +252,9 @@ Redirects:
 
 - A redirect to a scheme other than `https`: a failure.
 - More than MAX_REDIRECTS: a failure.
-- Reference resolution is a function of this module over `uri-bytestring` types (simplex-chat.cabal:411): `uri-bytestring` 0.3.3.1 exports `toAbsolute`, which takes a scheme, and no base-URI resolution.
+- URIs are parsed by RFC 3986, appendix B, and resolved by RFC 3986, 5.2, in this module, over the raw bytes of the link, so that the request target keeps the link's bytes. `uri-bytestring` 0.3.3.1 is not used for it: it exports no base-URI resolution, decodes paths with `+` as space (URI/ByteString/Internal.hs:590), splits and re-encodes queries (Internal.hs:260-268, 609-635) and serializes IPv6 hosts without brackets (Internal.hs:286, 496).
+- Bytes outside 0x21-0x7E in the path and the query are percent-encoded in the request line.
+- An `og:image` URL with `http` is fetched as `https`, as a link is (Q2 a); its response is decoded by its JPEG or PNG signature, whatever its `Content-Type`.
 
 Content by type:
 
@@ -299,7 +307,7 @@ stateDiagram-v2
 
 | Charset | Decoding |
 |---|---|
-| `utf-8`, `us-ascii` | `decodeUtf8'`; invalid bytes: a failure |
+| `utf-8`, `utf8`, `us-ascii` | `decodeUtf8'`; invalid bytes: a failure |
 | `iso-8859-1`, `windows-1252` | `windows-1252` table for 0x80-0x9F, Latin-1 otherwise |
 | other | a failure with the charset |
 
@@ -374,12 +382,13 @@ The returned `uri` is the string the app sent, because the apps send `MCLink` on
 | `uri-bytestring` | 411 | yes |
 | `file-embed` | 387 | yes |
 | `crypton-x509-store` | added | yes, through simplexmq (mq:simplexmq.cabal:395) |
-| `crypton-x509-validation` | added | yes, through simplexmq (mq:simplexmq.cabal:396) |
 | `iproute` | added | yes, through simplexmq (mq:simplexmq.cabal:405) |
-| `pem` | added | yes, through `crypton-x509-store` 1.6.9 (`pem >= 0.1 && < 0.3`) |
+| `warp-tls` | added to the test suite | not built for the mobile targets; in the plan of other builds through simplexmq (mq:simplexmq.cabal:432, 447) |
+
+- `crypton-x509-validation` and `pem` are not direct dependencies: `tls` validates the chain, and `readSignedObjectFromMemory` of `crypton-x509-store` 1.6.9 (Data/X509/Memory.hs) parses the embedded bundle.
 
 - Every package above is built for the mobile targets today.
-- Root bundle: `src/Simplex/Chat/LinkPreview/roots.pem`, embedded with `embedFile` as `DisplayP3-v4.icc` is (Image.hs:211-212), with a script that refreshes it and checks its SHA-256 (Q3).
+- Root bundle: `src/Simplex/Chat/LinkPreview/roots.pem`, curl's extract of the Mozilla roots, embedded with `embedFile` as `DisplayP3-v4.icc` is (Image.hs:211-212); scripts/update-link-preview-roots.sh refreshes it and checks its SHA-256 against the published one (Q3).
 - GHC 8.10.7: field puns and qualified selectors, no `OverloadedRecordDot` (docs/CONTRIBUTING.md, "Differences between GHC 8.10.7 and GHC 9.6.3").
 - The command goes through `chat_send_cmd`; C exports are unchanged.
 
@@ -479,7 +488,7 @@ Core, unit, `tests/LinkPreviewTests.hs` (new, registered in tests/Test.hs), patt
 | request | headers; fragment removed; `x.com` UA |
 | charsets | UTF-8, `windows-1252`, unsupported |
 
-Core, scenario, `tests/ChatTests/LinkPreviews.hs` (new, in ChatTests.hs), pattern `/SimpleX chat client/link preview tests/`. A local HTTPS server (`warp-tls` added to the test suite; `wai` and `warp` at simplex-chat.cabal:863-864) uses tests/fixtures/tls/server.crt (CN `localhost`, issued by tests/fixtures/tls/ca.crt); the client has `rootCerts = [ca.crt]` and `APPublicAndLoopback`. A test SOCKS5 server in the module records the address type and credentials of each request and connects to the HTTPS server.
+Core, scenario, `tests/ChatTests/LinkPreviews.hs` (new, in ChatTests.hs), pattern `/SimpleX chat client/link preview tests/`. A local HTTPS server (`warp-tls` added to the test suite; `wai` and `warp` at simplex-chat.cabal:863-864) uses tests/fixtures/tls/link-preview/server.crt (names `localhost` and `link-preview.test`, issued by tests/fixtures/tls/link-preview/ca.crt); the client has `rootCerts = [ca.crt]` and `APPublicAndLoopback`. A test SOCKS5 server in the module records the address type and credentials of each request and connects any host to the HTTPS server. The fixture uses `link-preview.test` through the SOCKS5 server, because the core's markdown marks a link only when its host contains a dot (Markdown.hs:873-882), and the app tests parse the typed link through the recorded markdown.
 
 | Test | Checked |
 |---|---|
@@ -488,12 +497,12 @@ Core, scenario, `tests/ChatTests/LinkPreviews.hs` (new, in ChatTests.hs), patter
 | image URL | `image/png` response titled by the file name, empty description |
 | no `og:image`, icon present | `CELinkPreview`, no request for the icon |
 | redirects | 5 followed; 6, to `https://10.0.0.1` without a connection, and to `http`: `CELinkPreview` |
-| endless body after the og tags | response before PREVIEW_DEADLINE; bytes sent by the server below MAX_HEAD_BYTES plus one TLS record |
+| endless body after the og tags, sent slowly | response before PREVIEW_DEADLINE; the server sees the connection closed after sending less than MAX_HEAD_BYTES |
 | head beyond MAX_HEAD_BYTES | the server sees the connection closed |
 | slow server, gzip, certificate of another CA, oversized image dimensions | `CELinkPreview`; slow server with a test deadline of 2 s |
 | SOCKS, isolate | domain address type; two previews with two usernames; page and image with one |
 | SOCKS, username | the configured credentials |
-| fixture | `apiFixture "previews/link_preview"` of a success and a failure, placeholder `LINK_URL` for the server URL |
+| fixture | `apiFixture "previews/link_preview"` of the markdown and the preview of `LINK_URL/page` (success) and `LINK_URL/no-image` (error "no image"); `LINK_URL` replaces `https://link-preview.test:<port>` |
 
 The fixture image is a PNG, so the recording does not depend on the JPEG encoder of the runner.
 
@@ -503,7 +512,7 @@ App tests on tests/fixtures/api/previews/link_preview.json:
 
 | Test | Checked | Apps |
 |---|---|---|
-| `LinkPreviewTest.kt`, `LinkPreviewTests.swift` | `getLinkPreview("LINK_URL")` sends `/_link preview LINK_URL` and returns the recorded preview | both |
+| `LinkPreviewTest.kt`, `LinkPreviewTests.swift` | `getLinkPreview("LINK_URL/page")` sends `/_link preview LINK_URL/page` and returns the recorded preview | both |
 | same | the recorded error returns no preview and no alert, also with only "Show developer options" on; with both toggles on, an alert with the raw message | both |
 | `CILinkView` preview | description shown under the title (snapshot) | iOS |
 | SE | `apiGetLinkPreview` of the share extension decodes the recorded response | iOS |
