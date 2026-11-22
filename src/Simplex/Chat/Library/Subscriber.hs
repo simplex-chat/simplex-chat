@@ -4098,9 +4098,8 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                 | otherwise -> do
                     when unknown $ toView $ CEvtUnknownMemberCreated user gInfo m author
                     signerKey_ <- memberSignerKey author
-                    void $ withVerifiedMsgKey gInfo scopeInfo author signerKey_ parsedMsg msgTs $ \verifiedMsg -> do
-                      processForwardedMsg verifiedMsg (Just author)
-                      forwardViaMemberMsg author verifiedMsg
+                    void $ withVerifiedMsgKey gInfo scopeInfo author signerKey_ parsedMsg msgTs $
+                      (`processForwardedMsg` Just author)
             Nothing -> pure ()
           where
             recordFwdVia :: GroupMember -> CM GroupMember
@@ -4115,14 +4114,17 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
           Just viaId
             | sameMemberId viaId membership -> pure $ memberPubKey membership
             | otherwise -> (memberPubKey =<<) . eitherToMaybe <$> withStore' (\db -> runExceptT $ getGroupMemberByMemberId db cxt user gInfo viaId)
-        forwardViaMemberMsg :: GroupMember -> VerifiedMsg 'Json -> CM ()
-        forwardViaMemberMsg author verifiedMsg =
-          when (memberVia author == Just (memberId' m) && not (useRelays' gInfo) && isUserGrpFwdRelay gInfo && toCMEventTag chatMsgEvent `elem` [XMsgNew_, XMsgUpdate_]) $ do
-            members <- withStore $ \db -> do
-              vec <- getMemberRelationsVector db m
-              liftIO $ getGroupMembersByIndexes db cxt user gInfo $ getRelationsIndexes MRIntroduced vec
-            forM_ (filter memberCurrent members) $ \member ->
-              sendFwdMemberMessage member GrpMsgForward {fwdSender = memberFwdSenderTo member author, fwdBrokerTs = msgTs} verifiedMsg
+        forwardViaMemberMsg :: Maybe GroupMember -> VerifiedMsg 'Json -> Maybe DeliveryTaskContext -> CM ()
+        forwardViaMemberMsg author_ verifiedMsg = \case
+          Just DeliveryTaskContext {jobScope = DJSGroup {}, updateNotification}
+            | Just author <- author_, memberVia author == Just (memberId' m), not (useRelays' gInfo), isUserGrpFwdRelay gInfo -> do
+                members <- withStore $ \db -> do
+                  vec <- getMemberRelationsVector db m
+                  liftIO $ getGroupMembersByIndexes db cxt user gInfo $ getRelationsIndexes MRIntroduced vec
+                let msgFlags = MsgFlags {notification = updateNotification || msgHasNotification verifiedMsg}
+                forM_ (filter memberCurrent members) $ \member ->
+                  sendFwdMemberMessageFlags member GrpMsgForward {fwdSender = memberFwdSenderTo member author, fwdBrokerTs = msgTs} msgFlags verifiedMsg
+          _ -> pure ()
         -- Forwards are only expected from the member that introduced us to the author: our host, or
         -- the author's inviter. Unknown members have no such record, so any admin may forward theirs.
         expectedForwarder :: GroupMember -> Bool
@@ -4136,13 +4138,13 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
           rcvMsg_ <- saveGroupFwdRcvMsg user gInfo m author_ verifiedMsg brokerTs
           forM_ rcvMsg_ $ \rcvMsg@RcvMessage {sharedMsgId_, chatMsgEvent = ACME _ event} -> case event of
             XMsgNew mc ->
-              void $ memberCanSend author_ scope $ newGroupContentMessage gInfo author_ mc rcvMsg msgTs True
+              forwardViaMemberMsg author_ verifiedMsg =<< memberCanSend author_ scope (newGroupContentMessage gInfo author_ mc rcvMsg msgTs True)
               where
                 MsgContainer {scope} = mc
             -- file description is always allowed, to allow sending files to support scope
             XMsgFileDescr sharedMsgId fileDescr fileExpires fileBadge -> void $ groupMessageFileDescription gInfo author_ sharedMsgId fileDescr fileExpires fileBadge
             XMsgUpdate sharedMsgId mContent mentions ttl live msgScope asGroup_ priority_ asNew_ ->
-              void $ memberCanSend author_ msgScope $ groupMessageUpdate gInfo author_ sharedMsgId mContent mentions msgScope rcvMsg msgTs ttl live asGroup_ priority_ asNew_
+              forwardViaMemberMsg author_ verifiedMsg =<< memberCanSend author_ msgScope (groupMessageUpdate gInfo author_ sharedMsgId mContent mentions msgScope rcvMsg msgTs ttl live asGroup_ priority_ asNew_)
             XMsgDel sharedMsgId memId scope_ _ -> void $ groupMessageDelete gInfo author_ sharedMsgId memId scope_ False rcvMsg msgTs
             XMsgReact sharedMsgId memId scope_ reaction add -> withAuthor XMsgReact_ $ \author -> void $ groupMsgReaction gInfo author sharedMsgId memId scope_ reaction add rcvMsg msgTs
             XFileCancel sharedMsgId -> void $ xFileCancelGroup gInfo author_ sharedMsgId

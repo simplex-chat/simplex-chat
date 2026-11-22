@@ -3010,9 +3010,13 @@ sendGroupMemberMessage gInfo@GroupInfo {groupId} m@GroupMember {groupMemberId} c
 -- Send pre-encoded forwarded message preserving original signature
 sendFwdMemberMessage :: GroupMember -> GrpMsgForward -> VerifiedMsg 'Json -> CM ()
 sendFwdMemberMessage member fwd verifiedMsg =
+  sendFwdMemberMessageFlags member fwd MsgFlags {notification = msgHasNotification verifiedMsg} verifiedMsg
+
+sendFwdMemberMessageFlags :: GroupMember -> GrpMsgForward -> MsgFlags -> VerifiedMsg 'Json -> CM ()
+sendFwdMemberMessageFlags member fwd msgFlags verifiedMsg =
   forM_ (readyMemberConn member) $ \(_, conn) -> do
     let body = encodeBinaryBatch [encodeFwdElement fwd verifiedMsg]
-    void $ withAgent $ \a -> sendMessages a [(aConnId conn, PQEncOff, MsgFlags {notification = msgHasNotification verifiedMsg}, VRValue Nothing body)]
+    void $ withAgent $ \a -> sendMessages a [(aConnId conn, PQEncOff, msgFlags, VRValue Nothing body)]
 
 -- TODO ensure order - pending messages interleave with user input messages
 sendPendingGroupMessages :: User -> GroupInfo -> GroupMember -> Connection -> CM ()
