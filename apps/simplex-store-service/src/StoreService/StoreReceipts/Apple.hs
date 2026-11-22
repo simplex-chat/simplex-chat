@@ -41,7 +41,8 @@ import Data.Text.Encoding (encodeUtf8)
 import Data.Time.Clock (UTCTime, addUTCTime, getCurrentTime)
 import Data.Time.Clock.POSIX (posixSecondsToUTCTime, utcTimeToPOSIXSeconds)
 import Data.Word (Word32)
-import Data.Hourglass (Elapsed (..), Seconds (..), timeFromElapsed)
+import Data.Hourglass (DateTime, Elapsed (..), Seconds (..), timeFromElapsed)
+import Data.Scientific (toBoundedInteger)
 import Data.X509
 import Data.X509.EC (unserializePoint)
 import Data.X509.Memory (readKeyFileFromMemory)
@@ -70,7 +71,7 @@ verifiedPayload roots jws = case T.splitOn "." jws of
     unless (ECDSA.verify SHA256 key sig (encodeUtf8 $ header <> "." <> payload)) $
       refused "the signature does not verify"
     o <- maybe (failed "the payload Apple signed is not JSON") Right $ jsonObject payload
-    signedAt <- either (const $ failed "the payload Apple signed carries no signedDate") (Right . fromMillis) $ JT.parseEither (J..: "signedDate") o
+    signedAt <- maybe (failed "the payload Apple signed carries no signedDate") Right $ signedDateTime o
     unless (all (validAt signedAt) [leaf, intermediate]) $ refused "a certificate of the chain was not valid at the payload's signedDate"
     pure o
   _ -> refused "not three dot-separated parts"
@@ -90,14 +91,14 @@ certificateChain header = do
       J.String c | Right bs <- B64.decode (encodeUtf8 c) -> Right bs
       _ -> refused "an x5c certificate is not base64"
 
-fromMillis :: Int64 -> UTCTime
-fromMillis ms = posixSecondsToUTCTime $ fromIntegral ms / 1000
+-- | When Apple signed the payload, from its signedDate in milliseconds.
+signedDateTime :: J.Object -> Maybe DateTime
+signedDateTime o = case JM.lookup "signedDate" o of
+  Just (J.Number n) | Just ms <- toBoundedInteger n -> Just $ timeFromElapsed $ Elapsed $ Seconds $ ms `div` 1000
+  _ -> Nothing
 
-validAt :: UTCTime -> SignedCertificate -> Bool
-validAt t cert = from <= at && at <= to
-  where
-    (from, to) = certValidity (getCertificate cert)
-    at = timeFromElapsed $ Elapsed $ Seconds $ floor $ utcTimeToPOSIXSeconds t
+validAt :: DateTime -> SignedCertificate -> Bool
+validAt t cert = let (from, to) = certValidity (getCertificate cert) in from <= t && t <= to
 
 -- | The leaf and the intermediate; the root in the chain is ignored: trust comes from the configured ones alone.
 signingChain :: NonEmpty SignedCertificate -> [ByteString] -> Either StoreRefusal (SignedCertificate, SignedCertificate)
@@ -355,6 +356,7 @@ statusVerdict AppleApi {roots, ourBundleId} originalId body = do
     asVerifierFailure = \case
       SRInvalid reason -> SRVerifierFailed $ "apple verifier: " <> reason
       refusal -> refusal
+    fromMillis ms = posixSecondsToUTCTime $ fromIntegral ms / 1000
 
 newtype StatusResponse = StatusResponse [J.Value]
 

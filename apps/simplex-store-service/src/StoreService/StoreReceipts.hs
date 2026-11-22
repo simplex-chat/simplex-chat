@@ -24,7 +24,6 @@ where
 
 import Control.Exception (Exception, catch, evaluate, try)
 import Control.Logger.Simple (logNote, logWarn)
-import Control.Monad.Except (ExceptT (..), runExceptT)
 import qualified Data.ByteString.Lazy as LB
 import Data.Char (isAlphaNum, isAscii, isAsciiLower, isAsciiUpper, isControl, isDigit, isPrint, isSpace)
 import Data.Functor (($>))
@@ -38,7 +37,7 @@ import Network.HTTP.Types (Status (..))
 import Simplex.Chat.StoreService (SubscriptionState)
 import Simplex.Chat.PaymentService (ServicePayment (..), appleTransactionRef, googlePurchaseRef)
 import Simplex.Chat.PaymentService.Types (CurrencyAmount, PaymentProvider (..), StoreTransactionRef (..))
-import Simplex.Messaging.Util (catchOwn', catchThrow, tshow)
+import Simplex.Messaging.Util (catchOwn', tshow)
 import System.Timeout (timeout)
 
 -- | What a store vouches for about one completed transaction.
@@ -215,14 +214,13 @@ askStore limit what call = do
 -- | A request to a store: its status and a body of at most a mebibyte. http-client's exceptions show
 -- the request, whose URL can hold a purchase token, so only their kind is kept.
 storeRequest :: Manager -> Text -> (Request -> Request) -> Text -> IO (Either StoreRefusal (Int, LB.ByteString))
-storeRequest manager store prepare url = runExceptT $ ExceptT answer `catchThrow` const (SRUnreachable $ "request to " <> store <> " failed")
+storeRequest manager store prepare url =
+  try (parseRequest (T.unpack url) >>= \req -> withResponse (prepare req) manager readBody) >>= \case
+    Left (e :: HttpException) -> pure $ Left $ SRUnreachable $ "request to " <> store <> " failed: " <> failureKind e
+    Right (code, body)
+      | LB.length body > maxStoreBytes -> pure $ Left $ SRVerifierFailed $ store <> " answered HTTP " <> tshow code <> " with over " <> tshow maxStoreBytes <> " bytes"
+      | otherwise -> pure $ Right (code, body)
   where
-    answer =
-      try (parseRequest (T.unpack url) >>= \req -> withResponse (prepare req) manager readBody) >>= \case
-        Left (e :: HttpException) -> pure $ Left $ SRUnreachable $ "request to " <> store <> " failed: " <> failureKind e
-        Right (code, body)
-          | LB.length body > maxStoreBytes -> pure $ Left $ SRVerifierFailed $ store <> " answered HTTP " <> tshow code <> " with over " <> tshow maxStoreBytes <> " bytes"
-          | otherwise -> pure $ Right (code, body)
     readBody resp = (statusCode (responseStatus resp),) <$> brReadSome (responseBody resp) (fromIntegral maxStoreBytes + 1)
     failureKind = \case
       HttpExceptionRequest _ content -> T.pack $ takeWhile (/= ' ') $ show content
