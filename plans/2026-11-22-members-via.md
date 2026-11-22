@@ -607,3 +607,30 @@ moderation                 deletion of an item sent as a member, by a moderator,
 adding                     no chat item on V's side, as APIAddMember creates none in the group (only the invitation item in the direct chat)
 forwarding by the host     per member (sendFwdMemberMessageFlags), without delivery tasks and a delivery_tasks column: a delivery job has one body for all its recipients, and the "V" header is sent only to recipients of version 23 (4.4)
 ```
+
+## 13. State: core done, plugin next
+
+The core part is on `ep/members-via`; the plugin stages (section 7) use these commands.
+
+```
+operation                  command                                                                                         response
+add a teammate             /_add via #<groupId> <role> json <profile>                                                      viaMemberAdded: member.groupMemberId = M
+post as the teammate       /_send #<groupId>(as_member=<M>)[ live=on][ ttl=<seconds>][ sign=on] json [<composedMessage>]   newChatItems: sent items, meta.sentAsMember = the member M
+edit its item              /_update item #<groupId> <itemId>[ live=on][ as_new=on] json <updatedMessage>                   chatItemUpdated: sent as M, the item's meta.sentAsMember
+end the teammate           /_remove #<groupId> <M>                                                                         userDeletedMembers; members see "<user> removed <name>"
+re-adopt after a restart   /_members #<groupId>                                                                            groupMembers: members with memberVia = membership.memberId, status connected
+```
+
+```
+parameter          value
+role               observer | author | member | moderator | admin | owner, up to the user's role
+profile            {"displayName": "<name>", "fullName": "", "shortDescr": "<task>", "peerType": "agent"}
+composedMessage    {"msgContent": {...}, "mentions": {...}, "priority": <n>}; filePath and quotedItemId refused
+updatedMessage     {"msgContent": {...}, "mentions": {...}, "priority": <n>}
+```
+
+- Errors: section 6.3.
+- With "sign messages" on, the core signs each message as the member with the user's key; `sign=on` is not needed.
+- Excluded: deletes as the member (broadcast delete of its item: CEInvalidChatItemDelete) and reactions as the member (APIChatItemReaction reacts as the user).
+- Replies to and mentions of a teammate (stage 3): a received item's quotedItem has the item ID of the item sent as M and direction groupRcv of M; mentions have M's group member ID (5.2). Core tests do not cover them (testViaMemberReply of section 8 is not written).
+- Display of `via` in the apps (Q2) is not built.
