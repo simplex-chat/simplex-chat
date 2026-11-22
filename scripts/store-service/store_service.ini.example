@@ -85,9 +85,10 @@ private_key = replace-me
 ;[names]
 ; testing until the .simplex TLD is deployed
 ;tld = testing
-; the paid years of a name, except a community name's, which are 2; at least 2, the controller's minimum
+; the paid years of a name, except a community name's, which are 2; 2 to 10, at least the controller's minimum
 ;years = 2
-; a name's term starts here; the days until then are free
+; a name's term starts here; the days until then are free; with term_slack_seconds, at most 365 days
+; ahead at the service's start, so that the controller's maximum term holds 10 years and the free days
 ;term_start = 2027-01-01T00:00:00Z
 ; how far an order's duration may be from the one the service computes
 ;term_slack_seconds = 3600
