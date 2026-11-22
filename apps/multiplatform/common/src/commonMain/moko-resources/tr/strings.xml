@@ -2514,18 +2514,15 @@
     <string name="delete_relay">Aktarıcıyı sil</string>
     <string name="deprecated_options_section">Kullanımdan kaldırılan seçenekler</string>
     <string name="direct_messages_are_prohibited_channel">Aboneler arasında doğrudan mesajlaşma yasaktır.</string>
-    <string name="link_previews_alert_disable">Devre dışı bırak</string>
     <string name="disable_sending_recent_history_channel">Yeni aboneler geçmişi görüntüleyemesin.</string>
     <string name="num_relays_selected">%d aktarıcı seçildi</string>
     <string name="rcv_msg_error_dropped">düştü (%1$d deneme)</string>
     <string name="v6_5_invite_friends">Arkadaşlarınızı davet etmek daha kolay 👋</string>
     <string name="button_edit_channel_profile">Kanal profilini düzenle</string>
-    <string name="link_previews_alert_enable">Etkinleştir</string>
     <string name="enable_chats_with_admins">Etkinleştir</string>
     <string name="enable_at_least_one_chat_relay">Bir kanal oluşturmak için en az bir sohbet aktarıcısını etkinleştirin.</string>
     <string name="enable_chats_with_admins_question">Yöneticilerle sohbet etkinleştirilsin mi?</string>
     <string name="v6_4_1_keep_chats_clean_descr">Varsayılan olarak kaybolan mesajları etkinleştirin.</string>
-    <string name="link_previews_alert_title">Bağlantı önizlemelerini etkinleştirin mi?</string>
     <string name="enter_profile_name">Profil adını girin…</string>
     <string name="enter_relay_name">Aktarıcı adını girin…</string>
     <string name="enter_webpage_url">Web sayfası URL\'sini girin</string>
@@ -2574,7 +2571,6 @@
     <string name="set_channel_simplex_name_footer">İnsanların bu kanal bağlantısıyla kayıtlı ad üzerinden katılmasına izin verin.</string>
     <string name="let_someone_connect_to_you">Birinin sizinle bağlantı kurmasına izin verin</string>
     <string name="action_button_channel_link">Bağlantı</string>
-    <string name="link_previews_alert_desc_socks">Bağlantı önizlemesi SOCKS proxy aracılığıyla talep edilecektir. DNS araması hala DNS çözümleyiciniz aracılığıyla yerel olarak gerçekleşebilir.</string>
     <string name="content_filter_links">Bağlantılar</string>
     <string name="owner_verification_passed">Bağlantı imzası doğrulandı.</string>
     <string name="member_messages_will_be_deleted_cannot_be_undone">Üye mesajları silinecektir - bu geri alınamaz!</string>
@@ -2665,7 +2661,6 @@
     <string name="placeholder_search_voice_messages">Sesli mesajlardan ara</string>
     <string name="v6_5_security">Güvenlik: kanal anahtarları sahiplerindedir.</string>
     <string name="select_relays">Aktarıcıları seçin</string>
-    <string name="link_previews_alert_desc">Bir bağlantı önizlemesi göndermek IP adresinizi web sitesine gösterebilir. Bunu daha sonra Gizlilik ayarlarından değiştirebilirsiniz.</string>
     <string name="onboarding_send_1_time_link">Bağlantıyı herhangi bir mesajlaşma programı aracılığıyla gönderin - güvenlidir. SimpleX\'e yapıştırılmasını isteyin.</string>
     <string name="enable_sending_recent_history_channel">Yeni abonelere 100 adede kadar son mesajları gönderin.</string>
     <string name="simplex_name_server_no_resolver_desc">Sunucu %1$s ad çözümlemesini desteklemiyor. Sunucuları yapılandırın veya bir bağlantı linki kullanın.</string>

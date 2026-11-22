@@ -799,7 +799,6 @@
     <string name="direct_messages_are_prohibited_channel">Priame správy medzi odberateľmi sú zakázané.</string>
     <string name="app_check_for_updates_notice_disable">Vypnúť</string>
     <string name="no_call_on_lock_screen">Vypnúť</string>
-    <string name="link_previews_alert_disable">Vypnúť</string>
     <string name="disable_automatic_deletion_question">Vypnúť automatické mazanie správ?</string>
     <string name="send_receipts_disabled">vypnuté</string>
     <string name="member_info_member_disabled">vypnuté</string>
@@ -1047,7 +1046,6 @@
     <string name="icon_descr_email">E-mail</string>
     <string name="enable_chats_with_admins">Povoliť</string>
     <string name="enable_receipts_all">Povoliť</string>
-    <string name="link_previews_alert_enable">Povoliť</string>
     <string name="enable_at_least_one_chat_relay">Povoľte aspoň jedno chatové relé na vytvorenie kanálu.</string>
     <string name="enable_automatic_deletion_question">Povoliť automatické mazanie správ?</string>
     <string name="allow_accepting_calls_from_lock_screen">Povoliť hovory zo zamknutej obrazovky prostredníctvom Nastavení.</string>
@@ -1326,7 +1324,6 @@
     <string name="feature_enabled_for_you">povolené pre vás</string>
     <string name="receipts_contacts_enable_for_all">Povoliť pre všetkých</string>
     <string name="receipts_groups_enable_for_all">Povoliť pre všetky skupiny</string>
-    <string name="link_previews_alert_title">Povoliť náhľady odkazov?</string>
     <string name="settings_experimental_features">Experimentálne funkcie</string>
     <string name="invalid_chat">neplatný chat</string>
     <string name="invalid_data">neplatné dáta</string>

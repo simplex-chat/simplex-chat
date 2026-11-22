@@ -81,6 +81,8 @@ Organized in sections:
 | Show last messages | `privacyShowChatPreviews` | Show message previews in chat list |
 | Message draft | `privacySaveLastDraft` | Save unsent message draft for each chat |
 
+Footer of the Chats section: "Without a SOCKS proxy, the website sees your IP address."
+
 **Files Section**:
 
 | Setting | Preference Key | Description |

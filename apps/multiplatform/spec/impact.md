@@ -211,7 +211,7 @@ Path prefix: `common/src/commonMain/kotlin/chat/simplex/common/`
 |-------------|--------------------------|------------|-------|
 | `views/usersettings/SettingsView.kt` | PC18, PC22, PC23, PC24, PC25, PC29 | Medium | Settings navigation hub |
 | `views/usersettings/Appearance.kt` | PC24, PC32 | Low | Theme and appearance customization |
-| `views/usersettings/PrivacySettings.kt` | PC20, PC22 | Medium | Privacy and lock settings |
+| `views/usersettings/PrivacySettings.kt` | PC11, PC20, PC22 | Medium | Privacy and lock settings |
 | `views/usersettings/UserProfileView.kt` | PC19 | Medium | Profile display name and image editing |
 | `views/usersettings/UserProfilesView.kt` | PC19, PC21 | Medium | Multi-profile management |
 | `views/usersettings/HiddenProfileView.kt` | PC21 | Medium | Hidden profile access |

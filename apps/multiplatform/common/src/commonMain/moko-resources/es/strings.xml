@@ -2619,12 +2619,9 @@
     <string name="connect_with_someone">Crea tu enlace</string>
     <string name="chat_link_contact_address">Dirección de contacto</string>
     <string name="create_your_public_address">Crea tu dirección pública</string>
-    <string name="link_previews_alert_disable">Desactivar</string>
     <string name="v6_5_invite_friends">Invitar a tus amigos es más fácil 👋</string>
-    <string name="link_previews_alert_enable">Activar</string>
     <string name="enable_chats_with_admins">Activar</string>
     <string name="enable_chats_with_admins_question">¿Activar chat con administradores?</string>
-    <string name="link_previews_alert_title">¿Activar previsualización de enlaces?</string>
     <string name="enter_profile_name">Introduce el nombre del perfil…</string>
     <string name="error_prefix">Error</string>
     <string name="error_sharing_channel">Error al compartir el canal</string>
@@ -2659,7 +2656,6 @@
     <string name="relay_conn_status_removed_by_operator">eliminado por el operador</string>
     <string name="v6_5_safe_web_links">Enlaces web seguros</string>
     <string name="v6_5_security">Seguridad: los propietarios tienen la llave del canal.</string>
-    <string name="link_previews_alert_desc">Enviar una previsualización del enlace puede revelar tu dirección IP al sitio web. Puedes cambiarlo más tarde en los ajustes de privacidad.</string>
     <string name="onboarding_send_1_time_link">Envía el enlace con cualquier mensajero, es seguro. El contacto debe pegarlo en SimpleX.</string>
     <string name="onboarding_configure_notifications">Configurar notificaciones</string>
     <string name="onboarding_configure_routers">Configurar routers</string>
@@ -2684,7 +2680,6 @@
     <string name="v6_5_non_profit_governance">Gobernanza no lucrativa</string>
     <string name="v6_5_safe_web_links_descr">- aceptar el envío de vistas previas de los enlaces. \n- usar proxy SOCKS si está hablilitado.\n- prevenir el phishing mediante hipervínculos. \n- eliminar el seguimiento de los enlaces.</string>
     <string name="one_hand_ui_bottom_bar">Menú inferior</string>
-    <string name="link_previews_alert_desc_socks">Las previsualizaciones de enlaces se solicitan a través del proxy SOCKS. Las peticiónes DNS aún pueden usar el DNS local del sistema.</string>
     <string name="one_hand_ui_top_bar">Menú superior</string>
     <string name="cancel_channel_alert_msg">Tu nuevo canal %1$s está conectado a %2$d de %3$d servidores.\nSi cancelas, el canal será eliminado. Puedes crearlo de nuevo.</string>
     <string name="add_relay_button">Añadir servidor</string>

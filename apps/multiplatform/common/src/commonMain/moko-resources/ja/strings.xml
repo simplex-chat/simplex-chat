@@ -2704,11 +2704,6 @@
     <string name="connect_plan_this_is_your_link_for_channel">あなたのチャンネル</string>
     <string name="connect_plan_this_is_your_link_for_channel_vName"><![CDATA[これはチャンネル <b>%1$s</b> 用のあなたのリンクです！]]></string>
     <string name="unblock_subscriber_for_all_question">全員に対して購読者のブロックを解除しますか？</string>
-    <string name="link_previews_alert_title">リンクプレビューを有効にしますか？</string>
-    <string name="link_previews_alert_desc">リンクプレビューを送信すると、あなたのIPアドレスがWebサイトに知られる可能性があります。これは後でプライバシー設定で変更できます。</string>
-    <string name="link_previews_alert_desc_socks">リンクプレビューはSOCKSプロキシ経由で要求されます。DNSルックアップは、あなたのDNSリゾルバーを介してローカルで行われる場合があります。</string>
-    <string name="link_previews_alert_enable">有効にする</string>
-    <string name="link_previews_alert_disable">無効にする</string>
     <string name="close_behavior_dialog_title">トレイに最小化しますか？</string>
     <string name="close_behavior_dialog_text">「閉じる」を選択すると、メッセージを受信できなくなります。\nこれは後で外観設定で変更できます。</string>
     <string name="close_behavior_dialog_close">アプリを閉じる</string>

@@ -2597,13 +2597,10 @@
     <string name="connect_with_someone">أنشئ رابطك</string>
     <string name="create_your_public_address">أنشئ رابطك العام</string>
     <string name="direct_messages_are_prohibited_channel">تُمنع الرسائل المباشرة بين المشتركين.</string>
-    <string name="link_previews_alert_disable">عطّل</string>
     <string name="disable_sending_recent_history_channel">لا ترسل السجل للمشتركين الجدد.</string>
     <string name="v6_5_invite_friends">أصبح أسهل أن تدعي أصحابك 👋</string>
-    <string name="link_previews_alert_enable">فعّل</string>
     <string name="enable_chats_with_admins">فعّل</string>
     <string name="enable_chats_with_admins_question">فعّل الدردشة مع المُدراء؟</string>
-    <string name="link_previews_alert_title">فعّل معاينة الروابط؟</string>
     <string name="enter_profile_name">أدخل اسم ملف التعريف…</string>
     <string name="error_prefix">خطأ</string>
     <string name="error_sharing_channel">خطأ في مشاركة القناة</string>
@@ -2615,7 +2612,6 @@
     <string name="relay_status_inactive">غير نشط</string>
     <string name="invite_someone_privately">ادعُ شخصٍ ما بشكل خاص</string>
     <string name="let_someone_connect_to_you">اجعل شخصًا ما يتواصل معك</string>
-    <string name="link_previews_alert_desc_socks">سيتم طلب معاينة الرابط عبر وسيط SOCKS. قد لا يزال البحث عن نظام أسماء النطاقات (DNS) يتم محليًا من خلال محلّل DNS الخاص بك.</string>
     <string name="owner_verification_passed">تحققَ من توقيع الرابط.</string>
     <string name="members_can_chat_with_admins">يمكن للأعضاء الدردشة مع المُدراء.</string>
     <string name="e2ee_info_no_e2ee"><![CDATA[الرسائل في هذه القناة <b>ليست مُعمّاة تمامًا بين الطرفين</b>. يمكن لمُرحلات الدردشة رؤية هذه الرسائل.]]></string>
@@ -2647,7 +2643,6 @@
     <string name="relay_conn_status_removed_by_operator">أُزيل بواسطة المُشغل</string>
     <string name="v6_5_safe_web_links">روابط ويب آمنة</string>
     <string name="v6_5_security">الأمن: المالكون يمتلكون مفاتيح القنوات.</string>
-    <string name="link_previews_alert_desc">قد يؤدي إرسال معاينة للرابط إلى كشف عنوان IP الخاص بك للموقع الإلكتروني. يمكنك تغيير هذا الإعداد لاحقًا من إعدادات الخصوصية.</string>
     <string name="onboarding_send_1_time_link">أرسل الرابط عبر أي تطبيق مُراسلة - فهو آمن. واطلب منه لصقه في SimpleX.</string>
     <string name="enable_sending_recent_history_channel">أرسل ما يصل إلى آخر 100 رسالة للمشتركين الجدد.</string>
     <string name="onboarding_configure_notifications">أعِدّ الإشعارات</string>

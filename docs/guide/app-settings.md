@@ -218,13 +218,15 @@ without asking – it is enabled by default.
 
 #### Send Link Previews
 
-Enabling sending link previews may reduce privacy – your app will be loading
-link preview from the website. The first time you type a link, the app asks
-**Enable link previews?**
+With this option, the app sends a preview of the first link in your message: the
+title, description and image of the page. The app loads the preview from the
+website through your network settings, so the website sees your IP address
+unless you use a [SOCKS proxy](#use-socks-proxy). The option is enabled by
+default.
 
 - [Open the app settings](#opening-the-app-settings).
 - Tap on "Your privacy".
-- Toggle on "Send link previews".
+- Toggle "Send link previews".
 
 #### SimpleX Links
 

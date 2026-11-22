@@ -2453,7 +2453,6 @@
     <string name="deprecated_options_section">Opções obsoletas</string>
     <string name="profile_description__field">Descrição</string>
     <string name="group_descr_too_large">Descrição muito longa</string>
-    <string name="link_previews_alert_disable">Desativar</string>
     <string name="group_new_support_messages">%d mensagens</string>
     <string name="do_not_require_message_signatures">Não exigir assinatura de mensagens.</string>
     <string name="num_relays_selected">%d relay(s) selecionado(s)</string>
@@ -2462,12 +2461,10 @@
     <string name="v7_0_channels_wider_messages">Mais fácil de ler.</string>
     <string name="button_edit_channel_profile">Editar perfil do canal</string>
     <string name="edit_description">Editar descrição</string>
-    <string name="link_previews_alert_enable">Ativar</string>
     <string name="enable_chats_with_admins">Ativar</string>
     <string name="enable_at_least_one_chat_relay">Ativar pelo menos um relay de chat para criar um canal.</string>
     <string name="enable_chats_with_admins_question">Ativar chats com administradores?</string>
     <string name="v6_4_1_keep_chats_clean_descr">Ativar mensagens temporárias por padrão.</string>
-    <string name="link_previews_alert_title">Ativar prévias de links?</string>
     <string name="enter_description_optional">Insira uma descrição (opcional)</string>
     <string name="enter_profile_name">Insira o nome de perfil…</string>
     <string name="enter_relay_name">Insira o nome do relay…</string>
@@ -2532,7 +2529,6 @@
     <string name="set_channel_simplex_name_footer">Permita que as pessoas entrem pelo nome registrado neste link do canal.</string>
     <string name="let_someone_connect_to_you">Permita que alguém se conecte com você</string>
     <string name="action_button_channel_link">Link</string>
-    <string name="link_previews_alert_desc_socks">A prévia do link será solicitada por meio de um proxy SOCKS. A consulta DNS ainda poderá ocorrer localmente pelo seu resolvedor DNS.</string>
     <string name="content_filter_links">Links</string>
     <string name="owner_verification_passed">Assinatura do link verificada.</string>
     <string name="loading_profile">Carregando perfil…</string>
@@ -2671,7 +2667,6 @@
     <string name="placeholder_search_voice_messages">Pesquisar mensagens de voz</string>
     <string name="select_relays">Selecionar relays</string>
     <string name="compose_view_send_contact_request_alert_question">Enviar solicitação de contato?</string>
-    <string name="link_previews_alert_desc">Enviar prévias de links pode expor seu endereço IP ao site. É possível alterar essa opção nas configurações de Privacidade mais tarde.</string>
     <string name="compose_view_send_request">Enviar solicitação</string>
     <string name="compose_view_send_request_without_message">Enviar solicitação sem mensagem</string>
     <string name="onboarding_send_1_time_link">Envie o link por qualquer aplicativo de mensagens - é seguro. Peça para colar no SimpleX.</string>
