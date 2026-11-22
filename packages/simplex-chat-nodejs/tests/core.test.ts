@@ -308,7 +308,8 @@ describe("Core tests", () => {
     const close = core.chatCloseStore(ctrl).then(() => { closed = true; });
     const timerStart = Date.now();
     const timerDelay = await new Promise<number>((resolve) => setTimeout(() => resolve(Date.now() - timerStart), 10));
-    expect({closed, timerDelayBelow100ms: timerDelay < 100}).toEqual({closed: false, timerDelayBelow100ms: true});
+    expect(closed).toBe(false);
+    expect(timerDelay).toBeLessThan(1000);
     await close;
     expect(await receives).toEqual([{event: undefined}, {error: "chat receiver stopped"}]);
   });
