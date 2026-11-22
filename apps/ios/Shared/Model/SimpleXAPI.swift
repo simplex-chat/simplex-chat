@@ -529,6 +529,11 @@ func apiGetLinkPreview(_ uri: String) async -> LinkPreview? {
     if case let .result(.linkPreview(linkPreview)) = r { return linkPreview }
     let err = if case let .error(.error(.linkPreview(message))) = r { message } else { responseError(r.unexpected) }
     logger.error("apiGetLinkPreview error: \(err)")
+    if UserDefaults.standard.bool(forKey: DEFAULT_DEVELOPER_TOOLS) && UserDefaults.standard.bool(forKey: DEFAULT_SHOW_LINK_PREVIEW_ERRORS) {
+        await MainActor.run {
+            showAlert(NSLocalizedString("Link preview error", comment: "alert title"), message: err)
+        }
+    }
     return nil
 }
 

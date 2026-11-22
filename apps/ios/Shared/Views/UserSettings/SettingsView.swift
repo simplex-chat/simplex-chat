@@ -85,6 +85,7 @@ let DEFAULT_SHOW_DELETE_CONVERSATION_NOTICE = "showDeleteConversationNotice"
 let DEFAULT_SHOW_DELETE_CONTACT_NOTICE = "showDeleteContactNotice"
 let DEFAULT_SHOW_SENT_VIA_RPOXY = "showSentViaProxy"
 let DEFAULT_SHOW_SUBSCRIPTION_PERCENTAGE = "showSubscriptionPercentage"
+let DEFAULT_SHOW_LINK_PREVIEW_ERRORS = "showLinkPreviewErrors"
 let DEFAULT_MARKDOWN_FILE_TEXT_VIEW = "markdownFileTextView"
 
 let DEFAULT_CURRENT_THEME = "currentTheme"
@@ -148,6 +149,7 @@ let appDefaults: [String: Any] = [
     DEFAULT_SHOW_DELETE_CONTACT_NOTICE: true,
     DEFAULT_SHOW_SENT_VIA_RPOXY: false,
     DEFAULT_SHOW_SUBSCRIPTION_PERCENTAGE: false,
+    DEFAULT_SHOW_LINK_PREVIEW_ERRORS: false,
     DEFAULT_MARKDOWN_FILE_TEXT_VIEW: false,
     ANDROID_DEFAULT_CALL_ON_LOCK_SCREEN: AppSettingsLockScreenCalls.show.rawValue,
 

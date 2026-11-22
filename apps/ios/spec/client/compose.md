@@ -323,7 +323,7 @@ Optional feature where the recipient sees typing in real-time.
 - Preview can be dismissed by the user
 - Link preview data is included in the `ComposedMessage` sent to the core
 - Toggle in privacy settings to disable auto-preview generation
-- A failed preview shows no card and no alert
+- A failed preview shows no card and no alert; with **Show developer options** and **Show link preview errors** on, an alert shows the error of the core
 - The share extension requests the preview of a shared link from the core when the toggle is on
 
 ---

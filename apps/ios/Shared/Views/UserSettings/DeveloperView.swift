@@ -13,6 +13,7 @@ struct DeveloperView: View {
     @EnvironmentObject var theme: AppTheme
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
     @AppStorage(GROUP_DEFAULT_CONFIRM_DB_UPGRADES, store: groupDefaults) private var confirmDatabaseUpgrades = false
+    @AppStorage(DEFAULT_SHOW_LINK_PREVIEW_ERRORS) private var showLinkPreviewErrors = false
     @State private var hintsUnchanged = hintDefaultsUnchanged()
     @State private var simplexLinkMode = privacySimplexLinkModeDefault.get()
 
@@ -56,6 +57,9 @@ struct DeveloperView: View {
                     Section {
                         settingsRow("internaldrive", color: theme.colors.secondary) {
                             Toggle("Confirm database upgrades", isOn: $confirmDatabaseUpgrades)
+                        }
+                        settingsRow("network", color: theme.colors.secondary) {
+                            Toggle("Show link preview errors", isOn: $showLinkPreviewErrors)
                         }
                         NavigationLink {
                             StorageView()

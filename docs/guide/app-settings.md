@@ -307,6 +307,14 @@ enabled.
 
 This option is off by default - the app database is migrated to the new version without any confirmations. Starting from v4.6.2 these migrations are reversible - you can rollback to the previous version(s) of the app (not earlier than v4.6.1). If you want to be asked a confirmation every time database is upgraded you may enable this option - this is not recommended, as it happens almost on every app update, and should not cause any concerns.
 
+### Show link preview errors
+
+This option is shown when [Show developer options](#show-developer-options) is
+enabled.
+
+This option is off by default. When the app cannot load the preview of a link
+you type, it shows no preview; with this option, it also shows the error.
+
 ### Show developer options
 
 This option currently enables [Transport isolation

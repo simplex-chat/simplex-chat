@@ -152,7 +152,7 @@ Database row shows exclamation octagon icon in red when `chatRunning == false`.
 
 | Row | Icon | Destination | Description |
 |---|---|---|---|
-| Developer | `chevron.left.forwardslash.chevron.right` | `DeveloperView` | Chat console/terminal, log level, confirm DB upgrades |
+| Developer | `chevron.left.forwardslash.chevron.right` | `DeveloperView` | Chat console/terminal, log level, confirm DB upgrades, link preview errors |
 | App version | (none) | `VersionView` | Shows "v{version} ({build})" |
 
 ## Loading / Error States
@@ -175,7 +175,7 @@ Key `UserDefaults` / `AppStorage` keys managed by settings:
 - `DEFAULT_CURRENT_THEME`, `DEFAULT_SYSTEM_DARK_THEME`, `DEFAULT_THEME_OVERRIDES`
 - `DEFAULT_PROFILE_IMAGE_CORNER_RADIUS`, `DEFAULT_CHAT_ITEM_ROUNDNESS`, `DEFAULT_CHAT_ITEM_TAIL`
 - `DEFAULT_TOOLBAR_MATERIAL`, `DEFAULT_ONE_HAND_UI_CARD_SHOWN`
-- `DEFAULT_DEVELOPER_TOOLS`, `DEFAULT_SHOW_SENT_VIA_RPOXY`, `DEFAULT_SHOW_SUBSCRIPTION_PERCENTAGE`
+- `DEFAULT_DEVELOPER_TOOLS`, `DEFAULT_SHOW_SENT_VIA_RPOXY`, `DEFAULT_SHOW_SUBSCRIPTION_PERCENTAGE`, `DEFAULT_SHOW_LINK_PREVIEW_ERRORS`
 
 ## Related Specs
 
