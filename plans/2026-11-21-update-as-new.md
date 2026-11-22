@@ -1,6 +1,6 @@
 # Group updates that show a message as new
 
-Status: proposed; U1-U4 decided by the user on 2026-11-21, P1 open. One 7.2 core pull request with `2026-11-21-edit-window-preference.md`, stacked on message priority (#8195, `ep/message-priority` at `1f3fff669`). Code references: master `20ee7cb14`; priority code by name, from `ep/message-priority`.
+Status: implemented on `ep/update-as-new`; U1-U4 and P1 decided by the user on 2026-11-21. One 7.2 core pull request with `2026-11-21-edit-window-preference.md`, stacked on message priority (#8195, `ep/message-priority` at `1f3fff669`). Code references: master `20ee7cb14`; priority code by name, from `ep/message-priority`.
 
 The user's words:
 
@@ -43,8 +43,8 @@ Protocol.hs
   XMsgUpdate                asNew :: Maybe Bool          new last field, after priority of #8195
   appJsonToCM, XMsgUpdate_  asNew <- opt "asNew"
   chatToAppMessage          "asNew" .=? asNew
-  eventPriority             XMsgUpdate {asNew = Just True, priority = Just p} -> limitPriority p     new case
-  eventHasNotification      EQ -> raisesPriority ev || isAsNew ev || hasNotification (toCMEventTag ev)
+  eventPriority             XMsgUpdate {priority = Just p} -> limitPriority p, as in #8195
+  eventHasNotification      EQ -> isAsNew ev || hasNotification (toCMEventTag ev)
   isAsNew                   new: ChatMsgEvent e -> Bool; XMsgUpdate {asNew = Just True}
   positional uses           Library/Commands.hs, Library/Subscriber.hs, tests/ProtocolTests.hs, tests/ChatTests/Groups.hs,
                             the sites of the priority field of #8195
@@ -88,11 +88,12 @@ An update as new carries the priority of the new message, as `x.msg.new`; an upd
 
 ```
                     update without asNew (#8195)              update as new
-sender sends        priority 1 when raising, else none        sndPriority highAllowed of UpdatedMessage.priority, as a new message
+sender sends        priority 1 when raising, -1 for a         sndPriority highAllowed of UpdatedMessage.priority, as a new message
+                    silent item, else none
 sender's item       priority 1 when raised                    the sent priority, 0 when none
 receiver's item     priority 1 when raised and allowed        limitPriority p; 1 only when rcvPriorityAllowed cd, as saveRcvChatItem'
 userMention         set when raised                           mention or reply of the updated content || priority > 0
-SMP flag            set when raising                          unset for -1, set otherwise
+SMP flag            set when raising, unset for -1            unset for -1, set otherwise
 apps notify         when raised (isRaised)                    when shown as new (isAsNew), unless silent
 ```
 
@@ -128,11 +129,12 @@ condition  changed || itemLive == Just True || raise || isJust asNew_
 event      XMsgUpdate ... priority (justTrue (isJust asNew_))
 edited     changed && itemLive /= Just True                           -- as in #8195
 store      after updateGroupChatItem, with meta.priority set:
-             forM_ asNew_ $ \ts -> setChatItemTs db ci' ts and updateChatTsStats db cxt user cd currentTs Nothing
+             forM_ asNew_ $ \ts -> updateChatTsStats db cxt user cd currentTs Nothing and setChatItemTs db ci' ts
 response   CRChatItemUpdated with the item at its new time
 ```
 
-- The edit limits of `2026-11-21-edit-window-preference.md` apply. `setChatItemTs` also sets `item_original_ts = COALESCE(item_original_ts, item_ts)`, and the limits are measured from it, so an update as new keeps the limits of the original send.
+- `asNew_` requires the main scope: an update as new in a member support scope is an edit in place.
+- The edit limits of `2026-11-21-edit-window-preference.md` apply. The sender's core measures them from `created_at` of its item, which `setChatItemTs` keeps, so an update as new keeps the limits of the original send.
 
 ## 6. Core: receiving
 
@@ -158,19 +160,17 @@ sequenceDiagram
 
 ```
 asNew_     = if asNew == Just True
+                && main scope                      -- member support scope: in place
                 && isNothing itemDeleted           -- deleted, moderated, blocked by admin: in place
                 && not (memberBlocked sender)      -- as for mentions (:2345)
              then asNewItemTs (chatItemTs' ci) brokerTs
              else Nothing
 priority   with asNew_: section 4; otherwise the raise of #8195
-condition  changed || itemLive == Just True || requested || isJust asNew_
+condition  changed || itemLive == Just True || requested || asNew == Just True
 edited     changed && itemLive /= Just True                                  -- as in #8195
 store      after updateGroupChatItem with meta.priority and userMention set: forM_ asNew_ $ \ts ->
+             updateChatTsStats db cxt user cd now Nothing
              setGroupChatItemAsNew db ci' ts
-             updateChatTsStats db cxt user cd now stats
-               stats   main scope: Nothing
-                       member support scope: memberChatStats of a new item (Internal.hs:3136),
-                       with unread 1 only when the item was read
 event      CEvtChatItemUpdated: the item at its new time with status rcv_new, the previous item; the chat info returned by updateChatTsStats
 delivery   as now: Just context whenever the condition holds, so an update as new without a change of text is forwarded
            the SMP flag of the forward follows the rule of a forwarded new message: msgHasNotification (Subscriber.hs:4261),
@@ -179,13 +179,15 @@ delivery   as now: Just context whenever the condition holds, so an update as ne
 
 `Store/Messages.hs`, new:
 ```
-setGroupChatItemAsNew :: DB.Connection -> ChatItem 'CTGroup 'MDRcv -> ChatItemTs -> IO (ChatItem 'CTGroup 'MDRcv)
+setGroupChatItemAsNew :: DB.Connection -> ChatItem 'CTGroup 'MDRcv -> UTCTime -> IO (ChatItem 'CTGroup 'MDRcv)
   UPDATE chat_items
   SET item_original_ts = COALESCE(item_original_ts, item_ts), item_ts = ?, item_status = ?, item_viewed = 0
   WHERE chat_item_id = ?
   item_status = rcv_new; returns the item with meta.itemTs and meta.itemStatus set
-setChatItemTs :: DB.Connection -> ChatItem 'CTGroup 'MDSnd -> ChatItemTs -> IO (ChatItem 'CTGroup 'MDSnd)
-  UPDATE chat_items SET item_original_ts = COALESCE(item_original_ts, item_ts), item_ts = ? WHERE chat_item_id = ?
+setChatItemTs :: DB.Connection -> ChatItem c d -> UTCTime -> IO (ChatItem c d)
+  UPDATE chat_items SET item_ts = ? WHERE chat_item_id = ?
+getChatItemOriginalTs :: DB.Connection -> ChatItemId -> ExceptT StoreError IO UTCTime
+  SELECT COALESCE(item_original_ts, item_ts) FROM chat_items WHERE chat_item_id = ?
 ```
 `item_priority` and `user_mention` are written by `updateGroupChatItem_` of #8195. `item_original_ts` is the column of `2026-11-21-edit-window-preference.md`. The new queries are added to `tests/chat_query_plans.txt` by the query plan test.
 
@@ -222,7 +224,7 @@ replies to the item         resolved by shared_msg_id (:702-748)                
 forward of the item         a new item with the content                              none
 expiration by chat TTL      item_ts <= cutoff AND created_at <= cutoff (:3662): kept a TTL after the update   none
 disappearing messages       deleteAt of an item read before the update continues     none
-edit and delete limits      from item_original_ts, kept across updates as new        2026-11-21-edit-window-preference.md
+edit and delete limits      sender from created_at, receivers from item_original_ts, kept across updates as new   2026-11-21-edit-window-preference.md
 item info                   "sent at" shows the time of the update; versions keep the earlier texts and times   none
 terminal view               viewItemUpdate (View.hs:870) as for an edit                none
 ```
@@ -268,6 +270,7 @@ iOS       Shared/Model/ChatModel.swift
             chatItemUpdate (:3241)          notify = isRaised || isAsNew, in both profiles, as #8195 for isRaised
           SimpleX NSE/NotificationService.swift
             receivedMsgNtf, chatItemUpdated case of #8195
+                                            AChatItemUpdate.showNotification (SimpleXChat/ChatTypes.swift):
                                             isRaised || isAsNew, with ntfsEnabled and showNotification: messageReceived
                                             otherwise noNtf: an edit and a silent update as new show nothing
 Kotlin    common/src/commonMain/kotlin/chat/simplex/common/model/ChatModel.kt
@@ -326,7 +329,7 @@ flowchart LR
 ```mermaid
 flowchart LR
   M[master] --> PRI["#8195 ep/message-priority"]
-  PRI --> THIS["ep/update-to-bottom: as new and edit limits"]
+  PRI --> THIS["ep/update-as-new: as new and edit limits"]
   THIS -->|"after #8195 merges:<br>git rebase --onto master"| M2[master]
 ```
 
@@ -339,7 +342,8 @@ Core, each failing on master and on `ep/message-priority`: the parser refuses `a
 ```
 tests/ProtocolTests.hs     x.msg.update with "asNew":true and with "asNew":true, "priority":-1 encoded and decoded;
                              without them decoded to Nothing
-                           eventHasNotification of an update as new: False for -1, True for 0 and 1
+                           "x.msg.update as new has the priority of a new message": eventHasNotification False for -1,
+                             True for 0 and 1
 tests/ChatTests/Groups.hs  "update as new shows the item last and unread"
                              bob: "status"; alice: /_read chat items #1 <status>; cath: "hi"
                              bob: /_update item #1 <status> as_new=on text status 2, sent without a pause after "hi"
@@ -348,14 +352,12 @@ tests/ChatTests/Groups.hs  "update as new shows the item last and unread"
                              recorded: eventsFixture "updates/group-as-new", alice with markRead = False
                            "silent update as new": priority -1: last, rcv_new, item_priority -1
                              recorded: eventsFixture "updates/group-as-new-silent"
-                           "high priority update as new": admin with priority 1: item_priority 1, user mention;
-                             a member below the priority role: item_priority 0
-                           "update as new without a change of text": not marked edited; last for all
-                           "update as new of a blocked member": cath blocks bob; bob's update applied in place for cath
+                           "high priority update as new without a change of text": admin with priority 1:
+                             item_priority 1, user mention, not marked edited; a member below the priority role: item_priority 0
+                           "update as new of a blocked member is applied in place": cath blocks bob; in place for cath
+                           "should update channel message as new": last and unread for a subscriber
 tests/ChatTests/Direct.hs  "update as new is ignored in a direct chat": bob "status", alice "hi", bob as_new=on;
                              both: /_get chat @2 -> "status 2", "hi"
-tests/ChatTests/ChatRelays.hs
-                           "owner updates a channel post as new": last and unread for a subscriber
 tests/ChatTests/Utils.hs   stableJSON (:1043): itemTs is 1970-01-01T00:00:00Z plus the fraction of the recorded second
                              existing fixtures are unchanged: their itemTs have whole seconds
 ```
@@ -369,9 +371,9 @@ item not loaded is inserted last                  chat opened after "hi": "hi" -
 update as new alerts as a new message             "status" marked read in the model (markChatItemsRead);        both
                                                     unread 1 -> 2; notifications "status", "hi", "status 2"
 silent update as new alerts nobody                the silent fixture: unread 1 -> 2; notifications "status", "hi"   both
-another profile alerts and counts it              the other profile's unread 1 -> 2; notification "status 2"    both
-NSE shows an update as new, not an edit           receivedMsgNtf: messageReceived for group-as-new; noNtf for   iOS
-                                                    the edit of updates/direct-edit and for group-as-new-silent
+another profile alerts and counts it              the other profile's unread 2 -> 3; notification "status 2"    both
+NSE shows an update as new, not an edit           AChatItemUpdate.showNotification: true for group-as-new;      iOS
+                                                    false for the edits of updates/direct-edit and for group-as-new-silent
 ```
 
 Kotlin: `common/src/desktopTest/kotlin/chat/simplex/app/ChatItemUpdateTest.kt`. iOS: `SimpleX Unit Tests/ChatItemUpdateTests.swift`.
@@ -411,4 +413,4 @@ U3. Decided: the edit and delete limits with their role exception are a group pr
 
 U4. Decided: the apps have no control for it; the option is documented in the protocol docs and the bot API with its clients.
 
-P1. Merge order: this pull request stacked on #8195 and merged after it, so that an update as new carries its priority from the first release. Recommended: yes. Alternative: merged first without priority, every update as new alerting until #8195.
+P1. Decided: this pull request is stacked on #8195 and merged after it, so that an update as new carries its priority from the first release.
