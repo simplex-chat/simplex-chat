@@ -305,8 +305,8 @@ describe("Core tests", () => {
     await new Promise((resolve) => setTimeout(resolve, 500));
     await expect(core.chatSendCmd(ctrl, "/_stop")).resolves.toMatchObject({type: "chatStopped"});
     let closed = false;
-    const close = core.chatCloseStore(ctrl).then(() => { closed = true; });
     const timerStart = Date.now();
+    const close = core.chatCloseStore(ctrl).then(() => { closed = true; });
     const timerDelay = await new Promise<number>((resolve) => setTimeout(() => resolve(Date.now() - timerStart), 10));
     expect(closed).toBe(false);
     expect(timerDelay).toBeLessThan(1000);
