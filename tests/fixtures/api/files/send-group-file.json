@@ -94,7 +94,7 @@
                   "localDisplayName": "alice",
                   "memberCategory": "user",
                   "memberChatVRange": {
-                    "maxVersion": 22,
+                    "maxVersion": 23,
                     "minVersion": 9
                   },
                   "memberContactId": 1,
