@@ -96,6 +96,7 @@ data StepFailure
   | SFAllowanceUsedUp
   | SFTakenAboveDepth
   | SFGoneButAvailable
+  | SFRevealMarginNotBelowWindow Integer
   | SFRefused RegistrationTx (Maybe RevertReason)
   | SFException Text
   deriving (Eq, Show)
@@ -119,6 +120,7 @@ stepClass = \case
   SFAllowanceUsedUp -> FCTemporary
   SFTakenAboveDepth -> FCTemporary
   SFGoneButAvailable -> FCTemporary
+  SFRevealMarginNotBelowWindow _ -> FCTemporary
   SFRefused _ reason -> maybe FCTemporary revertClass reason
   SFException _ -> FCTemporary
   where
@@ -211,6 +213,7 @@ follow w@Worker {wkOrders = OrdersEnv {oeStore, oePhases, oeNow, oeReport}} rid@
       SFAllowanceUsedUp -> "the registrar's allowance on the sponsor is used up; the guardian raises it with setRegistrarAllowance"
       SFTakenAboveDepth -> "the name reads taken only above the confirmation depth, where a reorg can undo it"
       SFGoneButAvailable -> "the dry run reverted the name as gone, but it reads available"
+      SFRevealMarginNotBelowWindow window -> "[names] reveal_margin_seconds is not below the controller's commitment window of " <> tshow window <> " seconds, so no commitment would be used before it lapses, and no commit is sent until it is lowered"
       SFRefused tx reason -> "the " <> textEncode tx <> " reverts while the name is available, " <> maybe "without a reason" reasonText reason
       SFException e -> "its step failed: " <> e
 
@@ -228,12 +231,16 @@ stepRegistration w@Worker {wkOrders = OrdersEnv {oeStore, oeNow}} rid = do
 
 -- | A commit of the registration in flight is waited for; otherwise commitments(commitment) decides.
 commit :: Worker -> UTCTime -> NameRegistration -> IO Next
-commit w@Worker {wkOrders = OrdersEnv {oeContracts}, wkSender} now r@NameRegistration {nrId, nrCommitment} =
+commit w@Worker {wkOrders = OrdersEnv {oeContracts, oeConfig = NamesConfig {nRevealMarginSeconds}}, wkSender} now r@NameRegistration {nrId, nrCommitment} =
   inFlightTransaction wkSender (TxRegistration RTCommit nrId) >>= \case
     Just p -> commitSent w now r p
     Nothing ->
       runExceptT ((,) <$> ExceptT (commitmentAges oeContracts) <*> ExceptT (commitmentTime oeContracts nrCommitment)) >>= \case
         Left e -> pure $ failure r $ SFChain e
+        Right (CommitmentAges {caMin, caMax}, _)
+          | toInteger nRevealMarginSeconds >= window -> pure $ Stalled (nrVersion r) $ SFRevealMarginNotBelowWindow window
+          where
+            window = toInteger caMax - toInteger caMin
         Right (_, Nothing) -> case nrPhase r of
           OCommitting h ->
             commitReverted w r h >>= \case

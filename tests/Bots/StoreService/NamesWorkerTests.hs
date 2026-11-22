@@ -85,6 +85,7 @@ workerTests = describe "StoreService names: worker" $ do
     it "sends a commit mined out of gas again, storing the attempt" testCommitOutOfGas
     it "fails an order at its fifth commit mined with status 0 for its commitment, sending nothing more" testCommitsCapped
     it "retries, writing nothing, while the commitment's reveal window would pass 2^64 seconds" testRevealWindowPastRange
+    it "holds an order, sending no commit, while reveal_margin_seconds is not below the commitment window" testMarginNotBelowWindow
     it "waits a second at the lapse second, retries as usual when the dry run still reverts, then commits" testLapseSecond
     it "keeps a requeued order's intent while it commits again after a lapse, and over a third party's commitment" testIntentAcrossCommits
     it "keeps the phase while the latest block needs more than the fee cap, then commits" testFeeAboveCap
@@ -459,6 +460,14 @@ testRevealWindowPastRange = withWorker $ \w@W {wCtx = ctx@Ctx {cNode}} -> do
   answerCall cNode fakeController maxCommitmentAgeCall $ Returns $ uint256 (maxBound :: Word64)
   answerCommitment w r $ orderSeconds - 600
   steps w r >>= retrying
+  stored ctx r `shouldReturn` r
+  sent w `shouldReturn` []
+
+testMarginNotBelowWindow :: IO ()
+testMarginNotBelowWindow = withWorkerAs (\c -> c {nRevealMarginSeconds = fromIntegral (maxAge - minAge)}) $ \w@W {wCtx = ctx} -> do
+  r <- paidIn ctx aliceOrder id
+  answerCommitment w r 0
+  steps w r >>= stalled >>= (`shouldBe` SFRevealMarginNotBelowWindow (toInteger $ maxAge - minAge))
   stored ctx r `shouldReturn` r
   sent w `shouldReturn` []
 

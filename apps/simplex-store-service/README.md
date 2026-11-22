@@ -1042,7 +1042,11 @@ head older than 2 minutes means the node has fallen behind.
 An order moves on within minutes: its commit and register are each mined and confirmed, and the
 register waits about a minute after the commit. An order tried again can wait unchanged up to
 `reveal_margin_seconds` (900 by default) for its old commitment to lapse, so the queue alert's
-threshold is above it. Every 5 minutes the service also logs an error and, with `[group]`, posts in
+threshold is above it. A margin not below the controller's commitment window, its maximum commitment
+age less its minimum, would leave no commitment usable: the worker then sends no commit, keeps each
+order as it is, logs `names worker: registration <id> waits: [names] reveal_margin_seconds is not
+below the controller's commitment window of <seconds> seconds, …` as an error and reports it in the
+group after 10 minutes. Every 5 minutes the service also logs an error and, with `[group]`, posts in
 the managed group, once for each order whose name was selected 3 hours ago or more, at its payment's
 settlement, its code's placement or a selection after a reset, and still `queued`, `committing`,
 `committed`, `registering` or `failed`: `names: order <id> had its name selected at <time> and is <phase>, not registered, 3
