@@ -3286,7 +3286,7 @@ func chatItemUpdate(_ user: any UserLike, _ update: AChatItemUpdate) async {
             notify = true
         }
     } else {
-        let change = unreadCountChange(prevItem, cItem) { $0.isRcvNew && cInfo.ntfsEnabled(chatItem: $0) && !($0.meta.silent && cInfo.silentNotCounted) }
+        let change = update.userUnreadChange
         if change > 0 {
             await MainActor.run { m.increaseUnreadCounter(user: user) }
         } else if change < 0 {

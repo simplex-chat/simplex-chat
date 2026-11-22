@@ -3941,7 +3941,7 @@ public struct AChatItemUpdate: Decodable, Hashable {
     }
 
     public var userUnreadChange: Int {
-        1
+        unreadCountChange(prevChatItem, chatItem) { $0.isRcvNew && chatInfo.ntfsEnabled(chatItem: $0) && !($0.meta.silent && chatInfo.silentNotCounted) }
     }
 }
 
