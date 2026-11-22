@@ -5,7 +5,8 @@
 -- and a balance turn is never taken with a code turn.
 module StoreService.Names.Turns (Turns, NameSelected, newTurns, withLabelTurn, withLabelTurns, withRegistrationTurn, withRegistrationTurns, withCodeTurn, withBalanceTurn) where
 
-import Simplex.Messaging.Agent.Client (withLockMap)
+import qualified Data.Set as S
+import Simplex.Messaging.Agent.Client (withLockMap, withLocksMap)
 import Simplex.Messaging.Agent.Lock (Lock)
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import Simplex.Messaging.SimplexName (LabelHash)
@@ -24,10 +25,7 @@ withLabelTurn Turns {labelTurns} h = withLockMap labelTurns h "turn"
 
 -- | Taken in hash order, so two requests for the same two names cannot each hold one and wait for the other.
 withLabelTurns :: Turns -> LabelHash -> LabelHash -> IO a -> IO a
-withLabelTurns turns a b action
-  | a == b = withLabelTurn turns a action
-  | a < b = withLabelTurn turns a $ withLabelTurn turns b action
-  | otherwise = withLabelTurn turns b $ withLabelTurn turns a action
+withLabelTurns Turns {labelTurns} a b = withLocksMap labelTurns (S.fromList [a, b]) "turn"
 
 type NameSelected = ()
 
