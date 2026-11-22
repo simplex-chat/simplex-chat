@@ -54,7 +54,7 @@ lpcm
 mkv
 mmdevice
 mp4
-mpgv
+mpg123
 mux_mp4
 opus
 packetizer_a52
@@ -87,7 +87,6 @@ stream_out_transcode
 swscale
 transform
 trivial_channel_mixer
-ts
 ugly_resampler
 vaapi
 vaapi_drm
