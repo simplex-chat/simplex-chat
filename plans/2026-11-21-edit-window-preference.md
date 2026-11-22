@@ -83,7 +83,7 @@ no limit              the welcome message of an address and of a business addres
                         the item with the shared message ID of welcomeSharedMsgId of the prepared contact or group
 ```
 
-Storage, migration `M20261121_item_original_ts`, SQLite and Postgres, one `ADD COLUMN`, without an index:
+Storage, migration `M20261113_item_priority` of #8195, SQLite and Postgres, one `ADD COLUMN`, without an index:
 ```
 chat_items
   item_original_ts    TEXT / TIMESTAMPTZ, nullable    set by setGroupChatItemAsNew: COALESCE(item_original_ts, item_ts)

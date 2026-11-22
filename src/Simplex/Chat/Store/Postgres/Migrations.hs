@@ -60,7 +60,6 @@ import Simplex.Chat.Store.Postgres.Migrations.M20261016_badge_store_receipts
 import Simplex.Chat.Store.Postgres.Migrations.M20261019_chat_layout
 import Simplex.Chat.Store.Postgres.Migrations.M20261021_badge_subscriptions
 import Simplex.Chat.Store.Postgres.Migrations.M20261113_item_priority
-import Simplex.Chat.Store.Postgres.Migrations.M20261121_item_original_ts
 import Simplex.Messaging.Agent.Store.Shared (Migration (..))
 
 schemaMigrations :: [(String, Text, Maybe Text)]
@@ -120,8 +119,7 @@ schemaMigrations =
     ("20261016_badge_store_receipts", m20261016_badge_store_receipts, Just down_m20261016_badge_store_receipts),
     ("20261019_chat_layout", m20261019_chat_layout, Just down_m20261019_chat_layout),
     ("20261021_badge_subscriptions", m20261021_badge_subscriptions, Just down_m20261021_badge_subscriptions),
-    ("20261113_item_priority", m20261113_item_priority, Just down_m20261113_item_priority),
-    ("20261121_item_original_ts", m20261121_item_original_ts, Just down_m20261121_item_original_ts)
+    ("20261113_item_priority", m20261113_item_priority, Just down_m20261113_item_priority)
   ]
 
 -- | The list of migrations in ascending order by date
