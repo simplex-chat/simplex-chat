@@ -3463,6 +3463,7 @@ public struct GroupMember: Identifiable, Decodable, Hashable {
     public var memberChatVRange: VersionRange
     public var relayLink: String?
     public var memberVerifiedCode: SecurityCode?
+    public var memberVia: String?
 
     public var id: String { groupMemberEntityId(groupId, groupMemberId) }
     public var ready: Bool { get { activeConn?.connStatus == .ready } }
@@ -4505,6 +4506,7 @@ public struct CIMeta: Decodable, Hashable {
     public var showGroupAsSender: Bool
     public var msgVerified: MsgVerified?
     public var priority: Int?
+    public var sentAsMember: GroupMember?
 
     public var timestampText: Text { Text(formatTimestampMeta(itemTs)) }
     public var recent: Bool { updatedAt + 10 > .now }

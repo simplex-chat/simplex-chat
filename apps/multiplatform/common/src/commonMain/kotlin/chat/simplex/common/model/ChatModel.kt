@@ -3120,7 +3120,8 @@ data class GroupMember (
   val supportChat: GroupSupportChat? = null,
   val memberChatVRange: VersionRange,
   val relayLink: String? = null,
-  val memberVerifiedCode: SecurityCode? = null
+  val memberVerifiedCode: SecurityCode? = null,
+  val memberVia: String? = null
 ): NamedChat {
   val id: String get() = "#$groupId @$groupMemberId"
   val ready get() = activeConn?.connStatus == ConnStatus.Ready
@@ -4171,7 +4172,8 @@ data class CIMeta (
   val editable: Boolean,
   val showGroupAsSender: Boolean,
   val msgVerified: MsgVerified? = null,
-  val priority: Int? = null
+  val priority: Int? = null,
+  val sentAsMember: GroupMember? = null
 ) {
   val timestampText: String get() = getTimestampText(itemTs, true)
 
