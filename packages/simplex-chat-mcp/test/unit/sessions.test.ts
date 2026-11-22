@@ -2976,11 +2976,11 @@ describe("Main group", () => {
     const hub = await hubWith(chat)
     const session = await openSession(hub, id1, stored(1, "one"))
     await session.turn({id: id1, agent: {id: "a1", start: {type: "Explore", description: "find callers", toolUse: "toolu_1", transcript: join(root, "agent-a1.jsonl")}}})
-    expect(chat.sent.at(-1)).toMatchObject({chat: [T.ChatType.Group, 20], live: true, messages: [{msgContent: {text: "🤖 Explore · find callers\n0 steps · 0:00"}, priority: -1}]})
+    expect(chat.sent.at(-1)).toMatchObject({chat: [T.ChatType.Group, 20], live: true, messages: [{msgContent: {text: "!- 🤖 Explore · find callers!\n!- 0 steps · 0:00!"}, priority: -1}]})
     await session.turn({id: id1, agent: {id: "a1", stop: "Found 6 callers."}})
     await session.turn({id: id1, prompt: "<task-notification>…</task-notification>", typed: false, note: "!- ✅ Agent finished!", task: {toolUse: "toolu_1", status: "completed", tokens: 61_500, steps: 22, ms: 160_000}})
     await until(() => chat.updates.length === 2)
-    expect([chat.updates, sentTo(chat, 20).filter(text => text.includes("finished"))]).toEqual([[{chatId: 20, itemId: chat.nextItemId - 1, text: "🤖 Explore · find callers · ✅ 0:00 · 0 steps\nFound 6 callers."}, {chatId: 20, itemId: chat.nextItemId - 1, text: "🤖 Explore · find callers · ✅ 2:40 · 22 steps · 61.5k tokens\nFound 6 callers."}], []])
+    expect([chat.updates, sentTo(chat, 20).filter(text => text.includes("finished"))]).toEqual([[{chatId: 20, itemId: chat.nextItemId - 1, text: "!- 🤖 Explore · find callers · ✅ 0:00 · 0 steps!\n!- Found 6 callers.!"}, {chatId: 20, itemId: chat.nextItemId - 1, text: "!- 🤖 Explore · find callers · ✅ 2:40 · 22 steps · 61.5k tokens!\n!- Found 6 callers.!"}], []])
   })
 
   it("shows the working subagents in the session's board message, and ends their live messages with ⏹️ at the last detach", async () => {
@@ -2992,7 +2992,7 @@ describe("Main group", () => {
     await hub.showSessions()
     expect(sentTo(chat, 10).at(-2)).toBe("▶️ 1 · one: running\n🤖 1 agent working")
     await session.endLive()
-    expect(chat.updates.at(-1)).toMatchObject({chatId: 20, text: "🤖 Explore · find callers · ⏹️ 0:00 · 0 steps"})
+    expect(chat.updates.at(-1)).toMatchObject({chatId: 20, text: "!- 🤖 Explore · find callers · ⏹️ 0:00 · 0 steps!"})
   })
 
   it("updates the descriptions of a session's group at most once a minute, with the latest values", async () => {

@@ -1903,7 +1903,7 @@ sequenceDiagram
   K->>F: read subagents/agent-ID.meta.json
   K->>D: POST /turn agent.start {type, description, toolUse, transcript}
   D->>N: turn
-  N->>G: live 🤖 TYPE · DESCRIPTION, priority -1
+  N->>G: live !- 🤖 TYPE · DESCRIPTION!, priority -1
   loop each tool use of A
     A->>K: PreToolUse, PostToolUse with agent_id
     K->>D: POST /turn agent.step
@@ -1921,7 +1921,7 @@ sequenceDiagram
   N->>G: edit with the figures; the note not posted
   L->>K: PostToolUse Workflow {runId, workflowName, transcriptDir}
   K->>D: POST /turn workflow
-  N->>G: live ⚙️ NAME
+  N->>G: live !- ⚙️ NAME!
   loop every 2 s
     N->>F: journal.jsonl appended lines; tokens of its working agents
     N->>G: edit phases, working agents, tokens, time
