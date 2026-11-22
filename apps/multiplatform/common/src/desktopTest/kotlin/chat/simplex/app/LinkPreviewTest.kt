@@ -30,15 +30,19 @@ class LinkPreviewTest {
   private val parseMarkdown = chatParseMarkdown
   private val savedPrefs = listOf(appPrefs.developerTools, appPrefs.showLinkPreviewErrors).associateWith { it.get() }
   private val requests = mutableListOf<String>()
-  private val commands = Json.parseToJsonElement(fixtureText("previews/link_preview")).jsonObject.getValue("commands").jsonObject
+  private val unrecorded = mutableListOf<String>()
+  private val recording = Json.parseToJsonElement(fixtureText("previews/link_preview")).jsonObject
+  private val commands = recording.getValue("commands").jsonObject
+  private val markdown = recording.getValue("markdown").jsonObject
 
   @BeforeTest
   fun setUp() {
     savedPrefs.keys.forEach { it.set(false) }
     chatSendCmdRetry = { _, cmd, _ ->
       synchronized(requests) { requests += cmd }
-      commands[cmd]?.toString() ?: "{}"
+      commands[cmd]?.toString() ?: unrecordedRequest(cmd)
     }
+    chatParseMarkdown = { text -> if (text.isEmpty()) "{}" else markdown[text]?.toString() ?: unrecordedRequest("markdown $text") }
   }
 
   @AfterTest
@@ -47,6 +51,7 @@ class LinkPreviewTest {
     chatSendCmdRetry = sendCmd
     chatParseMarkdown = parseMarkdown
     savedPrefs.forEach { (pref, value) -> pref.set(value) }
+    assertEquals(listOf(), unrecorded.toList(), "requests without recorded responses")
   }
 
   @Test
@@ -56,6 +61,7 @@ class LinkPreviewTest {
     val preview = runBlocking { ChatController.apiGetLinkPreview(url) }
     assertEquals(listOf(request), requests)
     assertEquals(url, preview?.uri)
+    assertNotEquals("", recordedPreview(response).text("description"))
     assertEquals(listOf("title", "description", "image").map { recordedPreview(response).text(it) }, listOf(preview?.title, preview?.description, preview?.image))
   }
 
@@ -95,7 +101,7 @@ class LinkPreviewTest {
 
   @Test
   fun failureShowsCoreErrorWithBothOptions() = failedPreview(developerTools = true, showLinkPreviewErrors = true) { message ->
-    assertTexts("Link preview error", "error chat: error chat linkPreview $message", "OK")
+    assertTexts("Link preview error", message, "OK")
   }
 
   private fun failedPreview(developerTools: Boolean, showLinkPreviewErrors: Boolean, test: ComposeUiTest.(message: String) -> Unit) = runComposeUiTest {
@@ -106,7 +112,7 @@ class LinkPreviewTest {
     assertNull(runBlocking { ChatController.apiGetLinkPreview(request.removePrefix(LINK_PREVIEW)) })
     assertEquals(listOf(request), requests)
     waitForIdle()
-    test(response.getValue("error").jsonObject.getValue("errorType").jsonObject.text("message"))
+    test(recordedMessage(response))
   }
 
   private fun ComposeUiTest.assertTexts(vararg texts: String) {
@@ -117,7 +123,6 @@ class LinkPreviewTest {
   }
 
   private fun composeView(test: ComposeUiTest.(MutableState<ComposeState>) -> Unit) = runComposeUiTest {
-    chatParseMarkdown = { text -> if (text.isEmpty()) "{}" else linkMarkdown(text) }
     val composeState = mutableStateOf(ComposeState(useLinkPreviews = true))
     setContent {
       ComposeView(rhId = null, chatModel = ChatModel, ChatModel.chatsContext, Chat.sampleData, composeState, remember { mutableStateOf(false) }, remember { mutableStateOf(null) }, {}, remember { FocusRequester() })
@@ -134,17 +139,18 @@ class LinkPreviewTest {
   private fun recordedPreview(response: JsonObject): JsonObject =
     response.getValue("result").jsonObject.getValue("linkPreview").jsonObject
 
+  private fun recordedMessage(response: JsonObject): String {
+    val errorType = response.getValue("error").jsonObject.getValue("errorType").jsonObject
+    assertEquals("linkPreview", errorType.text("type"))
+    return errorType.text("message")
+  }
+
   private fun JsonObject.text(key: String): String = getValue(key).jsonPrimitive.content
 
-  private fun linkMarkdown(text: String): String =
-    buildJsonObject {
-      putJsonArray("formattedText") {
-        addJsonObject {
-          putJsonObject("format") { put("type", "uri") }
-          put("text", text)
-        }
-      }
-    }.toString()
+  private fun unrecordedRequest(request: String): String {
+    synchronized(unrecorded) { unrecorded += request }
+    return "{}"
+  }
 
   private companion object {
     const val LINK_PREVIEW = "/_link preview "

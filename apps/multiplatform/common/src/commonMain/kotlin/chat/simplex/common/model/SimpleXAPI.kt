@@ -1349,8 +1349,10 @@ object ChatController {
   suspend fun apiGetLinkPreview(uri: String): LinkPreview? {
     val r = sendCmd(null, CC.ApiGetLinkPreview(uri))
     if (r is API.Result && r.res is CR.CRLinkPreview) return r.res.linkPreview
+    val err = (apiChatErrorType(r) as? ChatErrorType.CELinkPreview)?.message ?: r.details
+    Log.e(TAG, "apiGetLinkPreview error: $err")
     if (appPrefs.developerTools.get() && appPrefs.showLinkPreviewErrors.get()) {
-      apiErrorAlert("apiGetLinkPreview", generalGetString(MR.strings.link_preview_error), r)
+      AlertManager.shared.showAlertMsg(generalGetString(MR.strings.link_preview_error), err)
     }
     return null
   }
