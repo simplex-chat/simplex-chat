@@ -325,6 +325,7 @@ Optional feature where the recipient sees typing in real-time.
 - Toggle in privacy settings to disable auto-preview generation
 - A failed preview shows no card and no alert; with **Show developer options** and **Show link preview errors** on, an alert shows the error of the core
 - A link whose preview failed is added to `cancelledLinks`, so it is not requested again until the compose is cleared
+- A result is applied only while its link is `pendingLinkUrl`; the result of a link replaced since then is discarded
 - The share extension requests the preview of a shared link from the core when the toggle is on
 
 ---

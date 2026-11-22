@@ -10,6 +10,7 @@ final class LinkPreviewTests: XCTestCase {
     private let lock = NSLock()
     private var requested: [String] = []
     private var unrecorded: [String] = []
+    private var held: [String: DispatchSemaphore] = [:]
     private var window: UIWindow?
 
     @MainActor
@@ -21,7 +22,8 @@ final class LinkPreviewTests: XCTestCase {
         let markdown = recording["markdown"] ?? [:]
         sendSimpleXCmdStr = { [unowned self] cmd, _, _ in
             guard let response = commands[cmd] else { self.locked { self.unrecorded.append(cmd) }; return nil }
-            self.locked { self.requested.append(cmd) }
+            let gate: DispatchSemaphore? = self.locked { self.requested.append(cmd); return self.held[cmd] }
+            gate?.wait()
             return try? JSONSerialization.data(withJSONObject: singleFieldJSON(response))
         }
         parseSimpleXMarkdownText = { [unowned self] str in
@@ -32,6 +34,7 @@ final class LinkPreviewTests: XCTestCase {
 
     @MainActor
     override func tearDown() async throws {
+        locked { held.values }.forEach { $0.signal() }
         window?.isHidden = true
         window?.rootViewController = nil
         window = nil
@@ -109,6 +112,26 @@ final class LinkPreviewTests: XCTestCase {
         try await Task.sleep(nanoseconds: 2_000_000_000)
         XCTAssertTrue(compose.composeState.noPreview)
         XCTAssertEqual(requests(), ["/_link preview LINK_URL/no-image", "/_link preview LINK_URL/page"])
+    }
+
+    @MainActor
+    func testComposeKeepsNewerPreviewWhenOlderLinkResponds() async throws {
+        let older = hold("/_link preview LINK_URL/no-image")
+        let compose = try await showCompose()
+        compose.composeState.message = "LINK_URL/no-image"
+        try await waitFor { self.requests() == ["/_link preview LINK_URL/no-image"] }
+        compose.composeState.message = "LINK_URL/page"
+        try await waitFor { compose.composeState.linkPreview != nil }
+        older.signal()
+        try await Task.sleep(nanoseconds: 1_500_000_000)
+        assertRecordedPreview(compose.composeState.linkPreview)
+        XCTAssertEqual(requests(), ["/_link preview LINK_URL/no-image", "/_link preview LINK_URL/page"])
+    }
+
+    private func hold(_ cmd: String) -> DispatchSemaphore {
+        let gate = DispatchSemaphore(value: 0)
+        locked { held[cmd] = gate }
+        return gate
     }
 
     private func assertRecordedPreview(_ linkPreview: LinkPreview?, file: StaticString = #filePath, line: UInt = #line) {
