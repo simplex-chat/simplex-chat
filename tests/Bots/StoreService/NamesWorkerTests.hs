@@ -12,12 +12,12 @@ import Bots.StoreService.NamesOrdersTests
 import Bots.StoreService.NamesOwnerTests (answerExpiry, answerFree, answerOwner, answerUnowned, byB, codeIn, committedPhase, dynamisOrder, failedPhase, labelBytes, ownerOfSelector, paidIn, rewrite, select, selectionOf, sentRegister, stored)
 import Bots.StoreService.NamesPhasesTests (held, prompt, registrationPath, woken)
 import Bots.StoreService.NamesStoreTests (hashFixture, reveal)
-import Bots.StoreService.WebTests (answerOf, capturingStderr, fieldOf, jsonObject, lengthOf, phaseOf, phaseValue, refusedWith, renameTable, statusOf, stubCalls, webGet, withApp)
+import Bots.StoreService.WebTests (answerOf, blockedInSTM, capturingStderr, fieldOf, jsonObject, lengthOf, phaseOf, phaseValue, refusedWith, renameTable, statusOf, stubCalls, webGet, withApp)
 import Control.Applicative ((<|>))
 import Control.Arrow ((&&&))
 import Control.Concurrent (threadDelay)
 import qualified Control.Concurrent.Async as Async
-import Control.Concurrent.Async (wait, withAsync)
+import Control.Concurrent.Async (asyncThreadId, wait, withAsync)
 import qualified Control.Exception as E
 import Control.Concurrent.MVar (newEmptyMVar, putMVar, takeMVar)
 import Control.Concurrent.STM (atomically, check, modifyTVar', newTVarIO, readTVar, readTVarIO, retry)
@@ -54,7 +54,7 @@ import StoreService.Names.Reveal (intentOf)
 import StoreService.Names.Revert (RevertName (..), RevertReason (..), actedReverts)
 import StoreService.Names.Sender
 import StoreService.Names.Store
-import StoreService.Names.Turns (labelTurnCount, turnsCount, withLabelTurn)
+import StoreService.Names.Turns (withBalanceTurn, withLabelTurn)
 import StoreService.Names.Worker
 import StoreService.Providers (Reversal (..))
 import StoreService.Store.Invoices (InvoiceRow (..), getInvoice)
@@ -174,7 +174,7 @@ withWorker = withWorkerAs id
 -- | With the names settings changed, as the service reads them at startup.
 withWorkerAs :: (NamesConfig -> NamesConfig) -> (W -> IO a) -> IO a
 withWorkerAs settings action = withOrders $ \open -> do
-  let ctx@Ctx {cNode, cOrders, cWeb} = configured settings open
+  let ctx@Ctx {cNode, cOrders, cWeb, cHandlers} = configured settings open
   answerCall cNode fakeController minCommitmentAgeCall $ Returns $ uint256 minAge
   answerCall cNode fakeController maxCommitmentAgeCall $ Returns $ uint256 maxAge
   answerUnowned ctx "alicebakery"
@@ -186,7 +186,7 @@ withWorkerAs settings action = withOrders $ \open -> do
         ["api", "registration", rid, "name"] -> Just Route {rMethod = "POST", rLimit = createLimit, rHandler = selectNameHandler cOrders (weProviders web) (weWaiters web) (RegistrationId rid)}
         _ -> Nothing
       app req respond = fromMaybe (webApp web req respond) (namesApp (weHttp web) routes req respond)
-  withApp app $ \client -> started ctx {cWeb = web, cClient = client} >>= action
+  withApp (recordingHandlers cHandlers app) $ \client -> started ctx {cWeb = web, cClient = client} >>= action
 
 -- | A new sender and worker over the same store, as after a restart.
 started :: Ctx -> IO W
@@ -594,7 +594,7 @@ testInNameTurn = withWorker $ \w@W {wCtx = ctx@Ctx {cOrders}} -> do
     takeMVar holding
     withAsync (steps w r) $ \stepping -> do
       -- the unread failure's write waits for the turn the holder has
-      timeout prompt (atomically $ labelTurnCount (oeTurns cOrders) (nrLabelHash r) >>= check . (== 2)) >>= maybe (fail "the worker did not queue on the turn") pure
+      blockedInSTM (pure [asyncThreadId stepping]) 1
       stored ctx r `shouldReturn` r
       putMVar release ()
       timeout prompt (wait stepping) >>= maybe (fail "the step did not finish") done
@@ -1464,7 +1464,7 @@ testRetryInNameTurn = withWorker $ \W {wCtx = ctx@Ctx {cOrders}} -> do
         withAsync (withLabelTurn turns nrLabelHash $ putMVar holding () >> takeMVar release) $ \_ -> do
           takeMVar holding
           withAsync request $ \requesting -> do
-            timeout prompt (atomically $ labelTurnCount turns nrLabelHash >>= check . (== 2)) >>= maybe (fail "the retry did not queue on the turn") pure
+            blockedRequests ctx 1
             meanwhile
             putMVar release ()
             timeout prompt (wait requesting) >>= maybe (fail "the retry did not finish") pure
@@ -1501,7 +1501,7 @@ testCloseFailed = withWorker $ \W {wCtx = ctx@Ctx {cStore, cOrders}} -> do
   x <- stored ctx r
   (nrPhase x, nrReveal x, nrVersion x) `shouldBe` (OTaken orderTime, Nothing, nrVersion r + 1)
   figuresOf ctx r `shouldReturn` Just (0, price, price)
-  turnsCount (oeTurns cOrders) `shouldReturn` 0
+  timeout prompt (withLabelTurn (oeTurns cOrders) (nrLabelHash r) $ withBalanceTurn (oeTurns cOrders) (nrId r) $ pure ()) `shouldReturn` Just ()
   recordRefund (oeTurns cOrders) cStore rid price orderTime `shouldReturn` Left (RefundAmount 0)
   retryOf ctx x `shouldReturn` refusedWith 400 "bad_request"
   answerFree ctx "alicebakers"

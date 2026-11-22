@@ -9,14 +9,13 @@ module Bots.StoreService.NamesRevealTests (namesRevealTests) where
 
 import Bots.StoreService.FakeEthNode
 import Bots.StoreService.NamesContractsTests (noncesCall)
-import Bots.StoreService.NamesOrdersTests (Ctx (..), Order (..), aliceOrder, communityTerms, invoiceRegistration, keyA, orderSeconds, orderTime, placed, post, registrationOf, settleNow, settled, withOrders)
+import Bots.StoreService.NamesOrdersTests (Ctx (..), Order (..), aliceOrder, blockedRequests, communityTerms, invoiceRegistration, keyA, orderSeconds, orderTime, placed, post, recordingHandlers, registrationOf, settleNow, settled, withOrders)
 import Bots.StoreService.NamesOwnerTests (answerFree, postSelection, selectionBody, selectionOf)
-import Bots.StoreService.NamesPhasesTests (change, held, prompt, registrationPath, seenVersion, woken)
+import Bots.StoreService.NamesPhasesTests (change, held, registrationPath, seenVersion, woken)
 import Bots.StoreService.NamesStoreTests (hashFixture, ownerA)
 import Bots.StoreService.WebTests (bounded, fieldOf, refusedWith, phaseFieldOf, statusOf, webRequestBody)
 import Control.Concurrent.Async (Async, async, wait)
 import Control.Concurrent.MVar (newEmptyMVar, putMVar, takeMVar)
-import Control.Concurrent.STM
 import Control.Monad (forM_)
 import Crypto.Number.Serialize (i2ospOf_, os2ip)
 import qualified Crypto.PubKey.ECC.Types as ECC
@@ -42,16 +41,14 @@ import Simplex.Messaging.Agent.Store.Common (withTransaction)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.Secp256k1 (RecoverableSignature (..), Secp256k1PrivateKey, signRecoverable)
 import Simplex.Messaging.Encoding (Encoding (..))
-import Simplex.Messaging.SimplexName (LabelHash (..), SimplexTLD (..), labelHash)
+import Simplex.Messaging.SimplexName (SimplexTLD (..), labelHash)
 import Simplex.Messaging.SystemTime (RoundedSystemTime (..))
 import StoreService.Names.Abi (hex, uint256)
 import StoreService.Names.Chain (Hex32 (..), TxHash (..))
-import StoreService.Names.Orders (OrdersEnv (..))
 import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Registration (Registration (..), TermsAcceptance (..), acceptanceDigest, linkMaxBytes, makeCommitment, policyDomain, registerIntentDigest, sponsorDomain, termsKind)
 import StoreService.Names.Reveal (RevealRequest (..))
 import StoreService.Names.Store (Commit (..), FailReason (..), NameRegistration (..), NameReveal (..), OrderPhase (..), TxHistory (..), getRegistration, noHistory)
-import StoreService.Names.Turns (labelTurnCount)
 import StoreService.Web.Http (createLimit, holdMicros, maxBodyBytes, readLimit)
 import StoreService.Web.Names (Route (..), namesApp)
 import StoreService.Web.Names.Owner (selectNameHandler)
@@ -93,7 +90,7 @@ data Fx = Fx {fCtx :: Ctx, fApp :: Application}
 
 -- | The registration routes as namesRoutes registers them, the reveal's and the selection's included.
 withReveals :: (Fx -> IO a) -> IO a
-withReveals action = withOrders $ \ctx@Ctx {cNode, cOrders, cWeb} -> do
+withReveals action = withOrders $ \ctx@Ctx {cNode, cOrders, cWeb, cHandlers} -> do
   answerCall cNode fakeSponsor noncesCall $ Returns $ uint256 (0 :: Int)
   let web = cWeb {weOrders = Just cOrders}
       routes = \case
@@ -103,7 +100,7 @@ withReveals action = withOrders $ \ctx@Ctx {cNode, cOrders, cWeb} -> do
         _ -> Nothing
       app req respond = fromMaybe (webApp web req respond) (namesApp (weHttp web) routes req respond)
   mgr <- newManager defaultManagerSettings
-  Warp.testWithApplication (pure app) $ \port ->
+  Warp.testWithApplication (pure $ recordingHandlers cHandlers app) $ \port ->
     action Fx {fCtx = ctx {cWeb = web, cClient = (mgr, "http://127.0.0.1:" <> show port)}, fApp = app}
 
 -- | The request, held at its first chain read: a reveal's nonce read, or /name's name check, in its turns.
@@ -321,11 +318,6 @@ highS :: RecoverableSignature -> RecoverableSignature
 highS sig@RecoverableSignature {rsS, rsRecId} = sig {rsS = i2ospOf_ 32 (n - os2ip rsS), rsRecId = 1 - rsRecId}
   where
     n = ECC.ecc_n $ ECC.common_curve $ ECC.getCurveByName ECC.SEC_p256k1
-
--- | Waits until this many requests hold or wait for the label's turn.
-queuedOn :: Ctx -> LabelHash -> Int -> IO ()
-queuedOn Ctx {cOrders = OrdersEnv {oeTurns}} lh n =
-  timeout prompt (atomically $ labelTurnCount oeTurns lh >>= check . (== n)) >>= maybe (fail $ show n <> " requests did not queue on the turn") pure
 
 -- tests
 
@@ -552,7 +544,7 @@ testRacesName = bounded "races /name" $ withReveals $ \Fx {fCtx = ctx} -> do
   toAlicebakers <- selectionOf ctx "alicebakers" 1
   (inFlight, gate) <- pausedAtChainRead ctx (ownerReveal ctx rid alice)
   selection <- async $ postSelection ctx rid =<< selectionBody ctx keyA rid toAlicebakers
-  queuedOn ctx (labelHash "alicebakery") 2
+  blockedRequests ctx 1
   releaseGate gate
   wait inFlight `shouldReturn` accepted
   wait selection `shouldReturn` badRequest

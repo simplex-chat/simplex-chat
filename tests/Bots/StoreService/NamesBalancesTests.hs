@@ -11,10 +11,9 @@ import Bots.StoreService.FakeEthNode (plainTerms)
 import Bots.StoreService.FakeStripe (FakeStripe (..), stripeObjectEvent, stripeSigHeader, withFakeStripe)
 import Bots.StoreService.NamesOrdersTests (Ctx (..), withOrders, withOrdersVia)
 import Bots.StoreService.NamesStoreTests (at, btc, hashFixture, newReg, ownerA, paidOrder, reg, t0, write)
-import Bots.StoreService.WebTests (agreed, lengthOf, rcv, statusOf, webRequestBody, withServiceStore)
-import Control.Concurrent.Async (async, wait)
+import Bots.StoreService.WebTests (agreed, blockedInSTM, lengthOf, rcv, statusOf, webRequestBody, withServiceStore)
+import Control.Concurrent.Async (async, asyncThreadId, wait)
 import Control.Concurrent.MVar (newEmptyMVar, putMVar, takeMVar)
-import Control.Concurrent.STM (atomically, check)
 import Control.Monad (forM_)
 import qualified Data.Aeson as J
 import Data.IORef (IORef, modifyIORef', newIORef, readIORef)
@@ -40,7 +39,7 @@ import StoreService.Names.Chain (Hex32 (..), TxHash (..))
 import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Signatures (OrderFields (..))
 import StoreService.Names.Store
-import StoreService.Names.Turns (balanceTurnCount, newTurns, turnsCount, withBalanceTurn, withLabelTurn)
+import StoreService.Names.Turns (newTurns, withBalanceTurn, withLabelTurn)
 import StoreService.Names.View (addressText)
 import StoreService.Orders (cancelOpenInvoice, settleOrder)
 import StoreService.Service (linkText)
@@ -55,7 +54,7 @@ import Test.Hspec
 #if defined(dbPostgres)
 import Bots.StoreService.WebTests (withServiceStores)
 import Control.Concurrent.Async (concurrently)
-import Control.Concurrent.STM (modifyTVar', newTVarIO, readTVar)
+import Control.Concurrent.STM (atomically, check, modifyTVar', newTVarIO, readTVar)
 import Database.PostgreSQL.Simple ((:.) (..))
 #else
 import Database.SQLite.Simple ((:.) (..))
@@ -320,7 +319,7 @@ testRecordRefund = withServiceStore $ \st -> do
   refundOf "inv-s" 10000 t0 `shouldReturn` Right RefundRecord {rdRegistration = RegistrationId "s", rdCents = 10000, rdLink = link}
   figures st "s" `shouldReturn` Just (0, 10000, 10000)
   refundOf "s" 10000 t0 `shouldReturn` Left (RefundAmount 0)
-  turnsCount turns `shouldReturn` 0
+  timeout 5000000 (withBalanceTurn turns (RegistrationId "s") $ pure ()) `shouldReturn` Just ()
 
 testLinkText :: IO ()
 testLinkText = do
@@ -465,12 +464,11 @@ testBalanceTurn = withServiceStore $ \st -> do
     refund st "s" 10000
   takeMVar inside
   secondRefund <- async $ withBalanceTurn turns src $ refund st "s" 10000
-  timeout 5000000 (atomically $ balanceTurnCount turns src >>= check . (== 2)) `shouldReturn` Just ()
+  blockedInSTM (pure [asyncThreadId secondRefund]) 1
   putMVar proceed ()
   wait firstRefund `shouldReturn` True
   wait secondRefund `shouldReturn` False
   timeout 5000000 (withLabelTurn turns (labelHash "alicebakery") $ withBalanceTurn turns src $ pure ()) `shouldReturn` Just ()
-  turnsCount turns `shouldReturn` 0
 
 -- reversals
 

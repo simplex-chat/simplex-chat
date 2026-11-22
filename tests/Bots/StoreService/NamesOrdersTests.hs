@@ -12,6 +12,8 @@ module Bots.StoreService.NamesOrdersTests
     withOrdersOn,
     withOrdersCancelling,
     withSettings,
+    blockedRequests,
+    recordingHandlers,
     configured,
     testNamesConfig,
     codesOnly,
@@ -68,10 +70,10 @@ import Bots.StoreService.FakeHttp (nextFakeId)
 import Bots.StoreService.NamesContractsTests (alice, answerRegistered, answerRegistrar, minPriceCentsPerYear, nameExpiresCall, noncesCall, registrarOf, rentPriceAnswer, rentPriceCall, reservedNamesCall)
 import Bots.StoreService.NamesStoreTests (btc, codeReg, commitFixture, hashFixture, order, ownerA, ownerB, placeCode, placePaid, reveal, t0)
 import Bots.StoreService.WebTests
-import Control.Concurrent (threadDelay)
+import Control.Concurrent (ThreadId, myThreadId, threadDelay)
 import Control.Concurrent.Async (async, concurrently, wait)
 import Control.Concurrent.MVar (newEmptyMVar, putMVar, takeMVar)
-import Control.Concurrent.STM (TVar, atomically, readTVarIO, writeTVar)
+import Control.Concurrent.STM (TVar, atomically, modifyTVar', newTVarIO, readTVarIO, writeTVar)
 import qualified Control.Exception as E
 import Control.Arrow ((&&&))
 import Control.Monad (forM_, replicateM_, void)
@@ -405,7 +407,8 @@ data Ctx = Ctx
     cStub :: IORef StubState,
     cClock :: IORef UTCTime,
     cRandom :: TVar ChaChaDRG,
-    cIps :: IORef Int
+    cIps :: IORef Int,
+    cHandlers :: TVar [ThreadId]
   }
 
 testNamesConfig :: FakeEthNode -> NamesConfig
@@ -466,8 +469,9 @@ withOrdersOn cOpenStore via action = cOpenStore >>= \cStore -> withFakeEthNode $
     built <- newWebEnv cStore cfg waiters hints [crypto, card] Nothing
     let cWeb = built {weOrders = Just cOrders}
     mgr <- newManager defaultManagerSettings
-    Warp.testWithApplicationSettings (webSettings (listener cfg)) (pure $ ordersApp cWeb cOrders) $ \port ->
-      action Ctx {cStore, cOpenStore, cNode, cOrders, cWeb, cClient = (mgr, "http://127.0.0.1:" <> show port), cStub, cClock, cRandom, cIps}
+    cHandlers <- newTVarIO []
+    Warp.testWithApplicationSettings (webSettings (listener cfg)) (pure $ recordingHandlers cHandlers $ ordersApp cWeb cOrders) $ \port ->
+      action Ctx {cStore, cOpenStore, cNode, cOrders, cWeb, cClient = (mgr, "http://127.0.0.1:" <> show port), cStub, cClock, cRandom, cIps, cHandlers}
 
 -- | The context's store, chain, providers and clock with its names settings changed, as after a restart.
 configured :: (NamesConfig -> NamesConfig) -> Ctx -> Ctx
@@ -482,13 +486,19 @@ codesOnly cfg = cfg {nCodesOnly = True}
 -- | Another server of the orders routes over the context with its names settings changed.
 withSettings :: (NamesConfig -> NamesConfig) -> Ctx -> (Ctx -> IO a) -> IO a
 withSettings change ctx action = do
-  let ctx'@Ctx {cOrders, cWeb} = configured change ctx
+  let ctx'@Ctx {cOrders, cWeb, cHandlers} = configured change ctx
   mgr <- newManager defaultManagerSettings
-  Warp.testWithApplicationSettings (webSettings (listener $ weConfig cWeb)) (pure $ ordersApp cWeb cOrders) $ \port ->
+  Warp.testWithApplicationSettings (webSettings (listener $ weConfig cWeb)) (pure $ recordingHandlers cHandlers $ ordersApp cWeb cOrders) $ \port ->
     action ctx' {cClient = (mgr, "http://127.0.0.1:" <> show port)}
 
 ordersApp :: WebEnv -> OrdersEnv -> Application
 ordersApp web orders req respond = fromMaybe (webApp web req respond) (namesApp (weHttp web) (codeRoutes orders (weProviders web) (weWaiters web)) req respond)
+
+recordingHandlers :: TVar [ThreadId] -> Application -> Application
+recordingHandlers handlers app req respond = myThreadId >>= \t -> atomically (modifyTVar' handlers (t :)) >> app req respond
+
+blockedRequests :: HasCallStack => Ctx -> Int -> IO ()
+blockedRequests Ctx {cHandlers} = blockedInSTM (readTVarIO cHandlers)
 
 -- | The routes as namesRoutes registers them, since a NamesEnv needs a running chat controller.
 codeRoutes :: OrdersEnv -> [Provider] -> Waiters -> [Text] -> Maybe Route

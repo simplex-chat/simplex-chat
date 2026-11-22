@@ -46,7 +46,7 @@ namesWiringTests = describe "StoreService names: wiring" $ do
     it "holds both label hashes in withLabelTurns, and one when they are equal" testLabelTurnsHoldBoth
     it "never deadlocks withLabelTurns A->B against B->A" testLabelTurnsNoDeadlock
     it "releases a turn whose holder throws" testTurnReleasedOnThrow
-    it "drops a lock once nobody holds or waits for it" testTurnsDropIdleLocks
+    it "frees a turn whose waiter was cancelled while the holder kept it" testTurnFreedAfterCancelledWaiter
 
 -- | Long enough that only a missed wake-up could make a test wait it out.
 longHold :: Int
@@ -222,12 +222,9 @@ testTurnReleasedOnThrow = do
     Right () -> expectationFailure "the holder's exception must reach the caller"
   timeout prompt (withLabelTurn turns a (pure ())) `shouldReturn` Just ()
 
-testTurnsDropIdleLocks :: IO ()
-testTurnsDropIdleLocks = do
+testTurnFreedAfterCancelledWaiter :: IO ()
+testTurnFreedAfterCancelledWaiter = do
   turns <- newTurns
   let a = labelHash "alice1"
-  withLabelTurns turns a (labelHash "bobby2") $ withCodeTurn turns (Hex32 $ BC.replicate 32 'c') $ turnsCount turns `shouldReturn` 3
-  E.handle (\Boom -> pure ()) $ withLabelTurn turns a (E.throwIO Boom)
-  -- the waiter is cancelled by the timeout while the holder keeps the turn
   withLabelTurn turns a $ timeout parkDelay (withLabelTurn turns a (pure ())) `shouldReturn` Nothing
-  turnsCount turns `shouldReturn` 0
+  timeout prompt (withLabelTurn turns a (pure ())) `shouldReturn` Just ()

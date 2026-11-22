@@ -46,6 +46,7 @@ module Bots.StoreService.WebTests
     siteConfigJson,
     rcv,
     bounded,
+    blockedInSTM,
     seedCheckoutCatalog,
     createBody,
     supporterPriceId,
@@ -80,7 +81,7 @@ import Bots.StoreService.FakeBTCPay
 import Bots.StoreService.FakeHttp (withResetServer)
 import Bots.StoreService.FakeStripe (FakeStripe (..), fakeIntentStatus, setIntentState, stripeEvent, stripeSigHeader, withFakeStripe)
 import ChatTests.Utils (writeFixture)
-import Control.Concurrent (forkIO, forkOn, getNumCapabilities, threadDelay)
+import Control.Concurrent (ThreadId, forkIO, forkOn, getNumCapabilities, threadDelay)
 import Control.Concurrent.Async (async, wait)
 import qualified Control.Concurrent.Async as Async
 import Control.Concurrent.MVar (MVar, newEmptyMVar, newMVar, putMVar, takeMVar, withMVar)
@@ -102,7 +103,7 @@ import Data.Either (isLeft)
 import Data.Functor ((<&>))
 import Data.IORef (IORef, atomicModifyIORef', modifyIORef', newIORef, readIORef, writeIORef)
 import Data.Int (Int64)
-import Data.List (isInfixOf, sort, sortOn)
+import Data.List (isInfixOf, nub, sort, sortOn)
 import qualified Data.Map.Strict as Map
 import Data.Maybe (catMaybes, isJust, isNothing, fromMaybe, mapMaybe)
 import Data.String (fromString)
@@ -116,6 +117,7 @@ import Data.Time.Clock.POSIX (posixSecondsToUTCTime, utcTimeToPOSIXSeconds)
 import Data.Word (Word32, Word8)
 import qualified GHC.IO.Device as IODevice
 import qualified GHC.IO.FD as FD
+import GHC.Conc (BlockReason (..), ThreadStatus (..), threadStatus)
 import GHC.IO.Handle.FD (handleToFd)
 import Network.HTTP.Client (Manager, Request (..), RequestBody (..), Response, defaultManagerSettings, httpLbs, newManager, parseRequest, responseBody, responseHeaders, responseStatus, responseTimeoutMicro)
 import Network.HTTP.Types (Header, HeaderName, hCacheControl, hContentType)
@@ -1225,6 +1227,13 @@ exampleCeiling = 20 * 1000000
 bounded :: HasCallStack => String -> IO a -> IO a
 bounded label action =
   timeout exampleCeiling action >>= maybe (failWith (label <> ": did not finish within 20s")) pure
+
+blockedInSTM :: HasCallStack => IO [ThreadId] -> Int -> IO ()
+blockedInSTM threads n = bounded (show n <> " threads blocked in STM") blocked
+  where
+    blocked = do
+      statuses <- mapM threadStatus . nub =<< threads
+      when (length (filter (== ThreadBlocked BlockedOnSTM) statuses) < n) $ threadDelay 1000 >> blocked
 
 clientTimeout :: Int
 clientTimeout = 60 * 1000000

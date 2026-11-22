@@ -42,7 +42,6 @@ import Control.Concurrent.STM (TVar)
 import Data.Maybe (isNothing)
 import Control.Monad (forM_, (<=<))
 import Crypto.Random (ChaChaDRG)
-import qualified Data.Aeson as J
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as LB

@@ -18,7 +18,7 @@ import StoreService.Names.Abi (addressWord, selector, uint256)
 import StoreService.Names.Chain (SignedTx (..), newChainClient, signTransaction)
 import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Store (CmdSource (..), FailReason (..), NameRegistration (nrPhase), NewTransaction (..), OrderPhase (OFailed), PrepaidCode (..), RegistrationTx (..), TxFor (..), VersionWrite (Written), getPrepaidCode, insertTransaction, reservePrepaidCode, spendLandedPrepaidCode)
-import StoreService.Names.Turns (codeTurnCount, newTurns, withCodeTurn)
+import StoreService.Names.Turns (newTurns, withCodeTurn)
 import StoreService.Names.View (addressText)
 import StoreService.Options (StoreServiceOpts (..))
 import StoreService.Service (ServiceState (..), checkNodeChain, checkUnverifiedReceipts, newServiceState, requireDevKeys, serviceRequest, storeService, trustDevKeys)
@@ -28,7 +28,7 @@ import Bots.StoreService.BotTests (badgeBotName, badgeCmdUsage, badgeProfile, co
 import Bots.StoreService.ConfigTests (chainSection, controllerAddr, namesSection, registrarAddr, withChainId, withRpcUrl)
 import Bots.StoreService.FakeEthNode (CallAnswer (..), FakeEthNode (..), Fault (..), address, answerCall, awaitSent, fakeNamePolicy, linkTermsOnNode, setFault, withFakeEthNode)
 import Bots.StoreService.NamesContractsTests (nameExpiresCall, rentPriceAnswer, rentPriceCall, reservedNamesCall)
-import Bots.StoreService.WebTests (answerOf, capturingStderr, digestFixture, refusedWith, siteConfigJson, statusOf)
+import Bots.StoreService.WebTests (answerOf, blockedInSTM, capturingStderr, digestFixture, refusedWith, siteConfigJson, statusOf)
 import Bots.StoreService.NamesSearchTests (aliceHex)
 import qualified Bots.StoreService.NamesBalancesTests as Balances
 import Bots.StoreService.NamesStoreTests (issue, order, ownerA, placeCode, placePaid, reg, t0, usable, write)
@@ -38,7 +38,7 @@ import ChatTests.DBUtils
 import ChatTests.Utils
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.MVar (MVar, newEmptyMVar, putMVar, takeMVar)
-import Control.Concurrent.Async (Async, async, cancel, poll, wait, waitCatchSTM)
+import Control.Concurrent.Async (Async, async, asyncThreadId, cancel, poll, wait, waitCatchSTM)
 import Control.Concurrent.STM (TQueue, atomically, newTMVarIO, newTQueueIO, orElse, readTMVar, readTQueue, readTVarIO, tryReadTMVar, writeTQueue)
 import Control.Exception (IOException, bracket, catch, finally, throwIO, try)
 import Control.Monad (forM_, guard, mfilter, replicateM_, unless, void, when)
@@ -479,7 +479,7 @@ testRevokeTakesCodeTurn ps = do
     let st = chatStore cc
         revokeAfter code release = do
           revoking <- async $ revokeNameCode turns cc code
-          timeout 5000000 (atomically $ codeTurnCount turns (prepaidCodeHash code) >>= guard . (== 2)) `shouldReturn` Just ()
+          blockedInSTM (pure [asyncThreadId revoking]) 1
           poll revoking >>= (`shouldSatisfy` isNothing)
           release
           finished revoking

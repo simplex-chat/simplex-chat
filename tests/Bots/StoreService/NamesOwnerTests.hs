@@ -39,7 +39,6 @@ import Control.Applicative ((<|>))
 import Control.Arrow ((&&&))
 import Control.Concurrent.Async (async, wait)
 import Control.Concurrent.MVar (newEmptyMVar, putMVar, takeMVar)
-import Control.Concurrent.STM (atomically, check)
 import Control.Monad (forM, forM_, void, (<=<))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.KeyMap as KM
@@ -70,7 +69,7 @@ import StoreService.Names.Orders (OrdersEnv (..), signedRequestSeconds)
 import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Signatures (OrderFields (..), findMessage, parseAnyCaseAddress, personalDigest, selectionMessage)
 import StoreService.Names.Store hiding (findLimit)
-import StoreService.Names.Turns (labelTurnCount, withLabelTurn)
+import StoreService.Names.Turns (withLabelTurn)
 import StoreService.Names.View (addressText)
 import StoreService.Store (RevokeResult (..))
 import StoreService.Web.Http (createLimit, findLimit, holdMicros, readLimit)
@@ -125,10 +124,10 @@ withOwnerAs change action = withOrders $ \ctx -> do
 
 -- | The owner routes over the context's settings.
 serveOwner :: Ctx -> (Ctx -> IO a) -> IO a
-serveOwner ctx@Ctx {cOrders = orders, cWeb = web} action = do
+serveOwner ctx@Ctx {cOrders = orders, cWeb = web, cHandlers} action = do
   let routes path = ownerRoutes orders web path <|> codeRoutes orders (weProviders web) (weWaiters web) path
       app req respond = fromMaybe (webApp web req respond) (namesApp (weHttp web) routes req respond)
-  withApp app $ \client -> action ctx {cClient = client}
+  withApp (recordingHandlers cHandlers app) $ \client -> action ctx {cClient = client}
 
 ownerRoutes :: OrdersEnv -> WebEnv -> [Text] -> Maybe Route
 ownerRoutes orders WebEnv {weHttp, weProviders, weWaiters} = \case
@@ -747,8 +746,7 @@ testSelectionsCross = withOwner $ \ctx -> do
     holder <- async $ withLabelTurn (oeTurns $ cOrders ctx) (labelHash high) $ putMVar holding () >> takeMVar release
     takeMVar holding
     let started = if odd n then [lowSelection, highSelection] else [highSelection, lowSelection]
-        queuedOnLow k = bounded "the selection's turn" $ atomically $ labelTurnCount (oeTurns $ cOrders ctx) (labelHash low) >>= check . (== k)
-    selections <- forM (zip [1 ..] started) $ \(k, (r, body)) -> async (postSelection ctx (nrId r) body) <* queuedOnLow k
+    selections <- forM (zip [1 ..] started) $ \(k, (r, body)) -> async (postSelection ctx (nrId r) body) <* blockedRequests ctx k
     putMVar release ()
     wait holder
     outcomes <- bounded ("round " <> show n) $ mapM wait selections
