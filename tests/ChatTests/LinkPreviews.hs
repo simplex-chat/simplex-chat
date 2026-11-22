@@ -26,7 +26,7 @@ import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.IORef
 import Data.List (isInfixOf, isPrefixOf)
 import qualified Data.Text as T
-import Data.Text.Encoding (decodeUtf8, encodeUtf8)
+import Data.Text.Encoding (encodeUtf8)
 import qualified Data.X509.CertificateStore as XS
 import ImageTests (pngSideAbove16384)
 import Network.HTTP.Types (found302, hContentEncoding, hContentType, hLocation, notFound404, ok200)
@@ -97,7 +97,10 @@ onionUrl :: TestParams -> String -> String
 onionUrl ps path = "http://linkpreview.onion:" <> plainServerPort ps <> path
 
 previewOf :: TestCC -> String -> IO (Either ChatError ChatResponse)
-previewOf TestCC {chatController = cc} link = execChatCommand CSLocal (B.pack $ "/_link preview " <> link) 0 `runReaderT` cc
+previewOf cc link = chatCommand cc $ B.pack $ "/_link preview " <> link
+
+chatCommand :: TestCC -> ByteString -> IO (Either ChatError ChatResponse)
+chatCommand TestCC {chatController = cc} cmd = execChatCommand CSLocal cmd 0 `runReaderT` cc
 
 linkPreviewCfg :: IO ChatConfig
 linkPreviewCfg = linkPreviewPolicyCfg APPublicAndLoopback
@@ -240,8 +243,9 @@ testLongTextPreview ps = do
       description `shouldBe` T.replicate 500 "\20013"
       T.length image `shouldSatisfy` (<= 14000 - 602 - 1502)
       let content = J.encode $ J.object ["msgContent" J..= MCLink {text = T.pack link, preview}]
-      alice ##> ("/_send @2 json [" <> T.unpack (decodeUtf8 $ LB.toStrict content) <> "]")
-      alice <# ("@bob " <> link)
+      chatCommand alice ("/_send @2 json [" <> LB.toStrict content <> "]") >>= \case
+        Right CRNewChatItems {} -> pure ()
+        r -> expectationFailure $ "unexpected result: " <> show r
       bob <# ("alice> " <> link)
 
 testSocksIsolate :: HasCallStack => TestParams -> IO ()
