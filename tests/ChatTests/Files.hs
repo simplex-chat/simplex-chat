@@ -1272,7 +1272,7 @@ testXFTPUncommittedDescriptionDownload ps =
     opts = (testOpts :: ChatOpts) {autoAcceptFileSize = 200000}
     agentRcvFiles cc = withCCAgentTransaction cc (`DB.query_` "SELECT count(1) FROM rcv_files WHERE deleted = 0") :: IO [[Int]]
     skipDeletedDownloadErrors cc =
-      timeout 1000000 (getTermLine cc) >>= mapM_ (\l -> l `shouldStartWith` "chat db error: SERcvFileNotFoundXFTP" >> skipDeletedDownloadErrors cc)
+      timeout 1000000 (getTermLine cc) >>= mapM_ (\l -> (l `shouldStartWith` "chat db error: SERcvFileNotFoundXFTP") >> skipDeletedDownloadErrors cc)
 
 testRedeliveredUncommittedInlineChunk :: HasCallStack => TestParams -> IO ()
 testRedeliveredUncommittedInlineChunk =
