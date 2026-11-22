@@ -297,7 +297,7 @@ testLinkPreviewFixture ps = withSocksServer ps $ \_ -> do
   withLinkPreviewChat ps cfg (socksOpts ps SocksIsolateByAuth) $ \_ alice -> do
     let origin = "https://link-preview.test:" <> linkServerPort ps
         links = [origin <> "/page", origin <> "/no-image"]
-    apiFixture "previews/link_preview" alice [(origin, "LINK_URL")] FixtureRequests {frMarkdown = links, frUris = [], frCommands = map ("/_link preview " <>) links}
+    apiFixture "previews/link_preview" alice [(origin, "LINK_URL")] FixtureRequests {frMarkdown = links <> ["text without a link"], frUris = [], frCommands = map ("/_link preview " <>) links}
 
 isPreview :: Either ChatError ChatResponse -> Bool
 isPreview = \case

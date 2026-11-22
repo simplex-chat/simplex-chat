@@ -41,7 +41,8 @@
           "text": "LINK_URL/page"
         }
       ]
-    }
+    },
+    "text without a link": {}
   },
   "uris": {}
 }

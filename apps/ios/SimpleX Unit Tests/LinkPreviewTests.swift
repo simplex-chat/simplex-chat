@@ -182,6 +182,31 @@ final class LinkPreviewTests: XCTestCase {
     }
 
     @MainActor
+    func testComposeDropsPreviewOfLinkRemovedBeforeItLoads() async throws {
+        let compose = try await showCompose()
+        compose.composeState.message = "LINK_URL/page"
+        try await waitFor { !compose.composeState.parsedMessage.isEmpty }
+        compose.composeState.message = "text without a link"
+        try await waitFor { compose.composeState.parsedMessage.first?.text == "text without a link" }
+        try await Task.sleep(nanoseconds: 2_000_000_000)
+        XCTAssertTrue(compose.composeState.noPreview)
+        XCTAssertEqual(requests(), [])
+    }
+
+    @MainActor
+    func testComposeDropsPreviewOfLinkRemovedWhileItLoads() async throws {
+        let response = hold("/_link preview LINK_URL/page")
+        let compose = try await showCompose()
+        compose.composeState.message = "LINK_URL/page"
+        try await waitFor { self.requests() == ["/_link preview LINK_URL/page"] }
+        compose.composeState.message = "text without a link"
+        try await waitFor { compose.composeState.parsedMessage.first?.text == "text without a link" }
+        response.signal()
+        try await Task.sleep(nanoseconds: 1_000_000_000)
+        XCTAssertTrue(compose.composeState.noPreview)
+    }
+
+    @MainActor
     private func attachFile(_ compose: ComposeHostState) {
         compose.composeState = compose.composeState.copy(preview: .filePreview(fileName: "test.pdf", file: URL(fileURLWithPath: "test.pdf")))
     }
