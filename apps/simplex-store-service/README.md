@@ -331,7 +331,7 @@ The endpoint's events in the Dashboard are `payment_intent.succeeded`,
 A dispute or a refund of a name order's payment is acted on at its delivery, as no read finds it:
 - an order paid and live, of which no register transaction of its current name was saved, is
   closed with `closedBy` `reversed`, its name released and nothing credited to its balance, also
-  after support refunded part of its balance; a register of a moved order's earlier name does not
+  after support refunded part of its balance; a register of a name selected before a reset does not
   keep it;
 - an order whose payment is not recorded yet is closed the same way when its payment settles,
   instead of being queued;
@@ -969,7 +969,7 @@ warning. When the metrics port cannot be listened on, the failure is logged as a
 | `simplex_store_badges_codes_open` | badge codes paid or free, not revoked or expired, with redemptions left |
 | `simplex_store_names_orders{phase,reason}` | name orders in the phase: `unpaid`, `closed`, `queued`, `committing`, `committed`, `registering`, `registered`, `taken` or `failed`; the queue is `queued` to `registering`, while `closed` counts unpaid orders closed with their invoice, kept for 30 days, and `failed` every failed order not tried again, by `reason`: `registry_refused`, `signature_refused`, `month_ended` or `unread`, each 0 when it has none |
 | `simplex_store_names_queue_oldest_change_timestamp_seconds` | the last change, in Unix seconds, of the order unchanged longest among those the service moves on: `queued`, `committing`, `registering`, and `committed` with the page's reveal stored; absent when there is none |
-| `simplex_store_names_unregistered_oldest_paid_timestamp_seconds` | when the live order paid longest ago among those `queued`, `committing`, `committed`, `registering` or `failed` was paid, a month-ended order not counted, a code order at its placement; absent when there is none |
+| `simplex_store_names_unregistered_oldest_paid_timestamp_seconds` | the oldest selection of a name among the live orders `queued`, `committing`, `committed`, `registering` or `failed`: a payment's settlement, a code order's placement, or a selection after a reset; a month-ended order not counted; absent when there is none |
 | `simplex_store_names_transactions_pending` | registrar transactions sent and not settled, one per nonce, so a fee replacement counts once |
 | `simplex_store_names_transactions_oldest_pending_timestamp_seconds` | when the oldest of them was first signed; absent when none is pending |
 | `simplex_store_names_invoices_open` | open invoices of name orders |
@@ -1005,7 +1005,7 @@ failed read keeps the last one and is counted.
 | `simplex_names_refresh_failures_total` | counter of failed reads of the names since the service started |
 
 Every metric is a gauge, but for the names' histogram and counter. A stuck order, a paid order not
-registered 3 hours after its payment, a registrar key that cannot pay for a register with links, a
+registered 3 hours after the selection of its name, a registrar key that cannot pay for a register with links, a
 base fee above the fee cap, a stuck transaction or record edit, a node that cannot be read or
 has stopped following the chain, terms that cannot be shown, a payment provider that cannot be
 read, names on chain that cannot be counted, a month pass or late credit pass that stopped
@@ -1042,9 +1042,10 @@ An order moves on within minutes: its commit and register are each mined and con
 register waits about a minute after the commit. An order tried again can wait unchanged up to
 `reveal_margin_seconds` (900 by default) for its old commitment to lapse, so the queue alert's
 threshold is above it. Every 5 minutes the service also logs an error and, with `[group]`, posts in
-the managed group, once for each order paid 3 hours ago or more and still `queued`, `committing`,
-`committed`, `registering` or `failed`: `names: order <id> was paid at <time> and is <phase>, not registered, 3
-hours later`. A taken order is not alerted. When its name is no longer available on chain, the service logs an
+the managed group, once for each order whose name was selected 3 hours ago or more, at its payment's
+settlement, its code's placement or a selection after a reset, and still `queued`, `committing`,
+`committed`, `registering` or `failed`: `names: order <id> had its name selected at <time> and is <phase>, not registered, 3
+hours later`. A taken order is not alerted, and the 3 hours are counted again from each later selection. When its name is no longer available on chain, the service logs an
 error and posts in the group once: `names worker: registration <id> was taken: its name is no longer
 available on chain`. An order taken at settlement, as another buyer paid for its name first, is logged
 as a note. The alert rule fires for any phase. Below 0.01 ETH the node refuses a register with links (see [Fund the key](#fund-the-key)),
@@ -1116,7 +1117,7 @@ does not take, and meanwhile `503 terms_unavailable` with `Retry-After` for a te
 
 The terms of a name's kind are unavailable while their link is not set, is not a link the service
 takes, or has a text the service cannot fetch now. An available name's search answer then carries
-`"terms": null`, and an order, a code order or a move of such a name answers
+`"terms": null`, and an order, a code order or a selection of such a name answers
 `503 terms_unavailable` before any payment, with `Retry-After` while the fetch waits. The service
 logs both links and their hashes at startup, and warns for each that is not set or not a link it
 takes. A names lane reads or fetches both texts at the start and then every hour. A search reads the links only for an available name, and
@@ -1149,13 +1150,13 @@ the names site and check that it shows as a community name.
 Every order signs the terms the buyer agreed to: the 64 lower-case hex digits of the hash of the
 terms of the name's kind, without `0x`, after `community/` for a listed name. The request sends them
 as `terms` in its `fields`, `{"communityName": true, "termsHash": "0x…"}`. The service stores them
-with the order, so an open order keeps the terms it signed after a change, and every move signs the
-current terms for the name it moves to, and stores them. An order or a move signed with any other
+with the order, so an open order keeps the terms it signed after a change; a selection of a name is
+signed with the current terms for that name, which are stored with it. An order or a selection signed with any other
 value answers `409 terms_changed` with the current terms of the name's kind, `{"hash", "link"}`, and
 the name's community entry, and the page asks again; an order signed with a terms version, as pages
 before signed, meets it once. An exact resend is still answered after the terms changed.
 
-**Upgrading:** a page that sends no `terms` gets `bad_request` on every order and move, so the
+**Upgrading:** a page that sends no `terms` gets `bad_request` on every order and selection of a name, so the
 page and the service are deployed together.
 
 On chain the order is the same for every name: the service commits, the page signs the reveal, the
@@ -1169,7 +1170,7 @@ signs again. A relay that reverts while the policy holds that acceptance for the
 another sent it first, is followed by the register. The page signs the reveal and the acceptance
 with a deadline a week ahead, the latest the service accepts, so it keeps them across a lapse while the deadline has not
 passed and the sponsor nonce is unchanged: it commits again and registers with no new signature. The
-intent does not cover the secret; the service clears the stored reveal at a move and at a close.
+intent does not cover the secret; the service replaces the stored reveal at a selection of a name and clears it at a close.
 
 ### Codes-only launch
 
@@ -1182,7 +1183,7 @@ who hold them before anyone can pay. It is `off` by default. While it is on:
   `403 {"type": "codes_only"}`, before it reads the order,
   so no order takes money for a name;
 - search, the signing read, link previews, code checks, code orders (`POST /api/name/register`),
-  the registration view, `find`, the reveal, `/retry`, another name and record edits work as before. Webhooks and the
+  the registration view, `find`, the reveal, `/retry`, the selection of a name and record edits work as before. Webhooks and the
   poller still settle the invoices already open, and badges sell as before.
 
 The setting is read at startup, so switching it is an edit of the ini and a restart, with the same
@@ -1199,14 +1200,14 @@ fails the price read, and the service logs a warning with the price:
 
 - a search answers `503 provider_unavailable`;
 - an order answers `503 name_check_unavailable` before any payment;
-- a move answers `503 name_check_unavailable`.
+- a selection of a name for a taken order paid by invoice answers `503 name_check_unavailable`.
 
-A taken order paid by invoice moves only to a name of its own price: a dearer or a cheaper one
-answers `409 price_too_high` with the name's price. The price is spent from the order's balance,
-and a balance that no longer holds it, refunded or taken back at a dispute, answers
-`400 bad_request`.
+A name selected for a taken order paid by invoice must have the order's price, as an order's name
+must have the price its page showed: a dearer or a cheaper one answers `409 catalog_changed` with the
+name's price. The price is spent from the order's balance, and a balance that no longer holds it,
+refunded or taken back at a dispute, answers `400 bad_request`.
 
-Code orders and their moves read no price, so the floor does not apply to them. The default is the
+No price is read for a code order or for a name selected for one, so the floor does not apply to them. The default is the
 launch price of a name of 8 letters or more, $100 for 2 years. One floor bounds every length, so a
 node answering the floor price for a 6- or 7-letter name passes the check even when those names
 cost more on chain. To lower prices on chain below the floor, lower the setting and restart first.
@@ -1482,7 +1483,7 @@ commitment, and a commit's dry run that reverts for one of the reasons above tow
 `max_dry_run_failures`. At either cap the order fails with the reason `registryRefused`, logged at error and
 posted in the managed group as `names worker: registration <id> failed: its register failed <n> times
 at its dry run, last: <reason>`, and support closes it with `//close` (see
-[Closing a failed order](#closing-a-failed-order)). A taken order's move starts both counts again. Any other
+[Closing a failed order](#closing-a-failed-order)). Both counts start again at a selection of a name for a taken order. Any other
 failure after which the order's phase is kept, such as a node that does not answer, funds, the fee
 cap, the allowance or an exception in its step, is posted in the group after 10 minutes of
 consecutive failures, of any reasons, with the latest reason; an exception is logged at error
@@ -1503,8 +1504,8 @@ A signature past its deadline is cleared, and the page signs again. A signature 
 that no longer verifies, as after a change of `[chain] chain_id`, `sponsor` or `resolver`, or of
 `[names] tld`, fails the order before its acceptance relay or its register is sent, with the reason `signatureRefused`; the log line is
 `[ERROR …] names worker: registration <id> failed: its stored signature is refused under the service's current configuration, …`,
-and the same text is posted in the managed group. Its page asks the buyer to contact support. Only
-a taken order moves to another name, within the month from its payment or its code's placement.
+and the same text is posted in the managed group. Its page asks the buyer to contact support. A
+name is selected again only for a taken order.
 
 A close of a failed order, and the worker's judgment of a register that did not go
 through, first run `confirmLanded`. It marks the order registered when `ownerOf` at the confirmation
@@ -1652,9 +1653,11 @@ code row when the invoice is created, and settlement is what marks it paid.
 `paid` or `free`: nothing marks a name code paid later, so `unpaid` is refused. Without `[names]`,
 `//issue name` is answered that names are not enabled, and issues nothing. A name code reserves a
 name until 3 calendar months after its issue, and the answer says so: `Code: SN7-…. Valid until
-<time> UTC.` An order already holding the code keeps it past that time. A code order not registered a
-calendar month after its reservation fails with the reason `monthEnded`, its code released and its
-name freed.
+<time> UTC.` An order already holding the code keeps it past that time. The code is released at a take,
+so a name selected for the taken order afterwards is refused `code_expired` past that time and
+`code_invalid` once the code is revoked. A code order not registered a calendar month after its name
+was selected, at its placement or after a reset, fails with the reason `monthEnded`, its code
+released and its name freed.
 
 The console reads the commands by the group's grammar (see [From the group](#from-the-group)), with
 a payment status in place of `uses` and without `/bulk`. A malformed command is answered with its
@@ -1785,12 +1788,12 @@ them later is logged as not applied and changes nothing.
 
 ## Refunding a name balance
 
-A paid name order keeps its money as a balance when it ends `taken` (another buyer registered the
+A paid name order keeps its money as a balance when it is reset to `taken` (another buyer registered the
 name first, or support closed the failed order with `//close`, which also records the refund; see
 [Closing a failed order](#closing-a-failed-order)), when a payment reaches its invoice
 after the invoice closed, and when its invoice was paid more crypto than it asked (the extra). The
-balance of an order another buyer's name took pays that order's move to another name of its price,
-within the month from its payment, and no other order. Otherwise the buyer asks for a balance back: the page tells them to
+balance of a taken order is spent only when a name of the order's price is selected for that order,
+at any time, and on no other order. Otherwise the buyer asks for a balance back: the page tells them to
 write to chat@simplex.chat with the order's reference, which is its invoice id, or its registration
 id for an order without an invoice. Nothing is refunded automatically, and the service never learns
 where to send money. A reference is not proof of who paid: a registration id is in the service's
@@ -1827,7 +1830,7 @@ group](#balances-and-failed-orders-in-the-group)):
    balance.
 3. The answer, `Recorded a refund of $100.00 for order <id>. Refund it now, by: …`, repeats what
    paid. Pay the balance's amount in US dollars back now, by the method it lists. The refund is
-   recorded first so that a move cannot spend the money while it is paid back. The service logs
+   recorded first so that the money is not spent on a selection of a name while it is paid back. The service logs
    each recorded refund at note with the order's registration id and the cents.
 
 The commands also answer when the reference matches no order, when the order has no balance, and
@@ -1838,7 +1841,8 @@ Your names; a later late payment credits it again, and a second refund adds to `
 
 A failed paid order, after its attempts reached a cap, stays live, holds its name and keeps its money uncredited, so its wallet cannot order the
 name again. So does a paid order whose commitment lapsed before its page signed it, until the page
-asks for a new commitment. A calendar month after its payment, clipped to the last day of a shorter
+asks for a new commitment. A calendar month after its name was selected, at its payment or after a
+reset, clipped to the last day of a shorter
 month, an order that is still `queued`, `committed` or `failed` fails with the reason `monthEnded`:
 the money paid for an order paid by invoice is added to its balance, a code order's code is
 released, its name is released, and the order is final. A pass every 5 minutes does it, logging each order at note; an order sending its commit, or with a
@@ -1878,11 +1882,11 @@ psql "$BADGE_DB_CONN" -Atc "SELECT r.registration_id, r.phase, r.failed_at, r.re
 ```
 
 A closed order reads `taken` in Your names, with its refund. `/retry` answers `400 bad_request`, and so
-does a move, as the balance no longer holds the price; `//balance` finds nothing to refund, and the
+does a selection of a name, as the balance no longer holds the price; `//balance` finds nothing to refund, and the
 wallet can order the name again.
 
 The command records nothing for an order that is neither failed nor lapsed unsigned, or was paid with
-a prepaid code, whose code is released when the month from its reservation ends; for an order with a
+a prepaid code, whose code is released when the month from the selection of its name ends; for an order with a
 recorded dispute or refund of its payment, as nothing is refunded; for a failed chain read; and for an
 order or a balance that changed meanwhile. Run the command again after the last two.
 
@@ -1899,7 +1903,7 @@ slash:
 
 The service answers each in the group with the console's answer, which names `/record_refund` and
 `/close` in place of `//record_refund` and `//close`. A command takes the same per-name and
-per-balance locks as Try again and moves, and writes a balance only while it still holds the
+per-balance locks as Try again and the selection of a name, and writes a balance only while it still holds the
 amount read, so a late credit meanwhile makes it refuse rather than write. The group's commands run one at a time, so a `/close` waiting on a slow
 chain node delays the group's other replies by up to its three reads' timeouts. `/close` reads the chain through the client the console uses, made at
 start with `[names]`, and without `[names]` answers that names are not enabled.
