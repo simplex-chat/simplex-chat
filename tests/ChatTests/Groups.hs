@@ -45,6 +45,7 @@ import Simplex.Chat.Messages.Batch (encodeBinaryBatch, encodeFwdElement)
 import Simplex.Chat.Messages.CIContent (MsgDirection (MDRcv), ciMsgContent, publicGroupNoE2EText, toMsgDirection)
 import Simplex.Chat.Options
 import Simplex.Chat.Protocol (ChatBinding (CBGroup), ChatMessage (ChatMessage), ChatMsgEvent (BFileChunk, XFile, XGrpMemFwd, XGrpMemIntro, XGrpMemNew, XGrpRelayInv, XInfo, XMember, XMsgUpdate, XMsgNew, XMsgDel), FileChunk (..), FwdSender (FwdMember, FwdMemberVia, FwdChannel), GrpMsgForward (GrpMsgForward), KeyRef (KRMember), MsgContainer (..), MsgMention (..), MsgContent (..), MsgPriority (..), MsgSigning (MsgSigning), VerifiedMsg (VMSigned, VMUnsigned), chatMsgToBody, groupInvVersion, mcSimple, msgContentText, signChatMsgBody, supportedChatVRange)
+import Simplex.Chat.Store.Direct (setQuotaErrCounter)
 import Simplex.Chat.Types
 import Simplex.Chat.Types.MemberRelations (MemberRelation (..), getRelation, setRelation)
 import Simplex.Chat.Types.Preferences (EditsGroupPreference (..), FullGroupPreferences (FullGroupPreferences, edits), GroupFeatureEnabled (..))
@@ -323,13 +324,19 @@ chatGroupTests = do
     it "update message sent as member" testViaMemberUpdate
     it "introduce member via user to later joiner" testViaMemberLaterJoiner
     it "joiner of previous version creates unknown member" testViaMemberPrevVersionJoiner
-    it "host forwards messages of member via another member until its invitee connects to that member" testViaMemberOtherAdmin
+    it "host forwards messages and updates of member via another member until its invitee connects to that member" testViaMemberOtherAdmin
     it "introduce member via another member after that member" testViaMemberIntroOrder
     it "reply to and mention of member via user resolve to that member" testViaMemberReply
-    it "priority and edit window of messages sent as member follow member role" testViaMemberRoleRules
+    it "priority and edit window of messages sent as member follow member role at sender and receivers" testViaMemberRoleRules
     it "remove member via user" testViaMemberRemove
-    it "refuse role above user role, member not via user and user below admin" testViaMemberRefused
-    it "sign messages of member via user with user key" testViaMemberSigned
+    it "remove member via user by another admin" testViaMemberRemoveByAdmin
+    it "refuse role above user role, member not via user, user below admin and incognito membership" testViaMemberRefused
+    it "refuse announcement against via rules and forward with another via" testViaMemberAnnounceRefused
+    it "refuse introduction against via rules" testViaMemberIntroRefused
+    it "refuse support scope, files, quotes and broadcast delete as member, moderate as member" testViaMemberSendRefused
+    it "sign messages and updates of member via user with user key" testViaMemberSigned
+    it "deliver messages sent as member unsigned to members of previous version" testViaMemberSignedPrevVersion
+    it "deliver pending messages sent as member unsigned" testViaMemberSignedPending
     it "joiner records via and verifies signed history of removed member via another member" testViaMemberSignedHistory
     it "refuse in channels" testViaMemberRefusedChannel
     it "members via another member recorded for the apps" testViaMemberRecordings
@@ -15799,6 +15806,10 @@ testViaMemberOtherAdmin =
       alice ##> "/_send #1(as_member=4) text hi"
       alice <# "#team hi"
       [bob, cath] *<# "#team reviewer> hi [>>]"
+      hiId <- lastItemId alice
+      alice ##> ("/_update item #1 " <> hiId <> " text hello")
+      alice <# "#team [edited] hello"
+      [bob, cath] *<# "#team reviewer> [edited] hello"
 
 testViaMemberIntroOrder :: HasCallStack => TestParams -> IO ()
 testViaMemberIntroOrder =
@@ -15883,9 +15894,21 @@ testViaMemberRoleRules =
       bob <# "#team reviewer> hi [>>]"
       itemPriority alice "/_get chat #1 count=1" `shouldReturn` MPNormal
       hiId <- lastItemId alice
-      setItemAge alice hiId (100 * 3600)
+      bobHiId <- lastItemId bob
+      setItemAge bob bobHiId (79 * 3600)
       alice ##> ("/_update item #1 " <> hiId <> " text hello")
+      alice <# "#team [edited] hello"
+      bob <## "error: x.msg.update: edit too late"
+      setItemAge alice hiId (100 * 3600)
+      alice ##> ("/_update item #1 " <> hiId <> " text hey")
       alice <## "cannot update this item"
+      reviewerId <- memberIdByName bob "reviewer"
+      aliceId <- memberIdByName bob "alice"
+      connId <- relayConnIdToMember alice "bob"
+      ts <- getCurrentTime
+      let urgentMsg = ChatMessage chatInitialVRange (Just $ SharedMsgId "urgent_msg") (XMsgNew ((mcSimple (MCText "urgent") :: MsgContainer) {priority = MPHigh}))
+      agentSendBody alice connId $ encodeBinaryBatch [encodeFwdElement (GrpMsgForward (FwdMemberVia reviewerId "reviewer" aliceId) ts) (VMUnsigned urgentMsg)]
+      bob <# "#team reviewer> urgent [>>]"
 
 testViaMemberRemove :: HasCallStack => TestParams -> IO ()
 testViaMemberRemove =
@@ -15898,6 +15921,22 @@ testViaMemberRemove =
       alice <## "#team: you removed reviewer from the group (signed)"
       mapM_ (<## "#team: alice removed reviewer from the group (signed)") [bob, cath]
 
+testViaMemberRemoveByAdmin :: HasCallStack => TestParams -> IO ()
+testViaMemberRemoveByAdmin =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+      addViaMember alice "member"
+      viaMemberAdded [bob, cath]
+      alice ##> "/_send #1(as_member=4) text hi"
+      alice <# "#team hi"
+      [bob, cath] *<# "#team reviewer> hi [>>]"
+      bob ##> "/rm team reviewer"
+      bob <## "#team: you removed reviewer from the group (signed)"
+      mapM_ (<## "#team: bob removed reviewer from the group (signed)") [alice, cath]
+      alice ##> "/_send #1(as_member=4) text hey"
+      alice <## "your group connection is not active yet, try later"
+
 testViaMemberRefused :: HasCallStack => TestParams -> IO ()
 testViaMemberRefused =
   testChat3 aliceProfile bobProfile cathProfile $
@@ -15909,6 +15948,93 @@ testViaMemberRefused =
       alice <## "bad chat command: member is not via you"
       cath ##> "/_add via #1 member json {\"displayName\": \"reviewer\", \"fullName\": \"\"}"
       cath <## "#team: you have insufficient permissions for this action, the required role is admin"
+      alice ##> "/g i club"
+      aliceIncognito <- getTermLine alice
+      alice <## ("group #club is created, your incognito profile for this group is " <> aliceIncognito)
+      alice <## "to add members use /create link #club"
+      alice ##> "/_add via #2 member json {\"displayName\": \"reviewer\", \"fullName\": \"\"}"
+      alice <## "you are using an incognito profile for this group - prohibited to invite contacts"
+
+testViaMemberAnnounceRefused :: HasCallStack => TestParams -> IO ()
+testViaMemberAnnounceRefused =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+      addViaMember alice "admin"
+      viaMemberAdded [bob, cath]
+      aliceId <- memberIdByName bob "alice"
+      cathId <- memberIdByName alice "cath"
+      reviewerId <- memberIdByName alice "reviewer"
+      bobConnId <- relayConnIdToMember bob "cath"
+      aliceConnId <- relayConnIdToMember alice "bob"
+      ts <- getCurrentTime
+      let reviewerFwd fwdHdr fwdMsgId fwdEvt =
+            agentSendBody alice aliceConnId $ encodeBinaryBatch [encodeFwdElement (GrpMsgForward fwdHdr ts) (VMUnsigned $ ChatMessage chatInitialVRange (Just $ SharedMsgId fwdMsgId) fwdEvt)]
+      agentSendBody bob bobConnId $ chatMsgToBody $ ChatMessage supportedChatVRange Nothing (XGrpMemNew (MemberInfo (MemberId "new_1") GRMember Nothing danProfile Nothing (Just aliceId)) Nothing)
+      cath <## "error: x.grp.mem.new: member is not via the announcing member"
+      reviewerFwd (FwdMember reviewerId "reviewer") "new_2" (XGrpMemNew (MemberInfo (MemberId "new_2") GRMember Nothing danProfile Nothing Nothing) Nothing)
+      bob <## "error: x.grp.mem.new: member via another member cannot add members"
+      reviewerFwd (FwdMemberVia reviewerId "reviewer" cathId) "via_msg" (XMsgNew $ mcSimple $ MCText "forged")
+      alice #> "#team hello"
+      [bob, cath] *<# "#team alice> hello"
+
+testViaMemberIntroRefused :: HasCallStack => TestParams -> IO ()
+testViaMemberIntroRefused =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3' "team" alice (bob, GROwner) (cath, GRAdmin)
+      addViaMember alice "admin"
+      viaMemberAdded [bob, cath]
+      bobId <- memberIdByName alice "bob"
+      cathId <- memberIdByName alice "cath"
+      reviewerId <- memberIdByName alice "reviewer"
+      connId <- relayConnIdToMember alice "bob"
+      ts <- getCurrentTime
+      let sendIntro introId introRole viaId =
+            agentSendBody alice connId $ chatMsgToBody $ ChatMessage supportedChatVRange Nothing (XGrpMemIntro (MemberInfo (MemberId introId) introRole Nothing danProfile Nothing (Just viaId)) Nothing)
+      sendIntro "intro_1" GRMember bobId
+      bob <## "contact alice has insufficient permissions for this group action"
+      sendIntro "intro_2" GRMember reviewerId
+      bob <## "your group connection is not active yet, try later"
+      sendIntro "intro_3" GROwner cathId
+      bob <## "contact cath has insufficient permissions for this group action"
+      agentSendBody alice connId $ encodeBinaryBatch [encodeFwdElement (GrpMsgForward (FwdMember (MemberId "xavier_id") "xavier") ts) (VMUnsigned $ ChatMessage chatInitialVRange (Just $ SharedMsgId "xavier_msg") (XMsgNew $ mcSimple $ MCText "hi"))]
+      bob <## "#team: alice forwarded a message from an unknown member, creating unknown member record xavier"
+      bob <# "#team xavier> hi [>>]"
+      sendIntro "intro_4" GRMember (MemberId "xavier_id")
+      bob <## "your group connection is not active yet, try later"
+      bob ##> "/mr team alice member"
+      concurrentlyN_
+        [ bob <## "#team: you changed the role of alice to member (signed)",
+          alice <## "#team: bob changed your role from owner to member (signed)",
+          cath <## "#team: bob changed the role of alice from owner to member (signed)"
+        ]
+      sendIntro "intro_5" GRMember cathId
+      bob <## "contact alice has insufficient permissions for this group action"
+
+testViaMemberSendRefused :: HasCallStack => TestParams -> IO ()
+testViaMemberSendRefused =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+      addViaMember alice "member"
+      viaMemberAdded [bob, cath]
+      alice ##> "/_send #1(as_member=4) text hi"
+      alice <# "#team hi"
+      [bob, cath] *<# "#team reviewer> hi [>>]"
+      hiId <- lastItemId alice
+      alice ##> "/_send #1(_support:2)(as_member=4) text hey"
+      alice <## "bad chat command: cannot send as member in support scope"
+      alice ##> "/_send #1(as_member=4) json [{\"filePath\": \"test.pdf\", \"msgContent\": {\"type\": \"text\", \"text\": \"hey\"}}]"
+      alice <## "bad chat command: files and quotes cannot be sent as member"
+      alice ##> ("/_send #1(as_member=4) json [{\"quotedItemId\": " <> hiId <> ", \"msgContent\": {\"type\": \"text\", \"text\": \"hey\"}}]")
+      alice <## "bad chat command: files and quotes cannot be sent as member"
+      alice ##> ("/_delete item #1 " <> hiId <> " broadcast")
+      alice <## "cannot delete this item"
+      bobHiId <- lastItemId bob
+      bob ##> ("/_delete member item #1 " <> bobHiId)
+      bob <## "message marked deleted by you"
+      [alice, cath] *<# "#team reviewer> [marked deleted by bob] hi"
 
 createViaSignedGroup :: HasCallStack => TestCC -> TestCC -> IO ()
 createViaSignedGroup alice bob = do
@@ -15932,6 +16058,10 @@ testViaMemberSigned =
       alice ##> "/_send #1(as_member=3) text hi"
       alice <# "#team hi (signed)"
       bob <# "#team reviewer> hi (signed) [>>]"
+      hiId <- lastItemId alice
+      alice ##> ("/_update item #1 " <> hiId <> " text hello")
+      alice <# "#team [edited] hello (signed)"
+      bob <# "#team reviewer> [edited] hello (signed)"
       reviewerId <- memberIdByName bob "reviewer"
       aliceId <- memberIdByName bob "alice"
       connId <- relayConnIdToMember alice "bob"
@@ -15944,6 +16074,35 @@ testViaMemberSigned =
           fwd = GrpMsgForward (FwdMemberVia reviewerId "reviewer" aliceId) ts
       agentSendBody alice connId $ encodeBinaryBatch [encodeFwdElement fwd (VMSigned MSSVerified signedMsg chatMsg)]
       (bob ##> "/_get chat #1 count=100 search=bad signature" >> chat <$> getTermLine bob) `shouldEventuallyReturn` [(0, "message rejected: bad signature")]
+
+testViaMemberSignedPrevVersion :: HasCallStack => TestParams -> IO ()
+testViaMemberSignedPrevVersion ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatCfg ps testCfgVPrev "bob" bobProfile $ \bob -> do
+      createViaSignedGroup alice bob
+      addViaMember alice "member"
+      viaMemberAdded [bob]
+      alice ##> "/_send #1(as_member=3) text hi"
+      alice <# "#team hi (signed)"
+      bob <# "#team reviewer> hi (signature missing) [>>]"
+
+testViaMemberSignedPending :: HasCallStack => TestParams -> IO ()
+testViaMemberSignedPending =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      createViaSignedGroup alice bob
+      addViaMember alice "member"
+      viaMemberAdded [bob]
+      threadDelay 1000000
+      GroupMember {activeConn = Just bobConn} <- getTestMember alice "team" "bob"
+      withCCTransaction alice $ \db -> withCCUser alice $ \user -> setQuotaErrCounter db user bobConn quotaErrInactiveCount
+      alice ##> "/_send #1(as_member=3) text hi"
+      alice <# "#team hi (signed)"
+      connId <- relayConnIdToMember alice "bob"
+      agentSendBody alice connId $ chatMsgToBody $ ChatMessage supportedChatVRange (Just $ SharedMsgId "ping_msg") (XMsgNew $ mcSimple $ MCText "ping")
+      alice <## "[#team bob] inactive connection is marked as active"
+      bob <# "#team alice> ping (signature missing)"
+      bob <# "#team reviewer> hi (signature missing) [>>]"
 
 testViaMemberSignedHistory :: HasCallStack => TestParams -> IO ()
 testViaMemberSignedHistory =
