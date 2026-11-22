@@ -2406,7 +2406,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
         updateCI :: ShowGroupAsSender -> ChatDirection 'CTGroup 'MDRcv -> ChatItem 'CTGroup 'MDRcv -> Maybe GroupChatScopeInfo -> MsgContent -> Maybe Bool -> Maybe MemberId -> CM (Maybe DeliveryTaskContext)
         updateCI showGroupAsSender cd ci@ChatItem {meta = meta@CIMeta {itemDeleted, priority}} scopeInfo oldMC itemLive memberId = do
           let changed = mc /= oldMC
-              priority' = allowedPriority (isNothing scopeInfo && isNothing itemDeleted && rcvPriorityAllowed cd) priority_
+              priority' = if isJust itemDeleted then priority else allowedPriority (rcvPriorityAllowed cd) priority_
           if changed || fromMaybe False itemLive || priority' /= priority
             then do
               ci' <- withStore' $ \db -> do

@@ -295,7 +295,8 @@ approved text                                      becomes
 11    "1 or above ... received as normal" (doc)    the receiver rules and the preference of the approved plan
 5     item created by x.msg.update: its priority   unchanged: eventPriority of x.msg.update is its priority, and an update of a silent item
                                                    has -1 (decided by the user on 2026-11-21; replaces normal priority of 5a9677981)
-4, 5  raise conditions                             also an item that is not deleted (receiver) and in the main scope (sender) (5a9677981)
+4, 5  raise conditions                             the conditions of a new message, in every scope; an item deleted by the recipient keeps its priority
+                                                   (follows from the decision of 2026-11-22; replaces the main scope and not deleted conditions of 5a9677981)
 5     history: the priority of the stored item     silent kept, high dropped by the member that sends history; live forwards keep it (c2ccb6775)
 1, 4, 5  update without priority: priority kept    every update sets the item priority by the rules of a new message, absent is normal (decided by the user on 2026-11-22)
 5     update with requested priority applied       an update is applied only when it changes the content, the live state or the accepted priority;
@@ -304,7 +305,7 @@ approved text                                      becomes
 2     priority :: Maybe Int, limitPriority          MsgPriority = MPSilent | MPNormal | MPHigh, parsed at the protocol and API boundary
 ```
 
-The NSE decisions of this plan stay. A raise reaches the NSE as `.messageReceived`, which replaces the default best attempt, so the `.noNtf` rule for a push of only silent messages does not hide a raise. Silent is still accepted from every sender in every chat. High priority keeps the preference of the approved plan, and a raise keeps its main scope rule.
+The NSE decisions of this plan stay. A raise reaches the NSE as `.messageReceived`, which replaces the default best attempt, so the `.noNtf` rule for a push of only silent messages does not hide a raise. Silent is still accepted from every sender in every chat. High priority keeps the preference of the approved plan, and an update accepts it where a new message is accepted with it.
 
 ### 11.4 Combined rules
 
@@ -314,14 +315,14 @@ stateDiagram-v2
   [*] --> silent: x.msg.new or x.msg.update of a missing item, priority -1, any sender
   [*] --> normal: x.msg.new or x.msg.update of a missing item, priority 0 or absent, or 1 in a direct chat or from a sender who is not allowed
   [*] --> high: x.msg.new or x.msg.update of a missing item, priority 1, allowed sender, group
-  silent --> high: x.msg.update priority 1 by the author, allowed, main scope
-  normal --> high: x.msg.update priority 1 by the author, allowed, main scope
+  silent --> high: x.msg.update priority 1 by the author, allowed
+  normal --> high: x.msg.update priority 1 by the author, allowed
   silent --> normal: x.msg.update without priority, or priority 1 not allowed
   high --> normal: x.msg.update without priority, or priority 1 not allowed
   normal --> silent: x.msg.update priority -1
   high --> silent: x.msg.update priority -1
 ```
-A change to high notifies once; a change to a lower priority does not notify. An update with the item's present priority and content, of an item that is not live, changes nothing.
+A change to high notifies once; a change to a lower priority does not notify. An update with the item's present priority and content, of an item that is not live, changes nothing. An update of an item that the recipient deleted leaves its priority unchanged.
 
 Counters of a chat:
 ```
@@ -416,9 +417,10 @@ The recipient bob has `markRead = False`, mode "All", and the group `#team` in t
 Decided by the user on 2026-11-22. `MsgPriority` is parsed from the integer of the wire and the API by its sign; normal is an absent field.
 ```
 sender      priority' = allowedPriority highAllowed (priority of the updated message), absent: normal
-              contact: silent or normal; group: high when allowed, in the main scope
+              contact: silent or normal; group: high when allowed, in every scope, as for a new message
             condition: changed || live || priority' /= item priority
-receiver    priority' = allowedPriority (main scope && not deleted && rcvPriorityAllowed) (priority of x.msg.update), absent: normal
+receiver    priority' = item priority when the recipient deleted the item
+              otherwise allowedPriority rcvPriorityAllowed (priority of x.msg.update), absent: normal, as for a new item
               direct: silent or normal
             condition: changed || live || priority' /= item priority; otherwise not applied and not forwarded
 forwarder   forwards the message bytes; SMP flag of x.msg.update by the stored priority of its item: on for high, off otherwise

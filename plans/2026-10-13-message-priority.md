@@ -15,6 +15,7 @@ scope             groups, business chats and channels
 senders           the API, the CLI and the libraries; the apps send normal priority
 item priority     set from x.msg.new when the item is created, limited to -1 .. 1
                   set by every x.msg.update of the sender of the item, by the same rules; absent: normal (decided by the user on 2026-11-22)
+                  unchanged by an update of an item that the recipient deleted
 normal priority   a priority message of a sender who is not allowed (section 3), and a priority message to a contact,
                   are sent and received with normal priority, without an error
 read item         an item already read when its priority is raised stays read; a notification is shown
@@ -49,7 +50,7 @@ list label (user tag)    bell in place of "●" when a chat of the list has unre
 muted chat (MFNone)      notifications, list labels, the "unread" filter and profile totals: as now for a mention
 chat view                bell in the meta of the item, sent and received, in both layouts; its unread counters are unchanged
 item info                row "High priority"
-member support chats     a high priority item is counted in support_chat_items_mentions and shown with "@"; a raise by an update is ignored there
+member support chats     a high priority item is counted in support_chat_items_mentions and shown with "@"; an update sets the priority there as in the main scope
 preference               set and shown by the CLI; excluded from feature items and from the preference screens of the apps
 ```
 
@@ -133,7 +134,7 @@ note folder    priority of the updated message is ignored
 contact (:799)
   priority'    allowedPriority False priority: silent or normal
 group (:824)
-  priority'    allowedPriority (scope is Nothing && the item is in the main scope && groupFeatureUserAllowed SGFMsgPriority gInfo) priority
+  priority'    allowedPriority (groupFeatureUserAllowed SGFMsgPriority gInfo) priority, as for a new message in every scope
 both
   condition    changed || the item is live || priority' /= the item priority
   event        priority = priority'
@@ -163,7 +164,7 @@ rcvPriorityAllowed cd =          -- new, Library/Internal.hs, for high priority 
 Update, `Library/Subscriber.hs:2297` `groupMessageUpdate` and the direct `messageUpdate` (`:589`): new parameter, `priority` of `XMsgUpdate` (`:1088`, `:4048`).
 ```
 updateCI (:2368), new parameters: priority of the update; cd of the item (the values at :2351, :2354)
-  priority'    allowedPriority (scopeInfo is Nothing && the item is not deleted && rcvPriorityAllowed cd) priority
+  priority'    the item priority when the item is deleted; otherwise allowedPriority (rcvPriorityAllowed cd) priority, as for a new item
                direct messageUpdate: allowedPriority False priority
   condition    changed || the item is live || priority' /= the item priority; otherwise chatItemNotChanged, no delivery task
   edited       changed && itemLive /= Just True
@@ -352,7 +353,8 @@ downgrade                               item_priority is dropped; user_mention =
 - channel through a relay: an owner post with priority is high priority for a subscriber; business chat: high priority for a message of the business, normal for a message of the customer
 - raise: normal message, then `/_update item` with `"priority": 1` and the same text: sender `#team !! done`, members `#team alice!!> done`; one `chatItemUpdated` with a high priority item and a previous item that is not; raise of a read item: the item stays read, `unreadHighPriority = 0`, the item has priority 1
 - streamed message: `live=on`, live updates, completion with `"priority": 1`: high priority; a later edit with `"priority": 1`: high priority
-- raise by a member below the role: the update is sent without the field; raise in a member support chat: ignored; update of an item deleted by the recipient: the created item has the priority of the update, -1 for an edit of a silent item that repeats -1, 1 for a raise
+- raise by a member below the role: the update is sent without the field; update of an item deleted by the recipient: the created item has the priority of the update, -1 for an edit of a silent item that repeats -1, 1 for a raise
+- member support chat: an edit of a high priority item that repeats 1 keeps it high; a raise is applied; an edit of an item marked deleted by the recipient keeps its priority
 - an edit of a high priority item without `priority`: normal at the sender and the receivers, counters without it; a later update with `"priority": 1` notifies once
 - a forwarded update of a member below the role with `"priority": 1`: not applied and not forwarded when the content is unchanged; forwarded with the SMP notification flag off when the content changed
 - direct chat: an edit of a silent item without `priority`: normal at both
@@ -417,4 +419,4 @@ layout and rendering plans         the bell is part of CIMetaView in both layout
 
 ## Open questions
 1. Closed: one partial index of group items with a priority counts both tiers (2026-11-12-mcp-silent-messages.md, Q7 A).
-2. Later: a compose control for high priority in the apps; a raise by an update in a member support chat; the bell on the unread counters of the chat view, on preset filters (contacts, groups, businesses) and in member support chat lists. Recommended: later.
+2. Later: a compose control for high priority in the apps; the bell on the unread counters of the chat view, on preset filters (contacts, groups, businesses) and in member support chat lists. Recommended: later.

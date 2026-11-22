@@ -488,7 +488,7 @@
             "live": {"type": "boolean"},
             "priority": {
               "type": "integer",
-              "metadata": {"comment": "the priority of the item after the update, as in msgContainer; absent: normal; 1 or above: high from its author in the main scope of a group, when allowed by the preference msgPriority, otherwise normal; an item created for a missing message has this priority, as in msgContainer"}
+              "metadata": {"comment": "the priority of the item after the update, as in msgContainer; absent: normal; 1 or above: high from its author, when allowed by the preference msgPriority, otherwise normal; an item deleted by the recipient keeps its priority; an item created for a missing message has this priority, as in msgContainer"}
             }
           }
         }
