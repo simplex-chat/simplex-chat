@@ -488,7 +488,11 @@
             "live": {"type": "boolean"},
             "priority": {
               "type": "integer",
-              "metadata": {"comment": "1 or above: raises the item to high priority, sent by its author in the main scope of a group; other values do not change the item"}
+              "metadata": {"comment": "1 or above: raises the item to high priority, sent by its author in the main scope of a group; other values do not change the item; with asNew: the priority of the new message"}
+            },
+            "asNew": {
+              "type": "boolean",
+              "metadata": {"comment": "true: the item becomes new at the time of receiving the update, in the main scope of a group; sent only as true"}
             }
           }
         }
