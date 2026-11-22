@@ -42,7 +42,7 @@ module StoreService.Service
 where
 
 import StoreService.Catalog (StoreProduct (..), defaultCatalog, storeProduct)
-import StoreService.Config (AppleStoreConfig (..), BadgeIssuerKey (..), ChainConfig (..), GroupConfig (..), ListenerConfig (..), NamesConfig (..), PlayStoreConfig (..), ServiceConfig (..), readServiceConfig)
+import StoreService.Config (AppleStoreConfig (..), BadgeIssuerKey (..), ChainConfig (..), GroupConfig (..), ListenerConfig (..), NamesConfig (..), PlayStoreConfig (..), ServiceConfig (..), localChainId, readServiceConfig)
 import StoreService.Group (GroupEvent, ensureManagedGroup, fmtTime, groupEvent, hasTracker, joinerAcceptance, refreshTracker, reportToGroup, runCmd, runGroupLane)
 import StoreService.Group.Command (MoneyCmd (..), consoleCmd, spelledCmd)
 import StoreService.Metrics (MetricsEnv (..), runMetrics)
@@ -156,7 +156,7 @@ trustDevKeys serviceCfg cfg@ChatConfig {badgePublicKeys} = do
       | M.member keyIdx badgePublicKeys = pure $ Left $ "issuer.dev_keys index " <> show keyIdx <> " is the index of a key clients trust"
       | otherwise = fmap (keyIdx,) . first (("issuer.dev_keys secret at index " <> show keyIdx <> " is not a valid key: ") <>) <$> bbsPublicKey secretKey
 
--- | The node at rpc_url must serve chain_id. One that does not answer is only warned of, unless dev keys need it to be the local chain.
+-- | The node at rpc_url must serve chain_id. One that does not answer is only warned of, unless dev keys or loopback terms links need it to be the local chain.
 checkNodeChain :: Maybe ServiceConfig -> IO (Either String ())
 checkNodeChain = \case
   Just ServiceConfig {devIssuerKeys, names = Just NamesConfig {nChain = cc@ChainConfig {cChainId}}} -> do
@@ -166,7 +166,8 @@ checkNodeChain = \case
         | chainId == cChainId -> pure $ Right ()
         | otherwise -> pure $ Left $ "chain.chain_id is " <> show cChainId <> ", but the node at chain.rpc_url serves chain " <> show chainId
       Left e
-        | null devIssuerKeys -> Right () <$ logWarn ("names: the node's chain id could not be read, so it is not checked: " <> tshow e)
+        | null devIssuerKeys && cChainId /= localChainId -> Right () <$ logWarn ("names: the node's chain id could not be read, so it is not checked: " <> tshow e)
+        | null devIssuerKeys -> pure $ Left $ "chain.chain_id " <> show cChainId <> " is refused: the node's chain id could not be read"
         | otherwise -> pure $ Left "issuer.dev_keys is refused: the node's chain id could not be read"
   _ -> pure $ Right ()
 

@@ -316,7 +316,7 @@ testChainRead g = withServiceStore $ \st -> withFakeEthNode $ \node -> do
                    ]
       <> held "0"
       <> ["simplex_store_names_chain_read_timestamp_seconds " <> seconds readAt, "simplex_store_names_chain_read_ok 1"]
-  Right (Just general) <- termsOf ct $ fakeTermsLink fakeGeneralTermsText
+  Just general <- pure $ termsOf fakeChainId $ fakeTermsLink fakeGeneralTermsText
   termsText ct general `shouldReturn` Right "SimpleX general terms v1"
   readChain ct v
   fetched <- chainSamples <$> readTVarIO v

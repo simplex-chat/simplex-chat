@@ -180,9 +180,9 @@ testTermsLinks g = withContracts g $ \node ct -> do
   termsLinkTexts ct `shouldReturn` Right (fakeTermsLink fakeGeneralTermsText, fakeTermsLink fakeCommunityTermsText)
   setBlock node 101 now
   termsLinkTexts ct `shouldReturn` Right ("", fakeTermsLink fakeNewCommunityTermsText)
-  termsOf ct "" `shouldReturn` Right Nothing
-  termsOf ct viemLink
-    `shouldReturn` Right (Just Terms {tmLink = viemLink, tmHash = Hex32 $ unhex "c2ff2149afa84a77e3a041b2925ebd08a22c1e91a74abd8b82fd17e45c15cb7f", tmFetch = (T.unpack viemUrl, Just $ unhex $ encodeUtf8 viemDigest)})
+  termsOf fakeChainId "" `shouldBe` Nothing
+  termsOf fakeChainId viemLink
+    `shouldBe` Just Terms {tmLink = viemLink, tmHash = Hex32 $ unhex "c2ff2149afa84a77e3a041b2925ebd08a22c1e91a74abd8b82fd17e45c15cb7f", tmFetch = (T.unpack viemUrl, Just $ unhex $ encodeUtf8 viemDigest)}
   where
     viemUrl = "https://git.simplex.chat/simplex-chat/simplex-chat/raw/commit/4cb24444a1f2e3d4c5b6a7980716253443526170/docs/general-terms.md"
     viemDigest = "0b2c3d4e5f60718293a4b5c6d7e8f90112233445566778899aabbccddeeff001"
@@ -321,7 +321,6 @@ testTermsLinkForms :: TVar ChaChaDRG -> IO ()
 testTermsLinkForms g = withServiceStore $ \st -> withFakeEthNode $ \node -> do
   c <- fakeChainClient g node
   ct <- (\x -> x {ctTermsBackoff = 0}) <$> newContracts st TLDSimplex minPriceCentsPerYear c
-  otherChain <- newContracts st TLDSimplex minPriceCentsPerYear c {ccConfig = (ccConfig c) {cChainId = 1}}
   let digest = T.drop 2 $ hex $ C.sha256Hash fakeGeneralTermsText
       commit = T.replicate 40 "a"
       commitPath path = "/simplex-chat/simplex-chat/raw/commit/" <> commit <> path
@@ -331,7 +330,7 @@ testTermsLinkForms g = withServiceStore $ \st -> withFakeEthNode $ \node -> do
   forM_ [commitPath "/docs/terms.md", commitPath "/a/b_c-d.e/terms.v1.md", githubPath "/docs/NAMES-TERMS-GENERAL.md", "/terms/terms.md"] $ \path -> answerText node path $ servedText fakeGeneralTermsText
   forM_ taken $ \url -> (termsText ct =<< linkTerms ct (url <> "#sha256=" <> digest)) `shouldReturn` Right "SimpleX general terms v1"
   forM_ pinnedByCommit $ \url -> (termsText ct =<< linkTerms ct url) `shouldReturn` Right "SimpleX general terms v1"
-  let refused link = (link,) <$> termsOf ct link `shouldReturn` (link, Right Nothing)
+  let refused link = (link, termsOf fakeChainId link) `shouldBe` (link, Nothing)
   forM_
     [ "http://git.simplex.chat" <> commitPath "/docs/terms.md#sha256=" <> digest,
       "http://raw.githubusercontent.com" <> githubPath "/docs/terms.md",
@@ -360,9 +359,7 @@ testTermsLinkForms g = withServiceStore $ \st -> withFakeEthNode $ \node -> do
       "http://127.0.0.1:65536/terms/terms.md#sha256=" <> digest
     ]
     refused
-  termsOf otherChain ("http://127.0.0.1:8098/terms/terms.md#sha256=" <> digest) `shouldReturn` Right Nothing
-  setFault node "eth_chainId" (Answers (J.String "0x1"))
-  termsOf ct ("http://127.0.0.1:8099/terms/terms.md#sha256=" <> digest) `shouldReturn` Right Nothing
+  termsOf 1 ("http://127.0.0.1:8098/terms/terms.md#sha256=" <> digest) `shouldBe` Nothing
   length <$> fetchedTexts node `shouldReturn` 6
 
 testTermsTextRefused :: TVar ChaChaDRG -> IO ()
@@ -425,7 +422,7 @@ termsAt :: Contracts -> ByteString -> IO Terms
 termsAt ct = linkTerms ct . fakeTermsLink
 
 linkTerms :: Contracts -> T.Text -> IO Terms
-linkTerms ct link = termsOf ct link >>= either (fail . show) (maybe (fail "no terms") pure)
+linkTerms ct link = maybe (fail "no terms") pure $ termsOf (cChainId $ ccConfig $ ctChain ct) link
 
 testGracePeriod :: TVar ChaChaDRG -> IO ()
 testGracePeriod g = withContracts g $ \node ct -> do

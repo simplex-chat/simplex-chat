@@ -55,7 +55,7 @@ import Control.Concurrent.MVar (MVar, newMVar, withMVar)
 import Control.Concurrent.STM (TVar, atomically, newTVarIO, readTVarIO)
 import Control.Exception (try)
 import Control.Logger.Simple (logError, logWarn)
-import Control.Monad (forM_, forever, unless, when)
+import Control.Monad (forever, unless, when)
 import Control.Monad.Except (ExceptT (..), runExceptT)
 import Control.Monad.IO.Class (liftIO)
 import qualified Data.Attoparsec.ByteString.Char8 as A
@@ -90,7 +90,7 @@ import qualified Simplex.Messaging.TMap as TM
 import Simplex.Messaging.Util (catchOwn', catchThrow, eitherToMaybe, tshow)
 import StoreService.Config (ChainConfig (..), boundedDecimal, localChainId)
 import StoreService.Names.Abi (AbiError (..), AbiValue (..), abiBytes, abiTuple, abiWordSize, addressWord, decodeAddress, decodeBool, decodeBytes32, decodeSeconds, decodeString, decodeUint256, decodeWord64, lowerHexP, parseText, selector, uint256)
-import StoreService.Names.Chain (Block (..), BlockTag (..), ChainClient (..), ChainError (..), Hex32 (..), confirmedNumber, ethCallAt, httpFailure, latestBlock, nodeChainId, registrarBalance)
+import StoreService.Names.Chain (Block (..), BlockTag (..), ChainClient (..), ChainError (..), Hex32 (..), confirmedNumber, ethCallAt, httpFailure, latestBlock, registrarBalance)
 import StoreService.Names.Registration (Commitment, CommunityName, LinkKind (..), TermsHash, labelNode, nodeBytes, recordKey, termsKindText)
 import StoreService.Names.Revert (RevertReason (..))
 import StoreService.Names.Store (getTermsText, setTermsText)
@@ -107,7 +107,7 @@ data Contracts = Contracts
     ctNamePolicy :: IORef (Int, Maybe Address),
     ctTermsTexts :: TMap TermsHash Text,
     -- | the terms links as read at a block, which each search for an available name would read again
-    ctTermsLinks :: IORef (Maybe (Word64, ((Text, Maybe Terms), (Text, Maybe Terms)))),
+    ctTermsLinks :: IORef (Maybe (Word64, (Text, Text))),
     ctFetchAfter :: IORef UTCTime,
     ctFetching :: MVar (),
     -- | microseconds for all the reads of one name status, of one name's records, or of one registration view
@@ -265,37 +265,30 @@ termsLinks ct@Contracts {ctChain, ctTermsLinks} = runExceptT $ do
   policy <- ExceptT $ namePolicy ct
   Block {blockNumber} <- ExceptT $ latestBlock ctChain
   liftIO (readIORef ctTermsLinks) >>= \case
-    Just (at, (general, community)) | at == blockNumber -> pure (snd general, snd community)
-    cached -> do
+    Just (at, (general, community)) | at == blockNumber -> pure (terms general, terms community)
+    _ -> do
       let link signature = concurrent $ callAt ct (AtBlock blockNumber) policy (signature, "") decodeString
-      (generalLink, communityLink) <- ExceptT $ together $ (,) <$> link "generalTermsLink()" <*> link "communityTermsLink()"
-      general <- ExceptT $ linkTerms (fst . snd <$> cached) generalLink
-      community <- ExceptT $ linkTerms (snd . snd <$> cached) communityLink
-      written <- liftIO $ atomicModifyIORef' ctTermsLinks $ \kept -> case kept of
-        Just (keptAt, _) | keptAt >= blockNumber -> (kept, Nothing)
-        _ -> (Just (blockNumber, (general, community)), Just kept)
-      liftIO $ forM_ written $ \replaced -> do
+      (general, community) <- ExceptT $ together $ (,) <$> link "generalTermsLink()" <*> link "communityTermsLink()"
+      liftIO $ do
+        replaced <- atomicModifyIORef' ctTermsLinks (Just (blockNumber, (general, community)),)
         logRefused False (fst . snd <$> replaced) general
         logRefused True (snd . snd <$> replaced) community
-      pure (snd general, snd community)
+      pure (terms general, terms community)
   where
-    linkTerms before link = case before of
-      Just kept@(keptLink, _) | keptLink == link -> pure $ Right kept
-      _ -> fmap (link,) <$> termsOf ct link
-    logRefused community before (link, terms) =
-      when (fmap fst before /= Just link && isNothing terms && not (T.null link)) $
+    terms = termsOf $ cChainId $ chainConfig ct
+    logRefused community before link =
+      when (before /= Just link && isNothing (terms link) && not (T.null link)) $
         logWarn $ "names: the name policy's " <> termsKindText community <> " terms are not a link the service takes, so names under them cannot be ordered: " <> link
 
 kindTerms :: CommunityName -> (Maybe Terms, Maybe Terms) -> Maybe Terms
 kindTerms community (general, communityTerms) = if community then communityTerms else general
 
-termsOf :: Contracts -> Text -> IO (Either ChainError (Maybe Terms))
-termsOf Contracts {ctChain = c@ChainClient {ccConfig = ChainConfig {cChainId}}} link =
-  fmap terms <$> case eitherToMaybe $ parseText linkP link of
+termsOf :: Word64 -> Text -> Maybe Terms
+termsOf chainId link =
+  terms $ case eitherToMaybe $ parseText linkP link of
     Just (loopback, fetch)
-      | not loopback -> pure $ Right $ Just fetch
-      | cChainId == localChainId -> fmap (\chainId -> if chainId == localChainId then Just fetch else Nothing) <$> nodeChainId c
-    _ -> pure $ Right Nothing
+      | not loopback || chainId == localChainId -> Just fetch
+    _ -> Nothing
   where
     terms = fmap $ \tmFetch -> Terms {tmLink = link, tmHash = Hex32 $ keccak256 $ encodeUtf8 link, tmFetch}
     linkP = do

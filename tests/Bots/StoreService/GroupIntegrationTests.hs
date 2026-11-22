@@ -25,7 +25,7 @@ import StoreService.Service (ServiceState (..), checkNodeChain, checkUnverifiedR
 import StoreService.Store (ManagedGroup (..), getManagedGroup)
 import StoreService.Store.Migrate (withInstanceLock)
 import Bots.StoreService.BotTests (badgeBotName, badgeCmdUsage, badgeProfile, consoleIssueUsage, badgeTypeOf, credentialOf, devKeysIni, entryOf, issueCode, issueRaw, mkStoreServiceOpts, newPurchaseKeys, operatorCmd, redeemWithQueue, requestObject, revokeNamed, revokeRaw, serviceDbPrefix, shouldAnswerError, statementOf, stopStoreService, testIssuerKeyIdx, withStoreService)
-import Bots.StoreService.ConfigTests (chainSection, controllerAddr, namesSection, registrarAddr, withRpcUrl)
+import Bots.StoreService.ConfigTests (chainSection, controllerAddr, namesSection, registrarAddr, withChainId, withRpcUrl)
 import Bots.StoreService.FakeEthNode (CallAnswer (..), FakeEthNode (..), Fault (..), address, answerCall, awaitSent, fakeNamePolicy, linkTermsOnNode, setFault, withFakeEthNode)
 import Bots.StoreService.NamesContractsTests (nameExpiresCall, rentPriceAnswer, rentPriceCall, reservedNamesCall)
 import Bots.StoreService.WebTests (answerOf, capturingStderr, digestFixture, refusedWith, siteConfigJson, statusOf)
@@ -161,7 +161,7 @@ badgeGroupIntegrationTests = do
 namesBootTests :: SpecWith TestParams
 namesBootTests = do
   it "warns naming the indexes of trusted dev_keys, and says nothing without them" testDevKeysWarned
-  it "refuses a node serving another chain than chain_id, and dev_keys unless the node answers, only warning without them" testNodeChain
+  it "refuses a node serving another chain than chain_id, and dev_keys or chain_id 31337 unless the node answers, only warning without both" testNodeChain
   it "refuses unverified store receipts with an issuer key clients trust, and takes them with a dev key" testUnverifiedReceiptsKey
   it "refuses a second instance on the same Postgres database until the first ends, exits when the lock's connection fails, and takes no lock on SQLite" testInstanceLock
   it "exits before the chat core starts while a pending transaction was signed by another key" testOtherKeyPendingStops
@@ -197,7 +197,7 @@ testInstanceLock ps = do
 
 testOtherKeyPendingStops :: HasCallStack => TestParams -> IO ()
 testOtherKeyPendingStops ps = do
-  svc <- (\s -> s {gsIniSections = "" : namesSection <> chainSection}) <$> prepareGroupService ps
+  svc <- (\s -> s {gsIniSections = "" : namesSection <> sepoliaChain}) <$> prepareGroupService ps
   (opts, serviceCfg, _) <- groupServiceOpts svc Nothing
   Just chainCfg <- pure $ nChain <$> names serviceCfg
   g <- C.newRandom
@@ -243,6 +243,7 @@ testNodeChain _ = withFakeEthNode $ \node@FakeEthNode {fnUrl} -> do
   let onNode = map (\l -> if "rpc_url =" `T.isPrefixOf` l then "rpc_url = " <> T.pack fnUrl else l) chainSection
   Right withDev <- devKeysIni onNode 9 devSk [(9, devSk)]
   Right noDev <- devKeysIni onNode testIssuerKeyIdx devSk []
+  Right sepolia <- devKeysIni (map (\l -> if "chain_id =" `T.isPrefixOf` l then "chain_id = 11155111" else l) onNode) testIssuerKeyIdx devSk []
   checkNodeChain (Just withDev) `shouldReturn` Right ()
   checkNodeChain (Just noDev) `shouldReturn` Right ()
   M.member 9 . badgePublicKeys <$> requireDevKeys (Just withDev) testCfg `shouldReturn` True
@@ -253,14 +254,15 @@ testNodeChain _ = withFakeEthNode $ \node@FakeEthNode {fnUrl} -> do
   requireDevKeys (Just noDev) testCfg `shouldThrow` (== ExitFailure 1)
   setFault node "eth_chainId" HttpFailure
   checkNodeChain (Just withDev) `shouldReturn` Left "issuer.dev_keys is refused: the node's chain id could not be read"
-  warned <- capturingStderr $ checkNodeChain (Just noDev) `shouldReturn` Right ()
+  checkNodeChain (Just noDev) `shouldReturn` Left "chain.chain_id 31337 is refused: the node's chain id could not be read"
+  warned <- capturingStderr $ checkNodeChain (Just sepolia) `shouldReturn` Right ()
   warned `shouldSatisfy` T.isInfixOf "the node's chain id could not be read, so it is not checked: ChainUnavailable \"eth_chainId: HTTP 502\""
   checkNodeChain Nothing `shouldReturn` Right ()
 
 testNamesBoot :: HasCallStack => TestParams -> IO ()
 testNamesBoot ps = do
   svc <- prepareGroupService ps
-  (t, cc, _, port) <- startGroupService svc {gsIniSections = "" : namesSection <> chainSection, gsListener = ["trust_forwarded_for = on"]} Nothing
+  (t, cc, _, port) <- startGroupService svc {gsIniSections = "" : namesSection <> sepoliaChain, gsListener = ["trust_forwarded_for = on"]} Nothing
   flip finally (stopGroupService t cc) $ do
     pollUntilTrue (listening port)
     mgr <- newManager defaultManagerSettings
@@ -323,11 +325,11 @@ testNamesBoot ps = do
     poll t >>= (`shouldSatisfy` isNothing)
 
 testNamesBootCodesOnly :: HasCallStack => TestParams -> IO ()
-testNamesBootCodesOnly ps = do
+testNamesBootCodesOnly ps = withFakeEthNode $ \FakeEthNode {fnUrl} -> do
   svc@GroupSvc {gsStaticDir} <- prepareGroupService ps
   let shell = "<!doctype html><title>SimpleX badges</title>"
   B.writeFile (gsStaticDir </> "index.html") shell
-  (t, cc, _, port) <- startGroupService svc {gsIniSections = "" : codesOnlyNames <> chainSection} Nothing
+  (t, cc, _, port) <- startGroupService svc {gsIniSections = "" : codesOnlyNames <> withRpcUrl (T.pack fnUrl)} Nothing
   flip finally (stopGroupService t cc) $ do
     pollUntilTrue (listening port)
     mgr <- newManager defaultManagerSettings
@@ -369,6 +371,9 @@ testNamesBootPriceFloor ps = withFakeEthNode $ \node@FakeEthNode {fnUrl} -> do
 codesOnlyNames :: [Text]
 codesOnlyNames = namesSection <> ["codes_only = on"]
 
+sepoliaChain :: [Text]
+sepoliaChain = withChainId "11155111"
+
 namesWorkerBootTests :: SpecWith TestParams
 namesWorkerBootTests = it "starts the workers and the terms fetch with the service, sending the commit of an order queued after the start and storing both terms texts" testWorkerBoot
 
@@ -403,7 +408,7 @@ namesCodesChatTests = describe "StoreService names: prepaid codes" $ do
 testGroupNameCodes :: HasCallStack => TestParams -> IO ()
 testGroupNameCodes ps = do
   svc <- prepareGroupService ps
-  runWithOwner svc {gsIniSections = "" : codesOnlyNames <> chainSection} $ \cc _ _ alice -> do
+  runWithOwner svc {gsIniSections = "" : codesOnlyNames <> sepoliaChain} $ \cc _ _ alice -> do
     issued <- replyTo cc alice "/issue name 8"
     one <- prepaidIn $ T.stripPrefix "Code: " issued
     nameLengthInt (namePrepaidCodeLength one) `shouldBe` 8
@@ -419,7 +424,7 @@ testGroupNameCodes ps = do
 testGroupNameCodesPerDay :: HasCallStack => TestParams -> IO ()
 testGroupNameCodesPerDay ps = do
   svc <- prepareGroupService ps
-  let capped = svc {gsIniSections = "" : codesOnlyNames <> chainSection}
+  let capped = svc {gsIniSections = "" : codesOnlyNames <> sepoliaChain}
   runGroupServiceAs capped (Just testGroupConfig {gNameCodesPerDay = 3}) $ \cc env gid -> withOwnerJoined ps cc env gid $ \alice -> do
     replicateM_ 2 $ issueNameRaw cc "name 6"
     replicateM_ 3 $ T.isPrefixOf "Code: " <$> replyTo cc alice "/issue name 6" `shouldReturn` True
@@ -430,7 +435,7 @@ testGroupNameCodesPerDay ps = do
 testOperatorNameCodes :: HasCallStack => TestParams -> IO ()
 testOperatorNameCodes ps = do
   svc <- prepareGroupService ps
-  (t, cc, _, port) <- startGroupService svc {gsIniSections = "" : codesOnlyNames <> chainSection} Nothing
+  (t, cc, _, port) <- startGroupService svc {gsIniSections = "" : codesOnlyNames <> sepoliaChain} Nothing
   flip finally (stopGroupService t cc) $ do
     pollUntilTrue (listening port)
     forM_ ["name", "name 5", "name 64", "name 07", "name 7 years 1", "name 7 years 11", "name 7 gratis", "name 6 unpaid"] $ \args ->
@@ -467,7 +472,7 @@ testOperatorNameCodes ps = do
 testRevokeTakesCodeTurn :: HasCallStack => TestParams -> IO ()
 testRevokeTakesCodeTurn ps = do
   svc <- prepareGroupService ps
-  (t, cc, _, port) <- startGroupService svc {gsIniSections = "" : namesSection <> chainSection} Nothing
+  (t, cc, _, port) <- startGroupService svc {gsIniSections = "" : namesSection <> sepoliaChain} Nothing
   flip finally (stopGroupService t cc) $ do
     pollUntilTrue (listening port)
     turns <- newTurns
