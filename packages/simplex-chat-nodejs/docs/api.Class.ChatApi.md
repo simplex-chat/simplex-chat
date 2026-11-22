@@ -1693,7 +1693,7 @@ Defined in: [src/api.ts:491](../api.ts#L491)
 
 Update message.
 A live message stays live with `liveMessage = true` and is finalized with `liveMessage = false`.
-`priority = 1` raises the message to high priority (groups only, for roles allowed by the group preference); `asNew = true` makes it new in a group: last, unread and notified by `priority`.
+`priority`: the priority of the updated message, -1 silent, 0 or omitted normal, 1 high (groups only, for roles allowed by the group preference); `asNew = true` makes it new in a group: last, unread and notified by `priority`.
 Network usage: background.
 
 #### Parameters

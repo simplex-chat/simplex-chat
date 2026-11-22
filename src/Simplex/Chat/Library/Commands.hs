@@ -815,7 +815,7 @@ processChatCommand cxt nm = \case
     withGroupLock "reportMessage" gId $ do
       gInfo <- withFastStore $ \db -> getGroupInfoKeys db cxt user gId
       let mc = MCReport reportText reportReason
-          cm = ComposedMessage {fileSource = Nothing, quotedItemId = Just reportedItemId, msgContent = mc, mentions = M.empty, priority = Nothing}
+          cm = ComposedMessage {fileSource = Nothing, quotedItemId = Just reportedItemId, msgContent = mc, mentions = M.empty, priority = MPNormal}
       sendGroupContentMessages user gInfo (Just $ GCSMemberSupport Nothing) False False Nothing False [composedMessageReq cm]
   ReportMessage {groupName, contactName_, reportReason, reportedMessage} -> withUser $ \user -> do
     gId <- withFastStore $ \db -> getGroupIdByName db user groupName
@@ -829,19 +829,20 @@ processChatCommand cxt nm = \case
       cci <- withFastStore $ \db -> getDirectCIWithReactions db user ct itemId
       currentTs <- liftIO getCurrentTime
       case cci of
-        CChatItem SMDSnd ci@ChatItem {meta = CIMeta {itemSharedMsgId, itemTimed, itemLive, priority}, content = ciContent} -> do
+        CChatItem SMDSnd ci@ChatItem {meta = meta@CIMeta {itemSharedMsgId, itemTimed, itemLive, priority}, content = ciContent} -> do
           case (ciContent, itemSharedMsgId, sndItemEditable (userItemWindow $ DirectChat ct) currentTs ci) of
             (CISndMsgContent oldMC, Just itemSharedMId, True) -> do
               let changed = mc /= oldMC
-              if changed || fromMaybe False itemLive
+                  priority' = allowedPriority False priority_
+              if changed || fromMaybe False itemLive || priority' /= priority
                 then do
-                  let event = XMsgUpdate itemSharedMId mc M.empty (ttl' <$> itemTimed) (justTrue . (live &&) =<< itemLive) Nothing Nothing (mfilter (< 0) priority) Nothing
+                  let event = XMsgUpdate itemSharedMId mc M.empty (ttl' <$> itemTimed) (justTrue . (live &&) =<< itemLive) Nothing Nothing priority' Nothing
                   (SndMessage {msgId}, _) <- sendDirectContactMessage user ct event
                   ci' <- withFastStore' $ \db -> do
                     when changed $
                       addInitialAndNewCIVersions db itemId (chatItemTs' ci, oldMC) (currentTs, mc)
-                    let edited = itemLive /= Just True
-                    updateDirectChatItem' db user contactId ci (CISndMsgContent mc) edited live Nothing $ Just msgId
+                    let edited = changed && itemLive /= Just True
+                    updateDirectChatItem' db user contactId ci {meta = (meta :: CIMeta 'CTDirect 'MDSnd) {priority = priority'}} (CISndMsgContent mc) edited live Nothing $ Just msgId
                   startUpdatedTimedItemThread user (ChatRef CTDirect contactId Nothing) ci ci'
                   pure $ CRChatItemUpdated user (AChatItem SCTDirect SMDSnd (DirectChat ct) ci')
                 else pure $ CRChatItemNotChanged user (AChatItem SCTDirect SMDSnd (DirectChat ct) ci)
@@ -865,14 +866,9 @@ processChatCommand cxt nm = \case
                   recipients <- getGroupRecipients cxt user gInfo chatScopeInfo groupKnockingVersion
                   let changed = mc /= oldMC
                       mainScope = isNothing scope && isNothing itemScopeInfo
-                      highAllowed = groupFeatureUserAllowed SGFMsgPriority gInfo
                       newTs_ = if asNew && mainScope then asNewItemTs (chatItemTs' ci) currentTs else Nothing
-                      raise = isNothing newTs_ && requestsHighPriority priority_ && not (highPriority meta) && mainScope && highAllowed
-                      priority'
-                        | isJust newTs_ = sndPriority highAllowed priority_
-                        | raise = Just 1
-                        | otherwise = mfilter (< 0) priority
-                  if changed || fromMaybe False itemLive || raise || isJust newTs_
+                      priority' = allowedPriority (mainScope && groupFeatureUserAllowed SGFMsgPriority gInfo) priority_
+                  if changed || fromMaybe False itemLive || priority' /= priority || isJust newTs_
                     then do
                       ciMentions <- withFastStore $ \db -> getCIMentions db user gInfo ft_ mentions
                       let msgScope = toMsgScope gInfo <$> chatScopeInfo
@@ -884,8 +880,7 @@ processChatCommand cxt nm = \case
                         when changed $
                           addInitialAndNewCIVersions db itemId (chatItemTs' ci, oldMC) (currentTs, mc)
                         let edited = changed && itemLive /= Just True
-                            ciRaised = if raise || isJust newTs_ then ci {meta = (meta :: CIMeta 'CTGroup 'MDSnd) {priority = priority'}} else ci
-                        ci' <- updateGroupChatItem db user groupId ciRaised (CISndMsgContent mc) edited live $ Just msgId
+                        ci' <- updateGroupChatItem db user groupId ci {meta = (meta :: CIMeta 'CTGroup 'MDSnd) {priority = priority'}} (CISndMsgContent mc) edited live $ Just msgId
                         ci'' <- updateGroupCIMentions db gInfo ci' ciMentions
                         case newTs_ of
                           Just newTs -> do
@@ -1178,7 +1173,7 @@ processChatCommand cxt nm = \case
                   -- only includes mentions when forwarding to the same group
                   ciMentions = if toChat == fromChat then mentions' else M.empty
                   -- no need to have mentions in ComposedMessage, they are in ciMentions
-               in (ComposedMessage file Nothing mc' M.empty Nothing, ciff, msgContentTexts mc', ciMentions)
+               in (ComposedMessage file Nothing mc' M.empty MPNormal, ciff, msgContentTexts mc', ciMentions)
               where
                 forwardName :: GroupInfo -> ContactName
                 forwardName GroupInfo {groupProfile = GroupProfile {displayName}} = displayName
@@ -1512,7 +1507,7 @@ processChatCommand cxt nm = \case
       sendWelcomeMsg user ct ucl UserContactRequest {welcomeSharedMsgId} =
         forM_ (autoReply $ addressSettings ucl) $ \mc -> case welcomeSharedMsgId of
           Just smId ->
-            void $ sendDirectContactMessage user ct $ XMsgUpdate smId mc M.empty Nothing Nothing Nothing Nothing Nothing Nothing
+            void $ sendDirectContactMessage user ct $ XMsgUpdate smId mc M.empty Nothing Nothing Nothing Nothing MPNormal Nothing
           Nothing -> do
             (msg, _) <- sendDirectContactMessage user ct $ XMsgNew $ mcSimple mc
             ci <- saveSndChatItem user (CDDirectSnd ct) msg (CISndMsgContent mc)
@@ -2673,7 +2668,7 @@ processChatCommand cxt nm = \case
               GCSMemberSupport <$> mapM (getGroupMemberIdByName db user gId) mName_
           (gInfo, cScope_,) <$> liftIO (getMessageMentions db user gId msg)
         let sendRef = SRGroup (groupId' gInfo) cScope_ (sendAsGroup' gInfo cScope_)
-        processChatCommand cxt nm $ APISendMessages sendRef False Nothing False [ComposedMessage Nothing Nothing mc mentions Nothing]
+        processChatCommand cxt nm $ APISendMessages sendRef False Nothing False [ComposedMessage Nothing Nothing mc mentions MPNormal]
       SNLocal -> do
         folderId <- withFastStore (`getUserNoteFolderId` user)
         processChatCommand cxt nm $ APICreateChatItems folderId [composedMessage Nothing mc]
@@ -2701,7 +2696,7 @@ processChatCommand cxt nm = \case
     (chatRef, mentions) <- getChatRefAndMentions user chatName msg
     withSendRef user chatRef $ \sendRef -> do
       let mc = MCText msg
-      processChatCommand cxt nm $ APISendMessages sendRef True Nothing False [ComposedMessage Nothing Nothing mc mentions Nothing]
+      processChatCommand cxt nm $ APISendMessages sendRef True Nothing False [ComposedMessage Nothing Nothing mc mentions MPNormal]
   SendMessageBroadcast mc -> withUser $ \user -> do
     contacts <- withFastStore' $ \db -> getUserContacts db cxt user
     withChatLock "sendMessageBroadcast" $ do
@@ -2741,12 +2736,12 @@ processChatCommand cxt nm = \case
       combineResults _ _ (Left e) = Left e
       createCI :: DB.Connection -> User -> Bool -> UTCTime -> (Contact, SndMessage) -> IO ()
       createCI db user hasLink createdAt (ct, sndMsg) =
-        void $ createNewSndChatItem db user (CDDirectSnd ct) False sndMsg (CISndMsgContent mc) Nothing Nothing Nothing False 0 hasLink (roundDownToSecond createdAt) createdAt
+        void $ createNewSndChatItem db user (CDDirectSnd ct) False sndMsg (CISndMsgContent mc) Nothing Nothing Nothing False MPNormal hasLink (roundDownToSecond createdAt) createdAt
   SendMessageQuote cName (AMsgDirection msgDir) quotedMsg msg -> withUser $ \user@User {userId} -> do
     contactId <- withFastStore $ \db -> getContactIdByName db user cName
     quotedItemId <- withFastStore $ \db -> getDirectChatItemIdByText db userId contactId msgDir quotedMsg
     let mc = MCText msg
-    processChatCommand cxt nm $ APISendMessages (SRDirect contactId) False Nothing False [ComposedMessage Nothing (Just quotedItemId) mc M.empty Nothing]
+    processChatCommand cxt nm $ APISendMessages (SRDirect contactId) False Nothing False [ComposedMessage Nothing (Just quotedItemId) mc M.empty MPNormal]
   DeleteMessage chatName deletedMsg -> withUser $ \user -> do
     chatRef <- getChatRef user chatName
     deletedItemId <- getSentChatItemIdByText user chatRef deletedMsg
@@ -2759,11 +2754,11 @@ processChatCommand cxt nm = \case
     (chatRef, mentions) <- getChatRefAndMentions user chatName msg
     editedItemId <- getSentChatItemIdByText user chatRef editedMsg
     let mc = MCText msg
-    processChatCommand cxt nm $ APIUpdateChatItem chatRef editedItemId False False $ UpdatedMessage mc mentions Nothing
+    processChatCommand cxt nm $ APIUpdateChatItem chatRef editedItemId False False $ UpdatedMessage mc mentions MPNormal
   UpdateLiveMessage chatName chatItemId live msg -> withUser $ \user -> do
     (chatRef, mentions) <- getChatRefAndMentions user chatName msg
     let mc = MCText msg
-    processChatCommand cxt nm $ APIUpdateChatItem chatRef chatItemId live False $ UpdatedMessage mc mentions Nothing
+    processChatCommand cxt nm $ APIUpdateChatItem chatRef chatItemId live False $ UpdatedMessage mc mentions MPNormal
   ReactToMessage add reaction chatName msg -> withUser $ \user -> do
     chatRef <- getChatRef user chatName
     chatItemId <- getChatItemIdByText user chatRef msg
@@ -3131,7 +3126,7 @@ processChatCommand cxt nm = \case
             sndItemData GroupMember {groupMemberId, memberProfile} msg =
               let content = CISndGroupEvent $ SGEMemberRole groupMemberId (fromLocalProfile memberProfile) newRole
                   ts = ciContentTexts content
-               in NewSndChatItemData msg content ts M.empty Nothing Nothing Nothing 0
+               in NewSndChatItemData msg content ts M.empty Nothing Nothing Nothing MPNormal
             updMember db m = do
               updateGroupMemberRole db user m newRole
               pure (m :: GroupMember) {memberRole = newRole}
@@ -3183,7 +3178,7 @@ processChatCommand cxt nm = \case
           sndItemData GroupMember {groupMemberId, memberProfile} msg =
             let content = CISndGroupEvent $ SGEMemberBlocked groupMemberId (fromLocalProfile memberProfile) blockFlag
                 ts = ciContentTexts content
-             in NewSndChatItemData msg content ts M.empty Nothing Nothing Nothing 0
+             in NewSndChatItemData msg content ts M.empty Nothing Nothing Nothing MPNormal
   APIRemoveMembers {groupId, groupMemberIds, withMessages} -> withUser $ \user ->
     withGroupLock "removeMembers" groupId $ do
       -- TODO [relays] possible optimization is to read only required members + relays
@@ -3282,7 +3277,7 @@ processChatCommand cxt nm = \case
               | otherwise =
                   let content = CISndGroupEvent $ SGEMemberDeleted groupMemberId (fromLocalProfile memberProfile)
                       ts = ciContentTexts content
-                   in Just $ NewSndChatItemData msg content ts M.empty Nothing Nothing Nothing 0
+                   in Just $ NewSndChatItemData msg content ts M.empty Nothing Nothing Nothing MPNormal
             delMember db m = do
               -- We're in a function used in batch member deletion, and since we're passing same gInfo for each member,
               -- voided result (updated group info) may have incorrect state of membersRequireAttention.
@@ -3547,7 +3542,7 @@ processChatCommand cxt nm = \case
         qiId <- getGroupChatItemIdByText db user gId cName quotedMsg
         (gInfo, qiId,) <$> liftIO (getMessageMentions db user gId msg)
     let mc = MCText msg
-    processChatCommand cxt nm $ APISendMessages (SRGroup (groupId' gInfo) Nothing (sendAsGroup' gInfo Nothing)) False Nothing False [ComposedMessage Nothing (Just quotedItemId) mc mentions Nothing]
+    processChatCommand cxt nm $ APISendMessages (SRGroup (groupId' gInfo) Nothing (sendAsGroup' gInfo Nothing)) False Nothing False [ComposedMessage Nothing (Just quotedItemId) mc mentions MPNormal]
   ClearNoteFolder -> withUser $ \user -> do
     folderId <- withFastStore (`getUserNoteFolderId` user)
     processChatCommand cxt nm $ APIClearChat (ChatRef CTLocal folderId Nothing)
@@ -5199,7 +5194,7 @@ processChatCommand cxt nm = \case
       [Either ChatError (NewSndChatItemData c)]
     prepareSndItemsData =
       zipWith4 $ \(ComposedMessage {msgContent, priority}, itemForwarded, ts, mm) f q -> \case
-        Right msg -> Right $ NewSndChatItemData msg (CISndMsgContent msgContent) ts mm f q itemForwarded (fromMaybe 0 priority)
+        Right msg -> Right $ NewSndChatItemData msg (CISndMsgContent msgContent) ts mm f q itemForwarded priority
         Left e -> Left e -- step over original error
     processSendErrs :: ([ChatError], [ChatItem c d]) -> CM ()
     processSendErrs = \case
@@ -5408,13 +5403,13 @@ updatedRelays relays UserOperatorServers {operator, smpServers, xftpServers, cha
 type ComposedMessageReq = (ComposedMessage, Maybe CIForwardedFrom, (Text, ParsedMarkdown), Map MemberName CIMention)
 
 composedMessage :: Maybe CryptoFile -> MsgContent -> ComposedMessage
-composedMessage f mc = ComposedMessage {fileSource = f, quotedItemId = Nothing, msgContent = mc, mentions = M.empty, priority = Nothing}
+composedMessage f mc = ComposedMessage {fileSource = f, quotedItemId = Nothing, msgContent = mc, mentions = M.empty, priority = MPNormal}
 
 composedMessageReq :: ComposedMessage -> ComposedMessageReq
 composedMessageReq cm@ComposedMessage {msgContent = mc} = (cm, Nothing, msgContentTexts mc, M.empty)
 
 limitSndPriority :: Bool -> ComposedMessageReq -> ComposedMessageReq
-limitSndPriority highAllowed (cm@ComposedMessage {priority}, ciff, ts, mm) = ((cm :: ComposedMessage) {priority = sndPriority highAllowed priority}, ciff, ts, mm)
+limitSndPriority highAllowed (cm@ComposedMessage {priority}, ciff, ts, mm) = ((cm :: ComposedMessage) {priority = allowedPriority highAllowed priority}, ciff, ts, mm)
 
 composedMessageReqMentions :: DB.Connection -> User -> GroupInfo -> ComposedMessage -> ExceptT StoreError IO ComposedMessageReq
 composedMessageReqMentions db user g cm@ComposedMessage {msgContent = mc, mentions} = do
@@ -7274,7 +7269,7 @@ chatCommandP =
     composedMessagesTextP = do
       text <- mcTextP
       pure [composedMessage Nothing text]
-    updatedMessagesTextP = (\mc -> UpdatedMessage mc [] Nothing) <$> mcTextP
+    updatedMessagesTextP = (\mc -> UpdatedMessage mc [] MPNormal) <$> mcTextP
     liveMessageP = " live=" *> onOffP <|> pure False
     signMessagesP = " sign=" *> onOffP <|> pure False
     sendMessageTTLP = " ttl=" *> ((Just <$> A.decimal) <|> ("default" $> Nothing)) <|> pure Nothing

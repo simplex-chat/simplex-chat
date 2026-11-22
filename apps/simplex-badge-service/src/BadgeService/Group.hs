@@ -54,7 +54,7 @@ import Simplex.Chat.Core (sendChatCmd)
 import Simplex.Chat.Markdown (viewName)
 import Simplex.Chat.Messages
 import Simplex.Chat.Messages.CIContent (CIContent (..), ciContentToText)
-import Simplex.Chat.Protocol (MsgContent (..))
+import Simplex.Chat.Protocol (MsgContent (..), MsgPriority (..))
 import Simplex.Chat.Store.Messages (getGroupChatItem)
 import Simplex.Chat.Store.Shared (StoreError (..), getGroupInfo)
 import Simplex.Chat.Types
@@ -284,7 +284,7 @@ runGroupCmd cc groupId = \case
 -- The label says what is lost when the send fails, since the log line is its only trace.
 sendGroupText :: HasCallStack => ChatController -> GroupId -> Text -> Text -> IO (Maybe ChatItemId)
 sendGroupText cc groupId label txt =
-  sendChatCmd cc (APISendMessages (SRGroup groupId Nothing False) False Nothing False (ComposedMessage Nothing Nothing (MCText txt) M.empty Nothing :| [])) >>= \case
+  sendChatCmd cc (APISendMessages (SRGroup groupId Nothing False) False Nothing False (ComposedMessage Nothing Nothing (MCText txt) M.empty MPNormal :| [])) >>= \case
     Right CRNewChatItems {chatItems = ci : _} -> pure (Just (aChatItemId ci))
     r -> withFrozenCallStack logError ("badge group message not sent (" <> label <> "): " <> tshow r) $> Nothing
 
@@ -342,7 +342,7 @@ setTrackerBody cc groupId badgeCodeId policy mkBody =
               EditOnly -> logWarn $ "badge group tracker left uncorrected, code " <> tshow badgeCodeId <> " can no longer be edited"
         case trackerDecision now trackerSentAt of
           Edit ->
-            sendChatCmd cc (APIUpdateChatItem (ChatRef CTGroup groupId Nothing) trackerItemId False False (UpdatedMessage (MCText body) M.empty Nothing)) >>= \case
+            sendChatCmd cc (APIUpdateChatItem (ChatRef CTGroup groupId Nothing) trackerItemId False False (UpdatedMessage (MCText body) M.empty MPNormal)) >>= \case
               Right CRChatItemUpdated {} -> pure ()
               Right CRChatItemNotChanged {} -> pure ()
               Left (ChatError CEInvalidChatItemUpdate) -> uneditable

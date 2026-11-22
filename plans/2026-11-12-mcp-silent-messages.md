@@ -297,6 +297,11 @@ approved text                                      becomes
                                                    has -1 (decided by the user on 2026-11-21; replaces normal priority of 5a9677981)
 4, 5  raise conditions                             also an item that is not deleted (receiver) and in the main scope (sender) (5a9677981)
 5     history: the priority of the stored item     silent kept, high dropped by the member that sends history; live forwards keep it (c2ccb6775)
+1, 4, 5  update without priority: priority kept    every update sets the item priority by the rules of a new message, absent is normal (decided by the user on 2026-11-22)
+5     update with requested priority applied       an update is applied only when it changes the content, the live state or the accepted priority;
+                                                   otherwise it is not forwarded (decided by the user on 2026-11-22)
+5     forwarded update: flag of the message        flag of the priority stored by the forwarding member or relay (decided by the user on 2026-11-22)
+2     priority :: Maybe Int, limitPriority          MsgPriority = MPSilent | MPNormal | MPHigh, parsed at the protocol and API boundary
 ```
 
 The NSE decisions of this plan stay. A raise reaches the NSE as `.messageReceived`, which replaces the default best attempt, so the `.noNtf` rule for a push of only silent messages does not hide a raise. Silent is still accepted from every sender in every chat. High priority keeps the preference of the approved plan, and a raise keeps its main scope rule.
@@ -311,7 +316,12 @@ stateDiagram-v2
   [*] --> high: x.msg.new or x.msg.update of a missing item, priority 1, allowed sender, group
   silent --> high: x.msg.update priority 1 by the author, allowed, main scope
   normal --> high: x.msg.update priority 1 by the author, allowed, main scope
+  silent --> normal: x.msg.update without priority, or priority 1 not allowed
+  high --> normal: x.msg.update without priority, or priority 1 not allowed
+  normal --> silent: x.msg.update priority -1
+  high --> silent: x.msg.update priority -1
 ```
+A change to high notifies once; a change to a lower priority does not notify. An update with the item's present priority and content, of an item that is not live, changes nothing.
 
 Counters of a chat:
 ```
@@ -388,6 +398,7 @@ The recipient bob has `markRead = False`, mode "All", and the group `#team` in t
 | priority/chats-silent | responses to `/_get chats 1 pcc=on` and `/users` after them: the group with 2 unread, all silent; the profile's unread 1 |
 | priority/high | new normal "hello", new high priority "done" |
 | priority/raise | new normal "almost there", its raise; new silent "compiling", its raise with the text "compiled" |
+| priority/lower | new high "answer", its edit "answer!" without priority; new high "alert", its update with priority -1 |
 
 | Test | Fixture | Checked |
 |---|---|---|
@@ -396,5 +407,28 @@ The recipient bob has `markRead = False`, mode "All", and the group `#team` in t
 | high priority message notifies with bell | high | notifications of both; unread 2, mentions 1, high priority 1, profile 2; unread tag HighPriority; the item's bell; list label bell |
 | raise notifies and moves counters | raise | notification of each raise; counters after each event; the raised silent item leaves the gray tier |
 | raise in another profile notifies and counts for it | raise | notifications of the new item and both raises; the other profile's unread 2 |
+| lower priority moves counters without notification | lower | notifications of the two new items only; counters after each event: high to normal and high to silent |
 
 `ChatStats.allUnreadSilent` is the rule of the gray outline badge and the gray scroll button count, used by both views and the tests.
+
+### 11.9 Update priority and forwarded updates
+
+Decided by the user on 2026-11-22. `MsgPriority` is parsed from the integer of the wire and the API by its sign; normal is an absent field.
+```
+sender      priority' = allowedPriority highAllowed (priority of the updated message), absent: normal
+              contact: silent or normal; group: high when allowed, in the main scope
+            condition: changed || live || priority' /= item priority
+receiver    priority' = allowedPriority (main scope && not deleted && rcvPriorityAllowed) (priority of x.msg.update), absent: normal
+              direct: silent or normal
+            condition: changed || live || priority' /= item priority; otherwise not applied and not forwarded
+forwarder   forwards the message bytes; SMP flag of x.msg.update by the stored priority of its item: on for high, off otherwise
+```
+
+```mermaid
+flowchart LR
+  U["x.msg.update from a member"] --> R["forwarding member or relay:<br>priority' by the author's role"]
+  R -->|"no change of content, live state or priority"| N["chatItemNotChanged<br>no delivery task"]
+  R -->|"changed"| S["item stored with priority'<br>delivery task"]
+  S --> J["delivery job: message bytes<br>SMP flag of the stored priority"]
+  J --> M["each member: priority' by the author's role"]
+```

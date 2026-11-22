@@ -175,13 +175,13 @@ A silent message is shown in the chat and counted as unread, without a notificat
 
 A high priority message notifies as a mention, also in a chat set to notify about mentions only, and is shown with a bell. It is accepted in groups, business chats and channels from members whose role is allowed by the group preference "Message priority", by default admins and owners. The group owner changes it with `/set priority #<group> on|off [<role>]`. In direct chats and from other members a high priority message is sent and received as normal, without an error.
 
-An update with `"priority": 1` raises a sent message to high priority, with or without a change of the text, for example when a streamed message is completed:
+`"priority"` in an [UpdatedMessage](./api/TYPES.md#updatedmessage) sets the priority of a sent message, with the same values. An update without it makes the message normal, so every update repeats the priority. For example, a streamed message is completed with high priority, with or without a change of the text:
 
 ```
 /_update item #1 5 json {"msgContent": {"type": "text", "text": "Tests passed"}, "mentions": {}, "priority": 1}
 ```
 
-The received item has `"priority"` in its [CIMeta](./api/TYPES.md#cimeta). A raise is the [ChatItemUpdated](./api/EVENTS.md#chatitemupdated) event where `chatItemUpdate.chatItem` has priority 1 and `chatItemUpdate.prevChatItem` has a lower priority. Apps that do not support message priority show these messages as normal messages.
+The received item has `"priority"` in its [CIMeta](./api/TYPES.md#cimeta). A change to high priority is the [ChatItemUpdated](./api/EVENTS.md#chatitemupdated) event where `chatItemUpdate.chatItem` has priority 1 and `chatItemUpdate.prevChatItem` has a lower priority; it notifies once. Apps that do not support message priority show these messages as normal messages.
 
 ## Processing events
 

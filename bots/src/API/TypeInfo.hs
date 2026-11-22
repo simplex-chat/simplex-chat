@@ -155,6 +155,7 @@ toTypeInfo tr =
         "Maybe" -> case args of
           [innerTr] -> TIOptional (toTypeInfo innerTr)
           _ -> TIType (simpleType tr)
+        "MsgPriority" -> TIOptional (ti TInt)
         "Map" -> case args of
           [keyTr, valTr] -> TIMap {keyType = simpleType keyTr, valueType = toTypeInfo valTr}
           _ -> TIType (simpleType tr)

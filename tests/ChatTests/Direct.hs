@@ -34,7 +34,7 @@ import Simplex.Chat.Call
 import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), ChatEvent (CEvtChatItemUpdated), ChatHooks (..), PresetServers (..), defaultChatHooks)
 import Simplex.Chat.Messages (AChatItemUpdate (..), CIMeta (CIMeta, itemText), ChatItem (ChatItem, meta), ChatItemId)
 import Simplex.Chat.Options
-import Simplex.Chat.Protocol (supportedChatVRange)
+import Simplex.Chat.Protocol (MsgPriority (..), supportedChatVRange)
 import Simplex.Chat.Terminal.Notification (hideException)
 import Simplex.Chat.Terminal.Output (ChatTerminal (ChatTerminal, activeTo))
 import Simplex.Chat.Types (ContactId, VersionRangeChat, authErrDisableCount, sameVerificationCode, verificationCode, pattern VersionChat)
@@ -1068,22 +1068,22 @@ testDirectSilentMessage ps = do
     withNewTestChatCfg ps cfg "bob" bobProfile $ \bob -> do
       connectUsers alice bob
       [Only bobConnId] <- withCCTransaction alice $ \db -> DB.query_ db "SELECT agent_conn_id FROM connections WHERE contact_id IS NOT NULL"
-      let sendWithPriority t p flag stored = do
+      let sendWithPriority t p flag sent stored = do
             alice ##> ("/_send @2 json [{\"msgContent\": {\"type\": \"text\", \"text\": \"" <> t <> "\"}, \"priority\": " <> show (p :: Int) <> "}]")
             alice <# ("@bob " <> t)
             bob <# ("alice> " <> t)
             lastSndMsgFlags alice bobConnId 1 `shouldReturn` [flag]
-            lastSndMsgPriority alice `shouldReturn` stored
+            lastSndMsgPriority alice `shouldReturn` sent
             forM_ [alice, bob] $ \cc -> itemPriority cc "/_get chat @2 count=1" `shouldReturn` stored
 
-      sendWithPriority "hi" (-1) "F" (Just (-1))
+      sendWithPriority "hi" (-1) "F" (Just (-1)) MPSilent
       alice ##> "! @bob hi there"
       alice <# "@bob [edited] hi there"
       bob <# "alice> [edited] hi there"
-      lastSndEventPriority alice "x.msg.update" `shouldReturn` Just (-1)
-      forM_ [alice, bob] $ \cc -> itemPriority cc "/_get chat @2 count=1" `shouldReturn` Just (-1)
+      lastSndEventPriority alice "x.msg.update" `shouldReturn` Nothing
+      forM_ [alice, bob] $ \cc -> itemPriority cc "/_get chat @2 count=1" `shouldReturn` MPNormal
 
-      sendWithPriority "hello again" 1 "T" Nothing
+      sendWithPriority "hello again" 1 "T" Nothing MPNormal
       helloId <- lastItemId alice
       alice ##> ("/_update item @2 " <> helloId <> " json {\"msgContent\": {\"type\": \"text\", \"text\": \"hello again\"}, \"mentions\": {}, \"priority\": 1}")
       alice <## "message didn't change"
@@ -1091,11 +1091,11 @@ testDirectSilentMessage ps = do
       alice <# "@bob [edited] hello again!"
       bob <# "alice> [edited] hello again!"
       lastSndEventPriority alice "x.msg.update" `shouldReturn` Nothing
-      forM_ [alice, bob] $ \cc -> itemPriority cc "/_get chat @2 count=1" `shouldReturn` Nothing
+      forM_ [alice, bob] $ \cc -> itemPriority cc "/_get chat @2 count=1" `shouldReturn` MPNormal
       alice #> "@bob bye"
       bob <# "alice> bye"
       lastSndMsgFlags alice bobConnId 1 `shouldReturn` ["T"]
-      readTVarIO rcvItems `shouldReturn` [("hi", Just (-1)), ("hello again", Nothing), ("bye", Nothing)]
+      readTVarIO rcvItems `shouldReturn` [("hi", MPSilent), ("hello again", MPNormal), ("bye", MPNormal)]
 
 testDirectSilentMessageTerminal :: HasCallStack => TestParams -> IO ()
 testDirectSilentMessageTerminal =
@@ -1110,7 +1110,8 @@ testDirectSilentMessageTerminal =
       alice ##> "/_send @2 json [{\"msgContent\": {\"type\": \"text\", \"text\": \"hello\"}, \"priority\": -1}]"
       alice <# "@bob hello"
       bob <# "alice> hello"
-      alice ##> "! @bob hello there"
+      helloId <- lastItemId alice
+      alice ##> ("/_update item @2 " <> helloId <> " json {\"msgContent\": {\"type\": \"text\", \"text\": \"hello there\"}, \"mentions\": {}, \"priority\": -1}")
       alice <# "@bob [edited] hello there"
       bob <# "alice> [edited] hello there"
       alice ##> "/_send @2 json [{\"msgContent\": {\"type\": \"text\", \"text\": \"hey\"}, \"priority\": -1}]"

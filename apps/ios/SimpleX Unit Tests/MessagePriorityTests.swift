@@ -95,6 +95,21 @@ final class MessagePriorityTests: XCTestCase {
     }
 
     @MainActor
+    func testLowerPriorityMovesCountersWithoutNotification() async throws {
+        let events = try recordedEvents("priority/lower")
+        try listChat(events[0])
+        await processReceivedMsg(events[0])
+        try await assertCounts(unread: 1, mentions: 1, silent: 0, highPriority: 1, user: 1)
+        await processReceivedMsg(events[1])
+        try await assertCounts(unread: 1, mentions: 0, silent: 0, highPriority: 0, user: 1)
+        await processReceivedMsg(events[2])
+        try await assertCounts(unread: 2, mentions: 1, silent: 0, highPriority: 1, user: 2)
+        await processReceivedMsg(events[3])
+        try await assertCounts(unread: 2, mentions: 0, silent: 1, highPriority: 0, user: 1)
+        XCTAssertEqual(notified, ["answer", "alert"])
+    }
+
+    @MainActor
     func testRaiseInAnotherProfileNotifiesAndCountsForIt() async throws {
         let events = try recordedEvents("priority/raise")
         ChatModel.shared.currentUser = otherUser()

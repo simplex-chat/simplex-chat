@@ -104,6 +104,20 @@ class MessagePriorityTest {
   }
 
   @Test
+  fun lowerPriorityMovesCountersWithoutNotification() = recorded("priority/lower") { (answer, answerEdited, alert, alertSilent) ->
+    listChat(answer)
+    receive(answer)
+    assertEventually(Counts(1, 1, 0, 1, 1)) { counts() }
+    receive(answerEdited)
+    assertEquals(Counts(1, 0, 0, 0, 1), counts())
+    receive(alert)
+    assertEventually(Counts(2, 1, 0, 1, 2)) { counts() }
+    receive(alertSilent)
+    assertEquals(Counts(2, 0, 1, 0, 1), counts())
+    assertNotified("answer", "alert")
+  }
+
+  @Test
   fun raiseInAnotherProfileNotifiesAndCountsForIt() = recorded("priority/raise") { (almost, almostRaised, compiling, compiled) ->
     ChatModel.currentUser.value = User.sampleData.copy(userId = 2)
     receive(almost)
