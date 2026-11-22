@@ -296,8 +296,14 @@ testLinkPreviewFixture ps = withSocksServer ps $ \_ -> do
   cfg <- linkPreviewCfg
   withLinkPreviewChat ps cfg (socksOpts ps SocksIsolateByAuth) $ \_ alice -> do
     let origin = "https://link-preview.test:" <> linkServerPort ps
-        links = [origin <> "/page", origin <> "/no-image"]
-    apiFixture "previews/link_preview" alice [(origin, "LINK_URL")] FixtureRequests {frMarkdown = links <> ["text without a link"], frUris = [], frCommands = map ("/_link preview " <>) links}
+        page = origin <> "/page"
+        noImage = origin <> "/no-image"
+        links = [page, noImage]
+        twoLinks = noImage <> " " <> page
+    Right (CRLinkPreview preview) <- previewOf alice page
+    createCCNoteFolder alice
+    let note = J.encode [J.object ["msgContent" J..= MCLink {text = T.pack twoLinks, preview}, "mentions" J..= J.object []]]
+    apiFixture "previews/link_preview" alice [(origin, "LINK_URL")] FixtureRequests {frMarkdown = links <> [twoLinks, twoLinks <> " ", "text without a link"], frUris = [], frCommands = map ("/_link preview " <>) links <> ["/_create *1 json " <> LB.unpack note]}
 
 isPreview :: Either ChatError ChatResponse -> Bool
 isPreview = \case
