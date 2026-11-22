@@ -48,7 +48,7 @@ namesCodesTests = describe "StoreService names: prepaid codes" $ do
     it "answers bad_request to a body that is not an object with a code text" testCheckBadBody
   describe "reservations" $ do
     it "encodes each refusal of a code by its tag" testCodeRefusalTags
-    it "releases and spends a code only after the write, and only for its holder" testReleaseSpend
+    it "spends a code only after the write, and only for its holder" testSpendLanded
   describe "group commands" $ do
     it "parses /issue name with the length only, answering the usage to years and to /bulk name" testGroupNameCommands
     it "answers the usage to a bad length, years or count, or a badge option" testGroupNameCommandsRefused
@@ -180,27 +180,18 @@ testCodeRefusalTags =
   map (J.toJSON . orderRefusal . ORCode) [CRInvalid, CRUsed, CRReserved, CRExpired, CRPaymentPending, CRNotCovering]
     `shouldBe` map (\t -> J.object ["type" J..= (t :: Text)]) ["code_invalid", "code_used", "code_reserved", "code_expired", "payment_pending", "code_not_covering"]
 
-testReleaseSpend :: IO ()
-testReleaseSpend = withOrders $ \turns st -> do
-  [spent, released] <- mapM newCode [8, 8]
+testSpendLanded :: IO ()
+testSpendLanded = withOrders $ \turns st -> do
+  spent <- newCode 8
   spentRow <- issueAs st spent usable
-  releasedRow <- issueAs st released usable
   placeCode st "r3" ownerB (order "carolsbakery" 3) spentRow `shouldReturn` Right ()
-  placeCode st "r4" ownerB (order "davesbakery" 4) releasedRow `shouldReturn` Right ()
   let r3 = RegistrationId "r3"
-      r4 = RegistrationId "r4"
-      holderInWrite row db = Right . (pcReservedBy =<<) <$> getPrepaidCode db (pcCodeHash row) :: IO (Either Text (Maybe RegistrationId))
       changed _ = pure (Left "registration_changed") :: IO (Either Text ())
   spendLandedCode turns st tNow (pcId spentRow) r3 changed `shouldReturn` Left "registration_changed"
   (pcSpentAt =<<) <$> readCode st spentRow `shouldReturn` Nothing
   spendLandedCode turns st tNow (pcId spentRow) r1 writeOk `shouldReturn` Right ((), False)
   spendLandedCode turns st tNow (pcId spentRow) r3 writeOk `shouldReturn` Right ((), True)
   ((pcReservedBy =<<) &&& (pcSpentAt =<<)) <$> readCode st spentRow `shouldReturn` (Just r3, Just tNow)
-  releaseCode turns st (pcId spentRow) r3 writeOk `shouldReturn` Right ((), False)
-  releaseCode turns st (pcId releasedRow) r4 changed `shouldReturn` Left "registration_changed"
-  releaseCode turns st (pcId releasedRow) r1 writeOk `shouldReturn` Right ((), False)
-  releaseCode turns st (pcId releasedRow) r4 (holderInWrite releasedRow) `shouldReturn` Right (Just r4, True)
-  (pcReservedBy =<<) <$> readCode st releasedRow `shouldReturn` Nothing
 
 testGroupNameCommands :: IO ()
 testGroupNameCommands = do

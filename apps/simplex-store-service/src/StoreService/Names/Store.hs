@@ -115,7 +115,6 @@ module StoreService.Names.Store
     groupNameCodesIssuedSince,
     getPrepaidCodeById,
     reservePrepaidCode,
-    releasePrepaidCode,
     spendLandedPrepaidCode,
     revokePrepaidCode,
     insertTransaction,
@@ -1595,19 +1594,6 @@ reservePrepaidCode db codeId (RegistrationId rid) now =
       |]
       )
       (rid, now, codeId, rid, CPSUnpaid, now)
-
-releasePrepaidCode :: DB.Connection -> CodeId -> RegistrationId -> IO Bool
-releasePrepaidCode db codeId (RegistrationId rid) =
-  (> 0)
-    <$> executeChanging
-      db
-      ( prefixQuery
-          [sql|
-        UPDATE @name_prepaid_codes SET reserved_by = NULL, reserved_at = NULL
-        WHERE name_prepaid_code_id = ? AND reserved_by = ? AND spent_at IS NULL
-      |]
-      )
-      (codeId, rid)
 
 -- | For a registration whose register went through: spends the code it holds, or one released and still usable; False otherwise.
 spendLandedPrepaidCode :: DB.Connection -> CodeId -> RegistrationId -> UTCTime -> IO Bool

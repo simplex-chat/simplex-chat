@@ -86,7 +86,7 @@ namesStoreTests = describe "StoreService names: store" $ do
   describe "prepaid codes" $ do
     it "issues one code per hash" testIssueCode
     it "stores a code's origin as issued_in_group, counting a group code written before as the group's" testIssuerStored
-    it "reserves only an unused code, releases and spends it only for its holder" testReserveReleaseSpend
+    it "reserves only an unused code, and spends it only for its holder" testReserveSpend
     it "refuses an unpaid, revoked or expired code, and reserves the code a registration holds again past its expiry, never once revoked" testReserveRefused
     it "lets a registration hold one code" testOneCodePerRegistration
     it "revokes an unspent code, reserved or not, never a spent one" testRevoke
@@ -713,8 +713,8 @@ testIssuerStored = withServiceStore $ \st -> do
   withTransaction st (\db -> DB.query_ db "SELECT issued_in_group FROM sx_badge_service_name_prepaid_codes ORDER BY name_prepaid_code_id") `shouldReturn` [Only (1 :: Int), Only 1, Only 0]
   withTransaction st (`groupNameCodesIssuedSince` t0) `shouldReturn` 2
 
-testReserveReleaseSpend :: IO ()
-testReserveReleaseSpend = withServiceStore $ \st -> do
+testReserveSpend :: IO ()
+testReserveSpend = withServiceStore $ \st -> do
   PrepaidCode {pcId} <- issue st 1 usable
   placePaid st "r1" ownerA (order "alicebakery" 1) (at 60) `shouldReturn` Right ()
   placePaid st "r2" ownerB (order "bobsbakery" 2) (at 60) `shouldReturn` Right ()
@@ -722,19 +722,14 @@ testReserveReleaseSpend = withServiceStore $ \st -> do
       r2 = RegistrationId "r2"
       run :: (DB.Connection -> IO a) -> IO a
       run = withTransaction st
-  run (\db -> releasePrepaidCode db pcId r1) `shouldReturn` False
   run (\db -> reservePrepaidCode db pcId r1 (at 1)) `shouldReturn` True
   run (\db -> reservePrepaidCode db pcId r2 (at 1)) `shouldReturn` False
-  run (\db -> releasePrepaidCode db pcId r2) `shouldReturn` False
   run (\db -> spendLandedPrepaidCode db pcId r2 (at 2)) `shouldReturn` False
-  run (\db -> releasePrepaidCode db pcId r1) `shouldReturn` True
-  run (\db -> reservePrepaidCode db pcId r2 (at 2)) `shouldReturn` True
-  run (\db -> spendLandedPrepaidCode db pcId r2 (at 3)) `shouldReturn` True
-  run (\db -> releasePrepaidCode db pcId r2) `shouldReturn` False
+  run (\db -> spendLandedPrepaidCode db pcId r1 (at 3)) `shouldReturn` True
   run (\db -> reservePrepaidCode db pcId r1 (at 4)) `shouldReturn` False
-  run (\db -> spendLandedPrepaidCode db pcId r2 (at 4)) `shouldReturn` False
+  run (\db -> spendLandedPrepaidCode db pcId r1 (at 4)) `shouldReturn` False
   spent <- run $ \db -> getPrepaidCodeById db pcId
-  (pcReservedBy spent, pcSpentAt spent) `shouldBe` (Just r2, Just (at 3))
+  (pcReservedBy spent, pcSpentAt spent) `shouldBe` (Just r1, Just (at 3))
 
 testReserveRefused :: IO ()
 testReserveRefused = withServiceStore $ \st -> do

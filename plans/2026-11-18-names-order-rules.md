@@ -27,14 +27,14 @@ stateDiagram-v2
       state "selected" as selected
       state "not selected" as notSelected
       [*] --> selected: the order request
-      selected --> notSelected: reset by a take, or by support's close
+      selected --> notSelected: reset by a take, by support's close, or by a code order's month end
       notSelected --> selected: the owner selects a name, with a new order's checks
     }
     --
     state "payment or code" as pay {
       state "unpaid: invoice open" as unpaidPart
       state "paid: the price held, as a balance after a reset" as paidPart
-      state "code provided: reserved until a name is registered with it, or its month ends" as codePart
+      state "code provided: reserved until a name is registered with it" as codePart
       [*] --> unpaidPart: an invoice order
       [*] --> codePart: a code order
       unpaidPart --> paidPart: payment settled
@@ -76,9 +76,12 @@ stateDiagram-v2
   taken --> queued: a name selected, with a new order's checks; a paid order's price spent from its balance, a code order's code reserved; the month starts again
   failed --> registered: a close finds the register landed
   failed --> taken: reset by support's close of a paid order, the price credited and refunded
-  queued --> monthEnded: 1 month from the name's selection, no register pending, money to the balance
-  committed --> monthEnded: 1 month from the name's selection, no register pending, money to the balance
-  failed --> monthEnded: 1 month from the name's selection, money to the balance
+  queued --> monthEnded: a paid order, 1 month from the name's selection, no register pending, money to the balance
+  committed --> monthEnded: a paid order, 1 month from the name's selection, no register pending, money to the balance
+  failed --> monthEnded: a paid order, 1 month from the name's selection, money to the balance
+  queued --> taken: reset of a code order, 1 month from the name's selection, no register pending, the code kept
+  committed --> taken: reset of a code order, 1 month from the name's selection, no register pending, the code kept
+  failed --> taken: reset of a code order, 1 month from the name's selection, the code kept
   queued --> closed: dispute or reversal, no register of the current name sent
   committing --> closed: dispute or reversal, no register of the current name sent
   committed --> closed: dispute or reversal, no register of the current name sent
@@ -103,7 +106,7 @@ stateDiagram-v2
   - **A paid order:** the name's price for the order's years is checked against the order's price as a new order's against the price it saw, `409 catalog_changed` with the name's price; the price is spent from the order's balance in the write's transaction, `400 bad_request` when the balance no longer holds it.
   - **A code order:** a free name code accepted for an order stays valid for that order until a name is registered with it. In the code's turn, the code the order holds is checked and reserved again: an expired code is accepted, a revoked one is answered `400 code_invalid`, and a name shorter than the code allows `409 code_not_covering`.
   - `max_order_moves`, the order's `moves` and the refusals `move_limit` and `price_too_high` are removed.
-  - Failed and lapsed orders are refunded by support. An order not registered within the month fails, the name returns to sale, and the price goes to the order's balance; refunds from the balance are manual. An order with a register transaction sent and not settled is ended only after it settles.
+  - Failed and lapsed orders are refunded by support. A paid order not registered within the month fails, the name returns to sale, and the price goes to the order's balance; refunds from the balance are manual. A code order not registered within the month is reset, its name returned to sale and its code kept (1.5). An order with a register transaction sent and not settled is ended only after it settles.
 - **Why:** a hold extends the name's registration period; a month resolves every case that can be resolved.
 
 ### 1.4 Card disputes and payment reversals
@@ -127,7 +130,7 @@ stateDiagram-v2
 
 ### 1.5 Prepaid-code orders
 - **names:** a code order failed for 30 days gives its code back; the order stays failed (`Names/Worker.hs:108-110, 564-579`).
-- **Final:** a code order not registered within the month from `selected_at` (6) releases its code and is closed, freeing the name, as paid orders.
+- **Final:** a code order not registered within the month from `selected_at` (6) is reset to name not selected, phase `taken`: its name is freed, its code kept, and a name can be selected for it as for a taken order (1.3).
 
 ### 1.6 Prepaid codes expire
 - **names:** codes never expire: the expiry is stored and checked, but every code is issued without one (`Names/Codes.hs`, `issueNameCode`). No code has been issued yet.
