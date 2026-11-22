@@ -1476,6 +1476,12 @@ jobs:
           mkdir -p apps/multiplatform/common/src/commonMain/cpp/desktop/libs/${{ matrix.libs }}
           ${{ matrix.prepare }}
 
+      - name: Install the desktop libraries that VLC takes from the system
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libdrm2 libx11-6 libx11-xcb1 libxcb1 libxcb-dri3-0 libfontconfig1 libfreetype6 libfribidi0 libharfbuzz0b
+
       - name: Setup Python
         uses: actions/setup-python@v7
         with:
