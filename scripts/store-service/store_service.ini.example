@@ -92,7 +92,7 @@ private_key = replace-me
 ;term_start = 2027-01-01T00:00:00Z
 ; how far an order's duration may be from the one the service computes
 ;term_slack_seconds = 3600
-; a commitment, or a signed reveal on Try again, with less than this left before its deadline is not reused
+; a commitment with less than this left before it lapses is not reused
 ;reveal_margin_seconds = 900
 ; dry runs of commits, acceptance relays and registers that revert for a reason removed only by the owner's signature, a selection of a name or a code change, per commitment, before the order fails
 ;max_dry_run_failures = 5

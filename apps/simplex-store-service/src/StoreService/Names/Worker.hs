@@ -279,7 +279,7 @@ fromCommitment w@Worker {wkOrders = OrdersEnv {oeConfig}} now r CommitmentAges {
       | toInteger age <= toInteger (maxBound :: Int64) - toInteger (roundedSeconds t) = Just $ RoundedSystemTime $ roundedSeconds t + fromIntegral age
       | otherwise = Nothing
 
--- | A live commitment, or a stored intent, is reused while revealMargin is left before its end, time for the page's reveal and the register to mine.
+-- | A live commitment is reused while revealMargin is left before its end, time for the page's reveal and the register to mine.
 reusable :: NamesConfig -> UTCTime -> SystemSeconds -> Bool
 reusable NamesConfig {nRevealMarginSeconds} now end = roundedToUTCTime end >= addUTCTime (fromIntegral nRevealMarginSeconds) now
 

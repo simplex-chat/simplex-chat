@@ -1,5 +1,7 @@
 # Names service: fixes of the A3 findings (records and profiles)
 
+Superseded where it differs: plans/2026-11-18-names-order-rules.md and apps/simplex-store-service/docs/names.md state the current rules and code.
+
 Branch `ep/names-fixes-a3`, from `ep/names-review-fixes` at 16114b784. Decisions: the user's, 2026-11-16, and the type rule of `plans/2026-11-16-names-review-fixes.md`. Line references are at b13968b61.
 
 Each finding is one commit, `store: <change>`, or `core: <change>` for src/.

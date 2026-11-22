@@ -315,7 +315,7 @@ cannot be tried on it one after another, and the buyer starts a new checkout. Ad
 Dashboard too, such as blocking a card fingerprint or IP address that has failed several times.
 
 Both pages read `publishable_key` from `GET /api/config`, which every port answers with
-`{"mode": "open" | "codes", "stripePublishableKey": "pk_…" | null}`, so the ini is the only place
+`{"stripePublishableKey": "pk_…" | null, "names": {"codesOnly", "chainId", "resolver", "sponsor", "tld", "termStart"} | null}`, so the ini is the only place
 the key is set and the built pages are served as they are. With no `[stripe]` section the key is
 `null` and the page shows its development stand-in card form. The dev mock
 (`web/mock/server.py`) answers the same route from `$STRIPE_PUBLISHABLE_KEY`, since it runs
@@ -748,9 +748,8 @@ git -C apps/simplex-domains checkout <commit>
 git add apps/simplex-domains
 ```
 
-`.gitmodules` names `branch = sh/names-webapp`, the branch of simplex.domains#6, which is not merged
-yet; it only sets what `git submodule update --remote` fetches, and moves to the main branch once
-that pull request merges. The commit committed here is what builds.
+`.gitmodules` names `branch = names`, the simplex.domains branch of the names site; it only sets
+what `git submodule update --remote` fetches. The commit committed here is what builds.
 
 The names site is on when, and only when, the ini has `[names]`. Its `[listener]` keys:
 
@@ -1179,8 +1178,8 @@ intent does not cover the secret; the service replaces the stored reveal at a se
 `[names] codes_only = on` lets only prepaid codes register names, as for the launch to the investors
 who hold them before anyone can pay. It is `off` by default. While it is on:
 
-- `GET /api/config` answers `"mode": "codes"` in place of `"open"`, and the names page then offers
-  only codes. The badges site ignores the mode;
+- `GET /api/config` answers `"names": {"codesOnly": true, …}`, and the names page then offers
+  only codes. The badges site ignores it;
 - `POST /api/invoice` for a name answers
   `403 {"type": "codes_only"}`, before it reads the order,
   so no order takes money for a name;

@@ -273,7 +273,7 @@ Answers are the service's types encoded as derived JSON, and the page reads thos
 
 - The service's tests record the page's answers as fixtures; the page's contract tests read them.
 - Signature, code and label test values in one fixture set, read by both sides.
-- A `names-page` CI scope runs the page's tests and build.
+- A `names-page` CI scope runs the page's contract and terms vector tests against the service's recorded answers.
 - Two production-build layout tests stay skipped: they need the dev server's stand-in card form.
 
 ## 9. Internal structure, no behaviour change
