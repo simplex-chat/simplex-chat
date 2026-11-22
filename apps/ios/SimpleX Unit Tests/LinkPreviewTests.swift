@@ -34,7 +34,8 @@ final class LinkPreviewTests: XCTestCase {
             return try? JSONSerialization.data(withJSONObject: singleFieldJSON(response))
         }
         parseSimpleXMarkdownText = { [unowned self] str in
-            guard let parsed = markdown[str] else { self.locked { self.unrecorded.append("markdown \(str)") }; return nil }
+            let recorded: Any? = str.isEmpty ? [String: Any]() : markdown[str]
+            guard let parsed = recorded else { self.locked { self.unrecorded.append("markdown \(str)") }; return nil }
             return try? jsonDecoder.decode(ParsedMarkdown.self, from: JSONSerialization.data(withJSONObject: singleFieldJSON(parsed)))
         }
     }
@@ -128,6 +129,18 @@ final class LinkPreviewTests: XCTestCase {
         try await waitFor { compose.composeState.noPreview }
         let newCompose = try await showCompose()
         newCompose.composeState.message = "LINK_URL/no-image"
+        try await waitFor { self.requests() == ["/_link preview LINK_URL/no-image", "/_link preview LINK_URL/no-image"] }
+    }
+
+    @MainActor
+    func testClearedComposeFetchesFailedLinkAgain() async throws {
+        let compose = try await showCompose()
+        compose.composeState.message = "LINK_URL/no-image"
+        try await waitFor { self.requests() == ["/_link preview LINK_URL/no-image"] }
+        try await waitFor { compose.composeState.noPreview }
+        compose.composeState.message = ""
+        try await waitFor { compose.composeState.parsedMessage.isEmpty }
+        compose.composeState.message = "LINK_URL/no-image"
         try await waitFor { self.requests() == ["/_link preview LINK_URL/no-image", "/_link preview LINK_URL/no-image"] }
     }
 
