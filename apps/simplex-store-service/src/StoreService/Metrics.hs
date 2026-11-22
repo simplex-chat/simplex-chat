@@ -174,13 +174,13 @@ subscriptionStates :: [SubscriptionState]
 subscriptionStates = [SSRenewing, SSCancelled, SSBillingRetry, SSEnded]
 
 namesText :: Word64 -> NamesCounts -> ChainRead -> PassTimes -> Text
-namesText maxFeePerGas NamesCounts {ncPhases, ncQueueOldestChange, ncPendingTransactions, ncOldestPending, ncOpenInvoices, ncPendingEdits, ncOldestEdit, ncOldestUnregisteredPaid} ChainRead {crFunds, crHead, crTerms, crReadAt, crOk} PassTimes {ptMonthPass, ptCreditPass} =
+namesText maxFeePerGas NamesCounts {ncPhases, ncQueueOldestChange, ncPendingTransactions, ncOldestPending, ncOpenInvoices, ncPendingEdits, ncOldestEdit, ncOldestUnregisteredSelected} ChainRead {crFunds, crHead, crTerms, crReadAt, crOk} PassTimes {ptMonthPass, ptCreditPass} =
   T.concat
     [ gauge "simplex_store_names_orders" "Name orders by phase, and failed orders by reason" $
         [labelled "phase" (textEncode p) (value $ sum [n | (p', _, n) <- ncPhases, p' == p]) | p <- [minBound .. maxBound], p /= PFailed]
           <> [withLabels [("phase", textEncode PFailed), ("reason", textEncode r)] (value $ sum [n | (PFailed, Just r', n) <- ncPhases, r' == r]) | r <- [minBound .. maxBound :: FailReason]],
       gauge "simplex_store_names_queue_oldest_change_timestamp_seconds" "Last change of the order longest unmoved among those the service moves on: queued, committing, registering, or committed with its reveal" (timestamp <$> ncQueueOldestChange),
-      gauge "simplex_store_names_unregistered_oldest_paid_timestamp_seconds" "The oldest selection of a name among the live orders queued, committing, committed, registering or failed" (timestamp <$> ncOldestUnregisteredPaid),
+      gauge "simplex_store_names_unregistered_oldest_selected_timestamp_seconds" "The oldest selection of a name among the live orders queued, committing, committed, registering or failed" (timestamp <$> ncOldestUnregisteredSelected),
       gauge "simplex_store_names_transactions_pending" "Registrar transactions sent and not settled, one per nonce" (Just $ value ncPendingTransactions),
       gauge "simplex_store_names_transactions_oldest_pending_timestamp_seconds" "When the oldest pending registrar transaction was first signed" (timestamp <$> ncOldestPending),
       gauge "simplex_store_names_invoices_open" "Open invoices of name orders" (Just $ value ncOpenInvoices),

@@ -969,7 +969,7 @@ warning. When the metrics port cannot be listened on, the failure is logged as a
 | `simplex_store_badges_codes_open` | badge codes paid or free, not revoked or expired, with redemptions left |
 | `simplex_store_names_orders{phase,reason}` | name orders in the phase: `unpaid`, `closed`, `queued`, `committing`, `committed`, `registering`, `registered`, `taken` or `failed`; the queue is `queued` to `registering`, while `closed` counts unpaid orders closed with their invoice, kept for 30 days, and `failed` every failed order not tried again, by `reason`: `registry_refused`, `signature_refused`, `month_ended` or `unread`, each 0 when it has none |
 | `simplex_store_names_queue_oldest_change_timestamp_seconds` | the last change, in Unix seconds, of the order unchanged longest among those the service moves on: `queued`, `committing`, `registering`, and `committed` with the page's reveal stored; absent when there is none |
-| `simplex_store_names_unregistered_oldest_paid_timestamp_seconds` | the oldest selection of a name among the live orders `queued`, `committing`, `committed`, `registering` or `failed`: a payment's settlement, a code order's placement, or a selection after a reset; a month-ended order not counted; absent when there is none |
+| `simplex_store_names_unregistered_oldest_selected_timestamp_seconds` | the oldest selection of a name among the live orders `queued`, `committing`, `committed`, `registering` or `failed`: a payment's settlement, a code order's placement, or a selection after a reset; a month-ended order not counted; absent when there is none |
 | `simplex_store_names_transactions_pending` | registrar transactions sent and not settled, one per nonce, so a fee replacement counts once |
 | `simplex_store_names_transactions_oldest_pending_timestamp_seconds` | when the oldest of them was first signed; absent when none is pending |
 | `simplex_store_names_invoices_open` | open invoices of name orders |
@@ -1013,7 +1013,7 @@ completing and a scrape that fails, such as while the database cannot be read, s
 
 ```
 time() - simplex_store_names_queue_oldest_change_timestamp_seconds > 1200
-time() - simplex_store_names_unregistered_oldest_paid_timestamp_seconds > 10800
+time() - simplex_store_names_unregistered_oldest_selected_timestamp_seconds > 10800
 simplex_store_names_registrar_balance_wei < 10000000000000000
 simplex_store_names_chain_base_fee_wei > simplex_store_names_max_fee_per_gas_wei
 time() - simplex_store_names_transactions_oldest_pending_timestamp_seconds > 900

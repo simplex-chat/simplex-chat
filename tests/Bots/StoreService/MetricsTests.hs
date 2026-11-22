@@ -281,7 +281,7 @@ testNamesCounts = withServiceStore $ \st -> do
                  "simplex_store_names_orders{phase=\"failed\",reason=\"month_ended\"} 1",
                  "simplex_store_names_orders{phase=\"failed\",reason=\"unread\"} 0",
                  "simplex_store_names_queue_oldest_change_timestamp_seconds " <> seconds (at 3),
-                 "simplex_store_names_unregistered_oldest_paid_timestamp_seconds " <> seconds (at 0),
+                 "simplex_store_names_unregistered_oldest_selected_timestamp_seconds " <> seconds (at 0),
                  "simplex_store_names_transactions_pending 2",
                  "simplex_store_names_transactions_oldest_pending_timestamp_seconds " <> seconds (at 7),
                  "simplex_store_names_invoices_open 2",
@@ -373,7 +373,7 @@ chainSamples :: ChainRead -> [Text]
 chainSamples = filter (\l -> any (`T.isPrefixOf` l) ["simplex_store_names_registrar_", "simplex_store_names_sponsor_", "simplex_store_names_chain_", "simplex_store_names_terms_"]) . typedSamples . (\cr -> namesText fakeMaxFeePerGas noCounts cr noPasses)
   where
     noPasses = PassTimes {ptMonthPass = t0, ptCreditPass = t0}
-    noCounts = NamesCounts {ncPhases = [], ncQueueOldestChange = Nothing, ncPendingTransactions = 0, ncOldestPending = Nothing, ncOpenInvoices = 0, ncPendingEdits = 0, ncOldestEdit = Nothing, ncOldestUnregisteredPaid = Nothing}
+    noCounts = NamesCounts {ncPhases = [], ncQueueOldestChange = Nothing, ncPendingTransactions = 0, ncOldestPending = Nothing, ncOpenInvoices = 0, ncPendingEdits = 0, ncOldestEdit = Nothing, ncOldestUnregisteredSelected = Nothing}
 
 seconds :: UTCTime -> Text
 seconds t = tshow (floor $ utcTimeToPOSIXSeconds t :: Integer)

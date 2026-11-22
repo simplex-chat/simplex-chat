@@ -725,7 +725,7 @@ data NamesCounts = NamesCounts
     ncOpenInvoices :: Int,
     ncPendingEdits :: Int,
     ncOldestEdit :: Maybe UTCTime,
-    ncOldestUnregisteredPaid :: Maybe UTCTime
+    ncOldestUnregisteredSelected :: Maybe UTCTime
   }
   deriving (Eq, Show)
 
@@ -1886,8 +1886,8 @@ namesCounts db = do
     )
     ((PQueued, PCommitting, PRegistering, PCommitted, TSPending, TSPending, ISOpen, ETPending, ETPending) :. (PQueued, PCommitting, PCommitted, PRegistering, PFailed))
     >>= \case
-      [(ncQueueOldestChange, ncPendingTransactions, ncOldestPending, ncOpenInvoices, ncPendingEdits, ncOldestEdit) :. Only ncOldestUnregisteredPaid] ->
-        pure NamesCounts {ncPhases, ncQueueOldestChange, ncPendingTransactions, ncOldestPending, ncOpenInvoices, ncPendingEdits, ncOldestEdit, ncOldestUnregisteredPaid}
+      [(ncQueueOldestChange, ncPendingTransactions, ncOldestPending, ncOpenInvoices, ncPendingEdits, ncOldestEdit) :. Only ncOldestUnregisteredSelected] ->
+        pure NamesCounts {ncPhases, ncQueueOldestChange, ncPendingTransactions, ncOldestPending, ncOpenInvoices, ncPendingEdits, ncOldestEdit, ncOldestUnregisteredSelected}
       _ -> E.throwIO $ StoreDecodeError "names counts: not one row"
 
 int64 :: Word64 -> Int64
