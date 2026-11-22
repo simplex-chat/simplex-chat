@@ -194,7 +194,7 @@ This message is used to update previously created chat item. Its `params` proper
 
 If the referenced message does not exist, the clients MUST create a new chat item with the ID of the referenced message. If the referenced message is not a content message, the clients MUST ignore this message.
 
-Optional `priority` property with the value 1 or above raises the chat item to high priority, with or without a change of the content. It is accepted from the author of an item that is not deleted, in the main scope of a group, when the author is allowed to send high priority messages; other values do not change the item priority. A chat item created for a missing message has normal priority. The sending client sends this update with the SMP notification flag on. An item already read stays read, and receiving clients notify about the raise once.
+Optional `priority` property with the value 1 or above raises the chat item to high priority, with or without a change of the content. It is accepted from the author of an item that is not deleted, in the main scope of a group, when the author is allowed to send high priority messages; other values do not change the item priority. The sending client sends this update with the SMP notification flag on. An item already read stays read, and receiving clients notify about the raise once. An update of a silent message has the value -1. A chat item created for a missing message has the priority of the update, accepted as `priority` of `x.msg.new`.
 
 ### x.msg.del - request to delete previously sent message
 

@@ -828,13 +828,13 @@ processChatCommand cxt nm = \case
       assertDirectAllowed user MDSnd ct XMsgUpdate_
       cci <- withFastStore $ \db -> getDirectCIWithReactions db user ct itemId
       case cci of
-        CChatItem SMDSnd ci@ChatItem {meta = CIMeta {itemSharedMsgId, itemTimed, itemLive, editable}, content = ciContent} -> do
+        CChatItem SMDSnd ci@ChatItem {meta = CIMeta {itemSharedMsgId, itemTimed, itemLive, editable, priority}, content = ciContent} -> do
           case (ciContent, itemSharedMsgId, editable) of
             (CISndMsgContent oldMC, Just itemSharedMId, True) -> do
               let changed = mc /= oldMC
               if changed || fromMaybe False itemLive
                 then do
-                  let event = XMsgUpdate itemSharedMId mc M.empty (ttl' <$> itemTimed) (justTrue . (live &&) =<< itemLive) Nothing Nothing Nothing
+                  let event = XMsgUpdate itemSharedMId mc M.empty (ttl' <$> itemTimed) (justTrue . (live &&) =<< itemLive) Nothing Nothing (mfilter (< 0) priority)
                   (SndMessage {msgId}, _) <- sendDirectContactMessage user ct event
                   ci' <- withFastStore' $ \db -> do
                     currentTs <- liftIO getCurrentTime
@@ -857,7 +857,7 @@ processChatCommand cxt nm = \case
           -- TODO [knocking] check chat item scope?
           (cci, itemScopeInfo) <- withFastStore $ \db -> (,) <$> getGroupCIWithReactions db user gInfo itemId <*> getGroupChatScopeInfoForItem db cxt user gInfo itemId
           case cci of
-            CChatItem SMDSnd ci@ChatItem {meta = meta@CIMeta {itemSharedMsgId, itemTimed, itemLive, editable, showGroupAsSender, msgVerified}, content = ciContent} -> do
+            CChatItem SMDSnd ci@ChatItem {meta = meta@CIMeta {itemSharedMsgId, itemTimed, itemLive, editable, showGroupAsSender, msgVerified, priority}, content = ciContent} -> do
               case (ciContent, itemSharedMsgId, editable) of
                 (CISndMsgContent oldMC, Just itemSharedMId, True) -> do
                   chatScopeInfo <- mapM (getChatScopeInfo cxt user) scope
@@ -869,7 +869,7 @@ processChatCommand cxt nm = \case
                       ciMentions <- withFastStore $ \db -> getCIMentions db user gInfo ft_ mentions
                       let msgScope = toMsgScope gInfo <$> chatScopeInfo
                           mentions' = M.map (\CIMention {memberId} -> MsgMention {memberId}) ciMentions
-                          event = XMsgUpdate itemSharedMId mc mentions' (ttl' <$> itemTimed) (justTrue . (live &&) =<< itemLive) msgScope (Just showGroupAsSender) (if raise then Just 1 else Nothing)
+                          event = XMsgUpdate itemSharedMId mc mentions' (ttl' <$> itemTimed) (justTrue . (live &&) =<< itemLive) msgScope (Just showGroupAsSender) (if raise then Just 1 else mfilter (< 0) priority)
                           reuseSign = case msgVerified of Just (MVSigned _) -> True; _ -> False
                       SndMessage {msgId} <- sendGroupMessage user g scope recipients reuseSign event
                       ci' <- withFastStore' $ \db -> do

@@ -62,10 +62,9 @@ Protocol.hs
                                positional uses: Library/Commands.hs:811, 845, 1474; Library/Subscriber.hs:589, 769, 1088, 1339, 4048
   limitPriority                new: Int -> Int; the value limited to -1 .. 1
   cmPriority                   new, next to cmToQuotedMsg (:635): AChatMsgEvent -> Int, eventPriority of the event
-                                 XMsgNew: limitPriority of the field; otherwise 0
-  raisesPriority               new: ChatMsgEvent e -> Bool; XMsgUpdate whose priority requests high priority (1 or above)
+                                 XMsgNew, XMsgUpdate: limitPriority of the field; otherwise 0
   eventHasNotification         new, next to hasNotification (:1338): ChatMsgEvent e -> Bool
-                                 False for a silent eventPriority, True for a high one; otherwise raisesPriority or hasNotification of the event tag
+                                 False for a silent eventPriority, True for a high one; otherwise hasNotification of the event tag
 Types.hs
   IntDef                       new newtype of Int, next to BoolDef (:2337); FromJSON omittedField = Just (IntDef 0)
 Messages.hs
@@ -128,11 +127,11 @@ group      sent value = 1, when the value is 1 or above and groupFeatureUserAllo
 
 Update, `APIUpdateChatItem` (`Library/Commands.hs:798`):
 ```
-contact (:799), note folder    priority of the updated message is ignored
+contact (:799), note folder    priority of the updated message is ignored; contact: event priority = Just (-1) when the item is silent
 group (:824)
   raise        the value requests high priority, the item is not high priority, scope is Nothing, the item is in the main scope, groupFeatureUserAllowed SGFMsgPriority gInfo
   condition    :840: changed || the item is live || raise
-  event        :845: priority = Just 1 when raise; otherwise Nothing
+  event        :845: priority = Just 1 when raise; Just (-1) when the item is silent; otherwise Nothing
   SMP flag     sendGroupSignedMessages_ (Library/Internal.hs:2748): any eventHasNotification of the events
                unchanged: Library/Internal.hs:2248 (direct), :2552 (deliverMessage)
                messages forwarded by relays and hosts: "Depends on"
@@ -155,7 +154,7 @@ rcvPriorityAllowed cd =          -- new, Library/Internal.hs, for high priority 
   CDDirectRcv, CDLocalRcv -> False
 ```
 - A high priority message of a sender who is not allowed, and every direct high priority message, is received as a normal message.
-- Items of group and forwarded messages (`Library/Subscriber.hs:2209, 4008`), of history, and the item created by `x.msg.update` for a missing item (`:2327`) are created by this function. The item created by `x.msg.update` has normal priority: `cmPriority` takes the priority of `x.msg.new` only.
+- Items of group and forwarded messages (`Library/Subscriber.hs:2209, 4008`), of history, and the item created by `x.msg.update` for a missing item (`:2327`) are created by this function. The item created by `x.msg.update` has the priority of the update, by the rules above: `cmPriority` takes the priority of `x.msg.new` and of `x.msg.update` (decided by the user on 2026-11-21).
 - Support chat counters (`memberChatStats`, `Library/Internal.hs:3064`; `Store/Messages.hs:2195-2212`) are computed from `userMention`, unchanged.
 
 Update, `Library/Subscriber.hs:2297` `groupMessageUpdate`: new parameter, `priority` of `XMsgUpdate` (`:1088`, `:4048`). The field is ignored in the direct handler (`:589`).
@@ -349,7 +348,7 @@ downgrade                               item_priority is dropped; user_mention =
 - channel through a relay: an owner post with priority is high priority for a subscriber; business chat: high priority for a message of the business, normal for a message of the customer
 - raise: normal message, then `/_update item` with `"priority": 1` and the same text: sender `#team !! done`, members `#team alice!!> done`; one `chatItemUpdated` with a high priority item and a previous item that is not; raise of a read item: the item stays read, `unreadHighPriority = 0`, the item has priority 1
 - streamed message: `live=on`, live updates, completion with `"priority": 1`: high priority; a later edit without `priority`: priority kept
-- raise by a member below the role: the update is sent without the field; raise in a member support chat: ignored; update with `"priority": 1` for an item deleted by the recipient: the created item has normal priority
+- raise by a member below the role: the update is sent without the field; raise in a member support chat: ignored; update of an item deleted by the recipient: the created item has the priority of the update, -1 for an edit of a silent item, 1 for a raise
 - message to a contact with `"priority": 1`, and its update with `"priority": 1`: sent without the field; the items have priority 0
 
 Manual checks, Android, desktop, iOS:
