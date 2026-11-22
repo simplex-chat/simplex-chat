@@ -137,6 +137,7 @@ workerTests = describe "StoreService names: worker" $ do
     it "logs a month pass that fails, so a pass failing from the start keeps the start's time past the alert's age, until a pass completes" testMonthPassFails
     it "reports once each paid or code order not registered 3 hours after its payment, a failed one included" testUnregisteredAlert
     it "fails each order queued, committed or failed a calendar month after its payment or its code's reservation, once, reporting it, its name released, the money paid for a paid order added to its balance and a code order's code released" testMonthEnds
+    it "counts the month and the 3-hour alert from the latest selection of a name, not from the payment" testMonthFromSelection
     it "ends the month on the last day of a shorter month" testMonthClipped
     it "ends no month of an order whose register is sent and not settled, and ends it once the register reverted" testMonthRegisterInFlight
     it "fails an order waiting for its owner once its page has not read it for 3 days, logging and reporting it, holding its name" testUnreadReported
@@ -1289,6 +1290,31 @@ testMonthEnds = withWorker $ \W {wCtx = ctx@Ctx {cStore, cOrders}, wSender} -> d
   map (\NameRegistration {nrId = RegistrationId rid} -> length $ filter (T.isInfixOf $ "order " <> rid <> " was not registered within a month") sent') ended `shouldBe` [1, 1, 1]
   length sent' `shouldBe` 3
 
+testMonthFromSelection :: IO ()
+testMonthFromSelection = withWorker $ \W {wCtx = ctx@Ctx {cStore, cOrders}, wSender} -> do
+  reports <- newTVarIO []
+  wWorker <- newWorker cOrders {oeReport = \t -> atomically $ modifyTVar' reports (t :)} wSender
+  r <- paidIn ctx aliceOrder $ \o -> o {nrPhase = OTaken}
+  withTransaction cStore $ \db -> creditBalance db (nrId r) (nrPrice r) orderTime
+  answerFree ctx "alicebakers"
+  advance ctx $ 20 * day
+  selectedAt <- nowOf ctx
+  to <- selectionOf ctx "alicebakers" 10
+  fst <$> select ctx keyA r to `shouldReturn` 200
+  alertUnregisteredPaid wWorker
+  readTVarIO reports `shouldReturn` []
+  advance ctx $ 3 * 3600 + 1
+  alertUnregisteredPaid wWorker
+  let RegistrationId rid = nrId r
+  map (T.isInfixOf $ "order " <> rid <> " had its name selected at ") <$> readTVarIO reports `shouldReturn` [True]
+  advance ctx $ diffUTCTime (addMonths 1 orderTime) orderTime - 20 * day
+  endMonths wWorker
+  nrPhase <$> stored ctx r `shouldReturn` OQueued
+  advance ctx $ diffUTCTime (addMonths 1 selectedAt) (addMonths 1 orderTime)
+  now <- nowOf ctx
+  endMonths wWorker
+  nrPhase <$> stored ctx r `shouldReturn` OFailed now FRMonthEnded
+
 testUnreadFails :: IO ()
 testUnreadFails = withWorker $ \w@W {wCtx = ctx@Ctx {cClient}} -> do
   r <- paidIn ctx aliceOrder committedPhase
@@ -1334,10 +1360,10 @@ testMonthClipped = withWorker $ \W {wCtx = ctx@Ctx {cStore, cClock}, wWorker} ->
   r <- paidIn ctx aliceOrder id
   let paidAt = posixSecondsToUTCTime 1801396800
       lastDay = posixSecondsToUTCTime 1803816000
-  withTransaction cStore $ \db -> DB.execute db "UPDATE sx_badge_service_name_registrations SET paid_at = ? WHERE registration_id = ?" (paidAt, (\(RegistrationId t) -> t) $ nrId r)
+  withTransaction cStore $ \db -> DB.execute db "UPDATE sx_badge_service_name_registrations SET selected_at = ? WHERE registration_id = ?" (paidAt, (\(RegistrationId t) -> t) $ nrId r)
   writeIORef cClock $ addUTCTime (-1) lastDay
   endMonths wWorker
-  stored ctx r `shouldReturn` r {nrPaidAt = Just paidAt}
+  stored ctx r `shouldReturn` r {nrSelectedAt = Just paidAt}
   writeIORef cClock lastDay
   endMonths wWorker
   nrPhase <$> stored ctx r `shouldReturn` OFailed lastDay FRMonthEnded

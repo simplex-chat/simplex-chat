@@ -77,7 +77,7 @@ namesStoreTests = describe "StoreService names: store" $ do
     it "is live while an order can still progress to a registration for its name" testOrderLive
     it "refuses to queue a closed order, also when a newer live order holds its name" testLatePayment
     it "refuses a write that would meet another live order, writing nothing" testWriteMeetsLiveOrder
-    it "writes a name selected, with its fields and reveal, clearing the transactions, reveal times and failed attempts" testSelectRegistration
+    it "writes a name selected, with its fields and reveal, clearing the transactions, reveal times and failed attempts, its month counted from the selection" testSelectRegistration
     it "finds registrations made in the same second, and an exact resend's newest order, newest first, and orders the rest by their id" testSameSecondOrder
     it "names the order holding a label from queued to registering and failed, one at a time, and none for an unpaid, taken or registered one" testLabelRegistering
     it "lists the registrations a worker moves on" testActive
@@ -352,6 +352,7 @@ testCreatePaid = withServiceStore $ \st -> do
         nrUpdatedAt = t0,
         nrReadAt = t0,
         nrPaidAt = Nothing,
+        nrSelectedAt = Nothing,
         nrLastAttempt = Nothing
       }
 
@@ -596,6 +597,7 @@ testSelectRegistration = withServiceStore $ \st -> do
         nrPhase = OQueued,
         nrReveal = Just selected,
         nrUpdatedAt = at 6,
+        nrSelectedAt = Just (at 6),
         nrLastAttempt = Just attempt
       }
   withTransaction st (\db -> selectRegistration db failed {nrVersion = 2} o reveal (at 7)) `shouldReturn` VersionChanged
@@ -689,7 +691,7 @@ testMonthCandidates = withServiceStore $ \st -> do
   phaseAs "committing" $ OCommitting $ TxHash $ hashFixture 8
   phaseAs "ended" $ OFailed (at 2) FRMonthEnded
   phaseAs "taken" OTaken
-  withTransaction st $ \db -> DB.execute db "UPDATE sx_badge_service_name_registrations SET paid_at = ? WHERE registration_id = ?" (at 100, "recent" :: Text)
+  withTransaction st $ \db -> DB.execute db "UPDATE sx_badge_service_name_registrations SET selected_at = ? WHERE registration_id = ?" (at 100, "recent" :: Text)
   withTransaction st (\db -> monthCandidates db (at 10)) `shouldReturn` [(RegistrationId "failed", t0), (RegistrationId "queued", t0)]
 
 testIssueCode :: IO ()
