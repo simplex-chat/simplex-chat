@@ -8,8 +8,11 @@ import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.ComposeUiTest
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasSetTextAction
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTextInputSelection
@@ -41,6 +44,7 @@ class LinkPreviewTest {
     appPrefs.privacySanitizeLinks to false,
     appPrefs.developerTools to false,
     appPrefs.showLinkPreviewErrors to false,
+    appPrefs.privacySaveLastDraft to true,
   )
   private val savedPrefs = testPrefs.keys.associateWith { it.get() }
   private val requests = mutableListOf<String>()
@@ -52,16 +56,16 @@ class LinkPreviewTest {
   @BeforeTest
   fun setUp() {
     testPrefs.forEach { (pref, value) -> pref.set(value) }
-    chatSendCmdRetry = { _, cmd, _ ->
-      synchronized(requests) { requests += cmd }
-      commands[cmd]?.toString() ?: unrecordedRequest(cmd)
-    }
+    chatSendCmdRetry = { _, cmd, _ -> respond(cmd) }
     chatParseMarkdown = { text -> if (text.isEmpty()) "{}" else markdown[text]?.toString() ?: unrecordedRequest("markdown $text") }
   }
 
   @AfterTest
   fun tearDown() {
     AlertManager.shared.hideAllAlerts()
+    ChatModel.chatsContext.chats.value.clear()
+    ChatModel.chatsContext.chatItems.value.clear()
+    ChatModel.presetTags.clear()
     ChatModel.chatId.value = null
     ChatModel.draft.value = null
     ChatModel.draftChatId.value = null
@@ -192,6 +196,126 @@ class LinkPreviewTest {
   }
 
   @Test
+  fun linkReplacedDuringTheFetchKeepsPreviewOfTheNewLink() = composeView { composeState ->
+    val (failed) = recorded("error")
+    val (shown) = recorded("result")
+    val release = heldResponses { it == failed }
+    val field = onNode(hasSetTextAction())
+    field.performTextInput(failed.removePrefix(LINK_PREVIEW))
+    waitUntil(timeoutMillis = 10_000) { synchronized(requests) { requests.isNotEmpty() } }
+    field.performTextReplacement(shown.removePrefix(LINK_PREVIEW))
+    waitUntil(timeoutMillis = 10_000) { composeState.value.linkPreview != null }
+    release.countDown()
+    runCatching { waitUntil(timeoutMillis = 3_000) { composeState.value.linkPreview == null } }
+    assertEquals(shown.removePrefix(LINK_PREVIEW), composeState.value.linkPreview?.uri)
+    assertEquals(listOf(failed, shown), requests)
+  }
+
+  @Test
+  fun linkRestoredAfterAnotherLinkGetsItsPreview() = composeView { composeState ->
+    val (shown) = recorded("result")
+    val (failed) = recorded("error")
+    val field = onNode(hasSetTextAction())
+    field.performTextInput(shown.removePrefix(LINK_PREVIEW))
+    waitUntil(timeoutMillis = 10_000) { composeState.value.linkPreview != null }
+    field.performTextReplacement(failed.removePrefix(LINK_PREVIEW))
+    field.performTextReplacement(shown.removePrefix(LINK_PREVIEW))
+    waitUntil(timeoutMillis = 10_000) { synchronized(requests) { requests.size == 2 } && composeState.value.linkPreview != null }
+    assertEquals(listOf(shown, shown), requests)
+  }
+
+  @Test
+  fun linkChangedAndRestoredBeforeTheFetchIsRequestedOnce() = composeView { composeState ->
+    val (shown) = recorded("result")
+    val (failed) = recorded("error")
+    val release = heldResponses()
+    val field = onNode(hasSetTextAction())
+    field.performTextInput(shown.removePrefix(LINK_PREVIEW))
+    field.performTextReplacement(failed.removePrefix(LINK_PREVIEW))
+    field.performTextReplacement(shown.removePrefix(LINK_PREVIEW))
+    waitUntil(timeoutMillis = 10_000) { synchronized(requests) { requests.isNotEmpty() } }
+    runCatching { waitUntil(timeoutMillis = 3_000) { synchronized(requests) { requests.size > 1 } } }
+    release.countDown()
+    waitUntil(timeoutMillis = 10_000) { composeState.value.linkPreview != null }
+    assertEquals(listOf(shown), requests)
+  }
+
+  @Test
+  fun editedMessageKeepsItsPreviewWhenThePendingLinkResponds() = composeView { composeState ->
+    val (request) = recorded("result")
+    val release = heldResponses()
+    onNode(hasSetTextAction()).performTextInput(request.removePrefix(LINK_PREVIEW))
+    waitUntil(timeoutMillis = 10_000) { synchronized(requests) { requests.isNotEmpty() } }
+    val edited = LinkPreview.sampleData
+    composeState.value = ComposeState(editingItem = linkItem(edited), useLinkPreviews = true)
+    release.countDown()
+    runCatching { waitUntil(timeoutMillis = 3_000) { composeState.value.linkPreview !== edited } }
+    assertSame(edited, composeState.value.linkPreview)
+    assertEquals(listOf(request), requests)
+  }
+
+  @Test
+  fun failedLinkIsFetchedAgainAfterTheDeleteTextButton() = composeView { composeState ->
+    val (request) = recorded("error")
+    val field = onNode(hasSetTextAction())
+    field.performTextInput(request.removePrefix(LINK_PREVIEW) + "\n\n\n")
+    awaitFailedFetches(composeState, 1)
+    onNode(hasClickAction() and !hasSetTextAction() and SemanticsMatcher.keyNotDefined(SemanticsProperties.ContentDescription)).performClick()
+    field.performTextInput(request.removePrefix(LINK_PREVIEW))
+    awaitFailedFetches(composeState, 2)
+    assertEquals(listOf(request, request), requests)
+  }
+
+  @Test
+  fun failedLinkIsNotFetchedAgainAfterAFileIsAttachedAndRemoved() = composeView { composeState ->
+    val (request) = recorded("error")
+    val field = onNode(hasSetTextAction())
+    field.performTextInput(request.removePrefix(LINK_PREVIEW))
+    awaitFailedFetches(composeState, 1)
+    withTempDir { dir ->
+      composeState.attachFile(dir)
+      field.performTextInputSelection(TextRange.Zero)
+      onNodeWithContentDescription("Cancel file preview").performClick()
+      field.performTextInputSelection(TextRange(request.removePrefix(LINK_PREVIEW).length))
+      runCatching { waitUntil(timeoutMillis = 3_000) { synchronized(requests) { requests.size > 1 } } }
+      assertTrue(composeState.value.preview is ComposePreview.NoPreview)
+      assertEquals(listOf(request), requests)
+    }
+  }
+
+  @Test
+  fun draftSavedDuringTheFetchGetsThePreviewWhenTheChatIsOpenedAgain() = composeView { composeState ->
+    val (request) = recorded("result")
+    val release = heldResponses()
+    onNode(hasSetTextAction()).performTextInput(request.removePrefix(LINK_PREVIEW))
+    waitUntil(timeoutMillis = 10_000) { synchronized(requests) { requests.isNotEmpty() } }
+    ChatModel.chatId.value = "@2"
+    waitForIdle()
+    release.countDown()
+    ChatModel.chatId.value = Chat.sampleData.id
+    waitUntil(timeoutMillis = 10_000) { composeState.value.linkPreview != null }
+    assertEquals(listOf(request, request), requests)
+  }
+
+  @Test
+  fun messageWithFailedFirstLinkIsSentWithPreviewOfSecondLink() = composeView(noteFolder()) { composeState ->
+    val (failed) = recorded("error")
+    val (shown) = recorded("result")
+    sendTwoLinks(composeState, failed, shown)
+    assertEquals(listOf(failed, shown, createdItem()), requests)
+  }
+
+  @Test
+  fun failedLinkIsFetchedAgainAfterTheMessageIsSent() = composeView(noteFolder()) { composeState ->
+    val (failed) = recorded("error")
+    val (shown) = recorded("result")
+    sendTwoLinks(composeState, failed, shown)
+    onNode(hasSetTextAction()).performTextInput(failed.removePrefix(LINK_PREVIEW))
+    awaitFailedFetches(composeState, 4)
+    assertEquals(listOf(failed, shown, createdItem(), failed), requests)
+  }
+
+  @Test
   fun failureShowsNoAlert() = failedPreview(developerTools = false, showLinkPreviewErrors = false) {
     assertTexts()
   }
@@ -232,27 +356,57 @@ class LinkPreviewTest {
     assertEquals(texts.toList(), shown)
   }
 
-  private fun composeView(test: ComposeUiTest.(MutableState<ComposeState>) -> Unit) = runComposeUiTest {
+  private fun ComposeUiTest.sendTwoLinks(composeState: MutableState<ComposeState>, failed: String, shown: String) {
+    val field = onNode(hasSetTextAction())
+    field.performTextInput("${failed.removePrefix(LINK_PREVIEW)} ${shown.removePrefix(LINK_PREVIEW)}")
+    runCatching { waitUntil(timeoutMillis = 10_000) { composeState.value.linkPreview != null } }
+    field.performTextInputSelection(TextRange.Zero)
+    waitUntil(timeoutMillis = 10_000) { composeState.value.linkPreview != null }
+    onNodeWithContentDescription("Send Message").performClick()
+    waitUntil(timeoutMillis = 10_000) { composeState.value.message.text.isEmpty() }
+  }
+
+  private fun composeView(chat: Chat = Chat.sampleData, test: ComposeUiTest.(MutableState<ComposeState>) -> Unit) = runComposeUiTest {
     val composeState = mutableStateOf(ComposeState(useLinkPreviews = true))
+    ChatModel.chatId.value = chat.id
     setContent {
-      ComposeView(rhId = null, chatModel = ChatModel, ChatModel.chatsContext, Chat.sampleData, composeState, remember { mutableStateOf(false) }, remember { mutableStateOf(null) }, {}, remember { FocusRequester() })
+      ComposeView(rhId = null, chatModel = ChatModel, ChatModel.chatsContext, chat, composeState, remember { mutableStateOf(false) }, remember { mutableStateOf(null) }, {}, remember { FocusRequester() })
       AlertManager.shared.showInView()
     }
     test(composeState)
   }
 
-  private fun heldResponses(): CountDownLatch {
+  private fun respond(cmd: String, release: CountDownLatch? = null): String {
+    val request = recordedRequest(cmd)
+    synchronized(requests) { requests += request ?: cmd }
+    release?.await(10, TimeUnit.SECONDS)
+    return request?.let { commands.getValue(it).toString() } ?: unrecordedRequest(cmd)
+  }
+
+  private fun recordedRequest(cmd: String): String? =
+    if (cmd in commands) cmd
+    else commands.keys.firstOrNull { it.startsWith(CREATE_ITEM) && cmd.startsWith(CREATE_ITEM) && createdMessages(it) == createdMessages(cmd) }
+
+  private fun createdMessages(cmd: String): JsonElement = Json.parseToJsonElement(cmd.removePrefix(CREATE_ITEM))
+
+  private fun createdItem(): String = commands.keys.single { it.startsWith(CREATE_ITEM) }
+
+  private fun noteFolder(): Chat {
+    val created = commands.getValue(createdItem()).jsonObject.getValue("result").jsonObject.getValue("chatItems").jsonArray.first().jsonObject
+    return Chat(remoteHostId = null, chatInfo = json.decodeFromJsonElement(ChatInfo.serializer(), created.getValue("chatInfo")), chatItems = listOf())
+  }
+
+  private fun heldResponses(held: (String) -> Boolean = { true }): CountDownLatch {
     val release = CountDownLatch(1)
-    chatSendCmdRetry = { _, cmd, _ ->
-      synchronized(requests) { requests += cmd }
-      release.await(10, TimeUnit.SECONDS)
-      commands[cmd]?.toString() ?: unrecordedRequest(cmd)
-    }
+    chatSendCmdRetry = { _, cmd, _ -> respond(cmd, release.takeIf { held(cmd) }) }
     return release
   }
 
   private fun MutableState<ComposeState>.attachFile(dir: Path) =
     processPickedFile(dir.resolve("notes.txt").toFile().apply { writeText("notes") }.toURI(), null)
+
+  private fun linkItem(preview: LinkPreview): ChatItem =
+    ChatItem.getSampleData(text = preview.uri).copy(content = CIContent.SndMsgContent(MsgContent.MCLink(preview.uri, preview)))
 
   private fun recorded(outcome: String): Pair<String, JsonObject> =
     commands.entries
@@ -277,6 +431,7 @@ class LinkPreviewTest {
 
   private companion object {
     const val LINK_PREVIEW = "/_link preview "
+    const val CREATE_ITEM = "/_create *1 json "
     const val TEXT_WITHOUT_LINK = "text without a link"
   }
 }

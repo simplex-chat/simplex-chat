@@ -75,7 +75,8 @@ data class ComposeState(
   val inProgress: Boolean = false,
   val progressByTimeout: Boolean = false,
   val useLinkPreviews: Boolean,
-  val mentions: MentionedMembers = emptyMap()
+  val mentions: MentionedMembers = emptyMap(),
+  val cancelledLinks: Set<String> = emptySet()
 )
 ```
 
@@ -92,6 +93,7 @@ data class ComposeState(
 | `progressByTimeout` | `Boolean` | Show spinner after 1-second send delay |
 | `useLinkPreviews` | `Boolean` | Link preview feature flag |
 | `mentions` | `MentionedMembers` | Map of mention display name to `CIMention` |
+| `cancelledLinks` | `Set<String>` | Links whose preview failed or was closed, not requested again in this message |
 
 ### Computed Properties
 
@@ -102,7 +104,8 @@ data class ComposeState(
 | `reporting` | `Boolean` | True when `contextItem` is `ReportedItem` |
 | `sendEnabled` | `() -> Boolean` | True when there is content to send and not in progress |
 | `linkPreviewAllowed` | `Boolean` | True when no media/voice/file preview is active |
-| `linkPreview` | `LinkPreview?` | Extracts link preview from `CLinkPreview` |
+| `linkPreview` | `LinkPreview?` | The preview of `CLinkPreview(Shown)` |
+| `loadingLink` | `LinkPreviewStatus.Loading?` | The link of `CLinkPreview(Loading)` and its request |
 | `attachmentDisabled` | `Boolean` | True when editing, forwarding, live, in-progress, or reporting |
 | `attachmentPreview` | `Boolean` | True when a file or media preview is showing |
 | `empty` | `Boolean` | True when no text, no preview, and no context item |
@@ -149,7 +152,7 @@ Tracks a live (streaming) message: the associated `ChatItem`, the currently type
 ```kotlin
 sealed class ComposePreview {
   object NoPreview : ComposePreview()
-  class CLinkPreview(val linkPreview: LinkPreview?) : ComposePreview()
+  class CLinkPreview(val status: LinkPreviewStatus) : ComposePreview()
   class MediaPreview(val images: List<String>, val content: List<UploadContent>) : ComposePreview()
   data class VoicePreview(val voice: String, val durationMs: Int, val finished: Boolean) : ComposePreview()
   class FilePreview(val fileName: String, val uri: URI) : ComposePreview()
@@ -159,7 +162,7 @@ sealed class ComposePreview {
 | Variant | Fields | View |
 |---|---|---|
 | `NoPreview` | -- | Nothing shown |
-| `CLinkPreview` | `linkPreview: LinkPreview?` (null = loading) | `ComposeLinkView`: title, description, image thumbnail, cancel button |
+| `CLinkPreview` | `status: LinkPreviewStatus`: `Loading(uri)`, with a `request` number of the app process, or `Shown(linkPreview)` | `ComposeLinkView`: a spinner for `Loading`; title, description, image thumbnail for `Shown`; cancel button |
 | `MediaPreview` | `images: List<String>` (base64 thumbnails), `content: List<UploadContent>` | `ComposeImageView`: horizontal thumbnail strip, cancel button |
 | `VoicePreview` | `voice: String` (file path), `durationMs: Int`, `finished: Boolean` | `ComposeVoiceView`: waveform visualization, duration, play/pause |
 | `FilePreview` | `fileName: String`, `uri: URI` | `ComposeFileView`: file icon, file name, cancel button |
@@ -338,14 +341,16 @@ On send (line ~603, `sendMessageAsync`):
 
 ### Link Preview
 
-When `privacyLinkPreviews` is enabled and the message contains a URL:
+The link preview of the message is part of `ComposeState`: `preview` is `CLinkPreview(Loading)` or `CLinkPreview(Shown)`, and `cancelledLinks` contains the links not requested again in this message. It is changed only by `ComposeState.updateLinkPreview(event, previewsOn)`, with `previewsOn` = `privacyLinkPreviews`. The selected link is the first link of the text outside `cancelledLinks` and SimpleX links.
 
-1. `showLinkPreview` extracts first non-SimpleX, non-cancelled link from parsed markdown; when the text has none, it clears `pendingLinkUrl` and sets `NoPreview`.
-2. Sets `ComposePreview.CLinkPreview(null)` (loading state).
-3. After 1.5s debounce, calls `apiGetLinkPreview(url)`: the core fetches the page through its network settings (`/_link preview <url>`).
-4. If the link is still `pendingLinkUrl` and no attachment replaced the link preview (`linkPreviewAllowed`), updates to `CLinkPreview(linkPreview)` on success, otherwise to `NoPreview`, and the link is added to `cancelledLinks`, so that further typing does not fetch it again until the compose state is reset; with `developerTools` and `showLinkPreviewErrors`, the core's error is shown in an alert. `fetchAndUpdateLinkPreview` checks `pendingLinkUrl` and writes the compose state on the main thread.
-5. Cancel button adds the URL to `cancelledLinks` set.
-6. On a chat switch (`KeyChangeEffect(chatModel.chatId.value)`), `resetLinkPreview()` clears the pending link and `cancelledLinks`, because the same `ComposeView` is reused for the chat opened next.
+| Event | Site | State after |
+|---|---|---|
+| `TextChanged` | `onMessageChange`, for every text<br>the delete-text button, through `onMessageChange` | empty text: `cancelledLinks` emptied<br>attachment: kept<br>selected link of the preview: status kept<br>another selected link: `Loading` with a new request<br>no selected link, or previews off: `NoPreview` |
+| `Fetched(request, linkPreview)` | the fetch effect | `request` other than the loading request: unchanged<br>preview: `Shown`<br>failure: the link added to `cancelledLinks`, the next link selected |
+| `Cancelled` | the cancel button of the card | the link of the card added to `cancelledLinks`, the next link selected |
+| `ChatChanged` | end of `KeyChangeEffect(chatModel.chatId.value)`<br>each draft save | `cancelledLinks` emptied, the link selected again |
+
+In the fetch effect, `LaunchedEffect(composeState.value.loadingLink?.request)`, `apiGetLinkPreview(uri)` is called after 1.5 s and its result is applied as `Fetched`; the effect is cancelled when the request changes. The core fetches the page through its network settings (`/_link preview <url>`); with `developerTools` and `showLinkPreviewErrors`, its error is shown in an alert. `ComposeState` is replaced, with `cancelledLinks` empty, by a send, Edit, Reply while editing, a report and a bot command. `checkLinkPreview(cs)` returns `MCLink` when `cs.preview` is `Shown` for the selected link of the text; `cs` is the state captured at the send.
 
 ---
 
