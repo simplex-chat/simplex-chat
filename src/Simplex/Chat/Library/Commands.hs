@@ -821,23 +821,23 @@ processChatCommand cxt nm = \case
     gId <- withFastStore $ \db -> getGroupIdByName db user groupName
     reportedItemId <- withFastStore $ \db -> getGroupChatItemIdByText db user gId contactName_ reportedMessage
     processChatCommand cxt nm $ APIReportMessage gId reportedItemId reportReason ""
-  APIUpdateChatItem (ChatRef cType chatId scope) itemId live (UpdatedMessage mc mentions priority_) -> withUser $ \user -> assertAllowedContent mc >> case cType of
+  APIUpdateChatItem (ChatRef cType chatId scope) itemId live asNew (UpdatedMessage mc mentions priority_) -> withUser $ \user -> assertAllowedContent mc >> case cType of
     CTDirect -> withContactLock "updateChatItem" chatId $ do
       unless (null mentions) $ throwCmdError "mentions are not supported in this chat"
       ct@Contact {contactId} <- withFastStore $ \db -> getContact db cxt user chatId
       assertDirectAllowed user MDSnd ct XMsgUpdate_
       cci <- withFastStore $ \db -> getDirectCIWithReactions db user ct itemId
+      currentTs <- liftIO getCurrentTime
       case cci of
-        CChatItem SMDSnd ci@ChatItem {meta = CIMeta {itemSharedMsgId, itemTimed, itemLive, editable}, content = ciContent} -> do
-          case (ciContent, itemSharedMsgId, editable) of
+        CChatItem SMDSnd ci@ChatItem {meta = CIMeta {itemSharedMsgId, itemTimed, itemLive}, content = ciContent} -> do
+          case (ciContent, itemSharedMsgId, sndItemEditable (userItemWindow $ DirectChat ct) currentTs ci) of
             (CISndMsgContent oldMC, Just itemSharedMId, True) -> do
               let changed = mc /= oldMC
               if changed || fromMaybe False itemLive
                 then do
-                  let event = XMsgUpdate itemSharedMId mc M.empty (ttl' <$> itemTimed) (justTrue . (live &&) =<< itemLive) Nothing Nothing Nothing
+                  let event = XMsgUpdate itemSharedMId mc M.empty (ttl' <$> itemTimed) (justTrue . (live &&) =<< itemLive) Nothing Nothing Nothing Nothing
                   (SndMessage {msgId}, _) <- sendDirectContactMessage user ct event
                   ci' <- withFastStore' $ \db -> do
-                    currentTs <- liftIO getCurrentTime
                     when changed $
                       addInitialAndNewCIVersions db itemId (chatItemTs' ci, oldMC) (currentTs, mc)
                     let edited = itemLive /= Just True
@@ -856,30 +856,42 @@ processChatCommand cxt nm = \case
         else do
           -- TODO [knocking] check chat item scope?
           (cci, itemScopeInfo) <- withFastStore $ \db -> (,) <$> getGroupCIWithReactions db user gInfo itemId <*> getGroupChatScopeInfoForItem db cxt user gInfo itemId
+          currentTs <- liftIO getCurrentTime
           case cci of
-            CChatItem SMDSnd ci@ChatItem {meta = meta@CIMeta {itemSharedMsgId, itemTimed, itemLive, editable, showGroupAsSender, msgVerified}, content = ciContent} -> do
-              case (ciContent, itemSharedMsgId, editable) of
+            CChatItem SMDSnd ci@ChatItem {meta = meta@CIMeta {itemSharedMsgId, itemTimed, itemLive, showGroupAsSender, msgVerified}, content = ciContent} -> do
+              case (ciContent, itemSharedMsgId, sndItemEditable (userItemWindow $ GroupChat gInfo Nothing) currentTs ci) of
                 (CISndMsgContent oldMC, Just itemSharedMId, True) -> do
                   chatScopeInfo <- mapM (getChatScopeInfo cxt user) scope
                   recipients <- getGroupRecipients cxt user gInfo chatScopeInfo groupKnockingVersion
                   let changed = mc /= oldMC
-                      raise = requestsHighPriority priority_ && not (highPriority meta) && isNothing scope && isNothing itemScopeInfo && groupFeatureUserAllowed SGFMsgPriority gInfo
-                  if changed || fromMaybe False itemLive || raise
+                      mainScope = isNothing scope && isNothing itemScopeInfo
+                      highAllowed = groupFeatureUserAllowed SGFMsgPriority gInfo
+                      newTs_ = if asNew && mainScope then asNewItemTs (chatItemTs' ci) currentTs else Nothing
+                      raise = isNothing newTs_ && requestsHighPriority priority_ && not (highPriority meta) && mainScope && highAllowed
+                      priority'
+                        | isJust newTs_ = sndPriority highAllowed priority_
+                        | raise = Just 1
+                        | otherwise = Nothing
+                  if changed || fromMaybe False itemLive || raise || isJust newTs_
                     then do
                       ciMentions <- withFastStore $ \db -> getCIMentions db user gInfo ft_ mentions
                       let msgScope = toMsgScope gInfo <$> chatScopeInfo
                           mentions' = M.map (\CIMention {memberId} -> MsgMention {memberId}) ciMentions
-                          event = XMsgUpdate itemSharedMId mc mentions' (ttl' <$> itemTimed) (justTrue . (live &&) =<< itemLive) msgScope (Just showGroupAsSender) (if raise then Just 1 else Nothing)
+                          event = XMsgUpdate itemSharedMId mc mentions' (ttl' <$> itemTimed) (justTrue . (live &&) =<< itemLive) msgScope (Just showGroupAsSender) priority' (justTrue $ isJust newTs_)
                           reuseSign = case msgVerified of Just (MVSigned _) -> True; _ -> False
                       SndMessage {msgId} <- sendGroupMessage user g scope recipients reuseSign event
                       ci' <- withFastStore' $ \db -> do
-                        currentTs <- liftIO getCurrentTime
                         when changed $
                           addInitialAndNewCIVersions db itemId (chatItemTs' ci, oldMC) (currentTs, mc)
                         let edited = changed && itemLive /= Just True
-                            ciRaised = if raise then ci {meta = (meta :: CIMeta 'CTGroup 'MDSnd) {priority = Just 1}} else ci
+                            ciRaised = if raise || isJust newTs_ then ci {meta = (meta :: CIMeta 'CTGroup 'MDSnd) {priority = priority'}} else ci
                         ci' <- updateGroupChatItem db user groupId ciRaised (CISndMsgContent mc) edited live $ Just msgId
-                        updateGroupCIMentions db gInfo ci' ciMentions
+                        ci'' <- updateGroupCIMentions db gInfo ci' ciMentions
+                        case newTs_ of
+                          Just newTs -> do
+                            void $ updateChatTsStats db cxt user (CDGroupSnd gInfo Nothing) currentTs Nothing
+                            setChatItemTs db ci'' newTs
+                          Nothing -> pure ci''
                       startUpdatedTimedItemThread user (ChatRef CTGroup groupId scope) ci ci'
                       pure $ CRChatItemUpdated user (AChatItem SCTGroup SMDSnd (GroupChat gInfo chatScopeInfo) ci')
                     else pure $ CRChatItemNotChanged user (AChatItem SCTGroup SMDSnd (GroupChat gInfo chatScopeInfo) ci)
@@ -907,7 +919,7 @@ processChatCommand cxt nm = \case
         CIDMInternalMark -> markDirectCIsDeleted user ct items =<< liftIO getCurrentTime
         CIDMHistory -> throwChatError CEInvalidChatItemDelete
         CIDMBroadcast -> do
-          assertDeletable items
+          assertDeletable (userItemWindow $ DirectChat ct) items
           assertDirectAllowed user MDSnd ct XMsgDel_
           let msgIds = itemsMsgIds items
               events = map (\msgId -> XMsgDel msgId Nothing Nothing False) msgIds
@@ -929,7 +941,7 @@ processChatCommand cxt nm = \case
           markGroupCIsDeleted user gInfo chatScopeInfo items Nothing =<< liftIO getCurrentTime
         CIDMBroadcast -> do
           recipients <- getGroupRecipients cxt user gInfo chatScopeInfo groupKnockingVersion
-          assertDeletable items
+          assertDeletable (userItemWindow $ GroupChat gInfo chatScopeInfo) items
           assertUserGroupRole gInfo GRObserver -- can still delete messages sent earlier
           let signedEvents = L.nonEmpty $ mapMaybe (delEventSigned g chatScopeInfo False) items
           mapM_ (sendGroupSignedMessages user g Nothing False recipients) signedEvents
@@ -947,16 +959,16 @@ processChatCommand cxt nm = \case
     CTContactRequest -> throwCmdError "not supported"
     CTContactConnection -> throwCmdError "not supported"
     where
-      assertDeletable :: forall c. ChatTypeI c => [CChatItem c] -> CM ()
-      assertDeletable items = do
+      assertDeletable :: forall c. Maybe NominalDiffTime -> [CChatItem c] -> CM ()
+      assertDeletable window items = do
         currentTs <- liftIO getCurrentTime
         unless (all (itemDeletable currentTs) items) $ throwChatError CEInvalidChatItemDelete
         where
           itemDeletable :: UTCTime -> CChatItem c -> Bool
-          itemDeletable currentTs (CChatItem msgDir ChatItem {meta = CIMeta {itemSharedMsgId, itemTs, itemDeleted}, content}) =
+          itemDeletable currentTs (CChatItem msgDir ChatItem {meta = CIMeta {itemSharedMsgId, createdAt, itemDeleted}, content}) =
             case msgDir of
               -- We check with a 6 hour margin compared to CIMeta deletable to account for deletion on the border
-              SMDSnd -> isJust itemSharedMsgId && deletable' content itemDeleted itemTs (nominalDay + 6 * 3600) currentTs
+              SMDSnd -> isJust itemSharedMsgId && deletable' content itemDeleted (sndItemWindow window) createdAt currentTs
               SMDRcv -> False
       itemsMsgIds :: [CChatItem c] -> [SharedMsgId]
       itemsMsgIds = mapMaybe (\(CChatItem _ ChatItem {meta = CIMeta {itemSharedMsgId}}) -> itemSharedMsgId)
@@ -1056,7 +1068,8 @@ processChatCommand cxt nm = \case
           throwCmdError "too many reactions"
   APIGetReactionMembers userId groupId itemId reaction -> withUserId userId $ \user -> do
     memberReactions <- withStore $ \db -> do
-      CChatItem _ ChatItem {meta = CIMeta {itemSharedMsgId = Just itemSharedMId}} <- getGroupChatItem db user groupId itemId
+      g <- getGroupInfo db cxt user groupId
+      CChatItem _ ChatItem {meta = CIMeta {itemSharedMsgId = Just itemSharedMId}} <- getGroupChatItem db user g itemId
       liftIO $ getReactionMembers db cxt user groupId itemSharedMId reaction
     pure $ CRReactionMembers user memberReactions
   -- TODO [knocking] forward from scope?
@@ -1499,7 +1512,7 @@ processChatCommand cxt nm = \case
       sendWelcomeMsg user ct ucl UserContactRequest {welcomeSharedMsgId} =
         forM_ (autoReply $ addressSettings ucl) $ \mc -> case welcomeSharedMsgId of
           Just smId ->
-            void $ sendDirectContactMessage user ct $ XMsgUpdate smId mc M.empty Nothing Nothing Nothing Nothing Nothing
+            void $ sendDirectContactMessage user ct $ XMsgUpdate smId mc M.empty Nothing Nothing Nothing Nothing Nothing Nothing
           Nothing -> do
             (msg, _) <- sendDirectContactMessage user ct $ XMsgNew $ mcSimple mc
             ci <- saveSndChatItem user (CDDirectSnd ct) msg (CISndMsgContent mc)
@@ -2746,11 +2759,11 @@ processChatCommand cxt nm = \case
     (chatRef, mentions) <- getChatRefAndMentions user chatName msg
     editedItemId <- getSentChatItemIdByText user chatRef editedMsg
     let mc = MCText msg
-    processChatCommand cxt nm $ APIUpdateChatItem chatRef editedItemId False $ UpdatedMessage mc mentions Nothing
+    processChatCommand cxt nm $ APIUpdateChatItem chatRef editedItemId False False $ UpdatedMessage mc mentions Nothing
   UpdateLiveMessage chatName chatItemId live msg -> withUser $ \user -> do
     (chatRef, mentions) <- getChatRefAndMentions user chatName msg
     let mc = MCText msg
-    processChatCommand cxt nm $ APIUpdateChatItem chatRef chatItemId live $ UpdatedMessage mc mentions Nothing
+    processChatCommand cxt nm $ APIUpdateChatItem chatRef chatItemId live False $ UpdatedMessage mc mentions Nothing
   ReactToMessage add reaction chatName msg -> withUser $ \user -> do
     chatRef <- getChatRef user chatName
     chatItemId <- getChatItemIdByText user chatRef msg
@@ -3376,9 +3389,9 @@ processChatCommand cxt nm = \case
   ListGroups cName_ search_ -> withUser $ \user@User {userId} -> do
     ct_ <- forM cName_ $ \cName -> withFastStore $ \db -> getContactByName db cxt user cName
     processChatCommand cxt nm $ APIListGroups userId (contactId' <$> ct_) search_
-  APIUpdateGroupProfile groupId p' -> withUser $ \user -> do
-    gInfo <- withFastStore $ \db -> getGroupInfoKeys db cxt user groupId
-    runUpdateGroupProfile user gInfo p' False
+  APIUpdateGroupProfile groupId p'@GroupProfile {groupPreferences = prefs'} -> withUser $ \user -> do
+    gInfo@(GIK GroupInfo {groupProfile = GroupProfile {groupPreferences = prefs}} _) <- withFastStore $ \db -> getGroupInfoKeys db cxt user groupId
+    runUpdateGroupProfile user gInfo p' {groupPreferences = keepHiddenGroupPrefs prefs <$> prefs'} False
   UpdateGroupNames gName GroupProfile {displayName, fullName, shortDescr} ->
     updateGroupProfileByName gName $ \p -> p {displayName, fullName, shortDescr}
   ShowGroupProfile gName -> withUser $ \user ->
@@ -6876,7 +6889,7 @@ chatCommandP =
       "/_create *" *> (APICreateChatItems <$> A.decimal <*> (" json " *> jsonP <|> " text " *> composedMessagesTextP)),
       "/_report #" *> (APIReportMessage <$> A.decimal <* A.space <*> A.decimal <*> (" reason=" *> strP) <*> (A.space *> textP <|> pure "")),
       "/report #" *> (ReportMessage <$> displayNameP <*> optional (" @" *> displayNameP) <*> _strP <* A.space <*> msgTextP),
-      "/_update item " *> (APIUpdateChatItem <$> chatRefP <* A.space <*> A.decimal <*> liveMessageP <*> (" json" *> jsonP <|> " text " *> updatedMessagesTextP)),
+      "/_update item " *> (APIUpdateChatItem <$> chatRefP <* A.space <*> A.decimal <*> liveMessageP <*> (" as_new=" *> onOffP <|> pure False) <*> (" json" *> jsonP <|> " text " *> updatedMessagesTextP)),
       "/_delete item " *> (APIDeleteChatItem <$> chatRefP <*> _strP <*> _strP),
       "/_delete member item #" *> (APIDeleteMemberChatItem <$> A.decimal <*> _strP),
       "/_archive reports #" *> (APIArchiveReceivedReports <$> A.decimal),

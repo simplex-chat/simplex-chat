@@ -533,7 +533,8 @@ CREATE TABLE chat_items(
   fwd_from_public_group_id BLOB,
   fwd_from_member_id BLOB,
   fwd_from_shared_msg_id BLOB,
-  item_priority INTEGER NOT NULL DEFAULT 0
+  item_priority INTEGER NOT NULL DEFAULT 0,
+  item_original_ts TEXT
 ) STRICT;
 CREATE TABLE chat_item_messages(
   chat_item_id INTEGER NOT NULL REFERENCES chat_items ON DELETE CASCADE,

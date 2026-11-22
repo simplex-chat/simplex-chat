@@ -56,7 +56,7 @@ import Simplex.Chat.Messages
 import Simplex.Chat.Messages.CIContent (CIContent (..), ciContentToText)
 import Simplex.Chat.Protocol (MsgContent (..))
 import Simplex.Chat.Store.Messages (getGroupChatItem)
-import Simplex.Chat.Store.Shared (StoreError (..))
+import Simplex.Chat.Store.Shared (StoreError (..), getGroupInfo)
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences (GroupPreferences (..), commands_, emptyGroupPrefs)
 import Simplex.Chat.Types.Shared (GroupMemberRole (..))
@@ -342,7 +342,7 @@ setTrackerBody cc groupId badgeCodeId policy mkBody =
               EditOnly -> logWarn $ "badge group tracker left uncorrected, code " <> tshow badgeCodeId <> " can no longer be edited"
         case trackerDecision now trackerSentAt of
           Edit ->
-            sendChatCmd cc (APIUpdateChatItem (ChatRef CTGroup groupId Nothing) trackerItemId False (UpdatedMessage (MCText body) M.empty Nothing)) >>= \case
+            sendChatCmd cc (APIUpdateChatItem (ChatRef CTGroup groupId Nothing) trackerItemId False False (UpdatedMessage (MCText body) M.empty Nothing)) >>= \case
               Right CRChatItemUpdated {} -> pure ()
               Right CRChatItemNotChanged {} -> pure ()
               Left (ChatError CEInvalidChatItemUpdate) -> uneditable
@@ -429,6 +429,6 @@ codeInTracker = listToMaybe . mapMaybe parseBadgeCode . T.words
 trackerItemText :: ChatController -> GroupId -> ChatItemId -> IO (Maybe Text)
 trackerItemText cc groupId itemId =
   readTVarIO (currentUser cc) $>>= \user ->
-    withDB' "getGroupChatItem" cc (\db -> runExceptT $ getGroupChatItem db user groupId itemId) <&> \case
+    withDB' "getGroupChatItem" cc (\db -> runExceptT $ getGroupInfo db (storeCxt cc) user groupId >>= \g -> getGroupChatItem db user g itemId) <&> \case
       Right (Right (CChatItem _ ChatItem {content, meta = CIMeta {itemDeleted}})) | isNothing itemDeleted -> Just (ciContentToText content)
       _ -> Nothing

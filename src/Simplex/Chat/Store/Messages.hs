@@ -61,6 +61,9 @@ module Simplex.Chat.Store.Messages
     markDirectChatItemDeleted,
     updateGroupChatItemStatus,
     updateGroupChatItem,
+    setChatItemTs,
+    setGroupChatItemAsNew,
+    getChatItemOriginalTs,
     updateChatItemSignedMsg,
     createGroupCIMentions,
     updateGroupCIMentions,
@@ -165,7 +168,7 @@ import Data.Ord (Down (..), comparing)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time (addUTCTime)
-import Data.Time.Clock (UTCTime (..), getCurrentTime)
+import Data.Time.Clock (NominalDiffTime, UTCTime (..), getCurrentTime)
 import Data.Type.Equality (testEquality, (:~:) (Refl))
 import Simplex.Chat.Badges (BadgeStatus)
 import Simplex.Chat.Controller (ChatListQuery (..), ChatPagination (..), PaginationByTime (..))
@@ -1150,7 +1153,7 @@ toLocalChatItem currentTs ((itemId, itemTs, AMsgDirection msgDir, itemContentTex
             _ -> Just (CIDeleted @'CTLocal deletedTs)
           itemEdited' = maybe False unBI itemEdited
           itemForwarded = toCIForwardedFrom forwardedFromRow
-       in mkCIMeta itemId content itemText status (unBI <$> sentViaProxy) sharedMsgId itemForwarded itemDeleted' itemEdited' ciTimed (unBI <$> itemLive) userMention itemPriority hasLink currentTs itemTs Nothing False msgSigned createdAt updatedAt
+       in mkCIMeta itemId content itemText status (unBI <$> sentViaProxy) sharedMsgId itemForwarded itemDeleted' itemEdited' ciTimed (unBI <$> itemLive) userMention itemPriority hasLink Nothing currentTs itemTs Nothing False msgSigned createdAt updatedAt
     ciTimed :: Maybe CITimed
     ciTimed = timedTTL >>= \ttl -> Just CITimed {ttl, deleteAt = timedDeleteAt}
 
@@ -1657,8 +1660,8 @@ safeToGroupItem currentTs itemId = \case
                 file = Nothing
               }
 
-getGroupMemberChatItemLast :: DB.Connection -> User -> GroupId -> GroupMemberId -> ExceptT StoreError IO (CChatItem 'CTGroup)
-getGroupMemberChatItemLast db user@User {userId} groupId groupMemberId = do
+getGroupMemberChatItemLast :: DB.Connection -> User -> GroupInfo -> GroupMemberId -> ExceptT StoreError IO (CChatItem 'CTGroup)
+getGroupMemberChatItemLast db user@User {userId} g@GroupInfo {groupId} groupMemberId = do
   chatItemId <-
     ExceptT . firstRow fromOnly (SEChatItemNotFoundByGroupId groupId) $
       DB.query
@@ -1675,11 +1678,11 @@ getGroupMemberChatItemLast db user@User {userId} groupId groupMemberId = do
 #endif
         )
         (userId, groupId, groupMemberId)
-  getGroupChatItem db user groupId chatItemId
+  getGroupChatItem db user g chatItemId
 
 getGroupChatAfter_ :: DB.Connection -> User -> GroupInfo -> Maybe GroupChatScopeInfo -> Maybe MsgContentTag -> ChatItemId -> Int -> Text -> ExceptT StoreError IO (Chat 'CTGroup)
-getGroupChatAfter_ db user g@GroupInfo {groupId} scopeInfo contentFilter afterId count search = do
-  afterCI <- getGroupChatItem db user groupId afterId
+getGroupChatAfter_ db user g scopeInfo contentFilter afterId count search = do
+  afterCI <- getGroupChatItem db user g afterId
   let cInfo = GroupChat g scopeInfo
       range = CRAfter (chatItemTs afterCI) (cChatItemId afterCI)
   ciIds <- getChatItemIDs db user cInfo contentFilter range count search
@@ -1688,8 +1691,8 @@ getGroupChatAfter_ db user g@GroupInfo {groupId} scopeInfo contentFilter afterId
   pure $ Chat cInfo cis emptyChatStats
 
 getGroupChatBefore_ :: DB.Connection -> User -> GroupInfo -> Maybe GroupChatScopeInfo -> Maybe MsgContentTag -> ChatItemId -> Int -> Text -> ExceptT StoreError IO (Chat 'CTGroup)
-getGroupChatBefore_ db user g@GroupInfo {groupId} scopeInfo contentFilter beforeId count search = do
-  beforeCI <- getGroupChatItem db user groupId beforeId
+getGroupChatBefore_ db user g scopeInfo contentFilter beforeId count search = do
+  beforeCI <- getGroupChatItem db user g beforeId
   let cInfo = GroupChat g scopeInfo
       range = CRBefore (chatItemTs beforeCI) (cChatItemId beforeCI)
   ciIds <- getChatItemIDs db user cInfo contentFilter range count search
@@ -2366,7 +2369,7 @@ toDirectChatItem currentTs (((itemId, itemTs, AMsgDirection msgDir, itemContentT
             _ -> Just (CIDeleted @'CTDirect deletedTs)
           itemEdited' = maybe False unBI itemEdited
           itemForwarded = toCIForwardedFrom forwardedFromRow
-       in mkCIMeta itemId content itemText status (unBI <$> sentViaProxy) sharedMsgId itemForwarded itemDeleted' itemEdited' ciTimed (unBI <$> itemLive) userMention itemPriority hasLink currentTs itemTs Nothing False msgSigned createdAt updatedAt
+       in mkCIMeta itemId content itemText status (unBI <$> sentViaProxy) sharedMsgId itemForwarded itemDeleted' itemEdited' ciTimed (unBI <$> itemLive) userMention itemPriority hasLink directItemWindow currentTs itemTs Nothing False msgSigned createdAt updatedAt
     ciTimed :: Maybe CITimed
     ciTimed = timedTTL >>= \ttl -> Just CITimed {ttl, deleteAt = timedDeleteAt}
 
@@ -2395,6 +2398,7 @@ toGroupQuote qr@(_, _, _, _, quotedSent) quotedMember_ = toQuote qr $ direction 
 toGroupChatItem ::
   UTCTime ->
   Int64 ->
+  Maybe NominalDiffTime ->
   ChatItemRow
     :. (Maybe GroupMemberId, BoolInt)
     :. MaybeGroupMemberRow
@@ -2404,6 +2408,7 @@ toGroupChatItem ::
 toGroupChatItem
   currentTs
   userContactId
+  window
   ( ( (itemId, itemTs, AMsgDirection msgDir, itemContentText, itemText, itemStatus, sentViaProxy, sharedMsgId)
         :. (itemDeleted, deletedTs, itemEdited, createdAt, updatedAt)
         :. forwardedFromRow
@@ -2462,7 +2467,7 @@ toGroupChatItem
               _ -> Just (maybe (CIDeleted @'CTGroup deletedTs) (CIModerated deletedTs) deletedByGroupMember_)
             itemEdited' = maybe False unBI itemEdited
             itemForwarded = toCIForwardedFrom forwardedFromRow
-         in mkCIMeta itemId content itemText status (unBI <$> sentViaProxy) sharedMsgId itemForwarded itemDeleted' itemEdited' ciTimed (unBI <$> itemLive) userMention itemPriority hasLink currentTs itemTs forwardedByMember showGroupAsSender msgSigned createdAt updatedAt
+         in mkCIMeta itemId content itemText status (unBI <$> sentViaProxy) sharedMsgId itemForwarded itemDeleted' itemEdited' ciTimed (unBI <$> itemLive) userMention itemPriority hasLink window currentTs itemTs forwardedByMember showGroupAsSender msgSigned createdAt updatedAt
       ciTimed :: Maybe CITimed
       ciTimed = timedTTL >>= \ttl -> Just CITimed {ttl, deleteAt = timedDeleteAt}
 
@@ -2785,8 +2790,8 @@ updateGroupChatItemStatus db user@User {userId} g@GroupInfo {groupId} itemId ite
   pure ci {meta = (meta ci) {itemStatus}}
 
 getGroupCIWithReactions :: DB.Connection -> User -> GroupInfo -> ChatItemId -> ExceptT StoreError IO (CChatItem 'CTGroup)
-getGroupCIWithReactions db user g@GroupInfo {groupId} itemId = do
-  liftIO . groupCIWithReactions db g =<< getGroupChatItem db user groupId itemId
+getGroupCIWithReactions db user g itemId = do
+  liftIO . groupCIWithReactions db g =<< getGroupChatItem db user g itemId
 
 groupCIWithReactions :: DB.Connection -> GroupInfo -> CChatItem 'CTGroup -> IO (CChatItem 'CTGroup)
 groupCIWithReactions db g cci@(CChatItem md ci@ChatItem {meta = CIMeta {itemId, itemSharedMsgId}}) = do
@@ -2804,6 +2809,24 @@ updateGroupChatItem db user groupId ci newContent edited live msgId_ = do
   let ci' = updatedChatItem ci newContent edited live Nothing currentTs
   liftIO $ updateGroupChatItem_ db user groupId ci' msgId_
   pure ci'
+
+setChatItemTs :: DB.Connection -> ChatItem c d -> UTCTime -> IO (ChatItem c d)
+setChatItemTs db ci@ChatItem {meta} itemTs = do
+  DB.execute db "UPDATE chat_items SET item_ts = ? WHERE chat_item_id = ?" (itemTs, chatItemId' ci)
+  pure ci {meta = meta {itemTs}}
+
+setGroupChatItemAsNew :: DB.Connection -> ChatItem 'CTGroup 'MDRcv -> UTCTime -> IO (ChatItem 'CTGroup 'MDRcv)
+setGroupChatItemAsNew db ci@ChatItem {meta} itemTs = do
+  DB.execute
+    db
+    "UPDATE chat_items SET item_original_ts = COALESCE(item_original_ts, item_ts), item_ts = ?, item_status = ?, item_viewed = 0 WHERE chat_item_id = ?"
+    (itemTs, CISRcvNew, chatItemId' ci)
+  pure ci {meta = meta {itemTs, itemStatus = CISRcvNew}}
+
+getChatItemOriginalTs :: DB.Connection -> ChatItemId -> ExceptT StoreError IO UTCTime
+getChatItemOriginalTs db itemId =
+  ExceptT . firstRow fromOnly (SEChatItemNotFound itemId) $
+    DB.query db "SELECT COALESCE(item_original_ts, item_ts) FROM chat_items WHERE chat_item_id = ?" (Only itemId)
 
 -- overwrite the stored signed bytes and author when a signed edit is applied, so sendHistory forwards the latest signed content
 updateChatItemSignedMsg :: DB.Connection -> ChatItemId -> Maybe SignedMsg -> Maybe GroupMemberId -> IO ()
@@ -3128,15 +3151,15 @@ getGroupMemberCIBySharedMsgId db user@User {userId} g@GroupInfo {groupId} member
         (GCUserMember, userId, groupId, memberId, sharedMsgId)
   getGroupCIWithReactions db user g itemId
 
-getGroupChatItemsByAgentMsgId :: DB.Connection -> User -> GroupId -> Int64 -> AgentMsgId -> IO [CChatItem 'CTGroup]
-getGroupChatItemsByAgentMsgId db user groupId connId msgId = do
+getGroupChatItemsByAgentMsgId :: DB.Connection -> User -> GroupInfo -> Int64 -> AgentMsgId -> IO [CChatItem 'CTGroup]
+getGroupChatItemsByAgentMsgId db user g connId msgId = do
   itemIds <- getChatItemIdsByAgentMsgId db connId msgId
-  catMaybes <$> mapM (fmap eitherToMaybe . runExceptT . getGroupChatItem db user groupId) itemIds
+  catMaybes <$> mapM (fmap eitherToMaybe . runExceptT . getGroupChatItem db user g) itemIds
 
-getGroupChatItem :: DB.Connection -> User -> Int64 -> ChatItemId -> ExceptT StoreError IO (CChatItem 'CTGroup)
-getGroupChatItem db User {userId, userContactId} groupId itemId = ExceptT $ do
+getGroupChatItem :: DB.Connection -> User -> GroupInfo -> ChatItemId -> ExceptT StoreError IO (CChatItem 'CTGroup)
+getGroupChatItem db User {userId, userContactId} g@GroupInfo {groupId} itemId = ExceptT $ do
   currentTs <- getCurrentTime
-  firstRow' (toGroupChatItem currentTs userContactId) (SEChatItemNotFound itemId) getItem
+  firstRow' (toGroupChatItem currentTs userContactId $ userItemWindow $ GroupChat g Nothing) (SEChatItemNotFound itemId) getItem
   where
     getItem =
       DB.query
@@ -3402,7 +3425,7 @@ getAChatItem db cxt user (ChatRef cType chatId scope) itemId = do
       pure $ AChatItem SCTDirect msgDir (DirectChat ct) ci
     CTGroup -> do
       gInfo <- getGroupInfo db cxt user chatId
-      (CChatItem msgDir ci) <- getGroupChatItem db user chatId itemId
+      (CChatItem msgDir ci) <- getGroupChatItem db user gInfo itemId
       scopeInfo <- mapM (getGroupChatScopeInfo db cxt user gInfo) scope
       pure $ AChatItem SCTGroup msgDir (GroupChat gInfo scopeInfo) ci
     CTLocal -> do

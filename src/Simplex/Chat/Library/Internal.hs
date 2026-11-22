@@ -1842,7 +1842,7 @@ deleteTimedItem user (ChatRef cType chatId scope, itemId) deleteAt = do
       deletions <- deleteDirectCIs user ct [ci]
       toView $ CEvtChatItemsDeleted user deletions True True
     CTGroup -> do
-      (gInfo, ci) <- withStore $ \db -> (,) <$> getGroupInfo db cxt user chatId <*> getGroupChatItem db user chatId itemId
+      (gInfo, ci) <- withStore $ \db -> getGroupInfo db cxt user chatId >>= \g -> (g,) <$> getGroupChatItem db user g itemId
       deletedTs <- liftIO getCurrentTime
       chatScopeInfo <- mapM (getChatScopeInfo cxt user) scope
       deletions <- deleteGroupCIs user gInfo chatScopeInfo [ci] Nothing deletedTs
@@ -3091,6 +3091,9 @@ saveSndChatItems user cd showGroupAsSender itemsData itemTimed live = do
 roundDownToSecond :: UTCTime -> UTCTime
 roundDownToSecond t@UTCTime {utctDayTime} = t {utctDayTime = fromInteger (floor utctDayTime)}
 
+asNewItemTs :: ChatItemTs -> UTCTime -> Maybe ChatItemTs
+asNewItemTs itemTs = mfilter (> itemTs) . Just . addUTCTime 0.999 . roundDownToSecond
+
 saveRcvChatItemNoParse :: (ChatTypeI c, ChatTypeQuotable c) => User -> ChatDirection c 'MDRcv -> RcvMessage -> UTCTime -> CIContent 'MDRcv -> CM (ChatItem c 'MDRcv, ChatInfo c)
 saveRcvChatItemNoParse user cd msg brokerTs = saveRcvChatItem user cd msg brokerTs . ciContentNoParse
 
@@ -3166,7 +3169,7 @@ mkChatItem cd showGroupAsSender ciId content file quotedItem sharedMsgId itemFor
 mkChatItem_ :: (ChatTypeI c, MsgDirectionI d) => ChatDirection c d -> ShowGroupAsSender -> ChatItemId -> CIContent d -> (Text, ParsedMarkdown) -> Maybe (CIFile d) -> Maybe (CIQuote c) -> Maybe SharedMsgId -> Maybe CIForwardedFrom -> Maybe CITimed -> Bool -> Bool -> Int -> Bool -> ChatItemTs -> Maybe GroupMemberId -> Maybe MsgVerified -> UTCTime -> ChatItem c d
 mkChatItem_ cd showGroupAsSender ciId content (itemText, ParsedMarkdown formattedText markdownBlocks) file quotedItem sharedMsgId itemForwarded itemTimed live userMention priority hasLink_ itemTs forwardedByMember msgVerified currentTs =
   let itemStatus = ciCreateStatus content
-      meta = mkCIMeta ciId content itemText itemStatus Nothing sharedMsgId itemForwarded Nothing False itemTimed (justTrue live) userMention priority hasLink_ currentTs itemTs forwardedByMember showGroupAsSender msgVerified currentTs currentTs
+      meta = mkCIMeta ciId content itemText itemStatus Nothing sharedMsgId itemForwarded Nothing False itemTimed (justTrue live) userMention priority hasLink_ (userItemWindow $ toChatInfo cd) currentTs itemTs forwardedByMember showGroupAsSender msgVerified currentTs currentTs
    in ChatItem {chatDir = toCIDirection cd, meta, content, mentions = M.empty, formattedText, markdownBlocks, quotedItem, reactions = [], file}
 
 ciContentHasLink :: CIContent d -> Maybe MarkdownList -> Bool

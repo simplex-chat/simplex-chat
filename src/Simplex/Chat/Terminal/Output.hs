@@ -179,10 +179,10 @@ chatEventNotification t@ChatTerminal {sendNotification} cc = \case
     when (chatDirNtf u cInfo chatDir (isUserMention ci) && all (>= 0) priority) $ do
       whenCurrUser cc u $ setActiveChat t cInfo
       msgNtf cInfo chatDir $ msgText mc formattedText
-  CEvtChatItemUpdated u (AChatItemUpdate _ SMDRcv cInfo ci@ChatItem {chatDir, content = CIRcvMsgContent mc, formattedText, meta = meta@CIMeta {priority}} ChatItem {meta = prevMeta}) ->
+  CEvtChatItemUpdated u (AChatItemUpdate _ SMDRcv cInfo ci@ChatItem {chatDir, content = CIRcvMsgContent mc, formattedText, meta = meta@CIMeta {priority, itemTs}} ChatItem {meta = prevMeta@CIMeta {itemTs = prevItemTs}}) ->
     when (chatDirNtf u cInfo chatDir (isUserMention ci) && all (>= 0) priority) $ do
       whenCurrUser cc u $ setActiveChat t cInfo
-      when (highPriority meta && not (highPriority prevMeta)) $
+      when (highPriority meta && not (highPriority prevMeta) || itemTs /= prevItemTs) $
         msgNtf cInfo chatDir $ msgText mc formattedText
   CEvtContactConnected u ct _ -> when (contactNtf u ct False) $ do
     whenCurrUser cc u $ setActiveContact t ct

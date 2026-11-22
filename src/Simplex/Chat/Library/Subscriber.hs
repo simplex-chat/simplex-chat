@@ -595,7 +595,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
               case event of
                 XMsgNew mc -> newContentMessage ct'' mc msg msgMeta
                 XMsgFileDescr sharedMsgId fileDescr fileExpires fileBadge -> messageFileDescription ct'' sharedMsgId fileDescr fileExpires fileBadge
-                XMsgUpdate sharedMsgId mContent _ ttl live _msgScope _ _ -> messageUpdate ct'' sharedMsgId mContent msg msgMeta ttl live
+                XMsgUpdate sharedMsgId mContent _ ttl live _msgScope _ _ _ -> messageUpdate ct'' sharedMsgId mContent msg msgMeta ttl live
                 XMsgDel sharedMsgId _ _ _ -> messageDelete ct'' sharedMsgId msg msgMeta
                 XMsgReact sharedMsgId _ _ reaction add -> directMsgReaction ct'' sharedMsgId reaction add msg msgMeta
                 -- TODO discontinue XFile
@@ -777,7 +777,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
       where
         sendAutoReply ct mc = \case
           Just UserContactRequest {welcomeSharedMsgId = Just smId} ->
-            void $ sendDirectContactMessage user ct $ XMsgUpdate smId mc M.empty Nothing Nothing Nothing Nothing Nothing
+            void $ sendDirectContactMessage user ct $ XMsgUpdate smId mc M.empty Nothing Nothing Nothing Nothing Nothing Nothing
           _ -> do
             (msg, _) <- sendDirectContactMessage user ct $ XMsgNew $ mcSimple mc
             ci <- saveSndChatItem user (CDDirectSnd ct) msg (CISndMsgContent mc)
@@ -1096,10 +1096,10 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                   MsgContainer {scope, asGroup} = mc
               -- file description is always allowed, to allow sending files to support scope
               XMsgFileDescr sharedMsgId fileDescr fileExpires fileBadge -> groupMessageFileDescription gInfo' (Just m'') sharedMsgId fileDescr fileExpires fileBadge
-              XMsgUpdate sharedMsgId mContent mentions ttl live msgScope asGroup_ priority_ ->
+              XMsgUpdate sharedMsgId mContent mentions ttl live msgScope asGroup_ priority_ asNew_ ->
                 checkSendAsGroup asGroup_ $
                   memberCanSend (Just m'') msgScope $
-                    groupMessageUpdate gInfo' (Just m'') sharedMsgId mContent mentions msgScope msg brokerTs ttl live asGroup_ priority_
+                    groupMessageUpdate gInfo' (Just m'') sharedMsgId mContent mentions msgScope msg brokerTs ttl live asGroup_ priority_ asNew_
               XMsgDel sharedMsgId memberId_ scope_ onlyHistory ->
                 groupMessageDelete gInfo' (Just m'') sharedMsgId memberId_ scope_ onlyHistory msg brokerTs
               XMsgReact sharedMsgId memberId scope_ reaction add -> groupMsgReaction gInfo' m'' sharedMsgId memberId scope_ reaction add msg brokerTs
@@ -1232,7 +1232,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
           processErr gInfo' scopeInfo m' cryptoErr = do
             let e@(mde, n) = agentMsgDecryptError cryptoErr
             ci_ <- withStore $ \db ->
-              getGroupMemberChatItemLast db user groupId (groupMemberId' m')
+              getGroupMemberChatItemLast db user gInfo' (groupMemberId' m')
                 >>= liftIO
                   . mapM (\(ci, content') -> (ci,) <$> updateGroupChatItem db user groupId ci content' False False Nothing)
                   . mdeUpdatedCI e
@@ -1349,7 +1349,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
             _ -> pure Nothing
         sendGroupAutoReply mc = \case
           Just UserContactRequest {welcomeSharedMsgId = Just smId} ->
-            void $ sendGroupMessage' user g [m] $ XMsgUpdate smId mc M.empty Nothing Nothing Nothing Nothing Nothing
+            void $ sendGroupMessage' user g [m] $ XMsgUpdate smId mc M.empty Nothing Nothing Nothing Nothing Nothing Nothing
           _ -> do
             msg <- sendGroupMessage' user g [m] $ XMsgNew $ mcSimple mc
             ci <- saveSndChatItem user (CDGroupSnd gInfo Nothing) msg (CISndMsgContent mc)
@@ -2126,7 +2126,9 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
         updateRcvChatItem = do
           cci <- withStore $ \db -> getDirectChatItemBySharedMsgId db user contactId sharedMsgId
           case cci of
-            CChatItem SMDRcv ci@ChatItem {meta = CIMeta {itemForwarded, itemLive}, content = CIRcvMsgContent oldMC}
+            CChatItem SMDRcv ci@ChatItem {meta = CIMeta {itemTs, itemForwarded, itemLive}, content = CIRcvMsgContent oldMC}
+              | not (withinItemWindow (rcvItemWindow $ contactItemWindow ct sharedMsgId) itemTs brokerTs) ->
+                  messageError "x.msg.update: edit too late"
               | isNothing itemForwarded -> do
                   let changed = mc /= oldMC
                   if changed || fromMaybe False itemLive
@@ -2152,7 +2154,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
           cci@(CChatItem msgDir ci) <- withStore $ \db -> getDirectChatItemBySharedMsgId db user contactId sharedMsgId
           case msgDir of
             SMDRcv
-              | rcvItemDeletable ci brokerTs -> do
+              | rcvItemDeletable (contactItemWindow ct sharedMsgId) (chatItemTs' ci) ci brokerTs -> do
                   deletions <-
                     if featureAllowed SCFFullDelete forContact ct
                       then deleteDirectCIs user ct [cci]
@@ -2161,10 +2163,19 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
               | otherwise -> messageError "x.msg.del: contact attempted invalid message delete"
             SMDSnd -> messageError "x.msg.del: contact attempted invalid message delete"
 
-    rcvItemDeletable :: ChatItem c d -> UTCTime -> Bool
-    rcvItemDeletable ChatItem {meta = CIMeta {itemTs, itemDeleted}} brokerTs =
-      -- 78 hours margin to account for possible sending delay
-      diffUTCTime brokerTs itemTs < (78 * 3600) && isNothing itemDeleted
+    rcvItemDeletable :: Maybe NominalDiffTime -> UTCTime -> ChatItem c d -> UTCTime -> Bool
+    rcvItemDeletable window sinceTs ChatItem {meta = CIMeta {itemDeleted}} ts =
+      withinItemWindow (rcvItemWindow window) sinceTs ts && isNothing itemDeleted
+
+    contactItemWindow :: Contact -> SharedMsgId -> Maybe NominalDiffTime
+    contactItemWindow Contact {preparedContact} sharedMsgId
+      | (preparedContact >>= \PreparedContact {welcomeSharedMsgId} -> welcomeSharedMsgId) == Just sharedMsgId = Nothing
+      | otherwise = directItemWindow
+
+    groupRcvItemWindow :: GroupInfo -> GroupMemberRole -> SharedMsgId -> Maybe NominalDiffTime
+    groupRcvItemWindow gInfo@GroupInfo {preparedGroup} role sharedMsgId
+      | (preparedGroup >>= \PreparedGroup {welcomeSharedMsgId} -> welcomeSharedMsgId) == Just sharedMsgId = Nothing
+      | otherwise = groupItemWindow role gInfo
 
     directMsgReaction :: Contact -> SharedMsgId -> MsgReaction -> Bool -> RcvMessage -> MsgMeta -> CM ()
     directMsgReaction ct sharedMsgId reaction add RcvMessage {msgId} MsgMeta {broker = (_, brokerTs)} = do
@@ -2331,8 +2342,8 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
           reactions <- maybe (pure []) (\sharedMsgId -> withStore' $ \db -> getGroupCIReactions db gInfo' memberId_ sharedMsgId) sharedMsgId_
           groupMsgToView cInfo ci' {reactions}
 
-    groupMessageUpdate :: GroupInfo -> Maybe GroupMember -> SharedMsgId -> MsgContent -> Map MemberName MsgMention -> Maybe MsgScope -> RcvMessage -> UTCTime -> Maybe Int -> Maybe Bool -> Maybe Bool -> Maybe Int -> CM (Maybe DeliveryTaskContext)
-    groupMessageUpdate gInfo@GroupInfo {groupId} m_ sharedMsgId mc mentions msgScope_ msg@RcvMessage {msgId, msgSigned, signedMsg_, signedByGMId_} brokerTs ttl_ live_ asGroup_ priority_
+    groupMessageUpdate :: GroupInfo -> Maybe GroupMember -> SharedMsgId -> MsgContent -> Map MemberName MsgMention -> Maybe MsgScope -> RcvMessage -> UTCTime -> Maybe Int -> Maybe Bool -> Maybe Bool -> Maybe Int -> Maybe Bool -> CM (Maybe DeliveryTaskContext)
+    groupMessageUpdate gInfo@GroupInfo {groupId} m_ sharedMsgId mc mentions msgScope_ msg@RcvMessage {msgId, msgSigned, signedMsg_, signedByGMId_} brokerTs ttl_ live_ asGroup_ priority_ asNew_
       | Just m <- m_, prohibitedSimplexLinks gInfo m mc ft_ =
           messageWarning ("x.msg.update ignored: feature not allowed " <> groupFeatureNameText GFSimplexLinks) $> Nothing
       | otherwise = do
@@ -2375,20 +2386,20 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
         ts@(_, ParsedMarkdown ft_ _) = msgContentTexts mc
         live = fromMaybe False live_
         updateRcvChatItem = do
-          (cci, scopeInfo) <- withStore $ \db -> do
+          (cci, scopeInfo, originalTs) <- withStore $ \db -> do
             cci <-
               if asGroup_ == Just True
                 then getGroupChatItemBySharedMsgId db user gInfo Nothing sharedMsgId
                 else case m_ of
                   Just m -> getGroupMemberCIBySharedMsgId db user gInfo (memberId' m) sharedMsgId
                   Nothing -> getGroupChatItemBySharedMsgId db user gInfo Nothing sharedMsgId
-            (cci,) <$> getGroupChatScopeInfoForItem db cxt user gInfo (cChatItemId cci)
+            (cci,,) <$> getGroupChatScopeInfoForItem db cxt user gInfo (cChatItemId cci) <*> getChatItemOriginalTs db (cChatItemId cci)
           case cci of
             CChatItem SMDRcv ci@ChatItem {chatDir = CIGroupRcv m', meta = CIMeta {itemLive, msgVerified = itemVerified}, content = CIRcvMsgContent oldMC}
-              | isSender m' -> let cd = CDGroupRcv gInfo scopeInfo m' in requireVerifiedEdit cd itemVerified $ updateCI False cd ci scopeInfo oldMC itemLive (Just $ memberId' m')
+              | isSender m' -> let cd = CDGroupRcv gInfo scopeInfo m' in requireVerifiedEdit cd itemVerified $ updateCI False cd ci scopeInfo originalTs oldMC itemLive (Just $ memberId' m')
               | otherwise -> messageError "x.msg.update: group member attempted to update a message of another member" $> Nothing
             CChatItem SMDRcv ci@ChatItem {chatDir = CIChannelRcv, meta = CIMeta {itemLive, msgVerified = itemVerified}, content = CIRcvMsgContent oldMC}
-              | maybe True (\m -> memberRole' m == GROwner) m_ -> let cd = CDChannelRcv gInfo scopeInfo in requireVerifiedEdit cd itemVerified $ updateCI True cd ci scopeInfo oldMC itemLive Nothing
+              | maybe True (\m -> memberRole' m == GROwner) m_ -> let cd = CDChannelRcv gInfo scopeInfo in requireVerifiedEdit cd itemVerified $ updateCI True cd ci scopeInfo originalTs oldMC itemLive Nothing
               | otherwise -> messageError "x.msg.update: member attempted to update channel message" $> Nothing
             _ -> messageError "x.msg.update: invalid message update" $> Nothing
           where
@@ -2402,50 +2413,73 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                     Just MSSSignedNoKey -> logWarn "x.msg.update: unverified update of a signed item (no key to verify), dropped" $> Nothing
                     Nothing -> createInternalChatItem user cd (CIRcvGroupEvent RGEMsgBadSignature) (Just brokerTs) $> Nothing
               | otherwise = action
-        updateCI :: ShowGroupAsSender -> ChatDirection 'CTGroup 'MDRcv -> ChatItem 'CTGroup 'MDRcv -> Maybe GroupChatScopeInfo -> MsgContent -> Maybe Bool -> Maybe MemberId -> CM (Maybe DeliveryTaskContext)
-        updateCI showGroupAsSender cd ci@ChatItem {meta = meta@CIMeta {itemDeleted}} scopeInfo oldMC itemLive memberId = do
-          let changed = mc /= oldMC
-              requested = requestsHighPriority priority_
-              raise = requested && not (highPriority meta) && isNothing scopeInfo && isNothing itemDeleted && rcvPriorityAllowed cd
-              ciRaised = if raise then ci {meta = meta {priority = Just 1, userMention = True}} else ci
-          if changed || fromMaybe False itemLive || requested
-            then do
-              ci' <- withStore' $ \db -> do
-                when changed $
-                  addInitialAndNewCIVersions db (chatItemId' ci) (chatItemTs' ci, oldMC) (brokerTs, mc)
-                reactions <- getGroupCIReactions db gInfo memberId sharedMsgId
-                let edited = changed && itemLive /= Just True
-                ciMentions <- getRcvCIMentions db user gInfo ft_ mentions
-                ci' <- updateGroupChatItem db user groupId ciRaised {reactions} content edited live $ Just msgId
-                updateChatItemSignedMsg db (chatItemId' ci) signedMsg_ signedByGMId_
-                updateGroupCIMentions db gInfo ci' ciMentions >>= updateGroupCIUserMention db cxt user gInfo scopeInfo
-              toView $ CEvtChatItemUpdated user (AChatItemUpdate SCTGroup SMDRcv (GroupChat gInfo scopeInfo) ci' ci)
-              startUpdatedTimedItemThread user (ChatRef CTGroup groupId $ toChatScope <$> scopeInfo) ci ci'
-              pure $ Just $ infoToDeliveryContext gInfo scopeInfo showGroupAsSender
-            else do
-              toView $ CEvtChatItemNotChanged user (AChatItem SCTGroup SMDRcv (GroupChat gInfo scopeInfo) ci)
-              pure Nothing
+        updateCI :: ShowGroupAsSender -> ChatDirection 'CTGroup 'MDRcv -> ChatItem 'CTGroup 'MDRcv -> Maybe GroupChatScopeInfo -> UTCTime -> MsgContent -> Maybe Bool -> Maybe MemberId -> CM (Maybe DeliveryTaskContext)
+        updateCI showGroupAsSender cd ci@ChatItem {meta = meta@CIMeta {itemDeleted}} scopeInfo originalTs oldMC itemLive memberId
+          | not (withinItemWindow (rcvItemWindow $ groupRcvItemWindow gInfo (maybe GROwner memberRole' itemMember_) sharedMsgId) originalTs brokerTs) =
+              messageError "x.msg.update: edit too late" $> Nothing
+          | otherwise = do
+              let changed = mc /= oldMC
+                  requested = requestsHighPriority priority_
+                  asNew = asNew_ == Just True
+                  newTs_ = if asNew && isNothing scopeInfo && isNothing itemDeleted && not (maybe False memberBlocked itemMember_) then asNewItemTs (chatItemTs' ci) brokerTs else Nothing
+                  raise = isNothing newTs_ && requested && not (highPriority meta) && isNothing scopeInfo && isNothing itemDeleted && rcvPriorityAllowed cd
+                  ciUpdated = case newTs_ of
+                    Just _ -> ci {meta = meta {priority = mfilter (/= 0) $ Just newPriority}}
+                    Nothing
+                      | raise -> ci {meta = meta {priority = Just 1, userMention = True}}
+                      | otherwise -> ci
+              if changed || fromMaybe False itemLive || requested || asNew
+                then do
+                  (cInfo, ci') <- withStore' $ \db -> do
+                    when changed $
+                      addInitialAndNewCIVersions db (chatItemId' ci) (chatItemTs' ci, oldMC) (brokerTs, mc)
+                    reactions <- getGroupCIReactions db gInfo memberId sharedMsgId
+                    let edited = changed && itemLive /= Just True
+                    ciMentions <- getRcvCIMentions db user gInfo ft_ mentions
+                    ci' <- updateGroupChatItem db user groupId ciUpdated {reactions} content edited live $ Just msgId
+                    updateChatItemSignedMsg db (chatItemId' ci) signedMsg_ signedByGMId_
+                    ci'' <- updateGroupCIMentions db gInfo ci' ciMentions >>= updateGroupCIUserMention db cxt user gInfo scopeInfo
+                    case newTs_ of
+                      Just newTs -> do
+                        currentTs <- getCurrentTime
+                        cInfo <- updateChatTsStats db cxt user cd currentTs Nothing
+                        (cInfo,) <$> setGroupChatItemAsNew db ci'' newTs
+                      Nothing -> pure (GroupChat gInfo scopeInfo, ci'')
+                  toView $ CEvtChatItemUpdated user (AChatItemUpdate SCTGroup SMDRcv cInfo ci' ci)
+                  startUpdatedTimedItemThread user (ChatRef CTGroup groupId $ toChatScope <$> scopeInfo) ci ci'
+                  pure $ Just $ infoToDeliveryContext gInfo scopeInfo showGroupAsSender
+                else do
+                  toView $ CEvtChatItemNotChanged user (AChatItem SCTGroup SMDRcv (GroupChat gInfo scopeInfo) ci)
+                  pure Nothing
+          where
+            itemMember_ = chatItemRcvFromMember ci
+            newPriority = case maybe 0 limitPriority priority_ of
+              p | p > 0 && not (rcvPriorityAllowed cd) -> 0
+              p -> p
 
     groupMessageDelete :: GroupInfo -> Maybe GroupMember -> SharedMsgId -> Maybe MemberId -> Maybe MsgScope -> Bool -> RcvMessage -> UTCTime -> CM (Maybe DeliveryTaskContext)
     groupMessageDelete gInfo@GroupInfo {membership} m_ sharedMsgId sndMemberId_ scope_ onlyHistory rcvMsg brokerTs =
       findItem >>= \case
-        Right cci@(CChatItem _ ci@ChatItem {chatDir}) -> requireVerifiedDelete cci $ case (chatDir, m_) of
-          (CIGroupRcv mem, Just m@GroupMember {memberId}) ->
+        Right (cci@(CChatItem _ ci@ChatItem {chatDir}), originalTs) -> requireVerifiedDelete cci $ case (chatDir, m_) of
+          (CIGroupRcv mem, Just m@GroupMember {memberId, memberRole}) ->
             let msgMemberId = fromMaybe memberId sndMemberId_
                 isAuthor = sameMemberId memberId mem
+                window = groupRcvItemWindow gInfo memberRole sharedMsgId
             in case sndMemberId_ of
               -- regular deletion
               Nothing
                 | isAuthor && onlyHistory && publicGroupEditor gInfo m ->
                     delete cci False Nothing $> Nothing
-                | isAuthor && not onlyHistory && rcvItemDeletable ci brokerTs ->
+                | isAuthor && not onlyHistory && rcvItemDeletable window originalTs ci brokerTs ->
                     delete cci False Nothing
                 | otherwise ->
                     messageError "x.msg.del: member attempted invalid message delete" $> Nothing
               -- moderation (not limited by time)
               Just _
-                | isAuthor && msgMemberId == memberId ->
+                | isAuthor && msgMemberId == memberId && (memberRole >= GRModerator || withinItemWindow (rcvItemWindow window) originalTs brokerTs) ->
                     delete cci False (Just m)
+                | isAuthor && msgMemberId == memberId ->
+                    messageError "x.msg.del: member attempted invalid message delete" $> Nothing
                 | otherwise -> moderate m mem cci
           (CIChannelRcv, _)
             | isNothing sndMemberId_ && isOwner ->
@@ -2481,9 +2515,10 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
         RcvMessage {msgId, msgSigned} = rcvMsg
         findItem = do
           let tryMemberLookup mId =
-                withStore' (\db -> runExceptT $ getGroupMemberCIBySharedMsgId db user gInfo mId sharedMsgId)
+                withStore' (\db -> runExceptT $ getGroupMemberCIBySharedMsgId db user gInfo mId sharedMsgId >>= withOriginalTs db)
               tryChannelLookup =
-                withStore' (\db -> runExceptT $ getGroupChatItemBySharedMsgId db user gInfo Nothing sharedMsgId)
+                withStore' (\db -> runExceptT $ getGroupChatItemBySharedMsgId db user gInfo Nothing sharedMsgId >>= withOriginalTs db)
+              withOriginalTs db cci = (cci,) <$> getChatItemOriginalTs db (cChatItemId cci)
           case sndMemberId_ of
             Just sId -> tryMemberLookup sId
             Nothing -> case m_ of
@@ -4076,8 +4111,8 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                 MsgContainer {scope} = mc
             -- file description is always allowed, to allow sending files to support scope
             XMsgFileDescr sharedMsgId fileDescr fileExpires fileBadge -> void $ groupMessageFileDescription gInfo author_ sharedMsgId fileDescr fileExpires fileBadge
-            XMsgUpdate sharedMsgId mContent mentions ttl live msgScope asGroup_ priority_ ->
-              void $ memberCanSend author_ msgScope $ groupMessageUpdate gInfo author_ sharedMsgId mContent mentions msgScope rcvMsg msgTs ttl live asGroup_ priority_
+            XMsgUpdate sharedMsgId mContent mentions ttl live msgScope asGroup_ priority_ asNew_ ->
+              void $ memberCanSend author_ msgScope $ groupMessageUpdate gInfo author_ sharedMsgId mContent mentions msgScope rcvMsg msgTs ttl live asGroup_ priority_ asNew_
             XMsgDel sharedMsgId memId scope_ _ -> void $ groupMessageDelete gInfo author_ sharedMsgId memId scope_ False rcvMsg msgTs
             XMsgReact sharedMsgId memId scope_ reaction add -> withAuthor XMsgReact_ $ \author -> void $ groupMsgReaction gInfo author sharedMsgId memId scope_ reaction add rcvMsg msgTs
             XFileCancel sharedMsgId -> void $ xFileCancelGroup gInfo author_ sharedMsgId
@@ -4177,8 +4212,8 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
         _ -> pure False
 
     updateGroupItemsStatus :: DB.Connection -> GroupInfo -> GroupMember -> Connection -> AgentMsgId -> GroupSndStatus -> Maybe Bool -> ExceptT StoreError IO [AChatItem]
-    updateGroupItemsStatus db gInfo@GroupInfo {groupId} GroupMember {groupMemberId} Connection {connId} msgId newMemStatus viaProxy_ = do
-      items <- liftIO $ getGroupChatItemsByAgentMsgId db user groupId connId msgId
+    updateGroupItemsStatus db gInfo GroupMember {groupMemberId} Connection {connId} msgId newMemStatus viaProxy_ = do
+      items <- liftIO $ getGroupChatItemsByAgentMsgId db user gInfo connId msgId
       cis <- catMaybes <$> mapM updateItem items
       -- SENT and RCVD events are received for messages that may be batched in single scope,
       -- so we can look up scope of first item
