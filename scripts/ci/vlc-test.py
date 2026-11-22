@@ -3,17 +3,24 @@
 import argparse
 import ctypes
 import os
+import re
 import subprocess
 import sys
 import tempfile
 import time
-from ctypes import CFUNCTYPE, POINTER, Structure, byref, c_char, c_char_p, c_int, c_int64, c_uint, c_uint32, c_void_p
+from ctypes import CFUNCTYPE, POINTER, Structure, byref, c_char, c_char_p, c_float, c_int, c_int64, c_size_t, c_uint, c_uint32, c_void_p
 from dataclasses import dataclass
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 ALLOWLIST = ROOT / "scripts/desktop/vlc-plugins.txt"
 APP_SOUNDS = ROOT / "apps/multiplatform/common/src/desktopMain/resources/media"
+APP_PLAYER = ROOT / "apps/multiplatform/common/src/desktopMain/kotlin/chat/simplex/common/platform/RecAndPlay.desktop.kt"
+APP_DEMUX = re.search(r'const val VLC_DEMUX = "(--demux=([^"]+))"', APP_PLAYER.read_text())
+PREVIEW_ARGS = ("--avcodec-hw=none", APP_DEMUX[1])
+PLAYER_ARGS = (APP_DEMUX[1],)
+ALLOWED_MODULES = {"demux": {"main", *APP_DEMUX[2].split(",")}, "stream": {"main", "filesystem", "cache_read", "skiptags"}}
+LOG_WARNING = 3
 VOICE_SOUT = "#transcode{vcodec=none,acodec=mp4a,ab=32,channels=1,samplerate=16000}:std{access=file,mux=mp4,dst=%s}"
 VOICE_CHANNELS = 1
 VOICE_RATE = 16000
@@ -42,6 +49,7 @@ class Media:
     portrait: bool
     ffmpeg: tuple[str, ...]
     copy_of: str | None = None
+    played: bool = True
 
 
 GENERATED = (
@@ -58,6 +66,7 @@ GENERATED = (
     Media("mpeg4.avi", True, False, ("-c:v", "mpeg4", "-pix_fmt", "yuv420p", "-c:a", "libmp3lame", *STEREO)),
     Media("mpeg1.mpg", True, False, ("-c:v", "mpeg1video", "-pix_fmt", "yuv420p", "-c:a", "mp2", *STEREO)),
     Media("mpeg2.mpeg", True, False, ("-f", "vob", "-c:v", "mpeg2video", "-pix_fmt", "yuv420p", "-c:a", "mp2", *STEREO)),
+    Media("other.flv", True, False, (*H264, "-c:a", "aac", *STEREO), played=False),
 )
 SOUNDS = tuple(Media(sound.name, False, False, ()) for sound in sorted(APP_SOUNDS.glob("*.mp3")))
 
@@ -110,8 +119,31 @@ class Parsed:
 class Playback:
     state: int
     tracks: list[TrackInfo]
+    decoded_audio: int
+    played_audio: int
 
 
+class Stats(Structure):
+    _fields_ = [
+        ("read_bytes", c_int),
+        ("input_bitrate", c_float),
+        ("demux_read_bytes", c_int),
+        ("demux_bitrate", c_float),
+        ("demux_corrupted", c_int),
+        ("demux_discontinuity", c_int),
+        ("decoded_video", c_int),
+        ("decoded_audio", c_int),
+        ("displayed_pictures", c_int),
+        ("lost_pictures", c_int),
+        ("played_abuffers", c_int),
+        ("lost_abuffers", c_int),
+        ("sent_packets", c_int),
+        ("sent_bytes", c_int),
+        ("send_bitrate", c_float),
+    ]
+
+
+LOG = CFUNCTYPE(None, c_void_p, c_int, c_void_p, c_char_p, c_void_p)
 LOCK = CFUNCTYPE(c_void_p, c_void_p, POINTER(c_void_p))
 UNLOCK = CFUNCTYPE(None, c_void_p, c_void_p, POINTER(c_void_p))
 DISPLAY = CFUNCTYPE(None, c_void_p, c_void_p)
@@ -122,6 +154,11 @@ SIGNATURES = {
     "libvlc_get_version": (c_char_p, []),
     "libvlc_new": (c_void_p, [c_int, POINTER(c_char_p)]),
     "libvlc_release": (None, [c_void_p]),
+    "libvlc_log_set": (None, [c_void_p, LOG, c_void_p]),
+    "libvlc_log_unset": (None, [c_void_p]),
+    "libvlc_log_get_context": (None, [c_void_p, POINTER(c_char_p), POINTER(c_char_p), POINTER(c_uint)]),
+    "libvlc_log_get_object": (None, [c_void_p, POINTER(c_char_p), POINTER(c_char_p), POINTER(c_size_t)]),
+    "libvlc_media_get_stats": (c_int, [c_void_p, POINTER(Stats)]),
     "libvlc_media_new_path": (c_void_p, [c_void_p, c_char_p]),
     "libvlc_media_add_option": (None, [c_void_p, c_char_p]),
     "libvlc_media_parse_with_options": (c_int, [c_void_p, c_int, c_int]),
@@ -235,12 +272,36 @@ class Frames:
 
 
 class Player:
-    def __init__(self, libvlc: ctypes.CDLL) -> None:
+    def __init__(self, libvlc: ctypes.CDLL, args: tuple[str, ...]) -> None:
         self.libvlc = libvlc
-        args = (c_char_p * 2)(b"--avcodec-hw=none", b"--verbose=1")
-        self.instance = libvlc.libvlc_new(len(args), args)
+        self.modules: set[tuple[str, str]] = set()
+        argv = (c_char_p * len(args))(*(arg.encode() for arg in args))
+        self.instance = libvlc.libvlc_new(len(args), argv)
         if not self.instance:
-            raise RuntimeError("libvlc_new failed")
+            raise RuntimeError(f"libvlc_new failed with {' '.join(args)}")
+        self.log = LOG(self.on_log)
+        libvlc.libvlc_log_set(self.instance, self.log, None)
+
+    def on_log(self, data, level, context, text, args) -> None:
+        module, file, object_type = c_char_p(), c_char_p(), c_char_p()
+        line = c_uint()
+        self.libvlc.libvlc_log_get_context(context, byref(module), byref(file), byref(line))
+        self.libvlc.libvlc_log_get_object(context, byref(object_type), None, None)
+        names = ((object_type.value or b"").decode(), (module.value or b"").decode())
+        self.modules.add(names)
+        if level >= LOG_WARNING:
+            print(f"[{names[1]} {names[0]}] {(text or b'').decode(errors='replace').strip()}", flush=True)
+
+    def release(self) -> None:
+        self.libvlc.libvlc_log_unset(self.instance)
+        self.libvlc.libvlc_release(self.instance)
+
+    def unexpected_modules(self) -> list[str]:
+        return [
+            f"{object_type} module {module} outside {sorted(ALLOWED_MODULES[object_type])}"
+            for object_type, module in sorted(self.modules)
+            if object_type in ALLOWED_MODULES and module not in ALLOWED_MODULES[object_type]
+        ]
 
     def media(self, path: Path, *options: str) -> int:
         media = self.libvlc.libvlc_media_new_path(self.instance, str(path).encode())
@@ -287,7 +348,9 @@ class Player:
         while state not in (STATE_ENDED, STATE_ERROR) and time.monotonic() < deadline and (frames is None or frames.count < FRAMES):
             time.sleep(POLL_SECONDS)
             state = self.libvlc.libvlc_media_player_get_state(player)
-        playback = Playback(state, self.tracks(media))
+        stats = Stats()
+        self.libvlc.libvlc_media_get_stats(media, byref(stats))
+        playback = Playback(state, self.tracks(media), stats.decoded_audio, stats.played_abuffers)
         self.libvlc.libvlc_media_player_stop(player)
         self.libvlc.libvlc_media_player_release(player)
         self.libvlc.libvlc_media_release(media)
@@ -309,6 +372,10 @@ def check_media(player: Player, path: Path, media: Media, out_dir: Path) -> list
     failures = []
     parsed = player.parse(path)
     print(f"{media.name}: parsed with status {parsed.status}, duration {parsed.duration} ms, tracks {parsed.tracks}", flush=True)
+    if not media.played:
+        shown, frames = player.show_frames(path)
+        print(f"{media.name}: {frames.count} frames, state {shown.state}, tracks {shown.tracks}", flush=True)
+        return failures
     if parsed.status != PARSED_DONE:
         failures.append(f"{media.name}: parse status {parsed.status}")
     tracks = list(parsed.tracks)
@@ -347,25 +414,59 @@ def print_plugin_load_errors(vlc_dir: Path) -> None:
                 print(f"cannot load {file.relative_to(vlc_dir)}: {error}", flush=True)
 
 
-def check(vlc_dir: Path, media_dir: Path) -> int:
-    failures = check_bundle(vlc_dir)
+def check_played_audio(player: Player, path: Path) -> list[str]:
+    played = player.play(player.media(path))
+    print(f"{path.name}: state {played.state}, {played.decoded_audio} audio blocks decoded, {played.played_audio} played", flush=True)
+    if played.state != STATE_ENDED or played.decoded_audio <= 0 or played.played_audio <= 0:
+        return [f"{path.name}: state {played.state}, {played.decoded_audio} audio blocks decoded, {played.played_audio} played"]
+    return []
+
+
+def report(failures: list[str]) -> None:
+    for failure in failures:
+        print(f"FAIL {failure}", flush=True)
+
+
+def start_player(vlc_dir: Path, args: tuple[str, ...]) -> Player:
     libvlc = load_libvlc(vlc_dir)
     print(f"libVLC {libvlc.libvlc_get_version().decode()}", flush=True)
     try:
-        player = Player(libvlc)
+        return Player(libvlc, args)
     except RuntimeError:
         print_plugin_load_errors(vlc_dir)
         raise
+
+
+def check(vlc_dir: Path, media_dir: Path) -> list[str]:
+    player = start_player(vlc_dir, PREVIEW_ARGS)
+    failures = []
     with tempfile.TemporaryDirectory() as out:
         for media in GENERATED:
             failures += check_media(player, media_dir / media.name, media, Path(out))
         for sound in SOUNDS:
             failures += check_media(player, APP_SOUNDS / sound.name, sound, Path(out))
-    libvlc.libvlc_release(player.instance)
-    for failure in failures:
-        print(f"FAIL {failure}", flush=True)
-    print(f"{len(GENERATED) + len(SOUNDS)} files, {len(failures)} failures", flush=True)
-    return 1 if failures else 0
+    failures += player.unexpected_modules()
+    player.release()
+    return failures
+
+
+def check_audio(vlc_dir: Path, media_dir: Path) -> list[str]:
+    player = start_player(vlc_dir, PLAYER_ARGS)
+    failures = []
+    for path in [media_dir / media.name for media in GENERATED if not media.video] + [APP_SOUNDS / sound.name for sound in SOUNDS]:
+        failures += check_played_audio(player, path)
+    failures += player.unexpected_modules()
+    player.release()
+    return failures
+
+
+def run_checks(command: str, vlc_dir: Path, media_dir: Path) -> int:
+    failures = check_bundle(vlc_dir)
+    report(failures)
+    played = check(vlc_dir, media_dir) if command == "check" else check_audio(vlc_dir, media_dir)
+    report(played)
+    print(f"{len(failures) + len(played)} failures", flush=True)
+    return 1 if failures or played else 0
 
 
 def main() -> int:
@@ -373,14 +474,18 @@ def main() -> int:
     commands = parser.add_subparsers(dest="command", required=True)
     media = commands.add_parser("media", help="make the test media with FFmpeg")
     media.add_argument("dir", type=Path)
-    bundle = commands.add_parser("check", help="check the plugins of a VLC bundle and play the test media with it")
-    bundle.add_argument("vlc_dir", type=Path)
-    bundle.add_argument("media_dir", type=Path)
+    for command, description in (
+        ("check", "check the plugins of a VLC bundle, show the test media in frame callbacks and record their audio as voice messages"),
+        ("audio", "check the plugins of a VLC bundle and play the audio test media and the call sounds on the system audio output"),
+    ):
+        bundle = commands.add_parser(command, help=description)
+        bundle.add_argument("vlc_dir", type=Path)
+        bundle.add_argument("media_dir", type=Path)
     args = parser.parse_args()
     if args.command == "media":
         make_media(args.dir)
         return 0
-    return check(args.vlc_dir.resolve(), args.media_dir.resolve())
+    return run_checks(args.command, args.vlc_dir.resolve(), args.media_dir.resolve())
 
 
 if __name__ == "__main__":

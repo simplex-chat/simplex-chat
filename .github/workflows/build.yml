@@ -37,6 +37,7 @@ on:
       - "scripts/ci/package-tests.sh"
       - "scripts/desktop/*vlc*"
       - "scripts/ci/vlc-test.py"
+      - "apps/multiplatform/common/src/desktopMain/kotlin/chat/simplex/common/platform/RecAndPlay.desktop.kt"
       - "apps/simplex-badge-service/web/**"
       - "scripts/ci/packages_release.py"
       - "scripts/ci/test_packages_release.py"
@@ -1443,15 +1444,27 @@ jobs:
           - os: ubuntu-24.04
             libs: linux-x86_64
             prepare: scripts/desktop/prepare-vlc-linux.sh
+            checks: check audio
+          - os: ubuntu-24.04-arm
+            libs: linux-aarch64
+            prepare: scripts/desktop/prepare-vlc-linux.sh
+            checks: check audio
+          - os: ubuntu-22.04
+            libs: linux-x86_64
+            prepare: scripts/desktop/prepare-vlc-linux.sh
+            checks: audio
           - os: macos-latest
             libs: mac-aarch64
             prepare: scripts/desktop/prepare-vlc-mac.sh
+            checks: check
           - os: macos-15-intel
             libs: mac-x86_64
             prepare: scripts/desktop/prepare-vlc-mac.sh
+            checks: check
           - os: windows-latest
             libs: windows-x86_64
             prepare: scripts/desktop/prepare-vlc-windows.sh
+            checks: check
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
@@ -1476,11 +1489,12 @@ jobs:
           mkdir -p apps/multiplatform/common/src/commonMain/cpp/desktop/libs/${{ matrix.libs }}
           ${{ matrix.prepare }}
 
-      - name: Install the desktop libraries that VLC takes from the system
+      - name: Install the desktop libraries that VLC takes from the system and start PulseAudio
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y libdrm2 libx11-6 libx11-xcb1 libxcb1 libxcb-dri3-0 libfontconfig1 libfreetype6 libfribidi0 libharfbuzz0b libegl1 libgl1
+          sudo apt-get install -y libdrm2 libx11-6 libx11-xcb1 libxcb1 libxcb-dri3-0 libfontconfig1 libfreetype6 libfribidi0 libharfbuzz0b libegl1 libgl1 pulseaudio
+          pulseaudio --start --exit-idle-time=-1
 
       - name: Setup Python
         uses: actions/setup-python@v7
@@ -1495,7 +1509,10 @@ jobs:
 
       - name: Test VLC
         shell: bash
-        run: python scripts/ci/vlc-test.py check apps/multiplatform/common/src/commonMain/cpp/desktop/libs/${{ matrix.libs }}/vlc "$RUNNER_TEMP/vlc-media"
+        run: |
+          for command in ${{ matrix.checks }}; do
+            python scripts/ci/vlc-test.py "$command" apps/multiplatform/common/src/commonMain/cpp/desktop/libs/${{ matrix.libs }}/vlc "$RUNNER_TEMP/vlc-media"
+          done
 
 # =========================
 #      Windows Build

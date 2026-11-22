@@ -492,6 +492,9 @@ class ChangesTest(GitRepoTest):
     def test_vlc_test_change_tests_only_the_vlc_bundles(self):
         self.assertEqual(self.builds("scripts/ci/vlc-test.py"), {"vlc"})
 
+    def test_desktop_player_change_builds_kotlin_and_tests_the_vlc_bundles(self):
+        self.assertEqual(self.builds("apps/multiplatform/common/src/desktopMain/kotlin/chat/simplex/common/platform/RecAndPlay.desktop.kt"), {"kotlin", "vlc"})
+
     def test_other_desktop_script_does_not_test_the_vlc_bundles(self):
         self.assertEqual(self.builds("scripts/desktop/build-lib-linux.sh"), {"haskell"})
 
