@@ -248,12 +248,9 @@ decodeChatMessageTest = describe "Chat message encoding/decoding" $ do
     map (eventHasNotification . msgNew) priorities `shouldBe` [False, True, True]
     map (allowedPriority False) priorities `shouldBe` [MPSilent, MPNormal, MPNormal]
     map (allowedPriority True) priorities `shouldBe` priorities
-  it "x.msg.update priority is limited to low, normal and high" $ do
+  it "x.msg.update priority sets no notification flag" $ do
     let msgUpdate p = XMsgUpdate (SharedMsgId "\1\2\3\4") (MCText "hello") [] Nothing Nothing Nothing Nothing p Nothing
-    map (eventHasNotification . msgUpdate) [MPSilent, MPNormal, MPHigh] `shouldBe` [False, False, True]
-  it "x.msg.update as new has the priority of a new message" $ do
-    let msgUpdate p = XMsgUpdate (SharedMsgId "\1\2\3\4") (MCText "hello") [] Nothing Nothing Nothing Nothing p (Just True)
-    map (eventHasNotification . msgUpdate) [MPSilent, MPNormal, MPHigh] `shouldBe` [False, True, True]
+    map (eventHasNotification . msgUpdate) [MPSilent, MPNormal, MPHigh] `shouldBe` [False, False, False]
   it "x.msg.new simple link" $
     "{\"v\":\"9\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"https://simplex.chat\",\"type\":\"link\",\"preview\":{\"description\":\"SimpleX Chat\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgA\",\"title\":\"SimpleX Chat\",\"uri\":\"https://simplex.chat\"}}}}"
       #==# XMsgNew (mcSimple (MCLink "https://simplex.chat" $ LinkPreview {uri = "https://simplex.chat", title = "SimpleX Chat", description = "SimpleX Chat", image = ImageData "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgA", content = Nothing}))

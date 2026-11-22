@@ -865,9 +865,8 @@ processChatCommand cxt nm = \case
                   chatScopeInfo <- mapM (getChatScopeInfo cxt user) scope
                   recipients <- getGroupRecipients cxt user gInfo chatScopeInfo groupKnockingVersion
                   let changed = mc /= oldMC
-                      mainScope = isNothing scope && isNothing itemScopeInfo
-                      newTs_ = if asNew && mainScope then asNewItemTs (chatItemTs' ci) currentTs else Nothing
-                      priority' = allowedPriority (mainScope && groupFeatureUserAllowed SGFMsgPriority gInfo) priority_
+                      newTs_ = if asNew && isNothing scope && isNothing itemScopeInfo then asNewItemTs (chatItemTs' ci) currentTs else Nothing
+                      priority' = allowedPriority (groupFeatureUserAllowed SGFMsgPriority gInfo) priority_
                   if changed || fromMaybe False itemLive || priority' /= priority || isJust newTs_
                     then do
                       ciMentions <- withFastStore $ \db -> getCIMentions db user gInfo ft_ mentions
@@ -875,7 +874,8 @@ processChatCommand cxt nm = \case
                           mentions' = M.map (\CIMention {memberId} -> MsgMention {memberId}) ciMentions
                           event = XMsgUpdate itemSharedMId mc mentions' (ttl' <$> itemTimed) (justTrue . (live &&) =<< itemLive) msgScope (Just showGroupAsSender) priority' (justTrue $ isJust newTs_)
                           reuseSign = case msgVerified of Just (MVSigned _) -> True; _ -> False
-                      SndMessage {msgId} <- sendGroupMessage user g scope recipients reuseSign event
+                          msgFlags = MsgFlags {notification = priority' == MPHigh && priority /= MPHigh}
+                      SndMessage {msgId} <- sendGroupMessageFlags user g scope recipients reuseSign msgFlags event
                       ci' <- withFastStore' $ \db -> do
                         when changed $
                           addInitialAndNewCIVersions db itemId (chatItemTs' ci, oldMC) (currentTs, mc)
@@ -4298,7 +4298,7 @@ processChatCommand cxt nm = \case
       let msgMemIds = itemsMsgMemIds gInfo items
           -- moderation deletes always sign (attributable; avoids the catch-up-moderator divergence)
           signedEvents = L.nonEmpty $ map (\(msgId, memId) -> let evt = XMsgDel msgId memId (toMsgScope gInfo <$> chatScopeInfo) False in (groupMsgSigning True g evt, evt)) msgMemIds
-      mapM_ (sendGroupSignedMessages_ gInfo ms) signedEvents
+      mapM_ (sendGroupSignedMessages_ gInfo ms MsgFlags {notification = hasNotification XMsgDel_}) signedEvents
       delGroupChatItems user gInfo chatScopeInfo items True
       where
         assertDeletable :: GroupInfo -> [CChatItem 'CTGroup] -> CM ()

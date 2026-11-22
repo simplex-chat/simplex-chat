@@ -1081,7 +1081,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
           processEvent gInfo' m' verifiedMsg = do
             cc <- ask
             (m'', conn', msg@RcvMessage {msgId, sharedMsgId_, chatMsgEvent = ACME _ event}) <- saveGroupRcvMsg user groupId m' conn msgMeta verifiedMsg
-            let ctx js = DeliveryTaskContext js False
+            let ctx js = DeliveryTaskContext js False False
                 checkSendAsGroup :: Maybe Bool -> CM (Maybe DeliveryTaskContext) -> CM (Maybe DeliveryTaskContext)
                 checkSendAsGroup asGroup_ a
                   | asGroup_ == Just True && memberRole' m'' < GROwner =
@@ -1124,7 +1124,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                 SJson -> fmap ctx <$> xGrpMemDel (GIK gInfo' gks) Nothing m'' memId withMessages rosterVer verifiedMsg msg brokerTs False
                 SBinary -> pure Nothing
               XGrpLeave -> fmap ctx <$> xGrpLeave (GIK gInfo' gks) m'' msg brokerTs
-              XGrpDel -> Just (DeliveryTaskContext (DJSGroup {jobSpec = DJRelayRemoved}) False) <$ xGrpDel gInfo' m'' msg brokerTs
+              XGrpDel -> Just (DeliveryTaskContext (DJSGroup {jobSpec = DJRelayRemoved}) False False) <$ xGrpDel gInfo' m'' msg brokerTs
               XGrpInfo p' -> fmap ctx <$> xGrpInfo (GIK gInfo' gks) m'' p' msg brokerTs
               XGrpPrefs ps' -> fmap ctx <$> xGrpPrefs gInfo' m'' ps' msg
               XGrpRoster gr -> fmap ctx <$> xGrpRoster gInfo' m'' m'' gr verifiedMsg sharedMsgId_ brokerTs
@@ -2211,11 +2211,11 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                       djScope <- withStore $ \db -> do
                         liftIO $ setGroupReaction db g m itemMemberId sharedMsgId False reaction add msgId brokerTs
                         Just . DJSMemberSupport <$> getScopeMemberIdViaMemberId db user g m scopeMemberId
-                      pure $ fmap (\js -> DeliveryTaskContext js False) djScope
+                      pure $ fmap (\js -> DeliveryTaskContext js False False) djScope
                   | otherwise -> pure Nothing
                 Nothing -> do
                   withStore' $ \db -> setGroupReaction db g m itemMemberId sharedMsgId False reaction add msgId brokerTs
-                  pure $ Just $ DeliveryTaskContext (DJSGroup {jobSpec = DJDeliveryJob {includePending = False}}) False
+                  pure $ Just $ DeliveryTaskContext (DJSGroup {jobSpec = DJDeliveryJob {includePending = False}}) False False
             else pure Nothing
       | otherwise = pure Nothing
       where
@@ -2373,7 +2373,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                     groupMsgToView cInfo ci
                     pure Nothing
                   Nothing -> do
-                    (ci, cInfo) <- saveRcvChatItem' user chatDir msg (Just sharedMsgId) brokerTs (content, ts) Nothing timed_ live mentions'
+                    (ci@ChatItem {meta}, cInfo) <- saveRcvChatItem' user chatDir msg (Just sharedMsgId) brokerTs (content, ts) Nothing timed_ live mentions'
                     ci' <- withStore' $ \db -> do
                       createChatItemVersion db (chatItemId' ci) brokerTs mc
                       updateGroupChatItem db user groupId ci content True live Nothing
@@ -2381,7 +2381,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                       CDGroupRcv gi' _ m' -> blockedMemberCI gi' m' ci'
                       CDChannelRcv {} -> pure ci'
                     groupMsgToView cInfo ci''
-                    pure $ Just $ infoToDeliveryContext gInfo' scopeInfo showGroupAsSender
+                    pure $ Just (infoToDeliveryContext gInfo' scopeInfo showGroupAsSender :: DeliveryTaskContext) {priorityRaised = highPriority meta}
       where
         content = CIRcvMsgContent mc
         ts@(_, ParsedMarkdown ft_ _) = msgContentTexts mc
@@ -2420,7 +2420,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
               messageError "x.msg.update: edit too late" $> Nothing
           | otherwise = do
               let changed = mc /= oldMC
-                  priority' = allowedPriority (isNothing scopeInfo && isNothing itemDeleted && rcvPriorityAllowed cd) priority_
+                  priority' = if isJust itemDeleted then priority else allowedPriority (rcvPriorityAllowed cd) priority_
                   newTs_ = if asNew_ == Just True && isNothing scopeInfo && isNothing itemDeleted && not (maybe False memberBlocked itemMember_) then asNewItemTs (chatItemTs' ci) brokerTs else Nothing
               if changed || fromMaybe False itemLive || priority' /= priority || isJust newTs_
                 then do
@@ -2441,7 +2441,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                       Nothing -> pure (GroupChat gInfo scopeInfo, ci'')
                   toView $ CEvtChatItemUpdated user (AChatItemUpdate SCTGroup SMDRcv cInfo ci' ci)
                   startUpdatedTimedItemThread user (ChatRef CTGroup groupId $ toChatScope <$> scopeInfo) ci ci'
-                  pure $ Just $ infoToDeliveryContext gInfo scopeInfo showGroupAsSender
+                  pure $ Just (infoToDeliveryContext gInfo scopeInfo showGroupAsSender :: DeliveryTaskContext) {priorityRaised = priority' == MPHigh && priority /= MPHigh}
                 else do
                   toView $ CEvtChatItemNotChanged user (AChatItem SCTGroup SMDRcv (GroupChat gInfo scopeInfo) ci)
                   pure Nothing
@@ -2495,10 +2495,10 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                     withStore $ \db -> do
                       liftIO $ createCIModeration db gInfo m msgMemberId sharedMsgId msgId brokerTs
                       supportGMId <- getScopeMemberIdViaMemberId db user gInfo m scopeMemberId
-                      pure $ Just $ DeliveryTaskContext {jobScope = DJSMemberSupport supportGMId, sentAsGroup = False}
+                      pure $ Just $ DeliveryTaskContext {jobScope = DJSMemberSupport supportGMId, sentAsGroup = False, priorityRaised = False}
                   Nothing -> do
                     withStore' $ \db -> createCIModeration db gInfo m msgMemberId sharedMsgId msgId brokerTs
-                    pure $ Just $ DeliveryTaskContext {jobScope = DJSGroup {jobSpec = DJDeliveryJob {includePending = False}}, sentAsGroup = False}
+                    pure $ Just $ DeliveryTaskContext {jobScope = DJSGroup {jobSpec = DJDeliveryJob {includePending = False}}, sentAsGroup = False, priorityRaised = False}
           Nothing ->
             messageError ("x.msg.del: channel message not found, " <> tshow e) $> Nothing
       where

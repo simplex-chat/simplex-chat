@@ -288,8 +288,9 @@ chatGroupTests = do
     it "forward high priority message and its raise" testGroupMsgForwardHighPriority
     it "raise priority by update" testGroupRaisePriority
     it "raise priority of live message" testGroupRaisePriorityLive
-    it "raise priority below role and in support chat is ignored" testGroupRaisePriorityIgnored
-    it "update of deleted item creates item with its priority" testGroupUpdatePriorityDeletedItem
+    it "raise priority below role is ignored" testGroupRaisePriorityIgnored
+    it "high priority in support chat is kept by an edit and set by a raise" testGroupSupportChatPriority
+    it "update of deleted item creates item with its priority, of marked deleted item keeps it" testGroupUpdatePriorityDeletedItem
     it "update without priority makes item normal, a later raise notifies once" testGroupUpdateWithoutPriority
     it "forward update with notification flag of its accepted priority" testGroupMsgForwardAcceptedPriority
     it "silent, high priority and raised messages recorded for the apps" testGroupPriorityRecordings
@@ -6268,6 +6269,7 @@ testGroupMsgForwardHighPriority ps = do
         setupGroupForwarding alice bob cath
         cath ##> "/set receipts all off"
         cath <## "ok"
+        aliceConnId <- relayConnIdToMember bob "alice"
         cathConnId <- relayConnIdToMember alice "cath"
 
         bob ##> "/_send #1 json [{\"msgContent\": {\"type\": \"text\", \"text\": \"hi there\"}, \"priority\": 1}]"
@@ -6288,10 +6290,19 @@ testGroupMsgForwardHighPriority ps = do
         alice <# "#team bob!!> hello"
         cath <# "#team bob!!> hello"
         lastSndEventPriority bob "x.msg.update" `shouldReturn` Just 1
+        lastSndMsgFlags bob aliceConnId 1 `shouldReturn` ["T"]
         lastSndMsgFlags alice cathConnId 1 `shouldReturn` ["T"]
         lastJobNotification alice `shouldReturn` True
         forM_ [alice, bob, cath] $ \cc ->
           itemPriority cc "/_get chat #1 count=1" `shouldReturn` MPHigh
+
+        bob ##> ("/_update item #1 " <> helloId <> " json {\"msgContent\": {\"type\": \"text\", \"text\": \"hello there\"}, \"mentions\": {}, \"priority\": 1}")
+        bob <# "#team !! [edited] hello there"
+        alice <# "#team bob!!> [edited] hello there"
+        cath <# "#team bob!!> [edited] hello there"
+        lastSndMsgFlags bob aliceConnId 1 `shouldReturn` ["F"]
+        lastSndMsgFlags alice cathConnId 1 `shouldReturn` ["F"]
+        lastJobNotification alice `shouldReturn` False
         readTVarIO raised `shouldReturn` [("hello", True, False)]
 
 testGroupHighPriority :: HasCallStack => TestParams -> IO ()
@@ -6529,18 +6540,30 @@ testGroupRaisePriorityIgnored =
       forM_ [alice, bob, cath] $ \cc ->
         itemPriority cc "/_get chat #1 count=1" `shouldReturn` MPNormal
 
+testGroupSupportChatPriority :: HasCallStack => TestParams -> IO ()
+testGroupSupportChatPriority =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3' "team" alice (bob, GRMember) (cath, GRMember)
+      threadDelay 1000000
+
       bob ##> "/_send #1(_support) text help"
       bob <# "#team (support) help"
       alice <# "#team (support: bob) bob> help"
       alice ##> "/_send #1(_support:2) json [{\"msgContent\": {\"type\": \"text\", \"text\": \"hello\"}, \"priority\": 1}]"
       alice <# "#team (support: bob) !! hello"
       bob <# "#team (support) alice!!> hello"
+      helloId <- lastItemId alice
+      alice ##> ("/_update item #1(_support:2) " <> helloId <> " json {\"msgContent\": {\"type\": \"text\", \"text\": \"hello there\"}, \"mentions\": {}, \"priority\": 1}")
+      alice <# "#team (support: bob) !! [edited] hello there"
+      bob <# "#team (support) alice!!> [edited] hello there"
       alice ##> "/_send #1(_support:2) text later"
       alice <# "#team (support: bob) later"
       bob <# "#team (support) alice> later"
       laterId <- lastItemId alice
       alice ##> ("/_update item #1(_support:2) " <> laterId <> " json {\"msgContent\": {\"type\": \"text\", \"text\": \"later\"}, \"mentions\": {}, \"priority\": 1}")
-      alice <## "message didn't change"
+      alice <# "#team (support: bob) !! later"
+      bob <# "#team (support) alice!!> later"
 
 testGroupUpdatePriorityDeletedItem :: HasCallStack => TestParams -> IO ()
 testGroupUpdatePriorityDeletedItem =
@@ -6574,6 +6597,14 @@ testGroupUpdatePriorityDeletedItem =
       alice <# "#team !! done"
       bob <# "#team alice!!> done"
       cath <# "#team alice!!> done"
+      itemPriority cath "/_get chat #1 count=1" `shouldReturn` MPHigh
+
+      cathDoneId2 <- lastItemId cath
+      cath #$> ("/_delete item #1 " <> cathDoneId2 <> " internalMark", id, "message marked deleted")
+      alice ##> ("/_update item #1 " <> doneId <> " json {\"msgContent\": {\"type\": \"text\", \"text\": \"done!\"}, \"mentions\": {}, \"priority\": 1}")
+      alice <# "#team !! [edited] done!"
+      bob <# "#team alice!!> [edited] done!"
+      cath <# "#team alice!!> [edited] done!"
       itemPriority cath "/_get chat #1 count=1" `shouldReturn` MPHigh
 
 testGroupUpdateWithoutPriority :: HasCallStack => TestParams -> IO ()

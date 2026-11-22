@@ -3808,13 +3808,11 @@ Query:
           t.delivery_task_id,
           t.worker_scope, t.job_scope_spec_tag, t.job_scope_include_pending, t.job_scope_support_gm_id,
           m.group_member_id, m.member_id, p.display_name, msg.broker_ts, msg.msg_body, msg.msg_chat_binding, msg.msg_signatures, t.message_from_channel,
-          COALESCE(i.item_priority, 0)
+          t.priority_raised
         FROM delivery_tasks t
         JOIN messages msg ON msg.message_id = t.message_id
         JOIN group_members m ON m.group_member_id = t.sender_group_member_id
         JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id)
-        LEFT JOIN chat_item_messages cim ON cim.message_id = t.message_id
-        LEFT JOIN chat_items i ON i.chat_item_id = cim.chat_item_id
         WHERE t.delivery_task_id = ?
       
 Plan:
@@ -3822,8 +3820,6 @@ SEARCH t USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH msg USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH m USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH p USING INTEGER PRIMARY KEY (rowid=?)
-SEARCH cim USING INDEX sqlite_autoindex_chat_item_messages_1 (message_id=?) LEFT-JOIN
-SEARCH i USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
 
 Query: 
         SELECT COUNT(1)
@@ -5507,9 +5503,9 @@ Query:
       INSERT INTO delivery_tasks (
         group_id,
         worker_scope, job_scope_spec_tag, job_scope_include_pending, job_scope_support_gm_id,
-        sender_group_member_id, message_id, message_from_channel, task_status,
+        sender_group_member_id, message_id, message_from_channel, priority_raised, task_status,
         created_at, updated_at
-      ) VALUES (?,?,?,?,?,?,?,?,?,?,?)
+      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
     
 Plan:
 
