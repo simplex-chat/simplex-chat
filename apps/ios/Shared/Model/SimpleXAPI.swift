@@ -525,7 +525,11 @@ func apiShareMyAddress(toChatType: ChatType, toChatId: Int64, toScope: GroupChat
 }
 
 func apiGetLinkPreview(_ uri: String) async -> LinkPreview? {
-    let r: APIResult<ChatResponse2> = await chatApiSendCmd(.apiGetLinkPreview(uri: uri))
+    let r: APIResult<ChatResponse2> = await withCheckedContinuation { cont in
+        DispatchQueue.global().async {
+            cont.resume(returning: chatApiSendCmdSync(.apiGetLinkPreview(uri: uri)))
+        }
+    }
     if case let .result(.linkPreview(linkPreview)) = r { return linkPreview }
     let err = if case let .error(.error(.linkPreview(message))) = r { message } else { responseError(r.unexpected) }
     logger.error("apiGetLinkPreview error: \(err)")
