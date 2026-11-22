@@ -26,10 +26,11 @@ stateDiagram-v2
   state "committed: awaiting, signed or lapsed" as committed
   state "failed: registry refused, signature refused or unread" as failed
   state "failed: month ended" as monthEnded
+  state "taken: name not selected" as taken
   [*] --> unpaid: one request with the commitment, the signed registration and the terms acceptance; invoice opened, holds its price only
   [*] --> queued: a code order
   unpaid --> queued: payment settled, the name held, other buyers' open invoices of the name cancelled
-  unpaid --> taken: payment settled while another paid order holds the name
+  unpaid --> taken: reset: payment settled while another paid order holds the name, the price to the balance
   unpaid --> closed: invoice expired or cancelled; payment settled after a recorded reversal
   queued --> committing: commit sent
   committing --> queued: commitment lapsed, or commit mined with status 0 below its cap
@@ -41,19 +42,19 @@ stateDiagram-v2
   registering --> committed: register mined with status 0 below its cap, the name free
   committed --> registered: register landed
   registering --> registered: register landed
-  committed --> taken: the name gone at the confirmation depth
-  registering --> taken: the name gone at the confirmation depth
+  committed --> taken: reset: the name gone at the confirmation depth, the price to the balance or the code released
+  registering --> taken: reset: the name gone at the confirmation depth, the price to the balance or the code released
   queued --> failed: permanent reason at its cap
   committing --> failed: permanent reason at its cap
   committed --> failed: permanent reason at its cap; signature refused by the configuration; no read by its page for 3 days
   registering --> failed: permanent reason at its cap
   failed --> queued: Continue of an unread order
-  taken --> queued: a move to another name within the month, a paid order's of its price spent from its balance, a code order's on its code reserved again
+  taken --> queued: a name selected, with a purchase's checks; a paid order's price spent from its balance, a code order's code reserved; the month starts again
   failed --> registered: a close finds the register landed
-  failed --> taken: support's close of a paid order
-  queued --> monthEnded: 1 month from payment, no register pending, money to the balance
-  committed --> monthEnded: 1 month from payment, no register pending, money to the balance
-  failed --> monthEnded: 1 month from payment, money to the balance
+  failed --> taken: reset by support's close of a paid order, the price credited and refunded
+  queued --> monthEnded: 1 month from the name's selection, no register pending, money to the balance
+  committed --> monthEnded: 1 month from the name's selection, no register pending, money to the balance
+  failed --> monthEnded: 1 month from the name's selection, money to the balance
   queued --> closed: dispute or reversal, no register of the current name sent
   committing --> closed: dispute or reversal, no register of the current name sent
   committed --> closed: dispute or reversal, no register of the current name sent
@@ -62,22 +63,28 @@ stateDiagram-v2
 
 ### 1.1 Payment holds the name
 - **names:** another buyer's order is refused only while an order of the name has its register in flight (`Names/Orders.hs:295-302`, `Names/Store.hs:864-869`); search shows the name as available otherwise (`Web/Names/Search.hs:59, 69-70`). Two buyers can pay for one name; the loser ends `taken`, its price kept as a balance (`Names/Worker.hs:352-356, 369-383`).
-- **Final:** a paid order holds its name against every order through the service, from payment until it is registered, cancelled, or the month from payment ends (1.3); a failure inside the month does not end the hold. Search answers such a name `taken`, and the page shows "Taken". An open invoice holds only its price. A payment that settles while another paid order holds the name ends its own order `taken`, its price kept as its balance, which pays that order's move to another name of its price within the month from payment (1.3), or is refunded.
+- **Final:** a paid order holds its name against every order through the service, from payment until it is registered, cancelled, or its month ends (1.3); a failure inside the month does not end the hold. Search answers such a name `taken`, and the page shows "Taken". An open invoice holds only its price. When a payment settles while another paid order holds the name, its own order is reset to `taken`, its price kept as its balance, spent on the next name its owner selects for that order (1.3), or refunded.
 - **Why:** money from a second buyer for a name already paid for must not be taken; opening an invoice costs nothing, so it cannot hold a name.
 
 ### 1.2 Other invoices of a paid name are cancelled
 - **names:** they stay open.
 - **Final:** when an order's payment is fully settled, the name's other open invoices are cancelled at their providers (`pCancelInvoice`, `Providers.hs:237`). Money that still reaches one is late money, credited to that order's balance (`Names/LateCredits.hs`).
 
-### 1.3 One month from payment
+### 1.3 One month from each selection of a name
 - **names:** a failed order holds its place with no end; it stays live, refusing only orders of the same owner code (`Names/Store.hs:760-772`).
-- **Final:** the name stays reserved for the buyer for 1 month from payment acceptance. Only an order whose name was taken moves to another name, as the same order, within the month from payment or its code's placement, up to `max_order_moves`; the view gives the month's end in the taken phase's `heldUntil`. A paid order moves at exactly its price, its balance spent on it; each take credits its price again, so it moves again after another take. A dearer or a cheaper name is refused `409 price_too_high` with the name's price. A code order moves on the same name code: its code is released at the take and reserved again by the move as a code the order holds, which a code another order reserved meanwhile refuses `409 code_reserved`, a spent one `409 code_used`, a revoked one `400 code_invalid`, and a name the code does not cover `409 code_not_covering`; the move is not refused for the code's expiry. Failed and lapsed orders are refunded by support. An order not registered by then fails, the name returns to sale, and the price goes to the order's balance; refunds from the balance are manual. An order with a register transaction sent and not settled is ended only after it settles.
+- **Final:** the name stays reserved for the buyer for 1 month from its selection with the payment in place: a paid order's settlement, a code order's placement, or a later selection; `paid_at` stores that time, and a selection also clears `unregistered_alerted_at` (3.1).
+  - **Reset:** a take, by another buyer's paid order at settlement or on chain (2.1), resets the order to `taken`, no name selected: not live, its name free for other orders, a paid order's price credited to its balance, a code order's code released. The order keeps its id, its owner, its payment or code, and the taken name's fields, which its view shows. The view's `taken` phase has no other field.
+  - **Selection:** `POST /api/registration/ID/name`, signed by the owner as before, selects a name for a `taken` order; any other order is answered `400 bad_request`, and a body equal to the order's current fields with its current view. The selection runs the checks of a purchase, by its functions: the timestamp, the duration for the order's years, the terms, the name free, and the reveal, with the stored links accepted (2.4); then, in one transaction, other live orders of the commitment or of the owner and name as a new order meets them (an overdue order of the same wallet and name closed, any other answered `409 order_exists`), and the write: phase `queued`, the new fields and reveal, transactions and attempts cleared (3.2), `paid_at` set to the selection's time.
+  - **A paid order:** the name's price for the order's years is checked against the order's price as a new order's against the price it saw, `409 catalog_changed` with the name's price; the price is spent from the order's balance in the write's transaction, `400 bad_request` when the balance no longer holds it.
+  - **A code order:** in the code's turn, the code is checked and reserved as a new code order's: `400 code_invalid` for a revoked code, `409 code_expired`, `409 code_used`, `409 code_reserved`, `409 payment_pending` and `409 code_not_covering`.
+  - `max_order_moves`, the order's `moves` and the refusals `move_limit` and `price_too_high` are removed.
+  - Failed and lapsed orders are refunded by support. An order not registered within the month fails, the name returns to sale, and the price goes to the order's balance; refunds from the balance are manual. An order with a register transaction sent and not settled is ended only after it settles.
 - **Why:** a hold extends the name's registration period; a month resolves every case that can be resolved.
 
 ### 1.4 Card disputes and payment reversals
 - **names:** the service acts on three Stripe events only: succeeded, failed, cancelled (`Providers/Stripe.hs:104`); a dispute changes nothing and nobody is told.
 - **Final:** every dispute and reversal alerts the operators in the log and the group, with the order's evidence (payment, signed order, registration transaction) for the answer to Stripe, whatever the order's state. In addition:
-  - an order of which no register transaction of its current name was sent is cancelled: the hold released, nothing credited; a support refund of part of its balance does not prevent it, nor a register of a moved order's earlier name;
+  - an order of which no register transaction of its current name was sent is cancelled: the hold released, nothing credited; a support refund of part of its balance does not prevent it, nor a register of a name selected before a reset;
   - an order of which a register transaction of its current name was sent is treated as registered for the dispute: not cancelled, its registration continues;
   - a disputed order's price is never credited to its balance, a late credit concurrent with the dispute included; an order whose price is already in its balance (taken, month ended) has it taken back from the balance, as far as the balance holds it; an order not cancelled whose refund support recorded is alerted only;
   - a balance pays no other order, so disputed money pays for no other name.
@@ -99,7 +106,7 @@ stateDiagram-v2
 
 ### 1.6 Prepaid codes expire
 - **names:** codes never expire: the expiry is stored and checked, but every code is issued without one (`Names/Codes.hs`, `issueNameCode`). No code has been issued yet.
-- **Final:** a code can reserve a name for 3 months from its issue. A taken order's move reserves its own code again, which is not a new reservation, so the move is not refused for the code's expiry, but is refused for a code an operator revoked (1.3).
+- **Final:** a code can reserve a name for 3 months from its issue. A name selected for a taken code order reserves its code as a new code order does, so an expired or revoked code is refused (1.3).
 - **Why:** some time pressure; it bounds how long an old price stays valid.
 
 ### 1.7 One request before the invoice
@@ -112,7 +119,7 @@ stateDiagram-v2
 ### 2.1 One rule per failure reason
 - **names:** four places decide. Errors without a revert, and every commit error, are retried every 15 s with no end (`Names/Worker.hs:178, 237-243, 300, 315`). A register or relay revert goes to `judge`, which fails the order at once for any reason it does not name (`:336-362`). The service's own signature check fails it the same way (`:305-309`). 5 sends of one kind fail it (`:449-458`).
 - **Final:** one function classifies every reason. Permanent is what the operators cannot fix without the owner signing again or without a code change; every code error is permanent.
-  - Temporary: retried, logged, reported to the group once, with the latest reason, after 10 minutes of consecutive temporary failures of any reasons, until the month from payment ends (1.3); progress ends the streak. An exception in a step is a temporary failure; the step is run again in 15 s.
+  - Temporary: retried, logged, reported to the group once, with the latest reason, after 10 minutes of consecutive temporary failures of any reasons, until the month ends (1.3); progress ends the streak. An exception in a step is a temporary failure; the step is run again in 15 s.
   - Permanent: retried up to its cap (2.5), then the order fails, keeps its commit and register transactions, and is logged as an error, reported to the group and counted in Prometheus by reason.
   - Waiting for the owner: what the owner's page resolves (2.2).
 - **Why:** retrying a lost cause hides it; failing a fixable one loses a sale.
@@ -145,7 +152,7 @@ Contracts: brenzi/simplex-namespace-contract e3ba0a5, `ens-contracts/contracts`.
 
 ### 2.2 Waiting for the owner
 - **names:** an order whose signing window (60 s to 24 h after the commit; the contracts' deploy script, `deploy/simplex/00_deploy_simplex_controller.ts:46-47`) passes unsigned fails "The name was not signed in time" (`Names/Worker.hs:257-259`); Try again commits again (`:426-500`).
-- **Final:** rare with the single request (1.7). The stored signature is cleared when it can no longer register: the terms changed (the page asks again and never signs changed terms silently); the owner's counter moved; the name policy changed, so the owner signs the new terms; the signature's week ended. The owner signs again; the service commits again only if the signing window passed meanwhile, when the page asks for it by itself, once per window. A link refused at signing again waits for the owner to replace or remove it (2.4). The order fails when its page has not read it for 3 days, logged, reported to the group and counted in Prometheus; the last read is stored at most once an hour; the name stays held until the month ends.
+- **Final:** rare with the single request (1.7). The stored signature is cleared when it can no longer register: the terms changed (the page asks again and never signs changed terms silently); the owner's counter changed; the name policy changed, so the owner signs the new terms; the signature's week ended. The owner signs again; the service commits again only if the signing window passed meanwhile, when the page asks for it by itself, once per window. A link refused at signing again waits for the owner to replace or remove it (2.4). The order fails when its page has not read it for 3 days, logged, reported to the group and counted in Prometheus; the last read is stored at most once an hour; the name stays held until the month ends.
 - **Why:** waiting helps only while someone can act; 3 days covers a buyer away for a weekend.
 
 ### 2.3 The owner's signature is valid one week
@@ -154,7 +161,7 @@ Contracts: brenzi/simplex-namespace-contract e3ba0a5, `ens-contracts/contracts`.
 
 ### 2.4 Refused links
 - **names:** a link that is not a short link of its key's kind, or a second link for one key, is refused with `invalid_link`, without saying which (`Names/Reveal.hs:107-116, 142-145`; `Names/Links.hs:32-47`); the order fails "not signed in time" at the window's end; the page offers another name, or none of the links.
-- **Final:** links are checked at the order request, before the invoice (1.7), which names the refused link. The commitment fixes the links, so the owner's signing again checks no link. A link accepted at the order is accepted as stored wherever it is read again: a move's link equal to the stored link of its kind is not checked again.
+- **Final:** links are checked at the order request, before the invoice (1.7), which names the refused link. The commitment fixes the links, so the owner's signing again checks no link. A link accepted at the order is accepted as stored wherever it is read again: a selection's link equal to the stored link of its kind is not checked again.
 
 ### 2.5 Counting attempts
 - **names:** only sent transactions count, 5 per kind; a dry run that always reverts is retried forever.
@@ -167,12 +174,12 @@ Contracts: brenzi/simplex-namespace-contract e3ba0a5, `ens-contracts/contracts`.
 
 ### 3.1 The 3-hour alert
 - **names:** the queue alert fires after 20 minutes, but only for queued, committing, registering and committed with a stored signature (`README.md:912, 951`); an order waiting for its owner is not covered.
-- **Final:** every paid order not registered within 3 hours of payment, failed orders and orders waiting for the owner included, raises one alert in the log and the managed group. No alert is raised for a taken order: an order whose name is no longer available on chain is logged as an error and reported in the group once, as a failed order is, and one taken at settlement is logged as a note. The Prometheus gauge gives the oldest payment of a live order not registered, so a month-ended order leaves it. Badges: a later pull request.
+- **Final:** every paid order not registered within 3 hours of its name's selection with the payment in place (1.3), failed orders and orders waiting for the owner included, raises one alert in the log and the managed group. No alert is raised for a taken order: an order whose name is no longer available on chain is logged as an error and reported in the group once, as a failed order is, and one taken at settlement is logged as a note. The Prometheus gauge gives the oldest `paid_at` of a live order not registered, so a month-ended order leaves it. Badges: a later pull request.
 - **Why:** a customer once complained after a week, when the browser state needed to investigate was gone.
 
 ### 3.2 Failure reasons are stored
 - **names:** the transactions table keeps the signed transaction, hash, nonce, send time, mined block and status, without a reason; a dry run leaves no record.
-- **Final:** the order's row counts its counted dry-run failures and its sent failures, and keeps its last failed attempt: its kind, whether a dry run or a sent transaction failed, its decoded reason and its time, for the caps, the logs and the reports; the order's view does not show it. A failure not counted toward a cap is written only when its kind, stage or reason changes. A move, which gives the order a new commitment, clears the counts and the last attempt in the same transaction.
+- **Final:** the order's row counts its counted dry-run failures and its sent failures, and keeps its last failed attempt: its kind, whether a dry run or a sent transaction failed, its decoded reason and its time, for the caps, the logs and the reports; the order's view does not show it. A failure not counted toward a cap is written only when its kind, stage or reason changes. A selection, which gives the order a new commitment, clears the counts and the last attempt in the same transaction.
 
 ### 3.3 Metrics never stop the service
 - **names:** a failing metrics listener leaves the service running (`Metrics.hs:266-267`).
@@ -196,7 +203,7 @@ Answers are the service's types encoded as derived JSON, and the page reads thos
 | Search | one case per name state: available, taken (held by a paid order), reserved, registered with the store resolver's records or "other" |
 | Refusals | every endpoint answers a refusal as `{"type": "<code>"}` with flat snake_case codes, such as `{"type": "order_exists"}`, and data beside the code, such as `{"type": "catalog_changed", "price": 1500}`; prepaid-code refusals flat, such as `{"type": "code_used"}`; a `bad_request` reason is logged, not sent (the user's A1-28: the reason as text); `edit_limit` is 409 with an ISO time. On `names`: `{"error": "<code>"}` |
 | Order view | one shape per phase, the payment kind, the balance, the terms as a record, the failure reason; the name only once the order is paid |
-| Order requests | order, code order and move nest their fields, terms as a record; the payment method stays the text the badge request sends |
+| Order requests | order, code order and selection of a name nest their fields, terms as a record; the payment method stays the text the badge request sends |
 | Find, link edits, signing | decoded by derived types; find answers an empty list for an owner with no orders, and each order's phase as stored |
 | Replaced orders | as `names`: an order's view names no other order; the browser holding the name code finds the newer order through find |
 | Links | one link per kind in a signing request; edits name their record as contact or channel; the clear-records edit goes |
