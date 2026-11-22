@@ -26,8 +26,8 @@ With this package, Claude Code can join channels and groups, talk to bots, and e
 - Only owners and admins can approve tool calls.
 - The Main group shows every session's state, Claude account, model, goal, working subagents and recap.
 - A session's group shows each subagent and workflow as it works, and when it stalls.
+- Agent teams: each teammate is a member of the session's group, posts its messages and steps there, and gets your replies and mentions.
 - 🏗️ Each session as a topic in one group.
-- 🏗️ Agent teams: mention an agent to message it.
 
 ## Control your agents' activity
 

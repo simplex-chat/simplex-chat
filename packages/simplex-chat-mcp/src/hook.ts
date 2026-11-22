@@ -58,6 +58,10 @@ const recordReadFactor = 10
 const continueNotice = "continuing automatically"
 // spec: spec/architecture.md#hook-agentstart
 const handbackTool = "SubagentHandback"
+// spec: spec/architecture.md#hook-teammatestep
+const messageTool = "SendMessage"
+// spec: spec/architecture.md#hook-teammatestep
+const leadNames = ["team-lead", "main"]
 // spec: spec/architecture.md#hook-agentstart
 const agentRecordReads = 20
 // spec: spec/architecture.md#hook-agentstart
@@ -69,6 +73,8 @@ interface AgentRecord {
   description?: unknown
   toolUseId?: unknown
   taskKind?: unknown
+  name?: unknown
+  finished?: unknown
 }
 
 // spec: spec/api.md#plugin-options
@@ -168,7 +174,14 @@ interface AnswerUsage {
 interface PromptKind {
   typed: boolean
   note?: string
+  copyOf?: string
   midTurn?: boolean
+}
+
+// spec: spec/architecture.md#hook-noteof
+interface Note {
+  text: string
+  copyOf?: string
 }
 
 export interface HookOutput {
@@ -229,6 +242,12 @@ export async function turn(stdin: string, env: NodeJS.ProcessEnv = process.env, 
     if (event === undefined) return {}
     const lead = input.agent_id === undefined
     const request = {id: input.session_id, pid: claudePid(env), at, prompt: cut(input.prompt), answer: lead ? cut(input.last_assistant_message) : undefined, model: input.to_model, switched: input.to_model === undefined ? undefined : true, effort: lead ? input.effort?.level : undefined, ...event}
+    if (event.sessionEnd === true) {
+      await client.request("POST", "/turn", request).catch(error => {
+        if (!isNotRunning(error)) throw error
+      })
+      return {}
+    }
     await client.ensureService(version)
     for (let attempt = 1; ; attempt++) {
       try {
@@ -335,15 +354,19 @@ async function eventFields(input: TurnInput, at: number, readMs: number, env: No
     case "PreToolUse":
     case "PostToolUse":
     case "PostToolUseFailure": {
-      if (input.agent_id !== undefined) return agentStep(input)
+      if (input.agent_id !== undefined) return agentEvent(input)
       if (input.tool_name === "Agent" || input.tool_name === "Workflow") return leadTask(input)
       const step = stepOf(input)
-      return step === undefined ? undefined : {step}
+      const [to, message] = [stringOf(input.tool_input?.to), stringOf(input.tool_input?.message)]
+      const sent = input.tool_name === messageTool && to !== undefined && message !== undefined ? {message: {to, text: cut(message)}} : {}
+      return step === undefined ? undefined : {step: {...step, ...sent}}
     }
     case "SubagentStart":
       return agentStart(input, readMs)
     case "SubagentStop":
-      return input.agent_id === undefined ? undefined : {agent: {id: input.agent_id, stop: shortened(firstLine(input.last_assistant_message ?? ""))}}
+      return agentStop(input, readMs)
+    case "SessionEnd":
+      return {sessionEnd: true}
     case "PostCompact": {
       const note = await compactionNote(input, at, readMs)
       return note === undefined ? undefined : {note}
@@ -537,27 +560,27 @@ function recordKind(record: TranscriptEntry, id: string | undefined, text: strin
   const origin = record.type === "attachment" ? (record.attachment?.origin ?? (record.attachment?.commandMode === "task-notification" ? {kind: "task-notification"} : undefined)) : record.origin
   const note = noteOf(origin, record.turnOrigin, text)
   const midTurn = record.type !== "user" || (id !== undefined && record.promptId !== id)
-  return {typed: origin?.kind === "human", ...(note === undefined ? {} : {note: small(shortened(note))}), ...(midTurn ? {midTurn} : {})}
+  return {typed: origin?.kind === "human", ...(note === undefined ? {} : {note: small(shortened(note.text))}), ...(note?.copyOf === undefined ? {} : {copyOf: note.copyOf}), ...(midTurn ? {midTurn} : {})}
 }
 
 // spec: spec/architecture.md#hook-noteof
-function noteOf(origin: Origin | null | undefined, turnOrigin: unknown, text: string): string | undefined {
+function noteOf(origin: Origin | null | undefined, turnOrigin: unknown, text: string): Note | undefined {
   switch (origin?.kind) {
     case "human":
     case "channel":
       return undefined
     case "task-notification":
-      return taskNote(text)
+      return {text: taskNote(text)}
     case "peer":
       return origin.handback === true
-        ? `📋 Report from subagent ${peerName(origin)}: ${firstLine(stringOf(origin.handbackReportText) ?? stringOf(origin.body) ?? text)}`
-        : `✉️ Message from ${peerName(origin)}: ${firstLine(stringOf(origin.body) ?? text)}`
+        ? {text: `📋 Report from subagent ${peerName(origin)}: ${firstLine(stringOf(origin.handbackReportText) ?? stringOf(origin.body) ?? text)}`, copyOf: peerName(origin)}
+        : {text: `✉️ Message from ${peerName(origin)}: ${firstLine(stringOf(origin.body) ?? text)}`, copyOf: peerName(origin)}
     case "auto-continuation":
-      return `🔄 Automatic prompt: ${firstLine(text)}`
+      return {text: `🔄 Automatic prompt: ${firstLine(text)}`}
     case undefined:
-      return turnOrigin === "scheduled" ? `⏰ Scheduled prompt: ${firstLine(text)}` : teammateNote(text)
+      return turnOrigin === "scheduled" ? {text: `⏰ Scheduled prompt: ${firstLine(text)}`} : teammateNote(text)
     default:
-      return typeof origin?.kind === "string" ? `⚙️ Claude Code: ${firstLine(text)}` : undefined
+      return typeof origin?.kind === "string" ? {text: `⚙️ Claude Code: ${firstLine(text)}`} : undefined
   }
 }
 
@@ -573,13 +596,14 @@ function taskNote(text: string): string {
 }
 
 // spec: spec/architecture.md#hook-noteof
-function teammateNote(text: string): string | undefined {
+function teammateNote(text: string): Note | undefined {
   if (!teammatePrompt.test(text)) return undefined
   const match = [...text.matchAll(teammateMessage)].find(([, , , body]) => !idleNotification(body))
   if (match === undefined) return undefined
   const [, sender, attributes, body] = match
   const summary = /\ssummary="([^"]*)"/.exec(attributes)?.[1]
-  return `✉️ Message from ${oneLine(decoded(sender))}: ${firstLine(summary === undefined ? body : decoded(summary))}`
+  const name = oneLine(decoded(sender))
+  return {text: `✉️ Message from ${name}: ${firstLine(summary === undefined ? body : decoded(summary))}`, copyOf: name}
 }
 
 // spec: spec/architecture.md#hook-noteof
@@ -597,8 +621,8 @@ function peerName(origin: Origin): string {
 }
 
 // spec: spec/architecture.md#hook-stepof
-function stepOf({tool_use_id: id, tool_name: tool, agent_id: agent, hook_event_name: event, tool_input: fields = {}, cwd, is_interrupt: interrupted, duration_ms: ms}: TurnInput): Step | undefined {
-  if (id === undefined || tool === undefined || agent !== undefined || tool.startsWith(pluginTools)) return undefined
+function stepOf({tool_use_id: id, tool_name: tool, hook_event_name: event, tool_input: fields = {}, cwd, is_interrupt: interrupted, duration_ms: ms}: TurnInput): Step | undefined {
+  if (id === undefined || tool === undefined || tool.startsWith(pluginTools)) return undefined
   const text = shortened(stepText(tool, fields, cwd))
   if (event === "PreToolUse") return {id, text: small(text)}
   if (event === "PostToolUse" && fields.run_in_background === true) return {id, text: small(`${text} (in background)`), end: true}
@@ -607,19 +631,68 @@ function stepOf({tool_use_id: id, tool_name: tool, agent_id: agent, hook_event_n
 }
 
 // spec: spec/architecture.md#hook-agentstart
-async function agentStart({agent_id: id, agent_type: type, transcript_path: path}: TurnInput, readMs: number): Promise<Partial<TurnRequest> | undefined> {
+async function agentStart(input: TurnInput, readMs: number): Promise<Partial<TurnRequest> | undefined> {
+  const {agent_id: id, agent_type: type, transcript_path: path} = input
   if (id === undefined || !path) return undefined
-  const folder = join(path.replace(/\.jsonl$/, ""), "subagents")
   for (let read = 1; read <= agentRecordReads; read++) {
-    const record = await readFile(join(folder, `agent-${id}.meta.json`), "utf8").then(text => (JSON.parse(text) as AgentRecord | null) ?? undefined).catch(() => undefined)
+    const record = await agentRecord(input)
     if (record !== undefined) {
-      if (record.taskKind !== undefined) return undefined
       const description = typeof record.description === "string" ? shortened(firstLine(record.description)) : ""
-      return {agent: {id, start: {type: type ?? (typeof record.agentType === "string" ? record.agentType : "agent"), description, ...(typeof record.toolUseId === "string" ? {toolUse: record.toolUseId} : {}), transcript: join(folder, `agent-${id}.jsonl`)}}}
+      const name = nameOf(record)
+      if (name !== undefined) return {teammate: {name, start: {description}}}
+      if (record.taskKind !== undefined) return undefined
+      return {agent: {id, start: {type: type ?? (typeof record.agentType === "string" ? record.agentType : "agent"), description, ...(typeof record.toolUseId === "string" ? {toolUse: record.toolUseId} : {}), transcript: join(path.replace(/\.jsonl$/, ""), "subagents", `agent-${id}.jsonl`)}}}
     }
     if (read < agentRecordReads) await new Promise(resolve => setTimeout(resolve, readMs))
   }
   return undefined
+}
+
+// spec: spec/architecture.md#hook-agentstart
+async function agentStop(input: TurnInput, readMs: number): Promise<Partial<TurnRequest> | undefined> {
+  const {agent_id: id, last_assistant_message: message = ""} = input
+  if (id === undefined) return undefined
+  for (let read = 1; ; read++) {
+    const record = await agentRecord(input)
+    const name = nameOf(record)
+    if (name === undefined) return {agent: {id, stop: shortened(firstLine(message))}}
+    if (record?.finished === true) return {teammate: {name, end: true}}
+    if (read === agentRecordReads) return undefined
+    await new Promise(resolve => setTimeout(resolve, readMs))
+  }
+}
+
+// spec: spec/architecture.md#hook-agentstart
+async function agentEvent(input: TurnInput): Promise<Partial<TurnRequest> | undefined> {
+  const name = nameOf(await agentRecord(input))
+  return name === undefined ? agentStep(input) : teammateStep(input, name)
+}
+
+// spec: spec/architecture.md#hook-agentstart
+function agentRecord({agent_id: id, transcript_path: path}: TurnInput): Promise<AgentRecord | undefined> {
+  if (id === undefined || !path) return Promise.resolve(undefined)
+  return readFile(join(path.replace(/\.jsonl$/, ""), "subagents", `agent-${id}.meta.json`), "utf8").then(text => (JSON.parse(text) as AgentRecord | null) ?? undefined).catch(() => undefined)
+}
+
+// spec: spec/architecture.md#hook-teammatestep
+function nameOf(record: AgentRecord | undefined): string | undefined {
+  return typeof record?.name === "string" && record.name.trim() !== "" ? record.name : undefined
+}
+
+// spec: spec/architecture.md#hook-teammatestep
+function teammateStep(input: TurnInput, name: string): Partial<TurnRequest> | undefined {
+  const {tool_name: tool, hook_event_name: event, tool_input: fields = {}, tool_response: response = {}} = input
+  if (tool === handbackTool) return event === "PreToolUse" ? {teammate: {name, report: cut(stringOf(fields.message) ?? "")}} : undefined
+  if (tool === "Agent") return undefined
+  if (tool !== messageTool) {
+    const step = stepOf(input)
+    return step === undefined ? undefined : {teammate: {name, step}}
+  }
+  if (event !== "PostToolUse" || response.success !== true || !leadNames.includes(stringOf(fields.to) ?? "")) return undefined
+  const replies = [fields, fields.message].map(reply => (reply ?? {}) as {type?: unknown; approve?: unknown})
+  if (replies.some(({type, approve}) => type === "shutdown_response" && approve === true)) return {teammate: {name, end: true}}
+  const message = stringOf(fields.message)
+  return message === undefined || message.trim() === "" ? undefined : {teammate: {name, message: cut(message)}}
 }
 
 // spec: spec/architecture.md#hook-agentstart

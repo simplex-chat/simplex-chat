@@ -48,7 +48,7 @@ The reduced build runs the Linux job build-linux (ubuntu-22.04 x86_64) for every
   - the badge service web app, `npm ci` and `npm run build` in apps/simplex-badge-service/web with Node.js 22, for the test "serves the built web app" (step "Build badge web app for tests");
   - simplex-chat-test with the selected tests (step "Run tests"), each attempt limited to 35 minutes by `timeout`; an attempt that reaches the limit fails, and "Attempt <n> timed out." is printed;
   - step "Check generated files": it fails if a test changed a tracked file, and uploads the change as artifact `generated-files-<job>`. The tests "verify and overwrite schema dump", "verify and overwrite query plans" and the "generate ..." tests of the API docs overwrite their files, so a stale file fails here even when the test passes on retry.
-- App test fixtures: core tests write the core's responses and events that the app tests use to tests/fixtures/api (`/names tests/` to tests/fixtures/api/names; `/contact via address/`, `/should validate link type/` and `/reject contact and notify the sender/` to tests/fixtures/api/connect; `/updated item event has the previous item/`, `/should send updated item with mentions added and removed by edit/` and `/mark call invitation missed when the caller ends the call/` to tests/fixtures/api/updates; `/record upload/` to tests/fixtures/api/files), and fail when a recording differs from the committed file; the rewritten files are committed, and the kotlin and ios scopes run for them.
+- App test fixtures: core tests write the core's responses and events that the app tests use to tests/fixtures/api (`/names tests/` to tests/fixtures/api/names; `/contact via address/`, `/should validate link type/` and `/reject contact and notify the sender/` to tests/fixtures/api/connect; `/updated item event has the previous item/`, `/should send updated item with mentions added and removed by edit/`, `/mark call invitation missed when the caller ends the call/`, `/update as new shows the item last and unread/` and `/silent update as new/` to tests/fixtures/api/updates; `/record upload/` to tests/fixtures/api/files; `/silent, high priority and raised messages recorded for the apps/` to tests/fixtures/api/priority; `/members via another member recorded for the apps/` to tests/fixtures/api/via), and fail when a recording differs from the committed file; the rewritten files are committed, and the kotlin and ios scopes run for them.
 - CI, in test-postgres, except on stable and v* tags: the steps of build-linux with the matrix parameter `postgres` and these job settings:
   - the Docker image and dependency cache of build-linux, and its own build directory cache `dist-postgres-<target>`;
   - simplex-chat-test built with `--constraint 'simplexmq +client_postgres' --constraint 'simplex-chat +client_postgres'` at -O0 (step "Build CLI");
@@ -106,7 +106,7 @@ The reduced build runs the Linux job build-linux (ubuntu-22.04 x86_64) for every
 - CI, in build-linux:
   - Node 22 and Python 3.12 (steps "Setup Node.js" and "Setup Python");
   - libsimplex, when `CORE_SOURCES` of packages_release.py also changed (step "Build library");
-  - `package-tests.sh build linux-x86_64` and `package-tests.sh test` (step "Package tests (pull request)").
+  - `package-tests.sh build linux-x86_64` and `package-tests.sh test` (step "Package tests (pull request)"). `package-tests.sh build` without a platform builds the TypeScript of both packages without the add-on.
 - With libsimplex built, SIMPLEX_LIBS_DIR is set to it for the nodejs tests; the python tests run with it unset (package-tests.sh). Without SIMPLEX_LIBS_DIR, the pinned release libraries are downloaded (packages/simplex-chat-nodejs/src/libs.ts).
 - Local:
   ```sh
@@ -155,11 +155,12 @@ The reduced build runs the Linux job build-linux (ubuntu-22.04 x86_64) for every
 - CI:
   - in build-linux: `scope-tests.sh mcp` (step "Test changed scopes"), with the published `simplex-chat` and `@simplex-chat/types` of package-lock.json:
     - `npm ci`;
+    - when `CORE_SOURCES` of packages_release.py also changed: libsimplex of the branch (step "Build library"), passed as SIMPLEX_LIBS_DIR, and the branch's `@simplex-chat/types` and `simplex-chat`, built by `package-tests.sh build` and installed over the published ones with `npm install --no-save`;
     - `npx tsc` and `npx tsc -p test/tsconfig.json --noEmit`;
     - `npm test`, the unit tests;
-    - `npm run test:e2e`, the end-to-end tests. They download libsimplex and the add-on pinned by the installed `simplex-chat`, and smp-server and xftp-server of the simplexmq release in test/e2e/smpServer.ts;
+    - `npm run test:e2e`, the end-to-end tests. They download the add-on pinned by the installed `simplex-chat`, libsimplex too without SIMPLEX_LIBS_DIR, and smp-server and xftp-server of the simplexmq release in test/e2e/smpServer.ts;
   - before a publication: the package with its published dependencies, type-checked and unit tested in job `publish` of build.yml (docs/contributing/RELEASES.md, "MCP server release").
-- Local: `scripts/ci/scope-tests.sh mcp`.
+- Local: `scripts/ci/scope-tests.sh mcp`; with `SIMPLEX_LIBS_DIR` set to a folder with libsimplex of the branch, against the branch's packages.
 
 #### support-bot
 

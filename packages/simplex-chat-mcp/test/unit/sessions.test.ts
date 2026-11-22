@@ -1063,7 +1063,7 @@ describe("session channel", () => {
   })
 
   const received = (...items: T.ChatItem[]): ChatEvent => ({type: "newChatItems", user, chatItems: items.map(ci => event(sessionGroup, ci))}) as unknown as ChatEvent
-  const updated = (ci: T.ChatItem, edited = true): ChatEvent => ({type: "chatItemUpdated", user, chatItem: event(sessionGroup, {...ci, meta: {...ci.meta, itemEdited: edited}})}) as unknown as ChatEvent
+  const updated = (ci: T.ChatItem, edited = true): ChatEvent => ({type: "chatItemUpdated", user, chatItemUpdate: {...event(sessionGroup, {...ci, meta: {...ci.meta, itemEdited: edited}}), prevChatItem: ci}}) as unknown as ChatEvent
 
   it("passes an edit of a passed prompt with the same item and edited, with the quote line of a reply, once per new text, and nothing for an edit to a command, of a message not passed, of User's message or an update with the same text", async () => {
     const chat = new FakeChat()
@@ -1336,7 +1336,7 @@ describe("session channel", () => {
 
   const priorities = (chat: FakeChat) => chat.sent.filter(({chat: [, groupId]}) => groupId === 20).map(({messages}) => messages.map(message => (message as {priority?: number}).priority))
 
-  it("posts the start of a step as a silent live line and updates it with the step's end, and posts the end that arrives before its start as a silent line, and nothing for that start", async () => {
+  it("posts the start of a step as a silent live line and updates it with the step's end as silent again, and posts the end that arrives before its start as a silent line, and nothing for that start", async () => {
     const chat = new FakeChat()
     const {session} = await channel(chat)
     const posted = () => chat.sent.filter(({chat: [, groupId]}) => groupId === 20)
@@ -1344,7 +1344,7 @@ describe("session channel", () => {
     await session.turn({id: id1, at: 1, step: {id: "toolu_1", text: "💻 Run the tests"}})
     expect(posted()).toEqual([{chat: [T.ChatType.Group, 20], messages: [{msgContent: {type: "text", text: "💻 Run the tests"}, mentions: {}, priority: -1}], live: true}])
     await session.turn({id: id1, at: 2, step: {id: "toolu_1", text: "💻 Run the tests ✅ 2.0 s", end: true}})
-    expect(chat.updates).toEqual([{chatId: 20, itemId: line, text: "💻 Run the tests ✅ 2.0 s"}])
+    expect([chat.updates, chat.updatePriorities]).toEqual([[{chatId: 20, itemId: line, text: "💻 Run the tests ✅ 2.0 s"}], [{itemId: line, priority: -1}]])
     await session.turn({id: id1, at: 4, step: {id: "toolu_2", text: "📖 Read src/hook.ts ✅ 41 ms", end: true}})
     await session.turn({id: id1, at: 3, step: {id: "toolu_2", text: "📖 Read src/hook.ts"}})
     expect(posted().slice(1)).toEqual([{chat: [T.ChatType.Group, 20], messages: [{msgContent: {type: "text", text: "📖 Read src/hook.ts ✅ 41 ms"}, mentions: {}, priority: -1}]}])
@@ -1759,7 +1759,7 @@ describe("session channel", () => {
     expect(sentTo(chat, 20)).toHaveLength(1)
   })
 
-  it("keeps a text live after its final batch and finalizes it at the next step without the end line, or at the Stop hook with the end line and priority 1", async () => {
+  it("keeps a text live after its final batch and finalizes it at the next step without the end line, or at the Stop hook with the end line and priority 1, and repeats priority -1 in every other update", async () => {
     const chat = new FakeChat()
     const {session} = await channel(chat)
     const opening = chat.nextItemId
@@ -1777,7 +1777,7 @@ describe("session channel", () => {
       {chatId: 20, itemId: opening + 1, text: "📖 Read build.log"},
       {chatId: 20, itemId: opening + 2, text: "All good.\n!- Done in 4 ms!"},
     ])
-    expect(chat.updatePriorities).toEqual([{itemId: opening + 2, priority: 1}])
+    expect(chat.updatePriorities).toEqual([{itemId: opening, priority: -1}, {itemId: opening, priority: -1}, {itemId: opening + 1, priority: -1}, {itemId: opening + 2, priority: 1}])
     expect(chat.sent.filter(({chat: [, groupId]}) => groupId === 20).map(({messages, live}) => [messages[0].msgContent.text, live])).toEqual([["", true], ["📖 Read build.log", true], ["All good.", true]])
   })
 
@@ -2326,6 +2326,117 @@ describe("session channel", () => {
     expect(session.actions.get(1)?.state).toBe("pending")
   })
 
+  describe("teammates", () => {
+    const silent = (text: string) => ({msgContent: {type: "text", text}, mentions: {}, priority: -1})
+
+    it("add a named agent once as a member via Claude with its valid name, the agent peer type and its description, post its messages and report as that member, and remove it at its end, after its report and at the session's end", async () => {
+      const chat = new FakeChat()
+      const {session} = await channel(chat)
+      await session.turn({id: id1, teammate: {name: "reviewer", start: {description: "Review the diff"}}})
+      await session.turn({id: id1, teammate: {name: "reviewer", start: {description: "Review again"}}})
+      await session.turn({id: id1, teammate: {name: "tester_2", start: {description: ""}}})
+      expect(chat.viaMembers).toEqual([
+        {groupId: 20, role: "member", profile: {displayName: "reviewer", fullName: "", peerType: "agent", shortDescr: "Review the diff"}},
+        {groupId: 20, role: "member", profile: {displayName: "tester-2", fullName: "", peerType: "agent"}},
+      ])
+      const [reviewer, tester] = [chat.nextMemberId - 2, chat.nextMemberId - 1]
+      await session.turn({id: id1, teammate: {name: "reviewer", message: "No defect in the diff."}})
+      await session.turn({id: id1, teammate: {name: "tester_2", report: "All 212 tests pass."}})
+      await session.turn({id: id1, teammate: {name: "reviewer", end: true}})
+      await session.turn({id: id1, teammate: {name: "linter", start: {description: "Lint"}}})
+      const linter = chat.nextMemberId - 1
+      await session.turn({id: id1, sessionEnd: true})
+      await session.turn({id: id1, teammate: {name: "reviewer", message: "Late."}})
+      expect(chat.sent.filter(({asMember}) => asMember !== undefined)).toEqual([
+        {chat: [T.ChatType.Group, 20], messages: [silent("No defect in the diff.")], asMember: reviewer},
+        {chat: [T.ChatType.Group, 20], messages: [silent("All 212 tests pass.")], asMember: tester},
+      ])
+      expect(chat.removed).toEqual([{groupId: 20, memberIds: [tester]}, {groupId: 20, memberIds: [reviewer]}, {groupId: 20, memberIds: [linter]}])
+    })
+
+    it("post a named agent's steps as live lines of its member, end them as silent at their ends, at the last detach and before its removal, post an end without a start once, and drop the later end of a line ended at a detach", async () => {
+      const chat = new FakeChat()
+      const {session} = await channel(chat)
+      await session.turn({id: id1, teammate: {name: "reviewer", start: {description: "Review"}}})
+      const reviewer = chat.nextMemberId - 1
+      const step = (id: string, text: string, end?: true) => session.turn({id: id1, teammate: {name: "reviewer", step: {id, text, ...(end === undefined ? {} : {end})}}})
+      const line = chat.nextItemId
+      await step("toolu_1", "!- 💻 Run the tests!")
+      await step("toolu_1", "!- 💻 Run the tests 2.0 s!", true)
+      await step("toolu_2", "!- 📖 Read a.ts 4 ms!", true)
+      await step("toolu_2", "!- 📖 Read a.ts!")
+      await step("toolu_3", "!- ✏️ Edit b.ts!")
+      await session.endLive()
+      await step("toolu_3", "!- ✏️ Edit b.ts 1 ms!", true)
+      await step("toolu_4", "!- 💻 Build!")
+      await session.turn({id: id1, teammate: {name: "reviewer", end: true}})
+      expect(chat.sent.filter(({asMember}) => asMember !== undefined)).toEqual([
+        {chat: [T.ChatType.Group, 20], messages: [silent("!- 💻 Run the tests!")], live: true, asMember: reviewer},
+        {chat: [T.ChatType.Group, 20], messages: [silent("!- 📖 Read a.ts 4 ms!")], asMember: reviewer},
+        {chat: [T.ChatType.Group, 20], messages: [silent("!- ✏️ Edit b.ts!")], live: true, asMember: reviewer},
+        {chat: [T.ChatType.Group, 20], messages: [silent("!- 💻 Build!")], live: true, asMember: reviewer},
+      ])
+      expect([chat.updates, chat.updatePriorities]).toEqual([
+        [{chatId: 20, itemId: line, text: "!- 💻 Run the tests 2.0 s!"}, {chatId: 20, itemId: line + 2, text: "!- ✏️ Edit b.ts!"}, {chatId: 20, itemId: line + 3, text: "!- 💻 Build!"}],
+        [{itemId: line, priority: -1}, {itemId: line + 2, priority: -1}, {itemId: line + 3, priority: -1}],
+      ])
+      expect(chat.removed).toEqual([{groupId: 20, memberIds: [reviewer]}])
+    })
+
+    it("are adopted after a restart from the current members via Claude of a known session group, by their names, post as them and are removed at the session's end, or when the session stays closed after the start; other members are not adopted", async () => {
+      const chat = new FakeChat()
+      await openSession(await hubWith(chat), id1, stored(1, "auth"))
+      const via = (groupMemberId: number, name: string, status = T.GroupMemberStatus.Connected, of = "m1"): T.GroupMember => ({...member(groupMemberId, name, T.GroupMemberRole.Member, status), memberVia: of})
+      chat.members.set(20, [self, invitedAlice, via(41, "reviewer"), via(42, "tester", T.GroupMemberStatus.Removed), via(43, "assistant", T.GroupMemberStatus.Connected, "m1003")])
+      const hub = await hubWith(chat)
+      const session = await hub.session(id1, readSessionFile(sessionFolder(root, id1))!)
+      for (const name of ["reviewer", "tester", "assistant"]) await session.turn({id: id1, teammate: {name, message: `${name} is back.`}})
+      expect(chat.sent.filter(({asMember}) => asMember !== undefined)).toEqual([{chat: [T.ChatType.Group, 20], messages: [silent("reviewer is back.")], asMember: 41}])
+      session.open = true
+      hub.endUnattached()
+      expect(chat.removed).toEqual([])
+      session.open = false
+      hub.endUnattached()
+      await until(() => chat.removed.length === 1)
+      expect(chat.removed).toEqual([{groupId: 20, memberIds: [41]}])
+    })
+
+    it("drop the lead's copy of a message of an agent that has a member, post the copy of another agent's message, and post the lead's message to a teammate as Claude's message that mentions it, without a step line", async () => {
+      const chat = new FakeChat()
+      const {session} = await channel(chat)
+      await session.turn({id: id1, teammate: {name: "reviewer", start: {description: "Review"}}})
+      const reviewer = chat.nextMemberId - 1
+      const posts = chat.sent.length
+      await session.turn({id: id1, note: "!- ✉️ Message from reviewer: Done!", copyOf: "reviewer"})
+      await session.turn({id: id1, note: "!- 📋 Report from subagent tester: Done!", copyOf: "tester"})
+      await session.turn({id: id1, step: {id: "toolu_1", text: "!- 🔧 SendMessage!", message: {to: "reviewer", text: "Check the docs."}}})
+      await session.turn({id: id1, step: {id: "toolu_1", text: "!- 🔧 SendMessage 3 ms!", end: true, message: {to: "reviewer", text: "Check the docs."}}})
+      await session.turn({id: id1, step: {id: "toolu_2", text: "!- 🔧 SendMessage!", message: {to: "tester", text: "Run them."}}})
+      expect(chat.sent.slice(posts)).toEqual([
+        {chat: [T.ChatType.Group, 20], messages: [silent("!- 📋 Report from subagent tester: Done!")]},
+        {chat: [T.ChatType.Group, 20], messages: [{...silent("@reviewer Check the docs."), mentions: {reviewer}}]},
+        {chat: [T.ChatType.Group, 20], messages: [silent("!- 🔧 SendMessage!")], live: true},
+      ])
+    })
+
+    it("pass a reply to a teammate's message, a mention of teammates and a reaction to a teammate's message to the session with to, and other prompts without it", async () => {
+      const chat = new FakeChat()
+      const {session, lines} = await channel(chat)
+      await session.turn({id: id1, teammate: {name: "reviewer", start: {description: "Review"}}})
+      await session.turn({id: id1, teammate: {name: "tester", start: {description: "Test"}}})
+      const [reviewer, tester] = [chat.nextMemberId - 2, chat.nextMemberId - 1].map((groupMemberId, i) => ({...member(groupMemberId, ["reviewer", "tester"][i]), memberVia: "m1"}))
+      const mentioned = (m: T.GroupMember) => ({memberId: m.memberId, memberRef: {groupMemberId: m.groupMemberId, displayName: m.memberProfile.displayName, memberRole: m.memberRole}})
+      const sent = item(41, "No defect.", {type: "groupSnd"})
+      const reviewed = {...sent, meta: {...sent.meta, sentAsMember: reviewer}} as unknown as T.ChatItem
+      session.onMessage(event(sessionGroup, {...item(43, "Why?", from(invitedAlice)), quotedItem: {chatDir: from(reviewer), itemId: 41, sentAt: "", content: {type: "text", text: "No defect."}}} as unknown as T.ChatItem))
+      session.onMessage(event(sessionGroup, {...item(44, "@tester @reviewer sync", from(invitedAlice)), mentions: {tester: mentioned(tester), reviewer: mentioned(reviewer)}} as unknown as T.ChatItem))
+      session.onMessage(event(sessionGroup, {...item(45, "@Bob run it", from(invitedAlice)), mentions: {Bob: mentioned(bob)}} as unknown as T.ChatItem))
+      session.onReaction(reaction(sessionGroup, reviewed, invitedAlice, emoji("👍")) as CEvt.ChatItemReaction)
+      await until(() => lines.length === 4)
+      expect(lines.map(({prompt}) => [prompt?.to, prompt?.replyTo?.from])).toEqual([["reviewer", "reviewer"], ["tester, reviewer", undefined], [undefined, undefined], ["reviewer", "reviewer"]])
+    })
+  })
+
   describe("while files and media are off in the session group", () => {
     const groupPosts = (chat: FakeChat) => chat.sent.filter(({chat: [kind, id]}) => kind === T.ChatType.Group && id === 20).map(({messages: [{msgContent}]}) => msgContent)
     const peerPosts = (chat: FakeChat) => chat.sent.filter(({chat: [kind, id]}) => kind === T.ChatType.Direct && id === 4).map(({messages: [{msgContent}]}) => msgContent.type)
@@ -2805,6 +2916,27 @@ describe("Main group", () => {
     expect(sentTo(chat, 10).filter(text => text.includes("1 · one"))).toHaveLength(1)
   })
 
+  it("edits the board's messages as silent, in place while they are last in the Main group, and moves them together with the next change when another message follows them", async () => {
+    const chat = new FakeChat()
+    const hub = await hubWith(chat)
+    const one = await openSession(hub, id1, stored(1, "one"))
+    one.onLine = () => undefined
+    await hub.showSessions()
+    const [message, summary] = [chat.nextItemId - 2, chat.nextItemId - 1]
+    const items = chat.chats.get("#10")!.items
+    items.push(item(message, "board", {type: "groupSnd"}), item(summary, "summary", {type: "groupSnd"}))
+    one.record = join(root, "claude-1.json")
+    writeFileSync(one.record, JSON.stringify({status: "busy"}))
+    await hub.showSessions()
+    expect(chat.updatePriorities).toEqual([{itemId: message, priority: -1}, {itemId: summary, priority: -1}])
+    items.push(item(900, "/sessions", {type: "groupRcv", groupMember: bob}))
+    await hub.showSessions()
+    expect(chat.updatePriorities).toHaveLength(2)
+    writeFileSync(one.record, JSON.stringify({status: "idle"}))
+    await hub.showSessions()
+    expect(chat.updatePriorities.slice(2)).toEqual([{itemId: message, priority: -1, asNew: true}, {itemId: summary, priority: -1, asNew: true}])
+  })
+
   it("shows the title, the account, the model, the effort, the goal state and the recap of a session in its message, and the details and the recap in its group's descriptions", async () => {
     const chat = new FakeChat()
     const hub = await hubWith(chat)
@@ -2997,7 +3129,7 @@ describe("Main group", () => {
     expect(sentTo(chat, 21).slice(-2)).toEqual(["▶️ 1 · one: running", "1 session ▶️"])
   })
 
-  it("posts a silent live message of a subagent at its start, ends it with its result at its stop and with the figures of its task, and drops the note of that task", async () => {
+  it("posts a silent live message of a subagent at its start, ends it with its result at its stop and with the figures of its task, both silent, and drops the note of that task", async () => {
     const chat = new FakeChat()
     const hub = await hubWith(chat)
     const session = await openSession(hub, id1, stored(1, "one"))
@@ -3007,6 +3139,35 @@ describe("Main group", () => {
     await session.turn({id: id1, prompt: "<task-notification>…</task-notification>", typed: false, note: "!- ✅ Agent finished!", task: {toolUse: "toolu_1", status: "completed", tokens: 61_500, steps: 22, ms: 160_000}})
     await until(() => chat.updates.length === 2)
     expect([chat.updates, sentTo(chat, 20).filter(text => text.includes("finished"))]).toEqual([[{chatId: 20, itemId: chat.nextItemId - 1, text: "!- 🤖 Explore · find callers · ✅ 0:00 · 0 steps!\n!- Found 6 callers.!"}, {chatId: 20, itemId: chat.nextItemId - 1, text: "!- 🤖 Explore · find callers · ✅ 2:40 · 22 steps · 61.5k tokens!\n!- Found 6 callers.!"}], []])
+    expect(chat.updatePriorities.map(({priority}) => priority)).toEqual([-1, -1])
+  })
+
+  it("moves the live messages of subagents together, in their order and as silent, with their next due edit when another message follows them, edits them in place while they are last, and ends a message in place", async () => {
+    const chat = new FakeChat()
+    const hub = await hubWith(chat)
+    const session = await openSession(hub, id1, stored(1, "one"))
+    session.onLine = () => undefined
+    const first = chat.nextItemId
+    await session.turn({id: id1, agent: {id: "a1", start: {type: "Explore", description: "find callers", transcript: join(root, "agent-a1.jsonl")}}})
+    await session.turn({id: id1, agent: {id: "a2", start: {type: "Plan", description: "plan the fix", transcript: join(root, "agent-a2.jsonl")}}})
+    const items = chat.chats.get("#20")!.items
+    items.push(item(first, "card 1", {type: "groupSnd"}), item(first + 1, "card 2", {type: "groupSnd"}))
+    const edited = async (step: string): Promise<void> => {
+      const edits = chat.updatePriorities.length
+      await session.turn({id: id1, agent: {id: "a1", step: {id: step, text: `📖 Read ${step}.ts`}}})
+      for (const card of session["agents"].live()) card.sentAt -= 5_000
+      await session.readRecord()
+      await until(() => chat.updatePriorities.length > edits)
+      await session["agents"].live()[1].item
+    }
+    await edited("t1")
+    expect(chat.updatePriorities).toEqual([{itemId: first, priority: -1}])
+    items.push(item(first + 10, "!- 💻 Run the tests!", {type: "groupSnd"}))
+    await edited("t2")
+    expect(chat.updatePriorities.slice(1)).toEqual([{itemId: first, priority: -1, asNew: true}, {itemId: first + 1, priority: -1, asNew: true}])
+    await session.turn({id: id1, agent: {id: "a2", stop: "Planned."}})
+    await until(() => chat.updatePriorities.length === 4)
+    expect(chat.updatePriorities.at(-1)).toEqual({itemId: first + 1, priority: -1})
   })
 
   it("shows the working subagents in the session's board message, and ends their live messages with ⏹️ at the last detach", async () => {

@@ -20,7 +20,7 @@ import Data.Time.Clock.System (SystemTime (..), systemToUTCTime)
 import Simplex.Chat.Delivery
   ( DeliveryJobScope (DJSGroup, jobSpec),
     DeliveryJobSpec (DJDeliveryJob, includePending),
-    MessageDeliveryTask (MessageDeliveryTask, brokerTs, fwdSender, jobScope, senderGMId, taskId, verifiedMsg),
+    MessageDeliveryTask (MessageDeliveryTask, brokerTs, fwdSender, jobScope, senderGMId, taskId, updateNotification, verifiedMsg),
     deliveryTaskId,
   )
 import Simplex.Chat.Messages.Batch
@@ -54,7 +54,7 @@ batchingTests = describe "message batching tests" $ do
   it "shortens forwarded member names" testFwdMemberName
 
 instance IsString SndMessage where
-  fromString s = SndMessage {msgId, sharedMsgId = SharedMsgId "", msgBody = s', signedMsg_ = Nothing}
+  fromString s = SndMessage {msgId, sharedMsgId = SharedMsgId "", msgBody = s', signedMsg_ = Nothing, fwdElement_ = Nothing}
     where
       s' = encodeUtf8 $ T.pack s
       msgId = fromInteger $ os2ip s'
@@ -150,7 +150,7 @@ testImageFitsSingleBatch = do
 
   let xMsgNewStr = B.replicate xMsgNewRoundedSize 1
       descrStr = B.replicate descrRoundedSize 2
-      msg s = SndMessage {msgId = 0, sharedMsgId = SharedMsgId "", msgBody = s, signedMsg_ = Nothing}
+      msg s = SndMessage {msgId = 0, sharedMsgId = SharedMsgId "", msgBody = s, signedMsg_ = Nothing, fwdElement_ = Nothing}
       batched = "[" <> xMsgNewStr <> "," <> descrStr <> "]"
 
   runBatcherTest' BMJson maxEncodedMsgLength [msg xMsgNewStr, msg descrStr] [] [batched]
@@ -181,7 +181,8 @@ deliveryTask taskId text =
       brokerTs = systemToUTCTime $ MkSystemTime 0 0,
       verifiedMsg =
         VMUnsigned
-          (ChatMessage chatInitialVRange Nothing $ XMsgNew $ mcSimple $ MCText text)
+          (ChatMessage chatInitialVRange Nothing $ XMsgNew $ mcSimple $ MCText text),
+      updateNotification = False
     }
 
 testRelayBatchSingletonOverflow :: IO ()

@@ -32,4 +32,4 @@ What comes next for Claude Code in SimpleX Chat.
 ## More agents
 
 - Codex and other agents, alongside Claude Code.
-- Claude's subagents and teammates join the session's group with their own profiles, and a mention of one by name sends it a message.
+- ✅ Claude's teammates join the session's group with their own profiles, and a reply to one or a mention of one sends it the message.

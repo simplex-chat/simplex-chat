@@ -38,7 +38,7 @@ describe("plugin", () => {
     expect(read(".mcp.json").mcpServers.simplex.timeout).toBe((maxExpireHours + responseWaitHours) * 3_600_000 + marginMs)
   })
 
-  it("runs the hooks from the plugin's own build, allows the plugin's tools, runs the turn hook at the start and the end of every tool use and after each compaction, asks the session server before every tool use whether its tool is approved, runs the display hook synchronously for MessageDisplay, lets the PermissionRequest and Elicitation hooks wait a day for a card, and runs the turn hook at a failed turn and at the notifications of a waiting Claude Code", () => {
+  it("runs the hooks from the plugin's own build, allows the plugin's tools, runs the turn hook at the start and the end of every tool use and after each compaction, asks the session server before every tool use whether its tool is approved, runs the display hook synchronously for MessageDisplay, lets the PermissionRequest and Elicitation hooks wait a day for a card, runs the turn hook at a failed turn and at the notifications of a waiting Claude Code, and runs it synchronously for 5 seconds at most at the session's end", () => {
     const {hooks} = read("hooks/hooks.json")
     expect(hooks.SessionStart[0].hooks[0]).toEqual({type: "command", command: cli("hook session-start"), timeout: 600})
     expect(hooks.PreToolUse[0].matcher).toBe("mcp__plugin_simplex_simplex__.*")
@@ -50,6 +50,7 @@ describe("plugin", () => {
     expect(hooks.MessageDisplay).toEqual([{hooks: [{type: "command", command: 'node "${CLAUDE_PLUGIN_ROOT}/dist/display.js"', timeout: 2}]}])
     for (const event of ["PermissionRequest", "Elicitation"]) expect(hooks[event]).toEqual([{hooks: [{type: "command", command: cli("hook ask"), timeout: 86400}]}])
     expect(hooks.StopFailure).toEqual([{hooks: [{type: "command", command: cli("hook turn"), async: true}]}])
+    expect(hooks.SessionEnd).toEqual([{hooks: [{type: "command", command: cli("hook turn"), timeout: 5}]}])
     expect(hooks.Notification).toEqual([{matcher: "permission_prompt|worker_permission_prompt|elicitation_dialog|elicitation_url_dialog|agent_needs_input|quota_auto_resume_stale|quota_auto_resume_disabled", hooks: [{type: "command", command: cli("hook turn"), async: true}]}])
   })
 

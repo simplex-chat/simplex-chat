@@ -70,6 +70,7 @@ Claude Code plugin ([participants](#claude-code-plugin-flows)):
 41. [A tool prompt of the PermissionRequest hook](#41-a-tool-prompt-of-the-permissionrequest-hook)
 42. [Claude's question, a plan and an MCP server's link](#42-claudes-question-a-plan-and-an-mcp-servers-link)
 43. [A failed turn and a waiting Claude Code](#43-a-failed-turn-and-a-waiting-claude-code)
+44. [A teammate in the session group](#44-a-teammate-in-the-session-group)
 
 ---
 
@@ -1932,9 +1933,9 @@ sequenceDiagram
 
 Notes:
 
-- Workflow agents, teammates and Claude Code's internal agents get no message: their SubagentStart finds no record beside the transcript, a record with `taskKind`, or none, so the service drops their steps ([`agentStart`](../src/hook.ts), [`Agents.step`](../src/agents.ts)).
+- Workflow agents and Claude Code's internal agents get no message: their SubagentStart finds no record beside the transcript, a record with `taskKind`, or none, so the service drops their steps. Agents whose record has a name are teammates, [flow 44](#44-a-teammate-in-the-session-group) ([`agentStart`](../src/hook.ts), [`Agents.step`](../src/agents.ts)).
 - The state is in memory: after a service restart, the messages keep their last edit. The last detach and the hub's stop end the live ones with ⏹️ ([`Session.endLive`](../src/hub.ts)).
-- Edits leave the messages where they were posted.
+- Every edit has priority -1. While only live messages are last in the group, edits leave them in place; when another item follows them, the next due edit moves every live message to the bottom with `as_new=on`, in their order. An ended message is edited in place ([`Session.readAgents`, `cardsFollowed`](../src/hub.ts)).
 
 Source: [`agentStart`, `agentStep`, `leadTask`, `taskOf`](../src/hook.ts), [`Agents`, `cardText`, `agentsLine`, `applyJournal`](../src/agents.ts), [`lastUsage`, `AppendedLines`](../src/claude-code.ts), [`Session.onAgents`, `readAgents`, `showCard`](../src/hub.ts).
 
@@ -2043,3 +2044,62 @@ sequenceDiagram
 ```
 
 Source: [`eventFields`, `failureOf`, `continued`, `menuOpen`](../src/hook.ts), [`Session.turn`, `fail`, `waits`, `failureLine`](../src/hub.ts).
+
+---
+
+## 44. A teammate in the session group
+
+```mermaid
+sequenceDiagram
+  participant L as lead
+  participant R as teammate reviewer
+  participant K as hook turn
+  participant D as Service
+  participant N as Session N
+  participant C as Claude's core
+  participant G as session group
+  R->>K: SubagentStart, record with name reviewer
+  K->>D: POST /turn teammate {name, start: {description}}
+  N->>C: /_add via #G member json PROFILE
+  C->>G: x.grp.mem.new, via Claude: Claude added reviewer
+  loop each tool use of R
+    R->>K: PreToolUse, PostToolUse with agent_id
+    K->>D: POST /turn teammate {name, step}
+    N->>C: /_send #G(as_member=M) live=on, then /_update item, priority -1
+    C->>G: x.grp.msg.forward of reviewer's live line
+  end
+  R->>K: PostToolUse SendMessage to team-lead
+  K->>D: POST /turn teammate {name, message}
+  N->>C: /_send #G(as_member=M) json [...]
+  C->>G: reviewer: the message
+  L->>K: PreToolUse SendMessage to reviewer
+  K->>D: POST /turn step {..., message: {to, text}}
+  N->>G: Claude: @reviewer TEXT, mentioning M; no step line
+  G->>N: a reply to reviewer's message, or a mention of M
+  N->>L: channel prompt with to="reviewer"
+  L->>R: SendMessage, forwarded unchanged
+  R->>K: PostToolUse SendMessage shutdown_response approve
+  K->>D: POST /turn teammate {name, end}
+  N->>C: the live lines completed, then /_remove #G M
+  C->>G: Claude removed reviewer
+```
+
+Teammate states:
+
+```mermaid
+stateDiagram-v2
+  [*] --> adding: start, a valid name, fewer than 20 current
+  adding --> member: viaMemberAdded
+  adding --> without_member: the core refuses
+  member --> member: message, step, adopted after a restart
+  member --> [*]: end, report, SessionEnd, idle close, not reopened 10 min after a start, then /_remove
+  without_member --> [*]: end
+```
+
+Notes:
+
+- The lead's copy of a teammate's message or report, a note with `copyOf`, is not posted once that name had a member ([`Session.turn`](../src/hub.ts)).
+- The service keeps teammates in memory only, and the members in the chat database: at a start it adopts the current members via Claude of each known session group by name ([`Teammates.adopt`](../src/teammates.ts)).
+- The messages of a teammate without a member reach the group only as the lead's notes.
+
+Source: [`agentStart`, `agentStop`, `agentEvent`, `teammateStep`](../src/hook.ts), [`Teammates`](../src/teammates.ts), [`Session.turn`, `teammate`, `step`, `addressed`, `endTeammates`, `Hub.session`, `endUnattached`](../src/hub.ts), [`channelNotification`](../src/session.ts).

@@ -162,6 +162,16 @@ struct ChatItemInfoView: View {
             if let deleteAt = meta.itemTimed?.deleteAt {
                 infoRow("Disappears at", localTimestamp(deleteAt))
             }
+            if meta.highPriority {
+                HStack {
+                    Label {
+                        Text("High priority")
+                    } icon: {
+                        Text(Image(systemName: "bell.fill")).foregroundColor(theme.colors.primary)
+                    }
+                    Spacer()
+                }
+            }
             if let file = ci.file, let fileExpires = file.fileExpires {
                 infoRow(file.expired ? "File was available until" : "File available until", localTimestamp(fileExpires))
                 if noShownBadge() {
@@ -549,6 +559,9 @@ struct ChatItemInfoView: View {
         }
         if let deleteAt = meta.itemTimed?.deleteAt {
             shareText += [String.localizedStringWithFormat(NSLocalizedString("Disappears at: %@", comment: "copied message info"), localTimestamp(deleteAt))]
+        }
+        if meta.highPriority {
+            shareText += [NSLocalizedString("High priority", comment: "copied message info")]
         }
         if meta.msgVerified?.verified == true {
             shareText += [ci.chatDir.sent

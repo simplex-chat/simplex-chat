@@ -428,7 +428,7 @@ jobs:
 
       - name: Restore library build directory from cache
         id: restore-build-lib
-        if: env.release != 'true' && matrix.libs && needs.maybe-release.outputs.core_changed && matrix.arch == 'x86_64' && (needs.maybe-release.outputs.reduced != 'true' || matrix.packages == true)
+        if: env.release != 'true' && matrix.libs && needs.maybe-release.outputs.core_changed && matrix.arch == 'x86_64' && (needs.maybe-release.outputs.reduced != 'true' || matrix.packages == true || contains(needs.maybe-release.outputs.scopes, 'mcp'))
         uses: actions/cache/restore@v4
         with:
           path: |
@@ -471,10 +471,10 @@ jobs:
           done
           [ ! -f /out/simplex-chat ] || strip /out/simplex-chat
 
-      # Also for pull requests that change the chat core, for the package tests.
+      # Also for pull requests that change the chat core, for the package tests and the mcp scope.
       - name: Build library
         id: build-lib
-        if: matrix.libs && (needs.maybe-release.outputs.libs_tag || (needs.maybe-release.outputs.core_changed && matrix.arch == 'x86_64' && (needs.maybe-release.outputs.reduced != 'true' || matrix.packages == true)))
+        if: matrix.libs && (needs.maybe-release.outputs.libs_tag || (needs.maybe-release.outputs.core_changed && matrix.arch == 'x86_64' && (needs.maybe-release.outputs.reduced != 'true' || matrix.packages == true || contains(needs.maybe-release.outputs.scopes, 'mcp'))))
         shell: docker exec -t builder sh -eu {0}
         run: |
           scripts/ci/prune-old-builds.sh dist-lib
@@ -782,6 +782,7 @@ jobs:
         shell: bash
         env:
           SCOPES: ${{ needs.maybe-release.outputs.scopes }}
+          SIMPLEX_LIBS_DIR: ${{ steps.build-lib.outcome == 'success' && format('{0}/release-libs/simplex-chat-libs-linux-{1}/libs', github.workspace, matrix.arch) || '' }}
         run: |
           for scope in $SCOPES; do
             scripts/ci/scope-tests.sh "$scope"

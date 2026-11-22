@@ -10,7 +10,7 @@ temp=${RUNNER_TEMP:-$(mktemp -d)}
 npm_install=$PWD/scripts/ci/npm-install.sh
 
 usage() {
-  echo "usage: $0 build <platform> | test | addon <platform> | publish <platform> [nodejs] [python]" >&2
+  echo "usage: $0 build [<platform>] | test | addon <platform> | publish <platform> [nodejs] [python]" >&2
   exit 1
 }
 
@@ -36,8 +36,8 @@ test_python() {
 
 case "${1:-}" in
   build)
-    [ $# -eq 2 ] || usage
-    build_package "$2"
+    [ $# -le 2 ] || usage
+    build_package "${2:-}"
     ;;
   test)
     [ $# -eq 1 ] || usage

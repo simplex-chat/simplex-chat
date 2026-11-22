@@ -58,7 +58,9 @@ ChatTagsModel (singleton -- filter state)
 ├── userTags: [ChatTag]
 ├── activeFilter: ActiveFilter?
 ├── presetTags: [PresetTag: Int]
-└── unreadTags: [Int64: Int]
+├── unreadTags: [Int64: Int]
+├── silentTags: [Int64: Int]
+└── priorityTags: [Int64: Int]
 ```
 
 ---
@@ -258,7 +260,9 @@ enum SecondaryItemsModelFilter {
 | `userTags` | `[ChatTag]` | User-defined tags | [L192](../Shared/Model/ChatModel.swift#L192) |
 | `activeFilter` | `ActiveFilter?` | Currently active filter tab | [L193](../Shared/Model/ChatModel.swift#L193) |
 | `presetTags` | `[PresetTag: Int]` | Preset tag counts (groups, contacts, favorites, etc.) | [L194](../Shared/Model/ChatModel.swift#L194) |
-| `unreadTags` | `[Int64: Int]` | Unread count per user tag | [L195](../Shared/Model/ChatModel.swift#L195) |
+| `unreadTags` | `[Int64: Int]` | Count of chats with `unreadTag == .unread` or `.highPriority` per user tag | [L195](../Shared/Model/ChatModel.swift#L195) |
+| `silentTags` | `[Int64: Int]` | Count of chats with `unreadTag == .silent` per user tag | [L196](../Shared/Model/ChatModel.swift#L196) |
+| `priorityTags` | `[Int64: Int]` | Count of chats with `unreadTag == .highPriority` per user tag | `ChatTagsModel.priorityTags` |
 
 ### [ActiveFilter](../Shared/Views/ChatList/ChatListView.swift#L52)
 
@@ -318,11 +322,17 @@ Represents a single conversation in the chat list. Each `Chat` is an independent
 struct ChatStats: Decodable, Hashable {
     var unreadCount: Int = 0
     var unreadMentions: Int = 0
+    var unreadSilent: Int = 0
+    var unreadHighPriority: Int = 0
     var reportsCount: Int = 0
     var minUnreadItemId: Int64 = 0
     var unreadChat: Bool = false
 }
 ```
+
+`unreadSilent` counts unread silent items. The user's unread counter leaves them out in mode "All" (`ChatInfo.silentNotCounted`); in mode "Mentions" a silent mention counts as a mention.
+
+`unreadHighPriority` counts unread high priority items (`CIMeta.highPriority`, priority 1), groups only; they are also counted in `unreadMentions`. `ChatModel.applyChatItemUpdate` changes `unreadSilent` and `unreadHighPriority` by the difference between the previous and the new item, like `unreadCount` and `unreadMentions`; the user's counter changes by the silent delta in mode "All". In another profile, the profile total changes by the difference in the items counted with `ntfsEnabled`, without silent items in mode "All".
 
 ### Computed Properties
 
@@ -330,7 +340,7 @@ struct ChatStats: Decodable, Hashable {
 |----------|-------------|------|
 | `id` | Chat ID from `chatInfo.id` | [L1336](../Shared/Model/ChatModel.swift#L1336) |
 | `viewId` | Unique view identity including creation time | [L1338](../Shared/Model/ChatModel.swift#L1338) |
-| `unreadTag` | Whether chat counts as "unread" based on notification settings | [L1328](../Shared/Model/ChatModel.swift#L1328) |
+| `unreadTag` | `.highPriority`, `.unread`, `.silent` or `.read` based on notification settings: `.highPriority` when high priority items are unread in mode "All" or "Mentions"; `.silent` when only silent items are unread in mode "All" | [L1328](../Shared/Model/ChatModel.swift#L1328) |
 | `supportUnreadCount` | Unread count for group support scope | [L1340](../Shared/Model/ChatModel.swift#L1340) |
 
 ---
@@ -453,6 +463,10 @@ Haskell core generates ChatEvent.chatItemUpdated(user, chatItemUpdate: AChatItem
         2. Replace the preview if it is this item
         3. Replace the item in ItemsModel.reversedChatItems if it is loaded,
            never insert it
+    → An update as new (ChatItem.isAsNew(from:): itemTs differs from prevChatItem):
+        2. Set the preview by the group rule of addChatItem and pop the chat
+        3. Remove the item from ItemsModel.reversedChatItems if it is loaded,
+           and insert it last as a new item
     → Another user's event changes that user's unread counter by the same difference
     → An update of a locally deleted message creates it again: the core sends newChatItems
 ```

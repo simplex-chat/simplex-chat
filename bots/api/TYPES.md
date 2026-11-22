@@ -92,6 +92,7 @@ This file is generated automatically.
 - [DomainVerification](#domainverification)
 - [DroppedMsg](#droppedmsg)
 - [E2EInfo](#e2einfo)
+- [EditsGroupPreference](#editsgrouppreference)
 - [ErrorType](#errortype)
 - [FeatureAllowed](#featureallowed)
 - [FileDescr](#filedescr)
@@ -1102,11 +1103,13 @@ GroupLink:
 - itemTimed: [CITimed](#citimed)?
 - itemLive: bool?
 - userMention: bool
+- priority: int?
 - hasLink: bool
 - deletable: bool
 - editable: bool
 - forwardedByMember: int64?
 - showGroupAsSender: bool
+- sentAsMember: [GroupMember](#groupmember)?
 - msgVerified: [MsgVerified](#msgverified)?
 - createdAt: UTCTime
 - updatedAt: UTCTime
@@ -1786,6 +1789,8 @@ ChatType_cmd_string(chatType) + str(chatId) + ((GroupChatScope_cmd_string(chatSc
 **Record type**:
 - unreadCount: int
 - unreadMentions: int
+- unreadSilent: int
+- unreadHighPriority: int
 - reportsCount: int
 - minUnreadItemId: int64
 - unreadChat: bool
@@ -1926,6 +1931,7 @@ LARGE:
 - quotedItemId: int64?
 - msgContent: [MsgContent](#msgcontent)
 - mentions: {string : int64}
+- priority: int?
 
 
 ---
@@ -2319,6 +2325,16 @@ Remote controller application info.
 
 ---
 
+## EditsGroupPreference
+
+**Record type**:
+- enable: [GroupFeatureEnabled](#groupfeatureenabled)
+- role: [GroupMemberRole](#groupmemberrole)?
+- duration: int?
+
+
+---
+
 ## ErrorType
 
 **Discriminated union type**:
@@ -2616,6 +2632,8 @@ Markup:
 - sessions: [RoleGroupPreference](#rolegrouppreference)
 - comments: [CommentsGroupPreference](#commentsgrouppreference)
 - signMessages: [GroupPreference](#grouppreference)
+- msgPriority: [RoleGroupPreference](#rolegrouppreference)
+- edits: [EditsGroupPreference](#editsgrouppreference)
 - commands: [[ChatBotCommand](#chatbotcommand)]
 
 
@@ -2709,6 +2727,8 @@ MemberSupport:
 - "sessions"
 - "comments"
 - "signMessages"
+- "msgPriority"
+- "edits"
 
 
 ---
@@ -2828,6 +2848,7 @@ UpdateRequired:
 - blockedByAdmin: bool
 - invitedBy: [InvitedBy](#invitedby)
 - invitedByGroupMemberId: int64?
+- memberVia: string?
 - localDisplayName: string
 - memberProfile: [LocalProfile](#localprofile)
 - memberContactId: int64?
@@ -2964,6 +2985,8 @@ contact=<contactId> owner=<memberId>
 - sessions: [RoleGroupPreference](#rolegrouppreference)?
 - comments: [CommentsGroupPreference](#commentsgrouppreference)?
 - signMessages: [GroupPreference](#grouppreference)?
+- msgPriority: [RoleGroupPreference](#rolegrouppreference)?
+- edits: [EditsGroupPreference](#editsgrouppreference)?
 - commands: [[ChatBotCommand](#chatbotcommand)]?
 
 
@@ -5186,6 +5209,7 @@ Handshake:
 **Record type**:
 - msgContent: [MsgContent](#msgcontent)
 - mentions: {string : int64}
+- priority: int?
 
 
 ---

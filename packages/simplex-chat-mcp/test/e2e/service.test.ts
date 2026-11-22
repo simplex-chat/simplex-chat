@@ -288,6 +288,28 @@ test("the Main group shows a message of each running session with its state from
   await replied
 }, 300_000)
 
+test("a named agent joins a session's group as a member via Claude with its name, the agent peer type and its description, posts its message there as that member, a reply to that message reaches the session with to, and Claude removes the member at the agent's end", async () => {
+  const {alice, client, groupOne} = await linkSession("teammates")
+  const attached: AttachLine[] = []
+  const controller = new AbortController()
+  closing.push(async () => controller.abort())
+  client.stream("/attach", {id: one}, line => attached.push(line as AttachLine), controller.signal).catch(() => undefined)
+  await until(() => attached.length > 0)
+  const reviewer = async (): Promise<T.GroupMember | undefined> => (await alice.chat.apiListMembers(groupOne)).find(({memberProfile}) => memberProfile.displayName === "reviewer")
+  await client.request("POST", "/turn", {id: one, teammate: {name: "reviewer", start: {description: "Review the diff"}}})
+  await until(async () => (await reviewer()) !== undefined)
+  expect((await reviewer())!.memberProfile).toMatchObject({displayName: "reviewer", shortDescr: "Review the diff", peerType: T.ChatPeerType.Agent})
+  const posted = received(alice.chat, inGroup(groupOne, ({chatItem}) => chatItem.chatDir.type === "groupRcv" && chatItem.chatDir.groupMember.memberProfile.displayName === "reviewer" && chatItem.meta.itemText === "No defect in the diff."))
+  await client.request("POST", "/turn", {id: one, teammate: {name: "reviewer", message: "No defect in the diff."}})
+  const message = await posted
+  await alice.chat.apiSendMessages([T.ChatType.Group, groupOne], [{msgContent: {type: "text", text: "Check the tests too."}, quotedItemId: message.chatItem.meta.itemId, mentions: {}}])
+  await until(() => attached.some(({prompt}) => prompt !== undefined))
+  expect(attached.find(({prompt}) => prompt !== undefined)!.prompt).toMatchObject({text: "> No defect in the diff.\nCheck the tests too.", from: "Alice", replyTo: {from: "reviewer"}, to: "reviewer"})
+  const removed = alice.chat.wait("deletedMember", ({deletedMember}) => deletedMember.memberProfile.displayName === "reviewer", 60_000)
+  await client.request("POST", "/turn", {id: one, teammate: {name: "reviewer", end: true}})
+  expect(await removed).toMatchObject({groupInfo: {groupId: groupOne}, byMember: {memberProfile: {displayName: "Claude"}}})
+}, 300_000)
+
 test("while files and media are off in a session's group, the card of a send of an image is posted as text, the image is sent after the approval, and the card is edited as text", async () => {
   const root = join(dir, "media", "root")
   await prepareRoot(smpServer.address, root, xftpServer.address)
