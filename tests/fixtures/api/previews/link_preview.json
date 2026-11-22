@@ -1,0 +1,47 @@
+{
+  "commands": {
+    "/_link preview LINK_URL/no-image": {
+      "error": {
+        "errorType": {
+          "message": "no image",
+          "type": "linkPreview"
+        },
+        "type": "error"
+      }
+    },
+    "/_link preview LINK_URL/page": {
+      "result": {
+        "linkPreview": {
+          "description": "Link preview description",
+          "image": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAKklEQVR42u3MsQ0AAAQF0ZMYwMjG1rEDjeJfcu0zyA6o7U5wSoAAAV+AASePEiWxMZ/qAAAAAElFTkSuQmCC",
+          "title": "Link preview title",
+          "uri": "LINK_URL/page"
+        },
+        "type": "linkPreview"
+      }
+    }
+  },
+  "markdown": {
+    "LINK_URL/no-image": {
+      "formattedText": [
+        {
+          "format": {
+            "type": "uri"
+          },
+          "text": "LINK_URL/no-image"
+        }
+      ]
+    },
+    "LINK_URL/page": {
+      "formattedText": [
+        {
+          "format": {
+            "type": "uri"
+          },
+          "text": "LINK_URL/page"
+        }
+      ]
+    }
+  },
+  "uris": {}
+}
