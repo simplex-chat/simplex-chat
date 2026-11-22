@@ -310,12 +310,12 @@ Optional feature where the recipient sees typing in real-time.
 
 | Function | Line | Description |
 |----------|------|-------------|
-| [`showLinkPreview()`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L1909) | L1909 | Triggers link preview loading |
-| [`getMessageLinks()`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L1929) | L1929 | Extracts URLs from formatted text |
-| [`isSimplexLink()`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L1940) | L1940 | Checks if URL is a SimpleX link |
-| [`cancelLinkPreview()`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L1944) | L1944 | Cancels pending preview |
-| [`loadLinkPreview()`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L1956) | L1956 | Requests the preview from the core |
-| [`resetLinkPreview()`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L1977) | L1977 | Resets preview state |
+| [`showLinkPreview()`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L1912) | L1912 | Triggers link preview loading |
+| [`getMessageLinks()`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L1932) | L1932 | Extracts URLs from formatted text |
+| [`isSimplexLink()`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L1943) | L1943 | Checks if URL is a SimpleX link |
+| [`cancelLinkPreview()`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L1947) | L1947 | Cancels pending preview |
+| [`loadLinkPreview()`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L1959) | L1959 | Requests the preview from the core |
+| [`resetLinkPreview()`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L1982) | L1982 | Resets preview state |
 | [`apiGetLinkPreview()`](../../Shared/Model/SimpleXAPI.swift#L527) | L527 | Sends `/_link preview <uri>`; on failure returns no preview |
 
 ### Behavior
@@ -326,6 +326,7 @@ Optional feature where the recipient sees typing in real-time.
 - A failed preview shows no card and no alert; with **Show developer options** and **Show link preview errors** on, an alert shows the error of the core
 - A link whose preview failed is added to `cancelledLinks`, so it is not requested again until the compose is cleared
 - A result is applied only while its link is `pendingLinkUrl`; the result of a link replaced since then is discarded
+- An attachment, voice or chat link preview resets the link state (`resetLinkPreview`), so a pending link preview does not replace it
 - The share extension requests the preview of a shared link from the core when the toggle is on
 
 ---

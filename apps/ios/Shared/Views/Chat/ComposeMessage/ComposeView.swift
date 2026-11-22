@@ -611,6 +611,9 @@ struct ComposeView: View {
                 }
             }
         }
+        .onChange(of: composeState.linkPreviewAllowed) { allowed in
+            if !allowed { resetLinkPreview() }
+        }
         .onChange(of: chat.chatInfo.sendMsgEnabled) { sendEnabled in
             if !sendEnabled {
                 cancelCurrentVoiceRecording()
@@ -1965,7 +1968,9 @@ struct ComposeView: View {
                     } else {
                         cancelledLinks.insert(urlStr)
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                            composeState = composeState.copy(preview: .noPreview)
+                            if case .linkPreview(.none) = composeState.preview {
+                                composeState = composeState.copy(preview: .noPreview)
+                            }
                         }
                     }
                     pendingLinkUrl = nil

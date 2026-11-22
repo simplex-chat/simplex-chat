@@ -128,6 +128,34 @@ final class LinkPreviewTests: XCTestCase {
         XCTAssertEqual(requests(), ["/_link preview LINK_URL/no-image", "/_link preview LINK_URL/page"])
     }
 
+    @MainActor
+    func testComposeKeepsAttachmentChosenBeforeLinkPreviewLoads() async throws {
+        let compose = try await showCompose()
+        compose.composeState.message = "LINK_URL/page"
+        try await waitFor { !compose.composeState.parsedMessage.isEmpty }
+        attachFile(compose)
+        try await Task.sleep(nanoseconds: 2_000_000_000)
+        XCTAssertTrue(compose.composeState.attachmentPreview)
+        XCTAssertEqual(requests(), [])
+    }
+
+    @MainActor
+    func testComposeKeepsAttachmentChosenWhileLinkPreviewLoads() async throws {
+        let response = hold("/_link preview LINK_URL/page")
+        let compose = try await showCompose()
+        compose.composeState.message = "LINK_URL/page"
+        try await waitFor { self.requests() == ["/_link preview LINK_URL/page"] }
+        attachFile(compose)
+        response.signal()
+        try await Task.sleep(nanoseconds: 1_000_000_000)
+        XCTAssertTrue(compose.composeState.attachmentPreview)
+    }
+
+    @MainActor
+    private func attachFile(_ compose: ComposeHostState) {
+        compose.composeState = compose.composeState.copy(preview: .filePreview(fileName: "test.pdf", file: URL(fileURLWithPath: "test.pdf")))
+    }
+
     private func hold(_ cmd: String) -> DispatchSemaphore {
         let gate = DispatchSemaphore(value: 0)
         locked { held[cmd] = gate }
