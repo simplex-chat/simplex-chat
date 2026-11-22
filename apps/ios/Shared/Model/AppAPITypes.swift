@@ -46,6 +46,8 @@ enum ChatCommand: ChatCmdProtocol {
     case apiGetChat(chatId: ChatId, scope: GroupChatScope?, contentTag: MsgContentTag?, pagination: ChatPagination, search: String)
     case apiGetChatContentTypes(chatId: ChatId, scope: GroupChatScope?)
     case apiGetChatItemInfo(type: ChatType, id: Int64, scope: GroupChatScope?, itemId: Int64)
+    case apiGetChatItemLink(type: ChatType, id: Int64, scope: GroupChatScope?, itemId: Int64)
+    case apiMsgLinkPlan(userId: Int64, msgLink: String, chatId: ChatId?)
     case apiSendMessages(type: ChatType, id: Int64, scope: GroupChatScope?, sendAsGroup: Bool, live: Bool, ttl: Int?, sign: Bool, composedMessages: [ComposedMessage])
     case apiCreateChatTag(tag: ChatTagData)
     case apiSetChatTags(type: ChatType, id: Int64, tagIds: [Int64])
@@ -252,6 +254,8 @@ enum ChatCommand: ChatCmdProtocol {
                 return "/_get chat \(chatId)\(scopeRef(scope))\(tag) \(pagination.cmdString)" + (search == "" ? "" : " search=\(search)")
             case let .apiGetChatContentTypes(chatId, scope): return "/_get content types \(chatId)\(scopeRef(scope))"
             case let .apiGetChatItemInfo(type, id, scope, itemId): return "/_get item info \(ref(type, id, scope: scope)) \(itemId)"
+            case let .apiGetChatItemLink(type, id, scope, itemId): return "/_get item link \(ref(type, id, scope: scope)) \(itemId)"
+            case let .apiMsgLinkPlan(userId, msgLink, chatId): return "/_msg link plan \(userId) \(msgLink)" + (chatId.map { " chat=" + $0 } ?? "")
             case let .apiSendMessages(type, id, scope, sendAsGroup, live, ttl, sign, composedMessages):
                 let msgs = encodeJSON(composedMessages)
                 let ttlStr = ttl != nil ? "\(ttl!)" : "default"
@@ -475,6 +479,8 @@ enum ChatCommand: ChatCmdProtocol {
             case .apiGetChat: return "apiGetChat"
             case .apiGetChatContentTypes: return "apiGetChatContentTypes"
             case .apiGetChatItemInfo: return "apiGetChatItemInfo"
+            case .apiGetChatItemLink: return "apiGetChatItemLink"
+            case .apiMsgLinkPlan: return "apiMsgLinkPlan"
             case .apiSendMessages: return "apiSendMessages"
             case .apiCreateChatTag: return "apiCreateChatTag"
             case .apiSetChatTags: return "apiSetChatTags"
@@ -787,6 +793,8 @@ indirect enum ChatResponse0: Decodable, ChatAPIResult {
     case chatContentTypes(contentTypes: [MsgContentTag])
     case chatTags(user: UserRef, userTags: [ChatTag])
     case chatItemInfo(user: UserRef, chatItem: AChatItem, chatItemInfo: ChatItemInfo)
+    case chatItemLink(user: UserRef, msgLink: String)
+    case msgLinkPlan(user: UserRef, msgLinkPlan: MsgLinkPlan)
     case serverTestResult(user: UserRef, testServer: String, testFailure: ProtocolTestFailure?)
     case chatRelayTestResult(user: UserRef, relayProfile: RelayProfile?, relayTestFailure: RelayTestFailure?)
     case serverOperatorConditions(conditions: ServerOperatorConditions)
@@ -822,6 +830,8 @@ indirect enum ChatResponse0: Decodable, ChatAPIResult {
         case .chatContentTypes: "chatContentTypes"
         case .chatTags: "chatTags"
         case .chatItemInfo: "chatItemInfo"
+        case .chatItemLink: "chatItemLink"
+        case .msgLinkPlan: "msgLinkPlan"
         case .serverTestResult: "serverTestResult"
         case .chatRelayTestResult: "chatRelayTestResult"
         case .serverOperatorConditions: "serverOperators"
@@ -859,6 +869,8 @@ indirect enum ChatResponse0: Decodable, ChatAPIResult {
         case let .chatContentTypes(types): return "content types: \(String(describing: types))"
         case let .chatTags(u, userTags): return withUser(u, "userTags: \(String(describing: userTags))")
         case let .chatItemInfo(u, chatItem, chatItemInfo): return withUser(u, "chatItem: \(String(describing: chatItem))\nchatItemInfo: \(String(describing: chatItemInfo))")
+        case let .chatItemLink(u, msgLink): return withUser(u, msgLink)
+        case let .msgLinkPlan(u, msgLinkPlan): return withUser(u, String(describing: msgLinkPlan))
         case let .serverTestResult(u, server, testFailure): return withUser(u, "server: \(server)\nresult: \(String(describing: testFailure))")
         case let .chatRelayTestResult(u, relayProfile, relayTestFailure): return withUser(u, "relayProfile: \(String(describing: relayProfile))\nresult: \(String(describing: relayTestFailure))")
         case let .serverOperatorConditions(conditions): return "conditions: \(String(describing: conditions))"
@@ -1534,6 +1546,7 @@ enum ConnectionPlan: Decodable, Hashable {
     case invitationLink(invitationLinkPlan: InvitationLinkPlan)
     case contactAddress(contactAddressPlan: ContactAddressPlan, nameChange: NameChange?)
     case groupLink(groupLinkPlan: GroupLinkPlan, nameChange: NameChange?)
+    case updateRequired
     case error(chatError: ChatError)
 
     var localChats: [ChatInfo] {
@@ -1607,6 +1620,15 @@ enum GroupLinkPlan: Decodable, Hashable {
     case known(groupInfo: GroupInfo)
     case noRelays(groupSLinkData_: GroupShortLinkData?)
     case updateRequired(groupSLinkData_: GroupShortLinkData?)
+}
+
+enum MsgLinkPlan: Decodable, Hashable {
+    case item(chatItem: AChatItem, linkText: String)
+    case chat(chatInfo: ChatInfo)
+    case join(connTarget: String)
+    case notFound
+    case unknownSource
+    case unknownLink
 }
 
 struct ChatTagData: Encodable {

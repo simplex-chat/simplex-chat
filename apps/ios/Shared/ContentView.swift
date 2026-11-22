@@ -468,12 +468,14 @@ struct ContentView: View {
             if isAppLink(url) {
                 // branched on the scheme before the connection dispatch, which an app link must never reach
                 openAppLink(url)
+            } else if let parsedMd = parseSimpleXMarkdown(url.absoluteString), parsedMd.count == 1, case let .messageLink(_, msgLinkType, msgLink) = parsedMd[0].format {
+                openMsgLink(msgLink, msgLinkType, chatId: nil, target: nil, theme: theme)
             } else if path == "/r" {
                 showAlert(
                     NSLocalizedString("Relay address", comment: "alert title"),
                     message: NSLocalizedString("This is a chat relay address, it cannot be used to connect.", comment: "alert message")
                 )
-            } else if (path == "/contact" || path == "/invitation" || path == "/a" || path == "/c" || path == "/g" || path == "/i") {
+            } else if (path == "/contact" || path == "/invitation" || path == "/a" || path == "/c" || path == "/g" || path == "/i" || path == "/p" || path == "/s") {
                 path.removeFirst()
                 let link = url.absoluteString.replacingOccurrences(of: "///\(path)", with: "/\(path)")
                 planAndConnect(
@@ -503,7 +505,7 @@ struct ContentView: View {
     }
 }
 
-// the app's own scheme, for every link that is not a connection link, which stays on simplex:
+// the app's own scheme, for app-specific deep links such as badge links; SimpleX network links (connections, names, files, messages) use simplex:
 private let appLinkScheme = "simplexchat"
 private let badgeLinkPath = "/badge/code/"
 

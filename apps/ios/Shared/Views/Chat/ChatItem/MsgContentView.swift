@@ -38,6 +38,7 @@ struct MsgContentView: View {
     var sender: String? = nil
     var meta: CIMeta? = nil
     var mentions: [String: CIMention]? = nil
+    var links: [String: CILink]? = nil
     var userMemberId: String? = nil
     var rightToLeft = false
     var prefix: NSAttributedString? = nil
@@ -135,6 +136,7 @@ struct MsgContentView: View {
             textStyle: textStyle,
             sender: index == 0 ? sender : nil,
             mentions: mentions,
+            links: links,
             userMemberId: userMemberId,
             showSecrets: showSecrets,
             commands: chat.chatInfo.useCommands && chat.chatInfo.sndReady,
@@ -176,6 +178,7 @@ struct MsgContentView: View {
             textStyle: textStyle,
             sender: sender,
             mentions: mentions,
+            links: links,
             userMemberId: userMemberId,
             showSecrets: showSecrets,
             commands: chat.chatInfo.useCommands && chat.chatInfo.sndReady,
@@ -322,6 +325,8 @@ private func handleTextTaps(
             if index >= range.location && index < range.location + range.length {
                 if attrs[nameAttrKey] is SimplexNameInfo {
                     planAndConnect(s.attributedSubstring(from: range).string, theme: AppTheme.shared, dismiss: false)
+                } else if case let .messageLink(_, msgLinkType, msgLink)? = attrs[msgLinkAttrKey] as? Format {
+                    openMsgLink(msgLink, msgLinkType, chatId: ChatModel.shared.chatId, target: attrs[msgLinkTargetAttrKey] as? CILinkTarget, theme: AppTheme.shared)
                 } else if let url = attrs[linkAttrKey] as? String {
                     linkURL = url
                     browser = attrs[webLinkAttrKey] != nil
@@ -372,6 +377,8 @@ private let secretAttrKey = NSAttributedString.Key("chat.simplex.app.secret")
 private let commandAttrKey = NSAttributedString.Key("chat.simplex.app.command")
 private let nameAttrKey = NSAttributedString.Key("chat.simplex.app.name")
 private let modalAttrKey = NSAttributedString.Key("chat.simplex.app.modal")
+private let msgLinkAttrKey = NSAttributedString.Key("chat.simplex.app.msgLink")
+private let msgLinkTargetAttrKey = NSAttributedString.Key("chat.simplex.app.msgLinkTarget")
 
 typealias MsgTextResult = (string: NSMutableAttributedString, hasSecrets: Bool, handleTaps: Bool)
 
@@ -509,6 +516,7 @@ func messageText(
     sender: String?,
     preview: Bool = false,
     mentions: [String: CIMention]?,
+    links: [String: CILink]? = nil,
     userMemberId: String?,
     showSecrets: Set<Int>?,
     commands: Bool = false,
@@ -695,6 +703,23 @@ func messageText(
                 if !preview {
                     attrs[nameAttrKey] = nameInfo
                     handleTaps = true
+                }
+            case let .messageLink(text, msgLinkType, msgLink):
+                attrs = linkAttrs()
+                let ciLink = text.flatMap { links?[$0] }
+                if !preview {
+                    attrs[msgLinkAttrKey] = Format.messageLink(showText: text, msgLinkType: msgLinkType, msgLink: msgLink)
+                    if let target = ciLink?.target { attrs[msgLinkTargetAttrKey] = target }
+                    handleTaps = true
+                }
+                if let text {
+                    t = text
+                    if let linkText = ciLink?.text, linkText != text {
+                        res.append(NSAttributedString(string: text + " ", attributes: attrs))
+                        italic = italic ?? UIFont(descriptor: descr.withSymbolicTraits(.traitItalic) ?? descr, size: descr.pointSize)
+                        attrs[.font] = italic
+                        t = "(\(linkText))"
+                    }
                 }
             case .email:
                 attrs = linkAttrs()

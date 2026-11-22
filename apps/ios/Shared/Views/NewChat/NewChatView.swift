@@ -1723,6 +1723,15 @@ func planAndConnect(
                             }
                         }
                     }
+                case .updateRequired:
+                    logger.debug("planAndConnect, .updateRequired")
+                    await MainActor.run {
+                        showAlert(
+                            NSLocalizedString("App update required", comment: "alert title"),
+                            message: NSLocalizedString("This site requires a newer version of the app. Please update the app to open it.", comment: "alert message")
+                        )
+                        cleanup?()
+                    }
                 case let .error(chatError):
                     logger.debug("planAndConnect, .error \(chatErrorString(chatError))")
                     showAskCurrentOrIncognitoProfileSheet(
@@ -1736,6 +1745,62 @@ func planAndConnect(
                 }
             } else if let cleanup {
                 await MainActor.run { cleanup() }
+            }
+        }
+    }
+}
+
+enum MsgLinkAction: Equatable {
+    case openItem(chatId: ChatId, itemId: Int64)
+    case openChat(chatId: ChatId)
+    case connect(target: String)
+    case alert(title: String)
+}
+
+func msgLinkAction(_ plan: MsgLinkPlan, target: CILinkTarget?) -> MsgLinkAction {
+    switch plan {
+    case let .item(chatItem, _): .openItem(chatId: chatItem.chatInfo.id, itemId: chatItem.chatItem.id)
+    case let .chat(chatInfo): .openChat(chatId: chatInfo.id)
+    case let .join(connTarget): .connect(target: connTarget)
+    case .notFound: .alert(title: NSLocalizedString("This message is not in your chats.", comment: "alert title"))
+    case .unknownSource:
+        if let target {
+            .openItem(chatId: "\(target.chatType.rawValue)\(target.chatId)", itemId: target.chatItemId)
+        } else {
+            .alert(title: NSLocalizedString("This link is from an unknown source.", comment: "alert title"))
+        }
+    case .unknownLink: .alert(title: NSLocalizedString("Update the app to open this link.", comment: "alert title"))
+    }
+}
+
+func openMsgLink(_ msgLink: String, _ msgLinkType: MsgLinkType, chatId: ChatId?, target: CILinkTarget?, theme: AppTheme) {
+    Task {
+        do {
+            let plan: MsgLinkPlan
+            if msgLinkType == .unknownSource {
+                plan = .unknownSource
+            } else {
+                plan = try await apiMsgLinkPlan(msgLink: msgLink, chatId: chatId)
+            }
+            let action = msgLinkAction(plan, target: target)
+            await MainActor.run {
+                switch action {
+                case let .openItem(id, itemId):
+                    ItemsModel.shared.loadOpenChatNoWait(id, itemId)
+                case let .openChat(id):
+                    ItemsModel.shared.loadOpenChat(id) {
+                        showAlert(NSLocalizedString("No message", comment: "alert title"), message: NSLocalizedString("This message was deleted or not received yet.", comment: "alert message"))
+                    }
+                case let .connect(link):
+                    planAndConnect(link, theme: theme, dismiss: false)
+                case let .alert(title):
+                    showAlert(title)
+                }
+            }
+        } catch let error {
+            logger.error("openMsgLink error: \(responseError(error))")
+            await MainActor.run {
+                showAlert(NSLocalizedString("Error opening link", comment: "alert title"), message: responseError(error))
             }
         }
     }
@@ -1846,7 +1911,7 @@ private func planToConnReqType(_ connectionPlan: ConnectionPlan) -> ConnReqType?
     case .invitationLink: .invitation
     case .contactAddress: .contact
     case .groupLink: .groupLink
-    case .error: nil
+    case .updateRequired, .error: nil
     }
 }
 

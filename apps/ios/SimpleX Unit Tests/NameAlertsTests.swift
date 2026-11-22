@@ -236,6 +236,14 @@ final class NameAlertsTests: XCTestCase {
     }
 
     @MainActor
+    func testSiteLinkRequiresUpdate() async throws {
+        try recorded("links/channel")
+        connect("SITE_LINK")
+        try await assertTexts(["App update required", "This site requires a newer version of the app. Please update the app to open it.", "Ok"])
+        try await assertRequested { $0 == "markdown SITE_LINK" }
+    }
+
+    @MainActor
     func testRejectedContactInChatList() async throws {
         try recorded("connect/request-rejected")
         ChatModel.shared.updateChats(try apiGetChats())

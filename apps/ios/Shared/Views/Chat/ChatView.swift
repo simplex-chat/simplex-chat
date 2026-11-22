@@ -2459,6 +2459,9 @@ struct ChatView: View {
                     shareButton(ci)
                     copyButton(ci)
                 }
+                if ci.meta.itemDeleted == nil && !ci.isLiveDummy && !live {
+                    copyLinkButton(ci)
+                }
                 if let fileSource = fileSource, fileExists {
                     if case .image = ci.content.msgContent, let image = getLoadedImage(ci.file) {
                         if image.imageData != nil {
@@ -2649,6 +2652,25 @@ struct ChatView: View {
                 }
             } label: {
                 Label("Copy", systemImage: "doc.on.doc")
+            }
+        }
+
+        private func copyLinkButton(_ ci: ChatItem) -> Button<some View> {
+            Button {
+                Task {
+                    do {
+                        let cInfo = chat.chatInfo
+                        let link = try await apiGetChatItemLink(type: cInfo.chatType, id: cInfo.apiId, scope: cInfo.groupChatScope(), itemId: ci.id)
+                        await MainActor.run { UIPasteboard.general.string = link }
+                    } catch let error {
+                        logger.error("apiGetChatItemLink error: \(responseError(error))")
+                    }
+                }
+            } label: {
+                Label(
+                    NSLocalizedString("Copy link", comment: "chat item action"),
+                    systemImage: "link"
+                )
             }
         }
 
