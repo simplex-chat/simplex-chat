@@ -326,13 +326,13 @@ sequenceDiagram
     W->>E: rentPriceUSD, generalTermsLink, communityTermsLink
     W->>D: terms text stored for the hash, sha256 checked when the link has one
     W->>G: terms text when none is stored, once per hash, sha256 checked when the link has one, then stored
-    W-->>P: found available: price, years, terms; community
+    W-->>P: found available: price, years, terms#59; community
   else registered
     W->>E: records simplex.contact and simplex.channel, resolver nonce
     W->>C: the link data per link, 3 s each, after the chain reads
     C->>M: short link data
     W->>D: record edits of the last 365 days
-    W-->>P: found registered: owner, resolver, expiresAt, gracePeriod, entities, records with nonce and edits; community
+    W-->>P: found registered: owner, resolver, expiresAt, gracePeriod, entities, records with nonce and edits#59; community
   end
   P->>W: POST /api/link/preview: link
   W->>C: the same profile read, under the preview limits
@@ -365,9 +365,9 @@ sequenceDiagram
   opt the commit
     K->>S: commit(commitment) to the controller
     alt dry run reverted
-      K->>D: attempt stored, counted for a permanent reason; retried every 15 s; failed at max_dry_run_failures
+      K->>D: attempt stored, counted for a permanent reason#59; retried every 15 s#59; failed at max_dry_run_failures
     else mined with status 0
-      K->>D: attempt stored, counted; phase queued, the commit sent again; failed at max_sent_failures
+      K->>D: attempt stored, counted#59; phase queued, the commit sent again#59; failed at max_sent_failures
     end
   end
   K->>S: registerWithCredit to the sponsor, or the acceptance relay to the name policy
@@ -380,11 +380,11 @@ sequenceDiagram
   else name taken at the latest block and at the confirmation depth
     K->>D: phase taken, the money paid for the order added to its balance
   else name available, mined with status 0
-    K->>D: attempt stored, counted; phase committed with its reveal, sent again; failed at max_sent_failures
+    K->>D: attempt stored, counted#59; phase committed with its reveal, sent again#59; failed at max_sent_failures
   else name available, dry run reverted for a permanent reason
-    K->>D: attempt stored, counted; retried every 15 s; failed at max_dry_run_failures
+    K->>D: attempt stored, counted#59; retried every 15 s#59; failed at max_dry_run_failures
   else name available, dry run reverted for any other reason, InsufficientAllowance included
-    K->>D: attempt stored, uncounted; retried every 15 s, logged once, reported after 10 minutes of failures in a row
+    K->>D: attempt stored, uncounted#59; retried every 15 s, logged once, reported after 10 minutes of failures in a row
   end
 ```
 
@@ -542,7 +542,7 @@ sequenceDiagram
     C-->>O: Nothing refunded: the register of order ID went through
   else not registered
     C->>D: under the balance's lock, one transaction: order set taken, its stored reveal cleared, price credited, the whole balance recorded as refunded
-    C-->>O: Closed order ID, failed or lapsed unsigned at TIME ... Check at the provider ...; if not, refund it now, by: PAYMENT.
+    C-->>O: Closed order ID, failed or lapsed unsigned at TIME ... Check at the provider ...#59; if not, refund it now, by: PAYMENT.
     O--)B: money paid back by hand, unless refunded before (outside the service)
   end
 ```
@@ -644,9 +644,9 @@ sequenceDiagram
   else a dispute or a refund
     W->>D: under the name's lock, one transaction: the invoice's row locked, as settlement locks it, the event recorded, the order's row locked
     alt unpaid, its payment not recorded yet
-      W->>D: nothing more written; its settlement later closes it as reversed
+      W->>D: nothing more written#59; its settlement later closes it as reversed
     else live past unpaid, no register transaction of its current name saved
-      W->>D: order set closed, reversed; its reveal cleared; its own balance taken back
+      W->>D: order set closed, reversed#59; its reveal cleared#59; its own balance taken back
     else support recorded the order's refund
       W->>D: nothing more written
     else otherwise
