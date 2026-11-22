@@ -5728,7 +5728,7 @@ SEARCH chat_items USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
       UPDATE chat_items
-      SET item_content = ?, item_text = ?, item_status = ?, item_deleted = ?, item_deleted_ts = ?, item_edited = ?, item_live = ?, updated_at = ?, timed_ttl = ?, timed_delete_at = ?, user_mention = ?, item_priority = ?
+      SET item_content = ?, item_text = ?, item_status = ?, item_deleted = ?, item_deleted_ts = ?, item_edited = ?, item_live = ?, updated_at = ?, timed_ttl = ?, timed_delete_at = ?, item_priority = ?
       WHERE user_id = ? AND group_id = ? AND chat_item_id = ?
     
 Plan:

@@ -2850,17 +2850,17 @@ updateChatItemSignedMsg db itemId signedMsg_ signedByGMId_ =
 -- it should be checked before calling it
 updateGroupChatItem_ :: MsgDirectionI d => DB.Connection -> User -> Int64 -> ChatItem 'CTGroup d -> Maybe MessageId -> IO ()
 updateGroupChatItem_ db User {userId} groupId ChatItem {content, meta} msgId_ = do
-  let CIMeta {itemId, itemText, itemStatus, itemDeleted, itemEdited, itemTimed, itemLive, userMention, priority, updatedAt} = meta
+  let CIMeta {itemId, itemText, itemStatus, itemDeleted, itemEdited, itemTimed, itemLive, priority, updatedAt} = meta
       itemDeleted' = isJust itemDeleted
       itemDeletedTs' = itemDeletedTs =<< itemDeleted
   DB.execute
     db
     [sql|
       UPDATE chat_items
-      SET item_content = ?, item_text = ?, item_status = ?, item_deleted = ?, item_deleted_ts = ?, item_edited = ?, item_live = ?, updated_at = ?, timed_ttl = ?, timed_delete_at = ?, user_mention = ?, item_priority = ?
+      SET item_content = ?, item_text = ?, item_status = ?, item_deleted = ?, item_deleted_ts = ?, item_edited = ?, item_live = ?, updated_at = ?, timed_ttl = ?, timed_delete_at = ?, item_priority = ?
       WHERE user_id = ? AND group_id = ? AND chat_item_id = ?
     |]
-    ((content, itemText, itemStatus, BI itemDeleted', itemDeletedTs', BI itemEdited, BI <$> itemLive, updatedAt) :. ciTimedRow itemTimed :. (BI userMention, priority) :. (userId, groupId, itemId))
+    ((content, itemText, itemStatus, BI itemDeleted', itemDeletedTs', BI itemEdited, BI <$> itemLive, updatedAt) :. ciTimedRow itemTimed :. Only priority :. (userId, groupId, itemId))
   forM_ msgId_ $ \msgId -> insertChatItemMessage_ db itemId msgId updatedAt
 
 createGroupCIMentions :: forall d. DB.Connection -> GroupInfo -> ChatItem 'CTGroup d -> Map MemberName CIMention -> IO (ChatItem 'CTGroup d)
