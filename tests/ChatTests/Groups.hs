@@ -6731,7 +6731,7 @@ testGroupUpdateAsNewHighPriority =
       alice <# "#team !! done"
       [bob, cath] *<# "#team alice!!> done"
       forM_ [alice, bob, cath] $ \cc ->
-        itemPriority cc "/_get chat #1 count=1" `shouldReturn` Just 1
+        itemPriority cc "/_get chat #1 count=1" `shouldReturn` MPHigh
       priorityCounts cath "#1" `shouldReturn` (2, 1, 0, 1)
       threadDelay 1000000
       cath #> "#team ok"
@@ -6743,7 +6743,7 @@ testGroupUpdateAsNewHighPriority =
       cath <# "#team ok"
       [alice, bob] *<# "#team cath> ok"
       forM_ [alice, bob, cath] $ \cc ->
-        itemPriority cc "/_get chat #1 count=1" `shouldReturn` Nothing
+        itemPriority cc "/_get chat #1 count=1" `shouldReturn` MPNormal
 
 testGroupUpdateAsNewBlockedMember :: HasCallStack => TestParams -> IO ()
 testGroupUpdateAsNewBlockedMember =
