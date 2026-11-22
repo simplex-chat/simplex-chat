@@ -4645,17 +4645,17 @@ processChatCommand cxt nm = \case
         ts@(_, ParsedMarkdown ft_ _) = msgContentTexts mc
         sndSegment :: FormattedText -> CM (FormattedText, Maybe CILink)
         sndSegment ft = case segmentMsgLink ft of
-          Just (showText, msgLink) ->
+          Just (label_, msgLink) ->
             msgLinkPlan user (Just chatRef) msgLink >>= \case
               MLPItem (AChatItem _ _ cInfo ci) t -> do
-                let label = fromMaybe (msgLinkLabel t) showText
+                let label = fromMaybe (msgLinkLabel t) label_
                     sameChat = chatType == CTLocal || chatInfoToRef cInfo == Just chatRef
                 case itemMsgLink cInfo ci of
                   Right ml@MLPublicGroup {} -> pure (msgLinkSegment label ml, Just $ CILink t Nothing)
                   Right ml | sameChat -> pure (msgLinkSegment label ml, Just $ CILink t Nothing)
                   Right _ -> pure (msgLinkSegment label MLUnknownSource, Just $ CILink t (ciLinkTarget cInfo ci))
                   Left e -> throwCmdError $ "message link: " <> e
-              MLPUnknownSource -> pure (ft, (`M.lookup` itemLinks) =<< showText)
+              MLPUnknownSource -> pure (ft, (`M.lookup` itemLinks) =<< label_)
               MLPChat {} | isGlobal msgLink -> pure (ft, Nothing)
               MLPJoin {} -> pure (ft, Nothing)
               _ -> throwCmdError "message link: not in your chats"

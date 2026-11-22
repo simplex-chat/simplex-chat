@@ -724,7 +724,7 @@ viewChatItem chat ci@ChatItem {chatDir, meta = meta@CIMeta {itemForwarded, forwa
   (withGroupMsgForwarded . withItemDeleted <$> viewCI) <> rcvLinks
   where
     rcvLinks
-      | doShow && toMsgDirection (msgDirection @d) == MDRcv = map (\(label, CILink {text}) -> plain $ "[" <> label <> "]: " <> text) $ M.assocs links
+      | doShow && toMsgDirection (msgDirection @d) == MDRcv = map (\(l, CILink {text = t}) -> plain $ "[" <> l <> "]: " <> t) $ M.assocs links
       | otherwise = []
     viewCI = case chat of
       DirectChat c -> case chatDir of
