@@ -84,20 +84,29 @@ asNewItemTs itemTs t
 
 ## 4. Priority of an item updated as new
 
-An update as new carries the priority of the new message, as `x.msg.new`; an update without `asNew` keeps the priority rules of #8195.
+An update as new has the priority of the update, by the rule of every update of #8195. Only the notification differs: an update as new is notified as a new message.
 
 ```
-                    update without asNew (#8195)              update as new
-sender sends        priority 1 when raising, -1 for a         sndPriority highAllowed of UpdatedMessage.priority, as a new message
-                    silent item, else none
-sender's item       priority 1 when raised                    the sent priority, 0 when none
-receiver's item     priority 1 when raised and allowed        limitPriority p; 1 only when rcvPriorityAllowed cd, as saveRcvChatItem'
-userMention         set when raised                           mention or reply of the updated content || priority > 0
-SMP flag            set when raising, unset for -1            unset for -1, set otherwise
-apps notify         when raised (isRaised)                    when shown as new (isAsNew), unless silent
+every update, with or without asNew (#8195)
+  sender's item       allowedPriority (main scope && highAllowed) of UpdatedMessage.priority; absent: normal
+  receiver's item     allowedPriority (main scope && not deleted && rcvPriorityAllowed cd) of the update's priority
+  userMention         mention or reply of the updated content || high (updateGroupCIUserMention, #8219)
+
+                      update without asNew (#8195)        update as new
+  SMP flag            on for high only                    off for silent only
+  forward SMP flag    the same, by the forwarder's stored priority (taskHasNotification, Delivery.hs)
+  apps notify         when raised (isRaised)              when shown as new (isAsNew), unless silent
 ```
 
-- `highAllowed` is `groupFeatureUserAllowed SGFMsgPriority gInfo` of #8195; a silent priority (-1) is allowed to every member.
+```
+Protocol.hs
+  ntfEventTag             ChatMsgEvent e -> CMEventTag e; XMsgNew_ for XMsgUpdate {asNew = Just True}, toCMEventTag otherwise
+  eventHasNotification    priorityHasNotification (eventPriority ev) (ntfEventTag ev)
+Delivery.hs
+  taskHasNotification     XMsgUpdate: priorityHasNotification itemPriority (ntfEventTag ev)
+```
+
+- `highAllowed` is `groupFeatureUserAllowed SGFMsgPriority gInfo` of #8195; a silent priority is allowed to every member.
 - API: `/_update item #1 5 as_new=on json {"msgContent": {"type": "text", "text": "..."}, "mentions": {}, "priority": -1}`, with `UpdatedMessage.priority` of #8195.
 
 ```mermaid
@@ -123,17 +132,19 @@ positional uses             Commands.hs:2747, :2751                        False
 Group branch of the handler (Commands.hs:850); the direct (:825) and note folder (:886) branches ignore `asNew`:
 
 ```
-asNew_     = if asNew then asNewItemTs (chatItemTs' ci) currentTs else Nothing
-priority   if isJust asNew_ then sndPriority highAllowed priority_ else the raise of #8195
-condition  changed || itemLive == Just True || raise || isJust asNew_
-event      XMsgUpdate ... priority (justTrue (isJust asNew_))
+mainScope  isNothing scope && isNothing itemScopeInfo
+newTs_     if asNew && mainScope then asNewItemTs (chatItemTs' ci) currentTs else Nothing
+priority'  allowedPriority (mainScope && groupFeatureUserAllowed SGFMsgPriority gInfo) priority_   -- #8195
+condition  changed || itemLive == Just True || priority' /= priority || isJust newTs_
+event      XMsgUpdate ... priority' (justTrue (isJust newTs_))
+SMP flag   eventHasNotification of the event: off for silent only when newTs_ is set
 edited     changed && itemLive /= Just True                           -- as in #8195
-store      after updateGroupChatItem, with meta.priority set:
-             forM_ asNew_ $ \ts -> updateChatTsStats db cxt user cd currentTs Nothing and setChatItemTs db ci' ts
+store      updateGroupChatItem with meta.priority = priority', updateGroupCIMentions, then for newTs_:
+             updateChatTsStats db cxt user cd currentTs Nothing and setChatItemTs db ci'' newTs
 response   CRChatItemUpdated with the item at its new time
 ```
 
-- `asNew_` requires the main scope: an update as new in a member support scope is an edit in place.
+- `newTs_` requires the main scope: an update as new in a member support scope is an edit in place.
 - The edit limits of `2026-11-21-edit-window-preference.md` apply. The sender's core measures them from `created_at` of its item, which `setChatItemTs` keeps, so an update as new keeps the limits of the original send.
 
 ## 6. Core: receiving
@@ -149,32 +160,33 @@ sequenceDiagram
   B->>S: x.msg.update asNew, priority p<br>SMP flag unless p = -1
   S->>R: message, broker time t1
   R->>R: item time := asNewItemTs(itemTs, t1)
-  R->>S: forward, fwdBrokerTs t1, SMP flag unless p = -1
+  R->>S: forward, fwdBrokerTs t1, SMP flag unless the stored priority is silent
   S->>C: forward, push to iOS when flagged
   C->>C: item time := asNewItemTs(itemTs, t1)<br>status rcv_new, priority, chat_ts := now
   C->>A: chatItemUpdated: chatItem, prevChatItem
   A->>A: itemTs differs: item last, chat first<br>unread + 1, alert unless silent
 ```
 
-`updateCI` of `groupMessageUpdate` (Subscriber.hs:2398), new parameter `asNew :: Maybe Bool`, passed from `XMsgUpdate` at :1091 and :4068. `messageUpdate` of direct chats (:590) ignores the field, as now.
+`updateCI` of `groupMessageUpdate` (Subscriber.hs:2417), new parameter `asNew_ :: Maybe Bool`, passed from `XMsgUpdate` at :1099 and :4105. `messageUpdate` of direct chats (:598) ignores the field.
 
 ```
-asNew_     = if asNew == Just True
+newTs_     = if asNew_ == Just True
                 && main scope                      -- member support scope: in place
-                && isNothing itemDeleted           -- deleted, moderated, blocked by admin: in place
-                && not (memberBlocked sender)      -- as for mentions (:2345)
+                && isNothing itemDeleted           -- deleted, moderated, blocked: in place
+                && not (memberBlocked sender)      -- as for mentions
              then asNewItemTs (chatItemTs' ci) brokerTs
              else Nothing
-priority   with asNew_: section 4; otherwise the raise of #8195
-condition  changed || itemLive == Just True || requested || asNew == Just True
+priority'  allowedPriority (main scope && isNothing itemDeleted && rcvPriorityAllowed cd) priority_   -- #8195
+condition  changed || itemLive == Just True || priority' /= priority || isJust newTs_
+           otherwise chatItemNotChanged and no delivery task
 edited     changed && itemLive /= Just True                                  -- as in #8195
-store      after updateGroupChatItem with meta.priority and userMention set: forM_ asNew_ $ \ts ->
+store      updateGroupChatItem with meta.priority = priority', updateGroupCIMentions, updateGroupCIUserMention, then for newTs_:
              updateChatTsStats db cxt user cd now Nothing
-             setGroupChatItemAsNew db ci' ts
+             setGroupChatItemAsNew db ci'' newTs
 event      CEvtChatItemUpdated: the item at its new time with status rcv_new, the previous item; the chat info returned by updateChatTsStats
-delivery   as now: Just context whenever the condition holds, so an update as new without a change of text is forwarded
-           the SMP flag of the forward follows the rule of a forwarded new message: msgHasNotification (Subscriber.hs:4261),
-           based on eventHasNotification in #8195
+delivery   Just context when the condition holds: an update as new that moves the item is forwarded also without a change of text
+           SMP flag of the forward: taskHasNotification (Delivery.hs), the stored priority of the forwarder's item with ntfEventTag:
+             off for silent only
 ```
 
 `Store/Messages.hs`, new:
@@ -189,7 +201,7 @@ setChatItemTs :: DB.Connection -> ChatItem c d -> UTCTime -> IO (ChatItem c d)
 getChatItemOriginalTs :: DB.Connection -> ChatItemId -> ExceptT StoreError IO UTCTime
   SELECT COALESCE(item_original_ts, item_ts) FROM chat_items WHERE chat_item_id = ?
 ```
-`item_priority` and `user_mention` are written by `updateGroupChatItem_` of #8195. `item_original_ts` is the column of `2026-11-21-edit-window-preference.md`. The new queries are added to `tests/chat_query_plans.txt` by the query plan test.
+`item_priority` and `user_mention` are written by `updateGroupChatItem_` of #8195. `item_original_ts` is the column of `2026-11-21-edit-window-preference.md`, added by migration `M20261113_item_priority` of #8195, one migration for both features. The new queries are added to `tests/chat_query_plans.txt` by the query plan test.
 
 State of a received group item, read from the last row; `-` is unchanged:
 
@@ -201,7 +213,7 @@ x.msg.update, text changed               t0                  -        rcv_read  
 x.msg.update asNew p=0 at t1, changed    floor(t1) + 0.999   now      rcv_new      0            0         +1
 read                                     -                   -        rcv_read     1            -         -
 x.msg.update asNew p=-1 at t2, same      floor(t2) + 0.999   now      rcv_new      0            -1        -
-x.msg.update asNew, not later            -                   -        -            -            -         as an edit
+x.msg.update asNew, not later            -                   -        -            -            -         as an update without asNew
 ```
 
 - An update of an item missing on the receiver creates the item at the time source, unread, as now (Subscriber.hs:2331): it is last already.
@@ -342,8 +354,8 @@ Core, each failing on master and on `ep/message-priority`: the parser refuses `a
 ```
 tests/ProtocolTests.hs     x.msg.update with "asNew":true and with "asNew":true, "priority":-1 encoded and decoded;
                              without them decoded to Nothing
-                           "x.msg.update as new has the priority of a new message": eventHasNotification False for -1,
-                             True for 0 and 1
+                           "x.msg.update as new has the priority of a new message": eventHasNotification of
+                             MPSilent, MPNormal, MPHigh is False, True, True; without asNew False, False, True
 tests/ChatTests/Groups.hs  "update as new shows the item last and unread"
                              bob: "status"; alice: /_read chat items #1 <status>; cath: "hi"
                              bob: /_update item #1 <status> as_new=on text status 2, sent without a pause after "hi"
@@ -355,6 +367,8 @@ tests/ChatTests/Groups.hs  "update as new shows the item last and unread"
                            "high priority update as new without a change of text": admin with priority 1:
                              item_priority 1, user mention, not marked edited; a member below the priority role: item_priority 0
                            "update as new of a blocked member is applied in place": cath blocks bob; in place for cath
+                           "forward update as new with notification flag of a new message": alice forwards bob's update
+                             as new without a change of text to cath; msg_flags of the forward: T
                            "should update channel message as new": last and unread for a subscriber
 tests/ChatTests/Direct.hs  "update as new is ignored in a direct chat": bob "status", alice "hi", bob as_new=on;
                              both: /_get chat @2 -> "status 2", "hi"
