@@ -69,7 +69,7 @@ flowchart LR
 | Android and desktop with SOCKS | DNS may resolve locally | the host name is resolved by the proxy |
 | Desktop controlling a phone | desktop fetches | desktop fetches (section 3.12) |
 | Same link, two platforms | different rules | one rule set (section 3.8) |
-| `http://` link | fetched over HTTP on Android and desktop | Q2 |
+| `http://` link | fetched over HTTP on Android and desktop | fetched as `https://`; an `.onion` host over HTTP through the SOCKS proxy (Q2) |
 | WebP, GIF or ICO image | decoded on Android and desktop | Q4 |
 | Page without `og:image` | Android and desktop: the site icon at full width; iOS: no preview | no preview |
 | Description | never sent | `og:description`, else `<meta name="description">`; shown in the chat item on all platforms |
@@ -124,7 +124,7 @@ sequenceDiagram
   C->>C: parse URI, credentials for this preview
   C->>P: CONNECT site:443 (domain name, credentials)
   P->>S: TCP
-  C->>S: TLS, validated against the root store
+  C->>S: TLS, validated against the root store; none for an http onion host
   C->>S: GET /page
   S-->>C: 200, headers, head chunks
   C->>C: scan chunks until the stop condition
@@ -132,7 +132,7 @@ sequenceDiagram
   C->>P: CONNECT image host (same credentials)
   C->>S: GET image
   S-->>C: image bytes, at most MAX_IMAGE_BYTES
-  C->>C: decode, resize to 14000 bytes
+  C->>C: decode, resize to IMAGE_DATA_SIZE
   C-->>A: CRLinkPreview
 ```
 
@@ -148,7 +148,9 @@ sequenceDiagram
 | MAX_HEADERS | 100 |
 | MAX_HEAD_BYTES | 1 MiB of HTML body |
 | MAX_IMAGE_BYTES | 5 MiB |
-| IMAGE_DATA_SIZE | `maxImagePreviewSize`, 14000 (Library/Commands.hs:179-180) |
+| MAX_TITLE_LENGTH | 300 characters |
+| MAX_DESCRIPTION_LENGTH | 500 characters |
+| IMAGE_DATA_SIZE | `maxImagePreviewSize`, 14000 (Library/Commands.hs:179-180), less the JSON bytes of the title and the description (section 3.10) |
 
 ### 3.5 Types
 
@@ -170,13 +172,24 @@ data HeadTags = HeadTags
     metaCharset :: Maybe ByteString
   }
 
-data Page
-  = HtmlPage {pageTitle :: Text, pageDescription :: Text, pageImage :: Uri}
-  | ImagePage ByteString
+data Page = HtmlPage PageMeta | ImagePage ByteString
+
+data PageMeta = PageMeta {pageTitle :: Text, pageDescription :: Text, pageImage :: Uri}
+
+data UriScheme = USHttp | USHttps
+
+data Uri = Uri
+  { uriScheme :: UriScheme,
+    uriHost :: TransportHost,
+    uriPort :: Maybe Int,
+    uriPath :: ByteString,
+    uriQuery :: Maybe ByteString
+  }
 ```
 
-- The card shows what the existing `LinkPreview` holds (Protocol.hs:246): `title`, `description`, `image`, `uri`. `HeadTags` holds the raw values of the first tag of each kind, a monoid of first values; `Page` holds the decoded values, and `pageImage` is the URL that the core fetches and resizes into `ImageData`.
-- MAX_REDIRECTS, MAX_HEADER_BYTES, MAX_HEADERS, MAX_HEAD_BYTES and MAX_IMAGE_BYTES are constants of the module; the tests change only the roots, the address policy and the deadline.
+- The card shows what the existing `LinkPreview` holds (Protocol.hs:246): `title`, `description`, `image`, `uri`. `HeadTags` holds the raw values of the first tag of each kind, a monoid of first values; `PageMeta` holds the decoded values, and `pageImage` is the URL that the core fetches and resizes into `ImageData`.
+- `USHttp` is produced only for `.onion` hosts (section 3.7); `uriPort` is `Nothing` for the default port of the scheme.
+- MAX_REDIRECTS, MAX_HEADER_BYTES, MAX_HEADERS, MAX_HEAD_BYTES, MAX_IMAGE_BYTES, MAX_TITLE_LENGTH and MAX_DESCRIPTION_LENGTH are constants of the module; the tests change only the roots, the address policy and the deadline.
 - Card in the apps: compose shows image, title and link (LinkPreviews.kt:152-191; ComposeLinkView.swift:43-52); the chat item shows image, title, description when not empty, and link on Kotlin (LinkPreviews.kt:203-226); iOS shows image and title only (CILinkView.swift:22, 36).
 - Description: both apps send `""` today (LinkPreviews.kt:129-134, commented out "TODO add once supported in iOS"; ImageUtils.swift:471). The core fills it, Kotlin shows it with no change, and PR 3 adds it to CILinkView as Kotlin shows it.
 - `image` is required in `LinkPreview`, so a page without an image has no preview, as today on both platforms (LinkPreviews.kt:121-139; ImageUtils.swift:461-479).
@@ -188,21 +201,24 @@ data Page
 
 ```mermaid
 flowchart TD
-  U["https URI"] --> H{"host"}
+  U["URI"] --> H{"host"}
   H -->|"IP literal"| L{"allowed by AddressPolicy?"}
   L -->|no| X["prohibited address"]
   H -->|"name"| S
   L -->|yes| S{"socksProxy of transportClientConfig"}
   S -->|"Just proxy"| SP["socksConnectAuth or socksConnect, SocksAddrDomainName"]
-  S -->|"Nothing"| D["getAddrInfo"]
+  S -->|"Nothing, onion host"| XO["onion host without SOCKS proxy"]
+  S -->|"Nothing, other host"| D["getAddrInfo"]
   D --> F["drop prohibited addresses"]
   F -->|none left| X
   F --> TC["connect to each in order until one connects, CONNECT_TIMEOUT"]
-  SP --> TLS["T.contextNew, T.handshake"]
+  SP --> SC{"scheme"}
+  SC -->|"http, onion host"| R["request"]
+  SC -->|https| TLS["T.contextNew, T.handshake"]
   TC --> TLS
   TLS --> V{"chain valid for host?"}
   V -->|no| E["TLS error"]
-  V -->|yes| R["request"]
+  V -->|yes| R
 ```
 
 - Proxy selection: `socksProxy` of `transportClientConfig netCfg NRMInteractive host True Nothing` (mq:Messaging/Client.hs:445-453), so `SMOnion` mode and an unset proxy behave as for SMP servers.
@@ -214,9 +230,9 @@ flowchart TD
   | `SocksAuthUsername` | the configured username and password |
   | `SocksAuthNull` | none |
 
-- DNS: with a proxy, the host name is sent to the proxy as `SocksAddrDomainName`, as for SMP (mq:Messaging/Transport/Client.hs:191-195), and the device resolves nothing. Without a proxy, `getAddrInfo` uses the system resolver, as `connectTCPClient` does (mq:Messaging/Transport/Client.hs:197-206).
+- DNS: with a proxy, the host name is sent to the proxy as `SocksAddrDomainName`, as for SMP (mq:Messaging/Transport/Client.hs:191-195), and the device resolves nothing. Without a proxy, `getAddrInfo` resolves names and parses IP literals with the system resolver, and its `AddrInfo` opens the socket, as in `connectTCPClient` (mq:Messaging/Transport/Client.hs:197-206).
 - Prohibited addresses: loopback, 0.0.0.0/8 and `::`, private (RFC 1918, ULA), link-local, shared (RFC 6598), multicast, broadcast, and IPv4-mapped IPv6 forms of these. `APPublicAndLoopback` also allows loopback. The check runs on resolved addresses without a proxy and on IP literals with one.
-- An onion host without a proxy fails without a DNS query.
+- An onion host without a proxy fails without a DNS query. With a proxy, an `http` URI of an onion host is fetched over plain HTTP, as Tor encrypts and authenticates the connection to the onion service (Q2).
 - TLS: `T.defaultParamsClient host ""` with `sharedCAStore = rootCerts`, SNI on for host names, and `defaultSupportedParamsHTTPS` (mq:Messaging/Transport.hs:399-417) with `P256` and `P384` added to `supportedGroups`, which up to TLS 1.2 also limit the curves of ECDSA server keys (tls 1.9.0 Network/TLS/Parameters.hs, `supportedGroups`). The hostname check of `validateDefault` applies. CONNECT_TIMEOUT applies to the TCP or SOCKS connection and, again, to the TLS handshake.
 - The SimpleX transport (`runTLSTransportClient`) is not used: it connects through its own `connectTCPClient` (mq:Messaging/Transport/Client.hs:172-174), so resolved addresses cannot be checked, and its `getLn` reads a line without a length limit (mq:Messaging/Transport.hs:447-449; mq:Messaging/Transport/Buffer.hs:78-88).
 - Root certificates: Q3. Today the core loads no root store in client builds: `crypton-x509-system` is a dependency only without `client_library` (mq:simplexmq.cabal:432-435), and on iOS its `System.X509` reads the Unix paths, which are absent there (crypton-x509-system 1.6.7: modules `System.X509.MacOS` only under `os(OSX)`; `System.X509.Unix` paths `/etc/ssl/certs/`, `/system/etc/security/cacerts/`, `/usr/local/share/certs/`, `/etc/ssl/cert.pem`).
@@ -236,7 +252,8 @@ Connection: close
 
 - UA: one fixed browser string for all users; for host `x.com`, the string of LinkPreviews.kt:108, as today.
 - Cookies, `Referer` and `Accept-Language` are not sent.
-- Response head: at most MAX_HEADER_BYTES and MAX_HEADERS, else a failure.
+- `Host` omits the default port of the scheme, also when the link states it.
+- Response head: at most MAX_HEADER_BYTES and MAX_HEADERS, else a failure. Interim 1xx responses other than 101 are skipped (RFC 9110, 15.2); their bytes and headers count towards the same limits.
 - Body framing: `Transfer-Encoding: chunked`, `Content-Length`, or until close. The reader of the body stops at the budget, also inside a chunk; a chunk-size line has at most 7 hex digits and 1024 bytes.
 - `Content-Encoding` other than `identity`: a failure.
 - Reads: `T.recvData` with READ_TIMEOUT each; the budget counts body bytes after decoding of chunks.
@@ -250,18 +267,18 @@ Redirects:
 | other 3xx, 4xx, 5xx | a failure with the status |
 | 2xx | content by `Content-Type` |
 
-- A redirect to a scheme other than `https`: a failure.
+- A redirect to a scheme other than `https`, except `http` to an onion host: a failure.
 - More than MAX_REDIRECTS: a failure.
 - URIs are parsed by RFC 3986, appendix B, and resolved by RFC 3986, 5.2, in this module, over the raw bytes of the link, so that the request target keeps the link's bytes. `uri-bytestring` 0.3.3.1 is not used for it: it exports no base-URI resolution, decodes paths with `+` as space (URI/ByteString/Internal.hs:590), splits and re-encodes queries (Internal.hs:260-268, 609-635) and serializes IPv6 hosts without brackets (Internal.hs:286, 496).
 - Bytes outside 0x21-0x7E in the path and the query are percent-encoded in the request line.
-- An `og:image` URL with `http` is fetched as `https`, as a link is (Q2 a); its response is decoded by its JPEG or PNG signature, whatever its `Content-Type`.
+- An `http` link or `og:image` URL is fetched as `https`, except on an onion host (Q2); a relative reference keeps the scheme of its base. An `og:image` response is decoded by its JPEG or PNG signature, whatever its `Content-Type`.
 
 Content by type:
 
 | `Content-Type` | Content |
 |---|---|
 | `text/html`, `application/xhtml+xml` | `PageMeta` from the head scanner |
-| `image/jpeg`, `image/png` | the image itself, titled by the last path segment of the requested URI, without description (LinkPreviews.kt:93-95) |
+| `image/jpeg`, `image/png` | the image itself, titled by the last path segment of the requested URI, or by its host when the segment is empty, without description (LinkPreviews.kt:93-95) |
 | other | a failure with the type |
 
 ### 3.8 Head scanner and metadata rules
@@ -293,7 +310,7 @@ stateDiagram-v2
   | `image` | `<meta property="og:image" content>` |
 
 - `<meta charset>` and `<meta http-equiv="content-type" content>` are read for decoding only (section 3.9).
-- Values: whitespace trimmed and collapsed; named entities `amp lt gt quot apos nbsp` and numeric references decoded; `description` cut to 500 characters.
+- Values: whitespace trimmed and collapsed; named entities `amp lt gt quot apos nbsp` and numeric references decoded, in time linear in the value's length; in the preview, `title` cut to MAX_TITLE_LENGTH and `description` to MAX_DESCRIPTION_LENGTH characters.
 - No `title`: a failure. No `image`, or the image fails: a failure.
 - `image` is resolved against the final URI of the page.
 - Site icons (`<link rel="icon">`), which Kotlin uses when `og:image` is absent (LinkPreviews.kt:42, 117-118), are not read: the chat item shows the image at full width (LinkPreviews.kt:206-219), where a small square icon is upscaled; iOS requires the page image and uses no icon (ImageUtils.swift:462).
@@ -316,7 +333,8 @@ Tags are scanned as bytes, as both supported families are supersets of ASCII; on
 ### 3.10 Image
 
 - Bytes: at most MAX_IMAGE_BYTES, else a failure.
-- `imagePreview` (Library/Commands.hs:232-238) is split: its decode and resize steps become `imageDataPreview :: ByteString -> IO (Either String ImageData)`, used by `imagePreview` and by the link preview.
+- `imagePreview` (Library/Commands.hs:232-238) is split: its decode and resize steps become `imageDataPreview :: Int64 -> ByteString -> IO (Either String ImageData)`, with the size limit of the data URI as its first argument, used by `imagePreview` with `maxImagePreviewSize` and by the link preview.
+- Size: the JSON of a sent message is at most `maxEncodedMsgLength`, 15602 bytes (Protocol.hs:930-931, checked by `encodeChatMessage`, Protocol.hs:987-994), and the image takes up to 14000 of them. The image limit of a link preview is `maxImagePreviewSize` less the JSON bytes of its title and description, so a preview takes no more of the message than an image with an empty title and description, as the apps send today.
 - Decoding limits of `decodeResizable`: JPEG scaled by halvings to at most 4320 per side, at most 2^28 pixels and `maxDecodeMemoryMB`; PNG decoded by spng within half of `maxDecodeMemoryMB` (src/Simplex/Chat/Image.hs:69-93, 309-323).
 - Formats: JPEG and PNG (Image.hs:74-77); others: Q4.
 
@@ -329,18 +347,23 @@ Tags are scanned as bytes, as both supported families are supersets of ASCII; on
 
 ```
 getLinkPreview cfg netCfg uriText:
-  uri   <- parseUri uriText; require https (Q2)
+  uri   <- parseUri uriText; https, or http for an onion host (Q2)
   creds <- previewCredentials netCfg
   timeout previewDeadline:
     (finalUri, resp) <- fetchFollowing creds uri
     case contentType resp of
-      image -> preview (lastSegment uri) "" <$> resizedImage resp
+      image -> preview (lastSegment uri) "" (bytes resp)
       html  ->
         PageMeta {title, description, image} <- scanHead resp
         title' <- maybe (throwError "no title") pure title
         imgUri <- maybe (throwError "no image") (pure . resolve finalUri) image
-        img    <- resizedImage =<< fetchFollowing creds imgUri
-        pure LinkPreview {uri = uriText, title = title', description = fromMaybe "" description, image = img, content = Nothing}
+        preview title' (fromMaybe "" description) . bytes =<< fetchFollowing creds imgUri
+
+preview title description imageBytes:
+  title'       = take MAX_TITLE_LENGTH title
+  description' = take MAX_DESCRIPTION_LENGTH description
+  img <- imageDataPreview (maxImagePreviewSize - jsonBytes title' - jsonBytes description') imageBytes
+  pure LinkPreview {uri = uriText, title = title', description = description', image = img, content = Nothing}
 
 fetchFollowing creds uri, n:
   resp <- withConnection creds uri (sendRequest uri)
@@ -440,7 +463,9 @@ The recipient never fetches: received previews are drawn from `linkPreview.image
 | Website, huge or endless page | make the core read bytes | read beyond MAX_HEAD_BYTES or MAX_IMAGE_BYTES | stop condition; budgets; close |
 | Website, slow response | hold a connection | beyond READ_TIMEOUT per read and PREVIEW_DEADLINE | `timeout`; `bracket` |
 | Website, compressed body | send gzip | make the core inflate it | `Accept-Encoding: identity`; other encodings rejected |
-| Website, redirect | send the core to other hosts | to `http`, to prohibited addresses, beyond MAX_REDIRECTS | section 3.7; address check per hop |
+| Website, redirect | send the core to other hosts | to `http` other than an onion host, to prohibited addresses, beyond MAX_REDIRECTS | section 3.7; address check per hop |
+| Website, long title or description | send long text | make the message too large to send | MAX_TITLE_LENGTH, MAX_DESCRIPTION_LENGTH; image limit reduced by their size (section 3.10) |
+| Onion service, plain HTTP | serve the page and image | be reached without Tor | `http` only for onion hosts, only through the SOCKS proxy (section 3.6) |
 | Website, DNS name of a local address | point the core to the LAN without a proxy | connect: addresses are checked after resolution, and the checked address is the one connected | section 3.6 |
 | Website, image bomb | send large dimensions | exceed the decoding limits | `decodeResizable` limits; MAX_IMAGE_BYTES |
 | Network observer, proxy, exit | see the host name (SNI), timing, sizes | read or alter content | TLS validated against the root store |
@@ -472,6 +497,8 @@ flowchart TD
 | Q3 | Root certificates | (a) the Mozilla bundle embedded in the core, refreshed by a script each release; (b) the system store where `crypton-x509-system` reads one, the bundle on iOS; (c) roots passed by each app | (a) |
 | Q4 | `og:image` other than JPEG and PNG | (a) no preview; WebP with the WebP PR named in plans/2026-10-23-core-image-resizing.md:369; (b) the first GIF frame added now (JuicyPixels) | (a) |
 
+Decided: Q1 (a), Q2 (a), Q3 (a), Q4 (a). With Q2, `http` links of `.onion` hosts are fetched over plain HTTP, only through the SOCKS proxy; without a proxy they get no preview. Message size: the title is cut to 300 characters, the description to 500, and the image limit is reduced by their JSON bytes (3.10).
+
 Decided as details: concurrent fetches without a cancel command (3.11); the desktop fetches while it controls a phone (3.12); one browser UA with the `x.com` exception (3.7).
 
 ## 5. Tests
@@ -482,13 +509,15 @@ Core, unit, `tests/LinkPreviewTests.hs` (new, registered in tests/Test.hs), patt
 |---|---|
 | head scanner | `og:title`, `og:description`, `og:image`, `<title>`, `<meta name="description">`, priority of `og:`, quotes, entities, comments, `<meta>` inside `<script>` ignored, stop at `</head>`, at `<body` and after the three `og:` tags |
 | chunk law | QuickCheck: scan of a body equals scan of any chunk split |
-| reference resolution | RFC 3986 5.4.1 and 5.4.2 examples; `//cdn/...`; port kept |
+| page limits | an endless head read to exactly MAX_HEAD_BYTES; an image of MAX_IMAGE_BYTES accepted, one byte more refused; 200000 entity references decoded |
+| reference resolution | RFC 3986 5.4.1 and 5.4.2 examples; `//cdn/...`; port kept; default port and trailing dot of the host removed |
+| onion schemes | `http` kept for onion hosts, in links, relative references and redirects; other `http` links fetched as `https`; redirect from an onion page to `http` of another host refused |
 | address policy | each prohibited range, its IPv4-mapped form, public addresses |
-| HTTP framing | chunked, `Content-Length`, close; header limits; oversized chunk |
-| request | headers; fragment removed; `x.com` UA |
+| HTTP framing | chunked, `Content-Length`, close; header limits; oversized chunk; 1xx responses skipped within the head limits, 101 final |
+| request | headers; fragment removed; `x.com` UA; `Host` without the default port |
 | charsets | UTF-8, `windows-1252`, unsupported |
 
-Core, scenario, `tests/ChatTests/LinkPreviews.hs` (new, in ChatTests.hs), pattern `/SimpleX chat client/link preview tests/`. A local HTTPS server (`warp-tls` added to the test suite; `wai` and `warp` at simplex-chat.cabal:863-864) uses tests/fixtures/tls/link-preview/server.crt (names `localhost` and `link-preview.test`, issued by tests/fixtures/tls/link-preview/ca.crt); the client has `rootCerts = [ca.crt]` and `APPublicAndLoopback`. A test SOCKS5 server in the module records the address type and credentials of each request and connects any host to the HTTPS server. The fixture uses `link-preview.test` through the SOCKS5 server, because the core's markdown marks a link only when its host contains a dot (Markdown.hs:873-882), and the app tests parse the typed link through the recorded markdown.
+Core, scenario, `tests/ChatTests/LinkPreviews.hs` (new, in ChatTests.hs), pattern `/SimpleX chat client/link preview tests/`. A local HTTPS server (`warp-tls` added to the test suite; `wai` and `warp` at simplex-chat.cabal:863-864) uses tests/fixtures/tls/link-preview/server.crt (names `localhost` and `link-preview.test`, issued by tests/fixtures/tls/link-preview/ca.crt); the client has `rootCerts = [ca.crt]` and `APPublicAndLoopback`. A local HTTP server serves the same pages for onion links. A test SOCKS5 server in the module records the address type and credentials of each request and connects any host to the requested port on 127.0.0.1. The fixture uses `link-preview.test` through the SOCKS5 server, because the core's markdown marks a link only when its host contains a dot (Markdown.hs:873-882), and the app tests parse the typed link through the recorded markdown.
 
 | Test | Checked |
 |---|---|
@@ -497,6 +526,10 @@ Core, scenario, `tests/ChatTests/LinkPreviews.hs` (new, in ChatTests.hs), patter
 | image URL | `image/png` response titled by the file name, empty description |
 | no `og:image`, icon present | `CELinkPreview`, no request for the icon |
 | redirects | 5 followed; 6, to `https://10.0.0.1` without a connection, and to `http`: `CELinkPreview` |
+| `APPublic` | `localhost` without a proxy and `127.0.0.1` through the SOCKS5 server: `CELinkPreview` "prohibited address", without a request to the server or the proxy |
+| `http` links | `http://localhost` fetched from the HTTPS server; an onion link without a proxy: `CELinkPreview` |
+| onion through SOCKS | page and image of `http://linkpreview.onion` over plain HTTP through the SOCKS5 server, as domain address type; `http://localhost` through it from the HTTPS server |
+| long non-Latin text | title of 400 Cyrillic and description of 600 CJK characters: cut to 300 and 500, image within the reduced limit, and the preview sent in a message to a contact |
 | endless body after the og tags, sent slowly | response before PREVIEW_DEADLINE; the server sees the connection closed after sending less than MAX_HEAD_BYTES |
 | head beyond MAX_HEAD_BYTES | the server sees the connection closed |
 | slow server, gzip, certificate of another CA, oversized image dimensions | `CELinkPreview`; slow server with a test deadline of 2 s |
