@@ -88,9 +88,12 @@ final class LinkPreviewTests: XCTestCase {
     }
 
     @MainActor
-    func testShareExtensionDecodesRecordedResponses() throws {
-        assertRecordedPreview(try apiGetLinkPreview(uri: "LINK_URL/page"))
-        XCTAssertThrowsError(try apiGetLinkPreview(uri: "LINK_URL/no-image")) { error in
+    func testShareExtensionDecodesRecordedResponses() async throws {
+        assertRecordedPreview(try await apiGetLinkPreview(uri: "LINK_URL/page"))
+        do {
+            _ = try await apiGetLinkPreview(uri: "LINK_URL/no-image")
+            XCTFail("no error")
+        } catch {
             XCTAssertEqual(error as? ChatError, .error(errorType: .linkPreview(message: "no image")))
         }
         XCTAssertEqual(requests(), ["/_link preview LINK_URL/page", "/_link preview LINK_URL/no-image"])
