@@ -313,7 +313,7 @@ orderFieldsOf :: NameRegistration -> OrderFields
 orderFieldsOf NameRegistration {nrLabelHash, nrLength, nrDuration, nrCommitment, nrSealed, nrAgreedTerms} =
   OrderFields {ofLabelHash = nrLabelHash, ofLength = nrLength, ofDuration = nrDuration, ofCommitment = nrCommitment, ofSealed = nrSealed, ofAgreedTerms = nrAgreedTerms}
 
--- | A name selected for a taken order, written as a purchase writes its order, a compare-and-set on the version read: a paid order's price
+-- | A name selected for a taken order, written as a new order is placed, a compare-and-set on the version read: a paid order's price
 -- is spent from its own balance in the balance's turn, and a code order's code is checked and reserved as a new code order's, in the code's turn.
 selectName :: OrdersEnv -> OrderRequest -> NameRegistration -> NameReveal -> IO (Either WriteRefusal [ClosedOrder])
 selectName env@OrdersEnv {oeStore, oeTurns, oeNow} req@OrderRequest {orFields = fields@OrderFields {ofLength}} r@NameRegistration {nrId, nrPayment, nrPrice} reveal =

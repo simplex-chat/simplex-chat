@@ -13,7 +13,7 @@ module StoreService.Web.Names.Orders
     refused,
     nameInvoiceHandler,
     codeOrderHandler,
-    purchaseChecked,
+    orderChecked,
     announceHeld,
     nameInvoiceView,
     orderRefusal,
@@ -142,7 +142,7 @@ nameInvoiceHandler env http client cfg providers waiters body respond
             createPaidRegistration db new paid at >>= \case
               True -> pure $ Right ()
               False -> pure $ Left OROrderExists
-      purchaseChecked env now req (orderYears orFields $ nYears $ oeConfig env) (Just price) Nothing reveal >>= \case
+      orderChecked env now req (orderYears orFields $ nYears $ oeConfig env) (Just price) Nothing reveal >>= \case
         Left refusal -> refuse refusal
         Right rv -> createAtProvider env http client cfg providers waiters what now InvoicedOrder {ivRequest = req, ivReveal = rv, ivOrderHash = hash, ivMethod = method, ivPrice = price, ivInsert = insert}
 
@@ -249,7 +249,7 @@ codeOrderHandler env@OrdersEnv {oeStore} providers waiters req respond =
           answerOrder env what order (OTCode pcCodeHash) (\_ NameRegistration {nrId} -> pure $ answerNow $ registrationAnswer nrId) (\hash now -> newOrder now order reveal hash code)
     issuedCode = maybe (pure Nothing) (readPrepaidCode oeStore) . parseNameCode
     newOrder now order@OrderRequest {orOwner, orFields} reveal hash code@PrepaidCode {pcYears} =
-      purchaseChecked env now order (orderYears orFields pcYears) Nothing Nothing reveal >>= \case
+      orderChecked env now order (orderYears orFields pcYears) Nothing Nothing reveal >>= \case
         Left refusal -> refuse refusal
         Right rv -> do
           rid <- newRegistrationId
@@ -257,8 +257,8 @@ codeOrderHandler env@OrdersEnv {oeStore} providers waiters req respond =
             Left refusal -> refuse refusal
             Right closed -> pure Answer {aResponse = Right $ registrationAnswer rid, aAfter = announceHeld env providers waiters closed rid}
 
-purchaseChecked :: OrdersEnv -> UTCTime -> OrderRequest -> Int -> Maybe USDCents -> Maybe NameReveal -> RevealRequest -> IO (Either OrderRefusal NameReveal)
-purchaseChecked OrdersEnv {oeStore, oeConfig, oeContracts} now OrderRequest {orOwner, orFields = fields@OrderFields {ofLabelHash, ofLength, ofDuration}, orTimestamp} years price accepted reveal =
+orderChecked :: OrdersEnv -> UTCTime -> OrderRequest -> Int -> Maybe USDCents -> Maybe NameReveal -> RevealRequest -> IO (Either OrderRefusal NameReveal)
+orderChecked OrdersEnv {oeStore, oeConfig, oeContracts} now OrderRequest {orOwner, orFields = fields@OrderFields {ofLabelHash, ofLength, ofDuration}, orTimestamp} years price accepted reveal =
   runExceptT $ do
     mapM_ ExceptT $
       [ pure $ checkTimestamp now orTimestamp,

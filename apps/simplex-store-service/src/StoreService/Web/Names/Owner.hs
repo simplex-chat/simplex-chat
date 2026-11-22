@@ -38,7 +38,7 @@ import StoreService.Names.View (NameRefusal (..), registrationView)
 import StoreService.Web.Http (Respond, jsonResponse, maxBodyBytes, nameBodyBytes, readBoundedBody)
 import StoreService.Providers (Provider)
 import StoreService.Waiters (Waiters)
-import StoreService.Web.Names.Orders (Answer (..), announceHeld, answerNow, purchaseChecked, refusalAnswer, refused, sendAnswer)
+import StoreService.Web.Names.Orders (Answer (..), announceHeld, answerNow, orderChecked, refusalAnswer, refused, sendAnswer)
 import StoreService.Web.Names.Registration (registrationChanged)
 
 data FindRequest = FindRequest
@@ -98,7 +98,7 @@ foundOrder NameRegistration {nrId, nrPayment, nrPhase, nrCreatedAt, nrLabelHash 
       sealed = nrSealed
     }
 
--- | POST /api/registration/:id/name, a name selected for a taken order, under the turns of both names, with a purchase's checks.
+-- | POST /api/registration/:id/name, a name selected for a taken order, under the turns of both names, with a new order's checks.
 selectNameHandler :: OrdersEnv -> [Provider] -> Waiters -> RegistrationId -> Request -> Respond -> IO ResponseReceived
 selectNameHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oeNow} providers waiters rid@(RegistrationId ridText) req respond =
   readBoundedBody nameBodyBytes req >>= requested >>= sendAnswer respond
@@ -125,7 +125,7 @@ selectNameHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oeNow}
           withTransaction oeStore (\db -> overdueOrdersMet db order now) >>= \case
             Nothing -> refuse OROrderExists
             Just _ ->
-              purchaseChecked env now order (orderYears orFields nrYears) (nrPrice <$ paymentInvoice nrPayment) nrReveal reveal >>= \case
+              orderChecked env now order (orderYears orFields nrYears) (nrPrice <$ paymentInvoice nrPayment) nrReveal reveal >>= \case
                 Left refusal -> refuse refusal
                 Right rv -> write now r order rv
     write now r order rv =
