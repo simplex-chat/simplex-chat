@@ -249,6 +249,7 @@ A new test file is added to its target in project.pbxproj: a PBXBuildFile, a PBX
   - The stubs replace the libraries in apps/ios/Libraries/sim, where scripts/ios/prepare.sh puts the core built for the simulator.
   - With the stubs, the app opens its database error screen and calls the core no more.
   - The tests run with `-testLanguage en -testRegion US`; a test of dates sets `NSTimeZone.default` to UTC.
+  - The share extension's `logger` and its functions `apiGetActiveUser`, `apiStartChat`, `apiSetAppFilePaths`, `apiSetEncryptLocalFiles`, `apiGetChats`, `apiSendMessages`, `apiGetLinkPreview`, `apiActivateChat` and `apiSuspendChat` are declared in the test module beside the app's: a call that both accept, such as `apiGetActiveUser()`, is written `SimpleX.apiGetActiveUser()` to call the app's function, and `logger` is the extension's.
 
 ### SimpleX Snapshots
 
