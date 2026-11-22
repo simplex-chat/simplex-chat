@@ -20,9 +20,13 @@ import chat.simplex.common.views.helpers.*
 import chat.simplex.res.*
 
 @Composable
-fun DeveloperView(withAuth: (title: String, desc: String, block: () -> Unit) -> Unit,
-  developerTools: SharedPreference<Boolean> = appPrefs.developerTools
+fun DeveloperView(withAuth: (title: String, desc: String, block: () -> Unit) -> Unit
 ) {
+  DeveloperLayout(withAuth, appPrefs.developerTools)
+}
+
+@Composable
+private fun DeveloperLayout(withAuth: (title: String, desc: String, block: () -> Unit) -> Unit, developerTools: SharedPreference<Boolean>) {
   val m = chatModel
   ColumnWithScrollBar {
     val uriHandler = LocalUriHandler.current
@@ -89,6 +93,6 @@ fun showInDevelopingAlert() {
 @Composable
 fun PreviewDeveloperView() {
   SimpleXTheme {
-    DeveloperView(withAuth = { _, _, _ -> }, developerTools = remember { SharedPreference(get = { true }, set = {}) })
+    DeveloperLayout(withAuth = { _, _, _ -> }, developerTools = remember { SharedPreference(get = { true }, set = {}) })
   }
 }
