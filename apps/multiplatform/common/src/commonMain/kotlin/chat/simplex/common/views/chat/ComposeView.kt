@@ -531,6 +531,7 @@ fun ComposeView(
         loadLinkPreview(url, wait = if (prevLinkUrl.value == url) null else 1500L)
       }
     } else {
+      pendingLinkUrl.value = null
       composeState.value = composeState.value.copy(preview = ComposePreview.NoPreview)
     }
   }

@@ -340,7 +340,7 @@ On send (line ~603, `sendMessageAsync`):
 
 When `privacyLinkPreviews` is enabled and the message contains a URL:
 
-1. `showLinkPreview` extracts first non-SimpleX, non-cancelled link from parsed markdown.
+1. `showLinkPreview` extracts first non-SimpleX, non-cancelled link from parsed markdown; when the text has none, it clears `pendingLinkUrl` and sets `NoPreview`.
 2. Sets `ComposePreview.CLinkPreview(null)` (loading state).
 3. After 1.5s debounce, calls `apiGetLinkPreview(url)`: the core fetches the page through its network settings (`/_link preview <url>`).
 4. If the link is still `pendingLinkUrl` and no attachment replaced the link preview (`linkPreviewAllowed`), updates to `CLinkPreview(linkPreview)` on success, otherwise to `NoPreview`, and the link is added to `cancelledLinks`, so that further typing does not fetch it again until the compose state is reset; with `developerTools` and `showLinkPreviewErrors`, the core's error is shown in an alert. `fetchAndUpdateLinkPreview` checks `pendingLinkUrl` and writes the compose state on the main thread.
