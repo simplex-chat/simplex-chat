@@ -101,7 +101,8 @@ struct ChatItemForwardingView: View {
                     composeState.wrappedValue = ComposeState(
                         message: composeState.wrappedValue.message,
                         preview: composeState.wrappedValue.linkPreview != nil ? composeState.wrappedValue.preview : .noPreview,
-                        contextItem: .forwardingItems(chatItems: chatItems, fromChatInfo: fromChatInfo)
+                        contextItem: .forwardingItems(chatItems: chatItems, fromChatInfo: fromChatInfo),
+                        cancelledLinks: composeState.wrappedValue.cancelledLinks
                     )
                 } else {
                     composeState.wrappedValue = ComposeState.init(forwardingItems: chatItems, fromChatInfo: fromChatInfo)
