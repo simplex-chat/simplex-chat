@@ -510,13 +510,22 @@ Core, tests/ChatTests/Groups.hs, `describe "members via another member"`, groups
 - `testViaMemberMessages`: `/_add via #1 member json {...reviewer...}`; bob and cath see `#team: alice added reviewer to the group (via alice)`; `/_send #1(as_member=M) text hi` → `#team reviewer> hi [>>]` for bob and cath; `/ms team` of bob lists reviewer via alice.
 - `testViaMemberLiveUpdate`: send as member with live=on, two updates, the last with live=off → bob's item from reviewer has the final text and itemLive false.
 - `testViaMemberLaterJoiner`: dan joins by alice's invitation after the message → dan's output has no "added" or "unknown member" line for reviewer, has `#team reviewer> hi [>>]` from history, and `/ms team` lists reviewer via alice.
-- `testViaMemberOtherAdmin`: cath is bob's invitee, not connected to alice → bob forwards reviewer's message to cath.
+- `testViaMemberOtherAdmin`: cath is bob's invitee, not connected to alice → bob forwards reviewer's message and its update to cath.
 - `testViaMemberIntroOrder`: bob adds assistant (admin) via bob; dan joins by alice's invitation → dan records assistant via bob.
 - `testViaMemberPrevVersionJoiner`: dan with chat version range up to 22 joins → reviewer is not introduced; dan creates it as an unknown member from history.
 - `testViaMemberReply`: bob replies to reviewer's message and mentions @reviewer → on alice and cath, the item's quotedItem has the item ID of reviewer's item and direction groupRcv reviewer, and its mention has reviewer's group member ID.
+- `testViaMemberRoleRules`: reviewer is a member, owners are exempt from the edit window → alice's priority 1 as reviewer is stored normal; bob drops alice's edit of the item aged 79 hours on bob ("edit too late"); alice cannot edit the item aged 100 hours on alice; a forwarded priority 1 of reviewer arrives normal at bob.
 - `testViaMemberRemove`: `/_remove #1 M` → bob and cath see "alice removed reviewer".
-- `testViaMemberRefused`: bob (admin) adds an owner via bob → refused; send as bob's group member ID → "member is not via you"; cath (member) adds → refused; in a channel → refused.
-- `testViaMemberSigned`: "sign messages" on → bob shows reviewer's message signed; a forward signed by another key → bad signature.
+- `testViaMemberRemoveByAdmin`: bob removes reviewer → alice and cath see "bob removed reviewer"; alice's send as reviewer → "not active yet".
+- `testViaMemberRefused`: bob (admin) adds an owner via bob → refused; send as bob's group member ID → "member is not via you"; cath (member) adds → refused; alice adds in an incognito group → refused.
+- `testViaMemberRefusedChannel`: in a channel → refused.
+- `testViaMemberAnnounceRefused`: x.grp.mem.new with via of another member, x.grp.mem.new from reviewer → refused; a forward of reviewer with via cath → dropped.
+- `testViaMemberIntroRefused`: x.grp.mem.intro with via naming the user, reviewer, an owner role above cath's, an unknown member, and from a host demoted to member → refused.
+- `testViaMemberSendRefused`: send as reviewer in a support scope, with a file, with a quote, and its broadcast delete → refused; bob's moderation → alice sees "[marked deleted by bob]"; alice's moderation → bob and cath see "[marked deleted by alice]".
+- `testViaMemberSigned`: "sign messages" on → bob shows reviewer's message and its update signed; a forward signed by another key → bad signature.
+- `testViaMemberSignedPrevVersion`: bob with chat version range up to 22 → reviewer's message arrives with "(signature missing)".
+- `testViaMemberSignedPending`: bob's connection inactive → reviewer's message is sent as pending and arrives with "(signature missing)".
+- `testGroupMsgForwardViaRejected` (`describe "group message forwarding"`): a forward of an unknown member with via naming the recipient, or from a forwarder that is neither the host nor the named member → via not recorded.
 - `testViaMemberSignedHistory`: reviewer removed; dan joins → dan creates reviewer from history with via alice and shows the item signed.
 - `testViaMemberRestart`: alice restarts → reviewer listed via alice; send as member works.
 - Migrations: tests/MigrationTests up and down with the schema dump; down of a database with members via the user and via another member.
@@ -604,7 +613,7 @@ bot API (6.5)              SendRef is documented as before; nodejs and python he
 send and update as member  require the user to be admin; files and quotes as a member are refused
 receivers                  refuse via in channels, an x.grp.mem.intro whose via is the receiver, and x.grp.mem.fwd of a member via another member
 restrictions               restrictions of x.grp.mem.intro are stored for a member via another member
-moderation                 deletion of an item sent as a member, by a moderator, is attributed to the member via V on V's side
+moderation                 deletion of an item sent as a member, by a moderator, is attributed to the member via V on V's side; V's moderation of it names that member
 adding                     no chat item on V's side, as APIAddMember creates none in the group (only the invitation item in the direct chat)
 forwarding by the host     per member (sendFwdMemberMessageFlags), without delivery tasks and a delivery_tasks column: a delivery job has one body for all its recipients, and the "V" header is sent only to recipients of version 23 (4.4)
 ```
