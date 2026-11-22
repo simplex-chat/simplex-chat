@@ -205,13 +205,13 @@ testServiceCounts = withServiceStore $ \st -> do
                  "simplex_store_provider_list_ok_timestamp_seconds{provider=\"crypto\"} " <> seconds (at 11),
                  "simplex_store_provider_webhook_timestamp_seconds{provider=\"stripe\"} " <> seconds (at 13),
                  "simplex_store_badges_purchases{status=\"acquiring\"} 0",
+                 "simplex_store_badges_purchases{status=\"failed\"} 0",
                  "simplex_store_badges_purchases{status=\"issued\"} 2",
                  "simplex_store_badges_purchases{status=\"superseded\"} 1",
-                 "simplex_store_badges_purchases{status=\"failed\"} 0",
-                 "simplex_store_badges_subscriptions{state=\"renewing\"} 2",
-                 "simplex_store_badges_subscriptions{state=\"cancelled\"} 0",
                  "simplex_store_badges_subscriptions{state=\"billingRetry\"} 1",
+                 "simplex_store_badges_subscriptions{state=\"cancelled\"} 0",
                  "simplex_store_badges_subscriptions{state=\"ended\"} 0",
+                 "simplex_store_badges_subscriptions{state=\"renewing\"} 2",
                  "simplex_store_badges_codes_open 2"
                ]
   closed <- withTransaction st $ \db -> do

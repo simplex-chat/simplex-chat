@@ -651,8 +651,8 @@ getEditableTrackers db sentAfter =
     (Only sentAfter)
 
 data BadgeCounts = BadgeCounts
-  { bcPurchases :: [(BadgePurchaseStatus, Int)],
-    bcSubscriptions :: [(SubscriptionState, Int)],
+  { bcPurchases :: [(Text, Int)],
+    bcSubscriptions :: [(Text, Int)],
     bcOpenCodes :: Int
   }
   deriving (Eq, Show)
