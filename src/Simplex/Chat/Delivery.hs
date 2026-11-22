@@ -141,7 +141,7 @@ deliveryTaskId = taskId
 
 taskHasNotification :: MessageDeliveryTask -> Bool
 taskHasNotification MessageDeliveryTask {verifiedMsg, itemPriority} = case chatMsgEvent of
-  XMsgUpdate {} -> priorityHasNotification itemPriority XMsgUpdate_
+  ev@XMsgUpdate {} -> priorityHasNotification itemPriority (ntfEventTag ev)
   ev -> eventHasNotification ev
   where
     ChatMessage {chatMsgEvent} = verifiedChatMsg verifiedMsg

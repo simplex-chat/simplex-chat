@@ -298,6 +298,7 @@ chatGroupTests = do
     it "silent update as new" testGroupUpdateAsNewSilent
     it "high priority update as new without a change of text" testGroupUpdateAsNewHighPriority
     it "update as new of a blocked member is applied in place" testGroupUpdateAsNewBlockedMember
+    it "forward update as new with notification flag of a new message" testGroupMsgForwardUpdateAsNew
     it "update as new keeps the window of the message for receivers" testGroupUpdateAsNewReceiverWindow
   describe "edit window" $ do
     it "exempt owner edits and deletes an old message" testGroupEditsExemptOwner
@@ -6768,6 +6769,25 @@ testGroupUpdateAsNewBlockedMember =
       cath <#. "#team bob> [edited] status 2"
       alice #$> ("/_get chat #1 count=1", chat, [(0, "status 2")])
       cath #$> ("/_get chat #1 count=1", chat, [(0, "hi")])
+
+testGroupMsgForwardUpdateAsNew :: HasCallStack => TestParams -> IO ()
+testGroupMsgForwardUpdateAsNew =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+      setupGroupForwarding alice bob cath
+      cath ##> "/set receipts all off"
+      cath <## "ok"
+      cathConnId <- relayConnIdToMember alice "cath"
+      bob #> "#team status"
+      alice <# "#team bob> status"
+      cath <# "#team bob> status [>>]"
+      statusId <- lastItemId bob
+      bob ##> ("/_update item #1 " <> statusId <> " as_new=on text status")
+      bob <# "#team status"
+      alice <# "#team bob> status"
+      cath <# "#team bob> status"
+      lastSndMsgFlags alice cathConnId 1 `shouldReturn` ["T"]
 
 testGroupUpdateAsNewReceiverWindow :: HasCallStack => TestParams -> IO ()
 testGroupUpdateAsNewReceiverWindow =
