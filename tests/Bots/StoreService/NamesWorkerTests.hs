@@ -94,7 +94,7 @@ workerTests = describe "StoreService names: worker" $ do
     it "writes nothing when the registration changed since it was read" testLostRace
     it "writes in the name's turn" testInNameTurn
   describe "register" $ do
-    it "ends taken on any revert while the name is not available, keeping a code reserved and no balance" testRevertTaken
+    it "ends taken on a revert that names no error of the contracts while the name is not available, keeping a code reserved and no balance" testRevertTaken
     it "logs and reports an order taken on chain once, and none taken at settlement, alerting neither 3 hours after payment" testTakeReported
     it "waits while the name reads taken only above the confirmation depth, and ends taken once it reads so at the depth" testTakenAtDepth
     it "keeps the phase on NameNotAvailable while the name still reads available, as for a pending competitor" testPendingCompetitor

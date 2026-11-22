@@ -207,7 +207,7 @@ namesOrdersTests = describe "StoreService names: orders" $ do
     it "ends taken an order paid while another paid order holds its name, the money paid for it added to its balance" testSettledWhileHeld
     it "holds the name for a failed paid order: a new order of it is refused name_taken, and a payment for it ends taken" testFailedHoldsName
     it "holds the name from a code order's placement, cancelling the name's other open invoices" testCodeOrderHoldsName
-    it "takes the invoice's row before recording a payment that moves no status" testSettlementLocksInvoice
+    it "writes the invoice's row when it records a payment that moves no status" testSettlementLocksInvoice
     it "sweeps each invoice on its own, skipping one whose order cannot be read" testSweepSkipsBadRow
     it "keeps out of a pass's sweep only the invoices whose read or settlement failed" testPassSweepsAroundFailures
     it "cleans up unpaid orders after 30 days, reading the provider first" testCleanup
@@ -676,7 +676,9 @@ testOneFieldDiffers = withOrders $ \ctx -> do
   let variants =
         [ aliceOrder {oLabel = "dynamis", oCommitment = Just aliceCommitment},
           aliceOrder {oSecret = secretOf 2},
-          aliceOrder {oMethod = "xmr"}
+          aliceOrder {oMethod = "xmr"},
+          aliceOrder {oDuration = oDuration aliceOrder + 1},
+          aliceOrder {oSealed = "sealed-alicebakery-2"}
         ]
   forM_ variants $ \o -> placeOrder ctx o `shouldReturn` refusedWith 409 "order_exists"
   length <$> stubCalls (cStub ctx) `shouldReturn` 1
@@ -1158,6 +1160,8 @@ testCodeOneFieldDiffers = withOrders $ \ctx -> do
   let variants =
         [ (code, aliceOrder {oLabel = "dynamis", oCommitment = Just aliceCommitment}),
           (code, aliceOrder {oSecret = secretOf 2}),
+          (code, aliceOrder {oDuration = oDuration aliceOrder + 1}),
+          (code, aliceOrder {oSealed = "sealed-alicebakery-2"}),
           (other, aliceOrder)
         ]
   forM_ variants $ \(c, o) -> register ctx c o `shouldReturn` refusedWith 409 "order_exists"

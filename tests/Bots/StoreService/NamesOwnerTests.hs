@@ -686,6 +686,7 @@ testSelectSizes = withOwner $ \ctx -> do
   body <- selectionBody ctx keyA (nrId r) longest
   postSelection ctx (nrId r) (KM.insert "owner" (J.String $ T.replicate 5300 "0") body) `shouldReturn` refusedWith 400 "bad_request"
   post ctx (registrationPath (nrId r) <> "/name") "[]" `shouldReturn` refusedWith 400 "bad_request"
+  select ctx keyA r to {oSealed = T.replicate 11096 "s"} `shouldReturn` refusedWith 400 "bad_request"
   stored ctx r `shouldReturn` r
   -- an owner in the body is ignored
   (status, v) <- postSelection ctx (nrId r) (KM.insert "owner" (J.String ownerBText) body)
@@ -697,6 +698,7 @@ testSelectRefusedSigner = withOwner $ \ctx -> do
   r <- takenIn ctx aliceOrder id
   to <- selectionOf ctx "alicebakers" 10
   select ctx keyB r to `shouldReturn` refusedWith 400 "bad_request"
+  (clockSeconds ctx >>= \ts -> selectionBodyAt ctx keyA (nrId r) to (ts - signedWindow - 1) >>= postSelection ctx (nrId r)) `shouldReturn` refusedWith 400 "bad_request"
   stored ctx r `shouldReturn` r
   let unknown = RegistrationId "t2Jk8RmQ4vXw9NcP3yLb6g"
   (selectionBody ctx keyA unknown to >>= postSelection ctx unknown) `shouldReturn` refusedWith 404 "not_found"

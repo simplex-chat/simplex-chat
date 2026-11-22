@@ -82,7 +82,7 @@ namesRevealTests = describe "StoreService names: reveal" $ do
     it "answers 503 for a listed name's reveal while its listing or the owner's policy nonce cannot be read, or before the policy has community terms, storing nothing" testAcceptanceUnavailable
   describe "races" $ do
     it "answers registration_changed with the current view when the registration changed during the checks" testLostRace
-    it "runs one at a time with /name for the name, exactly one of them taking effect" testRacesName
+    it "holds the name's turn while it reads the nonce, so a /name sent meanwhile waits, then is refused, and the reveal is stored" testRacesName
 
 -- fixtures
 

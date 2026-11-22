@@ -83,7 +83,7 @@ namesStoreTests = describe "StoreService names: store" $ do
     it "names the order holding a label from queued to registering and failed, one at a time, and none for an unpaid, taken or registered one" testLabelRegistering
     it "lists the registrations a worker moves on" testActive
     it "lists unpaid orders whose invoice expired before the cutoff without a payment, and deletes one with its invoice, once" testUnpaidCleanup
-    it "lists the live queued, committed and failed orders paid by the cutoff, a code order's from its reservation" testMonthCandidates
+    it "lists the live queued and failed code orders reserved by the cutoff, and no committing, month-ended, taken or later one" testMonthCandidates
   describe "prepaid codes" $ do
     it "issues one code per hash" testIssueCode
     it "stores a code's origin as issued_in_group, counting a group code written before as the group's" testIssuerStored

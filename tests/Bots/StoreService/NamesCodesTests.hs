@@ -50,7 +50,7 @@ namesCodesTests = describe "StoreService names: prepaid codes" $ do
     it "encodes each refusal of a code by its tag" testCodeRefusalTags
     it "releases and spends a code only after the write, and only for its holder" testReleaseSpend
   describe "group commands" $ do
-    it "parses /issue name with the length only, answering the usage to years and to /bulk name" testGroupNameCommands
+    it "parses /issue name with its length and years, answering the usage to /bulk name" testGroupNameCommands
     it "answers the usage to a bad length, years or count, or a badge option" testGroupNameCommandsRefused
     it "parses /revoke of a prepaid code, telling a moderator it was not revoked" testGroupRevokeNameCommand
 
