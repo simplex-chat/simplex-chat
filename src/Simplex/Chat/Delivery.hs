@@ -1,5 +1,6 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -131,11 +132,19 @@ data MessageDeliveryTask = MessageDeliveryTask
     senderGMId :: GroupMemberId,
     fwdSender :: FwdSender,
     brokerTs :: UTCTime,
-    verifiedMsg :: VerifiedMsg 'Json
+    verifiedMsg :: VerifiedMsg 'Json,
+    itemPriority :: MsgPriority
   }
 
 deliveryTaskId :: MessageDeliveryTask -> Int64
 deliveryTaskId = taskId
+
+taskHasNotification :: MessageDeliveryTask -> Bool
+taskHasNotification MessageDeliveryTask {verifiedMsg, itemPriority} = case chatMsgEvent of
+  XMsgUpdate {} -> priorityHasNotification itemPriority XMsgUpdate_
+  ev -> eventHasNotification ev
+  where
+    ChatMessage {chatMsgEvent} = verifiedChatMsg verifiedMsg
 
 data DeliveryTaskStatus
   = DTSNew -- created for delivery task worker to pick up and convert into a delivery job

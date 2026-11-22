@@ -595,7 +595,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
               case event of
                 XMsgNew mc -> newContentMessage ct'' mc msg msgMeta
                 XMsgFileDescr sharedMsgId fileDescr fileExpires fileBadge -> messageFileDescription ct'' sharedMsgId fileDescr fileExpires fileBadge
-                XMsgUpdate sharedMsgId mContent _ ttl live _msgScope _ _ -> messageUpdate ct'' sharedMsgId mContent msg msgMeta ttl live
+                XMsgUpdate sharedMsgId mContent _ ttl live _msgScope _ priority_ -> messageUpdate ct'' sharedMsgId mContent msg msgMeta ttl live priority_
                 XMsgDel sharedMsgId _ _ _ -> messageDelete ct'' sharedMsgId msg msgMeta
                 XMsgReact sharedMsgId _ _ reaction add -> directMsgReaction ct'' sharedMsgId reaction add msg msgMeta
                 -- TODO discontinue XFile
@@ -777,7 +777,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
       where
         sendAutoReply ct mc = \case
           Just UserContactRequest {welcomeSharedMsgId = Just smId} ->
-            void $ sendDirectContactMessage user ct $ XMsgUpdate smId mc M.empty Nothing Nothing Nothing Nothing Nothing
+            void $ sendDirectContactMessage user ct $ XMsgUpdate smId mc M.empty Nothing Nothing Nothing Nothing MPNormal
           _ -> do
             (msg, _) <- sendDirectContactMessage user ct $ XMsgNew $ mcSimple mc
             ci <- saveSndChatItem user (CDDirectSnd ct) msg (CISndMsgContent mc)
@@ -1349,7 +1349,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
             _ -> pure Nothing
         sendGroupAutoReply mc = \case
           Just UserContactRequest {welcomeSharedMsgId = Just smId} ->
-            void $ sendGroupMessage' user g [m] $ XMsgUpdate smId mc M.empty Nothing Nothing Nothing Nothing Nothing
+            void $ sendGroupMessage' user g [m] $ XMsgUpdate smId mc M.empty Nothing Nothing Nothing Nothing MPNormal
           _ -> do
             msg <- sendGroupMessage' user g [m] $ XMsgNew $ mcSimple mc
             ci <- saveSndChatItem user (CDGroupSnd gInfo Nothing) msg (CISndMsgContent mc)
@@ -2100,8 +2100,8 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
           let fileDescr' = if needsBadge then dummyFileDescr <$ fileDescr else fileDescr
           pure $ mkValidFileInvitation fInv {fileDescr = fileDescr'}
 
-    messageUpdate :: Contact -> SharedMsgId -> MsgContent -> RcvMessage -> MsgMeta -> Maybe Int -> Maybe Bool -> CM ()
-    messageUpdate ct@Contact {contactId} sharedMsgId mc msg@RcvMessage {msgId} msgMeta ttl live_ = do
+    messageUpdate :: Contact -> SharedMsgId -> MsgContent -> RcvMessage -> MsgMeta -> Maybe Int -> Maybe Bool -> MsgPriority -> CM ()
+    messageUpdate ct@Contact {contactId} sharedMsgId mc msg@RcvMessage {msgId} msgMeta ttl live_ priority_ = do
       updateRcvChatItem `catchCINotFound` \_ -> do
         -- This patches initial sharedMsgId into chat item when locally deleted chat item
         -- received an update from the sender, so that it can be referenced later (e.g. by broadcast delete).
@@ -2126,18 +2126,19 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
         updateRcvChatItem = do
           cci <- withStore $ \db -> getDirectChatItemBySharedMsgId db user contactId sharedMsgId
           case cci of
-            CChatItem SMDRcv ci@ChatItem {meta = CIMeta {itemForwarded, itemLive}, content = CIRcvMsgContent oldMC}
+            CChatItem SMDRcv ci@ChatItem {meta = meta@CIMeta {itemForwarded, itemLive, priority}, content = CIRcvMsgContent oldMC}
               | isNothing itemForwarded -> do
                   let changed = mc /= oldMC
-                  if changed || fromMaybe False itemLive
+                      priority' = allowedPriority False priority_
+                  if changed || fromMaybe False itemLive || priority' /= priority
                     then do
                       (ciR, ci') <- withStore' $ \db -> do
                         when changed $
                           addInitialAndNewCIVersions db (chatItemId' ci) (chatItemTs' ci, oldMC) (brokerTs, mc)
                         reactions <- getDirectCIReactions db ct sharedMsgId
                         let ciR = (ci :: ChatItem 'CTDirect 'MDRcv) {reactions}
-                            edited = itemLive /= Just True
-                        (ciR,) <$> updateDirectChatItem' db user contactId ciR content edited live Nothing (Just msgId)
+                            edited = changed && itemLive /= Just True
+                        (ciR,) <$> updateDirectChatItem' db user contactId ciR {meta = (meta :: CIMeta 'CTDirect 'MDRcv) {priority = priority'}} content edited live Nothing (Just msgId)
                       toView $ CEvtChatItemUpdated user (AChatItemUpdate SCTDirect SMDRcv (DirectChat ct) ci' ciR)
                       startUpdatedTimedItemThread user (ChatRef CTDirect contactId Nothing) ci ci'
                     else toView $ CEvtChatItemNotChanged user (AChatItem SCTDirect SMDRcv (DirectChat ct) ci)
@@ -2331,7 +2332,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
           reactions <- maybe (pure []) (\sharedMsgId -> withStore' $ \db -> getGroupCIReactions db gInfo' memberId_ sharedMsgId) sharedMsgId_
           groupMsgToView cInfo ci' {reactions}
 
-    groupMessageUpdate :: GroupInfo -> Maybe GroupMember -> SharedMsgId -> MsgContent -> Map MemberName MsgMention -> Maybe MsgScope -> RcvMessage -> UTCTime -> Maybe Int -> Maybe Bool -> Maybe Bool -> Maybe Int -> CM (Maybe DeliveryTaskContext)
+    groupMessageUpdate :: GroupInfo -> Maybe GroupMember -> SharedMsgId -> MsgContent -> Map MemberName MsgMention -> Maybe MsgScope -> RcvMessage -> UTCTime -> Maybe Int -> Maybe Bool -> Maybe Bool -> MsgPriority -> CM (Maybe DeliveryTaskContext)
     groupMessageUpdate gInfo@GroupInfo {groupId} m_ sharedMsgId mc mentions msgScope_ msg@RcvMessage {msgId, msgSigned, signedMsg_, signedByGMId_} brokerTs ttl_ live_ asGroup_ priority_
       | Just m <- m_, prohibitedSimplexLinks gInfo m mc ft_ =
           messageWarning ("x.msg.update ignored: feature not allowed " <> groupFeatureNameText GFSimplexLinks) $> Nothing
@@ -2403,12 +2404,10 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                     Nothing -> createInternalChatItem user cd (CIRcvGroupEvent RGEMsgBadSignature) (Just brokerTs) $> Nothing
               | otherwise = action
         updateCI :: ShowGroupAsSender -> ChatDirection 'CTGroup 'MDRcv -> ChatItem 'CTGroup 'MDRcv -> Maybe GroupChatScopeInfo -> MsgContent -> Maybe Bool -> Maybe MemberId -> CM (Maybe DeliveryTaskContext)
-        updateCI showGroupAsSender cd ci@ChatItem {meta = meta@CIMeta {itemDeleted}} scopeInfo oldMC itemLive memberId = do
+        updateCI showGroupAsSender cd ci@ChatItem {meta = meta@CIMeta {itemDeleted, priority}} scopeInfo oldMC itemLive memberId = do
           let changed = mc /= oldMC
-              requested = requestsHighPriority priority_
-              raise = requested && not (highPriority meta) && isNothing scopeInfo && isNothing itemDeleted && rcvPriorityAllowed cd
-              ciRaised = if raise then ci {meta = meta {priority = Just 1, userMention = True}} else ci
-          if changed || fromMaybe False itemLive || requested
+              priority' = allowedPriority (isNothing scopeInfo && isNothing itemDeleted && rcvPriorityAllowed cd) priority_
+          if changed || fromMaybe False itemLive || priority' /= priority
             then do
               ci' <- withStore' $ \db -> do
                 when changed $
@@ -2416,7 +2415,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                 reactions <- getGroupCIReactions db gInfo memberId sharedMsgId
                 let edited = changed && itemLive /= Just True
                 ciMentions <- getRcvCIMentions db user gInfo ft_ mentions
-                ci' <- updateGroupChatItem db user groupId ciRaised {reactions} content edited live $ Just msgId
+                ci' <- updateGroupChatItem db user groupId ci {meta = (meta :: CIMeta 'CTGroup 'MDRcv) {priority = priority'}, reactions} content edited live $ Just msgId
                 updateChatItemSignedMsg db (chatItemId' ci) signedMsg_ signedByGMId_
                 updateGroupCIMentions db gInfo ci' ciMentions >>= updateGroupCIUserMention db cxt user gInfo scopeInfo
               toView $ CEvtChatItemUpdated user (AChatItemUpdate SCTGroup SMDRcv (GroupChat gInfo scopeInfo) ci' ci)
@@ -4269,7 +4268,7 @@ runDeliveryTaskWorker a deliveryKey Worker {doWork} = do
                   withWorkItems a doWork (withStoreIsolation' RepeatableRead $ \db -> getNextDeliveryTasks db gInfo task) $ \nextTasks -> do
                     let (body_, acceptedTasks, largeTasks) = batchDeliveryTasks1 (vr cxt) maxForwardBatchLength nextTasks
                         senderGMIds = S.toList . S.fromList $ map (\MessageDeliveryTask {senderGMId} -> senderGMId) acceptedTasks
-                        notification = any (\MessageDeliveryTask {verifiedMsg} -> msgHasNotification verifiedMsg) acceptedTasks
+                        notification = any taskHasNotification acceptedTasks
                     withStore' $ \db -> do
                       forM_ body_ $ \body -> createMsgDeliveryJob db gInfo jobScope senderGMIds notification body
                       forM_ acceptedTasks $ \t -> updateDeliveryTaskStatus db (deliveryTaskId t) DTSProcessed
@@ -4284,7 +4283,7 @@ runDeliveryTaskWorker a deliveryKey Worker {doWork} = do
                       fwd = GrpMsgForward {fwdSender, fwdBrokerTs}
                       body = encodeBinaryBatch [encodeFwdElement fwd verifiedMsg]
                   withStore' $ \db -> do
-                    createMsgDeliveryJob db gInfo jobScope [senderGMId] (msgHasNotification verifiedMsg) body
+                    createMsgDeliveryJob db gInfo jobScope [senderGMId] (taskHasNotification task) body
                     updateDeliveryTaskStatus db (deliveryTaskId task) DTSProcessed
                   lift . void $ getDeliveryJobWorker True deliveryKey
 

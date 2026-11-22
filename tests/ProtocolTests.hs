@@ -230,22 +230,20 @@ decodeChatMessageTest = describe "Chat message encoding/decoding" $ do
       #==# XMsgNew ((mcSimple (MCText "hello")) {live = Just True})
   it "x.msg.new simple text - silent message" $
     "{\"v\":\"9\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello\",\"type\":\"text\"},\"priority\":-1}}"
-      #==# XMsgNew ((mcSimple (MCText "hello")) {priority = Just (-1)})
+      #==# XMsgNew ((mcSimple (MCText "hello")) {priority = MPSilent})
   it "x.msg.new simple text - high priority message" $
     "{\"v\":\"9\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello\",\"type\":\"text\"},\"priority\":1}}"
-      #==# XMsgNew ((mcSimple (MCText "hello")) {priority = Just 1})
+      #==# XMsgNew ((mcSimple (MCText "hello")) {priority = MPHigh})
   it "x.msg.new priority is limited to low, normal and high" $ do
-    let priorities = [Just (-5), Just (-1), Nothing, Just 0, Just 1, Just 5]
+    let priorities = [MPSilent, MPNormal, MPHigh]
         msgNew p = XMsgNew ((mcSimple (MCText "hello")) {priority = p})
-    map (eventPriority . msgNew) priorities `shouldBe` [-1, -1, 0, 0, 1, 1]
-    map (eventHasNotification . msgNew) priorities `shouldBe` [False, False, True, True, True, True]
-    map (sndPriority False) priorities `shouldBe` [Just (-1), Just (-1), Nothing, Nothing, Nothing, Nothing]
-    map (sndPriority True) priorities `shouldBe` [Just (-1), Just (-1), Nothing, Nothing, Just 1, Just 1]
+    map (J.fromJSON . J.Number) [-5, -1, 0, 1, 5] `shouldBe` map J.Success [MPSilent, MPSilent, MPNormal, MPHigh, MPHigh]
+    map (eventHasNotification . msgNew) priorities `shouldBe` [False, True, True]
+    map (allowedPriority False) priorities `shouldBe` [MPSilent, MPNormal, MPNormal]
+    map (allowedPriority True) priorities `shouldBe` priorities
   it "x.msg.update priority is limited to low, normal and high" $ do
-    let priorities = [Just (-5), Just (-1), Nothing, Just 0, Just 1, Just 5]
-        msgUpdate = XMsgUpdate (SharedMsgId "\1\2\3\4") (MCText "hello") [] Nothing Nothing Nothing Nothing
-    map (eventPriority . msgUpdate) priorities `shouldBe` [-1, -1, 0, 0, 1, 1]
-    map (eventHasNotification . msgUpdate) priorities `shouldBe` [False, False, False, False, True, True]
+    let msgUpdate = XMsgUpdate (SharedMsgId "\1\2\3\4") (MCText "hello") [] Nothing Nothing Nothing Nothing
+    map (eventHasNotification . msgUpdate) [MPSilent, MPNormal, MPHigh] `shouldBe` [False, False, True]
   it "x.msg.new simple link" $
     "{\"v\":\"9\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"https://simplex.chat\",\"type\":\"link\",\"preview\":{\"description\":\"SimpleX Chat\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgA\",\"title\":\"SimpleX Chat\",\"uri\":\"https://simplex.chat\"}}}}"
       #==# XMsgNew (mcSimple (MCLink "https://simplex.chat" $ LinkPreview {uri = "https://simplex.chat", title = "SimpleX Chat", description = "SimpleX Chat", image = ImageData "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgA", content = Nothing}))
@@ -320,10 +318,10 @@ decodeChatMessageTest = describe "Chat message encoding/decoding" $ do
       ##==## ChatMessage chatInitialVRange (Just $ SharedMsgId "\1\2\3\4") (XMsgNew $ (mcForward Nothing (MCText "hello")) {file = Just FileInvitation {fileName = "photo.jpg", fileSize = 12345, fileDigest = Nothing, fileConnReq = Nothing, fileInline = Nothing, fileDescr = Nothing, fileBadge = Nothing}})
   it "x.msg.update" $
     "{\"v\":\"9\",\"event\":\"x.msg.update\",\"params\":{\"msgId\":\"AQIDBA==\", \"content\":{\"text\":\"hello\",\"type\":\"text\"}}}"
-      #==# XMsgUpdate (SharedMsgId "\1\2\3\4") (MCText "hello") [] Nothing Nothing Nothing Nothing Nothing
+      #==# XMsgUpdate (SharedMsgId "\1\2\3\4") (MCText "hello") [] Nothing Nothing Nothing Nothing MPNormal
   it "x.msg.update - high priority" $
     "{\"v\":\"9\",\"event\":\"x.msg.update\",\"params\":{\"msgId\":\"AQIDBA==\",\"content\":{\"text\":\"hello\",\"type\":\"text\"},\"priority\":1}}"
-      #==# XMsgUpdate (SharedMsgId "\1\2\3\4") (MCText "hello") [] Nothing Nothing Nothing Nothing (Just 1)
+      #==# XMsgUpdate (SharedMsgId "\1\2\3\4") (MCText "hello") [] Nothing Nothing Nothing Nothing MPHigh
   it "x.msg.update priority is encoded as -1, absent or 1" $ do
     let msgUpdate p = "{\"v\":\"9\",\"event\":\"x.msg.update\",\"params\":{\"msgId\":\"AQIDBA==\",\"content\":{\"text\":\"hello\",\"type\":\"text\"}" <> p <> "}}"
         reencoded (p, p') = case parseChatMessages (msgUpdate $ ",\"priority\":" <> p) of

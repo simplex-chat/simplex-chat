@@ -535,7 +535,7 @@ data CIMeta (c :: ChatType) (d :: MsgDirection) = CIMeta
     itemTimed :: Maybe CITimed,
     itemLive :: Maybe Bool,
     userMention :: Bool, -- True for messages that mention user or reply to user messages
-    priority :: Maybe Int,
+    priority :: MsgPriority,
     hasLink :: BoolDef,
     deletable :: Bool,
     editable :: Bool,
@@ -550,13 +550,12 @@ data CIMeta (c :: ChatType) (d :: MsgDirection) = CIMeta
 type ShowGroupAsSender = Bool
 
 highPriority :: CIMeta c d -> Bool
-highPriority CIMeta {priority} = maybe False (> 0) priority
+highPriority CIMeta {priority} = priority == MPHigh
 
-mkCIMeta :: forall c d. ChatTypeI c => ChatItemId -> CIContent d -> Text -> CIStatus d -> Maybe Bool -> Maybe SharedMsgId -> Maybe CIForwardedFrom -> Maybe (CIDeleted c) -> Bool -> Maybe CITimed -> Maybe Bool -> Bool -> Int -> Bool -> UTCTime -> ChatItemTs -> Maybe GroupMemberId -> Bool -> Maybe MsgVerified -> UTCTime -> UTCTime -> CIMeta c d
-mkCIMeta itemId itemContent itemText itemStatus sentViaProxy itemSharedMsgId itemForwarded itemDeleted itemEdited itemTimed itemLive userMention itemPriority hasLink_ currentTs itemTs forwardedByMember showGroupAsSender msgVerified createdAt updatedAt =
+mkCIMeta :: forall c d. ChatTypeI c => ChatItemId -> CIContent d -> Text -> CIStatus d -> Maybe Bool -> Maybe SharedMsgId -> Maybe CIForwardedFrom -> Maybe (CIDeleted c) -> Bool -> Maybe CITimed -> Maybe Bool -> Bool -> MsgPriority -> Bool -> UTCTime -> ChatItemTs -> Maybe GroupMemberId -> Bool -> Maybe MsgVerified -> UTCTime -> UTCTime -> CIMeta c d
+mkCIMeta itemId itemContent itemText itemStatus sentViaProxy itemSharedMsgId itemForwarded itemDeleted itemEdited itemTimed itemLive userMention priority hasLink_ currentTs itemTs forwardedByMember showGroupAsSender msgVerified createdAt updatedAt =
   let deletable = deletable' itemContent itemDeleted itemTs nominalDay currentTs
       editable = deletable && isNothing itemForwarded
-      priority = if itemPriority == 0 then Nothing else Just itemPriority
       hasLink = BoolDef hasLink_
    in CIMeta {itemId, itemTs, itemText, itemStatus, sentViaProxy, itemSharedMsgId, itemForwarded, itemDeleted, itemEdited, itemTimed, itemLive, userMention, priority, hasLink, deletable, editable, forwardedByMember, showGroupAsSender, msgVerified, createdAt, updatedAt}
 
@@ -584,7 +583,7 @@ dummyMeta itemId ts itemText =
       itemTimed = Nothing,
       itemLive = Nothing,
       userMention = False,
-      priority = Nothing,
+      priority = MPNormal,
       hasLink = BoolDef False,
       deletable = False,
       editable = False,

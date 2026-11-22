@@ -27,7 +27,7 @@ import Simplex.Chat.Markdown
 import Simplex.Chat.Messages
 import Simplex.Chat.Messages.CIContent (CIContent (..), SMsgDirection (..))
 import Simplex.Chat.Options
-import Simplex.Chat.Protocol (MsgContent (..), msgContentText)
+import Simplex.Chat.Protocol (MsgContent (..), MsgPriority (..), msgContentText)
 import Simplex.Chat.Remote.Types (RHKey (..), RemoteHostId, RemoteHostInfo (..), RemoteHostSession (..))
 import Simplex.Chat.Styled
 import Simplex.Chat.Terminal.Notification (Notification (..), initializeNotifications)
@@ -176,11 +176,11 @@ chatEventNotification :: ChatTerminal -> ChatController -> ChatEvent -> IO ()
 chatEventNotification t@ChatTerminal {sendNotification} cc = \case
   -- At the moment of writing received items are created one at a time
   CEvtNewChatItems u ((AChatItem _ SMDRcv cInfo ci@ChatItem {chatDir, content = CIRcvMsgContent mc, formattedText, meta = CIMeta {priority}}) : _) ->
-    when (chatDirNtf u cInfo chatDir (isUserMention ci) && all (>= 0) priority) $ do
+    when (chatDirNtf u cInfo chatDir (isUserMention ci) && priority /= MPSilent) $ do
       whenCurrUser cc u $ setActiveChat t cInfo
       msgNtf cInfo chatDir $ msgText mc formattedText
   CEvtChatItemUpdated u (AChatItemUpdate _ SMDRcv cInfo ci@ChatItem {chatDir, content = CIRcvMsgContent mc, formattedText, meta = meta@CIMeta {priority}} ChatItem {meta = prevMeta}) ->
-    when (chatDirNtf u cInfo chatDir (isUserMention ci) && all (>= 0) priority) $ do
+    when (chatDirNtf u cInfo chatDir (isUserMention ci) && priority /= MPSilent) $ do
       whenCurrUser cc u $ setActiveChat t cInfo
       when (highPriority meta && not (highPriority prevMeta)) $
         msgNtf cInfo chatDir $ msgText mc formattedText

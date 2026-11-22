@@ -22,7 +22,7 @@ import Simplex.Chat.Controller
 import Simplex.Chat.Core
 import Simplex.Chat.Messages
 import Simplex.Chat.Messages.CIContent
-import Simplex.Chat.Protocol (MsgContent (..))
+import Simplex.Chat.Protocol (MsgContent (..), MsgPriority (..))
 import Simplex.Chat.Store
 import Simplex.Chat.Types (Contact (..), ContactId, IsContact (..), User (..))
 import Simplex.Messaging.Agent.Protocol (CreatedConnLink (..))
@@ -87,14 +87,14 @@ sendComposedMessages cc sendRef = sendComposedMessages_ cc sendRef . L.map (Noth
 
 sendComposedMessages_ :: ChatController -> SendRef -> NonEmpty (Maybe ChatItemId, MsgContent) -> IO ()
 sendComposedMessages_ cc sendRef qmcs = do
-  let cms = L.map (\(qiId, mc) -> ComposedMessage {fileSource = Nothing, quotedItemId = qiId, msgContent = mc, mentions = M.empty, priority = Nothing}) qmcs
+  let cms = L.map (\(qiId, mc) -> ComposedMessage {fileSource = Nothing, quotedItemId = qiId, msgContent = mc, mentions = M.empty, priority = MPNormal}) qmcs
   sendChatCmd cc (APISendMessages sendRef False Nothing False cms) >>= \case
     Right (CRNewChatItems {}) -> printLog cc CLLInfo $ "sent " <> show (length cms) <> " messages to " <> show sendRef
     r -> putStrLn $ "unexpected send message response: " <> show r
 
 sendComposedMessageFile :: ChatController -> SendRef -> Maybe ChatItemId -> MsgContent -> CryptoFile -> IO ()
 sendComposedMessageFile cc sendRef qiId mc file = do
-  let cm = ComposedMessage {fileSource = Just file, quotedItemId = qiId, msgContent = mc, mentions = M.empty, priority = Nothing}
+  let cm = ComposedMessage {fileSource = Just file, quotedItemId = qiId, msgContent = mc, mentions = M.empty, priority = MPNormal}
   sendChatCmd cc (APISendMessages sendRef False Nothing False (cm :| [])) >>= \case
     Right (CRNewChatItems {}) -> printLog cc CLLInfo $ "sent file message to " <> show sendRef
     r -> putStrLn $ "unexpected send message response: " <> show r
