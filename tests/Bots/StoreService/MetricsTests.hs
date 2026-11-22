@@ -265,7 +265,7 @@ testNamesCounts = withServiceStore $ \st -> do
     Just mined <- insertRecordEdit db (newEdit ownerA 1 setChannel) (at 8)
     insertRecordEdit db (newEdit ownerB 3 setChannel) (at 9) >>= (`shouldSatisfy` isJust)
     settleRecordEdit db mined (EOApplied Nothing) `shouldReturn` True
-  withTransaction st $ \db -> forM_ [("c1", 2), ("rg", 1), ("f", 0), ("me", -1)] $ \(rid, minute) -> setPaidAt db (RegistrationId rid) (at minute)
+  withTransaction st $ \db -> forM_ [("c1", 2), ("rg", 1), ("f", 0), ("me", -1)] $ \(rid, minute) -> setSettledAt db (RegistrationId rid) (at minute)
   counts <- withTransaction st namesCounts
   typedSamples (namesText fakeMaxFeePerGas counts noChainRead PassTimes {ptMonthPass = at 10, ptCreditPass = at 11})
     `shouldBe` [ "simplex_store_names_orders{phase=\"unpaid\"} 2",

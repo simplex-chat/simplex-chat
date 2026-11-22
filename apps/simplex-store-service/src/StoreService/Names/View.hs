@@ -189,7 +189,7 @@ toRegistrationView cfg r balance late phase =
       vwVersion = nrVersion,
       vwPhase = phase,
       vwLabelHash = Hex32 lh,
-      vwLabel = if isJust nrPaidAt then rvLabel <$> nrReveal else Nothing,
+      vwLabel = if isJust nrSettledAt then rvLabel <$> nrReveal else Nothing,
       vwOwner = nrOwner,
       vwCommitment = nrCommitment,
       vwSealed = nrSealed,
@@ -206,7 +206,7 @@ toRegistrationView cfg r balance late phase =
     }
   where
     NameRegistration {nrId = RegistrationId rid, nrVersion, nrLabelHash = LabelHash lh, nrReveal, nrOwner, nrCommitment, nrSealed} = r
-    NameRegistration {nrYears, nrDuration, nrPrice, nrPayment, nrAgreedTerms, nrHistory = TxHistory {thCommitTx, thRegisterTx}, nrPaidAt} = r
+    NameRegistration {nrYears, nrDuration, nrPrice, nrPayment, nrAgreedTerms, nrHistory = TxHistory {thCommitTx, thRegisterTx}, nrSettledAt} = r
 
 paidWith :: OrderPayment -> PaidWith
 paidWith = \case

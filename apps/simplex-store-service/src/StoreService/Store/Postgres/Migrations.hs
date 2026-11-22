@@ -336,7 +336,7 @@ CREATE TABLE @name_registrations(
   closed_by TEXT,
   live SMALLINT NOT NULL,
   order_hash BYTEA NOT NULL,
-  paid_at TIMESTAMPTZ,
+  settled_at TIMESTAMPTZ,
   selected_at TIMESTAMPTZ,
   unregistered_alerted_at TIMESTAMPTZ,
   failed_dry_runs INTEGER NOT NULL DEFAULT 0,

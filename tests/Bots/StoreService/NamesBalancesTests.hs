@@ -531,7 +531,7 @@ testReversalBeforePayment = withReversals $ \Ctx {cStore = st, cWeb} env alerts 
   alertsWith alerts ["names: card dispute dp_1 of 10000 cents on payment ref-inv-d of order d: its payment is not recorded yet, so it is closed as reversed when it is. Evidence"]
   settleOrder st (weWaiters cWeb) (Just $ oePhases env) (InvoiceId "inv-d") (SigSettled (rcv 10000 Nothing) t0) t0 `shouldReturn` ISPaid
   d <- reg st "d"
-  (nrPhase d, nrPaidAt d) `shouldBe` (OClosed ICReversed, Just t0)
+  (nrPhase d, nrSettledAt d) `shouldBe` (OClosed ICReversed, Just t0)
   withTransaction st (`labelHolder` nrLabelHash d) `shouldReturn` Nothing
   figures st "d" `shouldReturn` Nothing
 

@@ -18,7 +18,7 @@ where
 
 import StoreService.Names.Phases (Phases, RegistrationId (..))
 import qualified StoreService.Names.Phases as Phases
-import StoreService.Names.Store (BrokenInvariant (..), InvoiceClose (..), LateSupport (..), NamePhase (..), NameRegistration (..), OrderPhase (..), VersionWrite (..), creditBalance, getRegistration, labelHolder, namePhase, openInvoicesOfHeldName, reversalRecorded, setLateSupport, setPaidAt, updateRegistration)
+import StoreService.Names.Store (BrokenInvariant (..), InvoiceClose (..), LateSupport (..), NamePhase (..), NameRegistration (..), OrderPhase (..), VersionWrite (..), creditBalance, getRegistration, labelHolder, namePhase, openInvoicesOfHeldName, reversalRecorded, setLateSupport, setSettledAt, updateRegistration)
 import StoreService.Providers (Confirmation (..), Confirmed (..), CryptoReceived (..), Funded (..), PaymentSignal (..), Provider (..), Received (..), providerErrorText, providerNamed, receivedAmount, receivedConfirmed)
 import StoreService.Store.Invoices (InvoicePayment (..), InvoiceProduct (..), InvoiceRow (..), OverdueInvoice (..), currentSecond, expireOverdueInvoice, lockInvoice, markCodePaid, paymentHolds, paymentStatusText, settlementCodeHash, settlementInvoice, truncateToSecond, updateInvoiceStatus, upsertPayment)
 import StoreService.Waiters (Waiters, publish, publishPayment)
@@ -207,14 +207,14 @@ nameSettled db ref before after money r@NameRegistration {nrId, nrLabelHash, nrP
               True ->
                 updateRegistration db r {nrPhase = OClosed ICReversed, nrReveal = Nothing} now >>= \case
                   Written v -> do
-                    setPaidAt db nrId paidAt
+                    setSettledAt db nrId paidAt
                     pure [NOWritten nrId v, NOReversed ref]
                   _ -> E.throwIO (RegistrationChanged nrId)
               False -> do
                 held <- isJust <$> labelHolder db nrLabelHash
                 updateRegistration db r {nrPhase = if held then OTaken else OQueued} now >>= \case
                   Written v -> do
-                    setPaidAt db nrId paidAt
+                    setSettledAt db nrId paidAt
                     when held $ creditBalance db nrId nrPrice now
                     pure $ NOWritten nrId v : [NOTaken ref | held]
                   NotLive -> pure [NOLate ref]

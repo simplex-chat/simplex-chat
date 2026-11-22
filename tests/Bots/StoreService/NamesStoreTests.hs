@@ -351,7 +351,7 @@ testCreatePaid = withServiceStore $ \st -> do
         nrCreatedAt = t0,
         nrUpdatedAt = t0,
         nrReadAt = t0,
-        nrPaidAt = Nothing,
+        nrSettledAt = Nothing,
         nrSelectedAt = Nothing,
         nrLastAttempt = Nothing
       }

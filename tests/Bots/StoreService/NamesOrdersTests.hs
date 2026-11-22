@@ -1790,7 +1790,7 @@ testViewFields = withServiceStore $ \st -> withFakeEthNode $ \node -> do
         vwCommunity = Nothing,
         vwTerms = agreed plainTerms
       }
-  vwLabel (toRegistrationView (testNamesConfig node) r {nrPaidAt = Just t0} Nothing Nothing PVTaken) `shouldBe` Just "alicebakery"
+  vwLabel (toRegistrationView (testNamesConfig node) r {nrSettledAt = Just t0} Nothing Nothing PVTaken) `shouldBe` Just "alicebakery"
   map (\w -> J.toJSON (vwLatePayment $ viewWith (Just w) PVUnpaid)) [LWConfirming, LWCrediting, LWSupport] `shouldBe` ["confirming", "crediting", "support"]
   let acceptance c h = AcceptanceAsked {community = c, policy = fakeNamePolicy, termsHash = Hex32 h, nonce = 2}
       committed = PVCommitted (RoundedSystemTime 1) (RoundedSystemTime 2)
@@ -1835,7 +1835,7 @@ testViewStates = withServiceStore $ \st -> withFakeEthNode $ \node -> do
           nrHistory = TxHistory {thCommitTx = Just $ TxHash $ hashFixture 8, thRegisterTx = Just $ TxHash $ hashFixture 9}
         }
   viewOf failed `shouldReturn` view [("version", J.Number 2), ("phase", J.object ["type" .= ("failed" :: Text), "reason" .= ("signatureRefused" :: Text)]), ("registerTx", txText 9), ("balance", J.Null), ("label", J.Null)]
-  paidFailed <- withTransaction st $ \db -> setPaidAt db rid t0 >> fromJust <$> getRegistration db rid
+  paidFailed <- withTransaction st $ \db -> setSettledAt db rid t0 >> fromJust <$> getRegistration db rid
   viewOf paidFailed `shouldReturn` view [("version", J.Number 2), ("phase", J.object ["type" .= ("failed" :: Text), "reason" .= ("signatureRefused" :: Text), "heldUntil" .= addMonths 1 t0]), ("registerTx", txText 9), ("balance", J.Null)]
   requeued <- written $ \r -> r {nrPhase = OQueued, nrHistory = (nrHistory r) {thRegisterTx = Nothing}}
   viewOf requeued `shouldReturn` view [("version", J.Number 3), ("phase", J.object ["type" .= ("queued" :: Text)]), ("registerTx", J.Null), ("balance", J.Null)]

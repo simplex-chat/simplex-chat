@@ -78,7 +78,7 @@ module StoreService.Names.Store
     selectRegistration,
     findRegistrations,
     labelHolder,
-    setPaidAt,
+    setSettledAt,
     unregisteredPaidBefore,
     monthCandidates,
     markRead,
@@ -361,7 +361,7 @@ data NameRegistration = NameRegistration
     nrCreatedAt :: UTCTime,
     nrUpdatedAt :: UTCTime,
     nrReadAt :: UTCTime,
-    nrPaidAt :: Maybe UTCTime,
+    nrSettledAt :: Maybe UTCTime,
     nrSelectedAt :: Maybe UTCTime,
     nrLastAttempt :: Maybe NameAttempt
   }
@@ -782,7 +782,7 @@ insertRegistration db NewRegistration {nrgId = RegistrationId rid, nrgOwner, nrg
           [sql|
         INSERT INTO @name_registrations
           (registration_id, version, label_hash, length, duration, owner, commitment, sealed, phase, years,
-           price, method, name_prepaid_code_id, live, order_hash, created_at, updated_at, agreed_terms, paid_at, selected_at, read_at,
+           price, method, name_prepaid_code_id, live, order_hash, created_at, updated_at, agreed_terms, settled_at, selected_at, read_at,
            label, secret, contact_link, channel_link, intent_nonce, intent_deadline, intent_signature, accept_terms, accept_nonce, accept_signature)
         VALUES (?,?,?,?,?,?,?,?,?,?, ?,?,?,?,?,?,?, ?,?,?,?, ?,?,?,?,?,?,?,?,?,?)
         ON CONFLICT DO NOTHING
@@ -804,7 +804,7 @@ registrationColumns =
       r.price, r.method, ni.invoice_id, r.name_prepaid_code_id, r.label, r.secret, r.contact_link, r.channel_link, r.intent_nonce, r.intent_deadline,
       r.intent_signature, r.commit_tx, r.commit_block, r.register_tx, r.reveal_after, r.reveal_before, r.expires_at, r.registered_at, r.failed_at, r.fail_reason,
       r.closed_by, r.order_hash, r.created_at, r.updated_at, r.agreed_terms, r.accept_terms,
-      r.accept_nonce, r.accept_signature, r.read_at, r.paid_at, r.selected_at, r.last_attempt_tx, r.last_attempt_stage, r.last_attempt_reason, r.last_attempt_at
+      r.accept_nonce, r.accept_signature, r.read_at, r.settled_at, r.selected_at, r.last_attempt_tx, r.last_attempt_stage, r.last_attempt_reason, r.last_attempt_at
   |]
 
 registrationFrom :: Query
@@ -832,7 +832,7 @@ toRegistration
       :. (nrPrice, method_, invoiceId_, codeId_, label_, secret_, nrContactLink, nrChannelLink, nonce_, deadline_)
       :. (signature_, commitTx, commitBlock, registerTx, revealAfter, revealBefore, expiresAt, registeredAt, failedAt, failReason)
       :. (closedBy, nrOrderHash, nrCreatedAt, nrUpdatedAt, nrAgreedTerms, acceptTerms_)
-      :. (acceptNonce_, acceptSignature_, nrReadAt, nrPaidAt, nrSelectedAt, attemptTx_, attemptStage_, attemptReason_, attemptAt_)
+      :. (acceptNonce_, acceptSignature_, nrReadAt, nrSettledAt, nrSelectedAt, attemptTx_, attemptStage_, attemptReason_, attemptAt_)
     ) = do
     nrLength <- note ("name_registrations.length: " <> rid) $ nameLength len
     let commitOf after before = Commit {cmTx = TxRef <$> commitTx <*> (word64 <$> commitBlock), cmRevealAfter = RoundedSystemTime after, cmRevealBefore = RoundedSystemTime before}
@@ -897,7 +897,7 @@ toRegistration
           nrCreatedAt,
           nrUpdatedAt,
           nrReadAt,
-          nrPaidAt,
+          nrSettledAt,
           nrSelectedAt,
           nrLastAttempt
         }
@@ -1077,13 +1077,13 @@ labelHolder db lh =
   maybeFirstRow (RegistrationId . fromOnly) $
     DB.query db (mkQuery "SELECT registration_id FROM @name_registrations WHERE label_hash = ? AND live = 1 AND phase <> ? LIMIT 1") (lh, PUnpaid)
 
-setPaidAt :: DB.Connection -> RegistrationId -> UTCTime -> IO ()
-setPaidAt db (RegistrationId rid) paidAt =
-  DB.execute db (mkQuery "UPDATE @name_registrations SET paid_at = ?, selected_at = ? WHERE registration_id = ? AND paid_at IS NULL") (paidAt, paidAt, rid)
+setSettledAt :: DB.Connection -> RegistrationId -> UTCTime -> IO ()
+setSettledAt db (RegistrationId rid) settledAt =
+  DB.execute db (mkQuery "UPDATE @name_registrations SET settled_at = ?, selected_at = ? WHERE registration_id = ? AND settled_at IS NULL") (settledAt, settledAt, rid)
 
 unregisteredPaidBefore :: DB.Connection -> UTCTime -> IO [(RegistrationId, NamePhase, UTCTime)]
 unregisteredPaidBefore db cutoff =
-  map (\(rid, phase, paidAt) -> (RegistrationId rid, phase, paidAt))
+  map (\(rid, phase, selectedAt) -> (RegistrationId rid, phase, selectedAt))
     <$> DB.query
       db
       (mkQuery "SELECT registration_id, phase, selected_at FROM @name_registrations WHERE phase IN (?,?,?,?,?) AND selected_at < ? AND unregistered_alerted_at IS NULL ORDER BY selected_at, registration_id")
@@ -1095,7 +1095,7 @@ markRead db (RegistrationId rid) before now =
 
 monthCandidates :: DB.Connection -> UTCTime -> IO [(RegistrationId, UTCTime)]
 monthCandidates db cutoff =
-  map (\(rid, paidAt) -> (RegistrationId rid, paidAt))
+  map (\(rid, selectedAt) -> (RegistrationId rid, selectedAt))
     <$> DB.query
       db
       (mkQuery "SELECT registration_id, selected_at FROM @name_registrations WHERE live = 1 AND phase IN (?,?,?) AND selected_at <= ? ORDER BY selected_at, registration_id")
