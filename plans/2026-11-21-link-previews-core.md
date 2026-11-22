@@ -76,7 +76,7 @@ flowchart LR
 | Failed preview | no card, no alert | the same; with the developer option "Show link preview errors" on, an alert with the raw error |
 | Developer options | — | new toggle "Show link preview errors", off by default, shown only with "Show developer options" on |
 
-The user guide section "Send Link Previews" (docs/guide/app-settings.md:219-227) is rewritten in the app PRs.
+The user guide section "Send Link Previews" (docs/guide/app-settings.md:219-227) is rewritten in the app stages.
 
 ## 3. Technical design
 
@@ -191,7 +191,7 @@ data Uri = Uri
 - `USHttp` is produced only for `.onion` hosts (section 3.7); `uriPort` is `Nothing` for the default port of the scheme.
 - MAX_REDIRECTS, MAX_HEADER_BYTES, MAX_HEADERS, MAX_HEAD_BYTES, MAX_IMAGE_BYTES, MAX_TITLE_LENGTH and MAX_DESCRIPTION_LENGTH are constants of the module; the tests change only the roots, the address policy and the deadline.
 - Card in the apps: compose shows image, title and link (LinkPreviews.kt:152-191; ComposeLinkView.swift:43-52); the chat item shows image, title, description when not empty, and link on Kotlin (LinkPreviews.kt:203-226); iOS shows image and title only (CILinkView.swift:22, 36).
-- Description: both apps send `""` today (LinkPreviews.kt:129-134, commented out "TODO add once supported in iOS"; ImageUtils.swift:471). The core fills it, Kotlin shows it with no change, and PR 3 adds it to CILinkView as Kotlin shows it.
+- Description: both apps send `""` today (LinkPreviews.kt:129-134, commented out "TODO add once supported in iOS"; ImageUtils.swift:471). The core fills it, Kotlin shows it with no change, and stage 3 adds it to CILinkView as Kotlin shows it.
 - `image` is required in `LinkPreview`, so a page without an image has no preview, as today on both platforms (LinkPreviews.kt:121-139; ImageUtils.swift:461-479).
 - `content = Nothing`, as both apps send it (LinkPreviews.kt:134; ImageUtils.swift:471).
 - `LinkPreviewConfig` is a field of `ChatConfig`; `rootCerts` is parsed once from the embedded bundle; `APPublicAndLoopback` is used by tests only.
@@ -421,11 +421,11 @@ Kotlin (android, desktop):
 
 | Site | Change |
 |---|---|
-| Kt:views/helpers/LinkPreviews.kt:33-149, 231-261 | `getLinkPreview(url)` calls `apiGetLinkPreview(url)`; Jsoup, proxy, `Authenticator`, mutex and `normalizeImageUri` removed |
+| Kt:views/helpers/LinkPreviews.kt:33-149, 231-261 | `getLinkPreview`, Jsoup, proxy, `Authenticator`, mutex and `normalizeImageUri` removed; `fetchAndUpdateLinkPreview` of Kt:views/chat/ComposeView.kt calls `apiGetLinkPreview(url)` |
 | apps/multiplatform/common/build.gradle.kts:74 | `org.jsoup:jsoup` removed |
-| Kt:model/SimpleXAPI.kt | `CC.ApiGetLinkPreview`, `CR.LinkPreview`, `apiGetLinkPreview` with `rh = null`; on error, the raw message in an alert only under `developerTools` and `showLinkPreviewErrors` (section 3.12); preference `showLinkPreviewErrors` |
+| Kt:model/SimpleXAPI.kt | `CC.ApiGetLinkPreview`, `CR.CRLinkPreview`, `ChatErrorType.CELinkPreview`, `apiGetLinkPreview` with `rh = null`; on error, the raw message in an alert only under `developerTools` and `showLinkPreviewErrors` (section 3.12); preference `showLinkPreviewErrors` |
 | Kt:views/usersettings/DeveloperView.kt:62; base strings.xml | toggle "Show link preview errors" |
-| Kt:views/chat/ComposeView.kt:508-539, 1871-1903 | alert branch and `showLinkPreviewsConfirmAlert` removed (Q1 a) |
+| Kt:views/chat/ComposeView.kt:508-539, 1871-1903 | alert branch and `showLinkPreviewsConfirmAlert` removed (Q1 a); a link whose preview failed is added to `cancelledLinks` |
 | Kt:model/SimpleXAPI.kt:132, 303, 426 | `privacyLinkPreviewsShowAlert`, its hint entry and key removed (Q1 a) |
 | Kt:views/usersettings/PrivacySettings.kt:70 | `onChange` removed (Q1 a) |
 | base strings.xml:3181-3185 and every locale | `link_previews_alert_*` removed; translations follow, as no locale has keys absent from base |
@@ -435,13 +435,13 @@ iOS:
 | Site | Change |
 |---|---|
 | apps/ios/SimpleXChat/ImageUtils.swift:13, 455-489 | `getLinkPreview` and `import LinkPresentation` removed |
-| apps/ios/Shared/Model/AppAPITypes.swift, SimpleXAPI.swift | `apiGetLinkPreview` command, response case, function; on error, the raw message in an alert only under "Show developer options" and "Show link preview errors" (section 3.12) |
+| apps/ios/Shared/Model/AppAPITypes.swift, SimpleXAPI.swift; SimpleXChat/APITypes.swift | `ChatCommand.apiGetLinkPreview`, `ChatResponse2.linkPreview`, `ChatErrorType.linkPreview`; `apiGetLinkPreview`, sent from a global dispatch queue; on error, the raw message in an alert only under "Show developer options" and "Show link preview errors" (section 3.12) |
 | apps/ios/Shared/Views/UserSettings/DeveloperView.swift:56-69 | toggle "Show link preview errors", default `DEFAULT_SHOW_LINK_PREVIEW_ERRORS` off |
 | apps/ios/Shared/Views/Chat/ChatItem/CILinkView.swift:36 | description under the title when not empty, as Kotlin (LinkPreviews.kt:223-225) |
-| apps/ios/Shared/Views/Chat/ComposeMessage/ComposeView.swift:414, 1956-2006 | `linkPreviewsShowAlert`, alert and `DEFAULT_PRIVACY_LINK_PREVIEWS` write in the alert path removed; `fetchLinkPreview` awaits `apiGetLinkPreview` (Q1 a) |
+| apps/ios/Shared/Views/Chat/ComposeMessage/ComposeView.swift:414, 1956-2006 | `linkPreviewsShowAlert`, alert and `DEFAULT_PRIVACY_LINK_PREVIEWS` write in the alert path removed (Q1 a); `loadLinkPreview` awaits `apiGetLinkPreview` and applies a result only while its link is pending; a link whose preview failed is added to `cancelledLinks`; an attachment preview resets the link state |
 | apps/ios/Shared/Views/UserSettings/PrivacySettings.swift:83 | the alert default write removed (Q1 a) |
 | apps/ios/SimpleXChat/AppGroup.swift:30, 99, 231; Shared/Views/UserSettings/SettingsView.swift:179-181 | the alert group default and its hint entry removed (Q1 a) |
-| apps/ios/SimpleX SE/ShareAPI.swift, ShareModel.swift:484 | `SEChatCommand.apiGetLinkPreview`; the alert condition removed; network config is set before content is prepared (ShareModel.swift:96-127, 197) |
+| apps/ios/SimpleX SE/ShareAPI.swift, ShareModel.swift:484 | `SEChatCommand.apiGetLinkPreview`, `SEChatResponse.linkPreview`; the alert condition removed; the network config is already set before content is prepared (ShareModel.swift:197, before :126) |
 | apps/ios/spec/client/compose.md:300-324 | "fetched by the core" |
 | localizations | by the export and import of apps/ios/README.md, "Localization" |
 
@@ -549,8 +549,9 @@ App tests on tests/fixtures/api/previews/link_preview.json:
 | same | the recorded error returns no preview and no alert, also with only "Show developer options" on; with both toggles on, an alert with the raw message | both |
 | `CILinkView` preview | description shown under the title (snapshot) | iOS |
 | SE | `apiGetLinkPreview` of the share extension decodes the recorded response | iOS |
+| compose, `LinkPreviewTests.swift` | the recorded card without an alert; a failed link not requested again until a new compose; the result of a replaced link discarded; an attachment kept when a pending link responds | iOS |
 
-The iOS test file is added to project.pbxproj (TESTS.md, "iOS app"). Compose flows: a case in `claude-test.md` of desktop-linux and android-emu and `device-test-plan.md` of ios-sim, with `backend: yes`: type a link, see a card, without an alert.
+The iOS test file is added to project.pbxproj (TESTS.md, "iOS app"). Compose flows: a case in `claude-test.md` of desktop-linux and android-emu and `device-test-plan.md` of ios-sim: type a link, see a card, without an alert. The cases fetch a page of github.com over the runner's network, so claude-scope keeps `backend: no`.
 
 | CI scope | Runs |
 |---|---|
@@ -559,7 +560,9 @@ The iOS test file is added to project.pbxproj (TESTS.md, "iOS app"). Compose flo
 | ios | SimpleX Unit Tests |
 | packages | generated types compiled |
 
-## 6. Pull requests
+## 6. Pull request
+
+One pull request, #8297 from `ep/link-previews`, built in stages.
 
 ```mermaid
 flowchart LR
@@ -568,11 +571,11 @@ flowchart LR
   P1 --> P3["3 ios: previews from the core"]
 ```
 
-| PR | Scope | Content |
+| Stage | Scope | Content |
 |---|---|---|
 | 0 | docs | this plan, first commit of `ep/link-previews` |
 | 1 | core | `Simplex.Chat.LinkPreview`, `LinkPreviewConfig` in `ChatConfig`, root bundle and its script, `imageDataPreview`, command, response, error, view, API docs, unit and scenario tests, fixture |
-| 2 | android, desktop | `apiGetLinkPreview`; Jsoup removed; alert, preference and strings per Q1; app tests; guide |
+| 2 | android, desktop | `apiGetLinkPreview`; Jsoup removed; alert, preference and strings per Q1; app tests |
 | 3 | ios | app and share extension commands; `LPMetadataProvider` removed; description in `CILinkView`; alert and defaults per Q1; app tests; spec; guide |
 
-Each PR adds its tests in the same PR. PRs 2 and 3 are developed in parallel on the fixture of PR 1.
+Each stage adds its tests. Stages 2 and 3 are developed in parallel on the fixture of stage 1, on `ep/link-previews-kotlin` and `ep/link-previews-ios`, and merged into `ep/link-previews`.
