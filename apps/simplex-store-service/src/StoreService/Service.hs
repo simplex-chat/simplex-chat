@@ -214,12 +214,12 @@ readConfigOrExit path =
 
 configureStoreVerifier :: Maybe ServiceConfig -> ServiceState -> IO ServiceState
 configureStoreVerifier serviceCfg env@ServiceState {serviceCC, storeVerifier = v} = case serviceCfg of
-  Just ServiceConfig {devAcceptUnverifiedStoreReceipts = True, devStoreChecks} -> do
+  Just ServiceConfig {devAcceptUnverifiedStoreReceipts = True, devCheckStoreDuringCoverage} -> do
     logWarn "[dev] accept_unverified_store_receipts is on: any store receipt is accepted without verification"
     -- the badge clock is read at each check, as the controller that holds it starts after this
     mock <- newMockStoreVerifier $ atomically (readTMVar serviceCC) >>= badgeNow
-    pure env {storeVerifier = mock {storeChecks = devStoreChecks}}
-  Just ServiceConfig {appleStore, playStore, devStoreChecks, devCreditTestPurchases} -> do
+    pure env {storeVerifier = mock {storeChecks = if devCheckStoreDuringCoverage then ChecksAtEveryRequest else ChecksAfterCoverage}}
+  Just ServiceConfig {appleStore, playStore, devCheckStoreDuringCoverage, devCreditTestPurchases} -> do
     when devCreditTestPurchases $ logWarn "[dev] credit_test_purchases is on: a purchase the store calls a test is credited as a real one"
     apple <- forM appleStore $ \AppleStoreConfig {aBundleId, aRootCertificates, aServerApi} -> do
       roots <- mapM ((>>= orExit) . readAppleRoot) aRootCertificates
@@ -242,7 +242,7 @@ configureStoreVerifier serviceCfg env@ServiceState {serviceCC, storeVerifier = v
                   (checkApple_, checkGoogle_) -> Just $ \ref _ -> case ref of
                     SubscriptionApple originalId -> maybe notConfigured ($ originalId) checkApple_
                     SubscriptionGoogle token -> maybe notConfigured ($ token) checkGoogle_,
-                storeChecks = devStoreChecks,
+                storeChecks = if devCheckStoreDuringCoverage && devCreditTestPurchases then ChecksAtEveryRequest else ChecksAfterCoverage,
                 creditTestPurchases = devCreditTestPurchases
               }
         }

@@ -68,7 +68,6 @@ import Simplex.Messaging.Util (eitherToMaybe, tshow)
 import StoreService.Names.Abi (abiWordSize, parseText)
 import StoreService.Names.Chain (ChainConfig (..))
 import StoreService.Names.Label (LabelError (..), validLabel)
-import StoreService.StoreReceipts (StoreChecks (..))
 import System.IO.Error (ioeGetErrorString)
 import Text.Read (readMaybe)
 
@@ -213,7 +212,7 @@ data ServiceConfig = ServiceConfig
     -- Local testing only; anyone who can reach the service can mint badges with any well-formed receipt.
     devAcceptUnverifiedStoreReceipts :: Bool,
     -- Local testing only; every issue request for a subscription asks its store and banks the months it charges.
-    devStoreChecks :: StoreChecks,
+    devCheckStoreDuringCoverage :: Bool,
     -- Local testing only; credits a purchase the store itself calls a test, which no real buyer pays for.
     devCreditTestPurchases :: Bool
   }
@@ -471,8 +470,6 @@ parseConfig ini = do
     Left "[dev] accept_unverified_store_receipts must be off where [apple] or [google] verifies store receipts"
   devCheckStoreDuringCoverage <- bool "dev" "check_store_during_coverage" False
   devCreditTestPurchases <- bool "dev" "credit_test_purchases" False
-  when (devUnverifiedReceipts && devCreditTestPurchases) $
-    Left "[dev] credit_test_purchases must be off where accept_unverified_store_receipts = on, as that verifier reports no test purchase"
   mapM_ (checkAppleHost devCreditTestPurchases) apple
   when (devCheckStoreDuringCoverage && not (devUnverifiedReceipts || devCreditTestPurchases)) $
     Left "[dev] check_store_during_coverage needs accept_unverified_store_receipts or credit_test_purchases = on, as only a dev deployment may ask a store while coverage runs"
@@ -490,7 +487,7 @@ parseConfig ini = do
         serviceLogLevel,
         names = nms,
         devAcceptUnverifiedStoreReceipts = devUnverifiedReceipts,
-        devStoreChecks = if devCheckStoreDuringCoverage then ChecksAtEveryRequest else ChecksAfterCoverage,
+        devCheckStoreDuringCoverage,
         devCreditTestPurchases
       }
   where

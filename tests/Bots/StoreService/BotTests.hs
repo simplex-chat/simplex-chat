@@ -204,7 +204,7 @@ storeServiceTests = do
     describe "the store lane" $ do
       it "should answer other requests while a Play receipt is with the store, and credit it once Play answers" testPlayHoldsNoOtherRequest
       it "should route each request to its lane, judging a minute ahead" testStoreRouting
-      it "should take the store checks from the config, beside the mock or a real store, and credit test purchases only from a real store" testStoreChecksConfigured
+      it "should check the store at every request only with check_store_during_coverage beside the mock or credit_test_purchases, and credit test purchases only from a real store" testStoreChecksConfigured
       it "should answer other requests while a renewal check is with the store, and the renewal once the store answers" testRenewalHoldsNoOtherRequest
       it "should answer a renewal check while a Play purchase is with the store" testPurchaseHoldsNoRenewal
       it "should answer other requests while an App Store subscription is with the store, and credit it once the store answers" testAppleSubscriptionHoldsNoOtherRequest
@@ -5954,18 +5954,20 @@ testStoreChecksConfigured _ = do
     Right cfg <- readServiceConfig (d </> "store_service.ini")
     let checksFor c = (\ServiceState {storeVerifier} -> storeChecks storeVerifier) <$> (newServiceState >>= configureStoreVerifier c)
         creditsFor c = (\ServiceState {storeVerifier} -> creditTestPurchases storeVerifier) <$> (newServiceState >>= configureStoreVerifier c)
-        dev accept checks credit = Just cfg {devAcceptUnverifiedStoreReceipts = accept, devStoreChecks = checks, devCreditTestPurchases = credit}
+        dev accept during credit = Just cfg {devAcceptUnverifiedStoreReceipts = accept, devCheckStoreDuringCoverage = during, devCreditTestPurchases = credit}
     checksFor Nothing `shouldReturn` ChecksAfterCoverage
-    checksFor (dev False ChecksAfterCoverage False) `shouldReturn` ChecksAfterCoverage
-    checksFor (dev True ChecksAfterCoverage False) `shouldReturn` ChecksAfterCoverage
-    checksFor (dev True ChecksAtEveryRequest False) `shouldReturn` ChecksAtEveryRequest
-    checksFor (dev False ChecksAfterCoverage True) `shouldReturn` ChecksAfterCoverage
-    checksFor (dev False ChecksAtEveryRequest True) `shouldReturn` ChecksAtEveryRequest
+    checksFor (dev False False False) `shouldReturn` ChecksAfterCoverage
+    checksFor (dev True False False) `shouldReturn` ChecksAfterCoverage
+    -- refused by the parser, and still not armed if set by hand
+    checksFor (dev False True False) `shouldReturn` ChecksAfterCoverage
+    checksFor (dev True True False) `shouldReturn` ChecksAtEveryRequest
+    checksFor (dev False False True) `shouldReturn` ChecksAfterCoverage
+    checksFor (dev False True True) `shouldReturn` ChecksAtEveryRequest
     creditsFor Nothing `shouldReturn` False
-    creditsFor (dev False ChecksAfterCoverage False) `shouldReturn` False
-    creditsFor (dev False ChecksAfterCoverage True) `shouldReturn` True
+    creditsFor (dev False False False) `shouldReturn` False
+    creditsFor (dev False False True) `shouldReturn` True
     -- the mock never reports a test purchase
-    creditsFor (dev True ChecksAfterCoverage True) `shouldReturn` False
+    creditsFor (dev True False True) `shouldReturn` False
 
 testStoreRouting :: HasCallStack => TestParams -> IO ()
 testStoreRouting ps =

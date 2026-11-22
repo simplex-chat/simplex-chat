@@ -7,7 +7,6 @@ module Bots.StoreService.ConfigTests where
 
 import Bots.StoreService.FakeEthNode (address)
 import StoreService.Config
-import StoreService.StoreReceipts (StoreChecks (..))
 import Control.Logger.Simple (LogLevel (..))
 import Control.Monad (forM_, void)
 import qualified Data.ByteArray as BA
@@ -76,7 +75,6 @@ badgeConfigTests = describe "store service config" $ do
   it "defaults credit_test_purchases to off" testDevCreditTestPurchasesDefault
   it "reads credit_test_purchases = on and off" testDevCreditTestPurchasesOnOff
   it "refuses a credit_test_purchases that is not on or off" testDevCreditTestPurchasesNotBoolean
-  it "refuses credit_test_purchases = on beside accept_unverified_store_receipts = on, whose verifier reports no test purchase" testDevCreditBesideUnverified
   it "reads credit_test_purchases = on beside [google] and beside the App Store Sandbox, however its host is spelled" testDevCreditTestPurchasesBesideStores
   it "refuses credit_test_purchases = on beside [apple] without the App Store Sandbox's server API, however production is spelled" testDevCreditTestPurchasesBesideApple
   it "reads check_store_during_coverage = on beside credit_test_purchases = on, with no store, beside the App Store Sandbox or [google]" testDevStoreChecksWithCredit
@@ -463,14 +461,14 @@ testDevStoreChecksDefault :: IO ()
 testDevStoreChecksDefault = do
   withIni fullIni $ \p -> do
     Right cfg <- readServiceConfig p
-    devStoreChecks cfg `shouldBe` ChecksAfterCoverage
-  withDev "accept_unverified_store_receipts = on\n" $ \r -> devStoreChecks <$> r `shouldBe` Right ChecksAfterCoverage
+    devCheckStoreDuringCoverage cfg `shouldBe` False
+  withDev "accept_unverified_store_receipts = on\n" $ \r -> devCheckStoreDuringCoverage <$> r `shouldBe` Right False
 
 testDevStoreChecksOnOff :: IO ()
 testDevStoreChecksOnOff =
-  forM_ [("on", ChecksAtEveryRequest), ("off", ChecksAfterCoverage)] $ \(v, expected) ->
+  forM_ [("on", True), ("off", False)] $ \(v, expected) ->
     withDev ("accept_unverified_store_receipts = on\ncheck_store_during_coverage = " <> v <> "\n") $ \r ->
-      devStoreChecks <$> r `shouldBe` Right expected
+      devCheckStoreDuringCoverage <$> r `shouldBe` Right expected
 
 testDevStoreChecksWithoutMock :: IO ()
 testDevStoreChecksWithoutMock =
@@ -491,12 +489,6 @@ testDevCreditTestPurchasesOnOff =
   forM_ [("on", True), ("off", False)] $ \(v, expected) ->
     withDev ("credit_test_purchases = " <> v <> "\n") $ \r ->
       devCreditTestPurchases <$> r `shouldBe` Right expected
-
-testDevCreditBesideUnverified :: IO ()
-testDevCreditBesideUnverified =
-  forM_ ["", "check_store_during_coverage = on\n"] $ \storeChecks ->
-    withDev ("accept_unverified_store_receipts = on\ncredit_test_purchases = on\n" <> storeChecks)
-      ((`shouldBe` Left "[dev] credit_test_purchases must be off where accept_unverified_store_receipts = on, as that verifier reports no test purchase") . void)
 
 testDevCreditTestPurchasesNotBoolean :: IO ()
 testDevCreditTestPurchasesNotBoolean = withDev "credit_test_purchases = yes\n" $ \case
@@ -523,7 +515,7 @@ testDevStoreChecksWithCredit :: IO ()
 testDevStoreChecksWithCredit =
   forM_ ["", appleSandboxIni, googleIni] $ \stores ->
     withDevBeside stores "credit_test_purchases = on\ncheck_store_during_coverage = on\n" $ \r ->
-      (\cfg -> (devStoreChecks cfg, devCreditTestPurchases cfg)) <$> r `shouldBe` Right (ChecksAtEveryRequest, True)
+      (\cfg -> (devCheckStoreDuringCoverage cfg, devCreditTestPurchases cfg)) <$> r `shouldBe` Right (True, True)
 
 withDev :: T.Text -> (Either String ServiceConfig -> IO a) -> IO a
 withDev = withDevBeside ""
