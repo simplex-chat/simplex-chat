@@ -240,7 +240,7 @@ A new test file is added to its target in project.pbxproj: a PBXBuildFile, a PBX
 
 ### SimpleX Unit Tests
 
-- Checked: app code on [app fixtures](#app-fixtures) and other logic of the app.
+- Checked: app code on [app fixtures](#app-fixtures) and other logic of the app; the notification service flow on the same recordings, as NotificationService.swift and NSEAPITypes.swift of SimpleX NSE are also compiled into this target.
 - Write: an `XCTestCase` in [apps/ios/SimpleX Unit Tests](../../apps/ios/SimpleX%20Unit%20Tests); `fixtureJSON`, `singleFieldJSON` and `waitFor` are at file scope of NameAlertsTests.swift.
 - Run, on macOS: `scripts/ci/ios-stub-libs.sh`, then the `xcodebuild test` command of the step "Run iOS unit tests" of build-ios in build.yml; or Product > Test with the scheme SimpleX Unit Tests.
 - Pitfalls:
