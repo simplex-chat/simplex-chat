@@ -765,6 +765,7 @@ class CIMeta(TypedDict):
     editable: bool
     forwardedByMember: NotRequired[int]  # int64
     showGroupAsSender: bool
+    sentAsMember: NotRequired["GroupMember"]
     msgVerified: NotRequired["MsgVerified"]
     createdAt: str  # ISO-8601 timestamp
     updatedAt: str  # ISO-8601 timestamp
@@ -2217,6 +2218,7 @@ class GroupMember(TypedDict):
     blockedByAdmin: bool
     invitedBy: "InvitedBy"
     invitedByGroupMemberId: NotRequired[int]  # int64
+    memberVia: NotRequired[str]
     localDisplayName: str
     memberProfile: "LocalProfile"
     memberContactId: NotRequired[int]  # int64

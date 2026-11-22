@@ -1109,6 +1109,7 @@ GroupLink:
 - editable: bool
 - forwardedByMember: int64?
 - showGroupAsSender: bool
+- sentAsMember: [GroupMember](#groupmember)?
 - msgVerified: [MsgVerified](#msgverified)?
 - createdAt: UTCTime
 - updatedAt: UTCTime
@@ -2847,6 +2848,7 @@ UpdateRequired:
 - blockedByAdmin: bool
 - invitedBy: [InvitedBy](#invitedby)
 - invitedByGroupMemberId: int64?
+- memberVia: string?
 - localDisplayName: string
 - memberProfile: [LocalProfile](#localprofile)
 - memberContactId: int64?

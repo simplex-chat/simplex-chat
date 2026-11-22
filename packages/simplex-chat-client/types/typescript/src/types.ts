@@ -1108,6 +1108,7 @@ export interface CIMeta {
   editable: boolean
   forwardedByMember?: number // int64
   showGroupAsSender: boolean
+  sentAsMember?: GroupMember
   msgVerified?: MsgVerified
   createdAt: string // ISO-8601 timestamp
   updatedAt: string // ISO-8601 timestamp
@@ -3157,6 +3158,7 @@ export interface GroupMember {
   blockedByAdmin: boolean
   invitedBy: InvitedBy
   invitedByGroupMemberId?: number // int64
+  memberVia?: string
   localDisplayName: string
   memberProfile: LocalProfile
   memberContactId?: number // int64

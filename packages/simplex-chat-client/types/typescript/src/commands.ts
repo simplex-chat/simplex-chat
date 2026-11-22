@@ -284,6 +284,22 @@ export namespace APIAddMemberViaGroup {
   }
 }
 
+// Add member via bot, without a connection: bot sends member's messages with /_send #<groupId>(as_member=<groupMemberId>). Requires bot to have Admin role and a role not lower than member role, not supported in channels.
+// Network usage: background.
+export interface APIAddViaMember {
+  groupId: number // int64
+  memberRole: T.GroupMemberRole
+  profile: T.Profile
+}
+
+export namespace APIAddViaMember {
+  export type Response = CR.ViaMemberAdded | CR.ChatCmdError
+
+  export function cmdString(self: APIAddViaMember): string {
+    return '/_add via #' + self.groupId + ' ' + self.memberRole + ' json ' + JSON.stringify(self.profile)
+  }
+}
+
 // Join group.
 // Network usage: interactive.
 export interface APIJoinGroup {

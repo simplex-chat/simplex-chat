@@ -26,6 +26,7 @@ This file is generated automatically.
 [Group commands](#group-commands)
 - [APIAddMember](#apiaddmember)
 - [APIAddMemberViaGroup](#apiaddmemberviagroup)
+- [APIAddViaMember](#apiaddviamember)
 - [APIJoinGroup](#apijoingroup)
 - [APIAcceptMember](#apiacceptmember)
 - [APIMembersRole](#apimembersrole)
@@ -819,6 +820,46 @@ ChatCmdError: Command error (only used in WebSockets API).
 
 **Errors**:
 - PeerChatVRangeIncompatible: Member's client version is older than required.
+
+---
+
+
+### APIAddViaMember
+
+Add member via bot, without a connection: bot sends member's messages with /_send #<groupId>(as_member=<groupMemberId>). Requires bot to have Admin role and a role not lower than member role, not supported in channels.
+
+*Network usage*: background.
+
+**Parameters**:
+- groupId: int64
+- memberRole: [GroupMemberRole](./TYPES.md#groupmemberrole)
+- profile: [Profile](./TYPES.md#profile)
+
+**Syntax**:
+
+```
+/_add via #<groupId> relay|observer|author|member|moderator|admin|owner json <json(profile)>
+```
+
+```javascript
+'/_add via #' + groupId + ' ' + memberRole + ' json ' + JSON.stringify(profile) // JavaScript
+```
+
+```python
+'/_add via #' + str(groupId) + ' ' + str(memberRole) + ' json ' + json.dumps(profile) # Python
+```
+
+**Responses**:
+
+ViaMemberAdded: Member via bot added.
+- type: "viaMemberAdded"
+- user: [User](./TYPES.md#user)
+- groupInfo: [GroupInfo](./TYPES.md#groupinfo)
+- member: [GroupMember](./TYPES.md#groupmember)
+
+ChatCmdError: Command error (only used in WebSockets API).
+- type: "chatCmdError"
+- chatError: [ChatError](./TYPES.md#chaterror)
 
 ---
 
