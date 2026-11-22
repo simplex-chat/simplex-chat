@@ -27,6 +27,8 @@ draft       created by maybe-release; assets uploaded by the build jobs
 published   every asset present; published by the releases job
 ```
 
+An upload step passes after a refused upload when the release is published with an asset of the file's name (`scripts/ci/release-upload.sh`).
+
 npm tag: `beta` for a version with a prerelease part, `latest` otherwise.
 
 Releases and publications are independent of the Haskell test results.
@@ -71,7 +73,7 @@ Failed claim, with every build job skipped:
 
 After a failed claim, a fix commit is pushed; the version is claimed by the next push.
 
-Incomplete draft: completed by a re-run of the failed jobs in the run of the claim. The version is skipped by later pushes, as it is recorded for another commit. A re-run whose release was published meanwhile passes its upload step when the published release has its zip (scripts/ci/release-upload.sh).
+Incomplete draft: completed by a re-run of the failed jobs in the run of the claim. The version is skipped by later pushes, as it is recorded for another commit.
 
 ## Add-on release
 
@@ -80,7 +82,7 @@ Run of `build.yml` on a push to master or stable with unreleased add-on sources:
 - build jobs, 5 platforms: add-on built, tested with the latest library release of the branch, uploaded
 - `releases`: release published
 
-Incomplete draft: completed by a re-run or by the next push with the same add-on sources. A run whose release was published meanwhile, by another run, passes its upload step when the published release has its add-on (scripts/ci/release-upload.sh).
+Incomplete draft: completed by a re-run or by the next push with the same add-on sources.
 
 ## Package release
 
