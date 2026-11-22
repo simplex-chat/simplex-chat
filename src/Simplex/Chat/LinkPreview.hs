@@ -17,6 +17,7 @@ import Control.Monad
 import Control.Monad.Except
 import Control.Monad.IO.Class (liftIO)
 import Crypto.Random (ChaChaDRG)
+import qualified Data.Aeson as J
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import Data.Bifunctor (first)
 import qualified Data.ByteString.Base64 as B64
@@ -30,24 +31,24 @@ import Data.IORef
 import Data.IP (AddrRange, IP (..), IPv4, IPv6, fromIPv6w, fromSockAddr, isMatchedTo, toHostAddress, toHostAddress6, toIPv4w)
 import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.List.NonEmpty as L
-import Data.Maybe (catMaybes, fromMaybe, isJust, listToMaybe, mapMaybe, maybeToList)
+import Data.Maybe (catMaybes, fromMaybe, isJust, isNothing, listToMaybe, mapMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeUtf8', encodeUtf8)
 import qualified Data.X509.CertificateStore as XS
 import Data.X509.Memory (readSignedObjectFromMemory)
 import Network.Socket
+import Network.Socket.ByteString (recv, sendAll)
 import Network.Socks5 (SocksAddress (..), SocksCredentials (..), SocksHostAddress (..), defaultSocksConf, socksConnect, socksConnectAuth)
 import qualified Network.TLS as TLS
-import Simplex.Chat.Image (imageDataPreview)
+import Simplex.Chat.Image (imageDataPreview, maxImagePreviewSize)
 import Simplex.Chat.Protocol (LinkPreview (..))
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Client (NetworkConfig (..), NetworkRequestMode, netTimeoutInt, transportClientConfig)
 import Simplex.Messaging.Encoding.String (strEncode)
 import Simplex.Messaging.Transport (closeTLS, defaultSupportedParamsHTTPS)
 import Simplex.Messaging.Transport.Client (SocksAuth (..), SocksProxy (..), SocksProxyWithAuth (..), TransportClientConfig (..), TransportHost (..))
-import Simplex.Messaging.Util (catchOwn', safeDecodeUtf8)
-import System.Timeout (timeout)
+import Simplex.Messaging.Util (catchOwn', safeDecodeUtf8, timeoutThrow)
 import Text.Read (readMaybe)
 
 data LinkPreviewConfig = LinkPreviewConfig
@@ -87,6 +88,9 @@ maxHeadBytes = 1048576
 maxImageBytes :: Int
 maxImageBytes = 5242880
 
+maxTitleLength :: Int
+maxTitleLength = 300
+
 maxDescriptionLength :: Int
 maxDescriptionLength = 500
 
@@ -97,9 +101,9 @@ data Fetcher = Fetcher
     socksCredentials :: Maybe SocksCredentials
   }
 
-data Page
-  = HtmlPage {pageTitle :: Text, pageDescription :: Text, pageImage :: Uri}
-  | ImagePage ByteString
+data Page = HtmlPage PageMeta | ImagePage ByteString
+
+data PageMeta = PageMeta {pageTitle :: Text, pageDescription :: Text, pageImage :: Uri}
   deriving (Eq, Show)
 
 getLinkPreview :: LinkPreviewConfig -> NetworkConfig -> NetworkRequestMode -> TVar ChaChaDRG -> Text -> IO (Either String LinkPreview)
@@ -107,17 +111,23 @@ getLinkPreview previewConfig@LinkPreviewConfig {previewDeadline} networkConfig r
   uri <- liftEither $ linkUri uriText
   socksCredentials <- liftIO $ previewCredentials networkConfig g
   let fetcher = Fetcher {previewConfig, networkConfig, requestMode, socksCredentials}
-  withTimeout previewDeadline "timeout" $ ExceptT $ runExceptT (linkPreview fetcher uriText uri) `catchOwn'` (pure . Left . show)
+  timeoutThrow "timeout" previewDeadline $ ExceptT $ runExceptT (linkPreview fetcher uriText uri) `catchOwn'` (pure . Left . show)
 
 linkPreview :: Fetcher -> Text -> Uri -> ExceptT String IO LinkPreview
-linkPreview fetcher uriText uri@Uri {uriPath} =
+linkPreview fetcher uriText uri@Uri {uriHost, uriPath} =
   fetch fetcher uri pageContent >>= \case
-    HtmlPage {pageTitle, pageDescription, pageImage} -> preview pageTitle pageDescription =<< fetch fetcher pageImage (\_ Response {body} -> imageBody body)
-    ImagePage bytes -> preview (safeDecodeUtf8 $ snd $ B.breakEnd (== '/') uriPath) "" bytes
+    HtmlPage PageMeta {pageTitle, pageDescription, pageImage} -> preview pageTitle pageDescription =<< fetch fetcher pageImage (\_ Response {body} -> imageBody body)
+    ImagePage bytes -> preview imageTitle "" bytes
   where
-    preview title description bytes = do
-      image <- ExceptT $ imageDataPreview bytes
+    preview pageTitle pageDescription bytes = do
+      let title = T.take maxTitleLength pageTitle
+          description = T.take maxDescriptionLength pageDescription
+      image <- ExceptT $ imageDataPreview (maxImagePreviewSize - jsonLength title - jsonLength description) bytes
       pure LinkPreview {uri = uriText, title, description, image, content = Nothing}
+    jsonLength = LB.length . J.encode
+    imageTitle = safeDecodeUtf8 $ case snd $ B.breakEnd (== '/') uriPath of
+      "" -> strEncode uriHost
+      segment -> segment
 
 previewCredentials :: NetworkConfig -> TVar ChaChaDRG -> IO (Maybe SocksCredentials)
 previewCredentials NetworkConfig {socksProxy} g = case socksProxy of
@@ -127,11 +137,12 @@ previewCredentials NetworkConfig {socksProxy} g = case socksProxy of
     SocksIsolateByAuth -> Just . (`SocksCredentials` "") . B64.encode <$> atomically (C.randomBytes 16 g)
   Nothing -> pure Nothing
 
-withTimeout :: Int -> String -> ExceptT String IO a -> ExceptT String IO a
-withTimeout t err action = ExceptT $ fromMaybe (Left err) <$> timeout t (runExceptT action)
+data UriScheme = USHttp | USHttps
+  deriving (Eq, Show)
 
 data Uri = Uri
-  { uriHost :: TransportHost,
+  { uriScheme :: UriScheme,
+    uriHost :: TransportHost,
     uriPort :: Maybe Int,
     uriPath :: ByteString,
     uriQuery :: Maybe ByteString
@@ -146,23 +157,36 @@ data UriRef = UriRef
   }
 
 linkUri :: Text -> Either String Uri
-linkUri = httpUri <=< resolveRef Nothing . uriRef . encodeUtf8
+linkUri = resolveRef linkScheme Nothing . uriRef . encodeUtf8
 
 imageUri :: Uri -> ByteString -> Either String Uri
-imageUri page = httpUri <=< resolveRef (Just page) . uriRef
+imageUri page = resolveRef linkScheme (Just page) . uriRef
 
 redirectUri :: Uri -> ByteString -> Either String Uri
-redirectUri request = httpsUri <=< resolveRef (Just request) . uriRef
+redirectUri request = resolveRef redirectScheme (Just request) . uriRef
 
-httpUri :: (ByteString, Uri) -> Either String Uri
-httpUri (scheme, uri)
-  | scheme == "https" || scheme == "http" = Right uri
-  | otherwise = Left $ "unsupported scheme: " <> B.unpack scheme
+linkScheme :: ByteString -> TransportHost -> Either String UriScheme
+linkScheme scheme host = case (scheme, host) of
+  ("https", _) -> Right USHttps
+  ("http", THOnionHost _) -> Right USHttp
+  ("http", _) -> Right USHttps
+  _ -> Left $ "unsupported scheme: " <> B.unpack scheme
 
-httpsUri :: (ByteString, Uri) -> Either String Uri
-httpsUri (scheme, uri)
-  | scheme == "https" = Right uri
-  | otherwise = Left $ "redirect to scheme: " <> B.unpack scheme
+redirectScheme :: ByteString -> TransportHost -> Either String UriScheme
+redirectScheme scheme host = case (scheme, host) of
+  ("https", _) -> Right USHttps
+  ("http", THOnionHost _) -> Right USHttp
+  _ -> Left $ "redirect to scheme: " <> B.unpack scheme
+
+schemeName :: UriScheme -> ByteString
+schemeName = \case
+  USHttp -> "http"
+  USHttps -> "https"
+
+schemePort :: UriScheme -> Int
+schemePort = \case
+  USHttp -> 80
+  USHttps -> 443
 
 uriRef :: ByteString -> UriRef
 uriRef s = UriRef {refScheme, refAuthority, refPath, refQuery}
@@ -177,43 +201,46 @@ uriRef s = UriRef {refScheme, refAuthority, refPath, refQuery}
     (refPath, query) = B.break (== '?') afterAuthority
     refQuery = B.drop 1 query <$ guard (not $ B.null query)
 
-resolveRef :: Maybe Uri -> UriRef -> Either String (ByteString, Uri)
-resolveRef base_ UriRef {refScheme, refAuthority, refPath, refQuery} = case (refScheme, refAuthority, base_) of
-  (Just scheme, Just authority, _) -> (asciiLower scheme,) <$> authorityUri authority (removeDotSegments refPath) refQuery
+resolveRef :: (ByteString -> TransportHost -> Either String UriScheme) -> Maybe Uri -> UriRef -> Either String Uri
+resolveRef refUriScheme base_ UriRef {refScheme, refAuthority, refPath, refQuery} = case (refScheme, refAuthority, base_) of
+  (Just scheme, Just authority, _) -> authorityUri (asciiLower scheme) authority
   (Just _, Nothing, _) -> Left "no host"
   (Nothing, _, Nothing) -> Left "relative link"
-  (Nothing, Just authority, Just _) -> ("https",) <$> authorityUri authority (removeDotSegments refPath) refQuery
+  (Nothing, Just authority, Just Uri {uriScheme}) -> authorityUri (schemeName uriScheme) authority
   (Nothing, Nothing, Just base@Uri {uriPath, uriQuery})
-    | B.null refPath -> Right ("https", base {uriQuery = refQuery <|> uriQuery})
-    | "/" `B.isPrefixOf` refPath -> Right ("https", base {uriPath = removeDotSegments refPath, uriQuery = refQuery})
-    | B.null uriPath -> Right ("https", base {uriPath = removeDotSegments $ "/" <> refPath, uriQuery = refQuery})
-    | otherwise -> Right ("https", base {uriPath = removeDotSegments $ B.dropWhileEnd (/= '/') uriPath <> refPath, uriQuery = refQuery})
+    | B.null refPath -> Right base {uriQuery = refQuery <|> uriQuery}
+    | "/" `B.isPrefixOf` refPath -> Right base {uriPath = removeDotSegments refPath, uriQuery = refQuery}
+    | B.null uriPath -> Right base {uriPath = removeDotSegments $ "/" <> refPath, uriQuery = refQuery}
+    | otherwise -> Right base {uriPath = removeDotSegments $ B.dropWhileEnd (/= '/') uriPath <> refPath, uriQuery = refQuery}
+  where
+    authorityUri scheme authority = do
+      (uriHost, port) <- authorityHostPort authority
+      uriScheme <- refUriScheme scheme uriHost
+      pure Uri {uriScheme, uriHost, uriPort = mfilter (/= schemePort uriScheme) port, uriPath = removeDotSegments refPath, uriQuery = refQuery}
 
-authorityUri :: ByteString -> ByteString -> Maybe ByteString -> Either String Uri
-authorityUri authority uriPath uriQuery = do
-  uriHost <- linkHost host
-  uriPort <- case B.uncons port of
-    Nothing -> Right Nothing
-    Just (':', "") -> Right Nothing
-    Just (':', digits) | B.length digits <= 5 && B.all isDigit digits, Just (n, "") <- B.readInt digits, n > 0 && n < 65536 -> Right $ Just n
-    _ -> Left $ "invalid port: " <> B.unpack port
-  pure Uri {uriHost, uriPort, uriPath, uriQuery}
+authorityHostPort :: ByteString -> Either String (TransportHost, Maybe Int)
+authorityHostPort authority = (,) <$> linkHost host <*> portNumber
   where
     hostPort = snd $ B.breakEnd (== '@') authority
     (host, port)
       | "[" `B.isPrefixOf` hostPort = let (ipv6, rest) = B.break (== ']') hostPort in (ipv6 <> B.take 1 rest, B.drop 1 rest)
       | otherwise = B.break (== ':') hostPort
+    portNumber = case B.uncons port of
+      Nothing -> Right Nothing
+      Just (':', "") -> Right Nothing
+      Just (':', digits) | B.length digits <= 5 && B.all isDigit digits, Just (n, "") <- B.readInt digits, n > 0 && n < 65536 -> Right $ Just n
+      _ -> Left $ "invalid port: " <> B.unpack port
 
 linkHost :: ByteString -> Either String TransportHost
 linkHost h
   | Just ('[', bracketed) <- B.uncons h, Just (ipv6, ']') <- B.unsnoc bracketed =
       maybe (Left $ "invalid host: " <> B.unpack h) (Right . THIPv6 . toHostAddress6) (readMaybe $ B.unpack ipv6 :: Maybe IPv6)
-  | Just ipv4 <- (readMaybe (B.unpack h) :: Maybe IPv4) = Right $ THIPv4 $ hostAddressToTuple $ toHostAddress ipv4
+  | Just ipv4 <- (readMaybe (B.unpack name) :: Maybe IPv4) = Right $ THIPv4 $ hostAddressToTuple $ toHostAddress ipv4
   | B.null name || not (B.all hostNameChar name) = Left $ "invalid host: " <> B.unpack h
   | ".onion" `B.isSuffixOf` name = Right $ THOnionHost name
   | otherwise = Right $ THDomainName $ B.unpack name
   where
-    name = asciiLower h
+    name = asciiLower $ fromMaybe h $ B.stripSuffix "." h
     hostNameChar c = isAsciiLower c || isDigit c || c == '-' || c == '.' || c == '_'
 
 removeDotSegments :: ByteString -> ByteString
@@ -249,42 +276,39 @@ unrecv :: Conn -> ByteString -> IO ()
 unrecv Conn {unread} s = unless (B.null s) $ modifyIORef' unread (s <>)
 
 withConnection :: Fetcher -> Uri -> (Conn -> ExceptT String IO a) -> ExceptT String IO a
-withConnection Fetcher {previewConfig = LinkPreviewConfig {rootCerts, addressPolicy}, networkConfig, requestMode, socksCredentials} Uri {uriHost, uriPort} action =
-  ExceptT $ E.bracket (runExceptT $ withTimeout connectTimeout "connection timeout" siteSocket) (mapM_ close) $ \case
+withConnection Fetcher {previewConfig = LinkPreviewConfig {rootCerts, addressPolicy}, networkConfig, requestMode, socksCredentials} Uri {uriScheme, uriHost, uriPort} action =
+  ExceptT $ E.bracket (runExceptT $ timeoutThrow "connection timeout" connectTimeout siteSocket) (mapM_ close) $ \case
     Left e -> pure $ Left e
-    Right sock -> E.bracket (TLS.contextNew sock tlsParams) closeTLS $ \ctx -> runExceptT $ do
-      withTimeout connectTimeout "TLS handshake timeout" $ liftIO $ TLS.handshake ctx
-      action =<< liftIO (newConn (TLS.sendData ctx . LB.fromStrict) (withTimeout readTimeout "read timeout" $ liftIO $ TLS.recvData ctx))
+    Right sock -> case uriScheme of
+      USHttps -> E.bracket (TLS.contextNew sock tlsParams) closeTLS $ \ctx -> runExceptT $ do
+        timeoutThrow "TLS handshake timeout" connectTimeout $ liftIO $ TLS.handshake ctx
+        action =<< liftIO (newConn (TLS.sendData ctx . LB.fromStrict) (received $ TLS.recvData ctx))
+      USHttp -> runExceptT $ action =<< liftIO (newConn (sendAll sock) (received $ recv sock 16384))
   where
     TransportClientConfig {socksProxy, tcpConnectTimeout = connectTimeout} = transportClientConfig networkConfig requestMode uriHost True Nothing
     NetworkConfig {tcpTimeout} = networkConfig
-    readTimeout = netTimeoutInt tcpTimeout requestMode
-    port = maybe 443 fromIntegral uriPort
-    siteSocket = case socksProxy of
-      Just (SocksProxy proxy) -> do
-        forM_ (literalAddress uriHost port) $ \addr -> unless (allowedAddress addressPolicy addr) $ throwError $ "prohibited address: " <> show addr
+    received r = timeoutThrow "read timeout" (netTimeoutInt tcpTimeout requestMode) $ liftIO r
+    host = B.unpack $ strEncode uriHost
+    port = fromIntegral $ fromMaybe (schemePort uriScheme) uriPort
+    literal = literalAddress uriHost port
+    siteSocket = case (socksProxy, uriHost) of
+      (Just (SocksProxy proxy), _) -> do
+        forM_ literal $ \addr -> unless (allowedAddress addressPolicy addr) $ throwError $ "prohibited address: " <> show addr
         let conf = defaultSocksConf proxy
             dest = SocksAddress (socksHostAddress uriHost) port
         liftIO $ fst <$> maybe (socksConnect conf dest) (socksConnectAuth conf dest) socksCredentials
-      Nothing -> do
-        addrs <- siteAddresses
-        case L.nonEmpty $ filter (allowedAddress addressPolicy) addrs of
+      (Nothing, THOnionHost _) -> throwError "onion host without SOCKS proxy"
+      (Nothing, _) -> do
+        addrs <- liftIO $ getAddrInfo (Just defaultHints {addrSocketType = Stream}) (Just host) (Just $ show port)
+        case L.nonEmpty $ filter (allowedAddress addressPolicy . addrAddress) addrs of
           Just allowed -> liftIO $ connectAny allowed
-          Nothing -> throwError $ "prohibited address: " <> unwords (map show addrs)
-    siteAddresses = case uriHost of
-      THDomainName name -> liftIO $ map addrAddress <$> getAddrInfo (Just defaultHints {addrSocketType = Stream}) (Just name) (Just $ show port)
-      THOnionHost _ -> throwError "onion host without SOCKS proxy"
-      _ -> pure $ maybeToList $ literalAddress uriHost port
+          Nothing -> throwError $ "prohibited address: " <> unwords (map (show . addrAddress) addrs)
     tlsParams =
-      (TLS.defaultParamsClient (B.unpack $ strEncode uriHost) "")
-        { TLS.clientUseServerNameIndication = hostName,
+      (TLS.defaultParamsClient host "")
+        { TLS.clientUseServerNameIndication = isNothing literal,
           TLS.clientShared = def {TLS.sharedCAStore = rootCerts},
           TLS.clientSupported = linkPreviewTLSParams
         }
-    hostName = case uriHost of
-      THDomainName _ -> True
-      THOnionHost _ -> True
-      _ -> False
 
 linkPreviewTLSParams :: TLS.Supported
 linkPreviewTLSParams = defaultSupportedParamsHTTPS {TLS.supportedGroups = TLS.supportedGroups defaultSupportedParamsHTTPS <> [TLS.P256, TLS.P384]}
@@ -302,16 +326,12 @@ socksHostAddress = \case
   THOnionHost h -> SocksAddrDomainName h
   THDomainName h -> SocksAddrDomainName $ B.pack h
 
-connectAny :: NonEmpty SockAddr -> IO Socket
-connectAny (addr :| addrs) = case L.nonEmpty addrs of
+connectAny :: NonEmpty AddrInfo -> IO Socket
+connectAny (AddrInfo {addrFamily, addrSocketType, addrProtocol, addrAddress} :| addrs) = case L.nonEmpty addrs of
   Nothing -> open
   Just addrs' -> open `E.catch` \(_ :: E.IOException) -> connectAny addrs'
   where
-    open = E.bracketOnError (socket sockFamily Stream defaultProtocol) close $ \sock -> sock <$ connect sock addr
-    sockFamily = case addr of
-      SockAddrInet {} -> AF_INET
-      SockAddrInet6 {} -> AF_INET6
-      SockAddrUnix {} -> AF_UNIX
+    open = E.bracketOnError (socket addrFamily addrSocketType addrProtocol) close $ \sock -> sock <$ connect sock addrAddress
 
 allowedAddress :: AddressPolicy -> SockAddr -> Bool
 allowedAddress policy = maybe False (allowedIP . fst) . fromSockAddr
@@ -335,8 +355,6 @@ localIPv6 = ["::/128", "fc00::/7", "fe80::/10", "ff00::/8"]
 data ResponseHead = ResponseHead {status :: Int, headers :: [(ByteString, ByteString)]}
 
 data Response = Response {headers :: [(ByteString, ByteString)], body :: ExceptT String IO ByteString}
-
-data BodyFraming = BFChunked | BFLength Int | BFClose
 
 data ChunkedState = CSSize | CSData Int | CSEnd | CSDone
 
@@ -389,19 +407,21 @@ recvLine conn maxLength = go ""
         | otherwise -> recvConn conn >>= \s -> if B.null s then throwError "connection closed" else go (received <> s)
 
 recvResponseHead :: Conn -> ExceptT String IO ResponseHead
-recvResponseHead conn = do
-  statusLine <- recvLine conn maxHeaderBytes
-  status <- liftEither $ first ("invalid HTTP status line: " <>) $ A.parseOnly statusP statusLine
-  headers <- recvHeaders (maxHeaderBytes - B.length statusLine - 2) maxHeaders
-  pure ResponseHead {status, headers}
+recvResponseHead conn = recvHead maxHeaderBytes maxHeaders
   where
+    recvHead budget n = do
+      statusLine <- recvLine conn budget
+      status <- liftEither $ first ("invalid HTTP status line: " <>) $ A.parseOnly statusP statusLine
+      recvHeaders status [] (budget - B.length statusLine - 2) n
     statusP = "HTTP/1." *> A.digit *> A.char ' ' *> (foldl (\n d -> n * 10 + digitToInt d) 0 <$> A.count 3 A.digit)
-    recvHeaders budget n =
+    recvHeaders status headers budget n =
       recvLine conn budget >>= \line ->
         if
-          | B.null line -> pure []
+          | B.null line && interim status -> recvHead (budget - 2) n
+          | B.null line -> pure ResponseHead {status, headers = reverse headers}
           | n <= 0 -> throwError "too many HTTP headers"
-          | otherwise -> (:) <$> liftEither (responseHeader line) <*> recvHeaders (budget - B.length line - 2) (n - 1)
+          | otherwise -> liftEither (responseHeader line) >>= \header -> recvHeaders status (header : headers) (budget - B.length line - 2) (n - 1)
+    interim status = status >= 100 && status < 200 && status /= 101
 
 responseHeader :: ByteString -> Either String (ByteString, ByteString)
 responseHeader line = case B.break (== ':') line of
@@ -415,18 +435,14 @@ response :: Conn -> [(ByteString, ByteString)] -> ExceptT String IO Response
 response conn headers = do
   forM_ (lookup "content-encoding" headers) $ \encoding ->
     unless (asciiLower encoding == "identity") $ throwError $ "unsupported content encoding: " <> B.unpack encoding
-  framing <- liftEither $ case (lookup "transfer-encoding" headers, lookup "content-length" headers) of
+  body <- case (lookup "transfer-encoding" headers, lookup "content-length" headers) of
     (Just encoding, _)
-      | asciiLower encoding == "chunked" -> Right BFChunked
-      | otherwise -> Left $ "unsupported transfer encoding: " <> B.unpack encoding
+      | asciiLower encoding == "chunked" -> liftIO $ chunkedBody conn
+      | otherwise -> throwError $ "unsupported transfer encoding: " <> B.unpack encoding
     (Nothing, Just len)
-      | B.length len <= 18, B.all isDigit len, Just (n, "") <- B.readInt len -> Right $ BFLength n
-      | otherwise -> Left $ "invalid content length: " <> B.unpack len
-    (Nothing, Nothing) -> Right BFClose
-  body <- liftIO $ case framing of
-    BFChunked -> chunkedBody conn
-    BFLength n -> limitBody n $ recvConn conn
-    BFClose -> pure $ recvConn conn
+      | B.length len <= 18, B.all isDigit len, Just (n, "") <- B.readInt len -> liftIO $ limitBody n $ recvConn conn
+      | otherwise -> throwError $ "invalid content length: " <> B.unpack len
+    (Nothing, Nothing) -> pure $ recvConn conn
   pure Response {headers, body}
 
 chunkedBody :: Conn -> IO (ExceptT String IO ByteString)
@@ -485,7 +501,7 @@ pageContent pageUri Response {headers, body} =
   if
     | mediaType `elem` ["text/html", "application/xhtml+xml"] -> do
         tags <- scanHead =<< liftIO (limitBody maxHeadBytes body)
-        liftEither $ htmlPage pageUri charset tags
+        HtmlPage <$> liftEither (htmlPage pageUri charset tags)
     | mediaType `elem` ["image/jpeg", "image/png"] -> ImagePage <$> imageBody body
     | otherwise -> throwError $ "unsupported content type: " <> B.unpack mediaType
   where
@@ -598,15 +614,15 @@ metaTags attrs =
     content = lookup "content" attrs
     property name = content <* guard (attr "property" == Just name)
 
-htmlPage :: Uri -> Maybe ByteString -> HeadTags -> Either String Page
+htmlPage :: Uri -> Maybe ByteString -> HeadTags -> Either String PageMeta
 htmlPage pageUri charset HeadTags {ogTitle, ogDescription, ogImage, titleText, nameDescription, metaCharset} = do
   decode <- charsetDecoder $ charset <|> metaCharset
   let firstValue = firstText decode . catMaybes
   pageTitle <- maybe (Left "no title") Right =<< firstValue [ogTitle, titleText]
-  pageDescription <- maybe "" (T.take maxDescriptionLength) <$> firstValue [ogDescription, nameDescription]
+  pageDescription <- fromMaybe "" <$> firstValue [ogDescription, nameDescription]
   imageRef <- maybe (Left "no image") Right =<< firstValue [ogImage]
   pageImage <- imageUri pageUri $ encodeUtf8 imageRef
-  pure HtmlPage {pageTitle, pageDescription, pageImage}
+  pure PageMeta {pageTitle, pageDescription, pageImage}
 
 firstText :: (ByteString -> Either String Text) -> [ByteString] -> Either String (Maybe Text)
 firstText decode = \case
@@ -633,13 +649,14 @@ windows1252 = T.pack . map (\c -> fromMaybe c $ lookup c table) . B.unpack
     table = zip ['\x80' .. '\x9f'] "\x20AC\x81\x201A\x0192\x201E\x2026\x2020\x2021\x02C6\x2030\x0160\x2039\x0152\x8D\x017D\x8F\x90\x2018\x2019\x201C\x201D\x2022\x2013\x2014\x02DC\x2122\x0161\x203A\x0153\x9D\x017E\x0178"
 
 decodeEntities :: Text -> Text
-decodeEntities t = case T.breakOn "&" t of
-  (before, "") -> before
-  (before, rest) -> before <> entity (T.drop 1 rest)
+decodeEntities = T.concat . pieces
   where
+    pieces t = case T.breakOn "&" t of
+      (before, "") -> [before]
+      (before, rest) -> before : entity (T.drop 1 rest)
     entity s = case T.breakOn ";" $ T.take 10 s of
-      (name, end) | not (T.null end), Just c <- entityChar name -> T.singleton c <> decodeEntities (T.drop (T.length name + 1) s)
-      _ -> "&" <> decodeEntities s
+      (name, end) | not (T.null end), Just c <- entityChar name -> T.singleton c : pieces (T.drop (T.length name + 1) s)
+      _ -> "&" : pieces s
     entityChar = \case
       "amp" -> Just '&'
       "lt" -> Just '<'

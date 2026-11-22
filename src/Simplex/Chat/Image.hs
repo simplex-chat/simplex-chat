@@ -13,6 +13,7 @@ module Simplex.Chat.Image
     imageFormat,
     decodeResizable,
     imageDataPreview,
+    maxImagePreviewSize,
     resizeImage,
     resizeImageDataUri,
     cropToSquare,
@@ -225,10 +226,10 @@ resizeImageDataUri maxSize img = fitImage ImageDataUri (imageFormat img) maxSize
 maxImagePreviewSize :: Int64
 maxImagePreviewSize = 14000
 
-imageDataPreview :: ByteString -> IO (Either String ImageData)
-imageDataPreview s = runExceptT $ do
+imageDataPreview :: Int64 -> ByteString -> IO (Either String ImageData)
+imageDataPreview maxSize s = runExceptT $ do
   (img, profile) <- ExceptT $ decodeResizable s
-  ImageData . safeDecodeUtf8 . LB.toStrict <$> ExceptT (resizeImageDataUri maxImagePreviewSize img profile)
+  ImageData . safeDecodeUtf8 . LB.toStrict <$> ExceptT (resizeImageDataUri maxSize img profile)
 
 fitImage :: ImageOutput -> ImageFormat -> Int64 -> DynamicImage -> ColourProfile -> IO (Either String LB.ByteString)
 fitImage output format maxSize img profile

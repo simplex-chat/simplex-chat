@@ -71,7 +71,7 @@ import Simplex.Chat.Call
 import Simplex.Chat.Controller
 import Simplex.Chat.Delivery (DeliveryJobScope (..), DeliveryJobSpec (..), DeliveryWorkerScope (..))
 import Simplex.Chat.Files
-import Simplex.Chat.Image (cropToSquare, decodeResizable, imageDataPreview, resizeImageDataUri)
+import Simplex.Chat.Image (cropToSquare, decodeResizable, imageDataPreview, maxImagePreviewSize, resizeImageDataUri)
 import Simplex.Chat.Markdown
 import Simplex.Chat.Messages
 import Simplex.Chat.Messages.Batch (BatchMode, encodeBatchElement)
@@ -232,7 +232,7 @@ imagePreview f = fromRight fixedImagePreview <$> (runExceptT preview `catchOwn'`
   where
     preview = do
       s <- withExceptT show $ CF.readFile f
-      ExceptT $ imageDataPreview $ LB.toStrict s
+      ExceptT $ imageDataPreview maxImagePreviewSize $ LB.toStrict s
 
 imageFilePrefix :: String
 imageFilePrefix = "IMG_"

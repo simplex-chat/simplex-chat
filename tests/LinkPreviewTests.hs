@@ -18,6 +18,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Data.X509 (SignedCertificate)
+import qualified Data.X509.CertificateStore as XS
 import Data.X509.Memory (readSignedObjectFromMemory)
 import Simplex.Chat.LinkPreview
 import Simplex.Messaging.Transport.Client (TransportHost (..))
@@ -38,6 +39,8 @@ linkPreviewTests = do
     it "should decode entities and collapse whitespace" testPageValues
     it "should require title and image" testPageRequired
     it "should resolve image against the page" testPageImage
+    it "should read at most the head limit of the page" testHeadLimit
+    it "should limit image size" testImageLimit
   describe "charsets" $ do
     it "should decode UTF-8 and windows-1252" testCharsets
     it "should refuse unsupported charsets and invalid UTF-8" testCharsetsRefused
@@ -45,12 +48,14 @@ linkPreviewTests = do
     it "should resolve RFC 3986 examples" testReferenceResolution
     it "should resolve network-path references and keep the port" testResolution
     it "should parse links" testLinks
+    it "should use plain HTTP only for onion hosts" testOnionSchemes
   describe "address policy" $ do
     it "should prohibit local addresses and their IPv4-mapped forms" testAddressPolicy
   describe "HTTP" $ do
     it "should make request" testRequest
     it "should read chunked, Content-Length and close-delimited bodies" testBodies
     it "should limit response head" testHeadLimits
+    it "should skip interim responses" testInterimResponses
     it "should limit chunks" testChunkLimits
     it "should refuse compressed bodies" testContentEncoding
   describe "root certificates" $ do
@@ -160,11 +165,11 @@ testScanStop = do
 testBase :: Uri
 testBase = either error id $ linkUri "https://example.com/dir/page"
 
-testPage :: Maybe ByteString -> ByteString -> IO (Either String Page)
+testPage :: Maybe ByteString -> ByteString -> IO (Either String PageMeta)
 testPage charset html = htmlPage testBase charset <$> scan html
 
-htmlPageOf :: Text -> Text -> Text -> Either String Page
-htmlPageOf pageTitle pageDescription image = (\pageImage -> HtmlPage {pageTitle, pageDescription, pageImage}) <$> linkUri image
+htmlPageOf :: Text -> Text -> Text -> Either String PageMeta
+htmlPageOf pageTitle pageDescription image = (\pageImage -> PageMeta {pageTitle, pageDescription, pageImage}) <$> linkUri image
 
 testPagePriority :: IO ()
 testPagePriority = do
@@ -177,9 +182,9 @@ testPageValues :: IO ()
 testPageValues = do
   testPage Nothing "<title>  Tom &amp; Jerry\n &lt;3&gt; &#169; &#x1F600; &#X41; &unknown; &amp </title><meta property=og:image content=\"/i.png?a=1&amp;b=2\">"
     `shouldReturn` htmlPageOf "Tom & Jerry <3> \169 \128512 A &unknown; &amp" "" "https://example.com/i.png?a=1&b=2"
-  let description = T.replicate 600 "d"
-  testPage Nothing ("<title>t</title><meta name=description content=" <> encodeUtf8 description <> "><meta property=og:image content=/i.png>")
-    `shouldReturn` htmlPageOf "t" (T.take 500 description) "https://example.com/i.png"
+  let title = T.replicate 200000 "&amp;"
+  testPage Nothing ("<title>" <> encodeUtf8 title <> "</title><meta property=og:image content=/i.png>")
+    `shouldReturn` htmlPageOf (T.replicate 200000 "&") "" "https://example.com/i.png"
 
 testPageRequired :: IO ()
 testPageRequired = do
@@ -194,13 +199,25 @@ testPageImage = do
   testPage Nothing "<title>t</title><meta property=og:image content=//cdn.example.com/i.png>" `shouldReturn` htmlPageOf "t" "" "https://cdn.example.com/i.png"
   testPage Nothing "<title>t</title><meta property=og:image content=http://example.net/i.png>" `shouldReturn` htmlPageOf "t" "" "https://example.net/i.png"
 
-pageTitleOf :: Page -> Text
-pageTitleOf = \case
-  HtmlPage {pageTitle} -> pageTitle
-  ImagePage _ -> ""
+testHeadLimit :: IO ()
+testHeadLimit = do
+  pulled <- newIORef 0
+  let chunk = "<title>t</title>" <> B.replicate 1008 ' '
+      body = liftIO $ chunk <$ modifyIORef' pulled (+ B.length chunk)
+  runExceptT (pageContent testBase Response {headers = [("content-type", "text/html")], body}) >>= \case
+    Left e -> e `shouldBe` "no image"
+    Right _ -> expectationFailure "unexpected page"
+  readIORef pulled `shouldReturn` maxHeadBytes
+
+testImageLimit :: IO ()
+testImageLimit = do
+  imageSize [B.replicate maxImageBytes 'a'] `shouldReturn` Right maxImageBytes
+  imageSize [B.replicate maxImageBytes 'a', "a"] `shouldReturn` Left "image too large"
+  where
+    imageSize chunks = fmap B.length <$> (runExceptT . imageBody =<< listStream chunks)
 
 titleWith :: Maybe ByteString -> ByteString -> IO (Either String Text)
-titleWith charset html = fmap pageTitleOf <$> testPage charset (html <> "<meta property=og:image content=/i.png>")
+titleWith charset html = fmap (\PageMeta {pageTitle} -> pageTitle) <$> testPage charset (html <> "<meta property=og:image content=/i.png>")
 
 testCharsets :: IO ()
 testCharsets = do
@@ -278,12 +295,15 @@ testResolution = do
 
 testLinks :: IO ()
 testLinks = do
-  linkUri "https://Example.COM:443/path?q=1#frag" `shouldBe` Right Uri {uriHost = THDomainName "example.com", uriPort = Just 443, uriPath = "/path", uriQuery = Just "q=1"}
-  linkUri "http://example.com" `shouldBe` Right Uri {uriHost = THDomainName "example.com", uriPort = Nothing, uriPath = "", uriQuery = Nothing}
-  linkUri "https://user:password@example.com:/" `shouldBe` Right Uri {uriHost = THDomainName "example.com", uriPort = Nothing, uriPath = "/", uriQuery = Nothing}
-  linkUri "https://[::1]:8443/" `shouldBe` Right Uri {uriHost = THIPv6 (0, 0, 0, 1), uriPort = Just 8443, uriPath = "/", uriQuery = Nothing}
-  linkUri "https://10.0.0.1/" `shouldBe` Right Uri {uriHost = THIPv4 (10, 0, 0, 1), uriPort = Nothing, uriPath = "/", uriQuery = Nothing}
-  linkUri "https://example.onion/" `shouldBe` Right Uri {uriHost = THOnionHost "example.onion", uriPort = Nothing, uriPath = "/", uriQuery = Nothing}
+  linkUri "https://Example.COM:443/path?q=1#frag" `shouldBe` Right Uri {uriScheme = USHttps, uriHost = THDomainName "example.com", uriPort = Nothing, uriPath = "/path", uriQuery = Just "q=1"}
+  linkUri "http://example.com" `shouldBe` Right Uri {uriScheme = USHttps, uriHost = THDomainName "example.com", uriPort = Nothing, uriPath = "", uriQuery = Nothing}
+  linkUri "https://user:password@example.com:/" `shouldBe` Right Uri {uriScheme = USHttps, uriHost = THDomainName "example.com", uriPort = Nothing, uriPath = "/", uriQuery = Nothing}
+  linkUri "https://[::1]:8443/" `shouldBe` Right Uri {uriScheme = USHttps, uriHost = THIPv6 (0, 0, 0, 1), uriPort = Just 8443, uriPath = "/", uriQuery = Nothing}
+  linkUri "https://10.0.0.1/" `shouldBe` Right Uri {uriScheme = USHttps, uriHost = THIPv4 (10, 0, 0, 1), uriPort = Nothing, uriPath = "/", uriQuery = Nothing}
+  linkUri "https://127.0.0.1./" `shouldBe` Right Uri {uriScheme = USHttps, uriHost = THIPv4 (127, 0, 0, 1), uriPort = Nothing, uriPath = "/", uriQuery = Nothing}
+  linkUri "https://Example.com.:8443/" `shouldBe` Right Uri {uriScheme = USHttps, uriHost = THDomainName "example.com", uriPort = Just 8443, uriPath = "/", uriQuery = Nothing}
+  linkUri "https://example.onion/" `shouldBe` Right Uri {uriScheme = USHttps, uriHost = THOnionHost "example.onion", uriPort = Nothing, uriPath = "/", uriQuery = Nothing}
+  linkUri "http://Example.onion.:80/" `shouldBe` Right Uri {uriScheme = USHttp, uriHost = THOnionHost "example.onion", uriPort = Nothing, uriPath = "/", uriQuery = Nothing}
   linkUri "ftp://example.com/" `shouldBe` Left "unsupported scheme: ftp"
   linkUri "example.com" `shouldBe` Left "relative link"
   linkUri "https:/path" `shouldBe` Left "no host"
@@ -291,6 +311,19 @@ testLinks = do
   linkUri "https://example.com:65536/" `shouldBe` Left "invalid port: :65536"
   linkUri "https://exa mple.com/" `shouldBe` Left "invalid host: exa mple.com"
   linkUri "https://[::1/" `shouldBe` Left "invalid host: [::1"
+
+testOnionSchemes :: IO ()
+testOnionSchemes = do
+  Right onion <- pure $ linkUri "http://example.onion:8080/dir/page"
+  imageUri onion "img.png" `shouldBe` linkUri "http://example.onion:8080/dir/img.png"
+  imageUri onion "//other.onion/i.png" `shouldBe` linkUri "http://other.onion/i.png"
+  imageUri onion "//cdn.example.com/i.png" `shouldBe` linkUri "https://cdn.example.com/i.png"
+  redirectUri onion "/next" `shouldBe` linkUri "http://example.onion:8080/next"
+  redirectUri onion "//example.com/" `shouldBe` Left "redirect to scheme: http"
+  Right page <- pure $ linkUri "https://example.com/"
+  redirectUri page "http://example.onion/" `shouldBe` linkUri "http://example.onion/"
+  map (fmap (\Uri {uriScheme} -> uriScheme) . linkUri) ["http://example.onion/", "https://example.onion/", "http://example.com/"]
+    `shouldBe` [Right USHttp, Right USHttps, Right USHttps]
 
 allowedHost :: AddressPolicy -> ByteString -> Bool
 allowedHost policy host = case linkHost host of
@@ -352,6 +385,10 @@ testRequest = do
   httpRequest x `shouldSatisfy` ("\r\nUser-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_1) AppleWebKit/601.2.4 (KHTML, like Gecko) Version/9.0.1 Safari/601.2.4 facebookexternalhit/1.1 Facebot Twitterbot/1.0\r\n" `B.isInfixOf`)
   Right ipv6 <- pure $ linkUri "https://[::1]:8443/"
   httpRequest ipv6 `shouldSatisfy` ("\r\nHost: [::1]:8443\r\n" `B.isInfixOf`)
+  Right explicitPort <- pure $ linkUri "https://example.com:443/"
+  httpRequest explicitPort `shouldSatisfy` ("\r\nHost: example.com\r\n" `B.isInfixOf`)
+  Right onion <- pure $ linkUri "http://example.onion:8080/"
+  httpRequest onion `shouldSatisfy` ("\r\nHost: example.onion:8080\r\n" `B.isInfixOf`)
 
 readResponse :: [ByteString] -> IO (Either String (Int, ByteString))
 readResponse chunks = do
@@ -383,6 +420,15 @@ testHeadLimits = do
   readResponse ["HTTP/1.1 200 OK\r\nno colon\r\n\r\n"] `shouldReturn` Left "invalid HTTP header: no colon"
   readResponse ["HTTP/1.1 200 OK\r\n"] `shouldReturn` Left "connection closed"
 
+testInterimResponses :: IO ()
+testInterimResponses = do
+  readResponse ["HTTP/1.1 103 Early Hints\r\nLink: </s.css>; rel=preload\r\n\r\nHTTP/1.1 100 Continue\r\n\r\nHTTP/1.1 200 OK\r\nContent-Length: 2\r\n\r\nok"]
+    `shouldReturn` Right (200, "ok")
+  readResponse ["HTTP/1.1 101 Switching Protocols\r\n\r\n"] `shouldReturn` Right (101, "")
+  readResponse [B.concat (replicate 2000 "HTTP/1.1 103 Early Hints\r\n\r\n")] `shouldReturn` Left "HTTP line too long"
+  readResponse ["HTTP/1.1 103 Early Hints\r\n" <> B.concat (replicate 60 "Link: a\r\n") <> "\r\nHTTP/1.1 200 OK\r\n" <> B.concat (replicate 60 "X: a\r\n") <> "\r\n"]
+    `shouldReturn` Left "too many HTTP headers"
+
 testChunkLimits :: IO ()
 testChunkLimits = do
   readResponse ["HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n100000000\r\nhello\r\n0\r\n\r\n"] `shouldReturn` Left "invalid chunk size: 100000000"
@@ -406,3 +452,6 @@ testRootCerts = do
   let pemCerts = length $ filter ("-----BEGIN CERTIFICATE-----" `B.isPrefixOf`) $ B.lines linkPreviewRoots
   pemCerts `shouldSatisfy` (>= 100)
   length (readSignedObjectFromMemory linkPreviewRoots :: [SignedCertificate]) `shouldBe` pemCerts
+  length (XS.listCertificates rootCerts) `shouldBe` pemCerts
+  where
+    LinkPreviewConfig {rootCerts} = defaultLinkPreviewConfig

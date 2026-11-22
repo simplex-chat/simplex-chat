@@ -17,14 +17,16 @@ import Control.Concurrent.STM
 import qualified Control.Exception as E
 import Control.Monad
 import Control.Monad.Reader (runReaderT)
+import qualified Data.Aeson as J
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Builder as BB
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.IORef
-import Data.List (isInfixOf)
+import Data.List (isInfixOf, isPrefixOf)
 import qualified Data.Text as T
+import Data.Text.Encoding (decodeUtf8, encodeUtf8)
 import qualified Data.X509.CertificateStore as XS
 import ImageTests (pngSideAbove16384)
 import Network.HTTP.Types (found302, hContentEncoding, hContentType, hLocation, notFound404, ok200)
@@ -37,7 +39,7 @@ import Simplex.Chat.Controller (ChatConfig (..), ChatError (..), ChatErrorType (
 import Simplex.Chat.Library.Commands (execChatCommand)
 import Simplex.Chat.LinkPreview (AddressPolicy (..), LinkPreviewConfig (..), defaultLinkPreviewConfig)
 import Simplex.Chat.Options (ChatOpts (..), CoreChatOpts (..))
-import Simplex.Chat.Protocol (LinkPreview (..))
+import Simplex.Chat.Protocol (LinkPreview (..), MsgContent (MCLink, preview, text))
 import Simplex.Chat.Types (ImageData (..))
 import Simplex.Messaging.Transport.Client (SocksAuth (..), SocksProxy (..), SocksProxyWithAuth (..))
 import System.Timeout (timeout)
@@ -50,13 +52,18 @@ chatLinkPreviewTests = do
   it "should get preview of an image" testImagePreview
   it "should not use site icons" testNoPageImage
   it "should follow at most 5 redirects to public https addresses" testRedirects
+  it "should prohibit loopback addresses with public address policy" testPublicAddressPolicy
+  it "should prohibit loopback addresses through SOCKS proxy with public address policy" testPublicAddressPolicySocks
+  it "should fetch http links as https" testHttpLinks
   it "should stop reading the page after og tags" testEndlessBody
   it "should stop reading the page after the head limit" testLargeHead
   it "should fail on slow server" testSlowServer
   it "should fail on compressed body and oversized image" testRefusedContent
   it "should fail on certificate of unknown CA" testUnknownCA
+  it "should send preview with long non-Latin title and description" testLongTextPreview
   it "should use SOCKS proxy with credentials per preview" testSocksIsolate
   it "should use SOCKS proxy with configured credentials" testSocksUsername
+  it "should fetch onion pages over HTTP through SOCKS proxy" testOnionHttp
   it "should show link preview in CLI" testLinkPreviewView
   it "should record link preview fixture" testLinkPreviewFixture
 
@@ -80,16 +87,25 @@ linkServerPort = testPort 5
 socksServerPort :: TestParams -> ServiceName
 socksServerPort = testPort 6
 
+plainServerPort :: TestParams -> ServiceName
+plainServerPort = testPort 7
+
 pageUrl :: TestParams -> String -> String
 pageUrl ps path = "https://localhost:" <> linkServerPort ps <> path
+
+onionUrl :: TestParams -> String -> String
+onionUrl ps path = "http://linkpreview.onion:" <> plainServerPort ps <> path
 
 previewOf :: TestCC -> String -> IO (Either ChatError ChatResponse)
 previewOf TestCC {chatController = cc} link = execChatCommand CSLocal (B.pack $ "/_link preview " <> link) 0 `runReaderT` cc
 
 linkPreviewCfg :: IO ChatConfig
-linkPreviewCfg = do
+linkPreviewCfg = linkPreviewPolicyCfg APPublicAndLoopback
+
+linkPreviewPolicyCfg :: AddressPolicy -> IO ChatConfig
+linkPreviewPolicyCfg addressPolicy = do
   rootCerts <- XS.makeCertificateStore <$> XS.readCertificates "tests/fixtures/tls/link-preview/ca.crt"
-  pure testCfg {linkPreviewConfig = LinkPreviewConfig {rootCerts, addressPolicy = APPublicAndLoopback, previewDeadline = 10_000000}}
+  pure testCfg {linkPreviewConfig = LinkPreviewConfig {rootCerts, addressPolicy, previewDeadline = 10_000000}}
 
 socksOpts :: TestParams -> SocksAuth -> ChatOpts
 socksOpts ps auth = testOpts {coreOptions = testCoreOpts {simpleNetCfg = defaultSimpleNetCfg {socksProxy = Just $ SocksProxyWithAuth auth proxy}}}
@@ -148,6 +164,32 @@ testRedirects ps = do
     previewOf alice (pageUrl ps "/to-private") >>= (`shouldBeError` "prohibited address: 10.0.0.1:443")
     previewOf alice (pageUrl ps "/to-http") >>= (`shouldBeError` "redirect to scheme: http")
 
+testPublicAddressPolicy :: HasCallStack => TestParams -> IO ()
+testPublicAddressPolicy ps = do
+  cfg <- linkPreviewPolicyCfg APPublic
+  withLinkPreviewChat ps cfg testOpts $ \LinkServer {requestedPaths} alice -> do
+    previewOf alice (pageUrl ps "/page") >>= \case
+      Left (ChatError (CELinkPreview e)) -> e `shouldSatisfy` ("prohibited address: " `isPrefixOf`)
+      r -> expectationFailure $ "unexpected result: " <> show r
+    readTVarIO requestedPaths `shouldReturn` []
+
+testPublicAddressPolicySocks :: HasCallStack => TestParams -> IO ()
+testPublicAddressPolicySocks ps = withSocksServer ps $ \socksRequests -> do
+  cfg <- linkPreviewPolicyCfg APPublic
+  withLinkPreviewChat ps cfg (socksOpts ps SocksIsolateByAuth) $ \LinkServer {requestedPaths} alice -> do
+    previewOf alice ("https://127.0.0.1:" <> linkServerPort ps <> "/page") >>= (`shouldBeError` ("prohibited address: 127.0.0.1:" <> linkServerPort ps))
+    map socksDestination . linkRequests (linkServerPort ps) <$> readTVarIO socksRequests `shouldReturn` []
+    readTVarIO requestedPaths `shouldReturn` []
+
+testHttpLinks :: HasCallStack => TestParams -> IO ()
+testHttpLinks ps = do
+  cfg <- linkPreviewCfg
+  withLinkPreviewChat ps cfg testOpts $ \LinkServer {requestedPaths} alice -> do
+    Right (CRLinkPreview LinkPreview {title}) <- previewOf alice ("http://localhost:" <> linkServerPort ps <> "/page")
+    title `shouldBe` "Link preview title"
+    previewOf alice (onionUrl ps "/page") >>= (`shouldBeError` "onion host without SOCKS proxy")
+    readTVarIO requestedPaths `shouldReturn` ["/page", "/image.png"]
+
 testEndlessBody :: HasCallStack => TestParams -> IO ()
 testEndlessBody ps = do
   cfg <- linkPreviewCfg
@@ -184,12 +226,30 @@ testUnknownCA ps =
       Left (ChatError (CELinkPreview e)) -> e `shouldSatisfy` ("certificate has unknown CA" `isInfixOf`)
       r -> expectationFailure $ "unexpected result: " <> show r
 
+testLongTextPreview :: HasCallStack => TestParams -> IO ()
+testLongTextPreview ps = do
+  cfg <- linkPreviewCfg
+  withLinkServer ps $ \_ -> testChatCfg2 cfg aliceProfile bobProfile test ps
+  where
+    test :: HasCallStack => TestCC -> TestCC -> IO ()
+    test alice bob = do
+      connectUsers alice bob
+      let link = pageUrl ps "/long-text"
+      Right (CRLinkPreview preview@LinkPreview {title, description, image = ImageData image}) <- previewOf alice link
+      title `shouldBe` T.replicate 300 "\1046"
+      description `shouldBe` T.replicate 500 "\20013"
+      T.length image `shouldSatisfy` (<= 14000 - 602 - 1502)
+      let content = J.encode $ J.object ["msgContent" J..= MCLink {text = T.pack link, preview}]
+      alice ##> ("/_send @2 json [" <> T.unpack (decodeUtf8 $ LB.toStrict content) <> "]")
+      alice <# ("@bob " <> link)
+      bob <# ("alice> " <> link)
+
 testSocksIsolate :: HasCallStack => TestParams -> IO ()
 testSocksIsolate ps = withSocksServer ps $ \socksRequests -> do
   cfg <- linkPreviewCfg
   withLinkPreviewChat ps cfg (socksOpts ps SocksIsolateByAuth) $ \_ alice -> do
     replicateM_ 2 $ previewOf alice (pageUrl ps "/page") >>= (`shouldSatisfy` isPreview)
-    requests <- linkRequests ps <$> readTVarIO socksRequests
+    requests <- linkRequests (linkServerPort ps) <$> readTVarIO socksRequests
     map socksDestination requests `shouldBe` replicate 4 (SDDomain "localhost")
     case map socksAuth requests of
       [Just (u1, ""), Just (u2, ""), Just (u3, ""), Just (u4, "")] -> do
@@ -203,8 +263,20 @@ testSocksUsername ps = withSocksServer ps $ \socksRequests -> do
   cfg <- linkPreviewCfg
   withLinkPreviewChat ps cfg (socksOpts ps SocksAuthUsername {username = "user", password = "pass"}) $ \_ alice -> do
     previewOf alice (pageUrl ps "/page") >>= (`shouldSatisfy` isPreview)
-    requests <- linkRequests ps <$> readTVarIO socksRequests
+    requests <- linkRequests (linkServerPort ps) <$> readTVarIO socksRequests
     map socksAuth requests `shouldBe` replicate 2 (Just ("user", "pass"))
+
+testOnionHttp :: HasCallStack => TestParams -> IO ()
+testOnionHttp ps = withSocksServer ps $ \socksRequests -> do
+  cfg <- linkPreviewCfg
+  withLinkPreviewChat ps cfg (socksOpts ps SocksIsolateByAuth) $ \LinkServer {requestedPaths} alice -> do
+    Right (CRLinkPreview LinkPreview {uri, title}) <- previewOf alice (onionUrl ps "/page")
+    uri `shouldBe` T.pack (onionUrl ps "/page")
+    title `shouldBe` "Link preview title"
+    previewOf alice ("http://localhost:" <> linkServerPort ps <> "/page") >>= (`shouldSatisfy` isPreview)
+    readTVarIO requestedPaths `shouldReturn` ["/page", "/image.png", "/page", "/image.png"]
+    map socksDestination . linkRequests (plainServerPort ps) <$> readTVarIO socksRequests `shouldReturn` replicate 2 (SDDomain "linkpreview.onion")
+    map socksDestination . linkRequests (linkServerPort ps) <$> readTVarIO socksRequests `shouldReturn` replicate 2 (SDDomain "localhost")
 
 testLinkPreviewView :: HasCallStack => TestParams -> IO ()
 testLinkPreviewView ps = do
@@ -233,20 +305,23 @@ shouldBeError r e = case r of
   Left (ChatError (CELinkPreview e')) -> e' `shouldBe` e
   _ -> expectationFailure $ "unexpected result: " <> show r
 
-linkRequests :: TestParams -> [SocksRequest] -> [SocksRequest]
-linkRequests ps = filter $ \SocksRequest {socksPort} -> socksPort == read (linkServerPort ps)
+linkRequests :: ServiceName -> [SocksRequest] -> [SocksRequest]
+linkRequests port = filter $ \SocksRequest {socksPort} -> socksPort == read port
 
 withLinkServer :: TestParams -> (LinkServer -> IO a) -> IO a
 withLinkServer ps action = do
   server <- LinkServer <$> newTVarIO [] <*> newEmptyTMVarIO
-  started <- newEmptyMVar
-  let settings =
-        W.setPort (read $ linkServerPort ps) $
+  tlsStarted <- newEmptyMVar
+  plainStarted <- newEmptyMVar
+  let settings port started =
+        W.setPort (read port) $
           W.setHost "127.0.0.1" $
             W.setOnException (\_ _ -> pure ()) $
               W.setBeforeMainLoop (putMVar started ()) W.defaultSettings
       tls = WT.tlsSettings "tests/fixtures/tls/link-preview/server.crt" "tests/fixtures/tls/link-preview/server.key"
-  withAsync (WT.runTLS tls settings $ linkServerApp server) $ \_ -> takeMVar started >> action server
+  withAsync (WT.runTLS tls (settings (linkServerPort ps) tlsStarted) $ linkServerApp server) $ \_ ->
+    withAsync (W.runSettings (settings (plainServerPort ps) plainStarted) $ linkServerApp server) $ \_ ->
+      takeMVar tlsStarted >> takeMVar plainStarted >> action server
 
 linkServerApp :: LinkServer -> W.Application
 linkServerApp LinkServer {requestedPaths, streamClosed} req respond = do
@@ -265,6 +340,8 @@ linkServerApp LinkServer {requestedPaths, streamClosed} req respond = do
     "/oversized" -> pure $ html $ pageHtml "/oversized.png"
     "/oversized.png" -> pure $ image $ LB.fromStrict pngSideAbove16384
     "/slow" -> html (pageHtml "/image.png") <$ threadDelay 5_000000
+    "/long-text" -> pure $ html longTextHtml
+    "/photo.jpg" -> pure $ W.responseFile ok200 [(hContentType, "image/jpeg")] "tests/fixtures/test.jpg" Nothing
     "/endless" -> pure $ stream (pageHead "/image.png") 1024 50_000
     "/large-head" -> pure $ stream "<html><head><title>Large head</title>" 16384 0
     _
@@ -293,6 +370,15 @@ pageHead imageUrl =
 
 pageHtml :: ByteString -> LB.ByteString
 pageHtml imageUrl = LB.fromStrict $ pageHead imageUrl <> "</head><body>Page</body></html>"
+
+longTextHtml :: LB.ByteString
+longTextHtml =
+  LB.fromStrict $
+    "<html><head><meta property=\"og:title\" content=\""
+      <> encodeUtf8 (T.replicate 400 "\1046")
+      <> "\"><meta property=\"og:description\" content=\""
+      <> encodeUtf8 (T.replicate 600 "\20013")
+      <> "\"><meta property=\"og:image\" content=\"/photo.jpg\"></head></html>"
 
 testPng :: LB.ByteString
 testPng = encodePng $ generateImage (\x y -> PixelRGBA8 (fromIntegral $ x * 16) (fromIntegral $ y * 16) 128 (fromIntegral $ 255 - x * 8)) 16 16
