@@ -82,6 +82,11 @@ final class MessageLinkTests: XCTestCase {
         XCTAssertEqual(msgLinkAction(try linkPlan("links/channel", "/_msg link plan 1 CHANNEL_MSG_LINK"), target: nil), .connect(target: "CHANNEL_LINK"))
     }
 
+    func testPublicChatMessageLinkCountsAsSimplexLink() throws {
+        XCTAssertTrue(parsedMsgHasSimplexLink(try XCTUnwrap(parsedMarkdown("links/channel", "CHANNEL_MSG_LINK").formattedText)))
+        XCTAssertFalse(parsedMsgHasSimplexLink(try XCTUnwrap(parsedMarkdown("links/same-group", "see [q](GROUP_MSG_LINK)").formattedText)))
+    }
+
     func testChatWithoutLinkedMessageOpensChat() throws {
         let plan = try linkPlan("links/same-group", "/_msg link plan 1 GROUP_MSG_LINK chat=#1")
         guard case let .item(chatItem, _) = plan else { return XCTFail("not an item: \(plan)") }

@@ -464,11 +464,12 @@ struct ContentView: View {
         // an app link must not tear down a redemption in flight
         if isAppLink(url) && isBadgeLinkIssuing() { return }
         dismissAllSheets() {
-            var path = url.path
+            let path = url.path
+            let link = url.absoluteString.replacingOccurrences(of: "///\(path.dropFirst())", with: "/\(path.dropFirst())")
             if isAppLink(url) {
                 // branched on the scheme before the connection dispatch, which an app link must never reach
                 openAppLink(url)
-            } else if let parsedMd = parseSimpleXMarkdown(url.absoluteString), parsedMd.count == 1, case let .messageLink(_, msgLinkType, msgLink) = parsedMd[0].format {
+            } else if let parsedMd = parseSimpleXMarkdown(link), parsedMd.count == 1, case let .messageLink(_, msgLinkType, msgLink) = parsedMd[0].format {
                 openMsgLink(msgLink, msgLinkType, chatId: nil, target: nil, theme: theme)
             } else if path == "/r" {
                 showAlert(
@@ -476,8 +477,6 @@ struct ContentView: View {
                     message: NSLocalizedString("This is a chat relay address, it cannot be used to connect.", comment: "alert message")
                 )
             } else if (path == "/contact" || path == "/invitation" || path == "/a" || path == "/c" || path == "/g" || path == "/i" || path == "/p" || path == "/s") {
-                path.removeFirst()
-                let link = url.absoluteString.replacingOccurrences(of: "///\(path)", with: "/\(path)")
                 planAndConnect(
                     link,
                     theme: theme,

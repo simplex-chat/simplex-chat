@@ -655,6 +655,8 @@ private struct ConnectView: View {
                         case let .name(text, _):
                             pastedLink = text
                             connect(pastedLink)
+                        case let .msgLink(msgLinkType, msgLink):
+                            openLink(msgLink, msgLinkType)
                         case .none:
                             alert = .newChatSomeAlert(alert: SomeAlert(
                                 alert: mkAlert(title: "Invalid link", message: "The text you pasted is not a SimpleX link."),
@@ -687,6 +689,8 @@ private struct ConnectView: View {
             let link = r.string
             if strIsSimplexLink(r.string) {
                 connect(link)
+            } else if case let .msgLink(msgLinkType, msgLink) = strConnectTarget(link) {
+                openLink(msgLink, msgLinkType)
             } else {
                 alert = .newChatSomeAlert(alert: SomeAlert(
                     alert: mkAlert(title: "Invalid QR code", message: "The code you scanned is not a SimpleX link QR code."),
@@ -730,6 +734,11 @@ private struct ConnectView: View {
                 scannerPaused = false
             }
         )
+    }
+
+    private func openLink(_ msgLink: String, _ msgLinkType: MsgLinkType) {
+        scannerPaused = true
+        openMsgLink(msgLink, msgLinkType, chatId: nil, target: nil, theme: theme, cleanup: { scannerPaused = false })
     }
 }
 
@@ -855,13 +864,16 @@ func strIsSimplexLink(_ str: String) -> Bool {
 enum ConnectTarget {
     case link(text: String, linkType: SimplexLinkType, linkText: String)
     case name(text: String, nameInfo: SimplexNameInfo)
+    case msgLink(msgLinkType: MsgLinkType, msgLink: String)
 }
 
 func strConnectTarget(_ str: String) -> ConnectTarget? {
     let parsedMd = parseSimpleXMarkdown(str)
-    let links = parsedMd?.filter { $0.format?.isSimplexLink ?? false } ?? []
+    let links = parsedMd?.filter { if case .simplexLink = $0.format { true } else { false } } ?? []
     return if links.count == 1, case let .simplexLink(showText, linkType, simplexUri, smpHosts) = links[0].format {
         .link(text: showText != nil ? simplexUri : links[0].text, linkType: linkType, linkText: simplexLinkText(linkType, smpHosts))
+    } else if parsedMd?.count == 1, case let .messageLink(_, msgLinkType, msgLink) = parsedMd?[0].format {
+        .msgLink(msgLinkType: msgLinkType, msgLink: msgLink)
     } else if links.isEmpty,
               let nameFt = parsedMd?.first(where: { if case .simplexName = $0.format { true } else { false } }),
               case let .simplexName(nameInfo) = nameFt.format {
@@ -1382,7 +1394,7 @@ func planAndConnect(
         }
     // A SimplexName falls through to apiConnectPlan, which resolves it on the
     // core (the /_connect plan command accepts a name target, not only a link).
-    case .name, .none: break
+    case .name, .msgLink, .none: break
     }
     ConnectProgressManager.shared.cancelConnectProgress()
     let inProgress = BoxedValue(true)
@@ -1773,7 +1785,7 @@ func msgLinkAction(_ plan: MsgLinkPlan, target: CILinkTarget?) -> MsgLinkAction 
     }
 }
 
-func openMsgLink(_ msgLink: String, _ msgLinkType: MsgLinkType, chatId: ChatId?, target: CILinkTarget?, theme: AppTheme) {
+func openMsgLink(_ msgLink: String, _ msgLinkType: MsgLinkType, chatId: ChatId?, target: CILinkTarget?, theme: AppTheme, cleanup: (() -> Void)? = nil) {
     Task {
         do {
             let plan: MsgLinkPlan
@@ -1786,21 +1798,27 @@ func openMsgLink(_ msgLink: String, _ msgLinkType: MsgLinkType, chatId: ChatId?,
             await MainActor.run {
                 switch action {
                 case let .openItem(id, itemId):
-                    ItemsModel.shared.loadOpenChatNoWait(id, itemId)
+                    dismissAllSheets(animated: true) {
+                        ItemsModel.shared.loadOpenChatNoWait(id, itemId)
+                        cleanup?()
+                    }
                 case let .openChat(id):
-                    ItemsModel.shared.loadOpenChat(id) {
-                        showAlert(NSLocalizedString("No message", comment: "alert title"), message: NSLocalizedString("This message was deleted or not received yet.", comment: "alert message"))
+                    dismissAllSheets(animated: true) {
+                        ItemsModel.shared.loadOpenChat(id) {
+                            showAlert(NSLocalizedString("No message", comment: "alert title"), message: NSLocalizedString("This message was deleted or not received yet.", comment: "alert message"))
+                            cleanup?()
+                        }
                     }
                 case let .connect(link):
-                    planAndConnect(link, theme: theme, dismiss: false)
+                    planAndConnect(link, theme: theme, dismiss: true, cleanup: cleanup)
                 case let .alert(title):
-                    showAlert(title)
+                    showAlert(title, actions: { [okCleanupAlertAction(cleanup: cleanup)] })
                 }
             }
         } catch let error {
             logger.error("openMsgLink error: \(responseError(error))")
             await MainActor.run {
-                showAlert(NSLocalizedString("Error opening link", comment: "alert title"), message: responseError(error))
+                showAlert(NSLocalizedString("Error opening link", comment: "alert title"), message: responseError(error), actions: { [okCleanupAlertAction(cleanup: cleanup)] })
             }
         }
     }

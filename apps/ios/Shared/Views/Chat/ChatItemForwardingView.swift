@@ -77,7 +77,7 @@ struct ChatItemForwardingView: View {
     @ViewBuilder private func forwardListChatView(_ chat: Chat) -> some View {
         let prohibited = isProhibited?(chat) ?? chatItems.map { ci in
             chat.prohibitedByPref(
-                hasSimplexLink: hasSimplexLink(ci.content.msgContent?.text),
+                hasSimplexLink: ci.formattedText?.contains { if case .simplexLink = $0.format { true } else { false } } ?? false,
                 isMediaOrFileAttachment: ci.content.msgContent?.isMediaOrFileAttachment ?? false,
                 isVoice: ci.content.msgContent?.isVoice ?? false
             )

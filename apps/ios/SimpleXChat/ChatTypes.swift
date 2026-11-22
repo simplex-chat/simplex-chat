@@ -6064,6 +6064,7 @@ public enum Format: Decodable, Equatable, Hashable {
         get {
             switch (self) {
             case .simplexLink: return true
+            case .messageLink(_, .publicGroup, _): return true
             default: return false
             }
         }

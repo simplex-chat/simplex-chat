@@ -218,6 +218,8 @@ A message link (`Format.messageLink`) is shown by `messageText()` as its label, 
 | `unknownSource`, without a target | alert *This link is from an unknown source.* |
 | `unknownLink` | alert *Update the app to open this link.* |
 
+A text that the core parses as one message link, pasted into a search field or *Tap to paste link*, or scanned as a QR code, is `ConnectTarget.msgLink` of `strConnectTarget()` and goes to `openMsgLink()` without a chat. `openMsgLink()` dismisses the sheets before it opens a chat, and runs `planAndConnect()` with `dismiss: true`. A message link of a public chat is a SimpleX link (`Format.isSimplexLink`) for the group preference in compose and in the share extension; the forward check counts only connection links, as the core reduces message links in a forward into such a group.
+
 `openMsgLink()` and `msgLinkAction()` are in NewChatView.swift. *Copy link* in the item menu puts the link of `apiGetChatItemLink()` on the clipboard. The paths `/p` (public groups) and `/s` (sites) go to `planAndConnect()`, where `GroupLinkPlan.updateRequired` and `ConnectionPlan.updateRequired` show the update alerts.
 
 ### Call Deep Link

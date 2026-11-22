@@ -244,6 +244,22 @@ final class NameAlertsTests: XCTestCase {
     }
 
     @MainActor
+    func testChannelPostLinkPastedInSearchJoinsChannel() async throws {
+        try recorded("links/channel")
+        let state = SearchState()
+        let window = UIWindow(windowScene: try XCTUnwrap(UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first))
+        window.rootViewController = UIHostingController(rootView: SearchHost(state: state))
+        window.isHidden = false
+        defer { window.isHidden = true }
+        try await Task.sleep(nanoseconds: 100_000_000)
+        state.searchText = "CHANNEL_MSG_LINK"
+        try? await waitFor { self.shownTexts().contains("Open channel") }
+        XCTAssertTrue(shownTexts().contains("Open channel"), "\(shownTexts())")
+        XCTAssertTrue(shownTexts().contains("team"), "\(shownTexts())")
+        XCTAssertEqual(state.searchText, "")
+    }
+
+    @MainActor
     func testRejectedContactInChatList() async throws {
         try recorded("connect/request-rejected")
         ChatModel.shared.updateChats(try apiGetChats())
