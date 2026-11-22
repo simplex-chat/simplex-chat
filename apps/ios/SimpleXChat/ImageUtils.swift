@@ -10,7 +10,6 @@ import Foundation
 import SwiftUI
 import AVKit
 import SwiftyGif
-import LinkPresentation
 
 public func getLoadedFileSource(_ file: CIFile?) -> CryptoFile? {
     if let file = file, file.loaded {
@@ -451,42 +450,6 @@ private var imageCache: NSCache<NSString, UIImage> = {
     cache.countLimit = 1000
     return cache
 }()
-
-public func getLinkPreview(url: URL, cb: @escaping (LinkPreview?) -> Void) {
-    logger.debug("getLinkMetadata: fetching URL preview")
-    LPMetadataProvider().startFetchingMetadata(for: url){ metadata, error in
-        if let e = error {
-            logger.error("Error retrieving link metadata: \(e.localizedDescription)")
-        }
-        if let metadata = metadata,
-           let imageProvider = metadata.imageProvider,
-           imageProvider.canLoadObject(ofClass: UIImage.self) {
-            imageProvider.loadObject(ofClass: UIImage.self){ object, error in
-                var linkPreview: LinkPreview? = nil
-                if let error = error {
-                    logger.error("Couldn't load image preview from link metadata with error: \(error.localizedDescription)")
-                } else {
-                    if let image = object as? UIImage,
-                       let resized = resizeImageToStrSizeSync(image, maxDataSize: 14000),
-                       let title = metadata.title,
-                       let uri = metadata.originalURL {
-                        linkPreview = LinkPreview(uri: uri.absoluteString, title: title, image: resized)
-                    }
-                }
-                cb(linkPreview)
-            }
-        } else {
-            logger.error("Could not load link preview image")
-            cb(nil)
-        }
-    }
-}
-
-public func getLinkPreview(for url: URL) async -> LinkPreview? {
-    await withCheckedContinuation { cont in
-        getLinkPreview(url: url) { cont.resume(returning: $0) }
-    }
-}
 
 private let squareToCircleRatio = 0.935
 

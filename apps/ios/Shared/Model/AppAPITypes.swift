@@ -65,6 +65,7 @@ enum ChatCommand: ChatCmdProtocol {
     case apiForwardChatItems(toChatType: ChatType, toChatId: Int64, toScope: GroupChatScope?, sendAsGroup: Bool, fromChatType: ChatType, fromChatId: Int64, fromScope: GroupChatScope?, itemIds: [Int64], ttl: Int?)
     case apiShareChatMsgContent(shareChatType: ChatType, shareChatId: Int64, toChatType: ChatType, toChatId: Int64, toScope: GroupChatScope?, sendAsGroup: Bool)
     case apiShareMyAddress(toChatType: ChatType, toChatId: Int64, toScope: GroupChatScope?, sendAsGroup: Bool)
+    case apiGetLinkPreview(uri: String)
     case apiGetNtfToken
     case apiRegisterToken(token: DeviceToken, notificationMode: NotificationsMode)
     case apiVerifyToken(token: DeviceToken, nonce: String, code: String)
@@ -285,6 +286,7 @@ enum ChatCommand: ChatCmdProtocol {
             case let .apiShareMyAddress(toChatType, toChatId, toScope, sendAsGroup):
                 let asGroup = sendAsGroup ? "(as_group=on)" : ""
                 return "/_share address \(ref(toChatType, toChatId, scope: toScope))\(asGroup)"
+            case let .apiGetLinkPreview(uri): return "/_link preview \(uri)"
             case .apiGetNtfToken: return "/_ntf get "
             case let .apiRegisterToken(token, notificationMode): return "/_ntf register \(token.cmdString) \(notificationMode.rawValue)"
             case let .apiVerifyToken(token, nonce, code): return "/_ntf verify \(token.cmdString) \(nonce) \(code)"
@@ -495,6 +497,7 @@ enum ChatCommand: ChatCmdProtocol {
             case .apiForwardChatItems: return "apiForwardChatItems"
             case .apiShareChatMsgContent: return "apiShareChatMsgContent"
             case .apiShareMyAddress: return "apiShareMyAddress"
+            case .apiGetLinkPreview: return "apiGetLinkPreview"
             case .apiGetNtfToken: return "apiGetNtfToken"
             case .apiRegisterToken: return "apiRegisterToken"
             case .apiVerifyToken: return "apiVerifyToken"
@@ -1103,6 +1106,7 @@ indirect enum ChatResponse2: Decodable, ChatAPIResult {
     case archiveExported(archiveErrors: [ArchiveError])
     case archiveImported(archiveErrors: [ArchiveError])
     case appSettings(appSettings: AppSettings)
+    case linkPreview(linkPreview: LinkPreview)
     // badges
     // the full user, not UserRef: its profile carries the badge that setUserBadge just stored
     case badgeRedeemed(user: User, redeemedBadge: LocalBadge, newBadge: Bool, badgeState: BadgeState?)
@@ -1161,6 +1165,7 @@ indirect enum ChatResponse2: Decodable, ChatAPIResult {
         case .archiveExported: "archiveExported"
         case .archiveImported: "archiveImported"
         case .appSettings: "appSettings"
+        case .linkPreview: "linkPreview"
         case .badgeRedeemed: "badgeRedeemed"
         case .badgeInvoice: "badgeInvoice"
         case .storeReceiptNotRecorded: "storeReceiptNotRecorded"
@@ -1219,6 +1224,7 @@ indirect enum ChatResponse2: Decodable, ChatAPIResult {
         case let .archiveExported(archiveErrors): return String(describing: archiveErrors)
         case let .archiveImported(archiveErrors): return String(describing: archiveErrors)
         case let .appSettings(appSettings): return String(describing: appSettings)
+        case let .linkPreview(linkPreview): return String(describing: linkPreview)
         case let .badgeRedeemed(u, redeemedBadge, newBadge, badgeState): return withUser(u, "redeemedBadge: \(String(describing: redeemedBadge))\nnewBadge: \(newBadge)\nbadgeState: \(String(describing: badgeState))")
         case let .badgeInvoice(u, invoiceId): return withUser(u, invoiceId)
         case let .storeReceiptNotRecorded(u): return withUser(u, "")

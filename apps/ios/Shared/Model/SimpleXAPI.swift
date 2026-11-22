@@ -524,6 +524,14 @@ func apiShareMyAddress(toChatType: ChatType, toChatId: Int64, toScope: GroupChat
     throw r.unexpected
 }
 
+func apiGetLinkPreview(_ uri: String) async -> LinkPreview? {
+    let r: APIResult<ChatResponse2> = await chatApiSendCmd(.apiGetLinkPreview(uri: uri))
+    if case let .result(.linkPreview(linkPreview)) = r { return linkPreview }
+    let err = if case let .error(.error(.linkPreview(message))) = r { message } else { responseError(r.unexpected) }
+    logger.error("apiGetLinkPreview error: \(err)")
+    return nil
+}
+
 func apiForwardChatItems(toChatType: ChatType, toChatId: Int64, toScope: GroupChatScope?, sendAsGroup: Bool = false, fromChatType: ChatType, fromChatId: Int64, fromScope: GroupChatScope?, itemIds: [Int64], ttl: Int?) async -> [ChatItem]? {
     let cmd: ChatCommand = .apiForwardChatItems(toChatType: toChatType, toChatId: toChatId, toScope: toScope, sendAsGroup: sendAsGroup, fromChatType: fromChatType, fromChatId: fromChatId, fromScope: fromScope, itemIds: itemIds, ttl: ttl)
     return await processSendMessageCmd(toChatType: toChatType, cmd: cmd)

@@ -80,7 +80,6 @@ struct PrivacySettings: View {
                         Toggle("Send link previews", isOn: $useLinkPreviews)
                             .onChange(of: useLinkPreviews) { linkPreviews in
                                 UserDefaults.standard.set(linkPreviews, forKey: DEFAULT_PRIVACY_LINK_PREVIEWS)
-                                privacyLinkPreviewsShowAlertGroupDefault.set(false)
                             }
                     }
                     settingsRow("link", color: theme.colors.secondary) {
@@ -88,6 +87,9 @@ struct PrivacySettings: View {
                     }
                 } header: {
                     Text("Chats")
+                        .foregroundColor(theme.colors.secondary)
+                } footer: {
+                    Text("Without a SOCKS proxy, the website sees your IP address.")
                         .foregroundColor(theme.colors.secondary)
                 }
 

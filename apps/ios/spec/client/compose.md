@@ -297,31 +297,34 @@ Optional feature where the recipient sees typing in real-time.
 
 ---
 
-## 10. [Link Previews](../../Shared/Views/Chat/ComposeMessage/ComposeLinkView.swift#L13) (`ComposeLinkView`)
+## 10. [Link Previews](../../Shared/Views/Chat/ComposeMessage/ComposeLinkView.swift#L12) (`ComposeLinkView`)
 
-**File**: [`ComposeLinkView.swift`](../../Shared/Views/Chat/ComposeMessage/ComposeLinkView.swift) (struct at L13)
+**File**: [`ComposeLinkView.swift`](../../Shared/Views/Chat/ComposeMessage/ComposeLinkView.swift) (struct at L12)
 
 ### Auto-Detection
 - As user types, URLs in the text are detected
-- When a URL is found, `ComposeLinkView` fetches OpenGraph metadata
-- Preview card shows title, description, and thumbnail image
+- When a URL is found, `loadLinkPreview` requests the preview from the core with `/_link preview <uri>`; the core loads the page through the network settings
+- Preview card shows thumbnail image, title and link
 
 ### Link Preview Functions
 
 | Function | Line | Description |
 |----------|------|-------------|
-| [`showLinkPreview()`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L1677) | L1677 | Triggers link preview loading |
-| [`getMessageLinks()`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L1697) | L1697 | Extracts URLs from formatted text |
-| [`isSimplexLink()`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L1708) | L1708 | Checks if URL is a SimpleX link |
-| [`cancelLinkPreview()`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L1712) | L1712 | Cancels pending preview |
-| [`loadLinkPreview()`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L1724) | L1724 | Fetches OpenGraph metadata |
-| [`resetLinkPreview()`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L1741) | L1741 | Resets preview state |
+| [`showLinkPreview()`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L1909) | L1909 | Triggers link preview loading |
+| [`getMessageLinks()`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L1929) | L1929 | Extracts URLs from formatted text |
+| [`isSimplexLink()`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L1940) | L1940 | Checks if URL is a SimpleX link |
+| [`cancelLinkPreview()`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L1944) | L1944 | Cancels pending preview |
+| [`loadLinkPreview()`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L1956) | L1956 | Requests the preview from the core |
+| [`resetLinkPreview()`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L1975) | L1975 | Resets preview state |
+| [`apiGetLinkPreview()`](../../Shared/Model/SimpleXAPI.swift#L527) | L527 | Sends `/_link preview <uri>`; on failure returns no preview |
 
 ### Behavior
 - Only the first URL in the message generates a preview
 - Preview can be dismissed by the user
 - Link preview data is included in the `ComposedMessage` sent to the core
 - Toggle in privacy settings to disable auto-preview generation
+- A failed preview shows no card and no alert
+- The share extension requests the preview of a shared link from the core when the toggle is on
 
 ---
 
@@ -368,5 +371,5 @@ When `chat.chatInfo.groupInfo?.useRelays == true` (channel mode), compose behave
 | Image preview | [`ComposeImageView.swift`](../../Shared/Views/Chat/ComposeMessage/ComposeImageView.swift) | `ComposeImageView` | [L12](../../Shared/Views/Chat/ComposeMessage/ComposeImageView.swift#L12) |
 | File preview | [`ComposeFileView.swift`](../../Shared/Views/Chat/ComposeMessage/ComposeFileView.swift) | `ComposeFileView` | [L11](../../Shared/Views/Chat/ComposeMessage/ComposeFileView.swift#L11) |
 | Voice preview | [`ComposeVoiceView.swift`](../../Shared/Views/Chat/ComposeMessage/ComposeVoiceView.swift) | `ComposeVoiceView` | [L26](../../Shared/Views/Chat/ComposeMessage/ComposeVoiceView.swift#L26) |
-| Link preview | [`ComposeLinkView.swift`](../../Shared/Views/Chat/ComposeMessage/ComposeLinkView.swift) | `ComposeLinkView` | [L13](../../Shared/Views/Chat/ComposeMessage/ComposeLinkView.swift#L13) |
+| Link preview | [`ComposeLinkView.swift`](../../Shared/Views/Chat/ComposeMessage/ComposeLinkView.swift) | `ComposeLinkView` | [L12](../../Shared/Views/Chat/ComposeMessage/ComposeLinkView.swift#L12) |
 | Audio recording | [`AudioRecPlay.swift`](../../Shared/Model/AudioRecPlay.swift) | `AudioRecorder` | [L14](../../Shared/Model/AudioRecPlay.swift#L14) |
