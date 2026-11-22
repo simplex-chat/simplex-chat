@@ -1,5 +1,149 @@
 {
   "commands": {
+    "/_create *1 json [{\"mentions\":{},\"msgContent\":{\"preview\":{\"description\":\"Link preview description\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAKklEQVR42u3MsQ0AAAQF0ZMYwMjG1rEDjeJfcu0zyA6o7U5wSoAAAV+AASePEiWxMZ/qAAAAAElFTkSuQmCC\",\"title\":\"Link preview title\",\"uri\":\"LINK_URL/page\"},\"text\":\"LINK_URL/no-image LINK_URL/page\",\"type\":\"link\"}}]": {
+      "result": {
+        "chatItems": [
+          {
+            "chatInfo": {
+              "noteFolder": {
+                "chatTs": "1970-01-01T00:00:00Z",
+                "createdAt": "1970-01-01T00:00:00Z",
+                "favorite": false,
+                "noteFolderId": 1,
+                "unread": false,
+                "updatedAt": "1970-01-01T00:00:00Z",
+                "userId": 1
+              },
+              "type": "local"
+            },
+            "chatItem": {
+              "chatDir": {
+                "type": "localSnd"
+              },
+              "content": {
+                "msgContent": {
+                  "preview": {
+                    "description": "Link preview description",
+                    "image": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAKklEQVR42u3MsQ0AAAQF0ZMYwMjG1rEDjeJfcu0zyA6o7U5wSoAAAV+AASePEiWxMZ/qAAAAAElFTkSuQmCC",
+                    "title": "Link preview title",
+                    "uri": "LINK_URL/page"
+                  },
+                  "text": "LINK_URL/no-image LINK_URL/page",
+                  "type": "link"
+                },
+                "type": "sndMsgContent"
+              },
+              "formattedText": [
+                {
+                  "format": {
+                    "type": "uri"
+                  },
+                  "text": "LINK_URL/no-image"
+                },
+                {
+                  "text": " "
+                },
+                {
+                  "format": {
+                    "type": "uri"
+                  },
+                  "text": "LINK_URL/page"
+                }
+              ],
+              "mentions": {},
+              "meta": {
+                "createdAt": "1970-01-01T00:00:00Z",
+                "deletable": true,
+                "editable": true,
+                "hasLink": true,
+                "itemEdited": false,
+                "itemId": 1,
+                "itemStatus": {
+                  "type": "sndNew"
+                },
+                "itemText": "LINK_URL/no-image LINK_URL/page",
+                "itemTs": "1970-01-01T00:00:00Z",
+                "showGroupAsSender": false,
+                "updatedAt": "1970-01-01T00:00:00Z",
+                "userMention": false
+              },
+              "reactions": []
+            }
+          }
+        ],
+        "type": "newChatItems",
+        "user": {
+          "activeOrder": 1,
+          "activeUser": true,
+          "agentUserId": "1",
+          "autoAcceptGroupInvitations": false,
+          "autoAcceptMemberContacts": false,
+          "clientService": false,
+          "fullPreferences": {
+            "calls": {
+              "allow": "yes"
+            },
+            "commands": [],
+            "files": {
+              "allow": "always"
+            },
+            "fullDelete": {
+              "allow": "no"
+            },
+            "reactions": {
+              "allow": "yes"
+            },
+            "sessions": {
+              "allow": "no"
+            },
+            "timedMessages": {
+              "allow": "yes"
+            },
+            "voice": {
+              "allow": "yes"
+            }
+          },
+          "localDisplayName": "alice",
+          "profile": {
+            "displayName": "alice",
+            "fullName": "",
+            "localAlias": "",
+            "preferences": {
+              "calls": {
+                "allow": "yes"
+              },
+              "commands": [],
+              "files": {
+                "allow": "always"
+              },
+              "fullDelete": {
+                "allow": "no"
+              },
+              "reactions": {
+                "allow": "yes"
+              },
+              "sessions": {
+                "allow": "no"
+              },
+              "timedMessages": {
+                "allow": "yes"
+              },
+              "voice": {
+                "allow": "yes"
+              }
+            },
+            "profileId": 1,
+            "shortDescr": "Alice"
+          },
+          "sendRcptsContacts": true,
+          "sendRcptsSmallGroups": true,
+          "showNtfs": true,
+          "userChatRelay": false,
+          "userContactId": 1,
+          "userId": 1
+        }
+      }
+    },
     "/_link preview LINK_URL/no-image": {
       "error": {
         "errorType": {
@@ -29,6 +173,76 @@
             "type": "uri"
           },
           "text": "LINK_URL/no-image"
+        }
+      ]
+    },
+    "LINK_URL/no-image\n\n\n": {
+      "formattedText": [
+        {
+          "format": {
+            "type": "uri"
+          },
+          "text": "LINK_URL/no-image"
+        },
+        {
+          "format": {
+            "token": {
+              "lineBreaks": 2,
+              "type": "paragraphBreak"
+            },
+            "type": "markup"
+          },
+          "text": "\n\n"
+        }
+      ],
+      "markdownBlocks": [
+        {
+          "content": {
+            "from": 0,
+            "to": 1
+          },
+          "type": "paragraph"
+        }
+      ]
+    },
+    "LINK_URL/no-image LINK_URL/page": {
+      "formattedText": [
+        {
+          "format": {
+            "type": "uri"
+          },
+          "text": "LINK_URL/no-image"
+        },
+        {
+          "text": " "
+        },
+        {
+          "format": {
+            "type": "uri"
+          },
+          "text": "LINK_URL/page"
+        }
+      ]
+    },
+    "LINK_URL/no-image LINK_URL/page ": {
+      "formattedText": [
+        {
+          "format": {
+            "type": "uri"
+          },
+          "text": "LINK_URL/no-image"
+        },
+        {
+          "text": " "
+        },
+        {
+          "format": {
+            "type": "uri"
+          },
+          "text": "LINK_URL/page"
+        },
+        {
+          "text": " "
         }
       ]
     },
