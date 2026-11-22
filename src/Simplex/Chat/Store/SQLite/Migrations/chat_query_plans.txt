@@ -8327,6 +8327,10 @@ Query: SELECT count(1) FROM group_members
 Plan:
 SCAN group_members USING COVERING INDEX idx_group_members_invited_via_group_member_id
 
+Query: SELECT count(1) FROM group_members WHERE member_via IS NOT NULL
+Plan:
+SCAN group_members
+
 Query: SELECT count(1) FROM pending_group_messages
 Plan:
 SCAN pending_group_messages USING COVERING INDEX idx_pending_group_messages_group_member_id
