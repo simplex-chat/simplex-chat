@@ -199,7 +199,7 @@ Contracts: brenzi/simplex-namespace-contract e3ba0a5, `ens-contracts/contracts`.
 
 ### 3.1 The 3-hour alert
 - **names:** the queue alert fires after 20 minutes, but only for queued, committing, registering and committed with a stored signature (`README.md:912, 951`); an order waiting for its owner is not covered.
-- **Final:** every paid order not registered within 3 hours of `selected_at` (6), failed orders and orders waiting for the owner included, raises one alert in the log and the managed group. No alert is raised for an order whose name is not selected: an order whose name is no longer available on chain is logged as an error and reported in the group once, as a failed order is, and one taken at settlement is logged as a note. The Prometheus gauge gives the oldest `selected_at` of a live order not registered, so a month-ended order leaves it. Badges: a later pull request.
+- **Final:** every order whose name is not registered within 3 hours of its selection, `selected_at` (6), failed orders and orders waiting for the owner included, raises one alert in the log and the managed group. No alert is raised for an order whose name is not selected: an order whose name is no longer available on chain is logged as an error and reported in the group once, as a failed order is, and one taken at settlement is logged as a note. The Prometheus gauge gives the oldest `selected_at` of a live order not registered, so a month-ended order leaves it. Badges: a later pull request.
 - **Why:** a customer once complained after a week, when the browser state needed to investigate was gone.
 
 ### 3.2 Failure reasons are stored

@@ -133,9 +133,9 @@ workerTests = describe "StoreService names: worker" $ do
     it "starts a worker for each registration in its phases" testRunWorkers
     it "keeps a registration's worker after an exception in its step, logging it once as a wait, runs the step again in 15 s and reports it after 10 minutes of failures" testStepException
     it "logs a scan that fails, and the next scan starts the registration's worker" testScanFails
-    it "logs a check of unregistered paid orders that fails, claiming no alert, so the next check alerts" testUnregisteredAlertsFail
+    it "logs a failed check of orders whose name is not registered 3 hours after its selection, claiming no alert, so the next check alerts" testUnregisteredAlertsFail
     it "logs a month pass that fails, so a pass failing from the start keeps the start's time past the alert's age, until a pass completes" testMonthPassFails
-    it "reports once each paid or code order not registered 3 hours after its payment, a failed one included" testUnregisteredAlert
+    it "reports once each order whose name is not registered 3 hours after its selection, a failed one included" testUnregisteredAlert
     it "fails each order queued, committed or failed a calendar month after its payment or its code's reservation, once, reporting it, its name released, the money paid for a paid order added to its balance and a code order's code released" testMonthEnds
     it "counts the month and the 3-hour alert from the latest selection of a name, not from the payment" testMonthFromSelection
     it "ends the month on the last day of a shorter month" testMonthClipped
@@ -683,7 +683,7 @@ testTakeReported = withWorker $ \w@W {wCtx = ctx@Ctx {cOrders}, wSender} -> do
   readTVarIO reports `shouldReturn` [lost]
   T.count lost logs `shouldBe` 1
   advance ctx $ 3 * 3600 + 1
-  alertUnregisteredPaid worker
+  alertUnregisteredSelected worker
   readTVarIO reports `shouldReturn` [lost]
 
 testTakenAtDepth :: IO ()
@@ -1218,9 +1218,9 @@ testUnregisteredAlertsFail = withWorker $ \W {wCtx = ctx@Ctx {cStore, cOrders}, 
     threadDelay 500000
     Async.poll lane >>= (`shouldSatisfy` isNothing)
   renameTable cStore "name_registrations_away" "sx_badge_service_name_registrations"
-  logged `shouldSatisfy` T.isInfixOf "names: the check of unregistered paid orders failed; the next pass will run: "
+  logged `shouldSatisfy` T.isInfixOf "names: the check of orders whose name is not registered 3 hours after its selection failed; the next pass will run: "
   readTVarIO reports `shouldReturn` []
-  alertUnregisteredPaid worker
+  alertUnregisteredSelected worker
   length <$> readTVarIO reports `shouldReturn` 1
 
 testMonthPassFails :: IO ()
@@ -1250,11 +1250,11 @@ testUnregisteredAlert = withWorker $ \W {wCtx = ctx@Ctx {cOrders}, wSender} -> d
   answerFree ctx "carolbakery"
   failedOrder <- paidIn ctx aliceOrder {oLabel = "carolbakery", oSecret = secretOf 6} failedPhase
   advance ctx $ 3 * 3600
-  alertUnregisteredPaid worker
+  alertUnregisteredSelected worker
   readTVarIO reports `shouldReturn` []
   advance ctx 1
-  alertUnregisteredPaid worker
-  alertUnregisteredPaid worker
+  alertUnregisteredSelected worker
+  alertUnregisteredSelected worker
   let named NameRegistration {nrId = RegistrationId rid} = any (T.isInfixOf rid)
   sent' <- readTVarIO reports
   (length sent', named paid sent', named code sent', named failedOrder sent') `shouldBe` (3, True, True, True)
@@ -1301,10 +1301,10 @@ testMonthFromSelection = withWorker $ \W {wCtx = ctx@Ctx {cStore, cOrders}, wSen
   selectedAt <- nowOf ctx
   to <- selectionOf ctx "alicebakers" 10
   fst <$> select ctx keyA r to `shouldReturn` 200
-  alertUnregisteredPaid wWorker
+  alertUnregisteredSelected wWorker
   readTVarIO reports `shouldReturn` []
   advance ctx $ 3 * 3600 + 1
-  alertUnregisteredPaid wWorker
+  alertUnregisteredSelected wWorker
   let RegistrationId rid = nrId r
   map (T.isInfixOf $ "order " <> rid <> " had its name selected at ") <$> readTVarIO reports `shouldReturn` [True]
   advance ctx $ diffUTCTime (addMonths 1 orderTime) orderTime - 20 * day

@@ -79,7 +79,7 @@ module StoreService.Names.Store
     findRegistrations,
     labelHolder,
     setSettledAt,
-    unregisteredPaidBefore,
+    unregisteredSelectedBefore,
     monthCandidates,
     markRead,
     claimUnregisteredAlert,
@@ -1081,8 +1081,8 @@ setSettledAt :: DB.Connection -> RegistrationId -> UTCTime -> IO ()
 setSettledAt db (RegistrationId rid) settledAt =
   DB.execute db (mkQuery "UPDATE @name_registrations SET settled_at = ?, selected_at = ? WHERE registration_id = ? AND settled_at IS NULL") (settledAt, settledAt, rid)
 
-unregisteredPaidBefore :: DB.Connection -> UTCTime -> IO [(RegistrationId, NamePhase, UTCTime)]
-unregisteredPaidBefore db cutoff =
+unregisteredSelectedBefore :: DB.Connection -> UTCTime -> IO [(RegistrationId, NamePhase, UTCTime)]
+unregisteredSelectedBefore db cutoff =
   map (\(rid, phase, selectedAt) -> (RegistrationId rid, phase, selectedAt))
     <$> DB.query
       db

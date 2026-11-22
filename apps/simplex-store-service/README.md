@@ -1004,8 +1004,8 @@ failed read keeps the last one and is counted.
 | `simplex_names_refresh_timestamp_seconds` | when the names were last read |
 | `simplex_names_refresh_failures_total` | counter of failed reads of the names since the service started |
 
-Every metric is a gauge, but for the names' histogram and counter. A stuck order, a paid order not
-registered 3 hours after the selection of its name, a registrar key that cannot pay for a register with links, a
+Every metric is a gauge, but for the names' histogram and counter. A stuck order, an order whose name is not
+registered 3 hours after its selection, a registrar key that cannot pay for a register with links, a
 base fee above the fee cap, a stuck transaction or record edit, a node that cannot be read or
 has stopped following the chain, terms that cannot be shown, a payment provider that cannot be
 read, names on chain that cannot be counted, a month pass or late credit pass that stopped

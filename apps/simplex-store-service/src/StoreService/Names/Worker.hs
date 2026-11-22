@@ -13,7 +13,7 @@ module StoreService.Names.Worker
     newWorker,
     stepRegistration,
     runWorkers,
-    alertUnregisteredPaid,
+    alertUnregisteredSelected,
     runUnregisteredAlerts,
     endMonths,
     runMonthEnds,
@@ -650,10 +650,10 @@ unregisteredAlertAge = 3 * 3600
 unregisteredCheckInterval :: Int
 unregisteredCheckInterval = 300 * 1000000
 
-alertUnregisteredPaid :: Worker -> IO ()
-alertUnregisteredPaid Worker {wkOrders = OrdersEnv {oeStore, oeNow, oeReport}} = do
+alertUnregisteredSelected :: Worker -> IO ()
+alertUnregisteredSelected Worker {wkOrders = OrdersEnv {oeStore, oeNow, oeReport}} = do
   now <- oeNow
-  due <- withTransaction oeStore (`unregisteredPaidBefore` addUTCTime (negate unregisteredAlertAge) now)
+  due <- withTransaction oeStore (`unregisteredSelectedBefore` addUTCTime (negate unregisteredAlertAge) now)
   forM_ due $ \(rid@(RegistrationId ridText), phase, selectedAt) -> do
     claimed <- withTransaction oeStore $ \db -> claimUnregisteredAlert db rid now
     when claimed $ do
@@ -662,7 +662,7 @@ alertUnregisteredPaid Worker {wkOrders = OrdersEnv {oeStore, oeNow, oeReport}} =
       oeReport alert
 
 runUnregisteredAlerts :: Worker -> IO ()
-runUnregisteredAlerts w = forever $ (alertUnregisteredPaid w `catchOwn'` \e -> logError ("names: the check of unregistered paid orders failed; the next pass will run: " <> tshow e)) >> threadDelay unregisteredCheckInterval
+runUnregisteredAlerts w = forever $ (alertUnregisteredSelected w `catchOwn'` \e -> logError ("names: the check of orders whose name is not registered 3 hours after its selection failed; the next pass will run: " <> tshow e)) >> threadDelay unregisteredCheckInterval
 
 shortestMonth :: NominalDiffTime
 shortestMonth = 28 * 86400
