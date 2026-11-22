@@ -1924,6 +1924,7 @@ struct ComposeView: View {
                 }
             }
         } else {
+            pendingLinkUrl = nil
             composeState = composeState.copy(preview: .noPreview)
         }
     }
