@@ -938,7 +938,8 @@ simplex.domains {
 ```
 
 The service then sets each file's type and `Cache-Control` itself: `no-cache`, and a year for
-`/assets/*`.
+`/assets/*`. It sets none of the security headers, so it logs a warning at start when it serves the
+names site and `[listener] host` is not loopback.
 
 ### Metrics
 

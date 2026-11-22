@@ -310,6 +310,7 @@ badgeWebTests = do
     it "serves a names asset with its type" testServesANamesAsset
     it "keeps every traversal spelling on the names port inside the names build" testNamesTraversalRefused
     it "refuses a build folder that is not there, only where it is served" testSiteDirsMustExist
+    it "warns at start when the names site is served on a host other than loopback" testNamesSiteExposedWarned
   describe "store service settlement" $ do
     it "settles an open invoice: paid, a settled payment row, and the code" testSettlesAnOpenInvoice
     it "settles an expired invoice, because late settlement is routine" testLateSettlementIsLegal
@@ -1472,6 +1473,13 @@ testSiteDirsMustExist = do
     checkSiteDirs lc {lBadgesSite = Nothing} `shouldReturn` Right ()
     checkSiteDirs lc {lNamesSite = Just (8081, absent)} `shouldReturn` missing "names" absent
     checkSiteDirs lc {lBadgesSite = Just (root </> "secret.txt")} `shouldReturn` missing "badges" (root </> "secret.txt")
+
+testNamesSiteExposedWarned :: IO ()
+testNamesSiteExposedWarned = do
+  let lc = (listener (testServiceConfig "/srv/badges" False)) {lNamesSite = Just (8081, "/srv/names")}
+  capturingStderr (warnIfNamesSiteIsExposed lc {lHost = "0.0.0.0"})
+    >>= (`shouldSatisfy` T.isInfixOf "the listener binds 0.0.0.0 and serves the names site without the security headers")
+  mapM (capturingStderr . warnIfNamesSiteIsExposed) [lc {lHost = "127.0.0.1"}, lc {lHost = "0.0.0.0", lNamesSite = Nothing}] `shouldReturn` ["", ""]
 
 type WebClient = (Manager, String)
 

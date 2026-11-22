@@ -14,6 +14,7 @@ module StoreService.Web.Server
     webListeners,
     webSettings,
     runWebListeners,
+    warnIfNamesSiteIsExposed,
     checkSiteDirs,
   )
 where
@@ -50,7 +51,7 @@ import qualified Data.ByteString.Lazy as LB
 import Data.Char (toLower)
 import Data.Functor ((<&>))
 import Data.List (isPrefixOf)
-import Data.Maybe (catMaybes, fromMaybe)
+import Data.Maybe (catMaybes, fromMaybe, isJust)
 import Data.String (fromString)
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -548,6 +549,7 @@ webListeners env = (lBadgesPort, webApp env) : [(port, siteApp env (Just dir)) |
 runWebListeners :: WebEnv -> IO ()
 runWebListeners env = do
   warnIfHeaderTrustIsExposed lc
+  warnIfNamesSiteIsExposed lc
   raceAny_ [Warp.runSettings (Warp.setPort port (webSettings lc)) app | (port, app) <- webListeners env]
   where
     lc = listenerConfig env
@@ -567,3 +569,8 @@ warnIfHeaderTrustIsExposed :: ListenerConfig -> IO ()
 warnIfHeaderTrustIsExposed ListenerConfig {lHost, lTrustForwardedFor} =
   when (lTrustForwardedFor && not (isLoopbackHost lHost)) $
     logWarn ("store service: trust_forwarded_for is on and the listener binds " <> lHost <> "; every caller can then choose its own rate limit bucket unless a proxy sets the header")
+
+warnIfNamesSiteIsExposed :: ListenerConfig -> IO ()
+warnIfNamesSiteIsExposed ListenerConfig {lHost, lNamesSite} =
+  when (isJust lNamesSite && not (isLoopbackHost lHost)) $
+    logWarn ("store service: the listener binds " <> lHost <> " and serves the names site without the security headers of the README's Caddy block; serve it only through a proxy that sets them")
