@@ -555,7 +555,7 @@ fun GroupMemberInfoLayout(
       ((groupInfo.fullGroupPreferences.support.on && member.memberRole < GroupMemberRole.Moderator)
         || member.supportChat != null)
     // the same condition decides whether the code is requested, so the row is shown disabled until it arrives
-    val canVerifyCode = member.memberRole != GroupMemberRole.Relay && (connectionCode != null || !connectionLoaded)
+    val canVerifyCode = member.canVerifyCode(groupInfo) && (connectionCode != null || !connectionLoaded)
     val canSyncConn = cStats != null && cStats.ratchetSyncAllowed
 
     if (memberConnected && (showMemberSupportChat || canVerifyCode || canSyncConn)) {

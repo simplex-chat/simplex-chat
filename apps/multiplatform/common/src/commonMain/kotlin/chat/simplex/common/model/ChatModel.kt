@@ -3255,6 +3255,9 @@ data class GroupMember (
         && !memberPending
   }
 
+  fun canVerifyCode(groupInfo: GroupInfo): Boolean =
+    (memberActive || (groupInfo.useRelays && memberCurrent)) && memberRole != GroupMemberRole.Relay
+
   val supportChatNotRead: Boolean get() =
     if (supportChat != null)
       supportChat.memberAttention > 0 || supportChat.mentions > 0 || supportChat.unread > 0
