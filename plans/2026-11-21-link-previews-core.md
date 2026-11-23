@@ -847,6 +847,7 @@ Core, scenario, `tests/ChatTests/LinkPreviews.hs` (new, in ChatTests.hs), patter
 | endless body after the og tags, sent slowly | response before PREVIEW_DEADLINE; the server sees the connection closed after sending less than MAX_HEAD_BYTES |
 | head beyond MAX_HEAD_BYTES | the server sees the connection closed |
 | slow server, gzip, certificate of another CA, oversized image dimensions | `CELinkPreview`; slow server with a test deadline of 2 s |
+| TLS 1.2 with a P-256 key | a preview from a server limited to TLS 1.2, with tests/fixtures/tls/link-preview/server-p256.crt issued by ca.crt; the handshake fails without `P256` in `supportedGroups` (section 3.6); P-384 is left untested, as a server of tls 1.9.0 signs with P-256 keys only (Network/TLS/Handshake/Key.hs, `isDigitalSignaturePair`) |
 | SOCKS deadline | a page delayed 5 s, with the SOCKS deadline 2 s and the other 10 s: a preview without a proxy; "timeout" through the SOCKS5 server, which receives the request |
 | SOCKS, isolate | domain address type; two previews with two usernames; page and image with one |
 | SOCKS, username | the configured credentials |

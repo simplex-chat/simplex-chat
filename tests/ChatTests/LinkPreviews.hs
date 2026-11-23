@@ -32,6 +32,7 @@ import ImageTests (pngSideAbove16384)
 import Network.HTTP.Types (found302, hContentEncoding, hContentLength, hContentType, hLocation, notFound404, ok200)
 import Network.Socket
 import Network.Socket.ByteString (recv, sendAll)
+import qualified Network.TLS as TLS
 import qualified Network.Wai as W
 import qualified Network.Wai.Handler.Warp as W
 import qualified Network.Wai.Handler.WarpTLS as WT
@@ -63,6 +64,7 @@ chatLinkPreviewTests = do
   it "should limit preview time by the SOCKS deadline only with SOCKS proxy" testSocksDeadline
   it "should fail on compressed body and oversized image" testRefusedContent
   it "should fail on certificate of unknown CA" testUnknownCA
+  it "should connect over TLS 1.2 to server with P-256 certificate" testTLS12P256
   it "should send preview with long non-Latin title and description" testLongTextPreview
   it "should use SOCKS proxy with credentials per preview" testSocksIsolate
   it "should use SOCKS proxy with configured credentials" testSocksUsername
@@ -264,6 +266,15 @@ testUnknownCA ps =
       Left (ChatError (CELinkPreview e)) -> e `shouldSatisfy` ("certificate has unknown CA" `isInfixOf`)
       r -> expectationFailure $ "unexpected result: " <> show r
 
+testTLS12P256 :: HasCallStack => TestParams -> IO ()
+testTLS12P256 ps = do
+  cfg <- linkPreviewCfg
+  withLinkServerTLS tls12P256 ps $ \_ ->
+    withNewTestChatCfgOpts ps cfg testOpts "alice" aliceProfile $ \alice ->
+      previewOf alice (pageUrl ps "/page") >>= (`shouldSatisfy` isPreview)
+  where
+    tls12P256 = (WT.tlsSettings "tests/fixtures/tls/link-preview/server-p256.crt" "tests/fixtures/tls/link-preview/server-p256.key") {WT.tlsAllowedVersions = [TLS.TLS12]}
+
 testLongTextPreview :: HasCallStack => TestParams -> IO ()
 testLongTextPreview ps = do
   cfg <- linkPreviewCfg
@@ -354,7 +365,10 @@ linkRequests :: ServiceName -> [SocksRequest] -> [SocksRequest]
 linkRequests port = filter $ \SocksRequest {socksPort} -> socksPort == read port
 
 withLinkServer :: TestParams -> (LinkServer -> IO a) -> IO a
-withLinkServer ps action = do
+withLinkServer = withLinkServerTLS $ WT.tlsSettings "tests/fixtures/tls/link-preview/server.crt" "tests/fixtures/tls/link-preview/server.key"
+
+withLinkServerTLS :: WT.TLSSettings -> TestParams -> (LinkServer -> IO a) -> IO a
+withLinkServerTLS tls ps action = do
   server <- LinkServer <$> newTVarIO [] <*> newEmptyTMVarIO
   tlsStarted <- newEmptyMVar
   plainStarted <- newEmptyMVar
@@ -363,7 +377,6 @@ withLinkServer ps action = do
           W.setHost "127.0.0.1" $
             W.setOnException (\_ _ -> pure ()) $
               W.setBeforeMainLoop (putMVar started ()) W.defaultSettings
-      tls = WT.tlsSettings "tests/fixtures/tls/link-preview/server.crt" "tests/fixtures/tls/link-preview/server.key"
   withAsync (WT.runTLS tls (settings (linkServerPort ps) tlsStarted) $ linkServerApp server) $ \_ ->
     withAsync (W.runSettings (settings (plainServerPort ps) plainStarted) $ linkServerApp server) $ \_ ->
       takeMVar tlsStarted >> takeMVar plainStarted >> action server
