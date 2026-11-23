@@ -61,7 +61,8 @@ fun chatEventText(eventText: String, ts: AnnotatedString): AnnotatedString =
 data class ChatItemReactionMenuItem (
   val name: String,
   val image: String?,
-  val onClick: (() -> Unit)?
+  val onClick: (() -> Unit)?,
+  val icon: ImageResource = MR.images.ic_account_circle_filled
 )
 
 private val REACTION_SPACING = 5.dp
@@ -110,7 +111,6 @@ fun ChatItemView(
   reveal: (Boolean) -> Unit,
   showMemberInfo: (GroupInfo, GroupMember) -> Unit,
   showChatInfo: () -> Unit,
-  developerTools: Boolean,
   showViaProxy: Boolean,
   showTimestamp: Boolean,
   itemSeparation: ItemSeparation,
@@ -172,7 +172,7 @@ fun ChatItemView(
                         reactionMenuItems.value = members.map {
                           val enabled = cInfo.groupInfo.membership.groupMemberId != it.groupMember.groupMemberId
                           val click = if (enabled) ({ showMemberInfo(cInfo.groupInfo, it.groupMember) }) else null
-                          ChatItemReactionMenuItem(it.groupMember.displayName, it.groupMember.image, click)
+                          ChatItemReactionMenuItem(it.groupMember.displayName, it.groupMember.image, click, peerTypeIcon(it.groupMember.memberProfile.peerType))
                         }
                       }
                     } catch (e: Exception) {
@@ -186,7 +186,7 @@ fun ChatItemView(
 
                   if (!r.userReacted || r.totalReacted > 1) {
                     val contact = cInfo.contact
-                    reactions.add(ChatItemReactionMenuItem(contact.displayName, contact.image, showChatInfo))
+                    reactions.add(ChatItemReactionMenuItem(contact.displayName, contact.image, showChatInfo, contact.chatIconName))
                   }
 
                   if (r.userReacted) {
@@ -218,7 +218,7 @@ fun ChatItemView(
               reactionMenuItems.value.forEach { m ->
                 ItemAction(
                   text = m.name,
-                  composable = { ProfileImage(44.dp, m.image) },
+                  composable = { ProfileImage(37.dp, m.image, m.icon, modifier = Modifier.centeredIn(44.dp)) },
                   onClick = {
                     val click = m.onClick
                     if (click != null) {
@@ -718,11 +718,9 @@ fun ChatItemView(
                 is CIContent.RcvDeleted -> LegacyDeletedItem()
                 is CIContent.SndCall -> CallItem(c.status, c.duration)
                 is CIContent.RcvCall -> CallItem(c.status, c.duration)
-                is CIContent.RcvIntegrityError -> if (developerTools) {
+                is CIContent.RcvIntegrityError -> {
                   IntegrityErrorItemView(c.msgError, cItem, showTimestamp, cInfo.timedMessagesTTL)
                   DeleteItemMenu()
-                } else {
-                  Box(Modifier.size(0.dp)) {}
                 }
                 is CIContent.RcvMsgErrorContent -> {
                   RcvMsgErrorItemView(c.rcvMsgError, cItem, showTimestamp, cInfo.timedMessagesTTL)
@@ -1261,6 +1259,9 @@ fun Modifier.clipChatItem(chatItem: ChatItem? = null, tailVisible: Boolean = fal
   }
 }
 
+@Composable
+fun terminalCardShape(): Shape = RoundedCornerShape(msgRectMaxRadius * remember { appPreferences.chatItemRoundness.state }.value.coerceIn(0f, 1f))
+
 private fun chatItemShape(roundness: Float, density: Density, tailVisible: Boolean, sent: Boolean = false): GenericShape = GenericShape { size, _ ->
   val (msgTailWidth, msgBubbleMaxRadius) = with(density) { Pair(msgTailWidthDp.toPx(), msgBubbleMaxRadius.toPx()) }
   val width = size.width
@@ -1507,6 +1508,41 @@ fun BubblePreview(content: @Composable () -> Unit) {
   CompositionLocalProvider(LocalBubbleLayout provides !LocalTerminalLayout.current, content = content)
 }
 
+val previewClaude: GroupMember get() = GroupMember.sampleData.copy(
+  groupMemberId = 5,
+  memberId = "Claude",
+  memberRole = GroupMemberRole.Owner,
+  localDisplayName = "Claude",
+  memberProfile = LocalProfile.sampleData.copy(profileId = 5, displayName = "Claude", fullName = "", peerType = ChatPeerType.Agent),
+  memberContactProfileId = 5
+)
+
+fun previewViaClaude(id: Long, name: String): GroupMember = GroupMember.sampleData.copy(
+  groupMemberId = id,
+  memberId = name,
+  localDisplayName = name,
+  memberProfile = LocalProfile.sampleData.copy(profileId = id, displayName = name, fullName = "", peerType = ChatPeerType.Agent),
+  memberContactId = null,
+  memberContactProfileId = id,
+  activeConn = null,
+  memberVia = previewClaude.memberId
+)
+
+@Composable
+fun GroupMembersPreview(members: List<GroupMember>, content: @Composable () -> Unit) {
+  remember {
+    chatModel.groupMembers.value = members
+    chatModel.membersLoaded.value = true
+  }
+  DisposableEffect(Unit) {
+    onDispose {
+      chatModel.groupMembers.value = emptyList()
+      chatModel.membersLoaded.value = false
+    }
+  }
+  content()
+}
+
 @Preview
 @Composable
 fun PreviewChatItemView(
@@ -1551,12 +1587,65 @@ fun PreviewChatItemView(
     reveal = {},
     showMemberInfo = { _, _ ->},
     showChatInfo = {},
-    developerTools = false,
     showViaProxy = false,
     showTimestamp = true,
     preview = true,
     itemSeparation = ItemSeparation(timestamp = true, largeGap = true, null)
   )
+}
+
+@Preview
+@Composable
+fun PreviewChatItemViewEmptyLines() = PreviewChatItemView(
+  ChatItem.getSampleData(1, CIDirection.DirectSnd(), previewDate, "### Gaps\n\none empty line above\n\n\ntwo empty lines above\n\n### After one empty line\n- list entry\n\n- after one empty line\n\n").copy(
+    formattedText = listOf(
+      FormattedText("### ", Format.Markup(BlockToken.HeadingMark(3))),
+      FormattedText("Gaps"),
+      FormattedText("\n\n", Format.Markup(BlockToken.ParagraphBreak(2))),
+      FormattedText("one empty line above"),
+      FormattedText("\n\n\n", Format.Markup(BlockToken.ParagraphBreak(3))),
+      FormattedText("two empty lines above"),
+      FormattedText("\n\n", Format.Markup(BlockToken.ParagraphBreak(2))),
+      FormattedText("### ", Format.Markup(BlockToken.HeadingMark(3))),
+      FormattedText("After one empty line"),
+      FormattedText("\n", Format.Markup(BlockToken.LineBreak())),
+      FormattedText("- ", Format.Markup(BlockToken.ListMark())),
+      FormattedText("list entry"),
+      FormattedText("\n\n", Format.Markup(BlockToken.ParagraphBreak(2))),
+      FormattedText("- ", Format.Markup(BlockToken.ListMark())),
+      FormattedText("after one empty line"),
+      FormattedText("\n", Format.Markup(BlockToken.LineBreak()))
+    ),
+    markdownBlocks = listOf(
+      MarkdownBlock.Heading(3, SegmentRange(1, 2)),
+      MarkdownBlock.Paragraph(SegmentRange(3, 4)),
+      MarkdownBlock.Paragraph(SegmentRange(5, 6)),
+      MarkdownBlock.Heading(3, SegmentRange(8, 9)),
+      MarkdownBlock.ItemList(listOf(ListEntry(content = SegmentRange(11, 12), items = listOf()), ListEntry(content = SegmentRange(14, 15), items = listOf())))
+    )
+  )
+)
+
+@Preview
+@Composable
+fun PreviewChatItemViewEmptyLinesTerminal() = CompositionLocalProvider(LocalTerminalLayout provides true) {
+  PreviewChatItemViewEmptyLines()
+}
+
+@Preview
+@Composable
+fun PreviewChatItemViewHighPriority() {
+  val rcvItem = ChatItem.getSampleData(1, CIDirection.DirectRcv(), previewDate, "Tests passed: 211", CIStatus.RcvRead(), priority = 1)
+  val sndItem = ChatItem.getSampleData(2, CIDirection.DirectSnd(), previewDate, "Deployed to staging", CIStatus.SndSent(SndCIStatusProgress.Complete), priority = 1)
+  Column {
+    listOf("Classic layout" to false, "Terminal layout" to true).forEach { (layout, terminal) ->
+      Text(layout, Modifier.padding(start = 20.dp, top = 8.dp), color = MaterialTheme.colors.secondary, fontSize = 13.sp)
+      CompositionLocalProvider(LocalTerminalLayout provides terminal) {
+        PreviewChatItemView(rcvItem)
+        PreviewChatItemView(sndItem)
+      }
+    }
+  }
 }
 
 @Preview
@@ -1602,7 +1691,6 @@ fun PreviewChatItemViewDeletedContent() = BubblePreview {
       reveal = {},
       showMemberInfo = { _, _ ->},
       showChatInfo = {},
-      developerTools = false,
       showViaProxy = false,
       preview = true,
       showTimestamp = true,

@@ -16,8 +16,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.*
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.RoundRect
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.UriHandler
 import androidx.compose.ui.text.Placeholder
@@ -34,6 +38,7 @@ import chat.simplex.common.model.BadgeType
 import chat.simplex.common.model.ChatInfo
 import chat.simplex.common.model.LocalBadge
 import chat.simplex.common.model.localDate
+import chat.simplex.common.model.peerTypeIcon
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.badges.openBadgesView
@@ -44,26 +49,25 @@ import kotlin.math.max
 import kotlin.math.roundToInt
 
 @Composable
-fun ChatInfoImage(chatInfo: ChatInfo, size: Dp, iconColor: Color = MaterialTheme.colors.secondaryVariant, shadow: Boolean = false) {
+fun ChatInfoImage(chatInfo: ChatInfo, size: Dp, iconColor: Color = MaterialTheme.colors.secondaryVariant, shadow: Boolean = false, modifier: Modifier = Modifier) {
   val icon =
     when (chatInfo) {
       is ChatInfo.Group -> chatInfo.groupInfo.chatIconName
-      is ChatInfo.Local -> MR.images.ic_folder_filled
+      is ChatInfo.Local -> MR.images.ic_avatar_folder
       is ChatInfo.Direct -> chatInfo.contact.chatIconName
+      is ChatInfo.ContactRequest -> peerTypeIcon(chatInfo.contactRequest.profile.peerType)
       else -> MR.images.ic_account_circle_filled
     }
-  ProfileImage(size, chatInfo.image, icon, if (chatInfo is ChatInfo.Local) NoteFolderIconColor else iconColor)
+  ProfileImage(size, chatInfo.image, icon, if (chatInfo is ChatInfo.Local) NoteFolderIconColor else iconColor, modifier = modifier)
 }
 
 @Composable
-fun IncognitoImage(size: Dp, iconColor: Color = MaterialTheme.colors.secondaryVariant) {
-  Box(Modifier.size(size)) {
-    Icon(
-      painterResource(MR.images.ic_theater_comedy_filled), stringResource(MR.strings.incognito),
-      modifier = Modifier.size(size).padding(size / 12),
-      iconColor
-    )
-  }
+fun IncognitoImage(size: Dp, iconColor: Color = MaterialTheme.colors.secondaryVariant, modifier: Modifier = Modifier) {
+  Icon(
+    painterResource(MR.images.ic_theater_comedy_filled), stringResource(MR.strings.incognito),
+    modifier = modifier.size(size),
+    iconColor
+  )
 }
 
 @Composable
@@ -74,9 +78,10 @@ fun ProfileImage(
   color: Color = MaterialTheme.colors.secondaryVariant,
   backgroundColor: Color? = null,
   blurred: Boolean = false,
-  async: Boolean = false
+  async: Boolean = false,
+  modifier: Modifier = Modifier
 ) {
-  Box(Modifier.size(size)) {
+  Box(modifier.size(size)) {
     if (image == null) {
       val iconToReplace = when (icon) {
         MR.images.ic_account_circle_filled -> AccountCircleFilled
@@ -85,7 +90,7 @@ fun ProfileImage(
       }
       if (iconToReplace != null) {
         if (backgroundColor != null) {
-          Box(Modifier.size(size * 0.7f).align(Alignment.Center).background(backgroundColor, CircleShape))
+          Box(Modifier.size(size * 0.84f).align(Alignment.Center).background(backgroundColor, CircleShape))
         }
         Icon(
           iconToReplace,
@@ -107,7 +112,7 @@ fun ProfileImage(
           base64ImageString = image,
           contentDescription = stringResource(MR.strings.image_descr_profile_image),
           contentScale = ContentScale.Crop,
-          modifier = ProfileIconModifier(size, blurred = blurred)
+          modifier = Modifier.fillMaxSize().profileIconShape(size, blurred)
         )
       } else {
         val imageBitmap = base64ToBitmap(image)
@@ -115,7 +120,7 @@ fun ProfileImage(
           bitmap = imageBitmap,
           contentDescription = stringResource(MR.strings.image_descr_profile_image),
           contentScale = ContentScale.Crop,
-          modifier = ProfileIconModifier(size, blurred = blurred)
+          modifier = Modifier.fillMaxSize().profileIconShape(size, blurred)
         )
       }
     }
@@ -145,8 +150,10 @@ fun NameWithBadge(
   fontWeight: FontWeight? = null,
   overflow: TextOverflow = TextOverflow.Clip,
   maxLines: Int = Int.MAX_VALUE,
-  style: TextStyle = LocalTextStyle.current
+  style: TextStyle = LocalTextStyle.current,
+  via: String? = null
 ) {
+  val nameSize = if (fontSize.isSpecified) fontSize else style.fontSize
   Row(modifier) {
     Text(
       name,
@@ -159,7 +166,19 @@ fun NameWithBadge(
       maxLines = maxLines,
       style = style
     )
-    NameBadge(badge, if (fontSize.isSpecified) fontSize else style.fontSize)
+    NameBadge(badge, nameSize)
+    if (via != null) {
+      Text(
+        " " + String.format(stringResource(MR.strings.member_via), via),
+        Modifier.alignByBaseline(),
+        color = color,
+        fontSize = nameSize * 0.84f,
+        fontStyle = FontStyle.Italic,
+        fontWeight = FontWeight.Normal,
+        maxLines = 1,
+        style = style
+      )
+    }
   }
 }
 
@@ -282,54 +301,58 @@ private const val squareToCircleRatio = 0.935f
 private const val radiusFactor = (1 - squareToCircleRatio) / 50
 
 @Composable
-fun ProfileIconModifier(size: Dp, padding: Boolean = true, blurred: Boolean = false): Modifier {
+fun ProfileIconModifier(size: Dp, blurred: Boolean = false): Modifier = Modifier.size(size).profileIconShape(size, blurred)
+
+@Composable
+private fun Modifier.profileIconShape(size: Dp, blurred: Boolean): Modifier {
   val percent = remember { appPreferences.profileImageCornerRadius.state }
   val r = max(0f, percent.value)
-  val pad = if (padding) size / 12 else 0.dp
-  val m = Modifier.size(size)
   val m1 = when {
     r >= 50 ->
-      m.padding(pad).clip(CircleShape)
-    r <= 0 -> {
-      val sz = (size - 2 * pad) * squareToCircleRatio
-      m.padding((size - sz) / 2)
-    }
+      clip(CircleShape)
+    r <= 0 ->
+      insetTo(squareToCircleRatio)
     else -> {
-      val sz = (size - 2 * pad) * (squareToCircleRatio + r * radiusFactor)
-      m.padding((size - sz) / 2).clip(RoundedCornerShape(size = sz * r / 100))
+      val ratio = squareToCircleRatio + r * radiusFactor
+      insetTo(ratio).clip(RoundedCornerShape(size = size * ratio * r / 100))
     }
   }
   return if (blurred) m1.blur(size / 4) else m1
 }
 
-/** [AccountCircleFilled] has its inner padding which leads to visible border if there is background underneath.
- * This is workaround
- * */
-@Composable
-fun ProfileImageForActiveCall(
-  size: Dp,
-  image: String? = null,
-  color: Color = MaterialTheme.colors.secondaryVariant,
-  backgroundColor: Color? = null,
-  ) {
-  if (image == null) {
-    Box(Modifier.requiredSize(size).clip(CircleShape).then(if (backgroundColor != null) Modifier.background(backgroundColor) else Modifier)) {
-      Icon(
-        AccountCircleFilled,
-        contentDescription = stringResource(MR.strings.icon_descr_profile_image_placeholder),
-        tint = color,
-        modifier = Modifier.requiredSize(size + 14.dp)
-      )
-    }
-  } else {
-    val imageBitmap = base64ToBitmap(image)
-    Image(
-      imageBitmap,
-      stringResource(MR.strings.image_descr_profile_image),
-      contentScale = ContentScale.Crop,
-      modifier = ProfileIconModifier(size, padding = false)
-    )
+private fun Modifier.insetTo(ratio: Float): Modifier = layout { measurable, constraints ->
+  val inset = ((constraints.maxWidth - constraints.maxWidth * ratio) / 2).roundToInt()
+  val side = constraints.maxWidth - 2 * inset
+  val placeable = measurable.measure(Constraints.fixed(side, side))
+  layout(constraints.maxWidth, constraints.maxHeight) {
+    placeable.place(inset, inset)
   }
+}
+
+@Composable
+fun profileImageShape(image: String?, size: Dp): Shape {
+  val percent = remember { appPreferences.profileImageCornerRadius.state }
+  val r = max(0f, percent.value)
+  return when {
+    image == null || r >= 50 -> CircleShape
+    r <= 0 -> InsetSquareShape(squareToCircleRatio, 0.dp)
+    else -> {
+      val ratio = squareToCircleRatio + r * radiusFactor
+      InsetSquareShape(ratio, size * ratio * r / 100)
+    }
+  }
+}
+
+private class InsetSquareShape(private val ratio: Float, private val radius: Dp) : Shape {
+  override fun createOutline(size: Size, layoutDirection: LayoutDirection, density: Density): Outline {
+    val inset = ((size.width - size.width * ratio) / 2).roundToInt().toFloat()
+    return Outline.Rounded(RoundRect(inset, inset, size.width - inset, size.height - inset, CornerRadius(with(density) { radius.toPx() })))
+  }
+}
+
+@Composable
+fun AvatarClickArea(image: String?, size: Dp, modifier: Modifier, onClick: () -> Unit) {
+  Box(modifier.clip(profileImageShape(image, size)).clickable(onClick = onClick))
 }
 
 @Preview
@@ -338,7 +361,8 @@ fun PreviewChatInfoImage() {
   SimpleXTheme {
     ChatInfoImage(
       chatInfo = ChatInfo.Direct.sampleData,
-      size = 55.dp
+      size = 46.dp,
+      modifier = Modifier.centeredIn(55.dp)
     )
   }
 }

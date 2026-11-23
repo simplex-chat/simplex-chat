@@ -641,6 +641,144 @@ class SummaryTest(unittest.TestCase):
         self.assertEqual(header, ["language", "in", "app", "translated", "link"])
 
 
+BLAME_PORCELAIN = (
+    "1111111111111111111111111111111111111111 1 1 2\n"
+    "author A\n"
+    "filename de/strings.xml\n"
+    "\t<resources>\n"
+    "1111111111111111111111111111111111111111 2 2\n"
+    '\t  <string name="hello">Hallo</string>\n'
+    "0000000000000000000000000000000000000000 3 3 1\n"
+    "author Not Committed Yet\n"
+    "filename de/strings.xml\n"
+    '\t  <string name="bye">Tschüss</string>\n'
+)
+
+
+class CrossPlatformRulesTest(unittest.TestCase):
+    def test_normalized_placeholders_match_across_platforms(self) -> None:
+        self.assertEqual(l10n.normalized_placeholders("%2$s von %1$s"), "{2} von {1}")
+        self.assertEqual(l10n.normalized_placeholders("%@ sent %lld files"), "{1} sent {2} files")
+        self.assertEqual(l10n.normalized_placeholders("%s sent %d files"), "{1} sent {2} files")
+        self.assertEqual(l10n.normalized_placeholders("%1$02d hrs, 100%%"), "{1} hrs, 100%%")
+
+    def test_android_locale(self) -> None:
+        self.assertEqual(
+            [l10n.android_locale(name) for name in ("de", "pt-BR", "zh-Hans", "zh-Hant", "he", "id")],
+            ["de", "pt-rBR", "zh-rCN", "zh-rTW", "iw", "in"],
+        )
+
+    def test_blamed_commits_reads_the_commit_of_each_string_line(self) -> None:
+        self.assertEqual(l10n.blamed_commits(BLAME_PORCELAIN), {"hello": "1" * 40, "bye": l10n.UNCOMMITTED})
+
+    def mismatches(self, android_then: dict[str, str], ios_then: dict[l10n.UnitKey, l10n.Unit]) -> list[tuple[str, str]]:
+        english = {"sent": "%1$s sent", "hello": "Hello", "same": "Same %s", "menu": "Menu"}
+        android_now = {"sent": "%1$s envoyé", "hello": "Salut", "same": "Même %s", "menu": "Menu"}
+        ios_now = {
+            (LOCALIZABLE, "%@ sent"): l10n.Unit("%@ sent", "%@ a envoyé"),
+            (LOCALIZABLE, "Hello"): l10n.Unit("Hello", "Bonjour"),
+            (LOCALIZABLE, "Same %@"): l10n.Unit("Same %@", "Même %@"),
+            (LOCALIZABLE, "Menu"): l10n.Unit("Menu", "Menu principal"),
+            ("SimpleX SE/en.lproj/Localizable.strings", "Menu"): l10n.Unit("Menu", "Carte"),
+        }
+        found = l10n.mismatched_translations(english, android_now, android_then, ios_now, ios_then)
+        return [(m.android_key, m.ios_text) for m in found]
+
+    def test_mismatch_needs_a_change_on_either_platform(self) -> None:
+        unchanged_android = {"sent": "%1$s envoyé", "hello": "Salut", "same": "Même %s", "menu": "Menu"}
+        unchanged_ios = {
+            (LOCALIZABLE, "%@ sent"): l10n.Unit("%@ sent", "%@ a envoyé"),
+            (LOCALIZABLE, "Hello"): l10n.Unit("Hello", "Bonjour"),
+        }
+        self.assertEqual(self.mismatches(unchanged_android, unchanged_ios), [])
+        self.assertEqual(self.mismatches({**unchanged_android, "hello": "Allô"}, unchanged_ios), [("hello", "Bonjour")])
+        self.assertEqual(self.mismatches(unchanged_android, {}), [("sent", "%@ a envoyé"), ("hello", "Bonjour")])
+
+    def test_mismatch_skips_equal_and_context_dependent_translations(self) -> None:
+        # "same" differs only in placeholder spelling; "menu" has two iOS translations, one per context.
+        keys = [key for key, _ in self.mismatches({}, {})]
+        self.assertNotIn("same", keys)
+        self.assertNotIn("menu", keys)
+
+
+class HistoryTest(RepositoryTestCase):
+    def setUp(self) -> None:
+        super().setUp()
+        self.git("init", "-q")
+        self.write(l10n.KOTLIN_BUILD_SCRIPT, BUILD_SCRIPT)
+        l10n.kotlin_values_at.cache_clear()
+
+    def git(self, *arguments: str) -> None:
+        identity = ["-c", "user.name=Test", "-c", "user.email=test@example.com", "-c", "commit.gpgsign=false"]
+        l10n.subprocess.run(["git", *identity, *arguments], check=True, capture_output=True)
+
+    def commit(self, message: str) -> None:
+        self.git("add", "-A")
+        self.git("commit", "-q", "-m", message)
+
+    def outdated(self) -> list[tuple[str, str, str]]:
+        problems, _ = l10n.check_kotlin_files({})
+        return [(p.language, p.key, p.detail) for p in problems if p.kind == l10n.OUTDATED]
+
+    def test_translation_older_than_its_english_text_is_outdated(self) -> None:
+        base = l10n.KOTLIN_RESOURCES / "base/strings.xml"
+        self.write(base, kotlin_xml(['<string name="title">Badge ❤️</string>', '<string name="ok">OK</string>']))
+        self.write(
+            l10n.KOTLIN_RESOURCES / "de/strings.xml",
+            kotlin_xml(['<string name="title">Abzeichen ❤️</string>', '<string name="ok">OK</string>']),
+        )
+        self.commit("translate")
+        self.assertEqual(self.outdated(), [])
+        self.write(base, kotlin_xml(['<string name="title">Badges</string>', '<string name="ok">OK</string>']))
+        self.commit("change english")
+        self.assertEqual(self.outdated(), [("de", "title", "English changed after this translation, from 'Badge ❤️' to 'Badges'")])
+        self.write(
+            l10n.KOTLIN_RESOURCES / "de/strings.xml",
+            kotlin_xml(['<string name="title">Abzeichen</string>', '<string name="ok">OK</string>']),
+        )
+        self.assertEqual(self.outdated(), [], "an uncommitted fix is not outdated")
+
+    def test_outside_a_git_work_tree_nothing_is_outdated(self) -> None:
+        l10n.shutil.rmtree(".git")
+        self.write(l10n.KOTLIN_RESOURCES / "base/strings.xml", kotlin_xml(['<string name="a">A</string>']))
+        self.write(l10n.KOTLIN_RESOURCES / "de/strings.xml", kotlin_xml(['<string name="a">B</string>']))
+        self.assertEqual(self.outdated(), [])
+
+    def test_cross_platform_mismatches_since_a_revision(self) -> None:
+        self.write(l10n.KOTLIN_RESOURCES / "base/strings.xml", kotlin_xml(['<string name="sent">%1$s sent</string>']))
+        self.write(l10n.KOTLIN_RESOURCES / "de/strings.xml", kotlin_xml(['<string name="sent">%1$s gesendet</string>']))
+        self.write(l10n.xliff_path("de"), xliff_xml("de", [unit_xml("%@ sent", "%@ sent", "%@ gesendet")]))
+        self.commit("translate")
+        base = l10n.commit_of("HEAD")
+        self.assertEqual(l10n.cross_platform_mismatches(base), [])
+        self.write(l10n.xliff_path("de"), xliff_xml("de", [unit_xml("%@ sent", "%@ sent", "%@ verschickt")]))
+        found = l10n.cross_platform_mismatches(base)
+        self.assertEqual(
+            [(android.parent.name, xliff.stem, m.android_key, m.android_text, m.ios_text) for android, xliff, m in found],
+            [("de", "de", "sent", "%1$s gesendet", "%@ verschickt")],
+        )
+
+    def test_since_options_of_the_commands(self) -> None:
+        self.write(l10n.KOTLIN_RESOURCES / "base/strings.xml", kotlin_xml(['<string name="hello">Hello</string>']))
+        self.commit("english")
+        self.write(l10n.KOTLIN_RESOURCES / "de/strings.xml", kotlin_xml(['<string name="hello">Hallo</string>']))
+        self.write(l10n.xliff_path("de"), xliff_xml("de", [unit_xml("Hello", "Hello", "Servus")]))
+        self.commit("translate")
+        for command in ("check-kotlin", "check"):
+            output = io.StringIO()
+            with contextlib.redirect_stdout(output), mock.patch.object(l10n.shutil, "which", return_value=None):
+                self.assertEqual(l10n.main([command, "--since", "HEAD~1"]), 0, "mismatches are warnings")
+            self.assertIn("1 mismatch", output.getvalue(), command)
+        unchanged = io.StringIO()
+        with contextlib.redirect_stdout(unchanged):
+            l10n.main(["check-kotlin", "--since", "HEAD"])
+        self.assertNotIn("mismatch", unchanged.getvalue(), "nothing changed since HEAD")
+        stderr = io.StringIO()
+        with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(stderr):
+            self.assertEqual(l10n.main(["check-kotlin", "--since", "no-such-branch"]), 2)
+        self.assertIn("'no-such-branch' is not a git commit", stderr.getvalue())
+
+
 class MainTest(RepositoryTestCase):
     def test_check_command_exit_code(self) -> None:
         self.write(l10n.xliff_path("de"), xliff_xml("de", [unit_xml("%@ x", "%@ x", "y")]))

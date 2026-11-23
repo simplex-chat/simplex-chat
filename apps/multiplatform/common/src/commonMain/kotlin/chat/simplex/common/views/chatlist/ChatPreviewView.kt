@@ -10,6 +10,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawOutline
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalDensity
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
@@ -19,6 +21,7 @@ import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontStyle
@@ -362,7 +365,7 @@ fun ChatPreviewView(
           if (image != null) {
             Image(base64ToBitmap(image), null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
           } else {
-            Icon(painterResource(mc.chatLink.iconRes), null, Modifier.size(44.sp.toDp()), tint = if (isInDarkTheme()) FileDark else FileLight)
+            ProfileImage(36.5.sp.toDp(), icon = mc.chatLink.iconRes, color = if (isInDarkTheme()) FileDark else FileLight, modifier = Modifier.centeredIn(44.sp.toDp()))
           }
         }
       }
@@ -403,7 +406,7 @@ fun ChatPreviewView(
   Box(contentAlignment = Alignment.Center) {
     Row {
       Box(contentAlignment = Alignment.BottomEnd) {
-        ChatInfoImage(cInfo, size = 72.dp * fontSizeSqrtMultiplier)
+        ChatInfoImage(cInfo, size = 60.dp * fontSizeSqrtMultiplier, modifier = Modifier.centeredIn(72.dp * fontSizeSqrtMultiplier))
         Box(Modifier.padding(end = 6.sp.toDp(), bottom = 6.sp.toDp())) {
           chatPreviewImageOverlayIcon()
         }
@@ -415,7 +418,7 @@ fun ChatPreviewView(
             chatPreviewTitle()
           }
           Spacer(Modifier.width(8.sp.toDp()))
-          val ts = getTimestampText(chat.chatItems.lastOrNull()?.meta?.itemTs ?: chat.chatInfo.chatTs)
+          val ts = getTimestampText(chat.chatItems.lastOrNull()?.takeIf { it.content !is CIContent.ChatBanner }?.meta?.itemTs ?: chat.chatInfo.chatTs)
           ChatListTimestampView(ts)
         }
         Row(Modifier.heightIn(min = 46.sp.toDp()).fillMaxWidth()) {
@@ -464,7 +467,8 @@ fun ChatPreviewView(
             val showNtfsIcon = !chat.chatInfo.ntfsEnabled(false) && (chat.chatInfo is ChatInfo.Direct || chat.chatInfo is ChatInfo.Group)
             if (n > 0 || chat.chatStats.unreadChat) {
               val unreadMentions = chat.chatStats.unreadMentions
-              Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.sp.toDp())) {
+              val (attentionIcon, attentionIconSize, badgeIconSize) = if (chat.chatStats.unreadHighPriority > 0) Triple(MR.images.ic_notifications_filled, 22.sp, 16.sp) else Triple(MR.images.ic_alternate_email, 16.sp, 11.2.sp)
+              Row(Modifier.offset(y = 3.sp.toDp()), horizontalArrangement = Arrangement.spacedBy(2.sp.toDp()), verticalAlignment = Alignment.CenterVertically) {
                 val mentionColor = when {
                   disabled -> MaterialTheme.colors.secondary
                   cInfo is ChatInfo.Group -> {
@@ -476,28 +480,28 @@ fun ChatPreviewView(
                 }
                 if (unreadMentions > 0 && n > 1) {
                   Icon(
-                    painterResource(MR.images.ic_alternate_email),
+                    painterResource(attentionIcon),
                     contentDescription = generalGetString(MR.strings.notifications),
                     tint = mentionColor,
-                    modifier = Modifier.size(12.sp.toDp()).offset(y = 3.sp.toDp())
+                    modifier = Modifier.size(20.sp.toDp()).requiredSize(attentionIconSize.toDp())
                   )
                 }
 
                 if (unreadMentions > 0 && n == 1) {
-                  Box(modifier = Modifier.offset(y = 2.sp.toDp()).size(15.sp.toDp()).background(mentionColor, shape = CircleShape), contentAlignment = Alignment.Center) {
+                  ChatPreviewBadge(mentionColor) {
                     Icon(
-                      painterResource(MR.images.ic_alternate_email),
+                      painterResource(attentionIcon),
                       contentDescription = generalGetString(MR.strings.notifications),
                       tint = Color.White,
-                      modifier = Modifier.size(9.sp.toDp())
+                      modifier = Modifier.widthIn(max = 14.sp.toDp()).requiredSize(badgeIconSize.toDp())
                     )
                   }
                 } else {
-                  UnreadBadge(
-                    text = if (n > 0) unreadCountStr(n) else "",
-                    backgroundColor = if (disabled || showNtfsIcon) MaterialTheme.colors.secondary else MaterialTheme.colors.primaryVariant,
-                    yOffset = 3.dp
-                  )
+                  val onlySilent = chat.chatStats.allUnreadSilent && !chat.chatStats.unreadChat
+                  val badgeColor = if (disabled || showNtfsIcon || onlySilent) MaterialTheme.colors.secondary else MaterialTheme.colors.primaryVariant
+                  ChatPreviewBadge(badgeColor, outline = onlySilent) {
+                    Text(if (n > 0) unreadCountStr(n) else "", color = if (onlySilent) badgeColor else Color.White, fontSize = 12.sp)
+                  }
                 }
               }
             } else if (showNtfsIcon && ntfsMode != null) {
@@ -609,6 +613,19 @@ fun UnreadBadge(
 }
 
 @Composable
+private fun ChatPreviewBadge(color: Color, outline: Boolean = false, content: @Composable () -> Unit) {
+  Box(
+    Modifier
+      .then(if (outline) Modifier.drawBehind { drawOutline(CircleShape.createOutline(size, layoutDirection, this), color, style = Stroke(1.dp.toPx())) } else Modifier.background(color, CircleShape))
+      .sizeIn(minWidth = 20.sp.toDp(), minHeight = 20.sp.toDp())
+      .padding(horizontal = 4.sp.toDp()),
+    contentAlignment = Alignment.Center
+  ) {
+    content()
+  }
+}
+
+@Composable
 fun unreadCountStr(n: Int): String {
   return if (n < 1000) "$n" else "${n / 1000}" + stringResource(MR.strings.thousand_abbreviation)
 }
@@ -645,5 +662,42 @@ private data class ActiveVoicePreview(
 fun PreviewChatPreviewView() {
   SimpleXTheme {
     ChatPreviewView(Chat.sampleData.copy(chatItems = Chat.sampleData.chatItems.map(::previewDated)), true, null, null, "", disabled = false, linkMode = SimplexLinkMode.DESCRIPTION, inProgress = false, progressByTimeout = false, {})
+  }
+}
+
+@Preview
+@Composable
+fun PreviewChatPreviewViewPriority() {
+  SimpleXTheme {
+    Column {
+      listOf(
+        Triple("2 normal, 1 high priority", MsgFilter.All, Chat.ChatStats(unreadCount = 3, unreadMentions = 1, unreadHighPriority = 1)),
+        Triple("1 high priority", MsgFilter.All, Chat.ChatStats(unreadCount = 1, unreadMentions = 1, unreadHighPriority = 1)),
+        Triple("Mentions mode: 1 high priority", MsgFilter.Mentions, Chat.ChatStats(unreadCount = 3, unreadMentions = 1, unreadHighPriority = 1)),
+        Triple("Muted: 1 high priority", MsgFilter.None, Chat.ChatStats(unreadCount = 3, unreadMentions = 1, unreadHighPriority = 1)),
+        Triple("1 mention", MsgFilter.All, Chat.ChatStats(unreadCount = 3, unreadMentions = 1)),
+        Triple("Silent only", MsgFilter.All, Chat.ChatStats(unreadCount = 3, unreadSilent = 3)),
+        Triple("3 silent, 1 high priority", MsgFilter.All, Chat.ChatStats(unreadCount = 4, unreadMentions = 1, unreadSilent = 3, unreadHighPriority = 1))
+      ).forEach { (name, enableNtfs, chatStats) ->
+        val groupInfo = GroupInfo.sampleData.copy(
+          localDisplayName = name,
+          groupProfile = GroupProfile.sampleData.copy(displayName = name, fullName = ""),
+          chatSettings = GroupInfo.sampleData.chatSettings.copy(enableNtfs = enableNtfs)
+        )
+        val chatItem = ChatItem.getSampleData(1, CIDirection.DirectRcv(), previewDate, "Tests passed: 211", CIStatus.RcvNew())
+        val chat = Chat(remoteHostId = null, chatInfo = ChatInfo.Group(groupInfo, groupChatScope = null), chatItems = listOf(chatItem), chatStats = chatStats)
+        ChatListNavLinkLayout(
+          chatLinkPreview = {
+            ChatPreviewView(chat, true, null, null, "", disabled = false, linkMode = SimplexLinkMode.DESCRIPTION, inProgress = false, progressByTimeout = false, {})
+          },
+          click = {},
+          dropdownMenuItems = null,
+          showMenu = remember { mutableStateOf(false) },
+          disabled = false,
+          selectedChat = remember { mutableStateOf(false) },
+          nextChatSelected = remember { mutableStateOf(false) },
+        )
+      }
+    }
   }
 }

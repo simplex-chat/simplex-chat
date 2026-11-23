@@ -13,12 +13,14 @@ module ChatTests.Direct where
 
 import ChatClient
 import ChatTests.DBUtils
+import ChatTests.Groups (itemPriority, lastSndEventPriority, lastSndMsgFlags, lastSndMsgPriority, rcvItemPrioritiesCfg)
 import ChatTests.Utils
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_, poll, wait)
 import Control.Monad (forM_, void, (>=>))
 import Data.Aeson (ToJSON)
 import qualified Data.Aeson as J
+import qualified Data.Aeson.KeyMap as KM
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.List (intercalate, isPrefixOf, stripPrefix)
@@ -29,16 +31,18 @@ import GHC.Conc (ThreadStatus (..), threadStatus)
 import Simplex.Chat.AppSettings (defaultAppSettings)
 import qualified Simplex.Chat.AppSettings as AS
 import Simplex.Chat.Call
-import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), PresetServers (..))
-import Simplex.Chat.Messages (ChatItemId)
+import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), ChatEvent (CEvtChatItemUpdated), ChatHooks (..), PresetServers (..), defaultChatHooks)
+import Simplex.Chat.Messages (AChatItemUpdate (..), CIMeta (CIMeta, itemText), ChatItem (ChatItem, meta), ChatItemId)
 import Simplex.Chat.Options
-import Simplex.Chat.Protocol (supportedChatVRange)
+import Simplex.Chat.Protocol (MsgPriority (..), supportedChatVRange)
+import Simplex.Chat.Terminal.Notification (hideException)
+import Simplex.Chat.Terminal.Output (ChatTerminal (ChatTerminal, activeTo))
 import Simplex.Chat.Types (ContactId, VersionRangeChat, authErrDisableCount, sameVerificationCode, verificationCode, pattern VersionChat)
 import Simplex.Messaging.Agent.Env.SQLite
 import Simplex.Messaging.Agent.RetryInterval
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Client (NetworkTimeout (..))
-import Control.Concurrent.STM (atomically, readTVarIO)
+import Control.Concurrent.STM (atomically, modifyTVar', newTVarIO, readTVarIO)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String (strEncode)
 import Simplex.Messaging.Server.Env.STM hiding (subscriptions)
@@ -48,6 +52,7 @@ import Simplex.Messaging.Version
 import System.Directory (copyFile, doesDirectoryExist, doesFileExist)
 import System.Mem.Weak (deRefWeak)
 import System.FilePath ((</>))
+import System.Timeout (timeout)
 import Test.Hspec hiding (it)
 #if defined(dbPostgres)
 import Database.PostgreSQL.Simple (Only (..))
@@ -55,7 +60,10 @@ import Database.PostgreSQL.Simple (Only (..))
 import Database.SQLite.Simple (Only (..), Query (..))
 import qualified Database.SQLite.Simple as SQL
 import Simplex.Chat.Options.DB
+import Simplex.Chat.Terminal.Input (updateTermState)
+import Simplex.Chat.Terminal.Output (TerminalState (inputString), mkTermState)
 import Simplex.Messaging.Agent.Store.Common (withConnection)
+import System.Terminal (Key (TabKey))
 #endif
 
 chatDirectTests :: SpecWith TestParams
@@ -71,12 +79,17 @@ chatDirectTests = do
     it "delete conversation keeping contact" testDeleteConversationKeepContact
     it "direct message quoted replies" testDirectMessageQuotedReply
     it "direct message update" testDirectMessageUpdate
+    it "updated item event has the previous item" testDirectMessageUpdatePrevItem
+    it "update as new is ignored in a direct chat" testDirectUpdateAsNewIgnored
+    it "receiver drops an edit after 78 hours" testDirectEditReceiverLimit
     it "direct message edit history" testDirectMessageEditHistory
     it "direct message delete" testDirectMessageDelete
     it "direct message delete multiple" testDirectMessageDeleteMultiple
     it "direct message delete multiple (many chat batches)" testDirectMessageDeleteMultipleManyBatches
     it "direct live message" testDirectLiveMessage
     it "direct timed message" testDirectTimedMessage
+    it "direct silent message" testDirectSilentMessage
+    it "silent message does not change terminal active chat" testDirectSilentMessageTerminal
     it "repeat AUTH errors disable contact" testRepeatAuthErrorsDisableContact
     it "should send multiline message" testMultilineMessage
     it "send large message" testLargeMessage
@@ -109,6 +122,7 @@ chatDirectTests = do
     it "negotiate call" testNegotiateCall
     it "negotiate call between current and v1 clients" testNegotiateCallV1
     it "mark expired call invitation missed on restore" testExpireCallInvitation
+    it "mark call invitation missed when the caller ends the call" testMissedCall
   describe "maintenance mode" $ do
     it "stop chat stops all threads, start chat restarts them" testStopStartChat
 #if !defined(dbPostgres)
@@ -151,6 +165,12 @@ chatDirectTests = do
   describe "settings" $ do
     it "set chat item expiration TTL" testSetChatItemTTL
     it "save/get app settings" testAppSettings
+  describe "terminal" $ do
+    it "should stop a notification at its time limit" $ \_ ->
+      timeout 100000 (hideException (\_ -> threadDelay 1000000) ()) `shouldReturn` Nothing
+#if !defined(dbPostgres)
+    it "should stop a name completion at its time limit" testNameCompletionTimeLimit
+#endif
   describe "connection switch" $ do
     it "switch contact to a different queue" testSwitchContact
     it "stop switching contact to a different queue" testAbortSwitchContact
@@ -366,7 +386,7 @@ testRetryConnectingClientTimeout ps = do
               { quotaExceededTimeout = 1,
                 messageRetryInterval = RetryInterval2 {riFast = fastRetryInterval, riSlow = fastRetryInterval}
               },
-          presetServers = presetSrvs {netCfg = (netCfg :: NetworkConfig) {tcpTimeout = NetworkTimeout 10 10}}
+          presetServers = presetSrvs {netCfg = (netCfg :: NetworkConfig) {tcpTimeout = NetworkTimeout 0 0}}
         }
     opts' =
       testOpts
@@ -775,7 +795,7 @@ testDirectMessageEditHistory =
 
       alice ##> ("/_update item @2 " <> itemId 1 <> " text hey there")
       alice <# "@bob [edited] hey there"
-      bob <# "alice> [edited] hey there"
+      bob <# "alice> hey there"
 
       alice ##> "/item info @bob hey"
       alice <##. "sent at: "
@@ -789,6 +809,75 @@ testDirectMessageEditHistory =
       bob <##. "received at: "
       bob <## "message history:"
       bob .<## ": hey there"
+
+testDirectMessageUpdatePrevItem :: HasCallStack => TestParams -> IO ()
+testDirectMessageUpdatePrevItem ps = do
+  updates <- newTVarIO []
+  encoded <- newTVarIO []
+  events <- newTVarIO []
+  let hook _ evt = do
+        recordItemEvent events evt
+        case evt of
+          Right e@CEvtChatItemUpdated {} -> atomically $ modifyTVar' encoded (<> [J.toJSON e])
+          _ -> pure ()
+        case J.decode . J.encode <$> evt of
+          Right (Just (CEvtChatItemUpdated _ (AChatItemUpdate _ _ _ ci prevCi))) -> atomically $ modifyTVar' updates (<> [(itemText' ci, itemText' prevCi)])
+          _ -> pure ()
+        pure evt
+      itemText' :: ChatItem c d -> T.Text
+      itemText' ChatItem {meta = CIMeta {itemText}} = itemText
+  withNewTestChatCfgOpts ps testCfg {chatHooks = defaultChatHooks {eventHook = Just hook}} testOpts {markRead = False} "alice" aliceProfile $ \alice ->
+    withNewTestChat ps "bob" bobProfile $ \bob -> do
+      connectUsers alice bob
+      eventsFixture "updates/direct-edit" events $ do
+        bob #> "@alice hello"
+        alice <# "bob> hello"
+        withCCTransaction bob (\db -> DB.query db "SELECT item_status FROM chat_items WHERE item_text = ?" (Only ("hello" :: String))) `shouldEventuallyReturn` [Only ("snd_rcvd ok complete" :: String)]
+        apiFixture "updates/update-response" bob [] FixtureRequests {frMarkdown = [], frUris = [], frCommands = ["/_update item @2 " <> itemId 1 <> " text hello there"]}
+        alice <# "bob> [edited] hello there"
+        bob #> "@alice how are you"
+        alice <# "bob> how are you"
+        bob ##> ("/_update item @2 " <> itemId 1 <> " text hello, alice")
+        bob <# "@alice [edited] hello, alice"
+        alice <# "bob> [edited] hello, alice"
+      alice #$> ("/_delete item @2 " <> itemId 1 <> " internal", id, "message deleted")
+      eventsFixture "updates/direct-recreated" events $ do
+        bob ##> ("/_update item @2 " <> itemId 1 <> " text hello again")
+        bob <# "@alice [edited] hello again"
+        alice <# "bob> hello again"
+      alice #$> ("/_get chat @2 count=1", chat, [(0, "hello again")])
+      readTVarIO updates `shouldReturn` [("hello there", "hello"), ("hello, alice", "hello there")]
+      J.Object evt : _ <- readTVarIO encoded
+      KM.member "chatItemUpdate" evt `shouldBe` True
+
+testDirectUpdateAsNewIgnored :: HasCallStack => TestParams -> IO ()
+testDirectUpdateAsNewIgnored =
+  testChat2 aliceProfile bobProfile $ \alice bob -> do
+    connectUsers alice bob
+    bob #> "@alice status"
+    alice <# "bob> status"
+    statusId <- lastItemId bob
+    alice #> "@bob hi"
+    bob <# "alice> hi"
+    bob ##> ("/_update item @2 " <> statusId <> " as_new=on text status 2")
+    bob <# "@alice [edited] status 2"
+    alice <# "bob> [edited] status 2"
+    alice #$> ("/_get chat @2 count=2", chat, [(0, "status 2"), (1, "hi")])
+    bob #$> ("/_get chat @2 count=2", chat, [(1, "status 2"), (0, "hi")])
+
+testDirectEditReceiverLimit :: HasCallStack => TestParams -> IO ()
+testDirectEditReceiverLimit =
+  testChat2 aliceProfile bobProfile $ \alice bob -> do
+    connectUsers alice bob
+    bob #> "@alice hello"
+    alice <# "bob> hello"
+    helloId <- lastItemId bob
+    aliceHelloId <- lastItemId alice
+    setItemAge alice aliceHelloId (79 * 3600)
+    bob ##> ("/_update item @2 " <> helloId <> " text hello there")
+    bob <# "@alice [edited] hello there"
+    alice <## "error: x.msg.update: edit too late"
+    getItemText alice aliceHelloId `shouldReturn` "hello"
 
 testDirectMessageDelete :: HasCallStack => TestParams -> IO ()
 testDirectMessageDelete =
@@ -824,7 +913,7 @@ testDirectMessageDelete =
       bob ##> ("/_update item @2 " <> itemId 2 <> " text hey alice")
       bob <# "@alice [edited] > hello 🙂"
       bob <## "      hey alice"
-      alice <# "bob> [edited] hey alice"
+      alice <# "bob> hey alice"
       alice @@@ [("@bob", "hey alice")]
       alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "hey alice")])
 
@@ -977,6 +1066,70 @@ testDirectTimedMessage =
       alice <# "@bob hi"
       bob <# "alice> hi"
 
+testDirectSilentMessage :: HasCallStack => TestParams -> IO ()
+testDirectSilentMessage ps = do
+  (rcvItems, cfg) <- rcvItemPrioritiesCfg
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatCfg ps cfg "bob" bobProfile $ \bob -> do
+      connectUsers alice bob
+      [Only bobConnId] <- withCCTransaction alice $ \db -> DB.query_ db "SELECT agent_conn_id FROM connections WHERE contact_id IS NOT NULL"
+      let sendWithPriority t p flag sent stored = do
+            alice ##> ("/_send @2 json [{\"msgContent\": {\"type\": \"text\", \"text\": \"" <> t <> "\"}, \"priority\": " <> show (p :: Int) <> "}]")
+            alice <# ("@bob " <> t)
+            bob <# ("alice> " <> t)
+            lastSndMsgFlags alice bobConnId 1 `shouldReturn` [flag]
+            lastSndMsgPriority alice `shouldReturn` sent
+            forM_ [alice, bob] $ \cc -> itemPriority cc "/_get chat @2 count=1" `shouldReturn` stored
+
+      sendWithPriority "hi" (-1) "F" (Just (-1)) MPSilent
+      alice ##> "! @bob hi there"
+      alice <# "@bob [edited] hi there"
+      bob <# "alice> [edited] hi there"
+      lastSndEventPriority alice "x.msg.update" `shouldReturn` Nothing
+      forM_ [alice, bob] $ \cc -> itemPriority cc "/_get chat @2 count=1" `shouldReturn` MPNormal
+
+      sendWithPriority "hello again" 1 "T" Nothing MPNormal
+      helloId <- lastItemId alice
+      alice ##> ("/_update item @2 " <> helloId <> " json {\"msgContent\": {\"type\": \"text\", \"text\": \"hello again\"}, \"mentions\": {}, \"priority\": 1}")
+      alice <## "message didn't change"
+      alice ##> ("/_update item @2 " <> helloId <> " json {\"msgContent\": {\"type\": \"text\", \"text\": \"hello again!\"}, \"mentions\": {}, \"priority\": 1}")
+      alice <# "@bob [edited] hello again!"
+      bob <# "alice> [edited] hello again!"
+      lastSndEventPriority alice "x.msg.update" `shouldReturn` Nothing
+      forM_ [alice, bob] $ \cc -> itemPriority cc "/_get chat @2 count=1" `shouldReturn` MPNormal
+      alice #> "@bob bye"
+      bob <# "alice> bye"
+      lastSndMsgFlags alice bobConnId 1 `shouldReturn` ["T"]
+      readTVarIO rcvItems `shouldReturn` [("hi", MPSilent), ("hello again", MPNormal), ("bye", MPNormal)]
+
+testDirectSilentMessageTerminal :: HasCallStack => TestParams -> IO ()
+testDirectSilentMessageTerminal =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      connectUsers alice bob
+      connectUsers cath bob
+      cath #> "@bob hi"
+      bob <# "cath> hi"
+      activeChat bob `shouldEventuallyReturn` "@cath "
+
+      alice ##> "/_send @2 json [{\"msgContent\": {\"type\": \"text\", \"text\": \"hello\"}, \"priority\": -1}]"
+      alice <# "@bob hello"
+      bob <# "alice> hello"
+      helloId <- lastItemId alice
+      alice ##> ("/_update item @2 " <> helloId <> " json {\"msgContent\": {\"type\": \"text\", \"text\": \"hello there\"}, \"mentions\": {}, \"priority\": -1}")
+      alice <# "@bob [edited] hello there"
+      bob <# "alice> [edited] hello there"
+      alice ##> "/_send @2 json [{\"msgContent\": {\"type\": \"text\", \"text\": \"hey\"}, \"priority\": -1}]"
+      alice <# "@bob hey"
+      bob <# "alice> hey"
+      activeChat bob `shouldReturn` "@cath "
+
+      alice #> "@bob hi"
+      bob <# "alice> hi"
+      activeChat bob `shouldEventuallyReturn` "@alice "
+  where
+    activeChat TestCC {chatTerminal = ChatTerminal {activeTo}} = readTVarIO activeTo
+
 testRepeatAuthErrorsDisableContact :: HasCallStack => TestParams -> IO ()
 testRepeatAuthErrorsDisableContact =
   testChat2 aliceProfile bobProfile $ \alice bob -> do
@@ -985,17 +1138,18 @@ testRepeatAuthErrorsDisableContact =
     threadDelay 500000
     bob ##> "/_delete @2 notify=off"
     bob <## "alice: contact is deleted"
-    forM_ [1 .. authErrDisableCount] $ \_ -> sendAuth alice
-    alice <## "[bob] connection is disabled, to enable: /enable bob, to delete: /d bob"
+    (withCCAgentTransaction bob $ \db -> DB.query_ db "SELECT count(1) FROM connections" :: IO [[Int]]) `shouldEventuallyReturn` [[0]]
+    forM_ [1 .. authErrDisableCount - 1] $ \_ -> sendAuth alice []
+    sendAuth alice ["[bob] connection is disabled, to enable: /enable bob, to delete: /d bob"]
     alice ##> "@bob hey"
     alice <## "bob: disabled, to enable: /enable bob, to delete: /d bob"
     alice ##> "/enable bob"
     alice <## "ok"
-    sendAuth alice
+    sendAuth alice []
   where
-    sendAuth alice = do
-      alice #> "@bob hey"
-      alice <## "[bob, contactId: 2, connId: 1] error: connection authorization failed - this could happen if connection was deleted, secured with different credentials, or due to a bug - please re-create the connection"
+    sendAuth alice disabled = do
+      alice `send` "@bob hey"
+      alice <### (WithTime "@bob hey" : "[bob, contactId: 2, connId: 1] error: connection authorization failed - this could happen if connection was deleted, secured with different credentials, or due to a bug - please re-create the connection" : disabled)
 
 testMultilineMessage :: HasCallStack => TestParams -> IO ()
 testMultilineMessage = testChat3 aliceProfile bobProfile cathProfile $ \alice bob cath -> do
@@ -1445,6 +1599,20 @@ testExpireCallInvitation ps =
       bob <## "subscribed 1 connections on server localhost"
       M.member 2 <$> readTVarIO (currentCalls $ chatController bob) `shouldReturn` False
       callRowCount bob `shouldReturn` 0
+      bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "incoming call: missed")])
+
+testMissedCall :: HasCallStack => TestParams -> IO ()
+testMissedCall ps = do
+  events <- newTVarIO []
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatCfgOpts ps testCfg {chatHooks = defaultChatHooks {eventHook = Just $ \_ evt -> evt <$ recordItemEvent events evt}} testOpts {markRead = False} "bob" bobProfile $ \bob -> do
+      connectUsers alice bob
+      eventsFixture "updates/missed-call" events $ do
+        inviteToCall alice bob
+        alice ##> "/_call end @2"
+        alice <## "ok"
+        bob <## "call with alice ended"
+        (length <$> readTVarIO events) `shouldEventuallyReturn` 2
       bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "incoming call: missed")])
 
 testStopStartChat :: HasCallStack => TestParams -> IO ()
@@ -3056,6 +3224,15 @@ testAppSettings ps =
     -- read back
     alice ##> "/_get app settings"
     alice <## ("app settings: " <> settingsApp)
+
+#if !defined(dbPostgres)
+testNameCompletionTimeLimit :: HasCallStack => TestParams -> IO ()
+testNameCompletionTimeLimit ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice@TestCC {chatController = ChatController {chatStore}} ->
+    withCCUser alice $ \user -> do
+      let complete = updateTermState (Just user) chatStore "" False 80 (TabKey, mempty) mkTermState {inputString = "@a"}
+      holdDuring (withCCTransaction alice . const) (timeout 100000 $ void complete) `shouldReturn` Nothing
+#endif
 
 testSwitchContact :: HasCallStack => TestParams -> IO ()
 testSwitchContact =

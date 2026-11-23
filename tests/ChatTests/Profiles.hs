@@ -19,6 +19,7 @@ import Control.Concurrent.Async (concurrently, concurrently_)
 import Control.Monad
 import Control.Monad.Except
 import Control.Monad.Reader (runReaderT)
+import qualified Data.Aeson as J
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import qualified Data.ByteString.Char8 as B
 import qualified Data.Text as T
@@ -26,25 +27,28 @@ import Data.Time.Clock (UTCTime, addUTCTime, getCurrentTime, nominalDay)
 import Data.Time.Clock.POSIX (posixSecondsToUTCTime, utcTimeToPOSIXSeconds)
 import Data.Time.Format (defaultTimeLocale, formatTime)
 import qualified Data.Map.Strict as M
+import ProtocolTests (testGroupProfile)
 import Simplex.Chat.Badges (BadgeCredential, BadgeInfo (..), BadgeProof, BadgePurchase (..), BadgeRequest (..), BadgeStatus (..), BadgeType (..), LocalBadge (..), ProofPresHeader (..), badgeProof, generateMasterKey, issueBadge, verifyPayment)
-import Simplex.Chat.Controller (ChatConfig (..), ChatController (ChatController, smpAgent), ChatHooks (..), defaultChatHooks, storeCxt)
-import Simplex.Chat.Library.Internal (encodeShortLinkData, groupMemberKey, redactedMemberProfile, sendDirectContactMessage, sendGroupMessage')
+import Simplex.Chat.Controller (CM, ChatConfig (..), ChatController (ChatController, smpAgent), ChatHooks (..), defaultChatHooks, storeCxt, withAgent)
+import Simplex.Chat.Library.Internal (encodeConnInfo, encodeShortLinkData, getShortLinkConnReq, groupMemberKey, redactedMemberProfile, sendDirectContactMessage, sendGroupMessage')
 import Simplex.Chat.Options (ChatOpts (..), CoreChatOpts (..))
-import Simplex.Chat.Protocol (ChatBinding (..), ChatMsgEvent (XInfo), ContactShortLinkData (ContactShortLinkData), LinkOwnerSig, MsgChatLink (..), MsgContent (..), encodeChatBinding)
+import Simplex.Chat.Protocol (ChatBinding (..), ChatMsgEvent (XContact, XInfo, XOk), ContactShortLinkData (ContactShortLinkData), GroupShortLinkData (GroupShortLinkData), LinkOwnerSig, MsgChatLink (..), MsgContent (..), encodeChatBinding)
 import Simplex.Chat.Store.Groups (getGroupMembers)
 import Simplex.Chat.Store.Shared (createContact, getGroupInfoKeys)
-import Simplex.Chat.Types (AgentConnId (..), ChatPeerType (..), ConnStatus (..), GroupId, GroupInfo (..), GroupInfoKeys (..), GroupMember (..), ImageData (..), Profile (..), GroupRejectionReason (..), User (..), fromLocalProfile, profileFromName, userProfileDirect, pattern VersionChat)
+import Simplex.Chat.Types (AgentConnId (..), B64UrlByteString (..), ChatPeerType (..), ConnStatus (..), GroupId, GroupInfo (..), GroupInfoKeys (..), GroupMember (..), GroupProfile (publicGroup), GroupType (..), ImageData (..), Profile (..), PublicGroupProfile (PublicGroupProfile), GroupRejectionReason (..), ShortLinkContact, User (..), aUserId, fromLocalProfile, profileFromName, userProfileDirect, pattern VersionChat)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.BBS (BBSPublicKey, BBSSecretKey, bbsKeyGen)
+import Simplex.Messaging.Crypto.Ratchet (pattern PQSupportOff)
 import Simplex.Chat.Types.Shared (GroupMemberRole (..))
 import Simplex.Chat.Types.UITheme
-import Simplex.Messaging.Agent (setConnShortLink)
+import Simplex.Messaging.Agent (joinConnection, prepareConnectionToJoin, setConnShortLink)
 import Simplex.Messaging.Agent.Env.SQLite
-import Simplex.Messaging.Agent.Protocol (SConnectionMode (..), UserConnLinkData (..))
+import Simplex.Messaging.Agent.Protocol (SConnectionMode (..), UserConnLinkData (..), UserContactData (..), UserLinkData (..))
 import Simplex.Messaging.Agent.RetryInterval
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Client (pattern NRMInteractive)
 import Simplex.Messaging.Encoding.String (StrEncoding (..))
+import Simplex.Messaging.Protocol (SubscriptionMode (..))
 import Simplex.Messaging.Server.Env.STM hiding (subscriptions)
 import Simplex.Messaging.Transport
 import Simplex.Messaging.Util (decodeJSON, encodeJSON)
@@ -111,13 +115,17 @@ chatProfileTests = do
     it "auto accept contact requests" testUserContactLinkAutoAccept
     it "deduplicate contact requests" testDeduplicateContactRequests
     it "deduplicate contact requests with profile change" testDeduplicateContactRequestsProfileChange
+    it "duplicate contact request from connected contact" testDuplicateContactRequestConnected
+    it "contact requests with invalid or unsupported messages" testContactRequestsInvalidMessages
     it "reject contact and delete contact link" testRejectContactAndDeleteUserContact
+    it "reject contact and notify the sender" testRejectContactNotifySender
     it "keep connection requests when contact link deleted" testKeepConnectionRequests
     it "connected contact works when contact link deleted" testContactLinkDeletedConnectedContactWorks
     it "auto-reply message" testAutoReplyMessage
     describe "business address" $ do
       it "create and connect via business address" testBusinessAddress
       it "update profiles with business address" testBusinessUpdateProfiles
+      it "high priority messages of the business" testBusinessHighPriority
   describe "contact address connection plan" $ do
     it "contact address ok to connect; known contact" testPlanAddressOkKnown
     it "own contact address" testPlanAddressOwn
@@ -157,9 +165,9 @@ chatProfileTests = do
     it "allow full deletion to contact" testAllowFullDeletionContact
     it "allow full deletion to group" testAllowFullDeletionGroup
     it "prohibit direct messages to group members" testProhibitDirectMessages
-    xit'' "enable timed messages with contact" testEnableTimedMessagesContact
+    it "enable timed messages with contact" testEnableTimedMessagesContact
     it "enable timed messages in group" testEnableTimedMessagesGroup
-    xit'' "timed messages enabled globally, contact turns on" testTimedMessagesEnabledGlobally
+    it "timed messages enabled globally, contact turns on" testTimedMessagesEnabledGlobally
     it "update multiple user preferences for multiple contacts" testUpdateMultipleUserPrefs
     describe "group preferences for specific member role" $ do
       it "direct messages" testGroupPrefsDirectForRole
@@ -178,6 +186,17 @@ chatProfileTests = do
     it "should connect via contact address" testShortLinkContactAddress
     it "should share contact address via chat" testShareAddressViaChat
     it "should join group" testShortLinkJoinGroup
+    describe "should validate link type" $ do
+      it "group link as address" $ testGroupLinkAsType "/a#" "connect/group-link-as-address"
+      it "group link as channel" $ testGroupLinkAsType "/c#" "connect/group-link-as-channel"
+      it "group link as relay address" testGroupLinkAsRelay
+      it "relay address as address, address as relay address" testRelayAddressLinkTypes
+      it "address as group link and channel" testAddressAsGroupLink
+      it "group link as address in contact profile" testGroupLinkInContactProfile
+      it "contact data in group link" testContactDataInGroupLink
+      it "channel data in invitation" testChannelDataInInvitation
+      it "invitation, address and group link with their data" testLinksWithTheirData
+      it "invitation and channel link without data" testLinksWithoutData
   describe "short links with attached data" shortLinkTests
   describe "client services" $ do
     it "should create user as a service, disable and re-enable" testClientService
@@ -196,6 +215,7 @@ shortLinkTests = do
   it "prepare contact via address and connect incognito with retry" testShortLinkAddressConnectRetryIncognito
   it "prepare business chat using address short link data and connect" testShortLinkAddressPrepareBusiness
   it "connect to business address with request message" testBusinessAddressRequestMessage
+  it "business welcome message is updated after 78 hours" testBusinessWelcomeUpdatedLate
   it "prepare group using group short link data and connect" testShortLinkPrepareGroup
   it "prepare group using group short link data and connect, host rejects" testShortLinkPrepareGroupReject
   it "connect to group with welcome message via short link" testGroupShortLinkWelcome
@@ -915,11 +935,14 @@ testUserBadgeGroupLinkJoiner ps = do
       alice <## "to add members use /a team <name> or /create link #team"
       alice ##> "/create link #team"
       gLink <- getGroupLink alice "team" GRMember True
+      alice ##> "/_stop"
+      alice <## "chat stopped"
       bob ##> ("/c " <> gLink)
       bob <## "connection request sent!"
       bob ##> "/_stop"
       bob <## "chat stopped"
-      alice <## "bob (Bob): accepting request to join group #team..."
+      alice ##> "/_start"
+      alice <### ["chat started", "subscribed 1 connections on server localhost", "bob (Bob): accepting request to join group #team..."]
       memberBadgeHeader alice "team" "bob" `shouldReturn` Just ("R", BSActive)
       bob ##> "/_start"
       concurrentlyN_
@@ -1163,11 +1186,20 @@ sendTestMemberProof cc groupId proof =
     runExceptT (sendGroupMessage' user g members (XInfo p (Just $ groupMemberKey gks))) `runReaderT` chatController cc
       >>= either (fail . show) (\_ -> pure ())
 
-setTestInvLinkData :: TestCC -> ContactShortLinkData -> IO ()
+setTestInvLinkData :: J.ToJSON a => TestCC -> a -> IO ()
 setTestInvLinkData cc linkData = do
   [Only (AgentConnId connId)] <- withCCTransaction cc $ \db -> DB.query_ db "SELECT agent_conn_id FROM connections"
   let ChatController {smpAgent} = chatController cc
   runExceptT (setConnShortLink smpAgent NRMInteractive connId SCMInvitation (UserInvLinkData $ encodeShortLinkData linkData) Nothing False Nothing)
+    >>= either (fail . show) (\_ -> pure ())
+
+setTestGroupLinkData :: TestCC -> UserLinkData -> IO ()
+setTestGroupLinkData cc linkData = do
+  [Only (AgentConnId connId)] <- withCCTransaction cc $ \db ->
+    DB.query_ db "SELECT c.agent_conn_id FROM connections c JOIN user_contact_links l ON l.user_contact_link_id = c.user_contact_link_id WHERE l.group_id IS NOT NULL"
+  let ChatController {smpAgent} = chatController cc
+      contactData = UserContactData {direct = True, owners = [], relays = [], userData = linkData, ratchetKeys = Nothing}
+  runExceptT (setConnShortLink smpAgent NRMInteractive connId SCMContact (UserContactLinkData contactData) Nothing False Nothing)
     >>= either (fail . show) (\_ -> pure ())
 
 testUpdateProfileImage :: HasCallStack => TestParams -> IO ()
@@ -1703,12 +1735,14 @@ testDeduplicateContactRequests = testChat3 aliceProfile bobProfile cathProfile $
     alice <#? bob
     alice @@@ [("@bob", "Audio/video calls: enabled")]
     bob @@@! [(":3", "", Just ConnJoined), (":2", "", Just ConnJoined), (":1", "", Just ConnJoined)]
+    checkPendingInvitations alice 1
 
     alice ##> "/ac bob"
     alice <## "bob (Bob): accepting contact request, you can send messages to contact"
     concurrently_
       (bob <## "alice (Alice): contact is connected")
       (alice <## "bob (Bob): contact is connected")
+    checkPendingInvitations alice 0
 
     bob ##> ("/c " <> cLink)
     bob <## "contact address: known contact alice"
@@ -1824,6 +1858,53 @@ testDeduplicateContactRequestsProfileChange = testChat3 aliceProfile bobProfile 
     alice @@@ [("@cath", lastChatFeature), ("@robert", "hey")]
     alice <##> cath
 
+testDuplicateContactRequestConnected :: HasCallStack => TestParams -> IO ()
+testDuplicateContactRequestConnected = testChat2 aliceProfile bobProfile $
+  \alice bob -> do
+    alice ##> "/ad"
+    (sLink, cLink) <- getContactLinks alice True
+    bob ##> ("/c " <> cLink)
+    alice <#? bob
+    alice ##> "/ac bob"
+    alice <## "bob (Bob): accepting contact request, you can send messages to contact"
+    concurrently_
+      (bob <## "alice (Alice): contact is connected")
+      (alice <## "bob (Bob): contact is connected")
+    [Only xContactId] <- withCCTransaction alice $ \db -> DB.query_ db "SELECT xcontact_id FROM contacts WHERE local_display_name = 'bob'"
+    sendAddressRequest bob sLink $ encodeConnInfo $ XContact bobProfile Nothing (Just xContactId) Nothing Nothing
+    alice <## "bob (Bob): sent you a duplicate contact request, but you are already connected, no action needed"
+    checkPendingInvitations alice 0
+    alice <##> bob
+
+testContactRequestsInvalidMessages :: HasCallStack => TestParams -> IO ()
+testContactRequestsInvalidMessages = testChat2 aliceProfile bobProfile $
+  \alice bob -> do
+    alice ##> "/ad"
+    (sLink, cLink) <- getContactLinks alice True
+    sendAddressRequest bob sLink $ pure "invalid"
+    alice <##. "chat message error: "
+    sendAddressRequest bob sLink $ encodeConnInfo XOk
+    bob ##> ("/c " <> cLink)
+    alice <#? bob
+    checkPendingInvitations alice 1
+    alice ##> "/ac bob"
+    alice <## "bob (Bob): accepting contact request, you can send messages to contact"
+    concurrently_
+      (bob <## "alice (Alice): contact is connected")
+      (alice <## "bob (Bob): contact is connected")
+    alice <##> bob
+
+sendAddressRequest :: TestCC -> String -> CM B.ByteString -> IO ()
+sendAddressRequest cc address encodeInfo =
+  withCCUser cc $ \user -> do
+    sLink <- either fail pure $ strDecode @ShortLinkContact (B.pack address)
+    let sendRequest = do
+          (_, _, cReq, _) <- getShortLinkConnReq NRMInteractive user sLink
+          (connId, _) <- withAgent $ \a -> prepareConnectionToJoin a (aUserId user) True cReq PQSupportOff
+          connInfo <- encodeInfo
+          withAgent $ \a -> joinConnection a NRMInteractive (aUserId user) connId True cReq connInfo PQSupportOff SMSubscribe
+    runExceptT sendRequest `runReaderT` chatController cc >>= either (fail . show) (\_ -> pure ())
+
 testRejectContactAndDeleteUserContact :: HasCallStack => TestParams -> IO ()
 testRejectContactAndDeleteUserContact = testChat3 aliceProfile bobProfile cathProfile $
   \alice bob cath -> do
@@ -1846,9 +1927,30 @@ testRejectContactAndDeleteUserContact = testChat3 aliceProfile bobProfile cathPr
     alice ##> "/_delete_address 1"
     alice <## "Your chat address is deleted - accepted contacts will remain connected."
     alice <## "To create a new chat address use /ad"
+    (withCCAgentTransaction alice $ \db -> DB.query_ db "SELECT count(1) FROM connections" :: IO [[Int]]) `shouldEventuallyReturn` [[0]]
 
     cath ##> ("/c " <> cLink)
     cath <## "error: connection authorization failed - this could happen if connection was deleted, secured with different credentials, or due to a bug - please re-create the connection"
+
+testRejectContactNotifySender :: HasCallStack => TestParams -> IO ()
+testRejectContactNotifySender =
+  testChat2 aliceProfile bobProfile $ \alice bob -> do
+    alice ##> "/ad pq_ratchet=on"
+    (shortLink, fullLink) <- getContactLinks alice True
+    bob ##> ("/_connect plan 1 " <> shortLink)
+    bob <## "contact address: ok to connect"
+    contactSLinkData <- getTermLine bob
+    bob ##> ("/_prepare contact 1 " <> fullLink <> " " <> shortLink <> " " <> contactSLinkData)
+    bob <## "alice: contact is prepared"
+    bob ##> "/_connect contact @2"
+    bob <## "alice: connection started"
+    alice <## "bob (Bob) wants to connect to you!"
+    alice <## "to accept: /ac bob"
+    alice <## "to reject: /rc bob (the sender will NOT be notified)"
+    alice ##> "/rc bob notify"
+    alice <## "bob: contact request rejected"
+    bob <## "alice: contact request rejected"
+    apiFixture "connect/request-rejected" bob [] FixtureRequests {frMarkdown = [""], frUris = [], frCommands = ["/_get chats 1 pcc=on"]}
 
 testKeepConnectionRequests :: HasCallStack => TestParams -> IO ()
 testKeepConnectionRequests = testChat3 aliceProfile bobProfile cathProfile $
@@ -2007,6 +2109,26 @@ testBusinessAddress = testChat3 businessProfile aliceProfile {fullName = "Alice 
     concurrently_
       (alice <# "#bob bob_1> hey there")
       (biz <# "#bob bob_1> hey there")
+
+testBusinessHighPriority :: HasCallStack => TestParams -> IO ()
+testBusinessHighPriority = testChat2 businessProfile aliceProfile $
+  \biz alice -> do
+    biz ##> "/ad"
+    cLink <- getContactLink biz True
+    biz ##> "/auto_accept on business"
+    biz <## "auto_accept on, business"
+    alice ##> ("/c " <> cLink)
+    alice <## "connection request sent!"
+    biz <## "#alice (Alice): accepting business address request..."
+    alice <## "#biz: joining the group..."
+    biz <## "#alice: alice_1 joined the group"
+    alice <## "#biz: you joined the group"
+    biz ##> "/_send #1 json [{\"msgContent\": {\"type\": \"text\", \"text\": \"hi\"}, \"priority\": 1}]"
+    biz <# "#alice !! hi"
+    alice <# "#biz biz_1!!> hi"
+    alice ##> "/_send #1 json [{\"msgContent\": {\"type\": \"text\", \"text\": \"hello\"}, \"priority\": 1}]"
+    alice <# "#biz hello"
+    biz <# "#alice alice_1> hello"
 
 checkBusinessPlanWhileJoining :: HasCallStack => TestCC -> String -> IO ()
 checkBusinessPlanWhileJoining cc link = do
@@ -2373,6 +2495,7 @@ testPlanAddressContactViaAddress =
 
           bob ##> ("/_connect plan 1 " <> cLink)
           bob <## "contact address: known contact without connection alice"
+          apiFixture "connect/contact-via-address" bob [(cLink, "CONTACT_LINK")] FixtureRequests {frMarkdown = [cLink], frUris = [], frCommands = ["/_connect plan 1 " <> cLink]}
 
           -- terminal api
           bob ##> ("/c " <> cLink)
@@ -3884,6 +4007,7 @@ testGroupChatLayout =
     alice <## "chat layout: classic"
     alice <## "group preferences:"
     mapM_ (\((_, feature), _, _) -> alice <## feature) $ groupFeatures_ 0 False
+    alice <## "Message priority: on for admins"
     bob ##> ("/_connect plan 1 " <> shortLink)
     bob <## "group link: ok to connect directly"
     groupSLinkData <- getTermLine bob
@@ -4214,6 +4338,133 @@ testShortLinkJoinGroup =
             cc <## "#team: you joined the group"
         ]
 
+testGroupLinkAsType :: HasCallStack => T.Text -> String -> TestParams -> IO ()
+testGroupLinkAsType linkType fixture =
+  testChat2 aliceProfile bobProfile $ \alice bob -> do
+    link <- setLinkType "/g#" linkType <$> createGroupWithLink alice
+    bob ##> ("/_connect plan 1 " <> link)
+    invalidLink bob
+    apiFixture fixture bob [(link, "GROUP_LINK")] FixtureRequests {frMarkdown = [link], frUris = [], frCommands = ["/_connect plan 1 " <> link]}
+    bob ##> ("/c " <> link)
+    invalidLink bob
+
+testGroupLinkAsRelay :: HasCallStack => TestParams -> IO ()
+testGroupLinkAsRelay =
+  testChat2 aliceProfile bobProfile $ \alice bob -> do
+    link <- setLinkType "/g#" "/r#" <$> createGroupWithLink alice
+    bob ##> ("/relay test " <> link)
+    bob <## "relay test failed at RTSGetLink, error: ChatError {errorType = CEInvalidConnReq}"
+
+testRelayAddressLinkTypes :: HasCallStack => TestParams -> IO ()
+testRelayAddressLinkTypes ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath -> do
+        bob ##> "/ad"
+        (relayAddress, _) <- getContactLinks bob True
+        cath ##> "/ad"
+        (address, _) <- getContactLinks cath True
+        alice ##> ("/relay test " <> setLinkType "/r#" "/a#" relayAddress)
+        alice <## "relay test passed, profile: bob (Bob)"
+        alice ##> ("/relay test " <> setLinkType "/a#" "/r#" address)
+        alice <##. "relay test failed at RTSDecodeLink, error: "
+
+testAddressAsGroupLink :: HasCallStack => TestParams -> IO ()
+testAddressAsGroupLink =
+  testChat2 aliceProfile bobProfile $ \alice bob -> do
+    alice ##> "/ad"
+    (address, _) <- getContactLinks alice True
+    forM_ ["/g#", "/c#"] $ \linkType -> do
+      let link = setLinkType "/a#" linkType address
+      bob ##> ("/_connect plan 1 " <> link)
+      invalidLink bob
+      bob ##> ("/c " <> link)
+      invalidLink bob
+
+testGroupLinkInContactProfile :: HasCallStack => TestParams -> IO ()
+testGroupLinkInContactProfile =
+  testChat2 aliceProfile bobProfile $ \alice bob -> do
+    link <- createGroupWithLink alice
+    void $ withCCUser bob $ \user -> withCCTransaction bob $ \db ->
+      runExceptT $ createContact db (storeCxt $ chatController bob) user aliceProfile {contactLink = either error Just $ strDecode $ B.pack link}
+    bob ##> "/_connect contact 1 2"
+    invalidLink bob
+
+testContactDataInGroupLink :: HasCallStack => TestParams -> IO ()
+testContactDataInGroupLink =
+  testChat2 aliceProfile bobProfile $ \alice bob -> do
+    link <- createGroupWithLink alice
+    setTestGroupLinkData alice $ encodeShortLinkData $ ContactShortLinkData aliceProfile Nothing False Nothing Nothing
+    bob ##> ("/_connect plan 1 " <> link)
+    invalidLink bob
+
+testChannelDataInInvitation :: HasCallStack => TestParams -> IO ()
+testChannelDataInInvitation =
+  testChat2 aliceProfile bobProfile $ \alice bob -> do
+    alice ##> "/_connect 1"
+    (link, _) <- getInvitations alice
+    setTestInvLinkData alice $ GroupShortLinkData testGroupProfile {publicGroup = Just channel} Nothing
+    bob ##> ("/_connect plan 1 " <> link)
+    invalidLink bob
+  where
+    channel = PublicGroupProfile GTChannel channelLink (B64UrlByteString "channel") Nothing
+    channelLink = either error id $ strDecode "https://localhost/c#Pz9qz7ZVljMofoRxiDDpL_w2DZSazK8IgafxqnWKv6Y"
+
+testLinksWithTheirData :: HasCallStack => TestParams -> IO ()
+testLinksWithTheirData =
+  testChat2 aliceProfile bobProfile $ \alice bob -> do
+    alice ##> "/_connect 1"
+    (invitation, _) <- getInvitations alice
+    setTestInvLinkData alice $ GroupShortLinkData testGroupProfile Nothing
+    bob ##> ("/_connect plan 1 " <> invitation)
+    bob <## "invitation link: ok to connect"
+    _ <- getTermLine bob
+    alice ##> "/ad"
+    (address, _) <- getContactLinks alice True
+    bob ##> ("/_connect plan 1 " <> address)
+    bob <## "contact address: ok to connect"
+    _ <- getTermLine bob
+    link <- createGroupWithLink alice
+    bob ##> ("/_connect plan 1 " <> link)
+    bob <## "group link: ok to connect directly"
+    _ <- getTermLine bob
+    setTestGroupLinkData alice $ UserLinkData ""
+    bob ##> ("/_connect plan 1 " <> link)
+    bob <## "group link: ok to connect directly"
+    void $ getTermLine bob
+
+testLinksWithoutData :: HasCallStack => TestParams -> IO ()
+testLinksWithoutData =
+  testChat2 aliceProfile bobProfile $ \alice bob -> do
+    alice ##> "/_connect 1"
+    (invitation, _) <- getInvitations alice
+    setTestInvLinkData alice J.Null
+    bob ##> ("/_connect plan 1 " <> invitation)
+    bob <## "invitation link: ok to connect"
+    _ <- getTermLine bob
+    link <- createGroupWithLink alice
+    setTestGroupLinkData alice $ UserLinkData ""
+    bob ##> ("/_connect plan 1 " <> setLinkType "/g#" "/c#" link)
+    invalidLink bob
+
+createGroupWithLink :: HasCallStack => TestCC -> IO String
+createGroupWithLink cc = do
+  cc ##> "/g team"
+  cc <## "group #team is created"
+  cc <## "to add members use /a team <name> or /create link #team"
+  cc ##> "/create link #team"
+  fst <$> getGroupLinks cc "team" GRMember True
+
+setLinkType :: T.Text -> T.Text -> String -> String
+setLinkType from to = T.unpack . T.replace from to . T.pack
+
+invalidLink :: HasCallStack => TestCC -> IO ()
+invalidLink cc = do
+  cc <## ""
+  cc <## "Connection link is invalid, possibly it was created in a previous version."
+  cc <## "Please ask your contact to check /version and update if needed."
+  cc <##. "To update run: "
+
 testShortLinkInvitationPrepareContact :: HasCallStack => TestParams -> IO ()
 testShortLinkInvitationPrepareContact = testChat2 aliceProfile bobProfile test
   where
@@ -4419,6 +4670,7 @@ testShortLinkDeletedInvitation = testChat2 aliceProfile bobProfile test
       alice @@@ [(":1","")]
       alice ##> "/_delete :1"
       alice <## "connection :1 deleted"
+      (withCCAgentTransaction alice $ \db -> DB.query_ db "SELECT count(1) FROM connections" :: IO [[Int]]) `shouldEventuallyReturn` [[0]]
       bob ##> "/_connect contact @2"
       bob <##. "error: connection authorization failed"
       bob ##> "/_connect contact @2"
@@ -4438,6 +4690,7 @@ testShortLinkDeletedAddress = testChat2 aliceProfile bobProfile test
       alice ##> "/da"
       alice <## "Your chat address is deleted - accepted contacts will remain connected."
       alice <## "To create a new chat address use /ad"
+      (withCCAgentTransaction alice $ \db -> DB.query_ db "SELECT count(1) FROM connections" :: IO [[Int]]) `shouldEventuallyReturn` [[0]]
       bob ##> "/_connect contact @2"
       bob <##. "error: connection authorization failed"
       bob ##> "/_connect contact @2"
@@ -4674,6 +4927,32 @@ testBusinessAddressRequestMessage = testChat3 businessProfile aliceProfile {full
             bob <## "#biz: biz_1 added alice (Alice @ Biz) to the group (connecting...)"
             bob <## "#biz: new member alice is connected"
         ]
+
+testBusinessWelcomeUpdatedLate :: HasCallStack => TestParams -> IO ()
+testBusinessWelcomeUpdatedLate = testChat2 businessProfile bobProfile $ \biz bob -> do
+  biz ##> "/ad"
+  (shortLink, fullLink) <- getContactLinks biz True
+  biz ##> "/auto_accept on business text Welcome!"
+  biz <## "auto_accept on, business"
+  biz <## "auto reply:"
+  biz <## "Welcome!"
+  bob ##> ("/_connect plan 1 " <> shortLink)
+  bob <## "business address: ok to connect"
+  contactSLinkData <- getTermLine bob
+  bob ##> ("/_prepare contact 1 " <> fullLink <> " " <> shortLink <> " " <> contactSLinkData)
+  bob <## "#biz: group is prepared"
+  welcomeId <- lastItemId bob
+  setItemAge bob welcomeId (80 * 3600)
+  biz ##> "/auto_accept on business text Welcome again!"
+  biz <## "auto_accept on, business"
+  biz <## "auto reply:"
+  biz <## "Welcome again!"
+  bob ##> "/_connect group #1"
+  bob <## "#biz: connection started"
+  biz <## "#bob (Bob): accepting business address request..."
+  bob <### ["#biz: joining the group...", "#biz: you joined the group", WithTime "#biz biz_1> [edited] Welcome again!"]
+  biz <## "#bob: bob_1 joined the group"
+  getItemText bob welcomeId `shouldReturn` "Welcome again!"
 
 testShortLinkPrepareGroup :: HasCallStack => TestParams -> IO ()
 testShortLinkPrepareGroup = testChat3 aliceProfile bobProfile cathProfile test

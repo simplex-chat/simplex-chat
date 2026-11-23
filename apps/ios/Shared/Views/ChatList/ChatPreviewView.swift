@@ -37,7 +37,7 @@ struct ChatPreviewView: View {
                 }
                 .padding(.leading, 4)
 
-                let chatTs = if let cItem {
+                let chatTs = if let cItem, cItem.content != .chatBanner {
                     cItem.meta.itemTs
                 } else {
                     chat.chatInfo.chatTs
@@ -228,9 +228,10 @@ struct ChatPreviewView: View {
         let s = chat.chatStats
         if s.unreadCount > 0 || s.unreadChat {
             let mentionColor = mentionColor(chat)
+            let attentionSign = s.unreadHighPriority > 0 ? Text(Image(systemName: "bell.fill")) : Text("\(MENTION_START)")
             HStack(alignment: .center, spacing: 2) {
                 if s.unreadMentions > 0 && s.unreadCount > 1 {
-                    Text("\(MENTION_START)")
+                    attentionSign
                         .font(userFont <= .xxxLarge ? .body : .callout)
                         .foregroundColor(mentionColor)
                         .frame(minWidth: dynamicChatInfoSize, minHeight: dynamicChatInfoSize)
@@ -238,13 +239,17 @@ struct ChatPreviewView: View {
                         .padding(.bottom, 1)
                 }
                 let singleUnreadIsMention = s.unreadMentions > 0 && s.unreadCount == 1
-                (singleUnreadIsMention ? Text("\(MENTION_START)") : unreadCountText(s.unreadCount))
+                let onlySilent = !singleUnreadIsMention && s.allUnreadSilent && !s.unreadChat
+                (singleUnreadIsMention ? attentionSign : unreadCountText(s.unreadCount))
                     .font(userFont <= .xxxLarge ? .caption : .caption2)
-                    .foregroundColor(.white)
+                    .foregroundColor(onlySilent ? theme.colors.secondary : .white)
                     .padding(.horizontal, dynamicSize(userFont).unreadPadding)
                     .frame(minWidth: dynamicChatInfoSize, minHeight: dynamicChatInfoSize)
-                    .background(singleUnreadIsMention ? mentionColor : chat.chatInfo.ntfsEnabled(false) || chat.chatInfo.chatType == .local ? theme.colors.primary : theme.colors.secondary)
+                    .background(onlySilent ? Color.clear : singleUnreadIsMention ? mentionColor : chat.chatInfo.ntfsEnabled(false) || chat.chatInfo.chatType == .local ? theme.colors.primary : theme.colors.secondary)
                     .cornerRadius(dynamicSize(userFont).unreadCorner)
+                    .if(onlySilent) {
+                        $0.overlay(RoundedRectangle(cornerRadius: dynamicSize(userFont).unreadCorner).stroke(theme.colors.secondary))
+                    }
             }
             .frame(height: dynamicChatInfoSize)
         } else if let ntfMode = chat.chatInfo.chatSettings?.enableNtfs, ntfMode != .all {
@@ -444,7 +449,7 @@ struct ChatPreviewView: View {
             smallContentPreview(size: dynamicMediaSize, borderColor: chatLink.image != nil ? .secondary : .clear) {
                 ProfileImage(
                     imageStr: chatLink.image,
-                    icon: Image(systemName: chatLink.iconName),
+                    icon: chatLink.icon,
                     size: dynamicMediaSize,
                     color: Color(uiColor: .tertiaryLabel)
                 )
@@ -596,5 +601,32 @@ struct ChatPreviewView_Previews: PreviewProvider {
             ), progressByTimeout: Binding.constant(false))
         }
         .previewLayout(.fixed(width: 360, height: 78))
+    }
+}
+
+struct ChatPreviewView_Priority_Previews: PreviewProvider {
+    static var previews: some View {
+        VStack(spacing: 0) {
+            row("2 normal, 1 high priority", .all, ChatStats(unreadCount: 3, unreadMentions: 1, unreadHighPriority: 1))
+            row("1 high priority", .all, ChatStats(unreadCount: 1, unreadMentions: 1, unreadHighPriority: 1))
+            row("Mentions mode: 1 high priority", .mentions, ChatStats(unreadCount: 3, unreadMentions: 1, unreadHighPriority: 1))
+            row("Muted: 1 high priority", MsgFilter.none, ChatStats(unreadCount: 3, unreadMentions: 1, unreadHighPriority: 1))
+            row("1 mention", .all, ChatStats(unreadCount: 3, unreadMentions: 1))
+            row("Silent only", .all, ChatStats(unreadCount: 3, unreadSilent: 3))
+            row("3 silent, 1 high priority", .all, ChatStats(unreadCount: 4, unreadMentions: 1, unreadSilent: 3, unreadHighPriority: 1))
+        }
+    }
+
+    private static func row(_ name: String, _ enableNtfs: MsgFilter, _ chatStats: ChatStats) -> some View {
+        var groupInfo = GroupInfo.sampleData
+        groupInfo.localDisplayName = name
+        groupInfo.groupProfile = GroupProfile(displayName: name, fullName: "")
+        groupInfo.chatSettings.enableNtfs = enableNtfs
+        return ChatPreviewView(chat: Chat(
+            chatInfo: .group(groupInfo: groupInfo, groupChatScope: nil),
+            chatItems: [ChatItem.getSample(1, .directRcv, previewDate, "Tests passed: 211", .rcvNew)],
+            chatStats: chatStats
+        ), progressByTimeout: Binding.constant(false))
+        .frame(height: dynamicSize(.large).rowHeight)
     }
 }

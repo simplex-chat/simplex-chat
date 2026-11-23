@@ -264,6 +264,7 @@ CREATE TABLE group_members(
   member_security_code TEXT,
   member_security_code_verified_at TEXT,
   invited_via_group_member_id INTEGER REFERENCES group_members(group_member_id) ON DELETE SET NULL,
+  member_via BLOB,
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -532,7 +533,9 @@ CREATE TABLE chat_items(
   fwd_from_group_link BLOB,
   fwd_from_public_group_id BLOB,
   fwd_from_member_id BLOB,
-  fwd_from_shared_msg_id BLOB
+  fwd_from_shared_msg_id BLOB,
+  item_priority INTEGER NOT NULL DEFAULT 0,
+  item_original_ts TEXT
 ) STRICT;
 CREATE TABLE chat_item_messages(
   chat_item_id INTEGER NOT NULL REFERENCES chat_items ON DELETE CASCADE,
@@ -793,6 +796,8 @@ CREATE TABLE delivery_tasks(
   failed INTEGER DEFAULT 0,
   created_at TEXT NOT NULL DEFAULT(datetime('now')),
   updated_at TEXT NOT NULL DEFAULT(datetime('now'))
+  ,
+  update_notification INTEGER NOT NULL DEFAULT 0
 ) STRICT;
 CREATE TABLE delivery_jobs(
   delivery_job_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -1594,6 +1599,20 @@ CREATE INDEX idx_chat_items_user_id_item_status ON chat_items(
   group_id,
   user_mention
 );
+CREATE INDEX idx_chat_items_contacts_silent ON chat_items(
+  user_id,
+  item_status,
+  contact_id,
+  item_priority
+) WHERE item_priority < 0 AND contact_id IS NOT NULL;
+CREATE INDEX idx_chat_items_groups_priority ON chat_items(
+  user_id,
+  item_status,
+  group_id,
+  group_scope_tag,
+  group_scope_group_member_id,
+  item_priority
+) WHERE item_priority <> 0 AND group_id IS NOT NULL;
 CREATE TRIGGER on_group_members_insert_update_summary
 AFTER INSERT ON group_members
 FOR EACH ROW

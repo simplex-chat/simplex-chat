@@ -538,7 +538,7 @@ data GroupInfo = GroupInfo
     rosterVersion :: Maybe VersionRoster,
     membersRequireAttention :: Int,
     viaGroupLinkUri :: Maybe ConnReqContact,
-    groupDomainVerified :: Maybe Bool
+    groupDomainVerified :: Maybe DomainVerification
   }
   deriving (Eq, Show)
 
@@ -834,14 +834,17 @@ data LocalProfile = LocalProfile
     localBadge :: Maybe LocalBadge,
     localAlias :: LocalAlias,
     contactDomain :: Maybe SimplexDomainClaim,
-    contactDomainVerified :: Maybe Bool
+    contactDomainVerified :: Maybe DomainVerification
   }
+  deriving (Eq, Show)
+
+data DomainVerification = DVFailed | DVVerified | DVMoved
   deriving (Eq, Show)
 
 localProfileId :: LocalProfile -> ProfileId
 localProfileId LocalProfile {profileId} = profileId
 
-toLocalProfile :: ProfileId -> Profile -> LocalAlias -> UTCTime -> Maybe Bool -> Maybe Bool -> LocalProfile
+toLocalProfile :: ProfileId -> Profile -> LocalAlias -> UTCTime -> Maybe Bool -> Maybe DomainVerification -> LocalProfile
 toLocalProfile profileId Profile {displayName, fullName, shortDescr, description, image, contactLink, preferences, peerType, badge, contactDomain} localAlias now badgeVerified contactDomainVerified =
   LocalProfile {profileId, displayName, fullName, shortDescr, description, image, contactLink, preferences, peerType, localBadge, localAlias, contactDomain, contactDomainVerified}
   where
@@ -1122,7 +1125,8 @@ data MemberInfo = MemberInfo
     memberRole :: GroupMemberRole,
     v :: Maybe ChatVersionRange,
     profile :: Profile,
-    memberKey :: Maybe MemberKey
+    memberKey :: Maybe MemberKey,
+    via :: Maybe MemberId
   }
   deriving (Eq, Show)
 
@@ -1201,6 +1205,7 @@ data GroupMember = GroupMember
     blockedByAdmin :: Bool,
     invitedBy :: InvitedBy,
     invitedByGroupMemberId :: Maybe GroupMemberId,
+    memberVia :: Maybe MemberId,
     localDisplayName :: ContactName,
     -- for membership, memberProfile can be either user's profile or incognito profile, based on memberIncognito test.
     -- for other members it's whatever profile the local user can see (there is no info about whether it's main or incognito profile for remote users).
@@ -1308,6 +1313,9 @@ memberSecurityCode GroupMember {activeConn, memberVerifiedCode} = memberVerified
 
 memberBlocked :: GroupMember -> Bool
 memberBlocked m = blockedByAdmin m || not (showMessages $ memberSettings m)
+
+memberViaUser :: GroupInfo -> GroupMember -> Bool
+memberViaUser GroupInfo {membership} GroupMember {memberVia} = memberVia == Just (memberId' membership)
 
 data NewGroupMember = NewGroupMember
   { memInfo :: MemberInfo,
@@ -2322,9 +2330,18 @@ instance FromJSON BoolDef where
   parseJSON v = BoolDef <$> parseJSON v
   omittedField = Just (BoolDef False)
 
+newtype IntDef = IntDef Int
+  deriving newtype (Eq, Show, ToJSON)
+
+instance FromJSON IntDef where
+  parseJSON v = IntDef <$> parseJSON v
+  omittedField = Just (IntDef 0)
+
 $(JQ.deriveJSON defaultJSON ''UserContact)
 
 $(JQ.deriveJSON defaultJSON ''Profile)
+
+$(JQ.deriveJSON (enumJSON $ dropPrefix "DV") ''DomainVerification)
 
 $(JQ.deriveJSON defaultJSON ''LocalProfile)
 
@@ -2394,6 +2411,13 @@ $(JQ.deriveJSON defaultJSON ''GroupLink)
 instance FromField MsgFilter where fromField = fromIntField_ msgFilterIntP
 
 instance ToField MsgFilter where toField = toField . msgFilterInt
+
+instance FromField DomainVerification where
+  fromField = fromIntField_ $ \case
+    0 -> Just DVFailed
+    1 -> Just DVVerified
+    2 -> Just DVMoved
+    _ -> Nothing
 
 $(JQ.deriveJSON defaultJSON ''CReqClientData)
 

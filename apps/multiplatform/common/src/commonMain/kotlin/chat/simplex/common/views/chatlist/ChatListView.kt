@@ -1,6 +1,7 @@
 package chat.simplex.common.views.chatlist
 
 import LocalCardScreen
+import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.*
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
@@ -8,6 +9,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.InlineTextContent
+import androidx.compose.foundation.text.appendInlineContent
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -239,12 +242,14 @@ fun ChatListView(chatModel: ChatModel, userPickerState: MutableStateFlow<Animate
   val oneHandUI = remember { appPrefs.oneHandUI.state }
 
   LaunchedEffect(Unit) {
+    if (noticesShown) return@LaunchedEffect
     val showWhatsNew = shouldShowWhatsNew(chatModel)
     val showUpdatedConditions = chatModel.conditions.value.conditionsAction?.shouldShowNotice ?: false
     if (showWhatsNew || showUpdatedConditions) {
       // Requested here, so that the country is known by the time the modal opens
       platform.androidLoadPlayStoreCountry()
       delay(1000L)
+      noticesShown = true
       ModalManager.center.showCustomModal { close -> WhatsNewView(close = close, updatedConditions = showUpdatedConditions) }
     }
   }
@@ -729,8 +734,9 @@ fun UserProfileButton(image: String?, allRead: Boolean, onButtonClicked: () -> U
       Box {
         ProfileImage(
           image = image,
-          size = 37.dp * fontSizeSqrtMultiplier,
-          color = MaterialTheme.colors.secondaryVariant.mixWith(MaterialTheme.colors.onBackground, 0.97f)
+          size = 31.dp * fontSizeSqrtMultiplier,
+          color = MaterialTheme.colors.secondaryVariant.mixWith(MaterialTheme.colors.onBackground, 0.97f),
+          modifier = Modifier.centeredIn(37.dp * fontSizeSqrtMultiplier)
         )
         if (!allRead) {
           unreadBadge()
@@ -902,16 +908,16 @@ private fun ChatListSearchBar(listState: LazyListState, searchText: MutableState
                 searchChatFilteredBySimplexLink.value = emptySet()
                 // resolve the name locally on each keystroke, debounced; collectLatest cancels the in-flight
                 // search when the next keystroke arrives. A bare name can be a contact or a channel, so search
-                // both and filter every known chat found; drop the row only when both types are already known.
+                // both and filter every known chat found.
                 delay(NAME_SEARCH_DEBOUNCE_MS)
                 val rhId = chatModel.remoteHostId()
                 val inProgress = mutableStateOf(false) // background search: no spinner, no error alerts
                 val targets = if (candidate.startsWith("@") || candidate.startsWith("#")) listOf(candidate) else listOf("@$candidate", "#$candidate")
-                val ids = targets.mapNotNull { name ->
-                  knownChatId(rhId, chatModel.controller.apiConnectPlan(rhId, name, PlanResolveMode.PRMNever, inProgress = inProgress))
+                val localChats = targets.flatMap { name ->
+                  chatModel.controller.apiConnectPlan(rhId, name, PlanResolveMode.PRMNever, inProgress = inProgress)?.connectionPlan?.localChats ?: emptyList()
                 }
-                searchChatFilteredBySimplexLink.value = ids.toSet()
-                if (ids.size == targets.size) connectNameCandidate.value = null
+                localChats.forEach { chatModel.chatsContext.updateChat(rhId, it) }
+                searchChatFilteredBySimplexLink.value = localChats.map { it.id }.toSet()
               } else if (!searchShowingSimplexLink.value || it.isEmpty()) {
                 if (it.isNotEmpty()) {
                   focusRequester.requestFocus()
@@ -956,6 +962,7 @@ private fun ErrorSettingsView() {
 }
 
 private var lazyListState = 0 to 0
+private var noticesShown = false
 
 enum class ScrollDirection {
   Up, Down, Idle
@@ -1036,6 +1043,7 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
   val searchShowingSimplexLink = remember { mutableStateOf(false) }
   val searchChatFilteredBySimplexLink = remember { mutableStateOf<Set<String>>(emptySet()) }
   val connectNameCandidate = remember { mutableStateOf<String?>(null) }
+  val showLocalChats: (List<ChatInfo>) -> Unit = { localChats -> searchChatFilteredBySimplexLink.value += localChats.map { it.id } }
   val chats = filteredChats(searchShowingSimplexLink, searchChatFilteredBySimplexLink, searchText.value.text, allChats.value.toList(), activeFilter.value)
   val topPaddingToContent = topPaddingToContent(false)
   val blankSpaceSize = if (oneHandUI.value) WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + AppBarHeight * fontSizeSqrtMultiplier else topPaddingToContent
@@ -1069,10 +1077,10 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
           Column(Modifier.consumeWindowInsets(WindowInsets.navigationBars).consumeWindowInsets(PaddingValues(bottom = AppBarHeight))) {
             Divider()
             // bottom toolbar: search bar below, so on desktop the connect row goes below the tags
-            TagsOrConnectByName(searchText, connectNameCandidate) { candidate ->
+            TagsOrConnectByName(searchText, connectNameCandidate, showLocalChats) { candidate ->
               TagsView(searchText)
               Divider()
-              ConnectByNameRow(candidate, searchText, connectNameCandidate, close = null)
+              ConnectByNameRow(candidate, searchText, connectNameCandidate, close = null, showLocalChats = showLocalChats)
             }
             ChatListSearchBar(listState, searchText, searchShowingSimplexLink, searchChatFilteredBySimplexLink, connectNameCandidate)
             Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.ime))
@@ -1080,8 +1088,8 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
         } else {
           ChatListSearchBar(listState, searchText, searchShowingSimplexLink, searchChatFilteredBySimplexLink, connectNameCandidate)
           // top toolbar: search bar above, so on desktop the connect row goes above the tags
-          TagsOrConnectByName(searchText, connectNameCandidate) { candidate ->
-            ConnectByNameRow(candidate, searchText, connectNameCandidate, close = null)
+          TagsOrConnectByName(searchText, connectNameCandidate, showLocalChats) { candidate ->
+            ConnectByNameRow(candidate, searchText, connectNameCandidate, close = null, showLocalChats = showLocalChats)
             Divider()
             TagsView(searchText)
           }
@@ -1215,30 +1223,6 @@ internal fun nameSearchCandidate(str: String): String? {
   }
 }
 
-// The chat id a local (PRMNever) search resolved to — a contact, a business, or a channel — or null on a miss.
-// The core returns the correct type for @ vs # (getContactToConnect / type-filtered getGroupToConnect), so no
-// client-side type check is needed.
-internal suspend fun knownChatId(rhId: Long?, result: ConnectionPlanResult?): String? = when (val plan = result?.connectionPlan) {
-  is ConnectionPlan.ContactAddress -> (plan.contactAddressPlan as? ContactAddressPlan.Known)?.contact?.let { contact ->
-    // a name-resolved chat may be prepared in the store but not yet listed, so add it (as the tap path does)
-    if (chatModel.getContactChat(contact.contactId) == null) {
-      chatModel.chatsContext.addChat(Chat(remoteHostId = rhId, chatInfo = ChatInfo.Direct(contact), chatItems = emptyList()))
-    }
-    contact.id
-  }
-  is ConnectionPlan.GroupLink -> (when (val g = plan.groupLinkPlan) {
-    is GroupLinkPlan.Known -> g.groupInfo
-    is GroupLinkPlan.OwnLink -> g.groupInfo
-    else -> null
-  })?.let { gInfo ->
-    if (chatModel.getGroupChat(gInfo.groupId) == null) {
-      chatModel.chatsContext.addChat(Chat(remoteHostId = rhId, chatInfo = ChatInfo.Group(gInfo, groupChatScope = null), chatItems = emptyList()))
-    }
-    gInfo.id
-  }
-  else -> null
-}
-
 // The list tags and the connect-by-name row share one slot. When there is no name, the tags show; on
 // mobile the row replaces the tags while shown. On desktop both show, arranged by the caller (which
 // knows whether the search bar is above or below), passed as desktopView.
@@ -1246,18 +1230,19 @@ internal suspend fun knownChatId(rhId: Long?, result: ConnectionPlanResult?): St
 private fun TagsOrConnectByName(
   searchText: MutableState<TextFieldValue>,
   connectNameCandidate: MutableState<String?>,
+  showLocalChats: (List<ChatInfo>) -> Unit,
   desktopView: @Composable (candidate: String) -> Unit,
 ) {
   val candidate = connectNameCandidate.value
   when {
     candidate == null -> TagsView(searchText)
-    !appPlatform.isDesktop -> ConnectByNameRow(candidate, searchText, connectNameCandidate, close = null)
+    !appPlatform.isDesktop -> ConnectByNameRow(candidate, searchText, connectNameCandidate, close = null, showLocalChats = showLocalChats)
     else -> desktopView(candidate)
   }
 }
 
 @Composable
-internal fun ConnectByNameRow(name: String, searchText: MutableState<TextFieldValue>, connectNameCandidate: MutableState<String?>, close: (() -> Unit)?) {
+internal fun ConnectByNameRow(name: String, searchText: MutableState<TextFieldValue>, connectNameCandidate: MutableState<String?>, close: (() -> Unit)?, showLocalChats: ((List<ChatInfo>) -> Unit)? = null) {
   val view = LocalMultiplatformView()
   Row(
     Modifier
@@ -1268,11 +1253,12 @@ internal fun ConnectByNameRow(name: String, searchText: MutableState<TextFieldVa
           planAndConnect(
             chatModel.remoteHostId(),
             name,
-            close = close,
-            cleanup = {
+            close = {
+              close?.invoke()
               searchText.value = TextFieldValue()
               connectNameCandidate.value = null
             },
+            showLocalChats = showLocalChats,
           )
         }
       }
@@ -1338,6 +1324,7 @@ private fun TagsView(searchText: MutableState<TextFieldValue>) {
   val alwaysShownPresetTags = presetTags.filter { !presetCanBeCollapsed(it.key) && it.value > 0 }
   val activeFilter = remember { chatModel.activeChatTagFilter }
   val unreadTags = remember { chatModel.unreadTags }
+  val priorityTags = remember { chatModel.priorityTags }
   val rhId = chatModel.remoteHostId()
 
   val rowSizeModifier = Modifier.sizeIn(minHeight = TAG_MIN_HEIGHT * fontSizeSqrtMultiplier)
@@ -1398,11 +1385,18 @@ private fun TagsView(searchText: MutableState<TextFieldValue>) {
           }
           Spacer(Modifier.width(4.dp))
           Box {
-            val badgeText = if ((unreadTags[tag.chatTagId] ?: 0) > 0) " ●" else ""
+            val priorityTag = (priorityTags[tag.chatTagId] ?: 0) > 0
+            val badgeText = when {
+              priorityTag -> " "
+              (unreadTags[tag.chatTagId] ?: 0) > 0 -> " ●"
+              else -> ""
+            }
+            val bellPlaceholder = Placeholder(12.5.sp, 16.sp, PlaceholderVerticalAlign.TextCenter)
             val invisibleText = buildAnnotatedString {
               append(tag.chatTagText)
               withStyle(SpanStyle(fontSize = 12.sp, fontWeight = FontWeight.SemiBold)) {
                 append(badgeText)
+                if (priorityTag) appendInlineContent("bell")
               }
             }
             Text(
@@ -1411,13 +1405,15 @@ private fun TagsView(searchText: MutableState<TextFieldValue>) {
               fontSize = 15.sp,
               color = Color.Transparent,
               maxLines = 1,
-              overflow = TextOverflow.Ellipsis
+              overflow = TextOverflow.Ellipsis,
+              inlineContent = mapOf("bell" to InlineTextContent(bellPlaceholder) {})
             )
             // Visible text with styles
             val visibleText = buildAnnotatedString {
               append(tag.chatTagText)
               withStyle(SpanStyle(fontSize = 12.5.sp, color = MaterialTheme.colors.primary)) {
                 append(badgeText)
+                if (priorityTag) appendInlineContent("bell")
               }
             }
             Text(
@@ -1426,7 +1422,10 @@ private fun TagsView(searchText: MutableState<TextFieldValue>) {
               fontSize = 15.sp,
               color = if (current) MaterialTheme.colors.primary else MaterialTheme.colors.secondary,
               maxLines = 1,
-              overflow = TextOverflow.Ellipsis
+              overflow = TextOverflow.Ellipsis,
+              inlineContent = mapOf("bell" to InlineTextContent(bellPlaceholder) {
+                Icon(painterResource(MR.images.ic_notifications_filled), null, Modifier.requiredSize(16.sp.toDp()), tint = MaterialTheme.colors.primary)
+              })
             )
           }
         }
@@ -1625,7 +1624,7 @@ private fun filtered(chat: Chat, activeFilter: ActiveFilter?): Boolean =
   when (activeFilter) {
     is ActiveFilter.PresetTag -> presetTagMatchesChat(activeFilter.tag, chat.chatInfo, chat.chatStats)
     is ActiveFilter.UserTag -> chat.chatInfo.chatTags?.contains(activeFilter.tag.chatTagId) ?: false
-    is ActiveFilter.Unread -> chat.unreadTag
+    is ActiveFilter.Unread -> chat.unreadTag != UnreadTag.Read
     else -> true
   }
 
@@ -1676,4 +1675,22 @@ private fun presetCanBeCollapsed(tag: PresetTagKind): Boolean = when (tag) {
 
 fun scrollToBottom(scope: CoroutineScope, listState: LazyListState) {
   scope.launch { try { listState.animateScrollToItem(0) } catch (e: Exception) { Log.e(TAG, e.stackTraceToString()) } }
+}
+
+@Preview
+@Composable
+fun PreviewTagsView() {
+  DisposableEffect(Unit) {
+    chatModel.userTags.value = listOf(ChatTag(1, "Work", null), ChatTag(2, "Friends", null), ChatTag(4, "Family", null))
+    chatModel.unreadTags.putAll(mapOf(1L to 1, 2L to 1))
+    chatModel.priorityTags[1L] = 1
+    onDispose {
+      chatModel.userTags.value = emptyList()
+      chatModel.unreadTags.clear()
+      chatModel.priorityTags.clear()
+    }
+  }
+  SimpleXTheme {
+    TagsView(remember { mutableStateOf(TextFieldValue()) })
+  }
 }

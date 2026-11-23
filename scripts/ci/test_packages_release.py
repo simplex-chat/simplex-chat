@@ -19,6 +19,7 @@ import packages_release
 from packages_release import (
     ADDON_ASSETS,
     CABAL_FILE,
+    MCP_DIR,
     NODEJS_DIR,
     PYTHON_DIR,
     PYTHON_VERSION_FILE,
@@ -85,6 +86,10 @@ def github_release(assets: list[str], n: int) -> dict:
 
 def listed_release(tag: str, assets: list[str], n: int, draft: bool = False, body: str | None = None) -> dict:
     return {"id": n, "tag_name": tag, "draft": draft, "body": body, **github_release(assets, n)}
+
+
+def releases_file(releases: dict, blob: str) -> dict:
+    return {"content": base64.b64encode(render_releases(releases).encode()).decode(), "sha": blob}
 
 
 def state(**overrides) -> State:
@@ -338,9 +343,6 @@ class ReleasesFileTest(unittest.TestCase):
 
 
 class RecordReleasesTest(unittest.TestCase):
-    def file(self, releases, blob):
-        return {"content": base64.b64encode(render_releases(releases).encode()).decode(), "sha": blob}
-
     def conflict(self):
         error = urllib.error.HTTPError("url", 409, "Conflict", email.message.Message(), io.BytesIO())
         self.addCleanup(error.close)
@@ -354,13 +356,13 @@ class RecordReleasesTest(unittest.TestCase):
             return None if method == "GET" else {"commit": {"sha": "libs1"}}
 
         with mock.patch.object(packages_release, "libs_api", api):
-            self.assertEqual(record_releases([("core", "7.1.0.12")], "sx1"), "libs1")
+            self.assertEqual(record_releases([("core", "7.1.0.12")], "sx1"), ({"core": {"7.1.0.12": "sx1"}}, "libs1"))
         _, method, body = calls[1]
         self.assertEqual((method, body["message"], "sha" in body), ("PUT", "core 7.1.0.12", False))
         self.assertEqual(tomllib.loads(base64.b64decode(body["content"]).decode()), {"core": {"7.1.0.12": "sx1"}})
 
     def test_retries_when_another_writer_changed_the_file(self):
-        reads = iter([self.file({"core": {"1": "a"}}, "blob1"), self.file({"core": {"1": "a", "2": "b"}}, "blob2")])
+        reads = iter([releases_file({"core": {"1": "a"}}, "blob1"), releases_file({"core": {"1": "a", "2": "b"}}, "blob2")])
         puts = []
 
         def api(path, method="GET", body=None):
@@ -371,21 +373,19 @@ class RecordReleasesTest(unittest.TestCase):
                 raise self.conflict()
             return {"commit": {"sha": "libs2"}}
 
+        written = {"core": {"1": "a", "2": "b"}, "npm": {"simplex-chat": {"3": "sx3"}}}
         with mock.patch.object(packages_release, "libs_api", api):
-            self.assertEqual(record_releases([("npm/simplex-chat", "3")], "sx3"), "libs2")
+            self.assertEqual(record_releases([("npm/simplex-chat", "3")], "sx3"), (written, "libs2"))
         self.assertEqual([body["sha"] for body in puts], ["blob1", "blob2"])
-        self.assertEqual(
-            tomllib.loads(base64.b64decode(puts[1]["content"]).decode()),
-            {"core": {"1": "a", "2": "b"}, "npm": {"simplex-chat": {"3": "sx3"}}},
-        )
+        self.assertEqual(tomllib.loads(base64.b64decode(puts[1]["content"]).decode()), written)
 
     def test_recorded_entries_return_the_last_commit_of_the_file(self):
         def api(path, method="GET", body=None):
             self.assertEqual(method, "GET")
-            return [{"sha": "libs0"}] if path.startswith("commits") else self.file({"core": {"1": "a"}}, "blob1")
+            return [{"sha": "libs0"}] if path.startswith("commits") else releases_file({"core": {"1": "a"}}, "blob1")
 
         with mock.patch.object(packages_release, "libs_api", api):
-            self.assertEqual(record_releases([("core", "1")], "other"), "libs0")
+            self.assertEqual(record_releases([("core", "1")], "other"), ({"core": {"1": "a"}}, "libs0"))
 
 
 class GitRepoTest(unittest.TestCase):
@@ -479,6 +479,9 @@ class ChangesTest(GitRepoTest):
     def test_core_change_builds_only_the_core(self):
         self.assertEqual(self.builds("src/Simplex/Chat.hs"), {"haskell"})
 
+    def test_api_fixture_change_builds_the_core_and_both_apps(self):
+        self.assertEqual(self.builds("tests/fixtures/api/names/plan-known-expired.json"), {"haskell", "kotlin", "ios"})
+
     def test_ios_stub_script_builds_only_ios(self):
         self.assertEqual(self.builds("scripts/ci/ios-stub-libs.sh"), {"ios"})
 
@@ -507,12 +510,52 @@ class ChangesTest(GitRepoTest):
         self.assertEqual(self.builds("packages/simplex-chat-python/src/simplex_chat/client.py"), {"packages"})
 
     def test_badge_web_change_builds_the_core_and_tests_its_scope(self):
-        self.assertEqual(self.builds("apps/simplex-badge-service/web/src/catalog.ts"), {"haskell"})
-        self.assertEqual(self.values["scopes"], "badge-web")
+        self.assertEqual(self.builds("apps/simplex-store-service/web/src/catalog.ts"), {"haskell"})
+        self.assertEqual(self.values["scopes"], "badge-web names-e2e")
 
     def test_release_script_change_tests_the_ci_scripts(self):
         self.assertEqual(self.builds("scripts/ci/packages_release.py"), set())
         self.assertEqual(self.values["scopes"], "ci-scripts")
+
+    def test_website_library_change_tests_its_scope(self):
+        self.assertEqual(self.builds("website/src/js/simplex-lib.jsc"), set())
+        self.assertEqual(self.values["scopes"], "website")
+
+    def test_mcp_change_tests_its_scope(self):
+        self.assertEqual(self.builds("packages/simplex-chat-mcp/src/tools.ts"), set())
+        self.assertEqual(self.values["scopes"], "mcp")
+
+    def test_library_change_builds_packages_without_the_mcp_scope(self):
+        self.assertEqual(self.builds("packages/simplex-chat-nodejs/src/api.ts"), {"packages"})
+        self.assertEqual(self.values["scopes"], "")
+
+    def test_support_bot_change_tests_its_scope(self):
+        self.assertEqual(self.builds("apps/simplex-support-bot/src/bot.ts"), set())
+        self.assertEqual(self.values["scopes"], "support-bot")
+
+    def test_support_bot_light_change_tests_its_scope(self):
+        self.assertEqual(self.builds("apps/simplex-support-bot-light/src/support_bot_light/handlers.py"), set())
+        self.assertEqual(self.values["scopes"], "support-bot-light")
+
+    def test_python_library_change_builds_packages_and_tests_the_support_bot_light_scope(self):
+        self.assertEqual(self.builds("packages/simplex-chat-python/src/simplex_chat/client.py"), {"packages"})
+        self.assertEqual(self.values["scopes"], "support-bot-light")
+
+    def test_names_page_pin_builds_the_core_and_tests_the_page_against_the_service(self):
+        self.assertEqual(self.builds("apps/simplex-domains"), {"haskell"})
+        self.assertEqual(self.values["scopes"], "names-page names-e2e")
+
+    def test_store_fixture_change_builds_only_the_core_and_tests_both_pages(self):
+        self.assertEqual(self.builds("tests/fixtures/store-service/rest-api/search.json"), {"haskell"})
+        self.assertEqual(self.values["scopes"], "badge-web names-page names-e2e")
+
+    def test_store_service_change_builds_the_core_and_tests_the_names_page_against_it(self):
+        self.assertEqual(self.builds("apps/simplex-store-service/src/StoreService/Service.hs"), {"haskell"})
+        self.assertEqual(self.values["scopes"], "names-e2e")
+
+    def test_store_service_test_or_script_change_builds_the_core_and_tests_the_names_page_against_the_service(self):
+        self.assertEqual(self.builds("tests/Bots/StoreService/FakeStripe.hs", "scripts/store-service/dev/contract-run.sh"), {"haskell"})
+        self.assertEqual(self.values["scopes"], "names-e2e")
 
 
 class PackageStateTest(GitRepoTest):
@@ -544,32 +587,103 @@ class PackageStateTest(GitRepoTest):
         self.assertFalse(self.state(registry_published=False).published)
         self.assertTrue(self.state(registry_published=True).published)
 
-    def test_publish_plan_skips_recorded_versions_before_the_registries_list_them(self):
+    def plan_output(self, releases, npm_versions):
+        mcp = {
+            "name": "@simplex-chat/mcp",
+            "version": "0.2.0",
+            "dependencies": {"simplex-chat": "^1.0.0-beta.1.1", "@simplex-chat/types": "^0.1.0", "qrcode": "^1.5"},
+        }
         self.write(f"{TYPES_DIR}/package.json", '{"name": "@simplex-chat/types", "version": "0.1.0"}')
         self.write(f"{NODEJS_DIR}/package.json", '{"name": "simplex-chat", "version": "1.0.0-beta.1.1"}')
+        self.write(f"{MCP_DIR}/package.json", json.dumps(mcp))
         self.write(PYTHON_VERSION_FILE, render_python_version("1.0.0b1.post1", Pins("core-1", {})))
         self.write("pyproject.toml", "")
-        self.commit("packages")
-        releases = {"npm": {"simplex-chat": {"1.0.0-beta.1.1": "c"}}, "pypi": {"simplex-chat": {"1.0.0b1.post1": "c"}}}
         output = io.StringIO()
+        notices = io.StringIO()
         with (
             mock.patch.object(packages_release, "ROOT", self.repo),
             mock.patch.object(packages_release, "read_releases", return_value=(releases, "blob")),
             mock.patch.object(packages_release, "python_project", return_value="simplex-chat"),
-            mock.patch.object(packages_release, "npm_published", return_value=False),
+            mock.patch.object(packages_release, "npm_published", lambda name, version: (name, version) in npm_versions),
             mock.patch.object(packages_release, "pypi_published", return_value=False),
             contextlib.redirect_stdout(output),
+            contextlib.redirect_stderr(notices),
         ):
             publish_plan()
+        self.notices = notices.getvalue()
+        return output.getvalue().splitlines()
+
+    def test_publish_plan_skips_recorded_versions_before_the_registries_list_them(self):
+        releases = {
+            "npm": {"simplex-chat": {"1.0.0-beta.1.1": "c"}, "@simplex-chat/mcp": {"0.2.0": "c"}},
+            "pypi": {"simplex-chat": {"1.0.0b1.post1": "c"}},
+        }
         self.assertEqual(
-            output.getvalue().splitlines(),
+            self.plan_output(releases, set()),
             [
                 "types_version=0.1.0",
                 "types_dist_tag=latest",
                 "nodejs_version=",
                 "nodejs_dist_tag=beta",
+                "mcp_version=",
+                "mcp_dist_tag=latest",
                 "python_version=",
             ],
+        )
+        self.assertEqual(self.notices, "")
+
+    def test_publish_plan_lists_mcp_when_its_pinned_versions_are_on_npm(self):
+        pins = {("simplex-chat", "1.0.0-beta.1.1"), ("@simplex-chat/types", "0.1.0")}
+        self.assertIn("mcp_version=0.2.0", self.plan_output({}, pins))
+        self.assertEqual(self.notices, "")
+
+    def test_publish_plan_counts_a_recorded_pinned_version_as_published(self):
+        releases = {"npm": {"simplex-chat": {"1.0.0-beta.1.1": "c"}}}
+        self.assertIn("mcp_version=0.2.0", self.plan_output(releases, {("@simplex-chat/types", "0.1.0")}))
+
+    def test_publish_plan_leaves_mcp_for_a_later_push_while_a_pinned_version_is_not_on_npm(self):
+        notice = "::notice title=Package release::@simplex-chat/mcp 0.2.0 waits for "
+        self.assertIn("mcp_version=", self.plan_output({}, {("simplex-chat", "1.0.0-beta.1.1")}))
+        self.assertEqual(self.notices, f"{notice}@simplex-chat/types 0.1.0\n")
+        self.assertIn("mcp_version=", self.plan_output({}, {("@simplex-chat/types", "0.1.0")}))
+        self.assertEqual(self.notices, f"{notice}simplex-chat 1.0.0-beta.1.1\n")
+
+    def test_record_adds_the_mcp_version(self):
+        self.write(f"{TYPES_DIR}/package.json", '{"name": "@simplex-chat/types"}')
+        self.write(f"{NODEJS_DIR}/package.json", '{"name": "simplex-chat"}')
+        self.write(f"{MCP_DIR}/package.json", '{"name": "@simplex-chat/mcp"}')
+        with (
+            mock.patch.object(packages_release, "ROOT", self.repo),
+            mock.patch.object(packages_release, "python_project", return_value="simplex-chat"),
+            mock.patch.object(packages_release, "record_releases", return_value=({}, "libs1")) as record,
+            contextlib.redirect_stdout(io.StringIO()),
+        ):
+            packages_release.main(["record", "--commit", "sx1", "--mcp", "0.2.0"])
+        record.assert_called_once_with([("npm/@simplex-chat/mcp", "0.2.0")], "sx1")
+
+    def test_test_names_rename_mcp_and_its_pinned_dependencies(self):
+        repository = {"type": "git", "url": "git+https://github.com/simplex-chat/simplex-chat.git"}
+        types = {"name": "@simplex-chat/types", "repository": repository}
+        nodejs = {"name": "simplex-chat", "repository": repository, "dependencies": {"@simplex-chat/types": "^0.1.0"}}
+        dependencies = {"simplex-chat": "^1.0.0-beta.1.1", "@simplex-chat/types": "^0.1.0", "qrcode": "^1.5"}
+        mcp = {"name": "@simplex-chat/mcp", "repository": repository, "dependencies": dependencies}
+        for directory, package in [(TYPES_DIR, types), (NODEJS_DIR, nodejs), (MCP_DIR, mcp)]:
+            self.write(f"{directory}/package.json", json.dumps(package))
+        with (
+            mock.patch.object(packages_release, "ROOT", self.repo),
+            mock.patch.dict("os.environ", {"NPM_SCOPE": "@test", "GITHUB_REPOSITORY": "a/b", "PYPI_PROJECT": ""}),
+        ):
+            packages_release.test_names()
+        renamed = json.loads((self.repo / MCP_DIR / "package.json").read_text())
+        self.assertEqual(renamed["name"], "@test/mcp")
+        self.assertEqual(renamed["repository"]["url"], "git+https://github.com/a/b.git")
+        self.assertEqual(
+            renamed["dependencies"],
+            {
+                "simplex-chat": "npm:@test/simplex-chat@^1.0.0-beta.1.1",
+                "@simplex-chat/types": "npm:@test/types@^0.1.0",
+                "qrcode": "^1.5",
+            },
         )
 
     def test_unknown_recorded_commit_falls_back_to_the_version_commit(self):
@@ -687,11 +801,10 @@ class PublishReleaseTest(unittest.TestCase):
 
 class ClaimCoreTest(unittest.TestCase):
     def claim(self, recorded, after_record=None, problem=None, version="7.1.0.12", branch="master"):
-        reads = iter([(recorded, "blob"), (after_record or recorded, "blob")])
-        self.record = mock.Mock(return_value="libs1")
+        self.record = mock.Mock(return_value=(after_record or recorded, "libs1"))
         output = io.StringIO()
         with (
-            mock.patch.object(packages_release, "read_releases", lambda: next(reads)),
+            mock.patch.object(packages_release, "read_releases", return_value=(recorded, "blob")),
             mock.patch.object(packages_release, "record_releases", self.record),
             mock.patch.object(packages_release, "types_problem", return_value=problem),
             contextlib.redirect_stdout(output),
@@ -736,6 +849,30 @@ class ClaimCoreTest(unittest.TestCase):
     def test_concurrent_claim_of_another_commit_is_skipped(self):
         claimed = {"core": {"master": {"7.1.0.11": "sx0", "7.1.0.12": "sx2"}}}
         self.assertEqual(self.claim({"core": {"master": {"7.1.0.11": "sx0"}}}, claimed), ["claim=skip"])
+
+    def test_written_claim_is_new_when_reads_return_the_previous_file(self):
+        previous = {"core": {"master": {"7.1.0.11": "sx0"}}}
+        puts = []
+
+        def api(path, method="GET", body=None):
+            if method == "GET":
+                return releases_file(previous, "blob1")
+            puts.append(body)
+            return {"commit": {"sha": "libs1"}}
+
+        output = io.StringIO()
+        with (
+            mock.patch.object(packages_release, "libs_api", api),
+            mock.patch.object(packages_release, "types_problem", return_value=None),
+            contextlib.redirect_stdout(output),
+        ):
+            claim_core("7.1.0.12", "sx1", "master")
+        self.assertEqual(output.getvalue().splitlines(), ["claim=new", "commit=libs1"])
+        self.assertEqual([body["sha"] for body in puts], ["blob1"])
+        self.assertEqual(
+            tomllib.loads(base64.b64decode(puts[0]["content"]).decode()),
+            {"core": {"master": {"7.1.0.11": "sx0", "7.1.0.12": "sx1"}}},
+        )
 
 
 class TypesProblemTest(unittest.TestCase):
@@ -804,6 +941,25 @@ class CoreReleaseTest(GitRepoTest):
         self.release("7.1.0.12")
         self.assertIn("version:        7.1.0.12\n", self.read(CABAL_FILE))
         self.assertEqual((self.types()["version"], self.types()["simplexChatCore"]), ("0.12.1", "7.1.0.11"))
+
+    def test_changed_types_manifest_gets_a_new_version_for_the_core(self):
+        types = self.types()
+        self.write(f"{TYPES_DIR}/package.json", json.dumps({**types, "dependencies": {"typescript": "^5.9.2"}}, indent=2) + "\n")
+        self.commit("types with a runtime dependency")
+        self.releases = {"core": {"master": {"7.1.0.11": self.head()}}}
+        self.write(f"{TYPES_DIR}/package.json", json.dumps({**types, "devDependencies": {"typescript": "^5.9.2"}}, indent=2) + "\n")
+        self.commit("types dependency moved")
+        self.release("7.1.0.12")
+        self.assertEqual((self.types()["version"], self.types()["simplexChatCore"]), ("0.12.2", "7.1.0.12"))
+        self.assertIn("SimpleX Chat core: 7.1.0.12\n", self.read(TYPES_README))
+
+    def test_release_fields_and_layout_of_the_types_manifest_are_not_a_types_change(self):
+        reordered = {"simplexChatCore": "7.1.0.12", "version": "0.12.5", "name": "@simplex-chat/types"}
+        self.write(f"{TYPES_DIR}/package.json", json.dumps(reordered))
+        self.commit("release fields and layout")
+        self.release("7.1.0.12")
+        self.assertEqual(self.types(), reordered)
+        self.assertIn("SimpleX Chat core: 7.1.0.11\n", self.read(TYPES_README))
 
     def test_requested_types_version_wins(self):
         self.release("7.1.0.12", "7.1.0-beta.6.1")

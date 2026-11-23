@@ -6,7 +6,7 @@
   "scripts": {
     "build": "npm run build:js && npm run build:eleventy && npm run build:tailwind",
     "start": "npx eleventy --serve",
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "node --test test/simplex-lib.test.js",
     "build:js": "cp ./node_modules/qrcode/build/qrcode.js ./src/js/ && cp ./node_modules/@plausible-analytics/tracker/plausible.js ./src/js/page.js && ./copy_call.sh",
     "build:eleventy": "eleventy",
     "build:tailwind": "npx tailwindcss -i tailwind.css -o _site/css/tailwind.css",

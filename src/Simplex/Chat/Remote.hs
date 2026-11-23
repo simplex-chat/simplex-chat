@@ -254,7 +254,7 @@ startRemoteHostSession rhKey = do
     TM.lookup rhKey sessions >>= \case
       Just _ -> pure . Left $ ChatErrorRemoteHost rhKey RHEBusy
       Nothing -> do
-        sessionSeq <- stateTVar nextSessionSeq $ \s -> (s, s + 1)
+        sessionSeq <- stateTVar' nextSessionSeq $ \s -> (s, s + 1)
         Right sessionSeq <$ TM.insert rhKey (sessionSeq, RHSessionStarting) sessions
 
 closeRemoteHost :: RHKey -> CM ()
@@ -457,7 +457,7 @@ startRemoteCtrlSession = do
     readTVar session >>= \case
       Just _ -> pure . Left $ ChatErrorRemoteCtrl RCEBusy
       Nothing -> do
-        sseq <- stateTVar nextSessionSeq $ \s -> (s, s + 1)
+        sseq <- stateTVar' nextSessionSeq $ \s -> (s, s + 1)
         Right sseq <$ writeTVar session (Just (sseq, RCSessionStarting))
 
 connectRemoteCtrl :: RCVerifiedInvitation -> SessionSeq -> CM (Maybe RemoteCtrlInfo, CtrlAppInfo)

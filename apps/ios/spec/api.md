@@ -388,7 +388,7 @@ Event processing entry point: [`processReceivedMsg`](../Shared/Model/SimpleXAPI.
 | Event | Key Fields | Description | Source |
 |-------|-----------|-------------|--------|
 | `newChatItems` | `user, chatItems: [AChatItem]` | New messages received | [L1084](../Shared/Model/AppAPITypes.swift#L1084) |
-| `chatItemUpdated` | `user, chatItem: AChatItem` | Message edited remotely | [L1086](../Shared/Model/AppAPITypes.swift#L1086) |
+| `chatItemUpdated` | `user, chatItemUpdate: AChatItemUpdate` | Message edited remotely; `chatItemUpdate.prevChatItem` is the item before the update | [L1250](../Shared/Model/AppAPITypes.swift#L1250) |
 | `chatItemReaction` | `user, added, reaction: ACIReaction` | Reaction added/removed | [L1087](../Shared/Model/AppAPITypes.swift#L1087) |
 | `chatItemsDeleted` | `user, chatItemDeletions, byUser` | Messages deleted | [L1088](../Shared/Model/AppAPITypes.swift#L1088) |
 | `chatItemsStatusesUpdated` | `user, chatItems: [AChatItem]` | Delivery status changed | [L1085](../Shared/Model/AppAPITypes.swift#L1085) |
@@ -549,6 +549,8 @@ public func sendSimpleXCmd<R: ChatAPIResult>(      // API.swift L115
     retryNum: Int32 = 0
 ) -> APIResult<R>
 ```
+
+`sendSimpleXCmd` calls [`sendSimpleXCmdStr`](../SimpleXChat/API.swift#L128), a `var` holding the call of `chat_send_cmd_retry`; [`parseSimpleXMarkdownText`](../SimpleXChat/API.swift#L154) is a `var` holding the call of `chat_parse_markdown`, and [`parseSanitizeUri`](../SimpleXChat/API.swift#L206) a `var` holding the call of `chat_parse_uri`. Tests replace them with responses recorded by the core tests.
 
 ### Event Receiver
 

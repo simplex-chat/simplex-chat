@@ -20,7 +20,7 @@ import Data.Time.Clock.System (SystemTime (..), systemToUTCTime)
 import Simplex.Chat.Delivery
   ( DeliveryJobScope (DJSGroup, jobSpec),
     DeliveryJobSpec (DJDeliveryJob, includePending),
-    MessageDeliveryTask (MessageDeliveryTask, brokerTs, fwdSender, jobScope, senderGMId, taskId, verifiedMsg),
+    MessageDeliveryTask (MessageDeliveryTask, brokerTs, fwdSender, jobScope, senderGMId, taskId, updateNotification, verifiedMsg),
     deliveryTaskId,
   )
 import Simplex.Chat.Messages.Batch
@@ -50,10 +50,11 @@ batchingTests = describe "message batching tests" $ do
   it "splits a batch that exceeds the element count limit" testBatchElementCountLimit
   it "does not create a relay delivery body when every task is oversized" testRelayBatchAllLarge
   it "classifies a task that fits raw but not as a framed singleton as large" testRelayBatchSingletonOverflow
+  it "stops a relay delivery batch at the first task that does not fit" testRelayBatchKeepsOrder
   it "shortens forwarded member names" testFwdMemberName
 
 instance IsString SndMessage where
-  fromString s = SndMessage {msgId, sharedMsgId = SharedMsgId "", msgBody = s', signedMsg_ = Nothing}
+  fromString s = SndMessage {msgId, sharedMsgId = SharedMsgId "", msgBody = s', signedMsg_ = Nothing, fwdElement_ = Nothing}
     where
       s' = encodeUtf8 $ T.pack s
       msgId = fromInteger $ os2ip s'
@@ -149,7 +150,7 @@ testImageFitsSingleBatch = do
 
   let xMsgNewStr = B.replicate xMsgNewRoundedSize 1
       descrStr = B.replicate descrRoundedSize 2
-      msg s = SndMessage {msgId = 0, sharedMsgId = SharedMsgId "", msgBody = s, signedMsg_ = Nothing}
+      msg s = SndMessage {msgId = 0, sharedMsgId = SharedMsgId "", msgBody = s, signedMsg_ = Nothing, fwdElement_ = Nothing}
       batched = "[" <> xMsgNewStr <> "," <> descrStr <> "]"
 
   runBatcherTest' BMJson maxEncodedMsgLength [msg xMsgNewStr, msg descrStr] [] [batched]
@@ -180,17 +181,32 @@ deliveryTask taskId text =
       brokerTs = systemToUTCTime $ MkSystemTime 0 0,
       verifiedMsg =
         VMUnsigned
-          (ChatMessage chatInitialVRange Nothing $ XMsgNew $ mcSimple $ MCText text)
+          (ChatMessage chatInitialVRange Nothing $ XMsgNew $ mcSimple $ MCText text),
+      updateNotification = False
     }
 
 testRelayBatchSingletonOverflow :: IO ()
 testRelayBatchSingletonOverflow = do
   let task = deliveryTask 1 "overflow"
-      elemLen = B.length $ encodeFwdElement (GrpMsgForward (fwdSender task) (brokerTs task)) (verifiedMsg task)
+      elemLen = B.length $ fwdElement task
       (body_, accepted, large) = batchDeliveryTasks1 chatInitialVRange (elemLen + 2) (task :| [])
   body_ `shouldBe` Nothing
   map deliveryTaskId accepted `shouldBe` []
   map deliveryTaskId large `shouldBe` [1]
+
+testRelayBatchKeepsOrder :: IO ()
+testRelayBatchKeepsOrder = do
+  let task1 = deliveryTask 1 "one"
+      task2 = deliveryTask 2 "two is longer"
+      task3 = deliveryTask 3 "three"
+      maxLen = B.length $ encodeBinaryBatch [fwdElement task1, fwdElement task3]
+      (body_, accepted, large) = batchDeliveryTasks1 chatInitialVRange maxLen (task1 :| [task2, task3])
+  map deliveryTaskId accepted `shouldBe` [1]
+  map deliveryTaskId large `shouldBe` []
+  body_ `shouldBe` Just (encodeBinaryBatch [fwdElement task1])
+
+fwdElement :: MessageDeliveryTask -> ByteString
+fwdElement MessageDeliveryTask {fwdSender, brokerTs, verifiedMsg} = encodeFwdElement (GrpMsgForward fwdSender brokerTs) verifiedMsg
 
 testFwdMemberName :: IO ()
 testFwdMemberName = do

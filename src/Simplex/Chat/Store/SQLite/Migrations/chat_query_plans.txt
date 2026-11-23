@@ -179,13 +179,13 @@ Query:
                   pu.display_name, pu.full_name, pu.short_descr, pu.description, pu.image, pu.contact_link, pu.chat_peer_type, pu.local_alias, pu.preferences, pu.preferences_json,
                   pu.badge_proof, pu.badge_pres_header, pu.badge_expiry, pu.badge_type, pu.badge_verified, pu.badge_extra, pu.badge_master_key, pu.badge_signature, pu.badge_key_idx, pu.contact_domain, pu.contact_domain_proof, pu.contact_domain_verified,
                   mu.created_at, mu.updated_at,
-                  mu.support_chat_ts, mu.support_chat_items_unread, mu.support_chat_items_member_attention, mu.support_chat_items_mentions, mu.support_chat_last_msg_from_member_ts, mu.member_pub_key, mu.relay_link, mu.member_security_code, mu.member_security_code_verified_at,
+                  mu.support_chat_ts, mu.support_chat_items_unread, mu.support_chat_items_member_attention, mu.support_chat_items_mentions, mu.support_chat_last_msg_from_member_ts, mu.member_pub_key, mu.relay_link, mu.member_security_code, mu.member_security_code_verified_at, mu.member_via,
                   -- from GroupMember
                   m.group_member_id, m.group_id, m.index_in_group, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category, m.member_status, m.show_messages, m.member_restriction,
                   m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.description, p.image, p.contact_link, p.chat_peer_type, p.local_alias, p.preferences, p.preferences_json,
                   p.badge_proof, p.badge_pres_header, p.badge_expiry, p.badge_type, p.badge_verified, p.badge_extra, p.badge_master_key, p.badge_signature, p.badge_key_idx, p.contact_domain, p.contact_domain_proof, p.contact_domain_verified,
                   m.created_at, m.updated_at,
-                  m.support_chat_ts, m.support_chat_items_unread, m.support_chat_items_member_attention, m.support_chat_items_mentions, m.support_chat_last_msg_from_member_ts, m.member_pub_key, m.relay_link, m.member_security_code, m.member_security_code_verified_at,
+                  m.support_chat_ts, m.support_chat_items_unread, m.support_chat_items_member_attention, m.support_chat_items_mentions, m.support_chat_last_msg_from_member_ts, m.member_pub_key, m.relay_link, m.member_security_code, m.member_security_code_verified_at, m.member_via,
                   bp.badge_proof, bp.badge_pres_header, bp.badge_key_idx, bp.badge_type, bp.badge_expiry, bp.badge_extra
                 FROM group_members m
                 JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id)
@@ -427,6 +427,29 @@ Plan:
 
 Query: 
               SELECT
+                (
+                  SELECT COUNT(1)
+                  FROM chat_items i
+                  JOIN contacts ct USING (contact_id)
+                  WHERE i.user_id = ? AND i.item_status = ? AND i.contact_id IS NOT NULL AND i.item_priority < 0 AND (ct.enable_ntfs = 1 OR ct.enable_ntfs IS NULL) AND ct.deleted = 0
+                ) + (
+                  SELECT COUNT(1)
+                  FROM chat_items i
+                  JOIN groups g USING (group_id)
+                  WHERE i.user_id = ? AND i.item_status = ? AND i.group_id IS NOT NULL AND i.item_priority <> 0 AND i.item_priority < 0 AND (g.enable_ntfs = 1 OR g.enable_ntfs IS NULL)
+                )
+            
+Plan:
+SCAN CONSTANT ROW
+SCALAR SUBQUERY 1
+SEARCH i USING COVERING INDEX idx_chat_items_contacts_silent (user_id=? AND item_status=? AND contact_id>?)
+SEARCH ct USING INTEGER PRIMARY KEY (rowid=?)
+SCALAR SUBQUERY 2
+SEARCH i USING COVERING INDEX idx_chat_items_groups_priority (user_id=? AND item_status=? AND group_id>?)
+SEARCH g USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: 
+              SELECT
                 cr.contact_request_id, cr.local_display_name, cr.agent_invitation_id,
                 cr.contact_id, cr.business_group_id, cr.user_contact_link_id, cr.rejection_supported,
                 cr.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.description, p.image, p.contact_link, p.chat_peer_type, p.local_alias, cr.xcontact_id,
@@ -496,7 +519,7 @@ Query:
               FROM user_contact_links ucl
               JOIN groups g ON g.group_id = ucl.group_id
               JOIN group_profiles gp ON gp.group_profile_id = g.group_profile_id
-              WHERE ucl.user_id = ? AND gp.group_domain = ?
+              WHERE ucl.user_id = ? AND gp.group_domain = ? AND g.group_domain_verified IS DISTINCT FROM 2
             
 Plan:
 SEARCH ucl USING INDEX sqlite_autoindex_user_contact_links_1 (user_id=?)
@@ -1099,7 +1122,7 @@ Query:
               p.display_name, p.full_name, p.short_descr, p.description, p.image, p.contact_link, p.chat_peer_type, p.local_alias, p.preferences, p.preferences_json,
               p.badge_proof, p.badge_pres_header, p.badge_expiry, p.badge_type, p.badge_verified, p.badge_extra, p.badge_master_key, p.badge_signature, p.badge_key_idx, p.contact_domain, p.contact_domain_proof, p.contact_domain_verified,
               m.created_at, m.updated_at,
-              m.support_chat_ts, m.support_chat_items_unread, m.support_chat_items_member_attention, m.support_chat_items_mentions, m.support_chat_last_msg_from_member_ts, m.member_pub_key, m.relay_link, m.member_security_code, m.member_security_code_verified_at
+              m.support_chat_ts, m.support_chat_items_unread, m.support_chat_items_member_attention, m.support_chat_items_mentions, m.support_chat_last_msg_from_member_ts, m.member_pub_key, m.relay_link, m.member_security_code, m.member_security_code_verified_at, m.member_via
             FROM group_members m
             JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id)
             LEFT JOIN contacts c ON m.contact_id = c.contact_id
@@ -1148,6 +1171,16 @@ Query:
           
 Plan:
 SEARCH display_names USING COVERING INDEX sqlite_autoindex_display_names_2 (user_id=? AND ldn_base=?)
+
+Query: 
+            SELECT p.display_name, m.member_status
+            FROM group_members m
+            JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id)
+            WHERE m.member_category = 'user'
+          
+Plan:
+SCAN m
+SEARCH p USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
             SELECT s.contact_id, g.group_id, s.group_member_id
@@ -1353,8 +1386,47 @@ Query:
             (group_id, index_in_group, member_id, member_role, member_category, member_status, member_relations_vector,
             member_restriction, invited_by, invited_by_group_member_id,
             user_id, local_display_name, contact_id, contact_profile_id, member_pub_key, created_at, updated_at,
-            peer_chat_min_version, peer_chat_max_version)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+            peer_chat_min_version, peer_chat_max_version, member_via)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+
+Plan:
+SEARCH group_member_badge_proofs USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH rcv_roster_transfers USING COVERING INDEX idx_rcv_roster_transfers_from_member_id (from_member_id=?)
+SEARCH group_relays USING COVERING INDEX idx_group_relays_group_member_id (group_member_id=?)
+SEARCH delivery_jobs USING COVERING INDEX idx_delivery_jobs_job_scope_support_gm_id (job_scope_support_gm_id=?)
+SEARCH delivery_tasks USING COVERING INDEX idx_delivery_tasks_sender_group_member_id (sender_group_member_id=?)
+SEARCH delivery_tasks USING COVERING INDEX idx_delivery_tasks_job_scope_support_gm_id (job_scope_support_gm_id=?)
+SEARCH received_probes USING COVERING INDEX idx_received_probes_group_member_id (group_member_id=?)
+SEARCH sent_probe_hashes USING COVERING INDEX idx_sent_probe_hashes_group_member_id (group_member_id=?)
+SEARCH sent_probes USING COVERING INDEX idx_sent_probes_group_member_id (group_member_id=?)
+SEARCH group_snd_item_statuses USING COVERING INDEX idx_group_snd_item_statuses_group_member_id (group_member_id=?)
+SEARCH chat_item_moderations USING COVERING INDEX idx_chat_item_moderations_moderator_member_id (moderator_member_id=?)
+SEARCH chat_item_reactions USING COVERING INDEX idx_chat_item_reactions_group_member_id (group_member_id=?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_item_signed_by_group_member_id (item_signed_by_group_member_id=?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_group_scope_group_member_id (group_scope_group_member_id=?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_forwarded_by_group_member_id (forwarded_by_group_member_id=?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_item_deleted_by_group_member_id (item_deleted_by_group_member_id=?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_group_member_id (group_member_id=?)
+SEARCH pending_group_messages USING COVERING INDEX idx_pending_group_messages_group_member_id (group_member_id=?)
+SEARCH messages USING COVERING INDEX idx_messages_forwarded_by_group_member_id (forwarded_by_group_member_id=?)
+SEARCH messages USING COVERING INDEX idx_messages_author_group_member_id (author_group_member_id=?)
+SEARCH connections USING COVERING INDEX idx_connections_group_member_id (group_member_id=?)
+SEARCH rcv_files USING COVERING INDEX idx_rcv_files_group_member_id (group_member_id=?)
+SEARCH snd_files USING COVERING INDEX idx_snd_files_group_member_id (group_member_id=?)
+SEARCH group_member_intros USING COVERING INDEX idx_group_member_intros_to_group_member_id (to_group_member_id=?)
+SEARCH group_member_intros USING COVERING INDEX idx_group_member_intros_re_group_member_id (re_group_member_id=?)
+SEARCH group_members USING COVERING INDEX idx_group_members_invited_via_group_member_id (invited_via_group_member_id=?)
+SEARCH group_members USING COVERING INDEX idx_group_members_invited_by_group_member_id (invited_by_group_member_id=?)
+SEARCH contacts USING COVERING INDEX idx_contacts_grp_direct_inv_from_group_member_id (grp_direct_inv_from_group_member_id=?)
+SEARCH contacts USING COVERING INDEX idx_contacts_contact_group_member_id (contact_group_member_id=?)
+
+Query: 
+          INSERT INTO group_members
+            (group_id, index_in_group, member_id, member_role, member_category, member_status, member_relations_vector,
+            member_restriction, invited_by, invited_by_group_member_id,
+            user_id, local_display_name, contact_id, contact_profile_id, member_pub_key, created_at, updated_at,
+            peer_chat_min_version, peer_chat_max_version, member_via)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         
 Plan:
 SEARCH group_member_badge_proofs USING INTEGER PRIMARY KEY (rowid=?)
@@ -1444,7 +1516,7 @@ Query:
             i.item_deleted, i.item_deleted_ts, i.item_edited, i.created_at, i.updated_at,
             i.fwd_from_tag, i.fwd_from_chat_name, i.fwd_from_msg_dir, i.fwd_from_contact_id, i.fwd_from_group_id, i.fwd_from_chat_item_id,
             i.fwd_from_group_type, i.fwd_from_group_link, i.fwd_from_public_group_id, i.fwd_from_member_id, i.fwd_from_shared_msg_id,
-            i.timed_ttl, i.timed_delete_at, i.item_live, i.user_mention, i.has_link, i.msg_signed,
+            i.timed_ttl, i.timed_delete_at, i.item_live, i.user_mention, i.item_priority, i.has_link, i.msg_signed,
             -- CIFile
             f.file_id, f.file_name, f.file_size, f.file_path, f.file_crypto_key, f.file_crypto_nonce, f.ci_file_status, f.protocol, f.file_expires_at, f.file_max_size, f.file_badge_status
           FROM chat_items i
@@ -1462,7 +1534,7 @@ Query:
             i.item_deleted, i.item_deleted_ts, i.item_edited, i.created_at, i.updated_at,
             i.fwd_from_tag, i.fwd_from_chat_name, i.fwd_from_msg_dir, i.fwd_from_contact_id, i.fwd_from_group_id, i.fwd_from_chat_item_id,
             i.fwd_from_group_type, i.fwd_from_group_link, i.fwd_from_public_group_id, i.fwd_from_member_id, i.fwd_from_shared_msg_id,
-            i.timed_ttl, i.timed_delete_at, i.item_live, i.user_mention, i.has_link, i.msg_signed,
+            i.timed_ttl, i.timed_delete_at, i.item_live, i.user_mention, i.item_priority, i.has_link, i.msg_signed,
             -- CIFile
             f.file_id, f.file_name, f.file_size, f.file_path, f.file_crypto_key, f.file_crypto_nonce, f.ci_file_status, f.protocol, f.file_expires_at, f.file_max_size, f.file_badge_status,
             -- CIMeta forwardedByMember, showGroupAsSender
@@ -1473,7 +1545,7 @@ Query:
             p.display_name, p.full_name, p.short_descr, p.description, p.image, p.contact_link, p.chat_peer_type, p.local_alias, p.preferences, p.preferences_json,
             p.badge_proof, p.badge_pres_header, p.badge_expiry, p.badge_type, p.badge_verified, p.badge_extra, p.badge_master_key, p.badge_signature, p.badge_key_idx, p.contact_domain, p.contact_domain_proof, p.contact_domain_verified,
             m.created_at, m.updated_at,
-            m.support_chat_ts, m.support_chat_items_unread, m.support_chat_items_member_attention, m.support_chat_items_mentions, m.support_chat_last_msg_from_member_ts, m.member_pub_key, m.relay_link, m.member_security_code, m.member_security_code_verified_at,
+            m.support_chat_ts, m.support_chat_items_unread, m.support_chat_items_member_attention, m.support_chat_items_mentions, m.support_chat_last_msg_from_member_ts, m.member_pub_key, m.relay_link, m.member_security_code, m.member_security_code_verified_at, m.member_via,
             -- quoted ChatItem
             ri.chat_item_id, i.quoted_shared_msg_id, i.quoted_sent_at, i.quoted_content, i.quoted_sent,
             -- quoted GroupMember
@@ -1482,14 +1554,14 @@ Query:
             rp.display_name, rp.full_name, rp.short_descr, rp.description, rp.image, rp.contact_link, rp.chat_peer_type, rp.local_alias, rp.preferences, rp.preferences_json,
             rp.badge_proof, rp.badge_pres_header, rp.badge_expiry, rp.badge_type, rp.badge_verified, rp.badge_extra, rp.badge_master_key, rp.badge_signature, rp.badge_key_idx, rp.contact_domain, rp.contact_domain_proof, rp.contact_domain_verified,
             rm.created_at, rm.updated_at,
-            rm.support_chat_ts, rm.support_chat_items_unread, rm.support_chat_items_member_attention, rm.support_chat_items_mentions, rm.support_chat_last_msg_from_member_ts, rm.member_pub_key, rm.relay_link, rm.member_security_code, rm.member_security_code_verified_at,
+            rm.support_chat_ts, rm.support_chat_items_unread, rm.support_chat_items_member_attention, rm.support_chat_items_mentions, rm.support_chat_last_msg_from_member_ts, rm.member_pub_key, rm.relay_link, rm.member_security_code, rm.member_security_code_verified_at, rm.member_via,
             -- deleted by GroupMember
             dbm.group_member_id, dbm.group_id, dbm.index_in_group, dbm.member_id, dbm.peer_chat_min_version, dbm.peer_chat_max_version, dbm.member_role, dbm.member_category,
             dbm.member_status, dbm.show_messages, dbm.member_restriction, dbm.invited_by, dbm.invited_by_group_member_id, dbm.local_display_name, dbm.contact_id, dbm.contact_profile_id, dbp.contact_profile_id,
             dbp.display_name, dbp.full_name, dbp.short_descr, dbp.description, dbp.image, dbp.contact_link, dbp.chat_peer_type, dbp.local_alias, dbp.preferences, dbp.preferences_json,
             dbp.badge_proof, dbp.badge_pres_header, dbp.badge_expiry, dbp.badge_type, dbp.badge_verified, dbp.badge_extra, dbp.badge_master_key, dbp.badge_signature, dbp.badge_key_idx, dbp.contact_domain, dbp.contact_domain_proof, dbp.contact_domain_verified,
             dbm.created_at, dbm.updated_at,
-            dbm.support_chat_ts, dbm.support_chat_items_unread, dbm.support_chat_items_member_attention, dbm.support_chat_items_mentions, dbm.support_chat_last_msg_from_member_ts, dbm.member_pub_key, dbm.relay_link, dbm.member_security_code, dbm.member_security_code_verified_at
+            dbm.support_chat_ts, dbm.support_chat_items_unread, dbm.support_chat_items_member_attention, dbm.support_chat_items_mentions, dbm.support_chat_last_msg_from_member_ts, dbm.member_pub_key, dbm.relay_link, dbm.member_security_code, dbm.member_security_code_verified_at, dbm.member_via
           FROM chat_items i
           LEFT JOIN files f ON f.chat_item_id = i.chat_item_id
           LEFT JOIN group_members m ON m.group_member_id = i.group_member_id
@@ -1519,7 +1591,7 @@ Query:
             i.item_deleted, i.item_deleted_ts, i.item_edited, i.created_at, i.updated_at,
             i.fwd_from_tag, i.fwd_from_chat_name, i.fwd_from_msg_dir, i.fwd_from_contact_id, i.fwd_from_group_id, i.fwd_from_chat_item_id,
             i.fwd_from_group_type, i.fwd_from_group_link, i.fwd_from_public_group_id, i.fwd_from_member_id, i.fwd_from_shared_msg_id,
-            i.timed_ttl, i.timed_delete_at, i.item_live, i.user_mention, i.has_link, i.msg_signed,
+            i.timed_ttl, i.timed_delete_at, i.item_live, i.user_mention, i.item_priority, i.has_link, i.msg_signed,
             -- CIFile
             f.file_id, f.file_name, f.file_size, f.file_path, f.file_crypto_key, f.file_crypto_nonce, f.ci_file_status, f.protocol, f.file_expires_at, f.file_max_size, f.file_badge_status,
             -- DirectQuote
@@ -2123,6 +2195,18 @@ Plan:
 
 Query: 
         SELECT
+          (SELECT COUNT(1) FROM chat_items WHERE user_id = ? AND contact_id = ? AND item_status = ?),
+          (SELECT COUNT(1) FROM chat_items WHERE user_id = ? AND item_status = ? AND contact_id = ? AND item_priority < 0)
+      
+Plan:
+SCAN CONSTANT ROW
+SCALAR SUBQUERY 1
+SEARCH chat_items USING COVERING INDEX idx_chat_items_contacts (user_id=? AND contact_id=? AND item_status=?)
+SCALAR SUBQUERY 2
+SEARCH chat_items USING COVERING INDEX idx_chat_items_contacts_silent (user_id=? AND item_status=? AND contact_id=? AND item_priority<?)
+
+Query: 
+        SELECT
           (SELECT prev.balance_start_ts FROM badge_ledger prev
            WHERE prev.badge_purchase_id = issued.badge_purchase_id AND prev.entry_id < issued.entry_id
            ORDER BY prev.entry_id DESC LIMIT 1),
@@ -2331,12 +2415,13 @@ Query:
             SELECT chat_item_id
             FROM chat_items ci
             WHERE ci.user_id = ? AND ci.contact_id = ct.contact_id
-            ORDER BY ci.created_at DESC
+            ORDER BY ci.created_at DESC, ci.chat_item_id DESC
             LIMIT 1
           ) AS chat_item_id,
           COALESCE(ChatStats.UnreadCount, 0),
           COALESCE(ChatStats.MinUnread, 0),
-          ct.unread_chat
+          ct.unread_chat,
+          COALESCE(SilentStats.UnreadSilent, 0)
         FROM contacts ct
         LEFT JOIN (
           SELECT contact_id, COUNT(1) AS UnreadCount, MIN(chat_item_id) AS MinUnread
@@ -2344,6 +2429,12 @@ Query:
           WHERE user_id = ? AND contact_id IS NOT NULL AND item_status = ?
           GROUP BY contact_id
         ) ChatStats ON ChatStats.contact_id = ct.contact_id
+        LEFT JOIN (
+          SELECT contact_id, COUNT(1) AS UnreadSilent
+          FROM chat_items
+          WHERE user_id = ? AND item_status = ? AND contact_id IS NOT NULL AND item_priority < 0
+          GROUP BY contact_id
+        ) SilentStats ON SilentStats.contact_id = ct.contact_id
        
                       JOIN contact_profiles cp ON ct.contact_profile_id = cp.contact_profile_id
                       WHERE ct.user_id = ? AND ct.is_user = 0 AND ct.deleted = 0 AND ct.contact_used = 1
@@ -2358,9 +2449,12 @@ Query:
 Plan:
 MATERIALIZE ChatStats
 SEARCH chat_items USING COVERING INDEX idx_chat_items_user_id_item_status (user_id=? AND item_status=? AND contact_id>?)
+MATERIALIZE SilentStats
+SEARCH chat_items USING COVERING INDEX idx_chat_items_contacts_silent (user_id=? AND item_status=? AND contact_id>?)
 SEARCH ct USING INDEX idx_contacts_chat_ts (user_id=?)
 SEARCH cp USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH ChatStats USING AUTOMATIC COVERING INDEX (contact_id=?) LEFT-JOIN
+SEARCH SilentStats USING AUTOMATIC COVERING INDEX (contact_id=?) LEFT-JOIN
 CORRELATED SCALAR SUBQUERY 1
 SEARCH ci USING COVERING INDEX idx_chat_items_contacts_created_at (user_id=? AND contact_id=?)
 
@@ -2372,12 +2466,13 @@ Query:
             SELECT chat_item_id
             FROM chat_items ci
             WHERE ci.user_id = ? AND ci.contact_id = ct.contact_id
-            ORDER BY ci.created_at DESC
+            ORDER BY ci.created_at DESC, ci.chat_item_id DESC
             LIMIT 1
           ) AS chat_item_id,
           COALESCE(ChatStats.UnreadCount, 0),
           COALESCE(ChatStats.MinUnread, 0),
-          ct.unread_chat
+          ct.unread_chat,
+          COALESCE(SilentStats.UnreadSilent, 0)
         FROM contacts ct
         LEFT JOIN (
           SELECT contact_id, COUNT(1) AS UnreadCount, MIN(chat_item_id) AS MinUnread
@@ -2385,16 +2480,25 @@ Query:
           WHERE user_id = ? AND contact_id IS NOT NULL AND item_status = ?
           GROUP BY contact_id
         ) ChatStats ON ChatStats.contact_id = ct.contact_id
+        LEFT JOIN (
+          SELECT contact_id, COUNT(1) AS UnreadSilent
+          FROM chat_items
+          WHERE user_id = ? AND item_status = ? AND contact_id IS NOT NULL AND item_priority < 0
+          GROUP BY contact_id
+        ) SilentStats ON SilentStats.contact_id = ct.contact_id
        
                       WHERE ct.user_id = ? AND ct.is_user = 0 AND ct.deleted = 0 AND ct.contact_used = 1
                         AND (ct.favorite = 1
-                          OR ct.unread_chat = 1 OR ChatStats.UnreadCount > 0)
+                          OR ct.unread_chat = 1 OR ChatStats.UnreadCount > COALESCE(SilentStats.UnreadSilent, 0))
                     ORDER BY ct.chat_ts DESC LIMIT ?
 Plan:
 MATERIALIZE ChatStats
 SEARCH chat_items USING COVERING INDEX idx_chat_items_user_id_item_status (user_id=? AND item_status=? AND contact_id>?)
+MATERIALIZE SilentStats
+SEARCH chat_items USING COVERING INDEX idx_chat_items_contacts_silent (user_id=? AND item_status=? AND contact_id>?)
 SEARCH ct USING INDEX idx_contacts_chat_ts (user_id=?)
 SEARCH ChatStats USING AUTOMATIC COVERING INDEX (contact_id=?) LEFT-JOIN
+SEARCH SilentStats USING AUTOMATIC COVERING INDEX (contact_id=?) LEFT-JOIN
 CORRELATED SCALAR SUBQUERY 1
 SEARCH ci USING COVERING INDEX idx_chat_items_contacts_created_at (user_id=? AND contact_id=?)
 
@@ -2406,12 +2510,13 @@ Query:
             SELECT chat_item_id
             FROM chat_items ci
             WHERE ci.user_id = ? AND ci.contact_id = ct.contact_id
-            ORDER BY ci.created_at DESC
+            ORDER BY ci.created_at DESC, ci.chat_item_id DESC
             LIMIT 1
           ) AS chat_item_id,
           COALESCE(ChatStats.UnreadCount, 0),
           COALESCE(ChatStats.MinUnread, 0),
-          ct.unread_chat
+          ct.unread_chat,
+          COALESCE(SilentStats.UnreadSilent, 0)
         FROM contacts ct
         LEFT JOIN (
           SELECT contact_id, COUNT(1) AS UnreadCount, MIN(chat_item_id) AS MinUnread
@@ -2419,15 +2524,24 @@ Query:
           WHERE user_id = ? AND contact_id IS NOT NULL AND item_status = ?
           GROUP BY contact_id
         ) ChatStats ON ChatStats.contact_id = ct.contact_id
+        LEFT JOIN (
+          SELECT contact_id, COUNT(1) AS UnreadSilent
+          FROM chat_items
+          WHERE user_id = ? AND item_status = ? AND contact_id IS NOT NULL AND item_priority < 0
+          GROUP BY contact_id
+        ) SilentStats ON SilentStats.contact_id = ct.contact_id
        
                       WHERE ct.user_id = ? AND ct.is_user = 0 AND ct.deleted = 0 AND ct.contact_used = 1
-                        AND (ct.unread_chat = 1 OR ChatStats.UnreadCount > 0)
+                        AND (ct.unread_chat = 1 OR ChatStats.UnreadCount > COALESCE(SilentStats.UnreadSilent, 0))
                     AND ct.chat_ts < ? ORDER BY ct.chat_ts DESC LIMIT ?
 Plan:
 MATERIALIZE ChatStats
 SEARCH chat_items USING COVERING INDEX idx_chat_items_user_id_item_status (user_id=? AND item_status=? AND contact_id>?)
+MATERIALIZE SilentStats
+SEARCH chat_items USING COVERING INDEX idx_chat_items_contacts_silent (user_id=? AND item_status=? AND contact_id>?)
 SEARCH ct USING INDEX idx_contacts_chat_ts (user_id=? AND chat_ts<?)
 SEARCH ChatStats USING AUTOMATIC COVERING INDEX (contact_id=?) LEFT-JOIN
+SEARCH SilentStats USING AUTOMATIC COVERING INDEX (contact_id=?) LEFT-JOIN
 CORRELATED SCALAR SUBQUERY 1
 SEARCH ci USING COVERING INDEX idx_chat_items_contacts_created_at (user_id=? AND contact_id=?)
 
@@ -2439,12 +2553,13 @@ Query:
             SELECT chat_item_id
             FROM chat_items ci
             WHERE ci.user_id = ? AND ci.contact_id = ct.contact_id
-            ORDER BY ci.created_at DESC
+            ORDER BY ci.created_at DESC, ci.chat_item_id DESC
             LIMIT 1
           ) AS chat_item_id,
           COALESCE(ChatStats.UnreadCount, 0),
           COALESCE(ChatStats.MinUnread, 0),
-          ct.unread_chat
+          ct.unread_chat,
+          COALESCE(SilentStats.UnreadSilent, 0)
         FROM contacts ct
         LEFT JOIN (
           SELECT contact_id, COUNT(1) AS UnreadCount, MIN(chat_item_id) AS MinUnread
@@ -2452,15 +2567,24 @@ Query:
           WHERE user_id = ? AND contact_id IS NOT NULL AND item_status = ?
           GROUP BY contact_id
         ) ChatStats ON ChatStats.contact_id = ct.contact_id
+        LEFT JOIN (
+          SELECT contact_id, COUNT(1) AS UnreadSilent
+          FROM chat_items
+          WHERE user_id = ? AND item_status = ? AND contact_id IS NOT NULL AND item_priority < 0
+          GROUP BY contact_id
+        ) SilentStats ON SilentStats.contact_id = ct.contact_id
        
                       WHERE ct.user_id = ? AND ct.is_user = 0 AND ct.deleted = 0 AND ct.contact_used = 1
-                        AND (ct.unread_chat = 1 OR ChatStats.UnreadCount > 0)
+                        AND (ct.unread_chat = 1 OR ChatStats.UnreadCount > COALESCE(SilentStats.UnreadSilent, 0))
                     AND ct.chat_ts > ? ORDER BY ct.chat_ts ASC LIMIT ?
 Plan:
 MATERIALIZE ChatStats
 SEARCH chat_items USING COVERING INDEX idx_chat_items_user_id_item_status (user_id=? AND item_status=? AND contact_id>?)
+MATERIALIZE SilentStats
+SEARCH chat_items USING COVERING INDEX idx_chat_items_contacts_silent (user_id=? AND item_status=? AND contact_id>?)
 SEARCH ct USING INDEX idx_contacts_chat_ts (user_id=? AND chat_ts>?)
 SEARCH ChatStats USING AUTOMATIC COVERING INDEX (contact_id=?) LEFT-JOIN
+SEARCH SilentStats USING AUTOMATIC COVERING INDEX (contact_id=?) LEFT-JOIN
 CORRELATED SCALAR SUBQUERY 1
 SEARCH ci USING COVERING INDEX idx_chat_items_contacts_created_at (user_id=? AND contact_id=?)
 
@@ -2472,12 +2596,13 @@ Query:
             SELECT chat_item_id
             FROM chat_items ci
             WHERE ci.user_id = ? AND ci.contact_id = ct.contact_id
-            ORDER BY ci.created_at DESC
+            ORDER BY ci.created_at DESC, ci.chat_item_id DESC
             LIMIT 1
           ) AS chat_item_id,
           COALESCE(ChatStats.UnreadCount, 0),
           COALESCE(ChatStats.MinUnread, 0),
-          ct.unread_chat
+          ct.unread_chat,
+          COALESCE(SilentStats.UnreadSilent, 0)
         FROM contacts ct
         LEFT JOIN (
           SELECT contact_id, COUNT(1) AS UnreadCount, MIN(chat_item_id) AS MinUnread
@@ -2485,15 +2610,24 @@ Query:
           WHERE user_id = ? AND contact_id IS NOT NULL AND item_status = ?
           GROUP BY contact_id
         ) ChatStats ON ChatStats.contact_id = ct.contact_id
+        LEFT JOIN (
+          SELECT contact_id, COUNT(1) AS UnreadSilent
+          FROM chat_items
+          WHERE user_id = ? AND item_status = ? AND contact_id IS NOT NULL AND item_priority < 0
+          GROUP BY contact_id
+        ) SilentStats ON SilentStats.contact_id = ct.contact_id
        
                       WHERE ct.user_id = ? AND ct.is_user = 0 AND ct.deleted = 0 AND ct.contact_used = 1
-                        AND (ct.unread_chat = 1 OR ChatStats.UnreadCount > 0)
+                        AND (ct.unread_chat = 1 OR ChatStats.UnreadCount > COALESCE(SilentStats.UnreadSilent, 0))
                     ORDER BY ct.chat_ts DESC LIMIT ?
 Plan:
 MATERIALIZE ChatStats
 SEARCH chat_items USING COVERING INDEX idx_chat_items_user_id_item_status (user_id=? AND item_status=? AND contact_id>?)
+MATERIALIZE SilentStats
+SEARCH chat_items USING COVERING INDEX idx_chat_items_contacts_silent (user_id=? AND item_status=? AND contact_id>?)
 SEARCH ct USING INDEX idx_contacts_chat_ts (user_id=?)
 SEARCH ChatStats USING AUTOMATIC COVERING INDEX (contact_id=?) LEFT-JOIN
+SEARCH SilentStats USING AUTOMATIC COVERING INDEX (contact_id=?) LEFT-JOIN
 CORRELATED SCALAR SUBQUERY 1
 SEARCH ci USING COVERING INDEX idx_chat_items_contacts_created_at (user_id=? AND contact_id=?)
 
@@ -2505,12 +2639,13 @@ Query:
             SELECT chat_item_id
             FROM chat_items ci
             WHERE ci.user_id = ? AND ci.contact_id = ct.contact_id
-            ORDER BY ci.created_at DESC
+            ORDER BY ci.created_at DESC, ci.chat_item_id DESC
             LIMIT 1
           ) AS chat_item_id,
           COALESCE(ChatStats.UnreadCount, 0),
           COALESCE(ChatStats.MinUnread, 0),
-          ct.unread_chat
+          ct.unread_chat,
+          COALESCE(SilentStats.UnreadSilent, 0)
         FROM contacts ct
         LEFT JOIN (
           SELECT contact_id, COUNT(1) AS UnreadCount, MIN(chat_item_id) AS MinUnread
@@ -2518,6 +2653,12 @@ Query:
           WHERE user_id = ? AND contact_id IS NOT NULL AND item_status = ?
           GROUP BY contact_id
         ) ChatStats ON ChatStats.contact_id = ct.contact_id
+        LEFT JOIN (
+          SELECT contact_id, COUNT(1) AS UnreadSilent
+          FROM chat_items
+          WHERE user_id = ? AND item_status = ? AND contact_id IS NOT NULL AND item_priority < 0
+          GROUP BY contact_id
+        ) SilentStats ON SilentStats.contact_id = ct.contact_id
        
                       WHERE ct.user_id = ? AND ct.is_user = 0 AND ct.deleted = 0 AND ct.contact_used = 1
                         AND ct.favorite = 1
@@ -2525,8 +2666,11 @@ Query:
 Plan:
 MATERIALIZE ChatStats
 SEARCH chat_items USING COVERING INDEX idx_chat_items_user_id_item_status (user_id=? AND item_status=? AND contact_id>?)
+MATERIALIZE SilentStats
+SEARCH chat_items USING COVERING INDEX idx_chat_items_contacts_silent (user_id=? AND item_status=? AND contact_id>?)
 SEARCH ct USING INDEX idx_contacts_chat_ts (user_id=? AND chat_ts<?)
 SEARCH ChatStats USING AUTOMATIC COVERING INDEX (contact_id=?) LEFT-JOIN
+SEARCH SilentStats USING AUTOMATIC COVERING INDEX (contact_id=?) LEFT-JOIN
 CORRELATED SCALAR SUBQUERY 1
 SEARCH ci USING COVERING INDEX idx_chat_items_contacts_created_at (user_id=? AND contact_id=?)
 
@@ -2538,12 +2682,13 @@ Query:
             SELECT chat_item_id
             FROM chat_items ci
             WHERE ci.user_id = ? AND ci.contact_id = ct.contact_id
-            ORDER BY ci.created_at DESC
+            ORDER BY ci.created_at DESC, ci.chat_item_id DESC
             LIMIT 1
           ) AS chat_item_id,
           COALESCE(ChatStats.UnreadCount, 0),
           COALESCE(ChatStats.MinUnread, 0),
-          ct.unread_chat
+          ct.unread_chat,
+          COALESCE(SilentStats.UnreadSilent, 0)
         FROM contacts ct
         LEFT JOIN (
           SELECT contact_id, COUNT(1) AS UnreadCount, MIN(chat_item_id) AS MinUnread
@@ -2551,6 +2696,12 @@ Query:
           WHERE user_id = ? AND contact_id IS NOT NULL AND item_status = ?
           GROUP BY contact_id
         ) ChatStats ON ChatStats.contact_id = ct.contact_id
+        LEFT JOIN (
+          SELECT contact_id, COUNT(1) AS UnreadSilent
+          FROM chat_items
+          WHERE user_id = ? AND item_status = ? AND contact_id IS NOT NULL AND item_priority < 0
+          GROUP BY contact_id
+        ) SilentStats ON SilentStats.contact_id = ct.contact_id
        
                       WHERE ct.user_id = ? AND ct.is_user = 0 AND ct.deleted = 0 AND ct.contact_used = 1
                         AND ct.favorite = 1
@@ -2558,8 +2709,11 @@ Query:
 Plan:
 MATERIALIZE ChatStats
 SEARCH chat_items USING COVERING INDEX idx_chat_items_user_id_item_status (user_id=? AND item_status=? AND contact_id>?)
+MATERIALIZE SilentStats
+SEARCH chat_items USING COVERING INDEX idx_chat_items_contacts_silent (user_id=? AND item_status=? AND contact_id>?)
 SEARCH ct USING INDEX idx_contacts_chat_ts (user_id=? AND chat_ts>?)
 SEARCH ChatStats USING AUTOMATIC COVERING INDEX (contact_id=?) LEFT-JOIN
+SEARCH SilentStats USING AUTOMATIC COVERING INDEX (contact_id=?) LEFT-JOIN
 CORRELATED SCALAR SUBQUERY 1
 SEARCH ci USING COVERING INDEX idx_chat_items_contacts_created_at (user_id=? AND contact_id=?)
 
@@ -2571,12 +2725,13 @@ Query:
             SELECT chat_item_id
             FROM chat_items ci
             WHERE ci.user_id = ? AND ci.contact_id = ct.contact_id
-            ORDER BY ci.created_at DESC
+            ORDER BY ci.created_at DESC, ci.chat_item_id DESC
             LIMIT 1
           ) AS chat_item_id,
           COALESCE(ChatStats.UnreadCount, 0),
           COALESCE(ChatStats.MinUnread, 0),
-          ct.unread_chat
+          ct.unread_chat,
+          COALESCE(SilentStats.UnreadSilent, 0)
         FROM contacts ct
         LEFT JOIN (
           SELECT contact_id, COUNT(1) AS UnreadCount, MIN(chat_item_id) AS MinUnread
@@ -2584,6 +2739,12 @@ Query:
           WHERE user_id = ? AND contact_id IS NOT NULL AND item_status = ?
           GROUP BY contact_id
         ) ChatStats ON ChatStats.contact_id = ct.contact_id
+        LEFT JOIN (
+          SELECT contact_id, COUNT(1) AS UnreadSilent
+          FROM chat_items
+          WHERE user_id = ? AND item_status = ? AND contact_id IS NOT NULL AND item_priority < 0
+          GROUP BY contact_id
+        ) SilentStats ON SilentStats.contact_id = ct.contact_id
        
                       WHERE ct.user_id = ? AND ct.is_user = 0 AND ct.deleted = 0 AND ct.contact_used = 1
                         AND ct.favorite = 1
@@ -2591,8 +2752,11 @@ Query:
 Plan:
 MATERIALIZE ChatStats
 SEARCH chat_items USING COVERING INDEX idx_chat_items_user_id_item_status (user_id=? AND item_status=? AND contact_id>?)
+MATERIALIZE SilentStats
+SEARCH chat_items USING COVERING INDEX idx_chat_items_contacts_silent (user_id=? AND item_status=? AND contact_id>?)
 SEARCH ct USING INDEX idx_contacts_chat_ts (user_id=?)
 SEARCH ChatStats USING AUTOMATIC COVERING INDEX (contact_id=?) LEFT-JOIN
+SEARCH SilentStats USING AUTOMATIC COVERING INDEX (contact_id=?) LEFT-JOIN
 CORRELATED SCALAR SUBQUERY 1
 SEARCH ci USING COVERING INDEX idx_chat_items_contacts_created_at (user_id=? AND contact_id=?)
 
@@ -2604,12 +2768,13 @@ Query:
             SELECT chat_item_id
             FROM chat_items ci
             WHERE ci.user_id = ? AND ci.contact_id = ct.contact_id
-            ORDER BY ci.created_at DESC
+            ORDER BY ci.created_at DESC, ci.chat_item_id DESC
             LIMIT 1
           ) AS chat_item_id,
           COALESCE(ChatStats.UnreadCount, 0),
           COALESCE(ChatStats.MinUnread, 0),
-          ct.unread_chat
+          ct.unread_chat,
+          COALESCE(SilentStats.UnreadSilent, 0)
         FROM contacts ct
         LEFT JOIN (
           SELECT contact_id, COUNT(1) AS UnreadCount, MIN(chat_item_id) AS MinUnread
@@ -2617,12 +2782,21 @@ Query:
           WHERE user_id = ? AND contact_id IS NOT NULL AND item_status = ?
           GROUP BY contact_id
         ) ChatStats ON ChatStats.contact_id = ct.contact_id
+        LEFT JOIN (
+          SELECT contact_id, COUNT(1) AS UnreadSilent
+          FROM chat_items
+          WHERE user_id = ? AND item_status = ? AND contact_id IS NOT NULL AND item_priority < 0
+          GROUP BY contact_id
+        ) SilentStats ON SilentStats.contact_id = ct.contact_id
        WHERE ct.user_id = ? AND ct.is_user = 0 AND ct.deleted = 0 AND ct.contact_used = 1 AND ct.chat_ts < ? ORDER BY ct.chat_ts DESC LIMIT ?
 Plan:
 MATERIALIZE ChatStats
 SEARCH chat_items USING COVERING INDEX idx_chat_items_user_id_item_status (user_id=? AND item_status=? AND contact_id>?)
+MATERIALIZE SilentStats
+SEARCH chat_items USING COVERING INDEX idx_chat_items_contacts_silent (user_id=? AND item_status=? AND contact_id>?)
 SEARCH ct USING INDEX idx_contacts_chat_ts (user_id=? AND chat_ts<?)
 SEARCH ChatStats USING AUTOMATIC COVERING INDEX (contact_id=?) LEFT-JOIN
+SEARCH SilentStats USING AUTOMATIC COVERING INDEX (contact_id=?) LEFT-JOIN
 CORRELATED SCALAR SUBQUERY 1
 SEARCH ci USING COVERING INDEX idx_chat_items_contacts_created_at (user_id=? AND contact_id=?)
 
@@ -2634,12 +2808,13 @@ Query:
             SELECT chat_item_id
             FROM chat_items ci
             WHERE ci.user_id = ? AND ci.contact_id = ct.contact_id
-            ORDER BY ci.created_at DESC
+            ORDER BY ci.created_at DESC, ci.chat_item_id DESC
             LIMIT 1
           ) AS chat_item_id,
           COALESCE(ChatStats.UnreadCount, 0),
           COALESCE(ChatStats.MinUnread, 0),
-          ct.unread_chat
+          ct.unread_chat,
+          COALESCE(SilentStats.UnreadSilent, 0)
         FROM contacts ct
         LEFT JOIN (
           SELECT contact_id, COUNT(1) AS UnreadCount, MIN(chat_item_id) AS MinUnread
@@ -2647,12 +2822,21 @@ Query:
           WHERE user_id = ? AND contact_id IS NOT NULL AND item_status = ?
           GROUP BY contact_id
         ) ChatStats ON ChatStats.contact_id = ct.contact_id
+        LEFT JOIN (
+          SELECT contact_id, COUNT(1) AS UnreadSilent
+          FROM chat_items
+          WHERE user_id = ? AND item_status = ? AND contact_id IS NOT NULL AND item_priority < 0
+          GROUP BY contact_id
+        ) SilentStats ON SilentStats.contact_id = ct.contact_id
        WHERE ct.user_id = ? AND ct.is_user = 0 AND ct.deleted = 0 AND ct.contact_used = 1 AND ct.chat_ts > ? ORDER BY ct.chat_ts ASC LIMIT ?
 Plan:
 MATERIALIZE ChatStats
 SEARCH chat_items USING COVERING INDEX idx_chat_items_user_id_item_status (user_id=? AND item_status=? AND contact_id>?)
+MATERIALIZE SilentStats
+SEARCH chat_items USING COVERING INDEX idx_chat_items_contacts_silent (user_id=? AND item_status=? AND contact_id>?)
 SEARCH ct USING INDEX idx_contacts_chat_ts (user_id=? AND chat_ts>?)
 SEARCH ChatStats USING AUTOMATIC COVERING INDEX (contact_id=?) LEFT-JOIN
+SEARCH SilentStats USING AUTOMATIC COVERING INDEX (contact_id=?) LEFT-JOIN
 CORRELATED SCALAR SUBQUERY 1
 SEARCH ci USING COVERING INDEX idx_chat_items_contacts_created_at (user_id=? AND contact_id=?)
 
@@ -2664,12 +2848,13 @@ Query:
             SELECT chat_item_id
             FROM chat_items ci
             WHERE ci.user_id = ? AND ci.contact_id = ct.contact_id
-            ORDER BY ci.created_at DESC
+            ORDER BY ci.created_at DESC, ci.chat_item_id DESC
             LIMIT 1
           ) AS chat_item_id,
           COALESCE(ChatStats.UnreadCount, 0),
           COALESCE(ChatStats.MinUnread, 0),
-          ct.unread_chat
+          ct.unread_chat,
+          COALESCE(SilentStats.UnreadSilent, 0)
         FROM contacts ct
         LEFT JOIN (
           SELECT contact_id, COUNT(1) AS UnreadCount, MIN(chat_item_id) AS MinUnread
@@ -2677,12 +2862,21 @@ Query:
           WHERE user_id = ? AND contact_id IS NOT NULL AND item_status = ?
           GROUP BY contact_id
         ) ChatStats ON ChatStats.contact_id = ct.contact_id
+        LEFT JOIN (
+          SELECT contact_id, COUNT(1) AS UnreadSilent
+          FROM chat_items
+          WHERE user_id = ? AND item_status = ? AND contact_id IS NOT NULL AND item_priority < 0
+          GROUP BY contact_id
+        ) SilentStats ON SilentStats.contact_id = ct.contact_id
        WHERE ct.user_id = ? AND ct.is_user = 0 AND ct.deleted = 0 AND ct.contact_used = 1 ORDER BY ct.chat_ts DESC LIMIT ?
 Plan:
 MATERIALIZE ChatStats
 SEARCH chat_items USING COVERING INDEX idx_chat_items_user_id_item_status (user_id=? AND item_status=? AND contact_id>?)
+MATERIALIZE SilentStats
+SEARCH chat_items USING COVERING INDEX idx_chat_items_contacts_silent (user_id=? AND item_status=? AND contact_id>?)
 SEARCH ct USING INDEX idx_contacts_chat_ts (user_id=?)
 SEARCH ChatStats USING AUTOMATIC COVERING INDEX (contact_id=?) LEFT-JOIN
+SEARCH SilentStats USING AUTOMATIC COVERING INDEX (contact_id=?) LEFT-JOIN
 CORRELATED SCALAR SUBQUERY 1
 SEARCH ci USING COVERING INDEX idx_chat_items_contacts_created_at (user_id=? AND contact_id=?)
 
@@ -2694,11 +2888,13 @@ Query:
             SELECT chat_item_id
             FROM chat_items ci
             WHERE ci.user_id = ? AND ci.group_id = g.group_id AND ci.group_scope_tag IS NULL AND ci.group_scope_group_member_id IS NULL
-            ORDER BY ci.item_ts DESC
+            ORDER BY ci.item_ts DESC, ci.chat_item_id DESC
             LIMIT 1
           ) AS chat_item_id,
           COALESCE(ChatStats.UnreadCount, 0),
           COALESCE(ChatStats.UnreadMentions, 0),
+          COALESCE(PriorityStats.UnreadSilent, 0),
+          COALESCE(PriorityStats.UnreadHighPriority, 0),
           COALESCE(ReportCount.Count, 0),
           COALESCE(ChatStats.MinUnread, 0),
           g.unread_chat
@@ -2709,6 +2905,14 @@ Query:
           WHERE user_id = ? AND group_id IS NOT NULL AND group_scope_tag IS NULL AND group_scope_group_member_id IS NULL AND item_status = ?
           GROUP BY group_id
         ) ChatStats ON ChatStats.group_id = g.group_id
+        LEFT JOIN (
+          SELECT group_id,
+            SUM(CASE WHEN item_priority < 0 THEN 1 ELSE 0 END) AS UnreadSilent,
+            SUM(CASE WHEN item_priority > 0 THEN 1 ELSE 0 END) AS UnreadHighPriority
+          FROM chat_items
+          WHERE user_id = ? AND item_status = ? AND group_id IS NOT NULL AND group_scope_tag IS NULL AND group_scope_group_member_id IS NULL AND item_priority <> 0
+          GROUP BY group_id
+        ) PriorityStats ON PriorityStats.group_id = g.group_id
         LEFT JOIN (
           SELECT group_id, COUNT(1) AS Count
           FROM chat_items
@@ -2730,11 +2934,14 @@ Query:
 Plan:
 MATERIALIZE ChatStats
 SEARCH chat_items USING COVERING INDEX idx_chat_items_group_scope_stats_all (user_id=? AND group_id>?)
+MATERIALIZE PriorityStats
+SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_priority (user_id=? AND item_status=? AND group_id>?)
 MATERIALIZE ReportCount
 SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_msg_content_tag_deleted (user_id=? AND group_id>?)
 SEARCH g USING INDEX idx_groups_chat_ts (user_id=?)
 SEARCH gp USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH ChatStats USING AUTOMATIC COVERING INDEX (group_id=?) LEFT-JOIN
+SEARCH PriorityStats USING AUTOMATIC COVERING INDEX (group_id=?) LEFT-JOIN
 SEARCH ReportCount USING AUTOMATIC COVERING INDEX (group_id=?) LEFT-JOIN
 CORRELATED SCALAR SUBQUERY 1
 SEARCH ci USING COVERING INDEX idx_chat_items_group_scope_item_ts (user_id=? AND group_id=? AND group_scope_tag=? AND group_scope_group_member_id=?)
@@ -2747,11 +2954,13 @@ Query:
             SELECT chat_item_id
             FROM chat_items ci
             WHERE ci.user_id = ? AND ci.group_id = g.group_id AND ci.group_scope_tag IS NULL AND ci.group_scope_group_member_id IS NULL
-            ORDER BY ci.item_ts DESC
+            ORDER BY ci.item_ts DESC, ci.chat_item_id DESC
             LIMIT 1
           ) AS chat_item_id,
           COALESCE(ChatStats.UnreadCount, 0),
           COALESCE(ChatStats.UnreadMentions, 0),
+          COALESCE(PriorityStats.UnreadSilent, 0),
+          COALESCE(PriorityStats.UnreadHighPriority, 0),
           COALESCE(ReportCount.Count, 0),
           COALESCE(ChatStats.MinUnread, 0),
           g.unread_chat
@@ -2762,6 +2971,14 @@ Query:
           WHERE user_id = ? AND group_id IS NOT NULL AND group_scope_tag IS NULL AND group_scope_group_member_id IS NULL AND item_status = ?
           GROUP BY group_id
         ) ChatStats ON ChatStats.group_id = g.group_id
+        LEFT JOIN (
+          SELECT group_id,
+            SUM(CASE WHEN item_priority < 0 THEN 1 ELSE 0 END) AS UnreadSilent,
+            SUM(CASE WHEN item_priority > 0 THEN 1 ELSE 0 END) AS UnreadHighPriority
+          FROM chat_items
+          WHERE user_id = ? AND item_status = ? AND group_id IS NOT NULL AND group_scope_tag IS NULL AND group_scope_group_member_id IS NULL AND item_priority <> 0
+          GROUP BY group_id
+        ) PriorityStats ON PriorityStats.group_id = g.group_id
         LEFT JOIN (
           SELECT group_id, COUNT(1) AS Count
           FROM chat_items
@@ -2772,15 +2989,18 @@ Query:
        
                       WHERE g.user_id = ? AND g.creating_in_progress = 0
                         AND (g.favorite = 1
-                          OR g.unread_chat = 1 OR ChatStats.UnreadCount > 0)
+                          OR g.unread_chat = 1 OR ChatStats.UnreadCount > COALESCE(PriorityStats.UnreadSilent, 0))
                     ORDER BY g.chat_ts DESC LIMIT ?
 Plan:
 MATERIALIZE ChatStats
 SEARCH chat_items USING COVERING INDEX idx_chat_items_group_scope_stats_all (user_id=? AND group_id>?)
+MATERIALIZE PriorityStats
+SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_priority (user_id=? AND item_status=? AND group_id>?)
 MATERIALIZE ReportCount
 SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_msg_content_tag_deleted (user_id=? AND group_id>?)
 SEARCH g USING INDEX idx_groups_chat_ts (user_id=?)
 SEARCH ChatStats USING AUTOMATIC COVERING INDEX (group_id=?) LEFT-JOIN
+SEARCH PriorityStats USING AUTOMATIC COVERING INDEX (group_id=?) LEFT-JOIN
 SEARCH ReportCount USING AUTOMATIC COVERING INDEX (group_id=?) LEFT-JOIN
 CORRELATED SCALAR SUBQUERY 1
 SEARCH ci USING COVERING INDEX idx_chat_items_group_scope_item_ts (user_id=? AND group_id=? AND group_scope_tag=? AND group_scope_group_member_id=?)
@@ -2793,11 +3013,13 @@ Query:
             SELECT chat_item_id
             FROM chat_items ci
             WHERE ci.user_id = ? AND ci.group_id = g.group_id AND ci.group_scope_tag IS NULL AND ci.group_scope_group_member_id IS NULL
-            ORDER BY ci.item_ts DESC
+            ORDER BY ci.item_ts DESC, ci.chat_item_id DESC
             LIMIT 1
           ) AS chat_item_id,
           COALESCE(ChatStats.UnreadCount, 0),
           COALESCE(ChatStats.UnreadMentions, 0),
+          COALESCE(PriorityStats.UnreadSilent, 0),
+          COALESCE(PriorityStats.UnreadHighPriority, 0),
           COALESCE(ReportCount.Count, 0),
           COALESCE(ChatStats.MinUnread, 0),
           g.unread_chat
@@ -2809,6 +3031,14 @@ Query:
           GROUP BY group_id
         ) ChatStats ON ChatStats.group_id = g.group_id
         LEFT JOIN (
+          SELECT group_id,
+            SUM(CASE WHEN item_priority < 0 THEN 1 ELSE 0 END) AS UnreadSilent,
+            SUM(CASE WHEN item_priority > 0 THEN 1 ELSE 0 END) AS UnreadHighPriority
+          FROM chat_items
+          WHERE user_id = ? AND item_status = ? AND group_id IS NOT NULL AND group_scope_tag IS NULL AND group_scope_group_member_id IS NULL AND item_priority <> 0
+          GROUP BY group_id
+        ) PriorityStats ON PriorityStats.group_id = g.group_id
+        LEFT JOIN (
           SELECT group_id, COUNT(1) AS Count
           FROM chat_items
           WHERE user_id = ? AND group_id IS NOT NULL
@@ -2817,15 +3047,18 @@ Query:
         ) ReportCount ON ReportCount.group_id = g.group_id
        
                       WHERE g.user_id = ? AND g.creating_in_progress = 0
-                        AND (g.unread_chat = 1 OR ChatStats.UnreadCount > 0)
+                        AND (g.unread_chat = 1 OR ChatStats.UnreadCount > COALESCE(PriorityStats.UnreadSilent, 0))
                     AND g.chat_ts < ? ORDER BY g.chat_ts DESC LIMIT ?
 Plan:
 MATERIALIZE ChatStats
 SEARCH chat_items USING COVERING INDEX idx_chat_items_group_scope_stats_all (user_id=? AND group_id>?)
+MATERIALIZE PriorityStats
+SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_priority (user_id=? AND item_status=? AND group_id>?)
 MATERIALIZE ReportCount
 SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_msg_content_tag_deleted (user_id=? AND group_id>?)
 SEARCH g USING INDEX idx_groups_chat_ts (user_id=? AND chat_ts<?)
 SEARCH ChatStats USING AUTOMATIC COVERING INDEX (group_id=?) LEFT-JOIN
+SEARCH PriorityStats USING AUTOMATIC COVERING INDEX (group_id=?) LEFT-JOIN
 SEARCH ReportCount USING AUTOMATIC COVERING INDEX (group_id=?) LEFT-JOIN
 CORRELATED SCALAR SUBQUERY 1
 SEARCH ci USING COVERING INDEX idx_chat_items_group_scope_item_ts (user_id=? AND group_id=? AND group_scope_tag=? AND group_scope_group_member_id=?)
@@ -2838,11 +3071,13 @@ Query:
             SELECT chat_item_id
             FROM chat_items ci
             WHERE ci.user_id = ? AND ci.group_id = g.group_id AND ci.group_scope_tag IS NULL AND ci.group_scope_group_member_id IS NULL
-            ORDER BY ci.item_ts DESC
+            ORDER BY ci.item_ts DESC, ci.chat_item_id DESC
             LIMIT 1
           ) AS chat_item_id,
           COALESCE(ChatStats.UnreadCount, 0),
           COALESCE(ChatStats.UnreadMentions, 0),
+          COALESCE(PriorityStats.UnreadSilent, 0),
+          COALESCE(PriorityStats.UnreadHighPriority, 0),
           COALESCE(ReportCount.Count, 0),
           COALESCE(ChatStats.MinUnread, 0),
           g.unread_chat
@@ -2854,6 +3089,14 @@ Query:
           GROUP BY group_id
         ) ChatStats ON ChatStats.group_id = g.group_id
         LEFT JOIN (
+          SELECT group_id,
+            SUM(CASE WHEN item_priority < 0 THEN 1 ELSE 0 END) AS UnreadSilent,
+            SUM(CASE WHEN item_priority > 0 THEN 1 ELSE 0 END) AS UnreadHighPriority
+          FROM chat_items
+          WHERE user_id = ? AND item_status = ? AND group_id IS NOT NULL AND group_scope_tag IS NULL AND group_scope_group_member_id IS NULL AND item_priority <> 0
+          GROUP BY group_id
+        ) PriorityStats ON PriorityStats.group_id = g.group_id
+        LEFT JOIN (
           SELECT group_id, COUNT(1) AS Count
           FROM chat_items
           WHERE user_id = ? AND group_id IS NOT NULL
@@ -2862,15 +3105,18 @@ Query:
         ) ReportCount ON ReportCount.group_id = g.group_id
        
                       WHERE g.user_id = ? AND g.creating_in_progress = 0
-                        AND (g.unread_chat = 1 OR ChatStats.UnreadCount > 0)
+                        AND (g.unread_chat = 1 OR ChatStats.UnreadCount > COALESCE(PriorityStats.UnreadSilent, 0))
                     AND g.chat_ts > ? ORDER BY g.chat_ts ASC LIMIT ?
 Plan:
 MATERIALIZE ChatStats
 SEARCH chat_items USING COVERING INDEX idx_chat_items_group_scope_stats_all (user_id=? AND group_id>?)
+MATERIALIZE PriorityStats
+SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_priority (user_id=? AND item_status=? AND group_id>?)
 MATERIALIZE ReportCount
 SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_msg_content_tag_deleted (user_id=? AND group_id>?)
 SEARCH g USING INDEX idx_groups_chat_ts (user_id=? AND chat_ts>?)
 SEARCH ChatStats USING AUTOMATIC COVERING INDEX (group_id=?) LEFT-JOIN
+SEARCH PriorityStats USING AUTOMATIC COVERING INDEX (group_id=?) LEFT-JOIN
 SEARCH ReportCount USING AUTOMATIC COVERING INDEX (group_id=?) LEFT-JOIN
 CORRELATED SCALAR SUBQUERY 1
 SEARCH ci USING COVERING INDEX idx_chat_items_group_scope_item_ts (user_id=? AND group_id=? AND group_scope_tag=? AND group_scope_group_member_id=?)
@@ -2883,11 +3129,13 @@ Query:
             SELECT chat_item_id
             FROM chat_items ci
             WHERE ci.user_id = ? AND ci.group_id = g.group_id AND ci.group_scope_tag IS NULL AND ci.group_scope_group_member_id IS NULL
-            ORDER BY ci.item_ts DESC
+            ORDER BY ci.item_ts DESC, ci.chat_item_id DESC
             LIMIT 1
           ) AS chat_item_id,
           COALESCE(ChatStats.UnreadCount, 0),
           COALESCE(ChatStats.UnreadMentions, 0),
+          COALESCE(PriorityStats.UnreadSilent, 0),
+          COALESCE(PriorityStats.UnreadHighPriority, 0),
           COALESCE(ReportCount.Count, 0),
           COALESCE(ChatStats.MinUnread, 0),
           g.unread_chat
@@ -2898,6 +3146,14 @@ Query:
           WHERE user_id = ? AND group_id IS NOT NULL AND group_scope_tag IS NULL AND group_scope_group_member_id IS NULL AND item_status = ?
           GROUP BY group_id
         ) ChatStats ON ChatStats.group_id = g.group_id
+        LEFT JOIN (
+          SELECT group_id,
+            SUM(CASE WHEN item_priority < 0 THEN 1 ELSE 0 END) AS UnreadSilent,
+            SUM(CASE WHEN item_priority > 0 THEN 1 ELSE 0 END) AS UnreadHighPriority
+          FROM chat_items
+          WHERE user_id = ? AND item_status = ? AND group_id IS NOT NULL AND group_scope_tag IS NULL AND group_scope_group_member_id IS NULL AND item_priority <> 0
+          GROUP BY group_id
+        ) PriorityStats ON PriorityStats.group_id = g.group_id
         LEFT JOIN (
           SELECT group_id, COUNT(1) AS Count
           FROM chat_items
@@ -2907,15 +3163,18 @@ Query:
         ) ReportCount ON ReportCount.group_id = g.group_id
        
                       WHERE g.user_id = ? AND g.creating_in_progress = 0
-                        AND (g.unread_chat = 1 OR ChatStats.UnreadCount > 0)
+                        AND (g.unread_chat = 1 OR ChatStats.UnreadCount > COALESCE(PriorityStats.UnreadSilent, 0))
                     ORDER BY g.chat_ts DESC LIMIT ?
 Plan:
 MATERIALIZE ChatStats
 SEARCH chat_items USING COVERING INDEX idx_chat_items_group_scope_stats_all (user_id=? AND group_id>?)
+MATERIALIZE PriorityStats
+SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_priority (user_id=? AND item_status=? AND group_id>?)
 MATERIALIZE ReportCount
 SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_msg_content_tag_deleted (user_id=? AND group_id>?)
 SEARCH g USING INDEX idx_groups_chat_ts (user_id=?)
 SEARCH ChatStats USING AUTOMATIC COVERING INDEX (group_id=?) LEFT-JOIN
+SEARCH PriorityStats USING AUTOMATIC COVERING INDEX (group_id=?) LEFT-JOIN
 SEARCH ReportCount USING AUTOMATIC COVERING INDEX (group_id=?) LEFT-JOIN
 CORRELATED SCALAR SUBQUERY 1
 SEARCH ci USING COVERING INDEX idx_chat_items_group_scope_item_ts (user_id=? AND group_id=? AND group_scope_tag=? AND group_scope_group_member_id=?)
@@ -2928,11 +3187,13 @@ Query:
             SELECT chat_item_id
             FROM chat_items ci
             WHERE ci.user_id = ? AND ci.group_id = g.group_id AND ci.group_scope_tag IS NULL AND ci.group_scope_group_member_id IS NULL
-            ORDER BY ci.item_ts DESC
+            ORDER BY ci.item_ts DESC, ci.chat_item_id DESC
             LIMIT 1
           ) AS chat_item_id,
           COALESCE(ChatStats.UnreadCount, 0),
           COALESCE(ChatStats.UnreadMentions, 0),
+          COALESCE(PriorityStats.UnreadSilent, 0),
+          COALESCE(PriorityStats.UnreadHighPriority, 0),
           COALESCE(ReportCount.Count, 0),
           COALESCE(ChatStats.MinUnread, 0),
           g.unread_chat
@@ -2943,6 +3204,14 @@ Query:
           WHERE user_id = ? AND group_id IS NOT NULL AND group_scope_tag IS NULL AND group_scope_group_member_id IS NULL AND item_status = ?
           GROUP BY group_id
         ) ChatStats ON ChatStats.group_id = g.group_id
+        LEFT JOIN (
+          SELECT group_id,
+            SUM(CASE WHEN item_priority < 0 THEN 1 ELSE 0 END) AS UnreadSilent,
+            SUM(CASE WHEN item_priority > 0 THEN 1 ELSE 0 END) AS UnreadHighPriority
+          FROM chat_items
+          WHERE user_id = ? AND item_status = ? AND group_id IS NOT NULL AND group_scope_tag IS NULL AND group_scope_group_member_id IS NULL AND item_priority <> 0
+          GROUP BY group_id
+        ) PriorityStats ON PriorityStats.group_id = g.group_id
         LEFT JOIN (
           SELECT group_id, COUNT(1) AS Count
           FROM chat_items
@@ -2957,10 +3226,13 @@ Query:
 Plan:
 MATERIALIZE ChatStats
 SEARCH chat_items USING COVERING INDEX idx_chat_items_group_scope_stats_all (user_id=? AND group_id>?)
+MATERIALIZE PriorityStats
+SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_priority (user_id=? AND item_status=? AND group_id>?)
 MATERIALIZE ReportCount
 SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_msg_content_tag_deleted (user_id=? AND group_id>?)
 SEARCH g USING INDEX idx_groups_chat_ts (user_id=? AND chat_ts<?)
 SEARCH ChatStats USING AUTOMATIC COVERING INDEX (group_id=?) LEFT-JOIN
+SEARCH PriorityStats USING AUTOMATIC COVERING INDEX (group_id=?) LEFT-JOIN
 SEARCH ReportCount USING AUTOMATIC COVERING INDEX (group_id=?) LEFT-JOIN
 CORRELATED SCALAR SUBQUERY 1
 SEARCH ci USING COVERING INDEX idx_chat_items_group_scope_item_ts (user_id=? AND group_id=? AND group_scope_tag=? AND group_scope_group_member_id=?)
@@ -2973,11 +3245,13 @@ Query:
             SELECT chat_item_id
             FROM chat_items ci
             WHERE ci.user_id = ? AND ci.group_id = g.group_id AND ci.group_scope_tag IS NULL AND ci.group_scope_group_member_id IS NULL
-            ORDER BY ci.item_ts DESC
+            ORDER BY ci.item_ts DESC, ci.chat_item_id DESC
             LIMIT 1
           ) AS chat_item_id,
           COALESCE(ChatStats.UnreadCount, 0),
           COALESCE(ChatStats.UnreadMentions, 0),
+          COALESCE(PriorityStats.UnreadSilent, 0),
+          COALESCE(PriorityStats.UnreadHighPriority, 0),
           COALESCE(ReportCount.Count, 0),
           COALESCE(ChatStats.MinUnread, 0),
           g.unread_chat
@@ -2988,6 +3262,14 @@ Query:
           WHERE user_id = ? AND group_id IS NOT NULL AND group_scope_tag IS NULL AND group_scope_group_member_id IS NULL AND item_status = ?
           GROUP BY group_id
         ) ChatStats ON ChatStats.group_id = g.group_id
+        LEFT JOIN (
+          SELECT group_id,
+            SUM(CASE WHEN item_priority < 0 THEN 1 ELSE 0 END) AS UnreadSilent,
+            SUM(CASE WHEN item_priority > 0 THEN 1 ELSE 0 END) AS UnreadHighPriority
+          FROM chat_items
+          WHERE user_id = ? AND item_status = ? AND group_id IS NOT NULL AND group_scope_tag IS NULL AND group_scope_group_member_id IS NULL AND item_priority <> 0
+          GROUP BY group_id
+        ) PriorityStats ON PriorityStats.group_id = g.group_id
         LEFT JOIN (
           SELECT group_id, COUNT(1) AS Count
           FROM chat_items
@@ -3002,10 +3284,13 @@ Query:
 Plan:
 MATERIALIZE ChatStats
 SEARCH chat_items USING COVERING INDEX idx_chat_items_group_scope_stats_all (user_id=? AND group_id>?)
+MATERIALIZE PriorityStats
+SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_priority (user_id=? AND item_status=? AND group_id>?)
 MATERIALIZE ReportCount
 SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_msg_content_tag_deleted (user_id=? AND group_id>?)
 SEARCH g USING INDEX idx_groups_chat_ts (user_id=? AND chat_ts>?)
 SEARCH ChatStats USING AUTOMATIC COVERING INDEX (group_id=?) LEFT-JOIN
+SEARCH PriorityStats USING AUTOMATIC COVERING INDEX (group_id=?) LEFT-JOIN
 SEARCH ReportCount USING AUTOMATIC COVERING INDEX (group_id=?) LEFT-JOIN
 CORRELATED SCALAR SUBQUERY 1
 SEARCH ci USING COVERING INDEX idx_chat_items_group_scope_item_ts (user_id=? AND group_id=? AND group_scope_tag=? AND group_scope_group_member_id=?)
@@ -3018,11 +3303,13 @@ Query:
             SELECT chat_item_id
             FROM chat_items ci
             WHERE ci.user_id = ? AND ci.group_id = g.group_id AND ci.group_scope_tag IS NULL AND ci.group_scope_group_member_id IS NULL
-            ORDER BY ci.item_ts DESC
+            ORDER BY ci.item_ts DESC, ci.chat_item_id DESC
             LIMIT 1
           ) AS chat_item_id,
           COALESCE(ChatStats.UnreadCount, 0),
           COALESCE(ChatStats.UnreadMentions, 0),
+          COALESCE(PriorityStats.UnreadSilent, 0),
+          COALESCE(PriorityStats.UnreadHighPriority, 0),
           COALESCE(ReportCount.Count, 0),
           COALESCE(ChatStats.MinUnread, 0),
           g.unread_chat
@@ -3033,6 +3320,14 @@ Query:
           WHERE user_id = ? AND group_id IS NOT NULL AND group_scope_tag IS NULL AND group_scope_group_member_id IS NULL AND item_status = ?
           GROUP BY group_id
         ) ChatStats ON ChatStats.group_id = g.group_id
+        LEFT JOIN (
+          SELECT group_id,
+            SUM(CASE WHEN item_priority < 0 THEN 1 ELSE 0 END) AS UnreadSilent,
+            SUM(CASE WHEN item_priority > 0 THEN 1 ELSE 0 END) AS UnreadHighPriority
+          FROM chat_items
+          WHERE user_id = ? AND item_status = ? AND group_id IS NOT NULL AND group_scope_tag IS NULL AND group_scope_group_member_id IS NULL AND item_priority <> 0
+          GROUP BY group_id
+        ) PriorityStats ON PriorityStats.group_id = g.group_id
         LEFT JOIN (
           SELECT group_id, COUNT(1) AS Count
           FROM chat_items
@@ -3047,10 +3342,13 @@ Query:
 Plan:
 MATERIALIZE ChatStats
 SEARCH chat_items USING COVERING INDEX idx_chat_items_group_scope_stats_all (user_id=? AND group_id>?)
+MATERIALIZE PriorityStats
+SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_priority (user_id=? AND item_status=? AND group_id>?)
 MATERIALIZE ReportCount
 SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_msg_content_tag_deleted (user_id=? AND group_id>?)
 SEARCH g USING INDEX idx_groups_chat_ts (user_id=?)
 SEARCH ChatStats USING AUTOMATIC COVERING INDEX (group_id=?) LEFT-JOIN
+SEARCH PriorityStats USING AUTOMATIC COVERING INDEX (group_id=?) LEFT-JOIN
 SEARCH ReportCount USING AUTOMATIC COVERING INDEX (group_id=?) LEFT-JOIN
 CORRELATED SCALAR SUBQUERY 1
 SEARCH ci USING COVERING INDEX idx_chat_items_group_scope_item_ts (user_id=? AND group_id=? AND group_scope_tag=? AND group_scope_group_member_id=?)
@@ -3063,11 +3361,13 @@ Query:
             SELECT chat_item_id
             FROM chat_items ci
             WHERE ci.user_id = ? AND ci.group_id = g.group_id AND ci.group_scope_tag IS NULL AND ci.group_scope_group_member_id IS NULL
-            ORDER BY ci.item_ts DESC
+            ORDER BY ci.item_ts DESC, ci.chat_item_id DESC
             LIMIT 1
           ) AS chat_item_id,
           COALESCE(ChatStats.UnreadCount, 0),
           COALESCE(ChatStats.UnreadMentions, 0),
+          COALESCE(PriorityStats.UnreadSilent, 0),
+          COALESCE(PriorityStats.UnreadHighPriority, 0),
           COALESCE(ReportCount.Count, 0),
           COALESCE(ChatStats.MinUnread, 0),
           g.unread_chat
@@ -3078,6 +3378,14 @@ Query:
           WHERE user_id = ? AND group_id IS NOT NULL AND group_scope_tag IS NULL AND group_scope_group_member_id IS NULL AND item_status = ?
           GROUP BY group_id
         ) ChatStats ON ChatStats.group_id = g.group_id
+        LEFT JOIN (
+          SELECT group_id,
+            SUM(CASE WHEN item_priority < 0 THEN 1 ELSE 0 END) AS UnreadSilent,
+            SUM(CASE WHEN item_priority > 0 THEN 1 ELSE 0 END) AS UnreadHighPriority
+          FROM chat_items
+          WHERE user_id = ? AND item_status = ? AND group_id IS NOT NULL AND group_scope_tag IS NULL AND group_scope_group_member_id IS NULL AND item_priority <> 0
+          GROUP BY group_id
+        ) PriorityStats ON PriorityStats.group_id = g.group_id
         LEFT JOIN (
           SELECT group_id, COUNT(1) AS Count
           FROM chat_items
@@ -3089,10 +3397,13 @@ Query:
 Plan:
 MATERIALIZE ChatStats
 SEARCH chat_items USING COVERING INDEX idx_chat_items_group_scope_stats_all (user_id=? AND group_id>?)
+MATERIALIZE PriorityStats
+SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_priority (user_id=? AND item_status=? AND group_id>?)
 MATERIALIZE ReportCount
 SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_msg_content_tag_deleted (user_id=? AND group_id>?)
 SEARCH g USING INDEX idx_groups_chat_ts (user_id=? AND chat_ts<?)
 SEARCH ChatStats USING AUTOMATIC COVERING INDEX (group_id=?) LEFT-JOIN
+SEARCH PriorityStats USING AUTOMATIC COVERING INDEX (group_id=?) LEFT-JOIN
 SEARCH ReportCount USING AUTOMATIC COVERING INDEX (group_id=?) LEFT-JOIN
 CORRELATED SCALAR SUBQUERY 1
 SEARCH ci USING COVERING INDEX idx_chat_items_group_scope_item_ts (user_id=? AND group_id=? AND group_scope_tag=? AND group_scope_group_member_id=?)
@@ -3105,11 +3416,13 @@ Query:
             SELECT chat_item_id
             FROM chat_items ci
             WHERE ci.user_id = ? AND ci.group_id = g.group_id AND ci.group_scope_tag IS NULL AND ci.group_scope_group_member_id IS NULL
-            ORDER BY ci.item_ts DESC
+            ORDER BY ci.item_ts DESC, ci.chat_item_id DESC
             LIMIT 1
           ) AS chat_item_id,
           COALESCE(ChatStats.UnreadCount, 0),
           COALESCE(ChatStats.UnreadMentions, 0),
+          COALESCE(PriorityStats.UnreadSilent, 0),
+          COALESCE(PriorityStats.UnreadHighPriority, 0),
           COALESCE(ReportCount.Count, 0),
           COALESCE(ChatStats.MinUnread, 0),
           g.unread_chat
@@ -3120,6 +3433,14 @@ Query:
           WHERE user_id = ? AND group_id IS NOT NULL AND group_scope_tag IS NULL AND group_scope_group_member_id IS NULL AND item_status = ?
           GROUP BY group_id
         ) ChatStats ON ChatStats.group_id = g.group_id
+        LEFT JOIN (
+          SELECT group_id,
+            SUM(CASE WHEN item_priority < 0 THEN 1 ELSE 0 END) AS UnreadSilent,
+            SUM(CASE WHEN item_priority > 0 THEN 1 ELSE 0 END) AS UnreadHighPriority
+          FROM chat_items
+          WHERE user_id = ? AND item_status = ? AND group_id IS NOT NULL AND group_scope_tag IS NULL AND group_scope_group_member_id IS NULL AND item_priority <> 0
+          GROUP BY group_id
+        ) PriorityStats ON PriorityStats.group_id = g.group_id
         LEFT JOIN (
           SELECT group_id, COUNT(1) AS Count
           FROM chat_items
@@ -3131,10 +3452,13 @@ Query:
 Plan:
 MATERIALIZE ChatStats
 SEARCH chat_items USING COVERING INDEX idx_chat_items_group_scope_stats_all (user_id=? AND group_id>?)
+MATERIALIZE PriorityStats
+SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_priority (user_id=? AND item_status=? AND group_id>?)
 MATERIALIZE ReportCount
 SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_msg_content_tag_deleted (user_id=? AND group_id>?)
 SEARCH g USING INDEX idx_groups_chat_ts (user_id=? AND chat_ts>?)
 SEARCH ChatStats USING AUTOMATIC COVERING INDEX (group_id=?) LEFT-JOIN
+SEARCH PriorityStats USING AUTOMATIC COVERING INDEX (group_id=?) LEFT-JOIN
 SEARCH ReportCount USING AUTOMATIC COVERING INDEX (group_id=?) LEFT-JOIN
 CORRELATED SCALAR SUBQUERY 1
 SEARCH ci USING COVERING INDEX idx_chat_items_group_scope_item_ts (user_id=? AND group_id=? AND group_scope_tag=? AND group_scope_group_member_id=?)
@@ -3147,11 +3471,13 @@ Query:
             SELECT chat_item_id
             FROM chat_items ci
             WHERE ci.user_id = ? AND ci.group_id = g.group_id AND ci.group_scope_tag IS NULL AND ci.group_scope_group_member_id IS NULL
-            ORDER BY ci.item_ts DESC
+            ORDER BY ci.item_ts DESC, ci.chat_item_id DESC
             LIMIT 1
           ) AS chat_item_id,
           COALESCE(ChatStats.UnreadCount, 0),
           COALESCE(ChatStats.UnreadMentions, 0),
+          COALESCE(PriorityStats.UnreadSilent, 0),
+          COALESCE(PriorityStats.UnreadHighPriority, 0),
           COALESCE(ReportCount.Count, 0),
           COALESCE(ChatStats.MinUnread, 0),
           g.unread_chat
@@ -3163,6 +3489,14 @@ Query:
           GROUP BY group_id
         ) ChatStats ON ChatStats.group_id = g.group_id
         LEFT JOIN (
+          SELECT group_id,
+            SUM(CASE WHEN item_priority < 0 THEN 1 ELSE 0 END) AS UnreadSilent,
+            SUM(CASE WHEN item_priority > 0 THEN 1 ELSE 0 END) AS UnreadHighPriority
+          FROM chat_items
+          WHERE user_id = ? AND item_status = ? AND group_id IS NOT NULL AND group_scope_tag IS NULL AND group_scope_group_member_id IS NULL AND item_priority <> 0
+          GROUP BY group_id
+        ) PriorityStats ON PriorityStats.group_id = g.group_id
+        LEFT JOIN (
           SELECT group_id, COUNT(1) AS Count
           FROM chat_items
           WHERE user_id = ? AND group_id IS NOT NULL
@@ -3173,10 +3507,13 @@ Query:
 Plan:
 MATERIALIZE ChatStats
 SEARCH chat_items USING COVERING INDEX idx_chat_items_group_scope_stats_all (user_id=? AND group_id>?)
+MATERIALIZE PriorityStats
+SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_priority (user_id=? AND item_status=? AND group_id>?)
 MATERIALIZE ReportCount
 SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_msg_content_tag_deleted (user_id=? AND group_id>?)
 SEARCH g USING INDEX idx_groups_chat_ts (user_id=?)
 SEARCH ChatStats USING AUTOMATIC COVERING INDEX (group_id=?) LEFT-JOIN
+SEARCH PriorityStats USING AUTOMATIC COVERING INDEX (group_id=?) LEFT-JOIN
 SEARCH ReportCount USING AUTOMATIC COVERING INDEX (group_id=?) LEFT-JOIN
 CORRELATED SCALAR SUBQUERY 1
 SEARCH ci USING COVERING INDEX idx_chat_items_group_scope_item_ts (user_id=? AND group_id=? AND group_scope_tag=? AND group_scope_group_member_id=?)
@@ -3189,7 +3526,7 @@ Query:
             SELECT chat_item_id
             FROM chat_items ci
             WHERE ci.user_id = ? AND ci.note_folder_id = nf.note_folder_id
-            ORDER BY ci.created_at DESC
+            ORDER BY ci.created_at DESC, ci.chat_item_id DESC
             LIMIT 1
           ) AS chat_item_id,
           COALESCE(ChatStats.UnreadCount, 0),
@@ -3224,7 +3561,7 @@ Query:
             SELECT chat_item_id
             FROM chat_items ci
             WHERE ci.user_id = ? AND ci.note_folder_id = nf.note_folder_id
-            ORDER BY ci.created_at DESC
+            ORDER BY ci.created_at DESC, ci.chat_item_id DESC
             LIMIT 1
           ) AS chat_item_id,
           COALESCE(ChatStats.UnreadCount, 0),
@@ -3258,7 +3595,7 @@ Query:
             SELECT chat_item_id
             FROM chat_items ci
             WHERE ci.user_id = ? AND ci.note_folder_id = nf.note_folder_id
-            ORDER BY ci.created_at DESC
+            ORDER BY ci.created_at DESC, ci.chat_item_id DESC
             LIMIT 1
           ) AS chat_item_id,
           COALESCE(ChatStats.UnreadCount, 0),
@@ -3292,7 +3629,7 @@ Query:
             SELECT chat_item_id
             FROM chat_items ci
             WHERE ci.user_id = ? AND ci.note_folder_id = nf.note_folder_id
-            ORDER BY ci.created_at DESC
+            ORDER BY ci.created_at DESC, ci.chat_item_id DESC
             LIMIT 1
           ) AS chat_item_id,
           COALESCE(ChatStats.UnreadCount, 0),
@@ -3326,7 +3663,7 @@ Query:
             SELECT chat_item_id
             FROM chat_items ci
             WHERE ci.user_id = ? AND ci.note_folder_id = nf.note_folder_id
-            ORDER BY ci.created_at DESC
+            ORDER BY ci.created_at DESC, ci.chat_item_id DESC
             LIMIT 1
           ) AS chat_item_id,
           COALESCE(ChatStats.UnreadCount, 0),
@@ -3360,7 +3697,7 @@ Query:
             SELECT chat_item_id
             FROM chat_items ci
             WHERE ci.user_id = ? AND ci.note_folder_id = nf.note_folder_id
-            ORDER BY ci.created_at DESC
+            ORDER BY ci.created_at DESC, ci.chat_item_id DESC
             LIMIT 1
           ) AS chat_item_id,
           COALESCE(ChatStats.UnreadCount, 0),
@@ -3394,7 +3731,7 @@ Query:
             SELECT chat_item_id
             FROM chat_items ci
             WHERE ci.user_id = ? AND ci.note_folder_id = nf.note_folder_id
-            ORDER BY ci.created_at DESC
+            ORDER BY ci.created_at DESC, ci.chat_item_id DESC
             LIMIT 1
           ) AS chat_item_id,
           COALESCE(ChatStats.UnreadCount, 0),
@@ -3428,7 +3765,7 @@ Query:
             SELECT chat_item_id
             FROM chat_items ci
             WHERE ci.user_id = ? AND ci.note_folder_id = nf.note_folder_id
-            ORDER BY ci.created_at DESC
+            ORDER BY ci.created_at DESC, ci.chat_item_id DESC
             LIMIT 1
           ) AS chat_item_id,
           COALESCE(ChatStats.UnreadCount, 0),
@@ -3459,7 +3796,7 @@ Query:
             SELECT chat_item_id
             FROM chat_items ci
             WHERE ci.user_id = ? AND ci.note_folder_id = nf.note_folder_id
-            ORDER BY ci.created_at DESC
+            ORDER BY ci.created_at DESC, ci.chat_item_id DESC
             LIMIT 1
           ) AS chat_item_id,
           COALESCE(ChatStats.UnreadCount, 0),
@@ -3490,7 +3827,7 @@ Query:
             SELECT chat_item_id
             FROM chat_items ci
             WHERE ci.user_id = ? AND ci.note_folder_id = nf.note_folder_id
-            ORDER BY ci.created_at DESC
+            ORDER BY ci.created_at DESC, ci.chat_item_id DESC
             LIMIT 1
           ) AS chat_item_id,
           COALESCE(ChatStats.UnreadCount, 0),
@@ -3517,7 +3854,8 @@ Query:
         SELECT
           t.delivery_task_id,
           t.worker_scope, t.job_scope_spec_tag, t.job_scope_include_pending, t.job_scope_support_gm_id,
-          m.group_member_id, m.member_id, p.display_name, msg.broker_ts, msg.msg_body, msg.msg_chat_binding, msg.msg_signatures, t.message_from_channel
+          m.group_member_id, m.member_id, p.display_name, msg.broker_ts, msg.msg_body, msg.msg_chat_binding, msg.msg_signatures, t.message_from_channel,
+          t.update_notification
         FROM delivery_tasks t
         JOIN messages msg ON msg.message_id = t.message_id
         JOIN group_members m ON m.group_member_id = t.sender_group_member_id
@@ -3529,14 +3867,6 @@ SEARCH t USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH msg USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH m USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH p USING INTEGER PRIMARY KEY (rowid=?)
-
-Query: 
-        SELECT COUNT(1)
-        FROM chat_items
-        WHERE user_id = ? AND contact_id = ? AND item_status = ?
-      
-Plan:
-SEARCH chat_items USING COVERING INDEX idx_chat_items_user_id_item_status (user_id=? AND item_status=? AND contact_id=?)
 
 Query: 
         SELECT COUNT(1)
@@ -3879,6 +4209,15 @@ SEARCH ct USING INDEX idx_contacts_chat_ts (user_id=?)
 SEARCH cp USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
+        SELECT ct.contact_id, ct.contact_profile_id FROM contacts ct
+        JOIN contact_profiles cp ON cp.contact_profile_id = ct.contact_profile_id
+        WHERE ct.user_id = ? AND ct.contact_id IS DISTINCT FROM ? AND cp.contact_domain = ? AND cp.contact_domain_verified = 1
+      
+Plan:
+SEARCH ct USING COVERING INDEX sqlite_autoindex_contacts_2 (user_id=?)
+SEARCH cp USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: 
         SELECT d.file_descr_id, d.file_descr_text, d.file_descr_part_no, d.file_descr_complete
         FROM xftp_file_descriptions d
         JOIN rcv_files f ON f.file_descr_id = d.file_descr_id
@@ -3942,8 +4281,8 @@ SEARCH f USING COVERING INDEX idx_files_chat_item_id (chat_item_id=?)
 Query: 
         SELECT f.file_id FROM files f
         JOIN rcv_files r ON r.file_id = f.file_id
-        WHERE f.user_id = ? AND f.group_id = ? AND f.shared_msg_id = ? AND f.file_type = ?
-       AND r.group_member_id = ?
+        WHERE f.user_id = ? AND f.group_id = ? AND f.shared_msg_id = ? AND f.file_type = ? AND r.group_member_id = ?
+      
 Plan:
 SEARCH f USING INDEX idx_files_group_id_shared_msg_id (group_id=? AND shared_msg_id=?)
 SEARCH r USING COVERING INDEX idx_rcv_files_group_member_id (group_member_id=? AND rowid=?)
@@ -4529,6 +4868,26 @@ Plan:
 SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
+        UPDATE groups SET group_domain_verified = 2
+        WHERE user_id = ? AND group_domain_verified = 1 AND group_id IS DISTINCT FROM ?
+          AND group_profile_id IN (SELECT group_profile_id FROM group_profiles WHERE user_id = ? AND group_domain = ?)
+       AND business_chat IS NOT NULL RETURNING group_id
+Plan:
+SEARCH groups USING INDEX sqlite_autoindex_groups_2 (user_id=? AND group_profile_id=?)
+LIST SUBQUERY 1
+SEARCH group_profiles USING INDEX idx_group_profiles_user_id (user_id=?)
+
+Query: 
+        UPDATE groups SET group_domain_verified = 2
+        WHERE user_id = ? AND group_domain_verified = 1 AND group_id IS DISTINCT FROM ?
+          AND group_profile_id IN (SELECT group_profile_id FROM group_profiles WHERE user_id = ? AND group_domain = ?)
+       AND business_chat IS NULL RETURNING group_id
+Plan:
+SEARCH groups USING INDEX sqlite_autoindex_groups_2 (user_id=? AND group_profile_id=?)
+LIST SUBQUERY 1
+SEARCH group_profiles USING INDEX idx_group_profiles_user_id (user_id=?)
+
+Query: 
         WITH user_groups AS MATERIALIZED (
           SELECT g.group_id
           FROM groups g
@@ -5081,6 +5440,13 @@ Query:
 Plan:
 
 Query: 
+      INSERT INTO chat_item_moderations
+        (group_id, moderator_member_id, item_member_id, shared_msg_id, created_by_msg_id, moderated_at)
+        VALUES (?,?,?,?,?,?)
+    
+Plan:
+
+Query: 
       INSERT INTO chat_item_versions (chat_item_id, msg_content, item_version_ts)
       VALUES (?,?,?)
     
@@ -5092,13 +5458,13 @@ Query:
         user_id, created_by_msg_id, contact_id, group_id, group_member_id, note_folder_id, group_scope_tag, group_scope_group_member_id,
         -- meta
         item_sent, item_ts, item_content, item_content_tag, item_text, item_status, msg_content_tag, shared_msg_id,
-        forwarded_by_group_member_id, include_in_history, created_at, updated_at, item_live, user_mention, has_link, item_viewed, show_group_as_sender, msg_signed, item_msg_body, item_chat_binding, item_signatures, item_signed_by_group_member_id, timed_ttl, timed_delete_at,
+        forwarded_by_group_member_id, include_in_history, created_at, updated_at, item_live, user_mention, item_priority, has_link, item_viewed, show_group_as_sender, msg_signed, item_msg_body, item_chat_binding, item_signatures, item_signed_by_group_member_id, timed_ttl, timed_delete_at,
         -- quote
         quoted_shared_msg_id, quoted_sent_at, quoted_content, quoted_sent, quoted_member_id,
         -- forwarded from
         fwd_from_tag, fwd_from_chat_name, fwd_from_msg_dir, fwd_from_contact_id, fwd_from_group_id, fwd_from_chat_item_id,
         fwd_from_group_type, fwd_from_group_link, fwd_from_public_group_id, fwd_from_member_id, fwd_from_shared_msg_id
-      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
     
 Plan:
 
@@ -5112,6 +5478,12 @@ SEARCH chat_tags USING INDEX idx_chat_tags_user_id (user_id=?)
 
 Query: 
       INSERT INTO chat_tags_chats (contact_id, chat_tag_id)
+      VALUES (?,?)
+    
+Plan:
+
+Query: 
+      INSERT INTO chat_tags_chats (group_id, chat_tag_id)
       VALUES (?,?)
     
 Plan:
@@ -5178,9 +5550,9 @@ Query:
       INSERT INTO delivery_tasks (
         group_id,
         worker_scope, job_scope_spec_tag, job_scope_include_pending, job_scope_support_gm_id,
-        sender_group_member_id, message_id, message_from_channel, task_status,
+        sender_group_member_id, message_id, message_from_channel, update_notification, task_status,
         created_at, updated_at
-      ) VALUES (?,?,?,?,?,?,?,?,?,?,?)
+      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
     
 Plan:
 
@@ -5356,7 +5728,7 @@ SEARCH p USING INDEX idx_badge_purchases_store_receipt (badge_store_receipt_id=?
 
 Query: 
       UPDATE chat_items
-      SET item_content = ?, item_text = ?, item_status = ?, item_deleted = ?, item_deleted_ts = ?, item_edited = ?, item_live = ?, updated_at = ?, timed_ttl = ?, timed_delete_at = ?
+      SET item_content = ?, item_text = ?, item_status = ?, item_deleted = ?, item_deleted_ts = ?, item_edited = ?, item_live = ?, updated_at = ?, timed_ttl = ?, timed_delete_at = ?, item_priority = ?
       WHERE user_id = ? AND contact_id = ? AND chat_item_id = ?
     
 Plan:
@@ -5364,7 +5736,7 @@ SEARCH chat_items USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
       UPDATE chat_items
-      SET item_content = ?, item_text = ?, item_status = ?, item_deleted = ?, item_deleted_ts = ?, item_edited = ?, item_live = ?, updated_at = ?, timed_ttl = ?, timed_delete_at = ?
+      SET item_content = ?, item_text = ?, item_status = ?, item_deleted = ?, item_deleted_ts = ?, item_edited = ?, item_live = ?, updated_at = ?, timed_ttl = ?, timed_delete_at = ?, item_priority = ?
       WHERE user_id = ? AND group_id = ? AND chat_item_id = ?
     
 Plan:
@@ -5945,7 +6317,7 @@ Query:
       pu.display_name, pu.full_name, pu.short_descr, pu.description, pu.image, pu.contact_link, pu.chat_peer_type, pu.local_alias, pu.preferences, pu.preferences_json,
       pu.badge_proof, pu.badge_pres_header, pu.badge_expiry, pu.badge_type, pu.badge_verified, pu.badge_extra, pu.badge_master_key, pu.badge_signature, pu.badge_key_idx, pu.contact_domain, pu.contact_domain_proof, pu.contact_domain_verified,
       mu.created_at, mu.updated_at,
-      mu.support_chat_ts, mu.support_chat_items_unread, mu.support_chat_items_member_attention, mu.support_chat_items_mentions, mu.support_chat_last_msg_from_member_ts, mu.member_pub_key, mu.relay_link, mu.member_security_code, mu.member_security_code_verified_at
+      mu.support_chat_ts, mu.support_chat_items_unread, mu.support_chat_items_member_attention, mu.support_chat_items_mentions, mu.support_chat_last_msg_from_member_ts, mu.member_pub_key, mu.relay_link, mu.member_security_code, mu.member_security_code_verified_at, mu.member_via
    
     FROM groups g
     JOIN group_profiles gp ON gp.group_profile_id = g.group_profile_id
@@ -5983,7 +6355,7 @@ Query:
       pu.display_name, pu.full_name, pu.short_descr, pu.description, pu.image, pu.contact_link, pu.chat_peer_type, pu.local_alias, pu.preferences, pu.preferences_json,
       pu.badge_proof, pu.badge_pres_header, pu.badge_expiry, pu.badge_type, pu.badge_verified, pu.badge_extra, pu.badge_master_key, pu.badge_signature, pu.badge_key_idx, pu.contact_domain, pu.contact_domain_proof, pu.contact_domain_verified,
       mu.created_at, mu.updated_at,
-      mu.support_chat_ts, mu.support_chat_items_unread, mu.support_chat_items_member_attention, mu.support_chat_items_mentions, mu.support_chat_last_msg_from_member_ts, mu.member_pub_key, mu.relay_link, mu.member_security_code, mu.member_security_code_verified_at
+      mu.support_chat_ts, mu.support_chat_items_unread, mu.support_chat_items_member_attention, mu.support_chat_items_mentions, mu.support_chat_last_msg_from_member_ts, mu.member_pub_key, mu.relay_link, mu.member_security_code, mu.member_security_code_verified_at, mu.member_via
    
     FROM groups g
     JOIN group_profiles gp ON gp.group_profile_id = g.group_profile_id
@@ -6014,7 +6386,7 @@ Query:
       pu.display_name, pu.full_name, pu.short_descr, pu.description, pu.image, pu.contact_link, pu.chat_peer_type, pu.local_alias, pu.preferences, pu.preferences_json,
       pu.badge_proof, pu.badge_pres_header, pu.badge_expiry, pu.badge_type, pu.badge_verified, pu.badge_extra, pu.badge_master_key, pu.badge_signature, pu.badge_key_idx, pu.contact_domain, pu.contact_domain_proof, pu.contact_domain_verified,
       mu.created_at, mu.updated_at,
-      mu.support_chat_ts, mu.support_chat_items_unread, mu.support_chat_items_member_attention, mu.support_chat_items_mentions, mu.support_chat_last_msg_from_member_ts, mu.member_pub_key, mu.relay_link, mu.member_security_code, mu.member_security_code_verified_at
+      mu.support_chat_ts, mu.support_chat_items_unread, mu.support_chat_items_member_attention, mu.support_chat_items_mentions, mu.support_chat_last_msg_from_member_ts, mu.member_pub_key, mu.relay_link, mu.member_security_code, mu.member_security_code_verified_at, mu.member_via
    
     FROM groups g
     JOIN group_profiles gp ON gp.group_profile_id = g.group_profile_id
@@ -6025,6 +6397,68 @@ Plan:
 SEARCH g USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH gp USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH mu USING INDEX idx_group_members_group_id (user_id=? AND group_id=?)
+SEARCH pu USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: 
+    SELECT
+      -- GroupInfo
+      g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.short_descr, g.local_alias, gp.description, gp.image, gp.group_type, gp.group_link, gp.public_group_id,
+      gp.group_web_page, gp.group_domain, gp.domain_web_page, gp.allow_embedding, gp.group_domain_proof,
+      g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences, gp.preferences_json, gp.member_admission, gp.chat_layout,
+      g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at,
+      g.conn_full_link_to_connect, g.conn_short_link_to_connect, g.conn_link_prepared_connection, g.conn_link_started_connection, g.welcome_shared_msg_id, g.request_shared_msg_id,
+      g.business_chat, g.business_member_id, g.customer_member_id,
+      g.use_relays, g.relay_own_status,
+      g.ui_themes, g.summary_current_members_count, g.public_member_count, g.roster_version, g.custom_data, g.chat_item_ttl, g.members_require_attention, g.via_group_link_uri, g.group_domain_verified,
+      g.root_priv_key, g.root_pub_key, g.member_priv_key,
+      -- GroupMember - membership
+      mu.group_member_id, mu.group_id, mu.index_in_group, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category,
+      mu.member_status, mu.show_messages, mu.member_restriction, mu.invited_by, mu.invited_by_group_member_id, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
+      pu.display_name, pu.full_name, pu.short_descr, pu.description, pu.image, pu.contact_link, pu.chat_peer_type, pu.local_alias, pu.preferences, pu.preferences_json,
+      pu.badge_proof, pu.badge_pres_header, pu.badge_expiry, pu.badge_type, pu.badge_verified, pu.badge_extra, pu.badge_master_key, pu.badge_signature, pu.badge_key_idx, pu.contact_domain, pu.contact_domain_proof, pu.contact_domain_verified,
+      mu.created_at, mu.updated_at,
+      mu.support_chat_ts, mu.support_chat_items_unread, mu.support_chat_items_member_attention, mu.support_chat_items_mentions, mu.support_chat_last_msg_from_member_ts, mu.member_pub_key, mu.relay_link, mu.member_security_code, mu.member_security_code_verified_at, mu.member_via
+   
+    FROM groups g
+    JOIN group_profiles gp ON gp.group_profile_id = g.group_profile_id
+    JOIN group_members mu ON mu.group_id = g.group_id
+    JOIN contact_profiles pu ON pu.contact_profile_id = COALESCE(mu.member_profile_id, mu.contact_profile_id)
+   WHERE g.user_id = ? AND mu.contact_id = ? AND g.relay_own_status = ? AND g.relay_inactive_at IS NOT NULL AND g.relay_inactive_at <= ?
+Plan:
+SEARCH mu USING INDEX idx_group_members_contact_id (contact_id=?)
+SEARCH g USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH gp USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH pu USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: 
+    SELECT
+      -- GroupInfo
+      g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.short_descr, g.local_alias, gp.description, gp.image, gp.group_type, gp.group_link, gp.public_group_id,
+      gp.group_web_page, gp.group_domain, gp.domain_web_page, gp.allow_embedding, gp.group_domain_proof,
+      g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences, gp.preferences_json, gp.member_admission, gp.chat_layout,
+      g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at,
+      g.conn_full_link_to_connect, g.conn_short_link_to_connect, g.conn_link_prepared_connection, g.conn_link_started_connection, g.welcome_shared_msg_id, g.request_shared_msg_id,
+      g.business_chat, g.business_member_id, g.customer_member_id,
+      g.use_relays, g.relay_own_status,
+      g.ui_themes, g.summary_current_members_count, g.public_member_count, g.roster_version, g.custom_data, g.chat_item_ttl, g.members_require_attention, g.via_group_link_uri, g.group_domain_verified,
+      g.root_priv_key, g.root_pub_key, g.member_priv_key,
+      -- GroupMember - membership
+      mu.group_member_id, mu.group_id, mu.index_in_group, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category,
+      mu.member_status, mu.show_messages, mu.member_restriction, mu.invited_by, mu.invited_by_group_member_id, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
+      pu.display_name, pu.full_name, pu.short_descr, pu.description, pu.image, pu.contact_link, pu.chat_peer_type, pu.local_alias, pu.preferences, pu.preferences_json,
+      pu.badge_proof, pu.badge_pres_header, pu.badge_expiry, pu.badge_type, pu.badge_verified, pu.badge_extra, pu.badge_master_key, pu.badge_signature, pu.badge_key_idx, pu.contact_domain, pu.contact_domain_proof, pu.contact_domain_verified,
+      mu.created_at, mu.updated_at,
+      mu.support_chat_ts, mu.support_chat_items_unread, mu.support_chat_items_member_attention, mu.support_chat_items_mentions, mu.support_chat_last_msg_from_member_ts, mu.member_pub_key, mu.relay_link, mu.member_security_code, mu.member_security_code_verified_at, mu.member_via
+   
+    FROM groups g
+    JOIN group_profiles gp ON gp.group_profile_id = g.group_profile_id
+    JOIN group_members mu ON mu.group_id = g.group_id
+    JOIN contact_profiles pu ON pu.contact_profile_id = COALESCE(mu.member_profile_id, mu.contact_profile_id)
+   WHERE g.user_id = ? AND mu.contact_id = ? AND g.relay_own_status IN (?, ?, ?)
+Plan:
+SEARCH mu USING INDEX idx_group_members_contact_id (contact_id=?)
+SEARCH g USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH gp USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH pu USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
@@ -6067,7 +6501,7 @@ Query:
       m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.description, p.image, p.contact_link, p.chat_peer_type, p.local_alias, p.preferences, p.preferences_json,
       p.badge_proof, p.badge_pres_header, p.badge_expiry, p.badge_type, p.badge_verified, p.badge_extra, p.badge_master_key, p.badge_signature, p.badge_key_idx, p.contact_domain, p.contact_domain_proof, p.contact_domain_verified,
       m.created_at, m.updated_at,
-      m.support_chat_ts, m.support_chat_items_unread, m.support_chat_items_member_attention, m.support_chat_items_mentions, m.support_chat_last_msg_from_member_ts, m.member_pub_key, m.relay_link, m.member_security_code, m.member_security_code_verified_at,
+      m.support_chat_ts, m.support_chat_items_unread, m.support_chat_items_member_attention, m.support_chat_items_mentions, m.support_chat_last_msg_from_member_ts, m.member_pub_key, m.relay_link, m.member_security_code, m.member_security_code_verified_at, m.member_via,
       c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.xcontact_id, c.custom_user_profile_id,
       c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias, c.contact_id, c.group_member_id, c.user_contact_link_id,
       c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
@@ -6098,7 +6532,7 @@ Query:
       m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.description, p.image, p.contact_link, p.chat_peer_type, p.local_alias, p.preferences, p.preferences_json,
       p.badge_proof, p.badge_pres_header, p.badge_expiry, p.badge_type, p.badge_verified, p.badge_extra, p.badge_master_key, p.badge_signature, p.badge_key_idx, p.contact_domain, p.contact_domain_proof, p.contact_domain_verified,
       m.created_at, m.updated_at,
-      m.support_chat_ts, m.support_chat_items_unread, m.support_chat_items_member_attention, m.support_chat_items_mentions, m.support_chat_last_msg_from_member_ts, m.member_pub_key, m.relay_link, m.member_security_code, m.member_security_code_verified_at,
+      m.support_chat_ts, m.support_chat_items_unread, m.support_chat_items_member_attention, m.support_chat_items_mentions, m.support_chat_last_msg_from_member_ts, m.member_pub_key, m.relay_link, m.member_security_code, m.member_security_code_verified_at, m.member_via,
       c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.xcontact_id, c.custom_user_profile_id,
       c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias, c.contact_id, c.group_member_id, c.user_contact_link_id,
       c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
@@ -6122,7 +6556,7 @@ Query:
       m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.description, p.image, p.contact_link, p.chat_peer_type, p.local_alias, p.preferences, p.preferences_json,
       p.badge_proof, p.badge_pres_header, p.badge_expiry, p.badge_type, p.badge_verified, p.badge_extra, p.badge_master_key, p.badge_signature, p.badge_key_idx, p.contact_domain, p.contact_domain_proof, p.contact_domain_verified,
       m.created_at, m.updated_at,
-      m.support_chat_ts, m.support_chat_items_unread, m.support_chat_items_member_attention, m.support_chat_items_mentions, m.support_chat_last_msg_from_member_ts, m.member_pub_key, m.relay_link, m.member_security_code, m.member_security_code_verified_at,
+      m.support_chat_ts, m.support_chat_items_unread, m.support_chat_items_member_attention, m.support_chat_items_mentions, m.support_chat_last_msg_from_member_ts, m.member_pub_key, m.relay_link, m.member_security_code, m.member_security_code_verified_at, m.member_via,
       c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.xcontact_id, c.custom_user_profile_id,
       c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias, c.contact_id, c.group_member_id, c.user_contact_link_id,
       c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
@@ -6145,7 +6579,7 @@ Query:
       m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.description, p.image, p.contact_link, p.chat_peer_type, p.local_alias, p.preferences, p.preferences_json,
       p.badge_proof, p.badge_pres_header, p.badge_expiry, p.badge_type, p.badge_verified, p.badge_extra, p.badge_master_key, p.badge_signature, p.badge_key_idx, p.contact_domain, p.contact_domain_proof, p.contact_domain_verified,
       m.created_at, m.updated_at,
-      m.support_chat_ts, m.support_chat_items_unread, m.support_chat_items_member_attention, m.support_chat_items_mentions, m.support_chat_last_msg_from_member_ts, m.member_pub_key, m.relay_link, m.member_security_code, m.member_security_code_verified_at,
+      m.support_chat_ts, m.support_chat_items_unread, m.support_chat_items_member_attention, m.support_chat_items_mentions, m.support_chat_last_msg_from_member_ts, m.member_pub_key, m.relay_link, m.member_security_code, m.member_security_code_verified_at, m.member_via,
       c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.xcontact_id, c.custom_user_profile_id,
       c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias, c.contact_id, c.group_member_id, c.user_contact_link_id,
       c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
@@ -6168,7 +6602,7 @@ Query:
       m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.description, p.image, p.contact_link, p.chat_peer_type, p.local_alias, p.preferences, p.preferences_json,
       p.badge_proof, p.badge_pres_header, p.badge_expiry, p.badge_type, p.badge_verified, p.badge_extra, p.badge_master_key, p.badge_signature, p.badge_key_idx, p.contact_domain, p.contact_domain_proof, p.contact_domain_verified,
       m.created_at, m.updated_at,
-      m.support_chat_ts, m.support_chat_items_unread, m.support_chat_items_member_attention, m.support_chat_items_mentions, m.support_chat_last_msg_from_member_ts, m.member_pub_key, m.relay_link, m.member_security_code, m.member_security_code_verified_at,
+      m.support_chat_ts, m.support_chat_items_unread, m.support_chat_items_member_attention, m.support_chat_items_mentions, m.support_chat_last_msg_from_member_ts, m.member_pub_key, m.relay_link, m.member_security_code, m.member_security_code_verified_at, m.member_via,
       c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.xcontact_id, c.custom_user_profile_id,
       c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias, c.contact_id, c.group_member_id, c.user_contact_link_id,
       c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
@@ -6191,7 +6625,7 @@ Query:
       m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.description, p.image, p.contact_link, p.chat_peer_type, p.local_alias, p.preferences, p.preferences_json,
       p.badge_proof, p.badge_pres_header, p.badge_expiry, p.badge_type, p.badge_verified, p.badge_extra, p.badge_master_key, p.badge_signature, p.badge_key_idx, p.contact_domain, p.contact_domain_proof, p.contact_domain_verified,
       m.created_at, m.updated_at,
-      m.support_chat_ts, m.support_chat_items_unread, m.support_chat_items_member_attention, m.support_chat_items_mentions, m.support_chat_last_msg_from_member_ts, m.member_pub_key, m.relay_link, m.member_security_code, m.member_security_code_verified_at,
+      m.support_chat_ts, m.support_chat_items_unread, m.support_chat_items_member_attention, m.support_chat_items_mentions, m.support_chat_last_msg_from_member_ts, m.member_pub_key, m.relay_link, m.member_security_code, m.member_security_code_verified_at, m.member_via,
       c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.xcontact_id, c.custom_user_profile_id,
       c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias, c.contact_id, c.group_member_id, c.user_contact_link_id,
       c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
@@ -6214,7 +6648,7 @@ Query:
       m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.description, p.image, p.contact_link, p.chat_peer_type, p.local_alias, p.preferences, p.preferences_json,
       p.badge_proof, p.badge_pres_header, p.badge_expiry, p.badge_type, p.badge_verified, p.badge_extra, p.badge_master_key, p.badge_signature, p.badge_key_idx, p.contact_domain, p.contact_domain_proof, p.contact_domain_verified,
       m.created_at, m.updated_at,
-      m.support_chat_ts, m.support_chat_items_unread, m.support_chat_items_member_attention, m.support_chat_items_mentions, m.support_chat_last_msg_from_member_ts, m.member_pub_key, m.relay_link, m.member_security_code, m.member_security_code_verified_at,
+      m.support_chat_ts, m.support_chat_items_unread, m.support_chat_items_member_attention, m.support_chat_items_mentions, m.support_chat_last_msg_from_member_ts, m.member_pub_key, m.relay_link, m.member_security_code, m.member_security_code_verified_at, m.member_via,
       c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.xcontact_id, c.custom_user_profile_id,
       c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias, c.contact_id, c.group_member_id, c.user_contact_link_id,
       c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
@@ -6237,7 +6671,7 @@ Query:
       m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.description, p.image, p.contact_link, p.chat_peer_type, p.local_alias, p.preferences, p.preferences_json,
       p.badge_proof, p.badge_pres_header, p.badge_expiry, p.badge_type, p.badge_verified, p.badge_extra, p.badge_master_key, p.badge_signature, p.badge_key_idx, p.contact_domain, p.contact_domain_proof, p.contact_domain_verified,
       m.created_at, m.updated_at,
-      m.support_chat_ts, m.support_chat_items_unread, m.support_chat_items_member_attention, m.support_chat_items_mentions, m.support_chat_last_msg_from_member_ts, m.member_pub_key, m.relay_link, m.member_security_code, m.member_security_code_verified_at,
+      m.support_chat_ts, m.support_chat_items_unread, m.support_chat_items_member_attention, m.support_chat_items_mentions, m.support_chat_last_msg_from_member_ts, m.member_pub_key, m.relay_link, m.member_security_code, m.member_security_code_verified_at, m.member_via,
       c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.xcontact_id, c.custom_user_profile_id,
       c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias, c.contact_id, c.group_member_id, c.user_contact_link_id,
       c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
@@ -6260,7 +6694,7 @@ Query:
       m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.description, p.image, p.contact_link, p.chat_peer_type, p.local_alias, p.preferences, p.preferences_json,
       p.badge_proof, p.badge_pres_header, p.badge_expiry, p.badge_type, p.badge_verified, p.badge_extra, p.badge_master_key, p.badge_signature, p.badge_key_idx, p.contact_domain, p.contact_domain_proof, p.contact_domain_verified,
       m.created_at, m.updated_at,
-      m.support_chat_ts, m.support_chat_items_unread, m.support_chat_items_member_attention, m.support_chat_items_mentions, m.support_chat_last_msg_from_member_ts, m.member_pub_key, m.relay_link, m.member_security_code, m.member_security_code_verified_at,
+      m.support_chat_ts, m.support_chat_items_unread, m.support_chat_items_member_attention, m.support_chat_items_mentions, m.support_chat_last_msg_from_member_ts, m.member_pub_key, m.relay_link, m.member_security_code, m.member_security_code_verified_at, m.member_via,
       c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.xcontact_id, c.custom_user_profile_id,
       c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias, c.contact_id, c.group_member_id, c.user_contact_link_id,
       c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
@@ -6283,7 +6717,7 @@ Query:
       m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.description, p.image, p.contact_link, p.chat_peer_type, p.local_alias, p.preferences, p.preferences_json,
       p.badge_proof, p.badge_pres_header, p.badge_expiry, p.badge_type, p.badge_verified, p.badge_extra, p.badge_master_key, p.badge_signature, p.badge_key_idx, p.contact_domain, p.contact_domain_proof, p.contact_domain_verified,
       m.created_at, m.updated_at,
-      m.support_chat_ts, m.support_chat_items_unread, m.support_chat_items_member_attention, m.support_chat_items_mentions, m.support_chat_last_msg_from_member_ts, m.member_pub_key, m.relay_link, m.member_security_code, m.member_security_code_verified_at,
+      m.support_chat_ts, m.support_chat_items_unread, m.support_chat_items_member_attention, m.support_chat_items_mentions, m.support_chat_last_msg_from_member_ts, m.member_pub_key, m.relay_link, m.member_security_code, m.member_security_code_verified_at, m.member_via,
       c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.xcontact_id, c.custom_user_profile_id,
       c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias, c.contact_id, c.group_member_id, c.user_contact_link_id,
       c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
@@ -6306,7 +6740,7 @@ Query:
       m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.description, p.image, p.contact_link, p.chat_peer_type, p.local_alias, p.preferences, p.preferences_json,
       p.badge_proof, p.badge_pres_header, p.badge_expiry, p.badge_type, p.badge_verified, p.badge_extra, p.badge_master_key, p.badge_signature, p.badge_key_idx, p.contact_domain, p.contact_domain_proof, p.contact_domain_verified,
       m.created_at, m.updated_at,
-      m.support_chat_ts, m.support_chat_items_unread, m.support_chat_items_member_attention, m.support_chat_items_mentions, m.support_chat_last_msg_from_member_ts, m.member_pub_key, m.relay_link, m.member_security_code, m.member_security_code_verified_at,
+      m.support_chat_ts, m.support_chat_items_unread, m.support_chat_items_member_attention, m.support_chat_items_mentions, m.support_chat_last_msg_from_member_ts, m.member_pub_key, m.relay_link, m.member_security_code, m.member_security_code_verified_at, m.member_via,
       c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.xcontact_id, c.custom_user_profile_id,
       c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias, c.contact_id, c.group_member_id, c.user_contact_link_id,
       c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
@@ -6329,7 +6763,7 @@ Query:
       m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.description, p.image, p.contact_link, p.chat_peer_type, p.local_alias, p.preferences, p.preferences_json,
       p.badge_proof, p.badge_pres_header, p.badge_expiry, p.badge_type, p.badge_verified, p.badge_extra, p.badge_master_key, p.badge_signature, p.badge_key_idx, p.contact_domain, p.contact_domain_proof, p.contact_domain_verified,
       m.created_at, m.updated_at,
-      m.support_chat_ts, m.support_chat_items_unread, m.support_chat_items_member_attention, m.support_chat_items_mentions, m.support_chat_last_msg_from_member_ts, m.member_pub_key, m.relay_link, m.member_security_code, m.member_security_code_verified_at,
+      m.support_chat_ts, m.support_chat_items_unread, m.support_chat_items_member_attention, m.support_chat_items_mentions, m.support_chat_last_msg_from_member_ts, m.member_pub_key, m.relay_link, m.member_security_code, m.member_security_code_verified_at, m.member_via,
       c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.xcontact_id, c.custom_user_profile_id,
       c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias, c.contact_id, c.group_member_id, c.user_contact_link_id,
       c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
@@ -6352,7 +6786,7 @@ Query:
       m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.description, p.image, p.contact_link, p.chat_peer_type, p.local_alias, p.preferences, p.preferences_json,
       p.badge_proof, p.badge_pres_header, p.badge_expiry, p.badge_type, p.badge_verified, p.badge_extra, p.badge_master_key, p.badge_signature, p.badge_key_idx, p.contact_domain, p.contact_domain_proof, p.contact_domain_verified,
       m.created_at, m.updated_at,
-      m.support_chat_ts, m.support_chat_items_unread, m.support_chat_items_member_attention, m.support_chat_items_mentions, m.support_chat_last_msg_from_member_ts, m.member_pub_key, m.relay_link, m.member_security_code, m.member_security_code_verified_at,
+      m.support_chat_ts, m.support_chat_items_unread, m.support_chat_items_member_attention, m.support_chat_items_mentions, m.support_chat_last_msg_from_member_ts, m.member_pub_key, m.relay_link, m.member_security_code, m.member_security_code_verified_at, m.member_via,
       c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.xcontact_id, c.custom_user_profile_id,
       c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias, c.contact_id, c.group_member_id, c.user_contact_link_id,
       c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
@@ -6375,7 +6809,7 @@ Query:
       m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.description, p.image, p.contact_link, p.chat_peer_type, p.local_alias, p.preferences, p.preferences_json,
       p.badge_proof, p.badge_pres_header, p.badge_expiry, p.badge_type, p.badge_verified, p.badge_extra, p.badge_master_key, p.badge_signature, p.badge_key_idx, p.contact_domain, p.contact_domain_proof, p.contact_domain_verified,
       m.created_at, m.updated_at,
-      m.support_chat_ts, m.support_chat_items_unread, m.support_chat_items_member_attention, m.support_chat_items_mentions, m.support_chat_last_msg_from_member_ts, m.member_pub_key, m.relay_link, m.member_security_code, m.member_security_code_verified_at,
+      m.support_chat_ts, m.support_chat_items_unread, m.support_chat_items_member_attention, m.support_chat_items_mentions, m.support_chat_last_msg_from_member_ts, m.member_pub_key, m.relay_link, m.member_security_code, m.member_security_code_verified_at, m.member_via,
       c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.xcontact_id, c.custom_user_profile_id,
       c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias, c.contact_id, c.group_member_id, c.user_contact_link_id,
       c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
@@ -6398,7 +6832,7 @@ Query:
       m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.description, p.image, p.contact_link, p.chat_peer_type, p.local_alias, p.preferences, p.preferences_json,
       p.badge_proof, p.badge_pres_header, p.badge_expiry, p.badge_type, p.badge_verified, p.badge_extra, p.badge_master_key, p.badge_signature, p.badge_key_idx, p.contact_domain, p.contact_domain_proof, p.contact_domain_verified,
       m.created_at, m.updated_at,
-      m.support_chat_ts, m.support_chat_items_unread, m.support_chat_items_member_attention, m.support_chat_items_mentions, m.support_chat_last_msg_from_member_ts, m.member_pub_key, m.relay_link, m.member_security_code, m.member_security_code_verified_at,
+      m.support_chat_ts, m.support_chat_items_unread, m.support_chat_items_member_attention, m.support_chat_items_mentions, m.support_chat_last_msg_from_member_ts, m.member_pub_key, m.relay_link, m.member_security_code, m.member_security_code_verified_at, m.member_via,
       c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.xcontact_id, c.custom_user_profile_id,
       c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias, c.contact_id, c.group_member_id, c.user_contact_link_id,
       c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
@@ -6421,7 +6855,7 @@ Query:
       m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.description, p.image, p.contact_link, p.chat_peer_type, p.local_alias, p.preferences, p.preferences_json,
       p.badge_proof, p.badge_pres_header, p.badge_expiry, p.badge_type, p.badge_verified, p.badge_extra, p.badge_master_key, p.badge_signature, p.badge_key_idx, p.contact_domain, p.contact_domain_proof, p.contact_domain_verified,
       m.created_at, m.updated_at,
-      m.support_chat_ts, m.support_chat_items_unread, m.support_chat_items_member_attention, m.support_chat_items_mentions, m.support_chat_last_msg_from_member_ts, m.member_pub_key, m.relay_link, m.member_security_code, m.member_security_code_verified_at,
+      m.support_chat_ts, m.support_chat_items_unread, m.support_chat_items_member_attention, m.support_chat_items_mentions, m.support_chat_last_msg_from_member_ts, m.member_pub_key, m.relay_link, m.member_security_code, m.member_security_code_verified_at, m.member_via,
       c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.xcontact_id, c.custom_user_profile_id,
       c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias, c.contact_id, c.group_member_id, c.user_contact_link_id,
       c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
@@ -6784,6 +7218,13 @@ SEARCH user_contact_links USING INDEX sqlite_autoindex_user_contact_links_1 (use
 Query: 
     SELECT user_contact_link_id, conn_req_contact, short_link_contact, short_link_data_set, short_link_large_data_set, business_address, auto_accept, auto_accept_incognito, auto_reply_msg_content, chat_layout
     FROM user_contact_links
+   WHERE user_id = ? AND group_id IS NULL AND short_link_contact IS NOT NULL
+Plan:
+SEARCH user_contact_links USING INDEX idx_user_contact_links_group_id (group_id=?)
+
+Query: 
+    SELECT user_contact_link_id, conn_req_contact, short_link_contact, short_link_data_set, short_link_large_data_set, business_address, auto_accept, auto_accept_incognito, auto_reply_msg_content, chat_layout
+    FROM user_contact_links
    WHERE user_id = ? AND local_display_name = '' AND group_id IS NULL
 Plan:
 SEARCH user_contact_links USING INDEX sqlite_autoindex_user_contact_links_1 (user_id=? AND local_display_name=?)
@@ -6811,6 +7252,24 @@ INDEX 1
 SEARCH chat_items USING COVERING INDEX idx_chat_items_contacts_created_at (user_id=? AND contact_id=? AND created_at>?)
 INDEX 2
 SEARCH chat_items USING COVERING INDEX idx_chat_items_contacts_created_at (user_id=? AND contact_id=? AND created_at=? AND rowid>?)
+USE TEMP B-TREE FOR ORDER BY
+
+Query:  SELECT chat_item_id FROM chat_items WHERE  (( user_id = ? AND group_id = ?  AND group_scope_tag = ? AND group_scope_group_member_id IS NOT DISTINCT FROM ?  AND item_ts < ?) OR ( user_id = ? AND group_id = ?  AND group_scope_tag = ? AND group_scope_group_member_id IS NOT DISTINCT FROM ?  AND item_ts = ? AND chat_item_id < ?))  ORDER BY item_ts DESC, chat_item_id DESC  LIMIT ?
+Plan:
+MULTI-INDEX OR
+INDEX 1
+SEARCH chat_items USING COVERING INDEX idx_chat_items_group_scope_item_ts (user_id=? AND group_id=? AND group_scope_tag=? AND group_scope_group_member_id=? AND item_ts<?)
+INDEX 2
+SEARCH chat_items USING COVERING INDEX idx_chat_items_group_scope_item_ts (user_id=? AND group_id=? AND group_scope_tag=? AND group_scope_group_member_id=? AND item_ts=? AND rowid<?)
+USE TEMP B-TREE FOR ORDER BY
+
+Query:  SELECT chat_item_id FROM chat_items WHERE  (( user_id = ? AND group_id = ?  AND group_scope_tag = ? AND group_scope_group_member_id IS NOT DISTINCT FROM ?  AND item_ts > ?) OR ( user_id = ? AND group_id = ?  AND group_scope_tag = ? AND group_scope_group_member_id IS NOT DISTINCT FROM ?  AND item_ts = ? AND chat_item_id > ?))  ORDER BY item_ts ASC, chat_item_id ASC  LIMIT ?
+Plan:
+MULTI-INDEX OR
+INDEX 1
+SEARCH chat_items USING COVERING INDEX idx_chat_items_group_scope_item_ts (user_id=? AND group_id=? AND group_scope_tag=? AND group_scope_group_member_id=? AND item_ts>?)
+INDEX 2
+SEARCH chat_items USING COVERING INDEX idx_chat_items_group_scope_item_ts (user_id=? AND group_id=? AND group_scope_tag=? AND group_scope_group_member_id=? AND item_ts=? AND rowid>?)
 USE TEMP B-TREE FOR ORDER BY
 
 Query:  SELECT chat_item_id FROM chat_items WHERE  (( user_id = ? AND group_id = ?  AND group_scope_tag IS NULL AND group_scope_group_member_id IS NULL  AND item_ts < ?) OR ( user_id = ? AND group_id = ?  AND group_scope_tag IS NULL AND group_scope_group_member_id IS NULL  AND item_ts = ? AND chat_item_id < ?))  ORDER BY item_ts DESC, chat_item_id DESC  LIMIT ?
@@ -6918,6 +7377,10 @@ SEARCH calls USING INDEX idx_calls_contact_id (contact_id=?)
 Query: DELETE FROM chat_item_mentions WHERE chat_item_id = ?
 Plan:
 SEARCH chat_item_mentions USING COVERING INDEX idx_chat_item_mentions_chat_item_id (chat_item_id=?)
+
+Query: DELETE FROM chat_item_moderations WHERE group_id = ? AND item_member_id = ? AND shared_msg_id = ?
+Plan:
+SEARCH chat_item_moderations USING COVERING INDEX idx_chat_item_moderations_group (group_id=? AND item_member_id=? AND shared_msg_id=?)
 
 Query: DELETE FROM chat_item_reactions WHERE contact_id = ?
 Plan:
@@ -7545,6 +8008,18 @@ Query: SELECT 1 FROM settings WHERE user_id = ? LIMIT 1
 Plan:
 SEARCH settings USING COVERING INDEX idx_settings_user_id (user_id=?)
 
+Query: SELECT COALESCE(SUM(CASE WHEN item_priority < 0 THEN 1 ELSE 0 END), 0), COALESCE(SUM(CASE WHEN item_priority > 0 THEN 1 ELSE 0 END), 0) FROM chat_items WHERE user_id = ? AND group_id = ?  AND group_scope_tag = ? AND group_scope_group_member_id IS NOT DISTINCT FROM ? AND  item_status = ? AND item_priority <> 0 
+Plan:
+SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_priority (user_id=? AND item_status=? AND group_id=? AND group_scope_tag=? AND group_scope_group_member_id=?)
+
+Query: SELECT COALESCE(SUM(CASE WHEN item_priority < 0 THEN 1 ELSE 0 END), 0), COALESCE(SUM(CASE WHEN item_priority > 0 THEN 1 ELSE 0 END), 0) FROM chat_items WHERE user_id = ? AND group_id = ?  AND group_scope_tag IS NULL AND group_scope_group_member_id IS NULL AND  item_status = ? AND item_priority <> 0 
+Plan:
+SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_priority (user_id=? AND item_status=? AND group_id=? AND group_scope_tag=? AND group_scope_group_member_id=?)
+
+Query: SELECT COALESCE(item_original_ts, item_ts) FROM chat_items WHERE chat_item_id = ?
+Plan:
+SEARCH chat_items USING INTEGER PRIMARY KEY (rowid=?)
+
 Query: SELECT COUNT(*) FROM badge_code_redemptions
 Plan:
 SCAN badge_code_redemptions USING COVERING INDEX idx_badge_code_redemptions_user
@@ -7556,6 +8031,10 @@ SCAN badge_store_receipts USING COVERING INDEX idx_badge_store_receipts_user
 Query: SELECT COUNT(*) FROM badge_store_receipts WHERE payment IS NOT NULL
 Plan:
 SCAN badge_store_receipts
+
+Query: SELECT COUNT(*) FROM chat_items WHERE item_sent = 0 AND item_text LIKE ?
+Plan:
+SCAN chat_items
 
 Query: SELECT COUNT(*) FROM groups WHERE relay_own_status IS NOT NULL
 Plan:
@@ -7573,6 +8052,15 @@ Query: SELECT COUNT(1) FROM commands WHERE command_function = 'set_short_link'
 Plan:
 SCAN commands
 
+Query: SELECT COUNT(1) FROM connections WHERE conn_status = 'ready' AND contact_conn_initiated = 1
+Plan:
+SCAN connections
+
+Query: SELECT COUNT(1) FROM connections c JOIN group_members m ON m.group_member_id = c.group_member_id WHERE m.local_display_name = ? AND c.conn_status != 'deleted'
+Plan:
+SCAN m USING COVERING INDEX idx_group_members_user_id_local_display_name
+SEARCH c USING INDEX idx_connections_group_member_id (group_member_id=?)
+
 Query: SELECT COUNT(1) FROM contacts WHERE user_id = ? AND chat_item_ttl > 0
 Plan:
 SEARCH contacts USING INDEX idx_contacts_chat_ts (user_id=?)
@@ -7586,9 +8074,17 @@ Plan:
 SEARCH m USING INDEX idx_group_members_group_id_index_in_group (group_id=?)
 SEARCH sp USING INDEX sqlite_autoindex_group_member_status_predicates_1 (member_status=?)
 
+Query: SELECT COUNT(1) FROM groups WHERE use_relays = 1 AND roster_version IS NULL
+Plan:
+SCAN groups
+
 Query: SELECT COUNT(1) FROM groups WHERE user_id = ? AND chat_item_ttl > 0
 Plan:
 SEARCH groups USING INDEX sqlite_autoindex_groups_2 (user_id=?)
+
+Query: SELECT COUNT(1), COALESCE(SUM(user_mention), 0) FROM chat_items WHERE user_id = ? AND group_id = ?  AND group_scope_tag = ? AND group_scope_group_member_id IS NOT DISTINCT FROM ? AND  item_status = ? 
+Plan:
+SEARCH chat_items USING COVERING INDEX idx_chat_items_group_scope_stats_all (user_id=? AND group_id=? AND group_scope_tag=? AND group_scope_group_member_id=? AND item_status=?)
 
 Query: SELECT COUNT(1), COALESCE(SUM(user_mention), 0) FROM chat_items WHERE user_id = ? AND group_id = ?  AND group_scope_tag IS NULL AND group_scope_group_member_id IS NULL AND  item_status = ? 
 Plan:
@@ -7631,6 +8127,10 @@ SEARCH operator_usage_conditions USING INDEX idx_operator_usage_conditions_condi
 Query: SELECT agent_conn_id FROM connections
 Plan:
 SCAN connections USING COVERING INDEX sqlite_autoindex_connections_1
+
+Query: SELECT agent_conn_id FROM connections WHERE contact_id IS NOT NULL
+Plan:
+SCAN connections
 
 Query: SELECT agent_conn_id FROM connections WHERE user_id = ? AND conn_req_inv IN (?,?) LIMIT 1
 Plan:
@@ -7702,6 +8202,11 @@ Plan:
 SCAN m USING COVERING INDEX idx_group_members_user_id_local_display_name
 SEARCH c USING INDEX idx_connections_group_member_id (group_member_id=?)
 
+Query: SELECT c.agent_conn_id FROM connections c JOIN user_contact_links l ON l.user_contact_link_id = c.user_contact_link_id WHERE l.group_id IS NOT NULL
+Plan:
+SCAN c
+SEARCH l USING INTEGER PRIMARY KEY (rowid=?)
+
 Query: SELECT chat_item_id FROM chat_items WHERE group_scope_tag = 'member_support' ORDER BY chat_item_id DESC LIMIT 1
 Plan:
 SCAN chat_items
@@ -7717,6 +8222,14 @@ SCAN chat_items
 Query: SELECT chat_item_id FROM chat_items WHERE user_id = ? AND contact_id = ? AND shared_msg_id = ? AND item_sent = ?
 Plan:
 SEARCH chat_items USING INDEX idx_chat_items_direct_shared_msg_id (user_id=? AND contact_id=? AND shared_msg_id=?)
+
+Query: SELECT chat_item_id FROM chat_items WHERE user_id = ? AND group_id = ?  AND group_scope_tag = ? AND group_scope_group_member_id IS NOT DISTINCT FROM ? AND  item_status = ?  ORDER BY item_ts ASC, chat_item_id ASC LIMIT 1
+Plan:
+SEARCH chat_items USING COVERING INDEX idx_chat_items_group_scope_item_status (user_id=? AND group_id=? AND group_scope_tag=? AND group_scope_group_member_id=? AND item_status=?)
+
+Query: SELECT chat_item_id FROM chat_items WHERE user_id = ? AND group_id = ?  AND group_scope_tag = ? AND group_scope_group_member_id IS NOT DISTINCT FROM ? AND  item_viewed = ?  ORDER BY item_ts DESC, chat_item_id DESC LIMIT 1
+Plan:
+SEARCH chat_items USING INDEX idx_chat_items_group_scope_item_ts (user_id=? AND group_id=? AND group_scope_tag=? AND group_scope_group_member_id=?)
 
 Query: SELECT chat_item_id FROM chat_items WHERE user_id = ? AND group_id = ?  AND group_scope_tag IS NULL AND group_scope_group_member_id IS NULL AND  item_status = ?  ORDER BY item_ts ASC, chat_item_id ASC LIMIT 1
 Plan:
@@ -7790,10 +8303,6 @@ Query: SELECT contact_id FROM contacts WHERE user_id = ? AND (chat_item_ttl > 0 
 Plan:
 SEARCH contacts USING INDEX idx_contacts_chat_ts (user_id=?)
 
-Query: SELECT contact_id FROM contacts WHERE user_id = ? AND (chat_item_ttl > 0)
-Plan:
-SEARCH contacts USING INDEX idx_contacts_chat_ts (user_id=?)
-
 Query: SELECT contact_id FROM contacts WHERE user_id = ? AND deleted = 0
 Plan:
 SEARCH contacts USING INDEX idx_contacts_chat_ts (user_id=?)
@@ -7837,6 +8346,10 @@ SCAN files
 Query: SELECT count(1) FROM group_members
 Plan:
 SCAN group_members USING COVERING INDEX idx_group_members_invited_via_group_member_id
+
+Query: SELECT count(1) FROM group_members WHERE member_via IS NOT NULL
+Plan:
+SCAN group_members
 
 Query: SELECT count(1) FROM pending_group_messages
 Plan:
@@ -7912,10 +8425,6 @@ Query: SELECT group_id FROM groups WHERE user_id = ? AND (chat_item_ttl > 0 OR c
 Plan:
 SEARCH groups USING INDEX sqlite_autoindex_groups_2 (user_id=?)
 
-Query: SELECT group_id FROM groups WHERE user_id = ? AND (chat_item_ttl > 0)
-Plan:
-SEARCH groups USING INDEX sqlite_autoindex_groups_2 (user_id=?)
-
 Query: SELECT group_id FROM groups WHERE user_id = ? AND creating_in_progress = 1 AND created_at <= ?
 Plan:
 SEARCH groups USING INDEX sqlite_autoindex_groups_2 (user_id=?)
@@ -7931,6 +8440,14 @@ SEARCH user_contact_links USING INTEGER PRIMARY KEY (rowid=?)
 Query: SELECT group_id, relay_own_status FROM groups WHERE relay_own_status IS NOT NULL ORDER BY group_id
 Plan:
 SCAN groups
+
+Query: SELECT group_member_id FROM group_members WHERE local_display_name = 'reviewer'
+Plan:
+SCAN group_members USING COVERING INDEX idx_group_members_user_id_local_display_name
+
+Query: SELECT group_member_id FROM group_members WHERE local_display_name = ?
+Plan:
+SCAN group_members USING COVERING INDEX idx_group_members_user_id_local_display_name
 
 Query: SELECT group_member_id FROM group_members WHERE user_id = ? AND contact_profile_id = ? AND group_member_id != ? LIMIT 1
 Plan:
@@ -7967,6 +8484,28 @@ SCAN badge_purchases
 Query: SELECT item_content FROM chat_items WHERE group_id = 1 ORDER BY chat_item_id DESC LIMIT 1
 Plan:
 SEARCH chat_items USING INDEX idx_chat_items_group_id (group_id=?)
+
+Query: SELECT item_deleted FROM chat_items WHERE chat_item_id = ?
+Plan:
+SEARCH chat_items USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: SELECT item_status FROM chat_items WHERE chat_item_id IN (SELECT chat_item_id FROM files)
+Plan:
+SEARCH chat_items USING INTEGER PRIMARY KEY (rowid=?)
+LIST SUBQUERY 1
+SCAN files USING COVERING INDEX idx_files_chat_item_id
+
+Query: SELECT item_status FROM chat_items WHERE item_text = ?
+Plan:
+SCAN chat_items
+
+Query: SELECT item_status, item_priority FROM chat_items WHERE item_text = ?
+Plan:
+SCAN chat_items
+
+Query: SELECT item_text FROM chat_items WHERE chat_item_id = ?
+Plan:
+SEARCH chat_items USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: SELECT last_insert_rowid()
 Plan:
@@ -8036,6 +8575,10 @@ Query: SELECT member_status FROM group_members WHERE local_display_name = ?
 Plan:
 SCAN group_members
 
+Query: SELECT member_status FROM group_members WHERE member_category = 'user'
+Plan:
+SCAN group_members
+
 Query: SELECT member_status FROM group_members WHERE member_role = 'relay'
 Plan:
 SCAN group_members
@@ -8048,203 +8591,11 @@ Query: SELECT member_xcontact_id, member_welcome_shared_msg_id FROM group_member
 Plan:
 SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
 
-Query: SELECT message_id FROM messages WHERE msg_sent = 0 AND hex(shared_msg_id) = '32316A574B414A435165634A50792F53'
+Query: SELECT message_id FROM messages WHERE msg_sent = 0 AND hex(shared_msg_id) = ?
 Plan:
 SCAN messages
 
-Query: SELECT message_id FROM messages WHERE msg_sent = 0 AND hex(shared_msg_id) = '34777371515341626273746F6A725531'
-Plan:
-SCAN messages
-
-Query: SELECT message_id FROM messages WHERE msg_sent = 0 AND hex(shared_msg_id) = '364C745457626A726943454F5139666D'
-Plan:
-SCAN messages
-
-Query: SELECT message_id FROM messages WHERE msg_sent = 0 AND hex(shared_msg_id) = '365431694F536951395477767543584B'
-Plan:
-SCAN messages
-
-Query: SELECT message_id FROM messages WHERE msg_sent = 0 AND hex(shared_msg_id) = '392F42343435485A4D6C4A4A42784179'
-Plan:
-SCAN messages
-
-Query: SELECT message_id FROM messages WHERE msg_sent = 0 AND hex(shared_msg_id) = '417A30336574747049655266542B536C'
-Plan:
-SCAN messages
-
-Query: SELECT message_id FROM messages WHERE msg_sent = 0 AND hex(shared_msg_id) = '433045507738554A4F7579523533326F'
-Plan:
-SCAN messages
-
-Query: SELECT message_id FROM messages WHERE msg_sent = 0 AND hex(shared_msg_id) = '44797166387A61574D33377351566A70'
-Plan:
-SCAN messages
-
-Query: SELECT message_id FROM messages WHERE msg_sent = 0 AND hex(shared_msg_id) = '47416E6C397937475639655A4F6A4872'
-Plan:
-SCAN messages
-
-Query: SELECT message_id FROM messages WHERE msg_sent = 0 AND hex(shared_msg_id) = '47662F48747469674A782F4B6C485865'
-Plan:
-SCAN messages
-
-Query: SELECT message_id FROM messages WHERE msg_sent = 0 AND hex(shared_msg_id) = '486F6247596E317158426C6857656B58'
-Plan:
-SCAN messages
-
-Query: SELECT message_id FROM messages WHERE msg_sent = 0 AND hex(shared_msg_id) = '4B474E46695541693956467863556162'
-Plan:
-SCAN messages
-
-Query: SELECT message_id FROM messages WHERE msg_sent = 0 AND hex(shared_msg_id) = '4B66326D76554F74434C3653464A6934'
-Plan:
-SCAN messages
-
-Query: SELECT message_id FROM messages WHERE msg_sent = 0 AND hex(shared_msg_id) = '4B6A54346C556543442B70736A657343'
-Plan:
-SCAN messages
-
-Query: SELECT message_id FROM messages WHERE msg_sent = 0 AND hex(shared_msg_id) = '4C41445631472B445858565442547459'
-Plan:
-SCAN messages
-
-Query: SELECT message_id FROM messages WHERE msg_sent = 0 AND hex(shared_msg_id) = '4C424D4D41583853784C6A6769634C7A'
-Plan:
-SCAN messages
-
-Query: SELECT message_id FROM messages WHERE msg_sent = 0 AND hex(shared_msg_id) = '4E3530694B50794D6C6A386764364D36'
-Plan:
-SCAN messages
-
-Query: SELECT message_id FROM messages WHERE msg_sent = 0 AND hex(shared_msg_id) = '4F682F542F664E73554974746A646457'
-Plan:
-SCAN messages
-
-Query: SELECT message_id FROM messages WHERE msg_sent = 0 AND hex(shared_msg_id) = '4F6B396E4E486B7A4E7A2F505461306D'
-Plan:
-SCAN messages
-
-Query: SELECT message_id FROM messages WHERE msg_sent = 0 AND hex(shared_msg_id) = '4F6C47567330784972386E4B72496661'
-Plan:
-SCAN messages
-
-Query: SELECT message_id FROM messages WHERE msg_sent = 0 AND hex(shared_msg_id) = '51504E3266467468397A5A6A555A5A59'
-Plan:
-SCAN messages
-
-Query: SELECT message_id FROM messages WHERE msg_sent = 0 AND hex(shared_msg_id) = '516E6B70364443765466557A74576F51'
-Plan:
-SCAN messages
-
-Query: SELECT message_id FROM messages WHERE msg_sent = 0 AND hex(shared_msg_id) = '52346F3844796156594651305A6E6A4E'
-Plan:
-SCAN messages
-
-Query: SELECT message_id FROM messages WHERE msg_sent = 0 AND hex(shared_msg_id) = '525038584D53442F6863586C54706D70'
-Plan:
-SCAN messages
-
-Query: SELECT message_id FROM messages WHERE msg_sent = 0 AND hex(shared_msg_id) = '52567950695555535955742B7A6B432B'
-Plan:
-SCAN messages
-
-Query: SELECT message_id FROM messages WHERE msg_sent = 0 AND hex(shared_msg_id) = '53526370717345687454376566784A52'
-Plan:
-SCAN messages
-
-Query: SELECT message_id FROM messages WHERE msg_sent = 0 AND hex(shared_msg_id) = '55455056465233397446394D36417837'
-Plan:
-SCAN messages
-
-Query: SELECT message_id FROM messages WHERE msg_sent = 0 AND hex(shared_msg_id) = '55566967354649644E5644704E4E4578'
-Plan:
-SCAN messages
-
-Query: SELECT message_id FROM messages WHERE msg_sent = 0 AND hex(shared_msg_id) = '562B3130557347544E67734559524C35'
-Plan:
-SCAN messages
-
-Query: SELECT message_id FROM messages WHERE msg_sent = 0 AND hex(shared_msg_id) = '57344B6B584E514C4B30727A6A56394B'
-Plan:
-SCAN messages
-
-Query: SELECT message_id FROM messages WHERE msg_sent = 0 AND hex(shared_msg_id) = '57625336465661464B567538756A6C56'
-Plan:
-SCAN messages
-
-Query: SELECT message_id FROM messages WHERE msg_sent = 0 AND hex(shared_msg_id) = '57786C587171347577326B6E4B343430'
-Plan:
-SCAN messages
-
-Query: SELECT message_id FROM messages WHERE msg_sent = 0 AND hex(shared_msg_id) = '58326263487A776B576F5A322B452F56'
-Plan:
-SCAN messages
-
-Query: SELECT message_id FROM messages WHERE msg_sent = 0 AND hex(shared_msg_id) = '584F5873316B49463861366249744146'
-Plan:
-SCAN messages
-
-Query: SELECT message_id FROM messages WHERE msg_sent = 0 AND hex(shared_msg_id) = '614C4637486D4C3141774D42754E6958'
-Plan:
-SCAN messages
-
-Query: SELECT message_id FROM messages WHERE msg_sent = 0 AND hex(shared_msg_id) = '6164576959516B7051312F635174612F'
-Plan:
-SCAN messages
-
-Query: SELECT message_id FROM messages WHERE msg_sent = 0 AND hex(shared_msg_id) = '62454B4B3074475654356464626C4331'
-Plan:
-SCAN messages
-
-Query: SELECT message_id FROM messages WHERE msg_sent = 0 AND hex(shared_msg_id) = '684D6135384C78366B2B435771687870'
-Plan:
-SCAN messages
-
-Query: SELECT message_id FROM messages WHERE msg_sent = 0 AND hex(shared_msg_id) = '68565070767234594F4F4F3777783743'
-Plan:
-SCAN messages
-
-Query: SELECT message_id FROM messages WHERE msg_sent = 0 AND hex(shared_msg_id) = '6976634F5868363358575167476C5731'
-Plan:
-SCAN messages
-
-Query: SELECT message_id FROM messages WHERE msg_sent = 0 AND hex(shared_msg_id) = '6D72486D5153563130647836586A784A'
-Plan:
-SCAN messages
-
-Query: SELECT message_id FROM messages WHERE msg_sent = 0 AND hex(shared_msg_id) = '6F512B70507A763170634B2F77414D45'
-Plan:
-SCAN messages
-
-Query: SELECT message_id FROM messages WHERE msg_sent = 0 AND hex(shared_msg_id) = '7138444F774A364F492B6D4B56712F53'
-Plan:
-SCAN messages
-
-Query: SELECT message_id FROM messages WHERE msg_sent = 0 AND hex(shared_msg_id) = '71684C516E6E423172626C595546536D'
-Plan:
-SCAN messages
-
-Query: SELECT message_id FROM messages WHERE msg_sent = 0 AND hex(shared_msg_id) = '72395A612F30424B732B41375061344D'
-Plan:
-SCAN messages
-
-Query: SELECT message_id FROM messages WHERE msg_sent = 0 AND hex(shared_msg_id) = '7351307538344376486B4A79664E687A'
-Plan:
-SCAN messages
-
-Query: SELECT message_id FROM messages WHERE msg_sent = 0 AND hex(shared_msg_id) = '7435356241497658594F334A42374767'
-Plan:
-SCAN messages
-
-Query: SELECT message_id FROM messages WHERE msg_sent = 0 AND hex(shared_msg_id) = '75413371367563467650575265516A6A'
-Plan:
-SCAN messages
-
-Query: SELECT message_id FROM messages WHERE msg_sent = 0 AND hex(shared_msg_id) = '79326A546878645A336346444D506B56'
-Plan:
-SCAN messages
-
-Query: SELECT message_id FROM messages WHERE msg_sent = 0 AND hex(shared_msg_id) = '794D423855453661496754424746484F'
+Query: SELECT msg_body FROM messages WHERE msg_sent = 1 AND chat_msg_event = ? ORDER BY message_id DESC LIMIT 1
 Plan:
 SCAN messages
 
@@ -8288,6 +8639,10 @@ SCAN badge_code_redemptions
 Query: SELECT quota_err_counter FROM connections WHERE user_id = ? AND connection_id = ?
 Plan:
 SEARCH connections USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: SELECT relay_own_status FROM groups
+Plan:
+SCAN groups
 
 Query: SELECT relay_own_status FROM groups WHERE group_id = ?
 Plan:
@@ -8357,6 +8712,10 @@ Query: SELECT short_descr FROM contact_profiles WHERE display_name = ? LIMIT 1
 Plan:
 SEARCH contact_profiles USING INDEX contact_profiles_index (display_name=?)
 
+Query: SELECT short_descr FROM group_profiles
+Plan:
+SCAN group_profiles
+
 Query: SELECT should_sync FROM connections_sync WHERE connections_sync_id = 1
 Plan:
 SEARCH connections_sync USING INTEGER PRIMARY KEY (rowid=?)
@@ -8420,6 +8779,10 @@ SEARCH connections USING INTEGER PRIMARY KEY (rowid=?)
 Query: SELECT via_contact_uri, via_contact_uri_hash FROM connections WHERE connection_id = ?
 Plan:
 SEARCH connections USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: SELECT xcontact_id FROM contacts WHERE local_display_name = 'bob'
+Plan:
+SCAN contacts
 
 Query: SELECT xgrplinkmem_received FROM group_members WHERE group_member_id = ?
 Plan:
@@ -8495,11 +8858,23 @@ Query: UPDATE badge_store_receipts SET user_id = ?, payment = ?, next_attempt_at
 Plan:
 SEARCH badge_store_receipts USING INTEGER PRIMARY KEY (rowid=?)
 
+Query: UPDATE chat_items SET created_at = ? WHERE chat_item_id = ?
+Plan:
+SEARCH chat_items USING INTEGER PRIMARY KEY (rowid=?)
+
 Query: UPDATE chat_items SET item_content = ?, item_text = ?, updated_at = ? WHERE chat_item_id = ?
 Plan:
 SEARCH chat_items USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: UPDATE chat_items SET item_msg_body = ?, item_chat_binding = ?, item_signatures = ?, item_signed_by_group_member_id = ? WHERE chat_item_id = ? AND include_in_history = 1
+Plan:
+SEARCH chat_items USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: UPDATE chat_items SET item_original_ts = ? WHERE chat_item_id = ?
+Plan:
+SEARCH chat_items USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: UPDATE chat_items SET item_original_ts = COALESCE(item_original_ts, item_ts), item_ts = ?, item_status = ?, item_viewed = 0 WHERE chat_item_id = ?
 Plan:
 SEARCH chat_items USING INTEGER PRIMARY KEY (rowid=?)
 
@@ -8515,11 +8890,23 @@ Query: UPDATE chat_items SET item_status = ?, updated_at = ? WHERE user_id = ? A
 Plan:
 SEARCH chat_items USING INTEGER PRIMARY KEY (rowid=?)
 
+Query: UPDATE chat_items SET item_ts = ? WHERE chat_item_id = ?
+Plan:
+SEARCH chat_items USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: UPDATE chat_items SET item_ts = ?, created_at = ? WHERE chat_item_id = ?
+Plan:
+SEARCH chat_items USING INTEGER PRIMARY KEY (rowid=?)
+
 Query: UPDATE chat_items SET timed_delete_at = ? WHERE user_id = ? AND contact_id = ? AND chat_item_id = ?
 Plan:
 SEARCH chat_items USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: UPDATE chat_items SET timed_delete_at = ? WHERE user_id = ? AND group_id = ? AND chat_item_id = ?
+Plan:
+SEARCH chat_items USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: UPDATE chat_items SET user_mention = ? WHERE user_id = ? AND chat_item_id = ?
 Plan:
 SEARCH chat_items USING INTEGER PRIMARY KEY (rowid=?)
 
@@ -8575,6 +8962,10 @@ Query: UPDATE contact_profiles SET contact_domain = ?, updated_at = ? WHERE user
 Plan:
 SEARCH contact_profiles USING INTEGER PRIMARY KEY (rowid=?)
 
+Query: UPDATE contact_profiles SET contact_domain_verified = 2 WHERE contact_profile_id = ?
+Plan:
+SEARCH contact_profiles USING INTEGER PRIMARY KEY (rowid=?)
+
 Query: UPDATE contact_profiles SET contact_domain_verified = NULL WHERE user_id = ? AND contact_profile_id = ?
 Plan:
 SEARCH contact_profiles USING INTEGER PRIMARY KEY (rowid=?)
@@ -8606,6 +8997,12 @@ SEARCH contacts USING INTEGER PRIMARY KEY (rowid=?)
 Query: UPDATE contacts SET contact_grp_inv_sent = ?, updated_at = ? WHERE contact_id = ?
 Plan:
 SEARCH contacts USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: UPDATE contacts SET contact_profile_id = NULL WHERE contact_id = (SELECT contact_id FROM users WHERE user_id = 1)
+Plan:
+SEARCH contacts USING INTEGER PRIMARY KEY (rowid=?)
+SCALAR SUBQUERY 1
+SEARCH users USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: UPDATE contacts SET contact_used = ? WHERE user_id = ? AND contact_id = ?
 Plan:
@@ -8743,6 +9140,10 @@ Query: UPDATE group_members SET member_relations_vector = set_member_vector_new_
 Plan:
 SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
 
+Query: UPDATE group_members SET member_role = ? WHERE local_display_name = ?
+Plan:
+SCAN group_members
+
 Query: UPDATE group_members SET member_role = ? WHERE user_id = ? AND group_member_id = ?
 Plan:
 SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
@@ -8752,6 +9153,10 @@ Plan:
 SCAN group_members
 
 Query: UPDATE group_members SET member_security_code = ?, member_security_code_verified_at = ?, updated_at = ? WHERE user_id = ? AND group_member_id = ?
+Plan:
+SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: UPDATE group_members SET member_via = ?, updated_at = ? WHERE group_member_id = ?
 Plan:
 SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
 
@@ -8783,7 +9188,25 @@ Query: UPDATE group_profiles SET description = ? WHERE display_name = ?
 Plan:
 SCAN group_profiles
 
+Query: UPDATE group_profiles SET group_link = (SELECT group_link FROM group_profiles WHERE display_name = 'news') WHERE display_name = 'team'
+Plan:
+SCAN group_profiles
+SCALAR SUBQUERY 1
+SCAN group_profiles
+
 Query: UPDATE group_profiles SET public_group_id = ?
+Plan:
+SCAN group_profiles
+
+Query: UPDATE group_profiles SET short_descr = 'earlier copy'
+Plan:
+SCAN group_profiles
+
+Query: UPDATE group_profiles SET short_descr = 'local copy'
+Plan:
+SCAN group_profiles
+
+Query: UPDATE group_profiles SET short_descr = 'relay copy'
 Plan:
 SCAN group_profiles
 

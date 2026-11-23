@@ -180,7 +180,7 @@ public struct LocalProfile: Codable, NamedChat, Hashable {
         localBadge: LocalBadge? = nil,
         localAlias: String,
         contactDomain: SimplexDomainClaim? = nil,
-        contactDomainVerified: Bool? = nil
+        contactDomainVerified: DomainVerification? = nil
     ) {
         self.profileId = profileId
         self.displayName = displayName
@@ -209,7 +209,7 @@ public struct LocalProfile: Codable, NamedChat, Hashable {
     public var localBadge: LocalBadge?
     public var localAlias: String
     public var contactDomain: SimplexDomainClaim?
-    public var contactDomainVerified: Bool?
+    public var contactDomainVerified: DomainVerification?
 
     public var profileDescription: String? { description }
 
@@ -310,11 +310,11 @@ extension ChatLayout: Codable {
     }
 }
 
-public func peerTypeIcon(_ peerType: ChatPeerType?) -> Image {
+public func peerTypeIcon(_ peerType: ChatPeerType?, person: Image = Image(systemName: "person.crop.circle.fill"), agent: Image = Image("agent")) -> Image {
     switch peerType {
     case .bot: Image(systemName: "cube.fill")
-    case .agent: Image("agent")
-    default: Image(systemName: "person.crop.circle.fill")
+    case .agent: agent
+    default: person
     }
 }
 
@@ -451,7 +451,7 @@ public struct BadgeIssueError: Decodable, Hashable {
 
 public enum BadgeIssueFailure: Decodable, Hashable {
     // retryable is the service's own view of transience: it gave retryAfter
-    case serviceError(code: BadgeServiceErrorCode, retryable: Bool)
+    case serviceError(code: StoreServiceErrorCode, retryable: Bool)
     case serviceTimeout
     case network(agentError: String)
     case invalidCredential
@@ -666,7 +666,7 @@ public struct BadgeAlert: Codable, Hashable {
     public var dateText: String { badgeDateText(date) }
 }
 
-private func badgeDateText(_ date: Date) -> String {
+public func badgeDateText(_ date: Date) -> String {
     DateFormatter.localizedString(from: date, dateStyle: .long, timeStyle: .none)
 }
 
@@ -957,18 +957,6 @@ public func fullPreferencesToPreferences(_ fullPreferences: FullPreferences) -> 
         files: fullPreferences.files,
         calls: fullPreferences.calls,
         commands: fullPreferences.commands
-    )
-}
-
-public func contactUserPreferencesToPreferences(_ contactUserPreferences: ContactUserPreferences) -> Preferences {
-    Preferences(
-        timedMessages: contactUserPreferences.timedMessages.userPreference.preference,
-        fullDelete: contactUserPreferences.fullDelete.userPreference.preference,
-        reactions: contactUserPreferences.reactions.userPreference.preference,
-        voice: contactUserPreferences.voice.userPreference.preference,
-        files: contactUserPreferences.files.userPreference.preference,
-        calls: contactUserPreferences.calls.userPreference.preference,
-        commands: contactUserPreferences.commands
     )
 }
 
@@ -1791,6 +1779,7 @@ public struct FullGroupPreferences: Decodable, Equatable, Hashable {
     public var history: GroupPreference
     public var support: GroupPreference
     public var signMessages: GroupPreference
+    public var msgPriority: RoleGroupPreference?
     public var commands: [ChatBotCommand]
 
     public init(
@@ -1805,6 +1794,7 @@ public struct FullGroupPreferences: Decodable, Equatable, Hashable {
         history: GroupPreference,
         support: GroupPreference,
         signMessages: GroupPreference,
+        msgPriority: RoleGroupPreference? = nil,
         commands: [ChatBotCommand]
     ) {
         self.timedMessages = timedMessages
@@ -1818,6 +1808,7 @@ public struct FullGroupPreferences: Decodable, Equatable, Hashable {
         self.history = history
         self.support = support
         self.signMessages = signMessages
+        self.msgPriority = msgPriority
         self.commands = commands
     }
 
@@ -1849,6 +1840,7 @@ public struct GroupPreferences: Codable, Hashable {
     public var history: GroupPreference?
     public var support: GroupPreference?
     public var signMessages: GroupPreference?
+    public var msgPriority: RoleGroupPreference?
     public var commands: [ChatBotCommand]?
 
     public init(
@@ -1863,6 +1855,7 @@ public struct GroupPreferences: Codable, Hashable {
         history: GroupPreference? = nil,
         support: GroupPreference? = nil,
         signMessages: GroupPreference? = nil,
+        msgPriority: RoleGroupPreference? = nil,
         commands: [ChatBotCommand]? = nil
     ) {
         self.timedMessages = timedMessages
@@ -1876,6 +1869,7 @@ public struct GroupPreferences: Codable, Hashable {
         self.history = history
         self.support = support
         self.signMessages = signMessages
+        self.msgPriority = msgPriority
         self.commands = commands
     }
 
@@ -1907,6 +1901,7 @@ public func toGroupPreferences(_ fullPreferences: FullGroupPreferences) -> Group
         history: fullPreferences.history,
         support: fullPreferences.support,
         signMessages: fullPreferences.signMessages,
+        msgPriority: fullPreferences.msgPriority,
         commands: fullPreferences.commands
     )
 }
@@ -2424,6 +2419,18 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable {
         }
     }
 
+    private var silentNotCounted: Bool {
+        chatSettings?.enableNtfs == .all
+    }
+
+    public func countedForUser(_ chatItem: ChatItem) -> Bool {
+        chatItem.isRcvNew && !(chatItem.meta.silent && silentNotCounted)
+    }
+
+    public func countedForUser(unreadCount: Int, unreadSilent: Int) -> Int {
+        silentNotCounted ? unreadCount - unreadSilent : unreadCount
+    }
+
     public var chatSettings: ChatSettings? {
         switch self {
         case let .direct(contact): return contact.chatSettings
@@ -2561,12 +2568,16 @@ public struct ChatStats: Decodable, Hashable {
     public init(
         unreadCount: Int = 0,
         unreadMentions: Int = 0,
+        unreadSilent: Int = 0,
+        unreadHighPriority: Int = 0,
         reportsCount: Int = 0,
         minUnreadItemId: Int64 = 0,
         unreadChat: Bool = false
     ) {
         self.unreadCount = unreadCount
         self.unreadMentions = unreadMentions
+        self.unreadSilent = unreadSilent
+        self.unreadHighPriority = unreadHighPriority
         self.reportsCount = reportsCount
         self.minUnreadItemId = minUnreadItemId
         self.unreadChat = unreadChat
@@ -2574,11 +2585,15 @@ public struct ChatStats: Decodable, Hashable {
 
     public var unreadCount: Int = 0
     public var unreadMentions: Int = 0
+    public var unreadSilent: Int = 0
+    public var unreadHighPriority: Int = 0
     // actual only via getChats() and getChat(.initial), otherwise, zero
     public var reportsCount: Int = 0
     public var minUnreadItemId: Int64 = 0
     // actual only via getChats(), otherwise, false
     public var unreadChat: Bool = false
+
+    public var allUnreadSilent: Bool { unreadCount > 0 && unreadCount == unreadSilent }
 }
 
 public enum GroupChatScope: Decodable {
@@ -2772,6 +2787,7 @@ public enum ContactStatus: String, Decodable, Hashable {
     case active = "active"
     case deleted = "deleted"
     case deletedByUser = "deletedByUser"
+    case rejected = "rejected"
 }
 
 public struct ContactRef: Decodable, Equatable, Hashable {
@@ -3068,7 +3084,7 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat, Hashable {
     public var chatTags: [Int64]
     public var chatItemTTL: Int64?
     public var localAlias: String
-    public var groupDomainVerified: Bool?
+    public var groupDomainVerified: DomainVerification?
 
     public var isOwner: Bool {
         return membership.memberRole == .owner && membership.memberCurrent
@@ -3175,9 +3191,28 @@ public struct SimplexDomainClaim: Codable, Hashable {
     }
 }
 
+public enum DomainVerification: String, Codable, Hashable {
+    case failed
+    case verified
+    case moved
+}
+
 public enum SimplexDomainError: Decodable, Hashable {
     case noValidLink
     case unknownDomain
+    case nameWarning(nameWarning: NameWarning)
+}
+
+public enum NameWarning: Decodable, Hashable {
+    case expired(expiredAt: Date, graceUntil: Date?)
+    case available(price: NamePrice)
+    case reservedForCommunity
+    case notRegistered
+}
+
+public struct NamePrice: Decodable, Hashable {
+    public var amount: Int64
+    public var years: Int
 }
 
 public struct RelayCapabilities: Codable, Hashable {
@@ -3436,6 +3471,7 @@ public struct GroupMember: Identifiable, Decodable, Hashable {
     public var memberChatVRange: VersionRange
     public var relayLink: String?
     public var memberVerifiedCode: SecurityCode?
+    public var memberVia: String?
 
     public var id: String { groupMemberEntityId(groupId, groupMemberId) }
     public var ready: Bool { get { activeConn?.connStatus == .ready } }
@@ -3903,6 +3939,20 @@ public struct AChatItem: Decodable, Hashable {
     public var chatItem: ChatItem
 }
 
+public struct AChatItemUpdate: Decodable, Hashable {
+    public var chatInfo: ChatInfo
+    public var chatItem: ChatItem
+    public var prevChatItem: ChatItem
+
+    public var showNotification: Bool {
+        (chatItem.isRaised(from: prevChatItem) || chatItem.isAsNew(from: prevChatItem)) && chatInfo.ntfsEnabled(chatItem: chatItem) && chatItem.showNotification
+    }
+
+    public var userUnreadChange: Int {
+        unreadCountChange(prevChatItem, chatItem) { chatInfo.ntfsEnabled(chatItem: $0) && chatInfo.countedForUser($0) }
+    }
+}
+
 public struct CIMentionMember: Decodable, Hashable {
     public var groupMemberId: Int64
     public var displayName: String
@@ -4047,7 +4097,7 @@ public struct ChatItem: Identifiable, Decodable, Hashable {
     public var showNotification: Bool {
         switch content {
         case .sndMsgContent: return false
-        case .rcvMsgContent: return meta.itemDeleted == nil
+        case .rcvMsgContent: return meta.itemDeleted == nil && !meta.silent
         case .sndDeleted: return false
         case .rcvDeleted: return false
         case .sndCall: return false
@@ -4203,23 +4253,35 @@ public struct ChatItem: Identifiable, Decodable, Hashable {
         }
     }
 
+    public var hasHeaderAboveQuote: Bool {
+        isReport || meta.itemDeleted != nil || meta.isLive
+    }
+
+    public var hasQuoteOrHeader: Bool {
+        quotedItem != nil || meta.itemForwarded != nil || hasHeaderAboveQuote
+    }
+
     public var textAtItemTop: Bool {
         let textContent = switch content.msgContent {
         case .text: true
         case .unknown: file == nil
         default: false
         }
-        return textContent && quotedItem == nil && meta.itemForwarded == nil && meta.itemDeleted == nil && !meta.isLive && !isReport
+        return textContent && !hasQuoteOrHeader
     }
 
     public var startsWithHeading: Bool {
         if case .heading = markdownBlocks?.first { true } else { false }
     }
 
-    public static func getSample (_ id: Int64, _ dir: CIDirection, _ ts: Date, _ text: String, _ status: CIStatus = .sndNew, quotedItem: CIQuote? = nil, file: CIFile? = nil, itemDeleted: CIDeleted? = nil, itemEdited: Bool = false, itemLive: Bool = false, deletable: Bool = true, editable: Bool = true) -> ChatItem {
+    public var isOneLine: Bool {
+        textAtItemTop && markdownBlocks == nil && !content.text.contains(where: \.isNewline)
+    }
+
+    public static func getSample (_ id: Int64, _ dir: CIDirection, _ ts: Date, _ text: String, _ status: CIStatus = .sndNew, quotedItem: CIQuote? = nil, file: CIFile? = nil, itemDeleted: CIDeleted? = nil, itemEdited: Bool = false, itemLive: Bool = false, deletable: Bool = true, editable: Bool = true, priority: Int? = nil) -> ChatItem {
         ChatItem(
             chatDir: dir,
-            meta: CIMeta.getSample(id, ts, text, status, itemDeleted: itemDeleted, itemEdited: itemEdited, itemLive: itemLive, deletable: deletable, editable: editable),
+            meta: CIMeta.getSample(id, ts, text, status, itemDeleted: itemDeleted, itemEdited: itemEdited, itemLive: itemLive, deletable: deletable, editable: editable, priority: priority),
             content: .sndMsgContent(msgContent: .text(text)),
             quotedItem: quotedItem,
             file: file
@@ -4427,6 +4489,10 @@ public enum CIDirection: Decodable, Hashable {
         if case let .groupRcv(groupMember) = self { groupMember.groupMemberId } else { nil }
     }
 
+    public var memberVia: String? {
+        if case let .groupRcv(groupMember) = self { groupMember.memberVia } else { nil }
+    }
+
     public func sameDirection(_ dir: CIDirection) -> Bool {
         switch (self, dir) {
         case let (.groupRcv(m1), .groupRcv(m2)): m1.groupMemberId == m2.groupMemberId
@@ -4455,10 +4521,14 @@ public struct CIMeta: Decodable, Hashable {
     public var forwardedByMember: Int64?
     public var showGroupAsSender: Bool
     public var msgVerified: MsgVerified?
+    public var priority: Int?
+    public var sentAsMember: GroupMember?
 
     public var timestampText: Text { Text(formatTimestampMeta(itemTs)) }
     public var recent: Bool { updatedAt + 10 > .now }
     public var isLive: Bool { itemLive == true }
+    public var silent: Bool { (priority ?? 0) < 0 }
+    public var highPriority: Bool { (priority ?? 0) > 0 }
     public var disappearing: Bool { !isRcvNew && itemTimed?.deleteAt != nil }
 
     public var isRcvNew: Bool {
@@ -4466,7 +4536,7 @@ public struct CIMeta: Decodable, Hashable {
         return false
     }
 
-    public static func getSample(_ id: Int64, _ ts: Date, _ text: String, _ status: CIStatus = .sndNew, itemDeleted: CIDeleted? = nil, itemEdited: Bool = false, itemLive: Bool = false, deletable: Bool = true, editable: Bool = true) -> CIMeta {
+    public static func getSample(_ id: Int64, _ ts: Date, _ text: String, _ status: CIStatus = .sndNew, itemDeleted: CIDeleted? = nil, itemEdited: Bool = false, itemLive: Bool = false, deletable: Bool = true, editable: Bool = true, priority: Int? = nil) -> CIMeta {
         CIMeta(
             itemId: id,
             itemTs: ts,
@@ -4481,7 +4551,8 @@ public struct CIMeta: Decodable, Hashable {
             deletable: deletable,
             editable: editable,
             showGroupAsSender: false,
-            msgVerified: nil
+            msgVerified: nil,
+            priority: priority
         )
     }
 
@@ -4647,6 +4718,20 @@ public enum CIStatus: Decodable, Hashable {
         case .sndRcvd: return true
         default: return false
         }
+    }
+}
+
+public func unreadCountChange(_ prevItem: ChatItem, _ cItem: ChatItem, _ counted: (ChatItem) -> Bool) -> Int {
+    (counted(cItem) ? 1 : 0) - (counted(prevItem) ? 1 : 0)
+}
+
+extension ChatItem {
+    public func isRaised(from prevItem: ChatItem) -> Bool {
+        meta.highPriority && !prevItem.meta.highPriority
+    }
+
+    public func isAsNew(from prevItem: ChatItem) -> Bool {
+        meta.itemTs != prevItem.meta.itemTs
     }
 }
 
@@ -5716,25 +5801,25 @@ public enum MsgChatLink: Equatable, Hashable {
         }
     }
 
-    public var iconName: String {
+    public var icon: Image {
         switch self {
         case let .group(_, groupProfile):
-            groupProfile.isChannel ? "antenna.radiowaves.left.and.right.circle.fill" : "person.2.circle.fill"
-        case let .contact(_, _, business):
-            business ? "briefcase.circle.fill" : "person.crop.circle.fill"
-        case .invitation:
-            "person.crop.circle.fill"
+            Image(systemName: groupProfile.isChannel ? "antenna.radiowaves.left.and.right.circle.fill" : "person.2.circle.fill")
+        case let .contact(_, profile, business):
+            business ? Image(systemName: "briefcase.circle.fill") : peerTypeIcon(profile.peerType)
+        case let .invitation(_, profile):
+            peerTypeIcon(profile.peerType)
         }
     }
 
-    public var smallIconName: String {
+    public func smallIcon(agent: Image = Image("agent")) -> Image {
         switch self {
         case let .group(_, groupProfile):
-            groupProfile.isChannel ? "antenna.radiowaves.left.and.right" : "person.2"
-        case let .contact(_, _, business):
-            business ? "briefcase" : "person"
-        case .invitation:
-            "person"
+            Image(systemName: groupProfile.isChannel ? "antenna.radiowaves.left.and.right" : "person.2")
+        case let .contact(_, profile, business):
+            business ? Image(systemName: "briefcase") : peerTypeIcon(profile.peerType, person: Image(systemName: "person"), agent: agent)
+        case let .invitation(_, profile):
+            peerTypeIcon(profile.peerType, person: Image(systemName: "person"), agent: agent)
         }
     }
 
@@ -5910,6 +5995,13 @@ public enum MarkdownBlock: Decodable, Hashable {
 
     public var isHeading: Bool {
         if case .heading = self { true } else { false }
+    }
+
+    public var isCard: Bool {
+        switch self {
+        case .codeBlock, .table, .rule: true
+        case .paragraph, .heading, .quote, .list: false
+        }
     }
 }
 

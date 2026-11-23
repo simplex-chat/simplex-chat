@@ -155,6 +155,7 @@ toTypeInfo tr =
         "Maybe" -> case args of
           [innerTr] -> TIOptional (toTypeInfo innerTr)
           _ -> TIType (simpleType tr)
+        "MsgPriority" -> TIOptional (ti TInt)
         "Map" -> case args of
           [keyTr, valTr] -> TIMap {keyType = simpleType keyTr, valueType = toTypeInfo valTr}
           _ -> TIType (simpleType tr)
@@ -169,9 +170,11 @@ toTypeInfo tr =
       "AgentUserId" -> ST TInt64 []
       "DBEntityId'" -> ST TInt64 []
       "Integer" -> ST TInt64 []
+      "USDCents" -> ST TInt64 []
       "Version" -> ST TInt []
       "VersionRoster" -> ST TInt64 []
       "BoolDef" -> ST TBool []
+      "IntDef" -> ST TInt []
       "PQEncryption" -> ST TBool []
       "PQSupport" -> ST TBool []
       "AChatInfo" -> ST "ChatInfo" []
@@ -255,5 +258,6 @@ toTypeInfo tr =
         "VoiceGroupPreference",
         "FilesGroupPreference",
         "SessionsGroupPreference",
-        "SimplexLinksGroupPreference"
+        "SimplexLinksGroupPreference",
+        "MsgPriorityGroupPreference"
       ]

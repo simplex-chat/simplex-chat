@@ -45,6 +45,23 @@ describe("documented success responses", () => {
     ])
   })
 
+  it("apiUpdateChatItem updates a message as new", async () => {
+    const chatItem = {meta: {itemId: 2}}
+    const chat = await chatWithResponse({type: "chatItemUpdated", user, chatItem: {chatItem}})
+    await expect(chat.apiUpdateChatItem(T.ChatType.Group, 1, 2, {type: "text", text: "status"}, false, -1, true)).resolves.toEqual(chatItem)
+    expect(sentCommands()).toEqual(['/_update item #1 2 as_new=on json {"msgContent":{"type":"text","text":"status"},"mentions":{},"priority":-1}'])
+  })
+
+  it("apiSendTextMessage sends the priority in the composed message", async () => {
+    const chat = await chatWithResponse({type: "newChatItems", user, chatItems: []})
+    await expect(chat.apiSendTextMessage([T.ChatType.Group, 1], "hi", undefined, -1)).resolves.toEqual([])
+    await chat.apiSendTextMessage([T.ChatType.Group, 1], "hi")
+    expect(sentCommands()).toEqual([
+      '/_send #1 json [{"msgContent":{"type":"text","text":"hi"},"mentions":{},"priority":-1}]',
+      '/_send #1 json [{"msgContent":{"type":"text","text":"hi"},"mentions":{}}]',
+    ])
+  })
+
   it("apiSetProfileAddress accepts userProfileNoChange", async () => {
     const chat = await chatWithResponse({type: "userProfileNoChange", user})
     await expect(chat.apiSetProfileAddress(1, true)).resolves.toEqual({updateSuccesses: 0, updateFailures: 0, changedContacts: []})
@@ -274,13 +291,14 @@ describe("LiveMessage", () => {
     const calls: string[] = []
     let itemId = 0
     const ref = (chatType: T.ChatType, chatId: number) => T.ChatType.cmdString(chatType) + chatId
+    const withPriority = (priority?: number) => priority === undefined ? "" : ` priority=${priority}`
     const chat = {
-      apiSendMessages: async ([chatType, chatId]: [T.ChatType, number], [{msgContent}]: T.ComposedMessage[], live: boolean) => {
-        calls.push(`send ${ref(chatType, chatId)} ${json(msgContent.text)} live=${live}`)
+      apiSendMessages: async ([chatType, chatId]: [T.ChatType, number], [{msgContent, priority}]: T.ComposedMessage[], live: boolean) => {
+        calls.push(`send ${ref(chatType, chatId)} ${json(msgContent.text)} live=${live}${withPriority(priority)}`)
         return [{chatItem: {meta: {itemId: ++itemId}}}] as unknown as T.AChatItem[]
       },
-      apiUpdateChatItem: async (chatType: T.ChatType, chatId: number, chatItemId: number, msgContent: T.MsgContent, live: boolean) => {
-        calls.push(`update ${ref(chatType, chatId)} ${chatItemId} ${json(msgContent.text)} live=${live}`)
+      apiUpdateChatItem: async (chatType: T.ChatType, chatId: number, chatItemId: number, msgContent: T.MsgContent, live: boolean, priority?: number) => {
+        calls.push(`update ${ref(chatType, chatId)} ${chatItemId} ${json(msgContent.text)} live=${live}${withPriority(priority)}`)
         return {} as T.ChatItem
       },
       apiDeleteChatItems: async (chatType: T.ChatType, chatId: number, chatItemIds: number[], deleteMode: T.CIDeleteMode) => {
@@ -334,6 +352,14 @@ describe("LiveMessage", () => {
     await live.end()
     await live.end("Done")
     expect(calls).toEqual(['send #5 "Done" live=false'])
+  })
+
+  it("finalizes with the priority", async () => {
+    const {live, calls} = recordingLiveMessage()
+    live.update("")
+    await live.end("Done", 1)
+    await live.end("Next", 1)
+    expect(calls).toEqual(['send #5 "" live=true', 'update #5 1 "Done" live=false priority=1', 'send #5 "Next" live=false priority=1'])
   })
 
   it("finalizes the last text", async () => {

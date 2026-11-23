@@ -118,12 +118,13 @@ export namespace APISendMessages {
   }
 }
 
-// Update message.
+// Update message. In groups, as_new=on makes the message new: last in the chat, unread and notified by its priority, with the time of the update set by each member; ignored in other chats.
 // Network usage: background.
 export interface APIUpdateChatItem {
   chatRef: T.ChatRef
   chatItemId: number // int64
   liveMessage: boolean
+  asNew: boolean
   updatedMessage: T.UpdatedMessage
 }
 
@@ -131,7 +132,7 @@ export namespace APIUpdateChatItem {
   export type Response = CR.ChatItemUpdated | CR.ChatItemNotChanged | CR.ChatCmdError
 
   export function cmdString(self: APIUpdateChatItem): string {
-    return '/_update item ' + T.ChatRef.cmdString(self.chatRef) + ' ' + self.chatItemId + (self.liveMessage ? ' live=on' : '') + ' json ' + JSON.stringify(self.updatedMessage)
+    return '/_update item ' + T.ChatRef.cmdString(self.chatRef) + ' ' + self.chatItemId + (self.liveMessage ? ' live=on' : '') + (self.asNew ? ' as_new=on' : '') + ' json ' + JSON.stringify(self.updatedMessage)
   }
 }
 
@@ -280,6 +281,22 @@ export namespace APIAddMemberViaGroup {
 
   export function cmdString(self: APIAddMemberViaGroup): string {
     return '/_add #' + self.groupId + ' #' + self.viaGroupId + ' ' + self.groupMemberId + ' ' + self.memberRole
+  }
+}
+
+// Add member via bot, without a connection: bot sends member's messages with /_send #<groupId>(as_member=<groupMemberId>). Requires bot to have Admin role and a role not lower than member role, not supported in channels.
+// Network usage: background.
+export interface APIAddViaMember {
+  groupId: number // int64
+  memberRole: T.GroupMemberRole
+  profile: T.Profile
+}
+
+export namespace APIAddViaMember {
+  export type Response = CR.ViaMemberAdded | CR.ChatCmdError
+
+  export function cmdString(self: APIAddViaMember): string {
+    return '/_add via #' + self.groupId + ' ' + self.memberRole + ' json ' + JSON.stringify(self.profile)
   }
 }
 

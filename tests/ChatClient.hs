@@ -40,7 +40,7 @@ import Simplex.Chat.Options.DB
 import Simplex.Chat.Store
 import Simplex.Chat.Store.Profiles
 import Simplex.Chat.Terminal
-import Simplex.Chat.Terminal.Output (WithTerminal (..), newChatTerminal)
+import Simplex.Chat.Terminal.Output (ChatTerminal, WithTerminal (..), newChatTerminal)
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Shared (GroupMemberRole (..))
 import Simplex.FileTransfer.Description (kb, mb)
@@ -60,7 +60,7 @@ import Simplex.Messaging.Client (ProtocolClientConfig (..))
 import Simplex.Messaging.Client.Agent (defaultSMPClientAgentConfig)
 import Simplex.Messaging.Protocol (ProtoServerWithAuth (..), ProtocolServer (..), ProtocolType (..))
 import Simplex.Messaging.Server (runSMPServerBlocking)
-import Simplex.Messaging.Server.Env.STM (ServerConfig (..), ServerStoreCfg (..), StartOptions (..), StorePaths (..), defaultMaxClientCmdWait, defaultMessageExpiration, defaultNtfExpiration, defaultInactiveClientExpiration)
+import Simplex.Messaging.Server.Env.STM (ServerConfig (..), ServerStoreCfg (..), StartOptions (..), StorePaths (..), defaultForwardWorkers, defaultMaxClientCmdWait, defaultMessageExpiration, defaultNtfExpiration, defaultInactiveClientExpiration)
 import NameResolver (NameRegistry, resolverNamesConfig, withNameResolver)
 import Simplex.Messaging.Server.MsgStore.STM (STMMsgStore)
 import Simplex.Messaging.Transport
@@ -260,6 +260,7 @@ termSettings =
 
 data TestCC = TestCC
   { chatController :: ChatController,
+    chatTerminal :: ChatTerminal,
     chatAsync :: Async (),
     termQ :: TQueue String,
     printOutput :: Bool,
@@ -406,7 +407,7 @@ startTestChat_ ps@TestParams {tmpPath, printOutput} db cfg_ opts_ dbPrefix user 
   void $ execChatCommand' (SetTempFolder (tmpPath </> dbPrefix)) 0 `runReaderT` cc
   chatAsync <- async $ runSimplexChat cfg opts user cc $ \_u cc' -> runChatTerminal ct cc' opts
   unless maintenance $ atomically $ readTVar (agentAsync cc) >>= \a -> when (isNothing a) retry
-  pure TestCC {chatController = cc, chatAsync, termQ, printOutput, ccParams = ps}
+  pure TestCC {chatController = cc, chatTerminal = ct, chatAsync, termQ, printOutput, ccParams = ps}
 
 stopTestChat :: TestParams -> TestCC -> IO ()
 stopTestChat ps TestCC {chatController = cc@ChatController {smpAgent, chatStore}, chatAsync} = do
@@ -669,6 +670,7 @@ smpServerCfg p =
       pendingENDInterval = 500000,
       authErrorDelay = 10,
       ntfDeliveryInterval = 200000,
+      ntfDeliveryChunk = 1000,
       smpServerVRange = supportedServerSMPRelayVRange,
       transportConfig = mkTransportServerConfig True (Just alpnSupportedSMPHandshakes) True,
       smpHandshakeTimeout = 1000000,
@@ -677,6 +679,7 @@ smpServerCfg p =
       allowSMPProxy = True,
       serverClientConcurrency = 16,
       serverResolverConcurrency = 1000,
+      serverForwardWorkers = defaultForwardWorkers,
       maxClientCmdWait = defaultMaxClientCmdWait,
       namesConfig = Nothing,
       information = Nothing,

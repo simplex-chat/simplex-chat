@@ -103,6 +103,7 @@ The `oneHandUI` preference (`appPrefs.oneHandUI.state`) controls the layout:
 | `chatModel.userTags` | `ChatModel.userTags` | User-created custom tags |
 | `chatModel.presetTags` | `ChatModel.presetTags` | Map of `PresetTagKind` to count |
 | `chatModel.unreadTags` | `ChatModel.unreadTags` | Map of tag ID to unread count |
+| `chatModel.priorityTags` | `ChatModel.priorityTags` | Map of tag ID to the count of chats with unread high priority items; the list label shows a bell in place of " ●" |
 | `chatModel.chatId` | `ChatModel.chatId` | Currently selected chat ID (highlights row) |
 | `chatModel.currentUser` | `ChatModel.currentUser` | Active user profile |
 | `chatModel.users` | `ChatModel.users` | All user profiles (for UserPicker) |
@@ -239,7 +240,7 @@ Layout logic:
 
 - **Single tap:** Toggles the tag filter on `chatModel.activeChatTagFilter`.
 - **Long press / right-click (user tags):** Opens dropdown menu with edit/delete/reorder options.
-- **Unread dot:** Shown on tags that have chats with unread messages.
+- **Unread mark:** a bell when a chat of the tag has unread high priority messages, otherwise "●" when a chat of the tag has unread messages that count; muted chats and chats with only silent unread messages leave the tag unmarked.
 
 <a id="TagListView"></a>
 
@@ -356,7 +357,7 @@ The badge alert banner always offers the X; only the pitch waits to be tapped on
 
 Both are in `AppPreferences.hintPreferences`, so "Reset all hints" restores the banner. The X is never offered below the onboarding cards, so the banner cannot be dismissed before the user has a chat.
 
-Tapping the card runs `openGetStake()`, which opens `GetStakeView` as a card modal.
+Tapping the card runs `openGetStake()`, which opens `GetStakeView(showFirstImage = true)` as a card modal — `showFirstImage` decides whether the page repeats the first slide's image, which only What's New shows above its own link.
 
 ### Shared card chrome
 

@@ -201,7 +201,26 @@ getUsersInfo db = getUsers db >>= mapM getUserInfo
                 AND (g.enable_ntfs = 1 OR g.enable_ntfs IS NULL OR (g.enable_ntfs = 2 AND i.user_mention = 1))
             |]
             (userId, CISRcvNew)
-      pure UserInfo {user, unreadCount = fromMaybe 0 ctCount + fromMaybe 0 gCount}
+      silentCount <-
+        maybeFirstRow fromOnly $
+          DB.query
+            db
+            [sql|
+              SELECT
+                (
+                  SELECT COUNT(1)
+                  FROM chat_items i
+                  JOIN contacts ct USING (contact_id)
+                  WHERE i.user_id = ? AND i.item_status = ? AND i.contact_id IS NOT NULL AND i.item_priority < 0 AND (ct.enable_ntfs = 1 OR ct.enable_ntfs IS NULL) AND ct.deleted = 0
+                ) + (
+                  SELECT COUNT(1)
+                  FROM chat_items i
+                  JOIN groups g USING (group_id)
+                  WHERE i.user_id = ? AND i.item_status = ? AND i.group_id IS NOT NULL AND i.item_priority <> 0 AND i.item_priority < 0 AND (g.enable_ntfs = 1 OR g.enable_ntfs IS NULL)
+                )
+            |]
+            (userId, CISRcvNew, userId, CISRcvNew)
+      pure UserInfo {user, unreadCount = fromMaybe 0 ctCount + fromMaybe 0 gCount - fromMaybe 0 silentCount}
 
 getUsers :: DB.Connection -> IO [User]
 getUsers db = do
@@ -371,9 +390,9 @@ updateUserProfile db user p'
           DB.execute db "UPDATE users SET user_member_profile_updated_at = ? WHERE user_id = ?" (currentTs, userId)
           pure $ Just currentTs
       | otherwise = pure userMemberProfileUpdatedAt
-    userMemberProfileChanged = newName /= displayName || fn' /= fullName || d' /= shortDescr || desc' /= description || img' /= image
-    User {userId, userContactId, localDisplayName, profile = LocalProfile {profileId, displayName, fullName, shortDescr, description, image}, userMemberProfileUpdatedAt} = user
-    Profile {displayName = newName, fullName = fn', shortDescr = d', description = desc', image = img', preferences} = p'
+    userMemberProfileChanged = newName /= displayName || fn' /= fullName || d' /= shortDescr || desc' /= description || img' /= image || pt' /= peerType
+    User {userId, userContactId, localDisplayName, profile = LocalProfile {profileId, displayName, fullName, shortDescr, description, image, peerType}, userMemberProfileUpdatedAt} = user
+    Profile {displayName = newName, fullName = fn', shortDescr = d', description = desc', image = img', peerType = pt', preferences} = p'
     fullPreferences = fullPreferences' preferences
 
 updatedUserProfile :: User -> Profile -> UTCTime -> LocalProfile
@@ -899,7 +918,7 @@ toServerOperator ((operatorId, operatorTag, tradeName, legalName, domains, BI en
     serverRolesXFTP (BI storage, BI proxy) = ServerRoles {storage, proxy, names = False}
 
 getOperatorConditions_ :: DB.Connection -> ServerOperator -> UsageConditions -> Maybe UsageConditions -> UTCTime -> IO ConditionsAcceptance
-getOperatorConditions_ db ServerOperator {operatorId} UsageConditions {conditionsCommit = currentCommit, createdAt, notifiedAt} latestAcceptedConds_ now = do
+getOperatorConditions_ db ServerOperator {operatorId} UsageConditions {conditionsCommit = currentCommit, notifiedAt} latestAcceptedConds_ now = do
   case latestAcceptedConds_ of
     Nothing -> pure $ CARequired Nothing -- no conditions accepted by any operator
     Just UsageConditions {conditionsCommit = latestAcceptedCommit} -> do
@@ -918,7 +937,7 @@ getOperatorConditions_ db ServerOperator {operatorId} UsageConditions {condition
       pure $ case operatorAcceptedConds_ of
         Just (operatorCommit, acceptedAt_, BI autoAccept)
           | operatorCommit /= latestAcceptedCommit -> CARequired Nothing -- TODO should we consider this operator disabled?
-          | currentCommit /= latestAcceptedCommit -> CARequired $ conditionsRequiredOrDeadline createdAt (fromMaybe now notifiedAt)
+          | currentCommit /= latestAcceptedCommit -> CARequired $ Just $ conditionsDeadline (fromMaybe now notifiedAt)
           | otherwise -> CAAccepted acceptedAt_ autoAccept
         _ -> CARequired Nothing -- no conditions were accepted for this operator
 

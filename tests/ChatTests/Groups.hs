@@ -14,7 +14,7 @@ module ChatTests.Groups where
 
 import ChatClient
 import ChatTests.DBUtils
-import ChatTests.Profiles (addTestBadge, futureDate, issueTestBadge, testBadgeKeys)
+import ChatTests.Profiles (addTestBadge, futureDate, invalidLink, issueTestBadge, setLinkType, setTestGroupLinkData, testBadgeKeys)
 import ChatTests.Utils
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_)
@@ -22,37 +22,52 @@ import Control.Concurrent.STM (TVar, atomically, modifyTVar', newTVarIO, readTVa
 import Control.Monad (forM_, void, when)
 import Control.Monad.Except (runExceptT)
 import Control.Monad.Reader (runReaderT)
+import Data.Aeson ((.:), (.:?))
+import qualified Data.Aeson as J
+import qualified Data.Aeson.Types as JT
 import Data.Bifunctor (second)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as B
-import Data.Maybe (fromMaybe, isJust, maybeToList)
-import Data.Time (UTCTime, getCurrentTime)
+import qualified Data.ByteString.Lazy.Char8 as LB
+import Data.Maybe (fromMaybe, isJust, mapMaybe, maybeToList)
+import Data.Time (UTCTime, addUTCTime, getCurrentTime)
 import Data.Int (Int64)
 import Data.List (intercalate, isInfixOf, isSubsequenceOf, isSuffixOf)
 import qualified Data.Map.Strict as M
 import qualified Data.Text as T
 import Simplex.Chat.Badges (FileSizeLimits (..))
-import Simplex.Chat.Controller (ChatController (ChatController, smpAgent, subscriptionMode), ChatConfig (..), ChatEvent (CEvtDuplicateGroupMessage), ChatHooks (..), ChatLogLevel (..), defaultChatHooks, withAgent)
-import Simplex.Chat.Library.Internal (encodeConnInfo, getShortLinkConnReq, uniqueMsgMentions, updatedMentionNames)
+import Simplex.Chat.Controller (ChatController (ChatController, smpAgent, subscriptionMode), ChatConfig (..), ChatDatabase (..), ChatEvent (CEvtChatItemUpdated, CEvtDuplicateGroupMessage, CEvtNewChatItems), ChatHooks (..), ChatLogLevel (..), ChatResponse (CRApiChat, CRApiChats), defaultChatHooks, withAgent)
+import Simplex.Chat.Core (sendChatCmdStr)
+import Simplex.Chat.Library.Internal (encodeConnInfo, getShortLinkConnReq, sendDirectMemberMessage, uniqueMsgMentions, updatedMentionNames)
 import Simplex.Chat.Markdown (parseMaybeMarkdownList)
-import Simplex.Chat.Messages (CIMention (..), CIMentionMember (..), ChatItemId)
+import Simplex.Chat.Messages (AChat (..), AChatItem (..), AChatItemUpdate (..), CChatItem (..), CIMention (..), CIMentionMember (..), CIMeta (CIMeta, priority, userMention), CIQuote (CIQuote, chatDir, itemId), Chat (Chat, chatInfo, chatItems, chatStats), ChatItem (ChatItem, content, mentions, meta, quotedItem), ChatItemId, ChatStats (..), ChatType (CTGroup), JSONCIDirection (JCIGroupRcv), JSONChatInfo (JCInfoGroup), highPriority, isUserMention, jsonCIQDirection, jsonChatInfo, toChatType)
 import Simplex.Chat.Messages.Batch (encodeBinaryBatch, encodeFwdElement)
-import Simplex.Chat.Messages.CIContent (publicGroupNoE2EText)
+import Simplex.Chat.Messages.CIContent (MsgDirection (MDRcv), ciMsgContent, publicGroupNoE2EText, toMsgDirection)
 import Simplex.Chat.Options
-import Simplex.Chat.Protocol (ChatMessage (ChatMessage), ChatMsgEvent (XGrpMemNew, XGrpRelayInv, XInfo, XMember, XMsgUpdate, XMsgNew, XMsgDel), FwdSender (FwdMember, FwdChannel), GrpMsgForward (GrpMsgForward), MsgContainer (..), MsgMention (..), MsgContent (..), VerifiedMsg (VMUnsigned), chatMsgToBody, mcSimple, msgContentText)
+import Simplex.Chat.Protocol (ChatBinding (CBGroup), ChatMessage (ChatMessage), ChatMsgEvent (BFileChunk, XFile, XGrpMemFwd, XGrpMemIntro, XGrpMemNew, XGrpRelayInv, XInfo, XMember, XMsgUpdate, XMsgNew, XMsgDel), FileChunk (..), FwdSender (FwdMember, FwdMemberVia, FwdChannel), GrpMsgForward (GrpMsgForward), KeyRef (KRMember), MsgContainer (..), MsgMention (..), MsgContent (..), MsgPriority (..), MsgSigning (MsgSigning), VerifiedMsg (VMSigned, VMUnsigned), chatMsgToBody, groupInvVersion, mcSimple, msgContentText, signChatMsgBody, supportedChatVRange)
+import qualified Simplex.Chat.Store as Store
+import Simplex.Chat.Store.Direct (setQuotaErrCounter)
+import Simplex.Chat.Terminal.Notification (Notification (Notification))
+import Simplex.Chat.Terminal.Output (ChatTerminal (sendNotification), chatEventNotification)
 import Simplex.Chat.Types
 import Simplex.Chat.Types.MemberRelations (MemberRelation (..), getRelation, setRelation)
-import Simplex.Chat.Types.Shared (GroupMemberRole (..), GroupAcceptance (..))
+import Simplex.Chat.Types.Preferences (EditsGroupPreference (..), FullGroupPreferences (FullGroupPreferences, edits), GroupFeatureEnabled (..))
+import Simplex.Chat.Types.Shared (GroupMemberRole (..), GroupAcceptance (..), MsgSigStatus (MSSVerified))
 import Simplex.Chat.Types.UITheme (ChatLayout (..))
-import Simplex.Messaging.Agent (joinConnection, prepareConnectionToJoin, sendMessages, vrValue)
+import Simplex.Messaging.Agent (createConnection, joinConnection, prepareConnectionToJoin, sendMessages, vrValue)
 import Simplex.Messaging.Agent.Env.SQLite
+import Simplex.Messaging.Agent.Protocol (CreatedConnLink (..), SConnectionMode (..), UserLinkData (..))
 import Simplex.Messaging.Agent.RetryInterval
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Agent.Store.DB (Binary (..), BoolInt (..))
+import Simplex.Messaging.Agent.Store.Interface (closeDBStore)
+import Simplex.Messaging.Agent.Store.Shared (MigrationsToRun (MTRDown), toDownMigration)
+import qualified Simplex.Messaging.Agent.Store.Shared as SM
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.BBS (bbsKeyGen)
 import Simplex.Messaging.Client (pattern NRMInteractive)
-import Simplex.Messaging.Crypto.Ratchet (pattern PQEncOff, pattern PQSupportOff)
+import Simplex.Messaging.Crypto.Ratchet (pattern IKPQOff, pattern PQEncOff, pattern PQSupportOff)
+import Simplex.Messaging.Encoding (smpEncode)
 import Simplex.Messaging.Encoding.String (strDecode)
 import Simplex.Messaging.Protocol (MsgFlags (..), SubscriptionMode (..))
 import Simplex.Messaging.Server.Env.STM hiding (subscriptions)
@@ -62,12 +77,21 @@ import System.Directory (copyFile, doesFileExist)
 import System.FilePath ((</>))
 import Test.Hspec hiding (it)
 #if defined(dbPostgres)
-import Database.PostgreSQL.Simple (Only (..))
+import Control.Concurrent (newEmptyMVar, putMVar, takeMVar)
+import Control.Concurrent.Async (wait, withAsync)
+import Data.List.NonEmpty (NonEmpty (..))
+import Data.Maybe (isNothing)
+import Database.PostgreSQL.Simple (Only (..), Query)
 import Database.PostgreSQL.Simple.SqlQQ (sql)
+import Simplex.Chat.Library.Subscriber (processAgentMessage)
+import Simplex.Messaging.Agent.Protocol (AEvent (MERRS), AgentErrorType (INTERNAL))
+import qualified Simplex.Messaging.Agent.Store.Postgres.Migrations as Migrations
+import System.Timeout (timeout)
 #else
-import Database.SQLite.Simple (Only (..))
+import Database.SQLite.Simple (Only (..), Query)
 import Database.SQLite.Simple.QQ (sql)
 import Simplex.Chat.Options.DB
+import qualified Simplex.Messaging.Agent.Store.SQLite.Migrations as Migrations
 #endif
 
 chatGroupTests :: SpecWith TestParams
@@ -100,16 +124,22 @@ chatGroupTests = do
     it "update group profile" testUpdateGroupProfile
     it "update member role" testUpdateMemberRole
     it "check owner role change" testOwnerRoleChange
+    it "reject member introduction for own membership and from member that did not announce it" testGroupMemFwdInvalidMember
+    it "observer cannot post file with legacy x.file" testGroupObserverLegacyFile
     it "group description is shown as the first message to new members" testGroupDescription
     it "moderate message of another group member" testGroupModerate
     it "moderate own message (should process as deletion)" testGroupModerateOwn
     it "moderate multiple messages" testGroupModerateMultiple
     it "moderate message of another group member (full delete)" testGroupModerateFullDelete
-    xit "moderate message that arrives after the event of moderation" testGroupDelayedModeration
-    xit "moderate message that arrives after the event of moderation (full delete)" testGroupDelayedModerationFullDelete
+    it "moderate message that arrives after the event of moderation" testGroupDelayedModeration
+    it "moderate message that arrives after the event of moderation (full delete)" testGroupDelayedModerationFullDelete
     it "remove member with messages (full deletion is enabled)" testDeleteMemberWithMessages
     it "remove member with messages mark deleted" testDeleteMemberMarkMessagesDeleted
     it "remove member - delete messages of left/removed members" testDeleteMemberMessagesLeftRemoved
+    it "file chunks from a member who did not send the file are ignored" testGroupFileChunkOtherMember
+#if defined(dbPostgres)
+    it "should stop a message error update at its time limit" testGroupMsgErrorsTimeLimit
+#endif
   describe "batch send messages" $ do
     it "send multiple messages api" testSendMulti
     it "send multiple timed messages" testSendMultiTimed
@@ -121,7 +151,7 @@ chatGroupTests = do
     it "all old members group upgrades to current version" testGroupAllOldThenUpgrade
     it "member key is generated at the first read of a group created without one" testGroupMemberKeyGenerated
   describe "async group connections" $ do
-    xit "create and join group when clients go offline" testGroupAsync
+    it "create and join group when clients go offline" testGroupAsync
   describe "group links" $ do
     it "create group link, join via group link" testGroupLink
     it "join via group link with group profile near the size limit" testGroupLinkLargeGroupProfile
@@ -193,6 +223,7 @@ chatGroupTests = do
   describe "group message forwarding" $ do
     it "forward messages between invitee and introduced (x.msg.new)" testGroupMsgForwardMessage
     it "reject forwarded content attributed to own membership" testGroupMsgForwardOwnMembershipRejected
+    it "reject forwarded content of unknown member via own membership or from a forwarder that is neither host nor that member" testGroupMsgForwardViaRejected
     it "forward batched messages" testGroupMsgForwardBatched
     it "forward reports to moderators, don't forward to members (x.msg.new, MCReport)" testGroupMsgForwardReport
     it "deduplicate forwarded messages" testGroupMsgForwardDeduplicate
@@ -200,6 +231,7 @@ chatGroupTests = do
     it "report duplicate when direct copy is received after forwarded copy" testGroupMsgDirectDuplicateEvent
     it "forward message edit (x.msg.update)" testGroupMsgForwardEdit
     it "set notification flag of forwarded messages by the original event" testGroupMsgForwardNotification
+    it "send and forward silent message without notification flag" testGroupMsgForwardSilent
     it "forward message reaction (x.msg.react)" testGroupMsgForwardReaction
     it "forward message deletion (x.msg.del)" testGroupMsgForwardDeletion
     it "forward file (x.msg.file.descr)" testGroupMsgForwardFile
@@ -211,6 +243,9 @@ chatGroupTests = do
     it "forward group deletion (x.grp.del)" testGroupMsgForwardGroupDeletion
   describe "group history" $ do
     it "text messages" testGroupHistory
+    it "silent message" testGroupHistorySilent
+    it "high priority message is received as normal" testGroupHistoryHighPriority
+    it "signed high priority message keeps its priority" testGroupHistorySignedHighPriority
     it "history is sent when joining via group link" testGroupHistoryGroupLink
     it "file with badge proof is received from history" testGroupHistoryFileBadgeProof
     it "file received from member with badge proof is received from history" testGroupHistoryRcvFileBadgeProof
@@ -232,6 +267,7 @@ chatGroupTests = do
     it "member contact is active" testMembershipProfileUpdateContactActive
     it "member contact is deleted" testMembershipProfileUpdateContactDeleted
     it "member contact is deleted, peer type is updated" testMembershipProfileUpdateContactDeletedPeerType
+    it "change of peer type alone is sent on next message" testMembershipProfileUpdatePeerTypeOnly
     it "member contact is deleted silently, then considered disabled" testMembershipProfileUpdateContactDisabled
     it "profile update without change is ignored" testMembershipProfileUpdateNoChangeIgnored
     it "change of profile contact link is ignored" testMembershipProfileUpdateContactLinkIgnored
@@ -251,10 +287,65 @@ chatGroupTests = do
     it "should send report to group owner, admins and moderators, but not other users" testGroupMemberReports
   describe "group member mentions" $ do
     it "should send and edit messages with member mentions" testMemberMention
+    it "should send updated item with mentions added and removed by edit" testMemberMentionEdited
     it "should forward and quote message updating mentioned member name" testForwardQuoteMention
     it "should send updated mentions in history" testGroupHistoryWithMentions
     describe "uniqueMsgMentions" testUniqueMsgMentions
     describe "updatedMentionNames" testUpdatedMentionNames
+  describe "message priority" $ do
+    it "send high priority message as attention item" testGroupHighPriority
+    it "set message priority preference" testGroupPriorityPreference
+    it "high priority message in mentions mode" testGroupHighPriorityMentionsMode
+    it "high priority message of blocked member is normal" testGroupHighPriorityBlockedMember
+    it "forward high priority message and its raise" testGroupMsgForwardHighPriority
+    it "raise priority by update" testGroupRaisePriority
+    it "raise priority of live message" testGroupRaisePriorityLive
+    it "raise priority below role is ignored" testGroupRaisePriorityIgnored
+    it "high priority in support chat is kept by an edit and set by a raise" testGroupSupportChatPriority
+    it "update of deleted item creates item with its priority, of marked deleted item keeps it" testGroupUpdatePriorityDeletedItem
+    it "update without priority makes item normal, a later raise notifies once" testGroupUpdateWithoutPriority
+    it "forward update with notification flag of its accepted priority" testGroupMsgForwardAcceptedPriority
+    it "silent, high priority and raised messages recorded for the apps" testGroupPriorityRecordings
+    it "terminal notifies of a raise and of an update as new, not of an edit" testGroupUpdateTerminalNotification
+  describe "update as new" $ do
+    it "update as new shows the item last and unread" testGroupUpdateAsNew
+    it "silent update as new" testGroupUpdateAsNewSilent
+    it "high priority update as new without a change of text" testGroupUpdateAsNewHighPriority
+    it "update as new of a blocked member is applied in place" testGroupUpdateAsNewBlockedMember
+    it "forward update as new with notification flag of a new message" testGroupMsgForwardUpdateAsNew
+    it "update as new keeps the window of the message for receivers" testGroupUpdateAsNewReceiverWindow
+    it "update as new in a support chat is applied in place" testGroupUpdateAsNewSupportScope
+  describe "edit window" $ do
+    it "exempt owner edits and deletes an old message" testGroupEditsExemptOwner
+    it "member edits within the window margin and update as new keeps the window" testGroupEditsMemberWindow
+    it "receiver drops an edit after 78 hours" testGroupEditReceiverLimit
+    it "receiver drops a deletion after the window of the preference" testGroupDeleteReceiverLimit
+    it "own message deletion with member ID applies the window below moderator role" testGroupDeleteOwnMemberIdWindow
+    it "sender deletes within the window margin" testGroupDeleteSenderWindow
+    it "sender edits within the custom duration" testGroupEditsCustomDuration
+    it "message editing preference is hidden and kept by profile updates" testGroupEditsPreferenceHidden
+  describe "members via another member" $ do
+    it "announce member via user and send messages as member" testViaMemberMessages
+    it "update message sent as member" testViaMemberUpdate
+    it "introduce member via user to later joiner" testViaMemberLaterJoiner
+    it "joiner of previous version creates unknown member" testViaMemberPrevVersionJoiner
+    it "host forwards messages and updates of member via another member until its invitee connects to that member" testViaMemberOtherAdmin
+    it "introduce member via another member after that member" testViaMemberIntroOrder
+    it "reply to and mention of member via user resolve to that member" testViaMemberReply
+    it "priority and edit window of messages sent as member follow member role at sender and receivers" testViaMemberRoleRules
+    it "remove member via user" testViaMemberRemove
+    it "remove member via user by another admin" testViaMemberRemoveByAdmin
+    it "refuse role above user role, member not via user, user below admin and incognito membership" testViaMemberRefused
+    it "refuse announcement against via rules and forward with another via" testViaMemberAnnounceRefused
+    it "refuse introduction against via rules" testViaMemberIntroRefused
+    it "refuse support scope, files, quotes and broadcast delete as member; moderation names member" testViaMemberSendRefused
+    it "sign messages and updates of member via user with user key" testViaMemberSigned
+    it "deliver messages sent as member unsigned to members of previous version" testViaMemberSignedPrevVersion
+    it "deliver pending messages sent as member unsigned" testViaMemberSignedPending
+    it "joiner records via and verifies signed history of removed member via another member" testViaMemberSignedHistory
+    it "refuse in channels" testViaMemberRefusedChannel
+    it "members via another member recorded for the apps" testViaMemberRecordings
+    it "down migration removes members via user and announces members via another member" testViaMemberMigrationDown
   describe "group scoped messages" $ do
     it "should send scoped messages to support (single moderator)" testScopedSupportSingleModerator
     it "should send scoped messages to support (many moderators)" testScopedSupportManyModerators
@@ -270,6 +361,7 @@ chatGroupTests = do
     it "should forward group deletion in support scope in review (x.grp.del)" testScopedSupportForwardGroupDeletion
     it "should send messages to admins and members" testSupportCLISendCommand
     it "should correctly maintain unread stats for support chats on reading chat items" testScopedSupportUnreadStatsOnRead
+    it "should correctly maintain unread stats for support chats on editing mentions" testScopedSupportUnreadStatsOnMentionEdit
     it "should correctly maintain unread stats for support chats on deleting chat items" testScopedSupportUnreadStatsOnDelete
     it "should correct member attention stat for support chat on opening it" testScopedSupportUnreadStatsCorrectOnOpen
     it "should not read support chat items when reading group without scope" testScopedSupportUnreadStatsGroupReadNoScope
@@ -289,6 +381,9 @@ chatGroupTests = do
       describe "single relay" $ do
         it "should deliver messages to members" testChannels1RelayDeliver
         it "should set notification flag of delivered messages" testChannels1RelayDeliverNotification
+        it "should deliver silent messages without notification flag" testChannels1RelayDeliverSilent
+        it "should deliver high priority messages of the owner" testChannels1RelayDeliverHighPriority
+        it "should set notification flag of the owner's raise, not of a repeated high edit" testChannels1RelayDeliverRaise
         it "should report duplicate message delivered by relay" testChannelDuplicateEvent
         describe "should deliver messages in a loop over members" $ do
           it "number of recipients is multiple of bucket size (3/1)" (testChannels1RelayDeliverLoop 1)
@@ -317,7 +412,10 @@ chatGroupTests = do
       it "should preserve owner key in link data after profile update" testChannelOwnerKeyAfterLinkUpdate
       it "should keep channel profile from link data when joining" testChannelJoinKeepsLinkProfile
       it "should apply channel profile from link data when joining" testChannelJoinAppliesLinkProfile
+      it "should apply channel profile from link data to known channel in plan" testChannelPlanAppliesLinkProfile
       it "should check entity ID of channel link on refresh" testChannelLinkDataOtherChannel
+      it "should validate type of channel link" testChannelLinkAsOtherTypes
+      it "relay link checks should skip invalid channel link data" testRelayLinkChecksInvalidData
       it "should update channel preferences (signed)" testChannelUpdatePrefsSigned
       it "should change member role (signed)" testChannelChangeRoleSigned
       it "should block member for all (signed)" testChannelBlockMemberSigned
@@ -337,6 +435,9 @@ chatGroupTests = do
       it "should not add relay when the invitation group id differs from link data" testChannelAddRelayGroupIdMismatch
       it "should ignore relay invitation without the owner's signature" testChannelRelayInvUnsigned
       it "should remove relay from channel" testChannelRemoveRelay
+#if defined(dbPostgres)
+      it "should connect to re-added relay when its connection is saved late" testChannelRemoveRelayConnSavedLate
+#endif
       it "should remove left relay from channel" testChannelRemoveLeftRelay
       describe "relay rejection" $ do
         it "relay rejects fresh invitation after leaving the same channel" testRelayRejectAfterLeave
@@ -352,6 +453,9 @@ chatGroupTests = do
         it "role transitions update the roster (mod <-> admin, admin -> non-roster)" testChannelRoleTransitionsUpdateRoster
         it "malicious relay cannot downgrade or re-key a roster-established moderator via XGrpMemNew" testChannelRelayCannotDowngradeRosterMember
         it "malicious relay cannot forge a privileged member via XGrpMemNew forwarded as the owner" testChannelRelayCannotForgePrivilegedMember
+        it "relay introduction of the subscriber's own member keeps the subscriber's profile" testChannelOwnMemberIntroKeepsProfile
+        it "owner promotion with a different member key keeps the member role" testChannelPromotionDifferentKeyKeepsRole
+        it "owner promotion pins the key of a member known without a key" testChannelPromotionPinsMemberKey
         it "should add relay to channel with roster (relay caches roster before joinable)" testChannelAddRelayWithRoster
         it "roster blob spanning multiple chunks reassembles" testChannelRosterMultipartReassembly
         it "corrupted roster blob is rejected on digest mismatch" testChannelRosterDigestMismatchRejected
@@ -361,6 +465,7 @@ chatGroupTests = do
         it "2 relays: multi-chunk roster reassembles per source (no stream interleaving)" testChannelRosterMultiRelayMultipart
     describe "channel message operations" $ do
       it "should update channel message" testChannelMessageUpdate
+      it "should update channel message as new" testChannelMessageUpdateAsNew
       it "should delete channel message" testChannelMessageDelete
       it "should delete channel message from history" testChannelMessageDeleteFromHistory
       it "should send and receive channel message file" testChannelMessageFile
@@ -1430,7 +1535,7 @@ testGroupMessageEditHistory =
 
       alice ##> ("/_update item #1 " <> aliceItemId <> " text hey there")
       alice <# "#team [edited] hey there"
-      bob <# "#team alice> [edited] hey there"
+      bob <# "#team alice> hey there"
 
       alice ##> "/item info #team hey"
       alice <##. "sent at: "
@@ -1498,7 +1603,7 @@ testGroupMessageDelete =
       bob <# "#team [edited] > alice hello!"
       bob <## "      hi alice"
       concurrently_
-        (alice <# "#team bob> [edited] hi alice")
+        (alice <# "#team bob> hi alice")
         ( do
             cath <# "#team bob> [edited] > alice hello!"
             cath <## "      hi alice"
@@ -1762,6 +1867,62 @@ testOwnerRoleChange =
                "cath (Catherine): admin, connected"
              ]
 
+testGroupMemFwdInvalidMember :: HasCallStack => TestParams -> IO ()
+testGroupMemFwdInvalidMember =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+      bobMemId <- memberIdByName alice "bob"
+      cathMemId <- memberIdByName bob "cath"
+      sendMemFwd alice "bob" bobMemId bobProfile
+      bob <## "cannot add member - duplicate member ID"
+      memberConnCount bob "bob" `shouldReturn` 0
+      sendMemFwd bob "alice" cathMemId cathProfile
+      alice <## "contact bob has insufficient permissions for this group action"
+      cath #> "#team hello"
+      concurrently_
+        (alice <# "#team cath> hello")
+        (bob <# "#team cath> hello")
+      alice ##> "/rm team cath"
+      concurrentlyN_
+        [ alice <## "#team: you removed cath from the group (signed)",
+          bob <## "#team: alice removed cath from the group (signed)",
+          do
+            cath <## "#team: alice removed you from the group (signed)"
+            cath <## "use /d #team to delete the group"
+        ]
+      sendMemFwd alice "bob" cathMemId cathProfile
+      bob <## "contact alice has insufficient permissions for this group action"
+      memberConnCount alice "cath" `shouldReturn` 0
+      memberConnCount bob "cath" `shouldReturn` 0
+  where
+    sendMemFwd cc toName memId p = do
+      let ChatController {smpAgent} = chatController cc
+      introInv <- withCCUser cc $ \user ->
+        runExceptT (createConnection smpAgent NRMInteractive (aUserId user) True False SCMInvitation Nothing Nothing IKPQOff False SMSubscribe)
+          >>= either (fail . show) (\(_, CCLink groupConnReq _) -> pure IntroInvitation {groupConnReq})
+      connId <- relayConnIdToMember cc toName
+      agentSendBody cc connId $ chatMsgToBody $ ChatMessage supportedChatVRange Nothing (XGrpMemFwd (MemberInfo memId GRMember Nothing p Nothing Nothing) introInv)
+    memberConnCount :: TestCC -> T.Text -> IO Int
+    memberConnCount cc name = do
+      [Only n] <- withCCTransaction cc $ \db ->
+        DB.query
+          db
+          "SELECT COUNT(1) FROM connections c JOIN group_members m ON m.group_member_id = c.group_member_id WHERE m.local_display_name = ? AND c.conn_status != 'deleted'"
+          (Only name)
+      pure n
+
+testGroupObserverLegacyFile :: HasCallStack => TestParams -> IO ()
+testGroupObserverLegacyFile =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      createGroup2' "team" alice (bob, GRObserver) True
+      connId <- relayConnIdToMember bob "alice"
+      let fInv = FileInvitation {fileName = "test.txt", fileSize = 1, fileDigest = Nothing, fileConnReq = Nothing, fileInline = Nothing, fileDescr = Nothing, fileBadge = Nothing}
+      agentSendBody bob connId $ chatMsgToBody $ ChatMessage chatInitialVRange Nothing (XFile fInv)
+      alice <##. "error: unsupported message: XFile"
+      alice #$> ("/_get chat #1 count=1", chat, [(0, "connected")])
+
 testGroupDescription :: HasCallStack => TestParams -> IO ()
 testGroupDescription = testChat4 aliceProfile bobProfile cathProfile danProfile $ \alice bob cath dan -> do
   connectUsers alice bob
@@ -1833,6 +1994,7 @@ testGroupDescription = testChat4 aliceProfile bobProfile cathProfile danProfile 
       alice <## "Member reports: on"
       alice <## "Recent history: on"
       alice <## "Chat with admins: on"
+      alice <## "Message priority: on for admins"
     bobAddedDan :: HasCallStack => TestCC -> IO ()
     bobAddedDan cc = do
       cc <## "#team: bob added dan (Daniel) to the group (connecting...)"
@@ -1974,36 +2136,24 @@ testGroupDelayedModeration ps = do
         [ alice <## "#team: cath joined the group",
           cath <## "#team: you joined the group"
         ]
-      threadDelay 1000000
-
-      -- imitate not implemented group forwarding
-      -- (real client wouldn't have forwarding code, but tests use "current code" with configured version,
-      -- and forwarding client doesn't check compatibility)
-      updateGroupForwardingVectors alice "bob" "cath" MRConnected
-
-      cath #> "#team hi" -- message is pending for bob
+      cath #> "#team hi"
       alice <# "#team cath> hi"
       alice ##> "\\\\ #team @cath hi"
       alice <## "message marked deleted by you"
       cath <# "#team cath> [marked deleted by alice] hi"
     withTestChatCfg ps cfg "bob" $ \bob -> do
-      bob <## "subscribed 2 connections on server localhost"
-      bob <## "#team: alice added cath (Catherine) to the group (connecting...)"
+      bob <### ["subscribed 2 connections on server localhost", "#team: alice added cath (Catherine) to the group (connecting...)"]
+      bob <# "#team cath> [marked deleted by alice] hi"
       withTestChatCfg ps cfg "cath" $ \cath -> do
-        cath <## "subscribed 3 connections on server localhost"
-        cath <## "#team: member bob (Bob) is connected"
-        bob
-          <### [ "#team: new member cath is connected",
-                 EndsWith "#team cath> [marked deleted by alice] hi"
-               ]
+        cath <### ["subscribed 3 connections on server localhost", "#team: member bob (Bob) is connected"]
+        bob <## "#team: new member cath is connected"
         alice #$> ("/_get chat #1 count=1", chat, [(0, "hi [marked deleted by you]")])
         cath #$> ("/_get chat #1 count=2", chat, [(1, "hi [marked deleted by alice]"), (0, "connected")])
         bob ##> "/_get chat #1 count=2"
         r <- chat <$> getTermLine bob
         r `shouldMatchList` [(0, "connected"), (0, "hi [marked deleted by alice]")]
   where
-    -- version before forwarding, so cath doesn't expect alice to forward messages (groupForwardVersion = 4)
-    cfg = testCfg {chatVRange = mkVersionRange (VersionChat 1) (VersionChat 3)}
+    cfg = testCfg {deliveryWorkerDelay = 3000000}
 
 testGroupDelayedModerationFullDelete :: HasCallStack => TestParams -> IO ()
 testGroupDelayedModerationFullDelete ps = do
@@ -2019,20 +2169,11 @@ testGroupDelayedModerationFullDelete ps = do
         [ alice <## "#team: cath joined the group",
           cath <## "#team: you joined the group"
         ]
-      threadDelay 1000000
-
-      -- imitate not implemented group forwarding
-      -- (real client wouldn't have forwarding code, but tests use "current code" with configured version,
-      -- and forwarding client doesn't check compatibility)
-      updateGroupForwardingVectors alice "bob" "cath" MRConnected
-
-      cath #> "#team hi" -- message is pending for bob
+      cath #> "#team hi"
       alice <# "#team cath> hi"
       alice ##> "\\\\ #team @cath hi"
       alice <## "message marked deleted by you"
       cath <# "#team cath> [marked deleted by alice] hi"
-      -- if full deletion was enabled at time of moderation, cath would delete pending message as well,
-      -- that's why we set it afterwards to test delayed moderation for bob
       alice ##> "/set delete #team on"
       alice <## "updated group preferences:"
       alice <## "Full deletion: on"
@@ -2040,26 +2181,21 @@ testGroupDelayedModerationFullDelete ps = do
       cath <## "updated group preferences:"
       cath <## "Full deletion: on"
     withTestChatCfg ps cfg "bob" $ \bob -> do
-      bob <## "subscribed 2 connections on server localhost"
-      bob <## "#team: alice added cath (Catherine) to the group (connecting...)"
+      bob <### ["subscribed 2 connections on server localhost", "#team: alice added cath (Catherine) to the group (connecting...)"]
       bob <## "alice updated group #team: (signed)"
       bob <## "updated group preferences:"
       bob <## "Full deletion: on"
+      bob <# "#team cath> moderated [deleted by alice] [>>]"
       withTestChatCfg ps cfg "cath" $ \cath -> do
-        cath <## "subscribed 3 connections on server localhost"
-        cath <## "#team: member bob (Bob) is connected"
-        bob
-          <### [ "#team: new member cath is connected",
-                 EndsWith "#team cath> moderated [deleted by alice]"
-               ]
+        cath <### ["subscribed 3 connections on server localhost", "#team: member bob (Bob) is connected"]
+        bob <## "#team: new member cath is connected"
         alice #$> ("/_get chat #1 count=2", chat, [(0, "hi [marked deleted by you]"), (1, "Full deletion: on")])
         cath #$> ("/_get chat #1 count=3", chat, [(1, "hi [marked deleted by alice]"), (0, "Full deletion: on"), (0, "connected")])
         bob ##> "/_get chat #1 count=3"
         r <- chat <$> getTermLine bob
         r `shouldMatchList` [(0, "Full deletion: on"), (0, "connected"), (0, "moderated [deleted by alice]")]
   where
-    -- version before forwarding, so cath doesn't expect alice to forward messages (groupForwardVersion = 4)
-    cfg = testCfg {chatVRange = mkVersionRange (VersionChat 1) (VersionChat 3)}
+    cfg = testCfg {deliveryWorkerDelay = 3000000}
 
 testDeleteMemberWithMessages :: HasCallStack => TestParams -> IO ()
 testDeleteMemberWithMessages =
@@ -2216,6 +2352,57 @@ testDeleteMemberMessagesLeftRemoved =
       bob #$> ("/_get chat #1 count=4", chat, [(0, "1 [marked deleted by alice]"), (0, "2 [marked deleted by alice]"), (0, "left (signed) [marked deleted by alice]"), (0, "removed dan (signed)")])
       cath #$> ("/_get chat #1 count=3", chat, [(1, "1"), (0, "2"), (1, "left (signed)")])
       dan #$> ("/_get chat #1 count=4", chat, [(0, "1"), (1, "2"), (0, "left (signed)"), (0, "removed you (signed)")])
+
+testGroupFileChunkOtherMember :: HasCallStack => TestParams -> IO ()
+testGroupFileChunkOtherMember =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+
+      -- the XFTP server is not started yet, so alice's file stays uploading while cath sends her chunks
+      alice #> "/f #team ./tests/fixtures/test.txt"
+      alice <## "use /fc 1 to cancel sending"
+      forM_ [bob, cath] $ \cc -> do
+        cc <# "#team alice> sends file test.txt (11 bytes / 11 bytes)"
+        cc <## "use /fr 1 [<dir>/ | <path>] to receive it"
+
+      -- cath, with a modified client, sends bob chunks naming alice's file over her own member connection
+      sharedMsgId <- itemSharedMsgId cath
+      GroupMember {groupId, activeConn = Just conn} <- getTestMember cath "team" "bob"
+      let cathSendsChunk chunk = do
+            runExceptT (sendDirectMemberMessage conn (BFileChunk sharedMsgId chunk) groupId) `runReaderT` chatController cath
+              >>= either (fail . show) (\_ -> pure ())
+            -- the next message on the same connection is shown only after the chunk is processed
+            cath #> "#team hi"
+            [alice, bob] *<# "#team cath> hi"
+
+      -- the cancel chunk is ignored, bob can still receive the file
+      cathSendsChunk FileChunkCancel
+      bob ##> ("/fr 1 " <> tmpDir bob)
+      bob <## ("saving file 1 from alice to " <> tmpFile bob "test.txt")
+      -- the data chunk is ignored, the file is not completed with cath's content
+      cathSendsChunk $ FileChunk 1 "cath's file"
+
+      withXFTPServer alice $ do
+        alice <## "completed uploading file 1 (test.txt) for #team"
+        bob <## "started receiving file 1 (test.txt) from alice"
+        bob <## "completed receiving file 1 (test.txt) from alice"
+      src <- B.readFile "./tests/fixtures/test.txt"
+      B.readFile (tmpFile bob "test.txt") `shouldReturn` src
+
+#if defined(dbPostgres)
+testGroupMsgErrorsTimeLimit :: HasCallStack => TestParams -> IO ()
+testGroupMsgErrorsTimeLimit =
+  testChat2 aliceProfile bobProfile $
+    \alice@TestCC {chatController = cc} bob -> do
+      createGroup2 "team" alice bob
+      connId <- relayConnIdToMember alice "bob"
+      alice ##> "/_stop"
+      alice <## "chat stopped"
+      let lockDeliveries inside = withCCTransaction alice $ \db -> DB.execute_ db "LOCK TABLE msg_deliveries" >> inside
+      r <- holdDuring lockDeliveries (timeout 1000000 $ runReaderT (runExceptT $ processAgentMessage "" connId $ MERRS (1 :| []) (INTERNAL "")) cc)
+      r `shouldSatisfy` isNothing
+#endif
 
 testSendMulti :: HasCallStack => TestParams -> IO ()
 testSendMulti =
@@ -2725,7 +2912,7 @@ testGroupAsync ps = do
       alice ##> "/g team"
       alice <## "group #team is created"
       alice <## "to add members use /a team <name> or /create link #team"
-      alice ##> "/a team bob"
+      alice ##> "/a team bob admin"
       concurrentlyN_
         [ alice <## "invitation to join the group #team sent to bob",
           do
@@ -2746,13 +2933,15 @@ testGroupAsync ps = do
       concurrentlyN_
         [ alice <## "invitation to join the group #team sent to cath",
           do
-            cath <## "#team: alice invites you to join the group as admin"
+            cath <## "#team: alice invites you to join the group as member"
             cath <## "use /j team to accept"
         ]
       cath ##> "/j team"
       concurrentlyN_
         [ alice <## "#team: cath joined the group",
-          cath <## "#team: you joined the group"
+          do
+            cath <## "#team: you joined the group"
+            cath <# "#team alice> hello bob [>>]"
         ]
       alice #> "#team hello cath"
       cath <# "#team alice> hello cath"
@@ -2760,30 +2949,30 @@ testGroupAsync ps = do
     withTestChat ps "cath" $ \cath -> do
       concurrentlyN_
         [ do
-            bob <## "subscribed 2 connections on server localhost"
-            bob <## "#team: alice added cath (Catherine) to the group (connecting...)"
+            bob <### ["subscribed 2 connections on server localhost", "#team: alice added cath (Catherine) to the group (connecting...)"]
             bob <# "#team alice> hello cath"
             bob <## "#team: new member cath is connected",
-          do
-            cath <## "subscribed 3 connections on server localhost"
-            cath <## "#team: member bob (Bob) is connected"
+          cath <### ["subscribed 3 connections on server localhost", "#team: member bob (Bob) is connected"]
         ]
   threadDelay 500000
   withTestChat ps "bob" $ \bob -> do
     withNewTestChat ps "dan" danProfile $ \dan -> do
-      bob <## "subscribed 4 connections on server localhost"
+      bob <## "subscribed 3 connections on server localhost"
       connectUsers bob dan
       bob ##> "/a team dan"
       concurrentlyN_
         [ bob <## "invitation to join the group #team sent to dan",
           do
-            dan <## "#team: bob invites you to join the group as admin"
+            dan <## "#team: bob invites you to join the group as member"
             dan <## "use /j team to accept"
         ]
       dan ##> "/j team"
       concurrentlyN_
         [ bob <## "#team: dan joined the group",
-          dan <## "#team: you joined the group"
+          do
+            dan <## "#team: you joined the group"
+            dan <# "#team alice> hello bob [>>]"
+            dan <# "#team alice> hello cath [>>]"
         ]
       threadDelay 1000000
   threadDelay 1000000
@@ -2792,17 +2981,16 @@ testGroupAsync ps = do
       withTestChat ps "dan" $ \dan -> do
         concurrentlyN_
           [ do
-              alice <## "subscribed 4 connections on server localhost"
-              alice <## "#team: bob added dan (Daniel) to the group (connecting...)"
+              alice <### ["subscribed 4 connections on server localhost", "#team: bob added dan (Daniel) to the group (connecting...)"]
               alice <## "#team: new member dan is connected",
             do
-              cath <## "subscribed 4 connections on server localhost"
-              cath <## "#team: bob added dan (Daniel) to the group (connecting...)"
+              cath <### ["subscribed 3 connections on server localhost", "#team: bob added dan (Daniel) to the group (connecting...)"]
               cath <## "#team: new member dan is connected",
-            do
-              dan <## "subscribed 5 connections on server localhost"
-              dan <## "#team: member alice (Alice) is connected"
-              dan <## "#team: member cath (Catherine) is connected"
+            dan
+              <### [ "subscribed 4 connections on server localhost",
+                     "#team: member alice (Alice) is connected",
+                     "#team: member cath (Catherine) is connected"
+                   ]
           ]
         threadDelay 1000000
   withTestChat ps "alice" $ \alice -> do
@@ -2810,10 +2998,10 @@ testGroupAsync ps = do
       withTestChat ps "cath" $ \cath -> do
         withTestChat ps "dan" $ \dan -> do
           concurrentlyN_
-            [ alice <## "subscribed 6 connections server localhost",
-              bob <## "subscribed 6 connections server localhost",
-              cath <## "subscribed 6 connections server localhost",
-              dan <## "subscribed 6 connections server localhost"
+            [ alice <## "subscribed 5 connections on server localhost",
+              bob <## "subscribed 5 connections on server localhost",
+              cath <## "subscribed 4 connections on server localhost",
+              dan <## "subscribed 4 connections on server localhost"
             ]
           alice #> "#team hello"
           concurrentlyN_
@@ -2839,9 +3027,45 @@ testGroupAsync ps = do
               bob <# "#team dan> how is it going?",
               cath <# "#team dan> how is it going?"
             ]
-          bob <##> cath
-          dan <##> cath
-          dan <##> alice
+          bob `send` "@cath hi"
+          bob
+            <### [ "member #team cath does not have direct connection, creating",
+                   "contact for member #team cath is created",
+                   "sent invitation to connect directly to member #team cath",
+                   WithTime "@cath hi"
+                 ]
+          cath
+            <### [ "#team bob requests to create direct contact with you",
+                   "to accept: /accept_member_contact @bob",
+                   "to reject: /delete @bob (the sender will NOT be notified)",
+                   WithTime "bob> hi"
+                 ]
+          dan `send` "@cath hi"
+          dan
+            <### [ "member #team cath does not have direct connection, creating",
+                   "contact for member #team cath is created",
+                   "sent invitation to connect directly to member #team cath",
+                   WithTime "@cath hi"
+                 ]
+          cath
+            <### [ "#team dan requests to create direct contact with you",
+                   "to accept: /accept_member_contact @dan",
+                   "to reject: /delete @dan (the sender will NOT be notified)",
+                   WithTime "dan> hi"
+                 ]
+          dan `send` "@alice hi"
+          dan
+            <### [ "member #team alice does not have direct connection, creating",
+                   "contact for member #team alice is created",
+                   "sent invitation to connect directly to member #team alice",
+                   WithTime "@alice hi"
+                 ]
+          alice
+            <### [ "#team dan requests to create direct contact with you",
+                   "to accept: /accept_member_contact @dan",
+                   "to reject: /delete @dan (the sender will NOT be notified)",
+                   WithTime "dan> hi"
+                 ]
 
 testGroupLinkDeleteGroupRejoin :: HasCallStack => TestParams -> IO ()
 testGroupLinkDeleteGroupRejoin =
@@ -3646,6 +3870,7 @@ testGroupLinkIgnoreRelayJoinRequest ps =
       (gShortLink, _gLink) <- getGroupLinks alice "team" GRMember True
       sendMemberJoinRequest bob gShortLink
       alice <## "warning: memberJoinRequestViaRelay (group team): ignored relay join request from bob (group does not use relays)"
+      checkPendingInvitations alice 0
       alice ##> "/ms team"
       alice <## "alice (Alice): owner, you, created group"
 
@@ -3655,7 +3880,7 @@ sendMemberJoinRequest cc groupLink =
     gLink :: ShortLinkContact <- either fail pure $ strDecode (B.pack groupLink)
     (memberKey, _) <- atomically . C.generateKeyPair =<< C.newRandom
     let joinGroup = do
-          (_, _, cReq) <- getShortLinkConnReq NRMInteractive user gLink
+          (_, _, cReq, _) <- getShortLinkConnReq NRMInteractive user gLink
           (connId, _) <- withAgent $ \a -> prepareConnectionToJoin a (aUserId user) True cReq PQSupportOff
           dm <- encodeConnInfo $ XMember bobProfile (MemberId "member") (MemberKey memberKey) Nothing
           withAgent $ \a -> joinConnection a NRMInteractive (aUserId user) connId True cReq dm PQSupportOff SMSubscribe
@@ -5647,12 +5872,14 @@ testInviteMemberViaGroupProhibited =
 testInviteMemberViaGroupPrevVersion :: HasCallStack => TestParams -> IO ()
 testInviteMemberViaGroupPrevVersion ps =
   withNewTestChat ps "alice" aliceProfile $ \alice ->
-    withNewTestChatCfg ps testCfgVPrev "bob" bobProfile $ \bob -> do
+    withNewTestChatCfg ps oldCfg "bob" bobProfile $ \bob -> do
       createGroup2 "team" alice bob
       createClub alice
       GroupMember {groupMemberId = bobId} <- getTestMember alice "team" "bob"
       alice ##> ("/_add #2 #1 " <> show bobId <> " member")
       alice <## "peer chat protocol version range incompatible"
+  where
+    oldCfg = testCfg {chatVRange = mkVersionRange (VersionChat 9) (prevVersion groupInvVersion)}
 
 createClub :: HasCallStack => TestCC -> IO ()
 createClub cc = do
@@ -5726,6 +5953,27 @@ testGroupMsgForwardOwnMembershipRejected =
       bob ##> "/p"
       bob <## "user profile: bob (Bob)"
       bob <## "use /p <name> [<bio>] to change it"
+
+testGroupMsgForwardViaRejected :: HasCallStack => TestParams -> IO ()
+testGroupMsgForwardViaRejected =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+      threadDelay 1000000
+      bobMemId <- memberIdByName alice "bob"
+      aliceMemId <- memberIdByName bob "alice"
+      aliceConnId <- relayConnIdToMember alice "bob"
+      cathConnId <- relayConnIdToMember cath "bob"
+      ts <- getCurrentTime
+      let forged sharedId = ChatMessage chatInitialVRange (Just $ SharedMsgId sharedId) (XMsgNew $ mcSimple $ MCText "forged")
+          fwdVia memId name viaId = GrpMsgForward (FwdMemberVia (MemberId memId) name viaId) ts
+      agentSendBody alice aliceConnId $ encodeBinaryBatch [encodeFwdElement (fwdVia "unknown_1" "xavier" bobMemId) (VMUnsigned $ forged "forged_msg1")]
+      alice #> "#team hello"
+      [bob, cath] *<# "#team alice> hello"
+      agentSendBody cath cathConnId $ encodeBinaryBatch [encodeFwdElement (fwdVia "unknown_2" "yvonne" aliceMemId) (VMUnsigned $ forged "forged_msg2")]
+      cath #> "#team hey"
+      [alice, bob] *<# "#team cath> hey"
+      withCCTransaction bob (\db -> DB.query_ db "SELECT count(1) FROM group_members WHERE member_via IS NOT NULL" :: IO [[Int]]) `shouldReturn` [[0]]
 
 testGroupMsgForwardBatched :: HasCallStack => TestParams -> IO ()
 testGroupMsgForwardBatched =
@@ -6048,6 +6296,837 @@ testGroupMsgForwardNotification =
       lastSndMsgFlags alice cathConnId 1 `shouldReturn` ["F"]
       lastJobNotification alice `shouldReturn` False
 
+testGroupMsgForwardSilent :: HasCallStack => TestParams -> IO ()
+testGroupMsgForwardSilent ps = do
+  (rcvItems, cfg) <- rcvItemPrioritiesCfg
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChat ps "bob" bobProfile $ \bob ->
+      withNewTestChatCfg ps cfg "cath" cathProfile $ \cath -> do
+        createGroup3 "team" alice bob cath
+        setupGroupForwarding alice bob cath
+        cath ##> "/set receipts all off"
+        cath <## "ok"
+        aliceConnId <- relayConnIdToMember bob "alice"
+        cathConnId <- relayConnIdToMember alice "cath"
+
+        bob ##> "/_send #1 json [{\"msgContent\": {\"type\": \"text\", \"text\": \"hi there\"}, \"priority\": -1}]"
+        bob <# "#team hi there"
+        alice <# "#team bob> hi there"
+        cath <# "#team bob> hi there [>>]"
+        lastSndMsgPriority bob `shouldReturn` Just (-1)
+        lastSndMsgFlags bob aliceConnId 1 `shouldReturn` ["F"]
+        lastSndMsgFlags alice cathConnId 1 `shouldReturn` ["F"]
+        lastJobNotification alice `shouldReturn` False
+        forM_ [alice, bob, cath] $ \cc ->
+          itemPriority cc "/_get chat #1 count=1" `shouldReturn` MPSilent
+        readTVarIO rcvItems `shouldReturn` [("hi there", MPSilent)]
+
+testGroupMsgForwardHighPriority :: HasCallStack => TestParams -> IO ()
+testGroupMsgForwardHighPriority ps = do
+  (raised, cfg) <- priorityRaisedCfg
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChat ps "bob" bobProfile $ \bob ->
+      withNewTestChatCfg ps cfg "cath" cathProfile $ \cath -> do
+        createGroup3 "team" alice bob cath
+        setupGroupForwarding alice bob cath
+        cath ##> "/set receipts all off"
+        cath <## "ok"
+        aliceConnId <- relayConnIdToMember bob "alice"
+        cathConnId <- relayConnIdToMember alice "cath"
+
+        bob ##> "/_send #1 json [{\"msgContent\": {\"type\": \"text\", \"text\": \"hi there\"}, \"priority\": 1}]"
+        bob <# "#team !! hi there"
+        alice <# "#team bob!!> hi there"
+        cath <# "#team bob!!> hi there [>>]"
+        lastSndMsgPriority bob `shouldReturn` Just 1
+        forM_ [alice, bob, cath] $ \cc ->
+          itemPriority cc "/_get chat #1 count=1" `shouldReturn` MPHigh
+
+        bob #> "#team hello"
+        alice <# "#team bob> hello"
+        cath <# "#team bob> hello [>>]"
+        lastSndMsgFlags alice cathConnId 1 `shouldReturn` ["T"]
+        helloId <- lastItemId bob
+        bob ##> ("/_update item #1 " <> helloId <> " json {\"msgContent\": {\"type\": \"text\", \"text\": \"hello\"}, \"mentions\": {}, \"priority\": 1}")
+        bob <# "#team !! hello"
+        alice <# "#team bob!!> hello"
+        cath <# "#team bob!!> hello"
+        lastSndEventPriority bob "x.msg.update" `shouldReturn` Just 1
+        lastSndMsgFlags bob aliceConnId 1 `shouldReturn` ["T"]
+        lastSndMsgFlags alice cathConnId 1 `shouldReturn` ["T"]
+        lastJobNotification alice `shouldReturn` True
+        forM_ [alice, bob, cath] $ \cc ->
+          itemPriority cc "/_get chat #1 count=1" `shouldReturn` MPHigh
+
+        bob ##> ("/_update item #1 " <> helloId <> " json {\"msgContent\": {\"type\": \"text\", \"text\": \"hello there\"}, \"mentions\": {}, \"priority\": 1}")
+        bob <# "#team !! [edited] hello there"
+        alice <# "#team bob!!> [edited] hello there"
+        cath <# "#team bob!!> [edited] hello there"
+        lastSndMsgFlags bob aliceConnId 1 `shouldReturn` ["F"]
+        lastSndMsgFlags alice cathConnId 1 `shouldReturn` ["F"]
+        lastJobNotification alice `shouldReturn` False
+        readTVarIO raised `shouldReturn` [("hello", True, False)]
+
+testGroupHighPriority :: HasCallStack => TestParams -> IO ()
+testGroupHighPriority =
+  testChatOpts3 testOpts {markRead = False} aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3' "team" alice (bob, GRMember) (cath, GRMember)
+      threadDelay 1000000
+      bobConnId <- relayConnIdToMember alice "bob"
+
+      alice ##> "/_send #1 json [{\"msgContent\": {\"type\": \"text\", \"text\": \"done\"}, \"priority\": 1}]"
+      alice <# "#team !! done"
+      bob <# "#team alice!!> done"
+      cath <# "#team alice!!> done"
+      lastSndMsgPriority alice `shouldReturn` Just 1
+      lastSndMsgFlags alice bobConnId 1 `shouldReturn` ["T"]
+      forM_ [alice, bob, cath] $ \cc ->
+        itemPriority cc "/_get chat #1 count=1" `shouldReturn` MPHigh
+      doneId <- lastItemId bob
+      priorityCounts bob "#1" `shouldReturn` (1, 1, 0, 1)
+      groupPreviewPriorityCounts bob `shouldReturn` [(1, 1, 0, 1)]
+
+      bob ##> "/_send #1 json [{\"msgContent\": {\"type\": \"text\", \"text\": \"ok\"}, \"priority\": 1}]"
+      bob <# "#team ok"
+      alice <# "#team bob> ok"
+      cath <# "#team bob> ok"
+      lastSndMsgPriority bob `shouldReturn` Nothing
+      forM_ [alice, bob, cath] $ \cc ->
+        itemPriority cc "/_get chat #1 count=1" `shouldReturn` MPNormal
+      priorityCounts alice "#1" `shouldReturn` (1, 0, 0, 0)
+
+      alice ##> "/_send #1 json [{\"msgContent\": {\"type\": \"text\", \"text\": \"later\"}, \"priority\": -1}]"
+      alice <# "#team later"
+      bob <# "#team alice> later"
+      cath <# "#team alice> later"
+      itemPriority bob "/_get chat #1 count=1" `shouldReturn` MPSilent
+      priorityCounts bob "#1" `shouldReturn` (2, 1, 1, 1)
+      groupPreviewPriorityCounts bob `shouldReturn` [(2, 1, 1, 1)]
+
+      bob #$> ("/_read chat items #1 " <> doneId, id, "items read for chat")
+      priorityCounts bob "#1" `shouldReturn` (1, 0, 1, 0)
+      groupPreviewPriorityCounts bob `shouldReturn` [(1, 0, 1, 0)]
+
+testGroupPriorityPreference :: HasCallStack => TestParams -> IO ()
+testGroupPriorityPreference =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3' "team" alice (bob, GRMember) (cath, GRMember)
+      threadDelay 1000000
+
+      alice ##> "/set priority #team on member"
+      alice <## "updated group preferences:"
+      alice <## "Message priority: on for members"
+      concurrentlyN_
+        [ do
+            bob <## "alice updated group #team: (signed)"
+            bob <## "updated group preferences:"
+            bob <## "Message priority: on for members",
+          do
+            cath <## "alice updated group #team: (signed)"
+            cath <## "updated group preferences:"
+            cath <## "Message priority: on for members"
+        ]
+      bob ##> "/_send #1 json [{\"msgContent\": {\"type\": \"text\", \"text\": \"done\"}, \"priority\": 1}]"
+      bob <# "#team !! done"
+      alice <# "#team bob!!> done"
+      cath <# "#team bob!!> done"
+
+      alice ##> "/set priority #team off"
+      alice <## "updated group preferences:"
+      alice <## "Message priority: off"
+      concurrentlyN_
+        [ do
+            bob <## "alice updated group #team: (signed)"
+            bob <## "updated group preferences:"
+            bob <## "Message priority: off",
+          do
+            cath <## "alice updated group #team: (signed)"
+            cath <## "updated group preferences:"
+            cath <## "Message priority: off"
+        ]
+      alice ##> "/_send #1 json [{\"msgContent\": {\"type\": \"text\", \"text\": \"done again\"}, \"priority\": 1}]"
+      alice <# "#team done again"
+      bob <# "#team alice> done again"
+      cath <# "#team alice> done again"
+      lastSndMsgPriority alice `shouldReturn` Nothing
+      alice #$> ("/_get chat #1 count=2", chat, [(0, "done"), (1, "done again")])
+      bob #$> ("/_get chat #1 count=2", chat, [(1, "done"), (0, "done again")])
+
+testGroupHighPriorityMentionsMode :: HasCallStack => TestParams -> IO ()
+testGroupHighPriorityMentionsMode =
+  testChatOpts3 testOpts {markRead = False} aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3' "team" alice (bob, GRMember) (cath, GRMember)
+      threadDelay 1000000
+      bob ##> "/_settings #1 {\"enableNtfs\":\"mentions\",\"favorite\":false}"
+      bob <## "ok"
+      bob ##> "/users"
+      bob <## "bob (Bob) (active, unread: 1)"
+
+      alice #> "#team hello"
+      bob <# "#team alice> hello <muted>"
+      cath <# "#team alice> hello"
+      alice ##> "/_send #1 json [{\"msgContent\": {\"type\": \"text\", \"text\": \"done\"}, \"priority\": 1}]"
+      alice <# "#team !! done"
+      bob <# "#team alice!!> done"
+      cath <# "#team alice!!> done"
+      alice ##> "/_send #1 json [{\"msgContent\": {\"type\": \"text\", \"text\": \"@bob check\"}, \"mentions\": {\"bob\": 2}, \"priority\": 1}]"
+      alice <# "#team !! @bob check"
+      bob <# "#team alice!!> @bob check"
+      cath <# "#team alice!!> @bob check"
+      priorityCounts bob "#1" `shouldReturn` (3, 2, 0, 2)
+      bob ##> "/users"
+      bob <## "bob (Bob) (active, unread: 3)"
+
+testGroupHighPriorityBlockedMember :: HasCallStack => TestParams -> IO ()
+testGroupHighPriorityBlockedMember =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+      threadDelay 1000000
+      bob ##> "/_member settings #1 1 {\"showMessages\": false}"
+      bob <## "ok"
+      threadDelay 1000000
+
+      alice ##> "/_send #1 json [{\"msgContent\": {\"type\": \"text\", \"text\": \"done\"}, \"priority\": 1}]"
+      alice <# "#team !! done"
+      bob <# "#team alice> done [blocked] <muted>"
+      cath <# "#team alice!!> done"
+      itemPriority bob "/_get chat #1 count=1" `shouldReturn` MPNormal
+      itemPriority cath "/_get chat #1 count=1" `shouldReturn` MPHigh
+
+testGroupRaisePriority :: HasCallStack => TestParams -> IO ()
+testGroupRaisePriority ps = do
+  (raised, cfg) <- priorityRaisedCfg
+  let opts = testOpts {markRead = False}
+  withNewTestChatOpts ps opts "alice" aliceProfile $ \alice ->
+    withNewTestChatCfgOpts ps cfg opts "bob" bobProfile $ \bob ->
+      withNewTestChatOpts ps opts "cath" cathProfile $ \cath -> do
+        createGroup3' "team" alice (bob, GRMember) (cath, GRMember)
+        threadDelay 1000000
+
+        alice #> "#team done"
+        bob <# "#team alice> done"
+        cath <# "#team alice> done"
+        doneId <- lastItemId alice
+        alice ##> ("/_update item #1 " <> doneId <> " json {\"msgContent\": {\"type\": \"text\", \"text\": \"done\"}, \"mentions\": {}, \"priority\": 1}")
+        alice <# "#team !! done"
+        bob <# "#team alice!!> done"
+        cath <# "#team alice!!> done"
+        forM_ [alice, bob, cath] $ \cc ->
+          itemPriority cc "/_get chat #1 count=1" `shouldReturn` MPHigh
+        priorityCounts bob "#1" `shouldReturn` (1, 1, 0, 1)
+        alice ##> ("/_update item #1 " <> doneId <> " json {\"msgContent\": {\"type\": \"text\", \"text\": \"done\"}, \"mentions\": {}, \"priority\": 1}")
+        alice <## "message didn't change"
+
+        alice ##> "/_send #1 json [{\"msgContent\": {\"type\": \"text\", \"text\": \"@bob check\"}, \"mentions\": {\"bob\": 2}}]"
+        alice <# "#team @bob check"
+        bob <# "#team alice!> @bob check"
+        cath <# "#team alice> @bob check"
+        checkId <- lastItemId alice
+        alice ##> ("/_update item #1 " <> checkId <> " json {\"msgContent\": {\"type\": \"text\", \"text\": \"@bob check\"}, \"mentions\": {\"bob\": 2}, \"priority\": 1}")
+        alice <# "#team !! @bob check"
+        bob <# "#team alice!!> @bob check"
+        cath <# "#team alice!!> @bob check"
+        priorityCounts bob "#1" `shouldReturn` (2, 2, 0, 2)
+
+        alice ##> "/_send #1 json [{\"msgContent\": {\"type\": \"text\", \"text\": \"working\"}, \"priority\": -1}]"
+        alice <# "#team working"
+        bob <# "#team alice> working"
+        cath <# "#team alice> working"
+        priorityCounts bob "#1" `shouldReturn` (3, 2, 1, 2)
+        workingId <- lastItemId alice
+        alice ##> ("/_update item #1 " <> workingId <> " json {\"msgContent\": {\"type\": \"text\", \"text\": \"finished\"}, \"mentions\": {}, \"priority\": 1}")
+        alice <# "#team !! [edited] finished"
+        bob <# "#team alice!!> [edited] finished"
+        cath <# "#team alice!!> [edited] finished"
+        priorityCounts bob "#1" `shouldReturn` (3, 3, 0, 3)
+
+        bob #$> ("/_read chat #1", id, "ok")
+        alice #> "#team later"
+        bob <# "#team alice> later"
+        cath <# "#team alice> later"
+        laterId <- lastItemId alice
+        bobLaterId <- lastItemId bob
+        bob #$> ("/_read chat items #1 " <> bobLaterId, id, "items read for chat")
+        alice ##> ("/_update item #1 " <> laterId <> " json {\"msgContent\": {\"type\": \"text\", \"text\": \"later\"}, \"mentions\": {}, \"priority\": 1}")
+        alice <# "#team !! later"
+        bob <# "#team alice!!> later"
+        cath <# "#team alice!!> later"
+        itemPriority bob "/_get chat #1 count=1" `shouldReturn` MPHigh
+        priorityCounts bob "#1" `shouldReturn` (0, 0, 0, 0)
+        readTVarIO raised `shouldReturn` [("done", True, False), ("@bob check", False, False), ("finished", True, True), ("later", True, False)]
+
+testGroupRaisePriorityLive :: HasCallStack => TestParams -> IO ()
+testGroupRaisePriorityLive =
+  testChat3 aliceProfile bobProfile cathProfile $ \alice bob cath -> do
+    createGroup3 "team" alice bob cath
+    threadDelay 500000
+    alice `send` "/live #team hello"
+    msgItemId <- lastItemId alice
+    bob <#. "#team alice> [LIVE started]"
+    cath <#. "#team alice> [LIVE started]"
+    alice ##> ("/_update item #1 " <> msgItemId <> " json {\"msgContent\": {\"type\": \"text\", \"text\": \"hello there\"}, \"mentions\": {}, \"priority\": 1}")
+    alice <# "#team !! [LIVE] hello there"
+    bob <# "#team alice!!> [LIVE ended] hello there"
+    cath <# "#team alice!!> [LIVE ended] hello there"
+    forM_ [alice, bob, cath] $ \cc ->
+      itemPriority cc "/_get chat #1 count=1" `shouldReturn` MPHigh
+    alice ##> ("/_update item #1 " <> msgItemId <> " json {\"msgContent\": {\"type\": \"text\", \"text\": \"hello there!\"}, \"mentions\": {}, \"priority\": 1}")
+    alice <# "#team !! [edited] hello there!"
+    bob <# "#team alice!!> [edited] hello there!"
+    cath <# "#team alice!!> [edited] hello there!"
+    forM_ [alice, bob, cath] $ \cc ->
+      itemPriority cc "/_get chat #1 count=1" `shouldReturn` MPHigh
+
+testGroupRaisePriorityIgnored :: HasCallStack => TestParams -> IO ()
+testGroupRaisePriorityIgnored =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3' "team" alice (bob, GRMember) (cath, GRMember)
+      threadDelay 1000000
+
+      bob #> "#team hi"
+      alice <# "#team bob> hi"
+      cath <# "#team bob> hi"
+      hiId <- lastItemId bob
+      bob ##> ("/_update item #1 " <> hiId <> " json {\"msgContent\": {\"type\": \"text\", \"text\": \"hi\"}, \"mentions\": {}, \"priority\": 1}")
+      bob <## "message didn't change"
+      bob ##> ("/_update item #1 " <> hiId <> " json {\"msgContent\": {\"type\": \"text\", \"text\": \"hi there\"}, \"mentions\": {}, \"priority\": 1}")
+      bob <# "#team [edited] hi there"
+      alice <# "#team bob> [edited] hi there"
+      cath <# "#team bob> [edited] hi there"
+      lastSndEventPriority bob "x.msg.update" `shouldReturn` Nothing
+      forM_ [alice, bob, cath] $ \cc ->
+        itemPriority cc "/_get chat #1 count=1" `shouldReturn` MPNormal
+
+testGroupSupportChatPriority :: HasCallStack => TestParams -> IO ()
+testGroupSupportChatPriority =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3' "team" alice (bob, GRMember) (cath, GRMember)
+      threadDelay 1000000
+
+      bob ##> "/_send #1(_support) text help"
+      bob <# "#team (support) help"
+      alice <# "#team (support: bob) bob> help"
+      alice ##> "/_send #1(_support:2) json [{\"msgContent\": {\"type\": \"text\", \"text\": \"hello\"}, \"priority\": 1}]"
+      alice <# "#team (support: bob) !! hello"
+      bob <# "#team (support) alice!!> hello"
+      helloId <- lastItemId alice
+      alice ##> ("/_update item #1(_support:2) " <> helloId <> " json {\"msgContent\": {\"type\": \"text\", \"text\": \"hello there\"}, \"mentions\": {}, \"priority\": 1}")
+      alice <# "#team (support: bob) !! [edited] hello there"
+      bob <# "#team (support) alice!!> [edited] hello there"
+      alice ##> "/_send #1(_support:2) text later"
+      alice <# "#team (support: bob) later"
+      bob <# "#team (support) alice> later"
+      laterId <- lastItemId alice
+      alice ##> ("/_update item #1(_support:2) " <> laterId <> " json {\"msgContent\": {\"type\": \"text\", \"text\": \"later\"}, \"mentions\": {}, \"priority\": 1}")
+      alice <# "#team (support: bob) !! later"
+      bob <# "#team (support) alice!!> later"
+
+testGroupUpdatePriorityDeletedItem :: HasCallStack => TestParams -> IO ()
+testGroupUpdatePriorityDeletedItem =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+      threadDelay 1000000
+
+      alice ##> "/_send #1 json [{\"msgContent\": {\"type\": \"text\", \"text\": \"working\"}, \"priority\": -1}]"
+      alice <# "#team working"
+      bob <# "#team alice> working"
+      cath <# "#team alice> working"
+      workingId <- lastItemId alice
+      cathWorkingId <- lastItemId cath
+      cath #$> ("/_delete item #1 " <> cathWorkingId <> " internal", id, "message deleted")
+      alice ##> ("/_update item #1 " <> workingId <> " json {\"msgContent\": {\"type\": \"text\", \"text\": \"still working\"}, \"mentions\": {}, \"priority\": -1}")
+      alice <# "#team [edited] still working"
+      bob <# "#team alice> [edited] still working"
+      cath <# "#team alice> still working"
+      lastSndEventPriority alice "x.msg.update" `shouldReturn` Just (-1)
+      forM_ [alice, bob, cath] $ \cc ->
+        itemPriority cc "/_get chat #1 count=1" `shouldReturn` MPSilent
+
+      alice #> "#team done"
+      bob <# "#team alice> done"
+      cath <# "#team alice> done"
+      doneId <- lastItemId alice
+      cathDoneId <- lastItemId cath
+      cath #$> ("/_delete item #1 " <> cathDoneId <> " internal", id, "message deleted")
+      alice ##> ("/_update item #1 " <> doneId <> " json {\"msgContent\": {\"type\": \"text\", \"text\": \"done\"}, \"mentions\": {}, \"priority\": 1}")
+      alice <# "#team !! done"
+      bob <# "#team alice!!> done"
+      cath <# "#team alice!!> done"
+      itemPriority cath "/_get chat #1 count=1" `shouldReturn` MPHigh
+
+      cathDoneId2 <- lastItemId cath
+      cath #$> ("/_delete item #1 " <> cathDoneId2 <> " internalMark", id, "message marked deleted")
+      alice ##> ("/_update item #1 " <> doneId <> " json {\"msgContent\": {\"type\": \"text\", \"text\": \"done!\"}, \"mentions\": {}, \"priority\": 1}")
+      alice <# "#team !! [edited] done!"
+      bob <# "#team alice!!> [edited] done!"
+      cath <# "#team alice!!> [edited] done!"
+      itemPriority cath "/_get chat #1 count=1" `shouldReturn` MPHigh
+
+testGroupUpdateWithoutPriority :: HasCallStack => TestParams -> IO ()
+testGroupUpdateWithoutPriority ps = do
+  (raised, cfg) <- priorityRaisedCfg
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatCfgOpts ps cfg testOpts {markRead = False} "bob" bobProfile $ \bob -> do
+      createGroup2 "team" alice bob
+      threadDelay 1000000
+
+      alice ##> "/_send #1 json [{\"msgContent\": {\"type\": \"text\", \"text\": \"done\"}, \"priority\": 1}]"
+      alice <# "#team !! done"
+      bob <# "#team alice!!> done"
+      doneId <- lastItemId alice
+      alice ##> ("/_update item #1 " <> doneId <> " text done!")
+      alice <# "#team [edited] done!"
+      bob <# "#team alice> [edited] done!"
+      priorityCounts bob "#1" `shouldReturn` (1, 0, 0, 0)
+      alice ##> ("/_update item #1 " <> doneId <> " json {\"msgContent\": {\"type\": \"text\", \"text\": \"done!\"}, \"mentions\": {}, \"priority\": 1}")
+      alice <# "#team !! [edited] done!"
+      bob <# "#team alice!!> [edited] done!"
+      readTVarIO raised `shouldReturn` [("done!", True, False)]
+
+testGroupMsgForwardAcceptedPriority :: HasCallStack => TestParams -> IO ()
+testGroupMsgForwardAcceptedPriority =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3' "team" alice (bob, GRMember) (cath, GRMember)
+      setupGroupForwarding alice bob cath
+      cath ##> "/set receipts all off"
+      cath <## "ok"
+      aliceConnId <- relayConnIdToMember bob "alice"
+      cathConnId <- relayConnIdToMember alice "cath"
+
+      bob #> "#team hi"
+      alice <# "#team bob> hi"
+      cath <# "#team bob> hi [>>]"
+      hiId <- itemSharedMsgId bob
+      let sendHighUpdate t =
+            agentSendBody bob aliceConnId . LB.toStrict . J.encode $
+              J.object
+                [ "v" J..= ChatVersionRange supportedChatVRange,
+                  "event" J..= ("x.msg.update" :: T.Text),
+                  "params" J..= J.object ["msgId" J..= hiId, "content" J..= MCText t, "priority" J..= (1 :: Int)]
+                ]
+      sendHighUpdate "hi"
+      bob #> "#team hello"
+      alice <# "#team bob> hello"
+      cath <# "#team bob> hello [>>]"
+      sendHighUpdate "hi there"
+      alice <# "#team bob> [edited] hi there"
+      cath <# "#team bob> [edited] hi there"
+      lastSndMsgFlags alice cathConnId 1 `shouldReturn` ["F"]
+
+testGroupPriorityRecordings :: HasCallStack => TestParams -> IO ()
+testGroupPriorityRecordings ps = do
+  events <- newTVarIO []
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatCfgOpts ps testCfg {chatHooks = defaultChatHooks {eventHook = Just $ \_ evt -> evt <$ recordItemEvent events evt}} testOpts {markRead = False} "bob" bobProfile $ \bob -> do
+      createGroup2 "team" alice bob
+      threadDelay 1000000
+      bob ##> "/_create tag {\"text\":\"work\"}"
+      bob <## "[{\"chatTagId\":1,\"chatTagText\":\"work\"}]"
+      bob ##> "/_tags #1 1"
+      bob <## "chat tags updated"
+      eventsFixture "priority/silent" events $ do
+        sendWithPriority alice "working" (-1)
+        alice <# "#team working"
+        bob <# "#team alice> working"
+        sendWithPriority alice "testing" (-1)
+        alice <# "#team testing"
+        bob <# "#team alice> testing"
+      apiFixture "priority/chats-silent" bob [] FixtureRequests {frMarkdown = [], frUris = [], frCommands = ["/_get chats 1 pcc=on", "/users"]}
+      eventsFixture "priority/high" events $ do
+        alice #> "#team hello"
+        bob <# "#team alice> hello"
+        sendWithPriority alice "done" 1
+        alice <# "#team !! done"
+        bob <# "#team alice!!> done"
+      eventsFixture "priority/raise" events $ do
+        alice #> "#team almost there"
+        bob <# "#team alice> almost there"
+        almostId <- lastItemId alice
+        raise alice almostId "almost there"
+        alice <# "#team !! almost there"
+        bob <# "#team alice!!> almost there"
+        sendWithPriority alice "compiling" (-1)
+        alice <# "#team compiling"
+        bob <# "#team alice> compiling"
+        compilingId <- lastItemId alice
+        raise alice compilingId "compiled"
+        alice <# "#team !! [edited] compiled"
+        bob <# "#team alice!!> [edited] compiled"
+      eventsFixture "priority/lower" events $ do
+        sendWithPriority alice "answer" 1
+        alice <# "#team !! answer"
+        bob <# "#team alice!!> answer"
+        answerId <- lastItemId alice
+        alice ##> ("/_update item #1 " <> answerId <> " text answer!")
+        alice <# "#team [edited] answer!"
+        bob <# "#team alice> [edited] answer!"
+        sendWithPriority alice "alert" 1
+        alice <# "#team !! alert"
+        bob <# "#team alice!!> alert"
+        alertId <- lastItemId alice
+        alice ##> ("/_update item #1 " <> alertId <> " json {\"msgContent\": {\"type\": \"text\", \"text\": \"alert\"}, \"mentions\": {}, \"priority\": -1}")
+        alice <# "#team alert"
+        bob <# "#team alice> alert"
+  where
+    sendWithPriority cc t p = cc ##> ("/_send #1 json [{\"msgContent\": {\"type\": \"text\", \"text\": \"" <> t <> "\"}, \"priority\": " <> show (p :: Int) <> "}]")
+    raise cc ciId t = cc ##> ("/_update item #1 " <> ciId <> " json {\"msgContent\": {\"type\": \"text\", \"text\": \"" <> t <> "\"}, \"mentions\": {}, \"priority\": 1}")
+
+testGroupUpdateTerminalNotification :: HasCallStack => TestParams -> IO ()
+testGroupUpdateTerminalNotification ps = do
+  updates <- newTVarIO []
+  let hook _ evt = do
+        case evt of
+          Right e@CEvtChatItemUpdated {} -> atomically $ modifyTVar' updates (<> [e])
+          _ -> pure ()
+        pure evt
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatCfg ps testCfg {chatHooks = defaultChatHooks {eventHook = Just hook}} "bob" bobProfile $ \bob -> do
+      createGroup2 "team" alice bob
+      threadDelay 1000000
+      alice #> "#team hi"
+      bob <# "#team alice> hi"
+      hiId <- lastItemId alice
+      alice ##> ("/_update item #1 " <> hiId <> " text hi there")
+      alice <# "#team [edited] hi there"
+      bob <# "#team alice> [edited] hi there"
+      alice ##> ("/_update item #1 " <> hiId <> " json {\"msgContent\": {\"type\": \"text\", \"text\": \"hi there\"}, \"mentions\": {}, \"priority\": 1}")
+      alice <# "#team !! [edited] hi there"
+      bob <# "#team alice!!> [edited] hi there"
+      threadDelay 1000000
+      alice ##> ("/_update item #1 " <> hiId <> " as_new=on text hi again")
+      alice <# "#team [edited] hi again"
+      bob <# "#team alice> [edited] hi again"
+      notified <- newTVarIO []
+      let ct = (chatTerminal bob) {sendNotification = Just $ \(Notification _ t) -> atomically $ modifyTVar' notified (<> [t])}
+      mapM_ (chatEventNotification ct $ chatController bob) =<< readTVarIO updates
+      readTVarIO notified `shouldReturn` ["hi there", "hi again"]
+
+testGroupUpdateAsNew :: HasCallStack => TestParams -> IO ()
+testGroupUpdateAsNew = testUpdateAsNewRecorded "updates/group-as-new" 0
+
+testGroupUpdateAsNewSilent :: HasCallStack => TestParams -> IO ()
+testGroupUpdateAsNewSilent = testUpdateAsNewRecorded "updates/group-as-new-silent" (-1)
+
+testUpdateAsNewRecorded :: HasCallStack => String -> Int -> TestParams -> IO ()
+testUpdateAsNewRecorded fixture sentPriority ps = do
+  events <- newTVarIO []
+  withNewTestChatCfgOpts ps testCfg {chatHooks = defaultChatHooks {eventHook = Just $ \_ evt -> evt <$ recordItemEvent events evt}} testOpts {markRead = False} "alice" aliceProfile $ \alice ->
+    withNewTestChat ps "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath -> do
+        createGroup3 "team" alice bob cath
+        threadDelay 1000000
+        eventsFixture fixture events $ do
+          bob #> "#team status"
+          [alice, cath] *<# "#team bob> status"
+          statusId <- lastItemId bob
+          aliceStatusId <- lastItemId alice
+          alice #$> ("/_read chat items #1 " <> aliceStatusId, id, "items read for chat")
+          cath #> "#team hi"
+          [alice, bob] *<# "#team cath> hi"
+          bob ##> ("/_update item #1 " <> statusId <> " as_new=on json {\"msgContent\": {\"type\": \"text\", \"text\": \"status 2\"}, \"mentions\": {}, \"priority\": " <> show sentPriority <> "}")
+          bob <# "#team [edited] status 2"
+          [alice, cath] *<# "#team bob> [edited] status 2"
+        alice #$> ("/_get chat #1 count=2", chat, [(0, "hi"), (0, "status 2")])
+        bob #$> ("/_get chat #1 count=2", chat, [(0, "hi"), (1, "status 2")])
+        cath #$> ("/_get chat #1 count=2", chat, [(1, "hi"), (0, "status 2")])
+        withCCTransaction alice (\db -> DB.query db "SELECT item_status, item_priority FROM chat_items WHERE item_text = ?" (Only ("status 2" :: String)))
+          `shouldReturn` [("rcv_new" :: String, sentPriority)]
+
+testGroupUpdateAsNewHighPriority :: HasCallStack => TestParams -> IO ()
+testGroupUpdateAsNewHighPriority =
+  testChatOpts3 testOpts {markRead = False} aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3' "team" alice (bob, GRMember) (cath, GRMember)
+      threadDelay 1000000
+      alice #> "#team done"
+      [bob, cath] *<# "#team alice> done"
+      doneId <- lastItemId alice
+      bob #> "#team hi"
+      [alice, cath] *<# "#team bob> hi"
+      alice ##> ("/_update item #1 " <> doneId <> " as_new=on json {\"msgContent\": {\"type\": \"text\", \"text\": \"done\"}, \"mentions\": {}, \"priority\": 1}")
+      alice <# "#team !! done"
+      [bob, cath] *<# "#team alice!!> done"
+      forM_ [alice, bob, cath] $ \cc ->
+        itemPriority cc "/_get chat #1 count=1" `shouldReturn` MPHigh
+      priorityCounts cath "#1" `shouldReturn` (2, 1, 0, 1)
+      threadDelay 1000000
+      cath #> "#team ok"
+      [alice, bob] *<# "#team cath> ok"
+      okId <- lastItemId cath
+      bob #> "#team later"
+      [alice, cath] *<# "#team bob> later"
+      cath ##> ("/_update item #1 " <> okId <> " as_new=on json {\"msgContent\": {\"type\": \"text\", \"text\": \"ok\"}, \"mentions\": {}, \"priority\": 1}")
+      cath <# "#team ok"
+      [alice, bob] *<# "#team cath> ok"
+      forM_ [alice, bob, cath] $ \cc ->
+        itemPriority cc "/_get chat #1 count=1" `shouldReturn` MPNormal
+
+testGroupUpdateAsNewBlockedMember :: HasCallStack => TestParams -> IO ()
+testGroupUpdateAsNewBlockedMember =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+      threadDelay 1000000
+      [Only bobMemberId] <- withCCTransaction cath $ \db ->
+        DB.query db "SELECT group_member_id FROM group_members WHERE local_display_name = ?" (Only ("bob" :: String))
+      cath ##> ("/_member settings #1 " <> show (bobMemberId :: Int64) <> " {\"showMessages\": false}")
+      cath <## "ok"
+      threadDelay 1000000
+      bob #> "#team status"
+      alice <# "#team bob> status"
+      cath <#. "#team bob> status"
+      statusId <- lastItemId bob
+      alice #> "#team hi"
+      [bob, cath] *<# "#team alice> hi"
+      bob ##> ("/_update item #1 " <> statusId <> " as_new=on text status 2")
+      bob <# "#team [edited] status 2"
+      alice <# "#team bob> [edited] status 2"
+      cath <#. "#team bob> [edited] status 2"
+      alice #$> ("/_get chat #1 count=1", chat, [(0, "status 2")])
+      cath #$> ("/_get chat #1 count=1", chat, [(0, "hi")])
+
+testGroupMsgForwardUpdateAsNew :: HasCallStack => TestParams -> IO ()
+testGroupMsgForwardUpdateAsNew =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+      setupGroupForwarding alice bob cath
+      cath ##> "/set receipts all off"
+      cath <## "ok"
+      aliceConnId <- relayConnIdToMember bob "alice"
+      cathConnId <- relayConnIdToMember alice "cath"
+      bob #> "#team status"
+      alice <# "#team bob> status"
+      cath <# "#team bob> status [>>]"
+      statusId <- lastItemId bob
+      bob ##> ("/_update item #1 " <> statusId <> " as_new=on text status")
+      bob <# "#team status"
+      alice <# "#team bob> status"
+      cath <# "#team bob> status"
+      lastSndMsgFlags bob aliceConnId 1 `shouldReturn` ["T"]
+      lastSndMsgFlags alice cathConnId 1 `shouldReturn` ["T"]
+      threadDelay 1000000
+      bob ##> ("/_update item #1 " <> statusId <> " as_new=on json {\"msgContent\": {\"type\": \"text\", \"text\": \"status\"}, \"mentions\": {}, \"priority\": -1}")
+      bob <# "#team status"
+      alice <# "#team bob> status"
+      cath <# "#team bob> status"
+      lastSndMsgFlags bob aliceConnId 1 `shouldReturn` ["F"]
+      lastSndMsgFlags alice cathConnId 1 `shouldReturn` ["F"]
+
+testGroupUpdateAsNewReceiverWindow :: HasCallStack => TestParams -> IO ()
+testGroupUpdateAsNewReceiverWindow =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3' "team" alice (bob, GRMember) (cath, GRMember)
+      threadDelay 1000000
+      bob #> "#team status"
+      [alice, cath] *<# "#team bob> status"
+      statusId <- lastItemId bob
+      cathStatusId <- lastItemId cath
+      bob ##> ("/_update item #1 " <> statusId <> " as_new=on text status 2")
+      bob <# "#team [edited] status 2"
+      [alice, cath] *<# "#team bob> [edited] status 2"
+      sentTs <- addUTCTime (-79 * 3600) <$> getCurrentTime
+      withCCTransaction cath $ \db ->
+        DB.execute db "UPDATE chat_items SET item_original_ts = ? WHERE chat_item_id = ?" (sentTs, read cathStatusId :: Int64)
+      bob ##> ("/_update item #1 " <> statusId <> " text status 3")
+      bob <# "#team [edited] status 3"
+      alice <# "#team bob> [edited] status 3"
+      cath <## "error: x.msg.update: edit too late"
+      getItemText cath cathStatusId `shouldReturn` "status 2"
+
+testGroupUpdateAsNewSupportScope :: HasCallStack => TestParams -> IO ()
+testGroupUpdateAsNewSupportScope =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      createGroup2' "team" alice (bob, GRMember) True
+      threadDelay 1000000
+      bob ##> "/_send #1(_support) text help"
+      bob <# "#team (support) help"
+      alice <# "#team (support: bob) bob> help"
+      helpId <- lastItemId bob
+      helpSharedId <- itemSharedMsgId bob
+      alice ##> "/_send #1(_support:2) text hi"
+      alice <# "#team (support: bob) hi"
+      bob <# "#team (support) alice> hi"
+      threadDelay 1000000
+      bob ##> ("/_update item #1(_support) " <> helpId <> " as_new=on text help 2")
+      bob <# "#team (support) [edited] help 2"
+      alice <# "#team (support: bob) bob> [edited] help 2"
+      bob #$> ("/_get chat #1(_support) count=2", chat, [(1, "help 2"), (0, "hi")])
+      aliceConnId <- relayConnIdToMember bob "alice"
+      agentSendBody bob aliceConnId $ chatMsgToBody $ ChatMessage supportedChatVRange Nothing $
+        XMsgUpdate helpSharedId (MCText "help 3") M.empty Nothing Nothing Nothing Nothing MPNormal (Just True)
+      alice <# "#team (support: bob) bob> [edited] help 3"
+      alice #$> ("/_get chat #1(_support:2) count=2", chat, [(0, "help 3"), (1, "hi")])
+
+testGroupEditsExemptOwner :: HasCallStack => TestParams -> IO ()
+testGroupEditsExemptOwner =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+      threadDelay 1000000
+      setGroupEdits alice "{\"enable\": \"on\", \"role\": \"owner\"}"
+      alice #> "#team hello"
+      [bob, cath] *<# "#team alice> hello"
+      helloIds@(helloId : _) <- mapM lastItemId [alice, bob, cath]
+      forM_ (zip [alice, bob, cath] helloIds) $ \(cc, i) -> setItemAge cc i (100 * 3600)
+      alice ##> ("/_update item #1 " <> helloId <> " text hello there")
+      alice <# "#team [edited] hello there"
+      [bob, cath] *<# "#team alice> [edited] hello there"
+      alice #$> ("/_delete item #1 " <> helloId <> " broadcast", id, "message marked deleted")
+      [bob, cath] *<# "#team alice> [marked deleted] hello there"
+
+testGroupEditsMemberWindow :: HasCallStack => TestParams -> IO ()
+testGroupEditsMemberWindow =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3' "team" alice (bob, GRMember) (cath, GRMember)
+      threadDelay 1000000
+      bob #> "#team hello"
+      [alice, cath] *<# "#team bob> hello"
+      helloId <- lastItemId bob
+      setItemAge bob helloId (25 * 3600)
+      bob ##> ("/_update item #1 " <> helloId <> " as_new=on text hello there")
+      bob <# "#team [edited] hello there"
+      [alice, cath] *<# "#team bob> [edited] hello there"
+      sentTs <- addUTCTime (-31 * 3600) <$> getCurrentTime
+      withCCTransaction bob $ \db ->
+        DB.execute db "UPDATE chat_items SET created_at = ? WHERE chat_item_id = ?" (sentTs, read helloId :: Int64)
+      bob ##> ("/_update item #1 " <> helloId <> " text hello again")
+      bob <## "cannot update this item"
+
+testGroupEditReceiverLimit :: HasCallStack => TestParams -> IO ()
+testGroupEditReceiverLimit =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3' "team" alice (bob, GRMember) (cath, GRMember)
+      threadDelay 1000000
+      bob #> "#team hello"
+      [alice, cath] *<# "#team bob> hello"
+      helloId <- lastItemId bob
+      cathHelloId <- lastItemId cath
+      setItemAge cath cathHelloId (79 * 3600)
+      bob ##> ("/_update item #1 " <> helloId <> " text hello there")
+      bob <# "#team [edited] hello there"
+      alice <# "#team bob> [edited] hello there"
+      cath <## "error: x.msg.update: edit too late"
+      getItemText cath cathHelloId `shouldReturn` "hello"
+
+testGroupDeleteReceiverLimit :: HasCallStack => TestParams -> IO ()
+testGroupDeleteReceiverLimit =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3' "team" alice (bob, GRMember) (cath, GRMember)
+      threadDelay 1000000
+      setGroupEdits alice "{\"enable\": \"off\", \"duration\": 3600}"
+      bob #> "#team hello"
+      [alice, cath] *<# "#team bob> hello"
+      helloId <- lastItemId bob
+      cathHelloId <- lastItemId cath
+      setItemAge cath cathHelloId (56 * 3600)
+      bob #$> ("/_delete item #1 " <> helloId <> " broadcast", id, "message marked deleted")
+      alice <# "#team bob> [marked deleted] hello"
+      cath <## "error: x.msg.del: member attempted invalid message delete"
+      itemDeletedFlag cath cathHelloId `shouldReturn` 0
+
+testGroupDeleteOwnMemberIdWindow :: HasCallStack => TestParams -> IO ()
+testGroupDeleteOwnMemberIdWindow =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3' "team" alice (bob, GRModerator) (cath, GRMember)
+      threadDelay 1000000
+      bob #> "#team hello"
+      [alice, cath] *<# "#team bob> hello"
+      helloId <- lastItemId bob
+      aliceHelloId <- lastItemId alice
+      cathHelloId <- lastItemId cath
+      setItemAge alice aliceHelloId (79 * 3600)
+      setItemAge cath cathHelloId (79 * 3600)
+      withCCTransaction cath $ \db ->
+        DB.execute db "UPDATE group_members SET member_role = ? WHERE local_display_name = ?" ("member" :: String, "bob" :: String)
+      bob ##> ("/_delete member item #1 " <> helloId)
+      bob <## "message marked deleted by you"
+      alice <# "#team bob> [marked deleted by bob] hello"
+      cath <## "error: x.msg.del: member attempted invalid message delete"
+      itemDeletedFlag cath cathHelloId `shouldReturn` 0
+
+testGroupDeleteSenderWindow :: HasCallStack => TestParams -> IO ()
+testGroupDeleteSenderWindow =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3' "team" alice (bob, GRMember) (cath, GRMember)
+      threadDelay 1000000
+      bob #> "#team hello"
+      [alice, cath] *<# "#team bob> hello"
+      helloId <- lastItemId bob
+      setItemAge bob helloId (31 * 3600)
+      bob ##> ("/_delete item #1 " <> helloId <> " broadcast")
+      bob <## "cannot delete this item"
+      setItemAge bob helloId (29 * 3600)
+      bob #$> ("/_delete item #1 " <> helloId <> " broadcast", id, "message marked deleted")
+      [alice, cath] *<# "#team bob> [marked deleted] hello"
+
+testGroupEditsCustomDuration :: HasCallStack => TestParams -> IO ()
+testGroupEditsCustomDuration =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3' "team" alice (bob, GRMember) (cath, GRMember)
+      threadDelay 1000000
+      setGroupEdits alice "{\"enable\": \"off\", \"duration\": 3600}"
+      bob #> "#team hello"
+      [alice, cath] *<# "#team bob> hello"
+      helloId <- lastItemId bob
+      setItemAge bob helloId (8 * 3600)
+      bob ##> ("/_update item #1 " <> helloId <> " text hello there")
+      bob <## "cannot update this item"
+
+testGroupEditsPreferenceHidden :: HasCallStack => TestParams -> IO ()
+testGroupEditsPreferenceHidden =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      createGroup2 "team" alice bob
+      threadDelay 1000000
+      setGroupEdits alice "{\"enable\": \"on\", \"role\": \"owner\"}"
+      alice #$> ("/_get chat #1 count=100", chat, sndGroupFeatures <> [(0, "connected")])
+      bob #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected")])
+      let ownersExempt = EditsGroupPreference {enable = FEOn, role = Just GROwner, duration = Nothing}
+      groupEditsPref bob `shouldReturn` ownersExempt
+      alice ##> "/_group_profile #1 {\"displayName\": \"team\", \"fullName\": \"\", \"groupPreferences\": {\"directMessages\": {\"enable\": \"on\"}, \"history\": {\"enable\": \"on\"}, \"voice\": {\"enable\": \"off\"}}}"
+      alice <## "updated group preferences:"
+      alice <## "Voice messages: off"
+      bob <## "alice updated group #team: (signed)"
+      bob <## "updated group preferences:"
+      bob <## "Voice messages: off"
+      forM_ [alice, bob] $ \cc -> groupEditsPref cc `shouldReturn` ownersExempt
+
+setGroupEdits :: HasCallStack => TestCC -> String -> IO ()
+setGroupEdits cc editsPref = do
+  cc ##> ("/_group_profile #1 {\"displayName\": \"team\", \"fullName\": \"\", \"groupPreferences\": {\"directMessages\": {\"enable\": \"on\"}, \"history\": {\"enable\": \"on\"}, \"edits\": " <> editsPref <> "}}")
+  threadDelay 1000000
+
+groupEditsPref :: TestCC -> IO EditsGroupPreference
+groupEditsPref TestCC {chatController = cc} = do
+  r <- sendChatCmdStr cc "/_get chat #1 count=1"
+  case r of
+    Right (CRApiChat _ (AChat _ Chat {chatInfo}) _)
+      | JCInfoGroup GroupInfo {fullGroupPreferences = FullGroupPreferences {edits}} _ <- jsonChatInfo chatInfo -> pure edits
+    _ -> fail $ show r
+
+itemDeletedFlag :: TestCC -> String -> IO Int
+itemDeletedFlag cc i = do
+  [Only d] <- withCCTransaction cc $ \db ->
+    DB.query db "SELECT item_deleted FROM chat_items WHERE chat_item_id = ?" (Only (read i :: Int64))
+  pure d
+
 testGroupMsgForwardReaction :: HasCallStack => TestParams -> IO ()
 testGroupMsgForwardReaction =
   testChat3 aliceProfile bobProfile cathProfile $
@@ -6325,6 +7404,93 @@ testGroupHistory =
       [alice, cath] *<# "#team bob> 2"
       cath #> "#team 3"
       [alice, bob] *<# "#team cath> 3"
+
+testGroupHistorySilent :: HasCallStack => TestParams -> IO ()
+testGroupHistorySilent ps = do
+  (rcvItems, cfg) <- rcvItemPrioritiesCfg
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChat ps "bob" bobProfile $ \bob ->
+      withNewTestChatCfg ps cfg "cath" cathProfile $ \cath -> do
+        createGroup2 "team" alice bob
+
+        threadDelay 1000000
+
+        bob ##> "/_send #1 json [{\"msgContent\": {\"type\": \"text\", \"text\": \"hey!\"}, \"priority\": -1}]"
+        bob <# "#team hey!"
+        alice <# "#team bob> hey!"
+
+        connectUsers alice cath
+        addMember "team" alice cath GRAdmin
+        cath ##> "/j team"
+        concurrentlyN_
+          [ alice <## "#team: cath joined the group",
+            cath
+              <### [ "#team: you joined the group",
+                     WithTime "#team bob> hey! [>>]",
+                     "#team: member bob (Bob) is connected"
+                   ],
+            do
+              bob <## "#team: alice added cath (Catherine) to the group (connecting...)"
+              bob <## "#team: new member cath is connected"
+          ]
+        itemPriority cath "/_get chat #1 count=1 search=hey!" `shouldReturn` MPSilent
+        readTVarIO rcvItems `shouldReturn` [("hey!", MPSilent)]
+
+testGroupHistoryHighPriority :: HasCallStack => TestParams -> IO ()
+testGroupHistoryHighPriority ps = do
+  (rcvItems, cfg) <- rcvItemPrioritiesCfg
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChat ps "bob" bobProfile $ \bob ->
+      withNewTestChatCfg ps cfg "cath" cathProfile $ \cath -> do
+        createGroup2 "team" alice bob
+
+        threadDelay 1000000
+
+        bob ##> "/_send #1 json [{\"msgContent\": {\"type\": \"text\", \"text\": \"hey!\"}, \"priority\": 1}]"
+        bob <# "#team !! hey!"
+        alice <# "#team bob!!> hey!"
+
+        connectUsers alice cath
+        addMember "team" alice cath GRAdmin
+        cath ##> "/j team"
+        concurrentlyN_
+          [ alice <## "#team: cath joined the group",
+            cath
+              <### [ "#team: you joined the group",
+                     WithTime "#team bob> hey! [>>]",
+                     "#team: member bob (Bob) is connected"
+                   ],
+            do
+              bob <## "#team: alice added cath (Catherine) to the group (connecting...)"
+              bob <## "#team: new member cath is connected"
+          ]
+        itemPriority cath "/_get chat #1 count=1 search=hey!" `shouldReturn` MPNormal
+        readTVarIO rcvItems `shouldReturn` [("hey!", MPNormal)]
+
+testGroupHistorySignedHighPriority :: HasCallStack => TestParams -> IO ()
+testGroupHistorySignedHighPriority =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createViaSignedGroup alice bob
+      threadDelay 1000000
+      bob ##> "/_send #1 json [{\"msgContent\": {\"type\": \"text\", \"text\": \"hey!\"}, \"priority\": 1}]"
+      bob <# "#team !! hey! (signed)"
+      alice <# "#team bob!!> hey! (signed)"
+      connectUsers alice cath
+      addMember "team" alice cath GRAdmin
+      cath ##> "/j team"
+      concurrentlyN_
+        [ alice <## "#team: cath joined the group",
+          cath
+            <### [ "#team: you joined the group",
+                   WithTime "#team bob!!> hey! (signed) [>>]",
+                   "#team: member bob (Bob) is connected"
+                 ],
+          do
+            bob <## "#team: alice added cath (Catherine) to the group (connecting...)"
+            bob <## "#team: new member cath is connected"
+        ]
+      itemPriority cath "/_get chat #1 count=1 search=hey!" `shouldReturn` MPHigh
 
 testGroupHistoryGroupLink :: HasCallStack => TestParams -> IO ()
 testGroupHistoryGroupLink =
@@ -7481,6 +8647,30 @@ testMembershipProfileUpdateContactDeletedPeerType =
 
       memberAddressPeerType bob "alisa" `shouldReturn` [(Nothing, Just CPTBot)]
 
+testMembershipProfileUpdatePeerTypeOnly :: HasCallStack => TestParams -> IO ()
+testMembershipProfileUpdatePeerTypeOnly =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      createGroup2 "team" alice bob
+
+      alice ##> "/d bob"
+      alice <## "bob: contact is deleted"
+      bob <## "alice (Alice) deleted contact with you"
+
+      alice ##> "/_profile 1 {\"displayName\": \"alice\", \"fullName\": \"\", \"shortDescr\": \"Alice\", \"peerType\": \"agent\"}"
+
+      alice #> "#team hello"
+      bob <# "#team alice> hello"
+
+      memberAddressPeerType bob "alice" `shouldReturn` [(Nothing, Just CPTAgent)]
+
+      alice #> "#team hello again"
+      bob <# "#team alice> hello again"
+
+      bob ##> "/_get chat #1 count=100"
+      r <- chat <$> getTermLine bob
+      filter (== (0, "updated profile (signed)")) r `shouldBe` [(0, "updated profile (signed)")]
+
 testMembershipProfileUpdateContactDisabled :: HasCallStack => TestParams -> IO ()
 testMembershipProfileUpdateContactDisabled =
   testChat2 aliceProfile bobProfile $
@@ -8104,7 +9294,7 @@ testBlockForAllLeftRemoved =
 testGroupMemberInactive :: HasCallStack => TestParams -> IO ()
 testGroupMemberInactive ps = do
   withSmpServer' serverCfg' $ do
-    withNewTestChatCfgOpts ps cfg' opts' "alice" aliceProfile $ \alice -> do
+    withNewTestChatCfgOpts ps cfg' testOpts "alice" aliceProfile $ \alice -> do
       withNewTestChatCfgOpts ps cfg' opts' "bob" bobProfile $ \bob -> do
         createGroup2 "team" alice bob
 
@@ -8360,6 +9550,35 @@ testMemberMention =
         [ alice <# "#team cath> [edited] hello @alice @bob",
           bob <# "#team cath> [edited] hello @alice @bob"
         ]
+
+testMemberMentionEdited :: HasCallStack => TestParams -> IO ()
+testMemberMentionEdited ps = do
+  updates <- newTVarIO []
+  events <- newTVarIO []
+  let hook _ evt = do
+        recordItemEvent events evt
+        case evt of
+          Right (CEvtChatItemUpdated _ (AChatItemUpdate _ _ _ ci prevCi)) ->
+            atomically $ modifyTVar' updates (<> [(mentionOf prevCi, mentionOf ci)])
+          _ -> pure ()
+        pure evt
+      mentionOf :: ChatItem c d -> ([T.Text], Bool)
+      mentionOf ci@ChatItem {mentions} = (M.keys mentions, isUserMention ci)
+  withNewTestChatCfgOpts ps testCfg {chatHooks = defaultChatHooks {eventHook = Just hook}} testOpts {markRead = False} "alice" aliceProfile $ \alice ->
+    withNewTestChat ps "bob" bobProfile $ \bob -> do
+      createGroup2 "team" alice bob
+      alice ##> "/unmute mentions #team"
+      alice <## "ok"
+      eventsFixture "updates/group-mention" events $ do
+        bob #> "#team hello"
+        alice <# "#team bob> hello <muted>"
+        bob ##> "! #team hello @alice"
+        bob <# "#team [edited] hello @alice"
+        alice <# "#team bob> [edited] hello @alice"
+        bob ##> "! #team hello"
+        bob <# "#team [edited] hello"
+        alice <# "#team bob> [edited] hello <muted>"
+      readTVarIO updates `shouldReturn` [(([], False), (["alice"], True)), ((["alice"], True), ([], False))]
 
 testForwardQuoteMention :: HasCallStack => TestParams -> IO ()
 testForwardQuoteMention =
@@ -9215,6 +10434,31 @@ testScopedSupportUnreadStatsOnRead =
         { markRead = False
         }
 
+testScopedSupportUnreadStatsOnMentionEdit :: HasCallStack => TestParams -> IO ()
+testScopedSupportUnreadStatsOnMentionEdit =
+  testChatOpts4 opts aliceProfile bobProfile cathProfile danProfile $ \alice bob cath dan -> do
+    createGroup4 "team" alice (bob, GRMember) (cath, GRMember) (dan, GRModerator)
+
+    dan ##> "/_send #1(_support:3) text 1"
+    dan <# "#team (support: bob) 1"
+    alice <# "#team (support: bob) dan> 1"
+    bob <# "#team (support) dan> 1"
+    danItemId <- lastItemId dan
+
+    dan ##> ("/_update item #1(_support:3) " <> danItemId <> " json {\"msgContent\": {\"type\": \"text\", \"text\": \"@alice 1\"}, \"mentions\": {\"alice\": 1}}")
+    dan <# "#team (support: bob) [edited] @alice 1"
+    alice <# "#team (support: bob) dan> [edited] @alice 1"
+    bob <# "#team (support) dan> [edited] @alice 1"
+
+    alice ##> "/member support chats #team"
+    alice <## "members require attention: 1"
+    alice <## "bob (Bob) (id 2): unread: 1, require attention: 0, mentions: 1"
+  where
+    opts =
+      testOpts
+        { markRead = False
+        }
+
 testScopedSupportUnreadStatsOnDelete :: HasCallStack => TestParams -> IO ()
 testScopedSupportUnreadStatsOnDelete =
   testChatOpts2 opts aliceProfile bobProfile $ \alice bob -> do
@@ -9701,6 +10945,83 @@ testChannels1RelayDeliverNotification ps =
             forM_ [danConnId, eveConnId] $ \connId ->
               lastSndMsgFlags bob connId 1 `shouldReturn` ["F"]
             lastJobNotification bob `shouldReturn` False
+
+testChannels1RelayDeliverSilent :: HasCallStack => TestParams -> IO ()
+testChannels1RelayDeliverSilent ps = do
+  (rcvItems, cfg) <- rcvItemPrioritiesCfg
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChatCfg ps cfg "cath" cathProfile $ \cath -> do
+        (shortLink, fullLink) <- prepareChannel1Relay "team" alice bob
+        memberJoinChannel "team" [bob] [alice] shortLink fullLink cath
+        cath ##> "/set receipts all off"
+        cath <## "ok"
+        bobConnId <- relayConnIdToMember alice "bob"
+        cathConnId <- relayConnIdToMember bob "cath"
+
+        alice ##> "/_send #1(as_group=on) json [{\"msgContent\": {\"type\": \"text\", \"text\": \"hi\"}, \"priority\": -1}]"
+        alice <# "#team hi"
+        bob <# "#team> hi"
+        cath <# "#team> hi [>>]"
+        lastSndMsgPriority alice `shouldReturn` Just (-1)
+        lastSndMsgFlags alice bobConnId 1 `shouldReturn` ["F"]
+        lastSndMsgFlags bob cathConnId 1 `shouldReturn` ["F"]
+        lastJobNotification bob `shouldReturn` False
+        forM_ [alice, bob, cath] $ \cc ->
+          itemPriority cc "/_get chat #1 count=1" `shouldReturn` MPSilent
+        readTVarIO rcvItems `shouldReturn` [("hi", MPSilent)]
+
+testChannels1RelayDeliverHighPriority :: HasCallStack => TestParams -> IO ()
+testChannels1RelayDeliverHighPriority ps = do
+  (rcvItems, cfg) <- rcvItemPrioritiesCfg
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChatCfg ps cfg "cath" cathProfile $ \cath -> do
+        (shortLink, fullLink) <- prepareChannel1Relay "team" alice bob
+        memberJoinChannel "team" [bob] [alice] shortLink fullLink cath
+        cath ##> "/set receipts all off"
+        cath <## "ok"
+        bobConnId <- relayConnIdToMember alice "bob"
+        cathConnId <- relayConnIdToMember bob "cath"
+
+        alice ##> "/_send #1(as_group=on) json [{\"msgContent\": {\"type\": \"text\", \"text\": \"hi\"}, \"priority\": 1}]"
+        alice <# "#team !! hi"
+        bob <# "#team!!> hi"
+        cath <# "#team!!> hi [>>]"
+        lastSndMsgPriority alice `shouldReturn` Just 1
+        lastSndMsgFlags alice bobConnId 1 `shouldReturn` ["T"]
+        lastSndMsgFlags bob cathConnId 1 `shouldReturn` ["T"]
+        lastJobNotification bob `shouldReturn` True
+        forM_ [alice, bob, cath] $ \cc ->
+          itemPriority cc "/_get chat #1 count=1" `shouldReturn` MPHigh
+        readTVarIO rcvItems `shouldReturn` [("hi", MPHigh)]
+
+testChannels1RelayDeliverRaise :: HasCallStack => TestParams -> IO ()
+testChannels1RelayDeliverRaise ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath -> do
+        (shortLink, fullLink) <- prepareChannel1Relay "team" alice bob
+        memberJoinChannel "team" [bob] [alice] shortLink fullLink cath
+        cath ##> "/set receipts all off"
+        cath <## "ok"
+        cathConnId <- relayConnIdToMember bob "cath"
+        alice #> "#team hello"
+        bob <# "#team> hello"
+        cath <# "#team> hello [>>]"
+        helloId <- lastItemId alice
+        alice ##> ("/_update item #1 " <> helloId <> " json {\"msgContent\": {\"type\": \"text\", \"text\": \"hello\"}, \"mentions\": {}, \"priority\": 1}")
+        alice <# "#team !! hello"
+        bob <# "#team!!> hello"
+        cath <# "#team!!> hello"
+        lastSndMsgFlags bob cathConnId 1 `shouldReturn` ["T"]
+        lastJobNotification bob `shouldReturn` True
+        alice ##> ("/_update item #1 " <> helloId <> " json {\"msgContent\": {\"type\": \"text\", \"text\": \"hello there\"}, \"mentions\": {}, \"priority\": 1}")
+        alice <# "#team !! [edited] hello there"
+        bob <# "#team!!> [edited] hello there"
+        cath <# "#team!!> [edited] hello there"
+        lastSndMsgFlags bob cathConnId 1 `shouldReturn` ["F"]
+        lastJobNotification bob `shouldReturn` False
 
 testChannelDuplicateEvent :: HasCallStack => TestParams -> IO ()
 testChannelDuplicateEvent ps = do
@@ -10721,6 +12042,57 @@ testChannelLinkDataOtherChannel ps =
         cath <## "Please ask your contact to check /version and update if needed."
         cath <## "To update run: curl -o- https://raw.githubusercontent.com/simplex-chat/simplex-chat/master/install.sh | bash"
 
+testChannelLinkAsOtherTypes :: HasCallStack => TestParams -> IO ()
+testChannelLinkAsOtherTypes ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath -> do
+        (shortLink, _) <- prepareChannel1Relay "team" alice bob
+        cath ##> ("/_connect plan 1 " <> shortLink)
+        cath <## "group link: ok to connect via relays"
+        _ <- getTermLine cath
+        forM_ ["/g#", "/a#"] $ \linkType -> do
+          cath ##> ("/_connect plan 1 " <> setLinkType "/c#" linkType shortLink)
+          invalidLink cath
+        cath ##> ("/relay test " <> setLinkType "/c#" "/r#" shortLink)
+        cath <## "relay test failed at RTSGetLink, error: ChatError {errorType = CEInvalidConnReq}"
+
+testChannelPlanAppliesLinkProfile :: HasCallStack => TestParams -> IO ()
+testChannelPlanAppliesLinkProfile ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath -> do
+        (shortLink, fullLink) <- prepareChannel1Relay "team" alice bob
+        memberJoinChannel "team" [bob] [alice] shortLink fullLink cath
+        withCCTransaction cath $ \db ->
+          DB.execute_ db "UPDATE group_profiles SET short_descr = 'local copy'"
+        cath ##> ("/_connect plan 1 " <> shortLink <> " resolve=allGroups")
+        cath <## "group link: known group #team"
+        cath <## "use #team <message> to send messages"
+        withCCTransaction cath (\db -> DB.query_ db "SELECT short_descr FROM group_profiles" :: IO [Only (Maybe T.Text)])
+          `shouldReturn` [Only Nothing]
+
+testRelayLinkChecksInvalidData :: HasCallStack => TestParams -> IO ()
+testRelayLinkChecksInvalidData ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatCfgOpts ps testCfg {relayChecksInterval = 3} relayTestOpts "bob" bobProfile $ \bob -> do
+      _ <- prepareChannel1Relay "team" alice bob
+      relayOwnStatus bob "active"
+      setTestGroupLinkData alice $ UserLinkData ""
+      invalidLink bob
+      relayOwnStatus bob "active"
+      bob ##> "/_stop"
+      bob <## "chat stopped"
+  where
+    relayOwnStatus :: HasCallStack => TestCC -> T.Text -> IO ()
+    relayOwnStatus cc status = go (100 :: Int)
+      where
+        go n = do
+          [Only s] <- withCCTransaction cc $ \db -> DB.query_ db "SELECT relay_own_status FROM groups" :: IO [Only T.Text]
+          if s == status || n == 0
+            then s `shouldBe` status
+            else threadDelay 100000 >> go (n - 1)
+
 testChannelUpdatePrefsSigned :: HasCallStack => TestParams -> IO ()
 testChannelUpdatePrefsSigned ps =
   withNewTestChat ps "alice" aliceProfile $ \alice ->
@@ -10898,13 +12270,21 @@ memberRoles cc name =
   map (\(Only r) -> r) <$> withCCTransaction cc (\db -> DB.query db "SELECT member_role FROM group_members WHERE local_display_name = ?" (Only name))
 
 waitQueuedLinkUpdates :: HasCallStack => TestCC -> IO ()
-waitQueuedLinkUpdates cc = go (100 :: Int)
+waitQueuedLinkUpdates cc = waitNoRows cc "SELECT COUNT(1) FROM commands WHERE command_function = 'set_short_link'"
+
+waitRosterApplied :: HasCallStack => TestCC -> IO ()
+waitRosterApplied cc = waitNoRows cc "SELECT COUNT(1) FROM groups WHERE use_relays = 1 AND roster_version IS NULL"
+
+waitConnectedContactsSettled :: HasCallStack => TestCC -> IO ()
+waitConnectedContactsSettled cc = waitNoRows cc "SELECT COUNT(1) FROM connections WHERE conn_status = 'ready' AND contact_conn_initiated = 1"
+
+waitNoRows :: HasCallStack => TestCC -> Query -> IO ()
+waitNoRows cc q = go (100 :: Int)
   where
     go n = do
-      [[queued]] <- withCCTransaction cc $ \db ->
-        DB.query_ db "SELECT COUNT(1) FROM commands WHERE command_function = 'set_short_link'" :: IO [[Int]]
-      if queued == 0 || n == 0
-        then queued `shouldBe` 0
+      [[rows]] <- withCCTransaction cc $ \db -> DB.query_ db q :: IO [[Int]]
+      if rows == 0 || n == 0
+        then rows `shouldBe` 0
         else threadDelay 100000 >> go (n - 1)
 
 -- The wire member id for a named member (look it up on a client that knows the name, e.g. the owner), used to
@@ -11313,7 +12693,8 @@ testChannelRelayCannotForgePrivilegedMember ps =
                   memberRole = GRAdmin,
                   v = Nothing,
                   profile = forgedProfile,
-                  memberKey = Just (MemberKey attackerPub)
+                  memberKey = Just (MemberKey attackerPub),
+                  via = Nothing
                 }
             chatMsg = ChatMessage chatInitialVRange Nothing (XGrpMemNew memInfo Nothing)
             fwd = GrpMsgForward (FwdMember ownerMemId "alice") ts
@@ -11336,6 +12717,82 @@ testChannelRelayCannotForgePrivilegedMember ps =
     forgedMemberRows cc name =
       withCCTransaction cc $ \db ->
         DB.query db "SELECT member_role, member_pub_key FROM group_members WHERE local_display_name = ?" (Only name)
+
+testChannelOwnMemberIntroKeepsProfile :: HasCallStack => TestParams -> IO ()
+testChannelOwnMemberIntroKeepsProfile ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath -> do
+        (shortLink, fullLink) <- prepareChannel1Relay "team" alice bob
+        memberJoinChannel "team" [bob] [alice] shortLink fullLink cath
+        ownMember cath `shouldReturn` [("cath", "connected")]
+        cathMemId <- memberIdByName bob "cath"
+        connId <- relayConnIdToMember bob "cath"
+        let otherProfile = (cathProfile :: Profile) {displayName = "other", fullName = "Other"}
+            memInfo = MemberInfo {memberId = cathMemId, memberRole = GRObserver, v = Nothing, profile = otherProfile, memberKey = Nothing, via = Nothing}
+        agentSendBody bob connId $ chatMsgToBody $ ChatMessage chatInitialVRange Nothing (XGrpMemIntro memInfo Nothing)
+        cath <## "error: x.grp.mem.intro ignored: member already exists"
+        ownMember cath `shouldReturn` [("cath", "connected")]
+  where
+    ownMember :: TestCC -> IO [(T.Text, T.Text)]
+    ownMember cc =
+      withCCTransaction cc $ \db ->
+        DB.query_
+          db
+          [sql|
+            SELECT p.display_name, m.member_status
+            FROM group_members m
+            JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id)
+            WHERE m.member_category = 'user'
+          |]
+
+testChannelPromotionDifferentKeyKeepsRole :: HasCallStack => TestParams -> IO ()
+testChannelPromotionDifferentKeyKeepsRole ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath ->
+        withNewTestChat ps "dan" danProfile $ \dan -> do
+          (shortLink, fullLink) <- prepareChannel1Relay "team" alice bob
+          memberJoinChannel "team" [bob] [alice] shortLink fullLink cath
+          memberJoinChannel "team" [bob] [alice] shortLink fullLink dan
+          danId <- memberIdByName alice "dan"
+          connId <- relayConnIdToMember bob "cath"
+          g <- C.newRandom
+          kp <- atomically $ C.generateKeyPair g
+          let relayKey = fst kp :: C.PublicKeyEd25519
+              memInfo = MemberInfo {memberId = danId, memberRole = GRObserver, v = Nothing, profile = danProfile, memberKey = Just (MemberKey relayKey), via = Nothing}
+          agentSendBody bob connId $ chatMsgToBody $ ChatMessage chatInitialVRange Nothing (XGrpMemNew memInfo Nothing)
+          cath <## "#team: bob introduced dan (Daniel) in the channel"
+          threadDelay 1000000
+          alice ##> "/mr #team dan admin"
+          alice <## "#team: you changed the role of dan to admin (signed)"
+          concurrentlyN_
+            [ bob <## "#team: alice changed the role of dan from observer to admin (signed)",
+              dan <## "#team: alice changed your role from observer to admin (signed)",
+              cath <##. "error: x.grp.mem.role: member key conflict, keeping trusted key, memberId="
+            ]
+          checkMemberRow cath "dan" (Just "observer")
+
+testChannelPromotionPinsMemberKey :: HasCallStack => TestParams -> IO ()
+testChannelPromotionPinsMemberKey ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath ->
+        withNewTestChat ps "dan" danProfile $ \dan -> do
+          (shortLink, fullLink) <- prepareChannel1Relay "team" alice bob
+          memberJoinChannel "team" [bob] [alice] shortLink fullLink cath
+          memberJoinChannel "team" [bob] [alice] shortLink fullLink dan
+          threadDelay 1000000
+          alice ##> "/block for all #team dan"
+          alice <## "#team: you blocked dan (signed)"
+          bob <## "#team: alice blocked dan (signed)"
+          cath <##. "#team: alice blocked an unknown member, creating unknown member record"
+          cath .<##. ("#team: alice blocked", "(signed)")
+          threadDelay 1000000
+          promoteChannelMember "team" alice bob dan [cath]
+          danId <- getMemberIdByName alice "dan"
+          (_, danKey) <- getMemberRoleKey alice danId
+          getMemberRoleKey cath danId `shouldReturn` ("member", danKey)
 
 testChannelRemoveMemberSigned :: HasCallStack => TestParams -> IO ()
 testChannelRemoveMemberSigned ps =
@@ -11992,6 +13449,7 @@ testChannelRelayInvUnsigned ps =
       (cathSLink, _cLink) <- getContactLinks cath True
       sendUnsignedRelayInv alice cathSLink
       cath <##. "error: x.grp.relay.inv: invitation is not signed by the owner"
+      checkPendingInvitations cath 0
 
 sendUnsignedRelayInv :: TestCC -> String -> IO ()
 sendUnsignedRelayInv cc relayAddress =
@@ -12008,7 +13466,7 @@ sendUnsignedRelayInv cc relayAddress =
               fromMemberKey = Just $ MemberKey memberKey
             }
         joinRelay = do
-          (_, _, cReq) <- getShortLinkConnReq NRMInteractive user relayLink
+          (_, _, cReq, _) <- getShortLinkConnReq NRMInteractive user relayLink
           (connId, _) <- withAgent $ \a -> prepareConnectionToJoin a (aUserId user) True cReq PQSupportOff
           dm <- encodeConnInfo $ XGrpRelayInv inv
           withAgent $ \a -> joinConnection a NRMInteractive (aUserId user) connId True cReq dm PQSupportOff SMSubscribe
@@ -12258,7 +13716,21 @@ testChannelRosterMultiRelayMultipart ps =
       map (\(Only k) -> isJust k) rows `shouldBe` [True]
 
 testChannelRemoveRelay :: HasCallStack => TestParams -> IO ()
-testChannelRemoveRelay ps =
+testChannelRemoveRelay = testChannelRemoveRelay_ (const id)
+
+#if defined(dbPostgres)
+testChannelRemoveRelayConnSavedLate :: HasCallStack => TestParams -> IO ()
+testChannelRemoveRelayConnSavedLate = testChannelRemoveRelay_ $ \cc refresh -> do
+  withCCTransaction cc $ \db -> do
+    DB.execute_ db "CREATE FUNCTION wait_test_lock() RETURNS trigger AS $$ BEGIN PERFORM pg_advisory_xact_lock(1); RETURN NEW; END $$ LANGUAGE plpgsql"
+    DB.execute_ db "CREATE TRIGGER wait_test_lock BEFORE INSERT ON connections FOR EACH ROW EXECUTE FUNCTION wait_test_lock()"
+  locked <- newEmptyMVar
+  withAsync (withCCTransaction cc $ \db -> DB.execute_ db "DO $$ BEGIN PERFORM pg_advisory_xact_lock(1); END $$" >> putMVar locked () >> threadDelay 2000000) $ \a ->
+    takeMVar locked >> refresh >> wait a
+#endif
+
+testChannelRemoveRelay_ :: HasCallStack => (TestCC -> IO () -> IO ()) -> TestParams -> IO ()
+testChannelRemoveRelay_ refreshLinkData ps =
   withNewTestChat ps "alice" aliceProfile $ \alice ->
     withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
       withNewTestChatOpts ps relayTestOpts "cath" cathProfile $ \cath ->
@@ -12334,7 +13806,7 @@ testChannelRemoveRelay ps =
           threadDelay 100000
 
           -- subscriber discovers and connects to new relay
-          dan ##> "/_get group link data #1"
+          refreshLinkData dan $ dan ##> "/_get group link data #1"
           dan <## "group ID: 1"
           void $ getTermLine dan -- subscribers: N
           concurrentlyN_
@@ -12777,6 +14249,30 @@ testChannelMessageUpdate ps =
             alice <# "#team [edited] hello updated"
             bob <# "#team> [edited] hello updated"
             [cath, dan, eve] *<# "#team> [edited] hello updated" -- TODO show as forwarded
+
+testChannelMessageUpdateAsNew :: HasCallStack => TestParams -> IO ()
+testChannelMessageUpdateAsNew ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChatOpts ps testOpts {markRead = False} "cath" cathProfile $ \cath -> do
+        (shortLink, fullLink) <- prepareChannel1Relay "team" alice bob
+        memberJoinChannel "team" [bob] [alice] shortLink fullLink cath
+        alice #> "#team status"
+        bob <# "#team> status"
+        cath <# "#team> status [>>]"
+        statusId <- lastItemId alice
+        cathStatusId <- lastItemId cath
+        cath #$> ("/_read chat items #1 " <> cathStatusId, id, "items read for chat")
+        alice #> "#team hi"
+        bob <# "#team> hi"
+        cath <# "#team> hi [>>]"
+        alice ##> ("/_update item #1 " <> statusId <> " as_new=on text status 2")
+        alice <# "#team [edited] status 2"
+        bob <# "#team> [edited] status 2"
+        cath <# "#team> [edited] status 2"
+        cath #$> ("/_get chat #1 count=2", chat, [(0, "hi"), (0, "status 2")])
+        withCCTransaction cath (\db -> DB.query db "SELECT item_status FROM chat_items WHERE item_text = ?" (Only ("status 2" :: String)))
+          `shouldReturn` [Only ("rcv_new" :: String)]
 
 testChannelMessageDelete :: HasCallStack => TestParams -> IO ()
 testChannelMessageDelete ps =
@@ -13351,8 +14847,8 @@ testChannelUpdateFallbackSendAsGroup ps =
             aliceMsgId <- lastItemId alice
             alice ##> ("/_update item #1 " <> aliceMsgId <> " text channel msg updated")
             alice <# "#team [edited] channel msg updated"
-            -- bob's item was locally deleted, fallback recreates it with [edited] marker
-            bob <# "#team> [edited] channel msg updated"
+            -- bob's item was locally deleted, fallback recreates it as a new item
+            bob <# "#team> channel msg updated"
             [cath, dan, eve] *<# "#team> [edited] channel msg updated"
 
             -- now test sendAsGroup=False case
@@ -13371,7 +14867,7 @@ testChannelUpdateFallbackSendAsGroup ps =
             alice ##> ("/_update item #1 " <> aliceMsgId2 <> " text member msg updated")
             alice <# "#team [edited] member msg updated"
             -- bob's internally deleted item is re-created as from member (sendAsGroup=False)
-            bob <# "#team alice> [edited] member msg updated"
+            bob <# "#team alice> member msg updated"
             -- forwarded members see correct member attribution
             [cath, dan, eve] *<# "#team alice> [edited] member msg updated"
 
@@ -13557,6 +15053,63 @@ lastSndMsgFlags cc connId n = do
       (connId, Binary ("M" :: ByteString), n)
   pure $ reverse $ map fromOnly rows
 
+itemPriority :: TestCC -> String -> IO MsgPriority
+itemPriority TestCC {chatController = cc} getChatCmd = do
+  r <- sendChatCmdStr cc getChatCmd
+  case r of
+    Right (CRApiChat _ (AChat _ Chat {chatItems = [CChatItem _ ChatItem {meta = CIMeta {priority}}]}) _) -> pure priority
+    _ -> fail $ show r
+
+lastSndMsgPriority :: TestCC -> IO (Maybe Int)
+lastSndMsgPriority cc = lastSndEventPriority cc "x.msg.new"
+
+lastSndEventPriority :: TestCC -> T.Text -> IO (Maybe Int)
+lastSndEventPriority cc event = do
+  [Only body] <- withCCTransaction cc $ \db ->
+    DB.query db "SELECT msg_body FROM messages WHERE msg_sent = 1 AND chat_msg_event = ? ORDER BY message_id DESC LIMIT 1" (Only event)
+  maybe (fail $ "bad message body: " <> B.unpack body) pure $
+    JT.parseMaybe (\o -> o .: "params" >>= (.:? "priority")) =<< J.decodeStrict body
+
+priorityCounts :: TestCC -> String -> IO (Int, Int, Int, Int)
+priorityCounts TestCC {chatController = cc} chatRef = do
+  r <- sendChatCmdStr cc ("/_get chat " <> chatRef <> " initial=10")
+  case r of
+    Right (CRApiChat _ (AChat _ Chat {chatStats}) _) -> pure $ statsCounts chatStats
+    _ -> fail $ show r
+
+groupPreviewPriorityCounts :: TestCC -> IO [(Int, Int, Int, Int)]
+groupPreviewPriorityCounts TestCC {chatController = cc} = do
+  r <- sendChatCmdStr cc "/_get chats 1"
+  case r of
+    Right (CRApiChats _ cs) -> pure [statsCounts chatStats | AChat cType Chat {chatStats} <- cs, toChatType cType == CTGroup]
+    _ -> fail $ show r
+
+statsCounts :: ChatStats -> (Int, Int, Int, Int)
+statsCounts ChatStats {unreadCount, unreadMentions, unreadSilent = IntDef silent, unreadHighPriority = IntDef high} = (unreadCount, unreadMentions, silent, high)
+
+priorityRaisedCfg :: IO (TVar [(T.Text, Bool, Bool)], ChatConfig)
+priorityRaisedCfg = do
+  raised <- newTVarIO []
+  let hook _ evt = do
+        case evt of
+          Right (CEvtChatItemUpdated _ (AChatItemUpdate _ _ _ ChatItem {content, meta} ChatItem {meta = prevMeta@CIMeta {userMention, priority}}))
+            | highPriority meta && not (highPriority prevMeta) ->
+                atomically $ modifyTVar' raised (<> [(msgContentText mc, not userMention, priority == MPSilent) | Just mc <- [ciMsgContent content]])
+          _ -> pure ()
+        pure evt
+  pure (raised, testCfg {chatHooks = defaultChatHooks {eventHook = Just hook}})
+
+rcvItemPrioritiesCfg :: IO (TVar [(T.Text, MsgPriority)], ChatConfig)
+rcvItemPrioritiesCfg = do
+  rcvItems <- newTVarIO []
+  let hook _ evt = do
+        case evt of
+          Right (CEvtNewChatItems _ cis) ->
+            atomically $ modifyTVar' rcvItems (<> [(msgContentText mc, priority) | AChatItem _ d _ ChatItem {content, meta = CIMeta {priority}} <- cis, toMsgDirection d == MDRcv, Just mc <- [ciMsgContent content]])
+          _ -> pure ()
+        pure evt
+  pure (rcvItems, testCfg {chatHooks = defaultChatHooks {eventHook = Just hook}})
+
 lastJobNotification :: TestCC -> IO Bool
 lastJobNotification cc = do
   [Only (BI ntf)] <- withCCTransaction cc $ \db ->
@@ -13733,7 +15286,7 @@ testChannelMemberUpdateEnforcement ps =
             connId <- relayConnIdToMember bob "dan"
             ts <- getCurrentTime
             let ChatController {smpAgent = bobAgent} = chatController bob
-                chatMsg = ChatMessage chatInitialVRange Nothing (XMsgUpdate sharedId (MCText "forged") M.empty Nothing Nothing Nothing Nothing)
+                chatMsg = ChatMessage chatInitialVRange Nothing (XMsgUpdate sharedId (MCText "forged") M.empty Nothing Nothing Nothing Nothing MPNormal Nothing)
                 fwd = GrpMsgForward (FwdMember cathMemId "cath") ts
                 body = encodeBinaryBatch [encodeFwdElement fwd (VMUnsigned chatMsg)]
             sent <- runExceptT $ sendMessages bobAgent [(connId, PQEncOff, MsgFlags False, vrValue body)]
@@ -13935,7 +15488,7 @@ testChannelSignedHistory ps =
 
       -- catch-up subscriber joins late: as-group edited content + signed member post (author unknown to dan, shown by id hash), deleted excluded
       memberJoinChannel "team" [relay] [alice] shortLink fullLink dan
-      dan <# "#team> [edited] history one edited (signed)"
+      dan <# "#team> history one edited (signed) [>>]"
       dan .<## "> from cath member (signed) [>>]"
       dan #$> ("/_get chat #1 count=100 search=history one edited", chat, [(0, "history one edited (signed)")])
       dan #$> ("/_get chat #1 count=100 search=from cath member", chat, [(0, "from cath member (signed)")])
@@ -14264,3 +15817,540 @@ testGroupLinkContentFilter =
       cath ##> "/_get content types #1"
       cath <## "Chat content types: link, text"
       cath #$> ("/_get chat #1 content=link count=100", chat, [(0, "https://simplex.chat"), (0, "check out https://example.com")])
+
+addViaMember :: HasCallStack => TestCC -> String -> IO ()
+addViaMember cc role = do
+  cc ##> ("/_add via #1 " <> role <> " json {\"displayName\": \"reviewer\", \"fullName\": \"\"}")
+  cc <## "#team: you added reviewer to the group"
+
+viaMemberAdded :: HasCallStack => [TestCC] -> IO ()
+viaMemberAdded = mapM_ (<## "#team: alice added reviewer to the group (via alice)")
+
+testViaMemberMessages :: HasCallStack => TestParams -> IO ()
+testViaMemberMessages =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+      addViaMember alice "member"
+      viaMemberAdded [bob, cath]
+      alice ##> "/ms team"
+      alice
+        <### [ "alice (Alice): owner, you, created group",
+               "bob (Bob): admin, invited, connected",
+               "cath (Catherine): admin, invited, connected",
+               "reviewer: member, via you, connected"
+             ]
+      bob ##> "/ms team"
+      bob
+        <### [ "alice (Alice): owner, host, connected",
+               "bob (Bob): admin, you, connected",
+               "cath (Catherine): admin, connected",
+               "reviewer: member, via alice, connected"
+             ]
+      alice ##> "/_send #1(as_member=4) text hi"
+      alice <# "#team hi"
+      [bob, cath] *<# "#team reviewer> hi [>>]"
+
+testViaMemberUpdate :: HasCallStack => TestParams -> IO ()
+testViaMemberUpdate =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+      addViaMember alice "member"
+      viaMemberAdded [bob, cath]
+      alice ##> "/_send #1(as_member=4) text hi"
+      alice <# "#team hi"
+      [bob, cath] *<# "#team reviewer> hi [>>]"
+      ciId <- lastItemId alice
+      alice ##> ("/_update item #1 " <> ciId <> " text hello")
+      alice <# "#team [edited] hello"
+      [bob, cath] *<# "#team reviewer> [edited] hello"
+
+testViaMemberLaterJoiner :: HasCallStack => TestParams -> IO ()
+testViaMemberLaterJoiner =
+  testChat4 aliceProfile bobProfile cathProfile danProfile $
+    \alice bob cath dan -> do
+      createGroup3 "team" alice bob cath
+      addViaMember alice "member"
+      viaMemberAdded [bob, cath]
+      alice ##> "/_send #1(as_member=4) text hi"
+      alice <# "#team hi"
+      [bob, cath] *<# "#team reviewer> hi [>>]"
+      connectUsers alice dan
+      addMember "team" alice dan GRMember
+      dan ##> "/j team"
+      concurrentlyN_
+        [ alice <## "#team: dan joined the group",
+          dan
+            <### [ "#team: you joined the group",
+                   WithTime "#team reviewer> hi [>>]",
+                   "#team: member bob (Bob) is connected",
+                   "#team: member cath (Catherine) is connected"
+                 ],
+          do
+            bob <## "#team: alice added dan (Daniel) to the group (connecting...)"
+            bob <## "#team: new member dan is connected",
+          do
+            cath <## "#team: alice added dan (Daniel) to the group (connecting...)"
+            cath <## "#team: new member dan is connected"
+        ]
+      dan ##> "/ms team"
+      dan
+        <### [ "dan (Daniel): member, you, connected",
+               "alice (Alice): owner, host, connected",
+               "bob (Bob): admin, connected",
+               "cath (Catherine): admin, connected",
+               "reviewer: member, via alice, connected"
+             ]
+      alice ##> "/_send #1(as_member=4) text hello"
+      alice <# "#team hello"
+      [bob, cath, dan] *<# "#team reviewer> hello [>>]"
+
+testViaMemberPrevVersionJoiner :: HasCallStack => TestParams -> IO ()
+testViaMemberPrevVersionJoiner ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChat ps "bob" bobProfile $ \bob ->
+      withNewTestChatCfg ps testCfgVPrev "dan" danProfile $ \dan -> do
+        createGroup2 "team" alice bob
+        addViaMember alice "member"
+        viaMemberAdded [bob]
+        alice ##> "/_send #1(as_member=3) text hi"
+        alice <# "#team hi"
+        bob <# "#team reviewer> hi [>>]"
+        connectUsers alice dan
+        addMember "team" alice dan GRMember
+        dan ##> "/j team"
+        concurrentlyN_
+          [ alice <## "#team: dan joined the group",
+            dan
+              <### [ "#team: you joined the group",
+                     StartsWith "#team: alice forwarded a message from an unknown member, creating unknown member record",
+                     EndsWith "hi [>>]",
+                     "#team: member bob (Bob) is connected"
+                   ],
+            do
+              bob <## "#team: alice added dan (Daniel) to the group (connecting...)"
+              bob <## "#team: new member dan is connected"
+          ]
+
+testViaMemberOtherAdmin :: HasCallStack => TestParams -> IO ()
+testViaMemberOtherAdmin =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup2 "team" alice bob
+      connectUsers bob cath
+      addMember "team" bob cath GRMember
+      cath ##> "/j team"
+      concurrentlyN_
+        [ bob <## "#team: cath joined the group",
+          do
+            cath <## "#team: you joined the group"
+            cath <## "#team: member alice (Alice) is connected",
+          do
+            alice <## "#team: bob added cath (Catherine) to the group (connecting...)"
+            alice <## "#team: new member cath is connected"
+        ]
+      setupGroupForwarding bob alice cath
+      addViaMember alice "member"
+      viaMemberAdded [bob, cath]
+      alice ##> "/_send #1(as_member=4) text hi"
+      alice <# "#team hi"
+      [bob, cath] *<# "#team reviewer> hi [>>]"
+      hiId <- lastItemId alice
+      alice ##> ("/_update item #1 " <> hiId <> " text hello")
+      alice <# "#team [edited] hello"
+      [bob, cath] *<# "#team reviewer> [edited] hello"
+
+testViaMemberIntroOrder :: HasCallStack => TestParams -> IO ()
+testViaMemberIntroOrder =
+  testChat3 aliceProfile bobProfile danProfile $
+    \alice bob dan -> do
+      createGroup2 "team" alice bob
+      bob ##> "/_add via #1 admin json {\"displayName\": \"assistant\", \"fullName\": \"\"}"
+      bob <## "#team: you added assistant to the group"
+      alice <## "#team: bob added assistant to the group (via bob)"
+      connectUsers alice dan
+      addMember "team" alice dan GRMember
+      dan ##> "/j team"
+      concurrentlyN_
+        [ alice <## "#team: dan joined the group",
+          do
+            dan <## "#team: you joined the group"
+            dan <## "#team: member bob (Bob) is connected",
+          do
+            bob <## "#team: alice added dan (Daniel) to the group (connecting...)"
+            bob <## "#team: new member dan is connected"
+        ]
+      dan ##> "/ms team"
+      dan
+        <### [ "dan (Daniel): member, you, connected",
+               "alice (Alice): owner, host, connected",
+               "bob (Bob): admin, connected",
+               "assistant: admin, via bob, connected"
+             ]
+
+testViaMemberReply :: HasCallStack => TestParams -> IO ()
+testViaMemberReply =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+      addViaMember alice "member"
+      viaMemberAdded [bob, cath]
+      alice ##> "/_send #1(as_member=4) text hi"
+      alice <# "#team hi"
+      [bob, cath] *<# "#team reviewer> hi [>>]"
+      aliceHiId <- lastItemId alice
+      cathHiId <- lastItemId cath
+      bob `send` "> #team @reviewer (hi) @reviewer thanks"
+      bob <# "#team > reviewer hi"
+      bob <## "      @reviewer thanks"
+      concurrently_
+        ( do
+            alice <# "#team bob> > reviewer hi"
+            alice <## "      @reviewer thanks"
+        )
+        ( do
+            cath <# "#team bob> > reviewer hi"
+            cath <## "      @reviewer thanks"
+        )
+      aliceReviewerId <- reviewerGMId alice
+      cathReviewerId <- reviewerGMId cath
+      lastItemQuoteMentions alice `shouldReturn` (Just (read aliceHiId), aliceReviewerId, [aliceReviewerId])
+      lastItemQuoteMentions cath `shouldReturn` (Just (read cathHiId), cathReviewerId, [cathReviewerId])
+  where
+    reviewerGMId :: TestCC -> IO GroupMemberId
+    reviewerGMId cc = do
+      [Only gmId] <- withCCTransaction cc $ \db -> DB.query_ db "SELECT group_member_id FROM group_members WHERE local_display_name = 'reviewer'"
+      pure gmId
+    lastItemQuoteMentions :: TestCC -> IO (Maybe ChatItemId, GroupMemberId, [GroupMemberId])
+    lastItemQuoteMentions TestCC {chatController = cc} = do
+      r <- sendChatCmdStr cc "/_get chat #1 count=1"
+      case r of
+        Right (CRApiChat _ (AChat _ Chat {chatItems = [CChatItem _ ChatItem {quotedItem = Just CIQuote {itemId = quotedId, chatDir = quoteDir}, mentions}]}) _)
+          | JCIGroupRcv GroupMember {groupMemberId = quotedGMId} <- jsonCIQDirection quoteDir ->
+              pure (quotedId, quotedGMId, [gmId | CIMention {memberRef = Just CIMentionMember {groupMemberId = gmId}} <- M.elems mentions])
+        _ -> fail $ show r
+
+testViaMemberRoleRules :: HasCallStack => TestParams -> IO ()
+testViaMemberRoleRules =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      createGroup2 "team" alice bob
+      threadDelay 1000000
+      setGroupEdits alice "{\"enable\": \"on\", \"role\": \"owner\"}"
+      addViaMember alice "member"
+      viaMemberAdded [bob]
+      alice ##> "/_send #1(as_member=3) json [{\"msgContent\": {\"type\": \"text\", \"text\": \"hi\"}, \"priority\": 1}]"
+      alice <# "#team hi"
+      bob <# "#team reviewer> hi [>>]"
+      itemPriority alice "/_get chat #1 count=1" `shouldReturn` MPNormal
+      hiId <- lastItemId alice
+      bobHiId <- lastItemId bob
+      setItemAge bob bobHiId (79 * 3600)
+      alice ##> ("/_update item #1 " <> hiId <> " text hello")
+      alice <# "#team [edited] hello"
+      bob <## "error: x.msg.update: edit too late"
+      setItemAge alice hiId (100 * 3600)
+      alice ##> ("/_update item #1 " <> hiId <> " text hey")
+      alice <## "cannot update this item"
+      reviewerId <- memberIdByName bob "reviewer"
+      aliceId <- memberIdByName bob "alice"
+      connId <- relayConnIdToMember alice "bob"
+      ts <- getCurrentTime
+      let urgentMsg = ChatMessage chatInitialVRange (Just $ SharedMsgId "urgent_msg") (XMsgNew ((mcSimple (MCText "urgent") :: MsgContainer) {priority = MPHigh}))
+      agentSendBody alice connId $ encodeBinaryBatch [encodeFwdElement (GrpMsgForward (FwdMemberVia reviewerId "reviewer" aliceId) ts) (VMUnsigned urgentMsg)]
+      bob <# "#team reviewer> urgent [>>]"
+
+testViaMemberRemove :: HasCallStack => TestParams -> IO ()
+testViaMemberRemove =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+      addViaMember alice "member"
+      viaMemberAdded [bob, cath]
+      alice ##> "/_remove #1 4"
+      alice <## "#team: you removed reviewer from the group (signed)"
+      mapM_ (<## "#team: alice removed reviewer from the group (signed)") [bob, cath]
+
+testViaMemberRemoveByAdmin :: HasCallStack => TestParams -> IO ()
+testViaMemberRemoveByAdmin =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+      addViaMember alice "member"
+      viaMemberAdded [bob, cath]
+      alice ##> "/_send #1(as_member=4) text hi"
+      alice <# "#team hi"
+      [bob, cath] *<# "#team reviewer> hi [>>]"
+      bob ##> "/rm team reviewer"
+      bob <## "#team: you removed reviewer from the group (signed)"
+      mapM_ (<## "#team: bob removed reviewer from the group (signed)") [alice, cath]
+      alice ##> "/_send #1(as_member=4) text hey"
+      alice <## "your group connection is not active yet, try later"
+
+testViaMemberRefused :: HasCallStack => TestParams -> IO ()
+testViaMemberRefused =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3' "team" alice (bob, GRAdmin) (cath, GRMember)
+      bob ##> "/_add via #1 owner json {\"displayName\": \"reviewer\", \"fullName\": \"\"}"
+      bob <## "#team: you have insufficient permissions for this action, the required role is owner"
+      alice ##> "/_send #1(as_member=2) text hi"
+      alice <## "bad chat command: member is not via you"
+      cath ##> "/_add via #1 member json {\"displayName\": \"reviewer\", \"fullName\": \"\"}"
+      cath <## "#team: you have insufficient permissions for this action, the required role is admin"
+      alice ##> "/g i club"
+      aliceIncognito <- getTermLine alice
+      alice <## ("group #club is created, your incognito profile for this group is " <> aliceIncognito)
+      alice <## "to add members use /create link #club"
+      alice ##> "/_add via #2 member json {\"displayName\": \"reviewer\", \"fullName\": \"\"}"
+      alice <## "you are using an incognito profile for this group - prohibited to invite contacts"
+
+testViaMemberAnnounceRefused :: HasCallStack => TestParams -> IO ()
+testViaMemberAnnounceRefused =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+      addViaMember alice "admin"
+      viaMemberAdded [bob, cath]
+      aliceId <- memberIdByName bob "alice"
+      cathId <- memberIdByName alice "cath"
+      reviewerId <- memberIdByName alice "reviewer"
+      bobConnId <- relayConnIdToMember bob "cath"
+      aliceConnId <- relayConnIdToMember alice "bob"
+      ts <- getCurrentTime
+      let reviewerFwd fwdHdr fwdMsgId fwdEvt =
+            agentSendBody alice aliceConnId $ encodeBinaryBatch [encodeFwdElement (GrpMsgForward fwdHdr ts) (VMUnsigned $ ChatMessage chatInitialVRange (Just $ SharedMsgId fwdMsgId) fwdEvt)]
+      agentSendBody bob bobConnId $ chatMsgToBody $ ChatMessage supportedChatVRange Nothing (XGrpMemNew (MemberInfo (MemberId "new_1") GRMember Nothing danProfile Nothing (Just aliceId)) Nothing)
+      cath <## "error: x.grp.mem.new: member is not via the announcing member"
+      reviewerFwd (FwdMember reviewerId "reviewer") "new_2" (XGrpMemNew (MemberInfo (MemberId "new_2") GRMember Nothing danProfile Nothing Nothing) Nothing)
+      bob <## "error: x.grp.mem.new: member via another member cannot add members"
+      reviewerFwd (FwdMemberVia reviewerId "reviewer" cathId) "via_msg" (XMsgNew $ mcSimple $ MCText "forged")
+      alice #> "#team hello"
+      [bob, cath] *<# "#team alice> hello"
+
+testViaMemberIntroRefused :: HasCallStack => TestParams -> IO ()
+testViaMemberIntroRefused =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3' "team" alice (bob, GROwner) (cath, GRAdmin)
+      addViaMember alice "admin"
+      viaMemberAdded [bob, cath]
+      bobId <- memberIdByName alice "bob"
+      cathId <- memberIdByName alice "cath"
+      reviewerId <- memberIdByName alice "reviewer"
+      connId <- relayConnIdToMember alice "bob"
+      ts <- getCurrentTime
+      let sendIntro introId introRole viaId =
+            agentSendBody alice connId $ chatMsgToBody $ ChatMessage supportedChatVRange Nothing (XGrpMemIntro (MemberInfo (MemberId introId) introRole Nothing danProfile Nothing (Just viaId)) Nothing)
+      sendIntro "intro_1" GRMember bobId
+      bob <## "contact alice has insufficient permissions for this group action"
+      sendIntro "intro_2" GRMember reviewerId
+      bob <## "your group connection is not active yet, try later"
+      sendIntro "intro_3" GROwner cathId
+      bob <## "contact cath has insufficient permissions for this group action"
+      agentSendBody alice connId $ encodeBinaryBatch [encodeFwdElement (GrpMsgForward (FwdMember (MemberId "xavier_id") "xavier") ts) (VMUnsigned $ ChatMessage chatInitialVRange (Just $ SharedMsgId "xavier_msg") (XMsgNew $ mcSimple $ MCText "hi"))]
+      bob <## "#team: alice forwarded a message from an unknown member, creating unknown member record xavier"
+      bob <# "#team xavier> hi [>>]"
+      sendIntro "intro_4" GRMember (MemberId "xavier_id")
+      bob <## "your group connection is not active yet, try later"
+      bob ##> "/mr team alice member"
+      concurrentlyN_
+        [ bob <## "#team: you changed the role of alice to member (signed)",
+          alice <## "#team: bob changed your role from owner to member (signed)",
+          cath <## "#team: bob changed the role of alice from owner to member (signed)"
+        ]
+      sendIntro "intro_5" GRMember cathId
+      bob <## "contact alice has insufficient permissions for this group action"
+
+testViaMemberSendRefused :: HasCallStack => TestParams -> IO ()
+testViaMemberSendRefused =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+      addViaMember alice "member"
+      viaMemberAdded [bob, cath]
+      alice ##> "/_send #1(as_member=4) text hi"
+      alice <# "#team hi"
+      [bob, cath] *<# "#team reviewer> hi [>>]"
+      hiId <- lastItemId alice
+      alice ##> "/_send #1(_support:2)(as_member=4) text hey"
+      alice <## "bad chat command: cannot send as member in support scope"
+      alice ##> "/_send #1(as_member=4) json [{\"filePath\": \"test.pdf\", \"msgContent\": {\"type\": \"text\", \"text\": \"hey\"}}]"
+      alice <## "bad chat command: files and quotes cannot be sent as member"
+      alice ##> ("/_send #1(as_member=4) json [{\"quotedItemId\": " <> hiId <> ", \"msgContent\": {\"type\": \"text\", \"text\": \"hey\"}}]")
+      alice <## "bad chat command: files and quotes cannot be sent as member"
+      alice ##> ("/_delete item #1 " <> hiId <> " broadcast")
+      alice <## "cannot delete this item"
+      bobHiId <- lastItemId bob
+      bob ##> ("/_delete member item #1 " <> bobHiId)
+      bob <## "message marked deleted by you"
+      [alice, cath] *<# "#team reviewer> [marked deleted by bob] hi"
+      alice ##> "/_send #1(as_member=4) text hey"
+      alice <# "#team hey"
+      [bob, cath] *<# "#team reviewer> hey [>>]"
+      heyId <- lastItemId alice
+      alice ##> ("/_delete member item #1 " <> heyId)
+      alice <## "message marked deleted by you"
+      [bob, cath] *<# "#team reviewer> [marked deleted by alice] hey"
+
+createViaSignedGroup :: HasCallStack => TestCC -> TestCC -> IO ()
+createViaSignedGroup alice bob = do
+  connectUsers alice bob
+  alice ##> "/_group 1 {\"displayName\": \"team\", \"fullName\": \"\", \"groupPreferences\": {\"directMessages\": {\"enable\": \"on\"}, \"history\": {\"enable\": \"on\"}, \"signMessages\": {\"enable\": \"on\"}}}"
+  alice <## "group #team is created"
+  alice <## "to add members use /a team <name> or /create link #team"
+  addMember "team" alice bob GRAdmin
+  bob ##> "/j team"
+  concurrently_
+    (alice <## "#team: bob joined the group")
+    (bob <## "#team: you joined the group")
+
+testViaMemberSigned :: HasCallStack => TestParams -> IO ()
+testViaMemberSigned =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      createViaSignedGroup alice bob
+      addViaMember alice "member"
+      viaMemberAdded [bob]
+      alice ##> "/_send #1(as_member=3) text hi"
+      alice <# "#team hi (signed)"
+      bob <# "#team reviewer> hi (signed) [>>]"
+      hiId <- lastItemId alice
+      alice ##> ("/_update item #1 " <> hiId <> " text hello")
+      alice <# "#team [edited] hello (signed)"
+      bob <# "#team reviewer> [edited] hello (signed)"
+      reviewerId <- memberIdByName bob "reviewer"
+      aliceId <- memberIdByName bob "alice"
+      connId <- relayConnIdToMember alice "bob"
+      ts <- getCurrentTime
+      g <- C.newRandom
+      (_, otherKey :: C.PrivateKeyEd25519) <- atomically $ C.generateKeyPair g
+      let chatMsg = ChatMessage chatInitialVRange (Just $ SharedMsgId "forged_msg") (XMsgNew $ mcSimple $ MCText "forged")
+          body = chatMsgToBody chatMsg
+          signedMsg = signChatMsgBody (MsgSigning CBGroup (smpEncode (reviewerId, C.publicKey otherKey)) KRMember otherKey) body
+          fwd = GrpMsgForward (FwdMemberVia reviewerId "reviewer" aliceId) ts
+      agentSendBody alice connId $ encodeBinaryBatch [encodeFwdElement fwd (VMSigned MSSVerified signedMsg chatMsg)]
+      (bob ##> "/_get chat #1 count=100 search=bad signature" >> chat <$> getTermLine bob) `shouldEventuallyReturn` [(0, "message rejected: bad signature")]
+
+testViaMemberSignedPrevVersion :: HasCallStack => TestParams -> IO ()
+testViaMemberSignedPrevVersion ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatCfg ps testCfgVPrev "bob" bobProfile $ \bob -> do
+      createViaSignedGroup alice bob
+      addViaMember alice "member"
+      viaMemberAdded [bob]
+      alice ##> "/_send #1(as_member=3) text hi"
+      alice <# "#team hi (signed)"
+      bob <# "#team reviewer> hi (signature missing) [>>]"
+
+testViaMemberSignedPending :: HasCallStack => TestParams -> IO ()
+testViaMemberSignedPending =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      createViaSignedGroup alice bob
+      addViaMember alice "member"
+      viaMemberAdded [bob]
+      threadDelay 1000000
+      GroupMember {activeConn = Just bobConn} <- getTestMember alice "team" "bob"
+      withCCTransaction alice $ \db -> withCCUser alice $ \user -> setQuotaErrCounter db user bobConn quotaErrInactiveCount
+      alice ##> "/_send #1(as_member=3) text hi"
+      alice <# "#team hi (signed)"
+      connId <- relayConnIdToMember alice "bob"
+      agentSendBody alice connId $ chatMsgToBody $ ChatMessage supportedChatVRange (Just $ SharedMsgId "ping_msg") (XMsgNew $ mcSimple $ MCText "ping")
+      alice <## "[#team bob] inactive connection is marked as active"
+      bob <# "#team alice> ping (signature missing)"
+      bob <# "#team reviewer> hi (signature missing) [>>]"
+
+testViaMemberSignedHistory :: HasCallStack => TestParams -> IO ()
+testViaMemberSignedHistory =
+  testChat3 aliceProfile bobProfile danProfile $
+    \alice bob dan -> do
+      createViaSignedGroup alice bob
+      addViaMember alice "member"
+      viaMemberAdded [bob]
+      alice ##> "/_send #1(as_member=3) text hi"
+      alice <# "#team hi (signed)"
+      bob <# "#team reviewer> hi (signed) [>>]"
+      alice ##> "/_remove #1 3"
+      alice <## "#team: you removed reviewer from the group (signed)"
+      bob <## "#team: alice removed reviewer from the group (signed)"
+      connectUsers alice dan
+      addMember "team" alice dan GRMember
+      dan ##> "/j team"
+      concurrentlyN_
+        [ alice <## "#team: dan joined the group",
+          dan
+            <### [ "#team: you joined the group",
+                   StartsWith "#team: alice forwarded a message from an unknown member, creating unknown member record",
+                   EndsWith "hi (signed) [>>]",
+                   "#team: member bob (Bob) is connected"
+                 ],
+          do
+            bob <## "#team: alice added dan (Daniel) to the group (connecting...)"
+            bob <## "#team: new member dan is connected"
+        ]
+      dan ##> "/ms team"
+      dan
+        <### [ "dan (Daniel): member, you, connected",
+               "alice (Alice): owner, host, connected",
+               "bob (Bob): admin, connected",
+               "reviewer: author, via alice, status unknown"
+             ]
+
+testViaMemberRefusedChannel :: HasCallStack => TestParams -> IO ()
+testViaMemberRefusedChannel ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob -> do
+      _ <- prepareChannel1Relay "team" alice bob
+      alice ##> "/_add via #1 member json {\"displayName\": \"reviewer\", \"fullName\": \"\"}"
+      alice <## "bad chat command: members via another member are not supported in channels"
+
+testViaMemberRecordings :: HasCallStack => TestParams -> IO ()
+testViaMemberRecordings =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      createGroup2 "team" alice bob
+      addViaMember alice "member"
+      viaMemberAdded [bob]
+      alice ##> "/_send #1(as_member=3) text hi"
+      alice <# "#team hi"
+      bob <# "#team reviewer> hi [>>]"
+      apiFixture "via/members" alice [] FixtureRequests {frMarkdown = [], frUris = [], frCommands = ["/_members #1", "/_get chat #1 count=1"]}
+      bob `send` "> #team @reviewer (hi) fix it"
+      bob <# "#team > reviewer hi"
+      bob <## "      fix it"
+      alice <# "#team bob> > reviewer hi"
+      alice <## "      fix it"
+      apiFixture "via/received" bob [] FixtureRequests {frMarkdown = [], frUris = [], frCommands = ["/_members #1", "/_get chat #1 count=2"]}
+
+testViaMemberMigrationDown :: HasCallStack => TestParams -> IO ()
+testViaMemberMigrationDown ps = do
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChat ps "bob" bobProfile $ \bob -> do
+      createGroup2 "team" alice bob
+      addViaMember alice "member"
+      viaMemberAdded [bob]
+      alice ##> "/_send #1(as_member=3) text hi"
+      alice <# "#team hi"
+      bob <# "#team reviewer> hi [>>]"
+  migrateDown "alice" `shouldReturn` (["removed"], [0])
+  migrateDown "bob" `shouldReturn` (["announced"], [0])
+  where
+    migrateDown :: String -> IO ([T.Text], [Int])
+    migrateDown dbPrefix = do
+      Right ChatDatabase {chatStore, agentStore} <- createDatabase ps testCoreOpts dbPrefix
+      runDown chatStore . MTRDown . mapMaybe toDownMigration . reverse $ dropWhile ((< "20261113_item_priority") . SM.name) Store.migrations
+      r <-
+        Store.withTransaction chatStore $ \db ->
+          (,)
+            <$> (map fromOnly <$> DB.query_ db "SELECT member_status FROM group_members WHERE local_display_name = 'reviewer'")
+            <*> (map fromOnly <$> DB.query_ db "SELECT count(1) FROM chat_items WHERE item_sent = 1 AND group_member_id IS NOT NULL")
+      closeDBStore chatStore
+      closeDBStore agentStore
+      pure r
+#if defined(dbPostgres)
+    runDown st = Migrations.run st Nothing
+#else
+    runDown st = Migrations.run st Nothing True
+#endif

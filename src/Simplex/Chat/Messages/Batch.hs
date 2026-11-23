@@ -34,7 +34,7 @@ import Simplex.Chat.Controller (ChatError (..), ChatErrorType (..))
 import Simplex.Chat.Delivery
 import Simplex.Chat.Messages
 import Simplex.Chat.Protocol
-import Data.Maybe (isJust)
+import Data.Maybe (fromMaybe, isJust)
 import Simplex.Chat.Types (GroupMember (..), LocalProfile (..), VersionRangeChat)
 import Simplex.Messaging.Encoding (Large (..), smpEncode, smpEncodeList)
 
@@ -62,12 +62,14 @@ batchMessages mode maxLen = addBatch . foldr addToBatch ([], [], [], 0, 0)
   where
     addToBatch :: Either ChatError SndMessage -> ([Either ChatError MsgBatch], [ByteString], [SndMessage], Int, Int) -> ([Either ChatError MsgBatch], [ByteString], [SndMessage], Int, Int)
     addToBatch (Left err) acc = (Left err : addBatch acc, [], [], 0, 0) -- step over original error
-    addToBatch (Right msg@SndMessage {msgBody, signedMsg_}) acc@(batches, bodies, msgs, len, n)
+    addToBatch (Right msg@SndMessage {msgBody, signedMsg_, fwdElement_}) acc@(batches, bodies, msgs, len, n)
       | n' <= maxBatchElementCount && batchLen mode len' n' <= maxLen = (batches, body : bodies, msg : msgs, len', n')
       | msgLen <= maxLen = (addBatch acc, [body], [msg], msgLen, 1)
       | otherwise = (errLarge msg : addBatch acc, [], [], 0, 0)
       where
-        body = encodeBatchElement (if mode == BMBinary then signedMsg_ else Nothing) msgBody
+        body = case mode of
+          BMBinary -> fromMaybe (encodeBatchElement signedMsg_ msgBody) fwdElement_
+          BMJson -> msgBody
         msgLen = B.length body
         len' = len + msgLen
         n' = n + 1
@@ -82,17 +84,18 @@ batchMessages mode maxLen = addBatch . foldr addToBatch ([], [], [], 0, 0)
 -- | Batches delivery tasks into (batch if any task was accepted, accepted, large).
 -- Always uses binary batch format for relay groups.
 batchDeliveryTasks1 :: VersionRangeChat -> Int -> NonEmpty MessageDeliveryTask -> (Maybe ByteString, [MessageDeliveryTask], [MessageDeliveryTask])
-batchDeliveryTasks1 _vr maxLen = toResult . foldl' addToBatch ([], [], [], 0, 0) . L.toList
+batchDeliveryTasks1 _vr maxLen = toResult . addToBatch ([], [], [], 0, 0) . L.toList
   where
-    addToBatch :: ([ByteString], [MessageDeliveryTask], [MessageDeliveryTask], Int, Int) -> MessageDeliveryTask -> ([ByteString], [MessageDeliveryTask], [MessageDeliveryTask], Int, Int)
-    addToBatch (msgBodies, accepted, large, len, n) task
+    addToBatch :: ([ByteString], [MessageDeliveryTask], [MessageDeliveryTask], Int, Int) -> [MessageDeliveryTask] -> ([ByteString], [MessageDeliveryTask], [MessageDeliveryTask], Int, Int)
+    addToBatch acc [] = acc
+    addToBatch acc@(msgBodies, accepted, large, len, n) (task : tasks)
       -- element can't fit even a singleton batch (4-byte binary-batch framing)
-      | msgLen + 4 > maxLen = (msgBodies, accepted, task : large, len, n)
+      | msgLen + 4 > maxLen = addToBatch (msgBodies, accepted, task : large, len, n) tasks
       -- fits: include in batch
       -- batch overhead: '=' + count (2) + 2-byte length prefix per element
-      | n + 1 <= maxBatchElementCount && len' + (n + 1) * 2 + 2 <= maxLen = (msgBody : msgBodies, task : accepted, large, len', n + 1)
+      | n + 1 <= maxBatchElementCount && len' + (n + 1) * 2 + 2 <= maxLen = addToBatch (msgBody : msgBodies, task : accepted, large, len', n + 1) tasks
       -- doesn't fit: stop adding further messages
-      | otherwise = (msgBodies, accepted, large, len, n)
+      | otherwise = acc
       where
         MessageDeliveryTask {fwdSender, brokerTs = fwdBrokerTs, verifiedMsg} = task
         msgBody = encodeFwdElement GrpMsgForward {fwdSender, fwdBrokerTs} verifiedMsg

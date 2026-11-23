@@ -1,5 +1,6 @@
 import org.gradle.internal.extensions.stdlib.toDefaultLowerCase
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
+import org.jetbrains.compose.desktop.application.tasks.AbstractJPackageTask
 
 plugins {
   kotlin("multiplatform")
@@ -39,6 +40,10 @@ compose {
         )
       }
       mainClass = "chat.simplex.desktop.MainKt"
+      val os = System.getProperty("os.name", "generic").toDefaultLowerCase()
+      if (os.contains("mac")) {
+        jvmArgs += "--add-exports=java.desktop/com.apple.eawt.event=ALL-UNNAMED"
+      }
       nativeDistributions {
         copyright = "(c) 2020-2026 SimpleX Chat"
         // For debugging via VisualVM
@@ -48,7 +53,6 @@ compose {
           // 'jdk.unsupported' is for vlcj
           modules("jdk.zipfs", "jdk.unsupported")
         }
-        val os = System.getProperty("os.name", "generic").toDefaultLowerCase()
         // 'jdk.accessibility' provides Java Access Bridge on Windows - without it the app
         // fails to start with "Failed to launch JVM" when assistive technologies are enabled
         // in the system (see #4146). Packages are always built on the target OS, so only
@@ -176,6 +180,19 @@ tasks.named("clean") {
 }
 tasks.named("compileKotlinJvm") {
   dependsOn("cmakeBuildAndCopy")
+}
+tasks.withType<AbstractJPackageTask>().configureEach {
+  if (targetFormat == TargetFormat.Msi) {
+    doLast {
+      exec {
+        commandLine(
+          "powershell", "-NoProfile", "-ExecutionPolicy", "Bypass",
+          "-File", project.file("../../../scripts/desktop/disable-msi-install-dir-wipe-windows.ps1"),
+          destinationDir.asFileTree.matching { include("*.msi") }.singleFile
+        )
+      }
+    }
+  }
 }
 afterEvaluate {
   tasks.create("cmakeBuildAndCopy") {
