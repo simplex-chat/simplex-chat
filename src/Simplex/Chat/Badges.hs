@@ -189,7 +189,7 @@ mkBadgeStatus now verified BadgeInfo {badgeExpiry = e} = case verified of
 
 -- A badge credential (own, secret) and a proof (a presentation) are independent records.
 -- badgeKeyIdx is the issuer key index: it tells verifiers which configured key to use.
--- Only proofs ride the wire (in a profile); credentials come from the badge service. Neither is
+-- Only proofs ride the wire (in a profile); credentials come from the store service. Neither is
 -- ever serialized as a sum - each travels as its own record, so the JSON carries no credential/proof tag.
 
 data BadgeCredential = BadgeCredential

@@ -10,7 +10,7 @@ The testing approaches of this repository: what is checked, how a test is writte
 | Encoding of a protocol message or a JSON type, markdown, a pure function of the core | [unit test](#unit-tests) |
 | Command, response, event or type of the core API | [Bot API docs](#checks-against-committed-files), regenerated<br>[app fixture](#app-fixtures), when an app processes it |
 | Database migration | [schema dumps](#checks-against-committed-files) of SQLite and PostgreSQL<br>query plans |
-| Directory service, badge service, remote sessions | the [suite](#suites) of the area |
+| Directory service, store service, remote sessions | the [suite](#suites) of the area |
 | App processing of a core response or event | [app fixture](#app-fixtures), replayed in Kotlin and iOS tests |
 | App screen | a preview, rendered by the [desktop](#desktop-snapshots) and [iOS](#simplex-snapshots) snapshot tests |
 | Flow across app screens | a case of an [app workflow](#app-workflows) |
@@ -51,8 +51,8 @@ The hspec suite `simplex-chat-test` of simplex-chat.cabal, with the entry point 
 | `/Remote session/` | RemoteTests.hs | a desktop controlling a mobile: handshake, messages, files |
 | `/SimpleX Directory service bot/`<br>`/SimpleX Directory names/` | Bots/DirectoryTests.hs | the directory service with chat clients (`withDirectoryService`); names: SQLite only |
 | `/SimpleX Broadcast bot/` | Bots/BroadcastTests.hs | the broadcast bot; skipped when `CI=true` |
-| `/SimpleX badge service/` | Bots/BadgeService/*Tests.hs | configuration, web server and schema, catalog, groups, invoice waiters, payment providers, store receipts; the providers are local fakes (`Fake*.hs`) |
-| `/SimpleX badge service e2e/` | Bots/BadgeService/BotTests.hs, GroupIntegrationTests.hs | the badge service bot with chat clients |
+| `/SimpleX store service/` | Bots/StoreService/*Tests.hs | configuration, web server and schema, catalog, groups, invoice waiters, payment providers, store receipts; the providers are local fakes (`Fake*.hs`) |
+| `/SimpleX store service e2e/` | Bots/StoreService/BotTests.hs, GroupIntegrationTests.hs | the store service bot with chat clients |
 | `/Schema dump/`<br>`/Postgres schema dump/`<br>`/Bot API docs/`<br>`/Save query plans/` | SchemaDump.hs, PostgresSchemaDump.hs, APIDocs.hs | [committed files](#checks-against-committed-files) |
 
 ### Chat scenario tests
@@ -290,7 +290,7 @@ The app built from a branch, its core included, driven on a device by scripts an
 | support-bot | [apps/simplex-support-bot/bot.test.ts](../../apps/simplex-support-bot/bot.test.ts), vitest, with `simplex-chat` and `@simplex-chat/types` replaced by test/__mocks__ | `scripts/ci/scope-tests.sh support-bot` |
 | support-bot-light | [apps/simplex-support-bot-light/tests](../../apps/simplex-support-bot-light/tests), pytest, with `FakeChatApi` of conftest.py; ruff, pyright | `scripts/ci/scope-tests.sh support-bot-light` |
 | website | [website/test](../../website/test), `node --test` of src/js/simplex-lib.jsc | `npm test` in website |
-| badge-web | [apps/simplex-badge-service/web/test](../../apps/simplex-badge-service/web/test), `node --test` of the compiled tests, in UTC | `npm ci`, `npm test` in apps/simplex-badge-service/web |
+| badge-web | [apps/simplex-store-service/web/test](../../apps/simplex-store-service/web/test), `node --test` of the compiled tests, in UTC | `npm ci`, `npm test` in apps/simplex-store-service/web |
 | ci-scripts | [scripts/ci/test_packages_release.py](../../scripts/ci/test_packages_release.py), unittest of packages_release.py | `python3 scripts/ci/test_packages_release.py` |
 
 CI of each scope: [CI guide, Scopes](../../scripts/ci/README.md#scopes). Scopes lacking CI tests, with tests run locally:

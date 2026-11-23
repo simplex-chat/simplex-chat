@@ -81,14 +81,14 @@ import Control.Concurrent (newEmptyMVar, putMVar, takeMVar)
 import Control.Concurrent.Async (wait, withAsync)
 import Data.List.NonEmpty (NonEmpty (..))
 import Data.Maybe (isNothing)
-import Database.PostgreSQL.Simple (Only (..))
+import Database.PostgreSQL.Simple (Only (..), Query)
 import Database.PostgreSQL.Simple.SqlQQ (sql)
 import Simplex.Chat.Library.Subscriber (processAgentMessage)
 import Simplex.Messaging.Agent.Protocol (AEvent (MERRS), AgentErrorType (INTERNAL))
 import qualified Simplex.Messaging.Agent.Store.Postgres.Migrations as Migrations
 import System.Timeout (timeout)
 #else
-import Database.SQLite.Simple (Only (..))
+import Database.SQLite.Simple (Only (..), Query)
 import Database.SQLite.Simple.QQ (sql)
 import Simplex.Chat.Options.DB
 import qualified Simplex.Messaging.Agent.Store.SQLite.Migrations as Migrations
@@ -12270,13 +12270,21 @@ memberRoles cc name =
   map (\(Only r) -> r) <$> withCCTransaction cc (\db -> DB.query db "SELECT member_role FROM group_members WHERE local_display_name = ?" (Only name))
 
 waitQueuedLinkUpdates :: HasCallStack => TestCC -> IO ()
-waitQueuedLinkUpdates cc = go (100 :: Int)
+waitQueuedLinkUpdates cc = waitNoRows cc "SELECT COUNT(1) FROM commands WHERE command_function = 'set_short_link'"
+
+waitRosterApplied :: HasCallStack => TestCC -> IO ()
+waitRosterApplied cc = waitNoRows cc "SELECT COUNT(1) FROM groups WHERE use_relays = 1 AND roster_version IS NULL"
+
+waitConnectedContactsSettled :: HasCallStack => TestCC -> IO ()
+waitConnectedContactsSettled cc = waitNoRows cc "SELECT COUNT(1) FROM connections WHERE conn_status = 'ready' AND contact_conn_initiated = 1"
+
+waitNoRows :: HasCallStack => TestCC -> Query -> IO ()
+waitNoRows cc q = go (100 :: Int)
   where
     go n = do
-      [[queued]] <- withCCTransaction cc $ \db ->
-        DB.query_ db "SELECT COUNT(1) FROM commands WHERE command_function = 'set_short_link'" :: IO [[Int]]
-      if queued == 0 || n == 0
-        then queued `shouldBe` 0
+      [[rows]] <- withCCTransaction cc $ \db -> DB.query_ db q :: IO [[Int]]
+      if rows == 0 || n == 0
+        then rows `shouldBe` 0
         else threadDelay 100000 >> go (n - 1)
 
 -- The wire member id for a named member (look it up on a client that knows the name, e.g. the owner), used to

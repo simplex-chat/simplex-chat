@@ -16,13 +16,11 @@ import {Changes, ChatItemsWatch, ReplyTo, ToolCall, duration, getChat, isLive, n
 import {AgentEvent, AskRequest, AttachLine, Decision, Failure, LimitWindow, Limits, OwnerState, PermissionRequest, Prompt, ResetReply, Step, TaskEnd, TextBatch, TurnRequest, Waiting, WorkflowRun} from "./protocol"
 import {waitForCancelledCards} from "./serve"
 import {Machine, limitParts, machineParts, machineState} from "./status-line"
-import {AgentTools, ToolName, featureOff, fitsMessage, maxMessageLength, ownerOf, refusedFeature} from "./tools"
+import {AgentTools, ToolName, featureOff, fitsMessage, maxMessageLength, ownerOf, refusedFeature, sessionKey} from "./tools"
 import {User, userContact} from "./user"
 
 // spec: spec/architecture.md#hub-constants
 const profileName = "Claude"
-// spec: spec/architecture.md#hub-constants
-const sessionKey = "simplexMcpSession"
 // spec: spec/architecture.md#hub-constants
 const firstAction = 1
 // spec: spec/architecture.md#hub-constants

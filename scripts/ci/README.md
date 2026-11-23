@@ -45,7 +45,7 @@ The reduced build runs the Linux job build-linux (ubuntu-22.04 x86_64) for every
   - Docker image (step "Build and cache Docker image");
   - caches (the steps "Restore ... from cache");
   - `cabal build -j --enable-tests --ghc-options=-O0` (step "Build CLI");
-  - the badge service web app, `npm ci` and `npm run build` in apps/simplex-badge-service/web with Node.js 22, for the test "serves the built web app" (step "Build badge web app for tests");
+  - the store service web app, `npm ci` and `npm run build` in apps/simplex-store-service/web with Node.js 22, for the test "serves the built web app" (step "Build badge web app for tests");
   - simplex-chat-test with the selected tests (step "Run tests"), each attempt limited to 35 minutes by `timeout`; an attempt that reaches the limit fails, and "Attempt <n> timed out." is printed;
   - step "Check generated files": it fails if a test changed a tracked file, and uploads the change as artifact `generated-files-<job>`. The tests "verify and overwrite schema dump", "verify and overwrite query plans" and the "generate ..." tests of the API docs overwrite their files, so a stale file fails here even when the test passes on retry.
 - App test fixtures: core tests write the core's responses and events that the app tests use to tests/fixtures/api (`/names tests/` to tests/fixtures/api/names; `/contact via address/`, `/should validate link type/` and `/reject contact and notify the sender/` to tests/fixtures/api/connect; `/updated item event has the previous item/`, `/should send updated item with mentions added and removed by edit/`, `/mark call invitation missed when the caller ends the call/`, `/update as new shows the item last and unread/` and `/silent update as new/` to tests/fixtures/api/updates; `/record upload/` to tests/fixtures/api/files; `/silent, high priority and raised messages recorded for the apps/` to tests/fixtures/api/priority; `/members via another member recorded for the apps/` to tests/fixtures/api/via), and fail when a recording differs from the committed file; the rewritten files are committed, and the kotlin and ios scopes run for them.
@@ -116,12 +116,14 @@ The reduced build runs the Linux job build-linux (ubuntu-22.04 x86_64) for every
 
 #### badge-web
 
-- Globs: apps/simplex-badge-service/web/**. These paths are also in the core globs (apps/simplex-badge-service/**), and web/src/catalog.ts is read by core tests (tests/Bots/BadgeService/CatalogTests.hs, WebTests.hs).
+- Globs:
+  - apps/simplex-store-service/web/**, also in the core globs (apps/simplex-store-service/**); web/src/catalog.ts is read by core tests (tests/Bots/StoreService/CatalogTests.hs, WebTests.hs);
+  - tests/fixtures/store-service/rest-api/**: the badge page's test/service-refusals.test.ts reads the refusals that WebTests.hs records there.
 - CI, in build-linux: core build and tests, then `scope-tests.sh badge-web` (step "Test changed scopes").
-- Selected core tests: `/SimpleX badge service/` and `/SimpleX badge service e2e/`.
+- Selected core tests: `/SimpleX store service/`, which includes `/SimpleX store service e2e/`.
 - Local:
   ```sh
-  cd apps/simplex-badge-service/web
+  cd apps/simplex-store-service/web
   npm ci
   npm test
   ```
@@ -133,6 +135,17 @@ The reduced build runs the Linux job build-linux (ubuntu-22.04 x86_64) for every
   - scripts/ci/test_packages_release.py
 - CI, in build-linux: `scope-tests.sh ci-scripts` (step "Test changed scopes").
 - Local: `python3 scripts/ci/test_packages_release.py`; Python 3.11 or newer is required for tomllib (packages_release.py).
+
+#### store service on Postgres
+
+- Job: test-store-postgres (ubuntu-22.04 x86_64), on a pull request that changes the store service, its tests, `tests/Test.hs`, `src/Simplex/Chat/PaymentService`, `src/Simplex/Chat/Badges`, `cabal.project`, `simplex-chat.cabal` or build.yml, and on every dispatch. Production runs the store service on Postgres only, and the SQLite jobs do not cover it.
+- CI: the build-linux Docker image, a `postgres:17` container on the host network, `cabal build` with `+client_postgres`, then simplex-chat-test with `--fail-on=empty -m "Supporter badges" -m "SimpleX store service" -m "StoreService names"`.
+- Local, with a Postgres 17 on 127.0.0.1 that trusts the `postgres` user and allows 1500 connections:
+  ```sh
+  cabal build --builddir dist-postgres --constraint 'simplexmq +client_postgres' --constraint 'simplex-chat +client_postgres' simplex-chat-test
+  mkdir -p tests/tmp
+  PGHOST=127.0.0.1 LANG=C.UTF-8 "$(cabal list-bin --builddir dist-postgres --constraint 'simplexmq +client_postgres' --constraint 'simplex-chat +client_postgres' simplex-chat-test)" -m "Supporter badges" -m "SimpleX store service" -m "StoreService names"
+  ```
 
 #### website
 
@@ -175,6 +188,33 @@ The reduced build runs the Linux job build-linux (ubuntu-22.04 x86_64) for every
   - packages/simplex-chat-python/**
 - CI, in build-linux: `scope-tests.sh support-bot-light` (step "Test changed scopes"): the Python library of the branch and the bot installed in a virtual environment, then ruff, pyright and pytest. The tests use a fake API, without libsimplex.
 - Local: `scripts/ci/scope-tests.sh support-bot-light`.
+
+#### names-page
+
+- Globs:
+  - apps/simplex-domains
+  - tests/fixtures/store-service/rest-api/**
+- CI, in build-linux: `scope-tests.sh names-page` (step "Test changed scopes"): `npm ci` in apps/simplex-domains/webapp, at the commit the submodule pins, which build-linux checks out with the submodules, then `npx vitest run test/contract test/terms-vectors.test.ts` with STORE_FIXTURES set to tests/fixtures/store-service/rest-api. These are the page's only tests that read STORE_FIXTURES: they read the answers and vectors the store service's tests record there, and without it they are skipped.
+- Store fixtures: the store service's tests write their answers to tests/fixtures/store-service/rest-api and fail when an answer differs from the committed file; the rewritten files are committed.
+- The page's other unit tests, its build and its browser tests run in the CI of its own repository (simplex-chat/simplex.domains, webapp.yml); its cases run against the store service in names-e2e.
+- Local: `scripts/ci/scope-tests.sh names-page`.
+
+#### names-e2e
+
+- Globs:
+  - apps/simplex-store-service/**
+  - tests/Bots/StoreService/**
+  - tests/fixtures/store-service/rest-api/**
+  - apps/simplex-domains
+  - scripts/store-service/**
+
+  These paths are also in the core globs, as the cases run against the service of the core build.
+- CI, in build-linux: core build, then `scope-tests.sh names-e2e` (step "Test changed scopes"):
+  - anvil and the compiled contracts from the `anvil` and `contracts` stages of the page's webapp/dev/Dockerfile, at the versions it pins;
+  - `npm ci` and Playwright's Chromium with its system packages, in apps/simplex-domains/webapp;
+  - scripts/store-service/dev/contract-run.sh with the job's simplex-chat-test: the page's end-to-end cases in Chromium against the service, with the fake BTCPay and Stripe of its tests (apps/simplex-store-service/README.md, "Running the webapp's cases against the service");
+  - on a failure, the run's folder (logs, the service's database, Playwright's results and traces) uploaded as the artifact `names-e2e`, kept 14 days (step "Names page cases' results").
+- Local: `scripts/ci/scope-tests.sh names-e2e`, with Docker; or contract-run.sh with anvil and the compiled contracts, as the README states.
 
 #### Scopes lacking CI tests
 
@@ -225,6 +265,8 @@ gh workflow run android-emu.yml --ref <branch> -f claude=true
 A newer run of a workflow on the same branch cancels the older one.
 
 Each run uploads the app it built, for manual tests, as an artifact kept 14 days: `ios-sim-app` (SimpleX.app.tar.gz, for the iOS simulator on an Apple-silicon Mac), `desktop-app` (desktop-app.tar.gz, for Linux x86-64) and `android-app` (the debug APK, arm64-v8a only). The run's page lists it under Artifacts; `gh run download <run id> -n <artifact>` downloads it.
+
+An agent that runs these workflows in a fork follows [app-tests-agent.md](app-tests-agent.md).
 
 ## How long a run takes
 

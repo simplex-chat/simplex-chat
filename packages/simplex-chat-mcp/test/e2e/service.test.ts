@@ -271,12 +271,13 @@ test("the Main group shows a message of each running session with its state from
   writeFileSync(record, JSON.stringify({status: "idle"}))
   await client.request("POST", "/turn", {id: one, answer: ""})
   await idle
-  const agentPosted = received(alice.chat, ({chatItem}) => chatItem.meta.itemText === "🤖 Explore · find callers\n0 steps · 0:00")
+  const agentPosted = received(alice.chat, ({chatItem}) => chatItem.meta.itemText === "!- 🤖 Explore · find callers!\n!- 0 steps · 0:00!")
   const agentLine = edited(message, "🔴 1 · one: idle\n🤖 1 agent working")
   await client.request("POST", "/turn", {id: one, agent: {id: "a1", start: {type: "Explore", description: "find callers", transcript: join(dir, "list", "agent-a1.jsonl")}}})
   const agentItem = await agentPosted
+  expect(agentItem.chatItem.formattedText).toEqual([{format: {type: "small"}, text: "🤖 Explore · find callers"}, {text: "\n"}, {format: {type: "small"}, text: "0 steps · 0:00"}])
   await agentLine
-  const agentEnded = updated(alice.chat, ({chatItem}) => chatItem.meta.itemId === agentItem.chatItem.meta.itemId && chatItem.meta.itemText.startsWith("🤖 Explore · find callers · ✅ ") && chatItem.meta.itemText.endsWith("\nFound 6 callers."))
+  const agentEnded = updated(alice.chat, ({chatItem}) => chatItem.meta.itemId === agentItem.chatItem.meta.itemId && chatItem.meta.itemText.startsWith("!- 🤖 Explore · find callers · ✅ ") && chatItem.meta.itemText.endsWith("!\n!- Found 6 callers.!"))
   await client.request("POST", "/turn", {id: one, agent: {id: "a1", stop: "Found 6 callers."}})
   await agentEnded
   const ended = Promise.all([edited(message, "⚪ 1 · one: stopped"), edited(summary, "1 session ⚪")])

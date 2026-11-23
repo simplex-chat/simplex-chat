@@ -1,0 +1,14 @@
+{
+  "body": {
+    "community": {
+      "for": "bakers and bakeries in Portugal",
+      "years": 2
+    },
+    "terms": {
+      "hash": "0xbbc52157d9b12f23af62ae8a7eacf2ea11e7db311fa2ed5bd48ea9ba01f77c4d",
+      "link": "https://git.simplex.chat/simplex-chat/simplex-chat/raw/commit/eed23f946d290583f5f55c2ae8255db70adac4fc/docs/terms.md#sha256=62494cf9b349f1544aad78a8a5917ff12df8576ce90c3c92a89d40ebae915af3"
+    },
+    "type": "terms_changed"
+  },
+  "status": 409
+}

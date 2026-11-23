@@ -1,0 +1,9 @@
+{
+  "body": {
+    "kind": "contact",
+    "profile": {
+      "type": "unavailable"
+    }
+  },
+  "status": 200
+}
