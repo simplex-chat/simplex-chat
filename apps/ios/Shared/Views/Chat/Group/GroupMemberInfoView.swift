@@ -112,7 +112,7 @@ struct GroupMemberInfoView: View {
                     .listRowSeparator(.hidden)
                     .padding(.bottom, 18)
 
-                if !groupInfo.useRelays {
+                if !groupInfo.useRelays && member.memberVia == nil {
                     infoActionButtons(member)
                         .padding(.horizontal)
                         .frame(maxWidth: .infinity)
@@ -126,6 +126,7 @@ struct GroupMemberInfoView: View {
                     let showMemberSupportChat = !openedFromSupportChat
                         && groupInfo.membership.memberRole >= .moderator
                         && member.memberRole != .relay
+                        && member.memberVia == nil
                         && ((groupInfo.fullGroupPreferences.support.on && member.memberRole < .moderator)
                             || member.supportChat != nil)
                     let canVerifyCode = connectionCode != nil && member.memberRole != .relay

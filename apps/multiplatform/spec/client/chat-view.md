@@ -144,7 +144,8 @@ Flat and Classic names  "via <host>" after the name and badge of a single member
                         the name's colour, on one line with the name shortened before it (NameWithBadge via)
 quotes                  "via <host>" after the quoted member's name (FramedItemView)
 member list             "via <host>" in place of the status (MemberRow.memberConnStatus, member_via)
-member info             row "Via" (info_row_via) with the host's name, after the role
+member info             row "Via" (info_row_via) with the host's name, after the role; the message, call and video
+                        buttons and "Chat with member" hidden; the security code not requested (GroupMember.canVerifyCode)
 loading                 ChatItemsList loads the members when an item or its quote is from a member via another member and
                         the members are not loaded
 ```

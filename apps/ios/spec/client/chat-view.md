@@ -176,7 +176,8 @@ Flat and Classic names  "via <host>" after the name and badge of a single member
                         the name's colour, on one line with the name shortened before it (MemberVia, NameWithBadge via:)
 quotes                  "via <host>" after the quoted member's name (FramedItemView)
 member list             "via <host>" in place of the status (MemberRowView.memberConnStatus)
-member info             row "Via" with the host's name, after the role
+member info             row "Via" with the host's name, after the role; the message, call and video buttons and "Chat
+                        with member" hidden; the security code not requested (GroupMember.canVerifyCode)
 loading                 ChatView loads the members when an item or its quote is from a member via another member and the
                         members are not loaded (viaHostsNotLoaded)
 ```

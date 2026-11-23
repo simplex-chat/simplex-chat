@@ -3616,7 +3616,7 @@ public struct GroupMember: Identifiable, Decodable, Hashable {
     }
 
     public func canVerifyCode(groupInfo: GroupInfo) -> Bool {
-        (memberActive || (groupInfo.useRelays && memberCurrent)) && memberRole != .relay
+        memberVia == nil && (memberActive || (groupInfo.useRelays && memberCurrent)) && memberRole != .relay
     }
 
     public var canReceiveReports: Bool {

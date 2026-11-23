@@ -485,7 +485,7 @@ fun GroupMemberInfoLayout(
 
     val contactId = member.memberContactId
 
-    if (!groupInfo.useRelays) {
+    if (!groupInfo.useRelays && member.memberVia == null) {
       Box(
         Modifier.fillMaxWidth(),
         contentAlignment = Alignment.Center
@@ -552,6 +552,7 @@ fun GroupMemberInfoLayout(
     val showMemberSupportChat = !openedFromSupportChat &&
       groupInfo.membership.memberRole >= GroupMemberRole.Moderator &&
       member.memberRole != GroupMemberRole.Relay &&
+      member.memberVia == null &&
       ((groupInfo.fullGroupPreferences.support.on && member.memberRole < GroupMemberRole.Moderator)
         || member.supportChat != null)
     // the same condition decides whether the code is requested, so the row is shown disabled until it arrives
@@ -1160,7 +1161,8 @@ fun PreviewGroupMemberInfoLayout() = GroupMemberInfoLayoutPreview(GroupMember.sa
 @Preview
 @Composable
 fun PreviewGroupMemberInfoLayoutViaMember() = GroupMembersPreview(listOf(previewClaude)) {
-  GroupMemberInfoLayoutPreview(previewViaClaude(6, "reviewer"), connectionCode = null)
+  val admin = GroupMember.sampleData.copy(memberRole = GroupMemberRole.Admin)
+  GroupMemberInfoLayoutPreview(previewViaClaude(6, "reviewer"), connectionCode = null, groupInfo = GroupInfo.sampleData.copy(membership = admin))
 }
 
 @Composable
