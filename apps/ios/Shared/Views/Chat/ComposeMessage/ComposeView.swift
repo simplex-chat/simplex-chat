@@ -105,10 +105,7 @@ struct ComposeState {
             self.voiceMessageRecordingState = .noRecording
         }
         self.mentions = editingItem.mentions ?? [:]
-        let links = parsedMessage.compactMap(\.linkUri)
-        if let uri = previewLink, let i = links.firstIndex(of: uri) {
-            self.cancelledLinks = Set(links[..<i])
-        }
+        self.cancelledLinks = ComposeState.linksBeforePreview(editingItem)
         self.preview = selectedPreview(previewsOn: previewsOn)
     }
 
@@ -333,7 +330,7 @@ struct ComposeState {
         case .textChanged:
             if message.isEmpty { s.cancelledLinks = [] }
         case .chatChanged:
-            s.cancelledLinks = []
+            s.cancelledLinks = if case let .editingItem(ci) = contextItem { ComposeState.linksBeforePreview(ci) } else { [] }
         }
         s.preview = s.selectedPreview(previewsOn: previewsOn)
         return s
@@ -350,6 +347,12 @@ struct ComposeState {
     static func nextLinkRequest() -> Int64 {
         lastLinkRequest += 1
         return lastLinkRequest
+    }
+
+    private static func linksBeforePreview(_ editingItem: ChatItem) -> Set<String> {
+        guard case let .link(_, preview)? = editingItem.content.msgContent else { return [] }
+        let links = (editingItem.formattedText ?? []).compactMap(\.linkUri)
+        return links.firstIndex(of: preview.uri).map { Set(links[..<$0]) } ?? []
     }
 
     // Spec: spec/client/compose.md#getMessageLinks

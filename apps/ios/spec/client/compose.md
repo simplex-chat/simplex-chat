@@ -315,21 +315,22 @@ The link preview is a part of `ComposeState`: `preview` is `.linkPreview(status:
 | `.textChanged` | `.onChange(of: composeState.message)`<br>`forwardingItems(_:fromChatInfo:previewsOn:)`, a forward to the same chat | for an empty text, `cancelledLinks` is emptied; the card of the selected link is kept, requested or removed; an attachment is kept |
 | `.fetched(request:linkPreview:)` | `loadLinkPreview` | applied only to the loading request; after a failure, the link is added to `cancelledLinks` and the next link is selected |
 | `.cancelled` | X of the card, `cancelLinkPreview` | the link is added to `cancelledLinks` and the next link is selected |
-| `.chatChanged` | `.onChange(of: chatModel.chatId)`, `saveCurrentDraft` | `cancelledLinks` is emptied and the link is selected again |
+| `.chatChanged` | `.onChange(of: chatModel.chatId)`, `saveCurrentDraft` | `cancelledLinks` is emptied, in an edit set to the links of the edited message before the link of its card, and the link is selected again |
 
-An edit opens with `ComposeState(editingItem:previewsOn:)`: the links of the text before the link of the edited card are added to `cancelledLinks`, and the preview is selected as `.textChanged` selects it. The card of the edited message is kept and saved with the message; a card whose link is absent from the text is replaced by the card of the selected link of the text.
+An edit opens with `ComposeState(editingItem:previewsOn:)`: the links of the edited message before the link of its card are added to `cancelledLinks`, and the preview is selected as `.textChanged` selects it. The card of the edited message is kept and saved with the message, also after its draft is saved or another chat is opened; a card whose link is absent from the text is replaced by the card of the selected link of the text.
 
 ### Link Preview Functions
 
 | Function | Line | Description |
 |----------|------|-------------|
 | [`init(editingItem:previewsOn:)`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L91) | L91 | State of an edit, with the links before the link of its card cancelled |
-| [`forwardingItems()`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L123) | L123 | State of a forward to the same chat, with the text and its link preview |
-| [`updateLinkPreview()`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L323) | L323 | Transition of the link preview state |
-| [`getMessageLinks()`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L356) | L356 | Returns the first URL outside `cancelledLinks` and SimpleX links |
-| [`checkLinkPreview()`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L371) | L371 | Content of the sent message: `.link` when the shown card is of the selected URL of the text |
-| [`cancelLinkPreview()`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L1975) | L1975 | Cancels the card |
-| [`loadLinkPreview()`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L1980) | L1980 | Requests the preview of the loading link from the core after 1.5 s |
+| [`forwardingItems()`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L120) | L120 | State of a forward to the same chat, with the text and its link preview |
+| [`updateLinkPreview()`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L320) | L320 | Transition of the link preview state |
+| [`linksBeforePreview()`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L352) | L352 | The links of an edited message before the link of its card |
+| [`getMessageLinks()`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L359) | L359 | Returns the first URL outside `cancelledLinks` and SimpleX links |
+| [`checkLinkPreview()`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L374) | L374 | Content of the sent message: `.link` when the shown card is of the selected URL of the text |
+| [`cancelLinkPreview()`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L1978) | L1978 | Cancels the card |
+| [`loadLinkPreview()`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L1983) | L1983 | Requests the preview of the loading link from the core after 1.5 s |
 | [`apiGetLinkPreview()`](../../Shared/Model/SimpleXAPI.swift#L527) | L527 | Sends `/_link preview <uri>`; on failure returns no preview |
 
 ### Behavior
@@ -338,7 +339,7 @@ An edit opens with `ComposeState(editingItem:previewsOn:)`: the links of the tex
 - Link preview data is included in the `ComposedMessage` sent to the core, from the state read when the send starts
 - Toggle in privacy settings to disable auto-preview generation
 - A failed preview shows no card and no alert; with **Show developer options** and **Show link preview errors** on, an alert shows the error of the core
-- A failed or dismissed link is not requested again in the same message; it is requested again after the text is cleared, the message is sent, the draft is saved or another chat is opened
+- A failed or dismissed link is not requested again in the same message; it is requested again after the text is cleared, the message is sent, the draft is saved or another chat is opened; in an edit, the links of the edited message before the link of its card stay cancelled when the draft is saved or another chat is opened
 - A result is applied only while its request is loading; the result of a link replaced or removed from the text, or of a state replaced by an attachment, an edit or a reply, is discarded
 - A forward to the same chat keeps the text, `cancelledLinks` and the link preview with its request; an attachment is removed, and the link of the text is selected
 - An attachment, voice or chat link preview replaces the link preview and keeps `cancelledLinks`
