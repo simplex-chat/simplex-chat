@@ -148,7 +148,8 @@ sequenceDiagram
 | MAX_HEADER_BYTES | 32 KiB of status line and headers |
 | MAX_HEADERS | 100 |
 | MAX_HEAD_BYTES | 1 MiB of HTML body (Q6) |
-| MAX_IMAGE_BYTES | 2 MiB (Q6) |
+| MAX_IMAGE_BYTES | 2 MiB of the `og:image` file (Q6) |
+| MAX_IMAGE_LINK_BYTES | 10 MiB of the JPEG or PNG file of an image link (section 3.7, Q6.1) |
 | MAX_TITLE_LENGTH | 300 characters |
 | MAX_DESCRIPTION_LENGTH | 500 characters |
 | IMAGE_DATA_SIZE | `maxImagePreviewSize`, 14000 (Library/Commands.hs:179-180), less the JSON bytes of the title and the description (section 3.10) |
@@ -160,7 +161,8 @@ data LinkPreviewConfig = LinkPreviewConfig
   { rootCerts :: XS.CertificateStore,
     addressPolicy :: AddressPolicy,
     previewDeadline :: Int,
-    socksPreviewDeadline :: Int
+    socksPreviewDeadline :: Int,
+    maxImageLinkBytes :: Int
   }
 
 data AddressPolicy = APPublic | APPublicAndLoopback
@@ -191,7 +193,7 @@ data Uri = Uri
 
 - The card shows what the existing `LinkPreview` holds (Protocol.hs:246): `title`, `description`, `image`, `uri`. `HeadTags` holds the raw values of the first tag of each kind, a monoid of first values; `PageMeta` holds the decoded values, and `pageImage` is the URL that the core fetches and resizes into `ImageData`.
 - `USHttp` is produced only for `.onion` hosts (section 3.7); `uriPort` is `Nothing` for the default port of the scheme.
-- MAX_REDIRECTS, MAX_HEADER_BYTES, MAX_HEADERS, MAX_HEAD_BYTES, MAX_IMAGE_BYTES, MAX_TITLE_LENGTH and MAX_DESCRIPTION_LENGTH are constants of the module; the tests change only the roots, the address policy and the deadlines.
+- MAX_REDIRECTS, MAX_HEADER_BYTES, MAX_HEADERS, MAX_HEAD_BYTES, MAX_IMAGE_BYTES, MAX_TITLE_LENGTH and MAX_DESCRIPTION_LENGTH are constants of the module, and MAX_IMAGE_LINK_BYTES is `maxImageLinkBytes` of `LinkPreviewConfig`; the tests change only the roots, the address policy and the deadlines.
 - Card in the apps: compose shows image, title and link (LinkPreviews.kt:152-191; ComposeLinkView.swift:43-52); the chat item shows image, title, description when not empty, and link on Kotlin (LinkPreviews.kt:203-226); iOS shows image and title only (CILinkView.swift:22, 36).
 - Description: both apps send `""` today (LinkPreviews.kt:129-134, commented out "TODO add once supported in iOS"; ImageUtils.swift:471). The core fills it, Kotlin shows it with no change, and stage 3 adds it to CILinkView as Kotlin shows it.
 - `image` is required in `LinkPreview`, so a page without an image has no preview, as today on both platforms (LinkPreviews.kt:121-139; ImageUtils.swift:461-479).
@@ -280,7 +282,7 @@ Content by type:
 | `Content-Type` | Content |
 |---|---|
 | `text/html`, `application/xhtml+xml` | `PageMeta` from the head scanner |
-| `image/jpeg`, `image/png` | the image itself, at most MAX_IMAGE_BYTES (Q6.1), titled by the last path segment of the requested URI, or by its host when the segment is empty, without description (LinkPreviews.kt:93-95) |
+| `image/jpeg`, `image/png` | the image itself, at most MAX_IMAGE_LINK_BYTES (Q6.1), titled by the last path segment of the requested URI, or by its host when the segment is empty, without description (LinkPreviews.kt:93-95) |
 | other | a failure with the type |
 
 ### 3.8 Head scanner and metadata rules
@@ -334,7 +336,7 @@ Tags are scanned as bytes, as both supported families are supersets of ASCII; on
 
 ### 3.10 Image
 
-- Bytes: at most MAX_IMAGE_BYTES, else a failure.
+- Bytes: at most MAX_IMAGE_BYTES of an `og:image` file and MAX_IMAGE_LINK_BYTES of the file of an image link, else a failure.
 - `imagePreview` (Library/Commands.hs:232-238) is split: its decode and resize steps become `imageDataPreview :: Int64 -> ByteString -> IO (Either String ImageData)`, with the size limit of the data URI as its first argument, used by `imagePreview` with `maxImagePreviewSize` and by the link preview.
 - Size: the JSON of a sent message is at most `maxEncodedMsgLength`, 15602 bytes (Protocol.hs:930-931, checked by `encodeChatMessage`, Protocol.hs:987-994), and the image takes up to 14000 of them. The image limit of a link preview is `maxImagePreviewSize` less the JSON bytes of its title and description, so a preview takes no more of the message than an image with an empty title and description, as the apps send today.
 - Decoding limits of `decodeResizable`: JPEG scaled by halvings to at most 4320 per side, at most 2^28 pixels and `maxDecodeMemoryMB`; PNG decoded by spng within half of `maxDecodeMemoryMB` (src/Simplex/Chat/Image.hs:69-93, 309-323).
@@ -722,14 +724,14 @@ Laws, tested in desktopTest and SimpleX Unit Tests on the recorded markdown:
 | Party | Can | Cannot | Measures |
 |---|---|---|---|
 | Website of the link | see the request time, a fixed UA, the IP address without a proxy or the proxy's exit with one; serve any title and image to the sender | read cookies or other sites' data; learn the recipient | no cookies, `Referer`, `Accept-Language`; per-preview SOCKS credentials |
-| Website, huge or endless page | make the core read bytes | read beyond MAX_HEAD_BYTES or MAX_IMAGE_BYTES | stop condition; budgets; close |
+| Website, huge or endless page | make the core read bytes | read beyond MAX_HEAD_BYTES, MAX_IMAGE_BYTES or MAX_IMAGE_LINK_BYTES | stop condition; budgets; close |
 | Website, slow response | hold a connection | beyond READ_TIMEOUT per read and PREVIEW_DEADLINE | `timeout`; `bracket` |
 | Website, compressed body | send gzip | make the core inflate it | `Accept-Encoding: identity`; other encodings rejected |
 | Website, redirect | send the core to other hosts | to `http` other than an onion host, to prohibited addresses, beyond MAX_REDIRECTS | section 3.7; address check per hop |
 | Website, long title or description | send long text | make the message too large to send | MAX_TITLE_LENGTH, MAX_DESCRIPTION_LENGTH; image limit reduced by their size (section 3.10) |
 | Onion service, plain HTTP | serve the page and image | be reached without Tor | `http` only for onion hosts, only through the SOCKS proxy (section 3.6) |
 | Website, DNS name of a local address | point the core to the LAN without a proxy | connect: addresses are checked after resolution, and the checked address is the one connected | section 3.6 |
-| Website, image bomb | send large dimensions | exceed the decoding limits | `decodeResizable` limits; MAX_IMAGE_BYTES |
+| Website, image bomb | send large dimensions | exceed the decoding limits | `decodeResizable` limits; MAX_IMAGE_BYTES, MAX_IMAGE_LINK_BYTES |
 | Network observer, proxy, exit | see the host name (SNI), timing, sizes | read or alter content | TLS validated against the root store |
 | A local non-Tor SOCKS proxy | resolve a name to a LAN address and connect | — | residual: only IP literals are checked with a proxy |
 | Recipient of the message | see the preview the sender made | make the sender or the recipient fetch | the recipient never fetches |
@@ -770,12 +772,12 @@ flowchart TD
 | Q4 | `og:image` other than JPEG and PNG | (a) no preview; WebP with the WebP PR named in plans/2026-10-23-core-image-resizing.md:369; (b) the first GIF frame added now (JuicyPixels) | (a) |
 | Q5 | Tags of the title, description and image | (a) `og:` tags with `property=` or `name=`, the first of each kind (3.8); (b) with `property=` only; (c) as (a), and the images of twitter, `image_src`, `itemprop` and JSON-LD tags | (a) |
 | Q6 | Limits | (a) PREVIEW_DEADLINE 15 s, and 30 s, the CONNECT_TIMEOUT of the apps' `proxyDefaults` (4.1), when the host of the link is reached through a SOCKS proxy; MAX_HEAD_BYTES 1 MiB; MAX_IMAGE_BYTES 2 MiB; (b) 30 s, 1 MiB, 5 MiB | (a) |
-| Q6.1 | A link to a JPEG or PNG file above MAX_IMAGE_BYTES gets no preview, as its file is limited as `og:image` is (3.7, 3.10); Android and desktop make one today, without a byte limit (LinkPreviews.kt:93-96, 124-128). The measurement fetched only `og:image` files; the one original above 2 MiB that it recorded is the JSON-LD PNG of a Substack post, 2,330,025 B | (a) MAX_IMAGE_BYTES for both; (b) 10 MiB for the file of the link, within the decoding limits of `decodeResizable` (3.10) | (b): the file of an image link is usually a full photo |
+| Q6.1 | The byte limit of the file of an image link, a link to a JPEG or PNG file (3.7, 3.10); Android and desktop make its preview today without a byte limit (LinkPreviews.kt:93-96, 124-128). The measurement fetched only `og:image` files; the one original above 2 MiB that it recorded is the JSON-LD PNG of a Substack post, 2,330,025 B | (a) MAX_IMAGE_BYTES, 2 MiB, as for `og:image`: a link to a larger file gets no preview; (b) MAX_IMAGE_LINK_BYTES, 10 MiB, within the decoding limits of `decodeResizable` (3.10); a file of 10 MiB is received within PREVIEW_DEADLINE only at 5.6 Mbit/s or more, 2.8 Mbit/s or more through a SOCKS proxy | (b): the file of an image link is usually a full photo |
 | Q7 | UA | (a) Firefox 160 on Windows (3.7); (b) Chrome 158 on Windows, `Chrome/158.0.0.0`; (c) Chrome 79, `Chrome/79.0.3945.130` | (a) |
 
 Decided: Q1 (a), Q2 (a), Q3 (a), Q4 (a). With Q2, `http` links of `.onion` hosts are fetched over plain HTTP, only through the SOCKS proxy; without a proxy they get no preview. Message size: the title is cut to 300 characters, the description to 500, and the image limit is reduced by their JSON bytes (3.10).
 
-Open: Q5, Q6, Q6.1, Q7; the branch implements (a) of each.
+Open: Q5, Q6, Q6.1, Q7; the branch implements the recommended option of each: (a) of Q5, Q6 and Q7, (b) of Q6.1.
 
 Decided as details: concurrent fetches without a cancel command (3.11); the desktop fetches while it controls a phone (3.12); one browser UA with the `x.com` exception (3.7).
 
@@ -831,7 +833,7 @@ Core, unit, `tests/LinkPreviewTests.hs` (new, registered in tests/Test.hs), patt
 |---|---|
 | head scanner | `og:title`, `og:description`, `og:image`, `<title>`, `<meta name="description">`, priority of `og:`, the first `og:` tag of each kind with `property=` or `name=`, quotes, entities, comments, `<meta>` inside `<script>` ignored, stop at `</head>`, at `<body` and after the three `og:` tags with either attribute |
 | chunk law | QuickCheck: scan of a body equals scan of any chunk split |
-| page limits | an endless head read to exactly MAX_HEAD_BYTES; MAX_IMAGE_BYTES of 2 MiB, an image of MAX_IMAGE_BYTES accepted, one byte more refused; PREVIEW_DEADLINE of 15 s without a SOCKS proxy and of 30 s through it, in `SMAlways` and `SMOnion` modes; 200000 entity references decoded |
+| page limits | an endless head read to exactly MAX_HEAD_BYTES; MAX_IMAGE_BYTES of 2 MiB and MAX_IMAGE_LINK_BYTES of 10 MiB, an image of each limit accepted, one byte more refused; PREVIEW_DEADLINE of 15 s without a SOCKS proxy and of 30 s through it, in `SMAlways` and `SMOnion` modes; 200000 entity references decoded |
 | reference resolution | RFC 3986 5.4.1 and 5.4.2 examples; `//cdn/...`; port kept; default port and trailing dot of the host removed |
 | onion schemes | `http` kept for onion hosts, in links, relative references and redirects; other `http` links fetched as `https`; redirect from an onion page to `http` of another host refused |
 | address policy | each prohibited range, its IPv4-mapped form, public addresses |
@@ -847,6 +849,7 @@ Core, scenario, `tests/ChatTests/LinkPreviews.hs` (new, in ChatTests.hs), patter
 | `og:` tags with `name=` | title, description and PNG image of a page with `<meta name="og:...">`, `<title>` and `<meta name="description">` |
 | relative `og:image` | resolved against the final URI after a redirect |
 | image URL | `image/png` response titled by the file name, empty description |
+| image limits | tests/fixtures/test.jpg padded with zero bytes after its end: a link to a file of MAX_IMAGE_BYTES + 1 bytes gets a preview; the same file as `og:image` and a link to a file of MAX_IMAGE_LINK_BYTES + 1 bytes: `CELinkPreview` "image too large" |
 | no `og:image`, icon present | `CELinkPreview`, no request for the icon |
 | redirects | 5 followed; 6, to `https://10.0.0.1` without a connection, and to `http`: `CELinkPreview` |
 | `APPublic` | `localhost` without a proxy and `127.0.0.1` through the SOCKS5 server: `CELinkPreview` "prohibited address", without a request to the server or the proxy |
