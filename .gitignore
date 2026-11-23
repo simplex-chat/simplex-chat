@@ -88,4 +88,6 @@ website/test/stubs-layout-cache/_includes/*.js
 apps/android/app/release
 apps/multiplatform/.kotlin/sessions
 # anywhere in the tree: this file holds a real BTCPay api_key and webhook_secret
+store_service.ini
+# a local ini under its name before the store service rename holds the same secrets
 badge_service.ini

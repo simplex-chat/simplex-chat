@@ -3,16 +3,39 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE TupleSections #-}
 
-import Bots.BadgeService.BTCPayTests
-import Bots.BadgeService.BotTests
-import Bots.BadgeService.CatalogTests
-import Bots.BadgeService.ConfigTests
-import Bots.BadgeService.GroupIntegrationTests
-import Bots.BadgeService.GroupTests
-import Bots.BadgeService.StoreVerifierTests
-import Bots.BadgeService.StripeTests
-import Bots.BadgeService.WaitersTests
-import Bots.BadgeService.WebTests
+import Bots.StoreService.BTCPayTests
+import Bots.StoreService.BotTests
+import Bots.StoreService.CatalogTests
+import Bots.StoreService.ConfigTests
+import Bots.StoreService.GroupIntegrationTests
+import Bots.StoreService.GroupTests
+import Bots.StoreService.MetricsTests
+import Bots.StoreService.NameRegistrationTests
+import Bots.StoreService.NamesBalancesTests
+import Bots.StoreService.NamesLateCreditTests
+import Bots.StoreService.NamesChainTests
+import Bots.StoreService.NamesCodesTests
+import Bots.StoreService.NamesCommunityTests
+import Bots.StoreService.NamesContractsTests
+import Bots.StoreService.NamesLabelTests
+import Bots.StoreService.NamesLinksTests
+import Bots.StoreService.NamesOrdersTests
+import Bots.StoreService.NamesOwnerTests
+import Bots.StoreService.NamesPageService
+import Bots.StoreService.NamesPhasesTests
+import Bots.StoreService.NamesProfilesTests
+import Bots.StoreService.NamesRecordsTests
+import Bots.StoreService.NamesRevealTests
+import Bots.StoreService.NamesSearchTests
+import Bots.StoreService.NamesSenderTests
+import Bots.StoreService.NamesSignatureTests
+import Bots.StoreService.NamesStoreTests
+import Bots.StoreService.NamesWiringTests
+import Bots.StoreService.NamesWorkerTests
+import Bots.StoreService.StoreVerifierTests
+import Bots.StoreService.StripeTests
+import Bots.StoreService.WaitersTests
+import Bots.StoreService.WebTests
 import Bots.BroadcastTests
 import Bots.DirectoryTests
 import ChatClient
@@ -43,12 +66,15 @@ import Control.Exception (bracket_, finally)
 import PostgresSchemaDump
 import Simplex.Chat.Store.Postgres.Migrations (migrations)
 import Simplex.Messaging.Agent.Store.Postgres.Util (createDBAndUserIfNotExists, dropDatabaseAndUser)
+import StoreService.Store.Postgres.Migrations (storeServiceSchemaMigrations)
 #else
 import APIDocs
 import ChatTests.Names (chatNamesTests)
+import ChatTests.Utils (ifCI)
 import qualified Simplex.Messaging.TMap as TM
 import MobileTests
 import SchemaDump
+import StoreService.Store.SQLite.Migrations (storeServiceSchemaMigrations)
 import System.Info (os)
 import WebRTCTests
 #endif
@@ -68,17 +94,44 @@ main = do
         describe "Postgres schema dump" $
           postgresSchemaDumpTest
             migrations
+            skipComparisonForDownMigrations
             schemaDumpDBOpts
             "src/Simplex/Chat/Store/Postgres/Migrations/chat_schema.sql"
+      sequential $
+        describe "Store service Postgres schema dump" $
+          postgresSchemaDumpTest
+            storeServiceSchemaMigrations
+            [ -- the down restores the code index as not unique
+              "20260918_badge_group_ops",
+              -- the columns are re-added last
+              "20261012_badge_subscriptions"
+            ]
+            serviceSchemaDumpDBOpts
+            "apps/simplex-store-service/src/StoreService/Store/Postgres/store_service_schema.sql"
 #else
       sequential $ describe "Schema dump" schemaDumpTest
+      sequential $
+        ifCI (if os /= "linux" then xdescribe else describe) describe "Store service schema dump" $
+          sqliteSchemaDumpTest
+            storeServiceSchemaMigrations
+            [ -- sqlite_sequence stays once an AUTOINCREMENT table exists
+              "20260915_badge_service_schema",
+              -- the down restores the code index as not unique
+              "20260918_badge_group_ops",
+              -- the index is re-created last
+              "20260925_badge_store_receipts",
+              -- the columns are re-added last
+              "20261012_badge_subscriptions"
+            ]
+            serviceSchemaDumpDBOpts
+            "apps/simplex-store-service/src/StoreService/Store/SQLite/store_service_schema.sql"
 #if MIN_VERSION_base(4,18,0)
       sequential $ describe "Bot API docs" apiDocsTest
 #endif
       around tmpBracket $ describe "WebRTC encryption" webRTCTests
 #endif
       describe "Supporter badges" badgeTests
-      describe "SimpleX badge service" $ do
+      describe "SimpleX store service" $ do
         badgeConfigTests
         badgeWebTests
         badgeCatalogTests
@@ -86,7 +139,31 @@ main = do
         badgeWaitersTests
         badgeBTCPayTests
         badgeStripeTests
+        badgeNameRegistrationTests
         badgeStoreVerifierTests
+        storeMetricsTests
+      namesConfigTests
+      namesBalancesTests
+      namesLateCreditTests
+      namesChainTests
+      namesCodesTests
+      namesCommunityTests
+      namesContractsTests
+      namesLabelTests
+      namesLinksTests
+      namesOrdersTests
+      namesOwnerTests
+      namesPhasesTests
+      namesProfilesTests
+      namesRecordsTests
+      namesRevealTests
+      namesSearchTests
+      namesSenderTests
+      namesSignatureTests
+      namesStoreTests
+      namesWiringTests
+      namesWorkerTests
+      namesPageServiceTests
       describe "SimpleX chat markdown" markdownTests
       describe "JSON Tests" jsonTests
       describe "Member relations" memberRelationsTests
@@ -114,9 +191,14 @@ main = do
           describe "SimpleX chat client" chatTests
           describe "SimpleX Broadcast bot" broadcastBotTests
           describe "SimpleX Directory service bot" directoryServiceTests
-          describe "SimpleX badge service e2e" $ do
-            badgeServiceTests
+          describe "SimpleX store service e2e" $ do
+            storeServiceTests
             describe "managed group" badgeGroupIntegrationTests
+          describe "StoreService names: boot" namesBootTests
+          describe "StoreService names: worker" namesWorkerBootTests
+          namesCodesChatTests
+          namesRefundChatTests
+          namesProfilesChatTests
           describe "Remote session" remoteTests
 #if !defined(dbPostgres)
           sequential $ (if os == "linux" then describe else xdescribe) "Save query plans" saveQueryPlans

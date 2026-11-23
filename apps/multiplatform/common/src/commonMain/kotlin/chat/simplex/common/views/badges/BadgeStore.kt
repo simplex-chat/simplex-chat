@@ -534,10 +534,10 @@ private fun compactPrice(product: BadgeProduct): String {
 // a sweep that hands over a receipt refused while the app was not running learns it only from this answer
 private fun badgeReceiptRefused(err: ChatError?): Boolean {
   val code = badgeServiceErrorCode(err)
-  return code is BadgeServiceErrorCode.ReceiptInvalid || code is BadgeServiceErrorCode.ReceiptUsed || code is BadgeServiceErrorCode.TestPurchase || code is BadgeServiceErrorCode.TransferLimited
+  return code is StoreServiceErrorCode.ReceiptInvalid || code is StoreServiceErrorCode.ReceiptUsed || code is StoreServiceErrorCode.TestPurchase || code is StoreServiceErrorCode.TransferLimited
 }
 
-private fun badgeServiceErrorCode(err: ChatError?): BadgeServiceErrorCode? {
+private fun badgeServiceErrorCode(err: ChatError?): StoreServiceErrorCode? {
   val redeemError = ((err as? ChatError.ChatErrorChat)?.errorType as? ChatErrorType.CEBadgeRedeemError)?.badgeRedeemError
   return (redeemError as? BadgeRedeemError.ServiceError)?.serviceError
 }

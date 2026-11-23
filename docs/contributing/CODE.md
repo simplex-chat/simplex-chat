@@ -40,6 +40,7 @@ Some files that use CPP language extension cannot be formatted as a whole, so in
 - Use qualified imports with short aliases (e.g., `import qualified Data.ByteString.Char8 as B`)
 - Use record syntax for types with multiple fields
 - Prefer explicit pattern matching over partial functions
+- You MUST use `Encoding` and `StrEncoding` instances for binary and human-readable forms of types, following the rules and the different defaults of decoders and parsers in [simplexmq's code guide](https://github.com/simplex-chat/simplexmq/blob/master/contributing/CODE.md).
 
 **Comments policy:**
 - Avoid redundant comments that restate what the code already says
