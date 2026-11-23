@@ -179,19 +179,33 @@ class App:
         values = result.stdout.split()
         return tuple(int(v) for v in values) if len(values) == 4 else None
 
+    def use_rect(self, rect):
+        self.x, top, width, height = rect
+        self.bottom = top + height - BOTTOM_BAR_OFFSET
+        self.log(f"window {rect}, maximized: {self.maximized()}")
+
+    def maximized(self):
+        if sys.platform != "win32":
+            return None
+        user32 = ctypes.windll.user32
+        return bool(user32.IsZoomed(user32.FindWindowW(None, "SimpleX")))
+
     def await_window(self, secs=FIRST_SCREEN_WAIT):
         deadline = time.time() + secs
         while time.time() < deadline:
-            if self.window_rect(maximize=True):
-                time.sleep(LAYOUT_SETTLE)
             rect = self.window_rect()
             if rect and rect[2] > 0:
-                self.x, top, width, height = rect
-                self.bottom = top + height - BOTTOM_BAR_OFFSET
-                self.log(f"window {rect}")
+                self.use_rect(rect)
                 return True
             time.sleep(SETTLE)
         return False
+
+    def maximize(self):
+        self.window_rect(maximize=True)
+        time.sleep(LAYOUT_SETTLE)
+        rect = self.window_rect()
+        if rect:
+            self.use_rect(rect)
 
     def on_chat_list(self):
         phrases = [key(p) for p, c in self.phrases() if c[0] < self.x + PANE_RIGHT_OFFSET]
@@ -289,7 +303,10 @@ class App:
         self.check(f"tour: {name} opens", opened)
 
     def onboarding(self):
-        if not self.click_text("Create your profile", FIRST_SCREEN_WAIT):
+        if not self.wait("Create your profile", FIRST_SCREEN_WAIT):
+            return False
+        self.maximize()
+        if not self.click_text("Create your profile"):
             return False
         field = self.wait("Enter profile name", NETWORK_WAIT)
         if not field or not self.type_into(*field, PROFILE_NAME):
