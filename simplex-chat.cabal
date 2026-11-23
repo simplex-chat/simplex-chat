@@ -392,6 +392,7 @@ library
     , JuicyPixels-jpeg-turbo ==0.1.*
     , JuicyPixels-spng ==0.1.*
     , JuicyPixels-stbir ==0.1.*
+    , JuicyPixels-webp ==0.1.*
     , memory ==0.18.*
     , mtl >=2.3.1 && <3.0
     , network >=3.1.2.7 && <3.2

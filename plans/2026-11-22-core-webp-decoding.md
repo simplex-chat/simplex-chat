@@ -40,7 +40,7 @@ Other sources:
 Evidence at review:
 - the groups `/Image resize/` and `/Mobile API Tests/` pass in the reduced build;
 - hs-jpeg-turbo CI: the conformance files decoded to the md5 of libwebp's test data, the armv7 and aarch64 outputs identical, the sanitizer run clean, the decoder size per platform in the job summary;
-- desktop-linux, android-emu and ios-sim smoke tests pick, preview and send the WebP fixtures.
+- pending: desktop-linux, android-emu and ios-sim smoke tests pick, preview and send the WebP fixtures.
 
 ## Decode paths today
 
@@ -101,6 +101,8 @@ flowchart TD
 |---|---|---|---|
 | Q1 | libwebp commit of the submodule | (a) `v1.6.0` (`4fa21912`, 7 Jul 2025): the latest release, later than 1.3.2, the release with the lossless decoder fix of CVE-2023-4863 (NEWS).<br>(b) main `f054d0c3` (21 Nov 2026), or the main head at the implementation commit: 109 commits to the files of the decoder and the demuxer after `v1.6.0`, unreleased; among them `5755839` (memory of Huffman tables limited), `0ff181e` (truncated Huffman streams refused before allocation), `ace1fa5` (32-bit offset overflows prevented), `d29e00a` (canvas fill overflow prevented), `54f23b0` (DSP initialisation locked on Windows). Precedent: mozjpeg master (plan 2026-10-23, D2). | (b) |
 | Q2 | Desktop picker in this pull request | (a) core only: desktop keeps the alert for every WebP image.<br>(b) core and desktop picker (D11): about 10 lines of Kotlin, a desktopTest case and WebP cases in the desktop-linux smoke test. | (b) |
+
+Implemented with the recommended options: Q1 (b), libwebp main `f054d0c3`; Q2 (b).
 
 ## Decoding
 
@@ -172,7 +174,7 @@ Pixels (D4):
 Limits (D6):
 - canvas sides at most 16384, the value of `maxImageSide` (Image.hs:309-310), checked from the demuxer before allocation; frames are at most 16384 per side by format (format_constants.h:29), canvases up to 2^24 (:82)
 - canvas bytes, 3 or 4 per pixel, at most `maxMemoryMB` MiB, checked before allocation
-- `maxMemoryMB` from `decodeResizable`: half of `maxDecodeMemoryMB`; the frame is allocated again by the lossless decoder (vp8l_dec.c:1556-1574), so a decode stays within `maxDecodeMemoryMB`; after it, the premultiplied copy of `scaleRGBA8` (Image.hs:338-346) stays within it as well
+- `maxMemoryMB` from `decodeResizable`: half of `maxDecodeMemoryMB`, so that the premultiplied copy of `scaleRGBA8` (Image.hs:338-346) also fits; at `f054d0c3` the lossless decoder keeps a window of rows, not a second frame (`GetWindowRows`, src/dec/vp8l_dec.c:1217-1239)
 - each libwebp allocation at most 512 MiB: `-DWEBP_MAX_ALLOCABLE_MEMORY=536870912` (src/utils/utils.h:34-41, src/utils/utils.c:173-176); the default is 16 GiB on 64-bit targets
 - input of the path and descriptor functions at most `maxDecodeMemoryMB` MiB (Mobile/File.hs:179-190), unchanged
 - link preview images at most 5 MiB (LinkPreview.hs:88-89), unchanged
@@ -193,7 +195,7 @@ Resizing, output formats, `ColourProfile` and the C functions are unchanged.
 
 ## hs-jpeg-turbo: JuicyPixels-webp
 
-Branch `ep/core-webp` of evgeny-simplex/hs-jpeg-turbo from master `c1b5080`; pull request to simplex-chat/hs-jpeg-turbo.
+Branch `ep/webp` of evgeny-simplex/hs-jpeg-turbo from master `c1b5080`; simplex-chat/hs-jpeg-turbo#3.
 
 Package `JuicyPixels-webp`:
 - `cabal-version: 3.0`, version `0.1.0.0`
@@ -213,6 +215,7 @@ Package `JuicyPixels-webp`:
   - `JuicyPixels`
   - `base`
   - `bytestring`
+  - `transformers`
   - `vector`
 - module `Codec.Picture.Webp` (`.hsc`), exports `DecodeOptions (..)` and `decodeWebp`; FFI to:
   - `WebPDemuxInternal`
@@ -257,12 +260,12 @@ Repository files:
 - `.github/scripts/webp-check.sh`, as `png-check.sh` (sources and `cc-options` read from the cabal file):
   - each conformance file decoded by `.github/scripts/webp.c` as by `decodeWebp`, and written as PAM or PPM
   - armv7 with `-mfpu=vfpv3-d16` (C code paths) and aarch64 (NEON): outputs identical and equal to `libwebp_tests.md5`
-  - aarch64 with `-fsanitize=address,undefined`: the conformance files, each also truncated at 64 lengths and with 64 single-byte changes; every run exits with 0 or a decoder status
+  - aarch64, built by clang 18 with `-fsanitize=address,undefined`: the conformance files, each also truncated at 64 lengths and with 64 single-byte changes; every run exits with 0 or a decoder status; GCC instruments the Neon additions of its `arm_neon.h` as `signed char` arithmetic
   - `size` of the armv7 and aarch64 objects in the job summary
 - `.github/scripts/coverage.sh`: the hpc report of `Codec.Picture.Webp`
 
 Package tests, `JuicyPixels-webp/test/WebpTest.hs` (tasty, as `SpngTest.hs`):
-- conformance: every `.webp` with a `.pam` or `.ppm` entry in `libwebp_tests.md5` of `$WEBP_TEST_DATA`; the decoded image, written as dwebp writes PAM for RGBA and PPM for RGB (imageio/image_enc.c:223-250), has the listed md5; the group fails when `WEBP_TEST_DATA` is unset
+- conformance: every `.webp` with a `.pam` or `.ppm` entry in `libwebp_tests.md5` of `$WEBP_TEST_DATA`, 96 files; the decoded image, written as dwebp writes PAM for RGBA and PPM for RGB (imageio/image_enc.c:223-250), has the listed md5 (`cryptohash-md5`); the group fails when `WEBP_TEST_DATA` is unset
 - animation: a container assembled in the test from two still frames of the conformance files (`VP8X` with the animation flag, `ANIM`, two `ANMF` with offsets) is decoded as frame 1 at its offset on a transparent canvas
 - ICC profile: the payload of the `ICCP` chunk of a `VP8X` container is returned; without the chunk, `Nothing`
 - limits: with `maxMemoryMB` 1, a 512×512 RGBA canvas is decoded and a 513×512 one refused; a canvas side of 16385 and `maxMemoryMB` 0 are refused
@@ -355,46 +358,46 @@ Measured in CI and reported in the pull request before review:
 ## Tests
 
 `tests/ImageTests.hs`, group "Image resize" (tests/Test.hs:98), new group "WebP decoding":
-- lossy: `test-lossy.webp` is decoded as `ImageRGB8` 1280×720 with `CPNone`; its data URI with limit 14000 starts `data:image/jpg;base64,`
-- lossless: `logo-lossless.webp` is decoded as `ImageRGBA8` with the samples of `logo-large-rgba.png` decoded by JuicyPixels; `imageFormat` PNG
-- lossy with alpha: `logo-lossy.webp` is decoded as `ImageRGBA8` 1630×466 with the alpha samples of `logo-large-rgba.png`
-- animation: `animated.webp`, a canvas of 1630×720 as the bounding box of its frames (libwebp src/mux/muxedit.c:434-459), is decoded as `ImageRGBA8` 1630×720: the left 1280×720 with the RGB samples of `test-lossy.webp` and alpha 255, the right 350 columns transparent; a container assembled in the test with frame 1 of `logo-lossless.webp` at offset (34, 16) on a 1700×500 canvas is decoded with the logo samples at the offset, transparent elsewhere
-- colour profile: the `VP8X` container of the logo with an `ICCP` chunk of `p3Profile` is decoded with `CPDisplayP3`, and its JPEG and PNG image data with limit 261120 read back as `CPDisplayP3`; with sRGB primaries, `CPNone`
+- decoding, each with `CPNone`, the samples written as dwebp writes PAM or PPM with the md5 of `libwebp_tests.md5`, and its data URI with limit 14000:
+
+  | Fixture | Image | md5 | Data URI |
+  |---|---|---|---|
+  | `test.webp`, lossy | `ImageRGB8` 128×128 | `ebdd46e0…` of the PPM | `data:image/jpg;base64,` |
+  | `lossless1.webp`, lossless with alpha | `ImageRGBA8` 1000×307 | `fd52591b…` of the PAM | `data:image/png;base64,` |
+  | `lossy_alpha1.webp`, lossy with an `ALPH` chunk | `ImageRGBA8` 1000×307 | `c5c77aff…` of the PAM | `data:image/png;base64,` |
+
+- animation, containers assembled in the test (`VP8X` with the animation flag, `ANIM`, two `ANMF`), decoded as `ImageRGBA8` of the canvas size with frame 1 at its offset and transparent pixels elsewhere:
+  - `test.webp` at (0, 0) and at (32, 0) on 160×128: the left 128 columns with the samples of `test.webp` and alpha 255
+  - `lossless1.webp` at (34, 16) and `test.webp` at (0, 0) on 1034×323: the samples of `lossless1.webp` at the offset
+- colour profile: a `VP8X` container with an `ICCP` chunk of `p3Profile` and the `VP8 ` chunk of `test.webp` is decoded with `CPDisplayP3`, and its JPEG and PNG image data with limit 261120 read back as `CPDisplayP3`; with rX 3/65536 above Display P3, `CPNone`
 - refusals, `Left`:
-  - an animation canvas of 16385×16, frame 1 inside it
-  - an animation canvas of 16384×16384, 1 GiB as RGBA, above the limit of every build
-  - `test-lossy.webp` cut at half its length and by its last byte
-  - the `RIFF` size increased by 1
+  - an animation canvas of 16385×128, frame 1 inside it: `image side exceeds 16384`
+  - an animation canvas of 16384×16384, 1 GiB as RGBA, above the limit of every build: `image is too large`
+  - `test.webp` cut at half its length and by its last byte, and with the `RIFF` size increased by 1: `invalid WebP container`
   - `RIFF`, 4 bytes, `WAVE`: `unsupported image format`
 
-`tests/MobileTests.hs`, "Images" (:103-110):
-- `cChatResizeImageUri` on `test-lossy.webp`, limit 14000: `data:image/jpg;base64,`
-- `cChatResizeImageFile` with `png = -1`, limit 100000, on `logo-lossless.webp`: the PNG signature
-- `cChatResizeImageFdUri` on `logo-lossless.webp` cut at half its length: `""`; the descriptor closed afterwards
+`tests/MobileTests.hs`, "Images" (:103-110), cases added to the existing tests:
+- `cChatResizeImageUri` on `test.webp`, limit 14000: `data:image/jpg;base64,`
+- `cChatResizeImageFile` with `png = -1`, limit 100000, on `lossless1.webp`: the PNG signature
+- `cChatResizeImageFdUri` on `lossless1.webp` cut at half its length: `""`; the descriptor closed afterwards
 
-`tests/ChatTests/Profiles.hs`, "set profile image from file" (:76, :1250-1255): `/set profile image file ./tests/fixtures/webp/test-lossy.webp` sets a `data:image/jpg;base64,` image of at most 12500 characters. Pattern `/SimpleX chat client/profile tests/user profiles/set profile image from file/`, added to the `ci-tests` block with the code.
+`tests/ChatTests/Profiles.hs`, "set profile image from file" (:76, :1250-1255): `/set profile image file ./tests/fixtures/webp/test.webp` sets a `data:image/jpg;base64,` image of at most 12500 characters. Pattern `/SimpleX chat client/profile tests/user profiles/set profile image from file/`, added to the `ci-tests` block with the code.
 
-Fixtures, `tests/fixtures/webp/`, made by the tools of the pinned libwebp, built with CMake in hs-jpeg-turbo CI:
-
-| File | Command |
-|---|---|
-| `test-lossy.webp` | `cwebp -q 80 tests/fixtures/test.jpg -o test-lossy.webp` |
-| `logo-lossless.webp` | `cwebp -lossless -exact tests/fixtures/logo-large-rgba.png -o logo-lossless.webp` |
-| `logo-lossy.webp` | `cwebp -q 80 tests/fixtures/logo-large-rgba.png -o logo-lossy.webp` |
-| `animated.webp` | `webpmux -frame test-lossy.webp +500 -frame logo-lossy.webp +500 -loop 0 -o animated.webp` |
+Fixtures, `tests/fixtures/webp/`: `test.webp`, `lossless1.webp` and `lossy_alpha1.webp` of libwebp-test-data at `06ddd96e`, with libwebp's `COPYING`, the licence of that repository's files.
 
 Apps (Q2 b):
 - desktopTest: desktop `isAnimImage` on temporary files: a `VP8X` header with the animation flag, true; without it, false; a simple `VP8 ` file, false; `.gif`, true.
-- desktop-linux, `send_images` (scripts/ci/desktop-linux/smoke-test.sh:373-379): `webp/test-lossy.webp` sent as `.jpg`, `webp/animated.webp` sent as `.webp`; each with the compose preview and the unchanged count of `core returned no image`; `send_image` takes a shot label besides the extension.
-- android-emu: `test-lossy.webp` added in its own folder and sent as `.jpg`, with the unchanged count of `core returned no image`.
-- ios-sim: `test-lossy.webp` added to the photo library and sent; the sent file 1280x720; the log lines of the app's own resizing absent.
-- Each workflow run once on the branch, with the app uploaded; READMEs: `scripts/ci/desktop-linux/README.md:27`, `scripts/ci/android/README.md:32`, `scripts/ci/ios-sim/README.md:3`.
+- Pending, with the runs of the app workflows on the branch:
+  - desktop-linux, `send_images` (scripts/ci/desktop-linux/smoke-test.sh:373-379): `webp/test.webp` sent as `.jpg`, and an animated container assembled from the fixtures sent as `.webp`; each with the compose preview and the unchanged count of `core returned no image`; `send_image` takes a shot label besides the extension.
+  - android-emu: `test.webp` added in its own folder and sent as `.jpg`, with the unchanged count of `core returned no image`.
+  - ios-sim: `test.webp` added to the photo library and sent; the sent file 128x128; the log lines of the app's own resizing absent.
+  - Each workflow run once on the branch, with the app uploaded; READMEs: `scripts/ci/desktop-linux/README.md:27`, `scripts/ci/android/README.md:32`, `scripts/ci/ios-sim/README.md:3`.
 
 Link previews (D10): `/Link preview/` cases in the second merge.
 
 ## Mechanics
 
-hs-jpeg-turbo, branch `ep/core-webp`: the files of "hs-jpeg-turbo: JuicyPixels-webp".
+hs-jpeg-turbo, branch `ep/webp`: the files of "hs-jpeg-turbo: JuicyPixels-webp".
 
 simplex-chat, branch `ep/core-webp`:
 - `Image.hs`:
@@ -414,13 +417,13 @@ simplex-chat, branch `ep/core-webp`:
   - `common/views/chat/ComposeView.kt:375`
   - `apps/multiplatform/common/src/desktopTest/kotlin/chat/simplex/app/ImageFileTypeTest.kt`
   - specs of "Apps"
-  - smoke tests and READMEs of "Tests"
+  - pending: smoke tests and READMEs of "Tests"
 
 Commits:
 1. `docs: plan of WebP images decoded by the core`
-2. `core: decode WebP images`: binding pin, `decodeResizable`, profile images, licences, core tests and fixtures
+2. `core: decode WebP images`: binding pin, `decodeResizable`, profile images, licences, core tests and fixtures, this plan updated
 3. `desktop: attach WebP images` (Q2 b): desktop picker, preview line, desktopTest, specs
-4. `ci: send WebP images in the app smoke tests`
+4. pending: `ci: send WebP images in the app smoke tests`
 
 ## Out of scope
 

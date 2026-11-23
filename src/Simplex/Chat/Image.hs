@@ -25,6 +25,7 @@ import Codec.Picture (DynamicImage (..), Image (..), Pixel (..), PixelRGB8, Pixe
 import Codec.Picture.JPEGTurbo (DecodeOptions (DecodeOptions), JpegHeader (..), Scale (..), decodeJpeg, encodeRGB, readJpegHeader)
 import qualified Codec.Picture.STBIR as STBIR
 import qualified Codec.Picture.Spng as Spng
+import qualified Codec.Picture.Webp as Webp
 import Control.Monad (guard, when, (<=<))
 import Control.Monad.Except (ExceptT (..), runExceptT, throwError)
 import Data.ByteString (ByteString)
@@ -74,6 +75,7 @@ decodeResizable s = runExceptT $ do
     decode
       | "\xFF\xD8" `B.isPrefixOf` s = decodeDisplayJpeg s
       | "\x89PNG\r\n\x1a\n" `B.isPrefixOf` s = ExceptT $ Spng.decodePng (Spng.DecodeOptions $ maxDecodeMemoryMB `div` 2) s
+      | "RIFF" `B.isPrefixOf` s && "WEBP" `B.isPrefixOf` B.drop 8 s = ExceptT $ Webp.decodeWebp (Webp.DecodeOptions $ maxDecodeMemoryMB `div` 2) s
       | otherwise = throwError "unsupported image format"
 
 decodeDisplayJpeg :: ByteString -> ExceptT String IO (DynamicImage, Maybe ByteString)

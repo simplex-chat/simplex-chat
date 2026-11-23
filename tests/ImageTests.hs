@@ -6,13 +6,15 @@ import Codec.Picture (DynamicImage (..), Image (..), Pixel8, PixelCMYK8, PixelRG
 import Codec.Picture.JPEGTurbo (encodeRGB)
 import Codec.Picture.Jpg (encodeDirectJpegAtQualityWithMetadata, encodeJpegAtQuality)
 import Codec.Picture.Png (encodePng)
-import Codec.Picture.Types (convertImage, extractLumaPlane, pixelFold)
+import Codec.Picture.Types (convertImage, extractLumaPlane, pixelFold, pixelFoldMap)
 import Control.Exception (bracket)
 import Control.Monad (forM_, when)
 import Control.Monad.Except (runExceptT)
+import Crypto.Hash (Digest, MD5, hashlazy)
 import Data.Bits (complement, shiftR, testBit, xor)
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Base64.Lazy as LB64
+import qualified Data.ByteString.Builder as BB
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Either (isLeft, isRight)
 import qualified Data.Text as T
@@ -60,6 +62,11 @@ imageTests = do
   describe "PNG decoding" $ do
     it "should decode PNG as JuicyPixels does" testPngDecoding
     it "should refuse malformed PNG and other formats" testPngRefused
+  describe "WebP decoding" $ do
+    it "should decode WebP as libwebp does" testWebpDecoding
+    it "should decode the first frame of animated WebP" testWebpAnimation
+    it "should write the Display P3 profile for Display P3 WebP" testWebpProfile
+    it "should refuse malformed and oversized WebP" testWebpRefused
   describe "scaling" $ do
     it "should scale and sharpen as the research code" testScaleResearch
     it "should keep an image of the same size" testScaleSameSize
@@ -330,6 +337,91 @@ iccChunk n count profile = B.pack [fromIntegral n, fromIntegral count] <> profil
 
 bigEndian :: Int -> Int -> B.ByteString
 bigEndian n v = B.pack [fromIntegral (v `shiftR` (8 * i)) | i <- [n - 1, n - 2 .. 0]]
+
+testWebpDecoding :: IO ()
+testWebpDecoding =
+  forM_ images $ \(file, size, md5, prefix) -> do
+    Right (img, CPNone) <- decodeResizable =<< B.readFile (webpFixture file)
+    imageSize img `shouldBe` size
+    netpbmMd5 img `shouldBe` Just md5
+    Right uri <- resizeImageDataUri 14000 img CPNone
+    uri `shouldSatisfy` (prefix `LB.isPrefixOf`)
+  where
+    images =
+      [ ("test.webp", (128, 128), "ebdd46e0760b2a4891e6550b37c00660", "data:image/jpg;base64,"),
+        ("lossless1.webp", (1000, 307), "fd52591b61fc34192d7c337fa024bf12", "data:image/png;base64,"),
+        ("lossy_alpha1.webp", (1000, 307), "c5c77aff5b4015d3416817d12c2c2377", "data:image/png;base64,")
+      ]
+
+testWebpAnimation :: IO ()
+testWebpAnimation = do
+  lossy <- B.readFile $ webpFixture "test.webp"
+  lossless <- B.readFile $ webpFixture "lossless1.webp"
+  Right (lossyFrame, _) <- decodeResizable lossy
+  Right (losslessFrame, _) <- decodeResizable lossless
+  forM_
+    [ (webpAnimation (160, 128) [((0, 0), (128, 128), lossy), ((32, 0), (128, 128), lossy)], placed (160, 128) (0, 0) lossyFrame),
+      (webpAnimation (1034, 323) [((34, 16), (1000, 307), lossless), ((0, 0), (128, 128), lossy)], placed (1034, 323) (34, 16) losslessFrame)
+    ]
+    $ \(webp, expected) -> do
+      Right (ImageRGBA8 canvas, CPNone) <- decodeResizable webp
+      (imageWidth canvas, imageHeight canvas, imageData canvas) `shouldBe` (imageWidth expected, imageHeight expected, imageData expected)
+  where
+    placed (w, h) (x0, y0) frame = generateImage (\x y -> if x >= x0 && y >= y0 && x < x0 + imageWidth rgba && y < y0 + imageHeight rgba then pixelAt rgba (x - x0) (y - y0) else PixelRGBA8 0 0 0 0) w h
+      where
+        rgba = convertRGBA8 frame
+
+testWebpProfile :: IO ()
+testWebpProfile = do
+  lossy <- B.readFile $ webpFixture "test.webp"
+  let withProfile profile = webpContainer [webpChunk "VP8X" $ B.pack [0x20, 0, 0, 0] <> littleEndian 3 127 <> littleEndian 3 127, webpChunk "ICCP" profile, B.drop 12 lossy]
+  Right (img, profile) <- decodeResizable $ withProfile p3Profile
+  profile `shouldBe` CPDisplayP3
+  forM_ [IFJpeg, IFPng] $ \format -> do
+    Right resized <- resizeImage format 261120 img profile
+    resizedProfile resized `shouldReturn` profile
+  Right (_, profile') <- decodeResizable $ withProfile $ iccProfile "RGB " $ 33759 + 3 : drop 1 p3Primaries
+  profile' `shouldBe` CPNone
+
+testWebpRefused :: IO ()
+testWebpRefused = do
+  lossy <- B.readFile $ webpFixture "test.webp"
+  forM_
+    [ (webpAnimation (16385, 128) [((0, 0), (128, 128), lossy)], "image side exceeds 16384"),
+      (webpAnimation (16384, 16384) [((0, 0), (128, 128), lossy)], "image is too large"),
+      (B.take (B.length lossy `div` 2) lossy, "invalid WebP container"),
+      (B.init lossy, "invalid WebP container"),
+      (B.take 4 lossy <> littleEndian 4 (B.length lossy - 7) <> B.drop 8 lossy, "invalid WebP container"),
+      ("RIFF" <> littleEndian 4 24 <> "WAVEfmt " <> B.replicate 16 0, "unsupported image format")
+    ]
+    $ \(input, err) -> either Just (const Nothing) <$> decodeResizable input `shouldReturn` Just err
+
+webpFixture :: FilePath -> FilePath
+webpFixture file = "tests/fixtures/webp" </> file
+
+netpbmMd5 :: DynamicImage -> Maybe String
+netpbmMd5 img = show . (hashlazy :: LB.ByteString -> Digest MD5) . BB.toLazyByteString <$> netpbm
+  where
+    netpbm = case img of
+      ImageRGB8 rgb@(Image w h _) -> Just $ BB.string7 ("P6\n" <> show w <> " " <> show h <> "\n255\n") <> pixelFoldMap (\(PixelRGB8 r g b) -> foldMap BB.word8 [r, g, b]) rgb
+      ImageRGBA8 rgba@(Image w h _) -> Just $ BB.string7 ("P7\nWIDTH " <> show w <> "\nHEIGHT " <> show h <> "\nDEPTH 4\nMAXVAL 255\nTUPLTYPE RGB_ALPHA\nENDHDR\n") <> pixelFoldMap (\(PixelRGBA8 r g b a) -> foldMap BB.word8 [r, g, b, a]) rgba
+      _ -> Nothing
+
+webpAnimation :: (Int, Int) -> [((Int, Int), (Int, Int), B.ByteString)] -> B.ByteString
+webpAnimation (w, h) frames = webpContainer $ [webpChunk "VP8X" $ B.pack [0x12, 0, 0, 0] <> littleEndian 3 (w - 1) <> littleEndian 3 (h - 1), webpChunk "ANIM" $ B.replicate 6 0] <> map frame frames
+  where
+    frame ((x, y), (fw, fh), still) = webpChunk "ANMF" $ B.concat (map (littleEndian 3) [x `div` 2, y `div` 2, fw - 1, fh - 1, 100]) <> "\0" <> B.drop 12 still
+
+webpContainer :: [B.ByteString] -> B.ByteString
+webpContainer chunks = "RIFF" <> littleEndian 4 (4 + B.length body) <> "WEBP" <> body
+  where
+    body = B.concat chunks
+
+webpChunk :: B.ByteString -> B.ByteString -> B.ByteString
+webpChunk fourcc payload = fourcc <> littleEndian 4 (B.length payload) <> payload <> B.replicate (B.length payload `mod` 2) 0
+
+littleEndian :: Int -> Int -> B.ByteString
+littleEndian n = B.reverse . bigEndian n
 
 testScaleResearch :: IO ()
 testScaleResearch = do

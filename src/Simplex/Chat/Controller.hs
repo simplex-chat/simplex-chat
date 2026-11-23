@@ -668,7 +668,7 @@ data ChatCommand
   | SetBotCommands [ChatBotCommand]
   | UpdateProfile ContactName (Maybe Text) -- UserId (not used in UI)
   | UpdateProfileImage (Maybe ImageData) -- UserId (not used in UI)
-  | UpdateProfileImageFromFile FilePath -- set profile image from a .png/.jpg/.jpeg file
+  | UpdateProfileImageFromFile FilePath -- set profile image from a .png/.jpg/.jpeg/.webp file
   | AddBadge BadgeCredential -- attach an issued badge credential (testing; credential from `simplex-chat badge sign`)
   | APIRedeemBadgeCode {userId :: UserId, code :: Text} -- redeem a badge code with the configured badge service
   | APIPurchaseBadge {userId :: UserId, echoedInvoiceId :: Maybe Text, origin :: StoreReceiptOrigin, payment :: ServicePayment} -- hand over an App Store or Google Play receipt, held until a worker credits it; answers from the record and sends nothing

@@ -4,6 +4,8 @@
 
 [libspng](https://github.com/randy408/libspng): PNG decoding and encoding of resized images ([BSD-2-clause](./licences/apps/libspng/LICENSE) and [libpng-2.0](./licences/apps/libspng/LICENSE-libpng))
 
+[libwebp](https://chromium.googlesource.com/webm/libwebp): WebP decoding of resized images ([BSD-3-clause](./licences/apps/libwebp/COPYING) and [patent grant](./licences/apps/libwebp/PATENTS))
+
 [miniz](https://github.com/richgel999/miniz): zlib compression and decompression for libspng ([MIT](./licences/apps/miniz/LICENSE))
 
 [mozjpeg](https://github.com/mozilla/mozjpeg): JPEG decoding and encoding of resized images ([IJG and BSD-3-clause](./licences/apps/mozjpeg/LICENSE.md)). This software is based in part on the work of the Independent JPEG Group.
