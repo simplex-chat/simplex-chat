@@ -63,8 +63,8 @@ flowchart LR
 |---|---|---|
 | Compose, first link | alert "Enable link previews?" | none (Q1 a) |
 | Compose, any link | spinner, then card or nothing | spinner from the selection of the link, during the 1.5 s wait (ComposeView.kt:550; ComposeView.swift:1919) and the fetch, then card or nothing (section 3.14.1) |
-| Compose, the preview of the first link failed | the failed link is requested again at the first keystroke after each failure, without the 1.5 s wait, and the next link only once the failed one is removed from the text (ComposeView.kt:497-507, 541-555; ComposeView.swift:1910-1927, 1981-1993) | the failed link is added to `cancelledLinks`, and the next link gets its card without a keystroke (section 3.14.1, T7) |
-| Compose, the card of the first link closed with X | the next link gets its card after a keystroke (ComposeView.kt:1109-1120; ComposeView.swift:1945-1954) | the next link gets its card without a keystroke (section 3.14.1, T9) |
+| Compose, the preview of the first link failed | the failed link is requested again at the first keystroke after each failure, without the 1.5 s wait, and the next link only once the failed one is removed from the text (ComposeView.kt:497-507, 541-555; ComposeView.swift:1910-1927, 1981-1993) | the failed link is added to `cancelledLinks`, and the card of the next link is shown without a keystroke (section 3.14.1, T7) |
+| Compose, the card of the first link closed with X | the card of the next link is shown after a keystroke (ComposeView.kt:1109-1120; ComposeView.swift:1945-1954) | the card of the next link is shown without a keystroke (section 3.14.1, T9) |
 | Privacy settings | toggle "Send link previews", default on (SimpleXAPI.kt:130; apps/ios/SimpleXChat/AppGroup.swift:98) | the same toggle; footer per Q1 |
 | iOS share extension | preview only after the alert was answered | preview when the toggle is on |
 | iOS with SOCKS | site sees the IP address | site sees the proxy's exit |
@@ -510,7 +510,7 @@ Request
 | `ComposePreview.CLinkPreview(status)`, in place of `CLinkPreview(linkPreview: LinkPreview?)` (60) | `ComposePreview.linkPreview(status:)`, in place of `linkPreview(linkPreview: LinkPreview?)` (13) |
 | `LinkPreviewStatus.Loading(uri)`; `request`, `@Transient`, set by `nextLinkRequest()` when the status is created | `LinkPreviewStatus.loading(uri:request:)` |
 | `LinkPreviewStatus.Shown(linkPreview)` | `LinkPreviewStatus.shown(linkPreview:)` |
-| `ComposeState.cancelledLinks: Set<String> = emptySet()` | `ComposeState.cancelledLinks: Set<String> = []`, a parameter of `init` (58-74); `copy` (103-121) keeps it, without a parameter |
+| `ComposeState.cancelledLinks: Set<String> = emptySet()` | `ComposeState.cancelledLinks: Set<String> = []`, a parameter of `init` (58-74); `copy` (103-121) returns it unchanged, without a parameter |
 | `ComposeState.updateLinkPreview(event, previewsOn)` | `ComposeState.updateLinkPreview(_:previewsOn:)` |
 | `ComposeState.getMessageLinks`, moved from `ComposeView` (469-479) | `ComposeState.getMessageLinks`, moved from `ComposeView` (1933-1942) |
 | `ComposeState.isSimplexLink`, moved from `ComposeView` (466-467) | `ComposeState.isSimplexLink`, moved from `ComposeView` (1944-1946) |
