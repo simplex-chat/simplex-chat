@@ -620,12 +620,12 @@ stateDiagram-v2
   [*] --> NoPreview: T13, T15, T18 iOS forward to another chat
   [*] --> Shown: T15, edit of MCLink with the link of its preview
   [*] --> Loading: T15, edit of MCLink without the link of its preview, iOS edit of a text with a link
-  NoPreview --> Loading: T3, T10 a link cancelled by T7 or T9
-  Loading --> Loading: T3 another link, T7 or T9 next link, T10 a link before it, cancelled by T7 or T9
-  Shown --> Loading: T3 another link, T9 next link, T10 a link before it, cancelled by T7 or T9
+  NoPreview --> Loading: T3, T10 as T3
+  Loading --> Loading: T3 another link, T7 or T9 next link, T10 as T3
+  Shown --> Loading: T3 another link, T9 next link, T10 as T3
   Loading --> Shown: T6
-  Loading --> NoPreview: T1, T4, T7 or T9 without a next link
-  Shown --> NoPreview: T1, T4, T9 without a next link
+  Loading --> NoPreview: T1, T4, T10 as T4, T7 or T9 without a next link
+  Shown --> NoPreview: T1, T4, T10 as T4, T9 without a next link
   NoPreview --> Attachment: T11
   Loading --> Attachment: T11
   Shown --> Attachment: T11
@@ -704,7 +704,7 @@ Findings of the review:
 | F13 | iOS: another chat opened in the same `ChatView`, with `cancelledLinks` of the previous message (ChatView.swift:368-379) | T10 | iOS: `chatModel.chatId` changed in the same `ComposeView`; the failed link typed again: requested again |
 | F14 | untested on Kotlin: a link replaced during its fetch | T3, T8 | Kt: A requested and held; B typed and its card shown; A released: card of B kept |
 | F15 | Kt, iOS: Edit of a message sent with the card of its second link: `Shown(P)` with `cancelledLinks` = {}; the save sends `MCText`, and a text change requests the first link (Kt ChatItemView.kt:472, `editPrevMessage`; iOS ChatView.swift:2696) | T15: the links before `P.uri` in `cancelledLinks`, then T2-T4 | Kt: the recorded note opened in edit by the up arrow and saved: `MCLink` of its preview; a space typed: no request, the same card, saved as `MCLink` of that preview; text changes and events of the edit as of the message it was sent from; the preview of a link absent from the text: the link of the text loading; laws on the edit states<br>iOS: the recorded note in edit: its card and `MCLink`, without a request, also after its text is changed to the link of the card; text changes as of the message it was sent from; the preview of a link absent from the text: the link of the text loading |
-| F16 | Kt, iOS: an Edit of a message sent with the card of its second link, then a chat switch or a draft save: `cancelledLinks` = {}; on return the first link is requested, and a save sends `MCText` while a link loads, or the card of the first link when its request succeeds (Kt `KeyChangeEffect(chatModel.chatId.value)` and the draft saves of T10; iOS `saveCurrentDraft`, `.onChange(of: chatModel.chatId)`) | T10: in an Edit, `cancelledLinks` = `linksBeforePreview` of the edited item | Kt: the recorded note opened in edit by the up arrow; another chat opened and the note folder opened again: the same card, no request, saved as `MCLink` of its preview; `ChatChanged` on the edit, also after a text change: the card and `cancelledLinks` kept; after X of the card, the link of the card loading<br>iOS: the recorded note in edit; its draft saved and restored: the same card, no request, `MCLink` of its preview; `.chatChanged` on the edit, also after a text change: the card and `cancelledLinks` kept; after X of the card, the link of the card loading |
+| F16 | Kt, iOS: an Edit of a message sent with the card of its second link, then a chat switch or a draft save: `cancelledLinks` = {}; on return the first link is requested, and a save sends `MCText` while a link loads, or the card of the first link when its request succeeds (Kt `KeyChangeEffect(chatModel.chatId.value)` and the draft saves of T10; iOS `saveCurrentDraft`, `.onChange(of: chatModel.chatId)`) | T10: in an Edit, `cancelledLinks` = `linksBeforePreview` of the edited item | Kt: the recorded note opened in edit by the up arrow; another chat opened and the note folder opened again: the same card, no request, saved as `MCLink` of its preview; `ChatChanged` on the edit, also after a text change: the card and `cancelledLinks` kept; X of the card, then `ChatChanged`: the link of the card loading<br>iOS: the recorded note in edit; its draft saved and restored: the same card, no request, `MCLink` of its preview; `.chatChanged` on the edit, also after a text change: the card and `cancelledLinks` kept; X of the card, then `.chatChanged`: the link of the card loading |
 | F17 | iOS: a forward to the same chat with an attachment and a link selects the link at once (`ComposeState.forwardingItems` applies `.textChanged`); Kotlin selects it at the next keystroke, as T12 states | T18: the attachment replaced by `NoPreview` without TextChanged; the link status and its request kept | iOS: a forward to the same chat keeps a loading link with its request and a card; with an attachment: `NoPreview`, no request until the next text change, then the card of the link |
 
 Laws, tested in desktopTest and SimpleX Unit Tests on the recorded markdown:
@@ -810,7 +810,7 @@ App tests on tests/fixtures/api/previews/link_preview.json:
 | `CILinkView` preview | description shown under the title (snapshot) | iOS |
 | SE | `apiGetLinkPreview` of the share extension decodes the recorded response | iOS |
 | compose, `LinkPreviewTests.swift` | the recorded card without an alert; a failed link not requested again until a new compose; the result of a replaced link discarded; an attachment kept when a pending link responds | iOS |
-| compose state, `LinkPreviewTest.kt`, `LinkPreviewTests.swift` | the laws and the tests of section 3.14.1 | both |
+| compose state, `LinkPreviewTest.kt`, `LinkPreviewStateTest.kt`, `LinkPreviewTests.swift` | the laws and the tests of section 3.14.1 | both |
 
 The iOS test file is added to project.pbxproj (TESTS.md, "iOS app"). Compose flows: a case in `claude-test.md` of desktop-linux and android-emu and `device-test-plan.md` of ios-sim: type a link, see a card, without an alert. The cases fetch a page of github.com over the runner's network, so claude-scope keeps `backend: no`.
 
