@@ -88,7 +88,7 @@ Link previews of the apps on master, replaced by #8297: Android and desktop deco
 | D8 | **App fallbacks kept; iOS unchanged.** The platform path is kept for formats other than JPEG, PNG and WebP: HEIC on Android (Images.android.kt:99-100, ComposeView.kt:382), pasted and camera images on iOS (`.simpleImage`, ComposeView.swift:1596-1597), other types picked on iOS (ImagePicker.swift:92-95). Each app ships with its core; the fallbacks are kept for those formats. | (a) all kept.<br>(b) Android and iOS fallbacks removed: HEIC, pasted and camera images fail. |
 | D9 | **CLI profile images from WebP; `/img` unchanged.** `loadImageData` accepts `.webp`; `/img` keeps `.jpg .jpeg .png .gif` (Library/Commands.hs:204-205), because a WebP file is sent as it is and desktop shows a received WebP file only as its preview (product/gaps.md:231). Bot libraries are unchanged and accept WebP with the next pinned core release (packages/simplex-chat-nodejs/src/release.ts:3 `core-7.1.4.0`, packages/simplex-chat-python/src/simplex_chat/_version.py:8 `core-7.1.3.0`). | (a) profile images only.<br>(b) `/img` too: WebP files that desktop recipients open only as previews. |
 | D10 | **Link previews in the second merge.** In whichever of #8297 and this pull request is merged second, `image/webp` is added to the image types of `pageContent` (LinkPreview.hs:505) and to `Accept` (:388), with two cases in `/SimpleX chat client/link preview tests/` (tests/ChatTests/LinkPreviews.hs). `og:image` responses are decoded by signature (plans/2026-11-21-link-previews-core.md:274 on `ep/link-previews`). | (a) in the second merge.<br>(b) a commit on `ep/link-previews` now: its tests fail until WebP decoding is in master. |
-| D11 | **Desktop picker (Q2 b).** Desktop: `.webp` is animated only with the animation flag of its `VP8X` chunk; the preview of an `AnimatedImage` with the WebP signature is made by the core first, on Android and desktop; the preview of a GIF is made from the bitmap, as now, without a call to the core. Details in "Apps". | Q2. |
+| D11 | **Desktop picker (Q2 b).** Desktop: `.webp` is animated only with the animation flag of its `VP8X` chunk; the preview of an `AnimatedImage` with the WebP signature is made by the core first, on Android and desktop; the preview of a GIF is made from the bitmap alone, as now. Details in "Apps". | Q2. |
 | D12 | **Licence notices.** libwebp's BSD-3-Clause `COPYING` and its `PATENTS` grant; details in "Licence notices". | |
 | D13 | **Security: limits, pinned libwebp, conformance and sanitizer runs in CI.** Threat model and measures in "Security". | |
 | D14 | **Binary size measured in CI.** Method in "Binary size"; figures in the pull request before review. | |
@@ -115,7 +115,7 @@ Implemented with the recommended options, pending the answers: Q1 (b), libwebp m
 Commits after `v1.6.0` to the 50 C files of D7, up to `f054d0c3` (`git rev-list`, `git log` in the submodule):
 - 148 commits, 119 of them without merges; 20 in November 2026;
 - src/dec/vp8l_dec.c: 807 lines added, 385 removed;
-- `git describe --tags f054d0c3`: `v1.6.0-420-gf054d0c3`; no release since `v1.6.0`.
+- `git describe --tags f054d0c3`: `v1.6.0-420-gf054d0c3`; `v1.6.0` is the latest release tag.
 
 Fixes in (b) on paths that `decodeWebp` reaches:
 
@@ -129,7 +129,7 @@ Fixes in (b) on paths that `decodeWebp` reaches:
 | `f9c049d5` | 13 Nov 2026 | a paletted alpha stream truncated at its last pixel refused; `v1.6.0` accepts it (`br->eos && pos < end`, vp8l_dec.c:1119 at `v1.6.0`) |
 
 Fixes in (b) outside the paths or limits of `decodeWebp`:
-- `d29e00aa` (`ZeroFillFrameRect`, anim_decode.c): called only from `WebPAnimDecoderGetNext` (anim_decode.c:386, 395 at `f054d0c3`), which is not among the 9 functions of the binding (hs-jpeg-turbo: JuicyPixels-webp).
+- `d29e00aa` (`ZeroFillFrameRect`, anim_decode.c): called only from `WebPAnimDecoderGetNext` (anim_decode.c:386, 395 at `f054d0c3`), outside the 9 functions that the binding imports (hs-jpeg-turbo: JuicyPixels-webp).
 - `54f23b04`: the `_WIN32` branch of src/dsp/cpu.h; the DSP initialisation locked on Windows, as `WEBP_USE_THREAD` is defined by the cabal file; desktop on Windows only.
 - `ace1fa52`: 32-bit overflows of row × stride; with sides of at most 16384 and 4 bytes per pixel, every offset is below 2^30.
 
@@ -142,7 +142,7 @@ Counter-risk of (b), unreleased rewrites of the lossless decoder:
 
 Defects of code added after `v1.6.0`, fixed on main:
 - `73730aba` (24 Aug 2026): valid images with more than 200 Huffman groups decoded to wrong pixels or refused; fixed by `21c53c13` (6 Oct 2026), 43 days later.
-- `bb3ad5bc`: the alpha window shifted wrongly with cropping; fixed by `a53957a4` (7 Oct 2026); `decodeWebp` sets no cropping.
+- `bb3ad5bc`: the alpha window shifted wrongly with cropping; fixed by `a53957a4` (7 Oct 2026); `decodeWebp` decodes without cropping.
 
 Measures against the counter-risk:
 - libwebp's fuzzers run on main in OSS-Fuzz (tests/fuzzer/oss-fuzz/build.sh);
@@ -354,7 +354,7 @@ flowchart LR
 
 - `readFileHeader(uri, size)` in common/platform/Images.kt: the first `size` bytes of the file, read through `URI.inputStream` (common/platform/Files.kt:192); `null` for a shorter file or a read error. `isWebpFile(uri)`: the first 12 bytes match `ImageFileType.WEBP` (Images.kt:32-41).
 - `isAnimImage` of desktop (desktop/platform/Images.desktop.kt:175-178): true for `.gif`, and for `.webp` when `readFileHeader(uri, 21)` returns `RIFF`, 4 bytes, `WEBP`, `VP8X`, 4 bytes, and a byte with bit `0x02`.
-- `processPickedMedia`, `AnimatedImage` branch (common/views/chat/ComposeView.kt:375): `preview = if (isWebpFile(uri)) resizeImageFileToStrSize(uri, maxDataSize = 14000) ?: bitmapPreview() else bitmapPreview()`, on Android and desktop. A GIF is not read by the core: its preview is made by `bitmapPreview`, as on master.
+- `processPickedMedia`, `AnimatedImage` branch (common/views/chat/ComposeView.kt:375): `preview = if (isWebpFile(uri)) resizeImageFileToStrSize(uri, maxDataSize = 14000) ?: bitmapPreview() else bitmapPreview()`, on Android and desktop. The preview of a GIF is made by `bitmapPreview` alone, as on master.
 - Sending is unchanged: `SimpleImage` through `saveImage` or `desktopSaveImageInTmp` (Utils.kt:174-216), `AnimatedImage` as the file (ComposeView.kt:922-924).
 - Specs: `apps/multiplatform/spec/client/compose.md:318`, step 2 of `processPickedMedia`; `apps/multiplatform/product/gaps.md:231`, the clause on picked WebP images.
 - User guide: the image steps of `docs/guide/send-messages.md:34-50` stay true and unchanged.
