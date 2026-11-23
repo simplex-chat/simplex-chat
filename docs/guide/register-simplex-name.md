@@ -68,7 +68,7 @@ On **Create your profile**, paste your SimpleX link into the matching field:
 
 Then tap **Next**.
 
-Then pay. After payment, the name is registered in two transactions, at least 60
+The name is registered in two transactions, at least 60
 seconds apart. The first transaction holds only a secret code for the name, not
 the name itself, so nobody watching the blockchain can see which name you want.
 In the second, the name is revealed and registered. Without these two steps,
