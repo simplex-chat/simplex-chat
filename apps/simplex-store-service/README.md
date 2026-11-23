@@ -968,7 +968,7 @@ warning. When the metrics port cannot be listened on, the failure is logged as a
 | `simplex_store_badges_purchases{status}` | badge purchases by status: `acquiring`, `issued`, `superseded` or `failed`, each 0 when it has none |
 | `simplex_store_badges_subscriptions{state}` | App Store and Google Play subscriptions paying for badges, by state: `renewing`, `cancelled`, `billingRetry` or `ended`, each 0 when it has none |
 | `simplex_store_badges_codes_open` | badge codes paid or free, not revoked or expired, with redemptions left |
-| `simplex_store_names_orders{phase,reason}` | name orders in the phase: `unpaid`, `closed`, `queued`, `committing`, `committed`, `registering`, `registered`, `taken` or `failed`; the queue is `queued` to `registering`, while `closed` counts unpaid orders closed with their invoice, kept for 30 days, and `failed` every failed order not tried again, by `reason`: `registry_refused`, `signature_refused`, `month_ended` or `unread`, each 0 when it has none |
+| `simplex_store_names_orders{phase,reason}` | name orders in the phase: `unpaid`, `closed`, `queued`, `committing`, `committed`, `registering`, `registered`, `taken`, `ended` or `failed`; the queue is `queued` to `registering`, while `closed` counts unpaid orders closed with their invoice, kept for 30 days, and `failed` every failed order not tried again, by `reason`: `registry_refused`, `signature_refused`, `month_ended` or `unread`, each 0 when it has none |
 | `simplex_store_names_queue_oldest_change_timestamp_seconds` | the last change, in Unix seconds, of the order unchanged longest among those the service moves on: `queued`, `committing`, `registering`, and `committed` with the page's reveal stored; absent when there is none |
 | `simplex_store_names_unregistered_oldest_selected_timestamp_seconds` | the oldest selection of a name among the live orders `queued`, `committing`, `committed`, `registering` or `failed`: a payment's settlement, a code order's placement, or a selection after a reset; a month-ended order not counted; absent when there is none |
 | `simplex_store_names_transactions_pending` | registrar transactions sent and not settled, one per nonce, so a fee replacement counts once |
@@ -1213,6 +1213,72 @@ launch price of a name of 8 letters or more, $100 for 2 years. One floor bounds 
 node answering the floor price for a 6- or 7-letter name passes the check even when those names
 cost more on chain. To lower prices on chain below the floor, lower the setting and restart first.
 
+### Dispute days
+
+Each name the sponsor registers has a dispute period, within which the guardian or the controller's
+owner can end the registration if a payment for it is disputed, reversed or refunded in full. Its length in
+days is set when the order is made, by how the order is paid:
+
+| Payment | Days |
+|---|---|
+| card | 120 |
+| BTC, XMR or another BTCPay method | 14 |
+| prepaid code | 14 |
+
+A name selected for an order after a take keeps the order's days, also when its price is spent from
+the order's balance.
+
+The order's `disputeDays` are returned in the registration view, signed by the owner in
+`RegisterName` and sent by the service in `registerWithCredit`. The page signs `RegisterName` with
+the order request, before the order exists, by its own table of the same days; a reveal signed over
+other days than the order's, with the order request, a selection of a name or `/reveal`, is refused
+with `400 bad_request`. Once the name is registered, `disputeUntil` is returned in the view: the
+registrar's `disputeUntil(id)` read at the confirmation depth, or `null` for a registration without a
+dispute period. The days of the orders stored before the migration `20261120_names_dispute_days`
+are set by it with the same rule. By its down migration, every stored dispute end is dropped and
+`ended` orders are set `registered`. By an up migration after it, the days are set again and
+`dispute_until` is left `NULL` on every order: `disputeUntil` is then returned `null` for every
+registered order, and the service's hourly pass below reads only orders with a stored dispute end,
+so these orders stay `registered` when their names are unregistered.
+
+The registrar's `disputeUntil(id)` is changed only by `unregister`, which ends a registration within
+its dispute period, and by a later registration of the name. Every hour the service reads the block
+at the confirmation depth and, at that block, `disputeUntil(id)` of each registered order whose
+dispute period has not ended or ended less than 7 days ago, if its registration is older than that
+block. When the value differs from the one read at the registration, the order's phase is set to
+`ended`, and it stays `ended` when the name is registered again. An order whose read fails is read
+again at the next pass, and the other orders are read in the same pass; when the block cannot be
+read, the pass is stopped. The first failed read of each pass is logged once, with its order's
+registration id, and a failed block read with the pass stopped. Each order set
+`ended`, by the pass or by the check below, is logged at note with its registration id, the
+`disputeUntil(id)` read and the end it was compared with.
+
+When an order's register is found mined, by the worker or `//close`, `disputeUntil(id)` at the
+confirmed block is compared with the end set by its register, its block's timestamp plus the
+order's days; when the two differ, the registration was ended before the confirmed block, possibly
+followed by another, and the order is set `ended` at once, with the expiry and the dispute end set
+by its register stored: its block's timestamp plus the order's duration, and plus its days. While
+the register's block is above the confirmed block, a warning naming both blocks is logged and the
+order is left as it is. Then, as after a failed chain read, the worker checks the order again 15
+seconds later, and `//close` answers `Nothing recorded: the chain could not be read; run //close
+again.` An ended order's phase in the view is `{"type": "ended"}`, with no expiry, and its
+`disputeUntil` is `null`; their stored values are kept.
+
+An order whose register landed while none of its register transactions is recorded `mined` in
+`sx_badge_service_name_transactions`, as when each was marked `dropped` after its nonce was used, is
+judged by `ownerOf` alone. Once its name is unregistered, `ownerOf` reverts, and the order is read as
+not registered: the worker takes its register as not gone through, sending it again at the sponsor's
+cost while its stored signature is valid, or setting the order `taken` when another registration of
+the name is at the confirmation depth, which credits a paid order's price to its balance and keeps a
+code order's code reserved; and `//close` of such an order, once failed or lapsed, records a refund
+of a payment that was disputed.
+Before `//close` of such an order, and before `//record_refund` of its balance, read the registrar's
+`NameRegistered` and `NameUnregistered` events of its name, whose id is the order's `label_hash`,
+from the order's creation on, as in a block explorer or with `cast logs`.
+
+This version runs against the contracts with the dispute period (ens-contracts #51): the service
+calls the sponsor's `registerWithCredit` with `disputeDays` and the registrar's `disputeUntil`.
+
 ### Link edits
 
 Each "Edit links" save is one request, relayed by the service as one transaction whose gas it pays
@@ -1386,6 +1452,12 @@ reads, clears and logs its acceptance, as a community name's did:
 | `setTextWithSig`, a link removed | 698,644 | 558,916 | 0.0035 ETH |
 | `multicall`, two new links | 6,054,042 | 6,008,868 | 0.01 ETH |
 
+- The figures predate the dispute period (ens-contracts #51), whose `registerWithCredit` also writes
+  the name's `disputeUntil`. That write is estimated, not measured, at about 22,100 gas for a name
+  registered for the first time: a storage slot set from zero, 20,000 gas, and its first access in
+  the transaction, 2,100 (EIP-2200, EIP-2929). Each register's estimate is then about 22,100 gas
+  higher, the two-link register's about 6,813,500, and the gas limit the service sets, a fifth above
+  the estimate, about 26,500 higher.
 - The service sets each transaction's gas limit a fifth above its estimate, within `gas_limit_cap`,
   and its max fee to at most `max_fee_per_gas` (default 5 gwei) and at most 0.01 ETH divided by its
   gas limit, so no transaction can cost more than 0.01 ETH. The node accepts a transaction only while
@@ -1395,14 +1467,15 @@ reads, clears and logs its acceptance, as a community name's did:
   blocks' median tips (`eth_feeHistory`), at least 0.05 gwei: reth's and geth's
   `eth_maxPriorityFeePerGas` sample each block's cheapest transactions and answer near zero.
 - An order is one commit, one acceptance relay and one register: 0.0108 ETH at the cap with two
-  links, 0.0036 ETH with none. The expected orders × 0.0108 ETH, plus 0.01 ETH per expected Save of
-  one or both links, pays for all of them even at the cap. A name's link edits are at most
+  links, 0.0036 ETH with none, and with none about 0.00013 ETH more for the dispute period's write,
+  its 26,500 more gas limit at 5 gwei. The expected orders × 0.0108 ETH, plus 0.01 ETH per expected
+  Save of one or both links, pays for all of them even at the cap. A name's link edits are at most
   `record_edits_per_year` (3) a year, see [Link edits](#link-edits). Below 0.01 ETH the figures scale
   with `max_fee_per_gas`.
 - A Save of both links in one `multicall` uses 26,906 gas less than the same two edits sent as two
   transactions with links of 4096 bytes, and 28,082 less with short links.
-- `gas_limit_cap` (default 8,000,000) must be at least 6,791,417: a transaction whose estimate is
-  above it is not sent.
+- `gas_limit_cap` (default 8,000,000) must be at least 6,791,417, about 6,813,500 with the dispute
+  period's write: a transaction whose estimate is above it is not sent.
 - The 0.01 ETH bound applies above 2,000,000 gas at 5 gwei: registers and edits with long links. It
   also keeps every transaction under reth's and geth's `--rpc.txfeecap`, 1 ETH by default, above which
   the node refuses a transaction and every later one of the key waits behind it. A transaction it
@@ -1862,8 +1935,9 @@ needs `[names]` and `[chain]` in `store_service.ini`; without `[names]` it answe
 enabled. It:
 
 1. checks the chain first: when a register of the order mined, or its owner holds
-   the name at the confirmation depth, the order is set `registered`, nothing is refunded, and the
-   change is logged at note with its registration id;
+   the name at the confirmation depth, the order is set `registered`, or `ended` when that
+   registration was ended in its dispute period (see [Dispute days](#dispute-days)); nothing is
+   refunded, and the change is logged at note with its registration id;
 2. otherwise, in one transaction, sets the order `taken`, clears its stored signatures, credits its
    price to its balance, which may already hold an overpayment or late money, and records all
    of that balance as refunded, as `//record_refund` does.
@@ -1970,7 +2044,7 @@ It needs bash 5.1 or later (for `wait -n -p`), `cabal` (for the default `STORE_T
 Foundry's anvil, Node.js 22.18 or later (which runs the webapp's `dev/deploy.ts` as TypeScript, as its
 `dev/start.sh` does), and `curl`; the webapp with its packages and
 Playwright's Chromium (`npm install`, `npx playwright install chromium`); and the compiled
-`ens-contracts` submodule (simplex-network/ens-contracts#47) of a simplex-namespace-contract checkout
+`ens-contracts` submodule (simplex-network/ens-contracts#51, ebf7698) of a simplex-namespace-contract checkout
 (brenzi/simplex-namespace-contract main, since #10), whose `test/fixtures/terms/` the deploy links
 as the terms, as the webapp's `dev/start.sh` needs; the webapp's `dev/Dockerfile` builds both at the
 versions it pins. `RPC_PORT`, `SERVICE_PORT`, `BADGES_PORT`, `RUNNER_PORT`, 8099, 5173 and 8098 must be
