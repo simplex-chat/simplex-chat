@@ -146,9 +146,9 @@ EXCLUDED=(
   "a commit that does not move on for longer than usual says so in its words' place, and nothing moves" "$SEARCH"
   "a card invoice opened in place of a new Bitcoin one says why in the card page's one notice, above the form" "$LIMIT"
   "a whole payment after the close, once credited, says so and offers a new invoice beside the refund" "$MONERO"
-  "a registration ended in its dispute period offers only Register with code, as the other endings do" "$MODE"
-  "a registration ended in its dispute period says so on its order's page, is marked Ended in Your names, has no links to edit, and leaves the name available" "$UNREGISTER"
-  "a reveal over more dispute days than the order's payment allows is not signed, and the page says so" "$STALE"
+  "a registration ended in its dispute period is shown with Register with code alone, as the other endings are" "$MODE"
+  "a registration ended in its dispute period is shown as ended on its order's page, in Your names and in Edit links, and its name is available again" "$UNREGISTER"
+  "a reveal signed over other dispute days than its order's payment's is bad_request, and the name is registered with the reveal over its payment's" "$STALE"
 )
 
 RUN_DIR="$(mktemp -d "${TMPDIR:-/tmp}/names-contract-run.XXXXXX")"
