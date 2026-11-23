@@ -29,7 +29,7 @@ import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import qualified Data.X509.CertificateStore as XS
 import ImageTests (pngSideAbove16384)
-import Network.HTTP.Types (found302, hContentEncoding, hContentType, hLocation, notFound404, ok200)
+import Network.HTTP.Types (found302, hContentEncoding, hContentLength, hContentType, hLocation, notFound404, ok200)
 import Network.Socket
 import Network.Socket.ByteString (recv, sendAll)
 import qualified Network.Wai as W
@@ -168,6 +168,7 @@ testImageLimits ps = do
     image `shouldSatisfy` ("data:image/jpg;base64," `T.isPrefixOf`)
     previewOf alice (pageUrl ps "/large-og") >>= (`shouldBeError` "image too large")
     previewOf alice (pageUrl ps "/too-large.jpg") >>= (`shouldBeError` "image too large")
+    previewOf alice (pageUrl ps "/declared-too-large.jpg") >>= (`shouldBeError` "image too large")
 
 testNoPageImage :: HasCallStack => TestParams -> IO ()
 testNoPageImage ps = do
@@ -378,6 +379,7 @@ linkServerApp LinkServer {requestedPaths, streamClosed} req respond = do
     "/large.jpg" -> paddedJpeg $ maxImageBytes + 1
     "/large-og" -> pure $ html $ pageHtml "/large.jpg"
     "/too-large.jpg" -> paddedJpeg $ maxImageLinkBytes + 1
+    "/declared-too-large.jpg" -> W.responseLBS ok200 [(hContentType, "image/jpeg"), (hContentLength, B.pack $ show $ maxImageLinkBytes + 1)] . LB.fromStrict <$> B.readFile "tests/fixtures/test.jpg"
     "/endless" -> pure $ stream (pageHead "/image.png") 1024 50_000
     "/large-head" -> pure $ stream "<html><head><title>Large head</title>" 16384 0
     _

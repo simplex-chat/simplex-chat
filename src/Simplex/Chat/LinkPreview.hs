@@ -121,7 +121,7 @@ getLinkPreview previewConfig networkConfig requestMode g uriText = runExceptT $ 
 linkPreview :: Fetcher -> Text -> Uri -> ExceptT String IO LinkPreview
 linkPreview fetcher uriText uri@Uri {uriHost, uriPath} =
   fetch fetcher uri pageContent >>= \case
-    HtmlPage PageMeta {pageTitle, pageDescription, pageImage} -> preview pageTitle pageDescription =<< fetch fetcher pageImage (\_ Response {body} -> imageBody maxImageBytes body)
+    HtmlPage PageMeta {pageTitle, pageDescription, pageImage} -> preview pageTitle pageDescription =<< fetch fetcher pageImage (const $ imageBody maxImageBytes)
     ImagePage bytes -> preview imageTitle "" bytes
   where
     preview pageTitle pageDescription bytes = do
@@ -365,7 +365,7 @@ localIPv6 = ["::/128", "fc00::/7", "fe80::/10", "ff00::/8"]
 
 data ResponseHead = ResponseHead {status :: Int, headers :: [(ByteString, ByteString)]}
 
-data Response = Response {headers :: [(ByteString, ByteString)], body :: ExceptT String IO ByteString}
+data Response = Response {headers :: [(ByteString, ByteString)], contentLength :: Maybe Int, body :: ExceptT String IO ByteString}
 
 data ChunkedState = CSSize | CSData Int | CSEnd | CSDone
 
@@ -446,15 +446,15 @@ response :: Conn -> [(ByteString, ByteString)] -> ExceptT String IO Response
 response conn headers = do
   forM_ (lookup "content-encoding" headers) $ \encoding ->
     unless (asciiLower encoding == "identity") $ throwError $ "unsupported content encoding: " <> B.unpack encoding
-  body <- case (lookup "transfer-encoding" headers, lookup "content-length" headers) of
+  (contentLength, body) <- case (lookup "transfer-encoding" headers, lookup "content-length" headers) of
     (Just encoding, _)
-      | asciiLower encoding == "chunked" -> liftIO $ chunkedBody conn
+      | asciiLower encoding == "chunked" -> (Nothing,) <$> liftIO (chunkedBody conn)
       | otherwise -> throwError $ "unsupported transfer encoding: " <> B.unpack encoding
     (Nothing, Just len)
-      | B.length len <= 18, B.all isDigit len, Just (n, "") <- B.readInt len -> liftIO $ limitBody n $ recvConn conn
+      | B.length len <= 18, B.all isDigit len, Just (n, "") <- B.readInt len -> (Just n,) <$> liftIO (limitBody n $ recvConn conn)
       | otherwise -> throwError $ "invalid content length: " <> B.unpack len
-    (Nothing, Nothing) -> pure $ recvConn conn
-  pure Response {headers, body}
+    (Nothing, Nothing) -> pure (Nothing, recvConn conn)
+  pure Response {headers, contentLength, body}
 
 chunkedBody :: Conn -> IO (ExceptT String IO ByteString)
 chunkedBody conn = next <$> newIORef CSSize
@@ -501,19 +501,19 @@ readBody next = B.concat <$> go
   where
     go = next >>= \s -> if B.null s then pure [] else (s :) <$> go
 
-imageBody :: Int -> ExceptT String IO ByteString -> ExceptT String IO ByteString
-imageBody limit body = do
+imageBody :: Int -> Response -> ExceptT String IO ByteString
+imageBody limit Response {body} = do
   bytes <- readBody =<< liftIO (limitBody (limit + 1) body)
   when (B.length bytes > limit) $ throwError "image too large"
   pure bytes
 
 pageContent :: Uri -> Response -> ExceptT String IO Page
-pageContent pageUri Response {headers, body} =
+pageContent pageUri resp@Response {headers, body} =
   if
     | mediaType `elem` ["text/html", "application/xhtml+xml"] -> do
         tags <- scanHead =<< liftIO (limitBody maxHeadBytes body)
         HtmlPage <$> liftEither (htmlPage pageUri charset tags)
-    | mediaType `elem` ["image/jpeg", "image/png"] -> ImagePage <$> imageBody maxImageLinkBytes body
+    | mediaType `elem` ["image/jpeg", "image/png"] -> ImagePage <$> imageBody maxImageLinkBytes resp
     | otherwise -> throwError $ "unsupported content type: " <> B.unpack mediaType
   where
     (mediaType, charset) = maybe ("", Nothing) contentType $ lookup "content-type" headers

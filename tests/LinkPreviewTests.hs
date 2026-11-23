@@ -46,6 +46,7 @@ linkPreviewTests = do
     it "should resolve image against the page" testPageImage
     it "should read at most the head limit of the page" testHeadLimit
     it "should limit image size" testImageLimit
+    it "should refuse image by its declared length without reading it" testImageLength
     it "should limit preview time to 15 seconds without SOCKS proxy" testPreviewDeadline
     it "should limit preview time to 30 seconds through SOCKS proxy" testSocksPreviewDeadline
   describe "charsets" $ do
@@ -74,6 +75,11 @@ listStream chunks = do
   pure $ liftIO $ atomicModifyIORef' ref $ \case
     [] -> ([], "")
     c : cs -> (cs, c)
+
+endlessBody :: ByteString -> IO (IORef Int, ExceptT String IO ByteString)
+endlessBody chunk = do
+  pulled <- newIORef 0
+  pure (pulled, liftIO $ chunk <$ modifyIORef' pulled (+ B.length chunk))
 
 scanChunks :: [ByteString] -> IO (Either String HeadTags)
 scanChunks chunks = runExceptT . scanHead =<< listStream chunks
@@ -226,10 +232,8 @@ testPageImage = do
 
 testHeadLimit :: IO ()
 testHeadLimit = do
-  pulled <- newIORef 0
-  let chunk = "<title>t</title>" <> B.replicate 1008 ' '
-      body = liftIO $ chunk <$ modifyIORef' pulled (+ B.length chunk)
-  runExceptT (pageContent testBase Response {headers = [("content-type", "text/html")], body}) >>= \case
+  (pulled, body) <- endlessBody $ "<title>t</title>" <> B.replicate 1008 ' '
+  runExceptT (pageContent testBase Response {headers = [("content-type", "text/html")], contentLength = Nothing, body}) >>= \case
     Left e -> e `shouldBe` "no image"
     Right _ -> expectationFailure "unexpected page"
   readIORef pulled `shouldReturn` maxHeadBytes
@@ -241,7 +245,17 @@ testImageLimit = do
     imageSize limit [B.replicate limit 'a'] `shouldReturn` Right limit
     imageSize limit [B.replicate limit 'a', "a"] `shouldReturn` Left "image too large"
   where
-    imageSize limit chunks = fmap B.length <$> (runExceptT . imageBody limit =<< listStream chunks)
+    imageSize limit chunks = fmap B.length <$> (readImage limit Nothing =<< listStream chunks)
+
+testImageLength :: IO ()
+testImageLength = do
+  (pulled, body) <- endlessBody "a"
+  readImage 1023 (Just 1024) body `shouldReturn` Left "image too large"
+  readIORef pulled `shouldReturn` 0
+  (readImage 1023 (Just 1023) =<< listStream [B.replicate 1023 'a']) `shouldReturn` Right (B.replicate 1023 'a')
+
+readImage :: Int -> Maybe Int -> ExceptT String IO ByteString -> IO (Either String ByteString)
+readImage limit contentLength body = runExceptT $ imageBody limit Response {headers = [], contentLength, body}
 
 testPreviewDeadline :: IO ()
 testPreviewDeadline = do
