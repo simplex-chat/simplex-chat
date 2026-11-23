@@ -63,8 +63,15 @@ import System.Directory (copyFile, doesFileExist)
 import System.FilePath ((</>))
 import Test.Hspec hiding (it)
 #if defined(dbPostgres)
+import Control.Concurrent (newEmptyMVar, putMVar, takeMVar)
+import Control.Concurrent.Async (wait, withAsync)
+import Data.List.NonEmpty (NonEmpty (..))
+import Data.Maybe (isNothing)
 import Database.PostgreSQL.Simple (Only (..))
 import Database.PostgreSQL.Simple.SqlQQ (sql)
+import Simplex.Chat.Library.Subscriber (processAgentMessage)
+import Simplex.Messaging.Agent.Protocol (AEvent (MERRS), AgentErrorType (INTERNAL))
+import System.Timeout (timeout)
 #else
 import Database.SQLite.Simple (Only (..))
 import Database.SQLite.Simple.QQ (sql)
@@ -108,12 +115,15 @@ chatGroupTests = do
     it "moderate own message (should process as deletion)" testGroupModerateOwn
     it "moderate multiple messages" testGroupModerateMultiple
     it "moderate message of another group member (full delete)" testGroupModerateFullDelete
-    xit "moderate message that arrives after the event of moderation" testGroupDelayedModeration
-    xit "moderate message that arrives after the event of moderation (full delete)" testGroupDelayedModerationFullDelete
+    it "moderate message that arrives after the event of moderation" testGroupDelayedModeration
+    it "moderate message that arrives after the event of moderation (full delete)" testGroupDelayedModerationFullDelete
     it "remove member with messages (full deletion is enabled)" testDeleteMemberWithMessages
     it "remove member with messages mark deleted" testDeleteMemberMarkMessagesDeleted
     it "remove member - delete messages of left/removed members" testDeleteMemberMessagesLeftRemoved
     it "file chunks from a member who did not send the file are ignored" testGroupFileChunkOtherMember
+#if defined(dbPostgres)
+    it "should stop a message error update at its time limit" testGroupMsgErrorsTimeLimit
+#endif
   describe "batch send messages" $ do
     it "send multiple messages api" testSendMulti
     it "send multiple timed messages" testSendMultiTimed
@@ -125,7 +135,7 @@ chatGroupTests = do
     it "all old members group upgrades to current version" testGroupAllOldThenUpgrade
     it "member key is generated at the first read of a group created without one" testGroupMemberKeyGenerated
   describe "async group connections" $ do
-    xit "create and join group when clients go offline" testGroupAsync
+    it "create and join group when clients go offline" testGroupAsync
   describe "group links" $ do
     it "create group link, join via group link" testGroupLink
     it "join via group link with group profile near the size limit" testGroupLinkLargeGroupProfile
@@ -347,6 +357,9 @@ chatGroupTests = do
       it "should not add relay when the invitation group id differs from link data" testChannelAddRelayGroupIdMismatch
       it "should ignore relay invitation without the owner's signature" testChannelRelayInvUnsigned
       it "should remove relay from channel" testChannelRemoveRelay
+#if defined(dbPostgres)
+      it "should connect to re-added relay when its connection is saved late" testChannelRemoveRelayConnSavedLate
+#endif
       it "should remove left relay from channel" testChannelRemoveLeftRelay
       describe "relay rejection" $ do
         it "relay rejects fresh invitation after leaving the same channel" testRelayRejectAfterLeave
@@ -2043,36 +2056,24 @@ testGroupDelayedModeration ps = do
         [ alice <## "#team: cath joined the group",
           cath <## "#team: you joined the group"
         ]
-      threadDelay 1000000
-
-      -- imitate not implemented group forwarding
-      -- (real client wouldn't have forwarding code, but tests use "current code" with configured version,
-      -- and forwarding client doesn't check compatibility)
-      updateGroupForwardingVectors alice "bob" "cath" MRConnected
-
-      cath #> "#team hi" -- message is pending for bob
+      cath #> "#team hi"
       alice <# "#team cath> hi"
       alice ##> "\\\\ #team @cath hi"
       alice <## "message marked deleted by you"
       cath <# "#team cath> [marked deleted by alice] hi"
     withTestChatCfg ps cfg "bob" $ \bob -> do
-      bob <## "subscribed 2 connections on server localhost"
-      bob <## "#team: alice added cath (Catherine) to the group (connecting...)"
+      bob <### ["subscribed 2 connections on server localhost", "#team: alice added cath (Catherine) to the group (connecting...)"]
+      bob <# "#team cath> [marked deleted by alice] hi"
       withTestChatCfg ps cfg "cath" $ \cath -> do
-        cath <## "subscribed 3 connections on server localhost"
-        cath <## "#team: member bob (Bob) is connected"
-        bob
-          <### [ "#team: new member cath is connected",
-                 EndsWith "#team cath> [marked deleted by alice] hi"
-               ]
+        cath <### ["subscribed 3 connections on server localhost", "#team: member bob (Bob) is connected"]
+        bob <## "#team: new member cath is connected"
         alice #$> ("/_get chat #1 count=1", chat, [(0, "hi [marked deleted by you]")])
         cath #$> ("/_get chat #1 count=2", chat, [(1, "hi [marked deleted by alice]"), (0, "connected")])
         bob ##> "/_get chat #1 count=2"
         r <- chat <$> getTermLine bob
         r `shouldMatchList` [(0, "connected"), (0, "hi [marked deleted by alice]")]
   where
-    -- version before forwarding, so cath doesn't expect alice to forward messages (groupForwardVersion = 4)
-    cfg = testCfg {chatVRange = mkVersionRange (VersionChat 1) (VersionChat 3)}
+    cfg = testCfg {deliveryWorkerDelay = 3000000}
 
 testGroupDelayedModerationFullDelete :: HasCallStack => TestParams -> IO ()
 testGroupDelayedModerationFullDelete ps = do
@@ -2088,20 +2089,11 @@ testGroupDelayedModerationFullDelete ps = do
         [ alice <## "#team: cath joined the group",
           cath <## "#team: you joined the group"
         ]
-      threadDelay 1000000
-
-      -- imitate not implemented group forwarding
-      -- (real client wouldn't have forwarding code, but tests use "current code" with configured version,
-      -- and forwarding client doesn't check compatibility)
-      updateGroupForwardingVectors alice "bob" "cath" MRConnected
-
-      cath #> "#team hi" -- message is pending for bob
+      cath #> "#team hi"
       alice <# "#team cath> hi"
       alice ##> "\\\\ #team @cath hi"
       alice <## "message marked deleted by you"
       cath <# "#team cath> [marked deleted by alice] hi"
-      -- if full deletion was enabled at time of moderation, cath would delete pending message as well,
-      -- that's why we set it afterwards to test delayed moderation for bob
       alice ##> "/set delete #team on"
       alice <## "updated group preferences:"
       alice <## "Full deletion: on"
@@ -2109,26 +2101,21 @@ testGroupDelayedModerationFullDelete ps = do
       cath <## "updated group preferences:"
       cath <## "Full deletion: on"
     withTestChatCfg ps cfg "bob" $ \bob -> do
-      bob <## "subscribed 2 connections on server localhost"
-      bob <## "#team: alice added cath (Catherine) to the group (connecting...)"
+      bob <### ["subscribed 2 connections on server localhost", "#team: alice added cath (Catherine) to the group (connecting...)"]
       bob <## "alice updated group #team: (signed)"
       bob <## "updated group preferences:"
       bob <## "Full deletion: on"
+      bob <# "#team cath> moderated [deleted by alice] [>>]"
       withTestChatCfg ps cfg "cath" $ \cath -> do
-        cath <## "subscribed 3 connections on server localhost"
-        cath <## "#team: member bob (Bob) is connected"
-        bob
-          <### [ "#team: new member cath is connected",
-                 EndsWith "#team cath> moderated [deleted by alice]"
-               ]
+        cath <### ["subscribed 3 connections on server localhost", "#team: member bob (Bob) is connected"]
+        bob <## "#team: new member cath is connected"
         alice #$> ("/_get chat #1 count=2", chat, [(0, "hi [marked deleted by you]"), (1, "Full deletion: on")])
         cath #$> ("/_get chat #1 count=3", chat, [(1, "hi [marked deleted by alice]"), (0, "Full deletion: on"), (0, "connected")])
         bob ##> "/_get chat #1 count=3"
         r <- chat <$> getTermLine bob
         r `shouldMatchList` [(0, "Full deletion: on"), (0, "connected"), (0, "moderated [deleted by alice]")]
   where
-    -- version before forwarding, so cath doesn't expect alice to forward messages (groupForwardVersion = 4)
-    cfg = testCfg {chatVRange = mkVersionRange (VersionChat 1) (VersionChat 3)}
+    cfg = testCfg {deliveryWorkerDelay = 3000000}
 
 testDeleteMemberWithMessages :: HasCallStack => TestParams -> IO ()
 testDeleteMemberWithMessages =
@@ -2322,6 +2309,20 @@ testGroupFileChunkOtherMember =
         bob <## "completed receiving file 1 (test.txt) from alice"
       src <- B.readFile "./tests/fixtures/test.txt"
       B.readFile (tmpFile bob "test.txt") `shouldReturn` src
+
+#if defined(dbPostgres)
+testGroupMsgErrorsTimeLimit :: HasCallStack => TestParams -> IO ()
+testGroupMsgErrorsTimeLimit =
+  testChat2 aliceProfile bobProfile $
+    \alice@TestCC {chatController = cc} bob -> do
+      createGroup2 "team" alice bob
+      connId <- relayConnIdToMember alice "bob"
+      alice ##> "/_stop"
+      alice <## "chat stopped"
+      let lockDeliveries inside = withCCTransaction alice $ \db -> DB.execute_ db "LOCK TABLE msg_deliveries" >> inside
+      r <- holdDuring lockDeliveries (timeout 1000000 $ runReaderT (runExceptT $ processAgentMessage "" connId $ MERRS (1 :| []) (INTERNAL "")) cc)
+      r `shouldSatisfy` isNothing
+#endif
 
 testSendMulti :: HasCallStack => TestParams -> IO ()
 testSendMulti =
@@ -2831,7 +2832,7 @@ testGroupAsync ps = do
       alice ##> "/g team"
       alice <## "group #team is created"
       alice <## "to add members use /a team <name> or /create link #team"
-      alice ##> "/a team bob"
+      alice ##> "/a team bob admin"
       concurrentlyN_
         [ alice <## "invitation to join the group #team sent to bob",
           do
@@ -2852,13 +2853,15 @@ testGroupAsync ps = do
       concurrentlyN_
         [ alice <## "invitation to join the group #team sent to cath",
           do
-            cath <## "#team: alice invites you to join the group as admin"
+            cath <## "#team: alice invites you to join the group as member"
             cath <## "use /j team to accept"
         ]
       cath ##> "/j team"
       concurrentlyN_
         [ alice <## "#team: cath joined the group",
-          cath <## "#team: you joined the group"
+          do
+            cath <## "#team: you joined the group"
+            cath <# "#team alice> hello bob [>>]"
         ]
       alice #> "#team hello cath"
       cath <# "#team alice> hello cath"
@@ -2866,30 +2869,30 @@ testGroupAsync ps = do
     withTestChat ps "cath" $ \cath -> do
       concurrentlyN_
         [ do
-            bob <## "subscribed 2 connections on server localhost"
-            bob <## "#team: alice added cath (Catherine) to the group (connecting...)"
+            bob <### ["subscribed 2 connections on server localhost", "#team: alice added cath (Catherine) to the group (connecting...)"]
             bob <# "#team alice> hello cath"
             bob <## "#team: new member cath is connected",
-          do
-            cath <## "subscribed 3 connections on server localhost"
-            cath <## "#team: member bob (Bob) is connected"
+          cath <### ["subscribed 3 connections on server localhost", "#team: member bob (Bob) is connected"]
         ]
   threadDelay 500000
   withTestChat ps "bob" $ \bob -> do
     withNewTestChat ps "dan" danProfile $ \dan -> do
-      bob <## "subscribed 4 connections on server localhost"
+      bob <## "subscribed 3 connections on server localhost"
       connectUsers bob dan
       bob ##> "/a team dan"
       concurrentlyN_
         [ bob <## "invitation to join the group #team sent to dan",
           do
-            dan <## "#team: bob invites you to join the group as admin"
+            dan <## "#team: bob invites you to join the group as member"
             dan <## "use /j team to accept"
         ]
       dan ##> "/j team"
       concurrentlyN_
         [ bob <## "#team: dan joined the group",
-          dan <## "#team: you joined the group"
+          do
+            dan <## "#team: you joined the group"
+            dan <# "#team alice> hello bob [>>]"
+            dan <# "#team alice> hello cath [>>]"
         ]
       threadDelay 1000000
   threadDelay 1000000
@@ -2898,17 +2901,16 @@ testGroupAsync ps = do
       withTestChat ps "dan" $ \dan -> do
         concurrentlyN_
           [ do
-              alice <## "subscribed 4 connections on server localhost"
-              alice <## "#team: bob added dan (Daniel) to the group (connecting...)"
+              alice <### ["subscribed 4 connections on server localhost", "#team: bob added dan (Daniel) to the group (connecting...)"]
               alice <## "#team: new member dan is connected",
             do
-              cath <## "subscribed 4 connections on server localhost"
-              cath <## "#team: bob added dan (Daniel) to the group (connecting...)"
+              cath <### ["subscribed 3 connections on server localhost", "#team: bob added dan (Daniel) to the group (connecting...)"]
               cath <## "#team: new member dan is connected",
-            do
-              dan <## "subscribed 5 connections on server localhost"
-              dan <## "#team: member alice (Alice) is connected"
-              dan <## "#team: member cath (Catherine) is connected"
+            dan
+              <### [ "subscribed 4 connections on server localhost",
+                     "#team: member alice (Alice) is connected",
+                     "#team: member cath (Catherine) is connected"
+                   ]
           ]
         threadDelay 1000000
   withTestChat ps "alice" $ \alice -> do
@@ -2916,10 +2918,10 @@ testGroupAsync ps = do
       withTestChat ps "cath" $ \cath -> do
         withTestChat ps "dan" $ \dan -> do
           concurrentlyN_
-            [ alice <## "subscribed 6 connections server localhost",
-              bob <## "subscribed 6 connections server localhost",
-              cath <## "subscribed 6 connections server localhost",
-              dan <## "subscribed 6 connections server localhost"
+            [ alice <## "subscribed 5 connections on server localhost",
+              bob <## "subscribed 5 connections on server localhost",
+              cath <## "subscribed 4 connections on server localhost",
+              dan <## "subscribed 4 connections on server localhost"
             ]
           alice #> "#team hello"
           concurrentlyN_
@@ -2945,9 +2947,45 @@ testGroupAsync ps = do
               bob <# "#team dan> how is it going?",
               cath <# "#team dan> how is it going?"
             ]
-          bob <##> cath
-          dan <##> cath
-          dan <##> alice
+          bob `send` "@cath hi"
+          bob
+            <### [ "member #team cath does not have direct connection, creating",
+                   "contact for member #team cath is created",
+                   "sent invitation to connect directly to member #team cath",
+                   WithTime "@cath hi"
+                 ]
+          cath
+            <### [ "#team bob requests to create direct contact with you",
+                   "to accept: /accept_member_contact @bob",
+                   "to reject: /delete @bob (the sender will NOT be notified)",
+                   WithTime "bob> hi"
+                 ]
+          dan `send` "@cath hi"
+          dan
+            <### [ "member #team cath does not have direct connection, creating",
+                   "contact for member #team cath is created",
+                   "sent invitation to connect directly to member #team cath",
+                   WithTime "@cath hi"
+                 ]
+          cath
+            <### [ "#team dan requests to create direct contact with you",
+                   "to accept: /accept_member_contact @dan",
+                   "to reject: /delete @dan (the sender will NOT be notified)",
+                   WithTime "dan> hi"
+                 ]
+          dan `send` "@alice hi"
+          dan
+            <### [ "member #team alice does not have direct connection, creating",
+                   "contact for member #team alice is created",
+                   "sent invitation to connect directly to member #team alice",
+                   WithTime "@alice hi"
+                 ]
+          alice
+            <### [ "#team dan requests to create direct contact with you",
+                   "to accept: /accept_member_contact @dan",
+                   "to reject: /delete @dan (the sender will NOT be notified)",
+                   WithTime "dan> hi"
+                 ]
 
 testGroupLinkDeleteGroupRejoin :: HasCallStack => TestParams -> IO ()
 testGroupLinkDeleteGroupRejoin =
@@ -8235,7 +8273,7 @@ testBlockForAllLeftRemoved =
 testGroupMemberInactive :: HasCallStack => TestParams -> IO ()
 testGroupMemberInactive ps = do
   withSmpServer' serverCfg' $ do
-    withNewTestChatCfgOpts ps cfg' opts' "alice" aliceProfile $ \alice -> do
+    withNewTestChatCfgOpts ps cfg' testOpts "alice" aliceProfile $ \alice -> do
       withNewTestChatCfgOpts ps cfg' opts' "bob" bobProfile $ \bob -> do
         createGroup2 "team" alice bob
 
@@ -12571,7 +12609,21 @@ testChannelRosterMultiRelayMultipart ps =
       map (\(Only k) -> isJust k) rows `shouldBe` [True]
 
 testChannelRemoveRelay :: HasCallStack => TestParams -> IO ()
-testChannelRemoveRelay ps =
+testChannelRemoveRelay = testChannelRemoveRelay_ (const id)
+
+#if defined(dbPostgres)
+testChannelRemoveRelayConnSavedLate :: HasCallStack => TestParams -> IO ()
+testChannelRemoveRelayConnSavedLate = testChannelRemoveRelay_ $ \cc refresh -> do
+  withCCTransaction cc $ \db -> do
+    DB.execute_ db "CREATE FUNCTION wait_test_lock() RETURNS trigger AS $$ BEGIN PERFORM pg_advisory_xact_lock(1); RETURN NEW; END $$ LANGUAGE plpgsql"
+    DB.execute_ db "CREATE TRIGGER wait_test_lock BEFORE INSERT ON connections FOR EACH ROW EXECUTE FUNCTION wait_test_lock()"
+  locked <- newEmptyMVar
+  withAsync (withCCTransaction cc $ \db -> DB.execute_ db "DO $$ BEGIN PERFORM pg_advisory_xact_lock(1); END $$" >> putMVar locked () >> threadDelay 2000000) $ \a ->
+    takeMVar locked >> refresh >> wait a
+#endif
+
+testChannelRemoveRelay_ :: HasCallStack => (TestCC -> IO () -> IO ()) -> TestParams -> IO ()
+testChannelRemoveRelay_ refreshLinkData ps =
   withNewTestChat ps "alice" aliceProfile $ \alice ->
     withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
       withNewTestChatOpts ps relayTestOpts "cath" cathProfile $ \cath ->
@@ -12647,7 +12699,7 @@ testChannelRemoveRelay ps =
           threadDelay 100000
 
           -- subscriber discovers and connects to new relay
-          dan ##> "/_get group link data #1"
+          refreshLinkData dan $ dan ##> "/_get group link data #1"
           dan <## "group ID: 1"
           void $ getTermLine dan -- subscribers: N
           concurrentlyN_

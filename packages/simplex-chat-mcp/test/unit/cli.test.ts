@@ -6,6 +6,7 @@ describe("plugin commands", () => {
     expect(parseCommand(["session"])).toEqual({command: "session"})
     expect(parseCommand(["service"])).toEqual({command: "service"})
     expect(parseCommand(["hook", "session-start"])).toEqual({command: "hook session-start"})
+    expect(parseCommand(["hook", "ask"])).toEqual({command: "hook ask"})
     expect(parseCommand(["link"])).toEqual({command: "link"})
     expect(parseCommand(["reset-owners"])).toEqual({command: "reset-owners"})
     expect(parseCommand(["--help"])).toEqual({command: "help"})
