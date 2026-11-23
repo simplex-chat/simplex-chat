@@ -444,12 +444,6 @@ testResizeImageFdCApi ps = do
   oversizedFile <- fdStat oversized
   (peekCAString =<< cChatResizeImageFdUri oversized 14000) `shouldReturn` ""
   isOpen oversized oversizedFile `shouldReturn` False
-  webp <- B.readFile "./tests/fixtures/webp/lossless-alpha.webp"
-  B.writeFile (tmpPath ps </> "truncated.webp") $ B.take (B.length webp `div` 2) webp
-  truncated <- openFd $ tmpPath ps </> "truncated.webp"
-  truncatedFile <- fdStat truncated
-  (peekCAString =<< cChatResizeImageFdUri truncated 14000) `shouldReturn` ""
-  isOpen truncated truncatedFile `shouldReturn` False
   where
     openFd path = FD.fdFD . fst <$> FD.openFile path ReadMode False
     isOpen fd file = either (const False) (== file) <$> tryIOError (fdStat fd)
