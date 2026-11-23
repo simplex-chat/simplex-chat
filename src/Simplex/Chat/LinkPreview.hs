@@ -118,8 +118,8 @@ getLinkPreview previewConfig networkConfig requestMode g uriText = runExceptT $ 
   timeoutThrow "timeout" (linkPreviewDeadline fetcher uri) $ ExceptT $ runExceptT (linkPreview fetcher uriText uri) `catchOwn'` (pure . Left . show)
 
 linkPreview :: Fetcher -> Text -> Uri -> ExceptT String IO LinkPreview
-linkPreview fetcher uriText uri@Uri {uriHost, uriPath} =
-  fetch fetcher uri pageContent >>= \case
+linkPreview fetcher@Fetcher {previewConfig} uriText uri@Uri {uriHost, uriPath} =
+  fetch fetcher uri (pageContent previewConfig) >>= \case
     HtmlPage PageMeta {pageTitle, pageDescription, pageImage} -> preview pageTitle pageDescription =<< fetch fetcher pageImage (\_ Response {body} -> imageBody maxImageBytes body)
     ImagePage bytes -> preview imageTitle "" bytes
   where
@@ -506,13 +506,13 @@ imageBody limit body = do
   when (B.length bytes > limit) $ throwError "image too large"
   pure bytes
 
-pageContent :: Uri -> Response -> ExceptT String IO Page
-pageContent pageUri Response {headers, body} =
+pageContent :: LinkPreviewConfig -> Uri -> Response -> ExceptT String IO Page
+pageContent LinkPreviewConfig {maxImageLinkBytes} pageUri Response {headers, body} =
   if
     | mediaType `elem` ["text/html", "application/xhtml+xml"] -> do
         tags <- scanHead =<< liftIO (limitBody maxHeadBytes body)
         HtmlPage <$> liftEither (htmlPage pageUri charset tags)
-    | mediaType `elem` ["image/jpeg", "image/png"] -> ImagePage <$> imageBody maxImageBytes body
+    | mediaType `elem` ["image/jpeg", "image/png"] -> ImagePage <$> imageBody maxImageLinkBytes body
     | otherwise -> throwError $ "unsupported content type: " <> B.unpack mediaType
   where
     (mediaType, charset) = maybe ("", Nothing) contentType $ lookup "content-type" headers

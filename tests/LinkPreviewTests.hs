@@ -221,7 +221,7 @@ testHeadLimit = do
   pulled <- newIORef 0
   let chunk = "<title>t</title>" <> B.replicate 1008 ' '
       body = liftIO $ chunk <$ modifyIORef' pulled (+ B.length chunk)
-  runExceptT (pageContent testBase Response {headers = [("content-type", "text/html")], body}) >>= \case
+  runExceptT (pageContent defaultLinkPreviewConfig testBase Response {headers = [("content-type", "text/html")], body}) >>= \case
     Left e -> e `shouldBe` "no image"
     Right _ -> expectationFailure "unexpected page"
   readIORef pulled `shouldReturn` maxHeadBytes
