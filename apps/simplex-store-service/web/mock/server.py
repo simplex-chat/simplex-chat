@@ -140,12 +140,12 @@ class Handler(BaseHTTPRequestHandler):
         if path.startswith("/control/"):
             parts = path.strip("/").split("/")
             if len(parts) != 3:
-                return self._send(400, {"error": "bad_request"})
+                return self._send(400, {"type": "bad_request"})
             _, action, invoice_id = parts
             with LOCK:
                 inv = INVOICES.get(invoice_id)
                 if inv is None:
-                    return self._send(404, {"error": "not_found"})
+                    return self._send(404, {"type": "not_found"})
                 if action == "settle":
                     inv["status"] = "paid"
                     inv["amountPaid"] = inv["amount"]
@@ -172,7 +172,7 @@ class Handler(BaseHTTPRequestHandler):
                         inv["cryptoAmountPaid"] = "0.734"
                         inv["cryptoAmountDue"] = "0.752"
                 else:
-                    return self._send(400, {"error": "bad_request"})
+                    return self._send(400, {"type": "bad_request"})
                 status = inv["status"]
                 old_event = swap_event(invoice_id)
             if old_event is not None:
@@ -184,12 +184,12 @@ class Handler(BaseHTTPRequestHandler):
             with LOCK:
                 inv = INVOICES.get(invoice_id)
                 if inv is None:
-                    return self._send(404, {"error": "not_found"})
+                    return self._send(404, {"type": "not_found"})
                 if inv["status"] != "open":
-                    return self._send(409, {"error": "not_open"})
+                    return self._send(409, {"type": "not_open"})
                 if payment_mark(inv) != ("", False) or inv.get("amountPaid"):
                     # Cancelling a funded invoice would strand what the buyer already sent.
-                    return self._send(409, {"error": "funded"})
+                    return self._send(409, {"type": "funded"})
                 inv["status"] = "expired"
                 payload = {"invoiceId": invoice_id, **public_view(inv)}
                 old_event = swap_event(invoice_id)
@@ -200,15 +200,15 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/invoice":
             body = self._read_json()
             if not body or not isinstance(body.get("codeHash"), str) or not body["codeHash"]:
-                return self._send(400, {"error": "bad_request"})
+                return self._send(400, {"type": "bad_request"})
             if body.get("method") not in ("card", "btc", "xmr"):
-                return self._send(400, {"error": "bad_request"})
+                return self._send(400, {"type": "bad_request"})
             with LOCK:
                 if body["codeHash"] in HASHES:
-                    return self._send(409, {"error": "code_conflict"})
+                    return self._send(409, {"type": "code_conflict"})
                 t = total(body.get("priceId"), body.get("offerId"))
                 if t is None:
-                    return self._send(400, {"error": "catalog_changed"})
+                    return self._send(400, {"type": "catalog_changed"})
                 invoice_id = secrets.token_urlsafe(16)
                 is_card = body["method"] == "card"
                 inv = {
@@ -227,7 +227,7 @@ class Handler(BaseHTTPRequestHandler):
                 payload = {"invoiceId": invoice_id, **public_view(inv)}
             return self._send(200, payload)
 
-        return self._send(405, {"error": "bad_request"})
+        return self._send(405, {"type": "bad_request"})
 
     def do_GET(self):
         parsed = urlparse(self.path)
@@ -243,7 +243,7 @@ class Handler(BaseHTTPRequestHandler):
             with LOCK:
                 inv = INVOICES.get(invoice_id)
                 if inv is None:
-                    return self._send(404, {"error": "not_found"})
+                    return self._send(404, {"type": "not_found"})
                 current = inv["status"]
                 held = payment_mark(inv)
                 event = EVENTS.get(invoice_id)
@@ -274,7 +274,7 @@ class Handler(BaseHTTPRequestHandler):
             if candidate.is_file():
                 ctype = MIME.get(candidate.suffix, "application/octet-stream")
                 return self._send(200, candidate.read_bytes(), ctype)
-        return self._send(404, {"error": "not_found"})
+        return self._send(404, {"type": "not_found"})
 
 
 class Server(ThreadingHTTPServer):

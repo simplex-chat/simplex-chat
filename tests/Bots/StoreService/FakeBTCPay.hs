@@ -29,7 +29,7 @@ module Bots.StoreService.FakeBTCPay
 where
 
 import StoreService.Config (BTCPayConfig (..), SpeedPolicy (..), providerCheckoutTimeoutMicros, providerTimeoutMicros)
-import Bots.StoreService.FakeHttp (setSwitch, stalledAnswer)
+import Bots.StoreService.FakeHttp (nextFakeId, setSwitch, stalledAnswer)
 import Control.Applicative ((<|>))
 import Control.Concurrent.STM
 import Control.Monad (join)
@@ -121,7 +121,6 @@ data FailPlan = FailPlan {fpSkip :: Int, fpCalls :: Int, fpStatus :: Int}
 
 data FakeState = FakeState
   { fsInvoices :: M.Map Text InvoiceState,
-    fsNextId :: Int,
     fsFail :: FailPlan,
     fsList :: Text,
     fsMethods :: Maybe Text,
@@ -137,7 +136,6 @@ initialState :: FakeState
 initialState =
   FakeState
     { fsInvoices = M.empty,
-      fsNextId = 1,
       fsFail = FailPlan {fpSkip = 0, fpCalls = 0, fpStatus = 0},
       fsList = "invoice-list",
       fsMethods = Nothing,
@@ -469,7 +467,8 @@ fakeApp stv req respond = do
       Just methodId -> do
         (invId, inv) <- atomically $ do
           st <- readTVar stv
-          let invId = "FakeInvoiceRef" <> T.justifyRight 4 '0' (tshow (fsNextId st))
+          n <- nextFakeId
+          let invId = "FakeInvoiceRef" <> T.justifyRight 4 '0' (tshow n)
               inv =
                 InvoiceState
                   { isMethodId = methodId,
@@ -481,7 +480,7 @@ fakeApp stv req respond = do
                     isSpeedPolicy = J.decode body >>= objectField "checkout" >>= objectField "speedPolicy" >>= asText,
                     isPayments = Nothing
                   }
-          writeTVar stv st {fsNextId = fsNextId st + 1, fsInvoices = M.insert invId inv (fsInvoices st)}
+          writeTVar stv st {fsInvoices = M.insert invId inv (fsInvoices st)}
           pure (invId, inv)
         serve (invoiceFixture (isStatus inv)) (patchInvoice invId inv)
 

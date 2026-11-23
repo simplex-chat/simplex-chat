@@ -109,25 +109,13 @@ it name test =
   where
     t = 180 * 1000000
 
-xit' :: HasCallStack => String -> (ps -> Expectation) -> SpecWith (Arg (ps -> Expectation))
-xit' = if os == "linux" then xit else it
-
-xit'' :: (HasCallStack, Example a) => String -> a -> SpecWith (Arg a)
-xit'' = ifCI xit Hspec.it
-
 xitMacCI :: HasCallStack => String -> (ps -> Expectation) -> SpecWith (Arg (ps -> Expectation))
 xitMacCI = ifCI (if os == "darwin" then xit else it) it
-
-xdescribe'' :: HasCallStack => String -> SpecWith a -> SpecWith a
-xdescribe'' = ifCI xdescribe describe
 
 ifCI :: HasCallStack => (HasCallStack => String -> a -> SpecWith b) -> (HasCallStack => String -> a -> SpecWith b) -> String -> a -> SpecWith b
 ifCI xrun run d t = do
   ci <- runIO $ lookupEnv "CI"
   (if ci == Just "true" then xrun else run) d t
-
-envCI :: IO Bool
-envCI = (Just "true" ==) <$> lookupEnv "CI"
 
 skip :: String -> SpecWith a -> SpecWith a
 skip = before_ . pendingWith
@@ -1005,7 +993,7 @@ apiFixture fixture TestCC {chatController = cc} placeholders FixtureRequests {fr
   responses <- mapM (\cmd -> (JK.fromString cmd J..=) <$> (decodeJSON =<< chatSendCmd cc (B.pack cmd))) frCommands
   parses <- mapM (\text -> (JK.fromString text J..=) <$> decodeJSON (chatParseMarkdown $ B.pack text)) frMarkdown
   uris <- mapM (\uri -> (JK.fromString uri J..=) <$> decodeJSON (chatParseUri False $ B.pack uri)) frUris
-  writeFixture fixture . withPlaceholders . stableJSON $ J.object ["commands" J..= J.object responses, "markdown" J..= J.object parses, "uris" J..= J.object uris]
+  writeFixture ("api/" <> fixture) . withPlaceholders . stableJSON $ J.object ["commands" J..= J.object responses, "markdown" J..= J.object parses, "uris" J..= J.object uris]
   where
     decodeJSON :: LB.ByteString -> IO J.Value
     decodeJSON = either fail pure . J.eitherDecode
@@ -1020,7 +1008,7 @@ nameMovedFixture :: String -> TestCC -> [ContactName] -> [GroupName] -> IO ()
 nameMovedFixture fixture cc contacts groups = withCCUser cc $ \user -> do
   ids <- withCCTransaction cc $ \db -> runExceptT $ (,) <$> mapM (getContactIdByName db user) contacts <*> mapM (getGroupIdByName db user) groups
   case ids of
-    Right (contactIds, groupIds) -> writeFixture ("names/" <> fixture) $ stableJSON $ J.toJSON (eitherToResult Nothing (Right $ CEvtNameMoved user contactIds groupIds :: Either ChatError ChatEvent))
+    Right (contactIds, groupIds) -> writeFixture ("api/names/" <> fixture) $ stableJSON $ J.toJSON (eitherToResult Nothing (Right $ CEvtNameMoved user contactIds groupIds :: Either ChatError ChatEvent))
     Left e -> error $ show e
 
 recordItemEvent :: TVar [J.Value] -> Either ChatError ChatEvent -> IO ()
@@ -1035,10 +1023,13 @@ eventsFixture :: String -> TVar [J.Value] -> IO () -> IO ()
 eventsFixture fixture events steps = do
   atomically $ writeTVar events []
   steps
-  readTVarIO events >>= writeFixture fixture . stableJSON . J.toJSON
+  readTVarIO events >>= writeFixture ("api/" <> fixture) . stableJSON . J.toJSON
 
 writeFixture :: String -> J.Value -> IO ()
-writeFixture fixture = testGenerate ("tests/fixtures/api/" <> fixture <> ".json") . prettyJSON
+#if defined(dbPostgres)
+writeFixture _ _ = pure ()
+#else
+writeFixture fixture = testGenerate ("tests/fixtures/" <> fixture <> ".json") . prettyJSON
   where
     prettyJSON = (<> "\n") . pretty ""
     pretty indent = \case
@@ -1047,6 +1038,7 @@ writeFixture fixture = testGenerate ("tests/fixtures/api/" <> fixture <> ".json"
       v -> jsonText v
     block indent open close items = open <> "\n" <> T.intercalate ",\n" (map ((indent <> "  ") <>) items) <> "\n" <> indent <> close
     jsonText = safeDecodeUtf8 . LB.toStrict . J.encode
+#endif
 
 stableJSON :: J.Value -> J.Value
 stableJSON = \case
@@ -1055,7 +1047,7 @@ stableJSON = \case
   v -> v
   where
     stableField k v
-      | k `elem` ["createdAt", "updatedAt", "chatTs", "userMemberProfileSentAt", "itemTs"] = J.String "1970-01-01T00:00:00Z"
-      | k `elem` ["agentConnId", "xContactId", "connFullLink", "connShortLink", "contactLink", "groupLink", "viaGroupLinkUri", "simplexUri", "memberId", "memberPubKey", "publicGroupId", "businessId", "customerId", "itemSharedMsgId"] = J.String $ JK.toText k
+      | k `elem` ["createdAt", "updatedAt", "chatTs", "userMemberProfileSentAt", "itemTs", "deletedTs", "fileExpires"] = J.String "1970-01-01T00:00:00Z"
+      | k `elem` ["agentConnId", "xContactId", "connFullLink", "connShortLink", "contactLink", "groupLink", "viaGroupLinkUri", "simplexUri", "memberId", "memberPubKey", "publicGroupId", "businessId", "customerId", "itemSharedMsgId", "fileDescrText"] = J.String $ JK.toText k
       | k == "groupRelays", J.Array a <- v = J.Array $ J.String "groupRelay" <$ a
       | otherwise = stableJSON v

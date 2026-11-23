@@ -234,11 +234,11 @@ apiTest("flow: readInvoice returns the fields and nothing else it was sent", asy
 
 apiTest("flow: EVERY 404 is the unknown order, whatever body sits on it", async () => {
   const shapes: Array<[string, Reply]> = [
-    ["the service's own body", { status: 404, body: { error: "not_found" } }],
+    ["the service's own body", { status: 404, body: { type: "not_found" } }],
     ["a proxy's HTML page", { status: 404, raw: "<html><body>404 Not Found</body></html>" }],
     ["an empty body", { status: 404, raw: "" }],
     ["unrelated JSON", { status: 404, body: { message: "no route matched" } }],
-    ["a body naming another code", { status: 404, body: { error: "internal" } }],
+    ["a body naming another code", { status: 404, body: { type: "internal" } }],
   ];
   for (const [what, reply] of shapes) {
     const net = new Net();
@@ -265,7 +265,7 @@ apiTest("flow: a 404 with a proxy's body during the WAIT stops the loop too", as
 
 apiTest("flow: readInvoice carries a 429's Retry-After through, so the history list can stop", async () => {
   const net = new Net();
-  net.script({ status: 429, body: { error: "rate_limited" }, headers: { "retry-after": "46" } });
+  net.script({ status: 429, body: { type: "rate_limited" }, headers: { "retry-after": "46" } });
   await assert.rejects(() => readInvoice("x", net.fetch),
     (e: unknown) => e instanceof ApiError && e.code === "rate_limited" && e.retryAfter === 46);
 });
@@ -522,7 +522,7 @@ apiTest("flow: a wipe while the invoice is bought leaves this browser holding no
 
 apiTest("flow: catalog_changed lands on the catalog-changed screen and nothing is stored", async () => {
   const h = harness();
-  h.net.script({ status: 400, body: { error: "catalog_changed" } });
+  h.net.script({ status: 400, body: { type: "catalog_changed" } });
   const out = await h.flow.checkout({ priceId: "p", method: "xmr" });
   assert.deepEqual(out, { kind: "catalogChanged" });
   assert.equal(h.store.orders().length, 0);
@@ -530,25 +530,25 @@ apiTest("flow: catalog_changed lands on the catalog-changed screen and nothing i
 
 apiTest("flow: rate_limited lands on the rate-limited screen carrying exactly the Retry-After seconds", async () => {
   const h = harness();
-  h.net.script({ status: 429, body: { error: "rate_limited" }, headers: { "retry-after": "46" } });
+  h.net.script({ status: 429, body: { type: "rate_limited" }, headers: { "retry-after": "46" } });
   assert.deepEqual(await h.flow.checkout({ priceId: "p", method: "xmr" }), { kind: "rateLimited", retryAfter: 46 });
 });
 
 apiTest("flow: a 429 naming no usable Retry-After falls back to the window", async () => {
   const h = harness();
-  h.net.script({ status: 429, body: { error: "rate_limited" } });
+  h.net.script({ status: 429, body: { type: "rate_limited" } });
   assert.deepEqual(await h.flow.checkout({ priceId: "p", method: "xmr" }),
     { kind: "rateLimited", retryAfter: DEFAULT_RETRY_AFTER_SECONDS });
 });
 
 apiTest("flow: provider_unavailable lands on the provider-unavailable screen naming the method that failed", async () => {
   const h = harness();
-  h.net.script({ status: 503, body: { error: "provider_unavailable" } });
+  h.net.script({ status: 503, body: { type: "provider_unavailable" } });
   assert.deepEqual(await h.flow.checkout({ priceId: "p", method: "xmr" }), { kind: "providerUnavailable", method: "xmr" });
 });
 
 apiTest("flow: bad_request, 500 and a network failure all land on the failure screen", async () => {
-  for (const reply of [{ status: 400, body: { error: "bad_request" } }, { status: 500, body: { error: "internal" } }]) {
+  for (const reply of [{ status: 400, body: { type: "bad_request" } }, { status: 500, body: { type: "internal" } }]) {
     const h = harness();
     h.net.script(reply);
     assert.deepEqual(await h.flow.checkout({ priceId: "p", method: "card" }), { kind: "failed" });
@@ -564,7 +564,7 @@ apiTest("flow: bad_request, 500 and a network failure all land on the failure sc
 
 apiTest("flow: code_conflict draws a NEW code and resubmits, invisibly to the buyer", async () => {
   const h = harness();
-  h.net.script({ status: 409, body: { error: "code_conflict" } }, { status: 200, body: createdXmr });
+  h.net.script({ status: 409, body: { type: "code_conflict" } }, { status: 200, body: createdXmr });
   const out = await h.flow.checkout({ priceId: "price_legend", method: "xmr" });
   assert.equal(out.kind, "created", "the conflict never reaches a screen");
   assert.equal(h.net.calls.length, 2);
@@ -576,7 +576,7 @@ apiTest("flow: code_conflict draws a NEW code and resubmits, invisibly to the bu
 
 apiTest("flow: a server stuck on code_conflict gives up bounded, rather than spinning", async () => {
   const h = harness();
-  for (let i = 0; i < CODE_ATTEMPTS + 5; i++) h.net.script({ status: 409, body: { error: "code_conflict" } });
+  for (let i = 0; i < CODE_ATTEMPTS + 5; i++) h.net.script({ status: 409, body: { type: "code_conflict" } });
   assert.deepEqual(await h.flow.checkout({ priceId: "p", method: "xmr" }), { kind: "failed" });
   assert.equal(h.net.calls.length, CODE_ATTEMPTS);
 });
@@ -667,7 +667,7 @@ apiTest("flow: not even a paid order renders its code before the store agrees it
 
 apiTest("flow: a 404 on the first read renders the unknown order without waiting", async () => {
   const h = harness();
-  h.net.script({ status: 404, body: { error: "not_found" } });
+  h.net.script({ status: 404, body: { type: "not_found" } });
   await h.flow.watch("inv_missing").done;
   assert.deepEqual(h.views, [{ screen: "unknownOrder", orderId: "inv_missing" }]);
   assert.equal(h.net.calls.length, 1);
@@ -923,7 +923,7 @@ apiTest("flow: refreshHistory stops on a 429 rather than walking the rest of the
       status: "open",
     }));
   }
-  h.net.script({ status: 200, body: paidXmr }, { status: 429, body: { error: "rate_limited" } }, { status: 200, body: paidXmr });
+  h.net.script({ status: 200, body: paidXmr }, { status: 429, body: { type: "rate_limited" } }, { status: 200, body: paidXmr });
   await h.flow.refreshHistory();
   assert.equal(h.net.calls.length, 2);
 });
@@ -931,7 +931,7 @@ apiTest("flow: refreshHistory stops on a 429 rather than walking the rest of the
 apiTest("flow: refreshHistory leaves a 404'd entry exactly as it was", async () => {
   const h = harness();
   h.store.saveOrder(record({ status: "open", code: "SB-Y" }));
-  h.net.script({ status: 404, body: { error: "not_found" } });
+  h.net.script({ status: 404, body: { type: "not_found" } });
   const after = await h.flow.refreshHistory();
   assert.equal(after.length, 1);
   assert.equal(after[0]!.status, "open");

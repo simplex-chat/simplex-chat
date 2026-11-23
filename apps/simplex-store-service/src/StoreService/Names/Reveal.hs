@@ -1,156 +1,119 @@
+{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 -- | The reveal's checks, in the contract's order: the signed label, the order's own label and links,
 -- the commitment, the owner's intent, the terms acceptance, and the links' kinds last.
 module StoreService.Names.Reveal
-  ( RevealRefusal (..),
-    SignedLabel (..),
-    RevealFields (..),
-    parseSignedLabel,
-    parseRevealFields,
+  ( RevealRequest (..),
     isRepeat,
-    committedRegistration,
-    checkIntent,
-    checkAcceptance,
-    linksValid,
-    revealOf,
+    checkReveal,
+    orderReveal,
     intentOf,
   )
 where
 
 import Control.Logger.Simple (logWarn)
-import Control.Monad (forM, unless)
-import qualified Data.Aeson as J
-import qualified Data.Aeson.KeyMap as KM
+import Control.Monad (unless)
+import Control.Monad.Except (ExceptT (..), liftEither, runExceptT)
+import qualified Data.Aeson.TH as JQ
 import Data.Bifunctor (first)
-import Data.ByteString (ByteString)
-import Data.Foldable (toList)
+import Data.Functor ((<&>))
+import Data.Maybe (listToMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Time.Clock (UTCTime)
-import Data.Time.Clock.POSIX (utcTimeToPOSIXSeconds)
+import Data.Time.Clock (UTCTime, addUTCTime)
 import Data.Word (Word64)
+import Simplex.Chat.Badges.Code (nameLengthInt)
 import Simplex.Messaging.Crypto.Secp256k1 (RecoverableSignature)
+import Simplex.Messaging.Eth.Address (Address)
+import Simplex.Messaging.Parsers (defaultJSON)
 import Simplex.Messaging.SimplexName (labelHash)
-import Simplex.Messaging.Util (eitherToMaybe, tshow)
+import Simplex.Messaging.SystemTime (SystemSeconds, roundedToUTCTime)
+import Simplex.Messaging.Util (tshow)
 import StoreService.Config (ChainConfig (..), NamesConfig (..))
-import StoreService.Names.Abi (bytes32FromHex)
+import StoreService.Names.Chain (Hex32)
+import StoreService.Names.Orders (OrderRefusal (..), signedRequestSeconds)
 import StoreService.Names.Community (AcceptanceAsked (..), currentAcceptance)
 import StoreService.Names.Contracts (Contracts, sponsorNonce)
 import StoreService.Names.Label (validLabel)
-import StoreService.Names.Links (LinkKind (..), linkKindOf)
-import StoreService.Names.Orders (integerField, textField)
-import StoreService.Names.Registration (RegisterIntent (..), Registration (..), TermsAcceptance (..), makeCommitment, policyDomain, sponsorDomain, termsKind, verifyAcceptance, verifyRegisterIntent)
-import StoreService.Names.Signatures (parseSignature)
-import StoreService.Names.Store (NameRegistration (..), NameReveal (..))
+import StoreService.Names.Registration (LinkKind (..), RegisterIntent (..), Registration (..), TermsAcceptance (..), makeCommitment, nameLink, policyDomain, sponsorDomain, termsKind, verifyAcceptance, verifyRegisterIntent)
+import StoreService.Names.Signatures (OrderFields (..))
+import StoreService.Names.Store (NameReveal (..))
 
-data RevealRefusal = RVBadRequest | RVInvalidLink | RVChainUnavailable
-  deriving (Eq, Show)
-
--- | What an identical repeat is compared on.
-data SignedLabel = SignedLabel {slLabel :: Text, slSignature :: RecoverableSignature}
-
-data RevealFields = RevealFields
-  { rfSecret :: ByteString,
-    rfContactLinks :: [Text],
-    rfChannelLinks :: [Text],
-    rfNonce :: Word64,
-    rfDeadline :: Word64,
-    rfAcceptance :: Maybe TermsAcceptance
+data RevealRequest = RevealRequest
+  { label :: Text,
+    signature :: RecoverableSignature,
+    secret :: Hex32,
+    records :: RevealLinks,
+    nonce :: Word64,
+    deadline :: SystemSeconds,
+    acceptance :: TermsAcceptance
   }
 
--- | The signature's format and low s, and the label as text.
-parseSignedLabel :: J.Object -> Maybe SignedLabel
-parseSignedLabel o = do
-  slSignature <- eitherToMaybe . parseSignature =<< textField o "signature"
-  slLabel <- textField o "label"
-  pure SignedLabel {slLabel, slSignature}
+data RevealLinks = RevealLinks {contact :: Maybe Text, channel :: Maybe Text}
 
--- | The links of each key as sent, however many; at most one per key is a check of its own.
-parseRevealFields :: J.Object -> Maybe RevealFields
-parseRevealFields o = do
-  rfSecret <- bytes32FromHex =<< textField o "secret"
-  rfNonce <- integerField =<< KM.lookup "nonce" o
-  rfDeadline <- integerField =<< KM.lookup "deadline" o
-  records <- case KM.lookup "records" o of
-    Just (J.Object records) -> Just records
-    _ -> Nothing
-  rfContactLinks <- links "contact" records
-  rfChannelLinks <- links "channel" records
-  rfAcceptance <- forM (KM.lookup "acceptance" o) $ \case
-    J.Object a -> acceptance a
-    _ -> Nothing
-  pure RevealFields {rfSecret, rfContactLinks, rfChannelLinks, rfNonce, rfDeadline, rfAcceptance}
-  where
-    acceptance a = do
-      taTermsHash <- bytes32FromHex =<< textField a "termsHash"
-      taNonce <- integerField =<< KM.lookup "nonce" a
-      taSignature <- eitherToMaybe . parseSignature =<< textField a "signature"
-      pure TermsAcceptance {taTermsHash, taNonce, taSignature}
-    links key records = case KM.lookup key records of
-      Just (J.Array items) -> mapM text $ toList items
-      _ -> Nothing
-    text = \case
-      J.String t -> Just t
-      _ -> Nothing
+$(JQ.deriveFromJSON defaultJSON ''RevealLinks)
 
-isRepeat :: SignedLabel -> NameReveal -> Bool
-isRepeat SignedLabel {slLabel, slSignature} NameReveal {rvLabel, rvSignature} = slLabel == rvLabel && slSignature == rvSignature
+$(JQ.deriveFromJSON defaultJSON ''RevealRequest)
 
--- | The registration the reveal commits to, rebuilt from the order's stored owner and duration and the default resolver.
-committedRegistration :: NamesConfig -> NameRegistration -> SignedLabel -> RevealFields -> Either RevealRefusal Registration
-committedRegistration NamesConfig {nTLD, nChain = ChainConfig {cResolver}} NameRegistration {nrLabelHash, nrLength, nrOwner, nrDuration, nrCommitment} SignedLabel {slLabel} RevealFields {rfSecret, rfContactLinks, rfChannelLinks} = do
-  label <- first (const RVBadRequest) $ validLabel nTLD slLabel
-  unless (labelHash label == nrLabelHash && T.length label == nrLength) $ Left RVBadRequest
-  rContactLink <- oneLink rfContactLinks
-  rChannelLink <- oneLink rfChannelLinks
-  let r = Registration {rLabel = label, rTLD = nTLD, rOwner = nrOwner, rDuration = nrDuration, rSecret = rfSecret, rResolver = cResolver, rContactLink, rChannelLink}
-  unless (makeCommitment r == nrCommitment) $ Left RVBadRequest
-  pure r
-  where
-    oneLink = \case
-      [] -> Right Nothing
-      [link] -> Right $ Just link
-      _ -> Left RVInvalidLink
+isRepeat :: RevealRequest -> NameReveal -> Bool
+isRepeat RevealRequest {label, signature} NameReveal {rvLabel, rvSignature} = label == rvLabel && signature == rvSignature
+
+checkReveal :: NamesConfig -> Contracts -> UTCTime -> Address -> OrderFields -> UTCTime -> RevealRequest -> IO (Either OrderRefusal NameReveal)
+checkReveal cfg ct now owner fields earliest request = runExceptT $ do
+  rv <- liftEither $ committedReveal cfg owner fields request
+  ExceptT $ checkIntent cfg ct now earliest (intentOf cfg owner (ofDuration fields) rv)
+  ExceptT $ checkAcceptance cfg ct owner fields rv
+  pure rv
+
+orderReveal :: NamesConfig -> Contracts -> UTCTime -> Address -> OrderFields -> Maybe NameReveal -> RevealRequest -> IO (Either OrderRefusal NameReveal)
+orderReveal cfg ct now owner fields accepted request =
+  checkReveal cfg ct now owner fields now request <&> (>>= \rv -> maybe (Right rv) (Left . ORInvalidLink) (refusedLink accepted rv))
+
+committedReveal :: NamesConfig -> Address -> OrderFields -> RevealRequest -> Either OrderRefusal NameReveal
+committedReveal cfg@NamesConfig {nTLD} owner OrderFields {ofLabelHash, ofLength, ofDuration, ofCommitment} RevealRequest {label = sentLabel, signature, secret, records = RevealLinks {contact, channel}, nonce, deadline, acceptance} = do
+  label <- first (ORBadRequest . ("the label is not a name: " <>) . tshow) $ validLabel nTLD sentLabel
+  unless (labelHash label == ofLabelHash && T.length label == nameLengthInt ofLength) $ Left $ ORBadRequest "the label is not the order's"
+  let rv = NameReveal {rvLabel = label, rvSecret = secret, rvContactLink = contact, rvChannelLink = channel, rvNonce = nonce, rvDeadline = deadline, rvSignature = signature, rvAcceptance = acceptance}
+  unless (makeCommitment (riRegistration $ intentOf cfg owner ofDuration rv) == ofCommitment) $ Left $ ORBadRequest "the reveal is not the order's commitment"
+  pure rv
 
 -- | The deadline and the owner's signature first, so a request nobody signed reads nothing from the chain.
 -- A deadline before revealBefore would expire while the commitment can still register.
-checkIntent :: NamesConfig -> Contracts -> UTCTime -> Maybe Word64 -> RegisterIntent -> IO (Either RevealRefusal ())
-checkIntent NamesConfig {nChain = ChainConfig {cChainId, cSponsor}} ct now revealBefore intent@RegisterIntent {riRegistration = Registration {rOwner}, riNonce, riDeadline}
-  | maybe True (riDeadline <) revealBefore = pure $ Left RVBadRequest
+checkIntent :: NamesConfig -> Contracts -> UTCTime -> UTCTime -> RegisterIntent -> IO (Either OrderRefusal ())
+checkIntent NamesConfig {nChain = ChainConfig {cChainId, cSponsor}} ct now earliest intent@RegisterIntent {riRegistration = Registration {rOwner}, riNonce, riDeadline}
+  | roundedToUTCTime riDeadline < earliest = pure $ Left $ ORBadRequest "the intent's deadline is before revealBefore"
+  | roundedToUTCTime riDeadline > addUTCTime (fromInteger $ signatureSeconds + signedRequestSeconds) now = pure $ Left $ ORBadRequest "the intent's deadline is more than a week ahead"
   | otherwise =
-      verifyRegisterIntent (sponsorDomain cChainId cSponsor) (floor $ utcTimeToPOSIXSeconds now) intent >>= \case
-        Left _ -> pure $ Left RVBadRequest
+      verifyRegisterIntent (sponsorDomain cChainId cSponsor) now intent >>= \case
+        Left e -> pure $ Left $ ORBadRequest $ T.pack e
         Right () ->
           sponsorNonce ct rOwner >>= \case
-            Left e -> Left RVChainUnavailable <$ logWarn ("names: a reveal's nonce read failed: " <> tshow e)
-            Right nonce -> pure $ if nonce == riNonce then Right () else Left RVBadRequest
+            Left e -> Left ORNameCheckUnavailable <$ logWarn ("names: a reveal's nonce read failed: " <> tshow e)
+            Right nonce -> pure $ if nonce == riNonce then Right () else Left $ ORBadRequest "the intent's nonce is not the sponsor's next"
 
 -- | After the intent, so only a signed request reads the policy. Every name needs its owner's signature of the acceptance
 -- its view returns, with the intent's deadline.
-checkAcceptance :: NamesConfig -> Contracts -> NameRegistration -> Word64 -> Maybe TermsAcceptance -> IO (Either RevealRefusal ())
-checkAcceptance NamesConfig {nChain = ChainConfig {cChainId}} ct NameRegistration {nrLabelHash, nrOwner, nrCommitment} deadline acceptance =
-  currentAcceptance ct nrLabelHash nrOwner >>= \case
-    Left e -> Left RVChainUnavailable <$ logWarn ("names: a reveal's terms acceptance could not be read: " <> tshow e)
-    Right AcceptanceAsked {acCommunity, acPolicy, acTermsHash, acNonce} -> case acceptance of
-      Just a@TermsAcceptance {taTermsHash, taNonce}
-        | taTermsHash == acTermsHash && taNonce == acNonce -> first (const RVBadRequest) <$> verifyAcceptance (policyDomain cChainId acPolicy) (termsKind acCommunity) nrOwner nrCommitment deadline a
-      _ -> pure $ Left RVBadRequest
+checkAcceptance :: NamesConfig -> Contracts -> Address -> OrderFields -> NameReveal -> IO (Either OrderRefusal ())
+checkAcceptance NamesConfig {nChain = ChainConfig {cChainId}} ct owner OrderFields {ofLabelHash, ofCommitment} NameReveal {rvDeadline, rvAcceptance = a@TermsAcceptance {termsHash = signedHash, nonce = signedNonce}} =
+  currentAcceptance ct ofLabelHash owner >>= \case
+    Left e -> Left ORNameCheckUnavailable <$ logWarn ("names: a reveal's terms acceptance could not be read: " <> tshow e)
+    Right AcceptanceAsked {community, policy, termsHash, nonce}
+      | signedHash == termsHash && signedNonce == nonce -> first (ORBadRequest . T.pack) <$> verifyAcceptance (policyDomain cChainId policy) (termsKind community) owner ofCommitment rvDeadline a
+      | otherwise -> pure $ Left $ ORBadRequest "the acceptance is not of the terms and nonce the policy asks"
 
-linksValid :: Registration -> Bool
-linksValid Registration {rContactLink, rChannelLink} = all (ofKind LKContact) rContactLink && all (ofKind LKChannel) rChannelLink
+signatureSeconds :: Integer
+signatureSeconds = 7 * 86400
+
+refusedLink :: Maybe NameReveal -> NameReveal -> Maybe LinkKind
+refusedLink accepted rv =
+  listToMaybe [kind | (kind, link_) <- [(LKContact, rvContactLink), (LKChannel, rvChannelLink)], Just link <- [link_ rv], (link_ =<< accepted) /= Just link, (fst <$> nameLink link) /= Just kind]
+
+intentOf :: NamesConfig -> Address -> Word64 -> NameReveal -> RegisterIntent
+intentOf NamesConfig {nTLD, nChain = ChainConfig {cResolver}} owner duration NameReveal {rvLabel, rvSecret, rvContactLink, rvChannelLink, rvNonce, rvDeadline, rvSignature} =
+  RegisterIntent {riRegistration = registration, riNonce = rvNonce, riDeadline = rvDeadline, riSignature = rvSignature}
   where
-    ofKind kind link = linkKindOf link == Just kind
-
-revealOf :: RegisterIntent -> Maybe TermsAcceptance -> NameReveal
-revealOf RegisterIntent {riRegistration = Registration {rLabel, rSecret, rContactLink, rChannelLink}, riNonce, riDeadline, riSignature} rvAcceptance =
-  NameReveal {rvLabel = rLabel, rvSecret = rSecret, rvContactLink = rContactLink, rvChannelLink = rChannelLink, rvNonce = riNonce, rvDeadline = riDeadline, rvSignature = riSignature, rvAcceptance}
-
--- | The intent an accepted reveal stored, as the register sends it.
-intentOf :: NamesConfig -> NameRegistration -> NameReveal -> RegisterIntent
-intentOf NamesConfig {nTLD, nChain = ChainConfig {cResolver}} NameRegistration {nrOwner, nrDuration, nrDisputeDays} NameReveal {rvLabel, rvSecret, rvContactLink, rvChannelLink, rvNonce, rvDeadline, rvSignature} =
-  RegisterIntent {riRegistration = registration, riDisputeDays = nrDisputeDays, riNonce = rvNonce, riDeadline = rvDeadline, riSignature = rvSignature}
-  where
-    registration = Registration {rLabel = rvLabel, rTLD = nTLD, rOwner = nrOwner, rDuration = nrDuration, rSecret = rvSecret, rResolver = cResolver, rContactLink = rvContactLink, rChannelLink = rvChannelLink}
+    registration = Registration {rLabel = rvLabel, rTLD = nTLD, rOwner = owner, rDuration = duration, rSecret = rvSecret, rResolver = cResolver, rContactLink = rvContactLink, rChannelLink = rvChannelLink}

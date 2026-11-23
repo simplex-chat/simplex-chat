@@ -204,7 +204,7 @@ The perform fails with `file: PATH changed after the request.` when the file's r
 
 ### 1.4 `receive`
 
-<a id="tool-receive"></a>Handler: [`AgentTools.receive`](../src/tools.ts). Schemas: input [`receiveSchema`](../src/tools.ts), output [`receiveOutput`](../src/tools.ts).
+<a id="tool-receive"></a>Handler: [`AgentTools.receive`](../src/tools.ts). History: [`historyMessages`](../src/tools.ts), [`historyItems`](../src/messages.ts). Schemas: input [`receiveSchema`](../src/tools.ts), output [`receiveOutput`](../src/tools.ts).
 
 Input:
 
@@ -213,14 +213,16 @@ Input:
 | `chat` | string | | required | `@N` or `#N` of the agent |
 | `wait` | number | 0 to 86400 | 0 | seconds to wait when no message is new |
 | `limit` | integer | 1 to 100 | 50 | most messages returned |
+| `history` | integer | 1 to 50 | | most message items returned in `history` |
 
-Output (all fields always present):
+Output (`history` only with its input):
 
 | Field | Value |
 |---|---|
 | `chat` | the chat reference |
 | `messages` | unread received messages in chat order, then received messages that arrived during the call; live items left out; at most `limit` |
 | `more` | new messages not returned, overflow, and unread items left unread by the page reads |
+| `history` | at most `history` message items: the last ones before the first item of `messages`, or the last ones of the chat when `messages` is empty, in chat order; sent items included; new and live items, and items with `itemDeleted` (deleted, blocked or moderated), left out; read after the wait |
 
 Tool errors: `No chat CHAT. list shows the agent's chats.` for an invalid reference, the control chat, or a store error of the first read, `initial` 1 ([`AgentTools.receive`](../src/tools.ts)); other chat errors, a store error of a later page read included, as their error text ([`errorText`, `chatErrorText`](../src/log.ts)).
 
@@ -333,9 +335,9 @@ Tool errors: `No chat CHAT. list shows the agent's chats.` when no action with t
 |---|---|---|---|
 | `chat` | string | always | chat reference of the item |
 | `item` | integer | always | `meta.itemId` |
-| `from` | string | always | `groupRcv`: member display name<br>`directRcv`: contact display name<br>`channelRcv`: channel display name<br>sent items in `connect`: the agent's name in that chat |
+| `from` | string | always | `groupRcv`: member display name<br>`directRcv`: contact display name<br>`channelRcv`: channel display name<br>sent items in `connect` and in `history` of `receive`: the agent's name in that chat |
 | `from_member` | integer | `groupRcv` | `groupMemberId` |
-| `from_type` | string | when the profile has a peer type | sender's `peerType`; the agent's own for its non-incognito items in `connect` |
+| `from_type` | string | when the profile has a peer type | sender's `peerType`; the agent's own for its non-incognito items in `connect` and in `history` of `receive` |
 | `time` | string | always | `meta.itemTs` |
 | `text` | string | always | `msgContent.text` |
 | `file` | object | a received item with a file | below |
@@ -366,7 +368,7 @@ Tool errors: `No chat CHAT. list shows the agent's chats.` when no action with t
 | `path` | `received`: the download path |
 | `error` | `failed`: the error text ([`fileError`, `fileStatusError`, `fileErrorText`, `srvErrorText`](../src/log.ts)) |
 
-Only received message items (`rcvMsgContent`) are returned by `send` and `receive`; `connect` also returns sent ones (`sndMsgContent`) ([`ChatItemsWatch.collect`](../src/messages.ts), [`AgentTools.connectedChat`](../src/tools.ts)).
+Only received message items (`rcvMsgContent`) are returned in `responses` of `send` and in `messages` of `receive`; `connect` and `history` of `receive` also return sent ones (`sndMsgContent`) ([`ChatItemsWatch.collect`, `historyItems`](../src/messages.ts), [`AgentTools.connectedChat`, `historyMessages`](../src/tools.ts)).
 
 <a id="command-object"></a>Command ([`commandsOf`](../src/tools.ts), schema [`commandSchema`](../src/tools.ts)):
 
@@ -735,10 +737,11 @@ Posts:
 
 | Part | Text | Condition |
 |---|---|---|
-| a running session | `🔵 N · NAME: waiting for you, K approvals`, `1 approval` for one | K pending cards of the session, without those cancelled by a stop. A tool-use card counts while Claude Code's state is `waiting` or unknown |
-| | `🔵 N · NAME: waiting for you in Claude Code` | no card; attached; state `waiting` |
-| | `🟠 N · NAME: working` | no card; attached; state `busy` |
-| | `🟢 N · NAME: idle` | no card; attached; state `idle` or `shell` |
+| a running session | `🟠 N · NAME: waiting for you, K approvals`, `1 approval` for one | K pending cards of the session, without those cancelled by a stop. A tool-use card counts while Claude Code's state is `waiting` or unknown |
+| | `⛔️ N · NAME: waiting for you in Claude Code` | no card; attached; state `waiting` |
+| | `🟢 N · NAME: working` | no card; attached; state `busy` |
+| | `🔴 N · NAME: idle` | no card; attached; state `idle` |
+| | `⚙️ N · NAME: working in the background` | no card; attached; state `shell` |
 | | `▶️ N · NAME: running` | no card; attached; no record path, no record file, or another state |
 | the other sessions | `⚪ Not running: N · NAME, N · NAME, K older sessions`, newest first | sessions without a card and without an attachment, or all of them while the service stops |
 | no session | `No sessions.` | |

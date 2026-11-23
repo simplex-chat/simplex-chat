@@ -26,6 +26,7 @@ import {
   fileOffer,
   filePaths,
   getChat,
+  historyItems,
   isChatRef,
   isLive,
   isMessageItem,
@@ -70,6 +71,7 @@ export interface ReceiveInput {
   chat: string
   wait?: number
   limit?: number
+  history?: number
 }
 
 // spec: spec/architecture.md#tools-inputs
@@ -312,6 +314,7 @@ const receiveSchema: Schema = {
     chat: {type: "string", description: "Chat reference from connect or list: @N or #N."},
     wait: {type: "number", minimum: 0, maximum: 86400, description: "Seconds to wait for a new message when none is unread. Default 0."},
     limit: {type: "integer", minimum: 1, maximum: 100, description: "Most messages returned. Default 50; the rest stay unread."},
+    history: {type: "integer", minimum: 1, maximum: 50, description: "Number of messages returned in history: the last ones before the new messages, yours included."},
   },
   required: ["chat"],
   additionalProperties: false,
@@ -382,6 +385,7 @@ const receiveOutput: Schema = {
     chat: {type: "string", description: "Chat reference."},
     messages: {type: "array", items: messageSchema, description: "New messages: the unread ones, then those that arrived during the call."},
     more: {type: "integer", description: "New messages not returned; call receive again for them."},
+    history: {type: "array", items: messageSchema, description: "With the input history: the last messages of the chat before the new ones, oldest first, yours included; not marked read."},
   },
   required: ["chat", "messages", "more"],
 }
@@ -467,7 +471,8 @@ Send bot commands as text, for example /help. When a message has a file with sta
 
 // spec: spec/architecture.md#tools-instructions
 const receiveDescription = `Returns the new messages of a chat: the unread ones, then those that arrive during the call. With wait, it waits up to wait seconds when no message is new.
-The returned messages are marked read; more counts the new ones not returned. It needs no approval. When a message has a file with status offered, call download when your user's task needs it.`
+The returned messages are marked read; more counts the new ones not returned. It needs no approval. When a message has a file with status offered, call download when your user's task needs it.
+With history N, it also returns the last N messages of the chat before the new ones, yours included, not marked read; at the start of a session, and after your context was compacted, call receive with history to recall the conversation.`
 
 // spec: spec/architecture.md#tools-instructions
 const downloadDescription = `Downloads the file of a received message to this computer and returns its full path.
@@ -1344,7 +1349,7 @@ export class AgentTools {
 
   // spec: spec/api.md#tool-receive
   private async receive(input: ReceiveInput, call: ToolCall): Promise<object | undefined> {
-    const {chat, wait = 0, limit = defaultLimit} = input
+    const {chat, wait = 0, limit = defaultLimit, history} = input
     if (!isChatRef(chat) || chat === this.agent.controlChat()) throw unknownChat(chat)
     const arrived = new Collected()
     const stop = this.agent.watch.collect(chat, arrived)
@@ -1371,13 +1376,20 @@ export class AgentTools {
         }
       }
       const returned = fresh().slice(0, limit)
+      const recalled = history === undefined ? undefined : await this.historyMessages(chat, chatInfo, returned[0]?.chatItem.meta.itemId, history)
       if (call.signal.aborted) return undefined
       await markRead(this.agent.chat, chat, [...returned.map(({chatItem}) => chatItem.meta.itemId), ...skipped])
       if (call.signal.aborted) return undefined
-      return {chat, messages: await this.toMessages(returned), more: arrived.items.length - returned.length + arrived.overflow.size + unreadRest}
+      return {chat, messages: await this.toMessages(returned), more: arrived.items.length - returned.length + arrived.overflow.size + unreadRest, ...defined({history: recalled})}
     } finally {
       stop()
     }
+  }
+
+  // spec: spec/api.md#tool-receive
+  private async historyMessages(chat: string, chatInfo: T.ChatInfo, before: number | undefined, count: number): Promise<Message[]> {
+    const items = await historyItems(this.agent.chat, chat, before, count)
+    return this.toMessages(items.map(chatItem => ({chatInfo, chatItem})))
   }
 
   // spec: spec/api.md#tool-list

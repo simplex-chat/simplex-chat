@@ -22,8 +22,7 @@ schemaMigrations =
     ("20260918_badge_group_ops", m20260918_badge_group_ops, Just down_m20260918_badge_group_ops),
     ("20260925_badge_store_receipts", m20260925_badge_store_receipts, Just down_m20260925_badge_store_receipts),
     ("20261012_badge_subscriptions", m20261012_badge_subscriptions, Just down_m20261012_badge_subscriptions),
-    ("20261013_names", m20261013_names, Just down_m20261013_names),
-    ("20261120_names_dispute_days", m20261120_names_dispute_days, Just down_m20261120_names_dispute_days)
+    ("20261013_names", m20261013_names, Just down_m20261013_names)
   ]
 
 -- | The client tables share this database, so the service tables are the same names behind a prefix.
@@ -277,7 +276,7 @@ DROP TABLE @subscription_charges;
 
 -- A registration is live as Names.Store's orderLive decides.
 -- reserved_by is added after the registrations table, which references the codes table.
--- A balance's amount = credited - spent - refunded, spent being the balance_used of the orders it paid for that went past unpaid.
+-- A balance's amount = credited - refunded, less the prices of the names selected for its taken order and the cents taken back at reversals.
 -- Crypto is counted in integer units (satoshi, piconero), so every sum is exact; rates are decimal text, never summed.
 -- invoiced_units is the crypto a payment's invoice asks, network fee included, which late and overpaid crypto is a price share of.
 m20261013_names :: Query
@@ -301,7 +300,8 @@ CREATE TABLE @name_prepaid_codes(
 ) STRICT;
 
 CREATE TABLE @name_registrations(
-  registration_id TEXT NOT NULL PRIMARY KEY,
+  name_registration_id INTEGER PRIMARY KEY,
+  registration_id TEXT NOT NULL,
   version INTEGER NOT NULL,
   label_hash BLOB NOT NULL,
   length INTEGER NOT NULL,
@@ -314,9 +314,7 @@ CREATE TABLE @name_registrations(
   years INTEGER NOT NULL,
   price INTEGER NOT NULL,
   method TEXT,
-  name_prepaid_code_id INTEGER REFERENCES @name_prepaid_codes,
-  balance_source TEXT REFERENCES @name_registrations,
-  balance_used INTEGER NOT NULL,
+  name_prepaid_code_id INTEGER REFERENCES @name_prepaid_codes(name_prepaid_code_id),
   label TEXT,
   secret BLOB,
   contact_link TEXT,
@@ -330,28 +328,40 @@ CREATE TABLE @name_registrations(
   commit_tx BLOB,
   commit_block INTEGER,
   register_tx BLOB,
-  register_block INTEGER,
   reveal_after INTEGER,
   reveal_before INTEGER,
   expires_at INTEGER,
   registered_at TEXT,
+  taken_at TEXT,
   failed_at TEXT,
-  error TEXT,
+  fail_reason TEXT,
+  closed_by TEXT,
   live INTEGER NOT NULL,
   order_hash BLOB NOT NULL,
-  moves INTEGER NOT NULL DEFAULT 0,
-  links_refused_at TEXT,
+  settled_at TEXT,
+  selected_at TEXT,
+  unregistered_alerted_at TEXT,
+  failed_dry_runs INTEGER NOT NULL DEFAULT 0,
+  failed_sends INTEGER NOT NULL DEFAULT 0,
+  last_attempt_tx TEXT,
+  last_attempt_stage TEXT,
+  last_attempt_reason TEXT,
+  last_attempt_at TEXT,
+  read_at TEXT NOT NULL,
   created_at TEXT NOT NULL,
-  updated_at TEXT NOT NULL
+  updated_at TEXT NOT NULL,
+  UNIQUE(registration_id)
 ) STRICT;
 
-ALTER TABLE @name_prepaid_codes ADD COLUMN reserved_by TEXT REFERENCES @name_registrations;
+ALTER TABLE @name_prepaid_codes ADD COLUMN reserved_by TEXT REFERENCES @name_registrations(registration_id);
 
 CREATE UNIQUE INDEX @idx_name_prepaid_codes_reserved_by ON @name_prepaid_codes(reserved_by);
 
 CREATE UNIQUE INDEX @idx_name_registrations_live_commitment ON @name_registrations(commitment) WHERE live = 1;
 
 CREATE UNIQUE INDEX @idx_name_registrations_live_owner_label ON @name_registrations(owner, label_hash) WHERE live = 1;
+
+CREATE UNIQUE INDEX @idx_name_registrations_held_label ON @name_registrations(label_hash) WHERE live = 1 AND phase <> 'unpaid';
 
 CREATE INDEX @idx_name_registrations_label_phase ON @name_registrations(label_hash, phase);
 
@@ -363,36 +373,32 @@ CREATE INDEX @idx_name_registrations_order_hash ON @name_registrations(order_has
 
 CREATE INDEX @idx_name_registrations_prepaid_code ON @name_registrations(name_prepaid_code_id);
 
-CREATE INDEX @idx_name_registrations_balance_source ON @name_registrations(balance_source);
-
 CREATE TABLE @name_balances(
-  registration_id TEXT NOT NULL PRIMARY KEY REFERENCES @name_registrations,
+  registration_id TEXT NOT NULL PRIMARY KEY REFERENCES @name_registrations(registration_id),
   amount INTEGER NOT NULL CHECK (amount >= 0),
   credited INTEGER NOT NULL DEFAULT 0 CHECK (credited >= 0),
   refunded INTEGER NOT NULL DEFAULT 0 CHECK (refunded >= 0),
-  reserved_by TEXT REFERENCES @name_registrations,
   refunded_at TEXT,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL
 ) STRICT;
 
-CREATE UNIQUE INDEX @idx_name_balances_reserved_by ON @name_balances(reserved_by);
-
 -- late_support says why a closed order's late money will not be credited by itself:
 -- high_speed, units, rate_floor, unconfirmed or no_confirmation. It is never cleared.
 CREATE TABLE @name_invoices(
-  invoice_id TEXT NOT NULL PRIMARY KEY REFERENCES @invoices ON DELETE CASCADE,
-  registration_id TEXT NOT NULL REFERENCES @name_registrations ON DELETE CASCADE,
-  provider_ref TEXT NOT NULL,
+  invoice_id TEXT NOT NULL PRIMARY KEY REFERENCES @invoices(invoice_id) ON DELETE CASCADE,
+  registration_id TEXT NOT NULL REFERENCES @name_registrations(registration_id) ON DELETE CASCADE,
   late_alerted_at TEXT,
   late_alerted_units INTEGER,
   late_support TEXT,
+  reversal_count INTEGER NOT NULL DEFAULT 0,
+  last_reversal_event TEXT,
+  last_reversal_cents INTEGER,
+  reversed_cents INTEGER NOT NULL DEFAULT 0,
   created_at TEXT NOT NULL
 ) STRICT;
 
 CREATE UNIQUE INDEX @idx_name_invoices_registration ON @name_invoices(registration_id);
-
-CREATE UNIQUE INDEX @idx_name_invoices_provider_ref ON @name_invoices(provider_ref);
 
 ALTER TABLE @payments ADD COLUMN confirmed_amount INTEGER NOT NULL DEFAULT 0;
 
@@ -409,9 +415,9 @@ CREATE INDEX @idx_payments_overpaid ON @payments(invoice_id) WHERE received_unit
 
 CREATE TABLE @name_late_credits(
   name_late_credit_id INTEGER PRIMARY KEY AUTOINCREMENT,
-  invoice_id TEXT NOT NULL REFERENCES @invoices,
+  invoice_id TEXT NOT NULL REFERENCES @invoices(invoice_id),
   credit_no INTEGER NOT NULL,
-  registration_id TEXT NOT NULL REFERENCES @name_registrations,
+  registration_id TEXT NOT NULL REFERENCES @name_registrations(registration_id),
   units INTEGER,
   invoice_rate TEXT,
   current_rate TEXT,
@@ -444,10 +450,10 @@ CREATE INDEX @idx_name_record_edits_label_created ON @name_record_edits(label_ha
 
 -- An edit is one request of the page, relayed as one transaction; its signed changes are its rows here, one per nonce.
 CREATE TABLE @name_record_changes(
-  name_record_edit_id INTEGER NOT NULL REFERENCES @name_record_edits ON DELETE CASCADE,
+  name_record_edit_id INTEGER NOT NULL REFERENCES @name_record_edits(name_record_edit_id) ON DELETE CASCADE,
   nonce INTEGER NOT NULL,
-  record_key TEXT,
-  record_value TEXT,
+  record_key TEXT NOT NULL,
+  record_value TEXT NOT NULL,
   deadline INTEGER NOT NULL,
   signature BLOB NOT NULL,
   PRIMARY KEY (name_record_edit_id, nonce)
@@ -455,8 +461,8 @@ CREATE TABLE @name_record_changes(
 
 CREATE TABLE @name_transactions(
   name_transaction_id INTEGER PRIMARY KEY AUTOINCREMENT,
-  registration_id TEXT REFERENCES @name_registrations,
-  name_record_edit_id INTEGER REFERENCES @name_record_edits,
+  registration_id TEXT REFERENCES @name_registrations(registration_id),
+  name_record_edit_id INTEGER REFERENCES @name_record_edits(name_record_edit_id),
   kind TEXT NOT NULL,
   raw BLOB NOT NULL,
   tx_hash BLOB NOT NULL,
@@ -478,6 +484,15 @@ CREATE TABLE @name_terms(
   terms_hash BLOB NOT NULL PRIMARY KEY,
   terms_text BLOB NOT NULL
 ) STRICT;
+
+ALTER TABLE @invoices ADD COLUMN product TEXT NOT NULL DEFAULT 'badge';
+
+ALTER TABLE @invoices ADD COLUMN provider_ref TEXT NOT NULL DEFAULT '';
+
+UPDATE @invoices SET provider_ref = (SELECT ci.provider_ref FROM @badge_code_invoices ci WHERE ci.invoice_id = @invoices.invoice_id)
+WHERE invoice_id IN (SELECT invoice_id FROM @badge_code_invoices);
+
+CREATE UNIQUE INDEX @idx_invoices_provider_ref ON @invoices(provider_ref);
 |]
 
 -- SQLite refuses to drop a column in a foreign key, and dropping a table deletes its rows first,
@@ -488,6 +503,10 @@ down_m20261013_names =
   withPrefix
     servicePrefix
     [sql|
+DROP INDEX @idx_invoices_provider_ref;
+ALTER TABLE @invoices DROP COLUMN provider_ref;
+ALTER TABLE @invoices DROP COLUMN product;
+
 DROP TABLE @name_terms;
 
 DROP INDEX @idx_name_transactions_status;
@@ -516,19 +535,17 @@ DELETE FROM @invoices WHERE invoice_id IN (
   SELECT ni.invoice_id FROM @name_invoices ni
   WHERE NOT EXISTS (SELECT 1 FROM @payments p WHERE p.invoice_id = ni.invoice_id)
 );
-DROP INDEX @idx_name_invoices_provider_ref;
 DROP INDEX @idx_name_invoices_registration;
 DROP TABLE @name_invoices;
 
-DROP INDEX @idx_name_balances_reserved_by;
 DROP TABLE @name_balances;
 
-DROP INDEX @idx_name_registrations_balance_source;
 DROP INDEX @idx_name_registrations_prepaid_code;
 DROP INDEX @idx_name_registrations_order_hash;
 DROP INDEX @idx_name_registrations_phase;
 DROP INDEX @idx_name_registrations_owner;
 DROP INDEX @idx_name_registrations_label_phase;
+DROP INDEX @idx_name_registrations_held_label;
 DROP INDEX @idx_name_registrations_live_owner_label;
 DROP INDEX @idx_name_registrations_live_commitment;
 DROP INDEX @idx_name_prepaid_codes_reserved_by;
@@ -536,38 +553,6 @@ UPDATE @name_prepaid_codes SET reserved_by = NULL;
 DROP TABLE @name_registrations;
 
 DROP TABLE @name_prepaid_codes;
-|]
-
-m20261120_names_dispute_days :: Query
-m20261120_names_dispute_days =
-  withPrefix
-    servicePrefix
-    [sql|
-ALTER TABLE @name_registrations ADD COLUMN dispute_days INTEGER NOT NULL DEFAULT 120;
-
-ALTER TABLE @name_registrations ADD COLUMN dispute_until INTEGER;
-
-WITH RECURSIVE funding(registration_id, source, days) AS (
-  SELECT registration_id, balance_source, CASE WHEN method = 'card' THEN 120 ELSE 14 END
-  FROM @name_registrations
-  UNION ALL
-  SELECT f.registration_id, CASE WHEN s.phase <> 'unpaid' THEN s.balance_source END, CASE WHEN s.method = 'card' THEN 120 ELSE 14 END
-  FROM funding f JOIN @name_registrations s ON s.registration_id = f.source
-)
-UPDATE @name_registrations
-SET dispute_days = (SELECT MAX(f.days) FROM funding f WHERE f.registration_id = @name_registrations.registration_id);
-|]
-
-down_m20261120_names_dispute_days :: Query
-down_m20261120_names_dispute_days =
-  withPrefix
-    servicePrefix
-    [sql|
-UPDATE @name_registrations SET phase = 'registered' WHERE phase = 'ended';
-
-ALTER TABLE @name_registrations DROP COLUMN dispute_until;
-
-ALTER TABLE @name_registrations DROP COLUMN dispute_days;
 |]
 
 {- TODO [badges] deferred with the draft in M20260915_user_badges, service only.

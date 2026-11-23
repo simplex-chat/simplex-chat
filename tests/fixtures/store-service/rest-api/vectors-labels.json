@@ -1,0 +1,90 @@
+[
+  {
+    "label": "bakery",
+    "valid": true
+  },
+  {
+    "label": "bak-ery-2",
+    "valid": true
+  },
+  {
+    "label": "a-b-c-d-e-f",
+    "valid": true
+  },
+  {
+    "label": "123456",
+    "valid": true
+  },
+  {
+    "label": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "valid": true
+  },
+  {
+    "label": "bak--ery",
+    "valid": false
+  },
+  {
+    "label": "--bakery",
+    "valid": false
+  },
+  {
+    "label": "bakery--",
+    "valid": false
+  },
+  {
+    "label": "-bakery",
+    "valid": false
+  },
+  {
+    "label": "bakery-",
+    "valid": false
+  },
+  {
+    "label": "Bakery",
+    "valid": false
+  },
+  {
+    "label": "bak.ery",
+    "valid": false
+  },
+  {
+    "label": "bäkery",
+    "valid": false
+  },
+  {
+    "label": "bak ery",
+    "valid": false
+  },
+  {
+    "label": "bak_ery",
+    "valid": false
+  },
+  {
+    "label": "bakery.simplex",
+    "valid": false
+  },
+  {
+    "label": "бакеry1",
+    "valid": false
+  },
+  {
+    "label": "",
+    "valid": false
+  },
+  {
+    "label": "abcde",
+    "valid": false
+  },
+  {
+    "label": "a.b",
+    "valid": false
+  },
+  {
+    "label": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "valid": false
+  },
+  {
+    "label": "----------------------------------------------------------------------------------------------------",
+    "valid": false
+  }
+]

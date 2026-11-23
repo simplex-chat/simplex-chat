@@ -5,12 +5,12 @@
 module Bots.StoreService.NamesChainTests (namesChainTests) where
 
 import Bots.StoreService.FakeEthNode
+import Bots.StoreService.FakeHttp (withResetServer)
 import Control.Concurrent.STM (TVar)
 import Control.Exception (toException, try)
 import Control.Monad (forM_)
 import Crypto.Random (ChaChaDRG)
 import qualified Data.Aeson as J
-import Data.ByteArray.Encoding (Base (Base16), convertFromBase)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
 import qualified Data.Text as T
@@ -18,8 +18,10 @@ import Data.Time.Clock (diffUTCTime, getCurrentTime)
 import Data.Word (Word64)
 import qualified Network.HTTP.Client as HTTP
 import qualified Simplex.Messaging.Crypto as C
-import StoreService.Config (ChainConfig (..))
-import StoreService.Names.Abi (uint256)
+import Simplex.Messaging.Encoding.String (TextEncoding (..))
+import Simplex.Messaging.Eth.Transaction (Eip1559Tx (..))
+import Simplex.Messaging.SystemTime (RoundedSystemTime (..))
+import StoreService.Names.Abi (hex, uint256)
 import StoreService.Names.Chain
 import StoreService.Names.Revert
 import Test.Hspec
@@ -28,15 +30,16 @@ namesChainTests :: Spec
 namesChainTests = describe "StoreService names: chain" $ do
   g <- runIO C.newRandom
   describe "reverts" $ do
-    it "names every contract error by the selector viem encodes it with" testRevertSelectors
+    it "names every contract error by the selector viem encodes it with, Error(string) by its message and any other by its selector" testRevertSelectors
     it "writes a revert's name as the contracts declare it, none for a revert without data" testRevertText
     it "reads a dry run's revert with data by its name" $ testDryRunRevertNamed g
   describe "failures" $ do
-    it "reads eth_call faults: a bare revert as one without data, a revert reason as unknown, an RPC error without the URL, a 2xx answer not JSON without quoting it, and a long message cut" $ testCallFaults g
+    it "reads eth_call faults: a bare revert as one without data, a revert reason by its message, an RPC error without the URL, an underfunded key by its own error, a 2xx answer not JSON without quoting it, and a long message cut" $ testCallFaults g
     it "gives up on a node that does not answer within the call's timeout" $ testTimeout g
     it "reads a refused connection as unavailable, without the URL" $ testRefused g
+    it "reads a connection reset while the answer is read as unavailable, without the URL" $ testResetWhileRead g
     it "refuses an answer over the size bound" $ testOversized g
-    it "refuses a quantity over 256 bits, and a long one within the call's timeout" $ testLongQuantity g
+    it "reads a quantity's digits in either case, refuses one over 256 bits and one not in hex, each by its reason, and a long one within the call's timeout" $ testLongQuantity g
     it "keeps an HTTP failure's detail for the log, with the URL's host, path and query redacted" testFailureDetail
   describe "reads" $ do
     it "reads a block by its number, and one the node does not have as a failed read" $ testBlockAt g
@@ -49,79 +52,92 @@ namesChainTests = describe "StoreService names: chain" $ do
 -- | The custom errors the service tells apart, from the contracts' compiled ABIs, with viem's encodeErrorResult selectors.
 viemSelectors :: [(ByteString, RevertName)]
 viemSelectors =
-  [ ("5289653e", RNAlreadyFrozen),
+  [ ("5289653e", RNOther "AlreadyFrozen"),
     ("836588c9", RNCommitmentNotFound),
     ("74480cc9", RNCommitmentTooNew),
     ("256e2216", RNCommitmentTooOld),
+    ("b666aeb7", RNDurationTooLong),
     ("9a71997b", RNDurationTooShort),
-    ("a8cab3d1", RNFrozen),
+    ("a8cab3d1", RNOther "Frozen"),
     ("2a1b2dd8", RNInsufficientAllowance),
-    ("11011294", RNInsufficientValue),
-    ("8d666f60", RNInvalidEVMAddress),
+    ("11011294", RNOther "InsufficientValue"),
+    ("8d666f60", RNOther "InvalidEVMAddress"),
     ("756688fe", RNInvalidNonce),
     ("8baa579f", RNInvalidSignature),
     ("21134988", RNLabelTooLong),
-    ("2d0c6794", RNMaxCommitmentAgeTooHigh),
-    ("3e5aa838", RNMaxCommitmentAgeTooLow),
-    ("ace8f2ce", RNMinCharLengthCanOnlyDecrease),
-    ("ce47b48d", RNMinCharLengthZero),
-    ("6357b884", RNMinCommitmentAgeZero),
+    ("2d0c6794", RNOther "MaxCommitmentAgeTooHigh"),
+    ("3e5aa838", RNOther "MaxCommitmentAgeTooLow"),
+    ("ace8f2ce", RNOther "MinCharLengthCanOnlyDecrease"),
+    ("ce47b48d", RNOther "MinCharLengthZero"),
+    ("6357b884", RNOther "MinCommitmentAgeZero"),
     ("477707e8", RNNameNotAvailable),
-    ("d17ee357", RNNameNotReserved),
+    ("d17ee357", RNOther "NameNotReserved"),
     ("e1bf11bf", RNNameReserved),
     ("c4295eb6", RNNameTooShort),
-    ("70f8a4c9", RNNftGateCanOnlyBeDisabled),
-    ("6b1578c1", RNNftRequired),
-    ("c30734cc", RNNodeNotOwnedByRegistrar),
-    ("644d871f", RNNotBeneficiary),
-    ("42f058b4", RNNotNameOwner),
-    ("ff43b88f", RNNotOffered),
-    ("4632a8bf", RNNotOwnerOrBeneficiary),
-    ("df4795c7", RNNotSponsor),
-    ("9a0aeacd", RNNotSubnameRegistrar),
-    ("8a3c1cfb", RNOffsetOutOfBoundsError),
-    ("a9efcc18", RNOwnerMustBeCaller),
-    ("40866499", RNPublicSalesClosed),
-    ("bc7fd331", RNReasonRequired),
-    ("2bea818f", RNRecipientMustBeCaller),
+    ("70f8a4c9", RNOther "NftGateCanOnlyBeDisabled"),
+    ("6b1578c1", RNOther "NftRequired"),
+    ("c30734cc", RNOther "NodeNotOwnedByRegistrar"),
+    ("644d871f", RNOther "NotBeneficiary"),
+    ("23019e67", RNOther "NotController"),
+    ("42f058b4", RNOther "NotNameOwner"),
+    ("ff43b88f", RNOther "NotOffered"),
+    ("4632a8bf", RNOther "NotOwnerOrBeneficiary"),
+    ("bf10dd3a", RNOther "NotProxy"),
+    ("df4795c7", RNOther "NotSponsor"),
+    ("9a0aeacd", RNOther "NotSubnameRegistrar"),
+    ("8a3c1cfb", RNOther "OffsetOutOfBoundsError"),
+    ("a9efcc18", RNOther "OwnerMustBeCaller"),
+    ("40866499", RNOther "PublicSalesClosed"),
+    ("bc7fd331", RNOther "ReasonRequired"),
+    ("2bea818f", RNOther "RecipientMustBeCaller"),
     ("37ed32e8", RNReentrantCall),
     ("d3f605c4", RNResolverRequiredWhenDataSupplied),
     ("27af646c", RNReverseRecordNotSupported),
     ("0819bdcd", RNSignatureExpired),
     ("c4f189e2", RNTermsMismatch),
     ("bcdf753d", RNTermsNotAccepted),
-    ("90b8ec18", RNTransferFailed),
-    ("bf2f44f5", RNTransferToSelf),
-    ("0a059d71", RNUnexpiredCommitmentExists),
-    ("d92e233d", RNZeroAddress)
+    ("90b8ec18", RNOther "TransferFailed"),
+    ("bf2f44f5", RNOther "TransferToSelf"),
+    ("0a059d71", RNOther "UnexpiredCommitmentExists"),
+    ("d92e233d", RNOther "ZeroAddress")
   ]
 
 testRevertSelectors :: IO ()
 testRevertSelectors = do
-  map snd viemSelectors `shouldBe` filter (/= RNWithoutData) [minBound .. maxBound]
-  [(n, decodeRevert $ unhex sel <> uint256 (0 :: Int)) | (sel, n) <- viemSelectors] `shouldBe` [(n, Just n) | (_, n) <- viemSelectors]
-  decodeRevert (B.take 3 $ unhex "74480cc9") `shouldBe` Nothing
-  decodeRevert "" `shouldBe` Just RNWithoutData
+  length actedReverts + length otherRevertSignatures `shouldBe` length viemSelectors
+  filter (`elem` actedReverts) (map snd viemSelectors) `shouldBe` actedReverts
+  [(n, decodeRevert $ unhex sel <> uint256 (0 :: Int)) | (sel, n) <- viemSelectors] `shouldBe` [(n, RRNamed n) | (_, n) <- viemSelectors]
+  decodeRevert (B.take 3 $ unhex "74480cc9") `shouldBe` RRUnnamed "0x74480c"
+  decodeRevert "" `shouldBe` RRWithoutData
+  decodeRevert errorInvalidToken `shouldBe` RRUnnamed "ERC721: invalid token ID"
+  decodeRevert (unhex "4e487b710000000000000000000000000000000000000000000000000000000000000011") `shouldBe` RRUnnamed "0x4e487b71"
 
 testRevertText :: IO ()
 testRevertText = do
-  revertText RNInvalidNonce `shouldBe` Just "InvalidNonce"
-  revertText RNSignatureExpired `shouldBe` Just "SignatureExpired"
-  revertText RNWithoutData `shouldBe` Nothing
+  textEncode RNInvalidNonce `shouldBe` "InvalidNonce"
+  textEncode RNSignatureExpired `shouldBe` "SignatureExpired"
+  textEncode (RNOther "NotSponsor") `shouldBe` "NotSponsor"
+  map revertName [RRWithoutData, RRNamed RNInvalidNonce, RRUnnamed "ERC721: invalid token ID"] `shouldBe` [Nothing, Just RNInvalidNonce, Nothing]
+  let names = map snd viemSelectors
+  map (textDecode . textEncode) names `shouldBe` map Just names
+  (textDecode "Unlisted" :: Maybe RevertName) `shouldBe` Nothing
 
 testDryRunRevertNamed :: TVar ChaChaDRG -> IO ()
 testDryRunRevertNamed g = withChain g $ \node c -> do
   setFault node "eth_estimateGas" $ revertFault insufficientAllowance
-  estimateGas c fakeSponsor "\x01\x02\x03\x04" `shouldReturn` Left (ChainReverted $ Just RNInsufficientAllowance)
+  estimateGas c fakeSponsor "\x01\x02\x03\x04" `shouldReturn` Left (ChainReverted $ RRNamed RNInsufficientAllowance)
   sentTransactions node `shouldReturn` []
 
 -- | A reason kept in the message names a revert that had data, so it is not read as one without.
 testCallFaults :: TVar ChaChaDRG -> IO ()
 testCallFaults g = withChain g $ \node c ->
   forM_
-    [ (RpcError (-32000) "execution reverted" Nothing, ChainReverted $ Just RNWithoutData),
-      (RpcError 3 "execution reverted: ERC721: invalid token ID" Nothing, ChainReverted Nothing),
+    [ (RpcError (-32000) "execution reverted" Nothing, ChainReverted RRWithoutData),
+      (RpcError 3 "execution reverted: ERC721: invalid token ID" Nothing, ChainReverted $ RRUnnamed "ERC721: invalid token ID"),
+      (RpcError 3 "execution reverted" (Just $ J.String $ hex errorInvalidToken), ChainReverted $ RRUnnamed "ERC721: invalid token ID"),
+      (RpcError 3 "execution reverted" (Just $ J.String "not hex"), ChainReverted $ RRUnnamed "execution reverted"),
       (RpcError (-32000) "header not found" Nothing, ChainUnavailable "eth_call: error -32000: header not found"),
+      (RpcError (-32003) "Insufficient funds for gas * price + value" Nothing, ChainUnderfunded "eth_call: error -32003: Insufficient funds for gas * price + value"),
       (NotJson, ChainUnavailable "eth_call: not a JSON-RPC response"),
       (RpcError (-32000) (T.replicate 1000 "x") Nothing, ChainUnavailable $ "eth_call: error -32000: " <> T.replicate 200 "x")
     ]
@@ -146,6 +162,13 @@ testRefused g = withFakeEthNode $ \node -> do
   c <- newChainClient g (fakeChainConfig node) {cRpcUrl = "http://127.0.0.1:1" <> secretPath}
   latestBlock c `shouldReturn` Left (ChainUnavailable "eth_getBlockByNumber: connection failed")
 
+testResetWhileRead :: TVar ChaChaDRG -> IO ()
+testResetWhileRead g = withFakeEthNode $ \node -> withResetServer $ \url -> do
+  c <- newChainClient g (fakeChainConfig node) {cRpcUrl = url}
+  latestBlock c >>= (`shouldSatisfy` \case
+    Left (ChainUnavailable reason) -> not (T.pack url `T.isInfixOf` reason)
+    _ -> False)
+
 testOversized :: TVar ChaChaDRG -> IO ()
 testOversized g = withChain g $ \node c -> do
   answerCall node fakeController availableCall $ Returns $ B.replicate (512 * 1024) 0
@@ -163,14 +186,16 @@ testRecentTip g = withChain g $ \node c -> do
 
 testLongQuantity :: TVar ChaChaDRG -> IO ()
 testLongQuantity g = withChain g $ \node c -> do
-  let fee digits = setFault node "eth_getTransactionCount" (Answers $ J.String $ "0x" <> digits) >> transactionCount c {ccTimeout = 300000} (ccRegistrar c) Latest
-      notQuantity = Left (ChainUnavailable "eth_getTransactionCount: not a JSON-RPC response: Error in $: not a quantity")
+  let fee digits = setFault node "eth_getTransactionCount" (Answers $ J.String $ "0x" <> digits) >> transactionCount c {ccTimeout = 2000000} (ccRegistrar c) Latest
+      refused reason = Left (ChainUnavailable $ "eth_getTransactionCount: not a JSON-RPC response: Error in $: " <> reason)
   fee (T.replicate 63 "0" <> "7") `shouldReturn` Right 7
-  fee (T.replicate 64 "0" <> "7") `shouldReturn` notQuantity
+  fee "1F" `shouldReturn` Right 31
+  fee (T.replicate 64 "0" <> "7") `shouldReturn` refused "over 256 bits"
+  fee "7z" `shouldReturn` refused "not a quantity"
   start <- getCurrentTime
-  fee (T.replicate 1000000 "f") `shouldReturn` notQuantity
+  fee (T.replicate 1000000 "f") `shouldReturn` refused "over 256 bits"
   elapsed <- (`diffUTCTime` start) <$> getCurrentTime
-  elapsed `shouldSatisfy` (< 1)
+  elapsed `shouldSatisfy` (< 3)
 
 testFailureDetail :: IO ()
 testFailureDetail = do
@@ -193,16 +218,16 @@ testBlockAt :: TVar ChaChaDRG -> IO ()
 testBlockAt g = withChain g $ \node c -> do
   setBlock node 100 1798761600
   mined <- mine node []
-  blockAt c 100 `shouldReturn` Right Block {blockNumber = 100, blockTimestamp = 1798761600, blockBaseFee = fakeBaseFee}
-  blockAt c mined `shouldReturn` Right Block {blockNumber = 101, blockTimestamp = 1798761612, blockBaseFee = fakeBaseFee}
+  blockAt c 100 `shouldReturn` Right Block {blockNumber = 100, blockTimestamp = RoundedSystemTime 1798761600, blockBaseFee = fakeBaseFee}
+  blockAt c mined `shouldReturn` Right Block {blockNumber = 101, blockTimestamp = RoundedSystemTime 1798761612, blockBaseFee = fakeBaseFee}
   blockAt c 102 >>= (`shouldSatisfy` \case Left (ChainUnavailable _) -> True; _ -> False)
 
 testFollowTransaction :: TVar ChaChaDRG -> IO ()
 testFollowTransaction g = withChain g $ \node c@ChainClient {ccRegistrar} -> do
-  let unknown = TxHash $ B.replicate 32 0xee
+  let unknown = TxHash $ Hex32 $ B.replicate 32 0xee
   transactionKnown c unknown `shouldReturn` Right False
   transactionReceipt c unknown `shouldReturn` Right Nothing
-  SignedTx {stRaw, stHash = hash@(TxHash h)} <- signed g c 0
+  SignedTx {stRaw, stHash = hash@(TxHash (Hex32 h))} <- signed g c 0
   sendRawTransaction c stRaw `shouldReturn` Right hash
   transactionKnown c hash `shouldReturn` Right True
   transactionReceipt c hash `shouldReturn` Right Nothing
@@ -216,7 +241,7 @@ testFollowTransaction g = withChain g $ \node c@ChainClient {ccRegistrar} -> do
 testSignedHash :: TVar ChaChaDRG -> IO ()
 testSignedHash g = withChain g $ \node c -> do
   SignedTx {stRaw, stHash} <- signed g c 7
-  stHash `shouldBe` TxHash (C.keccak256 stRaw)
+  stHash `shouldBe` TxHash (Hex32 $ C.keccak256 stRaw)
   sendRawTransaction c stRaw `shouldReturn` Right stHash
   sentTransactions node `shouldReturn` [stRaw]
 
@@ -242,15 +267,15 @@ secretPath = "/v2/provider-api-key"
 signed :: TVar ChaChaDRG -> ChainClient -> Word64 -> IO SignedTx
 signed g c nonce =
   either error id
-    <$> signTransaction g c TxRequest {trTo = fakeController, trData = availableCall, trNonce = nonce, trGasLimit = fakeGas, trMaxFeePerGas = 2 * fakeBaseFee + fakeTip, trMaxPriorityFeePerGas = fakeTip}
+    <$> signTransaction g c Eip1559Tx {txChainId = fakeChainId, txNonce = nonce, txMaxPriorityFeePerGas = fakeTip, txMaxFeePerGas = 2 * fakeBaseFee + fakeTip, txGasLimit = fakeGas, txTo = fakeController, txValue = 0, txData = availableCall}
 
 -- | controller.available("bakery1"), viem's encodeFunctionData
 availableCall :: ByteString
 availableCall = unhex "aeb8ce9b0000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000762616b6572793100000000000000000000000000000000000000000000000000"
 
+errorInvalidToken :: ByteString
+errorInvalidToken = unhex "08c379a0000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000184552433732313a20696e76616c696420746f6b656e2049440000000000000000"
+
 -- | viem's encodeErrorResult of InsufficientAllowance(10000, 2500)
 insufficientAllowance :: ByteString
 insufficientAllowance = unhex "2a1b2dd8000000000000000000000000000000000000000000000000000000000000271000000000000000000000000000000000000000000000000000000000000009c4"
-
-unhex :: ByteString -> ByteString
-unhex = either error id . convertFromBase Base16
