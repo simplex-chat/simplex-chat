@@ -923,7 +923,7 @@ window.addEventListener('click',(e)=>{
                         </div>
                     </div> -->
                     <div><h1 id="badge-service-rpc-protocol" tabindex="-1">Badge service RPC protocol</h1>
-<p>Schema: <code>badges-rpc.schema.json</code>, definitions <code>request</code> and <code>response</code>. Types: <code>Simplex.Chat.Badges.Service</code>. Model: <code>plans/2026-07-30-supporter-badges-v3-ux.md</code> §3 — cited below as &quot;model&quot;.</p>
+<p>Schema: <code>badges-rpc.schema.json</code>, definitions <code>request</code> and <code>response</code>. Types: <code>Simplex.Chat.StoreService</code>. Model: <code>plans/2026-07-30-supporter-badges-v3-ux.md</code> §3 — cited below as &quot;model&quot;.</p>
 <h2 id="transport" tabindex="-1">Transport</h2>
 <p>Service RPC (<code>plans/2026-07-22-service-rpc-chat.md</code>, branch <code>rpc</code>): the request travels in <code>APISendServiceRequest.request</code>, the response in <code>CRServiceResponse.responseData</code>; one response per request; per-call timeout.</p>
 <p>A request is an envelope: <code>version</code> — the client's protocol version; <code>purchaseKey</code>; <code>request</code> — the command, discriminated on <code>type</code>. Responses are discriminated on <code>type</code>. The service is deployed ahead of app releases, answers within the client's <code>version</code>, and rejects clients older than it supports with <code>unsupported_version</code>.</p>
