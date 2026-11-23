@@ -105,6 +105,11 @@ struct ComposeState {
             self.voiceMessageRecordingState = .noRecording
         }
         self.mentions = editingItem.mentions ?? [:]
+        let links = parsedMessage.compactMap(\.linkUri)
+        if let uri = previewLink, let i = links.firstIndex(of: uri) {
+            self.cancelledLinks = Set(links[..<i])
+        }
+        self.preview = selectedPreview(previewsOn: previewsOn)
     }
 
     init(forwardingItems: [ChatItem], fromChatInfo: ChatInfo) {
@@ -118,10 +123,11 @@ struct ComposeState {
     func forwardingItems(_ chatItems: [ChatItem], fromChatInfo: ChatInfo, previewsOn: Bool) -> ComposeState {
         ComposeState(
             message: message,
-            preview: linkPreview != nil ? preview : .noPreview,
+            parsedMessage: parsedMessage,
+            preview: linkPreviewAllowed ? preview : .noPreview,
             contextItem: .forwardingItems(chatItems: chatItems, fromChatInfo: fromChatInfo),
             cancelledLinks: cancelledLinks
-        )
+        ).updateLinkPreview(.textChanged, previewsOn: previewsOn)
     }
 
     func copy(
