@@ -42,7 +42,6 @@ module StoreService.Names.Orders
     versionWritten,
     confirmLanded,
     checkLanded,
-    confirmedBlock,
   )
 where
 
@@ -79,8 +78,7 @@ import StoreService.Names.Community (Community, communityOf, nameTerms, readable
 import StoreService.Names.Contracts (Contracts (ctChain), NameStatus (..), Terms, chainPriceCents, disputeUntil, nameExpires, nameStatus, ownerOfToken, secondsPerYear)
 import StoreService.Names.Env (NamesEnv (..))
 import StoreService.Names.Phases (Phases, RegistrationId (..))
-import StoreService.Names.Chain (Block (..), BlockTag (..), ChainError, Hex32 (..), TxHash, blockAt, latestBlock)
-import StoreService.Names.Records (deepBlock)
+import StoreService.Names.Chain (Block (..), BlockTag (..), Hex32 (..), TxHash, blockAt, confirmedNumber, latestBlock)
 import StoreService.Names.Registration (Commitment, LinkKind, disputeSeconds)
 import StoreService.Names.Signatures (AgreedTerms (..), OrderFields (..), parseChecksumAddress, personalDigest)
 import StoreService.Names.Store (CodeInsertRefused (..), LiveOrder (..), NameRegistration (..), NameReveal, NewRegistration (..), OrderHash, OrderPayment (..), OrderPhase (..), PrepaidCode (..), TxHistory (..), NameTransaction (..), RegistrationTx (..), TxFor (..), TxSettlement (..), TxState (..), VersionWrite (..), closeOverdue, createCodeRegistration, getLiveOrders, getPrepaidCode, getPrepaidCodeById, getRegistrationByOrderHash, labelHolder, markRead, registrationTransactions, reservePrepaidCode, selectRegistration, spendBalance, updateRegistration)
@@ -352,11 +350,6 @@ versionWritten = \case
 confirmLanded :: OrdersEnv -> NameRegistration -> IO Landing
 confirmLanded OrdersEnv {oeStore, oeContracts, oeTurns, oeNow} = checkLanded oeStore oeContracts oeTurns oeNow
 
-confirmedBlock :: Contracts -> IO (Either ChainError Block)
-confirmedBlock ct = runExceptT $ ExceptT (latestBlock c) >>= ExceptT . deepBlock c
-  where
-    c = ctChain ct
-
 -- | The register check, on the order's current name: a register mined with status 1, or the owner holding the name at the confirmation depth,
 -- went through with only its confirmation lost. The order then becomes registered by a compare-and-set on the version read, a code order spending its code;
 -- ended instead when disputeUntil(id) at the confirmation depth is not the end its mined register set.
@@ -375,7 +368,7 @@ checkLanded st ct turns clock r@NameRegistration {nrId, nrOwner, nrLabelHash, nr
         Left _ -> pure LChanged
   where
     landed mined = do
-      Block {blockNumber = confirmed} <- chainRead $ confirmedBlock ct
+      confirmed <- confirmedNumber (ctChain ct) . blockNumber <$> chainRead (latestBlock $ ctChain ct)
       let tag = AtBlock confirmed
       how <- case mined of
         (_, block) : _ | block > confirmed -> throwError $ "names: a register check waits for confirmation: the register's block " <> tshow block <> " is above the confirmed block " <> tshow confirmed

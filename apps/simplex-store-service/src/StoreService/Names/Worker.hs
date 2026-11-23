@@ -58,11 +58,12 @@ import qualified Simplex.Messaging.TMap as TM
 import Simplex.Messaging.Util (catchOwn', tshow, ($>>=))
 import StoreService.Config (ChainConfig (..), NamesConfig (..))
 import StoreService.Names.Balances (RefundRecord (..))
-import StoreService.Names.Chain (Block (..), BlockTag (..), ChainError (..), TxHash, blockAt)
+import StoreService.Names.Chain (Block (..), BlockTag (..), ChainError (..), TxHash, blockAt, latestBlock)
 import StoreService.Names.Codes (releaseCode)
 import StoreService.Names.Contracts (CommitmentAges (..), Contracts (..), acceptedTerms, commitmentAges, commitmentTime, communityName, confirmedTag, controllerAvailable, disputeUntil, forgetNamePolicy, namePolicy)
-import StoreService.Names.Orders (Landing (..), OrderRefusal, OrdersEnv (..), WriteRefusal (..), checkLanded, confirmLanded, confirmedBlock, versionWritten)
+import StoreService.Names.Orders (Landing (..), OrderRefusal, OrdersEnv (..), WriteRefusal (..), checkLanded, confirmLanded, versionWritten)
 import StoreService.Names.Phases (RegistrationId (..), awaitChange, publish)
+import StoreService.Names.Records (deepBlock)
 import StoreService.Names.Registration (TermsAcceptance (..), acceptCalldata, commitCalldata, disputeSeconds, policyDomain, registerWithCreditCalldata, sponsorDomain, termsKind, verifyAcceptance, verifyRegisterIntent)
 import StoreService.Names.Reveal (intentOf)
 import StoreService.Names.Revert (RevertName (..), RevertReason (..))
@@ -737,10 +738,11 @@ sweepEndedRegistrations w@Worker {wkOrders = OrdersEnv {oeStore, oeContracts, oe
   if null disputable
     then pure True
     else
-      confirmedBlock oeContracts >>= \case
+      runExceptT (ExceptT (latestBlock chain) >>= ExceptT . deepBlock chain) >>= \case
         Left e -> False <$ logWarn ("names ended sweep: a chain read failed, the pass is stopped: " <> tshow e)
         Right confirmed -> True <$ (mapM (\rid -> first (rid,) <$> endIfUnregistered now confirmed rid) disputable >>= mapM_ unread . take 1 . lefts)
   where
+    chain = ctChain oeContracts
     secondsAt = RoundedSystemTime . floor . utcTimeToPOSIXSeconds
     unread (RegistrationId ridText, e) = logWarn $ "names ended sweep: registration " <> ridText <> ": a chain read failed, read again at the next pass: " <> tshow e
     endIfUnregistered now Block {blockNumber, blockTimestamp} rid@(RegistrationId ridText) =

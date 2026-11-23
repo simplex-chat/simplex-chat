@@ -98,7 +98,6 @@ StoreService.Names.Store
 StoreService.Names.Orders
   Landing
     LEnded              Int64, the version written
-  confirmedBlock        Contracts -> IO (Either ChainError Block)
 
 StoreService.Names.Worker
   Closed
@@ -110,7 +109,7 @@ StoreService.Names.Contracts
   disputeUntil          Contracts -> BlockTag -> LabelHash -> IO (Either ChainError (Maybe SystemSeconds))
 
 StoreService.Names.Records
-  deepBlock             exported
+  deepBlock             exported, read by the ended sweep; the register check computes the confirmed number from the latest block
 
 StoreService.Metrics
   meEndedPassAt         TVar UTCTime
