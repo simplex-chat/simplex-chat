@@ -1,0 +1,6 @@
+{
+  "body": {
+    "type": "method_not_allowed"
+  },
+  "status": 405
+}

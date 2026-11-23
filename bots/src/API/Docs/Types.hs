@@ -35,7 +35,7 @@ import Simplex.Chat.Store.Shared
 import Simplex.Chat.Operators
 import Simplex.Messaging.Agent.Store.Entity (DBStored (..))
 import Simplex.Chat.Badges
-import Simplex.Chat.Badges.Service
+import Simplex.Chat.StoreService
 import Simplex.Chat.Names
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
@@ -227,7 +227,6 @@ chatTypesDocsData =
     (sti @AutoAccept, STRecord, "", [], "", ""),
     (sti @BadgeProof, STRecord, "", [], "", ""),
     (sti @BadgeRedeemError, STUnion, "BRE", [], "", ""),
-    (sti @BadgeServiceErrorCode, STEnum' (consSep "BSE" '_'), "", ["BSEUnknown"], "", ""),
     (sti @BlockingInfo, STRecord, "", [], "", ""),
     (sti @BlockingReason, STEnum, "BR", [], "", ""),
     (sti @BlockToken, STUnion, "", [], "", ""),
@@ -418,6 +417,7 @@ chatTypesDocsData =
     (sti @SocksMode, STEnum, "SM", [], "", ""),
     (sti @SrvError, STUnion, "SrvErr", [], "", ""),
     (sti @StoreError, STUnion, "SE", [], "", ""),
+    (sti @StoreServiceErrorCode, STEnum' (consSep "STE" '_'), "", ["STEUnknown"], "", ""),
     (sti @SubscriptionStatus, STUnion, "SS", [], "", ""),
     (sti @SupportGroupPreference, STRecord, "", [], "", ""),
     (sti @SwitchPhase, STEnum, "SP", [], "", ""),
@@ -488,7 +488,6 @@ deriving instance Generic AgentServiceError
 deriving instance Generic AutoAccept
 deriving instance Generic BadgeProof
 deriving instance Generic BadgeRedeemError
-deriving instance Generic BadgeServiceErrorCode
 deriving instance Generic BlockingInfo
 deriving instance Generic BlockingReason
 deriving instance Generic BlockToken
@@ -684,6 +683,7 @@ deriving instance Generic SndGroupEvent
 deriving instance Generic SocksMode
 deriving instance Generic SrvError
 deriving instance Generic StoreError
+deriving instance Generic StoreServiceErrorCode
 deriving instance Generic SubscriptionStatus
 deriving instance Generic SupportGroupPreference
 deriving instance Generic SwitchPhase

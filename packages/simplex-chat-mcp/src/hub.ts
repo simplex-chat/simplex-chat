@@ -3,24 +3,24 @@ import {open} from "fs/promises"
 import {dirname, join} from "path"
 import {CC, CEvt, ChatEvent, T} from "@simplex-chat/types"
 import {api} from "simplex-chat"
-import {Action, Actions, HostTexts, Mode, isDecided, maxPending} from "./actions"
+import {Action, Actions, HostTexts, Mode, NewAction, PlanAction, QuestionAction, ToolError, isDecided, maxPending} from "./actions"
+import {Agent, Agents, Card, Workflow, agentsLine, applyJournal, cardText, journalPath, workflowAgentTranscript} from "./agents"
+import {AccountReader, TranscriptReader, TranscriptState, lastUsage} from "./claude-code"
 import {Config} from "./config"
 import {Control, canSend, controlCommands, controlDataOf, createGroup, isControlEvent, isGroupMessage, parseCommand, rightsText, safeName, sessionApproverRoles} from "./control"
 import {openCore} from "./core"
 import {SessionFile, hubFolder, readSessionFile, sessionFolder, writeSessionFile} from "./files"
 import {chatErrorOf, errorText, log, logError, oneLine} from "./log"
-import {MainGroup, SessionGroups, createMainGroup, findMainGroup} from "./main-group"
+import {BoardSession, MainGroup, SessionGroups, createMainGroup, findMainGroup} from "./main-group"
 import {Changes, ChatItemsWatch, ReplyTo, ToolCall, duration, getChat, isLive, nextChange, quoteLine, storedName, toReplyTo, validName} from "./messages"
-import {AttachLine, LimitWindow, Limits, OwnerState, PermissionRequest, ResetReply, Step, TextBatch, TurnRequest} from "./protocol"
+import {AgentEvent, AskRequest, AttachLine, Decision, Failure, LimitWindow, Limits, OwnerState, PermissionRequest, Prompt, ResetReply, Step, TaskEnd, TextBatch, TurnRequest, Waiting, WorkflowRun} from "./protocol"
 import {waitForCancelledCards} from "./serve"
 import {Machine, limitParts, machineParts, machineState} from "./status-line"
-import {AgentTools, ToolName, featureOff, fitsMessage, maxMessageLength, ownerOf, refusedFeature} from "./tools"
+import {AgentTools, ToolName, featureOff, fitsMessage, maxMessageLength, ownerOf, refusedFeature, sessionKey} from "./tools"
 import {User, userContact} from "./user"
 
 // spec: spec/architecture.md#hub-constants
 const profileName = "Claude"
-// spec: spec/architecture.md#hub-constants
-const sessionKey = "simplexMcpSession"
 // spec: spec/architecture.md#hub-constants
 const firstAction = 1
 // spec: spec/architecture.md#hub-constants
@@ -59,6 +59,18 @@ const textEndMs = 10_000
 const maxRecentTexts = 20
 // spec: spec/architecture.md#hub-constants
 const stoppedLine = "⏹️ Stopped"
+// spec: spec/architecture.md#hub-constants
+const relayWait = 3_000
+// spec: spec/architecture.md#hub-constants
+const relayAge = 5_000
+// spec: spec/api.md#waiting-lines
+const cardQuietMs = 30_000
+// spec: spec/api.md#waiting-lines
+const waitingKinds = ["permission_prompt", "worker_permission_prompt", "elicitation_dialog", "elicitation_url_dialog", "agent_needs_input"]
+// spec: spec/api.md#waiting-lines
+const limitResetLine = "🔄 The usage limit has reset. Send a message here to continue."
+// spec: spec/api.md#waiting-lines
+const noContinueLine = "⛔ Claude Code will not continue by itself after the usage limit. Send a message here when the limit has reset."
 // spec: spec/api.md#list-of-sessions
 const listCheckMs = 2_000
 // spec: spec/api.md#list-of-sessions
@@ -72,6 +84,12 @@ const claudeStates = new Map<string, [string, string]>([
 ])
 // spec: spec/api.md#list-of-sessions
 const unknownState: [string, string] = ["▶️", "running"]
+// spec: spec/api.md#session-board
+const stoppedState: [string, string] = ["⚪", "stopped"]
+// spec: spec/api.md#session-group-profile
+const profileEveryMs = 60_000
+// spec: spec/api.md#agent-messages
+const cardEditMs = 5_000
 
 // spec: spec/architecture.md#hub-hubtexts
 export const hubTexts: HostTexts = {lost: "The group of this session is lost. Start a new Claude Code session.", stopping: "The SimpleX service is stopping.", pending: `${maxPending} actions are pending; wait for the approvers' decisions.`}
@@ -86,6 +104,11 @@ interface SessionGroupData {
   session: number
   pending?: {connId: number; at: number}[]
   mode?: Mode
+}
+
+// spec: spec/architecture.md#hub-session-readclaudecode
+interface ClaudeState extends TranscriptState {
+  account?: string
 }
 
 interface Part {
@@ -139,6 +162,8 @@ const answerLines: LineKind = {refused: "Claude's answer was not posted", log: "
 export class Session {
   open = false
   record?: string
+  globalConfig?: string
+  transcript?: string
   readonly actions: Actions
   readonly tools: AgentTools
   readonly control: Control
@@ -172,6 +197,17 @@ export class Session {
   private liveOrder: Promise<void> = Promise.resolve()
   private claudeStatus?: string
   private recordRead?: Promise<void>
+  private readonly relays = new Changes()
+  private readonly linked = new WeakSet<Action>()
+  private cardAt = -Infinity
+  private failedText?: string
+  private claude: ClaudeState
+  private readonly accountReader: AccountReader
+  private readonly transcriptReader: TranscriptReader
+  private readonly agents = new Agents()
+  private profileShown?: string
+  private profileAt = -Infinity
+  private profileTimer?: NodeJS.Timeout
 
   constructor(
     private readonly hub: Hub,
@@ -181,10 +217,14 @@ export class Session {
     private data: SessionGroupData,
   ) {
     const {chat, profile: user, root} = hub
-    const {number, name, model, effort, hostDeclined = false} = stored
+    const {number, name, model, effort, hostDeclined = false, account, transcript, goal, recap, title} = stored
     this.number = number
     this.name = name
     this.description = {model, effort}
+    this.transcript = transcript
+    this.claude = {account, goal, recap, title}
+    this.accountReader = new AccountReader(account)
+    this.transcriptReader = new TranscriptReader(transcript, {goal, recap, title})
     this.hostDeclined = hostDeclined
     this.actions = new Actions(data.mode ?? "requests", hub.expireHours, controlDataOf(group.customData)?.nextAction ?? firstAction, {
       refusal: action => this.control.refusal(action),
@@ -241,32 +281,175 @@ export class Session {
 
   // spec: spec/architecture.md#hub-session-readrecord
   async readRecord(): Promise<void> {
-    if (!this.attached || this.record === undefined) {
+    if (!this.attached) {
       this.claudeStatus = undefined
       return
     }
-    this.recordRead ??= recordStatus(this.record)
-      .then(
-        status => {
-          this.claudeStatus = status
-        },
-        error => {
-          if ((error as NodeJS.ErrnoException).code === "ENOENT") this.claudeStatus = undefined
-        },
-      )
+    this.recordRead ??= Promise.all([this.readStatus(), this.readClaudeCode(), this.readAgents()])
+      .then(() => undefined)
       .finally(() => (this.recordRead = undefined))
     await withinTime(this.recordRead, recordReadMs)
   }
 
   // spec: spec/architecture.md#hub-session-readrecord
+  private async readStatus(): Promise<void> {
+    if (this.record === undefined) {
+      this.claudeStatus = undefined
+      return
+    }
+    await recordStatus(this.record).then(
+      status => {
+        this.claudeStatus = status
+      },
+      error => {
+        if ((error as NodeJS.ErrnoException).code === "ENOENT") this.claudeStatus = undefined
+      },
+    )
+  }
+
+  // spec: spec/architecture.md#hub-session-readclaudecode
+  private async readClaudeCode(): Promise<void> {
+    const account = this.globalConfig === undefined ? this.claude.account : await this.accountReader.read(this.globalConfig)
+    const {goal, recap, title} = this.transcript === undefined ? this.claude : await this.transcriptReader.read(this.transcript)
+    const {claude} = this
+    if (account === claude.account && goal === claude.goal && recap === claude.recap && title === claude.title) return
+    const read = {account, goal, recap, title}
+    this.claude = read
+    this.store({...read, transcript: this.transcript})
+    await this.describe().catch(error => logError(`description of session ${this.number}`, error))
+  }
+
+  // spec: spec/architecture.md#hub-session-readrecord
   stateLine(): string | undefined {
+    const state = this.state()
+    return state === undefined ? undefined : `${state[0]} ${this.displayName}: ${state[1]}`
+  }
+
+  // spec: spec/api.md#session-board
+  boardSession(): BoardSession {
+    const state = this.state()
+    const [emoji, text] = state ?? stoppedState
+    const {title, recap} = this.claude
+    const titled = title === undefined || title === this.name ? undefined : title.includes("*") ? title : `*${title}*`
+    const lines = [`${emoji} ${this.displayName}: ${text}`, titled, this.details() || undefined, agentsLine(this.agents.all(), Date.now()), recap]
+    return {session: this.number, running: state !== undefined, emoji, text: lines.filter(line => line !== undefined).join("\n")}
+  }
+
+  // spec: spec/architecture.md#hub-session-readrecord
+  private state(): [string, string] | undefined {
     const state = claudeStates.get(this.claudeStatus ?? "")
-    const dialog = state === undefined || this.claudeStatus === "waiting"
-    const cards = this.actions.pending().filter(({tool, interrupted}) => !interrupted && (dialog || tool !== "permission")).length
-    if (cards > 0) return `🟠 ${this.displayName}: waiting for you, ${cards} approval${cards === 1 ? "" : "s"}`
+    const cards = this.actions.pending().filter(({interrupted}) => !interrupted).length
+    if (cards > 0) return ["🟠", `waiting for you, ${cards} approval${cards === 1 ? "" : "s"}`]
     if (!this.attached) return undefined
-    const [emoji, text] = state ?? unknownState
-    return `${emoji} ${this.displayName}: ${text}`
+    return state ?? unknownState
+  }
+
+  // spec: spec/api.md#session-group-profile
+  private details(): string {
+    const {model, effort} = this.description
+    const {account, goal} = this.claude
+    return [account, model, effort === undefined ? undefined : `effort ${effort}`, goal === undefined ? undefined : `goal ${goal}`].filter(part => part !== undefined).join(" · ")
+  }
+
+  // spec: spec/api.md#session-group-profile
+  private describe(): Promise<void> {
+    const shortDescr = this.details()
+    const {recap} = this.claude
+    const shown = JSON.stringify([shortDescr, recap])
+    if (shown === this.profileShown) return Promise.resolve()
+    const wait = this.profileAt + this.hub.profileMs - Date.now()
+    if (wait > 0) {
+      this.profileTimer ??= setTimeout(() => {
+        this.profileTimer = undefined
+        this.describe().catch(error => logError(`description of session ${this.number}`, error))
+      }, wait).unref()
+      return Promise.resolve()
+    }
+    this.profileShown = shown
+    const at = Date.now()
+    return this.control.describe(shortDescr || undefined, recap).then(
+      changed => {
+        if (changed) this.profileAt = at
+      },
+      error => {
+        this.profileShown = undefined
+        throw error
+      },
+    )
+  }
+
+  // spec: spec/architecture.md#hub-session-readagents
+  stopDescribing(): void {
+    clearTimeout(this.profileTimer)
+    this.profileTimer = undefined
+  }
+
+  // spec: spec/architecture.md#hub-session-readagents
+  private onAgents(agent: AgentEvent | undefined, task: TaskEnd | undefined, workflow: WorkflowRun | undefined): boolean {
+    const now = Date.now()
+    if (workflow !== undefined) this.postCard(this.agents.workflow(workflow, now))
+    if (agent !== undefined && "start" in agent) this.postCard(this.agents.start(agent.id, agent.start, now))
+    if (agent !== undefined && "step" in agent) this.agents.step(agent.id, agent.step, now)
+    if (agent !== undefined && "report" in agent) this.agents.report(agent.id, agent.report)
+    const stopped = agent !== undefined && "stop" in agent ? this.agents.stop(agent.id, agent.stop, now) : undefined
+    if (stopped !== undefined) void this.showCard(stopped, now)
+    const ended = task === undefined ? undefined : this.agents.task(task, now)
+    if (ended?.kind === "workflow") void this.readWorkflow(ended).then(() => this.showCard(ended, Date.now()))
+    else if (ended !== undefined) void this.showCard(ended, now)
+    return ended !== undefined
+  }
+
+  // spec: spec/architecture.md#hub-session-readagents
+  private async readAgents(): Promise<void> {
+    await Promise.all(this.agents.live().map(card => (card.kind === "agent" ? this.readAgent(card) : this.readWorkflow(card))))
+    const now = Date.now()
+    for (const card of this.agents.live()) if (now - card.postedAt >= liveLineMs) card.end = {status: "stopped", at: now}
+    for (const card of this.agents.all()) void this.showCard(card, now)
+  }
+
+  // spec: spec/architecture.md#hub-session-readagents
+  private async readAgent(agent: Agent): Promise<void> {
+    const tokens = await lastUsage(agent.transcript)
+    if (tokens !== undefined) agent.tokens = tokens
+  }
+
+  // spec: spec/architecture.md#hub-session-readagents
+  private async readWorkflow(workflow: Workflow): Promise<void> {
+    applyJournal(workflow, await workflow.lines.read(journalPath(workflow)))
+    const reads = [...workflow.journal.values()].filter(({state, agentId}) => state === "started" || !workflow.counted.has(agentId))
+    await Promise.all(reads.map(async ({state, agentId}) => {
+      const tokens = await lastUsage(workflowAgentTranscript(workflow, agentId))
+      if (tokens !== undefined) workflow.tokens.set(agentId, tokens)
+      if (state !== "started") workflow.counted.add(agentId)
+    }))
+  }
+
+  // spec: spec/architecture.md#hub-session-readagents
+  private postCard(card: Card): void {
+    const text = cardText(card, card.postedAt)
+    card.sent = text
+    card.sentAt = card.postedAt
+    card.item = this.post([{text, priority: -1}], undefined, true).then(
+      ([sent]) => sent?.chatItem.meta.itemId,
+      error => {
+        logError(`agents of session ${this.number}`, error)
+        return undefined
+      },
+    )
+  }
+
+  // spec: spec/architecture.md#hub-session-readagents
+  private showCard(card: Card, now: number): Promise<unknown> | undefined {
+    const text = cardText(card, now)
+    const live = card.end === undefined
+    if (card.item === undefined || text === card.sent || (live && now - card.sentAt < cardEditMs)) return undefined
+    card.sent = text
+    card.sentAt = now
+    card.item = card.item.then(async itemId => {
+      if (itemId !== undefined) await this.updateItem(itemId, text, live).catch(error => logError(`agents of session ${this.number}`, error))
+      return itemId
+    })
+    return card.item
   }
 
   // spec: spec/architecture.md#hub-session-readrecord
@@ -333,7 +516,15 @@ export class Session {
   private pass(ci: T.AChatItem, member: T.GroupMember, text: string): void {
     if (this.refusesCommand(text, member)) return this.queue(() => this.post([{text: commandsApproversOnly}], ci.chatItem.meta.itemId))
     if (parseCommand(text) !== undefined) return this.control.onMessage(ci)
+    const card = this.repliedCard(ci.chatItem.quotedItem?.itemId)
+    if (card !== undefined && this.approves(member)) return this.control.reply(member, card, text)
     this.queue(() => this.prompt(ci, text, member, ci.chatItem.file, this.replyTo(ci)))
+  }
+
+  // spec: spec/architecture.md#hub-session-onmessage
+  private repliedCard(itemId: number | undefined): QuestionAction | PlanAction | undefined {
+    if (itemId === undefined) return undefined
+    return this.actions.pending().find((action): action is QuestionAction | PlanAction => (action.tool === "question" || action.tool === "plan") && action.card === itemId)
   }
 
   // spec: spec/architecture.md#hub-session-onupdate
@@ -379,6 +570,8 @@ export class Session {
   permission({requestId, toolName, description, inputPreview}: PermissionRequest): void {
     const toolApproved = this.control.approvedTools().some(({tool}) => tool === toolName)
     const action = this.actions.create(`permission ${requestId}`, {tool: "permission", input: {requestId, toolName, description, inputPreview}, toolApproved}, undefined, this.number, "requests")
+    this.cardAt = Date.now()
+    this.relays.notify()
     const unsubscribe = action.changes.subscribe(() => {
       const behavior = action.state === "performing" ? "allow" : action.state === "rejected" ? "deny" : undefined
       if (behavior !== undefined) this.onLine?.({permission: {requestId, behavior}})
@@ -388,10 +581,75 @@ export class Session {
     })
   }
 
+  // spec: spec/architecture.md#hub-session-ask
+  async ask(request: AskRequest, signal: AbortSignal): Promise<Decision | undefined> {
+    if (request.kind === "tool" && request.agent === undefined && (await this.relayed(request.tool, request.at ?? Date.now(), signal))) return undefined
+    if (signal.aborted) return undefined
+    const fields = await this.promptAction(request)
+    let action: Action
+    try {
+      action = this.actions.create(`ask ${request.kind}`, fields, undefined, this.number, "requests")
+    } catch (error) {
+      if (error instanceof ToolError) return undefined
+      throw error
+    }
+    this.cardAt = Date.now()
+    return new Promise(resolve => {
+      const end = (): void => {
+        if (action.state === "pending") this.actions.end(action)
+      }
+      const unsubscribe = action.changes.subscribe(() => {
+        if (action.state === "performing" || action.state === "rejected") resolve(decisionOf(action))
+        if (!isDecided(action.state)) return
+        unsubscribe()
+        signal.removeEventListener("abort", end)
+        this.actions.remove(action)
+        resolve(undefined)
+      })
+      signal.addEventListener("abort", end, {once: true})
+    })
+  }
+
+  // spec: spec/architecture.md#hub-session-ask
+  private async promptAction(prompt: Prompt): Promise<NewAction> {
+    switch (prompt.kind) {
+      case "tool": {
+        const {tool, description, preview, agent, terminalOnly} = prompt
+        return {tool: "permission", input: {toolName: tool, description, inputPreview: preview, agent, terminalOnly}, toolApproved: this.control.approvedTools().some(approved => approved.tool === tool)}
+      }
+      case "question":
+        return {tool: "question", input: {questions: prompt.questions}}
+      case "plan": {
+        const [first] = prompt.plan.trim() === "" ? [] : await this.post(textParts(prompt.plan).map(text => ({text, priority: -1}))).catch(error => (logError(`plan of session ${this.number}`, error), []))
+        return {tool: "plan", input: {plan: prompt.plan}, quote: first?.chatItem.meta.itemId}
+      }
+      case "link": {
+        const {server, message, url} = prompt
+        return {tool: "link", input: {server, message, url}}
+      }
+    }
+  }
+
+  // spec: spec/architecture.md#hub-session-ask
+  private async relayed(tool: string, at: number, signal: AbortSignal): Promise<boolean> {
+    const until = Date.now() + relayWait
+    for (;;) {
+      const relay = this.actions.all().find(action => action.tool === "permission" && action.input.requestId !== undefined && action.input.toolName === tool && action.created >= at - relayAge && !this.linked.has(action))
+      if (relay !== undefined) {
+        this.linked.add(relay)
+        return true
+      }
+      const left = until - Date.now()
+      if (left <= 0 || !(await nextChange(this.relays, signal, left))) return false
+    }
+  }
+
   // spec: spec/architecture.md#hub-session-turn
-  async turn({at, prompt, typed, note, midTurn, answer, model, switched, effort, step, text, usage, limits, statusLine}: TurnRequest): Promise<void> {
+  async turn({at, prompt, typed, note, midTurn, answer, model, switched, effort, step, text, usage, limits, statusLine, agent, task, workflow, failure, waiting}: TurnRequest): Promise<void> {
+    const owned = this.onAgents(agent, task, workflow)
     const startsTurn = prompt !== undefined && midTurn !== true
-    if (startsTurn || answer !== undefined) {
+    if (answer !== undefined) this.failedText = undefined
+    if (startsTurn || answer !== undefined || failure !== undefined) {
       this.endPermissions(at)
       this.endSteps(at)
     }
@@ -422,22 +680,42 @@ export class Session {
       if (switches.length > 0) await this.post(switches).catch(error => this.postRefusal(error, noteRefused, featureOff))
       if (text !== undefined) this.text(text, at ?? Date.now())
       if (step !== undefined) await this.step(step, at ?? Date.now())
-      if (note !== undefined) await this.post([{text: note, priority: -1}]).catch(error => this.postRefusal(error, noteRefused, featureOff))
+      if (note !== undefined && !owned) await this.post([{text: note, priority: -1}]).catch(error => this.postRefusal(error, noteRefused, featureOff))
       const typedPrompt = prompt !== undefined && typed !== false && prompt.replace(channelPrompt, "").trim() !== "" && matched.length === 0 && parseCommand(prompt) === undefined
       const userPost = typedPrompt ? this.hub.user?.post(this.number, textParts(prompt)).catch(error => this.postRefusal(error, "User's prompt was not posted", notAllowedForUser)) : undefined
-      if (startsTurn && (typedPrompt || matched.length > 0) && (at ?? Date.now()) >= this.answeredAt) this.openTurn(at ?? Date.now(), matched[0]?.item, userPost)
+      if (startsTurn && (typedPrompt || matched.length > 0) && (at ?? Date.now()) >= this.answeredAt) {
+        this.failedText = undefined
+        this.openTurn(at ?? Date.now(), matched[0]?.item, userPost)
+      }
       await userPost
       if (answer !== undefined && end !== undefined) await this.answer(answer, quoted, at ?? Date.now(), (await streamed) === true, end)
+      if (failure !== undefined) await this.fail(failure, at ?? Date.now())
+      if (waiting !== undefined) await this.waits(waiting, at ?? Date.now())
     } finally {
-      const {model: shown, effort: level} = this.description
-      if (described) await this.control.describe([shown, level === undefined ? undefined : `effort ${level}`].filter(part => part !== undefined).join(" · "))
+      if (described) await this.describe()
     }
+  }
+
+  // spec: spec/architecture.md#hub-session-fail
+  private async fail(failure: Failure, at: number): Promise<void> {
+    await this.endTexts(at)
+    this.closeOpenings(({at: start, until}) => (until ?? start) <= at)
+    if (failure.text === this.failedText) return
+    this.failedText = failure.text
+    await this.post([{text: failureLine(failure), priority: 1}]).catch(error => this.postRefusal(error, noteRefused, featureOff))
+  }
+
+  // spec: spec/architecture.md#hub-session-fail
+  private async waits({kind, text}: Waiting, at: number): Promise<void> {
+    const line = kind === "quota_auto_resume_stale" ? limitResetLine : kind === "quota_auto_resume_disabled" ? noContinueLine : waitingKinds.includes(kind) && this.cardAt < at - cardQuietMs ? `⏸️ Claude Code waits in its terminal: ${text}` : undefined
+    if (line !== undefined) await this.post([{text: line, priority: 1}]).catch(error => this.postRefusal(error, noteRefused, featureOff))
   }
 
   // spec: spec/architecture.md#hub-session-endpermissions
   endPermissions(before = Infinity): void {
     for (const action of this.actions.pending()) {
-      if (action.tool === "permission" && action.created < before) this.actions.end(action)
+      const ofTurn = (action.tool === "permission" && action.input.agent === undefined) || action.tool === "question" || action.tool === "plan" || action.tool === "link"
+      if (ofTurn && action.created < before) this.actions.end(action)
     }
   }
 
@@ -471,7 +749,9 @@ export class Session {
   endLive(): Promise<void> {
     this.endSteps()
     this.closeOpenings(() => true)
-    return this.endTexts(Infinity).then(() => this.finalizing)
+    const now = Date.now()
+    const cards = this.agents.endAll(now).map(card => this.showCard(card, now))
+    return Promise.all([this.endTexts(Infinity), ...cards]).then(() => this.finalizing)
   }
 
   // spec: spec/architecture.md#hub-session-endpermissions
@@ -993,6 +1273,7 @@ export class Hub implements SessionGroups {
   userContactId?: number
   promptsHeldUntil = 0
   machine = (): Machine | undefined => machineState(this.root)
+  profileMs = profileEveryMs
   private readonly sessions = new Map<number, Session>()
   stopped = false
   private controlEvents: Promise<void> = Promise.resolve()
@@ -1102,8 +1383,8 @@ export class Hub implements SessionGroups {
   // spec: spec/architecture.md#hub-hub-showsessions
   showSessions(): Promise<void> {
     this.listing ??= Promise.all([...this.sessions.values()].map(session => session.readRecord()))
-      .then(() => this.main.showList(this.sessionsText()))
-      .catch(error => logError("list of sessions", error))
+      .then(() => this.main.showBoard([...this.sessions.values()].sort((a, b) => a.number - b.number).map(session => session.boardSession())))
+      .catch(error => logError("board of sessions", error))
       .finally(() => (this.listing = undefined))
     return this.listing
   }
@@ -1144,6 +1425,7 @@ export class Hub implements SessionGroups {
     await this.showSessions()
     await waitForCancelledCards(stopped.flatMap(({lost, cancelled}) => (lost ? [] : cancelled)), cardsWait, new AbortController().signal)
     await Promise.all(sessions.map(session => session.endLive()))
+    for (const session of sessions) session.stopDescribing()
     for (const {tools} of sessions) tools.close()
     await this.user?.close()
     await this.chat.close()
@@ -1164,7 +1446,6 @@ export class Hub implements SessionGroups {
     const group = await createGroup(this.chat, this.profile.userId, {
       displayName,
       fullName: "",
-      description: `The Claude Code session ${number}. Members send it prompts; admins and owners also send the group's commands and approve tool use.`,
       groupPreferences: {history: {enable: T.GroupFeatureEnabled.On}, directMessages: {enable: T.GroupFeatureEnabled.Off}, commands: controlCommands},
       chatLayout: T.ChatLayout.Terminal,
     }, {[sessionKey]: {session: number}})
@@ -1207,6 +1488,29 @@ export class Hub implements SessionGroups {
       this.controlEvents = this.controlEvents.then(() => session.control.onEvent(event)).then(() => session.sendTools()).then(() => session.announceRights(event)).then(() => session.askMode()).catch(error => logError(`${event.type} in the group of session ${session.number}`, error))
     }
   }
+}
+
+// spec: spec/api.md#waiting-lines
+function failureLine({error, text, autoContinue, menu}: Failure): string {
+  const lifted = "Send a message here when the limit is lifted."
+  const menuLine = "Claude Code shows its usage menu in its terminal. It holds messages from this group until someone closes the menu there."
+  const next = error === "rate_limit"
+    ? autoContinue ? "Claude Code continues by itself at the reset. When the limit is lifted earlier, send a message here." : menu ? `${lifted}\n${menuLine}` : lifted
+    : error === "authentication_failed" ? "Sign in again in a terminal on this computer, with `/login` in Claude Code or with `claude auth login`, then send a message here." : "Send a message here to try again."
+  return `⛔ Claude Code stopped: ${text === "" ? error : text}\n${next}`
+}
+
+// spec: spec/architecture.md#hub-session-ask
+function decisionOf(action: Action): Decision {
+  const by = action.decidedBy
+  if (action.state === "rejected") {
+    const refusal = action.tool === "question" ? `${by} declined to answer in the SimpleX group.` : action.tool === "plan" ? `${by} rejected the plan in the SimpleX group.` : `${by} rejected this in the SimpleX group.`
+    return {behavior: "deny", message: refusal}
+  }
+  if (action.tool === "plan" && action.answer !== undefined && "reply" in action.answer) return {behavior: "deny", message: `Keep planning. ${by} wrote in the SimpleX group: ${action.answer.reply}`}
+  if (action.tool !== "question" || action.answer === undefined) return {behavior: "allow"}
+  const {answer} = action
+  return {behavior: "allow", answers: Object.fromEntries(action.input.questions.map(({question}) => [question, "option" in answer ? answer.option : answer.reply]))}
 }
 
 // spec: spec/architecture.md#hub-notallowedforuser
