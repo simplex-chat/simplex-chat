@@ -280,6 +280,26 @@ final class LinkPreviewTests: XCTestCase {
     }
 
     @MainActor
+    func testSavedDraftOfEditedNoteKeepsCardOfItsSecondLink() async throws {
+        let (note, item) = try await recordedNote()
+        guard case let .link(text, preview)? = item.content.msgContent else { return XCTFail("note without a link preview") }
+        let compose = try await showCompose()
+        compose.composeState = ComposeState(editingItem: item, previewsOn: true)
+        try await Task.sleep(nanoseconds: 200_000_000)
+        compose.shown = false
+        try await waitFor { compose.chatModel.draft != nil }
+        let draft = try XCTUnwrap(compose.chatModel.draft)
+        XCTAssertEqual(draft.cancelledLinks, ["LINK_URL/no-image"])
+        XCTAssertEqual(status(draft), .shown(linkPreview: preview))
+        let restored = try await showCompose()
+        restored.composeState = draft
+        try await Task.sleep(nanoseconds: 2_000_000_000)
+        XCTAssertEqual(status(restored.composeState), .shown(linkPreview: preview))
+        XCTAssertEqual(restored.composeState.checkLinkPreview(), .link(text: text, preview: preview))
+        XCTAssertEqual(requests(), [note])
+    }
+
+    @MainActor
     func testComposeForwardedToSameChatKeepsLoadingLinkPreview() async throws {
         let response = hold("/_link preview LINK_URL/page")
         let compose = try await showCompose()
@@ -554,6 +574,24 @@ final class LinkPreviewTests: XCTestCase {
         assertSameLinkPreview(typed(text + " ", in: edited, previewsOn: false), typed(text + " ", in: composed, previewsOn: false))
         assertSameLinkPreview(typed("LINK_URL/no-image", in: typed("", in: edited)), typed("LINK_URL/no-image", in: typed("", in: composed)))
         assertSameLinkPreview(edited.updateLinkPreview(.cancelled, previewsOn: true), composed.updateLinkPreview(.cancelled, previewsOn: true))
+    }
+
+    @MainActor
+    func testChangedChatKeepsLinksBeforeCardOfEditedNoteCancelled() async throws {
+        let (_, item) = try await recordedNote()
+        guard case let .link(text, preview)? = item.content.msgContent else { return XCTFail("note without a link preview") }
+        let edited = ComposeState(editingItem: item, previewsOn: true)
+        for s in [edited, typed(text + " ", in: edited)] {
+            let opened = s.updateLinkPreview(.chatChanged, previewsOn: true)
+            XCTAssertEqual(opened.cancelledLinks, ["LINK_URL/no-image"])
+            XCTAssertEqual(status(opened), .shown(linkPreview: preview))
+            XCTAssertEqual(opened.checkLinkPreview(), .link(text: text, preview: preview))
+        }
+        let dismissed = edited.updateLinkPreview(.cancelled, previewsOn: true)
+        XCTAssertTrue(dismissed.noPreview)
+        let reopened = dismissed.updateLinkPreview(.chatChanged, previewsOn: true)
+        XCTAssertEqual(reopened.cancelledLinks, ["LINK_URL/no-image"])
+        XCTAssertEqual(loadingUri(reopened), "LINK_URL/page")
     }
 
     @MainActor
