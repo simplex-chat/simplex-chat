@@ -8738,7 +8738,10 @@ testMsgLinkSameGroup =
       bob <# "#team Approve the deploy plan?"
       cath ##> ("/_msg link plan 1 " <> link <> " chat=#1")
       cath <# "#team bob> Approve the deploy plan?"
-      apiFixture "links/same-group" cath [(link, "GROUP_MSG_LINK")] FixtureRequests
+      cath ##> "/item link #team see"
+      itemLink <- getTermLine cath
+      itemId <- lastItemId cath
+      apiFixture "links/same-group" cath [(link, "GROUP_MSG_LINK"), (itemLink, "ITEM_LINK")] FixtureRequests
         { frMarkdown = ["see [q](" <> link <> ")"],
           frUris = [],
           frCommands =
@@ -8746,7 +8749,9 @@ testMsgLinkSameGroup =
               "/_msg link plan 1 simplex:/m",
               "/_msg link plan 1 simplex:/m#x/abc",
               "/_msg link plan 1 simplex:/m#g/YWJjZGVmZ2hpamtsbW5vcA?a=MTIzNDU2Nzg5MDEyMzQ1Ng",
-              "/_get chat #1 count=1"
+              "/_msg link plan 2 " <> link,
+              "/_get chat #1 count=1",
+              "/_get item link #1 " <> itemId
             ]
         }
 
