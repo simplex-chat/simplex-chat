@@ -312,7 +312,7 @@ The link preview is a part of `ComposeState`: `preview` is `.linkPreview(status:
 
 | Event | Sent by | Result |
 |---|---|---|
-| `.textChanged` | `.onChange(of: composeState.message)`<br>`forwardingItems(_:fromChatInfo:previewsOn:)`, a forward to the same chat | for an empty text, `cancelledLinks` is emptied; the card of the selected link is kept, requested or removed; an attachment is kept |
+| `.textChanged` | `.onChange(of: composeState.message)` | for an empty text, `cancelledLinks` is emptied; the card of the selected link is kept, requested or removed; an attachment is kept |
 | `.fetched(request:linkPreview:)` | `loadLinkPreview` | applied only to the loading request; after a failure, the link is added to `cancelledLinks` and the next link is selected |
 | `.cancelled` | X of the card, `cancelLinkPreview` | the link is added to `cancelledLinks` and the next link is selected |
 | `.chatChanged` | `.onChange(of: chatModel.chatId)`, `saveCurrentDraft` | `cancelledLinks` is emptied, in an edit set to the links of the edited message before the link of its card, and the link is selected again |
@@ -341,7 +341,7 @@ An edit opens with `ComposeState(editingItem:previewsOn:)`: the links of the edi
 - A failed preview shows no card and no alert; with **Show developer options** and **Show link preview errors** on, an alert shows the error of the core
 - A failed or dismissed link is not requested again in the same message; it is requested again after the text is cleared, the message is sent, the draft is saved or another chat is opened; in an edit, the links of the edited message before the link of its card stay cancelled when the draft is saved or another chat is opened
 - A result is applied only while its request is loading; the result of a link replaced or removed from the text, or of a state replaced by an attachment, an edit or a reply, is discarded
-- A forward to the same chat keeps the text, `cancelledLinks` and the link preview with its request; an attachment is removed, and the link of the text is selected
+- A forward to the same chat keeps the text, `cancelledLinks` and the link preview with its request; an attachment is removed, and the link of the text is selected at the next text change
 - An attachment, voice or chat link preview replaces the link preview and keeps `cancelledLinks`
 - The share extension requests the preview of a shared link from the core when the toggle is on, from a global dispatch queue
 

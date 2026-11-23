@@ -117,14 +117,14 @@ struct ComposeState {
         self.voiceMessageRecordingState = .noRecording
     }
 
-    func forwardingItems(_ chatItems: [ChatItem], fromChatInfo: ChatInfo, previewsOn: Bool) -> ComposeState {
+    func forwardingItems(_ chatItems: [ChatItem], fromChatInfo: ChatInfo) -> ComposeState {
         ComposeState(
             message: message,
             parsedMessage: parsedMessage,
             preview: linkPreviewAllowed ? preview : .noPreview,
             contextItem: .forwardingItems(chatItems: chatItems, fromChatInfo: fromChatInfo),
             cancelledLinks: cancelledLinks
-        ).updateLinkPreview(.textChanged, previewsOn: previewsOn)
+        )
     }
 
     func copy(
