@@ -118,12 +118,73 @@ final class MessagePriorityTests: XCTestCase {
         XCTAssertEqual(ChatModel.shared.users.first?.unreadCount, 2)
     }
 
+    func testExtensionSilentMessageKeepsBestAttempt() async throws {
+        let nse = NotificationService()
+        let entity = try registerNtfEntity(nse, "priority/silent")
+        let expectedMsg = try XCTUnwrap(entity.expectedMsg)
+        let events = try nseEvents("priority/silent")
+        let received = await receivedMsgNtf(events[0])
+        let (id, ntf) = try XCTUnwrap(received)
+        XCTAssertFalse(nse.processReceivedNtf(entity, expectedMsg, ntf))
+        XCTAssertEqual(nse.notificationEntities[id]?.allowedGetNextAttempts, 4)
+        let marker: NtfMsgAckInfo = try decodeObject(["msgId": expectedMsg.msgId])
+        XCTAssertTrue(nse.processReceivedNtf(entity, expectedMsg, .msgInfo(marker)))
+        guard case .noNtf? = nse.notificationEntities[id]?.msgBestAttemptNtf else { return XCTFail("the default best attempt is kept") }
+    }
+
+    func testExtensionBadgeFollowsUnreadChange() async throws {
+        let badgeCount = ntfBadgeCountGroupDefault.get()
+        defer { ntfBadgeCountGroupDefault.set(badgeCount) }
+        ntfBadgeCountGroupDefault.set(0)
+        let nse = NotificationService()
+        let entity = try registerNtfEntity(nse, "priority/raise")
+        let expectedMsg = try XCTUnwrap(entity.expectedMsg)
+        let events = try nseEvents("priority/raise")
+        var badges: [Int] = []
+        for event in events {
+            let received = await receivedMsgNtf(event)
+            let (_, ntf) = try XCTUnwrap(received)
+            _ = nse.processReceivedNtf(entity, expectedMsg, ntf)
+            badges.append(nse.badgeCount)
+        }
+        XCTAssertEqual(badges, [1, 1, 1, 2])
+    }
+
     func testSilentItemIsNotCountedForUserInModeAll() {
         let cInfo = ChatInfo.direct(contact: Contact.sampleData)
         let normal = ChatItem.getSample(1, .directRcv, .now, "hi", .rcvNew)
         let silent = ChatItem.getSample(2, .directRcv, .now, "hi", .rcvNew, priority: -1)
         XCTAssertEqual([cInfo.countedForUser(normal), cInfo.countedForUser(silent)], [true, false])
         XCTAssertEqual(cInfo.countedForUser(unreadCount: 3, unreadSilent: 2), 1)
+    }
+
+    private func nseEvents(_ fixture: String) throws -> [NSEChatEvent] {
+        try XCTUnwrap(try fixtureJSON(fixture) as? [Any]).map { json in
+            let decoded: APIResult<NSEChatEvent> = decodeAPIResult(try JSONSerialization.data(withJSONObject: singleFieldJSON(json)))
+            let event: NSEChatEvent? = if case let .result(r) = decoded { r } else { nil }
+            return try XCTUnwrap(event, "event not decoded: \(decoded.responseType)")
+        }
+    }
+
+    private func registerNtfEntity(_ nse: NotificationService, _ fixture: String) throws -> NotificationEntity {
+        let event = try XCTUnwrap((try fixtureJSON(fixture) as? [[String: Any]])?.first?["result"] as? [String: Any])
+        let item = try XCTUnwrap((event["chatItems"] as? [[String: Any]])?.first)
+        let groupInfo = try XCTUnwrap((item["chatInfo"] as? [String: Any])?["groupInfo"])
+        let member = try XCTUnwrap(((item["chatItem"] as? [String: Any])?["chatDir"] as? [String: Any])?["groupMember"] as? [String: Any])
+        let user = try XCTUnwrap(event["user"])
+        let conn = try XCTUnwrap(member["activeConn"])
+        let connEntity: [String: Any] = ["type": "rcvGroupMsgConnection", "entityConnection": conn, "groupInfo": groupInfo, "groupMember": member]
+        let ntfConnJSON: [String: Any] = [
+            "user": user,
+            "agentConnId": "agentConnId",
+            "agentDbQueueId": 1,
+            "connEntity": connEntity,
+            "expectedMsg_": ["msgId": "expected", "msgTs": "1970-01-01T00:00:00Z"]
+        ]
+        let ntfConn: NtfConn = try decodeObject(singleFieldJSON(ntfConnJSON))
+        let entity = try XCTUnwrap(nse.mkNotificationEntity(ntfConn: ntfConn))
+        nse.notificationEntities[entity.entityId] = entity
+        return entity
     }
 
     @MainActor
