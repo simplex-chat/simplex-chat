@@ -9,10 +9,10 @@ import Bots.StoreService.FakeEthNode
 import Bots.StoreService.NamesBalancesTests (figures)
 import Bots.StoreService.NamesContractsTests (availableCall, maxCommitmentAgeCall, minCommitmentAgeCall, newPolicy, registrarOf)
 import Bots.StoreService.NamesOrdersTests
-import Bots.StoreService.NamesOwnerTests (answerExpiry, answerFree, answerOwner, answerUnowned, byB, codeIn, committedPhase, dynamisOrder, failedPhase, labelBytes, ownerOfSelector, paidIn, rewrite, select, selectionOf, sentRegister, stored)
+import Bots.StoreService.NamesOwnerTests (answerDisputeUntil, answerExpiry, answerFree, answerOwner, answerUnowned, byB, codeIn, committedPhase, dynamisOrder, failedPhase, labelBytes, ownerOfSelector, paidIn, rewrite, select, selectionOf, sentRegister, stored)
 import Bots.StoreService.NamesPhasesTests (held, prompt, registrationPath, woken)
 import Bots.StoreService.NamesStoreTests (hashFixture, reveal)
-import Bots.StoreService.WebTests (answerOf, blockedInSTM, capturingStderr, fieldOf, jsonObject, lengthOf, phaseOf, phaseValue, refusedWith, renameTable, statusOf, stubCalls, webGet, withApp)
+import Bots.StoreService.WebTests (answerOf, blockedInSTM, capturingStderr, fieldOf, jsonObject, lengthOf, phaseOf, phaseValue, refusedWith, renameTable, statusOf, storeFixture, stubCalls, webGet, withApp)
 import Control.Applicative ((<|>))
 import Control.Arrow ((&&&))
 import Control.Concurrent (threadDelay)
@@ -24,6 +24,7 @@ import Control.Concurrent.STM (atomically, check, modifyTVar', newTVarIO, readTV
 import Control.Monad (forM_, replicateM_, void, when)
 import Data.ByteString (ByteString)
 import qualified Data.Aeson as J
+import qualified Data.Aeson.KeyMap as KM
 import Data.IORef (readIORef, writeIORef)
 import Data.Maybe (fromJust, fromMaybe, isJust, isNothing)
 import Data.Text (Text)
@@ -42,6 +43,7 @@ import Simplex.Messaging.Eth.Transaction (Eip1559Tx (..))
 import Simplex.Messaging.Names.Record (USDCents)
 import Simplex.Messaging.SimplexName (labelHash)
 import Simplex.Messaging.SystemTime (RoundedSystemTime (..), SystemSeconds)
+import Simplex.Messaging.Util (tshow)
 import StoreService.Config (ChainConfig (..), NamesConfig (..))
 import StoreService.Names.Abi (AbiValue (..), abiBytes, abiTuple, addressWord, selector, uint256)
 import StoreService.Names.Balances (RefundRecord (..), RefundRefusal (..), recordRefund)
@@ -142,8 +144,18 @@ workerTests = describe "StoreService names: worker" $ do
     it "ends no month of an order whose register is sent and not settled, and ends it once the register reverted" testMonthRegisterInFlight
     it "fails an order waiting for its owner once its page has not read it for 3 days, logging and reporting it, holding its name" testUnreadReported
     it "fails an order waiting for its owner once its page has not read it for 3 days, a read of the order or its invoice stored at most hourly" testUnreadFails
-  describe "confirmation depth" $
+  describe "confirmation depth" $ do
     it "judges a register landed by ownerOf only once the owner holds the name at the confirmation depth" testLandedAtDepth
+    it "waits while the confirmed block is below the register's block, then reads the expiry and dispute end at the confirmed block" testRegisterReadAtDepth
+  describe "dispute period" $ do
+    it "ends a registered order whose registration was ended in its dispute period, publishing it, its view without times, and keeps it ended after the name is registered again" testEndedOnUnregister
+    it "ends an order whose name was registered again before the sweep read it, leaving an order without a dispute period, past it or registered after the confirmed block" testEndedSweepBounds
+    it "ends an order only once its unregister is at the confirmation depth" testEndedAtDepth
+    it "changes nothing when the block or every order's dispute end cannot be read, logging once the stopped pass or an order read again, and completes the pass only when the block is read" testEndedSweepUnread
+    it "reads the orders after one whose dispute end cannot be read, logging that order's failed read once" testEndedSweepPastUnread
+    it "ends an order unregistered within the confirmation depth once its mined register is judged, storing the expiry and dispute end set by its register" testEndedWithinDepth
+    it "ends an order whose name was unregistered and registered again by another before the confirmed block, storing the expiry and dispute end set by its register" testEndedByOtherRegistration
+    it "logs an ended sweep that fails, keeping the start's time until a pass completes" testEndedPassFails
   describe "retry" $ do
     it "refuses /retry of any order but a lapsed unsigned one with bad_request, a failed or signed one included, changing nothing, and answers an unknown order 404" testRetryNotFailed
     it "requeues a lapsed committed order, whose view says it lapsed, answering an old version at once after it and keeping its code" testRetryLapsed
@@ -151,7 +163,7 @@ workerTests = describe "StoreService names: worker" $ do
   describe "close" $ do
     it "closes a failed paid order taken, not live, its price credited and refunded, its reveal cleared, then refuses /retry, a selection of a name and a second refund, and accepts a new order for the name" testCloseFailed
     it "closes a lapsed unsigned committed order, naming its lapse as its end" testCloseLapsed
-    it "registers a failed order whose owner holds the name, and one whose register row mined while the owner no longer holds it, refunding nothing" testCloseLanded
+    it "registers a failed order whose owner holds the name, and one whose register row mined while the owner no longer holds it, and ends one whose mined registration was ended, refunding nothing" testCloseLanded
     it "refuses an unknown reference, an order not failed, a failed code order and a failed chain read, changing nothing" testCloseRefused
     it "refuses an order changed during its chain check as changed, writing nothing" testCloseLostRace
     it "refunds the whole balance, its earlier credits included" testCloseWhole
@@ -206,6 +218,9 @@ expiry = orderSeconds + 2 * 31536000
 expirySeconds :: SystemSeconds
 expirySeconds = RoundedSystemTime $ fromIntegral expiry
 
+genesisDisputeEnd :: Word64
+genesisDisputeEnd = genesisTime + 14 * 86400
+
 at :: Word64 -> UTCTime
 at = posixSecondsToUTCTime . fromIntegral
 
@@ -228,8 +243,8 @@ revealBeforeOf = fmap (fromIntegral . roundedSeconds . cmRevealBefore) . phaseCo
 -- | The reveal the page sends, its intent signed with the owner's key.
 signedReveal :: Ctx -> Secp256k1PrivateKey -> NameReveal -> NameRegistration -> IO NameReveal
 signedReveal Ctx {cRandom, cOrders, cNode} key rv r@NameRegistration {nrCommitment, nrOwner} = do
-  let RegisterIntent {riRegistration} = intentOf (oeConfig cOrders) nrOwner (nrDuration r) rv
-  sig <- either (error . show) id <$> signRecoverable cRandom key (registerIntentDigest (sponsorDomain fakeChainId fakeSponsor) riRegistration (rvNonce rv) (rvDeadline rv))
+  let RegisterIntent {riRegistration, riDisputeDays} = intentOf (oeConfig cOrders) nrOwner (nrDuration r) (nrDisputeDays r) rv
+  sig <- either (error . show) id <$> signRecoverable cRandom key (registerIntentDigest (sponsorDomain fakeChainId fakeSponsor) riRegistration riDisputeDays (rvNonce rv) (rvDeadline rv))
   answerCall cNode fakeNamePolicy (selector "acceptedTerms(bytes32,address)" <> unHex32 nrCommitment <> addressWord nrOwner) $ Returns $ unHex32 $ termsHash $ rvAcceptance rv
   pure rv {rvSignature = sig}
 
@@ -300,6 +315,12 @@ mineNewest w@W {wCtx = Ctx {cNode}, wSender} ok = do
 blockTime :: W -> Word64 -> IO Word64
 blockTime W {wChain} n = either (error . show) (fromIntegral . roundedSeconds . blockTimestamp) <$> blockAt wChain n
 
+mineRegister :: W -> IO Word64
+mineRegister w@W {wCtx = ctx} = do
+  block <- mineNewest w True
+  t <- blockTime w block
+  block <$ answerDisputeUntil ctx "alicebakery" (t + 14 * 86400)
+
 commitmentsCall :: NameRegistration -> ByteString
 commitmentsCall NameRegistration {nrCommitment} = selector "commitments(bytes32)" <> unHex32 nrCommitment
 
@@ -354,6 +375,7 @@ testPaidRegister = withWorker $ \w@W {wCtx = ctx@Ctx {cClient}} -> do
   commitWaitRegister w r
   (status, view) <- answerOf <$> webGet cClient (registrationPath $ nrId r)
   (status, phaseOf =<< view, (`fieldOf` "label") =<< view) `shouldBe` (200, Just "registered", Just "alicebakery")
+  viewFixture "registration-registered" view
 
 testCodesOnlyRegister :: IO ()
 testCodesOnlyRegister = withWorkerAs codesOnly $ \w@W {wCtx = ctx@Ctx {cClient}} -> do
@@ -399,11 +421,14 @@ commitWaitRegister w@W {wCtx = ctx} r = do
   registerTx <- newestHash w
   registering <- stored ctx r
   nrPhase registering `shouldBe` ORegistering onChain registerTx
-  void $ mineNewest w True
+  registerBlock <- mineRegister w
+  disputeEnd <- (+ 14 * 86400) <$> blockTime w registerBlock
   now <- nowOf ctx
   published w r (steps w r) >>= done
   x <- stored ctx r
-  (nrPhase x, nrHistory x, orderLive x) `shouldBe` (ORegistered expirySeconds now, TxHistory {thCommitTx = Just commitHash, thRegisterTx = Just registerTx}, False)
+  (nrPhase x, nrHistory x, orderLive x) `shouldBe` (ORegistered expirySeconds (Just $ RoundedSystemTime $ fromIntegral disputeEnd) now, TxHistory {thCommitTx = Just commitHash, thRegisterTx = Just registerTx}, False)
+  view <- webGet (cClient ctx) (registrationPath $ nrId r) >>= jsonObject
+  (fieldOf view "disputeDays", fieldOf view "phase") `shouldBe` (Just (J.Number 14), Just $ phaseValue "registered" [("expiresAt", J.toJSON expiry), ("disputeUntil", J.toJSON disputeEnd)])
   steps w r >>= done
 
 testPendingCommit :: IO ()
@@ -754,7 +779,7 @@ testAllowanceAcrossLapse = withWorker $ \w@W {wCtx = ctx@Ctx {cNode, cOrders}} -
   let lapse = orderSeconds + 10
   r <- paidIn ctx aliceOrder (\o -> o {nrPhase = OCommitted openCommit {cmRevealBefore = RoundedSystemTime $ fromIntegral lapse}}) >>= revealed ctx keyA "alicebakery"
   rv <- maybe (fail "no reveal") pure $ nrReveal r
-  let registerCall = registerWithCreditCalldata $ intentOf (oeConfig cOrders) (nrOwner r) (nrDuration r) rv
+  let registerCall = registerWithCreditCalldata $ intentOf (oeConfig cOrders) (nrOwner r) (nrDuration r) (nrDisputeDays r) rv
   answerAvailable w True
   answerCommitment w r (lapse - maxAge)
   revertDryRun cNode registerCall $ Just $ selector "InsufficientAllowance(uint256,uint256)"
@@ -1121,7 +1146,7 @@ testFailedOnlySettled = withWorker $ \w@W {wCtx = ctx@Ctx {cNode}, wSender} -> d
   -- judged from chain state with no hash known to have mined: no register transaction (contract section 6)
   now <- nowOf ctx
   x2 <- stored ctx r2
-  (nrPhase x2, thRegisterTx $ nrHistory x2) `shouldBe` (ORegistered expirySeconds now, Nothing)
+  (nrPhase x2, thRegisterTx $ nrHistory x2) `shouldBe` (ORegistered expirySeconds Nothing now, Nothing)
 
 testLapseFailed :: IO ()
 testLapseFailed = withWorker $ \w@W {wCtx = ctx} -> do
@@ -1158,7 +1183,7 @@ testRestart = withWorker $ \w@W {wCtx = ctx@Ctx {cStore}, wSender} -> do
   w3 <- started ctx
   steps w3 r >>= awaiting >>= (`shouldBe` ptHash register) . ptHash
   nrPhase <$> stored ctx r `shouldReturn` ORegistering (commitAt t $ Just $ TxRef (ptHash p) commitBlock) (ptHash register)
-  void $ mineNewest w3 True
+  void $ mineRegister w3
   w4 <- started ctx
   steps w4 r >>= done
   namePhase . nrPhase <$> stored ctx r `shouldReturn` PRegistered
@@ -1175,7 +1200,7 @@ testRestartRegisterSaved = withWorker $ \w@W {wCtx = ctx@Ctx {cOrders}, wSender}
   r <- paidIn ctx aliceOrder openPhase >>= revealed ctx keyA "alicebakery"
   rv <- maybe (fail "no reveal") pure $ nrReveal r
   -- the register saved and sent, the service stopped before recording registering
-  Right p <- submitTransaction wSender (TxRegistration RTRegister $ nrId r) fakeSponsor (registerWithCreditCalldata $ intentOf (oeConfig cOrders) (nrOwner r) (nrDuration r) rv)
+  Right p <- submitTransaction wSender (TxRegistration RTRegister $ nrId r) fakeSponsor (registerWithCreditCalldata $ intentOf (oeConfig cOrders) (nrOwner r) (nrDuration r) (nrDisputeDays r) rv)
   w1 <- started ctx
   steps w1 r >>= awaiting >>= (`shouldBe` ptHash p) . ptHash
   x <- stored ctx r
@@ -1246,7 +1271,7 @@ testUnregisteredAlert = withWorker $ \W {wCtx = ctx@Ctx {cOrders}, wSender} -> d
   paid <- paidIn ctx aliceOrder id
   (code, _) <- codeIn ctx 7 dynamisOrder id
   answerFree ctx "alicebakers"
-  void $ paidIn ctx aliceOrder {oLabel = "alicebakers", oSecret = secretOf 5} $ \o -> o {nrPhase = ORegistered expirySeconds orderTime}
+  void $ paidIn ctx aliceOrder {oLabel = "alicebakers", oSecret = secretOf 5} $ \o -> o {nrPhase = ORegistered expirySeconds Nothing orderTime}
   answerFree ctx "carolbakery"
   failedOrder <- paidIn ctx aliceOrder {oLabel = "carolbakery", oSecret = secretOf 6} failedPhase
   advance ctx $ 3 * 3600
@@ -1396,7 +1421,165 @@ testLandedAtDepth = withOrders $ \ctx@Ctx {cNode, cOrders} -> do
   confirmLanded cOrders r `shouldReturn` LRegistered (nrVersion r + 1)
   now <- nowOf ctx
   x <- stored ctx r
-  (nrPhase x, nrHistory x) `shouldBe` (ORegistered expirySeconds now, noHistory)
+  (nrPhase x, nrHistory x) `shouldBe` (ORegistered expirySeconds Nothing now, noHistory)
+
+atSeconds :: Word64 -> SystemSeconds
+atSeconds = RoundedSystemTime . fromIntegral
+
+registeredUntil :: Word64 -> NameRegistration -> NameRegistration
+registeredUntil t r = r {nrPhase = ORegistered expirySeconds (Just $ atSeconds t) orderTime}
+
+confirmedBlockAt :: Ctx -> Word64 -> IO Word64
+confirmedBlockAt Ctx {cNode} t = 100 <$ (setBlock cNode 100 t >> replicateM_ 2 (mine cNode []))
+
+registrationFrom :: Ctx -> Word64 -> Word64 -> Word64 -> IO ()
+registrationFrom Ctx {cNode} block expires disputeEnd =
+  forM_ [("nameExpires(uint256)", expires), ("disputeUntil(uint256)", disputeEnd)] $ \(s, v) ->
+    answerCallFrom cNode block fakeBaseRegistrar (selector s <> labelBytes "alicebakery") $ Returns $ uint256 v
+
+unregisteredFrom :: Ctx -> Word64 -> IO ()
+unregisteredFrom ctx block = registrationFrom ctx block 0 0
+
+minedRegister :: W -> IO (NameRegistration, Word64)
+minedRegister w@W {wCtx = ctx} = do
+  r <- paidIn ctx aliceOrder openPhase >>= revealed ctx keyA "alicebakery"
+  answerAvailable w True
+  void $ steps w r >>= awaiting
+  answerExpiry ctx "alicebakery" expiry
+  (r,) <$> mineRegister w
+
+readAgainLine :: NameRegistration -> Text
+readAgainLine NameRegistration {nrId = RegistrationId rid} = "names ended sweep: registration " <> rid <> ": a chain read failed, read again at the next pass: "
+
+testRegisterReadAtDepth :: IO ()
+testRegisterReadAtDepth = withWorker $ \w@W {wCtx = ctx@Ctx {cNode}} -> do
+  (r, registerBlock) <- minedRegister w
+  t <- blockTime w registerBlock
+  unregisteredFrom ctx $ registerBlock + 1
+  registering <- stored ctx r
+  setBlock cNode (registerBlock + 1) (t + 12)
+  logs <- capturingStderr $ steps w r >>= retrying
+  logs `shouldSatisfy` T.isInfixOf ("names: a register check waits for confirmation: the register's block " <> tshow registerBlock <> " is above the confirmed block " <> tshow (registerBlock - 1))
+  stored ctx r `shouldReturn` registering
+  void $ mine cNode []
+  steps w r >>= done
+  now <- nowOf ctx
+  nrPhase <$> stored ctx r `shouldReturn` ORegistered expirySeconds (Just $ atSeconds $ t + 14 * 86400) now
+
+testEndedOnUnregister :: IO ()
+testEndedOnUnregister = withWorker $ \w@W {wCtx = ctx, wWorker} -> do
+  let disputeEnd = orderSeconds + 14 * 86400
+  r <- paidIn ctx aliceOrder $ registeredUntil disputeEnd
+  void $ confirmedBlockAt ctx $ orderSeconds + 1
+  answerDisputeUntil ctx "alicebakery" disputeEnd
+  sweepEndedRegistrations wWorker `shouldReturn` True
+  stored ctx r `shouldReturn` r
+  answerDisputeUntil ctx "alicebakery" 0
+  logs <- capturingStderr $ published w r $ sweepEndedRegistrations wWorker `shouldReturn` True
+  let RegistrationId rid = nrId r
+  logs `shouldSatisfy` T.isInfixOf ("names ended sweep: registration " <> rid <> " set ended: disputeUntil(id) read at block 100 is 0, not " <> tshow disputeEnd)
+  ended <- stored ctx r
+  (nrPhase ended, nrVersion ended) `shouldBe` (OEnded expirySeconds (atSeconds disputeEnd), nrVersion r + 1)
+  (`fieldOf` "phase") <$> viewOf ctx r `shouldReturn` Just (phaseValue "ended" [])
+  answerDisputeUntil ctx "alicebakery" (disputeEnd + 3600)
+  sweepEndedRegistrations wWorker `shouldReturn` True
+  stored ctx r `shouldReturn` ended
+
+testEndedSweepBounds :: IO ()
+testEndedSweepBounds = withWorker $ \W {wCtx = ctx, wWorker} -> do
+  let disputeEnd = orderSeconds + 14 * 86400
+  plain <- paidIn ctx aliceOrder $ \x -> x {nrPhase = ORegistered expirySeconds Nothing orderTime}
+  again <- paidIn ctx (byB aliceOrder) {oSecret = secretOf 2} $ registeredUntil disputeEnd
+  past <- paidIn ctx dynamisOrder $ registeredUntil (orderSeconds - 8 * 86400)
+  later <- paidIn ctx (byB dynamisOrder) {oSecret = secretOf 4} $ registeredUntil (disputeEnd + 60)
+  void $ confirmedBlockAt ctx $ orderSeconds + 1
+  answerDisputeUntil ctx "alicebakery" (disputeEnd + 3600)
+  answerDisputeUntil ctx "dynamis" 0
+  sweepEndedRegistrations wWorker `shouldReturn` True
+  map (namePhase . nrPhase) <$> mapM (stored ctx) [plain, again, past, later] `shouldReturn` [PRegistered, PEnded, PRegistered, PRegistered]
+
+testEndedAtDepth :: IO ()
+testEndedAtDepth = withWorker $ \W {wCtx = ctx@Ctx {cNode}, wWorker} -> do
+  let disputeEnd = orderSeconds + 14 * 86400
+  r <- paidIn ctx aliceOrder $ registeredUntil disputeEnd
+  confirmed <- confirmedBlockAt ctx $ orderSeconds + 1
+  answerDisputeUntil ctx "alicebakery" disputeEnd
+  unregisteredFrom ctx $ confirmed + 1
+  sweepEndedRegistrations wWorker `shouldReturn` True
+  stored ctx r `shouldReturn` r
+  void $ mine cNode []
+  sweepEndedRegistrations wWorker `shouldReturn` True
+  namePhase . nrPhase <$> stored ctx r `shouldReturn` PEnded
+
+testEndedSweepUnread :: IO ()
+testEndedSweepUnread = withWorker $ \W {wCtx = ctx@Ctx {cNode}, wWorker} -> do
+  let disputeEnd = orderSeconds + 14 * 86400
+  rs <- mapM (\o -> paidIn ctx o $ registeredUntil disputeEnd) [aliceOrder, dynamisOrder]
+  void $ confirmedBlockAt ctx $ orderSeconds + 1
+  answerDisputeUntil ctx "alicebakery" 0
+  answerDisputeUntil ctx "dynamis" 0
+  forM_ [("eth_getBlockByNumber", False, ["names ended sweep: a chain read failed, the pass is stopped: "]), ("eth_call", True, map readAgainLine rs)] $ \(method, completed, expected) -> do
+    setFault cNode method HttpFailure
+    logs <- capturingStderr $ sweepEndedRegistrations wWorker `shouldReturn` completed
+    T.count "a chain read failed" logs `shouldBe` 1
+    logs `shouldSatisfy` \l -> any (`T.isInfixOf` l) expected
+    mapM (stored ctx) rs `shouldReturn` rs
+    clearFault cNode method
+  sweepEndedRegistrations wWorker `shouldReturn` True
+  map (namePhase . nrPhase) <$> mapM (stored ctx) rs `shouldReturn` [PEnded, PEnded]
+
+testEndedSweepPastUnread :: IO ()
+testEndedSweepPastUnread = withWorker $ \W {wCtx = ctx@Ctx {cNode}, wWorker} -> do
+  let disputeEnd = orderSeconds + 14 * 86400
+  unread <- paidIn ctx aliceOrder $ registeredUntil (disputeEnd - 60)
+  unregistered <- paidIn ctx dynamisOrder $ registeredUntil disputeEnd
+  void $ confirmedBlockAt ctx $ orderSeconds + 1
+  answerCall cNode (registrarOf cNode) (selector "disputeUntil(uint256)" <> labelBytes "alicebakery") $ Reverts ""
+  answerDisputeUntil ctx "dynamis" 0
+  logs <- capturingStderr $ sweepEndedRegistrations wWorker `shouldReturn` True
+  T.count "a chain read failed" logs `shouldBe` 1
+  logs `shouldSatisfy` T.isInfixOf (readAgainLine unread)
+  stored ctx unread `shouldReturn` unread
+  namePhase . nrPhase <$> stored ctx unregistered `shouldReturn` PEnded
+
+testEndedWithinDepth :: IO ()
+testEndedWithinDepth = withWorker $ \w@W {wCtx = ctx@Ctx {cNode}} -> do
+  (r, registerBlock) <- minedRegister w
+  t <- blockTime w registerBlock
+  unregisteredFrom ctx $ registerBlock + 1
+  void $ mine cNode []
+  logs <- capturingStderr $ steps w r >>= done
+  let RegistrationId rid = nrId r
+  logs `shouldSatisfy` T.isInfixOf ("names: registration " <> rid <> " set ended: disputeUntil(id) read at the confirmed block is 0, not its register's end " <> tshow (t + 14 * 86400))
+  x <- stored ctx r
+  nrPhase x `shouldBe` OEnded (atSeconds $ t + nrDuration r) (atSeconds $ t + 14 * 86400)
+  isJust (thRegisterTx $ nrHistory x) `shouldBe` True
+  view <- viewOf ctx r
+  fieldOf view "phase" `shouldBe` Just (phaseValue "ended" [])
+  viewFixture "registration-ended" $ Just view
+
+testEndedByOtherRegistration :: IO ()
+testEndedByOtherRegistration = withWorker $ \w@W {wCtx = ctx@Ctx {cNode}} -> do
+  (r, registerBlock) <- minedRegister w
+  t <- blockTime w registerBlock
+  registrationFrom ctx (registerBlock + 1) (expiry + 12) (t + 12 + 14 * 86400)
+  void $ mine cNode []
+  steps w r >>= done
+  nrPhase <$> stored ctx r `shouldReturn` OEnded (atSeconds $ t + nrDuration r) (atSeconds $ t + 14 * 86400)
+
+testEndedPassFails :: IO ()
+testEndedPassFails = withWorker $ \W {wCtx = ctx@Ctx {cStore, cOrders}, wWorker} -> do
+  serviceStart <- oeNow cOrders
+  passAt <- newTVarIO serviceStart
+  renameTable cStore "sx_badge_service_name_registrations" "name_registrations_away"
+  advance ctx 1
+  logged <- capturingStderr $ withAsync (runEndedSweep passAt wWorker) $ \_ -> threadDelay 500000
+  renameTable cStore "name_registrations_away" "sx_badge_service_name_registrations"
+  logged `shouldSatisfy` T.isInfixOf "names ended sweep failed; the next pass will run: "
+  readTVarIO passAt `shouldReturn` serviceStart
+  now <- oeNow cOrders
+  withAsync (runEndedSweep passAt wWorker) $ \_ ->
+    timeout prompt (atomically $ readTVar passAt >>= \t -> if t == serviceStart then retry else pure t) `shouldReturn` Just now
 
 -- retry
 
@@ -1413,10 +1596,13 @@ retried ctx r =
 viewOf :: Ctx -> NameRegistration -> IO J.Object
 viewOf Ctx {cClient} NameRegistration {nrId} = webGet cClient (registrationPath nrId) >>= jsonObject
 
+viewFixture :: String -> Maybe J.Object -> IO ()
+viewFixture name view = storeFixture name 200 (J.Object . KM.insert "id" "registration" <$> view) Nothing
+
 testRetryNotFailed :: IO ()
 testRetryNotFailed = withWorker $ \W {wCtx = ctx} -> do
   queued <- paidIn ctx aliceOrder id
-  registeredOrder <- paidIn ctx dynamisOrder $ \o -> o {nrPhase = ORegistered expirySeconds orderTime}
+  registeredOrder <- paidIn ctx dynamisOrder $ \o -> o {nrPhase = ORegistered expirySeconds Nothing orderTime}
   taken <- paidIn ctx (byB dynamisOrder) {oSecret = secretOf 4} $ \o -> o {nrPhase = OTaken orderTime}
   live <- paidIn ctx (byB dynamisOrder) {oSecret = secretOf 2} $ \o -> o {nrPhase = OCommitted openCommit {cmRevealBefore = RoundedSystemTime $ fromIntegral $ orderSeconds + 2 * maxAge}}
   answerFree ctx "alicebakers"
@@ -1529,16 +1715,25 @@ testCloseLanded = withWorker $ \W {wCtx = ctx} -> do
   closeOf ctx owned `shouldReturn` CLRegistered (nrId owned)
   now <- nowOf ctx
   x <- stored ctx owned
-  (nrPhase x, nrHistory x, orderLive x) `shouldBe` (ORegistered expirySeconds now, noHistory, False)
+  (nrPhase x, nrHistory x, orderLive x) `shouldBe` (ORegistered expirySeconds Nothing now, noHistory, False)
+  viewFixture "registration-registered-no-dispute" . Just =<< viewOf ctx owned
   figuresOf ctx owned `shouldReturn` Nothing
   minedOrder <- paidIn ctx dynamisOrder failedPhase
   answerUnowned ctx "dynamis"
   answerExpiry ctx "dynamis" expiry
-  minedHash <- sentRegister ctx minedOrder 1 $ TSMinedAt 120
+  answerDisputeUntil ctx "dynamis" genesisDisputeEnd
+  minedHash <- sentRegister ctx minedOrder 1 $ TSMinedAt 1
   closeOf ctx minedOrder `shouldReturn` CLRegistered (nrId minedOrder)
   y <- stored ctx minedOrder
-  (nrPhase y, nrHistory y) `shouldBe` (ORegistered expirySeconds now, noHistory {thRegisterTx = Just minedHash})
+  (nrPhase y, nrHistory y) `shouldBe` (ORegistered expirySeconds (Just $ RoundedSystemTime $ fromIntegral genesisDisputeEnd) now, noHistory {thRegisterTx = Just minedHash})
   figuresOf ctx minedOrder `shouldReturn` Nothing
+  answerFree ctx "alicebakers"
+  endedOrder <- paidIn ctx aliceOrder {oLabel = "alicebakers", oSecret = secretOf 5, oSealed = "sealed-alicebakers-5"} failedPhase
+  endedHash <- sentRegister ctx endedOrder 3 $ TSMinedAt 1
+  closeOf ctx endedOrder `shouldReturn` CLEnded (nrId endedOrder)
+  z <- stored ctx endedOrder
+  (nrPhase z, nrHistory z) `shouldBe` (OEnded (RoundedSystemTime $ fromIntegral $ genesisTime + nrDuration endedOrder) (RoundedSystemTime $ fromIntegral genesisDisputeEnd), noHistory {thRegisterTx = Just endedHash})
+  figuresOf ctx endedOrder `shouldReturn` Nothing
 
 testCloseRefused :: IO ()
 testCloseRefused = withWorker $ \W {wCtx = ctx@Ctx {cNode, cOrders = OrdersEnv {oeStore, oeContracts, oeTurns, oeNow}}} -> do

@@ -16,6 +16,7 @@ module StoreService.Names.Records
     relayEdit,
     runRecordEdits,
     recordsRound,
+    deepBlock,
   )
 where
 

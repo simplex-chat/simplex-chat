@@ -85,7 +85,7 @@ revealHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oePhases, 
           _ -> pure $ RDRefused (ORBadRequest "the order is not committed")
       where
         signed now earliest accept =
-          checkReveal oeConfig oeContracts now (nrOwner r) (orderFieldsOf r) earliest request >>= \case
+          checkReveal oeConfig oeContracts now (nrOwner r) (orderFieldsOf r) (nrDisputeDays r) earliest request >>= \case
             Left refusal -> pure $ RDRefused refusal
             Right rv -> write now (RDAccepted . Just) (accept rv)
     write now decided r =

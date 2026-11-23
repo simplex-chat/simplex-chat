@@ -19,7 +19,7 @@ import qualified Data.Text as T
 import Data.Text.Encoding (decodeLatin1, encodeUtf8)
 import Data.Word (Word64)
 import Simplex.Chat.Badges.Code (nameLengthInt)
-import Simplex.Messaging.Crypto (sha256Hash)
+import Simplex.Messaging.Crypto (keccak256, sha256Hash)
 import Simplex.Messaging.Crypto.Secp256k1 (RecoverableSignature (..))
 import Simplex.Messaging.Encoding.String (TextEncoding (..), strDecode)
 import Simplex.Messaging.Eth.Address (Address, recoverAddress)
@@ -35,12 +35,15 @@ import Test.Hspec
 namesSignatureTests :: Spec
 namesSignatureTests = describe "StoreService names: signatures" $ do
   -- expected values are viem 2.57.5's for the fixtures below, the webapp's wallet (BIP-39 entropy 6f2d1c9a4b7e3f80d15a2c6e9b04f7a3, account 0)
-  -- and the SimplexSponsor, SimplexController, SimplexResolver and SimplexPriceOracle ABIs of ens-contracts PR #36 at 23892cc
+  -- and the SimplexSponsor, SimplexController, SimplexResolver and SimplexPriceOracle ABIs of ens-contracts PR #36 at 23892cc,
+  -- with RegisterName of ens-contracts PR #51 at 78114e8
   describe "EIP-712" $ do
     it "commits to a registration with one contact link" $
       makeCommitment dynamis `shouldBe` commitment
+    it "hashes the RegisterName type as the sponsor's REGISTER_TYPEHASH" $
+      keccak256 registerNameType `shouldBe` hx "0x799a78e785584cefb5f76cae6faf2327553af45ef5da9491d690f7d4b851e444"
     it "hashes RegisterName" $
-      registerIntentDigest (sponsorDomain chainId sponsor) dynamis 0 (RoundedSystemTime 1800000000) `shouldBe` hx "0x4b0bcc282db581446f6c25e0e3fbe2839409acbc011bb3e082523dd9eab85a6a"
+      registerIntentDigest (sponsorDomain chainId sponsor) dynamis maxDisputeDays 0 (RoundedSystemTime 1800000000) `shouldBe` hx "0x6e2dce655c34df0e1009fa20673a51c5fb81347127b850fab6db9813dba5429c"
     it "hashes SetText" $
       setTextDigest (resolverDomain chainId resolver) (namehash TLDSimplex "dynamis") LKContact "https://x" 3 (RoundedSystemTime 99) `shouldBe` hx "0xa62d4320889eed3713462d725dc298cd96885572b8e6b424e93a205a96b96fb5"
   describe "EIP-191 messages" $ do
@@ -169,22 +172,8 @@ testVectorsFixture =
           .= [ J.object ["kind" .= kind, "terms" .= (textEncode . ofAgreedTerms <$> fields), "text" .= decodeLatin1 text, "digest" .= digest, "signature" .= signature]
                | (_, kind, fields, _, text, digest, signature) <- messageVectors
              ],
-        "registerName"
-          .= J.object
-            [ "chainId" .= chainId,
-              "sponsor" .= sponsor,
-              "label" .= rLabel dynamis,
-              "owner" .= rOwner dynamis,
-              "duration" .= rDuration dynamis,
-              "secret" .= rSecret dynamis,
-              "resolver" .= rResolver dynamis,
-              "contact" .= rContactLink dynamis,
-              "channel" .= rChannelLink dynamis,
-              "commitment" .= makeCommitment dynamis,
-              "nonce" .= (0 :: Int),
-              "deadline" .= (1800000000 :: Word64),
-              "digest" .= Hex32 (registerIntentDigest (sponsorDomain chainId sponsor) dynamis 0 (RoundedSystemTime 1800000000))
-            ],
+        "registerName" .= registerNameVector maxDisputeDays,
+        "registerNameCode" .= registerNameVector codeDisputeDays,
         "setText"
           .= J.object
             [ "chainId" .= chainId,
@@ -199,6 +188,23 @@ testVectorsFixture =
       ]
   where
     LabelHash lh = ofLabelHash termsOrder
+    registerNameVector days =
+      J.object
+        [ "chainId" .= chainId,
+          "sponsor" .= sponsor,
+          "label" .= rLabel dynamis,
+          "owner" .= rOwner dynamis,
+          "duration" .= rDuration dynamis,
+          "secret" .= rSecret dynamis,
+          "resolver" .= rResolver dynamis,
+          "contact" .= rContactLink dynamis,
+          "channel" .= rChannelLink dynamis,
+          "commitment" .= makeCommitment dynamis,
+          "disputeDays" .= days,
+          "nonce" .= (0 :: Int),
+          "deadline" .= (1800000000 :: Word64),
+          "digest" .= Hex32 (registerIntentDigest (sponsorDomain chainId sponsor) dynamis days 0 (RoundedSystemTime 1800000000))
+        ]
 
 testHighS :: IO ()
 testHighS = do

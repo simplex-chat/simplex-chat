@@ -5,6 +5,7 @@
 
 module Bots.StoreService.NamesOwnerTests
   ( namesOwnerTests,
+    answerDisputeUntil,
     answerExpiry,
     answerFree,
     answerOwner,
@@ -63,7 +64,7 @@ import Simplex.Messaging.SimplexName (LabelHash (..), labelHash)
 import Simplex.Messaging.SystemTime (RoundedSystemTime (..))
 import Simplex.Messaging.Util (tshow)
 import StoreService.Config (NamesConfig (..))
-import StoreService.Names.Abi (addressWord, hex, uint256)
+import StoreService.Names.Abi (addressWord, hex, selector, uint256)
 import StoreService.Names.Chain (TxHash (..))
 import StoreService.Names.Orders (OrdersEnv (..), signedRequestSeconds)
 import StoreService.Names.Phases (RegistrationId (..))
@@ -172,6 +173,9 @@ answerOwner Ctx {cNode} label owner = answerCall cNode (registrarOf cNode) (owne
 answerExpiry :: Ctx -> Text -> Word64 -> IO ()
 answerExpiry Ctx {cNode} label expiry = answerCall cNode (registrarOf cNode) (nameExpiresSelector <> labelBytes label) $ Returns $ uint256 expiry
 
+answerDisputeUntil :: Ctx -> Text -> Word64 -> IO ()
+answerDisputeUntil Ctx {cNode} label t = answerCall cNode (registrarOf cNode) (selector "disputeUntil(uint256)" <> labelBytes label) $ Returns $ uint256 t
+
 -- | A register transaction of the order as the sender saves it, then moved to this outcome.
 sentRegister :: Ctx -> NameRegistration -> Word8 -> TxSettlement -> IO TxHash
 sentRegister Ctx {cStore} NameRegistration {nrId} n settlement = withTransaction cStore $ \db -> do
@@ -228,7 +232,7 @@ stored ctx = registrationById ctx . nrId
 
 failedPhase, registeredPhase, committedPhase, takenPhase :: NameRegistration -> NameRegistration
 failedPhase r = r {nrPhase = OFailed orderTime FRRegistryRefused}
-registeredPhase r = r {nrPhase = ORegistered (RoundedSystemTime $ fromIntegral $ seconds orderTime + 3 * 31536000) orderTime}
+registeredPhase r = r {nrPhase = ORegistered (RoundedSystemTime $ fromIntegral $ seconds orderTime + 3 * 31536000) Nothing orderTime}
 committedPhase r = r {nrPhase = OCommitted committedCommit}
 takenPhase r = r {nrPhase = OTaken orderTime}
 

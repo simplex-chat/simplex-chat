@@ -99,7 +99,7 @@ How a request flows:
 | Registration and owner handlers | The registration view, held on its version; the reveal; `/retry`; find by the owner's signature; the selection of a name after a reset. | [`Web/Names/Registration.hs:45-140`](../src/StoreService/Web/Names/Registration.hs#L45-L140), [`Web/Names/Owner.hs:44-152`](../src/StoreService/Web/Names/Owner.hs#L44-L152), [`Names/Reveal.hs:103-145`](../src/StoreService/Names/Reveal.hs#L103-L145), [`Names/View.hs:81-176`](../src/StoreService/Names/View.hs#L81-L176) |
 | Search handlers | Name status, price, terms, and records with link profiles; the terms text; the link preview; what an owner signs with an order. These handlers only read, except that a terms text fetched for the first time is stored. | [`Web/Names/Search.hs:53-154`](../src/StoreService/Web/Names/Search.hs#L53-L154), [`Names/Profiles.hs:221-271`](../src/StoreService/Names/Profiles.hs#L221-L271) |
 | Poller | One loop. A pass is run every `waiting_seconds` (3) while a page holds an invoice poll, else every `idle_seconds` (60), and webhook read hints are served between passes. Invoices are settled, overdue ones expired 10 minutes past their window, late money credited, and unpaid orders deleted daily, 30 days after their invoice expired. | [`Poller.hs:62-76`](../src/StoreService/Poller.hs#L62-L76), [`Poller.hs:148-168`](../src/StoreService/Poller.hs#L148-L168), [`Poller.hs:559-598`](../src/StoreService/Poller.hs#L559-L598), [`Orders.hs:95-275`](../src/StoreService/Orders.hs#L95-L275), [`Names/LateCredits.hs:50-72`](../src/StoreService/Names/LateCredits.hs#L50-L72) |
-| Names worker | A thread is started by a scan every 5 s for each order in `queued`, `committing`, `committed` or `registering`: commit, terms acceptance relay, register with the stored reveal or wait for a new one, and the outcome judged from chain state. A month pass every 5 minutes fails each order unregistered a calendar month after the selection of its name. | [`Names/Worker.hs:115-401`](../src/StoreService/Names/Worker.hs#L115-L401), [`Names/Worker.hs:503-522`](../src/StoreService/Names/Worker.hs#L503-L522) |
+| Names worker | A thread is started by a scan every 5 s for each order in `queued`, `committing`, `committed` or `registering`: commit, terms acceptance relay, register with the stored reveal or wait for a new one, and the outcome judged from chain state. A month pass every 5 minutes fails each order unregistered a calendar month after the selection of its name. An hourly sweep sets `ended` each registered order whose registration was ended in its dispute period (`sweepEndedRegistrations`). | [`Names/Worker.hs:115-401`](../src/StoreService/Names/Worker.hs#L115-L401), [`Names/Worker.hs:503-522`](../src/StoreService/Names/Worker.hs#L503-L522) |
 | Sender | Signs with `[chain] service_key`, the only signer of that key. Per transaction: dry run, nonce, a tip of the last 10 blocks' median tip and at least 0.05 gwei, fees within `max_fee_per_gas` and within 0.01 ETH over the gas limit, EIP-1559 signature, a saved row, broadcast. Every 4 s: receipts followed to `confirmations` (default 3), an unknown transaction rebroadcast, and one unmined after 36 s replaced with higher fees when the market's fees have passed its own, within the same caps. | [`Names/Sender.hs:109-332`](../src/StoreService/Names/Sender.hs#L109-L332) |
 | Record edits relay and lane | Owner-signed link edits, each relayed as one resolver transaction through the sender, within `record_edits_per_year` and 10 an hour per name. Pending edits are settled by the lane every 4 s. | [`Names/Records.hs:108-375`](../src/StoreService/Names/Records.hs#L108-L375), [`Web/Names/Records.hs:33-86`](../src/StoreService/Web/Names/Records.hs#L33-L86) |
 | Contracts reader and chain client | One JSON-RPC client to `[chain] rpc_url`, 10 s per call, redirects refused. Typed `eth_call` reads; the name policy address, the registrar constants and the commitment ages kept once read; terms texts fetched once per hash and stored. | [`Names/Contracts.hs:147-411`](../src/StoreService/Names/Contracts.hs#L147-L411), [`Names/Chain.hs:147-313`](../src/StoreService/Names/Chain.hs#L147-L313) |
@@ -166,12 +166,12 @@ sequenceDiagram
   P->>W: GET /api/name/LABELHASH/sign?owner=OWNER
   W->>E: sponsor nonce, terms of the name's kind, policy nonce
   W-->>P: 200: the intent nonce and the terms acceptance to sign
-  P->>P: owner signs RegisterName and the terms acceptance (EIP-712)
+  P->>P: owner signs RegisterName with the method's disputeDays and the terms acceptance (EIP-712)
   P->>W: POST /api/invoice: kind name, method, price, signed order, reveal
   W->>W: owner's EIP-191 signature checked, name lock taken
   W->>D: identical earlier order looked up
   W->>E: eth_call: terms of the name's kind, name status, rentPriceUSD
-  W->>E: reveal: sponsor nonce, current terms, policy nonce
+  W->>E: reveal, checked over the method's disputeDays: sponsor nonce, current terms, policy nonce
   W->>V: create invoice for the price
   W->>D: one transaction: invoice open, registration unpaid with its reveal
   W-->>P: 200 invoice view: clientSecret, or address and cryptoAmount
@@ -228,24 +228,26 @@ sequenceDiagram
   alt reveal stored
     W-->>P: committed, signed
   else reveal cleared
-    W-->>P: committed: the reveal window, the intent nonce and the terms acceptance to sign
-    P->>P: owner signs RegisterName and the terms acceptance (EIP-712)
+    W-->>P: committed: the reveal window, the intent nonce and the terms acceptance to sign, disputeDays
+    P->>P: owner signs RegisterName with disputeDays and the terms acceptance (EIP-712)
     P->>W: POST /api/registration/ID/reveal: label, secret, links, signatures
     W->>E: sponsor nonce, current terms, policy nonce
     W->>D: reveal stored, version published
   end
   K->>S: acceptance relayed to the name policy
   Note over K: register waits for the relay and for revealAfter
-  K->>S: registerWithCredit to the sponsor, phase registering
+  K->>S: registerWithCredit with disputeDays to the sponsor, phase registering
   S-->>K: register receipt with status 1 at the depth
-  K->>D: phase registered, expiresAt read at the confirmed block
-  Note over P,W: the held GET answers registered with registerTx and expiresAt
+  K->>D: phase registered, expiresAt and disputeUntil read at the confirmed block
+  Note over P,W: the held GET answers registered with registerTx, expiresAt and disputeUntil
 ```
 
 Notes:
 
 - Every transaction here is sent through the sender as the commit is, with value 0 and its gas paid by the registrar key; a failed commit, acceptance or register is stored as an attempt and judged by its reason, as 3.5 says (`submitTransactionIf` in [`Names/Sender.hs`](../src/StoreService/Names/Sender.hs), `failedAttempt` in [`Names/Worker.hs`](../src/StoreService/Names/Worker.hs)). By the code comments and the log line of an `InsufficientAllowance` revert, the rent is spent from the registrar key's allowance on the sponsor ([`Names/Contracts.hs:179-181`](../src/StoreService/Names/Contracts.hs#L179-L181), [`Names/Worker.hs:351`](../src/StoreService/Names/Worker.hs#L351)).
 - `RegisterName` is signed in the EIP-712 domain `SimplexSponsor`, the acceptance in `SimplexNamePolicy`, as `AcceptGeneralTerms` or `AcceptCommunityTerms` ([`Names/Registration.hs:80-111`](../src/StoreService/Names/Registration.hs#L80-L111)).
+- `RegisterName` covers the order's dispute days, set by its payment when the order is made: 120 for a card, 14 for BTC, XMR and a code; a name selected after a reset keeps the order's days. The view gives them as `disputeDays`, and a reveal signed over other days is refused as not the owner's signature (`methodDisputeDays` in [`Names/Registration.hs`](../src/StoreService/Names/Registration.hs), `orderChecked` in [`Web/Names/Orders.hs`](../src/StoreService/Web/Names/Orders.hs); README, Dispute days).
+- The registered phase gives `disputeUntil`, the registrar's `disputeUntil(id)` read with the expiry at the confirmed block, absent for a registration without a dispute period. A register whose block is above the confirmed block is checked again later, and an order whose `disputeUntil(id)` there is not the end its register set, its block's time plus its days, is set `ended` instead, as T28 says (`checkLanded` in [`Names/Orders.hs`](../src/StoreService/Names/Orders.hs)).
 - The reveal, of an order or of `/reveal`, is checked in the contract's order: the label, its hash and length, the commitment rebuilt from the owner, duration and default resolver; the intent's deadline not before the service's clock for an order, or `revealBefore` for `/reveal`, and at most a week and 600 s after the service's clock, its signer and the sponsor nonce; the acceptance against the current terms and policy nonce; the links' kinds last ([`Names/Reveal.hs`](../src/StoreService/Names/Reveal.hs) `checkReveal`).
 - The names page signs the intent and the acceptance with a deadline a week after the service's clock, so a signature serves across commitments the service sends again within that week. The intent does not cover the secret, and it stays valid until its deadline or until the owner's sponsor nonce changes; a selection of a name stores its reveal in place of the old one, and a close clears it ([`Names/Store.hs`](../src/StoreService/Names/Store.hs) `selectRegistration`, [`Names/Worker.hs`](../src/StoreService/Names/Worker.hs) `sendRegister`).
 - A `/reveal` checks no link: the links were checked at the order, and the commitment fixes them, so a reveal of other links is refused as not the order's commitment.
@@ -372,7 +374,7 @@ sequenceDiagram
   end
   K->>S: registerWithCredit to the sponsor, or the acceptance relay to the name policy
   S-->>K: dry run reverted, or mined with status 0
-  K->>E: registered after all? ownerOf and nameExpires at the confirmed block
+  K->>E: registered after all? ownerOf, disputeUntil and nameExpires at the confirmed block
   alt InvalidNonce, SignatureExpired, TermsNotAccepted or TermsMismatch from the dry run
     K->>D: reveal cleared, phase stays committed, the page signs again
   else CommitmentTooOld past the lapse, or CommitmentNotFound
@@ -390,7 +392,7 @@ sequenceDiagram
 
 Notes:
 
-- Whether the name was registered after all is checked first: on a register mined with status 1, or with the name held by the owner at the confirmation depth, the order is set `registered` ([`Names/Orders.hs:365-400`](../src/StoreService/Names/Orders.hs#L365-L400), [`Names/Worker.hs:329-336`](../src/StoreService/Names/Worker.hs#L329-L336)).
+- Whether the name was registered after all is checked first: on a register mined with status 1, or with the name held by the owner at the confirmation depth, the order is set `registered`, or `ended` when the registrar's `disputeUntil` at the confirmed block is not the end set by its register ([`Names/Orders.hs:365-400`](../src/StoreService/Names/Orders.hs#L365-L400), [`Names/Worker.hs:329-336`](../src/StoreService/Names/Worker.hs#L329-L336)).
 - An `InsufficientAllowance` revert waits for the registrar key's allowance on the sponsor to be raised outside the service, also past the commitment's lapse, as the sponsor checks the allowance before the commitment. The reveal is cleared once its intent's deadline passes, and the page signs again ([`Names/Worker.hs:359`](../src/StoreService/Names/Worker.hs#L359), [`Names/Worker.hs:307-321`](../src/StoreService/Names/Worker.hs#L307-L321)).
 - A stored intent within its deadline that no longer verifies, as after a change of `[chain] chain_id`, `sponsor` or `resolver`, or of `[names] tld`, fails the order with the reason `signatureRefused` before its acceptance relay or its register is sent, logged as an error and reported in the managed group (`intentRefused` in [`Names/Worker.hs`](../src/StoreService/Names/Worker.hs)). No name is selected for such an order: `POST /api/registration/ID/name` with other fields answers `400 bad_request`, as for any order that is not `taken`, and support settles it.
 - `CommitmentTooOld` is reverted only after the intent's and the allowance's checks. The order is set `committing` with its reveal kept, or, while `revealBefore` has not passed by the service's clock, the dry run is tried again a second later; the commit is sent again, and the register follows once it has aged, with no new signature while the signature's week lasts (3.2) ([`Names/Worker.hs:356-358`](../src/StoreService/Names/Worker.hs#L356-L358), [`Names/Worker.hs:199-215`](../src/StoreService/Names/Worker.hs#L199-L215)).
@@ -538,7 +540,7 @@ sequenceDiagram
   C->>D: the order, under its name's lock
   C->>N: a mined register of the order, or the owner holding the name at the confirmation depth
   alt the register went through
-    C->>D: order set registered
+    C->>D: order set registered, or ended when its registration was ended in its dispute period
     C-->>O: Nothing refunded: the register of order ID went through
   else not registered
     C->>D: under the balance's lock, one transaction: order set taken, its stored reveal cleared, price credited, the whole balance recorded as refunded
@@ -620,7 +622,7 @@ Notes:
 - The container runs `simplex-store-service -d BADGE_DB_CONN --create-schema --yes-migrate --service-config /etc/simplex-store-service/store_service.ini` ([`compose.yml:14-20`](../../../scripts/store-service/compose.yml#L14-L20)).
 - The process exits on a config error (Stripe keys of two modes, or Stripe test keys with `[names]` off chains 31337 and 11155111, among them), a held lock, a chain id mismatch, an issuer key mismatch, a failed migration, a pending transaction signed by another key or for another chain, or a missing site build; while it runs, it exits when the lock's connection fails. Compose restarts it after every exit until it is stopped ([`Main.hs:23-29`](../Main.hs#L23-L29), [`Config.hs:475-479`](../src/StoreService/Config.hs#L475-L479), [`Service.hs:259-264`](../src/StoreService/Service.hs#L259-L264), [`Service.hs:632-635`](../src/StoreService/Service.hs#L632-L635), [`Store/Migrate.hs:53-64`](../src/StoreService/Store/Migrate.hs#L53-L64), [`compose.yml:10`](../../../scripts/store-service/compose.yml#L10)). A node that does not answer `eth_chainId` is only warned of, unless `dev_keys` are set or `chain_id` is 31337 ([`Service.hs:169-181`](../src/StoreService/Service.hs#L169-L181)).
 - The lanes are started in the chat core's callback, after `postStartHook`, so after the bot address exists, unless `--no-address` is passed ([`Chat/Core.hs:97-106`](../../../src/Simplex/Chat/Core.hs#L97-L106), [`Service.hs:301-313`](../src/StoreService/Service.hs#L301-L313), [`Service.hs:636-645`](../src/StoreService/Service.hs#L636-L645)).
-- The names lanes are the sender, the record edits lane, the names worker, the check of orders whose name is not registered 3 hours after its selection, every 5 minutes, which logs an error and reports in the managed group once for each, the month pass, every 5 minutes, which fails each order still `queued`, `committed` or `failed`, with no register transaction pending, a calendar month after the selection of its name with the reason `monthEnded`, the money paid for it added to its balance or its code released, and its name released, and the terms fetch, which reads or fetches both current terms texts at the start and then hourly; all lanes are started together with `raceAny_` from simplexmq ([`Service.hs:366-371`](../src/StoreService/Service.hs#L366-L371), [`Names/Contracts.hs:247-254`](../src/StoreService/Names/Contracts.hs#L247-L254)).
+- The names lanes are the sender, the record edits lane, the names worker, the check of orders whose name is not registered 3 hours after its selection, every 5 minutes, which logs an error and reports in the managed group once for each, the month pass, every 5 minutes, which fails each order still `queued`, `committed` or `failed`, with no register transaction pending, a calendar month after the selection of its name with the reason `monthEnded`, the money paid for it added to its balance or its code released, and its name released, the ended sweep, at the start and then hourly, which sets `ended` each registered order whose registration was ended in its dispute period (T30), and the terms fetch, which reads or fetches both current terms texts at the start and then hourly; all lanes are started together with `raceAny_` from simplexmq ([`Service.hs:366-371`](../src/StoreService/Service.hs#L366-L371), [`Names/Contracts.hs:247-254`](../src/StoreService/Names/Contracts.hs#L247-L254)).
 - Under `--run-cli` the binary runs the terminal chat and the badge request lanes only ([`Service.hs:381-404`](../src/StoreService/Service.hs#L381-L404)).
 
 ---
@@ -688,6 +690,7 @@ stateDiagram-v2
   state "taken: name not selected" as taken
   state "failed: registry refused, signature refused or unread" as failed
   state "failed: month ended" as monthEnded
+  state "ended: registration ended in its dispute period" as ended
   [*] --> unpaid: T1
   [*] --> queued: T2
   unpaid --> queued: T3
@@ -722,6 +725,10 @@ stateDiagram-v2
   committing --> closed: T27
   committed --> closed: T27
   failed --> closed: T27
+  committed --> ended: T28
+  registering --> ended: T28
+  failed --> ended: T29
+  registered --> ended: T30
 ```
 
 | | From → to | Trigger | Effect |
@@ -753,7 +760,10 @@ stateDiagram-v2
 | T25 | failed → registered | At support's close, the service finds the order's register mined with status 1, or the owner holding the name. | As T16 (`closeRegistration`). |
 | T26 | failed, or committed past its window → taken | Support's `//close` of a paid order. | The order is reset; the price is credited to the balance, then recorded as refunded (`closeRegistration`). |
 | T27 | queued, committing, committed or failed → closed, reversed | A dispute or refund of the payment while no register transaction of the order's current name was saved. | The hold is released; nothing is credited (`reverseOrder`). |
+| T28 | committed or registering → ended | As T16 for a mined register, but the registrar's `disputeUntil(id)` at the confirmed block is not the end the register set: its block's time plus the order's dispute days. | The expiry and the dispute end the register set are stored; a code is spent; logged at note (`checkLanded`). |
+| T29 | failed → ended | At support's close, as T28. | As T28 (`closeRegistration`). |
+| T30 | registered → ended | The hourly sweep reads the registrar's `disputeUntil(id)` at the confirmed block other than the stored dispute end, for an order registered before that block whose dispute period has not ended or ended less than 7 days ago. | Logged at note (`sweepEndedRegistrations`). |
 
 The functions named are in [`Names/Worker.hs`](../src/StoreService/Names/Worker.hs), [`Names/Orders.hs`](../src/StoreService/Names/Orders.hs), [`Orders.hs`](../src/StoreService/Orders.hs), [`Web/Names/Orders.hs`](../src/StoreService/Web/Names/Orders.hs), [`Names/Store.hs`](../src/StoreService/Names/Store.hs), [`Names/Balances.hs`](../src/StoreService/Names/Balances.hs) and [`Names/LateCredits.hs`](../src/StoreService/Names/LateCredits.hs).
 
-The service accepts a selection of a name (T24) only for an order whose name is not selected (`selectNameHandler` in [`Web/Names/Owner.hs`](../src/StoreService/Web/Names/Owner.hs)). A dispute or refund of an order not cancelled (a register sent, taken, month ended or registered) takes the reversed cents back from its balance, as section 3.12 says. Every order whose name is not registered 3 hours after its selection (`selected_at`) is alerted once, failed orders included and those whose name is not selected excepted, and again 3 hours after a later selection: an order whose name is no longer available on chain (T18) is logged as an error and reported once, and one taken at settlement (T4) is logged as a note; only live orders are counted in the gauge `simplex_store_names_unregistered_oldest_selected_timestamp_seconds`.
+The service accepts a selection of a name (T24) only for an order whose name is not selected (`selectNameHandler` in [`Web/Names/Owner.hs`](../src/StoreService/Web/Names/Owner.hs)). A dispute or refund of an order not cancelled (a register sent, taken, month ended, registered or ended) takes the reversed cents back from its balance, as section 3.12 says. Every order whose name is not registered 3 hours after its selection (`selected_at`) is alerted once, failed orders included and those whose name is not selected excepted, and again 3 hours after a later selection: an order whose name is no longer available on chain (T18) is logged as an error and reported once, and one taken at settlement (T4) is logged as a note; only live orders are counted in the gauge `simplex_store_names_unregistered_oldest_selected_timestamp_seconds`.
