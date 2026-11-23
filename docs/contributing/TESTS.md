@@ -215,7 +215,7 @@ In apps/multiplatform:
 ### Desktop snapshots
 
 - Checked: each `@Preview` of commonMain and desktopMain, rendered in the light and dark themes by `SnapshotTest` ([SnapshotTest.kt](../../apps/multiplatform/common/src/desktopTest/kotlin/chat/simplex/app/SnapshotTest.kt)), equals its reference in [common/src/desktopTest/snapshots](../../apps/multiplatform/common/src/desktopTest/snapshots), within 8 of 255 per colour channel ([snapshots-compare.py](../../scripts/ci/snapshots-compare.py)).
-- Write: a new `@Preview` is added to `previewScenes`, with `chatItemFontScales` for a chat item, or to `previewsCallingCore` when its layout calls the core library; `everyPreviewIsRendered` fails otherwise. A preview uses `previewDate` in place of the current time.
+- Write: a new `@Preview` is added to `previewScenes`, with `chatItemFontScales` for a chat item, or to `previewsCallingCore` when its layout calls the core library; `everyPreviewIsRendered` fails otherwise. A preview uses `previewDate` in place of the current time. While previews render, `chatSendCmdRetry` and `chatParseMarkdown` return `{}`; otherwise an exception in an effect of a preview is reported as a failure of the next `runComposeUiTest` in the test JVM.
 - Record and check: with `scripts/ci/snapshots-remote.py desktop record`, desktop-linux renders the previews of the pushed branch, and the renders replace the references, for review and commit; with `check`, the renders that differ are listed.
 - Run, from apps/multiplatform, then from the repository root:
 
