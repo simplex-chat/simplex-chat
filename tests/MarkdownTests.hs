@@ -569,9 +569,15 @@ inlineMarkdownGFM = describe "inline markdown of GFM" do
     "```a```" ==> markdown Snippet "a"
     "``` a ```" ==> markdown Snippet "a"
     "`` a`" <==> "`` a`"
-    "`a``b`" ==> markdown Snippet "a``b"
-    "```a``b```" <== markdown Snippet "a``b"
+    "`a``b`" <==> markdown Snippet "a``b"
+    "`a```b`" <==> markdown Snippet "a```b"
+    "```a``b```" ==> markdown Snippet "a``b"
+    "```a`b``c```" <==> markdown Snippet "a`b``c"
     markdownText (fmt Snippet "`a") `shouldBe` "`` `a ``"
+  it "code spans open with at most 3 backticks" do
+    "````a````" <==> "````a````"
+    "*a ```*``` b*" <==> bold "a ```*``` b"
+    "*a ````*```` b*" <==> bold "a ````" <> "```` b*"
   it "autolinks" do
     "<https://simplex.chat>" <==> web "https://simplex.chat" "https://simplex.chat" "<https://simplex.chat>"
     "mail <chat@simplex.chat>" <==> "mail " <> web "chat@simplex.chat" "mailto:chat@simplex.chat" "<chat@simplex.chat>"
@@ -586,11 +592,20 @@ backslashEscapes = describe "backslash escapes" do
     "a\\_b_" <==> "a" <> markdown Escape "\\" <> "_b_"
     "\\\\" <==> markdown Escape "\\" <> "\\"
     "\\`a`" <==> markdown Escape "\\" <> "`a`"
+  it "an escaped backtick and the backticks after it are text" do
+    "\\``a`" <==> markdown Escape "\\" <> "``a`"
   it "a backslash before other characters is text" do
     "\\a" <==> "\\a"
     "\\ a" <==> "\\ a"
     "a\\" <==> "a\\"
     "C:\\dir\\file.txt" <==> "C:\\dir\\file.txt"
+  it "a link target stops before an escape, as a word does" do
+    "[a](https://simplex.chat\\!)" <==> "[a](" <> uri "https://simplex.chat" <> markdown Escape "\\" <> "!)"
+    "[a](b\\!)" <==> "[a](b" <> markdown Escape "\\" <> "!)"
+    "[a](https://example.com/?q=a\\!)" <==> "[a](" <> uri "https://example.com/?q=a" <> markdown Escape "\\" <> "!)"
+  it "a SimpleX name stops before an escape, as a word does" do
+    "#privacy\\!" <==> sname NTPublicGroup TLDSimplex "privacy" [] "privacy" <> markdown Escape "\\" <> "!"
+    "@a.simplex\\!x" <==> sname NTContact TLDSimplex "a" [] "a.simplex" <> markdown Escape "\\" <> "!x"
   it "escapes are text in code" do
     "`\\*`" <==> markdown Snippet "\\*"
     "```\n\\*a\n```" <===> ([fence "```", hardBr, "\\*a", hardBr, fence "```"], [CodeBlock Nothing (rng 2 3)])
@@ -1053,8 +1068,16 @@ formatsAcrossLines = describe "formats across line breaks" do
     "# h\n`\na`" ===> ([heading1, "h", lineBr, fmt Snippet "", hardBr, fmt Snippet "a"], [Heading 1 (rng 1 2), Paragraph (rng 3 6)])
     "# h\n``\n``" <===> ([heading1, "h", lineBr, fmt Snippet "", hardBr, fmt Snippet ""], [Heading 1 (rng 1 2), Paragraph (rng 3 6)])
     T.concat (map markdownText $ fromMaybe [] $ parseMaybeMarkdownList "# h\n`\na`") `shouldBe` "# h\n``\n`a`"
+  it "delimiter runs and underscores inside words before the line break, as within a line" do
+    "*a**b\nc*" ==>> [fmt boldF "a**b", "\n", fmt boldF "c"]
+    "_a_b\nc_" ==>> [fmt Italic "a_b", "\n", fmt Italic "c"]
+    "*a `*`\nb*" ==>> [fmt boldF "a `*`", "\n", fmt boldF "b"]
+  it "code spans inside double delimiters continue across lines, as outside formats" do
+    "**a `b\n**` c**" ==>> [fmt bold2F "a `b", "\n", fmt bold2F "**` c"]
+    "**a `b** c\nd`" ==>> ["**a ", fmt Snippet "b** c", "\n", fmt Snippet "d"]
   it "an unclosed delimiter is text to the line end" do
     "*a\n_b_" ==>> ["*a\n", fmt Italic "b"]
+    "*a **b** c\n_d_" ==>> ["*a **b** c\n", fmt Italic "d"]
     parseMaybeMarkdownList "*a\nb" `shouldBe` Nothing
   it "white space at the content ends: as on master, within the line" do
     parseMaybeMarkdownList "*a\n*" `shouldBe` Nothing

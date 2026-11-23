@@ -1,6 +1,6 @@
 # Block Markdown: core
 
-Date: 2026-10-13. Revised: 2026-10-16, for master. Revised: 2026-10-17, two passes over the whole text. Revised: 2026-10-18, CommonMark syntax (S4, S6), soft breaks (S5), block lines then inline content. Revised: 2026-10-29, line breaks and lines without a marker (`2026-10-29-markdown-links-and-line-breaks.md`).
+Date: 2026-10-13. Revised: 2026-10-16, for master. Revised: 2026-10-17, two passes over the whole text. Revised: 2026-10-18, CommonMark syntax (S4, S6), soft breaks (S5), block lines then inline content. Revised: 2026-10-29, line breaks and lines without a marker (`2026-10-29-markdown-links-and-line-breaks.md`). Revised: 2026-11-09, code spans, escapes and the writer of code spans.
 
 Each message text is parsed in two passes. In pass 1, the lines of the text are grouped into blocks. The content of the lines of a block is joined with "\n" and parsed by the inline parser of master; each "\n" is then replaced by the break token and the syntax tokens of the next line. Pass 2 divides the tokens at the breaks between blocks and builds the block structure. `formattedText` is the joined token list; the text of each token is its source. `markdownBlocks` is the block structure: index ranges into `formattedText`.
 
@@ -126,6 +126,7 @@ across      a format is continued into the next line when that line is a continu
             the line break and the syntax of the next line between them
             never across a blank line
             "*", "_", "~": across lines when the content does not start or end with white space; otherwise as now, within the line
+            a code span inside "**", "__", "~~": across lines, as outside formats
 within      headings and cells: within one line
             links, SimpleX links, names, mentions, commands, e-mails, phones: within one line
 ```
@@ -147,13 +148,15 @@ Decided 2026-10-18 (S4, S6). In all messages, with and without blocks:
 ~~x~~          StrikeThrough                                   GFM example 491
 __x__          Bold, singleStar = False                        GFM example 391
 `x`            Snippet                                         CommonMark section 6.1, GFM example 339
-`` x ` y ``    a run of backticks, the content, a run of the same length
+`` x ` y ``    a run of 1 to 3 backticks, the content, a run of the same length
+               a run of 4 or more backticks: text, inside formats too
                one space removed at each end when the content starts and ends with a space and is not spaces only
                a space at one end only: kept (CommonMark example 332); spaces only: kept (example 334)
                master's check of spaces at the ends (Markdown.hs:231-235): not applied to Snippet
 <x>            as [x](x) (sowLinkP, Markdown.hs:281-293), its text "<x>"    GFM example 603
                x an e-mail address: HyperLink {showText = Just x, linkUri = "mailto:" <> x}
 \c             c an ASCII punctuation character: Escape "\", then c without format     CommonMark examples 12, 14
+               c "`": the backticks after it, without format too; commonmark.js can start a code span at them
                not in code blocks and snippets
                "\" before a line break: a hard break (section 1, Lines)
 ```
@@ -252,7 +255,7 @@ data ParsedMarkdown = ParsedMarkdown
 - `markdownText` (`Markdown.hs:472-491`):
   - a markup token, `Escape`: its text
   - `Bold`: `*x*` when `singleStar`, `**x**` otherwise (`Markdown.hs:476`)
-  - `Snippet`: delimited by a backtick run longer than any backtick run in its text, with a space inside each delimiter when the text starts or ends with a backtick, or starts and ends with a space and is not spaces only (`Markdown.hs:479`)
+  - `Snippet`: delimited by backtick runs of the smallest length that no backtick run in its text has, with a space inside each delimiter when the text starts or ends with a backtick, or starts and ends with a space and is not spaces only (`Markdown.hs:479`)
 - `SegmentRange`: `[from, to)` into `formattedText`.
 - JSON of `BlockToken` and `MarkdownBlock`: `sumTypeJSON fstToLower`, as `Format` (`Markdown.hs:536`).
 - An unknown block tag is decoded as `UnknownBlock`, as in `Format` (`Markdown.hs:538-539`).
@@ -407,9 +410,10 @@ secret (245-249)                   white space at the content ends by isSpace
 styledP (267-272)                  the space after the style: not "\n"
                                    white space at the content ends by isSpace
 sowLinkP (281-293)                 the format of the link: hyperLinkFormat, shared with autolinks
+                                   the link target: to ")", white space, or a backslash before an ASCII punctuation character
 wordP (320)                        to a space, "\n", or a backslash before an ASCII punctuation character
 secretFallback (251)               to a space or "\n"
-nameRefP (253)                     to a space or "\n"
+nameRefP (253)                     to a space, "\n", or a backslash before an ASCII punctuation character
 inParens (294)                     within one line
 displayNameTextP_ (512-517)        a quoted name: within one line
 parseMarkdown (176-177)            unchanged: the inline parser, used by msgPlain (View.hs:2474)
