@@ -275,8 +275,8 @@ testLongTextPreview ps = do
       let link = pageUrl ps "/long-text"
       Right (CRLinkPreview preview@LinkPreview {title, description, image = ImageData image}) <- previewOf alice link
       title `shouldBe` T.replicate 300 "\1046"
-      description `shouldBe` T.replicate 500 "\20013"
-      T.length image `shouldSatisfy` (<= 14000 - 602 - 1502)
+      description `shouldBe` T.replicate 200 "\20013"
+      T.length image `shouldSatisfy` (<= 14000 - 602 - 602)
       let content = J.encode $ J.object ["msgContent" J..= MCLink {text = T.pack link, preview}]
       chatCommand alice ("/_send @2 json [" <> LB.toStrict content <> "]") >>= \case
         Right CRNewChatItems {} -> pure ()

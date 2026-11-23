@@ -97,7 +97,7 @@ maxTitleLength :: Int
 maxTitleLength = 300
 
 maxDescriptionLength :: Int
-maxDescriptionLength = 500
+maxDescriptionLength = 200
 
 data Fetcher = Fetcher
   { previewConfig :: LinkPreviewConfig,
