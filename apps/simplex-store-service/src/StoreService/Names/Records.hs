@@ -291,14 +291,6 @@ recordsRound rs =
   )
     `catchOwn'` \e -> logError ("names records: the round failed; the next pass will run: " <> tshow e)
 
--- | The newest block at the configured confirmation depth, as the sender counts it.
-deepBlock :: ChainClient -> Block -> IO (Either ChainError Block)
-deepBlock c tip@Block {blockNumber}
-  | deep == blockNumber = pure $ Right tip
-  | otherwise = blockAt c deep
-  where
-    deep = confirmedNumber c blockNumber
-
 -- | One step for a pending edit, from its transactions' statuses as the sender settled them.
 follow :: Records -> Block -> Block -> RecordEdit -> IO ()
 follow rs Block {blockTimestamp} Block {blockTimestamp = deepTime} edit@RecordEdit {reId, reChanges} = do

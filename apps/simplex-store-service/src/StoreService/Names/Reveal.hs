@@ -39,7 +39,7 @@ import StoreService.Names.Orders (OrderRefusal (..), signedRequestSeconds)
 import StoreService.Names.Community (AcceptanceAsked (..), currentAcceptance)
 import StoreService.Names.Contracts (Contracts, sponsorNonce)
 import StoreService.Names.Label (validLabel)
-import StoreService.Names.Registration (LinkKind (..), RegisterIntent (..), Registration (..), TermsAcceptance (..), makeCommitment, nameLink, policyDomain, sponsorDomain, termsKind, verifyAcceptance, verifyRegisterIntent)
+import StoreService.Names.Registration (DisputeDays, LinkKind (..), RegisterIntent (..), Registration (..), TermsAcceptance (..), makeCommitment, nameLink, policyDomain, sponsorDomain, termsKind, verifyAcceptance, verifyRegisterIntent)
 import StoreService.Names.Signatures (OrderFields (..))
 import StoreService.Names.Store (NameReveal (..))
 
@@ -62,23 +62,23 @@ $(JQ.deriveFromJSON defaultJSON ''RevealRequest)
 isRepeat :: RevealRequest -> NameReveal -> Bool
 isRepeat RevealRequest {label, signature} NameReveal {rvLabel, rvSignature} = label == rvLabel && signature == rvSignature
 
-checkReveal :: NamesConfig -> Contracts -> UTCTime -> Address -> OrderFields -> UTCTime -> RevealRequest -> IO (Either OrderRefusal NameReveal)
-checkReveal cfg ct now owner fields earliest request = runExceptT $ do
+checkReveal :: NamesConfig -> Contracts -> UTCTime -> Address -> OrderFields -> DisputeDays -> UTCTime -> RevealRequest -> IO (Either OrderRefusal NameReveal)
+checkReveal cfg ct now owner fields days earliest request = runExceptT $ do
   rv <- liftEither $ committedReveal cfg owner fields request
-  ExceptT $ checkIntent cfg ct now earliest (intentOf cfg owner (ofDuration fields) rv)
+  ExceptT $ checkIntent cfg ct now earliest (intentOf cfg owner (ofDuration fields) days rv)
   ExceptT $ checkAcceptance cfg ct owner fields rv
   pure rv
 
-orderReveal :: NamesConfig -> Contracts -> UTCTime -> Address -> OrderFields -> Maybe NameReveal -> RevealRequest -> IO (Either OrderRefusal NameReveal)
-orderReveal cfg ct now owner fields accepted request =
-  checkReveal cfg ct now owner fields now request <&> (>>= \rv -> maybe (Right rv) (Left . ORInvalidLink) (refusedLink accepted rv))
+orderReveal :: NamesConfig -> Contracts -> UTCTime -> Address -> OrderFields -> DisputeDays -> Maybe NameReveal -> RevealRequest -> IO (Either OrderRefusal NameReveal)
+orderReveal cfg ct now owner fields days accepted request =
+  checkReveal cfg ct now owner fields days now request <&> (>>= \rv -> maybe (Right rv) (Left . ORInvalidLink) (refusedLink accepted rv))
 
 committedReveal :: NamesConfig -> Address -> OrderFields -> RevealRequest -> Either OrderRefusal NameReveal
 committedReveal cfg@NamesConfig {nTLD} owner OrderFields {ofLabelHash, ofLength, ofDuration, ofCommitment} RevealRequest {label = sentLabel, signature, secret, records = RevealLinks {contact, channel}, nonce, deadline, acceptance} = do
   label <- first (ORBadRequest . ("the label is not a name: " <>) . tshow) $ validLabel nTLD sentLabel
   unless (labelHash label == ofLabelHash && T.length label == nameLengthInt ofLength) $ Left $ ORBadRequest "the label is not the order's"
   let rv = NameReveal {rvLabel = label, rvSecret = secret, rvContactLink = contact, rvChannelLink = channel, rvNonce = nonce, rvDeadline = deadline, rvSignature = signature, rvAcceptance = acceptance}
-  unless (makeCommitment (riRegistration $ intentOf cfg owner ofDuration rv) == ofCommitment) $ Left $ ORBadRequest "the reveal is not the order's commitment"
+  unless (makeCommitment (registrationOf cfg owner ofDuration rv) == ofCommitment) $ Left $ ORBadRequest "the reveal is not the order's commitment"
   pure rv
 
 -- | The deadline and the owner's signature first, so a request nobody signed reads nothing from the chain.
@@ -112,8 +112,10 @@ refusedLink :: Maybe NameReveal -> NameReveal -> Maybe LinkKind
 refusedLink accepted rv =
   listToMaybe [kind | (kind, link_) <- [(LKContact, rvContactLink), (LKChannel, rvChannelLink)], Just link <- [link_ rv], (link_ =<< accepted) /= Just link, (fst <$> nameLink link) /= Just kind]
 
-intentOf :: NamesConfig -> Address -> Word64 -> NameReveal -> RegisterIntent
-intentOf NamesConfig {nTLD, nChain = ChainConfig {cResolver}} owner duration NameReveal {rvLabel, rvSecret, rvContactLink, rvChannelLink, rvNonce, rvDeadline, rvSignature} =
-  RegisterIntent {riRegistration = registration, riNonce = rvNonce, riDeadline = rvDeadline, riSignature = rvSignature}
-  where
-    registration = Registration {rLabel = rvLabel, rTLD = nTLD, rOwner = owner, rDuration = duration, rSecret = rvSecret, rResolver = cResolver, rContactLink = rvContactLink, rChannelLink = rvChannelLink}
+intentOf :: NamesConfig -> Address -> Word64 -> DisputeDays -> NameReveal -> RegisterIntent
+intentOf cfg owner duration days rv@NameReveal {rvNonce, rvDeadline, rvSignature} =
+  RegisterIntent {riRegistration = registrationOf cfg owner duration rv, riDisputeDays = days, riNonce = rvNonce, riDeadline = rvDeadline, riSignature = rvSignature}
+
+registrationOf :: NamesConfig -> Address -> Word64 -> NameReveal -> Registration
+registrationOf NamesConfig {nTLD, nChain = ChainConfig {cResolver}} owner duration NameReveal {rvLabel, rvSecret, rvContactLink, rvChannelLink} =
+  Registration {rLabel = rvLabel, rTLD = nTLD, rOwner = owner, rDuration = duration, rSecret = rvSecret, rResolver = cResolver, rContactLink = rvContactLink, rChannelLink = rvChannelLink}

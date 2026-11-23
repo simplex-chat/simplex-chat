@@ -46,9 +46,9 @@ module StoreService.Names.Orders
 where
 
 import qualified Control.Exception as E
-import Control.Logger.Simple (logError, logWarn)
+import Control.Logger.Simple (logError, logNote, logWarn)
 import Control.Monad (forM, unless, when)
-import Control.Monad.Except (ExceptT (..), runExceptT)
+import Control.Monad.Except (ExceptT (..), runExceptT, throwError, withExceptT)
 import qualified Data.Aeson as J
 import qualified Data.Aeson.TH as JQ
 import qualified Data.Aeson.Types as JT
@@ -75,11 +75,11 @@ import Simplex.Messaging.Util (safeDecodeUtf8, tshow, ($>>=))
 import StoreService.Config (NamesConfig (..))
 import StoreService.Names.Codes (CodeRefusal (..), codeRefusal, reserveRefusal, spendLandedCode)
 import StoreService.Names.Community (Community, communityOf, nameTerms, readableTerms, termsFor, yearsFor)
-import StoreService.Names.Contracts (Contracts, NameStatus (..), Terms, chainPriceCents, confirmedTag, nameExpires, nameStatus, ownerOfToken, secondsPerYear)
+import StoreService.Names.Contracts (Contracts (ctChain), NameStatus (..), Terms, chainPriceCents, confirmedBlock, disputeUntil, nameExpires, nameStatus, ownerOfToken, secondsPerYear)
 import StoreService.Names.Env (NamesEnv (..))
 import StoreService.Names.Phases (Phases, RegistrationId (..))
-import StoreService.Names.Chain (Hex32 (..), TxHash)
-import StoreService.Names.Registration (Commitment, LinkKind)
+import StoreService.Names.Chain (Block (..), BlockTag (..), Hex32 (..), TxHash, blockAt)
+import StoreService.Names.Registration (Commitment, LinkKind, disputeSeconds)
 import StoreService.Names.Signatures (AgreedTerms (..), OrderFields (..), parseChecksumAddress, personalDigest)
 import StoreService.Names.Store (CodeInsertRefused (..), LiveOrder (..), NameRegistration (..), NameReveal, NewRegistration (..), OrderHash, OrderPayment (..), OrderPhase (..), PrepaidCode (..), TxHistory (..), NameTransaction (..), RegistrationTx (..), TxFor (..), TxSettlement (..), TxState (..), VersionWrite (..), closeOverdue, createCodeRegistration, getLiveOrders, getPrepaidCode, getPrepaidCodeById, getRegistrationByOrderHash, labelHolder, markRead, registrationTransactions, reservePrepaidCode, selectRegistration, spendBalance, updateRegistration)
 import StoreService.Names.Turns (Turns, withBalanceTurn, withCodeTurn)
@@ -139,9 +139,9 @@ data ClosedOrder = ClosedOrder {coRegistration :: NameRegistration, coVersion ::
 data WriteRefusal = WRChanged | WRRefused OrderRefusal
   deriving (Eq, Show)
 
--- | What the register check found on the order's current name: no register through, the order registered at a new version,
+-- | What the register check found on the order's current name: no register through, the order registered or ended at a new version,
 -- the order changed since it was read, or a failed chain read.
-data Landing = LNotLanded | LRegistered Int64 | LChanged | LUnread
+data Landing = LNotLanded | LRegistered Int64 | LEnded Int64 | LChanged | LUnread
   deriving (Eq, Show)
 
 data Landed = LandedByReceipt TxHash | LandedByOwner
@@ -351,30 +351,46 @@ confirmLanded :: OrdersEnv -> NameRegistration -> IO Landing
 confirmLanded OrdersEnv {oeStore, oeContracts, oeTurns, oeNow} = checkLanded oeStore oeContracts oeTurns oeNow
 
 -- | The register check, on the order's current name: a register mined with status 1, or the owner holding the name at the confirmation depth,
--- went through with only its confirmation lost. The order then becomes registered by a compare-and-set on the version read, a code order spending its code.
+-- went through with only its confirmation lost. The order then becomes registered by a compare-and-set on the version read, a code order spending its code;
+-- ended instead when disputeUntil(id) at the confirmation depth is not the end its mined register set.
 -- The caller holds the turn of the order's label hash.
 checkLanded :: DBStore -> Contracts -> Turns -> IO UTCTime -> NameRegistration -> IO Landing
-checkLanded st ct turns clock r@NameRegistration {nrId, nrOwner, nrLabelHash, nrPayment, nrHistory} = do
+checkLanded st ct turns clock r@NameRegistration {nrId, nrOwner, nrLabelHash, nrPayment, nrHistory, nrDuration, nrDisputeDays} = do
   txs <- withTransaction st (`registrationTransactions` nrId)
-  let mined = [ntHash | NameTransaction {ntFor = TxRegistration RTRegister _, ntState = TxSettled TSMinedAt {}, ntHash} <- txs]
+  let mined = [(ntHash, block) | NameTransaction {ntFor = TxRegistration RTRegister _, ntState = TxSettled (TSMinedAt block), ntHash} <- txs]
   runExceptT (landed mined) >>= \case
-    Left e -> LUnread <$ logWarn ("names: a register check's chain read failed: " <> tshow e)
+    Left warning -> LUnread <$ logWarn warning
     Right Nothing -> pure LNotLanded
-    Right (Just (how, expiry)) -> either (const LChanged) LRegistered <$> markRegistered how expiry
+    Right (Just (how, Right (expiry, disputeEnd))) -> either (const LChanged) LRegistered <$> markLanded how (ORegistered expiry disputeEnd)
+    Right (Just (how, Left (registerTime, disputeEnd))) ->
+      markLanded how (const $ OEnded (laterBy nrDuration registerTime) (registerEnd registerTime)) >>= \case
+        Right v -> LEnded v <$ logNote ("names: registration " <> ridText nrId <> " set ended: disputeUntil(id) read at the confirmed block is " <> secondsText disputeEnd <> ", not its register's end " <> tshow (roundedSeconds $ registerEnd registerTime))
+        Left _ -> pure LChanged
   where
     landed mined = do
-      confirmed <- ExceptT $ confirmedTag ct
+      Block {blockNumber = confirmed} <- chainRead $ confirmedBlock ct
+      let tag = AtBlock confirmed
       how <- case mined of
-        tx : _ -> pure $ Just $ LandedByReceipt tx
-        [] -> (\holder -> if holder == Just nrOwner then Just LandedByOwner else Nothing) <$> ExceptT (ownerOfToken ct confirmed nrLabelHash)
-      forM how $ \l -> (l,) <$> ExceptT (nameExpires ct confirmed nrLabelHash)
-    markRegistered how expiry = do
+        (_, block) : _ | block > confirmed -> throwError $ "names: a register check waits for confirmation: the register's block " <> tshow block <> " is above the confirmed block " <> tshow confirmed
+        (tx, block) : _ -> pure $ Just (LandedByReceipt tx, Just block)
+        [] -> (\holder -> if holder == Just nrOwner then Just (LandedByOwner, Nothing) else Nothing) <$> chainRead (ownerOfToken ct tag nrLabelHash)
+      forM how $ \(l, block_) -> do
+        disputeEnd <- chainRead $ disputeUntil ct tag nrLabelHash
+        registerTime <- forM block_ $ fmap blockTimestamp . chainRead . blockAt (ctChain ct)
+        (l,) <$> case registerTime of
+          Just t | disputeEnd /= Just (registerEnd t) -> pure $ Left (t, disputeEnd)
+          _ -> (\expiry -> Right (expiry, disputeEnd)) <$> chainRead (nameExpires ct tag nrLabelHash)
+    chainRead = withExceptT (("names: a register check's chain read failed: " <>) . tshow) . ExceptT
+    registerEnd = laterBy $ disputeSeconds nrDisputeDays
+    laterBy seconds t = RoundedSystemTime $ roundedSeconds t + fromIntegral seconds
+    secondsText = maybe "0" (tshow . roundedSeconds)
+    markLanded how phaseAt = do
       now <- clock
       let registerTx = case how of
             LandedByReceipt tx -> Just tx
             -- judged by ownerOf alone, no hash is known to have mined: none is shown (contract section 6)
             LandedByOwner -> Nothing
-          registered = r {nrPhase = ORegistered expiry now, nrHistory = nrHistory {thRegisterTx = registerTx}}
+          registered = r {nrPhase = phaseAt now, nrHistory = nrHistory {thRegisterTx = registerTx}}
           write db = versionWritten <$> updateRegistration db registered now
       case nrPayment of
         OPInvoice {} -> withTransaction st write

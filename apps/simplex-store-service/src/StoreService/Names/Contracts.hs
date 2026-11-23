@@ -35,8 +35,10 @@ module StoreService.Names.Contracts
     policyNonce,
     acceptedTerms,
     confirmedTag,
+    confirmedBlock,
     ownerOfToken,
     nameExpires,
+    disputeUntil,
     commitmentTime,
     controllerAvailable,
     commitmentAges,
@@ -90,7 +92,7 @@ import qualified Simplex.Messaging.TMap as TM
 import Simplex.Messaging.Util (catchOwn', catchThrow, eitherToMaybe, tshow)
 import StoreService.Config (ChainConfig (..), boundedDecimal, localChainId)
 import StoreService.Names.Abi (AbiError (..), AbiValue (..), abiBytes, abiTuple, abiWordSize, addressWord, decodeAddress, decodeBool, decodeBytes32, decodeSeconds, decodeString, decodeUint256, decodeWord64, lowerHexP, parseText, selector, uint256)
-import StoreService.Names.Chain (Block (..), BlockTag (..), ChainClient (..), ChainError (..), Hex32 (..), confirmedNumber, ethCallAt, httpFailure, latestBlock, registrarBalance)
+import StoreService.Names.Chain (Block (..), BlockTag (..), ChainClient (..), ChainError (..), Hex32 (..), confirmedNumber, deepBlock, ethCallAt, httpFailure, latestBlock, registrarBalance)
 import StoreService.Names.Registration (Commitment, CommunityName, LinkKind (..), TermsHash, labelNode, nodeBytes, recordKey, termsKindText)
 import StoreService.Names.Revert (RevertReason (..))
 import StoreService.Names.Store (getTermsText, setTermsText)
@@ -399,6 +401,9 @@ policyCall ct tag args decode = runExceptT $ do
 confirmedTag :: Contracts -> IO (Either ChainError BlockTag)
 confirmedTag Contracts {ctChain} = fmap (AtBlock . confirmedNumber ctChain . blockNumber) <$> latestBlock ctChain
 
+confirmedBlock :: Contracts -> IO (Either ChainError Block)
+confirmedBlock Contracts {ctChain} = runExceptT $ ExceptT (latestBlock ctChain) >>= ExceptT . deepBlock ctChain
+
 -- | Nothing when nobody holds the name: @ownerOf@ then fails the registrar's bare @require@ on the expiry,
 -- a revert without data. Any other revert is a failed read.
 ownerOfToken :: Contracts -> BlockTag -> LabelHash -> IO (Either ChainError (Maybe Address))
@@ -410,11 +415,15 @@ ownerOfToken ct tag lh =
 nameExpires :: Contracts -> BlockTag -> LabelHash -> IO (Either ChainError SystemSeconds)
 nameExpires ct tag lh = callAt ct tag (baseRegistrar ct) ("nameExpires(uint256)", labelHashArg lh) decodeSeconds
 
+disputeUntil :: Contracts -> BlockTag -> LabelHash -> IO (Either ChainError (Maybe SystemSeconds))
+disputeUntil ct tag lh = fmap unlessZero <$> callAt ct tag (baseRegistrar ct) ("disputeUntil(uint256)", labelHashArg lh) decodeSeconds
+
 -- | The block time of the commitment, Nothing when the controller holds none.
 commitmentTime :: Contracts -> Commitment -> IO (Either ChainError (Maybe SystemSeconds))
-commitmentTime ct (Hex32 commitment) = fmap nonZero <$> call ct (controller ct) ("commitments(bytes32)", commitment) decodeSeconds
-  where
-    nonZero t = if t == RoundedSystemTime 0 then Nothing else Just t
+commitmentTime ct (Hex32 commitment) = fmap unlessZero <$> call ct (controller ct) ("commitments(bytes32)", commitment) decodeSeconds
+
+unlessZero :: SystemSeconds -> Maybe SystemSeconds
+unlessZero t = if t == RoundedSystemTime 0 then Nothing else Just t
 
 controllerAvailable :: Contracts -> BlockTag -> Text -> IO (Either ChainError Bool)
 controllerAvailable ct tag label = callAt ct tag (controller ct) ("available(string)", abiTuple [Dynamic $ abiBytes $ encodeUtf8 label]) decodeBool

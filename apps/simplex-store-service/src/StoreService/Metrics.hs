@@ -68,6 +68,7 @@ data MetricsEnv = MetricsEnv
     meNames :: Maybe Contracts,
     meMonthPassAt :: TVar UTCTime,
     meCreditPassAt :: TVar UTCTime,
+    meEndedPassAt :: TVar UTCTime,
     meReport :: Text -> IO ()
   }
 
@@ -86,7 +87,7 @@ noChainRead = ChainRead {crFunds = Nothing, crHead = Nothing, crTerms = [], crRe
 
 data ProviderTimes = ProviderTimes {ptListedOk :: Map PaymentProvider UTCTime, ptWebhookAt :: Map PaymentProvider UTCTime}
 
-data PassTimes = PassTimes {ptMonthPass :: UTCTime, ptCreditPass :: UTCTime}
+data PassTimes = PassTimes {ptMonthPass :: UTCTime, ptCreditPass :: UTCTime, ptEndedPass :: UTCTime}
 
 chainReadInterval :: Int
 chainReadInterval = 60 * 1000000
@@ -173,7 +174,7 @@ subscriptionStates :: [Text]
 subscriptionStates = map textEncode [SSRenewing, SSCancelled, SSBillingRetry, SSEnded]
 
 namesText :: Word64 -> NamesCounts -> ChainRead -> PassTimes -> Text
-namesText maxFeePerGas NamesCounts {ncPhases, ncQueueOldestChange, ncPendingTransactions, ncOldestPending, ncOpenInvoices, ncPendingEdits, ncOldestEdit, ncOldestUnregisteredSelected} ChainRead {crFunds, crHead, crTerms, crReadAt, crOk} PassTimes {ptMonthPass, ptCreditPass} =
+namesText maxFeePerGas NamesCounts {ncPhases, ncQueueOldestChange, ncPendingTransactions, ncOldestPending, ncOpenInvoices, ncPendingEdits, ncOldestEdit, ncOldestUnregisteredSelected} ChainRead {crFunds, crHead, crTerms, crReadAt, crOk} PassTimes {ptMonthPass, ptCreditPass, ptEndedPass} =
   T.concat
     [ gauge "simplex_store_names_orders" "Name orders by phase, and failed orders by reason" $
         [labelled "phase" (textEncode p) (value $ sum [n | (p', _, n) <- ncPhases, p' == p]) | p <- [minBound .. maxBound], p /= PFailed]
@@ -195,7 +196,8 @@ namesText maxFeePerGas NamesCounts {ncPhases, ncQueueOldestChange, ncPendingTran
       gauge "simplex_store_names_chain_read_timestamp_seconds" "When every part of the chain read last succeeded" (timestamp <$> crReadAt),
       gauge "simplex_store_names_chain_read_ok" "1 when the last chain read succeeded in every part, 0 when a part failed or none was made" (Just $ value $ fromEnum crOk),
       gauge "simplex_store_names_month_pass_timestamp_seconds" "When the last month pass that completed started, or the service started before the first one completed" (Just $ timestamp ptMonthPass),
-      gauge "simplex_store_names_credit_pass_timestamp_seconds" "When the last late credit pass that completed started, or the service started before the first one completed" (Just $ timestamp ptCreditPass)
+      gauge "simplex_store_names_credit_pass_timestamp_seconds" "When the last late credit pass that completed started, or the service started before the first one completed" (Just $ timestamp ptCreditPass),
+      gauge "simplex_store_names_ended_pass_timestamp_seconds" "When the last ended sweep that completed started, or the service started before the first one completed" (Just $ timestamp ptEndedPass)
     ]
 
 value :: Show a => a -> (Text, Text)
@@ -256,13 +258,13 @@ registeredNamesText RegisteredNamesRead {rrNames, rrFailures} =
                 <> line "_count" level (length lengths)
 
 metricsApp :: MetricsEnv -> TVar ChainRead -> TVar RegisteredNamesRead -> Application
-metricsApp MetricsEnv {meStore, meProviders, meListedOk, meWebhookAt, meNames, meMonthPassAt, meCreditPassAt} v registered req respond = case pathInfo req of
+metricsApp MetricsEnv {meStore, meProviders, meListedOk, meWebhookAt, meNames, meMonthPassAt, meCreditPassAt, meEndedPassAt} v registered req respond = case pathInfo req of
   ["metrics"] -> only "GET" req respond $ do
     now <- getCurrentTime
     (invoices, badges, names) <- withTransaction meStore $ \db ->
       (,,) <$> openInvoiceCounts db (addUTCTime (negate expiryGrace) now) <*> badgeCounts db now <*> mapM (\ct -> (feeCapOf ct,) <$> namesCounts db) meNames
     times <- ProviderTimes <$> readTVarIO meListedOk <*> readTVarIO meWebhookAt
-    passes <- PassTimes <$> readTVarIO meMonthPassAt <*> readTVarIO meCreditPassAt
+    passes <- PassTimes <$> readTVarIO meMonthPassAt <*> readTVarIO meCreditPassAt <*> readTVarIO meEndedPassAt
     chain <- readTVarIO v
     counted <- readTVarIO registered
     let text = serviceText meProviders invoices badges times <> foldMap (\(cap, n) -> namesText cap n chain passes <> registeredNamesText counted) names

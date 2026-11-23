@@ -15,7 +15,7 @@ module Bots.StoreService.WebUIMock
   )
 where
 
-import StoreService.Names.Registration (RegisterIntent (..), Registration, registerIntentDigest)
+import StoreService.Names.Registration (DisputeDays, RegisterIntent (..), Registration, registerIntentDigest)
 import Control.Concurrent.STM (TVar, atomically)
 import Control.Monad (guard)
 import Crypto.Number.Serialize (i2ospOf_, os2ip)
@@ -50,9 +50,9 @@ redemptionCode = formatNameOwnerCode . ewCode
 walletFromCode :: TVar ChaChaDRG -> Text -> IO EphemeralWallet
 walletFromCode g = maybe (fail "invalid name code") (walletFromNameOwnerCode g) . parseNameOwnerCode
 
-signRegisterIntent :: TVar ChaChaDRG -> Eip712Domain -> EphemeralWallet -> Registration -> SystemSeconds -> IO RegisterIntent
-signRegisterIntent g domain EphemeralWallet {ewKey} r deadline =
-  RegisterIntent r nonce deadline <$> (signRecoverable g ewKey (registerIntentDigest domain r nonce deadline) >>= either fail pure)
+signRegisterIntent :: TVar ChaChaDRG -> Eip712Domain -> EphemeralWallet -> Registration -> DisputeDays -> SystemSeconds -> IO RegisterIntent
+signRegisterIntent g domain EphemeralWallet {ewKey} r days deadline =
+  RegisterIntent r days nonce deadline <$> (signRecoverable g ewKey (registerIntentDigest domain r days nonce deadline) >>= either fail pure)
   where
     nonce = 0
 

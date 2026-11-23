@@ -32,7 +32,7 @@ import Simplex.Messaging.SimplexName (labelHash)
 import Simplex.Messaging.SystemTime (RoundedSystemTime (..))
 import StoreService.Names.Chain (Hex32 (..), TxHash (..))
 import StoreService.Names.Phases (RegistrationId (..))
-import StoreService.Names.Registration (LinkKind (..), TermsAcceptance (TermsAcceptance))
+import StoreService.Names.Registration (LinkKind (..), TermsAcceptance (TermsAcceptance), minDisputeDays, unDisputeDays)
 import StoreService.Names.Revert (RevertName (..))
 import StoreService.Names.Signatures (AgreedTerms (..), OrderFields (..), communityTermsPrefix, parseSignature)
 import StoreService.Names.Store
@@ -65,6 +65,7 @@ namesStoreTests = describe "StoreService names: store" $ do
   describe "registrations" $ do
     it "creates a paid order unpaid and live at version 1, linked to its invoice, with its reveal" testCreatePaid
     it "creates a code order queued with its code reserved" testCreateCode
+    it "stores the dispute days of the order's payment: card 120, crypto and prepaid codes 14" testOrderDays
     it "refuses a second live order for one owner and label hash, or for one commitment" testLiveUnique
     it "refuses a code order whose code cannot be reserved, leaving no registration once its writes are rolled back" testCodeNotReservable
     it "finds an exact resend by its order hash, live or not" testOrderHashLookup
@@ -296,7 +297,12 @@ testStoredPhase = forM_ unfit $ \columns -> withServiceStore $ \st -> do
         "phase = 'taken'",
         "taken_at = created_at",
         "phase = 'failed', fail_reason = 'registry_refused'",
-        "phase = 'failed', failed_at = created_at, fail_reason = 'registry_refused', closed_by = 'expired'"
+        "phase = 'failed', failed_at = created_at, fail_reason = 'registry_refused', closed_by = 'expired'",
+        "dispute_until = 1",
+        "phase = 'ended', expires_at = 1",
+        "phase = 'ended', expires_at = 1, dispute_until = 2, registered_at = created_at",
+        "dispute_days = 13",
+        "dispute_days = 121"
       ]
 
 testOrderHashFields :: IO ()
@@ -347,6 +353,7 @@ testCreatePaid = withServiceStore $ \st -> do
         nrYears = twoYears,
         nrPrice = price,
         nrPayment = OPInvoice btc (InvoiceId "inv-r1"),
+        nrDisputeDays = minDisputeDays,
         nrReveal = Just reveal,
         nrHistory = noHistory,
         nrOrderHash = orderHash ownerA o (OTInvoice btc price),
@@ -368,6 +375,15 @@ testCreateCode = withServiceStore $ \st -> do
   nrOrderHash r `shouldBe` orderHash ownerA o (OTCode pcCodeHash)
   held <- withTransaction st $ \db -> getPrepaidCode db pcCodeHash
   (pcReservedBy =<< held, pcReservedAt =<< held) `shouldBe` (Just (RegistrationId "r1"), Just t0)
+
+testOrderDays :: IO ()
+testOrderDays = withServiceStore $ \st -> do
+  forM_ (zip3 ["card", "btc", "xmr"] [SPMCard CPStripe, btc, SPMCrypto CCXmr] [1 ..]) $ \(rid, method, n) -> withTransaction st $ \db -> do
+    insertInvoiceRow db ("inv-" <> rid) (at 60) "open"
+    createPaidRegistration db (newReg rid ownerA (order (rid <> "bakery") n)) (paidOrder $ "inv-" <> rid) {poMethod = method} t0 `shouldReturn` True
+  code <- issue st 4 usable
+  placeCode st "code" ownerA (order "codebakery" 4) code `shouldReturn` Right ()
+  mapM (fmap (unDisputeDays . nrDisputeDays) . reg st) ["card", "btc", "xmr", "code"] `shouldReturn` [120, 14, 14, 14]
 
 testLiveUnique :: IO ()
 testLiveUnique = withServiceStore $ \st -> do
@@ -490,12 +506,15 @@ testRoundTrip = withServiceStore $ \st -> do
             nrHistory = TxHistory {thCommitTx = Just $ TxHash $ hashFixture 8, thRegisterTx = Just $ TxHash $ hashFixture 9},
             nrAgreedTerms = agreed (communityTermsPrefix <> plainTerms)
           }
-      registered = changed {nrPhase = ORegistered (RoundedSystemTime 1861833600) (at 3)}
+      registered = changed {nrPhase = ORegistered (RoundedSystemTime 1861833600) (Just $ RoundedSystemTime 1803116100) (at 3)}
+      ended = changed {nrPhase = OEnded (RoundedSystemTime 1861833600) (RoundedSystemTime 1803116100)}
   write st changed `shouldReturn` Written 2
   reg st "r1" `shouldReturn` changed {nrVersion = 2, nrUpdatedAt = at 1}
   write st registered {nrVersion = 2} `shouldReturn` Written 3
   reg st "r1" `shouldReturn` registered {nrVersion = 3, nrUpdatedAt = at 1}
-  write st registered {nrVersion = 3, nrReveal = Nothing} `shouldReturn` Written 4
+  write st ended {nrVersion = 3} `shouldReturn` Written 4
+  reg st "r1" `shouldReturn` ended {nrVersion = 4, nrUpdatedAt = at 1}
+  write st registered {nrVersion = 4, nrReveal = Nothing} `shouldReturn` Written 5
   nrReveal <$> reg st "r1" `shouldReturn` Nothing
 
 testLiveFollowsPhase :: IO ()
@@ -527,12 +546,13 @@ testOrderLive = withServiceStore $ \st -> do
   paid <- reg st "r1"
   let code = paid {nrPayment = OPCode 1}
       liveIn r phase = (namePhase phase, orderLive r {nrPhase = phase})
-      registered = ORegistered (RoundedSystemTime 1861833600) (at 3)
+      registered = ORegistered (RoundedSystemTime 1861833600) Nothing (at 3)
       failed = OFailed (at 2) FRRegistryRefused
       taken = OTaken (at 2)
-  map (liveIn paid) [OUnpaid (InvoiceId "inv-r1"), OClosed ICExpired, OQueued, OCommitting (TxHash $ hashFixture 8), OCommitted commitFixture, ORegistering commitFixture (TxHash $ hashFixture 9), registered, taken, failed]
-    `shouldBe` [(PUnpaid, True), (PClosed, False), (PQueued, True), (PCommitting, True), (PCommitted, True), (PRegistering, True), (PRegistered, False), (PTaken, False), (PFailed, True)]
-  map (liveIn code) [taken, failed, registered] `shouldBe` [(PTaken, False), (PFailed, True), (PRegistered, False)]
+      ended = OEnded (RoundedSystemTime 1861833600) (RoundedSystemTime 1803116100)
+  map (liveIn paid) [OUnpaid (InvoiceId "inv-r1"), OClosed ICExpired, OQueued, OCommitting (TxHash $ hashFixture 8), OCommitted commitFixture, ORegistering commitFixture (TxHash $ hashFixture 9), registered, taken, failed, ended]
+    `shouldBe` [(PUnpaid, True), (PClosed, False), (PQueued, True), (PCommitting, True), (PCommitted, True), (PRegistering, True), (PRegistered, False), (PTaken, False), (PFailed, True), (PEnded, False)]
+  map (liveIn code) [taken, failed, registered, ended] `shouldBe` [(PTaken, False), (PFailed, True), (PRegistered, False), (PEnded, False)]
 
 testLatePayment :: IO ()
 testLatePayment = withServiceStore $ \st -> do
@@ -636,14 +656,14 @@ testLabelRegistering = withServiceStore $ \st -> do
     holder `shouldReturn` Just (RegistrationId "r1")
     r2 <- reg st "r2"
     write st r2 {nrPhase = OQueued} `shouldThrow` anyException
-  forM_ [OTaken (at 4), ORegistered (RoundedSystemTime 1861833600) (at 4)] $ \phase -> do
+  forM_ [OTaken (at 4), ORegistered (RoundedSystemTime 1861833600) Nothing (at 4), OEnded (RoundedSystemTime 1861833600) (RoundedSystemTime 1803116100)] $ \phase -> do
     r <- reg st "r1"
     write st r {nrPhase = phase} `shouldNotReturn` VersionChanged
     holder `shouldReturn` Nothing
 
 testActive :: IO ()
 testActive = withServiceStore $ \st -> do
-  let phases = [OUnpaid (InvoiceId "inv-r1"), OQueued, OCommitting (TxHash $ hashFixture 8), OCommitted commitFixture, ORegistering commitFixture (TxHash $ hashFixture 9), ORegistered (RoundedSystemTime 1861833600) (at 3), OTaken (at 2), OFailed (at 2) FRRegistryRefused, OClosed ICExpired]
+  let phases = [OUnpaid (InvoiceId "inv-r1"), OQueued, OCommitting (TxHash $ hashFixture 8), OCommitted commitFixture, ORegistering commitFixture (TxHash $ hashFixture 9), ORegistered (RoundedSystemTime 1861833600) Nothing (at 3), OTaken (at 2), OFailed (at 2) FRRegistryRefused, OClosed ICExpired, OEnded (RoundedSystemTime 1861833600) (RoundedSystemTime 1803116100)]
   forM_ (zip [1 ..] phases) $ \(i, phase) -> do
     let rid = "r" <> T.pack (show i)
     placePaid st rid ownerA (order ("alicebakery" <> T.pack (show i)) i) (at 60) `shouldReturn` Right ()
