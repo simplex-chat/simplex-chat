@@ -211,12 +211,12 @@ getUsersInfo db = getUsers db >>= mapM getUserInfo
                   SELECT COUNT(1)
                   FROM chat_items i
                   JOIN contacts ct USING (contact_id)
-                  WHERE i.user_id = ? AND i.item_status = ? AND i.item_priority < 0 AND (ct.enable_ntfs = 1 OR ct.enable_ntfs IS NULL) AND ct.deleted = 0
+                  WHERE i.user_id = ? AND i.item_status = ? AND i.contact_id IS NOT NULL AND i.item_priority < 0 AND (ct.enable_ntfs = 1 OR ct.enable_ntfs IS NULL) AND ct.deleted = 0
                 ) + (
                   SELECT COUNT(1)
                   FROM chat_items i
                   JOIN groups g USING (group_id)
-                  WHERE i.user_id = ? AND i.item_status = ? AND i.item_priority <> 0 AND i.item_priority < 0 AND (g.enable_ntfs = 1 OR g.enable_ntfs IS NULL)
+                  WHERE i.user_id = ? AND i.item_status = ? AND i.group_id IS NOT NULL AND i.item_priority <> 0 AND i.item_priority < 0 AND (g.enable_ntfs = 1 OR g.enable_ntfs IS NULL)
                 )
             |]
             (userId, CISRcvNew, userId, CISRcvNew)

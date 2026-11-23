@@ -11,9 +11,9 @@ m20261113_item_priority =
   [r|
 ALTER TABLE chat_items ADD COLUMN item_priority SMALLINT NOT NULL DEFAULT 0;
 
-CREATE INDEX idx_chat_items_contacts_silent ON chat_items(user_id, item_status, contact_id, item_priority) WHERE item_priority < 0;
+CREATE INDEX idx_chat_items_contacts_silent ON chat_items(user_id, item_status, contact_id, item_priority) WHERE item_priority < 0 AND contact_id IS NOT NULL;
 
-CREATE INDEX idx_chat_items_groups_priority ON chat_items(user_id, item_status, group_id, group_scope_tag, group_scope_group_member_id, item_priority) WHERE item_priority <> 0;
+CREATE INDEX idx_chat_items_groups_priority ON chat_items(user_id, item_status, group_id, group_scope_tag, group_scope_group_member_id, item_priority) WHERE item_priority <> 0 AND group_id IS NOT NULL;
 
 ALTER TABLE delivery_tasks ADD COLUMN update_notification SMALLINT NOT NULL DEFAULT 0;
 
@@ -26,7 +26,7 @@ down_m20261113_item_priority :: Text
 down_m20261113_item_priority =
   [r|
 UPDATE group_members SET member_status = 'removed'
-WHERE member_via IN (SELECT u.member_id FROM group_members u WHERE u.group_id = group_members.group_id AND u.member_category = 'user');
+WHERE member_via IS NOT NULL AND EXISTS (SELECT 1 FROM group_members u WHERE u.group_id = group_members.group_id AND u.member_id = group_members.member_via AND u.member_category = 'user');
 
 UPDATE group_members SET member_status = 'announced'
 WHERE member_via IS NOT NULL AND member_status = 'connected';

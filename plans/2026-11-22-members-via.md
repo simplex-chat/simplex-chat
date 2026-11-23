@@ -353,7 +353,7 @@ Down, so that an older core reads and processes the rows as it would have create
 -- members via the user: an older core cannot send as them
 UPDATE group_members SET member_status = 'removed'
 WHERE member_via IS NOT NULL
-  AND member_via IN (SELECT u.member_id FROM group_members u WHERE u.group_id = group_members.group_id AND u.member_category = 'user');
+  AND EXISTS (SELECT 1 FROM group_members u WHERE u.group_id = group_members.group_id AND u.member_id = group_members.member_via AND u.member_category = 'user');
 -- members via another member: as an older core records them from x.grp.mem.new
 UPDATE group_members SET member_status = 'announced'
 WHERE member_via IS NOT NULL AND member_status = 'connected';
