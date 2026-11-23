@@ -136,7 +136,7 @@ fun segmentDisplayText(ft: FormattedText, mentions: Map<String, CIMention>?, lin
 
 private fun msgLinkTexts(text: String, link: Format.MessageLink, links: Map<String, CILink>?): Pair<String, String?> {
   val label = link.showText ?: text
-  return label to link.showText?.let { links?.get(it)?.text }?.takeIf { it != label }
+  return label to link.ciLink(links)?.text?.takeIf { it != label }
 }
 
 class ItemDisplay(val parts: List<Pair<String, String>>, val bases: List<Int>)
@@ -430,7 +430,8 @@ fun MarkdownText (
               }
             }
             is Format.MessageLink -> {
-              val ftStyle = Format.linkStyle
+              val unknownSource = ft.format.msgLinkType == MsgLinkType.unknownSource && ft.format.ciLink(links)?.target == null
+              val ftStyle = Format.linkStyle.let { if (unknownSource) it.copy(color = it.color.copy(alpha = 0.7f)) else it }
               val (label, shortText) = msgLinkTexts(ft.text, ft.format, links)
               val appendLink = {
                 withStyle(ftStyle) { append(label) }

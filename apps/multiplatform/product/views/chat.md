@@ -54,7 +54,7 @@ Each type has a dedicated composable in `views/chat/item/`:
 
 | Type | Composable | Description |
 |---|---|---|
-| Text | `FramedItemView` | Rendered with markdown (bold, italic, code, links, `@mentions`) via `CIMarkdownText` |
+| Text | `FramedItemView` | Rendered with markdown (bold, italic, code, links, `@mentions`) via `CIMarkdownText`; a message link shows its label and, in italics in parentheses, the short text of the linked message; a link from an unknown source is muted |
 | Image | `CIImageView` | Thumbnail with tap-to-fullscreen via `ImageFullScreenView`; animated GIFs play inline and full screen |
 | Video | `CIVideoView` | Video thumbnail with play button; inline playback via `VideoPlayerHolder` |
 | Voice | `CIVoiceView` | Waveform visualization with playback controls and duration |
@@ -79,6 +79,7 @@ Long-press context menu on any message:
 | Reply | Sets compose bar to reply mode with quoted message (`ComposeContextItem.QuotedItem`) |
 | Forward | Opens destination picker; uses `apiPlanForwardChatItems` with confirmation for partial forwards |
 | Copy | Copies message text to clipboard |
+| Copy link | Follows Copy; copies the link of the message to clipboard and shows "Copied to clipboard" |
 | Edit | Enters edit mode (`ComposeContextItem.EditingItem`); own messages within edit window |
 | Delete | Delete for self or delete for everyone (with confirmation via `deleteMessagesAlertDialog`) |
 | Moderate | Group moderators can delete messages for all members (`moderateMessagesAlertDialog`) |

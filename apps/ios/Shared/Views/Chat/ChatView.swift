@@ -2657,15 +2657,7 @@ struct ChatView: View {
 
         private func copyLinkButton(_ ci: ChatItem) -> Button<some View> {
             Button {
-                Task {
-                    do {
-                        let cInfo = chat.chatInfo
-                        let link = try await apiGetChatItemLink(type: cInfo.chatType, id: cInfo.apiId, scope: cInfo.groupChatScope(), itemId: ci.id)
-                        await MainActor.run { UIPasteboard.general.string = link }
-                    } catch let error {
-                        logger.error("apiGetChatItemLink error: \(responseError(error))")
-                    }
-                }
+                Task { await copyItemLink(chat.chatInfo, ci) }
             } label: {
                 Label(
                     NSLocalizedString("Copy link", comment: "chat item action"),
@@ -3254,6 +3246,15 @@ func archiveReports(_ chat: Chat, _ itemIds: [Int64], _ forAll: Bool, _ onSucces
                 logger.error("ChatView.archiveReports error: \(error.localizedDescription)")
             }
         }
+    }
+}
+
+func copyItemLink(_ cInfo: ChatInfo, _ ci: ChatItem) async {
+    do {
+        let link = try await apiGetChatItemLink(type: cInfo.chatType, id: cInfo.apiId, scope: cInfo.groupChatScope(), itemId: ci.id)
+        await MainActor.run { UIPasteboard.general.string = link }
+    } catch let error {
+        logger.error("apiGetChatItemLink error: \(responseError(error))")
     }
 }
 

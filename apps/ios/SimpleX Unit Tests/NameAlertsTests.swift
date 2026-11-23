@@ -244,6 +244,17 @@ final class NameAlertsTests: XCTestCase {
     }
 
     @MainActor
+    func testMessageLinkErrorShowsAlert() async throws {
+        var user = User.sampleData
+        user.userId = 2
+        ChatModel.shared.currentUser = user
+        try recorded("links/same-group")
+        openMsgLink("GROUP_MSG_LINK", .group, chatId: nil, target: nil, theme: CurrentColors.toAppTheme())
+        try? await waitFor { self.shownTexts().contains("Error opening link") }
+        XCTAssertTrue(shownTexts().contains("Error opening link"), "\(shownTexts())")
+    }
+
+    @MainActor
     func testChannelPostLinkPastedInSearchJoinsChannel() async throws {
         try recorded("links/channel")
         let state = SearchState()

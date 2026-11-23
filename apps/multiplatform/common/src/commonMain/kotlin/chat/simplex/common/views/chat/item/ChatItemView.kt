@@ -1523,12 +1523,13 @@ fun BubblePreview(content: @Composable () -> Unit) {
 @Preview
 @Composable
 fun PreviewChatItemView(
-  chatItem: ChatItem = ChatItem.getSampleData(1, CIDirection.DirectSnd(), previewDate, "hello")
+  chatItem: ChatItem = ChatItem.getSampleData(1, CIDirection.DirectSnd(), previewDate, "hello"),
+  chat: Chat = Chat.sampleData
 ) = BubblePreview {
   ChatItemView(
     chatsCtx = ChatModel.ChatsContext(secondaryContextFilter = null),
     rhId = null,
-    Chat.sampleData,
+    chat,
     chatItem,
     useLinkPreviews = true,
     linkMode = SimplexLinkMode.DESCRIPTION,
@@ -1612,7 +1613,7 @@ fun PreviewChatItemViewEmptyLinesTerminal() = CompositionLocalProvider(LocalTerm
 @Preview
 @Composable
 fun PreviewChatItemViewMessageLinks() = PreviewChatItemView(
-  ChatItem.getSampleData(1, CIDirection.DirectSnd(), previewDate, "Before the release: [Approve the deploy plan?](simplex:/m#d/UXhQdlR3WmNrTjhyRDFtYQ) and [the draft](simplex:/m)").copy(
+  ChatItem.getSampleData(1, CIDirection.DirectRcv(), previewDate, "Before the release: [Approve the deploy plan?](simplex:/m#d/UXhQdlR3WmNrTjhyRDFtYQ) and [the draft](simplex:/m)").copy(
     formattedText = listOf(
       FormattedText("Before the release: "),
       FormattedText("[Approve the deploy plan?](simplex:/m#d/UXhQdlR3WmNrTjhyRDFtYQ)", Format.MessageLink("Approve the deploy plan?", MsgLinkType.direct, "simplex:/m#d/UXhQdlR3WmNrTjhyRDFtYQ")),

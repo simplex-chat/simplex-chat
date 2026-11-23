@@ -707,6 +707,9 @@ func messageText(
             case let .messageLink(text, msgLinkType, msgLink):
                 attrs = linkAttrs()
                 let ciLink = text.flatMap { links?[$0] }
+                if msgLinkType == .unknownSource && ciLink?.target == nil {
+                    attrs[.foregroundColor] = uiLinkColor.withAlphaComponent(0.7)
+                }
                 if !preview {
                     attrs[msgLinkAttrKey] = Format.messageLink(showText: text, msgLinkType: msgLinkType, msgLink: msgLink)
                     if let target = ciLink?.target { attrs[msgLinkTargetAttrKey] = target }

@@ -304,7 +304,7 @@ Long-pressing a message shows a context menu with actions based on message type 
 | Reply | All messages | Sets compose state to `.replying` |
 | Forward | Sent/received content messages | `apiForwardChatItems` |
 | Copy | Text messages | Copies to clipboard |
-| Copy link | Content messages | `apiGetChatItemLink`, then the clipboard |
+| Copy link | Content messages | `copyItemLink()`: `apiGetChatItemLink`, then the clipboard, without a confirmation; follows Copy |
 | Edit | Own sent messages (within edit window) | `apiUpdateChatItem` |
 | Delete for me | All messages | `apiDeleteChatItem(mode: .cidmInternal)` |
 | Delete for everyone | Own sent messages | `apiDeleteChatItem(mode: .cidmBroadcast)` |

@@ -69,6 +69,24 @@ final class MessageLinkTests: XCTestCase {
         XCTAssertEqual(msgLinkAction(try linkPlan("links/same-group", "/_msg link plan 1 simplex:/m"), target: nil), .alert(title: "This link is from an unknown source."))
     }
 
+    func testLinkFromUnknownSourceIsMuted() throws {
+        XCTAssertEqual(labelColor(try lastItem("links/other-group-recipient", "/_get chat #2 count=1")), uiLinkColor.withAlphaComponent(0.7))
+    }
+
+    func testSendersLinkToOtherChatIsNotMuted() throws {
+        XCTAssertEqual(labelColor(try lastItem("links/other-group-sender", "/_get chat #2 count=1")), uiLinkColor)
+    }
+
+    @MainActor
+    func testCopyLinkCopiesWithoutConfirmation() async throws {
+        let chat = try lastChat("links/same-group", "/_get chat #1 count=1")
+        try recorded("links/same-group")
+        UIPasteboard.general.string = ""
+        await copyItemLink(chat.chatInfo, try XCTUnwrap(chat.chatItems.last))
+        XCTAssertEqual(UIPasteboard.general.string, "ITEM_LINK")
+        XCTAssertFalse(getTopViewController() is UIAlertController)
+    }
+
     func testLinkNotInChatsShowsAlert() throws {
         let plan = try linkPlan("links/same-group", "/_msg link plan 1 simplex:/m#g/YWJjZGVmZ2hpamtsbW5vcA?a=MTIzNDU2Nzg5MDEyMzQ1Ng")
         XCTAssertEqual(msgLinkAction(plan, target: nil), .alert(title: "This message is not in your chats."))
@@ -110,10 +128,19 @@ final class MessageLinkTests: XCTestCase {
         return try XCTUnwrap(plan, "not a message link plan: \(r.responseType)")
     }
 
-    private func lastItem(_ fixture: String, _ cmd: String) throws -> ChatItem {
+    private func lastChat(_ fixture: String, _ cmd: String) throws -> ChatData {
         let r = try response(fixture, cmd)
-        let item: ChatItem? = if case let .apiChat(_, chat, _) = r { chat.chatItems.last } else { nil }
-        return try XCTUnwrap(item, "no chat item: \(r.responseType)")
+        let chat: ChatData? = if case let .apiChat(_, chat, _) = r { chat } else { nil }
+        return try XCTUnwrap(chat, "no chat: \(r.responseType)")
+    }
+
+    private func lastItem(_ fixture: String, _ cmd: String) throws -> ChatItem {
+        try XCTUnwrap(try lastChat(fixture, cmd).chatItems.last, "no chat item in \(fixture)")
+    }
+
+    private func labelColor(_ item: ChatItem) -> UIColor? {
+        let r = messageText(item.text, item.formattedText, sender: nil, mentions: nil, links: item.links, userMemberId: nil, showSecrets: nil, backgroundColor: .white)
+        return r.string.attribute(.foregroundColor, at: (r.string.string as NSString).range(of: "q").location, effectiveRange: nil) as? UIColor
     }
 
     private func parsedMarkdown(_ fixture: String, _ text: String) throws -> ParsedMarkdown {

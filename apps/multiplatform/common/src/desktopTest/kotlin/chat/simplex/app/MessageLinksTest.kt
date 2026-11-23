@@ -1,24 +1,39 @@
 package chat.simplex.app
 
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.platform.ClipboardManager
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.ComposeUiTest
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.onFirst
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.runComposeUiTest
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.style.TextDecoration
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.chatParseMarkdown
 import chat.simplex.common.platform.chatSendCmdRetry
+import chat.simplex.common.simplexWindowState
+import chat.simplex.common.views.chat.item.MarkdownText
+import chat.simplex.common.views.chat.item.PreviewChatItemView
 import chat.simplex.common.views.chat.item.itemDisplay
 import chat.simplex.common.views.helpers.AlertManager
 import chat.simplex.common.views.helpers.generalGetString
 import chat.simplex.common.views.helpers.parseToMarkdown
 import chat.simplex.common.views.newchat.MsgLinkAction
 import chat.simplex.common.views.newchat.msgLinkAction
+import chat.simplex.common.views.newchat.openMsgLink
 import chat.simplex.common.views.newchat.planAndConnect
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import java.util.Locale
+import kotlin.math.roundToInt
 import kotlin.test.*
 
 @OptIn(ExperimentalTestApi::class)
@@ -102,6 +117,56 @@ class MessageLinksTest {
   }
 
   @Test
+  fun linkFromUnknownSourceIsMuted() = runComposeUiTest {
+    useRecording("links/other-group-recipient")
+    assertEquals(listOf(7, 7), linkAlphas(runBlocking { lastItem(groupId = 2) }))
+  }
+
+  @Test
+  fun sendersLinkToOtherChatIsNotMuted() = runComposeUiTest {
+    useRecording("links/other-group-sender")
+    assertEquals(listOf(10, 10), linkAlphas(runBlocking { lastItem(groupId = 2) }))
+  }
+
+  @Test
+  fun copyLinkFollowsCopyAndCopiesLink() = runComposeUiTest {
+    useRecording("links/same-group")
+    val chat = runBlocking { lastChat(groupId = 1) }
+    val copied = mutableListOf<String>()
+    val clipboard = object : ClipboardManager {
+      override fun setText(annotatedString: AnnotatedString) { copied += annotatedString.text }
+      override fun getText(): AnnotatedString? = null
+    }
+    try {
+      setContent {
+        CompositionLocalProvider(LocalClipboardManager provides clipboard) {
+          PreviewChatItemView(chat.chatItems.last(), chat)
+        }
+      }
+      onAllNodes(SemanticsMatcher.keyIsDefined(SemanticsActions.OnLongClick)).onFirst().performSemanticsAction(SemanticsActions.OnLongClick)
+      waitForIdle()
+      val texts = shownTexts()
+      assertEquals("Copy link", texts.getOrNull(texts.indexOf("Copy") + 1), "$texts")
+      onNodeWithText("Copy link").performClick()
+      waitUntil(timeoutMillis = 5_000) { copied.isNotEmpty() }
+      assertEquals(listOf("ITEM_LINK"), copied)
+      assertEquals(listOf("Copied to clipboard"), simplexWindowState.toasts.map { it.first })
+    } finally {
+      simplexWindowState.toasts.clear()
+    }
+  }
+
+  @Test
+  fun failedLinkPlanShowsError() = runComposeUiTest {
+    useRecording("links/same-group")
+    ChatModel.currentUser.value = User.sampleData.copy(userId = 2)
+    setContent { AlertManager.shared.showInView() }
+    runBlocking { openMsgLink(null, null, Format.MessageLink("q", MsgLinkType.group, "GROUP_MSG_LINK"), null) }
+    runCatching { waitUntil(timeoutMillis = 5_000) { shownTexts().contains("Error opening link") } }
+    assertTrue(shownTexts().contains("Error opening link"), "${shownTexts()}")
+  }
+
+  @Test
   fun postOfChannelNotJoinedConnects() = recorded("links/channel") {
     assertEquals("CHANNEL_LINK", (msgLinkAction(plan("CHANNEL_MSG_LINK"), null) as MsgLinkAction.Connect).connTarget)
   }
@@ -171,6 +236,12 @@ class MessageLinksTest {
   private suspend fun plan(link: String): MsgLinkPlan = assertNotNull(ChatController.apiMsgLinkPlan(null, link, null))
 
   private fun alertTitle(plan: MsgLinkPlan, target: CILinkTarget?): String = generalGetString((msgLinkAction(plan, target) as MsgLinkAction.Alert).title)
+
+  private fun ComposeUiTest.linkAlphas(item: ChatItem): List<Int> {
+    setContent { MarkdownText(item.text, item.formattedText, links = item.links, toggleSecrets = false, linkMode = SimplexLinkMode.DESCRIPTION) }
+    val text = onAllNodes(SemanticsMatcher.keyIsDefined(SemanticsProperties.Text), useUnmergedTree = true).fetchSemanticsNodes().single().config[SemanticsProperties.Text].single()
+    return text.spanStyles.filter { it.item.textDecoration == TextDecoration.Underline }.map { (it.item.color.alpha * 10).roundToInt() }
+  }
 
   private fun ComposeUiTest.assertTexts(vararg texts: String) {
     runCatching { waitUntil(timeoutMillis = 5_000) { shownTexts() == texts.toList() } }

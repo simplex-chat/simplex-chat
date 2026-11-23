@@ -204,7 +204,7 @@ App links use the app's own scheme, `simplexchat:`, for app-specific deep links,
 
 ### Message Link
 
-A message link (`Format.messageLink`) is shown by `messageText()` as its label, followed by the short text of the item's `links` entry of that label when the two differ.
+A message link (`Format.messageLink`) is shown by `messageText()` as its label, followed by the short text of the item's `links` entry of that label in italics in parentheses when the two differ. A `simplex:/m` link without a target in that entry, a link from an unknown source, is drawn in `uiLinkColor` at 70% opacity.
 
 `openMsgLink()` takes the plan `unknownSource` for a `simplex:/m` link, and otherwise calls `apiMsgLinkPlan()`: with the open chat at a tap, without a chat for a URL opened from outside that the core parses as one message link, before the path switch of `connectViaUrl_()`. `msgLinkAction()` maps the plan and the target of the item's link entry, which is present in the sender's or forwarder's copy of a link sent as `simplex:/m`:
 
@@ -217,6 +217,8 @@ A message link (`Format.messageLink`) is shown by `messageText()` as its label, 
 | `unknownSource`, with a target | `openItem` at the target |
 | `unknownSource`, without a target | alert *This link is from an unknown source.* |
 | `unknownLink` | alert *Update the app to open this link.* |
+
+A failed `apiMsgLinkPlan()` shows the alert *Error opening link* with the error.
 
 A text that the core parses as one message link, pasted into a search field or *Tap to paste link*, or scanned as a QR code, is `ConnectTarget.msgLink` of `strConnectTarget()` and goes to `openMsgLink()` without a chat. `openMsgLink()` dismisses the sheets before it opens a chat, and runs `planAndConnect()` with `dismiss: true`. A message link of a public chat is a SimpleX link (`Format.isSimplexLink`) for the group preference in compose and in the share extension; the forward check counts only connection links, as the core reduces message links in a forward into such a group.
 

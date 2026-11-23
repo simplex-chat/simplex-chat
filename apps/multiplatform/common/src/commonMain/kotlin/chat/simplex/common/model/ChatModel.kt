@@ -5413,7 +5413,9 @@ sealed class Format {
       "(${String.format(generalGetString(MR.strings.simplex_link_connection), smpHosts.firstOrNull() ?: "?")})"
   }
   @Serializable @SerialName("simplexName") class SimplexName(val nameInfo: SimplexNameInfo): Format()
-  @Serializable @SerialName("messageLink") class MessageLink(val showText: String?, val msgLinkType: MsgLinkType, val msgLink: String): Format()
+  @Serializable @SerialName("messageLink") class MessageLink(val showText: String?, val msgLinkType: MsgLinkType, val msgLink: String): Format() {
+    fun ciLink(links: Map<String, CILink>?): CILink? = showText?.let { links?.get(it) }
+  }
   @Serializable @SerialName("command") class Command(val commandStr: String): Format()
   @Serializable @SerialName("mention") class Mention(val memberName: String): Format()
   @Serializable @SerialName("modal") class Modal(val modalName: String, val text: String): Format() {

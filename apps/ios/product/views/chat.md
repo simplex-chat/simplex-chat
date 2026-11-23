@@ -49,7 +49,7 @@ Each type has a dedicated view in `Shared/Views/Chat/ChatItem/`:
 
 | Type | View | Description |
 |---|---|---|
-| Text | `MsgContentView` | Rendered with markdown (bold, italic, code, links, mentions); a message link shows its label and the short text of the linked message, and a tap opens the message |
+| Text | `MsgContentView` | Rendered with markdown (bold, italic, code, links, mentions); a message link shows its label and, in italics in parentheses, the short text of the linked message, and a tap opens the message; a link from an unknown source is muted |
 | Image | `CIImageView` | Thumbnail with tap-to-fullscreen via `FullScreenMediaView` |
 | Video | `CIVideoView` | Video thumbnail with play button; inline playback |
 | Voice | `CIVoiceView` / `FramedCIVoiceView` | Waveform visualization with playback controls and duration |
@@ -74,7 +74,7 @@ Long-press context menu on any message:
 | Reply | Sets compose bar to reply mode with quoted message |
 | Forward | Opens `forwardedChatItems` sheet to pick destination chat |
 | Copy | Copies message text to clipboard |
-| Copy link | Copies the link of the message to clipboard |
+| Copy link | Follows Copy; copies the link of the message to clipboard, without a confirmation |
 | Edit | Enters edit mode in compose bar (own messages, within edit window) |
 | Delete | Delete for self or delete for everyone (with confirmation) |
 | React | Opens emoji reaction picker |
