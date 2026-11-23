@@ -317,6 +317,23 @@ final class LinkPreviewTests: XCTestCase {
     }
 
     @MainActor
+    func testComposeForwardedToSameChatWithAttachmentRequestsLinkAtNextTextChange() async throws {
+        let compose = try await showCompose()
+        compose.composeState.message = "LINK_URL/no-image LINK_URL/page"
+        try await waitFor { !compose.composeState.parsedMessage.isEmpty }
+        attachFile(compose)
+        compose.composeState = compose.composeState.forwardingItems([ChatItem.getSample(1, .directRcv, .now, "hello")], fromChatInfo: compose.chat.chatInfo, previewsOn: true)
+        try await Task.sleep(nanoseconds: 2_000_000_000)
+        XCTAssertTrue(compose.composeState.noPreview)
+        XCTAssertEqual(requests(), [])
+        compose.composeState.message = "LINK_URL/no-image LINK_URL/page "
+        try await waitFor { compose.composeState.linkPreview != nil }
+        assertRecordedPreview(compose.composeState.linkPreview)
+        XCTAssertTrue(compose.composeState.forwarding)
+        XCTAssertEqual(requests(), ["/_link preview LINK_URL/no-image", "/_link preview LINK_URL/page"])
+    }
+
+    @MainActor
     func testComposeKeepsSendInProgressWhenPreviewLoads() async throws {
         let response = hold("/_link preview LINK_URL/page")
         let compose = try await showCompose()
@@ -607,7 +624,7 @@ final class LinkPreviewTests: XCTestCase {
     }
 
     @MainActor
-    func testForwardToSameChatKeepsLinkPreviewAndSelectsLinkInPlaceOfAttachment() {
+    func testForwardToSameChatKeepsLinkPreviewAndSelectsLinkInPlaceOfAttachmentAtNextTextChange() {
         let items = [ChatItem.getSample(1, .directRcv, .now, "hello")]
         let from = ChatInfo.direct(contact: Contact.sampleData)
         let loading = fetched(typed("LINK_URL/no-image LINK_URL/page"), nil)
@@ -616,7 +633,10 @@ final class LinkPreviewTests: XCTestCase {
         XCTAssertEqual(forwardedLoading.cancelledLinks, ["LINK_URL/no-image"])
         let shown = fetched(loading, pagePreview)
         XCTAssertEqual(status(shown.forwardingItems(items, fromChatInfo: from, previewsOn: true)), .shown(linkPreview: pagePreview))
-        XCTAssertEqual(loadingUri(withFile(shown).forwardingItems(items, fromChatInfo: from, previewsOn: true)), "LINK_URL/page")
+        let forwardedFile = withFile(shown).forwardingItems(items, fromChatInfo: from, previewsOn: true)
+        XCTAssertTrue(forwardedFile.noPreview)
+        XCTAssertEqual(forwardedFile.cancelledLinks, ["LINK_URL/no-image"])
+        XCTAssertEqual(loadingUri(typed("LINK_URL/no-image LINK_URL/page ", in: forwardedFile)), "LINK_URL/page")
     }
 
     @MainActor
