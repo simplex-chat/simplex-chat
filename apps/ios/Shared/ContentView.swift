@@ -473,7 +473,7 @@ struct ContentView: View {
                     NSLocalizedString("Relay address", comment: "alert title"),
                     message: NSLocalizedString("This is a chat relay address, it cannot be used to connect.", comment: "alert message")
                 )
-            } else if (path == "/contact" || path == "/invitation" || path == "/a" || path == "/c" || path == "/g" || path == "/i") {
+            } else if isConnectionLinkPath(path) {
                 path.removeFirst()
                 let link = url.absoluteString.replacingOccurrences(of: "///\(path)", with: "/\(path)")
                 planAndConnect(
@@ -513,6 +513,10 @@ func isAppLink(_ url: URL) -> Bool {
 
 func connectionLinkPath(_ url: URL) -> String {
     url.path.hasPrefix("/") ? url.path : "/" + (URLComponents(url: url, resolvingAgainstBaseURL: false)?.path ?? "")
+}
+
+func isConnectionLinkPath(_ path: String) -> Bool {
+    path == "/contact" || path == "/invitation" || path == "/a" || path == "/c" || path == "/g" || path == "/i" || path.hasPrefix("/name")
 }
 
 // a link type added in a later version reaches this build too, so an unknown path asks for an update

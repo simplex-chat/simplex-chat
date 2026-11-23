@@ -7,4 +7,10 @@ final class ConnectionLinkTests: XCTestCase {
         XCTAssertEqual(connectionLinkPath(try XCTUnwrap(URL(string: "simplex:" + link))), "/c")
         XCTAssertEqual(connectionLinkPath(try XCTUnwrap(URL(string: "simplex:/" + link))), "/c")
     }
+
+    func testNameLinksOpen() throws {
+        for link in ["simplex:/name#alice.simplex", "simplex:name#alice.simplex", "simplex:name@bob.simplex"] {
+            XCTAssertTrue(isConnectionLinkPath(connectionLinkPath(try XCTUnwrap(URL(string: link)))), link)
+        }
+    }
 }
