@@ -10,9 +10,9 @@ m20261113_item_priority =
   [sql|
 ALTER TABLE chat_items ADD COLUMN item_priority INTEGER NOT NULL DEFAULT 0;
 
-CREATE INDEX idx_chat_items_contacts_silent ON chat_items(user_id, item_status, contact_id, item_priority) WHERE item_priority < 0;
+CREATE INDEX idx_chat_items_contacts_silent ON chat_items(user_id, item_status, contact_id, item_priority) WHERE item_priority < 0 AND contact_id IS NOT NULL;
 
-CREATE INDEX idx_chat_items_groups_priority ON chat_items(user_id, item_status, group_id, group_scope_tag, group_scope_group_member_id, item_priority) WHERE item_priority <> 0;
+CREATE INDEX idx_chat_items_groups_priority ON chat_items(user_id, item_status, group_id, group_scope_tag, group_scope_group_member_id, item_priority) WHERE item_priority <> 0 AND group_id IS NOT NULL;
 
 ALTER TABLE delivery_tasks ADD COLUMN update_notification INTEGER NOT NULL DEFAULT 0;
 
