@@ -74,7 +74,7 @@ flowchart LR
 | `http://` link | fetched over HTTP on Android and desktop | fetched as `https://`; an `.onion` host over HTTP through the SOCKS proxy (Q2) |
 | WebP, GIF or ICO image | decoded on Android and desktop | Q4 |
 | Page without `og:image` | Android and desktop: the site icon at full width; iOS: no preview | no preview |
-| Description | never sent | `og:description`, else `<meta name="description">`; shown in the chat item on all platforms |
+| Description | never sent | `og:description`, else `<meta name="description">`; shown in the chat item on all platforms, in at most 2 lines |
 | Failed preview | no card, no alert | the same; with the developer option "Show link preview errors" on, an alert with the raw error |
 | Developer options | — | new toggle "Show link preview errors", off by default, shown only with "Show developer options" on |
 
@@ -154,7 +154,7 @@ sequenceDiagram
 | MAX_IMAGE_BYTES | 2 MiB of the `og:image` file (Q6) |
 | MAX_IMAGE_LINK_BYTES | 10 MiB of the JPEG or PNG file of an image link (section 3.7, Q6.1) |
 | MAX_TITLE_LENGTH | 300 characters |
-| MAX_DESCRIPTION_LENGTH | 500 characters |
+| MAX_DESCRIPTION_LENGTH | 200 characters |
 | IMAGE_DATA_SIZE | `maxImagePreviewSize`, 14000 (Library/Commands.hs:179-180), less the JSON bytes of the title and the description (section 3.10) |
 
 ### 3.5 Types
@@ -197,7 +197,7 @@ data Uri = Uri
 - `USHttp` is produced only for `.onion` hosts (section 3.7); `uriPort` is `Nothing` for the default port of the scheme.
 - MAX_REDIRECTS, MAX_HEADER_BYTES, MAX_HEADERS, MAX_HEAD_BYTES, MAX_IMAGE_BYTES, MAX_IMAGE_LINK_BYTES, MAX_TITLE_LENGTH and MAX_DESCRIPTION_LENGTH are constants of the module; the tests change only the roots, the address policy and the deadlines.
 - Card in the apps: compose shows image, title and link (LinkPreviews.kt:152-191; ComposeLinkView.swift:43-52); the chat item shows image, title, description when not empty, and link on Kotlin (LinkPreviews.kt:203-226); iOS shows image and title only (CILinkView.swift:22, 36).
-- Description: both apps send `""` today (LinkPreviews.kt:129-134, commented out "TODO add once supported in iOS"; ImageUtils.swift:471). The core fills it, Kotlin shows it with no change, and stage 3 adds it to CILinkView as Kotlin shows it.
+- Description: both apps send `""` today (LinkPreviews.kt:129-134, commented out "TODO add once supported in iOS"; ImageUtils.swift:471). The core fills it, Kotlin shows it in at most 2 lines in place of 12 (LinkPreviews.kt:224), and stage 3 adds it to CILinkView as Kotlin shows it.
 - `image` is required in `LinkPreview`, so a page without an image has no preview, as today on both platforms (LinkPreviews.kt:121-139; ImageUtils.swift:461-479).
 - `content = Nothing`, as both apps send it (LinkPreviews.kt:134; ImageUtils.swift:471).
 - `LinkPreviewConfig` is a field of `ChatConfig`; `rootCerts` is parsed once from the embedded bundle; `APPublicAndLoopback` is used by tests only.
@@ -429,6 +429,7 @@ Kotlin (android, desktop):
 | Site | Change |
 |---|---|
 | Kt:views/helpers/LinkPreviews.kt:33-149, 231-261 | `getLinkPreview`, Jsoup, proxy, `Authenticator`, mutex and `normalizeImageUri` removed; the fetch effect of Kt:views/chat/ComposeView.kt calls `apiGetLinkPreview(url)` (section 3.14.1) |
+| Kt:views/helpers/LinkPreviews.kt:224 | description in at most 2 lines, in place of 12 |
 | apps/multiplatform/common/build.gradle.kts:74 | `org.jsoup:jsoup` removed |
 | Kt:model/SimpleXAPI.kt | `CC.ApiGetLinkPreview`, `CR.CRLinkPreview`, `ChatErrorType.CELinkPreview`, `apiGetLinkPreview` with `rh = null`; on error, the raw message in an alert only under `developerTools` and `showLinkPreviewErrors` (section 3.12); preference `showLinkPreviewErrors` |
 | Kt:views/usersettings/DeveloperView.kt:62; base strings.xml | toggle "Show link preview errors" |
@@ -444,7 +445,7 @@ iOS:
 | apps/ios/SimpleXChat/ImageUtils.swift:13, 455-489 | `getLinkPreview` and `import LinkPresentation` removed |
 | apps/ios/Shared/Model/AppAPITypes.swift, SimpleXAPI.swift; SimpleXChat/APITypes.swift | `ChatCommand.apiGetLinkPreview`, `ChatResponse2.linkPreview`, `ChatErrorType.linkPreview`; `apiGetLinkPreview`, sent from a global dispatch queue; on error, the raw message in an alert only under "Show developer options" and "Show link preview errors" (section 3.12) |
 | apps/ios/Shared/Views/UserSettings/DeveloperView.swift:56-69 | toggle "Show link preview errors", default `DEFAULT_SHOW_LINK_PREVIEW_ERRORS` off |
-| apps/ios/Shared/Views/Chat/ChatItem/CILinkView.swift:36 | description under the title when not empty, as Kotlin (LinkPreviews.kt:223-225) |
+| apps/ios/Shared/Views/Chat/ChatItem/CILinkView.swift:36 | description under the title when not empty, in at most 2 lines, as Kotlin (LinkPreviews.kt:223-225) |
 | apps/ios/Shared/Views/Chat/ComposeMessage/ComposeView.swift:414, 1956-2006 | `linkPreviewsShowAlert`, alert and `DEFAULT_PRIVACY_LINK_PREVIEWS` write in the alert path removed (Q1 a); the link preview state of section 3.14.1 |
 | apps/ios/Shared/Views/UserSettings/PrivacySettings.swift:83 | the alert default write removed (Q1 a) |
 | apps/ios/SimpleXChat/AppGroup.swift:30, 99, 231; Shared/Views/UserSettings/SettingsView.swift:179-181 | the alert group default and its hint entry removed (Q1 a) |
@@ -777,7 +778,7 @@ flowchart TD
 | Q6.1 | The byte limit of the file of an image link, a link to a JPEG or PNG file (3.7, 3.10); Android and desktop make its preview today without a byte limit (LinkPreviews.kt:93-96, 124-128). The measurement fetched only `og:image` files; the one original above 2 MiB that it recorded is the JSON-LD PNG of a Substack post, 2,330,025 B | (a) MAX_IMAGE_BYTES, 2 MiB, as for `og:image`: a link to a larger file gets no preview; (b) MAX_IMAGE_LINK_BYTES, 10 MiB, within the decoding limits of `decodeResizable` (3.10); a file of 10 MiB is received within PREVIEW_DEADLINE only at 5.6 Mbit/s or more, 2.8 Mbit/s or more with a SOCKS proxy | (b): the file of an image link is usually a full photo |
 | Q7 | UA | (a) Firefox 160 on Windows (3.7); (b) Chrome 158 on Windows, `Chrome/158.0.0.0`; (c) Chrome 79, `Chrome/79.0.3945.130` | (a) |
 
-Decided: Q1 (a), Q2 (a), Q3 (a), Q4 (a). With Q2, `http` links of `.onion` hosts are fetched over plain HTTP, only through the SOCKS proxy; without a proxy they get no preview. Message size: the title is cut to 300 characters, the description to 500, and the image limit is reduced by their JSON bytes (3.10).
+Decided: Q1 (a), Q2 (a), Q3 (a), Q4 (a). With Q2, `http` links of `.onion` hosts are fetched over plain HTTP, only through the SOCKS proxy; without a proxy they get no preview. Message size: the title is cut to 300 characters, the description to 200, and the image limit is reduced by their JSON bytes (3.10). The description is shown in at most 2 lines.
 
 Open: Q5, Q6, Q6.1, Q7; the branch implements the recommended option of each: (a) of Q5, Q6 and Q7, (b) of Q6.1.
 
@@ -857,7 +858,7 @@ Core, scenario, `tests/ChatTests/LinkPreviews.hs` (new, in ChatTests.hs), patter
 | `APPublic` | `localhost` without a proxy and `127.0.0.1` through the SOCKS5 server: `CELinkPreview` "prohibited address", without a request to the server or the proxy |
 | `http` links | `http://localhost` fetched from the HTTPS server; an onion link without a proxy: `CELinkPreview` |
 | onion through SOCKS | page and image of `http://linkpreview.onion` over plain HTTP through the SOCKS5 server, as domain address type; `http://localhost` through it from the HTTPS server |
-| long non-Latin text | title of 400 Cyrillic and description of 600 CJK characters: cut to 300 and 500, image within the reduced limit, and the preview sent in a message to a contact |
+| long non-Latin text | title of 400 Cyrillic and description of 600 CJK characters: cut to 300 and 200, image within the reduced limit, and the preview sent in a message to a contact |
 | endless body after the og tags, sent slowly | response before PREVIEW_DEADLINE; the server sees the connection closed after sending less than MAX_HEAD_BYTES |
 | head beyond MAX_HEAD_BYTES | the server sees the connection closed |
 | slow server, gzip, certificate of another CA, oversized image dimensions | `CELinkPreview`; slow server with a test deadline of 2 s |
@@ -889,7 +890,7 @@ App tests on tests/fixtures/api/previews/link_preview.json:
 |---|---|---|
 | `LinkPreviewTest.kt`, `LinkPreviewTests.swift` | `getLinkPreview("LINK_URL/page")` sends `/_link preview LINK_URL/page` and returns the recorded preview | both |
 | same | the recorded error returns no preview and no alert, also with only "Show developer options" on; with both toggles on, an alert with the raw message | both |
-| `CILinkView` preview | description shown under the title (snapshot) | iOS |
+| `CILinkView` preview, `PreviewChatItemLinkView` | a description longer than 2 lines cut to 2 lines with an ellipsis under the title (snapshots) | both |
 | SE | `apiGetLinkPreview` of the share extension decodes the recorded response | iOS |
 | compose, `LinkPreviewTests.swift` | the recorded card without an alert; a failed link not requested again until a new compose; the result of a replaced link discarded; an attachment kept when a pending link responds | iOS |
 | compose state, `LinkPreviewTest.kt`, `LinkPreviewStateTest.kt`, `LinkPreviewTests.swift` | the laws and the tests of section 3.14.1 | both |
