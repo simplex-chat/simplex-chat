@@ -40,6 +40,7 @@ linkPreviewTests = do
   describe "page" $ do
     it "should prefer og tags" testPagePriority
     it "should read the first og tag of each kind, with property or name attribute" testPageNamedOg
+    it "should skip og tags with blank content" testPageBlankOg
     it "should decode entities and collapse whitespace" testPageValues
     it "should require title and image" testPageRequired
     it "should resolve image against the page" testPageImage
@@ -194,6 +195,13 @@ testPageNamedOg = do
     `shouldReturn` htmlPageOf "Named" "Named description" "https://example.com/n.png"
   testPage Nothing "<meta name=og:title content=Named><meta property=og:title content=OG><meta property=og:description content=\"OG description\"><meta name=og:description content=\"Named description\"><meta property=og:image content=/i.png><meta name=og:image content=/n.png>"
     `shouldReturn` htmlPageOf "Named" "OG description" "https://example.com/i.png"
+
+testPageBlankOg :: IO ()
+testPageBlankOg = do
+  testPage Nothing "<meta property=og:title content=\"\"><meta property=og:description content=d><meta property=og:image content=/i.png><title>Title</title>"
+    `shouldReturn` htmlPageOf "Title" "d" "https://example.com/i.png"
+  testPage Nothing "<title>Title</title><meta name=og:image content=\" \"><meta property=og:image content=/i.png>"
+    `shouldReturn` htmlPageOf "Title" "" "https://example.com/i.png"
 
 testPageValues :: IO ()
 testPageValues = do
