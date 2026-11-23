@@ -162,7 +162,7 @@ sealed class ComposePreview {
 | Variant | Fields | View |
 |---|---|---|
 | `NoPreview` | -- | Nothing shown |
-| `CLinkPreview` | `status: LinkPreviewStatus`: `Loading(uri)`, with a `request` number of the app process, or `Shown(linkPreview)` | `ComposeLinkView`: a spinner for `Loading`; title, description, image thumbnail for `Shown`; cancel button |
+| `CLinkPreview` | `status: LinkPreviewStatus`: `Loading(uri)`, with a `request` number of the app process, or `Shown(linkPreview)` | `ComposeLinkView`: a spinner for `Loading`; image thumbnail, title and link for `Shown`; cancel button |
 | `MediaPreview` | `images: List<String>` (base64 thumbnails), `content: List<UploadContent>` | `ComposeImageView`: horizontal thumbnail strip, cancel button |
 | `VoicePreview` | `voice: String` (file path), `durationMs: Int`, `finished: Boolean` | `ComposeVoiceView`: waveform visualization, duration, play/pause |
 | `FilePreview` | `fileName: String`, `uri: URI` | `ComposeFileView`: file icon, file name, cancel button |
