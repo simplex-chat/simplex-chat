@@ -31,6 +31,7 @@ import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String (StrEncoding (..))
 import Simplex.Messaging.Names.Record (USDCents)
 import Simplex.Messaging.SimplexName (labelHash)
+import Simplex.Messaging.SystemTime (RoundedSystemTime (..))
 import Simplex.Messaging.Util (safeDecodeUtf8)
 import StoreService.Config (StripeConfig (..))
 import StoreService.Names.Balances
@@ -87,6 +88,7 @@ namesBalancesTests = describe "StoreService names: balances" $ do
     it "records a reversal of an order not yet paid, and closes the order as reversed when its payment settles" testReversalBeforePayment
     it "keeps an order whose register was sent, naming the transaction" testReversalKeepsSent
     it "cancels an order whose only register is a settled one of another name, as after a reset and a selection, and keeps one with a register mined or recorded" testReversalCurrentName
+    it "names the label and disputeUntil of a registered order in its alert, as unregister takes them" testReversalRegisteredEvidence
     it "takes the reversed cents back from a taken order's balance, as far as it and the invoice's amount hold them, a refund as the rise of its total, and links the order with the cents reversed" testReversalTakesBack
     it "changes nothing for an order whose refund support recorded, and for an early fraud warning" testReversalAlertsOnly
     it "cancels a live order of which no register was sent, also after support refunded part of its balance" testReversalCancelsRefunded
@@ -558,6 +560,15 @@ testReversalCurrentName = withReversals $ \Ctx {cStore = st} env alerts -> do
   forM_ ["v", "n", "c"] $ \r -> reverseWith env r "evt_1" $ RVDispute "dp_1" $ CurrencyAmount 20000
   mapM (fmap nrPhase . reg st) ["v", "n", "c"] `shouldReturn` [OClosed ICReversed, OQueued, OQueued]
   alertsWith alerts ["of order v: it is cancelled, as no register transaction of its current name was sent", "of order n: it is not cancelled, as its register transaction was sent", "of order c: it is not cancelled, as its register transaction was sent"]
+
+testReversalRegisteredEvidence :: IO ()
+testReversalRegisteredEvidence = withReversals $ \Ctx {cStore = st} env alerts -> do
+  placeOrderRow st "g" True 20000 (at 60)
+  open <- reg st "g"
+  write st open {nrPhase = ORegistered (RoundedSystemTime 1861833600) (Just $ RoundedSystemTime 1803116100) t0} `shouldReturn` Written 2
+  reverseWith env "g" "evt_1" $ RVDispute "dp_1" $ CurrencyAmount 20000
+  alertsWith alerts ["of order g: it is not cancelled, as it is registered"]
+  readIORef alerts >>= (`shouldSatisfy` all (\a -> "; label " `T.isInfixOf` a && ", disputeUntil 1803116100; " `T.isInfixOf` a))
 
 testReversalTakesBack :: IO ()
 testReversalTakesBack = withReversals $ \Ctx {cStore = st} env alerts -> do

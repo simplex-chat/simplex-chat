@@ -347,8 +347,9 @@ The order's invoice row counts them and keeps the total reversed and the last on
 cents, a refund as the rise of `amount_refunded`; a repeated delivery of the last event
 changes nothing. Every dispute, refund and early fraud warning of a name order is logged at
 error and posted in the managed group as `names: <event> on payment <pi_...> of order <id>:
-<outcome>. Evidence: <payment>; <owner and order hash>; <signed registration>; <commit and register
-transactions>`, the evidence for the answer to Stripe. A delivery whose handling fails is answered
+<outcome>. Evidence: <payment>; <owner and order hash>; <label and disputeUntil>; <signed registration>;
+<commit and register transactions>`, the evidence for the answer to Stripe; the label and `disputeUntil`
+are the arguments of `unregister`. A delivery whose handling fails is answered
 500, so Stripe delivers it again; a badge order's dispute or refund changes nothing.
 
 The reverse proxy in front of this service must send a Content-Security-Policy that

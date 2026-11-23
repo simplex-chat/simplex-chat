@@ -26,6 +26,7 @@ import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Encoding.String (StrEncoding (..), textEncode)
 import Simplex.Messaging.Names.Record (USDCents)
+import Simplex.Messaging.SystemTime (RoundedSystemTime (..))
 import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
 import StoreService.Names.Orders (OrdersEnv (..))
 import StoreService.Names.Phases (RegistrationId (..), publish)
@@ -133,13 +134,16 @@ inOrderTurn oe@OrdersEnv {oeStore, oeTurns, oePhases, oeReport} row@InvoiceRow {
         Nothing -> logError $ "names: the " <> what <> " on payment " <> irProviderRef <> " has no order " <> idText rid
 
 orderEvidence :: DB.Connection -> InvoiceRow -> NameRegistration -> IO Text
-orderEvidence db InvoiceRow {irProviderRef, irAmount = CurrencyAmount amount, irStatus} NameRegistration {nrId, nrOwner, nrOrderHash, nrSettledAt, nrReveal} = do
+orderEvidence db InvoiceRow {irProviderRef, irAmount = CurrencyAmount amount, irStatus} NameRegistration {nrId, nrOwner, nrOrderHash, nrSettledAt, nrReveal, nrPhase} = do
   txs <- registrationTransactions db nrId
   pure $
     T.intercalate
       "; "
       [ "payment " <> irProviderRef <> " of " <> tshow amount <> " cents, invoice " <> textEncode irStatus <> maybe ", payment time not recorded" ((", paid at " <>) . tshow) nrSettledAt,
         "ordered by " <> addressText nrOwner <> ", order hash " <> encoded nrOrderHash,
+        maybe "label not stored" (\NameReveal {rvLabel} -> "label " <> rvLabel) nrReveal <> case nrPhase of
+          ORegistered _ (Just disputeEnd) _ -> ", disputeUntil " <> tshow (roundedSeconds disputeEnd)
+          _ -> ", no dispute period stored",
         maybe "its signed registration is no longer stored" (\NameReveal {rvSignature, rvAcceptance = TermsAcceptance {termsHash}} -> "registration signed " <> encoded rvSignature <> " with terms " <> encoded termsHash) nrReveal,
         transactions "commit" RTCommit txs,
         transactions "register" RTRegister txs
