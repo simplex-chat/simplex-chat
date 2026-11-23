@@ -40,7 +40,7 @@ import Simplex.Chat.Controller (ChatController (ChatController, smpAgent, subscr
 import Simplex.Chat.Core (sendChatCmdStr)
 import Simplex.Chat.Library.Internal (encodeConnInfo, getShortLinkConnReq, sendDirectMemberMessage, uniqueMsgMentions, updatedMentionNames)
 import Simplex.Chat.Markdown (parseMaybeMarkdownList)
-import Simplex.Chat.Messages (AChat (..), AChatItem (..), AChatItemUpdate (..), CChatItem (..), CIMention (..), CIMentionMember (..), CIMeta (CIMeta, priority, userMention), CIQDirection (..), CIQuote (CIQuote, chatDir, itemId), Chat (Chat, chatInfo, chatItems, chatStats), ChatInfo (GroupChat), ChatItem (ChatItem, content, mentions, meta, quotedItem), ChatItemId, ChatStats (..), ChatType (CTGroup), highPriority, isUserMention, toChatType)
+import Simplex.Chat.Messages (AChat (..), AChatItem (..), AChatItemUpdate (..), CChatItem (..), CIMention (..), CIMentionMember (..), CIMeta (CIMeta, priority, userMention), CIQuote (CIQuote, chatDir, itemId), Chat (Chat, chatInfo, chatItems, chatStats), ChatItem (ChatItem, content, mentions, meta, quotedItem), ChatItemId, ChatStats (..), ChatType (CTGroup), JSONCIDirection (JCIGroupRcv), JSONChatInfo (JCInfoGroup), highPriority, isUserMention, jsonCIQDirection, jsonChatInfo, toChatType)
 import Simplex.Chat.Messages.Batch (encodeBinaryBatch, encodeFwdElement)
 import Simplex.Chat.Messages.CIContent (MsgDirection (MDRcv), ciMsgContent, publicGroupNoE2EText, toMsgDirection)
 import Simplex.Chat.Options
@@ -7117,7 +7117,8 @@ groupEditsPref :: TestCC -> IO EditsGroupPreference
 groupEditsPref TestCC {chatController = cc} = do
   r <- sendChatCmdStr cc "/_get chat #1 count=1"
   case r of
-    Right (CRApiChat _ (AChat _ Chat {chatInfo = GroupChat GroupInfo {fullGroupPreferences = FullGroupPreferences {edits}} _}) _) -> pure edits
+    Right (CRApiChat _ (AChat _ Chat {chatInfo}) _)
+      | JCInfoGroup GroupInfo {fullGroupPreferences = FullGroupPreferences {edits}} _ <- jsonChatInfo chatInfo -> pure edits
     _ -> fail $ show r
 
 itemDeletedFlag :: TestCC -> String -> IO Int
@@ -16017,8 +16018,9 @@ testViaMemberReply =
     lastItemQuoteMentions TestCC {chatController = cc} = do
       r <- sendChatCmdStr cc "/_get chat #1 count=1"
       case r of
-        Right (CRApiChat _ (AChat _ Chat {chatItems = [CChatItem _ ChatItem {quotedItem = Just CIQuote {itemId = quotedId, chatDir = CIQGroupRcv (Just GroupMember {groupMemberId = quotedGMId})}, mentions}]}) _) ->
-          pure (quotedId, quotedGMId, [gmId | CIMention {memberRef = Just CIMentionMember {groupMemberId = gmId}} <- M.elems mentions])
+        Right (CRApiChat _ (AChat _ Chat {chatItems = [CChatItem _ ChatItem {quotedItem = Just CIQuote {itemId = quotedId, chatDir = quoteDir}, mentions}]}) _)
+          | JCIGroupRcv GroupMember {groupMemberId = quotedGMId} <- jsonCIQDirection quoteDir ->
+              pure (quotedId, quotedGMId, [gmId | CIMention {memberRef = Just CIMentionMember {groupMemberId = gmId}} <- M.elems mentions])
         _ -> fail $ show r
 
 testViaMemberRoleRules :: HasCallStack => TestParams -> IO ()
