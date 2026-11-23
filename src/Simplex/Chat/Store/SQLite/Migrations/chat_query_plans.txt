@@ -442,10 +442,10 @@ Query:
 Plan:
 SCAN CONSTANT ROW
 SCALAR SUBQUERY 1
-SEARCH i USING COVERING INDEX idx_chat_items_contacts_silent (user_id=? AND item_status=?)
+SEARCH i USING COVERING INDEX idx_chat_items_contacts_silent (user_id=? AND item_status=? AND contact_id>?)
 SEARCH ct USING INTEGER PRIMARY KEY (rowid=?)
 SCALAR SUBQUERY 2
-SEARCH i USING COVERING INDEX idx_chat_items_groups_priority (user_id=? AND item_status=?)
+SEARCH i USING COVERING INDEX idx_chat_items_groups_priority (user_id=? AND item_status=? AND group_id>?)
 SEARCH g USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
