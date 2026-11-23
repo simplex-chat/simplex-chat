@@ -1292,10 +1292,10 @@ struct TagsView_Previews: PreviewProvider {
     static var previews: some View {
         let tagsModel = ChatTagsModel()
         tagsModel.userTags = [
-            ChatTag(chatTagId: 1, chatTagText: "Work", chatTagEmoji: nil),
-            ChatTag(chatTagId: 2, chatTagText: "Friends", chatTagEmoji: nil),
+            ChatTag(chatTagId: 1, chatTagText: "Ops", chatTagEmoji: nil),
+            ChatTag(chatTagId: 2, chatTagText: "Dev", chatTagEmoji: nil),
             ChatTag(chatTagId: 3, chatTagText: "News", chatTagEmoji: nil),
-            ChatTag(chatTagId: 4, chatTagText: "Family", chatTagEmoji: nil)
+            ChatTag(chatTagId: 4, chatTagText: "Bots", chatTagEmoji: nil)
         ]
         tagsModel.unreadTags = [1: 1, 2: 1]
         tagsModel.priorityTags = [1: 1]
