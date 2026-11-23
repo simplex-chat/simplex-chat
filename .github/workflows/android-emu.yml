@@ -243,6 +243,7 @@ jobs:
       - name: Build app
         working-directory: apps/multiplatform
         run: |
+          printf 'application_id.suffix=.debug\napp.name=SimpleX Debug\n' > local.properties
           ./gradlew --no-daemon --console=plain -Psimplex.assets.dir=../../assets -Pandroid.injected.build.abi=armeabi-v7a :android:assembleFossDebug
           mkdir -p "$RUNNER_TEMP/apk"
           ls -la android/build/intermediates/apk/foss/debug

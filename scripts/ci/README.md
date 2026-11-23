@@ -264,7 +264,7 @@ gh workflow run android-emu.yml --ref <branch> -f claude=true
 
 A newer run of a workflow on the same branch cancels the older one.
 
-Each run uploads the app it built, for manual tests, as an artifact kept 14 days: `ios-sim-app` (SimpleX.app.tar.gz, for the iOS simulator on an Apple-silicon Mac), `desktop-app` (desktop-app.tar.gz, for Linux x86-64) and `android-app` (the debug APK, arm64-v8a only), with `armv7a` also `android-app-armeabi-v7a` (the debug APK, armeabi-v7a only). The run's page lists it under Artifacts; `gh run download <run id> -n <artifact>` downloads it.
+Each run uploads the app it built, for manual tests, as an artifact kept 14 days: `ios-sim-app` (SimpleX.app.tar.gz, for the iOS simulator on an Apple-silicon Mac), `desktop-app` (desktop-app.tar.gz, for Linux x86-64) and `android-app` (the debug APK, arm64-v8a only), with `armv7a` also `android-app-armeabi-v7a` (the debug APK, armeabi-v7a only, installed beside the released app as SimpleX Debug). The run's page lists it under Artifacts; `gh run download <run id> -n <artifact>` downloads it.
 
 An agent that runs these workflows in a fork follows [app-tests-agent.md](app-tests-agent.md).
 
