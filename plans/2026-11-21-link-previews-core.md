@@ -755,8 +755,8 @@ flowchart TD
   Q5 -->|c| Q6
   Q6 -->|"a (recommended)"| Q61{"Q6.1 image links"}
   Q6 -->|b| Q61
-  Q61 -->|"a (recommended)"| Q7{"Q7 user agent"}
-  Q61 -->|b| Q7
+  Q61 -->|a| Q7{"Q7 user agent"}
+  Q61 -->|"b (recommended)"| Q7
   Q7 -->|"a (recommended)"| END["build"]
   Q7 -->|b| END
   Q7 -->|c| END
@@ -770,7 +770,7 @@ flowchart TD
 | Q4 | `og:image` other than JPEG and PNG | (a) no preview; WebP with the WebP PR named in plans/2026-10-23-core-image-resizing.md:369; (b) the first GIF frame added now (JuicyPixels) | (a) |
 | Q5 | Tags of the title, description and image | (a) `og:` tags with `property=` or `name=`, the first of each kind (3.8); (b) with `property=` only; (c) as (a), and the images of twitter, `image_src`, `itemprop` and JSON-LD tags | (a) |
 | Q6 | Limits | (a) PREVIEW_DEADLINE 15 s, and 30 s, the CONNECT_TIMEOUT of the apps' `proxyDefaults` (4.1), when the host of the link is reached through a SOCKS proxy; MAX_HEAD_BYTES 1 MiB; MAX_IMAGE_BYTES 2 MiB; (b) 30 s, 1 MiB, 5 MiB | (a) |
-| Q6.1 | A link to a JPEG or PNG file above MAX_IMAGE_BYTES gets no preview, as its file is limited as `og:image` is (3.7, 3.10); Android and desktop make one today, without a byte limit (LinkPreviews.kt:93-96, 124-128). The measurement fetched only `og:image` files; the one original above 2 MiB that it recorded is the JSON-LD PNG of a Substack post, 2,330,025 B | (a) MAX_IMAGE_BYTES for both; (b) a larger limit for the file of the link | (a), until links to image files are measured |
+| Q6.1 | A link to a JPEG or PNG file above MAX_IMAGE_BYTES gets no preview, as its file is limited as `og:image` is (3.7, 3.10); Android and desktop make one today, without a byte limit (LinkPreviews.kt:93-96, 124-128). The measurement fetched only `og:image` files; the one original above 2 MiB that it recorded is the JSON-LD PNG of a Substack post, 2,330,025 B | (a) MAX_IMAGE_BYTES for both; (b) 10 MiB for the file of the link, within the decoding limits of `decodeResizable` (3.10) | (b): the file of an image link is usually a full photo |
 | Q7 | UA | (a) Firefox 160 on Windows (3.7); (b) Chrome 158 on Windows, `Chrome/158.0.0.0`; (c) Chrome 79, `Chrome/79.0.3945.130` | (a) |
 
 Decided: Q1 (a), Q2 (a), Q3 (a), Q4 (a). With Q2, `http` links of `.onion` hosts are fetched over plain HTTP, only through the SOCKS proxy; without a proxy they get no preview. Message size: the title is cut to 300 characters, the description to 500, and the image limit is reduced by their JSON bytes (3.10).
