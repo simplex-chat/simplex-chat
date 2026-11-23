@@ -15,6 +15,8 @@ import androidx.compose.ui.window.WindowState
 import boofcv.alg.fiducial.qrcode.QrCode
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatModel
+import chat.simplex.common.platform.chatParseMarkdown
+import chat.simplex.common.platform.chatSendCmdRetry
 import chat.simplex.common.simplexWindowState
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.PreviewTerminalLayout
@@ -71,6 +73,8 @@ private val previewScenes = listOf(
   SnapshotScene("ChatView.PreviewGroupChatLayoutBanner") { PreviewGroupChatLayoutBanner() },
   SnapshotScene("ChatView.PreviewGroupChatLayoutTerminalSession") { PreviewGroupChatLayoutTerminalSession() },
   SnapshotScene("ChatView.PreviewUnreadScrollButtons") { PreviewUnreadScrollButtons() },
+  SnapshotScene("ChatView.PreviewGroupChatLayoutViaMember") { PreviewGroupChatLayoutViaMember() },
+  SnapshotScene("ChatView.PreviewGroupChatLayoutTerminalViaMember", chatItemFontScales) { PreviewGroupChatLayoutTerminalViaMember() },
   SnapshotScene("ComposeFileView.PreviewComposeFileView") { PreviewComposeFileView() },
   SnapshotScene("ComposeVoiceView.PreviewComposeAudioView") { PreviewComposeAudioView() },
   SnapshotScene("ContextItemView.PreviewContextItemView") { PreviewContextItemView() },
@@ -79,7 +83,9 @@ private val previewScenes = listOf(
   SnapshotScene("SendMsgView.PreviewSendMsgViewInProgress") { PreviewSendMsgViewInProgress() },
   SnapshotScene("AddGroupMembersView.PreviewAddGroupMembersLayout") { PreviewAddGroupMembersLayout() },
   SnapshotScene("GroupChatInfoView.PreviewGroupChatInfoLayout") { PreviewGroupChatInfoLayout() },
+  SnapshotScene("GroupChatInfoView.PreviewMemberRowsViaMember") { PreviewMemberRowsViaMember() },
   SnapshotScene("GroupMemberInfoView.PreviewGroupMemberInfoLayout") { PreviewGroupMemberInfoLayout() },
+  SnapshotScene("GroupMemberInfoView.PreviewGroupMemberInfoLayoutViaMember") { PreviewGroupMemberInfoLayoutViaMember() },
   SnapshotScene("GroupMemberInfoView.PreviewPeerTypePlaceholders") { PreviewPeerTypePlaceholders() },
   SnapshotScene("CIEventView.CIEventViewPreview", chatItemFontScales) { CIEventViewPreview() },
   SnapshotScene("CIGroupInvitationView.PendingCIGroupInvitationViewPreview", chatItemFontScales) { PendingCIGroupInvitationViewPreview() },
@@ -182,9 +188,13 @@ class SnapshotTest {
     val appearanceBarsBlurRadius = appPrefs.appearanceBarsBlurRadius.get()
     val inAppBarsAlpha = appPrefs.inAppBarsAlpha.get()
     val appBarMaxHeightPx = AppBarHandler.appBarMaxHeightPx
+    val sendCmd = chatSendCmdRetry
+    val parseMarkdown = chatParseMarkdown
     val index = mutableListOf<Snapshot>()
     val failures = mutableListOf<String>()
     try {
+      chatSendCmdRetry = { _, _, _ -> "{}" }
+      chatParseMarkdown = { "{}" }
       Locale.setDefault(Locale.US)
       TimeZone.setDefault(TimeZone.getTimeZone("UTC"))
       simplexWindowState.windowState = WindowState(size = DpSize(SCENE_WIDTH.dp, SCENE_MAX_HEIGHT.dp))
@@ -217,6 +227,8 @@ class SnapshotTest {
       }
       File(dir, "index-desktop.json").writeText(indexJson.encodeToString(index))
     } finally {
+      chatSendCmdRetry = sendCmd
+      chatParseMarkdown = parseMarkdown
       Locale.setDefault(locale)
       TimeZone.setDefault(timeZone)
       appPrefs.themeOverrides.set(themeOverrides)

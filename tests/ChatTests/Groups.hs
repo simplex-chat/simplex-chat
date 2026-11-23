@@ -40,7 +40,7 @@ import Simplex.Chat.Controller (ChatController (ChatController, smpAgent, subscr
 import Simplex.Chat.Core (sendChatCmdStr)
 import Simplex.Chat.Library.Internal (encodeConnInfo, getShortLinkConnReq, sendDirectMemberMessage, uniqueMsgMentions, updatedMentionNames)
 import Simplex.Chat.Markdown (parseMaybeMarkdownList)
-import Simplex.Chat.Messages (AChat (..), AChatItem (..), AChatItemUpdate (..), CChatItem (..), CIMention (..), CIMentionMember (..), CIMeta (CIMeta, priority, userMention), CIQDirection (..), CIQuote (CIQuote, chatDir, itemId), Chat (Chat, chatInfo, chatItems, chatStats), ChatInfo (GroupChat), ChatItem (ChatItem, content, mentions, meta, quotedItem), ChatItemId, ChatStats (..), ChatType (CTGroup), highPriority, isUserMention, toChatType)
+import Simplex.Chat.Messages (AChat (..), AChatItem (..), AChatItemUpdate (..), CChatItem (..), CIMention (..), CIMentionMember (..), CIMeta (CIMeta, priority, userMention), CIQuote (CIQuote, chatDir, itemId), Chat (Chat, chatInfo, chatItems, chatStats), ChatItem (ChatItem, content, mentions, meta, quotedItem), ChatItemId, ChatStats (..), ChatType (CTGroup), JSONCIDirection (JCIGroupRcv), JSONChatInfo (JCInfoGroup), highPriority, isUserMention, jsonCIQDirection, jsonChatInfo, toChatType)
 import Simplex.Chat.Messages.Batch (encodeBinaryBatch, encodeFwdElement)
 import Simplex.Chat.Messages.CIContent (MsgDirection (MDRcv), ciMsgContent, publicGroupNoE2EText, toMsgDirection)
 import Simplex.Chat.Options
@@ -338,7 +338,7 @@ chatGroupTests = do
     it "refuse role above user role, member not via user, user below admin and incognito membership" testViaMemberRefused
     it "refuse announcement against via rules and forward with another via" testViaMemberAnnounceRefused
     it "refuse introduction against via rules" testViaMemberIntroRefused
-    it "refuse support scope, files, quotes and broadcast delete as member, moderate as member" testViaMemberSendRefused
+    it "refuse support scope, files, quotes and broadcast delete as member; moderation names member" testViaMemberSendRefused
     it "sign messages and updates of member via user with user key" testViaMemberSigned
     it "deliver messages sent as member unsigned to members of previous version" testViaMemberSignedPrevVersion
     it "deliver pending messages sent as member unsigned" testViaMemberSignedPending
@@ -7117,7 +7117,8 @@ groupEditsPref :: TestCC -> IO EditsGroupPreference
 groupEditsPref TestCC {chatController = cc} = do
   r <- sendChatCmdStr cc "/_get chat #1 count=1"
   case r of
-    Right (CRApiChat _ (AChat _ Chat {chatInfo = GroupChat GroupInfo {fullGroupPreferences = FullGroupPreferences {edits}} _}) _) -> pure edits
+    Right (CRApiChat _ (AChat _ Chat {chatInfo}) _)
+      | JCInfoGroup GroupInfo {fullGroupPreferences = FullGroupPreferences {edits}} _ <- jsonChatInfo chatInfo -> pure edits
     _ -> fail $ show r
 
 itemDeletedFlag :: TestCC -> String -> IO Int
@@ -16017,8 +16018,9 @@ testViaMemberReply =
     lastItemQuoteMentions TestCC {chatController = cc} = do
       r <- sendChatCmdStr cc "/_get chat #1 count=1"
       case r of
-        Right (CRApiChat _ (AChat _ Chat {chatItems = [CChatItem _ ChatItem {quotedItem = Just CIQuote {itemId = quotedId, chatDir = CIQGroupRcv (Just GroupMember {groupMemberId = quotedGMId})}, mentions}]}) _) ->
-          pure (quotedId, quotedGMId, [gmId | CIMention {memberRef = Just CIMentionMember {groupMemberId = gmId}} <- M.elems mentions])
+        Right (CRApiChat _ (AChat _ Chat {chatItems = [CChatItem _ ChatItem {quotedItem = Just CIQuote {itemId = quotedId, chatDir = quoteDir}, mentions}]}) _)
+          | JCIGroupRcv GroupMember {groupMemberId = quotedGMId} <- jsonCIQDirection quoteDir ->
+              pure (quotedId, quotedGMId, [gmId | CIMention {memberRef = Just CIMentionMember {groupMemberId = gmId}} <- M.elems mentions])
         _ -> fail $ show r
 
 testViaMemberRoleRules :: HasCallStack => TestParams -> IO ()
@@ -16176,6 +16178,13 @@ testViaMemberSendRefused =
       bob ##> ("/_delete member item #1 " <> bobHiId)
       bob <## "message marked deleted by you"
       [alice, cath] *<# "#team reviewer> [marked deleted by bob] hi"
+      alice ##> "/_send #1(as_member=4) text hey"
+      alice <# "#team hey"
+      [bob, cath] *<# "#team reviewer> hey [>>]"
+      heyId <- lastItemId alice
+      alice ##> ("/_delete member item #1 " <> heyId)
+      alice <## "message marked deleted by you"
+      [bob, cath] *<# "#team reviewer> [marked deleted by alice] hey"
 
 createViaSignedGroup :: HasCallStack => TestCC -> TestCC -> IO ()
 createViaSignedGroup alice bob = do
@@ -16300,6 +16309,12 @@ testViaMemberRecordings =
       alice <# "#team hi"
       bob <# "#team reviewer> hi [>>]"
       apiFixture "via/members" alice [] FixtureRequests {frMarkdown = [], frUris = [], frCommands = ["/_members #1", "/_get chat #1 count=1"]}
+      bob `send` "> #team @reviewer (hi) fix it"
+      bob <# "#team > reviewer hi"
+      bob <## "      fix it"
+      alice <# "#team bob> > reviewer hi"
+      alice <## "      fix it"
+      apiFixture "via/received" bob [] FixtureRequests {frMarkdown = [], frUris = [], frCommands = ["/_members #1", "/_get chat #1 count=2"]}
 
 testViaMemberMigrationDown :: HasCallStack => TestParams -> IO ()
 testViaMemberMigrationDown ps = do

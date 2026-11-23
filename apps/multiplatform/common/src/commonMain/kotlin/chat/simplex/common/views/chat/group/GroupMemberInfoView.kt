@@ -30,6 +30,9 @@ import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.*
+import chat.simplex.common.views.chat.item.GroupMembersPreview
+import chat.simplex.common.views.chat.item.previewClaude
+import chat.simplex.common.views.chat.item.previewViaClaude
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.newchat.*
 import chat.simplex.common.views.usersettings.SettingsActionItem
@@ -612,6 +615,10 @@ fun GroupMemberInfoLayout(
       } else {
         InfoRow(stringResource(MR.strings.role_in_group), member.memberRole.text(isChannel = groupInfo.isChannel))
       }
+      val via = chatModel.memberViaName(member)
+      if (via != null) {
+        InfoRow(stringResource(MR.strings.info_row_via), via)
+      }
       val relayLink = member.relayLink
       if (relayLink != null) {
         InfoRow(stringResource(MR.strings.info_row_relay_link), String.format(generalGetString(MR.strings.via_relay_hostname), hostFromRelayLink(relayLink)))
@@ -1148,17 +1155,26 @@ fun blockMemberForAll(rhId: Long?, gInfo: GroupInfo, memberIds: List<Long>, bloc
 
 @Preview
 @Composable
-fun PreviewGroupMemberInfoLayout() {
+fun PreviewGroupMemberInfoLayout() = GroupMemberInfoLayoutPreview(GroupMember.sampleData, connectionCode = "123")
+
+@Preview
+@Composable
+fun PreviewGroupMemberInfoLayoutViaMember() = GroupMembersPreview(listOf(previewClaude)) {
+  GroupMemberInfoLayoutPreview(previewViaClaude(6, "reviewer"), connectionCode = null)
+}
+
+@Composable
+internal fun GroupMemberInfoLayoutPreview(member: GroupMember, connectionCode: String?) {
   SimpleXTheme {
     GroupMemberInfoLayout(
       rhId = null,
       groupInfo = GroupInfo.sampleData,
-      member = GroupMember.sampleData,
+      member = member,
       scrollToItemId = remember { mutableStateOf(null) },
       connStats = remember { mutableStateOf(null) },
       newRole = remember { mutableStateOf(GroupMemberRole.Member) },
       developerTools = false,
-      connectionCode = "123",
+      connectionCode = connectionCode,
       connectionLoaded = true,
       getContactChat = { Chat.sampleData },
       openDirectChat = {},

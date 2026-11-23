@@ -1833,6 +1833,13 @@ fun BoxScope.ChatItemsList(
     }
   }
   val reversedChatItems = remember { derivedStateOf { chatsCtx.chatItems.value.asReversed() } }
+  if (chatInfo is ChatInfo.Group) {
+    LaunchedEffect(chatInfo.id) {
+      snapshotFlow { !chatModel.membersLoaded.value && reversedChatItems.value.any { it.chatDir.memberVia != null || it.quotedItem?.chatDir?.memberVia != null } }
+        .filter { it }
+        .collect { setGroupMembers(remoteHostId, chatInfo.groupInfo, chatModel) }
+    }
+  }
   val reportsCount = reportsCount(chatInfo.id)
   val supportUnreadCount = supportUnreadCount(chatInfo.id)
   val topPaddingToContent = topPaddingToContent(
@@ -2097,7 +2104,8 @@ fun BoxScope.ChatItemsList(
                         fontSize = 13.5.sp,
                         color = MaterialTheme.colors.secondary,
                         overflow = TextOverflow.Ellipsis,
-                        maxLines = 1
+                        maxLines = 1,
+                        via = if (memCount == 1) chatModel.memberViaName(member) else null
                       )
                       if (memCount == 1 && member.memberRole > GroupMemberRole.Member) {
                         val tailRendered = chatItemTailRendered(cItem, itemSeparation.largeGap, revealed = true)
@@ -4109,6 +4117,18 @@ fun PreviewGroupChatLayoutTerminalSession() = CompositionLocalProvider(LocalTerm
   GroupChatLayoutPreview(sessionPreview())
 }
 
+@Preview
+@Composable
+fun PreviewGroupChatLayoutViaMember() = GroupMembersPreview(listOf(previewClaude)) {
+  GroupChatLayoutPreview(viaMemberPreview())
+}
+
+@Preview
+@Composable
+fun PreviewGroupChatLayoutTerminalViaMember() = CompositionLocalProvider(LocalTerminalLayout provides true) {
+  PreviewGroupChatLayoutViaMember()
+}
+
 private fun previewMember(id: Long, name: String) =
   GroupMember.sampleData.copy(groupMemberId = id, memberId = name, localDisplayName = name, memberProfile = LocalProfile.sampleData.copy(profileId = id, displayName = name, fullName = ""))
 
@@ -4218,6 +4238,21 @@ fun PreviewUnreadScrollButtons() {
       }
     }
   }
+}
+
+private fun viaMemberPreview(): List<ChatItem> {
+  val reviewer = previewViaClaude(6, "reviewer")
+  val question = "Shall I fix them?"
+  return listOf(
+    previewRcv(1, previewClaude, 0, previewText("reviewer is running the tests.")),
+    previewRcv(2, reviewer, 180, previewText("Two tests fail on Postgres.")),
+    previewRcv(3, reviewer, 190, previewText(question)),
+    previewRcv(4, previewMember(2, "bob"), 300, previewText("Yes, please.")),
+    previewSnd(5, 360, "Fix and push.", CIStatus.SndSent(SndCIStatusProgress.Complete)).copy(
+      quotedItem = CIQuote(CIDirection.GroupRcv(reviewer), 3, sentAt = previewDate.plus(190, DateTimeUnit.SECOND), content = MsgContent.MCText(question))
+    ),
+    previewRcv(6, previewViaClaude(7, "postgres-integration-test-investigator"), 480, previewText("Both fail on a missing index."))
+  )
 }
 
 enum class ContentFilter(
