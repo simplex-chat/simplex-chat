@@ -42,6 +42,7 @@ module StoreService.Names.Orders
     versionWritten,
     confirmLanded,
     checkLanded,
+    confirmedBlock,
   )
 where
 
@@ -75,10 +76,11 @@ import Simplex.Messaging.Util (safeDecodeUtf8, tshow, ($>>=))
 import StoreService.Config (NamesConfig (..))
 import StoreService.Names.Codes (CodeRefusal (..), codeRefusal, reserveRefusal, spendLandedCode)
 import StoreService.Names.Community (Community, communityOf, nameTerms, readableTerms, termsFor, yearsFor)
-import StoreService.Names.Contracts (Contracts (ctChain), NameStatus (..), Terms, chainPriceCents, confirmedBlock, disputeUntil, nameExpires, nameStatus, ownerOfToken, secondsPerYear)
+import StoreService.Names.Contracts (Contracts (ctChain), NameStatus (..), Terms, chainPriceCents, disputeUntil, nameExpires, nameStatus, ownerOfToken, secondsPerYear)
 import StoreService.Names.Env (NamesEnv (..))
 import StoreService.Names.Phases (Phases, RegistrationId (..))
-import StoreService.Names.Chain (Block (..), BlockTag (..), Hex32 (..), TxHash, blockAt)
+import StoreService.Names.Chain (Block (..), BlockTag (..), ChainError, Hex32 (..), TxHash, blockAt, latestBlock)
+import StoreService.Names.Records (deepBlock)
 import StoreService.Names.Registration (Commitment, LinkKind, disputeSeconds)
 import StoreService.Names.Signatures (AgreedTerms (..), OrderFields (..), parseChecksumAddress, personalDigest)
 import StoreService.Names.Store (CodeInsertRefused (..), LiveOrder (..), NameRegistration (..), NameReveal, NewRegistration (..), OrderHash, OrderPayment (..), OrderPhase (..), PrepaidCode (..), TxHistory (..), NameTransaction (..), RegistrationTx (..), TxFor (..), TxSettlement (..), TxState (..), VersionWrite (..), closeOverdue, createCodeRegistration, getLiveOrders, getPrepaidCode, getPrepaidCodeById, getRegistrationByOrderHash, labelHolder, markRead, registrationTransactions, reservePrepaidCode, selectRegistration, spendBalance, updateRegistration)
@@ -349,6 +351,11 @@ versionWritten = \case
 
 confirmLanded :: OrdersEnv -> NameRegistration -> IO Landing
 confirmLanded OrdersEnv {oeStore, oeContracts, oeTurns, oeNow} = checkLanded oeStore oeContracts oeTurns oeNow
+
+confirmedBlock :: Contracts -> IO (Either ChainError Block)
+confirmedBlock ct = runExceptT $ ExceptT (latestBlock c) >>= ExceptT . deepBlock c
+  where
+    c = ctChain ct
 
 -- | The register check, on the order's current name: a register mined with status 1, or the owner holding the name at the confirmation depth,
 -- went through with only its confirmation lost. The order then becomes registered by a compare-and-set on the version read, a code order spending its code;

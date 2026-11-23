@@ -98,6 +98,7 @@ StoreService.Names.Store
 StoreService.Names.Orders
   Landing
     LEnded              Int64, the version written
+  confirmedBlock        Contracts -> IO (Either ChainError Block)
 
 StoreService.Names.Worker
   Closed
@@ -107,10 +108,9 @@ StoreService.Names.Worker
 
 StoreService.Names.Contracts
   disputeUntil          Contracts -> BlockTag -> LabelHash -> IO (Either ChainError (Maybe SystemSeconds))
-  confirmedBlock        Contracts -> IO (Either ChainError Block)
 
-StoreService.Names.Chain
-  deepBlock             moved from Records
+StoreService.Names.Records
+  deepBlock             exported
 
 StoreService.Metrics
   meEndedPassAt         TVar UTCTime

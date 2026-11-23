@@ -35,7 +35,6 @@ module StoreService.Names.Contracts
     policyNonce,
     acceptedTerms,
     confirmedTag,
-    confirmedBlock,
     ownerOfToken,
     nameExpires,
     disputeUntil,
@@ -92,7 +91,7 @@ import qualified Simplex.Messaging.TMap as TM
 import Simplex.Messaging.Util (catchOwn', catchThrow, eitherToMaybe, tshow)
 import StoreService.Config (ChainConfig (..), boundedDecimal, localChainId)
 import StoreService.Names.Abi (AbiError (..), AbiValue (..), abiBytes, abiTuple, abiWordSize, addressWord, decodeAddress, decodeBool, decodeBytes32, decodeSeconds, decodeString, decodeUint256, decodeWord64, lowerHexP, parseText, selector, uint256)
-import StoreService.Names.Chain (Block (..), BlockTag (..), ChainClient (..), ChainError (..), Hex32 (..), confirmedNumber, deepBlock, ethCallAt, httpFailure, latestBlock, registrarBalance)
+import StoreService.Names.Chain (Block (..), BlockTag (..), ChainClient (..), ChainError (..), Hex32 (..), confirmedNumber, ethCallAt, httpFailure, latestBlock, registrarBalance)
 import StoreService.Names.Registration (Commitment, CommunityName, LinkKind (..), TermsHash, labelNode, nodeBytes, recordKey, termsKindText)
 import StoreService.Names.Revert (RevertReason (..))
 import StoreService.Names.Store (getTermsText, setTermsText)
@@ -400,9 +399,6 @@ policyCall ct tag args decode = runExceptT $ do
 -- | The newest block at the configured confirmation depth, so a read there sees only what a reorg cannot undo.
 confirmedTag :: Contracts -> IO (Either ChainError BlockTag)
 confirmedTag Contracts {ctChain} = fmap (AtBlock . confirmedNumber ctChain . blockNumber) <$> latestBlock ctChain
-
-confirmedBlock :: Contracts -> IO (Either ChainError Block)
-confirmedBlock Contracts {ctChain} = runExceptT $ ExceptT (latestBlock ctChain) >>= ExceptT . deepBlock ctChain
 
 -- | Nothing when nobody holds the name: @ownerOf@ then fails the registrar's bare @require@ on the expiry,
 -- a revert without data. Any other revert is a failed read.
