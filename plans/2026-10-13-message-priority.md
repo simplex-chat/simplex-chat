@@ -282,14 +282,14 @@ I    Shared/Model/NtfManager.swift:253; Shared/Model/SimpleXAPI.swift:2636, 2646
 ```
 List labels:
 ```
-UnreadTag = Read | Silent | Unread | HighPriority    -- type of Chat.unreadTag; K model/ChatModel.kt:1475, I ChatModel.swift:1444
+UnreadTag = Read | Unread | HighPriority    -- type of Chat.unreadTag; K model/ChatModel.kt:1475, I ChatModel.swift:1444
 unreadTag(chat):
-  MFAll         HighPriority if unreadHighPriority > 0; Unread if unreadChat || unreadCount > unreadSilent; Silent if unreadCount > 0
+  MFAll         HighPriority if unreadHighPriority > 0; Unread if unreadChat || unreadCount > unreadSilent
+                  only silent unread items: Read, as unread items of a muted chat; "lists should only show unread and priority marks" (decided by the user on 2026-11-23)
   MFMentions    HighPriority if unreadHighPriority > 0; Unread if unreadChat || unreadMentions > 0
   MFNone, nil   Unread if unreadChat
   otherwise     Read
 unreadTags[tag]      chats of the tag with unreadTag Unread or HighPriority
-silentTags[tag]      chats of the tag with unreadTag Silent
 priorityTags[tag]    chats of the tag with unreadTag HighPriority
 update(chat, was):                                                     -- was: unreadTag before the change
   now = chat.unreadTag
@@ -420,7 +420,6 @@ storage           chat_items.item_priority
 apps              CIMeta.highPriority
                   UnreadTag
                   priorityTags
-                  silentTags
 ```
 
 ## Depends on

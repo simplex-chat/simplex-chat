@@ -179,15 +179,13 @@ object ChatModel {
   val activeChatTagFilter = mutableStateOf<ActiveFilter?>(null)
   val presetTags = mutableStateMapOf<PresetTagKind, Int>()
   val unreadTags = mutableStateMapOf<Long, Int>()
-  val silentTags = mutableStateMapOf<Long, Int>()
   val priorityTags = mutableStateMapOf<Long, Int>()
 
-  fun tagCounts(unreadTag: UnreadTag): List<MutableMap<Long, Int>> = tagCounts(unreadTag, unreadTags, silentTags, priorityTags)
+  fun tagCounts(unreadTag: UnreadTag): List<MutableMap<Long, Int>> = tagCounts(unreadTag, unreadTags, priorityTags)
 
-  private fun <M> tagCounts(unreadTag: UnreadTag, unread: M, silent: M, priority: M): List<M> = when (unreadTag) {
+  private fun <M> tagCounts(unreadTag: UnreadTag, unread: M, priority: M): List<M> = when (unreadTag) {
     UnreadTag.HighPriority -> listOf(unread, priority)
     UnreadTag.Unread -> listOf(unread)
-    UnreadTag.Silent -> listOf(silent)
     UnreadTag.Read -> emptyList()
   }
 
@@ -330,7 +328,6 @@ object ChatModel {
   fun updateChatTags(rhId: Long?) {
     val newPresetTags = mutableMapOf<PresetTagKind, Int>()
     val newUnreadTags = mutableMapOf<Long, Int>()
-    val newSilentTags = mutableMapOf<Long, Int>()
     val newPriorityTags = mutableMapOf<Long, Int>()
 
     for (chat in chats.value.filter { it.remoteHostId == rhId }) {
@@ -339,7 +336,7 @@ object ChatModel {
           newPresetTags[tag] = (newPresetTags[tag] ?: 0) + 1
         }
       }
-      val newTagCounts = tagCounts(chat.unreadTag, newUnreadTags, newSilentTags, newPriorityTags)
+      val newTagCounts = tagCounts(chat.unreadTag, newUnreadTags, newPriorityTags)
       val chatTags: List<Long> = when (val cInfo = chat.chatInfo) {
         is ChatInfo.Direct -> cInfo.contact.chatTags
         is ChatInfo.Group -> cInfo.groupInfo.chatTags
@@ -356,8 +353,6 @@ object ChatModel {
     presetTags.putAll(newPresetTags)
     unreadTags.clear()
     unreadTags.putAll(newUnreadTags)
-    silentTags.clear()
-    silentTags.putAll(newSilentTags)
     priorityTags.clear()
     priorityTags.putAll(newPriorityTags)
 
@@ -1576,7 +1571,6 @@ data class Chat(
     All -> when {
       chatStats.unreadHighPriority > 0 -> UnreadTag.HighPriority
       chatStats.unreadChat || chatStats.unreadCount > chatStats.unreadSilent -> UnreadTag.Unread
-      chatStats.unreadCount > 0 -> UnreadTag.Silent
       else -> UnreadTag.Read
     }
     Mentions -> when {
@@ -1631,7 +1625,7 @@ data class Chat(
   }
 }
 
-enum class UnreadTag { Read, Silent, Unread, HighPriority }
+enum class UnreadTag { Read, Unread, HighPriority }
 
 // Spec: spec/state.md#ChatInfo
 @Serializable

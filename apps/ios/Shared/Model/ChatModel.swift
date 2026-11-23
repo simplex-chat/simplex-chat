@@ -193,13 +193,11 @@ class ChatTagsModel: ObservableObject {
     @Published var activeFilter: ActiveFilter? = nil
     @Published var presetTags: [PresetTag:Int] = [:]
     @Published var unreadTags: [Int64:Int] = [:]
-    @Published var silentTags: [Int64:Int] = [:]
     @Published var priorityTags: [Int64:Int] = [:]
 
     private func tagCounts(_ unreadTag: UnreadTag) -> [ReferenceWritableKeyPath<ChatTagsModel, [Int64:Int]>] {
         switch unreadTag {
         case .read: []
-        case .silent: [\.silentTags]
         case .unread: [\.unreadTags]
         case .highPriority: [\.unreadTags, \.priorityTags]
         }
@@ -224,7 +222,6 @@ class ChatTagsModel: ObservableObject {
         presetTags = newPresetTags
         let highPriorityTags = newTagCounts[.highPriority] ?? [:]
         unreadTags = (newTagCounts[.unread] ?? [:]).merging(highPriorityTags, uniquingKeysWith: +)
-        silentTags = newTagCounts[.silent] ?? [:]
         priorityTags = highPriorityTags
         clearActiveChatFilterIfNeeded()
     }
@@ -1487,7 +1484,6 @@ struct NTFContactRequest {
 
 enum UnreadTag {
     case read
-    case silent
     case unread
     case highPriority
 }
@@ -1527,8 +1523,6 @@ final class Chat: ObservableObject, Identifiable, ChatLike {
                 .highPriority
             } else if chatStats.unreadChat || chatStats.unreadCount > chatStats.unreadSilent {
                 .unread
-            } else if chatStats.unreadCount > 0 {
-                .silent
             } else {
                 .read
             }

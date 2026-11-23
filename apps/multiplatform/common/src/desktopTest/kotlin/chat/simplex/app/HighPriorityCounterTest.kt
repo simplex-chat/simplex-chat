@@ -18,8 +18,7 @@ class HighPriorityCounterTest {
     val highPriority: Int,
     val user: Int,
     val unreadTag: Int,
-    val priorityTag: Int,
-    val silentTag: Int
+    val priorityTag: Int
   )
 
   private fun rcvItem(id: Long, priority: Int?, mention: Boolean = false): ChatItem {
@@ -33,7 +32,7 @@ class HighPriorityCounterTest {
     val stats = chatsCtx.chats.value[0].chatStats
     return Counts(
       stats.unreadCount, stats.unreadMentions, stats.unreadSilent, stats.unreadHighPriority, chatModel.users[0].unreadCount,
-      chatModel.unreadTags[tag] ?: 0, chatModel.priorityTags[tag] ?: 0, chatModel.silentTags[tag] ?: 0
+      chatModel.unreadTags[tag] ?: 0, chatModel.priorityTags[tag] ?: 0
     )
   }
 
@@ -52,7 +51,6 @@ class HighPriorityCounterTest {
         chatModel.chatId.value = cInfo.id
         chatModel.unreadTags.clear()
         chatModel.priorityTags.clear()
-        chatModel.silentTags.clear()
         chatsCtx.chats.add(Chat(remoteHostId = null, chatInfo = cInfo, chatItems = listOf()))
         test(chatsCtx, cInfo)
       }
@@ -64,7 +62,6 @@ class HighPriorityCounterTest {
         chatModel.chatId.value = chatId
         chatModel.unreadTags.clear()
         chatModel.priorityTags.clear()
-        chatModel.silentTags.clear()
       }
     }
   }
@@ -72,31 +69,31 @@ class HighPriorityCounterTest {
   @Test
   fun highPriorityItemIsCountedAndRead() = withOpenChat(MsgFilter.All) { chatsCtx, cInfo ->
     chatsCtx.addChatItem(null, cInfo, rcvItem(1, priority = 1, mention = true))
-    assertEquals(Counts(1, 1, 0, 1, 1, 1, 1, 0), counts(chatsCtx))
+    assertEquals(Counts(1, 1, 0, 1, 1, 1, 1), counts(chatsCtx))
     chatsCtx.markChatItemsRead(null, cInfo.id, listOf(1))
-    assertEquals(Counts(0, 0, 0, 0, 0, 0, 0, 0), counts(chatsCtx))
+    assertEquals(Counts(0, 0, 0, 0, 0, 0, 0), counts(chatsCtx))
   }
 
   @Test
   fun raisedSilentItemLeavesGrayTierInModeAll() = withOpenChat(MsgFilter.All) { chatsCtx, cInfo ->
     val silent = rcvItem(1, priority = -1)
     chatsCtx.addChatItem(null, cInfo, silent)
-    assertEquals(Counts(1, 0, 1, 0, 0, 0, 0, 1), counts(chatsCtx))
+    assertEquals(Counts(1, 0, 1, 0, 0, 0, 0), counts(chatsCtx))
     chatsCtx.applyChatItemUpdate(null, cInfo, raised(silent), silent)
-    assertEquals(Counts(1, 1, 0, 1, 1, 1, 1, 0), counts(chatsCtx))
+    assertEquals(Counts(1, 1, 0, 1, 1, 1, 1), counts(chatsCtx))
     chatsCtx.removeChatItem(null, cInfo, raised(silent))
-    assertEquals(Counts(0, 0, 0, 0, 0, 0, 0, 0), counts(chatsCtx))
+    assertEquals(Counts(0, 0, 0, 0, 0, 0, 0), counts(chatsCtx))
   }
 
   @Test
   fun raisedMentionIsCountedOnceInModeMentions() = withOpenChat(MsgFilter.Mentions) { chatsCtx, cInfo ->
     val mention = rcvItem(1, priority = null, mention = true)
     chatsCtx.addChatItem(null, cInfo, mention)
-    assertEquals(Counts(1, 1, 0, 0, 1, 1, 0, 0), counts(chatsCtx))
+    assertEquals(Counts(1, 1, 0, 0, 1, 1, 0), counts(chatsCtx))
     chatsCtx.applyChatItemUpdate(null, cInfo, raised(mention), mention)
-    assertEquals(Counts(1, 1, 0, 1, 1, 1, 1, 0), counts(chatsCtx))
+    assertEquals(Counts(1, 1, 0, 1, 1, 1, 1), counts(chatsCtx))
     chatsCtx.markChatItemsRead(null, cInfo.id, null)
-    assertEquals(Counts(0, 0, 0, 0, 0, 0, 0, 0), counts(chatsCtx))
+    assertEquals(Counts(0, 0, 0, 0, 0, 0, 0), counts(chatsCtx))
   }
 
   @Test
@@ -105,6 +102,6 @@ class HighPriorityCounterTest {
     chatsCtx.addChatItem(null, cInfo, item)
     chatsCtx.markChatItemsRead(null, cInfo.id, listOf(1))
     chatsCtx.applyChatItemUpdate(null, cInfo, raised(item).withStatus(CIStatus.RcvRead()), item.withStatus(CIStatus.RcvRead()))
-    assertEquals(Counts(0, 0, 0, 0, 0, 0, 0, 0), counts(chatsCtx))
+    assertEquals(Counts(0, 0, 0, 0, 0, 0, 0), counts(chatsCtx))
   }
 }

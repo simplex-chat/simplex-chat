@@ -37,9 +37,9 @@ final class MessagePriorityTests: XCTestCase {
         try await assertCounts(unread: 2, mentions: 0, silent: 2, highPriority: 0, user: 0)
         XCTAssertEqual(notified, [])
         let chat = try XCTUnwrap(ChatModel.shared.chats.first)
-        XCTAssertEqual(chat.unreadTag, .silent)
+        XCTAssertEqual(chat.unreadTag, .read)
         XCTAssertTrue(chat.chatStats.allUnreadSilent)
-        XCTAssertEqual(labels(), [0, 1, 0])
+        XCTAssertEqual(labels(), [0, 0])
     }
 
     @MainActor
@@ -55,10 +55,10 @@ final class MessagePriorityTests: XCTestCase {
         let group = try XCTUnwrap(ChatModel.shared.chats.first { $0.chatInfo.chatType == .group })
         let direct = try XCTUnwrap(ChatModel.shared.chats.first { $0.chatInfo.chatType == .direct })
         XCTAssertEqual([group.chatStats.unreadCount, group.chatStats.unreadSilent], [2, 2])
-        XCTAssertEqual(group.unreadTag, .silent)
+        XCTAssertEqual(group.unreadTag, .read)
         XCTAssertTrue(group.chatStats.allUnreadSilent)
         XCTAssertFalse(direct.chatStats.allUnreadSilent)
-        XCTAssertEqual(labels(), [0, 1, 0])
+        XCTAssertEqual(labels(), [0, 0])
         XCTAssertEqual(ChatModel.shared.totalUnreadCountForAllUsers(), 1)
         XCTAssertEqual(users.map(\.unreadCount), [1])
     }
@@ -74,7 +74,7 @@ final class MessagePriorityTests: XCTestCase {
         let chat = try XCTUnwrap(ChatModel.shared.chats.first)
         XCTAssertEqual(chat.unreadTag, .highPriority)
         XCTAssertEqual(chat.chatItems.last?.meta.highPriority, true)
-        XCTAssertEqual(labels(), [1, 0, 1])
+        XCTAssertEqual(labels(), [1, 1])
     }
 
     @MainActor
@@ -91,7 +91,7 @@ final class MessagePriorityTests: XCTestCase {
         await processReceivedMsg(events[3])
         try await assertCounts(unread: 2, mentions: 2, silent: 0, highPriority: 2, user: 2)
         XCTAssertEqual(notified, ["almost there", "almost there", "compiled"])
-        XCTAssertEqual(labels(), [1, 0, 1])
+        XCTAssertEqual(labels(), [1, 1])
     }
 
     @MainActor
@@ -190,13 +190,12 @@ final class MessagePriorityTests: XCTestCase {
     @MainActor
     private func labels() -> [Int] {
         let tm = ChatTagsModel.shared
-        return [tm.unreadTags[tag] ?? 0, tm.silentTags[tag] ?? 0, tm.priorityTags[tag] ?? 0]
+        return [tm.unreadTags[tag] ?? 0, tm.priorityTags[tag] ?? 0]
     }
 
     @MainActor
     private func clearLabels() {
         ChatTagsModel.shared.unreadTags = [:]
-        ChatTagsModel.shared.silentTags = [:]
         ChatTagsModel.shared.priorityTags = [:]
     }
 

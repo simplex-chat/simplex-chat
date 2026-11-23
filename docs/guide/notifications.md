@@ -160,10 +160,10 @@ apps send normal messages.
 
 A silent message is shown in the chat and counted as unread, without a
 notification or a sound. When all unread messages of a chat are silent, the
-chat list shows their count in a gray outline, the scroll button in the chat
-shows it in gray, and a list shows ○ next to its name. In chats with
-notifications for all messages, silent messages are not counted in the unread
-filter, the profile counts and, on iOS, the app icon badge.
+chat list shows their count in a gray outline, and the scroll button in the chat
+shows it in gray. In chats with notifications for all messages, silent messages
+are left out of the unread filter, the ● next to a list's name, the profile
+counts and, on iOS, the app icon badge.
 
 A high priority message notifies as a mention, also in a chat set to **Mute**.
 The chat list, the list name and the message show a bell, and the message info

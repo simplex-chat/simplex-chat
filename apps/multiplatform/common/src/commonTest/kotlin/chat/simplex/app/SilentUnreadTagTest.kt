@@ -11,8 +11,8 @@ class SilentUnreadTagTest {
   }
 
   @Test
-  fun onlySilentUnreadIsSilentInModeAll() {
-    assertEquals(UnreadTag.Silent, chat(MsgFilter.All, Chat.ChatStats(unreadCount = 2, unreadSilent = 2)).unreadTag)
+  fun onlySilentUnreadIsReadInModeAll() {
+    assertEquals(UnreadTag.Read, chat(MsgFilter.All, Chat.ChatStats(unreadCount = 2, unreadSilent = 2)).unreadTag)
   }
 
   @Test

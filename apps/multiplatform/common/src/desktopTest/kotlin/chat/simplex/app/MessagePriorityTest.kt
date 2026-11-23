@@ -18,7 +18,7 @@ class MessagePriorityTest {
 
   private data class Counts(val unread: Int, val mentions: Int, val silent: Int, val highPriority: Int, val user: Int)
 
-  private data class Labels(val unread: Int, val silent: Int, val priority: Int)
+  private data class Labels(val unread: Int, val priority: Int)
 
   @BeforeTest
   fun setUp() {
@@ -36,7 +36,6 @@ class MessagePriorityTest {
     ChatModel.currentUser.value = null
     ChatModel.users.clear()
     ChatModel.unreadTags.clear()
-    ChatModel.silentTags.clear()
     ChatModel.priorityTags.clear()
     simplexWindowState.windowFocused.value = true
     chatSendCmdRetry = sendCmd
@@ -50,9 +49,9 @@ class MessagePriorityTest {
     assertEventually(Counts(2, 0, 2, 0, 0)) { counts() }
     assertNotified()
     val chat = ChatModel.chatsContext.chats.value.single()
-    assertEquals(UnreadTag.Silent, chat.unreadTag)
+    assertEquals(UnreadTag.Read, chat.unreadTag)
     assertTrue(chat.chatStats.allUnreadSilent)
-    assertEquals(Labels(0, 1, 0), labels())
+    assertEquals(Labels(0, 0), labels())
   }
 
   @Test
@@ -67,10 +66,10 @@ class MessagePriorityTest {
     }
     val group = chats.single { it.chatInfo is ChatInfo.Group }
     assertEquals(2 to 2, group.chatStats.unreadCount to group.chatStats.unreadSilent)
-    assertEquals(UnreadTag.Silent, group.unreadTag)
+    assertEquals(UnreadTag.Read, group.unreadTag)
     assertTrue(group.chatStats.allUnreadSilent)
     assertFalse(chats.single { it.chatInfo is ChatInfo.Direct }.chatStats.allUnreadSilent)
-    assertEquals(Labels(0, 1, 0), labels())
+    assertEquals(Labels(0, 0), labels())
     assertEquals(1, users.single().unreadCount)
   }
 
@@ -84,7 +83,7 @@ class MessagePriorityTest {
     val chat = ChatModel.chatsContext.chats.value.single()
     assertEquals(UnreadTag.HighPriority, chat.unreadTag)
     assertTrue(chat.chatItems.last().meta.highPriority)
-    assertEquals(Labels(1, 0, 1), labels())
+    assertEquals(Labels(1, 1), labels())
   }
 
   @Test
@@ -100,7 +99,7 @@ class MessagePriorityTest {
     receive(compiled)
     assertEquals(Counts(2, 2, 0, 2, 2), counts())
     assertNotified("almost there", "almost there", "compiled")
-    assertEquals(Labels(1, 0, 1), labels())
+    assertEquals(Labels(1, 1), labels())
   }
 
   @Test
@@ -140,7 +139,7 @@ class MessagePriorityTest {
     return Counts(stats.unreadCount, stats.unreadMentions, stats.unreadSilent, stats.unreadHighPriority, ChatModel.users[0].unreadCount)
   }
 
-  private fun labels(): Labels = Labels(ChatModel.unreadTags[tag] ?: 0, ChatModel.silentTags[tag] ?: 0, ChatModel.priorityTags[tag] ?: 0)
+  private fun labels(): Labels = Labels(ChatModel.unreadTags[tag] ?: 0, ChatModel.priorityTags[tag] ?: 0)
 
   private fun assertNotified(vararg texts: String) = assertEventually(texts.toList()) { synchronized(notifications) { notifications.toList() } }
 }

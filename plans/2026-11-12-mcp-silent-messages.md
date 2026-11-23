@@ -1,6 +1,6 @@
 # Silent messages
 
-Status: Q1, Q2 and Q3 answered A by the user on 2026-11-12; Q4, the two tiers of unread items asked for in the note on Q3, and Q5, the look of a silent-only count, answered B on 2026-11-13. On 2026-11-14 the user replaced Q2: silent and high priority ship together, as one message priority feature; section 11 is the delta to the approved priority plan; Q6 and Q7 were decided A by the lead on 2026-11-14. On 2026-11-21 the user decided that an item created by an update of a missing message has the priority of the update (11.3). Code references: master `9d3241b06`. simplexmq at the commit of `cabal.project`, `71179c4d4`. Related plans: `2026-10-13-message-priority.md` (approved on 2026-10-13, not implemented), `2026-10-13-forwarded-notification-flag.md` (implemented by #7706).
+Status: Q1, Q2 and Q3 answered A by the user on 2026-11-12; Q4, the two tiers of unread items asked for in the note on Q3, and Q5, the look of a silent-only count, answered B on 2026-11-13. On 2026-11-14 the user replaced Q2: silent and high priority ship together, as one message priority feature; section 11 is the delta to the approved priority plan; Q6 and Q7 were decided A by the lead on 2026-11-14. On 2026-11-21 the user decided that an item created by an update of a missing message has the priority of the update (11.3). On 2026-11-23 the user decided that "lists should only show unread and priority marks": chats with only silent unread items are left out of list labels, as muted messages are (decision 18). Code references: master `9d3241b06`. simplexmq at the commit of `cabal.project`, `71179c4d4`. Related plans: `2026-10-13-message-priority.md` (approved on 2026-10-13, not implemented), `2026-10-13-forwarded-notification-flag.md` (implemented by #7706).
 
 ## 1. Goal
 
@@ -66,16 +66,16 @@ Q3. Does a silent message count as unread? Answered A.
 - B: it arrives as read.
 
 Q4. How does a chat whose unread items are all silent look? Answered B.
-- B, recommended: two tiers. Its count is shown in a gray outline badge in the chat list, and in gray inside the usual circle of the chat's scroll button. A list label shows a small outline circle in place of `●` while its chats have only silent unread items. The unread filter, the iOS icon badge and the profile totals leave it out. A chat with silent and normal unread items shows the blue count of all of them, as now. Silent and muted stay independent: a muted chat keeps its gray badge. Cost, in a pull request stacked on this one, in the same release:
+- B, recommended: two tiers. Its count is shown in a gray outline badge in the chat list, and in gray inside the usual circle of the chat's scroll button. Chats with only silent unread items are left out of list labels, as muted messages are (the user on 2026-11-23). The unread filter, the iOS icon badge and the profile totals leave it out. A chat with silent and normal unread items shows the blue count of all of them, as now. Silent and muted stay independent: a muted chat keeps its gray badge. Cost, in a pull request stacked on this one, in the same release:
   - core, about 100 lines: `ChatStats.unreadSilent`; two partial indexes of silent items, created in a migration after the column's; the chat list queries join the count; the core's unread filters, the single-chat counts and the profile totals subtract it. Every count reads only its index and only unread silent items (decision 16).
   - API types: one field, generated.
-  - apps, about 80 lines per platform: the count is kept where `unreadMentions` is kept; `unreadTag` becomes three-valued, none, silent or unread, and drives the unread filter and the list labels with a second map of tags; the badge style in the chat list and the chat; the iOS icon badge total.
+  - apps, about 80 lines per platform: the count is kept where `unreadMentions` is kept; in mode "All", silent items are left out of `unreadTag` of the unread filter and the list labels; the badge style in the chat list and the chat; the iOS icon badge total.
   - A count, not a flag: apps change the counters per item received or read without the core, so they need the number of silent unread items to know when only silent ones remain (decision 17).
 - A: one tier, as answered in Q3: a blue count; the filter, the labels and the icon badge count silent items. No cost.
 - C: silent messages arrive read. A few lines. The chat list does not show that Claude worked.
 
 Q5. How is the count of a chat with only silent unread items drawn? Answered B, after the renders below, made by the Compose code of `ep/mcp-silent-unread` in the light and dark themes.
-- B, as built: a gray outline with a gray count; the scroll button shows the count in gray; a list label shows `○`.
+- B, as built: a gray outline with a gray count; the scroll button shows the count in gray; a list label is not marked, in place of `○` of the renders (the user on 2026-11-23).
 - A2: a gray filled badge with a white count, the badge of a muted chat.
 
 ![Chat list: normal, silent B, silent A2, muted, mention](2026-11-12-mcp-silent-messages/silent-compose-all-light.png)
@@ -117,7 +117,7 @@ Two tiers of unread items, Q4 B, the stacked pull request:
     ```
     EXPLAIN QUERY PLAN with sqlite3 3.45.1 on the master schema plus the column: `SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_silent (user_id=? AND item_status=? AND group_id>?)` for the counts per group, `... idx_chat_items_contacts_silent (user_id=? AND item_status=? AND contact_id>?)` per contact, and `(... AND group_id=? ... AND item_priority<?)` and `(... AND contact_id=? AND item_priority<?)` for one chat, with `item_status` bound as a parameter. Without `item_priority` in the columns the plans are not covering. The indexes are created by `M20261113_item_priority` with the column; they are empty after the migration, and their creation scans `chat_items` once. Postgres gets the same partial indexes.
 17. `ChatStats.unreadSilent :: Int`, next to `unreadMentions` (`Messages.hs:459-469`). Apps change the counters per item received or read, without the core: Kotlin `ChatModel.kt:621`, `:903-906`; iOS `ChatModel.swift:732`, `:849`, `:884`, `:1056`, `:1073`, `:1081-1083`, `:1161-1165`, `ChatView.swift:1835-1881`. A flag cannot be kept there: after a normal item is read, only a count tells whether the rest is silent. The count follows `unreadMentions` at each of these sites.
-18. Rules. `unreadTag` (Kotlin `ChatModel.kt:1483-1489`, iOS `ChatModel.swift:1443-1449`) drives the unread filter (`ChatListView.kt:1631`, `ChatListView.swift:699`) and the list labels (`ChatListView.kt:1404`, `ChatListView.swift:1083`). It becomes none, silent or unread: unread when a normal unread item counts in the chat's mode; silent when only silent unread items remain in mode "All"; the filter takes unread only; a label shows `●` for unread and a small outline circle for silent. When `unreadCount == unreadSilent`, the chat list badge (`ChatPreviewView.kt:460-500`, `ChatPreviewView.swift:229-246`) is a gray outline with a gray count, and the chat's scroll button (`ChatView.kt:2907`, `:3322`) shows the count in gray inside its usual circle. The iOS icon badge total (`ChatModel.swift:1193-1201`) adds `unreadCount - unreadSilent` for "All". The profile totals (`Store/Profiles.hs:176-204`) and the core's unread filters (`Store/Messages.hs:849`, `:860`, `:960`, `:971`) subtract the silent count. Silent items are left out only in mode "All": in mode "Mentions" a silent mention counts as a mention, as in `unreadMentions`. The same rule holds in `unreadTag`, the filter, the profile totals, the iOS icon badge and the apps' user counters (`ChatInfo.silentNotCounted`: the other-profile counters, Kotlin `addChatItem`, `removeChatItem`, `markChatItemsRead`, `clearChat`, iOS `changeUnreadCounter` and `decreaseUnreadCounter`).
+18. Rules. `unreadTag` (Kotlin `ChatModel.kt:1483-1489`, iOS `ChatModel.swift:1443-1449`) drives the unread filter (`ChatListView.kt:1631`, `ChatListView.swift:699`) and the list labels (`ChatListView.kt:1404`, `ChatListView.swift:1083`). It becomes read or unread: unread when a normal unread item counts in the chat's mode; read when only silent unread items remain in mode "All"; the filter takes unread only; a label shows `●` for unread, and chats with only silent unread items are left out of it, as muted messages are (the user on 2026-11-23). When `unreadCount == unreadSilent`, the chat list badge (`ChatPreviewView.kt:460-500`, `ChatPreviewView.swift:229-246`) is a gray outline with a gray count, and the chat's scroll button (`ChatView.kt:2907`, `:3322`) shows the count in gray inside its usual circle. The iOS icon badge total (`ChatModel.swift:1193-1201`) adds `unreadCount - unreadSilent` for "All". The profile totals (`Store/Profiles.hs:176-204`) and the core's unread filters (`Store/Messages.hs:849`, `:860`, `:960`, `:971`) subtract the silent count. Silent items are left out only in mode "All": in mode "Mentions" a silent mention counts as a mention, as in `unreadMentions`. The same rule holds in `unreadTag`, the filter, the profile totals, the iOS icon badge and the apps' user counters (`ChatInfo.silentNotCounted`: the other-profile counters, Kotlin `addChatItem`, `removeChatItem`, `markChatItemsRead`, `clearChat`, iOS `changeUnreadCounter` and `decreaseUnreadCounter`).
 
 ## 5. Design
 
@@ -243,8 +243,8 @@ storage              chat_items.item_priority (M20261113_item_priority)
                      idx_chat_items_contacts_silent, idx_chat_items_groups_priority (M20261113_item_priority)
 counts               unread silent items in the chat list, one chat, a member support scope, the core's unread filters and profile totals
 apps                 CIMeta.priority, silent; notification checks; NSE .silentMsg and silentMsgReceived
-                     UnreadTag Read | Silent | Unread; silentTags; ChatInfo.silentNotCounted
-                     gray outline badge, gray scroll button count, label "○"
+                     UnreadTag Read | Unread; ChatInfo.silentNotCounted
+                     gray outline badge, gray scroll button count
 terminal             no notification and no change of the active chat for a silent item or its edit
 docs                 x.msg.new priority in the protocol doc and schema; bots/README "Silent messages"
 ```
@@ -289,8 +289,7 @@ approved text                                      becomes
 6     high priority sums inside ChatStats          one partial index of group items with item_priority <> 0 counts both tiers
                                                    (Q7 A, decided by the lead on 2026-11-14; closes the approved open question 1)
 2     cmPriority over msgPriority (built)           eventPriority: msgPriority is the field name of the group preference
-8     UnreadTag None | Unread | HighPriority        Read | Silent | Unread | HighPriority
-8     unreadTags, priorityTags                     unreadTags, priorityTags, silentTags
+8     UnreadTag None | Unread | HighPriority        Read | Unread | HighPriority
 10    Output.hs: notification for a raise          kept; the built silent checks stay; a raised item is no longer silent
 11    "1 or above ... received as normal" (doc)    the receiver rules and the preference of the approved plan
 5     item created by x.msg.update: its priority   unchanged: eventPriority of x.msg.update is its priority, and an update of a silent item
@@ -338,7 +337,6 @@ unreadHighPriority    unread high priority items; groups only
 ```
 mode "All"         HighPriority if unreadHighPriority > 0
                    Unread if unreadChat || unreadCount > unreadSilent
-                   Silent if unreadCount > 0
                    Read otherwise
 mode "Mentions"    HighPriority if unreadHighPriority > 0
                    Unread if unreadChat || unreadMentions > 0
@@ -347,7 +345,7 @@ mode "None"        Unread if unreadChat
                    Read otherwise
 unreadTags[tag]    chats with Unread or HighPriority
 priorityTags[tag]  chats with HighPriority
-silentTags[tag]    chats with Silent
+list label         bell if priorityTags[tag] > 0, otherwise "●" if unreadTags[tag] > 0
 unread filter      Unread or HighPriority
 ```
 
@@ -405,8 +403,8 @@ The recipient bob has `markRead = False`, mode "All", and the group `#team` in t
 
 | Test | Fixture | Checked |
 |---|---|---|
-| silent messages do not notify and are left out of totals | silent | no notification; unread 2, silent 2, profile 0; unread tag Silent; `allUnreadSilent` (gray badge and scroll button); list label ○ |
-| chat list with only silent unread | chats-silent | the group's tag Silent and `allUnreadSilent`; list label ○; profile unread 1; iOS: app badge total 1 |
+| silent messages do not notify and are left out of totals | silent | no notification; unread 2, silent 2, profile 0; unread tag Read; `allUnreadSilent` (gray badge and scroll button); list label not marked |
+| chat list with only silent unread | chats-silent | the group's tag Read and `allUnreadSilent`; list label not marked; profile unread 1; iOS: app badge total 1 |
 | high priority message notifies with bell | high | notifications of both; unread 2, mentions 1, high priority 1, profile 2; unread tag HighPriority; the item's bell; list label bell |
 | raise notifies and moves counters | raise | notification of each raise; counters after each event; the raised silent item leaves the gray tier |
 | raise in another profile notifies and counts for it | raise | notifications of the new item and both raises; the other profile's unread 2 |

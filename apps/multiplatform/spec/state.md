@@ -102,7 +102,6 @@ Defined at [`ChatModel.kt line 86`](../common/src/commonMain/kotlin/chat/simplex
 | [`activeChatTagFilter`](../common/src/commonMain/kotlin/chat/simplex/common/model/ChatModel.kt#L119) | `MutableState<ActiveFilter?>` | 119 | Currently active filter in chat list |
 | [`presetTags`](../common/src/commonMain/kotlin/chat/simplex/common/model/ChatModel.kt#L120) | `SnapshotStateMap<PresetTagKind, Int>` | 120 | Counts for preset tag categories (favorites, groups, contacts, etc.) |
 | [`unreadTags`](../common/src/commonMain/kotlin/chat/simplex/common/model/ChatModel.kt#L121) | `SnapshotStateMap<Long, Int>` | 121 | Counts of chats with `unreadTag == Unread` or `HighPriority` per user-defined tag |
-| [`silentTags`](../common/src/commonMain/kotlin/chat/simplex/common/model/ChatModel.kt#L182) | `SnapshotStateMap<Long, Int>` | 182 | Counts of chats with `unreadTag == Silent` per user-defined tag |
 | `priorityTags` | `SnapshotStateMap<Long, Int>` | `ChatModel.priorityTags` | Counts of chats with `unreadTag == HighPriority` per user-defined tag |
 
 ### Terminal and Developer
@@ -290,7 +289,7 @@ data class ChatStats(
 | Property | Line | Purpose |
 |---|---|---|
 | `id` | 1349 | Chat ID derived from `chatInfo.id` |
-| `unreadTag` | 1343 | `HighPriority`, `Unread`, `Silent` or `Read` for tag filtering (considers notification settings): `HighPriority` when high priority items are unread in mode "All" or "Mentions"; `Silent` when only silent items are unread in mode "All" |
+| `unreadTag` | 1343 | `HighPriority`, `Unread` or `Read` for tag filtering (considers notification settings): `HighPriority` when high priority items are unread in mode "All" or "Mentions"; `Read` when only silent items are unread in mode "All", so the chat is left out of list labels and the unread filter |
 | `supportUnreadCount` | 1351 | Unread count in support/moderation context |
 | `nextSendGrpInv` | 1337 | Whether next message should send group invitation |
 

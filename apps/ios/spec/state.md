@@ -59,7 +59,6 @@ ChatTagsModel (singleton -- filter state)
 ├── activeFilter: ActiveFilter?
 ├── presetTags: [PresetTag: Int]
 ├── unreadTags: [Int64: Int]
-├── silentTags: [Int64: Int]
 └── priorityTags: [Int64: Int]
 ```
 
@@ -261,7 +260,6 @@ enum SecondaryItemsModelFilter {
 | `activeFilter` | `ActiveFilter?` | Currently active filter tab | [L193](../Shared/Model/ChatModel.swift#L193) |
 | `presetTags` | `[PresetTag: Int]` | Preset tag counts (groups, contacts, favorites, etc.) | [L194](../Shared/Model/ChatModel.swift#L194) |
 | `unreadTags` | `[Int64: Int]` | Count of chats with `unreadTag == .unread` or `.highPriority` per user tag | [L195](../Shared/Model/ChatModel.swift#L195) |
-| `silentTags` | `[Int64: Int]` | Count of chats with `unreadTag == .silent` per user tag | [L196](../Shared/Model/ChatModel.swift#L196) |
 | `priorityTags` | `[Int64: Int]` | Count of chats with `unreadTag == .highPriority` per user tag | `ChatTagsModel.priorityTags` |
 
 ### [ActiveFilter](../Shared/Views/ChatList/ChatListView.swift#L52)
@@ -340,7 +338,7 @@ struct ChatStats: Decodable, Hashable {
 |----------|-------------|------|
 | `id` | Chat ID from `chatInfo.id` | [L1336](../Shared/Model/ChatModel.swift#L1336) |
 | `viewId` | Unique view identity including creation time | [L1338](../Shared/Model/ChatModel.swift#L1338) |
-| `unreadTag` | `.highPriority`, `.unread`, `.silent` or `.read` based on notification settings: `.highPriority` when high priority items are unread in mode "All" or "Mentions"; `.silent` when only silent items are unread in mode "All" | [L1328](../Shared/Model/ChatModel.swift#L1328) |
+| `unreadTag` | `.highPriority`, `.unread` or `.read` based on notification settings: `.highPriority` when high priority items are unread in mode "All" or "Mentions"; `.read` when only silent items are unread in mode "All", so the chat is left out of list labels and the unread filter | [L1328](../Shared/Model/ChatModel.swift#L1328) |
 | `supportUnreadCount` | Unread count for group support scope | [L1340](../Shared/Model/ChatModel.swift#L1340) |
 
 ---
