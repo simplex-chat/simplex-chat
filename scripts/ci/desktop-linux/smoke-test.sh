@@ -177,7 +177,7 @@ back_to_chat_list() {
   for attempt in 1 2 3 4 5 6; do
     phrases=$(left_pane_phrases)
     chat_list_in "$phrases" && return 0
-    if [[ "$phrases" == *"$(normalise "Your chat profiles")"* ]]; then
+    if [[ "$phrases" == *"$(normalise "Your chat profiles")"* && "$phrases" == *"$(normalise "Link a mobile")"* ]]; then
       "$ui" click "$pane_centre_x" "$pane_top_y"
     elif [ $((attempt % 2)) -eq 0 ]; then
       "$ui" click "$avatar_x" "$bottom_y"

@@ -42,7 +42,8 @@ FIELD_BELOW_LABEL = 40
 LOCAL_CHAT = "seeded notes"
 PROFILE_NAME = "citester"
 SEARCH_FIELD = "Search or paste SimpleX link"
-USER_MENU_ITEM = "Your chat profiles"
+USER_MENU_ITEMS = ("Your chat profiles", "Link a mobile")
+MIN_PARTIAL_MATCH = 3
 PASTE_ITEM = "Paste"
 CLIPBOARD_COMMAND = ["clip"] if sys.platform == "win32" else ["pbcopy"]
 WHEEL_NOTCH = 120 if sys.platform == "win32" else 1
@@ -111,6 +112,8 @@ class App:
         for phrase, centre in candidates:
             if key(phrase) == target:
                 return centre
+        if len(target) < MIN_PARTIAL_MATCH:
+            return None
         for phrase, centre in candidates:
             if target in key(phrase):
                 return centre
@@ -227,7 +230,7 @@ class App:
             phrases = self.left_pane_phrases()
             if self.chat_list_in(phrases):
                 return True
-            if any(key(USER_MENU_ITEM) in p for p in phrases):
+            if all(any(key(item) in p for p in phrases) for item in USER_MENU_ITEMS):
                 self.click(self.x + PANE_CENTRE_OFFSET, self.top + PANE_TOP_OFFSET)
             elif attempt % 2:
                 self.click(self.x + AVATAR_OFFSET, self.bottom)
