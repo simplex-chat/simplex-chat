@@ -5,7 +5,8 @@
 # tests/fixtures/test.jpg and logo-large-rgba.png picked in the GTK file dialog and sent in the group.
 # Usage: scripts/ci/desktop-linux/smoke-test.sh <app dir> <output dir> [start|onboarding|layouts|setup|backend|tour]
 # With "start" it stops at the first screen, for an agent to go on from; with "onboarding", at the chat list.
-# "tour" creates the group and opens each screen reachable from the chat list, saved as tour-<name>.
+# "tour" sizes the window's content to 1366x768, creates the group and opens each screen reachable from the chat list,
+# saved as tour-<name>.
 # "setup" creates the group, makes the test SMP server (backend.sh) the one that resolves SimpleX names, and stops;
 # "backend" does the same, connects to the name that backend.sh registered, and goes on to both layouts.
 # Both need NAMES_SERVER, the test SMP server's address.
@@ -46,6 +47,8 @@ tour_settle=1
 tour_scroll=10
 tour_label_scrolls=4
 tour_label_wait=5
+tour_window_width=1366
+tour_window_height=768
 app_version=$(sed -n 's/^desktop.version_name=//p' "$(dirname "$0")/../../../apps/multiplatform/gradle.properties")
 mkdir -p "$UI_OUT"
 : > "$checks"
@@ -513,6 +516,9 @@ tour() {
 # server on 127.0.0.1; developer tools at the debug level put the app's debug log in app.log
 read -r -a extra_settings <<< "${SMOKE_SETTINGS:-}"
 "$ui" start "$app_dir" NetworkSMPProxyMode=Unknown DeveloperTools=true LogLevel=DEBUG "${extra_settings[@]}"
+if [ "$cases" = tour ]; then
+  "$ui" size "$tour_window_width" "$tour_window_height"
+fi
 read -r window_x window_y window_width window_height < "$state/window-rect"
 bottom_y=$((window_y + window_height - bottom_bar_offset))
 switch_x=$((window_x + switch_offset))

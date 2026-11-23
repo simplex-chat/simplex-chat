@@ -27,6 +27,7 @@
 #   ui copy <text>                put the text on the clipboard
 #   ui close                      ask the app window to close, as its close button does
 #   ui shown [secs]               wait up to secs (30) until the app window shows, and update UI_STATE/window-rect
+#   ui size <width> <height>      resize the app window's content to width x height, and update UI_STATE/window-rect
 #   ui hidden [secs]              wait up to secs (30) until the app window is hidden
 #   ui luminance                  print the app window's mean brightness, from 0 (black) to 1 (white)
 #   ui type <text>                type into the focused field
@@ -310,6 +311,16 @@ wait_for_window() {
   fi
 }
 
+resize_window() {
+  if [ "$session" = x11 ]; then
+    xdotool windowsize "$(head -n 1 "$state/window")" "$1" "$2"
+  else
+    swaymsg "[title=\"^SimpleX\$\"] resize set width $1 px height $2 px" > /dev/null
+  fi
+  sleep 1
+  wait_for_window 10
+}
+
 start() {
   local target settings=$state/config/simplex/settings.properties
   local -a command environment session_environment
@@ -536,6 +547,15 @@ case "${1:-}" in
       exit 1
     fi
     log "shown"
+    ;;
+  size)
+    number "$2"
+    number "$3"
+    if ! resize_window "$2" "$3"; then
+      log "size $2x$3: no window"
+      exit 1
+    fi
+    log "size $2x$3: $(cat "$state/window-rect")"
     ;;
   hidden)
     secs=${2:-30}
