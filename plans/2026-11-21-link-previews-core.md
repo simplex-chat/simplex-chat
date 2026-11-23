@@ -2,7 +2,7 @@
 
 Repository: simplex-chat/simplex-chat.
 Branch: `ep/link-previews`.
-Base: master `20ee7cb14`, at which the citations hold. Merge base: master `ddcdc1b50`, merged into the branch in `406d40034`. simplexmq pinned at `d38bcf50` (cabal.project:23-24).
+Base: master `20ee7cb14`, at which the citations hold. Merge base: master `9ef95e3f6`, merged into the branch in `fdf73a0ae`. simplexmq pinned at `d38bcf50` (cabal.project:23-24).
 
 Citations: `mq:` is simplexmq at `d38bcf50`; other paths are in this repository at the base. `Kt:` is `apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/`.
 
