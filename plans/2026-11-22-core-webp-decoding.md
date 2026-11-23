@@ -423,7 +423,7 @@ Threat model:
   - conformance, armv7 and sanitizer runs in hs-jpeg-turbo CI, with images taller than the window of the lossless decoder
   - libwebp's fuzzers, run upstream on OSS-Fuzz (tests/fuzzer, tests/fuzzer/oss-fuzz/build.sh)
 - WebP is decoded in the chat process, as JPEG by mozjpeg and PNG by libspng.
-- Memory of the demuxer before the limits of "Decoding": `WebPDemuxInternal` allocates a 24-byte record (12 bytes on 32-bit targets) for each chunk of an unknown type after `VP8X` (`ParseVP8XChunks`, demux.c:531-545 at `f054d0c3`; `StoreChunk`, :378-388), before `decodeWebp` checks the canvas. The number of chunks is bounded by the input size: at most one per 8 bytes. Measured in CI ([run](https://github.com/evgeny-simplex/hs-jpeg-turbo/actions/runs/45103156185)), the maximum resident set of `.github/scripts/webp.c` for files of empty chunks after `VP8X`, input buffer included, the same at `v1.6.0` and `f054d0c3`:
+- Memory of the demuxer before the limits of "Decoding": `WebPDemuxInternal` allocates a 24-byte record (12 bytes on 32-bit targets) for each chunk of an unknown type after `VP8X` (`ParseVP8XChunks`, demux.c:531-545 at `f054d0c3`; `StoreChunk`, :378-388), before `decodeWebp` checks the canvas. The number of chunks is bounded by the input size: at most one per 8 bytes. Measured in CI ([run](https://github.com/evgeny-simplex/hs-jpeg-turbo/actions/runs/45103156185)), the maximum resident set of `.github/scripts/webp.c` for files of empty chunks after `VP8X`, input buffer included, at `f054d0c3`; at `v1.6.0` within 0.4 MiB of these:
 
   | Input | Limit of | Chunks | Maximum resident set |
   |---|---|---|---|
