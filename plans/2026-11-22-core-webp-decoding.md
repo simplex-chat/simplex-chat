@@ -5,7 +5,7 @@ Link previews made by the core (#8297) fail for a page with a WebP `og:image` an
 Bots get an error from `resizeImage` for WebP input; CLI users get one from `/set profile image file` and `--user-image-file` for a `.webp` file.
 On Android and iOS, a picked WebP image is decoded by the platform after the core returns `""`.
 
-WebP input is decoded in the core by libwebp: still images, the first frame of animations, alpha and the ICC profile. Encoding WebP is out of scope.
+WebP input is decoded in the core by libwebp: still images, the first frame of animations, alpha and the ICC profile; the EXIF orientation is applied as for JPEG. Encoding WebP is out of scope.
 libwebp's decoder and demuxer are compiled by cabal in `JuicyPixels-webp`, a new package of simplex-chat/hs-jpeg-turbo.
 `decodeResizable` passes WebP input to it within half of `maxDecodeMemoryMB`, as PNG input. Resizing, output formats and colour profiles are unchanged.
 The C functions are unchanged; the apps and the bots call them as now.
@@ -24,6 +24,7 @@ Other sources:
 | libwebp test data | chromium.googlesource.com/webm/libwebp-test-data at `06ddd96e` |
 | link previews | branch `ep/link-previews` of evgeny-simplex/simplex-chat at `3771cd6a`, simplex-chat/simplex-chat#8297 |
 | SwiftyGif | kirualex/SwiftyGif at `5e861933`, pinned in apps/ios/SimpleX.xcodeproj/project.pbxproj:2883-2890 |
+| Android | android.googlesource.com, tag `android-9.0.0_r1`: platform/external/skia and platform/frameworks/base |
 
 ## Acceptance
 
@@ -31,20 +32,22 @@ Other sources:
 |---|---|---|
 | desktop user, still WebP | alert "Decoding error", image dropped | compose preview; sent as `IMG_*.jpg` or `IMG_*.png` (Q2 b) |
 | desktop user, animated WebP | alert "Decoding error", image dropped | compose preview of frame 1; the file sent as it is (Q2 b) |
-| Android user, still WebP | preview and image from the platform decode; log line `core returned no image` | preview and image from the core; the log line is absent |
-| iOS user, WebP file from the photo picker | preview and image from `UIImage`, after `""` from the core | preview and image from the core |
+| Android user, still WebP | preview and image from the platform decode, upright by the EXIF orientation; log line `core returned no image` | preview and image from the core, upright by the EXIF orientation; the log line is absent |
+| iOS user, WebP file from the photo picker | preview and image from `UIImage`, after `""` from the core | preview and image from the core, upright by the EXIF orientation |
 | user who types a link to a page with a WebP `og:image` (#8297) | preview fails | preview with the image |
 | bot on the Node or Python library | `resizeImage` error | JPEG or PNG, with the next pinned core release |
 | CLI user, `/set profile image file x.webp` | `unsupported image extension` | profile image set |
 
 Evidence at review:
 - the groups `/Image resize/` and `/Mobile API Tests/`, the test `/SimpleX chat client/profile tests/user profiles/set profile image from file/` and desktopTest pass in the reduced build;
-- hs-jpeg-turbo CI:
+- the test "should apply EXIF orientation of WebP" fails at `2c4ca02`, the commit before the fix, with sides 1000×307 for the expected 307×1000 ([run](https://github.com/simplex-chat/simplex-chat/actions/runs/45287298996));
+- hs-jpeg-turbo CI, the full matrix and the armv7 job ([run](https://github.com/evgeny-simplex/hs-jpeg-turbo/actions/runs/45286775715) of `5b8ae10`, a dispatch with the input `full`):
+  - the package built and its tests passed with GHC 8.10.7 and 9.6.3 on Linux x86-64, with GHC 9.6.3 on Linux aarch64, macOS aarch64 and x86-64, and Windows;
   - the conformance files decoded to the md5 of libwebp's test data;
   - two images taller than the window of rows of the lossless decoder: the lossless one decoded to its source pixels by the package tests and by the armv7, aarch64 and sanitizer builds; the alpha of the lossy one equal to its source in the package tests, its outputs identical in the three builds; the line coverage of the window functions in the job summary;
   - the armv7 and aarch64 outputs identical;
   - the sanitizer run clean on truncated and changed copies of all these files;
-  - the decoder size per platform in the job summary;
+  - the decoder size per platform in the job summaries, in "Binary size";
 - the memory of libwebp decoding at `v1.6.0` and at `f054d0c3`, measured in CI (Q1);
 - pending: desktop-linux, android-emu and ios-sim smoke tests pick, preview and send the WebP fixtures.
 
@@ -79,10 +82,10 @@ Link previews of the apps on master, replaced by #8297: Android and desktop deco
 | ID | Decision | Options, recommended first |
 |---|---|---|
 | D1 | **Binding in hs-jpeg-turbo.** New package `JuicyPixels-webp`, module `Codec.Picture.Webp`, in simplex-chat/hs-jpeg-turbo; libwebp a submodule at `JuicyPixels-webp/cbits/libwebp`. | (a) package in hs-jpeg-turbo: one cabal package; CI, nix hash line, `subdir` list and Windows removal glob `hs-jpeg-t*` reused.<br>(b) new repository: created by the user; CI copied; one more `source-repository-package` and nix hash line.<br>(c) cbits in simplex-chat: a submodule in every simplex-chat checkout (CI, nix, Docker, reproducible Android build) and 50 C files in simplex-chat.cabal.<br>(d) Hackage `webp` 0.1.2.0: GPL-3; system libwebp through pkg-config, while the iOS and Android builds link bundled C sources only; c2hs; `error` on animated input; the decoded pointer used unchecked (`decodeAbsBS`).<br>(e) iko-soy/JuicyPixels-webp: pure Haskell, GitHub only, repository created 6 Feb 2026, about 11,650 lines to review (its STATUS.md). |
-| D2 | **One decode function.** `decodeWebp :: DecodeOptions -> ByteString -> IO (Either String (DynamicImage, Maybe ByteString))`, `newtype DecodeOptions = DecodeOptions {maxMemoryMB :: Int}`: the image and the ICC profile from one pass of the demuxer, the shape of `Spng.decodePng` (Spng.hsc:36-45). | (a) one function.<br>(b) header, decode and profile functions: three passes over the container; the header function used by tests only. |
+| D2 | **One decode function.** `decodeWebp :: DecodeOptions -> ByteString -> IO (Either String (DynamicImage, Metadata))`, `newtype DecodeOptions = DecodeOptions {maxMemoryMB :: Int}`, `data Metadata = Metadata {iccProfile, exif :: Maybe ByteString}`: the image and the payloads of the `ICCP` and `EXIF` chunks from one pass of the demuxer, as the image and the ICC profile from `Spng.decodePng` (Spng.hsc:36-45). | (a) one function.<br>(b) header, decode and metadata functions: three passes over the container; the header function used by tests only. |
 | D3 | **First frame of an animation through the demuxer.** Frame 1 of `WebPDemuxGetFrame`, decoded by `WebPDecode` into a zeroed canvas at the frame offset: the pixels of `WebPAnimDecoderGetNext` for frame 1 (anim_decode.c:202-203, 347-384). | (a) demuxer and decoder: one canvas.<br>(b) `WebPAnimDecoder`: two canvases allocated at creation (anim_decode.c:137-143), then a copy out.<br>(c) `Left` for animations: link previews of animated images fail. |
 | D4 | **RGB for opaque still images, RGBA otherwise.** Table in "Decoding". The output format is chosen by `imageFormat` (Image.hs:51-67), unchanged. | (a) RGB or RGBA by the frame's alpha.<br>(b) RGBA always: a third more memory for opaque images. |
-| D5 | **ICC profile as for JPEG and PNG; EXIF ignored.** The first `ICCP` chunk is passed to `colourProfile` (Image.hs:181-185): `CPDisplayP3` or `CPNone` (plan 2026-10-23, D25). `EXIF` and `XMP ` chunks are ignored, as by libwebp and dwebp: orientation is referenced in libwebp only by TIFF constants (imageio/tiffdec.c:239, imageio/image_enc.c:412). | (a) EXIF ignored.<br>(b) EXIF orientation applied as for JPEG: `exifOrientation` (Image.hs:107-129) extended to the `EXIF` chunk; the WebP container specification refers to the Exif format only (doc/webp-container-spec.txt:688-711). |
+| D5 | **ICC profile and EXIF orientation as for JPEG.** The payload of the first `ICCP` chunk is passed to `colourProfile` (Image.hs:181-185): `CPDisplayP3` or `CPNone` (plan 2026-10-23, D25). The payload of the first `EXIF` chunk is passed to `exifOrientation` (Image.hs:107-129), and the image is turned by `orientImage` (:154-166), as JPEG input (plan 2026-10-23, D6). The payload is read as TIFF data from its first byte, tag `0x0112` of IFD0, as by the WebP codec of Android's `ImageDecoder` (Android: SkWebpCodec.cpp:102-108, SkJpegCodec.cpp:63-103, ImageDecoder.cpp:110-111), which decodes still WebP images picked on SDK 28 and later on master (Utils.android.kt:278-283, Utils.kt:218-227). `XMP ` chunks are ignored. | (a) EXIF orientation applied.<br>(b) EXIF ignored, as by dwebp (imageio/tiffdec.c:239, imageio/image_enc.c:412): a still WebP with orientation 6, picked on Android SDK 28 and later, sent upright on master, sent turned by 90 degrees. |
 | D6 | **Full-size decode within half of `maxDecodeMemoryMB`.** Limits in "Decoding". | (a) full size, halved by `fitImage`, as PNG.<br>(b) libwebp scaled decoding to the display size: a smaller output for lossy images, the same internal frame for lossless ones (vp8l_dec.c:1556-1574), libwebp's rescaler before Catmull-Rom. |
 | D7 | **Decoder and demuxer sources only, SIMD by compiler macros.** 50 C files; list in "hs-jpeg-turbo". | (a) SSE2, NEON or C paths, selected by the macros of `src/dsp/cpu.h:47-137`.<br>(b) internal libraries for SSE4.1, AVX2 and armv7 NEON with their flags, as jpeg-turbo's `neon` (jpeg-turbo.cabal:214-215): three more stanzas, for one decode per picked image. |
 | D8 | **App fallbacks kept; iOS unchanged.** The platform path is kept for formats other than JPEG, PNG and WebP: HEIC on Android (Images.android.kt:99-100, ComposeView.kt:382), pasted and camera images on iOS (`.simpleImage`, ComposeView.swift:1596-1597), other types picked on iOS (ImagePicker.swift:92-95). Each app ships with its core; the fallbacks are kept for those formats. | (a) all kept.<br>(b) Android and iOS fallbacks removed: HEIC, pasted and camera images fail. |
@@ -195,12 +198,14 @@ flowchart TD
   SIG -->|other| ERR["Left: unsupported image format"]
   JPEG --> CP["colourProfile of the ICC profile, forced"]
   PNG --> CP
-  WEBP --> CP
+  WEBP --> OR["orientWebp: orientImage by exifOrientation of the EXIF payload, new"]
+  OR --> CP
   CP --> OUT["image and ColourProfile"]
 ```
 
 - WebP input: bytes 0-3 `RIFF` and bytes 8-11 `WEBP`.
 - ``Webp.decodeWebp (Webp.DecodeOptions $ maxDecodeMemoryMB `div` 2)``, as `Spng.decodePng` (Image.hs:76).
+- `orientWebp`: the image turned by `orientImage` with `exifOrientation` of the `EXIF` payload, as JPEG input with the APP1 `Exif` segment (Image.hs:83); the `ICCP` payload passed on.
 - The profile is passed to `colourProfile` and forced with `$!` (Image.hs:72), so the result references no part of the input.
 
 `decodeWebp`:
@@ -213,11 +218,11 @@ flowchart TD
   B --> C["canvas width, height, flags, frame count"]
   C -->|"a side above 16384"| L2["Left: image side exceeds 16384"]
   C -->|"canvas bytes above maxMemoryMB MiB"| L3["Left: image is too large"]
-  C --> D["frame 1 and ICCP chunk 1"]
+  C --> D["frame 1, ICCP chunk 1 and EXIF chunk 1"]
   D --> E["canvas buffer: RGB or RGBA, zeroed for an animation"]
   E --> F["WebPDecode of frame 1 into the canvas at its offset"]
   F -->|"status other than OK"| L4["Left: the status name"]
-  F --> G["ImageRGB8 or ImageRGBA8, ICCP payload or Nothing"]
+  F --> G["ImageRGB8 or ImageRGBA8; Metadata: ICCP and EXIF payloads or Nothing"]
 ```
 
 Pixels (D4):
@@ -234,7 +239,7 @@ Pixels (D4):
 Limits (D6):
 - canvas sides at most 16384, the value of `maxImageSide` (Image.hs:309-310), read from the demuxer and checked before the canvas is allocated (the demuxer's own records: Security); frames are at most 16384 per side by format (format_constants.h:29), canvases up to 2^24 (:82)
 - canvas bytes, 3 or 4 per pixel, at most `maxMemoryMB` MiB, checked before the canvas is allocated
-- `maxMemoryMB` from `decodeResizable`: half of `maxDecodeMemoryMB`, so that the premultiplied copy of `scaleRGBA8` (Image.hs:338-346) also fits; at `f054d0c3` the pixel buffer of the lossless decoder contains a window of rows, not a second frame (`GetWindowRows`, src/dec/vp8l_dec.c:1217-1239); the heap of libwebp measured at most 14.4 MiB for a 256 MiB canvas (Q1)
+- `maxMemoryMB` from `decodeResizable`: half of `maxDecodeMemoryMB`, so that one more copy of the canvas also fits: the turned copy of `orientImage` for EXIF orientations 2 to 8, made from the canvas, and the premultiplied copy of `scaleRGBA8` (Image.hs:338-346), made from the turned image, by which the canvas is replaced; at `f054d0c3` the pixel buffer of the lossless decoder contains a window of rows, not a second frame (`GetWindowRows`, src/dec/vp8l_dec.c:1217-1239); the heap of libwebp measured at most 14.4 MiB for a 256 MiB canvas (Q1)
 - each libwebp allocation at most 512 MiB: `-DWEBP_MAX_ALLOCABLE_MEMORY=536870912` (src/utils/utils.h:34-41, src/utils/utils.c:173-176); the default is 16 GiB on 64-bit targets
 - input of the path and descriptor functions at most `maxDecodeMemoryMB` MiB (Mobile/File.hs:179-190), unchanged
 - link preview images at most 5 MiB (LinkPreview.hs:88-89), unchanged
@@ -277,7 +282,7 @@ Package `JuicyPixels-webp`:
   - `bytestring`
   - `transformers`
   - `vector`
-- module `Codec.Picture.Webp` (`.hsc`), exports `DecodeOptions (..)` and `decodeWebp`; FFI to:
+- module `Codec.Picture.Webp` (`.hsc`), exports `DecodeOptions (..)`, `Metadata (..)` and `decodeWebp`; FFI to:
   - `WebPDemuxInternal`
   - `WebPDemuxGetI`
   - `WebPDemuxGetFrame`
@@ -289,7 +294,7 @@ Package `JuicyPixels-webp`:
   - `WebPDecode`
 - the demuxer and the iterators released with `bracket` on every path
 - the canvas a pinned vector that becomes the image data without a copy, as in `Spng.decodePng` (Spng.hsc:56-63)
-- the ICCP payload a slice of the input bytes
+- the `ICCP` and `EXIF` payloads slices of the input bytes
 
 C sources (D7), as `dec_srcs`, `demux_srcs`, `dsp_dec_srcs` and `utils_dec_srcs` of libwebp's Android.mk:47-106 and 162-172, without MIPS and MSA; 23,492 lines at `v1.6.0`:
 
@@ -317,6 +322,7 @@ Repository files:
   - before `cabal test`, in the shared steps: libwebp-test-data cloned at `06ddd96e` into `$RUNNER_TEMP`; `.github/scripts/webp-encode.c`, compiled with all C files of the submodule, writes the tall images into the same directory; `WEBP_TEST_DATA` set
   - armv7 job: `bash .github/scripts/webp-check.sh` after `png-check.sh`
   - each matrix job: the size of `libHSJuicyPixels-webp-*.a` in the job summary
+  - `workflow_dispatch` input `full`: the jobs `build-full` and `armv7` also on a dispatch
 - `.github/scripts/webp-encode.c`, the tall images:
   - 1024×4096 RGBA; the window of the lossless decoder at width 1024 is 2094 rows (`VP8LGetWindowRows`, src/dec/vp8l_dec.c:1217-1233 at `f054d0c3`), so the window is shifted twice during a decode
   - the left half noise, the right half gradients, alpha in 16×16 blocks of 32 levels; the image repeats every 960 rows, a multiple of the transform tiles, so that each pixel after the first 960 rows equals the pixel 983,040 positions back, within the 1024 rows that the window keeps (`GetMaxDistanceRows`, :1210-1215); with this period the lossless file is 2,330,300 bytes, with a period of 1023 rows 5,753,236
@@ -333,7 +339,7 @@ Repository files:
 Package tests, `JuicyPixels-webp/test/WebpTest.hs` (tasty, as `SpngTest.hs`):
 - conformance: every `.webp` with a `.pam` or `.ppm` entry in `libwebp_tests.md5` of `$WEBP_TEST_DATA`, 96 files; the decoded image, written as dwebp writes PAM for RGBA and PPM for RGB (imageio/image_enc.c:223-250), has the listed md5 (`cryptohash-md5`); the group fails when `WEBP_TEST_DATA` is unset
 - animation: a container assembled in the test from two still frames of the conformance files (`VP8X` with the animation flag, `ANIM`, two `ANMF` with offsets) is decoded as frame 1 at its offset on a transparent canvas
-- ICC profile: the payload of the `ICCP` chunk of a `VP8X` container is returned; without the chunk, `Nothing`
+- metadata: the payloads of the `ICCP` and `EXIF` chunks of a `VP8X` container are returned; without the chunks, `Nothing`
 - limits: with `maxMemoryMB` 1, a 512×512 RGBA canvas is decoded and a 513×512 one refused; a canvas side of 16385 and `maxMemoryMB` 0 are refused
 - malformed input, refused: empty input, `RIFF` without `WEBP`, truncations, a `RIFF` size beyond the input
 - sliding window: `tall-lossless.webp` decoded to the pixels of `tall-lossless.pam`; the alpha of `tall-lossy-alpha.webp` equal to `tall-lossy-alpha.pgm`
@@ -386,7 +392,7 @@ flowchart LR
 | `scripts/nix/sha256map.nix:12` | hash of that commit, computed with submodules |
 | `simplex-chat.cabal:391-394` | `JuicyPixels-webp ==0.1.*` in the library |
 | nix: Android aarch64 and armv7a, iOS, iOS simulator, macOS (flake.nix) | unchanged; the package is built by haskell.nix as `JuicyPixels-spng` is; its licence, BSD-3-Clause, is accepted as declared (flake.nix:73-75 overrides `JuicyPixels-spng` only) |
-| Android armv7a, GHC 8.10.7 (flake.nix:11-13, :344-346) | compatibility checked by the hs-jpeg-turbo job on ubuntu-22.04 with GHC 8.10.7; the core built once by android-emu with the input `armv7a` |
+| Android armv7a, GHC 8.10.7 (flake.nix:11-13, :344-346) | `JuicyPixels-webp` built and its tests passed with GHC 8.10.7 on ubuntu-22.04 in hs-jpeg-turbo CI ([run](https://github.com/evgeny-simplex/hs-jpeg-turbo/actions/runs/45286775715)); pending: the core built by android-emu with the input `armv7a`; the armv7a build of this branch is stopped by a compilation error of `wide-word`, a dependency unchanged from master, before `JuicyPixels-webp` is built ([run](https://github.com/evgeny-simplex/simplex-chat/actions/runs/45147694496)) |
 | Windows (`.github/workflows/build.yml:1652-1655, 1778, 1820-1822`; `scripts/desktop/build-lib-windows.sh:43`) | unchanged: the libwebp submodule is removed with the others by the glob `dist-newstyle/src/hs-jpeg-t*` |
 | reproducible Android build | unchanged: submodules are updated after checkout (`scripts/simplex-chat-reproduce-builds-android.sh:103`) |
 
@@ -422,7 +428,7 @@ Threat model:
   - libwebp pinned by submodule commit (Q1)
   - conformance, armv7 and sanitizer runs in hs-jpeg-turbo CI, with images taller than the window of the lossless decoder
   - libwebp's fuzzers, run upstream on OSS-Fuzz (tests/fuzzer, tests/fuzzer/oss-fuzz/build.sh)
-- WebP is decoded in the chat process, as JPEG by mozjpeg and PNG by libspng.
+- WebP is decoded in the chat process, as JPEG by mozjpeg and PNG by libspng; the `EXIF` payload is read by `exifOrientation` in Haskell, as the APP1 segment of JPEG input.
 - Memory of the demuxer before the limits of "Decoding": `WebPDemuxInternal` allocates a 24-byte record (12 bytes on 32-bit targets) for each chunk of an unknown type after `VP8X` (`ParseVP8XChunks`, demux.c:531-545 at `f054d0c3`; `StoreChunk`, :378-388), before `decodeWebp` checks the canvas. The number of chunks is bounded by the input size: at most one per 8 bytes. Measured in CI ([run](https://github.com/evgeny-simplex/hs-jpeg-turbo/actions/runs/45103156185)), the maximum resident set of `.github/scripts/webp.c` for files of empty chunks after `VP8X`, input buffer included, at `f054d0c3`; at `v1.6.0` within 0.4 MiB of these:
 
   | Input | Limit of | Chunks | Maximum resident set |
@@ -436,8 +442,20 @@ Threat model:
 ## Binary size
 
 Measured in CI and reported in the pull request before review:
-- hs-jpeg-turbo: `size` of the decoder objects for armv7 and aarch64 (webp-check.sh); size of `libHSJuicyPixels-webp-*.a` on each matrix OS: Linux x86-64 with GHC 9.6.3 and 8.10.7, Linux aarch64, macOS aarch64 and x86-64, Windows; the full matrix runs for a pull request ready for review (hs-jpeg-turbo build.yml, job `build-full`).
-- simplex-chat: `libsimplex.so` of android-emu with the input `armv7a`, aarch64 and armv7a, on this branch and on master.
+- hs-jpeg-turbo, [run](https://github.com/evgeny-simplex/hs-jpeg-turbo/actions/runs/45286775715) of `5b8ae10`: `size` of the 50 decoder objects for armv7 and aarch64 (webp-check.sh); size of `libHSJuicyPixels-webp-*.a` on each matrix OS; the full matrix runs for a pull request ready for review and for a dispatch with the input `full` (hs-jpeg-turbo build.yml, job `build-full`).
+
+  | Build | Bytes | text | data | bss |
+  |---|---|---|---|---|
+  | 50 objects, armv7 C code paths, GCC 13 `-O2` | | 126,383 | 148 | 1,684 |
+  | 50 objects, aarch64 Neon, GCC 13 `-O2` | | 203,488 | 304 | 2,752 |
+  | `.a`, Linux x86-64, GHC 9.6.3 | 570,602 | 289,754 | 2,992 | 2,856 |
+  | `.a`, Linux x86-64, GHC 8.10.7 | 581,150 | 294,097 | 3,264 | 2,888 |
+  | `.a`, Linux aarch64, GHC 9.6.3 | 545,102 | 230,167 | 3,040 | 2,720 |
+  | `.a`, macOS aarch64, GHC 9.6.3 | 535,456 | | | |
+  | `.a`, macOS x86-64, GHC 9.6.3 | 663,776 | | | |
+  | `.a`, Windows x86-64, GHC 9.6.3 | 534,588 | | | |
+
+- pending: simplex-chat `libsimplex.so` of android-emu, aarch64 and armv7a, on this branch and on master; armv7a after the `wide-word` fix ("Builds").
 
 ## Tests
 
@@ -454,6 +472,7 @@ Measured in CI and reported in the pull request before review:
   - `lossy.webp` at (0, 0) and at (32, 0) on 160×128: the left 128 columns with the samples of `lossy.webp` and alpha 255
   - `lossless-alpha.webp` at (34, 16) and `lossy.webp` at (0, 0) on 1034×323: the samples of `lossless-alpha.webp` at the offset
 - colour profile: a `VP8X` container with an `ICCP` chunk of `p3Profile` and the `VP8 ` chunk of `lossy.webp` is decoded with `CPDisplayP3`, and its JPEG and PNG image data with limit 261120 read back as `CPDisplayP3`; with rX 3/65536 above Display P3, `CPNone`
+- EXIF orientation: a `VP8X` container with the `VP8L` chunk of `lossless-alpha.webp` and an `EXIF` chunk of orientation 6, the little-endian TIFF data of `orientationTiff`, which `testJpegOrientation` also uses, is decoded as `ImageRGBA8` 307×1000, the pixels of `lossless-alpha.webp` turned by 90 degrees clockwise; the test fails without `orientWebp`
 - refusals, `Left`:
   - an animation canvas of 16385×128, frame 1 inside it: `image side exceeds 16384`
   - an animation canvas of 16384×16384, 1 GiB as RGBA, above the limit of every build: `image is too large`
@@ -463,7 +482,6 @@ Measured in CI and reported in the pull request before review:
 `tests/MobileTests.hs`, "Images" (:103-110), cases added to the existing tests:
 - `cChatResizeImageUri` on `lossy.webp`, limit 14000: `data:image/jpg;base64,`
 - `cChatResizeImageFile` with `png = -1`, limit 100000, on `lossless-alpha.webp`: the PNG signature
-- `cChatResizeImageFdUri` on `lossless-alpha.webp` cut at half its length: `""`; the descriptor closed afterwards
 
 `tests/ChatTests/Profiles.hs`, "set profile image from file" (:76, :1250-1255): `/set profile image file ./tests/fixtures/webp/lossy.webp` sets a `data:image/jpg;base64,` image of at most 12500 characters. Pattern `/SimpleX chat client/profile tests/user profiles/set profile image from file/`, added to the `ci-tests` block with the code.
 
@@ -481,7 +499,7 @@ Apps (Q2 b):
   - `isWebpFile` on temporary files: a WebP header in a `.gif` file, true; a GIF in a `.webp` file, false; 11 bytes of a WebP header, false.
 - Pending, with the runs of the app workflows on the branch:
   - desktop-linux, `send_images` (scripts/ci/desktop-linux/smoke-test.sh:373-379): `webp/lossy.webp` sent as `.jpg`, and an animated container assembled from the fixtures sent as `.webp`; each with the compose preview and the unchanged count of `core returned no image`; `send_image` takes a shot label besides the extension.
-  - android-emu: `lossy.webp` added in its own folder and sent as `.jpg`, with the unchanged count of `core returned no image`.
+  - android-emu: `lossy.webp` added in its own folder and sent as `.jpg`, with the unchanged count of `core returned no image`; a container assembled from `lossless-alpha.webp` with an `EXIF` chunk of orientation 6, sent as `.png` of 307×1000, as on master.
   - ios-sim: `lossy.webp` added to the photo library and sent; the sent file 128x128; the log lines of the app's own resizing absent.
   - Each workflow run once on the branch, with the app uploaded; READMEs: `scripts/ci/desktop-linux/README.md:27`, `scripts/ci/android/README.md:32`, `scripts/ci/ios-sim/README.md:3`.
 
@@ -494,7 +512,8 @@ hs-jpeg-turbo, branch `ep/webp`: the files of "hs-jpeg-turbo: JuicyPixels-webp".
 simplex-chat, branch `ep/core-webp`:
 - `Image.hs`:
   - `import qualified Codec.Picture.Webp as Webp`
-  - `decodeResizable` (:69-77): the WebP branch before `otherwise`
+  - `decodeResizable` (:69-77): the WebP branch before `otherwise`, and `orientWebp`
+  - `exifOrientation` (:107-129): the TIFF data as its argument; `decodeDisplayJpeg` (:83) passes `exifTiff segments`
 - `Library/Commands.hs`:
   - `loadImageData` (:209-211): `.webp` accepted; error text `(only .png, .jpg, .jpeg, .webp)`
   - comment (:207): `.webp` named
@@ -520,7 +539,11 @@ Commits:
 5. `tests: make the WebP fixtures from the repository's own test images`: fixtures, core tests, docs/dependencies
 6. `core: pin JuicyPixels-webp with tests of the lossless decoder's window`: binding pin
 7. `docs: complete Q1, the threat model and the tests of the WebP plan`
-8. pending: `ci: send WebP images in the app smoke tests`
+8. `tests: check the EXIF orientation of picked WebP images`: the test alone, run before the fix
+9. `core: apply the EXIF orientation of WebP images`: binding pin, `decodeResizable`, `exifOrientation`
+10. `tests: remove the WebP descriptor case that passes without WebP decoding`
+11. `docs: state the EXIF orientation and the binary sizes in the WebP plan`
+12. pending: `ci: send WebP images in the app smoke tests`
 
 ## Out of scope
 
