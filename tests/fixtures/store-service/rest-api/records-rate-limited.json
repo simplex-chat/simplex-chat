@@ -1,0 +1,8 @@
+{
+  "body": {
+    "retryAfter": 3600,
+    "type": "rate_limited"
+  },
+  "retryAfter": "3600",
+  "status": 429
+}
