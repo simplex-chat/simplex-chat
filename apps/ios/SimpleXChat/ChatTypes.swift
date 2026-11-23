@@ -451,7 +451,7 @@ public struct BadgeIssueError: Decodable, Hashable {
 
 public enum BadgeIssueFailure: Decodable, Hashable {
     // retryable is the service's own view of transience: it gave retryAfter
-    case serviceError(code: BadgeServiceErrorCode, retryable: Bool)
+    case serviceError(code: StoreServiceErrorCode, retryable: Bool)
     case serviceTimeout
     case network(agentError: String)
     case invalidCredential
@@ -2760,6 +2760,7 @@ public enum ContactStatus: String, Decodable, Hashable {
     case active = "active"
     case deleted = "deleted"
     case deletedByUser = "deletedByUser"
+    case rejected = "rejected"
 }
 
 public struct ContactRef: Decodable, Equatable, Hashable {

@@ -177,7 +177,6 @@ toTypeInfo tr =
       "PQSupport" -> ST TBool []
       "AChatInfo" -> ST "ChatInfo" []
       "ACreatedConnLink" -> ST "CreatedConnLink" []
-      "AChatInfo" -> ST "ChatInfo" []
       "UserChatRelay'" -> ST "UserChatRelay" []
       "ServerOperator'" -> ST "ServerOperator" []
       "UserServer'" -> ST "UserServer" []

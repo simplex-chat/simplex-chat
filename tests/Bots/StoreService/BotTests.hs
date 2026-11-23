@@ -41,6 +41,7 @@ import qualified Data.Aeson as J
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as LB
+import Data.Bifunctor (bimap)
 import Data.Char (toLower)
 import Data.Either (isLeft, isRight)
 import Data.Int (Int64)
@@ -48,7 +49,7 @@ import Data.IORef (IORef, modifyIORef', newIORef, readIORef, writeIORef)
 import Data.List (isInfixOf, isPrefixOf, stripPrefix)
 import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.Map.Strict as M
-import Data.Maybe (isJust, isNothing)
+import Data.Maybe (fromMaybe, isJust, isNothing)
 import Data.String (fromString)
 import System.Timeout (timeout)
 import Data.Text (Text)
@@ -86,6 +87,7 @@ import Simplex.Messaging.Crypto.BBS (BBSSecretKey, bbsKeyGen)
 import Simplex.Messaging.Encoding.String (strDecode, strEncode, textEncode)
 import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
 import Data.X509 (encodeSignedObject)
+import qualified Options.Applicative as O
 import System.Directory (createDirectoryIfMissing)
 import System.FilePath (takeDirectory, (</>))
 import UnliftIO.Temporary (withTempDirectory)
@@ -115,6 +117,7 @@ storeServiceTests = do
   it "should refuse to issue a code with an unknown badge type or a nonsense month count" testIssueRejectsBadArguments
   it "should refuse a request whose purchaseKey is not the verified signer" testPurchaseKeyMismatch
   it "should refuse to start unless the issuer secret is the key trusted at its index" testIssuerKeyMustMatchConfig
+  it "should set the chat command to the console command given by --execute" testExecuteOption
   it "should refuse to start when the [issuer] key is not one clients trust" testIssuerIniKeyMustBeTrusted
   it "should trust [issuer] dev_keys beside the clients' keys, and refuse one at a trusted index" testDevKeysTrusted
   it "should credit a code's months and issue one credential per month" testCodeMonthsRenew
@@ -346,6 +349,7 @@ mkStoreServiceOpts ps secretKey =
       clientService = True,
       noAddress = False,
       runCLI = False,
+      consoleCommand = Nothing,
       serviceConfigFile = Nothing,
       issuerKey = Right (Just BadgeIssuerKey {keyIdx = testIssuerKeyIdx, secretKey}),
       testing = True
@@ -426,7 +430,12 @@ issueCode :: HasCallStack => ChatController -> BadgeType -> Int -> IO BadgeCode
 issueCode cc badgeType months = issueCodeAs cc badgeType months "free"
 
 revokeCodeAs :: HasCallStack => ChatController -> BadgeCode -> IO (Either T.Text T.Text)
-revokeCodeAs cc code = revokeRaw cc (formatBadgeCode code)
+revokeCodeAs cc = revokeNamed cc . formatBadgeCode
+
+revokeNamed :: HasCallStack => ChatController -> T.Text -> IO (Either T.Text T.Text)
+revokeNamed cc shown = bimap outcome outcome <$> revokeRaw cc shown
+  where
+    outcome t = fromMaybe (error $ "the answer does not name the code: " <> T.unpack t) $ T.stripPrefix (shown <> ": ") t
 
 revokeRaw :: HasCallStack => ChatController -> T.Text -> IO (Either T.Text T.Text)
 revokeRaw cc args = operatorCmd cc ("//revoke " <> args)
@@ -546,14 +555,21 @@ testMasterKeyB64 = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
 testIssueRejectsBadArguments :: HasCallStack => TestParams -> IO ()
 testIssueRejectsBadArguments ps =
   withStoreService ps $ \_ _ cc -> do
-    let refuses arg = issueRaw cc arg >>= (`shouldSatisfy` isLeft)
+    let refuses arg = (arg,) <$> issueRaw cc arg `shouldReturn` (arg, Left consoleIssueUsage)
     refuses "suporter"
     refuses "supporter 0"
     refuses "supporter 13"
     refuses "supporter 18446744073709551617"
     refuses "supporter 1 gratis"
+    refuses "supporter months 0"
+    refuses "supporter months 13"
+    refuses "supporter months 18446744073709551617"
+    refuses "supporter months 1 gratis"
+    refuses "supporter uses 2"
     refuses ""
     issueRaw cc "supporter 12 paid" >>= (`shouldSatisfy` isRight)
+    issueRaw cc "supporter months 12 paid" >>= (`shouldSatisfy` isRight)
+    operatorCmd cc "//issued supporter" `shouldReturn` Left badgeCmdUsage
 
 -- | Left is a refusal or a failure the service answers as a command error.
 issueRaw :: HasCallStack => ChatController -> String -> IO (Either T.Text ())
@@ -1740,6 +1756,16 @@ testIssuerKeyMustMatchConfig ps = do
   let halfGiven = (optsFor sk) {issuerKey = Left "--issuer-key-idx and --issuer-secret are given together or not at all"}
   checkIssuerKey halfGiven Nothing cfg >>= (`shouldSatisfy` isLeft)
 
+parsedOpts :: [String] -> Maybe StoreServiceOpts
+parsedOpts = O.getParseResult . O.execParserPure O.defaultPrefs (O.info (storeServiceOpts "." "test") mempty)
+
+testExecuteOption :: HasCallStack => TestParams -> IO ()
+testExecuteOption _ = do
+  let chatCmdOf args = chatCmd . mkChatOpts <$> parsedOpts args
+  chatCmdOf ["-e", "//issue name 6"] `shouldBe` Just "//issue name 6"
+  chatCmdOf ["--execute", "//revoke SN6-X"] `shouldBe` Just "//revoke SN6-X"
+  chatCmdOf [] `shouldBe` Just ""
+
 testIssuerIniKeyMustBeTrusted :: HasCallStack => TestParams -> IO ()
 testIssuerIniKeyMustBeTrusted ps = do
   Right (pk, sk) <- bbsKeyGen
@@ -1881,11 +1907,14 @@ testRevokeRejectsTrailingInput ps =
     refused <- revokeRaw cc (formatBadgeCode code <> " junk")
     -- If the refused call revoked the code anyway, this fails with "Already revoked.".
     revokeCodeAs cc code `shouldReturn` Right "Revoked."
-    refused `shouldBe` Left badgeCmdUsage
+    refused `shouldBe` Left "Usage: //revoke <code>"
 
 -- The text is spelled out rather than taken from the service, so a change there fails here.
 badgeCmdUsage :: Text
-badgeCmdUsage = "Usage: //issue supporter|legend|investor [months 1-12] [paid|unpaid|free], //issue name <length 6-63> [years 2-10] [paid|free], //revoke <code>, //balance <reference>, //record_refund <reference> <cents>, or //close <reference>"
+badgeCmdUsage = "Usage:\n//issue <name <length>|supporter|legend|investor> [years|months <N>] [paid|unpaid|free]\n//revoke <code>\n//balance <reference>\n//record_refund <reference> <cents>\n//close <reference>"
+
+consoleIssueUsage :: Text
+consoleIssueUsage = "Usage: //issue <kind> [<length>] [years <Y> | months <M>] [paid|unpaid|free]\nname <length>: length 6–63, years 2–10, paid|free\nsupporter, legend, investor: months 1–12, paid|unpaid|free\ne.g. //issue name 6 years 5 · //issue supporter months 12"
 
 purchaseCmd :: BadgeMasterKey -> ServicePayment -> StoreServiceCommand
 purchaseCmd masterKey payment = STCPurchaseBadge {masterKey, payment, upgrade = Nothing}
@@ -3178,6 +3207,7 @@ testRestoreMovesBack ps =
         nextClaimCheck env
         bob `send` restoredCmd 1 subscriptionPlay
         waitShownBadge (chatController bob) (Just 1)
+        waitWakeArmed (chatController bob)
         setClockAt bsClock renewalAt
         alice `send` "/_app activate"
         waitShownBadge (chatController alice) Nothing

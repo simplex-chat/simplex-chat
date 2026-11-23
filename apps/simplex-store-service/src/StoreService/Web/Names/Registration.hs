@@ -7,152 +7,135 @@ module StoreService.Web.Names.Registration
   ( registrationHandler,
     revealHandler,
     retryHandler,
-    registrationChangedResponse,
-    registrationRefusalResponse,
+    registrationChanged,
+    registrationRefusal,
     heldFor,
     versionParam,
   )
 where
 
 import Control.Concurrent.STM (atomically)
+import qualified Control.Exception as E
 import Control.Logger.Simple (logNote)
 import Control.Monad (join)
-import Control.Monad.Except (ExceptT (..), runExceptT)
-import Data.Aeson ((.=))
 import qualified Data.Aeson as J
-import qualified Data.ByteString.Char8 as B
-import Data.Char (isDigit)
 import Data.Int (Int64)
-import Data.Maybe (isJust, maybeToList)
-import Data.Text (Text)
+import Data.Maybe (maybeToList)
+import qualified Data.Text as T
 import Data.Time.Clock (UTCTime, diffUTCTime)
-import Network.HTTP.Types (status200, status409)
-import Network.Wai (Request, Response, ResponseReceived, queryString)
+import Network.HTTP.Types (status200)
+import Network.Wai (Request, ResponseReceived, queryString)
 import Simplex.Messaging.Agent.Store.Common (withTransaction)
-import Simplex.Messaging.Util (tshow)
-import StoreService.Names.Orders (OrdersEnv (..))
+import Simplex.Messaging.Parsers (parseAll)
+import Simplex.Messaging.SystemTime (roundedToUTCTime)
+import Simplex.Messaging.Util (eitherToMaybe, tshow)
+import StoreService.Config (boundedDecimal)
+import StoreService.Names.Orders (OrderRefusal (..), OrdersEnv (..), WriteRefusal (..), noteRead, orderFieldsOf, versionWritten)
 import StoreService.Names.Phases (RegistrationId (..), awaitChange, publish)
-import StoreService.Names.Registration (RegisterIntent (..))
-import StoreService.Names.Reveal (RevealFields (..), RevealRefusal (..), SignedLabel (..), checkAcceptance, checkIntent, committedRegistration, isRepeat, linksValid, parseRevealFields, parseSignedLabel, revealOf)
-import StoreService.Names.Store (NamePhase (..), NameRegistration (..), VersionWrite (..), getRegistration, updateRegistration)
-import StoreService.Names.Turns (withLabelTurn)
-import StoreService.Names.View (lapseMoment, registrationAt, registrationVersion, registrationView)
+import StoreService.Names.Reveal (checkReveal, isRepeat)
+import StoreService.Names.Store (BrokenInvariant (..), Commit (..), FailReason (..), NameRegistration (..), OrderPhase (..), getRegistration, noHistory, updateRegistration)
+import StoreService.Names.Turns (withRegistrationTurn)
+import StoreService.Names.View (NameRefusal (..), RegistrationView, lapseMoment, lapsedAt, registrationVersion, registrationView)
 import StoreService.Names.Worker (Retried (..), RetryRefusal (..), retryRegistration)
-import StoreService.Web.Http (HttpEnv, Respond, badRequest, holdsFull, invalidLink, jsonResponse, nameBodyBytes, notFound, providerUnavailable, readBoundedBody, withHoldSlot)
-import StoreService.Web.Names.Codes (codeRefusalResponse)
-import Text.Read (readMaybe)
+import StoreService.Web.Http (HttpEnv, Respond, holdsFullSeconds, jsonResponse, maxBodyBytes, readBoundedBody, withHoldSlot)
+import StoreService.Web.Names.Orders (orderRefusal, refusalResponse)
 
 -- | GET /api/registration/:id, held while its version is seenVersion.
-registrationHandler :: OrdersEnv -> HttpEnv -> Int -> Text -> Request -> Respond -> IO ResponseReceived
-registrationHandler OrdersEnv {oeStore, oeConfig, oeContracts, oePhases, oeNow} http hold ridText req respond =
+registrationHandler :: OrdersEnv -> HttpEnv -> Int -> RegistrationId -> Request -> Respond -> IO ResponseReceived
+registrationHandler OrdersEnv {oeStore, oeConfig, oeContracts, oePhases, oeNow} http hold rid req respond =
   readNow >>= \case
-    Nothing -> respond notFound
+    Nothing -> respond $ refusalResponse NRNotFound
     Just (now, r@NameRegistration {nrVersion})
       | versionParam req == Just nrVersion ->
           withHoldSlot http (awaitChange oePhases rid (registrationVersion oeStore rid) nrVersion (heldFor hold now $ maybeToList $ lapseMoment r))
-            >>= maybe (respond holdsFull) (const $ readNow >>= maybe (respond notFound) answer)
+            >>= maybe (respond $ refusalResponse $ NRRateLimited holdsFullSeconds) (const $ readNow >>= maybe (respond $ refusalResponse NRNotFound) answer)
       | otherwise -> answer (now, r)
   where
-    rid = RegistrationId ridText
-    readNow = oeNow >>= \now -> fmap (now,) <$> withTransaction oeStore (`getRegistration` rid)
-    answer (now, r) = respond . jsonResponse status200 =<< registrationView oeStore oeConfig oeContracts now (registrationAt now r)
+    readNow = oeNow >>= \now -> withTransaction oeStore (`getRegistration` rid) >>= traverse (\r -> (now, r) <$ noteRead oeStore now r)
+    answer (now, r) = respond . jsonResponse status200 . J.toJSON =<< registrationView oeStore oeConfig oeContracts now r
 
 -- | What a reveal decided in the name's turn, with the version it wrote; the publish and the answer come after the turn.
 data RevealDecision
   = RDAccepted (Maybe Int64)
-  | RDRefused RevealRefusal (Maybe Int64)
+  | RDRefused OrderRefusal
   | RDChanged
   | RDGone
 
 -- | POST /api/registration/:id/reveal, its checks in the contract's order, from the stored commitment in the name's turn.
-revealHandler :: OrdersEnv -> Text -> Request -> Respond -> IO ResponseReceived
-revealHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oePhases, oeNow} ridText req respond =
+revealHandler :: OrdersEnv -> RegistrationId -> Request -> Respond -> IO ResponseReceived
+revealHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oePhases, oeNow} rid@(RegistrationId ridText) req respond =
   withTransaction oeStore (`getRegistration` rid) >>= \case
-    Nothing -> respond notFound
-    Just NameRegistration {nrLabelHash} ->
-      readBoundedBody nameBodyBytes req >>= \case
-        Just body | Just (J.Object o) <- J.decode body, Just signed <- parseSignedLabel o -> withLabelTurn oeTurns nrLabelHash (decide nrLabelHash o signed) >>= answer
-        _ -> answer $ RDRefused RVBadRequest Nothing
+    Nothing -> respond $ refusalResponse NRNotFound
+    Just r ->
+      readBoundedBody maxBodyBytes req >>= \case
+        Just body -> case J.eitherDecode body of
+          Right request -> withRegistrationTurn oeStore oeTurns r (decide request) >>= answer . maybe RDGone (either (const RDChanged) id)
+          Left e -> logNote ("POST /api/registration/:id/reveal refused: a malformed reveal: " <> T.pack e) >> respond (refusalResponse NRBadRequest)
+        Nothing -> answer $ RDRefused (ORBadRequest "the body is over its size limit")
   where
-    rid = RegistrationId ridText
-    decide turnHash o signed = do
+    decide request r@NameRegistration {nrReveal} = do
       now <- oeNow
-      withTransaction oeStore (`getRegistration` rid) >>= \case
-        Nothing -> pure RDGone
-        Just r@NameRegistration {nrLabelHash, nrReveal}
-          -- moved to another name while this request waited for the turn
-          | nrLabelHash /= turnHash -> pure RDChanged
-          | Just stored <- nrReveal -> pure $ if isRepeat signed stored then RDAccepted Nothing else RDRefused RVBadRequest Nothing
-          | nrPhase (registrationAt now r) /= PCommitted -> pure $ RDRefused RVBadRequest Nothing
-          | otherwise -> case parseRevealFields o of
-              Nothing -> pure $ RDRefused RVBadRequest Nothing
-              Just fields -> either (\refusal -> pure $ RDRefused refusal Nothing) (signedReveal now r signed fields) $ committedRegistration oeConfig r signed fields
-    signedReveal now r SignedLabel {slSignature} RevealFields {rfNonce, rfDeadline, rfAcceptance} registration = do
-      let intent = RegisterIntent {riRegistration = registration, riDisputeDays = nrDisputeDays r, riNonce = rfNonce, riDeadline = rfDeadline, riSignature = slSignature}
-      runExceptT (ExceptT (checkIntent oeConfig oeContracts now (nrRevealBefore r) intent) >> ExceptT (checkAcceptance oeConfig oeContracts r rfDeadline rfAcceptance)) >>= \case
-        Left refusal -> pure $ RDRefused refusal Nothing
-        Right ()
-          | linksValid registration -> write now (RDAccepted . Just) r {nrReveal = Just $ revealOf intent rfAcceptance}
-          | isJust (nrLinksRefusedAt r) -> pure $ RDRefused RVInvalidLink Nothing
-          | otherwise -> write now (RDRefused RVInvalidLink . Just) r {nrLinksRefusedAt = Just now}
+      case nrReveal of
+        Just stored -> pure $ if isRepeat request stored then RDAccepted Nothing else RDRefused (ORBadRequest "another reveal is stored")
+        Nothing -> case nrPhase r of
+          OCommitted Commit {cmRevealBefore}
+            | lapsedAt now r -> pure $ RDRefused (ORBadRequest "the commitment lapsed")
+            | otherwise -> signed now (roundedToUTCTime cmRevealBefore) $ \rv -> r {nrReveal = Just rv}
+          OFailed _ FRUnread -> signed now now $ \rv -> r {nrPhase = OQueued, nrHistory = noHistory, nrReveal = Just rv}
+          _ -> pure $ RDRefused (ORBadRequest "the order is not committed")
+      where
+        signed now earliest accept =
+          checkReveal oeConfig oeContracts now (nrOwner r) (orderFieldsOf r) (nrDisputeDays r) earliest request >>= \case
+            Left refusal -> pure $ RDRefused refusal
+            Right rv -> write now (RDAccepted . Just) (accept rv)
     write now decided r =
-      withTransaction oeStore (\db -> updateRegistration db r now) >>= \case
-        Written v -> pure $ decided v
-        _ -> pure RDChanged
+      withTransaction oeStore (\db -> versionWritten <$> updateRegistration db r now) >>= \case
+        Right v -> pure $ decided v
+        Left WRChanged -> pure RDChanged
+        Left (WRRefused refusal) -> E.throwIO $ BrokenInvariant $ "registration " <> ridText <> " is live while it waits for its owner, yet its reveal was refused: " <> tshow refusal
     answer = \case
       RDAccepted v -> published v >> respond (jsonResponse status200 $ J.object [])
-      RDRefused refusal v -> do
-        published v
+      RDRefused refusal -> do
         logNote ("POST /api/registration/:id/reveal refused: " <> tshow refusal)
-        respond $ case refusal of
-          RVBadRequest -> badRequest
-          RVInvalidLink -> invalidLink
-          RVChainUnavailable -> providerUnavailable
-      RDChanged -> respond =<< registrationChangedResponse env rid
-      RDGone -> respond notFound
+        respond $ refusalResponse $ case refusal of
+          ORNameCheckUnavailable -> NRProviderUnavailable
+          _ -> orderRefusal refusal
+      RDChanged -> respond . refusalResponse =<< registrationChanged env rid
+      RDGone -> respond $ refusalResponse NRNotFound
     published = mapM_ (atomically . publish oePhases rid)
 
--- | POST /api/registration/:id/retry, Try again in the name's turn; the publish and the answer come after the turn.
-retryHandler :: OrdersEnv -> Text -> Request -> Respond -> IO ResponseReceived
-retryHandler env@OrdersEnv {oeStore, oeTurns, oePhases} ridText _ respond =
+-- | POST /api/registration/:id/retry, a lapsed order committed again, in the name's turn; the publish and the answer come after the turn.
+retryHandler :: OrdersEnv -> RegistrationId -> Request -> Respond -> IO ResponseReceived
+retryHandler env@OrdersEnv {oeStore, oeTurns, oePhases} rid _ respond =
   withTransaction oeStore (`getRegistration` rid) >>= \case
-    Nothing -> respond notFound
-    Just NameRegistration {nrLabelHash} -> withLabelTurn oeTurns nrLabelHash (decide nrLabelHash) >>= maybe (respond notFound) answer
+    Nothing -> respond $ refusalResponse NRNotFound
+    Just r -> withRegistrationTurn oeStore oeTurns r (retryRegistration env) >>= maybe (respond $ refusalResponse NRNotFound) (answer . either (const RTChanged) id)
   where
-    rid = RegistrationId ridText
-    decide turnHash = withTransaction oeStore (`getRegistration` rid) >>= traverse (inTurn turnHash)
-    inTurn turnHash r
-      -- moved to another name while this request waited for the turn
-      | nrLabelHash r /= turnHash = pure RTChanged
-      | otherwise = retryRegistration env r
     answer = \case
       RTWritten v -> do
         atomically $ publish oePhases rid v
-        respond . maybe notFound (jsonResponse status200) =<< currentView env rid
-      RTChanged -> respond =<< registrationChangedResponse env rid
+        respond . maybe (refusalResponse NRNotFound) (jsonResponse status200 . J.toJSON) =<< currentView env rid
+      RTChanged -> respond . refusalResponse =<< registrationChanged env rid
       RTRefused refusal -> do
         logNote ("POST /api/registration/:id/retry refused: " <> tshow refusal)
-        respond $ case refusal of
-          RFNotFailed -> badRequest
-          RFLinksRefused -> badRequest
-          RFSendsUsedUp -> badRequest
-          RFCode code -> codeRefusalResponse code
-          RFUnread -> providerUnavailable
+        respond $ refusalResponse $ retryRefusal refusal
+
+retryRefusal :: RetryRefusal -> NameRefusal
+retryRefusal = \case
+  RFNotLapsed -> NRBadRequest
 
 -- | The registration's current view, for a request that lost the race to change it.
-registrationChangedResponse :: OrdersEnv -> RegistrationId -> IO Response
-registrationChangedResponse env = registrationRefusalResponse env "registration_changed"
+registrationChanged :: OrdersEnv -> RegistrationId -> IO NameRefusal
+registrationChanged env = registrationRefusal env NRRegistrationChanged
 
 -- | A refusal with the registration's current view, so the page follows its state.
-registrationRefusalResponse :: OrdersEnv -> Text -> RegistrationId -> IO Response
-registrationRefusalResponse env tag rid = maybe notFound refusal <$> currentView env rid
-  where
-    refusal view = jsonResponse status409 $ J.object ["error" .= tag, "registration" .= view]
+registrationRefusal :: OrdersEnv -> (RegistrationView -> NameRefusal) -> RegistrationId -> IO NameRefusal
+registrationRefusal env refusal rid = maybe NRNotFound refusal <$> currentView env rid
 
 -- | The registration's view as it reads now.
-currentView :: OrdersEnv -> RegistrationId -> IO (Maybe J.Value)
+currentView :: OrdersEnv -> RegistrationId -> IO (Maybe RegistrationView)
 currentView OrdersEnv {oeStore, oeConfig, oeContracts, oeNow} rid =
-  withTransaction oeStore (`getRegistration` rid) >>= traverse (\r -> oeNow >>= \now -> registrationView oeStore oeConfig oeContracts now (registrationAt now r))
+  withTransaction oeStore (`getRegistration` rid) >>= traverse (\r -> oeNow >>= \now -> registrationView oeStore oeConfig oeContracts now r)
 
 -- | The hold, cut to end just past the next moment at which the answer changes with time alone.
 heldFor :: Int -> UTCTime -> [UTCTime] -> Int
@@ -162,9 +145,4 @@ heldFor hold now moments = fromInteger $ minimum $ toInteger hold : [ceiling (di
 
 -- | Nothing unless seenVersion is a decimal version, so any other value answers at once.
 versionParam :: Request -> Maybe Int64
-versionParam req = case join $ lookup "seenVersion" $ queryString req of
-  Just s | not (B.null s) && B.all isDigit s -> readMaybe (B.unpack s) >>= inRange
-  _ -> Nothing
-  where
-    inRange :: Integer -> Maybe Int64
-    inRange v = if v <= toInteger (maxBound :: Int64) then Just (fromInteger v) else Nothing
+versionParam req = join (lookup "seenVersion" $ queryString req) >>= eitherToMaybe . parseAll (boundedDecimal 0 maxBound)

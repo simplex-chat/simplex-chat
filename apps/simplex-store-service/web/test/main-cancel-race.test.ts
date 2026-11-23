@@ -33,7 +33,7 @@ raceTest("main: a cancel that raced a payment leaves the buyer on the order", as
   page.respondWith(cancelledWithPayment);
   screenOf(app).all("button").find((b) => b.textContent === CANCEL_INVOICE)!.click();
   // The restart's first read decides what the buyer sees, and failing it makes the loop fall back on the record, which still names the address.
-  page.respondWith({ status: 500, body: { error: "internal" } });
+  page.respondWith({ status: 500, body: { type: "internal" } });
   await until(() => headingOf(screenOf(app)) === "This invoice expired",
     "the closed-window screen, not the payment screen it replaced");
 
