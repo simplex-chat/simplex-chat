@@ -637,7 +637,7 @@ fun PreviewSendMsgView() {
 fun PreviewSendMsgViewEditing() {
   val smallFont = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onBackground)
   val textStyle = remember { mutableStateOf(smallFont) }
-  val composeStateEditing = ComposeState(editingItem = ChatItem.getSampleData(), useLinkPreviews = true)
+  val composeStateEditing = ComposeState.edit(ChatItem.getSampleData(), useLinkPreviews = true, previewsOn = true)
   SimpleXTheme {
     SendMsgView(
       composeState = remember { mutableStateOf(composeStateEditing) },

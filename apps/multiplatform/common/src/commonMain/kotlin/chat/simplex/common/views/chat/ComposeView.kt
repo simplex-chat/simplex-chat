@@ -133,7 +133,7 @@ data class ComposeState(
   val sendIncognito: Boolean = false,
   val cancelledLinks: Set<String> = emptySet()
 ) {
-  constructor(editingItem: ChatItem, liveMessage: LiveMessage? = null, useLinkPreviews: Boolean): this(
+  private constructor(editingItem: ChatItem, liveMessage: LiveMessage? = null, useLinkPreviews: Boolean): this(
     ComposeMessage(
       when (val mc = editingItem.content.msgContent) {
         is MsgContent.MCChat -> stripTextLink(mc.text, mc.chatLink.connLinkStr)
@@ -303,8 +303,13 @@ data class ComposeState(
     private val linkRequests = AtomicLong()
     fun nextLinkRequest(): Long = linkRequests.incrementAndGet()
 
-    fun edit(editingItem: ChatItem, useLinkPreviews: Boolean, previewsOn: Boolean): ComposeState =
-      ComposeState(editingItem, useLinkPreviews = useLinkPreviews)
+    fun edit(editingItem: ChatItem, useLinkPreviews: Boolean, previewsOn: Boolean): ComposeState {
+      val s = ComposeState(editingItem, useLinkPreviews = useLinkPreviews)
+      val uri = s.linkPreview?.uri ?: return s
+      val links = s.parsedMessage.mapNotNull { it.linkUri }.filterNot(s::isSimplexLink)
+      val cancelledLinks = if (uri in links) links.takeWhile { it != uri }.toSet() else emptySet()
+      return s.copy(cancelledLinks = cancelledLinks).updateLinkPreview(LinkPreviewEvent.TextChanged, previewsOn)
+    }
   }
 
   fun mentionMemberName(name: String): String {
@@ -1162,7 +1167,7 @@ fun ComposeView(
     if (composeState.value.contextItem != ComposeContextItem.NoContextItem || composeState.value.preview != ComposePreview.NoPreview) return
     val lastEditable = chatsCtx.chatItems.value.findLast { it.meta.editable }
     if (lastEditable != null) {
-      composeState.value = ComposeState(editingItem = lastEditable, useLinkPreviews = useLinkPreviews).copy(maxFileSize = composeState.value.maxFileSize)
+      composeState.value = ComposeState.edit(lastEditable, useLinkPreviews, previewsOn()).copy(maxFileSize = composeState.value.maxFileSize)
     }
   }
 
