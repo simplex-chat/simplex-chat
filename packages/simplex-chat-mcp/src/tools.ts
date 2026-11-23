@@ -181,6 +181,8 @@ const pngSignature = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a
 const refusedName = /^id_|\.(pem|key|p12|pfx)$/i
 export const refusedFileReason = "private keys and the server's own files are not sent"
 const ownerKey = "simplexMcpOwner"
+export const mainKey = "simplexMcpMain"
+export const sessionKey = "simplexMcpSession"
 // spec: spec/api.md#tool-download
 const deletedItem = "The message or its chat was deleted."
 // spec: spec/api.md#tool-download
@@ -638,13 +640,14 @@ export class AgentTools {
 
   // spec: spec/architecture.md#tools-agenttools-givechat
   private owns(chatInfo: T.ChatInfo): boolean {
-    return this.agent.owner === undefined || ownerOf(chatInfo) === this.agent.owner
+    return !isHubGroup(chatInfo) && (this.agent.owner === undefined || ownerOf(chatInfo) === this.agent.owner)
   }
 
   // spec: spec/architecture.md#tools-agenttools-givechat
   async claim(chat: string): Promise<void> {
     if (this.agent.owner === undefined) return
     const {chatInfo} = await getChat(this.agent.chat, chat, 0)
+    if (isHubGroup(chatInfo)) throw hubGroupChat(chat)
     if (ownerOf(chatInfo) === undefined) await setChatData(this.agent.chat, chat, {...customDataOf(chatInfo), [ownerKey]: {session: this.agent.owner}})
   }
 
@@ -829,6 +832,7 @@ export class AgentTools {
 
   // spec: spec/api.md#tool-connect
   private async ownChat(chatInfo: T.ChatInfo, target: string): Promise<T.ChatInfo> {
+    if (isHubGroup(chatInfo)) throw hubGroupChat(target)
     const chat = chatRef(chatInfo)
     if (ownerOf(chatInfo) === undefined && chat !== undefined) await this.claim(chat)
     else if (!this.owns(chatInfo)) throw new ToolError(`The chat of ${target} belongs to another session; an admin or owner of that session's group can give it to this session with /give.`)
@@ -1399,7 +1403,7 @@ export class AgentTools {
       const fields = await this.chatFields(chatInfo)
       chats.push({chat: fields.chat, type: fields.type, name: fields.name, simplex_name: fields.simplex_name, peer_type: fields.peer_type, incognito: isIncognito(chatInfo), known_as: fields.known_as, connected: fields.connected, unread: chatStats.unreadCount, ...(this.agent.standingApprover(chatInfo, "messages") === undefined ? {} : {approved: true})})
     }
-    const actions = this.agent.actions.ofSession(this.session).filter(({tool}) => tool !== "mode" && tool !== "permission").map(({n, tool, input, state, open}) => ({action: n, tool, input, state, open: open > 0}))
+    const actions = this.agent.actions.ofSession(this.session).filter(({tool}) => tool === "connect" || tool === "send" || tool === "leave" || tool === "download").map(({n, tool, input, state, open}) => ({action: n, tool, input, state, open: open > 0}))
     return {chats, actions}
   }
 
@@ -1672,6 +1676,12 @@ export function ownerOf(chatInfo: T.ChatInfo): string | undefined {
   return (customDataOf(chatInfo) as {[ownerKey]?: {session?: string}} | undefined)?.[ownerKey]?.session
 }
 
+// spec: spec/architecture.md#tools-customdataof
+function isHubGroup(chatInfo: T.ChatInfo): boolean {
+  const data = chatInfo.type === "group" ? chatInfo.groupInfo.customData : undefined
+  return data !== undefined && (mainKey in data || sessionKey in data)
+}
+
 // spec: spec/architecture.md#tools-chatsubject
 export function isConnected(chatInfo: T.ChatInfo): boolean {
   if (chatInfo.type === "direct") return chatInfo.contact.activeConn?.connStatus.type === "ready"
@@ -1754,6 +1764,11 @@ function mentionedIn(text: string, name: string): boolean {
 // spec: spec/api.md#tool-send
 function unknownChat(chat: string): ToolError {
   return new ToolError(`No chat ${chat}. list shows the agent's chats.`)
+}
+
+// spec: spec/api.md#plugin-tools
+function hubGroupChat(chat: string): ToolError {
+  return new ToolError(`The chat of ${chat} is the Main group or a session's group, not one of the agent's chats.`)
 }
 
 function isNotFound(error: unknown): boolean {

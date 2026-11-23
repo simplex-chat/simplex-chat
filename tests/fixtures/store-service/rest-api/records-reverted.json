@@ -1,0 +1,6 @@
+{
+  "body": {
+    "type": "record_reverted"
+  },
+  "status": 409
+}

@@ -10,7 +10,7 @@ The testing approaches of this repository: what is checked, how a test is writte
 | Encoding of a protocol message or a JSON type, markdown, a pure function of the core | [unit test](#unit-tests) |
 | Command, response, event or type of the core API | [Bot API docs](#checks-against-committed-files), regenerated<br>[app fixture](#app-fixtures), when an app processes it |
 | Database migration | [schema dumps](#checks-against-committed-files) of SQLite and PostgreSQL<br>query plans |
-| Directory service, badge service, remote sessions | the [suite](#suites) of the area |
+| Directory service, store service, remote sessions | the [suite](#suites) of the area |
 | App processing of a core response or event | [app fixture](#app-fixtures), replayed in Kotlin and iOS tests |
 | App screen | a preview, rendered by the [desktop](#desktop-snapshots) and [iOS](#simplex-snapshots) snapshot tests |
 | Flow across app screens | a case of an [app workflow](#app-workflows) |
@@ -51,8 +51,8 @@ The hspec suite `simplex-chat-test` of simplex-chat.cabal, with the entry point 
 | `/Remote session/` | RemoteTests.hs | a desktop controlling a mobile: handshake, messages, files |
 | `/SimpleX Directory service bot/`<br>`/SimpleX Directory names/` | Bots/DirectoryTests.hs | the directory service with chat clients (`withDirectoryService`); names: SQLite only |
 | `/SimpleX Broadcast bot/` | Bots/BroadcastTests.hs | the broadcast bot; skipped when `CI=true` |
-| `/SimpleX badge service/` | Bots/BadgeService/*Tests.hs | configuration, web server and schema, catalog, groups, invoice waiters, payment providers, store receipts; the providers are local fakes (`Fake*.hs`) |
-| `/SimpleX badge service e2e/` | Bots/BadgeService/BotTests.hs, GroupIntegrationTests.hs | the badge service bot with chat clients |
+| `/SimpleX store service/` | Bots/StoreService/*Tests.hs | configuration, web server and schema, catalog, groups, invoice waiters, payment providers, store receipts; the providers are local fakes (`Fake*.hs`) |
+| `/SimpleX store service e2e/` | Bots/StoreService/BotTests.hs, GroupIntegrationTests.hs | the store service bot with chat clients |
 | `/Schema dump/`<br>`/Postgres schema dump/`<br>`/Bot API docs/`<br>`/Save query plans/` | SchemaDump.hs, PostgresSchemaDump.hs, APIDocs.hs | [committed files](#checks-against-committed-files) |
 
 ### Chat scenario tests
@@ -153,10 +153,10 @@ Helpers of [ChatTests/Utils.hs](../../tests/ChatTests/Utils.hs), called in a cha
 |---|---|
 | `apiFixture fixture cc placeholders FixtureRequests {frCommands, frMarkdown, frUris}` | an object with `commands`, `markdown` and `uris`, keyed by the request: the response to each command, encoded by `chatSendCmd` of the core library's API; `chatParseMarkdown` of each text; `chatParseUri` of each link |
 | `nameFixture fixture cc name` | `apiFixture` of `/_connect plan 1 <name>` and of the markdown of the name, in `names/` |
-| `eventsFixture fixture events steps` | an array of the events appended by `recordItemEvent events`, in `eventHook` of `chatHooks`, during `steps`: `newChatItems` and `chatItemUpdated`, encoded as `chatRecvMsg` encodes them |
+| `eventsFixture fixture events steps` | an array of the events appended by `recordItemEvent events`, in `eventHook` of `chatHooks`, during `steps`: `newChatItems` and `chatItemUpdated`, encoded as `chatRecvMsg` encodes them; with `recordSndFileEvent events`, `sndFileCompleteXFTP` and `sndFileError` |
 | `nameMovedFixture` | a `nameMoved` event, built from the IDs of the named contacts and groups |
 
-Examples: `testPlanKnownNameAvailable` in ChatTests/Names.hs, `testDirectMessageUpdatePrevItem` and `testMissedCall` in ChatTests/Direct.hs.
+Examples: `testPlanKnownNameAvailable` in ChatTests/Names.hs, `testDirectMessageUpdatePrevItem` and `testMissedCall` in ChatTests/Direct.hs, `testXFTPRecordUploadComplete` in ChatTests/Files.hs.
 
 Stable recordings:
 
@@ -165,7 +165,7 @@ Stable recordings:
   | Fields | Replaced by |
   |---|---|
   | `createdAt`<br>`updatedAt`<br>`chatTs`<br>`userMemberProfileSentAt`<br>`itemTs` | `1970-01-01T00:00:00Z` |
-  | `agentConnId`<br>`xContactId`<br>`connFullLink`<br>`connShortLink`<br>`contactLink`<br>`groupLink`<br>`viaGroupLinkUri`<br>`simplexUri`<br>`memberId`<br>`memberPubKey`<br>`publicGroupId`<br>`businessId`<br>`customerId`<br>`itemSharedMsgId` | the field name |
+  | `agentConnId`<br>`xContactId`<br>`connFullLink`<br>`connShortLink`<br>`contactLink`<br>`groupLink`<br>`viaGroupLinkUri`<br>`simplexUri`<br>`memberId`<br>`memberPubKey`<br>`publicGroupId`<br>`businessId`<br>`customerId`<br>`itemSharedMsgId`<br>`agentSndFileId`<br>`privateSndFileDescr`<br>`errorMessage` | the field name |
   | `groupRelays` | `"groupRelay"` per element |
 
   A field with a new value in each run is added to this list.
@@ -184,7 +184,7 @@ Stable recordings:
 | Events | `ChatController.processReceivedMsg`, model/SimpleXAPI.kt | `processReceivedMsg`, Shared/Model/SimpleXAPI.swift |
 | Notifications | `ntfManager`, platform/NtfManager.kt | `NtfManager.shared`, Shared/Model/NtfManager.swift |
 | Recording read by | `fixtureText` | `fixtureJSON`, then `singleFieldJSON` to the Swift JSON form |
-| Tests | [NameAlertsTest.kt](../../apps/multiplatform/common/src/desktopTest/kotlin/chat/simplex/app/NameAlertsTest.kt), [ChatItemUpdateTest.kt](../../apps/multiplatform/common/src/desktopTest/kotlin/chat/simplex/app/ChatItemUpdateTest.kt) | [NameAlertsTests.swift](../../apps/ios/SimpleX%20Unit%20Tests/NameAlertsTests.swift), [ChatItemUpdateTests.swift](../../apps/ios/SimpleX%20Unit%20Tests/ChatItemUpdateTests.swift) |
+| Tests | [NameAlertsTest.kt](../../apps/multiplatform/common/src/desktopTest/kotlin/chat/simplex/app/NameAlertsTest.kt), [ChatItemUpdateTest.kt](../../apps/multiplatform/common/src/desktopTest/kotlin/chat/simplex/app/ChatItemUpdateTest.kt) | [NameAlertsTests.swift](../../apps/ios/SimpleX%20Unit%20Tests/NameAlertsTests.swift), [ChatItemUpdateTests.swift](../../apps/ios/SimpleX%20Unit%20Tests/ChatItemUpdateTests.swift), [FileUploadTests.swift](../../apps/ios/SimpleX%20Unit%20Tests/FileUploadTests.swift) |
 
 - Pattern: `recorded(fixture)` in the NameAlerts tests sets the first three seams to lookups in the recording; the test fails at tear-down on a request without a recorded response, unless the request is checked with `assertRequested`. The ChatItemUpdate tests decode the recorded events, pass each to `processReceivedMsg` and compare `ChatModel`. Tear-down restores the seams and clears the model.
 - Run and CI: [Kotlin apps](#kotlin-apps), [SimpleX Unit Tests](#simplex-unit-tests). CI runs the kotlin and ios scopes for a change in tests/fixtures/api (`BUILD_CHANGES` in scripts/ci/packages_release.py). The recording tests are core tests, selected in the `ci-tests` block by the patterns of the [CI guide, core](../../scripts/ci/README.md#core).
@@ -289,7 +289,7 @@ The app built from a branch, its core included, driven on a device by scripts an
 | support-bot | [apps/simplex-support-bot/bot.test.ts](../../apps/simplex-support-bot/bot.test.ts), vitest, with `simplex-chat` and `@simplex-chat/types` replaced by test/__mocks__ | `scripts/ci/scope-tests.sh support-bot` |
 | support-bot-light | [apps/simplex-support-bot-light/tests](../../apps/simplex-support-bot-light/tests), pytest, with `FakeChatApi` of conftest.py; ruff, pyright | `scripts/ci/scope-tests.sh support-bot-light` |
 | website | [website/test](../../website/test), `node --test` of src/js/simplex-lib.jsc | `npm test` in website |
-| badge-web | [apps/simplex-badge-service/web/test](../../apps/simplex-badge-service/web/test), `node --test` of the compiled tests, in UTC | `npm ci`, `npm test` in apps/simplex-badge-service/web |
+| badge-web | [apps/simplex-store-service/web/test](../../apps/simplex-store-service/web/test), `node --test` of the compiled tests, in UTC | `npm ci`, `npm test` in apps/simplex-store-service/web |
 | ci-scripts | [scripts/ci/test_packages_release.py](../../scripts/ci/test_packages_release.py), unittest of packages_release.py | `python3 scripts/ci/test_packages_release.py` |
 
 CI of each scope: [CI guide, Scopes](../../scripts/ci/README.md#scopes). Scopes lacking CI tests, with tests run locally:
