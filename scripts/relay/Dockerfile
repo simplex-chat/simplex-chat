@@ -38,7 +38,8 @@ WORKDIR /project
 RUN git init -q . \
     && git remote add origin https://github.com/simplex-chat/simplex-chat \
     && git fetch -q --depth 1 origin "${CHAT_REF}" \
-    && git checkout -q FETCH_HEAD
+    && git checkout -q FETCH_HEAD \
+    && git submodule update -q --init --recursive --depth 1
 
 # The cache mounts keep compiled dependencies across ref changes.
 RUN --mount=type=cache,target=/root/.cabal/store,sharing=locked \

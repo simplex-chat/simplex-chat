@@ -11,7 +11,7 @@ set -euo pipefail
 nix_ver=nix-2.22.0
 nix_hash=4fed7db867186c01ce2a2077da4a6950ed16232efbf78d0cd19700cff80559f9
 arch=${2:-aarch64}
-jobs=(".#hydraJobs.x86_64-linux.$arch-android:lib:simplex-chat" ".#hydraJobs.x86_64-linux.$arch-android:lib:support")
+jobs=(".?submodules=1#hydraJobs.x86_64-linux.$arch-android:lib:simplex-chat" ".?submodules=1#hydraJobs.x86_64-linux.$arch-android:lib:support")
 
 install_nix() {
   local tmp

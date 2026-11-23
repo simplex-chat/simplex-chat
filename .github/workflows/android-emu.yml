@@ -67,6 +67,8 @@ jobs:
 
       - name: Checkout code
         uses: actions/checkout@v6
+        with:
+          submodules: recursive
 
       - name: Claude scope
         id: scope
@@ -117,6 +119,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
+        with:
+          submodules: recursive
 
       - name: Show runner
         run: |
@@ -160,6 +164,7 @@ jobs:
         with:
           fetch-depth: 0
           filter: tree:0
+          submodules: recursive
 
       - name: Show runner
         run: |
@@ -192,6 +197,7 @@ jobs:
         with:
           fetch-depth: 0
           filter: tree:0
+          submodules: recursive
 
       - name: Show runner
         run: |

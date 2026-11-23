@@ -935,6 +935,8 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
+        with:
+          submodules: recursive
 
       - name: Get UID and GID
         id: ids

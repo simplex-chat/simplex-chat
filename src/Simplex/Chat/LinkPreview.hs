@@ -70,7 +70,7 @@ defaultLinkPreviewConfig =
     }
 
 linkPreviewRoots :: ByteString
-linkPreviewRoots = $(embedFile "src/Simplex/Chat/LinkPreview/roots.pem")
+linkPreviewRoots = $(embedFile "src/Simplex/Chat/LinkPreview/certifi/certifi/cacert.pem")
 
 maxRedirects :: Int
 maxRedirects = 5

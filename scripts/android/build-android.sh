@@ -44,11 +44,12 @@ nix_setup() {
 
 git_setup() {
   if [ "$folder" != "." ]; then
-    git clone "$repo" "$folder"
+    git clone --recurse-submodules "$repo" "$folder"
   fi
 
-  if [ -z ${git_skip+x} ]; then 
+  if [ -z ${git_skip+x} ]; then
     git -C "$folder" checkout "$commit"
+    git -C "$folder" submodule update --init --recursive
   fi
 }
 
@@ -105,8 +106,8 @@ build() {
   sed -i.bak "s/android.version_code=.*/android.version_code=${vercode}/" "$folder/apps/multiplatform/gradle.properties"
 
   for arch in $arches; do
-    android_simplex_lib="${folder}#hydraJobs.x86_64-linux.${arch}-android:lib:simplex-chat"
-    android_support_lib="${folder}#hydraJobs.x86_64-linux.${arch}-android:lib:support"
+    android_simplex_lib="${folder}?submodules=1#hydraJobs.x86_64-linux.${arch}-android:lib:simplex-chat"
+    android_support_lib="${folder}?submodules=1#hydraJobs.x86_64-linux.${arch}-android:lib:support"
 
     android_simplex_lib_output="${PWD}/result/pkg-${arch}-android-libsimplex.zip"
     android_support_lib_output="${PWD}/result/pkg-${arch}-android-libsupport.zip"
