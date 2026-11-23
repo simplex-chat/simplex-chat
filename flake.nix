@@ -357,9 +357,6 @@
                   packages.simplexmq.components.library.libs = pkgs8107.lib.mkForce [
                     (android32Pkgs.openssl.override { static = true; enableKTLS = false; })
                   ];
-                  packages.wide-word.patches = [
-                    ./scripts/nix/wide-word-pr-112.patch
-                  ];
                 }];
               }).simplex-chat.components.library.override {
                 smallAddressSpace = true; enableShared = false;
