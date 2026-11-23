@@ -2,7 +2,7 @@
 
 Repository: simplex-chat/simplex-chat.
 Branch: `ep/link-previews`.
-Base: master `20ee7cb14`; simplexmq pinned at `d38bcf50` (cabal.project:23-24).
+Base: master `20ee7cb14`, at which the citations hold. Merge base: master `ddcdc1b50`, merged into the branch in `406d40034`. simplexmq pinned at `d38bcf50` (cabal.project:23-24).
 
 Citations: `mq:` is simplexmq at `d38bcf50`; other paths are in this repository at the base. `Kt:` is `apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/`.
 
@@ -63,7 +63,8 @@ flowchart LR
 |---|---|---|
 | Compose, first link | alert "Enable link previews?" | none (Q1 a) |
 | Compose, any link | spinner, then card or nothing | spinner from the selection of the link, during the 1.5 s wait (ComposeView.kt:550; ComposeView.swift:1919) and the fetch, then card or nothing (section 3.14.1) |
-| Compose, the preview of the first link failed or closed | the next link of the message gets its card after a keystroke | the next link gets its card without a keystroke (section 3.14.1) |
+| Compose, the preview of the first link failed | the failed link is requested again at the first keystroke after each failure, without the 1.5 s wait, and the next link only once the failed one is removed from the text (ComposeView.kt:497-507, 541-555; ComposeView.swift:1910-1927, 1981-1993) | the failed link is added to `cancelledLinks`, and the next link gets its card without a keystroke (section 3.14.1, T7) |
+| Compose, the card of the first link closed with X | the next link gets its card after a keystroke (ComposeView.kt:1109-1120; ComposeView.swift:1945-1954) | the next link gets its card without a keystroke (section 3.14.1, T9) |
 | Privacy settings | toggle "Send link previews", default on (SimpleXAPI.kt:130; apps/ios/SimpleXChat/AppGroup.swift:98) | the same toggle; footer per Q1 |
 | iOS share extension | preview only after the alert was answered | preview when the toggle is on |
 | iOS with SOCKS | site sees the IP address | site sees the proxy's exit |
@@ -509,7 +510,7 @@ Request
 | `ComposePreview.CLinkPreview(status)`, in place of `CLinkPreview(linkPreview: LinkPreview?)` (60) | `ComposePreview.linkPreview(status:)`, in place of `linkPreview(linkPreview: LinkPreview?)` (13) |
 | `LinkPreviewStatus.Loading(uri)`; `request`, `@Transient`, set by `nextLinkRequest()` when the status is created | `LinkPreviewStatus.loading(uri:request:)` |
 | `LinkPreviewStatus.Shown(linkPreview)` | `LinkPreviewStatus.shown(linkPreview:)` |
-| `ComposeState.cancelledLinks: Set<String> = emptySet()` | `ComposeState.cancelledLinks: Set<String> = []`, a parameter of `init` (58-74) and `copy` (103-121) |
+| `ComposeState.cancelledLinks: Set<String> = emptySet()` | `ComposeState.cancelledLinks: Set<String> = []`, a parameter of `init` (58-74); `copy` (103-121) keeps it, without a parameter |
 | `ComposeState.updateLinkPreview(event, previewsOn)` | `ComposeState.updateLinkPreview(_:previewsOn:)` |
 | `ComposeState.getMessageLinks`, moved from `ComposeView` (469-479) | `ComposeState.getMessageLinks`, moved from `ComposeView` (1933-1942) |
 | `ComposeState.isSimplexLink`, moved from `ComposeView` (466-467) | `ComposeState.isSimplexLink`, moved from `ComposeView` (1944-1946) |
@@ -863,7 +864,20 @@ Core, scenario, `tests/ChatTests/LinkPreviews.hs` (new, in ChatTests.hs), patter
 | SOCKS deadline | a page delayed 5 s, with the SOCKS deadline 2 s and the other 10 s: a preview without a proxy; "timeout" through the SOCKS5 server, which receives the request |
 | SOCKS, isolate | domain address type; two previews with two usernames; page and image with one |
 | SOCKS, username | the configured credentials |
-| fixture | `apiFixture "previews/link_preview"` of the markdown and the preview of `LINK_URL/page` (success) and `LINK_URL/no-image` (error "no image"); `LINK_URL` replaces `https://link-preview.test:<port>` |
+| fixture | `apiFixture "previews/link_preview"` of the recordings below, through the SOCKS5 server; `LINK_URL` replaces `https://link-preview.test:<port>` |
+
+Recordings of tests/fixtures/api/previews/link_preview.json and the app tests that use them; Kt: LinkPreviewTest.kt and LinkPreviewStateTest.kt, iOS: LinkPreviewTests.swift:
+
+| Recording | Response or text | Used by |
+|---|---|---|
+| command `/_link preview LINK_URL/page` | `CRLinkPreview`: title "Link preview title", description "Link preview description", a PNG image | Kt, iOS: the API test and the compose tests of a card<br>iOS: the share extension test |
+| command `/_link preview LINK_URL/no-image` | `CELinkPreview` "no image" | Kt, iOS: the error and alert tests; the compose tests of a failed link<br>iOS: the share extension test |
+| command `/_create *1 json` of a note: `MCLink` of `LINK_URL/no-image LINK_URL/page` with the preview of `LINK_URL/page` | `newChatItems` with the note | Kt, iOS: F1 and F12, the response to the send of that text to the note folder<br>Kt: F3, F15, F16 and the laws, the note opened in edit<br>iOS: F15 and F16, the note opened in edit |
+| markdown `LINK_URL/page`<br>markdown `LINK_URL/no-image` | one link | Kt, iOS: the tests of a text with one link |
+| markdown `LINK_URL/no-image LINK_URL/page` | two links | Kt, iOS: F1, F12, F15, F16, T7, T9 and the laws<br>iOS: F17 |
+| markdown `LINK_URL/no-image LINK_URL/page ` | two links and a space | Kt, iOS: T2, F15, F16 and the laws<br>iOS: F1 and F17 |
+| markdown `LINK_URL/no-image\n\n\n` | a link and three line breaks | Kt: F4 |
+| markdown `text without a link` | a text without a link | Kt, iOS: T4, F15 and the laws<br>iOS: F8 |
 
 The fixture image is a PNG, so the recording does not depend on the JPEG encoder of the runner.
 
