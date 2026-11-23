@@ -20,6 +20,7 @@ module Bots.StoreService.NamesOrdersTests
     aliceOrder,
     secretOf,
     orderRegistration,
+    orderDisputeDays,
     revealOf,
     withReveal,
     fieldsOf,
@@ -106,7 +107,7 @@ import Simplex.Messaging.Agent.Store.Common (DBStore, withConnection, withTransa
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.Secp256k1 (Secp256k1PrivateKey, mkPrivateKey, signRecoverable)
-import Simplex.Messaging.Encoding.String (strEncode)
+import Simplex.Messaging.Encoding.String (TextEncoding (textDecode), strEncode)
 import Simplex.Messaging.Eth.Address (Address)
 import Simplex.Messaging.Encoding (Encoding (..))
 import Simplex.Messaging.Names.Record (USDCents)
@@ -122,11 +123,11 @@ import StoreService.Names.Community (AcceptanceAsked (..))
 import StoreService.Names.Orders (OrdersEnv (..))
 import qualified StoreService.Names.Orders as Orders
 import StoreService.Names.Phases (RegistrationId (..), awaitChange, newPhases)
-import StoreService.Names.Registration (Registration (..), acceptanceDigest, makeCommitment, policyDomain, registerIntentDigest, sponsorDomain, termsKind)
+import StoreService.Names.Registration (DisputeDays, Registration (..), acceptanceDigest, makeCommitment, methodDisputeDays, minDisputeDays, policyDomain, registerIntentDigest, sponsorDomain, termsKind)
 import StoreService.Names.Signatures (AgreedTerms (..), OrderFields (..), orderMessage, parseChecksumAddress, personalDigest)
 import StoreService.Names.Store
 import StoreService.Names.Turns (newTurns, withCodeTurn)
-import StoreService.Names.View (PaidWith (PWInvoice), PhaseView (PVClosed, PVCommitted, PVFailed, PVRegistered, PVTaken, PVUnpaid), RegistrationView (..), Signing (SAwaiting, SLapsed, SSigned), ToSign (TSRead, TSUnread), phaseView, readToSign, registrationView, toRegistrationView)
+import StoreService.Names.View (PaidWith (PWInvoice), PhaseView (PVClosed, PVCommitted, PVEnded, PVFailed, PVRegistered, PVTaken, PVUnpaid), RegistrationView (..), Signing (SAwaiting, SLapsed, SSigned), ToSign (TSRead, TSUnread), phaseView, readToSign, registrationView, toRegistrationView)
 import StoreService.Orders (cancelOpenInvoice, expireOverdue, settleOrder)
 import StoreService.Poller (cleanupInterval, cleanupReadsPerPass, cleanupUnpaid, drainHints, newPollerEnv, newReadHints, queueReadHint, runOnePass, unpaidRetention)
 import StoreService.Providers.BTCPay (btcpayProvider)
@@ -153,7 +154,7 @@ namesOrdersTests = describe "StoreService names: orders" $ do
     it "refuses a resend differing in any one field, or a new commitment, with a bare order_exists" testOneFieldDiffers
     it "refuses an order carrying another wallet's commitment without disclosing anything" testForeignCommitment
     it "refuses a bad signature, or another signer's" testBadSignature
-    it "refuses an order without a reveal, or whose reveal is not the order's label, commitment, owner's intent, sponsor nonce or acceptance, or a week ahead, and names a refused link, reaching no provider" testOrderRevealRefusals
+    it "refuses an order without a reveal, or whose reveal is not the order's label, commitment, owner's intent, its payment's dispute days, sponsor nonce or acceptance, or a week ahead, and names a refused link, reaching no provider" testOrderRevealRefusals
     it "takes a timestamp within 600 seconds of the clock, also near the top of Word64" testStaleTimestamp
     it "lets one of two concurrent orders for one owner and name win, the other never reaching the provider" testConcurrentOrders
     it "cancels the provider invoice and logs it when the order's insert fails" testInsertFailureCancels
@@ -335,13 +336,16 @@ aliceCommitment = ofCommitment $ fieldsOf aliceOrder
 revealDeadline :: Order -> SystemSeconds
 revealDeadline Order {oTimestamp} = RoundedSystemTime $ fromIntegral $ oTimestamp + 7 * 86400
 
+orderDisputeDays :: Order -> DisputeDays
+orderDisputeDays Order {oMethod} = maybe minDisputeDays methodDisputeDays $ textDecode oMethod
+
 revealOf :: TVar ChaChaDRG -> Order -> IO J.Value
 revealOf g o@Order {oKey, oTerms, oAcceptanceNonce} = do
   let r@Registration {rLabel, rSecret = Hex32 secret, rContactLink, rChannelLink} = orderRegistration o
       deadline = revealDeadline o
       AgreedTerms {communityName, termsHash = Hex32 termsHash} = agreed oTerms
       sign digest = either error id <$> signRecoverable g oKey digest
-  intent <- sign $ registerIntentDigest (sponsorDomain fakeChainId fakeSponsor) r 0 deadline
+  intent <- sign $ registerIntentDigest (sponsorDomain fakeChainId fakeSponsor) r (orderDisputeDays o) 0 deadline
   acceptance <- sign $ acceptanceDigest (policyDomain fakeChainId fakeNamePolicy) (termsKind communityName) (makeCommitment r) (Hex32 termsHash) oAcceptanceNonce deadline
   pure $
     J.object
@@ -711,6 +715,9 @@ testOrderRevealRefusals = withOrders $ \ctx@Ctx {cRandom, cNode} -> do
   postOrder ctx (inReveal (KM.insert "label" "alicebakers") body) `shouldReturn` badRequest
   postOrder ctx (inReveal (KM.insert "secret" (J.String $ hex $ unHex32 $ secretOf 2)) body) `shouldReturn` badRequest
   postOrder ctx (KM.insert "reveal" otherKeys body) `shouldReturn` badRequest
+  postOrder ctx (KM.insert "method" "card" body) `shouldReturn` badRequest
+  cardBody <- signedBody cRandom aliceOrder {oMethod = "card"}
+  postOrder ctx (KM.insert "method" "btc" cardBody) `shouldReturn` badRequest
   postOrder ctx (inReveal (KM.insert "deadline" (J.toJSON $ oTimestamp aliceOrder + 7 * 86400 + 601)) body) `shouldReturn` badRequest
   placeOrder ctx aliceOrder {oAcceptanceNonce = 1} `shouldReturn` badRequest
   answerCall cNode fakeSponsor noncesCall $ Returns $ uint256 (1 :: Int)
@@ -1105,7 +1112,7 @@ testCodeResend = withOrders $ \ctx -> do
   r <- registrationById ctx rid
   now <- readIORef (cClock ctx)
   withTransaction (cStore ctx) $ \db -> do
-    updateRegistration db r {nrPhase = ORegistered (RoundedSystemTime $ fromIntegral $ seconds now + 31536000) now} now `shouldReturn` Written 2
+    updateRegistration db r {nrPhase = ORegistered (RoundedSystemTime $ fromIntegral $ seconds now + 31536000) Nothing now} now `shouldReturn` Written 2
     spendLandedPrepaidCode db pcId rid now `shouldReturn` True
   advance ctx 3600
   setFault (cNode ctx) "eth_call" HttpFailure
@@ -1800,6 +1807,7 @@ testViewFields = withServiceStore $ \st -> withFakeEthNode $ \node -> do
         vwDuration = 69292800,
         vwPrice = 20000,
         vwPayment = PWInvoice "btc",
+        vwDisputeDays = minDisputeDays,
         vwBalance = Nothing,
         vwLatePayment = Nothing,
         vwCommitTx = Nothing,
@@ -1822,18 +1830,20 @@ testViewFields = withServiceStore $ \st -> withFakeEthNode $ \node -> do
           ]
   J.toJSON (awaiting $ acceptance False fakeGeneralTerms) `shouldBe` phaseJSON False fakeGeneralTerms
   J.toJSON (awaiting $ acceptance True fakeCommunityTerms) `shouldBe` phaseJSON True fakeCommunityTerms
-  map J.toJSON [committed (SAwaiting TSUnread), committed SSigned, committed SLapsed, PVClosed ICCancelled, PVRegistered (RoundedSystemTime 3), PVFailed FRRegistryRefused Nothing, PVFailed FRUnread (Just t0)]
+  map J.toJSON [committed (SAwaiting TSUnread), committed SSigned, committed SLapsed, PVClosed ICCancelled, PVRegistered (RoundedSystemTime 3) Nothing, PVRegistered (RoundedSystemTime 3) (Just $ RoundedSystemTime 4), PVFailed FRRegistryRefused Nothing, PVFailed FRUnread (Just t0), PVEnded]
     `shouldBe` [ J.object ["type" .= ("committed" :: Text), "revealAfter" .= (1 :: Int), "revealBefore" .= (2 :: Int), "signature" .= J.object ["type" .= ("awaiting" :: Text), "toSign" .= J.object ["type" .= ("unread" :: Text)]]],
                  J.object ["type" .= ("committed" :: Text), "revealAfter" .= (1 :: Int), "revealBefore" .= (2 :: Int), "signature" .= J.object ["type" .= ("signed" :: Text)]],
                  J.object ["type" .= ("committed" :: Text), "revealAfter" .= (1 :: Int), "revealBefore" .= (2 :: Int), "signature" .= J.object ["type" .= ("lapsed" :: Text)]],
                  J.object ["type" .= ("closed" :: Text), "closedBy" .= ("cancelled" :: Text)],
                  J.object ["type" .= ("registered" :: Text), "expiresAt" .= (3 :: Int)],
+                 J.object ["type" .= ("registered" :: Text), "expiresAt" .= (3 :: Int), "disputeUntil" .= (4 :: Int)],
                  J.object ["type" .= ("failed" :: Text), "reason" .= ("registryRefused" :: Text)],
-                 J.object ["type" .= ("failed" :: Text), "reason" .= ("unread" :: Text), "heldUntil" .= t0]
+                 J.object ["type" .= ("failed" :: Text), "reason" .= ("unread" :: Text), "heldUntil" .= t0],
+                 J.object ["type" .= ("ended" :: Text)]
                ]
   map J.toJSON [FRSignatureRefused, FRMonthEnded, FRUnread] `shouldBe` ["signatureRefused", "monthEnded", "unread"]
   map J.toJSON [ICExpired, ICCancelled, ICReversed] `shouldBe` ["expired", "cancelled", "reversed"]
-  map J.toJSON [PUnpaid, PClosed, PRegistered] `shouldBe` ["unpaid", "closed", "registered"]
+  map J.toJSON [PUnpaid, PClosed, PRegistered, PEnded] `shouldBe` ["unpaid", "closed", "registered", "ended"]
   forM_
     [ ("unpaid", PVUnpaid),
       ("committed-awaiting", awaiting $ acceptance False fakeGeneralTerms),
@@ -1842,7 +1852,6 @@ testViewFields = withServiceStore $ \st -> withFakeEthNode $ \node -> do
       ("committed-signed", committed SSigned),
       ("committed-lapsed", committed SLapsed),
       ("closed-cancelled", PVClosed ICCancelled),
-      ("registered", PVRegistered (RoundedSystemTime 3)),
       ("failed", PVFailed FRRegistryRefused Nothing),
       ("failed-held", PVFailed FRUnread (Just t0))
     ]
@@ -1890,6 +1899,7 @@ testViewStates = withServiceStore $ \st -> withFakeEthNode $ \node -> do
               ("duration", J.Number 69292800),
               ("price", J.Number 20000),
               ("payment", J.object ["type" .= ("invoice" :: Text), "method" .= ("btc" :: Text)]),
+              ("disputeDays", J.Number 14),
               ("latePayment", J.Null),
               ("commitTx", txText 8),
               ("community", J.Null),

@@ -49,7 +49,7 @@ import StoreService.Names.Community (AcceptanceAsked, Community, TermsLink, comm
 import StoreService.Names.Contracts (Contracts (ctDeadline, ctViewSlots), sponsorNonce)
 import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Profiles (deadlineIn, withSlot)
-import StoreService.Names.Registration (LinkKind)
+import StoreService.Names.Registration (DisputeDays, LinkKind)
 import StoreService.Names.Signatures (AgreedTerms (..))
 import StoreService.Names.Store (Balance (..), Commit (..), FailReason, InvoiceClose, LateWait, NameRegistration (..), NameReveal (..), OrderPayment (..), OrderPhase (..), TxHistory (..), getBalance, getRegistration, lateWait, orderLive, paymentInvoice)
 
@@ -68,9 +68,10 @@ data PhaseView
   | PVCommitting
   | PVCommitted {revealAfter :: SystemSeconds, revealBefore :: SystemSeconds, signature :: Signing}
   | PVRegistering
-  | PVRegistered {expiresAt :: SystemSeconds}
+  | PVRegistered {expiresAt :: SystemSeconds, disputeUntil :: Maybe SystemSeconds}
   | PVTaken
   | PVFailed {reason :: FailReason, heldUntil :: Maybe UTCTime}
+  | PVEnded
   deriving (Eq, Show)
 
 data Signing = SAwaiting {toSign :: ToSign} | SSigned | SLapsed
@@ -93,6 +94,7 @@ data RegistrationView = RegistrationView
     vwDuration :: Word64,
     vwPrice :: USDCents,
     vwPayment :: PaidWith,
+    vwDisputeDays :: DisputeDays,
     vwBalance :: Maybe BalanceView,
     vwLatePayment :: Maybe LateWait,
     vwCommitTx :: Maybe TxHash,
@@ -162,9 +164,10 @@ phaseView ct now r@NameRegistration {nrPhase, nrReveal} = case nrPhase of
   OCommitting _ -> pure PVCommitting
   OCommitted Commit {cmRevealAfter, cmRevealBefore} -> PVCommitted cmRevealAfter cmRevealBefore <$> signing
   ORegistering {} -> pure PVRegistering
-  ORegistered expiry _ -> pure PVRegistered {expiresAt = expiry}
+  ORegistered expiry disputeEnd _ -> pure PVRegistered {expiresAt = expiry, disputeUntil = disputeEnd}
   OTaken _ -> pure PVTaken
   OFailed _ why -> pure PVFailed {reason = why, heldUntil = if orderLive r then addMonths 1 <$> nrSelectedAt r else Nothing}
+  OEnded {} -> pure PVEnded
   where
     signing
       | isJust nrReveal = pure SSigned
@@ -197,6 +200,7 @@ toRegistrationView cfg r balance late phase =
       vwDuration = nrDuration,
       vwPrice = nrPrice,
       vwPayment = paidWith nrPayment,
+      vwDisputeDays = nrDisputeDays,
       vwBalance = balanceView <$> balance,
       vwLatePayment = late,
       vwCommitTx = thCommitTx,
@@ -206,7 +210,7 @@ toRegistrationView cfg r balance late phase =
     }
   where
     NameRegistration {nrId = RegistrationId rid, nrVersion, nrLabelHash = LabelHash lh, nrReveal, nrOwner, nrCommitment, nrSealed} = r
-    NameRegistration {nrYears, nrDuration, nrPrice, nrPayment, nrAgreedTerms, nrHistory = TxHistory {thCommitTx, thRegisterTx}, nrSettledAt} = r
+    NameRegistration {nrYears, nrDuration, nrPrice, nrPayment, nrDisputeDays, nrAgreedTerms, nrHistory = TxHistory {thCommitTx, thRegisterTx}, nrSettledAt} = r
 
 paidWith :: OrderPayment -> PaidWith
 paidWith = \case

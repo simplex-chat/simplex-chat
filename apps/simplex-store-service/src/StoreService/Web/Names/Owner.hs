@@ -118,13 +118,13 @@ selectNameHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oeNow}
     inTurns order reveal stored = do
       now <- oeNow
       select now stored order reveal
-    select now r@NameRegistration {nrYears, nrPrice, nrPayment, nrReveal} order@OrderRequest {orFields} reveal
+    select now r@NameRegistration {nrYears, nrPrice, nrPayment, nrDisputeDays, nrReveal} order@OrderRequest {orFields} reveal
       | orderFieldsOf r == orFields = answerNow . jsonResponse status200 . J.toJSON <$> registrationView oeStore oeConfig oeContracts now r
       | OTaken takenAt <- nrPhase r =
           withTransaction oeStore (\db -> overdueOrdersMet db order now) >>= \case
             Nothing -> refuse OROrderExists
             Just _ ->
-              orderChecked env now order (orderYears orFields nrYears) (nrPrice <$ paymentInvoice nrPayment) nrReveal reveal >>= \case
+              orderChecked env now order (orderYears orFields nrYears) (nrPrice <$ paymentInvoice nrPayment) nrDisputeDays nrReveal reveal >>= \case
                 Left refusal -> refuse refusal
                 Right rv -> write now r takenAt order rv
       | otherwise = refuse $ ORBadRequest "the order's name is selected"

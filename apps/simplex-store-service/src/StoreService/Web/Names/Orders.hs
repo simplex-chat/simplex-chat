@@ -50,6 +50,7 @@ import StoreService.Names.Codes (CodeRefusal (..), readPrepaidCode)
 import StoreService.Names.Community (termsLink)
 import StoreService.Names.Orders
 import StoreService.Names.Phases (RegistrationId (..))
+import StoreService.Names.Registration (DisputeDays, codeDisputeDays, methodDisputeDays)
 import StoreService.Names.Reveal (RevealRequest, orderReveal)
 import StoreService.Names.Signatures (OrderFields (..), orderMessage)
 import StoreService.Names.Store (BrokenInvariant (..), NameRegistration (..), NameReveal, NewRegistration (..), OrderHash, OrderPayment (..), OrderTerms (..), PaidOrder (..), PrepaidCode (..), createPaidRegistration, getRegistration, newRegistrationId, orderHash, paymentInvoice)
@@ -141,7 +142,7 @@ nameInvoiceHandler env http client cfg providers waiters body respond
             createPaidRegistration db new paid at >>= \case
               True -> pure $ Right ()
               False -> pure $ Left OROrderExists
-      orderChecked env now req (orderYears orFields $ nYears $ oeConfig env) (Just price) Nothing reveal >>= \case
+      orderChecked env now req (orderYears orFields $ nYears $ oeConfig env) (Just price) (methodDisputeDays method) Nothing reveal >>= \case
         Left refusal -> refuse refusal
         Right rv -> createAtProvider env http client cfg providers waiters what now InvoicedOrder {ivRequest = req, ivReveal = rv, ivOrderHash = hash, ivMethod = method, ivPrice = price, ivInsert = insert}
 
@@ -248,7 +249,7 @@ codeOrderHandler env@OrdersEnv {oeStore} providers waiters req respond =
           answerOrder env what order (OTCode pcCodeHash) (\_ NameRegistration {nrId} -> pure $ answerNow $ registrationAnswer nrId) (\hash now -> newOrder now order reveal hash code)
     issuedCode = maybe (pure Nothing) (readPrepaidCode oeStore) . parseNameCode
     newOrder now order@OrderRequest {orOwner, orFields} reveal hash code@PrepaidCode {pcYears} =
-      orderChecked env now order (orderYears orFields pcYears) Nothing Nothing reveal >>= \case
+      orderChecked env now order (orderYears orFields pcYears) Nothing codeDisputeDays Nothing reveal >>= \case
         Left refusal -> refuse refusal
         Right rv -> do
           rid <- newRegistrationId
@@ -256,8 +257,8 @@ codeOrderHandler env@OrdersEnv {oeStore} providers waiters req respond =
             Left refusal -> refuse refusal
             Right closed -> pure Answer {aResponse = Right $ registrationAnswer rid, aAfter = announceHeld env providers waiters closed rid}
 
-orderChecked :: OrdersEnv -> UTCTime -> OrderRequest -> Int -> Maybe USDCents -> Maybe NameReveal -> RevealRequest -> IO (Either OrderRefusal NameReveal)
-orderChecked OrdersEnv {oeStore, oeConfig, oeContracts} now OrderRequest {orOwner, orFields = fields@OrderFields {ofLabelHash, ofLength, ofDuration}, orTimestamp} years price accepted reveal =
+orderChecked :: OrdersEnv -> UTCTime -> OrderRequest -> Int -> Maybe USDCents -> DisputeDays -> Maybe NameReveal -> RevealRequest -> IO (Either OrderRefusal NameReveal)
+orderChecked OrdersEnv {oeStore, oeConfig, oeContracts} now OrderRequest {orOwner, orFields = fields@OrderFields {ofLabelHash, ofLength, ofDuration}, orTimestamp} years price days accepted reveal =
   runExceptT $ do
     mapM_ ExceptT $
       [ pure $ checkTimestamp now orTimestamp,
@@ -266,7 +267,7 @@ orderChecked OrdersEnv {oeStore, oeConfig, oeContracts} now OrderRequest {orOwne
         checkNameFree oeContracts oeStore ofLabelHash
       ]
         <> map (checkPrice oeContracts ofLength years) (toList price)
-    ExceptT $ orderReveal oeConfig oeContracts now orOwner fields accepted reveal
+    ExceptT $ orderReveal oeConfig oeContracts now orOwner fields days accepted reveal
 
 -- | After the commit, the closed orders' invoices and versions are published, and their invoices cancelled at the provider,
 -- best effort, as the poller's sweep would cancel them.

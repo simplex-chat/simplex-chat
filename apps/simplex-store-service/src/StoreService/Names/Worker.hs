@@ -3,9 +3,9 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TupleSections #-}
 
--- | Each registration from queued to registered, taken or failed: its commit, the wait for the page's reveal, its acceptance relay, and its register;
--- and /retry, which queues one whose commitment lapsed unsigned again. A step starts from the stored registration, the sender's transactions in flight
--- and the chain, so a restart resumes any phase.
+-- | Each registration from queued to registered, ended, taken or failed: its commit, the wait for the page's reveal, its acceptance relay, and its register;
+-- /retry, which queues one whose commitment lapsed unsigned again; and the hourly sweep, which sets a registered one ended once its registration ended
+-- in its dispute period. A step starts from the stored registration, the sender's transactions in flight and the chain, so a restart resumes any phase.
 module StoreService.Names.Worker
   ( Worker,
     Next (..),
@@ -17,6 +17,8 @@ module StoreService.Names.Worker
     runUnregisteredAlerts,
     endMonths,
     runMonthEnds,
+    sweepEndedRegistrations,
+    runEndedSweep,
     Retried (..),
     RetryRefusal (..),
     retryRegistration,
@@ -34,15 +36,18 @@ import Control.Concurrent.Async (Async, asyncWithUnmask, cancel, poll)
 import Control.Concurrent.STM
 import Control.Exception (finally, mask_)
 import qualified Control.Exception as E
-import Control.Logger.Simple (logError, logWarn)
+import Control.Logger.Simple (logError, logNote, logWarn)
 import Control.Monad (forM_, forever, void, when)
 import Control.Monad.Except (ExceptT (..), runExceptT)
+import Data.Bifunctor (first)
+import Data.Either (lefts)
 import Data.Functor ((<&>))
 import Data.Int (Int64)
 import qualified Data.Map.Strict as M
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime, diffUTCTime)
+import Data.Time.Clock.POSIX (utcTimeToPOSIXSeconds)
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import Simplex.Messaging.Encoding.String (textEncode)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
@@ -55,10 +60,10 @@ import StoreService.Config (ChainConfig (..), NamesConfig (..))
 import StoreService.Names.Balances (RefundRecord (..))
 import StoreService.Names.Chain (Block (..), BlockTag (..), ChainError (..), TxHash, blockAt)
 import StoreService.Names.Codes (releaseCode)
-import StoreService.Names.Contracts (CommitmentAges (..), Contracts (..), acceptedTerms, commitmentAges, commitmentTime, communityName, confirmedTag, controllerAvailable, forgetNamePolicy, namePolicy)
-import StoreService.Names.Orders (Landing (..), OrderRefusal, OrdersEnv (..), WriteRefusal (..), checkLanded, confirmLanded, versionWritten)
+import StoreService.Names.Contracts (CommitmentAges (..), Contracts (..), acceptedTerms, commitmentAges, commitmentTime, communityName, confirmedTag, controllerAvailable, disputeUntil, forgetNamePolicy, namePolicy)
+import StoreService.Names.Orders (Landing (..), OrderRefusal, OrdersEnv (..), WriteRefusal (..), checkLanded, confirmLanded, confirmedBlock, versionWritten)
 import StoreService.Names.Phases (RegistrationId (..), awaitChange, publish)
-import StoreService.Names.Registration (TermsAcceptance (..), acceptCalldata, commitCalldata, policyDomain, registerWithCreditCalldata, sponsorDomain, termsKind, verifyAcceptance, verifyRegisterIntent)
+import StoreService.Names.Registration (TermsAcceptance (..), acceptCalldata, commitCalldata, disputeSeconds, policyDomain, registerWithCreditCalldata, sponsorDomain, termsKind, verifyAcceptance, verifyRegisterIntent)
 import StoreService.Names.Reveal (intentOf)
 import StoreService.Names.Revert (RevertName (..), RevertReason (..))
 import StoreService.Names.Sender (PendingTx, SendError (..), Sender, awaitOutcome, inFlightTransaction, ptHash, submitTransaction, submitTransactionIf)
@@ -209,7 +214,7 @@ follow w@Worker {wkOrders = OrdersEnv {oeStore, oePhases, oeNow, oeReport}} rid@
       SFChain e -> tshow e
       SFSend e -> tshow e
       SFWrite refusal -> "its write was refused: " <> tshow refusal
-      SFUnread -> "the register check's chain read failed"
+      SFUnread -> "its register could not be checked at the confirmed block"
       SFAllowanceUsedUp -> "the registrar's allowance on the sponsor is used up; the guardian raises it with setRegistrarAllowance"
       SFTakenAboveDepth -> "the name reads taken only above the confirmation depth, where a reorg can undo it"
       SFGoneButAvailable -> "the dry run reverted the name as gone, but it reads available"
@@ -405,7 +410,7 @@ sendRegister w@Worker {wkOrders = OrdersEnv {oeConfig = cfg@NamesConfig {nChain 
       intentRefused w now r rv >>= \case
         Just next -> pure next
         Nothing ->
-          submitTransactionIf wkSender (TxRegistration RTRegister regId) (`lockRegistration` r) cSponsor (registerWithCreditCalldata $ intentOf cfg (nrOwner r) (nrDuration r) rv) >>= \case
+          submitTransactionIf wkSender (TxRegistration RTRegister regId) (`lockRegistration` r) cSponsor (registerWithCreditCalldata $ intentOf cfg (nrOwner r) (nrDuration r) (nrDisputeDays r) rv) >>= \case
             Right p -> registerSent w now r c p
             Left SEInFlight -> pure Again
             Left SEChanged -> pure Again
@@ -414,7 +419,7 @@ sendRegister w@Worker {wkOrders = OrdersEnv {oeConfig = cfg@NamesConfig {nChain 
 
 intentRefused :: Worker -> UTCTime -> NameRegistration -> NameReveal -> IO (Maybe Next)
 intentRefused w@Worker {wkOrders = OrdersEnv {oeConfig = cfg@NamesConfig {nChain = ChainConfig {cChainId, cSponsor}}}} now r rv =
-  verifyRegisterIntent (sponsorDomain cChainId cSponsor) now (intentOf cfg (nrOwner r) (nrDuration r) rv) >>= \case
+  verifyRegisterIntent (sponsorDomain cChainId cSponsor) now (intentOf cfg (nrOwner r) (nrDuration r) (nrDisputeDays r) rv) >>= \case
     Left refusal -> Just <$> inTurn w r (failOrder w now r FRSignatureRefused $ "its stored signature is refused under the service's current configuration, " <> T.pack refusal)
     Right () -> pure Nothing
 
@@ -444,6 +449,7 @@ judge w@Worker {wkOrders = oe@OrdersEnv {oeContracts, oeReport}} now r@NameRegis
   inTurn w r $
     confirmLanded oe r >>= \case
       LRegistered v -> pure (Just v, Again)
+      LEnded v -> pure (Just v, Again)
       LChanged -> pure (Nothing, Again)
       LUnread -> pure (Nothing, failure r SFUnread)
       LNotLanded -> case reason of
@@ -599,7 +605,7 @@ reasonText = \case
   RRUnnamed t -> t
   RRWithoutData -> "without data"
 
-data Closed = CLRegistered RegistrationId | CLRefunded UTCTime RefundRecord | CLRefused CloseRefusal
+data Closed = CLRegistered RegistrationId | CLEnded RegistrationId | CLRefunded UTCTime RefundRecord | CLRefused CloseRefusal
   deriving (Eq, Show)
 
 data CloseRefusal = CFNoOrder | CFNotFailedPaid | CFMonthEnded | CFUnread | CFChanged | CFBalanceChanged | CFReversed
@@ -630,6 +636,7 @@ closeRegistration st ct turns clock ref = do
     close now r@NameRegistration {nrId} endedAt =
       checkLanded st ct turns clock r >>= \case
         LRegistered _ -> pure $ CLRegistered nrId
+        LEnded _ -> pure $ CLEnded nrId
         LChanged -> refused CFChanged
         LUnread -> refused CFUnread
         LNotLanded -> either CLRefused (CLRefunded endedAt) <$> refundTaken st turns now r {nrReveal = Nothing}
@@ -716,3 +723,43 @@ runMonthEnds passAt w@Worker {wkOrders = OrdersEnv {oeNow}} =
       started <- oeNow
       endMonths w
       atomically $ writeTVar passAt started
+
+disputeReadMargin :: NominalDiffTime
+disputeReadMargin = 7 * 86400
+
+endedSweepInterval :: Int
+endedSweepInterval = 3600 * 1000000
+
+sweepEndedRegistrations :: Worker -> IO Bool
+sweepEndedRegistrations w@Worker {wkOrders = OrdersEnv {oeStore, oeContracts, oeNow}} = do
+  now <- oeNow
+  disputable <- withTransaction oeStore (`disputableRegistrations` secondsAt (addUTCTime (negate disputeReadMargin) now))
+  if null disputable
+    then pure True
+    else
+      confirmedBlock oeContracts >>= \case
+        Left e -> False <$ logWarn ("names ended sweep: a chain read failed, the pass is stopped: " <> tshow e)
+        Right confirmed -> True <$ (mapM (\rid -> first (rid,) <$> endIfUnregistered now confirmed rid) disputable >>= mapM_ unread . take 1 . lefts)
+  where
+    secondsAt = RoundedSystemTime . floor . utcTimeToPOSIXSeconds
+    unread (RegistrationId ridText, e) = logWarn $ "names ended sweep: registration " <> ridText <> ": a chain read failed, read again at the next pass: " <> tshow e
+    endIfUnregistered now Block {blockNumber, blockTimestamp} rid@(RegistrationId ridText) =
+      ( withTransaction oeStore (`getRegistration` rid) >>= \case
+          Just r@NameRegistration {nrPhase = ORegistered expiry (Just disputeEnd) _, nrLabelHash, nrDisputeDays}
+            | roundedSeconds disputeEnd < roundedSeconds blockTimestamp + fromIntegral (disputeSeconds nrDisputeDays) ->
+                disputeUntil oeContracts (AtBlock blockNumber) nrLabelHash >>= traverse (\current -> when (current /= Just disputeEnd) $ void $ inTurn w r $ do
+                  result@(v, _) <- store w now r {nrPhase = OEnded expiry disputeEnd}
+                  forM_ v $ \_ -> logNote $ "names ended sweep: registration " <> ridText <> " set ended: disputeUntil(id) read at block " <> tshow blockNumber <> " is " <> maybe "0" (tshow . roundedSeconds) current <> ", not " <> tshow (roundedSeconds disputeEnd)
+                  pure result)
+          _ -> pure $ Right ()
+      )
+        `catchOwn'` \e -> Right () <$ logError ("names ended sweep: registration " <> ridText <> " failed; the next pass tries it again: " <> tshow e)
+
+runEndedSweep :: TVar UTCTime -> Worker -> IO ()
+runEndedSweep passAt w@Worker {wkOrders = OrdersEnv {oeNow}} =
+  forever $ (endedPass `catchOwn'` \e -> logError ("names ended sweep failed; the next pass will run: " <> tshow e)) >> threadDelay endedSweepInterval
+  where
+    endedPass = do
+      started <- oeNow
+      completed <- sweepEndedRegistrations w
+      when completed $ atomically $ writeTVar passAt started

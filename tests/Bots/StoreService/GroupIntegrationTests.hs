@@ -15,9 +15,9 @@ import StoreService.Group (GroupAction (..), GroupEvent (..), codeInTracker, ens
 import StoreService.Group.Command (maxUses)
 import StoreService.Names.Codes (issueNameCode, prepaidCodeHash, revokeNameCode)
 import StoreService.Names.Abi (addressWord, selector, uint256)
-import StoreService.Names.Chain (SignedTx (..), newChainClient, signTransaction)
+import StoreService.Names.Chain (Hex32 (..), SignedTx (..), TxHash (..), newChainClient, signTransaction)
 import StoreService.Names.Phases (RegistrationId (..))
-import StoreService.Names.Store (CmdSource (..), FailReason (..), NameRegistration (nrPhase), NewTransaction (..), OrderPhase (OFailed), PrepaidCode (..), RegistrationTx (..), TxFor (..), VersionWrite (Written), getPrepaidCode, insertTransaction, reservePrepaidCode, spendLandedPrepaidCode)
+import StoreService.Names.Store (CmdSource (..), FailReason (..), NamePhase (PEnded), NameRegistration (nrPhase), NewTransaction (..), OrderPhase (OFailed), PrepaidCode (..), RegistrationTx (..), TxFor (..), TxSettlement (..), TxStatus (..), VersionWrite (Written), getPrepaidCode, insertTransaction, namePhase, recordTransactionOutcome, reservePrepaidCode, spendLandedPrepaidCode)
 import StoreService.Names.Turns (newTurns, withCodeTurn)
 import StoreService.Names.View (addressText)
 import StoreService.Options (StoreServiceOpts (..))
@@ -26,7 +26,7 @@ import StoreService.Store (ManagedGroup (..), getManagedGroup)
 import StoreService.Store.Migrate (withInstanceLock)
 import Bots.StoreService.BotTests (badgeBotName, badgeCmdUsage, badgeProfile, consoleIssueUsage, badgeTypeOf, credentialOf, devKeysIni, entryOf, issueCode, issueRaw, mkStoreServiceOpts, newPurchaseKeys, operatorCmd, redeemWithQueue, requestObject, revokeNamed, revokeRaw, serviceDbPrefix, shouldAnswerError, statementOf, stopStoreService, testIssuerKeyIdx, withStoreService)
 import Bots.StoreService.ConfigTests (chainSection, controllerAddr, namesSection, registrarAddr, withChainId, withRpcUrl)
-import Bots.StoreService.FakeEthNode (CallAnswer (..), FakeEthNode (..), Fault (..), address, answerCall, awaitSent, fakeNamePolicy, linkTermsOnNode, setFault, withFakeEthNode)
+import Bots.StoreService.FakeEthNode (CallAnswer (..), FakeEthNode (..), Fault (..), address, answerCall, awaitSent, fakeNamePolicy, linkTermsOnNode, mine, setFault, withFakeEthNode)
 import Bots.StoreService.NamesContractsTests (nameExpiresCall, rentPriceAnswer, rentPriceCall, reservedNamesCall)
 import Bots.StoreService.WebTests (answerOf, blockedInSTM, capturingStderr, digestFixture, refusedWith, siteConfigJson, statusOf)
 import Bots.StoreService.NamesSearchTests (aliceHex)
@@ -507,7 +507,7 @@ namesRefundChatTests = describe "StoreService names: operator refund" $ do
   it "shows a balance with its order's phase, the cents reversed and what paid for it, and records refunds by registration or invoice id, adding them up" testRefundRecorded
   it "refuses an unknown reference, an order without a balance and another amount, and answers the usage to a malformed command" testRefundRefusals
   it "answers an owner's /balance, /record_refund and /close in the group, worded for the group, refusing as the console does" testGroupMoneyCmds
-  it "closes a failed paid order by its invoice id, recording the refund of its price, and refuses an unknown reference and an order no longer failed" testCloseRecorded
+  it "closes a failed paid order by its invoice id, recording the refund of its price, refuses an unknown reference and an order no longer failed, and answers an order whose registration was ended as ended" testCloseRecorded
   it "refuses //close and //issue name without [names], and answers the usage to a malformed //close" testCloseNamesOff
 
 balanceRaw :: HasCallStack => ChatController -> Text -> IO (Either Text Text)
@@ -550,9 +550,23 @@ testCloseRecorded ps = withFakeEthNode $ \node@FakeEthNode {fnUrl} -> do
     write st unpaidG {nrPhase = OFailed t0 FRRegistryRefused} `shouldReturn` Written 2
     answerCall node registrar (ownerOfSelector <> labelBytes "g") $ Returns $ addressWord ownerA
     answerCall node registrar (selector "nameExpires(uint256)" <> labelBytes "g") $ Returns $ uint256 (2000000000 :: Int)
+    answerCall node registrar (selector "disputeUntil(uint256)" <> labelBytes "g") $ Returns $ uint256 (0 :: Int)
     registeredLogs <- capturingStderr $ closeRaw cc "inv-g" `shouldReturn` Left "Nothing refunded: the register of order g went through, so the order is registered now."
     registeredLogs `shouldSatisfy` T.isInfixOf "names: order g set registered by //close, as its register went through"
     Balances.figures st "g" `shouldReturn` Nothing
+    Balances.placeOrderRow st "e" False 10000 (addUTCTime 3600 now)
+    unpaidE <- reg st "e"
+    write st unpaidE {nrPhase = OFailed t0 FRRegistryRefused} `shouldReturn` Written 2
+    withTransaction st $ \db -> do
+      void $ insertTransaction db (TxRegistration RTRegister $ RegistrationId "e") NewTransaction {ntxRaw = "raw", ntxHash = TxHash $ Hex32 $ digestFixture 5, ntxNonce = 5} t0
+      recordTransactionOutcome db (TxHash $ Hex32 $ digestFixture 5) TSPending (TSMinedAt 1) `shouldReturn` True
+    replicateM_ 2 $ mine node []
+    answerCall node registrar (selector "nameExpires(uint256)" <> labelBytes "e") $ Returns $ uint256 (2000000000 :: Int)
+    answerCall node registrar (selector "disputeUntil(uint256)" <> labelBytes "e") $ Returns $ uint256 (0 :: Int)
+    endedLogs <- capturingStderr $ closeRaw cc "inv-e" `shouldReturn` Left "Nothing refunded: the register of order e went through and its registration was ended in its dispute period, so the order is ended now."
+    endedLogs `shouldSatisfy` T.isInfixOf "names: registration e set ended: disputeUntil(id) read at the confirmed block is 0, not its register's end "
+    namePhase . nrPhase <$> reg st "e" `shouldReturn` PEnded
+    Balances.figures st "e" `shouldReturn` Nothing
 
 testGroupMoneyCmds :: HasCallStack => TestParams -> IO ()
 testGroupMoneyCmds ps = withFakeEthNode $ \node@FakeEthNode {fnUrl} -> do

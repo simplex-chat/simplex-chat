@@ -52,6 +52,7 @@ LIMIT="sends more checkouts or cancels than the service takes from one client in
 AMOUNTS="expects the mock's coin amounts, a price at the invoice's rate, or its decimal text; the fake BTCPay answers its fixtures' amounts, written to 8 places as BTCPay writes them"
 PROFILES="expects the profiles the mock makes up for its links; the service reads a link's profile from the link's server, which these links are not on"
 MONERO="pays late in Monero, which the service credits only when BTCPay's Monero settled-confirmation threshold is 1 or more; the fake BTCPay's Monero fixture sets none"
+UNREGISTER="ends a registration with /control/unregister, which only the mock does; on chain, unregister takes the cold key"
 
 EXCLUDED=(
   "the service's mode is at /api/config: open by default, codes once the mock takes codes only, the page the same in both" "$STATE"
@@ -144,6 +145,9 @@ EXCLUDED=(
   "a commit that does not move on for longer than usual says so in its words' place, and nothing moves" "$SEARCH"
   "a card invoice opened in place of a new Bitcoin one says why in the card page's one notice, above the form" "$LIMIT"
   "a whole payment after the close, once credited, says so and offers a new invoice beside the refund" "$MONERO"
+  "a registration ended in its dispute period is shown with Register with code alone, as the other endings are" "$MODE"
+  "a registration ended in its dispute period is shown as ended on its order's page, in Your names and in Edit links, and its name is available again" "$UNREGISTER"
+  "a reveal signed over other dispute days than its order's payment's is bad_request, and the name is registered with the reveal over its payment's" "$STALE"
 )
 
 RUN_DIR="$(mktemp -d "${TMPDIR:-/tmp}/names-contract-run.XXXXXX")"

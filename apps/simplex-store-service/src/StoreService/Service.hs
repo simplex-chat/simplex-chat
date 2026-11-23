@@ -57,7 +57,7 @@ import StoreService.Names.Sender (checkPendingSignatures, runSender)
 import StoreService.Names.Store (Balance (..), BalanceLink (..), CmdSource (..), LateCredit (..), OrderPayment (..), balanceByReference, balanceLink, creditCents)
 import StoreService.Names.Turns (Turns, newTurns)
 import StoreService.Names.View (addressText)
-import StoreService.Names.Worker (CloseRefusal (..), Closed (..), closeRegistration, newWorker, runMonthEnds, runUnregisteredAlerts, runWorkers)
+import StoreService.Names.Worker (CloseRefusal (..), Closed (..), closeRegistration, newWorker, runEndedSweep, runMonthEnds, runUnregisteredAlerts, runWorkers)
 import StoreService.Options
 import StoreService.Poller (PollerEnv (peCreditPassAt, peListedOk), newPollerEnv, newReadHints, runPoller)
 import StoreService.Providers (Provider (pProvider), minorDecimal)
@@ -320,8 +320,9 @@ storeService opts serviceCfg baseCfg env = do
       webEnv <- newWebEnv chatStore sc ws hints providers namesEnv
       pollerEnv <- newPollerEnv chatStore ws (nePhases <$> namesEnv) hints providers (poll sc)
       monthPassAt <- newTVarIO =<< getCurrentTime
-      nameLanes <- maybe (pure []) (namesLanes monthPassAt) namesEnv
-      let metricsEnv = MetricsEnv {meStore = chatStore, meProviders = map pProvider providers, meListedOk = peListedOk pollerEnv, meWebhookAt = weWebhookAt webEnv, meNames = neContracts <$> namesEnv, meMonthPassAt = monthPassAt, meCreditPassAt = peCreditPassAt pollerEnv, meReport = report}
+      endedPassAt <- newTVarIO =<< getCurrentTime
+      nameLanes <- maybe (pure []) (namesLanes monthPassAt endedPassAt) namesEnv
+      let metricsEnv = MetricsEnv {meStore = chatStore, meProviders = map pProvider providers, meListedOk = peListedOk pollerEnv, meWebhookAt = weWebhookAt webEnv, meNames = neContracts <$> namesEnv, meMonthPassAt = monthPassAt, meCreditPassAt = peCreditPassAt pollerEnv, meEndedPassAt = endedPassAt, meReport = report}
           metricsLane = [runMetrics (listener sc) port metricsEnv | Just port <- [lMetricsPort $ listener sc]]
       pure $ [runWebListeners webEnv, runPoller pollerEnv] <> nameLanes <> metricsLane
 
@@ -358,11 +359,11 @@ logNamePolicy NamesConfig {nCommunity} ct =
       Nothing -> logWarn $ "names: the name policy has no " <> what <> " the service takes, so " <> sold <> " cannot be ordered until the owner sets them"
       Just Terms {tmLink, tmHash} -> logNote $ "names: " <> what <> " " <> tmLink <> ", hash " <> safeDecodeUtf8 (strEncode tmHash)
 
--- | The workers resume every registration in their phases, and the terms fetch runs at the start and then hourly.
-namesLanes :: TVar UTCTime -> NamesEnv -> IO [IO ()]
-namesLanes monthPassAt ne@NamesEnv {neContracts, neSender, neRecords} = do
+-- | The workers resume every registration in their phases, and the ended sweep and the terms fetch run at the start and then hourly.
+namesLanes :: TVar UTCTime -> TVar UTCTime -> NamesEnv -> IO [IO ()]
+namesLanes monthPassAt endedPassAt ne@NamesEnv {neContracts, neSender, neRecords} = do
   worker <- newWorker (ordersEnv ne) neSender
-  pure [runSender neSender, runRecordEdits neRecords, runWorkers worker, runUnregisteredAlerts worker, runMonthEnds monthPassAt worker, runTermsFetch neContracts]
+  pure [runSender neSender, runRecordEdits neRecords, runWorkers worker, runUnregisteredAlerts worker, runMonthEnds monthPassAt worker, runEndedSweep endedPassAt worker, runTermsFetch neContracts]
 
 seedServiceCatalog :: DBStore -> IO ()
 seedServiceCatalog st = do
@@ -480,6 +481,8 @@ closeOrderCmd source turns (tld, minPriceCentsPerYear, chain) ChatController {ch
     Right (CLRegistered (RegistrationId rid)) -> do
       logNote $ "names: order " <> rid <> " set registered by " <> spelledCmd source "close" <> ", as its register went through"
       pure $ Left $ "Nothing refunded: the register of order " <> rid <> " went through, so the order is registered now."
+    Right (CLEnded (RegistrationId rid)) ->
+      pure $ Left $ "Nothing refunded: the register of order " <> rid <> " went through and its registration was ended in its dispute period, so the order is ended now."
     Right (CLRefused refusal) -> pure $ Left $ "Nothing recorded: " <> refusalText refusal <> "."
     Left e -> Left "The order could not be closed." <$ logError ("names: closing an order failed: " <> tshow e)
   where

@@ -89,6 +89,7 @@ module StoreService.Names.Store
     recordAttempt,
     openInvoicesOfHeldName,
     activeRegistrations,
+    disputableRegistrations,
     unpaidCleanupCandidates,
     deleteUnpaidRegistration,
     getBalance,
@@ -171,7 +172,7 @@ import Simplex.Messaging.SystemTime (RoundedSystemTime (..), SystemSeconds)
 import Simplex.Messaging.Util (maybeFirstRow, maybeFirstRow', tshow)
 import StoreService.Names.Chain (Hex32 (..), TxHash (..))
 import StoreService.Names.Phases (RegistrationId (..))
-import StoreService.Names.Registration (Commitment, LinkKind, TermsAcceptance (..), TermsHash)
+import StoreService.Names.Registration (Commitment, DisputeDays, LinkKind, TermsAcceptance (..), TermsHash, codeDisputeDays, methodDisputeDays, mkDisputeDays, unDisputeDays)
 import StoreService.Names.Revert (RevertName)
 import StoreService.Names.Signatures (AgreedTerms, OrderFields (..))
 import StoreService.Providers (Rate, Reversal (..), Uncreditable (..), Units)
@@ -209,6 +210,7 @@ data NamePhase
   | PRegistered
   | PTaken
   | PFailed
+  | PEnded
   deriving (Eq, Show, Enum, Bounded)
 
 instance TextEncoding NamePhase where
@@ -222,6 +224,7 @@ instance TextEncoding NamePhase where
     PRegistered -> "registered"
     PTaken -> "taken"
     PFailed -> "failed"
+    PEnded -> "ended"
   textDecode = \case
     "unpaid" -> Just PUnpaid
     "closed" -> Just PClosed
@@ -232,6 +235,7 @@ instance TextEncoding NamePhase where
     "registered" -> Just PRegistered
     "taken" -> Just PTaken
     "failed" -> Just PFailed
+    "ended" -> Just PEnded
     _ -> Nothing
 
 instance FromField NamePhase where fromField = fromTextField_ textDecode
@@ -273,9 +277,10 @@ data OrderPhase
   | OCommitting TxHash
   | OCommitted Commit
   | ORegistering Commit TxHash
-  | ORegistered SystemSeconds UTCTime
+  | ORegistered SystemSeconds (Maybe SystemSeconds) UTCTime
   | OTaken UTCTime
   | OFailed UTCTime FailReason
+  | OEnded SystemSeconds SystemSeconds
   deriving (Eq, Show)
 
 namePhase :: OrderPhase -> NamePhase
@@ -289,6 +294,7 @@ namePhase = \case
   ORegistered {} -> PRegistered
   OTaken _ -> PTaken
   OFailed {} -> PFailed
+  OEnded {} -> PEnded
 
 phaseCommit :: OrderPhase -> Maybe Commit
 phaseCommit = \case
@@ -360,6 +366,7 @@ data NameRegistration = NameRegistration
     nrYears :: Int,
     nrPrice :: USDCents,
     nrPayment :: OrderPayment,
+    nrDisputeDays :: DisputeDays,
     nrReveal :: Maybe NameReveal,
     nrHistory :: TxHistory,
     nrOrderHash :: OrderHash,
@@ -760,7 +767,7 @@ newRegistrationId = (\(InvoiceId t) -> RegistrationId t) <$> newInvoiceId
 -- | False when the registration would be a second live one. A refusal leaves its writes for the caller to roll back.
 createPaidRegistration :: DB.Connection -> NewRegistration -> PaidOrder -> UTCTime -> IO Bool
 createPaidRegistration db new@NewRegistration {nrgId = RegistrationId rid} PaidOrder {poMethod, poPrice, poInvoiceId = InvoiceId invId} now = do
-  inserted <- insertRegistration db new PUnpaid poPrice (Just poMethod) Nothing now
+  inserted <- insertRegistration db new PUnpaid poPrice (Just poMethod) Nothing (methodDisputeDays poMethod) now
   when inserted $
     DB.execute
       db
@@ -772,7 +779,7 @@ createPaidRegistration db new@NewRegistration {nrgId = RegistrationId rid} PaidO
 -- the caller to roll back.
 createCodeRegistration :: DB.Connection -> NewRegistration -> PrepaidCode -> UTCTime -> IO (Either CodeInsertRefused ())
 createCodeRegistration db new@NewRegistration {nrgId = regId} PrepaidCode {pcId} now = do
-  inserted <- insertRegistration db new PQueued 0 Nothing (Just pcId) now
+  inserted <- insertRegistration db new PQueued 0 Nothing (Just pcId) codeDisputeDays now
   if not inserted
     then pure $ Left CIRLiveOrder
     else
@@ -781,8 +788,8 @@ createCodeRegistration db new@NewRegistration {nrgId = regId} PrepaidCode {pcId}
         False -> pure $ Left CIRCodeNotReservable
 
 -- | False when the registration would be a second live one for its commitment, or for its owner and label hash.
-insertRegistration :: DB.Connection -> NewRegistration -> NamePhase -> USDCents -> Maybe ServicePaymentMethod -> Maybe CodeId -> UTCTime -> IO Bool
-insertRegistration db NewRegistration {nrgId = RegistrationId rid, nrgOwner, nrgOrder, nrgReveal, nrgYears, nrgOrderHash} phase price method codeId now =
+insertRegistration :: DB.Connection -> NewRegistration -> NamePhase -> USDCents -> Maybe ServicePaymentMethod -> Maybe CodeId -> DisputeDays -> UTCTime -> IO Bool
+insertRegistration db NewRegistration {nrgId = RegistrationId rid, nrgOwner, nrgOrder, nrgReveal, nrgYears, nrgOrderHash} phase price method codeId days now =
   (> 0)
     <$> executeChanging
       db
@@ -790,14 +797,14 @@ insertRegistration db NewRegistration {nrgId = RegistrationId rid, nrgOwner, nrg
           [sql|
         INSERT INTO @name_registrations
           (registration_id, version, label_hash, length, duration, owner, commitment, sealed, phase, years,
-           price, method, name_prepaid_code_id, live, order_hash, created_at, updated_at, agreed_terms, settled_at, selected_at, read_at,
+           price, method, name_prepaid_code_id, dispute_days, live, order_hash, created_at, updated_at, agreed_terms, settled_at, selected_at, read_at,
            label, secret, contact_link, channel_link, intent_nonce, intent_deadline, intent_signature, accept_terms, accept_nonce, accept_signature)
-        VALUES (?,?,?,?,?,?,?,?,?,?, ?,?,?,?,?,?,?, ?,?,?,?, ?,?,?,?,?,?,?,?,?,?)
+        VALUES (?,?,?,?,?,?,?,?,?,?, ?,?,?,?,?,?,?,?, ?,?,?,?, ?,?,?,?,?,?,?,?,?,?)
         ON CONFLICT DO NOTHING
       |]
       )
       ( (rid, initialVersion, ofLabelHash, nameLengthInt ofLength, int64 ofDuration, nrgOwner, ofCommitment, ofSealed, phase, nrgYears)
-          :. (price, method, codeId, BI True, nrgOrderHash, now, now)
+          :. (price, method, codeId, unDisputeDays days, BI True, nrgOrderHash, now, now)
           :. (ofAgreedTerms, placedAt, placedAt, now)
           :. revealRow (Just nrgReveal)
       )
@@ -812,7 +819,8 @@ registrationColumns =
       r.price, r.method, ni.invoice_id, r.name_prepaid_code_id, r.label, r.secret, r.contact_link, r.channel_link, r.intent_nonce, r.intent_deadline,
       r.intent_signature, r.commit_tx, r.commit_block, r.register_tx, r.reveal_after, r.reveal_before, r.expires_at, r.registered_at, r.failed_at, r.fail_reason,
       r.taken_at, r.closed_by, r.order_hash, r.created_at, r.updated_at, r.agreed_terms, r.accept_terms,
-      r.accept_nonce, r.accept_signature, r.read_at, r.settled_at, r.selected_at, r.last_attempt_tx, r.last_attempt_stage, r.last_attempt_reason, r.last_attempt_at
+      r.accept_nonce, r.accept_signature, r.read_at, r.settled_at, r.selected_at, r.last_attempt_tx, r.last_attempt_stage, r.last_attempt_reason, r.last_attempt_at,
+      r.dispute_days, r.dispute_until
   |]
 
 registrationFrom :: Query
@@ -833,6 +841,7 @@ type RegistrationRow =
     :. (Maybe RecoverableSignature, Maybe TxHash, Maybe Int64, Maybe TxHash, Maybe Int64, Maybe Int64, Maybe Int64, Maybe UTCTime, Maybe UTCTime, Maybe FailReason)
     :. (Maybe UTCTime, Maybe InvoiceClose, OrderHash, UTCTime, UTCTime, AgreedTerms, Maybe TermsHash)
     :. (Maybe Int64, Maybe RecoverableSignature, UTCTime, Maybe UTCTime, Maybe UTCTime, Maybe RegistrationTx, Maybe AttemptStage, Maybe Text, Maybe UTCTime)
+    :. (Int, Maybe Int64)
 
 toRegistration :: RegistrationRow -> Either Text NameRegistration
 toRegistration
@@ -841,11 +850,13 @@ toRegistration
       :. (signature_, commitTx, commitBlock, registerTx, revealAfter, revealBefore, expiresAt, registeredAt, failedAt, failReason)
       :. (takenAt, closedBy, nrOrderHash, nrCreatedAt, nrUpdatedAt, nrAgreedTerms, acceptTerms_)
       :. (acceptNonce_, acceptSignature_, nrReadAt, nrSettledAt, nrSelectedAt, attemptTx_, attemptStage_, attemptReason_, attemptAt_)
+      :. (days, disputeUntil)
     ) = do
     nrLength <- note ("name_registrations.length: " <> rid) $ nameLength len
+    nrDisputeDays <- note ("name_registrations.dispute_days: " <> rid) $ mkDisputeDays days
     let commitOf after before = Commit {cmTx = TxRef <$> commitTx <*> (word64 <$> commitBlock), cmRevealAfter = RoundedSystemTime after, cmRevealBefore = RoundedSystemTime before}
         noCommit = isNothing revealAfter && isNothing revealBefore && isNothing commitBlock
-        noRegistered = isNothing expiresAt && isNothing registeredAt
+        noRegistered = isNothing expiresAt && isNothing disputeUntil && isNothing registeredAt
         noTaken = isNothing takenAt
         noFailure = isNothing failedAt && isNothing failReason
         noClose = isNothing closedBy
@@ -863,12 +874,15 @@ toRegistration
         (Just after, Just before, Just tx) -> fitting (ORegistering (commitOf after before) tx) (ownCommit && noRegistered && noTaken && noFailure && noClose)
         _ -> Left $ "name_registrations registering without reveal times or register_tx: " <> rid
       PRegistered -> case (expiresAt, registeredAt) of
-        (Just expiry, Just at) -> fitting (ORegistered (RoundedSystemTime expiry) at) (noCommit && noTaken && noFailure && noClose)
+        (Just expiry, Just at) -> fitting (ORegistered (RoundedSystemTime expiry) (RoundedSystemTime <$> disputeUntil) at) (noCommit && noTaken && noFailure && noClose)
         _ -> Left $ "name_registrations registered without expires_at or registered_at: " <> rid
       PTaken -> maybe (Left $ "name_registrations taken without taken_at: " <> rid) (\at -> fitting (OTaken at) (noCommit && noRegistered && noFailure && noClose)) takenAt
       PFailed -> case (failedAt, failReason) of
         (Just at, Just reason) -> fitting (OFailed at reason) (noCommit && noRegistered && noTaken && noClose)
         _ -> Left $ "name_registrations failed without failed_at or fail_reason: " <> rid
+      PEnded -> case (expiresAt, disputeUntil) of
+        (Just expiry, Just disputeEnd) -> fitting (OEnded (RoundedSystemTime expiry) (RoundedSystemTime disputeEnd)) (noCommit && isNothing registeredAt && noTaken && noFailure && noClose)
+        _ -> Left $ "name_registrations ended without expires_at or dispute_until: " <> rid
     nrPayment <- case (method_, invoiceId_, codeId_) of
       (Just m, Just invId, Nothing) -> Right $ OPInvoice m (InvoiceId invId)
       (Nothing, Nothing, Just codeId) -> Right $ OPCode codeId
@@ -900,6 +914,7 @@ toRegistration
           nrYears,
           nrPrice,
           nrPayment,
+          nrDisputeDays,
           nrReveal,
           nrHistory = TxHistory {thCommitTx = commitTx, thRegisterTx = registerTx},
           nrOrderHash,
@@ -988,6 +1003,7 @@ orderLive NameRegistration {nrPhase} = case nrPhase of
   OFailed {} -> True
   OTaken _ -> False
   ORegistered {} -> False
+  OEnded {} -> False
 
 -- | Writes every changeable field of a registration read at its nrVersion, unless it changed since, with live as orderLive decides.
 -- A closed order is never made live again, and a write that would make the order meet another live one changes nothing.
@@ -1002,7 +1018,7 @@ updateRegistration db r now = do
         SET version = version + 1, label_hash = ?, length = ?, duration = ?, commitment = ?, sealed = ?, agreed_terms = ?, phase = ?, price = ?,
           label = ?, secret = ?, contact_link = ?, channel_link = ?, intent_nonce = ?, intent_deadline = ?, intent_signature = ?,
           accept_terms = ?, accept_nonce = ?, accept_signature = ?, commit_tx = ?, commit_block = ?, register_tx = ?, reveal_after = ?, reveal_before = ?, expires_at = ?,
-          registered_at = ?, taken_at = ?, failed_at = ?, fail_reason = ?, closed_by = ?, live = ?, updated_at = ?
+          dispute_until = ?, registered_at = ?, taken_at = ?, failed_at = ?, fail_reason = ?, closed_by = ?, live = ?, updated_at = ?
         WHERE registration_id = ? AND version = ?
           AND (? = 0 OR ((live = 1 OR phase = ?) AND NOT EXISTS (
             SELECT 1 FROM @name_registrations o
@@ -1013,7 +1029,7 @@ updateRegistration db r now = do
       ( (nrLabelHash, nameLengthInt nrLength, int64 nrDuration, nrCommitment, nrSealed, nrAgreedTerms, namePhase nrPhase, nrPrice)
           :. revealRow nrReveal
           :. (commitTx, int64 <$> commitBlock, registerTx, roundedSeconds <$> revealAfter, roundedSeconds <$> revealBefore, roundedSeconds <$> expiresAt)
-          :. (registeredAt, takenAt, failedAt, failReason, closedBy, BI live, now)
+          :. (roundedSeconds <$> disputeUntil, registeredAt, takenAt, failedAt, failReason, closedBy, BI live, now)
           :. (rid, nrVersion, BI live, PTaken, rid, nrCommitment, nrOwner, nrLabelHash)
       )
   if changed > 0 then pure $ Written (nrVersion + 1) else refusal
@@ -1029,12 +1045,13 @@ updateRegistration db r now = do
     registerTx = case nrPhase of
       ORegistering _ tx -> Just tx
       _ -> thRegisterTx
-    (expiresAt, registeredAt, takenAt, failedAt, failReason, closedBy) = case nrPhase of
-      ORegistered expiry at -> (Just expiry, Just at, Nothing, Nothing, Nothing, Nothing)
-      OTaken at -> (Nothing, Nothing, Just at, Nothing, Nothing, Nothing)
-      OFailed at reason -> (Nothing, Nothing, Nothing, Just at, Just reason, Nothing)
-      OClosed closed -> (Nothing, Nothing, Nothing, Nothing, Nothing, Just closed)
-      _ -> (Nothing, Nothing, Nothing, Nothing, Nothing, Nothing)
+    (expiresAt, disputeUntil, registeredAt, takenAt, failedAt, failReason, closedBy) = case nrPhase of
+      ORegistered expiry disputeEnd at -> (Just expiry, disputeEnd, Just at, Nothing, Nothing, Nothing, Nothing)
+      OEnded expiry disputeEnd -> (Just expiry, Just disputeEnd, Nothing, Nothing, Nothing, Nothing, Nothing)
+      OTaken at -> (Nothing, Nothing, Nothing, Just at, Nothing, Nothing, Nothing)
+      OFailed at reason -> (Nothing, Nothing, Nothing, Nothing, Just at, Just reason, Nothing)
+      OClosed closed -> (Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Just closed)
+      _ -> (Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing)
     live = orderLive r
     refusal =
       DB.query db (mkQuery "SELECT version, live, phase FROM @name_registrations WHERE registration_id = ?") (Only rid) >>= \case
@@ -1170,6 +1187,14 @@ activeRegistrations db =
       db
       (mkQuery "SELECT registration_id FROM @name_registrations WHERE phase IN (?,?,?,?) ORDER BY created_at, registration_id")
       (PQueued, PCommitting, PCommitted, PRegistering)
+
+disputableRegistrations :: DB.Connection -> SystemSeconds -> IO [RegistrationId]
+disputableRegistrations db endsAfter =
+  map (RegistrationId . fromOnly)
+    <$> DB.query
+      db
+      (mkQuery "SELECT registration_id FROM @name_registrations WHERE phase = ? AND dispute_until > ? ORDER BY dispute_until, registration_id")
+      (PRegistered, endsAfter)
 
 -- | Unpaid orders whose invoice expired before the cutoff, without a recorded payment.
 unpaidCleanupCandidates :: DB.Connection -> UTCTime -> IO [(RegistrationId, InvoiceId, Text)]

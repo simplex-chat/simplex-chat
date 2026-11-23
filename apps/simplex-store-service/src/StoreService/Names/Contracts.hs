@@ -37,6 +37,7 @@ module StoreService.Names.Contracts
     confirmedTag,
     ownerOfToken,
     nameExpires,
+    disputeUntil,
     commitmentTime,
     controllerAvailable,
     commitmentAges,
@@ -410,11 +411,15 @@ ownerOfToken ct tag lh =
 nameExpires :: Contracts -> BlockTag -> LabelHash -> IO (Either ChainError SystemSeconds)
 nameExpires ct tag lh = callAt ct tag (baseRegistrar ct) ("nameExpires(uint256)", labelHashArg lh) decodeSeconds
 
+disputeUntil :: Contracts -> BlockTag -> LabelHash -> IO (Either ChainError (Maybe SystemSeconds))
+disputeUntil ct tag lh = fmap unlessZero <$> callAt ct tag (baseRegistrar ct) ("disputeUntil(uint256)", labelHashArg lh) decodeSeconds
+
 -- | The block time of the commitment, Nothing when the controller holds none.
 commitmentTime :: Contracts -> Commitment -> IO (Either ChainError (Maybe SystemSeconds))
-commitmentTime ct (Hex32 commitment) = fmap nonZero <$> call ct (controller ct) ("commitments(bytes32)", commitment) decodeSeconds
-  where
-    nonZero t = if t == RoundedSystemTime 0 then Nothing else Just t
+commitmentTime ct (Hex32 commitment) = fmap unlessZero <$> call ct (controller ct) ("commitments(bytes32)", commitment) decodeSeconds
+
+unlessZero :: SystemSeconds -> Maybe SystemSeconds
+unlessZero t = if t == RoundedSystemTime 0 then Nothing else Just t
 
 controllerAvailable :: Contracts -> BlockTag -> Text -> IO (Either ChainError Bool)
 controllerAvailable ct tag label = callAt ct tag (controller ct) ("available(string)", abiTuple [Dynamic $ abiBytes $ encodeUtf8 label]) decodeBool
