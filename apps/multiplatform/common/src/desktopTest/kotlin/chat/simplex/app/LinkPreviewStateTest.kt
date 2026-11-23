@@ -122,6 +122,15 @@ class LinkPreviewStateTest {
   }
 
   @Test
+  fun restoredStateRequestsItsLinkAgain() {
+    val loading = empty.typed(TWO_LINKS).fetched()
+    val restored = json.decodeFromString(ComposeState.serializer(), json.encodeToString(ComposeState.serializer(), loading))
+    assertEquals(PAGE, restored.loadingLink?.uri)
+    assertNotEquals(loading.loadingLink?.request, restored.loadingLink?.request)
+    assertEquals(setOf(FAILED), restored.cancelledLinks)
+  }
+
+  @Test
   fun textChangeAppliedTwiceEqualsOnce() {
     for (s in reachableStates()) {
       val once = s.updateLinkPreview(LinkPreviewEvent.TextChanged, true)
