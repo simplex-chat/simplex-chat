@@ -432,8 +432,9 @@ registering w@Worker {wkSender} now r@NameRegistration {nrId} c =
 data Availability = AvailableAtLatest | TakenAtDepth | TakenOnlyAboveDepth
 
 -- | A register or relay that did not go through, by its dry run's revert or once every transaction settled: registered when one mined
--- with status 1 or the owner holds the name; its reveal cleared on InvalidNonce, SignatureExpired or a refused terms acceptance, for the
--- page to sign again, the name policy read again on TermsNotAccepted; committing again with its reveal on CommitmentTooOld, which the
+-- with status 1 or the owner holds the name, ended when that registration was ended before the confirmed block; its reveal cleared on
+-- InvalidNonce, SignatureExpired or a refused terms acceptance, for the page to sign again, the name policy read again on TermsNotAccepted;
+-- committing again with its reveal on CommitmentTooOld, which the
 -- sponsor reverts only after the intent's and the allowance's checks, and on CommitmentNotFound; kept waiting while the sponsor allowance
 -- is used up; taken on any revert while the name is not available at the confirmation depth. Otherwise, unless the dry run named the
 -- name as gone, the attempt is stored and retried, and a permanent reason or a mined failure at its stage's cap fails the order;

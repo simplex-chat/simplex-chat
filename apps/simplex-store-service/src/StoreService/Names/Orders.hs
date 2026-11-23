@@ -353,7 +353,8 @@ confirmLanded :: OrdersEnv -> NameRegistration -> IO Landing
 confirmLanded OrdersEnv {oeStore, oeContracts, oeTurns, oeNow} = checkLanded oeStore oeContracts oeTurns oeNow
 
 -- | The register check, on the order's current name: a register mined with status 1, or the owner holding the name at the confirmation depth,
--- went through with only its confirmation lost. The order then becomes registered by a compare-and-set on the version read, a code order spending its code.
+-- went through with only its confirmation lost. The order then becomes registered, or ended when disputeUntil at the confirmed block is not the end set
+-- by its register, by a compare-and-set on the version read, a code order spending its code.
 -- The caller holds the turn of the order's label hash.
 checkLanded :: DBStore -> Contracts -> Turns -> IO UTCTime -> NameRegistration -> IO Landing
 checkLanded st ct turns clock r@NameRegistration {nrId, nrOwner, nrLabelHash, nrPayment, nrHistory, nrDuration, nrDisputeDays} = do
