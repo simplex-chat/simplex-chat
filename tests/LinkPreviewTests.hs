@@ -402,7 +402,7 @@ testRequest = do
   httpRequest uri
     `shouldBe` "GET /a%20b/%C3%BC?q=1 HTTP/1.1\r\n\
                \Host: example.com\r\n\
-               \User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36\r\n\
+               \User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:160.0) Gecko/20100101 Firefox/160.0\r\n\
                \Accept: text/html,application/xhtml+xml,image/png,image/jpeg;q=0.9,*/*;q=0.1\r\n\
                \Accept-Encoding: identity\r\n\
                \Connection: close\r\n\r\n"

@@ -395,7 +395,7 @@ httpRequest Uri {uriHost, uriPort, uriPath, uriQuery} =
       _ -> strEncode uriHost
     userAgent = case uriHost of
       THDomainName "x.com" -> "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_1) AppleWebKit/601.2.4 (KHTML, like Gecko) Version/9.0.1 Safari/601.2.4 facebookexternalhit/1.1 Facebot Twitterbot/1.0"
-      _ -> "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36"
+      _ -> "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:160.0) Gecko/20100101 Firefox/160.0"
 
 recvLine :: Conn -> Int -> ExceptT String IO ByteString
 recvLine conn maxLength = go ""
