@@ -513,6 +513,8 @@ Request
 | `ComposeState.linkPreview`: the preview of `Shown` (191-196) | `ComposeState.linkPreview`: the preview of `Shown` (205-210) |
 | `ComposeState.loadingLink`: the `Loading` status; `loadingRequest` is its `request` | `ComposeState.loadingRequest`: the request of `loading` |
 | `ComposeState.edit(editingItem, useLinkPreviews, previewsOn)`, in place of the constructor `ComposeState(editingItem, liveMessage, useLinkPreviews)` (119), which is private | `ComposeState(editingItem:previewsOn:)`, in place of `init(editingItem:)` (76) |
+| `ComposeState.linksBeforePreview(item)`, private, used by `edit` and by `ChatChanged` | `ComposeState.linksBeforePreview(_:)`, private static, used by `init(editingItem:previewsOn:)` and by `.chatChanged` |
+| — | `ComposeState.forwardingItems(_:fromChatInfo:)`, in place of the state built by ChatItemForwardingView.swift:101-105 |
 
 Removed from `ComposeView`:
 
@@ -553,7 +555,7 @@ updateLinkPreview(event, previewsOn):
 
 cancelledAfter(event):
   TextChanged -> {} for an empty text, else cancelledLinks
-  ChatChanged -> {}
+  ChatChanged -> linksBeforePreview(item) in an Edit of item, else {}
   Cancelled   -> cancelledLinks + previewLink
   Fetched     -> cancelledLinks + previewLink
 
@@ -566,11 +568,15 @@ selectedPreview(previewsOn):
 
 previewLink     -- uri of Loading, linkPreview.uri of Shown
 loadingRequest  -- request of Loading
+
+linksBeforePreview(item):
+  item of MCLink(P), P.uri in its links -> the links of the item's text before P.uri
+  otherwise                             -> {}
 ```
 
 - `updateLinkPreview` returns a copy of its state with `preview` and `cancelledLinks` set: Kotlin `copy`, Swift `var s = self`. Other fields, `inProgress` included, are unchanged.
 - `nextLinkRequest()` increments one counter of the app process. Every transition runs on the main thread, so the number of a new request differs from every earlier number.
-- `cancelledLinks`: L is added by T7 and T9; the set is emptied by T1, T10, T13 and T15, except for the edit of an `MCLink`, where T15 sets it to the links of the text before the link of its preview.
+- `cancelledLinks`: L is added by T7 and T9; the set is emptied by T1, T10, T13 and T15, except in an Edit, where T10 and T15 set it to `linksBeforePreview` of the edited item: the links of the item's text, also after the text of the compose is changed; Kotlin excludes SimpleX links.
 
 Fetch effect, in `ComposeView`: Kotlin `LaunchedEffect(loadingLink?.request)`, with `loadingLink = composeState.value.loadingLink`; iOS `.task(id: composeState.loadingRequest)`.
 
@@ -598,31 +604,32 @@ Transitions; r is the current request, r' a new one, L the selected link, M the 
 | T7 | Fetched(r, failure) | fetch effect | `Loading(L, r)` | r' requested after 1.5 s | `cancelledLinks` + L<br>`Loading(M, r')`, else `NoPreview` |
 | T8 | Fetched(r, any) | fetch effect | any state other than `Loading(_, r)` | response discarded | unchanged |
 | T9 | Cancelled | X of the card: Kt `cancelLinkPreview` (1091-1102); iOS `cancelLinkPreview` (1948-1957) | `Loading(L, r)`<br>`Shown(P)`, `P.uri` = L | r discarded; r' requested after 1.5 s | `cancelledLinks` + L<br>`Loading(M, r')`, else `NoPreview` |
-| T10 | ChatChanged | draft saved: Kt 1026, 1412, 1449, 1462; iOS `saveCurrentDraft` (1898-1901)<br>another chat opened: Kt end of `KeyChangeEffect`, in place of `resetLinkPreview()` (1422); iOS `.onChange(of: chatModel.chatId)` of `ComposeView`, new | any | as T2-T4 | `cancelledLinks` = {}<br>status as T2-T4 |
+| T10 | ChatChanged | draft saved: Kt 1026, 1412, 1449, 1462; iOS `saveCurrentDraft` (1898-1901)<br>another chat opened: Kt end of `KeyChangeEffect`, in place of `resetLinkPreview()` (1422); iOS `.onChange(of: chatModel.chatId)` of `ComposeView`, new | any | as T2-T4 | `cancelledLinks` = {}; in an Edit, `linksBeforePreview` of the edited item, as T15<br>status as T2-T4: an Edit keeps `Shown(P)` while `P.uri` is selected |
 | T11 | attachment shown: media, voice, file, chat link | the writes of `preview` today | any | r discarded by T8 | attachment<br>`cancelledLinks` unchanged |
 | T12 | attachment removed | the writes of `NoPreview` today | attachment | — | `NoPreview`; the link is selected by the next TextChanged |
 | T13 | message sent | `clearState()` after a successful send: Kt 665, 685, 730, 1010; iOS 1184, 1223, 1243, 1586 | any | r discarded by T8 | new `ComposeState`: `NoPreview`, `cancelledLinks` = {} |
 | T14 | send failed | Kt: the captured cs restored (1012, 1024), or saved as a draft (1026, T10)<br>iOS: `clearState` (1586) | any | `Loading(L, r)` of cs requested by its effect | Kt: cs<br>iOS: new `ComposeState` |
-| T15 | Edit<br>Reply while editing<br>report<br>bot command | Kt ChatItemView.kt:416, 472, 1027, 1033; `editPrevMessage` (1176); CommandsMenuView.kt:156, 158<br>iOS ChatView.swift:2321, 2539, 2696, 2895, 2897 | any | r discarded by T8 | new `ComposeState`: `NoPreview`, `cancelledLinks` = {}<br>Edit of `MCLink(P)`: `cancelledLinks` = the links of the text before `P.uri` (Kt: SimpleX links excluded), {} when the text lacks `P.uri`; the status as T2-T4: `Shown(P)` for `P.uri` in the text with "Send link previews" on<br>iOS, every Edit: the status as T2-T5<br>report outside an edit (Kt 1033; iOS 2897): `preview` = `NoPreview` |
+| T15 | Edit<br>Reply while editing<br>report<br>bot command | Kt ChatItemView.kt:416, 472, 1027, 1033; `editPrevMessage` (1176); CommandsMenuView.kt:156, 158<br>iOS ChatView.swift:2321, 2539, 2696, 2895, 2897 | any | r discarded by T8<br>an Edit with `Loading(L, r')`: r' requested after 1.5 s, as T3; Kt: `MCLink(P)` whose text has a link and lacks `P.uri`; iOS: every Edit without an attachment whose selected link is not the link of its card | new `ComposeState`: `NoPreview`, `cancelledLinks` = {}<br>Edit of `MCLink(P)`: `cancelledLinks` = the links of the text before `P.uri` (Kt: SimpleX links excluded), {} when the text lacks `P.uri`; the status as T2-T4: `Shown(P)` for `P.uri` in the text with "Send link previews" on<br>iOS, every Edit: the status as T2-T5<br>report outside an edit (Kt 1033; iOS 2897): `preview` = `NoPreview` |
 | T16 | state restored: draft, draft after a forward, Android configuration change | Kt ChatView.kt:149-158; `KeyChangeEffect` (1392, 1403, 1417); 1017; `rememberSaveable`<br>iOS ChatView.swift:796-799; ComposeView.swift:1587-1591 | — | `Loading(L, r)` of the restored state requested by its effect | the restored state |
 | T17 | live message update | `sendLiveMessage`, `updateLiveMessage`, then `clearState(live)` (Kt 562; iOS 1886) | any | r kept | unchanged |
+| T18 | forward | Kt `SharedContent.Forward` of `LaunchedEffect(chatModel.sharedContent.value)` (1630-1633), on the state of the chat opened for it: its draft (T16) or a new `ComposeState`<br>iOS, to the same chat: `ComposeState.forwardingItems`, in place of ChatItemForwardingView.swift:101-105<br>iOS, to another chat: `ComposeState(forwardingItems:fromChatInfo:)` (95-101), from ChatItemForwardingView.swift:107 | `NoPreview`<br>`Loading(L, r)`<br>`Shown(P)`<br>attachment | r kept<br>iOS, another chat: r discarded by T8 | `contextItem` = `ForwardingItems`; text and `cancelledLinks` kept<br>link status unchanged<br>attachment: `NoPreview`; the link is selected by the next TextChanged, as T12<br>iOS, another chat: new `ComposeState`: `NoPreview`, `cancelledLinks` = {} |
 
 ```mermaid
 stateDiagram-v2
   direction LR
-  [*] --> NoPreview: T13, T15
+  [*] --> NoPreview: T13, T15, T18 iOS forward to another chat
   [*] --> Shown: T15, edit of MCLink with the link of its preview
   [*] --> Loading: T15, edit of MCLink without the link of its preview, iOS edit of a text with a link
   NoPreview --> Loading: T3
-  Loading --> Loading: T3 another link, T7 or T9 next link
-  Shown --> Loading: T3 another link, T9 next link
+  Loading --> Loading: T3 another link, T7 or T9 next link, T10 a link before it, cancelled by T7 or T9
+  Shown --> Loading: T3 another link, T9 next link, T10 a link before it, cancelled by T7 or T9
   Loading --> Shown: T6
   Loading --> NoPreview: T1, T4, T7 or T9 without a next link
   Shown --> NoPreview: T1, T4, T9 without a next link
   NoPreview --> Attachment: T11
   Loading --> Attachment: T11
   Shown --> Attachment: T11
-  Attachment --> NoPreview: T12
+  Attachment --> NoPreview: T12, T18
   note right of Loading
     T8, a response of another request is discarded
   end note
@@ -674,7 +681,8 @@ Visible changes:
 
 - The spinner card is shown from the selection of a link, during the 1.5 s wait. The card of a replaced link is replaced by the spinner at once, and the link is requested again when the user restores it.
 - After a failure or X, the next link of the message is selected without a keystroke.
-- An edit keeps the card of a message sent with the card of a link other than its first, and the links before that link are not requested until the text is cleared or the draft is saved (T1, T10).
+- An edit keeps the card of a message sent with the card of a link other than its first, also after a draft save and a chat switch, and the links before that link are not requested in the edit until its text is cleared (T1, T10, T15).
+- iOS: a forward to the same chat keeps the spinner of a loading link, and its card is shown after the response, as on Kotlin (T18).
 - iOS: the spinner of a failed link is removed at once, as on Kotlin.
 
 Findings of the review:
@@ -696,6 +704,8 @@ Findings of the review:
 | F13 | iOS: another chat opened in the same `ChatView`, with `cancelledLinks` of the previous message (ChatView.swift:368-379) | T10 | iOS: `chatModel.chatId` changed in the same `ComposeView`; the failed link typed again: requested again |
 | F14 | untested on Kotlin: a link replaced during its fetch | T3, T8 | Kt: A requested and held; B typed and its card shown; A released: card of B kept |
 | F15 | Kt, iOS: Edit of a message sent with the card of its second link: `Shown(P)` with `cancelledLinks` = {}; the save sends `MCText`, and a text change requests the first link (Kt ChatItemView.kt:472, `editPrevMessage`; iOS ChatView.swift:2696) | T15: the links before `P.uri` in `cancelledLinks`, then T2-T4 | Kt: the recorded note opened in edit by the up arrow and saved: `MCLink` of its preview; a space typed: no request, the same card, saved as `MCLink` of that preview; text changes and events of the edit as of the message it was sent from; the preview of a link absent from the text: the link of the text loading; laws on the edit states<br>iOS: the recorded note in edit: its card and `MCLink`, without a request, also after its text is changed to the link of the card; text changes as of the message it was sent from; the preview of a link absent from the text: the link of the text loading |
+| F16 | Kt, iOS: an Edit of a message sent with the card of its second link, then a chat switch or a draft save: `cancelledLinks` = {}; on return the first link is requested, and the save sends `MCText` or the card of the first link (Kt `KeyChangeEffect(chatModel.chatId.value)` and the draft saves of T10; iOS `saveCurrentDraft`, `.onChange(of: chatModel.chatId)`) | T10: in an Edit, `cancelledLinks` = `linksBeforePreview` of the edited item | Kt: the recorded note opened in edit by the up arrow; another chat opened and the note folder opened again: the same card, no request, saved as `MCLink` of its preview; `ChatChanged` on the edit, also after a text change: the card and `cancelledLinks` kept; after X of the card, the link of the card loading<br>iOS: the recorded note in edit; the draft saved and restored, and another chat opened and the chat opened again: the same card, no request, saved as `MCLink` of its preview |
+| F17 | iOS: a forward to the same chat with an attachment and a link selects the link at once (`ComposeState.forwardingItems` applies `.textChanged`); Kotlin selects it at the next keystroke, as T12 states | T18: the attachment replaced by `NoPreview` without TextChanged; the link status and its request kept | iOS: a forward to the same chat keeps a loading link with its request and a card; with an attachment, `NoPreview` |
 
 Laws, tested in desktopTest and SimpleX Unit Tests on the recorded markdown:
 
