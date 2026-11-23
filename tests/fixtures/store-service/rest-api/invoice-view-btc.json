@@ -13,6 +13,7 @@
       "commitTx": null,
       "commitment": "0xbd3ab23bccfdbcb0ac4f8445afd1b34eb67b0c8274b89e6870fa7e084ed4b184",
       "community": null,
+      "disputeDays": 14,
       "duration": 69259500,
       "id": "registration",
       "label": null,
