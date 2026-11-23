@@ -141,7 +141,7 @@ A member with `memberVia` is shown with its host: the member whose `memberId` is
 ```
 place                   shown
 Flat and Classic names  "via <host>" after the name and badge of a single member: regular, italic, 0.84 of the name size,
-                        the name's colour (NameWithBadge via)
+                        the name's colour, on one line with the name shortened before it (NameWithBadge via)
 quotes                  "via <host>" after the quoted member's name (FramedItemView)
 member list             "via <host>" in place of the status (MemberRow.memberConnStatus, member_via)
 member info             row "Via" (info_row_via) with the host's name, after the role

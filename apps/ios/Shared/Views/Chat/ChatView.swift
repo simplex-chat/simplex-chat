@@ -2103,7 +2103,7 @@ struct ChatView: View {
                                     )
                                 } else {
                                     NameWithBadge(Text(memberNames(member, prevMember, memCount)), memCount == 1 ? member.nameBadge : nil, .caption1, via: via)
-                                        .lineLimit(2)
+                                        .lineLimit(via == nil ? 2 : 1)
                                 }
                             }
                                 .font(.caption)
