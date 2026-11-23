@@ -751,33 +751,7 @@ Laws, tested in desktopTest and SimpleX Unit Tests on the recorded markdown:
 | A local non-Tor SOCKS proxy | resolve a name to a LAN address and connect | — | residual: only IP literals are checked with a proxy |
 | Recipient of the message | see the preview the sender made | make the sender or the recipient fetch | the recipient never fetches |
 
-## 4. Decisions open
-
-```mermaid
-flowchart TD
-  Q1{"Q1 alert"} -->|"a (recommended)"| Q1F["footer text"]
-  Q1 -->|b| Q1B["alert only without SOCKS"]
-  Q1 -->|c| Q1C["alert kept"]
-  Q1F --> Q2{"Q2 http links"}
-  Q1B --> Q2
-  Q1C --> Q2
-  Q2 -->|"a (recommended)"| Q3{"Q3 root certificates"}
-  Q2 -->|b| Q3
-  Q3 -->|"a (recommended)"| Q4{"Q4 image formats"}
-  Q3 -->|b| Q4
-  Q4 -->|"a (recommended)"| Q5{"Q5 tags"}
-  Q4 -->|b| Q5
-  Q5 -->|"a (recommended)"| Q6{"Q6 limits"}
-  Q5 -->|b| Q6
-  Q5 -->|c| Q6
-  Q6 -->|"a (recommended)"| Q61{"Q6.1 image links"}
-  Q6 -->|b| Q61
-  Q61 -->|a| Q7{"Q7 user agent"}
-  Q61 -->|"b (recommended)"| Q7
-  Q7 -->|"a (recommended)"| END["build"]
-  Q7 -->|b| END
-  Q7 -->|c| END
-```
+## 4. Decisions
 
 | Q | Question | Options | Recommendation |
 |---|---|---|---|
@@ -790,9 +764,7 @@ flowchart TD
 | Q6.1 | The byte limit of the file of an image link, a link to a JPEG or PNG file (3.7, 3.10); Android and desktop make its preview today without a byte limit (LinkPreviews.kt:93-96, 124-128). The measurement fetched only `og:image` files; the one original above 2 MiB that it recorded is the JSON-LD PNG of a Substack post, 2,330,025 B | (a) MAX_IMAGE_BYTES, 2 MiB, as for `og:image`: a link to a larger file gets no preview; (b) MAX_IMAGE_LINK_BYTES, 10 MiB, within the decoding limits of `decodeResizable` (3.10); a file of 10 MiB is received within PREVIEW_DEADLINE only at 5.6 Mbit/s or more, 2.8 Mbit/s or more with a SOCKS proxy | (b): the file of an image link is usually a full photo |
 | Q7 | UA | (a) Firefox 160 on Windows (3.7); (b) Chrome 158 on Windows, `Chrome/158.0.0.0`; (c) Chrome 79, `Chrome/79.0.3945.130` | (a) |
 
-Decided: Q1 (a), Q2 (a), Q3 (a), Q4 (a). With Q2, `http` links of `.onion` hosts are fetched over plain HTTP, only through the SOCKS proxy; without a proxy they get no preview. Message size: the title is cut to 300 characters, the description to 200, and the image limit is reduced by their JSON bytes (3.10). The description is shown in at most 2 lines.
-
-Open: Q5, Q6, Q6.1, Q7; the branch implements the recommended option of each: (a) of Q5, Q6 and Q7, (b) of Q6.1.
+Decided: Q1 (a), Q2 (a), Q3 (a), Q4 (a), Q5 (a), Q6 (a), Q6.1 (b), Q7 (a). With Q2, `http` links of `.onion` hosts are fetched over plain HTTP, only through the SOCKS proxy; without a proxy they get no preview. Message size: the title is cut to 300 characters, the description to 200, and the image limit is reduced by their JSON bytes (3.10). The description is shown in at most 2 lines.
 
 Decided as details: concurrent fetches without a cancel command (3.11); the desktop fetches while it controls a phone (3.12); one browser UA with the `x.com` exception (3.7).
 
