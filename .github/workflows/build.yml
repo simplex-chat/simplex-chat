@@ -276,7 +276,7 @@ jobs:
       image_cache: ghcr.io/${{ github.repository_owner }}/simplex-chat-build-cache:${{ matrix.os }}-${{ matrix.arch }}-ghc${{ matrix.ghc }}
       source_hashes: dist-newstyle/sources.sha256
     concurrency: &linux-concurrency
-      group: ${{ github.workflow }}-${{ github.ref }}-linux-${{ matrix.os }}-${{ matrix.arch }}-${{ matrix.ghc }}-${{ needs.maybe-release.outputs.libs_tag }}
+      group: ${{ github.workflow }}-${{ github.ref }}-linux-${{ matrix.os }}-${{ matrix.arch }}-${{ matrix.ghc }}${{ matrix.postgres && '-postgres' || '' }}-${{ needs.maybe-release.outputs.libs_tag }}
       cancel-in-progress: ${{ github.event_name != 'push' }}
     strategy:
       fail-fast: false
@@ -378,7 +378,7 @@ jobs:
           toolchain=$(docker exec builder dpkg-query -W -f '${db:Status-Status} ${binary:Package} ${Version}\n' 'binutils*' 'cpp*' 'gcc*' '*-dev' | grep '^installed ' | sha256sum | cut -c1-16)
           target=ubuntu-${{ matrix.os }}-${{ matrix.arch }}-ghc${{ matrix.ghc }}-$toolchain
           echo "deps=deps-$target" >> "$GITHUB_OUTPUT"
-          echo "dist=dist-$target" >> "$GITHUB_OUTPUT"
+          echo "dist=${{ env.dist_name || 'dist' }}-$target" >> "$GITHUB_OUTPUT"
           echo "dist_lib=dist-lib-$target" >> "$GITHUB_OUTPUT"
 
       - name: Restore dependencies from cache
@@ -462,14 +462,14 @@ jobs:
         run: |
           scripts/ci/prune-old-builds.sh dist-newstyle
           cabal update
-          cabal build -j --enable-tests ${{ env.ghc_options }}
+          cabal build -j --enable-tests ${{ env.ghc_options }} ${{ env.cabal_targets }}
           mkdir -p /out
-          for i in simplex-chat simplex-chat-test; do
+          for i in ${{ env.bins || 'simplex-chat simplex-chat-test' }}; do
             bin=$(find /project/dist-newstyle -name "$i" -type f -executable)
             chmod +x "$bin"
             cp "$bin" /out/
           done
-          strip /out/simplex-chat
+          [ ! -f /out/simplex-chat ] || strip /out/simplex-chat
 
       # Also for pull requests that change the chat core, for the package tests.
       - name: Build library
@@ -661,6 +661,36 @@ jobs:
           github_ref: ${{ github.ref }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Setup Node.js for tests
+        if: matrix.should_run == true && matrix.arch == 'x86_64'
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      - name: Build badge web app for tests
+        if: matrix.should_run == true && matrix.arch == 'x86_64'
+        working-directory: apps/simplex-badge-service/web
+        run: |
+          npm ci
+          npm run build
+
+      - name: Install PostgreSQL 15 client tools
+        if: matrix.postgres == true
+        shell: bash
+        run: |
+          sudo install -d /usr/share/postgresql-common/pgdg
+          sudo curl -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc --fail https://www.postgresql.org/media/keys/ACCC4CF8.asc
+          sudo sh -c 'echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+          sudo apt update
+          sudo apt -y install postgresql-client-15
+
+      - name: Start PostgreSQL
+        if: matrix.postgres == true
+        shell: bash
+        run: |
+          docker run -d --name postgres -p 5432:5432 -e POSTGRES_HOST_AUTH_METHOD=trust postgres:15 -c max_connections=3000 -c fsync=off
+          timeout 60 sh -c 'until pg_isready -h localhost; do sleep 1; done'
+
       - name: Mount RAM disk for tests
         if: matrix.should_run == true && matrix.arch == 'x86_64'
         shell: bash
@@ -670,6 +700,7 @@ jobs:
           sudo chown $(id -u):$(id -g) tests/tmp
 
       - name: Run tests
+        id: tests
         if: matrix.should_run == true && matrix.arch == 'x86_64'
         timeout-minutes: 120
         shell: bash
@@ -678,7 +709,22 @@ jobs:
           TESTS: ${{ github.event_name == 'workflow_dispatch' && inputs.tests || '' }}
           PR_BODY: ${{ github.event.pull_request.draft == true && github.event.pull_request.body || '' }}
           ATTEMPTS: ${{ (github.ref == 'refs/heads/stable' || startsWith(github.ref, 'refs/tags/v')) && 3 || 1 }}
-        run: scripts/ci/run-tests.sh timeout 35m ./simplex-chat-test
+        run: scripts/ci/run-tests.sh timeout ${{ env.test_timeout || '35m' }} ./simplex-chat-test
+
+      - name: Check generated files
+        id: generated
+        if: ${{ !cancelled() && steps.tests.outcome != 'skipped' }}
+        shell: bash
+        run: |
+          git diff > "$RUNNER_TEMP/generated-files.patch"
+          git diff --stat --exit-code
+
+      - name: Upload generated files
+        if: ${{ !cancelled() && steps.generated.outcome == 'failure' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: generated-files-ubuntu-${{ matrix.os }}-ghc${{ matrix.ghc }}${{ matrix.postgres && '-postgres' || '' }}
+          path: ${{ runner.temp }}/generated-files.patch
 
       # Compiling the desktop and Android targets of :common in parallel exceeds the 2 GB Kotlin daemon heap.
       # cmakeBuildAndCopy links the JNI library against libsimplex, which this job does not build.
@@ -1007,6 +1053,46 @@ jobs:
           TAG: ${{ needs.maybe-release.outputs.libs_tag }}
         run: gh release upload "$TAG" postgres-libs/*.zip --clobber --repo "${{ github.repository }}-libs"
 
+# =================================
+#      Linux PostgreSQL Tests
+# =================================
+
+  test-postgres:
+    name: "ubuntu-${{ matrix.os }}-${{ matrix.arch }} (PostgreSQL tests), GHC: ${{ matrix.ghc }}"
+    needs: [maybe-release, variables]
+    if: needs.maybe-release.outputs.haskell == 'true' && !(github.ref == 'refs/heads/stable' || startsWith(github.ref, 'refs/tags/v'))
+    runs-on: ${{ matrix.runner }}
+    permissions:
+      contents: write
+      packages: write
+    env:
+      image_cache: ghcr.io/${{ github.repository_owner }}/simplex-chat-build-cache:${{ matrix.os }}-${{ matrix.arch }}-ghc${{ matrix.ghc }}
+      source_hashes: dist-newstyle/sources.sha256
+      opt: O0
+      ghc_options: --ghc-options=-O0
+      cache_o0: false
+      cabal_targets: --constraint 'simplexmq +client_postgres' --constraint 'simplex-chat +client_postgres' test:simplex-chat-test
+      bins: simplex-chat-test
+      dist_name: dist-postgres
+      test_timeout: 60m
+      PGHOST: localhost
+      ALLOW_EMPTY: true
+    concurrency: *linux-concurrency
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: 22.04
+            os_underscore: 22_04
+            arch: x86_64
+            runner: "ubuntu-22.04"
+            should_run: true
+            ghc: ${{ needs.variables.outputs.GHC_VER }}
+            hash: 'sha256:5c8b2c0a6c745bc177669abfaa716b4bc57d58e2ea3882fb5da67f4d59e3dda5'
+            kotlin: false
+            postgres: true
+    steps: *linux-steps
+
 # =========================
 #        MacOS Build
 # =========================
@@ -1246,6 +1332,7 @@ jobs:
           ln -s /Volumes/tests tests/tmp
 
       - name: Run tests
+        id: tests
         if: matrix.should_run == true && matrix.arch == 'aarch64'
         timeout-minutes: 120
         shell: bash
@@ -1266,6 +1353,21 @@ jobs:
             echo "All "$attempts" attempts failed."
             exit 1
           fi
+
+      - name: Check generated files
+        id: generated
+        if: ${{ !cancelled() && steps.tests.outcome != 'skipped' }}
+        shell: bash
+        run: |
+          git diff > "$RUNNER_TEMP/generated-files.patch"
+          git diff --stat --exit-code
+
+      - name: Upload generated files
+        if: ${{ !cancelled() && steps.generated.outcome == 'failure' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: generated-files-${{ matrix.os }}
+          path: ${{ runner.temp }}/generated-files.patch
 
       - name: Build library
         id: mac_lib_build
@@ -1838,8 +1940,8 @@ jobs:
         if: steps.plan.outputs.nodejs_version
         working-directory: packages/simplex-chat-nodejs
         run: |
-          (cd ../simplex-chat-client/types/typescript && npm install --no-audit --no-fund && npx tsc)
-          npm install --ignore-scripts --no-save --no-audit --no-fund ../simplex-chat-client/types/typescript
+          (cd ../simplex-chat-client/types/typescript && "$GITHUB_WORKSPACE/scripts/ci/npm-install.sh" && npx tsc)
+          "$GITHUB_WORKSPACE/scripts/ci/npm-install.sh" --ignore-scripts --no-save ../simplex-chat-client/types/typescript
           npx tsc && cp src/simplex.* dist
           npx jest tests/libs.test.ts tests/api.unit.test.ts
 
@@ -1855,7 +1957,7 @@ jobs:
           VERSION: ${{ steps.plan.outputs.types_version }}
           DIST_TAG: ${{ steps.plan.outputs.types_dist_tag }}
         run: |
-          npm install --no-audit --no-fund
+          "$GITHUB_WORKSPACE/scripts/ci/npm-install.sh"
           npm publish --provenance --access public --tag "$DIST_TAG"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 

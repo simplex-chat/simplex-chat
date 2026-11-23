@@ -7,6 +7,7 @@ import Codec.Picture.JPEGTurbo (encodeRGB)
 import Codec.Picture.Jpg (encodeDirectJpegAtQualityWithMetadata, encodeJpegAtQuality)
 import Codec.Picture.Png (encodePng)
 import Codec.Picture.Types (convertImage, extractLumaPlane, pixelFold)
+import Control.Exception (bracket)
 import Control.Monad (forM_, when)
 import Control.Monad.Except (runExceptT)
 import Data.Bits (complement, shiftR, testBit, xor)
@@ -23,6 +24,9 @@ import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFile (..))
 import qualified Simplex.Messaging.Crypto.File as CF
 import System.FilePath ((</>))
+import System.IO (IOMode (..), hClose, openFile)
+import System.Process (callProcess)
+import System.Timeout (timeout)
 import Test.Hspec
 import UnliftIO.STM (atomically)
 import UnliftIO.Temporary (withTempDirectory)
@@ -47,6 +51,7 @@ imageTests = do
     it "should generate preview of an encrypted image file" testEncryptedFilePreview
     it "should keep the fixed preview when the file is not an image" $
       imagePreview (CryptoFile "tests/fixtures/test.pdf" Nothing) `shouldReturn` fixedImagePreview
+    it "should stop an image preview at its time limit" testImagePreviewTimeLimit
   describe "JPEG decoding" $ do
     it "should decode JPEG at the display size" testJpegDisplaySize
     it "should decode JPEG colour spaces" testJpegColourSpaces
@@ -169,6 +174,13 @@ testEncryptedFilePreview = withTempDirectory "tests/tmp" "image-preview" $ \dir 
   let f = CryptoFile (dir </> "test.jpg") (Just args)
   Right () <- runExceptT . CF.writeFile f . LB.fromStrict =<< B.readFile "tests/fixtures/test.jpg"
   testFilePreview f
+
+testImagePreviewTimeLimit :: IO ()
+testImagePreviewTimeLimit = withTempDirectory "tests/tmp" "image-preview" $ \dir -> do
+  let path = dir </> "test.jpg"
+  callProcess "mkfifo" [path]
+  bracket (openFile path ReadWriteMode) hClose $ \_ ->
+    timeout 100000 (imagePreview $ CryptoFile path Nothing) `shouldReturn` Nothing
 
 testJpegDisplaySize :: IO ()
 testJpegDisplaySize =

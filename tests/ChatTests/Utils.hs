@@ -11,8 +11,8 @@ module ChatTests.Utils where
 import APIDocs (testGenerate)
 import ChatClient
 import ChatTests.DBUtils
-import Control.Concurrent (threadDelay)
-import Control.Concurrent.Async (concurrently_, mapConcurrently_)
+import Control.Concurrent (newEmptyMVar, putMVar, takeMVar, threadDelay)
+import Control.Concurrent.Async (concurrently_, mapConcurrently_, race_, wait, withAsync)
 import Control.Concurrent.STM
 import Control.Monad (join, unless, when)
 import Control.Monad.Except (runExceptT)
@@ -30,7 +30,7 @@ import Data.Maybe (fromMaybe)
 import Data.String
 import qualified Data.Text as T
 import Simplex.Chat.Badges (BadgeProof (..), BadgeStatus, LocalBadge (..), ProofPresHeader (..))
-import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), ChatError, ChatEvent (CEvtChatItemUpdated, CEvtNameMoved, CEvtNewChatItems), storeCxt)
+import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), ChatError, ChatEvent (CEvtChatItemUpdated, CEvtNameMoved, CEvtNewChatItems, CEvtSndFileCompleteXFTP, CEvtSndFileError), storeCxt)
 import Simplex.Chat.Library.Commands (maxProfileImageSize)
 import Simplex.Chat.Markdown (viewName)
 import Simplex.Chat.Mobile (chatParseMarkdown, chatParseUri, chatSendCmd, eitherToResult)
@@ -109,25 +109,13 @@ it name test =
   where
     t = 180 * 1000000
 
-xit' :: HasCallStack => String -> (ps -> Expectation) -> SpecWith (Arg (ps -> Expectation))
-xit' = if os == "linux" then xit else it
-
-xit'' :: (HasCallStack, Example a) => String -> a -> SpecWith (Arg a)
-xit'' = ifCI xit Hspec.it
-
 xitMacCI :: HasCallStack => String -> (ps -> Expectation) -> SpecWith (Arg (ps -> Expectation))
 xitMacCI = ifCI (if os == "darwin" then xit else it) it
-
-xdescribe'' :: HasCallStack => String -> SpecWith a -> SpecWith a
-xdescribe'' = ifCI xdescribe describe
 
 ifCI :: HasCallStack => (HasCallStack => String -> a -> SpecWith b) -> (HasCallStack => String -> a -> SpecWith b) -> String -> a -> SpecWith b
 ifCI xrun run d t = do
   ci <- runIO $ lookupEnv "CI"
   (if ci == Just "true" then xrun else run) d t
-
-envCI :: IO Bool
-envCI = (Just "true" ==) <$> lookupEnv "CI"
 
 skip :: String -> SpecWith a -> SpecWith a
 skip = before_ . pendingWith
@@ -686,6 +674,14 @@ withCCAgentTransaction :: TestCC -> (DB.Connection -> IO a) -> IO a
 withCCAgentTransaction TestCC {chatController = ChatController {smpAgent}} action =
   withTransaction (agentClientStore smpAgent) $ \db -> action db
 
+holdDuring :: (IO () -> IO ()) -> IO a -> IO a
+holdDuring hold action = do
+  held <- newEmptyMVar
+  release <- newEmptyMVar
+  withAsync (hold $ putMVar held () >> takeMVar release) $ \holder -> do
+    timeout 30000000 (race_ (takeMVar held) (wait holder)) `shouldReturn` Just ()
+    action <* (putMVar release () >> wait holder)
+
 checkPendingInvitations :: HasCallStack => TestCC -> Int -> IO ()
 checkPendingInvitations cc n =
   withCCAgentTransaction cc (\db -> DB.query_ db "SELECT count(1) FROM conn_invitations WHERE accepted = 0") `shouldReturn` [[n]]
@@ -1025,11 +1021,18 @@ nameMovedFixture fixture cc contacts groups = withCCUser cc $ \user -> do
 
 recordItemEvent :: TVar [J.Value] -> Either ChatError ChatEvent -> IO ()
 recordItemEvent events evt = case evt of
-  Right CEvtNewChatItems {} -> record
-  Right CEvtChatItemUpdated {} -> record
+  Right CEvtNewChatItems {} -> recordEvent events evt
+  Right CEvtChatItemUpdated {} -> recordEvent events evt
   _ -> pure ()
-  where
-    record = atomically $ modifyTVar' events (<> [J.toJSON $ eitherToResult Nothing evt])
+
+recordSndFileEvent :: TVar [J.Value] -> Either ChatError ChatEvent -> IO ()
+recordSndFileEvent events evt = case evt of
+  Right CEvtSndFileCompleteXFTP {} -> recordEvent events evt
+  Right CEvtSndFileError {} -> recordEvent events evt
+  _ -> pure ()
+
+recordEvent :: TVar [J.Value] -> Either ChatError ChatEvent -> IO ()
+recordEvent events evt = atomically $ modifyTVar' events (<> [J.toJSON $ eitherToResult Nothing evt])
 
 eventsFixture :: String -> TVar [J.Value] -> IO () -> IO ()
 eventsFixture fixture events steps = do
@@ -1038,6 +1041,9 @@ eventsFixture fixture events steps = do
   readTVarIO events >>= writeFixture fixture . stableJSON . J.toJSON
 
 writeFixture :: String -> J.Value -> IO ()
+#if defined(dbPostgres)
+writeFixture _ _ = pure ()
+#else
 writeFixture fixture = testGenerate ("tests/fixtures/api/" <> fixture <> ".json") . prettyJSON
   where
     prettyJSON = (<> "\n") . pretty ""
@@ -1047,6 +1053,7 @@ writeFixture fixture = testGenerate ("tests/fixtures/api/" <> fixture <> ".json"
       v -> jsonText v
     block indent open close items = open <> "\n" <> T.intercalate ",\n" (map ((indent <> "  ") <>) items) <> "\n" <> indent <> close
     jsonText = safeDecodeUtf8 . LB.toStrict . J.encode
+#endif
 
 stableJSON :: J.Value -> J.Value
 stableJSON = \case
@@ -1056,6 +1063,6 @@ stableJSON = \case
   where
     stableField k v
       | k `elem` ["createdAt", "updatedAt", "chatTs", "userMemberProfileSentAt", "itemTs", "deletedTs", "fileExpires"] = J.String "1970-01-01T00:00:00Z"
-      | k `elem` ["agentConnId", "xContactId", "connFullLink", "connShortLink", "contactLink", "groupLink", "viaGroupLinkUri", "simplexUri", "memberId", "memberPubKey", "publicGroupId", "businessId", "customerId", "itemSharedMsgId", "fileDescrText"] = J.String $ JK.toText k
+      | k `elem` ["agentConnId", "xContactId", "connFullLink", "connShortLink", "contactLink", "groupLink", "viaGroupLinkUri", "simplexUri", "memberId", "memberPubKey", "publicGroupId", "businessId", "customerId", "itemSharedMsgId", "fileDescrText", "agentSndFileId", "privateSndFileDescr", "errorMessage"] = J.String $ JK.toText k
       | k == "groupRelays", J.Array a <- v = J.Array $ J.String "groupRelay" <$ a
       | otherwise = stableJSON v

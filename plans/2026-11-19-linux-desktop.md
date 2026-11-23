@@ -67,6 +67,7 @@ Code changes of the upgrade:
   - `apps/multiplatform/build.gradle.kts`;
   - `android/build.gradle.kts`.
 - Java compile options set in the `android` blocks of `:android` and `:common`, replacing the root block on the legacy `BaseExtension`.
+- The root block's rule resolving skiko 0.9.4.2 to 0.9.24 (plans/2026-11-13-linux-fallback-font-crash.md) removed with the block: Compose 1.12.1 requests another skiko version; `FallbackFontTest` checks the fallback fonts with it.
 - Gradle 9: `Project.exec` → `providers.exec`, `buildDir` → `layout.buildDirectory`.
 - `org.gradle.configureondemand=true`, desktop tasks named with `:desktop:`: desktop builds leave `:android` unconfigured, whose NDK 23.1 AGP 9 installs while configuring.
 - `nativeCanvas` → `skiaCanvas` in `BarsBlur.desktop.kt`.

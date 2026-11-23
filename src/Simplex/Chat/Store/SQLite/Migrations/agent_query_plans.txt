@@ -1173,6 +1173,9 @@ SEARCH q USING INDEX idx_rcv_queues_to_subscribe (to_subscribe=? AND host=? AND 
 SEARCH c USING PRIMARY KEY (conn_id=?)
 SEARCH s USING PRIMARY KEY (host=? AND port=?)
 
+Query: ALTER TABLE snd_files RENAME COLUMN prefix_path TO prefix_path_renamed
+Plan:
+
 Query: DELETE FROM client_services WHERE user_id = ?
 Plan:
 SEARCH client_services USING COVERING INDEX idx_server_certs_user_id_host_port (user_id=?)
@@ -1371,6 +1374,10 @@ Query: SELECT 1 FROM snd_message_deliveries WHERE conn_id = ? AND failed = 0 LIM
 Plan:
 SEARCH snd_message_deliveries USING COVERING INDEX idx_snd_message_deliveries_expired (conn_id=?)
 
+Query: SELECT 1 FROM snd_queues WHERE host = ? AND port = ? AND snd_id = ? AND status != ? LIMIT 1
+Plan:
+SEARCH snd_queues USING PRIMARY KEY (host=? AND port=? AND snd_id=?)
+
 Query: SELECT conn_id FROM connections WHERE deleted = 0
 Plan:
 SEARCH connections USING COVERING INDEX idx_connections_deleted (deleted=?)
@@ -1411,6 +1418,14 @@ Query: SELECT count(1) FROM connections
 Plan:
 SCAN connections USING COVERING INDEX idx_connections_deleted
 
+Query: SELECT count(1) FROM snd_files
+Plan:
+SCAN snd_files USING COVERING INDEX idx_snd_files_user_id
+
+Query: SELECT count(1) FROM snd_files WHERE deleted = 0
+Plan:
+SCAN snd_files
+
 Query: SELECT count(1) FROM snd_message_bodies
 Plan:
 SCAN snd_message_bodies
@@ -1422,6 +1437,10 @@ SEARCH snd_message_deliveries USING COVERING INDEX idx_snd_message_deliveries_ex
 Query: SELECT count(1) FROM users
 Plan:
 SCAN users
+
+Query: SELECT deleted FROM snd_files
+Plan:
+SCAN snd_files
 
 Query: SELECT deleted FROM snd_files WHERE snd_file_id = ?
 Plan:
@@ -1474,6 +1493,10 @@ SEARCH rcv_messages USING PRIMARY KEY (conn_id=?)
 Query: SELECT skipped_message_id, header_key, msg_n, msg_key FROM skipped_messages WHERE conn_id = ? ORDER BY skipped_message_id DESC LIMIT ?
 Plan:
 SEARCH skipped_messages USING INDEX idx_skipped_messages_conn_id (conn_id=?)
+
+Query: SELECT snd_file_entity_id FROM snd_files WHERE deleted = 0 AND failed = 0
+Plan:
+SCAN snd_files
 
 Query: SELECT snd_file_id FROM snd_files WHERE snd_file_entity_id = ?
 Plan:
@@ -1531,6 +1554,10 @@ Query: UPDATE connections SET smp_agent_version = ?, pq_support = ?, enable_ntfs
 Plan:
 SEARCH connections USING PRIMARY KEY (conn_id=?)
 
+Query: UPDATE deleted_snd_chunk_replicas SET delay = ?, retries = retries + 1, updated_at = ? WHERE deleted_snd_chunk_replica_id = ?
+Plan:
+SEARCH deleted_snd_chunk_replicas USING INTEGER PRIMARY KEY (rowid=?)
+
 Query: UPDATE messages SET msg_body = x'' WHERE conn_id = ? AND internal_id = ?
 Plan:
 SEARCH messages USING PRIMARY KEY (conn_id=? AND internal_id=?)
@@ -1538,6 +1565,10 @@ SEARCH messages USING PRIMARY KEY (conn_id=? AND internal_id=?)
 Query: UPDATE ratchets SET ratchet_state = ? WHERE conn_id = ?
 Plan:
 SEARCH ratchets USING PRIMARY KEY (conn_id=?)
+
+Query: UPDATE rcv_file_chunk_replicas SET delay = ?, retries = retries + 1, updated_at = ? WHERE rcv_file_chunk_replica_id = ?
+Plan:
+SEARCH rcv_file_chunk_replicas USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: UPDATE rcv_file_chunk_replicas SET received = 1, updated_at = ? WHERE rcv_file_chunk_replica_id = ?
 Plan:
@@ -1575,6 +1606,10 @@ Query: UPDATE rcv_messages SET user_ack = ? WHERE conn_id = ? AND internal_id = 
 Plan:
 SEARCH rcv_messages USING COVERING INDEX idx_rcv_messages_conn_id_internal_id (conn_id=? AND internal_id=?)
 
+Query: UPDATE rcv_queues SET delete_errors = delete_errors + 1 WHERE conn_id = ? AND rcv_queue_id = ?
+Plan:
+SEARCH rcv_queues USING COVERING INDEX idx_rcv_queue_id (conn_id=? AND rcv_queue_id=?)
+
 Query: UPDATE rcv_queues SET last_broker_ts = ? WHERE conn_id = ? AND rcv_queue_id = ? AND (last_broker_ts IS NULL OR last_broker_ts < ?)
 Plan:
 SEARCH rcv_queues USING INDEX idx_rcv_queue_id (conn_id=? AND rcv_queue_id=?)
@@ -1602,6 +1637,14 @@ SEARCH servers_stats USING INTEGER PRIMARY KEY (rowid=?)
 Query: UPDATE snd_file_chunk_replicas SET replica_status = ?, updated_at = ? WHERE snd_file_chunk_replica_id = ?
 Plan:
 SEARCH snd_file_chunk_replicas USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: UPDATE snd_files SET deleted = 1, updated_at = ? WHERE snd_file_id = ?
+Plan:
+SEARCH snd_files USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: UPDATE snd_files SET prefix_path = NULL, error = ?, status = ?, updated_at = ? WHERE snd_file_id = ?
+Plan:
+SEARCH snd_files USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: UPDATE snd_files SET prefix_path = NULL, status = ?, updated_at = ? WHERE snd_file_id = ?
 Plan:
