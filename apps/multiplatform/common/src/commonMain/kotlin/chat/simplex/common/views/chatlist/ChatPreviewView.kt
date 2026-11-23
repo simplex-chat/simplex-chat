@@ -10,6 +10,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawOutline
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalDensity
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
@@ -19,6 +21,7 @@ import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontStyle
@@ -464,8 +467,8 @@ fun ChatPreviewView(
             val showNtfsIcon = !chat.chatInfo.ntfsEnabled(false) && (chat.chatInfo is ChatInfo.Direct || chat.chatInfo is ChatInfo.Group)
             if (n > 0 || chat.chatStats.unreadChat) {
               val unreadMentions = chat.chatStats.unreadMentions
-              val attentionIcon = if (chat.chatStats.unreadHighPriority > 0) MR.images.ic_notifications else MR.images.ic_alternate_email
-              Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.sp.toDp())) {
+              val (attentionIcon, attentionIconSize, badgeIconSize) = if (chat.chatStats.unreadHighPriority > 0) Triple(MR.images.ic_notifications_filled, 22.sp, 16.sp) else Triple(MR.images.ic_alternate_email, 16.sp, 11.2.sp)
+              Row(Modifier.offset(y = 3.sp.toDp()), horizontalArrangement = Arrangement.spacedBy(2.sp.toDp()), verticalAlignment = Alignment.CenterVertically) {
                 val mentionColor = when {
                   disabled -> MaterialTheme.colors.secondary
                   cInfo is ChatInfo.Group -> {
@@ -480,27 +483,25 @@ fun ChatPreviewView(
                     painterResource(attentionIcon),
                     contentDescription = generalGetString(MR.strings.notifications),
                     tint = mentionColor,
-                    modifier = Modifier.size(12.sp.toDp()).offset(y = 3.sp.toDp())
+                    modifier = Modifier.size(20.sp.toDp()).requiredSize(attentionIconSize.toDp())
                   )
                 }
 
                 if (unreadMentions > 0 && n == 1) {
-                  Box(modifier = Modifier.offset(y = 2.sp.toDp()).size(15.sp.toDp()).background(mentionColor, shape = CircleShape), contentAlignment = Alignment.Center) {
+                  ChatPreviewBadge(mentionColor) {
                     Icon(
                       painterResource(attentionIcon),
                       contentDescription = generalGetString(MR.strings.notifications),
                       tint = Color.White,
-                      modifier = Modifier.size(9.sp.toDp())
+                      modifier = Modifier.widthIn(max = 14.sp.toDp()).requiredSize(badgeIconSize.toDp())
                     )
                   }
                 } else {
                   val onlySilent = chat.chatStats.allUnreadSilent && !chat.chatStats.unreadChat
-                  UnreadBadge(
-                    text = if (n > 0) unreadCountStr(n) else "",
-                    backgroundColor = if (disabled || showNtfsIcon || onlySilent) MaterialTheme.colors.secondary else MaterialTheme.colors.primaryVariant,
-                    yOffset = 3.dp,
-                    outline = onlySilent
-                  )
+                  val badgeColor = if (disabled || showNtfsIcon || onlySilent) MaterialTheme.colors.secondary else MaterialTheme.colors.primaryVariant
+                  ChatPreviewBadge(badgeColor, outline = onlySilent) {
+                    Text(if (n > 0) unreadCountStr(n) else "", color = if (onlySilent) badgeColor else Color.White, fontSize = 12.sp)
+                  }
                 }
               }
             } else if (showNtfsIcon && ntfsMode != null) {
@@ -595,21 +596,33 @@ private fun groupInvitationPreviewText(currentUserProfileDisplayName: String?, g
 fun UnreadBadge(
   text: String,
   backgroundColor: Color,
-  yOffset: Dp? = null,
-  outline: Boolean = false
+  yOffset: Dp? = null
 ) {
   Text(
     text,
-    color = if (outline) backgroundColor else Color.White,
+    color = Color.White,
     fontSize = 10.sp,
     style = TextStyle(textAlign = TextAlign.Center),
     modifier = Modifier
       .offset(y = yOffset ?: 0.dp)
-      .then(if (outline) Modifier.border(1.dp, backgroundColor, CircleShape) else Modifier.background(backgroundColor, shape = CircleShape))
+      .background(backgroundColor, shape = CircleShape)
       .badgeLayout()
       .padding(horizontal = 2.sp.toDp())
       .padding(vertical = 1.sp.toDp())
   )
+}
+
+@Composable
+private fun ChatPreviewBadge(color: Color, outline: Boolean = false, content: @Composable () -> Unit) {
+  Box(
+    Modifier
+      .then(if (outline) Modifier.drawBehind { drawOutline(CircleShape.createOutline(size, layoutDirection, this), color, style = Stroke(1.dp.toPx())) } else Modifier.background(color, CircleShape))
+      .sizeIn(minWidth = 20.sp.toDp(), minHeight = 20.sp.toDp())
+      .padding(horizontal = 4.sp.toDp()),
+    contentAlignment = Alignment.Center
+  ) {
+    content()
+  }
 }
 
 @Composable
