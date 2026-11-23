@@ -46,7 +46,7 @@ CLIPBOARD_COMMAND = ["clip"] if sys.platform == "win32" else ["pbcopy"]
 WHEEL_NOTCH = 120 if sys.platform == "win32" else 1
 LEFT_PANE_SCREENS = ("Settings", "Chat preferences", "Network", "New chat")
 GRADLE_PROPERTIES = Path(__file__).resolve().parents[2] / "apps" / "multiplatform" / "gradle.properties"
-APP_VERSION = re.search(r"^desktop\.version_name=(.+)$", GRADLE_PROPERTIES.read_text(), re.MULTILINE).group(1).strip()
+VERSION_ROW = "(%s)" % re.search(r"^desktop\.version_code=(.+)$", GRADLE_PROPERTIES.read_text(), re.MULTILINE).group(1).strip()
 
 pyautogui.PAUSE = 0.2
 
@@ -347,8 +347,6 @@ class App:
         self.visit("your-servers", self.open_settings, "Network", "Your servers")
         self.visit("advanced-network", self.open_settings, "Network", "Advanced network settings")
         self.visit("calls", self.open_settings, "Audio")
-        self.visit("version", self.open_settings, APP_VERSION)
-        self.visit("developer-tools", self.open_settings, APP_VERSION, "Developer tools")
         self.visit("address", self.open_user_menu, "SimpleX address")
         self.visit("chat-preferences", self.open_user_menu, "Chat preferences")
         self.visit("chat-profiles", self.open_user_menu, "Your chat profiles")
@@ -363,6 +361,8 @@ class App:
             time.sleep(SETTLE)
             self.shot("tour-attachment-menu")
             self.press("escape")
+        self.visit("version", self.open_settings, VERSION_ROW)
+        self.visit("developer-tools", self.open_settings, VERSION_ROW, "Developer tools")
         self.visit("migrate", self.open_settings, "Migrate to another device")
 
     def stop(self):

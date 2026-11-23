@@ -49,7 +49,7 @@ tour_label_scrolls=4
 tour_label_wait=5
 tour_window_width=1366
 tour_window_height=768
-app_version=$(sed -n 's/^desktop.version_name=//p' "$(dirname "$0")/../../../apps/multiplatform/gradle.properties")
+version_row="($(sed -n 's/^desktop.version_code=//p' "$(dirname "$0")/../../../apps/multiplatform/gradle.properties"))"
 mkdir -p "$UI_OUT"
 : > "$checks"
 if [ -n "${GITHUB_ENV:-}" ]; then
@@ -181,7 +181,9 @@ back_to_chat_list() {
       "$ui" key Escape
     fi
   done
-  on_chat_list
+  on_chat_list && return 0
+  "$ui" shot back-failed
+  return 1
 }
 
 left_pane_phrases() {
@@ -492,8 +494,6 @@ tour() {
   visit your-servers open_settings "Network" "Your servers"
   visit advanced-network open_settings "Network" "Advanced network settings"
   visit calls open_settings "Audio"
-  visit version open_settings "$app_version"
-  visit developer-tools open_settings "$app_version" "Developer tools"
   visit address open_user_menu "SimpleX address"
   visit chat-preferences open_user_menu "Chat preferences"
   visit chat-profiles open_user_menu "Your chat profiles"
@@ -509,6 +509,8 @@ tour() {
     "$ui" shot tour-attachment-menu
     "$ui" key Escape
   fi
+  visit version open_settings "$version_row"
+  visit developer-tools open_settings "$version_row" "Developer tools"
   visit migrate open_settings "Migrate to another device"
 }
 
