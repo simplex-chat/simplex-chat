@@ -502,7 +502,8 @@ readBody next = B.concat <$> go
     go = next >>= \s -> if B.null s then pure [] else (s :) <$> go
 
 imageBody :: Int -> Response -> ExceptT String IO ByteString
-imageBody limit Response {body} = do
+imageBody limit Response {contentLength, body} = do
+  when (any (> limit) contentLength) $ throwError "image too large"
   bytes <- readBody =<< liftIO (limitBody (limit + 1) body)
   when (B.length bytes > limit) $ throwError "image too large"
   pure bytes
