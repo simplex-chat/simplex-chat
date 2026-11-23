@@ -1,5 +1,7 @@
 # SimpleX Chat and SimpleX servers dependencies
 
+[certifi](https://github.com/certifi/python-certifi): Mozilla root certificates of link previews ([MPL-2.0](./licences/apps/certifi/LICENSE))
+
 [Compact ICC Profiles](https://github.com/saucecontrol/Compact-ICC-Profiles): Display P3 colour profile of resized images ([CC0 1.0](./licences/apps/compact-icc-profiles/license))
 
 [libspng](https://github.com/randy408/libspng): PNG decoding and encoding of resized images ([BSD-2-clause](./licences/apps/libspng/LICENSE) and [libpng-2.0](./licences/apps/libspng/LICENSE-libpng))
