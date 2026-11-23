@@ -41,6 +41,8 @@ FIELD_BELOW_LABEL = 40
 LOCAL_CHAT = "seeded notes"
 PROFILE_NAME = "citester"
 SEARCH_FIELD = "Search or paste SimpleX link"
+PASTE_ITEM = "Paste"
+CLIPBOARD_COMMAND = ["clip"] if sys.platform == "win32" else ["pbcopy"]
 LEFT_PANE_SCREENS = ("Settings", "Chat preferences", "Network", "New chat")
 GRADLE_PROPERTIES = Path(__file__).resolve().parents[2] / "apps" / "multiplatform" / "gradle.properties"
 APP_VERSION = re.search(r"^desktop\.version_name=(.+)$", GRADLE_PROPERTIES.read_text(), re.MULTILINE).group(1).strip()
@@ -229,7 +231,17 @@ class App:
             self.type(text)
             if self.wait(text, LABEL_WAIT):
                 return True
-        return False
+            self.shot(f"typing-{attempt + 1}")
+        return self.paste_into(x, y, text)
+
+    def paste_into(self, x, y, text):
+        subprocess.run(CLIPBOARD_COMMAND, input=text, text=True, check=True)
+        self.log(f"paste {text}")
+        pyautogui.rightClick(x, y)
+        if not self.click_text(PASTE_ITEM, LABEL_WAIT):
+            self.shot("paste-menu")
+            return False
+        return self.wait(text, LABEL_WAIT) is not None
 
     def open_user_menu(self):
         self.click(self.x + AVATAR_OFFSET, self.bottom)
