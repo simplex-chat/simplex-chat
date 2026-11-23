@@ -24,7 +24,7 @@ import qualified Data.ByteString.Base64 as B64
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy as LB
-import Data.Char (chr, digitToInt, intToDigit, isAsciiLower, isAsciiUpper, isDigit, isHexDigit, ord, toLower, toUpper)
+import Data.Char (chr, digitToInt, intToDigit, isAsciiLower, isAsciiUpper, isDigit, isHexDigit, isSpace, ord, toLower, toUpper)
 import Data.Default (def)
 import Data.FileEmbed (embedFile)
 import Data.IORef
@@ -623,7 +623,7 @@ metaTags attrs =
   where
     attr name = asciiLower <$> lookup name attrs
     content = lookup "content" attrs
-    ogContent name = content <* guard (Just name `elem` [attr "property", attr "name"])
+    ogContent name = mfilter (not . B.all isSpace) content <* guard (Just name `elem` [attr "property", attr "name"])
 
 htmlPage :: Uri -> Maybe ByteString -> HeadTags -> Either String PageMeta
 htmlPage pageUri charset HeadTags {ogTitle, ogDescription, ogImage, titleText, nameDescription, metaCharset} = do
