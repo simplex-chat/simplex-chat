@@ -1254,7 +1254,9 @@ length in days is set when the order is made, by how the order is paid:
 | BTC, XMR or another BTCPay method | 14 |
 | prepaid code | 14 |
 
-A name selected for a taken order keeps the order's payment, and so its days. The order's
+The days of a payment kind never change: the page signs by its own table, and the service checks a
+reveal against the days stored when the order was made, so after a change every order made before it
+would be refused when it is signed again. A name selected for a taken order keeps the order's payment, and so its days. The order's
 `disputeDays` are returned in the registration view, signed by the owner in `RegisterName` with the
 reveal of the order or of the selection, and sent by the service in `registerWithCredit`; a reveal
 signed over other days is refused `400 bad_request`. Once the name is registered, the view's
