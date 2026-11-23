@@ -230,6 +230,7 @@
               },
               "type": "rcvMsgContent"
             },
+            "links": {},
             "mentions": {},
             "meta": {
               "createdAt": "1970-01-01T00:00:00Z",
@@ -544,6 +545,7 @@
               "text": "@alice"
             }
           ],
+          "links": {},
           "mentions": {
             "alice": {
               "memberId": "memberId",
@@ -644,6 +646,7 @@
             },
             "type": "rcvMsgContent"
           },
+          "links": {},
           "mentions": {},
           "meta": {
             "createdAt": "1970-01-01T00:00:00Z",
@@ -945,6 +948,7 @@
             },
             "type": "rcvMsgContent"
           },
+          "links": {},
           "mentions": {},
           "meta": {
             "createdAt": "1970-01-01T00:00:00Z",
@@ -1047,6 +1051,7 @@
               "text": "@alice"
             }
           ],
+          "links": {},
           "mentions": {
             "alice": {
               "memberId": "memberId",

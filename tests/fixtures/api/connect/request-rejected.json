@@ -207,6 +207,7 @@
                   "feature": "calls",
                   "type": "rcvChatFeature"
                 },
+                "links": {},
                 "mentions": {},
                 "meta": {
                   "createdAt": "1970-01-01T00:00:00Z",
