@@ -16,6 +16,7 @@ class LinkPreviewStateTest {
   private val preview = assertNotNull(recordedPreview(PAGE))
   private val file = ComposePreview.FilePreview("notes.txt", URI("file:///notes.txt"))
   private val empty = ComposeState(useLinkPreviews = true)
+  private val note = recordedNote()
 
   @BeforeTest
   fun setUp() {
@@ -131,6 +132,44 @@ class LinkPreviewStateTest {
   }
 
   @Test
+  fun editedMessageKeepsThePreviewOfItsSecondLink() {
+    val edited = note.edited()
+    assertSame(assertIs<MsgContent.MCLink>(note.content.msgContent).preview, edited.linkPreview)
+    assertEquals(setOf(FAILED), edited.cancelledLinks)
+  }
+
+  @Test
+  fun editedMessageChangesAsTheMessageItWasSentFrom() {
+    val composed = empty.typed(TWO_LINKS).fetched().fetched()
+    val edited = note.edited()
+    assertSameLinkPreview(composed, edited)
+    for (text in TEXTS) {
+      assertSameLinkPreview(composed.typed(text, previewsOn = false), edited.typed(text, previewsOn = false))
+      for (next in TEXTS) {
+        assertSameLinkPreview(composed.typed(text).typed(next), edited.typed(text).typed(next))
+      }
+    }
+    for (event in listOf(LinkPreviewEvent.Cancelled, LinkPreviewEvent.ChatChanged)) {
+      assertSameLinkPreview(composed.updateLinkPreview(event, true), edited.updateLinkPreview(event, true))
+    }
+  }
+
+  @Test
+  fun editedMessageWithoutTheLinkOfItsPreviewSelectsTheLinkOfItsText() {
+    val moved = note.withText(FAILED).edited()
+    assertEquals(FAILED, moved.loadingLink?.uri)
+    assertEquals(setOf(), moved.cancelledLinks)
+    assertSame(ComposePreview.NoPreview, note.withText(TEXT_WITHOUT_LINK).edited().preview)
+  }
+
+  @Test
+  fun editedMessageHasNoPreviewWithPreviewsOff() {
+    for (item in listOf(note, note.withText(FAILED))) {
+      assertSame(ComposePreview.NoPreview, item.edited(previewsOn = false).preview)
+    }
+  }
+
+  @Test
   fun textChangeAppliedTwiceEqualsOnce() {
     for (s in reachableStates()) {
       val once = s.updateLinkPreview(LinkPreviewEvent.TextChanged, true)
@@ -147,8 +186,8 @@ class LinkPreviewStateTest {
   }
 
   private fun reachableStates(): List<ComposeState> =
-    TEXTS
-      .flatMap { text -> generateSequence(empty.typed(text)) { s -> s.loadingLink?.let { s.fetched() } }.toList() }
+    (TEXTS.map { empty.typed(it) } + listOf(note, note.withText(FAILED), note.withText(TEXT_WITHOUT_LINK)).map { it.edited() })
+      .flatMap { first -> generateSequence(first) { s -> s.loadingLink?.let { s.fetched() } }.toList() }
       .flatMap { s ->
         listOf(s, s.copy(preview = file), s.updateLinkPreview(LinkPreviewEvent.Cancelled, true), s.updateLinkPreview(LinkPreviewEvent.ChatChanged, true)) +
           TEXTS.map { s.typed(it) }
@@ -163,8 +202,24 @@ class LinkPreviewStateTest {
     return updateLinkPreview(LinkPreviewEvent.Fetched(loading.request, recordedPreview(loading.uri)), true)
   }
 
+  private fun assertSameLinkPreview(expected: ComposeState, actual: ComposeState) {
+    assertEquals(expected.loadingLink?.uri, actual.loadingLink?.uri)
+    assertEquals(expected.linkPreview?.uri, actual.linkPreview?.uri)
+    assertEquals(expected.cancelledLinks, actual.cancelledLinks)
+  }
+
+  private fun ChatItem.edited(previewsOn: Boolean = true): ComposeState = ComposeState.edit(this, useLinkPreviews = true, previewsOn = previewsOn)
+
+  private fun ChatItem.withText(text: String): ChatItem =
+    copy(content = CIContent.SndMsgContent(MsgContent.MCLink(text, preview)), formattedText = parseToMarkdown(text))
+
   private fun recordedPreview(uri: String): LinkPreview? =
     commands.getValue("/_link preview $uri").jsonObject["result"]?.let { json.decodeFromJsonElement(LinkPreview.serializer(), it.jsonObject.getValue("linkPreview")) }
+
+  private fun recordedNote(): ChatItem {
+    val created = commands.entries.single { (cmd, _) -> cmd.startsWith("/_create *1 json ") }.value
+    return json.decodeFromJsonElement(ChatItem.serializer(), created.jsonObject.getValue("result").jsonObject.getValue("chatItems").jsonArray.first().jsonObject.getValue("chatItem"))
+  }
 
   private companion object {
     const val PAGE = "LINK_URL/page"

@@ -302,6 +302,9 @@ data class ComposeState(
 
     private val linkRequests = AtomicLong()
     fun nextLinkRequest(): Long = linkRequests.incrementAndGet()
+
+    fun edit(editingItem: ChatItem, useLinkPreviews: Boolean, previewsOn: Boolean): ComposeState =
+      ComposeState(editingItem, useLinkPreviews = useLinkPreviews)
   }
 
   fun mentionMemberName(name: String): String {

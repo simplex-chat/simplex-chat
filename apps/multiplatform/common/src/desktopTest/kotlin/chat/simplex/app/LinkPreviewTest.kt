@@ -4,6 +4,7 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.ComposeUiTest
 import androidx.compose.ui.test.ExperimentalTestApi
@@ -13,10 +14,13 @@ import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performKeyInput
 import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTextInputSelection
 import androidx.compose.ui.test.performTextReplacement
+import androidx.compose.ui.test.pressKey
+import androidx.compose.ui.test.requestFocus
 import androidx.compose.ui.test.runComposeUiTest
 import androidx.compose.ui.text.TextRange
 import chat.simplex.common.model.*
@@ -246,12 +250,35 @@ class LinkPreviewTest {
     val release = heldResponses()
     onNode(hasSetTextAction()).performTextInput(request.removePrefix(LINK_PREVIEW))
     waitUntil(timeoutMillis = 10_000) { synchronized(requests) { requests.isNotEmpty() } }
-    val edited = LinkPreview.sampleData
-    composeState.value = ComposeState(editingItem = linkItem(edited), useLinkPreviews = true)
+    val note = recordedNote()
+    val edited = assertIs<MsgContent.MCLink>(note.content.msgContent).preview
+    composeState.value = ComposeState.edit(note, useLinkPreviews = true, previewsOn = true)
     release.countDown()
     runCatching { waitUntil(timeoutMillis = 3_000) { composeState.value.linkPreview !== edited } }
     assertSame(edited, composeState.value.linkPreview)
     assertEquals(listOf(request), requests)
+  }
+
+  @Test
+  fun editedMessageIsSavedWithThePreviewOfItsSecondLink() = composeView(noteFolder()) {
+    val note = editLastNote()
+    onNodeWithText(assertIs<MsgContent.MCLink>(note.content.msgContent).preview.title).assertExists()
+    onNodeWithContentDescription("Send Message").performClick()
+    assertEquals(createdContent(), updatedContent())
+  }
+
+  @Test
+  fun editedMessageKeepsThePreviewOfItsSecondLinkWhenTheTextChanges() = composeView(noteFolder()) { composeState ->
+    val note = editLastNote()
+    val edited = assertIs<MsgContent.MCLink>(note.content.msgContent).preview
+    onNode(hasSetTextAction()).performTextInput(" ")
+    runCatching { waitUntil(timeoutMillis = 3_000) { synchronized(requests) { requests.isNotEmpty() } } }
+    assertSame(edited, composeState.value.linkPreview)
+    assertEquals(listOf(), requests)
+    onNodeWithContentDescription("Send Message").performClick()
+    val updated = updatedContent()
+    assertEquals(createdContent().getValue("preview"), updated.getValue("preview"))
+    assertEquals("${note.content.text} ", updated.text("text"))
   }
 
   @Test
@@ -391,9 +418,28 @@ class LinkPreviewTest {
 
   private fun createdItem(): String = commands.keys.single { it.startsWith(CREATE_ITEM) }
 
-  private fun noteFolder(): Chat {
-    val created = commands.getValue(createdItem()).jsonObject.getValue("result").jsonObject.getValue("chatItems").jsonArray.first().jsonObject
-    return Chat(remoteHostId = null, chatInfo = json.decodeFromJsonElement(ChatInfo.serializer(), created.getValue("chatInfo")), chatItems = listOf())
+  private fun createdNote(): JsonObject =
+    commands.getValue(createdItem()).jsonObject.getValue("result").jsonObject.getValue("chatItems").jsonArray.first().jsonObject
+
+  private fun noteFolder(): Chat =
+    Chat(remoteHostId = null, chatInfo = json.decodeFromJsonElement(ChatInfo.serializer(), createdNote().getValue("chatInfo")), chatItems = listOf())
+
+  private fun recordedNote(): ChatItem = json.decodeFromJsonElement(ChatItem.serializer(), createdNote().getValue("chatItem"))
+
+  private fun ComposeUiTest.editLastNote(): ChatItem {
+    val note = recordedNote()
+    ChatModel.chatsContext.chatItems.replaceAll(listOf(note))
+    onNode(hasSetTextAction()).requestFocus().performKeyInput { pressKey(Key.DirectionUp) }
+    return note
+  }
+
+  private fun createdContent(): JsonObject = createdMessages(createdItem()).jsonArray.single().jsonObject.getValue("msgContent").jsonObject
+
+  private fun ComposeUiTest.updatedContent(): JsonObject {
+    waitUntil(timeoutMillis = 10_000) { synchronized(unrecorded) { unrecorded.isNotEmpty() } }
+    val update = synchronized(unrecorded) { unrecorded.single().also { unrecorded.clear() } }
+    assertTrue(update.startsWith(UPDATE_ITEM), update)
+    return Json.parseToJsonElement(update.removePrefix(UPDATE_ITEM)).jsonObject.getValue("msgContent").jsonObject
   }
 
   private fun heldResponses(held: (String) -> Boolean = { true }): CountDownLatch {
@@ -404,9 +450,6 @@ class LinkPreviewTest {
 
   private fun MutableState<ComposeState>.attachFile(dir: Path) =
     processPickedFile(dir.resolve("notes.txt").toFile().apply { writeText("notes") }.toURI(), null)
-
-  private fun linkItem(preview: LinkPreview): ChatItem =
-    ChatItem.getSampleData(text = preview.uri).copy(content = CIContent.SndMsgContent(MsgContent.MCLink(preview.uri, preview)))
 
   private fun recorded(outcome: String): Pair<String, JsonObject> =
     commands.entries
@@ -432,6 +475,7 @@ class LinkPreviewTest {
   private companion object {
     const val LINK_PREVIEW = "/_link preview "
     const val CREATE_ITEM = "/_create *1 json "
+    const val UPDATE_ITEM = "/_update item *1 1 live=off json "
     const val TEXT_WITHOUT_LINK = "text without a link"
   }
 }
