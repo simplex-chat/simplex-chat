@@ -36,11 +36,13 @@ BOTTOM_BAR_OFFSET = 30
 PENCIL_OFFSET = 363
 PANE_CENTRE_OFFSET = 195
 PANE_RIGHT_OFFSET = 390
+PANE_TOP_OFFSET = 40
 PAPERCLIP_OFFSET = 415
 FIELD_BELOW_LABEL = 40
 LOCAL_CHAT = "seeded notes"
 PROFILE_NAME = "citester"
 SEARCH_FIELD = "Search or paste SimpleX link"
+USER_MENU_ITEM = "Your chat profiles"
 PASTE_ITEM = "Paste"
 CLIPBOARD_COMMAND = ["clip"] if sys.platform == "win32" else ["pbcopy"]
 WHEEL_NOTCH = 120 if sys.platform == "win32" else 1
@@ -64,7 +66,7 @@ class App:
         self.checks.write_text("")
         log = open(self.out / "app.log", "w")
         self.process = subprocess.Popen([executable], stdout=log, stderr=subprocess.STDOUT)
-        self.x = self.bottom = 0
+        self.x = self.top = self.bottom = 0
 
     def log(self, message):
         line = f"{time.strftime('%H:%M:%S')} {message}"
@@ -181,8 +183,8 @@ class App:
         return tuple(int(v) for v in values) if len(values) == 4 else None
 
     def use_rect(self, rect):
-        self.x, top, width, height = rect
-        self.bottom = top + height - BOTTOM_BAR_OFFSET
+        self.x, self.top, width, height = rect
+        self.bottom = self.top + height - BOTTOM_BAR_OFFSET
         self.log(f"window {rect}, maximized: {self.maximized()}")
 
     def maximized(self):
@@ -208,17 +210,26 @@ class App:
         if rect:
             self.use_rect(rect)
 
-    def on_chat_list(self):
-        phrases = [key(p) for p, c in self.phrases() if c[0] < self.x + PANE_RIGHT_OFFSET]
+    def left_pane_phrases(self):
+        return [key(p) for p, c in self.phrases() if c[0] < self.x + PANE_RIGHT_OFFSET]
+
+    @staticmethod
+    def chat_list_in(phrases):
         if any(key(s) in phrases for s in LEFT_PANE_SCREENS):
             return False
         return any(key(SEARCH_FIELD) in p for p in phrases)
 
+    def on_chat_list(self):
+        return self.chat_list_in(self.left_pane_phrases())
+
     def back_to_chat_list(self):
         for attempt in range(BACK_PRESSES):
-            if self.on_chat_list():
+            phrases = self.left_pane_phrases()
+            if self.chat_list_in(phrases):
                 return True
-            if attempt % 2:
+            if any(key(USER_MENU_ITEM) in p for p in phrases):
+                self.click(self.x + PANE_CENTRE_OFFSET, self.top + PANE_TOP_OFFSET)
+            elif attempt % 2:
                 self.click(self.x + AVATAR_OFFSET, self.bottom)
             else:
                 self.press("escape")

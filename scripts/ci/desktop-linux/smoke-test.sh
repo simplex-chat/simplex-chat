@@ -41,6 +41,7 @@ avatar_offset=27
 pencil_offset=363
 pane_centre_offset=195
 pane_right_offset=390
+pane_top_offset=40
 paperclip_offset=415
 send_offset=27
 tour_settle=1
@@ -170,12 +171,15 @@ scroll_to() {
   return 1
 }
 
-# Escape closes one screen at a time, and clears the search field
+# Escape closes one screen at a time, and clears the search field; a click in the left pane outside the user menu closes it
 back_to_chat_list() {
-  local attempt
+  local attempt phrases
   for attempt in 1 2 3 4 5 6; do
-    on_chat_list && return 0
-    if [ $((attempt % 2)) -eq 0 ]; then
+    phrases=$(left_pane_phrases)
+    chat_list_in "$phrases" && return 0
+    if [[ "$phrases" == *"$(normalise "Your chat profiles")"* ]]; then
+      "$ui" click "$pane_centre_x" "$pane_top_y"
+    elif [ $((attempt % 2)) -eq 0 ]; then
       "$ui" click "$avatar_x" "$bottom_y"
     else
       "$ui" key Escape
@@ -197,13 +201,16 @@ left_pane_phrases() {
 }
 
 # New chat has the same search field
-on_chat_list() {
-  local phrases title
-  phrases=$(left_pane_phrases)
+chat_list_in() {
+  local title
   for title in "Settings" "Chat preferences" "Network" "New chat"; do
-    [[ "$phrases" == *"$(normalise "$title")"* ]] && return 1
+    [[ "$1" == *"$(normalise "$title")"* ]] && return 1
   done
-  [[ "$phrases" == *"$(normalise "Search or paste SimpleX link")"* ]]
+  [[ "$1" == *"$(normalise "Search or paste SimpleX link")"* ]]
+}
+
+on_chat_list() {
+  chat_list_in "$(left_pane_phrases)"
 }
 
 # Opens Settings from the user menu, behind the profile picture at the left of the bottom toolbar.
@@ -528,6 +535,7 @@ avatar_x=$((window_x + avatar_offset))
 pencil_x=$((window_x + pencil_offset))
 pane_centre_x=$((window_x + pane_centre_offset))
 pane_right_x=$((window_x + pane_right_offset))
+pane_top_y=$((window_y + pane_top_offset))
 paperclip_x=$((window_x + paperclip_offset))
 send_x=$((window_x + window_width - send_offset))
 
