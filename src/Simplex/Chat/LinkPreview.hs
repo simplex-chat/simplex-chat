@@ -519,6 +519,9 @@ data HeadTags = HeadTags
   { ogTitle :: Maybe ByteString,
     ogDescription :: Maybe ByteString,
     ogImage :: Maybe ByteString,
+    nameOgTitle :: Maybe ByteString,
+    nameOgDescription :: Maybe ByteString,
+    nameOgImage :: Maybe ByteString,
     titleText :: Maybe ByteString,
     nameDescription :: Maybe ByteString,
     metaCharset :: Maybe ByteString
@@ -526,10 +529,10 @@ data HeadTags = HeadTags
   deriving (Eq, Show)
 
 instance Semigroup HeadTags where
-  HeadTags a b c d e f <> HeadTags a' b' c' d' e' f' = HeadTags (a <|> a') (b <|> b') (c <|> c') (d <|> d') (e <|> e') (f <|> f')
+  HeadTags a b c d e f g h i <> HeadTags a' b' c' d' e' f' g' h' i' = HeadTags (a <|> a') (b <|> b') (c <|> c') (d <|> d') (e <|> e') (f <|> f') (g <|> g') (h <|> h') (i <|> i')
 
 instance Monoid HeadTags where
-  mempty = HeadTags Nothing Nothing Nothing Nothing Nothing Nothing
+  mempty = HeadTags Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing
 
 data HeadToken = HTTags HeadTags | HTEnd
 
@@ -551,7 +554,8 @@ headP = go mempty
         | otherwise -> go tags'
         where
           tags' = tags <> t
-    ogComplete HeadTags {ogTitle, ogDescription, ogImage} = isJust ogTitle && isJust ogDescription && isJust ogImage
+    ogComplete HeadTags {ogTitle, ogDescription, ogImage, nameOgTitle, nameOgDescription, nameOgImage} =
+      all isJust [ogTitle <|> nameOgTitle, ogDescription <|> nameOgDescription, ogImage <|> nameOgImage]
 
 headTokenP :: A.Parser HeadToken
 headTokenP =
@@ -605,22 +609,26 @@ metaTags attrs =
     { ogTitle = property "og:title",
       ogDescription = property "og:description",
       ogImage = property "og:image",
+      nameOgTitle = named "og:title",
+      nameOgDescription = named "og:description",
+      nameOgImage = named "og:image",
       titleText = Nothing,
-      nameDescription = content <* guard (attr "name" == Just "description"),
+      nameDescription = named "description",
       metaCharset = lookup "charset" attrs <|> (guard (attr "http-equiv" == Just "content-type") *> (snd . contentType =<< content))
     }
   where
     attr name = asciiLower <$> lookup name attrs
     content = lookup "content" attrs
     property name = content <* guard (attr "property" == Just name)
+    named name = content <* guard (attr "name" == Just name)
 
 htmlPage :: Uri -> Maybe ByteString -> HeadTags -> Either String PageMeta
-htmlPage pageUri charset HeadTags {ogTitle, ogDescription, ogImage, titleText, nameDescription, metaCharset} = do
+htmlPage pageUri charset HeadTags {ogTitle, ogDescription, ogImage, nameOgTitle, nameOgDescription, nameOgImage, titleText, nameDescription, metaCharset} = do
   decode <- charsetDecoder $ charset <|> metaCharset
   let firstValue = firstText decode . catMaybes
-  pageTitle <- maybe (Left "no title") Right =<< firstValue [ogTitle, titleText]
-  pageDescription <- fromMaybe "" <$> firstValue [ogDescription, nameDescription]
-  imageRef <- maybe (Left "no image") Right =<< firstValue [ogImage]
+  pageTitle <- maybe (Left "no title") Right =<< firstValue [ogTitle, nameOgTitle, titleText]
+  pageDescription <- fromMaybe "" <$> firstValue [ogDescription, nameOgDescription, nameDescription]
+  imageRef <- maybe (Left "no image") Right =<< firstValue [ogImage, nameOgImage]
   pageImage <- imageUri pageUri $ encodeUtf8 imageRef
   pure PageMeta {pageTitle, pageDescription, pageImage}
 

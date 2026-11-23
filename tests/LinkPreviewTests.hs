@@ -36,6 +36,7 @@ linkPreviewTests = do
       ioProperty $ (==) <$> scanChunks (splitChunks sizes body) <*> scanChunks [body]
   describe "page" $ do
     it "should prefer og tags" testPagePriority
+    it "should prefer og tags with property, then with name attribute" testPageNamedOg
     it "should decode entities and collapse whitespace" testPageValues
     it "should require title and image" testPageRequired
     it "should resolve image against the page" testPageImage
@@ -100,6 +101,8 @@ splitBody = (,) <$> listOf (choose (1, 24)) <*> (B.concat <$> listOf (elements f
         "<meta property=\"og:title\" content=\"OG title\">",
         "<meta property='og:description' content='OG description'>",
         "<META PROPERTY=og:image CONTENT=/image.png>",
+        "<meta name=\"og:title\" content=\"Name title\">",
+        "<meta name=og:image content=/name.png>",
         "<meta name=description content=\"Meta description\">",
         "<meta charset=utf-8>",
         "<meta content=\"x\"",
@@ -130,6 +133,9 @@ testScanTags =
       { ogTitle = Just "OG title",
         ogDescription = Just "OG description",
         ogImage = Just "/image.png",
+        nameOgTitle = Nothing,
+        nameOgDescription = Nothing,
+        nameOgImage = Nothing,
         titleText = Just "Page title",
         nameDescription = Just "Meta description",
         metaCharset = Just "utf-8"
@@ -155,10 +161,14 @@ testScanSkipped = do
 testScanStop :: IO ()
 testScanStop = do
   let og = "<meta property=og:title content=a><meta property=og:description content=b><meta property=og:image content=c>"
+      namedOg = "<meta name=og:title content=a><meta name=og:description content=b><meta name=og:image content=c>"
+      mixedOg = "<meta property=og:title content=a><meta name=og:description content=b><meta property=og:image content=c>"
   scan (og <> "<title>late</title>") `shouldReturn` mempty {ogTitle = Just "a", ogDescription = Just "b", ogImage = Just "c"}
+  scan (namedOg <> "<meta property=og:title content=late>") `shouldReturn` mempty {nameOgTitle = Just "a", nameOgDescription = Just "b", nameOgImage = Just "c"}
+  scan (mixedOg <> "<meta property=og:description content=late>") `shouldReturn` mempty {ogTitle = Just "a", nameOgDescription = Just "b", ogImage = Just "c"}
   scan "<head><title>t</title></head><meta property=og:title content=late>" `shouldReturn` mempty {titleText = Just "t"}
   scan "<title>t</title><body><meta property=og:title content=late>" `shouldReturn` mempty {titleText = Just "t"}
-  forM_ [og, "<title>t</title></head>", "<body>"] $ \s -> case A.parse headP s of
+  forM_ [og, namedOg, mixedOg, "<title>t</title></head>", "<body>"] $ \s -> case A.parse headP s of
     A.Done {} -> pure ()
     _ -> expectationFailure $ "scanner needs input after " <> B.unpack s
 
@@ -177,6 +187,15 @@ testPagePriority = do
     `shouldReturn` htmlPageOf "OG" "OG description" "https://example.com/i.png"
   testPage Nothing "<title>Title</title><meta name=description content=Description><meta property=og:title content=\" \"><meta property=og:image content=/i.png>"
     `shouldReturn` htmlPageOf "Title" "Description" "https://example.com/i.png"
+
+testPageNamedOg :: IO ()
+testPageNamedOg = do
+  testPage Nothing "<title>Title</title><meta name=description content=Description><meta name=og:title content=Named><meta name=og:description content=\"Named description\"><meta name=og:image content=/n.png>"
+    `shouldReturn` htmlPageOf "Named" "Named description" "https://example.com/n.png"
+  testPage Nothing "<meta name=og:title content=Named><meta name=og:image content=/n.png><meta property=og:title content=OG><meta property=og:image content=/i.png>"
+    `shouldReturn` htmlPageOf "OG" "" "https://example.com/i.png"
+  testPage Nothing "<title>Title</title><meta name=og:description content=\"Named description\"><meta property=og:description content=\"OG description\"><meta name=og:image content=/n.png>"
+    `shouldReturn` htmlPageOf "Title" "OG description" "https://example.com/n.png"
 
 testPageValues :: IO ()
 testPageValues = do

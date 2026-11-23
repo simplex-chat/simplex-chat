@@ -48,6 +48,7 @@ import Test.Hspec hiding (it)
 chatLinkPreviewTests :: SpecWith TestParams
 chatLinkPreviewTests = do
   it "should get preview of a page" testPagePreview
+  it "should get preview of a page with og tags in name attributes" testNamedOgPreview
   it "should resolve page image against the final URI" testRelativeImage
   it "should get preview of an image" testImagePreview
   it "should not use site icons" testNoPageImage
@@ -128,6 +129,16 @@ testPagePreview ps = do
     description `shouldBe` "Link preview description"
     image `shouldSatisfy` ("data:image/png;base64," `T.isPrefixOf`)
     readTVarIO requestedPaths `shouldReturn` ["/page", "/image.png"]
+
+testNamedOgPreview :: HasCallStack => TestParams -> IO ()
+testNamedOgPreview ps = do
+  cfg <- linkPreviewCfg
+  withLinkPreviewChat ps cfg testOpts $ \LinkServer {requestedPaths} alice -> do
+    Right (CRLinkPreview LinkPreview {title, description, image = ImageData image}) <- previewOf alice (pageUrl ps "/named-og")
+    title `shouldBe` "Link preview title"
+    description `shouldBe` "Link preview description"
+    image `shouldSatisfy` ("data:image/png;base64," `T.isPrefixOf`)
+    readTVarIO requestedPaths `shouldReturn` ["/named-og", "/image.png"]
 
 testRelativeImage :: HasCallStack => TestParams -> IO ()
 testRelativeImage ps = do
@@ -341,6 +352,7 @@ linkServerApp LinkServer {requestedPaths, streamClosed} req respond = do
     "/image.png" -> pure $ image testPng
     "/icon.png" -> pure $ image testPng
     "/no-image" -> pure $ html "<html><head><title>No image</title><link rel=\"icon\" href=\"/icon.png\"></head><body></body></html>"
+    "/named-og" -> pure $ html "<html><head><title>Page title</title><meta name=\"description\" content=\"Page description\"><meta name=\"og:title\" content=\"Link preview title\"><meta name=\"og:description\" content=\"Link preview description\"><meta name=\"og:image\" content=\"/image.png\"></head><body>Page</body></html>"
     "/moved" -> pure $ redirect "/dir/page"
     "/dir/page" -> pure $ html $ pageHtml "image.png"
     "/dir/image.png" -> pure $ image testPng
