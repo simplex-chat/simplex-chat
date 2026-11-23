@@ -16309,6 +16309,12 @@ testViaMemberRecordings =
       alice <# "#team hi"
       bob <# "#team reviewer> hi [>>]"
       apiFixture "via/members" alice [] FixtureRequests {frMarkdown = [], frUris = [], frCommands = ["/_members #1", "/_get chat #1 count=1"]}
+      bob `send` "> #team @reviewer (hi) fix it"
+      bob <# "#team > reviewer hi"
+      bob <## "      fix it"
+      alice <# "#team bob> > reviewer hi"
+      alice <## "      fix it"
+      apiFixture "via/received" bob [] FixtureRequests {frMarkdown = [], frUris = [], frCommands = ["/_members #1", "/_get chat #1 count=2"]}
 
 testViaMemberMigrationDown :: HasCallStack => TestParams -> IO ()
 testViaMemberMigrationDown ps = do

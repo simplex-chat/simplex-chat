@@ -106,6 +106,10 @@ struct ChatView: View {
         chat.chatInfo.activeChatLayout(profileChatLayout(ChatModel.shared.currentUser)) == .terminal
     }
 
+    private var viaHostsNotLoaded: Bool {
+        !chatModel.membersLoaded && im.reversedChatItems.contains { $0.chatDir.memberVia != nil || $0.quotedItem?.chatDir?.memberVia != nil }
+    }
+
     // Spec: spec/client/chat-view.md#body
     var body: some View {
         if #available(iOS 16.0, *) {
@@ -356,6 +360,11 @@ struct ChatView: View {
                     showUserSupportChatSheet = true
                     chatModel.secondaryPendingInviteeChatOpened = true
                 }
+            }
+        }
+        .task(id: viaHostsNotLoaded) {
+            if viaHostsNotLoaded, case let .group(groupInfo, _) = chat.chatInfo {
+                await chatModel.loadGroupMembers(groupInfo)
             }
         }
         .onChange(of: chatModel.secondaryPendingInviteeChatOpened) { secondaryChatOpened in
@@ -2060,6 +2069,7 @@ struct ChatView: View {
                                 } else {
                                     (nil, 1)
                                 }
+                                let via = memCount == 1 && !ci.meta.showGroupAsSender ? m.memberViaName(member) : nil
                                 if memCount == 1 && (member.memberRole > .member || ci.meta.showGroupAsSender) {
                                     let (name, role) = if ci.meta.showGroupAsSender {
                                         (groupInfo.chatViewName, NSLocalizedString("group", comment: "shown on group welcome message"))
@@ -2069,7 +2079,7 @@ struct ChatView: View {
                                     Group {
                                         if #available(iOS 16.0, *) {
                                             MemberLayout(spacing: 16, msgWidth: msgWidth) {
-                                                NameWithBadge(Text(name), ci.meta.showGroupAsSender ? nil : member.nameBadge, .caption1)
+                                                NameWithBadge(Text(name), ci.meta.showGroupAsSender ? nil : member.nameBadge, .caption1, via: via)
                                                     .lineLimit(1)
                                                 Text(role)
                                                     .fontWeight(.semibold)
@@ -2078,7 +2088,7 @@ struct ChatView: View {
                                             }
                                         } else {
                                             HStack(spacing: 16) {
-                                                NameWithBadge(Text(name), ci.meta.showGroupAsSender ? nil : member.nameBadge, .caption1)
+                                                NameWithBadge(Text(name), ci.meta.showGroupAsSender ? nil : member.nameBadge, .caption1, via: via)
                                                     .lineLimit(1)
                                                 Text(role)
                                                     .fontWeight(.semibold)
@@ -2092,8 +2102,8 @@ struct ChatView: View {
                                         alignment: chatItem.chatDir.sent ? .trailing : .leading
                                     )
                                 } else {
-                                    NameWithBadge(Text(memberNames(member, prevMember, memCount)), memCount == 1 ? member.nameBadge : nil, .caption1)
-                                        .lineLimit(2)
+                                    NameWithBadge(Text(memberNames(member, prevMember, memCount)), memCount == 1 ? member.nameBadge : nil, .caption1, via: via)
+                                        .lineLimit(via == nil ? 2 : 1)
                                 }
                             }
                                 .font(.caption)
@@ -2228,6 +2238,7 @@ struct ChatView: View {
                 return ChatItemSender(
                     name: Text(memberNames(member, prevMember, memCount)),
                     badge: prevMember == nil && memCount == 1 ? member.nameBadge : nil,
+                    via: memCount == 1 ? m.memberViaName(member) : nil,
                     role: memCount == 1 ? senderRole(member, groupInfo) : nil,
                     own: false,
                     image: AnyView(
