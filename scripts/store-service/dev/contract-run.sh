@@ -147,7 +147,6 @@ EXCLUDED=(
   "a whole payment after the close, once credited, says so and offers a new invoice beside the refund" "$MONERO"
   "a registration ended in its dispute period is shown with Register with code alone, as the other endings are" "$MODE"
   "a registration ended in its dispute period is shown as ended on its order's page, in Your names and in Edit links, and its name is available again" "$UNREGISTER"
-  "a reveal signed over other dispute days than its order's payment's is bad_request, and the name is registered with the reveal over its payment's" "$STALE"
 )
 
 RUN_DIR="$(mktemp -d "${TMPDIR:-/tmp}/names-contract-run.XXXXXX")"
