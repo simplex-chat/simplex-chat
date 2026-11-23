@@ -3,6 +3,7 @@ package chat.simplex.app
 import chat.simplex.common.platform.ImageFileType
 import chat.simplex.common.platform.isAnimImage
 import chat.simplex.common.platform.isImageFile
+import chat.simplex.common.platform.isWebpFile
 import java.awt.image.BufferedImage
 import java.io.ByteArrayOutputStream
 import javax.imageio.ImageIO
@@ -47,6 +48,18 @@ class ImageFileTypeTest {
     assertFalse(animated("still.webp", vp8x + listOf(0x10, 0x00, 0x00, 0x00)))
     assertFalse(animated("simple.webp", listOf(0x52, 0x49, 0x46, 0x46, 0x16, 0x00, 0x00, 0x00, 0x57, 0x45, 0x42, 0x50, 0x56, 0x50, 0x38, 0x20, 0x0A, 0x00, 0x00, 0x00, 0x12)))
     assertTrue(animated("image.gif", listOf(0x47, 0x49, 0x46, 0x38, 0x39, 0x61)))
+  }
+
+  @Test
+  fun testWebpFilesBySignature() = withTempDir { dir ->
+    fun webp(name: String, bytes: ByteArray): Boolean {
+      val file = dir.resolve(name).toFile()
+      file.writeBytes(bytes)
+      return isWebpFile(file.toURI())
+    }
+    assertTrue(webp("image.gif", webpHeader))
+    assertFalse(webp("image.webp", encoded("gif")))
+    assertFalse(webp("short.webp", webpHeader.copyOf(11)))
   }
 
   private fun encoded(format: String): ByteArray {
