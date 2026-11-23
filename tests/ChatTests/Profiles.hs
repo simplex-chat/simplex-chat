@@ -1253,7 +1253,7 @@ testSetProfileImageFromFile ps = testChat aliceProfile test ps
       Profile {image = Just (ImageData img)} <- withCCUser alice $ \User {profile} -> pure $ fromLocalProfile profile
       T.length img `shouldSatisfy` (<= 12500)
       img `shouldSatisfy` ("data:image/jpg;base64," `T.isPrefixOf`)
-      alice ##> "/set profile image file ./tests/fixtures/webp/test.webp"
+      alice ##> "/set profile image file ./tests/fixtures/webp/lossy.webp"
       alice <## "profile image updated"
       Profile {image = Just (ImageData webpImg)} <- withCCUser alice $ \User {profile} -> pure $ fromLocalProfile profile
       T.length webpImg `shouldSatisfy` (<= 12500)

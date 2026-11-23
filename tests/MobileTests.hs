@@ -371,7 +371,7 @@ testResizeImageUriCApi _ = do
   uri <- peekCAString =<< cChatResizeImageUri ptr len 14000
   uri `shouldStartWith` "data:image/jpg;base64,"
   length uri `shouldSatisfy` (<= 14000)
-  (webpPtr, webpLen) <- cBuffer =<< B.readFile "./tests/fixtures/webp/test.webp"
+  (webpPtr, webpLen) <- cBuffer =<< B.readFile "./tests/fixtures/webp/lossy.webp"
   webpUri <- peekCAString =<< cChatResizeImageUri webpPtr webpLen 14000
   webpUri `shouldStartWith` "data:image/jpg;base64,"
   length webpUri `shouldSatisfy` (<= 14000)
@@ -411,7 +411,7 @@ testResizeImageFileCApi ps = do
   length uri `shouldSatisfy` (<= 14000)
   Right bytes <- B64.decode . BS.pack <$> (peekCAString =<< withCString "./tests/fixtures/logo-large-rgba.png" (\path -> cChatResizeImageFile path 100000 (-1)))
   B.take 8 bytes `shouldBe` "\x89PNG\r\n\x1a\n"
-  Right webpBytes <- B64.decode . BS.pack <$> (peekCAString =<< withCString "./tests/fixtures/webp/lossless1.webp" (\path -> cChatResizeImageFile path 100000 (-1)))
+  Right webpBytes <- B64.decode . BS.pack <$> (peekCAString =<< withCString "./tests/fixtures/webp/lossless-alpha.webp" (\path -> cChatResizeImageFile path 100000 (-1)))
   B.take 8 webpBytes `shouldBe` "\x89PNG\r\n\x1a\n"
   (peekCAString =<< withCString "./tests/fixtures/missing.jpg" (`cChatResizeImageFileUri` 14000)) `shouldReturn` ""
   oversized <- oversizedJpegFile ps
@@ -444,7 +444,7 @@ testResizeImageFdCApi ps = do
   oversizedFile <- fdStat oversized
   (peekCAString =<< cChatResizeImageFdUri oversized 14000) `shouldReturn` ""
   isOpen oversized oversizedFile `shouldReturn` False
-  webp <- B.readFile "./tests/fixtures/webp/lossless1.webp"
+  webp <- B.readFile "./tests/fixtures/webp/lossless-alpha.webp"
   B.writeFile (tmpPath ps </> "truncated.webp") $ B.take (B.length webp `div` 2) webp
   truncated <- openFd $ tmpPath ps </> "truncated.webp"
   truncatedFile <- fdStat truncated

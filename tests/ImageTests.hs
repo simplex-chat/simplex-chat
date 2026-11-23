@@ -348,15 +348,15 @@ testWebpDecoding =
     uri `shouldSatisfy` (prefix `LB.isPrefixOf`)
   where
     images =
-      [ ("test.webp", (128, 128), "ebdd46e0760b2a4891e6550b37c00660", "data:image/jpg;base64,"),
-        ("lossless1.webp", (1000, 307), "fd52591b61fc34192d7c337fa024bf12", "data:image/png;base64,"),
-        ("lossy_alpha1.webp", (1000, 307), "c5c77aff5b4015d3416817d12c2c2377", "data:image/png;base64,")
+      [ ("lossy.webp", (128, 128), "338174980391426283f635d6dc502bed", "data:image/jpg;base64,"),
+        ("lossless-alpha.webp", (1000, 307), "16ddf5905ba09736fb76b8387d46f2f5", "data:image/png;base64,"),
+        ("lossy-alpha.webp", (1000, 307), "ea2f149f390aa765e11cb01d29ca3836", "data:image/png;base64,")
       ]
 
 testWebpAnimation :: IO ()
 testWebpAnimation = do
-  lossy <- B.readFile $ webpFixture "test.webp"
-  lossless <- B.readFile $ webpFixture "lossless1.webp"
+  lossy <- B.readFile $ webpFixture "lossy.webp"
+  lossless <- B.readFile $ webpFixture "lossless-alpha.webp"
   Right (lossyFrame, _) <- decodeResizable lossy
   Right (losslessFrame, _) <- decodeResizable lossless
   forM_
@@ -373,7 +373,7 @@ testWebpAnimation = do
 
 testWebpProfile :: IO ()
 testWebpProfile = do
-  lossy <- B.readFile $ webpFixture "test.webp"
+  lossy <- B.readFile $ webpFixture "lossy.webp"
   let withProfile profile = webpContainer [webpChunk "VP8X" $ B.pack [0x20, 0, 0, 0] <> littleEndianInt 3 127 <> littleEndianInt 3 127, webpChunk "ICCP" profile, B.drop 12 lossy]
   Right (img, profile) <- decodeResizable $ withProfile p3Profile
   profile `shouldBe` CPDisplayP3
@@ -385,7 +385,7 @@ testWebpProfile = do
 
 testWebpRefused :: IO ()
 testWebpRefused = do
-  lossy <- B.readFile $ webpFixture "test.webp"
+  lossy <- B.readFile $ webpFixture "lossy.webp"
   forM_
     [ (webpAnimation (16385, 128) [((0, 0), (128, 128), lossy)], "image side exceeds 16384"),
       (webpAnimation (16384, 16384) [((0, 0), (128, 128), lossy)], "image is too large"),
