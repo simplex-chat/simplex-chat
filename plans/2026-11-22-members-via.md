@@ -13,9 +13,9 @@ Status: plan only. Code references: master `dbd3fd7ca`, by file and line. Nothin
 - the host of a member forwards the messages of a member via V to it until it connects to V (Q5 B);
 - with "sign messages" on, V signs the messages of its members via V with its own key, and receivers verify them with the key of the member recorded as `via` (Q6, new option D);
 - each forward of a message of a member via V has `via`, set by whoever forwards it: V, the host of the recipient, and group history;
-- how apps show `via` waits for renders (Q2): "Alice via Claude" on each message where the sender is shown, with distinct styling; the chat item and member JSON have the fields the apps need.
+- how apps show `via` (Q2), from renders: variant C, "via <host>" in italics after the member's name in message headers and quotes, in place of its status in the member list, and in a row Via of member info.
 
-Q2 is open. Facts about Claude Code are those recorded in `plans/2026-11-14-mcp-teammate-profiles.md` (branch `ep/mcp-teammate-profiles`, facts 1 to 9, F1 and F2).
+Facts about Claude Code are those recorded in `plans/2026-11-14-mcp-teammate-profiles.md` (branch `ep/mcp-teammate-profiles`, facts 1 to 9, F1 and F2).
 
 Terms: "a member via V" is a member whose messages are sent only by V, as forwards; V is "the member it is via". In this plan V is Claude and the member via V is a teammate.
 
@@ -42,7 +42,7 @@ reacts to reviewer's message                                                forw
 reviewer's final report             Claude: 📋 Report from subagent …        reviewer: the report
 reviewer ends, or the session ends  nothing                                 Claude removed reviewer
 an unnamed subagent                 Claude's 🤖 card in small print          unchanged
-member list and member info         people, Claude, User                    also reviewer, "via Claude" (Q2; renders before UI)
+member list and member info         people, Claude, User                    also reviewer, "via Claude" (Q2)
 a person who joins later            -                                       reviewer listed via Claude, history under reviewer
 ```
 
@@ -336,7 +336,7 @@ delivery receipts limit            counted toward 20 current members (smallGroup
 V's chat items                     sent items with sentAsMember
 unread counts                      unchanged: V's items are sent items
 V's item delivery statuses         per member: sent (4.4: receipts are not sent)
-apps                               memberVia decoded later with the UI of Q2; the optional field is ignored by the current decoders
+apps                               memberVia decoded and shown as stated in Q2 C; the optional field is ignored by earlier app versions
 ```
 
 ### 5.7 Migration
@@ -543,7 +543,7 @@ By hand (TESTING): the previous app releases of iOS and Android in a session gro
 
 ## 9. Questions for the maintainer
 
-Decided on 2026-11-22: Q1 A, Q3 A, Q4 A, Q5 B, Q6 D (V signs; added below). Q2 waits for renders.
+Decided on 2026-11-22: Q1 A, Q3 A, Q4 A, Q5 B, Q6 D (V signs; added below), Q2 C (from renders; added below).
 
 Q1. Threat model: receivers' acceptance rules are unchanged; on the wire, no party gets a new capability; the API posts only as members via the user (4.8).
 - A, recommended: confirm.
@@ -552,6 +552,7 @@ Q1. Threat model: receivers' acceptance rules are unchanged; on the wire, no par
 Q2. How apps show `via` (renders for approval before the UI is built).
 - A, recommended: member list: "via Claude" in place of the connection status; member info: a row "Via: Claude", and the connection and verification rows omitted.
 - B: member info only.
+- C, decided from renders: "via Claude" in italics after the member's name in message headers and quotes, in place of its status in the member list, and in a row Via of member info.
 
 Q3. What users see when a teammate ends.
 - A: "Claude removed reviewer": the existing removal, no code.
@@ -595,7 +596,7 @@ packages/simplex-chat-mcp: src/teammates.ts (new), hook.ts, hub.ts, protocol.ts,
 scripts/ci/scope-tests.sh, scripts/ci/README.md       mcp with the branch's core
 ```
 
-Apps: unchanged in this pull request; the display of `via` follows Q2 with its renders.
+Apps: `via` is shown as stated in Q2 C.
 
 ## 11. Estimate
 
@@ -644,4 +645,4 @@ updatedMessage     {"msgContent": {...}, "mentions": {...}, "priority": <n>}
 - Priority and the edit window of a message sent as the member follow the member's role, as at the receivers.
 - Excluded: deletes as the member (broadcast delete of its item: CEInvalidChatItemDelete) and reactions as the member (APIChatItemReaction reacts as the user).
 - Replies to and mentions of a teammate (stage 3): a received item's quotedItem has the item ID of the item sent as M and direction groupRcv of M; mentions have M's group member ID (5.2; testViaMemberReply).
-- Display of `via` in the apps (Q2) is not built.
+- Display of `via` in the apps: Q2 C, with app tests on the recorded fixture `via/received` and snapshot references of both apps.
