@@ -313,6 +313,8 @@ chatGroupTests = do
     it "high priority update as new without a change of text" testGroupUpdateAsNewHighPriority
     it "update as new of a blocked member is applied in place" testGroupUpdateAsNewBlockedMember
     it "forward update as new with notification flag of a new message" testGroupMsgForwardUpdateAsNew
+    it "forward update as new of an item the forwarder marked deleted" testGroupMsgForwardUpdateAsNewDeletedItem
+    it "update as new of a missing item creates a new item and is forwarded as a new message" testGroupMsgForwardUpdateAsNewMissingItem
     it "update as new keeps the window of the message for receivers" testGroupUpdateAsNewReceiverWindow
     it "update as new in a support chat is applied in place" testGroupUpdateAsNewSupportScope
   describe "edit window" $ do
@@ -6920,6 +6922,47 @@ testGroupMsgForwardUpdateAsNew =
       cath <# "#team bob> status"
       lastSndMsgFlags bob aliceConnId 1 `shouldReturn` ["F"]
       lastSndMsgFlags alice cathConnId 1 `shouldReturn` ["F"]
+
+testGroupMsgForwardUpdateAsNewDeletedItem :: HasCallStack => TestParams -> IO ()
+testGroupMsgForwardUpdateAsNewDeletedItem =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+      setupGroupForwarding alice bob cath
+      cath ##> "/set receipts all off"
+      cath <## "ok"
+      cathConnId <- relayConnIdToMember alice "cath"
+      bob #> "#team status"
+      alice <# "#team bob> status"
+      cath <# "#team bob> status [>>]"
+      statusId <- lastItemId bob
+      aliceStatusId <- lastItemId alice
+      alice #$> ("/_delete item #1 " <> aliceStatusId <> " internalMark", id, "message marked deleted")
+      bob ##> ("/_update item #1 " <> statusId <> " as_new=on text status")
+      bob <# "#team status"
+      cath <# "#team bob> status"
+      lastSndMsgFlags alice cathConnId 1 `shouldReturn` ["T"]
+
+testGroupMsgForwardUpdateAsNewMissingItem :: HasCallStack => TestParams -> IO ()
+testGroupMsgForwardUpdateAsNewMissingItem =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+      setupGroupForwarding alice bob cath
+      cath ##> "/set receipts all off"
+      cath <## "ok"
+      cathConnId <- relayConnIdToMember alice "cath"
+      bob #> "#team status"
+      alice <# "#team bob> status"
+      cath <# "#team bob> status [>>]"
+      statusId <- lastItemId bob
+      aliceStatusId <- lastItemId alice
+      alice #$> ("/_delete item #1 " <> aliceStatusId <> " internal", id, "message deleted")
+      bob ##> ("/_update item #1 " <> statusId <> " as_new=on text status 2")
+      bob <# "#team [edited] status 2"
+      alice <# "#team bob> status 2"
+      cath <# "#team bob> [edited] status 2"
+      lastSndMsgFlags alice cathConnId 1 `shouldReturn` ["T"]
 
 testGroupUpdateAsNewReceiverWindow :: HasCallStack => TestParams -> IO ()
 testGroupUpdateAsNewReceiverWindow =
