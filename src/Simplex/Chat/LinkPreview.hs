@@ -64,7 +64,7 @@ defaultLinkPreviewConfig =
   LinkPreviewConfig
     { rootCerts = XS.makeCertificateStore $ readSignedObjectFromMemory linkPreviewRoots,
       addressPolicy = APPublic,
-      previewDeadline = 30_000000
+      previewDeadline = 15_000000
     }
 
 linkPreviewRoots :: ByteString
@@ -86,7 +86,7 @@ maxHeadBytes :: Int
 maxHeadBytes = 1048576
 
 maxImageBytes :: Int
-maxImageBytes = 5242880
+maxImageBytes = 2097152
 
 maxTitleLength :: Int
 maxTitleLength = 300

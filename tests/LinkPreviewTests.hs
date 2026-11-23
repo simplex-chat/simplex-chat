@@ -1,6 +1,7 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE NumericUnderscores #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TupleSections #-}
 
@@ -42,6 +43,7 @@ linkPreviewTests = do
     it "should resolve image against the page" testPageImage
     it "should read at most the head limit of the page" testHeadLimit
     it "should limit image size" testImageLimit
+    it "should limit preview time" testPreviewDeadline
   describe "charsets" $ do
     it "should decode UTF-8 and windows-1252" testCharsets
     it "should refuse unsupported charsets and invalid UTF-8" testCharsetsRefused
@@ -230,10 +232,16 @@ testHeadLimit = do
 
 testImageLimit :: IO ()
 testImageLimit = do
+  maxImageBytes `shouldBe` 2097152
   imageSize [B.replicate maxImageBytes 'a'] `shouldReturn` Right maxImageBytes
   imageSize [B.replicate maxImageBytes 'a', "a"] `shouldReturn` Left "image too large"
   where
     imageSize chunks = fmap B.length <$> (runExceptT . imageBody =<< listStream chunks)
+
+testPreviewDeadline :: IO ()
+testPreviewDeadline = previewDeadline `shouldBe` 15_000000
+  where
+    LinkPreviewConfig {previewDeadline} = defaultLinkPreviewConfig
 
 titleWith :: Maybe ByteString -> ByteString -> IO (Either String Text)
 titleWith charset html = fmap (\PageMeta {pageTitle} -> pageTitle) <$> testPage charset (html <> "<meta property=og:image content=/i.png>")
