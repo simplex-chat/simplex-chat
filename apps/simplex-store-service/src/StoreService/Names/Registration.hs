@@ -1,5 +1,7 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -137,9 +139,7 @@ data RegisterIntent = RegisterIntent
 
 newtype DisputeDays = DisputeDays Int
   deriving (Eq, Ord, Show)
-
-instance J.ToJSON DisputeDays where
-  toJSON (DisputeDays n) = J.toJSON n
+  deriving newtype (J.ToJSON)
 
 mkDisputeDays :: Int -> Maybe DisputeDays
 mkDisputeDays n
@@ -160,11 +160,13 @@ maxDisputeDays = DisputeDays 120
 
 methodDisputeDays :: ServicePaymentMethod -> DisputeDays
 methodDisputeDays = \case
-  SPMCard _ -> maxDisputeDays
-  SPMCrypto _ -> minDisputeDays
+  SPMCard _ -> cardDisputeDays
+  SPMCrypto _ -> cryptoDisputeDays
 
-codeDisputeDays :: DisputeDays
-codeDisputeDays = minDisputeDays
+cardDisputeDays, cryptoDisputeDays, codeDisputeDays :: DisputeDays
+cardDisputeDays = DisputeDays 120
+cryptoDisputeDays = DisputeDays 14
+codeDisputeDays = DisputeDays 14
 
 sponsorDomain :: Word64 -> Address -> Eip712Domain
 sponsorDomain edChainId edVerifyingContract = Eip712Domain {edName = "SimplexSponsor", edVersion = "1", edChainId, edVerifyingContract}
