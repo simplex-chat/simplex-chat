@@ -231,9 +231,15 @@ data class ComposeState(
   private fun cancelledAfter(event: LinkPreviewEvent): Set<String> =
     when (event) {
       LinkPreviewEvent.TextChanged -> if (message.text.isEmpty()) emptySet() else cancelledLinks
-      LinkPreviewEvent.ChatChanged -> emptySet()
+      LinkPreviewEvent.ChatChanged -> if (contextItem is ComposeContextItem.EditingItem) linksBeforePreview(contextItem.chatItem) else emptySet()
       LinkPreviewEvent.Cancelled, is LinkPreviewEvent.Fetched -> cancelledLinks + listOfNotNull(previewLink)
     }
+
+  private fun linksBeforePreview(item: ChatItem): Set<String> {
+    val uri = (item.content.msgContent as? MsgContent.MCLink)?.preview?.uri ?: return emptySet()
+    val links = item.formattedText.orEmpty().mapNotNull { it.linkUri }.filterNot(::isSimplexLink)
+    return if (uri in links) links.takeWhile { it != uri }.toSet() else emptySet()
+  }
 
   private fun selectedPreview(previewsOn: Boolean): ComposePreview {
     val link = getMessageLinks(parsedMessage).first
@@ -305,10 +311,8 @@ data class ComposeState(
 
     fun edit(editingItem: ChatItem, useLinkPreviews: Boolean, previewsOn: Boolean): ComposeState {
       val s = ComposeState(editingItem, useLinkPreviews = useLinkPreviews)
-      val uri = s.linkPreview?.uri ?: return s
-      val links = s.parsedMessage.mapNotNull { it.linkUri }.filterNot(s::isSimplexLink)
-      val cancelledLinks = if (uri in links) links.takeWhile { it != uri }.toSet() else emptySet()
-      return s.copy(cancelledLinks = cancelledLinks).updateLinkPreview(LinkPreviewEvent.TextChanged, previewsOn)
+      if (s.linkPreview == null) return s
+      return s.copy(cancelledLinks = s.linksBeforePreview(editingItem)).updateLinkPreview(LinkPreviewEvent.TextChanged, previewsOn)
     }
   }
 
