@@ -66,6 +66,7 @@ imageTests = do
     it "should decode WebP as libwebp does" testWebpDecoding
     it "should decode the first frame of animated WebP" testWebpAnimation
     it "should write the Display P3 profile for Display P3 WebP" testWebpProfile
+    it "should apply EXIF orientation of WebP" testWebpOrientation
     it "should refuse malformed and oversized WebP" testWebpRefused
   describe "scaling" $ do
     it "should scale and sharpen as the research code" testScaleResearch
@@ -273,8 +274,12 @@ testJpegOrientation = do
     withExif :: Bool -> Int -> Int -> B.ByteString -> B.ByteString
     withExif littleEndian ifdOffset orientation jpeg = B.take 2 jpeg <> "\xFF\xE1" <> bigEndian 2 (8 + B.length tiff) <> "Exif\0\0" <> tiff <> B.drop 2 jpeg
       where
-        tiff = B.concat [if littleEndian then "II" else "MM", word 2 42, word 4 ifdOffset, word 2 1, word 2 0x0112, word 2 3, word 4 1, word 2 orientation, word 2 0, word 4 0]
-        word n = (if littleEndian then B.reverse else id) . bigEndian n
+        tiff = orientationTiff littleEndian ifdOffset orientation
+
+orientationTiff :: Bool -> Int -> Int -> B.ByteString
+orientationTiff littleEndian ifdOffset orientation = B.concat [if littleEndian then "II" else "MM", word 2 42, word 4 ifdOffset, word 2 1, word 2 0x0112, word 2 3, word 4 1, word 2 orientation, word 2 0, word 4 0]
+  where
+    word n = (if littleEndian then B.reverse else id) . bigEndian n
 
 testPngDecoding :: IO ()
 testPngDecoding = do
@@ -382,6 +387,16 @@ testWebpProfile = do
     resizedProfile resized `shouldReturn` profile
   Right (_, profile') <- decodeResizable $ withProfile $ iccProfile "RGB " $ 33759 + 3 : drop 1 p3Primaries
   profile' `shouldBe` CPNone
+
+testWebpOrientation :: IO ()
+testWebpOrientation = do
+  lossless <- B.readFile $ webpFixture "lossless-alpha.webp"
+  Right (ImageRGBA8 upright, CPNone) <- decodeResizable lossless
+  let (w, h) = (imageWidth upright, imageHeight upright)
+      rotated = generateImage (\x y -> pixelAt upright y (h - 1 - x)) h w
+      withExif = webpContainer [webpChunk "VP8X" $ B.pack [0x18, 0, 0, 0] <> littleEndianInt 3 (w - 1) <> littleEndianInt 3 (h - 1), B.drop 12 lossless, webpChunk "EXIF" $ orientationTiff True 8 6]
+  Right (ImageRGBA8 img, CPNone) <- decodeResizable withExif
+  (imageWidth img, imageHeight img, imageData img) `shouldBe` (h, w, imageData rotated)
 
 testWebpRefused :: IO ()
 testWebpRefused = do
