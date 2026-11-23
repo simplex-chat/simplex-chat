@@ -421,7 +421,6 @@ The returned `uri` is the string the app sent, because the apps send `MCLink` on
 - Every package above is built for the mobile targets today.
 - Root bundle: `certifi/cacert.pem` of the submodule `src/Simplex/Chat/LinkPreview/certifi`, https://github.com/certifi/python-certifi at tag 2026.11.20, certifi's extract of the Mozilla roots under MPL-2.0, embedded with `embedFile` as `DisplayP3-v4.icc` is (Image.hs:211-212) (Q3, D4). A library release moves the submodule to the latest certifi tag (docs/contributing/RELEASES.md, "Library release").
 - Builds with the submodule: the checkout of each job that compiles the core or names a core artifact by `hashFiles('src/**')` has `submodules: recursive`; the flake references of scripts/ci/android/build-core.sh and scripts/android/build-android.sh have `?submodules=1`, as submodules are left out of a flake's source without it (Nix 2.22, pinned there).
-- Hydra (ci.zw3rk.com) evaluates its jobsets from `github:<owner>/<repo>/<rev>` flake references, GitHub tarballs without submodules; its builds of the core require `git+https://github.com/<owner>/<repo>?rev=<rev>&submodules=1` references (open).
 - GHC 8.10.7: field puns and qualified selectors, no `OverloadedRecordDot` (docs/CONTRIBUTING.md, "Differences between GHC 8.10.7 and GHC 9.6.3").
 - The command goes through `chat_send_cmd`; C exports are unchanged.
 
@@ -433,7 +432,6 @@ flowchart LR
   ROOTS -->|"readSignedObjectFromMemory"| STORE["rootCerts"]
   CAB["cabal builds: checkout with submodules"] --> SUB
   NIX["Nix builds: flake reference with submodules=1"] --> SUB
-  HY["Hydra: github: tarball without submodules"] -.->|"open"| SUB
 ```
 
 ### 3.14 Apps
