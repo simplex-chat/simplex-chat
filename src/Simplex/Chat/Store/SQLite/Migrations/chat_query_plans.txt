@@ -7659,6 +7659,10 @@ Query: SELECT COUNT(*) FROM badge_store_receipts WHERE payment IS NOT NULL
 Plan:
 SCAN badge_store_receipts
 
+Query: SELECT COUNT(*) FROM chat_items WHERE item_sent = 0 AND item_text LIKE ?
+Plan:
+SCAN chat_items
+
 Query: SELECT COUNT(*) FROM groups WHERE relay_own_status IS NOT NULL
 Plan:
 SCAN groups
@@ -7674,6 +7678,10 @@ SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_msg_content_tag_del
 Query: SELECT COUNT(1) FROM commands WHERE command_function = 'set_short_link'
 Plan:
 SCAN commands
+
+Query: SELECT COUNT(1) FROM connections WHERE conn_status = 'ready' AND contact_conn_initiated = 1
+Plan:
+SCAN connections
 
 Query: SELECT COUNT(1) FROM connections c JOIN group_members m ON m.group_member_id = c.group_member_id WHERE m.local_display_name = ? AND c.conn_status != 'deleted'
 Plan:
@@ -7692,6 +7700,10 @@ Query: SELECT COUNT(1) FROM group_members m JOIN group_member_status_predicates 
 Plan:
 SEARCH m USING INDEX idx_group_members_group_id_index_in_group (group_id=?)
 SEARCH sp USING INDEX sqlite_autoindex_group_member_status_predicates_1 (member_status=?)
+
+Query: SELECT COUNT(1) FROM groups WHERE use_relays = 1 AND roster_version IS NULL
+Plan:
+SCAN groups
 
 Query: SELECT COUNT(1) FROM groups WHERE user_id = ? AND chat_item_ttl > 0
 Plan:
@@ -8156,6 +8168,10 @@ Plan:
 SCAN group_members
 
 Query: SELECT member_status FROM group_members WHERE local_display_name = ?
+Plan:
+SCAN group_members
+
+Query: SELECT member_status FROM group_members WHERE member_category = 'user'
 Plan:
 SCAN group_members
 

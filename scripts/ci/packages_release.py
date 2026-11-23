@@ -57,7 +57,9 @@ BUILD_CHANGES = {
         "apps/simplex-chat/**",
         "apps/simplex-bot/**",
         "apps/simplex-bot-advanced/**",
-        "apps/simplex-badge-service/**",
+        "apps/simplex-store-service/**",
+        "apps/simplex-domains",
+        "scripts/store-service/**",
         "apps/simplex-broadcast-bot/**",
         "apps/simplex-directory-service/**",
         "tests/**",
@@ -82,12 +84,14 @@ BUILD_CHANGES = {
     ],
 }
 SCOPE_CHANGES = {
-    "badge-web": ["apps/simplex-badge-service/web/**"],
+    "badge-web": ["apps/simplex-store-service/web/**", "tests/fixtures/store-service/rest-api/**"],
     "ci-scripts": ["scripts/ci/packages_release.py", "scripts/ci/test_packages_release.py"],
     "website": ["website/src/js/simplex-lib.jsc", "website/test/**", "website/package.json"],
     "mcp": ["packages/simplex-chat-mcp/**"],
     "support-bot": ["apps/simplex-support-bot/**"],
     "support-bot-light": ["apps/simplex-support-bot-light/**", "packages/simplex-chat-python/**"],
+    "names-page": ["apps/simplex-domains", "tests/fixtures/store-service/rest-api/**"],
+    "names-e2e": ["apps/simplex-store-service/**", "tests/Bots/StoreService/**", "tests/fixtures/store-service/rest-api/**", "apps/simplex-domains", "scripts/store-service/**"],
 }
 CABAL_FILE = "simplex-chat.cabal"
 CABAL_VERSION = re.compile(r"^(version:\s*)(\S+)", re.M)
