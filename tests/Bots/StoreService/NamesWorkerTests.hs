@@ -154,8 +154,9 @@ workerTests = describe "StoreService names: worker" $ do
     it "ends an order only once its unregister is at the confirmation depth" testEndedAtDepth
     it "changes nothing when the block or every order's dispute end cannot be read, logging once the stopped pass or an order read again, and completes the pass only when the block is read" testEndedSweepUnread
     it "reads the orders after one whose dispute end cannot be read, logging that order's failed read once" testEndedSweepPastUnread
-    it "ends an order unregistered within the confirmation depth once its mined register is judged, storing the expiry and dispute end set by its register" testEndedWithinDepth
-    it "ends an order whose name was unregistered and registered again by another before the confirmed block, storing the expiry and dispute end set by its register" testEndedByOtherRegistration
+    it "ends an order unregistered within the confirmation depth once its mined register is judged, storing no times" testEndedWithinDepth
+    it "ends a code order unregistered within the confirmation depth once its mined register is judged, spending its code" testEndedCodeOrder
+    it "ends an order whose name was unregistered and registered again by another before the confirmed block" testEndedByOtherRegistration
     it "logs an ended sweep that fails, keeping the start's time until a pass completes" testEndedPassFails
   describe "retry" $ do
     it "refuses /retry of any order but a lapsed unsigned one with bad_request, a failed or signed one included, changing nothing, and answers an unknown order 404" testRetryNotFailed
@@ -165,6 +166,7 @@ workerTests = describe "StoreService names: worker" $ do
     it "closes a failed paid order taken, not live, its price credited and refunded, its reveal cleared, then refuses /retry, a selection of a name and a second refund, and accepts a new order for the name" testCloseFailed
     it "closes a lapsed unsigned committed order, naming its lapse as its end" testCloseLapsed
     it "registers a failed order whose owner holds the name, and one whose register row mined while the owner no longer holds it, and ends one whose mined registration was ended, refunding nothing" testCloseLanded
+    it "changes nothing and refunds nothing for a failed order whose mined register is above the confirmed block" testCloseAboveConfirmed
     it "refuses an unknown reference, an order not failed, a failed code order and a failed chain read, changing nothing" testCloseRefused
     it "refuses an order changed during its chain check as changed, writing nothing" testCloseLostRace
     it "refunds the whole balance, its earlier credits included" testCloseWhole
@@ -1572,6 +1574,19 @@ testEndedWithinDepth = withWorker $ \w@W {wCtx = ctx@Ctx {cNode}} -> do
   fieldOf view "phase" `shouldBe` Just (phaseValue "ended" [])
   viewFixture "registration-ended" $ Just view
 
+testEndedCodeOrder :: IO ()
+testEndedCodeOrder = withWorker $ \w@W {wCtx = ctx@Ctx {cNode}} -> do
+  (r, code) <- codeIn ctx 8 aliceOrder openPhase >>= traverseFst (revealed ctx keyA "alicebakery")
+  answerAvailable w True
+  void $ steps w r >>= awaiting
+  answerExpiry ctx "alicebakery" expiry
+  registerBlock <- mineRegister w
+  unregisteredFrom ctx $ registerBlock + 1
+  void $ mine cNode []
+  steps w r >>= done
+  nrPhase <$> stored ctx r `shouldReturn` OEnded
+  isJust . pcSpentAt <$> codeOf ctx code `shouldReturn` True
+
 testEndedByOtherRegistration :: IO ()
 testEndedByOtherRegistration = withWorker $ \w@W {wCtx = ctx@Ctx {cNode}} -> do
   (r, registerBlock) <- minedRegister w
@@ -1748,6 +1763,14 @@ testCloseLanded = withWorker $ \W {wCtx = ctx} -> do
   z <- stored ctx endedOrder
   (nrPhase z, nrHistory z) `shouldBe` (OEnded, noHistory {thRegisterTx = Just endedHash})
   figuresOf ctx endedOrder `shouldReturn` Nothing
+
+testCloseAboveConfirmed :: IO ()
+testCloseAboveConfirmed = withWorker $ \W {wCtx = ctx} -> do
+  r <- paidIn ctx aliceOrder failedPhase
+  void $ sentRegister ctx r 1 $ TSMinedAt 1000000
+  closeOf ctx r `shouldReturn` CLRefused CFUnread
+  stored ctx r `shouldReturn` r
+  figuresOf ctx r `shouldReturn` Nothing
 
 testCloseRefused :: IO ()
 testCloseRefused = withWorker $ \W {wCtx = ctx@Ctx {cNode, cOrders = OrdersEnv {oeStore, oeContracts, oeTurns, oeNow}}} -> do
