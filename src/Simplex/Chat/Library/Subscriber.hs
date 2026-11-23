@@ -2373,7 +2373,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                     groupMsgToView cInfo ci
                     pure Nothing
                   Nothing -> do
-                    (ci@ChatItem {meta}, cInfo) <- saveRcvChatItem' user chatDir msg (Just sharedMsgId) brokerTs (content, ts) Nothing timed_ live mentions'
+                    (ci, cInfo) <- saveRcvChatItem' user chatDir msg (Just sharedMsgId) brokerTs (content, ts) Nothing timed_ live mentions'
                     ci' <- withStore' $ \db -> do
                       createChatItemVersion db (chatItemId' ci) brokerTs mc
                       updateGroupChatItem db user groupId ci content True live Nothing
@@ -2381,7 +2381,9 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                       CDGroupRcv gi' _ m' -> blockedMemberCI gi' m' ci'
                       CDChannelRcv {} -> pure ci'
                     groupMsgToView cInfo ci''
-                    pure $ Just (infoToDeliveryContext gInfo' scopeInfo showGroupAsSender :: DeliveryTaskContext) {updateNotification = highPriority meta}
+                    let fwdPriority = allowedPriority (rcvPriorityAllowed blockedByAdmin chatDir) priority_
+                        fwdAsNew = asNew_ == Just True && isNothing scopeInfo && not (maybe False blockedByAdmin m_)
+                    pure $ Just (infoToDeliveryContext gInfo' scopeInfo showGroupAsSender :: DeliveryTaskContext) {updateNotification = if fwdAsNew then fwdPriority /= MPSilent else fwdPriority == MPHigh}
       where
         content = CIRcvMsgContent mc
         ts@(_, ParsedMarkdown ft_ _) = msgContentTexts mc
@@ -2420,8 +2422,11 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
               messageError "x.msg.update: edit too late" $> Nothing
           | otherwise = do
               let changed = mc /= oldMC
-                  priority' = if isJust itemDeleted then priority else allowedPriority (rcvPriorityAllowed cd) priority_
-                  newTs_ = if asNew_ == Just True && isNothing scopeInfo && isNothing itemDeleted && not (maybe False memberBlocked itemMember_) then asNewItemTs (chatItemTs' ci) brokerTs else Nothing
+                  priority' = if isJust itemDeleted then priority else allowedPriority (rcvPriorityAllowed memberBlocked cd) priority_
+                  newTs_ = if isNothing itemDeleted && not (maybe False memberBlocked itemMember_) then fwdNewTs_ else Nothing
+                  fwdPriority = if hiddenForAll then priority else allowedPriority (rcvPriorityAllowed blockedByAdmin cd) priority_
+                  fwdNewTs_ = if asNew_ == Just True && isNothing scopeInfo && not hiddenForAll then asNewItemTs (chatItemTs' ci) brokerTs else Nothing
+                  fwdContext = (infoToDeliveryContext gInfo scopeInfo showGroupAsSender :: DeliveryTaskContext) {updateNotification = if isJust fwdNewTs_ then fwdPriority /= MPSilent else fwdPriority == MPHigh && priority /= MPHigh}
               if changed || fromMaybe False itemLive || priority' /= priority || isJust newTs_
                 then do
                   (cInfo, ci') <- withStore' $ \db -> do
@@ -2441,12 +2446,16 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                       Nothing -> pure (GroupChat gInfo scopeInfo, ci'')
                   toView $ CEvtChatItemUpdated user (AChatItemUpdate SCTGroup SMDRcv cInfo ci' ci)
                   startUpdatedTimedItemThread user (ChatRef CTGroup groupId $ toChatScope <$> scopeInfo) ci ci'
-                  pure $ Just (infoToDeliveryContext gInfo scopeInfo showGroupAsSender :: DeliveryTaskContext) {updateNotification = if isJust newTs_ then priority' /= MPSilent else priority' == MPHigh && priority /= MPHigh}
+                  pure $ Just fwdContext
                 else do
                   toView $ CEvtChatItemNotChanged user (AChatItem SCTGroup SMDRcv (GroupChat gInfo scopeInfo) ci)
-                  pure Nothing
+                  pure $ if fwdPriority /= priority || isJust fwdNewTs_ then Just fwdContext else Nothing
           where
             itemMember_ = chatItemRcvFromMember ci
+            hiddenForAll = case itemDeleted of
+              Just CIModerated {} -> True
+              Just CIBlockedByAdmin {} -> True
+              _ -> maybe False blockedByAdmin itemMember_
 
     groupMessageDelete :: GroupInfo -> Maybe GroupMember -> SharedMsgId -> Maybe MemberId -> Maybe MsgScope -> Bool -> RcvMessage -> UTCTime -> CM (Maybe DeliveryTaskContext)
     groupMessageDelete gInfo@GroupInfo {membership} m_ sharedMsgId sndMemberId_ scope_ onlyHistory rcvMsg brokerTs =

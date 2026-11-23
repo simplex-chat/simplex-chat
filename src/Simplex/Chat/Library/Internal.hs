@@ -3167,7 +3167,7 @@ saveRcvChatItem' user cd msg@RcvMessage {chatMsgEvent, msgSigned, forwardedByMem
       GroupChat g@GroupInfo {membership} _ -> groupMentions db g membership
       _ -> pure (M.empty, False)
     let highAllowed = case content of
-          CIRcvMsgContent _ -> rcvPriorityAllowed cd
+          CIRcvMsgContent _ -> rcvPriorityAllowed memberBlocked cd
           _ -> False
         priority = allowedPriority highAllowed (cmPriority chatMsgEvent)
         userMention = mentionOrReply || priority == MPHigh
@@ -3206,9 +3206,9 @@ saveRcvChatItem' user cd msg@RcvMessage {chatMsgEvent, msgSigned, forwardedByMem
          in Just (unread, memberAttentionChange unread (Just brokerTs) Nothing scope, fromEnum userMention)
       _ -> Nothing
 
-rcvPriorityAllowed :: ChatDirection c 'MDRcv -> Bool
-rcvPriorityAllowed = \case
-  CDGroupRcv g _ m -> groupFeatureMemberAllowed SGFMsgPriority m g && not (memberBlocked m)
+rcvPriorityAllowed :: (GroupMember -> Bool) -> ChatDirection c 'MDRcv -> Bool
+rcvPriorityAllowed senderBlocked = \case
+  CDGroupRcv g _ m -> groupFeatureMemberAllowed SGFMsgPriority m g && not (senderBlocked m)
   CDChannelRcv g _ -> groupFeatureMemberAllowed' SGFMsgPriority GROwner (fullGroupPreferences g)
   _ -> False
 
