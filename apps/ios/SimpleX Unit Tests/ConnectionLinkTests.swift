@@ -13,4 +13,8 @@ final class ConnectionLinkTests: XCTestCase {
             XCTAssertTrue(isConnectionLinkPath(connectionLinkPath(try XCTUnwrap(URL(string: link)))), link)
         }
     }
+
+    func testFileLinkWithoutSlashIsAccepted() {
+        XCTAssertTrue(strHasSimplexFileLink("simplex:file#/?desc=abc"))
+    }
 }

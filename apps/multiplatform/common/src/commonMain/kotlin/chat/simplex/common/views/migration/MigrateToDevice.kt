@@ -728,8 +728,8 @@ private suspend fun MutableState<MigrationToState?>.cleanUpOnBack(chatReceiver: 
   chatModel.migrationState.value = null
 }
 
-private fun strHasSimplexFileLink(text: String): Boolean =
-  text.startsWith("simplex:/file") || text.startsWith("https://simplex.chat/file")
+internal fun strHasSimplexFileLink(text: String): Boolean =
+  text.startsWith("simplex:/file") || text.startsWith("simplex:file") || text.startsWith("https://simplex.chat/file")
 
 private fun fileForTemporaryDatabase(): File =
   File(getMigrationTempFilesDirectory(), generateNewFileName("migration", "db", getMigrationTempFilesDirectory()))

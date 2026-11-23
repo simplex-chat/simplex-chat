@@ -640,13 +640,13 @@ struct MigrateToDevice: View {
         dismiss()
     }
 
-    private func strHasSimplexFileLink(_ text: String) -> Bool {
-        text.starts(with: "simplex:/file") || text.starts(with: "https://simplex.chat/file")
-    }
-
     private static func urlForTemporaryDatabase() -> URL {
         URL(fileURLWithPath: generateNewFileName(getMigrationTempFilesDirectory().path + "/" + "migration", "db", fullPath: true))
     }
+}
+
+func strHasSimplexFileLink(_ text: String) -> Bool {
+    text.starts(with: "simplex:/file") || text.starts(with: "simplex:file") || text.starts(with: "https://simplex.chat/file")
 }
 
 private struct PassphraseEnteringView: View {
