@@ -196,6 +196,7 @@ Pushes start none of the app workflows: a run is started by hand, on any branch,
 | `release` | — | also the latest release's onboarding, to tell a branch's failure from the runner's | also the latest release's onboarding, to tell a branch's failure from the runner's |
 | `e2e` | — | also the deb, the AppImage and the Flatpak, built, installed and tested under X11, Wayland and XWayland | — |
 | `armv7a` | — | — | also the core library for 32-bit Arm (armeabi-v7a), built only |
+| `compare` | — | the run ID of another desktop-linux run: also the screen tour of both apps, paired by screen | the run ID of another android-emu run: also the screen tour of both apps, paired by screen |
 
 In the Actions tab: `ios-sim`, `desktop-linux` or `android-emu` → Run workflow, choose the branch and tick the inputs. With the GitHub CLI, each input is a field:
 
@@ -207,6 +208,28 @@ gh workflow run android-emu.yml --ref <branch> -f claude=true
 ```
 
 A newer run of a workflow on the same branch cancels the older one.
+
+### Screens compared with the base
+
+A change that can alter what the apps show is compared, screen by screen, with the base branch's apps:
+
+| Workflow | Platforms | Compared | Artifacts |
+|---|---|---|---|
+| `desktop-linux` with `compare` | Linux | the screen tour (`smoke-test.sh … tour`) of this run's app and of the compared run's app, each in its own job, with the window's content at 1366x768 | `desktop-tour-base`<br>`desktop-tour-head`<br>`desktop-tour-pairs` |
+| `android-emu` with `compare` | Android | the screen tour (`android/smoke-test.sh … tour`) of both apps in one emulator, with a fixed status bar clock | `android-tour` |
+| `desktop-tour` | macOS<br>Windows | the screen tour (`desktop-tour.py`) of the apps built from this branch and from `base`, both with the native libraries of the release `libraries` | `desktop-tour-macos-latest`<br>`desktop-tour-windows-latest` |
+| `desktop-snapshots` | Linux<br>macOS<br>Windows | the desktop snapshots of this branch and of `base` | `desktop-snapshots-ubuntu-24.04`<br>`desktop-snapshots-macos-latest`<br>`desktop-snapshots-windows-latest` |
+
+- `desktop-tour` and `desktop-snapshots` compare with `base`, a commit, or with the merge base with master when it is empty. `desktop-tour` builds both apps from Kotlin only, so a change of the core or of the JNI library is left out of it.
+- `compare` names a run of the same workflow on the base branch, whose uploaded app is toured; the app is kept 14 days.
+- The tours save each screen as `NN-tour-<name>.png`, and its end, scrolled down, as `NN-tour-<name>-end.png`; `tour-compare.sh` pairs the screens by name into `base` and `head` and writes the differing pixels to `diff`, with `snapshots-compare.py`.
+
+```sh
+gh workflow run desktop-linux.yml --ref <branch> -f compare=<run ID>
+gh workflow run android-emu.yml --ref <branch> -f compare=<run ID>
+gh workflow run desktop-tour.yml --ref <branch>
+gh workflow run desktop-snapshots.yml --ref <branch>
+```
 
 Each run uploads the app it built, for manual tests, as an artifact kept 14 days: `ios-sim-app` (SimpleX.app.tar.gz, for the iOS simulator on an Apple-silicon Mac), `desktop-app` (desktop-app.tar.gz, for Linux x86-64) and `android-app` (the debug APK, arm64-v8a only). The run's page lists it under Artifacts; `gh run download <run id> -n <artifact>` downloads it.
 
