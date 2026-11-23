@@ -1271,7 +1271,8 @@ again at the next pass, and the other orders are read in the same pass; when the
 read, the pass is stopped and does not complete (see [Metrics](#metrics)). The first failed read of
 each pass is logged once, with its order's registration id, and a failed block read with the pass
 stopped. Each order set `ended`, by the pass or by the check below, is logged at note with its
-registration id, the `disputeUntil(id)` read and the end it was compared with.
+registration id, the `disputeUntil(id)` read and the end it was compared with, and reported in the
+managed group: by the pass with the same line, by the worker's check with its registration id.
 
 When an order's register is found mined, by the worker or by `//close`, `disputeUntil(id)` at the
 confirmed block is compared with the end set by its register, its block's timestamp plus the order's

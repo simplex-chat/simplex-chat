@@ -450,7 +450,7 @@ judge w@Worker {wkOrders = oe@OrdersEnv {oeContracts, oeReport}} now r@NameRegis
   inTurn w r $
     confirmLanded oe r >>= \case
       LRegistered v -> pure (Just v, Again)
-      LEnded v -> pure (Just v, Again)
+      LEnded v -> (Just v, Again) <$ oeReport ("names worker: registration " <> rid <> " was set ended: its registration was ended in its dispute period")
       LChanged -> pure (Nothing, Again)
       LUnread -> pure (Nothing, failure r SFUnread)
       LNotLanded -> case reason of
@@ -732,7 +732,7 @@ endedSweepInterval :: Int
 endedSweepInterval = 3600 * 1000000
 
 sweepEndedRegistrations :: Worker -> IO Bool
-sweepEndedRegistrations w@Worker {wkOrders = OrdersEnv {oeStore, oeContracts, oeNow}} = do
+sweepEndedRegistrations w@Worker {wkOrders = OrdersEnv {oeStore, oeContracts, oeNow, oeReport}} = do
   now <- oeNow
   disputable <- withTransaction oeStore (`disputableRegistrations` secondsAt (addUTCTime (negate disputeReadMargin) now))
   if null disputable
@@ -751,7 +751,10 @@ sweepEndedRegistrations w@Worker {wkOrders = OrdersEnv {oeStore, oeContracts, oe
             | roundedSeconds disputeEnd < roundedSeconds blockTimestamp + fromIntegral (disputeSeconds nrDisputeDays) ->
                 disputeUntil oeContracts (AtBlock blockNumber) nrLabelHash >>= traverse (\current -> when (current /= Just disputeEnd) $ void $ inTurn w r $ do
                   result@(v, _) <- store w now r {nrPhase = OEnded}
-                  forM_ v $ \_ -> logNote $ "names ended sweep: registration " <> ridText <> " set ended: disputeUntil(id) read at block " <> tshow blockNumber <> " is " <> maybe "0" (tshow . roundedSeconds) current <> ", not " <> tshow (roundedSeconds disputeEnd)
+                  forM_ v $ \_ -> do
+                    let ended = "names ended sweep: registration " <> ridText <> " set ended: disputeUntil(id) read at block " <> tshow blockNumber <> " is " <> maybe "0" (tshow . roundedSeconds) current <> ", not " <> tshow (roundedSeconds disputeEnd)
+                    logNote ended
+                    oeReport ended
                   pure result)
           _ -> pure $ Right ()
       )

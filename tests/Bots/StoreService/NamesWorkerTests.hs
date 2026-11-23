@@ -1476,7 +1476,9 @@ testRegisterReadAtDepth = withWorker $ \w@W {wCtx = ctx@Ctx {cNode}} -> do
   nrPhase <$> stored ctx r `shouldReturn` ORegistered expirySeconds (Just $ atSeconds $ t + 14 * 86400) now
 
 testEndedOnUnregister :: IO ()
-testEndedOnUnregister = withWorker $ \w@W {wCtx = ctx, wWorker} -> do
+testEndedOnUnregister = withWorker $ \w@W {wCtx = ctx@Ctx {cOrders}, wSender} -> do
+  reports <- newTVarIO []
+  wWorker <- newWorker cOrders {oeReport = \t -> atomically $ modifyTVar' reports (t :)} wSender
   let disputeEnd = orderSeconds + 14 * 86400
   r <- paidIn ctx aliceOrder $ registeredUntil disputeEnd
   void $ confirmedBlockAt ctx $ orderSeconds + 1
@@ -1486,13 +1488,16 @@ testEndedOnUnregister = withWorker $ \w@W {wCtx = ctx, wWorker} -> do
   answerDisputeUntil ctx "alicebakery" 0
   logs <- capturingStderr $ published w r $ sweepEndedRegistrations wWorker `shouldReturn` True
   let RegistrationId rid = nrId r
-  logs `shouldSatisfy` T.isInfixOf ("names ended sweep: registration " <> rid <> " set ended: disputeUntil(id) read at block 100 is 0, not " <> tshow disputeEnd)
+      setEnded = "names ended sweep: registration " <> rid <> " set ended: disputeUntil(id) read at block 100 is 0, not " <> tshow disputeEnd
+  logs `shouldSatisfy` T.isInfixOf setEnded
+  readTVarIO reports `shouldReturn` [setEnded]
   ended <- stored ctx r
   (nrPhase ended, nrVersion ended) `shouldBe` (OEnded, nrVersion r + 1)
   (`fieldOf` "phase") <$> viewOf ctx r `shouldReturn` Just (phaseValue "ended" [])
   answerDisputeUntil ctx "alicebakery" (disputeEnd + 3600)
   sweepEndedRegistrations wWorker `shouldReturn` True
   stored ctx r `shouldReturn` ended
+  length <$> readTVarIO reports `shouldReturn` 1
 
 testEndedSweepBounds :: IO ()
 testEndedSweepBounds = withWorker $ \W {wCtx = ctx, wWorker} -> do
