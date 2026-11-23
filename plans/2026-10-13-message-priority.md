@@ -208,8 +208,8 @@ chat_items
   item_priority INTEGER NOT NULL DEFAULT 0      -- SMALLINT in Postgres
 delivery_tasks
   priority_raised INTEGER NOT NULL DEFAULT 0    -- SMALLINT in Postgres; 1: the forwarded x.msg.update changed the item to high priority
-idx_chat_items_contacts_silent    (user_id, item_status, contact_id, item_priority) WHERE item_priority < 0
-idx_chat_items_groups_priority    (user_id, item_status, group_id, group_scope_tag, group_scope_group_member_id, item_priority) WHERE item_priority <> 0
+idx_chat_items_contacts_silent    (user_id, item_status, contact_id, item_priority) WHERE item_priority < 0 AND contact_id IS NOT NULL
+idx_chat_items_groups_priority    (user_id, item_status, group_id, group_scope_tag, group_scope_group_member_id, item_priority) WHERE item_priority <> 0 AND group_id IS NOT NULL
 ```
 - `Store/Delivery.hs`: `createMsgDeliveryTask` writes `priority_raised` from `DeliveryTaskContext`; `getMsgDeliveryTask_` reads it into `MessageDeliveryTask.priorityRaised`. A task created before the migration has 0.
 - Down migration: the indexes and the columns are dropped. The schema dumps and `chat_query_plans.txt` need regeneration by the schema and query plan tests; they are never edited by hand.
