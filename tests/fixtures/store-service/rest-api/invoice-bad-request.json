@@ -1,0 +1,6 @@
+{
+  "body": {
+    "type": "bad_request"
+  },
+  "status": 400
+}

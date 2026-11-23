@@ -55,18 +55,22 @@ testSchema = "tests/tmp/test_agent_schema.sql"
 
 schemaDumpTest :: Spec
 schemaDumpTest = do
-  it "verify and overwrite schema dump" testVerifySchemaDump
+  sqliteSchemaDumpTest Store.migrations skipComparisonForDownMigrations (DBOpts testDB chatDBFunctions "" False True TQOff) appSchema
   it "verify .lint fkey-indexes" testVerifyLintFKeyIndexes
-  it "verify schema down migrations" testSchemaMigrations
   it "verify strict tables" testVerifyStrict
 
-testVerifySchemaDump :: IO ()
-testVerifySchemaDump = do
-  savedSchema <- ifM (doesFileExist appSchema) (readFile appSchema) (pure "")
+sqliteSchemaDumpTest :: [Migration] -> [String] -> DBOpts -> FilePath -> Spec
+sqliteSchemaDumpTest migrations skipComparisonForDown testDBOpts srcSchemaPath = do
+  it "verify and overwrite schema dump" $ testVerifySchemaDump migrations testDBOpts srcSchemaPath
+  it "verify schema down migrations" $ testSchemaMigrations migrations skipComparisonForDown testDBOpts
+
+testVerifySchemaDump :: [Migration] -> DBOpts -> FilePath -> IO ()
+testVerifySchemaDump migrations testDBOpts@DBOpts {dbFilePath} srcSchemaPath = do
+  savedSchema <- ifM (doesFileExist srcSchemaPath) (readFile srcSchemaPath) (pure "")
   savedSchema `deepseq` pure ()
-  void $ createChatStore (DBOpts testDB chatDBFunctions "" False True TQOff) (MigrationConfig MCError Nothing)
-  getSchema testDB appSchema `shouldReturn` savedSchema
-  removeFile testDB
+  void $ createDBStore testDBOpts migrations (MigrationConfig MCError Nothing)
+  getSchema dbFilePath srcSchemaPath `shouldReturn` savedSchema
+  removeFile dbFilePath
 
 testVerifyLintFKeyIndexes :: IO ()
 testVerifyLintFKeyIndexes = do
@@ -76,29 +80,29 @@ testVerifyLintFKeyIndexes = do
   getLintFKeyIndexes testDB "tests/tmp/chat_lint.sql" `shouldReturn` savedLint
   removeFile testDB
 
-testSchemaMigrations :: IO ()
-testSchemaMigrations = do
-  let noDownMigrations = dropWhileEnd (\Migration {down} -> isJust down) Store.migrations
-  Right st <- createDBStore (DBOpts testDB chatDBFunctions "" False True TQOff) noDownMigrations (MigrationConfig MCError Nothing)
-  mapM_ (testDownMigration st) $ drop (length noDownMigrations) Store.migrations
+testSchemaMigrations :: [Migration] -> [String] -> DBOpts -> IO ()
+testSchemaMigrations migrations skipComparisonForDown testDBOpts@DBOpts {dbFilePath} = do
+  let noDownMigrations = dropWhileEnd (\Migration {down} -> isJust down) migrations
+  Right st <- createDBStore testDBOpts noDownMigrations (MigrationConfig MCError Nothing)
+  mapM_ (testDownMigration st) $ drop (length noDownMigrations) migrations
   closeDBStore st
-  removeFile testDB
+  removeFile dbFilePath
   whenM (doesFileExist testSchema) $ removeFile testSchema
   where
     testDownMigration st m = do
       putStrLn $ "down migration " <> name m
       let downMigr = fromJust $ toDownMigration m
-      schema <- getSchema testDB testSchema
+      schema <- getSchema dbFilePath testSchema
       Migrations.run st Nothing True $ MTRUp [m]
-      schema' <- getSchema testDB testSchema
+      schema' <- getSchema dbFilePath testSchema
       unless (name m `elem` skipComparisonForUpMigrations) $
         schema' `shouldNotBe` schema
       Migrations.run st Nothing True $ MTRDown [downMigr]
-      unless (name m `elem` skipComparisonForDownMigrations) $ do
-        schema'' <- getSchema testDB testSchema
+      unless (name m `elem` skipComparisonForDown) $ do
+        schema'' <- getSchema dbFilePath testSchema
         schema'' `shouldBe` schema
       Migrations.run st Nothing True $ MTRUp [m]
-      schema''' <- getSchema testDB testSchema
+      schema''' <- getSchema dbFilePath testSchema
       schema''' `shouldBe` schema'
 
 testVerifyStrict :: IO ()

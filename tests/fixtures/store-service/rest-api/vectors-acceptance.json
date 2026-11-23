@@ -1,0 +1,12 @@
+{
+  "chainId": 31337,
+  "commitment": "0x26d4dc807322bcdc1f68a2459b580919c4e6c5629d07cb20c38a31f7b72b7e5d",
+  "deadline": 1767315600,
+  "digests": {
+    "community": "0x6df583ad3bcbef3e4061599fa9d45174fcda5731764320cd08ade35c8324eef7",
+    "general": "0xf486b536cdf4e28031b02fb4345f26678a088d84846a0a6c72896062af283065"
+  },
+  "nonce": 3,
+  "policy": "0x5FC8d32690cc91D4c39d9d3abcBD16989F875707",
+  "termsHash": "0xeed23f946d290583f5f55c2ae8255db70adac4fc4c5de714a920d35eed9c7dac"
+}
