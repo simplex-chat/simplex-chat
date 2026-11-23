@@ -141,14 +141,14 @@ sequenceDiagram
 
 | Name | Value |
 |---|---|
-| PREVIEW_DEADLINE | 30 s for the whole preview |
+| PREVIEW_DEADLINE | 15 s for the whole preview (Q6) |
 | CONNECT_TIMEOUT | `tcpConnectTimeout` of the network config, interactive (mq:Messaging/Client.hs:323, 434) |
 | READ_TIMEOUT | `tcpTimeout` of the network config, interactive, per read (mq:Messaging/Client.hs:325, 435) |
 | MAX_REDIRECTS | 5 |
 | MAX_HEADER_BYTES | 32 KiB of status line and headers |
 | MAX_HEADERS | 100 |
-| MAX_HEAD_BYTES | 1 MiB of HTML body |
-| MAX_IMAGE_BYTES | 5 MiB |
+| MAX_HEAD_BYTES | 1 MiB of HTML body (Q6) |
+| MAX_IMAGE_BYTES | 2 MiB (Q6) |
 | MAX_TITLE_LENGTH | 300 characters |
 | MAX_DESCRIPTION_LENGTH | 500 characters |
 | IMAGE_DATA_SIZE | `maxImagePreviewSize`, 14000 (Library/Commands.hs:179-180), less the JSON bytes of the title and the description (section 3.10) |
@@ -168,6 +168,9 @@ data HeadTags = HeadTags
   { ogTitle :: Maybe ByteString,
     ogDescription :: Maybe ByteString,
     ogImage :: Maybe ByteString,
+    nameOgTitle :: Maybe ByteString,
+    nameOgDescription :: Maybe ByteString,
+    nameOgImage :: Maybe ByteString,
     titleText :: Maybe ByteString,
     nameDescription :: Maybe ByteString,
     metaCharset :: Maybe ByteString
@@ -188,7 +191,7 @@ data Uri = Uri
   }
 ```
 
-- The card shows what the existing `LinkPreview` holds (Protocol.hs:246): `title`, `description`, `image`, `uri`. `HeadTags` holds the raw values of the first tag of each kind, a monoid of first values; `PageMeta` holds the decoded values, and `pageImage` is the URL that the core fetches and resizes into `ImageData`.
+- The card shows what the existing `LinkPreview` holds (Protocol.hs:246): `title`, `description`, `image`, `uri`. `HeadTags` holds the raw values of the first tag of each kind and attribute, a monoid of first values; `PageMeta` holds the decoded values, and `pageImage` is the URL that the core fetches and resizes into `ImageData`.
 - `USHttp` is produced only for `.onion` hosts (section 3.7); `uriPort` is `Nothing` for the default port of the scheme.
 - MAX_REDIRECTS, MAX_HEADER_BYTES, MAX_HEADERS, MAX_HEAD_BYTES, MAX_IMAGE_BYTES, MAX_TITLE_LENGTH and MAX_DESCRIPTION_LENGTH are constants of the module; the tests change only the roots, the address policy and the deadline.
 - Card in the apps: compose shows image, title and link (LinkPreviews.kt:152-191; ComposeLinkView.swift:43-52); the chat item shows image, title, description when not empty, and link on Kotlin (LinkPreviews.kt:203-226); iOS shows image and title only (CILinkView.swift:22, 36).
@@ -251,7 +254,7 @@ Accept-Encoding: identity
 Connection: close
 ```
 
-- UA: one fixed browser string for all users; for host `x.com`, the string of LinkPreviews.kt:108, as today.
+- UA: `Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:160.0) Gecko/20100101 Firefox/160.0`, the string of Firefox 160 on Windows, for all users (Q7); for host `x.com`, the string of LinkPreviews.kt:108, as today.
 - Cookies, `Referer` and `Accept-Language` are not sent.
 - `Host` omits the default port of the scheme, also when the link states it.
 - Response head: at most MAX_HEADER_BYTES and MAX_HEADERS, else a failure. Interim 1xx responses other than 101 are skipped (RFC 9110, 15.2); their bytes and headers count towards the same limits.
@@ -296,19 +299,21 @@ stateDiagram-v2
   Tag --> Title: "<title"
   Title --> Text: "</title"
   Tag --> Done: "</head" or "<body"
-  Text --> Done: og:title, og:description and og:image read
+  Text --> Done: og:title, og:description and og:image read, each with property or name
   Text --> Done: MAX_HEAD_BYTES
 ```
 
 - The scanner is an incremental `attoparsec` parser fed with body chunks; tag and attribute names are compared case-insensitively; attribute values are unquoted, single- or double-quoted.
 - Law: the scan of a body equals the scan of any split of it into chunks. A QuickCheck property tests it.
-- Fields, first tag of each kind:
+- Fields, first tag of each kind and attribute (Q5):
 
   | Field | Tags, in priority |
   |---|---|
-  | `title` | `<meta property="og:title" content>`, else `<title>` text |
-  | `description` | `<meta property="og:description" content>`, else `<meta name="description" content>` |
-  | `image` | `<meta property="og:image" content>` |
+  | `title` | `<meta property="og:title" content>`<br>`<meta name="og:title" content>`<br>`<title>` text |
+  | `description` | `<meta property="og:description" content>`<br>`<meta name="og:description" content>`<br>`<meta name="description" content>` |
+  | `image` | `<meta property="og:image" content>`<br>`<meta name="og:image" content>` |
+
+- The scan stops when each of the three `og:` tags is read with either attribute, so a `property=` tag after that point is not read.
 
 - `<meta charset>` and `<meta http-equiv="content-type" content>` are read for decoding only (section 3.9).
 - Values: whitespace trimmed and collapsed; named entities `amp lt gt quot apos nbsp` and numeric references decoded, in time linear in the value's length; in the preview, `title` cut to MAX_TITLE_LENGTH and `description` to MAX_DESCRIPTION_LENGTH characters.
@@ -746,8 +751,16 @@ flowchart TD
   Q2 -->|b| Q3
   Q3 -->|"a (recommended)"| Q4{"Q4 image formats"}
   Q3 -->|b| Q4
-  Q4 -->|"a (recommended)"| END["build"]
-  Q4 -->|b| END
+  Q4 -->|"a (recommended)"| Q5{"Q5 tags"}
+  Q4 -->|b| Q5
+  Q5 -->|"a (recommended)"| Q6{"Q6 limits"}
+  Q5 -->|b| Q6
+  Q5 -->|c| Q6
+  Q6 -->|"a (recommended)"| Q7{"Q7 user agent"}
+  Q6 -->|b| Q7
+  Q7 -->|"a (recommended)"| END["build"]
+  Q7 -->|b| END
+  Q7 -->|c| END
 ```
 
 | Q | Question | Options | Recommendation |
@@ -756,10 +769,56 @@ flowchart TD
 | Q2 | `http://` links | (a) fetched as `https://` on the same host, without plain HTTP; (b) plain HTTP as on Android and desktop today | (a) |
 | Q3 | Root certificates | (a) the Mozilla bundle embedded in the core, refreshed by a script each release; (b) the system store where `crypton-x509-system` reads one, the bundle on iOS; (c) roots passed by each app | (a) |
 | Q4 | `og:image` other than JPEG and PNG | (a) no preview; WebP with the WebP PR named in plans/2026-10-23-core-image-resizing.md:369; (b) the first GIF frame added now (JuicyPixels) | (a) |
+| Q5 | Tags of the title, description and image | (a) `og:` tags with `property=`, else with `name=` (3.8); (b) with `property=` only; (c) as (a), and the images of twitter, `image_src`, `itemprop` and JSON-LD tags | (a) |
+| Q6 | Limits | (a) PREVIEW_DEADLINE 15 s, MAX_HEAD_BYTES 1 MiB, MAX_IMAGE_BYTES 2 MiB; (b) 30 s, 1 MiB, 5 MiB | (a) |
+| Q7 | UA | (a) Firefox 160 on Windows (3.7); (b) Chrome 158 on Windows, `Chrome/158.0.0.0`; (c) Chrome 79, `Chrome/79.0.3945.130` | (a) |
 
 Decided: Q1 (a), Q2 (a), Q3 (a), Q4 (a). With Q2, `http` links of `.onion` hosts are fetched over plain HTTP, only through the SOCKS proxy; without a proxy they get no preview. Message size: the title is cut to 300 characters, the description to 500, and the image limit is reduced by their JSON bytes (3.10).
 
+Open: Q5, Q6, Q7; the branch implements (a) of each.
+
 Decided as details: concurrent fetches without a cancel command (3.11); the desktop fetches while it controls a phone (3.12); one browser UA with the `x.com` exception (3.7).
+
+### 4.1 Measurement for Q5, Q6 and Q7
+
+71 pages: news in 11 languages, social networks, code hosting, documentation, shops, blogs, maps, app stores, simplex.chat and plain sites. They were fetched on 2026-11-22 from a datacenter in Stockholm, with the request of section 3.7 and the Chrome 79 UA; 54 were usable. A page is lost by a limit when its preview fails under the limit and succeeds without it, by the rules of Q5 (a).
+
+Tags, of 54 usable pages:
+
+| Tags read | Pages with an image |
+|---|---|
+| `og:image` with `property=` | 43 |
+| Q5 (a) | 44: developer.mozilla.org added, with `<meta name="og:image">` |
+| Q5 (c), without JSON-LD | 44 |
+| Q5 (c) | 45: lite.cnn.com added, with a JSON-LD image of 4000x2667 and 1,294,463 B |
+
+- edition.cnn.com has `og:description` with `name=` only: under Q5 (a), the scan stops at 255,321 bytes in place of MAX_HEAD_BYTES.
+- The first JSON-LD image is the publisher's logo on 3 of 21 pages, and the original file on others: 414,306 B on edition.cnn.com, beside its `og:image` of 43,885 B.
+
+Limits, under Q5 (a):
+
+| Limit | Base | Value | Pages lost |
+|---|---|---|---|
+| MAX_HEAD_BYTES | 44 pages with `og:image`, by the offset after their title and image tags | 128 KiB | 5:<br>edition.cnn.com<br>www.france24.com<br>www.youtube.com<br>youtu.be<br>play.google.com |
+| | | 256 KiB to 768 KiB | 3:<br>www.youtube.com, 854,449 B<br>youtu.be, 847,811 B<br>play.google.com, 931,373 B |
+| | | 1 MiB | 0, with 117,203 B above the largest offset |
+| MAX_IMAGE_BYTES | 42 images fetched | 512 KiB | 3:<br>mastodon.social, 1,347,906 B<br>en.wikipedia.org, 576,798 B<br>ru.wikipedia.org, 576,798 B |
+| | | 1 MiB | 1: mastodon.social |
+| | | 2 MiB | 0; the largest image is 64% of the limit |
+| PREVIEW_DEADLINE, measured | 38 previews | 2 s | 1: www.yna.co.kr, 3.8 s |
+| | | 5 s | 0 |
+| PREVIEW_DEADLINE, estimated at 1 Mbit/s | 38 previews | 10 s | 2:<br>mastodon.social, 12.9 s<br>youtu.be, 10.4 s |
+| | | 15 s | 0 |
+
+- The estimate: the bytes of the page head to the stop, of the response head and of the image, at 1 Mbit/s, plus 1 s per connection.
+- With a SOCKS proxy, the Kotlin apps set CONNECT_TIMEOUT to 30 s and READ_TIMEOUT to 20 s by default (Kt:model/SimpleXAPI.kt:330-334, 5408-5412), and the iOS app sets them with "Set timeouts for proxy/VPN" (apps/ios/Shared/Views/UserSettings/NetworkAndServers/AdvancedNetworkSettings.swift:254-256; apps/ios/SimpleXChat/APITypes.swift:286-288): a preview whose connection through the proxy takes more than 15 s fails at PREVIEW_DEADLINE.
+
+UA, of the same 71 pages, on 2026-11-23: the status and `og:image` in the first MiB, by curl over HTTP/1.1 with the headers of section 3.7. Each page that differed was requested 3 to 7 times with each UA, with one result every time, except www.amazon.com with Chrome 158.
+
+| UA | Gained | Lost |
+|---|---|---|
+| Firefox 160 | codeberg.org: 403 "Access denied, old Chrome version." with Chrome 79<br>maps.apple.com: a redirect to /unsupported with Chrome 79 | open.spotify.com: a page of 169,691 B without `og:` tags, in place of 7,801 B with them |
+| Chrome 158 | codeberg.org<br>maps.apple.com | open.spotify.com<br>www.france24.com: 403<br>www.amazon.com: 503 on 5 of 7 requests, a page without `og:` tags on 1 |
 
 ## 5. Tests
 
@@ -767,14 +826,14 @@ Core, unit, `tests/LinkPreviewTests.hs` (new, registered in tests/Test.hs), patt
 
 | Case | Checked |
 |---|---|
-| head scanner | `og:title`, `og:description`, `og:image`, `<title>`, `<meta name="description">`, priority of `og:`, quotes, entities, comments, `<meta>` inside `<script>` ignored, stop at `</head>`, at `<body` and after the three `og:` tags |
+| head scanner | `og:title`, `og:description`, `og:image`, `<title>`, `<meta name="description">`, priority of `og:` with `property=`, then with `name=`, quotes, entities, comments, `<meta>` inside `<script>` ignored, stop at `</head>`, at `<body` and after the three `og:` tags with either attribute |
 | chunk law | QuickCheck: scan of a body equals scan of any chunk split |
-| page limits | an endless head read to exactly MAX_HEAD_BYTES; an image of MAX_IMAGE_BYTES accepted, one byte more refused; 200000 entity references decoded |
+| page limits | an endless head read to exactly MAX_HEAD_BYTES; MAX_IMAGE_BYTES of 2 MiB, an image of MAX_IMAGE_BYTES accepted, one byte more refused; PREVIEW_DEADLINE of 15 s; 200000 entity references decoded |
 | reference resolution | RFC 3986 5.4.1 and 5.4.2 examples; `//cdn/...`; port kept; default port and trailing dot of the host removed |
 | onion schemes | `http` kept for onion hosts, in links, relative references and redirects; other `http` links fetched as `https`; redirect from an onion page to `http` of another host refused |
 | address policy | each prohibited range, its IPv4-mapped form, public addresses |
 | HTTP framing | chunked, `Content-Length`, close; header limits; oversized chunk; 1xx responses skipped within the head limits, 101 final |
-| request | headers; fragment removed; `x.com` UA; `Host` without the default port |
+| request | headers, with the UA of Q7; fragment removed; `x.com` UA; `Host` without the default port |
 | charsets | UTF-8, `windows-1252`, unsupported |
 
 Core, scenario, `tests/ChatTests/LinkPreviews.hs` (new, in ChatTests.hs), pattern `/SimpleX chat client/link preview tests/`. A local HTTPS server (`warp-tls` added to the test suite; `wai` and `warp` at simplex-chat.cabal:863-864) uses tests/fixtures/tls/link-preview/server.crt (names `localhost` and `link-preview.test`, issued by tests/fixtures/tls/link-preview/ca.crt); the client has `rootCerts = [ca.crt]` and `APPublicAndLoopback`. A local HTTP server serves the same pages for onion links. A test SOCKS5 server in the module records the address type and credentials of each request and connects any host to the requested port on 127.0.0.1. The fixture uses `link-preview.test` through the SOCKS5 server, because the core's markdown marks a link only when its host contains a dot (Markdown.hs:873-882), and the app tests parse the typed link through the recorded markdown.
@@ -782,6 +841,7 @@ Core, scenario, `tests/ChatTests/LinkPreviews.hs` (new, in ChatTests.hs), patter
 | Test | Checked |
 |---|---|
 | og page | title, description and PNG image in the response |
+| `og:` tags with `name=` | title, description and PNG image of a page with `<meta name="og:...">`, `<title>` and `<meta name="description">` |
 | relative `og:image` | resolved against the final URI after a redirect |
 | image URL | `image/png` response titled by the file name, empty description |
 | no `og:image`, icon present | `CELinkPreview`, no request for the icon |
