@@ -1164,18 +1164,18 @@ fun PreviewGroupMemberInfoLayoutViaMember() = GroupMembersPreview(listOf(preview
 }
 
 @Composable
-internal fun GroupMemberInfoLayoutPreview(member: GroupMember, connectionCode: String?) {
+internal fun GroupMemberInfoLayoutPreview(member: GroupMember, connectionCode: String?, groupInfo: GroupInfo = GroupInfo.sampleData, connectionLoaded: Boolean = true) {
   SimpleXTheme {
     GroupMemberInfoLayout(
       rhId = null,
-      groupInfo = GroupInfo.sampleData,
+      groupInfo = groupInfo,
       member = member,
       scrollToItemId = remember { mutableStateOf(null) },
       connStats = remember { mutableStateOf(null) },
       newRole = remember { mutableStateOf(GroupMemberRole.Member) },
       developerTools = false,
       connectionCode = connectionCode,
-      connectionLoaded = true,
+      connectionLoaded = connectionLoaded,
       getContactChat = { Chat.sampleData },
       openDirectChat = {},
       createMemberContact = {},

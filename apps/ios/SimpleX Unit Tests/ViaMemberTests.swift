@@ -41,6 +41,15 @@ final class ViaMemberTests: XCTestCase {
     }
 
     @MainActor
+    func testCodeOfViaMemberIsNotRequested() async throws {
+        try replay("via/received")
+        let members = await apiListMembers(1)
+        let (chat, _) = try await apiGetChat(chatId: "#1", scope: nil, pagination: .last(count: 2))
+        guard case let .group(groupInfo, _) = chat.chatInfo else { return XCTFail("not a group: \(chat.chatInfo.id)") }
+        XCTAssertEqual(members.filter { $0.canVerifyCode(groupInfo: groupInfo) }.map(\.displayName), ["alice"])
+    }
+
+    @MainActor
     private func replay(_ fixture: String) throws {
         let commands = try XCTUnwrap((try fixtureJSON(fixture) as? [String: [String: Any]])?["commands"])
         sendSimpleXCmdStr = { cmd, _, _ in
