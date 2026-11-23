@@ -374,7 +374,7 @@ testWebpAnimation = do
 testWebpProfile :: IO ()
 testWebpProfile = do
   lossy <- B.readFile $ webpFixture "test.webp"
-  let withProfile profile = webpContainer [webpChunk "VP8X" $ B.pack [0x20, 0, 0, 0] <> littleEndian 3 127 <> littleEndian 3 127, webpChunk "ICCP" profile, B.drop 12 lossy]
+  let withProfile profile = webpContainer [webpChunk "VP8X" $ B.pack [0x20, 0, 0, 0] <> littleEndianInt 3 127 <> littleEndianInt 3 127, webpChunk "ICCP" profile, B.drop 12 lossy]
   Right (img, profile) <- decodeResizable $ withProfile p3Profile
   profile `shouldBe` CPDisplayP3
   forM_ [IFJpeg, IFPng] $ \format -> do
@@ -391,8 +391,8 @@ testWebpRefused = do
       (webpAnimation (16384, 16384) [((0, 0), (128, 128), lossy)], "image is too large"),
       (B.take (B.length lossy `div` 2) lossy, "invalid WebP container"),
       (B.init lossy, "invalid WebP container"),
-      (B.take 4 lossy <> littleEndian 4 (B.length lossy - 7) <> B.drop 8 lossy, "invalid WebP container"),
-      ("RIFF" <> littleEndian 4 24 <> "WAVEfmt " <> B.replicate 16 0, "unsupported image format")
+      (B.take 4 lossy <> littleEndianInt 4 (B.length lossy - 7) <> B.drop 8 lossy, "invalid WebP container"),
+      ("RIFF" <> littleEndianInt 4 24 <> "WAVEfmt " <> B.replicate 16 0, "unsupported image format")
     ]
     $ \(input, err) -> either Just (const Nothing) <$> decodeResizable input `shouldReturn` Just err
 
@@ -408,20 +408,20 @@ netpbmMd5 img = show . (hashlazy :: LB.ByteString -> Digest MD5) . BB.toLazyByte
       _ -> Nothing
 
 webpAnimation :: (Int, Int) -> [((Int, Int), (Int, Int), B.ByteString)] -> B.ByteString
-webpAnimation (w, h) frames = webpContainer $ [webpChunk "VP8X" $ B.pack [0x12, 0, 0, 0] <> littleEndian 3 (w - 1) <> littleEndian 3 (h - 1), webpChunk "ANIM" $ B.replicate 6 0] <> map frame frames
+webpAnimation (w, h) frames = webpContainer $ [webpChunk "VP8X" $ B.pack [0x12, 0, 0, 0] <> littleEndianInt 3 (w - 1) <> littleEndianInt 3 (h - 1), webpChunk "ANIM" $ B.replicate 6 0] <> map frame frames
   where
-    frame ((x, y), (fw, fh), still) = webpChunk "ANMF" $ B.concat (map (littleEndian 3) [x `div` 2, y `div` 2, fw - 1, fh - 1, 100]) <> "\0" <> B.drop 12 still
+    frame ((x, y), (fw, fh), still) = webpChunk "ANMF" $ B.concat (map (littleEndianInt 3) [x `div` 2, y `div` 2, fw - 1, fh - 1, 100]) <> "\0" <> B.drop 12 still
 
 webpContainer :: [B.ByteString] -> B.ByteString
-webpContainer chunks = "RIFF" <> littleEndian 4 (4 + B.length body) <> "WEBP" <> body
+webpContainer chunks = "RIFF" <> littleEndianInt 4 (4 + B.length body) <> "WEBP" <> body
   where
     body = B.concat chunks
 
 webpChunk :: B.ByteString -> B.ByteString -> B.ByteString
-webpChunk fourcc payload = fourcc <> littleEndian 4 (B.length payload) <> payload <> B.replicate (B.length payload `mod` 2) 0
+webpChunk fourcc payload = fourcc <> littleEndianInt 4 (B.length payload) <> payload <> B.replicate (B.length payload `mod` 2) 0
 
-littleEndian :: Int -> Int -> B.ByteString
-littleEndian n = B.reverse . bigEndian n
+littleEndianInt :: Int -> Int -> B.ByteString
+littleEndianInt n = B.reverse . bigEndian n
 
 testScaleResearch :: IO ()
 testScaleResearch = do
