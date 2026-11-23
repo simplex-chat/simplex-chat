@@ -174,7 +174,7 @@ Pixels (D4):
 Limits (D6):
 - canvas sides at most 16384, the value of `maxImageSide` (Image.hs:309-310), checked from the demuxer before allocation; frames are at most 16384 per side by format (format_constants.h:29), canvases up to 2^24 (:82)
 - canvas bytes, 3 or 4 per pixel, at most `maxMemoryMB` MiB, checked before allocation
-- `maxMemoryMB` from `decodeResizable`: half of `maxDecodeMemoryMB`, so that the premultiplied copy of `scaleRGBA8` (Image.hs:338-346) also fits; at `f054d0c3` the lossless decoder keeps a window of rows, not a second frame (`GetWindowRows`, src/dec/vp8l_dec.c:1217-1239)
+- `maxMemoryMB` from `decodeResizable`: half of `maxDecodeMemoryMB`, so that the premultiplied copy of `scaleRGBA8` (Image.hs:338-346) also fits; at `f054d0c3` the pixel buffer of the lossless decoder contains a window of rows, not a second frame (`GetWindowRows`, src/dec/vp8l_dec.c:1217-1239)
 - each libwebp allocation at most 512 MiB: `-DWEBP_MAX_ALLOCABLE_MEMORY=536870912` (src/utils/utils.h:34-41, src/utils/utils.c:173-176); the default is 16 GiB on 64-bit targets
 - input of the path and descriptor functions at most `maxDecodeMemoryMB` MiB (Mobile/File.hs:179-190), unchanged
 - link preview images at most 5 MiB (LinkPreview.hs:88-89), unchanged
