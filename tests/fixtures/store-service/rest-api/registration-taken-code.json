@@ -4,6 +4,8 @@
     "commitTx": null,
     "commitment": "0x798eae92f6eeaf4b461486319eca83995d00a0a6a1bfdcab7ca5d4037541026b",
     "community": null,
+    "disputeDays": 14,
+    "disputeUntil": null,
     "duration": 69259500,
     "id": "registration",
     "label": "carolbakery",
