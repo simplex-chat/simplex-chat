@@ -96,7 +96,7 @@ simplex:/m
 
 ## Scheme path
 
-By Q10 (decided), `/` after `simplex:` is optional in parsing. The existing parsers are changed in a separate PR, in simplexmq and simplex-chat:
+By Q10 (decided), `/` after `simplex:` is optional in parsing. The existing parsers are changed in separate PRs, simplex-chat/simplexmq#2092 and simplex-chat/simplex-chat#8306:
 
 | Parser | Source |
 |---|---|
@@ -534,6 +534,9 @@ sequenceDiagram
     else unknown link
       A->>A: alert "Update the app to open this link."
     end
+    opt the plan request fails
+      A->>A: alert "Error opening link" with the error
+    end
   end
 ```
 
@@ -545,10 +548,10 @@ sequenceDiagram
 | open at the item | `ItemsModel.loadOpenChatNoWait(chatId, itemId)` (ChatModel.swift:143-157), as the forward header (FramedItemView.swift:117-123) | `openChat(null, rhId, chatType, apiId, itemId)` (ChatListNavLinkView.kt:212-236), as FramedItemView.kt:362-370 |
 | link from outside | `connectViaUrl_` (ContentView.swift:463-488): a URL that the core parses as a message link is passed to the plan before the path switch; `/p` and `/s` are added to the path list | `connectIfOpenedViaUri` (ChatListView.kt:800-814): the same check before `planAndConnect`; `/p` and `/s` in AndroidManifest.xml:116-127 |
 | compose | a pasted link is shown as `[short text]` with the short text from the plan, and the link is kept in the compose state, as mentions are kept (ComposeView.swift:56-137); the text is sent with `[label](link)`; an edit loads the item's links the same way | the same in the Compose view |
-| Copy link | the item menu (ChatView.swift:2447-2507) | `MsgContentItemDropdownMenu` (ChatItemView.kt:394-451) |
+| Copy link | the item menu (ChatView.swift:2447-2507), after Copy, without a confirmation | `MsgContentItemDropdownMenu` (ChatItemView.kt:394-451), after Copy, with "Copied to clipboard" |
 | link pasted in search | `strConnectTarget` (NewChatView.swift:860-872), then the plan | `strConnectTarget` (NewChatView.kt:834), then the plan |
 
-- A link is shown as its label with its short text (Q3, Q4); a label equal to the short text is shown once. At Copy of a message's text, the app puts the text with its links on the clipboard; at "Copy link", the message's own link: global for a public chat, `simplex:/m#…` otherwise. At long-press on a link, the app opens the item menu, as now (ChatItemView.kt:129).
+- A link is shown as `label (short text)` in the link style, the short text in italics (Q3, Q4, Q19); a label equal to the short text is shown once. A link from an unknown source, without a target in the item's links, is shown in the link colour at 70% opacity (Q19). At Copy of a message's text, the app puts the text with its links on the clipboard; at "Copy link", the message's own link: global for a public chat, `simplex:/m#…` otherwise. At long-press on a link, the app opens the item menu, as now (ChatItemView.kt:129).
 - The decision from a link and its `MsgLinkPlan` to an action is one pure function in each app, tested on recorded core responses.
 - `simplex:` is registered on iOS (SimpleX--iOS--Info.plist:40-43), Android (AndroidManifest.xml:75) and desktop (plans/2026-09-28-desktop-deep-links.md, section "`simplex:` connection links"); https links on preset servers are opened in the app on iOS (SimpleX (iOS).entitlements:12) and Android (AndroidManifest.xml:86-127).
 - `minRemoteCtrlVersion` and `minRemoteHostVersion` (Remote.hs:77-82) are set to the release version, as for block markdown (plans/2026-10-13-block-markdown.md:691), because an earlier desktop cannot decode the new `Format`, `ChatItem` and `SimplexLinkType` values.
@@ -661,6 +664,8 @@ Each test, except the compatibility tests, is written to fail on master; the com
 | | alice forwards her own message in `#club` with a link to bob's message in `#team` to dan: alice's copy has the target copied from the original item's row; cath forwards the same message from `#club`: cath's copy is without a target |
 | | a global link forwarded into a group with SimpleX links off: the forwarder's copy has the target when the forwarder is in the public chat |
 | app tests on recorded core responses | `Format.messageLink` and `ChatItem.links` are decoded; each kind of link and `MsgLinkPlan` variant → its action; `CPUpdateRequired` → its alert; a pasted link is shown as `[short text]` and sent as `[short text](link)` |
+| | Q19: a link is shown as `label (short text)`; the recipient's link from an unknown source is muted, the sender's link with a target is not; Copy link follows Copy and puts the recorded link on the clipboard, with "Copied to clipboard" on desktop and no alert on iOS; a failed plan request shows "Error opening link" |
+| snapshot previews | a received message with a link to the same chat and a link from an unknown source: `ChatItemView.PreviewChatItemViewMessageLinks` (desktop), `FramedItemView_MessageLinks` (iOS) |
 | plugin unit and e2e tests | `link` of a message in the session's group, then a live message with `[label](link)`, then `links` of the message for a member and `open`; `open` for a chat of another session returns `none`; `connect` with a `simplex:/m` link returns its error |
 
 ## Decisions
@@ -682,5 +687,6 @@ Decided by the maintainer:
 | Q7 | a: agents and bots write links in the text as `[label](link)`, rewritten by the core |
 | Q8 | a, in stage 2: on the board, "waiting for you" of the session is linked to the oldest pending card of the session |
 | Q9 | accepted: the short text is received by everyone who receives the message and by everyone it is forwarded to |
-| Q10 | b now, c later: `/` after `simplex:` is optional in parsing now, in a separate PR for the parsers of simplexmq and simplex-chat; links are generated with `/` until enough clients parse both forms, then without it; in the maintainer's words, "it looks nicer. Do that now then" |
+| Q10 | b now, c later: `/` after `simplex:` is optional in parsing now, in separate PRs for the parsers, simplex-chat/simplexmq#2092 and simplex-chat/simplex-chat#8306; links are generated with `/` until enough clients parse both forms, then without it; in the maintainer's words, "it looks nicer. Do that now then" |
 | Q11 | a: `#name` for any public entity (a channel, a public group or a site), whose kind is given by the type of the resolved link; in the maintainer's words, "Group is a proto-site" |
+| Q19 | from the renders: links are shown as `label (short text)`; links from an unknown source are muted slightly; "Copy link" follows "Copy" in the message menu, on iOS without a confirmation; a new error text "Error opening link" |
