@@ -511,7 +511,7 @@ class ChangesTest(GitRepoTest):
 
     def test_badge_web_change_builds_the_core_and_tests_its_scope(self):
         self.assertEqual(self.builds("apps/simplex-store-service/web/src/catalog.ts"), {"haskell"})
-        self.assertEqual(self.values["scopes"], "badge-web")
+        self.assertEqual(self.values["scopes"], "badge-web names-e2e")
 
     def test_release_script_change_tests_the_ci_scripts(self):
         self.assertEqual(self.builds("scripts/ci/packages_release.py"), set())
@@ -540,6 +540,22 @@ class ChangesTest(GitRepoTest):
     def test_python_library_change_builds_packages_and_tests_the_support_bot_light_scope(self):
         self.assertEqual(self.builds("packages/simplex-chat-python/src/simplex_chat/client.py"), {"packages"})
         self.assertEqual(self.values["scopes"], "support-bot-light")
+
+    def test_names_page_pin_builds_the_core_and_tests_the_page_against_the_service(self):
+        self.assertEqual(self.builds("apps/simplex-domains"), {"haskell"})
+        self.assertEqual(self.values["scopes"], "names-page names-e2e")
+
+    def test_store_fixture_change_builds_only_the_core_and_tests_both_pages(self):
+        self.assertEqual(self.builds("tests/fixtures/store-service/rest-api/search.json"), {"haskell"})
+        self.assertEqual(self.values["scopes"], "badge-web names-page names-e2e")
+
+    def test_store_service_change_builds_the_core_and_tests_the_names_page_against_it(self):
+        self.assertEqual(self.builds("apps/simplex-store-service/src/StoreService/Service.hs"), {"haskell"})
+        self.assertEqual(self.values["scopes"], "names-e2e")
+
+    def test_store_service_test_or_script_change_builds_the_core_and_tests_the_names_page_against_the_service(self):
+        self.assertEqual(self.builds("tests/Bots/StoreService/FakeStripe.hs", "scripts/store-service/dev/contract-run.sh"), {"haskell"})
+        self.assertEqual(self.values["scopes"], "names-e2e")
 
 
 class PackageStateTest(GitRepoTest):

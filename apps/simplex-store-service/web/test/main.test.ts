@@ -119,7 +119,7 @@ mainTest("main: the answers are in the store, and never in the URL", () => {
 mainTest("main: a 429 lands on the rate-limited screen, counts down, and re-enables Pay at zero", async () => {
   mock.timers.enable({ apis: ["setInterval"] });
   try {
-    page.respondWith({ status: 429, body: { error: "rate_limited" }, headers: { "retry-after": "46" } });
+    page.respondWith({ status: 429, body: { type: "rate_limited" }, headers: { "retry-after": "46" } });
     const before = fetches.length;
     inView().all("button.primary")[0]!.click();
     await until(() => heading(inView()) === "Too many attempts", "the rate-limited screen");
@@ -150,7 +150,7 @@ mainTest("main: a 429 lands on the rate-limited screen, counts down, and re-enab
 });
 
 mainTest("main: a second press of Pay creates no second invoice", async () => {
-  page.respondWith({ status: 500, body: { error: "internal" } });
+  page.respondWith({ status: 500, body: { type: "internal" } });
   const before = fetches.length;
   const pay = inView().all("button.primary")[0]!;
   pay.click();
@@ -162,7 +162,7 @@ mainTest("main: a second press of Pay creates no second invoice", async () => {
   assert.equal(heading(inView()), "That did not go through", "a 500 is the failure screen, in the checkout's place on the track");
   assert.equal(panels().length, 4, "the track keeps its four panels");
 
-  page.respondWith({ status: 500, body: { error: "internal" } });
+  page.respondWith({ status: 500, body: { type: "internal" } });
   inView().all("button.primary")[0]!.click();
   await until(() => fetches.length === before + 2, "the retry's POST");
   await settle();
@@ -171,7 +171,7 @@ mainTest("main: a second press of Pay creates no second invoice", async () => {
   inView().all("button.back")[0]!.click();
   assert.equal(heading(inView()), "Check your order", "Back on the failure screen is the order summary again, in place");
   assert.ok(primary(inView()), "with an enabled Pay button");
-  page.respondWith({ status: 500, body: { error: "internal" } });
+  page.respondWith({ status: 500, body: { type: "internal" } });
   primary(inView())!.click();
   await until(() => heading(inView()) === "That did not go through", "the failure screen again");
 
@@ -353,7 +353,7 @@ mainTest("main: the provider-unavailable screen notice does not outlive the chec
   walk();
   assert.equal(heading(inView()), "Check your order");
 
-  page.respondWith({ status: 503, body: { error: "provider_unavailable" } });
+  page.respondWith({ status: 503, body: { type: "provider_unavailable" } });
   primary(inView())!.click();
   await until(() => inView().textContent.includes("temporarily unavailable"), "the provider-unavailable screen");
   assert.ok(inView().textContent.includes("Monero is temporarily unavailable"));
@@ -371,7 +371,7 @@ mainTest("main: the provider-unavailable screen notice does not outlive the chec
   assert.equal(inView().all("button.choice").filter((c) => c.hasAttribute("disabled")).length, 0,
     "and no method is left disabled by an attempt that is no longer being made");
 
-  page.respondWith({ status: 503, body: { error: "provider_unavailable" } });
+  page.respondWith({ status: 503, body: { type: "provider_unavailable" } });
   primary(inView())!.click();
   await until(() => inView().textContent.includes("temporarily unavailable"), "the provider-unavailable screen again");
   history.back();

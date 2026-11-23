@@ -2,12 +2,12 @@
 
 module StoreService.Names.Env (NamesEnv (..), newNamesEnv) where
 
-import Data.Time.Clock (getCurrentTime)
+import Data.Text (Text)
 import Simplex.Chat.Controller (ChatController (..))
-import Simplex.Messaging.Agent.Protocol (UserId)
+import Simplex.Chat.Types (User)
 import Simplex.Messaging.Agent.Store.Common (DBStore)
 import StoreService.Config (NamesConfig (..))
-import StoreService.Names.Chain (ChainClient, newChainClient)
+import StoreService.Names.Chain (newChainClient)
 import StoreService.Names.Contracts (Contracts, newContracts)
 import StoreService.Names.Phases (Phases, newPhases)
 import StoreService.Names.Profiles (Profiles, chatProfile, defaultProfileLimits, monotonicSeconds, newProfiles, systemResolver)
@@ -15,30 +15,31 @@ import StoreService.Names.Records (Records, newRecords)
 import StoreService.Names.Sender (Sender, newSender)
 import StoreService.Names.Turns (Turns)
 import StoreService.Providers (Provider)
+import StoreService.Store.Invoices (currentSecond)
 import StoreService.Waiters (Waiters)
 
 data NamesEnv = NamesEnv
   { neChat :: ChatController,
-    neUserId :: UserId,
+    neUser :: User,
     neConfig :: NamesConfig,
     neStore :: DBStore,
     nePhases :: Phases,
     neTurns :: Turns,
-    neChain :: ChainClient,
     neContracts :: Contracts,
     neProfiles :: Profiles,
     neSender :: Sender,
     neRecords :: Records,
     neWaiters :: Waiters,
-    neProviders :: [Provider]
+    neProviders :: [Provider],
+    neReport :: Text -> IO ()
   }
 
-newNamesEnv :: ChatController -> UserId -> NamesConfig -> DBStore -> Turns -> Waiters -> [Provider] -> IO NamesEnv
-newNamesEnv neChat@ChatController {random} neUserId neConfig@NamesConfig {nTLD, nChain, nRecordEditsPerYear, nMinPriceCentsPerYear} neStore neTurns neWaiters neProviders = do
+newNamesEnv :: ChatController -> User -> NamesConfig -> DBStore -> Turns -> Waiters -> [Provider] -> (Text -> IO ()) -> IO NamesEnv
+newNamesEnv neChat@ChatController {random} neUser neConfig@NamesConfig {nTLD, nChain, nRecordEditsPerYear, nMinPriceCentsPerYear} neStore neTurns neWaiters neProviders neReport = do
   nePhases <- newPhases
-  neChain <- newChainClient random nChain
-  neContracts <- newContracts neStore nTLD nMinPriceCentsPerYear neChain
-  neProfiles <- newProfiles defaultProfileLimits monotonicSeconds (chatProfile neChat neUserId) systemResolver
-  neSender <- newSender random neChain neStore getCurrentTime
-  neRecords <- newRecords neStore neTurns neContracts neChain neSender nTLD nRecordEditsPerYear getCurrentTime
-  pure NamesEnv {neChat, neUserId, neConfig, neStore, nePhases, neTurns, neChain, neContracts, neProfiles, neSender, neRecords, neWaiters, neProviders}
+  chain <- newChainClient random nChain
+  neContracts <- newContracts neStore nTLD nMinPriceCentsPerYear chain
+  neProfiles <- newProfiles defaultProfileLimits monotonicSeconds (chatProfile neChat neUser) systemResolver
+  neSender <- newSender random chain neStore currentSecond
+  neRecords <- newRecords neStore neTurns neContracts neSender nTLD nRecordEditsPerYear currentSecond
+  pure NamesEnv {neChat, neUser, neConfig, neStore, nePhases, neTurns, neContracts, neProfiles, neSender, neRecords, neWaiters, neProviders, neReport}

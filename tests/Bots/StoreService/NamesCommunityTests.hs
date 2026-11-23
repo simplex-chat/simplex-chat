@@ -3,26 +3,27 @@
 
 module Bots.StoreService.NamesCommunityTests (namesCommunityTests) where
 
-import Bots.StoreService.ConfigTests (chainSection, namesIni, namesRefusal, namesSection, parseIni, parsedNames, withIni)
-import Bots.StoreService.FakeEthNode (CallAnswer (..), answerCall, answerListing, fakeCommunityTerms, fakeCommunityTermsText, fakeController, fakeGeneralTerms, fakeGeneralTermsText, fakeNamePolicy, fakeTermsLink, fetchedTexts, setCommunityTerms, setGeneralTerms, nextBlock)
+import Bots.StoreService.ConfigTests (chainSection, namesIni, namesRefusal, namesSection, parseIni, parsedNames, unknownIn)
+import Bots.StoreService.FakeEthNode (CallAnswer (..), address, answerCall, fakeController, fakeNamePolicy, fakeTermsHash, fakeTermsLink, fetchedTexts, setCommunityTerms, setGeneralTerms, nextBlock)
 import Bots.StoreService.NamesContractsTests (withContracts)
 import Bots.StoreService.NamesSearchTests (aliceHex)
 import Bots.StoreService.WebTests (capturingStderr)
 import Control.Concurrent.STM (TVar)
 import Control.Monad (forM_, void)
 import Crypto.Random (ChaChaDRG)
-import Data.Ini (readIniFile)
 import qualified Data.Map.Strict as M
-import Data.Maybe (fromJust)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import qualified Simplex.Messaging.Crypto as C
+import Simplex.Messaging.Encoding.String (TextEncoding (..), strDecode)
 import Simplex.Messaging.SimplexName (LabelHash (..), labelHash)
-import StoreService.Config (NamesConfig (..), unknownKeys)
-import StoreService.Names.Abi (AbiValue (..), abiBytes, abiTuple, bytes32FromHex, hex, selector)
-import StoreService.Names.Community (agreedTermsHash, communityFor, termsFor)
+import StoreService.Config (NamesConfig (..))
+import StoreService.Names.Abi (AbiValue (..), abiBytes, abiTuple, addressWord, hex, selector, uint256)
+import StoreService.Names.Chain (Hex32 (..))
+import StoreService.Names.Community (communityFor, termsFor)
 import StoreService.Names.Contracts (Terms (..))
+import StoreService.Names.Signatures (AgreedTerms (..))
 import StoreService.Names.View (addressText)
 import StoreService.Service (logNamePolicy)
 import Test.Hspec
@@ -57,7 +58,7 @@ refusedCommunity entries = namesRefusal namesSection (chainSection <> communityL
 
 -- viem: keccak256 of "alicebakery", as the page sends it
 aliceHash :: LabelHash
-aliceHash = LabelHash $ fromJust $ bytes32FromHex aliceHex
+aliceHash = LabelHash $ unHex32 $ either error id $ strDecode $ encodeUtf8 aliceHex
 
 testCommunityParsed :: IO ()
 testCommunityParsed = do
@@ -76,16 +77,16 @@ testCommunityWithoutNames =
 testRepeatedHeader :: IO ()
 testRepeatedHeader = do
   refusedCommunity ["bakers = " <> bakersText, "[community]", "florists = florists in Lisbon"]
-    `shouldReturn` "[community] is written twice, and only the last of them would be read"
-  namesRefusal (namesSection <> chainSection <> namesSection) [] `shouldReturn` "[names] is written twice, and only the last of them would be read"
-  namesRefusal namesSection (chainSection <> ["[legacy]", "a = 1", " [ legacy ] "]) `shouldReturn` "[legacy] is written twice, and only the last of them would be read"
+    `shouldReturn` "[community] is written twice"
+  namesRefusal (namesSection <> chainSection <> namesSection) [] `shouldReturn` "[names] is written twice"
+  namesRefusal namesSection (chainSection <> ["[legacy]", "a = 1", " [ legacy ] "]) `shouldReturn` "[legacy] is written twice"
 
 testRepeatedKey :: IO ()
 testRepeatedKey = do
   refusedCommunity ["bakers = " <> bakersText, "florists = florists in Lisbon", "bakers = bakers of Porto"]
-    `shouldReturn` "community.bakers is written twice, and only the first of them would be read"
+    `shouldReturn` "community.bakers is written twice"
   namesRefusal (namesSection <> ["tld = simplex"]) chainSection
-    `shouldReturn` "names.tld is written twice, and only the first of them would be read"
+    `shouldReturn` "names.tld is written twice"
 
 testBadLabel :: IO ()
 testBadLabel = do
@@ -110,41 +111,45 @@ testBadText = do
 
 testNoUnknownKeys :: IO ()
 testNoUnknownKeys =
-  withIni (namesIni namesSection (chainSection <> communityLines ["bakers = " <> bakersText, "florists = florists in Lisbon"])) $ \p -> do
-    Right ini <- readIniFile p
-    unknownKeys ini `shouldBe` []
+  unknownIn (namesIni namesSection (chainSection <> communityLines ["bakers = " <> bakersText, "florists = florists in Lisbon"])) `shouldBe` []
 
 testLoadedCount :: IO ()
 testLoadedCount = do
-  listed <- capturingStderr $ void $ parseIni (namesIni namesSection (chainSection <> communityLines ["bakers = " <> bakersText, "florists = florists in Lisbon"]))
-  listed `shouldSatisfy` T.isInfixOf "names: 2 community names loaded"
-  none <- capturingStderr $ void $ parseIni (namesIni namesSection chainSection)
-  none `shouldSatisfy` T.isInfixOf "names: 0 community names loaded"
+  listed <- capturingStderr $ void $ parseIni (namesIni namesSection (chainSection <> communityLines ["bakers = " <> bakersText, "florists = florists in Lisbon", "potters = potters in Porto"]))
+  listed `shouldSatisfy` T.isInfixOf "names: 3 community names loaded"
 
 testTermsFor :: IO ()
 testTermsFor = do
   let hexDigits = "e2937ea655d8e743e2a8cecbab83acdf055846c80e13001ec1f8dc404e4ef2d9"
-      h = fromJust $ bytes32FromHex $ "0x" <> hexDigits
-      terms = Terms {tmLink = "https://git.simplex.chat/simplex-chat/simplex-chat/raw/commit/4cb24444a1f2e3d4c5b6a7980716253443526170/docs/terms.md#sha256=" <> hexDigits, tmHash = h}
+      h = either error id $ strDecode $ encodeUtf8 $ "0x" <> hexDigits
+      terms = Terms {tmLink = "https://git.simplex.chat/simplex-chat/simplex-chat/raw/commit/4cb24444a1f2e3d4c5b6a7980716253443526170/docs/terms.md#sha256=" <> hexDigits, tmHash = h, tmFetch = ("", Nothing)}
       listed = "community/" <> hexDigits
-  termsFor False terms `shouldBe` hexDigits
-  termsFor True terms `shouldBe` listed
-  agreedTermsHash listed `shouldBe` Just h
-  agreedTermsHash hexDigits `shouldBe` Nothing
-  agreedTermsHash "community" `shouldBe` Nothing
-  agreedTermsHash "2026-10-23" `shouldBe` Nothing
-  agreedTermsHash ("community/" <> T.toUpper hexDigits) `shouldBe` Nothing
+  textEncode (termsFor False terms) `shouldBe` hexDigits
+  textEncode (termsFor True terms) `shouldBe` listed
+  textDecode listed `shouldBe` Just AgreedTerms {communityName = True, termsHash = h}
+  textDecode hexDigits `shouldBe` Just AgreedTerms {communityName = False, termsHash = h}
+  mapM_ (\t -> (t, textDecode t :: Maybe AgreedTerms) `shouldBe` (t, Nothing)) ["community", "2026-10-23", "community/" <> T.toUpper hexDigits, T.toUpper hexDigits, "community/community/" <> hexDigits]
 
 testStartupCheck :: TVar ChaChaDRG -> IO ()
 testStartupCheck g = withContracts g $ \node ct -> do
   cfg <- withCommunity ["alicebakery = Alice's bakery"]
+  let policy = address "0x00000000000000000000000000000000057a7700"
+      generalText = "SimpleX general terms of the startup check"
+      communityText = "SimpleX community terms of the startup check"
+      LabelHash lh = aliceHash
+      listing = selector "communityNames(bytes32)" <> lh
+      linked text = Returns $ abiTuple [Dynamic $ abiBytes $ encodeUtf8 $ fakeTermsLink text]
+  answerCall node fakeController (selector "namePolicy()") $ Returns $ addressWord policy
+  answerCall node policy listing $ Returns $ uint256 (0 :: Int)
+  answerCall node policy (selector "generalTermsLink()") $ linked generalText
+  answerCall node policy (selector "communityTermsLink()") $ linked communityText
   logged <- capturingStderr $ logNamePolicy cfg ct
-  logged `shouldSatisfy` T.isInfixOf ("names: name policy " <> addressText fakeNamePolicy)
-  logged `shouldSatisfy` T.isInfixOf ("names: general terms " <> fakeTermsLink fakeGeneralTermsText <> ", hash " <> hex fakeGeneralTerms)
-  logged `shouldSatisfy` T.isInfixOf ("names: community terms " <> fakeTermsLink fakeCommunityTermsText <> ", hash " <> hex fakeCommunityTerms)
+  logged `shouldSatisfy` T.isInfixOf ("names: name policy " <> addressText policy)
+  logged `shouldSatisfy` T.isInfixOf ("names: general terms " <> fakeTermsLink generalText <> ", hash " <> hex (fakeTermsHash generalText))
+  logged `shouldSatisfy` T.isInfixOf ("names: community terms " <> fakeTermsLink communityText <> ", hash " <> hex (fakeTermsHash communityText))
   logged `shouldSatisfy` T.isInfixOf "names: [community] lists a name the name policy does not list, so it is sold as a plain name: Alice's bakery"
   fetchedTexts node `shouldReturn` []
-  answerListing node aliceHash $ Reverts ""
+  answerCall node policy listing $ Reverts ""
   unread <- capturingStderr $ logNamePolicy cfg ct
   unread `shouldSatisfy` T.isInfixOf "names: a [community] name's listing could not be read: Alice's bakery"
 
@@ -163,12 +168,12 @@ testStartupWarnings g = withContracts g $ \node ct -> do
   let warns text = capturingStderr (logNamePolicy cfg ct) >>= (`shouldSatisfy` T.isInfixOf text)
       otherLink = "https://example.org/simplex-chat/terms.md"
   setGeneralTerms node ""
-  warns "names: the name policy has no general terms yet, so plain names cannot be ordered until the owner sets them"
+  warns "names: the name policy has no general terms the service takes, so plain names cannot be ordered until the owner sets them"
   setCommunityTerms node ""
-  warns "names: the name policy has no community terms yet, so community names cannot be ordered until the owner sets them"
+  warns "names: the name policy has no community terms the service takes, so community names cannot be ordered until the owner sets them"
   answerCall node fakeNamePolicy (selector "generalTermsLink()") $ Returns $ abiTuple [Dynamic $ abiBytes $ encodeUtf8 otherLink]
   nextBlock node
-  warns $ "names: the name policy's general terms are not a link the service takes, so plain names cannot be ordered: " <> otherLink
+  warns $ "names: the name policy's general terms are not a link the service takes, so names under them cannot be ordered: " <> otherLink
   answerCall node fakeNamePolicy (selector "generalTermsLink()") $ Reverts ""
   nextBlock node
   warns "names: the name policy's terms could not be read: "

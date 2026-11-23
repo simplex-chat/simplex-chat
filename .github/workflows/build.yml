@@ -16,6 +16,7 @@ on:
       - "apps/simplex-bot/**"
       - "apps/simplex-bot-advanced/**"
       - "apps/simplex-store-service/**"
+      - "scripts/store-service/**"
       - "apps/simplex-broadcast-bot/**"
       - "apps/simplex-directory-service/**"
       - "apps/multiplatform/**"
@@ -45,6 +46,9 @@ on:
       - "packages/simplex-chat-mcp/**"
       - "apps/simplex-support-bot/**"
       - "apps/simplex-support-bot-light/**"
+      - "apps/simplex-domains"
+      - "tests/fixtures/store-service/rest-api/**"
+      - "tests/Bots/StoreService/**"
     types: [opened, synchronize, reopened, ready_for_review]
   workflow_dispatch:
     inputs:
@@ -790,7 +794,7 @@ jobs:
 
       - name: Test changed scopes
         if: ${{ !cancelled() && matrix.scope_tests == true && steps.setup-python.outcome == 'success' }}
-        timeout-minutes: 30
+        timeout-minutes: 90
         shell: bash
         env:
           SCOPES: ${{ needs.maybe-release.outputs.scopes }}
@@ -798,6 +802,14 @@ jobs:
           for scope in $SCOPES; do
             scripts/ci/scope-tests.sh "$scope"
           done
+
+      - name: Names page cases' results
+        if: ${{ failure() && matrix.scope_tests == true && contains(needs.maybe-release.outputs.scopes, 'names-e2e') }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: names-e2e
+          path: ${{ runner.temp }}/names-contract-run.*
+          retention-days: 14
 
       - name: Remove -O2 build directory
         id: remove-o2

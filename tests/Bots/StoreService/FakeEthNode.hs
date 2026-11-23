@@ -5,6 +5,7 @@
 module Bots.StoreService.FakeEthNode
   ( FakeEthNode (..),
     address,
+    unhex,
     CallAnswer (..),
     TextAnswer (..),
     Fault (..),
@@ -95,11 +96,12 @@ import Simplex.Messaging.Crypto (keccak256, sha256Hash)
 import qualified Simplex.Messaging.Crypto.Secp256k1 as S
 import Simplex.Messaging.Encoding.String (strDecode)
 import Simplex.Messaging.Eth.Address (Address, unAddress)
+import Simplex.Messaging.Eth.Transaction (Eip1559Tx (..))
 import Simplex.Messaging.SimplexName (LabelHash (..))
 import Simplex.Messaging.Util (eitherToMaybe)
 import StoreService.Config (ChainConfig (..))
 import StoreService.Names.Abi (AbiValue (..), abiBytes, abiTuple, addressWord, hex, selector, uint256)
-import StoreService.Names.Chain (ChainClient (..), TxRequest (..), decodeSignedTx, newChainClient)
+import StoreService.Names.Chain (ChainClient (..), decodeSignedTx, newChainClient)
 import System.Timeout (timeout)
 
 data FakeEthNode = FakeEthNode
@@ -113,7 +115,7 @@ data CallAnswer = Returns ByteString | Reverts ByteString
 data TextAnswer = TextAnswer Status ResponseHeaders LB.ByteString
 
 data Fault
-  = RpcError Int Text (Maybe ByteString)
+  = RpcError Int Text (Maybe J.Value)
   | -- | answers only once the node is closed
     Hang
   | HttpFailure
@@ -250,6 +252,7 @@ defaultCall (to, calldata)
   | to == unAddress fakeNamePolicy && calldata == selector "communityTermsLink()" = Just $ Returns $ linkAnswer $ fakeTermsLink fakeCommunityTermsText
   | to == unAddress fakeNamePolicy && selector "acceptedTerms(bytes32,address)" `B.isPrefixOf` calldata = Just $ Returns $ B.replicate 32 0
   | to == unAddress fakeNamePolicy && selector "nonces(address)" `B.isPrefixOf` calldata = Just $ Returns $ uint256 (0 :: Int)
+  | to == unAddress fakeSponsor && selector "nonces(address)" `B.isPrefixOf` calldata = Just $ Returns $ uint256 (0 :: Int)
   | otherwise = Nothing
 
 fakeRegistrarKey :: S.Secp256k1PrivateKey
@@ -355,7 +358,7 @@ pausedAt node method action = do
   timeout gateArrival (awaitGate gate) >>= maybe (cancel inFlight >> fail ("no " <> T.unpack method <> " reached the gate")) (const $ pure (inFlight, gate))
 
 revertFault :: ByteString -> Fault
-revertFault = RpcError 3 "execution reverted" . Just
+revertFault = RpcError 3 "execution reverted" . Just . J.String . hex
 
 -- | Sets the latest block's number and time.
 setBlock :: FakeEthNode -> Word64 -> Word64 -> IO ()
@@ -457,7 +460,7 @@ answer st method params = do
           let key = (unAddress to, calldata)
               callAnswer = \case
                 Just (Returns ret) -> result $ hex ret
-                Just (Reverts revertData) -> rpcError 3 "execution reverted" (Just revertData)
+                Just (Reverts revertData) -> rpcError 3 "execution reverted" (Just $ J.String $ hex revertData)
                 Nothing -> rpcError (-32000) "no fake answer for this call" Nothing
            in case M.lookup key fsCallsOnce of
                 Just a -> callAnswer (Just a) <$ writeTVar st s {fsCallsOnce = M.delete key fsCallsOnce}
@@ -467,7 +470,7 @@ answer st method params = do
     ("eth_estimateGas", call : _)
       | Just (_, calldata) <- JT.parseMaybe callTarget call,
         Just revertData <- M.lookup calldata fsDryRuns ->
-          pure $ rpcError 3 "execution reverted" (Just revertData)
+          pure $ rpcError 3 "execution reverted" (Just $ J.String $ hex revertData)
     ("eth_estimateGas", _) -> pure $ result $ quantity fakeGas
     ("eth_getTransactionCount", [_, J.String "latest"]) -> pure $ result $ quantity $ toInteger fsUsed
     ("eth_getTransactionCount", [_, J.String "pending"]) ->
@@ -490,15 +493,15 @@ answer st method params = do
         | otherwise -> J.Null
     ("eth_sendRawTransaction", [J.String raw])
       | Just tx <- fromHex raw,
-        Right TxRequest {trNonce, trMaxFeePerGas, trMaxPriorityFeePerGas} <- decodeSignedTx tx -> do
-          let accept = (result $ hex $ keccak256 tx) <$ writeTVar st s {fsSent = tx : fsSent, fsPool = M.insert trNonce tx fsPool}
-          case M.lookup trNonce fsPool of
-            _ | trNonce < fsUsed -> pure $ rpcError (-32000) "nonce too low" Nothing
+        Right Eip1559Tx {txNonce, txMaxFeePerGas, txMaxPriorityFeePerGas} <- decodeSignedTx tx -> do
+          let accept = (result $ hex $ keccak256 tx) <$ writeTVar st s {fsSent = tx : fsSent, fsPool = M.insert txNonce tx fsPool}
+          case M.lookup txNonce fsPool of
+            _ | txNonce < fsUsed -> pure $ rpcError (-32000) "nonce too low" Nothing
             Just known
               | known == tx -> pure $ rpcError (-32000) "already known" Nothing
               -- geth and reth replace a pending transaction only when both its fees are at least 10% higher
-              | Right TxRequest {trMaxFeePerGas = knownMax, trMaxPriorityFeePerGas = knownTip} <- decodeSignedTx known,
-                trMaxFeePerGas * 10 < knownMax * 11 || trMaxPriorityFeePerGas * 10 < knownTip * 11 ->
+              | Right Eip1559Tx {txMaxFeePerGas = knownMax, txMaxPriorityFeePerGas = knownTip} <- decodeSignedTx known,
+                txMaxFeePerGas * 10 < knownMax * 11 || txMaxPriorityFeePerGas * 10 < knownTip * 11 ->
                   pure $ rpcError (-32000) "replacement transaction underpriced" Nothing
             _ -> accept
     _ -> pure $ rpcError (-32601) "method not found" Nothing
@@ -509,8 +512,8 @@ answer st method params = do
 blockJson :: Word64 -> Word64 -> Word64 -> J.Value
 blockJson baseFee number time = J.object ["number" .= quantity (toInteger number), "timestamp" .= quantity (toInteger time), "baseFeePerGas" .= quantity (toInteger baseFee)]
 
-rpcError :: Int -> Text -> Maybe ByteString -> [JT.Pair]
-rpcError code message revertData = ["error" .= J.object (["code" .= code, "message" .= message] <> maybe [] (\d -> ["data" .= hex d]) revertData)]
+rpcError :: Int -> Text -> Maybe J.Value -> [JT.Pair]
+rpcError code message revertData = ["error" .= J.object (["code" .= code, "message" .= message] <> maybe [] (\d -> ["data" .= d]) revertData)]
 
 quantity :: Integer -> Text
 quantity n = "0x" <> T.pack (showHex n "")
@@ -525,3 +528,6 @@ fromHex t = T.stripPrefix "0x" t >>= eitherToMaybe . convertFromBase Base16 . en
 
 address :: ByteString -> Address
 address = either error id . strDecode
+
+unhex :: ByteString -> ByteString
+unhex = either error id . convertFromBase Base16
