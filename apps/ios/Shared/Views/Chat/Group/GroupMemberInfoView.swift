@@ -944,6 +944,8 @@ struct GroupMemberInfoView_ViaMember_Previews: PreviewProvider {
         reviewer.memberRole = .member
         reviewer.memberProfile = LocalProfile(profileId: 3, displayName: "reviewer", fullName: "", localAlias: "")
         reviewer.memberProfile.peerType = .agent
+        reviewer.memberContactId = nil
+        reviewer.memberContactProfileId = 3
         reviewer.memberVia = claude.memberId
         reviewer.activeConn = nil
         let m = ChatModel()

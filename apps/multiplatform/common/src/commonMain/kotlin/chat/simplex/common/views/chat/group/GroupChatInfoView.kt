@@ -1493,7 +1493,7 @@ fun PreviewMemberRowsViaMember() = GroupMembersPreview(listOf(previewClaude)) {
     Column(Modifier.padding(horizontal = DEFAULT_PADDING)) {
       MemberRow(GroupInfo.sampleData.membership, user = true)
       MemberRow(previewClaude)
-      MemberRow(GroupMember.sampleData.copy(groupMemberId = 2, memberId = "bob", localDisplayName = "bob", memberProfile = LocalProfile.sampleData.copy(profileId = 2, displayName = "bob", fullName = "")))
+      MemberRow(GroupMember.sampleData.copy(groupMemberId = 2, memberId = "bob", localDisplayName = "bob", memberProfile = LocalProfile.sampleData.copy(profileId = 2, displayName = "bob", fullName = ""), memberContactProfileId = 2))
       MemberRow(previewViaClaude(6, "reviewer"))
     }
   }

@@ -1263,6 +1263,7 @@ struct GroupChatInfoView_ViaMember_Previews: PreviewProvider {
         m.localDisplayName = name
         m.memberProfile = LocalProfile(profileId: id, displayName: name, fullName: "", localAlias: "")
         m.memberProfile.peerType = peerType
+        m.memberContactProfileId = id
         return m
     }
 }
