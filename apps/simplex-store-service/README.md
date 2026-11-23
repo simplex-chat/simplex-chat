@@ -2061,7 +2061,7 @@ It needs bash 5.1 or later (for `wait -n -p`), `cabal` (for the default `STORE_T
 Foundry's anvil, Node.js 22.18 or later (which runs the webapp's `dev/deploy.ts` as TypeScript, as its
 `dev/start.sh` does), and `curl`; the webapp with its packages and
 Playwright's Chromium (`npm install`, `npx playwright install chromium`); and the compiled
-`ens-contracts` submodule (simplex-network/ens-contracts#47) of a simplex-namespace-contract checkout
+`ens-contracts` submodule (simplex-network/ens-contracts#51, ebf7698) of a simplex-namespace-contract checkout
 (brenzi/simplex-namespace-contract main, since #10), whose `test/fixtures/terms/` the deploy links
 as the terms, as the webapp's `dev/start.sh` needs; the webapp's `dev/Dockerfile` builds both at the
 versions it pins. `RPC_PORT`, `SERVICE_PORT`, `BADGES_PORT`, `RUNNER_PORT`, 8099, 5173 and 8098 must be

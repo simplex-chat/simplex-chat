@@ -140,7 +140,7 @@ data WriteRefusal = WRChanged | WRRefused OrderRefusal
   deriving (Eq, Show)
 
 -- | What the register check found on the order's current name: no register through, the order registered or ended at a new version,
--- the order changed since it was read, or a failed chain read.
+-- the order changed since it was read, or nothing judged yet: a failed chain read, or a register above the confirmed block.
 data Landing = LNotLanded | LRegistered Int64 | LEnded Int64 | LChanged | LUnread
   deriving (Eq, Show)
 

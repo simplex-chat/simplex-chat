@@ -52,7 +52,7 @@ LIMIT="sends more checkouts or cancels than the service takes from one client in
 AMOUNTS="expects the mock's coin amounts, a price at the invoice's rate, or its decimal text; the fake BTCPay answers its fixtures' amounts, written to 8 places as BTCPay writes them"
 PROFILES="expects the profiles the mock makes up for its links; the service reads a link's profile from the link's server, which these links are not on"
 MONERO="pays late in Monero, which the service credits only when BTCPay's Monero settled-confirmation threshold is 1 or more; the fake BTCPay's Monero fixture sets none"
-UNREGISTER="ends a registration with /control/unregister, which only the mock does; on chain, unregister takes the cold key"
+UNREGISTER="ends a registration with /control/unregister, which only the mock does; the service sets ended only in its hourly sweep or at a register check, which the run does not reach after an unregister"
 
 EXCLUDED=(
   "the service's mode is at /api/config: open by default, codes once the mock takes codes only, the page the same in both" "$STATE"
