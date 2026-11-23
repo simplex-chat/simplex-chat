@@ -747,10 +747,10 @@ sweepEndedRegistrations w@Worker {wkOrders = OrdersEnv {oeStore, oeContracts, oe
     unread (RegistrationId ridText, e) = logWarn $ "names ended sweep: registration " <> ridText <> ": a chain read failed, read again at the next pass: " <> tshow e
     endIfUnregistered now Block {blockNumber, blockTimestamp} rid@(RegistrationId ridText) =
       ( withTransaction oeStore (`getRegistration` rid) >>= \case
-          Just r@NameRegistration {nrPhase = ORegistered expiry (Just disputeEnd) _, nrLabelHash, nrDisputeDays}
+          Just r@NameRegistration {nrPhase = ORegistered _ (Just disputeEnd) _, nrLabelHash, nrDisputeDays}
             | roundedSeconds disputeEnd < roundedSeconds blockTimestamp + fromIntegral (disputeSeconds nrDisputeDays) ->
                 disputeUntil oeContracts (AtBlock blockNumber) nrLabelHash >>= traverse (\current -> when (current /= Just disputeEnd) $ void $ inTurn w r $ do
-                  result@(v, _) <- store w now r {nrPhase = OEnded expiry disputeEnd}
+                  result@(v, _) <- store w now r {nrPhase = OEnded}
                   forM_ v $ \_ -> logNote $ "names ended sweep: registration " <> ridText <> " set ended: disputeUntil(id) read at block " <> tshow blockNumber <> " is " <> maybe "0" (tshow . roundedSeconds) current <> ", not " <> tshow (roundedSeconds disputeEnd)
                   pure result)
           _ -> pure $ Right ()

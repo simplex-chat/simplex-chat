@@ -1275,12 +1275,12 @@ registration id, the `disputeUntil(id)` read and the end it was compared with.
 When an order's register is found mined, by the worker or by `//close`, `disputeUntil(id)` at the
 confirmed block is compared with the end set by its register, its block's timestamp plus the order's
 days; when the two differ, the registration was ended before the confirmed block, possibly followed
-by another, and the order is set `ended` at once, with the expiry and the dispute end set by its
-register stored: its block's timestamp plus the order's duration, and plus its days. While the
+by another, and the order is set `ended` at once. An ended order stores no expiry, dispute end or
+registration time. While the
 register's block is above the confirmed block, a warning naming both blocks is logged and the order
 is left as it is: the worker checks it again 15 seconds later, and `//close` answers `Nothing
 recorded: the chain could not be read; run //close again.` The view's phase of an ended order is
-`{"type": "ended"}`; its stored times are kept.
+`{"type": "ended"}`.
 
 This version runs against the contracts with the dispute period (ens-contracts #51): the service
 calls the sponsor's `registerWithCredit` with `disputeDays` and the registrar's `disputeUntil`.

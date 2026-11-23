@@ -301,7 +301,7 @@ testStoredPhase = forM_ unfit $ \columns -> withServiceStore $ \st -> do
         "phase = 'failed', failed_at = created_at, fail_reason = 'registry_refused', closed_by = 'expired'",
         "dispute_until = 1",
         "phase = 'ended', expires_at = 1",
-        "phase = 'ended', expires_at = 1, dispute_until = 2, registered_at = created_at",
+        "phase = 'ended', dispute_until = 2",
         "dispute_days = 13",
         "dispute_days = 121"
       ]
@@ -508,7 +508,7 @@ testRoundTrip = withServiceStore $ \st -> do
             nrAgreedTerms = agreed (communityTermsPrefix <> plainTerms)
           }
       registered = changed {nrPhase = ORegistered (RoundedSystemTime 1861833600) (Just $ RoundedSystemTime 1803116100) (at 3)}
-      ended = changed {nrPhase = OEnded (RoundedSystemTime 1861833600) (RoundedSystemTime 1803116100)}
+      ended = changed {nrPhase = OEnded}
   write st changed `shouldReturn` Written 2
   reg st "r1" `shouldReturn` changed {nrVersion = 2, nrUpdatedAt = at 1}
   write st registered {nrVersion = 2} `shouldReturn` Written 3
@@ -550,7 +550,7 @@ testOrderLive = withServiceStore $ \st -> do
       registered = ORegistered (RoundedSystemTime 1861833600) Nothing (at 3)
       failed = OFailed (at 2) FRRegistryRefused
       taken = OTaken (at 2)
-      ended = OEnded (RoundedSystemTime 1861833600) (RoundedSystemTime 1803116100)
+      ended = OEnded
   map (liveIn paid) [OUnpaid (InvoiceId "inv-r1"), OClosed ICExpired, OQueued, OCommitting (TxHash $ hashFixture 8), OCommitted commitFixture, ORegistering commitFixture (TxHash $ hashFixture 9), registered, taken, failed, ended]
     `shouldBe` [(PUnpaid, True), (PClosed, False), (PQueued, True), (PCommitting, True), (PCommitted, True), (PRegistering, True), (PRegistered, False), (PTaken, False), (PFailed, True), (PEnded, False)]
   map (liveIn code) [taken, failed, registered, ended] `shouldBe` [(PTaken, False), (PFailed, True), (PRegistered, False), (PEnded, False)]
@@ -672,14 +672,14 @@ testLabelRegistering = withServiceStore $ \st -> do
     holder `shouldReturn` Just (RegistrationId "r1")
     r2 <- reg st "r2"
     write st r2 {nrPhase = OQueued} `shouldThrow` anyException
-  forM_ [OTaken (at 4), ORegistered (RoundedSystemTime 1861833600) Nothing (at 4), OEnded (RoundedSystemTime 1861833600) (RoundedSystemTime 1803116100)] $ \phase -> do
+  forM_ [OTaken (at 4), ORegistered (RoundedSystemTime 1861833600) Nothing (at 4), OEnded] $ \phase -> do
     r <- reg st "r1"
     write st r {nrPhase = phase} `shouldNotReturn` VersionChanged
     holder `shouldReturn` Nothing
 
 testActive :: IO ()
 testActive = withServiceStore $ \st -> do
-  let phases = [OUnpaid (InvoiceId "inv-r1"), OQueued, OCommitting (TxHash $ hashFixture 8), OCommitted commitFixture, ORegistering commitFixture (TxHash $ hashFixture 9), ORegistered (RoundedSystemTime 1861833600) Nothing (at 3), OTaken (at 2), OFailed (at 2) FRRegistryRefused, OClosed ICExpired, OEnded (RoundedSystemTime 1861833600) (RoundedSystemTime 1803116100)]
+  let phases = [OUnpaid (InvoiceId "inv-r1"), OQueued, OCommitting (TxHash $ hashFixture 8), OCommitted commitFixture, ORegistering commitFixture (TxHash $ hashFixture 9), ORegistered (RoundedSystemTime 1861833600) Nothing (at 3), OTaken (at 2), OFailed (at 2) FRRegistryRefused, OClosed ICExpired, OEnded]
   forM_ (zip [1 ..] phases) $ \(i, phase) -> do
     let rid = "r" <> T.pack (show i)
     placePaid st rid ownerA (order ("alicebakery" <> T.pack (show i)) i) (at 60) `shouldReturn` Right ()

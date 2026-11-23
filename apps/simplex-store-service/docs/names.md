@@ -761,7 +761,7 @@ stateDiagram-v2
 | T25 | failed → registered | At support's close, the service finds the order's register mined with status 1, or the owner holding the name. | As T16 (`closeRegistration`). |
 | T26 | failed, or committed past its window → taken | Support's `//close` of a paid order. | The order is reset; the price is credited to the balance, then recorded as refunded (`closeRegistration`). |
 | T27 | queued, committing, committed or failed → closed, reversed | A dispute or refund of the payment while no register transaction of the order's current name was saved. | The hold is released; nothing is credited (`reverseOrder`). |
-| T28 | committed or registering → ended | As T16 for a mined register, but the registrar's `disputeUntil(id)` at the confirmed block is not the end the register set: its block's time plus the order's dispute days. | The expiry and the dispute end the register set are stored; a code is spent; logged at note (`checkLanded`). |
+| T28 | committed or registering → ended | As T16 for a mined register, but the registrar's `disputeUntil(id)` at the confirmed block is not the end the register set: its block's time plus the order's dispute days. | No expiry, dispute end or registration time is stored; a code is spent; logged at note (`checkLanded`). |
 | T29 | failed → ended | At support's close, as T28. | As T28 (`closeRegistration`). |
 | T30 | registered → ended | The hourly sweep reads the registrar's `disputeUntil(id)` at the confirmed block other than the stored dispute end, for an order registered before that block whose dispute period has not ended or ended less than 7 days ago. | Logged at note (`sweepEndedRegistrations`). |
 

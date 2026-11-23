@@ -90,7 +90,7 @@ StoreService.Names.Store
     PEnded              "ended"
   OrderPhase
     ORegistered         expiry, Maybe dispute end, registered at
-    OEnded              expiry, dispute end
+    OEnded              no fields
   NameRegistration
     nrDisputeDays       DisputeDays
   disputableRegistrations  DB.Connection -> SystemSeconds -> IO [RegistrationId]
@@ -129,7 +129,7 @@ name_registrations
 | Phase | expires_at | dispute_until | registered_at |
 |---|---|---|---|
 | registered | set | set or NULL | set |
-| ended | set | set | NULL |
+| ended | NULL | NULL | NULL |
 | any other | NULL | NULL | NULL |
 
 ## Registration
@@ -154,7 +154,7 @@ sequenceDiagram
     K->>R: nameExpires(id) at the confirmed block
     K->>D: registered with expires_at, and dispute_until with 0 stored as NULL
   else another value
-    K->>D: ended with expires_at and dispute_until the register's own
+    K->>D: ended, with no times stored
   end
   W-->>P: view: disputeUntil
 ```
@@ -177,8 +177,7 @@ sweepEndedRegistrations, at the start and then every hour
 checkLanded, a register mined at block M
   M above the confirmed block     unread, a warning naming both blocks, checked again
   own end                         timestamp of M + days * 86400
-  own expiry                      timestamp of M + duration
-  disputeUntil(id) at the confirmed block differs from the own end    phase ended, expires_at the own expiry, dispute_until the own end, logged at note with the value read; LEnded
+  disputeUntil(id) at the confirmed block differs from the own end    phase ended, no times stored, logged at note with the value read; LEnded
   otherwise                       phase registered, expires_at and dispute_until read at the confirmed block; LRegistered
   the owner holding the name, judged by ownerOf alone                  phase registered, expires_at and dispute_until read at the confirmed block; LRegistered
 
@@ -212,7 +211,7 @@ stateDiagram-v2
 | `disputeDays` and the phases' fields in the view | NamesOrdersTests, NamesWorkerTests |
 | an unregistered registration ended and kept ended; orders the sweep leaves, a registration after the confirmed block included | NamesWorkerTests |
 | an unregister ending an order only at the confirmation depth; a failed block read stopping the pass, and one order's failed read leaving the others read, each logged once | NamesWorkerTests |
-| a register checked again while its block is above the confirmed block, with a warning naming both blocks; an order ended when its mined register is checked, or after another registration of the name, keeping its register's own expiry and dispute end | NamesWorkerTests |
+| a register checked again while its block is above the confirmed block, with a warning naming both blocks; an order ended when its mined register is checked, or after another registration of the name | NamesWorkerTests |
 | `//close` of an order whose mined registration was ended | NamesWorkerTests |
 | the ended pass gauge, and a failing sweep keeping it | NamesWorkerTests, MetricsTests |
 

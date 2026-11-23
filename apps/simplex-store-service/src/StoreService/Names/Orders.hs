@@ -355,7 +355,7 @@ confirmLanded OrdersEnv {oeStore, oeContracts, oeTurns, oeNow} = checkLanded oeS
 -- ended instead when disputeUntil(id) at the confirmation depth is not the end its mined register set.
 -- The caller holds the turn of the order's label hash.
 checkLanded :: DBStore -> Contracts -> Turns -> IO UTCTime -> NameRegistration -> IO Landing
-checkLanded st ct turns clock r@NameRegistration {nrId, nrOwner, nrLabelHash, nrPayment, nrHistory, nrDuration, nrDisputeDays} = do
+checkLanded st ct turns clock r@NameRegistration {nrId, nrOwner, nrLabelHash, nrPayment, nrHistory, nrDisputeDays} = do
   txs <- withTransaction st (`registrationTransactions` nrId)
   let mined = [(ntHash, block) | NameTransaction {ntFor = TxRegistration RTRegister _, ntState = TxSettled (TSMinedAt block), ntHash} <- txs]
   runExceptT (landed mined) >>= \case
@@ -363,7 +363,7 @@ checkLanded st ct turns clock r@NameRegistration {nrId, nrOwner, nrLabelHash, nr
     Right Nothing -> pure LNotLanded
     Right (Just (how, Right (expiry, disputeEnd))) -> either (const LChanged) LRegistered <$> markLanded how (ORegistered expiry disputeEnd)
     Right (Just (how, Left (registerTime, disputeEnd))) ->
-      markLanded how (const $ OEnded (laterBy nrDuration registerTime) (registerEnd registerTime)) >>= \case
+      markLanded how (const OEnded) >>= \case
         Right v -> LEnded v <$ logNote ("names: registration " <> ridText nrId <> " set ended: disputeUntil(id) read at the confirmed block is " <> secondsText disputeEnd <> ", not its register's end " <> tshow (roundedSeconds $ registerEnd registerTime))
         Left _ -> pure LChanged
   where
@@ -381,8 +381,7 @@ checkLanded st ct turns clock r@NameRegistration {nrId, nrOwner, nrLabelHash, nr
           Just t | disputeEnd /= Just (registerEnd t) -> pure $ Left (t, disputeEnd)
           _ -> (\expiry -> Right (expiry, disputeEnd)) <$> chainRead (nameExpires ct tag nrLabelHash)
     chainRead = withExceptT (("names: a register check's chain read failed: " <>) . tshow) . ExceptT
-    registerEnd = laterBy $ disputeSeconds nrDisputeDays
-    laterBy seconds t = RoundedSystemTime $ roundedSeconds t + fromIntegral seconds
+    registerEnd t = RoundedSystemTime $ roundedSeconds t + fromIntegral (disputeSeconds nrDisputeDays)
     secondsText = maybe "0" (tshow . roundedSeconds)
     markLanded how phaseAt = do
       now <- clock

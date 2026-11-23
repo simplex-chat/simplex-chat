@@ -1488,7 +1488,7 @@ testEndedOnUnregister = withWorker $ \w@W {wCtx = ctx, wWorker} -> do
   let RegistrationId rid = nrId r
   logs `shouldSatisfy` T.isInfixOf ("names ended sweep: registration " <> rid <> " set ended: disputeUntil(id) read at block 100 is 0, not " <> tshow disputeEnd)
   ended <- stored ctx r
-  (nrPhase ended, nrVersion ended) `shouldBe` (OEnded expirySeconds (atSeconds disputeEnd), nrVersion r + 1)
+  (nrPhase ended, nrVersion ended) `shouldBe` (OEnded, nrVersion r + 1)
   (`fieldOf` "phase") <$> viewOf ctx r `shouldReturn` Just (phaseValue "ended" [])
   answerDisputeUntil ctx "alicebakery" (disputeEnd + 3600)
   sweepEndedRegistrations wWorker `shouldReturn` True
@@ -1561,7 +1561,7 @@ testEndedWithinDepth = withWorker $ \w@W {wCtx = ctx@Ctx {cNode}} -> do
   let RegistrationId rid = nrId r
   logs `shouldSatisfy` T.isInfixOf ("names: registration " <> rid <> " set ended: disputeUntil(id) read at the confirmed block is 0, not its register's end " <> tshow (t + 14 * 86400))
   x <- stored ctx r
-  nrPhase x `shouldBe` OEnded (atSeconds $ t + nrDuration r) (atSeconds $ t + 14 * 86400)
+  nrPhase x `shouldBe` OEnded
   isJust (thRegisterTx $ nrHistory x) `shouldBe` True
   view <- viewOf ctx r
   fieldOf view "phase" `shouldBe` Just (phaseValue "ended" [])
@@ -1574,7 +1574,7 @@ testEndedByOtherRegistration = withWorker $ \w@W {wCtx = ctx@Ctx {cNode}} -> do
   registrationFrom ctx (registerBlock + 1) (expiry + 12) (t + 12 + 14 * 86400)
   void $ mine cNode []
   steps w r >>= done
-  nrPhase <$> stored ctx r `shouldReturn` OEnded (atSeconds $ t + nrDuration r) (atSeconds $ t + 14 * 86400)
+  nrPhase <$> stored ctx r `shouldReturn` OEnded
 
 testEndedPassFails :: IO ()
 testEndedPassFails = withWorker $ \W {wCtx = ctx@Ctx {cStore, cOrders}, wWorker} -> do
@@ -1741,7 +1741,7 @@ testCloseLanded = withWorker $ \W {wCtx = ctx} -> do
   endedHash <- sentRegister ctx endedOrder 3 $ TSMinedAt 1
   closeOf ctx endedOrder `shouldReturn` CLEnded (nrId endedOrder)
   z <- stored ctx endedOrder
-  (nrPhase z, nrHistory z) `shouldBe` (OEnded (RoundedSystemTime $ fromIntegral $ genesisTime + nrDuration endedOrder) (RoundedSystemTime $ fromIntegral genesisDisputeEnd), noHistory {thRegisterTx = Just endedHash})
+  (nrPhase z, nrHistory z) `shouldBe` (OEnded, noHistory {thRegisterTx = Just endedHash})
   figuresOf ctx endedOrder `shouldReturn` Nothing
 
 testCloseRefused :: IO ()

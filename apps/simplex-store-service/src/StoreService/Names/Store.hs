@@ -280,7 +280,7 @@ data OrderPhase
   | ORegistered SystemSeconds (Maybe SystemSeconds) UTCTime
   | OTaken UTCTime
   | OFailed UTCTime FailReason
-  | OEnded SystemSeconds SystemSeconds
+  | OEnded
   deriving (Eq, Show)
 
 namePhase :: OrderPhase -> NamePhase
@@ -880,9 +880,7 @@ toRegistration
       PFailed -> case (failedAt, failReason) of
         (Just at, Just reason) -> fitting (OFailed at reason) (noCommit && noRegistered && noTaken && noClose)
         _ -> Left $ "name_registrations failed without failed_at or fail_reason: " <> rid
-      PEnded -> case (expiresAt, disputeUntil) of
-        (Just expiry, Just disputeEnd) -> fitting (OEnded (RoundedSystemTime expiry) (RoundedSystemTime disputeEnd)) (noCommit && isNothing registeredAt && noTaken && noFailure && noClose)
-        _ -> Left $ "name_registrations ended without expires_at or dispute_until: " <> rid
+      PEnded -> fitting OEnded (noCommit && noRegistered && noTaken && noFailure && noClose)
     nrPayment <- case (method_, invoiceId_, codeId_) of
       (Just m, Just invId, Nothing) -> Right $ OPInvoice m (InvoiceId invId)
       (Nothing, Nothing, Just codeId) -> Right $ OPCode codeId
@@ -1047,7 +1045,6 @@ updateRegistration db r now = do
       _ -> thRegisterTx
     (expiresAt, disputeUntil, registeredAt, takenAt, failedAt, failReason, closedBy) = case nrPhase of
       ORegistered expiry disputeEnd at -> (Just expiry, disputeEnd, Just at, Nothing, Nothing, Nothing, Nothing)
-      OEnded expiry disputeEnd -> (Just expiry, Just disputeEnd, Nothing, Nothing, Nothing, Nothing, Nothing)
       OTaken at -> (Nothing, Nothing, Nothing, Just at, Nothing, Nothing, Nothing)
       OFailed at reason -> (Nothing, Nothing, Nothing, Nothing, Just at, Just reason, Nothing)
       OClosed closed -> (Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Just closed)
