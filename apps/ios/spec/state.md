@@ -162,6 +162,7 @@ ChatTagsModel (singleton -- filter state)
 | Property | Type | Description | Line |
 |----------|------|-------------|------|
 | `messageDelivery` | `[Int64: () -> Void]` | Pending delivery confirmation callbacks | [L426](../Shared/Model/ChatModel.swift#L426) |
+| `fileUploads` | `[Int64: () -> Void]` | End functions of the background tasks of XFTP uploads, by file ID | [L470](../Shared/Model/ChatModel.swift#L470) |
 | `filesToDelete` | `Set<URL>` | Files queued for deletion | [L428](../Shared/Model/ChatModel.swift#L428) |
 | `chatListBanner` | `ChatListBanner?` | The banner kind the chat list showed this app session; `bannerSlotFree(for:)` tells whether a kind may take the slot (see [chat-list.md](client/chat-list.md)) | [L474](../Shared/Model/ChatModel.swift#L474) |
 | `im` | `ItemsModel` | Reference to `ItemsModel.shared` | [L432](../Shared/Model/ChatModel.swift#L432) |

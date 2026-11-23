@@ -222,15 +222,27 @@ processAgentMessageNoConn = \case
     errsEvent = toView . CEvtChatErrors . map (\(cId, e) -> ChatErrorAgent e (AgentConnId cId) Nothing)
 
 processAgentMsgSndFile :: ACorrId -> SndFileId -> AEvent 'AESndFile -> CM ()
-processAgentMsgSndFile _corrId aFileId msg = do
-  (cRef_, fileId) <- withStore (`getXFTPSndFileDBIds` AgentSndFileId aFileId)
-  withEntityLock_ cRef_ . withFileLock "processAgentMsgSndFile" fileId $
-    withStore' (`getUserByASndFileId` AgentSndFileId aFileId) >>= \case
-      Just user -> process user fileId `catchAllErrors` eToView
-      _ -> do
-        lift $ withAgent' (`xftpDeleteSndFileInternal` aFileId)
-        throwChatError $ CENoSndFileUser $ AgentSndFileId aFileId
+processAgentMsgSndFile _ "" (SFERR e) =
+  eToView $ chatErrorAgent e
+processAgentMsgSndFile _corrId aFileId msg = flip allFinally (when sndFileEnded deleteAgentFile) $
+  withStore' (\db -> runExceptT $ getXFTPSndFileDBIds db $ AgentSndFileId aFileId) >>= \case
+    Left SESndFileNotFoundXFTP {} -> unless sndFileEnded deleteAgentFile
+    Left e -> throwError $ ChatErrorStore e
+    Right (cRef_, fileId) ->
+      withEntityLock_ cRef_ . withFileLock "processAgentMsgSndFile" fileId $
+        withStore' (`getUserByASndFileId` AgentSndFileId aFileId) >>= \case
+          Just user -> process user fileId `catchAllErrors` eToView
+          _ -> do
+            unless sndFileEnded deleteAgentFile
+            throwChatError $ CENoSndFileUser $ AgentSndFileId aFileId
   where
+    sndFileEnded :: Bool
+    sndFileEnded = case msg of
+      SFDONE {} -> True
+      SFERR _ -> True
+      _ -> False
+    deleteAgentFile :: CM ()
+    deleteAgentFile = lift $ withAgent' (`xftpDeleteSndFileInternal` aFileId)
     withEntityLock_ :: Maybe ChatRef -> CM a -> CM a
     withEntityLock_ = \case
       Just (ChatRef CTDirect contactId _) -> withContactLock "processAgentMsgSndFile" contactId
@@ -253,7 +265,6 @@ processAgentMsgSndFile _corrId aFileId msg = do
           ci <- withStore $ \db -> lookupChatItemByFileId db cxt user fileId
           case ci of
             Nothing -> do
-              lift $ withAgent' (`xftpDeleteSndFileInternal` aFileId)
               withStore' $ \db -> createExtraSndFTDescrs db user fileId (map fileDescrText rfds)
               case rfds of
                 [] -> sendFileError (FileErrOther "no receiver descriptions") "no receiver descriptions" cxt ft
@@ -289,7 +300,6 @@ processAgentMsgSndFile _corrId aFileId msg = do
                           Right (deliveryIds, _) -> eToView $ ChatError $ CEInternalError $ "SFDONE, sendFileDescriptions: expected 1 delivery id, got " <> show (length deliveryIds)
                           Left e -> eToView e
                         Nothing -> eToView $ ChatError $ CEInternalError "SFDONE, sendFileDescriptions: expected at least 1 result"
-                      lift $ withAgent' (`xftpDeleteSndFileInternal` aFileId)
                     (_, _, SMDSnd, GroupChat g@GroupInfo {groupId} _scope) -> do
                       -- TODO [relays] single description for all recipients
                       ms <- getRecipients
@@ -309,7 +319,6 @@ processAgentMsgSndFile _corrId aFileId msg = do
                       ci' <- withStore $ \db -> do
                         liftIO $ updateCIFileStatus db user fileId CIFSSndComplete
                         getChatItemByFileId db cxt user fileId
-                      lift $ withAgent' (`xftpDeleteSndFileInternal` aFileId)
                       toView $ CEvtSndFileCompleteXFTP user ci' ft
                       where
                         getRecipients
@@ -361,7 +370,6 @@ processAgentMsgSndFile _corrId aFileId msg = do
           ci <- withStore $ \db -> do
             liftIO $ updateFileCancelled db user fileId (CIFSSndError ferr)
             lookupChatItemByFileId db cxt user fileId
-          lift $ withAgent' (`xftpDeleteSndFileInternal` aFileId)
           toView $ CEvtSndFileError user ci ft err
 
 agentFileError :: AgentErrorType -> FileError
@@ -812,7 +820,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                     withStore' $ \db -> do
                       setRelayLinkConfId db m confId relayLink
                       updateRelayCapabilities db m relayCap
-                    void $ getAgentConnShortLinkAsync user CFGetRelayDataAccept (Just conn') relayLink
+                    getAgentConnShortLinkAsync user CFGetRelayDataAccept conn' relayLink
                 | otherwise -> messageError "x.grp.relay.acpt: only owner can add relay"
               XGrpRelayReject reason
                 | memberRole' membership == GROwner && isRelay m -> do
@@ -1310,7 +1318,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
         let newStatus = GSSError $ agentSndError err
         -- error cannot be AUTH error here
         withStore' $ \db -> forM_ msgIds $ \msgId ->
-          updateGroupItemsErrorStatus db msgId (groupMemberId' m) newStatus `catchAll_` pure ()
+          updateGroupItemsErrorStatus db msgId (groupMemberId' m) newStatus `catchOwn'` \_ -> pure ()
         eToView $ ChatErrorAgent err (AgentConnId agentConnId) (Just connEntity)
       ERR err@(AGENT (A_DUPLICATE (Just DroppedMsg {brokerTs, attempts})))
         | isRelay membership ->

@@ -26,6 +26,7 @@ import {
   fileOffer,
   filePaths,
   getChat,
+  historyItems,
   isChatRef,
   isLive,
   isMessageItem,
@@ -70,6 +71,7 @@ export interface ReceiveInput {
   chat: string
   wait?: number
   limit?: number
+  history?: number
 }
 
 // spec: spec/architecture.md#tools-inputs
@@ -179,6 +181,8 @@ const pngSignature = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a
 const refusedName = /^id_|\.(pem|key|p12|pfx)$/i
 export const refusedFileReason = "private keys and the server's own files are not sent"
 const ownerKey = "simplexMcpOwner"
+export const mainKey = "simplexMcpMain"
+export const sessionKey = "simplexMcpSession"
 // spec: spec/api.md#tool-download
 const deletedItem = "The message or its chat was deleted."
 // spec: spec/api.md#tool-download
@@ -312,6 +316,7 @@ const receiveSchema: Schema = {
     chat: {type: "string", description: "Chat reference from connect or list: @N or #N."},
     wait: {type: "number", minimum: 0, maximum: 86400, description: "Seconds to wait for a new message when none is unread. Default 0."},
     limit: {type: "integer", minimum: 1, maximum: 100, description: "Most messages returned. Default 50; the rest stay unread."},
+    history: {type: "integer", minimum: 1, maximum: 50, description: "Number of messages returned in history: the last ones before the new messages, yours included."},
   },
   required: ["chat"],
   additionalProperties: false,
@@ -382,6 +387,7 @@ const receiveOutput: Schema = {
     chat: {type: "string", description: "Chat reference."},
     messages: {type: "array", items: messageSchema, description: "New messages: the unread ones, then those that arrived during the call."},
     more: {type: "integer", description: "New messages not returned; call receive again for them."},
+    history: {type: "array", items: messageSchema, description: "With the input history: the last messages of the chat before the new ones, oldest first, yours included; not marked read."},
   },
   required: ["chat", "messages", "more"],
 }
@@ -467,7 +473,8 @@ Send bot commands as text, for example /help. When a message has a file with sta
 
 // spec: spec/architecture.md#tools-instructions
 const receiveDescription = `Returns the new messages of a chat: the unread ones, then those that arrive during the call. With wait, it waits up to wait seconds when no message is new.
-The returned messages are marked read; more counts the new ones not returned. It needs no approval. When a message has a file with status offered, call download when your user's task needs it.`
+The returned messages are marked read; more counts the new ones not returned. It needs no approval. When a message has a file with status offered, call download when your user's task needs it.
+With history N, it also returns the last N messages of the chat before the new ones, yours included, not marked read; at the start of a session, and after your context was compacted, call receive with history to recall the conversation.`
 
 // spec: spec/architecture.md#tools-instructions
 const downloadDescription = `Downloads the file of a received message to this computer and returns its full path.
@@ -633,13 +640,14 @@ export class AgentTools {
 
   // spec: spec/architecture.md#tools-agenttools-givechat
   private owns(chatInfo: T.ChatInfo): boolean {
-    return this.agent.owner === undefined || ownerOf(chatInfo) === this.agent.owner
+    return !isHubGroup(chatInfo) && (this.agent.owner === undefined || ownerOf(chatInfo) === this.agent.owner)
   }
 
   // spec: spec/architecture.md#tools-agenttools-givechat
   async claim(chat: string): Promise<void> {
     if (this.agent.owner === undefined) return
     const {chatInfo} = await getChat(this.agent.chat, chat, 0)
+    if (isHubGroup(chatInfo)) throw hubGroupChat(chat)
     if (ownerOf(chatInfo) === undefined) await setChatData(this.agent.chat, chat, {...customDataOf(chatInfo), [ownerKey]: {session: this.agent.owner}})
   }
 
@@ -824,6 +832,7 @@ export class AgentTools {
 
   // spec: spec/api.md#tool-connect
   private async ownChat(chatInfo: T.ChatInfo, target: string): Promise<T.ChatInfo> {
+    if (isHubGroup(chatInfo)) throw hubGroupChat(target)
     const chat = chatRef(chatInfo)
     if (ownerOf(chatInfo) === undefined && chat !== undefined) await this.claim(chat)
     else if (!this.owns(chatInfo)) throw new ToolError(`The chat of ${target} belongs to another session; an admin or owner of that session's group can give it to this session with /give.`)
@@ -1344,7 +1353,7 @@ export class AgentTools {
 
   // spec: spec/api.md#tool-receive
   private async receive(input: ReceiveInput, call: ToolCall): Promise<object | undefined> {
-    const {chat, wait = 0, limit = defaultLimit} = input
+    const {chat, wait = 0, limit = defaultLimit, history} = input
     if (!isChatRef(chat) || chat === this.agent.controlChat()) throw unknownChat(chat)
     const arrived = new Collected()
     const stop = this.agent.watch.collect(chat, arrived)
@@ -1371,13 +1380,20 @@ export class AgentTools {
         }
       }
       const returned = fresh().slice(0, limit)
+      const recalled = history === undefined ? undefined : await this.historyMessages(chat, chatInfo, returned[0]?.chatItem.meta.itemId, history)
       if (call.signal.aborted) return undefined
       await markRead(this.agent.chat, chat, [...returned.map(({chatItem}) => chatItem.meta.itemId), ...skipped])
       if (call.signal.aborted) return undefined
-      return {chat, messages: await this.toMessages(returned), more: arrived.items.length - returned.length + arrived.overflow.size + unreadRest}
+      return {chat, messages: await this.toMessages(returned), more: arrived.items.length - returned.length + arrived.overflow.size + unreadRest, ...defined({history: recalled})}
     } finally {
       stop()
     }
+  }
+
+  // spec: spec/api.md#tool-receive
+  private async historyMessages(chat: string, chatInfo: T.ChatInfo, before: number | undefined, count: number): Promise<Message[]> {
+    const items = await historyItems(this.agent.chat, chat, before, count)
+    return this.toMessages(items.map(chatItem => ({chatInfo, chatItem})))
   }
 
   // spec: spec/api.md#tool-list
@@ -1387,7 +1403,7 @@ export class AgentTools {
       const fields = await this.chatFields(chatInfo)
       chats.push({chat: fields.chat, type: fields.type, name: fields.name, simplex_name: fields.simplex_name, peer_type: fields.peer_type, incognito: isIncognito(chatInfo), known_as: fields.known_as, connected: fields.connected, unread: chatStats.unreadCount, ...(this.agent.standingApprover(chatInfo, "messages") === undefined ? {} : {approved: true})})
     }
-    const actions = this.agent.actions.ofSession(this.session).filter(({tool}) => tool !== "mode" && tool !== "permission").map(({n, tool, input, state, open}) => ({action: n, tool, input, state, open: open > 0}))
+    const actions = this.agent.actions.ofSession(this.session).filter(({tool}) => tool === "connect" || tool === "send" || tool === "leave" || tool === "download").map(({n, tool, input, state, open}) => ({action: n, tool, input, state, open: open > 0}))
     return {chats, actions}
   }
 
@@ -1660,6 +1676,12 @@ export function ownerOf(chatInfo: T.ChatInfo): string | undefined {
   return (customDataOf(chatInfo) as {[ownerKey]?: {session?: string}} | undefined)?.[ownerKey]?.session
 }
 
+// spec: spec/architecture.md#tools-customdataof
+function isHubGroup(chatInfo: T.ChatInfo): boolean {
+  const data = chatInfo.type === "group" ? chatInfo.groupInfo.customData : undefined
+  return data !== undefined && (mainKey in data || sessionKey in data)
+}
+
 // spec: spec/architecture.md#tools-chatsubject
 export function isConnected(chatInfo: T.ChatInfo): boolean {
   if (chatInfo.type === "direct") return chatInfo.contact.activeConn?.connStatus.type === "ready"
@@ -1742,6 +1764,11 @@ function mentionedIn(text: string, name: string): boolean {
 // spec: spec/api.md#tool-send
 function unknownChat(chat: string): ToolError {
   return new ToolError(`No chat ${chat}. list shows the agent's chats.`)
+}
+
+// spec: spec/api.md#plugin-tools
+function hubGroupChat(chat: string): ToolError {
+  return new ToolError(`The chat of ${chat} is the Main group or a session's group, not one of the agent's chats.`)
 }
 
 function isNotFound(error: unknown): boolean {

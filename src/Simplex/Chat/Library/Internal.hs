@@ -544,8 +544,8 @@ deleteFilesLocally files =
   where
     delete :: FilePath -> IO ()
     delete fPath =
-      removeFile fPath `catchAll` \_ ->
-        removePathForcibly fPath `catchAll_` pure ()
+      removeFile fPath `catchOwn'` \_ ->
+        removePathForcibly fPath `catchOwn'` \_ -> pure ()
     -- perform an action only if filesFolder is set (i.e. on mobile devices)
     withFilesFolder :: (FilePath -> CM ()) -> CM ()
     withFilesFolder action = asks filesFolder >>= readTVarIO >>= mapM_ action
@@ -1617,10 +1617,15 @@ connectToRelayAsync user gInfo relayLink = do
   relayMember@GroupMember {activeConn} <- withFastStore $ \db -> getCreateRelayForMember db cxt gVar user gInfo relayLink
   case activeConn of
     Just _ -> pure ()
-    Nothing -> do
-      subMode <- chatReadVar subscriptionMode
-      newConnIds <- getAgentConnShortLinkAsync user CFGetRelayDataJoin Nothing relayLink
-      withFastStore' $ \db -> createRelayMemberConnectionAsync db user gInfo relayMember relayLink newConnIds subMode
+    Nothing -> createRelayConnectionAsync user gInfo relayMember relayLink
+
+createRelayConnectionAsync :: User -> GroupInfo -> GroupMember -> ShortLinkContact -> CM ()
+createRelayConnectionAsync user gInfo relayMember relayLink = do
+  subMode <- chatReadVar subscriptionMode
+  newConnIds@(cmdId, connId) <- prepareAgentCreation user CFGetRelayDataJoin False SCMInvitation
+  withFastStore' $ \db -> createRelayMemberConnectionAsync db user gInfo relayMember relayLink newConnIds subMode
+  relayLink' <- restoreShortLink' relayLink
+  void $ withAgent $ \a -> getConnShortLinkAsync a (aUserId user) (aCorrId cmdId) (Just connId) relayLink'
 
 updatePublicGroupData :: User -> GroupInfo -> GroupKeys -> CM GroupInfo
 updatePublicGroupData user gInfo gks
@@ -2177,7 +2182,7 @@ closeFileHandle :: Int64 -> (ChatController -> TVar (Map Int64 Handle)) -> CM' (
 closeFileHandle fileId files = do
   fs <- asks files
   h_ <- atomically . stateTVar' fs $ \m -> (M.lookup fileId m, M.delete fileId m)
-  liftIO $ mapM_ hClose h_ `catchAll_` pure ()
+  liftIO $ mapM_ hClose h_ `catchOwn'` \_ -> pure ()
 
 -- The roster file has no chat item, so chat-item file enumeration misses it; clean it up by group.
 cleanupGroupRosterFile :: User -> GroupInfo -> CM ()
@@ -3224,12 +3229,11 @@ setAgentConnShortLinkAsync user conn@Connection {connId} userLinkData crClientDa
   cmdId <- withStore' $ \db -> createCommand db user (Just connId) CFSetShortLink
   withAgent $ \a -> setConnShortLinkAsync a (aCorrId cmdId) (aConnId conn) userLinkData crClientData_
 
-getAgentConnShortLinkAsync :: User -> CommandFunction -> Maybe Connection -> ShortLinkContact -> CM (CommandId, ConnId)
-getAgentConnShortLinkAsync user cmdFunc conn_ shortLink = do
+getAgentConnShortLinkAsync :: User -> CommandFunction -> Connection -> ShortLinkContact -> CM ()
+getAgentConnShortLinkAsync user cmdFunc conn@Connection {connId} shortLink = do
   shortLink' <- restoreShortLink' shortLink
-  cmdId <- withStore' $ \db -> createCommand db user (dbConnId <$> conn_) cmdFunc
-  connId <- withAgent $ \a -> getConnShortLinkAsync a (aUserId user) (aCorrId cmdId) (aConnId <$> conn_) shortLink'
-  pure (cmdId, connId)
+  cmdId <- withStore' $ \db -> createCommand db user (Just connId) cmdFunc
+  void $ withAgent $ \a -> getConnShortLinkAsync a (aUserId user) (aCorrId cmdId) (Just $ aConnId conn) shortLink'
 
 agentXFTPDeleteRcvFile :: RcvFileId -> FileTransferId -> CM ()
 agentXFTPDeleteRcvFile aFileId fileId = do

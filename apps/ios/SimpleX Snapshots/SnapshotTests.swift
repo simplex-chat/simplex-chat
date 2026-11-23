@@ -760,6 +760,7 @@ private func previewScenes() -> [SnapshotScene] {
         SnapshotScene(LinkNoticeContactAlert_Previews.self, alert: true),
         SnapshotScene(LinkNoticeGroupAlert_Previews.self, alert: true),
         SnapshotScene(LocalAuthView_Previews.self),
+        SnapshotScene(MarkdownFileView_Previews.self, device: true),
         SnapshotScene(MarkdownHelp_Previews.self),
         SnapshotScene(MarkedDeletedItemView_Previews.self, allSizes: true),
         SnapshotScene(MemberAdmissionView_Previews.self),

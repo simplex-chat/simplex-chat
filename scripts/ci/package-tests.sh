@@ -7,6 +7,7 @@ nodejs=packages/simplex-chat-nodejs
 python_package=packages/simplex-chat-python
 python=$(command -v python3 || command -v python)
 temp=${RUNNER_TEMP:-$(mktemp -d)}
+npm_install=$PWD/scripts/ci/npm-install.sh
 
 usage() {
   echo "usage: $0 build <platform> | test | addon <platform> | publish <platform> [nodejs] [python]" >&2
@@ -14,8 +15,8 @@ usage() {
 }
 
 build_package() {
-  (cd packages/simplex-chat-client/types/typescript && npm install --no-audit --no-fund && npx tsc)
-  (cd "$nodejs" && npm install --ignore-scripts --no-save --no-audit --no-fund ../simplex-chat-client/types/typescript)
+  (cd packages/simplex-chat-client/types/typescript && "$npm_install" && npx tsc)
+  (cd "$nodejs" && "$npm_install" --ignore-scripts --no-save ../simplex-chat-client/types/typescript ${1:+node-gyp})
   if [ -n "${1:-}" ]; then
     (cd "$nodejs" && npx --yes node-gyp rebuild)
   fi

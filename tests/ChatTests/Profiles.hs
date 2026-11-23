@@ -171,9 +171,9 @@ chatProfileTests = do
     it "allow full deletion to contact" testAllowFullDeletionContact
     it "allow full deletion to group" testAllowFullDeletionGroup
     it "prohibit direct messages to group members" testProhibitDirectMessages
-    xit'' "enable timed messages with contact" testEnableTimedMessagesContact
+    it "enable timed messages with contact" testEnableTimedMessagesContact
     it "enable timed messages in group" testEnableTimedMessagesGroup
-    xit'' "timed messages enabled globally, contact turns on" testTimedMessagesEnabledGlobally
+    it "timed messages enabled globally, contact turns on" testTimedMessagesEnabledGlobally
     it "update multiple user preferences for multiple contacts" testUpdateMultipleUserPrefs
     describe "group preferences for specific member role" $ do
       it "direct messages" testGroupPrefsDirectForRole
@@ -940,11 +940,14 @@ testUserBadgeGroupLinkJoiner ps = do
       alice <## "to add members use /a team <name> or /create link #team"
       alice ##> "/create link #team"
       gLink <- getGroupLink alice "team" GRMember True
+      alice ##> "/_stop"
+      alice <## "chat stopped"
       bob ##> ("/c " <> gLink)
       bob <## "connection request sent!"
       bob ##> "/_stop"
       bob <## "chat stopped"
-      alice <## "bob (Bob): accepting request to join group #team..."
+      alice ##> "/_start"
+      alice <### ["chat started", "subscribed 1 connections on server localhost", "bob (Bob): accepting request to join group #team..."]
       memberBadgeHeader alice "team" "bob" `shouldReturn` Just ("R", BSActive)
       bob ##> "/_start"
       concurrentlyN_
@@ -1929,6 +1932,7 @@ testRejectContactAndDeleteUserContact = testChat3 aliceProfile bobProfile cathPr
     alice ##> "/_delete_address 1"
     alice <## "Your chat address is deleted - accepted contacts will remain connected."
     alice <## "To create a new chat address use /ad"
+    (withCCAgentTransaction alice $ \db -> DB.query_ db "SELECT count(1) FROM connections" :: IO [[Int]]) `shouldEventuallyReturn` [[0]]
 
     cath ##> ("/c " <> cLink)
     cath <## "error: connection authorization failed - this could happen if connection was deleted, secured with different credentials, or due to a bug - please re-create the connection"
@@ -4870,6 +4874,7 @@ testShortLinkDeletedInvitation = testChat2 aliceProfile bobProfile test
       alice @@@ [(":1","")]
       alice ##> "/_delete :1"
       alice <## "connection :1 deleted"
+      (withCCAgentTransaction alice $ \db -> DB.query_ db "SELECT count(1) FROM connections" :: IO [[Int]]) `shouldEventuallyReturn` [[0]]
       bob ##> "/_connect contact @2"
       bob <##. "error: connection authorization failed"
       bob ##> "/_connect contact @2"
@@ -4889,6 +4894,7 @@ testShortLinkDeletedAddress = testChat2 aliceProfile bobProfile test
       alice ##> "/da"
       alice <## "Your chat address is deleted - accepted contacts will remain connected."
       alice <## "To create a new chat address use /ad"
+      (withCCAgentTransaction alice $ \db -> DB.query_ db "SELECT count(1) FROM connections" :: IO [[Int]]) `shouldEventuallyReturn` [[0]]
       bob ##> "/_connect contact @2"
       bob <##. "error: connection authorization failed"
       bob ##> "/_connect contact @2"

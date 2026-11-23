@@ -1,8 +1,8 @@
-import {appendFileSync, mkdtempSync, rmSync, truncateSync, writeFileSync} from "fs"
+import {appendFileSync, mkdirSync, mkdtempSync, rmSync, truncateSync, writeFileSync} from "fs"
 import {tmpdir} from "os"
 import {join} from "path"
 import {ServiceClient} from "../../src/client"
-import {HookDeps, sessionStart, turn} from "../../src/hook"
+import {HookDeps, ask, sessionStart, turn} from "../../src/hook"
 import {linkText, resetOwners, resetOwnersText, showLink} from "../../src/owner"
 import {qrCodeText} from "../../src/qr"
 import {SocketError} from "../../src/socket"
@@ -48,6 +48,12 @@ describe("SessionStart hook", () => {
       {method: "POST", route: "/title", body: {id: "11111111-1111-4111-8111-111111111111", at: performance.timeOrigin, name: "auth", project: "/p/app", model: "claude-opus-5", config: {mainGroup: "Claude Control", approve: "requests", expireHours: 23}}},
       {method: "POST", route: "/title", body: {id: "11111111-1111-4111-8111-111111111111", pid: 4321, at: 6, name: "auth", project: "/p/app", config: {mainGroup: "Claude Control", approve: "requests", expireHours: 23}}},
     ])
+  })
+
+  it("starts the session with the path of its transcript", async () => {
+    const {client, requests} = fakeClient({owners: ["Alice"]})
+    await sessionStart(JSON.stringify({...JSON.parse(input), transcript_path: "/c/projects/p/1.jsonl"}), {}, {client, nodeVersion: "22.1.0"})
+    expect(requests).toMatchObject([{route: "/title", body: {transcript: "/c/projects/p/1.jsonl"}}])
   })
 
   it("shows the link of the service's Main group with a QR code to the person only, while it has no owner", async () => {
@@ -123,6 +129,68 @@ describe("SessionStart hook", () => {
   })
 })
 
+describe("PermissionRequest hook", () => {
+  const id = "11111111-1111-4111-8111-111111111111"
+
+  function askClient(lines: unknown[]) {
+    const requests: unknown[] = []
+    const client = {
+      ensureService: async () => undefined,
+      stream: async (route: string, body: unknown, onLine: (line: unknown) => void) => {
+        requests.push({route, body})
+        lines.forEach(onLine)
+      },
+    } as unknown as HookDeps["client"]
+    return {client, requests}
+  }
+
+  const prompt = (tool: string, fields: object, extra: object = {}) => JSON.stringify({session_id: id, hook_event_name: "PermissionRequest", tool_name: tool, tool_input: fields, ...extra})
+
+  it("sends a tool prompt with its preview to the service and prints the decision of the stream", async () => {
+    const deny = {behavior: "deny", message: "Alice rejected this in the SimpleX group."}
+    const {client, requests} = askClient([{decision: deny}])
+    const bash = prompt("Bash", {command: "npm test", description: "Run the unit tests"}, {agent_id: "a1", agent_type: "reviewer"})
+    expect(await ask(bash, {CLAUDE_PID: "4321"}, client, 5)).toEqual({hookSpecificOutput: {hookEventName: "PermissionRequest", decision: deny}})
+    await ask(prompt("Artifact", {action: "read", url: "https://claude.ai/artifact/abc"}), {}, client, 6)
+    expect(requests).toEqual([
+      {route: "/ask", body: {id, pid: 4321, at: 5, kind: "tool", tool: "Bash", description: "Run the unit tests", preview: "npm test", agent: "reviewer"}},
+      {route: "/ask", body: {id, at: 6, kind: "tool", tool: "Artifact", description: "", preview: "action: read\nurl: https://claude.ai/artifact/abc", terminalOnly: true}},
+    ])
+  })
+
+  it("sends Claude's question, the plan and an MCP server's link, and answers them with the input, the answers or the link's action", async () => {
+    const questions = [{question: "Which library?", header: "Library", options: [{label: "date-fns", description: "Small"}, {label: "Luxon"}], multiSelect: false}]
+    const answered = askClient([{decision: {behavior: "allow", answers: {"Which library?": "date-fns"}}}])
+    expect(await ask(prompt("AskUserQuestion", {questions}), {}, answered.client, 1)).toEqual({hookSpecificOutput: {hookEventName: "PermissionRequest", decision: {behavior: "allow", updatedInput: {questions, answers: {"Which library?": "date-fns"}}}}})
+    expect(answered.requests).toEqual([{route: "/ask", body: {id, at: 1, kind: "question", questions: [{question: "Which library?", options: [{label: "date-fns", description: "Small"}, {label: "Luxon", description: ""}], multiSelect: false}]}}])
+    const approved = askClient([{decision: {behavior: "allow"}}])
+    const plan = {plan: "## Retry uploads", planFilePath: "/p/plan.md"}
+    expect(await ask(prompt("ExitPlanMode", plan), {}, approved.client, 2)).toEqual({hookSpecificOutput: {hookEventName: "PermissionRequest", decision: {behavior: "allow", updatedInput: plan}}})
+    const link = JSON.stringify({session_id: id, hook_event_name: "Elicitation", mcp_server_name: "tracker", mode: "url", message: "Sign in to continue.", url: "https://tracker.example/oauth"})
+    expect(await ask(link, {}, approved.client, 3)).toEqual({hookSpecificOutput: {hookEventName: "Elicitation", action: "accept"}})
+    expect(approved.requests).toEqual([
+      {route: "/ask", body: {id, at: 2, kind: "plan", plan: "## Retry uploads"}},
+      {route: "/ask", body: {id, at: 3, kind: "link", server: "tracker", message: "Sign in to continue.", url: "https://tracker.example/oauth"}},
+    ])
+    const declined = askClient([{decision: {behavior: "deny", message: "Alice rejected this in the SimpleX group."}}])
+    expect(await ask(link, {}, declined.client)).toEqual({hookSpecificOutput: {hookEventName: "Elicitation", action: "decline"}})
+  })
+
+  it("prints nothing without a decision, in a run that is not interactive, for the plugin's tools, a question without questions, a subagent's question, plan and artifact, a form, and on a failure", async () => {
+    const errors = captureStderr()
+    const {client, requests} = askClient([{}])
+    expect(await ask(prompt("Bash", {command: "ls"}), {}, client)).toBeUndefined()
+    expect(await ask(prompt("Bash", {command: "ls"}), {CLAUDE_CODE_ENTRYPOINT: "sdk-ts"}, client)).toBeUndefined()
+    for (const tool of ["mcp__plugin_simplex_simplex__send", "AskUserQuestion"]) expect(await ask(prompt(tool, {}), {}, client)).toBeUndefined()
+    const subagent = {agent_id: "a1", agent_type: "reviewer"}
+    for (const [tool, fields] of [["WebFetch", {url: "https://claude.ai/code/artifact/abc"}], ["ExitPlanMode", {plan: "Plan"}]] as const) expect(await ask(prompt(tool, fields, subagent), {}, client)).toBeUndefined()
+    expect(await ask(JSON.stringify({session_id: id, hook_event_name: "Elicitation", mcp_server_name: "tracker", mode: "form", message: "Your name"}), {}, client)).toBeUndefined()
+    expect(requests).toHaveLength(1)
+    expect(await ask("not json", {}, client)).toBeUndefined()
+    expect(errors).toEqual([expect.stringMatching(/^SimpleX MCP ask: /)])
+  })
+})
+
 describe("turn hooks", () => {
   const id = "11111111-1111-4111-8111-111111111111"
 
@@ -155,6 +223,31 @@ describe("turn hooks", () => {
     const stopped = {ensureService: async () => Promise.reject(Object.assign(new Error("connect ENOENT"), {code: "ENOENT"}))} as unknown as HookDeps["client"]
     expect(await turn(JSON.stringify({session_id: id, prompt: "x"}), {}, stopped)).toEqual({})
     expect(errors).toEqual(["SimpleX MCP turn: connect ENOENT"])
+  })
+
+  it("pass a failed turn without an answer, with the automatic continue noted after its error entry or the usage menu open in Claude Code's record, and a notification", async () => {
+    const folder = mkdtempSync(join(tmpdir(), "simplex-mcp-failure-"))
+    try {
+      const transcript = join(folder, "session.jsonl")
+      const limit = "You've hit your weekly limit · resets Nov 18, 3am (UTC)"
+      const errorEntry = {type: "assistant", isApiErrorMessage: true, message: {model: "<synthetic>", content: [{type: "text", text: limit}]}}
+      writeFileSync(transcript, `${JSON.stringify(errorEntry)}\n${JSON.stringify({type: "system", subtype: "informational", content: "Usage limit reached · continuing automatically at 1am · esc to cancel"})}\n`)
+      mkdirSync(join(folder, "sessions"))
+      writeFileSync(join(folder, "sessions", "4321.json"), JSON.stringify({status: "waiting", waitingFor: "dialog open"}))
+      const {client, requests} = turnClient()
+      const env = {CLAUDE_PID: "4321", CLAUDE_CONFIG_DIR: folder}
+      const failed = (path: string) => turn(JSON.stringify({session_id: id, hook_event_name: "StopFailure", error: "rate_limit", transcript_path: path, last_assistant_message: limit}), env, client, 0, 1, 1)
+      await failed(transcript)
+      await failed(join(folder, "missing.jsonl"))
+      await turn(JSON.stringify({session_id: id, hook_event_name: "Notification", notification_type: "permission_prompt", message: "Claude needs your permission"}), {}, client, 0, 1, 1)
+      expect(requests).toEqual([
+        {method: "POST", route: "/turn", body: {id, pid: 4321, at: 1, failure: {error: "rate_limit", text: limit, autoContinue: true, menu: false}}},
+        {method: "POST", route: "/turn", body: {id, pid: 4321, at: 1, failure: {error: "rate_limit", text: limit, autoContinue: false, menu: true}}},
+        {method: "POST", route: "/turn", body: {id, at: 1, waiting: {kind: "permission_prompt", text: "Claude needs your permission"}}},
+      ])
+    } finally {
+      rmSync(folder, {recursive: true, force: true})
+    }
   })
 
   it("pass the model of a Stop hook's answer from Claude's last entry in the tail of the transcript, after that entry is written, and no model for another answer, a synthetic message or a missing transcript", async () => {
@@ -614,7 +707,6 @@ describe("turn hooks", () => {
       {id: "toolu_Read", text: "!- 📖 Read /p/app-old/src/hook.ts!"},
       {id: "toolu_WebFetch", text: "!- 🌐 Fetch https://spec.torproject.org/hspow-spec/common-protocol.html!"},
       {id: "toolu_WebSearch", text: '!- 🔍 Search "hs_pow.c" tor source!'},
-      {id: "toolu_Agent", text: "!- 🤖 Agent: Review pass 6 usage stats!"},
       {id: "toolu_ToolSearch", text: "!- 🔍 ToolSearch: select:Monitor!"},
       {id: "toolu_Glob", text: "!- 🔍 Glob **/*.ts in src!"},
       {id: "toolu_Grep", text: "!- 🔍 Grep endSteps in src/hub.ts!"},
@@ -629,7 +721,7 @@ describe("turn hooks", () => {
     ])
   })
 
-  it("send a step at the end of each tool use with its outcome and duration, or in background for a launch, and nothing for a tool use of a subagent or of this plugin, or without its ID or tool", async () => {
+  it("send a step at the end of each tool use with its outcome and duration, or in background for a launch, and nothing for a tool use of this plugin, a launch of an agent, or without its ID or tool", async () => {
     const {client, requests, ensured} = turnClient()
     const bash = {command: "npm test", description: "Run the tests"}
     const ended = (event: string, extra: object, tool = "Bash", input: object = bash) => turn(toolUse(event, tool, input, extra), {}, client, 0, 1)
@@ -644,8 +736,6 @@ describe("turn hooks", () => {
     await ended("PostToolUse", {duration_ms: 25}, "Bash", {...bash, run_in_background: true})
     await ended("PostToolUse", {duration_ms: 31}, "Agent", {description: "Review", prompt: "Review it.", run_in_background: true})
     await ended("PostToolUseFailure", {error: "Exit code 127", is_interrupt: false, duration_ms: 12}, "Bash", {...bash, run_in_background: true})
-    await turn(toolUse("PreToolUse", "Bash", bash, {agent_id: "af945fc18f2e2d0d9", agent_type: "general-purpose"}), {}, client, 0, 1)
-    await ended("PostToolUse", {agent_id: "af945fc18f2e2d0d9", duration_ms: 13})
     await turn(toolUse("PreToolUse", "mcp__plugin_simplex_simplex__send", {chat: "@1", text: "hi"}), {}, client, 0, 1)
     await ended("PostToolUse", {duration_ms: 120}, "mcp__plugin_simplex_simplex__send")
     await turn(JSON.stringify({session_id: id, hook_event_name: "PreToolUse", tool_input: bash, tool_use_id: "toolu_1"}), {}, client, 0, 1)
@@ -660,10 +750,54 @@ describe("turn hooks", () => {
       {id: "toolu_Bash", text: "!- 💻 Run the tests 42 ms!", end: true},
       {id: "toolu_Bash", text: "!- 💻 Run the tests 2.0 s!", end: true},
       {id: "toolu_Bash", text: "!- 💻 Run the tests (in background)!", end: true},
-      {id: "toolu_Agent", text: "!- 🤖 Agent: Review (in background)!", end: true},
       {id: "toolu_Bash", text: "!- 💻 Run the tests ❌ 12 ms!", end: true},
     ])
-    expect(ensured()).toBe(11)
+    expect(ensured()).toBe(10)
+  })
+
+  it("send the start of a subagent with its type, the description and tool use of its record and its transcript, and nothing for a teammate or without a record", async () => {
+    const folder = mkdtempSync(join(tmpdir(), "simplex-mcp-agents-"))
+    try {
+      const subagents = join(folder, "s1", "subagents")
+      mkdirSync(subagents, {recursive: true})
+      writeFileSync(join(subagents, "agent-a1.meta.json"), JSON.stringify({agentType: "general-purpose", description: "Audit the call stack", toolUseId: "toolu_9"}))
+      writeFileSync(join(subagents, "agent-a2.meta.json"), JSON.stringify({agentType: "reviewer", description: "Review", taskKind: "in_process_teammate"}))
+      const {client, requests} = turnClient()
+      const started = (agent: string) => turn(JSON.stringify({session_id: id, hook_event_name: "SubagentStart", transcript_path: join(folder, "s1.jsonl"), agent_id: agent, agent_type: "Explore"}), {}, client, 0, 1, 1)
+      for (const agent of ["a1", "a2", "a3"]) await started(agent)
+      expect(requests).toEqual([{method: "POST", route: "/turn", body: {id, at: 1, agent: {id: "a1", start: {type: "Explore", description: "Audit the call stack", toolUse: "toolu_9", transcript: join(subagents, "agent-a1.jsonl")}}}}])
+    } finally {
+      rmSync(folder, {recursive: true, force: true})
+    }
+  })
+
+  it("send a subagent's tool uses as its steps, its hand-back as its report and its stop with the first line of its answer, without effort and answer", async () => {
+    const {client, requests} = turnClient()
+    const bash = {command: "npm test", description: "Run the tests"}
+    await turn(toolUse("PreToolUse", "Bash", bash, {agent_id: "a1"}), {}, client, 0, 1)
+    await turn(toolUse("PostToolUse", "Bash", bash, {agent_id: "a1"}), {}, client, 0, 1)
+    await turn(toolUse("PreToolUse", "SubagentHandback", {message: "Found 6 callers.\nDetails."}, {agent_id: "a1"}), {}, client, 0, 1)
+    await turn(JSON.stringify({session_id: id, hook_event_name: "SubagentStop", agent_id: "a1", last_assistant_message: "Done.\nMore.", effort: {level: "high"}}), {}, client, 0, 1)
+    expect(requests.map(request => (request as {body: unknown}).body)).toEqual([
+      {id, at: 1, agent: {id: "a1", step: {id: "toolu_Bash", text: "💻 Run the tests"}}},
+      {id, at: 1, agent: {id: "a1", step: {id: "toolu_Bash", text: "💻 Run the tests", end: true}}},
+      {id, at: 1, agent: {id: "a1", report: "Found 6 callers."}},
+      {id, at: 1, agent: {id: "a1", stop: "Done."}},
+    ])
+  })
+
+  it("send the end of an agent from its result or its task notification with the figures, a workflow's run from its result, and no step for either", async () => {
+    const {client, requests} = turnClient()
+    await turn(toolUse("PreToolUse", "Agent", {description: "Review"}), {}, client, 0, 1)
+    await turn(toolUse("PostToolUse", "Agent", {description: "Review"}, {tool_response: {status: "completed", agentId: "a1", totalTokens: 61_500, totalToolUseCount: 22, totalDurationMs: 160_000}}), {}, client, 0, 1)
+    await turn(toolUse("PostToolUse", "Workflow", {}, {tool_response: {status: "async_launched", runId: "wf_1", workflowName: "review", transcriptDir: "/t/wf_1"}}), {}, client, 0, 1)
+    const notification = "<task-notification>\n<task-id>a2</task-id>\n<tool-use-id>toolu_7</tool-use-id>\n<status>completed</status>\n<summary>Agent \"Map\" finished</summary>\n<usage><subagent_tokens>112485</subagent_tokens><tool_uses>27</tool_uses><duration_ms>165352</duration_ms></usage>\n</task-notification>"
+    await turn(JSON.stringify({session_id: id, hook_event_name: "UserPromptSubmit", prompt: notification}), {}, client, 0, 1)
+    expect(requests.map(request => (request as {body: {task?: unknown; workflow?: unknown}}).body).map(({task, workflow}) => task ?? workflow)).toEqual([
+      {toolUse: "toolu_Agent", status: "completed", tokens: 61_500, steps: 22, ms: 160_000},
+      {toolUse: "toolu_Workflow", run: "wf_1", name: "review", folder: "/t/wf_1"},
+      {toolUse: "toolu_7", status: "completed", tokens: 112_485, steps: 27, ms: 165_352},
+    ])
   })
 
   it("cut a prompt or an answer over 250,000 characters, so that the request fits the socket's 1 MiB", async () => {

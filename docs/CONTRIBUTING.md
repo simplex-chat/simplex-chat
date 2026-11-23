@@ -89,13 +89,14 @@ For some complex features we create feature branches that will be merged once re
 
 ## Pull requests and CI
 
-1. Open a pull request to `master` as a draft. On a draft, CI runs the reduced build: one Linux job that builds and tests the changed scopes, and one macOS job only when iOS code changed (CI guide: scripts/ci/README.md).
+1. Open a pull request to `master` as a draft. On a draft, CI runs the reduced build: one Linux job that builds and tests the changed scopes, one Linux job that runs the core tests on PostgreSQL when core code changed, and one macOS job only when iOS code changed (CI guide: scripts/ci/README.md).
 2. Select the core tests in a `ci-tests` block in the description, one hspec match pattern per line. `/` runs all tests; without a block, the reduced build runs no core tests.
 3. Push further changes to the same branch; on a draft, each push runs the reduced build.
 4. Mark the pull request ready for review once it is ready. CI then runs the full matrix on each push, and the code owners are requested for review.
 5. Mark it as a draft again when more work is needed. After the approval, the pull request is merged by squash once CI passes.
 6. A change to a scope without CI tests adds its build and tests to CI in the same pull request.
 7. A change of the apps' code adds, in the same pull request, app tests of all its changes on the core's real responses: core tests record the responses and events in tests/fixtures/api, and the Kotlin and iOS tests run the app code on them, with any platform service the code calls mocked (CI guide: "App test fixtures").
+8. Files that tests generate (schema dumps, query plans, API docs) are committed as CI generates them: when a test changes one, the step "Check generated files" fails, and the run's artifact `generated-files-<job>` holds the change as a patch.
 
 ## Differences between GHC 8.10.7 and GHC 9.6.3
 
