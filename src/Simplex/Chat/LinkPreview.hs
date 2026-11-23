@@ -55,8 +55,7 @@ data LinkPreviewConfig = LinkPreviewConfig
   { rootCerts :: XS.CertificateStore,
     addressPolicy :: AddressPolicy,
     previewDeadline :: Int,
-    socksPreviewDeadline :: Int,
-    maxImageLinkBytes :: Int
+    socksPreviewDeadline :: Int
   }
 
 data AddressPolicy = APPublic | APPublicAndLoopback
@@ -67,8 +66,7 @@ defaultLinkPreviewConfig =
     { rootCerts = XS.makeCertificateStore $ readSignedObjectFromMemory linkPreviewRoots,
       addressPolicy = APPublic,
       previewDeadline = 15_000000,
-      socksPreviewDeadline = 30_000000,
-      maxImageLinkBytes = 10485760
+      socksPreviewDeadline = 30_000000
     }
 
 linkPreviewRoots :: ByteString
@@ -91,6 +89,9 @@ maxHeadBytes = 1048576
 
 maxImageBytes :: Int
 maxImageBytes = 2097152
+
+maxImageLinkBytes :: Int
+maxImageLinkBytes = 10485760
 
 maxTitleLength :: Int
 maxTitleLength = 300
@@ -118,8 +119,8 @@ getLinkPreview previewConfig networkConfig requestMode g uriText = runExceptT $ 
   timeoutThrow "timeout" (linkPreviewDeadline fetcher uri) $ ExceptT $ runExceptT (linkPreview fetcher uriText uri) `catchOwn'` (pure . Left . show)
 
 linkPreview :: Fetcher -> Text -> Uri -> ExceptT String IO LinkPreview
-linkPreview fetcher@Fetcher {previewConfig} uriText uri@Uri {uriHost, uriPath} =
-  fetch fetcher uri (pageContent previewConfig) >>= \case
+linkPreview fetcher uriText uri@Uri {uriHost, uriPath} =
+  fetch fetcher uri pageContent >>= \case
     HtmlPage PageMeta {pageTitle, pageDescription, pageImage} -> preview pageTitle pageDescription =<< fetch fetcher pageImage (\_ Response {body} -> imageBody maxImageBytes body)
     ImagePage bytes -> preview imageTitle "" bytes
   where
@@ -506,8 +507,8 @@ imageBody limit body = do
   when (B.length bytes > limit) $ throwError "image too large"
   pure bytes
 
-pageContent :: LinkPreviewConfig -> Uri -> Response -> ExceptT String IO Page
-pageContent LinkPreviewConfig {maxImageLinkBytes} pageUri Response {headers, body} =
+pageContent :: Uri -> Response -> ExceptT String IO Page
+pageContent pageUri Response {headers, body} =
   if
     | mediaType `elem` ["text/html", "application/xhtml+xml"] -> do
         tags <- scanHead =<< liftIO (limitBody maxHeadBytes body)

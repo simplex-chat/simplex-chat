@@ -37,7 +37,7 @@ import qualified Network.Wai.Handler.Warp as W
 import qualified Network.Wai.Handler.WarpTLS as WT
 import Simplex.Chat.Controller (ChatConfig (..), ChatError (..), ChatErrorType (..), ChatResponse (..), CommandSource (..), SimpleNetCfg (..), defaultSimpleNetCfg)
 import Simplex.Chat.Library.Commands (execChatCommand)
-import Simplex.Chat.LinkPreview (AddressPolicy (..), LinkPreviewConfig (..), defaultLinkPreviewConfig, maxImageBytes)
+import Simplex.Chat.LinkPreview (AddressPolicy (..), LinkPreviewConfig (..), defaultLinkPreviewConfig, maxImageBytes, maxImageLinkBytes)
 import Simplex.Chat.Options (ChatOpts (..), CoreChatOpts (..))
 import Simplex.Chat.Protocol (LinkPreview (..), MsgContent (MCLink, preview, text))
 import Simplex.Chat.Types (ImageData (..))
@@ -389,7 +389,6 @@ linkServerApp LinkServer {requestedPaths, streamClosed} req respond = do
     html = W.responseLBS ok200 [(hContentType, "text/html; charset=utf-8")]
     image = W.responseLBS ok200 [(hContentType, "image/png")]
     redirect location = W.responseLBS found302 [(hLocation, location)] ""
-    LinkPreviewConfig {maxImageLinkBytes} = defaultLinkPreviewConfig
     paddedJpeg size = do
       jpeg <- B.readFile "tests/fixtures/test.jpg"
       pure $ W.responseLBS ok200 [(hContentType, "image/jpeg")] $ LB.fromStrict $ jpeg <> B.replicate (size - B.length jpeg) '\0'
