@@ -716,7 +716,7 @@ runGroupServiceAs svc groupCfg action = do
   let started = pollUntilTrue (listening port) >> pollUntil (getStoredGroup cc)
       -- A stop inside a lane's database call leaves a statement open, and closing the store then fails.
       settle gid = when (isJust groupCfg) $ settleServingLane cc env gid
-  (started >>= \ManagedGroup {mgGroupId} -> action cc env mgGroupId <* settle mgGroupId) `finally` stopGroupService t cc
+  (started >>= \ManagedGroup {mgGroupId} -> action cc env mgGroupId <* settle mgGroupId) `finally` (stopGroupService t cc >> pollUntilTrue (not <$> listening port))
 
 settleServingLane :: HasCallStack => ChatController -> ServiceState -> Int64 -> IO ()
 settleServingLane cc env gid = do
