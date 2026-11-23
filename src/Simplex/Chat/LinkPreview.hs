@@ -116,7 +116,7 @@ getLinkPreview previewConfig networkConfig requestMode g uriText = runExceptT $ 
   uri <- liftEither $ linkUri uriText
   socksCredentials <- liftIO $ previewCredentials networkConfig g
   let fetcher = Fetcher {previewConfig, networkConfig, requestMode, socksCredentials}
-  timeoutThrow "timeout" (linkPreviewDeadline fetcher uri) $ ExceptT $ runExceptT (linkPreview fetcher uriText uri) `catchOwn'` (pure . Left . show)
+  timeoutThrow "timeout" (linkPreviewDeadline previewConfig networkConfig) $ ExceptT $ runExceptT (linkPreview fetcher uriText uri) `catchOwn'` (pure . Left . show)
 
 linkPreview :: Fetcher -> Text -> Uri -> ExceptT String IO LinkPreview
 linkPreview fetcher uriText uri@Uri {uriHost, uriPath} =
@@ -142,11 +142,9 @@ previewCredentials NetworkConfig {socksProxy} g = case socksProxy of
     SocksIsolateByAuth -> Just . (`SocksCredentials` "") . B64.encode <$> atomically (C.randomBytes 16 g)
   Nothing -> pure Nothing
 
-linkPreviewDeadline :: Fetcher -> Uri -> Int
-linkPreviewDeadline Fetcher {previewConfig = LinkPreviewConfig {previewDeadline, socksPreviewDeadline}, networkConfig, requestMode} Uri {uriHost} =
+linkPreviewDeadline :: LinkPreviewConfig -> NetworkConfig -> Int
+linkPreviewDeadline LinkPreviewConfig {previewDeadline, socksPreviewDeadline} NetworkConfig {socksProxy} =
   if isJust socksProxy then socksPreviewDeadline else previewDeadline
-  where
-    TransportClientConfig {socksProxy} = transportClientConfig networkConfig requestMode uriHost True Nothing
 
 data UriScheme = USHttp | USHttps
   deriving (Eq, Show)

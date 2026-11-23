@@ -60,6 +60,7 @@ chatLinkPreviewTests = do
   it "should stop reading the page after og tags" testEndlessBody
   it "should stop reading the page after the head limit" testLargeHead
   it "should fail on slow server" testSlowServer
+  it "should limit preview time by the SOCKS deadline only with SOCKS proxy" testSocksDeadline
   it "should fail on compressed body and oversized image" testRefusedContent
   it "should fail on certificate of unknown CA" testUnknownCA
   it "should send preview with long non-Latin title and description" testLongTextPreview
@@ -237,6 +238,17 @@ testSlowServer ps = do
   cfg@ChatConfig {linkPreviewConfig} <- linkPreviewCfg
   withLinkPreviewChat ps cfg {linkPreviewConfig = linkPreviewConfig {previewDeadline = 2_000000}} testOpts $ \_ alice ->
     previewOf alice (pageUrl ps "/slow") >>= (`shouldBeError` "timeout")
+
+testSocksDeadline :: HasCallStack => TestParams -> IO ()
+testSocksDeadline ps = withSocksServer ps $ \socksRequests -> do
+  cfg@ChatConfig {linkPreviewConfig} <- linkPreviewCfg
+  let cfg' = cfg {linkPreviewConfig = linkPreviewConfig {socksPreviewDeadline = 2_000000}}
+  withLinkServer ps $ \_ ->
+    withNewTestChatCfgOpts ps cfg' testOpts "alice" aliceProfile $ \alice ->
+      withNewTestChatCfgOpts ps cfg' (socksOpts ps SocksIsolateByAuth) "bob" bobProfile $ \bob -> do
+        previewOf alice (pageUrl ps "/slow") >>= (`shouldSatisfy` isPreview)
+        previewOf bob (pageUrl ps "/slow") >>= (`shouldBeError` "timeout")
+        map socksDestination . linkRequests (linkServerPort ps) <$> readTVarIO socksRequests `shouldReturn` [SDDomain "localhost"]
 
 testRefusedContent :: HasCallStack => TestParams -> IO ()
 testRefusedContent ps = do

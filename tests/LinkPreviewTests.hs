@@ -3,7 +3,6 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NumericUnderscores #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE TupleSections #-}
 
 module LinkPreviewTests where
@@ -23,7 +22,7 @@ import Data.X509 (SignedCertificate)
 import qualified Data.X509.CertificateStore as XS
 import Data.X509.Memory (readSignedObjectFromMemory)
 import Simplex.Chat.LinkPreview
-import Simplex.Messaging.Client (NetworkConfig (..), SocksMode (..), defaultNetworkConfig, pattern NRMInteractive)
+import Simplex.Messaging.Client (NetworkConfig (..), SocksMode (..), defaultNetworkConfig)
 import Simplex.Messaging.Transport.Client (TransportHost (..), defaultSocksProxyWithAuth)
 import Test.Hspec
 import Test.QuickCheck (Gen, choose, elements, forAll, ioProperty, listOf, property)
@@ -49,7 +48,7 @@ linkPreviewTests = do
     it "should refuse image by its declared length without reading it" testImageLength
     it "should read at most the limit and one byte of an endless image" testImageEndless
     it "should limit preview time to 15 seconds without SOCKS proxy" testPreviewDeadline
-    it "should limit preview time to 30 seconds through SOCKS proxy" testSocksPreviewDeadline
+    it "should limit preview time to 30 seconds with SOCKS proxy in any SOCKS mode" testSocksPreviewDeadline
   describe "charsets" $ do
     it "should decode UTF-8 and windows-1252" testCharsets
     it "should refuse unsupported charsets and invalid UTF-8" testCharsetsRefused
@@ -265,20 +264,12 @@ readImage :: Int -> Maybe Int -> ExceptT String IO ByteString -> IO (Either Stri
 readImage limit contentLength body = runExceptT $ imageBody limit Response {headers = [], contentLength, body}
 
 testPreviewDeadline :: IO ()
-testPreviewDeadline = do
-  linkDeadline defaultNetworkConfig "https://example.com/" `shouldBe` 15_000000
-  linkDeadline (socksNetworkConfig SMOnion) "https://example.com/" `shouldBe` 15_000000
+testPreviewDeadline = linkPreviewDeadline defaultLinkPreviewConfig defaultNetworkConfig `shouldBe` 15_000000
 
 testSocksPreviewDeadline :: IO ()
-testSocksPreviewDeadline = do
-  linkDeadline (socksNetworkConfig SMAlways) "https://example.com/" `shouldBe` 30_000000
-  linkDeadline (socksNetworkConfig SMOnion) "http://example.onion/" `shouldBe` 30_000000
-
-linkDeadline :: NetworkConfig -> Text -> Int
-linkDeadline networkConfig link = linkPreviewDeadline Fetcher {previewConfig = defaultLinkPreviewConfig, networkConfig, requestMode = NRMInteractive, socksCredentials = Nothing} $ either error id $ linkUri link
-
-socksNetworkConfig :: SocksMode -> NetworkConfig
-socksNetworkConfig socksMode = defaultNetworkConfig {socksProxy = Just defaultSocksProxyWithAuth, socksMode}
+testSocksPreviewDeadline =
+  forM_ [SMAlways, SMOnion] $ \socksMode ->
+    (socksMode, linkPreviewDeadline defaultLinkPreviewConfig defaultNetworkConfig {socksProxy = Just defaultSocksProxyWithAuth, socksMode}) `shouldBe` (socksMode, 30_000000)
 
 titleWith :: Maybe ByteString -> ByteString -> IO (Either String Text)
 titleWith charset html = fmap (\PageMeta {pageTitle} -> pageTitle) <$> testPage charset (html <> "<meta property=og:image content=/i.png>")
