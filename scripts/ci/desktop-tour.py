@@ -43,6 +43,7 @@ PROFILE_NAME = "citester"
 SEARCH_FIELD = "Search or paste SimpleX link"
 PASTE_ITEM = "Paste"
 CLIPBOARD_COMMAND = ["clip"] if sys.platform == "win32" else ["pbcopy"]
+WHEEL_NOTCH = 120 if sys.platform == "win32" else 1
 LEFT_PANE_SCREENS = ("Settings", "Chat preferences", "Network", "New chat")
 GRADLE_PROPERTIES = Path(__file__).resolve().parents[2] / "apps" / "multiplatform" / "gradle.properties"
 APP_VERSION = re.search(r"^desktop\.version_name=(.+)$", GRADLE_PROPERTIES.read_text(), re.MULTILINE).group(1).strip()
@@ -143,7 +144,7 @@ class App:
 
     def scroll(self, x, y, clicks):
         pyautogui.moveTo(x, y)
-        pyautogui.scroll(clicks)
+        pyautogui.scroll(clicks * WHEEL_NOTCH)
 
     def shot(self, name):
         self.shots += 1
