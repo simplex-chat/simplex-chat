@@ -606,23 +606,27 @@ struct ChatPreviewView_Previews: PreviewProvider {
 
 struct ChatPreviewView_Priority_Previews: PreviewProvider {
     static var previews: some View {
-        Group {
-            ChatPreviewView(chat: Chat(
-                chatInfo: ChatInfo.sampleData.group,
-                chatItems: [ChatItem.getSample(1, .groupRcv(groupMember: GroupMember.sampleData), previewDate, "silent messages", .rcvNew)],
-                chatStats: ChatStats(unreadCount: 3, unreadSilent: 3)
-            ), progressByTimeout: Binding.constant(false))
-            ChatPreviewView(chat: Chat(
-                chatInfo: ChatInfo.sampleData.group,
-                chatItems: [ChatItem.getSample(1, .groupRcv(groupMember: GroupMember.sampleData), previewDate, "high priority message", .rcvNew)],
-                chatStats: ChatStats(unreadCount: 1, unreadMentions: 1, unreadHighPriority: 1)
-            ), progressByTimeout: Binding.constant(false))
-            ChatPreviewView(chat: Chat(
-                chatInfo: ChatInfo.sampleData.group,
-                chatItems: [ChatItem.getSample(1, .groupRcv(groupMember: GroupMember.sampleData), previewDate, "silent and high priority messages", .rcvNew)],
-                chatStats: ChatStats(unreadCount: 4, unreadMentions: 1, unreadSilent: 3, unreadHighPriority: 1)
-            ), progressByTimeout: Binding.constant(false))
+        VStack(spacing: 0) {
+            row("2 normal, 1 high priority", .all, ChatStats(unreadCount: 3, unreadMentions: 1, unreadHighPriority: 1))
+            row("1 high priority", .all, ChatStats(unreadCount: 1, unreadMentions: 1, unreadHighPriority: 1))
+            row("Mentions mode: 1 high priority", .mentions, ChatStats(unreadCount: 3, unreadMentions: 1, unreadHighPriority: 1))
+            row("Muted: 1 high priority", MsgFilter.none, ChatStats(unreadCount: 3, unreadMentions: 1, unreadHighPriority: 1))
+            row("1 mention", .all, ChatStats(unreadCount: 3, unreadMentions: 1))
+            row("Silent only", .all, ChatStats(unreadCount: 3, unreadSilent: 3))
+            row("3 silent, 1 high priority", .all, ChatStats(unreadCount: 4, unreadMentions: 1, unreadSilent: 3, unreadHighPriority: 1))
         }
-        .previewLayout(.fixed(width: 360, height: 78))
+    }
+
+    private static func row(_ name: String, _ enableNtfs: MsgFilter, _ chatStats: ChatStats) -> some View {
+        var groupInfo = GroupInfo.sampleData
+        groupInfo.localDisplayName = name
+        groupInfo.groupProfile = GroupProfile(displayName: name, fullName: "")
+        groupInfo.chatSettings.enableNtfs = enableNtfs
+        return ChatPreviewView(chat: Chat(
+            chatInfo: .group(groupInfo: groupInfo, groupChatScope: nil),
+            chatItems: [ChatItem.getSample(1, .directRcv, previewDate, "Tests passed: 211", .rcvNew)],
+            chatStats: chatStats
+        ), progressByTimeout: Binding.constant(false))
+        .frame(height: dynamicSize(.large).rowHeight)
     }
 }

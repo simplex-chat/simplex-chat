@@ -678,6 +678,7 @@ private func previewScenes() -> [SnapshotScene] {
         SnapshotScene(ChatPreviewView_Previews.self),
         SnapshotScene(ChatPreviewView_Priority_Previews.self),
         SnapshotScene(ChatView_Previews.self, device: true),
+        SnapshotScene(ChatViewFloatingButtons_Previews.self),
         SnapshotScene(CIChatFeatureView_Previews.self, allSizes: true),
         SnapshotScene(CIEventView_Previews.self, allSizes: true),
         SnapshotScene(CIFeaturePreferenceView_Previews.self, allSizes: true),
@@ -685,7 +686,6 @@ private func previewScenes() -> [SnapshotScene] {
         SnapshotScene(CIGroupInvitationView_Previews.self, allSizes: true),
         SnapshotScene(CIInvalidJSONView_Previews.self, allSizes: true),
         SnapshotScene(CIMemberCreatedContactView_Previews.self, allSizes: true),
-        SnapshotScene(CIMetaView_HighPriority_Previews.self, allSizes: true),
         SnapshotScene(CIMetaView_Previews.self, allSizes: true),
         SnapshotScene(CIVoiceView_Previews.self, allSizes: true),
         SnapshotScene(ClassicAvatars_Previews.self, allSizes: true),
@@ -694,6 +694,7 @@ private func previewScenes() -> [SnapshotScene] {
         SnapshotScene(ClassicOverviewDirect_Previews.self),
         SnapshotScene(ClassicOverviewGroup_Previews.self),
         SnapshotScene(ClassicParagraphs_Previews.self, allSizes: true),
+        SnapshotScene(ClassicPriority_Previews.self, allSizes: true),
         SnapshotScene(ComposeVoiceView_Previews.self),
         SnapshotScene(ConnectDesktopView_Previews.self, device: true),
         SnapshotScene(ContactConnectionInfo_Previews.self),
@@ -780,6 +781,7 @@ private func previewScenes() -> [SnapshotScene] {
         SnapshotScene(TerminalOverviewChannel_Previews.self),
         SnapshotScene(TerminalOverviewDirect_Previews.self),
         SnapshotScene(TerminalOverviewGroup_Previews.self),
+        SnapshotScene(TerminalPriority_Previews.self, allSizes: true),
         SnapshotScene(TerminalQuoteThumbnail_Previews.self, allSizes: true),
         SnapshotScene(TerminalRightToLeft_Previews.self),
         SnapshotScene(TerminalRuleOnly_Previews.self, allSizes: true),
@@ -992,6 +994,18 @@ struct ClassicOverviewChannel_Previews: PreviewProvider {
 struct ClassicParagraphs_Previews: PreviewProvider {
     static var previews: some View {
         SnapshotFixtures().paragraphs()
+    }
+}
+
+struct ClassicPriority_Previews: PreviewProvider {
+    static var previews: some View {
+        SnapshotFixtures().priority(terminal: false)
+    }
+}
+
+struct TerminalPriority_Previews: PreviewProvider {
+    static var previews: some View {
+        SnapshotFixtures().priority(terminal: true)
     }
 }
 
@@ -1407,12 +1421,12 @@ private final class SnapshotFixtures {
         previewDate.addingTimeInterval(minutes * 60)
     }
 
-    private func msg(_ dir: CIDirection, _ text: String, _ minutes: Double, quote: CIQuote? = nil, reactions: [CIReactionCount] = [], content: MsgContent? = nil, file: CIFile? = nil) -> ChatItem {
+    private func msg(_ dir: CIDirection, _ text: String, _ minutes: Double, quote: CIQuote? = nil, reactions: [CIReactionCount] = [], content: MsgContent? = nil, file: CIFile? = nil, priority: Int? = nil) -> ChatItem {
         let parsed = markdown[text]
         let mc = content ?? .text(text)
         return ChatItem(
             chatDir: dir,
-            meta: CIMeta.getSample(id(), ts(minutes), text, dir.sent ? .sndSent(sndProgress: .complete) : .rcvRead),
+            meta: CIMeta.getSample(id(), ts(minutes), text, dir.sent ? .sndSent(sndProgress: .complete) : .rcvRead, priority: priority),
             content: dir.sent ? .sndMsgContent(msgContent: mc) : .rcvMsgContent(msgContent: mc),
             formattedText: parsed?.formattedText,
             markdownBlocks: parsed?.markdownBlocks,
@@ -1505,6 +1519,13 @@ private final class SnapshotFixtures {
             msg(.groupRcv(groupMember: carol), "Let's start", -14 + 40.0 / 60),
             ChatItem(chatDir: .groupRcv(groupMember: carol), meta: CIMeta.getSample(id(), ts(-13), "1 skipped message", .rcvRead), content: .rcvIntegrityError(msgError: .msgSkipped(fromMsgId: 1, toMsgId: 1))),
             msg(.groupSnd, "ok", -12)
+        ], terminal: terminal)
+    }
+
+    func priority(terminal: Bool) -> some View {
+        chatRows(direct, [
+            msg(.directRcv, "Tests passed: 211", -10, priority: 1),
+            msg(.directSnd, "Deployed to staging", -9, priority: 1)
         ], terminal: terminal)
     }
 

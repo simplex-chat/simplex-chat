@@ -3506,3 +3506,32 @@ struct ChatView_Previews: PreviewProvider {
         .environmentObject(chatModel)
     }
 }
+
+extension ChatView {
+    struct FloatingButtonsPreview: View {
+        @EnvironmentObject var theme: AppTheme
+        let label: String
+        let chatStats: ChatStats
+
+        var body: some View {
+            let im = ItemsModel(secondaryIMFilter: nil)
+            let scrollView = EndlessScrollView<MergedItem>(frame: .zero)
+            let model = FloatingButtonModel(im: im)
+            model.unreadAbove = chatStats.unreadCount
+            return ZStack(alignment: .topLeading) {
+                FloatingButtons(im: im, theme: theme, scrollView: scrollView, chat: Chat(chatInfo: ChatInfo.sampleData.direct, chatItems: [], chatStats: chatStats), loadingMoreItems: .constant(false), loadingTopItems: .constant(false), requestedTopScroll: .constant(false), loadingBottomItems: .constant(false), requestedBottomScroll: .constant(false), animatedScrollingInProgress: .constant(false), listState: scrollView.listState, model: model, reloadItems: {})
+                Text(verbatim: label).padding()
+            }
+            .frame(height: 76)
+        }
+    }
+}
+
+struct ChatViewFloatingButtons_Previews: PreviewProvider {
+    static var previews: some View {
+        VStack(spacing: 0) {
+            ChatView.FloatingButtonsPreview(label: "Normal unread", chatStats: ChatStats(unreadCount: 5))
+            ChatView.FloatingButtonsPreview(label: "Silent only", chatStats: ChatStats(unreadCount: 5, unreadSilent: 5))
+        }
+    }
+}

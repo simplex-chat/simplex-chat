@@ -1300,7 +1300,7 @@ struct TagsView_Previews: PreviewProvider {
         tagsModel.unreadTags = [1: 1, 2: 1]
         tagsModel.priorityTags = [1: 1]
         tagsModel.silentTags = [3: 1]
-        return TagsView(parentSheet: .constant(nil), searchText: .constant(""))
+        return ScrollView([.horizontal], showsIndicators: false) { TagsView(parentSheet: .constant(nil), searchText: .constant("")) }
             .padding()
             .environmentObject(tagsModel)
     }

@@ -656,14 +656,34 @@ fun PreviewChatPreviewView() {
 @Composable
 fun PreviewChatPreviewViewPriority() {
   SimpleXTheme {
-    Column(Modifier.padding(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column {
       listOf(
-        "silent messages" to Chat.ChatStats(unreadCount = 3, unreadSilent = 3),
-        "high priority message" to Chat.ChatStats(unreadCount = 1, unreadMentions = 1, unreadHighPriority = 1),
-        "silent and high priority messages" to Chat.ChatStats(unreadCount = 4, unreadMentions = 1, unreadSilent = 3, unreadHighPriority = 1)
-      ).forEach { (text, chatStats) ->
-        val chatItem = ChatItem.getSampleData(1, CIDirection.GroupRcv(GroupMember.sampleData), previewDate, text, CIStatus.RcvNew())
-        ChatPreviewView(Chat(remoteHostId = null, chatInfo = ChatInfo.Group.sampleData, chatItems = listOf(chatItem), chatStats = chatStats), true, null, null, "", disabled = false, linkMode = SimplexLinkMode.DESCRIPTION, inProgress = false, progressByTimeout = false, {})
+        Triple("2 normal, 1 high priority", MsgFilter.All, Chat.ChatStats(unreadCount = 3, unreadMentions = 1, unreadHighPriority = 1)),
+        Triple("1 high priority", MsgFilter.All, Chat.ChatStats(unreadCount = 1, unreadMentions = 1, unreadHighPriority = 1)),
+        Triple("Mentions mode: 1 high priority", MsgFilter.Mentions, Chat.ChatStats(unreadCount = 3, unreadMentions = 1, unreadHighPriority = 1)),
+        Triple("Muted: 1 high priority", MsgFilter.None, Chat.ChatStats(unreadCount = 3, unreadMentions = 1, unreadHighPriority = 1)),
+        Triple("1 mention", MsgFilter.All, Chat.ChatStats(unreadCount = 3, unreadMentions = 1)),
+        Triple("Silent only", MsgFilter.All, Chat.ChatStats(unreadCount = 3, unreadSilent = 3)),
+        Triple("3 silent, 1 high priority", MsgFilter.All, Chat.ChatStats(unreadCount = 4, unreadMentions = 1, unreadSilent = 3, unreadHighPriority = 1))
+      ).forEach { (name, enableNtfs, chatStats) ->
+        val groupInfo = GroupInfo.sampleData.copy(
+          localDisplayName = name,
+          groupProfile = GroupProfile.sampleData.copy(displayName = name, fullName = ""),
+          chatSettings = GroupInfo.sampleData.chatSettings.copy(enableNtfs = enableNtfs)
+        )
+        val chatItem = ChatItem.getSampleData(1, CIDirection.DirectRcv(), previewDate, "Tests passed: 211", CIStatus.RcvNew())
+        val chat = Chat(remoteHostId = null, chatInfo = ChatInfo.Group(groupInfo, groupChatScope = null), chatItems = listOf(chatItem), chatStats = chatStats)
+        ChatListNavLinkLayout(
+          chatLinkPreview = {
+            ChatPreviewView(chat, true, null, null, "", disabled = false, linkMode = SimplexLinkMode.DESCRIPTION, inProgress = false, progressByTimeout = false, {})
+          },
+          click = {},
+          dropdownMenuItems = null,
+          showMenu = remember { mutableStateOf(false) },
+          disabled = false,
+          selectedChat = remember { mutableStateOf(false) },
+          nextChatSelected = remember { mutableStateOf(false) },
+        )
       }
     }
   }

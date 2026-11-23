@@ -410,18 +410,3 @@ fun PreviewCIMetaViewDeletedContent() = BubblePreview {
     showTimestamp = true
   )
 }
-
-@Preview
-@Composable
-fun PreviewCIMetaViewHighPriority() = BubblePreview {
-  CIMetaView(
-    chatItem = ChatItem.getSampleData(
-      1, CIDirection.GroupRcv(GroupMember.sampleData), previewDate, "hello",
-      status = CIStatus.RcvRead(),
-      priority = 1
-    ),
-    null,
-    showViaProxy = false,
-    showTimestamp = true
-  )
-}

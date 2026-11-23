@@ -4198,6 +4198,28 @@ private fun sessionPreview(): List<ChatItem> {
   )
 }
 
+@Preview
+@Composable
+fun PreviewUnreadScrollButtons() {
+  SimpleXTheme {
+    Row(Modifier.padding(DEFAULT_PADDING), horizontalArrangement = Arrangement.spacedBy(DEFAULT_PADDING * 2)) {
+      listOf("Normal unread" to false, "Silent only" to true).forEach { (label, silent) ->
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(DEFAULT_PADDING)) {
+          Text(label)
+          TopEndFloatingButton(
+            unreadCount = remember { mutableStateOf(5) },
+            onlySilentUnread = remember { mutableStateOf(silent) },
+            requestedTopScroll = remember { mutableStateOf(false) },
+            animatedScrollingInProgress = remember { mutableStateOf(false) },
+            onClick = {},
+            onLongClick = {}
+          )
+        }
+      }
+    }
+  }
+}
+
 enum class ContentFilter(
   val contentTag: MsgContentTag,
   val label: StringResource,

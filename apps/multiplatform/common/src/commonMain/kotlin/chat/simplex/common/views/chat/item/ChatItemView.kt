@@ -1599,6 +1599,22 @@ fun PreviewChatItemViewEmptyLinesTerminal() = CompositionLocalProvider(LocalTerm
 
 @Preview
 @Composable
+fun PreviewChatItemViewHighPriority() {
+  val rcvItem = ChatItem.getSampleData(1, CIDirection.DirectRcv(), previewDate, "Tests passed: 211", CIStatus.RcvRead(), priority = 1)
+  val sndItem = ChatItem.getSampleData(2, CIDirection.DirectSnd(), previewDate, "Deployed to staging", CIStatus.SndSent(SndCIStatusProgress.Complete), priority = 1)
+  Column {
+    listOf("Classic layout" to false, "Terminal layout" to true).forEach { (layout, terminal) ->
+      Text(layout, Modifier.padding(start = 20.dp, top = 8.dp), color = MaterialTheme.colors.secondary, fontSize = 13.sp)
+      CompositionLocalProvider(LocalTerminalLayout provides terminal) {
+        PreviewChatItemView(rcvItem)
+        PreviewChatItemView(sndItem)
+      }
+    }
+  }
+}
+
+@Preview
+@Composable
 fun PreviewChatItemViewDeletedContent() = BubblePreview {
   SimpleXTheme {
     ChatItemView(
