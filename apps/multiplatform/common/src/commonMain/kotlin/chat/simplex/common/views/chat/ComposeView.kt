@@ -372,7 +372,7 @@ suspend fun MutableState<ComposeState>.processPickedMedia(uris: List<URI>, text:
           // It's a gif or webp
           val fileSize = getFileSize(uri)
           if (fileSize != null && fileSize <= maxFileSize) {
-            preview = bitmapPreview()
+            preview = resizeImageFileToStrSize(uri, maxDataSize = 14000) ?: bitmapPreview()
             UploadContent.AnimatedImage(uri)
           } else {
             showLargeFileAlert(fileSize ?: 0, value.sendIncognito, chatModel.currentUser.value?.profile)
