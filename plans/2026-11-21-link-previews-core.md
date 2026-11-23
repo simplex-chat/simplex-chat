@@ -215,7 +215,7 @@ flowchart TD
   L -->|yes| S{"socksProxy of transportClientConfig"}
   S -->|"Just proxy"| SP["socksConnectAuth or socksConnect, SocksAddrDomainName"]
   S -->|"Nothing, onion host"| XO["onion host without SOCKS proxy"]
-  S -->|"Nothing, other host"| D["getAddrInfo"]
+  S -->|"Nothing, other host"| D["getAddrInfo, in a separate thread"]
   D --> F["drop prohibited addresses"]
   F -->|none left| X
   F --> TC["connect to each in order until one connects, CONNECT_TIMEOUT"]
@@ -237,7 +237,7 @@ flowchart TD
   | `SocksAuthUsername` | the configured username and password |
   | `SocksAuthNull` | none |
 
-- DNS: with a proxy, the host name is sent to the proxy as `SocksAddrDomainName`, as for SMP (mq:Messaging/Transport/Client.hs:191-195), and the device resolves nothing. Without a proxy, `getAddrInfo` resolves names and parses IP literals with the system resolver, and its `AddrInfo` opens the socket, as in `connectTCPClient` (mq:Messaging/Transport/Client.hs:197-206).
+- DNS: with a proxy, the host name is sent to the proxy as `SocksAddrDomainName`, as for SMP (mq:Messaging/Transport/Client.hs:191-195), and the device resolves nothing. Without a proxy, `getAddrInfo` resolves names and parses IP literals with the system resolver, and its `AddrInfo` opens the socket, as in `connectTCPClient` (mq:Messaging/Transport/Client.hs:197-206). `getAddrInfo` is called in a separate thread, and the calling thread waits for its result, so that CONNECT_TIMEOUT and PREVIEW_DEADLINE end the wait: a timeout interrupts the safe foreign call `getaddrinfo` only after it returns (network 3.1.4.0, Network/Socket/Info.hsc:301).
 - Prohibited addresses: loopback, 0.0.0.0/8 and `::`, private (RFC 1918, ULA), link-local, shared (RFC 6598), multicast, broadcast, and IPv4-mapped IPv6 forms of these. `APPublicAndLoopback` also allows loopback. The check runs on resolved addresses without a proxy and on IP literals with one.
 - An onion host without a proxy fails without a DNS query. With a proxy, an `http` URI of an onion host is fetched over plain HTTP, as Tor encrypts and authenticates the connection to the onion service (Q2).
 - TLS: `T.defaultParamsClient host ""` with `sharedCAStore = rootCerts`, SNI on for host names, and `defaultSupportedParamsHTTPS` (mq:Messaging/Transport.hs:399-417) with `P256` and `P384` added to `supportedGroups`, which up to TLS 1.2 also limit the curves of ECDSA server keys (tls 1.9.0 Network/TLS/Parameters.hs, `supportedGroups`). The hostname check of `validateDefault` applies. CONNECT_TIMEOUT applies to the TCP or SOCKS connection and, again, to the TLS handshake.
@@ -741,6 +741,7 @@ Laws, tested in desktopTest and SimpleX Unit Tests on the recorded markdown:
 | Website of the link | see the request time, a fixed UA, the IP address without a proxy or the proxy's exit with one; serve any title and image to the sender | read cookies or other sites' data; learn the recipient | no cookies, `Referer`, `Accept-Language`; per-preview SOCKS credentials |
 | Website, huge or endless page | make the core read bytes | read beyond MAX_HEAD_BYTES, MAX_IMAGE_BYTES or MAX_IMAGE_LINK_BYTES | stop condition; budgets; an image refused by its `Content-Length`; close |
 | Website, slow response | hold a connection | beyond READ_TIMEOUT per read and PREVIEW_DEADLINE | `timeout`; `bracket` |
+| Website, slow answers of its DNS server, without a proxy | delay the name resolution | delay a connection beyond CONNECT_TIMEOUT or the preview beyond PREVIEW_DEADLINE | `getAddrInfo` in a separate thread (section 3.6) |
 | Website, compressed body | send gzip | make the core inflate it | `Accept-Encoding: identity`; other encodings rejected |
 | Website, redirect | send the core to other hosts | to `http` other than an onion host, to prohibited addresses, beyond MAX_REDIRECTS | section 3.7; address check per hop |
 | Website, long title or description | send long text | make the message too large to send | MAX_TITLE_LENGTH, MAX_DESCRIPTION_LENGTH; image limit reduced by their size (section 3.10) |

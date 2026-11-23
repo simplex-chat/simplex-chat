@@ -11,6 +11,7 @@
 module Simplex.Chat.LinkPreview where
 
 import Control.Applicative (optional, (<|>))
+import Control.Concurrent.Async (async, wait)
 import Control.Concurrent.STM (TVar, atomically)
 import qualified Control.Exception as E
 import Control.Monad
@@ -308,7 +309,7 @@ withConnection Fetcher {previewConfig = LinkPreviewConfig {rootCerts, addressPol
         liftIO $ fst <$> maybe (socksConnect conf dest) (socksConnectAuth conf dest) socksCredentials
       (Nothing, THOnionHost _) -> throwError "onion host without SOCKS proxy"
       (Nothing, _) -> do
-        addrs <- liftIO $ getAddrInfo (Just defaultHints {addrSocketType = Stream}) (Just host) (Just $ show port)
+        addrs <- liftIO $ wait =<< async (getAddrInfo (Just defaultHints {addrSocketType = Stream}) (Just host) (Just $ show port))
         case L.nonEmpty $ filter (allowedAddress addressPolicy . addrAddress) addrs of
           Just allowed -> liftIO $ connectAny allowed
           Nothing -> throwError $ "prohibited address: " <> unwords (map (show . addrAddress) addrs)
