@@ -4987,13 +4987,13 @@ Wkrótce pojawią się kolejne ulepszenia!</target>
         <target>Może się to zdarzyć, gdy Ty lub Twoje połączenie użyło starej kopii zapasowej bazy danych.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="It can happen when:&#10;1. The messages expired in the sending client after 2 days or on the server after 30 days.&#10;2. Message decryption failed, because you or your contact used old database backup.&#10;3. The connection was compromised." xml:space="preserve">
+      <trans-unit id="It can happen when:&#10;1. The messages expired in the sending client after 2 days or on the server after 21 days.&#10;2. Message decryption failed, because you or your contact used old database backup.&#10;3. The connection was compromised." xml:space="preserve">
         <source>It can happen when:
-1. The messages expired in the sending client after 2 days or on the server after 30 days.
+1. The messages expired in the sending client after 2 days or on the server after 21 days.
 2. Message decryption failed, because you or your contact used old database backup.
 3. The connection was compromised.</source>
         <target>Może to nastąpić, gdy:
-1. Wiadomości wygasły w wysyłającym kliencie po 2 dniach lub na serwerze po 30 dniach.
+1. Wiadomości wygasły w wysyłającym kliencie po 2 dniach lub na serwerze po 21 dniach.
 2. Odszyfrowanie wiadomości nie powiodło się, ponieważ Ty lub Twój kontakt użyliście starej kopii zapasowej bazy danych.
 3. Połączenie zostało skompromitowane.</target>
         <note>No comment provided by engineer.</note>

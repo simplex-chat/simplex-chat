@@ -455,7 +455,7 @@
     <string name="invite_to_group_button">Uitnodigen voor groep</string>
     <string name="join_group_incognito_button">Doe incognito mee</string>
     <string name="group_preview_join_as">lid worden als %s</string>
-    <string name="alert_text_skipped_messages_it_can_happen_when">Het kan gebeuren wanneer: \n1. De berichten zijn na 2 dagen verlopen bij de verzendende client of na 30 dagen op de server. \n2. Decodering van het bericht is mislukt, omdat u of uw contact een oude database back-up heeft gebruikt. \n3. De verbinding is verbroken.</string>
+    <string name="alert_text_skipped_messages_it_can_happen_when">Het kan gebeuren wanneer: \n1. De berichten zijn na 2 dagen verlopen bij de verzendende client of na 21 dagen op de server. \n2. Decodering van het bericht is mislukt, omdat u of uw contact een oude database back-up heeft gebruikt. \n3. De verbinding is verbroken.</string>
     <string name="joining_group">Deel nemen aan groep</string>
     <string name="leave_group_button">Verlaten</string>
     <string name="group_member_role_member">Lid</string>

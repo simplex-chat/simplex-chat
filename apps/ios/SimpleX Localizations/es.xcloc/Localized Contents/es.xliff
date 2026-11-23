@@ -5634,13 +5634,13 @@ More improvements are coming soon!</source>
         <target>Puede ocurrir cuando tu o tu contacto estáis usando una copia de seguridad antigua de la base de datos.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="It can happen when:&#10;1. The messages expired in the sending client after 2 days or on the server after 30 days.&#10;2. Message decryption failed, because you or your contact used old database backup.&#10;3. The connection was compromised." xml:space="preserve">
+      <trans-unit id="It can happen when:&#10;1. The messages expired in the sending client after 2 days or on the server after 21 days.&#10;2. Message decryption failed, because you or your contact used old database backup.&#10;3. The connection was compromised." xml:space="preserve">
         <source>It can happen when:
-1. The messages expired in the sending client after 2 days or on the server after 30 days.
+1. The messages expired in the sending client after 2 days or on the server after 21 days.
 2. Message decryption failed, because you or your contact used old database backup.
 3. The connection was compromised.</source>
         <target>Esto puede suceder cuando:
-1. Los mensajes caducan tras 2 días en el cliente saliente o tras 30 días en el servidor.
+1. Los mensajes caducan tras 2 días en el cliente saliente o tras 21 días en el servidor.
 2. El descifrado ha fallado porque tu o tu contacto estáis usando una copia de seguridad antigua de la base de datos.
 3. La conexión ha sido comprometida.</target>
         <note>No comment provided by engineer.</note>

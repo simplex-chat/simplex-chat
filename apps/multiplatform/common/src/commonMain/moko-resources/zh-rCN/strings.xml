@@ -424,7 +424,7 @@
     <string name="live_message">实时消息！</string>
     <string name="image_descr_link_preview">链接预览图片</string>
     <string name="onboarding_notifications_mode_subtitle">它如何影响电量</string>
-    <string name="alert_text_skipped_messages_it_can_happen_when">它可能在以下情况发生： \n1. 消息在发送客户端 2 天后或在服务器上 30 天后过期。 \n2. 消息解密失败，因为你或你的联系人使用了旧的数据库备份。 \n3.连接被破坏。</string>
+    <string name="alert_text_skipped_messages_it_can_happen_when">它可能在以下情况发生： \n1. 消息在发送客户端 2 天后或在服务器上 21 天后过期。 \n2. 消息解密失败，因为你或你的联系人使用了旧的数据库备份。 \n3.连接被破坏。</string>
     <string name="leave_group_question">离开群？</string>
     <string name="rcv_group_event_invited_via_your_group_link">通过你的群链接邀请</string>
     <string name="info_row_local_name">本地名称</string>

@@ -652,7 +652,7 @@
     <string name="icon_descr_call_ended">Skončený hovor</string>
     <string name="answer_call">Přijmout hovor</string>
     <string name="integrity_msg_skipped">%1$d přeskočených zpráv</string>
-    <string name="alert_text_skipped_messages_it_can_happen_when">Může se to stát, když: \n1. Zprávy vypršely v odesílajícím klientovi po 2 dnech nebo na serveru po 30 dnech. \n2. Dešifrování zprávy se nezdařilo, protože vy nebo váš kontakt jste použili starou zálohu databáze. \n3. Spojení je kompromitováno.</string>
+    <string name="alert_text_skipped_messages_it_can_happen_when">Může se to stát, když: \n1. Zprávy vypršely v odesílajícím klientovi po 2 dnech nebo na serveru po 21 dnech. \n2. Dešifrování zprávy se nezdařilo, protože vy nebo váš kontakt jste použili starou zálohu databáze. \n3. Spojení je kompromitováno.</string>
     <string name="settings_section_title_you">Vy</string>
     <string name="settings_section_title_support">Podpořit SimpleX Chat</string>
     <string name="settings_developer_tools">Nástroje pro vývojáře</string>

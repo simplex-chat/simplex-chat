@@ -495,7 +495,7 @@
     <string name="integrity_msg_bad_id">Falsche Nachrichten-ID</string>
     <string name="integrity_msg_duplicate">Doppelte Nachricht</string>
     <string name="alert_title_skipped_messages">Übersprungene Nachrichten</string>
-    <string name="alert_text_skipped_messages_it_can_happen_when">Dies kann unter folgenden Umständen passieren: \n1. Die Nachrichten verfallen auf dem sendenden Client-System nach 2 Tagen oder auf dem Server nach 30 Tagen. \n2. Die Nachrichten-Entschlüsselung ist fehlgeschlagen, da von Ihnen oder Ihrem Kontakt ein altes Datenbank-Backup genutzt wurde. \n3. Die Verbindung wurde kompromittiert.</string>
+    <string name="alert_text_skipped_messages_it_can_happen_when">Dies kann unter folgenden Umständen passieren: \n1. Die Nachrichten verfallen auf dem sendenden Client-System nach 2 Tagen oder auf dem Server nach 21 Tagen. \n2. Die Nachrichten-Entschlüsselung ist fehlgeschlagen, da von Ihnen oder Ihrem Kontakt ein altes Datenbank-Backup genutzt wurde. \n3. Die Verbindung wurde kompromittiert.</string>
     <!-- Privacy settings -->
     <string name="privacy_and_security">Datenschutz und Sicherheit</string>
     <string name="your_privacy">Privatsphäre</string>

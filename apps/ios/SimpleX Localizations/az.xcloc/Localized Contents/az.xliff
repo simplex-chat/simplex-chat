@@ -5314,13 +5314,13 @@ Tezliklə daha çox təkmilləşdirmə olacaq!</target>
         <target state="translated">Bu, siz və ya əlaqəniz köhnə verilənlər bazası ehtiyat nüsxəsindən istifadə etdikdə baş verə bilər.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="It can happen when:&#10;1. The messages expired in the sending client after 2 days or on the server after 30 days.&#10;2. Message decryption failed, because you or your contact used old database backup.&#10;3. The connection was compromised." xml:space="preserve" approved="no">
+      <trans-unit id="It can happen when:&#10;1. The messages expired in the sending client after 2 days or on the server after 21 days.&#10;2. Message decryption failed, because you or your contact used old database backup.&#10;3. The connection was compromised." xml:space="preserve" approved="no">
         <source>It can happen when:
-1. The messages expired in the sending client after 2 days or on the server after 30 days.
+1. The messages expired in the sending client after 2 days or on the server after 21 days.
 2. Message decryption failed, because you or your contact used old database backup.
 3. The connection was compromised.</source>
         <target state="translated">Bu, aşağıdakı hallarda baş verə bilər:
-1. Mesajların müddəti göndərən tərəfdəki tətbiqdə 2 gün, yaxud serverdə 30 gün sonra bitdikdə.
+1. Mesajların müddəti göndərən tərəfdəki tətbiqdə 2 gün, yaxud serverdə 21 gün sonra bitdikdə.
 2. Siz və ya həmsöhbətiniz köhnə verilənlər bazası ehtiyat nüsxəsindən istifadə etdiyiniz üçün mesajın şifrəsinin açılması uğursuz olduqda.
 3. Bağlantının təhlükəsizliyi pozulduqda.</target>
         <note>No comment provided by engineer.</note>

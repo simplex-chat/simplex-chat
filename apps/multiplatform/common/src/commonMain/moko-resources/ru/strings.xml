@@ -496,7 +496,7 @@
     <string name="integrity_msg_bad_id">ошибка ID сообщения</string>
     <string name="integrity_msg_duplicate">повторное сообщение</string>
     <string name="alert_title_skipped_messages">Пропущенные сообщения</string>
-    <string name="alert_text_skipped_messages_it_can_happen_when">Это может произойти, когда:\n1. Клиент отправителя удалил неотправленные сообщения через 2 дня, или сервер – через 30 дней.\n2. Расшифровка сообщения была невозможна, когда Вы или Ваш контакт использовали старую копию базы данных.\n3. Соединение компроментировано.</string>
+    <string name="alert_text_skipped_messages_it_can_happen_when">Это может произойти, когда:\n1. Клиент отправителя удалил неотправленные сообщения через 2 дня, или сервер – через 21 день.\n2. Расшифровка сообщения была невозможна, когда Вы или Ваш контакт использовали старую копию базы данных.\n3. Соединение компроментировано.</string>
     <!-- Privacy settings -->
     <string name="privacy_and_security">Конфиденциальность</string>
     <string name="your_privacy">Конфиденциальность</string>
