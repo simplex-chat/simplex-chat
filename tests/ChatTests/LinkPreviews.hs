@@ -109,7 +109,7 @@ linkPreviewCfg = linkPreviewPolicyCfg APPublicAndLoopback
 linkPreviewPolicyCfg :: AddressPolicy -> IO ChatConfig
 linkPreviewPolicyCfg addressPolicy = do
   rootCerts <- XS.makeCertificateStore <$> XS.readCertificates "tests/fixtures/tls/link-preview/ca.crt"
-  pure testCfg {linkPreviewConfig = LinkPreviewConfig {rootCerts, addressPolicy, previewDeadline = 10_000000}}
+  pure testCfg {linkPreviewConfig = LinkPreviewConfig {rootCerts, addressPolicy, previewDeadline = 10_000000, socksPreviewDeadline = 10_000000}}
 
 socksOpts :: TestParams -> SocksAuth -> ChatOpts
 socksOpts ps auth = testOpts {coreOptions = testCoreOpts {simpleNetCfg = defaultSimpleNetCfg {socksProxy = Just $ SocksProxyWithAuth auth proxy}}}
