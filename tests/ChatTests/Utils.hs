@@ -1001,7 +1001,7 @@ apiFixture fixture TestCC {chatController = cc} placeholders FixtureRequests {fr
   responses <- mapM (\cmd -> (JK.fromString cmd J..=) <$> (decodeJSON =<< chatSendCmd cc (B.pack cmd))) frCommands
   parses <- mapM (\text -> (JK.fromString text J..=) <$> decodeJSON (chatParseMarkdown $ B.pack text)) frMarkdown
   uris <- mapM (\uri -> (JK.fromString uri J..=) <$> decodeJSON (chatParseUri False $ B.pack uri)) frUris
-  writeFixture fixture . withPlaceholders . stableJSON $ J.object ["commands" J..= J.object responses, "markdown" J..= J.object parses, "uris" J..= J.object uris]
+  writeFixture ("api/" <> fixture) . withPlaceholders . stableJSON $ J.object ["commands" J..= J.object responses, "markdown" J..= J.object parses, "uris" J..= J.object uris]
   where
     decodeJSON :: LB.ByteString -> IO J.Value
     decodeJSON = either fail pure . J.eitherDecode
@@ -1016,7 +1016,7 @@ nameMovedFixture :: String -> TestCC -> [ContactName] -> [GroupName] -> IO ()
 nameMovedFixture fixture cc contacts groups = withCCUser cc $ \user -> do
   ids <- withCCTransaction cc $ \db -> runExceptT $ (,) <$> mapM (getContactIdByName db user) contacts <*> mapM (getGroupIdByName db user) groups
   case ids of
-    Right (contactIds, groupIds) -> writeFixture ("names/" <> fixture) $ stableJSON $ J.toJSON (eitherToResult Nothing (Right $ CEvtNameMoved user contactIds groupIds :: Either ChatError ChatEvent))
+    Right (contactIds, groupIds) -> writeFixture ("api/names/" <> fixture) $ stableJSON $ J.toJSON (eitherToResult Nothing (Right $ CEvtNameMoved user contactIds groupIds :: Either ChatError ChatEvent))
     Left e -> error $ show e
 
 recordItemEvent :: TVar [J.Value] -> Either ChatError ChatEvent -> IO ()
@@ -1038,13 +1038,13 @@ eventsFixture :: String -> TVar [J.Value] -> IO () -> IO ()
 eventsFixture fixture events steps = do
   atomically $ writeTVar events []
   steps
-  readTVarIO events >>= writeFixture fixture . stableJSON . J.toJSON
+  readTVarIO events >>= writeFixture ("api/" <> fixture) . stableJSON . J.toJSON
 
 writeFixture :: String -> J.Value -> IO ()
 #if defined(dbPostgres)
 writeFixture _ _ = pure ()
 #else
-writeFixture fixture = testGenerate ("tests/fixtures/api/" <> fixture <> ".json") . prettyJSON
+writeFixture fixture = testGenerate ("tests/fixtures/" <> fixture <> ".json") . prettyJSON
   where
     prettyJSON = (<> "\n") . pretty ""
     pretty indent = \case

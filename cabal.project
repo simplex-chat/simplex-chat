@@ -21,7 +21,7 @@ constraints: zip +disable-bzip2 +disable-zstd
 source-repository-package
     type: git
     location: https://github.com/evgeny-simplex/simplexmq.git
-    tag: 4fb1c173ecac5acc4e264f3b77ef4031724dbcee
+    tag: 376fc6e240cbb3518badc47a4ef9b651578c823f
 
 source-repository-package
     type: git
@@ -83,3 +83,8 @@ source-repository-package
     type: git
     location: https://github.com/simplex-chat/JuicyPixels-stbir.git
     tag: e0090e14f6348a33b53c11b377cb69df766b02b4
+
+source-repository-package
+    type: git
+    location: https://github.com/simplex-chat/wide-word.git
+    tag: ea975840f57f44d6bd376ce32aa4de2bd1b2ec31
