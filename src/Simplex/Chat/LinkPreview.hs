@@ -55,7 +55,8 @@ data LinkPreviewConfig = LinkPreviewConfig
   { rootCerts :: XS.CertificateStore,
     addressPolicy :: AddressPolicy,
     previewDeadline :: Int,
-    socksPreviewDeadline :: Int
+    socksPreviewDeadline :: Int,
+    maxImageLinkBytes :: Int
   }
 
 data AddressPolicy = APPublic | APPublicAndLoopback
@@ -66,7 +67,8 @@ defaultLinkPreviewConfig =
     { rootCerts = XS.makeCertificateStore $ readSignedObjectFromMemory linkPreviewRoots,
       addressPolicy = APPublic,
       previewDeadline = 15_000000,
-      socksPreviewDeadline = 30_000000
+      socksPreviewDeadline = 30_000000,
+      maxImageLinkBytes = 10485760
     }
 
 linkPreviewRoots :: ByteString
@@ -118,7 +120,7 @@ getLinkPreview previewConfig networkConfig requestMode g uriText = runExceptT $ 
 linkPreview :: Fetcher -> Text -> Uri -> ExceptT String IO LinkPreview
 linkPreview fetcher uriText uri@Uri {uriHost, uriPath} =
   fetch fetcher uri pageContent >>= \case
-    HtmlPage PageMeta {pageTitle, pageDescription, pageImage} -> preview pageTitle pageDescription =<< fetch fetcher pageImage (\_ Response {body} -> imageBody body)
+    HtmlPage PageMeta {pageTitle, pageDescription, pageImage} -> preview pageTitle pageDescription =<< fetch fetcher pageImage (\_ Response {body} -> imageBody maxImageBytes body)
     ImagePage bytes -> preview imageTitle "" bytes
   where
     preview pageTitle pageDescription bytes = do
@@ -498,10 +500,10 @@ readBody next = B.concat <$> go
   where
     go = next >>= \s -> if B.null s then pure [] else (s :) <$> go
 
-imageBody :: ExceptT String IO ByteString -> ExceptT String IO ByteString
-imageBody body = do
-  bytes <- readBody =<< liftIO (limitBody (maxImageBytes + 1) body)
-  when (B.length bytes > maxImageBytes) $ throwError "image too large"
+imageBody :: Int -> ExceptT String IO ByteString -> ExceptT String IO ByteString
+imageBody limit body = do
+  bytes <- readBody =<< liftIO (limitBody (limit + 1) body)
+  when (B.length bytes > limit) $ throwError "image too large"
   pure bytes
 
 pageContent :: Uri -> Response -> ExceptT String IO Page
@@ -510,7 +512,7 @@ pageContent pageUri Response {headers, body} =
     | mediaType `elem` ["text/html", "application/xhtml+xml"] -> do
         tags <- scanHead =<< liftIO (limitBody maxHeadBytes body)
         HtmlPage <$> liftEither (htmlPage pageUri charset tags)
-    | mediaType `elem` ["image/jpeg", "image/png"] -> ImagePage <$> imageBody body
+    | mediaType `elem` ["image/jpeg", "image/png"] -> ImagePage <$> imageBody maxImageBytes body
     | otherwise -> throwError $ "unsupported content type: " <> B.unpack mediaType
   where
     (mediaType, charset) = maybe ("", Nothing) contentType $ lookup "content-type" headers

@@ -37,7 +37,7 @@ import qualified Network.Wai.Handler.Warp as W
 import qualified Network.Wai.Handler.WarpTLS as WT
 import Simplex.Chat.Controller (ChatConfig (..), ChatError (..), ChatErrorType (..), ChatResponse (..), CommandSource (..), SimpleNetCfg (..), defaultSimpleNetCfg)
 import Simplex.Chat.Library.Commands (execChatCommand)
-import Simplex.Chat.LinkPreview (AddressPolicy (..), LinkPreviewConfig (..), defaultLinkPreviewConfig)
+import Simplex.Chat.LinkPreview (AddressPolicy (..), LinkPreviewConfig (..), defaultLinkPreviewConfig, maxImageBytes)
 import Simplex.Chat.Options (ChatOpts (..), CoreChatOpts (..))
 import Simplex.Chat.Protocol (LinkPreview (..), MsgContent (MCLink, preview, text))
 import Simplex.Chat.Types (ImageData (..))
@@ -51,6 +51,7 @@ chatLinkPreviewTests = do
   it "should get preview of a page with og tags in name attributes" testNamedOgPreview
   it "should resolve page image against the final URI" testRelativeImage
   it "should get preview of an image" testImagePreview
+  it "should limit image links to 10 MiB and og:image to 2 MiB" testImageLimits
   it "should not use site icons" testNoPageImage
   it "should follow at most 5 redirects to public https addresses" testRedirects
   it "should prohibit loopback addresses with public address policy" testPublicAddressPolicy
@@ -109,7 +110,7 @@ linkPreviewCfg = linkPreviewPolicyCfg APPublicAndLoopback
 linkPreviewPolicyCfg :: AddressPolicy -> IO ChatConfig
 linkPreviewPolicyCfg addressPolicy = do
   rootCerts <- XS.makeCertificateStore <$> XS.readCertificates "tests/fixtures/tls/link-preview/ca.crt"
-  pure testCfg {linkPreviewConfig = LinkPreviewConfig {rootCerts, addressPolicy, previewDeadline = 10_000000, socksPreviewDeadline = 10_000000}}
+  pure testCfg {linkPreviewConfig = defaultLinkPreviewConfig {rootCerts, addressPolicy, previewDeadline = 10_000000, socksPreviewDeadline = 10_000000}}
 
 socksOpts :: TestParams -> SocksAuth -> ChatOpts
 socksOpts ps auth = testOpts {coreOptions = testCoreOpts {simpleNetCfg = defaultSimpleNetCfg {socksProxy = Just $ SocksProxyWithAuth auth proxy}}}
@@ -157,6 +158,16 @@ testImagePreview ps = do
     title `shouldBe` "image.png"
     description `shouldBe` ""
     image `shouldSatisfy` ("data:image/png;base64," `T.isPrefixOf`)
+
+testImageLimits :: HasCallStack => TestParams -> IO ()
+testImageLimits ps = do
+  cfg <- linkPreviewCfg
+  withLinkPreviewChat ps cfg testOpts $ \_ alice -> do
+    Right (CRLinkPreview LinkPreview {title, image = ImageData image}) <- previewOf alice (pageUrl ps "/large.jpg")
+    title `shouldBe` "large.jpg"
+    image `shouldSatisfy` ("data:image/jpg;base64," `T.isPrefixOf`)
+    previewOf alice (pageUrl ps "/large-og") >>= (`shouldBeError` "image too large")
+    previewOf alice (pageUrl ps "/too-large.jpg") >>= (`shouldBeError` "image too large")
 
 testNoPageImage :: HasCallStack => TestParams -> IO ()
 testNoPageImage ps = do
@@ -364,6 +375,9 @@ linkServerApp LinkServer {requestedPaths, streamClosed} req respond = do
     "/slow" -> html (pageHtml "/image.png") <$ threadDelay 5_000000
     "/long-text" -> pure $ html longTextHtml
     "/photo.jpg" -> pure $ W.responseFile ok200 [(hContentType, "image/jpeg")] "tests/fixtures/test.jpg" Nothing
+    "/large.jpg" -> paddedJpeg $ maxImageBytes + 1
+    "/large-og" -> pure $ html $ pageHtml "/large.jpg"
+    "/too-large.jpg" -> paddedJpeg $ maxImageLinkBytes + 1
     "/endless" -> pure $ stream (pageHead "/image.png") 1024 50_000
     "/large-head" -> pure $ stream "<html><head><title>Large head</title>" 16384 0
     _
@@ -375,6 +389,10 @@ linkServerApp LinkServer {requestedPaths, streamClosed} req respond = do
     html = W.responseLBS ok200 [(hContentType, "text/html; charset=utf-8")]
     image = W.responseLBS ok200 [(hContentType, "image/png")]
     redirect location = W.responseLBS found302 [(hLocation, location)] ""
+    LinkPreviewConfig {maxImageLinkBytes} = defaultLinkPreviewConfig
+    paddedJpeg size = do
+      jpeg <- B.readFile "tests/fixtures/test.jpg"
+      pure $ W.responseLBS ok200 [(hContentType, "image/jpeg")] $ LB.fromStrict $ jpeg <> B.replicate (size - B.length jpeg) '\0'
     stream start size delay = W.responseStream ok200 [(hContentType, "text/html")] $ \write flush -> do
       sent <- newIORef 0
       let sendChunk s = write (BB.byteString s) >> flush >> modifyIORef' sent (+ B.length s)

@@ -228,11 +228,13 @@ testHeadLimit = do
 
 testImageLimit :: IO ()
 testImageLimit = do
-  maxImageBytes `shouldBe` 2097152
-  imageSize [B.replicate maxImageBytes 'a'] `shouldReturn` Right maxImageBytes
-  imageSize [B.replicate maxImageBytes 'a', "a"] `shouldReturn` Left "image too large"
+  (maxImageBytes, maxImageLinkBytes) `shouldBe` (2097152, 10485760)
+  forM_ [maxImageBytes, maxImageLinkBytes] $ \limit -> do
+    imageSize limit [B.replicate limit 'a'] `shouldReturn` Right limit
+    imageSize limit [B.replicate limit 'a', "a"] `shouldReturn` Left "image too large"
   where
-    imageSize chunks = fmap B.length <$> (runExceptT . imageBody =<< listStream chunks)
+    LinkPreviewConfig {maxImageLinkBytes} = defaultLinkPreviewConfig
+    imageSize limit chunks = fmap B.length <$> (runExceptT . imageBody limit =<< listStream chunks)
 
 testPreviewDeadline :: IO ()
 testPreviewDeadline = do
