@@ -1,0 +1,10 @@
+{
+  "body": {
+    "found": {
+      "price": 10000,
+      "type": "available",
+      "years": 2
+    }
+  },
+  "status": 200
+}

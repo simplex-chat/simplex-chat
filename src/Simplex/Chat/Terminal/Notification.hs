@@ -4,7 +4,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
-module Simplex.Chat.Terminal.Notification (Notification (..), initializeNotifications) where
+module Simplex.Chat.Terminal.Notification (Notification (..), hideException, initializeNotifications) where
 
 import Data.List (isInfixOf)
 import Data.Maybe (isJust)

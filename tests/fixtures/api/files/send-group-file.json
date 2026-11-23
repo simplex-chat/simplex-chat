@@ -1,0 +1,262 @@
+{
+  "commands": {
+    "/_send #1 json [{\"filePath\": \"./tests/fixtures/test.pdf\", \"msgContent\": {\"type\": \"file\", \"text\": \"\"}}]": {
+      "result": {
+        "chatItems": [
+          {
+            "chatInfo": {
+              "groupInfo": {
+                "chatSettings": {
+                  "enableNtfs": "all",
+                  "favorite": false
+                },
+                "chatTags": [],
+                "chatTs": "1970-01-01T00:00:00Z",
+                "createdAt": "1970-01-01T00:00:00Z",
+                "fullGroupPreferences": {
+                  "commands": [],
+                  "comments": {
+                    "enable": "off"
+                  },
+                  "directMessages": {
+                    "enable": "on"
+                  },
+                  "files": {
+                    "enable": "on"
+                  },
+                  "fullDelete": {
+                    "enable": "off"
+                  },
+                  "history": {
+                    "enable": "on"
+                  },
+                  "reactions": {
+                    "enable": "on"
+                  },
+                  "reports": {
+                    "enable": "on"
+                  },
+                  "sessions": {
+                    "enable": "off"
+                  },
+                  "signMessages": {
+                    "enable": "off"
+                  },
+                  "simplexLinks": {
+                    "enable": "on"
+                  },
+                  "support": {
+                    "enable": "on"
+                  },
+                  "timedMessages": {
+                    "enable": "off",
+                    "ttl": 86400
+                  },
+                  "voice": {
+                    "enable": "on"
+                  }
+                },
+                "groupId": 1,
+                "groupProfile": {
+                  "displayName": "team",
+                  "fullName": "",
+                  "groupPreferences": {
+                    "directMessages": {
+                      "enable": "on"
+                    },
+                    "history": {
+                      "enable": "on"
+                    }
+                  }
+                },
+                "groupSummary": {
+                  "currentMembers": 2
+                },
+                "localAlias": "",
+                "localDisplayName": "team",
+                "membersRequireAttention": 0,
+                "membership": {
+                  "blockedByAdmin": false,
+                  "createdAt": "1970-01-01T00:00:00Z",
+                  "groupId": 1,
+                  "groupMemberId": 1,
+                  "indexInGroup": 0,
+                  "invitedBy": {
+                    "type": "user"
+                  },
+                  "localDisplayName": "alice",
+                  "memberCategory": "user",
+                  "memberChatVRange": {
+                    "maxVersion": 22,
+                    "minVersion": 9
+                  },
+                  "memberContactId": 1,
+                  "memberContactProfileId": 1,
+                  "memberId": "memberId",
+                  "memberProfile": {
+                    "displayName": "alice",
+                    "fullName": "",
+                    "localAlias": "",
+                    "preferences": {
+                      "calls": {
+                        "allow": "yes"
+                      },
+                      "commands": [],
+                      "files": {
+                        "allow": "always"
+                      },
+                      "fullDelete": {
+                        "allow": "no"
+                      },
+                      "reactions": {
+                        "allow": "yes"
+                      },
+                      "sessions": {
+                        "allow": "no"
+                      },
+                      "timedMessages": {
+                        "allow": "yes"
+                      },
+                      "voice": {
+                        "allow": "yes"
+                      }
+                    },
+                    "profileId": 1,
+                    "shortDescr": "Alice"
+                  },
+                  "memberPubKey": "memberPubKey",
+                  "memberRole": "owner",
+                  "memberSettings": {
+                    "showMessages": true
+                  },
+                  "memberStatus": "creator",
+                  "updatedAt": "1970-01-01T00:00:00Z"
+                },
+                "updatedAt": "1970-01-01T00:00:00Z",
+                "useRelays": false,
+                "userMemberProfileSentAt": "1970-01-01T00:00:00Z"
+              },
+              "type": "group"
+            },
+            "chatItem": {
+              "chatDir": {
+                "type": "groupSnd"
+              },
+              "content": {
+                "msgContent": {
+                  "text": "",
+                  "type": "file"
+                },
+                "type": "sndMsgContent"
+              },
+              "file": {
+                "fileId": 1,
+                "fileName": "test.pdf",
+                "fileProtocol": "xftp",
+                "fileSize": 272376,
+                "fileSource": {
+                  "filePath": "./tests/fixtures/test.pdf"
+                },
+                "fileStatus": {
+                  "type": "sndStored"
+                }
+              },
+              "mentions": {},
+              "meta": {
+                "createdAt": "1970-01-01T00:00:00Z",
+                "deletable": true,
+                "editable": true,
+                "hasLink": false,
+                "itemEdited": false,
+                "itemId": 22,
+                "itemSharedMsgId": "itemSharedMsgId",
+                "itemStatus": {
+                  "type": "sndNew"
+                },
+                "itemText": "",
+                "itemTs": "1970-01-01T00:00:00Z",
+                "showGroupAsSender": false,
+                "updatedAt": "1970-01-01T00:00:00Z",
+                "userMention": false
+              },
+              "reactions": []
+            }
+          }
+        ],
+        "type": "newChatItems",
+        "user": {
+          "activeOrder": 1,
+          "activeUser": true,
+          "agentUserId": "1",
+          "autoAcceptGroupInvitations": false,
+          "autoAcceptMemberContacts": false,
+          "clientService": false,
+          "fullPreferences": {
+            "calls": {
+              "allow": "yes"
+            },
+            "commands": [],
+            "files": {
+              "allow": "always"
+            },
+            "fullDelete": {
+              "allow": "no"
+            },
+            "reactions": {
+              "allow": "yes"
+            },
+            "sessions": {
+              "allow": "no"
+            },
+            "timedMessages": {
+              "allow": "yes"
+            },
+            "voice": {
+              "allow": "yes"
+            }
+          },
+          "localDisplayName": "alice",
+          "profile": {
+            "displayName": "alice",
+            "fullName": "",
+            "localAlias": "",
+            "preferences": {
+              "calls": {
+                "allow": "yes"
+              },
+              "commands": [],
+              "files": {
+                "allow": "always"
+              },
+              "fullDelete": {
+                "allow": "no"
+              },
+              "reactions": {
+                "allow": "yes"
+              },
+              "sessions": {
+                "allow": "no"
+              },
+              "timedMessages": {
+                "allow": "yes"
+              },
+              "voice": {
+                "allow": "yes"
+              }
+            },
+            "profileId": 1,
+            "shortDescr": "Alice"
+          },
+          "sendRcptsContacts": true,
+          "sendRcptsSmallGroups": true,
+          "showNtfs": true,
+          "userChatRelay": false,
+          "userContactId": 1,
+          "userId": 1
+        }
+      }
+    }
+  },
+  "markdown": {},
+  "uris": {}
+}
