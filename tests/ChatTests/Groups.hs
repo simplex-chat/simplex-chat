@@ -26,7 +26,7 @@ import Data.Bifunctor (second)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as B
 import Data.Maybe (fromMaybe, isJust, maybeToList)
-import Data.Time (UTCTime, getCurrentTime)
+import Data.Time (UTCTime (..), fromGregorian, getCurrentTime)
 import Data.Int (Int64)
 import Data.List (intercalate, isInfixOf, isSubsequenceOf, isSuffixOf)
 import qualified Data.Map.Strict as M
@@ -283,6 +283,7 @@ chatGroupTests = do
     it "blocked pending member can't be accepted" testBlockPendingMember
     it "block of member pending review is sent to moderators only" testBlockPendingReviewMember
     it "late automatic unblock doesn't cancel a newer block" testBlockForAllLateAutomaticUnblock
+    it "received end time before 1970 is read as 1970" testBlockForAllEndTimeBefore1970
     it "blocked member's update leaves no rows on regular members" testBlockForAllNoRowsForMembers
     it "blocked member's edit of an earlier message is not applied for regular members" testBlockForAllEditNotApplied
     it "app fixtures: block, unblock, remove and hide" testBlockMembersFixtures
@@ -8692,6 +8693,8 @@ testBlockForAllAutomaticUnblock alice bob cath = do
   (alice ##> "/_get chat #1 count=3" >> chat <$> getTermLine alice)
     `shouldEventuallyReturn` [(1, "blocked cath (signed)"), (1, "blocked bob (signed)"), (1, "unblocked bob (signed)")]
   rcvRestrictCount cath `shouldEventuallyReturn` 2
+  bobConnId <- relayConnIdToMember cath "bob"
+  connNtfsOn cath bobConnId `shouldEventuallyReturn` True
   rcvRestrictCount bob `shouldReturn` 1
   threadDelay 2000000
   alice #$> ("/_get chat #1 count=1", chat, [(1, "unblocked bob (signed)")])
@@ -8741,6 +8744,28 @@ testBlockForAllLateAutomaticUnblock =
       cath #> "#team hi"
       alice <# "#team cath> hi [blocked by admin] <muted>"
       bob <# "#team cath> hi [blocked by admin] <muted>"
+
+testBlockForAllEndTimeBefore1970 :: HasCallStack => TestParams -> IO ()
+testBlockForAllEndTimeBefore1970 =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3' "team" alice (bob, GRAdmin) (cath, GRMember)
+      threadDelay 1000000
+
+      cathMemId <- memberIdByName bob "cath"
+      connId <- relayConnIdToMember alice "bob"
+      agentSendBody alice connId $ chatMsgToBody $ ChatMessage chatInitialVRange Nothing $
+        XGrpMemRestrict cathMemId MemberRestrictions {restriction = MRSBlocked, expiresAt = Just $ UTCTime (fromGregorian (-1) 1 1) 0}
+      bob <## "#team: alice blocked cath"
+      bob ##> "/ms team"
+      bob
+        <### [ "bob (Bob): admin, you, connected",
+               "alice (Alice): owner, host, connected",
+               "cath (Catherine): member, connected"
+             ]
+
+      cath #> "#team hi"
+      [alice, bob] *<# "#team cath> hi"
 
 testBlockForAllNoRowsForMembers :: HasCallStack => TestParams -> IO ()
 testBlockForAllNoRowsForMembers =
@@ -8810,6 +8835,11 @@ rcvRestrictCount :: TestCC -> IO Int
 rcvRestrictCount cc = do
   [Only n] <- withCCTransaction cc $ \db -> DB.query_ db "SELECT count(1) FROM messages WHERE msg_sent = 0 AND chat_msg_event = 'x.grp.mem.restrict'"
   pure n
+
+connNtfsOn :: TestCC -> ByteString -> IO Bool
+connNtfsOn cc connId = do
+  [Only (n :: Int)] <- withCCAgentTransaction cc $ \db -> DB.query db "SELECT enable_ntfs FROM connections WHERE conn_id = ?" (Only connId)
+  pure $ n == 1
 
 testBlockPendingMember :: HasCallStack => TestParams -> IO ()
 testBlockPendingMember =

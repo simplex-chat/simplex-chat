@@ -290,7 +290,7 @@ def APIMembersRole_cmd_string(self: APIMembersRole) -> str:
 APIMembersRole_Response = CR.MembersRoleUser | CR.ChatCmdError
 
 
-# Block members. Requires Moderator role.
+# Block members. Requires Moderator role. With ttl, in seconds, the block ends after this time.
 # Network usage: background.
 class APIBlockMembersForAll(TypedDict):
     groupId: int  # int64
@@ -305,7 +305,7 @@ def APIBlockMembersForAll_cmd_string(self: APIBlockMembersForAll) -> str:
 APIBlockMembersForAll_Response = CR.MembersBlockedForAllUser | CR.ChatCmdError
 
 
-# Remove members. Requires Admin role.
+# Remove members. Requires Admin role. With notice, the removal is silent, and the removed member's app does not rejoin via the group link while the notice lasts. A notice is refused for relays, members with Moderator role or above, members that are not current or pending, and members on versions before 23.
 # Network usage: background.
 class APIRemoveMembers(TypedDict):
     groupId: int  # int64
@@ -777,7 +777,7 @@ def APIGetChatItemInfo_cmd_string(self: APIGetChatItemInfo) -> str:
 APIGetChatItemInfo_Response = CR.ChatItemInfo | CR.ChatCmdError
 
 
-# Delete chat.
+# Delete chat. For groups, the full mode deletes the group, and the entity mode keeps the conversation and requires the active owner; other modes are refused. A notice is accepted for contacts on version 23 or later and for the customer of a business chat: the deletion is silent, and the peer's app does not connect via the user's address while the notice lasts.
 # Network usage: background.
 class APIDeleteChat(TypedDict):
     chatRef: "T.ChatRef"

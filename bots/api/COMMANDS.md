@@ -947,7 +947,7 @@ ChatCmdError: Command error (only used in WebSockets API).
 
 ### APIBlockMembersForAll
 
-Block members. Requires Moderator role.
+Block members. Requires Moderator role. With ttl, in seconds, the block ends after this time.
 
 *Network usage*: background.
 
@@ -990,7 +990,7 @@ ChatCmdError: Command error (only used in WebSockets API).
 
 ### APIRemoveMembers
 
-Remove members. Requires Admin role.
+Remove members. Requires Admin role. With notice, the removal is silent, and the removed member's app does not rejoin via the group link while the notice lasts. A notice is refused for relays, members with Moderator role or above, members that are not current or pending, and members on versions before 23.
 
 *Network usage*: background.
 
@@ -2413,7 +2413,7 @@ ChatCmdError: Command error (only used in WebSockets API).
 
 ### APIDeleteChat
 
-Delete chat.
+Delete chat. For groups, the full mode deletes the group, and the entity mode keeps the conversation and requires the active owner; other modes are refused. A notice is accepted for contacts on version 23 or later and for the customer of a business chat: the deletion is silent, and the peer's app does not connect via the user's address while the notice lasts.
 
 *Network usage*: background.
 

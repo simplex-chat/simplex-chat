@@ -3742,10 +3742,14 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
             withStore (\db -> getCreateUnknownGMByMemberId db cxt user gInfo memId "" unknownRole True) >>= \case
               Nothing -> messageError "x.grp.mem.restrict: no member" $> Nothing -- shouldn't happen
               Just (bm, unknown) -> do
-                let GroupMember {groupMemberId = bmId, memberRole, blockedByAdmin, memberProfile = bmp} = bm
+                let GroupMember {groupMemberId = bmId, memberRole, blockedByAdmin, blockedUntil, memberProfile = bmp} = bm
                 if
                   | senderRole < GRModerator || senderRole < memberRole ->
                       messageError "x.grp.mem.restrict with insufficient member permissions" $> Nothing
+                  | not blocked && not blockedByAdmin && isJust blockedUntil -> do
+                      bm' <- setMemberBlocked bm
+                      toggleNtf bm' True
+                      pure $ memberEventDeliveryScope bm
                   | blockedByAdmin == blocked || automaticUnblock -> pure $ memberEventDeliveryScope bm
                   | otherwise -> do
                       bm' <- setMemberBlocked bm
