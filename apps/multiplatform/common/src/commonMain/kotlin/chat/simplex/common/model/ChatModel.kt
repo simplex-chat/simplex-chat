@@ -3239,18 +3239,41 @@ data class GroupMemberIds(
   val groupId: Long
 )
 
-@Serializable
-enum class GroupMemberRole(val memberRole: String) {
-  @SerialName("relay") Relay("relay"), // order matters in comparisons
-  @SerialName("observer") Observer("observer"),
-  @SerialName("author") Author("author"),
-  @SerialName("member") Member("member"),
-  @SerialName("moderator") Moderator("moderator"),
-  @SerialName("admin") Admin("admin"),
-  @SerialName("owner") Owner("owner");
+@Serializable(with = GroupMemberRoleSerializer::class)
+sealed class GroupMemberRole: Comparable<GroupMemberRole> {
+  @Serializable @SerialName("relay") object Relay: GroupMemberRole()
+  @Serializable @SerialName("observer") object Observer: GroupMemberRole()
+  @Serializable @SerialName("author") object Author: GroupMemberRole()
+  @Serializable @SerialName("member") object Member: GroupMemberRole()
+  @Serializable @SerialName("moderator") object Moderator: GroupMemberRole()
+  @Serializable @SerialName("admin") object Admin: GroupMemberRole()
+  @Serializable @SerialName("owner") object Owner: GroupMemberRole()
+  @Serializable @SerialName("unknown") data class Unknown(val role: String): GroupMemberRole()
 
   companion object {
-    val selectableRoles: List<GroupMemberRole> = listOf(Observer, Member, Moderator, Admin, Owner)
+    val selectableRoles: List<GroupMemberRole> by lazy { listOf(Observer, Member, Moderator, Admin, Owner) }
+
+    fun fromString(role: String): GroupMemberRole = when (role) {
+      "relay" -> Relay
+      "observer" -> Observer
+      "author" -> Author
+      "member" -> Member
+      "moderator" -> Moderator
+      "admin" -> Admin
+      "owner" -> Owner
+      else -> Unknown(role)
+    }
+  }
+
+  val memberRole: String get() = when (this) {
+    Relay -> "relay"
+    Observer -> "observer"
+    Author -> "author"
+    Member -> "member"
+    Moderator -> "moderator"
+    Admin -> "admin"
+    Owner -> "owner"
+    is Unknown -> role
   }
 
   fun text(isChannel: Boolean): String = when (this) {
@@ -3261,7 +3284,29 @@ enum class GroupMemberRole(val memberRole: String) {
     Moderator -> generalGetString(MR.strings.group_member_role_moderator)
     Admin -> generalGetString(MR.strings.group_member_role_admin)
     Owner -> generalGetString(MR.strings.group_member_role_owner)
+    is Unknown -> role
   }
+
+  private val comparisonValue: Int get() = when (this) {
+    is Unknown -> 0
+    Relay -> 1
+    Observer -> 2
+    Author -> 3
+    Member -> 4
+    Moderator -> 5
+    Admin -> 6
+    Owner -> 7
+  }
+
+  override fun compareTo(other: GroupMemberRole): Int = comparisonValue.compareTo(other.comparisonValue)
+
+  final override fun toString(): String = memberRole
+}
+
+object GroupMemberRoleSerializer : KSerializer<GroupMemberRole> {
+  override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("GroupMemberRole", PrimitiveKind.STRING)
+  override fun deserialize(decoder: Decoder): GroupMemberRole = GroupMemberRole.fromString(decoder.decodeString())
+  override fun serialize(encoder: Encoder, value: GroupMemberRole) = encoder.encodeString(value.memberRole)
 }
 
 @Serializable

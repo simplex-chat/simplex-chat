@@ -44,6 +44,8 @@ import Simplex.Chat.Types
 import Simplex.Chat.Types.MemberRelations (MemberRelation (..), getRelation, setRelation)
 import Simplex.Chat.Types.Shared (GroupMemberRole (..), GroupAcceptance (..))
 import Simplex.Chat.Types.UITheme (ChatLayout (..))
+import Simplex.Chat.Protocol (ChatMsgEvent (XGrpDirectInv, XGrpInv, XGrpLinkAcpt, XGrpLinkInv, XGrpLinkReject, XGrpMemRestrict, XGrpMemRole), MsgScope (MSMember))
+import Simplex.Chat.Store.Groups (getMemberInvitation)
 import Simplex.Messaging.Agent (createConnection, joinConnection, prepareConnectionToJoin, sendMessages, vrValue)
 import Simplex.Messaging.Agent.Env.SQLite
 import Simplex.Messaging.Agent.Protocol (CreatedConnLink (..), SConnectionMode (..), UserLinkData (..))
@@ -195,6 +197,22 @@ chatGroupTests = do
     it "re-create member contact after deletion, many groups" testRecreateMemberContactManyGroups
     it "manually accept contact with group member" testMemberContactAccept
     it "manually accept contact with group member incognito" testMemberContactAcceptIncognito
+  describe "group roles and membership on receipt" $ do
+    it "reject group link invitation in reply to member contact invitation" testMemberContactGroupLinkInvRejected
+    it "reject group link invitation and rejection in reply to one-time invitation" testInvitationGroupLinkInvRejected
+    it "reject repeated invitation to joined group" testGroupInvitationRepeatJoinedRejected
+    it "join via group link ID automatically only once" testGroupLinkIdAutoJoinOnce
+    it "accept only pending members" testGroupLinkAcceptNotPendingRejected
+    it "accept support chat messages only in own or moderated support chats" testSupportScopeNonParticipantRejected
+    it "accept forwards as group only from owners in groups without relays" testGroupFwdAsGroupFromAdminRejected
+    it "restrict members only by moderators" testRestrictUnknownMemberByMemberRejected
+    it "moderate own messages only by moderators" testModerateOwnMessageByMemberRejected
+    it "announce members in channels only by relays" testChannelMemberAnnouncedBySubscriberRejected
+    it "accept support chat edits only in own or moderated support chats" testSupportScopeEditNonParticipantRejected
+    it "accept forwarded support chat messages only in own or moderated support chats" testSupportScopeForwardNonParticipantRejected
+    it "record unknown member roles for app tests" testUnknownMemberRolesFixture
+    it "reject repeated invitation via group to joined group" testGroupInvitationViaGroupRepeatJoinedRejected
+    it "accept business chat in reply to prepared contact request via address" testBusinessAddressPreparedContactAccepted
   describe "invite member via group" $ do
     it "invite member of another group" testInviteMemberViaGroup
     it "auto-accept invitation from member of another group" testInviteMemberViaGroupAutoAccept
@@ -1832,6 +1850,306 @@ testGroupMemFwdInvalidMember =
           "SELECT COUNT(1) FROM connections c JOIN group_members m ON m.group_member_id = c.group_member_id WHERE m.local_display_name = ? AND c.conn_status != 'deleted'"
           (Only name)
       pure n
+
+testMemberContactGroupLinkInvRejected :: HasCallStack => TestParams -> IO ()
+testMemberContactGroupLinkInvRejected =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+      bob ##> "/_create member contact #1 3"
+      bob <## "contact for member #team cath is created"
+      bob ##> "/_invite member contact @3"
+      bob <## "sent invitation to connect directly to member #team cath"
+      cath <## "#team bob requests to create direct contact with you"
+      cath <## "to accept: /accept_member_contact @bob"
+      cath <## "to reject: /delete @bob (the sender will NOT be notified)"
+      Contact {groupDirectInv = Just GroupDirectInvitation {groupDirectInvLink}} <- getTestCCContact cath 3
+      joinWithGroupLinkReply cath groupDirectInvLink $ Right groupLinkInv
+      bob <##. "chat message error: x.grp.link.inv: connection not requested via address"
+      bob ##> "/ms team"
+      bob
+        <### [ "alice (Alice): owner, host, connected",
+               "bob (Bob): admin, you, connected",
+               "cath (Catherine): admin, connected"
+             ]
+      cath #> "#team hello"
+      concurrently_
+        (alice <# "#team cath> hello")
+        (bob <# "#team cath> hello")
+
+testInvitationGroupLinkInvRejected :: HasCallStack => TestParams -> IO ()
+testInvitationGroupLinkInvRejected =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      replyToInvitation alice bob $ Right groupLinkInv
+      alice <##. "chat message error: x.grp.link.inv: connection not requested via address"
+      replyToInvitation alice bob $ Left GroupLinkRejection {fromMember = MemberIdRole (MemberId "host") GROwner, invitedMember = MemberIdRole (MemberId "invited") GRMember, groupProfile = groupProfileNamed "club", rejectionReason = GRRBlockedName}
+      alice <##. "chat message error: x.grp.link.reject: connection not requested via address"
+      alice ##> "/gs"
+      alice <## "you have no groups!"
+      alice <## "to create: /g <name>"
+  where
+    replyToInvitation cc cc' reply = do
+      cc ##> "/c"
+      inv <- getInvitation cc
+      cReq <- either fail pure $ strDecode (B.pack inv)
+      joinWithGroupLinkReply cc' cReq reply
+
+groupLinkInv :: GroupLinkInvitation
+groupLinkInv =
+  GroupLinkInvitation
+    { fromMember = MemberIdRole (MemberId "host") GROwner,
+      fromMemberName = "host",
+      fromMemberKey = Nothing,
+      invitedMember = MemberIdRole (MemberId "invited") GRMember,
+      groupProfile = groupProfileNamed "club",
+      accepted = Just GAAccepted,
+      business = Nothing,
+      groupSize = Nothing
+    }
+
+joinWithGroupLinkReply :: TestCC -> ConnReqInvitation -> Either GroupLinkRejection GroupLinkInvitation -> IO ()
+joinWithGroupLinkReply cc cReq reply =
+  withCCUser cc $ \user -> do
+    let joinInv = do
+          (connId, _) <- withAgent $ \a -> prepareConnectionToJoin a (aUserId user) True cReq PQSupportOff
+          dm <- encodeConnInfo $ either XGrpLinkReject XGrpLinkInv reply
+          withAgent $ \a -> joinConnection a NRMInteractive (aUserId user) connId True cReq dm PQSupportOff SMSubscribe
+    runExceptT joinInv `runReaderT` chatController cc >>= either (fail . show) (\_ -> pure ())
+
+testGroupInvitationRepeatJoinedRejected :: HasCallStack => TestParams -> IO ()
+testGroupInvitationRepeatJoinedRejected =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      createGroup2' "team" alice (bob, GRMember) True
+      GroupMember {groupMemberId = bobGMId, memberId = bobMemId} <- getTestMember alice "team" "bob"
+      aliceMemId <- memberIdByName alice "alice"
+      Just cReq <- withCCTransaction alice $ \db -> withCCUser alice $ \user -> getMemberInvitation db user bobGMId
+      Connection {agentConnId = AgentConnId connId} <- getCtConn alice 2
+      let inv = GroupInvitation {fromMember = MemberIdRole aliceMemId GROwner, fromMemberKey = Nothing, invitedMember = MemberIdRole bobMemId GRObserver, connRequest = cReq, groupProfile = groupProfileNamed "club", business = Nothing, groupLinkId = Nothing, groupSize = Nothing}
+      agentSendBody alice connId $ chatMsgToBody $ ChatMessage chatInitialVRange Nothing (XGrpInv inv)
+      bob <## "you already joined this group"
+      checkMemberRow bob "bob" (Just "member")
+      bob ##> "/gs"
+      bob <## "#team (2 members)"
+
+testGroupLinkIdAutoJoinOnce :: HasCallStack => TestParams -> IO ()
+testGroupLinkIdAutoJoinOnce =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      connectUsers alice bob
+      Connection {connId = bobConnId} <- getCtConn bob 2
+      withCCTransaction bob $ \db ->
+        DB.execute db "UPDATE connections SET group_link_id = ? WHERE connection_id = ?" (Binary linkIdBytes, bobConnId)
+      Connection {agentConnId = AgentConnId connId} <- getCtConn alice 2
+      sendLinkInvitation alice connId "club"
+      alice #> "@bob hi"
+      bob <# "alice> hi"
+      bob ##> "/gs"
+      bob <## "#club (2 members)"
+      sendLinkInvitation alice connId "team"
+      bob <## "#team: alice invites you to join the group as member"
+      bob <## "use /j team to accept"
+  where
+    linkIdBytes = "group_link_id" :: ByteString
+    sendLinkInvitation cc connId gName = do
+      cReq <- newAgentInvitation cc
+      let inv = GroupInvitation {fromMember = MemberIdRole (MemberId "host") GROwner, fromMemberKey = Nothing, invitedMember = MemberIdRole (MemberId "invited") GRMember, connRequest = cReq, groupProfile = groupProfileNamed gName, business = Nothing, groupLinkId = Just (GroupLinkId linkIdBytes), groupSize = Nothing}
+      agentSendBody cc connId $ chatMsgToBody $ ChatMessage chatInitialVRange Nothing (XGrpInv inv)
+
+testGroupLinkAcceptNotPendingRejected :: HasCallStack => TestParams -> IO ()
+testGroupLinkAcceptNotPendingRejected =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3' "team" alice (bob, GRModerator) (cath, GRMember)
+      aliceMemId <- memberIdByName bob "alice"
+      cathMemId <- memberIdByName bob "cath"
+      connId <- relayConnIdToMember bob "cath"
+      agentSendBody bob connId $ chatMsgToBody $ ChatMessage chatInitialVRange Nothing (XGrpLinkAcpt GAAccepted GRObserver aliceMemId)
+      cath <## "error: x.grp.link.acpt: member is not pending"
+      agentSendBody bob connId $ chatMsgToBody $ ChatMessage chatInitialVRange Nothing (XGrpLinkAcpt GAAccepted GRObserver cathMemId)
+      cath <## "error: x.grp.link.acpt: member is not pending"
+      checkMemberRow cath "alice" (Just "owner")
+      checkMemberRow cath "cath" (Just "member")
+
+testSupportScopeNonParticipantRejected :: HasCallStack => TestParams -> IO ()
+testSupportScopeNonParticipantRejected =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3' "team" alice (bob, GRObserver) (cath, GRMember)
+      bobMemId <- memberIdByName bob "bob"
+      cathConnId <- relayConnIdToMember bob "cath"
+      aliceConnId <- relayConnIdToMember bob "alice"
+      let scoped = (mcSimple (MCText "hello")) {scope = Just (MSMember bobMemId)}
+          scopedMsg = chatMsgToBody $ ChatMessage chatInitialVRange (Just $ SharedMsgId "scoped_msg") (XMsgNew scoped)
+      agentSendBody bob cathConnId scopedMsg
+      cath <## "error: member is not allowed to send to this support chat"
+      cReq <- newAgentInvitation bob
+      agentSendBody bob cathConnId $ chatMsgToBody $ ChatMessage chatInitialVRange Nothing (XGrpDirectInv cReq Nothing (Just $ MSMember bobMemId))
+      cath <## "error: member is not allowed to send to this support chat"
+      agentSendBody bob aliceConnId scopedMsg
+      alice <# "#team (support: bob) bob> hello"
+
+testGroupFwdAsGroupFromAdminRejected :: HasCallStack => TestParams -> IO ()
+testGroupFwdAsGroupFromAdminRejected =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+      bobConnId <- relayConnIdToMember bob "cath"
+      aliceConnId <- relayConnIdToMember alice "cath"
+      sendFwdAsGroup bob bobConnId "group_msg_1" "from admin"
+      cath <## "error: x.grp.msg.forward: member is not allowed to forward as group"
+      sendFwdAsGroup alice aliceConnId "group_msg_2" "from owner"
+      cath <#. "#team> from owner"
+  where
+    sendFwdAsGroup cc connId msgId t = do
+      ts <- getCurrentTime
+      let container = (mcSimple (MCText t)) {asGroup = Just True}
+          chatMsg = ChatMessage chatInitialVRange (Just $ SharedMsgId msgId) (XMsgNew container)
+      agentSendBody cc connId $ encodeBinaryBatch [encodeFwdElement (GrpMsgForward FwdChannel ts) (VMUnsigned chatMsg)]
+
+testRestrictUnknownMemberByMemberRejected :: HasCallStack => TestParams -> IO ()
+testRestrictUnknownMemberByMemberRejected =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3' "team" alice (bob, GRMember) (cath, GRMember)
+      connId <- relayConnIdToMember bob "cath"
+      agentSendBody bob connId $ chatMsgToBody $ ChatMessage chatInitialVRange Nothing (XGrpMemRestrict (MemberId "unknown_member") MemberRestrictions {restriction = MRSUnrestricted})
+      cath <## "error: x.grp.mem.restrict with insufficient member permissions"
+      withCCTransaction cath (\db -> DB.query_ db "SELECT count(1) FROM group_members" :: IO [[Int]]) `shouldReturn` [[3]]
+
+testModerateOwnMessageByMemberRejected :: HasCallStack => TestParams -> IO ()
+testModerateOwnMessageByMemberRejected =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3' "team" alice (bob, GRMember) (cath, GRMember)
+      bobMemId <- memberIdByName bob "bob"
+      connId <- relayConnIdToMember bob "cath"
+      agentSendBody bob connId $ chatMsgToBody $ ChatMessage chatInitialVRange (Just $ SharedMsgId "bob_msg") (XMsgNew $ mcSimple $ MCText "hello")
+      cath <# "#team bob> hello"
+      agentSendBody bob connId $ chatMsgToBody $ ChatMessage chatInitialVRange Nothing (XMsgDel (SharedMsgId "bob_msg") (Just bobMemId) Nothing False)
+      cath <## "error: x.msg.del: message of another member with insufficient member permissions"
+      cath #$> ("/_get chat #1 count=1", chat, [(0, "hello")])
+
+testChannelMemberAnnouncedBySubscriberRejected :: HasCallStack => TestParams -> IO ()
+testChannelMemberAnnouncedBySubscriberRejected ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath ->
+        withNewTestChat ps "dan" danProfile $ \dan -> do
+          (shortLink, fullLink) <- prepareChannel1Relay "team" alice bob
+          memberJoinChannel "team" [bob] [alice] shortLink fullLink cath
+          memberJoinChannel "team" [bob] [alice] shortLink fullLink dan
+          cathMemId <- memberIdByName bob "cath"
+          cathConnId <- relayConnIdToMember cath "bob"
+          danConnId <- relayConnIdToMember bob "dan"
+          ts <- getCurrentTime
+          let memInfo memberRole = MemberInfo {memberId = MemberId "announced_member", memberRole, v = Nothing, profile = (aliceProfile :: Profile) {displayName = "announced", fullName = ""}, memberKey = Nothing}
+              memNew role = ChatMessage chatInitialVRange Nothing (XGrpMemNew (memInfo role) Nothing)
+          forM_ [GRRelay, GRObserver, GRAuthor] $ \role -> do
+            agentSendBody cath cathConnId $ chatMsgToBody $ memNew role
+            bob <## "contact cath has insufficient permissions for this group action"
+          agentSendBody bob danConnId $ encodeBinaryBatch [encodeFwdElement (GrpMsgForward (FwdMember cathMemId "cath") ts) (VMUnsigned $ memNew GRObserver)]
+          dan <## "#team: bob forwarded a message from an unknown member, creating unknown member record cath"
+          dan <## "contact cath has insufficient permissions for this group action"
+          agentSendBody bob danConnId $ chatMsgToBody $ memNew GRRelay
+          dan <## "contact bob has insufficient permissions for this group action"
+          alice #> "#team hi"
+          bob <# "#team> hi"
+          [cath, dan] *<# "#team> hi [>>]"
+          forM_ [alice, bob, cath, dan] $ \cc -> checkMemberRow cc "announced" Nothing
+
+testSupportScopeEditNonParticipantRejected :: HasCallStack => TestParams -> IO ()
+testSupportScopeEditNonParticipantRejected =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3' "team" alice (bob, GRObserver) (cath, GRMember)
+      bobMemId <- memberIdByName bob "bob"
+      connId <- relayConnIdToMember bob "cath"
+      agentSendBody bob connId $ chatMsgToBody $ ChatMessage chatInitialVRange Nothing (XMsgUpdate (SharedMsgId "scoped_msg") (MCText "hello") M.empty Nothing Nothing (Just $ MSMember bobMemId) Nothing)
+      cath <## "error: member is not allowed to send to this support chat"
+
+testSupportScopeForwardNonParticipantRejected :: HasCallStack => TestParams -> IO ()
+testSupportScopeForwardNonParticipantRejected =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3' "team" alice (bob, GRObserver) (cath, GRMember)
+      bobMemId <- memberIdByName bob "bob"
+      connId <- relayConnIdToMember alice "cath"
+      ts <- getCurrentTime
+      let forwardFromBob msgId event =
+            agentSendBody alice connId $ encodeBinaryBatch [encodeFwdElement (GrpMsgForward (FwdMember bobMemId "bob") ts) (VMUnsigned $ ChatMessage chatInitialVRange (Just $ SharedMsgId msgId) event)]
+      forwardFromBob "scoped_msg" $ XMsgNew (mcSimple (MCText "hello")) {scope = Just (MSMember bobMemId)}
+      cath <## "error: member is not allowed to send to this support chat"
+      forwardFromBob "scoped_edit" $ XMsgUpdate (SharedMsgId "scoped_msg") (MCText "hello!") M.empty Nothing Nothing (Just $ MSMember bobMemId) Nothing
+      cath <## "error: member is not allowed to send to this support chat"
+
+testUnknownMemberRolesFixture :: HasCallStack => TestParams -> IO ()
+testUnknownMemberRolesFixture =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3' "team" alice (bob, GRMember) (cath, GRMember)
+      cathMemId <- memberIdByName bob "cath"
+      bobMemId <- memberIdByName bob "bob"
+      connId <- relayConnIdToMember alice "bob"
+      forM_ [cathMemId, bobMemId] $ \memId ->
+        agentSendBody alice connId $ chatMsgToBody $ ChatMessage chatInitialVRange Nothing (XGrpMemRole memId (GRUnknown "vip") Nothing Nothing)
+      bob <## "#team: alice changed the role of cath from member to vip"
+      bob <## "#team: alice changed your role from member to vip"
+      apiFixture "members/unknown-roles" bob [] FixtureRequests {frMarkdown = ["", "Catherine"], frUris = [], frCommands = ["/_get chats 1 pcc=on", "/_get chat #1 count=2", "/_members #1"]}
+
+testGroupInvitationViaGroupRepeatJoinedRejected :: HasCallStack => TestParams -> IO ()
+testGroupInvitationViaGroupRepeatJoinedRejected =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      createGroup2 "team" alice bob
+      createClub alice
+      GroupMember {groupMemberId = bobId} <- getTestMember alice "team" "bob"
+      addBob alice bob bobId "club"
+      bob ##> "/j club"
+      concurrently_
+        (alice <## "#club: bob_1 joined the group")
+        (bob <## "#club: you joined the group")
+      GroupMember {groupMemberId = bobClubGMId, memberId = bobMemId} <- getTestMember alice "club" "bob_1"
+      Just cReq <- withCCTransaction alice $ \db -> withCCUser alice $ \user -> getMemberInvitation db user bobClubGMId
+      connId <- relayConnIdToMember alice "bob"
+      let inv = GroupInvitation {fromMember = MemberIdRole (MemberId "host") GROwner, fromMemberKey = Nothing, invitedMember = MemberIdRole bobMemId GRObserver, connRequest = cReq, groupProfile = groupProfileNamed "club", business = Nothing, groupLinkId = Nothing, groupSize = Nothing}
+      agentSendBody alice connId $ chatMsgToBody $ ChatMessage chatInitialVRange Nothing (XGrpInv inv)
+      bob <## "you already joined this group"
+      memberRoles bob "bob" `shouldReturn` ["admin", "member"]
+
+testBusinessAddressPreparedContactAccepted :: HasCallStack => TestParams -> IO ()
+testBusinessAddressPreparedContactAccepted =
+  testChat2 businessProfile bobProfile $
+    \biz bob -> do
+      biz ##> "/ad"
+      (shortLink, fullLink) <- getContactLinks biz True
+      bob ##> ("/_connect plan 1 " <> shortLink)
+      bob <## "contact address: ok to connect"
+      contactSLinkData <- getTermLine bob
+      bob ##> ("/_prepare contact 1 " <> fullLink <> " " <> shortLink <> " " <> contactSLinkData)
+      bob <## "biz: contact is prepared"
+      biz ##> "/auto_accept on business"
+      biz <## "auto_accept on, business"
+      bob ##> "/_connect contact @2"
+      bob <## "biz: connection started"
+      biz <## "#bob (Bob): accepting business address request..."
+      bob <## "#biz_1: joining the group..."
+      concurrently_
+        (biz <## "#bob: bob_1 joined the group")
+        (bob <## "#biz_1: you joined the group")
+      bob #> "#biz_1 hello"
+      biz <# "#bob bob_1> hello"
+
+newAgentInvitation :: TestCC -> IO ConnReqInvitation
+newAgentInvitation cc = do
+  let ChatController {smpAgent} = chatController cc
+  withCCUser cc $ \user ->
+    runExceptT (createConnection smpAgent NRMInteractive (aUserId user) True False SCMInvitation Nothing Nothing IKPQOff False SMSubscribe)
+      >>= either (fail . show) (\(_, CCLink cReq _) -> pure cReq)
+
+groupProfileNamed :: GroupName -> GroupProfile
+groupProfileNamed displayName = GroupProfile {displayName, fullName = "", shortDescr = Nothing, description = Nothing, image = Nothing, publicGroup = Nothing, groupPreferences = Nothing, memberAdmission = Nothing, chatLayout = Nothing}
 
 testGroupObserverLegacyFile :: HasCallStack => TestParams -> IO ()
 testGroupObserverLegacyFile =
@@ -11603,6 +11921,8 @@ testChannelRelayCannotForgePrivilegedMember ps =
         sent <- runExceptT $ sendMessages bobAgent [(connId, PQEncOff, MsgFlags False, vrValue body)]
         either (fail . show) (const $ pure ()) sent
         -- secure: the victim rejects the forged privileged announcement instead of storing it
+        cath <## "contact alice has insufficient permissions for this group action"
+        agentSendBody bob connId $ chatMsgToBody chatMsg
         cath <##. "error: x.grp.mem.new: privileged member not established by roster"
         forged <- forgedMemberRows cath "forgery"
         forged `shouldBe` []

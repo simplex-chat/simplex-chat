@@ -37,7 +37,7 @@ import kotlinx.coroutines.*
 @Composable
 fun AddGroupMembersView(rhId: Long?, groupInfo: GroupInfo, creatingGroup: Boolean = false, chatModel: ChatModel, close: () -> Unit) {
   val selectedContacts = remember { mutableStateListOf<Long>() }
-  val selectedRole = remember { mutableStateOf(GroupMemberRole.Member) }
+  val selectedRole = remember { mutableStateOf<GroupMemberRole>(GroupMemberRole.Member) }
   var allowModifyMembers by remember { mutableStateOf(true) }
   val searchText = rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(TextFieldValue("")) }
   BackHandler(onBack = close)

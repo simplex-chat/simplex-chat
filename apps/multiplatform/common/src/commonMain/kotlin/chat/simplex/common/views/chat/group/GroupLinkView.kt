@@ -39,7 +39,7 @@ fun GroupLinkView(
   close: (() -> Unit)? = null
 ) {
   var groupLinkVar by rememberSaveable(stateSaver = GroupLink.nullableStateSaver) { mutableStateOf(groupLink) }
-  val groupLinkMemberRole = rememberSaveable { mutableStateOf(groupLink?.acceptMemberRole) }
+  val groupLinkMemberRole = rememberSaveable(stateSaver = serializableSaver()) { mutableStateOf(groupLink?.acceptMemberRole) }
   var creatingLink by rememberSaveable { mutableStateOf(false) }
   val clipboard = LocalClipboardManager.current
   fun createLink() {

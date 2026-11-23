@@ -274,6 +274,7 @@
 		4E57A1E70000000000000014 /* ChatItemUpdateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E57A1E70000000000000013 /* ChatItemUpdateTests.swift */; };
 		4E57A1E70000000000000019 /* FileUploadTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E57A1E70000000000000018 /* FileUploadTests.swift */; };
 		6D4F1C2A9B3E000000000002 /* MarkdownFileTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6D4F1C2A9B3E000000000001 /* MarkdownFileTests.swift */; };
+		4E57A1E7000000008215A002 /* MemberRolesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E57A1E7000000008215A001 /* MemberRolesTests.swift */; };
 		E5AEC0AF2F91A73500270665 /* ComposeChatLinkView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5AEC0AE2F91A73500270665 /* ComposeChatLinkView.swift */; };
 		E5C0BBE82F82B45500EA7527 /* SimpleXAssets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = E5C0BBE72F82B45500EA7527 /* SimpleXAssets.xcassets */; };
 		E5C0BBEB2F82B45500EA7527 /* SharedAssets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = E5C0BBEA2F82B45500EA7527 /* SharedAssets.xcassets */; };
@@ -688,6 +689,7 @@
 		4E57A1E70000000000000013 /* ChatItemUpdateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatItemUpdateTests.swift; sourceTree = "<group>"; };
 		4E57A1E70000000000000018 /* FileUploadTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileUploadTests.swift; sourceTree = "<group>"; };
 		6D4F1C2A9B3E000000000001 /* MarkdownFileTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownFileTests.swift; sourceTree = "<group>"; };
+		4E57A1E7000000008215A001 /* MemberRolesTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemberRolesTests.swift; sourceTree = "<group>"; };
 		4E57A1E70000000000000007 /* SimpleX Unit Tests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "SimpleX Unit Tests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		E5AEC0AE2F91A73500270665 /* ComposeChatLinkView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComposeChatLinkView.swift; sourceTree = "<group>"; };
 		E5C0BBE72F82B45500EA7527 /* SimpleXAssets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = SimpleXAssets.xcassets; sourceTree = "<group>"; };
@@ -1044,6 +1046,7 @@
 				4E57A1E70000000000000013 /* ChatItemUpdateTests.swift */,
 				4E57A1E70000000000000018 /* FileUploadTests.swift */,
 				6D4F1C2A9B3E000000000001 /* MarkdownFileTests.swift */,
+				4E57A1E7000000008215A001 /* MemberRolesTests.swift */,
 			);
 			path = "SimpleX Unit Tests";
 			sourceTree = "<group>";
@@ -1934,6 +1937,7 @@
 				4E57A1E70000000000000014 /* ChatItemUpdateTests.swift in Sources */,
 				4E57A1E70000000000000019 /* FileUploadTests.swift in Sources */,
 				6D4F1C2A9B3E000000000002 /* MarkdownFileTests.swift in Sources */,
+				4E57A1E7000000008215A002 /* MemberRolesTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
