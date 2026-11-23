@@ -1087,6 +1087,7 @@ jobs:
         uses: actions/checkout@v3
         with:
           fetch-depth: 2
+          submodules: recursive
 
       # a pull request's checkout is the merge commit, whose first parent is the base; a manual run's is not, so it always tests
       - name: Check store changes
