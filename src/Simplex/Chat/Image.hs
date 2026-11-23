@@ -75,14 +75,15 @@ decodeResizable s = runExceptT $ do
     decode
       | "\xFF\xD8" `B.isPrefixOf` s = decodeDisplayJpeg s
       | "\x89PNG\r\n\x1a\n" `B.isPrefixOf` s = ExceptT $ Spng.decodePng (Spng.DecodeOptions $ maxDecodeMemoryMB `div` 2) s
-      | "RIFF" `B.isPrefixOf` s && "WEBP" `B.isPrefixOf` B.drop 8 s = ExceptT $ Webp.decodeWebp (Webp.DecodeOptions $ maxDecodeMemoryMB `div` 2) s
+      | "RIFF" `B.isPrefixOf` s && "WEBP" `B.isPrefixOf` B.drop 8 s = orientWebp <$> ExceptT (Webp.decodeWebp (Webp.DecodeOptions $ maxDecodeMemoryMB `div` 2) s)
       | otherwise = throwError "unsupported image format"
+    orientWebp (img, Webp.Metadata {Webp.iccProfile, Webp.exif}) = (orientImage (exifOrientation exif) img, iccProfile)
 
 decodeDisplayJpeg :: ByteString -> ExceptT String IO (DynamicImage, Maybe ByteString)
 decodeDisplayJpeg s = do
   JpegHeader {jpegWidth, jpegHeight} <- ExceptT $ readJpegHeader s
   (halvings, size) <- maybe (throwError "image does not fit") pure $ displaySize jpegWidth jpegHeight
-  (,jpegIccProfile segments) . orientImage (exifOrientation segments) . resizeToSize size <$> ExceptT (decodeJpeg (DecodeOptions (jpegScale halvings) maxJpegPixels maxDecodeMemoryMB) s)
+  (,jpegIccProfile segments) . orientImage (exifOrientation $ exifTiff segments) . resizeToSize size <$> ExceptT (decodeJpeg (DecodeOptions (jpegScale halvings) maxJpegPixels maxDecodeMemoryMB) s)
   where
     segments = jpegSegments $ B.drop 2 s
 
@@ -106,9 +107,9 @@ resizeToSize size@(w, h) img
   | dynamicMap (hasSize size) img = img
   | otherwise = ImageRGB8 $ STBIR.resize STBIR.defaultOptions w h $ convertRGB8 img
 
-exifOrientation :: [(Word8, ByteString)] -> Int
-exifOrientation segments = fromMaybe 1 $ do
-  tiff <- exifTiff segments
+exifOrientation :: Maybe ByteString -> Int
+exifOrientation exif = fromMaybe 1 $ do
+  tiff <- exif
   order <- case B.take 2 tiff of
     "II" -> Just B.reverse
     "MM" -> Just id
