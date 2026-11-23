@@ -326,7 +326,7 @@ testLinkPreviewView ps = do
     alice ##> ("/_link preview " <> pageUrl ps "/no-image")
     alice <## "link preview error: no image"
 
-testLinkPreviewFixture :: HasCallStack => TestParams -> IO ()
+testLinkPreviewFixture :: TestParams -> IO ()
 testLinkPreviewFixture ps = withSocksServer ps $ \_ -> do
   cfg <- linkPreviewCfg
   withLinkPreviewChat ps cfg (socksOpts ps SocksIsolateByAuth) $ \_ alice -> do
