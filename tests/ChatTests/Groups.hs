@@ -65,8 +65,13 @@ import Test.Hspec hiding (it)
 #if defined(dbPostgres)
 import Control.Concurrent (newEmptyMVar, putMVar, takeMVar)
 import Control.Concurrent.Async (wait, withAsync)
+import Data.List.NonEmpty (NonEmpty (..))
+import Data.Maybe (isNothing)
 import Database.PostgreSQL.Simple (Only (..), Query)
 import Database.PostgreSQL.Simple.SqlQQ (sql)
+import Simplex.Chat.Library.Subscriber (processAgentMessage)
+import Simplex.Messaging.Agent.Protocol (AEvent (MERRS), AgentErrorType (INTERNAL))
+import System.Timeout (timeout)
 #else
 import Database.SQLite.Simple (Only (..), Query)
 import Database.SQLite.Simple.QQ (sql)
@@ -116,6 +121,9 @@ chatGroupTests = do
     it "remove member with messages mark deleted" testDeleteMemberMarkMessagesDeleted
     it "remove member - delete messages of left/removed members" testDeleteMemberMessagesLeftRemoved
     it "file chunks from a member who did not send the file are ignored" testGroupFileChunkOtherMember
+#if defined(dbPostgres)
+    it "should stop a message error update at its time limit" testGroupMsgErrorsTimeLimit
+#endif
   describe "batch send messages" $ do
     it "send multiple messages api" testSendMulti
     it "send multiple timed messages" testSendMultiTimed
@@ -2301,6 +2309,20 @@ testGroupFileChunkOtherMember =
         bob <## "completed receiving file 1 (test.txt) from alice"
       src <- B.readFile "./tests/fixtures/test.txt"
       B.readFile (tmpFile bob "test.txt") `shouldReturn` src
+
+#if defined(dbPostgres)
+testGroupMsgErrorsTimeLimit :: HasCallStack => TestParams -> IO ()
+testGroupMsgErrorsTimeLimit =
+  testChat2 aliceProfile bobProfile $
+    \alice@TestCC {chatController = cc} bob -> do
+      createGroup2 "team" alice bob
+      connId <- relayConnIdToMember alice "bob"
+      alice ##> "/_stop"
+      alice <## "chat stopped"
+      let lockDeliveries inside = withCCTransaction alice $ \db -> DB.execute_ db "LOCK TABLE msg_deliveries" >> inside
+      r <- holdDuring lockDeliveries (timeout 1000000 $ runReaderT (runExceptT $ processAgentMessage "" connId $ MERRS (1 :| []) (INTERNAL "")) cc)
+      r `shouldSatisfy` isNothing
+#endif
 
 testSendMulti :: HasCallStack => TestParams -> IO ()
 testSendMulti =

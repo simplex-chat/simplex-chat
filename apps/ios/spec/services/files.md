@@ -271,6 +271,10 @@ func getWallpaperDirectory() -> URL   // Documents/wallpapers/
    - ChatEvent.sndFileError (on failure)
 ```
 
+Each XFTP file of a sent item has a background task from the response to the send until `sndFileCompleteXFTP`, `sndFileError`, the cancellation of the file, the deletion of its item, or the task's expiration ([`beginFileUploadTasks`](../../Shared/Model/SimpleXAPI.swift#L606-L615), [`endFileUploadTask`](../../Shared/Model/SimpleXAPI.swift#L617-L620)). For a direct chat, the core sends `sndFileCompleteXFTP` after the file description is sent; for a group, after the file descriptions are queued.
+
+While the chat is suspending, the agent continues the XFTP uploads started in foreground by this app process. The chat deletes the agent file of each upload after handling its completion or error, queueing the file descriptions of a completed upload first. The core sends `chatSuspended` after these deletions and the delivery of the queued messages, or at the suspend timeout. Uploads started while suspending or resumed from an earlier process are not awaited.
+
 ### Receiving
 
 ```

@@ -54,6 +54,7 @@ async function hubWith(chat: FakeChat, mainMembers: T.GroupMember[] = [self, ali
   chat.members.set(10, mainMembers)
   const hub = new (Hub as unknown as HubConstructor)(chat.api(), user, root, 23, main, "SimpleX MCP")
   hub.machine = () => undefined
+  hub.profileMs = 0
   await hub.main.load()
   await hub.main.start()
   return hub
@@ -108,7 +109,6 @@ describe("session groups", () => {
         groupProfile: {
           displayName: "1 · auth",
           fullName: "",
-          description: "The Claude Code session 1. Members send it prompts; admins and owners also send the group's commands and approve tool use.",
           groupPreferences: {history: {enable: "on"}, directMessages: {enable: "off"}, commands: controlCommands},
           chatLayout: "terminal",
         },
@@ -296,19 +296,19 @@ describe("session groups", () => {
     expect(groupInfo.groupProfile).toMatchObject({displayName: "1 · deploy", shortDescr: "claude-opus-5"})
   })
 
-  it("keep the profile an owner changed, its preference for files and media and its layout included, at the next update of the model and at a rename, from the group's current profile", async () => {
+  it("keep the profile an owner changed, its preference for files and media and its layout included, but the description, which is the recap, at the next update of the model and at a rename, from the group's current profile", async () => {
     const chat = new FakeChat()
     const hub = await hubWith(chat)
     const session = await openSession(hub, id1, stored(1, "auth"))
     const {groupInfo} = chat.chats.get("#20")!.chatInfo as T.ChatInfo.Group
     const files = {enable: T.GroupFeatureEnabled.Off}
     const chatLayout = T.ChatLayout.Classic
-    groupInfo.groupProfile = {...groupInfo.groupProfile, description: "Release work", groupPreferences: {...groupInfo.groupProfile.groupPreferences, files}, chatLayout}
+    groupInfo.groupProfile = {...groupInfo.groupProfile, fullName: "Release work", description: "Old description", groupPreferences: {...groupInfo.groupProfile.groupPreferences, files}, chatLayout}
     await session.turn({id: id1, model: "claude-opus-5"})
     await session.rename("deploy")
     expect(chat.profiles.filter(({groupId}) => groupId === 20).map(({groupProfile}) => groupProfile)).toEqual([
-      expect.objectContaining({shortDescr: "claude-opus-5", description: "Release work", groupPreferences: expect.objectContaining({files}), chatLayout}),
-      expect.objectContaining({displayName: "1 · deploy", shortDescr: "claude-opus-5", description: "Release work", groupPreferences: expect.objectContaining({files}), chatLayout}),
+      expect.objectContaining({shortDescr: "claude-opus-5", fullName: "Release work", description: undefined, groupPreferences: expect.objectContaining({files}), chatLayout}),
+      expect.objectContaining({displayName: "1 · deploy", shortDescr: "claude-opus-5", fullName: "Release work", description: undefined, groupPreferences: expect.objectContaining({files}), chatLayout}),
     ])
   })
 
@@ -426,6 +426,32 @@ describe("session groups", () => {
     expect((await listed(session)).sort()).toEqual(["@12", "@13"])
     chat.responses.set(`/_connect plan 1 ${link}`, plan({type: "contactAddress", contactAddressPlan: {type: "known", contact: (ownedContact(14, "Summit", id2) as T.ChatInfo.Direct).contact}}))
     expect(textOf(await session.call("connect", {target: link}, signal().call))).toBe(`The chat of ${link} belongs to another session; an admin or owner of that session's group can give it to this session with /give.`)
+  })
+
+  it("refuse a connect to the Main group and to a session's group as known chats, and set no owner of them", async () => {
+    const chat = new FakeChat()
+    const session = await openSession(await hubWith(chat), id1, stored(1, "auth"))
+    const link = "https://simplex.chat/g#control"
+    for (const ref of ["#10", "#20"]) {
+      const {groupInfo} = chat.chats.get(ref)!.chatInfo as T.ChatInfo.Group
+      chat.responses.set(`/_connect plan 1 ${link}`, {type: "connectionPlan", user, connLink: {connFullLink: link}, connectionPlan: {type: "groupLink", groupLinkPlan: {type: "known", groupInfo}}})
+      expect(textOf(await session.call("connect", {target: link}, signal().call))).toBe(`The chat of ${link} is the Main group or a session's group, not one of the agent's chats.`)
+    }
+    expect(chat.customData).toEqual([{chat: "#20", customData: {simplexMcpSession: {session: 1}}}])
+  })
+
+  it("leave the Main group and the session groups out of list, send and receive, also with an owner", async () => {
+    const chat = new FakeChat()
+    const session = await openSession(await hubWith(chat), id1, stored(1, "auth"))
+    for (const ref of ["#10", "#20"]) {
+      const {groupInfo} = chat.chats.get(ref)!.chatInfo as T.ChatInfo.Group
+      groupInfo.customData = {...groupInfo.customData, simplexMcpOwner: {session: id1}}
+    }
+    expect(await listed(session)).toEqual([])
+    for (const ref of ["#10", "#20"]) {
+      expect(textOf(await session.call("send", {chat: ref, text: "hi"}, signal().call))).toBe(`No chat ${ref}. list shows the agent's chats.`)
+      expect(textOf(await session.call("receive", {chat: ref}, signal().call))).toBe(`No chat ${ref}. list shows the agent's chats.`)
+    }
   })
 
   it("claim a group joined after its connect call returned, and no chat of a connection pending for over a day", async () => {
@@ -593,6 +619,140 @@ describe("session channel", () => {
     expect(lines).toHaveLength(2)
     expect(session.busy()).toBe(false)
     expect(sentTo(chat, 20)).toHaveLength(3)
+  })
+
+  it("posts a card for a subagent's tool prompt from the PermissionRequest hook, returns the verdict, and keeps the card pending at the turn's end", async () => {
+    const chat = new FakeChat()
+    const {session} = await channel(chat)
+    const prompt = {id: id1, kind: "tool" as const, tool: "Bash", description: "Run the unit tests", preview: "npm test", agent: "reviewer"}
+    const approved = session.ask(prompt, new AbortController().signal)
+    const rejected = session.ask(prompt, new AbortController().signal)
+    await until(() => sentTo(chat, 20).length === 2)
+    const card = "Subagent `reviewer` asks to use `Bash`: `Run the unit tests`\n`npm test`"
+    expect(sentTo(chat, 20)).toEqual([1, 2].map(n => `${card}\n/'approve ${n}', /'approve ${n} all' or /'reject ${n}'`))
+    await session.turn({id: id1, answer: ""})
+    expect(session.actions.pending()).toHaveLength(2)
+    expect(session.stateLine()).toBe("🟠 1 · auth: waiting for you, 2 approvals")
+    await session.control.ownerCommand(invitedAlice, {keyword: "approve", params: "1"})
+    await session.control.ownerCommand(invitedAlice, {keyword: "reject", params: "2"})
+    expect([await approved, await rejected]).toEqual([{behavior: "allow"}, {behavior: "deny", message: "Alice rejected this in the SimpleX group."}])
+  })
+
+  it("links the PermissionRequest hook of a main-conversation prompt to the channel's card of its tool, without a second card or a decision", async () => {
+    const chat = new FakeChat()
+    const {session} = await channel(chat)
+    session.permission({id: id1, requestId: "abcde", toolName: "Bash", description: "Run shell command", inputPreview: "ls"})
+    expect(await session.ask({id: id1, at: Date.now(), kind: "tool", tool: "Bash", description: "", preview: "ls"}, new AbortController().signal)).toBeUndefined()
+    await until(() => sentTo(chat, 20).length === 1)
+    expect(session.actions.all()).toHaveLength(1)
+  })
+
+  it("posts a reject-only card for an Artifact prompt of the main conversation 3 s after no channel request came, and ends it at the turn's end", async () => {
+    const chat = new FakeChat()
+    const {session} = await channel(chat)
+    const asked = session.ask({id: id1, at: Date.now(), kind: "tool", tool: "Artifact", description: "", preview: "action: read\nurl: https://claude.ai/artifact/abc", terminalOnly: true}, new AbortController().signal)
+    await new Promise(resolve => setTimeout(resolve, 3_000))
+    await until(() => sentTo(chat, 20).length === 1)
+    const card = "I want to use `Artifact`, and Claude Code takes its approval only in its terminal:\n`action: read`\n`url: https://claude.ai/artifact/abc`"
+    expect(sentTo(chat, 20)).toEqual([`${card}\nApprove it there, or /'reject 1' here.`])
+    expect(await session.control.ownerCommand(invitedAlice, {keyword: "approve", params: "1"})).toBe("Action 1 is approved only in Claude Code's terminal.")
+    await session.turn({id: id1, answer: ""})
+    expect(await asked).toBeUndefined()
+    await until(() => chat.updates.length === 1)
+    expect(chat.updates[0].text).toBe(`${card}\nEnded.`)
+  }, 10_000)
+
+  it("posts Claude's question as a card, answers it by /answer N K and by a reply of an approver, and declines it by /reject N", async () => {
+    const chat = new FakeChat()
+    const {session} = await channel(chat)
+    const signal = new AbortController().signal
+    const one = {question: "Which library should we use for dates?", options: [{label: "date-fns", description: "Small modular functions"}, {label: "Luxon", description: "Immutable time zones"}], multiSelect: false}
+    const two = {question: "Which features should we enable?", options: [{label: "Auth", description: ""}, {label: "Billing", description: ""}], multiSelect: true}
+    const tapped = session.ask({id: id1, kind: "question", questions: [one]}, signal)
+    const replied = session.ask({id: id1, kind: "question", questions: [one, two]}, signal)
+    const declined = session.ask({id: id1, kind: "question", questions: [two]}, signal)
+    await until(() => [1, 2, 3].every(n => session.actions.get(n)?.card !== undefined))
+    expect(sentTo(chat, 20)).toEqual([
+      "❓ Which library should we use for dates?\n1. date-fns: Small modular functions /'answer 1 1'\n2. Luxon: Immutable time zones /'answer 1 2'\nReply to this message to answer in your own words, or /'reject 1'.",
+      "❓ Claude Code asks 2 questions:\n1. Which library should we use for dates?\n   date-fns: Small modular functions\n   Luxon: Immutable time zones\n2. Which features should we enable? (any of them)\n   Auth\n   Billing\nReply to this message with your answers, or /'reject 2'.",
+      "❓ Which features should we enable? (any of them)\n1. Auth\n2. Billing\nReply to this message with your answers, or /'reject 3'.",
+    ])
+    expect(await session.control.ownerCommand(invitedAlice, {keyword: "answer", params: "3 1"})).toBe("Action 3 has no option 1.")
+    expect(await session.control.ownerCommand(invitedAlice, {keyword: "approve", params: "1"})).toBe("Action 1 is a question; reply to its card to answer it.")
+    expect(await session.control.ownerCommand(invitedAlice, {keyword: "answer", params: "1 1"})).toBeUndefined()
+    session.onMessage(event(sessionGroup, item(50, "React, and both", from(invitedAlice), {quoted: session.actions.get(2)!.card})))
+    expect(await session.control.ownerCommand(invitedAlice, {keyword: "reject", params: "3"})).toBeUndefined()
+    expect([await tapped, await replied, await declined]).toEqual([
+      {behavior: "allow", answers: {[one.question]: "date-fns"}},
+      {behavior: "allow", answers: {[one.question]: "React, and both", [two.question]: "React, and both"}},
+      {behavior: "deny", message: "Alice declined to answer in the SimpleX group."},
+    ])
+    await until(() => chat.updates.length === 3)
+    expect(chat.updates.map(({text}) => text.split("\n").at(-1)).sort()).toEqual(["Answered by Alice in a reply.", "Answered by Alice: date-fns.", "Rejected by Alice."])
+  })
+
+  it("posts a plan and its card as a reply to it, keeps Claude planning at a reply of an approver, and approves the next plan by /approve N", async () => {
+    const chat = new FakeChat()
+    const {session, lines} = await channel(chat)
+    const signal = new AbortController().signal
+    const planned = session.ask({id: id1, kind: "plan", plan: "## Retry failed uploads\n1. Retry 3 times."}, signal)
+    await until(() => session.actions.get(1)?.card !== undefined)
+    expect(answers(chat)).toEqual([[{text: "## Retry failed uploads\n1. Retry 3 times.", quotedItemId: undefined}], [{text: "📋 Claude Code asks to approve this plan.\n/'approve 1' to start, or reply to this message to keep planning with your changes; /'reject 1'", quotedItemId: chat.nextItemId - 2}]])
+    session.onMessage(event(sessionGroup, item(60, "Retry on 503 too.", from(invitedAlice), {quoted: session.actions.get(1)!.card})))
+    expect(await planned).toEqual({behavior: "deny", message: "Keep planning. Alice wrote in the SimpleX group: Retry on 503 too."})
+    await until(() => chat.updates.length === 1)
+    expect(chat.updates[0].text).toBe("📋 Claude Code asks to approve this plan.\nAnswered by Alice in a reply.")
+    const approved = session.ask({id: id1, kind: "plan", plan: "## Retry failed uploads, also on 503"}, signal)
+    await until(() => session.actions.get(2)?.card !== undefined)
+    await session.control.ownerCommand(invitedAlice, {keyword: "approve", params: "2"})
+    expect(await approved).toEqual({behavior: "allow"})
+    expect(lines).toEqual([])
+  })
+
+  it("posts an MCP server's link as a card, accepts it by /approve N, and ends a pending one at the turn's end", async () => {
+    const chat = new FakeChat()
+    const {session} = await channel(chat)
+    const signal = new AbortController().signal
+    const link = {id: id1, kind: "link" as const, server: "tracker", message: "Sign in to continue.", url: "https://tracker.example/oauth"}
+    const accepted = session.ask(link, signal)
+    const ended = session.ask(link, signal)
+    await until(() => [1, 2].every(n => session.actions.get(n)?.card !== undefined))
+    expect(sentTo(chat, 20)[0]).toBe("🔗 MCP server `tracker` asks you to open: https://tracker.example/oauth\nSign in to continue.\nOpen it, then /'approve 1', or /'reject 1' to decline.")
+    await session.control.ownerCommand(invitedAlice, {keyword: "approve", params: "1"})
+    expect(await accepted).toEqual({behavior: "allow"})
+    await session.turn({id: id1, answer: ""})
+    expect(await ended).toBeUndefined()
+  })
+
+  it("posts a line when a turn fails, once per text until an answer or a member's prompt, completes the turn's opening message, and posts the lines of Claude Code's notifications unless a card came in the 30 s before", async () => {
+    const chat = new FakeChat()
+    const {session} = await channel(chat)
+    const failure = {error: "rate_limit", text: "You've hit your weekly limit · resets Nov 18, 3am (UTC)", autoContinue: false, menu: true}
+    await ownerPrompt(session, 70, "Run the unit tests.")
+    await session.turn({id: id1, at: Date.now(), prompt: "Run the unit tests."})
+    await session.turn({id: id1, at: Date.now(), failure})
+    await session.turn({id: id1, at: Date.now(), failure: {...failure, menu: false}})
+    await session.turn({id: id1, answer: ""})
+    await session.turn({id: id1, at: Date.now(), failure: {...failure, autoContinue: true, menu: false}})
+    await session.turn({id: id1, at: Date.now(), failure: {error: "authentication_failed", text: "Please run /login · API Error: 401", autoContinue: false, menu: false}})
+    await session.turn({id: id1, at: Date.now(), failure: {error: "overloaded", text: "API Error: Repeated 529 Overloaded errors", autoContinue: false, menu: false}})
+    await session.turn({id: id1, at: Date.now(), waiting: {kind: "quota_auto_resume_stale", text: ""}})
+    await session.turn({id: id1, at: Date.now(), waiting: {kind: "quota_auto_resume_disabled", text: ""}})
+    await session.turn({id: id1, at: Date.now(), waiting: {kind: "elicitation_dialog", text: "Session paused"}})
+    session.permission({id: id1, requestId: "abcde", toolName: "Bash", description: "Run shell command", inputPreview: "ls"})
+    await session.turn({id: id1, at: Date.now(), waiting: {kind: "permission_prompt", text: "Claude needs your permission"}})
+    await session.turn({id: id1, at: Date.now(), waiting: {kind: "idle_prompt", text: "Claude is waiting for your input"}})
+    await until(() => chat.updates.some(({text}) => text === "⏹️ Stopped"))
+    expect(sentTo(chat, 20).filter(text => !text.startsWith("I want to use"))).toEqual([
+      "",
+      "⛔ Claude Code stopped: You've hit your weekly limit · resets Nov 18, 3am (UTC)\nSend a message here when the limit is lifted.\nClaude Code shows its usage menu in its terminal. It holds messages from this group until someone closes the menu there.",
+      "⛔ Claude Code stopped: You've hit your weekly limit · resets Nov 18, 3am (UTC)\nClaude Code continues by itself at the reset. When the limit is lifted earlier, send a message here.",
+      "⛔ Claude Code stopped: Please run /login · API Error: 401\nSign in again in a terminal on this computer, with `/login` in Claude Code or with `claude auth login`, then send a message here.",
+      "⛔ Claude Code stopped: API Error: Repeated 529 Overloaded errors\nSend a message here to try again.",
+      "🔄 The usage limit has reset. Send a message here to continue.",
+      "⛔ Claude Code will not continue by itself after the usage limit. Send a message here when the limit has reset.",
+      "⏸️ Claude Code waits in its terminal: Session paused",
+    ])
   })
 
   it("leaves the tool-use and mode cards out of the actions that list returns to the session", async () => {
@@ -2606,47 +2766,72 @@ describe("Main group", () => {
     expect(chat.invitations.at(-1)).toEqual({groupId: 21, viaGroupId: 10, groupMemberId: 3, memberRole: T.GroupMemberRole.Owner})
   })
 
-  it("posts the list of every session after the greeting, silent, and edits it as Claude Code's records and the cards change: working, waiting for you, waiting for you in Claude Code, idle, working in the background, and the ⚪ line after an exit", async () => {
+  it("posts a silent message of each running session and then the summary, once an owner joined, and edits them as Claude Code's records and the cards change: working, waiting for you, waiting for you in Claude Code, idle, working in the background, and stopped after an exit", async () => {
     const chat = new FakeChat()
     const hub = await hubWith(chat, [self])
     const one = await openSession(hub, id1, stored(1, "one"))
     await openSession(hub, id2, stored(2, "two"))
+    one.record = join(root, "claude-1.json")
+    writeFileSync(one.record, JSON.stringify({pid: 100, status: "busy"}))
+    one.onLine = () => undefined
     await hub.showSessions()
     expect(sentTo(chat, 10)).toEqual([])
     const carol = member(5, "Carol", T.GroupMemberRole.Member)
     chat.members.set(10, [self, carol])
     await hub.main.onEvent({type: "joinedGroupMember", groupInfo: group(10, "SimpleX MCP", self), member: carol} as unknown as ChatEvent)
     await hub.showSessions()
-    expect(sentTo(chat, 10).slice(-1)).toEqual(["⚪ Not running: 2 · two, 1 · one"])
-    expect(sentTo(chat, 10)[0]).toMatch(/^I'm Claude\./)
+    expect(sentTo(chat, 10).slice(-2)).toEqual(["🟢 1 · one: working", "1 session 🟢"])
     expect(chat.sent.at(-1)!.messages[0]).toMatchObject({priority: -1})
-    const list = chat.nextItemId - 1
-    expect(chat.customData.at(-1)).toEqual({chat: "#10", customData: {simplexMcpMain: true, simplexMcpList: {item: list, at: expect.any(Number)}}})
+    const [message, summary] = [chat.nextItemId - 2, chat.nextItemId - 1]
+    expect(chat.customData.at(-1)).toEqual({chat: "#10", customData: {simplexMcpMain: true, simplexMcpBoard: {summary: {item: summary, at: expect.any(Number)}, sessions: [{session: 1, item: message, at: expect.any(Number)}]}}})
     await withOwner(chat, one)
-    one.record = join(root, "claude-1.json")
-    one.onLine = () => undefined
-    const shows = async (status: string): Promise<string | undefined> => {
+    const shows = async (status: string): Promise<string[]> => {
       writeFileSync(one.record!, JSON.stringify({pid: 100, status}))
       const edits = chat.updates.length
       await hub.showSessions()
-      return chat.updates.length === edits ? undefined : chat.updates.at(-1)!.text
+      return chat.updates.slice(edits).filter(({chatId}) => chatId === 10).map(({itemId, text}) => `${itemId === message ? "message" : itemId === summary ? "summary" : itemId}: ${text}`)
     }
-    expect(await shows("busy")).toBe("🟢 1 · one: working\n⚪ Not running: 2 · two")
-    expect(chat.updates.at(-1)).toMatchObject({chatId: 10, itemId: list})
-    expect(await shows("busy")).toBeUndefined()
-    expect(await shows("waiting")).toBe("⛔️ 1 · one: waiting for you in Claude Code\n⚪ Not running: 2 · two")
+    expect(await shows("busy")).toEqual([])
+    expect(await shows("waiting")).toEqual(["message: ⛔️ 1 · one: waiting for you in Claude Code", "summary: 1 session ⛔️"])
     one.permission({id: id1, requestId: "abcde", toolName: "Bash", description: "Run shell command", inputPreview: "ls"})
-    expect(await shows("waiting")).toBe("🟠 1 · one: waiting for you, 1 approval\n⚪ Not running: 2 · two")
-    expect(await shows("busy")).toBe("🟢 1 · one: working\n⚪ Not running: 2 · two")
-    expect(await shows("idle")).toBe("🔴 1 · one: idle\n⚪ Not running: 2 · two")
-    expect(await shows("shell")).toBe("⚙️ 1 · one: working in the background\n⚪ Not running: 2 · two")
+    expect(await shows("waiting")).toEqual(["message: 🟠 1 · one: waiting for you, 1 approval", "summary: 1 session 🟠"])
+    expect(await shows("busy")).toEqual([])
     one.endPermissions()
+    expect(await shows("busy")).toEqual(["message: 🟢 1 · one: working", "summary: 1 session 🟢"])
+    expect(await shows("idle")).toEqual(["message: 🔴 1 · one: idle", "summary: 1 session 🔴"])
+    expect(await shows("shell")).toEqual(["message: ⚙️ 1 · one: working in the background", "summary: 1 session ⚙️"])
     one.onLine = undefined
-    expect(await shows("idle")).toBe("⚪ Not running: 2 · two, 1 · one")
-    expect(sentTo(chat, 10).filter(text => text.startsWith("⚪"))).toHaveLength(1)
+    expect(await shows("idle")).toEqual(["message: ⚪ 1 · one: stopped", "summary: 1 session ⚪"])
+    expect(sentTo(chat, 10).filter(text => text.includes("1 · one"))).toHaveLength(1)
   })
 
-  it("counts a tool-use card only while Claude Code shows its dialog or its state is unknown, every other card, and no card cancelled by a stop, whose list is edited before the wait for the cancelled cards", async () => {
+  it("shows the title, the account, the model, the effort, the goal state and the recap of a session in its message, and the details and the recap in its group's descriptions", async () => {
+    const chat = new FakeChat()
+    const hub = await hubWith(chat)
+    const one = await openSession(hub, id1, {...stored(1, "one"), model: "claude-opus-5", effort: "high"})
+    one.globalConfig = join(root, ".claude.json")
+    writeFileSync(one.globalConfig, JSON.stringify({oauthAccount: {emailAddress: "alice@example.com"}}))
+    one.transcript = join(root, "t.jsonl")
+    const entries = [{type: "ai-title", aiTitle: "Session board"}, {type: "attachment", attachment: {type: "goal_status", met: false, sentinel: true}}, {type: "system", subtype: "away_summary", content: "Built the board. (disable recaps in /config)"}]
+    writeFileSync(one.transcript, entries.map(entry => `${JSON.stringify(entry)}\n`).join(""))
+    one.onLine = () => undefined
+    await hub.showSessions()
+    expect(sentTo(chat, 10).slice(-2)).toEqual(["▶️ 1 · one: running\n*Session board*\nalice@example.com · claude-opus-5 · effort high · goal set\nBuilt the board.", "1 session ▶️"])
+    expect(chat.profiles.filter(({groupId}) => groupId === 20).at(-1)!.groupProfile).toMatchObject({shortDescr: "alice@example.com · claude-opus-5 · effort high · goal set", description: "Built the board."})
+    expect(readSessionFile(sessionFolder(root, id1))).toMatchObject({account: "alice@example.com", goal: "set", recap: "Built the board.", title: "Session board", transcript: one.transcript})
+  })
+
+  it("deletes the message of a stopped session 23 hours after its post, and the message of a session the hub does not have", async () => {
+    const chat = new FakeChat()
+    const old = Date.now() - 23 * 3_600_000
+    const hub = await hubWith(chat, [self, alice], {simplexMcpMain: true, simplexMcpBoard: {summary: {item: 300, at: old}, sessions: [{session: 1, item: 301, at: old}, {session: 9, item: 302, at: Date.now()}]}})
+    await openSession(hub, id1, stored(1, "one"))
+    await hub.showSessions()
+    expect(chat.deletedItems.map(({itemIds}) => itemIds)).toEqual([[301], [302]])
+    expect(chat.updates).toEqual([{chatId: 10, itemId: 300, text: "No sessions."}])
+  })
+
+  it("counts every pending card, a tool-use card also while Claude Code's record says busy, as for a subagent's card without a dialog, and no card cancelled by a stop, whose board is edited before the wait for the cancelled cards", async () => {
     const chat = new FakeChat()
     const hub = await hubWith(chat)
     const one = await openSession(hub, id1, stored(1, "one"))
@@ -2660,7 +2845,7 @@ describe("Main group", () => {
     one.record = join(root, "claude-1.json")
     writeFileSync(one.record, JSON.stringify({status: "busy"}))
     await hub.showSessions()
-    expect(hub.sessionsText()).toBe("🟢 1 · one: working\n🟠 2 · two: waiting for you, 1 approval")
+    expect(hub.sessionsText()).toBe("🟠 1 · one: waiting for you, 1 approval\n🟠 2 · two: waiting for you, 1 approval")
     writeFileSync(one.record, JSON.stringify({status: "compacting"}))
     await hub.showSessions()
     expect(hub.sessionsText()).toBe("🟠 1 · one: waiting for you, 1 approval\n🟠 2 · two: waiting for you, 1 approval")
@@ -2670,7 +2855,7 @@ describe("Main group", () => {
     expect(hub.sessionsText()).toBe("🟠 1 · one: waiting for you, 2 approvals\n🟠 2 · two: waiting for you, 1 approval")
     let stopped = false
     const stopping = hub.stop().then(() => (stopped = true))
-    await until(() => chat.updates.filter(({chatId}) => chatId === 10).at(-1)?.text === "⚪ Not running: 2 · two, 1 · one")
+    await until(() => chat.updates.filter(({chatId}) => chatId === 10).at(-1)?.text === "2 sessions ⚪ ⚪")
     expect(stopped).toBe(false)
     await stopping
     expect(hub.sessionsText()).toBe("⚪ Not running: 2 · two, 1 · one")
@@ -2723,37 +2908,21 @@ describe("Main group", () => {
     expect(hub.sessionsText()).toBe("🟢 1 · one: working")
   })
 
-  it("deletes a new list whose item it could not save and posts it again at the next render, and does not send a text the core refused as too large again until the text changes", async () => {
+  it("deletes the messages of the board it could not save and posts them again at the next render", async () => {
     const chat = new FakeChat()
-    const errors: string[] = []
-    jest.spyOn(process.stderr, "write").mockImplementation(text => (errors.push(String(text)), true))
+    jest.spyOn(process.stderr, "write").mockImplementation(() => true)
     const hub = await hubWith(chat)
     const one = await openSession(hub, id1, stored(1, "one"))
+    one.onLine = () => undefined
     const save = chat.apiSetGroupCustomData
     chat.apiSetGroupCustomData = async () => {
       throw new Error("database busy")
     }
+    const first = chat.nextItemId
     await hub.showSessions()
-    expect(chat.deletedItems).toEqual([{chatType: T.ChatType.Group, chatId: 10, itemIds: [chat.nextItemId - 1], deleteMode: T.CIDeleteMode.Broadcast}])
-    expect(errors.filter(line => line.startsWith("list of sessions: "))).toHaveLength(1)
     chat.apiSetGroupCustomData = save
     await hub.showSessions()
-    expect(sentTo(chat, 10)).toEqual(["⚪ Not running: 1 · one", "⚪ Not running: 1 · one"])
-    expect(chat.customData.at(-1)).toEqual({chat: "#10", customData: {simplexMcpMain: true, simplexMcpList: {item: chat.nextItemId - 1, at: expect.any(Number)}}})
-    const tooLarge = jest.fn(async () => {
-      throw new core.ChatAPIError("Chat command error", {type: "errorStore", storeError: {type: "largeMsg"}} as unknown as T.ChatError)
-    })
-    chat.apiUpdateChatItem = tooLarge
-    one.onLine = () => undefined
-    await hub.showSessions()
-    await hub.showSessions()
-    expect(tooLarge).toHaveBeenCalledTimes(1)
-    expect(errors.filter(line => line.startsWith("list of sessions: "))).toHaveLength(2)
-    one.onLine = undefined
-    await hub.showSessions()
-    one.onLine = () => undefined
-    await hub.showSessions()
-    expect(tooLarge).toHaveBeenCalledTimes(1)
+    expect([chat.deletedItems.flatMap(({itemIds}) => itemIds), sentTo(chat, 10)]).toEqual([[first, first + 1], ["▶️ 1 · one: running", "1 session ▶️", "▶️ 1 · one: running", "1 session ▶️"]])
   })
 
   it("fits the list in one message: the ⚪ line keeps the newest names that fit and counts the older ones, only the count when no name fits, and every line of a running session", async () => {
@@ -2781,42 +2950,42 @@ describe("Main group", () => {
     expect(tools.fitsMessage({type: "text", text: crowded}, undefined, undefined)).toBe(true)
   })
 
-  it("posts a new list and deletes the old one for everyone when the list is 23 hours old or its edit is refused, logs a refused deletion, and edits the list of the Main group's data after a restart", async () => {
+  it("deletes the list of the earlier version for everyone and removes its key with the save of the board", async () => {
     const chat = new FakeChat()
-    const errors: string[] = []
-    jest.spyOn(process.stderr, "write").mockImplementation(text => (errors.push(String(text)), true))
-    const old = {item: 300, at: Date.now() - 23 * 3_600_000}
-    const hub = await hubWith(chat, [self, alice], {simplexMcpMain: true, simplexMcpList: old})
-    await openSession(hub, id1, stored(1, "one"))
+    const hub = await hubWith(chat, [self, alice], {simplexMcpMain: true, simplexMcpList: {item: 300, at: Date.now()}})
     await hub.showSessions()
-    expect(sentTo(chat, 10)).toEqual(["⚪ Not running: 1 · one"])
-    expect(chat.deletedItems).toEqual([{chatType: T.ChatType.Group, chatId: 10, itemIds: [300], deleteMode: T.CIDeleteMode.Broadcast}])
-    const posted = chat.nextItemId - 1
-    const saved = chat.customData.at(-1)!.customData!
-    expect(saved).toEqual({simplexMcpMain: true, simplexMcpList: {item: posted, at: expect.any(Number)}})
-    const restarted = await hubWith(chat, [self, alice], saved)
-    const one = await openSession(restarted, id1, stored(1, "one"))
+    expect([chat.deletedItems.map(({itemIds}) => itemIds), chat.customData.at(-1)]).toEqual([[[300]], {chat: "#10", customData: {simplexMcpMain: true, simplexMcpBoard: {sessions: []}}}])
+  })
+
+  it("edits once after a restart the messages of the board in the Main group's data", async () => {
+    const chat = new FakeChat()
+    const hub = await hubWith(chat, [self, alice], {simplexMcpMain: true, simplexMcpBoard: {summary: {item: 300, at: Date.now()}, sessions: [{session: 1, item: 301, at: Date.now()}]}})
+    const one = await openSession(hub, id1, stored(1, "one"))
     one.onLine = () => undefined
-    await restarted.showSessions()
-    expect(chat.updates.at(-1)).toEqual({chatId: 10, itemId: posted, text: "▶️ 1 · one: running"})
+    await hub.showSessions()
+    await hub.showSessions()
+    expect(chat.updates).toEqual([{chatId: 10, itemId: 301, text: "▶️ 1 · one: running"}, {chatId: 10, itemId: 300, text: "1 session ▶️"}])
+  })
+
+  it("posts a message and the summary again and deletes the old ones for everyone when the core refuses their edits", async () => {
+    const chat = new FakeChat()
+    const hub = await hubWith(chat, [self, alice], {simplexMcpMain: true, simplexMcpBoard: {summary: {item: 300, at: Date.now()}, sessions: [{session: 1, item: 301, at: Date.now()}]}})
+    const one = await openSession(hub, id1, stored(1, "one"))
+    one.onLine = () => undefined
     chat.apiUpdateChatItem = async () => {
       throw new core.ChatAPIError("Chat command error", {type: "error", errorType: {type: "invalidChatItemUpdate"}} as unknown as T.ChatError)
     }
-    chat.apiDeleteChatItems = async () => {
-      throw new core.ChatAPIError("Chat command error", {type: "error", errorType: {type: "invalidChatItemDelete"}} as unknown as T.ChatError)
-    }
-    one.onLine = undefined
-    await restarted.showSessions()
-    expect(sentTo(chat, 10)).toEqual(["⚪ Not running: 1 · one", "⚪ Not running: 1 · one"])
-    expect(errors.some(line => line.startsWith("old list of sessions: "))).toBe(true)
+    await hub.showSessions()
+    expect([chat.deletedItems.map(({itemIds}) => itemIds), sentTo(chat, 10)]).toEqual([[[301], [300]], ["▶️ 1 · one: running", "1 session ▶️"]])
   })
 
-  it("posts no list while the Main group has no owner, and a new one in the new Main group after a reset of the owners once an owner joins", async () => {
+  it("posts no board while the Main group has no owner, and a new one in the new Main group after a reset of the owners once an owner joins", async () => {
     const chat = new FakeChat()
     const hub = await hubWith(chat)
-    await openSession(hub, id1, stored(1, "one"))
+    const one = await openSession(hub, id1, stored(1, "one"))
+    one.onLine = () => undefined
     await hub.showSessions()
-    expect(sentTo(chat, 10)).toEqual(["⚪ Not running: 1 · one"])
+    expect(sentTo(chat, 10)).toEqual(["▶️ 1 · one: running", "1 session ▶️"])
     await hub.resetOwners()
     chat.members.set(21, [self])
     await hub.showSessions()
@@ -2825,8 +2994,45 @@ describe("Main group", () => {
     chat.members.set(21, [self, carol])
     await hub.main.onEvent({type: "joinedGroupMember", groupInfo: group(21, "SimpleX MCP", self), member: carol} as unknown as ChatEvent)
     await hub.showSessions()
-    expect(sentTo(chat, 21).at(-1)).toBe("⚪ Not running: 1 · one")
-    expect(chat.customData.at(-1)).toEqual({chat: "#21", customData: {simplexMcpMain: true, simplexMcpList: {item: chat.nextItemId - 1, at: expect.any(Number)}}})
+    expect(sentTo(chat, 21).slice(-2)).toEqual(["▶️ 1 · one: running", "1 session ▶️"])
+  })
+
+  it("posts a silent live message of a subagent at its start, ends it with its result at its stop and with the figures of its task, and drops the note of that task", async () => {
+    const chat = new FakeChat()
+    const hub = await hubWith(chat)
+    const session = await openSession(hub, id1, stored(1, "one"))
+    await session.turn({id: id1, agent: {id: "a1", start: {type: "Explore", description: "find callers", toolUse: "toolu_1", transcript: join(root, "agent-a1.jsonl")}}})
+    expect(chat.sent.at(-1)).toMatchObject({chat: [T.ChatType.Group, 20], live: true, messages: [{msgContent: {text: "!- 🤖 Explore · find callers!\n!- 0 steps · 0:00!"}, priority: -1}]})
+    await session.turn({id: id1, agent: {id: "a1", stop: "Found 6 callers."}})
+    await session.turn({id: id1, prompt: "<task-notification>…</task-notification>", typed: false, note: "!- ✅ Agent finished!", task: {toolUse: "toolu_1", status: "completed", tokens: 61_500, steps: 22, ms: 160_000}})
+    await until(() => chat.updates.length === 2)
+    expect([chat.updates, sentTo(chat, 20).filter(text => text.includes("finished"))]).toEqual([[{chatId: 20, itemId: chat.nextItemId - 1, text: "!- 🤖 Explore · find callers · ✅ 0:00 · 0 steps!\n!- Found 6 callers.!"}, {chatId: 20, itemId: chat.nextItemId - 1, text: "!- 🤖 Explore · find callers · ✅ 2:40 · 22 steps · 61.5k tokens!\n!- Found 6 callers.!"}], []])
+  })
+
+  it("shows the working subagents in the session's board message, and ends their live messages with ⏹️ at the last detach", async () => {
+    const chat = new FakeChat()
+    const hub = await hubWith(chat)
+    const session = await openSession(hub, id1, stored(1, "one"))
+    session.onLine = () => undefined
+    await session.turn({id: id1, agent: {id: "a1", start: {type: "Explore", description: "find callers", transcript: join(root, "agent-a1.jsonl")}}})
+    await hub.showSessions()
+    expect(sentTo(chat, 10).at(-2)).toBe("▶️ 1 · one: running\n🤖 1 agent working")
+    await session.endLive()
+    expect(chat.updates.at(-1)).toMatchObject({chatId: 20, text: "!- 🤖 Explore · find callers · ⏹️ 0:00 · 0 steps!"})
+  })
+
+  it("updates the descriptions of a session's group at most once a minute, with the latest values", async () => {
+    const chat = new FakeChat()
+    const hub = await hubWith(chat)
+    hub.profileMs = 200
+    const session = await openSession(hub, id1, stored(1, "one"))
+    await session.turn({id: id1, model: "claude-opus-5"})
+    await session.turn({id: id1, model: "claude-sonnet-5", switched: true})
+    await session.turn({id: id1, model: "claude-haiku-5", switched: true})
+    const described = () => chat.profiles.filter(({groupId}) => groupId === 20).map(({groupProfile}) => groupProfile.shortDescr)
+    expect(described()).toEqual(["claude-opus-5"])
+    await until(() => described().length === 2)
+    expect(described()).toEqual(["claude-opus-5", "claude-haiku-5"])
   })
 
   it("replaces the Main group at once also while owners exist, without a post there, and answers /approve reset and /reject reset as unknown commands", async () => {
