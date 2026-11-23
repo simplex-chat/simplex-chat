@@ -1084,15 +1084,17 @@ registrationById Ctx {cStore} rid = withTransaction cStore $ \db -> fromJust <$>
 
 testOrderDisputeDays :: IO ()
 testOrderDisputeDays = withOrders $ \ctx -> do
-  forM_ [("card", "alicebakers", 120), ("btc", "alicebaking", 14), ("xmr", "alicebagels", 14 :: Int)] $ \(method, label, days) -> do
-    (inv, v) <- placed ctx aliceOrder {oLabel = label, oMethod = method}
-    unDisputeDays . nrDisputeDays <$> invoiceRegistration ctx inv `shouldReturn` days
-    KM.lookup "disputeDays" (registrationOf v) `shouldBe` Just (J.toJSON days)
-  (code, _) <- issueCode ctx 11 2 id
-  rid <- registered ctx code aliceOrder {oLabel = "alicebakeds"}
-  nrDisputeDays <$> registrationById ctx rid `shouldReturn` codeDisputeDays
+  let dynamisOrder = aliceOrder {oLabel = "dynamis", oPrice = 20000}
+      byB o = o {oKey = keyB, oOwner = ownerBText}
   body <- signedBody (cRandom ctx) aliceOrder
   postOrder ctx (KM.insert "method" (J.String "card") body) `shouldReturn` refusedWith 400 "bad_request"
+  forM_ [("card", aliceOrder, 120), ("btc", byB aliceOrder {oSecret = secretOf 2}, 14), ("xmr", dynamisOrder, 14 :: Int)] $ \(method, o, days) -> do
+    (inv, v) <- placed ctx o {oMethod = method}
+    unDisputeDays . nrDisputeDays <$> invoiceRegistration ctx inv `shouldReturn` days
+    KM.lookup "disputeDays" (registrationOf v) `shouldBe` Just (J.toJSON days)
+  (code, _) <- issueCode ctx 7 2 id
+  rid <- registered ctx code (byB dynamisOrder) {oSecret = secretOf 4}
+  nrDisputeDays <$> registrationById ctx rid `shouldReturn` codeDisputeDays
 
 testCodeOrder :: IO ()
 testCodeOrder = withOrders $ \ctx -> do
@@ -1896,6 +1898,8 @@ testViewStates = withServiceStore $ \st -> withFakeEthNode $ \node -> do
               ("sealed", "sealed-alicebakery-1"),
               ("years", J.Number 2),
               ("duration", J.Number 69292800),
+              ("disputeDays", J.Number 14),
+              ("disputeUntil", J.Null),
               ("price", J.Number 20000),
               ("payment", J.object ["type" .= ("invoice" :: Text), "method" .= ("btc" :: Text)]),
               ("latePayment", J.Null),
