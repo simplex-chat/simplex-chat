@@ -38,7 +38,7 @@ struct CILinkView: View {
                 if !linkPreview.description.isEmpty {
                     Text(linkPreview.description)
                         .font(.subheadline)
-                        .lineLimit(12)
+                        .lineLimit(2)
                 }
                 Text(linkPreview.uri)
                     .font(.caption)
@@ -149,7 +149,7 @@ struct LargeLinkPreview_Previews: PreviewProvider {
                 linkPreview: LinkPreview(
                     uri: preview.uri,
                     title: preview.title,
-                    description: "Search and browse without being tracked.",
+                    description: "The Internet privacy company that empowers you to seamlessly take control of your personal information online, without any tradeoffs.",
                     image: preview.image
                 ),
                 maxWidth: 360

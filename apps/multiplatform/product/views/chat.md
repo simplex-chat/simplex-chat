@@ -59,7 +59,7 @@ Each type has a dedicated composable in `views/chat/item/`:
 | Video | `CIVideoView` | Video thumbnail with play button; inline playback via `VideoPlayerHolder` |
 | Voice | `CIVoiceView` | Waveform visualization with playback controls and duration |
 | File | `CIFileView` | File icon, name, size; download/open actions with progress indicator |
-| Link preview | `ChatItemLinkView` | URL preview card with title, description, image (defined in `LinkPreviews.kt`) |
+| Link preview | `ChatItemLinkView` | URL preview card with title, description of at most 2 lines, image (defined in `LinkPreviews.kt`) |
 | Emoji-only | `EmojiItemView` | Large emoji rendering without message bubble |
 | Call event | `CICallItemView` | Call status (missed, ended, duration) |
 | Group event | `CIEventView` | Member joined/left, role changes, group updates |
