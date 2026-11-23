@@ -47,6 +47,7 @@ linkPreviewTests = do
     it "should read at most the head limit of the page" testHeadLimit
     it "should limit image size" testImageLimit
     it "should refuse image by its declared length without reading it" testImageLength
+    it "should read at most the limit and one byte of an endless image" testImageEndless
     it "should limit preview time to 15 seconds without SOCKS proxy" testPreviewDeadline
     it "should limit preview time to 30 seconds through SOCKS proxy" testSocksPreviewDeadline
   describe "charsets" $ do
@@ -253,6 +254,12 @@ testImageLength = do
   readImage 1023 (Just 1024) body `shouldReturn` Left "image too large"
   readIORef pulled `shouldReturn` 0
   (readImage 1023 (Just 1023) =<< listStream [B.replicate 1023 'a']) `shouldReturn` Right (B.replicate 1023 'a')
+
+testImageEndless :: IO ()
+testImageEndless = do
+  (pulled, body) <- endlessBody $ B.replicate 1024 'a'
+  readImage 1023 Nothing body `shouldReturn` Left "image too large"
+  readIORef pulled `shouldReturn` 1024
 
 readImage :: Int -> Maybe Int -> ExceptT String IO ByteString -> IO (Either String ByteString)
 readImage limit contentLength body = runExceptT $ imageBody limit Response {headers = [], contentLength, body}
