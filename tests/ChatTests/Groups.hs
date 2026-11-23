@@ -17,8 +17,8 @@ import ChatTests.DBUtils
 import ChatTests.Profiles (addTestBadge, futureDate, invalidLink, issueTestBadge, setLinkType, setTestGroupLinkData, testBadgeKeys)
 import ChatTests.Utils
 import Control.Concurrent (threadDelay)
-import Control.Concurrent.Async (concurrently_)
-import Control.Concurrent.STM (TVar, atomically, modifyTVar', newTVarIO, readTVarIO, writeTVar)
+import Control.Concurrent.Async (async, concurrently, concurrently_, wait, withAsync)
+import Control.Concurrent.STM (TVar, atomically, modifyTVar', newTVarIO, putTMVar, readTVarIO, takeTMVar, writeTVar)
 import Control.Monad (forM_, void, when)
 import Control.Monad.Except (runExceptT)
 import Control.Monad.Reader (runReaderT)
@@ -32,7 +32,8 @@ import Data.List (intercalate, isInfixOf, isSubsequenceOf, isSuffixOf)
 import qualified Data.Map.Strict as M
 import qualified Data.Text as T
 import Simplex.Chat.Badges (FileSizeLimits (..))
-import Simplex.Chat.Controller (ChatController (ChatController, smpAgent, subscriptionMode), ChatConfig (..), ChatEvent (CEvtChatItemUpdated, CEvtDuplicateGroupMessage), ChatHooks (..), ChatLogLevel (..), defaultChatHooks, withAgent)
+import Simplex.Chat.Controller (ChatCommand (APIAcceptMemberContact, APICreateGroupLink, APIGetUpdatedGroupLinkData), ChatController (ChatController, chatLock, smpAgent, subscriptionMode), ChatConfig (..), ChatError (ChatError), ChatErrorType (CEException), ChatEvent (CEvtChatItemUpdated, CEvtDuplicateGroupMessage), ChatHooks (..), ChatLogLevel (..), ChatResponse (CRGroupInfo, CRGroupLinkCreated), defaultChatHooks, storeCxt, withAgent)
+import Simplex.Chat.Library.Commands (execChatCommand')
 import Simplex.Chat.Library.Internal (encodeConnInfo, getShortLinkConnReq, sendDirectMemberMessage, uniqueMsgMentions, updatedMentionNames)
 import Simplex.Chat.Markdown (parseMaybeMarkdownList)
 import Simplex.Chat.Messages (AChatItemUpdate (..), CIMention (..), CIMentionMember (..), ChatItem (ChatItem, mentions), ChatItemId, isUserMention)
@@ -40,6 +41,9 @@ import Simplex.Chat.Messages.Batch (encodeBinaryBatch, encodeFwdElement)
 import Simplex.Chat.Messages.CIContent (publicGroupNoE2EText)
 import Simplex.Chat.Options
 import Simplex.Chat.Protocol (ChatMessage (ChatMessage), ChatMsgEvent (BFileChunk, XFile, XGrpMemFwd, XGrpMemIntro, XGrpMemNew, XGrpRelayInv, XInfo, XMember, XMsgUpdate, XMsgNew, XMsgDel), FileChunk (..), FwdSender (FwdMember, FwdChannel), GrpMsgForward (GrpMsgForward), MsgContainer (..), MsgMention (..), MsgContent (..), VerifiedMsg (VMUnsigned), chatMsgToBody, mcSimple, msgContentText, supportedChatVRange)
+import Simplex.Chat.Store.Connections (getChatLockEntity)
+import Simplex.Chat.Store.Groups (getGroupIdByName, getGroupLinkConnection, getGroupRelayMembers, updateGroupMemberStatus)
+import Simplex.Chat.Store.Shared (ChatLockEntity (..), getGroupInfo)
 import Simplex.Chat.Types
 import Simplex.Chat.Types.MemberRelations (MemberRelation (..), getRelation, setRelation)
 import Simplex.Chat.Types.Shared (GroupMemberRole (..), GroupAcceptance (..))
@@ -64,7 +68,6 @@ import System.FilePath ((</>))
 import Test.Hspec hiding (it)
 #if defined(dbPostgres)
 import Control.Concurrent (newEmptyMVar, putMVar, takeMVar)
-import Control.Concurrent.Async (wait, withAsync)
 import Data.List.NonEmpty (NonEmpty (..))
 import Data.Maybe (isNothing)
 import Database.PostgreSQL.Simple (Only (..), Query)
@@ -121,6 +124,7 @@ chatGroupTests = do
     it "remove member with messages mark deleted" testDeleteMemberMarkMessagesDeleted
     it "remove member - delete messages of left/removed members" testDeleteMemberMessagesLeftRemoved
     it "file chunks from a member who did not send the file are ignored" testGroupFileChunkOtherMember
+    it "group messages are received while a member is added" testAddMemberReceivesMessages
 #if defined(dbPostgres)
     it "should stop a message error update at its time limit" testGroupMsgErrorsTimeLimit
 #endif
@@ -150,6 +154,9 @@ chatGroupTests = do
     it "host profile received" testGroupLinkHostProfileReceived
     it "existing contact merged" testGroupLinkExistingContactMerged
     it "ignore relay join request in group without relays" testGroupLinkIgnoreRelayJoinRequest
+    it "group link connection is locked with its group" testGroupLinkLockedWithGroup
+    it "group messages are received while a group link is created" testGroupLinkCreationReceivesMessages
+    it "created group link is returned when its data update fails" testGroupLinkDataUpdateError
   describe "group links - member screening" $ do
     it "reject member - blocked name" testGLinkRejectBlockedName
     it "accept member - only host approval" testGLinkApproveMember
@@ -195,6 +202,7 @@ chatGroupTests = do
     it "re-create member contact after deletion, many groups" testRecreateMemberContactManyGroups
     it "manually accept contact with group member" testMemberContactAccept
     it "manually accept contact with group member incognito" testMemberContactAcceptIncognito
+    it "accept contact with group member twice at once" testMemberContactAcceptTwice
   describe "invite member via group" $ do
     it "invite member of another group" testInviteMemberViaGroup
     it "auto-accept invitation from member of another group" testInviteMemberViaGroupAutoAccept
@@ -336,6 +344,7 @@ chatGroupTests = do
       it "should apply channel profile from link data when joining" testChannelJoinAppliesLinkProfile
       it "should apply channel profile from link data to known channel in plan" testChannelPlanAppliesLinkProfile
       it "should check entity ID of channel link on refresh" testChannelLinkDataOtherChannel
+      it "should not connect to relays of a channel left during link refresh" testChannelLinkDataLeft
       it "should validate type of channel link" testChannelLinkAsOtherTypes
       it "relay link checks should skip invalid channel link data" testRelayLinkChecksInvalidData
       it "should update channel preferences (signed)" testChannelUpdatePrefsSigned
@@ -3806,6 +3815,74 @@ sendMemberJoinRequest cc groupLink =
           withAgent $ \a -> joinConnection a NRMInteractive (aUserId user) connId True cReq dm PQSupportOff SMSubscribe
     runExceptT joinGroup `runReaderT` chatController cc >>= either (fail . show) (\_ -> pure ())
 
+testGroupLinkLockedWithGroup :: HasCallStack => TestParams -> IO ()
+testGroupLinkLockedWithGroup =
+  testChat aliceProfile $ \alice -> do
+    alice ##> "/g team"
+    alice <## "group #team is created"
+    alice <## "to add members use /a team <name> or /create link #team"
+    alice ##> "/create link #team"
+    _ <- getGroupLink alice "team" GRMember True
+    let cxt = storeCxt $ chatController alice
+    r <- withCCTransaction alice $ \db -> withCCUser alice $ \user -> runExceptT $ do
+      gInfo <- getGroupInfo db cxt user =<< getGroupIdByName db user "team"
+      Connection {agentConnId = acId} <- getGroupLinkConnection db cxt user gInfo
+      (,) (groupId' gInfo) <$> getChatLockEntity db acId
+    case r of
+      Right (gId, CLGroup gId') -> gId' `shouldBe` gId
+      _ -> expectationFailure "group link connection is not locked with its group"
+
+testGroupLinkCreationReceivesMessages :: HasCallStack => TestParams -> IO ()
+testGroupLinkCreationReceivesMessages =
+  testChat2 aliceProfile bobProfile $ \alice bob -> do
+    createGroup2 "team" alice bob
+    withUnresponsiveServer (smpTestPort2 alice) $ do
+      useUnresponsiveServer alice
+      alice ##> "/create link #team"
+      bob #> "#team hello"
+      alice <# "#team bob> hello"
+      alice <##. "smp agent error: BROKER"
+
+testGroupLinkDataUpdateError :: HasCallStack => TestParams -> IO ()
+testGroupLinkDataUpdateError ps =
+  withNewTestChatOpts ps opts' "alice" aliceProfile $ \alice -> do
+    alice ##> "/g team"
+    alice <## "group #team is created"
+    alice <## "to add members use /a team <name> or /create link #team"
+    let lock = chatLock $ chatController alice
+    atomically $ putTMVar lock "test"
+    a <- withSmpServer' serverCfg' $
+      async (execChatCommand' (APICreateGroupLink 1 GRMember) 0 `runReaderT` chatController alice) <* threadDelay 1000000
+    alice <## "disconnected 1 connections on server localhost"
+    withCCTransaction alice $ \db ->
+      DB.execute db "UPDATE group_profiles SET description = ? WHERE display_name = ?" ("team description" :: T.Text, "team" :: T.Text)
+    void . atomically $ takeTMVar lock
+    r <- wait a
+    case r of
+      Right CRGroupLinkCreated {} -> pure ()
+      _ -> expectationFailure "created group link is not returned when its data update fails"
+  where
+    serverCfg' = (smpServerCfg ps) {transports = [(smpTestPort2 ps, transport @TLS, False)]}
+    opts' =
+      testOpts
+        { coreOptions =
+            testCoreOpts
+              { smpServers = ["smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7003"]
+              }
+        }
+
+testAddMemberReceivesMessages :: HasCallStack => TestParams -> IO ()
+testAddMemberReceivesMessages =
+  testChat3 aliceProfile bobProfile cathProfile $ \alice bob cath -> do
+    createGroup2 "team" alice bob
+    connectUsers alice cath
+    withUnresponsiveServer (smpTestPort2 alice) $ do
+      useUnresponsiveServer alice
+      alice ##> "/a team cath member"
+      bob #> "#team hello"
+      alice <# "#team bob> hello"
+      alice <##. "smp agent error: BROKER"
+
 testGLinkRejectBlockedName :: HasCallStack => TestParams -> IO ()
 testGLinkRejectBlockedName =
   testChatCfg2 cfg aliceProfile bobProfile $
@@ -5530,6 +5607,34 @@ testMemberContactAccept =
             cath <## "use /d #team to delete the local copy of the group"
         ]
 
+      bob <##> cath
+
+testMemberContactAcceptTwice :: HasCallStack => TestParams -> IO ()
+testMemberContactAcceptTwice =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+      bob ##> "/_create member contact #1 3"
+      bob <## "contact for member #team cath is created"
+      bob ##> "/_invite member contact @3"
+      bob <## "sent invitation to connect directly to member #team cath"
+      cath <## "#team bob requests to create direct contact with you"
+      cath <## "to accept: /accept_member_contact @bob"
+      cath <## "to reject: /delete @bob (the sender will NOT be notified)"
+      let lock = chatLock $ chatController cath
+          accept = execChatCommand' (APIAcceptMemberContact 3) 0 `runReaderT` chatController cath
+          alreadyStarted r = case r of
+            Left (ChatError (CEException e)) -> "connection already started" `isInfixOf` e
+            _ -> False
+      atomically $ putTMVar lock "test"
+      (r1, r2) <- withAsync (concurrently accept accept) $ \a -> do
+        threadDelay 1000000
+        void . atomically $ takeTMVar lock
+        wait a
+      length (filter alreadyStarted [r1, r2]) `shouldBe` 1
+      concurrently_
+        (bob <## "cath (Catherine): contact is connected")
+        (cath <## "bob (Bob): contact is connected")
       bob <##> cath
 
 testMemberContactAcceptIncognito :: HasCallStack => TestParams -> IO ()
@@ -10943,6 +11048,31 @@ testChannelLinkDataOtherChannel ps =
         cath <## "Connection link is invalid, possibly it was created in a previous version."
         cath <## "Please ask your contact to check /version and update if needed."
         cath <## "To update run: curl -o- https://raw.githubusercontent.com/simplex-chat/simplex-chat/master/install.sh | bash"
+
+testChannelLinkDataLeft :: HasCallStack => TestParams -> IO ()
+testChannelLinkDataLeft ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath -> do
+        (shortLink, fullLink) <- prepareChannel1Relay "team" alice bob
+        memberJoinChannel "team" [bob] [alice] shortLink fullLink cath
+        let lock = chatLock $ chatController cath
+            cxt = storeCxt $ chatController cath
+            memberCount = withCCTransaction cath (\db -> DB.query_ db "SELECT count(1) FROM group_members" :: IO [[Int]])
+        n <- memberCount
+        atomically $ putTMVar lock "test"
+        r <- withAsync (execChatCommand' (APIGetUpdatedGroupLinkData 1) 0 `runReaderT` chatController cath) $ \a -> do
+          threadDelay 1000000
+          withCCUser cath $ \user@User {userId} -> withCCTransaction cath $ \db -> do
+            g@GroupInfo {membership} <- runExceptT (getGroupInfo db cxt user 1) >>= either (fail . show) pure
+            relays <- getGroupRelayMembers db cxt user g
+            forM_ (membership : relays) $ \m -> updateGroupMemberStatus db userId m GSMemLeft
+          void . atomically $ takeTMVar lock
+          wait a
+        case r of
+          Right CRGroupInfo {} -> pure ()
+          _ -> expectationFailure "channel link data is not refreshed"
+        memberCount `shouldReturn` n
 
 testChannelLinkAsOtherTypes :: HasCallStack => TestParams -> IO ()
 testChannelLinkAsOtherTypes ps =

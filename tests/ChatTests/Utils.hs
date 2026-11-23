@@ -11,10 +11,11 @@ module ChatTests.Utils where
 import APIDocs (testGenerate)
 import ChatClient
 import ChatTests.DBUtils
-import Control.Concurrent (newEmptyMVar, putMVar, takeMVar, threadDelay)
+import Control.Concurrent (forkIO, newEmptyMVar, putMVar, takeMVar, threadDelay)
 import Control.Concurrent.Async (concurrently_, mapConcurrently_, race_, wait, withAsync)
 import Control.Concurrent.STM
-import Control.Monad (join, unless, when)
+import Control.Exception (bracket)
+import Control.Monad (forever, join, unless, when)
 import Control.Monad.Except (runExceptT)
 import qualified Data.Aeson as J
 import qualified Data.Aeson.Key as JK
@@ -29,6 +30,7 @@ import Data.List (foldl', isPrefixOf, isSuffixOf)
 import Data.Maybe (fromMaybe)
 import Data.String
 import qualified Data.Text as T
+import qualified Network.Socket as N
 import Simplex.Chat.Badges (BadgeProof (..), BadgeStatus, LocalBadge (..), ProofPresHeader (..))
 import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), ChatError, ChatEvent (CEvtChatItemUpdated, CEvtNameMoved, CEvtNewChatItems, CEvtSndFileCompleteXFTP, CEvtSndFileError), storeCxt)
 import Simplex.Chat.Library.Commands (maxProfileImageSize)
@@ -990,6 +992,18 @@ setRelativePaths cc filesFolder tempFolder = do
   cc #$> ("/_temp_folder " <> tempFolder, id, "ok")
   cc ##> "/_start"
   cc <## "chat started"
+
+withUnresponsiveServer :: N.ServiceName -> IO a -> IO a
+withUnresponsiveServer srvPort action = do
+  addrInfo : _ <- N.getAddrInfo (Just N.defaultHints {N.addrFlags = [N.AI_PASSIVE], N.addrSocketType = N.Stream}) (Just "127.0.0.1") (Just srvPort)
+  bracket (N.socket (N.addrFamily addrInfo) (N.addrSocketType addrInfo) (N.addrProtocol addrInfo)) N.close $ \listenSock -> do
+    N.setSocketOption listenSock N.ReuseAddr 1
+    N.bind listenSock $ N.addrAddress addrInfo
+    N.listen listenSock 4
+    withAsync (forever $ N.accept listenSock >>= \(peerSock, _) -> forkIO $ threadDelay 5000000 >> N.close peerSock) $ \_ -> action
+
+useUnresponsiveServer :: HasCallStack => TestCC -> IO ()
+useUnresponsiveServer cc = cc #$> ("/smp smp://" <> testServerKeyHash <> "@127.0.0.1:" <> smpTestPort2 cc, id, "ok")
 
 data FixtureRequests = FixtureRequests {frMarkdown :: [String], frUris :: [String], frCommands :: [String]}
 
