@@ -25,7 +25,7 @@ down_m20261113_item_priority :: Query
 down_m20261113_item_priority =
   [sql|
 UPDATE group_members SET member_status = 'removed'
-WHERE member_via IN (SELECT u.member_id FROM group_members u WHERE u.group_id = group_members.group_id AND u.member_category = 'user');
+WHERE member_via IS NOT NULL AND EXISTS (SELECT 1 FROM group_members u WHERE u.group_id = group_members.group_id AND u.member_id = group_members.member_via AND u.member_category = 'user');
 
 UPDATE group_members SET member_status = 'announced'
 WHERE member_via IS NOT NULL AND member_status = 'connected';
