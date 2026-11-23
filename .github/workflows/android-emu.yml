@@ -33,8 +33,10 @@ env:
   CABAL_VER: 3.10.2.0
   JAVA_VER: 17
   CORE_PKG: android-core-arm64-v8a.tar.gz
+  CORE32_PKG: android-core-armeabi-v7a.tar.gz
   BACKEND_PKG: desktop-linux-backend.tar.gz
   APK: android-foss-arm64-v8a-debug.apk
+  APK32: android-foss-armeabi-v7a-debug.apk
 
 jobs:
   plan:
@@ -201,7 +203,60 @@ jobs:
           df -h /
 
       - name: Build core library
-        run: scripts/ci/android/build-core.sh ~/core/android-core-armeabi-v7a.tar.gz armv7a
+        run: scripts/ci/android/build-core.sh ~/core/${{ env.CORE32_PKG }} armv7a
+
+      - name: Upload core library
+        uses: actions/upload-artifact@v7
+        with:
+          name: android-core-armeabi-v7a
+          path: ~/core/${{ env.CORE32_PKG }}
+          compression-level: 0
+          retention-days: 14
+          if-no-files-found: error
+
+  app-armv7a:
+    name: Android app for armv7a
+    needs: core-armv7a
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          submodules: recursive
+
+      - name: Download core library
+        uses: actions/download-artifact@v8
+        with:
+          name: android-core-armeabi-v7a
+          path: ~/core
+
+      - name: Install core library
+        run: scripts/ci/android/install-core.sh ~/core/${{ env.CORE32_PKG }} armeabi-v7a
+
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: corretto
+          java-version: ${{ env.JAVA_VER }}
+
+      - name: Build app
+        working-directory: apps/multiplatform
+        run: |
+          ./gradlew --no-daemon --console=plain -Psimplex.assets.dir=../../assets -Pandroid.injected.build.abi=armeabi-v7a :android:assembleFossDebug
+          mkdir -p "$RUNNER_TEMP/apk"
+          ls -la android/build/intermediates/apk/foss/debug
+          cp "android/build/intermediates/apk/foss/debug/$APK32" "$RUNNER_TEMP/apk"
+          unzip -l "$RUNNER_TEMP/apk/$APK32" | grep -E ' lib/'
+
+      - name: Upload app
+        uses: actions/upload-artifact@v7
+        with:
+          name: android-app-armeabi-v7a
+          path: ${{ runner.temp }}/apk/${{ env.APK32 }}
+          compression-level: 0
+          retention-days: 14
+          if-no-files-found: error
 
   app:
     name: Android app in the emulator
