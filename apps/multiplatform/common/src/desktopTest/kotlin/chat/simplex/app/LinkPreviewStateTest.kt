@@ -149,9 +149,20 @@ class LinkPreviewStateTest {
         assertSameLinkPreview(composed.typed(text).typed(next), edited.typed(text).typed(next))
       }
     }
-    for (event in listOf(LinkPreviewEvent.Cancelled, LinkPreviewEvent.ChatChanged)) {
-      assertSameLinkPreview(composed.updateLinkPreview(event, true), edited.updateLinkPreview(event, true))
+    assertSameLinkPreview(composed.updateLinkPreview(LinkPreviewEvent.Cancelled, true), edited.updateLinkPreview(LinkPreviewEvent.Cancelled, true))
+  }
+
+  @Test
+  fun chatChangeKeepsThePreviewOfAnEditedMessage() {
+    val edited = note.edited()
+    for (s in listOf(edited, edited.typed("$TWO_LINKS "))) {
+      val changed = s.updateLinkPreview(LinkPreviewEvent.ChatChanged, true)
+      assertSame(s.preview, changed.preview)
+      assertEquals(setOf(FAILED), changed.cancelledLinks)
     }
+    val reopened = edited.updateLinkPreview(LinkPreviewEvent.Cancelled, true).updateLinkPreview(LinkPreviewEvent.ChatChanged, true)
+    assertEquals(PAGE, reopened.loadingLink?.uri)
+    assertEquals(setOf(FAILED), reopened.cancelledLinks)
   }
 
   @Test

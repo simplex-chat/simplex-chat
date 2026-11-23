@@ -282,6 +282,21 @@ class LinkPreviewTest {
   }
 
   @Test
+  fun editedMessageKeepsThePreviewOfItsSecondLinkWhenTheChatIsOpenedAgain() = composeView(noteFolder()) { composeState ->
+    val note = editLastNote()
+    val edited = assertIs<MsgContent.MCLink>(note.content.msgContent).preview
+    ChatModel.chatId.value = "@2"
+    waitForIdle()
+    ChatModel.chatId.value = noteFolder().id
+    runCatching { waitUntil(timeoutMillis = 3_000) { synchronized(requests) { requests.isNotEmpty() } } }
+    assertSame(edited, composeState.value.linkPreview)
+    onNodeWithText(edited.title).assertExists()
+    assertEquals(listOf(), requests)
+    onNodeWithContentDescription("Send Message").performClick()
+    assertEquals(createdContent(), updatedContent())
+  }
+
+  @Test
   fun failedLinkIsFetchedAgainAfterTheDeleteTextButton() = composeView { composeState ->
     val (request) = recorded("error")
     val field = onNode(hasSetTextAction())
