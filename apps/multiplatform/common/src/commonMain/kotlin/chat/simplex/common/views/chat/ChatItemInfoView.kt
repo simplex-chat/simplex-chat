@@ -279,7 +279,7 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
         InfoRow(stringResource(MR.strings.info_row_disappears_at), localTimestamp(deleteAt))
       }
       if (ci.meta.highPriority) {
-        InfoRow(stringResource(MR.strings.info_row_high_priority), "", icon = painterResource(MR.images.ic_notifications))
+        InfoRow(stringResource(MR.strings.info_row_high_priority), "", icon = painterResource(MR.images.ic_notifications_filled), iconTint = MaterialTheme.colors.primary)
       }
       val file = ci.file
       if (file?.fileExpires != null) {

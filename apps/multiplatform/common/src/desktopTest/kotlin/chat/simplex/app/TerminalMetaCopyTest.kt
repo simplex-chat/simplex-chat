@@ -37,6 +37,7 @@ class TerminalMetaCopyTest {
   private val sentEdited = CIMeta.getSample(1, Clock.System.now(), "", status = CIStatus.SndSent(SndCIStatusProgress.Complete), itemEdited = true)
   private val receivedTimed = CIMeta.getSample(2, Clock.System.now(), "", status = CIStatus.RcvRead(), itemTimed = CITimed(30, null))
   private val sentViaProxy = CIMeta.getSample(3, Clock.System.now(), "", status = CIStatus.SndSent(SndCIStatusProgress.Complete), sentViaProxy = true)
+  private val sentEditedHighPriority = CIMeta.getSample(4, Clock.System.now(), "", status = CIStatus.SndSent(SndCIStatusProgress.Complete), itemEdited = true, priority = 1)
 
   private fun copy(meta: CIMeta, density: Density, direction: LayoutDirection, showViaProxy: Boolean = false, breakBefore: Boolean = false) =
     metaReserveCopy(
@@ -77,10 +78,10 @@ class TerminalMetaCopyTest {
 
   @Test
   fun iconSpacesKeepWidthAcrossFontScales() {
-    val ts = sentEdited.timestampText
+    val ts = sentEditedHighPriority.timestampText
     val widths = listOf(0.7f, 0.75f, 1f, 1.3f).associateWith { s ->
       val density = Density(1f, s)
-      val text = copy(sentEdited, density, LayoutDirection.Ltr)
+      val text = copy(sentEditedHighPriority, density, LayoutDirection.Ltr)
       val p = paragraph(text, density, TextDirection.Ltr, 1000)
       val timeStart = text.length - ts.length
       assertTrue(p.getHorizontalPosition(2, true) < 0.5f, "marks at scale $s: ${p.getHorizontalPosition(2, true)} px")

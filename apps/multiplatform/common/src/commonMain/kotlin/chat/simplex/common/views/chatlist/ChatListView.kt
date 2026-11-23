@@ -1391,7 +1391,7 @@ private fun TagsView(searchText: MutableState<TextFieldValue>) {
               (unreadTags[tag.chatTagId] ?: 0) > 0 -> " ●"
               else -> ""
             }
-            val bellPlaceholder = Placeholder(12.5.sp, 12.5.sp, PlaceholderVerticalAlign.TextCenter)
+            val bellPlaceholder = Placeholder(12.5.sp, 16.sp, PlaceholderVerticalAlign.TextCenter)
             val invisibleText = buildAnnotatedString {
               append(tag.chatTagText)
               withStyle(SpanStyle(fontSize = 12.sp, fontWeight = FontWeight.SemiBold)) {
@@ -1424,7 +1424,7 @@ private fun TagsView(searchText: MutableState<TextFieldValue>) {
               maxLines = 1,
               overflow = TextOverflow.Ellipsis,
               inlineContent = mapOf("bell" to InlineTextContent(bellPlaceholder) {
-                Icon(painterResource(MR.images.ic_notifications), null, Modifier.fillMaxSize(), tint = MaterialTheme.colors.primary)
+                Icon(painterResource(MR.images.ic_notifications_filled), null, Modifier.requiredSize(16.sp.toDp()), tint = MaterialTheme.colors.primary)
               })
             )
           }
