@@ -88,7 +88,7 @@ struct ComposeState {
         self.cancelledLinks = cancelledLinks
     }
 
-    init(editingItem: ChatItem) {
+    init(editingItem: ChatItem, previewsOn: Bool) {
         let text = if case let .chat(t, chatLink, _) = editingItem.content.msgContent {
             stripTextLink(t, chatLink.connLinkStr)
         } else {
@@ -113,6 +113,15 @@ struct ComposeState {
         self.preview = .noPreview
         self.contextItem = .forwardingItems(chatItems: forwardingItems, fromChatInfo: fromChatInfo)
         self.voiceMessageRecordingState = .noRecording
+    }
+
+    func forwardingItems(_ chatItems: [ChatItem], fromChatInfo: ChatInfo, previewsOn: Bool) -> ComposeState {
+        ComposeState(
+            message: message,
+            preview: linkPreview != nil ? preview : .noPreview,
+            contextItem: .forwardingItems(chatItems: chatItems, fromChatInfo: fromChatInfo),
+            cancelledLinks: cancelledLinks
+        )
     }
 
     func copy(

@@ -447,7 +447,7 @@ struct SendMessageView_Previews: PreviewProvider {
         @State var composeStateNew = ComposeState()
         @State var selectedRange = NSRange()
         let ci = ChatItem.getSample(1, .directSnd, previewDate, "hello")
-        @State var composeStateEditing = ComposeState(editingItem: ci)
+        @State var composeStateEditing = ComposeState(editingItem: ci, previewsOn: true)
         @State var selectedRangeEditing = NSRange()
         @State var sendEnabled: Bool = true
 

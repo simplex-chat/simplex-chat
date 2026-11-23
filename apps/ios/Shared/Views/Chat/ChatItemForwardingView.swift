@@ -98,12 +98,7 @@ struct ChatItemForwardingView: View {
             } else if let fromChatInfo, let composeState {
                 dismiss()
                 if chat.id == fromChatInfo.id {
-                    composeState.wrappedValue = ComposeState(
-                        message: composeState.wrappedValue.message,
-                        preview: composeState.wrappedValue.linkPreview != nil ? composeState.wrappedValue.preview : .noPreview,
-                        contextItem: .forwardingItems(chatItems: chatItems, fromChatInfo: fromChatInfo),
-                        cancelledLinks: composeState.wrappedValue.cancelledLinks
-                    )
+                    composeState.wrappedValue = composeState.wrappedValue.forwardingItems(chatItems, fromChatInfo: fromChatInfo, previewsOn: privacyLinkPreviewsGroupDefault.get())
                 } else {
                     composeState.wrappedValue = ComposeState.init(forwardingItems: chatItems, fromChatInfo: fromChatInfo)
                     ItemsModel.shared.loadOpenChat(chat.id)
