@@ -545,7 +545,7 @@ sequenceDiagram
   S->>C: close
   S->>S: remove DATA/lock
   S->>P: Stopped.
-  Note over P,O: next start: counter continues, restart notice (flow 37), /approve of an old number: Action N is not pending.
+  Note over P,O: next start: counter continues, restart notice (flow 44), /approve of an old number: Action N is not pending.
 ```
 
 Notes:

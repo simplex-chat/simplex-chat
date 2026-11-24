@@ -302,6 +302,7 @@ My Agent: SimpleX MCP server VERSION (8e4b6f1c2d) started.
 - It is posted in the agent control chat and, in mode `requests`, in each chat approved for all messages where the agent is connected, can post by its role, and is not incognito.
 - VERSION is the package version, and `8e4b6f1c2d` is the commit the package was built from, as `git rev-parse --short=10 HEAD` printed it at `npm pack` or `npm publish`. No commit is written by `npx tsc`: with a build by it alone, the notice is `SimpleX MCP server VERSION started.` The same version is in the first line the server prints: `SimpleX MCP server VERSION (8e4b6f1c2d), agent "my-agent"`.
 - The server posts it by itself: it is not an action, and no card is posted for it. An owner who joins later receives it among the chat's recent messages.
+- In an approved chat, the notice is one of the agent's own messages, so `receive` with `history` returns it with them.
 - A failed post is logged on stderr, for example `restart notice to #9: <error>`, and the server continues the start. After the agent lost its control chat, no notice is posted.
 
 ## What the agent sees
