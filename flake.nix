@@ -215,7 +215,8 @@
         find ${mobileRuntime.darwinCLibrary (pkgs.libffi.overrideAttrs (old: { dontDisableStatic = true; }))}/lib -name "*.a" -exec cp {} $out/_pkg \;
         find ${mobileRuntime.darwinCLibrary (pkgs.gmp6.override { withStatic = true; })}/lib -name "*.a" -exec cp {} $out/_pkg \;
         # _SHA512 stays undefined with commoncrypto. The framework links this static archive.
-        find ${darwinOpenSSL}/lib -name "libcrypto.a" -exec cp {} $out/_pkg \;
+        # openssl's default output is bin, which has no lib. libcrypto.a is on out.
+        find ${darwinOpenSSL.out}/lib -name "libcrypto.a" -exec cp {} $out/_pkg \;
         test -f $out/_pkg/libcrypto.a
         # There is no static libc
         ${pkgs.tree}/bin/tree $out/_pkg
