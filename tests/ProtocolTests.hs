@@ -297,6 +297,12 @@ decodeChatMessageTest = describe "Chat message encoding/decoding" $ do
         chatInitialVRange
         (Just $ SharedMsgId "\1\2\3\4")
         (XMsgNew (mcQuote quotedMsg (MCReport "" RRSpam)))
+  it "x.msg.new report with reason illegal" $
+    "{\"v\":\"9\",\"msgId\":\"AQIDBA==\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"\",\"reason\":\"illegal\",\"type\":\"report\"},\"quote\":{\"content\":{\"text\":\"hello there!\",\"type\":\"text\"},\"msgRef\":{\"msgId\":\"BQYHCA==\",\"sent\":true,\"sentAt\":\"1970-01-01T00:00:01.000000001Z\"}}}}"
+      ==## ChatMessage
+        chatInitialVRange
+        (Just $ SharedMsgId "\1\2\3\4")
+        (XMsgNew (mcQuote quotedMsg (MCReport "" RRContent)))
   it "x.msg.new forward with file" $
     "{\"v\":\"9\",\"msgId\":\"AQIDBA==\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello\",\"type\":\"text\"},\"file\":{\"fileSize\":12345,\"fileName\":\"photo.jpg\"},\"forward\":true}}"
       ##==## ChatMessage chatInitialVRange (Just $ SharedMsgId "\1\2\3\4") (XMsgNew $ (mcForward Nothing (MCText "hello")) {file = Just FileInvitation {fileName = "photo.jpg", fileSize = 12345, fileDigest = Nothing, fileConnReq = Nothing, fileInline = Nothing, fileDescr = Nothing, fileBadge = Nothing}})
