@@ -2356,7 +2356,7 @@ testDeleteMemberMessagesLeftRemoved =
 
 testClearChatDeleteLeftMember :: HasCallStack => TestParams -> IO ()
 testClearChatDeleteLeftMember =
-  testChat3 aliceProfile bobProfile cathProfile $
+  testChatCfg3 cfg aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       createGroup3' "team" alice (bob, GRMember) (cath, GRMember)
       alice #> "@bob hi"
@@ -2369,9 +2369,17 @@ testClearChatDeleteLeftMember =
           alice <## "#team: cath left the group (signed)",
           bob <## "#team: cath left the group (signed)"
         ]
+      alice #$> ("/clear #team", id, "#team: all messages are removed locally ONLY")
+      groupMembers alice `shouldReturn` [["alice"], ["bob"], ["cath"]]
       bob #$> ("/clear #team", id, "#team: all messages are removed locally ONLY")
-      withCCTransaction bob (\db -> DB.query_ db "SELECT local_display_name FROM group_members ORDER BY group_member_id" :: IO [[T.Text]])
-        `shouldReturn` [["alice"], ["bob"]]
+      groupMembers bob `shouldReturn` [["alice"], ["bob"]]
+      pendingDeliveries alice `shouldEventuallyReturn` [[0]]
+      alice #$> ("/clear #team", id, "#team: all messages are removed locally ONLY")
+      groupMembers alice `shouldReturn` [["alice"], ["bob"]]
+  where
+    cfg = testCfg {deliveryWorkerDelay = 3000000}
+    groupMembers cc = withCCTransaction cc (\db -> DB.query_ db "SELECT local_display_name FROM group_members ORDER BY group_member_id" :: IO [[T.Text]])
+    pendingDeliveries cc = withCCTransaction cc (\db -> DB.query_ db "SELECT (SELECT COUNT(1) FROM delivery_tasks WHERE task_status = 'new') + (SELECT COUNT(1) FROM delivery_jobs WHERE job_status = 'pending')" :: IO [[Int]])
 
 testGroupFileChunkOtherMember :: HasCallStack => TestParams -> IO ()
 testGroupFileChunkOtherMember =
