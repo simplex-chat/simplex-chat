@@ -44,7 +44,7 @@ Status: v0.3. [`TESTING.md`](TESTING.md) describes a local build and test. The d
 - On Linux x86-64: glibc 2.34 or later, and the system libraries `libcrypto.so.3`, `libgmp.so.10` and `libz.so.1`.
 - The SimpleX Chat app on a phone or computer, for the owner.
 - Claude Code; other MCP hosts with Streamable HTTP and custom headers can be configured by hand.
-- For voice messages, `--audio`: an OpenAI-compatible audio API, and `ffmpeg` and `ffprobe` for voice replies ([Voice messages](#voice-messages)).
+- For voice messages of `serve`, `--audio`: an OpenAI-compatible audio API, and `ffmpeg` and `ffprobe` for voice replies ([Voice messages](#voice-messages)).
 
 At its first start the server downloads the SimpleX core library, 29 to 50 MB depending on the platform, into `~/.cache/simplex-chat` (macOS: `~/Library/Caches/simplex-chat`, Windows: `%LOCALAPPDATA%\simplex-chat`). Unpacked on Linux, it takes about 240 MB.
 
@@ -368,7 +368,7 @@ Add an entry with the URL `http://127.0.0.1:5226/mcp` and the header `Authorizat
 
 ## Voice messages
 
-With `--audio`, an OpenAI-compatible audio API transcribes the voice messages the agent receives and speaks the voice replies it sends:
+With `serve --audio`, an OpenAI-compatible audio API transcribes the voice messages the agent receives and speaks the voice replies it sends:
 
 ```
 npx -y @simplex-chat/mcp serve my-agent --audio http://127.0.0.1:8080,stt,tts
@@ -378,6 +378,7 @@ npx -y @simplex-chat/mcp serve my-agent --audio http://127.0.0.1:8080,stt,tts
 - URL is an `http` or `https` URL without a user name or password; its trailing slashes are removed. With another value, the server exits with `--audio: URL,STT,TTS or URL,STT,TTS,VOICE with an http or https URL expected, got VALUE`.
 - At start, the server prints `Audio: http://127.0.0.1:8080, speech-to-text stt, text-to-speech tts`, with `, voice VOICE` when VOICE is given.
 - Without `--audio`, voice messages are files only, and `voice` is absent from the input of `send`.
+- `--audio` is an option of `serve` only: in the sessions of the [Claude Code plugin](#claude-code-plugin), voice messages are files only.
 
 ### Transcripts
 
@@ -601,7 +602,7 @@ One server runs per data folder: a second one exits, because two processes on on
 
 ## Claude Code plugin
 
-The plugin gives every Claude Code session its own SimpleX group. In that group you send the session prompts, approve its actions and tool use, and read its answers. One service runs all sessions that share a data folder. Peers see one SimpleX profile, `Claude`. Sessions have the tools of `serve` (`connect`, `send`, `receive`, `download`, `list` and `leave`), and `reply`, which sends files to the session's group.
+The plugin gives every Claude Code session its own SimpleX group. In that group you send the session prompts, approve its actions and tool use, and read its answers. One service runs all sessions that share a data folder. Peers see one SimpleX profile, `Claude`. Sessions have the tools of `serve` (`connect`, `send`, `receive`, `download`, `list` and `leave`), with voice messages as files only, and `reply`, which sends files to the session's group.
 
 ### Install
 

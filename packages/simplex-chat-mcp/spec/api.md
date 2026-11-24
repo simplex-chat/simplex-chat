@@ -406,7 +406,7 @@ The link texts of a `connect` card are its description and welcome lines. These 
 
 ### 1.10 Voice messages
 
-<a id="voice-messages"></a>With `--audio` ([3.1](#31-serve)), voice messages are transcribed and voice replies spoken by the audio API at URL ([`audio.ts`](../src/audio.ts)).
+<a id="voice-messages"></a>With `serve --audio` ([3.1](#31-serve)), voice messages are transcribed and voice replies spoken by the audio API at URL ([`audio.ts`](../src/audio.ts)).
 
 A received voice message is transcribed at its arrival under these conditions ([`AgentTools.transcribesAtArrival`](../src/tools.ts)):
 
@@ -744,7 +744,7 @@ stderr: `CONTEXT: ERROR` from [`logError`](../src/log.ts), with CONTEXT one of `
 
 | Rule | Code |
 |---|---|
-| The six tools of [1](#1-tools) and `reply` are registered on the session's `McpServer`. Claude Code names them `mcp__plugin_simplex_simplex__NAME` | [`startSession`](../src/session.ts), the `PreToolUse` matcher of [`hooks`](../hooks/hooks.json) |
+| The six tools of [1](#1-tools) and `reply` are registered on the session's `McpServer`, `send` with `sendSchema`: the voice messages of [1.10](#110-voice-messages) are of `serve` only. Claude Code names them `mcp__plugin_simplex_simplex__NAME` | [`startSession`](../src/session.ts), the `PreToolUse` matcher of [`hooks`](../hooks/hooks.json) |
 | The four action tools are registered with `_meta: {"anthropic/requiresUserInteraction": true}` when the option `approve` is `host` at the start of the session process | [`startSession`](../src/session.ts), [`registerTools`](../src/tools.ts) |
 | `pre_tool_use`, with input `{tool}`, answers the PreToolUse hook of type `mcp_tool` of [4.8](#48-plugin-options-files-and-hook-output). For a tool in the approved tools of the session server's current attachment ([4.6](#46-socket-protocol)), its text is `{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"allow","permissionDecisionReason":"Approved for this session by NAME in the session's SimpleX group."}}`; otherwise it is empty. It sends no request to the service and returns no error, also in a run that is not interactive and with an invalid option. Its description, which Claude sees: `Answers the plugin's PreToolUse hook before each tool use: allow for a tool that an admin or owner of the SimpleX group of this session approved for the rest of the session, and nothing otherwise. You never need to call it.` | [`hookTool`, `startSession`, `ServiceLink.approvedBy`, `hookOutput`](../src/session.ts) |
 | Instructions: those of [1.1](#11-common-rules), with the display name `Claude` and the host `SimpleX service`, followed by the channel instructions of [4.5](#45-channel) | [`channelInstructions`, `startSession`](../src/session.ts), [`instructions`](../src/tools.ts) |
