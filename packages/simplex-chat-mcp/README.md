@@ -7,65 +7,71 @@ SimpleX Network is the only messaging network without any user identifiers - no 
 With this package, Claude Code can join channels and groups, talk to bots, and even receive your prompts via the SimpleX app. It asks you on your phone before it connects or sends - one tap to approve.
 
 <p>
-  <img src="https://raw.githubusercontent.com/simplex-chat/simplex-chat/master/packages/simplex-chat-mcp/images/approval.png" alt="The agent asks in its chat before it sends a message; one tap approves it" width="320">
-  <img src="https://raw.githubusercontent.com/simplex-chat/simplex-chat/master/packages/simplex-chat-mcp/images/prompts.png" alt="Prompting the agent from the SimpleX app" width="320">
+  <img src="https://raw.githubusercontent.com/simplex-chat/simplex-chat/master/packages/simplex-chat-mcp/images/session.png" alt="The group of a Claude Code session in the SimpleX app: a prompt, Claude's answer, and its requests to run commands, which one tap approves" width="320">
 </p>
 
-## Try it
+🏗️ marks what is on the [roadmap](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-mcp/ROADMAP.md).
 
-You need Node.js 22 or later, Claude Code and the [SimpleX Chat app](https://simplex.chat/downloads/).
+## Use your agents in private chats, with the full chat UX
 
-1. Start your agent and keep it running:
+- No phone number, email or account. Agents have their own profile, without access to your other chats.
+- Send prompts with images and files, and see answers live. Terminal prompts sent to the chat too.
+- Reply and edit messages, send reactions.
+- Sessions use flat layout.
+- 🏗️ Voice messages, code highlighting, widgets, etc.
+
+## Work with others in the same session
+
+- Invite people to the Main group, and they join any session's group.
+- Only owners and admins can approve tool calls.
+- The Main group shows every session's state, Claude account, model, goal, working subagents and recap.
+- A session's group shows each subagent and workflow as it works, and when it stalls.
+- 🏗️ Each session as a topic in one group.
+- 🏗️ Agent teams: mention an agent to message it.
+
+## Control your agents' activity
+
+- Agents ask before they act in other chats or use a tool such as Bash.
+- A live stream of agent's work: tasks, tool calls, etc.
+- Session and machine status.
+- Answer Claude's questions, plans and subagents' tool prompts in the chat, and see when Claude Code stops or waits in its terminal.
+- 🏗️ Code diffs, etc.
+
+## Start
+
+You need Node.js 22 or later, Claude Code, and the [SimpleX Chat app](https://simplex.chat/downloads/) 7.1 or later.
+
+1. Install the plugin in Claude Code:
 
    ```
-   npx -y @simplex-chat/mcp serve my-agent --display-name "My Agent"
+   /plugin marketplace add https://raw.githubusercontent.com/simplex-chat/simplex-chat/master/.claude-plugin/marketplace.json
+   /plugin install simplex@simplex-chat
    ```
 
-   Scan the QR code it prints with the SimpleX app, and tap Join. The chat "My Agent" appears: your agent asks there before it acts. Ctrl-C stops it; when requests were waiting, it first marks them cancelled in "My Agent", waiting up to 10 seconds (`--stop-wait`), and a second Ctrl-C stops it at once.
-
-2. In another terminal, add it to Claude Code:
+2. Start Claude Code with the SimpleX channel:
 
    ```
-   npx -y @simplex-chat/mcp register my-agent
+   claude --dangerously-load-development-channels plugin:simplex@simplex-chat
    ```
 
-3. Add `"mcp__simplex-my-agent"` to `permissions.allow` in `~/.claude/settings.json`. You approve in the app, so Claude Code doesn't need to ask too.
+   Scan the QR code with the SimpleX app and tap Join: the Main group "Claude Control" appears. The first start downloads the SimpleX core library, so the QR code can take a minute.
 
-4. Start `claude` and ask:
+3. Each Claude Code session gets its own group, such as "1 · my-project". Join it from the invitation in "Claude Control", and send prompts there.
 
-   ```
-   Search the SimpleX Directory for security groups: https://smp4.simplex.im/a#lXUjJW5vHYQzoLYgmi8GbxkGP41_kjefFvBrdwg-0Ok
-   ```
-
-   Approve its cards in "My Agent" with one tap.
-
-## Prompt your agent from the app
-
-Give Claude Code your SimpleX address:
-
-```
-Connect to me as yourself at <your SimpleX address>, with the message:
-"I'm your agent, connected as you asked in Claude Code. I'll act on your prompts here, except security-sensitive ones."
-Then take my prompts from that chat and answer there: wait for my messages with receive (wait 3600),
-answer each one in that chat, and call receive again after every answer, until I say stop.
-```
-
-Approve the connection in "My Agent", and accept the request in the app if it asks. On the card of the agent's first answer, tap `all`: its later answers to you need no approval.
+[REFERENCE.md](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-mcp/REFERENCE.md) covers the plugin without the channel, several machines or containers, the status line, options, recovery and security.
 
 ## Safety
 
-- The agent asks in "My Agent" before it connects, sends a message or a file, downloads a file or leaves; you approve or reject. On a download card, `/receive` gives the agent the file, and `/forward` sends it only to you.
-- `all` approves every message to one chat; `/revoke` ends it. `/receive CHAT N all` lets the agent receive that file and later files from one chat on the agent's servers; `/receive CHAT off` ends it.
-- Messages in your prompt chat can become prompts for your Claude Code session: use a chat where only you write.
-- The agent runs on your computer and has no address in SimpleX Network, so nobody can contact it first.
+- Anyone in "Claude Control" can join your sessions as an admin, so only invite people you trust.
+- In a session, admins and owners can prompt the agent and approve what it does. Other members can only prompt, and observers can only read.
+- A tool approved for the session runs without asking until the session ends or `/revoke`. Claude Code still asks where its own rules require it, such as before a change to `.git` or `.bashrc`.
+- Claude Code doesn't run `!` or `/` commands sent in the group.
+- Agents send files to the group only if the group allows them.
+- Agents have no SimpleX address, so nobody can contact them first.
 
 ## Only Claude Code, for now
 
 The agent is tested with Claude Code. Tell us which other apps and models you want to use in [an issue](https://github.com/simplex-chat/simplex-chat/issues), or contribute.
-
-## Reference
-
-Approval modes, owners, several agents, other MCP hosts, recovery and all options: [REFERENCE.md](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-mcp/REFERENCE.md).
 
 ## Own a part of SimpleX
 

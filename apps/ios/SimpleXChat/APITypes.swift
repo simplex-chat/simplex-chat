@@ -262,7 +262,7 @@ public struct NetCfg: Codable, Equatable {
     var socksMode: SocksMode = .always
     public var hostMode: HostMode = .publicHost
     public var requiredHostMode = true
-    public var sessionMode = TransportSessionMode.user
+    public var sessionMode = TransportSessionMode.session
     public var smpProxyMode: SMPProxyMode = .always
     public var smpProxyFallback: SMPProxyFallback = .allowProtected
     public var smpWebPortServers: SMPWebPortServers = .preset
@@ -831,14 +831,14 @@ public enum BadgeRedeemError: Decodable, Hashable {
     case serviceNotConfigured
     case badgeActive
     case storePurchaseOpen
-    case serviceError(serviceError: BadgeServiceErrorCode)
+    case serviceError(serviceError: StoreServiceErrorCode)
     case invalidResponse(message: String)
     case unknownKeyIndex
     case credentialNotVerified
 }
 
 // the service is deployed ahead of clients, so a code this version does not know keeps its tag
-public enum BadgeServiceErrorCode: Decodable, Hashable {
+public enum StoreServiceErrorCode: Decodable, Hashable {
     case badRequest
     case unsupportedVersion
     case unknownPurchaseKey
@@ -914,7 +914,7 @@ public enum BadgeServiceErrorCode: Decodable, Hashable {
     }
 }
 
-public func badgeServiceErrorText(_ code: BadgeServiceErrorCode) -> String? {
+public func badgeServiceErrorText(_ code: StoreServiceErrorCode) -> String? {
     switch code {
     case .codeInvalid: NSLocalizedString("This code was not recognized.", comment: "alert message")
     case .codeUsed: NSLocalizedString("This code has already been used.", comment: "alert message")

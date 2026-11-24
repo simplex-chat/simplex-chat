@@ -127,7 +127,7 @@ Versions unpublished after a failure: published by the next push to the branch.
 2. Commit, push to the same branch.
 
 3. Run of `build.yml`:
-   - `publish`, with the pinned versions on npm: package installed by `npm ci` from the published packages, type-checked and unit tested, then published with trusted publishing
+   - `publish`, with the pinned versions on npm: package installed by `npm ci` from the published packages, type-checked and unit tested, then published with trusted publishing, with the production packages of that install bundled in it (`bundleDependencies`) and without a lockfile
    - `record`: published version recorded
 
 The package tests of 5 platforms are not required.
