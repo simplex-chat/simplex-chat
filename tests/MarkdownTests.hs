@@ -525,7 +525,9 @@ onChain :: PaymentNetwork -> Text -> Text -> PaymentRequest
 onChain n a = payTo $ PPAddress n a ACVerified
 
 paysTo :: Text -> PaymentRequest -> Expectation
-paysTo t r = t <==> pay r t
+paysTo t r = do
+  t <==> pay r t
+  strDecode (strEncode r) `shouldBe` Right r
 
 isText :: Text -> Expectation
 isText t = t <==> unmarked t
@@ -564,6 +566,7 @@ paymentLinks = describe "payment links" do
     ("bitcoin:" <> btc <> "?lightning=" <> coffee) `paysTo` PaymentRequest btcPayee [coffeeInvoice] Nothing Nothing Nothing Nothing ("bitcoin:" <> btc <> "?lightning=" <> coffee)
     ("bitcoin:?lightning=" <> coffee) `paysTo` PaymentRequest (PPLightning coffeeInvoice) [] (Just "0.0025") Nothing Nothing Nothing ("bitcoin:?lightning=" <> coffee)
     ("dogecoin://" <> doge) `paysTo` onChain PNDogecoin doge ("dogecoin:" <> doge)
+    ("bitcoincash:" <> bch) `paysTo` onChain PNBitcoinCash bch ("bitcoincash:" <> bch)
     ("litecoin:" <> ltcM) `paysTo` onChain PNLitecoin ltcM ("litecoin:" <> ltcM)
     ("monero:" <> xmr <> "?tx_amount=0.5&recipient_name=SimpleX&tx_description=Donation%20to%20SimpleX")
       `paysTo` PaymentRequest (PPAddress PNMonero xmr ACVerified) [] (Just "0.5") Nothing (Just "SimpleX") (Just "Donation to SimpleX") ("monero:" <> xmr <> "?tx_amount=0.5&recipient_name=SimpleX&tx_description=Donation%20to%20SimpleX")
