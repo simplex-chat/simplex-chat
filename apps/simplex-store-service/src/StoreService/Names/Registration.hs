@@ -100,6 +100,7 @@ newtype Node = Node ByteString
 
 nodeBytes :: Node -> ByteString
 nodeBytes (Node node) = node
+{-# INLINE nodeBytes #-}
 
 data LinkKind = LKContact | LKChannel
   deriving (Eq, Show)
@@ -115,6 +116,7 @@ instance TextEncoding LinkKind where
 
 recordKey :: LinkKind -> ByteString
 recordKey = encodeUtf8 . textEncode
+{-# INLINE recordKey #-}
 
 linkMaxBytes :: Int
 linkMaxBytes = 1024
@@ -170,12 +172,15 @@ codeDisputeDays = DisputeDays 14
 
 sponsorDomain :: Word64 -> Address -> Eip712Domain
 sponsorDomain edChainId edVerifyingContract = Eip712Domain {edName = "SimplexSponsor", edVersion = "1", edChainId, edVerifyingContract}
+{-# INLINE sponsorDomain #-}
 
 resolverDomain :: Word64 -> Address -> Eip712Domain
 resolverDomain edChainId edVerifyingContract = Eip712Domain {edName = "SimplexResolver", edVersion = "1", edChainId, edVerifyingContract}
+{-# INLINE resolverDomain #-}
 
 policyDomain :: Word64 -> Address -> Eip712Domain
 policyDomain edChainId edVerifyingContract = Eip712Domain {edName = "SimplexNamePolicy", edVersion = "1", edChainId, edVerifyingContract}
+{-# INLINE policyDomain #-}
 
 -- | The owner's acceptance of the terms of the name's kind for a commitment, relayed to the name policy before the register.
 -- Its deadline is the reveal's.
@@ -208,6 +213,7 @@ termsKind community
 
 makeCommitment :: Registration -> Commitment
 makeCommitment r = Hex32 $ keccak256 $ abiTuple [Dynamic $ registrationTuple r]
+{-# INLINE makeCommitment #-}
 
 commitCalldata :: Commitment -> ByteString
 commitCalldata (Hex32 commitment) = selector "commit(bytes32)" <> commitment
@@ -296,6 +302,7 @@ multicallCalldata calls = selector "multicall(bytes[])" <> abiTuple [Dynamic $ a
 
 bytes32 :: ByteString -> Eip712Value
 bytes32 b = VUint $ fromInteger $ os2ip b
+{-# INLINE bytes32 #-}
 
 registrationTuple :: Registration -> ByteString
 registrationTuple r@Registration {rLabel, rOwner, rDuration, rSecret = Hex32 rSecret, rResolver} =
@@ -324,9 +331,11 @@ recordCalls Registration {rLabel, rTLD, rContactLink, rChannelLink} =
 
 namehash :: SimplexTLD -> Text -> Node
 namehash tld = labelNode tld . labelHash
+{-# INLINE namehash #-}
 
 labelNode :: SimplexTLD -> LabelHash -> Node
 labelNode tld = Node . childNode (childNode (B.replicate 32 0) (labelHash $ tldLabel tld))
+{-# INLINE labelNode #-}
 
 childNode :: ByteString -> LabelHash -> ByteString
 childNode parent (LabelHash h) = keccak256 $ parent <> h

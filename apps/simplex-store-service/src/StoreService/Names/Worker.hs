@@ -167,6 +167,7 @@ chainSecond = 1
 
 newWorker :: OrdersEnv -> Sender -> IO Worker
 newWorker wkOrders wkSender = Worker wkOrders wkSender <$> TM.emptyIO
+{-# INLINE newWorker #-}
 
 -- | A thread for each registration in the worker's phases, started by a scan every scanInterval; they stop with it.
 runWorkers :: Worker -> IO ()
@@ -523,6 +524,7 @@ endOrder OrdersEnv {oeStore, oeTurns} now r@NameRegistrationOrder {nrId, nrPayme
 
 creditedTaken :: UTCTime -> NameRegistrationOrder -> DB.Connection -> IO (Either WriteRefusal Int64)
 creditedTaken now r = creditedWrite now r {nrPhase = OTaken now}
+{-# INLINE creditedTaken #-}
 
 creditedWrite :: UTCTime -> NameRegistrationOrder -> DB.Connection -> IO (Either WriteRefusal Int64)
 creditedWrite now r@NameRegistrationOrder {nrId, nrPrice} db = versionWritten <$> updateRegistration db r now >>= traverse (\v -> v <$ creditBalance db nrId nrPrice now)
@@ -542,6 +544,7 @@ store Worker {wkOrders = OrdersEnv {oeStore}} now r = written r <$> withTransact
 
 save :: Worker -> UTCTime -> NameRegistrationOrder -> IO Next
 save w now r = inTurn w r $ store w now r
+{-# INLINE save #-}
 
 -- | In the name's turn, as the requests that change an order; the version written is published after the turn.
 inTurn :: Worker -> NameRegistrationOrder -> IO (Maybe Int64, Next) -> IO Next
@@ -558,9 +561,11 @@ written r = \case
 
 failure :: NameRegistrationOrder -> StepFailure -> Next
 failure r = Retry (nrVersion r)
+{-# INLINE failure #-}
 
 waitUntil :: NameRegistrationOrder -> UTCTime -> Next
 waitUntil r = WaitUntil (nrVersion r)
+{-# INLINE waitUntil #-}
 
 -- | What /retry did: the version it wrote, the order changed since it was read, or a refusal.
 data Retried = RTWritten Int64 | RTChanged | RTRefused RetryRefusal

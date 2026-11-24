@@ -19,18 +19,22 @@ data Turns = Turns {labelTurns :: TMap LabelHash Lock, codeTurns :: TMap CodeHas
 
 newTurns :: IO Turns
 newTurns = Turns <$> TM.emptyIO <*> TM.emptyIO <*> TM.emptyIO
+{-# INLINE newTurns #-}
 
 withLabelTurn :: Turns -> LabelHash -> IO a -> IO a
 withLabelTurn Turns {labelTurns} h = withLockMap labelTurns h "turn"
+{-# INLINE withLabelTurn #-}
 
 -- | Taken in hash order, so two requests for the same two names cannot each hold one and wait for the other.
 withLabelTurns :: Turns -> LabelHash -> LabelHash -> IO a -> IO a
 withLabelTurns Turns {labelTurns} a b = withLocksMap labelTurns (S.fromList [a, b]) "turn"
+{-# INLINE withLabelTurns #-}
 
 type NameSelected = ()
 
 withRegistrationTurn :: DBStore -> Turns -> NameRegistrationOrder -> (NameRegistrationOrder -> IO a) -> IO (Maybe (Either NameSelected a))
 withRegistrationTurn st turns r = withRegistrationTurns st turns r $ nrLabelHash r
+{-# INLINE withRegistrationTurn #-}
 
 withRegistrationTurns :: DBStore -> Turns -> NameRegistrationOrder -> LabelHash -> (NameRegistrationOrder -> IO a) -> IO (Maybe (Either NameSelected a))
 withRegistrationTurns st turns NameRegistrationOrder {nrId, nrLabelHash = held} other action =
@@ -44,7 +48,9 @@ withRegistrationTurns st turns NameRegistrationOrder {nrId, nrLabelHash = held} 
 -- | Keyed by the code's SHA-256 hash.
 withCodeTurn :: Turns -> CodeHash -> IO a -> IO a
 withCodeTurn Turns {codeTurns} h = withLockMap codeTurns h "turn"
+{-# INLINE withCodeTurn #-}
 
 -- | Keyed by the order the balance belongs to.
 withBalanceTurn :: Turns -> RegistrationId -> IO a -> IO a
 withBalanceTurn Turns {balanceTurns} rid = withLockMap balanceTurns rid "turn"
+{-# INLINE withBalanceTurn #-}

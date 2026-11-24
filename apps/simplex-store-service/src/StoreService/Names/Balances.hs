@@ -162,6 +162,7 @@ orderEvidence db InvoiceRow {irProviderRef, irAmount = CurrencyAmount amount, ir
 
 idText :: RegistrationId -> Text
 idText (RegistrationId t) = t
+{-# INLINE idText #-}
 
 centsText :: USDCents -> Text
 centsText cents = tshow (toInteger cents) <> " cents"

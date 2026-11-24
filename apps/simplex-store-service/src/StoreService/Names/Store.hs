@@ -763,6 +763,7 @@ orderHash owner OrderFields {ofLabelHash = LabelHash lh, ofLength, ofDuration, o
 
 newRegistrationId :: IO RegistrationId
 newRegistrationId = (\(InvoiceId t) -> RegistrationId t) <$> newInvoiceId
+{-# INLINE newRegistrationId #-}
 
 -- | False when the registration would be a second live one. A refusal leaves its writes for the caller to roll back.
 createPaidRegistration :: DB.Connection -> NewRegistration -> PaidOrder -> UTCTime -> IO Bool
@@ -1620,6 +1621,7 @@ type PrepaidCodeRow = (Int64, CodeHash, Int, Int, BadgeCodePaymentStatus, Maybe 
 toPrepaidCode :: PrepaidCodeRow -> PrepaidCode
 toPrepaidCode ((pcId, pcCodeHash, pcMinLength, pcYears, pcPaymentStatus, reservedBy, pcReservedAt, pcSpentAt, pcRevokedAt, pcExpiresAt) :. (pcCreatedAt, pcHolderTakenAt)) =
   PrepaidCode {pcId, pcCodeHash, pcMinLength, pcYears, pcPaymentStatus, pcReservedBy = RegistrationId <$> reservedBy, pcReservedAt, pcHolderTakenAt, pcSpentAt, pcRevokedAt, pcExpiresAt, pcCreatedAt}
+{-# INLINE toPrepaidCode #-}
 
 groupNameCodesIssuedSince :: DB.Connection -> UTCTime -> IO Int
 groupNameCodesIssuedSince db since = maybeFirstRow' 0 fromOnly (DB.query db (mkQuery "SELECT COUNT(*) FROM @name_prepaid_codes WHERE created_at >= ? AND issued_in_group = 1") (Only since))
@@ -1859,6 +1861,7 @@ toRecordEdit (reId, reLabelHash, reOwner, reBodyHash, state, revert, minedTx, re
 
 firstRecordEdit :: DB.Connection -> IO [RecordEditRow] -> IO (Maybe RecordEdit)
 firstRecordEdit db rows = rows >>= mapM (readRecordEdit db) . listToMaybe
+{-# INLINE firstRecordEdit #-}
 
 getRecordEdit :: DB.Connection -> RecordEditId -> IO (Maybe RecordEdit)
 getRecordEdit db editId =
@@ -1944,15 +1947,19 @@ namesCounts db = do
 
 int64 :: Word64 -> Int64
 int64 = fromIntegral
+{-# INLINE int64 #-}
 
 word64 :: Int64 -> Word64
 word64 = fromIntegral
+{-# INLINE word64 #-}
 
 decodeAll :: (row -> Either Text a) -> [row] -> IO [a]
 decodeAll decode = either (E.throwIO . StoreDecodeError) pure . traverse decode
+{-# INLINE decodeAll #-}
 
 firstDecoded :: (row -> Either Text a) -> IO [row] -> IO (Maybe a)
 firstDecoded decode rows = rows >>= fmap listToMaybe . decodeAll decode . take 1
+{-# INLINE firstDecoded #-}
 
 $(JQ.deriveToJSON (enumJSON $ dropPrefix "P") ''NamePhase)
 

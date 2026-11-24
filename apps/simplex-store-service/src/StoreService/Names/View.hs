@@ -219,18 +219,22 @@ paidWith = \case
 
 balanceView :: Balance -> BalanceView
 balanceView Balance {blAmount, blRefunded} = BalanceView {amount = blAmount, refunded = blRefunded}
+{-# INLINE balanceView #-}
 
 -- | EIP-55, as the page compares owners.
 addressText :: Address -> Text
 addressText = safeDecodeUtf8 . strEncode
+{-# INLINE addressText #-}
 
 -- | Versions start at 1, so a registration deleted during a hold reads as changed.
 registrationVersion :: DBStore -> RegistrationId -> IO Int64
 registrationVersion st rid = maybe 0 nrVersion <$> withTransaction st (`getRegistration` rid)
+{-# INLINE registrationVersion #-}
 
 -- | Past revealBefore with no reveal, the commitment can no longer register.
 lapsedAt :: UTCTime -> NameRegistrationOrder -> Bool
 lapsedAt now = maybe False (now >) . lapseMoment
+{-# INLINE lapsedAt #-}
 
 lapseMoment :: NameRegistrationOrder -> Maybe UTCTime
 lapseMoment = \case

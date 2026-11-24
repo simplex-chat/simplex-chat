@@ -78,18 +78,22 @@ instance J.FromJSON InvoiceOrder where
 
 paymentMethod :: J.Value -> JT.Parser ServicePaymentMethod
 paymentMethod = textParseJSON "payment method"
+{-# INLINE paymentMethod #-}
 
 -- | An order's answer and the work its commit leaves, both done after the name's turn, so a slow client holds no turn.
 data Answer = Answer {aResponse :: Either NameRefusal Response, aAfter :: IO ()}
 
 answerNow :: Response -> Answer
 answerNow r = Answer {aResponse = Right r, aAfter = pure ()}
+{-# INLINE answerNow #-}
 
 refusalAnswer :: NameRefusal -> Answer
 refusalAnswer r = Answer {aResponse = Left r, aAfter = pure ()}
+{-# INLINE refusalAnswer #-}
 
 sendAnswer :: Respond -> Answer -> IO ResponseReceived
 sendAnswer respond Answer {aResponse, aAfter} = aAfter >> respond (either refusalResponse id aResponse)
+{-# INLINE sendAnswer #-}
 
 refusalResponse :: NameRefusal -> Response
 refusalResponse r = responseLBS status (retryAfterHeader <> apiHeaders) (J.encode r)
@@ -208,6 +212,7 @@ resentOrder env@OrdersEnv {oeStore} cfg now r@NameRegistrationOrder {nrId = Regi
 
 invoiceViewResponse :: OrdersEnv -> ServiceConfig -> NameRegistrationOrder -> InvoiceRow -> IO Response
 invoiceViewResponse env cfg r row = jsonResponse status200 <$> nameInvoiceView env (confirmationsFor cfg) row r
+{-# INLINE invoiceViewResponse #-}
 
 registrationAnswer :: RegistrationId -> Response
 registrationAnswer rid = jsonResponse status200 $ J.object ["registrationId" .= rid]

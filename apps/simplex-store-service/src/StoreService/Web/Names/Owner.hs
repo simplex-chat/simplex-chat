@@ -145,4 +145,5 @@ selectNameHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oeNow}
 -- | Published after the turn, as the answer is sent.
 written :: OrdersEnv -> RegistrationId -> Int64 -> Answer -> Answer
 written OrdersEnv {oePhases} rid v a = a {aAfter = atomically $ publish oePhases rid v}
+{-# INLINE written #-}
 

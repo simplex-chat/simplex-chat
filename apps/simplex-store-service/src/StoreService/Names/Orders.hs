@@ -99,6 +99,7 @@ data OrdersEnv = OrdersEnv
 ordersEnv :: NamesEnv -> OrdersEnv
 ordersEnv NamesEnv {neStore, neConfig, neContracts, neTurns, nePhases, neReport} =
   OrdersEnv {oeStore = neStore, oeConfig = neConfig, oeContracts = neContracts, oeTurns = neTurns, oePhases = nePhases, oeNow = currentSecond, oeReport = neReport}
+{-# INLINE ordersEnv #-}
 
 -- | The fields both kinds of order carry, with the owner's signature over them.
 data OrderRequest = OrderRequest
@@ -182,6 +183,7 @@ instance J.FromJSON SentOrder where
 
 orderRequest :: SentOrder -> Either OrderRefusal OrderRequest
 orderRequest SentOrder {soOwner, soSigned} = (\(orFields, orTimestamp, orSignature) -> OrderRequest {orOwner = soOwner, orFields, orTimestamp, orSignature}) <$> signedFields soSigned
+{-# INLINE orderRequest #-}
 
 -- | Every format check; the length's range refuses after the formats a kind of order adds.
 signedFields :: SignedFields -> Either OrderRefusal SignedOrderFields
@@ -196,6 +198,7 @@ parseBody what = first (\e -> ORBadRequest $ "a malformed " <> what <> ": " <> T
 
 textWith :: (Text -> Either String a) -> J.Value -> JT.Parser a
 textWith f = J.withText "string" $ either fail pure . f
+{-# INLINE textWith #-}
 
 -- | The owner's EIP-191 signature over the message.
 checkSigner :: Address -> ByteString -> RecoverableSignature -> IO (Either OrderRefusal ())
@@ -271,6 +274,7 @@ checkDuration NamesConfig {nTermStart, nTermSlackSeconds} now years duration = d
 -- for any other name.
 orderYears :: OrderFields -> Int -> Int
 orderYears OrderFields {ofAgreedTerms = AgreedTerms {communityName}} = yearsFor communityName
+{-# INLINE orderYears #-}
 
 -- | The terms the order signed must be the current ones for its name, the community terms for a name the policy lists,
 -- which cannot be ordered while a buyer cannot read them.
@@ -312,6 +316,7 @@ noteRead st now NameRegistrationOrder {nrId, nrReadAt} =
 orderFieldsOf :: NameRegistrationOrder -> OrderFields
 orderFieldsOf NameRegistrationOrder {nrLabelHash, nrLength, nrDuration, nrCommitment, nrSealed, nrAgreedTerms} =
   OrderFields {ofLabelHash = nrLabelHash, ofLength = nrLength, ofDuration = nrDuration, ofCommitment = nrCommitment, ofSealed = nrSealed, ofAgreedTerms = nrAgreedTerms}
+{-# INLINE orderFieldsOf #-}
 
 -- | A name selected for a taken order, written as a new order is placed, a compare-and-set on the version read: a paid order's price
 -- is spent from its own balance in the balance's turn, and a code order's code is checked and reserved in the code's turn, good past its expiry
@@ -349,6 +354,7 @@ versionWritten = \case
 
 confirmLanded :: OrdersEnv -> NameRegistrationOrder -> IO Landing
 confirmLanded OrdersEnv {oeStore, oeContracts, oeTurns, oeNow} = checkLanded oeStore oeContracts oeTurns oeNow
+{-# INLINE confirmLanded #-}
 
 -- | The register check, on the order's current name: a register mined with status 1, or the owner holding the name at the confirmation depth,
 -- went through with only its confirmation lost. The order then becomes registered by a compare-and-set on the version read, a code order spending its code;

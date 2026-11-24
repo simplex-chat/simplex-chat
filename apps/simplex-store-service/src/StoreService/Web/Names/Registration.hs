@@ -127,10 +127,12 @@ retryRefusal = \case
 -- | The registration's current view, for a request that lost the race to change it.
 registrationChanged :: OrdersEnv -> RegistrationId -> IO NameRefusal
 registrationChanged env = registrationRefusal env NRRegistrationChanged
+{-# INLINE registrationChanged #-}
 
 -- | A refusal with the registration's current view, so the page follows its state.
 registrationRefusal :: OrdersEnv -> (RegistrationView -> NameRefusal) -> RegistrationId -> IO NameRefusal
 registrationRefusal env refusal rid = maybe NRNotFound refusal <$> currentView env rid
+{-# INLINE registrationRefusal #-}
 
 -- | The registration's view as it reads now.
 currentView :: OrdersEnv -> RegistrationId -> IO (Maybe RegistrationView)
@@ -146,3 +148,4 @@ heldFor hold now moments = fromInteger $ minimum $ toInteger hold : [ceiling (di
 -- | Nothing unless seenVersion is a decimal version, so any other value answers at once.
 versionParam :: Request -> Maybe Int64
 versionParam req = join (lookup "seenVersion" $ queryString req) >>= eitherToMaybe . parseAll (boundedDecimal 0 maxBound)
+{-# INLINE versionParam #-}
