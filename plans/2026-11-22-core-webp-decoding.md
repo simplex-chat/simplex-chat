@@ -255,7 +255,7 @@ Errors:
 | `WebPDemuxInternal` returns NULL: truncated input, wrong `RIFF` size, invalid chunks | `invalid WebP container` |
 | a canvas side above 16384 | `image side exceeds 16384` |
 | canvas bytes above `maxMemoryMB` MiB | `image is too large` |
-| `WebPDecode` status (decode.h:236-243) | `out of memory`, `invalid parameter`, `bitstream error`, `unsupported feature`, `output aborted` (`VP8_STATUS_USER_ABORT`, "Output aborted." of the decoder, vp8_dec.c:693, 699 at `f054d0c3`), `not enough data`; another status, `VP8_STATUS_SUSPENDED` of incremental decoding: `decoding status N` |
+| `WebPDecode` status (decode.h:236-243) | `out of memory`, `invalid parameter`, `bitstream error`, `unsupported feature`, `output aborted` (`VP8_STATUS_USER_ABORT`, "Output aborted." of the decoder, vp8_dec.c:693, 699 at `f054d0c3`), `not enough data`; `VP8_STATUS_SUSPENDED`, a status of incremental decoding (vp8_dec.c:104-105; alpha_dec.c:207-212 and vp8l_dec.c:2073-2075 map it to `bitstream error`, at `f054d0c3`): `decoding status 5` |
 
 Resizing, output formats, `ColourProfile` and the C functions are unchanged.
 
@@ -488,7 +488,7 @@ Measured in CI and reported in the pull request before review:
 
 `tests/ChatTests/Profiles.hs`, "set profile image from file" (:76, :1250-1255): `/set profile image file ./tests/fixtures/webp/lossy.webp` sets a `data:image/jpg;base64,` image of at most 12500 characters. Pattern `/SimpleX chat client/profile tests/user profiles/set profile image from file/`, added to the `ci-tests` block with the code.
 
-Fixtures, `tests/fixtures/webp/`, made from the repository's own test images by cwebp of the libwebp 1.6.0 release archive for Linux x86-64, and `animated.webp` from `lossy.webp` (sha256 `1c5ffab7…`, signature of the WebP release key `6B0E6B70976DE303EDF2F601F9C3D6BDB8232B5D` verified), in CI ([run](https://github.com/evgeny-simplex/hs-jpeg-turbo/actions/runs/45103156185), `.github/scripts/measure-fixtures.sh` of branch `ep/webp-measure`); the md5 sums are of dwebp 1.6.0's output in the same run. In libwebp-test-data at `06ddd96e`, the only licence notice is "This file distributed under the same terms as libwebp" in each of the three `test_*.sh` scripts, which covers those scripts; its images are therefore used in hs-jpeg-turbo CI only, cloned at run time.
+Fixtures, `tests/fixtures/webp/`, made from the repository's own test images by cwebp of the libwebp 1.6.0 release archive for Linux x86-64 (sha256 `1c5ffab7…`, signature of the WebP release key `6B0E6B70976DE303EDF2F601F9C3D6BDB8232B5D` verified), in CI ([run](https://github.com/evgeny-simplex/hs-jpeg-turbo/actions/runs/45103156185), `.github/scripts/measure-fixtures.sh` of branch `ep/webp-measure`); the md5 sums are of dwebp 1.6.0's output in the same run. `animated.webp` is assembled from `lossy.webp`, and `testWebpAnimation` checks it against `webpAnimation`. In libwebp-test-data at `06ddd96e`, the only licence notice is "This file distributed under the same terms as libwebp" in each of the three `test_*.sh` scripts, which covers those scripts; its images are therefore used in hs-jpeg-turbo CI only, cloned at run time.
 
 | Fixture | Command | Source, master `8f5dfa3d4` |
 |---|---|---|
@@ -558,6 +558,7 @@ Commits, without the updates of this plan:
 17. `android, desktop: test the previews of picked animated images`: the image seams, desktopTest, the architecture spec, TESTS.md, CI guide
 18. `ci: send WebP images in the desktop smoke test`
 19. `tests: commit the recorded preview of the animated WebP fixture`: the file that CI writes
+20. `docs: correct the recording and smoke test references of the WebP plan`: the `writeFixture` row of TESTS.md
 
 ## Out of scope
 
