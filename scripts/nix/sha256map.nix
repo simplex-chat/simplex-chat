@@ -1,5 +1,5 @@
 {
-  "https://github.com/simplex-chat/simplexmq.git"."b7339d94b552edf72ba4ccec74c2344cb8b08c3d" = "0zpvxwgxqypwlfvjxmvkykdzzdw82nhy7smz1zxm1amgspqqm9b6";
+  "https://github.com/simplex-chat/simplexmq.git"."fe3ee760afe35136b53571c6221252b61c66a51f" = "0pjq6hg97a6hax1wzpbxgm63x14p3aiida8dcjnvrkr0s8npyn32";
   "https://github.com/simplex-chat/hs-socks.git"."a30cc7a79a08d8108316094f8f2f82a0c5e1ac51" = "0yasvnr7g91k76mjkamvzab2kvlb1g5pspjyjn2fr6v83swjhj38";
   "https://github.com/simplex-chat/direct-sqlcipher.git"."2330df3dc8c4b660674d3c02d76bb86f66c2abee" = "11pfj1vqsjdl26nplkr2l6z1xj7cn153qijj5gknmlzq3krn7x1i";
   "https://github.com/simplex-chat/sqlcipher-simple.git"."6bf2796de625dca678c70e98560010c6ec7ed635" = "0mgkm2d6c4vsv689niy2fi0q58pk13mpvm4idzmn0vhwyi2wmv1g";
@@ -11,4 +11,5 @@
   "https://github.com/simplex-chat/wai.git"."63667cb577d09c967ddcd945e42c324872dfeb7d" = "1nh4j3fnxbpkdhz1sfgpfhb7j0371apbmx1kv7aqa2zrdxc8gmzb";
   "https://github.com/simplex-chat/hs-jpeg-turbo.git"."d0a4d954038ee5bcb5c4dc9372a6fb0b05fed77c" = "0b6gl3m05hdaq8ph1nd9b9807k7cdlmwrxvj0rhxv4lp1rkm57rg";
   "https://github.com/simplex-chat/JuicyPixels-stbir.git"."e0090e14f6348a33b53c11b377cb69df766b02b4" = "0wj8i9wylpas6i7bbyw1vl11vxxy4qz3vx3z9cplzy1nfp914h0g";
+  "https://github.com/simplex-chat/wide-word.git"."ea975840f57f44d6bd376ce32aa4de2bd1b2ec31" = "13mjsisznv1daxx0xs91wx2xkkzqhxizxhn23k8k5xwcqkdzybmz";
 }
