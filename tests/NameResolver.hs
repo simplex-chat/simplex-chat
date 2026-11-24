@@ -10,6 +10,7 @@ module NameResolver
     withNameResolver,
     registerName,
     registerExpiredName,
+    registerExpiredName',
     registerReservedName,
     unregisterName,
     failNameResolution,
@@ -34,7 +35,7 @@ import Simplex.Messaging.Encoding.String (strEncode)
 import Simplex.Messaging.Names.Record (NamePricing (..), NameRecord (..), NameRegistration (..), NameReservedReason, NameResponse (..), USDCents (..))
 import Simplex.Messaging.Server.Names (NamesConfig (..))
 import Simplex.Messaging.SimplexName (SimplexDomain (..), SimplexNameInfo (..), labelHash)
-import Simplex.Messaging.SystemTime (RoundedSystemTime (..), getSystemSeconds)
+import Simplex.Messaging.SystemTime (RoundedSystemTime (..), SystemSeconds)
 
 data TestNameAnswer = AnswerRegistration NameRegistration | AnswerFails
 
@@ -67,11 +68,11 @@ registerAnswer :: NameRegistry -> SimplexNameInfo -> TestNameAnswer -> IO ()
 registerAnswer reg ni a = atomically $ modifyTVar' reg $ M.insert (registryKey ni) a
 
 registerExpiredName :: NameRegistry -> SimplexNameInfo -> NameRecord -> IO ()
-registerExpiredName reg ni nameRecord = do
-  RoundedSystemTime now <- getSystemSeconds
-  let expires = Just $ RoundedSystemTime (now - 86400)
-      graceUntil = Just $ RoundedSystemTime (now + 30 * 86400)
-  registerAnswer reg ni $ AnswerRegistration NRRegistered {expires, graceUntil, reservedReason_ = Nothing, nameRecord}
+registerExpiredName reg ni = registerExpiredName' reg ni (Just $ RoundedSystemTime 4070952000)
+
+registerExpiredName' :: NameRegistry -> SimplexNameInfo -> Maybe SystemSeconds -> NameRecord -> IO ()
+registerExpiredName' reg ni graceUntil nameRecord =
+  registerAnswer reg ni $ AnswerRegistration NRRegistered {expires = Just $ RoundedSystemTime 1767268800, graceUntil, reservedReason_ = Nothing, nameRecord}
 
 registerReservedName :: NameRegistry -> SimplexNameInfo -> NameReservedReason -> IO ()
 registerReservedName reg ni reservedReason = registerAnswer reg ni $ AnswerRegistration NRReserved {reservedReason}

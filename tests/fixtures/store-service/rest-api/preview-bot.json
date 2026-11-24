@@ -1,0 +1,14 @@
+{
+  "body": {
+    "kind": "contact",
+    "profile": {
+      "linkProfile": {
+        "displayName": "helper",
+        "fullName": "",
+        "kind": "bot"
+      },
+      "type": "ok"
+    }
+  },
+  "status": 200
+}

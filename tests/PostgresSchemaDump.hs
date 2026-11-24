@@ -2,9 +2,8 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module PostgresSchemaDump (postgresSchemaDumpTest) where
+module PostgresSchemaDump (postgresSchemaDumpTest, skipComparisonForDownMigrations) where
 
-import ChatTests.Utils hiding (it)
 import Control.Concurrent (threadDelay)
 import Control.DeepSeq
 import Control.Monad (unless, void)
@@ -17,6 +16,7 @@ import qualified Simplex.Messaging.Agent.Store.Postgres.Migrations as Migrations
 import Simplex.Messaging.Agent.Store.Shared (Migration (..), MigrationConfig (..), MigrationConfirmation (..), MigrationsToRun (..), toDownMigration)
 import Simplex.Messaging.Util (ifM, whenM)
 import System.Directory (doesFileExist, removeFile)
+import System.Info (os)
 import System.Process (readCreateProcess, shell)
 import Test.Hspec
 
@@ -24,8 +24,8 @@ testSchemaPath :: FilePath
 testSchemaPath = "tests/tmp/test_schema.sql"
 
 -- copied from simplexmq
-postgresSchemaDumpTest :: [Migration] -> DBOpts -> FilePath -> Spec
-postgresSchemaDumpTest migrations testDBOpts@DBOpts {connstr, schema = testDBSchema} srcSchemaPath = do
+postgresSchemaDumpTest :: [Migration] -> [String] -> DBOpts -> FilePath -> Spec
+postgresSchemaDumpTest migrations skipComparisonForDown testDBOpts@DBOpts {connstr, schema = testDBSchema} srcSchemaPath = do
   it "verify and overwrite schema dump" testVerifySchemaDump
   it "verify schema down migrations" testSchemaMigrations
   where
@@ -52,7 +52,7 @@ postgresSchemaDumpTest migrations testDBOpts@DBOpts {connstr, schema = testDBSch
           schema' <- getSchema testSchemaPath
           schema' `shouldNotBe` schema
           Migrations.run st Nothing $ MTRDown [downMigr]
-          unless (name m `elem` skipComparisonForDownMigrations) $ do
+          unless (name m `elem` skipComparisonForDown) $ do
             schema'' <- getSchema testSchemaPath
             schema'' `shouldBe` schema
           Migrations.run st Nothing $ MTRUp [m]
@@ -61,15 +61,14 @@ postgresSchemaDumpTest migrations testDBOpts@DBOpts {connstr, schema = testDBSch
 
     getSchema :: FilePath -> IO String
     getSchema schemaPath = do
-      ci <- envCI
       let cmd =
-            ("pg_dump " <> B.unpack connstr <> " --schema " <> B.unpack testDBSchema)
+            ("PGTZ=UTC pg_dump " <> B.unpack connstr <> " --schema " <> B.unpack testDBSchema)
               <> " --schema-only --no-owner --no-privileges --no-acl --no-subscriptions --no-tablespaces > "
               <> schemaPath
       void $ readCreateProcess (shell cmd) ""
       threadDelay 20000
-      let sed = (if ci then "sed -i" else "sed -i ''")
-      void $ readCreateProcess (shell $ sed <> " '/^--/d' " <> schemaPath) ""
+      let sed = (if os == "linux" then "sed -i" else "sed -i ''")
+      void $ readCreateProcess (shell $ sed <> " '/^--/d; /^\\\\restrict/d; /^\\\\unrestrict/d' " <> schemaPath) ""
       sch <- readFile schemaPath
       sch `deepseq` pure sch
 

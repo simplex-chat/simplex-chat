@@ -1939,7 +1939,7 @@ struct ComposeView: View {
     }
 
     private func isSimplexLink(_ link: String) -> Bool {
-        link.starts(with: "https://simplex.chat") || link.starts(with: "http://simplex.chat") || link.starts(with: "simplex:/")
+        link.starts(with: "https://simplex.chat") || link.starts(with: "http://simplex.chat") || link.starts(with: "simplex:")
     }
 
     private func cancelLinkPreview() {
@@ -2016,7 +2016,7 @@ struct ComposeView: View {
 func sanitizeMessage(
     _ text: String,
     _ parsedMsg: [FormattedText],
-    sanitize: (String) -> String? = { parseSanitizeUri($0, safe: true)?.uriInfo?.sanitized }
+    sanitize: (String) -> String? = { parseSanitizeUri($0, true)?.uriInfo?.sanitized }
 ) -> (message: String, parsedMsg: [FormattedText], sanitizedPos: Int?) {
     var updatedMsg = ""
     var copied = text.startIndex

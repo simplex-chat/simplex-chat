@@ -2,11 +2,17 @@
   "hooks": {
     "SessionStart": [{"hooks": [{"type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/dist/cli.js\" hook session-start", "timeout": 600}]}],
     "PreToolUse": [{"matcher": "mcp__plugin_simplex_simplex__.*", "hooks": [{"type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/plugin/allow.js\""}]}, {"matcher": "*", "hooks": [{"type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/dist/cli.js\" hook turn", "async": true}, {"type": "mcp_tool", "server": "plugin:simplex:simplex", "tool": "pre_tool_use", "input": {"tool": "${tool_name}"}, "timeout": 5}]}],
+    "PermissionRequest": [{"hooks": [{"type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/dist/cli.js\" hook ask", "timeout": 86400}]}],
+    "Elicitation": [{"hooks": [{"type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/dist/cli.js\" hook ask", "timeout": 86400}]}],
+    "StopFailure": [{"hooks": [{"type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/dist/cli.js\" hook turn", "async": true}]}],
+    "Notification": [{"matcher": "permission_prompt|worker_permission_prompt|elicitation_dialog|elicitation_url_dialog|agent_needs_input|quota_auto_resume_stale|quota_auto_resume_disabled", "hooks": [{"type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/dist/cli.js\" hook turn", "async": true}]}],
     "PostToolUse": [{"matcher": "*", "hooks": [{"type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/dist/cli.js\" hook turn", "async": true}]}],
     "PostToolUseFailure": [{"matcher": "*", "hooks": [{"type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/dist/cli.js\" hook turn", "async": true}]}],
     "UserPromptSubmit": [{"hooks": [{"type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/dist/cli.js\" hook turn", "async": true}]}],
     "Stop": [{"hooks": [{"type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/dist/cli.js\" hook turn", "async": true}]}],
     "PostModelSwitch": [{"hooks": [{"type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/dist/cli.js\" hook turn", "async": true}]}],
+    "SubagentStart": [{"hooks": [{"type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/dist/cli.js\" hook turn", "async": true}]}],
+    "SubagentStop": [{"hooks": [{"type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/dist/cli.js\" hook turn", "async": true}]}],
     "PostCompact": [{"hooks": [{"type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/dist/cli.js\" hook turn", "async": true}]}],
     "MessageDisplay": [{"hooks": [{"type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/dist/display.js\"", "timeout": 2}]}]
   }

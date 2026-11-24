@@ -63,8 +63,8 @@ import Simplex.Messaging.Session (SessionVar (..), withGetSessVar')
 import Simplex.Chat.Badges (BadgeCredential (..), BadgeInfo (..), BadgeMasterKey, BadgeType (..), LocalBadge (..), ProofPresHeader (..), badgeGraceInterval, badgeServerCredential, mkBadgeStatus, maxSndXFTPFileSize, verifyCredential)
 import qualified Simplex.Chat.Badges.Ledger as L
 import Simplex.Chat.Badges.Types (BadgeAlert (..), BadgeAlertKind (..), BadgeIssueError (..), BadgeIssueFailure (..), BadgeState (..), BadgeSubscription (..), OpenStorePurchase (..), StoreReceiptOrigin (..))
-import Simplex.Chat.Badges.Code (badgeCodeText, parseBadgeCode)
-import Simplex.Chat.Badges.Service (BadgeBalance (..), BadgeServiceCommand (..), BadgeServiceErrorCode (..), BadgeServiceRequest (..), BadgeServiceResponse (..), BadgeStatement (..), StatementDebitType (..), StatementEntry (..), StatementEntryType (..), SubscriptionState (..), currentBadgeServiceVersion)
+import Simplex.Chat.Badges.Code (badgeCodeText, minNameYears, parseBadgeCode)
+import Simplex.Chat.StoreService (BadgeBalance (..), BadgeStatement (..), StatementDebitType (..), StatementEntry (..), StatementEntryType (..), StoreServiceCommand (..), StoreServiceErrorCode (..), StoreServiceRequest (..), StoreServiceResponse (..), SubscriptionState (..), currentStoreServiceVersion)
 import Simplex.Chat.Badges.StorePlan (storePlan)
 import Simplex.Chat.Names (SimplexDomainProof (..), SimplexDomainClaim (..), claimDomain, mkDomainClaim)
 import Simplex.Chat.Call
@@ -218,7 +218,7 @@ loadImageData path = case map toLower (takeExtension path) of
           bs <- B.readFile path
           if B.null bs
             then pure $ Left $ "image file is empty: " <> path
-            else first (\e -> "image file cannot be resized: " <> path <> " (" <> e <> ")") <$> (runExceptT (resize bs) `catchAll` (pure . Left . show))
+            else first (\e -> "image file cannot be resized: " <> path <> " (" <> e <> ")") <$> (runExceptT (resize bs) `catchOwn'` (pure . Left . show))
     resize bs = do
       (img, profile) <- ExceptT $ decodeResizable bs
       ImageData . safeDecodeUtf8 . LB.toStrict <$> ExceptT (resizeImageDataUri (fromIntegral maxProfileImageSize) (cropToSquare img) profile)
@@ -230,7 +230,7 @@ fixedImagePreview :: ImageData
 fixedImagePreview = ImageData "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAAAXNSR0IArs4c6QAAAKVJREFUeF7t1kENACEUQ0FQhnVQ9lfGO+xggITQdvbMzArPey+8fa3tAfwAEdABZQspQStgBssEcgAIkSAJkiAJljtEgiRIgmUCSZAESZAESZAEyx0iQRIkwTKBJEiCv5fgvTd1wDmn7QAP4AeIgA4oW0gJWgEzWCZwbQ7gAA7ggLKFOIADOKBMIAeAEAmSIAmSYLlDJEiCJFgmkARJkARJ8N8S/ADTZUewBvnTOQAAAABJRU5ErkJggg=="
 
 imagePreview :: CryptoFile -> IO ImageData
-imagePreview f = either (const fixedImagePreview) (ImageData . safeDecodeUtf8 . LB.toStrict) <$> (runExceptT preview `catchAll` (pure . Left . show))
+imagePreview f = either (const fixedImagePreview) (ImageData . safeDecodeUtf8 . LB.toStrict) <$> (runExceptT preview `catchOwn'` (pure . Left . show))
   where
     preview = do
       s <- withExceptT show $ CF.readFile f
@@ -1741,11 +1741,9 @@ processChatCommand cxt nm = \case
     r <- tryAllErrors $ getShortLinkConnReq nm user address
     case r of
       Left e -> failAt RTSGetLink e
-      Right (FixedLinkData {rootKey}, cData, cReq) -> do
-        relayProfile_ <- liftIO $ decodeLinkUserData cData
-        case relayProfile_ of
-          Nothing -> failAt RTSDecodeLink (ChatError $ CERelayTestError "no relay address link data")
-          Just RelayAddressLinkData {relayProfile} -> do
+      Right (FixedLinkData {rootKey}, _, cReq, sLinkData_) ->
+        case sLinkData_ of
+          Just (SLDRelayAddress RelayAddressLinkData {relayProfile}) -> do
             let failWithProfile step e =
                   pure $ CRChatRelayTestResult user (Just relayProfile) (Just $ RelayTestFailure step e)
             lift (withAgent' (`connRequestAgentVersion` cReq)) >>= \case
@@ -1774,6 +1772,7 @@ processChatCommand cxt nm = \case
                   Right Nothing -> failWithProfile RTSWaitResponse (ChatError $ CERelayTestError "timeout")
                   Right (Just Nothing) -> pure $ CRChatRelayTestResult user (Just relayProfile) Nothing
                   Right (Just (Just failure)) -> pure $ CRChatRelayTestResult user (Just relayProfile) (Just failure)
+          _ -> failAt RTSDecodeLink (ChatError $ CERelayTestError "no relay address link data")
   TestChatRelay address -> withUser $ \User {userId} ->
     processChatCommand cxt nm $ APITestChatRelay userId address
   APIAllowRelayGroup groupId -> withUser $ \user -> do
@@ -1986,10 +1985,9 @@ processChatCommand cxt nm = \case
     gInfo@GroupInfo {groupProfile = p} <- withFastStore $ \db -> getGroupInfo db cxt user groupId
     case p of
       GroupProfile {publicGroup = Just PublicGroupProfile {groupLink = sLnk, publicGroupId}} | useRelays' gInfo -> do
-        (FixedLinkData {linkEntityId}, cData@(ContactLinkData _ UserContactData {relays = currentRelayLinks}), _) <- getShortLinkConnReq' nm user sLnk
+        (FixedLinkData {linkEntityId}, ContactLinkData _ UserContactData {relays = currentRelayLinks}, _, sLinkData_) <- getShortLinkConnReq' nm user sLnk
         unless ((B64UrlByteString <$> linkEntityId) == Just publicGroupId) $ throwChatError CEInvalidConnReq
-        groupSLinkData_ <- liftIO $ decodeLinkUserData cData
-        gInfo' <- case groupSLinkData_ of
+        gInfo' <- case shortLinkGroupData =<< sLinkData_ of
           Just sLinkData -> (\(g, _, _) -> g) <$> updateGroupFromLinkData user gInfo sLinkData Nothing
           _ -> pure gInfo
         when (memberRole' (membership gInfo) /= GROwner && memberCurrent (membership gInfo)) $
@@ -2352,8 +2350,8 @@ processChatCommand cxt nm = \case
         sLnk <- case connShortLink' connLinkToConnect of
           Just sl -> pure sl
           Nothing -> throwChatError $ CEException "failed to retrieve relays: no short link"
-        (FixedLinkData {linkEntityId, rootKey}, cData@(ContactLinkData _ UserContactData {owners, relays}), mainCReq@(CRContactUri crData e2e)) <- getShortLinkConnReq nm user sLnk
-        groupSLinkData_ <- liftIO $ decodeLinkUserData cData
+        (FixedLinkData {linkEntityId, rootKey}, ContactLinkData _ UserContactData {owners, relays}, mainCReq@(CRContactUri crData e2e), sLinkData_) <- getShortLinkConnReq nm user sLnk
+        let groupSLinkData_ = shortLinkGroupData =<< sLinkData_
         -- Validate link entity ID matches group profile's publicGroupId (relay groups must have both)
         case groupSLinkData_ of
           Just sLinkData@GroupShortLinkData {groupProfile = GroupProfile {publicGroup = Just PublicGroupProfile {publicGroupId}}}
@@ -2407,9 +2405,7 @@ processChatCommand cxt nm = \case
             forM_ activeConn $ \conn -> do
               deleteAgentConnectionAsync $ aConnId conn
               withStore' $ \db -> deleteConnectionRecord db user (dbConnId conn)
-            subMode <- chatReadVar subscriptionMode
-            newConnIds <- getAgentConnShortLinkAsync user CFGetRelayDataJoin Nothing relayLink
-            withStore' $ \db -> createRelayMemberConnectionAsync db user gInfo' relayMember relayLink newConnIds subMode
+            createRelayConnectionAsync user gInfo' relayMember relayLink
       GroupInfo {preparedGroup = Just PreparedGroup {connLinkToConnect, welcomeSharedMsgId, requestSharedMsgId}} -> do
         hostMember <- withFastStore $ \db -> getHostMember db cxt user groupId
         msg_ <- forM msgContent_ $ \mc -> case requestSharedMsgId of
@@ -2490,9 +2486,10 @@ processChatCommand cxt nm = \case
     when (isJust groupDirectInv) $ throwCmdError "contact is a member contact request"
     ccLink <- case contactLink of
       Just (CLFull cReq) -> pure $ CCLink cReq Nothing
-      Just (CLShort sLnk) -> do
-        (_, _, cReq) <- getShortLinkConnReq nm user sLnk
+      Just (CLShort sLnk@(CSLContact _ CCTContact _ _)) -> do
+        (_, _, cReq, _) <- getShortLinkConnReq nm user sLnk
         pure $ CCLink cReq $ Just sLnk
+      Just (CLShort _) -> throwChatError CEInvalidConnReq
       Nothing -> throwCmdError "no address in contact profile"
     connectContactViaAddress user incognito ct ccLink `catchAllErrors` \e -> do
       -- get updated contact, in case connection was started - in UI it would lock ability to change incognito choice
@@ -3642,10 +3639,10 @@ processChatCommand cxt nm = \case
               Just XFTPRcvFile {agentRcvFileId} -> do
                 forM_ (liveRcvFileTransferPath ftr) $ \filePath -> do
                   fsFilePath <- lift $ toFSFilePath filePath
-                  liftIO $ removeFile fsFilePath `catchAll_` pure ()
+                  liftIO $ removeFile fsFilePath `catchOwn'` \_ -> pure ()
                 lift . forM_ agentRcvFileId $ \(AgentRcvFileId aFileId) ->
                   withAgent' (`xftpDeleteRcvFile` aFileId)
-                aci_ <- resetRcvCIFileStatus user fileId CIFSRcvInvitation
+                aci_ <- fmap updatedAChatItem <$> resetRcvCIFileStatus user fileId CIFSRcvInvitation
                 pure $ CRRcvFileCancelled user aci_ ftr
   FileStatus fileId -> withUser $ \user -> do
     withFastStore (\db -> lookupChatItemByFileId db cxt user fileId) >>= \case
@@ -3666,7 +3663,7 @@ processChatCommand cxt nm = \case
   APIPurchaseBadge userId echoedInvoiceId origin payment -> withUserId userId $ \user -> handOverStoreReceipt user echoedInvoiceId origin payment
   APISetBadgeSubscriptionStatus status payment -> recordStoreSubscriptionStatus status payment >> ok_
   APICreateBadgeInvoice userId -> withUserId userId $ \user -> do
-    void requireBadgeService
+    void requireStoreService
     refuseWhileBadgeHeld user
     refuseWhileStoreReceiptPending user Nothing
     g <- asks random
@@ -4045,10 +4042,9 @@ processChatCommand cxt nm = \case
       -- Save relayLink to re-use relay member record on retry (check by relayLink)
       relayMember <- withFastStore $ \db -> getCreateRelayForMember db cxt gVar user gInfo relayLink
       r <- tryAllErrors $ do
-        (FixedLinkData {rootKey = relayKey, linkEntityId}, cData, cReq) <- getShortLinkConnReq nm user relayLink
-        relayLinkData_ <- liftIO $ decodeLinkUserData cData
-        relayMemberId <- case (relayLinkData_, linkEntityId) of
-          (Just RelayShortLinkData {relayProfile = p}, Just entityId) -> do
+        (FixedLinkData {rootKey = relayKey, linkEntityId}, _, cReq, sLinkData_) <- getShortLinkConnReq nm user relayLink
+        relayMemberId <- case (sLinkData_, linkEntityId) of
+          (Just (SLDRelayLink RelayShortLinkData {relayProfile = p}), Just entityId) -> do
             withFastStore $ \db -> updateRelayMemberData db cxt user relayMember (MemberId entityId) (MemberKey relayKey) p
             pure $ MemberId entityId
           _ -> throwChatError $ CEException "relay link: no relay link data or entity id"
@@ -4453,7 +4449,7 @@ processChatCommand cxt nm = \case
       where
         addRelay :: UserChatRelay -> CM (UserChatRelay, Either ChatError GroupRelay)
         addRelay relay@UserChatRelay {address} = fmap (relay,) . tryAllErrors $ do
-          (_, _, cReq) <- getShortLinkConnReq nm user address
+          (_, _, cReq, _) <- getShortLinkConnReq nm user address
           lift (withAgent' (`connRequestAgentVersion` cReq)) >>= \case
             Nothing -> throwChatError CEInvalidConnReq
             Just _ -> do
@@ -4555,8 +4551,8 @@ processChatCommand cxt nm = \case
         knownLinkPlans l' >>= \case
           Just (createdLink, p) -> pure (createdLink, Nothing, Nothing, p)
           Nothing -> do
-            (FixedLinkData {rootKey}, cData, cReq) <- getShortLinkConnReq nm user l'
-            contactSLinkData_ <- mapM (linkDataBadge $ linkPresHeader l') =<< liftIO (decodeLinkUserData cData)
+            (FixedLinkData {rootKey}, _, cReq, sLinkData_) <- getShortLinkConnReq nm user l'
+            contactSLinkData_ <- mapM (linkDataBadge $ linkPresHeader l') $ shortLinkContactData =<< sLinkData_
             let ov = verifyLinkOwner rootKey [] l sig_
             invitationReqAndPlan cReq (Just l') contactSLinkData_ ov
       where
@@ -4611,9 +4607,9 @@ processChatCommand cxt nm = \case
                 resolveSLink >>= contactLinkPlan Nothing
             where
               contactLinkPlan knownChat_ l' = do
-                (FixedLinkData {rootKey}, cData, cReq) <- getShortLinkConnReq nm user l'
+                (FixedLinkData {rootKey}, cData, cReq, sLinkData_) <- getShortLinkConnReq nm user l'
                 let presHeader = linkPresHeader l'
-                contactSLinkData_ <- mapM (linkDataBadge presHeader) =<< liftIO (decodeLinkUserData cData)
+                contactSLinkData_ <- mapM (linkDataBadge presHeader) $ shortLinkContactData =<< sLinkData_
                 let linkProfile_ = (\ContactShortLinkData {profile} -> profile) <$> contactSLinkData_
                     linkDomain_ = linkProfile_ >>= \Profile {contactDomain} -> claimDomain <$> contactDomain
                     planDomain = case nl of CTName ni -> Just (nameDomain ni); _ -> Nothing
@@ -4680,9 +4676,9 @@ processChatCommand cxt nm = \case
                 resolveSLink >>= groupLinkPlan Nothing
             where
               groupLinkPlan knownChat_ l' = do
-                (fd, cData@(ContactLinkData _ UserContactData {direct, owners, relays}), cReq) <- getShortLinkConnReq' nm user l'
-                groupSLinkData_ <- liftIO $ decodeLinkUserData cData
-                let planDomain = case nl of CTName ni -> Just (nameDomain ni); _ -> Nothing
+                (fd, ContactLinkData _ UserContactData {direct, owners, relays}, cReq, sLinkData_) <- getShortLinkConnReq' nm user l'
+                let groupSLinkData_ = shortLinkGroupData =<< sLinkData_
+                    planDomain = case nl of CTName ni -> Just (nameDomain ni); _ -> Nothing
                     nc_ = NCMoved <$> knownChat_
                     knownMoved moved = NCMoved . movedChat moved <$> knownChat_
                 plan <- if
@@ -4726,8 +4722,8 @@ processChatCommand cxt nm = \case
                   Nothing -> (gPlan =<<) <$> getGroupToConnect db cxt user nl'
               resolveKnownGroup g = do
                 l' <- resolveSLink
-                (FixedLinkData {rootKey = rk}, cData@(ContactLinkData _ UserContactData {owners}), cReq) <- getShortLinkConnReq' nm user l'
-                groupSLinkData_ <- liftIO $ decodeLinkUserData cData
+                (FixedLinkData {rootKey = rk}, ContactLinkData _ UserContactData {owners}, cReq, sLinkData_) <- getShortLinkConnReq' nm user l'
+                let groupSLinkData_ = shortLinkGroupData =<< sLinkData_
                 let ov = verifyLinkOwner rk owners l' sig_
                     glOwners = map (\OwnerAuth {ownerId, ownerKey} -> GroupLinkOwner {memberId = MemberId ownerId, memberKey = ownerKey}) owners
                 (g', updated, _) <- case groupSLinkData_ of
@@ -4970,7 +4966,7 @@ processChatCommand cxt nm = \case
               let content' = CIRcvGroupInvitation (ciGroupInv {status = newStatus} :: CIGroupInvitation) memRole
               timed_ <- sndGroupCITimed False g Nothing
               ci' <- withFastStore' $ \db -> updateGroupChatItem db user (groupId' g) ci {meta = meta {itemTimed = timed_}} content' False False Nothing
-              toView $ CEvtChatItemUpdated user (AChatItem SCTGroup SMDRcv cInfo ci')
+              toView $ CEvtChatItemUpdated user (AChatItemUpdate SCTGroup SMDRcv cInfo ci' ci)
               forM_ (timed_ >>= timedDeleteAt') $
                 startProximateTimedItemThread user (ChatRef CTGroup (groupId' g) Nothing, itemId)
         _ -> pure () -- prohibited
@@ -5323,7 +5319,7 @@ nameRecordOrWarning now SimplexDomain {domain} = \case
   NRAvailable {pricing = NamePricing {registrationPrices, basePrice, minLabelLength}}
     | labelLength >= minLabelLength ->
         let USDCents perYear = M.findWithDefault basePrice labelLength registrationPrices
-            years = 2
+            years = minNameYears
          in Left $ NWAvailable NamePrice {amount = USDCents (perYear * fromIntegral years), years}
   NRReserved {reservedReason = NRRCommunity} -> Left NWReservedForCommunity
   _ -> Left NWNotRegistered
@@ -5348,7 +5344,7 @@ verifyEntityDomain user nm nameType SimplexDomainClaim {domain = StrJSON domain,
   where
     verifyDomainProof :: SimplexDomainProof -> ShortLinkContact -> CM Bool
     verifyDomainProof SimplexDomainProof {linkOwnerId, presHeader, signature} sLnk@(CSLContact _ ct srv key) = do
-      (FixedLinkData {rootKey}, ContactLinkData _ UserContactData {owners}, _) <- getShortLinkConnReq nm user sLnk
+      (FixedLinkData {rootKey}, ContactLinkData _ UserContactData {owners}, _, _) <- getShortLinkConnReq nm user sLnk
       let ownerKey_ = case linkOwnerId of
             Nothing -> Just rootKey
             Just (StrJSON oid) -> ownerKey <$> find (\OwnerAuth {ownerId} -> ownerId == oid) owners
@@ -5463,7 +5459,7 @@ presentUserBadgeToContacts user'@User {userId, profile = LocalProfile {localBadg
 redeemBadgeCode :: NetworkRequestMode -> User -> Text -> CM ChatResponse
 redeemBadgeCode nm user@User {userId} codeText = do
   code <- maybe (throwRedeemError BREInvalidCode) pure $ parseBadgeCode codeText
-  sendTarget <- requireBadgeService
+  sendTarget <- requireStoreService
   g <- asks random
   now <- liftIO getCurrentTime
   let codeSent = badgeCodeText code
@@ -5472,7 +5468,7 @@ redeemBadgeCode nm user@User {userId} codeText = do
   (present_, redeemed) <- withEntityLock "badgeRedeem" (CLBadgeUser userId) $ do
     stash_ <- withStore' $ \db -> getBadgeCodeRedemption db user codeSent
     stash@BadgeStash {masterKey} <- stashBadgeKeys user stash_ $ \db -> createBadgeCodeRedemption db g user codeSent now
-    requestBadgeStash nm user sendTarget stash BSCRedeemBadgeCode {masterKey, code = codeSent} >>= \case
+    requestBadgeStash nm user sendTarget stash STCRedeemBadgeCode {masterKey, code = codeSent} >>= \case
       Left (errCode, _) -> do
         when (terminalCodeError errCode) $ withStore' $ \db -> deleteBadgeCodeRedemption db user codeSent
         throwRedeemError $ BREServiceError errCode
@@ -5483,9 +5479,9 @@ redeemBadgeCode nm user@User {userId} codeText = do
   where
     -- the code will never work, so the keys stashed for it are dead; a timeout keeps them
     terminalCodeError = \case
-      BSECodeInvalid -> True
-      BSECodeUsed -> True
-      BSECodeExpired -> True
+      STECodeInvalid -> True
+      STECodeUsed -> True
+      STECodeExpired -> True
       _ -> False
 
 -- | The app hands a receipt over until it is answered credited or refused, under whichever profile is
@@ -5493,7 +5489,7 @@ redeemBadgeCode nm user@User {userId} codeText = do
 handOverStoreReceipt :: User -> Maybe Text -> StoreReceiptOrigin -> ServicePayment -> CM ChatResponse
 handOverStoreReceipt presentingUser echoedInvoiceId origin payment = do
   txRef <- maybe (throwRedeemError BREInvalidReceipt) pure $ storeTransactionRef payment
-  void requireBadgeService
+  void requireStoreService
   g <- asks random
   now <- badgeNow
   limited <- case origin of
@@ -5510,7 +5506,7 @@ handOverStoreReceipt presentingUser echoedInvoiceId origin payment = do
       _ -> throwChatError $ CEInternalError "store receipt was not recorded"
     Just BadgeReceiptRecord {receiptId, ownerId, status} -> do
       owner <- withStore $ \db -> getUser db ownerId
-      when limited $ lift (resumeStoreReceiptWork ownerId) >> throwRedeemError (BREServiceError BSETransferLimited)
+      when limited $ lift (resumeStoreReceiptWork ownerId) >> throwRedeemError (BREServiceError STETransferLimited)
       case status of
         RSHeld {} -> lift (resumeStoreReceiptWork ownerId) >> badgeStateResponse owner
         RSCredited {badgePurchaseId, refusalRecorded} -> do
@@ -5523,7 +5519,7 @@ handOverStoreReceipt presentingUser echoedInvoiceId origin payment = do
                   True -> do
                     unlessM (withStore' (`userHasBadge` owner)) $
                       whenM (withStore' $ \db -> holdStoreTransfer db g owner txRef payment now) $
-                        lift (resumeStoreReceiptWork ownerId) >> throwRedeemError (BREServiceError BSETransferLimited)
+                        lift (resumeStoreReceiptWork ownerId) >> throwRedeemError (BREServiceError STETransferLimited)
                     pure True
           movedOut <- withStore' (`purchaseMovedOut` badgePurchaseId)
           answeredHeld <- case resumeHold now payment of
@@ -5583,13 +5579,13 @@ recordStoreSubscriptionStatus reported payment = do
       _ -> True
 
 -- | The receipt will never be credited to its key; any other refusal may pass on a retry.
-storeReceiptRefused :: BadgeServiceErrorCode -> Bool
+storeReceiptRefused :: StoreServiceErrorCode -> Bool
 storeReceiptRefused = \case
-  BSEReceiptInvalid -> True
-  BSEReceiptUsed -> True
+  STEReceiptInvalid -> True
+  STEReceiptUsed -> True
   -- a badge moves only on the user's Restore, never by a retry once the limit has passed
-  BSETransferLimited -> True
-  BSETestPurchase -> True
+  STETransferLimited -> True
+  STETestPurchase -> True
   _ -> False
 
 -- | How far ahead of this device's clock a charge's purchase date may be: a payload dated further ahead is never held.
@@ -5669,8 +5665,8 @@ stashBadgeKeys user stash_ createStash = do
   unless replaying $ refuseWhileBadgeHeld user >> refuseWhileStoreReceiptPending user Nothing
   maybe (withStore' createStash) pure stash_
 
-requireBadgeService :: CM (ConnectTarget 'CMContact)
-requireBadgeService = asks (badgeServiceAddress . config) >>= maybe (throwRedeemError BREServiceNotConfigured) pure
+requireStoreService :: CM (ConnectTarget 'CMContact)
+requireStoreService = asks (storeServiceAddress . config) >>= maybe (throwRedeemError BREServiceNotConfigured) pure
 
 refuseWhileBadgeHeld :: User -> CM ()
 refuseWhileBadgeHeld user = whenM (withStore' (`userHasBadge` user)) $ throwRedeemError BREBadgeActive
@@ -5692,29 +5688,29 @@ refuseWhileStoreReceiptPending user presented_ = do
 
 -- | One attempt to turn a stash into a badge. A refusal is answered rather than thrown, with the
 -- service's retryAfter.
-requestBadgeStash :: NetworkRequestMode -> User -> ConnectTarget 'CMContact -> BadgeStash -> BadgeServiceCommand -> CM (Either (BadgeServiceErrorCode, Maybe Word32) (Maybe User, ChatResponse))
+requestBadgeStash :: NetworkRequestMode -> User -> ConnectTarget 'CMContact -> BadgeStash -> StoreServiceCommand -> CM (Either (StoreServiceErrorCode, Maybe Word32) (Maybe User, ChatResponse))
 requestBadgeStash nm user sendTarget stash@BadgeStash {purchaseKey, purchasePrivKey} request = do
-  let req = BadgeServiceRequest {version = currentBadgeServiceVersion, purchaseKey = Just purchaseKey, request}
+  let req = StoreServiceRequest {version = currentStoreServiceVersion, purchaseKey = Just purchaseKey, request}
   respBytes <- sendServiceRequestBytes nm user sendTarget Nothing (Just purchasePrivKey) req
   respData <- either (const $ throwRedeemError $ BREInvalidResponse "not JSON") pure $ J.eitherDecodeStrict' respBytes
   case J.fromJSON (J.Object respData) of
-    J.Error _ -> throwRedeemError $ BREInvalidResponse "not a badge service response"
-    J.Success BSPError {code, retryAfter} -> pure $ Left (code, retryAfter)
-    J.Success BSPBadgeCredential {credential = Just cred, statement, subscription} -> Right <$> storeRedeemedBadge user stash cred statement (boundedSubscriptionState <$> subscription)
+    J.Error _ -> throwRedeemError $ BREInvalidResponse "not a store service response"
+    J.Success STPError {code, retryAfter} -> pure $ Left (code, retryAfter)
+    J.Success STPBadgeCredential {credential = Just cred, statement, subscription} -> Right <$> storeRedeemedBadge user stash cred statement (boundedSubscriptionState <$> subscription)
     J.Success _ -> throwRedeemError $ BREInvalidResponse "unexpected response type"
 
 throwRedeemError :: BadgeRedeemError -> CM a
 throwRedeemError = throwChatError . CEBadgeRedeemError
 
-badgeServiceErrorText :: BadgeServiceErrorCode -> Text
-badgeServiceErrorText = textEncode . boundedServiceErrorCode
+storeServiceErrorText :: StoreServiceErrorCode -> Text
+storeServiceErrorText = textEncode . boundedServiceErrorCode
 
 -- | An unknown code is reported and recorded, since the service is deployed ahead of clients, but
 -- its text is the service's - so it is bounded and stripped before it reaches a terminal that acts
 -- on controls, or a sentence the app shows the user as its own.
-boundedServiceErrorCode :: BadgeServiceErrorCode -> BadgeServiceErrorCode
+boundedServiceErrorCode :: StoreServiceErrorCode -> StoreServiceErrorCode
 boundedServiceErrorCode = \case
-  BSEUnknown t -> boundedServiceText BSEUnknown errorCodeChar t
+  STEUnknown t -> boundedServiceText STEUnknown errorCodeChar t
   code -> code
   where
     errorCodeChar c = isAsciiLower c || isDigit c || c == '_'
@@ -5740,12 +5736,12 @@ badgeNow = asks (badgeCurrentTime . config) >>= liftIO
 -- | A signal carries nothing: each pass derives its work from stored state, so a signal lost or
 -- duplicated changes no outcome.
 startBadgeWork :: User -> CM' ()
-startBadgeWork user = whenM (isJust <$> asks (badgeServiceAddress . config)) $ void $ getBadgeWorker user
+startBadgeWork user = whenM (isJust <$> asks (storeServiceAddress . config)) $ void $ getBadgeWorker user
 
--- | Sent off the shared request moment, so only a build for a dev badge service may send it.
+-- | Sent off the shared request moment, so only a build for a dev store service may send it.
 requestBadgeNow :: User -> CM ChatResponse
 requestBadgeNow user@User {userId} = do
-  unlessM (asks $ badgeDevRequests . config) $ throwCmdError "/_badge request is only available in builds for a dev badge service"
+  unlessM (asks $ badgeDevRequests . config) $ throwCmdError "/_badge request is only available in builds for a dev store service"
   withStore' (`getUserBadgePurchase` user) >>= \case
     Just p@UserBadgePurchase {shown = True} -> do
       badgeNow >>= requestBadgeIssue userId p >>= \case
@@ -5914,19 +5910,19 @@ creditStoreReceipt a userId receiptId stash@BadgeStash {masterKey} invoiceId_ pa
     credit ri delay cmd =
       tryAllErrors (attempt cmd) >>= \answer -> serviceAnswered ri delay refuse (failed ri delay) answer $ \(present_, _) -> pure $ SROCredited present_
     -- retried takes only a service error that is not a refusal: a thrown error is recorded as a failure as it is
-    serviceAnswered :: RetryInterval -> Int64 -> (BadgeIssueFailure -> CM StoreReceiptOutcome) -> (BadgeIssueFailure -> Maybe Word32 -> CM StoreReceiptOutcome) -> Either ChatError (Either (BadgeServiceErrorCode, Maybe Word32) r) -> (r -> CM StoreReceiptOutcome) -> CM StoreReceiptOutcome
+    serviceAnswered :: RetryInterval -> Int64 -> (BadgeIssueFailure -> CM StoreReceiptOutcome) -> (BadgeIssueFailure -> Maybe Word32 -> CM StoreReceiptOutcome) -> Either ChatError (Either (StoreServiceErrorCode, Maybe Word32) r) -> (r -> CM StoreReceiptOutcome) -> CM StoreReceiptOutcome
     serviceAnswered ri delay refused retried answer answered = case answer of
       Left e -> failed ri delay (badgeIssueFailure e) Nothing
       Right (Left (code, retryAfter))
         | storeReceiptRefused code -> refused $ serviceFailure code retryAfter
         | otherwise -> retried (serviceFailure code retryAfter) retryAfter
       Right (Right r) -> answered r
-    purchaseCmd payment' = BSCPurchaseBadge {masterKey, payment = payment', upgrade = Nothing}
-    transferCmd payment' = BSCTransferBadge {masterKey, payment = payment'}
+    purchaseCmd payment' = STCPurchaseBadge {masterKey, payment = payment', upgrade = Nothing}
+    transferCmd payment' = STCTransferBadge {masterKey, payment = payment'}
     attempt cmd = do
       user <- withStore $ \db -> getUser db userId
       refuseWhileBadgeHeld user
-      sendTarget <- requireBadgeService
+      sendTarget <- requireStoreService
       payment' <- maybe (throwChatError $ CEInternalError "held store payment does not decode") pure $ decodeJSON payment
       requestBadgeStash NRMBackground user sendTarget stash (cmd payment')
     -- a held record whose keys already fund a purchase is a resume of that retired subscription, checked before every send
@@ -5945,7 +5941,7 @@ creditStoreReceipt a userId receiptId stash@BadgeStash {masterKey} invoiceId_ pa
           | isNewest, Just hold <- resumeHold now =<< decodeJSON payment -> resumeIssue ri delay user p hold now
         _ -> refuse receiptInvalid
     resumeIssue ri delay user p@UserBadgePurchase {badgePurchaseId} hold now = do
-      answer <- tryAllErrors $ requireBadgeService >>= \sendTarget -> sendBadgeIssue sendTarget userId p BSCIssueBadge (recordBadgeIssueFailure p) now
+      answer <- tryAllErrors $ requireStoreService >>= \sendTarget -> sendBadgeIssue sendTarget userId p STCIssueBadge (recordBadgeIssueFailure p) now
       answeredAt <- badgeNow
       -- a charge the service does not grant, as a revoked one, stops holding the profile once its hold ends
       let notCredited failure retryAfter = case hold of
@@ -5964,7 +5960,7 @@ creditStoreReceipt a userId receiptId stash@BadgeStash {masterKey} invoiceId_ pa
                 lift $ startBadgeWork user'
                 pure $ SROCredited (Just user')
           -- the service's own check interval
-          _ -> notCredited BIFServiceError {code = BSEPaymentPending, retryable = True} (Just 3600)
+          _ -> notCredited BIFServiceError {code = STEPaymentPending, retryable = True} (Just 3600)
     -- Settles with nothing to announce: a charge expired or no newer than the last one credited, or to a tier that is not
     -- higher, the renewal check grants the change, and a badge no longer shown is resumed by the charge's next hand-over.
     changeTier ri delay purchaseId = do
@@ -5979,8 +5975,8 @@ creditStoreReceipt a userId receiptId stash@BadgeStash {masterKey} invoiceId_ pa
     -- the receipt's failures are recorded on the record, not as the purchase's failed renewal, as the badge shown still covers
     upgradeIssue ri delay user p@UserBadgePurchase {badgePurchaseId} payment' tier now = do
       failure_ <- newTVarIO Nothing
-      let upgradeCmd balance = BSCUpgradeBadgeSubscription {payment = payment', balance}
-      answer <- tryAllErrors $ requireBadgeService >>= \sendTarget -> sendBadgeIssue sendTarget userId p upgradeCmd (atomically . writeTVar failure_ . Just) now
+      let upgradeCmd balance = STCUpgradeBadgeSubscription {payment = payment', balance}
+      answer <- tryAllErrors $ requireStoreService >>= \sendTarget -> sendBadgeIssue sendTarget userId p upgradeCmd (atomically . writeTVar failure_ . Just) now
       answeredAt <- badgeNow
       recorded_ <- readTVarIO failure_
       let refusedInSilence failure = SRODeferred <$ withStore' (\db -> refuseStoreReceipt db receiptId payment failure)
@@ -5995,7 +5991,7 @@ creditStoreReceipt a userId receiptId stash@BadgeStash {masterKey} invoiceId_ pa
                     setUserBadge db user (Just $ OwnBadge cred (mkBadgeStatus answeredAt (Just True) info))
                   lift $ startBadgeWork user'
                   pure $ SROCredited (Just user')
-            _ -> failedHeld ri delay BIFServiceError {code = BSEPaymentPending, retryable = True} (Just 3600)
+            _ -> failedHeld ri delay BIFServiceError {code = STEPaymentPending, retryable = True} (Just 3600)
     -- out of attempts, the record is set aside without a refusal, so the next hand-over holds it again;
     -- this attempt's failure is not recorded yet, so it is counted here
     failedHeld ri delay failure retryAfter = do
@@ -6004,7 +6000,7 @@ creditStoreReceipt a userId receiptId stash@BadgeStash {masterKey} invoiceId_ pa
         then setAside
         else failed ri delay failure retryAfter
     setAside = SRODeferred <$ withStore' (`settleStoreReceipt` receiptId)
-    receiptInvalid = BIFServiceError {code = BSEReceiptInvalid, retryable = False}
+    receiptInvalid = BIFServiceError {code = STEReceiptInvalid, retryable = False}
     -- a payment adopted while this one was with the service stays held and is sent next, so nothing is announced
     refuse failure = do
       refused <- withStore' $ \db -> refuseStoreReceipt db receiptId payment failure
@@ -6298,7 +6294,7 @@ badgeIssueFailure e = case e of
 badgeFailureTransient :: BadgeIssueFailure -> Bool
 badgeFailureTransient = \case
   -- the service withholds retryAfter from internal to avoid being pressed while failing, not because it is final
-  BIFServiceError {code = BSEInternal} -> True
+  BIFServiceError {code = STEInternal} -> True
   BIFServiceError {retryable} -> retryable
   BIFServiceTimeout -> True
   BIFNetwork {} -> True
@@ -6315,10 +6311,10 @@ badgeErrorRetry = badgeFailureTransient . badgeIssueFailure
 -- since a service error is answered rather than thrown. Any request that
 -- ends without a credential the ledger still owes is recorded on the purchase as a failed renewal;
 -- nothing else records one.
-requestBadgeIssue :: UserId -> UserBadgePurchase -> UTCTime -> CM (Either (BadgeServiceErrorCode, Maybe Word32) (StatementEntry, Maybe SubscriptionState))
+requestBadgeIssue :: UserId -> UserBadgePurchase -> UTCTime -> CM (Either (StoreServiceErrorCode, Maybe Word32) (StatementEntry, Maybe SubscriptionState))
 requestBadgeIssue userId p now = do
-  sendTarget <- asks (badgeServiceAddress . config) >>= maybe (throwCmdError "badge service not configured") pure
-  withEntityLock "badgeIssue" (CLBadgeUser userId) $ sendBadgeIssue sendTarget userId p BSCIssueBadge (recordBadgeIssueFailure p) now
+  sendTarget <- asks (storeServiceAddress . config) >>= maybe (throwCmdError "store service not configured") pure
+  withEntityLock "badgeIssue" (CLBadgeUser userId) $ sendBadgeIssue sendTarget userId p STCIssueBadge (recordBadgeIssueFailure p) now
 
 recordBadgeIssueFailure :: UserBadgePurchase -> BadgeIssueFailure -> CM ()
 recordBadgeIssueFailure UserBadgePurchase {badgePurchaseId} failure = do
@@ -6326,13 +6322,13 @@ recordBadgeIssueFailure UserBadgePurchase {badgePurchaseId} failure = do
   withStore' $ \db -> setBadgeIssueError db badgePurchaseId failedAt failure
 
 -- | 'requestBadgeIssue' for a caller that already holds the owner's badge lock, which is not reentrant.
-sendBadgeIssue :: ConnectTarget 'CMContact -> UserId -> UserBadgePurchase -> (BadgeBalance -> BadgeServiceCommand) -> (BadgeIssueFailure -> CM ()) -> UTCTime -> CM (Either (BadgeServiceErrorCode, Maybe Word32) (StatementEntry, Maybe SubscriptionState))
+sendBadgeIssue :: ConnectTarget 'CMContact -> UserId -> UserBadgePurchase -> (BadgeBalance -> StoreServiceCommand) -> (BadgeIssueFailure -> CM ()) -> UTCTime -> CM (Either (StoreServiceErrorCode, Maybe Word32) (StatementEntry, Maybe SubscriptionState))
 sendBadgeIssue sendTarget userId UserBadgePurchase {badgePurchaseId, badgeType, purchaseKey, purchasePrivKey, masterKey} command recordFailure now = do
   user <- withStore $ \db -> getUser db userId
   lastEntry <- withStore' (`getBadgeLedgerLastEntry` badgePurchaseId) >>= maybe (throwCmdError "badge ledger has no entry to assert") pure
   let req =
-        BadgeServiceRequest
-          { version = currentBadgeServiceVersion,
+        StoreServiceRequest
+          { version = currentStoreServiceVersion,
             purchaseKey = Just purchaseKey,
             request = command BadgeBalance {lastEntry}
           }
@@ -6340,7 +6336,7 @@ sendBadgeIssue sendTarget userId UserBadgePurchase {badgePurchaseId, badgeType, 
     sendServiceRequestTo NRMBackground user sendTarget Nothing (Just purchasePrivKey) req
       `catchAllErrors` \e -> recordFailure (badgeIssueFailure e) >> throwError e
   case J.fromJSON (J.Object respData) of
-    J.Success BSPBadgeCredential {credential = sentCred_, statement, subscription} -> do
+    J.Success STPBadgeCredential {credential = sentCred_, statement, subscription} -> do
       verifiedCred_ <- verifyIssuedCredential masterKey sentCred_
       g <- asks random
       -- read again: now was taken before a lock wait and an untimed request, and the check reads
@@ -6361,11 +6357,11 @@ sendBadgeIssue sendTarget userId UserBadgePurchase {badgePurchaseId, badgeType, 
         (_, _, False) -> recordUnexpected "issued badge credential has no ledger row to store it against"
         -- no credential is the service saying nothing is owed - the months ran out, or a subscription
         -- waits for its store to charge - which its statement then shows; ended after a move leaves the issued month running
-        (Nothing, _, _) | subscription /= Just SSEnded && maybe False ((> storedAt) . L.paidThrough) balance_ -> recordUnexpected "badge service issued no credential"
+        (Nothing, _, _) | subscription /= Just SSEnded && maybe False ((> storedAt) . L.paidThrough) balance_ -> recordUnexpected "store service issued no credential"
         _ -> pure ()
       maybe (throwCmdError "badge ledger has no balance") (pure . Right . (,storedSubscription)) balance_
-    J.Success BSPError {code, retryAfter} -> do
-      eToView $ ChatError $ CECommandError $ "badge service error: " <> T.unpack (badgeServiceErrorText code)
+    J.Success STPError {code, retryAfter} -> do
+      eToView $ ChatError $ CECommandError $ "store service error: " <> T.unpack (storeServiceErrorText code)
       -- retryAfter only marks the failure as one that can clear: the retry waits a stall like any request that
       -- issued nothing, since a shorter wait would let the service choose how often activations reach it
       recordFailure BIFServiceError {code = boundedServiceErrorCode code, retryable = isJust retryAfter}
@@ -6374,7 +6370,7 @@ sendBadgeIssue sendTarget userId UserBadgePurchase {badgePurchaseId, badgeType, 
       recordFailure BIFUnexpected {message = unexpectedResponse}
       throwCmdError $ T.unpack unexpectedResponse
   where
-    unexpectedResponse = "unexpected badge service response"
+    unexpectedResponse = "unexpected store service response"
     recordUnexpected message = do
       eToView $ ChatError $ CEInternalError $ T.unpack message
       recordFailure BIFUnexpected {message}
@@ -6502,7 +6498,7 @@ sendServiceRequestBytes nm user sendTarget requestTimeout signKey request = do
       case firstNameLink CCTContact (nrSimplexContact nr) of
         Just sLnk -> resolveShortLink sLnk
         Nothing -> throwChatError $ CESimplexDomainNotReady d SDENoValidLink
-    resolveShortLink sLnk = (\(_, _, cReq) -> cReq) <$> getShortLinkConnReq nm user sLnk
+    resolveShortLink sLnk = (\(_, _, cReq, _) -> cReq) <$> getShortLinkConnReq nm user sLnk
 
 assertDirectAllowed :: User -> MsgDirection -> Contact -> CMEventTag e -> CM ()
 assertDirectAllowed user dir ct event =
@@ -6697,7 +6693,7 @@ runRelayGroupLinkChecks user = do
       forM_ relayGroups $ \g@(GIK gInfo@GroupInfo {groupProfile = gp} _) -> flip catchAllErrors eToView $ do
         case publicGroup gp of
           Just PublicGroupProfile {groupLink = sLnk} -> do
-            (_, ContactLinkData _ UserContactData {relays = relayLinks}, _) <-
+            (_, ContactLinkData _ UserContactData {relays = relayLinks}, _, _) <-
               getShortLinkConnReq' NRMBackground user sLnk
             gLink_ <- withStore' $ \db -> runExceptT $ getGroupLink db user gInfo
             case gLink_ of

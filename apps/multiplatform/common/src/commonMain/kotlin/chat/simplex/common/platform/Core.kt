@@ -15,6 +15,10 @@ import kotlinx.coroutines.*
 import java.io.File
 import java.nio.ByteBuffer
 
+var chatSendCmdRetry: (ChatCtrl, String, Int) -> String = ::nativeChatSendCmdRetry
+var chatParseMarkdown: (String) -> String = ::nativeChatParseMarkdown
+var chatParseUri: (String, Int) -> String = ::nativeChatParseUri
+
 // the code in core's canonical form (prefix and 20 characters, no separators), or null when core rejects it.
 // The check character is verified by core via FFI, not re-implemented here, so the two cannot disagree.
 fun parseBadgeCode(s: String): String? {

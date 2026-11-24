@@ -1618,7 +1618,7 @@ data ContactShortLinkData = ContactShortLinkData
     -- never part of the published link data (the link carries the proof inside profile).
     localBadge :: Maybe LocalBadge
   }
-  deriving (Show)
+  deriving (Eq, Show)
 
 data PublicGroupData = PublicGroupData
   { publicMemberCount :: Int64
@@ -1629,7 +1629,7 @@ data GroupShortLinkData = GroupShortLinkData
   { groupProfile :: GroupProfile,
     publicGroupData :: Maybe PublicGroupData
   }
-  deriving (Show)
+  deriving (Eq, Show)
 
 $(JQ.deriveJSON defaultJSON ''ContactShortLinkData)
 
@@ -1664,4 +1664,21 @@ data RelayAddressLinkData = RelayAddressLinkData {relayProfile :: RelayProfile}
   deriving (Show)
 
 $(JQ.deriveJSON defaultJSON ''RelayAddressLinkData)
+
+data ShortLinkData
+  = SLDContact ContactShortLinkData
+  | SLDGroup GroupShortLinkData
+  | SLDRelayLink RelayShortLinkData
+  | SLDRelayAddress RelayAddressLinkData
+  deriving (Show)
+
+shortLinkContactData :: ShortLinkData -> Maybe ContactShortLinkData
+shortLinkContactData = \case
+  SLDContact d -> Just d
+  _ -> Nothing
+
+shortLinkGroupData :: ShortLinkData -> Maybe GroupShortLinkData
+shortLinkGroupData = \case
+  SLDGroup d -> Just d
+  _ -> Nothing
 

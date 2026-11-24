@@ -17,6 +17,7 @@ import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.DEFAULT_START_MODAL_WIDTH
 import chat.simplex.common.ui.theme.SimpleXTheme
 import chat.simplex.common.views.TerminalView
+import chat.simplex.common.views.chat.item.addPinchListener
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.*
 import dev.icerock.moko.resources.StringResource
@@ -235,6 +236,7 @@ private fun ApplicationScope.AppWindow(closedByError: MutableState<Boolean>) {
             AppLock.appWasHidden()
           }
         })
+        if (desktopPlatform.isMac()) addPinchListener(window.rootPane)
       }
       LaunchedEffect(Unit) {
         snapshotFlow { chatModel.chatRunning.value }.first { it == true }
