@@ -1375,9 +1375,8 @@ getGroupMembersForExpiration db cxt user@User {userId, userContactId} GroupInfo 
           <> [sql|
                 WHERE m.group_id = ? AND m.user_id = ? AND (m.contact_id IS NULL OR m.contact_id != ?)
                   AND m.member_status IN (?, ?, ?, ?)
-                  AND m.group_member_id NOT IN (
-                    SELECT DISTINCT group_member_id FROM chat_items
-                  )
+                  AND m.removed_at IS NULL
+                  AND NOT EXISTS (SELECT 1 FROM chat_items i WHERE i.group_member_id = m.group_member_id)
               |]
       )
       (groupId, userId, userContactId, GSMemRemoved, GSMemLeft, GSMemGroupDeleted, GSMemUnknown)
