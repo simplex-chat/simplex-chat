@@ -1,0 +1,108 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="820" height="928" viewBox="0 0 820 928" font-family="-apple-system, 'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif" fill="#000000">
+  <title>Your privacy, with the Parental controls row</title>
+  <defs>
+    <g id="i-lock" fill="none" stroke="#8a8a8e" stroke-width="1.6"><rect x="-7" y="-2" width="14" height="10" rx="2"/><path d="M-4.5,-2 V-5 A4.5,4.5 0 0 1 4.5,-5 V-2"/></g>
+    <g id="i-eye" fill="none" stroke="#8a8a8e" stroke-width="1.6"><path d="M-9,0 Q0,-8 9,0 Q0,8 -9,0 Z"/><circle r="2.6"/><path d="M-8,7 L8,-7"/></g>
+    <g id="i-hand" fill="none" stroke="#8a8a8e" stroke-width="1.5" stroke-linejoin="round"><path d="M-6,3 L-6,-5 A1.5,1.5 0 0 1 -3,-5 L-3,-1 L-3,-8 A1.5,1.5 0 0 1 0,-8 L0,-1 L0,-7 A1.5,1.5 0 0 1 3,-7 L3,-1 L3,-4.5 A1.5,1.5 0 0 1 6,-4.5 L6,3 C6,7.5 3,10 -0.5,10 C-3.5,10 -5.5,8.5 -7,6.5 L-9.5,3 A1.4,1.4 0 0 1 -7.2,1.4 Z"/></g>
+    <g id="i-globe" fill="none" stroke="#8a8a8e" stroke-width="1.6"><circle r="8.5"/><ellipse rx="3.8" ry="8.5"/><path d="M-8.5,0 H8.5"/></g>
+    <g id="i-search" fill="none" stroke="#8a8a8e" stroke-width="1.8"><circle cx="-1.5" cy="-1.5" r="5.8"/><path d="M2.8,2.8 L8,8"/></g>
+    <g id="i-link" fill="none" stroke="#8a8a8e" stroke-width="1.6"><rect x="-9" y="-3.5" width="10" height="7" rx="3.5" transform="rotate(-35)"/><rect x="-1" y="-3.5" width="10" height="7" rx="3.5" transform="rotate(-35)"/></g>
+    <g id="i-photo" fill="none" stroke="#8a8a8e" stroke-width="1.6"><rect x="-9" y="-7" width="18" height="14" rx="2.5"/><path d="M-7,5 L-2,0 L2,3.5 L4.5,1 L7.5,4.5"/><circle cx="3.5" cy="-2.5" r="1.4"/></g>
+    <g id="i-blur" fill="none" stroke="#8a8a8e" stroke-width="1.6"><rect x="-9" y="-7" width="18" height="14" rx="2.5"/><path d="M-5,7 L5,-7 M-9,2 L-2,-7 M2,7 L9,-2"/></g>
+    <g id="i-person" fill="none" stroke="#8a8a8e" stroke-width="1.6"><circle cy="-4" r="4"/><path d="M-7.5,9 C-7.5,3 7.5,3 7.5,9"/></g>
+    <g id="i-person2" fill="none" stroke="#8a8a8e" stroke-width="1.6"><circle cx="-3.5" cy="-4" r="3.6"/><path d="M-10,9 C-10,3 3,3 3,9"/><circle cx="5" cy="-4.5" r="3"/><path d="M5.5,2.5 C9,2.5 10.5,5 10.5,8"/></g>
+    <g id="i-dots" fill="#8a8a8e"><circle cx="-6" r="1.8"/><circle r="1.8"/><circle cx="6" r="1.8"/></g>
+    <path id="i-updown" d="M-3.5,-2 L0,-5.5 L3.5,-2 M-3.5,2 L0,5.5 L3.5,2" fill="none" stroke="#8a8a8e" stroke-width="1.5"/>
+    <g id="t-on"><rect width="51" height="31" rx="15.5" fill="#34c759"/><circle cx="35.5" cy="15.5" r="13.5" fill="#ffffff"/></g>
+    <g id="t-off"><rect width="51" height="31" rx="15.5" fill="#e9e9eb"/><circle cx="15.5" cy="15.5" r="13.5" fill="#ffffff" stroke="#d1d1d6" stroke-width="0.5"/></g>
+  </defs>
+  <rect width="820" height="928" fill="#ffffff"/>
+
+  <text x="0" y="22" font-size="15" font-weight="600" fill="#162120">Parental controls off</text>
+  <text x="430" y="22" font-size="15" font-weight="600" fill="#162120">Parental controls on</text>
+
+  <g transform="translate(0,36)">
+    <rect width="390" height="854" rx="24" fill="#f2f2f7" stroke="#d0d5d4"/>
+    <text x="16" y="36" font-size="17" fill="#0088ff">‹ Your settings</text>
+    <text x="20" y="84" font-size="32" font-weight="700">Your privacy</text>
+
+    <text x="36" y="122" font-size="13" fill="#8a8a8e">DEVICE</text>
+    <rect x="16" y="132" width="358" height="132" rx="10" fill="#ffffff"/>
+    <use href="#i-lock" x="46" y="156"/><text x="72" y="159" font-size="17">SimpleX Lock</text><text x="350" y="159" font-size="17" fill="#8a8a8e" text-anchor="end">Off</text><text x="362" y="159" font-size="17" fill="#c7c7cc">›</text>
+    <path d="M72,176 H374" stroke="#c6c6c8" stroke-width="0.5"/>
+    <use href="#i-eye" x="46" y="198"/><text x="72" y="203" font-size="17">Protect app screen</text><use href="#t-off" x="313" y="182"/>
+    <path d="M72,220 H374" stroke="#c6c6c8" stroke-width="0.5"/>
+    <use href="#i-hand" x="46" y="242"/><text x="72" y="247" font-size="17">Parental controls</text><text x="350" y="247" font-size="17" fill="#8a8a8e" text-anchor="end">Off</text><text x="362" y="247" font-size="17" fill="#c7c7cc">›</text>
+    <rect x="18" y="222" width="354" height="40" rx="8" fill="none" stroke="#17708a" stroke-width="1.4" stroke-dasharray="5 3"/>
+
+    <text x="36" y="294" font-size="13" fill="#8a8a8e">CHATS</text>
+    <rect x="16" y="304" width="358" height="132" rx="10" fill="#ffffff"/>
+    <use href="#i-globe" x="46" y="326"/><text x="72" y="331" font-size="17">Send link previews</text><use href="#t-on" x="313" y="310"/>
+    <path d="M72,348 H374" stroke="#c6c6c8" stroke-width="0.5"/>
+    <use href="#i-search" x="46" y="370"/><text x="72" y="375" font-size="17">Directory search</text><use href="#t-off" x="313" y="354"/>
+    <path d="M72,392 H374" stroke="#c6c6c8" stroke-width="0.5"/>
+    <use href="#i-link" x="46" y="414"/><text x="72" y="419" font-size="17">Remove link tracking</text><use href="#t-off" x="313" y="398"/>
+
+    <text x="36" y="466" font-size="13" fill="#8a8a8e">FILES</text>
+    <rect x="16" y="476" width="358" height="88" rx="10" fill="#ffffff"/>
+    <use href="#i-photo" x="46" y="498"/><text x="72" y="503" font-size="17">Auto-accept images</text><use href="#t-on" x="313" y="482"/>
+    <path d="M72,520 H374" stroke="#c6c6c8" stroke-width="0.5"/>
+    <use href="#i-blur" x="46" y="542"/><text x="72" y="547" font-size="17">Blur media</text><text x="350" y="547" font-size="17" fill="#8a8a8e" text-anchor="end">Off</text><use href="#i-updown" x="362" y="542"/>
+
+    <text x="36" y="594" font-size="13" fill="#8a8a8e">AUTO-ACCEPT</text>
+    <rect x="16" y="604" width="358" height="88" rx="10" fill="#ffffff"/>
+    <use href="#i-person" x="46" y="626"/><text x="72" y="631" font-size="17">Contact requests in groups</text><use href="#t-off" x="313" y="610"/>
+    <path d="M72,648 H374" stroke="#c6c6c8" stroke-width="0.5"/>
+    <use href="#i-person2" x="46" y="670"/><text x="72" y="675" font-size="17">Group invitations</text><use href="#t-off" x="313" y="654"/>
+    <text x="36" y="712" font-size="13" fill="#8a8a8e">These settings are for your current profile <tspan font-weight="700">Anna</tspan>.</text>
+
+    <rect x="16" y="740" width="358" height="44" rx="10" fill="#ffffff"/>
+    <use href="#i-dots" x="46" y="762"/><text x="72" y="767" font-size="17">More privacy</text><text x="362" y="767" font-size="17" fill="#c7c7cc">›</text>
+  </g>
+
+  <g transform="translate(430,36)">
+    <rect width="390" height="854" rx="24" fill="#f2f2f7" stroke="#d0d5d4"/>
+    <text x="16" y="36" font-size="17" fill="#0088ff">‹ Your settings</text>
+    <text x="20" y="84" font-size="32" font-weight="700">Your privacy</text>
+
+    <text x="36" y="122" font-size="13" fill="#8a8a8e">DEVICE</text>
+    <rect x="16" y="132" width="358" height="132" rx="10" fill="#ffffff"/>
+    <use href="#i-lock" x="46" y="156"/><text x="72" y="159" font-size="17">SimpleX Lock</text><text x="350" y="159" font-size="17" fill="#8a8a8e" text-anchor="end">Off</text><text x="362" y="159" font-size="17" fill="#c7c7cc">›</text>
+    <path d="M72,176 H374" stroke="#c6c6c8" stroke-width="0.5"/>
+    <use href="#i-eye" x="46" y="198"/><text x="72" y="203" font-size="17">Protect app screen</text><use href="#t-off" x="313" y="182"/>
+    <path d="M72,220 H374" stroke="#c6c6c8" stroke-width="0.5"/>
+    <use href="#i-hand" x="46" y="242"/><text x="72" y="247" font-size="17">Parental controls</text><text x="350" y="247" font-size="17" fill="#8a8a8e" text-anchor="end">On</text><text x="362" y="247" font-size="17" fill="#c7c7cc">›</text>
+    <rect x="18" y="222" width="354" height="40" rx="8" fill="none" stroke="#17708a" stroke-width="1.4" stroke-dasharray="5 3"/>
+
+    <text x="36" y="294" font-size="13" fill="#8a8a8e">CHATS</text>
+    <rect x="16" y="304" width="358" height="132" rx="10" fill="#ffffff"/>
+    <use href="#i-globe" x="46" y="326"/><text x="72" y="331" font-size="17">Send link previews</text><use href="#t-on" x="313" y="310"/>
+    <path d="M72,348 H374" stroke="#c6c6c8" stroke-width="0.5"/>
+    <g opacity="0.4"><use href="#i-search" x="46" y="370"/><text x="72" y="375" font-size="17">Directory search</text><use href="#t-off" x="313" y="354"/></g>
+    <path d="M72,392 H374" stroke="#c6c6c8" stroke-width="0.5"/>
+    <use href="#i-link" x="46" y="414"/><text x="72" y="419" font-size="17">Remove link tracking</text><use href="#t-off" x="313" y="398"/>
+    <text x="36" y="456" font-size="13" fill="#8a8a8e">Directory search: turned off by parental controls.</text>
+    <rect x="28" y="442" width="334" height="22" rx="6" fill="none" stroke="#17708a" stroke-width="1.4" stroke-dasharray="5 3"/>
+
+    <text x="36" y="494" font-size="13" fill="#8a8a8e">FILES</text>
+    <rect x="16" y="504" width="358" height="88" rx="10" fill="#ffffff"/>
+    <use href="#i-photo" x="46" y="526"/><text x="72" y="531" font-size="17">Auto-accept images</text><use href="#t-on" x="313" y="510"/>
+    <path d="M72,548 H374" stroke="#c6c6c8" stroke-width="0.5"/>
+    <use href="#i-blur" x="46" y="570"/><text x="72" y="575" font-size="17">Blur media</text><text x="350" y="575" font-size="17" fill="#8a8a8e" text-anchor="end">Off</text><use href="#i-updown" x="362" y="570"/>
+
+    <text x="36" y="622" font-size="13" fill="#8a8a8e">AUTO-ACCEPT</text>
+    <rect x="16" y="632" width="358" height="88" rx="10" fill="#ffffff"/>
+    <use href="#i-person" x="46" y="654"/><text x="72" y="659" font-size="17">Contact requests in groups</text><use href="#t-off" x="313" y="638"/>
+    <path d="M72,676 H374" stroke="#c6c6c8" stroke-width="0.5"/>
+    <use href="#i-person2" x="46" y="698"/><text x="72" y="703" font-size="17">Group invitations</text><use href="#t-off" x="313" y="682"/>
+    <text x="36" y="740" font-size="13" fill="#8a8a8e">These settings are for your current profile <tspan font-weight="700">Anna</tspan>.</text>
+    <text x="36" y="760" font-size="13" fill="#8a8a8e">Contact requests in groups: paused by parental controls.</text>
+    <text x="36" y="778" font-size="13" fill="#8a8a8e">Group invitations: paused by parental controls.</text>
+    <rect x="28" y="746" width="346" height="40" rx="6" fill="none" stroke="#17708a" stroke-width="1.4" stroke-dasharray="5 3"/>
+
+    <rect x="16" y="802" width="358" height="44" rx="10" fill="#ffffff"/>
+    <use href="#i-dots" x="46" y="824"/><text x="72" y="829" font-size="17">More privacy</text><text x="362" y="829" font-size="17" fill="#c7c7cc">›</text>
+  </g>
+
+  <text x="0" y="916" font-size="12" fill="#56625f">Dashed outline: new. From PrivacySettings.swift at master 85ba221d7; the Directory search row is added by pull request 7881 (e90838ea9).</text>
+</svg>

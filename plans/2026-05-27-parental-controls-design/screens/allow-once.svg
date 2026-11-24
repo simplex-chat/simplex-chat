@@ -1,0 +1,89 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="600" viewBox="0 0 960 600" font-family="-apple-system, 'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif" fill="#000000">
+  <title>Turned off by parental controls, and Allow once</title>
+  <rect width="960" height="600" fill="#ffffff"/>
+
+  <text x="0" y="22" font-size="15" font-weight="600" fill="#162120">1. Connecting to someone new</text>
+  <text x="330" y="22" font-size="15" font-weight="600" fill="#162120">2. After the PIN: the contact's name</text>
+  <text x="660" y="22" font-size="15" font-weight="600" fill="#162120">3. After the PIN: the group's name</text>
+  <text x="0" y="318" font-size="15" font-weight="600" fill="#162120">4. A link with no name: no Allow once</text>
+  <text x="330" y="318" font-size="15" font-weight="600" fill="#162120">5. Joining a group</text>
+  <text x="660" y="318" font-size="15" font-weight="600" fill="#162120">6. Any other switch</text>
+
+  <g transform="translate(0,36)">
+    <rect width="300" height="240" rx="12" fill="#8f8f93"/>
+    <rect x="15" y="44" width="270" height="152" rx="14" fill="#f2f2f2"/>
+    <text x="150" y="74" font-size="17" font-weight="600" text-anchor="middle">Turned off by</text>
+    <text x="150" y="95" font-size="17" font-weight="600" text-anchor="middle">parental controls</text>
+    <text x="150" y="118" font-size="13" text-anchor="middle">Connecting to new people is off.</text>
+    <text x="150" y="135" font-size="13" text-anchor="middle">A parent can allow it once.</text>
+    <path d="M15,152 H285 M150,152 V196" stroke="#c6c6c8" stroke-width="0.6"/>
+    <text x="82" y="180" font-size="17" fill="#0088ff" text-anchor="middle">Cancel</text>
+    <text x="218" y="180" font-size="17" fill="#0088ff" text-anchor="middle" font-weight="600">Allow once</text>
+    <rect x="11" y="40" width="278" height="160" rx="16" fill="none" stroke="#17708a" stroke-width="1.4" stroke-dasharray="5 3"/>
+  </g>
+
+  <g transform="translate(330,36)">
+    <rect width="300" height="240" rx="12" fill="#8f8f93"/>
+    <rect x="15" y="54" width="270" height="132" rx="14" fill="#f2f2f2"/>
+    <text x="150" y="85" font-size="17" font-weight="600" text-anchor="middle">Allow once?</text>
+    <text x="150" y="108" font-size="13" text-anchor="middle">Connect to <tspan font-weight="700">Alice Smith</tspan>.</text>
+    <text x="150" y="125" font-size="13" text-anchor="middle">The contact chose this name.</text>
+    <path d="M15,142 H285 M150,142 V186" stroke="#c6c6c8" stroke-width="0.6"/>
+    <text x="82" y="170" font-size="17" fill="#0088ff" text-anchor="middle">Cancel</text>
+    <text x="218" y="170" font-size="17" fill="#0088ff" text-anchor="middle" font-weight="600">Allow</text>
+    <rect x="11" y="50" width="278" height="140" rx="16" fill="none" stroke="#17708a" stroke-width="1.4" stroke-dasharray="5 3"/>
+  </g>
+
+  <g transform="translate(660,36)">
+    <rect width="300" height="240" rx="12" fill="#8f8f93"/>
+    <rect x="15" y="45" width="270" height="150" rx="14" fill="#f2f2f2"/>
+    <text x="150" y="76" font-size="17" font-weight="600" text-anchor="middle">Allow once?</text>
+    <text x="150" y="99" font-size="13" text-anchor="middle">Join the group <tspan font-weight="700">Mathematics olympiad</tspan></text>
+    <text x="150" y="116" font-size="13" text-anchor="middle"><tspan font-weight="700">training, Year 9 (2026–27)</tspan>.</text>
+    <text x="150" y="133" font-size="13" text-anchor="middle">Its owners chose this name.</text>
+    <path d="M15,151 H285 M150,151 V195" stroke="#c6c6c8" stroke-width="0.6"/>
+    <text x="82" y="179" font-size="17" fill="#0088ff" text-anchor="middle">Cancel</text>
+    <text x="218" y="179" font-size="17" fill="#0088ff" text-anchor="middle" font-weight="600">Allow</text>
+    <rect x="11" y="41" width="278" height="158" rx="16" fill="none" stroke="#17708a" stroke-width="1.4" stroke-dasharray="5 3"/>
+  </g>
+
+  <g transform="translate(0,332)">
+    <rect width="300" height="240" rx="12" fill="#8f8f93"/>
+    <rect x="15" y="35" width="270" height="170" rx="14" fill="#f2f2f2"/>
+    <text x="150" y="65" font-size="17" font-weight="600" text-anchor="middle">Turned off by</text>
+    <text x="150" y="86" font-size="17" font-weight="600" text-anchor="middle">parental controls</text>
+    <text x="150" y="109" font-size="13" text-anchor="middle">Connecting to new people is off. This</text>
+    <text x="150" y="126" font-size="13" text-anchor="middle">link has no name in it, so it can't be</text>
+    <text x="150" y="143" font-size="13" text-anchor="middle">allowed once: ask for a new link.</text>
+    <path d="M15,161 H285" stroke="#c6c6c8" stroke-width="0.6"/>
+    <text x="150" y="189" font-size="17" fill="#0088ff" text-anchor="middle" font-weight="600">OK</text>
+    <rect x="11" y="31" width="278" height="178" rx="16" fill="none" stroke="#17708a" stroke-width="1.4" stroke-dasharray="5 3"/>
+  </g>
+
+  <g transform="translate(330,332)">
+    <rect width="300" height="240" rx="12" fill="#8f8f93"/>
+    <rect x="15" y="44" width="270" height="152" rx="14" fill="#f2f2f2"/>
+    <text x="150" y="74" font-size="17" font-weight="600" text-anchor="middle">Turned off by</text>
+    <text x="150" y="95" font-size="17" font-weight="600" text-anchor="middle">parental controls</text>
+    <text x="150" y="118" font-size="13" text-anchor="middle">Joining groups and channels is off.</text>
+    <text x="150" y="135" font-size="13" text-anchor="middle">A parent can allow it once.</text>
+    <path d="M15,152 H285 M150,152 V196" stroke="#c6c6c8" stroke-width="0.6"/>
+    <text x="82" y="180" font-size="17" fill="#0088ff" text-anchor="middle">Cancel</text>
+    <text x="218" y="180" font-size="17" fill="#0088ff" text-anchor="middle" font-weight="600">Allow once</text>
+    <rect x="11" y="40" width="278" height="160" rx="16" fill="none" stroke="#17708a" stroke-width="1.4" stroke-dasharray="5 3"/>
+  </g>
+
+  <g transform="translate(660,332)">
+    <rect width="300" height="240" rx="12" fill="#8f8f93"/>
+    <rect x="15" y="44" width="270" height="152" rx="14" fill="#f2f2f2"/>
+    <text x="150" y="74" font-size="17" font-weight="600" text-anchor="middle">Turned off by</text>
+    <text x="150" y="95" font-size="17" font-weight="600" text-anchor="middle">parental controls</text>
+    <text x="150" y="118" font-size="13" text-anchor="middle">Calls are off. A parent can change</text>
+    <text x="150" y="135" font-size="13" text-anchor="middle">this in Parental controls.</text>
+    <path d="M15,152 H285" stroke="#c6c6c8" stroke-width="0.6"/>
+    <text x="150" y="180" font-size="17" fill="#0088ff" text-anchor="middle" font-weight="600">OK</text>
+    <rect x="11" y="40" width="278" height="160" rx="16" fill="none" stroke="#17708a" stroke-width="1.4" stroke-dasharray="5 3"/>
+  </g>
+
+  <text x="0" y="592" font-size="12" fill="#56625f">System alerts, as the app's other alerts (showAlert). "Allow once" asks for the PIN, then shows panel 2 or 3; "Allow" lets that one connection go through.</text>
+</svg>
