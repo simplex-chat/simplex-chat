@@ -7,6 +7,7 @@ This file is generated automatically.
 - [AChatItem](#achatitem)
 - [AChatItemUpdate](#achatitemupdate)
 - [AddRelayResult](#addrelayresult)
+- [AddressChecksum](#addresschecksum)
 - [AddressSettings](#addresssettings)
 - [AgentCryptoError](#agentcryptoerror)
 - [AgentErrorType](#agenterrortype)
@@ -140,6 +141,7 @@ This file is generated automatically.
 - [InvitationLinkPlan](#invitationlinkplan)
 - [InvitedBy](#invitedby)
 - [KeepAliveOpts](#keepaliveopts)
+- [LightningPayee](#lightningpayee)
 - [LinkContent](#linkcontent)
 - [LinkOwnerSig](#linkownersig)
 - [LinkPreview](#linkpreview)
@@ -173,6 +175,9 @@ This file is generated automatically.
 - [OperatorTag](#operatortag)
 - [OwnerVerification](#ownerverification)
 - [PaginationByTime](#paginationbytime)
+- [PaymentNetwork](#paymentnetwork)
+- [PaymentPayee](#paymentpayee)
+- [PaymentRequest](#paymentrequest)
 - [PendingContactConnection](#pendingcontactconnection)
 - [PlanResolveMode](#planresolvemode)
 - [PrefEnabled](#prefenabled)
@@ -312,6 +317,15 @@ Updated message, with the message before the update.
 **Record type**:
 - relay: [UserChatRelay](#userchatrelay)
 - relayError: [ChatError](#chaterror)?
+
+
+---
+
+## AddressChecksum
+
+**Enum type**:
+- "verified"
+- "unchecked"
 
 
 ---
@@ -2540,6 +2554,11 @@ SimplexName:
 - type: "simplexName"
 - nameInfo: [SimplexNameInfo](#simplexnameinfo)
 
+PaymentLink:
+- type: "paymentLink"
+- showText: string?
+- payment: [PaymentRequest](#paymentrequest)
+
 Command:
 - type: "command"
 - commandStr: string
@@ -3135,6 +3154,28 @@ Unknown:
 
 ---
 
+## LightningPayee
+
+**Discriminated union type**:
+
+Invoice:
+- type: "invoice"
+- invoice: string
+- description: string?
+- expiresAt: UTCTime
+
+Offer:
+- type: "offer"
+- offer: string
+
+Lnurl:
+- type: "lnurl"
+- lnurl: string
+- host: string
+
+
+---
+
 ## LinkContent
 
 **Discriminated union type**:
@@ -3670,6 +3711,71 @@ count=<count>
 ```python
 'count=' + str(count) # Python
 ```
+
+
+---
+
+## PaymentNetwork
+
+**Discriminated union type**:
+
+Bitcoin:
+- type: "bitcoin"
+
+Ethereum:
+- type: "ethereum"
+- chainId: int64?
+
+Monero:
+- type: "monero"
+
+Zcash:
+- type: "zcash"
+
+Solana:
+- type: "solana"
+
+Litecoin:
+- type: "litecoin"
+
+Dogecoin:
+- type: "dogecoin"
+
+BitcoinCash:
+- type: "bitcoinCash"
+
+
+---
+
+## PaymentPayee
+
+**Discriminated union type**:
+
+Address:
+- type: "address"
+- network: [PaymentNetwork](#paymentnetwork)
+- address: string
+- checksum: [AddressChecksum](#addresschecksum)
+
+Lightning:
+- type: "lightning"
+- lightning: [LightningPayee](#lightningpayee)
+
+
+---
+
+## PaymentRequest
+
+Payment URI or address in a message text. amount: in coins of the network; with token, in base units of the ERC-20 token or in units of the SPL token. walletUri: the URI to open in a wallet.
+
+**Record type**:
+- payee: [PaymentPayee](#paymentpayee)
+- alternatives: [[LightningPayee](#lightningpayee)]
+- amount: string?
+- token: string?
+- label: string?
+- message: string?
+- walletUri: string
 
 
 ---

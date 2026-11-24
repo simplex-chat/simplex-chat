@@ -29,6 +29,11 @@ export interface AddRelayResult {
   relayError?: ChatError
 }
 
+export enum AddressChecksum {
+  Verified = "verified",
+  Unchecked = "unchecked",
+}
+
 export interface AddressSettings {
   businessAddress: boolean
   autoAccept?: AutoAccept
@@ -2791,6 +2796,7 @@ export type Format =
   | Format.HyperLink
   | Format.SimplexLink
   | Format.SimplexName
+  | Format.PaymentLink
   | Format.Command
   | Format.Mention
   | Format.Email
@@ -2811,6 +2817,7 @@ export namespace Format {
     | "hyperLink"
     | "simplexLink"
     | "simplexName"
+    | "paymentLink"
     | "command"
     | "mention"
     | "email"
@@ -2873,6 +2880,12 @@ export namespace Format {
   export interface SimplexName extends Interface {
     type: "simplexName"
     nameInfo: SimplexNameInfo
+  }
+
+  export interface PaymentLink extends Interface {
+    type: "paymentLink"
+    showText?: string
+    payment: PaymentRequest
   }
 
   export interface Command extends Interface {
@@ -3406,6 +3419,34 @@ export interface KeepAliveOpts {
   keepIdle: number // int
   keepIntvl: number // int
   keepCnt: number // int
+}
+
+export type LightningPayee = LightningPayee.Invoice | LightningPayee.Offer | LightningPayee.Lnurl
+
+export namespace LightningPayee {
+  export type Tag = "invoice" | "offer" | "lnurl"
+
+  interface Interface {
+    type: Tag
+  }
+
+  export interface Invoice extends Interface {
+    type: "invoice"
+    invoice: string
+    description?: string
+    expiresAt: string // ISO-8601 timestamp
+  }
+
+  export interface Offer extends Interface {
+    type: "offer"
+    offer: string
+  }
+
+  export interface Lnurl extends Interface {
+    type: "lnurl"
+    lnurl: string
+    host: string
+  }
 }
 
 export type LinkContent = LinkContent.Page | LinkContent.Image | LinkContent.Video | LinkContent.Unknown
@@ -3978,6 +4019,98 @@ export namespace PaginationByTime {
   export function cmdString(self: PaginationByTime): string {
     return 'count=' + self.count
   }
+}
+
+export type PaymentNetwork = 
+  | PaymentNetwork.Bitcoin
+  | PaymentNetwork.Ethereum
+  | PaymentNetwork.Monero
+  | PaymentNetwork.Zcash
+  | PaymentNetwork.Solana
+  | PaymentNetwork.Litecoin
+  | PaymentNetwork.Dogecoin
+  | PaymentNetwork.BitcoinCash
+
+export namespace PaymentNetwork {
+  export type Tag = 
+    | "bitcoin"
+    | "ethereum"
+    | "monero"
+    | "zcash"
+    | "solana"
+    | "litecoin"
+    | "dogecoin"
+    | "bitcoinCash"
+
+  interface Interface {
+    type: Tag
+  }
+
+  export interface Bitcoin extends Interface {
+    type: "bitcoin"
+  }
+
+  export interface Ethereum extends Interface {
+    type: "ethereum"
+    chainId?: number // int64
+  }
+
+  export interface Monero extends Interface {
+    type: "monero"
+  }
+
+  export interface Zcash extends Interface {
+    type: "zcash"
+  }
+
+  export interface Solana extends Interface {
+    type: "solana"
+  }
+
+  export interface Litecoin extends Interface {
+    type: "litecoin"
+  }
+
+  export interface Dogecoin extends Interface {
+    type: "dogecoin"
+  }
+
+  export interface BitcoinCash extends Interface {
+    type: "bitcoinCash"
+  }
+}
+
+export type PaymentPayee = PaymentPayee.Address | PaymentPayee.Lightning
+
+export namespace PaymentPayee {
+  export type Tag = "address" | "lightning"
+
+  interface Interface {
+    type: Tag
+  }
+
+  export interface Address extends Interface {
+    type: "address"
+    network: PaymentNetwork
+    address: string
+    checksum: AddressChecksum
+  }
+
+  export interface Lightning extends Interface {
+    type: "lightning"
+    lightning: LightningPayee
+  }
+}
+// Payment URI or address in a message text. amount: in coins of the network; with token, in base units of the ERC-20 token or in units of the SPL token. walletUri: the URI to open in a wallet.
+
+export interface PaymentRequest {
+  payee: PaymentPayee
+  alternatives: LightningPayee[]
+  amount?: string
+  token?: string
+  label?: string
+  message?: string
+  walletUri: string
 }
 
 export interface PendingContactConnection {

@@ -27,6 +27,8 @@ class AddRelayResult(TypedDict):
     relay: "UserChatRelay"
     relayError: NotRequired["ChatError"]
 
+AddressChecksum = Literal["verified", "unchecked"]
+
 class AddressSettings(TypedDict):
     businessAddress: bool
     autoAccept: NotRequired["AutoAccept"]
@@ -2002,6 +2004,11 @@ class Format_simplexName(TypedDict):
     type: Literal["simplexName"]
     nameInfo: "SimplexNameInfo"
 
+class Format_paymentLink(TypedDict):
+    type: Literal["paymentLink"]
+    showText: NotRequired[str]
+    payment: "PaymentRequest"
+
 class Format_command(TypedDict):
     type: Literal["command"]
     commandStr: str
@@ -2035,6 +2042,7 @@ Format = (
     | Format_hyperLink
     | Format_simplexLink
     | Format_simplexName
+    | Format_paymentLink
     | Format_command
     | Format_mention
     | Format_email
@@ -2043,7 +2051,7 @@ Format = (
     | Format_markup
 )
 
-Format_Tag = Literal["bold", "italic", "strikeThrough", "snippet", "secret", "small", "colored", "uri", "hyperLink", "simplexLink", "simplexName", "command", "mention", "email", "phone", "escape", "markup"]
+Format_Tag = Literal["bold", "italic", "strikeThrough", "snippet", "secret", "small", "colored", "uri", "hyperLink", "simplexLink", "simplexName", "paymentLink", "command", "mention", "email", "phone", "escape", "markup"]
 
 class FormattedText(TypedDict):
     format: NotRequired["Format"]
@@ -2391,6 +2399,25 @@ class KeepAliveOpts(TypedDict):
     keepIdle: int  # int
     keepIntvl: int  # int
     keepCnt: int  # int
+
+class LightningPayee_invoice(TypedDict):
+    type: Literal["invoice"]
+    invoice: str
+    description: NotRequired[str]
+    expiresAt: str  # ISO-8601 timestamp
+
+class LightningPayee_offer(TypedDict):
+    type: Literal["offer"]
+    offer: str
+
+class LightningPayee_lnurl(TypedDict):
+    type: Literal["lnurl"]
+    lnurl: str
+    host: str
+
+LightningPayee = LightningPayee_invoice | LightningPayee_offer | LightningPayee_lnurl
+
+LightningPayee_Tag = Literal["invoice", "offer", "lnurl"]
 
 class LinkContent_page(TypedDict):
     type: Literal["page"]
@@ -2791,6 +2818,69 @@ PaginationByTime_Tag = Literal["last"]
 
 def PaginationByTime_cmd_string(self: PaginationByTime) -> str:
     return 'count=' + str(self['count'])  # type: ignore[typeddict-item]
+
+class PaymentNetwork_bitcoin(TypedDict):
+    type: Literal["bitcoin"]
+
+class PaymentNetwork_ethereum(TypedDict):
+    type: Literal["ethereum"]
+    chainId: NotRequired[int]  # int64
+
+class PaymentNetwork_monero(TypedDict):
+    type: Literal["monero"]
+
+class PaymentNetwork_zcash(TypedDict):
+    type: Literal["zcash"]
+
+class PaymentNetwork_solana(TypedDict):
+    type: Literal["solana"]
+
+class PaymentNetwork_litecoin(TypedDict):
+    type: Literal["litecoin"]
+
+class PaymentNetwork_dogecoin(TypedDict):
+    type: Literal["dogecoin"]
+
+class PaymentNetwork_bitcoinCash(TypedDict):
+    type: Literal["bitcoinCash"]
+
+PaymentNetwork = (
+    PaymentNetwork_bitcoin
+    | PaymentNetwork_ethereum
+    | PaymentNetwork_monero
+    | PaymentNetwork_zcash
+    | PaymentNetwork_solana
+    | PaymentNetwork_litecoin
+    | PaymentNetwork_dogecoin
+    | PaymentNetwork_bitcoinCash
+)
+
+PaymentNetwork_Tag = Literal["bitcoin", "ethereum", "monero", "zcash", "solana", "litecoin", "dogecoin", "bitcoinCash"]
+
+class PaymentPayee_address(TypedDict):
+    type: Literal["address"]
+    network: "PaymentNetwork"
+    address: str
+    checksum: "AddressChecksum"
+
+class PaymentPayee_lightning(TypedDict):
+    type: Literal["lightning"]
+    lightning: "LightningPayee"
+
+PaymentPayee = PaymentPayee_address | PaymentPayee_lightning
+
+PaymentPayee_Tag = Literal["address", "lightning"]
+
+# Payment URI or address in a message text. amount: in coins of the network; with token, in base units of the ERC-20 token or in units of the SPL token. walletUri: the URI to open in a wallet.
+
+class PaymentRequest(TypedDict):
+    payee: "PaymentPayee"
+    alternatives: list["LightningPayee"]
+    amount: NotRequired[str]
+    token: NotRequired[str]
+    label: NotRequired[str]
+    message: NotRequired[str]
+    walletUri: str
 
 class PendingContactConnection(TypedDict):
     pccConnId: int  # int64
