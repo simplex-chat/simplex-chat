@@ -65,7 +65,7 @@ export const sessionApproverRoles: T.GroupMemberRole[] = [T.GroupMemberRole.Admi
 const roleOrder: T.GroupMemberRole[] = [T.GroupMemberRole.Relay, T.GroupMemberRole.Observer, T.GroupMemberRole.Author, T.GroupMemberRole.Member, T.GroupMemberRole.Moderator, T.GroupMemberRole.Admin, T.GroupMemberRole.Owner]
 
 // spec: spec/api.md#control-commands
-const commandsHelp = `/'approve N' or /'approve CHAT N' performs pending action N, other than a download; /'approve CHAT all' approves all sends to CHAT.
+const commandsHelp = `/'approve N' or /'approve CHAT N' performs pending action N when its card offers it; /'approve CHAT all' approves all sends to CHAT.
 /'reject N' or /'reject CHAT N' rejects pending action N.
 /'receive CHAT N' downloads the file of pending download N; /'receive CHAT N all' also approves later files from CHAT on the agent's XFTP servers.
 /'forward CHAT N' sends you the file of pending download N here.

@@ -351,7 +351,7 @@ Schedule 1 of #3 removed by Alice.
 The agent answers `/help` with the commands, one line each:
 
 ```
-My Agent: /approve N or /approve CHAT N performs pending action N, other than a download; /approve CHAT all approves all sends to CHAT.
+My Agent: /approve N or /approve CHAT N performs pending action N when its card offers it; /approve CHAT all approves all sends to CHAT.
           /reject N or /reject CHAT N rejects pending action N.
           ...
           /help COMMAND shows how to use COMMAND, such as /help schedule.

@@ -555,7 +555,7 @@ agent's
 /unschedule CHAT N                          Schedule 2 of group Builders (#3) is removed.
 /unschedule CHAT N, no schedule N           #3 has no schedule 4.
 /schedules, no schedules                    No schedules.
-/help                                       /'approve N' or /'approve CHAT N' performs pending action N, other than a download; /'approve CHAT all' approves all sends to CHAT.
+/help                                       /'approve N' or /'approve CHAT N' performs pending action N when its card offers it; /'approve CHAT all' approves all sends to CHAT.
                                             ... one line per command ...
                                             /'help COMMAND' shows how to use COMMAND, such as /'help schedule'.
 /help COMMAND, COMMAND a keyword of the     its help text, such as for /help revoke:

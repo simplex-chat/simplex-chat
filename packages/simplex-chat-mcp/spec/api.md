@@ -832,7 +832,7 @@ Commands and replies are those of [2.1](#21-commands-and-replies), from approver
 | `/give CHAT N` | no session N | `No session N. /sessions in the Main group lists the sessions.` | [`Control.give`](../src/control.ts) |
 | `/give CHAT N` | accepted: CHAT's owner is set to session N; the schedules of CHAT are moved from the `Schedules` of this session to those of session N, without their due prompts; the pending actions of CHAT with a card are rejected by the sender | `Gave KIND NAME (CHAT) to session N.` | [`Control.give`](../src/control.ts) |
 | `/list`, `/revoke CHAT`, `/leave CHAT` | | only the chats of this session, even while the session is closed | [`AgentTools.agentChats`, `knownChat`](../src/tools.ts) |
-| `/give CHAT N` in the control chat of `serve` | any sender | the help reply, as in 0.2 | [`Control.ownerCommand`, `ownerRequest`](../src/control.ts) |
+| `/give CHAT N` in the control chat of `serve` | any sender | the commands reply, as in 0.2 | [`Control.ownerCommand`, `ownerRequest`](../src/control.ts) |
 | `/observer #G ID` | #G is not this group | `#G is not this group.` | [`Control.setObserver`](../src/control.ts) |
 | `/observer #G ID` | member ID is neither current nor pending, as it is absent, gone, or invited and not joined yet | `No member ID in this group.` | [`Control.setObserver`](../src/control.ts), [`memberCurrent`, `memberCurrentOrPending`](../src/tools.ts) |
 | `/observer #G ID` | ID is Claude, the sender, a relay or a member pending approval or review | `NAME's role can't be changed.` | [`Control.setObserver`](../src/control.ts) |

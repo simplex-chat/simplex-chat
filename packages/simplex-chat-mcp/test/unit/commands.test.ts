@@ -968,7 +968,7 @@ describe("help", () => {
   it("lists the commands of the commands reply in its order, one line each, to every member", async () => {
     const {control} = await setup()
     const lines = [
-      "/'approve N' or /'approve CHAT N' performs pending action N, other than a download; /'approve CHAT all' approves all sends to CHAT.",
+      "/'approve N' or /'approve CHAT N' performs pending action N when its card offers it; /'approve CHAT all' approves all sends to CHAT.",
       "/'reject N' or /'reject CHAT N' rejects pending action N.",
       "/'receive CHAT N' downloads the file of pending download N; /'receive CHAT N all' also approves later files from CHAT on the agent's XFTP servers.",
       "/'forward CHAT N' sends you the file of pending download N here.",
