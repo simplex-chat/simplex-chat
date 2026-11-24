@@ -631,7 +631,7 @@ testLnOrder = withOrders $ \ctx -> do
   stubCalls (cStub ctx) >>= \case
     [StubCreate method _] -> method `shouldBe` SPMCrypto CCLn
     other -> expectationFailure ("provider calls: " <> show other)
-  nrPayment <$> invoiceRegistration ctx invId `shouldReturn` RPInvoice (SPMCrypto CCLn) invId
+  nrPayment <$> invoiceRegistration ctx invId `shouldReturn` OPInvoice (SPMCrypto CCLn) invId
 
 testExactResend :: IO ()
 testExactResend = withOrders $ \ctx -> do

@@ -519,7 +519,7 @@ testLnAlertUnits = withLate $ \l@Late {lStore = st} -> do
   withTransaction st $ \db -> DB.execute_ db "UPDATE sx_badge_service_invoices SET payment_crypto_currency = 'ln' WHERE invoice_id = 'inv-lnfloor'"
   let floored = rateOf "31000" 31000
   setRate l (Right floored)
-  settleAt l "lnfloor" (SigClosed (btcPaid lateUnits lateUnits) PaidInPart) (at 70) `shouldReturn` Right ISExpired
+  settleAt l "lnfloor" (SigClosed (btcPaid lateUnits lateUnits) PaidInPart) (at 70) `shouldReturn` ISExpired
   void $ passAt l (at 71)
   alertsAt l (Right floored) (pastWindow (at 70) 60)
     >>= (`shouldSatisfy` logged "ERROR" "invoice ref-inv-lnfloor: 320000 millisatoshi received, 320000 millisatoshi confirmed, 0 millisatoshi credited; confirmed; the coin's price fell by more than half since the invoice (62500, 31000); it is never credited by itself; refund the Lightning payment by hand; it is found among the node's settled invoices by its BOLT11")

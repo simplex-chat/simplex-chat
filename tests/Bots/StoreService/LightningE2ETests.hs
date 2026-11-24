@@ -25,7 +25,7 @@ import Simplex.Chat.Badges.Types (BadgeCodePaymentStatus (..))
 import Simplex.Chat.PaymentService.Types (CryptoCurrency (..), InvoiceId (..), InvoiceStatus (..), PaymentProvider (..), ServicePaymentMethod (..))
 import StoreService.Config (BTCPayConfig (..), ListenerConfig (..), ServiceConfig (..))
 import StoreService.Names.Orders (OrdersEnv (..))
-import StoreService.Names.Store (NamePhase (..), NameRegistration (..), RegistrationPayment (..))
+import StoreService.Names.Store (NameRegistration (..), OrderPayment (..), OrderPhase (..))
 import StoreService.Poller (PollerEnv, drainHints, newPollerEnv, runOnePass)
 import StoreService.Providers (Provider (..))
 import StoreService.Providers.BTCPay (btcMethodId, btcpayProvider, lnMethodId, xmrMethodId)
@@ -217,13 +217,13 @@ testNamePaid stack = withService stack $ \ctx@Ctx {cClient} poller -> do
     (invId, order) <- placed ctx aliceOrder {oMethod = "ln"}
     fieldOf order "cryptoCurrency" `shouldBe` Just (J.String "ln")
     fieldOf order "requiredConfirmations" `shouldBe` Nothing
-    nrPayment <$> invoiceRegistration ctx invId `shouldReturn` RPInvoice (SPMCrypto CCLn) invId
+    nrPayment <$> invoiceRegistration ctx invId `shouldReturn` OPInvoice (SPMCrypto CCLn) invId
     bolt11 <- stringField order "address"
     bolt11 `shouldSatisfy` T.isPrefixOf bolt11Prefix
     payBolt11 stack ctx bolt11
     awaitInvoice ctx invId (drainHints poller) ((== ISPaid) . irStatus)
-    nrPhase <$> invoiceRegistration ctx invId `shouldReturn` PQueued
+    nrPhase <$> invoiceRegistration ctx invId `shouldReturn` OQueued
     paid <- viewInvoice cClient invId
-    (fieldOf paid "status", fieldOf (registrationOf paid) "phase") `shouldBe` (Just (J.String "paid"), Just (J.String "queued"))
+    (fieldOf paid "status", fieldOf (registrationOf paid) "phase") `shouldBe` (Just (J.String "paid"), Just (J.object ["type" .= ("queued" :: Text)]))
     providerRefOf ctx invId
   logs `shouldSatisfy` T.isInfixOf ("queued a read of " <> ref)
