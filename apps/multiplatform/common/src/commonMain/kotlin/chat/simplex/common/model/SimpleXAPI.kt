@@ -787,6 +787,15 @@ object ChatController {
     return migrationActiveUser
   }
 
+  suspend fun stopChatWithTemporaryDatabase(ctrl: ChatCtrl) {
+    try {
+      apiStopChat(ctrl)
+    } catch (e: Exception) {
+      Log.e(TAG, "Error stopping chat in temporary database: ${e.stackTraceToString()}")
+    }
+    chatCloseStore(ctrl)
+  }
+
   suspend fun changeActiveUser(rhId: Long?, toUserId: Long, viewPwd: String?) {
     try {
       changeActiveUser_(rhId, toUserId, viewPwd)
@@ -1143,8 +1152,8 @@ object ChatController {
     }
   }
 
-  suspend fun apiStopChat(): Boolean {
-    val r = sendCmd(null, CC.ApiStopChat())
+  suspend fun apiStopChat(ctrl: ChatCtrl? = null): Boolean {
+    val r = sendCmd(null, CC.ApiStopChat(), ctrl)
     if (r.result is CR.ChatStopped) return true
     throw Exception("failed stopping chat: ${r.responseType} ${r.details}")
   }
