@@ -1,0 +1,47 @@
+{
+  "name": "@simplex-chat/openclaw",
+  "version": "0.1.0",
+  "description": "SimpleX Chat channel for OpenClaw: direct messages over the SimpleX network",
+  "type": "module",
+  "license": "AGPL-3.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/simplex-chat/simplex-chat.git",
+    "directory": "packages/simplex-chat-openclaw"
+  },
+  "dependencies": {
+    "@simplex-chat/types": "^0.10.3",
+    "simplex-chat": "7.0.2"
+  },
+  "allowScripts": {
+    "simplex-chat": true
+  },
+  "peerDependencies": {
+    "openclaw": ">=2026.9.9"
+  },
+  "peerDependenciesMeta": {
+    "openclaw": {
+      "optional": true
+    }
+  },
+  "openclaw": {
+    "extensions": [
+      "./index.ts"
+    ],
+    "channel": {
+      "id": "simplex",
+      "label": "SimpleX",
+      "selectionLabel": "SimpleX Chat",
+      "docsPath": "/channels/simplex",
+      "docsLabel": "simplex",
+      "blurb": "End-to-end encrypted direct messages without phone numbers or user IDs.",
+      "order": 60
+    },
+    "compat": {
+      "pluginApi": ">=2026.9.9"
+    },
+    "build": {
+      "openclawVersion": "2026.9.9"
+    }
+  }
+}
