@@ -64,6 +64,7 @@ imageTests = do
     it "should refuse malformed PNG and other formats" testPngRefused
   describe "WebP decoding" $ do
     it "should decode WebP as libwebp does" testWebpDecoding
+    it "should decode WebP at the display size" testWebpDisplaySize
     it "should decode the first frame of animated WebP" testWebpAnimation
     it "should write the Display P3 profile for Display P3 WebP" testWebpProfile
     it "should apply EXIF orientation of WebP" testWebpOrientation
@@ -359,6 +360,23 @@ testWebpDecoding =
         ("lossy-alpha.webp", (1000, 307), "ea2f149f390aa765e11cb01d29ca3836", "data:image/png;base64,")
       ]
 
+testWebpDisplaySize :: IO ()
+testWebpDisplaySize = do
+  forM_ images $ \(file, size, colour) -> do
+    Right (img, CPNone) <- decodeResizable =<< B.readFile (webpFixture file)
+    imageSize img `shouldBe` size
+    pixelFold (\near _ _ p -> near && closeTo colour p) True (convertRGBA8 img) `shouldBe` True
+  lossy <- B.readFile $ webpFixture "lossy.webp"
+  Right (canvas, CPNone) <- decodeResizable $ webpAnimation (16384, 16384) [((0, 0), (128, 128), lossy)]
+  imageSize canvas `shouldBe` (4096, 4096)
+  where
+    images =
+      [ ("lossy-8641x16.webp", (4320, 8), PixelRGBA8 200 100 50 255),
+        ("lossless-alpha-16383x16.webp", (4096, 4), PixelRGBA8 200 100 50 128),
+        ("lossy-alpha-4321x16.webp", (2160, 8), PixelRGBA8 200 100 50 128)
+      ]
+    closeTo (PixelRGBA8 r g b a) (PixelRGBA8 r' g' b' a') = and $ zipWith (\x y -> abs (fromIntegral x - fromIntegral y :: Int) <= 2) [r, g, b, a] [r', g', b', a']
+
 testWebpAnimation :: IO ()
 testWebpAnimation = do
   lossy <- B.readFile $ webpFixture "lossy.webp"
@@ -413,9 +431,14 @@ testWebpChunksWithoutFlags = do
 testWebpRefused :: IO ()
 testWebpRefused = do
   lossy <- B.readFile $ webpFixture "lossy.webp"
+  lossless <- B.readFile $ webpFixture "lossless-alpha-9000x9000.webp"
+  let paddedTo size = webpContainer [webpVp8x 0 (128, 128), webpChunk "ABCD" $ B.replicate (size - 26 - B.length lossy) 0, B.drop 12 lossy]
+  Right (img, CPNone) <- decodeResizable $ paddedTo $ 16 * 1048576
+  imageSize img `shouldBe` (128, 128)
   forM_
     [ (webpAnimation (16385, 128) [((0, 0), (128, 128), lossy)], "image side exceeds 16384"),
-      (webpAnimation (16384, 16384) [((0, 0), (128, 128), lossy)], "image is too large"),
+      (lossless, "image is too large"),
+      (paddedTo $ 16 * 1048576 + 2, "image file is too large"),
       (B.take (B.length lossy `div` 2) lossy, "invalid WebP container"),
       (B.init lossy, "invalid WebP container"),
       (B.take 4 lossy <> littleEndianInt 4 (B.length lossy - 7) <> B.drop 8 lossy, "invalid WebP container"),
