@@ -1,8 +1,8 @@
 # Chat list, profile switch, member cleanup and chat pages on SQLite and PostgreSQL
 
-Status: implemented on `ep/chat-list-queries`, code at 058c1311d; results in section 7. Branch `ep/chat-list-queries`, stacked on #8314 (`ep/omnibus` e3457510f); #7969 by Narasimha-sc is adopted. Problems of q29 in the review of #8314, decided by the maintainer: "q29 - yes, and also adopt the PR by narasimha-sc that makes loading chat list faster - it improved sqlite but not postgres, need to work on both."
+Status: implemented on `ep/chat-list-queries`, code at eeae6a446; results in section 7. Branch `ep/chat-list-queries`, stacked on #8314 (`ep/omnibus` e3457510f); #7969 by Narasimha-sc is adopted. Problems of q29 in the review of #8314, decided by the maintainer: "q29 - yes, and also adopt the PR by narasimha-sc that makes loading chat list faster - it improved sqlite but not postgres, need to work on both."
 
-Code references: this branch at 5727cc7d5, by file and line. SQLite plans: `chat_query_plans.txt`, and `EXPLAIN QUERY PLAN` of SQLite 3.45.1 on empty databases of each schema. PostgreSQL plans: probe runs of #8314, PostgreSQL 15.20, 1,000,000 chat items: review run https://github.com/evgeny-simplex/simplex-chat/actions/runs/45197482204 (schema ce3673792) and fixes run https://github.com/evgeny-simplex/simplex-chat/actions/runs/45229293446 (schema 582d0058d, equal to `ep/omnibus`); pg-plans run of #7969 https://github.com/Narasimha-sc/simplex-chat/actions/runs/41325761174.
+Code references: this branch at 5727cc7d5, by file and line; the references added with the review fixes, at eeae6a446. SQLite plans: `chat_query_plans.txt`, and `EXPLAIN QUERY PLAN` of SQLite 3.45.1 on empty databases of each schema. PostgreSQL plans: probe runs of #8314, PostgreSQL 15.20, 1,000,000 chat items: review run https://github.com/evgeny-simplex/simplex-chat/actions/runs/45197482204 (schema ce3673792) and fixes run https://github.com/evgeny-simplex/simplex-chat/actions/runs/45229293446 (schema 582d0058d, equal to `ep/omnibus`); pg-plans run of #7969 https://github.com/Narasimha-sc/simplex-chat/actions/runs/41325761174.
 
 ## 1. Problems
 
@@ -126,6 +126,15 @@ DROP INDEX idx_chat_items_groups_msg_content_tag_deleted;
 CREATE INDEX idx_chat_items_groups_msg_content_tag_deleted ON chat_items(user_id, msg_content_tag, item_deleted, group_id, item_sent);
 ```
 
+SQLite only, at the end of the up text, `idx_chat_items_groups_item_viewed` is rebuilt with its columns of `M20260403_item_viewed`:
+
+```sql
+DROP INDEX idx_chat_items_groups_item_viewed;
+CREATE INDEX idx_chat_items_groups_item_viewed ON chat_items(user_id, group_id, item_viewed, item_ts);
+```
+
+Without `sqlite_stat1`, SQLite chooses among indexes of equal estimated cost by their order in the schema, the last created first: an index read from the schema is put first in the list of its table (sqlite3.c:119559 of 3.39.2), and a plan of equal or higher cost than a plan found earlier is discarded (`whereLoopFindLesser`, sqlite3.c:156353). The message search reads of `getAllChatItems` (`/search`, `/tail` and `/last_item_id` without a chat name, `/_get items`) are searched by `user_id` only; among the indexes led by `user_id`, the index created last is used: `idx_chat_items_groups_item_viewed` on `ep/omnibus`, `idx_chat_items_groups_msg_content_tag_deleted` without the rebuild, `idx_chat_items_groups_item_viewed` with it. The down text is unchanged.
+
 Down migration, the definitions of `ep/omnibus`:
 
 ```sql
@@ -172,7 +181,7 @@ CREATE INDEX idx_chat_items_user_id_item_status ON chat_items(user_id, item_stat
 
 `idx_chat_items_user_id_item_status`: dropped.
 
-Indexes of `chat_items` in this change: 4 before, 3 after. Their SQLite bytes at 1,000,000 items: 114.4 MB before, 99.2 MB after.
+Indexes of `chat_items` in this change: 4 before, 3 after. Their SQLite bytes at 1,000,000 items: 114.4 MB before, 99.2 MB after. `idx_chat_items_groups_item_viewed` is rebuilt on SQLite with its columns.
 
 ```mermaid
 flowchart LR
@@ -186,6 +195,7 @@ flowchart LR
   RC["ReportCount"] --> R["idx_chat_items_groups_msg_content_tag_deleted<br>user_id<br>msg_content_tag<br>item_deleted<br>group_id<br>item_sent"]
   RG["report count and archive of one group"] --> R
   U["user_id only: files of a profile, user deletion"] --> T["idx_chat_items_timed_delete_at"]
+  MS["user_id only: message search across chats"] --> V["idx_chat_items_groups_item_viewed<br>rebuilt last on SQLite"]
 ```
 
 Search keys on SQLite:
@@ -197,42 +207,56 @@ Search keys on SQLite:
 | direct ChatStats, 15 texts | `idx_chat_items_contacts (user_id=? AND contact_id>?)` | `idx_chat_items_contacts (user_id=? AND item_status=? AND contact_id>?)` |
 | group ChatStats, 15 texts | `idx_chat_items_group_scope_stats_all (user_id=? AND group_id>?)` | `idx_chat_items_group_scope_stats_all (user_id=? AND item_status=? AND group_id>?)` |
 | ReportCount, 15 texts | `idx_chat_items_groups_msg_content_tag_deleted (user_id=? AND group_id>?)` | `idx_chat_items_groups_msg_content_tag_deleted (user_id=? AND msg_content_tag=? AND item_deleted=? AND group_id>?)` |
+| message search across chats, 3 texts | `idx_chat_items_groups_item_viewed (user_id=?)` | `idx_chat_items_groups_item_viewed (user_id=?)` |
 
 On PostgreSQL each read of this table is expected as an Index Only Scan whose Index Cond includes `item_status` (ReportCount: `msg_content_tag` and `item_deleted`), with `chat_item_id` and `user_mention` read from the index.
 
-Every user of the four indexes: the SQLite plan changes for 77 of 1,011 statements (949 saved in `chat_query_plans.txt`; 62 generated: the 30 chat list texts, the first unread lookup, the page and cleanup texts); the plans of the other 934 are unchanged.
+Every user of the four indexes: the SQLite plan changes for 74 of 1,011 statements (949 saved in `chat_query_plans.txt`; 62 generated: the 30 chat list texts, the first unread lookup, the page and cleanup texts); the plans of the other 937 are unchanged.
 
 | statements | new plan |
 |---|---|
 | 2 users list counts, 52 chat list texts | the keys of the table above |
 | 14 reads of one chat: unread counts of a contact and of a group (3), first unread of a contact, navigation count of a contact, mark read of a contact and of a group (3), unread timed items (3), report count and archive (3) | the same equality columns, in the order of the new index |
-| 5 reads by `user_id` only: message search (3), files of a profile, user deletion | another index keyed by `user_id` |
+| 2 reads by `user_id` only: files of a profile, user deletion | `idx_chat_items_timed_delete_at (user_id=?)` |
 | mark all read (Store/Direct.hs:694) | `idx_chat_items_group_scope_stats_all (user_id=? AND item_status=?)` |
 | `SELECT DISTINCT msg_content_tag` of a group | `idx_chat_items_groups_msg_content_tag_item_ts`, the same key |
-| `getFirstUnreadItemId_`, SQLite text with #7969's `GROUP BY user_id` | `idx_chat_items_group_scope_stats_all (user_id=? AND item_status=?)`: the unread entries of the profile are read in place of one entry; of the clients, only the CLI sends `/_get items initial=` (Commands.hs:6904) |
-| `getFirstUnreadItemId_`, PostgreSQL text | measured by the probe |
+| `getFirstUnreadItemId_`, the text of master | `idx_chat_items_item_status (item_status=?)`: the unread entries of all profiles are read in `chat_item_id` order, each with its table row, up to the first entry of the profile; of the clients, only the CLI sends `/_get items initial=` (Commands.hs:6904) |
+| `getFirstUnreadItemId_` on PostgreSQL | `chat_items_pkey`, as on `ep/omnibus` (section 7) |
 
 Adopted parts of #7969:
-- `GROUP BY user_id` of `getFirstUnreadItemId_` on SQLite: kept.
-- `testUsersUnreadCountQueryPlans`: the expected plans of the tables above; the silent count of #8314 (its text contains `item_priority`) is excluded from the recorded queries of the test.
+- `GROUP BY user_id` of `getFirstUnreadItemId_` on SQLite: removed; the text of master is used on both backends.
+- `testUsersUnreadCountQueryPlans`: the expected plans of the tables above; the first unread lookup is recorded by its `SELECT MIN(chat_item_id)`; the silent count of #8314 (its text contains `item_priority`) is excluded from the recorded queries of the test.
 - `skipComparisonForDownMigrations` (SchemaDump.hs): `20261124_chat_list_indexes` in place of `20261101_chat_items_unread_index`.
-- `plans/2026-11-01-profile-switch-unread-counts*.md`: kept; their sections Fix and Scope are superseded by this plan.
+- `plans/2026-11-01-profile-switch-unread-counts*.md`: kept, with a first line that points to this section; their sections Fix and Scope are superseded by this plan.
 
 ### 5.2 Member cleanup
 
-`getGroupMembersForExpiration` (Groups.hs:1376-1380):
+`getGroupMembersForExpiration` (Groups.hs:1377-1390):
 
 ```sql
 WHERE m.group_id = ? AND m.user_id = ? AND (m.contact_id IS NULL OR m.contact_id != ?)
   AND m.member_status IN (?, ?, ?, ?)
   AND m.removed_at IS NULL
   AND NOT EXISTS (SELECT 1 FROM chat_items i WHERE i.group_member_id = m.group_member_id)
+  AND NOT EXISTS (
+    SELECT 1 FROM delivery_tasks t
+    WHERE t.sender_group_member_id = m.group_member_id AND t.failed = 0 AND t.task_status = ?
+  )
+  AND NOT EXISTS (
+    SELECT 1 FROM delivery_jobs j
+    WHERE j.group_id = m.group_id AND j.worker_scope IN (?, ?) AND j.failed = 0 AND j.job_status = ?
+      AND ',' || j.sender_group_member_ids || ',' LIKE '%,' || m.group_member_id || ',%'
+  )
 ```
 
-- `NOT EXISTS` is the condition of `checkGroupMemberHasItems` (Groups.hs:2615), by which deletion is decided at removal (Internal.hs:2281).
-- With `m.removed_at IS NULL`, the members of relay groups marked by `updateGroupMemberRemovedAt` (Groups.hs:2421, called at Internal.hs:2284) are deleted by `cleanupRemovedMembers` (Commands.hs:6687) one day after removal, as today, so that forwarded messages of a removed member are ignored in that day (Subscriber.hs:4093, #7010).
-- Plans: SQLite `CORRELATED SCALAR SUBQUERY`, `SEARCH i USING COVERING INDEX idx_chat_items_group_member_id (group_member_id=?)`; PostgreSQL: an anti join over `idx_chat_items_group_member_id`, measured by the probe.
-- Each selected member is deleted by `deleteGroupMember` (Groups.hs:2619). By the `ON DELETE` rules of `chat_schema.sql`, the member's id is set to NULL in `chat_items`, `messages`, `chat_item_reactions`, `contacts` and `group_members`, and the rows with the member's id in tables with `ON DELETE CASCADE` are deleted, among them `chat_item_moderations`, `group_member_intros`, `group_snd_item_statuses` and `delivery_tasks`; the items of the member's support chat are deleted earlier, at leave and at removal (`deleteSupportChatIfExists`).
+Parameters of the delivery conditions: `DTSNew`, `DWSGroup`, `DWSMemberSupport`, `DJSPending`.
+
+- `NOT EXISTS` of `chat_items` is the condition of `checkGroupMemberHasItems` (Groups.hs:2624), by which deletion is decided at removal (Internal.hs:2281).
+- With `m.removed_at IS NULL`, the members of relay groups marked by `updateGroupMemberRemovedAt` (Groups.hs:2430, called at Internal.hs:2284) are deleted by `cleanupRemovedMembers` (Commands.hs:6687) one day after removal, as today, so that forwarded messages of a removed member are ignored in that day (Subscriber.hs:4093, #7010).
+- A member is kept while its messages are pending forwarding by the user: a task with the member as sender, selected by the task worker (`failed = 0 AND task_status = ?`, Store/Delivery.hs:129), or a job of the group whose `sender_group_member_ids` (comma-separated, Store/Delivery.hs:267-271) contains the member, selected by the job worker (`failed = 0 AND job_status = ?`, Store/Delivery.hs:300). Tasks are created by admins of groups without relays and by relays (Subscriber.hs:1033); a task is deleted with its sender and with its message (`ON DELETE CASCADE`, chat_schema.sql:791-792), and the job worker of a group without relays reads its sender with `getGroupMemberById` (Subscriber.hs:4556). On `/clear`, the messages of the group are deleted before the cleanup (`deleteGroupChatItemsMessages`, Messages.hs:240), and with them its tasks, so a member is kept by its pending jobs, whose bodies are stored in `delivery_jobs`; on expiration, the messages of the last 12 hours are kept (`deleteGroupExpiredCIs`, Messages.hs:3701), and a member is also kept by its new tasks.
+- `j.worker_scope IN (?, ?)` lists both worker scopes, so that only the pending jobs of the group are read: SQLite `SEARCH j USING INDEX idx_delivery_jobs_next (group_id=? AND worker_scope=? AND failed=? AND job_status=?)`; without it, `idx_delivery_jobs_group_id (group_id=?)` and every job of the group, kept 7 days after completion (`cleanupDeliveryJobs`, Commands.hs:6702).
+- Plans: SQLite `CORRELATED SCALAR SUBQUERY` of each condition: `SEARCH i USING COVERING INDEX idx_chat_items_group_member_id (group_member_id=?)`, `SEARCH t USING INDEX idx_delivery_tasks_sender_group_member_id (sender_group_member_id=?)` and the jobs search above; PostgreSQL: measured by the probe of section 7.
+- Each selected member is deleted by `deleteGroupMember` (Groups.hs:2628). By the `ON DELETE` rules of `chat_schema.sql`, the member's id is set to NULL in `chat_items`, `messages`, `chat_item_reactions`, `contacts` and `group_members`, and the rows with the member's id in tables with `ON DELETE CASCADE` are deleted, among them `chat_item_moderations`, `group_member_intros`, `group_snd_item_statuses` and `delivery_tasks`; the items of the member's support chat are deleted earlier, at leave and at removal (`deleteSupportChatIfExists`).
 - Cleanup is run on `/clear` of a group and on expiration of a group whose TTL is positive (`withExpirationDate`, Commands.hs:6813).
 
 ```mermaid
@@ -241,12 +265,11 @@ flowchart TD
   B --> C{"member removed, left, group deleted or unknown,<br>other than the user"}
   C -->|"removed_at set, relay group"| K["kept for cleanupRemovedMembers, one day"]
   C -->|"an item with its group_member_id"| L["kept"]
+  C -->|"a new delivery task or a pending delivery job of its messages"| P["kept until forwarded,<br>deleted at a later cleanup"]
   C -->|"otherwise"| D["deleteGroupMember"]
 ```
 
-Test, in `tests/ChatTests/Groups.hs`, run on both backends: alice is the owner of #team, bob and cath are members (`createGroup3'`); alice sends bob a direct message, so items with NULL `group_member_id` exist; cath leaves #team; bob clears #team; the member row of cath in bob's database is expected to be deleted (`withCCTransaction`). On `ep/omnibus` the row is kept.
-
-The chat is cleared by bob, not by alice: an admin creates a delivery job for the leave of cath (Subscriber.hs:1033), and the job worker of a group without relays reads its sender with `getGroupMemberById` (Subscriber.hs:4556). When the member row is deleted before the job runs, the job is set to error, and "chat db error: SEGroupMemberNotFound" is shown (run https://github.com/evgeny-simplex/simplex-chat/actions/runs/45299780513, where alice cleared the chat). The same order exists on `ep/omnibus` when a member without items is removed (Internal.hs:2285). Options, for the maintainer: skip the job when its sender is deleted, as the relay path does (Subscriber.hs:4458); or keep members with pending delivery jobs at cleanup.
+Test, in `tests/ChatTests/Groups.hs`, run on both backends, with `deliveryWorkerDelay` of 3 s, so that the job that forwards the leave is pending for 3 s after its task is processed: alice is the owner of #team, bob and cath are members (`createGroup3'`); alice sends bob a direct message, so items with NULL `group_member_id` exist; cath leaves #team; when alice has one pending job, alice clears #team, and the member row of cath in alice's database is kept; bob, who forwards nothing, clears #team, and the row of cath in bob's database is deleted; when the job of alice is complete, alice clears #team again, and the row of cath is deleted. On `ep/omnibus` the rows are kept; before the delivery conditions, the row of cath in alice's database was deleted at the first clearing, and the forward of the leave was dropped (run https://github.com/evgeny-simplex/simplex-chat/actions/runs/45299780513: "chat db error: SEGroupMemberNotFound").
 
 ### 5.3 Chat pages
 
@@ -284,7 +307,7 @@ flowchart LR
 
 Databases with `20261101_chat_items_unread_index` applied exist only from builds of #7969's branch.
 
-The iOS notification service applies up-migrations (NotificationService.swift:888 with `defaultMigrationConfirmation`, API.swift:374). Three indexes of `chat_items` are built in this migration; two were built in `M20260403_item_viewed`.
+The iOS notification service applies up-migrations (NotificationService.swift:888 with `defaultMigrationConfirmation`, API.swift:374). Four indexes of `chat_items` are built in this migration on SQLite, three on PostgreSQL; two were built in `M20260403_item_viewed`.
 
 ## 7. Measurement
 
@@ -369,10 +392,46 @@ Old and new text on the new database:
 - Bytes of the four indexes: 251.6 MB on `ep/omnibus`, 262.8 MB on the new schema; `chat_item_id` is stored in `idx_chat_items_contacts`, as a btree entry of PostgreSQL references the heap tuple.
 - Migration: 4.9 s up, 4.9 s down.
 
+Results of the review fixes on SQLite 3.45.1, in one session: three copies of the #8314 database, with the `ep/omnibus` schema, migrated by the up text without the rebuild of `idx_chat_items_groups_item_viewed`, and migrated with it, both vacuumed; one cold run, then warm medians of 3 runs (message search) or 15 runs, in ms; rows equal in the three copies.
+
+| read | ep/omnibus | without rebuild | with rebuild |
+|---|---|---|---|
+| message search, last 100 | 3,363, cold 9,031 | 3,884, cold 49,437 | 3,385, cold 8,957 |
+| message search, 100 after the middle item | 1,695, cold 5,405 | 3,785, cold 49,065 | 1,735, cold 5,243 |
+| message search, 100 before the middle item | 1,783, cold 3,766 | 3,630, cold 48,172 | 1,687, cold 3,796 |
+| last item, empty search (`/last_item_id`) | 3,458, cold 8,641 | 4,077, cold 49,945 | 3,388, cold 9,846 |
+| group chat list, all chats | 240.9, cold 441 | 13.83, cold 172 | 13.85, cold 168 |
+| direct chat list, all chats | 14.31, cold 144 | 2.80, cold 115 | 2.85, cold 120 |
+| users list, contacts count | 122.9 | 3.46 | 3.32 |
+| users list, groups count | 121.7 | 5.50 | 5.64 |
+| report count of group 17 | 0.04 | 0.04 | 0.04 |
+| content tags of group 17 | 71.6 | 67.8 | 68.8 |
+| first unread lookup, profile with 30,000 unread | 0.097, cold 2.8 | 0.098, cold 5.4 | 0.096, cold 5.1 |
+| first unread lookup, profile without unread items, 30,000 unread in another profile | 0.193, cold 3.0 | 52.6, cold 943 | 58.2, cold 989 |
+
+- The first unread lookup is the text of master; with `GROUP BY user_id` on the new schema: 5.21 ms (cold 17.5) and 0.04 ms (cold 3.3) for the two profiles.
+- Migration, up text on copies of the `ep/omnibus` database, first statement cold: 14.4 s without the rebuild (commit 2.7 s), then VACUUM 57.3 s; 14.5 s with it (commit 1.7 s; the rebuild 0.39 s and 1.91 s), then VACUUM 54.4 s; quick_check ok. The review measurement of the up text without the rebuild: 19.5 s, then VACUUM 75.8 s.
+- Member cleanup, on the copy migrated without the rebuild: group 61, 0.168 ms with the text of commit 3 and 0.258 ms with the delivery conditions, 7 rows each; after 20,000 completed jobs, a pending job with a candidate among its 3 senders and a new task of another candidate are added to group 61 (rolled back): 0.128 ms and 7 rows with the text of commit 3, 0.194 ms and 5 rows with the delivery conditions, 28.99 ms without `j.worker_scope IN (?, ?)`.
+
+Member cleanup on PostgreSQL 15.20: probe run https://github.com/evgeny-simplex/simplex-chat/actions/runs/45326908038 (schema of f93a3156e, data of `gen_data.py` seed 8314); medians of 10 runs, planning and execution, in ms.
+
+| read | text of commit 3 | with the delivery conditions |
+|---|---|---|
+| group 17 | 0.775, 5 rows | 1.612, 5 rows |
+| group 61 | 0.571, 0 rows | 1.228, 0 rows |
+| group 17, after 20,000 completed jobs, a pending job with a candidate among its 3 senders and a new task of another candidate | 0.721, 5 rows | 1.503, 3 rows |
+
+- Plan: Nested Loop Anti Join; tasks by Bitmap Index Scan of `idx_delivery_tasks_sender_group_member_id`, one loop per candidate; jobs by one Index Scan of `idx_delivery_jobs_next` with `group_id`, `worker_scope = ANY`, `failed` and `job_status` in Index Cond. Execution 0.176 and 0.251 ms; planning 0.55 and 1.25 ms.
+- Without `j.worker_scope IN (?, ?)`: Index Cond without `worker_scope`, 18 buffers against 5, execution 0.275 ms.
+
 CI of the reduced build:
 - the cleanup test, as alice clears the chat, fails on 7ae07e459 on SQLite and PostgreSQL (https://github.com/evgeny-simplex/simplex-chat/actions/runs/45293671447);
 - the cleanup test, as bob clears the chat (commit 8), fails on 7ae07e459 on SQLite and PostgreSQL (https://github.com/evgeny-simplex/simplex-chat/actions/runs/45303423558, a temporary branch of 7ae07e459 and commit 8);
-- the tests of section 8 pass on d27b96924 except "verify and overwrite query plans" (https://github.com/evgeny-simplex/simplex-chat/actions/runs/45295704428), whose patch is commit 6.
+- the tests of section 8 pass on d27b96924 except "verify and overwrite query plans" (https://github.com/evgeny-simplex/simplex-chat/actions/runs/45295704428), whose patch is commit 6;
+- with the test of commit 10, alice's database before and after the clearing: one task of cath with status `new` and no job before, no task and no row of cath after; the task is deleted with the messages of the group (https://github.com/evgeny-simplex/simplex-chat/actions/runs/45329677603, a temporary branch of commit 14 with the rows printed);
+- the cleanup test of commit 15 fails without the delivery conditions, on SQLite and PostgreSQL, at the first clearing by alice, after the pending job is found (https://github.com/evgeny-simplex/simplex-chat/actions/runs/45331692413, a temporary branch of commit 10 and the test of commit 15);
+- on commit 14, "verify and overwrite query plans" and the cleanup test of commit 10 fail (https://github.com/evgeny-simplex/simplex-chat/actions/runs/45326659814); the patch of the plans is commit 16;
+- the tests of section 8 pass on commit 16 on PostgreSQL, and on SQLite except "verify and overwrite query plans" (https://github.com/evgeny-simplex/simplex-chat/actions/runs/45331833208), whose patch, the plan of the pending jobs count of the test, is commit 17.
 
 ## 8. Commits
 
@@ -385,6 +444,15 @@ CI of the reduced build:
 7. `docs: PostgreSQL results of the chat list plan`
 8. `tests: clear the chat as a member in the member cleanup test`
 9. `docs: member cleanup test and delivery jobs in the chat list plan`
+10. `tests: member cleanup while a forward of the member is pending`, failing on its own commit
+11. `core: keep left members until their messages are forwarded`
+12. `core: faster first unread message lookup on SQLite`
+13. `core: faster search and tail across all chats on SQLite`
+14. `docs: point the profile switch plans to the chat list plan`
+15. `tests: wait for the pending forward in the member cleanup test`
+16. `core: update query plans`, from the CI artifact of the generated files of commit 14, without the entries of the replaced texts of `getFirstUnreadItemId_` and `getGroupMembersForExpiration`
+17. `core: update query plans`, from the CI artifact of the generated files of commit 16
+18. `docs: review fixes in the chat list plan`
 
 Tests of the reduced build:
 
