@@ -219,4 +219,4 @@ stateDiagram-v2
 
 This version runs against contracts with #51 applied.
 
-The names site is built from `apps/simplex-domains`, pinned to c13bce0, the merge commit of simplex.domains#23 on `names`, whose webapp signs `RegisterName` with `disputeDays` and accepts the phase `ended`.
+The names site is built from `apps/simplex-domains`, pinned to dfa590c, the merge commit of simplex.domains#29 on `names`, after #23, whose webapp signs `RegisterName` with `disputeDays` and accepts the phase `ended`.
