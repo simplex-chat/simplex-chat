@@ -1785,3 +1785,8 @@ C6      Claude Code closes the request stream when a call times out or its task 
 
 - In a plugin session group, `/help` also lists `/approve N all` and `/revoke TOOL` before `/give`.
 - There, `/help approve` and `/help revoke` start with a line on the approval of a tool and its end, `/help list` ends with a line on the approved tools, and `/help observer` counts the approvals of tools among the approvals that stop applying.
+
+## Decisions of 2026-11-24
+
+- In a plugin session group, `/help` also lists `/answer N K` after `/approve N all`, and `/help answer` explains it, with the reply to the card that answers in other cases.
+- There, `/help approve` and `/help reject` also explain the cards of plans and links, and name the other ways for a question and for a tool use that Claude Code approves only in its terminal.

@@ -2298,18 +2298,24 @@ describe("session channel", () => {
     expect(answers(chat)).toEqual([[{text: commandsApproversOnly, quotedItemId: 41}]])
   })
 
-  it("lists /approve N all, /revoke TOOL, /give and /observer in /help before the line of /help, and explains /give and /observer, each written with or without its slash", async () => {
+  it("lists /approve N all, /answer N K, /revoke TOOL, /give and /observer in /help before the line of /help, and explains /answer, /give and /observer, each written with or without its slash", async () => {
     const chat = new FakeChat()
     const {session} = await channel(chat)
     const help = async (topic: string): Promise<string[]> => (await session.control.ownerCommand(invitedAlice, {keyword: "help", params: topic}))!.split("\n")
     const lines = await help("")
-    expect(lines.map(line => /^\/'?(\w+)/.exec(line)![1])).toEqual(["approve", "reject", "receive", "forward", "revoke", "leave", "delete", "pending", "list", "schedule", "unschedule", "schedules", "approve", "revoke", "give", "observer", "help"])
-    expect(lines.slice(-5)).toEqual([
+    expect(lines.map(line => /^\/'?(\w+)/.exec(line)![1])).toEqual(["approve", "reject", "receive", "forward", "revoke", "leave", "delete", "pending", "list", "schedule", "unschedule", "schedules", "approve", "answer", "revoke", "give", "observer", "help"])
+    expect(lines.slice(-6)).toEqual([
       "/'approve N all' allows pending tool use N and approves its tool for the rest of this session.",
+      "/'answer N K' answers Claude Code's question N with option K.",
       "/'revoke TOOL' ends the approval of all uses of TOOL.",
       "/'give CHAT N' gives the agent's chat CHAT to session N.",
       "/'observer #G ID' makes member ID of this group an observer.",
       "/'help COMMAND' shows how to use COMMAND, such as /'help schedule'.",
+    ])
+    expect(await help("answer")).toEqual([
+      "/'answer N K' answers Claude Code's question N with option K, the number of the option on its card; the card then shows the answer and who gave it. It applies to a card of one question of one choice, where each option shows its command.",
+      "A reply to the card answers in your own words; it is the answer to a card of several questions or of a question of several choices. /'reject N' declines to answer.",
+      "Example: `/answer 14 1`. Related: /'help approve'.",
     ])
     expect(await help("give")).toEqual([
       "/'give CHAT N' gives the agent's chat CHAT to session N, so that only session N and the commands of its group can use CHAT; the pending actions of CHAT here are rejected, and its schedules move to session N without their due prompts.",
@@ -2322,15 +2328,17 @@ describe("session channel", () => {
       "#G and ID: as in Claude's post of the member's rights at a join or a role change, which shows this command for a member who can send, other than an owner.",
       "Example: `/observer #2 6`. Related: /'help approve', /'help schedule'.",
     ])
-    for (const topic of ["give", "observer"]) expect(await help(`/${topic}`)).toEqual(await help(topic))
+    for (const topic of ["answer", "give", "observer"]) expect(await help(`/${topic}`)).toEqual(await help(topic))
   })
 
-  it("explains the approval of a tool in /help approve and /help reject before the text of serve, its end in /help revoke before that text, and its line of /list in /help list after that text, each written with or without its slash", async () => {
+  it("explains the approval of a tool and the cards of plans, links, questions and tool uses approved only in the terminal in /help approve and /help reject before the text of serve, the end of a tool's approval in /help revoke before that text, and its line of /list in /help list after that text, each written with or without its slash", async () => {
     const chat = new FakeChat()
     const {session} = await channel(chat)
     const help = async (topic: string): Promise<string[]> => (await session.control.ownerCommand(invitedAlice, {keyword: "help", params: topic}))!.split("\n")
     expect(await help("approve")).toEqual([
       "On the card of a tool use, /'approve N' allows the use, and /'approve N all' also approves its tool for the rest of this session: its later uses run without a card, while you approve actions, until /'revoke TOOL'. A use that Claude Code still asks for gets a card that says so.",
+      "On the card of a plan, /'approve N' starts the work, and a reply to the card keeps Claude planning with your text. On the card of an MCP server's link, open the link, then /'approve N'.",
+      "A tool use that Claude Code approves only in its terminal is approved there, and a question is answered with /'answer N K' or a reply, see /'help answer'; /'reject N' rejects either here.",
       "/'approve N' performs pending action N: a connect, send or leave. /'reject N' rejects pending action N, a download too. Its card then shows the outcome.",
       "/'approve CHAT N' and /'reject CHAT N' do the same for an action of CHAT, as its card shows.",
       "/'approve CHAT all' performs the pending sends to CHAT; later ones are performed at once and posted here, while you approve actions, until /'revoke CHAT'. It applies in mode requests only.",

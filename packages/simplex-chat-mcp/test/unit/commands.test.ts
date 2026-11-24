@@ -1026,7 +1026,7 @@ describe("help", () => {
 
   it("answers an unknown topic without repeating it", async () => {
     const {control} = await setup()
-    for (const text of ["/help Schedule", "/help schedule now", "/help /", "/help //schedule", "/help #2", "/help constructor", "/help __proto__", "/help give", "/help observer"]) {
+    for (const text of ["/help Schedule", "/help schedule now", "/help /", "/help //schedule", "/help #2", "/help constructor", "/help __proto__", "/help give", "/help observer", "/help answer"]) {
       expect(await control.ownerCommand(bob, parseCommand(text)!)).toBe(noHelp)
     }
   })

@@ -79,6 +79,7 @@ const commandsHelp = `/'approve N' or /'approve CHAT N' performs pending action 
 /schedules lists the schedules of all chats.`
 // spec: spec/api.md#session-groups
 const sessionCommandsHelp = `/'approve N all' allows pending tool use N and approves its tool for the rest of this session.
+/'answer N K' answers Claude Code's question N with option K.
 /'revoke TOOL' ends the approval of all uses of TOOL.
 /'give CHAT N' gives the agent's chat CHAT to session N.
 /'observer #G ID' makes member ID of this group an observer.`
@@ -123,7 +124,12 @@ Admins and owners use it for another member whose role is not above their own.
 Example: \`/observer #2 6\`. Related: /'help approve', /'help schedule'.`
 // spec: spec/api.md#session-groups
 const sessionApproveHelp = `On the card of a tool use, /'approve N' allows the use, and /'approve N all' also approves its tool for the rest of this session: its later uses run without a card, while you approve actions, until /'revoke TOOL'. A use that Claude Code still asks for gets a card that says so.
+On the card of a plan, /'approve N' starts the work, and a reply to the card keeps Claude planning with your text. On the card of an MCP server's link, open the link, then /'approve N'.
+A tool use that Claude Code approves only in its terminal is approved there, and a question is answered with /'answer N K' or a reply, see /'help answer'; /'reject N' rejects either here.
 ${approveHelp}`
+const answerHelp = `/'answer N K' answers Claude Code's question N with option K, the number of the option on its card; the card then shows the answer and who gave it. It applies to a card of one question of one choice, where each option shows its command.
+A reply to the card answers in your own words; it is the answer to a card of several questions or of a question of several choices. /'reject N' declines to answer.
+Example: \`/answer 14 1\`. Related: /'help approve'.`
 // spec: spec/api.md#session-groups
 const sessionRevokeHelp = `/'revoke TOOL' ends the approval of all uses of TOOL given with /'approve N all': each later use of TOOL needs approval again. TOOL: a tool name from /list, such as \`Bash\`.
 ${revokeHelp}`
@@ -159,6 +165,7 @@ const sessionHelpTexts = new Map<string, string>([
   ["", `${commandsHelp}\n${sessionCommandsHelp}\n${helpLine}`],
   ["approve", sessionApproveHelp],
   ["reject", sessionApproveHelp],
+  ["answer", answerHelp],
   ["revoke", sessionRevokeHelp],
   ["list", sessionListHelp],
   ["give", giveHelp],
