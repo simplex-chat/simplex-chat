@@ -162,4 +162,5 @@ test('simplex: links without the slash after the scheme open as links with it', 
   const link = 'c#grcfG3ulVI4Sh6ow33qBsmSk7uEy3gRSl2KkJ5ER6tA?h=smp18.simplex.im';
   assert.strictEqual(platformSimplexUri('simplex:' + link), platformSimplexUri('simplex:/' + link));
   assert.strictEqual(platformSimplexUri('simplex:contact#/?v=2'), 'https://simplex.chat/contact#/?v=2');
+  check([{ format: { type: 'uri' }, text: 'simplex:' + link }], undefined, `<a href="simplex:${link}" target="_blank" rel="noopener">simplex:${link}</a>`);
 });
