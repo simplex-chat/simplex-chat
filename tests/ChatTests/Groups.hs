@@ -136,6 +136,7 @@ chatGroupTests = do
     it "remove member with messages (full deletion is enabled)" testDeleteMemberWithMessages
     it "remove member with messages mark deleted" testDeleteMemberMarkMessagesDeleted
     it "remove member - delete messages of left/removed members" testDeleteMemberMessagesLeftRemoved
+    it "clear chat - delete left members without messages" testClearChatDeleteLeftMember
     it "file chunks from a member who did not send the file are ignored" testGroupFileChunkOtherMember
 #if defined(dbPostgres)
     it "should stop a message error update at its time limit" testGroupMsgErrorsTimeLimit
@@ -2352,6 +2353,25 @@ testDeleteMemberMessagesLeftRemoved =
       bob #$> ("/_get chat #1 count=4", chat, [(0, "1 [marked deleted by alice]"), (0, "2 [marked deleted by alice]"), (0, "left (signed) [marked deleted by alice]"), (0, "removed dan (signed)")])
       cath #$> ("/_get chat #1 count=3", chat, [(1, "1"), (0, "2"), (1, "left (signed)")])
       dan #$> ("/_get chat #1 count=4", chat, [(0, "1"), (1, "2"), (0, "left (signed)"), (0, "removed you (signed)")])
+
+testClearChatDeleteLeftMember :: HasCallStack => TestParams -> IO ()
+testClearChatDeleteLeftMember =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+      alice #> "@bob hi"
+      bob <# "alice> hi"
+      cath ##> "/l team"
+      concurrentlyN_
+        [ do
+            cath <## "#team: you left the group"
+            cath <## "use /d #team to delete the group",
+          alice <## "#team: cath left the group (signed)",
+          bob <## "#team: cath left the group (signed)"
+        ]
+      alice #$> ("/clear #team", id, "#team: all messages are removed locally ONLY")
+      withCCTransaction alice (\db -> DB.query_ db "SELECT local_display_name FROM group_members ORDER BY group_member_id" :: IO [[T.Text]])
+        `shouldReturn` [["alice"], ["bob"]]
 
 testGroupFileChunkOtherMember :: HasCallStack => TestParams -> IO ()
 testGroupFileChunkOtherMember =
