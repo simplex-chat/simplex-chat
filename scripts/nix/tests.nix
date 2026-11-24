@@ -118,7 +118,7 @@ let
     requiredSystemFeatures = lib.optionals (system == "aarch64-darwin") [ "xcode-home" ];
   } ''
     set -eu
-    bash ${./xcodetest.sh} ${source} $out ${iosLib} ${iosArchiveConverter}/bin/mac2ios
+    bash ${./xcodetest.sh} ${source} $out ${iosLib} ${iosArchiveConverter}/bin/mac2ios ${./xcodetest-ci.sh}
   '';
 
   # These asserts do not depend on the build host. One Hydra system runs them.

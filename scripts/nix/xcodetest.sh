@@ -10,14 +10,17 @@
 # YES form.
 #
 # aarch64-darwin requires the xcode-home system feature so the nixbld passwd
-# home is writable. CoreSimulator follows that home, not $HOME. A host that
-# cannot reach a simulator fails this derivation.
+# home is writable for build-for-testing. The UI suite then runs as console
+# user ci through /private/var/run/xcodetest-as-ci.sock. nixbld's own
+# simulator is not the one on the display, and booting a second one is not
+# attempted. A host without that socket fails this derivation.
 set -euo pipefail
 
 src=${1:?source tree}
 out=${2:?output}
 ios_lib=${3:?ios library output}
 mac2ios=${4:?mac2ios}
+ci_runner=${5:?ci runner}
 
 work=$(mktemp -d)
 cp -a "$src/." "$work/"
@@ -105,103 +108,51 @@ if [ ! -s "$out/built.txt" ]; then
   exit 1
 fi
 
-if ! simctl list devices available -j >"$out/simulators.json" 2>"$out/simulators.err"; then
-  echo "CoreSimulatorService is not reachable. The iOS suite did not run." >&2
-  cat "$out/simulators.err" >&2 || true
+# nixbld can see only its own shutdown simulators. The booted phone is in
+# ci's Aqua session. sudo from this builder is EPERM (setuid is refused by
+# the Nix seatbelt), so the store script runs through the root helper.
+helper_sock=/private/var/run/xcodetest-as-ci.sock
+if [ ! -S "$helper_sock" ]; then
+  echo "xcodetest-as-ci is not available. The iOS suite did not run." >&2
   exit 1
 fi
-
-destination=$(python3 - "$out/simulators.json" <<'PY'
-import json
-import sys
-data = json.load(open(sys.argv[1]))
-phones = []
-for runtime, devices in data.get("devices", {}).items():
-    if "iOS" not in runtime:
-        continue
-    for device in devices:
-        if device.get("isAvailable", True) and device.get("name", "").startswith("iPhone"):
-            phones.append(device)
-by_name = {device["name"]: device for device in phones}
-pick = None
-for name in ("iPhone 17", "iPhone 16", "iPhone 15", "iPhone 14"):
-    if name in by_name:
-        pick = by_name[name]
-        break
-if pick is None and phones:
-    pick = phones[-1]
-if pick is None:
-    sys.exit("CoreSimulatorService is reachable, but no available iPhone simulator exists")
-print("platform=iOS Simulator,id=" + pick["udid"])
-PY
-)
-
-# Linker-signed products have no app-group entitlement, so the process
-# SIGTRAPs in getWallpaperDirectory(). Sign inside-out. keychain-access-groups
-# is restricted under an ad-hoc signature (AMFI -424) and is not included.
-ent=$work/scripts/nix/adhoc-group-task.entitlements
-prod=$derived/Build/Products/Debug-iphonesimulator
-python3 - "$prod" "$ent" <<'PY'
-import os, subprocess, sys
-prod, ent = sys.argv[1], sys.argv[2]
-entitled = ("/SimpleX.app", "/SimpleX NSE.appex", "/SimpleX SE.appex")
-found = []
-for dirpath, dirnames, filenames in os.walk(prod):
-    if os.path.basename(dirpath).endswith((".app", ".appex", ".xctest", ".framework")):
-        found.append(dirpath)
-found.sort(key=lambda p: p.count(os.sep), reverse=True)
-if not found:
-    sys.exit("no built bundles to sign under " + prod)
-for path in found:
-    cmd = ["/usr/bin/codesign", "--force", "--sign", "-", "--timestamp=none"]
-    if any(path.endswith(suffix) for suffix in entitled):
-        cmd += ["--entitlements", ent]
-    cmd.append(path)
-    result = subprocess.run(cmd, capture_output=True, text=True)
-    if result.returncode != 0:
-        sys.stderr.write(result.stderr)
-        sys.exit(result.returncode)
-print("resigned", len(found))
-PY
+# The build directory is mode 0700. ci has to read the project and write
+# test results under DerivedData.
+chmod a+x "${NIX_BUILD_TOP:-$work}" "$(dirname "$work")" "$work"
+chmod -R a+rX "$work"
+chmod -R a+rwX "$derived"
 
 set +e
-xcodebuild test-without-building \
-  -project apps/ios/SimpleX.xcodeproj \
-  -scheme "SimpleX (iOS)" \
-  -destination "$destination" \
-  -derivedDataPath "$derived" \
-  -onlyUsePackageVersionsFromResolvedFile \
-  -skipPackagePluginValidation \
-  -skipMacroValidation \
-  -IDEPackageSupportDisableManifestSandbox=1 \
-  -IDEPackageSupportDisablePluginExecutionSandbox=1 \
-  CODE_SIGNING_ALLOWED=NO &
-xpid=$!
-# The one-pass suite is about eight minutes. A UI-configuration regression
-# is not allowed to occupy the builder for hours.
-(
-  sleep 1200
-  cmd=$(ps -p "$xpid" -o command= 2>/dev/null || true)
-  case "$cmd" in
-    *test-without-building*)
-      echo "WATCHDOG: exceeded 20 minutes, stopping test run"
-      kill -TERM "$xpid" 2>/dev/null || true
-      sleep 10
-      cmd=$(ps -p "$xpid" -o command= 2>/dev/null || true)
-      case "$cmd" in
-        *test-without-building*) kill -KILL "$xpid" 2>/dev/null || true ;;
-      esac
-      ;;
-  esac
-) &
-wpid=$!
-wait "$xpid"
+python3 - "$ci_runner" "$work" "$derived" "$work/scripts/nix/adhoc-group-task.entitlements" <<'PY'
+import json, socket, sys
+runner, work, derived, ent = sys.argv[1:5]
+sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+sock.settimeout(1600)
+sock.connect("/private/var/run/xcodetest-as-ci.sock")
+payload = json.dumps({"script": runner, "args": [work, derived, ent]}).encode() + b"\n"
+sock.sendall(payload)
+sock.shutdown(socket.SHUT_WR)
+buf = b""
+while True:
+    chunk = sock.recv(1 << 20)
+    if not chunk:
+        break
+    buf += chunk
+text = buf.decode("utf-8", "replace")
+line, _, rest = text.partition("\n")
+sys.stdout.write(rest)
+if not line.startswith("EXIT "):
+    sys.stderr.write("xcodetest-as-ci returned %r\n" % line)
+    sys.exit(1)
+sys.exit(int(line.split()[1]))
+PY
 ec=$?
-kill "$wpid" 2>/dev/null || true
-wait "$wpid" 2>/dev/null || true
 set -e
-echo "XCODEBUILD_EXIT=$ec"
+if [ -f "$derived/xcodetest-run.log" ]; then
+  cp "$derived/xcodetest-run.log" "$out/xcodebuild.log" || true
+fi
 if [ "$ec" -ne 0 ]; then
+  echo "XCODEBUILD_EXIT=$ec" >&2
   exit "$ec"
 fi
-echo "ran $destination" > "$out/simulator-tests.txt"
+echo "ran as ci" > "$out/simulator-tests.txt"
