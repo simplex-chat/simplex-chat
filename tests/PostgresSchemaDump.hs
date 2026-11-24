@@ -2,7 +2,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module PostgresSchemaDump (postgresSchemaDumpTest) where
+module PostgresSchemaDump (postgresSchemaDumpTest, skipComparisonForDownMigrations) where
 
 import Control.Concurrent (threadDelay)
 import Control.DeepSeq
@@ -24,8 +24,8 @@ testSchemaPath :: FilePath
 testSchemaPath = "tests/tmp/test_schema.sql"
 
 -- copied from simplexmq
-postgresSchemaDumpTest :: [Migration] -> DBOpts -> FilePath -> Spec
-postgresSchemaDumpTest migrations testDBOpts@DBOpts {connstr, schema = testDBSchema} srcSchemaPath = do
+postgresSchemaDumpTest :: [Migration] -> [String] -> DBOpts -> FilePath -> Spec
+postgresSchemaDumpTest migrations skipComparisonForDown testDBOpts@DBOpts {connstr, schema = testDBSchema} srcSchemaPath = do
   it "verify and overwrite schema dump" testVerifySchemaDump
   it "verify schema down migrations" testSchemaMigrations
   where
@@ -52,7 +52,7 @@ postgresSchemaDumpTest migrations testDBOpts@DBOpts {connstr, schema = testDBSch
           schema' <- getSchema testSchemaPath
           schema' `shouldNotBe` schema
           Migrations.run st Nothing $ MTRDown [downMigr]
-          unless (name m `elem` skipComparisonForDownMigrations) $ do
+          unless (name m `elem` skipComparisonForDown) $ do
             schema'' <- getSchema testSchemaPath
             schema'' `shouldBe` schema
           Migrations.run st Nothing $ MTRUp [m]

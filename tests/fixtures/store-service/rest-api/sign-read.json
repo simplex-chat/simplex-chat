@@ -1,0 +1,13 @@
+{
+  "body": {
+    "acceptance": {
+      "community": false,
+      "nonce": 2,
+      "policy": "0x5FC8d32690cc91D4c39d9d3abcBD16989F875707",
+      "termsHash": "0x67b989cccc7ae150142daa4029304c7b7e78ab0a4ccebeba2ec1ef8a30f8147e"
+    },
+    "intentNonce": 4,
+    "type": "read"
+  },
+  "status": 200
+}

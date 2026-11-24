@@ -1,0 +1,34 @@
+{
+  "body": {
+    "balance": null,
+    "commitTx": "0xa8dd3f866653b64b6da5bc8ceb59952a391745f2c1e6f7eeff9d76753874662a",
+    "commitment": "0xbd3ab23bccfdbcb0ac4f8445afd1b34eb67b0c8274b89e6870fa7e084ed4b184",
+    "community": null,
+    "disputeDays": 14,
+    "duration": 69259500,
+    "id": "registration",
+    "label": "alicebakery",
+    "labelHash": "0xbcc46b7948ff6be55bc3ff4db5bc4be16638f29e818a89244dae11caaed7c9c6",
+    "latePayment": null,
+    "owner": "0x014f9c09CcEeDEF1B713110d04D3a07d5B5D9b73",
+    "payment": {
+      "method": "btc",
+      "type": "invoice"
+    },
+    "phase": {
+      "disputeUntil": 1793783784,
+      "expiresAt": 1855646100,
+      "type": "registered"
+    },
+    "price": 10000,
+    "registerTx": "0x8bd58a3c88cb4261fa33d5b7016df4559cdce95a73fb705663e8916d102efc92",
+    "sealed": "sealed-alicebakery-1",
+    "terms": {
+      "communityName": false,
+      "termsHash": "0x67b989cccc7ae150142daa4029304c7b7e78ab0a4ccebeba2ec1ef8a30f8147e"
+    },
+    "version": 6,
+    "years": 2
+  },
+  "status": 200
+}
