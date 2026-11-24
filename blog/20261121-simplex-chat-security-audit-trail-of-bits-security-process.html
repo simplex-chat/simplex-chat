@@ -55,7 +55,7 @@
     <meta property="og:type" content="article" />
     <meta property="og:title" content="SimpleX Chat Security Audit by Trail of Bits and Our Security Process" />
     
-      <meta property="og:image" content="https://simplex.chat/img/share_simplex.jpg" />
+      <meta property="og:image" content="https://simplex.chat/blog/images/20221108-trail-of-bits.jpg" />
     
     <meta name="twitter:card" content="summary" />
     <link rel="icon" type="image/png" sizes="96x96" href="/img/favicon.ico" />
@@ -522,13 +522,25 @@ window.addEventListener('click',(e)=>{
 
     <section id="article" class="container mb-[75px] bg-white dark:bg-[#071C46] px-5">
       <div class="py-6 md:p-[60px]"><h1 id="simplex-chat-security-audit-by-trail-of-bits-and-our-security-process" tabindex="-1">SimpleX Chat Security Audit by Trail of Bits and Our Security Process</h1>
-<p><strong>To be published:</strong> early next week, pending some minor (and positive) corrections in the report from Trail of Bits.</p>
-<p>This is a permalink for a blog post about:</p>
-<ul>
-<li>the fixes in SimpleX Chat app - please upgrade to v7.1.4+, and ask your contacts to upgrade too.</li>
-<li>the new security audit of SimpleX Chat apps and SimpleX Network protocols by <a href="https://www.trailofbits.com/about/">Trail of Bits</a>.</li>
-<li>our security process: how we manage security reports, Anthropic's <a href="https://red.anthropic.com/oss-scanner/">OSS Scanner</a>, and vulnerability disclosure process.</li>
-</ul>
+<p><strong>Published:</strong> Nov 24, 2026</p>
+<p><strong>Please upgrade to SimpleX Chat v7.1.4 or later, and ask your contacts to upgrade too.</strong> It includes all fixes from this audit.</p>
+<p>This release also includes supporter badges that allow sending larger files (2/5GB) available for longer (7/21 days) — buy the badge to <a href="https://badges.simplex.chat" target="_blank">support our work</a>.</p>
+<p>SimpleX <a href="https://wefunder.com/simplex.chat?utm_source=blog" target="_blank">crowdfunding investors</a> get a free badge, and if you invest $500 or more, you will get a free SimpleX public name.</p>
+<h2 id="the-most-comprehensive-security-audit-of-simplex-so-far" tabindex="-1">The most comprehensive security audit of SimpleX so far</h2>
+<p><a href="https://www.trailofbits.com/about/">Trail of Bits</a> completed a comprehensive security audit of SimpleX Chat apps for iOS, Android and desktop, and of the simplexmq library that implements the protocols and servers of SimpleX network.</p>
+<p>It is much larger than our previous security audits in <a href="/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html">2022</a> and <a href="/blog/20241014-simplex-network-v6-1-security-review-better-calls-user-experience.html">2024</a>. It covers 16 areas, from the post-quantum double ratchet and the messaging protocol to groups and channels, file transfer, calls, remote access from desktop, and storage of secrets on devices.</p>
+<p>This depth was only possible because Trail of Bits engineers combined their expertise with frontier AI models: two engineer-weeks of review, with AI-assisted code analysis and formal modeling of the protocols.</p>
+<h2 id="what-we-fixed-and-when" tabindex="-1">What we fixed, and when</h2>
+<p>Half of the high-severity issues were resolved before we received the final report — they were released in v7.0.0 in July. All other fixes were released in November.</p>
+<p>Trail of Bits reviewed our fixes: 49 issues are marked as resolved and 12 as partially resolved. The remaining 14 are 2 issues we resolved after the fix review (released in v7.1.4), design decisions, part of the <a href="https://github.com/simplex-chat/simplexmq/blob/stable/protocol/security.md#threat-model">security model</a>, or planned future work, such as including the parameters of the post-quantum key exchange in the security code.</p>
+<p>The <a href="/blog/20261123-trail-of-bits-security-audit-2026-findings.html">addendum</a> lists all findings, where we resolved them, and our comments. The full report is available <a href="https://github.com/simplex-chat/simplex-chat/blob/master/docs/SimpleX_Chat_Code_Review_2026_Final_Report_with_Fix_Review.pdf">here</a>.</p>
+<h2 id="thank-you-trail-of-bits" tabindex="-1">Thank you, Trail of Bits</h2>
+<p>We are hugely thankful to Trail of Bits and its engineers for their hard work on this audit, and for the time they spent earlier in June helping us fix other security issues in SimpleX as part of the <a href="https://trailofbits.com/patch-the-planet/">Patch the Planet</a> program.</p>
+<h2 id="our-security-process" tabindex="-1">Our security process</h2>
+<p>We no longer see security as a periodic effort. It is an ongoing activity: we fix security issues as soon as we find them or they are reported, and release the fixes as soon as possible.</p>
+<p>Not only do we fix issues in our code, we also analyse all dependencies as we upgrade them — we aim to complete the systematic review of all dependencies used by SimpleX Chat app and servers in the near future.</p>
+<p>Anthropic's <a href="https://red.anthropic.com/oss-scanner/">OSS Scanner</a> supports this process: it gives us access to security findings from Anthropic's frontier models that are not yet publicly available.</p>
+<p>To report a security issue, please follow our <a href="/security/index.html">security policy</a>.</p>
 </div>
     </section>
 

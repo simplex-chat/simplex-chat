@@ -1,5 +1,5 @@
 {
-  "updated": "2026-10-08",
+  "updated": "2026-11-24",
   "groups": [
     {
       "title": "Network and users",
@@ -218,13 +218,21 @@
           ]
         },
         {
-          "fact": "Third Trail of Bits audit",
-          "value": "completed, to be published",
-          "asOf": "2026",
+          "fact": "Security audit of the apps and the protocols' implementation",
+          "value": "Trail of Bits: 75 findings, all fixes released by v7.1.4",
+          "asOf": "November 2026",
           "sources": [
             {
-              "title": "Wefunder memo",
-              "url": "https://simplex.chat/wefunder.md"
+              "title": "Blog",
+              "url": "https://simplex.chat/blog/20261121-simplex-chat-security-audit-trail-of-bits-security-process.md"
+            },
+            {
+              "title": "Findings and fixes",
+              "url": "https://simplex.chat/blog/20261123-trail-of-bits-security-audit-2026-findings.md"
+            },
+            {
+              "title": "Report",
+              "url": "https://github.com/simplex-chat/simplex-chat/blob/master/docs/SimpleX_Chat_Code_Review_2026_Final_Report_with_Fix_Review.pdf"
             }
           ]
         },

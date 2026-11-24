@@ -2,6 +2,20 @@
 
 [Open SimpleX Network News channel](https://simplex.chat/news)
 
+## [SimpleX Chat Security Audit by Trail of Bits and Our Security Process](https://simplex.chat/blog/20261121-simplex-chat-security-audit-trail-of-bits-security-process.html)
+
+24 Nov 2026
+
+Trail of Bits completed the most comprehensive security audit of SimpleX so far.
+
+All fixes are included in v7.1.4 — please upgrade, and ask your contacts to upgrade too.
+
+v7.1.4 also includes supporter badges that allow larger files available for longer — buy the badge to [support our work.](https://badges.simplex.chat/)
+
+SimpleX [crowdfunding investors](https://wefunder.com/simplex.chat?utm_source=blog) get a free badge, and if you invest $500+, you will get a free SimpleX public name.
+
+[Read More](https://simplex.chat/blog/20261121-simplex-chat-security-audit-trail-of-bits-security-process.html)
+
 ## [SimpleX Supporter Badges — Send Larger Files That Stay Available Longer, Without Being Identified](https://simplex.chat/blog/20260919-simplex-supporter-badges.html)
 
 19 Sep 2026

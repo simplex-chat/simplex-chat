@@ -41,6 +41,8 @@ Every page of simplex.chat is also available as Markdown: replace `.html` with `
 - [Security policy and audits](https://simplex.chat/security.md)
 - [Trail of Bits implementation assessment, 2022](https://github.com/simplex-chat/simplex-chat/blob/stable/docs/SimpleX_Chat_Final_Report_11_03_2022.pdf)
 - [Trail of Bits cryptographic design review, 2024](https://github.com/simplex-chat/simplex-chat/blob/stable/docs/SimpleX_Design_Review_2024_Summary_Report_12_08_2024.pdf)
+- [Trail of Bits security audit, 2026](https://github.com/simplex-chat/simplex-chat/blob/master/docs/SimpleX_Chat_Code_Review_2026_Final_Report_with_Fix_Review.pdf)
+- [Trail of Bits security audit 2026: findings and fixes](https://simplex.chat/blog/20261123-trail-of-bits-security-audit-2026-findings.md)
 - [Transparency reports](https://simplex.chat/transparency.md)
 - [Reproducible builds](https://simplex.chat/reproduce.md)
 - [Privacy policy](https://simplex.chat/privacy.md)
@@ -82,7 +84,8 @@ Every page of simplex.chat is also available as Markdown: replace `.html` with `
 
 - [All posts](https://simplex.chat/blog.md)
 - [SimpleX Network News](https://simplex.chat/news.md): the news channel, with links to its recent posts in JSON
-- [SimpleX Chat Security Audit by Trail of Bits and Our Security Process](https://simplex.chat/blog/20261121-simplex-chat-security-audit-trail-of-bits-security-process.md) (2026-11-21)
+- [SimpleX Chat Security Audit by Trail of Bits and Our Security Process](https://simplex.chat/blog/20261121-simplex-chat-security-audit-trail-of-bits-security-process.md) (2026-11-24)
+- [Trail of Bits security audit 2026: findings and fixes](https://simplex.chat/blog/20261123-trail-of-bits-security-audit-2026-findings.md) (2026-11-23)
 - [SimpleX Supporter Badges — Send Larger Files That Stay Available Longer, Without Being Identified](https://simplex.chat/blog/20260919-simplex-supporter-badges.md) (2026-09-19)
 - [Nick Rogers: Why I Backed SimpleX Chat in 2022, and Why I Doubled Down](https://simplex.chat/blog/20260908-nick-rogers-why-i-backed-simplex-chat.md) (2026-09-08)
 - [Equity Crowdfunding Launched — You Can Get a Stake in SimpleX Chat](https://simplex.chat/blog/20260819-simplex-chat-crowdfunding.md) (2026-08-20)
@@ -91,7 +94,6 @@ Every page of simplex.chat is also available as Markdown: replace `.html` with `
 - [SimpleX Chat v6.4.1: welcome your contacts, review members to protect groups, and more.](https://simplex.chat/blog/20250729-simplex-chat-v6-4-1-welcome-contacts-protect-groups-app-security.md) (2025-07-29)
 - [SimpleX network: new experience of connecting with people — available in SimpleX Chat v6.4-beta.4](https://simplex.chat/blog/20250703-simplex-network-protocol-extension-for-securely-connecting-people.md) (2025-07-03)
 - [SimpleX Chat v6.3: new user experience and safety in public groups](https://simplex.chat/blog/20250308-simplex-chat-v6-3-new-user-experience-safety-in-public-groups.md) (2025-03-08)
-- [SimpleX network: large groups and privacy-preserving content moderation](https://simplex.chat/blog/20250114-simplex-network-large-groups-privacy-preserving-content-moderation.md) (2025-01-14)
 
 ## Optional
 

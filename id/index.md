@@ -15,7 +15,7 @@ Miliki sebagian darinya. [Berinvestasilah di SimpleX Chat.](https://wefunder.com
 
 [Download Desktop App](https://simplex.chat/downloads) [App Store](https://apps.apple.com/us/app/simplex-chat/id1605771084) [Google Play](https://play.google.com/store/apps/details?id=chat.simplex.app) [Aplikasi SimpleX via F-Droid](https://simplex.chat/id/fdroid) [TestFlight](https://testflight.apple.com/join/DWuT2LQu)
 
-[Audit Keamanan](https://www.trailofbits.com/about) [2022](https://simplex.chat/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html) [2024](https://simplex.chat/blog/20241014-simplex-network-v6-1-security-review-better-calls-user-experience.html)
+[Audit Keamanan](https://www.trailofbits.com/about) [2022](https://simplex.chat/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html) [2024](https://simplex.chat/blog/20241014-simplex-network-v6-1-security-review-better-calls-user-experience.html) [2026](https://simplex.chat/blog/20261121-simplex-chat-security-audit-trail-of-bits-security-process.html)
 
 Audit
 Keamanan
