@@ -15,8 +15,10 @@ import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
+import Data.Time.Clock.POSIX (posixSecondsToUTCTime)
 import Simplex.Chat.Markdown
 import Simplex.Chat.Messages (parsedMsgContent)
+import Simplex.Chat.Payments
 import Simplex.Chat.Protocol (MsgContent (..), ReportReason (..))
 import Simplex.Chat.Types (BoolDef (..))
 import Simplex.Messaging.Agent.Protocol (SimplexDomain (..), SimplexNameInfo (..), SimplexNameType (..), SimplexTLD (..))
@@ -40,6 +42,7 @@ markdownTests = do
   textWithMentions
   textWithCommands
   textWithSimplexNames
+  paymentLinks
   multilineMarkdownList
   inlineMarkdownGFM
   backslashEscapes
@@ -511,6 +514,110 @@ textWithSimplexNames = describe "text with SimpleX names" do
     "#secret#" <==> markdown Secret "secret"
     "##double secret##" <==> markdown Secret "#double secret#"
     "#" <==> "#"
+
+pay :: PaymentRequest -> Text -> Markdown
+pay = markdown . PaymentLink Nothing
+
+payTo :: PaymentPayee -> Text -> PaymentRequest
+payTo p = PaymentRequest p [] Nothing Nothing Nothing Nothing
+
+onChain :: PaymentNetwork -> Text -> Text -> PaymentRequest
+onChain n a = payTo $ PPAddress n a ACVerified
+
+paysTo :: Text -> PaymentRequest -> Expectation
+paysTo t r = t <==> pay r t
+
+isText :: Text -> Expectation
+isText t = t <==> unmarked t
+
+paymentLinks :: Spec
+paymentLinks = describe "payment links" do
+  it "bare addresses and invoices with a checksum" do
+    btc `paysTo` onChain PNBitcoin btc ("bitcoin:" <> btc)
+    T.toUpper btc `paysTo` onChain PNBitcoin btc ("bitcoin:" <> T.toUpper btc)
+    ("send to " <> btc <> ".") <==> "send to " <> pay (onChain PNBitcoin btc $ "bitcoin:" <> btc) btc <> "."
+    p2sh `paysTo` onChain PNBitcoin p2sh ("bitcoin:" <> p2sh)
+    ltc `paysTo` onChain PNLitecoin ltc ("litecoin:" <> ltc)
+    xmr `paysTo` onChain PNMonero xmr ("monero:" <> xmr)
+    bch `paysTo` onChain PNBitcoinCash bch ("bitcoincash:" <> bch)
+    zecT `paysTo` onChain PNZcash zecT ("zcash:" <> zecT)
+    zecU `paysTo` onChain PNZcash zecU ("zcash:" <> zecU)
+    doge `paysTo` onChain PNDogecoin doge ("dogecoin:" <> doge)
+    eth `paysTo` payTo (PPAddress (PNEthereum Nothing) eth ACVerified) ("ethereum:" <> eth)
+    coffee `paysTo` PaymentRequest (PPLightning coffeeInvoice) [] (Just "0.0025") Nothing Nothing Nothing ("lightning:" <> coffee)
+    lnurlUpper `paysTo` payTo (PPLightning LPLnurl {lnurl = T.toLower lnurlUpper, host = "service.com"}) ("lightning:" <> lnurlUpper)
+  it "text: a wrong checksum, no checksum, a testnet, code, a Lightning Address" do
+    isText "bc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66505d4v"
+    isText "0xD7047fe3Eecb2f2FF78d839dD927Be27Bc12c86a"
+    isText $ T.toLower eth
+    isText sol
+    isText "ThereAreMany32ByteKeysHereButNoneAreChecked"
+    isText offerText
+    isText "tb1qrp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3q0sl5k7"
+    isText badCoffee
+    ("`" <> btc <> "`") <==> markdown Snippet btc
+    "alice@getalby.com" <==> email "alice@getalby.com"
+  it "payment URIs" do
+    ("BITCOIN:" <> T.toUpper btc <> "?AMOUNT=0.001") `paysTo` PaymentRequest btcPayee [] (Just "0.001") Nothing Nothing Nothing ("bitcoin:" <> T.toUpper btc <> "?amount=0.001")
+    ("bitcoin:" <> btc <> "?amount=0.001&Label=SimpleX%20Chat&message=Donation&pop=app%3A")
+      `paysTo` PaymentRequest btcPayee [] (Just "0.001") Nothing (Just "SimpleX Chat") (Just "Donation") ("bitcoin:" <> btc <> "?amount=0.001&label=SimpleX%20Chat&message=Donation&pop=app%3A")
+    ("bitcoin:" <> btc <> "?lightning=" <> coffee) `paysTo` PaymentRequest btcPayee [coffeeInvoice] Nothing Nothing Nothing Nothing ("bitcoin:" <> btc <> "?lightning=" <> coffee)
+    ("bitcoin:?lightning=" <> coffee) `paysTo` PaymentRequest (PPLightning coffeeInvoice) [] (Just "0.0025") Nothing Nothing Nothing ("bitcoin:?lightning=" <> coffee)
+    ("dogecoin://" <> doge) `paysTo` onChain PNDogecoin doge ("dogecoin:" <> doge)
+    ("litecoin:" <> ltcM) `paysTo` onChain PNLitecoin ltcM ("litecoin:" <> ltcM)
+    ("monero:" <> xmr <> "?tx_amount=0.5&recipient_name=SimpleX&tx_description=Donation%20to%20SimpleX")
+      `paysTo` PaymentRequest (PPAddress PNMonero xmr ACVerified) [] (Just "0.5") Nothing (Just "SimpleX") (Just "Donation to SimpleX") ("monero:" <> xmr <> "?tx_amount=0.5&recipient_name=SimpleX&tx_description=Donation%20to%20SimpleX")
+    ("zcash:" <> zecU <> "?amount=0.1&memo=" <> memo)
+      `paysTo` PaymentRequest (PPAddress PNZcash zecU ACVerified) [] (Just "0.1") Nothing Nothing (Just "This is a simple memo.") ("zcash:" <> zecU <> "?amount=0.1&memo=" <> memo)
+    ("solana:" <> sol <> "?amount=0.5") `paysTo` PaymentRequest (PPAddress PNSolana sol ACUnchecked) [] (Just "0.5") Nothing Nothing Nothing ("solana:" <> sol <> "?amount=0.5")
+    ("ethereum:" <> eth <> "@42161?value=1e16") `paysTo` PaymentRequest (PPAddress (PNEthereum $ Just 42161) eth ACVerified) [] (Just "0.01") Nothing Nothing Nothing ("ethereum:" <> eth <> "@42161?value=1e16")
+    ("ethereum:" <> usdt <> "@1/transfer?address=" <> eth <> "&uint256=5000000")
+      `paysTo` PaymentRequest (PPAddress (PNEthereum $ Just 1) eth ACVerified) [] (Just "5000000") (Just usdt) Nothing Nothing ("ethereum:" <> usdt <> "@1/transfer?address=" <> eth <> "&uint256=5000000")
+    ("ethereum:" <> T.toLower eth) `paysTo` payTo (PPAddress (PNEthereum Nothing) eth ACUnchecked) ("ethereum:" <> T.toLower eth)
+    ("lightning:" <> offerText) `paysTo` payTo (PPLightning LPOffer {offer = offerText}) ("lightning:" <> offerText)
+  it "URIs that are text" do
+    isText $ "bitcoin:" <> btc <> "?amount=0.000000001"
+    isText $ "bitcoin:" <> btc <> "?amount=1,000"
+    isText $ "bitcoin:" <> btc <> "?amount=1&amount=2"
+    isText $ "bitcoin:" <> btc <> "?req-pop=callback"
+    isText $ "monero-wallet:" <> xmr <> "?spend_key=029c559cd7669f14e91fd835144916009f8697ab5ac5c7f7c06e1ff869c17b0b"
+    isText $ "monero:" <> xmr <> ";" <> xmr <> "?tx_amount=1;2"
+    isText $ "zcash:" <> zecT <> "?memo=" <> memo
+    isText $ "zcash:?address=" <> zecT <> "&address.1=" <> zecU
+    isText $ "ethereum:" <> usdt <> "/approve?address=" <> eth <> "&uint256=1"
+    isText "ethereum:donate.simplexchat.eth"
+  it "hyperlinks and autolinks" do
+    ("[Donate](monero:" <> xmr <> ")") <==> markdown (PaymentLink (Just "Donate") $ onChain PNMonero xmr $ "monero:" <> xmr) ("[Donate](monero:" <> xmr <> ")")
+    ("[" <> btc <> "](bitcoin:" <> btc <> ")") <==> markdown (PaymentLink (Just btc) $ onChain PNBitcoin btc $ "bitcoin:" <> btc) ("[" <> btc <> "](bitcoin:" <> btc <> ")")
+    ("[bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4](bitcoin:" <> btc <> ")") <==> "[bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4](" <> pay (onChain PNBitcoin btc $ "bitcoin:" <> btc) ("bitcoin:" <> btc) <> ")"
+    ("[Donate!](monero:" <> xmr <> ")") <==> "[Donate!](" <> pay (onChain PNMonero xmr $ "monero:" <> xmr) ("monero:" <> xmr) <> ")"
+    ("<zcash:" <> zecU <> "?amount=0.1>")
+      <==> markdown (PaymentLink (Just $ "zcash:" <> zecU <> "?amount=0.1") $ PaymentRequest (PPAddress PNZcash zecU ACVerified) [] (Just "0.1") Nothing Nothing Nothing $ "zcash:" <> zecU <> "?amount=0.1") ("<zcash:" <> zecU <> "?amount=0.1>")
+  it "payment links are links" do
+    hasLinks <$> parseMaybeMarkdownList ("donate: " <> btc) `shouldBe` Just True
+  it "linear time in the number of addresses" do
+    let fts = fromMaybe [] $ parseMaybeMarkdownList $ T.unwords $ replicate 10000 p2sh
+    length [() | FormattedText (Just PaymentLink {}) _ <- fts] `shouldBe` 10000
+  where
+    btc = "bc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66505d4u"
+    btcPayee = PPAddress PNBitcoin btc ACVerified
+    p2sh = "37116639cErLzxER6tL3a6EH2DbdETwTxd"
+    ltc = "ltc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66snwfdv"
+    ltcM = "MFNwCCkQTusV1FN9aWcN6jNfoLu53NkfUg"
+    xmr = "8A3ZWAXrrQddvnT1fPrtbK86ZAoM4nai3Gjg1LEow3JWcryJtovMnHYZnxTJpCLmAbfWbnPMeTzPmMBjAhyd4xoM89hYq1c"
+    bch = "qq6c8vfvxqrk6rhdysgvkhqc24sggkfsx5nqvdlqcg"
+    eth = "0xD7047Fe3Eecb2f2FF78d839dD927Be27Bc12c86a"
+    usdt = "0xdAC17F958D2ee523a2206206994597C13D831ec7"
+    zecT = "t1fwjQW5gpFhDqXNhxqDWyF9j9WeKvVS5Jg"
+    zecU = "u16rnvkflumf5uw9frngc2lymvmzgdr2mmc9unyu0l44unwfmdcpfm0axujd2w34ct3ye709azxsqge45705lpvvqu264ltzvfay55ygyq"
+    memo = "VGhpcyBpcyBhIHNpbXBsZSBtZW1vLg"
+    doge = "D99pV4n9TrPxBPCkQGx4w4SMSa6QjRBxPf"
+    sol = "7JCf5m3TiHmYKZVr6jCu1KeZVtb9Y1jRMQDU69p5ARnu"
+    coffee = "lnbc2500u1pvjluezsp5zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zygspp5qqqsyqcyq5rqwzqfqqqsyqcyq5rqwzqfqqqsyqcyq5rqwzqfqypqdq5xysxxatsyp3k7enxv4jsxqzpu9qrsgquk0rl77nj30yxdy8j9vdx85fkpmdla2087ne0xh8nhedh8w27kyke0lp53ut353s06fv3qfegext0eh0ymjpf39tuven09sam30g4vgpfna3rh"
+    coffeeInvoice = LPInvoice {invoice = coffee, description = Just "1 cup coffee", expiresAt = posixSecondsToUTCTime 1496314718}
+    badCoffee = "lnbc2500u1pvjluezpp5qqqsyqcyq5rqwzqfqqqsyqcyq5rqwzqfqqqsyqcyq5rqwzqfqypqdpquwpc4curk03c9wlrswe78q4eyqc7d8d0xqzpuyk0sg5g70me25alkluzd2x62aysf2pyy8edtjeevuv4p2d5p76r4zkmneet7uvyakky2zr4cusd45tftc9c5fh0nnqpnl2jfll544esqchsrnt"
+    lnurlUpper = "LNURL1DP68GURN8GHJ7UM9WFMXJCM99E3K7MF0V9CXJ0M385EKVCENXC6R2C35XVUKXEFCV5MKVV34X5EKZD3EV56NYD3HXQURZEPEXEJXXEPNXSCRVWFNV9NXZCN9XQ6XYEFHVGCXXCMYXYMNSERXFQ5FNS"
+    offerText = "lno1pgx9getnwss8vetrw3hhyuckyypwa3eyt44h6txtxquqh7lz5djge4afgfjn7k4rgrkuag0jsd5xvxg"
 
 multilineMarkdownList :: Spec
 multilineMarkdownList = describe "multiline markdown" do

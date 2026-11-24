@@ -26,7 +26,7 @@ import Data.Bifunctor (first)
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import Data.Char (isAlpha, isAlphaNum, isAscii, isAsciiLower, isDigit, isPunctuation, isSpace, isSymbol)
-import Data.Either (fromRight, isLeft, lefts)
+import Data.Either (fromRight, isLeft, isRight, lefts)
 import Data.Functor (($>))
 import Data.List (intercalate)
 import Data.List.NonEmpty (NonEmpty (..))
@@ -37,6 +37,7 @@ import Data.String
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
+import Simplex.Chat.Payments (PaymentRequest, hasOtherAddress)
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent.Protocol (AConnectionLink (..), ConnReqUriData (..), ConnShortLink (..), ConnectionLink (..), ConnectionRequestUri (..), ContactConnType (..), SMPQueue (..), SimplexNameInfo (..), simplexConnReqUri, simplexShortLink)
 import Simplex.Messaging.Encoding.String
@@ -63,6 +64,7 @@ data Format
   | HyperLink {showText :: Maybe Text, linkUri :: Text}
   | SimplexLink {showText :: Maybe Text, linkType :: SimplexLinkType, simplexUri :: AConnectionLink, smpHosts :: NonEmpty Text}
   | SimplexName {nameInfo :: SimplexNameInfo}
+  | PaymentLink {showText :: Maybe Text, payment :: PaymentRequest}
   | Command {commandStr :: Text}
   | Mention {memberName :: Text}
   | Email
@@ -323,6 +325,7 @@ isLink = \case
   HyperLink {} -> True
   SimplexLink {} -> True
   SimplexName {} -> True
+  PaymentLink {} -> True
   _ -> False
 
 hasLinks :: MarkdownList -> Bool
@@ -360,7 +363,7 @@ markdownP = joinMarkdown <$> A.many' fragmentP
           '<' -> autolinkP <|> wordP
           '\\' -> escapeP <|> wordP
           _
-            | isDigit c -> phoneP <|> wordP
+            | isDigit c -> paymentWordP <|> phoneP <|> wordP
             | otherwise -> wordP
         Nothing -> fail ""
     formattedP :: Char -> Format -> Parser Markdown
@@ -462,9 +465,15 @@ markdownP = joinMarkdown <$> A.many' fragmentP
       Right lnk@(ACL _ cLink) -> case cLink of
         CLShort _ -> pure $ simplexUriFormat (Just t) lnk
         CLFull _ -> fail "full SimpleX link in hyperlink"
-      Left _ -> case parseUri $ encodeUtf8 l of
-        Right _ -> pure $ HyperLink (Just t) l
-        Left e -> fail $ "not uri: " <> T.unpack e
+      Left _ -> case paymentRequest l of
+        Right p
+          | t /= l && hasOtherAddress p t -> fail "other payment address in hyperlink text"
+          | otherwise -> pure $ PaymentLink (Just t) p
+        Left _ -> case parseUri $ encodeUtf8 l of
+          Right _ -> pure $ HyperLink (Just t) l
+          Left e -> fail $ "not uri: " <> T.unpack e
+    paymentRequest :: Text -> Either String PaymentRequest
+    paymentRequest = strDecode . encodeUtf8
     enclosedP open close stop = A.char open *> A.takeWhile1 (\c -> c /= close && not (stop c)) <* A.char close
     colorP =
       A.anyChar >>= \case
@@ -492,8 +501,14 @@ markdownP = joinMarkdown <$> A.many' fragmentP
       | otherwise = optional ((<>) <$> phoneSep <*> A.takeWhile1 isDigit) >>= maybe (pure s) (segmentsP . (s <>))
     conc4 s1 s2 s3 s4 = s1 <> s2 <> s3 <> s4
     phoneSep = " " <|> "-" <|> "." <|> ""
+    paymentWordP :: Parser Markdown
+    paymentWordP = do
+      s <- wordTextP
+      if isRight $ paymentRequest $ T.dropEnd (linkEndLength s) s then pure $ wordMD s else fail "not a payment link"
     wordP :: Parser Markdown
-    wordP = wordMD . T.concat <$> A.many' (A.takeWhile1 (\c -> c /= ' ' && c /= '\n' && c /= '\\') <|> (notP escapeP *> A.string "\\"))
+    wordP = wordMD <$> wordTextP
+    wordTextP :: Parser Text
+    wordTextP = T.concat <$> A.many' (A.takeWhile1 (\c -> c /= ' ' && c /= '\n' && c /= '\\') <|> (notP escapeP *> A.string "\\"))
     wordMD :: Text -> Markdown
     wordMD s = fromMaybe (unmarked s) $ linkMD s <|> linkAfterParen
       where
@@ -510,6 +525,7 @@ markdownP = joinMarkdown <$> A.many' fragmentP
           Left _ -> case parseUri $ encodeUtf8 s' of
             Right _ -> Just $ res $ markdown Uri s'
             Left _ -> Nothing
+      | Right p <- paymentRequest s' = Just $ res $ markdown (PaymentLink Nothing p) s'
       | isDomain s' = Just $ res $ markdown Uri s'
       | isEmail s' = Just $ res $ markdown Email s'
       | otherwise = Nothing
@@ -977,6 +993,7 @@ markdownText (FormattedText f_ t) = case f_ of
     HyperLink {} -> t
     SimplexLink {} -> t
     SimplexName {} -> t
+    PaymentLink {} -> t
     Mention _ -> t
     Command _ -> t
     Email -> t

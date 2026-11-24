@@ -33,6 +33,7 @@ import Simplex.Chat.Protocol
 import Simplex.Chat.Store.Profiles
 import Simplex.Chat.Store.Shared
 import Simplex.Chat.Operators
+import Simplex.Chat.Payments
 import Simplex.Messaging.Agent.Store.Entity (DBStored (..))
 import Simplex.Chat.Badges
 import Simplex.Chat.StoreService
@@ -219,6 +220,7 @@ chatTypesDocsData =
     (sti @(ContactUserPreference SimplePreference), STRecord, "", [], "", ""),
     (sti @(CreatedConnLink 'CMContact), STRecord, "", [], Param "connFullLink" <> Optional "" (" " <> Param "$0") "connShortLink", ""),
     (sti @AddRelayResult, STRecord, "", [], "", ""),
+    (sti @AddressChecksum, STEnum, "AC", [], "", ""),
     (sti @AddressSettings, STRecord, "", [], "", ""),
     (sti @AgentCryptoError, STUnion, "", ["RATCHET_EARLIER", "RATCHET_SKIPPED"], "", ""), -- TODO add fields to types
     (sti @AgentErrorType, STUnion, "", [], "", ""),
@@ -330,6 +332,7 @@ chatTypesDocsData =
     (sti @InvitationLinkPlan, STUnion, "ILP", [], "", ""),
     (sti @InvitedBy, STUnion, "IB", [], "", ""),
     (sti @KeepAliveOpts, STRecord, "", [], "", ""),
+    (sti @LightningPayee, STUnion, "LP", [], "", ""),
     (sti @LinkContent, STUnion, "LC", [], "", ""),
     (sti @LinkOwnerSig, STRecord, "", [], "", ""),
     (sti @LinkPreview, STRecord, "", [], "", ""),
@@ -359,6 +362,9 @@ chatTypesDocsData =
     (sti @NoteFolder, STRecord, "", [], "", ""),
     (sti @OperatorTag, STEnum, "OT", [], "", ""),
     (sti @OwnerVerification, STUnion, "OV", [], "", ""),
+    (sti @PaymentNetwork, STUnion, "PN", [], "", ""),
+    (sti @PaymentPayee, STUnion, "PP", [], "", ""),
+    (sti @PaymentRequest, STRecord, "", [], "", "Payment URI or address in a message text. amount: in coins of the network; with token, in base units of the ERC-20 token or in units of the SPL token. walletUri: the URI to open in a wallet."),
     (sti @PendingContactConnection, STRecord, "", [], "", ""),
     (sti @PlanResolveMode, STEnum, "PRM", [], Choice "self" [("allGroups", " resolve=allGroups"), ("never", " resolve=never")] "", ""),
     (sti @PrefEnabled, STRecord, "", [], "", ""),
@@ -481,6 +487,7 @@ deriving instance Generic (ContactUserPref p)
 deriving instance Generic (ContactUserPreference p)
 deriving instance Generic (CreatedConnLink m)
 deriving instance Generic AddRelayResult
+deriving instance Generic AddressChecksum
 deriving instance Generic AddressSettings
 deriving instance Generic AgentCryptoError
 deriving instance Generic AgentErrorType
@@ -598,6 +605,7 @@ deriving instance Generic JSONCIDirection
 deriving instance Generic JSONCIFileStatus
 deriving instance Generic JSONCIStatus
 deriving instance Generic KeepAliveOpts
+deriving instance Generic LightningPayee
 deriving instance Generic LinkContent
 deriving instance Generic LinkOwnerSig
 deriving instance Generic LinkPreview
@@ -627,6 +635,9 @@ deriving instance Generic NewUser
 deriving instance Generic NoteFolder
 deriving instance Generic OperatorTag
 deriving instance Generic OwnerVerification
+deriving instance Generic PaymentNetwork
+deriving instance Generic PaymentPayee
+deriving instance Generic PaymentRequest
 deriving instance Generic PendingContactConnection
 deriving instance Generic PlanResolveMode
 deriving instance Generic PrefEnabled

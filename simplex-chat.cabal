@@ -71,6 +71,7 @@ library
       Simplex.Chat.Options.DB
       Simplex.Chat.PaymentService
       Simplex.Chat.PaymentService.Types
+      Simplex.Chat.Payments
       Simplex.Chat.ProfileGenerator
       Simplex.Chat.Protocol
       Simplex.Chat.Remote
