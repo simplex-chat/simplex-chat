@@ -428,8 +428,8 @@ requests
   delete CHAT files
   pending
   list
-  model
-  model NAME
+  model               in serve only
+  model NAME          in serve only
   give CHAT N         in a plugin session group only
   observer #G ID      in a plugin session group only
 ```
@@ -826,7 +826,7 @@ Commands and replies are those of [2.1](#21-commands-and-replies), from approver
 | one-line `/` text outside the requests | an admin or owner | `Unknown command.` | [`unknownCommand`, `Control.ownerCommand`](../src/control.ts) |
 | any one-line `/` text | a moderator, member or author. The session replies before `Control`, and the text is passed to neither `Control` nor Claude | `Only admins and owners of this group can send / commands.`, quoting the message | [`commandsApproversOnly`, `Session.onMessage`, `refusesCommand`](../src/hub.ts) |
 
-The requests `give CHAT N` and `observer #G ID` of [2.1](#21-commands-and-replies), `approve N all` and `revoke TOOL` are parsed only in a plugin session group ([`ownerRequest`](../src/control.ts)). Approvers are the active members of the session group with the role `admin` or `owner`, other than Claude and `User`, however they joined. An observer can't send, because the core refuses an observer's message ([`Session.approves`, `isUser`](../src/hub.ts), [`sessionApproverRoles`, `Control.approvers`, `isHuman`, `isApprover`](../src/control.ts)). The core accepts an observer's reaction, and the hub ignores it ([`Session.onReaction`](../src/hub.ts), [`canSend`](../src/control.ts)).
+The requests `give CHAT N` and `observer #G ID` of [2.1](#21-commands-and-replies), `approve N all` and `revoke TOOL` are parsed only in a plugin session group, and `model` and `model NAME` only outside one, so they get `Unknown command.` there ([`ownerRequest`](../src/control.ts)). Approvers are the active members of the session group with the role `admin` or `owner`, other than Claude and `User`, however they joined. An observer can't send, because the core refuses an observer's message ([`Session.approves`, `isUser`](../src/hub.ts), [`sessionApproverRoles`, `Control.approvers`, `isHuman`, `isApprover`](../src/control.ts)). The core accepts an observer's reaction, and the hub ignores it ([`Session.onReaction`](../src/hub.ts), [`canSend`](../src/control.ts)).
 
 The hub handles other messages by these rules, in arrival order, one at a time ([`Session.onMessage`, `prompt`, `queue`, `refusesCommand`, `approves`](../src/hub.ts), [`Control.onMessage`](../src/control.ts)):
 

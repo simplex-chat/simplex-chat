@@ -1077,7 +1077,7 @@ function ownerRequest({keyword, params}: Command, session: boolean): OwnerReques
   if (session && keyword === "answer" && words.length === 2 && words.every(word => /^\d+$/.test(word))) return {type: "answer", action: Number(words[0]), option: Number(words[1])}
   if (session && keyword === "revoke" && chat === undefined && value !== undefined && /^[\w-]+$/.test(value)) return {type: "revokeTool", tool: value}
   if ((keyword === "pending" || keyword === "list") && words.length === 0) return {type: keyword}
-  if (keyword === "model" && words.length <= 1) return {type: keyword, name: words.at(0)}
+  if (!session && keyword === "model" && words.length <= 1) return {type: keyword, name: words.at(0)}
   return undefined
 }
 
