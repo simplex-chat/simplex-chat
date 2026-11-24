@@ -84,7 +84,7 @@ fun ModalData.WhatsNewView(updatedConditions: Boolean = false, viaSettings: Bool
   }
 
   @Composable
-  fun featureDescription(icon: ImageResource?, titleId: StringResource, descrId: StringResource?, link: String?, learnMoreLink: String?, subfeatures: List<Pair<ImageResource, StringResource>>) {
+  fun featureDescription(icon: ImageResource?, titleId: StringResource, descrId: StringResource?, link: String?, learnMoreLink: String?, learnMoreText: StringResource?, subfeatures: List<Pair<ImageResource, StringResource>>) {
     @Composable
     fun linkButton(link: String) {
       val uriHandler = LocalUriHandler.current
@@ -123,7 +123,7 @@ fun ModalData.WhatsNewView(updatedConditions: Boolean = false, viaSettings: Bool
               append(" ")
               withLink(LinkAnnotation.Url(learnMoreLink) { uriHandler.openExternalLink(learnMoreLink) }) {
                 withStyle(SpanStyle(color = MaterialTheme.colors.primary)) {
-                  append(generalGetString(MR.strings.whats_new_learn_more))
+                  append(generalGetString(learnMoreText ?: MR.strings.whats_new_learn_more))
                 }
               }
             }
@@ -200,7 +200,7 @@ fun ModalData.WhatsNewView(updatedConditions: Boolean = false, viaSettings: Bool
         when (feature) {
           is VersionFeature.FeatureDescription -> {
             if (feature.show) {
-              featureDescription(feature.icon, feature.titleId, feature.descrId, feature.link, feature.learnMoreLink, feature.subfeatures)
+              featureDescription(feature.icon, feature.titleId, feature.descrId, feature.link, feature.learnMoreLink, feature.learnMoreText, feature.subfeatures)
             }
           }
           is VersionFeature.FeatureView -> {
@@ -292,6 +292,7 @@ private sealed class VersionFeature {
     var subfeatures: List<Pair<ImageResource, StringResource>> = listOf(),
     val link: String? = null,
     val learnMoreLink: String? = null,
+    val learnMoreText: StringResource? = null,
     val show: Boolean = true
   ): VersionFeature()
 
@@ -999,7 +1000,8 @@ private val versionDescriptions: List<VersionDescription> = listOf(
         icon = MR.images.ic_verified_user,
         titleId = MR.strings.v7_1_4_security_audit,
         descrId = MR.strings.v7_1_4_security_audit_descr,
-        learnMoreLink = "https://simplex.chat/blog/20261121-simplex-chat-security-audit-trail-of-bits-security-process.html"
+        learnMoreLink = "https://simplex.chat/blog/20261121-simplex-chat-security-audit-trail-of-bits-security-process.html",
+        learnMoreText = MR.strings.v7_1_4_security_audit_link
       ),
       VersionFeature.FeatureView(
         icon = null,
