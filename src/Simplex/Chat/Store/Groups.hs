@@ -238,6 +238,7 @@ import qualified Data.Text as T
 import Data.Time.Clock (NominalDiffTime, UTCTime (..), addUTCTime, getCurrentTime)
 import Data.Text.Encoding (encodeUtf8)
 import Simplex.Chat.Badges (BadgeProof, BadgeRow, ProofPresHeader, acceptedBadge, badgeProofToRow, badgeToRow, sameBadgeProof, verifyBadge)
+import Simplex.Chat.Delivery (DeliveryJobStatus (..), DeliveryTaskStatus (..), DeliveryWorkerScope (..))
 import Simplex.Chat.Names (SimplexDomainClaim (..), mkDomainClaim)
 import Simplex.Chat.Messages
 import Simplex.Chat.Operators
@@ -1377,9 +1378,18 @@ getGroupMembersForExpiration db cxt user@User {userId, userContactId} GroupInfo 
                   AND m.member_status IN (?, ?, ?, ?)
                   AND m.removed_at IS NULL
                   AND NOT EXISTS (SELECT 1 FROM chat_items i WHERE i.group_member_id = m.group_member_id)
+                  AND NOT EXISTS (
+                    SELECT 1 FROM delivery_tasks t
+                    WHERE t.sender_group_member_id = m.group_member_id AND t.failed = 0 AND t.task_status = ?
+                  )
+                  AND NOT EXISTS (
+                    SELECT 1 FROM delivery_jobs j
+                    WHERE j.group_id = m.group_id AND j.worker_scope IN (?, ?) AND j.failed = 0 AND j.job_status = ?
+                      AND ',' || j.sender_group_member_ids || ',' LIKE '%,' || m.group_member_id || ',%'
+                  )
               |]
       )
-      (groupId, userId, userContactId, GSMemRemoved, GSMemLeft, GSMemGroupDeleted, GSMemUnknown)
+      ((groupId, userId, userContactId, GSMemRemoved, GSMemLeft, GSMemGroupDeleted, GSMemUnknown) :. (DTSNew, DWSGroup, DWSMemberSupport, DJSPending))
 
 getRemovedMembersToCleanup :: DB.Connection -> StoreCxt -> User -> UTCTime -> IO [GroupMember]
 getRemovedMembersToCleanup db cxt user@User {userId} cutoffTs = do
