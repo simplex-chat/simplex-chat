@@ -517,11 +517,11 @@ class ModerationTest : RecordedApiTest() {
   fun archiveContact() = recordedAlerts("bans/contact-deletion") {
     ChatController.appPrefs.showDeleteConversationNotice.set(true)
     val loaded = (recordedResult("/_get chat @2 count=0") as CR.ApiChat).chat
-    val chat = openChat(loaded.copy(chatItems = listOf(ChatItem.getSampleData(dir = CIDirection.DirectRcv(), status = CIStatus.RcvNew())), chatStats = Chat.ChatStats(unreadCount = 1)))
+    val chat = openChat(loaded.copy(chatItems = listOf(ChatItem.getSampleData(dir = CIDirection.DirectRcv(), status = CIStatus.RcvNew())), chatStats = Chat.ChatStats(unreadCount = 1, unreadChat = true)))
     archiveContact(chat, ChatModel)
     assertTexts("Contact archived!", "You can send messages to bob from Archived contacts.", "Don't show again", "OK")
     assertTrue((chatInfo(chat.id) as ChatInfo.Direct).contact.chatDeleted)
-    assertEquals(0, ChatModel.chatsContext.chats.value.first { it.id == chat.id }.chatStats.unreadCount)
+    assertEquals(Chat.ChatStats(), ChatModel.chatsContext.chats.value.first { it.id == chat.id }.chatStats)
   }
 
   @Test

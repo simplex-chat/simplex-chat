@@ -1363,10 +1363,10 @@ func deleteContactChat(_ chat: Chat, chatDeleteMode: ChatDeleteMode = .full(noti
             switch chatDeleteMode {
             case .full:
                 ChatModel.shared.removeChat(cInfo.id)
-            case .entity, .archive:
-                if case .archive = chatDeleteMode {
-                    ChatModel.shared.markAllChatItemsRead(ItemsModel.shared, cInfo)
-                }
+            case .archive:
+                ChatModel.shared.markAllChatItemsRead(ItemsModel.shared, cInfo)
+                fallthrough
+            case .entity:
                 ChatModel.shared.updateContact(ct)
                 ChatTagsModel.shared.addPresetChatTags(.direct(contact: ct), chat.chatStats)
                 ChatTagsModel.shared.removePresetChatTags(cInfo, chat.chatStats)

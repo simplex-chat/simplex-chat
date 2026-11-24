@@ -482,12 +482,12 @@ final class ModerationTests: RecordedAPITestCase {
         try recorded("bans/contact-deletion")
         showDeleteConversationNoticeDefault.set(true)
         let (chat, contact) = try openContact("/_get chat @2 count=0")
-        chat.chatStats = ChatStats(unreadCount: 1)
+        chat.chatStats = ChatStats(unreadCount: 1, unreadChat: true)
         archiveContact(chat, contact)
         try await assertTexts(["Contact archived!", "You can send messages to bob from Archived contacts.", "Don't show again", "Ok"])
         guard case let .direct(archived)? = ChatModel.shared.getChat(chat.id)?.chatInfo else { return XCTFail("contact removed") }
         XCTAssertTrue(archived.chatDeleted)
-        XCTAssertEqual(ChatModel.shared.getChat(chat.id)?.chatStats.unreadCount, 0)
+        XCTAssertEqual(ChatModel.shared.getChat(chat.id)?.chatStats, ChatStats())
     }
 
     @MainActor

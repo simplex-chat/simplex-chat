@@ -1401,7 +1401,7 @@ processChatCommand cxt nm = \case
           CDMArchive -> do
             when (isJust notice_) $ throwCmdError "notice requires deleting the contact"
             void $ processChatCommand cxt nm $ APIChatRead cRef
-            withFastStore' $ \db -> setContactChatDeleted db user ct True
+            withFastStore' $ \db -> updateContactUnreadChat db user ct False >> setContactChatDeleted db user ct True
             pure $ CRContactDeleted user ct {chatDeleted = True}
       where
         noticeSupported ct = contactReady ct && contactActive ct && any (\Connection {peerChatVRange} -> maxVersion peerChatVRange >= linkNoticeVersion) (contactConn ct)
@@ -1435,18 +1435,7 @@ processChatCommand cxt nm = \case
             updateCIGroupInvitationStatus user gInfo CIGISRejected `catchAllErrors` \_ -> pure ()
             pure msgSigned
       case cdm of
-        CDMEntity _
-          | doSendDel -> do
-              removeCustomer gInfo businessChat
-              withGroupLock "deleteChat group" chatId $ do
-                cancelFilesInProgress user filesInfo
-                msgSigned <- sendDelDeleteConns
-                withFastStore' $ \db -> cleanupHostGroupLinkConn db user gInfo
-                withFastStore' $ \db -> updateGroupMemberStatus db userId membership GSMemGroupDeleted
-                pure $ CRGroupDeletedUser user gInfo {membership = membership {memberStatus = GSMemGroupDeleted}} msgSigned False
-          | otherwise -> throwCmdError "keeping the conversation requires an active owner"
-        CDMArchive -> throwCmdError "archive is not supported for groups"
-        _ -> do
+        CDMFull _ -> do
           removeCustomer gInfo businessChat
           withGroupLock "deleteChat group" chatId $ do
             deleteCIFiles user filesInfo
@@ -1458,6 +1447,18 @@ processChatCommand cxt nm = \case
             withFastStore' $ \db -> deleteGroupMembers db user gInfo
             withFastStore' $ \db -> deleteGroup db user gInfo
             pure $ CRGroupDeletedUser user gInfo msgSigned (not doSendDel)
+        CDMEntity _
+          | doSendDel -> do
+              removeCustomer gInfo businessChat
+              withGroupLock "deleteChat group" chatId $ do
+                cancelFilesInProgress user filesInfo
+                msgSigned <- sendDelDeleteConns
+                withFastStore' $ \db -> cleanupHostGroupLinkConn db user gInfo
+                withFastStore' $ \db -> updateGroupMemberStatus db userId membership GSMemGroupDeleted
+                pure $ CRGroupDeletedUser user gInfo {membership = membership {memberStatus = GSMemGroupDeleted}} msgSigned False
+          | otherwise -> throwCmdError "keeping the conversation requires an active owner"
+        CDMMessages -> processChatCommand cxt nm $ APIDeleteChat cRef (CDMFull True) notice_
+        CDMArchive -> throwCmdError "archive is not supported for groups"
       where
         getRecipients gInfo
           | useRelays' gInfo = do

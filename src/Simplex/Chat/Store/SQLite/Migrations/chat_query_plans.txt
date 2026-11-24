@@ -4054,15 +4054,6 @@ SEARCH g USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH gp USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
-        SELECT group_id, group_member_id, member_restriction_by_user
-        FROM group_members
-        WHERE user_id = ? AND member_restriction = ? AND member_restriction_expires_at <= ?
-          AND member_status NOT IN (?,?,?,?)
-      
-Plan:
-SEARCH group_members USING INDEX idx_group_members_member_restriction_expires_at (user_id=? AND member_restriction_expires_at<?)
-
-Query: 
         SELECT group_member_id
         FROM group_members
         WHERE group_id = ?
@@ -5359,6 +5350,15 @@ Plan:
 SEARCH chat_items USING INDEX idx_chat_items_contacts (user_id=? AND contact_id=? AND item_status=?)
 
 Query: 
+      SELECT group_id, group_member_id, member_restriction_by_member_id
+      FROM group_members
+      WHERE user_id = ? AND member_restriction = ? AND member_restriction_expires_at <= ?
+        AND member_status NOT IN (?,?,?,?)
+    
+Plan:
+SEARCH group_members USING INDEX idx_group_members_member_restriction_expires_at (user_id=? AND member_restriction_expires_at<?)
+
+Query: 
       SELECT group_snd_item_status, COUNT(1)
       FROM group_snd_item_statuses
       WHERE chat_item_id = ?
@@ -5696,7 +5696,7 @@ SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
       UPDATE group_members
-      SET member_restriction = ?, member_restriction_expires_at = ?, member_restriction_by_user = ?, updated_at = ?
+      SET member_restriction = ?, member_restriction_expires_at = ?, member_restriction_by_member_id = ?, updated_at = ?
       WHERE user_id = ? AND group_id = ? AND group_member_id = ?
     
 Plan:
@@ -8083,6 +8083,10 @@ Query: SELECT count(1) FROM chat_items WHERE chat_item_id > ?
 Plan:
 SEARCH chat_items USING INTEGER PRIMARY KEY (rowid>?)
 
+Query: SELECT count(1) FROM chat_items WHERE contact_id = 2 AND item_status = 'rcv_new'
+Plan:
+SEARCH chat_items USING INDEX idx_chat_items_contact_id (contact_id=?)
+
 Query: SELECT count(1) FROM files WHERE file_digest IS NOT NULL
 Plan:
 SCAN files
@@ -8300,6 +8304,10 @@ Query: SELECT member_relations_vector FROM group_members WHERE group_member_id =
 Plan:
 SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
 
+Query: SELECT member_restriction_by_member_id FROM group_members WHERE group_member_id = ?
+Plan:
+SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
+
 Query: SELECT member_role FROM group_members WHERE local_display_name = ?
 Plan:
 SCAN group_members
@@ -8477,6 +8485,10 @@ Query: SELECT summary_current_members_count FROM groups WHERE group_id = ?
 Plan:
 SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
 
+Query: SELECT unread_chat FROM contacts WHERE contact_id = 2
+Plan:
+SEARCH contacts USING INTEGER PRIMARY KEY (rowid=?)
+
 Query: SELECT unrenewed_since, last_unrenewed_at FROM badge_purchases
 Plan:
 SCAN badge_purchases
@@ -8610,6 +8622,10 @@ SEARCH chat_items USING INTEGER PRIMARY KEY (rowid=?)
 Query: UPDATE chat_items SET item_msg_body = ?, item_chat_binding = ?, item_signatures = ?, item_signed_by_group_member_id = ? WHERE chat_item_id = ? AND include_in_history = 1
 Plan:
 SEARCH chat_items USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: UPDATE chat_items SET item_status = 'rcv_new' WHERE contact_id = 2 AND item_status = 'rcv_read'
+Plan:
+SEARCH chat_items USING INDEX idx_chat_items_contact_id (contact_id=?)
 
 Query: UPDATE chat_items SET item_status = ?, item_viewed = 1, updated_at = ? WHERE user_id = ? AND item_status = ?
 Plan:
@@ -8757,6 +8773,10 @@ Query: UPDATE contacts SET ui_themes = ?, updated_at = ? WHERE user_id = ? AND c
 Plan:
 SEARCH contacts USING INTEGER PRIMARY KEY (rowid=?)
 
+Query: UPDATE contacts SET unread_chat = 1 WHERE contact_id = 2
+Plan:
+SEARCH contacts USING INTEGER PRIMARY KEY (rowid=?)
+
 Query: UPDATE contacts SET unread_chat = ?, updated_at = ? WHERE user_id = ? AND contact_id = ?
 Plan:
 SEARCH contacts USING INTEGER PRIMARY KEY (rowid=?)
@@ -8864,6 +8884,10 @@ SCAN group_members
 Query: UPDATE group_members SET member_relations_vector = set_member_vector_new_relation(member_relations_vector, ?, ?, ?), updated_at = ? WHERE group_member_id = ?
 Plan:
 SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: UPDATE group_members SET member_restriction_expires_at = NULL, member_restriction_by_member_id = NULL WHERE local_display_name = 'cath'
+Plan:
+SCAN group_members
 
 Query: UPDATE group_members SET member_role = ? WHERE user_id = ? AND group_member_id = ?
 Plan:

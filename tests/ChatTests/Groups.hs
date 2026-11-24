@@ -41,7 +41,7 @@ import Simplex.Chat.Messages.CIContent (publicGroupNoE2EText)
 import Simplex.Chat.Options
 import Simplex.Chat.Protocol (ChatMessage (ChatMessage), ChatMsgEvent (BFileChunk, XFile, XGrpMemDel, XGrpMemFwd, XGrpMemIntro, XGrpMemNew, XGrpMemRestrict, XGrpRelayInv, XInfo, XMember, XMsgUpdate, XMsgNew, XMsgDel), FileChunk (..), FwdSender (FwdMember, FwdChannel), GrpMemDel (..), GrpMsgForward (GrpMsgForward), LinkNotice (..), MsgContainer (..), MsgEncodingI, MsgMention (..), MsgContent (..), VerifiedMsg (VMUnsigned), chatMsgToBody, mcSimple, msgContentText, supportedChatVRange)
 import Simplex.Chat.Store.Groups (getGroupRelayMembers)
-import Simplex.Chat.Store.Shared (getGroupInfoKeys)
+import Simplex.Chat.Store.Shared (capExpiry, getGroupInfoKeys)
 import Simplex.Chat.Types
 import Simplex.Chat.Types.MemberRelations (MemberRelation (..), getRelation, setRelation)
 import Simplex.Chat.Types.Shared (GroupMemberRole (..), GroupAcceptance (..))
@@ -285,6 +285,8 @@ chatGroupTests = do
     it "late automatic unblock doesn't cancel a newer block" testBlockForAllLateAutomaticUnblock
     it "automatic unblock ends a block stored without end time and blocking member" testBlockForAllAutomaticUnblockNoEndTime
     it "received block with end time before 1970 is ignored" testBlockForAllEndTimeBefore1970
+    it "end time before 1970 is stored as 1970" $ \_ ->
+      capExpiry (Just $ UTCTime (fromGregorian (-1) 1 1) 0) `shouldBe` Just (UTCTime (fromGregorian 1970 1 1) 0)
     it "blocked member's update leaves no rows on regular members" testBlockForAllNoRowsForMembers
     it "blocked member's edit of an earlier message is not applied for regular members" testBlockForAllEditNotApplied
     it "app fixtures: block, unblock, remove and hide" testBlockMembersFixtures

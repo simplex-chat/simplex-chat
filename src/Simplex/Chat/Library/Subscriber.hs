@@ -3783,13 +3783,13 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
     xGrpMemDel :: GroupInfoKeys -> Maybe GroupMember -> GroupMember -> MemberId -> Bool -> Maybe VersionRoster -> Bool -> Maybe LinkNotice -> VerifiedMsg 'Json -> RcvMessage -> UTCTime -> Bool -> CM (Maybe DeliveryJobScope)
     xGrpMemDel g@(GIK gInfo@GroupInfo {membership} gks) fwdRelay_ m@GroupMember {memberRole = senderRole} memId withMessages rosterVer_ silent notice_ verifiedMsg msg@RcvMessage {msgSigned} brokerTs forwarded = do
       let GroupMember {memberId = membershipMemId} = membership
-          trusted = not forwarded || (useRelays' gInfo && msgSigned == Just MSSVerified) || (not (useRelays' gInfo) && maybe False trustedForwarder fwdRelay_)
-          silent' = trusted && silent
+          trusted removed = not forwarded || (useRelays' gInfo && msgSigned == Just MSSVerified) || (not (useRelays' gInfo) && maybe False (trustedForwarder removed) fwdRelay_)
+          silent' removed = trusted removed && silent
       if membershipMemId == memId
         then applyAtRosterVersion g fwdRelay_ m rosterVer_ $ checkRole membership $ do
           deleteGroupLinkIfExists user gInfo
-          when trusted $ forM_ notice_ $ \notice -> withStore' $ \db -> setGroupLinkNotice db gInfo brokerTs notice
-          if silent' && not (isUserGrpFwdRelay gInfo)
+          when (trusted membership) $ forM_ notice_ $ \notice -> withStore' $ \db -> setGroupLinkNotice db gInfo brokerTs notice
+          if silent' membership && not (isUserGrpFwdRelay gInfo)
             then Nothing <$ (mapM_ deleteMemberConnection =<< getGroupConnMembers user gInfo)
             else do
               -- TODO [relays] possible improvement is to immediately delete rcv queues if isUserGrpFwdRelay
@@ -3834,11 +3834,11 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                 -- as the member record was already deleted above.
                 let RcvMessage {forwardedByMember = fwdBy} = msg
                     msg' = if fwdBy == Just groupMemberId then (msg :: RcvMessage) {forwardedByMember = Nothing} else msg
-                unless (wasDeleted || silent') $ deleteMemberItem msg' gInfo'' $ RGEMemberDeleted groupMemberId (fromLocalProfile memberProfile)
+                unless (wasDeleted || silent' deletedMember) $ deleteMemberItem msg' gInfo'' $ RGEMemberDeleted groupMemberId (fromLocalProfile memberProfile)
                 toView $ CEvtDeletedMember user gInfo'' m deletedMember' withMessages msgSigned
                 pure deliveryScope
       where
-        trustedForwarder GroupMember {memberRole = fwdRole} = fwdRole >= GRAdmin && fwdRole >= memberRole' membership
+        trustedForwarder removed GroupMember {memberRole = fwdRole} = fwdRole >= GRAdmin && fwdRole >= memberRole' removed
         checkRole GroupMember {memberRole} a
           | senderRole < GRAdmin || senderRole < memberRole =
               messageError "x.grp.mem.del with insufficient member permissions" $> Nothing

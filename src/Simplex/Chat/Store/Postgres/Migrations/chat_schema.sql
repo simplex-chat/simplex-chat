@@ -1063,7 +1063,7 @@ CREATE TABLE test_chat_schema.group_members (
     member_security_code_verified_at timestamp with time zone,
     invited_via_group_member_id bigint,
     member_restriction_expires_at timestamp with time zone,
-    member_restriction_by_user smallint DEFAULT 0 NOT NULL
+    member_restriction_by_member_id bytea
 );
 
 
