@@ -182,6 +182,12 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
     return this.startListed(owners)
   }
 
+  // spec: spec/architecture.md#control-control-postrestartnotice
+  async postRestartNotice(text: string): Promise<void> {
+    if (this.actions.lost) return
+    await this.chat.apiSendTextMessage([T.ChatType.Group, this.groupId], text)
+  }
+
   // spec: spec/architecture.md#control-control-refusal
   refusal(action: Action): string | undefined {
     const {mode} = action

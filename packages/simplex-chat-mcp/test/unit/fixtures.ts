@@ -169,6 +169,7 @@ export class FakeChat {
   apiCancelFile = library.apiCancelFile
   apiGetChatItemInfo = library.apiGetChatItemInfo
   apiGetUserServers = library.apiGetUserServers
+  apiSendTextMessage = library.apiSendTextMessage
   commands: string[] = []
   sent: {chat: [T.ChatType, number]; messages: T.ComposedMessage[]; live?: true}[] = []
   updates: {chatId: number; itemId: number; text: string; live?: true}[] = []

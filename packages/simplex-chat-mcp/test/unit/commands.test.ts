@@ -7,8 +7,9 @@ import {core} from "simplex-chat"
 import {Action, Actions, Mode, NewAction, ToolError} from "../../src/actions"
 import {Control, cardText, parseCommand} from "../../src/control"
 import {ChatItemsWatch, Collected, utcMinutes} from "../../src/messages"
-import {OwnerEntry, waitForCancelledCards} from "../../src/serve"
+import {OwnerEntry, versionWithCommit, waitForCancelledCards} from "../../src/serve"
 import {AgentTools} from "../../src/tools"
+import {version} from "../../src/version"
 import {FakeChat, actionsWith, contact, data, direct, event, fakeHooks, fileItem, group, groupChat, item, member, settled, signal, user} from "./fixtures"
 
 beforeEach(() => {
@@ -1000,5 +1001,52 @@ describe("wait at the stop", () => {
     expect(jest.getTimerCount()).toBe(0)
     await waitForCancelledCards([send], 10, endWait.signal)
     expect(jest.getTimerCount()).toBe(0)
+  })
+})
+
+describe("restart notice", () => {
+  const text = "SimpleX MCP server 0.2.0 (0123456789) started."
+  const approval = {simplexMcp: {approvedBy: "Alice", approvedById: 3, approvedAt: "2026-11-12T10:00:00.000Z"}}
+
+  function approvedChats(): FakeChat {
+    const chat = agentChats()
+    const {contact: directory} = chatInfoOf(chat, "@4") as T.ChatInfo.Direct
+    const {groupInfo: business} = chatInfoOf(chat, "#2") as T.ChatInfo.Group
+    directory.customData = approval
+    business.customData = approval
+    return chat
+  }
+
+  it("is posted only in the agent control chat, not in the chats approved for all messages", async () => {
+    const chat = approvedChats()
+    const {control} = await controlWith(chat, actionsWith("requests", fakeHooks()))
+    await control.postRestartNotice(text)
+    expect(chat.sent.map(({chat: target, messages: [{msgContent}]}) => [target, msgContent])).toEqual([[[T.ChatType.Group, 10], {type: "text", text}]])
+  })
+
+  it("is posted in no chat after the agent lost its control chat", async () => {
+    const chat = approvedChats()
+    const actions = actionsWith("requests", fakeHooks())
+    const {control} = await controlWith(chat, actions)
+    actions.loseControl()
+    await control.postRestartNotice(text)
+    expect(chat.sent).toEqual([])
+  })
+
+  it("rejects with the error of a failed post, which the start logs", async () => {
+    const chat = approvedChats()
+    chat.apiSendMessages = async () => {
+      throw new Error("no connection")
+    }
+    const {control} = await controlWith(chat, actionsWith("requests", fakeHooks()))
+    await expect(control.postRestartNotice(text)).rejects.toThrow("no connection")
+  })
+
+  it("names the version with the commit of the build, or the version alone without the commit file", () => {
+    mkdirSync(data, {recursive: true})
+    const commitFile = join(data, "commit.txt")
+    writeFileSync(commitFile, "0123456789\n")
+    expect(versionWithCommit(commitFile)).toBe(`${version} (0123456789)`)
+    expect(versionWithCommit(join(data, "no-commit.txt"))).toBe(version)
   })
 })

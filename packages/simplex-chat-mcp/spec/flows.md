@@ -1,6 +1,6 @@
 # SimpleX MCP server: flows
 
-> Sequence diagrams of the main flows of `@simplex-chat/mcp` 0.3.0, each with notes and source locations. `serve` is shown in flows 1-16, and the Claude Code plugin in flows 17-43.
+> Sequence diagrams of the main flows of `@simplex-chat/mcp` 0.3.0, each with notes and source locations. `serve` is shown in flows 1-16 and 44, and the Claude Code plugin in flows 17-43.
 >
 > Related specs: [README](README.md) | [Architecture](architecture.md) | [API](api.md)
 
@@ -18,7 +18,7 @@ Participants:
 | O | the owner in the SimpleX app |
 | D | a peer |
 
-In flows 1-16, `#G` is the agent control chat, `USER` the agent's user ID, `DATA` the data folder. Calls to the core are shown as the `ChatApi` methods the server calls, with their arguments in short. Card and progress texts with a semicolon are shown with a comma in the diagrams; the exact texts are in [API](api.md).
+In flows 1-16 and 44, `#G` is the agent control chat, `USER` the agent's user ID, `DATA` the data folder. Calls to the core are shown as the `ChatApi` methods the server calls, with their arguments in short. Card and progress texts with a semicolon are shown with a comma in the diagrams; the exact texts are in [API](api.md).
 
 ---
 
@@ -71,6 +71,10 @@ Claude Code plugin ([participants](#claude-code-plugin-flows)):
 42. [Claude's question, a plan and an MCP server's link](#42-claudes-question-a-plan-and-an-mcp-servers-link)
 43. [A failed turn and a waiting Claude Code](#43-a-failed-turn-and-a-waiting-claude-code)
 
+`serve`, from the next version:
+
+44. [Restart notice](#44-restart-notice)
+
 ---
 
 ## 1. First start and the owner joins
@@ -104,6 +108,8 @@ sequenceDiagram
   K->>C: apiCreateGroupLink #35;G member
   K->>P: join line, QR code, link, QR hint, owner line
   S->>P: Listening on http://127.0.0.1:5226/mcp
+  S->>K: postRestartNotice
+  K->>C: apiSendTextMessage #35;G "SimpleX MCP server VERSION started."
   O->>C: joins by the link
   C->>S: joinedGroupMember
   S->>K: onEvent, queued
@@ -123,8 +129,9 @@ Notes:
 - With `--qr-code small`, the line `If the QR code does not scan, ...` is printed after the link ([`Control.openLink`](../src/control.ts)).
 - Events that arrive before the HTTP listener starts are buffered and handled in order ([`bufferEvents`](../src/core.ts)).
 - The server runs `ownerJoined` for every `joinedGroupMember` event of a human without `--owners`, and the link is deleted in that handler ([`Control.onEvent`, `ownerJoined`](../src/control.ts)).
+- The restart notice is posted before anyone joins; the control chat has history on, so the core sends it to the owner with the chat's history ([`createControlChat`](../src/control.ts), [flow 44](#44-restart-notice)).
 
-Source: [`main`, `readStdin`](../src/cli.ts), [`startServer`, `startAgent`](../src/serve.ts), [`prepareCore`, `deletePresetContacts`, `updatedUser`, `bufferEvents`, `setTempFolder`](../src/core.ts), [`createDataFolder`, `acquireLock`, `releaseLock`, `serverToken`, `headersFile`, `writeHeadersFile`, `writeServerFile`](../src/files.ts), [`startHttp`](../src/http.ts), [`Control.load`, `rename`, `describe`, `updateProfile`, `start`, `startOwners`, `openLink`, `deleteLink`, `findControlGroup`, `controlDataOf`, `createControlChat`, `createGroup`](../src/control.ts).
+Source: [`main`, `readStdin`](../src/cli.ts), [`startServer`, `startAgent`](../src/serve.ts), [`prepareCore`, `deletePresetContacts`, `updatedUser`, `bufferEvents`, `setTempFolder`](../src/core.ts), [`createDataFolder`, `acquireLock`, `releaseLock`, `serverToken`, `headersFile`, `writeHeadersFile`, `writeServerFile`](../src/files.ts), [`startHttp`](../src/http.ts), [`Control.load`, `rename`, `describe`, `updateProfile`, `start`, `postRestartNotice`, `startOwners`, `openLink`, `deleteLink`, `findControlGroup`, `controlDataOf`, `createControlChat`, `createGroup`](../src/control.ts).
 
 ---
 
@@ -537,7 +544,7 @@ sequenceDiagram
   S->>C: close
   S->>S: remove DATA/lock
   S->>P: Stopped.
-  Note over P,O: next start: counter continues, /approve of an old number: Action N is not pending.
+  Note over P,O: next start: counter continues, restart notice (flow 44), /approve of an old number: Action N is not pending.
 ```
 
 Notes:
@@ -2043,3 +2050,40 @@ sequenceDiagram
 ```
 
 Source: [`eventFields`, `failureOf`, `continued`, `menuOpen`](../src/hook.ts), [`Session.turn`, `fail`, `waits`, `failureLine`](../src/hub.ts).
+
+---
+
+## 44. Restart notice
+
+```mermaid
+sequenceDiagram
+  participant P as Person
+  participant S as serve.ts
+  participant K as Control
+  participant C as Core
+  participant O as Owner
+  P->>S: simplex-mcp serve my-agent
+  S->>P: SimpleX MCP server VERSION (COMMIT), agent "my-agent"
+  S->>K: start: owner setup
+  S->>P: Listening on http://127.0.0.1:5226/mcp
+  S->>K: postRestartNotice "SimpleX MCP server VERSION (COMMIT) started."
+  K->>C: apiSendTextMessage #35;G
+  C->>O: SimpleX MCP server VERSION (COMMIT) started.
+  alt the post failed
+    C-->>K: error
+    K-->>S: error
+    S->>P: restart notice: ERROR (stderr)
+  end
+  S->>S: buffered events replayed
+```
+
+Notes:
+
+- COMMIT is the content of `dist/commit.txt`, trimmed, read once when `serve.ts` is loaded. The file is written by the `prepack` script with the output of `git rev-parse --short=10 HEAD`, unless git or the write fails, and deleted by `postpack`. Without the file, ` (COMMIT)` is left out of both lines ([`prepack`, `postpack`](../package.json), [`fullVersion`, `versionWithCommit`](../src/serve.ts)).
+- The package version alone is in the MCP server info (`factory` in [`startAgent`](../src/serve.ts)).
+- The notice is posted only in the agent control chat, in both modes; the chats under a standing approval of messages get none ([`Control.postRestartNotice`](../src/control.ts)).
+- With a lost control chat, no notice is posted ([`Control.postRestartNotice`](../src/control.ts)).
+- The notice is not an action: no action number, card or log line is made for it ([`Control.postRestartNotice`](../src/control.ts)).
+- The HTTP listener serves calls to `/mcp` from `started = true`, before `Listening on ...`, also during the post; the buffered events are replayed after the post ([`startAgent`](../src/serve.ts)).
+
+Source: [`fullVersion`, `startServer`, `startAgent`, `versionWithCommit`](../src/serve.ts), [`Control.postRestartNotice`](../src/control.ts), [`prepack`, `postpack`](../package.json).

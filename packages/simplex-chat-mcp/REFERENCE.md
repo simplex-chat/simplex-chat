@@ -71,7 +71,7 @@ At its first start the server downloads the SimpleX core library, 29 to 50 MB de
 
    `-y` answers npm's prompt to install the package. The server asks no questions: every choice is an option. The QR code of such a link is 37 columns wide and 19 lines high; `--qr-code large` draws it twice as wide and twice as high. Ctrl-C stops the server, see [Expiry](#expiry).
 
-2. In the SimpleX app, scan the QR code or open the link, and tap Join. The chat "My Agent" appears in the chat list, and the agent writes: `I'm your agent. I ask here before I connect, send, download a file or leave a chat.` The terminal prints:
+2. In the SimpleX app, scan the QR code or open the link, and tap Join. The chat "My Agent" appears in the chat list, from the next version with the [restart notice](#restart-notice) of this start, and the agent writes: `I'm your agent. I ask here before I connect, send, download a file or leave a chat.` The terminal prints:
 
    ```
    Alice joined (member 3) and is now an owner. The link is deleted.
@@ -290,6 +290,19 @@ After `/receive #3 7 all`, the agent's later downloads from #3 are performed at 
 - It covers downloads only, and the approval of messages covers no downloads: each is given and ended by its own command.
 - It lasts as the approval of messages does, until `/receive #3 off`, and is kept next to it in the chat's custom data.
 - `/list` shows it as `, files approved by Alice`.
+
+### Restart notice
+
+From the next version, at each start, after the owner setup, the agent posts its version and the commit of its build:
+
+```
+My Agent: SimpleX MCP server VERSION (8e4b6f1c2d) started.
+```
+
+- It is posted only in the agent control chat, in both modes; the chats approved for all messages get no notice.
+- VERSION is the package version, and `8e4b6f1c2d` is the commit the package was built from, as `git rev-parse --short=10 HEAD` printed it at `npm pack` or `npm publish`. No commit is written by `npx tsc`: with a build by it alone, the notice is `SimpleX MCP server VERSION started.` The same version is in the first line the server prints: `SimpleX MCP server VERSION (8e4b6f1c2d), agent "my-agent"`.
+- The server posts it by itself: it is not an action, and no card is posted for it. An owner who joins later receives it among the chat's recent messages.
+- A failed post is logged on stderr as `restart notice: <error>`, and the server continues the start. After the agent lost its control chat, no notice is posted.
 
 ## What the agent sees
 

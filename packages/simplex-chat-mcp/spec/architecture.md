@@ -107,13 +107,15 @@ Start sequence, event dispatch and stop sequence of one agent.
 
 | Symbol | Contents |
 |---|---|
+| <a id="serve-fullversion"></a>`fullVersion` | the package version with the commit of the build, read once at load: the start line and the restart notice |
 | <a id="serve-ownerentry"></a>`OwnerEntry` | `{memberId, name}` of `--owners` |
 | <a id="serve-serveoptions"></a>`ServeOptions` | name, data folder and its `dataGiven` flag, display name, mode, owners, expiry, reset and token flags, port, QR code size, stop wait |
 | <a id="serve-runningserver"></a>`RunningServer` | token, `ChatApi`, user, `Actions`, `stop` |
 | <a id="serve-serve"></a>`serve` | `startServer`, then SIGINT and SIGTERM handlers: the first signal stops, a second ends the stop wait |
 | <a id="serve-startserver"></a>`startServer` | data folder, lock, token, headers file, `ChatApi.init`, `startAgent`; cleanup on error |
-| <a id="serve-startagent"></a>`startAgent` | user, `prepareCore`, control group, wiring of `Actions`, `AgentTools`, `Control`, HTTP, event handler, `stop` |
+| <a id="serve-startagent"></a>`startAgent` | user, `prepareCore`, control group, wiring of `Actions`, `AgentTools`, `Control`, HTTP, restart notice, event handler, `stop` |
 | <a id="serve-registerhint"></a>`registerHint` | the `register` command line printed after the owner setup |
+| <a id="serve-versionwithcommit"></a>`versionWithCommit` | `VERSION (COMMIT)` when the commit file exists, COMMIT its content trimmed; otherwise `VERSION` |
 | <a id="serve-waitforcancelledcards"></a>`waitForCancelledCards` | the fixed wait at stop for cards edited or posted at the stop, used by the plugin's hub as well |
 | <a id="serve-controlgroup"></a>`controlGroup` | found, created or reset agent control chat |
 | <a id="serve-listen"></a>`listen` | `startHttp`; `EADDRINUSE` to `ExitError` code 1 |
@@ -221,6 +223,7 @@ Hooks are bound in [`startAgent`](../src/serve.ts), where `actions` is created: 
 | <a id="control-control-load"></a>`Control.load` | lost check, group profile and menu through `updateProfile`, and member list |
 | <a id="control-control-rename"></a>`Control.rename`, `Control.describe`, `updateProfile` | the plugin's group name, and its short description. `updateProfile` makes one profile update at a time, and keeps the custom data in memory. A session group is updated from its current profile in the chat database. The agent control chat of `serve` is updated from the profile held in memory since the start, by `changeGroupProfile`. |
 | <a id="control-control-start"></a>`Control.start` | owner setup per `--owners` |
+| <a id="control-control-postrestartnotice"></a>`Control.postRestartNotice` | the restart notice in the control chat |
 | <a id="control-control-refusal"></a>`Control.refusal` | bytes left for the link texts of a connect card and for the input preview of a tool-use card, card size of a send, connect or download, approver presence |
 | <a id="control-control-hasapprover"></a>`Control.hasApprover` | an approver is a member |
 | <a id="control-control-standingapprover"></a>`Control.standingApprover` | approver name of a chat's standing approval of messages or files |
@@ -367,7 +370,7 @@ The core library is downloaded once into `CACHE/core-7.1.3.0/sqlite`, and the No
 
 1. Data folder, lock, token and headers file are prepared ([`startServer`](../src/serve.ts)).
 2. libsimplex for SQLite is loaded by `ChatApi.init`, and the databases are migrated with confirmation `yesUp` ([`startServer`](../src/serve.ts), [`ChatApi.init`](../../simplex-chat-nodejs/src/api.ts)).
-3. Three log lines: version and NAME, data folder, mode ([`startServer`](../src/serve.ts)).
+3. Three log lines: version, with the commit of the build when `dist/commit.txt` exists, and NAME; data folder; mode ([`startServer`, `fullVersion`](../src/serve.ts)).
 4. The active user is read, or created with display name `--display-name` or NAME, empty full name and peer type `agent` ([`startAgent`](../src/serve.ts)).
 5. `prepareCore` reads the network config and sets it with `smpProxyMode` `always` and `smpProxyFallback` `allowProtected` ([`startAgent`](../src/serve.ts), [`prepareCore`](../src/core.ts)).
 6. `prepareCore` sets `DATA/tmp` as the core's temp folder and deletes `DATA/files/sent` ([`prepareCore`](../src/core.ts)).
@@ -380,9 +383,10 @@ The core library is downloaded once into `CACHE/core-7.1.3.0/sqlite`, and the No
 13. `server.json` is written ([`startAgent`](../src/serve.ts)).
 14. The server runs the owner setup, `Control.start`; after an error, HTTP is closed and the error is rethrown ([`startAgent`](../src/serve.ts)).
 15. `Listening on http://127.0.0.1:PORT/mcp` ([`startAgent`](../src/serve.ts)).
-16. Buffered events are replayed, then live events are dispatched ([`startAgent`](../src/serve.ts), [`bufferEvents`](../src/core.ts)).
+16. Unless the control chat is lost, the restart notice is posted in the control chat; a failed post is logged, and the server continues the start ([`startAgent`](../src/serve.ts), [`Control.postRestartNotice`](../src/control.ts), [API: other posts](api.md#23-other-posts)).
+17. Buffered events are replayed, then live events are dispatched ([`startAgent`](../src/serve.ts), [`bufferEvents`](../src/core.ts)).
 
-After an error inside `startAgent` (steps 4-16) the chat is closed; after any error once the lock is taken, the lock is released ([`startServer`](../src/serve.ts)).
+After an error inside `startAgent` (steps 4-17) the chat is closed; after any error once the lock is taken, the lock is released ([`startServer`](../src/serve.ts)).
 
 ### 4.2 Event dispatch
 
