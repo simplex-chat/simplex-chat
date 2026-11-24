@@ -118,6 +118,16 @@ final class NameAlertsTests: XCTestCase {
     }
 
     @MainActor
+    func testNameLinkOpened() async throws {
+        try recorded("names/plan-known-link")
+        for link in ["simplex:/name@alice.simplex", "simplex:name@alice.simplex"] {
+            connect(try XCTUnwrap(openedConnectionLink(try XCTUnwrap(URL(string: link))), link))
+            try await assertTexts(["alice", "@alice.simplex", "Open chat", "Cancel"])
+            try await dismissPresented()
+        }
+    }
+
+    @MainActor
     func testNameMovedToKnownContact() async throws {
         try recorded("names/plan-moved-known")
         connect("@alice.simplex")
