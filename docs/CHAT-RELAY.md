@@ -169,7 +169,7 @@ The relay can also be built and run with Docker Compose, using PostgreSQL for st
    cat out/relay-address.txt
    ```
 
-To give the relay a picture, put a small `.png`/`.jpg`/`.jpeg` file (large images are rejected) next to the compose file and add a `docker-compose.override.yml`:
+To give the relay a picture, put a small `.png`/`.jpg`/`.jpeg`/`.webp` file (large images are rejected) next to the compose file and add a `docker-compose.override.yml`:
 
 ```yaml
 services:

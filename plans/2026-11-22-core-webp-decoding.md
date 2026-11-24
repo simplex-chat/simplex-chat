@@ -519,7 +519,9 @@ simplex-chat, branch `ep/core-webp`:
   - comment (:207): `.webp` named
 - `Controller.hs:671`, comment: `.webp` named.
 - `Options.hs:493`, help: `.png/.jpg/.jpeg/.webp`.
-- `docs/CHAT-RELAY.md:110`: `.png`, `.jpg`, `.jpeg` or `.webp`.
+- `docs/CHAT-RELAY.md`:
+  - `--user-image-file` (:110): `.png`, `.jpg`, `.jpeg` or `.webp`
+  - Docker picture (:172): `.png`/`.jpg`/`.jpeg`/`.webp`
 - `cabal.project`, `scripts/nix/sha256map.nix`, `simplex-chat.cabal`: "Builds".
 - `docs/dependencies`: "Licence notices".
 - Tests and fixtures: "Tests".
