@@ -81,16 +81,22 @@ Apps, with the platform decode after `""` from the core:
 
 Link previews of the apps on master, replaced by #8297: Android and desktop decode the image with `loadImageBitmap`, WebP included (common/views/helpers/LinkPreviews.kt:43, 92-96, 124-128); iOS with `LPMetadataProvider` and `UIImage` (SimpleXChat/ImageUtils.swift:455-489).
 
-## Decisions
+## Design
 
-| ID | Decision | Options, recommended first |
+Decided by the product owner, 2026-11-24:
+- D6 (b): "then obviously we must be doing it, and for PNG too, if possible";
+- the desktop picker in this pull request (D11): "We need to have desktop picker to test sending and receiving".
+
+The other rows are recommendations to the product owner.
+
+| ID | Choice | Options, recommended first |
 |---|---|---|
 | D1 | **Binding in hs-jpeg-turbo.** New package `JuicyPixels-libwebp`, module `Codec.Picture.Webp`, in simplex-chat/hs-jpeg-turbo; libwebp a submodule at `JuicyPixels-libwebp/cbits/libwebp`. The name `JuicyPixels-webp` is the package name of (e). | (a) package in hs-jpeg-turbo: one cabal package; CI, nix hash line, `subdir` list and Windows removal glob `hs-jpeg-t*` reused.<br>(b) new repository: created by the user; CI copied; one more `source-repository-package` and nix hash line.<br>(c) cbits in simplex-chat: a submodule in every simplex-chat checkout (CI, nix, Docker, reproducible Android build) and 49 C files in simplex-chat.cabal.<br>(d) Hackage `webp` 0.1.2.0: GPL-3; system libwebp through pkg-config, while the iOS and Android builds link bundled C sources only; c2hs; animated input unsupported.<br>(e) iko-soy/JuicyPixels-webp, package `JuicyPixels-webp`, module `Codec.Picture.WebP`: pure Haskell, GitHub only, repository created 6 Feb 2026, about 11,650 lines to review (its STATUS.md). |
 | D2 | **One decode function.** `decodeWebp :: DecodeOptions -> ByteString -> IO (Either String (DynamicImage, Metadata))`, `data DecodeOptions = DecodeOptions {maxMemoryMB :: Int, outputSize :: (Int, Int) -> Either String (Int, Int)}`, `data Metadata = Metadata {iccProfile, exif :: Maybe ByteString}`: the image at the size that `outputSize` returns for the canvas size, and the payloads of the `ICCP` and `EXIF` chunks, from one pass of the demuxer, as the image and the ICC profile from `Spng.decodePng` (Spng.hsc:36-45). | (a) one function.<br>(b) a header function, then decoding at a given size, as `readJpegHeader` and `decodeJpeg`: two passes over the container. |
 | D3 | **First frame of an animation through the demuxer.** Frame 1 of `WebPDemuxGetFrame`, decoded by `WebPDecode` into a zeroed canvas at the frame offset: the pixels of `WebPAnimDecoderGetNext` for frame 1 (anim_decode.c:202-203, 347-384). | (a) demuxer and decoder: one canvas.<br>(b) `WebPAnimDecoder`: two canvases allocated at creation (anim_decode.c:137-143), then a copy out.<br>(c) `Left` for animations: link previews of animated images fail. |
 | D4 | **RGB for opaque still images, RGBA otherwise.** Table in "Decoding". The output format is chosen by `imageFormat` (Image.hs:51-67), unchanged. | (a) RGB or RGBA by the frame's alpha.<br>(b) RGBA always: a third more memory for opaque images. |
 | D5 | **ICC profile and EXIF orientation as for JPEG.** The payload of the first `ICCP` chunk is passed to `colourProfile` (Image.hs:181-185): `CPDisplayP3` or `CPNone` (plan 2026-10-23, D25). The payload of the first `EXIF` chunk is passed to `exifOrientation` (Image.hs:107-129), and the image is turned by `orientImage` (:154-166), as JPEG input (plan 2026-10-23, D6). The payload is read as TIFF data from its first byte, tag `0x0112` of IFD0, as by the WebP codec of Android's `ImageDecoder` (Android: SkWebpCodec.cpp:102-108, SkJpegCodec.cpp:63-103, ImageDecoder.cpp:110-111), which decodes still WebP images picked on SDK 28 and later on master (Utils.android.kt:278-283, Utils.kt:218-227). `XMP ` chunks are ignored. | (a) EXIF orientation applied.<br>(b) EXIF ignored, as by dwebp (imageio/tiffdec.c:239, imageio/image_enc.c:412): a still WebP with orientation 6, picked on Android SDK 28 and later, sent upright on master, sent turned by 90 degrees. |
-| D6 | **Decoded at the display size in one pass (b), product owner: decode and scale down in one pass, as JPEG is.** The canvas sides halved while a side exceeds 4320, as `displaySize` (Image.hs:90-96); libwebp's rescaler scales frame 1 to that size while it is decoded. Limits within half of `maxDecodeMemoryMB` in "Decoding". | (a) full size, halved by `fitImage`, as PNG: the canvas at full size, up to 768 MiB for 16384×16384 RGB.<br>(b) libwebp scaled decoding to the display size: the output at most 4320×4320; the internal buffers of lossless frames and of alpha at full size at `v1.6.0` (vp8l_dec.c:1556-1574). |
+| D6 | **Decoded at the display size in one pass (b), decided by the product owner.** The canvas sides halved while a side exceeds 4320, as `displaySize` (Image.hs:90-96); libwebp's rescaler scales frame 1 to that size while it is decoded. Limits within half of `maxDecodeMemoryMB` in "Decoding". | (a) full size, halved by `fitImage`, as PNG: the canvas at full size, up to 768 MiB for 16384×16384 RGB.<br>(b) libwebp scaled decoding to the display size: the output at most 4320×4320; the internal buffers of lossless frames and of alpha at full size at `v1.6.0` (vp8l_dec.c:1556-1574). |
 | D7 | **Decoder and demuxer sources only, SIMD by compiler macros.** 49 C files; list in "hs-jpeg-turbo". | (a) SSE2, NEON or C paths, selected by the macros of `src/dsp/cpu.h:47-137`.<br>(b) internal libraries for SSE4.1, AVX2 and armv7 NEON with their flags, as jpeg-turbo's `neon` (jpeg-turbo.cabal:214-215): three more stanzas, for one decode per picked image. |
 | D8 | **App fallbacks kept; iOS unchanged.** The platform path is kept for formats other than JPEG, PNG and WebP: HEIC on Android (Images.android.kt:99-100, ComposeView.kt:382), pasted and camera images on iOS (`.simpleImage`, ComposeView.swift:1596-1597), other types picked on iOS (ImagePicker.swift:92-95). Each app ships with its core; the fallbacks are kept for those formats. | (a) all kept.<br>(b) Android and iOS fallbacks removed: HEIC, pasted and camera images fail. |
 | D9 | **CLI profile images from WebP; `/img` unchanged.** `loadImageData` accepts `.webp`; `/img` keeps `.jpg .jpeg .png .gif` (Library/Commands.hs:204-205), because a WebP file is sent as it is and desktop shows a received WebP file only as its preview (product/gaps.md:231). Bot libraries are unchanged and accept WebP with the next pinned core release (packages/simplex-chat-nodejs/src/release.ts:3 `core-7.1.4.0`, packages/simplex-chat-python/src/simplex_chat/_version.py:8 `core-7.1.3.0`). | (a) profile images only.<br>(b) `/img` too: WebP files that desktop recipients open only as previews. |
@@ -104,19 +110,31 @@ Link previews of the apps on master, replaced by #8297: Android and desktop deco
 
 ```mermaid
 flowchart TD
-  Q2{"Q2 desktop picker"} -->|"b, recommended: core and desktop"| B["build"]
-  Q2 -->|"a: core only"| B
+  A["answer of libwebp's maintainers:<br>release date"] --> Q1{"Q1 libwebp commit"}
+  Q1 -->|"a: v1.6.0, as built"| B["merge"]
+  Q1 -->|"b: wait for the release"| R["release"] --> B
+  Q1 -->|"c: main at 68dd1c30"| U["audit, Huffman limit"] --> B
+  Q1 -->|"d: backport onto v1.6.0"| U
+  Q3{"Q3 desktop picker<br>after this pull request"} -->|"a, recommended: kept"| B
+  Q3 -->|"b: commented out"| P["separate pull request"]
 ```
 
 | Q | Question | Options | Recommendation |
 |---|---|---|---|
-| Q2 | Desktop picker in this pull request | (a) core only: desktop keeps the alert for every WebP image.<br>(b) core and desktop picker (D11): about 20 lines of Kotlin, desktopTest cases and WebP cases in the desktop-linux smoke test. | (b) |
+| Q1 | libwebp commit | (a) the release `v1.6.0`, as built: lossless and transparent images above the limits of "Decoding" (about 11 to 16 million pixels) refused.<br>(b) `v1.6.0` until a release with `e7a90451`, `4391fdb0` and `bb3ad5bc`, then that release: this pull request waits for a release of unknown date.<br>(c) main at `68dd1c30`, the commit of Chrome stable: an audit of the commits after `v1.6.0` to the 49 C files of D7, and a limit of the total size of Huffman tables in the binding.<br>(d) `v1.6.0` with those three commits, `ea3c97c6`, `a53957a4` and the Huffman commits backported: 9 files, 413 lines added and 141 removed after clang-format of `v1.6.0`; a patched submodule, its audit and the same Huffman limit. | after the maintainers' answer: (b) when a release is near, (c) otherwise |
+| Q2 | Desktop picker in this pull request | (a) core only: desktop keeps the alert for every WebP image.<br>(b) core and desktop picker (D11): about 20 lines of Kotlin, desktopTest cases and WebP cases in the desktop-linux smoke test. | decided (b) by the product owner |
+| Q3 | Desktop picker after this pull request | (a) kept: a still WebP sent as JPEG or PNG, an animated WebP as its file, so that recipients of every version receive the kinds of images of master.<br>(b) commented out until the next version, in a separate pull request, as the product owner proposed. | (a) |
 
-Implemented with Q1 decided and Q2 (b), pending its answer.
+Implemented with Q1 (a) and Q2 (b).
 
 ### Q1: libwebp commit
 
-Decided (a), the release `v1.6.0` (`4fa21912`, 7 Jul 2025), by the product owner: main is unreleased, and its diff after `v1.6.0` would need an audit (146 commits to the 49 C files of D7 up to main `f054d0c3`; 807 lines added and 385 removed in src/dec/vp8l_dec.c).
+Built with (a), the release `v1.6.0` (`4fa21912`, 7 Jul 2025). The product owner, 2026-11-24: "I don't like pinning dev head, as it's unreleased and the diff is large and needs to be audited", then "It may be worth holding our adoption until they release if it's soon, let's find out. I don't like the idea of shipping bad code if good one is already commited in dev head." The release date is asked of libwebp's maintainers in their issue tracker.
+
+libwebp on 2026-11-24:
+- the newest tag is `v1.6.0`; NEWS, ChangeLog and AUTHORS on main `940c8692` are as at `v1.6.0`, while for 1.5.0 and 1.6.0 they were updated 7 to 9 days before the release;
+- Chrome stable 158.0.8127.88, released 23 Nov 2026, is built with libwebp main at `68dd1c30` of 9 Oct 2026 (DEPS:2713-2714 of chromium/src at that tag); `68dd1c30` contains `e7a90451`, `4391fdb0`, `bb3ad5bc`, `ea3c97c6`, `a53957a4`, the Huffman commits `5755839a`, `0ff181e8`, `21c53c13` and `5b744118`, and `54f23b04`;
+- on main, the Huffman tables of a lossless stream are allocated in segments of 16 or 52 groups (vp8l_dec.c:519-529 at `940c8692`), so `WEBP_MAX_ALLOCABLE_MEMORY`, a limit of each allocation (utils.c:182-187), no longer limits their total.
 
 At `v1.6.0`, the lossless decoder allocates its pixel buffer for the whole frame, 4 bytes per pixel (`AllocateInternalBuffers32b`, vp8l_dec.c:1556-1574), also for lossless-coded alpha (:1644-1653), and the Huffman tables of a lossless stream in one allocation for all its groups (:478-487). The limits of "Decoding" keep decoding within `maxDecodeMemoryMB` at this version.
 
