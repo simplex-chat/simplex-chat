@@ -408,7 +408,7 @@ Until the pull request in simplex-chat/hs-jpeg-turbo is merged, `cabal.project`,
 - `docs/dependencies/licences/apps/libwebp/COPYING` and `PATENTS`: copies from the pinned commit.
 - `docs/dependencies/HASKELL.md`:
   - direct dependency, after `JuicyPixels-stbir` (:28): `JuicyPixels-webp` 0.1.0.0, the hs-jpeg-turbo commit of `cabal.project` ("Builds"), `BSD-3-Clause`, "JuicyPixels wrappers for libwebp"
-  - `JuicyPixels-webp` added to the dependents of `JuicyPixels` (:25), `bytestring` (:11) and `vector` (:55)
+  - `JuicyPixels-webp` added to the dependents of `JuicyPixels` (:25), `bytestring` (:11), `vector` (:55) and `transformers` (:167)
 - `docs/dependencies/licences/haskell/JuicyPixels-webp-0.1.0.0/LICENSE`, with "Copyright 2026 SimpleX Chat Ltd".
 - `docs/dependencies/README.md`, after the list: the WebP test images in `tests/fixtures/webp` are made from the repository's own test images (Tests, "Fixtures"), under the licence of this repository.
 
