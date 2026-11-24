@@ -270,6 +270,9 @@ L2  [label](URI): each alphanumeric run of the label that is an address of the n
     with or without a checksum, equals the payee, an alternative or the token,
     or the hyperlink is refused: the label is text, the URI a bare payment link;
     an autolink <URI>, whose label is its URI, is not checked
+L3  a hyperlink target without a scheme is not a payment link:
+      [label](address) is the text [label]( , a bare payment link, and )
+      <address> is text
 B1  bare forms without a checksum are text:
       Solana
       an EVM address in one case
@@ -282,7 +285,9 @@ B3  code spans and code blocks are text, as for links
 flowchart TD
   W["word, autolink, or target of a hyperlink"] --> S{"payment scheme?"}
   S -->|yes| U["URI parser of the scheme"]
-  S -->|no| B{"bare form with a checksum?"}
+  S -->|no| H{"target of a hyperlink?"}
+  H -->|"yes: L3"| X["hyperlink refused: its text is parsed as words"]
+  H -->|no| B{"bare form with a checksum?"}
   B -->|yes| V["decode; check checksum, network byte or HRP"]
   B -->|no| O["message link, SimpleX link, web link, domain, e-mail, as now"]
   U -->|valid| L{"target of a hyperlink?"}
@@ -303,7 +308,7 @@ data PaymentRequest = PaymentRequest
   { payee :: PaymentPayee,
     alternatives :: [LightningPayee], -- lightning= and lno= beside a bitcoin: address
     amount :: Maybe Text, -- decimal: coins of the network, or base units of the token
-    token :: Maybe Text, -- ERC-20 contract or SPL mint
+    token :: Maybe PaymentToken, -- ERC-20 contract or SPL mint
     label :: Maybe Text, -- recipient in the link
     message :: Maybe Text, -- description in the link
     walletUri :: Text -- handed to the OS
@@ -328,9 +333,11 @@ data LightningPayee
   | LPOffer {offer :: Text} -- BOLT 12
   | LPLnurl {lnurl :: Text, host :: Text} -- LUD-01
 
+data PaymentToken = PaymentToken {address :: Text, checksum :: AddressChecksum}
+
 data AddressChecksum = ACVerified | ACUnchecked -- ACUnchecked: Solana, or an EVM address in one case
 
-instance StrEncoding PaymentRequest -- strDecode: a URI or a bare word; strEncode: walletUri
+instance StrEncoding PaymentRequest -- strDecode: a URI or a bare word; strEncode: walletUri; strDecode . strEncode = Right
 
 hasOtherAddress :: PaymentRequest -> Text -> Bool -- rule L2
 ```
@@ -349,7 +356,8 @@ data Format
 - Amounts: `1*DIGIT ["." 1*DIGIT]`, the grammar of ZIP-321, for every scheme but `ethereum:`.
 - Codecs in `Payments.hs`: Base58 and Base58Check; the Monero block variant, 8 bytes in 11 characters; bech32 and bech32m without a length limit; CashAddr; the BOLT 11 fields `d` and `x`. Hashes: `sha256Hash` and `keccak256` (simplexmq Crypto.hs:1035-1057); the EIP-55 check of `strP` of `Simplex.Messaging.Eth.Address` (simplexmq Eth/Address.hs:40-48) [S36].
 - Chain names and coin symbols, in the apps, for `chainId` 1, 10, 56, 137, 8453 and 42161: Ethereum, OP Mainnet, BNB Smart Chain, Polygon, Base, Arbitrum One; ETH, BNB, POL [S34]. Another chain is shown by its number.
-- Each word is tested only for the prefixes and lengths of section Syntax before it is decoded.
+- Each word is tested for the prefixes of the bech32, Lightning and `0x` forms, and for the lengths of the Base58, CashAddr and Monero forms, before it is decoded.
+- The schemes and their parsers are one list, `schemeRequests`: a URI is parsed by the parser of its scheme, and a bare word by each parser in the order of the list, so Bitcoin is tried before Litecoin for a `3…` address.
 
 ## Parser changes
 
@@ -358,7 +366,7 @@ fragmentP     digit branch: a word with a PaymentLink, then phoneP, then wordP (
 linkMD        after the web URI branch, before isDomain: paymentLink of the link text (Markdown.hs:506-518)
 hyperLinkFormat
               after the SimpleX link branch, before parseUri: paymentLink of the target,
-              with the label rules L1 and L2 (Markdown.hs:450-467)
+              with the label rules L1, L2 and L3 (Markdown.hs:450-467)
 isLink        PaymentLink, as decided in Q5 (Markdown.hs:320-326)
 markdownText  PaymentLink -> the source text (Markdown.hs:965-986)
 ```
@@ -462,7 +470,7 @@ sequenceDiagram
 | open | `UIApplication.shared.open(url) { success in … }`; the alert when `success` is false [S18] | `uriHandler.openUri` in `try`; the alert on an exception (TextItemView.kt:729-738) |
 | previews | `linkUri` is unchanged, so a payment link is never previewed (ChatTypes.swift:5883-5889, ComposeView.swift:1929-1939) | the same (ChatModel.kt:5369-5374, ComposeView.kt:472-482) |
 
-- Remote desktop: `minRemoteCtrlVersion` and `minRemoteHostVersion` (Remote.hs:77-82) are set to the release version, because an app of an earlier version fails to decode the new `Format`.
+- Remote desktop: an app of an earlier version fails to decode the new `Format`; `minRemoteCtrlVersion` and `minRemoteHostVersion` (Remote.hs:77-82) are raised to the release version by the release commit, as by `d7d180a42 core: 7.1.0.16`.
 - Website: the payment schemes are added to `SAFE_URI_SCHEME` (website/src/js/simplex-lib.jsc:26), and `paymentLink` is rendered as a link to `walletUri` in `renderSegments` (simplex-lib.jsc:225-301).
 - CLI: the text is printed as now (Styled.hs:71-79).
 - Bots API: `PaymentLink` and its types are added in bots/src/API/Docs/Types.hs:298; bots/api and the TypeScript and Python types are generated again.
@@ -483,13 +491,16 @@ Each test of tests/MarkdownTests.hs, tests/ChatTests and the apps fails on maste
 | tests/MarkdownTests.hs | `bc1q2gy6…505d4u` and its upper-case form are parsed as `PaymentLink` with `walletUri` `bitcoin:` and the address; the address with its last character changed is text |
 | | `BITCOIN:BC1Q2GY6…?AMOUNT=0.001` is parsed with `walletUri` `bitcoin:BC1Q2GY6…?amount=0.001`; `amount=0.000000001` and `amount=1,000` are text |
 | | `37116639cErLzxER6tL3a6EH2DbdETwTxd`, a P2SH address made for the test from random bytes, which starts with 8 digits, is one `PaymentLink`; on master it is split by `phoneP` (Markdown.hs:363, 484-494) |
-| | the README.md:151-158 addresses, bare and as URIs: Monero byte 42, CashAddr with and without its prefix, EIP-55, `t1`, `u1`, Dogecoin; `solana:7JCf…ARnu?amount=0.5` |
+| | the README.md:151-158 addresses, bare and as URIs: Monero byte 42, CashAddr with and without its prefix, EIP-55, `t1`, `u1`, Dogecoin; `solana:7JCf…ARnu?amount=0.5`; with `spl-token`, a token without a checksum |
+| | `strDecode (strEncode r) == Right r` for each request of these tests |
 | | the BOLT 11 example "Please send $3 for a cup of coffee to the same peer, within one minute" [S4]: amount 0.0025 BTC, description `1 cup coffee`, `expiresAt` 2017-06-01T10:58:38Z; its example "Bech32 checksum is invalid" is text |
-| | `ethereum:0xD704…c86a@42161?value=1e16`: chain 42161, amount 0.01; the USDT `transfer` example: token, payee, `5000000`; `/approve?…` is text; the address with the case of one letter changed is text |
-| | `[Donate](monero:8A3Z…q1c)` is parsed as `PaymentLink (Just "Donate")`; `[bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4](bitcoin:bc1q2gy6…)`, a valid address of BIP-173 as the label, is parsed as label text and a bare `PaymentLink` (L2) |
+| | `ethereum:0xD704…c86a@42161?value=1e16`: chain 42161, amount 0.01; the USDT `transfer` example: token with its checksum, payee, `5000000`; the same with the token contract in lower case: a token without a checksum; `/approve?…` is text; the address with the case of one letter changed is text |
+| | `[Donate](monero:8A3Z…q1c)` is parsed as `PaymentLink (Just "Donate")`; `[bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4](bitcoin:bc1q2gy6…)`, a valid address of BIP-173 as the label, is parsed as label text and a bare `PaymentLink` (L2); `[Donate](bc1q2gy6…)` is parsed as text and a bare `PaymentLink`, and `<bc1q2gy6…>` as text (L3) |
 | | text: `ThereAreMany32ByteKeysHereButNoneAreChecked`; `0xd7047fe3eecb2f2ff78d839dd927be27bc12c86a` bare; `tb1…`; `monero-wallet:…?spend_key=…`; `monero:A;B?tx_amount=1;2`; `zcash:t1fwj…?memo=…`; `` `bc1q2gy6…` ``; `alice@getalby.com` as e-mail |
 | | `hasLinks` of a payment link, as decided in Q5; linear time: 10000 words of 34 Base58 characters |
-| tests/ChatTests/Direct.hs | a message with payment links: the item's `formattedText` has `PaymentLink`; recorded by `apiFixture` (tests/ChatTests/Utils.hs:999-1004) to tests/fixtures/api/payments, a pattern added to "App test fixtures" (scripts/ci/README.md:51) |
+| tests/JSONTests.hs | the JSON of a `bitcoin:` URI with `lightning=`, an `ethereum:` URI with a chain and a token transfer is decoded to the same value |
+| tests/ChatTests/Direct.hs | `filter chat by link content`: a message with a bare address is in the Links filter, as decided in Q5 |
+| tests/ChatTests/Direct.hs | `payment links in a received message`: alice sends a bare address, `[Donate](monero:…)` and a bare invoice; `apiFixture` (tests/ChatTests/Utils.hs:999-1004) records bob's `/_get chat @2 count=1`, whose item has `PaymentLink` in `formattedText`, and the markdown of each payee kind, to tests/fixtures/api/payments/links.json; its pattern is in "App test fixtures" (scripts/ci/README.md:51) |
 | tests/APIDocs.hs | the bots API files, generated again with the new types |
 | app tests on the recorded responses | `Format.paymentLink` is decoded; each payee kind is mapped to its sheet title, grouped address, amount, warnings and marks; a mocked open failure is followed by the alert |
 
@@ -498,7 +509,8 @@ Each test of tests/MarkdownTests.hs, tests/ChatTests and the apps fails on maste
 | Part | Stage |
 |---|---|
 | core: `Payments.hs`, `Format.PaymentLink`, parser changes, `walletUri`, tests, bots API types, fixtures | v1 |
-| iOS, Android, desktop: rendering, sheet, open, alert, QR code, app tests; remote versions | v1, in the same pull request |
+| iOS, Android, desktop: rendering, sheet, open, alert, QR code, app tests | v1, in the same pull request |
+| remote versions | the release commit |
 | website renderer | v1 |
 | names: `₿user@domain`, Lightning Address, ENS, handed to the wallet | later, once wallets accept a URI form for them |
 | a group preference that prohibits payment links | later, a protocol preference (Types/Preferences.hs:206-218) |
