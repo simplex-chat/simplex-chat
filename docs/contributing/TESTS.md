@@ -46,7 +46,7 @@ The hspec suite `simplex-chat-test` of simplex-chat.cabal, with the entry point 
 | `/Operators/` | OperatorTests.hs | server operators, usage conditions, validation of user servers |
 | `/Member relations/` | MemberRelationsTests.hs | member relation vectors |
 | `/Image resize/` | ImageTests.hs | image resizing |
-| `/Link preview/` | LinkPreviewTests.hs | link previews: the head scanner, the page and image limits, URIs, the address policy, HTTP framing and interim responses, charsets and the embedded root certificates |
+| `/Link preview/` | LinkPreviewTests.hs | link previews: the head scanner, the page and image limits, URIs, the address policy, the keys of certificate chains, HTTP framing and interim responses, charsets and the embedded root certificates |
 | `/Supporter badges/` | BadgeTests.hs | badge credentials and proofs |
 | `/WebRTC encryption/` | WebRTCTests.hs | encryption of call media frames; SQLite only |
 | `/Remote session/` | RemoteTests.hs | a desktop controlling a mobile: handshake, messages, files |

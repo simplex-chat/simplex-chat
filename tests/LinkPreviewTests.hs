@@ -10,6 +10,11 @@ module LinkPreviewTests where
 import Control.Monad (forM_)
 import Control.Monad.Except (ExceptT, runExceptT)
 import Control.Monad.IO.Class (liftIO)
+import qualified Crypto.PubKey.DSA as DSA
+import Crypto.PubKey.ECC.Types (CurveName (SEC_p256r1))
+import qualified Crypto.PubKey.Ed25519 as Ed25519
+import qualified Crypto.PubKey.Ed448 as Ed448
+import qualified Crypto.PubKey.RSA as RSA
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
@@ -18,7 +23,7 @@ import Data.IORef
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
-import Data.X509 (SignedCertificate)
+import Data.X509 (PubKey (..), PubKeyEC (PubKeyEC_Named), SerializedPoint (..), SignedCertificate)
 import qualified Data.X509.CertificateStore as XS
 import Data.X509.Memory (readSignedObjectFromMemory)
 import Simplex.Chat.LinkPreview
@@ -59,6 +64,8 @@ linkPreviewTests = do
     it "should use plain HTTP only for onion hosts" testOnionSchemes
   describe "address policy" $ do
     it "should prohibit local addresses and their IPv4-mapped forms" testAddressPolicy
+  describe "certificate keys" $ do
+    it "should limit RSA keys to 16384-bit moduli and 33-bit exponents and allow EC and EdDSA keys" testCertificateKeys
   describe "HTTP" $ do
     it "should make request" testRequest
     it "should read chunked, Content-Length and close-delimited bodies" testBodies
@@ -423,6 +430,19 @@ testAddressPolicy = do
              "[::ffff:255.255.255.255]"
            ]
     public = ["1.1.1.1", "8.8.8.8", "100.128.0.1", "172.32.0.1", "192.169.0.1", "[2001:4860:4860::8888]", "[::ffff:8.8.8.8]"]
+
+testCertificateKeys :: IO ()
+testCertificateKeys = do
+  (maxRSAModulusBits, maxRSAExponentBits) `shouldBe` (16384, 33)
+  ed25519 <- PubKeyEd25519 . Ed25519.toPublic <$> Ed25519.generateSecretKey
+  ed448 <- PubKeyEd448 . Ed448.toPublic <$> Ed448.generateSecretKey
+  forM_ [rsa (2 ^ maxRSAModulusBits - 1) (2 ^ maxRSAExponentBits - 1), PubKeyEC $ PubKeyEC_Named SEC_p256r1 $ SerializedPoint "", ed25519, ed448] $ \key ->
+    (key, allowedKey key) `shouldBe` (key, True)
+  forM_ [rsa (2 ^ maxRSAModulusBits) 65537, rsa (2 ^ maxRSAModulusBits - 1) (2 ^ maxRSAExponentBits), rsa (-(2 ^ maxRSAModulusBits)) 65537, dsa] $ \key ->
+    (key, allowedKey key) `shouldBe` (key, False)
+  where
+    rsa n e = PubKeyRSA RSA.PublicKey {RSA.public_size = 0, RSA.public_n = n, RSA.public_e = e}
+    dsa = PubKeyDSA DSA.PublicKey {DSA.public_params = DSA.Params {DSA.params_p = 23, DSA.params_g = 4, DSA.params_q = 11}, DSA.public_y = 8}
 
 testRequest :: IO ()
 testRequest = do

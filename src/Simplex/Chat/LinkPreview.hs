@@ -17,6 +17,7 @@ import qualified Control.Exception as E
 import Control.Monad
 import Control.Monad.Except
 import Control.Monad.IO.Class (liftIO)
+import qualified Crypto.PubKey.RSA as RSA
 import Crypto.Random (ChaChaDRG)
 import qualified Data.Aeson as J
 import qualified Data.Attoparsec.ByteString.Char8 as A
@@ -36,8 +37,10 @@ import Data.Maybe (catMaybes, fromMaybe, isJust, isNothing, listToMaybe, mapMayb
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeUtf8', encodeUtf8)
+import Data.X509 (Certificate (certPubKey), CertificateChain (..), PubKey (..), getCertificate)
 import qualified Data.X509.CertificateStore as XS
 import Data.X509.Memory (readSignedObjectFromMemory)
+import Data.X509.Validation (FailedReason (InvalidSignature), SignatureFailure (SignatureUnimplemented), validateDefault)
 import Network.Socket
 import Network.Socket.ByteString (recv, sendAll)
 import Network.Socks5 (SocksAddress (..), SocksCredentials (..), SocksHostAddress (..), defaultSocksConf, socksConnect, socksConnectAuth)
@@ -99,6 +102,12 @@ maxTitleLength = 300
 
 maxDescriptionLength :: Int
 maxDescriptionLength = 200
+
+maxRSAModulusBits :: Int
+maxRSAModulusBits = 16384
+
+maxRSAExponentBits :: Int
+maxRSAExponentBits = 33
 
 data Fetcher = Fetcher
   { previewConfig :: LinkPreviewConfig,
@@ -317,11 +326,31 @@ withConnection Fetcher {previewConfig = LinkPreviewConfig {rootCerts, addressPol
       (TLS.defaultParamsClient host "")
         { TLS.clientUseServerNameIndication = isNothing literal,
           TLS.clientShared = def {TLS.sharedCAStore = rootCerts},
+          TLS.clientHooks = def {TLS.onServerCertificate = validateServerChain},
           TLS.clientSupported = linkPreviewTLSParams
         }
 
 linkPreviewTLSParams :: TLS.Supported
-linkPreviewTLSParams = defaultSupportedParamsHTTPS {TLS.supportedGroups = TLS.supportedGroups defaultSupportedParamsHTTPS <> [TLS.P256, TLS.P384]}
+linkPreviewTLSParams =
+  defaultSupportedParamsHTTPS
+    { TLS.supportedCiphers = filter ((`notElem` [TLS.CipherKeyExchange_DHE_RSA, TLS.CipherKeyExchange_DHE_DSS]) . TLS.cipherKeyExchange) $ TLS.supportedCiphers defaultSupportedParamsHTTPS,
+      TLS.supportedGroups = TLS.supportedGroups defaultSupportedParamsHTTPS <> [TLS.P256, TLS.P384]
+    }
+
+validateServerChain :: TLS.OnServerCertificate
+validateServerChain store cache serviceId chain@(CertificateChain certs)
+  | all (allowedKey . certPubKey . getCertificate) certs = validateDefault store cache serviceId chain
+  | otherwise = pure [InvalidSignature SignatureUnimplemented]
+
+allowedKey :: PubKey -> Bool
+allowedKey = \case
+  PubKeyRSA RSA.PublicKey {RSA.public_n, RSA.public_e} -> withinBits maxRSAModulusBits public_n && withinBits maxRSAExponentBits public_e
+  PubKeyEC _ -> True
+  PubKeyEd25519 _ -> True
+  PubKeyEd448 _ -> True
+  _ -> False
+  where
+    withinBits bits n = 0 < n && n < 2 ^ bits
 
 literalAddress :: TransportHost -> PortNumber -> Maybe SockAddr
 literalAddress host port = case host of

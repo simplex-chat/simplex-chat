@@ -156,6 +156,8 @@ sequenceDiagram
 | MAX_IMAGE_LINK_BYTES | 10 MiB of the JPEG or PNG file of an image link (section 3.7, Q6.1) |
 | MAX_TITLE_LENGTH | 300 characters |
 | MAX_DESCRIPTION_LENGTH | 200 characters |
+| MAX_RSA_MODULUS_BITS | 16384 bits of the modulus of an RSA key in the server's certificate chain (section 3.6) |
+| MAX_RSA_EXPONENT_BITS | 33 bits of the public exponent of an RSA key in the server's certificate chain (section 3.6) |
 | IMAGE_DATA_SIZE | `maxImagePreviewSize`, 14000 (Library/Commands.hs:179-180), less the JSON bytes of the title and the description (section 3.10) |
 
 ### 3.5 Types
@@ -196,7 +198,7 @@ data Uri = Uri
 
 - The card shows what the existing `LinkPreview` holds (Protocol.hs:246): `title`, `description`, `image`, `uri`. `HeadTags` holds the raw values of the first tag of each kind, a monoid of first values; `PageMeta` holds the decoded values, and `pageImage` is the URL that the core fetches and resizes into `ImageData`.
 - `USHttp` is produced only for `.onion` hosts (section 3.7); `uriPort` is `Nothing` for the default port of the scheme.
-- MAX_REDIRECTS, MAX_HEADER_BYTES, MAX_HEADERS, MAX_HEAD_BYTES, MAX_IMAGE_BYTES, MAX_IMAGE_LINK_BYTES, MAX_TITLE_LENGTH and MAX_DESCRIPTION_LENGTH are constants of the module; the tests change only the roots, the address policy and the deadlines.
+- MAX_REDIRECTS, MAX_HEADER_BYTES, MAX_HEADERS, MAX_HEAD_BYTES, MAX_IMAGE_BYTES, MAX_IMAGE_LINK_BYTES, MAX_TITLE_LENGTH, MAX_DESCRIPTION_LENGTH, MAX_RSA_MODULUS_BITS and MAX_RSA_EXPONENT_BITS are constants of the module; the tests change only the roots, the address policy and the deadlines.
 - Card in the apps: compose shows image, title and link (LinkPreviews.kt:152-191; ComposeLinkView.swift:43-52); the chat item shows image, title, description when not empty, and link on Kotlin (LinkPreviews.kt:203-226); iOS shows image and title only (CILinkView.swift:22, 36).
 - Description: both apps send `""` today (LinkPreviews.kt:129-134, commented out "TODO add once supported in iOS"; ImageUtils.swift:471). The core fills it, Kotlin shows it in at most 2 lines in place of 12 (LinkPreviews.kt:224), and stage 3 adds it to CILinkView as Kotlin shows it.
 - `image` is required in `LinkPreview`, so a page without an image has no preview, as today on both platforms (LinkPreviews.kt:121-139; ImageUtils.swift:461-479).
@@ -221,10 +223,12 @@ flowchart TD
   F --> TC["connect to each in order until one connects, CONNECT_TIMEOUT"]
   SP --> SC{"scheme"}
   SC -->|"http, onion host"| R["request"]
-  SC -->|https| TLS["T.contextNew, T.handshake"]
+  SC -->|https| TLS["T.contextNew, T.handshake: ECDHE, RSA or TLS 1.3 key exchange"]
   TC --> TLS
-  TLS --> V{"chain valid for host?"}
-  V -->|no| E["TLS error"]
+  TLS --> K{"keys of the chain allowed?"}
+  K -->|no| E["TLS error"]
+  K -->|yes| V{"chain valid for host?"}
+  V -->|no| E
   V -->|yes| R
 ```
 
@@ -240,7 +244,17 @@ flowchart TD
 - DNS: with a proxy, the host name is sent to the proxy as `SocksAddrDomainName`, as for SMP (mq:Messaging/Transport/Client.hs:191-195), and the device resolves nothing. Without a proxy, `getAddrInfo` resolves names and parses IP literals with the system resolver, and its `AddrInfo` opens the socket, as in `connectTCPClient` (mq:Messaging/Transport/Client.hs:197-206). `getAddrInfo` is called in a separate thread, and the calling thread waits for its result, so that the wait ends at CONNECT_TIMEOUT or PREVIEW_DEADLINE: the exception of a timeout is raised in a thread in the safe foreign call `getaddrinfo` only after the call returns (network 3.1.4.0, Network/Socket/Info.hsc:301; base, `throwTo`).
 - Prohibited addresses: loopback, 0.0.0.0/8 and `::`, private (RFC 1918, ULA), link-local, shared (RFC 6598), multicast, broadcast, and IPv4-mapped IPv6 forms of these. `APPublicAndLoopback` also allows loopback. The check runs on resolved addresses without a proxy and on IP literals with one.
 - An onion host without a proxy fails without a DNS query. With a proxy, an `http` URI of an onion host is fetched over plain HTTP, as Tor encrypts and authenticates the connection to the onion service (Q2).
-- TLS: `T.defaultParamsClient host ""` with `sharedCAStore = rootCerts`, SNI on for host names, and `defaultSupportedParamsHTTPS` (mq:Messaging/Transport.hs:399-417) with `P256` and `P384` added to `supportedGroups`, which up to TLS 1.2 also limit the curves of ECDSA server keys (tls 1.9.0 Network/TLS/Parameters.hs, `supportedGroups`). The hostname check of `validateDefault` applies. CONNECT_TIMEOUT applies to the TCP or SOCKS connection and, again, to the TLS handshake.
+- TLS: `T.defaultParamsClient host ""` with `sharedCAStore = rootCerts`, SNI on for host names, and `defaultSupportedParamsHTTPS` (mq:Messaging/Transport.hs:399-417) with `P256` and `P384` added to `supportedGroups`, which up to TLS 1.2 also limit the curves of ECDSA server keys (tls 1.9.0 Network/TLS/Parameters.hs, `supportedGroups`). CONNECT_TIMEOUT applies to the TCP or SOCKS connection and, again, to the TLS handshake.
+- Key exchange: `supportedCiphers` without the DHE suites; the ECDHE and RSA suites of TLS 1.2 and the suites of TLS 1.3 are kept.
+- Certificate chain: `onServerCertificate` accepts a chain whose certificates all have one of these keys, then validates it with `validateDefault`, whose hostname check applies:
+
+  | Key | Allowed |
+  |---|---|
+  | RSA | modulus positive, of at most MAX_RSA_MODULUS_BITS<br>public exponent positive, of at most MAX_RSA_EXPONENT_BITS |
+  | EC | any curve |
+  | Ed25519, Ed448 | any key |
+
+  A chain with another key, DSA included, is refused with `InvalidSignature SignatureUnimplemented`.
 - The SimpleX transport (`runTLSTransportClient`) is not used: it connects through its own `connectTCPClient` (mq:Messaging/Transport/Client.hs:172-174), so resolved addresses cannot be checked, and its `getLn` reads a line without a length limit (mq:Messaging/Transport.hs:447-449; mq:Messaging/Transport/Buffer.hs:78-88).
 - Root certificates: Q3. Today the core loads no root store in client builds: `crypton-x509-system` is a dependency only without `client_library` (mq:simplexmq.cabal:432-435), and on iOS its `System.X509` reads the Unix paths, which are absent there (crypton-x509-system 1.6.7: modules `System.X509.MacOS` only under `os(OSX)`; `System.X509.Unix` paths `/etc/ssl/certs/`, `/system/etc/security/cacerts/`, `/usr/local/share/certs/`, `/etc/ssl/cert.pem`).
 
@@ -413,10 +427,11 @@ The returned `uri` is the string the app sent, because the apps send `MCLink` on
 | `uri-bytestring` | 411 | yes |
 | `file-embed` | 387 | yes |
 | `crypton-x509-store` | added | yes, through simplexmq (mq:simplexmq.cabal:395) |
+| `crypton-x509-validation` | added | yes, through simplexmq (mq:simplexmq.cabal:396) |
 | `iproute` | added | yes, through simplexmq (mq:simplexmq.cabal:405) |
 | `warp-tls` | added to the test suite | not built for the mobile targets; in the plan of other builds through simplexmq (mq:simplexmq.cabal:432, 447) |
 
-- `crypton-x509-validation` and `pem` are not direct dependencies: `tls` validates the chain, and `readSignedObjectFromMemory` of `crypton-x509-store` 1.6.9 (Data/X509/Memory.hs) parses the embedded bundle.
+- `pem` is a dependency of `crypton-x509-store`, whose `readSignedObjectFromMemory` (1.6.9, Data/X509/Memory.hs) parses the embedded bundle.
 
 - Every package above is built for the mobile targets today.
 - Root bundle: `certifi/cacert.pem` of the submodule `src/Simplex/Chat/LinkPreview/certifi`, https://github.com/certifi/python-certifi at tag 2026.11.20, certifi's extract of the Mozilla roots under MPL-2.0, embedded with `embedFile` as `DisplayP3-v4.icc` is (Image.hs:211-212) (Q3, D4). A library release moves the submodule to the latest certifi tag (docs/contributing/RELEASES.md, "Library release").
@@ -748,6 +763,7 @@ Laws, tested in desktopTest and SimpleX Unit Tests on the recorded markdown:
 | Onion service, plain HTTP | serve the page and image | be reached without Tor | `http` only for onion hosts, only through the SOCKS proxy (section 3.6) |
 | Website, DNS name of a local address | point the core to the LAN without a proxy | connect: addresses are checked after resolution, and the checked address is the one connected | section 3.6 |
 | Website, image bomb | send large dimensions | exceed the decoding limits | `decodeResizable` limits; MAX_IMAGE_BYTES, MAX_IMAGE_LINK_BYTES |
+| Website, TLS handshake | choose its certificate chain and, in TLS 1.2, the key exchange | make the core compute with a DHE group of its own or with RSA keys above MAX_RSA_MODULUS_BITS or MAX_RSA_EXPONENT_BITS | DHE suites not offered; the keys of the chain checked before its validation (section 3.6) |
 | Network observer, proxy, exit | see the host name (SNI), timing, sizes | read or alter content | TLS validated against the root store |
 | A local non-Tor SOCKS proxy | resolve a name to a LAN address and connect | — | residual: only IP literals are checked with a proxy |
 | Recipient of the message | see the preview the sender made | make the sender or the recipient fetch | the recipient never fetches |
@@ -825,6 +841,7 @@ Core, unit, `tests/LinkPreviewTests.hs` (new, registered in tests/Test.hs), patt
 | reference resolution | RFC 3986 5.4.1 and 5.4.2 examples; `//cdn/...`; port kept; default port and trailing dot of the host removed |
 | onion schemes | `http` kept for onion hosts, in links, relative references and redirects; other `http` links fetched as `https`; redirect from an onion page to `http` of another host refused |
 | address policy | each prohibited range, its IPv4-mapped form, public addresses |
+| certificate keys | RSA keys of MAX_RSA_MODULUS_BITS and MAX_RSA_EXPONENT_BITS, EC P-256, Ed25519 and Ed448 keys allowed; RSA keys one bit above either limit or with a negative modulus, and DSA keys refused |
 | HTTP framing | chunked, `Content-Length`, close; header limits; oversized chunk; 1xx responses skipped within the head limits, 101 final |
 | request | headers, with the UA of Q7; fragment removed; `x.com` UA; `Host` without the default port |
 | charsets | UTF-8, `windows-1252`, unsupported |
@@ -848,6 +865,8 @@ Core, scenario, `tests/ChatTests/LinkPreviews.hs` (new, in ChatTests.hs), patter
 | head beyond MAX_HEAD_BYTES | the server sees the connection closed |
 | slow server, gzip, certificate of another CA, oversized image dimensions | `CELinkPreview`; slow server with a test deadline of 2 s |
 | TLS 1.2 with a P-256 key | a preview from a server limited to TLS 1.2, with tests/fixtures/tls/link-preview/server-p256.crt issued by ca.crt; the handshake fails without `P256` in `supportedGroups` (section 3.6); P-384 is left untested, as a server of tls 1.9.0 signs with P-256 keys only (Network/TLS/Handshake/Key.hs, `isDigitalSignaturePair`) |
+| TLS 1.2 key exchange | servers limited to TLS 1.2, with tests/fixtures/tls/link-preview/server-rsa.crt issued by ca.crt: a preview with only an ECDHE suite and with only an RSA suite; with only the DHE suites and a group of its own, the prime of `ffdhe2048` with the generator 5: `CELinkPreview` with the server's alert to the client's hello, and no request |
+| certificate chain keys | a server with tests/fixtures/tls/link-preview/server-intermediate.crt, issued by intermediate-rsa.crt, an intermediate CA with an RSA public exponent of 34 bits issued by ca.crt: `CELinkPreview` "certificate rejected: [InvalidSignature SignatureUnimplemented]", and no request |
 | SOCKS deadline | a page delayed 5 s, with the SOCKS deadline 2 s and the other 10 s: a preview without a proxy; "timeout" through the SOCKS5 server, which receives the request |
 | SOCKS, isolate | domain address type; two previews with two usernames; page and image with one |
 | SOCKS, username | the configured credentials |
