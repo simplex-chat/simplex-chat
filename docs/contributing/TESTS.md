@@ -269,7 +269,7 @@ The app built from a branch, its core included, driven on a device by scripts an
 |---|---|---|---|---|
 | `ios-sim` | iOS app in an iPhone simulator | onboarding<br>images sent in a group<br>snapshots | device-test-plan.md, cases per layout in claude-scope | [ios-sim](../../scripts/ci/ios-sim/README.md) |
 | `desktop-linux` | desktop app on a virtual display, Ubuntu | desktopTest with snapshots<br>onboarding<br>a local group<br>both layouts<br>images sent | claude-test.md, claude-scope | [desktop-linux](../../scripts/ci/desktop-linux/README.md) |
-| `android-emu` | debug APK in an Android emulator | onboarding<br>a local group<br>both layouts<br>images sent | claude-test.md, claude-scope | [android](../../scripts/ci/android/README.md) |
+| `android-emu` | debug APK in an Android emulator | the arm64 core's imports against Android 8.0<br>onboarding<br>a local group<br>both layouts<br>images sent | claude-test.md, claude-scope | [android](../../scripts/ci/android/README.md) |
 
 - Write: a scripted case in the workflow's `smoke-test.sh`, with its `ui` driver; a Claude plan in the files of the table, with `backend: yes` in claude-scope when the cases use the test backend.
 - Run: by hand only, on any branch: [CI guide, Starting a run](../../scripts/ci/README.md#starting-a-run). Each run uploads the app for manual tests.
