@@ -406,6 +406,7 @@ fun ChatItemView(
                   }
                 }
                 cItem.content.msgContent != null && cItem.id >= 0 && !cItem.isReport -> {
+                  val clipboard = LocalClipboardManager.current
                   DefaultDropdownMenu(showMenu) {
                     if (cInfo.featureEnabled(ChatFeature.Reactions) && cItem.allowAddReaction) {
                       MsgReactionsMenu()
@@ -420,7 +421,6 @@ fun ChatItemView(
                         showMenu.value = false
                       })
                     }
-                    val clipboard = LocalClipboardManager.current
                     val cachedRemoteReqs = remember { CIFile.cachedRemoteFileRequests }
                     val copyAndShareAllowed = when {
                       cItem.content.text.isNotEmpty() -> true
@@ -455,7 +455,13 @@ fun ChatItemView(
                     }
                     if (cItem.meta.itemDeleted == null && !live) {
                       ItemAction(stringResource(MR.strings.copy_link), painterResource(MR.images.ic_link), onClick = {
-                        withApi { copyItemLink(rhId, cInfo, cItem, clipboard) }
+                        withApi {
+                          val link = controller.apiGetChatItemLink(rhId, cInfo.chatType, cInfo.apiId, cInfo.groupChatScope(), cItem.id)
+                          if (link != null) {
+                            clipboard.setText(AnnotatedString(link))
+                            showToast(generalGetString(MR.strings.copied))
+                          }
+                        }
                         showMenu.value = false
                       })
                     }
@@ -1503,14 +1509,6 @@ fun moderateMessagesAlertDialog(itemIds: List<Long>, questionText: String, delet
 }
 
 expect fun copyItemToClipboard(cItem: ChatItem, clipboard: ClipboardManager)
-
-suspend fun copyItemLink(rhId: Long?, cInfo: ChatInfo, cItem: ChatItem, clipboard: ClipboardManager) {
-  val link = controller.apiGetChatItemLink(rhId, cInfo.chatType, cInfo.apiId, cInfo.groupChatScope(), cItem.id)
-  if (link != null) {
-    clipboard.setText(AnnotatedString(link))
-    showToast(generalGetString(MR.strings.copied))
-  }
-}
 
 val previewDate = Instant.fromEpochSeconds(1_736_936_100)
 

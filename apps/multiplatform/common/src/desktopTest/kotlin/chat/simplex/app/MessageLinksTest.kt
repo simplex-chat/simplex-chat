@@ -9,6 +9,8 @@ import androidx.compose.ui.test.ComposeUiTest
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.onFirst
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.runComposeUiTest
 import androidx.compose.ui.text.AnnotatedString
@@ -19,7 +21,6 @@ import chat.simplex.common.platform.chatSendCmdRetry
 import chat.simplex.common.simplexWindowState
 import chat.simplex.common.views.chat.item.MarkdownText
 import chat.simplex.common.views.chat.item.PreviewChatItemView
-import chat.simplex.common.views.chat.item.copyItemLink
 import chat.simplex.common.views.chat.item.itemDisplay
 import chat.simplex.common.views.helpers.AlertManager
 import chat.simplex.common.views.helpers.generalGetString
@@ -32,6 +33,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import java.util.Locale
+import java.util.concurrent.CopyOnWriteArrayList
 import kotlin.math.roundToInt
 import kotlin.test.*
 
@@ -131,7 +133,7 @@ class MessageLinksTest {
   fun copyLinkFollowsCopyAndCopiesLink() = runComposeUiTest {
     useRecording("links/same-group")
     val chat = runBlocking { lastChat(groupId = 1) }
-    val copied = mutableListOf<String>()
+    val copied = CopyOnWriteArrayList<String>()
     val clipboard = object : ClipboardManager {
       override fun setText(annotatedString: AnnotatedString) { copied += annotatedString.text }
       override fun getText(): AnnotatedString? = null
@@ -146,7 +148,8 @@ class MessageLinksTest {
       waitForIdle()
       val texts = shownTexts()
       assertEquals("Copy link", texts.getOrNull(texts.indexOf("Copy") + 1), "$texts")
-      runBlocking { copyItemLink(null, chat.chatInfo, chat.chatItems.last(), clipboard) }
+      onNodeWithText("Copy link").performClick()
+      waitUntil(timeoutMillis = 5_000) { copied.isNotEmpty() && simplexWindowState.toasts.isNotEmpty() }
       assertEquals(listOf("ITEM_LINK"), copied)
       assertEquals(listOf("Copied to clipboard"), simplexWindowState.toasts.map { it.first })
     } finally {
