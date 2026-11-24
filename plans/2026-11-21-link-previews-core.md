@@ -278,7 +278,7 @@ Connection: close
 - Body framing: `Transfer-Encoding: chunked`, `Content-Length`, or until close. The reader of the body stops at the budget, also inside a chunk; a chunk-size line has at most 7 hex digits and 1024 bytes.
 - `Content-Encoding` other than `identity`: a failure.
 - Reads: `T.recvData` with READ_TIMEOUT each; the budget counts body bytes after decoding of chunks.
-- Close: `T.bye`, then `T.contextClose`, in `bracket`, also on timeout and on the stop condition.
+- Close: the socket is closed in `bracket`, also on timeout and on the stop condition, without `T.bye`, as its send of `close_notify` blocks without a time limit when the site does not read.
 
 Redirects:
 
@@ -361,7 +361,7 @@ Tags are scanned as bytes, as both supported families are supersets of ASCII; on
 
 ### 3.11 Timeouts, concurrency, cancellation
 
-- The whole preview runs in `timeout PREVIEW_DEADLINE`; expiry: a failure. Sockets and TLS contexts are released by `bracket`.
+- The whole preview runs in `timeout PREVIEW_DEADLINE`; expiry: a failure. Sockets are closed by `bracket`.
 - Commands run in the calling thread of `chat_send_cmd` (Library/Commands.hs:434-458); the preview command takes no `chatLock`, so previews run concurrently with each other and with other commands.
 - A fetch for a link that the user has since edited runs to its end or to PREVIEW_DEADLINE; the apps discard its result, as today (ComposeView.kt:500-506; ComposeView.swift:1984-1991).
 - The Kotlin mutex is removed with the Jsoup code (LinkPreviews.kt:48), so a slow site no longer delays the next preview.
@@ -756,7 +756,7 @@ Laws, tested in desktopTest and SimpleX Unit Tests on the recorded markdown:
 |---|---|---|---|
 | Website of the link | see the request time, a fixed UA, the IP address without a proxy or the proxy's exit with one; serve any title and image to the sender | read cookies or other sites' data; learn the recipient | no cookies, `Referer`, `Accept-Language`; per-preview SOCKS credentials |
 | Website, huge or endless page | make the core read bytes | read beyond MAX_HEAD_BYTES, MAX_IMAGE_BYTES or MAX_IMAGE_LINK_BYTES | stop condition; budgets; an image refused by its `Content-Length`; close |
-| Website, slow response | hold a connection | beyond READ_TIMEOUT per read and PREVIEW_DEADLINE | `timeout`; `bracket` |
+| Website, slow response or stopped reading | hold a connection | beyond READ_TIMEOUT per read and PREVIEW_DEADLINE | `timeout`; `bracket`; the socket closed without `T.bye` (section 3.7) |
 | Website, slow answers of its DNS server, without a proxy | delay the name resolution | delay a connection beyond CONNECT_TIMEOUT or the preview beyond PREVIEW_DEADLINE | `getAddrInfo` in a separate thread (section 3.6) |
 | Website, compressed body | send gzip | make the core inflate it | `Accept-Encoding: identity`; other encodings rejected |
 | Website, redirect | send the core to other hosts | to `http` other than an onion host, to prohibited addresses, beyond MAX_REDIRECTS | section 3.7; address check per hop |

@@ -50,7 +50,7 @@ import Simplex.Chat.Protocol (LinkPreview (..))
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Client (NetworkConfig (..), NetworkRequestMode, netTimeoutInt, transportClientConfig)
 import Simplex.Messaging.Encoding.String (strEncode)
-import Simplex.Messaging.Transport (closeTLS, defaultSupportedParamsHTTPS)
+import Simplex.Messaging.Transport (defaultSupportedParamsHTTPS)
 import Simplex.Messaging.Transport.Client (SocksAuth (..), SocksProxy (..), SocksProxyWithAuth (..), TransportClientConfig (..), TransportHost (..))
 import Simplex.Messaging.Util (catchOwn', safeDecodeUtf8, timeoutThrow)
 import Text.Read (readMaybe)
@@ -299,7 +299,7 @@ withConnection Fetcher {previewConfig = LinkPreviewConfig {rootCerts, addressPol
   ExceptT $ E.bracket (runExceptT $ timeoutThrow "connection timeout" connectTimeout siteSocket) (mapM_ close) $ \case
     Left e -> pure $ Left e
     Right sock -> case uriScheme of
-      USHttps -> E.bracket (TLS.contextNew sock tlsParams) closeTLS $ \ctx -> runExceptT $ do
+      USHttps -> TLS.contextNew sock tlsParams >>= \ctx -> runExceptT $ do
         timeoutThrow "TLS handshake timeout" connectTimeout $ liftIO $ TLS.handshake ctx
         action =<< liftIO (newConn (TLS.sendData ctx . LB.fromStrict) (received $ TLS.recvData ctx))
       USHttp -> runExceptT $ action =<< liftIO (newConn (sendAll sock) (received $ recv sock 16384))
