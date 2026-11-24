@@ -1,0 +1,731 @@
+{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TupleSections #-}
+
+module Bots.StoreService.NamesContractsTests
+  ( namesContractsTests,
+    withContracts,
+    minPriceCentsPerYear,
+    answerRegistrar,
+    answerRegistered,
+    registrarOf,
+    resolverOf,
+    rentPriceCall,
+    threeYearsOf11,
+    rentPriceAnswer,
+    now,
+    year,
+    gracePeriod,
+    otherResolver,
+    registry,
+    nameExpiresCall,
+    reservedNamesCall,
+    contactTextCall,
+    channelTextCall,
+    noncesCall,
+    alice,
+    availableCall,
+    minCommitmentAgeCall,
+    maxCommitmentAgeCall,
+    newPolicy,
+  )
+where
+
+import Bots.StoreService.FakeEthNode
+import Bots.StoreService.FakeHttp (withResetServer)
+import Bots.StoreService.WebTests (capturingStderr, lengthOf, renameTable, withServiceStore, withServiceStores)
+import Network.HTTP.Client.TLS (newTlsManager)
+import Control.Concurrent (threadDelay)
+import Control.Concurrent.Async (poll, wait, withAsync)
+import Control.Concurrent.STM (TVar)
+import Data.Maybe (isNothing)
+import Control.Monad (forM_, (<=<))
+import Crypto.Random (ChaChaDRG)
+import Data.ByteString (ByteString)
+import qualified Data.ByteString as B
+import qualified Data.ByteString.Lazy as LB
+import qualified Data.Text as T
+import Data.Text.Encoding (decodeUtf8, encodeUtf8)
+import Data.Time.Clock (NominalDiffTime, diffUTCTime, getCurrentTime)
+import Data.Word (Word64)
+import Network.HTTP.Types (hContentType, hLocation, status200, status302, status404, status429, status503)
+import Simplex.Messaging.Agent.Store.Common (withTransaction)
+import qualified Simplex.Messaging.Agent.Store.DB as DB
+import qualified Simplex.Messaging.Crypto as C
+import Simplex.Messaging.Eth.Address (Address)
+import Simplex.Messaging.SimplexName (LabelHash, SimplexTLD (..), labelHash)
+import Simplex.Messaging.SystemTime (RoundedSystemTime (..))
+import Simplex.Messaging.Util (tshow)
+import StoreService.Names.Abi
+import StoreService.Names.Chain
+import StoreService.Names.Community (currentAcceptance)
+import StoreService.Names.Contracts
+import StoreService.Names.Registration (labelNode, namehash, nodeBytes, tldLabel)
+import StoreService.Names.Revert (RevertName (..), RevertReason (..))
+import StoreService.Names.Store (getTermsText, setTermsText)
+import Test.Hspec
+
+namesContractsTests :: Spec
+namesContractsTests = describe "StoreService names: contracts" $ do
+  -- the calldata and answers marked viem are viem 2.33.3's encodeFunctionData and encodeFunctionResult
+  -- with the ABIs of ens-contracts PR #36, so a read the fake node answers sends viem's calldata
+  g <- runIO C.newRandom
+  it "builds a name's node from its label hash as viem's namehash, the label in any case" testNode
+  describe "status" $ do
+    it "reads a reserved name" $ testReserved g
+    it "keeps a name registered to the last second of its grace period" $ testGracePeriod g
+    it "reads the registry and the grace period once, and again after a failed read" $ testRegistrarOnce g
+    it "reads the expiry and the owner at the block whose time it compares" $ testStatusAtOneBlock g
+  describe "records" $ do
+    it "reads the default resolver's records and the owner's nonce" $ testRecords g
+    it "reads the records and the owner's nonce at one block" $ testRecordsAtOneBlock g
+    it "reads no records from another resolver" $ testOtherResolver g
+  describe "prices" $ do
+    it "quotes 6, 7 and 12 letters at the launch list for 2 years, and refuses a price under the floor times the years, for 2 and 3 years" $ testLaunchPrices g
+  describe "other reads" $ do
+    it "reads the sponsor's and the resolver's nonces from their own contracts" $ testNonces g
+    it "reads ownerOf's revert without data as nobody" $ testOwnerOfNobody g
+    it "reads any other ownerOf revert or failure as a failed read" $ testOwnerOfFailed g
+    it "reads a commitment's time, none as Nothing" $ testCommitmentTime g
+    it "reads the controller's availability and the name's expiry" $ testAvailability g
+    it "reads the commitment ages once" $ testCommitmentAges g
+  describe "name policy" $ do
+    it "reads the policy from the controller once, and again after a zero answer, a failed read or once forgotten, and the reservations, listing, terms links, nonces and acceptances from it" $ testNamePolicy g
+    it "keeps no policy read that was in flight when the policy was forgotten" $ testPolicyForgottenInRead g
+  describe "terms" $ do
+    it "reads both terms links at one block, once per block, \"\" for one not set, and hashes a set link with keccak256 as viem does" $ testTermsLinks g
+    it "logs a terms link the service does not take once, when it is read, and asks no acceptance of it" $ testRefusedLinkLogged g
+    it "logs such a link once when two reads at its block overlap" $ testRefusedLinkLoggedOnce g
+    it "fetches a terms text once, keeping it by its link's hash" $ testTermsTextKept g
+    it "waits after a terms text whose connection resets while it is read" $ testTermsTextReset g
+    it "logs a terms fetch that throws, and the lane runs on" $ testTermsFetchThrows g
+    it "answers a stored terms text after a restart while its host answers 404 and while fetches wait, fetching again one stored with another SHA-256 and logging it" $ testTermsTextStored g
+    it "fetches both current terms texts, storing them, and logs links it cannot read" $ testCurrentTermsFetched g
+    it "answers a fetched terms text from memory when it cannot be stored, logging the failure" $ testTermsTextNotStored g
+    it "takes only a git.simplex.chat or raw.githubusercontent.com link of one .md file at one commit, with or without the file's SHA-256, or a loopback link with it on the local chain, fetching nothing else" $ testTermsLinkForms g
+    it "takes the mainnet policy's links, and answers a text its link pins only by commit from the database after a restart while its host answers 404" $ testTermsTextByCommit g
+    it "refuses an answer other than a 200 UTF-8 text of at most 256 KB with the link's SHA-256, following no redirect" $ testTermsTextRefused g
+    it "fetches no terms text for 30 seconds after a failed fetch, or as long as its Retry-After asks, up to an hour" $ testTermsBackoff g
+    it "gives up a terms fetch past the call timeout" $ testTermsTimeout g
+  describe "failures" $ do
+    it "fails a status on a failed read, never reading it as available" $ testFailedRead g
+    it "fails a read whose answer does not decode or does not fit" $ testMalformed g
+    it "fails a status within its deadline when one method hangs" $ testStatusDeadline g
+    it "fails records within their deadline when the calls hang" $ testRecordsDeadline g
+    it "reads a status and records within a deadline only concurrent reads meet" $ testConcurrentReads g
+
+testNode :: IO ()
+testNode = do
+  nodeBytes (labelNode TLDSimplex $ labelHash "alicebakery") `shouldBe` aliceNode
+  nodeBytes (namehash TLDSimplex "alicebakery") `shouldBe` aliceNode
+  nodeBytes (namehash TLDSimplex "AliceBakery") `shouldBe` aliceNode
+  map tldLabel [TLDSimplex, TLDTesting, TLDWeb] `shouldBe` ["simplex", "testing", ""]
+
+testReserved :: TVar ChaChaDRG -> IO ()
+testReserved g = withContracts g $ \node ct -> do
+  answerRegistrar node
+  setBlock node 100 now
+  answerCall node (registrarOf node) nameExpiresCall $ Returns $ uint256 (0 :: Int)
+  -- viem: reservedNames answering Reason 1
+  answerCall node fakeNamePolicy reservedNamesCall $ Returns $ unhex "0000000000000000000000000000000000000000000000000000000000000001"
+  nameStatus ct alice `shouldReturn` Right NSReserved
+
+testNamePolicy :: TVar ChaChaDRG -> IO ()
+testNamePolicy g = withContracts g $ \node ct -> do
+  answerRegistrar node
+  setBlock node 100 now
+  answerCall node (registrarOf node) nameExpiresCall $ Returns $ uint256 (0 :: Int)
+  answerCall node fakeNamePolicy reservedNamesCall $ Returns $ uint256 (2 :: Int)
+  answerCall node fakeController (selector "namePolicy()") $ Returns $ B.replicate 32 0
+  namePolicy ct `shouldReturn` Left (ChainUnavailable "the controller has no name policy yet")
+  answerCall node fakeController (selector "namePolicy()") $ Reverts ""
+  namePolicy ct `shouldReturn` Left (ChainReverted RRWithoutData)
+  answerCall node fakeController (selector "namePolicy()") $ Returns $ addressWord fakeNamePolicy
+  namePolicy ct `shouldReturn` Right fakeNamePolicy
+  -- read once: a controller answering no more keeps the policy read
+  answerCall node fakeController (selector "namePolicy()") $ Reverts ""
+  nameStatus ct alice `shouldReturn` Right NSReserved
+  communityName ct alice `shouldReturn` Right False
+  listCommunityName node alice
+  communityName ct alice `shouldReturn` Right True
+  termsLinkTexts ct `shouldReturn` Right (fakeTermsLink fakeGeneralTermsText, fakeTermsLink fakeCommunityTermsText)
+  answerCall node fakeNamePolicy noncesCall $ Returns $ uint256 (5 :: Int)
+  policyNonce ct owner `shouldReturn` Right 5
+  answerCall node fakeNamePolicy (selector "acceptedTerms(bytes32,address)" <> unHex32 commitment <> addressWord owner) $ Returns fakeCommunityTerms
+  acceptedTerms ct commitment owner `shouldReturn` Right (Hex32 fakeCommunityTerms)
+  answerCall node fakeController (selector "namePolicy()") $ Returns $ addressWord newPolicy
+  namePolicy ct `shouldReturn` Right fakeNamePolicy
+  forgetNamePolicy ct
+  namePolicy ct `shouldReturn` Right newPolicy
+
+testPolicyForgottenInRead :: TVar ChaChaDRG -> IO ()
+testPolicyForgottenInRead g = withContracts g $ \node ct -> do
+  (reading, gate) <- pausedAt node "eth_call" $ namePolicy ct
+  forgetNamePolicy ct
+  releaseGate gate
+  wait reading `shouldReturn` Right fakeNamePolicy
+  answerCall node fakeController (selector "namePolicy()") $ Returns $ addressWord newPolicy
+  namePolicy ct `shouldReturn` Right newPolicy
+
+testTermsLinks :: TVar ChaChaDRG -> IO ()
+testTermsLinks g = withContracts g $ \node ct -> do
+  setBlock node 100 now
+  answerCallFrom node 101 fakeNamePolicy (selector "generalTermsLink()") $ Returns $ abiTuple [Dynamic $ abiBytes ""]
+  answerCallFrom node 101 fakeNamePolicy (selector "communityTermsLink()") $ Returns $ abiTuple [Dynamic $ abiBytes $ encodeUtf8 $ fakeTermsLink fakeNewCommunityTermsText]
+  termsLinkTexts ct `shouldReturn` Right (fakeTermsLink fakeGeneralTermsText, fakeTermsLink fakeCommunityTermsText)
+  -- read once per block: a changed answer at the same block is not read again
+  answerCall node fakeNamePolicy (selector "generalTermsLink()") $ Returns $ abiTuple [Dynamic $ abiBytes "changed"]
+  termsLinkTexts ct `shouldReturn` Right (fakeTermsLink fakeGeneralTermsText, fakeTermsLink fakeCommunityTermsText)
+  setBlock node 101 now
+  termsLinkTexts ct `shouldReturn` Right ("", fakeTermsLink fakeNewCommunityTermsText)
+  termsOf fakeChainId "" `shouldBe` Nothing
+  termsOf fakeChainId viemLink
+    `shouldBe` Just Terms {tmLink = viemLink, tmHash = Hex32 $ unhex "c2ff2149afa84a77e3a041b2925ebd08a22c1e91a74abd8b82fd17e45c15cb7f", tmFetch = (T.unpack viemUrl, Just $ unhex $ encodeUtf8 viemDigest)}
+  where
+    viemUrl = "https://git.simplex.chat/simplex-chat/simplex-chat/raw/commit/4cb24444a1f2e3d4c5b6a7980716253443526170/docs/general-terms.md"
+    viemDigest = "0b2c3d4e5f60718293a4b5c6d7e8f90112233445566778899aabbccddeeff001"
+    viemLink = viemUrl <> "#sha256=" <> viemDigest
+
+testRefusedLinkLogged :: TVar ChaChaDRG -> IO ()
+testRefusedLinkLogged g = withContracts g $ \node ct -> do
+  let otherLink = "https://example.org/simplex-chat/terms.md"
+      warning = "names: the name policy's community terms are not a link the service takes, so names under them cannot be ordered: " <> otherLink
+  answerCall node fakeNamePolicy (selector "communityTermsLink()") $ Returns $ abiTuple [Dynamic $ abiBytes $ encodeUtf8 otherLink]
+  nextBlock node
+  capturingStderr (fetchCurrentTerms ct) >>= (`shouldSatisfy` T.isInfixOf warning)
+  nextBlock node
+  capturingStderr (fetchCurrentTerms ct) >>= (`shouldNotSatisfy` T.isInfixOf warning)
+  listCommunityName node alice
+  currentAcceptance ct alice owner `shouldReturn` Left (ChainUnavailable "the name policy has no terms of this kind that the service takes")
+
+testRefusedLinkLoggedOnce :: TVar ChaChaDRG -> IO ()
+testRefusedLinkLoggedOnce g = withContracts g $ \node ct -> do
+  let otherLink = "https://example.org/simplex-chat/terms.md"
+      warning = "names: the name policy's community terms are not a link the service takes, so names under them cannot be ordered: " <> otherLink
+  namePolicy ct `shouldReturn` Right fakeNamePolicy
+  answerCall node fakeNamePolicy (selector "communityTermsLink()") $ Returns $ abiTuple [Dynamic $ abiBytes $ encodeUtf8 otherLink]
+  logged <- capturingStderr $ do
+    (gated, gate) <- pausedAt node "eth_call" $ termsLinks ct
+    _ <- termsLinks ct
+    releaseGate gate
+    _ <- wait gated
+    pure ()
+  T.count warning logged `shouldBe` 1
+
+termsLinkTexts :: Contracts -> IO (Either ChainError (T.Text, T.Text))
+termsLinkTexts ct = fmap (\(general, community) -> (linkText general, linkText community)) <$> termsLinks ct
+  where
+    linkText = maybe "" tmLink
+
+testTermsTextReset :: TVar ChaChaDRG -> IO ()
+testTermsTextReset g = withContracts g $ \_ ct -> withResetServer $ \url -> do
+  manager <- newTlsManager
+  let direct = ct {ctChain = (ctChain ct) {ccManager = manager}}
+      terms = Terms {tmLink = "reset", tmHash = Hex32 $ B.replicate 32 7, tmFetch = (url, Nothing)}
+  logged <- capturingStderr $ termsText direct terms >>= (`shouldSatisfy` either (const True) (const False))
+  logged `shouldSatisfy` T.isInfixOf "names: the terms text of reset could not be fetched, request failed"
+
+testTermsFetchThrows :: TVar ChaChaDRG -> IO ()
+testTermsFetchThrows g = withServiceStore $ \st -> withFakeEthNode $ \node -> do
+  ct <- newContracts st TLDSimplex minPriceCentsPerYear =<< fakeChainClient g node
+  linkTermsOnNode node
+  renameTable st "sx_badge_service_name_terms" "name_terms_away"
+  logged <- capturingStderr $ withAsync (runTermsFetch ct) $ \lane -> do
+    threadDelay 500000
+    poll lane >>= (`shouldSatisfy` isNothing)
+  renameTable st "name_terms_away" "sx_badge_service_name_terms"
+  logged `shouldSatisfy` T.isInfixOf "names terms fetch failed; the next pass will run: "
+
+testTermsTextKept :: TVar ChaChaDRG -> IO ()
+testTermsTextKept g = withContracts g $ \node ct -> do
+  general <- termsAt ct fakeGeneralTermsText
+  termsText ct general `shouldReturn` Right "SimpleX general terms v1"
+  answerText node (fakeTermsPath fakeGeneralTermsText) $ TextAnswer status404 [] ""
+  termsText ct general `shouldReturn` Right "SimpleX general terms v1"
+  fetchedTexts node `shouldReturn` [fakeTermsPath fakeGeneralTermsText]
+
+testTermsTextStored :: TVar ChaChaDRG -> IO ()
+testTermsTextStored g = withServiceStores $ \open -> withFakeEthNode $ \node -> do
+  let contracts = open >>= \st -> newContracts st TLDSimplex minPriceCentsPerYear =<< fakeChainClient g node
+      restarted = (\x -> x {ctTermsBackoff = 0}) <$> contracts
+      generalPath = fakeTermsPath fakeGeneralTermsText
+      communityPath = fakeTermsPath fakeCommunityTermsText
+      hostDown path = answerText node path $ TextAnswer status404 [] ""
+  ct <- restarted
+  general <- termsAt ct fakeGeneralTermsText
+  termsText ct general `shouldReturn` Right "SimpleX general terms v1"
+  hostDown generalPath
+  afterRestart <- restarted
+  termsText afterRestart general `shouldReturn` Right "SimpleX general terms v1"
+  hostDown communityPath
+  waiting <- contracts
+  (termsText waiting =<< termsAt waiting fakeCommunityTermsText) `shouldReturn` Left (TRWait 30)
+  termsText waiting general `shouldReturn` Right "SimpleX general terms v1"
+  st <- open
+  withTransaction st $ \db -> setTermsText db (tmHash general) (decodeUtf8 fakeNewGeneralTermsText)
+  tampered <- restarted
+  refused <- capturingStderr $ termsText tampered general `shouldReturn` Left (TRWait 0)
+  refused `shouldSatisfy` T.isInfixOf ("names: the stored terms text of " <> tmLink general <> " is refused, its SHA-256 is not the link's")
+  answerText node generalPath $ servedText fakeGeneralTermsText
+  termsText tampered general `shouldReturn` Right "SimpleX general terms v1"
+  hostDown generalPath
+  replaced <- restarted
+  termsText replaced general `shouldReturn` Right "SimpleX general terms v1"
+  fetchedTexts node `shouldReturn` [generalPath, generalPath, communityPath, generalPath]
+
+testCurrentTermsFetched :: TVar ChaChaDRG -> IO ()
+testCurrentTermsFetched g = withServiceStores $ \open -> withFakeEthNode $ \node -> do
+  let restarted = open >>= \st -> newContracts st TLDSimplex minPriceCentsPerYear =<< fakeChainClient g node
+      paths = map fakeTermsPath [fakeCommunityTermsText, fakeGeneralTermsText]
+  restarted >>= fetchCurrentTerms
+  fetchedTexts node `shouldReturn` paths
+  forM_ paths $ \path -> answerText node path $ TextAnswer status404 [] ""
+  ct <- restarted
+  fetchCurrentTerms ct
+  mapM (termsText ct <=< termsAt ct) [fakeGeneralTermsText, fakeCommunityTermsText] `shouldReturn` [Right "SimpleX general terms v1", Right "SimpleX community terms v1"]
+  answerCall node fakeController (selector "namePolicy()") $ Reverts ""
+  unread <- restarted
+  capturingStderr (fetchCurrentTerms unread) >>= (`shouldSatisfy` T.isInfixOf "names: the terms links could not be read to fetch their texts: ChainReverted")
+  fetchedTexts node `shouldReturn` paths
+
+testTermsTextNotStored :: TVar ChaChaDRG -> IO ()
+testTermsTextNotStored g = withServiceStore $ \st -> withFakeEthNode $ \node -> do
+  let generalPath = fakeTermsPath fakeGeneralTermsText
+  withTransaction st $ \db -> DB.execute_ db "ALTER TABLE sx_badge_service_name_terms ADD COLUMN refused INTEGER CHECK (refused IS NOT NULL)"
+  ct <- newContracts st TLDSimplex minPriceCentsPerYear =<< fakeChainClient g node
+  general <- termsAt ct fakeGeneralTermsText
+  logged <- capturingStderr $ termsText ct general `shouldReturn` Right "SimpleX general terms v1"
+  logged `shouldSatisfy` T.isInfixOf ("names: the terms text of " <> tmLink general <> " could not be stored")
+  answerText node generalPath $ TextAnswer status404 [] ""
+  termsText ct general `shouldReturn` Right "SimpleX general terms v1"
+  withTransaction st (`getTermsText` tmHash general) `shouldReturn` Nothing
+  fetchedTexts node `shouldReturn` [generalPath]
+
+testTermsTextByCommit :: TVar ChaChaDRG -> IO ()
+testTermsTextByCommit g = withServiceStores $ \open -> withFakeEthNode $ \node -> do
+  let contracts = open >>= \st -> newContracts st TLDSimplex minPriceCentsPerYear =<< fakeChainClient g node
+      mainnetPath file = "/simplex-chat/simplex-chat/72fcd35893ec8ea20531757a455699f41fbaf84e/docs/" <> file
+      generalPath = mainnetPath "NAMES-TERMS-GENERAL.md"
+  ct <- contracts
+  [general, _] <- mapM (linkTerms ct . ("https://raw.githubusercontent.com" <>) . mainnetPath) ["NAMES-TERMS-GENERAL.md", "NAMES-TERMS-COMMUNITY.md"]
+  answerText node generalPath $ servedText fakeGeneralTermsText
+  termsText ct general `shouldReturn` Right "SimpleX general terms v1"
+  answerText node generalPath $ TextAnswer status404 [] ""
+  restarted <- contracts
+  termsText restarted general `shouldReturn` Right "SimpleX general terms v1"
+  fetchedTexts node `shouldReturn` [generalPath]
+
+testTermsLinkForms :: TVar ChaChaDRG -> IO ()
+testTermsLinkForms g = withServiceStore $ \st -> withFakeEthNode $ \node -> do
+  c <- fakeChainClient g node
+  ct <- (\x -> x {ctTermsBackoff = 0}) <$> newContracts st TLDSimplex minPriceCentsPerYear c
+  let digest = T.drop 2 $ hex $ C.sha256Hash fakeGeneralTermsText
+      commit = T.replicate 40 "a"
+      commitPath path = "/simplex-chat/simplex-chat/raw/commit/" <> commit <> path
+      githubPath path = "/simplex-chat/simplex-chat/" <> commit <> path
+      pinnedByCommit = ["https://git.simplex.chat" <> commitPath "/docs/terms.md", "https://raw.githubusercontent.com" <> githubPath "/docs/NAMES-TERMS-GENERAL.md"]
+      taken = pinnedByCommit <> ["https://git.simplex.chat" <> commitPath "/a/b_c-d.e/terms.v1.md", "http://127.0.0.1:8098/terms/terms.md"]
+  forM_ [commitPath "/docs/terms.md", commitPath "/a/b_c-d.e/terms.v1.md", githubPath "/docs/NAMES-TERMS-GENERAL.md", "/terms/terms.md"] $ \path -> answerText node path $ servedText fakeGeneralTermsText
+  forM_ taken $ \url -> (termsText ct =<< linkTerms ct (url <> "#sha256=" <> digest)) `shouldReturn` Right "SimpleX general terms v1"
+  forM_ pinnedByCommit $ \url -> (termsText ct =<< linkTerms ct url) `shouldReturn` Right "SimpleX general terms v1"
+  let refused link = (link, termsOf fakeChainId link) `shouldBe` (link, Nothing)
+  forM_
+    [ "http://git.simplex.chat" <> commitPath "/docs/terms.md#sha256=" <> digest,
+      "http://raw.githubusercontent.com" <> githubPath "/docs/terms.md",
+      "https://raw.githubusercontent.com/simplex-chat/simplexmq/" <> commit <> "/docs/terms.md",
+      "https://raw.githubusercontent.com/simplex-chat/simplex-chat/" <> T.replicate 39 "a" <> "/docs/terms.md",
+      "https://raw.githubusercontent.com/simplex-chat/simplex-chat/" <> T.replicate 40 "A" <> "/docs/terms.md",
+      "https://raw.githubusercontent.com" <> githubPath "/docs/terms.txt",
+      "https://raw.githubusercontent.com" <> githubPath "/docs/../terms.md",
+      "https://raw.githubusercontent.com/simplex-chat/simplex-chat/raw/commit/" <> commit <> "/docs/terms.md",
+      "https://git.simplex.chat" <> commitPath "/docs/terms.md#",
+      "https://git.simplex.chat/simplex-chat/simplexmq/raw/commit/" <> commit <> "/docs/terms.md#sha256=" <> digest,
+      "https://git.simplex.chat/simplex-chat/simplex-chat/raw/commit/" <> T.replicate 39 "a" <> "/docs/terms.md#sha256=" <> digest,
+      "https://git.simplex.chat/simplex-chat/simplex-chat/raw/commit/" <> T.replicate 40 "A" <> "/docs/terms.md#sha256=" <> digest,
+      "https://git.simplex.chat" <> commitPath "/docs/terms.txt#sha256=" <> digest,
+      "https://git.simplex.chat" <> commitPath "/docs/../terms.md#sha256=" <> digest,
+      "https://git.simplex.chat" <> commitPath "/docs/./terms.md#sha256=" <> digest,
+      "https://git.simplex.chat" <> commitPath "/docs//terms.md#sha256=" <> digest,
+      "https://git.simplex.chat" <> commitPath "/docs/terms%2E.md#sha256=" <> digest,
+      "https://git.simplex.chat" <> commitPath "/docs/terms.md?raw=1#sha256=" <> digest,
+      "https://git.simplex.chat" <> commitPath "/docs/terms.md#sha256=" <> T.toUpper digest,
+      "https://git.simplex.chat" <> commitPath "/docs/terms.md#sha256=" <> T.drop 1 digest,
+      "https://git.simplex.chat" <> commitPath "/docs/terms.md#sha1=" <> digest,
+      "http://127.0.0.1:8098/terms/terms.md",
+      "http://localhost:8098/terms/terms.md#sha256=" <> digest,
+      "http://127.0.0.1:08098/terms/terms.md#sha256=" <> digest,
+      "http://127.0.0.1:65536/terms/terms.md#sha256=" <> digest
+    ]
+    refused
+  termsOf 1 ("http://127.0.0.1:8098/terms/terms.md#sha256=" <> digest) `shouldBe` Nothing
+  length <$> fetchedTexts node `shouldReturn` 6
+
+testTermsTextRefused :: TVar ChaChaDRG -> IO ()
+testTermsTextRefused g = withContracts g $ \node ct0 -> do
+  let ct = ct0 {ctTermsBackoff = 0}
+      served n headers status body bytes = do
+        let path = "/simplex-chat/simplex-chat/raw/commit/" <> T.justifyRight 40 '0' (tshow (n :: Int)) <> "/terms.md"
+        answerText node path $ TextAnswer status headers body
+        termsText ct =<< linkTerms ct ("https://git.simplex.chat" <> path <> "#sha256=" <> T.drop 2 (hex $ C.sha256Hash bytes))
+      markdown = [(hContentType, "text/markdown; charset=utf-8")]
+      long = B.replicate (256 * 1024) 0x61
+  served 1 [(hLocation, "/elsewhere.md")] status302 "" "" `shouldReturn` Left (TRWait 0)
+  served 2 markdown status404 "terms" "terms" `shouldReturn` Left (TRWait 0)
+  served 7 markdown status200 (LB.fromStrict $ long <> "a") (long <> "a") `shouldReturn` Left (TRWait 0)
+  served 8 markdown status200 (LB.fromStrict long) long `shouldReturn` Right (decodeUtf8 long)
+  served 9 markdown status200 "\xff" "\xff" `shouldReturn` Left (TRWait 0)
+  served 10 markdown status200 "other terms" "terms" `shouldReturn` Left (TRWait 0)
+  elem "/elsewhere.md" <$> fetchedTexts node `shouldReturn` False
+
+testTermsBackoff :: TVar ChaChaDRG -> IO ()
+testTermsBackoff g = withContracts g $ \node ct -> withServiceStore $ \shortStore -> withServiceStore $ \cappedStore -> do
+  let generalPath = fakeTermsPath fakeGeneralTermsText
+      waitsUpTo seconds = \case
+        Left (TRWait n) -> n >= 1 && n <= seconds
+        _ -> False
+  general <- termsAt ct fakeGeneralTermsText
+  community <- termsAt ct fakeCommunityTermsText
+  answerText node generalPath $ TextAnswer status429 [("Retry-After", "2")] ""
+  termsText ct general `shouldReturn` Left (TRWait 30)
+  termsText ct general >>= (`shouldSatisfy` waitsUpTo 30)
+  termsText ct community >>= (`shouldSatisfy` waitsUpTo 30)
+  fetchedTexts node `shouldReturn` [generalPath]
+  short <- (\x -> x {ctTermsBackoff = 1}) <$> (newContracts shortStore TLDSimplex minPriceCentsPerYear =<< fakeChainClient g node)
+  answerText node generalPath $ TextAnswer status503 [] ""
+  termsText short general `shouldReturn` Left (TRWait 1)
+  termsText short general `shouldReturn` Left (TRWait 1)
+  threadDelay 1100000
+  answerText node generalPath $ TextAnswer status503 [("Retry-After", "2")] ""
+  termsText short general `shouldReturn` Left (TRWait 2)
+  answerText node generalPath $ servedText fakeGeneralTermsText
+  threadDelay 1100000
+  termsText short community >>= (`shouldSatisfy` waitsUpTo 1)
+  threadDelay 1000000
+  termsText short general `shouldReturn` Right "SimpleX general terms v1"
+  length <$> fetchedTexts node `shouldReturn` 4
+  capped <- newContracts cappedStore TLDSimplex minPriceCentsPerYear =<< fakeChainClient g node
+  answerText node generalPath $ TextAnswer status429 [("Retry-After", "999999999")] ""
+  termsText capped general `shouldReturn` Left (TRWait 3600)
+
+testTermsTimeout :: TVar ChaChaDRG -> IO ()
+testTermsTimeout g = withServiceStore $ \st -> withFakeEthNode $ \node -> do
+  c <- fakeChainClient g node
+  ct <- newContracts st TLDSimplex minPriceCentsPerYear c {ccTimeout = testDeadline}
+  general <- termsAt ct fakeGeneralTermsText
+  setFault node "GET" $ Slow 2000000
+  elapsed <- timed $ termsText ct general `shouldReturn` Left (TRWait 30)
+  elapsed `shouldSatisfy` (< 1)
+
+termsAt :: Contracts -> ByteString -> IO Terms
+termsAt ct = linkTerms ct . fakeTermsLink
+
+linkTerms :: Contracts -> T.Text -> IO Terms
+linkTerms ct link = maybe (fail "no terms") pure $ termsOf (cChainId $ ccConfig $ ctChain ct) link
+
+testGracePeriod :: TVar ChaChaDRG -> IO ()
+testGracePeriod g = withContracts g $ \node ct -> do
+  answerRegistrar node
+  answerRegistered node (resolverOf node)
+  answerCall node fakeNamePolicy reservedNamesCall $ Returns $ uint256 (0 :: Int)
+  let expired = now - year
+  answerCall node (registrarOf node) nameExpiresCall $ Returns $ uint256 expired
+  setBlock node 100 $ expired + gracePeriod
+  nameStatus ct alice `shouldReturn` Right (NSRegistered $ registeredAlice (resolverOf node) expired)
+  setBlock node 101 $ expired + gracePeriod + 1
+  nameStatus ct alice `shouldReturn` Right NSAvailable
+
+testRegistrarOnce :: TVar ChaChaDRG -> IO ()
+testRegistrarOnce g = withContracts g $ \node ct -> do
+  setBlock node 100 now
+  answerCall node (registrarOf node) nameExpiresCall $ Returns $ uint256 (0 :: Int)
+  answerCall node fakeNamePolicy reservedNamesCall $ Returns $ uint256 (0 :: Int)
+  nameStatus ct alice `shouldReturn` Left (ChainUnavailable "eth_call: error -32000: no fake answer for this call")
+  answerRegistrar node
+  nameStatus ct alice `shouldReturn` Right NSAvailable
+  answerCall node (registrarOf node) ensCall $ Reverts ""
+  answerCall node (registrarOf node) gracePeriodCall $ Reverts ""
+  nameStatus ct alice `shouldReturn` Right NSAvailable
+
+testStatusAtOneBlock :: TVar ChaChaDRG -> IO ()
+testStatusAtOneBlock g = withContracts g $ \node ct -> do
+  let resolver = resolverOf node
+      registered = Right $ NSRegistered $ registeredAlice resolver $ now + year
+  answerRegistrar node
+  answerRegistered node resolver
+  setBlock node 100 now
+  answerCall node (registrarOf node) nameExpiresCall $ Returns $ uint256 (now + year)
+  nameStatus ct alice `shouldReturn` registered
+  answerCallFrom node 101 registry registryOwnerCall $ Returns $ addressWord newPolicy
+  answerCallFrom node 101 (registrarOf node) nameExpiresCall $ Returns $ uint256 (0 :: Int)
+  (status, gate) <- pausedAt node "eth_call" $ nameStatus ct alice
+  setBlock node 101 now
+  releaseGate gate
+  wait status `shouldReturn` registered
+
+testRecords :: TVar ChaChaDRG -> IO ()
+testRecords g = withContracts g $ \node ct -> do
+  let resolver = resolverOf node
+  answerCall node resolver contactTextCall $ Returns contactTextAnswer
+  -- an unset record is the empty string
+  answerCall node resolver channelTextCall $ Returns $ abiTuple [Dynamic $ abiBytes ""]
+  answerCall node resolver noncesCall $ Returns $ uint256 (3 :: Int)
+  nameRecords ct alice (registeredAlice resolver $ now + year)
+    `shouldReturn` Right (Just NameRecords {rdContact = "https://smp8.simplex.im/a#Y8m3", rdChannel = "", rdNonce = 3})
+  textRecord ct alice "simplex.contact" `shouldReturn` Right "https://smp8.simplex.im/a#Y8m3"
+
+testRecordsAtOneBlock :: TVar ChaChaDRG -> IO ()
+testRecordsAtOneBlock g = withContracts g $ \node ct -> do
+  let resolver = resolverOf node
+      text t = abiTuple [Dynamic $ abiBytes t]
+  setBlock node 100 now
+  answerCall node resolver contactTextCall $ Returns contactTextAnswer
+  answerCall node resolver channelTextCall $ Returns $ text ""
+  answerCall node resolver noncesCall $ Returns $ uint256 (3 :: Int)
+  answerCallFrom node 101 resolver contactTextCall $ Returns $ text ""
+  answerCallFrom node 101 resolver channelTextCall $ Returns $ text "https://smp9.simplex.im/c#Rk27"
+  answerCallFrom node 101 resolver noncesCall $ Returns $ uint256 (4 :: Int)
+  (records, gate) <- pausedAt node "eth_call" $ nameRecords ct alice (registeredAlice resolver $ now + year)
+  setBlock node 101 now
+  releaseGate gate
+  wait records `shouldReturn` Right (Just NameRecords {rdContact = "https://smp8.simplex.im/a#Y8m3", rdChannel = "", rdNonce = 3})
+
+testOtherResolver :: TVar ChaChaDRG -> IO ()
+testOtherResolver g = withContracts g $ \_ ct -> do
+  nameRecords ct alice (registeredAlice otherResolver $ now + year) `shouldReturn` Right Nothing
+
+testLaunchPrices :: TVar ChaChaDRG -> IO ()
+testLaunchPrices g = withContracts g $ \node ct -> do
+  -- viem: rentPriceUSD answering {base: 40000 * 10^16, premium: 0}
+  answerCall node fakeController (rentPriceCall 6) $ Returns $ unhex "000000000000000000000000000000000000000000000015af1d78b58c4000000000000000000000000000000000000000000000000000000000000000000000"
+  answerCall node fakeController (rentPriceCall 7) $ Returns $ rentPriceAnswer 20000
+  answerCall node fakeController (rentPriceCall 12) $ Returns $ rentPriceAnswer 10000
+  mapM (\len -> chainPriceCents ct (lengthOf len) 2) [6, 7, 12] `shouldReturn` [Right 40000, Right 20000, Right 10000]
+  answerCall node fakeController (rentPriceCall 12) $ Returns $ rentPriceAnswer 9999
+  chainPriceCents ct (lengthOf 12) 2 `shouldReturn` Left (ChainUnavailable "rentPriceUSD answered 9999 cents for 2 years, under names.min_price_cents_per_year")
+  answerCall node fakeController (rentPriceCall 11) $ Returns $ rentPriceAnswer 0
+  chainPriceCents ct (lengthOf 11) 2 `shouldReturn` Left (ChainUnavailable "rentPriceUSD answered 0 cents for 2 years, under names.min_price_cents_per_year")
+  answerCall node fakeController threeYearsOf11 $ Returns $ rentPriceAnswer 15000
+  chainPriceCents ct (lengthOf 11) 3 `shouldReturn` Right 15000
+  answerCall node fakeController threeYearsOf11 $ Returns $ rentPriceAnswer 14999
+  chainPriceCents ct (lengthOf 11) 3 `shouldReturn` Left (ChainUnavailable "rentPriceUSD answered 14999 cents for 3 years, under names.min_price_cents_per_year")
+
+testNonces :: TVar ChaChaDRG -> IO ()
+testNonces g = withContracts g $ \node ct -> do
+  answerCall node fakeSponsor noncesCall $ Returns $ uint256 (5 :: Int)
+  answerCall node (resolverOf node) noncesCall $ Returns $ uint256 (3 :: Int)
+  sponsorNonce ct owner `shouldReturn` Right 5
+  resolverNonce ct Latest owner `shouldReturn` Right 3
+
+testOwnerOfNobody :: TVar ChaChaDRG -> IO ()
+testOwnerOfNobody g = withContracts g $ \node ct -> do
+  answerCall node (registrarOf node) ownerOfCall $ Returns $ addressWord owner
+  ownerOfToken ct Latest alice `shouldReturn` Right (Just owner)
+  -- the registrar's require(expiries[tokenId] > block.timestamp), as anvil answers it with "0x" and reth without data
+  answerCall node (registrarOf node) ownerOfCall $ Reverts ""
+  ownerOfToken ct Latest alice `shouldReturn` Right Nothing
+  setFault node "eth_call" $ RpcError 3 "execution reverted" Nothing
+  ownerOfToken ct Latest alice `shouldReturn` Right Nothing
+
+testOwnerOfFailed :: TVar ChaChaDRG -> IO ()
+testOwnerOfFailed g = withContracts g $ \node ct -> do
+  -- viem's encodeErrorResult of Error("ERC721: invalid token ID")
+  answerCall node (registrarOf node) ownerOfCall $ Reverts $ unhex "08c379a0000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000184552433732313a20696e76616c696420746f6b656e2049440000000000000000"
+  ownerOfToken ct Latest alice `shouldReturn` Left (ChainReverted $ RRUnnamed "ERC721: invalid token ID")
+  -- viem's encodeErrorResult of ReentrantCall()
+  answerCall node (registrarOf node) ownerOfCall $ Reverts $ unhex "37ed32e8"
+  ownerOfToken ct Latest alice `shouldReturn` Left (ChainReverted $ RRNamed RNReentrantCall)
+  -- a node or proxy that keeps the reason in the message but drops the data
+  setFault node "eth_call" $ RpcError (-32000) "execution reverted: ERC721: invalid token ID" Nothing
+  ownerOfToken ct Latest alice `shouldReturn` Left (ChainReverted $ RRUnnamed "ERC721: invalid token ID")
+  setFault node "eth_call" HttpFailure
+  ownerOfToken ct Latest alice `shouldReturn` Left (ChainUnavailable "eth_call: HTTP 502")
+
+testCommitmentTime :: TVar ChaChaDRG -> IO ()
+testCommitmentTime g = withContracts g $ \node ct -> do
+  answerCall node fakeController commitmentsCall $ Returns $ uint256 (0 :: Int)
+  commitmentTime ct commitment `shouldReturn` Right Nothing
+  answerCall node fakeController commitmentsCall $ Returns $ uint256 now
+  commitmentTime ct commitment `shouldReturn` Right (Just $ RoundedSystemTime $ fromIntegral now)
+
+testAvailability :: TVar ChaChaDRG -> IO ()
+testAvailability g = withContracts g $ \node ct -> do
+  answerCall node fakeController availableCall $ Returns $ uint256 (1 :: Int)
+  controllerAvailable ct Latest "alicebakery" `shouldReturn` Right True
+  answerCall node fakeController availableCall $ Returns $ uint256 (0 :: Int)
+  controllerAvailable ct Latest "alicebakery" `shouldReturn` Right False
+  answerCall node (registrarOf node) nameExpiresCall $ Returns $ uint256 (now + year)
+  nameExpires ct Latest alice `shouldReturn` Right (RoundedSystemTime $ fromIntegral $ now + year)
+
+testCommitmentAges :: TVar ChaChaDRG -> IO ()
+testCommitmentAges g = withContracts g $ \node ct -> do
+  answerCall node fakeController minCommitmentAgeCall $ Returns $ uint256 (60 :: Int)
+  answerCall node fakeController maxCommitmentAgeCall $ Returns $ uint256 (86400 :: Int)
+  commitmentAges ct `shouldReturn` Right CommitmentAges {caMin = 60, caMax = 86400}
+  answerCall node fakeController maxCommitmentAgeCall $ Returns $ uint256 (3600 :: Int)
+  commitmentAges ct `shouldReturn` Right CommitmentAges {caMin = 60, caMax = 86400}
+
+testFailedRead :: TVar ChaChaDRG -> IO ()
+testFailedRead g = withContracts g $ \node ct -> do
+  answerRegistrar node
+  setBlock node 100 now
+  answerCall node fakeNamePolicy reservedNamesCall $ Returns $ uint256 (0 :: Int)
+  answerCall node (registrarOf node) nameExpiresCall $ Reverts ""
+  nameStatus ct alice `shouldReturn` Left (ChainReverted RRWithoutData)
+  answerCall node (registrarOf node) nameExpiresCall $ Returns $ uint256 (0 :: Int)
+  setFault node "eth_getBlockByNumber" HttpFailure
+  nameStatus ct alice `shouldReturn` Left (ChainUnavailable "eth_getBlockByNumber: HTTP 502")
+  clearFault node "eth_getBlockByNumber"
+  answerCall node fakeNamePolicy reservedNamesCall $ Reverts ""
+  nameStatus ct alice `shouldReturn` Left (ChainReverted RRWithoutData)
+
+testMalformed :: TVar ChaChaDRG -> IO ()
+testMalformed g = withContracts g $ \node ct -> do
+  answerCall node (registrarOf node) nameExpiresCall $ Returns $ B.replicate 31 0
+  nameExpires ct Latest alice `shouldReturn` Left (ChainUnavailable "eth_call: nameExpires(uint256) answered AEShort")
+  answerCall node fakeSponsor noncesCall $ Returns $ uint256 (toInteger (maxBound :: Word64) + 1)
+  sponsorNonce ct owner `shouldReturn` Left (ChainUnavailable "eth_call: nonces(address) answered AERange")
+  answerCall node fakeController minCommitmentAgeCall $ Returns $ uint256 (60 :: Int)
+  answerCall node fakeController maxCommitmentAgeCall $ Returns $ uint256 (toInteger (maxBound :: Word64) + 1)
+  commitmentAges ct `shouldReturn` Left (ChainUnavailable "eth_call: maxCommitmentAge() answered AERange")
+
+testStatusDeadline :: TVar ChaChaDRG -> IO ()
+testStatusDeadline g = withContracts g $ \node ct -> do
+  answerRegistrar node
+  answerCall node (registrarOf node) nameExpiresCall $ Returns $ uint256 (0 :: Int)
+  answerCall node fakeNamePolicy reservedNamesCall $ Returns $ uint256 (0 :: Int)
+  setFault node "eth_getBlockByNumber" Hang
+  elapsed <- timed $ nameStatus ct {ctDeadline = testDeadline} alice `shouldReturn` Left (ChainUnavailable "name status: timed out")
+  elapsed `shouldSatisfy` (< 2)
+  clearFault node "eth_getBlockByNumber"
+  nameStatus ct {ctDeadline = testDeadline} alice `shouldReturn` Right NSAvailable
+
+testRecordsDeadline :: TVar ChaChaDRG -> IO ()
+testRecordsDeadline g = withContracts g $ \node ct -> do
+  setFault node "eth_call" Hang
+  elapsed <- timed $ nameRecords ct {ctDeadline = testDeadline} alice (registeredAlice (resolverOf node) $ now + year) `shouldReturn` Left (ChainUnavailable "name records: timed out")
+  elapsed `shouldSatisfy` (< 2)
+
+testConcurrentReads :: TVar ChaChaDRG -> IO ()
+testConcurrentReads g = withContracts g $ \node ct -> do
+  let resolver = resolverOf node
+      ct' = ct {ctDeadline = concurrentDeadline}
+      registered = registeredAlice resolver (now + year)
+  answerRegistrar node
+  answerRegistered node resolver
+  setBlock node 100 now
+  answerCall node (registrarOf node) nameExpiresCall $ Returns $ uint256 (now + year)
+  answerCall node resolver contactTextCall $ Returns contactTextAnswer
+  answerCall node resolver channelTextCall $ Returns $ abiTuple [Dynamic $ abiBytes ""]
+  answerCall node resolver noncesCall $ Returns $ uint256 (3 :: Int)
+  -- the registrar's constants are read once, so this read takes them out of the timed ones
+  nameStatus ct alice `shouldReturn` Right (NSRegistered registered)
+  forM_ ["eth_call", "eth_getBlockByNumber"] $ \m -> setFault node m $ Slow $ concurrentDeadline * 27 `div` 100
+  nameStatus ct' alice `shouldReturn` Right (NSRegistered registered)
+  nameRecords ct' alice registered `shouldReturn` Right (Just NameRecords {rdContact = "https://smp8.simplex.im/a#Y8m3", rdChannel = "", rdNonce = 3})
+
+-- fixtures
+
+concurrentDeadline :: Int
+concurrentDeadline = 4000000
+
+-- | Far below a call's 10-second timeout, so only the deadline can end a hung read in time.
+testDeadline :: Int
+testDeadline = 300000
+
+minPriceCentsPerYear :: Int
+minPriceCentsPerYear = 5000
+
+timed :: IO () -> IO NominalDiffTime
+timed action = do
+  start <- getCurrentTime
+  action
+  (`diffUTCTime` start) <$> getCurrentTime
+
+withContracts :: TVar ChaChaDRG -> (FakeEthNode -> Contracts -> IO a) -> IO a
+withContracts g action = withServiceStore $ \st -> withFakeEthNode $ \node -> do
+  ct <- newContracts st TLDSimplex minPriceCentsPerYear =<< fakeChainClient g node
+  action node ct
+
+answerRegistrar :: FakeEthNode -> IO ()
+answerRegistrar node = do
+  answerCall node (registrarOf node) ensCall $ Returns $ addressWord registry
+  answerCall node (registrarOf node) gracePeriodCall $ Returns $ uint256 gracePeriod
+
+answerRegistered :: FakeEthNode -> Address -> IO ()
+answerRegistered node resolver = do
+  answerCall node registry registryOwnerCall $ Returns $ addressWord owner
+  answerCall node registry registryResolverCall $ Returns $ addressWord resolver
+
+registeredAlice :: Address -> Word64 -> RegisteredName
+registeredAlice rnResolver expires = RegisteredName {rnOwner = owner, rnResolver, rnExpiresAt = RoundedSystemTime $ fromIntegral expires, rnGracePeriod = toInteger gracePeriod}
+
+registrarOf, resolverOf :: FakeEthNode -> Address
+registrarOf = cBaseRegistrar . fakeChainConfig
+resolverOf = cResolver . fakeChainConfig
+
+rentPriceAnswer :: Integer -> ByteString
+rentPriceAnswer cents = uint256 (cents * 10 ^ (16 :: Int)) <> uint256 (0 :: Int)
+
+-- viem: text answering "https://smp8.simplex.im/a#Y8m3"
+contactTextAnswer :: ByteString
+contactTextAnswer = unhex "0000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000001e68747470733a2f2f736d70382e73696d706c65782e696d2f612359386d330000"
+
+-- 2027-01-01, the term start
+now :: Word64
+now = 1798761600
+
+year, gracePeriod :: Word64
+year = 31536000
+gracePeriod = 7776000
+
+alice :: LabelHash
+alice = labelHash "alicebakery"
+
+-- viem: namehash("alicebakery.simplex")
+aliceNode :: ByteString
+aliceNode = unhex "0f4104919a21c22f566d9c7947c7c7d8addbf546c973851a7e449276ea54ec1a"
+
+commitment :: Hex32
+commitment = Hex32 $ unhex "f8096c3f3cfbadc9f3a108d2c586ccc816c0510711c8d6228aa4fa507324d30c"
+
+owner, registry, otherResolver, newPolicy :: Address
+owner = address "0x014f9c09cceedef1b713110d04d3a07d5b5d9b73"
+registry = address "0x5fbdb2315678afecb367f032d93f642f64180aa3"
+otherResolver = address "0x4826533b4897376654bb4d4ad88b7fafd0c98528"
+newPolicy = address "0x8a791620dd6260079bf849dc5567adc3f2fdc318"
+
+-- viem's calldata for the reads
+
+ensCall, gracePeriodCall, nameExpiresCall, ownerOfCall, reservedNamesCall, registryOwnerCall, registryResolverCall :: ByteString
+ensCall = unhex "3f15457f"
+gracePeriodCall = unhex "c1a287e2"
+nameExpiresCall = unhex "d6e4fa86bcc46b7948ff6be55bc3ff4db5bc4be16638f29e818a89244dae11caaed7c9c6"
+ownerOfCall = unhex "6352211ebcc46b7948ff6be55bc3ff4db5bc4be16638f29e818a89244dae11caaed7c9c6"
+reservedNamesCall = unhex "389c0748bcc46b7948ff6be55bc3ff4db5bc4be16638f29e818a89244dae11caaed7c9c6"
+registryOwnerCall = unhex "02571be30f4104919a21c22f566d9c7947c7c7d8addbf546c973851a7e449276ea54ec1a"
+registryResolverCall = unhex "0178b8bf0f4104919a21c22f566d9c7947c7c7d8addbf546c973851a7e449276ea54ec1a"
+
+contactTextCall, channelTextCall, noncesCall :: ByteString
+contactTextCall = unhex "59d1d43c0f4104919a21c22f566d9c7947c7c7d8addbf546c973851a7e449276ea54ec1a0000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000000f73696d706c65782e636f6e746163740000000000000000000000000000000000"
+channelTextCall = unhex "59d1d43c0f4104919a21c22f566d9c7947c7c7d8addbf546c973851a7e449276ea54ec1a0000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000000f73696d706c65782e6368616e6e656c0000000000000000000000000000000000"
+noncesCall = unhex "7ecebe00000000000000000000000000014f9c09cceedef1b713110d04d3a07d5b5d9b73"
+
+-- | rentPriceUSD("a" × length, 2 years)
+rentPriceCall :: Int -> ByteString
+rentPriceCall = \case
+  6 -> unhex "9ff7ec0900000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000003c2670000000000000000000000000000000000000000000000000000000000000000066161616161610000000000000000000000000000000000000000000000000000"
+  7 -> unhex "9ff7ec0900000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000003c2670000000000000000000000000000000000000000000000000000000000000000076161616161616100000000000000000000000000000000000000000000000000"
+  11 -> unhex "9ff7ec0900000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000003c26700000000000000000000000000000000000000000000000000000000000000000b6161616161616161616161000000000000000000000000000000000000000000"
+  12 -> unhex "9ff7ec0900000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000003c26700000000000000000000000000000000000000000000000000000000000000000c6161616161616161616161610000000000000000000000000000000000000000"
+  len -> error $ "no viem vector for length " <> show len
+
+-- | viem: rentPriceUSD of 11 letters for 3 years
+threeYearsOf11 :: ByteString
+threeYearsOf11 = unhex "9ff7ec0900000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000005a39a80000000000000000000000000000000000000000000000000000000000000000b6161616161616161616161000000000000000000000000000000000000000000"
+
+commitmentsCall, availableCall, minCommitmentAgeCall, maxCommitmentAgeCall :: ByteString
+commitmentsCall = unhex "839df945f8096c3f3cfbadc9f3a108d2c586ccc816c0510711c8d6228aa4fa507324d30c"
+availableCall = unhex "aeb8ce9b0000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000b616c69636562616b657279000000000000000000000000000000000000000000"
+minCommitmentAgeCall = unhex "8d839ffe"
+maxCommitmentAgeCall = unhex "ce1e09c0"

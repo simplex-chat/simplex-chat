@@ -15,7 +15,7 @@ while read -r p; do
   if [ -n "$p" ]; then args+=(-m "$p"); fi
 done <<< "${TESTS:-}"
 if [ "${#args[@]}" -gt 0 ]; then
-  args+=(--fail-on=empty)
+  if [ "${ALLOW_EMPTY:-}" != true ]; then args+=(--fail-on=empty); fi
 elif [ "${REDUCED:-}" = true ]; then
   echo "No tests selected"
   exit 0

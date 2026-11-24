@@ -1,0 +1,6 @@
+{
+  "body": {
+    "type": "catalog_changed"
+  },
+  "status": 400
+}

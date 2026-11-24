@@ -1,0 +1,6 @@
+{
+  "body": {
+    "type": "invalid_name"
+  },
+  "status": 400
+}

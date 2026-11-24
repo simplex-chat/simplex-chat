@@ -1,0 +1,6 @@
+{
+  "body": {
+    "type": "rate_limited"
+  },
+  "status": 429
+}

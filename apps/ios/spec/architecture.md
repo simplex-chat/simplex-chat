@@ -134,6 +134,10 @@ func sendSimpleXCmd<R: ChatAPIResult>(_ cmd: ChatCmdProtocol, _ ctrl: chat_ctrl?
 
 All FFI calls are wrapped in [`beginBGTask()`](../Shared/Model/SimpleXAPI.swift#L54) / `endBackgroundTask()` to prevent iOS from killing the app mid-operation. The `maxTaskDuration` is 15 seconds.
 
+Each XFTP file of a sent item has its own background task ([`beginFileUploadTasks`](../Shared/Model/SimpleXAPI.swift#L606-L615)), begun when the response to a send or a forward is received and stored in `ChatModel.fileUploads` by file ID. It is ended once, and removed, on `sndFileCompleteXFTP` or `sndFileError`, on the response to the cancellation of the file, on the deletion of its item, or on expiration ([`endFileUploadTask`](../Shared/Model/SimpleXAPI.swift#L617-L620)).
+
+While the chat is suspending, the agent continues the XFTP uploads started in foreground by this app process. The chat deletes the agent file of each upload after handling its completion or error, queueing the file descriptions of a completed upload first. The core sends `chatSuspended` after these deletions and the delivery of the queued messages, or at the suspend timeout. Uploads started while suspending or resumed from an earlier process are not awaited.
+
 ---
 
 ## [3. Event Streaming](../Shared/Model/SimpleXAPI.swift#L2220-L2916)
