@@ -7,3 +7,7 @@
 [submodule "apps/multiplatform/external/composenativetray/upstream"]
 	path = apps/multiplatform/external/composenativetray/upstream
 	url = https://github.com/sh-agents/ComposeNativeTray
+[submodule "apps/simplex-domains"]
+	path = apps/simplex-domains
+	url = https://github.com/simplex-chat/simplex.domains
+	branch = names
