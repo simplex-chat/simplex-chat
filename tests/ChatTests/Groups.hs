@@ -306,6 +306,7 @@ chatGroupTests = do
     it "update without priority makes item normal, a later raise notifies once" testGroupUpdateWithoutPriority
     it "forward update with notification flag of its accepted priority" testGroupMsgForwardAcceptedPriority
     it "forward priority raise of an item the forwarder marked deleted" testGroupMsgForwardRaiseDeletedItem
+    it "forward priority raise of an item whose author the forwarder blocked for itself" testGroupMsgForwardRaiseBlockedAuthor
     it "silent, high priority and raised messages recorded for the apps" testGroupPriorityRecordings
     it "terminal notifies of a raise and of an update as new, not of an edit" testGroupUpdateTerminalNotification
   describe "update as new" $ do
@@ -6743,6 +6744,28 @@ testGroupMsgForwardRaiseDeletedItem =
       bob ##> ("/_update item #1 " <> doneId <> " text done")
       bob <# "#team done"
       cath <# "#team bob> done"
+      bob ##> ("/_update item #1 " <> doneId <> " json {\"msgContent\": {\"type\": \"text\", \"text\": \"done\"}, \"mentions\": {}, \"priority\": 1}")
+      bob <# "#team !! done"
+      cath <# "#team bob!!> done"
+      lastSndMsgFlags alice cathConnId 1 `shouldReturn` ["T"]
+
+testGroupMsgForwardRaiseBlockedAuthor :: HasCallStack => TestParams -> IO ()
+testGroupMsgForwardRaiseBlockedAuthor =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+      setupGroupForwarding alice bob cath
+      cath ##> "/set receipts all off"
+      cath <## "ok"
+      cathConnId <- relayConnIdToMember alice "cath"
+      [Only bobMemberId] <- withCCTransaction alice $ \db ->
+        DB.query db "SELECT group_member_id FROM group_members WHERE local_display_name = ?" (Only ("bob" :: String))
+      alice ##> ("/_member settings #1 " <> show (bobMemberId :: Int64) <> " {\"showMessages\": false}")
+      alice <## "ok"
+      bob #> "#team done"
+      alice <# "#team bob> done [blocked] <muted>"
+      cath <# "#team bob> done [>>]"
+      doneId <- lastItemId bob
       bob ##> ("/_update item #1 " <> doneId <> " json {\"msgContent\": {\"type\": \"text\", \"text\": \"done\"}, \"mentions\": {}, \"priority\": 1}")
       bob <# "#team !! done"
       cath <# "#team bob!!> done"
