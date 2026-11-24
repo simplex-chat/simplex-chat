@@ -87,12 +87,13 @@ An update as new has the priority of the update, by the rule of every update of 
 ```
 every update, with or without asNew (#8195)
   sender's item       allowedPriority highAllowed of UpdatedMessage.priority; absent: normal; support scopes included
-  receiver's item     deleted: its priority; otherwise allowedPriority (rcvPriorityAllowed cd) of the update's priority
+  receiver's item     deleted: its priority; otherwise allowedPriority (rcvPriorityAllowed memberBlocked cd) of the update's priority
   userMention         mention or reply of the updated content || high (updateGroupCIUserMention, #8219)
 
                       update in place (#8195)                  update as new, the item moved (newTs_ set)
   SMP flag            on for a change to high only             off for silent only
-  forward SMP flag    the same, by the forwarder's own item and its own newTs_
+  forward SMP flag    the same, by fwdPriority and fwdNewTs_ of the rules of the group (section 6);
+                      on for high when the item is missing or not compared
   apps notify         when raised (isRaised)                   when shown as new (isAsNew), unless silent
 ```
 
@@ -100,7 +101,9 @@ every update, with or without asNew (#8195)
 SMP flag            newTs_ set: priority' /= MPSilent; otherwise priority' == MPHigh && priority /= MPHigh (#8195)
 sender              Commands.hs, group branch: MsgFlags of sendGroupMessageFlags (#8195)
 forwarder           Subscriber.hs, updateCI: DeliveryTaskContext.updateNotification
-                    an item created for a missing message: the created item is high, as in #8195, also with asNew
+                      fwdNewTs_ set: fwdPriority /= MPSilent; otherwise fwdPriority == MPHigh && fwdPrevPriority /= Just MPHigh (section 6)
+                    an item created for a missing message: asNew in the main scope from an author not blocked for all:
+                      fwdPriority /= MPSilent; otherwise fwdPriority == MPHigh
 delivery task       Delivery.hs: priorityRaised of #8195 renamed updateNotification, in DeliveryTaskContext and MessageDeliveryTask
                     delivery_tasks.priority_raised of #8195 renamed update_notification, in M20261113_item_priority
                     taskHasNotification: updateNotification || msgHasNotification, as in #8195
@@ -108,11 +111,11 @@ delivery task       Delivery.hs: priorityRaised of #8195 renamed updateNotificat
 
 ```mermaid
 flowchart LR
-  U["x.msg.update applied<br>by the sender or a forwarder"] --> M{"item moved as new<br>(newTs_ set)"}
-  M -->|yes| S{priority'}
+  U["x.msg.update sent by the sender<br>or forwarded by a member or relay"] --> M{"item moved as new<br>sender: newTs_ set<br>forwarder: fwdNewTs_ set"}
+  M -->|yes| S{"sender: priority'<br>forwarder: fwdPriority"}
   S -->|silent| OFF[SMP flag off]
   S -->|normal or high| ON[SMP flag on]
-  M -->|no| R{"priority' high,<br>item priority not high"}
+  M -->|no| R{"priority' or fwdPriority high,<br>item priority not high<br>or not compared"}
   R -->|yes| ON
   R -->|no| OFF
 ```
@@ -170,7 +173,7 @@ sequenceDiagram
   B->>S: x.msg.update asNew, priority p<br>SMP flag unless p = -1
   S->>R: message, broker time t1
   R->>R: item time := asNewItemTs(itemTs, t1)
-  R->>S: forward, fwdBrokerTs t1, SMP flag when R moved its item, unless p = -1
+  R->>S: forward, fwdBrokerTs t1, SMP flag when the update moves the item by the rules of the group, unless p = -1
   S->>C: forward, push to iOS when flagged
   C->>C: item time := asNewItemTs(itemTs, t1)<br>status rcv_new, priority, chat_ts := now
   C->>A: chatItemUpdated: chatItem, prevChatItem
@@ -186,16 +189,46 @@ newTs_     = if asNew_ == Just True
                 && not (memberBlocked sender)      -- as for mentions
              then asNewItemTs (chatItemTs' ci) brokerTs
              else Nothing
-priority'  if isJust itemDeleted then priority else allowedPriority (rcvPriorityAllowed cd) priority_   -- #8195
+priority'  if isJust itemDeleted then priority else allowedPriority (rcvPriorityAllowed memberBlocked cd) priority_   -- #8195
 condition  changed || itemLive == Just True || priority' /= priority || isJust newTs_
-           otherwise chatItemNotChanged and no delivery task
+           otherwise chatItemNotChanged
 edited     changed && itemLive /= Just True                                  -- as in #8195
 store      updateGroupChatItem with meta.priority = priority', updateGroupCIMentions, updateGroupCIUserMention, then for newTs_:
              updateChatTsStats db cxt user cd now Nothing
              setGroupChatItemAsNew db ci'' newTs
 event      CEvtChatItemUpdated: the item at its new time with status rcv_new, the previous item; the chat info returned by updateChatTsStats
-delivery   Just context when the condition holds: an update as new that moves the item is forwarded also without a change of text
-           updateNotification of the context: the SMP flag of section 4, by priority', priority and newTs_ of the forwarder
+delivery   by the rules of the group, below: an update as new that moves the item is forwarded also without a change of text
+```
+
+A member or relay that forwards decides by the rules of the group, not by its own copy of the item (decided by the user in the review of #8314):
+
+```
+shown               isNothing itemDeleted && not (memberBlocked sender)
+hiddenForAll        itemDeleted is CIModerated or CIBlockedByAdmin, or blockedByAdmin sender
+fwdNewTs_           if asNew_ == Just True && main scope && not hiddenForAll then asNewItemTs (chatItemTs' ci) brokerTs else Nothing
+fwdPriority         if hiddenForAll then priority else allowedPriority (rcvPriorityAllowed blockedByAdmin cd) priority_
+fwdPrevPriority     if shown || hiddenForAll then Just priority else Nothing      -- Nothing: the item is not compared
+delivery            Just context when the condition holds, or when fwdPrevPriority /= Just fwdPriority || isJust fwdNewTs_
+updateNotification  if isJust fwdNewTs_ then fwdPriority /= MPSilent else fwdPriority == MPHigh && fwdPrevPriority /= Just MPHigh
+item missing        created by saveRcvChatItem' with the priority of the update, event newChatItems; delivery: Just context
+                    content prohibited by the group: a rejected item, no delivery
+                    fwdPriority = allowedPriority (rcvPriorityAllowed blockedByAdmin cd) priority_
+                    updateNotification: if asNew_ == Just True && main scope && not (blockedByAdmin sender)
+                                        then fwdPriority /= MPSilent else fwdPriority == MPHigh
+```
+
+```mermaid
+flowchart LR
+  U["x.msg.update at a member<br>or relay that forwards"] --> I{"its item"}
+  I -->|missing| C["created: newChatItems"]
+  C --> F1["forwarded<br>flag: asNew ? not silent : high"]
+  I -->|found| H{"item moderated or blocked for all,<br>or its author blocked for all"}
+  H -->|yes| A{condition}
+  H -->|no| L{"item marked deleted or blocked by the user,<br>or its author blocked by the user"}
+  L -->|yes| F2["forwarded<br>flag: fwdNewTs_ ? not silent : high"]
+  L -->|"no: shown"| A
+  A -->|holds| F3["forwarded<br>flag: section 4 for a shown item,<br>off otherwise"]
+  A -->|"does not hold"| N[not forwarded]
 ```
 
 `Store/Messages.hs`, new:
@@ -225,7 +258,7 @@ x.msg.update asNew p=-1 at t2, same      floor(t2) + 0.999   now      rcv_new   
 x.msg.update asNew, not later            -                   -        -            -            -         as an update without asNew
 ```
 
-- An update of an item missing on the receiver creates the item at the time source, unread, as now (Subscriber.hs:2331): it is last already.
+- An update of an item missing on the receiver creates the item at the time source, unread, as now (Subscriber.hs:2331): it is last already. The event is newChatItems, so the apps show it as a new item and alert as for a new message, unless it is silent (`showNotification`, iOS `ChatTypes.swift`, Kotlin `ChatModel.kt`); a forwarder forwards an update as new of a missing item with the SMP flag of a new message, unless it is silent (decided by the user in the review of #8314).
 
 ## 7. Effects in groups
 
@@ -256,7 +289,8 @@ terminal view               viewItemUpdate (View.hs:870) as for an edit         
 ## 8. Relays, hosts and channels
 
 ```
-relay or host of this release     applies the update as new to its copy; forwards it with its SMP flag, an update without a change of text included
+relay or host of this release     applies the update as new to its copy when it is shown; forwards it by the rules of the group with its SMP flag (section 6),
+                                  an update without a change of text included
 relay or host before              signed update: forwarded as received bytes, asNew kept (Protocol.hs:1597)
                                   unsigned update: encoded again from the parsed message, asNew dropped: an edit in place
                                   an update as new without a change of text: not forwarded (condition :2400 of this master)

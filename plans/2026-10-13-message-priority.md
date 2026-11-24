@@ -21,7 +21,7 @@ normal priority   a priority message of a sender who is not allowed (section 3),
 read item         an item already read when its priority is raised stays read; a notification is shown
 attention item    received item with userMention: mention or reply (as now), or high priority (new)
 ```
-- Notifications are created for every message except a silent one. Notification text and sound are unchanged. The SMP notification flag is set as now for new messages, and for an update only when it changes the item to high priority: the author compares its item before and after the update, and a forwarding member or relay compares its own item when it applies the update and stores the result with the delivery task. An edit that repeats high priority is sent and forwarded without the flag.
+- Notifications are created for every message except a silent one. Notification text and sound are unchanged. The SMP notification flag is set as now for new messages, and for an update only when it changes the item to high priority: the author compares its item before and after the update, and a forwarding member or relay compares the priority accepted by the rules of the group with its own item and stores the result with the delivery task. An edit that repeats high priority is sent and forwarded without the flag. A forwarding member or relay that does not have the item, deleted its copy or blocked its author not for all forwards each update, with the flag on each high priority accepted by the rules of the group (decided by the user in the review of #8314).
 - Mode `MFMentions`: the apps notify for attention items, as now; a high priority item is one of them. A raise is notified once, for an unread and for a read item; a change to a lower priority is not notified.
 - An item that is a mention and high priority is shown as high priority.
 
@@ -149,15 +149,17 @@ both
 ## 5. Core: receiving
 New item, `Library/Internal.hs:3030` `saveRcvChatItem'`, with unchanged callers:
 ```
-priority = allowedPriority (content is CIRcvMsgContent && rcvPriorityAllowed cd) (cmPriority chatMsgEvent)
+priority = allowedPriority (content is CIRcvMsgContent && rcvPriorityAllowed memberBlocked cd) (cmPriority chatMsgEvent)
            silent from every sender in every chat; high only when allowed, otherwise normal
 userMention = (mention or reply, :3062, as now) || priority == MPHigh
 priority is passed to createNewRcvChatItem and mkChatItem_
 
-rcvPriorityAllowed cd =          -- new, Library/Internal.hs, for high priority only
-  CDGroupRcv g _ m   -> groupFeatureMemberAllowed SGFMsgPriority m g && not (memberBlocked m)
+rcvPriorityAllowed senderBlocked cd =    -- new, Library/Internal.hs, for high priority only
+  CDGroupRcv g _ m   -> groupFeatureMemberAllowed SGFMsgPriority m g && not (senderBlocked m)
   CDChannelRcv g _   -> groupFeatureMemberAllowed' SGFMsgPriority GROwner (fullGroupPreferences g)
   CDDirectRcv, CDLocalRcv -> False
+senderBlocked   memberBlocked: for the item of the user
+                blockedByAdmin: for the priority that a forwarding member or relay accepts by the rules of the group
 ```
 - A high priority message of a sender who is not allowed, and every direct high priority message, is received as a normal message.
 - Items of group and forwarded messages (`Library/Subscriber.hs:2209, 4008`), of history, and the item created by `x.msg.update` for a missing item (`:2327`) are created by this function. The item created by `x.msg.update` has the priority of the update, by the rules above: `cmPriority` takes the priority of `x.msg.new` and of `x.msg.update` (decided by the user on 2026-11-21).
@@ -166,22 +168,28 @@ rcvPriorityAllowed cd =          -- new, Library/Internal.hs, for high priority 
 Update, `Library/Subscriber.hs:2297` `groupMessageUpdate` and the direct `messageUpdate` (`:589`): new parameter, `priority` of `XMsgUpdate` (`:1088`, `:4048`).
 ```
 updateCI (:2368), new parameters: priority of the update; cd of the item (the values at :2351, :2354)
-  priority'    the item priority when the item is deleted; otherwise allowedPriority (rcvPriorityAllowed cd) priority, as for a new item
+  priority'    the item priority when the item is deleted; otherwise allowedPriority (rcvPriorityAllowed memberBlocked cd) priority, as for a new item
                direct messageUpdate: allowedPriority False priority
-  condition    changed || the item is live || priority' /= the item priority; otherwise chatItemNotChanged, no delivery task
+  condition    changed || the item is live || priority' /= the item priority; otherwise chatItemNotChanged
   edited       changed && itemLive /= Just True
   item         CIMeta.priority = priority' before updateGroupChatItem (:2379) and updateDirectChatItem'
   userMention  updateGroupCIUserMention (#8219), after updateGroupCIMentions: mention or reply || high priority, as for a new item
   event        :2382: chatItemUpdated with prevChatItem, the item before the update (#8219)
-  delivery     for an applied update only (:2384); DeliveryTaskContext.priorityRaised = priority' is high and the item priority is not
-               an item created for a missing message (:2373): priorityRaised = the created item is high
+  fwdPriority  the item priority when the item is moderated or blocked for all, or its author is blocked for all;
+               otherwise allowedPriority (rcvPriorityAllowed blockedByAdmin cd) priority: by the rules of the group
+  fwdPrevPriority
+               the item priority; Nothing, not compared, when the item is marked deleted or blocked by the user, or its author is
+               blocked by the user, and neither the item nor its author is moderated or blocked for all
+  delivery     for an applied update, and for an update with fwdPrevPriority /= Just fwdPriority (decided by the user in the review of #8314)
+               DeliveryTaskContext.priorityRaised = fwdPriority is high and fwdPrevPriority is not Just high
+               an item created for a missing message (:2373): priorityRaised = fwdPriority is high
 ```
 - The status of an item is unchanged by its priority: an unread item is counted by the stats queries; a read item stays read. The apps notify a change to high priority once and a change to a lower priority not at all; their counters change by the previous and the new item.
 
 Groups, channels, relays:
 ```
-forwarding    an applied update is forwarded: signed as its bytes; unsigned encoded again with priority (Protocol.hs:1591)
-              SMP flag of a forwarded x.msg.update: priorityRaised of its delivery task, stored when the forwarding member or relay applies it
+forwarding    an update is forwarded by the rules of the group (delivery of updateCI): signed as its bytes; unsigned encoded again with priority (Protocol.hs:1591)
+              SMP flag of a forwarded x.msg.update: priorityRaised of its delivery task, stored when the forwarding member or relay receives it
                 (delivery_tasks.priority_raised), not the priority in the message; a delivery job has the flag when one of its tasks has it
                 (taskHasNotification: priorityRaised || msgHasNotification)
               each receiver applies rcvPriorityAllowed with the role of the author
@@ -195,7 +203,7 @@ limits        the role of the preference; a high priority message of a blocked m
 SMP notification flag of `x.msg.update`:
 ```mermaid
 flowchart LR
-  A["author: APIUpdateChatItem<br>raise = priority' high, item priority not high"] -->|"x.msg.update, flag = raise"| F["forwarding member or relay: updateCI<br>raise = priority' high, its item priority not high"]
+  A["author: APIUpdateChatItem<br>raise = priority' high, item priority not high"] -->|"x.msg.update, flag = raise"| F["forwarding member or relay: updateCI<br>raise = fwdPriority high, its item priority not high or not compared"]
   A -->|"x.msg.update, flag = raise"| M["members with a connection to the author"]
   F -->|"delivery_tasks.priority_raised = raise"| J["delivery job<br>flag = any task raised or with a flag of its message"]
   J -->|"x.grp.msg.forward"| S["members and subscribers"]
@@ -423,7 +431,7 @@ apps              CIMeta.highPriority
 ```
 
 ## Depends on
-`2026-10-13-forwarded-notification-flag.md`, a separate patch: the notification flag of messages forwarded by relays and hosts (delivery jobs, `Library/Subscriber.hs:4416, 4483`) is set by that patch; for `x.msg.update` this plan sets it when the forwarding member or relay changes its item to high priority (`priorityRaised` of the delivery task, section 5). The author's own send (section 4) is part of this plan.
+`2026-10-13-forwarded-notification-flag.md`, a separate patch: the notification flag of messages forwarded by relays and hosts (delivery jobs, `Library/Subscriber.hs:4416, 4483`) is set by that patch; for `x.msg.update` this plan sets it when the update changes the item of the forwarding member or relay to high priority by the rules of the group, or has high priority by these rules and the item is missing or not compared (`priorityRaised` of the delivery task, section 5). The author's own send (section 4) is part of this plan.
 
 This plan is implemented independently of the other plans. Their references to `silent` of the rejected plan are replaced:
 ```
