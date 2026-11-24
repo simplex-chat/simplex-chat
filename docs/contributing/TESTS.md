@@ -155,7 +155,7 @@ Helpers of [ChatTests/Utils.hs](../../tests/ChatTests/Utils.hs), called in core 
 | `nameFixture fixture cc name` | `apiFixture` of `/_connect plan 1 <name>` and of the markdown of the name, in `names/` |
 | `eventsFixture fixture events steps` | an array of the events appended by `recordItemEvent events`, in `eventHook` of `chatHooks`, during `steps`: `newChatItems` and `chatItemUpdated`, encoded as `chatRecvMsg` encodes them; with `recordSndFileEvent events`, `sndFileCompleteXFTP` and `sndFileError` |
 | `nameMovedFixture` | a `nameMoved` event, built from the IDs of the named contacts and groups |
-| `writeFixture fixture value` | `value`: in `testResizeImageFileCApi` of MobileTests.hs, `images/resize-file-uri`, the data URI of `cChatResizeImageFileUri` with limit 14000 for each image, keyed by its path in tests/fixtures |
+| `writeFixture fixture value` | `value`, in `tests/fixtures/<fixture>.json`: in `testResizeImageFileCApi` of MobileTests.hs, `api/images/resize-file-uri`, the data URI of `cChatResizeImageFileUri` with limit 14000 for each image, keyed by its path in tests/fixtures |
 
 Examples: `testPlanKnownNameAvailable` in ChatTests/Names.hs, `testDirectMessageUpdatePrevItem` and `testMissedCall` in ChatTests/Direct.hs, `testXFTPRecordUploadComplete` in ChatTests/Files.hs.
 

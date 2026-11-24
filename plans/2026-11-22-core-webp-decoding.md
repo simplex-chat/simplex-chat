@@ -40,7 +40,7 @@ Other sources:
 | CLI user, `/set profile image file x.webp` | `unsupported image extension` | profile image set |
 
 Evidence at review:
-- the groups `/Image resize/` and `/Mobile API Tests/`, the test `/SimpleX chat client/profile tests/user profiles/set profile image from file/` and desktopTest pass in the reduced build; desktopTest passes the preview of a picked animated WebP image recorded from the core (Tests, "Apps");
+- the groups `/Image resize/` and `/Mobile API Tests/`, the test `/SimpleX chat client/profile tests/user profiles/set profile image from file/` and desktopTest pass in the reduced build; in desktopTest, a picked animated WebP image gets the core's recorded preview (Tests, "Apps");
 - the test "should apply EXIF orientation of WebP" fails at `2c4ca02`, the commit before the fix, with sides 1000×307 for the expected 307×1000 ([run](https://github.com/simplex-chat/simplex-chat/actions/runs/45287298996));
 - hs-jpeg-turbo CI, the full matrix and the armv7 job ([run](https://github.com/evgeny-simplex/hs-jpeg-turbo/actions/runs/45334111937) of `13e1dc6`, a dispatch with the input `full`):
   - the package built and its tests passed with GHC 8.10.7 and 9.6.3 on Linux x86-64, with GHC 9.6.3 on Linux aarch64, macOS aarch64 and x86-64, and Windows;
@@ -502,7 +502,7 @@ Apps (Q2 b):
   - desktop `isAnimImage` on temporary files: a `VP8X` header with the animation flag, true; without it, false; a simple `VP8 ` file, false; `.gif`, true;
   - `isWebpFile` on temporary files: a WebP header in a `.gif` file, true; a GIF in a `.webp` file, false; 11 bytes of a WebP header, false;
   - `processPickedMedia` (ComposeView.kt:375), with the seams `chatResizeImageFileUri` and `chatResizeImageUri` of common/platform/Core.kt, as `chatParseUri`: `animated.webp`, an `AnimatedImage` with the recorded data URI of the core as its preview, requested once for its path with limit 14000; a `.gif`, an `AnimatedImage` with the preview from the bitmap, without a request for its file.
-- desktop-linux, `send_images` (scripts/ci/desktop-linux/smoke-test.sh:394-403): `webp/lossy.webp` sent as `.jpg`, and `webp/animated.webp` sent as `.webp`; each with the compose preview and the unchanged count of `core returned no image`; `send_image` takes a shot label besides the extension; README: `scripts/ci/desktop-linux/README.md:27`.
+- desktop-linux, `send_images` (scripts/ci/desktop-linux/smoke-test.sh:395-403): `webp/lossy.webp` sent as `.jpg`, and `webp/animated.webp` sent as `.webp`; each with the compose preview and the unchanged count of `core returned no image`; `send_image` takes a shot label besides the extension; README: `scripts/ci/desktop-linux/README.md:27`.
 - android-emu and ios-sim: their smoke tests, unchanged, with the core of the branch: the Android app with its core for arm64 and, with the input `armv7a`, the core for armv7a built; the iOS app in the simulator.
 - Each workflow runs once at the head of the pull request, with the app uploaded.
 
