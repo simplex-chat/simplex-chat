@@ -1,8 +1,8 @@
 # Chat list, profile switch, member cleanup and chat pages on SQLite and PostgreSQL
 
-Status: implemented on `ep/chat-list-queries`, code at eeae6a446; results in section 7. Branch `ep/chat-list-queries`, stacked on #8314 (`ep/omnibus` e3457510f); #7969 by Narasimha-sc is adopted. Problems of q29 in the review of #8314, decided by the maintainer: "q29 - yes, and also adopt the PR by narasimha-sc that makes loading chat list faster - it improved sqlite but not postgres, need to work on both."
+Status: implemented on `ep/chat-list-queries`, code at 34371d80f; results in section 7; decisions in section 9. Branch `ep/chat-list-queries`, stacked on #8314 (`ep/omnibus` e3457510f); #7969 by Narasimha-sc is adopted. Problems of q29 in the review of #8314, decided by the maintainer: "q29 - yes, and also adopt the PR by narasimha-sc that makes loading chat list faster - it improved sqlite but not postgres, need to work on both."
 
-Code references: this branch at 5727cc7d5, by file and line; the references added with the review fixes, at eeae6a446. SQLite plans: `chat_query_plans.txt`, and `EXPLAIN QUERY PLAN` of SQLite 3.45.1 on empty databases of each schema. PostgreSQL plans: probe runs of #8314, PostgreSQL 15.20, 1,000,000 chat items: review run https://github.com/evgeny-simplex/simplex-chat/actions/runs/45197482204 (schema ce3673792) and fixes run https://github.com/evgeny-simplex/simplex-chat/actions/runs/45229293446 (schema 582d0058d, equal to `ep/omnibus`); pg-plans run of #7969 https://github.com/Narasimha-sc/simplex-chat/actions/runs/41325761174.
+Code references: this branch at 5727cc7d5, by file and line; the references added with the review fixes, at eeae6a446; the references added with the decisions of section 9, at 70ff83d12. SQLite plans: `chat_query_plans.txt`, and `EXPLAIN QUERY PLAN` of SQLite 3.45.1 on empty databases of each schema. PostgreSQL plans: probe runs of #8314, PostgreSQL 15.20, 1,000,000 chat items: review run https://github.com/evgeny-simplex/simplex-chat/actions/runs/45197482204 (schema ce3673792) and fixes run https://github.com/evgeny-simplex/simplex-chat/actions/runs/45229293446 (schema 582d0058d, equal to `ep/omnibus`); pg-plans run of #7969 https://github.com/Narasimha-sc/simplex-chat/actions/runs/41325761174.
 
 ## 1. Problems
 
@@ -133,7 +133,7 @@ DROP INDEX idx_chat_items_groups_item_viewed;
 CREATE INDEX idx_chat_items_groups_item_viewed ON chat_items(user_id, group_id, item_viewed, item_ts);
 ```
 
-Without `sqlite_stat1`, SQLite chooses among indexes of equal estimated cost by their order in the schema, the last created first: an index read from the schema is put first in the list of its table (sqlite3.c:119559 of 3.39.2), and a plan of equal or higher cost than a plan found earlier is discarded (`whereLoopFindLesser`, sqlite3.c:156353). The message search reads of `getAllChatItems` (`/search`, `/tail` and `/last_item_id` without a chat name, `/_get items`) are searched by `user_id` only; among the indexes led by `user_id`, the index created last is used: `idx_chat_items_groups_item_viewed` on `ep/omnibus`, `idx_chat_items_groups_msg_content_tag_deleted` without the rebuild, `idx_chat_items_groups_item_viewed` with it. The down text is unchanged.
+Without `sqlite_stat1`, SQLite chooses among indexes of equal estimated cost by their order in the schema, the last created first: an index read from the schema is put first in the list of its table (sqlite3.c:119559 of 3.39.2), and a plan of equal or higher cost than a plan found earlier is discarded (`whereLoopFindLesser`, sqlite3.c:156353). The message search reads of `getAllChatItems` (`/search`, `/tail` and `/last_item_id` without a chat name, `/_get items`) are searched by `user_id` only; among the indexes led by `user_id`, the index created last is used: `idx_chat_items_groups_item_viewed` on `ep/omnibus`, `idx_chat_items_groups_msg_content_tag_deleted` without the rebuild, `idx_chat_items_groups_item_viewed` with it. The down text is unchanged. Open as D1 (section 9).
 
 Down migration, the definitions of `ep/omnibus`:
 
@@ -192,6 +192,7 @@ flowchart LR
   GS["group ChatStats"] --> S
   PG["unread reads of one group"] --> S
   MA["mark all read"] --> S
+  FU["first unread lookup of a profile, SQLite"] --> S
   RC["ReportCount"] --> R["idx_chat_items_groups_msg_content_tag_deleted<br>user_id<br>msg_content_tag<br>item_deleted<br>group_id<br>item_sent"]
   RG["report count and archive of one group"] --> R
   U["user_id only: files of a profile, user deletion"] --> T["idx_chat_items_timed_delete_at"]
@@ -220,12 +221,12 @@ Every user of the four indexes: the SQLite plan changes for 74 of 1,011 statemen
 | 2 reads by `user_id` only: files of a profile, user deletion | `idx_chat_items_timed_delete_at (user_id=?)` |
 | mark all read (Store/Direct.hs:694) | `idx_chat_items_group_scope_stats_all (user_id=? AND item_status=?)` |
 | `SELECT DISTINCT msg_content_tag` of a group | `idx_chat_items_groups_msg_content_tag_item_ts`, the same key |
-| `getFirstUnreadItemId_`, the text of master | `idx_chat_items_item_status (item_status=?)`: the unread entries of all profiles are read in `chat_item_id` order, each with its table row, up to the first entry of the profile; of the clients, only the CLI sends `/_get items initial=` (Commands.hs:6904) |
-| `getFirstUnreadItemId_` on PostgreSQL | `chat_items_pkey`, as on `ep/omnibus` (section 7) |
+| `getFirstUnreadItemId_` on SQLite, with `GROUP BY user_id` of #7969 | `idx_chat_items_group_scope_stats_all (user_id=? AND item_status=?)`: the unread entries of the profile are read; of the clients, only the CLI sends `/_get items initial=` (Commands.hs:6904) |
+| `getFirstUnreadItemId_` on PostgreSQL, the text of master | `chat_items_pkey`, as on `ep/omnibus` (section 7) |
 
 Adopted parts of #7969:
-- `GROUP BY user_id` of `getFirstUnreadItemId_` on SQLite: removed; the text of master is used on both backends.
-- `testUsersUnreadCountQueryPlans`: the expected plans of the tables above; the first unread lookup is recorded by its `SELECT MIN(chat_item_id)`; the silent count of #8314 (its text contains `item_priority`) is excluded from the recorded queries of the test.
+- `GROUP BY user_id` of `getFirstUnreadItemId_` on SQLite: kept (D2, section 9); the text of master on PostgreSQL.
+- `testUsersUnreadCountQueryPlans`: the expected plans of the tables above; the first unread lookup is recorded by its `GROUP BY user_id`, as in #7969; the silent count of #8314 (its text contains `item_priority`) is excluded from the recorded queries of the test.
 - `skipComparisonForDownMigrations` (SchemaDump.hs): `20261124_chat_list_indexes` in place of `20261101_chat_items_unread_index`.
 - `plans/2026-11-01-profile-switch-unread-counts*.md`: kept, with a first line that points to this section; their sections Fix and Scope are superseded by this plan.
 
@@ -271,6 +272,8 @@ flowchart TD
 
 Test, in `tests/ChatTests/Groups.hs`, run on both backends, with `deliveryWorkerDelay` of 3 s, so that the job that forwards the leave is pending for 3 s after its task is processed: alice is the owner of #team, bob and cath are members (`createGroup3'`); alice sends bob a direct message, so items with NULL `group_member_id` exist; cath leaves #team; when alice has one pending job, alice clears #team, and the member row of cath in alice's database is kept; bob, who forwards nothing, clears #team, and the row of cath in bob's database is deleted; when the job of alice is complete, alice clears #team again, and the row of cath is deleted. On `ep/omnibus` the rows are kept; before the delivery conditions, the row of cath in alice's database was deleted at the first clearing, and the forward of the leave was dropped (run https://github.com/evgeny-simplex/simplex-chat/actions/runs/45299780513: "chat db error: SEGroupMemberNotFound").
 
+Test of expiration, in `tests/ChatTests/Groups.hs` (`testExpireChatKeepLeftMemberUntilForwarded`, line 2386), run on both backends, with `deliveryWorkerDelay` of 3 s, so that the task of the forward of the leave is new for 3 s: alice is the owner of #team, bob and cath are members; cath leaves #team; when alice has one new task, the items of cath in alice's database are set 2 days old; alice sets the TTL of #team to a day, and the member row of cath in alice's database is kept. The message of the task is newer than the 12-hour cut-off of messages and is kept with its task (`deleteGroupExpiredCIs`, Messages.hs:3705); the items of cath are deleted. Without the condition of `delivery_tasks`, the row of cath is deleted at this expiration (section 7).
+
 ### 5.3 Chat pages
 
 `idsQuery` of `getChatItemIDs` (Messages.hs:1607-1626):
@@ -307,7 +310,7 @@ flowchart LR
 
 Databases with `20261101_chat_items_unread_index` applied exist only from builds of #7969's branch.
 
-The iOS notification service applies up-migrations (NotificationService.swift:888 with `defaultMigrationConfirmation`, API.swift:374). Four indexes of `chat_items` are built in this migration on SQLite, three on PostgreSQL; two were built in `M20260403_item_viewed`.
+The iOS notification service applies up-migrations (NotificationService.swift:888 with `defaultMigrationConfirmation`, API.swift:374). Four indexes of `chat_items` are built in this migration on SQLite, three on PostgreSQL; two were built in `M20260403_item_viewed`. Open as D3 (section 9).
 
 ## 7. Measurement
 
@@ -340,7 +343,8 @@ Acceptance:
 - the users list counts, ChatStats and ReportCount use the keys of section 5.1 on SQLite, and Index Only Scans with `item_status` (`msg_content_tag`) in Index Cond on PostgreSQL;
 - other statements are at most 20% or 2 ms slower than on `ep/omnibus`, on either backend; the migration time is reported;
 - the page rows equal those of the OR text at every pivot;
-- the cleanup test fails on the commit of the test and passes on the head, on SQLite and PostgreSQL.
+- the cleanup test fails on the commit of the test and passes on the head, on SQLite and PostgreSQL;
+- the expiration test fails without the condition of `delivery_tasks` and passes on the head, on SQLite and PostgreSQL.
 
 Results at 8f64fbc6c, the code of eeae6a446: `ep/omnibus` against the head, 111 statements on each backend. SQLite 3.45.1: two copies of the #8314 database, one with the `ep/omnibus` schema and one migrated by the up text of the head, both vacuumed; warm medians of 20 runs, 5 for reads with a cold run over 1 s; cold: one run, and the median of 3 cold runs for the first unread lookup and the message search. PostgreSQL 15.20: probe run https://github.com/evgeny-simplex/simplex-chat/actions/runs/45341717900, two databases, data digests equal, medians of 10 runs of planning and execution. In ms.
 
@@ -354,8 +358,8 @@ Results at 8f64fbc6c, the code of eeae6a446: `ep/omnibus` against the head, 111 
 | group chat list, all chats | 238.3, cold 634 | 14.1, cold 285 | 24.87 | 12.25 |
 | group chat list texts: 14 on SQLite, 15 on PostgreSQL | 214.5-246.1 | 9.9-14.1 | 21.99-26.60 | 9.23-13.48 |
 | unread count of group 17 | 0.24 | 0.22 | 0.49 | 0.51 |
-| first unread lookup, profile with 30,000 unread items | 0.049, cold 2.9 | 0.049, cold 4.8 | 7.48 | 7.46 |
-| first unread lookup, profile without unread items | 0.154, cold 2.8 | 44.6, cold 933 | 0.26 | 0.26 |
+| first unread lookup, profile with 30,000 unread items | 0.049, cold 2.9 | 4.36, cold 11.4 | 7.48 | 7.46 |
+| first unread lookup, profile without unread items | 0.154, cold 2.8 | 0.042, cold 3.1 | 0.26 | 0.26 |
 | message search, last 100 (`/search`) | 4,201, cold 9,026 | 4,304, cold 9,381 | 367.9 | 365.6 |
 | message search, 100 after the middle item | 2,055, cold 5,342 | 2,002, cold 5,303 | 353.4 | 350.9 |
 | message search, 100 before the middle item | 1,954, cold 4,054 | 2,043, cold 4,025 | 355.5 | 353.6 |
@@ -369,8 +373,9 @@ Results at 8f64fbc6c, the code of eeae6a446: `ep/omnibus` against the head, 111 
 | pages around the middle item of group 17, 200 each | 11.5 | 0.46 | 10.25 | 0.75 |
 | pages around the middle item of contact 42, 200 each | 2.9 | 0.35 | 7.70 | 0.67 |
 
-- Plans changed since 37187229a, by the saved 3.39.2 plans and by SQLite 3.45.1: the first unread lookup, `idx_chat_items_item_status (item_status=?)` in place of `idx_chat_items_group_scope_stats_all (user_id=? AND item_status=?)`; the 3 message search texts, `idx_chat_items_groups_item_viewed (user_id=?)`, as on `ep/omnibus`; member cleanup, the two delivery conditions. On PostgreSQL, the cleanup plan alone, compared with run https://github.com/evgeny-simplex/simplex-chat/actions/runs/45314570894 of 37187229a: two Nested Loop Anti Joins added, tasks by Bitmap Index Scan of `idx_delivery_tasks_sender_group_member_id`, jobs by Seq Scan, as `delivery_jobs` is empty in the generated data; with 20,000 jobs, Index Scan of `idx_delivery_jobs_next` (https://github.com/evgeny-simplex/simplex-chat/actions/runs/45326908038).
-- Slower than `ep/omnibus` by more than 20% and 2 ms: on SQLite, the first unread lookup of a profile without unread items, while another profile has 30,000 unread items; the unread entries of all profiles are read in `idx_chat_items_item_status` with their table rows. With the text of #7969 on the head schema: 4.36 ms for the profile with unread items, 0.042 ms for the profile without.
+- Plans changed since 37187229a, by the saved 3.39.2 plans and by SQLite 3.45.1: the first unread lookup, `idx_chat_items_item_status (item_status=?)` in place of `idx_chat_items_group_scope_stats_all (user_id=? AND item_status=?)`, and again `idx_chat_items_group_scope_stats_all (user_id=? AND item_status=?)` with the text of #7969 since 152c25a2f; the 3 message search texts, `idx_chat_items_groups_item_viewed (user_id=?)`, as on `ep/omnibus`; member cleanup, the two delivery conditions. On PostgreSQL, the cleanup plan alone, compared with run https://github.com/evgeny-simplex/simplex-chat/actions/runs/45314570894 of 37187229a: two Nested Loop Anti Joins added, tasks by Bitmap Index Scan of `idx_delivery_tasks_sender_group_member_id`, jobs by Seq Scan, as `delivery_jobs` is empty in the generated data; with 20,000 jobs, Index Scan of `idx_delivery_jobs_next` (https://github.com/evgeny-simplex/simplex-chat/actions/runs/45326908038).
+- The SQLite head values of the first unread lookup are the text of #7969 (D2, section 9), measured in the same session on the head copy, one cold run each. The text of master on the head schema: 0.049 ms (cold 4.8) for the profile with 30,000 unread items, and 44.6 ms (cold 933) for the profile without unread items, as the unread entries of all profiles are read in `idx_chat_items_item_status` with their table rows.
+- Slower than `ep/omnibus` by more than 20% and 2 ms: on SQLite, the first unread lookup of a profile with 30,000 unread items, 0.049 to 4.36 ms; the unread entries of the profile are read in `idx_chat_items_group_scope_stats_all` (D2).
 - On PostgreSQL every statement is within the criterion; the largest relative increase is 24%, 0.10 ms: the page before the newest item of the member support scope, 0.43 to 0.53 ms.
 - Rows are equal on both sides, except member cleanup and the files of a profile, whose text has no `ORDER BY`: equal as sets on SQLite, 136,175 rows; one plan on both PostgreSQL databases, with parallel workers.
 - Subqueries of the chat list on SQLite, measured before the review fixes, with the search keys of the head: direct ChatStats 12.1 to 0.66 ms, group ChatStats 136.2 to 7.2 ms, ReportCount 101.3 to 0.63 ms.
@@ -448,7 +453,10 @@ CI of the reduced build:
 - with the test of commit 10, alice's database before and after the clearing: one task of cath with status `new` and no job before, no task and no row of cath after; the task is deleted with the messages of the group (https://github.com/evgeny-simplex/simplex-chat/actions/runs/45329677603, a temporary branch of commit 14 with the rows printed);
 - the cleanup test of commit 15 fails without the delivery conditions, on SQLite and PostgreSQL, at the first clearing by alice, after the pending job is found (https://github.com/evgeny-simplex/simplex-chat/actions/runs/45331692413, a temporary branch of commit 10 and the test of commit 15);
 - on commit 14, "verify and overwrite query plans" and the cleanup test of commit 10 fail (https://github.com/evgeny-simplex/simplex-chat/actions/runs/45326659814); the patch of the plans is commit 16;
-- the tests of section 8 pass on commit 16 on PostgreSQL, and on SQLite except "verify and overwrite query plans" (https://github.com/evgeny-simplex/simplex-chat/actions/runs/45331833208), whose patch, the plan of the pending jobs count of the test, is commit 17.
+- the tests of section 8 pass on commit 16 on PostgreSQL, and on SQLite except "verify and overwrite query plans" (https://github.com/evgeny-simplex/simplex-chat/actions/runs/45331833208), whose patch, the plan of the pending jobs count of the test, is commit 17;
+- the expiration test of commit 21 fails without the condition of `delivery_tasks`, on SQLite and PostgreSQL: the row of cath is deleted at the expiration (https://github.com/evgeny-simplex/simplex-chat/actions/runs/45349877773, a temporary branch of commit 21 without the condition);
+- on commit 21, the tests of section 8 pass on PostgreSQL, 486 examples, and on SQLite except "verify and overwrite query plans", 498 examples (https://github.com/evgeny-simplex/simplex-chat/actions/runs/45349740040); its patch, the plans of the 8 queries of group expiration and of the test, is commit 22;
+- the tests of section 8 pass on commit 22, 498 examples on SQLite and 486 on PostgreSQL (https://github.com/evgeny-simplex/simplex-chat/actions/runs/45353654557); on PostgreSQL, the first attempt failed at "delete user", as "completed deleting user" (`DEL_USER` of the agent) was not shown within 20 s, and the re-run of the job passed; the test passed on commit 21.
 
 ## 8. Commits
 
@@ -470,6 +478,11 @@ CI of the reduced build:
 16. `core: update query plans`, from the CI artifact of the generated files of commit 14, without the entries of the replaced texts of `getFirstUnreadItemId_` and `getGroupMembersForExpiration`
 17. `core: update query plans`, from the CI artifact of the generated files of commit 16
 18. `docs: review fixes in the chat list plan`
+19. `docs: measurements of the chat list plan at the head`
+20. `core: faster first unread lookup when other profiles have unread items`, the text of #7969 on SQLite, as before commit 12 (D2)
+21. `tests: member expiration while a forward of the member is pending`
+22. `core: update query plans`, from the CI artifact of the generated files of commit 21
+23. `docs: decisions in the chat list plan`
 
 Tests of the reduced build:
 
@@ -482,3 +495,50 @@ Tests of the reduced build:
 /Postgres schema dump/
 /Save query plans/
 ```
+
+## 9. Decisions
+
+| ID | state | decision |
+|---|---|---|
+| D1 | open, for the maintainer | SQLite: `idx_chat_items_groups_item_viewed` rebuilt at the end of the up text (03c80b347) |
+| D2 | decided | SQLite: `getFirstUnreadItemId_` with `GROUP BY user_id` of #7969 (152c25a2f) |
+| D3 | open, for the maintainer | up-migration and VACUUM in the iOS notification service extension |
+
+D1:
+- Reads by `user_id` only (`/search`, `/tail` and `/last_item_id` without a chat name, `/_get items`): `idx_chat_items_groups_item_viewed (user_id=?)`, as on `ep/omnibus`; without the rebuild, `idx_chat_items_groups_msg_content_tag_deleted (user_id=?)`, the index created last by the up text (section 5.1).
+- Last 100 messages (section 7, review fixes): 3,385 ms, cold 8,957 with the rebuild; 3,884 ms, cold 49,437 without it; 3,363 ms, cold 9,031 on `ep/omnibus`.
+- Cost of the rebuild at 1,000,000 items: 2.4 s of the up text (drop 0.38 s, create 1.99 s).
+- Code comment proposed above the rebuild in the SQLite up text, awaiting approval:
+  ```sql
+  -- rebuilt last: for reads by user_id, SQLite uses the last created of equal-cost indexes
+  ```
+
+D2:
+- With `GROUP BY user_id`, worst case: 4.4-5.2 ms warm, 17.5 ms cold, a profile with 30,000 unread items.
+- With the text of master: 44.6-58.2 ms warm, 933-989 ms cold, a profile without unread items while another profile has 30,000.
+- Sent only by the CLI: `/_get items initial=` (Commands.hs:6904).
+- PostgreSQL: the text of master, `chat_items_pkey`.
+
+D3:
+- The extension calls `chatMigrateInit` with `backgroundMode: true` and `defaultMigrationConfirmation()` (NotificationService.swift:888): `.yesUp`, unless the user confirms database upgrades (API.swift:374).
+- `mobileDbOpts` sets `vacuumOnMigration = True` in every mode (Options/SQLite.hs:107).
+- simplexmq b7339d94 applies each up migration in its own transaction, then VACUUM once; with no up migrations, VACUUM is not run (`run`, Migrations.hs:43-48).
+- iOS gives the extension about 30 s.
+- Measured on SQLite at 1,000,000 items on the desktop, the up text of the head (section 7): 14.5-15.3 s, then VACUUM 46.6-54.4 s; the file has the same size after the migration and after VACUUM, as `auto_vacuum` is FULL.
+
+```mermaid
+flowchart LR
+  N["notification"] --> I["chatMigrateInit<br>background mode, yesUp"]
+  I --> U["up migrations<br>one transaction each<br>14.5-15.3 s"]
+  U --> V["VACUUM<br>46.6-54.4 s"]
+  V --> M["messages received"]
+  I -.->|"c"| C["migration refused<br>new notification text"]
+  U -.->|"d"| D["one migration per index<br>2.4-5.5 s each"]
+  U -.->|"b"| M
+```
+
+Options:
+- a. accept: 62-69 s at 1,000,000 items on the desktop; an extension stopped during VACUUM leaves the migrations applied, and VACUUM is not repeated.
+- b. recommended: VACUUM skipped in background mode, a separate core change, measured on a device: 14.5-15.3 s on the desktop; VACUUM is then not run for these migrations.
+- c. the extension refuses migrations, with a new notification text, a UX decision: 0 s in the extension; the migration runs at the next app start.
+- d. one migration per index, each committed: `idx_chat_items_contacts` with the drop of `idx_chat_items_user_id_item_status` 5.5 s, `idx_chat_items_group_scope_stats_all` 3.1 s, `idx_chat_items_groups_msg_content_tag_deleted` 2.4 s, `idx_chat_items_groups_item_viewed` 2.4 s; VACUUM still runs after all of them.
