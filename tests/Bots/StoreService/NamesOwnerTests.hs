@@ -98,7 +98,7 @@ namesOwnerTests = describe "StoreService names: owner" $ do
     it "answers terms_changed for an old version, other terms or the other kind, listed or not, a body differing only in terms included, and selects under the community terms, storing them" testSelectTermsChanged
     it "checks a code order's community name for 2 years, and its next name for its code's years again" testSelectCommunityYears
     it "prices a paid order's community name for 2 years, whatever years it paid for" testSelectCommunityPaidYears
-    it "checks the terms after the timestamp and the duration, at the first chain read, answering terms_unavailable while they are not set" testSelectTermsCheckOrder
+    it "checks the terms after the timestamp, the duration and the reveal's dispute days, refusing a BTC order's reveal signed over a card's, at the first chain read, answering terms_unavailable while they are not set" testSelectTermsCheckOrder
     it "selects a name again after each reset, as often as the order is reset" testSelectAgain
     it "refuses a selection meeting another live order of the wallet's or the commitment with a bare order_exists before its checks, and closes an overdue order of the same wallet and name, as a new order does" testSelectMeetsOrder
     it "runs the order checks on the new fields: invalid_name, the duration, name_taken and name_check_unavailable" testSelectOrderChecks
@@ -552,6 +552,7 @@ testSelectTermsCheckOrder = withOwner $ \ctx@Ctx {cNode} -> do
   ts <- clockSeconds ctx
   (selectionBodyAt ctx keyA (nrId r) to (ts - signedWindow - 1) >>= postSelection ctx (nrId r)) `shouldReturn` refusedWith 400 "bad_request"
   select ctx keyA r to {oDuration = oDuration to + 3601} `shouldReturn` refusedWith 400 "bad_request"
+  select ctx keyA r to {oMethod = "card"} `shouldReturn` refusedWith 400 "bad_request"
   setFault cNode "eth_call" HttpFailure
   select ctx keyA r to `shouldReturn` refusedWith 503 "name_check_unavailable"
   clearFault cNode "eth_call"

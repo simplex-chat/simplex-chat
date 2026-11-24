@@ -51,14 +51,14 @@ import StoreService.Names.Chain (Block (..), ChainClient, ChainError (..), Hex32
 import StoreService.Names.Contracts (namePolicy)
 import StoreService.Names.Orders (Landing (..), OrdersEnv (..), confirmLanded)
 import StoreService.Names.Phases (RegistrationId (..), awaitChange)
-import StoreService.Names.Registration (RegisterIntent (..), TermsAcceptance (..), acceptCalldata, acceptanceDigest, commitCalldata, policyDomain, registerIntentDigest, registerWithCreditCalldata, sponsorDomain, termsKind)
+import StoreService.Names.Registration (DisputeDays, RegisterIntent (..), TermsAcceptance (..), acceptCalldata, acceptanceDigest, commitCalldata, disputeSeconds, minDisputeDays, policyDomain, registerIntentDigest, registerWithCreditCalldata, sponsorDomain, termsKind, unDisputeDays)
 import StoreService.Names.Reveal (intentOf)
 import StoreService.Names.Revert (RevertName (..), RevertReason (..), actedReverts)
 import StoreService.Names.Sender
 import StoreService.Names.Store
 import StoreService.Names.Turns (withBalanceTurn, withLabelTurn)
 import StoreService.Names.Worker
-import StoreService.Providers (Reversal (..))
+import StoreService.Providers (PaymentSignal (..), Received (..), Reversal (..))
 import StoreService.Store.Invoices (InvoiceRow (..), getInvoice)
 import StoreService.Web.Http (createLimit, holdMicros, readLimit)
 import StoreService.Web.Names (Route (..), namesApp)
@@ -81,6 +81,7 @@ workerTests = describe "StoreService names: worker" $ do
   describe "commit" $ do
     it "commits a code order, relays the acceptance its order stored, waits for revealAfter and registers it with the stored signature, spending its code and publishing each change" testCommitWaitRegister
     it "registers a paid order from its payment to the registered view with the signature its order stored, with no reveal request" testPaidRegister
+    it "registers a card order over its 120 dispute days, judging its register by a dispute end 120 days after the register's block" testCardRegister
     it "registers a code order with codes_only on, from the code check to the registered view, refusing a paid order" testCodesOnlyRegister
     it "waits for a pending commit without sending another, following its fee-bumped replacement" testPendingCommit
     it "goes to committed when the commit reverts UnexpiredCommitmentExists, in its dry run or mined, with the commitment's times" testUnexpiredCommitment
@@ -150,7 +151,7 @@ workerTests = describe "StoreService names: worker" $ do
     it "waits while the confirmed block is below the register's block, then reads the expiry and dispute end at the confirmed block" testRegisterReadAtDepth
   describe "dispute period" $ do
     it "ends a registered order whose registration was ended in its dispute period, publishing it, its view without times, and keeps it ended after the name is registered again" testEndedOnUnregister
-    it "ends an order whose name was registered again before the sweep read it, leaving an order without a dispute period, past it or registered after the confirmed block" testEndedSweepBounds
+    it "ends an order whose name was registered again before the sweep read it, or unregistered in a dispute period that ended less than 7 days ago, leaving an order without a dispute period, past it by 7 days or more or registered after the confirmed block" testEndedSweepBounds
     it "ends an order only once its unregister is at the confirmation depth" testEndedAtDepth
     it "changes nothing when the block or every order's dispute end cannot be read, logging once the stopped pass or an order read again, and completes the pass only when the block is read" testEndedSweepUnread
     it "reads the orders after one whose dispute end cannot be read, logging that order's failed read once" testEndedSweepPastUnread
@@ -319,10 +320,13 @@ blockTime :: W -> Word64 -> IO Word64
 blockTime W {wChain} n = either (error . show) (fromIntegral . roundedSeconds . blockTimestamp) <$> blockAt wChain n
 
 mineRegister :: W -> IO Word64
-mineRegister w@W {wCtx = ctx} = do
+mineRegister w = mineRegisterOver w minDisputeDays
+
+mineRegisterOver :: W -> DisputeDays -> IO Word64
+mineRegisterOver w@W {wCtx = ctx} days = do
   block <- mineNewest w True
   t <- blockTime w block
-  block <$ answerDisputeUntil ctx "alicebakery" (t + 14 * 86400)
+  block <$ answerDisputeUntil ctx "alicebakery" (t + disputeSeconds days)
 
 commitmentsCall :: NameRegistration -> ByteString
 commitmentsCall NameRegistration {nrCommitment} = selector "commitments(bytes32)" <> unHex32 nrCommitment
@@ -380,6 +384,17 @@ testPaidRegister = withWorker $ \w@W {wCtx = ctx@Ctx {cClient}} -> do
   (status, phaseOf =<< view, (`fieldOf` "label") =<< view) `shouldBe` (200, Just "registered", Just "alicebakery")
   viewFixture "registration-registered" view
 
+testCardRegister :: IO ()
+testCardRegister = withWorker $ \w@W {wCtx = ctx@Ctx {cOrders}} -> do
+  (invId, _) <- placed ctx aliceOrder {oMethod = "card"}
+  settleNow ctx invId (SigSettled RCard {rcAmount = CurrencyAmount 10000, rcConfirmed = CurrencyAmount 10000} orderTime) `shouldReturn` ISPaid
+  r <- invoiceRegistration ctx invId
+  unDisputeDays (nrDisputeDays r) `shouldBe` 120
+  rv <- maybe (fail "no reveal") pure $ nrReveal r
+  commitWaitRegister w r
+  registerRaw <- last <$> sent w
+  (txData <$> decodeSignedTx registerRaw) `shouldBe` Right (registerWithCreditCalldata $ intentOf (oeConfig cOrders) (nrOwner r) (nrDuration r) (nrDisputeDays r) rv)
+
 testCodesOnlyRegister :: IO ()
 testCodesOnlyRegister = withWorkerAs codesOnly $ \w@W {wCtx = ctx@Ctx {cClient}} -> do
   (text, code) <- issueCode ctx 8 2 id
@@ -424,14 +439,14 @@ commitWaitRegister w@W {wCtx = ctx} r = do
   registerTx <- newestHash w
   registering <- stored ctx r
   nrPhase registering `shouldBe` ORegistering onChain registerTx
-  registerBlock <- mineRegister w
-  disputeEnd <- (+ 14 * 86400) <$> blockTime w registerBlock
+  registerBlock <- mineRegisterOver w (nrDisputeDays r)
+  disputeEnd <- (+ disputeSeconds (nrDisputeDays r)) <$> blockTime w registerBlock
   now <- nowOf ctx
   published w r (steps w r) >>= done
   x <- stored ctx r
   (nrPhase x, nrHistory x, orderLive x) `shouldBe` (ORegistered expirySeconds (Just $ RoundedSystemTime $ fromIntegral disputeEnd) now, TxHistory {thCommitTx = Just commitHash, thRegisterTx = Just registerTx}, False)
   view <- webGet (cClient ctx) (registrationPath $ nrId r) >>= jsonObject
-  (fieldOf view "disputeDays", fieldOf view "phase") `shouldBe` (Just (J.Number 14), Just $ phaseValue "registered" [("expiresAt", J.toJSON expiry), ("disputeUntil", J.toJSON disputeEnd)])
+  (fieldOf view "disputeDays", fieldOf view "phase") `shouldBe` (Just (J.toJSON $ unDisputeDays $ nrDisputeDays r), Just $ phaseValue "registered" [("expiresAt", J.toJSON expiry), ("disputeUntil", J.toJSON disputeEnd)])
   steps w r >>= done
 
 testPendingCommit :: IO ()
@@ -1508,11 +1523,13 @@ testEndedSweepBounds = withWorker $ \W {wCtx = ctx, wWorker} -> do
   again <- paidIn ctx (byB aliceOrder) {oSecret = secretOf 2} $ registeredUntil disputeEnd
   past <- paidIn ctx dynamisOrder $ registeredUntil (orderSeconds - 8 * 86400)
   later <- paidIn ctx (byB dynamisOrder) {oSecret = secretOf 4} $ registeredUntil (disputeEnd + 60)
+  recent <- paidIn ctx aliceOrder {oLabel = "carolbakery", oSecret = secretOf 6, oSealed = "sealed-carolbakery-6"} $ registeredUntil (orderSeconds - 86400)
   void $ confirmedBlockAt ctx $ orderSeconds + 1
   answerDisputeUntil ctx "alicebakery" (disputeEnd + 3600)
   answerDisputeUntil ctx "dynamis" 0
+  answerDisputeUntil ctx "carolbakery" 0
   sweepEndedRegistrations wWorker `shouldReturn` True
-  map (namePhase . nrPhase) <$> mapM (stored ctx) [plain, again, past, later] `shouldReturn` [PRegistered, PEnded, PRegistered, PRegistered]
+  map (namePhase . nrPhase) <$> mapM (stored ctx) [plain, again, past, later, recent] `shouldReturn` [PRegistered, PEnded, PRegistered, PRegistered, PEnded]
 
 testEndedAtDepth :: IO ()
 testEndedAtDepth = withWorker $ \W {wCtx = ctx@Ctx {cNode}, wWorker} -> do

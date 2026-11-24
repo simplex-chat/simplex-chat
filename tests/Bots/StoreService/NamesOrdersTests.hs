@@ -174,7 +174,7 @@ namesOrdersTests = describe "StoreService names: orders" $ do
     it "refuses a bad signature, or another signer's, after the code check, and a refused link, reserving nothing" testCodeBadSignature
     it "refuses a code order meeting an open invoice for the name with order_exists" testCodeMeetsInvoice
     it "closes an overdue paid order of the same wallet and name, removing its reveal and cancelling its invoice after" testCodeClosesOverdue
-    it "refuses each code that cannot pay with its tag" testCodeRefusals
+    it "refuses each code that cannot pay with its tag, and a code order whose reveal is signed over a card's dispute days" testCodeRefusals
     it "checks the duration for the code's years" testCodeYears
     it "checks a community name's code order for 2 years, whatever its code's years, keeping the code's" testCommunityCodeYears
     it "answers name_taken and name_check_unavailable before the code's state and cover, leaving the code unreserved" testCodeNameChecks
@@ -1236,6 +1236,8 @@ testCodeRefusals = withOrders $ \ctx@Ctx {cStore} -> do
   register ctx expired aliceOrder `shouldReturn` refusedWith 409 "code_expired"
   (unpaid, _) <- issueCode ctx 8 2 $ \c -> c {npcPaymentStatus = CPSUnpaid}
   register ctx unpaid aliceOrder `shouldReturn` refusedWith 409 "payment_pending"
+  (valid, _) <- issueCode ctx 8 2 id
+  register ctx valid aliceOrder {oMethod = "card"} `shouldReturn` refusedWith 400 "bad_request"
   length <$> registrationsOf ctx ownerA `shouldReturn` 0
 
 testCodeYears :: IO ()
