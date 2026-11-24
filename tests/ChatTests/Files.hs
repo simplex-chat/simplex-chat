@@ -1669,6 +1669,9 @@ testXFTPStandaloneSmallInfo = testChat2 aliceProfile aliceDesktopProfile $ \src 
     logNote "info"
     dst ##> ("/_download info " <> uri)
     dst <## "{\"secret\":\"*********\"}"
+    let desc = drop (length ("simplex:/file#/?desc=" :: String)) uri3
+        onionConfig = "%7B%22networkConfig%22%3A%7B%22hostMode%22%3A%22onion%22%2C%22requiredHostMode%22%3Atrue%7D%7D"
+    apiFixture "files/download-info" dst [(desc, "DESCRIPTION")] FixtureRequests {frMarkdown = [], frUris = [], frCommands = ["/_download info simplex:file#/?desc=" <> desc <> "&data=" <> onionConfig]}
 
     logNote "receiving"
     let dstFile = tmpFile dst "logo.jpg"

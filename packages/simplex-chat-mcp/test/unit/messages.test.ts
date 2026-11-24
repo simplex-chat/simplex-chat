@@ -1036,6 +1036,12 @@ describe("connect", () => {
     expect(known({connId: 207, connStatus: {type: "joined"}})).toMatchObject({known: {type: "direct"}})
   })
 
+  it("takes a name link with or without the slash after the scheme as the SimpleX name", () => {
+    const join = (target: string): object => classifyPlan([{type: "groupLink", groupLinkPlan: {type: "ok"}} as T.ConnectionPlan, {connFullLink: link}], {target})
+    expect(join("simplex:/name#alice.simplex")).toMatchObject({join: {simplexName: "simplex:/name#alice.simplex"}})
+    expect(join("simplex:name#alice.simplex")).toMatchObject({join: {simplexName: "simplex:name#alice.simplex"}})
+  })
+
   it("reports an unregistered name as the apps word it", async () => {
     const chat = new FakeChat()
     chat.sendChatCmd = async () => {
