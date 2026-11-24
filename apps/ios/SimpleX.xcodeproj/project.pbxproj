@@ -2621,7 +2621,8 @@
 					"$(inherited)",
 					"$(PROJECT_DIR)/Libraries/sim",
 				);
-				LLVM_LTO = YES;
+				LLVM_LTO = NO;
+				OTHER_LDFLAGS = "-lcrypto";
 				MARKETING_VERSION = 7.1.4;
 				PRODUCT_BUNDLE_IDENTIFIER = chat.simplex.SimpleXChat;
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
@@ -2673,7 +2674,8 @@
 					"$(inherited)",
 					"$(PROJECT_DIR)/Libraries/sim",
 				);
-				LLVM_LTO = YES;
+				LLVM_LTO = NO;
+				OTHER_LDFLAGS = "-lcrypto";
 				MARKETING_VERSION = 7.1.4;
 				PRODUCT_BUNDLE_IDENTIFIER = chat.simplex.SimpleXChat;
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";

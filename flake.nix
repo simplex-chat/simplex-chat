@@ -220,12 +220,18 @@
         find ./dist -name "libHS*.a" -exec cp {} $out/_pkg \;
         find ${mobileRuntime.darwinCLibrary (pkgs.libffi.overrideAttrs (old: { dontDisableStatic = true; }))}/lib -name "*.a" -exec cp {} $out/_pkg \;
         find ${mobileRuntime.darwinCLibrary (pkgs.gmp6.override { withStatic = true; })}/lib -name "*.a" -exec cp {} $out/_pkg \;
+        # _SHA512 stays undefined with commoncrypto. The framework links this static archive.
+        find ${darwinOpenSSL}/lib -name "libcrypto.a" -exec cp {} $out/_pkg \;
+        test -f $out/_pkg/libcrypto.a
         # There is no static libc
         ${pkgs.tree}/bin/tree $out/_pkg
         for pkg in $out/_pkg/*.a; do
           chmod +w $pkg
           ${iosArchiveConverter}/bin/mac2ios $pkg
-          [[ "$pkg" == *simplex-chat* ]] && ${pkgs.stdenv.cc.targetPrefix}strip -x $pkg
+          # strip -x deletes the local symbols Apple ld needs for the GHC
+          # relocations. Zero the unwind sections instead: ld 1267 rejects
+          # ARM64_RELOC_SUBTRACTOR pairs there ("address not in any section").
+          ${pkgs.python3}/bin/python3 ${./scripts/nix/strip-unwind.py} "$pkg"
           # Reject malformed members before publishing an otherwise valid ZIP.
           /usr/bin/nm -gU "$pkg" > /dev/null
           chmod -w $pkg
@@ -655,6 +661,7 @@
           lib = pkgs.lib;
           nativeProject = drv pkgs;
           compiler = (compilerSelection pkgs).ghc914-sh;
+          iosLib = packages."${system}-ios:lib:simplex-chat" or null;
         };
         # Release outputs stay under their existing names. The test jobs are
         # siblings, so Hydra builds them and `nix flake check` builds the same set.

@@ -1,7 +1,7 @@
 # Hydra jobs for the checks that belong with this compiler pin.
 # Pure asserts are recorded by forcing them at evaluation time. The Cabal
 # suite, the CLI smoke, and xcodetest are real builds.
-{ pkgs, lib, haskellNix, system, nativePackages, nativeProject, iosArchiveConverter, compiler }:
+{ pkgs, lib, haskellNix, system, nativePackages, nativeProject, iosArchiveConverter, compiler, iosLib }:
 let
   haskellLib = pkgs.haskell-nix.haskellLib;
   source = haskellLib.cleanGit {
@@ -110,11 +110,15 @@ let
     '';
   });
 
+  # Real core from the ios library zip. aarch64-darwin is the host whose
+  # nixbld home can be retargeted; without xcode-home the passwd home stays
+  # /var/empty and CoreSimulator cannot subscribe.
   xcodetest = pkgs.runCommand "xcodetest" {
-    nativeBuildInputs = [ pkgs.python3 pkgs.bash ];
+    nativeBuildInputs = [ pkgs.python3 pkgs.bash pkgs.unzip iosArchiveConverter ];
+    requiredSystemFeatures = lib.optionals (system == "aarch64-darwin") [ "xcode-home" ];
   } ''
     set -eu
-    bash ${./xcodetest.sh} ${source} $out
+    bash ${./xcodetest.sh} ${source} $out ${iosLib} ${iosArchiveConverter}/bin/mac2ios
   '';
 
   # These asserts do not depend on the build host. One Hydra system runs them.
