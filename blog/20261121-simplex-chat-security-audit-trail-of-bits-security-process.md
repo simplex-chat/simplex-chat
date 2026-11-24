@@ -35,7 +35,7 @@ The [addendum](./20261123-trail-of-bits-security-audit-2026-findings.md) lists a
 
 ## Thank you, Trail of Bits
 
-We are hugely thankful to Trail of Bits engineers for their hard work on this audit, and for the time they spent earlier in June helping us fix other security issues in SimpleX as part of the [Patch the Planet](https://trailofbits.com/patch-the-planet/) program.
+We are hugely thankful to Trail of Bits and their engineers for their hard work on this audit, and for the time they spent earlier in June helping us fix other security issues in SimpleX as part of the [Patch the Planet](https://trailofbits.com/patch-the-planet/) program.
 
 ## Our security process
 
