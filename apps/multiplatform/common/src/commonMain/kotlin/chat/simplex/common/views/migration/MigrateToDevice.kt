@@ -523,7 +523,7 @@ private fun ProgressView() {
   DefaultProgressView(null)
 }
 
-private suspend fun MutableState<MigrationToState?>.checkUserLink(link: String): Boolean {
+internal suspend fun MutableState<MigrationToState?>.checkUserLink(link: String): Boolean {
   val trimmed = link.trim()
   return if (strHasSimplexFileLink(trimmed)) {
     val data = MigrationFileLinkData.readFromLink(trimmed)
@@ -728,7 +728,7 @@ private suspend fun MutableState<MigrationToState?>.cleanUpOnBack(chatReceiver: 
   chatModel.migrationState.value = null
 }
 
-internal fun strHasSimplexFileLink(text: String): Boolean =
+private fun strHasSimplexFileLink(text: String): Boolean =
   text.startsWith("simplex:/file") || text.startsWith("simplex:file") || text.startsWith("https://simplex.chat/file")
 
 private fun fileForTemporaryDatabase(): File =
