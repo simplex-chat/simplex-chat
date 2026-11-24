@@ -76,7 +76,7 @@ source-repository-package
 source-repository-package
     type: git
     location: https://github.com/evgeny-simplex/hs-jpeg-turbo.git
-    tag: 13e1dc61fb7857ca44bd585c7019df71dc5241fb
+    tag: 1691888682f8e8641ff4bbe174a0da9a42cf3bef
     subdir: JuicyPixels-jpeg-turbo JuicyPixels-libwebp JuicyPixels-spng jpeg-turbo
 
 source-repository-package

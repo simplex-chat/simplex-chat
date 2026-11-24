@@ -75,9 +75,12 @@ decodeResizable s = runExceptT $ do
     decode
       | "\xFF\xD8" `B.isPrefixOf` s = decodeDisplayJpeg s
       | "\x89PNG\r\n\x1a\n" `B.isPrefixOf` s = ExceptT $ Spng.decodePng (Spng.DecodeOptions $ maxDecodeMemoryMB `div` 2) s
-      | "RIFF" `B.isPrefixOf` s && "WEBP" `B.isPrefixOf` B.drop 8 s = orientWebp <$> ExceptT (Webp.decodeWebp (Webp.DecodeOptions $ maxDecodeMemoryMB `div` 2) s)
+      | "RIFF" `B.isPrefixOf` s && "WEBP" `B.isPrefixOf` B.drop 8 s = do
+          when (B.length s > maxWebpFileMB * 1048576) $ throwError "image file is too large"
+          orientWebp <$> ExceptT (Webp.decodeWebp (Webp.DecodeOptions (maxDecodeMemoryMB `div` 2) webpDisplaySize) s)
       | otherwise = throwError "unsupported image format"
     orientWebp (img, Webp.Metadata {Webp.iccProfile, Webp.exif}) = (orientImage (exifOrientation exif) img, iccProfile)
+    webpDisplaySize (w, h) = maybe imageDoesNotFit (Right . snd) $ displaySize w h
 
 decodeDisplayJpeg :: ByteString -> ExceptT String IO (DynamicImage, Maybe ByteString)
 decodeDisplayJpeg s = do
@@ -317,6 +320,9 @@ maxDisplaySide = 4320
 
 maxJpegPixels :: Int
 maxJpegPixels = 2 ^ (28 :: Int)
+
+maxWebpFileMB :: Int
+maxWebpFileMB = 16
 
 maxDecodeMemoryMB :: Int
 #if defined(mobileBuild)
