@@ -1609,21 +1609,14 @@ getChatItemIDs db User {userId} cInfo contentFilter range count search = case cI
       CRLast -> rangeQuery c p (" ORDER BY " <> f <> " DESC, chat_item_id DESC ")
       CRAfter ts itemId ->
         rangeQuery
-          ((f <> " > ?") `orCond` (f <> " = ? AND chat_item_id > ?"))
-          (orParams ts itemId)
+          (c <> " AND (" <> f <> ", chat_item_id) > (?, ?) ")
+          (p :. (ts, itemId))
           (" ORDER BY " <> f <> " ASC, chat_item_id ASC ")
       CRBefore ts itemId ->
         rangeQuery
-          ((f <> " < ?") `orCond` (f <> " = ? AND chat_item_id < ?"))
-          (orParams ts itemId)
+          (c <> " AND (" <> f <> ", chat_item_id) < (?, ?) ")
+          (p :. (ts, itemId))
           (" ORDER BY " <> f <> " DESC, chat_item_id DESC ")
-      where
-        -- `orCond` creates this query: `(c AND c1) OR (c AND c2)`,
-        -- that is equivalent to `c AND (c1 OR c2)`.
-        -- OR has to be used on the top level for query planner to use indices
-        -- that include fields in c1 and c2.
-        orCond c1 c2 = " ((" <> c <> " AND " <> c1 <> ") OR (" <> c <> " AND " <> c2 <> ")) "
-        orParams ts itemId = (p :. (Only ts) :. p :. (ts, itemId))
     rangeQuery :: ToRow p => Query -> p -> Query -> IO [ChatItemId]
     rangeQuery c p ob =
       map fromOnly
