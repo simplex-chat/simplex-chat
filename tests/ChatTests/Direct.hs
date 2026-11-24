@@ -2156,16 +2156,18 @@ testUsersUnreadCountQueryPlans ps =
       executedQueries <- readTVarIO $ DB.slow db
       mapM (queryPlan $ DB.conn db) $ filter isUnreadQuery $ M.keys executedQueries
     plans
-      `shouldBe` [ [ "SEARCH i USING COVERING INDEX idx_chat_items_user_id_item_status (user_id=? AND item_status=?)",
+      `shouldBe` [ [ "SEARCH i USING COVERING INDEX idx_chat_items_contacts (user_id=? AND item_status=?)",
                      "SEARCH ct USING INTEGER PRIMARY KEY (rowid=?)"
                    ],
-                   [ "SEARCH i USING COVERING INDEX idx_chat_items_user_id_item_status (user_id=? AND item_status=?)",
+                   [ "SEARCH i USING COVERING INDEX idx_chat_items_group_scope_stats_all (user_id=? AND item_status=?)",
                      "SEARCH g USING INTEGER PRIMARY KEY (rowid=?)"
                    ],
-                   ["SEARCH chat_items USING COVERING INDEX idx_chat_items_user_id_item_status (user_id=? AND item_status=?)"]
+                   ["SEARCH chat_items USING COVERING INDEX idx_chat_items_group_scope_stats_all (user_id=? AND item_status=?)"]
                  ]
   where
-    isUnreadQuery q = any (`T.isInfixOf` fromQuery q) ["JOIN contacts ct USING (contact_id)", "JOIN groups g USING (group_id)", "GROUP BY user_id"]
+    isUnreadQuery q =
+      any (`T.isInfixOf` fromQuery q) ["JOIN contacts ct USING (contact_id)", "JOIN groups g USING (group_id)", "GROUP BY user_id"]
+        && not ("item_priority" `T.isInfixOf` fromQuery q)
     queryPlan db q = map (\(_, _, _, detail) -> detail) <$> (SQL.query_ db ("EXPLAIN QUERY PLAN " <> q) :: IO [(Int, Int, Int, T.Text)])
 #endif
 

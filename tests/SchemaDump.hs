@@ -152,7 +152,7 @@ skipComparisonForDownMigrations =
     -- group_domain is removed
     "20260603_simplex_name",
     "20261018_autoincrement_ids",
-    "20261101_chat_items_unread_index"
+    "20261124_chat_list_indexes"
   ]
 
 getSchema :: FilePath -> FilePath -> IO String

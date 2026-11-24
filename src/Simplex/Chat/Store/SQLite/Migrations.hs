@@ -183,8 +183,8 @@ import Simplex.Chat.Store.SQLite.Migrations.M20261016_badge_store_receipts
 import Simplex.Chat.Store.SQLite.Migrations.M20261018_autoincrement_ids
 import Simplex.Chat.Store.SQLite.Migrations.M20261019_chat_layout
 import Simplex.Chat.Store.SQLite.Migrations.M20261021_badge_subscriptions
-import Simplex.Chat.Store.SQLite.Migrations.M20261101_chat_items_unread_index
 import Simplex.Chat.Store.SQLite.Migrations.M20261113_item_priority
+import Simplex.Chat.Store.SQLite.Migrations.M20261124_chat_list_indexes
 import Simplex.Messaging.Agent.Store.Shared (Migration (..))
 
 schemaMigrations :: [(String, Query, Maybe Query)]
@@ -368,8 +368,8 @@ schemaMigrations =
     ("20261018_autoincrement_ids", m20261018_autoincrement_ids, Just down_m20261018_autoincrement_ids),
     ("20261019_chat_layout", m20261019_chat_layout, Just down_m20261019_chat_layout),
     ("20261021_badge_subscriptions", m20261021_badge_subscriptions, Just down_m20261021_badge_subscriptions),
-    ("20261101_chat_items_unread_index", m20261101_chat_items_unread_index, Just down_m20261101_chat_items_unread_index),
-    ("20261113_item_priority", m20261113_item_priority, Just down_m20261113_item_priority)
+    ("20261113_item_priority", m20261113_item_priority, Just down_m20261113_item_priority),
+    ("20261124_chat_list_indexes", m20261124_chat_list_indexes, Just down_m20261124_chat_list_indexes)
   ]
 
 -- | The list of migrations in ascending order by date

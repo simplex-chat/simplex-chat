@@ -2365,7 +2365,7 @@ CREATE INDEX idx_chat_items_contact_id ON test_chat_schema.chat_items USING btre
 
 
 
-CREATE INDEX idx_chat_items_contacts ON test_chat_schema.chat_items USING btree (user_id, contact_id, item_status, created_at);
+CREATE INDEX idx_chat_items_contacts ON test_chat_schema.chat_items USING btree (user_id, item_status, contact_id, created_at, chat_item_id);
 
 
 
@@ -2433,7 +2433,7 @@ CREATE INDEX idx_chat_items_group_scope_item_ts ON test_chat_schema.chat_items U
 
 
 
-CREATE INDEX idx_chat_items_group_scope_stats_all ON test_chat_schema.chat_items USING btree (user_id, group_id, group_scope_tag, group_scope_group_member_id, item_status, chat_item_id, user_mention);
+CREATE INDEX idx_chat_items_group_scope_stats_all ON test_chat_schema.chat_items USING btree (user_id, item_status, group_id, group_scope_tag, group_scope_group_member_id, chat_item_id, user_mention);
 
 
 
@@ -2461,7 +2461,7 @@ CREATE INDEX idx_chat_items_groups_item_viewed ON test_chat_schema.chat_items US
 
 
 
-CREATE INDEX idx_chat_items_groups_msg_content_tag_deleted ON test_chat_schema.chat_items USING btree (user_id, group_id, msg_content_tag, item_deleted, item_sent);
+CREATE INDEX idx_chat_items_groups_msg_content_tag_deleted ON test_chat_schema.chat_items USING btree (user_id, msg_content_tag, item_deleted, group_id, item_sent);
 
 
 
@@ -2506,10 +2506,6 @@ CREATE INDEX idx_chat_items_notes_created_at ON test_chat_schema.chat_items USIN
 
 
 CREATE INDEX idx_chat_items_timed_delete_at ON test_chat_schema.chat_items USING btree (user_id, timed_delete_at);
-
-
-
-CREATE INDEX idx_chat_items_user_id_item_status ON test_chat_schema.chat_items USING btree (user_id, item_status, contact_id, group_id, user_mention);
 
 
 
