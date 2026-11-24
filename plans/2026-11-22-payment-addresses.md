@@ -259,14 +259,17 @@ U1  a URI is text when
       an EIP-681 value or uint256 is not an integer
 U2  unknown keys without req- are kept in the wallet URI and not shown
 U3  ethereum: function calls other than transfer are text
+    ethereum: transfer with a value is text
     ethereum: ENS names are text
 U4  monero: with ";" is text: several recipients
     zcash: with a paramindex is text: several payments
 U5  zcash: memo with a transparent address is text, as ZIP-321 requires
 U6  solana: with an https link, a transaction request, is text
 L1  [label](URI): the punctuation rule of web hyperlinks is applied (Markdown.hs:453-454)
-L2  [label](URI): each word of the label that is a payment address equals the payee,
-    or the hyperlink is refused: the label is text, the URI a bare payment link
+L2  [label](URI): each alphanumeric run of the label that is an address of the nine forms,
+    with or without a checksum, equals the payee, an alternative or the token,
+    or the hyperlink is refused: the label is text, the URI a bare payment link;
+    an autolink <URI>, whose label is its URI, is not checked
 B1  bare forms without a checksum are text:
       Solana
       an EVM address in one case
@@ -312,7 +315,7 @@ data PaymentPayee
 
 data PaymentNetwork
   = PNBitcoin
-  | PNEthereum {chainId :: Maybe Word64} -- Nothing: chain not stated
+  | PNEthereum {chainId :: Maybe Int64} -- Nothing: chain not stated
   | PNMonero
   | PNZcash
   | PNSolana
@@ -325,9 +328,11 @@ data LightningPayee
   | LPOffer {offer :: Text} -- BOLT 12
   | LPLnurl {lnurl :: Text, host :: Text} -- LUD-01
 
-data AddressChecksum = ACVerified | ACNone -- ACNone: Solana, or an EVM address in one case
+data AddressChecksum = ACVerified | ACUnchecked -- ACUnchecked: Solana, or an EVM address in one case
 
-paymentLink :: Text -> Maybe PaymentRequest -- a URI or a bare word
+instance StrEncoding PaymentRequest -- strDecode: a URI or a bare word; strEncode: walletUri
+
+hasOtherAddress :: PaymentRequest -> Text -> Bool -- rule L2
 ```
 
 Markdown.hs:
@@ -340,8 +345,10 @@ data Format
 
 - JSON: `sumTypeJSON fstToLower` for the sums and `defaultJSON` for the records, as for `Format` (Markdown.hs:1040-1043); in a core of an earlier version, the constructor is decoded as `Unknown` (Markdown.hs:1042-1043).
 - `message` is set from `message`, `tx_description`, the Solana `memo`, or the Zcash `memo` when it is UTF-8; `label` from `label` or `recipient_name`.
+- `address`: bech32, bech32m and CashAddr in lower case, an EVM address in its EIP-55 case, other forms as written; rule L2 compares these forms.
+- Amounts: `1*DIGIT ["." 1*DIGIT]`, the grammar of ZIP-321, for every scheme but `ethereum:`.
 - Codecs in `Payments.hs`: Base58 and Base58Check; the Monero block variant, 8 bytes in 11 characters; bech32 and bech32m without a length limit; CashAddr; the BOLT 11 fields `d` and `x`. Hashes: `sha256Hash` and `keccak256` (simplexmq Crypto.hs:1035-1057); the EIP-55 check of `strP` of `Simplex.Messaging.Eth.Address` (simplexmq Eth/Address.hs:40-48) [S36].
-- Chain names and coin symbols for `chainId` 1, 10, 56, 137, 8453 and 42161: Ethereum, OP Mainnet, BNB Smart Chain, Polygon, Base, Arbitrum One; ETH, BNB, POL [S34]. Another chain is shown by its number.
+- Chain names and coin symbols, in the apps, for `chainId` 1, 10, 56, 137, 8453 and 42161: Ethereum, OP Mainnet, BNB Smart Chain, Polygon, Base, Arbitrum One; ETH, BNB, POL [S34]. Another chain is shown by its number.
 - Each word is tested only for the prefixes and lengths of section Syntax before it is decoded.
 
 ## Parser changes
