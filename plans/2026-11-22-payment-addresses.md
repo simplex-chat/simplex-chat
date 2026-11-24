@@ -484,7 +484,7 @@ sequenceDiagram
 
 ## Tests
 
-Each test of tests/MarkdownTests.hs, tests/ChatTests and the apps fails on master.
+Each test that expects a payment link fails on master.
 
 | File | Test |
 |---|---|
@@ -494,7 +494,7 @@ Each test of tests/MarkdownTests.hs, tests/ChatTests and the apps fails on maste
 | | the README.md:151-158 addresses, bare and as URIs: Monero byte 42, CashAddr with and without its prefix, EIP-55, `t1`, `u1`, Dogecoin; `solana:7JCf…ARnu?amount=0.5`; with `spl-token`, a token without a checksum |
 | | `strDecode (strEncode r) == Right r` for each request of these tests |
 | | the BOLT 11 example "Please send $3 for a cup of coffee to the same peer, within one minute" [S4]: amount 0.0025 BTC, description `1 cup coffee`, `expiresAt` 2017-06-01T10:58:38Z; its example "Bech32 checksum is invalid" is text |
-| | `ethereum:0xD704…c86a@42161?value=1e16`: chain 42161, amount 0.01; the USDT `transfer` example: token with its checksum, payee, `5000000`; the same with the token contract in lower case: a token without a checksum; `/approve?…` is text; the address with the case of one letter changed is text |
+| | `ethereum:0xD704…c86a@42161?value=1e16`: chain 42161, amount 0.01; the USDT `transfer` example: token with its checksum, payee, `5000000`; the same with the token contract in lower case: a token without a checksum; `/approve?…` and a `transfer` with `value` are text; the address with the case of one letter changed is text |
 | | `[Donate](monero:8A3Z…q1c)` is parsed as `PaymentLink (Just "Donate")`; `[bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4](bitcoin:bc1q2gy6…)`, a valid address of BIP-173 as the label, is parsed as label text and a bare `PaymentLink` (L2); `[Donate](bc1q2gy6…)` is parsed as text and a bare `PaymentLink`, and `<bc1q2gy6…>` as text (L3) |
 | | text: `ThereAreMany32ByteKeysHereButNoneAreChecked`; `0xd7047fe3eecb2f2ff78d839dd927be27bc12c86a` bare; `tb1…`; `monero-wallet:…?spend_key=…`; `monero:A;B?tx_amount=1;2`; `zcash:t1fwj…?memo=…`; `` `bc1q2gy6…` ``; `alice@getalby.com` as e-mail |
 | | `hasLinks` of a payment link, as decided in Q5; linear time: 10000 words of 34 Base58 characters |
@@ -502,7 +502,7 @@ Each test of tests/MarkdownTests.hs, tests/ChatTests and the apps fails on maste
 | tests/ChatTests/Direct.hs | `filter chat by link content`: a message with a bare address is in the Links filter, as decided in Q5 |
 | tests/ChatTests/Direct.hs | `payment links in a received message`: alice sends a bare address, `[Donate](monero:…)` and a bare invoice; `apiFixture` (tests/ChatTests/Utils.hs:999-1004) records bob's `/_get chat @2 count=1`, whose item has `PaymentLink` in `formattedText`, and the markdown of each payee kind, to tests/fixtures/api/payments/links.json; its pattern is in "App test fixtures" (scripts/ci/README.md:51) |
 | tests/APIDocs.hs | the bots API files, generated again with the new types |
-| app tests on the recorded responses | `Format.paymentLink` is decoded; each payee kind is mapped to its sheet title, grouped address, amount, warnings and marks; a mocked open failure is followed by the alert |
+| app tests on tests/fixtures/api/payments/links.json | `Format.paymentLink` is decoded; each payee kind is mapped to its sheet title, grouped address, amount, warnings and marks; a mocked open failure is followed by the alert |
 
 ## Stages
 
