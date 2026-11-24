@@ -1,6 +1,6 @@
 # Blog
 
-Nov 23, 2026 [SimpleX Chat Security Audit by Trail of Bits and Our Security Process](./20261121-simplex-chat-security-audit-trail-of-bits-security-process.md)
+Nov 24, 2026 [SimpleX Chat Security Audit by Trail of Bits and Our Security Process](./20261121-simplex-chat-security-audit-trail-of-bits-security-process.md)
 
 Trail of Bits completed the most comprehensive security audit of SimpleX so far. All fixes are included in v7.1.4 - please upgrade, and ask your contacts to upgrade too. All findings, where we resolved them, and our comments are in [the addendum](./20261123-trail-of-bits-security-audit-2026-findings.md).
 

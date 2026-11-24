@@ -221,7 +221,7 @@ You can use SimpleX with your own servers and still communicate with people usin
 
 Recent and important updates:
 
-[Nov 23, 2026. SimpleX Chat Security Audit by Trail of Bits and Our Security Process](./blog/20261121-simplex-chat-security-audit-trail-of-bits-security-process.md)
+[Nov 24, 2026. SimpleX Chat Security Audit by Trail of Bits and Our Security Process](./blog/20261121-simplex-chat-security-audit-trail-of-bits-security-process.md)
 
 [Sep 19, 2026. SimpleX Supporter Badges — Send Larger Files That Stay Available Longer, Without Being Identified](./blog/20260919-simplex-supporter-badges.md)
 
