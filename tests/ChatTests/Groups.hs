@@ -173,7 +173,7 @@ chatGroupTests = do
     it "group deletion without notice leaves notices unchanged" testPlanGroupLinkDeletedWithoutNotice
     it "rejected pending member with notice can't re-join" testPlanGroupLinkRejectedNotice
     it "removal of a moderator with notice is refused" testRemoveModeratorNoticeRefused
-    it "removal with notice forwarded by host is shown and notice ignored" testPlanGroupLinkForwardedRemovalNotice
+    it "silent removal with notice forwarded by host is applied" testPlanGroupLinkForwardedRemovalNotice
     it "removal with notice of a member on previous version is prohibited" $
       runTestCfg2 testCfg testCfgVPrev testRemoveMemberNoticePrevVersion
     it "group deleted with kept conversation" testGroupDeleteKeepConversation
@@ -283,7 +283,8 @@ chatGroupTests = do
     it "blocked pending member can't be accepted" testBlockPendingMember
     it "block of member pending review is sent to moderators only" testBlockPendingReviewMember
     it "late automatic unblock doesn't cancel a newer block" testBlockForAllLateAutomaticUnblock
-    it "received end time before 1970 is read as 1970" testBlockForAllEndTimeBefore1970
+    it "automatic unblock ends a block stored without end time and blocking member" testBlockForAllAutomaticUnblockNoEndTime
+    it "received block with end time before 1970 is ignored" testBlockForAllEndTimeBefore1970
     it "blocked member's update leaves no rows on regular members" testBlockForAllNoRowsForMembers
     it "blocked member's edit of an earlier message is not applied for regular members" testBlockForAllEditNotApplied
     it "app fixtures: block, unblock, remove and hide" testBlockMembersFixtures
@@ -3530,9 +3531,8 @@ testPlanGroupLinkForwardedRemovalNotice =
       ts <- getCurrentTime
       let chatMsg = ChatMessage chatInitialVRange (Just $ SharedMsgId "\1\2\3\4") $ XGrpMemDel (GrpMemDel cathMemId False Nothing True (Just LinkNotice {ttl = Just 86400}))
       agentSendBody alice connId $ encodeBinaryBatch [encodeFwdElement (GrpMsgForward (FwdMember bobMemId "bob") ts) (VMUnsigned chatMsg)]
-      cath <## "#team: bob removed you from the group"
-      cath <## "use /d #team to delete the group"
-      linkNoticesCount cath `shouldReturn` 0
+      linkNoticesCount cath `shouldEventuallyReturn` 1
+      cath <// 50000
 
 testRemoveMemberNoticePrevVersion :: HasCallStack => TestCC -> TestCC -> IO ()
 testRemoveMemberNoticePrevVersion alice bob = do
@@ -3558,9 +3558,7 @@ testGroupDeleteKeepConversation =
       bob ##> "/_delete #1 entity"
       bob <## "#team: you have insufficient permissions for this action, the required role is owner"
       alice ##> "/_delete #1 archive"
-      alice <## "bad chat command: only full deletion or keeping the conversation is supported for groups"
-      alice ##> "/_delete #1 messages"
-      alice <## "bad chat command: only full deletion or keeping the conversation is supported for groups"
+      alice <## "bad chat command: archive is not supported for groups"
 
       alice ##> "/_delete #1 entity"
       alice <## "#team: you deleted the group (signed)"
@@ -3573,6 +3571,8 @@ testGroupDeleteKeepConversation =
       alice <## "bad chat command: keeping the conversation requires an active owner"
       alice ##> "/d #team"
       alice <## "#team: you deleted your local copy of the group"
+      bob ##> "/_delete #1 messages"
+      bob <## "#team: you deleted your local copy of the group"
 
 testGroupDeletionFixtures :: HasCallStack => TestParams -> IO ()
 testGroupDeletionFixtures =
@@ -8716,11 +8716,11 @@ testBlockForAllLateAutomaticUnblock =
       createGroup3' "team" alice (bob, GRAdmin) (cath, GRMember)
       threadDelay 1000000
 
-      alice ##> "/block for all #team cath ttl=1"
+      alice ##> "/block for all #team cath ttl=2"
       alice <## "#team: you blocked cath (signed)"
       bob <## "#team: alice blocked cath (signed)"
       cath <// 50000
-      threadDelay 1500000
+      threadDelay 2500000
 
       bob ##> "/block for all #team cath"
       bob <## "#team: you blocked cath (signed)"
@@ -8745,6 +8745,37 @@ testBlockForAllLateAutomaticUnblock =
       alice <# "#team cath> hi [blocked by admin] <muted>"
       bob <# "#team cath> hi [blocked by admin] <muted>"
 
+testBlockForAllAutomaticUnblockNoEndTime :: HasCallStack => TestParams -> IO ()
+testBlockForAllAutomaticUnblockNoEndTime =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3' "team" alice (bob, GRAdmin) (cath, GRMember)
+      threadDelay 1000000
+
+      alice ##> "/block for all #team cath ttl=86400"
+      alice <## "#team: you blocked cath (signed)"
+      bob <## "#team: alice blocked cath (signed)"
+      cath <// 50000
+      withCCTransaction bob $ \db ->
+        DB.execute_ db "UPDATE group_members SET member_restriction_expires_at = NULL, member_restriction_by_member_id = NULL WHERE local_display_name = 'cath'"
+
+      cathMemId <- memberIdByName bob "cath"
+      ts <- getCurrentTime
+      connId <- relayConnIdToMember alice "bob"
+      agentSendBody alice connId $ chatMsgToBody $ ChatMessage chatInitialVRange Nothing $
+        XGrpMemRestrict cathMemId MemberRestrictions {restriction = MRSUnrestricted, expiresAt = Just ts}
+      bob <## "#team: alice unblocked cath"
+      bob ##> "/ms team"
+      bob
+        <### [ "bob (Bob): admin, you, connected",
+               "alice (Alice): owner, host, connected",
+               "cath (Catherine): member, connected"
+             ]
+
+      cath #> "#team hi"
+      alice <# "#team cath> hi [blocked by admin] <muted>"
+      bob <# "#team cath> hi"
+
 testBlockForAllEndTimeBefore1970 :: HasCallStack => TestParams -> IO ()
 testBlockForAllEndTimeBefore1970 =
   testChat3 aliceProfile bobProfile cathProfile $
@@ -8756,7 +8787,8 @@ testBlockForAllEndTimeBefore1970 =
       connId <- relayConnIdToMember alice "bob"
       agentSendBody alice connId $ chatMsgToBody $ ChatMessage chatInitialVRange Nothing $
         XGrpMemRestrict cathMemId MemberRestrictions {restriction = MRSBlocked, expiresAt = Just $ UTCTime (fromGregorian (-1) 1 1) 0}
-      bob <## "#team: alice blocked cath"
+      rcvRestrictCount bob `shouldEventuallyReturn` 1
+      bob <// 50000
       bob ##> "/ms team"
       bob
         <### [ "bob (Bob): admin, you, connected",

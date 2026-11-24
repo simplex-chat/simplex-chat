@@ -3731,7 +3731,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
     xGrpMemRestrict :: GroupInfo -> GroupMember -> MemberId -> MemberRestrictions -> RcvMessage -> UTCTime -> CM (Maybe DeliveryJobScope)
     xGrpMemRestrict
       gInfo@GroupInfo {membership = GroupMember {memberId = membershipMemId, memberRole = userRole}}
-      m@GroupMember {memberRole = senderRole}
+      m@GroupMember {memberId = senderMemId, memberRole = senderRole}
       memId
       mrs@MemberRestrictions {restriction, expiresAt}
       msg@RcvMessage {msgSigned}
@@ -3743,14 +3743,20 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
               Nothing -> messageError "x.grp.mem.restrict: no member" $> Nothing -- shouldn't happen
               Just (bm, unknown) -> do
                 let GroupMember {groupMemberId = bmId, memberRole, blockedByAdmin, blockedUntil, memberProfile = bmp} = bm
+                currentTs <- liftIO getCurrentTime
+                endsStoredBlock <-
+                  if automaticUnblock && blockedByAdmin && isNothing blockedUntil
+                    then maybe True (== senderMemId) <$> withStore' (`getRestrictingMemberId` bm)
+                    else pure False
                 if
                   | senderRole < GRModerator || senderRole < memberRole ->
                       messageError "x.grp.mem.restrict with insufficient member permissions" $> Nothing
+                  | blocked && maybe False (<= currentTs) expiresAt -> pure Nothing
                   | not blocked && not blockedByAdmin && isJust blockedUntil -> do
                       bm' <- setMemberBlocked bm
                       toggleNtf bm' True
                       pure $ memberEventDeliveryScope bm
-                  | blockedByAdmin == blocked || automaticUnblock -> pure $ memberEventDeliveryScope bm
+                  | blockedByAdmin == blocked || (automaticUnblock && not endsStoredBlock) -> pure $ memberEventDeliveryScope bm
                   | otherwise -> do
                       bm' <- setMemberBlocked bm
                       toggleNtf bm' (not blocked)
@@ -3763,7 +3769,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                       toView CEvtMemberBlockedForAll {user, groupInfo = gInfo', byMember = m', member = bm', blocked, msgSigned}
                       pure $ memberEventDeliveryScope bm
         where
-          setMemberBlocked bm = withStore' $ \db -> updateGroupMemberBlocked db user gInfo mrs False bm
+          setMemberBlocked bm = withStore' $ \db -> updateGroupMemberBlocked db user gInfo mrs (Just senderMemId) bm
           blocked = mrsBlocked restriction
           automaticUnblock = not blocked && isJust expiresAt
 
@@ -3777,7 +3783,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
     xGrpMemDel :: GroupInfoKeys -> Maybe GroupMember -> GroupMember -> MemberId -> Bool -> Maybe VersionRoster -> Bool -> Maybe LinkNotice -> VerifiedMsg 'Json -> RcvMessage -> UTCTime -> Bool -> CM (Maybe DeliveryJobScope)
     xGrpMemDel g@(GIK gInfo@GroupInfo {membership} gks) fwdRelay_ m@GroupMember {memberRole = senderRole} memId withMessages rosterVer_ silent notice_ verifiedMsg msg@RcvMessage {msgSigned} brokerTs forwarded = do
       let GroupMember {memberId = membershipMemId} = membership
-          trusted = not forwarded || (useRelays' gInfo && msgSigned == Just MSSVerified)
+          trusted = not forwarded || (useRelays' gInfo && msgSigned == Just MSSVerified) || (not (useRelays' gInfo) && maybe False trustedForwarder fwdRelay_)
           silent' = trusted && silent
       if membershipMemId == memId
         then applyAtRosterVersion g fwdRelay_ m rosterVer_ $ checkRole membership $ do
@@ -3832,6 +3838,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                 toView $ CEvtDeletedMember user gInfo'' m deletedMember' withMessages msgSigned
                 pure deliveryScope
       where
+        trustedForwarder GroupMember {memberRole = fwdRole} = fwdRole >= GRAdmin && fwdRole >= memberRole' membership
         checkRole GroupMember {memberRole} a
           | senderRole < GRAdmin || senderRole < memberRole =
               messageError "x.grp.mem.del with insufficient member permissions" $> Nothing

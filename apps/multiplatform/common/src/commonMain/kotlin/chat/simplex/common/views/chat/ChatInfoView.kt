@@ -422,6 +422,9 @@ fun deleteContact(chat: Chat, chatModel: ChatModel, close: (() -> Unit)?, chatDe
           is ChatDeleteMode.Full ->
             chatModel.chatsContext.removeChat(chatRh, chatInfo.id)
           is ChatDeleteMode.Entity, is ChatDeleteMode.Archive -> {
+            if (chatDeleteMode is ChatDeleteMode.Archive) {
+              chatModel.chatsContext.markChatItemsRead(chatRh, chatInfo.id)
+            }
             chatModel.chatsContext.updateContact(chatRh, ct)
             chatModel.addPresetChatTags(ChatInfo.Direct(ct), chat.chatStats)
             chatModel.removePresetChatTags(chatInfo, chat.chatStats)

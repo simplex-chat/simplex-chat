@@ -20,7 +20,7 @@ CREATE TABLE link_notices(
 CREATE UNIQUE INDEX idx_link_notices_link_hash ON link_notices(link_hash);
 
 ALTER TABLE group_members ADD COLUMN member_restriction_expires_at TIMESTAMPTZ;
-ALTER TABLE group_members ADD COLUMN member_restriction_by_user SMALLINT NOT NULL DEFAULT 0;
+ALTER TABLE group_members ADD COLUMN member_restriction_by_member_id BYTEA;
 
 CREATE INDEX idx_group_members_member_restriction_expires_at ON group_members(user_id, member_restriction_expires_at);
 |]
@@ -30,7 +30,7 @@ down_m20261107_link_notices =
   [r|
 DROP INDEX idx_group_members_member_restriction_expires_at;
 
-ALTER TABLE group_members DROP COLUMN member_restriction_by_user;
+ALTER TABLE group_members DROP COLUMN member_restriction_by_member_id;
 ALTER TABLE group_members DROP COLUMN member_restriction_expires_at;
 
 DROP INDEX idx_link_notices_link_hash;

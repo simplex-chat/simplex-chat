@@ -165,7 +165,7 @@ Delete (`deleteContactDialog`):
 6. Other contacts: "Confirm contact deletion?" with Confirm.
 
 Archive (`archiveContact`):
-1. `apiDeleteChat` with `.archive`: the contact moves to Archived contacts and keeps the conversation.
+1. `apiDeleteChat` with `.archive`: the contact moves to Archived contacts and keeps the conversation; its messages are marked read.
 2. "Contact archived!" with "Don't show again" (`showDeleteConversationNoticeDefault`): "You can send messages to <name> from Archived contacts." or, for a deleted contact, "You can view the conversation with <name> in Archived contacts."
 
 Delete and block (`deleteAndBanContactDialog`), when `Contact.canDeleteAndBan`: the contact is ready and active, connected via the user's address (`Connection.viaUserContactLink`), and supports `LINK_NOTICE_VERSION`:

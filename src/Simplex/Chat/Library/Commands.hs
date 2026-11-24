@@ -1400,6 +1400,7 @@ processChatCommand cxt nm = \case
             pure $ CRContactDeleted user ct {chatDeleted = True}
           CDMArchive -> do
             when (isJust notice_) $ throwCmdError "notice requires deleting the contact"
+            void $ processChatCommand cxt nm $ APIChatRead cRef
             withFastStore' $ \db -> setContactChatDeleted db user ct True
             pure $ CRContactDeleted user ct {chatDeleted = True}
       where
@@ -1434,7 +1435,18 @@ processChatCommand cxt nm = \case
             updateCIGroupInvitationStatus user gInfo CIGISRejected `catchAllErrors` \_ -> pure ()
             pure msgSigned
       case cdm of
-        CDMFull _ -> do
+        CDMEntity _
+          | doSendDel -> do
+              removeCustomer gInfo businessChat
+              withGroupLock "deleteChat group" chatId $ do
+                cancelFilesInProgress user filesInfo
+                msgSigned <- sendDelDeleteConns
+                withFastStore' $ \db -> cleanupHostGroupLinkConn db user gInfo
+                withFastStore' $ \db -> updateGroupMemberStatus db userId membership GSMemGroupDeleted
+                pure $ CRGroupDeletedUser user gInfo {membership = membership {memberStatus = GSMemGroupDeleted}} msgSigned False
+          | otherwise -> throwCmdError "keeping the conversation requires an active owner"
+        CDMArchive -> throwCmdError "archive is not supported for groups"
+        _ -> do
           removeCustomer gInfo businessChat
           withGroupLock "deleteChat group" chatId $ do
             deleteCIFiles user filesInfo
@@ -1446,17 +1458,6 @@ processChatCommand cxt nm = \case
             withFastStore' $ \db -> deleteGroupMembers db user gInfo
             withFastStore' $ \db -> deleteGroup db user gInfo
             pure $ CRGroupDeletedUser user gInfo msgSigned (not doSendDel)
-        CDMEntity _
-          | doSendDel -> do
-              removeCustomer gInfo businessChat
-              withGroupLock "deleteChat group" chatId $ do
-                cancelFilesInProgress user filesInfo
-                msgSigned <- sendDelDeleteConns
-                withFastStore' $ \db -> cleanupHostGroupLinkConn db user gInfo
-                withFastStore' $ \db -> updateGroupMemberStatus db userId membership GSMemGroupDeleted
-                pure $ CRGroupDeletedUser user gInfo {membership = membership {memberStatus = GSMemGroupDeleted}} msgSigned False
-          | otherwise -> throwCmdError "keeping the conversation requires an active owner"
-        _ -> throwCmdError "only full deletion or keeping the conversation is supported for groups"
       where
         getRecipients gInfo
           | useRelays' gInfo = do
@@ -6622,7 +6623,7 @@ blockMembers user g@(GIK gInfo _) mrs@MemberRestrictions {restriction} blockMems
     when (length cis_ /= length blockMems) $ logError "blockMembers: blockMems and cis_ length mismatch"
     let acis = map (AChatItem SCTGroup SMDSnd (GroupChat gInfo Nothing)) $ rights cis_
     unless (null acis) $ toView $ CEvtNewChatItems user acis
-    (errs, blocked) <- lift $ partitionEithers <$> withStoreBatch' (\db -> map (updateGroupMemberBlocked db user gInfo mrs True) blockMems)
+    (errs, blocked) <- lift $ partitionEithers <$> withStoreBatch' (\db -> map (updateGroupMemberBlocked db user gInfo mrs (Just $ memberId' $ membership gInfo)) blockMems)
     unless (null errs) $ toView $ CEvtChatErrors errs
     -- TODO not batched - requires agent batch api
     forM_ blocked $ \m -> toggleNtf m (not blockFlag)
@@ -6719,20 +6720,20 @@ cleanupManager = do
       cxt <- chatStoreCxt
       ts <- liftIO getCurrentTime
       members <- withStore' $ \db -> getMembersToUnblock db user ts
-      forM_ members $ \(groupId, gmId, byUser) ->
-        withGroupLock "blockForAll" groupId (unblockMember cxt ts groupId gmId byUser) `catchAllErrors` eToView
+      forM_ members $ \(groupId, gmId, byMemberId_) ->
+        withGroupLock "blockForAll" groupId (unblockMember cxt ts groupId gmId byMemberId_) `catchAllErrors` eToView
       where
-        unblockMember cxt ts groupId gmId byUser = do
+        unblockMember cxt ts groupId gmId byMemberId_ = do
           (gInfo@GroupInfo {membership}, m) <- withStore $ \db -> (,) <$> getGroupInfo db cxt user groupId <*> getGroupMember db cxt user groupId gmId
           when (maybe False (<= ts) (blockedUntil m)) $ do
             let mrs = MemberRestrictions {restriction = MRSUnrestricted, expiresAt = blockedUntil m}
             ms' <-
-              if byUser && memberActive membership && memberRole' membership >= max GRModerator (memberRole' m)
+              if byMemberId_ == Just (memberId' membership) && memberActive membership && memberRole' membership >= max GRModerator (memberRole' m)
                 then do
                   (Group gInfo' members, gks) <- withStore $ \db -> getGroupKeys_ db cxt user groupId
                   fst <$> blockMembers user (GIK gInfo' gks) mrs [m] (filter ((gmId /=) . groupMemberId') members)
                 else do
-                  m' <- withStore' $ \db -> updateGroupMemberBlocked db user gInfo mrs False m
+                  m' <- withStore' $ \db -> updateGroupMemberBlocked db user gInfo mrs Nothing m
                   toggleNtf m' True
                   pure [m']
             forM_ ms' $ toView . CEvtGroupMemberUpdated user gInfo m

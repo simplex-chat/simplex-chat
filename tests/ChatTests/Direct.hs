@@ -643,9 +643,12 @@ testArchiveContact =
 
       alice ##> "/_delete @2 archive notice={}"
       alice <## "bad chat command: notice requires deleting the contact"
+      withCCTransaction alice $ \db -> DB.execute_ db "UPDATE chat_items SET item_status = 'rcv_new' WHERE contact_id = 2 AND item_status = 'rcv_read'"
+      unreadCount alice >>= (`shouldSatisfy` (> 0))
       alice ##> "/_delete @2 archive"
       alice <## "bob: contact is deleted"
       chatDeleted alice `shouldReturn` True
+      unreadCount alice `shouldReturn` 0
       alice #$> ("/_get chat @2 count=1", chat, [(0, "hey")])
 
       bob #> "@alice hi"
@@ -671,6 +674,9 @@ testArchiveContact =
     chatDeleted cc = do
       [Only (DB.BI d)] <- withCCTransaction cc $ \db -> DB.query_ db "SELECT chat_deleted FROM contacts WHERE contact_id = 2"
       pure d
+    unreadCount cc = do
+      [Only n] <- withCCTransaction cc $ \db -> DB.query_ db "SELECT count(1) FROM chat_items WHERE contact_id = 2 AND item_status = 'rcv_new'"
+      pure (n :: Int)
 
 testDeleteConversationKeepContact :: HasCallStack => TestParams -> IO ()
 testDeleteConversationKeepContact =

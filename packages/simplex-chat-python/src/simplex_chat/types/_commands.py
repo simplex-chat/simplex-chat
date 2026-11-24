@@ -777,7 +777,7 @@ def APIGetChatItemInfo_cmd_string(self: APIGetChatItemInfo) -> str:
 APIGetChatItemInfo_Response = CR.ChatItemInfo | CR.ChatCmdError
 
 
-# Delete chat. For groups, the full mode deletes the group, and the entity mode keeps the conversation and requires the active owner; other modes are refused. A notice is accepted for contacts on version 23 or later and for the customer of a business chat: the deletion is silent, and the peer's app does not connect via the user's address while the notice lasts.
+# Delete chat. For groups, the full and messages modes delete the group, the entity mode keeps the conversation and requires the active owner, and the archive mode is refused. A notice is accepted for contacts on version 23 or later and for the customer of a business chat: the deletion is silent, and the peer's app does not connect via the user's address while the notice lasts.
 # Network usage: background.
 class APIDeleteChat(TypedDict):
     chatRef: "T.ChatRef"
