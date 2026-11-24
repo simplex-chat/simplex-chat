@@ -2279,7 +2279,7 @@ describe("session channel", () => {
     expect(answers(chat)).toEqual([43, 44, 47, 48, 49].map(quotedItemId => [{text: commandsApproversOnly, quotedItemId}]))
   })
 
-  it("answers /help help with the rule of the group, which refuses the /help of a member", async () => {
+  it("answers /help help with the rule of the group, which refuses the /help of a member, also one that reaches the commands", async () => {
     const chat = new FakeChat()
     const {session} = await channel(chat)
     const mia = member(13, "Mia", T.GroupMemberRole.Member)
@@ -2296,6 +2296,7 @@ describe("session channel", () => {
       ],
     ])
     expect(answers(chat)).toEqual([[{text: commandsApproversOnly, quotedItemId: 41}]])
+    expect(await session.control.ownerCommand(mia, {keyword: "help", params: ""})).toBeUndefined()
   })
 
   it("lists /approve N all, /answer N K, /revoke TOOL, /give and /observer in /help before the line of /help, and explains /answer, /give and /observer, each written with or without its slash", async () => {

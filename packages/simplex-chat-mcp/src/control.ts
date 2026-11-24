@@ -422,7 +422,7 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
     this.actions.expireDue()
     const request = ownerRequest(command, this.options.session !== undefined)
     if (request === undefined) return this.options.session === undefined ? commandsReply : unknownCommand
-    if (request.type === "help") return (this.options.session === undefined ? helpTexts : sessionHelpTexts).get(request.topic) ?? noHelp
+    if (request.type === "help") return this.options.session === undefined ? helpTexts.get(request.topic) ?? noHelp : this.isApprover(sender) ? sessionHelpTexts.get(request.topic) ?? noHelp : undefined
     if (!this.isApprover(sender)) return this.options.session !== undefined ? undefined : this.options.owners === undefined ? "Only owners approve actions." : "Only the owners listed in --owners approve actions."
     switch (request.type) {
       case "pending": {
