@@ -36,6 +36,7 @@ chatNamesTests = do
   it "channel name is not verified just by joining via link" testChannelDomainLinkJoinUnverified
   it "verify channel name, fail on re-point, retain status on refresh" testChannelDomainVerify
   it "connect by channel name" testConnectByChannelName
+  it "message link of a channel post in the name form, and channel names of public group and site links" testMsgLinkChannelName
   it "channel name is verified when the channel is prepared with it" testPrepareChannelWithName
   it "connect by name resolving to channel (primary) and direct contact" testConnectByNameChannelAndContact
   it "connect by name resolving to direct contact (primary) and channel" testConnectByNameContactAndChannel
@@ -368,6 +369,51 @@ testConnectByChannelName ps = withSmpServerAndNames ps $ \reg ->
         bob <## "group link: known group #team"
         bob <## "SimpleX name: #team (verified)"
         bob <## "use #team <message> to send messages"
+  where
+    teamName = SimplexNameInfo NTPublicGroup (SimplexDomain TLDSimplex "team" [])
+
+testMsgLinkChannelName :: HasCallStack => TestParams -> IO ()
+testMsgLinkChannelName ps = withSmpServerAndNames ps $ \reg ->
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "cath" cathProfile $ \cath ->
+      withNewTestChat ps "bob" bobProfile $ \bob ->
+        withNewTestChat ps "dan" danProfile $ \dan -> do
+          mapM_ enableNamesRole [alice, cath, bob, dan]
+          (shortLink, _) <- prepareChannel1Relay "team" alice cath
+          registerName reg teamName (channelNameRecord "team.simplex" (T.pack shortLink))
+          alice ##> "/public group access #team domain=team.simplex"
+          alice <## "updated public group access: domain=team.simplex"
+          cath <## "alice updated group #team: (signed)"
+          cath <## "updated public group access: domain=team.simplex"
+          bob ##> "/c #team.simplex"
+          bob <## "#team: connection started"
+          concurrentlyN_
+            [ bob
+                <### [ "#team: joining the group (connecting to relay cath)...",
+                       "#team: you joined the group (connected to relay cath)"
+                     ],
+              do
+                cath <## "bob (Bob): accepting request to join group #team..."
+                cath <## "#team: bob joined the group",
+              alice <### [EndsWith "introduced bob (Bob) in the channel"]
+            ]
+          alice #> "#team Release notes 7.2"
+          cath <# "#team> Release notes 7.2"
+          bob <# "#team> Release notes 7.2 [>>]"
+          alice ##> "/item link #team Release"
+          link <- getTermLine alice
+          let nameLink = "simplex:/name#team.simplex?" <> T.unpack (snd $ T.breakOn "m=" $ T.pack link)
+              withType t = T.replace "/c#" t $ T.pack shortLink
+          bob ##> ("/_msg link plan 1 " <> nameLink)
+          bob <# "#team> Release notes 7.2 [>>]"
+          dan ##> ("/_msg link plan 1 " <> nameLink)
+          dan <## "message link: connect with #team.simplex"
+          registerName reg teamName (channelNameRecord "team.simplex" (withType "/p#"))
+          dan ##> "/_connect plan 1 #team.simplex"
+          dan <## "group link: this group requires a newer version of the app, please upgrade"
+          registerName reg teamName (channelNameRecord "team.simplex" (withType "/s#"))
+          dan ##> "/_connect plan 1 #team.simplex"
+          dan <## "this site requires a newer version of the app"
   where
     teamName = SimplexNameInfo NTPublicGroup (SimplexDomain TLDSimplex "team" [])
 

@@ -5,7 +5,7 @@ module ChatTests.Forward where
 
 import ChatClient
 import ChatTests.DBUtils
-import ChatTests.Groups (memberJoinChannel, prepareChannel1Relay)
+import ChatTests.Groups (linkTargets, memberJoinChannel, prepareChannel1Relay)
 import ChatTests.Utils
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_)
@@ -14,6 +14,7 @@ import Data.List (intercalate)
 import qualified Data.Text as T
 import Simplex.Chat.Library.Commands (fixedImagePreview)
 import Simplex.Chat.Types (ImageData (..))
+import Simplex.Chat.Types.Shared (GroupMemberRole (..))
 import System.Directory (copyFile, doesFileExist, removeFile)
 import System.FilePath ((</>))
 import Test.Hspec hiding (it)
@@ -33,6 +34,10 @@ chatForwardTests = do
     it "from notes to contact" testForwardNotesToContact
     it "from notes to group" testForwardNotesToGroup
     it "from notes to notes" testForwardNotesToNotes -- TODO forward between different folders when supported
+  describe "message links" $ do
+    it "forward removes the reference and keeps the target in the forwarder's copy" testMsgLinkForward
+    it "forward of a link from an unknown source copies the target of the original" testForwardMsgLinkTargetCopied
+    it "forward keeps a global link, and removes it where SimpleX links are off" testForwardGlobalMsgLink
   describe "interactions with forwarded messages" $ do
     it "preserve original forward info" testForwardPreserveInfo
     it "received forwarded message is saved with new forward info" testForwardRcvMsgNewInfo
@@ -370,6 +375,82 @@ testForwardNotesToNotes ps =
     alice ##> "/tail * 2"
     alice <# "* hi"
     alice <# "* hi"
+
+testMsgLinkForward :: HasCallStack => TestParams -> IO ()
+testMsgLinkForward =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+      bob #> "#team Approve the deploy plan?"
+      [alice, cath] *<# "#team bob> Approve the deploy plan?"
+      alice ##> "/item link #team Approve"
+      link <- getTermLine alice
+      alice #> ("#team see [q](" <> link <> ")")
+      bob <# ("#team alice> see [q](" <> link <> ")")
+      bob <## "[q]: Approve the deploy plan?"
+      cath <# ("#team alice> see [q](" <> link <> ")")
+      cath <## "[q]: Approve the deploy plan?"
+      cath `send` "@alice <- #team see"
+      cath <# "@alice <- #team"
+      cath <## "      see [q](simplex:/m)"
+      alice <# "cath> -> forwarded"
+      alice <## "      see [q](simplex:/m)"
+      alice <## "[q]: Approve the deploy plan?"
+      linkTargets cath `shouldReturn` [("q", Nothing), ("q", Just "Approve the deploy plan?")]
+
+testForwardMsgLinkTargetCopied :: HasCallStack => TestParams -> IO ()
+testForwardMsgLinkTargetCopied =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+      createGroup2' "club" alice (cath, GRAdmin) False
+      bob #> "#team Approve the deploy plan?"
+      [alice, cath] *<# "#team bob> Approve the deploy plan?"
+      alice ##> "/item link #team Approve"
+      link <- getTermLine alice
+      alice `send` ("#club see [q](" <> link <> ")")
+      alice <# "#club see [q](simplex:/m)"
+      cath <# "#club alice> see [q](simplex:/m)"
+      cath <## "[q]: Approve the deploy plan?"
+      alice `send` "@cath <- #club see"
+      alice <# "@cath <- you #club"
+      alice <## "      see [q](simplex:/m)"
+      cath <# "alice> -> forwarded"
+      cath <## "      see [q](simplex:/m)"
+      cath <## "[q]: Approve the deploy plan?"
+      linkTargets alice `shouldReturn` [("q", Just "Approve the deploy plan?"), ("q", Just "Approve the deploy plan?")]
+
+testForwardGlobalMsgLink :: HasCallStack => TestParams -> IO ()
+testForwardGlobalMsgLink ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath ->
+        withNewTestChat ps "dan" danProfile $ \dan -> do
+          (shortLink, fullLink) <- prepareChannel1Relay "team" alice bob
+          memberJoinChannel "team" [bob] [alice] shortLink fullLink cath
+          createCCNoteFolder cath
+          createGroup2 "club" cath dan
+          cath ##> "/set links #club off"
+          cath <## "updated group preferences:"
+          cath <## "SimpleX links: off"
+          dan <## "cath updated group #club: (signed)"
+          dan <## "updated group preferences:"
+          dan <## "SimpleX links: off"
+          alice #> "#team Release notes 7.2"
+          bob <# "#team> Release notes 7.2"
+          cath <# "#team> Release notes 7.2 [>>]"
+          cath ##> "/item link #team Release"
+          link <- getTermLine cath
+          cath >* ("see [r](" <> link <> ")")
+          cath `send` "@dan <- * see"
+          cath <# ("@dan see [r](" <> link <> ")")
+          dan <# ("cath> see [r](" <> link <> ")")
+          dan <## "[r]: Release notes 7.2"
+          cath `send` "#club <- * see"
+          cath <# "#club see [r](simplex:/m)"
+          dan <# "#club cath> see [r](simplex:/m)"
+          dan <## "[r]: Release notes 7.2"
+          linkTargets cath `shouldReturn` [("r", Nothing), ("r", Nothing), ("r", Just "Release notes 7.2")]
 
 testForwardPreserveInfo :: HasCallStack => TestParams -> IO ()
 testForwardPreserveInfo =

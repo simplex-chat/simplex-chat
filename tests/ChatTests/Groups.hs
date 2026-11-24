@@ -276,7 +276,9 @@ chatGroupTests = do
     it "link to a message of another group is sent without its reference" testMsgLinkOtherGroup
     it "link that is not in the sender's chats is refused" testMsgLinkRefused
     it "edit keeps the target of a kept link and removes a changed link" testMsgLinkEdit
-    it "forward removes the reference and keeps the target in the forwarder's copy" testMsgLinkForward
+    it "history sends the short texts of links" testMsgLinkHistory
+    it "short text is kept after the target is edited, and the plan is the chat after it is deleted" testMsgLinkTargetChanged
+    it "group with SimpleX links off refuses a global link and sends a local link" testMsgLinkSimplexLinksOff
     it "global link to a channel post" testMsgLinkChannel
   describe "group scoped messages" $ do
     it "should send scoped messages to support (single moderator)" testScopedSupportSingleModerator
@@ -8815,27 +8817,78 @@ testMsgLinkEdit =
       linkTargets alice `shouldReturn` []
       linkTargets cath `shouldReturn` []
 
-testMsgLinkForward :: HasCallStack => TestParams -> IO ()
-testMsgLinkForward =
+testMsgLinkHistory :: HasCallStack => TestParams -> IO ()
+testMsgLinkHistory =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
-      createGroup3 "team" alice bob cath
+      createGroup2 "team" alice bob
       bob #> "#team Approve the deploy plan?"
-      [alice, cath] *<# "#team bob> Approve the deploy plan?"
+      alice <# "#team bob> Approve the deploy plan?"
       alice ##> "/item link #team Approve"
       link <- getTermLine alice
       alice #> ("#team see [q](" <> link <> ")")
       bob <# ("#team alice> see [q](" <> link <> ")")
       bob <## "[q]: Approve the deploy plan?"
-      cath <# ("#team alice> see [q](" <> link <> ")")
-      cath <## "[q]: Approve the deploy plan?"
-      cath `send` "@alice <- #team see"
-      cath <# "@alice <- #team"
-      cath <## "      see [q](simplex:/m)"
-      alice <# "cath> -> forwarded"
-      alice <## "      see [q](simplex:/m)"
-      alice <## "[q]: Approve the deploy plan?"
-      linkTargets cath `shouldReturn` [("q", Nothing), ("q", Just "Approve the deploy plan?")]
+      connectUsers alice cath
+      addMember "team" alice cath GRAdmin
+      cath ##> "/j team"
+      concurrentlyN_
+        [ alice <## "#team: cath joined the group",
+          cath
+            <### [ "#team: you joined the group",
+                   WithTime "#team bob> Approve the deploy plan? [>>]",
+                   WithTime ("#team alice> see [q](" <> link <> ") [>>]"),
+                   "[q]: Approve the deploy plan?",
+                   "#team: member bob (Bob) is connected"
+                 ],
+          do
+            bob <## "#team: alice added cath (Catherine) to the group (connecting...)"
+            bob <## "#team: new member cath is connected"
+        ]
+
+testMsgLinkTargetChanged :: HasCallStack => TestParams -> IO ()
+testMsgLinkTargetChanged =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      createGroup2 "team" alice bob
+      bob #> "#team Approve the deploy plan?"
+      alice <# "#team bob> Approve the deploy plan?"
+      targetId <- lastItemId alice
+      alice ##> "/item link #team Approve"
+      link <- getTermLine alice
+      alice #> ("#team see [q](" <> link <> ")")
+      bob <# ("#team alice> see [q](" <> link <> ")")
+      bob <## "[q]: Approve the deploy plan?"
+      bob ##> "! #team Approve the release plan?"
+      bob <# "#team [edited] Approve the release plan?"
+      alice <# "#team bob> [edited] Approve the release plan?"
+      bob ##> "/tail #team 1"
+      bob <# ("#team alice> see [q](" <> link <> ")")
+      bob <## "[q]: Approve the deploy plan?"
+      alice #$> ("/_delete item #1 " <> targetId <> " internal", id, "message deleted")
+      alice ##> ("/_msg link plan 1 " <> link <> " chat=#1")
+      alice <## "message link: the message is not in #team"
+
+testMsgLinkSimplexLinksOff :: HasCallStack => TestParams -> IO ()
+testMsgLinkSimplexLinksOff =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      createGroup2 "team" alice bob
+      alice ##> "/set links #team off"
+      alice <## "updated group preferences:"
+      alice <## "SimpleX links: off"
+      bob <## "alice updated group #team: (signed)"
+      bob <## "updated group preferences:"
+      bob <## "SimpleX links: off"
+      bob #> "#team Approve the deploy plan?"
+      alice <# "#team bob> Approve the deploy plan?"
+      alice ##> "/item link #team Approve"
+      link <- getTermLine alice
+      alice ##> "#team see [r](simplex:/name#privacy.simplex?m=YWJjZGVmZ2hpamtsbW5vcA)"
+      alice <## "bad chat command: feature not allowed SimpleX links"
+      alice #> ("#team see [q](" <> link <> ")")
+      bob <# ("#team alice> see [q](" <> link <> ")")
+      bob <## "[q]: Approve the deploy plan?"
 
 testMsgLinkChannel :: HasCallStack => TestParams -> IO ()
 testMsgLinkChannel ps =
@@ -8866,6 +8919,14 @@ testMsgLinkChannel ps =
               frUris = [],
               frCommands = ["/_msg link plan 1 " <> link, "/_connect plan 1 " <> withType "/s#", "/_connect plan 1 " <> chatLink]
             }
+          connectUsers cath dan
+          cath #> ("@dan see [r](" <> link <> ")")
+          dan <# ("cath> see [r](" <> link <> ")")
+          dan <## "[r]: Release notes 7.2"
+          memberJoinChannel "team" [bob] [alice] shortLink fullLink dan
+          dan <# "#team> Release notes 7.2 [>>]"
+          dan ##> ("/_msg link plan 1 " <> link)
+          dan <# "#team> Release notes 7.2 [>>]"
 
 linkTargets :: TestCC -> IO [(T.Text, Maybe T.Text)]
 linkTargets cc =

@@ -30,6 +30,7 @@ chatLocalChatsTests = do
     it "filter notes by link content" testLinkContentFilter
   describe "message links" $ do
     it "links in notes and links to notes" testNoteMessageLinks
+    it "link to a file note without text has the file name as its label" testNoteLinkFileName
 
 testNotes :: TestParams -> IO ()
 testNotes ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
@@ -261,6 +262,20 @@ testNoteMessageLinks =
     noteLink `shouldStartWith` "simplex:/m#n/"
     alice ##> ("/_msg link plan 1 " <> noteLink)
     alice <# ("* " <> note)
+
+testNoteLinkFileName :: TestParams -> IO ()
+testNoteLinkFileName ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
+  createCCNoteFolder alice
+  let files = tmpFile ps "alice_app_files"
+  alice #$> ("/_files_folder " <> files, id, "ok")
+  copyFile "./tests/fixtures/test.pdf" (files </> "report_2026.pdf")
+  alice ##> "/_create *1 json [{\"filePath\": \"report_2026.pdf\", \"msgContent\": {\"type\": \"file\", \"text\": \"\"}}]"
+  alice <# "* file 1 (report_2026.pdf)"
+  fileItemId <- lastItemId alice
+  alice ##> ("/_get item link *1 " <> fileItemId)
+  noteLink <- getTermLine alice
+  alice `send` ("/* see " <> noteLink)
+  alice <# ("* see [report_2026.pdf](" <> noteLink <> ")")
 
 testLinkContentFilter :: TestParams -> IO ()
 testLinkContentFilter ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
