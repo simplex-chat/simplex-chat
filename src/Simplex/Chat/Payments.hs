@@ -29,7 +29,7 @@ import qualified Data.ByteString.Char8 as B
 import Data.Char (chr, digitToInt, isAlphaNum, isAscii, isDigit, isHexDigit, isLower, isUpper, toLower)
 import Data.Either (rights)
 import Data.Int (Int64)
-import Data.List (foldl')
+import Data.List (find, foldl')
 import Data.Maybe (fromMaybe, isJust, isNothing, listToMaybe, maybeToList)
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -86,7 +86,9 @@ data AddressChecksum = ACVerified | ACUnchecked
 instance StrEncoding PaymentRequest where
   strEncode PaymentRequest {walletUri} = encodeUtf8 walletUri
   strDecode s = case B.break (== ':') s of
-    (scheme, rest) | not (B.null rest) -> paymentUri (B.map toLower scheme) (B.drop 1 rest)
+    (scheme, rest) | not (B.null rest) -> do
+      schemeRequest <- required "not a payment URI" $ find ((B.map toLower scheme ==) . fst) schemeRequests
+      paymentUri schemeRequest $ B.drop 1 rest
     _ -> listToEither "not a payment address" $ filter hasChecksum $ addressRequests s
   strP = strDecode <$?> A.takeTill (\c -> c == ' ' || c == '\n')
 
@@ -98,7 +100,7 @@ hasOtherAddress PaymentRequest {payee, alternatives, token} t = any (`notElem` r
 
 addressRequests :: ByteString -> [PaymentRequest]
 addressRequests s
-  | B.all (\c -> isAscii c && isAlphaNum c) s = rights $ map (`paymentUri` s) ["bitcoin", "lightning", "ethereum", "monero", "zcash", "litecoin", "dogecoin", "bitcoincash", "solana"]
+  | B.all (\c -> isAscii c && isAlphaNum c) s = rights $ map (`paymentUri` s) schemeRequests
   | otherwise = []
 
 hasChecksum :: PaymentRequest -> Bool
@@ -122,12 +124,14 @@ lightningAddress = \case
 
 type QueryParam = (ByteString, ByteString)
 
-paymentUri :: ByteString -> ByteString -> Either String PaymentRequest
-paymentUri scheme body = do
+type SchemeRequest = ByteString -> [QueryParam] -> Either String ([ByteString], Text -> PaymentRequest)
+
+paymentUri :: (ByteString, SchemeRequest) -> ByteString -> Either String PaymentRequest
+paymentUri (scheme, schemeRequest) body = do
   unless (B.all uriChar body) $ Left "invalid URI character"
   params <- queryParams $ B.drop 1 query
   when (any (B.isPrefixOf "req-" . paramKey) params) $ Left "unknown required parameter"
-  (keys, request) <- schemeRequest scheme path params
+  (keys, request) <- schemeRequest path params
   when (any (\k -> k `notElem` ["lightning", "lno"] && length (paramValues k params) > 1) keys) $ Left "repeated parameter"
   pure $ request $ safeDecodeUtf8 $ scheme <> ":" <> path <> walletQuery keys params
   where
@@ -158,27 +162,27 @@ walletQuery keys = \case
   where
     normalized p@(k, v) = (if paramKey p `elem` keys then paramKey p else k) <> v
 
-schemeRequest :: ByteString -> ByteString -> [QueryParam] -> Either String ([ByteString], Text -> PaymentRequest)
-schemeRequest scheme path ps = case scheme of
-  "bitcoin" -> bitcoinRequest
-  "litecoin" -> onChainRequest PNLitecoin $ litecoinAddress path
-  "dogecoin" -> onChainRequest PNDogecoin $ dogecoinAddress path
-  "bitcoincash" -> onChainRequest PNBitcoinCash $ cashAddress path
-  "zcash" -> zcashRequest
-  "monero" -> moneroRequest
-  "solana" -> solanaRequest
-  "ethereum" -> ethereumRequest
-  "lightning" -> lightningRequest
-  _ -> Left "not a payment URI"
+schemeRequests :: [(ByteString, SchemeRequest)]
+schemeRequests =
+  [ ("bitcoin", bitcoinRequest),
+    ("lightning", lightningRequest),
+    ("ethereum", ethereumRequest),
+    ("monero", moneroRequest),
+    ("zcash", zcashRequest),
+    ("litecoin", onChainRequest PNLitecoin litecoinAddress),
+    ("dogecoin", onChainRequest PNDogecoin dogecoinAddress),
+    ("bitcoincash", onChainRequest PNBitcoinCash cashAddress),
+    ("solana", solanaRequest)
+  ]
   where
     bip21Keys = ["amount", "label", "message"]
-    bip21Params = (,,) <$> traverse (decimalAmount 8) (param "amount" ps) <*> paramText "label" <*> paramText "message"
-    paramText k = join <$> traverse percentText (param k ps)
-    onChainRequest network address_ = do
-      a <- required "invalid address" address_
-      (amount, label, message) <- bip21Params
+    bip21Params ps = (,,) <$> traverse (decimalAmount 8) (param "amount" ps) <*> paramText "label" ps <*> paramText "message" ps
+    paramText k ps = join <$> traverse percentText (param k ps)
+    onChainRequest network address_ path ps = do
+      a <- required "invalid address" $ address_ path
+      (amount, label, message) <- bip21Params ps
       pure (bip21Keys, PaymentRequest (PPAddress network a ACVerified) [] amount Nothing label message)
-    bitcoinRequest = do
+    bitcoinRequest path ps = do
       invoices <- mapM (required "invalid lightning payment" . lightningPayee) $ paramValues "lightning" ps
       offers <- mapM (required "invalid offer" . fmap (,Nothing) . offerPayee) $ paramValues "lno" ps
       let instructions = invoices <> offers
@@ -188,9 +192,9 @@ schemeRequest scheme path ps = case scheme of
             (p, a) : more -> Right (PPLightning p, map fst more, a)
             [] -> Left "no payee"
           else (\a -> (PPAddress PNBitcoin a ACVerified, map fst instructions, Nothing)) <$> required "invalid address" (bitcoinAddress path)
-      (amount, label, message) <- bip21Params
+      (amount, label, message) <- bip21Params ps
       pure (bip21Keys <> ["lightning", "lno"], PaymentRequest payee alternatives (amount <|> payeeAmount) Nothing label message)
-    zcashRequest = do
+    zcashRequest path ps = do
       when (any (B.elem '.' . fst) ps) $ Left "several payments"
       addressText <- case (B.null path, param "address" ps) of
         (True, Just a) -> Right a
@@ -199,24 +203,24 @@ schemeRequest scheme path ps = case scheme of
       (a, memoAllowed) <- required "invalid address" $ (,False) <$> zcashTransparent addressText <|> (,True) <$> zcashShielded addressText
       memo <- traverse memoText $ param "memo" ps
       when (isJust memo && not memoAllowed) $ Left "memo with a transparent address"
-      (amount, label, message) <- bip21Params
+      (amount, label, message) <- bip21Params ps
       pure (bip21Keys <> ["address", "memo"], PaymentRequest (PPAddress PNZcash a ACVerified) [] amount Nothing label (message <|> join memo))
-    moneroRequest = do
+    moneroRequest path ps = do
       when (B.elem ';' path || any (B.elem ';' . snd) ps) $ Left "several recipients"
       a <- required "invalid address" $ moneroAddress path
       amount <- traverse (decimalAmount 12) $ param "tx_amount" ps
-      label <- paramText "recipient_name"
-      message <- paramText "tx_description"
+      label <- paramText "recipient_name" ps
+      message <- paramText "tx_description" ps
       pure (["tx_amount", "recipient_name", "tx_description"], PaymentRequest (PPAddress PNMonero a ACVerified) [] amount Nothing label message)
-    solanaRequest = do
+    solanaRequest path ps = do
       a <- required "invalid address" $ solanaAddress path
       token <- traverse (required "invalid token" . solanaAddress) $ param "spl-token" ps
       amount <- traverse (decimalAmount $ if isJust token then maxBound else 9) $ param "amount" ps
-      label <- paramText "label"
-      message <- paramText "message"
-      memo <- paramText "memo"
+      label <- paramText "label" ps
+      message <- paramText "message" ps
+      memo <- paramText "memo" ps
       pure (["amount", "spl-token", "label", "message", "memo"], PaymentRequest (PPAddress PNSolana a ACUnchecked) [] amount ((`PaymentToken` ACUnchecked) <$> token) label (message <|> memo))
-    ethereumRequest = do
+    ethereumRequest path ps = do
       (target, chainId, function) <- parseAll ethereumPathP path
       (targetAddress, targetChecksum) <- required "invalid address" $ evmAddress target
       let network = PNEthereum chainId
@@ -230,7 +234,7 @@ schemeRequest scheme path ps = case scheme of
           amount <- traverse (fmap tshow . evmInteger) $ param "uint256" ps
           pure (["address", "uint256"], PaymentRequest (PPAddress network a addressChecksum) [] amount (Just $ PaymentToken targetAddress targetChecksum) Nothing Nothing)
         Just _ -> Left "unsupported function"
-    lightningRequest = do
+    lightningRequest path _ = do
       (payee, amount) <- required "invalid lightning payment" $ lightningPayee path <|> (,Nothing) <$> offerPayee path
       pure ([], PaymentRequest (PPLightning payee) [] amount Nothing Nothing Nothing)
 
