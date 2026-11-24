@@ -1,6 +1,7 @@
 """SimpleX Chat — Python client library for chat bots."""
 
 from . import util as util  # re-export the util namespace
+from ._native import RuntimeInitializedError, set_runtime_options
 from ._version import __version__
 from .api import (
     ChatApi,
@@ -63,11 +64,13 @@ __all__ = [
     "PostgresDb",
     "Profile",
     "ReportMessage",
+    "RuntimeInitializedError",
     "SqliteDb",
     "TextMessage",
     "UnknownMessage",
     "VideoMessage",
     "VoiceMessage",
     "__version__",
+    "set_runtime_options",
     "util",
 ]
