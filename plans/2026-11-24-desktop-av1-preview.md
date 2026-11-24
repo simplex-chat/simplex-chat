@@ -6,7 +6,7 @@ The desktop app rejects every AV1 video attached as a video with "Decoding error
 
 ## 2. Cause
 
-libVLC 3.0.23 (simplex-chat/vlc v3.0.23-2, revision 92ddd6d). `getBitmapFromVideo` (VideoPlayer.desktop.kt) starts the preview player paused and waits 1.5 s for one frame.
+libVLC 3.0.23 (simplex-chat/vlc v3.0.23-2, revision 92ddd6d); vlcj 4.8.3. In `getBitmapFromVideo` (VideoPlayer.desktop.kt), the preview player is started with `startPaused`, and one frame is awaited for 1.5 s. vlcj `startPaused` starts the media with `:start-paused`, then calls `setPosition(0)`.
 
 ```mermaid
 sequenceDiagram
@@ -14,17 +14,22 @@ sequenceDiagram
   participant In as input
   participant Dec as decoder
   participant Vout as video output
-  App->>In: startPaused
+  App->>In: start with :start-paused
   In->>Dec: pause
-  Note over Dec: vout absent: pause not sent (decoder.c:1574-1585)
-  Note over Dec: decoder wait ends while paused (decoder.c:2307-2310): no picture forced (decoder.c:1045-1050)
-  Dec->>Vout: create, unpaused (video_output.c:1601)
-  Dec->>Vout: first pictures
-  Note over Vout: H.264: avcodec forces its first picture (avcodec/video.c:1430-1432): displayed
-  Note over Vout: AV1: dav1d forces none: late pictures dropped (video_output.c:850-876)
-  Note over Dec: paused: no further pictures
-  App->>App: no frame in 1.5 s: "Decoding error"
+  Note over Dec: no video output yet: pause not passed on (decoder.c:1574-1585)
+  Note over Dec: decoder wait ended by the pause (decoder.c:2307-2312): picture not marked forced (decoder.c:1045-1050)
+  App->>In: setPosition(0)
+  In->>Dec: flush while paused: frame countdown set (decoder.c:2136-2141)
+  Dec->>Vout: created unpaused (video_output.c:1601)
+  Dec->>Vout: first picture
+  Note over Vout: H.264: first picture marked forced by avcodec (avcodec/video.c:1430-1432): displayed
+  Note over Vout: AV1: no picture marked forced by dav1d: late picture dropped (video_output.c:850-876)
+  Note over Dec: paused again: no further pictures (decoder.c:1594)
+  App->>App: no frame in 1.5 s: null preview
+  Note over App: "Decoding error" alert (ComposeView.kt, processPickedMedia)
 ```
+
+The plugins and the code path are the same in the Linux, macOS and Windows builds of v3.0.23-2; the failure was reproduced on Linux only.
 
 ## 3. Change
 
@@ -34,11 +39,13 @@ Users of `vlcPreviewFactory`:
 
 | Caller | Effect |
 |---|---|
-| `getBitmapFromVideo`, attaching a video | the first picture reaches the callback |
-| `getBitmapFromVideo`, received video previews | the first picture reaches the callback |
+| `getBitmapFromVideo`, attaching a video | the first picture is passed to the callback |
+| `getBitmapFromVideo`, received video previews | the first picture is passed to the callback |
 | `hasVideoTrack` | none: parsing only, no video output |
 
-Playback uses `vlcFactory`, unchanged.
+`vlcFactory` is used for playback and is unchanged.
+
+Unverified: on macOS, the videotoolbox decoder is not disabled by `--avcodec-hw=none` and marks no first picture forced (videotoolbox.m), so H.264 previews there may be dropped the same way; the change applies to them too.
 
 ## 4. Acceptance
 
