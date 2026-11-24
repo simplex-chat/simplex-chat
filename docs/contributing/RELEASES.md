@@ -27,6 +27,8 @@ draft       created by maybe-release; assets uploaded by the build jobs
 published   every asset present; published by the releases job
 ```
 
+An upload step passes after a refused upload when the release is published with an asset of the file's name (`scripts/ci/release-upload.sh`).
+
 npm tag: `beta` for a version with a prerelease part, `latest` otherwise.
 
 Releases and publications are independent of the Haskell test results.
