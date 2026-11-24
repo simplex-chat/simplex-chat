@@ -15,11 +15,13 @@ on:
       - "apps/simplex-chat/**"
       - "apps/simplex-bot/**"
       - "apps/simplex-bot-advanced/**"
-      - "apps/simplex-badge-service/**"
+      - "apps/simplex-store-service/**"
+      - "scripts/store-service/**"
       - "apps/simplex-broadcast-bot/**"
       - "apps/simplex-directory-service/**"
       - "apps/multiplatform/**"
       - "apps/ios/**"
+      - "tests/fixtures/api/**"
       - "tests/**"
       - "bots/src/**"
       - "simplex-chat.cabal"
@@ -35,7 +37,7 @@ on:
       - "packages/simplex-chat-client/types/typescript/**"
       - "packages/simplex-chat-python/**"
       - "scripts/ci/package-tests.sh"
-      - "apps/simplex-badge-service/web/**"
+      - "apps/simplex-store-service/web/**"
       - "scripts/ci/packages_release.py"
       - "scripts/ci/test_packages_release.py"
       - "website/src/js/simplex-lib.jsc"
@@ -44,6 +46,9 @@ on:
       - "packages/simplex-chat-mcp/**"
       - "apps/simplex-support-bot/**"
       - "apps/simplex-support-bot-light/**"
+      - "apps/simplex-domains"
+      - "tests/fixtures/store-service/rest-api/**"
+      - "tests/Bots/StoreService/**"
     types: [opened, synchronize, reopened, ready_for_review]
   workflow_dispatch:
     inputs:
@@ -275,7 +280,7 @@ jobs:
       image_cache: ghcr.io/${{ github.repository_owner }}/simplex-chat-build-cache:${{ matrix.os }}-${{ matrix.arch }}-ghc${{ matrix.ghc }}
       source_hashes: dist-newstyle/sources.sha256
     concurrency: &linux-concurrency
-      group: ${{ github.workflow }}-${{ github.ref }}-linux-${{ matrix.os }}-${{ matrix.arch }}-${{ matrix.ghc }}-${{ needs.maybe-release.outputs.libs_tag }}
+      group: ${{ github.workflow }}-${{ github.ref }}-linux-${{ matrix.os }}-${{ matrix.arch }}-${{ matrix.ghc }}${{ matrix.postgres && '-postgres' || '' }}-${{ needs.maybe-release.outputs.libs_tag }}
       cancel-in-progress: ${{ github.event_name != 'push' }}
     strategy:
       fail-fast: false
@@ -377,7 +382,7 @@ jobs:
           toolchain=$(docker exec builder dpkg-query -W -f '${db:Status-Status} ${binary:Package} ${Version}\n' 'binutils*' 'cpp*' 'gcc*' '*-dev' | grep '^installed ' | sha256sum | cut -c1-16)
           target=ubuntu-${{ matrix.os }}-${{ matrix.arch }}-ghc${{ matrix.ghc }}-$toolchain
           echo "deps=deps-$target" >> "$GITHUB_OUTPUT"
-          echo "dist=dist-$target" >> "$GITHUB_OUTPUT"
+          echo "dist=${{ env.dist_name || 'dist' }}-$target" >> "$GITHUB_OUTPUT"
           echo "dist_lib=dist-lib-$target" >> "$GITHUB_OUTPUT"
 
       - name: Restore dependencies from cache
@@ -403,6 +408,18 @@ jobs:
           path: dist-newstyle/src
           key: src-${{ runner.os }}-${{ hashFiles('cabal.project') }}
           restore-keys: src-${{ runner.os }}-
+
+      # A checkout restored for other pins can keep untracked files of a submodule those pins lack,
+      # such as a .git file whose repository is gone, and cabal's submodule update then fails.
+      - name: Clean source repositories restored for other pins
+        if: matrix.should_run == true && env.release != 'true' && steps.restore-src.outputs.cache-matched-key != '' && steps.restore-src.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          for repo in dist-newstyle/src/*/; do
+            [ -e "$repo/.git" ] || continue
+            # the repositories can be owned by the build container's user
+            git -c safe.directory='*' -C "$repo" clean -ffdxq || echo "::warning title=Source clean failed::$repo"
+          done
 
       - name: Warn if source repositories not in cache
         if: matrix.should_run == true && env.release != 'true' && steps.restore-src.outputs.cache-matched-key == ''
@@ -461,14 +478,14 @@ jobs:
         run: |
           scripts/ci/prune-old-builds.sh dist-newstyle
           cabal update
-          cabal build -j --enable-tests ${{ env.ghc_options }}
+          cabal build -j --enable-tests ${{ env.ghc_options }} ${{ env.cabal_targets }}
           mkdir -p /out
-          for i in simplex-chat simplex-chat-test; do
+          for i in ${{ env.bins || 'simplex-chat simplex-chat-test' }}; do
             bin=$(find /project/dist-newstyle -name "$i" -type f -executable)
             chmod +x "$bin"
             cp "$bin" /out/
           done
-          strip /out/simplex-chat
+          [ ! -f /out/simplex-chat ] || strip /out/simplex-chat
 
       # Also for pull requests that change the chat core, for the package tests.
       - name: Build library
@@ -645,6 +662,36 @@ jobs:
           github_ref: ${{ github.ref }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Setup Node.js for tests
+        if: matrix.should_run == true && matrix.arch == 'x86_64'
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      - name: Build badge web app for tests
+        if: matrix.should_run == true && matrix.arch == 'x86_64'
+        working-directory: apps/simplex-store-service/web
+        run: |
+          npm ci
+          npm run build
+
+      - name: Install PostgreSQL 15 client tools
+        if: matrix.postgres == true
+        shell: bash
+        run: |
+          sudo install -d /usr/share/postgresql-common/pgdg
+          sudo curl -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc --fail https://www.postgresql.org/media/keys/ACCC4CF8.asc
+          sudo sh -c 'echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+          sudo apt update
+          sudo apt -y install postgresql-client-15
+
+      - name: Start PostgreSQL
+        if: matrix.postgres == true
+        shell: bash
+        run: |
+          docker run -d --name postgres -p 5432:5432 -e POSTGRES_HOST_AUTH_METHOD=trust postgres:15 -c max_connections=3000 -c fsync=off
+          timeout 60 sh -c 'until pg_isready -h localhost; do sleep 1; done'
+
       - name: Mount RAM disk for tests
         if: matrix.should_run == true && matrix.arch == 'x86_64'
         shell: bash
@@ -654,6 +701,7 @@ jobs:
           sudo chown $(id -u):$(id -g) tests/tmp
 
       - name: Run tests
+        id: tests
         if: matrix.should_run == true && matrix.arch == 'x86_64'
         timeout-minutes: 120
         shell: bash
@@ -662,7 +710,22 @@ jobs:
           TESTS: ${{ github.event_name == 'workflow_dispatch' && inputs.tests || '' }}
           PR_BODY: ${{ github.event.pull_request.draft == true && github.event.pull_request.body || '' }}
           ATTEMPTS: ${{ (github.ref == 'refs/heads/stable' || startsWith(github.ref, 'refs/tags/v')) && 3 || 1 }}
-        run: scripts/ci/run-tests.sh timeout 35m ./simplex-chat-test
+        run: scripts/ci/run-tests.sh timeout ${{ env.test_timeout || '35m' }} ./simplex-chat-test
+
+      - name: Check generated files
+        id: generated
+        if: ${{ !cancelled() && steps.tests.outcome != 'skipped' }}
+        shell: bash
+        run: |
+          git diff > "$RUNNER_TEMP/generated-files.patch"
+          git diff --stat --exit-code
+
+      - name: Upload generated files
+        if: ${{ !cancelled() && steps.generated.outcome == 'failure' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: generated-files-ubuntu-${{ matrix.os }}-ghc${{ matrix.ghc }}${{ matrix.postgres && '-postgres' || '' }}
+          path: ${{ runner.temp }}/generated-files.patch
 
       # Compiling the desktop and Android targets of :common in parallel exceeds the 2 GB Kotlin daemon heap.
       # cmakeBuildAndCopy links the JNI library against libsimplex, which this job does not build.
@@ -731,7 +794,7 @@ jobs:
 
       - name: Test changed scopes
         if: ${{ !cancelled() && matrix.scope_tests == true && steps.setup-python.outcome == 'success' }}
-        timeout-minutes: 30
+        timeout-minutes: 90
         shell: bash
         env:
           SCOPES: ${{ needs.maybe-release.outputs.scopes }}
@@ -739,6 +802,14 @@ jobs:
           for scope in $SCOPES; do
             scripts/ci/scope-tests.sh "$scope"
           done
+
+      - name: Names page cases' results
+        if: ${{ failure() && matrix.scope_tests == true && contains(needs.maybe-release.outputs.scopes, 'names-e2e') }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: names-e2e
+          path: ${{ runner.temp }}/names-contract-run.*
+          retention-days: 14
 
       - name: Remove -O2 build directory
         id: remove-o2
@@ -991,6 +1062,211 @@ jobs:
           TAG: ${{ needs.maybe-release.outputs.libs_tag }}
         run: gh release upload "$TAG" postgres-libs/*.zip --clobber --repo "${{ github.repository }}-libs"
 
+# =============================
+#   Store service on Postgres
+# =============================
+
+# Production runs the store service on PostgreSQL only, so its tests run on Postgres when a pull request changes it, and on every manual run.
+  test-store-postgres:
+    name: "ubuntu-22.04-x86_64 (store service, Postgres), GHC: ${{ needs.variables.outputs.GHC_VER }}"
+    needs: [maybe-release, variables]
+    if: (github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch') && needs.maybe-release.outputs.haskell == 'true'
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: read
+      packages: read
+    env:
+      image_cache: ghcr.io/${{ github.repository_owner }}/simplex-chat-build-cache:22.04-x86_64-ghc${{ needs.variables.outputs.GHC_VER }}
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}-store-postgres
+      cancel-in-progress: true
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 2
+
+      # a pull request's checkout is the merge commit, whose first parent is the base; a manual run's is not, so it always tests
+      - name: Check store changes
+        id: store
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = workflow_dispatch ] || ! git diff --quiet HEAD^1 HEAD -- \
+            apps/simplex-store-service tests/Bots/StoreService tests/Test.hs src/Simplex/Chat/PaymentService src/Simplex/Chat/Badges \
+            cabal.project simplex-chat.cabal .github/workflows/build.yml; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Get UID and GID
+        if: steps.store.outputs.changed
+        id: ids
+        run: |
+          echo "uid=$(id -u)" >> $GITHUB_OUTPUT
+          echo "gid=$(id -g)" >> $GITHUB_OUTPUT
+
+      - name: Free disk space
+        if: steps.store.outputs.changed
+        shell: bash
+        run: ./scripts/ci/linux_util_free_space.sh
+
+      - name: Set up Docker Buildx
+        if: steps.store.outputs.changed
+        uses: simplex-chat/docker-setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        if: steps.store.outputs.changed
+        shell: bash
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: echo "$GHCR_TOKEN" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+      - name: Compute image cache week
+        if: steps.store.outputs.changed
+        id: week
+        run: echo "week=$(date -u +%G-W%V)" >> "$GITHUB_OUTPUT"
+
+      # reads the image layers that build-linux writes on master
+      - name: Build and cache Docker image
+        if: steps.store.outputs.changed
+        uses: simplex-chat/docker-build-push-action@v6
+        with:
+          context: .
+          load: true
+          file: Dockerfile.build
+          tags: build/22.04:latest
+          build-args: |
+            TAG=22.04
+            HASH=sha256:5c8b2c0a6c745bc177669abfaa716b4bc57d58e2ea3882fb5da67f4d59e3dda5
+            GHC=${{ needs.variables.outputs.GHC_VER }}
+            USER_UID=${{ steps.ids.outputs.uid }}
+            USER_GID=${{ steps.ids.outputs.gid }}
+          cache-from: type=registry,ref=${{ env.image_cache }}-${{ steps.week.outputs.week }}
+
+      # the parallel test suites open more connections than the default 100
+      - name: Start PostgreSQL
+        if: steps.store.outputs.changed
+        shell: bash
+        run: |
+          docker run -d --name postgres --network host -e POSTGRES_HOST_AUTH_METHOD=trust postgres:17 \
+            -c listen_addresses=127.0.0.1 -c max_connections=1500
+          for _ in $(seq 60); do
+            docker exec postgres pg_isready -q -h 127.0.0.1 && exit 0
+            sleep 1
+          done
+          docker logs postgres
+          exit 1
+
+      # the tests' connection string names no host, so PGHOST points it at the server
+      - name: Start container
+        if: steps.store.outputs.changed
+        shell: bash
+        run: |
+          mkdir -p ~/.cabal
+          docker run -t -d \
+            --name builder \
+            --network host \
+            -e CABAL_DIR=/home/builder/.cabal \
+            -e PGHOST=127.0.0.1 \
+            -e LANG=C.UTF-8 \
+            -v ~/.cabal:/home/builder/.cabal \
+            -v /home/runner/work/_temp:/home/runner/work/_temp \
+            -v ${{ github.workspace }}:/project \
+            build/22.04:latest
+
+      - name: Compute cache key prefix
+        if: steps.store.outputs.changed
+        id: keys
+        run: |
+          toolchain=$(docker exec builder dpkg-query -W -f '${db:Status-Status} ${binary:Package} ${Version}\n' 'binutils*' 'cpp*' 'gcc*' '*-dev' | grep '^installed ' | sha256sum | cut -c1-16)
+          echo "deps=deps-ubuntu-22.04-x86_64-postgres-tests-ghc${{ needs.variables.outputs.GHC_VER }}-$toolchain" >> "$GITHUB_OUTPUT"
+
+      - name: Restore dependencies from cache
+        if: steps.store.outputs.changed
+        id: restore-deps
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.cabal/store
+          key: ${{ steps.keys.outputs.deps }}-${{ env.branch }}-${{ github.sha }}
+          restore-keys: |
+            ${{ steps.keys.outputs.deps }}-${{ env.branch }}-
+            ${{ steps.keys.outputs.deps }}-
+
+      - name: Prepare cabal.project.local
+        if: steps.store.outputs.changed
+        shell: bash
+        run: |
+          echo "ignore-project: False"    >> cabal.project.local
+          echo "package direct-sqlcipher" >> cabal.project.local
+          echo "    flags: +openssl"      >> cabal.project.local
+
+      - name: Build tests
+        if: steps.store.outputs.changed
+        shell: docker exec -t builder sh -eu {0}
+        run: |
+          cabal update
+          cabal build -j --enable-tests ${{ env.ghc_options }} --constraint 'simplexmq +client_postgres' --constraint 'simplex-chat +client_postgres' simplex-chat-test
+
+      - name: Compute dependency cache key
+        if: steps.store.outputs.changed
+        id: hash-deps
+        shell: bash
+        run: echo "hash=$(ls ~/.cabal/store/ghc-*/ | sha256sum | cut -c1-16)" >> "$GITHUB_OUTPUT"
+
+      - name: Save dependencies to cache
+        if: steps.store.outputs.changed && steps.restore-deps.outputs.cache-matched-key != format('{0}-{1}-{2}', steps.keys.outputs.deps, env.branch, steps.hash-deps.outputs.hash)
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.cabal/store
+          key: ${{ steps.keys.outputs.deps }}-${{ env.branch }}-${{ steps.hash-deps.outputs.hash }}
+
+      - name: Run store tests
+        if: steps.store.outputs.changed
+        timeout-minutes: 60
+        shell: docker exec -t builder sh -eu {0}
+        run: |
+          test=$(cabal list-bin --constraint 'simplexmq +client_postgres' --constraint 'simplex-chat +client_postgres' simplex-chat-test | tail -n 1)
+          "$test" --fail-on=empty -m "Supporter badges" -m "SimpleX store service" -m "StoreService names"
+
+# =================================
+#      Linux PostgreSQL Tests
+# =================================
+
+  test-postgres:
+    name: "ubuntu-${{ matrix.os }}-${{ matrix.arch }} (PostgreSQL tests), GHC: ${{ matrix.ghc }}"
+    needs: [maybe-release, variables]
+    if: needs.maybe-release.outputs.haskell == 'true' && !(github.ref == 'refs/heads/stable' || startsWith(github.ref, 'refs/tags/v'))
+    runs-on: ${{ matrix.runner }}
+    permissions:
+      contents: write
+      packages: write
+    env:
+      image_cache: ghcr.io/${{ github.repository_owner }}/simplex-chat-build-cache:${{ matrix.os }}-${{ matrix.arch }}-ghc${{ matrix.ghc }}
+      source_hashes: dist-newstyle/sources.sha256
+      opt: O0
+      ghc_options: --ghc-options=-O0
+      cache_o0: false
+      cabal_targets: --constraint 'simplexmq +client_postgres' --constraint 'simplex-chat +client_postgres' test:simplex-chat-test
+      bins: simplex-chat-test
+      dist_name: dist-postgres
+      test_timeout: 60m
+      PGHOST: localhost
+      ALLOW_EMPTY: true
+    concurrency: *linux-concurrency
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: 22.04
+            os_underscore: 22_04
+            arch: x86_64
+            runner: "ubuntu-22.04"
+            should_run: true
+            ghc: ${{ needs.variables.outputs.GHC_VER }}
+            hash: 'sha256:5c8b2c0a6c745bc177669abfaa716b4bc57d58e2ea3882fb5da67f4d59e3dda5'
+            kotlin: false
+            postgres: true
+    steps: *linux-steps
+
 # =========================
 #        MacOS Build
 # =========================
@@ -1125,6 +1401,18 @@ jobs:
           key: src-${{ runner.os }}-${{ hashFiles('cabal.project') }}
           restore-keys: src-${{ runner.os }}-
 
+      # A checkout restored for other pins can keep untracked files of a submodule those pins lack,
+      # such as a .git file whose repository is gone, and cabal's submodule update then fails.
+      - name: Clean source repositories restored for other pins
+        if: matrix.should_run == true && env.release != 'true' && steps.restore-src.outputs.cache-matched-key != '' && steps.restore-src.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          for repo in dist-newstyle/src/*/; do
+            [ -e "$repo/.git" ] || continue
+            # the repositories can be owned by the build container's user
+            git -c safe.directory='*' -C "$repo" clean -ffdxq || echo "::warning title=Source clean failed::$repo"
+          done
+
       - name: Warn if source repositories not in cache
         if: matrix.should_run == true && env.release != 'true' && steps.restore-src.outputs.cache-matched-key == ''
         run: echo "::warning title=Cache miss::src-${{ runner.os }}"
@@ -1230,6 +1518,7 @@ jobs:
           ln -s /Volumes/tests tests/tmp
 
       - name: Run tests
+        id: tests
         if: matrix.should_run == true && matrix.arch == 'aarch64'
         timeout-minutes: 120
         shell: bash
@@ -1250,6 +1539,21 @@ jobs:
             echo "All "$attempts" attempts failed."
             exit 1
           fi
+
+      - name: Check generated files
+        id: generated
+        if: ${{ !cancelled() && steps.tests.outcome != 'skipped' }}
+        shell: bash
+        run: |
+          git diff > "$RUNNER_TEMP/generated-files.patch"
+          git diff --stat --exit-code
+
+      - name: Upload generated files
+        if: ${{ !cancelled() && steps.generated.outcome == 'failure' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: generated-files-${{ matrix.os }}
+          path: ${{ runner.temp }}/generated-files.patch
 
       - name: Build library
         id: mac_lib_build
@@ -1396,6 +1700,29 @@ jobs:
             ARCHS=arm64 \
             CODE_SIGNING_ALLOWED=NO
 
+      - name: Run iOS unit tests
+        timeout-minutes: 30
+        shell: bash
+        run: |
+          runtime=com.apple.CoreSimulator.SimRuntime.iOS-$(xcrun --sdk iphonesimulator --show-sdk-version | tr . -)
+          device=$(xcrun simctl list runtimes --json | python3 -c 'import json, sys; r = next(r for r in json.load(sys.stdin)["runtimes"] if r["identifier"] == sys.argv[1]); print(next(t["identifier"] for t in r["supportedDeviceTypes"] if t["productFamily"] == "iPhone"))' "$runtime")
+          udid=$(xcrun simctl create unit-tests "$device" "$runtime")
+          xcodebuild test \
+            -project apps/ios/SimpleX.xcodeproj \
+            -scheme "SimpleX Unit Tests" \
+            -configuration Debug \
+            -destination "id=$udid" \
+            -onlyUsePackageVersionsFromResolvedFile \
+            -skipPackagePluginValidation \
+            -skipMacroValidation \
+            -testLanguage en \
+            -testRegion US \
+            ARCHS=arm64 \
+            CODE_SIGN_STYLE=Manual \
+            CODE_SIGN_IDENTITY=- \
+            DEVELOPMENT_TEAM= \
+            PROVISIONING_PROFILE_SPECIFIER=
+
 # =========================
 #      Windows Build
 # =========================
@@ -1484,6 +1811,18 @@ jobs:
           path: dist-newstyle/src
           key: src-${{ runner.os }}-${{ hashFiles('cabal.project') }}
           restore-keys: src-${{ runner.os }}-
+
+      # A checkout restored for other pins can keep untracked files of a submodule those pins lack,
+      # such as a .git file whose repository is gone, and cabal's submodule update then fails.
+      - name: Clean source repositories restored for other pins
+        if: env.release != 'true' && steps.restore-src.outputs.cache-matched-key != '' && steps.restore-src.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          for repo in dist-newstyle/src/*/; do
+            [ -e "$repo/.git" ] || continue
+            # the repositories can be owned by the build container's user
+            git -c safe.directory='*' -C "$repo" clean -ffdxq || echo "::warning title=Source clean failed::$repo"
+          done
 
       - name: Warn if source repositories not in cache
         if: env.release != 'true' && steps.restore-src.outputs.cache-matched-key == ''
@@ -1799,8 +2138,8 @@ jobs:
         if: steps.plan.outputs.nodejs_version
         working-directory: packages/simplex-chat-nodejs
         run: |
-          (cd ../simplex-chat-client/types/typescript && npm install --no-audit --no-fund && npx tsc)
-          npm install --ignore-scripts --no-save --no-audit --no-fund ../simplex-chat-client/types/typescript
+          (cd ../simplex-chat-client/types/typescript && "$GITHUB_WORKSPACE/scripts/ci/npm-install.sh" && npx tsc)
+          "$GITHUB_WORKSPACE/scripts/ci/npm-install.sh" --ignore-scripts --no-save ../simplex-chat-client/types/typescript
           npx tsc && cp src/simplex.* dist
           npx jest tests/libs.test.ts tests/api.unit.test.ts
 
@@ -1816,7 +2155,7 @@ jobs:
           VERSION: ${{ steps.plan.outputs.types_version }}
           DIST_TAG: ${{ steps.plan.outputs.types_dist_tag }}
         run: |
-          npm install --no-audit --no-fund
+          "$GITHUB_WORKSPACE/scripts/ci/npm-install.sh"
           npm publish --provenance --access public --tag "$DIST_TAG"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
