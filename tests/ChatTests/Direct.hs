@@ -1067,6 +1067,8 @@ testDirectSilentMessage ps = do
   withNewTestChat ps "alice" aliceProfile $ \alice ->
     withNewTestChatCfg ps cfg "bob" bobProfile $ \bob -> do
       connectUsers alice bob
+      bob ##> "/set receipts all off"
+      bob <## "ok"
       [Only bobConnId] <- withCCTransaction alice $ \db -> DB.query_ db "SELECT agent_conn_id FROM connections WHERE contact_id IS NOT NULL"
       let sendWithPriority t p flag sent stored = do
             alice ##> ("/_send @2 json [{\"msgContent\": {\"type\": \"text\", \"text\": \"" <> t <> "\"}, \"priority\": " <> show (p :: Int) <> "}]")

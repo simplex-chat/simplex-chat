@@ -6308,8 +6308,9 @@ testGroupMsgForwardSilent ps = do
       withNewTestChatCfg ps cfg "cath" cathProfile $ \cath -> do
         createGroup3 "team" alice bob cath
         setupGroupForwarding alice bob cath
-        cath ##> "/set receipts all off"
-        cath <## "ok"
+        forM_ [alice, cath] $ \cc -> do
+          cc ##> "/set receipts all off"
+          cc <## "ok"
         aliceConnId <- relayConnIdToMember bob "alice"
         cathConnId <- relayConnIdToMember alice "cath"
 
@@ -6377,6 +6378,8 @@ testGroupHighPriority =
     \alice bob cath -> do
       createGroup3' "team" alice (bob, GRMember) (cath, GRMember)
       threadDelay 1000000
+      bob ##> "/set receipts all off"
+      bob <## "ok"
       bobConnId <- relayConnIdToMember alice "bob"
 
       alice ##> "/_send #1 json [{\"msgContent\": {\"type\": \"text\", \"text\": \"done\"}, \"priority\": 1}]"
@@ -11045,8 +11048,9 @@ testChannels1RelayDeliverSilent ps = do
       withNewTestChatCfg ps cfg "cath" cathProfile $ \cath -> do
         (shortLink, fullLink) <- prepareChannel1Relay "team" alice bob
         memberJoinChannel "team" [bob] [alice] shortLink fullLink cath
-        cath ##> "/set receipts all off"
-        cath <## "ok"
+        forM_ [bob, cath] $ \cc -> do
+          cc ##> "/set receipts all off"
+          cc <## "ok"
         bobConnId <- relayConnIdToMember alice "bob"
         cathConnId <- relayConnIdToMember bob "cath"
 
@@ -11070,8 +11074,9 @@ testChannels1RelayDeliverHighPriority ps = do
       withNewTestChatCfg ps cfg "cath" cathProfile $ \cath -> do
         (shortLink, fullLink) <- prepareChannel1Relay "team" alice bob
         memberJoinChannel "team" [bob] [alice] shortLink fullLink cath
-        cath ##> "/set receipts all off"
-        cath <## "ok"
+        forM_ [bob, cath] $ \cc -> do
+          cc ##> "/set receipts all off"
+          cc <## "ok"
         bobConnId <- relayConnIdToMember alice "bob"
         cathConnId <- relayConnIdToMember bob "cath"
 
