@@ -13,9 +13,9 @@ permalink: "/blog/20261121-simplex-chat-security-audit-trail-of-bits-security-pr
 
 **Please upgrade to SimpleX Chat v7.1.4 or later, and ask your contacts to upgrade too.** It includes all fixes from this audit.
 
-This release also includes supporter badges that allow to send larger files (2/5GB) available for longer (7/21 days) &mdash; buy the badge to <a href="https://badges.simplex.chat" target="_blank">support our work</a>
+This release also includes supporter badges that allow sending larger files (2/5GB) available for longer (7/21 days) &mdash; buy the badge to <a href="https://badges.simplex.chat" target="_blank">support our work</a>.
 
-SimpleX <a href="https://wefunder.com/simplex.chat?utm_source=blog" target="_blank">crowdfunding investors</a> get a free badge, and in you invest $500 or more, you will get a free SimpleX public name.
+SimpleX <a href="https://wefunder.com/simplex.chat?utm_source=blog" target="_blank">crowdfunding investors</a> get a free badge, and if you invest $500 or more, you will get a free SimpleX public name.
 
 ## The most comprehensive security audit of SimpleX so far
 
@@ -29,7 +29,7 @@ This depth was only possible because Trail of Bits engineers combined their expe
 
 Half of the high-severity issues were resolved before we received the final report &mdash; they were released in v7.0.0 in July. All other fixes were released in November.
 
-Trail of Bits reviewed our fixes: 49 issues are marked as resolved and 12 as partially resolved. The remaining 14 are 2 issues we resolved after the fix review (released in v7.1.4), design decisions, part of [security model](https://github.com/simplex-chat/simplexmq/blob/stable/protocol/security.md#threat-model), or planned future work, such as including the parameters of the post-quantum key exchange in the security code.
+Trail of Bits reviewed our fixes: 49 issues are marked as resolved and 12 as partially resolved. The remaining 14 are 2 issues we resolved after the fix review (released in v7.1.4), design decisions, part of the [security model](https://github.com/simplex-chat/simplexmq/blob/stable/protocol/security.md#threat-model), or planned future work, such as including the parameters of the post-quantum key exchange in the security code.
 
 The [addendum](./20261123-trail-of-bits-security-audit-2026-findings.md) lists all findings, where we resolved them, and our comments. The full report is available [here](https://github.com/simplex-chat/simplex-chat/blob/master/docs/SimpleX_Chat_Code_Review_2026_Final_Report_with_Fix_Review.pdf).
 
@@ -41,7 +41,7 @@ We are hugely thankful to Trail of Bits engineers for their hard work on this au
 
 We no longer see security as a periodic effort. It is an ongoing activity: we fix security issues as soon as we find them or they are reported, and release the fixes as soon as possible.
 
-Not only we fix issues in our code, we analyse all dependencies as we upgrade them &mdash; we aim to complete the systematic review of all dependencies used by SimpleX Chat app and servers in the near future.
+Not only do we fix issues in our code, we also analyse all dependencies as we upgrade them &mdash; we aim to complete the systematic review of all dependencies used by SimpleX Chat app and servers in the near future.
 
 Anthropic's [OSS Scanner](https://red.anthropic.com/oss-scanner/) supports this process: it gives us access to security findings from Anthropic's frontier models that are not yet publicly available.
 
