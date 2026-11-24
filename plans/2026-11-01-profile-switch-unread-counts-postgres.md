@@ -1,3 +1,5 @@
+Superseded by section 5.1 of [2026-11-24-chat-list-queries.md](2026-11-24-chat-list-queries.md#51-indexes-migration-20261124_chat_list_indexes): the text of `getFirstUnreadItemId_` equals master's on both backends.
+
 # First unread message lookup on Postgres
 
 ## Problem

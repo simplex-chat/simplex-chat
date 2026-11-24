@@ -1,3 +1,5 @@
+Superseded by section 5.1 of [2026-11-24-chat-list-queries.md](2026-11-24-chat-list-queries.md#51-indexes-migration-20261124_chat_list_indexes): migration `20261101_chat_items_unread_index` is replaced by `20261124_chat_list_indexes`.
+
 # Unread counts of chat profiles
 
 ## Problem
