@@ -474,7 +474,7 @@ Query:
               WHERE i.user_id = ? AND i.item_status = ? AND (ct.enable_ntfs = 1 OR ct.enable_ntfs IS NULL) AND ct.deleted = 0
             
 Plan:
-SEARCH i USING COVERING INDEX idx_chat_items_user_id_item_status (user_id=? AND item_status=?)
+SEARCH i USING COVERING INDEX idx_chat_items_contacts (user_id=? AND item_status=?)
 SEARCH ct USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
@@ -485,7 +485,7 @@ Query:
                 AND (g.enable_ntfs = 1 OR g.enable_ntfs IS NULL OR (g.enable_ntfs = 2 AND i.user_mention = 1))
             
 Plan:
-SEARCH i USING COVERING INDEX idx_chat_items_user_id_item_status (user_id=? AND item_status=?)
+SEARCH i USING COVERING INDEX idx_chat_items_group_scope_stats_all (user_id=? AND item_status=?)
 SEARCH g USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
@@ -869,9 +869,9 @@ Plan:
 CO-ROUTINE ci
 COMPOUND QUERY
 LEFT-MOST SUBQUERY
-SEARCH chat_items USING COVERING INDEX idx_chat_items_contacts (user_id=? AND contact_id=? AND item_status=? AND created_at>?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_contacts (user_id=? AND item_status=? AND contact_id=? AND created_at>?)
 UNION ALL
-SEARCH chat_items USING COVERING INDEX idx_chat_items_contacts (user_id=? AND contact_id=? AND item_status=? AND created_at=? AND rowid>?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_contacts (user_id=? AND item_status=? AND contact_id=? AND created_at=? AND chat_item_id>?)
 SCAN ci
 
 Query: 
@@ -972,7 +972,7 @@ Query:
             WHERE user_id = ? AND item_status = ?
            GROUP BY user_id
 Plan:
-SEARCH chat_items USING COVERING INDEX idx_chat_items_user_id_item_status (user_id=? AND item_status=?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_group_scope_stats_all (user_id=? AND item_status=?)
 
 Query: 
             SELECT author_group_member_id, forwarded_by_group_member_id
@@ -1011,7 +1011,7 @@ Query:
             LIMIT ?
           
 Plan:
-SEARCH chat_items USING INDEX idx_chat_items_user_id_item_status (user_id=?)
+SEARCH chat_items USING INDEX idx_chat_items_groups_msg_content_tag_deleted (user_id=?)
 USE TEMP B-TREE FOR ORDER BY
 
 Query: 
@@ -1022,7 +1022,7 @@ Query:
             LIMIT ?
           
 Plan:
-SEARCH chat_items USING INDEX idx_chat_items_user_id_item_status (user_id=?)
+SEARCH chat_items USING INDEX idx_chat_items_groups_msg_content_tag_deleted (user_id=?)
 USE TEMP B-TREE FOR ORDER BY
 
 Query: 
@@ -1725,7 +1725,7 @@ Query:
           LIMIT ?
         
 Plan:
-SEARCH chat_items USING INDEX idx_chat_items_user_id_item_status (user_id=?)
+SEARCH chat_items USING INDEX idx_chat_items_groups_msg_content_tag_deleted (user_id=?)
 USE TEMP B-TREE FOR ORDER BY
 
 Query: 
@@ -1736,7 +1736,7 @@ Query:
             AND item_status = ? AND timed_ttl IS NOT NULL AND timed_delete_at IS NULL
         
 Plan:
-SEARCH chat_items USING INDEX idx_chat_items_group_scope_stats_all (user_id=? AND group_id=? AND group_scope_tag=? AND group_scope_group_member_id=? AND item_status=?)
+SEARCH chat_items USING INDEX idx_chat_items_group_scope_stats_all (user_id=? AND item_status=? AND group_id=? AND group_scope_tag=? AND group_scope_group_member_id=?)
 
 Query: 
           SELECT chat_item_id, timed_ttl
@@ -1746,7 +1746,7 @@ Query:
             AND item_status = ? AND timed_ttl IS NOT NULL AND timed_delete_at IS NULL
         
 Plan:
-SEARCH chat_items USING INDEX idx_chat_items_group_scope_stats_all (user_id=? AND group_id=? AND group_scope_tag=? AND group_scope_group_member_id=? AND item_status=?)
+SEARCH chat_items USING INDEX idx_chat_items_group_scope_stats_all (user_id=? AND item_status=? AND group_id=? AND group_scope_tag=? AND group_scope_group_member_id=?)
 
 Query: 
           SELECT chat_item_moderation_id, moderator_member_id, created_by_msg_id, moderated_at
@@ -1927,7 +1927,7 @@ Query:
             AND item_status = ?
         
 Plan:
-SEARCH chat_items USING INDEX idx_chat_items_group_scope_stats_all (user_id=? AND group_id=? AND group_scope_tag=? AND group_scope_group_member_id=? AND item_status=?)
+SEARCH chat_items USING INDEX idx_chat_items_group_scope_stats_all (user_id=? AND item_status=? AND group_id=? AND group_scope_tag=? AND group_scope_group_member_id=?)
 
 Query: 
           UPDATE chat_relays
@@ -2201,7 +2201,7 @@ Query:
 Plan:
 SCAN CONSTANT ROW
 SCALAR SUBQUERY 1
-SEARCH chat_items USING COVERING INDEX idx_chat_items_contacts (user_id=? AND contact_id=? AND item_status=?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_contacts (user_id=? AND item_status=? AND contact_id=?)
 SCALAR SUBQUERY 2
 SEARCH chat_items USING COVERING INDEX idx_chat_items_contacts_silent (user_id=? AND item_status=? AND contact_id=? AND item_priority<?)
 
@@ -2448,7 +2448,7 @@ Query:
                     ORDER BY ct.chat_ts DESC LIMIT ?
 Plan:
 MATERIALIZE ChatStats
-SEARCH chat_items USING COVERING INDEX idx_chat_items_user_id_item_status (user_id=? AND item_status=? AND contact_id>?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_contacts (user_id=? AND item_status=? AND contact_id>?)
 MATERIALIZE SilentStats
 SEARCH chat_items USING COVERING INDEX idx_chat_items_contacts_silent (user_id=? AND item_status=? AND contact_id>?)
 SEARCH ct USING INDEX idx_contacts_chat_ts (user_id=?)
@@ -2493,7 +2493,7 @@ Query:
                     ORDER BY ct.chat_ts DESC LIMIT ?
 Plan:
 MATERIALIZE ChatStats
-SEARCH chat_items USING COVERING INDEX idx_chat_items_user_id_item_status (user_id=? AND item_status=? AND contact_id>?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_contacts (user_id=? AND item_status=? AND contact_id>?)
 MATERIALIZE SilentStats
 SEARCH chat_items USING COVERING INDEX idx_chat_items_contacts_silent (user_id=? AND item_status=? AND contact_id>?)
 SEARCH ct USING INDEX idx_contacts_chat_ts (user_id=?)
@@ -2536,7 +2536,7 @@ Query:
                     AND ct.chat_ts < ? ORDER BY ct.chat_ts DESC LIMIT ?
 Plan:
 MATERIALIZE ChatStats
-SEARCH chat_items USING COVERING INDEX idx_chat_items_user_id_item_status (user_id=? AND item_status=? AND contact_id>?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_contacts (user_id=? AND item_status=? AND contact_id>?)
 MATERIALIZE SilentStats
 SEARCH chat_items USING COVERING INDEX idx_chat_items_contacts_silent (user_id=? AND item_status=? AND contact_id>?)
 SEARCH ct USING INDEX idx_contacts_chat_ts (user_id=? AND chat_ts<?)
@@ -2579,7 +2579,7 @@ Query:
                     AND ct.chat_ts > ? ORDER BY ct.chat_ts ASC LIMIT ?
 Plan:
 MATERIALIZE ChatStats
-SEARCH chat_items USING COVERING INDEX idx_chat_items_user_id_item_status (user_id=? AND item_status=? AND contact_id>?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_contacts (user_id=? AND item_status=? AND contact_id>?)
 MATERIALIZE SilentStats
 SEARCH chat_items USING COVERING INDEX idx_chat_items_contacts_silent (user_id=? AND item_status=? AND contact_id>?)
 SEARCH ct USING INDEX idx_contacts_chat_ts (user_id=? AND chat_ts>?)
@@ -2622,7 +2622,7 @@ Query:
                     ORDER BY ct.chat_ts DESC LIMIT ?
 Plan:
 MATERIALIZE ChatStats
-SEARCH chat_items USING COVERING INDEX idx_chat_items_user_id_item_status (user_id=? AND item_status=? AND contact_id>?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_contacts (user_id=? AND item_status=? AND contact_id>?)
 MATERIALIZE SilentStats
 SEARCH chat_items USING COVERING INDEX idx_chat_items_contacts_silent (user_id=? AND item_status=? AND contact_id>?)
 SEARCH ct USING INDEX idx_contacts_chat_ts (user_id=?)
@@ -2665,7 +2665,7 @@ Query:
                     AND ct.chat_ts < ? ORDER BY ct.chat_ts DESC LIMIT ?
 Plan:
 MATERIALIZE ChatStats
-SEARCH chat_items USING COVERING INDEX idx_chat_items_user_id_item_status (user_id=? AND item_status=? AND contact_id>?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_contacts (user_id=? AND item_status=? AND contact_id>?)
 MATERIALIZE SilentStats
 SEARCH chat_items USING COVERING INDEX idx_chat_items_contacts_silent (user_id=? AND item_status=? AND contact_id>?)
 SEARCH ct USING INDEX idx_contacts_chat_ts (user_id=? AND chat_ts<?)
@@ -2708,7 +2708,7 @@ Query:
                     AND ct.chat_ts > ? ORDER BY ct.chat_ts ASC LIMIT ?
 Plan:
 MATERIALIZE ChatStats
-SEARCH chat_items USING COVERING INDEX idx_chat_items_user_id_item_status (user_id=? AND item_status=? AND contact_id>?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_contacts (user_id=? AND item_status=? AND contact_id>?)
 MATERIALIZE SilentStats
 SEARCH chat_items USING COVERING INDEX idx_chat_items_contacts_silent (user_id=? AND item_status=? AND contact_id>?)
 SEARCH ct USING INDEX idx_contacts_chat_ts (user_id=? AND chat_ts>?)
@@ -2751,7 +2751,7 @@ Query:
                     ORDER BY ct.chat_ts DESC LIMIT ?
 Plan:
 MATERIALIZE ChatStats
-SEARCH chat_items USING COVERING INDEX idx_chat_items_user_id_item_status (user_id=? AND item_status=? AND contact_id>?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_contacts (user_id=? AND item_status=? AND contact_id>?)
 MATERIALIZE SilentStats
 SEARCH chat_items USING COVERING INDEX idx_chat_items_contacts_silent (user_id=? AND item_status=? AND contact_id>?)
 SEARCH ct USING INDEX idx_contacts_chat_ts (user_id=?)
@@ -2791,7 +2791,7 @@ Query:
        WHERE ct.user_id = ? AND ct.is_user = 0 AND ct.deleted = 0 AND ct.contact_used = 1 AND ct.chat_ts < ? ORDER BY ct.chat_ts DESC LIMIT ?
 Plan:
 MATERIALIZE ChatStats
-SEARCH chat_items USING COVERING INDEX idx_chat_items_user_id_item_status (user_id=? AND item_status=? AND contact_id>?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_contacts (user_id=? AND item_status=? AND contact_id>?)
 MATERIALIZE SilentStats
 SEARCH chat_items USING COVERING INDEX idx_chat_items_contacts_silent (user_id=? AND item_status=? AND contact_id>?)
 SEARCH ct USING INDEX idx_contacts_chat_ts (user_id=? AND chat_ts<?)
@@ -2831,7 +2831,7 @@ Query:
        WHERE ct.user_id = ? AND ct.is_user = 0 AND ct.deleted = 0 AND ct.contact_used = 1 AND ct.chat_ts > ? ORDER BY ct.chat_ts ASC LIMIT ?
 Plan:
 MATERIALIZE ChatStats
-SEARCH chat_items USING COVERING INDEX idx_chat_items_user_id_item_status (user_id=? AND item_status=? AND contact_id>?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_contacts (user_id=? AND item_status=? AND contact_id>?)
 MATERIALIZE SilentStats
 SEARCH chat_items USING COVERING INDEX idx_chat_items_contacts_silent (user_id=? AND item_status=? AND contact_id>?)
 SEARCH ct USING INDEX idx_contacts_chat_ts (user_id=? AND chat_ts>?)
@@ -2871,7 +2871,7 @@ Query:
        WHERE ct.user_id = ? AND ct.is_user = 0 AND ct.deleted = 0 AND ct.contact_used = 1 ORDER BY ct.chat_ts DESC LIMIT ?
 Plan:
 MATERIALIZE ChatStats
-SEARCH chat_items USING COVERING INDEX idx_chat_items_user_id_item_status (user_id=? AND item_status=? AND contact_id>?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_contacts (user_id=? AND item_status=? AND contact_id>?)
 MATERIALIZE SilentStats
 SEARCH chat_items USING COVERING INDEX idx_chat_items_contacts_silent (user_id=? AND item_status=? AND contact_id>?)
 SEARCH ct USING INDEX idx_contacts_chat_ts (user_id=?)
@@ -2933,11 +2933,11 @@ Query:
                     ORDER BY g.chat_ts DESC LIMIT ?
 Plan:
 MATERIALIZE ChatStats
-SEARCH chat_items USING COVERING INDEX idx_chat_items_group_scope_stats_all (user_id=? AND group_id>?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_group_scope_stats_all (user_id=? AND item_status=? AND group_id>?)
 MATERIALIZE PriorityStats
 SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_priority (user_id=? AND item_status=? AND group_id>?)
 MATERIALIZE ReportCount
-SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_msg_content_tag_deleted (user_id=? AND group_id>?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_msg_content_tag_deleted (user_id=? AND msg_content_tag=? AND item_deleted=? AND group_id>?)
 SEARCH g USING INDEX idx_groups_chat_ts (user_id=?)
 SEARCH gp USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH ChatStats USING AUTOMATIC COVERING INDEX (group_id=?) LEFT-JOIN
@@ -2993,11 +2993,11 @@ Query:
                     ORDER BY g.chat_ts DESC LIMIT ?
 Plan:
 MATERIALIZE ChatStats
-SEARCH chat_items USING COVERING INDEX idx_chat_items_group_scope_stats_all (user_id=? AND group_id>?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_group_scope_stats_all (user_id=? AND item_status=? AND group_id>?)
 MATERIALIZE PriorityStats
 SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_priority (user_id=? AND item_status=? AND group_id>?)
 MATERIALIZE ReportCount
-SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_msg_content_tag_deleted (user_id=? AND group_id>?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_msg_content_tag_deleted (user_id=? AND msg_content_tag=? AND item_deleted=? AND group_id>?)
 SEARCH g USING INDEX idx_groups_chat_ts (user_id=?)
 SEARCH ChatStats USING AUTOMATIC COVERING INDEX (group_id=?) LEFT-JOIN
 SEARCH PriorityStats USING AUTOMATIC COVERING INDEX (group_id=?) LEFT-JOIN
@@ -3051,11 +3051,11 @@ Query:
                     AND g.chat_ts < ? ORDER BY g.chat_ts DESC LIMIT ?
 Plan:
 MATERIALIZE ChatStats
-SEARCH chat_items USING COVERING INDEX idx_chat_items_group_scope_stats_all (user_id=? AND group_id>?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_group_scope_stats_all (user_id=? AND item_status=? AND group_id>?)
 MATERIALIZE PriorityStats
 SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_priority (user_id=? AND item_status=? AND group_id>?)
 MATERIALIZE ReportCount
-SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_msg_content_tag_deleted (user_id=? AND group_id>?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_msg_content_tag_deleted (user_id=? AND msg_content_tag=? AND item_deleted=? AND group_id>?)
 SEARCH g USING INDEX idx_groups_chat_ts (user_id=? AND chat_ts<?)
 SEARCH ChatStats USING AUTOMATIC COVERING INDEX (group_id=?) LEFT-JOIN
 SEARCH PriorityStats USING AUTOMATIC COVERING INDEX (group_id=?) LEFT-JOIN
@@ -3109,11 +3109,11 @@ Query:
                     AND g.chat_ts > ? ORDER BY g.chat_ts ASC LIMIT ?
 Plan:
 MATERIALIZE ChatStats
-SEARCH chat_items USING COVERING INDEX idx_chat_items_group_scope_stats_all (user_id=? AND group_id>?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_group_scope_stats_all (user_id=? AND item_status=? AND group_id>?)
 MATERIALIZE PriorityStats
 SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_priority (user_id=? AND item_status=? AND group_id>?)
 MATERIALIZE ReportCount
-SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_msg_content_tag_deleted (user_id=? AND group_id>?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_msg_content_tag_deleted (user_id=? AND msg_content_tag=? AND item_deleted=? AND group_id>?)
 SEARCH g USING INDEX idx_groups_chat_ts (user_id=? AND chat_ts>?)
 SEARCH ChatStats USING AUTOMATIC COVERING INDEX (group_id=?) LEFT-JOIN
 SEARCH PriorityStats USING AUTOMATIC COVERING INDEX (group_id=?) LEFT-JOIN
@@ -3167,11 +3167,11 @@ Query:
                     ORDER BY g.chat_ts DESC LIMIT ?
 Plan:
 MATERIALIZE ChatStats
-SEARCH chat_items USING COVERING INDEX idx_chat_items_group_scope_stats_all (user_id=? AND group_id>?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_group_scope_stats_all (user_id=? AND item_status=? AND group_id>?)
 MATERIALIZE PriorityStats
 SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_priority (user_id=? AND item_status=? AND group_id>?)
 MATERIALIZE ReportCount
-SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_msg_content_tag_deleted (user_id=? AND group_id>?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_msg_content_tag_deleted (user_id=? AND msg_content_tag=? AND item_deleted=? AND group_id>?)
 SEARCH g USING INDEX idx_groups_chat_ts (user_id=?)
 SEARCH ChatStats USING AUTOMATIC COVERING INDEX (group_id=?) LEFT-JOIN
 SEARCH PriorityStats USING AUTOMATIC COVERING INDEX (group_id=?) LEFT-JOIN
@@ -3225,11 +3225,11 @@ Query:
                     AND g.chat_ts < ? ORDER BY g.chat_ts DESC LIMIT ?
 Plan:
 MATERIALIZE ChatStats
-SEARCH chat_items USING COVERING INDEX idx_chat_items_group_scope_stats_all (user_id=? AND group_id>?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_group_scope_stats_all (user_id=? AND item_status=? AND group_id>?)
 MATERIALIZE PriorityStats
 SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_priority (user_id=? AND item_status=? AND group_id>?)
 MATERIALIZE ReportCount
-SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_msg_content_tag_deleted (user_id=? AND group_id>?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_msg_content_tag_deleted (user_id=? AND msg_content_tag=? AND item_deleted=? AND group_id>?)
 SEARCH g USING INDEX idx_groups_chat_ts (user_id=? AND chat_ts<?)
 SEARCH ChatStats USING AUTOMATIC COVERING INDEX (group_id=?) LEFT-JOIN
 SEARCH PriorityStats USING AUTOMATIC COVERING INDEX (group_id=?) LEFT-JOIN
@@ -3283,11 +3283,11 @@ Query:
                     AND g.chat_ts > ? ORDER BY g.chat_ts ASC LIMIT ?
 Plan:
 MATERIALIZE ChatStats
-SEARCH chat_items USING COVERING INDEX idx_chat_items_group_scope_stats_all (user_id=? AND group_id>?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_group_scope_stats_all (user_id=? AND item_status=? AND group_id>?)
 MATERIALIZE PriorityStats
 SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_priority (user_id=? AND item_status=? AND group_id>?)
 MATERIALIZE ReportCount
-SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_msg_content_tag_deleted (user_id=? AND group_id>?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_msg_content_tag_deleted (user_id=? AND msg_content_tag=? AND item_deleted=? AND group_id>?)
 SEARCH g USING INDEX idx_groups_chat_ts (user_id=? AND chat_ts>?)
 SEARCH ChatStats USING AUTOMATIC COVERING INDEX (group_id=?) LEFT-JOIN
 SEARCH PriorityStats USING AUTOMATIC COVERING INDEX (group_id=?) LEFT-JOIN
@@ -3341,11 +3341,11 @@ Query:
                     ORDER BY g.chat_ts DESC LIMIT ?
 Plan:
 MATERIALIZE ChatStats
-SEARCH chat_items USING COVERING INDEX idx_chat_items_group_scope_stats_all (user_id=? AND group_id>?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_group_scope_stats_all (user_id=? AND item_status=? AND group_id>?)
 MATERIALIZE PriorityStats
 SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_priority (user_id=? AND item_status=? AND group_id>?)
 MATERIALIZE ReportCount
-SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_msg_content_tag_deleted (user_id=? AND group_id>?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_msg_content_tag_deleted (user_id=? AND msg_content_tag=? AND item_deleted=? AND group_id>?)
 SEARCH g USING INDEX idx_groups_chat_ts (user_id=?)
 SEARCH ChatStats USING AUTOMATIC COVERING INDEX (group_id=?) LEFT-JOIN
 SEARCH PriorityStats USING AUTOMATIC COVERING INDEX (group_id=?) LEFT-JOIN
@@ -3396,11 +3396,11 @@ Query:
        WHERE g.user_id = ? AND g.creating_in_progress = 0 AND g.chat_ts < ? ORDER BY g.chat_ts DESC LIMIT ?
 Plan:
 MATERIALIZE ChatStats
-SEARCH chat_items USING COVERING INDEX idx_chat_items_group_scope_stats_all (user_id=? AND group_id>?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_group_scope_stats_all (user_id=? AND item_status=? AND group_id>?)
 MATERIALIZE PriorityStats
 SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_priority (user_id=? AND item_status=? AND group_id>?)
 MATERIALIZE ReportCount
-SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_msg_content_tag_deleted (user_id=? AND group_id>?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_msg_content_tag_deleted (user_id=? AND msg_content_tag=? AND item_deleted=? AND group_id>?)
 SEARCH g USING INDEX idx_groups_chat_ts (user_id=? AND chat_ts<?)
 SEARCH ChatStats USING AUTOMATIC COVERING INDEX (group_id=?) LEFT-JOIN
 SEARCH PriorityStats USING AUTOMATIC COVERING INDEX (group_id=?) LEFT-JOIN
@@ -3451,11 +3451,11 @@ Query:
        WHERE g.user_id = ? AND g.creating_in_progress = 0 AND g.chat_ts > ? ORDER BY g.chat_ts ASC LIMIT ?
 Plan:
 MATERIALIZE ChatStats
-SEARCH chat_items USING COVERING INDEX idx_chat_items_group_scope_stats_all (user_id=? AND group_id>?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_group_scope_stats_all (user_id=? AND item_status=? AND group_id>?)
 MATERIALIZE PriorityStats
 SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_priority (user_id=? AND item_status=? AND group_id>?)
 MATERIALIZE ReportCount
-SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_msg_content_tag_deleted (user_id=? AND group_id>?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_msg_content_tag_deleted (user_id=? AND msg_content_tag=? AND item_deleted=? AND group_id>?)
 SEARCH g USING INDEX idx_groups_chat_ts (user_id=? AND chat_ts>?)
 SEARCH ChatStats USING AUTOMATIC COVERING INDEX (group_id=?) LEFT-JOIN
 SEARCH PriorityStats USING AUTOMATIC COVERING INDEX (group_id=?) LEFT-JOIN
@@ -3506,11 +3506,11 @@ Query:
        WHERE g.user_id = ? AND g.creating_in_progress = 0 ORDER BY g.chat_ts DESC LIMIT ?
 Plan:
 MATERIALIZE ChatStats
-SEARCH chat_items USING COVERING INDEX idx_chat_items_group_scope_stats_all (user_id=? AND group_id>?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_group_scope_stats_all (user_id=? AND item_status=? AND group_id>?)
 MATERIALIZE PriorityStats
 SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_priority (user_id=? AND item_status=? AND group_id>?)
 MATERIALIZE ReportCount
-SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_msg_content_tag_deleted (user_id=? AND group_id>?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_msg_content_tag_deleted (user_id=? AND msg_content_tag=? AND item_deleted=? AND group_id>?)
 SEARCH g USING INDEX idx_groups_chat_ts (user_id=?)
 SEARCH ChatStats USING AUTOMATIC COVERING INDEX (group_id=?) LEFT-JOIN
 SEARCH PriorityStats USING AUTOMATIC COVERING INDEX (group_id=?) LEFT-JOIN
@@ -4013,7 +4013,7 @@ Query:
         LIMIT 1
       
 Plan:
-SEARCH chat_items USING COVERING INDEX idx_chat_items_contacts (user_id=? AND contact_id=? AND item_status=?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_contacts (user_id=? AND item_status=? AND contact_id=?)
 
 Query: 
         SELECT chat_item_id
@@ -4745,7 +4745,7 @@ Query:
         RETURNING chat_item_id
       
 Plan:
-SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_msg_content_tag_deleted (user_id=? AND group_id=? AND msg_content_tag=? AND item_deleted=? AND item_sent=?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_msg_content_tag_deleted (user_id=? AND msg_content_tag=? AND item_deleted=? AND group_id=? AND item_sent=?)
 
 Query: 
         UPDATE chat_items
@@ -4754,7 +4754,7 @@ Query:
         RETURNING chat_item_id;
       
 Plan:
-SEARCH chat_items USING INDEX idx_chat_items_groups_msg_content_tag_deleted (user_id=? AND group_id=? AND msg_content_tag=? AND item_deleted=?)
+SEARCH chat_items USING INDEX idx_chat_items_groups_msg_content_tag_deleted (user_id=? AND msg_content_tag=? AND item_deleted=? AND group_id=?)
 
 Query: 
         UPDATE chat_items
@@ -5661,7 +5661,7 @@ Query:
       WHERE user_id = ? AND contact_id = ? AND item_status = ? AND timed_ttl IS NOT NULL AND timed_delete_at IS NULL
     
 Plan:
-SEARCH chat_items USING INDEX idx_chat_items_user_id_item_status (user_id=? AND item_status=? AND contact_id=?)
+SEARCH chat_items USING INDEX idx_chat_items_contacts (user_id=? AND item_status=? AND contact_id=?)
 
 Query: 
       SELECT group_snd_item_status, COUNT(1)
@@ -5779,7 +5779,7 @@ Query:
       WHERE user_id = ? AND contact_id = ? AND item_status = ?
     
 Plan:
-SEARCH chat_items USING INDEX idx_chat_items_user_id_item_status (user_id=? AND item_status=? AND contact_id=?)
+SEARCH chat_items USING INDEX idx_chat_items_contacts (user_id=? AND item_status=? AND contact_id=?)
 
 Query: 
       UPDATE chat_items SET item_status = ?, item_viewed = 1, updated_at = ?
@@ -5795,7 +5795,7 @@ Query:
         AND item_status = ?
     
 Plan:
-SEARCH chat_items USING INDEX idx_chat_items_group_scope_stats_all (user_id=? AND group_id=? AND group_scope_tag=? AND group_scope_group_member_id=? AND item_status=?)
+SEARCH chat_items USING INDEX idx_chat_items_group_scope_stats_all (user_id=? AND item_status=? AND group_id=? AND group_scope_tag=? AND group_scope_group_member_id=?)
 
 Query: 
       UPDATE chat_items SET item_status = ?, item_viewed = 1, updated_at = ?
@@ -6511,6 +6511,36 @@ Query:
     JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id)
     LEFT JOIN connections c ON c.group_member_id = m.group_member_id
     LEFT JOIN group_member_badge_proofs bp ON bp.group_member_id = m.group_member_id
+   
+                WHERE m.group_id = ? AND m.user_id = ? AND (m.contact_id IS NULL OR m.contact_id != ?)
+                  AND m.member_status IN (?, ?, ?, ?)
+                  AND m.removed_at IS NULL
+                  AND NOT EXISTS (SELECT 1 FROM chat_items i WHERE i.group_member_id = m.group_member_id)
+              
+Plan:
+SEARCH m USING INDEX idx_group_members_group_id (user_id=? AND group_id=?)
+CORRELATED SCALAR SUBQUERY 1
+SEARCH i USING COVERING INDEX idx_chat_items_group_member_id (group_member_id=?)
+SEARCH p USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH c USING INDEX idx_connections_group_member_id (group_member_id=?) LEFT-JOIN
+SEARCH bp USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
+
+Query: 
+    SELECT
+      m.group_member_id, m.group_id, m.index_in_group, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category, m.member_status, m.show_messages, m.member_restriction,
+      m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.description, p.image, p.contact_link, p.chat_peer_type, p.local_alias, p.preferences, p.preferences_json,
+      p.badge_proof, p.badge_pres_header, p.badge_expiry, p.badge_type, p.badge_verified, p.badge_extra, p.badge_master_key, p.badge_signature, p.badge_key_idx, p.contact_domain, p.contact_domain_proof, p.contact_domain_verified,
+      m.created_at, m.updated_at,
+      m.support_chat_ts, m.support_chat_items_unread, m.support_chat_items_member_attention, m.support_chat_items_mentions, m.support_chat_last_msg_from_member_ts, m.member_pub_key, m.relay_link, m.member_security_code, m.member_security_code_verified_at, m.member_via,
+      c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.xcontact_id, c.custom_user_profile_id,
+      c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias, c.contact_id, c.group_member_id, c.user_contact_link_id,
+      c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
+      c.conn_chat_version, c.peer_chat_min_version, c.peer_chat_max_version,
+      bp.badge_proof, bp.badge_pres_header, bp.badge_key_idx, bp.badge_type, bp.badge_expiry, bp.badge_extra
+    FROM group_members m
+    JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id)
+    LEFT JOIN connections c ON c.group_member_id = m.group_member_id
+    LEFT JOIN group_member_badge_proofs bp ON bp.group_member_id = m.group_member_id
    JOIN group_member_status_predicates sp ON m.member_status = sp.member_status WHERE m.group_id = ? AND m.relay_link = ? AND sp.current_member = 1
 Plan:
 SEARCH m USING INDEX idx_group_members_group_id_index_in_group (group_id=?)
@@ -7205,6 +7235,14 @@ Query:
 Plan:
 SEARCH user_contact_links USING INDEX sqlite_autoindex_user_contact_links_1 (user_id=?)
 
+Query:  SELECT chat_item_id FROM chat_items WHERE  user_id = ? AND contact_id = ?  AND (created_at, chat_item_id) < (?, ?)  ORDER BY created_at DESC, chat_item_id DESC  LIMIT ?
+Plan:
+SEARCH chat_items USING COVERING INDEX idx_chat_items_contacts_created_at (user_id=? AND contact_id=? AND created_at<?)
+
+Query:  SELECT chat_item_id FROM chat_items WHERE  user_id = ? AND contact_id = ?  AND (created_at, chat_item_id) > (?, ?)  ORDER BY created_at ASC, chat_item_id ASC  LIMIT ?
+Plan:
+SEARCH chat_items USING COVERING INDEX idx_chat_items_contacts_created_at (user_id=? AND contact_id=? AND created_at>?)
+
 Query:  SELECT chat_item_id FROM chat_items WHERE  user_id = ? AND contact_id = ?  AND LOWER(item_text) LIKE '%' || LOWER(?) || '%'  ORDER BY created_at DESC, chat_item_id DESC  LIMIT ?
 Plan:
 SEARCH chat_items USING INDEX idx_chat_items_contacts_created_at (user_id=? AND contact_id=?)
@@ -7221,9 +7259,25 @@ Query:  SELECT chat_item_id FROM chat_items WHERE  user_id = ? AND contact_id = 
 Plan:
 SEARCH chat_items USING COVERING INDEX idx_chat_items_contacts_created_at (user_id=? AND contact_id=?)
 
+Query:  SELECT chat_item_id FROM chat_items WHERE  user_id = ? AND group_id = ?  AND group_scope_tag = ? AND group_scope_group_member_id IS NOT DISTINCT FROM ?  AND (item_ts, chat_item_id) < (?, ?)  ORDER BY item_ts DESC, chat_item_id DESC  LIMIT ?
+Plan:
+SEARCH chat_items USING COVERING INDEX idx_chat_items_group_scope_item_ts (user_id=? AND group_id=? AND group_scope_tag=? AND group_scope_group_member_id=? AND item_ts<?)
+
+Query:  SELECT chat_item_id FROM chat_items WHERE  user_id = ? AND group_id = ?  AND group_scope_tag = ? AND group_scope_group_member_id IS NOT DISTINCT FROM ?  AND (item_ts, chat_item_id) > (?, ?)  ORDER BY item_ts ASC, chat_item_id ASC  LIMIT ?
+Plan:
+SEARCH chat_items USING COVERING INDEX idx_chat_items_group_scope_item_ts (user_id=? AND group_id=? AND group_scope_tag=? AND group_scope_group_member_id=? AND item_ts>?)
+
 Query:  SELECT chat_item_id FROM chat_items WHERE  user_id = ? AND group_id = ?  AND group_scope_tag = ? AND group_scope_group_member_id IS NOT DISTINCT FROM ?  ORDER BY item_ts DESC, chat_item_id DESC  LIMIT ?
 Plan:
 SEARCH chat_items USING COVERING INDEX idx_chat_items_group_scope_item_ts (user_id=? AND group_id=? AND group_scope_tag=? AND group_scope_group_member_id=?)
+
+Query:  SELECT chat_item_id FROM chat_items WHERE  user_id = ? AND group_id = ?  AND group_scope_tag IS NULL AND group_scope_group_member_id IS NULL  AND (item_ts, chat_item_id) < (?, ?)  ORDER BY item_ts DESC, chat_item_id DESC  LIMIT ?
+Plan:
+SEARCH chat_items USING COVERING INDEX idx_chat_items_group_scope_item_ts (user_id=? AND group_id=? AND group_scope_tag=? AND group_scope_group_member_id=? AND item_ts<?)
+
+Query:  SELECT chat_item_id FROM chat_items WHERE  user_id = ? AND group_id = ?  AND group_scope_tag IS NULL AND group_scope_group_member_id IS NULL  AND (item_ts, chat_item_id) > (?, ?)  ORDER BY item_ts ASC, chat_item_id ASC  LIMIT ?
+Plan:
+SEARCH chat_items USING COVERING INDEX idx_chat_items_group_scope_item_ts (user_id=? AND group_id=? AND group_scope_tag=? AND group_scope_group_member_id=? AND item_ts>?)
 
 Query:  SELECT chat_item_id FROM chat_items WHERE  user_id = ? AND group_id = ?  AND group_scope_tag IS NULL AND group_scope_group_member_id IS NULL  AND LOWER(item_text) LIKE '%' || LOWER(?) || '%'  ORDER BY item_ts DESC, chat_item_id DESC  LIMIT ?
 Plan:
@@ -7240,6 +7294,14 @@ SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_has_link_item_ts (u
 Query:  SELECT chat_item_id FROM chat_items WHERE  user_id = ? AND group_id = ?  AND msg_content_tag = ?  ORDER BY item_ts DESC, chat_item_id DESC  LIMIT ?
 Plan:
 SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_msg_content_tag_item_ts (user_id=? AND group_id=? AND msg_content_tag=?)
+
+Query:  SELECT chat_item_id FROM chat_items WHERE  user_id = ? AND note_folder_id = ?  AND (created_at, chat_item_id) < (?, ?)  ORDER BY created_at DESC, chat_item_id DESC  LIMIT ?
+Plan:
+SEARCH chat_items USING COVERING INDEX idx_chat_items_notes_created_at (user_id=? AND note_folder_id=? AND created_at<?)
+
+Query:  SELECT chat_item_id FROM chat_items WHERE  user_id = ? AND note_folder_id = ?  AND (created_at, chat_item_id) > (?, ?)  ORDER BY created_at ASC, chat_item_id ASC  LIMIT ?
+Plan:
+SEARCH chat_items USING COVERING INDEX idx_chat_items_notes_created_at (user_id=? AND note_folder_id=? AND created_at>?)
 
 Query:  SELECT chat_item_id FROM chat_items WHERE  user_id = ? AND note_folder_id = ?  AND LOWER(item_text) LIKE '%' || LOWER(?) || '%'  ORDER BY created_at DESC, chat_item_id DESC  LIMIT ?
 Plan:
@@ -7943,7 +8005,7 @@ SEARCH chat_item_versions USING COVERING INDEX idx_chat_item_versions_chat_item_
 
 Query: SELECT COUNT(1) FROM chat_items WHERE user_id = ? AND group_id = ? AND msg_content_tag = ? AND item_deleted = ? AND item_sent = 0
 Plan:
-SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_msg_content_tag_deleted (user_id=? AND group_id=? AND msg_content_tag=? AND item_deleted=? AND item_sent=?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_msg_content_tag_deleted (user_id=? AND msg_content_tag=? AND item_deleted=? AND group_id=? AND item_sent=?)
 
 Query: SELECT COUNT(1) FROM commands WHERE command_function = 'set_short_link'
 Plan:
@@ -7981,11 +8043,11 @@ SEARCH groups USING INDEX sqlite_autoindex_groups_2 (user_id=?)
 
 Query: SELECT COUNT(1), COALESCE(SUM(user_mention), 0) FROM chat_items WHERE user_id = ? AND group_id = ?  AND group_scope_tag = ? AND group_scope_group_member_id IS NOT DISTINCT FROM ? AND  item_status = ? 
 Plan:
-SEARCH chat_items USING COVERING INDEX idx_chat_items_group_scope_stats_all (user_id=? AND group_id=? AND group_scope_tag=? AND group_scope_group_member_id=? AND item_status=?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_group_scope_stats_all (user_id=? AND item_status=? AND group_id=? AND group_scope_tag=? AND group_scope_group_member_id=?)
 
 Query: SELECT COUNT(1), COALESCE(SUM(user_mention), 0) FROM chat_items WHERE user_id = ? AND group_id = ?  AND group_scope_tag IS NULL AND group_scope_group_member_id IS NULL AND  item_status = ? 
 Plan:
-SEARCH chat_items USING COVERING INDEX idx_chat_items_group_scope_stats_all (user_id=? AND group_id=? AND group_scope_tag=? AND group_scope_group_member_id=? AND item_status=?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_group_scope_stats_all (user_id=? AND item_status=? AND group_id=? AND group_scope_tag=? AND group_scope_group_member_id=?)
 
 Query: SELECT DISTINCT msg_content_tag FROM chat_items WHERE user_id = ? AND  contact_id = ?  AND msg_content_tag IS NOT NULL ORDER BY msg_content_tag
 Plan:
@@ -7993,7 +8055,7 @@ SEARCH chat_items USING COVERING INDEX idx_chat_items_contacts_msg_content_tag_c
 
 Query: SELECT DISTINCT msg_content_tag FROM chat_items WHERE user_id = ? AND  group_id = ? AND group_scope_tag IS NULL AND group_scope_group_member_id IS NULL  AND msg_content_tag IS NOT NULL ORDER BY msg_content_tag
 Plan:
-SEARCH chat_items USING INDEX idx_chat_items_groups_msg_content_tag_deleted (user_id=? AND group_id=? AND msg_content_tag>?)
+SEARCH chat_items USING INDEX idx_chat_items_groups_msg_content_tag_item_ts (user_id=? AND group_id=? AND msg_content_tag>?)
 
 Query: SELECT DISTINCT msg_content_tag FROM chat_items WHERE user_id = ? AND  note_folder_id = ?  AND msg_content_tag IS NOT NULL ORDER BY msg_content_tag
 Plan:
@@ -8412,6 +8474,10 @@ Query: SELECT local_display_name FROM group_members
 Plan:
 SCAN group_members USING COVERING INDEX idx_group_members_user_id_local_display_name
 
+Query: SELECT local_display_name FROM group_members ORDER BY group_member_id
+Plan:
+SCAN group_members
+
 Query: SELECT max(active_order) FROM users
 Plan:
 SEARCH users
@@ -8777,7 +8843,7 @@ SEARCH chat_items USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: UPDATE chat_items SET item_status = ?, item_viewed = 1, updated_at = ? WHERE user_id = ? AND item_status = ?
 Plan:
-SEARCH chat_items USING INDEX idx_chat_items_user_id_item_status (user_id=? AND item_status=?)
+SEARCH chat_items USING INDEX idx_chat_items_group_scope_stats_all (user_id=? AND item_status=?)
 
 Query: UPDATE chat_items SET item_status = ?, updated_at = ? WHERE user_id = ? AND contact_id = ? AND chat_item_id = ?
 Plan:
