@@ -3,6 +3,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NumericUnderscores #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module ChatTests.LinkPreviews where
 
@@ -498,7 +499,9 @@ withKeyUpdateServer :: TestParams -> IO a -> IO a
 withKeyUpdateServer ps action = do
   Right credential <- TLS.credentialLoadX509 "tests/fixtures/tls/link-preview/server.crt" "tests/fixtures/tls/link-preview/server.key"
   let params = def {TLS.serverShared = def {TLS.sharedCredentials = TLS.Credentials [credential]}, TLS.serverSupported = def {TLS.supportedVersions = [TLS.TLS13], TLS.supportedCiphers = TE.ciphersuite_strong}}
-      requestKeyUpdates conn = TLS.contextNew conn params >>= \ctx -> TLS.handshake ctx >> forever (TLS.updateKey ctx TLS.TwoWay)
+      requestKeyUpdates conn =
+        (TLS.contextNew conn params >>= \ctx -> TLS.handshake ctx >> forever (TLS.updateKey ctx TLS.TwoWay))
+          `E.catch` \(_ :: E.IOException) -> pure ()
   withTCPServer (linkServerPort ps) [(RecvBuffer, 1024), (MaxSegment, 512)] requestKeyUpdates action
 
 withTCPServer :: ServiceName -> [(SocketOption, Int)] -> (Socket -> IO ()) -> IO a -> IO a
