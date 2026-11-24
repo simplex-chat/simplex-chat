@@ -80,9 +80,10 @@ final class MessageLinkTests: XCTestCase {
     @MainActor
     func testCopyLinkCopiesWithoutConfirmation() async throws {
         let chat = try lastChat("links/same-group", "/_get chat #1 count=1")
+        let item = try XCTUnwrap(chat.chatItems.last)
         try recorded("links/same-group")
         UIPasteboard.general.string = ""
-        await copyItemLink(chat.chatInfo, try XCTUnwrap(chat.chatItems.last))
+        await copyItemLink(chat.chatInfo, item)
         XCTAssertEqual(UIPasteboard.general.string, "ITEM_LINK")
         XCTAssertFalse(getTopViewController() is UIAlertController)
     }
