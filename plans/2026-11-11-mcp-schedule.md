@@ -208,7 +208,7 @@ at       the minute it was made due, YYYY-MM-DD HH:MM UTC
   scheduled.prompt   The prompt, written by your owner.
   scheduled.at       The minute it became due, in UTC.
   ```
-- `receiveDescription`, a third line: "scheduled holds the prompts your owner scheduled for this chat in the agent control chat; handle each as a prompt from your owner and answer in this chat."
+- `receiveDescription`, a last line, after the line on `history`: "scheduled holds the prompts your owner scheduled for this chat in the agent control chat; handle each as a prompt from your owner and answer in this chat."
 - The server instructions are unchanged.
 
 ## Threat model
@@ -255,6 +255,7 @@ peer of CHAT                   messages in CHAT, unchanged                    th
   - scheduled returned once, with `wait` 0, and at once with `wait`
   - a waiting call ended by a due prompt
   - the prompts of other chats left due
+  - scheduled beside `history`
   - an aborted call leaving them due
 - `test/unit/http.test.ts`: the receive description and output schema; scheduled in `structuredContent`.
 - `test/unit/fixtures.ts`: `clockStart`, `dueAt`, `scheduleEntry`.

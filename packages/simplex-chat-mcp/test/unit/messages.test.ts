@@ -610,6 +610,26 @@ describe("scheduled prompts in receive", () => {
     schedules.stop()
   })
 
+  it("returns the due prompts of its chat beside the history of the chat", async () => {
+    jest.useFakeTimers({now: clockStart})
+    const chat = new FakeChat()
+    chat.chats.set("@4", {chatInfo: direct(contact(4, "Switchback")), items: [item(10, "hi", {type: "directRcv"}, {status: "rcvRead"}), item(11, "hello", {type: "directSnd"})]})
+    const {tools, schedules} = scheduledTools(chat, {"@4": [scheduleEntry("0 7 * * *", "Check the trail report.")]})
+    schedules.start()
+    jest.advanceTimersByTime(30_000)
+    expect((await tools.call("receive", {chat: "@4", history: 5}, signal().call))!.structuredContent).toEqual({
+      chat: "@4",
+      messages: [],
+      more: 0,
+      history: [
+        {chat: "@4", item: 10, from: "Switchback", time: "2026-10-17T10:00:00Z", text: "hi", new: false, mentions_me: false},
+        {chat: "@4", item: 11, from: "agent", from_type: "agent", time: "2026-10-17T10:00:00Z", text: "hello", new: false, mentions_me: false},
+      ],
+      scheduled: [{prompt: "Check the trail report.", at: dueAt(7, 0)}],
+    })
+    schedules.stop()
+  })
+
   it("leaves the due prompts due when the call is aborted while it marks the messages read", async () => {
     jest.useFakeTimers({now: clockStart})
     const chat = new FakeChat()
