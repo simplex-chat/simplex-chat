@@ -125,12 +125,10 @@
                 ++ pkgs.lib.optional pkgs'.stdenv.hostPlatform.isMusl
                   ./scripts/nix/direct-sqlcipher-static-libraries.patch;
           } // pkgs.lib.optionalAttrs pkgs'.stdenv.hostPlatform.isDarwin {
+            # fe3ee76 createUniqueDirectory already claims the prefix and
+            # retries when that timestamp directory exists.
             "https://github.com/simplex-chat/simplexmq.git" =
-              [ ./scripts/nix/simplexmq-blst-darwin-extern.patch
-                # Two XFTP prepares in one clock tick both create the same
-                # timestamp directory. The voice-captcha retry hits that.
-                ./scripts/nix/simplexmq-xftp-prefix-race.patch
-              ];
+              [ ./scripts/nix/simplexmq-blst-darwin-extern.patch ];
           } // pkgs.lib.optionalAttrs pkgs'.stdenv.hostPlatform.isWindows {
             "https://github.com/simplex-chat/simplexmq.git" =
               [ ./scripts/nix/simplexmq-blst-windows-extern.patch ];
@@ -150,10 +148,6 @@
             "https://github.com/simplex-chat/simplexmq.git" = [
               ./scripts/nix/simplexmq-close-listener-first.patch
               ./scripts/nix/simplexmq-ipv6-fallback.patch
-              # Same clock-tick XFTP directory race as Darwin. The voice
-              # captcha retry sends two files. Android, Windows, and musl
-              # do not run that suite.
-              ./scripts/nix/simplexmq-xftp-prefix-race.patch
             ];
           };
         };
