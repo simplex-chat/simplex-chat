@@ -12,7 +12,7 @@ The implementation security assessment of SimpleX cryptography and networking wa
 
 The cryptographic review of SimpleX protocols design was done by Trail of Bits in [2024](../blog/20241014-simplex-network-v6-1-security-review-better-calls-user-experience.md).
 
-The security audit of SimpleX by Trail of Bits published in [November 2026](../blog/20261121-simplex-chat-security-audit-trail-of-bits-security-process.md).
+The security audit of SimpleX by Trail of Bits was published in [November 2026](../blog/20261121-simplex-chat-security-audit-trail-of-bits-security-process.md).
 
 ## Reporting security issues
 
