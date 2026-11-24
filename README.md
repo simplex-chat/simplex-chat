@@ -12,7 +12,7 @@ Invest in SimpleX Chat. [Learn more on Wefunder](https://wefunder.com/simplex.ch
 
 # SimpleX - the first messaging platform that has no user identifiers of any kind - 100% private by design!
 
-[<img src="./images/trail-of-bits.jpg" height="80">](http://simplex.chat/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html) &nbsp;&nbsp;&nbsp; [<img src="./images/privacy-guides.jpg" height="64">](https://www.privacyguides.org/en/real-time-communication/#simplex-chat) &nbsp;&nbsp;&nbsp; [<img src="./images/whonix-logo.jpg" height="64">](https://www.whonix.org/wiki/Chat#Recommendation) &nbsp;&nbsp;&nbsp; [<img src="./images/kuketz-blog.jpg" height="64">](https://www.kuketz-blog.de/simplex-eindruecke-vom-messenger-ohne-identifier/)
+[<img src="./images/trail-of-bits.jpg" height="80">](https://simplex.chat/blog/20261121-simplex-chat-security-audit-trail-of-bits-security-process.html) &nbsp;&nbsp;&nbsp; [<img src="./images/privacy-guides.jpg" height="64">](https://www.privacyguides.org/en/real-time-communication/#simplex-chat) &nbsp;&nbsp;&nbsp; [<img src="./images/whonix-logo.jpg" height="64">](https://www.whonix.org/wiki/Chat#Recommendation) &nbsp;&nbsp;&nbsp; [<img src="./images/kuketz-blog.jpg" height="64">](https://www.kuketz-blog.de/simplex-eindruecke-vom-messenger-ohne-identifier/)
 
 **[Why we are building SimpleX Network](./docs/WHY.md)**
 
@@ -221,6 +221,8 @@ You can use SimpleX with your own servers and still communicate with people usin
 
 Recent and important updates:
 
+[Nov 23, 2026. SimpleX Chat Security Audit by Trail of Bits and Our Security Process](./blog/20261121-simplex-chat-security-audit-trail-of-bits-security-process.md)
+
 [Sep 19, 2026. SimpleX Supporter Badges — Send Larger Files That Stay Available Longer, Without Being Identified](./blog/20260919-simplex-supporter-badges.md)
 
 [Aug 20, 2026. Equity Crowdfunding Launched - You Can Get a Stake in SimpleX Chat](./blog/20260819-simplex-chat-crowdfunding.md)
@@ -423,6 +425,8 @@ Also see [TypeScript SimpleX Chat client](./packages/simplex-chat-client/) and [
 The implementation security assessment of SimpleX cryptography and networking was done in October 2022 by [Trail of Bits](https://www.trailofbits.com/about) – see [the announcement](./blog/20221108-simplex-chat-v4.2-security-audit-new-website.md).
 
 The cryptographic review of SimpleX protocols was done in July 2024 by Trail of Bits – see [the announcement](./blog/20241014-simplex-network-v6-1-security-review-better-calls-user-experience.md).
+
+The security audit of SimpleX apps and the protocols' implementation was done in 2026 by Trail of Bits – see [the announcement](./blog/20261121-simplex-chat-security-audit-trail-of-bits-security-process.md) and [the findings and fixes](./blog/20261123-trail-of-bits-security-audit-2026-findings.md).
 
 SimpleX Chat is still a relatively early stage platform (the mobile apps were released in March 2022), so you may discover some bugs and missing features. We would really appreciate if you let us know anything that needs to be fixed or improved.
 
