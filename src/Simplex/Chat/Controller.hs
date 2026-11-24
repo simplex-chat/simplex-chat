@@ -84,7 +84,7 @@ import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Client (HostMode (..), SMPProxyFallback (..), SMPProxyMode (..), SMPWebPortServers (..), SocksMode (..))
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Chat.Badges (BadgeCredential, FileSizeLimits, LocalBadge)
-import Simplex.Chat.Badges.Service (BadgeServiceErrorCode, StatementEntry)
+import Simplex.Chat.StoreService (StoreServiceErrorCode, StatementEntry)
 import Simplex.Chat.Badges.Types (BadgeAlert (..), BadgeAlertKind, BadgeIssueFailure, BadgeState (..), OpenStorePurchase (..), StoreReceiptOrigin, SubscriptionState)
 import Simplex.Chat.PaymentService (ServicePayment)
 import Simplex.Messaging.Crypto.BBS (BBSPublicKey)
@@ -94,7 +94,7 @@ import Simplex.Messaging.Crypto.Ratchet (PQEncryption)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Notifications.Protocol (DeviceToken (..), NtfTknStatus)
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, parseAll, parseString, sumTypeJSON)
-import Simplex.Messaging.Protocol (AProtoServerWithAuth, AProtocolType (..), MsgId, NMsgMeta (..), NtfServer, ProtocolType (..), QueueId, SMPMsgMeta (..), SubscriptionMode (..), XFTPServer)
+import Simplex.Messaging.Protocol (AProtoServerWithAuth, AProtocolType (..), MsgId, NMsgMeta (..), NtfServer, ProtocolType (..), QueueId, SMPMsgMeta (..), SubscriptionMode (..), USDCents, XFTPServer)
 import Simplex.Messaging.Session (SessionVar)
 import Simplex.Messaging.TMap (TMap)
 import Simplex.Messaging.Transport (TLS, TransportPeer (..), simplexMQVersion)
@@ -148,15 +148,15 @@ data ChatConfig = ChatConfig
     callVRange :: VersionRangeCall,
     -- issuer public keys by index: credentials and proofs name the key that signed them, for rotation
     badgePublicKeys :: Map Int BBSPublicKey,
-    -- Nothing until the badge service is deployed
-    badgeServiceAddress :: Maybe (ConnectTarget 'CMContact),
+    -- Nothing until the store service is deployed
+    storeServiceAddress :: Maybe (ConnectTarget 'CMContact),
     -- the only clock badge code reads, so tests can shift it; production arithmetic is unchanged
     badgeCurrentTime :: IO UTCTime,
     -- how long a badge worker waits before repeating a renewal that failed for a passing reason
     badgeRetryInterval :: RetryInterval,
     -- attempts a store receipt gets in one turn before its next one waits for the stored schedule
     badgeConsecutiveRetries :: Int,
-    -- set only by builds for a dev badge service: allows /_badge request, sent off the shared schedule
+    -- set only by builds for a dev store service: allows /_badge request, sent off the shared schedule
     badgeDevRequests :: Bool,
     -- Local testing only: the badge worker treats a request as due this often, instead of near the
     -- credential's expiry, so a renewal can be watched without waiting weeks.
@@ -670,7 +670,7 @@ data ChatCommand
   | UpdateProfileImage (Maybe ImageData) -- UserId (not used in UI)
   | UpdateProfileImageFromFile FilePath -- set profile image from a .png/.jpg/.jpeg file
   | AddBadge BadgeCredential -- attach an issued badge credential (testing; credential from `simplex-chat badge sign`)
-  | APIRedeemBadgeCode {userId :: UserId, code :: Text} -- redeem a badge code with the configured badge service
+  | APIRedeemBadgeCode {userId :: UserId, code :: Text} -- redeem a badge code with the configured store service
   | APIPurchaseBadge {userId :: UserId, echoedInvoiceId :: Maybe Text, origin :: StoreReceiptOrigin, payment :: ServicePayment} -- hand over an App Store or Google Play receipt, held until a worker credits it; answers from the record and sends nothing
   | APISetBadgeSubscriptionStatus {status :: SubscriptionState, payment :: ServicePayment} -- the device store's view of a credited subscription, which changes what is shown and alerted, and retires its badge once ended
   | APICreateBadgeInvoice {userId :: UserId} -- the record of a store purchase, created before the store charges; answers the id the store echoes
@@ -726,8 +726,8 @@ data ChatCommand
   deriving (Show)
 
 data PlanResolveMode
-  = PRMAllGroups -- resolve all known groups and all unknown chats
-  | PRMUnknown -- only resolve if chat is unknown (default)
+  = PRMAllGroups -- resolve names, links of known groups and of unknown chats
+  | PRMUnknown -- resolve names, and links of unknown chats (default)
   | PRMNever -- do not resolve links and names, only do local search
   deriving (Eq, Show)
 
@@ -994,7 +994,7 @@ data ChatEvent
   | CEvtChatInfoUpdated {user :: User, chatInfo :: AChatInfo}
   | CEvtNewChatItems {user :: User, chatItems :: [AChatItem]} -- there is the same command response
   | CEvtChatItemsStatusesUpdated {user :: User, chatItems :: [AChatItem]}
-  | CEvtChatItemUpdated {user :: User, chatItem :: AChatItem} -- there is the same command response
+  | CEvtChatItemUpdated {user :: User, chatItemUpdate :: AChatItemUpdate} -- there is the same command response
   | CEvtChatItemNotChanged {user :: User, chatItem :: AChatItem} -- there is the same command response
   | CEvtChatItemReaction {user :: User, added :: Bool, reaction :: ACIReaction} -- there is the same command response
   | CEvtGroupChatItemsDeleted {user :: User, groupInfo :: GroupInfo, chatItemIDs :: [ChatItemId], byUser :: Bool, member_ :: Maybe GroupMember} -- there is the same command response
@@ -1004,6 +1004,7 @@ data ChatEvent
   | CEvtGroupLinkConnecting {user :: User, groupInfo :: GroupInfo, hostMember :: GroupMember}
   | CEvtBusinessLinkConnecting {user :: User, groupInfo :: GroupInfo, hostMember :: GroupMember, fromContact :: Contact}
   | CEvtContactUpdated {user :: User, fromContact :: Contact, toContact :: Contact}
+  | CEvtNameMoved {user :: User, contactIds :: [ContactId], groupIds :: [GroupId]}
   | CEvtGroupMemberUpdated {user :: User, groupInfo :: GroupInfo, fromMember :: GroupMember, toMember :: GroupMember}
   | CEvtContactDeletedByContact {user :: User, contact :: Contact}
   | CEvtReceivedContactRequest {user :: User, contactRequest :: UserContactRequest, chat_ :: Maybe AChat}
@@ -1176,10 +1177,25 @@ data ChatDeleteMode
 
 data ConnectionPlan
   = CPInvitationLink {invitationLinkPlan :: InvitationLinkPlan}
-  | CPContactAddress {contactAddressPlan :: ContactAddressPlan}
-  | CPGroupLink {groupLinkPlan :: GroupLinkPlan}
+  | CPContactAddress {contactAddressPlan :: ContactAddressPlan, nameChange :: Maybe NameChange}
+  | CPGroupLink {groupLinkPlan :: GroupLinkPlan, nameChange :: Maybe NameChange}
   | CPError {chatError :: ChatError}
   deriving (Show)
+
+data NameChange
+  = NCLapsed {nameWarning :: NameWarning}
+  | NCMoved {knownChat :: AChatInfo}
+  deriving (Show)
+
+data NameWarning
+  = NWExpired {expiredAt :: UTCTime, graceUntil :: Maybe UTCTime}
+  | NWAvailable {price :: NamePrice}
+  | NWReservedForCommunity
+  | NWNotRegistered
+  deriving (Eq, Show)
+
+data NamePrice = NamePrice {amount :: USDCents, years :: Int}
+  deriving (Eq, Show)
 
 data InvitationLinkPlan
   = ILPOk {contactSLinkData_ :: Maybe ContactShortLinkData, ownerVerification :: Maybe OwnerVerification}
@@ -1239,13 +1255,15 @@ connectionPlanProceed = \case
     ILPOk {} -> True
     ILPOwnLink -> True
     _ -> False
-  CPContactAddress cap -> case cap of
+  CPContactAddress _ (Just NCLapsed {}) -> False
+  CPContactAddress cap _ -> case cap of
     CAPOk {} -> True
     CAPOwnLink -> True
     CAPConnectingConfirmReconnect -> True
     CAPContactViaAddress _ -> True
     _ -> False
-  CPGroupLink glp -> case glp of
+  CPGroupLink _ (Just NCLapsed {}) -> False
+  CPGroupLink glp _ -> case glp of
     GLPOk {} -> True
     GLPOwnLink _ -> True
     GLPConnectingConfirmReconnect -> True
@@ -1253,6 +1271,12 @@ connectionPlanProceed = \case
     GLPUpdateRequired _ -> False
     _ -> False
   CPError _ -> True
+
+connectionPlanOwnLink :: ConnectionPlan -> Bool
+connectionPlanOwnLink = \case
+  CPContactAddress CAPOwnLink _ -> True
+  CPGroupLink GLPOwnLink {} _ -> True
+  _ -> False
 
 data ForwardConfirmation
   = FCFilesNotAccepted {fileIds :: [FileTransferId]}
@@ -1502,6 +1526,7 @@ data ChatError
 data SimplexDomainError
   = SDENoValidLink -- the name's record has no usable contact/channel link
   | SDEUnknownDomain -- the resolved link's profile has no name, or a different name
+  | SDENameWarning {nameWarning :: NameWarning}
   deriving (Eq, Show)
 
 -- | Why acquiring a badge failed, for a code and for a store purchase alike.
@@ -1511,7 +1536,7 @@ data BadgeRedeemError
   | BREServiceNotConfigured
   | BREBadgeActive
   | BREStorePurchaseOpen -- a store receipt held for this profile may still be credited
-  | BREServiceError {serviceError :: BadgeServiceErrorCode}
+  | BREServiceError {serviceError :: StoreServiceErrorCode}
   | BREInvalidResponse {message :: String}
   | BREUnknownKeyIndex
   | BRECredentialNotVerified
@@ -1877,6 +1902,10 @@ $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "GLP") ''GroupLinkPlan)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "FC") ''ForwardConfirmation)
 
+$(JQ.deriveJSON defaultJSON ''NamePrice)
+
+$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "NW") ''NameWarning)
+
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "SDE") ''SimplexDomainError)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "BRE") ''BadgeRedeemError)
@@ -1892,6 +1921,8 @@ $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "SQLite") ''SQLiteError)
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "DB") ''DatabaseError)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "Chat") ''ChatError)
+
+$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "NC") ''NameChange)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "CP") ''ConnectionPlan)
 

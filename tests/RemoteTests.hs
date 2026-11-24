@@ -96,9 +96,9 @@ remoteTests = describe "Remote" $ do
       r `shouldSatisfy` \case
         Left (RPEInvalidBody _) -> True
         _ -> False
-  xdescribe "No compression" $ aroundWith (. ((False, False),)) runRemoteTests
-  xdescribe "Mobile offers compression" $ aroundWith (. ((True, False),)) runRemoteTests
-  xdescribe "Desktop offers compression" $ aroundWith (. ((False, True),)) runRemoteTests
+  describe "No compression" $ aroundWith (. ((False, False),)) runRemoteTests
+  describe "Mobile offers compression" $ aroundWith (. ((True, False),)) runRemoteTests
+  describe "Desktop offers compression" $ aroundWith (. ((False, True),)) runRemoteTests
   describe "With compression" $ aroundWith (. ((True, True),)) runRemoteTests
   where
     fileNames :: [FilePath]
@@ -195,12 +195,16 @@ remoteHandshakeRejectTest = testRemote3 $ \compress mobile desktop mobileBob -> 
   mobileBob <## "ok"
   desktop ##> "/start remote host 1"
   desktop <##. "remote host 1 started on "
-  desktop <##. "other addresses: "
-  desktop <## "Remote session invitation:"
-  inv <- getTermLine desktop
+  (_, inv) <- getRemoteInvitation desktop
   mobileBob ##> ("/connect remote ctrl " <> inv)
   mobileBob <## ("connecting new remote controller: My desktop, v" <> versionNumber)
-  mobileBob <## "remote controller stopped: this link was used with another controller, please create a new link on the host"
+  getTermLine mobileBob >>= \case
+    "new remote controller connected" -> do
+      mobileBob <## "Compare session code with controller and use:"
+      void $ getTermLine mobileBob
+      mobileBob ##> "/stop remote ctrl"
+      mobileBob <## "ok"
+    l -> l `shouldBe` "remote controller stopped: this link was used with another controller, please create a new link on the host"
 
   -- the server remains active after rejecting invalid client
   mobile ##> ("/connect remote ctrl " <> inv)
@@ -224,19 +228,15 @@ storedBindingsTest = testRemote $ \compress mobile desktop -> do
   mobile <## "ok"
 
   desktop ##> "/start remote host new"
-  desktop <##. "new remote host started on "
-  addrs <- words . dropStrPrefix "other addresses: " <$> getTermLine desktop
-  Just localAddress <- pure $ find ("127." `isPrefixOf`) addrs
-  desktop <## "Remote session invitation:"
-  void $ getTermLine desktop
+  started <- dropStrPrefix "new remote host started on " <$> getTermLine desktop
+  (addrs, _) <- getRemoteInvitation desktop
+  Just localAddress <- pure $ find ("127." `isPrefixOf`) $ takeWhile (/= ':') started : addrs
   desktop ##> "/stop remote host new"
   desktop <## "ok"
 
   desktop ##> ("/start remote host new addr=" <> localAddress <> " iface=\"lo\" port=" <> remoteTestPort desktop)
   desktop <## ("new remote host started on " <> localAddress <> ":" <> remoteTestPort desktop)
-  desktop <##. "other addresses: "
-  desktop <## "Remote session invitation:"
-  inv <- getTermLine desktop
+  (_, inv) <- getRemoteInvitation desktop
 
   mobile ##> ("/connect remote ctrl " <> inv)
   mobile <## ("connecting new remote controller: My desktop, v" <> versionNumber)
@@ -629,9 +629,7 @@ startRemote compress mobile desktop = do
   mobile <## "ok"
   desktop ##> "/start remote host new"
   desktop <##. "new remote host started on "
-  desktop <##. "other addresses: "
-  desktop <## "Remote session invitation:"
-  inv <- getTermLine desktop
+  (_, inv) <- getRemoteInvitation desktop
   mobile ##> ("/connect remote ctrl " <> inv)
   mobile <## ("connecting new remote controller: My desktop, v" <> versionNumber)
   desktop <## "new remote host connecting"
@@ -645,9 +643,7 @@ startRemoteStored :: String -> TestCC -> TestCC -> IO ()
 startRemoteStored compress mobile desktop = do
   desktop ##> "/start remote host 1"
   desktop <##. "remote host 1 started on "
-  desktop <##. "other addresses: "
-  desktop <## "Remote session invitation:"
-  inv <- getTermLine desktop
+  (_, inv) <- getRemoteInvitation desktop
   mobile ##> ("/connect remote ctrl " <> inv)
   mobile <## ("connecting remote controller 1: My desktop, v" <> versionNumber)
   desktop <## "remote host 1 connecting"
@@ -660,9 +656,7 @@ startRemoteDiscover :: String -> TestCC -> TestCC -> IO ()
 startRemoteDiscover compress mobile desktop = do
   desktop ##> "/start remote host 1 multicast=on"
   desktop <##. "remote host 1 started on "
-  desktop <##. "other addresses: "
-  desktop <## "Remote session invitation:"
-  _inv <- getTermLine desktop -- will use multicast instead
+  void $ getRemoteInvitation desktop -- will use multicast instead
   mobile ##> "/find remote ctrl"
   mobile <## "ok"
   mobile <## ("remote controller 1 found: My desktop, v" <> versionNumber)
@@ -675,6 +669,13 @@ startRemoteDiscover compress mobile desktop = do
   verifyRemoteCtrl mobile desktop
   mobile <## ("remote controller 1 session started with My desktop" <> compress)
   desktop <## ("remote host 1 connected" <> compress)
+
+getRemoteInvitation :: HasCallStack => TestCC -> IO ([String], String)
+getRemoteInvitation desktop = do
+  addrs <- getTermLine desktop >>= \case
+    "Remote session invitation:" -> pure []
+    l -> evaluate (words $ dropStrPrefix "other addresses: " l) <* desktop <## "Remote session invitation:"
+  (addrs,) <$> getTermLine desktop
 
 verifyRemoteCtrl :: TestCC -> TestCC -> IO ()
 verifyRemoteCtrl mobile desktop = do

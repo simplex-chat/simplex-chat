@@ -154,9 +154,6 @@ active_home: true
                     <h2 class="gradient-text">{{ "index-hero-h2" | i18n({}, lang) | safe }}</h2>
                     <p>{{ "index-hero-p1" | i18n({}, lang) | safe }}</p>
                     <p class="invest">{{ "index-hero-own-part" | i18n({}, lang) | safe }} <a class="gradient-text" href="https://wefunder.com/simplex.chat?utm_source=home" target="_blank" rel="noopener">{{ "index-hero-invest" | i18n({}, lang) | safe }}</a></p>
-                    {% if lang == 'en' %}
-                    <p class="invest webinar"><span class="webinar-q">Who owns your identity? </span><a class="gradient-text" href="https://us06web.zoom.us/webinar/register/4717946558907/WN_20s72h57RyyYzOwoIRVUUQ" target="_blank" rel="noopener">Join our webinar on Nov 19.</a></p>
-                    {% endif %}
                     <div class="cover-stats">
                         <div class="cover-stat"><b>3M</b><span>{{ "index-hero-downloads" | i18n({}, lang) }}</span></div>
                         <div class="cover-stat"><b>600K</b><span>{{ "index-hero-monthly-users" | i18n({}, lang) }}</span></div>
@@ -185,8 +182,11 @@ active_home: true
                         <a class="box-btn btn-1" title="{{ 'index-security-review-2022-title' | i18n({}, lang) }}" href="/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html">
                             2022
                         </a>
-                        <a class="box-btn gold-gradient" title="{{ 'index-security-review-2024-title' | i18n({}, lang) }}" href="/blog/20241014-simplex-network-v6-1-security-review-better-calls-user-experience.html">
+                        <a class="box-btn btn-1" title="{{ 'index-security-review-2024-title' | i18n({}, lang) }}" href="/blog/20241014-simplex-network-v6-1-security-review-better-calls-user-experience.html">
                             2024
+                        </a>
+                        <a class="box-btn gold-gradient" title="{{ 'index-security-review-2026-title' | i18n({}, lang) }}" href="/blog/20261121-simplex-chat-security-audit-trail-of-bits-security-process.html">
+                            2026
                         </a>
                         <p class="security-audits">
                             {{ 'index-security-audits-label' | i18n({}, lang) | safe }}
