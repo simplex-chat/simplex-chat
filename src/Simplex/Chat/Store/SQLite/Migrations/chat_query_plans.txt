@@ -8198,6 +8198,10 @@ Query: SELECT group_id, relay_own_status FROM groups WHERE relay_own_status IS N
 Plan:
 SCAN groups
 
+Query: SELECT group_member_id FROM group_members WHERE local_display_name = 'bob'
+Plan:
+SCAN group_members USING COVERING INDEX idx_group_members_user_id_local_display_name
+
 Query: SELECT group_member_id FROM group_members WHERE user_id = ? AND contact_profile_id = ? AND group_member_id != ? LIMIT 1
 Plan:
 SEARCH group_members USING INDEX idx_group_members_user_id (user_id=?)
@@ -8299,6 +8303,10 @@ SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
 Query: SELECT member_relations_vector FROM group_members WHERE group_member_id = ? AND member_relations_vector IS NOT NULL
 Plan:
 SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: SELECT member_restriction_expires_at FROM group_members WHERE local_display_name = ?
+Plan:
+SCAN group_members
 
 Query: SELECT member_role FROM group_members WHERE local_display_name = ?
 Plan:
