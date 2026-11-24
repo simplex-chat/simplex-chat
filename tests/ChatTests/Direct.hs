@@ -2162,11 +2162,11 @@ testUsersUnreadCountQueryPlans ps =
                    [ "SEARCH i USING COVERING INDEX idx_chat_items_group_scope_stats_all (user_id=? AND item_status=?)",
                      "SEARCH g USING INTEGER PRIMARY KEY (rowid=?)"
                    ],
-                   ["SEARCH chat_items USING COVERING INDEX idx_chat_items_group_scope_stats_all (user_id=? AND item_status=?)"]
+                   ["SEARCH chat_items USING INDEX idx_chat_items_item_status (item_status=?)"]
                  ]
   where
     isUnreadQuery q =
-      any (`T.isInfixOf` fromQuery q) ["JOIN contacts ct USING (contact_id)", "JOIN groups g USING (group_id)", "GROUP BY user_id"]
+      any (`T.isInfixOf` fromQuery q) ["JOIN contacts ct USING (contact_id)", "JOIN groups g USING (group_id)", "SELECT MIN(chat_item_id)"]
         && not ("item_priority" `T.isInfixOf` fromQuery q)
     queryPlan db q = map (\(_, _, _, detail) -> detail) <$> (SQL.query_ db ("EXPLAIN QUERY PLAN " <> q) :: IO [(Int, Int, Int, T.Text)])
 #endif
