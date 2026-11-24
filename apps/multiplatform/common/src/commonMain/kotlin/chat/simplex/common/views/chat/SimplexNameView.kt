@@ -85,7 +85,7 @@ fun SimplexNameView(
         }
       !verifiable -> Text(simplexName, style = nameStyle)
       verified == DomainVerification.Failed || verified == DomainVerification.Moved ->
-        SimplexNameWithIcon(simplexName, nameStyle, MR.images.ic_close, if (verified == DomainVerification.Failed) Color.Red else MaterialTheme.colors.secondary) { runVerify(manual = true) }
+        SimplexNameWithIcon(simplexName, nameStyle, MR.images.ic_close, simplexNameCrossColor(verified, MaterialTheme.colors.secondary)) { runVerify(manual = true) }
       else -> {
         Text(simplexName, style = nameStyle)
         Text(
@@ -97,6 +97,9 @@ fun SimplexNameView(
     }
   }
 }
+
+internal fun simplexNameCrossColor(verified: DomainVerification?, secondary: Color): Color =
+  if (verified == DomainVerification.Failed) Color.Red else secondary
 
 // The check/cross drawable is centered in its box with ~27% padding top and bottom, so its glyph bottom sits at
 // ~73% of the box height. Align that line with the text baseline so the glyph rests on the baseline; the box is

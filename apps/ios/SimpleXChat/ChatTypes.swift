@@ -3174,6 +3174,7 @@ public enum SimplexDomainError: Decodable, Hashable {
     case noValidLink
     case unknownDomain
     case nameWarning(nameWarning: NameWarning)
+    case ownNameExpired(expiredAt: Date, graceUntil: Date?)
 }
 
 public enum NameWarning: Decodable, Hashable {

@@ -1139,6 +1139,8 @@ private func apiConnectResponseAlert<R>(_ r: APIResult<R>) async {
                 )
             case let .nameWarning(warning):
                 showNameWarningAlert(domain: domain, warning: warning, own: false, openExistingChat: nil, cleanup: nil)
+            case let .ownNameExpired(expiredAt, graceUntil):
+                showNameWarningAlert(domain: domain, warning: .expired(expiredAt: expiredAt, graceUntil: graceUntil), own: true, openExistingChat: nil, cleanup: nil)
             }
         case .errorAgent(.NO_NAME_SERVERS):
             showAlert(

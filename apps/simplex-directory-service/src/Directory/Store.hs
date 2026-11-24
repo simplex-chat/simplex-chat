@@ -70,7 +70,6 @@ import Data.Time.Clock (UTCTime (..), getCurrentTime)
 import Directory.Search
 import Simplex.Chat.Bot.Store
 import Simplex.Chat.Controller
-import Simplex.Chat.Names (claimDomain)
 import Simplex.Chat.Options.DB (FromField (..), ToField (..))
 import Simplex.Chat.Store
 import Simplex.Chat.Store.Groups
@@ -205,8 +204,8 @@ grDirectoryStatus = \case
   _ -> DSRegistered
 
 verifiedGroupDomain :: GroupInfo -> Maybe SimplexDomain
-verifiedGroupDomain GroupInfo {groupProfile = GroupProfile {publicGroup}, groupDomainVerified}
-  | groupDomainVerified == Just DVVerified = claimDomain <$> (publicGroup >>= publicGroupAccess >>= groupDomainClaim)
+verifiedGroupDomain GroupInfo {groupProfile, groupDomainVerified}
+  | groupDomainVerified == Just DVVerified = groupClaim groupProfile
   | otherwise = Nothing
 
 $(JQ.deriveJSON (enumJSON $ dropPrefix "PC") ''ProfileCondition)
@@ -375,12 +374,12 @@ searchListedGroups cc user@User {userId, userContactId} searchType lastGroup_ pa
           orderBy = " ORDER BY r.created_at DESC, r.group_reg_id ASC "
       STSearch search -> case lastGroup_ of
         Nothing -> do
-          gs <- groups currentTs $ DB.query db (listedGroupQuery <> searchCond <> orderBy <> " LIMIT ?") ((userId, userContactId, GRSActive, s, s, s, s) :. (sDomain, pageSize))
-          n <- count $ DB.query db (countQuery' <> searchCond) (GRSActive, s, s, s, s, sDomain)
+          gs <- groups currentTs $ DB.query db (listedGroupQuery <> searchCond <> orderBy <> " LIMIT ?") ((userId, userContactId, GRSActive, s, s, s, s) :. (sDomain, DVVerified, pageSize))
+          n <- count $ DB.query db (countQuery' <> searchCond) (GRSActive, s, s, s, s, sDomain, DVVerified)
           pure (gs, n)
         Just gId -> do
-          gs <- groups currentTs $ DB.query db (listedGroupQuery <> " AND r.group_id > ? " <> searchCond <> orderBy <> " LIMIT ?") ((userId, userContactId, GRSActive, gId, s, s, s, s) :. (sDomain, pageSize))
-          n <- count $ DB.query db (countQuery' <> " AND r.group_id > ? " <> searchCond) (GRSActive, gId, s, s, s, s, sDomain)
+          gs <- groups currentTs $ DB.query db (listedGroupQuery <> " AND r.group_id > ? " <> searchCond <> orderBy <> " LIMIT ?") ((userId, userContactId, GRSActive, gId, s, s, s, s) :. (sDomain, DVVerified, pageSize))
+          n <- count $ DB.query db (countQuery' <> " AND r.group_id > ? " <> searchCond) (GRSActive, gId, s, s, s, s, sDomain, DVVerified)
           pure (gs, n)
         where
           s = T.toLower search
@@ -401,7 +400,7 @@ searchListedGroups cc user@User {userId, userContactId} searchType lastGroup_ pa
           OR LOWER(gp.full_name) LIKE '%' || ? || '%'
           OR LOWER(gp.short_descr) LIKE '%' || ? || '%'
           OR LOWER(gp.description) LIKE '%' || ? || '%'
-          OR (LOWER(gp.group_domain) LIKE '%' || ? || '%' AND g.group_domain_verified = 1)
+          OR (LOWER(gp.group_domain) LIKE '%' || ? || '%' AND g.group_domain_verified = ?)
         )
       |]
 

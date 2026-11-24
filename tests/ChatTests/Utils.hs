@@ -25,7 +25,7 @@ import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Char (isDigit)
 import Data.Foldable (toList)
-import Data.List (foldl', isPrefixOf, isSuffixOf)
+import Data.List (dropWhileEnd, foldl', isPrefixOf, isSuffixOf)
 import Data.Maybe (fromMaybe)
 import Data.String
 import qualified Data.Text as T
@@ -998,13 +998,16 @@ nameFixture fixture cc name = apiFixture ("names/" <> fixture) cc [] FixtureRequ
 
 apiFixture :: String -> TestCC -> [(String, String)] -> FixtureRequests -> IO ()
 apiFixture fixture TestCC {chatController = cc} placeholders FixtureRequests {frMarkdown, frUris, frCommands} = do
-  responses <- mapM (\cmd -> (JK.fromString cmd J..=) <$> (decodeJSON =<< chatSendCmd cc (B.pack cmd))) frCommands
+  responses <- mapM (\cmd -> (JK.fromString (commandKey cmd) J..=) <$> (decodeJSON =<< chatSendCmd cc (B.pack cmd))) frCommands
   parses <- mapM (\text -> (JK.fromString text J..=) <$> decodeJSON (chatParseMarkdown $ B.pack text)) frMarkdown
   uris <- mapM (\uri -> (JK.fromString uri J..=) <$> decodeJSON (chatParseUri False $ B.pack uri)) frUris
   writeFixture ("api/" <> fixture) . withPlaceholders . stableJSON $ J.object ["commands" J..= J.object responses, "markdown" J..= J.object parses, "uris" J..= J.object uris]
   where
     decodeJSON :: LB.ByteString -> IO J.Value
     decodeJSON = either fail pure . J.eitherDecode
+    commandKey cmd
+      | "/_prepare " `isPrefixOf` cmd = dropWhileEnd (== ' ') $ takeWhile (/= '{') cmd
+      | otherwise = cmd
     withPlaceholders = \case
       J.Object o -> J.Object $ JM.fromList [(JK.fromText $ replaced $ JK.toText k, withPlaceholders v) | (k, v) <- JM.toList o]
       J.Array a -> J.Array $ fmap withPlaceholders a
@@ -1063,6 +1066,6 @@ stableJSON = \case
   where
     stableField k v
       | k `elem` ["createdAt", "updatedAt", "chatTs", "userMemberProfileSentAt", "itemTs", "deletedTs", "fileExpires"] = J.String "1970-01-01T00:00:00Z"
-      | k `elem` ["agentConnId", "xContactId", "connFullLink", "connShortLink", "contactLink", "groupLink", "viaGroupLinkUri", "simplexUri", "memberId", "memberPubKey", "publicGroupId", "businessId", "customerId", "itemSharedMsgId", "fileDescrText", "agentSndFileId", "privateSndFileDescr", "errorMessage"] = J.String $ JK.toText k
+      | k `elem` ["agentConnId", "pccAgentConnId", "xContactId", "connFullLink", "connShortLink", "contactLink", "groupLink", "viaGroupLinkUri", "simplexUri", "memberId", "memberPubKey", "publicGroupId", "businessId", "customerId", "itemSharedMsgId", "fileDescrText", "agentSndFileId", "privateSndFileDescr", "errorMessage"] = J.String $ JK.toText k
       | k == "groupRelays", J.Array a <- v = J.Array $ J.String "groupRelay" <$ a
       | otherwise = stableJSON v

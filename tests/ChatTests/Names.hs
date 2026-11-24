@@ -16,7 +16,8 @@ import Data.Time.Clock (UTCTime)
 import NameResolver
 import Simplex.Chat.Controller (NamePrice (..), NameWarning (..))
 import Simplex.Chat.Library.Commands (nameRecordOrWarning)
-import Simplex.Messaging.Names.Record (NamePricing (..), NameRecord, NameRegistration (..), NameReservedReason (..), USDCents (..))
+import qualified Simplex.Messaging.Agent.Store.DB as DB
+import Simplex.Messaging.Names.Record (NamePricing (..), NameRecord, NameRegistration (..), NameReservedReason (..), NameResponse (..), USDCents (..))
 import Simplex.Messaging.SimplexName (SimplexDomain (..), SimplexNameInfo (..), SimplexNameType (..), SimplexTLD (..))
 import Simplex.Messaging.SystemTime (RoundedSystemTime (..), roundedToUTCTime)
 import Test.Hspec hiding (it)
@@ -33,6 +34,8 @@ chatNamesTests = do
   it "connect by name to a known contact not claimed in profile is rejected" testConnectByNameKnownContactNotClaimed
   it "connect by unregistered name reports it is available" testConnectByNameNotFound
   it "set name not resolving to own address is rejected" testSetNameNotOwnAddress
+  it "set expired name is rejected, as own when its record has the address" testSetNameExpired
+  it "set expired channel name is rejected, as own when its record has the channel link" testSetChannelNameExpired
   it "channel name is not verified just by joining via link" testChannelDomainLinkJoinUnverified
   it "verify channel name, fail on re-point, retain status on refresh" testChannelDomainVerify
   it "connect by channel name" testConnectByChannelName
@@ -54,6 +57,9 @@ chatNamesTests = do
     it "own channel expired, joined channel moved to a new channel, new channel joined" testPlanChannelNameMoved
     it "joined channel moved to a channel with no relays" testPlanChannelNameMovedNoRelays
     it "no local chat, the channel has no relays" testPlanNameChannelNoRelays
+    it "no local chat, the channel requires a newer version" testPlanNameChannelUpdateRequired
+    it "own address, the name's channel not claimed, offered" testPlanOwnNameOtherKind
+    it "contact still connecting, by link" testPlanContactConnecting
     it "known chats, the name's link differs only in its key hash" testPlanNameLinkKeyHash
     it "known chats, the name's link differs only in its server address" testPlanNameLinkServer
     it "local chats, before and after the name expired" testPlanLocalChats
@@ -281,6 +287,31 @@ testSetNameNotOwnAddress ps = withSmpServerAndNames ps $ \reg ->
       alice ##> "/_set domain 1 alice.simplex"
       alice <## "SimpleX name alice.simplex has no valid connection link"
 
+testSetNameExpired :: HasCallStack => TestParams -> IO ()
+testSetNameExpired ps = withSmpServerAndNames ps $ \reg ->
+  withNewTestChat ps "alice" aliceProfile $ \alice -> do
+    enableNamesRole alice
+    alice ##> "/ad"
+    (shortLink, _) <- getContactLinks alice True
+    registerExpiredName reg aliceSimplexName (aliceRecord "https://simplex.chat/other")
+    alice ##> "/_set domain 1 alice.simplex"
+    alice <##. "SimpleX name alice.simplex expired on "
+    apiFixture "names/set-expired" alice [] FixtureRequests {frMarkdown = [], frUris = [], frCommands = ["/_set domain 1 alice.simplex"]}
+    registerExpiredName reg aliceSimplexName (aliceRecord shortLink)
+    alice ##> "/_set domain 1 alice.simplex"
+    alice <##. "your SimpleX name alice.simplex expired on "
+    apiFixture "names/set-own-expired" alice [] FixtureRequests {frMarkdown = [], frUris = [], frCommands = ["/_set domain 1 alice.simplex"]}
+
+testSetChannelNameExpired :: HasCallStack => TestParams -> IO ()
+testSetChannelNameExpired = withChannelChats $ \reg alice cath _bob -> do
+  (shortLink, _) <- prepareChannel1Relay "team" alice cath
+  registerExpiredName reg teamSimplexName (channelNameRecord "team.simplex" "https://simplex.chat/other")
+  alice ##> "/public group access #team domain=team.simplex"
+  alice <##. "SimpleX name team.simplex expired on "
+  registerExpiredName reg teamSimplexName (channelNameRecord "team.simplex" (T.pack shortLink))
+  alice ##> "/public group access #team domain=team.simplex"
+  alice <##. "your SimpleX name team.simplex expired on "
+
 -- a self-claimed name is never auto-verified from link data: the claim is not proof of ownership
 testChannelDomainLinkJoinUnverified :: HasCallStack => TestParams -> IO ()
 testChannelDomainLinkJoinUnverified ps = withSmpServerAndNames ps $ \reg ->
@@ -327,6 +358,9 @@ testChannelDomainVerify ps = withSmpServerAndNames ps $ \reg ->
         settleTeamJoin alice cath bob
         bob ##> "/_verify domain #1"
         bob <## "SimpleX name #team verified"
+        registerExpiredName reg teamName (channelNameRecord "team.simplex" (T.pack shortLink))
+        bob ##> "/_verify domain #1"
+        bob <## "SimpleX name #team not verified: the name expired"
         -- the name is re-pointed to a different link: verification fails
         registerName reg teamName (channelNameRecord "team.simplex" "https://simplex.chat/other")
         bob ##> "/_verify domain #1"
@@ -784,8 +818,7 @@ testPlanKnownNameNewChatOpened = withKnownAliceName $ \reg _alice bob cath -> do
   bob <## "contact address: ok to connect"
   contactSLinkData <- getTermLine bob
   bob <## "known contact @alice"
-  bob ##> ("/_prepare contact 1 " <> cathFullLink <> " " <> cathLink <> " domain=alice.simplex " <> contactSLinkData)
-  bob <## "cath: contact is prepared"
+  apiFixture "names/plan-known-moved-prepared" bob [(cathFullLink, "connFullLink"), (cathLink, "connShortLink")] FixtureRequests {frMarkdown = ["@alice.simplex"], frUris = [], frCommands = ["/_connect plan 1 @alice.simplex", "/_prepare contact 1 " <> cathFullLink <> " " <> cathLink <> " domain=alice.simplex " <> contactSLinkData]}
   bob ##> "/_connect plan 1 @alice.simplex resolve=never"
   bob <## "contact address: known prepared contact cath"
   bob <## "SimpleX name: @alice.simplex (verified)"
@@ -805,6 +838,7 @@ testPlanKnownNameMovedToKnownChat = withKnownAliceName $ \reg alice bob cath -> 
   knownContactPlan "cath" "alice.simplex" bob
   bob <## "known contact @alice"
   nameFixture "plan-moved-known" bob "@alice.simplex"
+  apiFixture "names/search-moved-known" bob [] FixtureRequests {frMarkdown = ["", "@alice.simplex"], frUris = [], frCommands = ["/_connect plan 1 @alice.simplex resolve=never", "/_connect plan 1 @alice.simplex"]}
   alice ##> ("/c " <> cathLink)
   cath <#? alice
   cath ##> "/ac alice"
@@ -941,6 +975,51 @@ testPlanNameChannelNoRelays = withChannelChats $ \reg alice cath bob -> do
   bob ##> "/_connect plan 1 @nobody.simplex resolve=never"
   bob <## "no matching chat found, name resolution is disabled"
 
+testPlanNameChannelUpdateRequired :: HasCallStack => TestParams -> IO ()
+testPlanNameChannelUpdateRequired = withChannelChats $ \reg alice cath bob -> do
+  (channelLink, _) <- prepareChannel1Relay "team" alice cath
+  alice ##> "/ad"
+  (contactLink, _) <- getContactLinks alice True
+  registerName reg teamSimplexName (contactAndChannelNameRecord "team.simplex" (T.pack contactLink) (T.pack channelLink))
+  alice ##> "/_set domain 1 team.simplex"
+  alice <## "new contact address set"
+  withCCTransaction alice $ \db -> DB.execute_ db "UPDATE group_profiles SET group_type = 'group'"
+  setChannelDomain alice cath "alice" "team" "team.simplex"
+  waitQueuedLinkUpdates alice
+  bob ##> "/_connect plan 1 team.simplex"
+  bob <## "group link: this group requires a newer version of the app, please upgrade"
+  bob <## "You can also connect to @team.simplex in direct chat"
+  apiFixture "names/plan-update-required" bob [] FixtureRequests {frMarkdown = ["team.simplex", "@team.simplex"], frUris = [], frCommands = ["/_connect plan 1 team.simplex", "/_connect plan 1 @team.simplex"]}
+
+testPlanOwnNameOtherKind :: HasCallStack => TestParams -> IO ()
+testPlanOwnNameOtherKind = withChannelChats $ \reg alice cath bob -> do
+  (channelLink, _) <- prepareChannel1Relay "team" alice cath
+  bob ##> "/ad"
+  (contactLink, contactFullLink) <- getContactLinks bob True
+  registerName reg teamSimplexName (contactAndChannelNameRecord "team.simplex" (T.pack contactLink) (T.pack channelLink))
+  bob ##> "/_set domain 1 team.simplex"
+  bob <## "new contact address set"
+  bob ##> "/_connect plan 1 team.simplex"
+  bob <## "contact address: own address"
+  bob <## "You can also join channel #team"
+  apiFixture "names/plan-own-address-other-kind" bob [(contactFullLink, "connFullLink"), (contactLink, "connShortLink")] FixtureRequests {frMarkdown = ["team.simplex"], frUris = [], frCommands = ["/_connect plan 1 team.simplex", "/_connect 1 incognito=off " <> contactFullLink <> " " <> contactLink]}
+  bob
+    <### [ "bob_1 (Bob) wants to connect to you!",
+           "to accept: /ac bob_1",
+           "to reject: /rc bob_1 (the sender will NOT be notified)"
+         ]
+
+testPlanContactConnecting :: HasCallStack => TestParams -> IO ()
+testPlanContactConnecting = withAliceName $ \_reg (_, fullLink) alice bob -> do
+  bob ##> "/c @alice.simplex"
+  bob <## "alice: connection started"
+  alice <## "bob (Bob) wants to connect to you!"
+  alice <## "to accept: /ac bob"
+  alice <## "to reject: /rc bob (the sender will NOT be notified)"
+  bob ##> ("/_connect plan 1 " <> fullLink)
+  bob <## "contact address: connecting to contact alice"
+  apiFixture "names/plan-connecting-contact" bob [(fullLink, "CONTACT_LINK")] FixtureRequests {frMarkdown = [fullLink], frUris = [], frCommands = ["/_connect plan 1 " <> fullLink]}
+
 testPlanNameLinkKeyHash :: HasCallStack => TestParams -> IO ()
 testPlanNameLinkKeyHash = withTeamChats $ \reg contactLink channelLink _alice bob -> do
   registerName reg teamSimplexName (contactAndChannelNameRecord "team.simplex" (T.pack contactLink <> "?c=LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI") (T.pack channelLink))
@@ -968,6 +1047,7 @@ testPlanLocalChats :: HasCallStack => TestParams -> IO ()
 testPlanLocalChats = withTeamChats $ \reg contactLink channelLink alice bob -> do
   apiFixture "names/search-team" bob [] FixtureRequests {frMarkdown = ["", "team.simplex"], frUris = [], frCommands = ["/_connect plan 1 @team.simplex resolve=never", "/_connect plan 1 #team.simplex resolve=never"]}
   apiFixture "names/plan-own-channel" alice [] FixtureRequests {frMarkdown = ["#team.simplex"], frUris = [], frCommands = ["/_connect plan 1 #team.simplex"]}
+  apiFixture "names/plan-own-channel-other-kind" alice [] FixtureRequests {frMarkdown = ["team.simplex", "@team.simplex"], frUris = [], frCommands = ["/_connect plan 1 team.simplex", "/_connect plan 1 @team.simplex"]}
   bob ##> "/_connect plan 1 team.simplex resolve=never"
   knownGroupPlan "team" "team" bob
   bob ##> "/_connect plan 1 #team.simplex resolve=never"
@@ -1131,8 +1211,12 @@ testNameRecordOrWarning = do
   recordOrWarning (NRAvailable (pricing 6 M.empty) Nothing) `shouldBe` Left NWNotRegistered
   recordOrWarning (NRReserved NRRCommunity) `shouldBe` Left NWReservedForCommunity
   recordOrWarning (NRReserved NRRTrademark) `shouldBe` Left NWNotRegistered
+  recordOrWarningAt (Just 800) (registered (Just 900) (Just 2000) record) `shouldBe` Right record
+  recordOrWarningAt (Just 1200) (registered (Just 1100) (Just 2000) record) `shouldBe` Left (NWExpired (utc 1100) (Just $ utc 2000))
+  recordOrWarningAt (Just 2100) (registered (Just 1100) (Just 2000) record) `shouldBe` Left (NWExpired (utc 1100) Nothing)
   where
-    recordOrWarning = nameRecordOrWarning (RoundedSystemTime 1000) (SimplexDomain TLDSimplex "alice" [])
+    recordOrWarning = recordOrWarningAt Nothing
+    recordOrWarningAt blockTs = nameRecordOrWarning (RoundedSystemTime 1000) (SimplexDomain TLDSimplex "alice" []) . NameResponse (RoundedSystemTime <$> blockTs)
     registered expires graceUntil = NRRegistered (RoundedSystemTime <$> expires) (RoundedSystemTime <$> graceUntil) Nothing
     pricing minLabelLength registrationPrices = NamePricing {registrationPrices, basePrice = USDCents 1000, minLabelLength}
     record = contactNameRecord "alice.simplex" "https://smp4.simplex.im/a#lXUjJW5vHYQzoLYgmi8GbxkGP41_kjefFvBrdwg-0Ok"

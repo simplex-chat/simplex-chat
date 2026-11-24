@@ -8,6 +8,8 @@ const broker = (brokerErr: object): object => ({type: "BROKER", brokerAddress: s
 const forwarding = (brokerErr: object): object => ({type: "SMP", serverAddress: server, smpErr: {type: "PROXY", proxyErr: {type: "BROKER", brokerErr}}})
 const destination = (proxyErr: object): object => ({type: "PROXY", proxyServer: server, relayServer: relay, proxyErr: {type: "protocolError", protocolErr: {type: "PROXY", proxyErr}}})
 const domain = {nameTLD: T.SimplexTLD.Simplex, domain: "ridgeline", subDomain: []}
+const nameWarning = (warning: object): T.ChatError =>
+  ({type: "error", errorType: {type: "simplexDomainNotReady", simplexDomain: domain, simplexDomainError: {type: "nameWarning", nameWarning: warning}}}) as unknown as T.ChatError
 
 describe("SimpleX errors", () => {
   const cases: [string, T.ChatError, string][] = [
@@ -23,6 +25,18 @@ describe("SimpleX errors", () => {
       {type: "error", errorType: {type: "simplexDomainNotReady", simplexDomain: domain, simplexDomainError: {type: "unknownDomain"}}},
       "Unconfirmed name: The SimpleX name ridgeline.simplex is registered, but not added to profile. Please add it to your address or channel profile, if you are the owner.",
     ],
+    [
+      "expired name",
+      nameWarning({type: "expired", expiredAt: "2026-01-01T12:00:00Z", graceUntil: "2099-01-01T12:00:00Z"}),
+      "Name expired: ridgeline.simplex expired on 2026-01-01. Its owner can renew it until 2099-01-01.",
+    ],
+    ["available name", nameWarning({type: "available", price: {amount: 2050, years: 2}}), "Name not registered: ridgeline.simplex is available for registration for $20.50 for 2 years."],
+    [
+      "name reserved for community",
+      nameWarning({type: "reservedForCommunity"}),
+      "Name not registered: ridgeline.simplex is reserved for community. Please contact SimpleX Chat if you are interested in using it.",
+    ],
+    ["name not registered", nameWarning({type: "notRegistered"}), "Name not registered: This SimpleX name is not registered. Please check the name."],
     [
       "file servers not approved",
       {type: "error", errorType: {type: "fileNotApproved", fileId: 7, unknownServers: ["xftp://k@xftp2.example.com", "xftp://k@xftp1.example.com:443", "xftp://j@xftp2.example.com"]}},

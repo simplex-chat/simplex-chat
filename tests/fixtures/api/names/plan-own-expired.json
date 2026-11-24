@@ -11,6 +11,11 @@
             "type": "ownLink"
           },
           "nameChange": {
+            "nameDomain": {
+              "domain": "alice",
+              "nameTLD": "simplex",
+              "subDomain": []
+            },
             "nameWarning": {
               "expiredAt": "2026-01-01T12:00:00Z",
               "graceUntil": "2099-01-01T12:00:00Z",

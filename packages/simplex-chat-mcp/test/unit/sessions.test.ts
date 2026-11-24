@@ -428,6 +428,25 @@ describe("session groups", () => {
     expect(textOf(await session.call("connect", {target: link}, signal().call))).toBe(`The chat of ${link} belongs to another session; an admin or owner of that session's group can give it to this session with /give.`)
   })
 
+  it("claim the chat of a lapsed SimpleX name without owner at a connect, and refuse the chat of another session", async () => {
+    const chat = new FakeChat()
+    const hub = await hubWith(chat)
+    const session = await openSession(hub, id1, stored(1, "auth"))
+    const name = "@ridgeline.simplex"
+    const lapsed = (c: T.Contact) => ({
+      type: "connectionPlan",
+      user,
+      connLink: {connFullLink: "https://simplex.chat/a#ridgeline"},
+      connectionPlan: {type: "contactAddress", contactAddressPlan: {type: "known", contact: c}, nameChange: {type: "lapsed", nameDomain: {nameTLD: "simplex", domain: "ridgeline", subDomain: []}, nameWarning: {type: "expired", expiredAt: "2026-01-01T12:00:00Z"}}},
+    })
+    chat.chats.set("@13", {chatInfo: direct(contact(13, "Trailhead")), items: []})
+    chat.responses.set(`/_connect plan 1 ${name}`, lapsed(contact(13, "Trailhead")))
+    expect(textOf(await session.call("connect", {target: name}, signal().call))).toBe("Name expired: ridgeline.simplex expired on 2026-01-01. Your chat: @13.")
+    expect(await listed(session)).toEqual(["@13"])
+    chat.responses.set(`/_connect plan 1 ${name}`, lapsed((ownedContact(14, "Summit", id2) as T.ChatInfo.Direct).contact))
+    expect(textOf(await session.call("connect", {target: name}, signal().call))).toBe(`The chat of ${name} belongs to another session; an admin or owner of that session's group can give it to this session with /give.`)
+  })
+
   it("refuse a connect to the Main group and to a session's group as known chats, and set no owner of them", async () => {
     const chat = new FakeChat()
     const session = await openSession(await hubWith(chat), id1, stored(1, "auth"))

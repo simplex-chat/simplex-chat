@@ -12,6 +12,9 @@ final class NameAlertsTests: XCTestCase {
     private var unrecorded: [String] = []
     private var shownLocalChats: [String] = []
     private var opened = 0
+    private var verifications = 0
+    private var windows: [UIWindow] = []
+    private var sent: [String] = []
 
     @MainActor
     override func setUp() async throws {
@@ -23,6 +26,7 @@ final class NameAlertsTests: XCTestCase {
     @MainActor
     override func tearDown() async throws {
         try await dismissPresented()
+        for window in windows { window.isHidden = true }
         for chat in ChatModel.shared.chats { ChatModel.shared.removeChat(chat.id) }
         ChatModel.shared.chatId = nil
         ChatModel.shared.appOpenUrl = nil
@@ -53,6 +57,20 @@ final class NameAlertsTests: XCTestCase {
         XCTAssertEqual(shownLocalChats, [])
         try await press("Renew")
         try await assertTexts(["Open link?", "https://simplex.domains/#testing", "Cancel", "Open"])
+    }
+
+    @MainActor
+    func testSetOwnNameExpired() async throws {
+        try recorded("names/set-own-expired")
+        _ = try? await apiSetUserDomain("alice.simplex")
+        try await assertTexts(["Your name has expired", "Your name alice.simplex expired on January 1, 2026. Renew it before January 1, 2099.", "Renew", "Ok"])
+    }
+
+    @MainActor
+    func testSetNameExpired() async throws {
+        try recorded("names/set-expired")
+        _ = try? await apiSetUserDomain("alice.simplex")
+        try await assertTexts(["Name expired", "alice.simplex expired on January 1, 2026. Its owner can renew it until January 1, 2099.", "Ok"])
     }
 
     @MainActor
@@ -93,6 +111,17 @@ final class NameAlertsTests: XCTestCase {
         try await press("Open new chat")
         try await assertRequested { $0.hasPrefix("/_prepare contact 1 ") && $0.contains(" domain=alice.simplex ") }
         try await assertTexts(["Error opening chat", "no data", "Ok"])
+    }
+
+    @MainActor
+    func testOnOpenAfterPrepareWithoutCheckingItsJSON() async throws {
+        try recorded("names/plan-known-moved-prepared")
+        connect("@alice.simplex")
+        try await assertTexts(["cath", "@alice.simplex", "Open new chat", "Cancel"])
+        try await press("Open new chat")
+        try await waitFor { self.opened == 1 }
+        XCTAssertNotNil(ChatModel.shared.getChat("@3"))
+        try await assertRequested { $0.hasPrefix("/_get chat @3 ") }
     }
 
     @MainActor
@@ -155,11 +184,41 @@ final class NameAlertsTests: XCTestCase {
     }
 
     @MainActor
+    func testChannelUpdateRequired() async throws {
+        try recorded("names/plan-update-required")
+        connect("team.simplex")
+        try await assertTexts(["team", "This group requires a newer version of the app. Please update the app to join.", "Connect to @team.simplex", "OK"])
+        XCTAssertEqual(shownLocalChats, [])
+        try await press("Connect to @team.simplex")
+        try await assertTexts(["alice", "@team.simplex", "Open new chat", "Cancel"])
+    }
+
+    @MainActor
     func testOwnChannel() async throws {
         try recorded("names/plan-own-channel")
         connect("#team.simplex")
         try await assertTexts(["Your channel", "This is your link for channel team (#team)!", "Open channel", "Cancel"])
         XCTAssertEqual(shownLocalChats, ["#1"])
+    }
+
+    @MainActor
+    func testOwnChannelOffersOtherKind() async throws {
+        try recorded("names/plan-own-channel-other-kind")
+        connect("team.simplex")
+        try await assertTexts(["Your channel", "This is your link for channel team (#team)!", "Open channel", "Connect to @team.simplex", "Cancel"])
+        XCTAssertEqual(shownLocalChats, ["#1"])
+        try await press("Connect to @team.simplex")
+        try await assertTexts(["Connect to yourself?\nThis is your own SimpleX address!", "Use current profile", "Use new incognito profile", "Cancel"])
+    }
+
+    @MainActor
+    func testOwnAddressOffersOtherKind() async throws {
+        try recorded("names/plan-own-address-other-kind")
+        connect("team.simplex")
+        try await assertTexts(["Connect to yourself?\nThis is your own SimpleX address!", "Use current profile", "Use new incognito profile", "Join channel #team", "Cancel"])
+        try await press("Use current profile")
+        try await waitFor { self.opened == 1 }
+        XCTAssertNotNil(ChatModel.shared.getChat(":2"))
     }
 
     @MainActor
@@ -222,6 +281,14 @@ final class NameAlertsTests: XCTestCase {
     }
 
     @MainActor
+    func testContactConnecting() async throws {
+        try recorded("names/plan-connecting-contact")
+        connect("CONTACT_LINK")
+        try await assertTexts(["alice", "Open chat", "Cancel"])
+        XCTAssertEqual(shownLocalChats, ["@2"])
+    }
+
+    @MainActor
     func testGroupLinkAsAddress() async throws {
         try recorded("connect/group-link-as-address")
         connect("GROUP_LINK")
@@ -265,14 +332,75 @@ final class NameAlertsTests: XCTestCase {
     func testChatListSearchShowsChatsOfName() async throws {
         try recorded("names/search-team")
         let state = SearchState()
-        let window = UIWindow(windowScene: try XCTUnwrap(UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first))
-        window.rootViewController = UIHostingController(rootView: SearchHost(state: state))
-        window.isHidden = false
-        defer { window.isHidden = true }
+        try show(SearchHost(state: state))
         try await Task.sleep(nanoseconds: 100_000_000)
         state.searchText = "team.simplex"
         try await waitFor { state.filtered == ["@2", "#1"] }
         XCTAssertEqual(Set(ChatModel.shared.chats.map(\.id)), ["@2", "#1"])
+        XCTAssertNotNil(accessibilityElement("Connect to team.simplex"))
+    }
+
+    @MainActor
+    func testChatListRowShowsChatsOfName() async throws {
+        try recorded("names/search-moved-known")
+        let respond = sendSimpleXCmdStr
+        sendSimpleXCmdStr = { [unowned self] cmd, ctrl, retryNum in
+            self.locked { self.sent.append(cmd) }
+            return respond(cmd, ctrl, retryNum)
+        }
+        let state = SearchState()
+        try show(SearchHost(state: state))
+        try await Task.sleep(nanoseconds: 100_000_000)
+        state.searchText = "@alice.simplex"
+        try await waitFor { self.locked { self.sent.contains("/_connect plan 1 @alice.simplex resolve=never") } }
+        try await Task.sleep(nanoseconds: 100_000_000)
+        try await tap("Connect to @alice.simplex")
+        try await waitFor { state.filtered == ["@3"] }
+    }
+
+    @MainActor
+    func testConnectByNameRowShowsLocalChats() async throws {
+        try recorded("names/plan-known")
+        let state = NameRowState()
+        try show(NameRowHost(state: state) { [unowned self] chats in self.shownLocalChats += chats.map(\.id) })
+        try await tap("Connect to @alice.simplex")
+        try await assertTexts(["alice", "@alice.simplex", "Open chat", "Cancel"])
+        XCTAssertEqual(shownLocalChats, ["@2"])
+        XCTAssertEqual(state.searchText, "alice")
+        XCTAssertEqual(state.candidate, "@alice.simplex")
+        try await press("Open chat")
+        try await assertRequested { $0.hasPrefix("/_get chat @2 ") }
+        XCTAssertEqual(state.searchText, "")
+        XCTAssertNil(state.candidate)
+    }
+
+    @MainActor
+    func testVerifiedNameIsCopied() async throws {
+        UIPasteboard.general.string = ""
+        try show(simplexName(.verified))
+        try await tap("@alice.simplex")
+        try await waitFor { UIPasteboard.general.string == "@alice.simplex" }
+        XCTAssertEqual(verifications, 0)
+    }
+
+    @MainActor
+    func testFailedNameIsVerifiedAgain() async throws {
+        try show(simplexName(.failed))
+        try await tap("@alice.simplex")
+        try await waitFor { self.verifications == 1 }
+    }
+
+    @MainActor
+    func testMovedNameIsVerifiedAgain() async throws {
+        try show(simplexName(.moved))
+        try await tap("@alice.simplex")
+        try await waitFor { self.verifications == 1 }
+    }
+
+    @MainActor
+    func testCrossColorOfNameState() {
+        XCTAssertEqual(SimplexNameView.crossColor(.failed, secondary: .gray), .red)
+        XCTAssertEqual(SimplexNameView.crossColor(.moved, secondary: .gray), .gray)
     }
 
     private func recorded(_ fixture: String) throws {
@@ -281,7 +409,7 @@ final class NameAlertsTests: XCTestCase {
         let markdown = responses["markdown"] ?? [:]
         let uris = responses["uris"] ?? [:]
         sendSimpleXCmdStr = { [unowned self] cmd, _, _ in
-            guard let response = commands[cmd] else { self.unrecordedRequest(cmd); return nil }
+            guard let response = commands[commandKey(cmd)] else { self.unrecordedRequest(cmd); return nil }
             return try? JSONSerialization.data(withJSONObject: singleFieldJSON(response))
         }
         parseSimpleXMarkdownText = { [unowned self] str in
@@ -311,6 +439,54 @@ final class NameAlertsTests: XCTestCase {
     @MainActor
     private func connect(_ name: String) {
         planAndConnect(name, theme: CurrentColors.toAppTheme(), dismiss: false, showLocalChats: { [unowned self] chats in self.shownLocalChats += chats.map(\.id) }, onOpen: { [unowned self] in self.opened += 1 })
+    }
+
+    @MainActor
+    private func simplexName(_ verified: DomainVerification?) -> some View {
+        SimplexNameView(simplexName: "@alice.simplex", verified: verified) { [unowned self] in
+            await MainActor.run { self.verifications += 1 }
+            return nil
+        }
+        .environmentObject(CurrentColors.toAppTheme())
+    }
+
+    @MainActor
+    private func show<Content: View>(_ view: Content) throws {
+        try enableAccessibilityAutomation()
+        let window = UIWindow(windowScene: try XCTUnwrap(UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first))
+        window.rootViewController = UIHostingController(rootView: view)
+        window.isHidden = false
+        windows.append(window)
+    }
+
+    private func enableAccessibilityAutomation() throws {
+        let environment = ProcessInfo.processInfo.environment
+        let root = try XCTUnwrap(environment["SIMULATOR_ROOT"] ?? environment["IPHONE_SIMULATOR_ROOT"])
+        let library = try XCTUnwrap(dlopen(root + "/usr/lib/libAccessibility.dylib", RTLD_NOW))
+        let setAutomationEnabled = try XCTUnwrap(dlsym(library, "_AXSSetAutomationEnabled"))
+        unsafeBitCast(setAutomationEnabled, to: (@convention(c) (Int32) -> Void).self)(1)
+    }
+
+    @MainActor
+    private func tap(_ label: String, file: StaticString = #filePath, line: UInt = #line) async throws {
+        try? await waitFor { self.accessibilityElement(label) != nil }
+        let element = try XCTUnwrap(accessibilityElement(label), "\(accessibilityNodes().compactMap(\.accessibilityLabel))", file: file, line: line)
+        XCTAssertTrue(element.accessibilityActivate(), file: file, line: line)
+    }
+
+    private func accessibilityElement(_ label: String) -> NSObject? {
+        accessibilityNodes().first { $0.isAccessibilityElement && $0.accessibilityLabel?.contains(label) == true }
+    }
+
+    private func accessibilityNodes() -> [NSObject] {
+        windows.flatMap { accessibilityNodes($0) }
+    }
+
+    private func accessibilityNodes(_ node: NSObject) -> [NSObject] {
+        let count = node.accessibilityElementCount()
+        let elements = (node.accessibilityElements as? [NSObject]) ?? (count == NSNotFound ? [] : (0..<count).compactMap { node.accessibilityElement(at: $0) as? NSObject })
+        let subviews: [NSObject] = (node as? UIView)?.subviews ?? []
+        return [node] + (elements + subviews).flatMap { accessibilityNodes($0) }
     }
 
     @MainActor
@@ -417,6 +593,29 @@ private struct SearchHost: View {
     }
 }
 
+private final class NameRowState: ObservableObject {
+    @Published var searchText = "alice"
+    @Published var candidate: String? = "@alice.simplex"
+}
+
+private struct NameRowHost: View {
+    @ObservedObject var state: NameRowState
+    var showLocalChats: ([ChatInfo]) -> Void
+    @FocusState private var focused: Bool
+
+    var body: some View {
+        ConnectByNameRow(
+            name: "@alice.simplex",
+            searchText: $state.searchText,
+            connectNameCandidate: $state.candidate,
+            searchFocussed: $focused,
+            dismiss: false,
+            showLocalChats: showLocalChats
+        )
+        .environmentObject(CurrentColors.toAppTheme())
+    }
+}
+
 func fixtureJSON(_ fixture: String) throws -> Any {
     let url = URL(fileURLWithPath: #filePath).deletingLastPathComponent().appendingPathComponent("../../../tests/fixtures/api/\(fixture).json")
     return try JSONSerialization.jsonObject(with: Data(contentsOf: url))
@@ -433,6 +632,10 @@ func singleFieldJSON(_ value: Any) -> Any {
     } else {
         return value
     }
+}
+
+private func commandKey(_ cmd: String) -> String {
+    cmd.hasPrefix("/_prepare ") ? String(cmd.prefix { $0 != "{" }).trimmingCharacters(in: .whitespaces) : cmd
 }
 
 private let msgContentTypes: Set<String> = ["text", "link", "image", "video", "voice", "file", "report", "chat"]

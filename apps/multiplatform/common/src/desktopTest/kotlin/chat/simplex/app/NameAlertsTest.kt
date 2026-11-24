@@ -2,6 +2,7 @@ package chat.simplex.app
 
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.ClipboardManager
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.semantics.SemanticsProperties
@@ -22,6 +23,7 @@ import chat.simplex.common.platform.chatParseUri
 import chat.simplex.common.platform.chatSendCmdRetry
 import chat.simplex.common.simplexWindowState
 import chat.simplex.common.views.chat.SimplexNameView
+import chat.simplex.common.views.chat.simplexNameCrossColor
 import chat.simplex.common.views.chatlist.ChatListView
 import chat.simplex.common.views.chatlist.ConnectByNameRow
 import chat.simplex.common.views.helpers.AlertManager
@@ -91,6 +93,18 @@ class NameAlertsTest {
     assertLocalChats()
     press("Renew")
     assertTexts("Open web link?", "https://simplex.domains/#testing", "Cancel", "Open")
+  }
+
+  @Test
+  fun setOwnNameExpired() = recordedAlerts("names/set-own-expired") {
+    setName("alice.simplex")
+    assertTexts("Your name has expired", "Your name alice.simplex expired on January 1, 2026. Renew it before January 1, 2099.", "Renew", "OK")
+  }
+
+  @Test
+  fun setNameExpired() = recordedAlerts("names/set-expired") {
+    setName("alice.simplex")
+    assertTexts("Name expired", "alice.simplex expired on January 1, 2026. Its owner can renew it until January 1, 2099.", "OK")
   }
 
   @Test
@@ -190,6 +204,15 @@ class NameAlertsTest {
   }
 
   @Test
+  fun channelUpdateRequired() = recordedAlerts("names/plan-update-required") {
+    connect("team.simplex")
+    assertTexts("team", "This group requires a newer version of the app. Please update the app to join.", "Connect to @team.simplex", "OK")
+    assertLocalChats()
+    press("Connect to @team.simplex")
+    assertTexts("alice", "@team.simplex", "Open new chat", "Cancel")
+  }
+
+  @Test
   fun ownChannel() = recordedAlerts("names/plan-own-channel") {
     connect("#team.simplex")
     assertTexts("Your channel", "This is your link for channel team (#team)!", "Open channel", "Cancel")
@@ -244,6 +267,13 @@ class NameAlertsTest {
     connect("CONTACT_LINK")
     assertTexts("alice", "Open chat", "Cancel")
     assertLocalChats("@3")
+  }
+
+  @Test
+  fun contactConnecting() = recordedAlerts("names/plan-connecting-contact") {
+    connect("CONTACT_LINK")
+    assertTexts("alice", "Open chat", "Cancel")
+    assertLocalChats("@2")
   }
 
   @Test
@@ -311,6 +341,25 @@ class NameAlertsTest {
   }
 
   @Test
+  fun chatListRowShowsChatsOfName() = recorded("names/search-moved-known") {
+    val sent = mutableListOf<String>()
+    val respond = chatSendCmdRetry
+    chatSendCmdRetry = { ctrl, cmd, retryNum -> synchronized(sent) { sent += cmd }; respond(ctrl, cmd, retryNum) }
+    ChatModel.chatRunning.value = true
+    setContent {
+      CompositionLocalProvider(LocalAppBarHandler provides rememberAppBarHandler()) {
+        ChatListView(ChatModel, MutableStateFlow(AnimatedViewState.GONE), {}, false)
+      }
+    }
+    onNode(hasSetTextAction()).performTextInput("@alice.simplex")
+    waitUntil(timeoutMillis = 5_000) { synchronized(sent) { "/_connect plan 1 @alice.simplex resolve=never" in sent } }
+    waitForIdle()
+    press("Connect to @alice.simplex")
+    waitUntil(timeoutMillis = 5_000) { onAllNodesWithText("cath").fetchSemanticsNodes().isNotEmpty() }
+    assertEquals(listOf("@3"), chatIds())
+  }
+
+  @Test
   fun rejectedContactInChatList() = recorded("connect/request-rejected") {
     ChatModel.chatRunning.value = true
     runBlocking {
@@ -354,6 +403,12 @@ class NameAlertsTest {
   fun movedNameIsVerifiedAgain() = simplexName(DomainVerification.Moved) { verifications, _ ->
     onNodeWithText(SIMPLEX_NAME).performClick()
     waitUntil(timeoutMillis = 5_000) { verifications() == 1 }
+  }
+
+  @Test
+  fun crossColorOfNameState() {
+    assertEquals(Color.Red, simplexNameCrossColor(DomainVerification.Failed, Color.Gray))
+    assertEquals(Color.Gray, simplexNameCrossColor(DomainVerification.Moved, Color.Gray))
   }
 
   @Test
@@ -408,6 +463,11 @@ class NameAlertsTest {
 
   private fun ComposeUiTest.connect(name: String, cleanup: (() -> Unit)? = null) {
     runBlocking { planAndConnect(rhId = null, name, close = null, cleanup = cleanup, showLocalChats = { chats -> shownLocalChats += chats.map { it.id } }) }
+    waitForIdle()
+  }
+
+  private fun ComposeUiTest.setName(name: String) {
+    runBlocking { runCatching { ChatController.apiSetUserDomain(rh = null, name) } }
     waitForIdle()
   }
 
