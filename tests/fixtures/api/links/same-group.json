@@ -329,6 +329,82 @@
         }
       }
     },
+    "/_get item link #1 24": {
+      "result": {
+        "msgLink": "ITEM_LINK",
+        "type": "chatItemLink",
+        "user": {
+          "activeOrder": 1,
+          "activeUser": true,
+          "agentUserId": "1",
+          "autoAcceptGroupInvitations": false,
+          "autoAcceptMemberContacts": false,
+          "clientService": false,
+          "fullPreferences": {
+            "calls": {
+              "allow": "yes"
+            },
+            "commands": [],
+            "files": {
+              "allow": "always"
+            },
+            "fullDelete": {
+              "allow": "no"
+            },
+            "reactions": {
+              "allow": "yes"
+            },
+            "sessions": {
+              "allow": "no"
+            },
+            "timedMessages": {
+              "allow": "yes"
+            },
+            "voice": {
+              "allow": "yes"
+            }
+          },
+          "localDisplayName": "cath",
+          "profile": {
+            "displayName": "cath",
+            "fullName": "",
+            "localAlias": "",
+            "preferences": {
+              "calls": {
+                "allow": "yes"
+              },
+              "commands": [],
+              "files": {
+                "allow": "always"
+              },
+              "fullDelete": {
+                "allow": "no"
+              },
+              "reactions": {
+                "allow": "yes"
+              },
+              "sessions": {
+                "allow": "no"
+              },
+              "timedMessages": {
+                "allow": "yes"
+              },
+              "voice": {
+                "allow": "yes"
+              }
+            },
+            "profileId": 1,
+            "shortDescr": "Catherine"
+          },
+          "sendRcptsContacts": true,
+          "sendRcptsSmallGroups": true,
+          "showNtfs": true,
+          "userChatRelay": false,
+          "userContactId": 1,
+          "userId": 1
+        }
+      }
+    },
     "/_msg link plan 1 GROUP_MSG_LINK chat=#1": {
       "result": {
         "msgLinkPlan": {
@@ -843,6 +919,16 @@
           "userContactId": 1,
           "userId": 1
         }
+      }
+    },
+    "/_msg link plan 2 GROUP_MSG_LINK": {
+      "error": {
+        "errorType": {
+          "activeUserId": 1,
+          "commandUserId": 2,
+          "type": "differentActiveUser"
+        },
+        "type": "error"
       }
     }
   },
