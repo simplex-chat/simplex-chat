@@ -136,10 +136,6 @@ restore_ci_state() {
 trap restore_ci_state EXIT
 rm -rf "$derived/result.xcresult"
 
-# iOS 26 callservicesd drops CXProvider unless the process has an
-# application-identifier entitlement. Ad-hoc signatures cannot carry that
-# entitlement (AMFI -424). These six tests call real CallKit and are not
-# part of the ad-hoc run. They stay in the tree.
 set +e
 xcodebuild test-without-building \
   -project apps/ios/SimpleX.xcodeproj \
@@ -150,12 +146,6 @@ xcodebuild test-without-building \
   -onlyUsePackageVersionsFromResolvedFile \
   -skipPackagePluginValidation \
   -skipMacroValidation \
-  -skip-testing:"SimpleX Snapshots/SnapshotTests/testVoIPPushForAnswerBeforeChatStartsSuspendsChat" \
-  -skip-testing:"SimpleX Snapshots/SnapshotTests/testVoIPPushForAnswerWithoutInvitationSuspendsChat" \
-  -skip-testing:"SimpleX Snapshots/SnapshotTests/testVoIPPushForDeclinedCallSuspendsChat" \
-  -skip-testing:"SimpleX Snapshots/SnapshotTests/testVoIPPushForExpiredCallKeepsChatSuspended" \
-  -skip-testing:"SimpleX Snapshots/SnapshotTests/testVoIPPushForRefusedCallSuspendsChat" \
-  -skip-testing:"SimpleX Snapshots/SnapshotTests/testVoIPPushKeepsChatActiveWhenAppOpens" \
   -IDEPackageSupportDisableManifestSandbox=1 \
   -IDEPackageSupportDisablePluginExecutionSandbox=1 \
   CODE_SIGNING_ALLOWED=NO >>"$log" 2>&1 &
