@@ -7,7 +7,7 @@ import {Action, Actions, HostTexts, Mode, NewAction, PlanAction, QuestionAction,
 import {Agent, Agents, Card, Workflow, agentsLine, applyJournal, cardText, journalPath, workflowAgentTranscript} from "./agents"
 import {AccountReader, TranscriptReader, TranscriptState, lastUsage} from "./claude-code"
 import {Config} from "./config"
-import {Control, canSend, controlCommands, controlDataOf, createGroup, isControlEvent, isGroupMessage, parseCommand, rightsText, safeName, sessionApproverRoles} from "./control"
+import {Control, canSend, controlCommands, controlDataOf, createGroup, fullDelete, isControlEvent, isGroupMessage, parseCommand, rightsText, safeName, sessionApproverRoles} from "./control"
 import {openCore} from "./core"
 import {SessionFile, hubFolder, readSessionFile, sessionFolder, writeSessionFile} from "./files"
 import {chatErrorOf, errorText, log, logError, oneLine} from "./log"
@@ -1446,7 +1446,7 @@ export class Hub implements SessionGroups {
     const group = await createGroup(this.chat, this.profile.userId, {
       displayName,
       fullName: "",
-      groupPreferences: {history: {enable: T.GroupFeatureEnabled.On}, directMessages: {enable: T.GroupFeatureEnabled.Off}, commands: controlCommands},
+      groupPreferences: {history: {enable: T.GroupFeatureEnabled.On}, directMessages: {enable: T.GroupFeatureEnabled.Off}, fullDelete, commands: controlCommands},
       chatLayout: T.ChatLayout.Terminal,
     }, {[sessionKey]: {session: number}})
     const user = await userContact(this.chat, this.profile.userId)
@@ -1466,6 +1466,7 @@ export class Hub implements SessionGroups {
         else sessions.find(({control}) => isGroupMessage(ci, control.groupId))?.onMessage(ci)
       }
     }
+    if (event.type === "groupUpdated") sessions.find(({control}) => control.groupId === event.toGroup.groupId)?.control.onGroupUpdated()
     if (event.type === "chatItemReaction") sessions.find(({control}) => isGroupMessage(event.reaction, control.groupId))?.onReaction(event)
     if (event.type === "chatItemUpdated") sessions.find(({control}) => isGroupMessage(event.chatItem, control.groupId))?.onUpdate(event.chatItem)
     const {file} = event.type === "rcvFileComplete" ? event.chatItem.chatItem : {}
