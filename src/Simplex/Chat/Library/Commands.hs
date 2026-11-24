@@ -3269,7 +3269,6 @@ processChatCommand cxt nm = \case
           else leaveGroupSendMsg user g
       (gInfo', scopeInfo) <- mkLocalGroupChatScope gInfo
       ci <- saveSndChatItem user (CDGroupSnd gInfo' scopeInfo) msg (CISndGroupEvent SGEUserLeft)
-      toView $ CEvtNewChatItems user [AChatItem SCTGroup SMDSnd (GroupChat gInfo' scopeInfo) ci]
       -- TODO delete direct connections that were unused
       deleteGroupLinkIfExists user gInfo'
       let relayRejected = useRelays' gInfo && isRelay membership
@@ -3278,7 +3277,9 @@ processChatCommand cxt nm = \case
         updateGroupMemberStatus db userId membership GSMemLeft
         when relayRejected $ updateRelayOwnStatus_ db gInfo RSRejected
       let relayOwnStatus' = if relayRejected then Just RSRejected else relayOwnStatus gInfo
-      pure $ CRLeftMemberUser user gInfo' {membership = membership {memberStatus = GSMemLeft}, relayOwnStatus = relayOwnStatus'}
+          gInfo'' = gInfo' {membership = membership {memberStatus = GSMemLeft}, relayOwnStatus = relayOwnStatus'}
+      toView $ CEvtNewChatItems user [AChatItem SCTGroup SMDSnd (GroupChat gInfo'' scopeInfo) ci]
+      pure $ CRLeftMemberUser user gInfo''
     where
       -- Relay leaving channel: create delivery job for cursor-based sending and async connection cleanup.
       leaveChannelRelay g@(GIK gInfo _) = do
