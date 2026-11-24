@@ -696,7 +696,7 @@ struct ChatListView: View {
             switch chatTagsModel.activeFilter {
             case let .presetTag(tag): presetTagMatchesChat(tag, chat.chatInfo, chat.chatStats)
             case let .userTag(tag): chat.chatInfo.chatTags?.contains(tag.chatTagId) == true
-            case .unread: chat.unreadTag
+            case .unread: chat.unreadTag != .read
             case .none: true
             }
         }
@@ -1057,7 +1057,9 @@ struct TagsView: View {
                             .foregroundColor(color)
                     }
                     ZStack {
-                        let badge = Text(verbatim: (chatTagsModel.unreadTags[tag.chatTagId] ?? 0) > 0 ? " ●" : "").font(.footnote)
+                        let priority = (chatTagsModel.priorityTags[tag.chatTagId] ?? 0) > 0
+                        let unread = (chatTagsModel.unreadTags[tag.chatTagId] ?? 0) > 0
+                        let badge = (priority ? Text(verbatim: " ") + Text(Image(systemName: "bell.fill")) : Text(verbatim: unread ? " ●" : "")).font(.footnote)
                         (Text(tag.chatTagText).fontWeight(.semibold) + badge).foregroundColor(.clear)
                         Text(tag.chatTagText).fontWeight(current ? .semibold : .regular).foregroundColor(color) + badge.foregroundColor(theme.colors.primary)
                     }
@@ -1282,5 +1284,21 @@ struct ChatListView_Previews: PreviewProvider {
             ChatListView(activeUserPickerSheet: $userPickerSheet)
                 .environmentObject(ChatModel())
         }
+    }
+}
+
+struct TagsView_Previews: PreviewProvider {
+    static var previews: some View {
+        let tagsModel = ChatTagsModel()
+        tagsModel.userTags = [
+            ChatTag(chatTagId: 1, chatTagText: "Ops", chatTagEmoji: nil),
+            ChatTag(chatTagId: 2, chatTagText: "Dev", chatTagEmoji: nil),
+            ChatTag(chatTagId: 4, chatTagText: "Bots", chatTagEmoji: nil)
+        ]
+        tagsModel.unreadTags = [1: 1, 2: 1]
+        tagsModel.priorityTags = [1: 1]
+        return ScrollView([.horizontal], showsIndicators: false) { TagsView(parentSheet: .constant(nil), searchText: .constant("")) }
+            .padding()
+            .environmentObject(tagsModel)
     }
 }

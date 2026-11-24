@@ -40,7 +40,7 @@ import Simplex.Chat.Options.DB
 import Simplex.Chat.Store
 import Simplex.Chat.Store.Profiles
 import Simplex.Chat.Terminal
-import Simplex.Chat.Terminal.Output (WithTerminal (..), newChatTerminal)
+import Simplex.Chat.Terminal.Output (ChatTerminal, WithTerminal (..), newChatTerminal)
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Shared (GroupMemberRole (..))
 import Simplex.FileTransfer.Description (kb, mb)
@@ -260,6 +260,7 @@ termSettings =
 
 data TestCC = TestCC
   { chatController :: ChatController,
+    chatTerminal :: ChatTerminal,
     chatAsync :: Async (),
     termQ :: TQueue String,
     printOutput :: Bool,
@@ -406,7 +407,7 @@ startTestChat_ ps@TestParams {tmpPath, printOutput} db cfg_ opts_ dbPrefix user 
   void $ execChatCommand' (SetTempFolder (tmpPath </> dbPrefix)) 0 `runReaderT` cc
   chatAsync <- async $ runSimplexChat cfg opts user cc $ \_u cc' -> runChatTerminal ct cc' opts
   unless maintenance $ atomically $ readTVar (agentAsync cc) >>= \a -> when (isNothing a) retry
-  pure TestCC {chatController = cc, chatAsync, termQ, printOutput, ccParams = ps}
+  pure TestCC {chatController = cc, chatTerminal = ct, chatAsync, termQ, printOutput, ccParams = ps}
 
 stopTestChat :: TestParams -> TestCC -> IO ()
 stopTestChat ps TestCC {chatController = cc@ChatController {smpAgent, chatStore}, chatAsync} = do

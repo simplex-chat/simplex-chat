@@ -264,6 +264,7 @@ CREATE TABLE group_members(
   member_security_code TEXT,
   member_security_code_verified_at TEXT,
   invited_via_group_member_id INTEGER REFERENCES group_members(group_member_id) ON DELETE SET NULL,
+  member_via BLOB,
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -532,7 +533,9 @@ CREATE TABLE chat_items(
   fwd_from_group_link BLOB,
   fwd_from_public_group_id BLOB,
   fwd_from_member_id BLOB,
-  fwd_from_shared_msg_id BLOB
+  fwd_from_shared_msg_id BLOB,
+  item_priority INTEGER NOT NULL DEFAULT 0,
+  item_original_ts TEXT
 ) STRICT;
 CREATE TABLE chat_item_messages(
   chat_item_id INTEGER NOT NULL REFERENCES chat_items ON DELETE CASCADE,
@@ -793,6 +796,8 @@ CREATE TABLE delivery_tasks(
   failed INTEGER DEFAULT 0,
   created_at TEXT NOT NULL DEFAULT(datetime('now')),
   updated_at TEXT NOT NULL DEFAULT(datetime('now'))
+  ,
+  update_notification INTEGER NOT NULL DEFAULT 0
 ) STRICT;
 CREATE TABLE delivery_jobs(
   delivery_job_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -1178,10 +1183,6 @@ CREATE INDEX idx_group_snd_item_statuses_chat_item_id ON group_snd_item_statuses
 CREATE INDEX idx_group_snd_item_statuses_group_member_id ON group_snd_item_statuses(
   group_member_id
 );
-CREATE INDEX idx_chat_items_user_id_item_status ON chat_items(
-  user_id,
-  item_status
-);
 CREATE INDEX idx_contacts_contact_group_member_id ON contacts(
   contact_group_member_id
 );
@@ -1288,12 +1289,6 @@ CREATE UNIQUE INDEX idx_operator_usage_conditions_conditions_commit ON operator_
   conditions_commit,
   server_operator_id
 );
-CREATE INDEX idx_chat_items_contacts ON chat_items(
-  user_id,
-  contact_id,
-  item_status,
-  created_at
-);
 CREATE INDEX idx_chat_items_groups ON chat_items(
   user_id,
   group_id,
@@ -1335,13 +1330,6 @@ CREATE INDEX idx_chat_items_groups_msg_content_tag_item_ts ON chat_items(
   group_id,
   msg_content_tag,
   item_ts
-);
-CREATE INDEX idx_chat_items_groups_msg_content_tag_deleted ON chat_items(
-  user_id,
-  group_id,
-  msg_content_tag,
-  item_deleted,
-  item_sent
 );
 CREATE INDEX idx_chat_items_groups_history ON chat_items(
   user_id,
@@ -1403,15 +1391,6 @@ CREATE INDEX idx_contact_requests_business_group_id ON contact_requests(
 CREATE INDEX idx_contact_requests_xcontact_id ON contact_requests(
   user_id,
   xcontact_id
-);
-CREATE INDEX idx_chat_items_group_scope_stats_all ON chat_items(
-  user_id,
-  group_id,
-  group_scope_tag,
-  group_scope_group_member_id,
-  item_status,
-  chat_item_id,
-  user_mention
 );
 CREATE INDEX idx_contacts_grp_direct_inv_from_group_id ON contacts(
   grp_direct_inv_from_group_id
@@ -1528,12 +1507,6 @@ CREATE INDEX idx_chat_items_contacts_item_viewed ON chat_items(
   item_viewed,
   created_at
 );
-CREATE INDEX idx_chat_items_groups_item_viewed ON chat_items(
-  user_id,
-  group_id,
-  item_viewed,
-  item_ts
-);
 CREATE INDEX idx_groups_relay_request_group_link
 ON groups(
   user_id,
@@ -1590,6 +1563,49 @@ CREATE INDEX idx_group_members_invited_via_group_member_id ON group_members(
 CREATE INDEX idx_badge_store_receipts_user ON badge_store_receipts(user_id);
 CREATE UNIQUE INDEX idx_badge_purchases_store_receipt ON badge_purchases(
   badge_store_receipt_id
+);
+CREATE INDEX idx_chat_items_contacts_silent ON chat_items(
+  user_id,
+  item_status,
+  contact_id,
+  item_priority
+) WHERE item_priority < 0 AND contact_id IS NOT NULL;
+CREATE INDEX idx_chat_items_groups_priority ON chat_items(
+  user_id,
+  item_status,
+  group_id,
+  group_scope_tag,
+  group_scope_group_member_id,
+  item_priority
+) WHERE item_priority <> 0 AND group_id IS NOT NULL;
+CREATE INDEX idx_chat_items_contacts ON chat_items(
+  user_id,
+  item_status,
+  contact_id,
+  created_at,
+  chat_item_id
+);
+CREATE INDEX idx_chat_items_group_scope_stats_all ON chat_items(
+  user_id,
+  item_status,
+  group_id,
+  group_scope_tag,
+  group_scope_group_member_id,
+  chat_item_id,
+  user_mention
+);
+CREATE INDEX idx_chat_items_groups_msg_content_tag_deleted ON chat_items(
+  user_id,
+  msg_content_tag,
+  item_deleted,
+  group_id,
+  item_sent
+);
+CREATE INDEX idx_chat_items_groups_item_viewed ON chat_items(
+  user_id,
+  group_id,
+  item_viewed,
+  item_ts
 );
 CREATE TRIGGER on_group_members_insert_update_summary
 AFTER INSERT ON group_members

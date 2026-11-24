@@ -125,6 +125,7 @@ chatProfileTests = do
     describe "business address" $ do
       it "create and connect via business address" testBusinessAddress
       it "update profiles with business address" testBusinessUpdateProfiles
+      it "high priority messages of the business" testBusinessHighPriority
   describe "contact address connection plan" $ do
     it "contact address ok to connect; known contact" testPlanAddressOkKnown
     it "own contact address" testPlanAddressOwn
@@ -214,6 +215,7 @@ shortLinkTests = do
   it "prepare contact via address and connect incognito with retry" testShortLinkAddressConnectRetryIncognito
   it "prepare business chat using address short link data and connect" testShortLinkAddressPrepareBusiness
   it "connect to business address with request message" testBusinessAddressRequestMessage
+  it "business welcome message is updated after 78 hours" testBusinessWelcomeUpdatedLate
   it "prepare group using group short link data and connect" testShortLinkPrepareGroup
   it "prepare group using group short link data and connect, host rejects" testShortLinkPrepareGroupReject
   it "connect to group with welcome message via short link" testGroupShortLinkWelcome
@@ -2108,6 +2110,26 @@ testBusinessAddress = testChat3 businessProfile aliceProfile {fullName = "Alice 
       (alice <# "#bob bob_1> hey there")
       (biz <# "#bob bob_1> hey there")
 
+testBusinessHighPriority :: HasCallStack => TestParams -> IO ()
+testBusinessHighPriority = testChat2 businessProfile aliceProfile $
+  \biz alice -> do
+    biz ##> "/ad"
+    cLink <- getContactLink biz True
+    biz ##> "/auto_accept on business"
+    biz <## "auto_accept on, business"
+    alice ##> ("/c " <> cLink)
+    alice <## "connection request sent!"
+    biz <## "#alice (Alice): accepting business address request..."
+    alice <## "#biz: joining the group..."
+    biz <## "#alice: alice_1 joined the group"
+    alice <## "#biz: you joined the group"
+    biz ##> "/_send #1 json [{\"msgContent\": {\"type\": \"text\", \"text\": \"hi\"}, \"priority\": 1}]"
+    biz <# "#alice !! hi"
+    alice <# "#biz biz_1!!> hi"
+    alice ##> "/_send #1 json [{\"msgContent\": {\"type\": \"text\", \"text\": \"hello\"}, \"priority\": 1}]"
+    alice <# "#biz hello"
+    biz <# "#alice alice_1> hello"
+
 checkBusinessPlanWhileJoining :: HasCallStack => TestCC -> String -> IO ()
 checkBusinessPlanWhileJoining cc link = do
   let cmd = "/_connect plan 1 " <> link
@@ -3985,6 +4007,7 @@ testGroupChatLayout =
     alice <## "chat layout: classic"
     alice <## "group preferences:"
     mapM_ (\((_, feature), _, _) -> alice <## feature) $ groupFeatures_ 0 False
+    alice <## "Message priority: on for admins"
     bob ##> ("/_connect plan 1 " <> shortLink)
     bob <## "group link: ok to connect directly"
     groupSLinkData <- getTermLine bob
@@ -4904,6 +4927,32 @@ testBusinessAddressRequestMessage = testChat3 businessProfile aliceProfile {full
             bob <## "#biz: biz_1 added alice (Alice @ Biz) to the group (connecting...)"
             bob <## "#biz: new member alice is connected"
         ]
+
+testBusinessWelcomeUpdatedLate :: HasCallStack => TestParams -> IO ()
+testBusinessWelcomeUpdatedLate = testChat2 businessProfile bobProfile $ \biz bob -> do
+  biz ##> "/ad"
+  (shortLink, fullLink) <- getContactLinks biz True
+  biz ##> "/auto_accept on business text Welcome!"
+  biz <## "auto_accept on, business"
+  biz <## "auto reply:"
+  biz <## "Welcome!"
+  bob ##> ("/_connect plan 1 " <> shortLink)
+  bob <## "business address: ok to connect"
+  contactSLinkData <- getTermLine bob
+  bob ##> ("/_prepare contact 1 " <> fullLink <> " " <> shortLink <> " " <> contactSLinkData)
+  bob <## "#biz: group is prepared"
+  welcomeId <- lastItemId bob
+  setItemAge bob welcomeId (80 * 3600)
+  biz ##> "/auto_accept on business text Welcome again!"
+  biz <## "auto_accept on, business"
+  biz <## "auto reply:"
+  biz <## "Welcome again!"
+  bob ##> "/_connect group #1"
+  bob <## "#biz: connection started"
+  biz <## "#bob (Bob): accepting business address request..."
+  bob <### ["#biz: joining the group...", "#biz: you joined the group", WithTime "#biz biz_1> [edited] Welcome again!"]
+  biz <## "#bob: bob_1 joined the group"
+  getItemText bob welcomeId `shouldReturn` "Welcome again!"
 
 testShortLinkPrepareGroup :: HasCallStack => TestParams -> IO ()
 testShortLinkPrepareGroup = testChat3 aliceProfile bobProfile cathProfile test

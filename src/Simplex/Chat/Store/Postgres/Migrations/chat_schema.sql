@@ -517,7 +517,9 @@ CREATE TABLE test_chat_schema.chat_items (
     fwd_from_group_link bytea,
     fwd_from_public_group_id bytea,
     fwd_from_member_id bytea,
-    fwd_from_shared_msg_id bytea
+    fwd_from_shared_msg_id bytea,
+    item_priority smallint DEFAULT 0 NOT NULL,
+    item_original_ts timestamp with time zone
 );
 
 
@@ -862,7 +864,8 @@ CREATE TABLE test_chat_schema.delivery_tasks (
     task_err_reason text,
     failed smallint DEFAULT 0,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
-    updated_at timestamp with time zone DEFAULT now() NOT NULL
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    update_notification smallint DEFAULT 0 NOT NULL
 );
 
 
@@ -1061,7 +1064,8 @@ CREATE TABLE test_chat_schema.group_members (
     roster_served_version bigint,
     member_security_code text,
     member_security_code_verified_at timestamp with time zone,
-    invited_via_group_member_id bigint
+    invited_via_group_member_id bigint,
+    member_via bytea
 );
 
 
@@ -2361,7 +2365,7 @@ CREATE INDEX idx_chat_items_contact_id ON test_chat_schema.chat_items USING btre
 
 
 
-CREATE INDEX idx_chat_items_contacts ON test_chat_schema.chat_items USING btree (user_id, contact_id, item_status, created_at);
+CREATE INDEX idx_chat_items_contacts ON test_chat_schema.chat_items USING btree (user_id, item_status, contact_id, created_at, chat_item_id);
 
 
 
@@ -2378,6 +2382,10 @@ CREATE INDEX idx_chat_items_contacts_item_viewed ON test_chat_schema.chat_items 
 
 
 CREATE INDEX idx_chat_items_contacts_msg_content_tag_created_at ON test_chat_schema.chat_items USING btree (user_id, contact_id, msg_content_tag, created_at);
+
+
+
+CREATE INDEX idx_chat_items_contacts_silent ON test_chat_schema.chat_items USING btree (user_id, item_status, contact_id, item_priority) WHERE ((item_priority < 0) AND (contact_id IS NOT NULL));
 
 
 
@@ -2425,7 +2433,7 @@ CREATE INDEX idx_chat_items_group_scope_item_ts ON test_chat_schema.chat_items U
 
 
 
-CREATE INDEX idx_chat_items_group_scope_stats_all ON test_chat_schema.chat_items USING btree (user_id, group_id, group_scope_tag, group_scope_group_member_id, item_status, chat_item_id, user_mention);
+CREATE INDEX idx_chat_items_group_scope_stats_all ON test_chat_schema.chat_items USING btree (user_id, item_status, group_id, group_scope_tag, group_scope_group_member_id, chat_item_id, user_mention);
 
 
 
@@ -2453,11 +2461,15 @@ CREATE INDEX idx_chat_items_groups_item_viewed ON test_chat_schema.chat_items US
 
 
 
-CREATE INDEX idx_chat_items_groups_msg_content_tag_deleted ON test_chat_schema.chat_items USING btree (user_id, group_id, msg_content_tag, item_deleted, item_sent);
+CREATE INDEX idx_chat_items_groups_msg_content_tag_deleted ON test_chat_schema.chat_items USING btree (user_id, msg_content_tag, item_deleted, group_id, item_sent);
 
 
 
 CREATE INDEX idx_chat_items_groups_msg_content_tag_item_ts ON test_chat_schema.chat_items USING btree (user_id, group_id, msg_content_tag, item_ts);
+
+
+
+CREATE INDEX idx_chat_items_groups_priority ON test_chat_schema.chat_items USING btree (user_id, item_status, group_id, group_scope_tag, group_scope_group_member_id, item_priority) WHERE ((item_priority <> 0) AND (group_id IS NOT NULL));
 
 
 
@@ -2494,10 +2506,6 @@ CREATE INDEX idx_chat_items_notes_created_at ON test_chat_schema.chat_items USIN
 
 
 CREATE INDEX idx_chat_items_timed_delete_at ON test_chat_schema.chat_items USING btree (user_id, timed_delete_at);
-
-
-
-CREATE INDEX idx_chat_items_user_id_item_status ON test_chat_schema.chat_items USING btree (user_id, item_status);
 
 
 

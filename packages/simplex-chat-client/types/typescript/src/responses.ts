@@ -76,6 +76,7 @@ export type ChatResponse =
   | CR.UserProfileNoChange
   | CR.UserServers
   | CR.UsersList
+  | CR.ViaMemberAdded
   | CR.ApiChats
 
 export namespace CR {
@@ -152,6 +153,7 @@ export namespace CR {
     | "userProfileNoChange"
     | "userServers"
     | "usersList"
+    | "viaMemberAdded"
     | "apiChats"
 
   interface Interface {
@@ -633,6 +635,13 @@ export namespace CR {
   export interface UsersList extends Interface {
     type: "usersList"
     users: T.UserInfo[]
+  }
+
+  export interface ViaMemberAdded extends Interface {
+    type: "viaMemberAdded"
+    user: T.User
+    groupInfo: T.GroupInfo
+    member: T.GroupMember
   }
 
   export interface ApiChats extends Interface {

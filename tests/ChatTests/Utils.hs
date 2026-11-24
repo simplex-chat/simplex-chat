@@ -25,10 +25,12 @@ import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Char (isDigit)
 import Data.Foldable (toList)
+import Data.Int (Int64)
 import Data.List (foldl', isPrefixOf, isSuffixOf)
 import Data.Maybe (fromMaybe)
 import Data.String
 import qualified Data.Text as T
+import Data.Time.Clock (NominalDiffTime, addUTCTime, getCurrentTime)
 import Simplex.Chat.Badges (BadgeProof (..), BadgeStatus, LocalBadge (..), ProofPresHeader (..))
 import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), ChatError, ChatEvent (CEvtChatItemUpdated, CEvtNameMoved, CEvtNewChatItems, CEvtSndFileCompleteXFTP, CEvtSndFileError), storeCxt)
 import Simplex.Chat.Library.Commands (maxProfileImageSize)
@@ -1056,13 +1058,34 @@ writeFixture fixture = testGenerate ("tests/fixtures/" <> fixture <> ".json") . 
 #endif
 
 stableJSON :: J.Value -> J.Value
-stableJSON = \case
-  J.Object o -> J.Object $ JM.mapWithKey stableField o
-  J.Array a -> J.Array $ fmap stableJSON a
-  v -> v
+stableJSON fixtureJSON = stable fixtureJSON
   where
+    hostIds = viaMemberIds fixtureJSON
+    stable = \case
+      J.Object o -> J.Object $ JM.mapWithKey stableField o
+      J.Array a -> J.Array $ fmap stable a
+      v -> v
     stableField k v
-      | k `elem` ["createdAt", "updatedAt", "chatTs", "userMemberProfileSentAt", "itemTs", "deletedTs", "fileExpires"] = J.String "1970-01-01T00:00:00Z"
-      | k `elem` ["agentConnId", "xContactId", "connFullLink", "connShortLink", "contactLink", "groupLink", "viaGroupLinkUri", "simplexUri", "memberId", "memberPubKey", "publicGroupId", "businessId", "customerId", "itemSharedMsgId", "fileDescrText", "agentSndFileId", "privateSndFileDescr", "errorMessage"] = J.String $ JK.toText k
+      | k == "itemTs", J.String ts <- v = J.String $ "1970-01-01T00:00:00" <> secondFraction ts
+      | k `elem` ["createdAt", "updatedAt", "chatTs", "userMemberProfileSentAt", "deletedTs", "fileExpires", "sentAt"] = J.String "1970-01-01T00:00:00Z"
+      | k == "memberId", v `elem` hostIds = J.String "memberVia"
+      | k `elem` ["agentConnId", "xContactId", "connFullLink", "connShortLink", "contactLink", "groupLink", "viaGroupLinkUri", "simplexUri", "memberId", "memberVia", "memberPubKey", "publicGroupId", "businessId", "customerId", "itemSharedMsgId", "sharedMsgId", "fileDescrText", "agentSndFileId", "privateSndFileDescr", "errorMessage"] = J.String $ JK.toText k
       | k == "groupRelays", J.Array a <- v = J.Array $ J.String "groupRelay" <$ a
-      | otherwise = stableJSON v
+      | otherwise = stable v
+    secondFraction ts = case T.breakOn "." ts of
+      (_, "") -> "Z"
+      (_, fraction) -> fraction
+    viaMemberIds = \case
+      J.Object o -> toList (JM.lookup "memberVia" o) <> foldMap viaMemberIds o
+      J.Array a -> foldMap viaMemberIds a
+      _ -> []
+
+getItemText :: TestCC -> String -> IO String
+getItemText cc i = do
+  [Only t] <- withCCTransaction cc $ \db -> DB.query db "SELECT item_text FROM chat_items WHERE chat_item_id = ?" (Only (read i :: Int64))
+  pure t
+
+setItemAge :: TestCC -> String -> NominalDiffTime -> IO ()
+setItemAge cc ciId age = do
+  ts <- addUTCTime (negate age) <$> getCurrentTime
+  withCCTransaction cc $ \db -> DB.execute db "UPDATE chat_items SET item_ts = ?, created_at = ? WHERE chat_item_id = ?" (ts, ts, read ciId :: Int64)

@@ -101,7 +101,8 @@ Defined at [`ChatModel.kt line 86`](../common/src/commonMain/kotlin/chat/simplex
 | [`userTags`](../common/src/commonMain/kotlin/chat/simplex/common/model/ChatModel.kt#L118) | `MutableState<List<ChatTag>>` | 118 | User-defined chat tags |
 | [`activeChatTagFilter`](../common/src/commonMain/kotlin/chat/simplex/common/model/ChatModel.kt#L119) | `MutableState<ActiveFilter?>` | 119 | Currently active filter in chat list |
 | [`presetTags`](../common/src/commonMain/kotlin/chat/simplex/common/model/ChatModel.kt#L120) | `SnapshotStateMap<PresetTagKind, Int>` | 120 | Counts for preset tag categories (favorites, groups, contacts, etc.) |
-| [`unreadTags`](../common/src/commonMain/kotlin/chat/simplex/common/model/ChatModel.kt#L121) | `SnapshotStateMap<Long, Int>` | 121 | Unread counts per user-defined tag |
+| [`unreadTags`](../common/src/commonMain/kotlin/chat/simplex/common/model/ChatModel.kt#L121) | `SnapshotStateMap<Long, Int>` | 121 | Counts of chats with `unreadTag == Unread` or `HighPriority` per user-defined tag |
+| `priorityTags` | `SnapshotStateMap<Long, Int>` | `ChatModel.priorityTags` | Counts of chats with `unreadTag == HighPriority` per user-defined tag |
 
 ### Terminal and Developer
 
@@ -205,7 +206,7 @@ The secondary context is used for:
 - `addChat(chat)` -- adds chat at index 0, triggers pop animation
 - `reorderChat(chat, toIndex)` -- reorders chat list (e.g., when a chat receives a new message)
 - `updateChatInfo(rhId, cInfo)` -- updates chat metadata while preserving connection stats
-- `applyChatItemUpdate(rhId, cInfo, cItem, prevItem)` -- applies the `chatItemUpdated` event. The item is replaced if it is loaded and the preview if it is the last item; it is not inserted into the loaded items. The counters change by the difference between `prevItem` and `cItem` (unread: `isRcvNew`; mentions: `isRcvNew` and `userMention`). An update of a locally deleted message creates it again, and the core sends it in `newChatItems`.
+- `applyChatItemUpdate(rhId, cInfo, cItem, prevItem)` -- applies the `chatItemUpdated` event. The item is replaced if it is loaded and the preview if it is the last item; it is not inserted into the loaded items. An update as new (`ChatItem.isAsNew`: `itemTs` differs from `prevItem`) sets the preview by the rule of `addChatItem` and pops the chat; the item is removed from the loaded items and inserted last, before the live message. The counters change by the difference between `prevItem` and `cItem` (unread: `isRcvNew`; mentions: `isRcvNew` and `userMention`). An update of a locally deleted message creates it again, and the core sends it in `newChatItems`.
 - `hasChat(rhId, id)` / `getChat(id)` -- lookup methods
 
 ### ActiveChatState
@@ -271,18 +272,24 @@ Defined at [`ChatModel.kt line 1370`](../common/src/commonMain/kotlin/chat/simpl
 data class ChatStats(
     val unreadCount: Int = 0,
     val unreadMentions: Int = 0,
+    val unreadSilent: Int = 0,
+    val unreadHighPriority: Int = 0,
     val reportsCount: Int = 0,
     val minUnreadItemId: Long = 0,
     val unreadChat: Boolean = false
 )
 ```
 
+`unreadSilent` counts unread silent items. The user's unread counter leaves them out in mode "All" (`ChatInfo.countedForUser`, for an item and for counts); in mode "Mentions" a silent mention counts as a mention.
+
+`unreadHighPriority` counts unread high priority items (`CIMeta.highPriority`, priority 1), groups only; they are also counted in `unreadMentions`. `decreaseCounterInPrimaryContext` reduces `unreadMentions` and `unreadHighPriority` by the flags of the item. `applyChatItemUpdate` changes `unreadSilent` and `unreadHighPriority` by the difference between the previous and the new item, like `unreadCount` and `unreadMentions`, and the user's counter by the difference in the items counted for the user (silent items are not counted in mode "All"). In another profile, the profile total changes by the difference in the items counted with `ntfsEnabled`, without silent items in mode "All".
+
 ### Derived Properties
 
 | Property | Line | Purpose |
 |---|---|---|
 | `id` | 1349 | Chat ID derived from `chatInfo.id` |
-| `unreadTag` | 1343 | Whether chat counts as "unread" for tag filtering (considers notification settings) |
+| `unreadTag` | 1343 | `HighPriority`, `Unread` or `Read` for tag filtering (considers notification settings): `HighPriority` when high priority items are unread in mode "All" or "Mentions"; `Read` when only silent items are unread in mode "All", so the chat is left out of list labels and the unread filter |
 | `supportUnreadCount` | 1351 | Unread count in support/moderation context |
 | `nextSendGrpInv` | 1337 | Whether next message should send group invitation |
 

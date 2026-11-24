@@ -757,11 +757,13 @@ class CIMeta(TypedDict):
     itemTimed: NotRequired["CITimed"]
     itemLive: NotRequired[bool]
     userMention: bool
+    priority: NotRequired[int]  # int
     hasLink: bool
     deletable: bool
     editable: bool
     forwardedByMember: NotRequired[int]  # int64
     showGroupAsSender: bool
+    sentAsMember: NotRequired["GroupMember"]
     msgVerified: NotRequired["MsgVerified"]
     createdAt: str  # ISO-8601 timestamp
     updatedAt: str  # ISO-8601 timestamp
@@ -1404,6 +1406,8 @@ class ChatSettings(TypedDict):
 class ChatStats(TypedDict):
     unreadCount: int  # int
     unreadMentions: int  # int
+    unreadSilent: int  # int
+    unreadHighPriority: int  # int
     reportsCount: int  # int
     minUnreadItemId: int  # int64
     unreadChat: bool
@@ -1492,6 +1496,7 @@ class ComposedMessage(TypedDict):
     quotedItemId: NotRequired[int]  # int64
     msgContent: "MsgContent"
     mentions: dict[str, int]  # str : int64
+    priority: NotRequired[int]  # int
 
 class ConditionsAcceptance_accepted(TypedDict):
     type: Literal["accepted"]
@@ -1791,6 +1796,11 @@ class E2EInfo(TypedDict):
     public: NotRequired[bool]
     pqEnabled: NotRequired[bool]
 
+class EditsGroupPreference(TypedDict):
+    enable: "GroupFeatureEnabled"
+    role: NotRequired["GroupMemberRole"]
+    duration: NotRequired[int]  # int
+
 class ErrorType_BLOCK(TypedDict):
     type: Literal["BLOCK"]
 
@@ -2063,6 +2073,8 @@ class FullGroupPreferences(TypedDict):
     sessions: "RoleGroupPreference"
     comments: "CommentsGroupPreference"
     signMessages: "GroupPreference"
+    msgPriority: "RoleGroupPreference"
+    edits: "EditsGroupPreference"
     commands: list["ChatBotCommand"]
 
 class FullPreferences(TypedDict):
@@ -2106,7 +2118,7 @@ class GroupDirectInvitation(TypedDict):
     fromGroupMemberConnId_: NotRequired[int]  # int64
     groupDirectInvStartedConnection: bool
 
-GroupFeature = Literal["timedMessages", "directMessages", "fullDelete", "reactions", "voice", "files", "simplexLinks", "reports", "history", "support", "sessions", "comments", "signMessages"]
+GroupFeature = Literal["timedMessages", "directMessages", "fullDelete", "reactions", "voice", "files", "simplexLinks", "reports", "history", "support", "sessions", "comments", "signMessages", "msgPriority", "edits"]
 
 GroupFeatureEnabled = Literal["on", "off"]
 
@@ -2204,6 +2216,7 @@ class GroupMember(TypedDict):
     blockedByAdmin: bool
     invitedBy: "InvitedBy"
     invitedByGroupMemberId: NotRequired[int]  # int64
+    memberVia: NotRequired[str]
     localDisplayName: str
     memberProfile: "LocalProfile"
     memberContactId: NotRequired[int]  # int64
@@ -2258,6 +2271,8 @@ class GroupPreferences(TypedDict):
     sessions: NotRequired["RoleGroupPreference"]
     comments: NotRequired["CommentsGroupPreference"]
     signMessages: NotRequired["GroupPreference"]
+    msgPriority: NotRequired["RoleGroupPreference"]
+    edits: NotRequired["EditsGroupPreference"]
     commands: NotRequired[list["ChatBotCommand"]]
 
 class GroupProfile(TypedDict):
@@ -4066,6 +4081,7 @@ class UIThemeEntityOverrides(TypedDict):
 class UpdatedMessage(TypedDict):
     msgContent: "MsgContent"
     mentions: dict[str, int]  # str : int64
+    priority: NotRequired[int]  # int
 
 class User(TypedDict):
     userId: int  # int64

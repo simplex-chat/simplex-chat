@@ -195,8 +195,9 @@ keyRef         = %s"M"                        ; member key reference
 sigBytes       = 64*64 OCTET                  ; Ed25519 signature
 
 grpMsgForward  = fwdSender brokerTs
-fwdSender      = memberFwd / channelFwd
+fwdSender      = memberFwd / memberViaFwd / channelFwd
 memberFwd      = %s"M" memberId memberName    ; attributed to specific member
+memberViaFwd   = %s"V" memberId memberName viaMemberId ; attributed to member via another member, chat version 23
 channelFwd     = %s"C"                        ; attributed to channel as sender
 brokerTs       = 8*8 OCTET                    ; UTC system time
 ```

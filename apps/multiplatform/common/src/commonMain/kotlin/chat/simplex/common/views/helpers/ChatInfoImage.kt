@@ -150,8 +150,10 @@ fun NameWithBadge(
   fontWeight: FontWeight? = null,
   overflow: TextOverflow = TextOverflow.Clip,
   maxLines: Int = Int.MAX_VALUE,
-  style: TextStyle = LocalTextStyle.current
+  style: TextStyle = LocalTextStyle.current,
+  via: String? = null
 ) {
+  val nameSize = if (fontSize.isSpecified) fontSize else style.fontSize
   Row(modifier) {
     Text(
       name,
@@ -164,7 +166,19 @@ fun NameWithBadge(
       maxLines = maxLines,
       style = style
     )
-    NameBadge(badge, if (fontSize.isSpecified) fontSize else style.fontSize)
+    NameBadge(badge, nameSize)
+    if (via != null) {
+      Text(
+        " " + String.format(stringResource(MR.strings.member_via), via),
+        Modifier.alignByBaseline(),
+        color = color,
+        fontSize = nameSize * 0.84f,
+        fontStyle = FontStyle.Italic,
+        fontWeight = FontWeight.Normal,
+        maxLines = 1,
+        style = style
+      )
+    }
   }
 }
 

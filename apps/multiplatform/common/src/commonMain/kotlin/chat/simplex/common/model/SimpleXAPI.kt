@@ -3103,7 +3103,7 @@ object ChatController {
               }
               chatModel.secondaryChatsContext.value?.addChatItem(rhId, cInfo, cItem)
             }
-          } else if (cItem.isRcvNew && cInfo.ntfsEnabled(cItem)) {
+          } else if (cInfo.ntfsEnabled(cItem) && cInfo.countedForUser(cItem)) {
             withContext(Dispatchers.Main) {
               chatModel.chatsContext.increaseUnreadCounter(rhId, r.user)
             }
@@ -3149,7 +3149,7 @@ object ChatController {
       is CR.ChatItemsDeleted -> {
         if (!active(r.user)) {
           r.chatItemDeletions.forEach { (deletedChatItem, toChatItem) ->
-            if (toChatItem == null && deletedChatItem.chatItem.isRcvNew && deletedChatItem.chatInfo.ntfsEnabled(deletedChatItem.chatItem)) {
+            if (toChatItem == null && deletedChatItem.chatInfo.ntfsEnabled(deletedChatItem.chatItem) && deletedChatItem.chatInfo.countedForUser(deletedChatItem.chatItem)) {
               withContext(Dispatchers.Main) {
                 chatModel.chatsContext.decreaseUnreadCounter(rhId, r.user)
               }
@@ -3848,13 +3848,15 @@ object ChatController {
     val cInfo = update.chatInfo
     val cItem = update.chatItem
     val prevItem = update.prevChatItem
+    val notify = cItem.meta.highPriority && !prevItem.meta.highPriority || cItem.isAsNew(prevItem)
     if (!activeUser(rh, user)) {
-      val unreadChange = unreadCountChange(prevItem, cItem) { it.isRcvNew && cInfo.ntfsEnabled(it) }
+      val unreadChange = unreadCountChange(prevItem, cItem) { cInfo.ntfsEnabled(it) && cInfo.countedForUser(it) }
       if (unreadChange > 0) {
         withContext(Dispatchers.Main) { chatModel.chatsContext.increaseUnreadCounter(rh, user) }
       } else if (unreadChange < 0) {
         withContext(Dispatchers.Main) { chatModel.chatsContext.decreaseUnreadCounter(rh, user) }
       }
+      if (notify) ntfManager.notifyMessageReceived(rh, user, cInfo, cItem)
     } else {
       val createdChat = withContext(Dispatchers.Main) {
         chatModel.chatsContext.applyChatItemUpdate(rh, cInfo, cItem, prevItem)
@@ -3862,7 +3864,7 @@ object ChatController {
       withContext(Dispatchers.Main) {
         chatModel.secondaryChatsContext.value?.applyChatItemUpdate(rh, cInfo, cItem, prevItem)
       }
-      if (createdChat) ntfManager.notifyMessageReceived(rh, user, cInfo, cItem)
+      if (createdChat || notify) ntfManager.notifyMessageReceived(rh, user, cInfo, cItem)
     }
   }
 
@@ -6504,6 +6506,7 @@ data class FullGroupPreferences(
   val history: GroupPreference,
   val support: GroupPreference,
   val signMessages: GroupPreference,
+  val msgPriority: RoleGroupPreference = RoleGroupPreference(GroupFeatureEnabled.ON, role = GroupMemberRole.Admin),
   val commands: List<ChatBotCommand>,
 ) {
   fun toGroupPreferences(): GroupPreferences =
@@ -6519,6 +6522,7 @@ data class FullGroupPreferences(
       history = history,
       support = support,
       signMessages = signMessages,
+      msgPriority = msgPriority,
       commands = commands,
     )
 
@@ -6553,6 +6557,7 @@ data class GroupPreferences(
   val history: GroupPreference? = null,
   val support: GroupPreference? = null,
   val signMessages: GroupPreference? = null,
+  val msgPriority: RoleGroupPreference? = null,
   val commands: List<ChatBotCommand>? = null
 ) {
   companion object {

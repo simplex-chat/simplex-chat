@@ -500,11 +500,12 @@ struct GroupChatInfoView: View {
             }
     }
 
-    private struct MemberRowView: View {
+    struct MemberRowView: View {
         var chat: Chat
         var groupInfo: GroupInfo
         @ObservedObject var groupMember: GMember
         @Binding var scrollToItemId: ChatItem.ID?
+        @EnvironmentObject var chatModel: ChatModel
         @EnvironmentObject var theme: AppTheme
         var user: Bool = false
         @Binding var alert: GroupChatInfoViewAlert?
@@ -578,6 +579,8 @@ struct GroupChatInfoView: View {
                 return "disabled"
             } else if member.activeConn?.connInactive ?? false {
                 return "inactive"
+            } else if let via = chatModel.memberViaName(member) {
+                return "via \(via)"
             } else {
                 return member.memberStatus.shortText
             }
@@ -1230,5 +1233,37 @@ struct GroupChatInfoView_Previews: PreviewProvider {
             onSearch: {},
             localAlias: ""
         )
+    }
+}
+
+struct GroupChatInfoView_ViaMember_Previews: PreviewProvider {
+    static var previews: some View {
+        let groupInfo = GroupInfo.sampleData
+        let chat = Chat(chatInfo: ChatInfo.sampleData.group, chatItems: [])
+        let claude = member(2, "Claude", .owner, .agent)
+        var reviewer = member(4, "reviewer", .member, .agent)
+        reviewer.memberVia = claude.memberId
+        reviewer.activeConn = nil
+        let m = ChatModel()
+        m.groupMembers = [GMember(claude)]
+        return List {
+            GroupChatInfoView.MemberRowView(chat: chat, groupInfo: groupInfo, groupMember: GMember(groupInfo.membership), scrollToItemId: .constant(nil), user: true, alert: .constant(nil))
+            ForEach([claude, member(3, "bob", .member, nil), reviewer].map(GMember.init)) { mem in
+                GroupChatInfoView.MemberRowView(chat: chat, groupInfo: groupInfo, groupMember: mem, scrollToItemId: .constant(nil), alert: .constant(nil))
+            }
+        }
+        .environmentObject(m)
+    }
+
+    private static func member(_ id: Int64, _ name: String, _ role: GroupMemberRole, _ peerType: ChatPeerType?) -> GroupMember {
+        var m = GroupMember.sampleData
+        m.groupMemberId = id
+        m.memberId = name
+        m.memberRole = role
+        m.localDisplayName = name
+        m.memberProfile = LocalProfile(profileId: id, displayName: name, fullName: "", localAlias: "")
+        m.memberProfile.peerType = peerType
+        m.memberContactProfileId = id
+        return m
     }
 }

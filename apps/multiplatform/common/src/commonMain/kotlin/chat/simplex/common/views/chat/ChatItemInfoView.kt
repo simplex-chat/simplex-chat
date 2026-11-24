@@ -5,6 +5,7 @@ import SectionBottomSpacer
 import SectionDividerSpaced
 import SectionItemView
 import SectionView
+import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -276,6 +277,9 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
       val deleteAt = ci.meta.itemTimed?.deleteAt
       if (deleteAt != null) {
         InfoRow(stringResource(MR.strings.info_row_disappears_at), localTimestamp(deleteAt))
+      }
+      if (ci.meta.highPriority) {
+        InfoRow(stringResource(MR.strings.info_row_high_priority), "", icon = painterResource(MR.images.ic_notifications_filled), iconTint = MaterialTheme.colors.primary)
       }
       val file = ci.file
       if (file?.fileExpires != null) {
@@ -593,6 +597,9 @@ fun itemInfoShareText(chatModel: ChatModel, ci: ChatItem, chatItemInfo: ChatItem
   if (deleteAt != null) {
     shareText.add(String.format(generalGetString(MR.strings.share_text_disappears_at), localTimestamp(deleteAt)))
   }
+  if (ci.meta.highPriority) {
+    shareText.add(generalGetString(MR.strings.info_row_high_priority))
+  }
   if (ci.meta.msgVerified?.verified == true) {
     shareText.add(generalGetString(if (sent) MR.strings.info_row_signed else MR.strings.info_row_signed_verified))
   } else if (ci.meta.msgVerified is MsgVerified.SigMissing) {
@@ -643,4 +650,18 @@ fun itemInfoShareText(chatModel: ChatModel, ci: ChatItem, chatItemInfo: ChatItem
     }
   }
   return shareText.joinToString(separator = "\n")
+}
+
+@Preview
+@Composable
+fun PreviewChatItemInfoViewHighPriority() {
+  SimpleXTheme {
+    ChatItemInfoView(
+      chatRh = null,
+      ci = ChatItem.getSampleData(1, CIDirection.GroupRcv(GroupMember.sampleData), previewDate, "hello", status = CIStatus.RcvRead(), priority = 1),
+      ciInfo = ChatItemInfo(itemVersions = listOf(), memberDeliveryStatuses = null, forwardedFromChatItem = null),
+      devTools = false,
+      chatInfo = ChatInfo.Group.sampleData
+    )
+  }
 }

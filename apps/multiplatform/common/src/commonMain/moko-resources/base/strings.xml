@@ -1947,6 +1947,7 @@
   <string name="button_add_friends">Add friends</string>
   <string name="group_info_section_title_num_members">%1$s members</string>
   <string name="group_info_member_you">you: %1$s</string>
+  <string name="member_via">via %1$s</string>
   <string name="button_delete_group">Delete group</string>
   <string name="button_delete_channel">Delete channel</string>
   <string name="button_cancel_and_delete_channel">Cancel and delete channel</string>
@@ -2025,6 +2026,7 @@
   <string name="info_row_deleted_at">Deleted at</string>
   <string name="info_row_moderated_at">Moderated at</string>
   <string name="info_row_disappears_at">Disappears at</string>
+  <string name="info_row_high_priority">High priority</string>
   <string name="info_row_file_expires">File available until</string>
   <string name="info_row_file_expired">File was available until</string>
   <string name="share_text_database_id">Database ID: %d</string>
@@ -2087,6 +2089,7 @@
   <string name="member_info_member_inactive">inactive</string>
   <string name="member_info_section_title_member">Member</string>
   <string name="role_in_group">Role</string>
+  <string name="info_row_via">Via</string>
   <string name="change_role">Change role</string>
   <string name="change_verb">Change</string>
   <string name="switch_verb">Switch</string>

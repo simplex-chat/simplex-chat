@@ -283,6 +283,7 @@ chatTypesDocsData =
     (sti @DomainVerification, STEnum, "DV", [], "", ""),
     (sti @DroppedMsg, STRecord, "", [], "", ""),
     (sti @E2EInfo, STRecord, "", [], "", ""),
+    (sti @EditsGroupPreference, STRecord, "", [], "", ""),
     (sti @ErrorType, STUnion, "", [], "", ""),
     (sti @FeatureAllowed, STEnum, "FA", [], "", ""),
     (sti @FileDescr, STRecord, "", [], "", ""),
@@ -544,6 +545,7 @@ deriving instance Generic CryptoFileArgs
 deriving instance Generic DomainVerification
 deriving instance Generic DroppedMsg
 deriving instance Generic E2EInfo
+deriving instance Generic EditsGroupPreference
 deriving instance Generic ErrorType
 deriving instance Generic FeatureAllowed
 deriving instance Generic FileDescr

@@ -151,7 +151,8 @@ skipComparisonForDownMigrations =
     "20260529_delivery_job_senders",
     -- group_domain is removed
     "20260603_simplex_name",
-    "20261018_autoincrement_ids"
+    "20261018_autoincrement_ids",
+    "20261124_chat_list_indexes"
   ]
 
 getSchema :: FilePath -> FilePath -> IO String

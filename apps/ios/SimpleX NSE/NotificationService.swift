@@ -28,9 +28,10 @@ public enum NSENotificationData {
     case connectionEvent(_ user: User, _ connEntity: ConnectionEntity)
     case contactConnected(_ user: any UserLike, _ contact: Contact)
     case contactRequest(_ user: any UserLike, _ contactRequest: UserContactRequest)
-    case messageReceived(_ user: any UserLike, _ cInfo: ChatInfo, _ cItem: ChatItem)
+    case messageReceived(_ user: any UserLike, _ cInfo: ChatInfo, _ cItem: ChatItem, _ unreadChange: Int)
     case callInvitation(_ invitation: RcvCallInvitation)
     case msgInfo(NtfMsgAckInfo)
+    case silentMsg
     case noNtf
 
     @inline(__always)
@@ -46,9 +47,10 @@ public enum NSENotificationData {
         case let .connectionEvent(user, connEntity): createConnectionEventNtf(user, connEntity, badgeCount)
         case let .contactConnected(user, contact): createContactConnectedNtf(user, contact, badgeCount)
         case let .contactRequest(user, contactRequest): createContactRequestNtf(user, contactRequest, badgeCount)
-        case let .messageReceived(user, cInfo, cItem): createMessageReceivedNtf(user, cInfo, cItem, badgeCount)
+        case let .messageReceived(user, cInfo, cItem, _): createMessageReceivedNtf(user, cInfo, cItem, badgeCount)
         case let .callInvitation(invitation): createCallInvitationNtf(invitation, badgeCount)
         case .msgInfo: UNMutableNotificationContent()
+        case .silentMsg: UNMutableNotificationContent()
         case .noNtf: UNMutableNotificationContent()
         }
     }
@@ -62,6 +64,7 @@ public enum NSENotificationData {
         case .messageReceived: self
         case .callInvitation: self
         case .msgInfo: nil
+        case .silentMsg: nil
         case .noNtf: nil
         }
     }
@@ -265,6 +268,7 @@ struct NotificationEntity {
     var expectedMsg: NtfMsgInfo?
     var allowedGetNextAttempts: Int = 3
     var msgBestAttemptNtf: NSENotificationData
+    var silentMsgReceived: Bool = false
 
     // startedProcessingNewMsgs determines that the entity stared processing events once it processed dropped notifications.
     // It remains true when shouldProcessNtf is set to false, to prevent NSE from being chosen as the next for the entity.
@@ -546,6 +550,9 @@ class NotificationService: UNNotificationServiceExtension {
             if info.msgId == expectedMsg.msgId {
                 // The message for this instance is processed, no more expected, deliver.
                 logger.debug("NotificationService processNtf: msgInfo msgId = \(info.msgId, privacy: .private): expected")
+                if let entity = notificationEntities[id], entity.silentMsgReceived, case .connectionEvent = entity.msgBestAttemptNtf {
+                    notificationEntities[id]?.msgBestAttemptNtf = .noNtf
+                }
                 return true
             } else if let msgTs = info.msgTs_, msgTs > expectedMsg.msgTs {
                 // Otherwise check timestamp - if it is after the currently expected timestamp, preserve .msgInfo marker for the next instance.
@@ -572,10 +579,17 @@ class NotificationService: UNNotificationServiceExtension {
                 logger.debug("NotificationService processNtf: msgInfo msgId = \(info.msgId, privacy: .private): unknown message, let other instance to process it")
                 return true
             }
+        } else if case .silentMsg = ntf {
+            logger.debug("NotificationService processNtf: silent message, get next message without using an attempt")
+            notificationEntities[id]?.allowedGetNextAttempts += 1
+            notificationEntities[id]?.silentMsgReceived = true
+            return false
         } else if ntfEntity.ntfConn.user.showNotifications {
             // This is the notification event for the user with enabled notifications.
             logger.debug("NotificationService processNtf: setting best attempt")
-            if ntf.notificationEvent != nil {
+            if case let .messageReceived(_, _, _, unreadChange) = ntf {
+                setBadgeCount(by: unreadChange)
+            } else if ntf.notificationEvent != nil {
                 setBadgeCount()
             }
             // If previous "best attempt" is not a call, or if the current notification is a call, replace best attempt.
@@ -599,8 +613,8 @@ class NotificationService: UNNotificationServiceExtension {
         deliverBestAttemptNtf()
     }
 
-    func setBadgeCount() {
-        badgeCount = ntfBadgeCountGroupDefault.get() + 1
+    func setBadgeCount(by change: Int = 1) {
+        badgeCount = ntfBadgeCountGroupDefault.get() + change
         ntfBadgeCountGroupDefault.set(badgeCount)
     }
 
@@ -760,7 +774,7 @@ class NotificationService: UNNotificationServiceExtension {
         var userId: Int64?
         for ntf in ntfs {
             switch ntf {
-            case let .messageReceived(user, chat, _):
+            case let .messageReceived(user, chat, _, _):
                 if seenChatIds.isEmpty { userId = user.userId }
                 if !seenChatIds.contains(chat.id) {
                     seenChatIds.insert(chat.id)
@@ -1031,16 +1045,26 @@ func receivedMsgNtf(_ res: NSEChatEvent) async -> (String, NSENotificationData)?
             if let file = cItem.autoReceiveFile() {
                 cItem = autoReceiveFile(file) ?? cItem
             }
-            let ntf: NSENotificationData = (cInfo.ntfsEnabled(chatItem: cItem) && cItem.showNotification) ? .messageReceived(user, cInfo, cItem) : .noNtf
-            let chatIdOrMemberId = if case let .group(groupInfo, _) = cInfo, let memberId = cItem.meta.forwardedByMember ?? cItem.chatDir.groupMemberId {
-                groupMemberEntityId(groupInfo.groupId, memberId)
+            let ntf: NSENotificationData = if cItem.meta.silent {
+                .silentMsg
+            } else if cInfo.ntfsEnabled(chatItem: cItem) && cItem.showNotification {
+                .messageReceived(user, cInfo, cItem, 1)
             } else {
-                chatItem.chatInfo.id
+                .noNtf
             }
-            return (chatIdOrMemberId, ntf)
+            return (itemNtfEntityId(cInfo, cItem), ntf)
         } else {
             return nil
         }
+    case let .chatItemUpdated(user, update):
+        let cInfo = update.chatInfo
+        let cItem = update.chatItem
+        let ntf: NSENotificationData = if update.showNotification {
+            .messageReceived(user, cInfo, cItem, update.userUnreadChange)
+        } else {
+            .noNtf
+        }
+        return (itemNtfEntityId(cInfo, cItem), ntf)
     case let .duplicateGroupMessage(_, member):
         return (member.id, .noNtf)
     case let .rcvFileSndCancelled(_, aChatItem, _):
@@ -1062,6 +1086,14 @@ func receivedMsgNtf(_ res: NSEChatEvent) async -> (String, NSENotificationData)?
     case .chatSuspended:
         chatSuspended()
         return nil
+    }
+}
+
+private func itemNtfEntityId(_ cInfo: ChatInfo, _ cItem: ChatItem) -> String {
+    if case let .group(groupInfo, _) = cInfo, let memberId = cItem.meta.forwardedByMember ?? cItem.chatDir.groupMemberId {
+        groupMemberEntityId(groupInfo.groupId, memberId)
+    } else {
+        cInfo.id
     }
 }
 
