@@ -17,6 +17,7 @@ import Control.Concurrent.STM
 import qualified Control.Exception as E
 import Control.Monad
 import Control.Monad.Reader (runReaderT)
+import qualified Crypto.PubKey.DH as DH
 import qualified Data.Aeson as J
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Builder as BB
@@ -33,6 +34,7 @@ import Network.HTTP.Types (found302, hContentEncoding, hContentLength, hContentT
 import Network.Socket
 import Network.Socket.ByteString (recv, sendAll)
 import qualified Network.TLS as TLS
+import qualified Network.TLS.Extra as TE
 import qualified Network.Wai as W
 import qualified Network.Wai.Handler.Warp as W
 import qualified Network.Wai.Handler.WarpTLS as WT
@@ -65,6 +67,8 @@ chatLinkPreviewTests = do
   it "should fail on compressed body and oversized image" testRefusedContent
   it "should fail on certificate of unknown CA" testUnknownCA
   it "should connect over TLS 1.2 to server with P-256 certificate" testTLS12P256
+  it "should connect over TLS 1.2 with ECDHE and RSA key exchange only" testTLS12KeyExchange
+  it "should limit RSA keys of certificate chains" testChainKeys
   it "should send preview with long non-Latin title and description" testLongTextPreview
   it "should use SOCKS proxy with credentials per preview" testSocksIsolate
   it "should use SOCKS proxy with configured credentials" testSocksUsername
@@ -197,9 +201,7 @@ testPublicAddressPolicy :: HasCallStack => TestParams -> IO ()
 testPublicAddressPolicy ps = do
   cfg <- linkPreviewPolicyCfg APPublic
   withLinkPreviewChat ps cfg testOpts $ \LinkServer {requestedPaths} alice -> do
-    previewOf alice (pageUrl ps "/page") >>= \case
-      Left (ChatError (CELinkPreview e)) -> e `shouldSatisfy` ("prohibited address: " `isPrefixOf`)
-      r -> expectationFailure $ "unexpected result: " <> show r
+    previewOf alice (pageUrl ps "/page") >>= (`shouldBeErrorWith` ("prohibited address: " `isPrefixOf`))
     readTVarIO requestedPaths `shouldReturn` []
 
 testPublicAddressPolicySocks :: HasCallStack => TestParams -> IO ()
@@ -262,9 +264,7 @@ testRefusedContent ps = do
 testUnknownCA :: HasCallStack => TestParams -> IO ()
 testUnknownCA ps =
   withLinkPreviewChat ps testCfg {linkPreviewConfig = defaultLinkPreviewConfig {addressPolicy = APPublicAndLoopback}} testOpts $ \_ alice ->
-    previewOf alice (pageUrl ps "/page") >>= \case
-      Left (ChatError (CELinkPreview e)) -> e `shouldSatisfy` ("certificate has unknown CA" `isInfixOf`)
-      r -> expectationFailure $ "unexpected result: " <> show r
+    previewOf alice (pageUrl ps "/page") >>= (`shouldBeErrorWith` ("certificate has unknown CA" `isInfixOf`))
 
 testTLS12P256 :: HasCallStack => TestParams -> IO ()
 testTLS12P256 ps = do
@@ -274,6 +274,30 @@ testTLS12P256 ps = do
       previewOf alice (pageUrl ps "/page") >>= (`shouldSatisfy` isPreview)
   where
     tls12P256 = (WT.tlsSettings "tests/fixtures/tls/link-preview/server-p256.crt" "tests/fixtures/tls/link-preview/server-p256.key") {WT.tlsAllowedVersions = [TLS.TLS12]}
+
+testTLS12KeyExchange :: HasCallStack => TestParams -> IO ()
+testTLS12KeyExchange ps = do
+  cfg <- linkPreviewCfg
+  withNewTestChatCfgOpts ps cfg testOpts "alice" aliceProfile $ \alice -> do
+    forM_ [TE.cipher_ECDHE_RSA_AES256GCM_SHA384, TE.cipher_AES256GCM_SHA384] $ \cipher ->
+      withLinkServerTLS tls12RSA {WT.tlsCiphers = [cipher]} ps $ \_ ->
+        previewOf alice (pageUrl ps "/page") >>= (`shouldSatisfy` isPreview)
+    withLinkServerTLS tls12RSA {WT.tlsCiphers = TE.ciphersuite_dhe_rsa, WT.tlsServerDHEParams = Just serverGroup} ps $ \LinkServer {requestedPaths} -> do
+      previewOf alice (pageUrl ps "/page") >>= (`shouldBeErrorWith` ("expecting server hello, got alert" `isInfixOf`))
+      readTVarIO requestedPaths `shouldReturn` []
+  where
+    tls12RSA = (WT.tlsSettings "tests/fixtures/tls/link-preview/server-rsa.crt" "tests/fixtures/tls/link-preview/server-rsa.key") {WT.tlsAllowedVersions = [TLS.TLS12]}
+    serverGroup = TE.ffdhe2048 {DH.params_g = 5}
+
+testChainKeys :: HasCallStack => TestParams -> IO ()
+testChainKeys ps = do
+  cfg <- linkPreviewCfg
+  withLinkServerTLS intermediateRSA ps $ \LinkServer {requestedPaths} ->
+    withNewTestChatCfgOpts ps cfg testOpts "alice" aliceProfile $ \alice -> do
+      previewOf alice (pageUrl ps "/page") >>= (`shouldBeErrorWith` ("certificate rejected: [InvalidSignature SignatureUnimplemented]" `isInfixOf`))
+      readTVarIO requestedPaths `shouldReturn` []
+  where
+    intermediateRSA = WT.tlsSettingsChain "tests/fixtures/tls/link-preview/server-intermediate.crt" ["tests/fixtures/tls/link-preview/intermediate-rsa.crt"] "tests/fixtures/tls/link-preview/server.key"
 
 testLongTextPreview :: HasCallStack => TestParams -> IO ()
 testLongTextPreview ps = do
@@ -359,6 +383,11 @@ isPreview = \case
 shouldBeError :: HasCallStack => Either ChatError ChatResponse -> String -> Expectation
 shouldBeError r e = case r of
   Left (ChatError (CELinkPreview e')) -> e' `shouldBe` e
+  _ -> expectationFailure $ "unexpected result: " <> show r
+
+shouldBeErrorWith :: HasCallStack => Either ChatError ChatResponse -> (String -> Bool) -> Expectation
+shouldBeErrorWith r p = case r of
+  Left (ChatError (CELinkPreview e)) -> e `shouldSatisfy` p
   _ -> expectationFailure $ "unexpected result: " <> show r
 
 linkRequests :: ServiceName -> [SocksRequest] -> [SocksRequest]
