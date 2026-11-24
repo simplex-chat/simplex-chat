@@ -363,10 +363,12 @@ testWebpAnimation :: IO ()
 testWebpAnimation = do
   lossy <- B.readFile $ webpFixture "lossy.webp"
   lossless <- B.readFile $ webpFixture "lossless-alpha.webp"
+  animated <- B.readFile $ webpFixture "animated.webp"
+  animated `shouldBe` webpAnimation (160, 128) [((0, 0), (128, 128), lossy), ((32, 0), (128, 128), lossy)]
   Right (lossyFrame, _) <- decodeResizable lossy
   Right (losslessFrame, _) <- decodeResizable lossless
   forM_
-    [ (webpAnimation (160, 128) [((0, 0), (128, 128), lossy), ((32, 0), (128, 128), lossy)], placed (160, 128) (0, 0) lossyFrame),
+    [ (animated, placed (160, 128) (0, 0) lossyFrame),
       (webpAnimation (1034, 323) [((34, 16), (1000, 307), lossless), ((0, 0), (128, 128), lossy)], placed (1034, 323) (34, 16) losslessFrame)
     ]
     $ \(webp, expected) -> do

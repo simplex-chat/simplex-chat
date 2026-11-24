@@ -20,4 +20,4 @@
 
 [Haskell dependencies](./HASKELL.md).
 
-The WebP test images in [tests/fixtures/webp](../../tests/fixtures/webp) are made from the repository's own test images [test.jpg](../../tests/fixtures/test.jpg) and [logo-large-rgba.png](../../tests/fixtures/logo-large-rgba.png) by cwebp of libwebp 1.6.0, and are distributed under the licence of this repository.
+The WebP test images in [tests/fixtures/webp](../../tests/fixtures/webp) are made from the repository's own test images [test.jpg](../../tests/fixtures/test.jpg) and [logo-large-rgba.png](../../tests/fixtures/logo-large-rgba.png) by cwebp of libwebp 1.6.0, `animated.webp` with two frames of `lossy.webp`, and are distributed under the licence of this repository.
