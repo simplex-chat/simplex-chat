@@ -1507,12 +1507,6 @@ CREATE INDEX idx_chat_items_contacts_item_viewed ON chat_items(
   item_viewed,
   created_at
 );
-CREATE INDEX idx_chat_items_groups_item_viewed ON chat_items(
-  user_id,
-  group_id,
-  item_viewed,
-  item_ts
-);
 CREATE INDEX idx_groups_relay_request_group_link
 ON groups(
   user_id,
@@ -1606,6 +1600,12 @@ CREATE INDEX idx_chat_items_groups_msg_content_tag_deleted ON chat_items(
   item_deleted,
   group_id,
   item_sent
+);
+CREATE INDEX idx_chat_items_groups_item_viewed ON chat_items(
+  user_id,
+  group_id,
+  item_viewed,
+  item_ts
 );
 CREATE TRIGGER on_group_members_insert_update_summary
 AFTER INSERT ON group_members
