@@ -3665,13 +3665,16 @@ testLinkContentFilter =
       alice #> "@bob visit example.com for info"
       bob <# "alice> visit example.com for info"
 
+      bob #> "@alice donate bc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66505d4u"
+      alice <# "bob> donate bc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66505d4u"
+
       alice #> "@bob hello, no links here"
       bob <# "alice> hello, no links here"
 
       alice ##> "/_get content types @2"
       alice <## "Chat content types: link, text"
-      alice #$> ("/_get chat @2 content=link count=100", chat, [(1, "https://simplex.chat"), (1, "check out https://example.com"), (0, "visit http://test.org"), (1, simplexLink), (0, "[click here](https://link.example.com)"), (1, "visit example.com for info")])
+      alice #$> ("/_get chat @2 content=link count=100", chat, [(1, "https://simplex.chat"), (1, "check out https://example.com"), (0, "visit http://test.org"), (1, simplexLink), (0, "[click here](https://link.example.com)"), (1, "visit example.com for info"), (0, "donate bc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66505d4u")])
 
       bob ##> "/_get content types @2"
       bob <## "Chat content types: link, text"
-      bob #$> ("/_get chat @2 content=link count=100", chat, [(0, "https://simplex.chat"), (0, "check out https://example.com"), (1, "visit http://test.org"), (0, simplexLink), (1, "[click here](https://link.example.com)"), (0, "visit example.com for info")])
+      bob #$> ("/_get chat @2 content=link count=100", chat, [(0, "https://simplex.chat"), (0, "check out https://example.com"), (1, "visit http://test.org"), (0, simplexLink), (1, "[click here](https://link.example.com)"), (0, "visit example.com for info"), (1, "donate bc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66505d4u")])
