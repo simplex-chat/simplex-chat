@@ -467,6 +467,7 @@ markdownP = joinMarkdown <$> A.many' fragmentP
         CLFull _ -> fail "full SimpleX link in hyperlink"
       Left _ -> case paymentRequest l of
         Right p
+          | T.all (/= ':') l -> fail "payment address without scheme in hyperlink"
           | t /= l && hasOtherAddress p t -> fail "other payment address in hyperlink text"
           | otherwise -> pure $ PaymentLink (Just t) p
         Left _ -> case parseUri $ encodeUtf8 l of

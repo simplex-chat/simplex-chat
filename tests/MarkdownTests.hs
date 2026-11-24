@@ -591,6 +591,8 @@ paymentLinks = describe "payment links" do
     ("[" <> btc <> "](bitcoin:" <> btc <> ")") <==> markdown (PaymentLink (Just btc) $ onChain PNBitcoin btc $ "bitcoin:" <> btc) ("[" <> btc <> "](bitcoin:" <> btc <> ")")
     ("[bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4](bitcoin:" <> btc <> ")") <==> "[bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4](" <> pay (onChain PNBitcoin btc $ "bitcoin:" <> btc) ("bitcoin:" <> btc) <> ")"
     ("[Donate!](monero:" <> xmr <> ")") <==> "[Donate!](" <> pay (onChain PNMonero xmr $ "monero:" <> xmr) ("monero:" <> xmr) <> ")"
+    ("[Donate](" <> btc <> ")") <==> "[Donate](" <> pay (onChain PNBitcoin btc $ "bitcoin:" <> btc) btc <> ")"
+    isText $ "<" <> btc <> ">"
     ("<zcash:" <> zecU <> "?amount=0.1>")
       <==> markdown (PaymentLink (Just $ "zcash:" <> zecU <> "?amount=0.1") $ PaymentRequest (PPAddress PNZcash zecU ACVerified) [] (Just "0.1") Nothing Nothing Nothing $ "zcash:" <> zecU <> "?amount=0.1") ("<zcash:" <> zecU <> "?amount=0.1>")
   it "payment links are links" do
