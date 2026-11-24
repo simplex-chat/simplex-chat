@@ -278,7 +278,7 @@ Connection: close
 - Body framing: `Transfer-Encoding: chunked`, `Content-Length`, or until close. The reader of the body stops at the budget, also inside a chunk; a chunk-size line has at most 7 hex digits and 1024 bytes.
 - `Content-Encoding` other than `identity`: a failure.
 - Reads: `T.recvData` with READ_TIMEOUT each; the budget counts body bytes after decoding of chunks.
-- Close: the socket is closed in `bracket`, also on timeout and on the stop condition, without `T.bye`, as its send of `close_notify` blocks without a time limit when the site does not read.
+- Close: the socket is closed in `bracket`, also on timeout and on the stop condition, without `T.bye`, so that each close completes in bounded time and the whole preview, its closes included, is limited by PREVIEW_DEADLINE.
 
 Redirects:
 
@@ -756,7 +756,7 @@ Laws, tested in desktopTest and SimpleX Unit Tests on the recorded markdown:
 |---|---|---|---|
 | Website of the link | see the request time, a fixed UA, the IP address without a proxy or the proxy's exit with one; serve any title and image to the sender | read cookies or other sites' data; learn the recipient | no cookies, `Referer`, `Accept-Language`; per-preview SOCKS credentials |
 | Website, huge or endless page | make the core read bytes | read beyond MAX_HEAD_BYTES, MAX_IMAGE_BYTES or MAX_IMAGE_LINK_BYTES | stop condition; budgets; an image refused by its `Content-Length`; close |
-| Website, slow response or stopped reading | hold a connection | beyond READ_TIMEOUT per read and PREVIEW_DEADLINE | `timeout`; `bracket`; the socket closed without `T.bye` (section 3.7) |
+| Website, slow response | hold a connection | beyond READ_TIMEOUT per read and PREVIEW_DEADLINE, its close included | `timeout`; `bracket`; the socket closed without `T.bye` (section 3.7) |
 | Website, slow answers of its DNS server, without a proxy | delay the name resolution | delay a connection beyond CONNECT_TIMEOUT or the preview beyond PREVIEW_DEADLINE | `getAddrInfo` in a separate thread (section 3.6) |
 | Website, compressed body | send gzip | make the core inflate it | `Accept-Encoding: identity`; other encodings rejected |
 | Website, redirect | send the core to other hosts | to `http` other than an onion host, to prohibited addresses, beyond MAX_REDIRECTS | section 3.7; address check per hop |
