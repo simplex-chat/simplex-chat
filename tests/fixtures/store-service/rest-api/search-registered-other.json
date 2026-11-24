@@ -1,0 +1,16 @@
+{
+  "body": {
+    "found": {
+      "entities": [],
+      "expiresAt": 1830297600,
+      "gracePeriod": 7776000,
+      "owner": "0x014f9c09CcEeDEF1B713110d04D3a07d5B5D9b73",
+      "records": {
+        "type": "other"
+      },
+      "resolver": "0x4826533B4897376654Bb4d4AD88B7faFD0C98528",
+      "type": "registered"
+    }
+  },
+  "status": 200
+}

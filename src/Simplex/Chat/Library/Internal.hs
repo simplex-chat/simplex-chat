@@ -28,6 +28,7 @@ import Control.Monad.IO.Unlift
 import Control.Monad.Reader
 import Crypto.Random (ChaChaDRG)
 import qualified Data.Aeson as J
+import qualified Data.Aeson.Types as JT
 import Data.Bifunctor (first)
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
@@ -543,8 +544,8 @@ deleteFilesLocally files =
   where
     delete :: FilePath -> IO ()
     delete fPath =
-      removeFile fPath `catchAll` \_ ->
-        removePathForcibly fPath `catchAll_` pure ()
+      removeFile fPath `catchOwn'` \_ ->
+        removePathForcibly fPath `catchOwn'` \_ -> pure ()
     -- perform an action only if filesFolder is set (i.e. on mobile devices)
     withFilesFolder :: (FilePath -> CM ()) -> CM ()
     withFilesFolder action = asks filesFolder >>= readTVarIO >>= mapM_ action
@@ -707,8 +708,8 @@ updateCallItemStatus user ct@Contact {contactId} Call {chatItemId} receivedStatu
 
 updateDirectChatItemView :: User -> Contact -> ChatItemId -> ACIContent -> Bool -> Bool -> Maybe CITimed -> Maybe MessageId -> CM ()
 updateDirectChatItemView user ct chatItemId (ACIContent msgDir ciContent) edited live timed_ msgId_ = do
-  ci' <- withStore $ \db -> updateDirectChatItem db user ct chatItemId ciContent edited live timed_ msgId_
-  toView $ CEvtChatItemUpdated user (AChatItem SCTDirect msgDir (DirectChat ct) ci')
+  (ci, ci') <- withStore $ \db -> updateDirectChatItem db user ct chatItemId ciContent edited live timed_ msgId_
+  toView $ CEvtChatItemUpdated user (AChatItemUpdate SCTDirect msgDir (DirectChat ct) ci' ci)
 
 callStatusItemContent :: User -> Contact -> ChatItemId -> WebRTCCallStatus -> CM (Maybe ACIContent)
 callStatusItemContent user Contact {contactId} chatItemId receivedStatus = do
@@ -849,12 +850,11 @@ receiveViaCompleteFD user fileId RcvFileDescr {fileDescrText, fileDescrComplete}
     -- TODO re-enable redirects with relay checks
     when (isJust redirect) $ do
       cxt <- chatStoreCxt
-      aci_ <- withStore $ \db -> do
-        liftIO $ updateFileCancelled db user fileId (CIFSRcvError $ FileErrOther "redirect not allowed")
-        lookupChatItemByFileId db cxt user fileId
-      forM_ aci_ $ \aci -> do
-        cleanupACIFile aci
-        toView $ CEvtChatItemUpdated user aci
+      upd_ <- withStore $ \db ->
+        updateFileChatItem db cxt user fileId $ updateFileCancelled db user fileId (CIFSRcvError $ FileErrOther "redirect not allowed")
+      forM_ upd_ $ \upd -> do
+        cleanupACIFile $ updatedAChatItem upd
+        toView $ CEvtChatItemUpdated user upd
       throwChatError $ CEInvalidFileDescription "redirect not allowed"
     when (rcvSize > maxRcvSize) $ throwChatError $ CEFileRcvChunk "declared file size exceeds the file invitation size"
     if userApprovedRelays
@@ -884,10 +884,10 @@ receiveViaCompleteFD user fileId RcvFileDescr {fileDescrText, fileDescrComplete}
       pure $ all (ipAddressProtected netCfg) srvs
     relaysNotApproved :: [XFTPServer] -> CM ()
     relaysNotApproved unknownSrvs = do
-      aci_ <- resetRcvCIFileStatus user fileId CIFSRcvInvitation
-      forM_ aci_ $ \aci -> do
-        cleanupACIFile aci
-        toView $ CEvtChatItemUpdated user aci
+      upd_ <- resetRcvCIFileStatus user fileId CIFSRcvInvitation
+      forM_ upd_ $ \upd -> do
+        cleanupACIFile $ updatedAChatItem upd
+        toView $ CEvtChatItemUpdated user upd
       throwChatError $ CEFileNotApproved fileId unknownSrvs
 
 cleanupACIFile :: AChatItem -> CM ()
@@ -910,15 +910,16 @@ protoServer' ServerCfg {server} = protoServer server
 getNetworkConfig :: CM' NetworkConfig
 getNetworkConfig = withAgent' $ liftIO . getFastNetworkConfig
 
-resetRcvCIFileStatus :: User -> FileTransferId -> CIFileStatus 'MDRcv -> CM (Maybe AChatItem)
+resetRcvCIFileStatus :: User -> FileTransferId -> CIFileStatus 'MDRcv -> CM (Maybe AChatItemUpdate)
 resetRcvCIFileStatus user fileId ciFileStatus = do
   cxt <- chatStoreCxt
-  withStore $ \db -> do
-    liftIO $ do
-      updateCIFileStatus db user fileId ciFileStatus
-      updateRcvFileStatus db fileId FSNew
-      updateRcvFileAgentId db fileId Nothing
-    lookupChatItemByFileId db cxt user fileId
+  withStore $ \db -> updateFileChatItem db cxt user fileId $ resetRcvFile db user fileId ciFileStatus
+
+resetRcvFile :: DB.Connection -> User -> FileTransferId -> CIFileStatus 'MDRcv -> IO ()
+resetRcvFile db user fileId ciFileStatus = do
+  updateCIFileStatus db user fileId ciFileStatus
+  updateRcvFileStatus db fileId FSNew
+  updateRcvFileAgentId db fileId Nothing
 
 receiveViaURI :: User -> FileDescriptionURI -> CryptoFile -> CM RcvFileTransfer
 receiveViaURI user@User {userId} FileDescriptionURI {description} cf@CryptoFile {cryptoArgs} = do
@@ -1616,10 +1617,15 @@ connectToRelayAsync user gInfo relayLink = do
   relayMember@GroupMember {activeConn} <- withFastStore $ \db -> getCreateRelayForMember db cxt gVar user gInfo relayLink
   case activeConn of
     Just _ -> pure ()
-    Nothing -> do
-      subMode <- chatReadVar subscriptionMode
-      newConnIds <- getAgentConnShortLinkAsync user CFGetRelayDataJoin Nothing relayLink
-      withFastStore' $ \db -> createRelayMemberConnectionAsync db user gInfo relayMember relayLink newConnIds subMode
+    Nothing -> createRelayConnectionAsync user gInfo relayMember relayLink
+
+createRelayConnectionAsync :: User -> GroupInfo -> GroupMember -> ShortLinkContact -> CM ()
+createRelayConnectionAsync user gInfo relayMember relayLink = do
+  subMode <- chatReadVar subscriptionMode
+  newConnIds@(cmdId, connId) <- prepareAgentCreation user CFGetRelayDataJoin False SCMInvitation
+  withFastStore' $ \db -> createRelayMemberConnectionAsync db user gInfo relayMember relayLink newConnIds subMode
+  relayLink' <- restoreShortLink' relayLink
+  void $ withAgent $ \a -> getConnShortLinkAsync a (aUserId user) (aCorrId cmdId) (Just connId) relayLink'
 
 updatePublicGroupData :: User -> GroupInfo -> GroupKeys -> CM GroupInfo
 updatePublicGroupData user gInfo gks
@@ -1721,14 +1727,35 @@ groupLinkData (GIK gInfo@GroupInfo {groupProfile, groupSummary = GroupSummary {p
 restoreShortLink' :: ConnShortLink m -> CM (ConnShortLink m)
 restoreShortLink' l = (`restoreShortLink` l) <$> asks (shortLinkPresetServers . config)
 
-getShortLinkConnReq' :: NetworkRequestMode -> User -> ConnShortLink m -> CM (FixedLinkData m, ConnLinkData m, ConnectionRequestUri m)
+getShortLinkConnReq' :: NetworkRequestMode -> User -> ConnShortLink m -> CM (FixedLinkData m, ConnLinkData m, ConnectionRequestUri m, Maybe ShortLinkData)
 getShortLinkConnReq' nm user l = do
   l' <- restoreShortLink' l
-  withAgent $ \a -> getConnShortLink a nm (aUserId user) l'
+  (fd, cData, cReq) <- withAgent $ \a -> getConnShortLink a nm (aUserId user) l'
+  linkData <- liftIO $ decodeLinkUserData cData
+  case JT.parseMaybe (shortLinkDataP l) (fromMaybe J.Null linkData) of
+    Just sLinkData_ -> pure (fd, cData, cReq, sLinkData_)
+    Nothing -> throwChatError CEInvalidConnReq
 
-getShortLinkConnReq :: NetworkRequestMode -> User -> ConnShortLink m -> CM (FixedLinkData m, ConnLinkData m, ConnectionRequestUri m)
+shortLinkDataP :: ConnShortLink m -> J.Value -> JT.Parser (Maybe ShortLinkData)
+shortLinkDataP l v = case l of
+  CSLInvitation {} -> optionalData $ contact <|> group notChannel
+  CSLContact _ ct _ _ -> case ct of
+    CCTContact -> optionalData $ contact <|> relayAddress
+    CCTGroup -> optionalData $ group notChannel <|> relayLink
+    CCTChannel -> Just <$> group isJust
+    CCTRelay -> optionalData $ relayAddress <|> contact
+  where
+    optionalData :: JT.Parser ShortLinkData -> JT.Parser (Maybe ShortLinkData)
+    optionalData p = if v == J.Null then pure Nothing else Just <$> p
+    contact = SLDContact <$> J.parseJSON v
+    relayLink = SLDRelayLink <$> J.parseJSON v
+    relayAddress = SLDRelayAddress <$> J.parseJSON v
+    group ok = SLDGroup <$> mfilter (\GroupShortLinkData {groupProfile = GroupProfile {publicGroup}} -> ok publicGroup) (J.parseJSON v)
+    notChannel = maybe True (\PublicGroupProfile {groupType} -> groupType /= GTChannel)
+
+getShortLinkConnReq :: NetworkRequestMode -> User -> ConnShortLink m -> CM (FixedLinkData m, ConnLinkData m, ConnectionRequestUri m, Maybe ShortLinkData)
 getShortLinkConnReq nm user l = do
-  r@(_, cData, _) <- getShortLinkConnReq' nm user l
+  r@(_, cData, _, _) <- getShortLinkConnReq' nm user l
   case cData of
     ContactLinkData _ UserContactData {direct, relays}
       | not direct && null relays -> throwChatError CEUnsupportedConnReq
@@ -2155,7 +2182,7 @@ closeFileHandle :: Int64 -> (ChatController -> TVar (Map Int64 Handle)) -> CM' (
 closeFileHandle fileId files = do
   fs <- asks files
   h_ <- atomically . stateTVar' fs $ \m -> (M.lookup fileId m, M.delete fileId m)
-  liftIO $ mapM_ hClose h_ `catchAll_` pure ()
+  liftIO $ mapM_ hClose h_ `catchOwn'` \_ -> pure ()
 
 -- The roster file has no chat item, so chat-item file enumeration misses it; clean it up by group.
 cleanupGroupRosterFile :: User -> GroupInfo -> CM ()
@@ -3102,11 +3129,10 @@ saveRcvChatItem' user cd msg@RcvMessage {chatMsgEvent, msgSigned, forwardedByMem
       let senderBlocked = case cd of
             CDGroupRcv _g _scope m -> memberBlocked m
             _ -> False
-          userReply = not senderBlocked && case cmToQuotedMsg chatMsgEvent of
+          userReply = case cmToQuotedMsg chatMsgEvent of
             Just QuotedMsg {msgRef = MsgRef {memberId = Just mId}} -> sameMemberId mId membership
             _ -> False
-          userMention' = userReply || any (\CIMention {memberId} -> sameMemberId memberId membership) mentions'
-       in pure (mentions', userMention')
+       in pure (mentions', userMentioned membership senderBlocked userReply mentions')
     memberChatStats :: Bool -> Maybe (Int, MemberAttention, Int)
     memberChatStats userMention = case cd of
       CDGroupRcv _g (Just scope) m ->
@@ -3203,12 +3229,11 @@ setAgentConnShortLinkAsync user conn@Connection {connId} userLinkData crClientDa
   cmdId <- withStore' $ \db -> createCommand db user (Just connId) CFSetShortLink
   withAgent $ \a -> setConnShortLinkAsync a (aCorrId cmdId) (aConnId conn) userLinkData crClientData_
 
-getAgentConnShortLinkAsync :: User -> CommandFunction -> Maybe Connection -> ShortLinkContact -> CM (CommandId, ConnId)
-getAgentConnShortLinkAsync user cmdFunc conn_ shortLink = do
+getAgentConnShortLinkAsync :: User -> CommandFunction -> Connection -> ShortLinkContact -> CM ()
+getAgentConnShortLinkAsync user cmdFunc conn@Connection {connId} shortLink = do
   shortLink' <- restoreShortLink' shortLink
-  cmdId <- withStore' $ \db -> createCommand db user (dbConnId <$> conn_) cmdFunc
-  connId <- withAgent $ \a -> getConnShortLinkAsync a (aUserId user) (aCorrId cmdId) (aConnId <$> conn_) shortLink'
-  pure (cmdId, connId)
+  cmdId <- withStore' $ \db -> createCommand db user (Just connId) cmdFunc
+  void $ withAgent $ \a -> getConnShortLinkAsync a (aUserId user) (aCorrId cmdId) (Just $ aConnId conn) shortLink'
 
 agentXFTPDeleteRcvFile :: RcvFileId -> FileTransferId -> CM ()
 agentXFTPDeleteRcvFile aFileId fileId = do

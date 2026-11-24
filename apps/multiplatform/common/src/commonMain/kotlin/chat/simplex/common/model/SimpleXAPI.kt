@@ -1350,7 +1350,7 @@ object ChatController {
   suspend fun apiUpdateChatItem(rh: Long?, type: ChatType, id: Long, scope: GroupChatScope?, itemId: Long, updatedMessage: UpdatedMessage, live: Boolean = false): AChatItem? {
     val r = sendCmd(rh, CC.ApiUpdateChatItem(type, id, scope, itemId, updatedMessage, live))
     when {
-      r is API.Result && r.res is CR.ChatItemUpdated -> return r.res.chatItem
+      r is API.Result && r.res is CR.ChatItemUpdated && r.res.chatItem != null -> return r.res.chatItem
       r is API.Result && r.res is CR.ChatItemNotChanged -> return r.res.chatItem
       r is API.Error && r.err is ChatError.ChatErrorStore && r.err.storeError is StoreError.LargeMsg -> {
         val mc = updatedMessage.msgContent
@@ -3135,7 +3135,7 @@ object ChatController {
           }
         }
       is CR.ChatItemUpdated ->
-        chatItemUpdateNotify(rhId, r.user, r.chatItem)
+        if (r.chatItemUpdate != null) chatItemUpdateNotify(rhId, r.user, r.chatItemUpdate)
       is CR.ChatItemReaction -> {
         if (active(r.user)) {
           withContext(Dispatchers.Main) {
@@ -3844,24 +3844,25 @@ object ChatController {
     }
   }
 
-  private suspend fun chatItemUpdateNotify(rh: Long?, user: UserLike, aChatItem: AChatItem) {
-    val cInfo = aChatItem.chatInfo
-    val cItem = aChatItem.chatItem
-    val notify = { ntfManager.notifyMessageReceived(rh, user, cInfo, cItem) }
+  private suspend fun chatItemUpdateNotify(rh: Long?, user: UserLike, update: AChatItemUpdate) {
+    val cInfo = update.chatInfo
+    val cItem = update.chatItem
+    val prevItem = update.prevChatItem
     if (!activeUser(rh, user)) {
-      notify()
+      val unreadChange = unreadCountChange(prevItem, cItem) { it.isRcvNew && cInfo.ntfsEnabled(it) }
+      if (unreadChange > 0) {
+        withContext(Dispatchers.Main) { chatModel.chatsContext.increaseUnreadCounter(rh, user) }
+      } else if (unreadChange < 0) {
+        withContext(Dispatchers.Main) { chatModel.chatsContext.decreaseUnreadCounter(rh, user) }
+      }
     } else {
       val createdChat = withContext(Dispatchers.Main) {
-        chatModel.chatsContext.upsertChatItem(rh, cInfo, cItem)
+        chatModel.chatsContext.applyChatItemUpdate(rh, cInfo, cItem, prevItem)
       }
       withContext(Dispatchers.Main) {
-        chatModel.secondaryChatsContext.value?.upsertChatItem(rh, cInfo, cItem)
+        chatModel.secondaryChatsContext.value?.applyChatItemUpdate(rh, cInfo, cItem, prevItem)
       }
-      if (createdChat) {
-        notify()
-      } else if (cItem.content is CIContent.RcvCall && cItem.content.status == CICallStatus.Missed) {
-        notify()
-      }
+      if (createdChat) ntfManager.notifyMessageReceived(rh, user, cInfo, cItem)
     }
   }
 
@@ -6928,7 +6929,7 @@ sealed class CR {
   @Serializable @SerialName("newChatItems") class NewChatItems(val user: UserRef, val chatItems: List<AChatItem>): CR()
   @Serializable @SerialName("chatMsgContent") class ChatMsgContent(val user: UserRef, val msgContent: MsgContent): CR()
   @Serializable @SerialName("chatItemsStatusesUpdated") class ChatItemsStatusesUpdated(val user: UserRef, val chatItems: List<AChatItem>): CR()
-  @Serializable @SerialName("chatItemUpdated") class ChatItemUpdated(val user: UserRef, val chatItem: AChatItem): CR()
+  @Serializable @SerialName("chatItemUpdated") class ChatItemUpdated(val user: UserRef, val chatItem: AChatItem? = null, val chatItemUpdate: AChatItemUpdate? = null): CR()
   @Serializable @SerialName("chatItemNotChanged") class ChatItemNotChanged(val user: UserRef, val chatItem: AChatItem): CR()
   @Serializable @SerialName("chatItemReaction") class ChatItemReaction(val user: UserRef, val added: Boolean, val reaction: ACIReaction): CR()
   @Serializable @SerialName("reactionMembers") class ReactionMembers(val user: UserRef, val memberReactions: List<MemberReaction>): CR()
@@ -7332,7 +7333,7 @@ sealed class CR {
     is NewChatItems -> withUser(user, chatItems.joinToString("\n") { json.encodeToString(it) })
     is ChatMsgContent -> withUser(user, msgContent.toString())
     is ChatItemsStatusesUpdated -> withUser(user, chatItems.joinToString("\n") { json.encodeToString(it) })
-    is ChatItemUpdated -> withUser(user, json.encodeToString(chatItem))
+    is ChatItemUpdated -> withUser(user, "chatItem: ${json.encodeToString(chatItem)}\nchatItemUpdate: ${json.encodeToString(chatItemUpdate)}")
     is ChatItemNotChanged -> withUser(user, json.encodeToString(chatItem))
     is ChatItemReaction -> withUser(user, "added: $added\n${json.encodeToString(reaction)}")
     is ReactionMembers -> withUser(user, "memberReactions: ${json.encodeToString(memberReactions)}")
@@ -7533,36 +7534,36 @@ sealed class BadgeRedeemError {
   @Serializable @SerialName("serviceNotConfigured") object ServiceNotConfigured : BadgeRedeemError()
   @Serializable @SerialName("badgeActive") object BadgeActive : BadgeRedeemError()
   @Serializable @SerialName("storePurchaseOpen") object StorePurchaseOpen : BadgeRedeemError()
-  @Serializable @SerialName("serviceError") class ServiceError(val serviceError: BadgeServiceErrorCode) : BadgeRedeemError()
+  @Serializable @SerialName("serviceError") class ServiceError(val serviceError: StoreServiceErrorCode) : BadgeRedeemError()
   @Serializable @SerialName("invalidResponse") class InvalidResponse(val message: String) : BadgeRedeemError()
   @Serializable @SerialName("unknownKeyIndex") object UnknownKeyIndex : BadgeRedeemError()
   @Serializable @SerialName("credentialNotVerified") object CredentialNotVerified : BadgeRedeemError()
 }
 
 // the service is deployed ahead of clients, so a code this version does not know keeps its tag
-@Serializable(with = BadgeServiceErrorCodeSerializer::class)
-sealed class BadgeServiceErrorCode {
-  object BadRequest: BadgeServiceErrorCode()
-  object UnsupportedVersion: BadgeServiceErrorCode()
-  object UnknownPurchaseKey: BadgeServiceErrorCode()
-  object UnknownOfferId: BadgeServiceErrorCode()
-  object OfferDisabled: BadgeServiceErrorCode()
-  object OfferMismatch: BadgeServiceErrorCode()
-  object ProductUnavailable: BadgeServiceErrorCode()
-  object PaymentNotEntitled: BadgeServiceErrorCode()
-  object PaymentPending: BadgeServiceErrorCode()
-  object ProviderUnavailable: BadgeServiceErrorCode()
-  object ProviderNotConfigured: BadgeServiceErrorCode()
-  object RateLimited: BadgeServiceErrorCode()
-  object CodeInvalid: BadgeServiceErrorCode()
-  object CodeUsed: BadgeServiceErrorCode()
-  object CodeExpired: BadgeServiceErrorCode()
-  object ReceiptInvalid: BadgeServiceErrorCode()
-  object ReceiptUsed: BadgeServiceErrorCode()
-  object TestPurchase: BadgeServiceErrorCode()
-  object TransferLimited: BadgeServiceErrorCode()
-  object Internal: BadgeServiceErrorCode()
-  data class Unknown(val code: String): BadgeServiceErrorCode()
+@Serializable(with = StoreServiceErrorCodeSerializer::class)
+sealed class StoreServiceErrorCode {
+  object BadRequest: StoreServiceErrorCode()
+  object UnsupportedVersion: StoreServiceErrorCode()
+  object UnknownPurchaseKey: StoreServiceErrorCode()
+  object UnknownOfferId: StoreServiceErrorCode()
+  object OfferDisabled: StoreServiceErrorCode()
+  object OfferMismatch: StoreServiceErrorCode()
+  object ProductUnavailable: StoreServiceErrorCode()
+  object PaymentNotEntitled: StoreServiceErrorCode()
+  object PaymentPending: StoreServiceErrorCode()
+  object ProviderUnavailable: StoreServiceErrorCode()
+  object ProviderNotConfigured: StoreServiceErrorCode()
+  object RateLimited: StoreServiceErrorCode()
+  object CodeInvalid: StoreServiceErrorCode()
+  object CodeUsed: StoreServiceErrorCode()
+  object CodeExpired: StoreServiceErrorCode()
+  object ReceiptInvalid: StoreServiceErrorCode()
+  object ReceiptUsed: StoreServiceErrorCode()
+  object TestPurchase: StoreServiceErrorCode()
+  object TransferLimited: StoreServiceErrorCode()
+  object Internal: StoreServiceErrorCode()
+  data class Unknown(val code: String): StoreServiceErrorCode()
 
   val text: String
     get() = when (this) {
@@ -7590,52 +7591,52 @@ sealed class BadgeServiceErrorCode {
     }
 }
 
-fun badgeServiceErrorText(code: BadgeServiceErrorCode): String? = when (code) {
-  is BadgeServiceErrorCode.CodeInvalid -> generalGetString(MR.strings.badges_error_code_invalid)
-  is BadgeServiceErrorCode.CodeUsed -> generalGetString(MR.strings.badges_error_code_used)
-  is BadgeServiceErrorCode.CodeExpired -> generalGetString(MR.strings.badges_error_code_expired)
-  is BadgeServiceErrorCode.RateLimited -> generalGetString(MR.strings.badges_error_rate_limited)
-  is BadgeServiceErrorCode.UnsupportedVersion -> generalGetString(MR.strings.badges_error_unsupported_version)
-  is BadgeServiceErrorCode.UnknownPurchaseKey -> generalGetString(MR.strings.badges_error_unknown_purchase)
-  is BadgeServiceErrorCode.Internal -> generalGetString(MR.strings.badges_error_service_internal)
-  is BadgeServiceErrorCode.ReceiptInvalid -> generalGetString(MR.strings.badges_error_receipt_invalid)
-  is BadgeServiceErrorCode.TestPurchase -> generalGetString(MR.strings.badges_error_test_purchase)
-  is BadgeServiceErrorCode.ReceiptUsed -> generalGetString(MR.strings.badges_error_receipt_used)
-  is BadgeServiceErrorCode.TransferLimited -> generalGetString(MR.strings.badges_error_transfer_limited)
-  is BadgeServiceErrorCode.PaymentPending -> generalGetString(MR.strings.badges_error_payment_pending)
-  is BadgeServiceErrorCode.ProviderUnavailable -> generalGetString(MR.strings.badges_error_provider_unavailable)
-  is BadgeServiceErrorCode.ProviderNotConfigured -> generalGetString(MR.strings.badges_error_provider_not_configured)
-  is BadgeServiceErrorCode.ProductUnavailable -> generalGetString(MR.strings.badges_error_product_unavailable)
+fun badgeServiceErrorText(code: StoreServiceErrorCode): String? = when (code) {
+  is StoreServiceErrorCode.CodeInvalid -> generalGetString(MR.strings.badges_error_code_invalid)
+  is StoreServiceErrorCode.CodeUsed -> generalGetString(MR.strings.badges_error_code_used)
+  is StoreServiceErrorCode.CodeExpired -> generalGetString(MR.strings.badges_error_code_expired)
+  is StoreServiceErrorCode.RateLimited -> generalGetString(MR.strings.badges_error_rate_limited)
+  is StoreServiceErrorCode.UnsupportedVersion -> generalGetString(MR.strings.badges_error_unsupported_version)
+  is StoreServiceErrorCode.UnknownPurchaseKey -> generalGetString(MR.strings.badges_error_unknown_purchase)
+  is StoreServiceErrorCode.Internal -> generalGetString(MR.strings.badges_error_service_internal)
+  is StoreServiceErrorCode.ReceiptInvalid -> generalGetString(MR.strings.badges_error_receipt_invalid)
+  is StoreServiceErrorCode.TestPurchase -> generalGetString(MR.strings.badges_error_test_purchase)
+  is StoreServiceErrorCode.ReceiptUsed -> generalGetString(MR.strings.badges_error_receipt_used)
+  is StoreServiceErrorCode.TransferLimited -> generalGetString(MR.strings.badges_error_transfer_limited)
+  is StoreServiceErrorCode.PaymentPending -> generalGetString(MR.strings.badges_error_payment_pending)
+  is StoreServiceErrorCode.ProviderUnavailable -> generalGetString(MR.strings.badges_error_provider_unavailable)
+  is StoreServiceErrorCode.ProviderNotConfigured -> generalGetString(MR.strings.badges_error_provider_not_configured)
+  is StoreServiceErrorCode.ProductUnavailable -> generalGetString(MR.strings.badges_error_product_unavailable)
   else -> null
 }
 
-object BadgeServiceErrorCodeSerializer : KSerializer<BadgeServiceErrorCode> {
-  override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("BadgeServiceErrorCode", PrimitiveKind.STRING)
-  override fun deserialize(decoder: Decoder): BadgeServiceErrorCode =
+object StoreServiceErrorCodeSerializer : KSerializer<StoreServiceErrorCode> {
+  override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("StoreServiceErrorCode", PrimitiveKind.STRING)
+  override fun deserialize(decoder: Decoder): StoreServiceErrorCode =
     when (val v = decoder.decodeString()) {
-      "bad_request" -> BadgeServiceErrorCode.BadRequest
-      "unsupported_version" -> BadgeServiceErrorCode.UnsupportedVersion
-      "unknown_purchase_key" -> BadgeServiceErrorCode.UnknownPurchaseKey
-      "unknown_offer_id" -> BadgeServiceErrorCode.UnknownOfferId
-      "offer_disabled" -> BadgeServiceErrorCode.OfferDisabled
-      "offer_mismatch" -> BadgeServiceErrorCode.OfferMismatch
-      "product_unavailable" -> BadgeServiceErrorCode.ProductUnavailable
-      "payment_not_entitled" -> BadgeServiceErrorCode.PaymentNotEntitled
-      "payment_pending" -> BadgeServiceErrorCode.PaymentPending
-      "provider_unavailable" -> BadgeServiceErrorCode.ProviderUnavailable
-      "provider_not_configured" -> BadgeServiceErrorCode.ProviderNotConfigured
-      "rate_limited" -> BadgeServiceErrorCode.RateLimited
-      "code_invalid" -> BadgeServiceErrorCode.CodeInvalid
-      "code_used" -> BadgeServiceErrorCode.CodeUsed
-      "code_expired" -> BadgeServiceErrorCode.CodeExpired
-      "receipt_invalid" -> BadgeServiceErrorCode.ReceiptInvalid
-      "receipt_used" -> BadgeServiceErrorCode.ReceiptUsed
-      "test_purchase" -> BadgeServiceErrorCode.TestPurchase
-      "transfer_limited" -> BadgeServiceErrorCode.TransferLimited
-      "internal" -> BadgeServiceErrorCode.Internal
-      else -> BadgeServiceErrorCode.Unknown(v)
+      "bad_request" -> StoreServiceErrorCode.BadRequest
+      "unsupported_version" -> StoreServiceErrorCode.UnsupportedVersion
+      "unknown_purchase_key" -> StoreServiceErrorCode.UnknownPurchaseKey
+      "unknown_offer_id" -> StoreServiceErrorCode.UnknownOfferId
+      "offer_disabled" -> StoreServiceErrorCode.OfferDisabled
+      "offer_mismatch" -> StoreServiceErrorCode.OfferMismatch
+      "product_unavailable" -> StoreServiceErrorCode.ProductUnavailable
+      "payment_not_entitled" -> StoreServiceErrorCode.PaymentNotEntitled
+      "payment_pending" -> StoreServiceErrorCode.PaymentPending
+      "provider_unavailable" -> StoreServiceErrorCode.ProviderUnavailable
+      "provider_not_configured" -> StoreServiceErrorCode.ProviderNotConfigured
+      "rate_limited" -> StoreServiceErrorCode.RateLimited
+      "code_invalid" -> StoreServiceErrorCode.CodeInvalid
+      "code_used" -> StoreServiceErrorCode.CodeUsed
+      "code_expired" -> StoreServiceErrorCode.CodeExpired
+      "receipt_invalid" -> StoreServiceErrorCode.ReceiptInvalid
+      "receipt_used" -> StoreServiceErrorCode.ReceiptUsed
+      "test_purchase" -> StoreServiceErrorCode.TestPurchase
+      "transfer_limited" -> StoreServiceErrorCode.TransferLimited
+      "internal" -> StoreServiceErrorCode.Internal
+      else -> StoreServiceErrorCode.Unknown(v)
     }
-  override fun serialize(encoder: Encoder, value: BadgeServiceErrorCode) = encoder.encodeString(value.text)
+  override fun serialize(encoder: Encoder, value: StoreServiceErrorCode) = encoder.encodeString(value.text)
 }
 
 data class ConnectionPlanResult(

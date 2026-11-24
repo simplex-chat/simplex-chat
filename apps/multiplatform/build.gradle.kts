@@ -107,6 +107,14 @@ configure(subprojects) {
             if (jvmVersion.isPresent) jvmTarget = jvmVersion.get()
         }
     }
+
+    configurations.configureEach {
+        resolutionStrategy.eachDependency {
+            if (requested.group == "org.jetbrains.skiko" && requested.version == "0.9.4.2") {
+                useVersion("0.9.24")
+            }
+        }
+    }
 }
 
 tasks.register("clean", Delete::class) {

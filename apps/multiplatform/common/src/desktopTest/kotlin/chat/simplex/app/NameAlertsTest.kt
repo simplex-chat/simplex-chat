@@ -28,7 +28,9 @@ import chat.simplex.common.views.helpers.AlertManager
 import chat.simplex.common.views.helpers.AnimatedViewState
 import chat.simplex.common.views.helpers.LocalAppBarHandler
 import chat.simplex.common.views.helpers.rememberAppBarHandler
+import chat.simplex.common.views.newchat.ConnectTarget
 import chat.simplex.common.views.newchat.planAndConnect
+import chat.simplex.common.views.newchat.strConnectTarget
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.runBlocking
@@ -157,6 +159,13 @@ class NameAlertsTest {
   }
 
   @Test
+  fun nameLinkPasted() = recorded("names/plan-known-link") {
+    for (link in listOf("simplex:/name@alice.simplex", "simplex:name@alice.simplex")) {
+      assertEquals(link, (strConnectTarget(link) as? ConnectTarget.Name)?.text)
+    }
+  }
+
+  @Test
   fun nameMovedToKnownContact() = recordedAlerts("names/plan-moved-known") {
     connect("@alice.simplex")
     assertTexts("cath", "@alice.simplex", "Open chat", "Cancel")
@@ -247,6 +256,18 @@ class NameAlertsTest {
   }
 
   @Test
+  fun groupLinkAsAddress() = recordedAlerts("connect/group-link-as-address") {
+    connect("GROUP_LINK")
+    assertTexts("Invalid connection link", "Please check that you used the correct link or ask your contact to send you another one.", "OK")
+  }
+
+  @Test
+  fun groupLinkAsChannel() = recordedAlerts("connect/group-link-as-channel") {
+    connect("GROUP_LINK")
+    assertTexts("Invalid connection link", "Please check that you used the correct link or ask your contact to send you another one.", "OK")
+  }
+
+  @Test
   fun connectByNameRowShowsLocalChats() = recorded("names/plan-known") {
     val searchText = mutableStateOf(TextFieldValue("alice"))
     val candidate = mutableStateOf<String?>("@alice.simplex")
@@ -296,6 +317,23 @@ class NameAlertsTest {
     waitUntil(timeoutMillis = 5_000) { names.all { onAllNodesWithText(it).fetchSemanticsNodes().size > shownBefore.getValue(it) } }
     assertEquals(setOf("@2", "#1"), chatIds().toSet())
     onNodeWithText("Connect to team.simplex").assertExists()
+  }
+
+  @Test
+  fun rejectedContactInChatList() = recorded("connect/request-rejected") {
+    ChatModel.chatRunning.value = true
+    runBlocking {
+      val chats = ChatController.apiGetChats(null)
+      withContext(Dispatchers.Main) { ChatModel.chatsContext.updateChats(chats) }
+    }
+    setContent {
+      CompositionLocalProvider(LocalAppBarHandler provides rememberAppBarHandler()) {
+        ChatListView(ChatModel, MutableStateFlow(AnimatedViewState.GONE), {}, false)
+      }
+    }
+    assertEquals(listOf("@2"), chatIds())
+    assertFalse((chatInfo("@2") as ChatInfo.Direct).contact.active)
+    waitUntil(timeoutMillis = 5_000) { onAllNodesWithText("alice").fetchSemanticsNodes().isNotEmpty() }
   }
 
   @Test
@@ -418,9 +456,9 @@ class NameAlertsTest {
 
   private fun chatInfo(id: String): ChatInfo = ChatModel.chatsContext.chats.value.first { it.id == id }.chatInfo
 
-  private fun fixtureText(name: String): String = File("../../../tests/fixtures/api/$name.json").readText()
-
   private companion object {
     const val SIMPLEX_NAME = "@alice.simplex"
   }
 }
+
+internal fun fixtureText(name: String): String = File("../../../tests/fixtures/api/$name.json").readText()
