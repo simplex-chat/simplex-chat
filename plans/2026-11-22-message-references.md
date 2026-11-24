@@ -185,7 +185,7 @@ type LinkLabel = Text
 - At most 20 links are sent in a message and 30 are kept from a received message. The message is limited as now by `maxEncodedMsgLength` (Protocol.hs:930-931): a message over it is refused at send with `SELargeMsg` (Store/Messages.hs:245).
 - Unknown fields are ignored by aeson, and an absent field is parsed as empty (plans/2026-08-22-forward-link.md, section "Protocol"), so earlier clients receive the text and ignore the map; the chat protocol version is unchanged. Their forwards are built from the content only (`mcForward`, Protocol.hs:741-742), and their copies consist of the text.
 
-Short text, `linkText :: MsgContent -> Text`, Messages.hs, beside `parsedMsgContent` (Messages.hs:633-637):
+Short text, `ciLinkText :: ChatItem c d -> Text` and `shortLinkText :: Text -> Text`, Messages.hs, beside `parsedMsgContent` (Messages.hs:633-637):
 
 1. the text of the content, or the file name when the text is empty, as in quotes (Internal.hs:396-400);
 2. its first line, after the markdown is removed: the shown text of each segment, the label of a link, `…` for a secret;
@@ -227,7 +227,7 @@ composedLinks user chat scope text:
       MLPUnknownSource, otherwise                                -> as written; no entry
       MLPChat or MLPJoin of a global link                        -> as written; no entry
       otherwise                                                  -> command error "message link: not in your chats"
-  entry text = linkText item
+  entry text = ciLinkText item
   two different links with one label -> command error, as SEInvalidMention (Internal.hs:327-336)
   21 links or more -> command error
 ```
@@ -409,7 +409,7 @@ msgLinkPlan user chat_ link:
       Left _  -> MLPNotFound
   MLUnknownSource -> MLPUnknownSource
   MLUnsupported _ -> MLPUnknownLink
-item of chat and itemId = getAChatItem (Store/Messages.hs:3376-3393), with the scope of getGroupChatScopeForItem_ (Store/Messages.hs:1510), and its linkText
+item of chat and itemId = getAChatItem (Store/Messages.hs:3376-3393), with the scope of getGroupChatScopeForItem_ (Store/Messages.hs:1510), and its ciLinkText
 ```
 
 - With `PRMNever`, the connect plan is limited to the local search (Controller.hs:728-732): a public chat is found by its link (Commands.hs:4718-4722) or by its verified name (Store/Groups.hs:1116-1134), and the link's entity ID is checked against the chat's identity when the link data is fetched (Commands.hs:4688-4695); otherwise the plan is refused with `CENotResolvedLocally` (Commands.hs:4674-4676).
@@ -466,6 +466,7 @@ data Format
 - `linkType` is set by the parser from `msgLink`, as `linkType` of `SimplexLink` (Markdown.hs:546-567).
 - In `linkMD` and `hyperLinkFormat` (Markdown.hs:461-467, 506-518), `MsgLink` is tried before `AConnectionLink`.
 - `sowLinkP` (Markdown.hs:450-456): with a message link, the label is any text up to `]` without `[` or a line break. The punctuation rule of web hyperlinks (Markdown.hs:453-454) is not applied. A label with a link in its own markdown (`isLink`) is refused: the label is left as text and the link is parsed bare, as for spoofed web links (MarkdownTests.hs:344-348).
+- A label written by the core from a short text with a link in it, such as a URL or a file name `report.pdf`, which is parsed as a domain (`isDomain`, Markdown.hs:563-571), is also refused by this rule: the message is displayed as `[report.pdf](`, a bare link and `)`, and no short text is stored by recipients. The rule for such labels is left to the decision Q21.
 - A bare link is parsed whole first, then without its trailing punctuation (`linkEndLength`, Markdown.hs:519-532), so a final `-` of an ID is kept.
 - The source text is returned by `markdownText`, as for `SimplexLink` (Markdown.hs:978).
 - `MessageLink` is included in `isLink`, so `hasLink` is set for the item (Internal.hs:3159-3167). `MessageLink` with `MLPublicGroup` is included in `isSimplexLink` (Markdown.hs:315-318), so the group preference is applied at send (Commands.hs:5076), edit (Commands.hs:854) and receive (Subscriber.hs:2260, 2336, 2357), and in member profiles (Internal.hs:1376-1385), as earlier cores apply it to the chat's link. Local links are not SimpleX links, as nobody is connected by them.
@@ -549,6 +550,7 @@ sequenceDiagram
 | link from outside | `connectViaUrl_` (ContentView.swift:463-488): a URL that the core parses as a message link is passed to the plan before the path switch; `/p` and `/s` are added to the path list | `connectIfOpenedViaUri` (ChatListView.kt:800-814): the same check before `planAndConnect`; `/p` and `/s` in AndroidManifest.xml:116-127 |
 | compose, waiting for the decision Q20 | a pasted link is shown as `[short text]` with the short text from the plan, and the link is kept in the compose state, as mentions are kept (ComposeView.swift:56-137); the text is sent with `[label](link)`; an edit loads the item's links the same way | the same in the Compose view |
 | Copy link | the item menu (ChatView.swift:2447-2507), after Copy, without a confirmation | `MsgContentItemDropdownMenu` (ChatItemView.kt:394-451), after Copy, with "Copied to clipboard" |
+| Copy link refused by the core, waiting for the decision Q19-2 | built: the error in the app log only (ChatView.swift:3252-3258) | built: the alert "Error loading details" with the error (SimpleXAPI.kt:1324-1329) |
 | link pasted in search | `strConnectTarget` (NewChatView.swift:860-872), then the plan | `strConnectTarget` (NewChatView.kt:834), then the plan |
 
 - A link is shown as `label (short text)` in the link style, the short text in italics (Q3, Q4, Q19); a label equal to the short text is shown once. A link from an unknown source, without a target in the item's links, is muted (Q19): the link colour at 70% opacity, waiting for the decision Q19-1. At Copy of a message's text, the app puts the text with its links on the clipboard; at "Copy link", the message's own link: global for a public chat, `simplex:/m#…` otherwise. At long-press on a link, the app opens the item menu, as now (ChatItemView.kt:129).
@@ -614,6 +616,8 @@ Agents can use such links under three conditions, each stated by the design:
 | connect plan of types `p` and `s`: the update alerts; `#name` resolved to a link of type `c`, `p` or `s` (Q11) | v1 |
 | apps: rendering, tap, Copy link, links from outside, search paste, the update alert of sites; website; remote versions; the comments of the scheme roles | v1 |
 | apps: the compose preview of pasted links | v1, waiting for the decision Q20 |
+| apps: the alert of a Copy link refused by the core | v1, waiting for the decision Q19-2 |
+| core: labels written from short texts with links | v1, waiting for the decision Q21 |
 | plugin: `link`, `open`, the `links` field, the `connect` error, instructions | stage 2, after the release of the npm packages simplex-chat and @simplex-chat/types (packages/simplex-chat-mcp/package.json:31-33) |
 | the board link of Q8 | stage 2 |
 | the reference of a link kept in a forward into the chat and scope of its target | later |
@@ -646,24 +650,24 @@ Each test, except the compatibility tests, is written to fail on master; the com
 | | `see simplex:/m#d/ID.` → text, a bare link and `.`; a final `-` of an ID is kept; `simplex:/m#x/…` → `MLUnsupported` |
 | | `[https://example.com](simplex:/m#d/…)` → the label as text and a bare link |
 | | `strDecode . strEncode` → each `MsgLink` variant in each form; `simplex:m#d/…` and `simplex:name#…?m=…` → the links of the forms with `/`, and `strEncode` → the forms with `/` |
-| | `linkText`: the first line without markdown, a secret as `…`, a file name for an empty text, 80 characters with `…` |
+| | `shortLinkText`: the first line without markdown, a secret as `…`, the label of a link, 80 characters with `…` |
 | simplexmq tests | short links of types `p` and `s` are encoded and parsed |
 | tests/ProtocolTests.hs | `x.msg.new` and `x.msg.update` with `links` are encoded and parsed; compatibility: a container without `links` is parsed with an empty map, as `x.msg.new forward with channel link` (ProtocolTests.hs:273-277) |
-| tests/ChatTests/Groups.hs | in `#team`, alice sends `Approve [q](link of bob's message in #team)?`; bob and cath receive the link with its reference and the short text, and their plan of it with `chat=#team` is the item |
-| | alice sends in `#club` a link to bob's message in `#team`; cath, in both groups, receives `[q](simplex:/m)` with the short text; alice's copy has the target, and her tap opens it (Q2b) |
-| | dan joins `#club` with history on: the history item has `[q](simplex:/m)`; bob quotes alice's message: the quote has `[q](simplex:/m)` |
-| | a channel post: a subscriber gets the item by the https form; a non-subscriber gets `join` with the link, connects with it, and then gets the item; the short text is shown before the join |
-| | the target is edited after the link is sent: the short text is unchanged; the target is deleted: the plan is the chat |
+| tests/ChatTests/Groups.hs | in `#team`, alice sends `see [q](link of bob's message in #team)`; bob and cath receive the link with its reference and the short text, and their plan of it with `chat=#team` is the item |
+| | alice sends in `#club` a link to bob's message in `#team`; cath, in both groups, receives `[q](simplex:/m)` with the short text; alice's copy has the target (Q2b), and cath's plan of `simplex:/m` is an unknown source |
+| | cath joins `#team` with history on: the history item has the link and its short text |
+| | a channel post: a subscriber gets the item by the https form; a non-member gets `join` with the chat's link, receives a link to the post with its short text from a contact, joins by the link, and then gets the item; the plans of the chat's link with types `p` and `s` are the update alerts |
+| | bob edits the target after alice's link is sent: bob's short text is unchanged; alice deletes the target: her plan is the chat |
 | | a link that is not in the sender's chats is refused at send; 21 links are refused |
 | | after an edit that changes a label, the item's links are replaced for every member; after an edit, the target of a kept `simplex:/m` label is kept |
-| | `#club` with SimpleX links off: a global link is refused, and a local link is sent |
-| tests/ChatTests/Names.hs | a channel with a verified name, as in `testConnectByChannelName`: a subscriber gets the item by the name form; a non-subscriber gets `join` with the name; the plan of a `#name` whose record has a link of type `p` is `GLPUpdateRequired`, and of type `s`, `CPUpdateRequired` |
+| | `#team` with SimpleX links off: a global link in the name form is refused, and a local link is sent |
+| tests/ChatTests/Names.hs | a channel joined by its name: a subscriber gets the item by the name form; a non-member gets `join` with the name; the plan of `#name` whose record has a link of type `p` is `GLPUpdateRequired`, and of type `s`, `CPUpdateRequired` |
 | tests/ChatTests/Direct.hs | alice links to her earlier message to bob in their chat: bob's plan of the link is the item; a link from that chat to a group message is received by bob as `simplex:/m` |
 | tests/ChatTests/Local.hs | the URIs of a note's links to a group message and a contact message are kept, and their plans are the items; the link of a note is in the `n` form, and its plan is the note |
-| tests/ChatTests/Forward.hs | a link to the same group, forwarded to a contact and into the target's own group, is `[label](simplex:/m)` with the short text; a global link is kept, and reduced to `[label](simplex:/m)` in a group with SimpleX links off |
-| | cath forwards bob's message in `#team` with a link to alice's message in `#team` to dan: dan receives `[q](simplex:/m)` without a target; cath's copy has the target, alice's message in `#team` |
-| | alice forwards her own message in `#club` with a link to bob's message in `#team` to dan: alice's copy has the target copied from the original item's row; cath forwards the same message from `#club`: cath's copy is without a target |
-| | a global link forwarded into a group with SimpleX links off: the forwarder's copy has the target when the forwarder is in the public chat |
+| | a bare link to a note with a file and without text is labeled with the file name, `report_2026.pdf`; a file name parsed as a domain is left to the decision Q21 |
+| tests/ChatTests/Forward.hs | cath forwards alice's message in `#team` with a link to bob's message in `#team` to alice: alice receives `[q](simplex:/m)` with the short text; cath's copy has the target, bob's message |
+| | alice forwards her own message in `#club` with a link to bob's message in `#team` to cath: alice's copy has the target copied from the original item's row |
+| | cath, a channel subscriber, forwards her note with a link to a channel post: to dan, the global link is kept with the short text; into `#club` with SimpleX links off, it is `[r](simplex:/m)` with the short text, and cath's copy has the post as its target |
 | app tests on recorded core responses | `Format.messageLink` and `ChatItem.links` are decoded; each kind of link and `MsgLinkPlan` variant → its action; `CPUpdateRequired` → its alert |
 | | Q19: a link is shown as `label (short text)`; the recipient's link from an unknown source is muted, the sender's link with a target is not; a failed plan request shows "Error opening link" |
 | | Q19, desktop: in the opened menu of a message, Copy link follows Copy, and a click on it puts the recorded link on the clipboard and shows "Copied to clipboard" |
