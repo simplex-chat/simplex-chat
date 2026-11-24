@@ -18,7 +18,7 @@ import qualified Data.ByteString.Builder as BB
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Either (isLeft, isRight)
 import qualified Data.Text as T
-import Data.Word (Word32)
+import Data.Word (Word32, Word8)
 import Simplex.Chat.Image
 import Simplex.Chat.Library.Commands (fixedImagePreview, imagePreview)
 import Simplex.Chat.Types (ImageData (..))
@@ -379,7 +379,7 @@ testWebpAnimation = do
 testWebpProfile :: IO ()
 testWebpProfile = do
   lossy <- B.readFile $ webpFixture "lossy.webp"
-  let withProfile profile = webpContainer [webpChunk "VP8X" $ B.pack [0x20, 0, 0, 0] <> littleEndianInt 3 127 <> littleEndianInt 3 127, webpChunk "ICCP" profile, B.drop 12 lossy]
+  let withProfile profile = webpContainer [webpVp8x 0x20 (128, 128), webpChunk "ICCP" profile, B.drop 12 lossy]
   Right (img, profile) <- decodeResizable $ withProfile p3Profile
   profile `shouldBe` CPDisplayP3
   forM_ [IFJpeg, IFPng] $ \format -> do
@@ -394,7 +394,7 @@ testWebpOrientation = do
   Right (ImageRGBA8 upright, CPNone) <- decodeResizable lossless
   let (w, h) = (imageWidth upright, imageHeight upright)
       rotated = generateImage (\x y -> pixelAt upright y (h - 1 - x)) h w
-      withExif = webpContainer [webpChunk "VP8X" $ B.pack [0x18, 0, 0, 0] <> littleEndianInt 3 (w - 1) <> littleEndianInt 3 (h - 1), B.drop 12 lossless, webpChunk "EXIF" $ orientationTiff True 8 6]
+      withExif = webpContainer [webpVp8x 0x18 (w, h), B.drop 12 lossless, webpChunk "EXIF" $ orientationTiff True 8 6]
   Right (ImageRGBA8 img, CPNone) <- decodeResizable withExif
   (imageWidth img, imageHeight img, imageData img) `shouldBe` (h, w, imageData rotated)
 
@@ -423,9 +423,12 @@ netpbmMd5 img = show . (hashlazy :: LB.ByteString -> Digest MD5) . BB.toLazyByte
       _ -> Nothing
 
 webpAnimation :: (Int, Int) -> [((Int, Int), (Int, Int), B.ByteString)] -> B.ByteString
-webpAnimation (w, h) frames = webpContainer $ [webpChunk "VP8X" $ B.pack [0x12, 0, 0, 0] <> littleEndianInt 3 (w - 1) <> littleEndianInt 3 (h - 1), webpChunk "ANIM" $ B.replicate 6 0] <> map frame frames
+webpAnimation size frames = webpContainer $ [webpVp8x 0x12 size, webpChunk "ANIM" $ B.replicate 6 0] <> map frame frames
   where
     frame ((x, y), (fw, fh), still) = webpChunk "ANMF" $ B.concat (map (littleEndianInt 3) [x `div` 2, y `div` 2, fw - 1, fh - 1, 100]) <> "\0" <> B.drop 12 still
+
+webpVp8x :: Word8 -> (Int, Int) -> B.ByteString
+webpVp8x flags (w, h) = webpChunk "VP8X" $ B.pack [flags, 0, 0, 0] <> littleEndianInt 3 (w - 1) <> littleEndianInt 3 (h - 1)
 
 webpContainer :: [B.ByteString] -> B.ByteString
 webpContainer chunks = "RIFF" <> littleEndianInt 4 (4 + B.length body) <> "WEBP" <> body
