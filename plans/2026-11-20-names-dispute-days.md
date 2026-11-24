@@ -91,7 +91,7 @@ StoreService.Names.Store
   OrderPhase
     ORegistered         expiry, Maybe dispute end, registered at
     OEnded              no fields
-  NameRegistration
+  NameRegistrationOrder
     nrDisputeDays       DisputeDays
   disputableRegistrations  DB.Connection -> SystemSeconds -> IO [RegistrationId]
 

@@ -1521,10 +1521,10 @@ testEndedSweepBounds = withWorker $ \W {wCtx = ctx, wWorker} -> do
   let disputeEnd = orderSeconds + 14 * 86400
   plain <- paidIn ctx aliceOrder $ \x -> x {nrPhase = ORegistered expirySeconds Nothing orderTime}
   again <- paidIn ctx (byB aliceOrder) {oSecret = secretOf 2} $ registeredUntil disputeEnd
-  past <- paidIn ctx dynamisOrder $ registeredUntil (orderSeconds - 8 * 86400)
+  past <- paidIn ctx dynamisOrder $ registeredUntil (orderSeconds - 7 * 86400)
   later <- paidIn ctx (byB dynamisOrder) {oSecret = secretOf 4} $ registeredUntil (disputeEnd + 60)
   answerFree ctx "carolbakery"
-  recent <- paidIn ctx aliceOrder {oLabel = "carolbakery", oSecret = secretOf 6, oSealed = "sealed-carolbakery-6"} $ registeredUntil (orderSeconds - 86400)
+  recent <- paidIn ctx aliceOrder {oLabel = "carolbakery", oSecret = secretOf 6, oSealed = "sealed-carolbakery-6"} $ registeredUntil (orderSeconds - 7 * 86400 + 1)
   void $ confirmedBlockAt ctx $ orderSeconds + 1
   answerDisputeUntil ctx "alicebakery" (disputeEnd + 3600)
   answerDisputeUntil ctx "dynamis" 0
