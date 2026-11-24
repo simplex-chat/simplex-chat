@@ -121,6 +121,10 @@ fi
 chmod a+x "${NIX_BUILD_TOP:-$work}" "$(dirname "$work")" "$work"
 chmod -R a+rX "$work"
 chmod -R a+rwX "$derived"
+# ci sets TMPDIR to $work/tmp. The build tree is not writable by the console
+# user, so create that directory before the helper runs.
+mkdir -p "$work/tmp"
+chmod 1777 "$work/tmp"
 
 set +e
 python3 - "$ci_runner" "$work" "$derived" "$work/scripts/nix/adhoc-group-task.entitlements" <<'PY'
