@@ -6942,6 +6942,15 @@ Query:
     SELECT f.file_id, f.ci_file_status, f.file_path
     FROM chat_items i
     JOIN files f ON f.chat_item_id = i.chat_item_id
+   WHERE i.user_id = ? AND i.group_id = ? AND i.item_ts <= ? AND i.created_at <= ?
+Plan:
+SEARCH i USING INDEX idx_chat_items_groups_item_ts (user_id=? AND group_id=? AND item_ts<?)
+SEARCH f USING INDEX idx_files_chat_item_id (chat_item_id=?)
+
+Query: 
+    SELECT f.file_id, f.ci_file_status, f.file_path
+    FROM chat_items i
+    JOIN files f ON f.chat_item_id = i.chat_item_id
    WHERE i.user_id = ? AND i.note_folder_id = ?
 Plan:
 SEARCH i USING COVERING INDEX idx_chat_items_note_folder_has_link_created_at (user_id=? AND note_folder_id=?)
@@ -7370,6 +7379,10 @@ Query: DELETE FROM chat_item_reactions WHERE group_id = ?
 Plan:
 SEARCH chat_item_reactions USING COVERING INDEX idx_chat_item_reactions_group_id (group_id=?)
 
+Query: DELETE FROM chat_item_reactions WHERE group_id = ? AND reaction_ts <= ? AND created_at <= ?
+Plan:
+SEARCH chat_item_reactions USING INDEX idx_chat_item_reactions_group_id (group_id=?)
+
 Query: DELETE FROM chat_item_reactions WHERE group_id = ? AND shared_msg_id = ? AND item_member_id IS NOT DISTINCT FROM ?
 Plan:
 SEARCH chat_item_reactions USING INDEX idx_chat_item_reactions_group (group_id=? AND shared_msg_id=?)
@@ -7453,6 +7466,18 @@ SEARCH groups USING COVERING INDEX idx_groups_chat_item_id (chat_item_id=?)
 Query: DELETE FROM chat_items WHERE user_id = ? AND group_id = ? AND item_content_tag != 'chatBanner'
 Plan:
 SEARCH chat_items USING INDEX idx_chat_items_groups_item_viewed (user_id=? AND group_id=?)
+SEARCH chat_item_mentions USING COVERING INDEX idx_chat_item_mentions_chat_item_id (chat_item_id=?)
+SEARCH group_snd_item_statuses USING COVERING INDEX idx_group_snd_item_statuses_chat_item_id (chat_item_id=?)
+SEARCH chat_item_versions USING COVERING INDEX idx_chat_item_versions_chat_item_id (chat_item_id=?)
+SEARCH calls USING COVERING INDEX idx_calls_chat_item_id (chat_item_id=?)
+SEARCH chat_item_messages USING COVERING INDEX sqlite_autoindex_chat_item_messages_2 (chat_item_id=?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_fwd_from_chat_item_id (fwd_from_chat_item_id=?)
+SEARCH files USING COVERING INDEX idx_files_chat_item_id (chat_item_id=?)
+SEARCH groups USING COVERING INDEX idx_groups_chat_item_id (chat_item_id=?)
+
+Query: DELETE FROM chat_items WHERE user_id = ? AND group_id = ? AND item_ts <= ? AND created_at <= ? AND item_content_tag != 'chatBanner'
+Plan:
+SEARCH chat_items USING INDEX idx_chat_items_groups_item_ts (user_id=? AND group_id=? AND item_ts<?)
 SEARCH chat_item_mentions USING COVERING INDEX idx_chat_item_mentions_chat_item_id (chat_item_id=?)
 SEARCH group_snd_item_statuses USING COVERING INDEX idx_group_snd_item_statuses_chat_item_id (chat_item_id=?)
 SEARCH chat_item_versions USING COVERING INDEX idx_chat_item_versions_chat_item_id (chat_item_id=?)
@@ -7756,6 +7781,17 @@ SEARCH chat_item_messages USING COVERING INDEX sqlite_autoindex_chat_item_messag
 SEARCH chat_items USING COVERING INDEX sqlite_autoindex_chat_items_1 (created_by_msg_id=?)
 SEARCH pending_group_messages USING COVERING INDEX idx_pending_group_messages_message_id (message_id=?)
 
+Query: DELETE FROM messages WHERE group_id = ? AND created_at <= ?
+Plan:
+SEARCH messages USING INDEX idx_messages_group_id_shared_msg_id (group_id=?)
+SEARCH delivery_tasks USING COVERING INDEX idx_delivery_tasks_message_id (message_id=?)
+SEARCH msg_deliveries USING COVERING INDEX idx_msg_deliveries_message_id (message_id=?)
+SEARCH chat_item_moderations USING COVERING INDEX idx_chat_item_moderations_created_by_msg_id (created_by_msg_id=?)
+SEARCH chat_item_reactions USING COVERING INDEX idx_chat_item_reactions_created_by_msg_id (created_by_msg_id=?)
+SEARCH chat_item_messages USING COVERING INDEX sqlite_autoindex_chat_item_messages_1 (message_id=?)
+SEARCH chat_items USING COVERING INDEX sqlite_autoindex_chat_items_1 (created_by_msg_id=?)
+SEARCH pending_group_messages USING COVERING INDEX idx_pending_group_messages_message_id (message_id=?)
+
 Query: DELETE FROM pending_group_messages WHERE group_member_id = ? AND message_id = ?
 Plan:
 SEARCH pending_group_messages USING INDEX idx_pending_group_messages_group_member_id (group_member_id=?)
@@ -8041,6 +8077,10 @@ Query: SELECT COUNT(1) FROM delivery_jobs WHERE job_status = 'pending'
 Plan:
 SCAN delivery_jobs USING COVERING INDEX idx_delivery_jobs_next
 
+Query: SELECT COUNT(1) FROM delivery_tasks WHERE task_status = 'new'
+Plan:
+SCAN delivery_tasks USING COVERING INDEX idx_delivery_tasks_next
+
 Query: SELECT COUNT(1) FROM group_members WHERE member_role = 'owner' AND member_pub_key IS NOT NULL
 Plan:
 SCAN group_members
@@ -8238,6 +8278,10 @@ SEARCH chat_items USING INDEX idx_chat_items_group_shared_msg_id (user_id=? AND 
 Query: SELECT chat_item_ttl FROM contacts WHERE contact_id = ? LIMIT 1
 Plan:
 SEARCH contacts USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: SELECT chat_item_ttl FROM groups WHERE group_id = ? LIMIT 1
+Plan:
+SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: SELECT chat_item_ttl FROM settings WHERE user_id = ? LIMIT 1
 Plan:
@@ -8878,6 +8922,10 @@ Query: UPDATE chat_items SET item_ts = ?, created_at = ? WHERE chat_item_id = ?
 Plan:
 SEARCH chat_items USING INTEGER PRIMARY KEY (rowid=?)
 
+Query: UPDATE chat_items SET item_ts = ?, created_at = ? WHERE group_member_id = ?
+Plan:
+SEARCH chat_items USING INDEX idx_chat_items_group_member_id (group_member_id=?)
+
 Query: UPDATE chat_items SET timed_delete_at = ? WHERE user_id = ? AND contact_id = ? AND chat_item_id = ?
 Plan:
 SEARCH chat_items USING INTEGER PRIMARY KEY (rowid=?)
@@ -9211,6 +9259,10 @@ Plan:
 SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: UPDATE groups SET chat_item_id = ?, updated_at = ? WHERE user_id = ? AND group_id = ?
+Plan:
+SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: UPDATE groups SET chat_item_ttl = ?, updated_at = ? WHERE group_id = ?
 Plan:
 SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
 
