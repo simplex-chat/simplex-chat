@@ -265,7 +265,7 @@ function renderSegments(fts, withBlocks) {
           html += `<span class="${(format.color || '').replace(/[^a-zA-Z0-9_-]/g, '')}">${escapeHtml(text)}</span>`;
           break;
         case 'uri': {
-          let href = text.startsWith('http://') || text.startsWith('https://') || text.startsWith('simplex:/') ? text : 'https://' + text;
+          let href = text.startsWith('http://') || text.startsWith('https://') || text.startsWith('simplex:') ? text : 'https://' + text;
           html += `<a href="${safeHref(href)}"${targetBlank(href)}>${escapeHtml(text)}</a>`;
           break;
         }
@@ -311,7 +311,7 @@ function renderSegments(fts, withBlocks) {
   return html;
 }
 
-const simplexAddressRegexp = /^simplex:\/([a-z]+)#(.+)/i;
+const simplexAddressRegexp = /^simplex:\/?([a-z]+)#(.+)/i;
 
 const simplexShortLinkTypes = ["a", "c", "g", "i", "r"];
 
