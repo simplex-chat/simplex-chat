@@ -13,7 +13,7 @@ module ChatTests.Direct where
 
 import ChatClient
 import ChatTests.DBUtils
-import ChatTests.Groups (itemPriority, lastSndEventPriority, lastSndMsgFlags, lastSndMsgPriority, rcvItemPrioritiesCfg)
+import ChatTests.Groups (itemPriority, lastSndEventPriority, lastSndMsgPriority, rcvItemPrioritiesCfg)
 import ChatTests.Utils
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_, poll, wait)
@@ -1067,25 +1067,21 @@ testDirectSilentMessage ps = do
   withNewTestChat ps "alice" aliceProfile $ \alice ->
     withNewTestChatCfg ps cfg "bob" bobProfile $ \bob -> do
       connectUsers alice bob
-      bob ##> "/set receipts all off"
-      bob <## "ok"
-      [Only bobConnId] <- withCCTransaction alice $ \db -> DB.query_ db "SELECT agent_conn_id FROM connections WHERE contact_id IS NOT NULL"
-      let sendWithPriority t p flag sent stored = do
+      let sendWithPriority t p sent stored = do
             alice ##> ("/_send @2 json [{\"msgContent\": {\"type\": \"text\", \"text\": \"" <> t <> "\"}, \"priority\": " <> show (p :: Int) <> "}]")
             alice <# ("@bob " <> t)
             bob <# ("alice> " <> t)
-            lastSndMsgFlags alice bobConnId 1 `shouldReturn` [flag]
             lastSndMsgPriority alice `shouldReturn` sent
             forM_ [alice, bob] $ \cc -> itemPriority cc "/_get chat @2 count=1" `shouldReturn` stored
 
-      sendWithPriority "hi" (-1) "F" (Just (-1)) MPSilent
+      sendWithPriority "hi" (-1) (Just (-1)) MPSilent
       alice ##> "! @bob hi there"
       alice <# "@bob [edited] hi there"
       bob <# "alice> [edited] hi there"
       lastSndEventPriority alice "x.msg.update" `shouldReturn` Nothing
       forM_ [alice, bob] $ \cc -> itemPriority cc "/_get chat @2 count=1" `shouldReturn` MPNormal
 
-      sendWithPriority "hello again" 1 "T" Nothing MPNormal
+      sendWithPriority "hello again" 1 Nothing MPNormal
       helloId <- lastItemId alice
       alice ##> ("/_update item @2 " <> helloId <> " json {\"msgContent\": {\"type\": \"text\", \"text\": \"hello again\"}, \"mentions\": {}, \"priority\": 1}")
       alice <## "message didn't change"
@@ -1096,8 +1092,7 @@ testDirectSilentMessage ps = do
       forM_ [alice, bob] $ \cc -> itemPriority cc "/_get chat @2 count=1" `shouldReturn` MPNormal
       alice #> "@bob bye"
       bob <# "alice> bye"
-      lastSndMsgFlags alice bobConnId 1 `shouldReturn` ["T"]
-      readTVarIO rcvItems `shouldReturn` [("hi", MPSilent), ("hello again", MPNormal), ("bye", MPNormal)]
+      readTVarIO rcvItems `shouldReturn` [("hi", MPSilent, Just "F"), ("hello again", MPNormal, Just "T"), ("bye", MPNormal, Just "T")]
 
 testDirectSilentMessageTerminal :: HasCallStack => TestParams -> IO ()
 testDirectSilentMessageTerminal =

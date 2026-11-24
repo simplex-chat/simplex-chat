@@ -8120,10 +8120,6 @@ Query: SELECT agent_conn_id FROM connections
 Plan:
 SCAN connections USING COVERING INDEX sqlite_autoindex_connections_1
 
-Query: SELECT agent_conn_id FROM connections WHERE contact_id IS NOT NULL
-Plan:
-SCAN connections
-
 Query: SELECT agent_conn_id FROM connections WHERE user_id = ? AND conn_req_inv IN (?,?) LIMIT 1
 Plan:
 SEARCH connections USING INDEX idx_connections_conn_req_inv (user_id=? AND conn_req_inv=?)
@@ -8198,6 +8194,12 @@ Query: SELECT c.agent_conn_id FROM connections c JOIN user_contact_links l ON l.
 Plan:
 SCAN c
 SEARCH l USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: SELECT c.agent_conn_id, d.agent_msg_id FROM chat_items i JOIN msg_deliveries d ON d.message_id = i.created_by_msg_id JOIN connections c ON c.connection_id = d.connection_id WHERE i.chat_item_id = ?
+Plan:
+SEARCH i USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH d USING INDEX idx_msg_deliveries_message_id (message_id=?)
+SEARCH c USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: SELECT chat_item_id FROM chat_items WHERE group_scope_tag = 'member_support' ORDER BY chat_item_id DESC LIMIT 1
 Plan:
