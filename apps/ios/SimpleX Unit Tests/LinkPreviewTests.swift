@@ -564,7 +564,7 @@ final class LinkPreviewTests: XCTestCase {
     }
 
     @MainActor
-    func testNewAndEditedComposeHaveNoCancelledLinks() {
+    func testNewAndEditedComposeHaveNoCancelledLinks() async throws {
         XCTAssertEqual(ComposeState().cancelledLinks, [])
         let edited = ComposeState(editingItem: ChatItem(
             chatDir: .directSnd,
@@ -574,7 +574,11 @@ final class LinkPreviewTests: XCTestCase {
         ), previewsOn: true)
         XCTAssertEqual(edited.cancelledLinks, [])
         XCTAssertEqual(status(edited), .shown(linkPreview: pagePreview))
-        XCTAssertTrue(ComposeState(editingItem: ChatItem.getSample(1, .directSnd, .now, "LINK_URL/page"), previewsOn: true).noPreview)
+        var (_, item) = try await recordedNote()
+        item.content = .sndMsgContent(msgContent: .text(item.content.text))
+        let editedText = ComposeState(editingItem: item, previewsOn: true)
+        XCTAssertEqual(editedText.cancelledLinks, [])
+        XCTAssertEqual(loadingUri(editedText), "LINK_URL/no-image")
     }
 
     @MainActor

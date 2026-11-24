@@ -880,7 +880,7 @@ Recordings of tests/fixtures/api/previews/link_preview.json and the app tests th
 |---|---|---|
 | command `/_link preview LINK_URL/page` | `CRLinkPreview`: title "Link preview title", description "Link preview description", a PNG image | Kt, iOS: the API test and the compose tests of a card<br>iOS: the share extension test |
 | command `/_link preview LINK_URL/no-image` | `CELinkPreview` "no image" | Kt, iOS: the error and alert tests; the compose tests of a failed link<br>iOS: the share extension test |
-| command `/_create *1 json` of a note: `MCLink` of `LINK_URL/no-image LINK_URL/page` with the preview of `LINK_URL/page` | `newChatItems` with the note | Kt, iOS: F1 and F12, the response to the send of that text to the note folder<br>Kt: F3, F15, F16 and the laws, the note opened in edit<br>iOS: F15 and F16, the note opened in edit |
+| command `/_create *1 json` of a note: `MCLink` of `LINK_URL/no-image LINK_URL/page` with the preview of `LINK_URL/page` | `newChatItems` with the note | Kt, iOS: F1 and F12, the response to the send of that text to the note folder<br>Kt: F3, F15, F16 and the laws, the note opened in edit<br>iOS: F15 and F16, the note opened in edit; T15, the note opened in edit as `MCText`: its first link loading |
 | markdown `LINK_URL/page`<br>markdown `LINK_URL/no-image` | one link | Kt, iOS: the tests of a text with one link |
 | markdown `LINK_URL/no-image LINK_URL/page` | two links | Kt, iOS: F1, F12, F15, F16, T7, T9 and the laws<br>iOS: F17 |
 | markdown `LINK_URL/no-image LINK_URL/page ` | two links and a space | Kt, iOS: T2, F15, F16 and the laws<br>iOS: F1 and F17 |
