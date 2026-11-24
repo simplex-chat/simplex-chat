@@ -53,7 +53,7 @@ Kotlin suspend fun api*()
 ```kotlin
 external fun chatMigrateInit(dbPath: String, dbKey: String, confirm: String): Array<Any>
 external fun chatCloseStore(ctrl: ChatCtrl): String
-external fun chatSendCmdRetry(ctrl: ChatCtrl, msg: String, retryNum: Int): String
+@JvmName("chatSendCmdRetry") external fun nativeChatSendCmdRetry(ctrl: ChatCtrl, msg: String, retryNum: Int): String
 external fun chatSendRemoteCmdRetry(ctrl: ChatCtrl, rhId: Int, msg: String, retryNum: Int): String
 external fun chatRecvMsg(ctrl: ChatCtrl): String
 external fun chatRecvMsgWait(ctrl: ChatCtrl, timeout: Int): String
@@ -342,7 +342,7 @@ Events handled in `processReceivedMsg` include:
 | `ContactDeletedByContact` | A contact deleted their side of the conversation |
 | `ReceivedContactRequest` | An incoming contact request arrived |
 | `NewChatItems` | New messages received |
-| `ChatItemUpdated` | A message was edited |
+| `ChatItemUpdated` | A message was edited; the event has `chatItemUpdate: AChatItemUpdate`, whose `prevChatItem` is the item before the update; the response to `apiUpdateChatItem` has `chatItem: AChatItem` |
 | `ChatItemsDeleted` | Messages were deleted |
 | `ChatItemReaction` | A reaction was added/removed |
 | `ChatItemsStatusesUpdated` | Delivery statuses updated |

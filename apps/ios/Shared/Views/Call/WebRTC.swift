@@ -441,7 +441,7 @@ struct RTCIceCandidate: Codable, Equatable {
     var candidateType: RTCIceCandidateType?
     var `protocol`: String?
     var sdpMid: String?
-    var sdpMLineIndex: Int?
+    var sdpMLineIndex: Int32?
     var candidate: String
 }
 

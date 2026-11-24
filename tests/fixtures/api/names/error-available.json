@@ -1,0 +1,48 @@
+{
+  "commands": {
+    "/_connect plan 1 @nobody.simplex": {
+      "error": {
+        "errorType": {
+          "simplexDomain": {
+            "domain": "nobody",
+            "nameTLD": "simplex",
+            "subDomain": []
+          },
+          "simplexDomainError": {
+            "nameWarning": {
+              "price": {
+                "amount": 2000,
+                "years": 2
+              },
+              "type": "available"
+            },
+            "type": "nameWarning"
+          },
+          "type": "simplexDomainNotReady"
+        },
+        "type": "error"
+      }
+    }
+  },
+  "markdown": {
+    "@nobody.simplex": {
+      "formattedText": [
+        {
+          "format": {
+            "nameInfo": {
+              "nameDomain": {
+                "domain": "nobody",
+                "nameTLD": "simplex",
+                "subDomain": []
+              },
+              "nameType": "contact"
+            },
+            "type": "simplexName"
+          },
+          "text": "@nobody.simplex"
+        }
+      ]
+    }
+  },
+  "uris": {}
+}

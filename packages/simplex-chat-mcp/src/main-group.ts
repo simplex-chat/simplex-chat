@@ -3,19 +3,19 @@ import {api} from "simplex-chat"
 import {Command, createGroup, deleteGroup, isLost, joinedText, losesControl, parseCommand, safeName, updateGroupProfile} from "./control"
 import {chatErrorOf, log, logError, oneLine} from "./log"
 import {resetCommand} from "./owner"
-import {isActive} from "./tools"
+import {isActive, mainKey} from "./tools"
 
 // spec: spec/architecture.md#main-group-maincommands
 const mainCommands: T.ChatBotCommand[] = [
   {type: "command", keyword: "sessions", label: "Claude Code sessions"},
   {type: "command", keyword: "join", label: "Join the group of a session", params: "<session number>"},
 ]
-// spec: spec/architecture.md#main-group-maincommands
-const mainKey = "simplexMcpMain"
 // spec: spec/api.md#main-group-profile
 const listKey = "simplexMcpList"
-// spec: spec/api.md#list-of-sessions
-const listAge = 23 * 3_600_000
+// spec: spec/api.md#main-group-profile
+const boardKey = "simplexMcpBoard"
+// spec: spec/api.md#session-board
+const boardAge = 23 * 3_600_000
 // spec: spec/architecture.md#main-group-maincommands
 const greeting = "I'm Claude. Each Claude Code session has its own group, and you get its invitation here. /sessions lists the sessions; /join N joins the group of session N."
 // spec: spec/api.md#main-group
@@ -36,10 +36,29 @@ export interface SessionGroups {
   inviteOwner(member: T.GroupMember): Promise<void>
 }
 
+// spec: spec/api.md#session-board
+export interface BoardSession {
+  session: number
+  running: boolean
+  emoji: string
+  text: string
+}
+
 // spec: spec/api.md#main-group-profile
-interface SessionList {
+interface BoardItem {
   item: number
   at: number
+}
+
+// spec: spec/api.md#main-group-profile
+interface BoardEntry extends BoardItem {
+  session: number
+}
+
+// spec: spec/api.md#main-group-profile
+interface Board {
+  summary?: BoardItem
+  sessions: BoardEntry[]
 }
 
 export class MainGroup {
@@ -48,9 +67,10 @@ export class MainGroup {
   private events: Promise<unknown> = Promise.resolve()
   private commands: Promise<unknown> = Promise.resolve()
   private linkText?: string
-  private list?: SessionList
-  private shown?: string
-  private tooLarge?: string
+  private board: Board
+  private oldList?: number
+  private readonly shown = new Map<number, string>()
+  private shownSummary?: string
 
   constructor(
     private readonly chat: api.ChatApi,
@@ -59,7 +79,8 @@ export class MainGroup {
     private name: string,
     private readonly sessions: SessionGroups,
   ) {
-    this.list = listOf(group.customData)
+    this.board = boardOf(group.customData)
+    this.oldList = listOf(group.customData)
   }
 
   get groupId(): number {
@@ -132,7 +153,10 @@ export class MainGroup {
       this.lost = true
       await deleteGroup(this.chat, this.group)
       this.group = await createMainGroup(this.chat, this.userId, this.name)
-      this.list = undefined
+      this.board = {sessions: []}
+      this.oldList = undefined
+      this.shown.clear()
+      this.shownSummary = undefined
       this.lost = false
       await this.load()
       await this.openLink()
@@ -140,54 +164,96 @@ export class MainGroup {
     })
   }
 
-  // spec: spec/architecture.md#main-group-maingroup-showlist
-  showList(text: string): Promise<void> {
+  // spec: spec/architecture.md#main-group-maingroup-showboard
+  showBoard(sessions: BoardSession[]): Promise<void> {
     return this.serialize(async () => {
-      if (this.lost || text === this.tooLarge) return
-      await this.renderList(text).catch(error => {
-        if (!isTooLarge(error)) throw error
-        this.tooLarge = text
-        logError("list of sessions", error)
-      })
+      if (this.lost) return
+      if (this.oldList !== undefined) await this.deleteItem(this.oldList, "old list of sessions")
+      const owned = this.owners().length > 0
+      const posted: number[] = []
+      const entries: BoardEntry[] = []
+      for (const session of sessions) {
+        const entry = this.board.sessions.find(known => known.session === session.session)
+        const kept = entry === undefined ? (session.running && owned ? await this.postEntry(session, posted) : undefined) : await this.renderEntry(entry, session, posted)
+        if (kept !== undefined) entries.push(kept)
+      }
+      for (const entry of this.board.sessions) if (!sessions.some(({session}) => session === entry.session)) await this.deleteEntry(entry)
+      const shown = sessions.filter(({session}) => entries.some(entry => entry.session === session))
+      const summary = await this.renderSummary(summaryText(shown), owned && entries.length > 0, posted)
+      await this.saveBoard({...(summary === undefined ? {} : {summary}), sessions: entries}, posted)
     })
   }
 
-  // spec: spec/architecture.md#main-group-maingroup-showlist
-  private async renderList(text: string): Promise<void> {
-    const {list} = this
-    if (list === undefined) {
-      if (this.owners().length > 0) await this.postList(text)
-      return
+  // spec: spec/architecture.md#main-group-maingroup-showboard
+  private async renderEntry(entry: BoardEntry, session: BoardSession, posted: number[]): Promise<BoardEntry | undefined> {
+    if (!session.running && entry.at <= Date.now() - boardAge) return this.deleteEntry(entry)
+    if (session.text === this.shown.get(entry.session)) return entry
+    if (await this.edited(entry.item, session.text)) {
+      this.shown.set(entry.session, session.text)
+      return entry
     }
-    if (list.at <= Date.now() - listAge) return this.replaceList(list, text)
-    if (text === this.shown) return
+    await this.deleteEntry(entry)
+    return session.running ? this.postEntry(session, posted) : undefined
+  }
+
+  // spec: spec/architecture.md#main-group-maingroup-showboard
+  private async postEntry(session: BoardSession, posted: number[]): Promise<BoardEntry> {
+    const item = await this.postItem(session.text, posted)
+    this.shown.set(session.session, session.text)
+    return {session: session.session, ...item}
+  }
+
+  // spec: spec/architecture.md#main-group-maingroup-showboard
+  private async deleteEntry(entry: BoardEntry): Promise<undefined> {
+    this.shown.delete(entry.session)
+    await this.deleteItem(entry.item, "old message of the board")
+    return undefined
+  }
+
+  // spec: spec/architecture.md#main-group-maingroup-showboard
+  private async renderSummary(text: string, postable: boolean, posted: number[]): Promise<BoardItem | undefined> {
+    const {summary} = this.board
+    if (summary !== undefined && (text === this.shownSummary || (await this.edited(summary.item, text)))) {
+      this.shownSummary = text
+      return summary
+    }
+    if (summary !== undefined) await this.deleteItem(summary.item, "old summary of the board")
+    else if (!postable) return undefined
+    this.shownSummary = text
+    return this.postItem(text, posted)
+  }
+
+  // spec: spec/architecture.md#main-group-maingroup-showboard
+  private async edited(item: number, text: string): Promise<boolean> {
     try {
-      await this.chat.apiUpdateChatItem(T.ChatType.Group, this.groupId, list.item, {type: "text", text})
-      this.shown = text
+      await this.chat.apiUpdateChatItem(T.ChatType.Group, this.groupId, item, {type: "text", text})
+      return true
     } catch (error) {
       if (!isRefusedEdit(error)) throw error
-      await this.replaceList(list, text)
+      return false
     }
   }
 
-  // spec: spec/architecture.md#main-group-maingroup-showlist
-  private async replaceList(old: SessionList, text: string): Promise<void> {
-    await this.postList(text)
-    await this.deleteItem(old.item, "old list of sessions")
+  // spec: spec/architecture.md#main-group-maingroup-showboard
+  private async postItem(text: string, posted: number[]): Promise<BoardItem> {
+    const item = await this.post(text, -1)
+    posted.push(item)
+    return {item, at: Date.now()}
   }
 
-  // spec: spec/architecture.md#main-group-maingroup-showlist
-  private async postList(text: string): Promise<void> {
-    const list = {item: await this.post(text, -1), at: Date.now()}
-    const customData = {...this.group.customData, [mainKey]: true, [listKey]: list}
+  // spec: spec/architecture.md#main-group-maingroup-showboard
+  private async saveBoard(board: Board, posted: number[]): Promise<void> {
+    if (this.oldList === undefined && JSON.stringify(board) === JSON.stringify(this.board)) return
+    const {[listKey]: _, ...data} = (this.group.customData ?? {}) as {[key: string]: unknown}
+    const customData = {...data, [mainKey]: true, [boardKey]: board}
     try {
       await this.chat.apiSetGroupCustomData(this.groupId, customData)
     } catch (error) {
-      await this.deleteItem(list.item, "new list of sessions")
+      for (const item of posted) await this.deleteItem(item, "new message of the board")
       throw error
     }
-    this.list = list
-    this.shown = text
+    this.board = board
+    this.oldList = undefined
     this.group = {...this.group, customData}
   }
 
@@ -288,22 +354,39 @@ function isMissingLink(error: unknown): boolean {
   return chatError?.type === "errorStore" && chatError.storeError.type === "groupLinkNotFound"
 }
 
-// spec: spec/architecture.md#main-group-maingroup-showlist
+// spec: spec/architecture.md#main-group-maingroup-showboard
 function isRefusedEdit(error: unknown): boolean {
   const chatError = chatErrorOf(error)
   return (chatError?.type === "error" && chatError.errorType.type === "invalidChatItemUpdate") || (chatError?.type === "errorStore" && chatError.storeError.type === "chatItemNotFound")
 }
 
-// spec: spec/architecture.md#main-group-maingroup-showlist
-function isTooLarge(error: unknown): boolean {
-  const chatError = chatErrorOf(error)
-  return chatError?.type === "errorStore" && chatError.storeError.type === "largeMsg"
+// spec: spec/api.md#session-board
+function summaryText(sessions: BoardSession[]): string {
+  if (sessions.length === 0) return "No sessions."
+  return `${sessions.length} session${sessions.length === 1 ? "" : "s"} ${sessions.map(({emoji}) => emoji).join(" ")}`
 }
 
 // spec: spec/api.md#main-group-profile
-function listOf(customData: object | undefined): SessionList | undefined {
-  const list = (customData as {[listKey]?: Partial<SessionList>} | undefined)?.[listKey]
-  return typeof list?.item === "number" && typeof list.at === "number" ? {item: list.item, at: list.at} : undefined
+function listOf(customData: object | undefined): number | undefined {
+  const item = (customData as {[listKey]?: {item?: unknown}} | undefined)?.[listKey]?.item
+  return typeof item === "number" ? item : undefined
+}
+
+// spec: spec/api.md#main-group-profile
+function boardOf(customData: object | undefined): Board {
+  const board = (customData as {[boardKey]?: {summary?: unknown; sessions?: unknown}} | undefined)?.[boardKey]
+  const summary = itemOf(board?.summary)
+  const entries = board?.sessions
+  const sessions = (Array.isArray(entries) ? entries : []).flatMap((entry: {session?: unknown} | null) => {
+    const item = itemOf(entry)
+    return item !== undefined && typeof entry?.session === "number" ? [{session: entry.session, ...item}] : []
+  })
+  return {...(summary === undefined ? {} : {summary}), sessions}
+}
+
+function itemOf(value: unknown): BoardItem | undefined {
+  const {item, at} = (value ?? {}) as {item?: unknown; at?: unknown}
+  return typeof item === "number" && typeof at === "number" ? {item, at} : undefined
 }
 
 // spec: spec/api.md#main-group-profile

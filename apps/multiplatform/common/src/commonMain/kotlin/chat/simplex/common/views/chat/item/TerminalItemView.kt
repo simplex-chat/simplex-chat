@@ -332,8 +332,9 @@ fun chatItemSender(
   return when {
     cItem.channelIsSender && chatInfo is ChatInfo.Group ->
       ChatItemSender(chatInfo.chatViewName, null, stringResource(MR.strings.channel_role_label), dir.sent) {
-        Box(Modifier.clickable { showChatInfo() }) {
+        Box {
           ProfileImage(imageSize, chatInfo.groupInfo.image, chatInfo.groupInfo.chatIconName, backgroundColor = MaterialTheme.colors.background)
+          AvatarClickArea(chatInfo.groupInfo.image, imageSize, Modifier.matchParentSize()) { showChatInfo() }
         }
       }
     dir is CIDirection.DirectRcv ->
@@ -348,8 +349,9 @@ fun chatItemSender(
         if (memCount == 1) memberRole(member, chatInfo.isChannel) else null,
         false
       ) {
-        Box(Modifier.clickable { showMemberInfo(chatInfo.groupInfo, member) }) {
+        Box {
           MemberImage(member, imageSize)
+          AvatarClickArea(member.image, imageSize, Modifier.matchParentSize()) { showMemberInfo(chatInfo.groupInfo, member) }
         }
       }
     }

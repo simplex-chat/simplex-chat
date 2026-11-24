@@ -118,7 +118,6 @@ void haskell_init() {
       "--install-signal-handlers=no",
       nullptr};
 #else
-  int argc = 6;
   const char *argv[] = {
       "simplex",
       "+RTS",  // requires `hs_init_with_rtsopts`
@@ -126,7 +125,11 @@ void haskell_init() {
       "-H64m", // initial heap size
       "-xn",   // non-moving GC
       "--install-signal-handlers=no",
+#if defined(__APPLE__) && defined(__x86_64__)
+      "-xb0x500000000000", // heap above V8's addresses: GHC < 9.12.4 can loop reserving the heap on Intel macOS
+#endif
       nullptr};
+  int argc = static_cast<int>(sizeof(argv) / sizeof(argv[0])) - 1;
 #endif
   char **pargv = const_cast<char **>(argv);
   lib.hs_init_with_rtsopts(&argc, &pargv);

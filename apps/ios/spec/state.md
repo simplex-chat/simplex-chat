@@ -162,6 +162,7 @@ ChatTagsModel (singleton -- filter state)
 | Property | Type | Description | Line |
 |----------|------|-------------|------|
 | `messageDelivery` | `[Int64: () -> Void]` | Pending delivery confirmation callbacks | [L426](../Shared/Model/ChatModel.swift#L426) |
+| `fileUploads` | `[Int64: () -> Void]` | End functions of the background tasks of XFTP uploads, by file ID | [L470](../Shared/Model/ChatModel.swift#L470) |
 | `filesToDelete` | `Set<URL>` | Files queued for deletion | [L428](../Shared/Model/ChatModel.swift#L428) |
 | `chatListBanner` | `ChatListBanner?` | The banner kind the chat list showed this app session; `bannerSlotFree(for:)` tells whether a kind may take the slot (see [chat-list.md](client/chat-list.md)) | [L474](../Shared/Model/ChatModel.swift#L474) |
 | `im` | `ItemsModel` | Reference to `ItemsModel.shared` | [L432](../Shared/Model/ChatModel.swift#L432) |
@@ -441,6 +442,19 @@ Haskell core generates ChatEvent.newChatItems
         3. Update ChatStats (unread counts)
         4. Update ChatTagsModel (tag unread counts)
     → SwiftUI re-renders affected views via @Published observation
+```
+
+### Updating a Message (Event)
+```
+Haskell core generates ChatEvent.chatItemUpdated(user, chatItemUpdate: AChatItemUpdate)
+    → ChatModel.applyChatItemUpdate(chatInfo, chatItem, prevChatItem):
+        1. Change ChatStats by the difference between prevItem and cItem
+           (unread: isRcvNew; mentions: isRcvNew && userMention)
+        2. Replace the preview if it is this item
+        3. Replace the item in ItemsModel.reversedChatItems if it is loaded,
+           never insert it
+    → Another user's event changes that user's unread counter by the same difference
+    → An update of a locally deleted message creates it again: the core sends newChatItems
 ```
 
 ### Sending a Message
