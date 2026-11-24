@@ -53,7 +53,7 @@ import qualified Data.Text as T
 import Data.Time.Clock (addUTCTime, diffUTCTime)
 import Data.Word (Word64, Word8)
 import Simplex.Chat.Badges.Ledger (addMonths)
-import Simplex.Chat.PaymentService.Types (InvoiceId (..), InvoiceStatus (..))
+import Simplex.Chat.PaymentService.Types (CurrencyAmount (..), InvoiceId (..), InvoiceStatus (..))
 import Simplex.Messaging.Agent.Store.Common (withTransaction)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Crypto.Secp256k1 (Secp256k1PrivateKey, signRecoverable)
@@ -73,6 +73,7 @@ import StoreService.Names.Signatures (OrderFields (..), findMessage, parseAnyCas
 import StoreService.Names.Store hiding (findLimit)
 import StoreService.Names.Turns (withLabelTurn)
 import StoreService.Names.View (addressText)
+import StoreService.Providers (PaymentSignal (..), Received (..))
 import StoreService.Store (RevokeResult (..))
 import StoreService.Web.Http (createLimit, findLimit, holdMicros, readLimit)
 import StoreService.Web.Names (Route (..), namesApp)
@@ -106,7 +107,8 @@ namesOwnerTests = describe "StoreService names: owner" $ do
     it "checks a code order's code as a new code order's: code_not_covering for a shorter name, and reserves it for the name selected" testSelectCodeOrder
     it "accepts the code the order holds past its expiry until a month after the take, then refuses it with code_expired, refuses it once revoked with code_invalid, changing nothing, and keeps it from other code orders, checked as expired once refused" testSelectRefusedCode
     it "refuses sealed over 11095 characters, a body over 16384 bytes and malformed fields, accepting the longest" testSelectSizes
-    it "refuses another signer's signature, a BTC order's reveal signed over a card's dispute days and a stale timestamp, answers an unknown order 404, and selects with the order's own" testSelectRefusedSigner
+    it "refuses another signer's signature and a stale timestamp, and answers an unknown order 404" testSelectRefusedSigner
+    it "selects a name for a taken card order with a reveal over its 120 dispute days, refusing one over 14" testSelectCardDays
     it "answers registration_changed with the current view when the order changed during the checks, writing nothing" testSelectLostRace
     it "takes both turns in hash order when the order on A selects B while the order on B selects A, without deadlock, each refused as a paid order holds the other's name" testSelectionsCross
   describe "polls" $
@@ -705,12 +707,22 @@ testSelectRefusedSigner = withOwner $ \ctx -> do
   r <- takenIn ctx aliceOrder id
   to <- selectionOf ctx "alicebakers" 10
   select ctx keyB r to `shouldReturn` refusedWith 400 "bad_request"
-  select ctx keyA r to {oMethod = "card"} `shouldReturn` refusedWith 400 "bad_request"
   (clockSeconds ctx >>= \ts -> selectionBodyAt ctx keyA (nrId r) to (ts - signedWindow - 1) >>= postSelection ctx (nrId r)) `shouldReturn` refusedWith 400 "bad_request"
   stored ctx r `shouldReturn` r
   let unknown = RegistrationId "t2Jk8RmQ4vXw9NcP3yLb6g"
   (selectionBody ctx keyA unknown to >>= postSelection ctx unknown) `shouldReturn` refusedWith 404 "not_found"
-  void $ selected ctx keyA r to
+
+testSelectCardDays :: IO ()
+testSelectCardDays = withOwner $ \ctx -> do
+  answerFree ctx "alicebakers"
+  (invId, _) <- placed ctx aliceOrder {oMethod = "card"}
+  settleNow ctx invId (SigSettled RCard {rcAmount = CurrencyAmount 10000, rcConfirmed = CurrencyAmount 10000} orderTime) `shouldReturn` ISPaid
+  r <- invoiceRegistration ctx invId >>= retaken ctx
+  to <- selectionOf ctx "alicebakers" 10
+  select ctx keyA r to `shouldReturn` refusedWith 400 "bad_request"
+  stored ctx r `shouldReturn` r
+  v <- selected ctx keyA r to {oMethod = "card"}
+  fieldOf v "disputeDays" `shouldBe` Just (J.Number 120)
 
 testSelectLostRace :: IO ()
 testSelectLostRace = withOwner $ \ctx@Ctx {cNode} -> do

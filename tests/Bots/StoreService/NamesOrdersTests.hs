@@ -171,10 +171,10 @@ namesOrdersTests = describe "StoreService names: orders" $ do
     it "places a code order as a queued live registration holding its code, answering only its id" testCodeOrder
     it "answers an exact resend with its id in any phase, the code spent or not, also after the terms changed on chain, before any chain read" testCodeResend
     it "refuses a resend differing in any one field, the code included, with a bare order_exists" testCodeOneFieldDiffers
-    it "refuses a bad signature, or another signer's, after the code check, and a refused link, reserving nothing" testCodeBadSignature
+    it "refuses a bad signature, or another signer's, after the code check, a reveal signed over a card's dispute days, and a refused link, reserving nothing" testCodeBadSignature
     it "refuses a code order meeting an open invoice for the name with order_exists" testCodeMeetsInvoice
     it "closes an overdue paid order of the same wallet and name, removing its reveal and cancelling its invoice after" testCodeClosesOverdue
-    it "refuses each code that cannot pay with its tag, and a code order whose reveal is signed over a card's dispute days" testCodeRefusals
+    it "refuses each code that cannot pay with its tag" testCodeRefusals
     it "checks the duration for the code's years" testCodeYears
     it "checks a community name's code order for 2 years, whatever its code's years, keeping the code's" testCommunityCodeYears
     it "answers name_taken and name_check_unavailable before the code's state and cover, leaving the code unreserved" testCodeNameChecks
@@ -1185,6 +1185,7 @@ testCodeBadSignature = withOrders $ \ctx -> do
   postRegister ctx (inOrder (KM.delete "signature") good) `shouldReturn` refusedWith 400 "bad_request"
   unknown <- unissuedCode ctx 8
   register ctx unknown aliceOrder {oKey = keyB} `shouldReturn` refusedWith 400 "code_invalid"
+  register ctx code aliceOrder {oMethod = "card"} `shouldReturn` refusedWith 400 "bad_request"
   register ctx code aliceOrder {oContact = Just "https://smp8.simplex.im/a#contact"} `shouldReturn` (400, Just $ KM.fromList [("type", "invalid_link"), ("kind", "contact")])
   pcReservedBy <$> readCode ctx issued `shouldReturn` Nothing
   length <$> registrationsOf ctx ownerA `shouldReturn` 0
@@ -1236,8 +1237,6 @@ testCodeRefusals = withOrders $ \ctx@Ctx {cStore} -> do
   register ctx expired aliceOrder `shouldReturn` refusedWith 409 "code_expired"
   (unpaid, _) <- issueCode ctx 8 2 $ \c -> c {npcPaymentStatus = CPSUnpaid}
   register ctx unpaid aliceOrder `shouldReturn` refusedWith 409 "payment_pending"
-  (valid, _) <- issueCode ctx 8 2 id
-  register ctx valid aliceOrder {oMethod = "card"} `shouldReturn` refusedWith 400 "bad_request"
   length <$> registrationsOf ctx ownerA `shouldReturn` 0
 
 testCodeYears :: IO ()
