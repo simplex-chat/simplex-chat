@@ -365,6 +365,7 @@ chatTypesDocsData =
     (sti @PaymentNetwork, STUnion, "PN", [], "", ""),
     (sti @PaymentPayee, STUnion, "PP", [], "", ""),
     (sti @PaymentRequest, STRecord, "", [], "", "Payment URI or address in a message text. amount: in coins of the network; with token, in base units of the ERC-20 token or in units of the SPL token. walletUri: the URI to open in a wallet."),
+    (sti @PaymentToken, STRecord, "", [], "", ""),
     (sti @PendingContactConnection, STRecord, "", [], "", ""),
     (sti @PlanResolveMode, STEnum, "PRM", [], Choice "self" [("allGroups", " resolve=allGroups"), ("never", " resolve=never")] "", ""),
     (sti @PrefEnabled, STRecord, "", [], "", ""),
@@ -638,6 +639,7 @@ deriving instance Generic OwnerVerification
 deriving instance Generic PaymentNetwork
 deriving instance Generic PaymentPayee
 deriving instance Generic PaymentRequest
+deriving instance Generic PaymentToken
 deriving instance Generic PendingContactConnection
 deriving instance Generic PlanResolveMode
 deriving instance Generic PrefEnabled

@@ -570,9 +570,13 @@ paymentLinks = describe "payment links" do
     ("zcash:" <> zecU <> "?amount=0.1&memo=" <> memo)
       `paysTo` PaymentRequest (PPAddress PNZcash zecU ACVerified) [] (Just "0.1") Nothing Nothing (Just "This is a simple memo.") ("zcash:" <> zecU <> "?amount=0.1&memo=" <> memo)
     ("solana:" <> sol <> "?amount=0.5") `paysTo` PaymentRequest (PPAddress PNSolana sol ACUnchecked) [] (Just "0.5") Nothing Nothing Nothing ("solana:" <> sol <> "?amount=0.5")
+    ("solana:" <> sol <> "?amount=1.5&spl-token=" <> usdc)
+      `paysTo` PaymentRequest (PPAddress PNSolana sol ACUnchecked) [] (Just "1.5") (Just $ PaymentToken usdc ACUnchecked) Nothing Nothing ("solana:" <> sol <> "?amount=1.5&spl-token=" <> usdc)
     ("ethereum:" <> eth <> "@42161?value=1e16") `paysTo` PaymentRequest (PPAddress (PNEthereum $ Just 42161) eth ACVerified) [] (Just "0.01") Nothing Nothing Nothing ("ethereum:" <> eth <> "@42161?value=1e16")
     ("ethereum:" <> usdt <> "@1/transfer?address=" <> eth <> "&uint256=5000000")
-      `paysTo` PaymentRequest (PPAddress (PNEthereum $ Just 1) eth ACVerified) [] (Just "5000000") (Just usdt) Nothing Nothing ("ethereum:" <> usdt <> "@1/transfer?address=" <> eth <> "&uint256=5000000")
+      `paysTo` PaymentRequest (PPAddress (PNEthereum $ Just 1) eth ACVerified) [] (Just "5000000") (Just $ PaymentToken usdt ACVerified) Nothing Nothing ("ethereum:" <> usdt <> "@1/transfer?address=" <> eth <> "&uint256=5000000")
+    ("ethereum:" <> T.toLower usdt <> "@1/transfer?address=" <> eth <> "&uint256=5000000")
+      `paysTo` PaymentRequest (PPAddress (PNEthereum $ Just 1) eth ACVerified) [] (Just "5000000") (Just $ PaymentToken usdt ACUnchecked) Nothing Nothing ("ethereum:" <> T.toLower usdt <> "@1/transfer?address=" <> eth <> "&uint256=5000000")
     ("ethereum:" <> T.toLower eth) `paysTo` payTo (PPAddress (PNEthereum Nothing) eth ACUnchecked) ("ethereum:" <> T.toLower eth)
     ("lightning:" <> offerText) `paysTo` payTo (PPLightning LPOffer {offer = offerText}) ("lightning:" <> offerText)
   it "URIs that are text" do
@@ -610,6 +614,7 @@ paymentLinks = describe "payment links" do
     bch = "qq6c8vfvxqrk6rhdysgvkhqc24sggkfsx5nqvdlqcg"
     eth = "0xD7047Fe3Eecb2f2FF78d839dD927Be27Bc12c86a"
     usdt = "0xdAC17F958D2ee523a2206206994597C13D831ec7"
+    usdc = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
     zecT = "t1fwjQW5gpFhDqXNhxqDWyF9j9WeKvVS5Jg"
     zecU = "u16rnvkflumf5uw9frngc2lymvmzgdr2mmc9unyu0l44unwfmdcpfm0axujd2w34ct3ye709azxsqge45705lpvvqu264ltzvfay55ygyq"
     memo = "VGhpcyBpcyBhIHNpbXBsZSBtZW1vLg"

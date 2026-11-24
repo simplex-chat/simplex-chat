@@ -10,6 +10,7 @@ module Simplex.Chat.Payments
     PaymentPayee (..),
     PaymentNetwork (..),
     LightningPayee (..),
+    PaymentToken (..),
     AddressChecksum (..),
     hasOtherAddress,
   )
@@ -47,7 +48,7 @@ data PaymentRequest = PaymentRequest
   { payee :: PaymentPayee,
     alternatives :: [LightningPayee],
     amount :: Maybe Text,
-    token :: Maybe Text,
+    token :: Maybe PaymentToken,
     label :: Maybe Text,
     message :: Maybe Text,
     walletUri :: Text
@@ -76,6 +77,9 @@ data LightningPayee
   | LPLnurl {lnurl :: Text, host :: Text}
   deriving (Eq, Show)
 
+data PaymentToken = PaymentToken {address :: Text, checksum :: AddressChecksum}
+  deriving (Eq, Show)
+
 data AddressChecksum = ACVerified | ACUnchecked
   deriving (Eq, Show)
 
@@ -89,7 +93,7 @@ instance StrEncoding PaymentRequest where
 hasOtherAddress :: PaymentRequest -> Text -> Bool
 hasOtherAddress PaymentRequest {payee, alternatives, token} t = any (`notElem` requestAddresses) textAddresses
   where
-    requestAddresses = payeeAddress payee : map lightningAddress alternatives <> maybeToList token
+    requestAddresses = payeeAddress payee : map lightningAddress alternatives <> [address | PaymentToken {address} <- maybeToList token]
     textAddresses = [payeeAddress p | w <- T.split (not . isAlphaNum) t, not (T.null w), PaymentRequest {payee = p} <- addressRequests $ encodeUtf8 w]
 
 addressRequests :: ByteString -> [PaymentRequest]
@@ -211,7 +215,7 @@ schemeRequest scheme path ps = case scheme of
       label <- paramText "label"
       message <- paramText "message"
       memo <- paramText "memo"
-      pure (["amount", "spl-token", "label", "message", "memo"], PaymentRequest (PPAddress PNSolana a ACUnchecked) [] amount token label (message <|> memo))
+      pure (["amount", "spl-token", "label", "message", "memo"], PaymentRequest (PPAddress PNSolana a ACUnchecked) [] amount ((`PaymentToken` ACUnchecked) <$> token) label (message <|> memo))
     ethereumRequest = do
       (target, chainId, function) <- parseAll ethereumPathP path
       (targetAddress, targetChecksum) <- required "invalid address" $ evmAddress target
@@ -224,7 +228,7 @@ schemeRequest scheme path ps = case scheme of
           unless (isNothing $ param "value" ps) $ Left "value in a token transfer"
           (a, addressChecksum) <- required "invalid address" $ evmAddress =<< param "address" ps
           amount <- traverse (fmap tshow . evmInteger) $ param "uint256" ps
-          pure (["address", "uint256"], PaymentRequest (PPAddress network a addressChecksum) [] amount (Just targetAddress) Nothing Nothing)
+          pure (["address", "uint256"], PaymentRequest (PPAddress network a addressChecksum) [] amount (Just $ PaymentToken targetAddress targetChecksum) Nothing Nothing)
         Just _ -> Left "unsupported function"
     lightningRequest = do
       (payee, amount) <- required "invalid lightning payment" $ lightningPayee path <|> (,Nothing) <$> offerPayee path
@@ -501,5 +505,7 @@ $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "PN") ''PaymentNetwork)
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "LP") ''LightningPayee)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "PP") ''PaymentPayee)
+
+$(JQ.deriveJSON defaultJSON ''PaymentToken)
 
 $(JQ.deriveJSON defaultJSON ''PaymentRequest)
