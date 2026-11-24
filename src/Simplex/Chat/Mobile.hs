@@ -311,6 +311,7 @@ mobileChatOpts dbOptions tbqSize =
       chatCmdDelay = 3,
       chatCmdLog = CCLNone,
       chatServerPort = Nothing,
+      chatServerHost = Nothing,
       optFilesFolder = Nothing,
       optTempDirectory = Nothing,
       showReactions = False,
