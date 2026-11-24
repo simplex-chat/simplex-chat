@@ -1,5 +1,13 @@
 # Blog
 
+Nov 24, 2026 [SimpleX Chat Security Audit by Trail of Bits and Our Security Process](./20261121-simplex-chat-security-audit-trail-of-bits-security-process.md)
+
+Trail of Bits completed the most comprehensive security audit of SimpleX so far. All fixes are included in v7.1.4 - please upgrade, and ask your contacts to upgrade too. All findings, where we resolved them, and our comments are in [the addendum](./20261123-trail-of-bits-security-audit-2026-findings.md).
+
+v7.1.4 also includes supporter badges allowing you to send larger files available for longer - buy the badge to [support our work](https://badges.simplex.chat/).
+
+---
+
 Sep 19, 2026 [SimpleX Supporter Badges - Send Larger Files That Stay Available Longer, Without Being Identified](./20260919-simplex-supporter-badges.md)
 
 Supporter badges are available in v7.1 beta: a badge on your profile, larger files and longer file storage - and the purchase cannot be linked to your profile.

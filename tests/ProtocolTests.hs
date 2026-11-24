@@ -28,6 +28,7 @@ import Simplex.Messaging.Compression (compress1)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.Ratchet
 import Simplex.Messaging.Encoding (smpEncode)
+import Simplex.Messaging.Encoding.String (strDecode)
 import Simplex.Messaging.Protocol (EntityId (..), supportedSMPClientVRange)
 import Simplex.Messaging.ServiceScheme
 import Simplex.Messaging.Version
@@ -40,6 +41,14 @@ protocolTests = do
   batchLimitTests
   forwardDepthTests
   preferencesJSONTests
+  connectTargetTests
+
+connectTargetTests :: Spec
+connectTargetTests = describe "Connect target" $
+  it "parses a name link without the slash after the scheme" $ do
+    let target = ACTarget SCMContact $ CTShortContact $ CTName $ SimplexNameInfo NTPublicGroup $ SimplexDomain TLDSimplex "alice" []
+    strDecode "simplex:/name#alice.simplex" `shouldBe` Right target
+    strDecode "simplex:name#alice.simplex" `shouldBe` Right target
 
 preferencesJSONTests :: Spec
 preferencesJSONTests = describe "preferences JSON" $ do

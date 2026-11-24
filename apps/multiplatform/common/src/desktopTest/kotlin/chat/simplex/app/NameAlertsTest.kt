@@ -35,7 +35,9 @@ import chat.simplex.common.views.helpers.AlertManager
 import chat.simplex.common.views.helpers.AnimatedViewState
 import chat.simplex.common.views.helpers.LocalAppBarHandler
 import chat.simplex.common.views.helpers.rememberAppBarHandler
+import chat.simplex.common.views.newchat.ConnectTarget
 import chat.simplex.common.views.newchat.planAndConnect
+import chat.simplex.common.views.newchat.strConnectTarget
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.runBlocking
@@ -249,6 +251,13 @@ class NameAlertsTest : RecordedApiTest() {
     connect("@alice.simplex")
     assertTexts("alice", "@alice.simplex", "Open chat", "Cancel")
     assertLocalChats("@2")
+  }
+
+  @Test
+  fun nameLinkPasted() = recorded("names/plan-known-link") {
+    for (link in listOf("simplex:/name@alice.simplex", "simplex:name@alice.simplex")) {
+      assertEquals(link, (strConnectTarget(link) as? ConnectTarget.Name)?.text)
+    }
   }
 
   @Test
