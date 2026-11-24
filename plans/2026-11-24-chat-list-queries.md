@@ -1,6 +1,6 @@
 # Chat list, profile switch, member cleanup and chat pages on SQLite and PostgreSQL
 
-Status: plan. Branch `ep/chat-list-queries`, stacked on #8314 (`ep/omnibus` e3457510f); #7969 by Narasimha-sc is adopted. Problems of q29 in the review of #8314, decided by the maintainer: "q29 - yes, and also adopt the PR by narasimha-sc that makes loading chat list faster - it improved sqlite but not postgres, need to work on both."
+Status: implemented on `ep/chat-list-queries`, code at 99e84da96; results in section 7. Branch `ep/chat-list-queries`, stacked on #8314 (`ep/omnibus` e3457510f); #7969 by Narasimha-sc is adopted. Problems of q29 in the review of #8314, decided by the maintainer: "q29 - yes, and also adopt the PR by narasimha-sc that makes loading chat list faster - it improved sqlite but not postgres, need to work on both."
 
 Code references: this branch at 5727cc7d5, by file and line. SQLite plans: `chat_query_plans.txt`, and `EXPLAIN QUERY PLAN` of SQLite 3.45.1 on empty databases of each schema. PostgreSQL plans: probe runs of #8314, PostgreSQL 15.20, 1,000,000 chat items: review run https://github.com/evgeny-simplex/simplex-chat/actions/runs/45197482204 (schema ce3673792) and fixes run https://github.com/evgeny-simplex/simplex-chat/actions/runs/45229293446 (schema 582d0058d, equal to `ep/omnibus`); pg-plans run of #7969 https://github.com/Narasimha-sc/simplex-chat/actions/runs/41325761174.
 
@@ -335,6 +335,40 @@ Results on SQLite 3.45.1, measured for this plan: copies of the #8314 database w
 
 Migration on the same database: 16.1 s for the up text, in two runs of its statements with the first statement of each run cold; quick_check ok.
 
+Results on PostgreSQL 15.20: probe run https://github.com/evgeny-simplex/simplex-chat/actions/runs/45296525730 (schema of d27b96924 as new), 1,000,000 items, 30,000 unread, data digests equal in the three databases; medians of 10 runs of planning and execution, in ms.
+
+| read | ep/omnibus | 5727cc7d5 (#7969) | new | new plan |
+|---|---|---|---|---|
+| users list, contacts count | 1.22 | 0.51 | 0.55 | Index Only Scan `idx_chat_items_contacts` (user_id, item_status) |
+| users list, groups count | 4.51 | 5.82 | 4.54 | nested loop over groups, Index Only Scan `idx_chat_items_groups_user_mention`, as on `ep/omnibus` |
+| users list, silent count | 2.35 | 2.35 | 2.35 | partial indexes of #8314 |
+| first unread lookup | 5.16 | 5.20 | 5.14 | `chat_items_pkey`, as on `ep/omnibus` |
+| direct ChatStats | 8.63 | 0.49 | 0.30 | Index Only Scan `idx_chat_items_contacts` (user_id, item_status, contact_id) |
+| group ChatStats | 27.34 | 27.03 | 5.50 | Index Only Scan `idx_chat_items_group_scope_stats_all`, all 5 conditions in Index Cond |
+| ReportCount | 1.06 | 1.05 | 0.25 | Index Only Scan `idx_chat_items_groups_msg_content_tag_deleted`, all 5 conditions in Index Cond |
+| 15 direct chat list texts | 9.04-10.87 | 0.97-2.81 | 0.75-2.65 | |
+| 15 group chat list texts | 31.74-35.48 | 32.56-37.24 | 7.21-11.83 | |
+| content tags of group 17 | 29.80 | 31.29 | 31.95 | `idx_chat_items_groups_user_mention` in place of `idx_chat_items_groups_msg_content_tag_deleted` |
+
+Old and new text on the new database:
+
+| read | old text | new text |
+|---|---|---|
+| page before the middle item of group 17, 19,782 items | 3.69 | 0.22 |
+| page after the middle item of group 17 | 3.34 | 0.22 |
+| page before the middle item of contact 42, 20,000 items | 3.16 | 0.21 |
+| member cleanup of group 17 | 51.34, 0 rows | 0.67, 5 rows |
+| member cleanup of group 61 | 50.88, 0 rows | 0.56, 0 rows |
+
+- New page text: Index Scan Backward of `idx_chat_items_groups_item_ts` with `item_ts <= ts` in Index Cond and the row comparison as Filter, then Incremental Sort and Limit; with the old text, the same index is read from the newest item of the group, and 9,986 rows are removed by Filter (8,913 buffers against 44).
+- New cleanup text: Nested Loop Anti Join over `idx_chat_items_group_member_id`.
+- Page rows of the two texts are equal in the 24 measured pages and in 2,698 more pages of the four chats.
+- Writes on `ep/omnibus`, 5727cc7d5 and new, execution in ms, rolled back: mark all chats read 7,872, 8,267, 7,901; mark group 17 read 209, 197, 195; TTL deletion of group 17 270, 250, 245; insert of 1,000 items of group 17 118, 115, 114.
+- Bytes of the four indexes: 251.6 MB on `ep/omnibus`, 262.8 MB on the new schema; `chat_item_id` is stored in `idx_chat_items_contacts`, as a btree entry of PostgreSQL references the heap tuple.
+- Migration: 4.9 s up, 4.9 s down.
+
+CI of the reduced build: the cleanup test fails on 7ae07e459 on SQLite and PostgreSQL (https://github.com/evgeny-simplex/simplex-chat/actions/runs/45293671447); the tests of section 8 pass on d27b96924 except "verify and overwrite query plans" (https://github.com/evgeny-simplex/simplex-chat/actions/runs/45295704428), whose patch is commit 6.
+
 ## 8. Commits
 
 1. `docs: plan for faster chat list and pages, member cleanup`
@@ -343,6 +377,7 @@ Migration on the same database: 16.1 s for the up text, in two runs of its state
 4. `core: faster chat list and profile switch on SQLite and PostgreSQL`
 5. `core: faster pages of long chats`
 6. `core: update query plans`, from the CI artifact of the generated files
+7. `docs: PostgreSQL results of the chat list plan`
 
 Tests of the reduced build:
 
