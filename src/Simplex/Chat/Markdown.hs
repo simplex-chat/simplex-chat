@@ -506,12 +506,15 @@ markdownP = joinMarkdown <$> A.many' fragmentP
     linkMD :: Text -> Maybe Markdown
     linkMD s
       | isUri s' = case strDecode $ encodeUtf8 s' of
-          Right cLink -> Just $ res $ markdown (simplexUriFormat Nothing cLink) s'
-          Left _ -> case strDecode $ encodeUtf8 s' of
-            Right ni -> Just $ res $ markdown (SimplexName ni) s'
-            Left _ -> case parseUri $ encodeUtf8 s' of
-              Right _ -> Just $ res $ markdown Uri s'
-              Left _ -> Nothing
+          Right (ACTarget m t) -> Just $ res $ flip markdown s' $ case t of
+            CTShortContact (CTName ni) -> SimplexName ni
+            CTShortContact (CTLink sLnk) -> simplexUriFormat Nothing $ ACL m $ CLShort sLnk
+            CTFullContact cReq -> simplexUriFormat Nothing $ ACL m $ CLFull cReq
+            CTInv cLink -> simplexUriFormat Nothing $ ACL m cLink
+            CTDomain _ -> Uri
+          Left _ -> case parseUri $ encodeUtf8 s' of
+            Right _ -> Just $ res $ markdown Uri s'
+            Left _ -> Nothing
       | isDomain s' = Just $ res $ markdown Uri s'
       | isEmail s' = Just $ res $ markdown Email s'
       | otherwise = Nothing
