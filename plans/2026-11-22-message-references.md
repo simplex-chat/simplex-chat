@@ -319,7 +319,7 @@ itemMsgLink cInfo ci@ChatItem {meta = CIMeta {itemId, itemSharedMsgId}} = case (
 
 | Party | Local link, same chat | Local link, other chat | Global link |
 |---|---|---|---|
-| sender | the label and the short text, in the compose preview before sending and in the sent message; opens it | the label and the short text; opens it from the sender's own copy | the label and the short text; opens it |
+| sender | the label and the short text, in the compose preview before sending (Q20) and in the sent message; opens it | the label and the short text; opens it from the sender's own copy | the label and the short text; opens it |
 | recipient in the chat | the label and the short text; opens it | the label and the short text; a link from an unknown source | the label and the short text; opens it as a member, or joins the chat |
 | forwarder | the label and the short text; opens it from the forwarder's own copy, by its target in the original chat | the label and the short text; opens it from the forwarder's own copy when the forwarded message is the forwarder's own, whose row has the target; otherwise a link from an unknown source | the label and the short text; opens it, or joins the chat; where it is reduced to `simplex:/m`, opens it from the forwarder's own copy when the target is in the forwarder's chats |
 | recipient of a forward | the label and the short text; a link from an unknown source | the same | the label and the short text; opens it, or joins the chat |
@@ -329,7 +329,7 @@ Privacy:
 
 - The reference of a local link, the message ID and, in a group, the author's member ID, is written in a sent text only for a target in the chat and scope of the message, whose members have the target. A link to another chat is sent as `simplex:/m`, and new clients remove references in forwards.
 - Earlier clients copy and forward the text as it is, references included. This is accepted by the threat model, in the maintainer's words: "It's chatham house rule, and we don't change threat model - anybody can say X said Y in chat Z, which is more than is shared here".
-- The short text is received by everyone who receives the linking message and by everyone it is forwarded to by new clients; as the default label (Q4), it is also in the text, so it is in copies and forwards of earlier clients. The sender sees it in the compose preview before sending. For a link to another chat, it is text of that chat shown to the audience of this one (Q9).
+- The short text is received by everyone who receives the linking message and by everyone it is forwarded to by new clients; as the default label (Q4), it is also in the text, so it is in copies and forwards of earlier clients. The sender sees it in the compose preview before sending (Q20). For a link to another chat, it is text of that chat shown to the audience of this one (Q9).
 - A note link consists of database IDs of the user's device; it is written in notes and on the clipboard, and sent as `simplex:/m` to other chats.
 - Access to a message is not given by its link: only a reader who has the message can open it.
 - The core resolves a link from the local database and sends no request. For a public chat that the reader is not in, its link data is then fetched from its server by the connection flow, as for its link; `m` and `a` are not sent.
@@ -547,11 +547,11 @@ sequenceDiagram
 | rendering and tap | MsgContentView.swift:300-313, 645-692: an attribute key for message links, and the short text from the item's `links` | TextItemView.kt:354, 394-416, 489-504: the annotation `MESSAGE_LINK` |
 | open at the item | `ItemsModel.loadOpenChatNoWait(chatId, itemId)` (ChatModel.swift:143-157), as the forward header (FramedItemView.swift:117-123) | `openChat(null, rhId, chatType, apiId, itemId)` (ChatListNavLinkView.kt:212-236), as FramedItemView.kt:362-370 |
 | link from outside | `connectViaUrl_` (ContentView.swift:463-488): a URL that the core parses as a message link is passed to the plan before the path switch; `/p` and `/s` are added to the path list | `connectIfOpenedViaUri` (ChatListView.kt:800-814): the same check before `planAndConnect`; `/p` and `/s` in AndroidManifest.xml:116-127 |
-| compose | a pasted link is shown as `[short text]` with the short text from the plan, and the link is kept in the compose state, as mentions are kept (ComposeView.swift:56-137); the text is sent with `[label](link)`; an edit loads the item's links the same way | the same in the Compose view |
+| compose, waiting for the decision Q20 | a pasted link is shown as `[short text]` with the short text from the plan, and the link is kept in the compose state, as mentions are kept (ComposeView.swift:56-137); the text is sent with `[label](link)`; an edit loads the item's links the same way | the same in the Compose view |
 | Copy link | the item menu (ChatView.swift:2447-2507), after Copy, without a confirmation | `MsgContentItemDropdownMenu` (ChatItemView.kt:394-451), after Copy, with "Copied to clipboard" |
 | link pasted in search | `strConnectTarget` (NewChatView.swift:860-872), then the plan | `strConnectTarget` (NewChatView.kt:834), then the plan |
 
-- A link is shown as `label (short text)` in the link style, the short text in italics (Q3, Q4, Q19); a label equal to the short text is shown once. A link from an unknown source, without a target in the item's links, is shown in the link colour at 70% opacity (Q19). At Copy of a message's text, the app puts the text with its links on the clipboard; at "Copy link", the message's own link: global for a public chat, `simplex:/m#…` otherwise. At long-press on a link, the app opens the item menu, as now (ChatItemView.kt:129).
+- A link is shown as `label (short text)` in the link style, the short text in italics (Q3, Q4, Q19); a label equal to the short text is shown once. A link from an unknown source, without a target in the item's links, is muted (Q19): the link colour at 70% opacity, waiting for the decision Q19-1. At Copy of a message's text, the app puts the text with its links on the clipboard; at "Copy link", the message's own link: global for a public chat, `simplex:/m#…` otherwise. At long-press on a link, the app opens the item menu, as now (ChatItemView.kt:129).
 - The decision from a link and its `MsgLinkPlan` to an action is one pure function in each app, tested on recorded core responses.
 - `simplex:` is registered on iOS (SimpleX--iOS--Info.plist:40-43), Android (AndroidManifest.xml:75) and desktop (plans/2026-09-28-desktop-deep-links.md, section "`simplex:` connection links"); https links on preset servers are opened in the app on iOS (SimpleX (iOS).entitlements:12) and Android (AndroidManifest.xml:86-127).
 - `minRemoteCtrlVersion` and `minRemoteHostVersion` (Remote.hs:77-82) are set to the release version, as for block markdown (plans/2026-10-13-block-markdown.md:691), because an earlier desktop cannot decode the new `Format`, `ChatItem` and `SimplexLinkType` values.
@@ -612,7 +612,8 @@ Agents can use such links under three conditions, each stated by the design:
 | edits: a new map with new short texts | v1 |
 | link URIs for "Copy link", links from outside and composed texts; the plan; `/_get item link` | v1 |
 | connect plan of types `p` and `s`: the update alerts; `#name` resolved to a link of type `c`, `p` or `s` (Q11) | v1 |
-| apps: rendering, tap, compose, Copy link, links from outside, search paste, the update alert of sites; website; remote versions; the comments of the scheme roles | v1 |
+| apps: rendering, tap, Copy link, links from outside, search paste, the update alert of sites; website; remote versions; the comments of the scheme roles | v1 |
+| apps: the compose preview of pasted links | v1, waiting for the decision Q20 |
 | plugin: `link`, `open`, the `links` field, the `connect` error, instructions | stage 2, after the release of the npm packages simplex-chat and @simplex-chat/types (packages/simplex-chat-mcp/package.json:31-33) |
 | the board link of Q8 | stage 2 |
 | the reference of a link kept in a forward into the chat and scope of its target | later |
@@ -663,8 +664,12 @@ Each test, except the compatibility tests, is written to fail on master; the com
 | | cath forwards bob's message in `#team` with a link to alice's message in `#team` to dan: dan receives `[q](simplex:/m)` without a target; cath's copy has the target, alice's message in `#team` |
 | | alice forwards her own message in `#club` with a link to bob's message in `#team` to dan: alice's copy has the target copied from the original item's row; cath forwards the same message from `#club`: cath's copy is without a target |
 | | a global link forwarded into a group with SimpleX links off: the forwarder's copy has the target when the forwarder is in the public chat |
-| app tests on recorded core responses | `Format.messageLink` and `ChatItem.links` are decoded; each kind of link and `MsgLinkPlan` variant → its action; `CPUpdateRequired` → its alert; a pasted link is shown as `[short text]` and sent as `[short text](link)` |
-| | Q19: a link is shown as `label (short text)`; the recipient's link from an unknown source is muted, the sender's link with a target is not; Copy link follows Copy and puts the recorded link on the clipboard, with "Copied to clipboard" on desktop and no alert on iOS; a failed plan request shows "Error opening link" |
+| app tests on recorded core responses | `Format.messageLink` and `ChatItem.links` are decoded; each kind of link and `MsgLinkPlan` variant → its action; `CPUpdateRequired` → its alert |
+| | Q19: a link is shown as `label (short text)`; the recipient's link from an unknown source is muted, the sender's link with a target is not; a failed plan request shows "Error opening link" |
+| | Q19, desktop: in the opened menu of a message, Copy link follows Copy, and a click on it puts the recorded link on the clipboard and shows "Copied to clipboard" |
+| | Q19, iOS: Copy link puts the recorded link on the clipboard without an alert |
+| | waiting for the decision Q20: the compose preview of a pasted link |
+| ios-sim smoke test | Q19, iOS: in the menu of a sent message, Copy link follows Copy, and a tap on it puts the message's link on the clipboard |
 | snapshot previews | a received message with a link to the same chat and a link from an unknown source: `ChatItemView.PreviewChatItemViewMessageLinks` (desktop), `FramedItemView_MessageLinks` (iOS) |
 | plugin unit and e2e tests | `link` of a message in the session's group, then a live message with `[label](link)`, then `links` of the message for a member and `open`; `open` for a chat of another session returns `none`; `connect` with a `simplex:/m` link returns its error |
 
