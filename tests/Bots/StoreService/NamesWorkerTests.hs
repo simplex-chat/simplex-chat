@@ -232,7 +232,7 @@ day :: NominalDiffTime
 day = 86400
 
 -- | Committed a minute before the order.
-openPhase :: NameRegistration -> NameRegistration
+openPhase :: NameRegistrationOrder -> NameRegistrationOrder
 openPhase r = r {nrPhase = OCommitted openCommit}
 
 openCommit :: Commit
@@ -241,24 +241,24 @@ openCommit = Commit {cmTx = Just $ TxRef (TxHash $ hashFixture 8) 100, cmRevealA
 commitAt :: Word64 -> Maybe TxRef -> Commit
 commitAt t tx = Commit {cmTx = tx, cmRevealAfter = RoundedSystemTime $ fromIntegral $ t + minAge, cmRevealBefore = RoundedSystemTime $ fromIntegral $ t + maxAge}
 
-revealBeforeOf :: NameRegistration -> Maybe Word64
+revealBeforeOf :: NameRegistrationOrder -> Maybe Word64
 revealBeforeOf = fmap (fromIntegral . roundedSeconds . cmRevealBefore) . phaseCommit . nrPhase
 
 -- | The reveal the page sends, its intent signed with the owner's key.
-signedReveal :: Ctx -> Secp256k1PrivateKey -> NameReveal -> NameRegistration -> IO NameReveal
-signedReveal Ctx {cRandom, cOrders, cNode} key rv r@NameRegistration {nrCommitment, nrOwner} = do
+signedReveal :: Ctx -> Secp256k1PrivateKey -> NameReveal -> NameRegistrationOrder -> IO NameReveal
+signedReveal Ctx {cRandom, cOrders, cNode} key rv r@NameRegistrationOrder {nrCommitment, nrOwner} = do
   let RegisterIntent {riRegistration, riDisputeDays} = intentOf (oeConfig cOrders) nrOwner (nrDuration r) (nrDisputeDays r) rv
   sig <- either (error . show) id <$> signRecoverable cRandom key (registerIntentDigest (sponsorDomain fakeChainId fakeSponsor) riRegistration riDisputeDays (rvNonce rv) (rvDeadline rv))
   answerCall cNode fakeNamePolicy (selector "acceptedTerms(bytes32,address)" <> unHex32 nrCommitment <> addressWord nrOwner) $ Returns $ unHex32 $ termsHash $ rvAcceptance rv
   pure rv {rvSignature = sig}
 
 -- | The registration with the page's reveal of the label accepted.
-revealed :: Ctx -> Secp256k1PrivateKey -> Text -> NameRegistration -> IO NameRegistration
+revealed :: Ctx -> Secp256k1PrivateKey -> Text -> NameRegistrationOrder -> IO NameRegistrationOrder
 revealed ctx key label r = signedReveal ctx key reveal {rvLabel = label} r >>= \rv -> rewrite ctx r (\o -> o {nrReveal = Just rv})
 
 -- | Steps until the worker has nothing to do at once.
-steps :: W -> NameRegistration -> IO Next
-steps W {wWorker} NameRegistration {nrId} = go (10 :: Int)
+steps :: W -> NameRegistrationOrder -> IO Next
+steps W {wWorker} NameRegistrationOrder {nrId} = go (10 :: Int)
   where
     go 0 = fail "the worker kept stepping"
     go n =
@@ -328,11 +328,11 @@ mineRegisterOver w@W {wCtx = ctx} days = do
   t <- blockTime w block
   block <$ answerDisputeUntil ctx "alicebakery" (t + disputeSeconds days)
 
-commitmentsCall :: NameRegistration -> ByteString
-commitmentsCall NameRegistration {nrCommitment} = selector "commitments(bytes32)" <> unHex32 nrCommitment
+commitmentsCall :: NameRegistrationOrder -> ByteString
+commitmentsCall NameRegistrationOrder {nrCommitment} = selector "commitments(bytes32)" <> unHex32 nrCommitment
 
 -- | The commitment's time on chain, 0 for none.
-answerCommitment :: W -> NameRegistration -> Word64 -> IO ()
+answerCommitment :: W -> NameRegistrationOrder -> Word64 -> IO ()
 answerCommitment W {wCtx = Ctx {cNode}} r t = answerCall cNode fakeController (commitmentsCall r) $ Returns $ uint256 t
 
 answerAvailable :: W -> Bool -> IO ()
@@ -346,13 +346,13 @@ dryRunsPass :: W -> IO ()
 dryRunsPass W {wCtx = Ctx {cNode}} = clearFault cNode "eth_estimateGas"
 
 -- | The action's result, failing unless it published the version it wrote to a poll held at the version before.
-published :: W -> NameRegistration -> IO a -> IO a
+published :: W -> NameRegistrationOrder -> IO a -> IO a
 published W {wCtx = ctx} r action = do
-  NameRegistration {nrId, nrVersion} <- stored ctx r
+  NameRegistrationOrder {nrId, nrVersion} <- stored ctx r
   poll <- held ctx (0, 1) $ registrationPath nrId <> "?seenVersion=" <> show nrVersion
   a <- action
   (status, view) <- woken "the registration poll" poll
-  NameRegistration {nrVersion = written} <- stored ctx r
+  NameRegistrationOrder {nrVersion = written} <- stored ctx r
   (status, fieldOf view "version", written > nrVersion) `shouldBe` (200, Just (J.toJSON written), True)
   pure a
 
@@ -409,7 +409,7 @@ testCodesOnlyRegister = withWorkerAs codesOnly $ \w@W {wCtx = ctx@Ctx {cClient}}
   stubCalls (cStub ctx) `shouldReturn` []
 
 -- | A queued order with the reveal its order stored, committed, its acceptance relayed, and registered, with no reveal request.
-commitWaitRegister :: W -> NameRegistration -> IO ()
+commitWaitRegister :: W -> NameRegistrationOrder -> IO ()
 commitWaitRegister w@W {wCtx = ctx} r = do
   answerExpiry ctx "alicebakery" expiry
   answerCommitment w r 0
@@ -595,8 +595,8 @@ testFeeAboveCap = withWorker $ \w@W {wCtx = ctx@Ctx {cNode}} -> do
   void $ steps w r >>= awaiting
   namePhase . nrPhase <$> stored ctx r `shouldReturn` PCommitting
 
-sentCommits :: Ctx -> NameRegistration -> TxSettlement -> [Word8] -> IO ()
-sentCommits Ctx {cStore} NameRegistration {nrId} settlement nonces = withTransaction cStore $ \db -> forM_ nonces $ \n -> do
+sentCommits :: Ctx -> NameRegistrationOrder -> TxSettlement -> [Word8] -> IO ()
+sentCommits Ctx {cStore} NameRegistrationOrder {nrId} settlement nonces = withTransaction cStore $ \db -> forM_ nonces $ \n -> do
   let h = TxHash $ hashFixture n
   void $ insertTransaction db (TxRegistration RTCommit nrId) NewTransaction {ntxRaw = "raw", ntxHash = h, ntxNonce = fromIntegral n} orderTime
   recordTransactionOutcome db h TSPending settlement `shouldReturn` True
@@ -656,7 +656,7 @@ balanceFigures :: Ctx -> RegistrationId -> IO (Maybe (USDCents, USDCents))
 balanceFigures Ctx {cStore} rid = fmap (\Balance {blAmount, blCredited} -> (blAmount, blCredited)) <$> withTransaction cStore (`getBalance` rid)
 
 -- | The register's dry run reverts on a name someone else holds, so the registration ends taken.
-endsTaken :: W -> NameRegistration -> IO ()
+endsTaken :: W -> NameRegistrationOrder -> IO ()
 endsTaken w@W {wCtx = Ctx {cNode}} r = do
   answerAvailable w False
   setFault cNode "eth_estimateGas" $ RpcError 3 "execution reverted: ERC721: invalid token ID" Nothing
@@ -781,8 +781,8 @@ testRevertFailed = withWorker $ \w@W {wCtx = ctx@Ctx {cNode}} -> do
   fmap naAt . nrLastAttempt <$> stored ctx p `shouldReturn` Just firstAt
   sent w `shouldReturn` []
 
-attemptsOf :: Ctx -> NameRegistration -> IO (Int, Int, Maybe (RegistrationTx, AttemptStage, Text))
-attemptsOf Ctx {cStore} NameRegistration {nrId = rid@(RegistrationId ridText)} = withTransaction cStore $ \db -> do
+attemptsOf :: Ctx -> NameRegistrationOrder -> IO (Int, Int, Maybe (RegistrationTx, AttemptStage, Text))
+attemptsOf Ctx {cStore} NameRegistrationOrder {nrId = rid@(RegistrationId ridText)} = withTransaction cStore $ \db -> do
   [(dryRuns, sends)] <- DB.query db "SELECT failed_dry_runs, failed_sends FROM sx_badge_service_name_registrations WHERE registration_id = ?" [ridText]
   (dryRuns,sends,) . (>>= fmap (\NameAttempt {naTx, naStage, naReason} -> (naTx, naStage, naReason)) . nrLastAttempt) <$> getRegistration db rid
 
@@ -861,25 +861,25 @@ testInvalidNonce = forM_ [("InvalidNonce()", fakeNamePolicy), ("TermsNotAccepted
   namePolicy oeContracts `shouldReturn` Right policyAfter
 
 -- | The page's reveal with its acceptance of the policy's general terms.
-acceptedReveal :: Ctx -> NameRegistration -> IO NameRegistration
+acceptedReveal :: Ctx -> NameRegistrationOrder -> IO NameRegistrationOrder
 acceptedReveal = acceptedRevealFor fakeNamePolicy False fakeGeneralTerms
 
 -- | The page's reveal with its acceptance of these terms signed for the given policy, as community terms or general terms.
-acceptedRevealFor :: Address -> Bool -> ByteString -> Ctx -> NameRegistration -> IO NameRegistration
+acceptedRevealFor :: Address -> Bool -> ByteString -> Ctx -> NameRegistrationOrder -> IO NameRegistrationOrder
 acceptedRevealFor policy community terms ctx@Ctx {cRandom} r = do
   rv <- signedReveal ctx keyA reveal {rvLabel = "alicebakery"} r
   sig <- either (error . show) id <$> signRecoverable cRandom keyA (acceptanceDigest (policyDomain fakeChainId policy) (termsKind community) (nrCommitment r) (Hex32 terms) 0 (rvDeadline rv))
   rewrite ctx r (\o -> o {nrReveal = Just rv {rvAcceptance = TermsAcceptance {termsHash = Hex32 terms, nonce = 0, signature = sig}}})
 
 -- | The terms hash the policy holds as accepted for the registration's commitment by its owner.
-answerAccepted :: W -> NameRegistration -> CallAnswer -> IO ()
-answerAccepted W {wCtx = Ctx {cNode}} NameRegistration {nrCommitment, nrOwner} =
+answerAccepted :: W -> NameRegistrationOrder -> CallAnswer -> IO ()
+answerAccepted W {wCtx = Ctx {cNode}} NameRegistrationOrder {nrCommitment, nrOwner} =
   answerCall cNode fakeNamePolicy (selector "acceptedTerms(bytes32,address)" <> unHex32 nrCommitment <> addressWord nrOwner)
 
 testAcceptanceRelayed :: IO ()
 testAcceptanceRelayed = forM_ [(False, fakeGeneralTerms, plainTerms), (True, fakeCommunityTerms, communityTerms)] $ \(community, terms, signed) -> withWorker $ \w@W {wCtx = ctx@Ctx {cNode}} -> do
   when community $ listCommunityName cNode $ labelHash "alicebakery"
-  r@NameRegistration {nrReveal = Just NameReveal {rvDeadline, rvAcceptance = acceptance}} <- paidIn ctx aliceOrder {oTerms = signed} openPhase >>= acceptedRevealFor fakeNamePolicy community terms ctx
+  r@NameRegistrationOrder {nrReveal = Just NameReveal {rvDeadline, rvAcceptance = acceptance}} <- paidIn ctx aliceOrder {oTerms = signed} openPhase >>= acceptedRevealFor fakeNamePolicy community terms ctx
   relay <- steps w r >>= awaiting
   [acceptRaw] <- sent w
   ((txTo &&& txData) <$> decodeSignedTx acceptRaw) `shouldBe` Right (fakeNamePolicy, acceptCalldata (termsKind community) (nrCommitment r) (nrOwner r) rvDeadline acceptance)
@@ -915,7 +915,7 @@ testAcceptanceRefused = forM_ ["TermsMismatch(bytes32,bytes32)", "InvalidNonce()
 
 testAcceptanceSentFirst :: IO ()
 testAcceptanceSentFirst = withWorker $ \w@W {wCtx = ctx@Ctx {cNode}} -> do
-  r@NameRegistration {nrReveal = Just NameReveal {rvDeadline, rvAcceptance = acceptance}} <- paidIn ctx aliceOrder openPhase >>= acceptedReveal ctx
+  r@NameRegistrationOrder {nrReveal = Just NameReveal {rvDeadline, rvAcceptance = acceptance}} <- paidIn ctx aliceOrder openPhase >>= acceptedReveal ctx
   answerAccepted w r $ Returns fakeGeneralTerms
   answerCallOnce cNode fakeNamePolicy (selector "acceptedTerms(bytes32,address)" <> unHex32 (nrCommitment r) <> addressWord (nrOwner r)) $ Returns $ uint256 (0 :: Int)
   revertDryRun cNode (acceptCalldata (termsKind False) (nrCommitment r) (nrOwner r) rvDeadline acceptance) $ Just $ selector "InvalidNonce()"
@@ -1073,7 +1073,7 @@ testStepException :: IO ()
 testStepException = withWorker $ \W {wCtx = ctx@Ctx {cStore, cOrders}, wSender} -> do
   reports <- newTVarIO []
   worker <- newWorker cOrders {oeReport = \t -> atomically $ modifyTVar' reports (t :)} wSender
-  NameRegistration {nrId = RegistrationId rid} <- paidIn ctx aliceOrder id
+  NameRegistrationOrder {nrId = RegistrationId rid} <- paidIn ctx aliceOrder id
   withTransaction cStore $ \db -> DB.execute db "UPDATE sx_badge_service_name_registrations SET commit_block = 1 WHERE registration_id = ?" [rid]
   logged <- capturingStderr $ withAsync (runWorkers worker) $ \_ -> do
     threadDelay 6000000
@@ -1306,7 +1306,7 @@ testUnregisteredAlert = withWorker $ \W {wCtx = ctx@Ctx {cOrders}, wSender} -> d
   advance ctx 1
   alertUnregisteredSelected worker
   alertUnregisteredSelected worker
-  let named NameRegistration {nrId = RegistrationId rid} = any (T.isInfixOf rid)
+  let named NameRegistrationOrder {nrId = RegistrationId rid} = any (T.isInfixOf rid)
   sent' <- readTVarIO reports
   (length sent', named paid sent', named code sent', named failedOrder sent') `shouldBe` (3, True, True, True)
 
@@ -1338,7 +1338,7 @@ testMonthEnds = withWorker $ \W {wCtx = ctx@Ctx {cStore, cOrders}, wSender} -> d
   map orderLive <$> mapM (stored ctx) ended `shouldReturn` [False, False, False]
   closeOf ctx failed `shouldReturn` CLRefused CFMonthEnded
   sent' <- readTVarIO reports
-  map (\NameRegistration {nrId = RegistrationId rid} -> length $ filter (T.isInfixOf $ "order " <> rid <> " was not registered within a month") sent') ended `shouldBe` [1, 1, 1]
+  map (\NameRegistrationOrder {nrId = RegistrationId rid} -> length $ filter (T.isInfixOf $ "order " <> rid <> " was not registered within a month") sent') ended `shouldBe` [1, 1, 1]
   length sent' `shouldBe` 3
 
 testMonthFromSelection :: IO ()
@@ -1452,7 +1452,7 @@ testLandedAtDepth = withOrders $ \ctx@Ctx {cNode, cOrders} -> do
 atSeconds :: Word64 -> SystemSeconds
 atSeconds = RoundedSystemTime . fromIntegral
 
-registeredUntil :: Word64 -> NameRegistration -> NameRegistration
+registeredUntil :: Word64 -> NameRegistrationOrder -> NameRegistrationOrder
 registeredUntil t r = r {nrPhase = ORegistered expirySeconds (Just $ atSeconds t) orderTime}
 
 confirmedBlockAt :: Ctx -> Word64 -> IO Word64
@@ -1466,7 +1466,7 @@ registrationFrom Ctx {cNode} block expires disputeEnd =
 unregisteredFrom :: Ctx -> Word64 -> IO ()
 unregisteredFrom ctx block = registrationFrom ctx block 0 0
 
-minedRegister :: W -> IO (NameRegistration, Word64)
+minedRegister :: W -> IO (NameRegistrationOrder, Word64)
 minedRegister w@W {wCtx = ctx} = do
   r <- paidIn ctx aliceOrder openPhase >>= revealed ctx keyA "alicebakery"
   answerAvailable w True
@@ -1474,8 +1474,8 @@ minedRegister w@W {wCtx = ctx} = do
   answerExpiry ctx "alicebakery" expiry
   (r,) <$> mineRegister w
 
-readAgainLine :: NameRegistration -> Text
-readAgainLine NameRegistration {nrId = RegistrationId rid} = "names ended sweep: registration " <> rid <> ": a chain read failed, read again at the next pass: "
+readAgainLine :: NameRegistrationOrder -> Text
+readAgainLine NameRegistrationOrder {nrId = RegistrationId rid} = "names ended sweep: registration " <> rid <> ": a chain read failed, read again at the next pass: "
 
 testRegisterReadAtDepth :: IO ()
 testRegisterReadAtDepth = withWorker $ \w@W {wCtx = ctx@Ctx {cNode}} -> do
@@ -1629,18 +1629,18 @@ testEndedPassFails = withWorker $ \W {wCtx = ctx@Ctx {cStore, cOrders}, wWorker}
 
 -- retry
 
-retryOf :: Ctx -> NameRegistration -> IO (Int, Maybe J.Object)
-retryOf ctx NameRegistration {nrId} = post ctx (registrationPath nrId <> "/retry") ""
+retryOf :: Ctx -> NameRegistrationOrder -> IO (Int, Maybe J.Object)
+retryOf ctx NameRegistrationOrder {nrId} = post ctx (registrationPath nrId <> "/retry") ""
 
 -- | The view of an accepted /retry, failing the test otherwise.
-retried :: Ctx -> NameRegistration -> IO J.Object
+retried :: Ctx -> NameRegistrationOrder -> IO J.Object
 retried ctx r =
   retryOf ctx r >>= \case
     (200, Just v) -> pure v
     other -> fail $ "retry refused: " <> show other
 
-viewOf :: Ctx -> NameRegistration -> IO J.Object
-viewOf Ctx {cClient} NameRegistration {nrId} = webGet cClient (registrationPath nrId) >>= jsonObject
+viewOf :: Ctx -> NameRegistrationOrder -> IO J.Object
+viewOf Ctx {cClient} NameRegistrationOrder {nrId} = webGet cClient (registrationPath nrId) >>= jsonObject
 
 viewFixture :: String -> Maybe J.Object -> IO ()
 viewFixture name view = storeFixture name 200 (J.Object . KM.insert "id" "registration" <$> view) Nothing
@@ -1689,8 +1689,8 @@ testRetryInNameTurn = withWorker $ \W {wCtx = ctx@Ctx {cOrders}} -> do
   renamed <- paidIn ctx (byB dynamisOrder) {oSecret = secretOf 2} committedPhase
   advance ctx $ day + 1
   let turns = oeTurns cOrders
-      whileHeld :: NameRegistration -> IO a -> IO () -> IO a
-      whileHeld NameRegistration {nrLabelHash} request meanwhile = do
+      whileHeld :: NameRegistrationOrder -> IO a -> IO () -> IO a
+      whileHeld NameRegistrationOrder {nrLabelHash} request meanwhile = do
         holding <- newEmptyMVar
         release <- newEmptyMVar
         withAsync (withLabelTurn turns nrLabelHash $ putMVar holding () >> takeMVar release) $ \_ -> do
@@ -1707,16 +1707,16 @@ testRetryInNameTurn = withWorker $ \W {wCtx = ctx@Ctx {cOrders}} -> do
   (status', (`fieldOf` "type") =<< v') `shouldBe` (409, Just "registration_changed")
   nrPhase <$> stored ctx renamed `shouldReturn` nrPhase renamed
 
-closeOf :: Ctx -> NameRegistration -> IO Closed
-closeOf Ctx {cOrders = OrdersEnv {oeStore, oeContracts, oeTurns, oeNow}} NameRegistration {nrId = RegistrationId rid} = closeRegistration oeStore oeContracts oeTurns oeNow rid
+closeOf :: Ctx -> NameRegistrationOrder -> IO Closed
+closeOf Ctx {cOrders = OrdersEnv {oeStore, oeContracts, oeTurns, oeNow}} NameRegistrationOrder {nrId = RegistrationId rid} = closeRegistration oeStore oeContracts oeTurns oeNow rid
 
-figuresOf :: Ctx -> NameRegistration -> IO (Maybe (USDCents, USDCents, USDCents))
-figuresOf Ctx {cStore} NameRegistration {nrId = RegistrationId rid} = figures cStore rid
+figuresOf :: Ctx -> NameRegistrationOrder -> IO (Maybe (USDCents, USDCents, USDCents))
+figuresOf Ctx {cStore} NameRegistrationOrder {nrId = RegistrationId rid} = figures cStore rid
 
-refundedWhole :: Ctx -> NameRegistration -> USDCents -> IO RefundRecord
+refundedWhole :: Ctx -> NameRegistrationOrder -> USDCents -> IO RefundRecord
 refundedWhole ctx r price = (\ref -> RefundRecord {rdRegistration = nrId r, rdCents = price, rdLink = Just BalanceLink {lkRegistration = nrId r, lkOwner = nrOwner r, lkPhase = PTaken, lkPayment = nrPayment r, lkProviderRef = Just ref, lkPaid = price, lkReversedCents = 0, lkLateCredits = []}}) <$> paidRef ctx r
 
-paidRef :: Ctx -> NameRegistration -> IO Text
+paidRef :: Ctx -> NameRegistrationOrder -> IO Text
 paidRef Ctx {cStore} r = case paymentInvoice (nrPayment r) of
   Just invId -> maybe (error "no invoice row") irProviderRef <$> getInvoice cStore invId
   Nothing -> error $ "not paid by invoice: " <> show (nrPayment r)

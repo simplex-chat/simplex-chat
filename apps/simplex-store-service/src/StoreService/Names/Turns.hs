@@ -13,7 +13,7 @@ import Simplex.Messaging.SimplexName (LabelHash)
 import Simplex.Messaging.TMap (TMap)
 import qualified Simplex.Messaging.TMap as TM
 import StoreService.Names.Phases (RegistrationId (..))
-import StoreService.Names.Store (CodeHash, NameRegistration (..), getRegistration)
+import StoreService.Names.Store (CodeHash, NameRegistrationOrder (..), getRegistration)
 
 data Turns = Turns {labelTurns :: TMap LabelHash Lock, codeTurns :: TMap CodeHash Lock, balanceTurns :: TMap RegistrationId Lock}
 
@@ -29,11 +29,11 @@ withLabelTurns Turns {labelTurns} a b = withLocksMap labelTurns (S.fromList [a, 
 
 type NameSelected = ()
 
-withRegistrationTurn :: DBStore -> Turns -> NameRegistration -> (NameRegistration -> IO a) -> IO (Maybe (Either NameSelected a))
+withRegistrationTurn :: DBStore -> Turns -> NameRegistrationOrder -> (NameRegistrationOrder -> IO a) -> IO (Maybe (Either NameSelected a))
 withRegistrationTurn st turns r = withRegistrationTurns st turns r $ nrLabelHash r
 
-withRegistrationTurns :: DBStore -> Turns -> NameRegistration -> LabelHash -> (NameRegistration -> IO a) -> IO (Maybe (Either NameSelected a))
-withRegistrationTurns st turns NameRegistration {nrId, nrLabelHash = held} other action =
+withRegistrationTurns :: DBStore -> Turns -> NameRegistrationOrder -> LabelHash -> (NameRegistrationOrder -> IO a) -> IO (Maybe (Either NameSelected a))
+withRegistrationTurns st turns NameRegistrationOrder {nrId, nrLabelHash = held} other action =
   withLabelTurns turns held other $
     withTransaction st (`getRegistration` nrId) >>= traverse inTurns
   where

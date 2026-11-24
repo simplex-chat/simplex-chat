@@ -26,7 +26,7 @@ import StoreService.Names.Env (NamesEnv)
 import StoreService.Names.Orders (OrdersEnv (..), noteRead, ordersEnv)
 import StoreService.Names.Phases (RegistrationId, awaitChange)
 import StoreService.Names.Registration (tldLabel)
-import StoreService.Names.Store (NamePhase (..), NameRegistration (..), getRegistration, namePhase)
+import StoreService.Names.Store (NamePhase (..), NameRegistrationOrder (..), getRegistration, namePhase)
 import StoreService.Names.View (lapseMoment, registrationVersion)
 import StoreService.Orders (RegistrationChanged (..), cancelOpenInvoice)
 import StoreService.Poller (ReadHints, queueReadHint)
@@ -246,7 +246,7 @@ readNameInvoice env@WebEnv {weConfig, weWaiters, weHoldMicros, weHttp} orders@Or
       _ -> respond . jsonResponse status200 =<< nameInvoiceView orders (confirmationsFor weConfig) row r
   where
     seenVersion = versionParam req
-    holds wait row@InvoiceRow {irStatus} NameRegistration {nrPhase, nrVersion} =
+    holds wait row@InvoiceRow {irStatus} NameRegistrationOrder {nrPhase, nrVersion} =
       wait == irStatus
         && not (irStatus == ISPaid && namePhase nrPhase `elem` [PUnpaid, PClosed])
         && samePayment req row
@@ -261,7 +261,7 @@ readNameInvoice env@WebEnv {weConfig, weWaiters, weHoldMicros, weHttp} orders@Or
         (_, Nothing) -> void onStatus
 
 -- | The invoice and its registration as a read now shows them.
-readName :: OrdersEnv -> InvoiceRow -> RegistrationId -> IO (Maybe (UTCTime, InvoiceRow, NameRegistration))
+readName :: OrdersEnv -> InvoiceRow -> RegistrationId -> IO (Maybe (UTCTime, InvoiceRow, NameRegistrationOrder))
 readName OrdersEnv {oeStore, oeNow} row rid = do
   now <- oeNow
   withTransaction oeStore (`getRegistration` rid) >>= traverse (\r -> (now, invoiceAt now row, r) <$ noteRead oeStore now r)

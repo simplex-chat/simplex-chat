@@ -18,7 +18,7 @@ where
 
 import StoreService.Names.Phases (Phases, RegistrationId (..))
 import qualified StoreService.Names.Phases as Phases
-import StoreService.Names.Store (BrokenInvariant (..), InvoiceClose (..), LateSupport (..), NamePhase (..), NameRegistration (..), OrderPhase (..), VersionWrite (..), creditBalance, getRegistration, labelHolder, namePhase, openInvoicesOfHeldName, queueSettled, reversalRecorded, setLateSupport, setSettledAt, updateRegistration)
+import StoreService.Names.Store (BrokenInvariant (..), InvoiceClose (..), LateSupport (..), NamePhase (..), NameRegistrationOrder (..), OrderPhase (..), VersionWrite (..), creditBalance, getRegistration, labelHolder, namePhase, openInvoicesOfHeldName, queueSettled, reversalRecorded, setLateSupport, setSettledAt, updateRegistration)
 import StoreService.Providers (Confirmation (..), Confirmed (..), CryptoReceived (..), Funded (..), PaymentSignal (..), Provider (..), Received (..), providerErrorText, providerNamed, receivedAmount, receivedConfirmed)
 import StoreService.Store.Invoices (InvoicePayment (..), InvoiceProduct (..), InvoiceRow (..), OverdueInvoice (..), currentSecond, expireOverdueInvoice, lockInvoice, markCodePaid, paymentHolds, paymentStatusText, settlementCodeHash, settlementInvoice, truncateToSecond, updateInvoiceStatus, upsertPayment)
 import StoreService.Waiters (Waiters, publish, publishPayment)
@@ -86,7 +86,7 @@ maxBackdate = 30 * 24 * 60 * 60
 data Published = PubNothing | PubStatus InvoiceStatus | PubPayment
 
 -- | What the invoice pays for, read before any write.
-data Product = PBadge (Maybe ByteString) | PName NameRegistration
+data Product = PBadge (Maybe ByteString) | PName NameRegistrationOrder
 
 -- | A name order's change at settlement: its new version; money received after it closed, which stays unpaid and is credited to its balance;
 -- or an order closed because another live order holds its commitment, or its owner and name. The text is the provider's reference of the order's invoice.
@@ -196,8 +196,8 @@ settleOrder st waiters phases invId@(InvoiceId invText) signal now' = do
 -- An invoice the provider closed closes its order, and is late once if it holds money, read now or before.
 -- BTCPay reports money paid into a closed invoice as Expired or Invalid, not Settled, so a new payment figure
 -- on a closed invoice is late too; the monotonic payment write reports each figure once.
-nameSettled :: DB.Connection -> Text -> InvoiceStatus -> Maybe InvoiceStatus -> SettledMoney -> NameRegistration -> UTCTime -> UTCTime -> IO [NameOutcome]
-nameSettled db ref before after money r@NameRegistration {nrId, nrLabelHash, nrPhase, nrPrice} paidAt now
+nameSettled :: DB.Connection -> Text -> InvoiceStatus -> Maybe InvoiceStatus -> SettledMoney -> NameRegistrationOrder -> UTCTime -> UTCTime -> IO [NameOutcome]
+nameSettled db ref before after money r@NameRegistrationOrder {nrId, nrLabelHash, nrPhase, nrPrice} paidAt now
   | namePhase nrPhase `notElem` [PUnpaid, PClosed] = pure []
   | otherwise = case after of
       Just ISPaid
@@ -229,8 +229,8 @@ nameSettled db ref before after money r@NameRegistration {nrId, nrLabelHash, nrP
     closed = maybe [] (\(rid, v) -> [NOWritten rid v]) <$> closeOrder db ICExpired r now
 
 -- | Closes a live unpaid order, as its invoice closes in the same transaction.
-closeOrder :: DB.Connection -> InvoiceClose -> NameRegistration -> UTCTime -> IO (Maybe (RegistrationId, Int64))
-closeOrder db how r@NameRegistration {nrId, nrPhase} now = case nrPhase of
+closeOrder :: DB.Connection -> InvoiceClose -> NameRegistrationOrder -> UTCTime -> IO (Maybe (RegistrationId, Int64))
+closeOrder db how r@NameRegistrationOrder {nrId, nrPhase} now = case nrPhase of
   OUnpaid _ ->
     updateRegistration db r {nrPhase = OClosed how, nrReveal = Nothing} now >>= \case
       Written v -> pure $ Just (nrId, v)

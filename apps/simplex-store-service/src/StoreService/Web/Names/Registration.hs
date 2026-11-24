@@ -33,7 +33,7 @@ import StoreService.Config (boundedDecimal)
 import StoreService.Names.Orders (OrderRefusal (..), OrdersEnv (..), WriteRefusal (..), noteRead, orderFieldsOf, versionWritten)
 import StoreService.Names.Phases (RegistrationId (..), awaitChange, publish)
 import StoreService.Names.Reveal (checkReveal, isRepeat)
-import StoreService.Names.Store (BrokenInvariant (..), Commit (..), FailReason (..), NameRegistration (..), OrderPhase (..), getRegistration, noHistory, updateRegistration)
+import StoreService.Names.Store (BrokenInvariant (..), Commit (..), FailReason (..), NameRegistrationOrder (..), OrderPhase (..), getRegistration, noHistory, updateRegistration)
 import StoreService.Names.Turns (withRegistrationTurn)
 import StoreService.Names.View (NameRefusal (..), RegistrationView, lapseMoment, lapsedAt, registrationVersion, registrationView)
 import StoreService.Names.Worker (Retried (..), RetryRefusal (..), retryRegistration)
@@ -45,7 +45,7 @@ registrationHandler :: OrdersEnv -> HttpEnv -> Int -> RegistrationId -> Request 
 registrationHandler OrdersEnv {oeStore, oeConfig, oeContracts, oePhases, oeNow} http hold rid req respond =
   readNow >>= \case
     Nothing -> respond $ refusalResponse NRNotFound
-    Just (now, r@NameRegistration {nrVersion})
+    Just (now, r@NameRegistrationOrder {nrVersion})
       | versionParam req == Just nrVersion ->
           withHoldSlot http (awaitChange oePhases rid (registrationVersion oeStore rid) nrVersion (heldFor hold now $ maybeToList $ lapseMoment r))
             >>= maybe (respond $ refusalResponse $ NRRateLimited holdsFullSeconds) (const $ readNow >>= maybe (respond $ refusalResponse NRNotFound) answer)
@@ -73,7 +73,7 @@ revealHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oePhases, 
           Left e -> logNote ("POST /api/registration/:id/reveal refused: a malformed reveal: " <> T.pack e) >> respond (refusalResponse NRBadRequest)
         Nothing -> answer $ RDRefused (ORBadRequest "the body is over its size limit")
   where
-    decide request r@NameRegistration {nrReveal} = do
+    decide request r@NameRegistrationOrder {nrReveal} = do
       now <- oeNow
       case nrReveal of
         Just stored -> pure $ if isRepeat request stored then RDAccepted Nothing else RDRefused (ORBadRequest "another reveal is stored")

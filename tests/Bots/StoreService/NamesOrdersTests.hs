@@ -554,10 +554,10 @@ registrationOf v = case KM.lookup "registration" v of
 advance :: Ctx -> NominalDiffTime -> IO ()
 advance Ctx {cClock} by = modifyIORef' cClock (addUTCTime by)
 
-registrationsOf :: Ctx -> Address -> IO [NameRegistration]
+registrationsOf :: Ctx -> Address -> IO [NameRegistrationOrder]
 registrationsOf Ctx {cStore} owner = withTransaction cStore (`findRegistrations` owner)
 
-invoiceRegistration :: Ctx -> InvoiceId -> IO NameRegistration
+invoiceRegistration :: Ctx -> InvoiceId -> IO NameRegistrationOrder
 invoiceRegistration Ctx {cStore} invId =
   getInvoice cStore invId >>= \case
     Just InvoiceRow {irProduct = IPName rid} -> withTransaction cStore $ \db -> fromJust <$> getRegistration db rid
@@ -1084,7 +1084,7 @@ registered ctx code o =
 registrationAnswer :: RegistrationId -> (Int, Maybe J.Object)
 registrationAnswer (RegistrationId rid) = (200, Just $ KM.fromList [("registrationId", J.String rid)])
 
-registrationById :: Ctx -> RegistrationId -> IO NameRegistration
+registrationById :: Ctx -> RegistrationId -> IO NameRegistrationOrder
 registrationById Ctx {cStore} rid = withTransaction cStore $ \db -> fromJust <$> getRegistration db rid
 
 testCodeOrder :: IO ()
@@ -1573,7 +1573,7 @@ withOrdersCancelling signal action = withOrders $ \ctx -> do
 testSettlementQueues :: IO ()
 testSettlementQueues = withOrders $ \ctx -> do
   (invId, _) <- placed ctx aliceOrder
-  NameRegistration {nrId} <- invoiceRegistration ctx invId
+  NameRegistrationOrder {nrId} <- invoiceRegistration ctx invId
   parked <- newEmptyMVar
   -- the version read is pinned, so only a publish can wake the waiter
   waiter <- async $ awaitChange (oePhases $ cOrders ctx) nrId (putMVar parked () >> pure 1) 1 10000000
@@ -1612,7 +1612,7 @@ testSettledWhileHeld = withOrders $ \ctx@Ctx {cStore = st} -> do
   settleNow ctx aliceInv settled `shouldReturn` ISPaid
   settleNow ctx bobInv settled `shouldReturn` ISPaid
   nrPhase <$> invoiceRegistration ctx aliceInv `shouldReturn` OQueued
-  NameRegistration {nrId, nrPhase} <- invoiceRegistration ctx bobInv
+  NameRegistrationOrder {nrId, nrPhase} <- invoiceRegistration ctx bobInv
   nrPhase `shouldBe` OTaken orderTime
   fmap blAmount <$> withTransaction st (`getBalance` nrId) `shouldReturn` Just alicePrice
 
@@ -1651,7 +1651,7 @@ testSweepSkipsBadRow :: IO ()
 testSweepSkipsBadRow = withOrders $ \ctx@Ctx {cStore = st} -> do
   (bad, _) <- placed ctx aliceOrder
   (good, _) <- placed ctx aliceOrder {oLabel = "dynamis", oPrice = 20000, oSecret = secretOf 2}
-  NameRegistration {nrId = RegistrationId badId} <- invoiceRegistration ctx bad
+  NameRegistrationOrder {nrId = RegistrationId badId} <- invoiceRegistration ctx bad
   withConnection st $ \db -> DB.execute db "UPDATE sx_badge_service_name_registrations SET phase = 'lost' WHERE registration_id = ? AND phase = ?" (badId, "unpaid" :: Text)
   let later = addUTCTime 3600 orderTime
   overdue@[OverdueInvoice {oiProviderRef = badRef}, _] <- mapM (overdueOf st) [bad, good]
@@ -1677,7 +1677,7 @@ testPassSweepsAroundFailures = do
     (poisoned, _) <- placed ctx $ at' aliceOrder
     (unread, _) <- placed ctx $ at' aliceOrder {oLabel = "dynamis", oPrice = 20000, oSecret = secretOf 2}
     (good, _) <- placed ctx $ at' aliceOrder {oOwner = ownerBText, oKey = keyB, oSecret = secretOf 3}
-    NameRegistration {nrId = RegistrationId poisonedId} <- invoiceRegistration ctx poisoned
+    NameRegistrationOrder {nrId = RegistrationId poisonedId} <- invoiceRegistration ctx poisoned
     withConnection st $ \db -> DB.execute db "UPDATE sx_badge_service_name_registrations SET phase = 'lost' WHERE registration_id = ? AND phase = ?" (poisonedId, "unpaid" :: Text)
     poisonedRef <- refOf poisoned
     refOf unread >>= writeIORef unreadable
@@ -1942,8 +1942,8 @@ testViewReads = withServiceStore $ \st -> withFakeEthNode $ \node -> do
   phaseView ct t0 taken `shouldReturn` PVTaken
   phaseView ct t0 committed `shouldReturn` awaiting TSUnread
 
-readToSignOf :: Contracts -> NameRegistration -> IO ToSign
-readToSignOf ct NameRegistration {nrOwner, nrLabelHash} = readToSign ct "the view" nrOwner nrLabelHash
+readToSignOf :: Contracts -> NameRegistrationOrder -> IO ToSign
+readToSignOf ct NameRegistrationOrder {nrOwner, nrLabelHash} = readToSign ct "the view" nrOwner nrLabelHash
 
 testViewReadsBounded :: IO ()
 testViewReadsBounded = withServiceStore $ \st -> withFakeEthNode $ \node -> do

@@ -81,7 +81,7 @@ import StoreService.Names.Phases (Phases, RegistrationId (..))
 import StoreService.Names.Chain (Block (..), BlockTag (..), Hex32 (..), TxHash, blockAt, confirmedNumber, latestBlock)
 import StoreService.Names.Registration (Commitment, LinkKind, disputeSeconds)
 import StoreService.Names.Signatures (AgreedTerms (..), OrderFields (..), parseChecksumAddress, personalDigest)
-import StoreService.Names.Store (CodeInsertRefused (..), LiveOrder (..), NameRegistration (..), NameReveal, NewRegistration (..), OrderHash, OrderPayment (..), OrderPhase (..), PrepaidCode (..), TxHistory (..), NameTransaction (..), RegistrationTx (..), TxFor (..), TxSettlement (..), TxState (..), VersionWrite (..), closeOverdue, createCodeRegistration, getLiveOrders, getPrepaidCode, getPrepaidCodeById, getRegistrationByOrderHash, labelHolder, markRead, registrationTransactions, reservePrepaidCode, selectRegistration, spendBalance, updateRegistration)
+import StoreService.Names.Store (CodeInsertRefused (..), LiveOrder (..), NameRegistrationOrder (..), NameReveal, NewRegistration (..), OrderHash, OrderPayment (..), OrderPhase (..), PrepaidCode (..), TxHistory (..), NameTransaction (..), RegistrationTx (..), TxFor (..), TxSettlement (..), TxState (..), VersionWrite (..), closeOverdue, createCodeRegistration, getLiveOrders, getPrepaidCode, getPrepaidCodeById, getRegistrationByOrderHash, labelHolder, markRead, registrationTransactions, reservePrepaidCode, selectRegistration, spendBalance, updateRegistration)
 import StoreService.Names.Turns (Turns, withBalanceTurn, withCodeTurn)
 import StoreService.Orders (RegistrationChanged (..))
 import StoreService.Store.Invoices (currentSecond)
@@ -130,10 +130,10 @@ instance E.Exception OrderRefused
 
 -- | An exact resend of a stored order, live or not; a new order, which closes the overdue orders of the same wallet and name;
 -- or one meeting another live order.
-data ExistingOrder = EOResent NameRegistration | EONew | EOMeets
+data ExistingOrder = EOResent NameRegistrationOrder | EONew | EOMeets
 
 -- | An overdue order a new order closed, at its new version; its invoice is now expired.
-data ClosedOrder = ClosedOrder {coRegistration :: NameRegistration, coVersion :: Int64}
+data ClosedOrder = ClosedOrder {coRegistration :: NameRegistrationOrder, coVersion :: Int64}
 
 -- | Why an owner's write changed nothing: the registration changed since it was read, or a refusal.
 data WriteRefusal = WRChanged | WRRefused OrderRefusal
@@ -212,12 +212,12 @@ existingOrder db req hash now =
 
 -- | The live orders of the request's commitment, or of its owner and label hash, when all are overdue orders of the same wallet and name;
 -- Nothing when any other live order holds them.
-overdueOrdersMet :: DB.Connection -> OrderRequest -> UTCTime -> IO (Maybe [NameRegistration])
+overdueOrdersMet :: DB.Connection -> OrderRequest -> UTCTime -> IO (Maybe [NameRegistrationOrder])
 overdueOrdersMet db OrderRequest {orOwner, orFields = OrderFields {ofLabelHash, ofCommitment}} now = do
   orders <- getLiveOrders db ofCommitment orOwner ofLabelHash now
   pure $ if all closable orders then Just (map loRegistration orders) else Nothing
   where
-    closable LiveOrder {loRegistration = NameRegistration {nrOwner, nrLabelHash}, loOverdue} =
+    closable LiveOrder {loRegistration = NameRegistrationOrder {nrOwner, nrLabelHash}, loOverdue} =
       loOverdue && nrOwner == orOwner && nrLabelHash == ofLabelHash
 
 -- | In one transaction, the overdue orders the request meets are closed, then the order is inserted.
@@ -305,19 +305,19 @@ checkPrice ct len years price =
 readNoteSeconds :: NominalDiffTime
 readNoteSeconds = 3600
 
-noteRead :: DBStore -> UTCTime -> NameRegistration -> IO ()
-noteRead st now NameRegistration {nrId, nrReadAt} =
+noteRead :: DBStore -> UTCTime -> NameRegistrationOrder -> IO ()
+noteRead st now NameRegistrationOrder {nrId, nrReadAt} =
   when (diffUTCTime now nrReadAt >= readNoteSeconds) $ withTransaction st $ \db -> markRead db nrId (addUTCTime (negate readNoteSeconds) now) now
 
-orderFieldsOf :: NameRegistration -> OrderFields
-orderFieldsOf NameRegistration {nrLabelHash, nrLength, nrDuration, nrCommitment, nrSealed, nrAgreedTerms} =
+orderFieldsOf :: NameRegistrationOrder -> OrderFields
+orderFieldsOf NameRegistrationOrder {nrLabelHash, nrLength, nrDuration, nrCommitment, nrSealed, nrAgreedTerms} =
   OrderFields {ofLabelHash = nrLabelHash, ofLength = nrLength, ofDuration = nrDuration, ofCommitment = nrCommitment, ofSealed = nrSealed, ofAgreedTerms = nrAgreedTerms}
 
 -- | A name selected for a taken order, written as a new order is placed, a compare-and-set on the version read: a paid order's price
 -- is spent from its own balance in the balance's turn, and a code order's code is checked and reserved in the code's turn, good past its expiry
 -- until a month after the take.
-selectName :: OrdersEnv -> OrderRequest -> NameRegistration -> UTCTime -> NameReveal -> IO (Either WriteRefusal [ClosedOrder])
-selectName env@OrdersEnv {oeStore, oeTurns, oeNow} req@OrderRequest {orFields = fields@OrderFields {ofLength}} r@NameRegistration {nrId, nrPayment, nrPrice} takenAt reveal =
+selectName :: OrdersEnv -> OrderRequest -> NameRegistrationOrder -> UTCTime -> NameReveal -> IO (Either WriteRefusal [ClosedOrder])
+selectName env@OrdersEnv {oeStore, oeTurns, oeNow} req@OrderRequest {orFields = fields@OrderFields {ofLength}} r@NameRegistrationOrder {nrId, nrPayment, nrPrice} takenAt reveal =
   E.handle (\(RegistrationChanged _) -> pure $ Left WRChanged) $
     first WRRefused <$> case nrPayment of
       OPInvoice {} -> do
@@ -347,15 +347,15 @@ versionWritten = \case
   LiveOrderExists -> Left $ WRRefused OROrderExists
   NotLive -> Left $ WRRefused $ ORBadRequest "the order is closed"
 
-confirmLanded :: OrdersEnv -> NameRegistration -> IO Landing
+confirmLanded :: OrdersEnv -> NameRegistrationOrder -> IO Landing
 confirmLanded OrdersEnv {oeStore, oeContracts, oeTurns, oeNow} = checkLanded oeStore oeContracts oeTurns oeNow
 
 -- | The register check, on the order's current name: a register mined with status 1, or the owner holding the name at the confirmation depth,
 -- went through with only its confirmation lost. The order then becomes registered by a compare-and-set on the version read, a code order spending its code;
 -- ended instead when disputeUntil(id) at the confirmation depth is not the end its mined register set.
 -- The caller holds the turn of the order's label hash.
-checkLanded :: DBStore -> Contracts -> Turns -> IO UTCTime -> NameRegistration -> IO Landing
-checkLanded st ct turns clock r@NameRegistration {nrId, nrOwner, nrLabelHash, nrPayment, nrHistory, nrDisputeDays} = do
+checkLanded :: DBStore -> Contracts -> Turns -> IO UTCTime -> NameRegistrationOrder -> IO Landing
+checkLanded st ct turns clock r@NameRegistrationOrder {nrId, nrOwner, nrLabelHash, nrPayment, nrHistory, nrDisputeDays} = do
   txs <- withTransaction st (`registrationTransactions` nrId)
   let mined = [(ntHash, block) | NameTransaction {ntFor = TxRegistration RTRegister _, ntState = TxSettled (TSMinedAt block), ntHash} <- txs]
   runExceptT (landed mined) >>= \case

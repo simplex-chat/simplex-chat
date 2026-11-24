@@ -45,7 +45,7 @@ import StoreService.Names.Abi (addressWord, hex, uint256)
 import StoreService.Names.Chain (ChainConfig (..))
 import StoreService.Names.Codes (issueNameCode)
 import StoreService.Names.Phases (RegistrationId (..))
-import StoreService.Names.Store (Balance (..), CmdSource (..), Commit (..), LatePending (..), NameRegistration (..), NameReveal (..), OrderPhase (..), VersionWrite (..), balanceByReference, getRegistration, latePending, updateRegistration)
+import StoreService.Names.Store (Balance (..), CmdSource (..), Commit (..), LatePending (..), NameRegistrationOrder (..), NameReveal (..), OrderPhase (..), VersionWrite (..), balanceByReference, getRegistration, latePending, updateRegistration)
 import StoreService.Options (storeServiceOpts)
 import StoreService.Service (ServiceState (..), newServiceState, storeService)
 import StoreService.Store.Invoices (InvoicePayment (..), InvoiceRow (..), getInvoice)
@@ -154,8 +154,8 @@ staleControl :: PageControls -> RegistrationId -> IO ControlAnswer
 staleControl pc@PageControls {pcService, pcChain = ChainConfig {cSponsor}} rid@(RegistrationId ridText) =
   withTransaction (chatStore pcService) (`getRegistration` rid) >>= \case
     Nothing -> pure $ Left (notFound404, "no order " <> ridText)
-    Just NameRegistration {nrReveal = Nothing} -> pure $ Left (conflict409, "order " <> ridText <> " has no stored reveal")
-    Just NameRegistration {nrOwner, nrReveal = Just NameReveal {rvNonce}} -> do
+    Just NameRegistrationOrder {nrReveal = Nothing} -> pure $ Left (conflict409, "order " <> ridText <> " has no stored reveal")
+    Just NameRegistrationOrder {nrOwner, nrReveal = Just NameReveal {rvNonce}} -> do
       let slot = keccak256 $ addressWord nrOwner <> uint256 sponsorNoncesSlot
       chainRpc pc "anvil_setStorageAt" [hex $ unAddress cSponsor, hex slot, hex $ uint256 (rvNonce + 1)]
       pure $ Right $ J.object ["nonce" J..= (rvNonce + 1)]
@@ -170,7 +170,7 @@ lapseControl PageControls {pcService} rid@(RegistrationId ridText) = do
   withTransaction (chatStore pcService) $ \db ->
     getRegistration db rid >>= \case
       Nothing -> pure $ Left (notFound404, "no order " <> ridText)
-      Just r@NameRegistration {nrPhase = OCommitted c} ->
+      Just r@NameRegistrationOrder {nrPhase = OCommitted c} ->
         updateRegistration db r {nrPhase = OCommitted c {cmRevealBefore = lapsed}} now <&> \case
           Written v -> Right $ J.object ["version" J..= v]
           w -> Left (conflict409, T.pack (show w))

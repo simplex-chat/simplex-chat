@@ -53,7 +53,7 @@ import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Registration (DisputeDays, codeDisputeDays, methodDisputeDays)
 import StoreService.Names.Reveal (RevealRequest, orderReveal)
 import StoreService.Names.Signatures (OrderFields (..), orderMessage)
-import StoreService.Names.Store (BrokenInvariant (..), NameRegistration (..), NameReveal, NewRegistration (..), OrderHash, OrderPayment (..), OrderTerms (..), PaidOrder (..), PrepaidCode (..), createPaidRegistration, getRegistration, newRegistrationId, orderHash, paymentInvoice)
+import StoreService.Names.Store (BrokenInvariant (..), NameRegistrationOrder (..), NameReveal, NewRegistration (..), OrderHash, OrderPayment (..), OrderTerms (..), PaidOrder (..), PrepaidCode (..), createPaidRegistration, getRegistration, newRegistrationId, orderHash, paymentInvoice)
 import StoreService.Names.Turns (withLabelTurn)
 import StoreService.Names.View (NameRefusal (..), registrationView)
 import StoreService.Orders (cancelNameInvoices, publishRegistration)
@@ -198,15 +198,15 @@ createAtProvider env@OrdersEnv {oeStore, oeConfig} http client cfg providers wai
       E.throwIO e
 
 -- | An exact resend, answered with its order as it reads now: the invoice view, or the id of an order without an invoice.
-resentOrder :: OrdersEnv -> ServiceConfig -> UTCTime -> NameRegistration -> IO Answer
-resentOrder env@OrdersEnv {oeStore} cfg now r@NameRegistration {nrId = RegistrationId ridText, nrPayment} = case nrPayment of
+resentOrder :: OrdersEnv -> ServiceConfig -> UTCTime -> NameRegistrationOrder -> IO Answer
+resentOrder env@OrdersEnv {oeStore} cfg now r@NameRegistrationOrder {nrId = RegistrationId ridText, nrPayment} = case nrPayment of
   OPInvoice _ invId -> invoiceAnswer invId
   -- the hash of an invoice order never matches a code order's
   OPCode _ -> E.throwIO $ BrokenInvariant $ "an invoice order's hash matched code order " <> ridText
   where
     invoiceAnswer invId = getInvoice oeStore invId >>= maybe (E.throwIO $ BrokenInvariant $ "the invoice of order " <> ridText <> " is missing") (fmap answerNow . invoiceViewResponse env cfg r . invoiceAt now)
 
-invoiceViewResponse :: OrdersEnv -> ServiceConfig -> NameRegistration -> InvoiceRow -> IO Response
+invoiceViewResponse :: OrdersEnv -> ServiceConfig -> NameRegistrationOrder -> InvoiceRow -> IO Response
 invoiceViewResponse env cfg r row = jsonResponse status200 <$> nameInvoiceView env (confirmationsFor cfg) row r
 
 registrationAnswer :: RegistrationId -> Response
@@ -218,7 +218,7 @@ refused what refusal = refusalAnswer (orderRefusal refusal) <$ logNote (what <> 
 notObject :: Text
 notObject = "a body that is not a JSON object within its size limit"
 
-answerOrder :: OrdersEnv -> Text -> OrderRequest -> OrderTerms -> (UTCTime -> NameRegistration -> IO Answer) -> (OrderHash -> UTCTime -> IO Answer) -> IO Answer
+answerOrder :: OrdersEnv -> Text -> OrderRequest -> OrderTerms -> (UTCTime -> NameRegistrationOrder -> IO Answer) -> (OrderHash -> UTCTime -> IO Answer) -> IO Answer
 answerOrder OrdersEnv {oeStore, oeTurns, oeNow} what order@OrderRequest {orOwner, orFields, orTimestamp, orSignature} terms resent new =
   checkSigner orOwner message orSignature >>= \case
     Left refusal -> refused what refusal
@@ -246,7 +246,7 @@ codeOrderHandler env@OrdersEnv {oeStore} providers waiters req respond =
       issuedCode codeText >>= \case
         Nothing -> refuse $ ORCode CRInvalid
         Just code@PrepaidCode {pcCodeHash} ->
-          answerOrder env what order (OTCode pcCodeHash) (\_ NameRegistration {nrId} -> pure $ answerNow $ registrationAnswer nrId) (\hash now -> newOrder now order reveal hash code)
+          answerOrder env what order (OTCode pcCodeHash) (\_ NameRegistrationOrder {nrId} -> pure $ answerNow $ registrationAnswer nrId) (\hash now -> newOrder now order reveal hash code)
     issuedCode = maybe (pure Nothing) (readPrepaidCode oeStore) . parseNameCode
     newOrder now order@OrderRequest {orOwner, orFields} reveal hash code@PrepaidCode {pcYears} =
       orderChecked env now order (orderYears orFields pcYears) Nothing codeDisputeDays Nothing reveal >>= \case
@@ -273,10 +273,10 @@ orderChecked OrdersEnv {oeStore, oeConfig, oeContracts} now OrderRequest {orOwne
 -- best effort, as the poller's sweep would cancel them.
 announceClosed :: OrdersEnv -> [Provider] -> Waiters -> [ClosedOrder] -> IO ()
 announceClosed OrdersEnv {oeStore, oePhases} providers waiters closed = do
-  atomically $ forM_ closed $ \ClosedOrder {coRegistration = NameRegistration {nrId, nrPayment}, coVersion} -> do
+  atomically $ forM_ closed $ \ClosedOrder {coRegistration = NameRegistrationOrder {nrId, nrPayment}, coVersion} -> do
     forM_ (paymentInvoice nrPayment) $ \invId -> publish waiters invId ISExpired
     publishRegistration (Just oePhases) (nrId, coVersion)
-  forM_ closed $ \ClosedOrder {coRegistration = NameRegistration {nrPayment}} ->
+  forM_ closed $ \ClosedOrder {coRegistration = NameRegistrationOrder {nrPayment}} ->
     forM_ (paymentInvoice nrPayment) $ \invId ->
       getInvoice oeStore invId >>= mapM_ (\InvoiceRow {irProvider, irProviderRef} -> forM_ (providerNamed providers irProvider) $ \p -> unless (expiresItself irProvider) $ cancelAtProvider p irProviderRef)
 
@@ -291,7 +291,7 @@ cancelAtProvider Provider {pCancelInvoice} ref =
     Left e -> logWarn ("names: cancelling invoice " <> ref <> " at the provider failed: " <> providerErrorText e)
     Right () -> pure ()
 
-nameInvoiceView :: OrdersEnv -> Maybe Int -> InvoiceRow -> NameRegistration -> IO J.Value
+nameInvoiceView :: OrdersEnv -> Maybe Int -> InvoiceRow -> NameRegistrationOrder -> IO J.Value
 nameInvoiceView OrdersEnv {oeStore, oeConfig, oeContracts, oeNow} confirmations row@InvoiceRow {irInvoiceId = InvoiceId invId} r = do
   now <- oeNow
   view <- registrationView oeStore oeConfig oeContracts now r

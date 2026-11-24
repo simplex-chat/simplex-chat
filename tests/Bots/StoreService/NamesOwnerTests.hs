@@ -178,8 +178,8 @@ answerDisputeUntil :: Ctx -> Text -> Word64 -> IO ()
 answerDisputeUntil Ctx {cNode} label t = answerCall cNode (registrarOf cNode) (selector "disputeUntil(uint256)" <> labelBytes label) $ Returns $ uint256 t
 
 -- | A register transaction of the order as the sender saves it, then moved to this outcome.
-sentRegister :: Ctx -> NameRegistration -> Word8 -> TxSettlement -> IO TxHash
-sentRegister Ctx {cStore} NameRegistration {nrId} n settlement = withTransaction cStore $ \db -> do
+sentRegister :: Ctx -> NameRegistrationOrder -> Word8 -> TxSettlement -> IO TxHash
+sentRegister Ctx {cStore} NameRegistrationOrder {nrId} n settlement = withTransaction cStore $ \db -> do
   let h = TxHash $ hashFixture n
   void $ insertTransaction db (TxRegistration RTRegister nrId) NewTransaction {ntxRaw = "raw", ntxHash = h, ntxNonce = fromIntegral n} orderTime
   recordTransactionOutcome db h TSPending settlement `shouldReturn` True
@@ -197,7 +197,7 @@ answerReserved Ctx {cNode} label reason = do
     LabelHash lh = labelHash label
 
 -- | A paid order, settled, then written as the worker would write it, without the signature its order stored, as after a rare path cleared it.
-paidIn :: Ctx -> Order -> (NameRegistration -> NameRegistration) -> IO NameRegistration
+paidIn :: Ctx -> Order -> (NameRegistrationOrder -> NameRegistrationOrder) -> IO NameRegistrationOrder
 paidIn ctx o change = do
   (invId, _) <- placed ctx o
   settleNow ctx invId settled `shouldReturn` ISPaid
@@ -205,18 +205,18 @@ paidIn ctx o change = do
   rewrite ctx r (change . unsigned)
 
 -- | A code order of a code of this length, then written as paidIn writes it.
-codeIn :: Ctx -> Int -> Order -> (NameRegistration -> NameRegistration) -> IO (NameRegistration, PrepaidCode)
+codeIn :: Ctx -> Int -> Order -> (NameRegistrationOrder -> NameRegistrationOrder) -> IO (NameRegistrationOrder, PrepaidCode)
 codeIn ctx len o change = do
   (text, code) <- issueCode ctx len 2 id
   r <- registrationById ctx =<< registered ctx text o
   (,code) <$> rewrite ctx r (change . unsigned)
 
-unsigned :: NameRegistration -> NameRegistration
+unsigned :: NameRegistrationOrder -> NameRegistrationOrder
 unsigned r = r {nrReveal = Nothing}
 
 -- | A write outside the turns, as the worker's, at the stored version.
-rewrite :: Ctx -> NameRegistration -> (NameRegistration -> NameRegistration) -> IO NameRegistration
-rewrite Ctx {cStore, cClock} NameRegistration {nrId} change = do
+rewrite :: Ctx -> NameRegistrationOrder -> (NameRegistrationOrder -> NameRegistrationOrder) -> IO NameRegistrationOrder
+rewrite Ctx {cStore, cClock} NameRegistrationOrder {nrId} change = do
   t <- readIORef cClock
   withTransaction cStore $ \db -> do
     current <- fromJust <$> getRegistration db nrId
@@ -225,23 +225,23 @@ rewrite Ctx {cStore, cClock} NameRegistration {nrId} change = do
       refused -> error $ "not written: " <> show refused
 
 -- | The amount and credited of the order's balance.
-balanceOf :: Ctx -> NameRegistration -> IO (Maybe (USDCents, USDCents))
-balanceOf Ctx {cStore} NameRegistration {nrId} = fmap (\Balance {blAmount, blCredited} -> (blAmount, blCredited)) <$> withTransaction cStore (`getBalance` nrId)
+balanceOf :: Ctx -> NameRegistrationOrder -> IO (Maybe (USDCents, USDCents))
+balanceOf Ctx {cStore} NameRegistrationOrder {nrId} = fmap (\Balance {blAmount, blCredited} -> (blAmount, blCredited)) <$> withTransaction cStore (`getBalance` nrId)
 
-stored :: Ctx -> NameRegistration -> IO NameRegistration
+stored :: Ctx -> NameRegistrationOrder -> IO NameRegistrationOrder
 stored ctx = registrationById ctx . nrId
 
-failedPhase, registeredPhase, committedPhase, takenPhase :: NameRegistration -> NameRegistration
+failedPhase, registeredPhase, committedPhase, takenPhase :: NameRegistrationOrder -> NameRegistrationOrder
 failedPhase r = r {nrPhase = OFailed orderTime FRRegistryRefused}
 registeredPhase r = r {nrPhase = ORegistered (RoundedSystemTime $ fromIntegral $ seconds orderTime + 3 * 31536000) Nothing orderTime}
 committedPhase r = r {nrPhase = OCommitted committedCommit}
 takenPhase r = r {nrPhase = OTaken orderTime}
 
 -- | A paid order reset to taken as the taken write sets it, its price credited to its balance.
-takenIn :: Ctx -> Order -> (NameRegistration -> NameRegistration) -> IO NameRegistration
+takenIn :: Ctx -> Order -> (NameRegistrationOrder -> NameRegistrationOrder) -> IO NameRegistrationOrder
 takenIn ctx o change = paidIn ctx o change >>= retaken ctx
 
-retaken :: Ctx -> NameRegistration -> IO NameRegistration
+retaken :: Ctx -> NameRegistrationOrder -> IO NameRegistrationOrder
 retaken ctx@Ctx {cStore} r = do
   t <- rewrite ctx r takenPhase
   t <$ withTransaction cStore (\db -> case nrPayment t of
@@ -271,18 +271,18 @@ selectionBodyAt ctx@Ctx {cRandom} key rid o timestamp = do
 postSelection :: Ctx -> RegistrationId -> J.Object -> IO (Int, Maybe J.Object)
 postSelection ctx rid = post ctx (registrationPath rid <> "/name") . J.encode
 
-select :: Ctx -> Secp256k1PrivateKey -> NameRegistration -> Order -> IO (Int, Maybe J.Object)
-select ctx key NameRegistration {nrId} o = selectionBody ctx key nrId o >>= postSelection ctx nrId
+select :: Ctx -> Secp256k1PrivateKey -> NameRegistrationOrder -> Order -> IO (Int, Maybe J.Object)
+select ctx key NameRegistrationOrder {nrId} o = selectionBody ctx key nrId o >>= postSelection ctx nrId
 
 -- | The view of an accepted selection, failing the test otherwise.
-selected :: Ctx -> Secp256k1PrivateKey -> NameRegistration -> Order -> IO J.Object
+selected :: Ctx -> Secp256k1PrivateKey -> NameRegistrationOrder -> Order -> IO J.Object
 selected ctx key r o =
   select ctx key r o >>= \case
     (200, Just v) -> pure v
     other -> error $ "selection refused: " <> show other
 
-getView :: Ctx -> NameRegistration -> IO J.Object
-getView ctx NameRegistration {nrId} = webGet (cClient ctx) (registrationPath nrId) >>= jsonObject
+getView :: Ctx -> NameRegistrationOrder -> IO J.Object
+getView ctx NameRegistrationOrder {nrId} = webGet (cClient ctx) (registrationPath nrId) >>= jsonObject
 
 findBody :: Ctx -> Secp256k1PrivateKey -> Text -> Word64 -> IO J.Object
 findBody ctx key owner timestamp = do

@@ -484,7 +484,7 @@ reverseWith env r event reversal = do
   Just row <- getInvoice (oeStore env) (InvoiceId $ "inv-" <> r)
   reverseOrder env row (RegistrationId r) event reversal
 
-queuedOrder :: DBStore -> Text -> IO NameRegistration
+queuedOrder :: DBStore -> Text -> IO NameRegistrationOrder
 queuedOrder st r = do
   placeOrderRow st r True 20000 (at 60)
   unpaid <- reg st r

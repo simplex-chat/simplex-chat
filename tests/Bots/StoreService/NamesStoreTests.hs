@@ -181,10 +181,10 @@ placeCode st rid owner o code = withTransaction st $ \db -> insertOrRollBack db 
 codeReg :: Text -> Address -> OrderFields -> PrepaidCode -> NewRegistration
 codeReg rid owner o PrepaidCode {pcCodeHash} = (newReg rid owner o) {nrgOrderHash = orderHash owner o (OTCode pcCodeHash)}
 
-reg :: DBStore -> Text -> IO NameRegistration
+reg :: DBStore -> Text -> IO NameRegistrationOrder
 reg st rid = withTransaction st $ \db -> fromJust <$> getRegistration db (RegistrationId rid)
 
-write :: DBStore -> NameRegistration -> IO VersionWrite
+write :: DBStore -> NameRegistrationOrder -> IO VersionWrite
 write st r = withTransaction st $ \db -> updateRegistration db r (at 1)
 
 namesTables :: [Text]
@@ -340,7 +340,7 @@ testCreatePaid = withServiceStore $ \st -> do
   placePaid st "r1" ownerA o (at 60) `shouldReturn` Right ()
   r <- reg st "r1"
   r
-    `shouldBe` NameRegistration
+    `shouldBe` NameRegistrationOrder
       { nrId = RegistrationId "r1",
         nrVersion = 1,
         nrLabelHash = ofLabelHash o,

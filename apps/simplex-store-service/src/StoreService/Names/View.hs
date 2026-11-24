@@ -51,7 +51,7 @@ import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Profiles (deadlineIn, withSlot)
 import StoreService.Names.Registration (DisputeDays, LinkKind)
 import StoreService.Names.Signatures (AgreedTerms (..))
-import StoreService.Names.Store (Balance (..), Commit (..), FailReason, InvoiceClose, LateWait, NameRegistration (..), NameReveal (..), OrderPayment (..), OrderPhase (..), TxHistory (..), getBalance, getRegistration, lateWait, orderLive, paymentInvoice)
+import StoreService.Names.Store (Balance (..), Commit (..), FailReason, InvoiceClose, LateWait, NameRegistrationOrder (..), NameReveal (..), OrderPayment (..), OrderPhase (..), TxHistory (..), getBalance, getRegistration, lateWait, orderLive, paymentInvoice)
 
 data PaidWith
   = PWInvoice {method :: Text}
@@ -147,7 +147,7 @@ data NameRefusal
 $(JQ.deriveToJSON (taggedObjectJSON $ J.camelTo2 '_' . dropPrefix "NR") {J.omitNothingFields = False} ''NameRefusal)
 
 -- | The balance, and what a closed order's late money waits on.
-registrationView :: DBStore -> NamesConfig -> Contracts -> UTCTime -> NameRegistration -> IO RegistrationView
+registrationView :: DBStore -> NamesConfig -> Contracts -> UTCTime -> NameRegistrationOrder -> IO RegistrationView
 registrationView st cfg ct now r = do
   (balance, late) <- withTransaction st $ \db -> do
     balance <- getBalance db (nrId r)
@@ -156,8 +156,8 @@ registrationView st cfg ct now r = do
   toRegistrationView cfg r balance late <$> phaseView ct now r
 
 -- | The chain is read only while a committed order awaits its owner's signature.
-phaseView :: Contracts -> UTCTime -> NameRegistration -> IO PhaseView
-phaseView ct now r@NameRegistration {nrPhase, nrReveal} = case nrPhase of
+phaseView :: Contracts -> UTCTime -> NameRegistrationOrder -> IO PhaseView
+phaseView ct now r@NameRegistrationOrder {nrPhase, nrReveal} = case nrPhase of
   OUnpaid _ -> pure PVUnpaid
   OClosed by -> pure PVClosed {closedBy = by}
   OQueued -> pure PVQueued
@@ -173,7 +173,7 @@ phaseView ct now r@NameRegistration {nrPhase, nrReveal} = case nrPhase of
       | isJust nrReveal = pure SSigned
       | lapsedAt now r = pure SLapsed
       | otherwise = SAwaiting <$> readToSign ct ("the view of registration " <> rid) nrOwner nrLabelHash
-    NameRegistration {nrId = RegistrationId rid, nrOwner, nrLabelHash} = r
+    NameRegistrationOrder {nrId = RegistrationId rid, nrOwner, nrLabelHash} = r
 
 readToSign :: Contracts -> Text -> Address -> LabelHash -> IO ToSign
 readToSign ct what owner lh = do
@@ -185,7 +185,7 @@ readToSign ct what owner lh = do
   where
     unread reason = logWarn $ "names: " <> what <> " " <> reason
 
-toRegistrationView :: NamesConfig -> NameRegistration -> Maybe Balance -> Maybe LateWait -> PhaseView -> RegistrationView
+toRegistrationView :: NamesConfig -> NameRegistrationOrder -> Maybe Balance -> Maybe LateWait -> PhaseView -> RegistrationView
 toRegistrationView cfg r balance late phase =
   RegistrationView
     { vwId = rid,
@@ -209,8 +209,8 @@ toRegistrationView cfg r balance late phase =
       vwTerms = nrAgreedTerms
     }
   where
-    NameRegistration {nrId = RegistrationId rid, nrVersion, nrLabelHash = LabelHash lh, nrReveal, nrOwner, nrCommitment, nrSealed} = r
-    NameRegistration {nrYears, nrDuration, nrPrice, nrPayment, nrDisputeDays, nrAgreedTerms, nrHistory = TxHistory {thCommitTx, thRegisterTx}, nrSettledAt} = r
+    NameRegistrationOrder {nrId = RegistrationId rid, nrVersion, nrLabelHash = LabelHash lh, nrReveal, nrOwner, nrCommitment, nrSealed} = r
+    NameRegistrationOrder {nrYears, nrDuration, nrPrice, nrPayment, nrDisputeDays, nrAgreedTerms, nrHistory = TxHistory {thCommitTx, thRegisterTx}, nrSettledAt} = r
 
 paidWith :: OrderPayment -> PaidWith
 paidWith = \case
@@ -229,10 +229,10 @@ registrationVersion :: DBStore -> RegistrationId -> IO Int64
 registrationVersion st rid = maybe 0 nrVersion <$> withTransaction st (`getRegistration` rid)
 
 -- | Past revealBefore with no reveal, the commitment can no longer register.
-lapsedAt :: UTCTime -> NameRegistration -> Bool
+lapsedAt :: UTCTime -> NameRegistrationOrder -> Bool
 lapsedAt now = maybe False (now >) . lapseMoment
 
-lapseMoment :: NameRegistration -> Maybe UTCTime
+lapseMoment :: NameRegistrationOrder -> Maybe UTCTime
 lapseMoment = \case
-  NameRegistration {nrPhase = OCommitted Commit {cmRevealBefore}, nrReveal = Nothing} -> Just $ roundedToUTCTime cmRevealBefore
+  NameRegistrationOrder {nrPhase = OCommitted Commit {cmRevealBefore}, nrReveal = Nothing} -> Just $ roundedToUTCTime cmRevealBefore
   _ -> Nothing
