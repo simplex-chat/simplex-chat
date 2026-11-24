@@ -471,11 +471,13 @@ percentText :: ByteString -> Either String (Maybe Text)
 percentText v = nonEmptyText <$> (first show . decodeUtf8' =<< percentDecode v)
 
 percentDecode :: ByteString -> Either String ByteString
-percentDecode s = case B.break (== '%') s of
-  (before, "") -> Right before
-  (before, rest) -> case B.unpack $ B.take 3 rest of
-    [_, h, l] | isHexDigit h && isHexDigit l -> (before <>) . B.cons (chr $ digitToInt h * 16 + digitToInt l) <$> percentDecode (B.drop 3 rest)
-    _ -> Left "invalid percent-encoding"
+percentDecode = fmap B.concat . chunks
+  where
+    chunks s = case B.break (== '%') s of
+      (before, "") -> Right [before]
+      (before, rest) -> case B.unpack $ B.take 3 rest of
+        [_, h, l] | isHexDigit h && isHexDigit l -> ([before, B.singleton $ chr $ digitToInt h * 16 + digitToInt l] <>) <$> chunks (B.drop 3 rest)
+        _ -> Left "invalid percent-encoding"
 
 uriChar :: Char -> Bool
 uriChar c = isAscii c && (isAlphaNum c || c `B.elem` "-._~:/?@!$&'()*+,;=%")
