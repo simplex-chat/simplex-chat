@@ -1,0 +1,17 @@
+{
+  "commands": {
+    "/_download info simplex:file#/?desc=DESCRIPTION&data=%7B%22networkConfig%22%3A%7B%22hostMode%22%3A%22onion%22%2C%22requiredHostMode%22%3Atrue%7D%7D": {
+      "result": {
+        "fileMeta": {
+          "networkConfig": {
+            "hostMode": "onion",
+            "requiredHostMode": true
+          }
+        },
+        "type": "standaloneFileInfo"
+      }
+    }
+  },
+  "markdown": {},
+  "uris": {}
+}
