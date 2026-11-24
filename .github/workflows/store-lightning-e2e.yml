@@ -16,8 +16,6 @@ env:
   image_cache: ghcr.io/${{ github.repository_owner }}/simplex-chat-build-cache:22.04-x86_64-ghc9.6.3
   lightning_stack: scripts/store-service/dev/lightning.yml
   cabal_flags: --constraint 'simplexmq +client_postgres' --constraint 'simplex-chat +client_postgres'
-  namespace_commit: e3ba0a50d9475dab8336b5a4026ab0fc5f79ebd4
-  ens_contracts_commit: 6ccb5c52c80619493db32a4128ee5067f4274ac2
   foundry_version: v1.5.1
 
 jobs:
@@ -178,17 +176,29 @@ jobs:
         with:
           node-version: 24
 
+      - name: Read the contracts' commits that the names webapp pins
+        id: pins
+        shell: bash
+        run: |
+          for arg in NAMESPACE_COMMIT ENS_CONTRACTS_COMMIT; do
+            sed -n "s/^ARG $arg=\([0-9a-f]\{40\}\)$/\1/p" names-webapp/webapp/dev/Dockerfile | grep -x '[0-9a-f]\{40\}' \
+              | sed "s/^/${arg,,}=/" >> "$GITHUB_OUTPUT"
+          done
+
       - name: Restore the compiled contracts from cache
         id: contracts
         uses: actions/cache@v4
         with:
           path: ens-contracts-artifacts
-          key: ens-contracts-${{ env.namespace_commit }}-${{ env.ens_contracts_commit }}
+          key: ens-contracts-${{ steps.pins.outputs.namespace_commit }}-${{ steps.pins.outputs.ens_contracts_commit }}
 
       - name: Compile the contracts
         shell: bash
+        env:
+          namespace_commit: ${{ steps.pins.outputs.namespace_commit }}
+          ens_contracts_commit: ${{ steps.pins.outputs.ens_contracts_commit }}
         run: |
-          git clone -q https://github.com/brenzi/simplex-namespace-contract.git contracts
+          git clone -q https://github.com/simplex-chat/simplex-namespace-contract.git contracts
           git -C contracts fetch -q origin "$namespace_commit"
           git -C contracts checkout -q "$namespace_commit"
           git -C contracts submodule update -q --init ens-contracts
