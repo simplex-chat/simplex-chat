@@ -592,6 +592,7 @@ paymentLinks = describe "payment links" do
     isText $ "zcash:" <> zecT <> "?memo=" <> memo
     isText $ "zcash:?address=" <> zecT <> "&address.1=" <> zecU
     isText $ "ethereum:" <> usdt <> "/approve?address=" <> eth <> "&uint256=1"
+    isText $ "ethereum:" <> usdt <> "@1/transfer?address=" <> eth <> "&uint256=1&value=1"
     isText "ethereum:donate.simplexchat.eth"
   it "hyperlinks and autolinks" do
     ("[Donate](monero:" <> xmr <> ")") <==> markdown (PaymentLink (Just "Donate") $ onChain PNMonero xmr $ "monero:" <> xmr) ("[Donate](monero:" <> xmr <> ")")
