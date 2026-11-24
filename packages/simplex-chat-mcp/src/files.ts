@@ -2,6 +2,7 @@ import {randomBytes} from "crypto"
 import {chmodSync, existsSync, fchmodSync, mkdirSync, linkSync, openSync, readFileSync, readdirSync, renameSync, rmSync, statSync, truncateSync, unlinkSync, writeFileSync} from "fs"
 import {join} from "path"
 import {pathToFileURL} from "url"
+import type {GoalState} from "./claude-code"
 import {ExitError, logError} from "./log"
 import {serviceTokenFile} from "./paths"
 
@@ -21,6 +22,11 @@ export interface SessionFile {
   model?: string
   effort?: string
   hostDeclined?: boolean
+  account?: string
+  transcript?: string
+  goal?: GoalState
+  recap?: string
+  title?: string
 }
 
 export interface ServerFile {

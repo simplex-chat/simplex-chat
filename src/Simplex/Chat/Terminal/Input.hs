@@ -35,7 +35,7 @@ import Simplex.Chat.Terminal.Output
 import Simplex.Chat.Types (User (..))
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
-import Simplex.Messaging.Util (catchAll_, safeDecodeUtf8, whenM)
+import Simplex.Messaging.Util (catchOwn', safeDecodeUtf8, whenM)
 import System.Exit (exitSuccess)
 import System.Terminal hiding (insertChars)
 import UnliftIO.STM
@@ -329,7 +329,7 @@ updateTermState user_ st chatPrefix live tw (key, ms) ts@TerminalState {inputStr
                 "SELECT local_display_name FROM " <> table <> " WHERE user_id = ? AND local_display_name LIKE ?"
             getNameSfxs_ :: ToRow p => Text -> p -> Query -> IO [String]
             getNameSfxs_ pfx ps q =
-              withTransaction st (\db -> hasPfx pfx . map fromOnly <$> DB.query db q ps) `catchAll_` pure []
+              withTransaction st (\db -> hasPfx pfx . map fromOnly <$> DB.query db q ps) `catchOwn'` \_ -> pure []
             commands =
               ["connect", "search", "tail", "info", "clear", "delete", "code", "verify"]
                 <> ["file", "freceive", "fcancel", "fstatus", "fforward", "image", "image_forward"]

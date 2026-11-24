@@ -2016,7 +2016,7 @@ struct ComposeView: View {
 func sanitizeMessage(
     _ text: String,
     _ parsedMsg: [FormattedText],
-    sanitize: (String) -> String? = { parseSanitizeUri($0, safe: true)?.uriInfo?.sanitized }
+    sanitize: (String) -> String? = { parseSanitizeUri($0, true)?.uriInfo?.sanitized }
 ) -> (message: String, parsedMsg: [FormattedText], sanitizedPos: Int?) {
     var updatedMsg = ""
     var copied = text.startIndex
