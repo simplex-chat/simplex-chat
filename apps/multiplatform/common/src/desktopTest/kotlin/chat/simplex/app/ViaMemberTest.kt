@@ -78,6 +78,19 @@ class ViaMemberTest {
     onNodeWithText("alice", useUnmergedTree = true).assertExists()
   }
 
+  @Test
+  fun memberInfoOfViaMemberOffersNoChatCallsOrCode() = runComposeUiTest {
+    val groupInfo = (receivedChat().chatInfo as ChatInfo.Group).groupInfo
+    val reviewer = ChatModel.groupMembers.value.single { it.displayName == "reviewer" }
+    setContent {
+      CompositionLocalProvider(LocalAppBarHandler provides rememberAppBarHandler()) {
+        GroupMemberInfoLayoutPreview(reviewer, connectionCode = null, groupInfo = groupInfo, connectionLoaded = false)
+      }
+    }
+    val offered = listOf("Message", "Call", "Video", "Chat with member", "Verify security code")
+    assertEquals(emptyList(), offered.filter { onAllNodesWithText(it).fetchSemanticsNodes().isNotEmpty() })
+  }
+
   private fun receivedChat(): Chat = runBlocking {
     replay("via/received")
     ChatModel.groupMembers.value = ChatController.apiListMembers(null, 1)

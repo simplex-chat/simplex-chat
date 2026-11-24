@@ -485,7 +485,7 @@ fun GroupMemberInfoLayout(
 
     val contactId = member.memberContactId
 
-    if (!groupInfo.useRelays) {
+    if (!groupInfo.useRelays && member.memberVia == null) {
       Box(
         Modifier.fillMaxWidth(),
         contentAlignment = Alignment.Center
@@ -552,10 +552,11 @@ fun GroupMemberInfoLayout(
     val showMemberSupportChat = !openedFromSupportChat &&
       groupInfo.membership.memberRole >= GroupMemberRole.Moderator &&
       member.memberRole != GroupMemberRole.Relay &&
+      member.memberVia == null &&
       ((groupInfo.fullGroupPreferences.support.on && member.memberRole < GroupMemberRole.Moderator)
         || member.supportChat != null)
     // the same condition decides whether the code is requested, so the row is shown disabled until it arrives
-    val canVerifyCode = member.memberRole != GroupMemberRole.Relay && (connectionCode != null || !connectionLoaded)
+    val canVerifyCode = member.canVerifyCode(groupInfo) && (connectionCode != null || !connectionLoaded)
     val canSyncConn = cStats != null && cStats.ratchetSyncAllowed
 
     if (memberConnected && (showMemberSupportChat || canVerifyCode || canSyncConn)) {
@@ -1160,22 +1161,23 @@ fun PreviewGroupMemberInfoLayout() = GroupMemberInfoLayoutPreview(GroupMember.sa
 @Preview
 @Composable
 fun PreviewGroupMemberInfoLayoutViaMember() = GroupMembersPreview(listOf(previewClaude)) {
-  GroupMemberInfoLayoutPreview(previewViaClaude(6, "reviewer"), connectionCode = null)
+  val admin = GroupMember.sampleData.copy(memberRole = GroupMemberRole.Admin)
+  GroupMemberInfoLayoutPreview(previewViaClaude(6, "reviewer"), connectionCode = null, groupInfo = GroupInfo.sampleData.copy(membership = admin))
 }
 
 @Composable
-internal fun GroupMemberInfoLayoutPreview(member: GroupMember, connectionCode: String?) {
+internal fun GroupMemberInfoLayoutPreview(member: GroupMember, connectionCode: String?, groupInfo: GroupInfo = GroupInfo.sampleData, connectionLoaded: Boolean = true) {
   SimpleXTheme {
     GroupMemberInfoLayout(
       rhId = null,
-      groupInfo = GroupInfo.sampleData,
+      groupInfo = groupInfo,
       member = member,
       scrollToItemId = remember { mutableStateOf(null) },
       connStats = remember { mutableStateOf(null) },
       newRole = remember { mutableStateOf(GroupMemberRole.Member) },
       developerTools = false,
       connectionCode = connectionCode,
-      connectionLoaded = true,
+      connectionLoaded = connectionLoaded,
       getContactChat = { Chat.sampleData },
       openDirectChat = {},
       createMemberContact = {},

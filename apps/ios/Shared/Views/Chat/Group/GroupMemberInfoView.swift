@@ -112,7 +112,7 @@ struct GroupMemberInfoView: View {
                     .listRowSeparator(.hidden)
                     .padding(.bottom, 18)
 
-                if !groupInfo.useRelays {
+                if !groupInfo.useRelays && member.memberVia == nil {
                     infoActionButtons(member)
                         .padding(.horizontal)
                         .frame(maxWidth: .infinity)
@@ -126,6 +126,7 @@ struct GroupMemberInfoView: View {
                     let showMemberSupportChat = !openedFromSupportChat
                         && groupInfo.membership.memberRole >= .moderator
                         && member.memberRole != .relay
+                        && member.memberVia == nil
                         && ((groupInfo.fullGroupPreferences.support.on && member.memberRole < .moderator)
                             || member.supportChat != nil)
                     let canVerifyCode = connectionCode != nil && member.memberRole != .relay
@@ -302,7 +303,7 @@ struct GroupMemberInfoView: View {
                 newRole = member.memberRole
                 do {
                     let (_, stats) = try await apiGroupMemberInfo(groupInfo.apiId, member.groupMemberId)
-                    let getCode = (member.memberActive || (groupInfo.useRelays && member.memberCurrent)) && member.memberRole != .relay
+                    let getCode = member.canVerifyCode(groupInfo: groupInfo)
                     let (mem, code) = getCode ? try await apiGetGroupMemberCode(groupInfo.apiId, member.groupMemberId) : (member, nil)
                     await MainActor.run {
                         _ = chatModel.upsertGroupMember(groupInfo, mem)
