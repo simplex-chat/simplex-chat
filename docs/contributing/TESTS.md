@@ -267,7 +267,7 @@ The app built from a branch, its core included, driven on a device by scripts an
 
 | Workflow | App | Smoke test | Claude plan | README |
 |---|---|---|---|---|
-| `ios-sim` | iOS app in an iPhone simulator | onboarding<br>images sent in a group<br>snapshots | device-test-plan.md, cases per layout in claude-scope | [ios-sim](../../scripts/ci/ios-sim/README.md) |
+| `ios-sim` | iOS app in an iPhone simulator | onboarding<br>images sent in a group<br>Copy link in the menu of a sent message<br>snapshots | device-test-plan.md, cases per layout in claude-scope | [ios-sim](../../scripts/ci/ios-sim/README.md) |
 | `desktop-linux` | desktop app on a virtual display, Ubuntu | desktopTest with snapshots<br>onboarding<br>a local group<br>both layouts<br>images sent | claude-test.md, claude-scope | [desktop-linux](../../scripts/ci/desktop-linux/README.md) |
 | `android-emu` | debug APK in an Android emulator | onboarding<br>a local group<br>both layouts<br>images sent | claude-test.md, claude-scope | [android](../../scripts/ci/android/README.md) |
 
