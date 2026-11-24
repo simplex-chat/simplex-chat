@@ -206,7 +206,7 @@ flowchart TD
 - WebP input: bytes 0-3 `RIFF` and bytes 8-11 `WEBP`.
 - ``Webp.decodeWebp (Webp.DecodeOptions $ maxDecodeMemoryMB `div` 2)``, as `Spng.decodePng` (Image.hs:76).
 - `orientWebp`: the image turned by `orientImage` with `exifOrientation` of the `EXIF` payload, as JPEG input with the APP1 `Exif` segment (Image.hs:83); the `ICCP` payload passed on.
-- The profile is passed to `colourProfile` and forced with `$!` (Image.hs:72), so the result references no part of the input.
+- The profile is passed to `colourProfile` and forced with `$!` (Image.hs:72), so the `ColourProfile` references no part of the input.
 
 `decodeWebp`:
 
