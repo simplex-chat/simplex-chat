@@ -9,8 +9,6 @@ import androidx.compose.ui.test.ComposeUiTest
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.onFirst
-import androidx.compose.ui.test.onNodeWithText
-import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.runComposeUiTest
 import androidx.compose.ui.text.AnnotatedString
@@ -21,6 +19,7 @@ import chat.simplex.common.platform.chatSendCmdRetry
 import chat.simplex.common.simplexWindowState
 import chat.simplex.common.views.chat.item.MarkdownText
 import chat.simplex.common.views.chat.item.PreviewChatItemView
+import chat.simplex.common.views.chat.item.copyItemLink
 import chat.simplex.common.views.chat.item.itemDisplay
 import chat.simplex.common.views.helpers.AlertManager
 import chat.simplex.common.views.helpers.generalGetString
@@ -147,8 +146,7 @@ class MessageLinksTest {
       waitForIdle()
       val texts = shownTexts()
       assertEquals("Copy link", texts.getOrNull(texts.indexOf("Copy") + 1), "$texts")
-      onNodeWithText("Copy link").performClick()
-      waitUntil(timeoutMillis = 5_000) { copied.isNotEmpty() }
+      runBlocking { copyItemLink(null, chat.chatInfo, chat.chatItems.last(), clipboard) }
       assertEquals(listOf("ITEM_LINK"), copied)
       assertEquals(listOf("Copied to clipboard"), simplexWindowState.toasts.map { it.first })
     } finally {

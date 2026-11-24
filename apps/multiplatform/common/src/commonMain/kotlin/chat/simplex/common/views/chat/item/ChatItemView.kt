@@ -455,13 +455,7 @@ fun ChatItemView(
                     }
                     if (cItem.meta.itemDeleted == null && !live) {
                       ItemAction(stringResource(MR.strings.copy_link), painterResource(MR.images.ic_link), onClick = {
-                        withApi {
-                          val link = controller.apiGetChatItemLink(rhId, cInfo.chatType, cInfo.apiId, cInfo.groupChatScope(), cItem.id)
-                          if (link != null) {
-                            clipboard.setText(AnnotatedString(link))
-                            showToast(generalGetString(MR.strings.copied))
-                          }
-                        }
+                        withApi { copyItemLink(rhId, cInfo, cItem, clipboard) }
                         showMenu.value = false
                       })
                     }
@@ -1509,6 +1503,14 @@ fun moderateMessagesAlertDialog(itemIds: List<Long>, questionText: String, delet
 }
 
 expect fun copyItemToClipboard(cItem: ChatItem, clipboard: ClipboardManager)
+
+suspend fun copyItemLink(rhId: Long?, cInfo: ChatInfo, cItem: ChatItem, clipboard: ClipboardManager) {
+  val link = controller.apiGetChatItemLink(rhId, cInfo.chatType, cInfo.apiId, cInfo.groupChatScope(), cItem.id)
+  if (link != null) {
+    clipboard.setText(AnnotatedString(link))
+    showToast(generalGetString(MR.strings.copied))
+  }
+}
 
 val previewDate = Instant.fromEpochSeconds(1_736_936_100)
 
