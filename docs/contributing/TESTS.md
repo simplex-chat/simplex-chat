@@ -147,7 +147,7 @@ flowchart LR
 
 ### Recording
 
-Helpers of [ChatTests/Utils.hs](../../tests/ChatTests/Utils.hs), called in a chat scenario test:
+Helpers of [ChatTests/Utils.hs](../../tests/ChatTests/Utils.hs), called in core tests:
 
 | Helper | Written to `tests/fixtures/api/<fixture>.json` |
 |---|---|
@@ -155,6 +155,7 @@ Helpers of [ChatTests/Utils.hs](../../tests/ChatTests/Utils.hs), called in a cha
 | `nameFixture fixture cc name` | `apiFixture` of `/_connect plan 1 <name>` and of the markdown of the name, in `names/` |
 | `eventsFixture fixture events steps` | an array of the events appended by `recordItemEvent events`, in `eventHook` of `chatHooks`, during `steps`: `newChatItems` and `chatItemUpdated`, encoded as `chatRecvMsg` encodes them; with `recordSndFileEvent events`, `sndFileCompleteXFTP` and `sndFileError` |
 | `nameMovedFixture` | a `nameMoved` event, built from the IDs of the named contacts and groups |
+| `writeFixture fixture value` | `value`: in `testResizeImageFileCApi` of MobileTests.hs, `images/resize-file-uri`, the data URI of `cChatResizeImageFileUri` with limit 14000 for each image, keyed by its path in tests/fixtures |
 
 Examples: `testPlanKnownNameAvailable` in ChatTests/Names.hs, `testDirectMessageUpdatePrevItem` and `testMissedCall` in ChatTests/Direct.hs, `testXFTPRecordUploadComplete` in ChatTests/Files.hs.
 
@@ -181,12 +182,13 @@ Stable recordings:
 | Commands | `chatSendCmdRetry`, platform/Core.kt | `sendSimpleXCmdStr`, SimpleXChat/API.swift |
 | Markdown | `chatParseMarkdown`, platform/Core.kt | `parseSimpleXMarkdownText`, SimpleXChat/API.swift |
 | Links | `chatParseUri`, platform/Core.kt | `parseSanitizeUri`, SimpleXChat/API.swift |
+| Images | `chatResizeImageFileUri` and `chatResizeImageUri`, platform/Core.kt | |
 | Events | `ChatController.processReceivedMsg`, model/SimpleXAPI.kt | `processReceivedMsg`, Shared/Model/SimpleXAPI.swift |
 | Notifications | `ntfManager`, platform/NtfManager.kt | `NtfManager.shared`, Shared/Model/NtfManager.swift |
 | Recording read by | `fixtureText` | `fixtureJSON`, then `singleFieldJSON` to the Swift JSON form |
-| Tests | [NameAlertsTest.kt](../../apps/multiplatform/common/src/desktopTest/kotlin/chat/simplex/app/NameAlertsTest.kt), [ChatItemUpdateTest.kt](../../apps/multiplatform/common/src/desktopTest/kotlin/chat/simplex/app/ChatItemUpdateTest.kt) | [NameAlertsTests.swift](../../apps/ios/SimpleX%20Unit%20Tests/NameAlertsTests.swift), [ChatItemUpdateTests.swift](../../apps/ios/SimpleX%20Unit%20Tests/ChatItemUpdateTests.swift), [FileUploadTests.swift](../../apps/ios/SimpleX%20Unit%20Tests/FileUploadTests.swift) |
+| Tests | [NameAlertsTest.kt](../../apps/multiplatform/common/src/desktopTest/kotlin/chat/simplex/app/NameAlertsTest.kt), [ChatItemUpdateTest.kt](../../apps/multiplatform/common/src/desktopTest/kotlin/chat/simplex/app/ChatItemUpdateTest.kt), [ImageFileTypeTest.kt](../../apps/multiplatform/common/src/desktopTest/kotlin/chat/simplex/app/ImageFileTypeTest.kt) | [NameAlertsTests.swift](../../apps/ios/SimpleX%20Unit%20Tests/NameAlertsTests.swift), [ChatItemUpdateTests.swift](../../apps/ios/SimpleX%20Unit%20Tests/ChatItemUpdateTests.swift), [FileUploadTests.swift](../../apps/ios/SimpleX%20Unit%20Tests/FileUploadTests.swift) |
 
-- Pattern: `recorded(fixture)` in the NameAlerts tests sets the first three seams to lookups in the recording; the test fails at tear-down on a request without a recorded response, unless the request is checked with `assertRequested`. The ChatItemUpdate tests decode the recorded events, pass each to `processReceivedMsg` and compare `ChatModel`. Tear-down restores the seams and clears the model.
+- Pattern: `recorded(fixture)` in the NameAlerts tests sets the first three seams to lookups in the recording; the test fails at tear-down on a request without a recorded response, unless the request is checked with `assertRequested`. The ChatItemUpdate tests decode the recorded events, pass each to `processReceivedMsg` and compare `ChatModel`. The ImageFileType tests set the image seams and pass picked files to `processPickedMedia`: an animated WebP image gets the recorded data URI as its preview. Tear-down restores the seams and clears the model.
 - Run and CI: [Kotlin apps](#kotlin-apps), [SimpleX Unit Tests](#simplex-unit-tests). CI runs the kotlin and ios scopes for a change in tests/fixtures/api (`BUILD_CHANGES` in scripts/ci/packages_release.py). The recording tests are core tests, selected in the `ci-tests` block by the patterns of the [CI guide, core](../../scripts/ci/README.md#core).
 - Pitfalls:
   - `singleFieldJSON` converts each object with a `type` field, except `MsgContent`, recognized by its tags. The core encodes other types with `type` in both JSON forms: the types of `taggedObjectJSON` in src, such as `MsgChatLink`, `LinkContent`, `MsgScope` and `ChatBotCommand`, and `MsgReaction`, by its own instance. A recording with them requires another conversion rule.
