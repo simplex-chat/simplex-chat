@@ -34,6 +34,7 @@ import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), ChatEvent 
 import Simplex.Chat.Messages (AChatItemUpdate (..), CIMeta (CIMeta, itemText), ChatItem (ChatItem, meta), ChatItemId)
 import Simplex.Chat.Options
 import Simplex.Chat.Protocol (supportedChatVRange)
+import Simplex.Chat.Terminal.Notification (hideException)
 import Simplex.Chat.Types (ContactId, VersionRangeChat, authErrDisableCount, sameVerificationCode, verificationCode, pattern VersionChat)
 import Simplex.Messaging.Agent.Env.SQLite
 import Simplex.Messaging.Agent.RetryInterval
@@ -49,12 +50,16 @@ import Simplex.Messaging.Version
 import System.Directory (copyFile, doesDirectoryExist, doesFileExist)
 import System.Mem.Weak (deRefWeak)
 import System.FilePath ((</>))
+import System.Timeout (timeout)
 import Test.Hspec hiding (it)
 #if defined(dbPostgres)
 import Database.PostgreSQL.Simple (Only (..))
 #else
 import Database.SQLite.Simple (Only (..))
 import Simplex.Chat.Options.DB
+import Simplex.Chat.Terminal.Input (updateTermState)
+import Simplex.Chat.Terminal.Output (TerminalState (inputString), mkTermState)
+import System.Terminal (Key (TabKey))
 #endif
 
 chatDirectTests :: SpecWith TestParams
@@ -149,6 +154,12 @@ chatDirectTests = do
   describe "settings" $ do
     it "set chat item expiration TTL" testSetChatItemTTL
     it "save/get app settings" testAppSettings
+  describe "terminal" $ do
+    it "should stop a notification at its time limit" $ \_ ->
+      timeout 100000 (hideException (\_ -> threadDelay 1000000) ()) `shouldReturn` Nothing
+#if !defined(dbPostgres)
+    it "should stop a name completion at its time limit" testNameCompletionTimeLimit
+#endif
   describe "connection switch" $ do
     it "switch contact to a different queue" testSwitchContact
     it "stop switching contact to a different queue" testAbortSwitchContact
@@ -364,7 +375,7 @@ testRetryConnectingClientTimeout ps = do
               { quotaExceededTimeout = 1,
                 messageRetryInterval = RetryInterval2 {riFast = fastRetryInterval, riSlow = fastRetryInterval}
               },
-          presetServers = presetSrvs {netCfg = (netCfg :: NetworkConfig) {tcpTimeout = NetworkTimeout 10 10}}
+          presetServers = presetSrvs {netCfg = (netCfg :: NetworkConfig) {tcpTimeout = NetworkTimeout 0 0}}
         }
     opts' =
       testOpts
@@ -1023,17 +1034,18 @@ testRepeatAuthErrorsDisableContact =
     threadDelay 500000
     bob ##> "/_delete @2 notify=off"
     bob <## "alice: contact is deleted"
-    forM_ [1 .. authErrDisableCount] $ \_ -> sendAuth alice
-    alice <## "[bob] connection is disabled, to enable: /enable bob, to delete: /d bob"
+    (withCCAgentTransaction bob $ \db -> DB.query_ db "SELECT count(1) FROM connections" :: IO [[Int]]) `shouldEventuallyReturn` [[0]]
+    forM_ [1 .. authErrDisableCount - 1] $ \_ -> sendAuth alice []
+    sendAuth alice ["[bob] connection is disabled, to enable: /enable bob, to delete: /d bob"]
     alice ##> "@bob hey"
     alice <## "bob: disabled, to enable: /enable bob, to delete: /d bob"
     alice ##> "/enable bob"
     alice <## "ok"
-    sendAuth alice
+    sendAuth alice []
   where
-    sendAuth alice = do
-      alice #> "@bob hey"
-      alice <## "[bob, contactId: 2, connId: 1] error: connection authorization failed - this could happen if connection was deleted, secured with different credentials, or due to a bug - please re-create the connection"
+    sendAuth alice disabled = do
+      alice `send` "@bob hey"
+      alice <### (WithTime "@bob hey" : "[bob, contactId: 2, connId: 1] error: connection authorization failed - this could happen if connection was deleted, secured with different credentials, or due to a bug - please re-create the connection" : disabled)
 
 testMultilineMessage :: HasCallStack => TestParams -> IO ()
 testMultilineMessage = testChat3 aliceProfile bobProfile cathProfile $ \alice bob cath -> do
@@ -3084,6 +3096,15 @@ testAppSettings ps =
     -- read back
     alice ##> "/_get app settings"
     alice <## ("app settings: " <> settingsApp)
+
+#if !defined(dbPostgres)
+testNameCompletionTimeLimit :: HasCallStack => TestParams -> IO ()
+testNameCompletionTimeLimit ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice@TestCC {chatController = ChatController {chatStore}} ->
+    withCCUser alice $ \user -> do
+      let complete = updateTermState (Just user) chatStore "" False 80 (TabKey, mempty) mkTermState {inputString = "@a"}
+      holdDuring (withCCTransaction alice . const) (timeout 100000 $ void complete) `shouldReturn` Nothing
+#endif
 
 testSwitchContact :: HasCallStack => TestParams -> IO ()
 testSwitchContact =

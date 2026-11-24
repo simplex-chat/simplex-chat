@@ -22,6 +22,7 @@ import Bots.StoreService.NamesLabelTests
 import Bots.StoreService.NamesLinksTests
 import Bots.StoreService.NamesOrdersTests
 import Bots.StoreService.NamesOwnerTests
+import Bots.StoreService.NamesPageService
 import Bots.StoreService.NamesPhasesTests
 import Bots.StoreService.NamesProfilesTests
 import Bots.StoreService.NamesRecordsTests
@@ -29,7 +30,6 @@ import Bots.StoreService.NamesRevealTests
 import Bots.StoreService.NamesSearchTests
 import Bots.StoreService.NamesSenderTests
 import Bots.StoreService.NamesSignatureTests
-import Bots.StoreService.NamesSpendTests
 import Bots.StoreService.NamesStoreTests
 import Bots.StoreService.NamesWiringTests
 import Bots.StoreService.NamesWorkerTests
@@ -42,7 +42,6 @@ import Bots.DirectoryTests
 import ChatClient
 import ChatTests
 import ChatTests.DBUtils
-import ChatTests.Utils (xdescribe'')
 import Control.Logger.Simple
 import Data.Time.Clock.System
 import BadgeTests
@@ -67,12 +66,16 @@ import Control.Exception (bracket_, finally)
 import PostgresSchemaDump
 import Simplex.Chat.Store.Postgres.Migrations (migrations)
 import Simplex.Messaging.Agent.Store.Postgres.Util (createDBAndUserIfNotExists, dropDatabaseAndUser)
+import StoreService.Store.Postgres.Migrations (storeServiceSchemaMigrations)
 #else
 import APIDocs
 import ChatTests.Names (chatNamesTests)
+import ChatTests.Utils (ifCI)
 import qualified Simplex.Messaging.TMap as TM
 import MobileTests
 import SchemaDump
+import StoreService.Store.SQLite.Migrations (storeServiceSchemaMigrations)
+import System.Info (os)
 import WebRTCTests
 #endif
 
@@ -91,10 +94,37 @@ main = do
         describe "Postgres schema dump" $
           postgresSchemaDumpTest
             migrations
+            skipComparisonForDownMigrations
             schemaDumpDBOpts
             "src/Simplex/Chat/Store/Postgres/Migrations/chat_schema.sql"
+      sequential $
+        describe "Store service Postgres schema dump" $
+          postgresSchemaDumpTest
+            storeServiceSchemaMigrations
+            [ -- the down restores the code index as not unique
+              "20260918_badge_group_ops",
+              -- the columns are re-added last
+              "20261012_badge_subscriptions"
+            ]
+            serviceSchemaDumpDBOpts
+            "apps/simplex-store-service/src/StoreService/Store/Postgres/store_service_schema.sql"
 #else
       sequential $ describe "Schema dump" schemaDumpTest
+      sequential $
+        ifCI (if os /= "linux" then xdescribe else describe) describe "Store service schema dump" $
+          sqliteSchemaDumpTest
+            storeServiceSchemaMigrations
+            [ -- sqlite_sequence stays once an AUTOINCREMENT table exists
+              "20260915_badge_service_schema",
+              -- the down restores the code index as not unique
+              "20260918_badge_group_ops",
+              -- the index is re-created last
+              "20260925_badge_store_receipts",
+              -- the columns are re-added last
+              "20261012_badge_subscriptions"
+            ]
+            serviceSchemaDumpDBOpts
+            "apps/simplex-store-service/src/StoreService/Store/SQLite/store_service_schema.sql"
 #if MIN_VERSION_base(4,18,0)
       sequential $ describe "Bot API docs" apiDocsTest
 #endif
@@ -130,11 +160,11 @@ main = do
       namesSearchTests
       namesSenderTests
       namesSignatureTests
-      namesSpendTests
       namesStoreTests
       namesWiringTests
       namesWorkerTests
       sequential storeLightningE2ETests
+      namesPageServiceTests
       describe "SimpleX chat markdown" markdownTests
       describe "JSON Tests" jsonTests
       describe "Member relations" memberRelationsTests
@@ -159,7 +189,7 @@ main = do
           describe "Mobile API Tests" mobileTests
 #endif
           describe "SimpleX chat client" chatTests
-          xdescribe'' "SimpleX Broadcast bot" broadcastBotTests
+          describe "SimpleX Broadcast bot" broadcastBotTests
           describe "SimpleX Directory service bot" directoryServiceTests
           describe "SimpleX store service e2e" $ do
             storeServiceTests
@@ -168,11 +198,10 @@ main = do
           describe "StoreService names: worker" namesWorkerBootTests
           namesCodesChatTests
           namesRefundChatTests
-          namesSpendChatTests
           namesProfilesChatTests
           describe "Remote session" remoteTests
 #if !defined(dbPostgres)
-          sequential $ xdescribe'' "Save query plans" saveQueryPlans
+          sequential $ (if os == "linux" then describe else xdescribe) "Save query plans" saveQueryPlans
 #endif
   where
 #if defined(dbPostgres)

@@ -24,7 +24,7 @@ refusalTest("main: a funded refusal keeps the order's own screen, not a stripped
   await until(() => headingOf(screenOf(app)).startsWith("Send"), "the payment screen");
 
   page.confirmAnswer(true);
-  page.respondWith({ status: 409, body: { error: "funded" } });
+  page.respondWith({ status: 409, body: { type: "funded" } });
   cancelControl()!.click();
   // The restarted watch reads here, and without the previous loop's options it would draw this order as a fresh one.
   page.respondWith(openReply);
@@ -53,7 +53,7 @@ refusalTest("main: the reason does not follow the buyer to an order they did not
 refusalTest("main: a repaint mid-cancel does not arm a second one", async () => {
   const before = fetches.filter((f) => f.url.endsWith("/cancel")).length;
   page.confirmAnswer(true);
-  page.respondWith({ status: 409, body: { error: "funded" } });
+  page.respondWith({ status: 409, body: { type: "funded" } });
   // No await after this click, so the POST stays on the wire, which is the window a second click must be refused in.
   screenOf(app).all("button").find((b) => b.textContent === CANCEL_INVOICE)!.click();
   // The online event redraws the panel, giving a Cancel button whose disabled attribute is gone.
@@ -68,7 +68,7 @@ refusalTest("main: a repaint mid-cancel does not arm a second one", async () => 
 
 refusalTest("main: a not_open refusal takes the destination with it", async () => {
   page.confirmAnswer(true);
-  page.respondWith({ status: 409, body: { error: "not_open" } });
+  page.respondWith({ status: 409, body: { type: "not_open" } });
   cancelControl()!.click();
   await settle();
 

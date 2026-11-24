@@ -5,21 +5,21 @@
 
 module Bots.StoreService.ConfigTests where
 
+import Bots.StoreService.FakeEthNode (address)
 import StoreService.Config
 import Control.Logger.Simple (LogLevel (..))
-import Control.Monad (forM_)
+import Control.Monad (forM_, void)
 import qualified Data.ByteArray as BA
 import qualified Data.ByteString.Char8 as B
 import Data.Either (isLeft, isRight)
-import Data.Ini (readIniFile)
 import Data.List.NonEmpty (NonEmpty (..))
+import Data.Maybe (isNothing)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Data.Time.Calendar (fromGregorian)
 import Data.Time.Clock (UTCTime (..))
 import Simplex.Messaging.Crypto.Secp256k1 (mkPrivateKey)
 import Simplex.Messaging.Encoding.String (strDecode)
-import Simplex.Messaging.Eth.Address (Address)
 import Simplex.Messaging.SimplexName (SimplexTLD (..))
 import System.Directory (createDirectoryIfMissing)
 import System.FilePath ((</>))
@@ -34,7 +34,7 @@ badgeConfigTests = describe "store service config" $ do
   it "refuses an incomplete provider section, naming the key" testIncompleteSection
   it "reads the badges_port and badges_static_dir written out, as a local run sets them" testBadgesListenerKeys
   it "refuses the listener keys of earlier releases, naming the key that replaced each, all at once" testRetiredListenerKeys
-  it "refuses a badges_port outside 1-65535" testBadgesPortRange
+  it "refuses a badges_port outside 1-65535 or written other than in decimal digits" testBadgesPortRange
   it "reads serve_webapp off" testWebappOff
   it "applies every documented stripe default" testStripeDefaults
   it "disables stripe when the section is absent" testStripeAbsent
@@ -50,13 +50,13 @@ badgeConfigTests = describe "store service config" $ do
   it "accepts a poll cadence and refuses a zero or negative one" testPollCadence
   it "accepts an expiry window and refuses a zero or negative one" testExpiryMinutes
   it "accepts a payment tolerance and refuses one that settles for a satoshi" testPaymentTolerance
-  it "refuses a BTCPay host that would send the api key in the clear off the machine, and takes http on loopback" testHostMustBeHttps
+  it "refuses a BTCPay host that would send the api key in the clear off the machine or that the HTTP client cannot parse, takes http on loopback, in any case of the scheme" testHostMustBeHttps
   it "names a setting nothing reads, in every section it parses" testUnknownKeysAreNamed
   it "ignores a section nothing reads rather than refusing the file" testUnknownSectionStillBoots
-  it "refuses a file one malformed line would silently truncate" testMalformedLineRefused
+  it "refuses a line that is neither a header, a setting nor a comment, naming its line" testMalformedLineRefused
   it "reads the file as UTF-8 whatever the locale, and refuses one that is not UTF-8" testUtf8File
   it "accepts a comment or blank line after the last setting" testTrailingCommentIsAccepted
-  it "refuses a setting written as key: value, naming it and quoting no value" testColonSettingRefused
+  it "refuses a setting written as key: value, naming its line and quoting no value" testColonSettingRefused
   it "reports a missing file rather than throwing" testMissingFileIsReported
   it "has no issuer key when the section is absent" testIssuerAbsent
   it "reads the index and the private key it signs with" testIssuerKey
@@ -113,13 +113,12 @@ withIni t f = do
 testDefaults :: IO ()
 testDefaults = withIni fullIni $ \p -> do
   Right cfg <- readServiceConfig p
-  let ListenerConfig {lHost, lBadgesPort, lBadgesStaticDir, lServeWebapp, lTrustForwardedFor, lNamesStaticDir, lNamesPort} = listener cfg
+  let ListenerConfig {lHost, lBadgesPort, lBadgesSite, lTrustForwardedFor, lNamesSite} = listener cfg
   lHost `shouldBe` "127.0.0.1"
   lBadgesPort `shouldBe` 8080
-  lBadgesStaticDir `shouldBe` "/srv/badges"
-  lServeWebapp `shouldBe` True
+  lBadgesSite `shouldBe` Just "/srv/badges"
   lTrustForwardedFor `shouldBe` False
-  (lNamesStaticDir, lNamesPort) `shouldBe` (Nothing, Nothing)
+  lNamesSite `shouldBe` Nothing
   let PollConfig {pWaitingSeconds, pIdleSeconds} = poll cfg
   pWaitingSeconds `shouldBe` 3
   pIdleSeconds `shouldBe` 60
@@ -157,8 +156,8 @@ withListenerKeys ks = T.replace "[listener]\n" ("[listener]\n" <> T.unlines ks) 
 testBadgesListenerKeys :: IO ()
 testBadgesListenerKeys = do
   Right cfg <- parseIni (withListenerKeys ["badges_port = 9080", "badges_static_dir = ./apps/simplex-store-service/web/dist"])
-  let ListenerConfig {lBadgesPort, lBadgesStaticDir} = listener cfg
-  (lBadgesPort, lBadgesStaticDir) `shouldBe` (9080, "./apps/simplex-store-service/web/dist")
+  let ListenerConfig {lBadgesPort, lBadgesSite} = listener cfg
+  (lBadgesPort, lBadgesSite) `shouldBe` (9080, Just "./apps/simplex-store-service/web/dist")
 
 testRetiredListenerKeys :: IO ()
 testRetiredListenerKeys = do
@@ -169,17 +168,15 @@ testRetiredListenerKeys = do
     refused (k <> " = /srv/export") ("listener." <> T.unpack k <> " is removed: the service writes no site, as the pages read their settings from /api/config; serve the build as it is")
   refused "names_hosts = simplex.domains" "listener.names_hosts is replaced by listener.names_port: serve the names site on its own port"
   refusedAll ["port = 8080", "static_dir = /srv/badges"] "listener.port is now listener.badges_port; listener.static_dir is now listener.badges_static_dir"
-  withIni (withListenerKeys ["static_dir = /srv/badges", "webapp_export_dir = /srv/badges-export", "names_hosts = simplex.domains", "port = 8080"]) $ \p -> do
-    Right ini <- readIniFile p
-    unknownKeys ini `shouldBe` []
+  unknownIn (withListenerKeys ["static_dir = /srv/badges", "webapp_export_dir = /srv/badges-export", "names_hosts = simplex.domains", "port = 8080"]) `shouldBe` []
   where
     refused key = refusedAll [key]
     refusedAll keys e = parseIni (withListenerKeys keys) >>= (`shouldBe` e) . either id (const "parsed")
 
 testBadgesPortRange :: IO ()
 testBadgesPortRange = do
-  forM_ ["0", "65536", "-1"] $ \v ->
-    parseIni (withListenerKeys ["badges_port = " <> v]) >>= (`shouldBe` "listener.badges_port must be between 1 and 65535") . either id (const "parsed")
+  forM_ ["0", "65536", "-1", "0x7a69", "(3)", "8_080"] $ \v ->
+    parseIni (withListenerKeys ["badges_port = " <> v]) >>= (`shouldBe` "listener.badges_port must be a whole number from 1 to 65535") . either id (const "parsed")
   Right cfg <- parseIni (withListenerKeys ["badges_port = 65535"])
   lBadgesPort (listener cfg) `shouldBe` 65535
 
@@ -187,7 +184,7 @@ testWebappOff :: IO ()
 testWebappOff =
   withIni (withListenerKeys ["serve_webapp = off"]) $ \p -> do
     Right cfg <- readServiceConfig p
-    lServeWebapp (listener cfg) `shouldBe` False
+    lBadgesSite (listener cfg) `shouldBe` Nothing
 
 fullStripeIni :: T.Text
 fullStripeIni =
@@ -203,7 +200,7 @@ testStripePublishableKey :: IO ()
 testStripePublishableKey = do
   forM_ [("rk_test_x", "pk_test_51Hx"), ("rk_live_x", "pk_live_AbC123")] $ \(s, k) -> (\r -> (k, isRight r)) <$> withStripeKeys s k `shouldReturn` (k, True)
   forM_ ["pk_test_", "sk_test_x", "pk_test_x\"><script>", "pk_live_a-b"] $ \k ->
-    withStripeKeys "rk_test_x" k `shouldReturn` Left "stripe.publishable_key must be pk_live_ or pk_test_ followed by letters and digits"
+    void <$> withStripeKeys "rk_test_x" k `shouldReturn` Left "stripe.publishable_key must be pk_live_ or pk_test_ followed by letters and digits"
 
 withStripeKeys :: T.Text -> T.Text -> IO (Either String ServiceConfig)
 withStripeKeys secret publishable = parseIni (fullIni <> T.unlines (devKeysStripe secret publishable))
@@ -213,7 +210,7 @@ testStripeKeyModes = do
   forM_ [("sk_live_x", "pk_live_x"), ("rk_live_x", "pk_live_x"), ("sk_test_x", "pk_test_x"), ("rk_test_x", "pk_test_x")] $ \(s, k) ->
     (\r -> (s, k, isRight r)) <$> withStripeKeys s k `shouldReturn` (s, k, True)
   forM_ [("rk_live_x", "pk_test_x"), ("sk_live_x", "pk_test_x"), ("rk_test_x", "pk_live_x"), ("sk_test_x", "pk_live_x"), ("sk_test", "pk_test_x")] $ \(s, k) ->
-    (\r -> (s, k, r)) <$> withStripeKeys s k `shouldReturn` (s, k, Left "stripe.secret_key and stripe.publishable_key must be both live keys or both test keys")
+    (\r -> (s, k, void r)) <$> withStripeKeys s k `shouldReturn` (s, k, Left "stripe.secret_key and stripe.publishable_key must be both live keys or both test keys")
 
 testStripeDefaults :: IO ()
 testStripeDefaults = withIni fullStripeIni $ \p -> do
@@ -270,7 +267,7 @@ testSpeedPolicyAccepted name expected =
 testSpeedPolicyName :: IO ()
 testSpeedPolicyName =
   withIni (fullIni <> "speed_policy = 2\n") $ \p ->
-    readServiceConfig p >>= (`shouldSatisfy` isLeft)
+    readServiceConfig p >>= (`shouldSatisfy` isLeft) . void
 
 testPollCadence :: IO ()
 testPollCadence = do
@@ -278,7 +275,7 @@ testPollCadence = do
     Right cfg -> poll cfg `shouldBe` PollConfig {pWaitingSeconds = 1, pIdleSeconds = 5}
     Left e -> expectationFailure ("a one-second cadence is legal: " <> e)
   mapM_
-    (\v -> withPoll v (`shouldSatisfy` isLeft))
+    (\v -> withPoll v ((`shouldSatisfy` isLeft) . void))
     [ "waiting_seconds = 0\n",
       "idle_seconds = 0\n",
       "waiting_seconds = -3\n",
@@ -305,48 +302,40 @@ testExpiryMinutes = do
     withExpiry key act = withIni (fullIni <> key) $ \p -> readServiceConfig p >>= act
 
 testUnknownKeysAreNamed :: IO ()
-testUnknownKeysAreNamed =
-  withIni (fullIni <> "speed_polcy = LowSpeed\ntrust_forwaded_for = on\n[poll]\nwaiting_secnds = 5\n[stripe]\nsecret_ky = rk_test_x\n") $ \p -> do
-    Right ini <- readIniFile p
-    unknownKeys ini `shouldMatchList` ["btcpay.speed_polcy", "btcpay.trust_forwaded_for", "poll.waiting_secnds", "stripe.secret_ky"]
-    withIni (T.replace "[btcpay]" "[btcpai]" fullIni) $ \wrongSection -> do
-      Right sectionIni <- readIniFile wrongSection
-      unknownKeys sectionIni `shouldContain` ["[btcpai]"]
-    withIni ("badges_static_dir = /srv/badges\n" <> fullIni) $ \stray -> do
-      Right strayIni <- readIniFile stray
-      unknownKeys strayIni `shouldContain` ["badges_static_dir, written above the first section header"]
-    withIni fullIni $ \clean -> do
-      Right cleanIni <- readIniFile clean
-      unknownKeys cleanIni `shouldBe` []
+testUnknownKeysAreNamed = do
+  unknownIn (fullIni <> "speed_polcy = LowSpeed\ntrust_forwaded_for = on\n[poll]\nwaiting_secnds = 5\n[stripe]\nsecret_ky = rk_test_x\n")
+    `shouldMatchList` ["btcpay.speed_polcy", "btcpay.trust_forwaded_for", "poll.waiting_secnds", "stripe.secret_ky"]
+  unknownIn (T.replace "[btcpay]" "[btcpai]" fullIni) `shouldContain` ["[btcpai]"]
+  unknownIn ("badges_static_dir = /srv/badges\n" <> fullIni) `shouldContain` ["badges_static_dir, written above the first section header"]
+  unknownIn fullIni `shouldBe` []
+
+unknownIn :: T.Text -> [T.Text]
+unknownIn = either error unknownKeys . iniSections
 
 testUnknownSectionStillBoots :: IO ()
 testUnknownSectionStillBoots =
   parseIni (fullIni <> "[legacy]\nsetting = on\n") >>= \r -> case r of
-    Right cfg -> lBadgesStaticDir (listener cfg) `shouldBe` "/srv/badges"
+    Right cfg -> lBadgesSite (listener cfg) `shouldBe` Just "/srv/badges"
     Left e -> expectationFailure ("a section nothing reads must be ignored, not refused: " <> e)
 
--- | The ini parser stops at the first line it cannot read and keeps what it has, so without this a
--- missing `=` in [listener] would silently drop every section below it, and the provider with it.
 testMalformedLineRefused :: IO ()
 testMalformedLineRefused =
-  withIni (withListenerKeys ["trust_forwarded_for on"]) $ \p ->
-    readServiceConfig p >>= \r -> case r of
-      Left e -> e `shouldContain` "malformed"
-      Right cfg -> expectationFailure ("a truncated file must not boot, and this one kept " <> show (btcpay cfg))
+  void <$> parseIni (withListenerKeys ["trust_forwarded_for on"]) `shouldReturn` Left (malformedLine 2)
 
 testColonSettingRefused :: IO ()
 testColonSettingRefused = do
-  parseIni (fullIni <> "[poll]\nwaiting_seconds:5\n") `shouldReturn` Left "poll.waiting_seconds is written as `key: value`, which the parser misreads; write `key = value`"
+  void <$> parseIni (fullIni <> "[poll]\nwaiting_seconds:5\n") `shouldReturn` Left (malformedLine 11)
   Left e <- parseIni (T.replace "api_key = token-value" "api_key: token-value" fullIni)
-  e `shouldBe` "btcpay.api_key is written as `key: value`, which the parser misreads; write `key = value`"
+  e `shouldBe` malformedLine 7
   e `shouldNotContain` "token-value"
   -- a colon in a value, or in a comment, is no such setting
   Right _ <- parseIni (fullIni <> "[poll]\n; waiting_seconds: 5\nidle_seconds = 60 \n")
   Right ServiceConfig {btcpay = Just BTCPayConfig {bHost}} <- parseIni fullIni
   bHost `shouldBe` "https://btcpay.example.org"
 
--- | The strictness that refuses a truncated file must not refuse a trailing comment or blank line,
--- since `iniParser` stops before one and commenting out the last section is enough to produce it.
+malformedLine :: Int -> String
+malformedLine n = "line " <> show n <> " is malformed: write a [section] header, a key = value setting or a ; comment"
+
 testTrailingCommentIsAccepted :: IO ()
 testTrailingCommentIsAccepted = do
   accepts (fullIni <> "; rotated the api key on 2026-09-01\n")
@@ -387,16 +376,13 @@ testPaymentTolerance = do
 
 testHostMustBeHttps :: IO ()
 testHostMustBeHttps = do
-  forM_ ["http://btcpay.example.org", "http://127.0.0.1.example.org:49392", "http://localhost@btcpay.example.org", "http://10.0.0.5:49392"] $ \host ->
-    withIni (T.replace "https://btcpay.example.org" host fullIni) $ \p ->
-      readServiceConfig p >>= \case
-        Left e -> e `shouldBe` "btcpay.host must be an https URL, or http to BTCPay on loopback: 127.0.0.1, ::1 or localhost"
-        Right _ -> expectationFailure (T.unpack host <> " carries the api key in the clear off the machine")
-  forM_ ["http://127.0.0.1:49392", "http://localhost:49392", "http://[::1]:49392"] $ \host ->
-    withIni (T.replace "https://btcpay.example.org" host fullIni) $ \p ->
-      readServiceConfig p >>= \case
-        Right cfg -> bHost <$> btcpay cfg `shouldBe` Just host
-        Left e -> expectationFailure (T.unpack host <> " is on loopback, refused: " <> e)
+  forM_ ["http://btcpay.example.org", "http://127.0.0.1.example.org:49392", "http://localhost@btcpay.example.org", "http://10.0.0.5:49392", "https://btcpay.example.org:port"] $ \host ->
+    void <$> parseIni (withHost host) `shouldReturn` Left "btcpay.host must be an https URL, or http to BTCPay on loopback: 127.0.0.1, ::1 or localhost"
+  forM_ ["http://127.0.0.1:49392", "http://localhost:49392", "http://[::1]:49392", "HTTPS://btcpay.example.org"] $ \host -> do
+    Right ServiceConfig {btcpay = Just BTCPayConfig {bHost}} <- parseIni (withHost host)
+    bHost `shouldBe` host
+  where
+    withHost host = T.replace "host = https://btcpay.example.org" ("host = " <> host) fullIni
 
 -- A real 32-byte base64url secret, as `simplex-chat badge keygen` prints it.
 issuerSecret :: T.Text
@@ -432,10 +418,11 @@ testIssuerSecretMissing =
   issuerRefusal ["index = 1"] `shouldReturn` "issuer.private_key is required"
 
 testIssuerIndexInvalid :: IO ()
-testIssuerIndexInvalid =
+testIssuerIndexInvalid = do
   mapM_
-    (\v -> issuerRefusal ["index = " <> v, "private_key = " <> issuerSecret] `shouldReturn` "issuer.index must be a positive whole number")
-    ["0", "-1", "one", "1.5", "key_1", "18446744073709551617"]
+    (\v -> issuerRefusal ["index = " <> v, "private_key = " <> issuerSecret] `shouldReturn` "issuer.index must be a whole number of at least 1")
+    ["0", "-1", "one", "1.5", "key_1"]
+  issuerRefusal ["index = 18446744073709551617", "private_key = " <> issuerSecret] `shouldReturn` "issuer.index must be a whole number from 1 to 9223372036854775807"
 
 testIssuerBadSecret :: IO ()
 testIssuerBadSecret =
@@ -445,9 +432,7 @@ testIssuerBadSecret =
 testIssuerOldFormat :: IO ()
 testIssuerOldFormat = do
   let old = ["default = key_1", "key_1 = " <> issuerSecret]
-  withIssuer old $ \p -> do
-    Right ini <- readIniFile p
-    unknownKeys ini `shouldMatchList` ["issuer.default", "issuer.key_1"]
+  unknownIn (fullIni <> T.unlines ("[issuer]" : old)) `shouldMatchList` ["issuer.default", "issuer.key_1"]
   issuerRefusal old `shouldReturn` "issuer.index is required"
 
 testDevUnverifiedReceiptsAbsent :: IO ()
@@ -635,14 +620,14 @@ testUtf8File = do
   withTempDirectory "tests/tmp" "badge-ini" $ \d -> do
     let p = d </> "store_service.ini"
     B.writeFile p "[listener]\n[group]\ndisplay_name = \xff\n"
-    readServiceConfig p `shouldReturn` Left "is not UTF-8"
+    void <$> readServiceConfig p `shouldReturn` Left "is not UTF-8"
 
 testHighSpeedWithNames :: IO ()
 testHighSpeedWithNames = do
   let withPolicy p = parseIni (fullIni <> "speed_policy = " <> p <> "\n" <> T.unlines (namesSection <> chainSection))
-  withPolicy "HighSpeed"
+  void <$> withPolicy "HighSpeed"
     `shouldReturn` Left "btcpay.speed_policy = HighSpeed settles an invoice with no confirmation, which a double spend would turn into a free name, so it is refused with [names]"
-  withPolicy "MediumSpeed" >>= (`shouldSatisfy` isRight)
+  withPolicy "MediumSpeed" >>= (`shouldSatisfy` isRight) . void
 
 parseIni :: T.Text -> IO (Either String ServiceConfig)
 parseIni t = withIni t readServiceConfig
@@ -664,7 +649,7 @@ testGroupNameCodesPerDay = do
   perDay "" `shouldReturn` Right (Just 10)
   perDay "name_codes_per_day = 200\n" `shouldReturn` Right (Just 200)
   perDay "name_codes_per_day = 0\n" `shouldReturn` Right (Just 0)
-  perDay "name_codes_per_day = -1\n" `shouldReturn` Left "group.name_codes_per_day must be at least 0"
+  perDay "name_codes_per_day = -1\n" `shouldReturn` Left "group.name_codes_per_day must be a whole number of at least 0"
 
 listenerIni :: T.Text
 listenerIni = "[listener]\nbadges_static_dir = /srv/web\n"
@@ -723,9 +708,9 @@ namesConfigTests = describe "StoreService names: config" $ do
   it "refuses a term_start that is not an ISO 8601 UTC time" testNamesBadTermStart
   it "refuses a TLD other than simplex or testing" testNamesBadTLD
   it "refuses a bad or wrongly checksummed contract address, naming the key" testNamesBadAddress
-  it "refuses a bad service key without quoting it" testNamesBadServiceKey
-  it "keeps the RPC URL and the service key out of errors and the shown config" testNamesSecretsHidden
-  it "takes an http rpc_url only to a node on loopback, any other only as https" testNamesRpcUrlHttps
+  it "reads the service key's hex digits in either case, and refuses a bad key without quoting it" testNamesBadServiceKey
+  it "keeps the RPC URL and the service key out of errors" testNamesSecretsHidden
+  it "takes an http rpc_url only to a node on loopback, any other only as https, in any case of the scheme, and refuses one the HTTP client cannot parse" testNamesRpcUrlHttps
   it "refuses a [names] or [chain] setting nothing reads, terms_version among them, naming each" testNamesUnknownKeys
   it "reads codes_only on and off as a known setting, off when absent, and refuses any other value" testNamesCodesOnly
   it "reads record_edits_per_year as a known setting, 3 when absent, and refuses a value outside 1-100" testNamesRecordEdits
@@ -771,7 +756,7 @@ namesRefusal :: [T.Text] -> [T.Text] -> IO String
 namesRefusal ns cs =
   parseIni (namesIni ns cs) >>= \r -> case r of
     Left e -> pure e
-    Right cfg -> expectationFailure ("must not boot, it read " <> show (names cfg)) >> pure ""
+    Right _ -> expectationFailure "must not boot" >> pure ""
 
 parsedNames :: [T.Text] -> [T.Text] -> IO NamesConfig
 parsedNames ns cs =
@@ -779,22 +764,18 @@ parsedNames ns cs =
     Right cfg -> maybe (fail "[names] was present but not read") pure (names cfg)
     Left e -> fail ("must boot, but: " <> e)
 
-address :: HasCallStack => T.Text -> Address
-address t = either error id (strDecode (B.pack (T.unpack t)))
-
 testNamesDefaults :: IO ()
 testNamesDefaults = do
-  NamesConfig {nTLD, nYears, nTermStart, nTermSlackSeconds, nRevealMarginSeconds, nMaxOrderMoves, nChain} <- parsedNames namesSection chainSection
+  NamesConfig {nTLD, nYears, nTermStart, nTermSlackSeconds, nRevealMarginSeconds, nChain} <- parsedNames namesSection chainSection
   nTLD `shouldBe` TLDTesting
   nYears `shouldBe` 2
   nTermStart `shouldBe` UTCTime (fromGregorian 2027 1 1) 0
   nTermSlackSeconds `shouldBe` 3600
   nRevealMarginSeconds `shouldBe` 900
-  nMaxOrderMoves `shouldBe` 3
   let ChainConfig {cRpcUrl, cChainId, cController, cSponsor, cBaseRegistrar, cResolver, cServiceKey, cConfirmations, cGasLimitCap, cMaxFeePerGas} = nChain
   cRpcUrl `shouldBe` T.unpack rpcUrl
   cChainId `shouldBe` 31337
-  (cController, cSponsor, cBaseRegistrar, cResolver) `shouldBe` (address controllerAddr, address sponsorAddr, address registrarAddr, address resolverAddr)
+  (cController, cSponsor, cBaseRegistrar, cResolver) `shouldBe` (address (encodeUtf8 controllerAddr), address (encodeUtf8 sponsorAddr), address (encodeUtf8 registrarAddr), address (encodeUtf8 resolverAddr))
   Right expectedKey <- pure (mkPrivateKey (BA.pack [0xac, 0x09, 0x74, 0xbe, 0xc3, 0x9a, 0x17, 0xe3, 0x6b, 0xa4, 0xa6, 0xb4, 0xd2, 0x38, 0xff, 0x94, 0x4b, 0xac, 0xb4, 0x78, 0xcb, 0xed, 0x5e, 0xfc, 0xae, 0x78, 0x4d, 0x7b, 0xf4, 0xf2, 0xff, 0x80]))
   (cServiceKey == expectedKey) `shouldBe` True
   cConfirmations `shouldBe` 3
@@ -803,33 +784,34 @@ testNamesDefaults = do
 
 testNamesWrittenOut :: IO ()
 testNamesWrittenOut = do
-  let ns = ["[names]", "tld = simplex", "years = 5", "term_start = 2027-03-01T12:00:00Z", "term_slack_seconds = 60", "reveal_margin_seconds = 0", "max_order_moves = 0"]
+  let ns = ["[names]", "tld = simplex", "years = 5", "term_start = 2027-03-01T12:00:00Z", "term_slack_seconds = 60", "reveal_margin_seconds = 0", "max_dry_run_failures = 2", "max_sent_failures = 3"]
       cs = chainSection <> ["confirmations = 1", "gas_limit_cap = 500000", "max_fee_per_gas = 30000000000"]
-  NamesConfig {nTLD, nYears, nTermStart, nTermSlackSeconds, nRevealMarginSeconds, nMaxOrderMoves, nChain = ChainConfig {cConfirmations, cGasLimitCap, cMaxFeePerGas}} <- parsedNames ns cs
+  NamesConfig {nTLD, nYears, nTermStart, nTermSlackSeconds, nRevealMarginSeconds, nMaxDryRunFailures, nMaxSentFailures, nChain = ChainConfig {cConfirmations, cGasLimitCap, cMaxFeePerGas}} <- parsedNames ns cs
   nTLD `shouldBe` TLDSimplex
   nYears `shouldBe` 5
   nTermStart `shouldBe` UTCTime (fromGregorian 2027 3 1) (12 * 3600)
-  (nTermSlackSeconds, nRevealMarginSeconds, nMaxOrderMoves) `shouldBe` (60, 0, 0)
+  (nTermSlackSeconds, nRevealMarginSeconds, nMaxDryRunFailures, nMaxSentFailures) `shouldBe` (60, 0, 2, 3)
+  NamesConfig {nMaxDryRunFailures = dryRuns, nMaxSentFailures = sent} <- parsedNames namesSection chainSection
+  (dryRuns, sent) `shouldBe` (5, 5)
+  namesRefusal (namesSection <> ["max_dry_run_failures = 0"]) chainSection `shouldReturn` "names.max_dry_run_failures must be a whole number of at least 1"
   (cConfirmations, cGasLimitCap, cMaxFeePerGas) `shouldBe` (1, 500000, 30000000000)
-  namesRefusal ns (chainSection <> ["confirmations = 0"]) `shouldReturn` "chain.confirmations must be at least 1"
-  namesRefusal ns (chainSection <> ["confirmations = -1"]) `shouldReturn` "chain.confirmations must be at least 1"
-  namesRefusal ns (chainSection <> ["gas_limit_cap = 0"]) `shouldReturn` "chain.gas_limit_cap must be a positive whole number"
-  namesRefusal ns (chainSection <> ["max_fee_per_gas = 0"]) `shouldReturn` "chain.max_fee_per_gas must be a positive whole number"
-  namesRefusal ns (chainSection <> ["max_fee_per_gas = 18446744073709551616"]) `shouldReturn` "chain.max_fee_per_gas must be a positive whole number"
+  namesRefusal ns (chainSection <> ["confirmations = 0"]) `shouldReturn` "chain.confirmations must be a whole number of at least 1"
+  namesRefusal ns (chainSection <> ["confirmations = -1"]) `shouldReturn` "chain.confirmations must be a whole number of at least 1"
+  namesRefusal ns (chainSection <> ["gas_limit_cap = 0"]) `shouldReturn` "chain.gas_limit_cap must be a whole number of at least 1"
+  namesRefusal ns (chainSection <> ["max_fee_per_gas = 0"]) `shouldReturn` "chain.max_fee_per_gas must be a whole number of at least 1"
+  namesRefusal ns (chainSection <> ["max_fee_per_gas = 18446744073709551616"]) `shouldReturn` "chain.max_fee_per_gas must be a whole number from 1 to 18446744073709551615"
   namesRefusal ns (filter (not . ("chain_id" `T.isPrefixOf`)) chainSection) `shouldReturn` "chain.chain_id is required"
-  namesRefusal (namesSection <> ["max_order_moves = -1"]) chainSection `shouldReturn` "names.max_order_moves must be at least 0"
+  namesRefusal ns (withChainId "") `shouldReturn` "chain.chain_id is required"
+  namesRefusal ns (withChainId "0") `shouldReturn` "chain.chain_id must be a whole number of at least 1"
 
 testNamesListenerKeys :: IO ()
 testNamesListenerKeys = do
   Right cfg <- parseIni (namesIni namesSection chainSection)
-  let ListenerConfig {lNamesStaticDir, lNamesPort} = listener cfg
-  (lNamesStaticDir, lNamesPort) `shouldBe` (Just "/srv/names", Just 8081)
+  lNamesSite (listener cfg) `shouldBe` Just (8081, "/srv/names")
   Right written <- parseIni (namesIniWith ["names_static_dir = ./names/dist", "names_port = 9081"])
-  let ListenerConfig {lNamesStaticDir = dir, lNamesPort = port} = listener written
-  (dir, port) `shouldBe` (Just "./names/dist", Just 9081)
+  lNamesSite (listener written) `shouldBe` Just (9081, "./names/dist")
   Right apiOnly <- parseIni (namesIniWith ["serve_webapp = off"])
-  let ListenerConfig {lNamesStaticDir = apiOnlyDir, lNamesPort = apiOnlyPort} = listener apiOnly
-  (apiOnlyDir, apiOnlyPort) `shouldBe` (Just "/srv/names", Nothing)
+  lNamesSite (listener apiOnly) `shouldBe` Nothing
 
 testNamesSiteOnlyWithNames :: IO ()
 testNamesSiteOnlyWithNames =
@@ -839,13 +821,13 @@ testNamesSiteOnlyWithNames =
 
 testNamesPortRules :: IO ()
 testNamesPortRules = do
-  forM_ ["0", "65536"] $ \v -> refused ["names_port = " <> v] "listener.names_port must be between 1 and 65535"
+  forM_ ["0", "65536"] $ \v -> refused ["names_port = " <> v] "listener.names_port must be a whole number from 1 to 65535"
   refused ["names_port = 8080"] "listener.names_port must differ from listener.badges_port"
   refused ["badges_port = 8081"] "listener.names_port must differ from listener.badges_port"
   refused ["serve_webapp = off", "names_port = 8081"] "listener.names_port is set but serve_webapp is off, so nothing would use it"
   Right moved <- parseIni (namesIniWith ["badges_port = 8081", "names_port = 8080"])
-  let ListenerConfig {lBadgesPort, lNamesPort} = listener moved
-  (lBadgesPort, lNamesPort) `shouldBe` (8081, Just 8080)
+  let ListenerConfig {lBadgesPort, lNamesSite} = listener moved
+  (lBadgesPort, fst <$> lNamesSite) `shouldBe` (8081, Just 8080)
   where
     refused ks e = parseIni (namesIniWith ks) >>= (`shouldBe` e) . either id (const "parsed")
 
@@ -857,7 +839,7 @@ testMetricsPort = do
   lMetricsPort (listener on) `shouldBe` Just 9300
   Right badgesOnly <- parseIni (withListenerKeys ["metrics_port = 9300"])
   lMetricsPort (listener badgesOnly) `shouldBe` Just 9300
-  forM_ ["0", "65536"] $ \v -> refused ["metrics_port = " <> v] "listener.metrics_port must be between 1 and 65535"
+  forM_ ["0", "65536"] $ \v -> refused ["metrics_port = " <> v] "listener.metrics_port must be a whole number from 1 to 65535"
   forM_ ["8080", "8081"] $ \v -> refused ["metrics_port = " <> v] "listener.metrics_port must differ from listener.badges_port and listener.names_port"
   where
     refused ks e = parseIni (namesIniWith ks) >>= (`shouldBe` e) . either id (const "parsed")
@@ -869,7 +851,7 @@ namesIniWith ks = withListenerKeys ks <> T.unlines (namesSection <> chainSection
 testNamesAbsent :: IO ()
 testNamesAbsent = do
   Right cfg <- parseIni fullIni
-  names cfg `shouldBe` Nothing
+  isNothing (names cfg) `shouldBe` True
 
 testNamesNeedsChain :: IO ()
 testNamesNeedsChain = do
@@ -878,7 +860,7 @@ testNamesNeedsChain = do
 
 testNamesYearsBelowTwo :: IO ()
 testNamesYearsBelowTwo = do
-  mapM_ (\v -> namesRefusal (namesSection <> ["years = " <> v]) chainSection `shouldReturn` "names.years must be at least 2") ["1", "0", "-2"]
+  mapM_ (\v -> namesRefusal (namesSection <> ["years = " <> v]) chainSection `shouldReturn` "names.years must be a whole number of at least 2") ["1", "0", "-2"]
   NamesConfig {nYears} <- parsedNames (namesSection <> ["years = 2"]) chainSection
   nYears `shouldBe` 2
 
@@ -903,7 +885,7 @@ testNamesBadAddress = do
   refused "0x0B306BF915C4d645ff596e518fAf3F9669b97016ff"
   refused "not-an-address"
   NamesConfig {nChain = ChainConfig {cSponsor}} <- parsedNames namesSection (withSponsor (T.toLower sponsorAddr))
-  cSponsor `shouldBe` address sponsorAddr
+  cSponsor `shouldBe` address (encodeUtf8 sponsorAddr)
 
 testNamesBadServiceKey :: IO ()
 testNamesBadServiceKey = do
@@ -911,7 +893,12 @@ testNamesBadServiceKey = do
       refused v = do
         e <- namesRefusal namesSection (withKey v)
         e `shouldBe` "chain.service_key must be 0x and 64 hex digits of a valid secp256k1 key"
-  refused (T.drop 2 serviceKeyHex)
+      keyOf v = cServiceKey . nChain <$> parsedNames namesSection (withKey v)
+      digits = T.drop 2 serviceKeyHex
+  lowerKey <- keyOf serviceKeyHex
+  forM_ ["0x" <> T.toUpper digits, "0x" <> T.toUpper (T.take 32 digits) <> T.drop 32 digits] $ \v ->
+    keyOf v >>= (`shouldBe` True) . (== lowerKey)
+  refused digits
   refused (T.dropEnd 2 serviceKeyHex)
   refused ("0x" <> T.replicate 64 "0")
   -- the curve order n is not a valid key
@@ -920,10 +907,10 @@ testNamesBadServiceKey = do
 
 testNamesRpcUrlHttps :: IO ()
 testNamesRpcUrlHttps = do
-  forM_ ["https://eth.example.org/v2/rpc-token-value", "http://127.0.0.1:8545", "http://[::1]:8545", "http://LOCALHOST:8545/"] $ \url -> do
+  forM_ ["https://eth.example.org/v2/rpc-token-value", "http://127.0.0.1:8545", "http://[::1]:8545", "http://LOCALHOST:8545/", "HTTPS://eth.example.org/v2/rpc-token-value", "HTTP://127.0.0.1:8545"] $ \url -> do
     ChainConfig {cRpcUrl} <- nChain <$> parsedNames namesSection (withRpcUrl url)
     cRpcUrl `shouldBe` T.unpack url
-  forM_ ["http://eth.example.org/v2/rpc-token-value", "http://127.0.0.1.example.org:8545", "http://localhost@eth.example.org/rpc-token-value", "http://10.0.0.5:8545"] $ \url -> do
+  forM_ ["http://eth.example.org/v2/rpc-token-value", "http://127.0.0.1.example.org:8545", "http://localhost@eth.example.org/rpc-token-value", "http://10.0.0.5:8545", "https://eth.example.org:port/v2/rpc-token-value"] $ \url -> do
     e <- namesRefusal namesSection (withRpcUrl url)
     e `shouldBe` rpcUrlRefusal
     e `shouldNotContain` "rpc-token-value"
@@ -942,17 +929,11 @@ testNamesSecretsHidden = do
   other <- namesRefusal namesSection (chainSection <> ["confirmations = many"])
   other `shouldNotContain` "rpc-token-value"
   other `shouldNotContain` T.unpack (T.drop 2 serviceKeyHex)
-  Right cfg <- parseIni (namesIni namesSection chainSection)
-  show cfg `shouldNotContain` "rpc-token-value"
-  show cfg `shouldNotContain` T.unpack (T.drop 2 serviceKeyHex)
-  show cfg `shouldContain` "chain 31337"
 
 testNamesUnknownKeys :: IO ()
 testNamesUnknownKeys = do
-  let t = namesIni (namesSection <> ["yeers = 3", "terms_version = 2026-10-23"]) (chainSection <> ["rpc = x"])
-  withIni t $ \p -> do
-    Right ini <- readIniFile p
-    unknownKeys ini `shouldMatchList` ["names.yeers", "names.terms_version", "chain.rpc"]
+  unknownIn (namesIni (namesSection <> ["yeers = 3", "terms_version = 2026-10-23"]) (chainSection <> ["rpc = x"]))
+    `shouldMatchList` ["names.yeers", "names.terms_version", "chain.rpc"]
   namesRefusal (namesSection <> ["yeers = 3", "terms_version = 2026-10-23"]) (chainSection <> ["rpc = x"])
     `shouldReturn` "nothing reads names.yeers, names.terms_version, chain.rpc, and a mistyped [names] or [chain] setting would change what is sold: correct or remove it"
   namesRefusal (namesSection <> ["code_only = on"]) chainSection
@@ -964,9 +945,7 @@ testNamesCodesOnly = do
   absent `shouldBe` False
   forM_ [("on", True), ("off", False)] $ \(value, expected) -> do
     let ns = namesSection <> ["codes_only = " <> value]
-    withIni (namesIni ns chainSection) $ \p -> do
-      Right ini <- readIniFile p
-      unknownKeys ini `shouldBe` []
+    unknownIn (namesIni ns chainSection) `shouldBe` []
     NamesConfig {nCodesOnly} <- parsedNames ns chainSection
     (value, nCodesOnly) `shouldBe` (value, expected)
   namesRefusal (namesSection <> ["codes_only = yes"]) chainSection `shouldReturn` "codes_only must be on or off, not yes"
@@ -977,14 +956,12 @@ testNamesRecordEdits = do
   absent `shouldBe` 3
   forM_ [1, 100] $ \n -> do
     let ns = namesSection <> ["record_edits_per_year = " <> T.pack (show n)]
-    withIni (namesIni ns chainSection) $ \p -> do
-      Right ini <- readIniFile p
-      unknownKeys ini `shouldBe` []
+    unknownIn (namesIni ns chainSection) `shouldBe` []
     NamesConfig {nRecordEditsPerYear} <- parsedNames ns chainSection
     (n, nRecordEditsPerYear) `shouldBe` (n, n)
   forM_ ["0", "101", "-3"] $ \v ->
-    namesRefusal (namesSection <> ["record_edits_per_year = " <> v]) chainSection `shouldReturn` "names.record_edits_per_year must be between 1 and 100"
-  namesRefusal (namesSection <> ["record_edits_per_year = three"]) chainSection `shouldReturn` "record_edits_per_year must be a whole number"
+    namesRefusal (namesSection <> ["record_edits_per_year = " <> v]) chainSection `shouldReturn` "names.record_edits_per_year must be a whole number from 1 to 100"
+  namesRefusal (namesSection <> ["record_edits_per_year = three"]) chainSection `shouldReturn` "names.record_edits_per_year must be a whole number from 1 to 100"
 
 testNamesPriceFloor :: IO ()
 testNamesPriceFloor = do
@@ -992,14 +969,12 @@ testNamesPriceFloor = do
   absent `shouldBe` 5000
   forM_ [1, 7500] $ \n -> do
     let ns = namesSection <> ["min_price_cents_per_year = " <> T.pack (show n)]
-    withIni (namesIni ns chainSection) $ \p -> do
-      Right ini <- readIniFile p
-      unknownKeys ini `shouldBe` []
+    unknownIn (namesIni ns chainSection) `shouldBe` []
     NamesConfig {nMinPriceCentsPerYear} <- parsedNames ns chainSection
     (n, nMinPriceCentsPerYear) `shouldBe` (n, n)
   forM_ ["0", "-5000"] $ \v ->
-    namesRefusal (namesSection <> ["min_price_cents_per_year = " <> v]) chainSection `shouldReturn` "names.min_price_cents_per_year must be at least 1"
-  namesRefusal (namesSection <> ["min_price_cents_per_year = 50.00"]) chainSection `shouldReturn` "min_price_cents_per_year must be a whole number"
+    namesRefusal (namesSection <> ["min_price_cents_per_year = " <> v]) chainSection `shouldReturn` "names.min_price_cents_per_year must be a whole number of at least 1"
+  namesRefusal (namesSection <> ["min_price_cents_per_year = 50.00"]) chainSection `shouldReturn` "names.min_price_cents_per_year must be a whole number of at least 1"
 
 -- | Names on the local chain with no payment provider, as a run with dev keys has.
 localNamesIni :: [T.Text] -> T.Text
@@ -1020,8 +995,8 @@ testDevKeysLocalChain = do
   devIssuerKeys without `shouldBe` []
   let refused = "issuer.dev_keys is accepted only with [names] on the local chain, [chain] chain_id = 31337" :: String
   forM_ ["1", "11155111", "31338"] $ \chainId ->
-    parseIni (localNamesIni (withChainId chainId) <> T.unlines (devKeysIssuer ("9:" <> issuerSecret))) `shouldReturn` Left refused
-  parseIni (T.unlines ["[listener]"] <> T.unlines (devKeysIssuer ("9:" <> issuerSecret))) `shouldReturn` Left refused
+    void <$> parseIni (localNamesIni (withChainId chainId) <> T.unlines (devKeysIssuer ("9:" <> issuerSecret))) `shouldReturn` Left refused
+  void <$> parseIni (T.unlines ["[listener]"] <> T.unlines (devKeysIssuer ("9:" <> issuerSecret))) `shouldReturn` Left refused
 
 testDevKeysMalformed :: IO ()
 testDevKeysMalformed = do
@@ -1029,7 +1004,7 @@ testDevKeysMalformed = do
     e <- refusal keys
     e `shouldBe` "issuer.dev_keys must be <index>:<secret> entries separated by commas"
     e `shouldNotContain` T.unpack issuerSecret
-  refusal ("0:" <> issuerSecret) `shouldReturn` "issuer.dev_keys index must be a positive whole number"
+  refusal ("0:" <> issuerSecret) `shouldReturn` "issuer.dev_keys index must be a whole number of at least 1"
   refusal "9:not-a-key" `shouldReturn` "issuer.dev_keys secret is not a valid issuer secret; use the value from `simplex-chat badge keygen`"
   refusal ("9:" <> issuerSecret <> ",9:" <> issuerSecret) `shouldReturn` "issuer.dev_keys names an index twice"
   where
@@ -1055,22 +1030,23 @@ testDevKeysTestPayments = do
     devKeysWith provider >>= \case
       Right cfg -> length (devIssuerKeys cfg) `shouldBe` 1
       Left e -> expectationFailure (show provider <> " must boot with dev_keys, got: " <> e)
-  parseIni (localNamesIni (withChainId "1" <> devKeysStripe "rk_test_x" "pk_test_x") <> T.unlines (devKeysIssuer ("9:" <> issuerSecret)))
+  void <$> parseIni (localNamesIni (withChainId "1" <> devKeysStripe "rk_test_x" "pk_test_x") <> T.unlines (devKeysIssuer ("9:" <> issuerSecret)))
     `shouldReturn` Left "issuer.dev_keys is accepted only with [names] on the local chain, [chain] chain_id = 31337"
 
 testDevKeysLivePayments :: IO ()
 testDevKeysLivePayments = do
-  let liveSecret = "issuer.dev_keys is refused with a live Stripe key: stripe.secret_key must be a test key, sk_test_ or rk_test_" :: String
-      livePublishable = "issuer.dev_keys is refused with a live Stripe key: stripe.publishable_key must be a test key, pk_test_" :: String
+  let live = "issuer.dev_keys is refused with live Stripe keys: stripe.secret_key and stripe.publishable_key must be test keys" :: String
+      mixed = "stripe.secret_key and stripe.publishable_key must be both live keys or both test keys" :: String
       remote = "issuer.dev_keys is refused with a remote BTCPay: btcpay.host must be on loopback, 127.0.0.1, ::1 or localhost" :: String
-  forM_ ["sk_live_secretvalue", "rk_live_secretvalue", "sk_test", "pk_test_x"] $ \secret ->
-    devKeysWith (devKeysStripe secret "pk_test_x") `shouldReturn` Left liveSecret
-  devKeysWith (devKeysStripe "rk_test_x" "pk_live_x") `shouldReturn` Left livePublishable
+  forM_ ["sk_live_secretvalue", "rk_live_secretvalue"] $ \secret ->
+    void <$> devKeysWith (devKeysStripe secret "pk_live_x") `shouldReturn` Left live
+  forM_ [("sk_live_secretvalue", "pk_test_x"), ("sk_test", "pk_test_x"), ("pk_test_x", "pk_test_x"), ("rk_test_x", "pk_live_x")] $ \(secret, publishable) ->
+    void <$> devKeysWith (devKeysStripe secret publishable) `shouldReturn` Left mixed
   forM_ ["https://btcpay.example.org", "https://127.0.0.2", "https://localhost.example.org", "https://user@btcpay.example.org", "https://[::2]:8443"] $ \host ->
-    devKeysWith (devKeysBTCPay host) `shouldReturn` Left remote
-  devKeysWith (devKeysBTCPay "https://127.0.0.1" <> devKeysStripe "sk_live_secretvalue" "pk_test_x") `shouldReturn` Left liveSecret
-  devKeysWith (devKeysStripe "sk_live_secretvalue" "pk_test_x") >>= either (`shouldNotContain` "secretvalue") (const (expectationFailure "a live key must not boot"))
-  parseIni (localNamesIni (chainSection <> devKeysBTCPay "https://btcpay.example.org" <> devKeysStripe "sk_live_x" "pk_live_x")) >>= (`shouldSatisfy` either (const False) (const True))
+    void <$> devKeysWith (devKeysBTCPay host) `shouldReturn` Left remote
+  void <$> devKeysWith (devKeysBTCPay "https://127.0.0.1" <> devKeysStripe "sk_live_secretvalue" "pk_live_x") `shouldReturn` Left live
+  devKeysWith (devKeysStripe "sk_live_secretvalue" "pk_live_x") >>= either (`shouldNotContain` "secretvalue") (const (expectationFailure "a live key must not boot"))
+  parseIni (localNamesIni (chainSection <> devKeysBTCPay "https://btcpay.example.org" <> devKeysStripe "sk_live_x" "pk_live_x")) >>= (`shouldSatisfy` isRight) . void
 
 testStripeTestKeysChain :: IO ()
 testStripeTestKeysChain = do
@@ -1079,5 +1055,5 @@ testStripeTestKeysChain = do
   forM_ ["31337", "11155111"] $ \chainId ->
     (\r -> (chainId, isRight r)) <$> onChain chainId "rk_test_x" "pk_test_x" `shouldReturn` (chainId, True)
   forM_ ["1", "31338", "11155112"] $ \chainId -> do
-    (\r -> (chainId, r)) <$> onChain chainId "sk_test_x" "pk_test_x" `shouldReturn` (chainId, Left refused)
+    (\r -> (chainId, void r)) <$> onChain chainId "sk_test_x" "pk_test_x" `shouldReturn` (chainId, Left refused)
     (\r -> (chainId, isRight r)) <$> onChain chainId "rk_live_x" "pk_live_x" `shouldReturn` (chainId, True)

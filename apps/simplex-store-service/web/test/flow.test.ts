@@ -117,7 +117,7 @@ apiTest("api: a Lightning invoice answered to an on-chain request, and the rever
 
 apiTest("api: createInvoice maps error codes to typed errors", async () => {
   for (const [status, code] of [[409, "code_conflict"], [400, "catalog_changed"], [429, "rate_limited"], [503, "provider_unavailable"]] as const) {
-    const { fn } = fetchReturning({ status, body: { error: code } });
+    const { fn } = fetchReturning({ status, body: { type: code } });
     await assert.rejects(
       () => createInvoice({ priceId: "p", method: "card", codeHash: "h" }, fn),
       (e: unknown) => e instanceof ApiError && e.code === code,
@@ -126,7 +126,7 @@ apiTest("api: createInvoice maps error codes to typed errors", async () => {
 });
 
 apiTest("api: an unrecognised server error code maps to 'unknown', not passed through verbatim", async () => {
-  const { fn } = fetchReturning({ status: 400, body: { error: "a_code_this_client_predates" } });
+  const { fn } = fetchReturning({ status: 400, body: { type: "a_code_this_client_predates" } });
   await assert.rejects(
     () => createInvoice({ priceId: "p", method: "card", codeHash: "h" }, fn),
     (e: unknown) => e instanceof ApiError && e.code === "unknown",
@@ -384,11 +384,11 @@ apiTest("api: waitForChange resolves, rather than throws, when the status become
 
 apiTest("api: EVERY 404 stops the loop, whatever body a proxy or a CDN put on it", async () => {
   const shapes: Array<[string, MockResponse]> = [
-    ["the service's own body", { status: 404, body: { error: "not_found" } }],
+    ["the service's own body", { status: 404, body: { type: "not_found" } }],
     ["a proxy's HTML page", { status: 404, badJson: true }],
     ["an empty body", { status: 404 }],
     ["unrelated JSON", { status: 404, body: { message: "no route matched" } }],
-    ["a body naming another code", { status: 404, body: { error: "internal" } }],
+    ["a body naming another code", { status: 404, body: { type: "internal" } }],
   ];
   for (const [what, reply] of shapes) {
     const { fn, calls } = fetchReturning(reply);
@@ -402,13 +402,13 @@ apiTest("api: EVERY 404 stops the loop, whatever body a proxy or a CDN put on it
 
 apiTest("api: this client's own error words are never adopted FROM the wire", async () => {
   for (const named of ["invalid_response", "unknown", "teapot"]) {
-    const { fn } = fetchReturning({ status: 400, body: { error: named } });
+    const { fn } = fetchReturning({ status: 400, body: { type: named } });
     await assert.rejects(
       () => createInvoice({ priceId: "p", method: "xmr", codeHash: "h" }, fn),
       (e: unknown) => e instanceof ApiError && e.code === "unknown" && e.status === 400, named,
     );
   }
-  const { fn } = fetchReturning({ status: 400, body: { error: "bad_request" } });
+  const { fn } = fetchReturning({ status: 400, body: { type: "bad_request" } });
   await assert.rejects(
     () => createInvoice({ priceId: "p", method: "xmr", codeHash: "h" }, fn),
     (e: unknown) => e instanceof ApiError && e.code === "bad_request",
@@ -417,7 +417,7 @@ apiTest("api: this client's own error words are never adopted FROM the wire", as
 
 apiTest("api: a non-404 error response's body is drained rather than left unconsumed", async () => {
   const { fn, consumed } = fetchReturning(
-    { status: 500, body: { error: "internal" } },
+    { status: 500, body: { type: "internal" } },
     { status: 200, body: { status: "paid" } },
   );
   await waitForChange("i", "open", fn, instantSleep);
@@ -427,7 +427,7 @@ apiTest("api: a non-404 error response's body is drained rather than left uncons
 apiTest("api: a 429 waits out the exact interval named by Retry-After, not the 1s backoff start", async () => {
   const delays: number[] = [];
   const { fn } = fetchReturning(
-    { status: 429, body: { error: "rate_limited" }, headers: { "retry-after": "5" } },
+    { status: 429, body: { type: "rate_limited" }, headers: { "retry-after": "5" } },
     { status: 200, body: { status: "paid" } },
   );
   const got = await waitForChange("i", "open", fn, async (ms) => { delays.push(ms); });
@@ -438,7 +438,7 @@ apiTest("api: a 429 waits out the exact interval named by Retry-After, not the 1
 apiTest("api: a 429's wait does not consume or advance the backoff ladder", async () => {
   const delays: number[] = [];
   const { fn } = fetchReturning(
-    { status: 429, body: { error: "rate_limited" }, headers: { "retry-after": "5" } },
+    { status: 429, body: { type: "rate_limited" }, headers: { "retry-after": "5" } },
     new Error("offline"),
     { status: 200, body: { status: "paid" } },
   );
@@ -454,7 +454,7 @@ apiTest("api: a 429 with a missing or unusable Retry-After falls back to the net
   for (const headers of cases) {
     const delays: number[] = [];
     const { fn } = fetchReturning(
-      { status: 429, body: { error: "rate_limited" }, headers },
+      { status: 429, body: { type: "rate_limited" }, headers },
       { status: 200, body: { status: "paid" } },
     );
     const got = await waitForChange("i", "open", fn, async (ms) => { delays.push(ms); });
@@ -466,7 +466,7 @@ apiTest("api: a 429 with a missing or unusable Retry-After falls back to the net
 apiTest("api: Retry-After is clamped to 300s in the waiting loop, not honoured verbatim", async () => {
   const delays: number[] = [];
   const { fn } = fetchReturning(
-    { status: 429, body: { error: "rate_limited" }, headers: { "retry-after": "86400" } },
+    { status: 429, body: { type: "rate_limited" }, headers: { "retry-after": "86400" } },
     { status: 200, body: { status: "paid" } },
   );
   const got = await waitForChange("i", "open", fn, async (ms) => { delays.push(ms); });
@@ -475,19 +475,19 @@ apiTest("api: Retry-After is clamped to 300s in the waiting loop, not honoured v
 });
 
 apiTest("api: createInvoice's ApiError carries retryAfter from a 429's Retry-After, clamped to 300s, and omits it when absent", async () => {
-  const withHeader = fetchReturning({ status: 429, body: { error: "rate_limited" }, headers: { "retry-after": "60" } });
+  const withHeader = fetchReturning({ status: 429, body: { type: "rate_limited" }, headers: { "retry-after": "60" } });
   await assert.rejects(
     () => createInvoice({ priceId: "p", method: "card", codeHash: "h" }, withHeader.fn),
     (e: unknown) => e instanceof ApiError && e.code === "rate_limited" && e.retryAfter === 60,
   );
 
-  const excessive = fetchReturning({ status: 429, body: { error: "rate_limited" }, headers: { "retry-after": "86400" } });
+  const excessive = fetchReturning({ status: 429, body: { type: "rate_limited" }, headers: { "retry-after": "86400" } });
   await assert.rejects(
     () => createInvoice({ priceId: "p", method: "card", codeHash: "h" }, excessive.fn),
     (e: unknown) => e instanceof ApiError && e.retryAfter === 300,
   );
 
-  const withoutHeader = fetchReturning({ status: 429, body: { error: "rate_limited" } });
+  const withoutHeader = fetchReturning({ status: 429, body: { type: "rate_limited" } });
   await assert.rejects(
     () => createInvoice({ priceId: "p", method: "card", codeHash: "h" }, withoutHeader.fn),
     (e: unknown) => e instanceof ApiError && e.code === "rate_limited" && e.retryAfter === undefined,
@@ -649,8 +649,8 @@ async function ready(base: string, proc: ChildProcess): Promise<void> {
     }
     try {
       const res = await fetch(`${base}/api/invoice/no-such-invoice`);
-      const body = (await res.json()) as { error?: string };
-      if (res.status === 404 && body.error === "not_found") return;
+      const body = (await res.json()) as { type?: string };
+      if (res.status === 404 && body.type === "not_found") return;
       last = `answered ${res.status} ${JSON.stringify(body)}`;
     } catch (e) {
       last = String(e);

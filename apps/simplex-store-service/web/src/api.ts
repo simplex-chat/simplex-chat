@@ -89,7 +89,7 @@ export function inferMethod(view: Pick<InvoiceView, "clientSecret" | "cryptoCurr
 async function decodeError(res: Response): Promise<never> {
   let code: ErrorCode = "unknown";
   try {
-    code = wireError(asObject(await res.json())?.error) ?? "unknown";
+    code = wireError(asObject(await res.json())?.type) ?? "unknown";
   } catch { /* an empty or unparseable body stays "unknown" */ }
   if (res.status === 404) code = "not_found";
   throw new ApiError(code, res.status, retryAfterSeconds(res));

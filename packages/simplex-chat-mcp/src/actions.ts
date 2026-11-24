@@ -1,5 +1,6 @@
 import {errorText, log, logError, oneLine} from "./log"
 import {Changes, Collected, FileOffer, FileType, ToolCall, nextChange, reportProgress, utcMinutes} from "./messages"
+import type {Question} from "./protocol"
 import type {ConnectInput, DownloadInput, LeaveInput, PlanSummary, SendInput} from "./tools"
 
 // spec: spec/architecture.md#actions-mode
@@ -140,16 +141,46 @@ export interface ModeAction extends ActionRecord {
 // spec: spec/architecture.md#actions-modeaction
 export interface PermissionAction extends ActionRecord {
   readonly tool: "permission"
-  readonly input: {requestId: string; toolName: string; description: string; inputPreview: string}
+  readonly input: {requestId?: string; toolName: string; description: string; inputPreview: string; agent?: string; terminalOnly?: boolean}
   readonly subject?: undefined
   readonly chat?: undefined
   readonly toolApproved: boolean
   previewBytes?: number
 }
 
-export type Action = ConnectAction | SendAction | LeaveAction | DownloadAction | ModeAction | PermissionAction
+// spec: spec/architecture.md#actions-questionaction
+export type Answer = {option: string} | {reply: string}
 
-export type NewAction = Omit<ConnectAction, keyof ActionRecord> | Omit<SendAction, keyof ActionRecord> | Omit<LeaveAction, keyof ActionRecord> | Omit<DownloadAction, keyof ActionRecord> | Omit<ModeAction, keyof ActionRecord> | Omit<PermissionAction, keyof ActionRecord>
+// spec: spec/architecture.md#actions-questionaction
+export interface QuestionAction extends ActionRecord {
+  readonly tool: "question"
+  readonly input: {questions: Question[]}
+  readonly subject?: undefined
+  readonly chat?: undefined
+  answer?: Answer
+}
+
+// spec: spec/architecture.md#actions-questionaction
+export interface PlanAction extends ActionRecord {
+  readonly tool: "plan"
+  readonly input: {plan: string}
+  readonly subject?: undefined
+  readonly chat?: undefined
+  readonly quote?: number
+  answer?: Answer
+}
+
+// spec: spec/architecture.md#actions-questionaction
+export interface LinkAction extends ActionRecord {
+  readonly tool: "link"
+  readonly input: {server: string; message: string; url: string}
+  readonly subject?: undefined
+  readonly chat?: undefined
+}
+
+export type Action = ConnectAction | SendAction | LeaveAction | DownloadAction | ModeAction | PermissionAction | QuestionAction | PlanAction | LinkAction
+
+export type NewAction = Omit<ConnectAction, keyof ActionRecord> | Omit<SendAction, keyof ActionRecord> | Omit<LeaveAction, keyof ActionRecord> | Omit<DownloadAction, keyof ActionRecord> | Omit<ModeAction, keyof ActionRecord> | Omit<PermissionAction, keyof ActionRecord> | Omit<QuestionAction, keyof ActionRecord> | Omit<PlanAction, keyof ActionRecord> | Omit<LinkAction, keyof ActionRecord>
 
 // spec: spec/architecture.md#actions-actionhooks
 export interface ActionHooks {
@@ -418,6 +449,9 @@ export function subjectText({kind, name, simplexName}: Subject, showName: (name:
 export function summary(action: Action, showName: (name: string) => string): {what: string; detail: string} {
   if (action.tool === "mode") return {what: `run in mode ${action.input.mode}`, detail: ""}
   if (action.tool === "permission") return {what: `use ${showName(action.input.toolName)}`, detail: ""}
+  if (action.tool === "question") return {what: "answer a question", detail: ""}
+  if (action.tool === "plan") return {what: "approve a plan", detail: ""}
+  if (action.tool === "link") return {what: `open a link of ${showName(action.input.server)}`, detail: ""}
   const target = subjectText({...action.subject, simplexName: undefined}, showName)
   switch (action.tool) {
     case "connect":
@@ -444,7 +478,8 @@ function performedText(action: Action): string {
   if (action.tool === "leave") return `${leaveVerbs(action).past}.`
   if (action.tool === "download") return "downloaded."
   if (action.tool === "mode") return `mode ${action.input.mode}.`
-  if (action.tool === "permission") return "allowed."
+  if (action.tool === "permission" || action.tool === "link") return "allowed."
+  if (action.tool === "question" || action.tool === "plan") return action.answer === undefined ? "allowed." : "answered."
   return action.connected ? "connected." : "connection requested."
 }
 

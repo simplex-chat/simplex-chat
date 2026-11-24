@@ -1,9 +1,12 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 -- | The chat core reads a link of an unknown server through an SMP proxy, so the service opens no connection to a link's host.
 -- The host rule refuses internal addresses as a backstop to that; the chat core resolves a name again when it connects.
@@ -12,8 +15,10 @@ module StoreService.Names.Profiles
     ProfileLimits (..),
     ProfileFetcher,
     HostResolver,
+    LinkData (..),
     ChatKind (..),
     LinkProfile (..),
+    linkProfileOf,
     ProfileRead (..),
     Preview (..),
     Entity (..),
@@ -26,8 +31,8 @@ module StoreService.Names.Profiles
     withSlot,
     chatProfile,
     systemResolver,
-    planProfile,
     checkHosts,
+    shortLinkHosts,
     linkEntity,
     linkPreview,
   )
@@ -36,34 +41,42 @@ where
 import Control.Concurrent (forkIOWithUnmask)
 import Control.Concurrent.STM
 import Control.Exception (SomeException, bracket, mask_, try)
-import Control.Monad (join, unless)
-import Data.Aeson ((.=))
-import qualified Data.Aeson as J
-import qualified Data.Aeson.Types as JT
+import Control.Logger.Simple (logWarn)
+import Control.Monad (unless)
+import Control.Monad.Reader (runReaderT)
+import qualified Data.Aeson.TH as JQ
 import Data.Bits (shiftL, shiftR, (.|.))
 import Data.Bool (bool)
+import Data.ByteString (ByteString)
 import Data.Char (toLower)
-import Data.Int (Int64)
 import Data.List (dropWhileEnd, isSuffixOf)
 import Data.List.NonEmpty (NonEmpty)
 import qualified Data.List.NonEmpty as L
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
-import Data.Maybe (isJust, mapMaybe)
+import Data.Int (Int64)
+import Data.Maybe (fromMaybe, isJust, mapMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Word (Word32, Word64, Word8)
 import GHC.Clock (getMonotonicTimeNSec)
-import Network.Socket (AddrInfo (..), HostName, SockAddr (..), SocketType (..), defaultHints, getAddrInfo, hostAddressToTuple)
-import Simplex.Chat.Controller (ChatResponse (..), ChatCommand (APIConnectPlan), ChatController, ConnectionPlan (..), ContactAddressPlan (..), GroupLinkPlan (..), PlanResolveMode (..))
-import Simplex.Chat.Core (sendChatCmd)
-import Simplex.Chat.Protocol (ContactShortLinkData (..), GroupShortLinkData (..), PublicGroupData (..))
-import Simplex.Chat.Types (AConnectTarget (..), ChatPeerType (..), Contact (..), ContactNameOrLink (..), ConnectTarget (..), GroupInfo (..), GroupProfile (..), GroupSummary (..), ImageData (..), Profile (..), User (..), fromLocalProfile)
-import Simplex.Messaging.Agent.Protocol (ConnShortLink, ConnectionMode (..), SConnectionMode (..), UserId, simplexShortLink)
+import Network.Socket (AddrInfo (..), HostName, SocketType (..), defaultHints, getAddrInfo)
+import Simplex.Chat.Controller (ChatController, ChatError (..), ChatErrorType (..))
+import Simplex.Chat.Library.Internal (getShortLinkConnReq')
+import Simplex.Chat.Protocol (ContactShortLinkData (..), GroupShortLinkData (..), PublicGroupData (..), shortLinkContactData, shortLinkGroupData)
+import Simplex.Chat.Types (ChatPeerType (..), GroupProfile (..), ImageData (..), Profile (..), User)
+import Simplex.Messaging.Agent.Client (temporaryOrHostError)
+import Simplex.Messaging.Agent.Protocol (ConnShortLink (..), ConnectionMode (..), simplexShortLink)
+import Simplex.Messaging.Client (pattern NRMInteractive)
 import Simplex.Messaging.Encoding.String (strEncode)
+import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, taggedObjectJSON)
+import Simplex.Messaging.Protocol (ProtocolServer (..))
+import Simplex.Messaging.TMap (TMap)
+import qualified Simplex.Messaging.TMap as TM
 import Simplex.Messaging.Transport.Client (TransportHost (..))
-import Simplex.Messaging.Util (safeDecodeUtf8)
-import StoreService.Names.Links (LinkKind (..), parseShortLink, shortLinkHosts)
+import Simplex.Messaging.Util (tryAllErrors', tshow)
+import StoreService.Names.Registration (LinkKind (..))
+import StoreService.Web.Http (sockHost)
 import System.Timeout (timeout)
 
 data ProfileLimits = ProfileLimits
@@ -95,8 +108,8 @@ defaultProfileLimits =
       maxRefusedHosts = 2048
     }
 
--- | Nothing when the link data could not be read.
-type ProfileFetcher = ConnShortLink 'CMContact -> IO (Maybe LinkProfile)
+-- | Nothing when the link data does not decode.
+type ProfileFetcher = LinkKind -> ConnShortLink 'CMContact -> IO (Either ChatError (Maybe LinkData))
 
 -- | The addresses a name resolves to; none or an exception when it does not resolve.
 type HostResolver = HostName -> IO [TransportHost]
@@ -110,9 +123,9 @@ data Profiles = Profiles
     previewSlots :: TVar Int,
     lookupSlots :: TVar Int,
     previewLookups :: TVar Int,
-    cache :: TVar (Map Text (Word64, LinkProfile)),
-    refusedHosts :: TVar (Map HostName (Word64, ())),
-    runningLookups :: TVar (Map HostName (Deadline, TMVar Bool))
+    cache :: TMap ByteString (Word64, LinkProfile),
+    refusedHosts :: TMap HostName (Word64, ()),
+    runningLookups :: TMap HostName (Deadline, TMVar Bool)
   }
 
 newProfiles :: ProfileLimits -> IO Word64 -> ProfileFetcher -> HostResolver -> IO Profiles
@@ -121,9 +134,9 @@ newProfiles limits@ProfileLimits {searchFetchSlots, previewFetchSlots, hostLooku
   previewSlots <- newTVarIO previewFetchSlots
   lookupSlots <- newTVarIO hostLookupSlots
   previewLookups <- newTVarIO previewLookupSlots
-  cache <- newTVarIO Map.empty
-  refusedHosts <- newTVarIO Map.empty
-  runningLookups <- newTVarIO Map.empty
+  cache <- TM.emptyIO
+  refusedHosts <- TM.emptyIO
+  runningLookups <- TM.emptyIO
   pure Profiles {limits, clock, fetchLink, resolveHost, searchSlots, previewSlots, lookupSlots, previewLookups, cache, refusedHosts, runningLookups}
 
 monotonicSeconds :: IO Word64
@@ -161,8 +174,8 @@ withSlot deadline slots act =
     Nothing -> pure Nothing
     Just () -> remainingMicros deadline >>= (`timeout` act)
 
-freshEntry :: Ord k => Word64 -> k -> Map k (Word64, v) -> Maybe v
-freshEntry now k m = case Map.lookup k m of
+freshEntry :: Word64 -> Maybe (Word64, v) -> Maybe v
+freshEntry now = \case
   Just (expiry, v) | expiry > now -> Just v
   _ -> Nothing
 
@@ -177,152 +190,96 @@ insertBounded maxSize now k entry m = Map.insert k entry room
            in if Map.size live < maxSize then live else maybe live (`Map.delete` live) (soonestExpiry live)
     soonestExpiry = fmap fst . Map.foldrWithKey (\k' (e, _) acc -> if maybe True ((e <) . snd) acc then Just (k', e) else acc) Nothing
 
+data LinkData = LDContact {contact :: ContactShortLinkData} | LDChannel {channel :: GroupShortLinkData}
+  deriving (Eq, Show)
+
 data ChatKind = CKContact | CKBusiness | CKBot | CKChannel
   deriving (Eq, Show)
 
-data LinkProfile = LinkProfile
-  { kind :: ChatKind,
-    displayName :: Text,
-    fullName :: Text,
-    image :: Maybe Text,
-    subscribers :: Maybe Int64
-  }
+data LinkProfile = LinkProfile {kind :: ChatKind, displayName :: Text, fullName :: Text, image :: Maybe Text, subscribers :: Maybe Int64}
   deriving (Eq, Show)
 
-data ProfileRead = ProfileOk LinkProfile | ProfileUnread | ProfileUnavailable
+data ProfileRead = ProfileOk {linkProfile :: LinkProfile} | ProfileUnread | ProfileUnavailable
   deriving (Eq, Show)
 
-data Preview = Preview {previewType :: LinkKind, previewProfile :: ProfileRead}
+data Preview = Preview {kind :: LinkKind, profile :: ProfileRead}
   deriving (Eq, Show)
 
-data Entity = Entity {entityPreview :: Preview, link :: Text, deepLink :: Maybe Text}
+data Entity = Entity {preview :: Preview, link :: ConnShortLink 'CMContact, deepLink :: ConnShortLink 'CMContact}
   deriving (Eq, Show)
 
-instance J.ToJSON Preview where
-  toJSON = J.object . previewPairs
+$(JQ.deriveToJSON (enumJSON $ dropPrefix "CK") ''ChatKind)
 
-instance J.ToJSON Entity where
-  toJSON Entity {entityPreview, link, deepLink} = J.object $ previewPairs entityPreview <> ["link" .= link, "deepLink" .= deepLink]
+$(JQ.deriveToJSON defaultJSON ''LinkProfile)
 
-previewPairs :: Preview -> [JT.Pair]
-previewPairs (Preview t r) =
-  [ "type" .= linkKindText t,
-    "kind" .= chatKindText kind,
-    "displayName" .= displayName,
-    "fullName" .= fullName,
-    "image" .= image,
-    "subscribers" .= subscribers,
-    "profile" .= readText
-  ]
-  where
-    (LinkProfile {kind, displayName, fullName, image, subscribers}, readText) = case r of
-      ProfileOk p -> (p, "ok" :: Text)
-      ProfileUnread -> (emptyProfile, "unread")
-      ProfileUnavailable -> (emptyProfile, "unavailable")
-    emptyProfile = LinkProfile {kind = chatKind t, displayName = "", fullName = "", image = Nothing, subscribers = Nothing}
-    chatKind = \case
-      LKContact -> CKContact
-      LKChannel -> CKChannel
+$(JQ.deriveToJSON (taggedObjectJSON $ dropPrefix "Profile") ''ProfileRead)
 
--- | The record the link came from, as the contract names it: @simplex.contact@ holds an address.
-linkKindText :: LinkKind -> Text
-linkKindText = \case
-  LKContact -> "address"
-  LKChannel -> "channel"
+$(JQ.deriveToJSON defaultJSON ''Preview)
 
-chatKindText :: ChatKind -> Text
-chatKindText = \case
-  CKContact -> "contact"
-  CKBusiness -> "business"
-  CKBot -> "bot"
-  CKChannel -> "channel"
+$(JQ.deriveToJSON defaultJSON ''Entity)
 
 -- | A search answer's entity, within the search bound. Every server host of the link must pass the host rule.
--- The deep link is the core's @simplex:/@ form, which carries the server; a link the core cannot parse has none.
-linkEntity :: Profiles -> LinkKind -> Text -> IO Entity
+-- The deep link is the link's @simplex:/@ form, with its server.
+linkEntity :: Profiles -> LinkKind -> ConnShortLink 'CMContact -> IO Entity
 linkEntity ps@Profiles {searchSlots} t link = do
-  r <- boundedProfile ps searchSlots [] link sl_
-  pure Entity {entityPreview = Preview t r, link, deepLink = safeDecodeUtf8 . strEncode . simplexShortLink <$> sl_}
-  where
-    sl_ = parseShortLink link
+  r <- boundedProfile ps searchSlots [] t link
+  pure Entity {preview = Preview t r, link, deepLink = simplexShortLink link}
 
 -- | A link preview, within the preview bound.
-linkPreview :: Profiles -> LinkKind -> Text -> IO Preview
-linkPreview ps@Profiles {previewSlots, previewLookups} t link = Preview t <$> boundedProfile ps previewSlots [previewLookups] link (parseShortLink link)
+linkPreview :: Profiles -> LinkKind -> ConnShortLink 'CMContact -> IO Preview
+linkPreview ps@Profiles {previewSlots, previewLookups} t sl = Preview t <$> boundedProfile ps previewSlots [previewLookups] t sl
 
--- | A link the chat core cannot parse names no server it could fetch from, so it is not fetched. Each host lookup also takes
--- a slot of every pool given, beside the shared one.
-boundedProfile :: Profiles -> TVar Int -> [TVar Int] -> Text -> Maybe (ConnShortLink 'CMContact) -> IO ProfileRead
-boundedProfile ps@Profiles {limits = ProfileLimits {fetchTimeout, cacheSeconds, maxCachedProfiles}, clock, fetchLink, cache} slots lookupPools link sl_ =
+-- | Each host lookup also takes a slot of every pool given, beside the shared one.
+boundedProfile :: Profiles -> TVar Int -> [TVar Int] -> LinkKind -> ConnShortLink 'CMContact -> IO ProfileRead
+boundedProfile ps@Profiles {limits = ProfileLimits {fetchTimeout, cacheSeconds, maxCachedProfiles}, clock, fetchLink, cache} slots lookupPools t sl =
   cached >>= \case
     Just p -> pure $ ProfileOk p
-    Nothing -> case sl_ of
-      Nothing -> pure ProfileUnavailable
-      Just sl -> do
-        deadline <- deadlineIn fetchTimeout
-        checkHostsIn ps lookupPools deadline (shortLinkHosts sl) >>= \case
-          HostRefused -> pure ProfileUnavailable
-          HostUnanswered -> pure ProfileUnread
-          HostPublic -> maybe ProfileUnread ProfileOk . join <$> withSlot deadline slots (fetchLink sl >>= mapM remember)
+    Nothing -> do
+      deadline <- deadlineIn fetchTimeout
+      checkHostsIn ps lookupPools deadline (shortLinkHosts sl) >>= \case
+        HostRefused -> pure ProfileUnavailable
+        HostUnanswered -> pure ProfileUnread
+        HostPublic -> fromMaybe ProfileUnread <$> withSlot deadline slots (fetchLink t sl >>= profileRead)
   where
-    cached = clock >>= \now -> freshEntry now link <$> readTVarIO cache
+    key = strEncode $ simplexShortLink sl
+    cached = clock >>= \now -> freshEntry now <$> TM.lookupIO key cache
     remember p = do
       now <- clock
-      p <$ atomically (modifyTVar' cache $ insertBounded maxCachedProfiles now link (now + cacheSeconds, p))
+      p <$ atomically (modifyTVar' cache $ insertBounded maxCachedProfiles now key (now + cacheSeconds, p))
+    profileRead = \case
+      Right (Just d) -> ProfileOk <$> remember (linkProfileOf d)
+      Right Nothing -> pure ProfileUnavailable
+      Left e -> unreadable e <$ logWarn ("names: a link's data could not be read: " <> tshow e)
+    unreadable = \case
+      ChatError CEInvalidConnReq -> ProfileUnavailable
+      ChatErrorAgent {agentError} | not (temporaryOrHostError agentError) -> ProfileUnavailable
+      _ -> ProfileUnread
 
--- | Runs the connect plan, which reads the link data without connecting. A known chat answers with its stored profile.
-chatProfile :: ChatController -> UserId -> ProfileFetcher
-chatProfile cc userId sl =
-  sendChatCmd cc (APIConnectPlan userId (Just $ ACTarget SCMContact $ CTShortContact $ CTLink sl) PRMUnknown Nothing) >>= \case
-    Right CRConnectionPlan {user = User {profile}, connectionPlan} -> pure $ planProfile (fromLocalProfile profile) connectionPlan
-    _ -> pure Nothing
-
--- | The first argument is the profile of the user who ran the plan, which their own address shows.
-planProfile :: Profile -> ConnectionPlan -> Maybe LinkProfile
-planProfile own = \case
-  CPContactAddress plan _ -> case plan of
-    CAPOk {contactSLinkData_} -> (\ContactShortLinkData {profile, business} -> contactProfile business profile) <$> contactSLinkData_
-    CAPOwnLink -> Just $ contactProfile False own
-    CAPConnectingConfirmReconnect -> Nothing
-    CAPConnectingProhibit {contact} -> Just $ knownContact contact
-    CAPKnown {contact} -> Just $ knownContact contact
-    CAPContactViaAddress {contact} -> Just $ knownContact contact
-  CPGroupLink plan _ -> case plan of
-    GLPOk {groupSLinkData_} -> channelProfile <$> groupSLinkData_
-    GLPNoRelays {groupSLinkData_} -> channelProfile <$> groupSLinkData_
-    GLPUpdateRequired {groupSLinkData_} -> channelProfile <$> groupSLinkData_
-    GLPOwnLink {groupInfo} -> Just $ knownGroup groupInfo
-    GLPConnectingConfirmReconnect -> Nothing
-    GLPConnectingProhibit {groupInfo_} -> knownGroup <$> groupInfo_
-    GLPKnown {groupInfo} -> Just $ knownGroup groupInfo
-  CPInvitationLink _ -> Nothing
-  CPError _ -> Nothing
+linkProfileOf :: LinkData -> LinkProfile
+linkProfileOf = \case
+  LDContact ContactShortLinkData {profile = Profile {displayName, fullName, image, peerType}, business} ->
+    LinkProfile {kind = contactKind business peerType, displayName, fullName, image = imageURI =<< image, subscribers = Nothing}
+  LDChannel GroupShortLinkData {groupProfile = GroupProfile {displayName, fullName, image}, publicGroupData} ->
+    LinkProfile {kind = CKChannel, displayName, fullName, image = imageURI =<< image, subscribers = (\PublicGroupData {publicMemberCount} -> publicMemberCount) <$> publicGroupData}
   where
-    knownContact Contact {profile} = contactProfile False (fromLocalProfile profile)
-    channelProfile GroupShortLinkData {groupProfile, publicGroupData} =
-      groupProfileOf CKChannel groupProfile ((\PublicGroupData {publicMemberCount} -> publicMemberCount) <$> publicGroupData)
-    knownGroup GroupInfo {groupProfile, businessChat, groupSummary = GroupSummary {publicMemberCount}} = case businessChat of
-      Just _ -> groupProfileOf CKBusiness groupProfile Nothing
-      Nothing -> groupProfileOf CKChannel groupProfile publicMemberCount
-
-contactProfile :: Bool -> Profile -> LinkProfile
-contactProfile business Profile {displayName, fullName, image, peerType} =
-  LinkProfile {kind, displayName, fullName, image = image >>= imageURI, subscribers = Nothing}
-  where
-    kind
+    contactKind business peerType
       | business || peerType == Just CPTBusiness = CKBusiness
       | peerType == Just CPTBot = CKBot
       | otherwise = CKContact
+    imageURI (ImageData uri)
+      | "data:image/" `T.isPrefixOf` uri = Just uri
+      | otherwise = Nothing
 
-groupProfileOf :: ChatKind -> GroupProfile -> Maybe Int64 -> LinkProfile
-groupProfileOf kind GroupProfile {displayName, fullName, image} subscribers =
-  LinkProfile {kind, displayName, fullName, image = image >>= imageURI, subscribers}
+shortLinkHosts :: ConnShortLink 'CMContact -> NonEmpty TransportHost
+shortLinkHosts (CSLContact _ _ ProtocolServer {host} _) = host
 
--- | A profile image the page can show as it is.
-imageURI :: ImageData -> Maybe Text
-imageURI (ImageData uri)
-  | "data:image/" `T.isPrefixOf` uri = Just uri
-  | otherwise = Nothing
+-- | Reads the link data without connecting.
+chatProfile :: ChatController -> User -> ProfileFetcher
+chatProfile cc user t sl = runReaderT (tryAllErrors' $ linkData <$> getShortLinkConnReq' NRMInteractive user sl) cc
+  where
+    linkData (_, _, _, sLinkData_) = case t of
+      LKContact -> LDContact <$> (shortLinkContactData =<< sLinkData_)
+      LKChannel -> LDChannel <$> (shortLinkGroupData =<< sLinkData_)
 
 data HostCheck = HostPublic | HostRefused | HostUnanswered
   deriving (Eq, Show)
@@ -355,7 +312,7 @@ checkHostsIn ps pools deadline = checkAll . L.toList
 lookupHost :: Profiles -> [TVar Int] -> Deadline -> HostName -> IO HostCheck
 lookupHost Profiles {limits = ProfileLimits {fetchTimeout, refusedHostSeconds, maxRefusedHosts}, clock, resolveHost, lookupSlots, refusedHosts, runningLookups} pools deadline name = do
   now <- clock
-  cachedRefusal <- isJust . freshEntry now name <$> readTVarIO refusedHosts
+  cachedRefusal <- isJust . freshEntry now <$> TM.lookupIO name refusedHosts
   if cachedRefusal
     then pure HostRefused
     else do
@@ -366,16 +323,16 @@ lookupHost Profiles {limits = ProfileLimits {fetchTimeout, refusedHostSeconds, m
         Just (lookupDeadline, answer) -> maybe HostUnanswered (bool HostRefused HostPublic) <$> waitUntil (min deadline lookupDeadline) (readTMVar answer)
   where
     runningOrStarted lookup' =
-      Map.lookup name <$> readTVar runningLookups >>= \case
+      TM.lookup name runningLookups >>= \case
         Just running -> pure $ Just running
-        Nothing -> Nothing <$ (mapM_ takeSlot slots >> modifyTVar' runningLookups (Map.insert name lookup'))
+        Nothing -> Nothing <$ (mapM_ takeSlot slots >> TM.insert name lookup' runningLookups)
     started lookup'@(_, answer) = maybe (lookup' <$ forkIOWithUnmask (\unmask -> try (unmask $ resolveHost name) >>= finish answer)) pure
     finish answer resolved = do
       let public = either (\(_ :: SomeException) -> True) (all publicAddress) resolved
       now <- clock
       atomically $ do
         unless public $ modifyTVar' refusedHosts $ insertBounded maxRefusedHosts now name (now + refusedHostSeconds, ())
-        modifyTVar' runningLookups $ Map.delete name
+        TM.delete name runningLookups
         putTMVar answer public
         mapM_ releaseSlot slots
     slots = lookupSlots : pools
@@ -431,8 +388,3 @@ ipv4Word (a, b, c, d) = fromIntegral a `shiftL` 24 .|. fromIntegral b `shiftL` 1
 
 systemResolver :: HostResolver
 systemResolver name = mapMaybe (sockHost . addrAddress) <$> getAddrInfo (Just defaultHints {addrSocketType = Stream}) (Just name) Nothing
-  where
-    sockHost = \case
-      SockAddrInet _ a -> Just $ THIPv4 $ hostAddressToTuple a
-      SockAddrInet6 _ _ a _ -> Just $ THIPv6 a
-      SockAddrUnix _ -> Nothing

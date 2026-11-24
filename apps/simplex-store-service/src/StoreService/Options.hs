@@ -13,6 +13,7 @@ where
 
 import StoreService.Config (BadgeIssuerKey (..))
 import qualified Data.ByteString.Char8 as B
+import Data.Maybe (fromMaybe)
 import qualified Data.Text as T
 import Options.Applicative
 import Simplex.Chat.Controller (updateStr, versionNumber, versionString)
@@ -25,6 +26,7 @@ data StoreServiceOpts = StoreServiceOpts
     clientService :: Bool,
     noAddress :: Bool,
     runCLI :: Bool,
+    consoleCommand :: Maybe String,
     serviceConfigFile :: Maybe FilePath,
     issuerKey :: Either String (Maybe BadgeIssuerKey),
     testing :: Bool
@@ -55,6 +57,14 @@ storeServiceOpts appDir defaultDbName = do
       ( long "run-cli"
           <> help "Run store service as CLI"
       )
+  consoleCommand <-
+    optional $
+      strOption
+        ( long "execute"
+            <> short 'e'
+            <> metavar "COMMAND"
+            <> help "Run one console command in CLI mode, such as \"//issue name 6\", and exit"
+        )
   serviceConfigFile <-
     optional
       ( strOption
@@ -86,6 +96,7 @@ storeServiceOpts appDir defaultDbName = do
         clientService,
         noAddress,
         runCLI,
+        consoleCommand,
         serviceConfigFile,
         issuerKey = case (issuerKeyIdx, issuerSecret) of
           (Just idx, Just secret) -> Right (Just (BadgeIssuerKey idx secret))
@@ -106,10 +117,10 @@ getStoreServiceOpts appDir defaultDbName =
     versionAndUpdate = versionStr <> "\n" <> updateStr
 
 mkChatOpts :: StoreServiceOpts -> ChatOpts
-mkChatOpts StoreServiceOpts {coreOptions, serviceName, clientService} =
+mkChatOpts StoreServiceOpts {coreOptions, serviceName, clientService, consoleCommand} =
   ChatOpts
     { coreOptions,
-      chatCmd = "",
+      chatCmd = fromMaybe "" consoleCommand,
       chatCmdDelay = 3,
       chatCmdLog = CCLNone,
       chatServerPort = Nothing,

@@ -21,7 +21,7 @@ refusedTest("main: a refused cancel answered after the wipe is not written back"
   await until(() => headingOf(screenOf(app)).startsWith("Send"), "the payment screen");
 
   page.confirmAnswer(true);
-  page.respondWith({ status: 409, body: { error: "funded" } });
+  page.respondWith({ status: 409, body: { type: "funded" } });
   screenOf(app).all("button").find((b) => b.textContent === CANCEL_INVOICE)!.click();
 
   // There is no settle here, because the cancel is on the wire while the wipe lands.

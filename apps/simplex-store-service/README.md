@@ -42,6 +42,19 @@ Build prerequisites and the general contribution flow are in [`docs/CONTRIBUTING
 cabal build exe:simplex-store-service
 ```
 
+### Tests on PostgreSQL
+
+The tests are built with `+client_postgres` and run against a PostgreSQL server with
+`max_connections=1500`, with `PGHOST` set to its host and `LANG=C.UTF-8`, as CI's job
+`test-store-postgres` (`.github/workflows/build.yml`) runs them. They connect as `test_chat_user`
+to `test_chat_db`, which they create and drop. With the default 100 connections, examples fail with
+"remaining connection slots are reserved"; without a UTF-8 locale, reading the label vectors fails.
+
+```
+cabal build --enable-tests --ghc-options -O0 --constraint 'simplexmq +client_postgres' --constraint 'simplex-chat +client_postgres' simplex-chat-test
+LANG=C.UTF-8 PGHOST=127.0.0.1 $(cabal list-bin simplex-chat-test --ghc-options -O0 --constraint 'simplexmq +client_postgres' --constraint 'simplex-chat +client_postgres') -m "Supporter badges" -m "SimpleX store service" -m "StoreService names"
+```
+
 ## Run
 
 ```
@@ -54,6 +67,8 @@ simplex-store-service --help
   below: it starts no web listener and no poller, and serves no group commands, whatever
   `--service-config` says. It still updates a code's group message when the code is redeemed or
   revoked. `[apple]`, `[google]`, `[dev]` and `[log]` apply to it.
+- `--execute COMMAND` (`-e`): `--run-cli` without a terminal, for one command: it runs `COMMAND`,
+  such as `//issue name 6`, prints its answer and exits.
 - `--no-address`: skip address creation on start-up (for operators who provision the address themselves).
 The service cannot sign credentials without an issuer key and refuses to start without one:
 
@@ -149,13 +164,14 @@ turns it off), whose `[chain] service_key` is [the gas key](#the-gas-key). `[cha
 https, as it can carry a provider's API key, unless the node is on the same machine (`127.0.0.1`,
 `::1` or `localhost`), which `http://` may reach. The service refuses to start when the node there
 answers `eth_chainId` with another chain than `[chain] chain_id`, and only warns when it does not
-answer. `[chain] confirmations` (default 3) is how deep a
+answer, unless `[chain] chain_id` is 31337, whose loopback terms links it takes, or `[issuer] dev_keys`
+are set. `[chain] confirmations` (default 3) is how deep a
 transaction's receipt must be before the service settles it and reads the chain's state, counting
 the receipt's own block, so it must be at least 1. An optional `[community]` section gives what each
 community name is for (see [Terms and community names](#terms-and-community-names)). Write every setting as
-`key = value`. A `key: value` line, which the parser would read with the first character of its
-value dropped, a key written twice in one section, a section header written twice, or a `[names]` or
-`[chain]` setting nothing reads, stops the service at startup.
+`key = value`. A line other than a `[section]` header, a setting, a `;` or `#` comment or a blank
+line, `key: value` among them, a key written twice in one section, a section header written twice,
+or a `[names]` or `[chain]` setting nothing reads, stops the service at startup.
 `store_service.ini.example` is the committed template; `store_service.ini` itself is
 gitignored, since a real one holds API keys and webhook secrets.
 
@@ -180,8 +196,8 @@ then the header is whatever the caller wrote. The last entry is the one read, wh
 proxy appends.
 An IPv6 client is counted by its /64, since one host gets a whole /64, and an IPv4-mapped address
 by its IPv4 address.
-Checkouts that reach the provider (`POST /api/invoice` and `POST /api/registration/:id/spend` with a
-difference to pay, each a provider invoice or card PaymentIntent) are also capped at 5 a minute for
+Checkouts that reach the provider (`POST /api/invoice`, each a provider invoice or card
+PaymentIntent) are also capped at 5 a minute for
 each IPv4 /24 or IPv6 /48, and at 60 card and 30 BTCPay checkouts a minute for all clients together.
 A call to BTCPay or Stripe, its body read included, fails as a provider error after 10 seconds, and
 after 30 seconds when it creates a checkout's invoice or card payment, which a buyer waits on; the
@@ -325,6 +341,31 @@ without an ini.
 read, the same hint-only role as `POST /webhooks/btcpay`: the poller carries authority, so
 an unverified or unreadable delivery costs nothing but a log line. A delivery signed more than
 15 minutes away from the server's clock is refused with a warning, so keep the clock synced (NTP).
+The endpoint's events in the Dashboard are `payment_intent.succeeded`,
+`payment_intent.payment_failed` and `payment_intent.canceled`, and with `[names]` also
+`charge.dispute.created`, `charge.refunded` and `radar.early_fraud_warning.created`.
+
+A dispute or a refund of a name order's payment is acted on at its delivery, as no read finds it:
+- an order paid and live, of which no register transaction of its current name was saved, is
+  closed with `closedBy` `reversed`, its name released and nothing credited to its balance, also
+  after support refunded part of its balance; a register of a name selected before a reset does not
+  keep it;
+- an order whose payment is not recorded yet is closed the same way when its payment settles,
+  instead of being queued;
+- any other order is kept, and the reversed cents are taken back from its balance, as far as the
+  balance and the invoice's amount hold them; an order whose refund support recorded is kept as
+  it is;
+- an order with a recorded dispute or refund is credited nothing more, its price included when
+  it is taken or its month ends, and a late credit concurrent with a dispute of its order is
+  written after it.
+
+The order's invoice row counts them and keeps the total reversed and the last one's event id and
+cents, a refund as the rise of `amount_refunded`; a repeated delivery of the last event
+changes nothing. Every dispute, refund and early fraud warning of a name order is logged at
+error and posted in the managed group as `names: <event> on payment <pi_...> of order <id>:
+<outcome>. Evidence: <payment>; <owner and order hash>; <signed registration>; <commit and register
+transactions>`, the evidence for the answer to Stripe. A delivery whose handling fails is answered
+500, so Stripe delivers it again; a badge order's dispute or refund changes nothing.
 
 The reverse proxy in front of this service must send a Content-Security-Policy that
 allows Stripe.js and its iframes, since Stripe forbids bundling or self-hosting its
@@ -357,7 +398,7 @@ an invoice, which is why the code, which lets them take the badge, is never prin
 service says the invoice is paid. The service keeps it out of its own logs: a line about an invoice
 names the provider's reference (the BTCPay invoice id or the Stripe PaymentIntent id), which opens
 nothing in this service's API. A line about a name order without its invoice, from the worker or
-`//record_refund`, names the registration id, which reads the order and asks Try again, so keep the logs to
+`//record_refund`, names the registration id, which reads the order and asks for a lapsed commitment to be sent again, so keep the logs to
 the service's operators.
 
 | Route | Answers |
@@ -367,12 +408,13 @@ the service's operators.
 | `GET /api/invoice/:id?wait=<status>&seenPaid=<figure>&seenFull=<0\|1>` | The same, held for up to 30 seconds while the invoice's status is still `<status>` **and** its payment is the one the caller says it has rendered. `wait=paid` and any value that is not a status answer at once, since neither can change. A status the caller has not seen, or a payment it has not seen, answers at once — the provider's verdict counts as much as the figure, because Monero reports an invoice as confirming while its figures are still zero. A request that omits `seenPaid` holds on the status alone. |
 | `POST /api/invoice/:id/cancel` | Invalidates an open invoice at the provider and expires it here. Refuses a settled or expired one with `not_open`, and one that already holds a payment with `funded`. The provider is told first, and a payment made in between does not keep the invoice open: the row is expired either way, and the poller settles or reports what arrived, also a payment BTCPay records afterwards (for Lightning, see the Lightning paragraph above). |
 | `POST /webhooks/btcpay` | Verifies `BTCPay-Sig` over the bytes as received and queues a read. A hint only: the poller is what carries authority, so an unverified or unreadable delivery costs nothing but a log line. |
-| `POST /webhooks/stripe` | Verifies `Stripe-Signature` over the bytes as received and queues a read. The card lane's equivalent of the row above, and a hint just the same: the poller carries authority, so an unverified or unreadable delivery costs nothing but a log line. |
+| `POST /webhooks/stripe` | Verifies `Stripe-Signature` over the bytes as received and queues a read. The card lane's equivalent of the row above, and a hint just the same: the poller carries authority, so an unverified or unreadable delivery costs nothing but a log line. A name order's dispute, refund or early fraud warning is acted on at once (see Stripe above). |
 
-Every `/api` refusal is `{"error": "<code>"}`. Besides the codes above, any of them can answer
+Every refusal is `{"type": "<code>", …}`, with its data beside the code, such as
+`{"type": "catalog_changed", "price": 1500}`. Besides the codes above, any of them can answer
 `internal`, an unknown id answers `not_found`, and a wrong verb answers `method_not_allowed` —
 ten codes in all, which is what the browser's `WIRE_ERROR_CODES` lists. The two webhook routes are
-the exception: each answers 200, 400 or 413 with an empty body, because its provider is the only
+the exception: each answers 200, 400, 413 or, for a name order's dispute or refund not handled, 500 with an empty body, because its provider is the only
 caller and nothing it could read would change what the route does. A wrong verb on any route, those
 two included, answers `method_not_allowed`.
 
@@ -617,7 +659,7 @@ from some contacts. Before the service starts on it:
    service numbers a new transaction after the key's mined transactions and the ones the copy saved,
    so a transaction in the pool that the copy does not hold can have the same nonce.
 2. Record again, with `//record_refund` in `--run-cli` or `/record_refund` in the group, each refund recorded after the copy: the copy holds
-   those balances unrefunded, so their buyers could spend them. The service logged each as
+   those balances unrefunded, so they could be refunded twice. The service logged each as
    `names: recorded a refund of <cents> cents for order <registration id>`.
 3. Revoke with `//revoke` each code spent or revoked after the copy, which the copy holds unspent, and
    issue again each code issued after it, which the copy does not hold, so it answers `code_invalid`.
@@ -677,11 +719,29 @@ from `scripts/store-service/`. The database `badge_service`,
 `simplex_badge_service` are unchanged.
 
 A badge-service database upgrades in place: the store's own migrations run after every badge
-migration, `20261012_badge_subscriptions` included. A database that ran the names migrations of
-an earlier draft (`20261010_names`, or the steps dated after `20261013_names`) does not start, as
+migration, `20261012_badge_subscriptions` included; `20261013_names` marks each existing
+invoice `badge` and copies its provider reference into the invoices table, which holds every
+invoice's reference from then on; a badge invoice's stays in its badge row too. A database that ran the names migrations of
+an earlier draft (`20261010_names`, or that draft's steps dated after `20261013_names`) does not start, as
 the service refuses to roll back migrations it does not list. A database that ran `20261013_names`
 before it created `sx_badge_service_name_terms` starts without that table, and every terms read
 fails. Recreate such a database.
+
+A database that a build of the `names` branch ran keeps `20261013_names` as that branch wrote it,
+in a shape this service does not read. It is upgraded in two steps:
+
+1. From master's `scripts/badge-service/`, run the badge service once without `--yes-migrate`, and
+   answer `y` when it asks to roll back `20261013_names`:
+
+   ```
+   docker compose run --rm badge-service -d "$BADGE_DB_CONN" --create-schema --service-config /etc/simplex-badge-service/badge_service.ini
+   ```
+
+   It runs the down migration that the database stored with `20261013_names`: the names tables
+   and the columns that migration added to the payments table are dropped, and the badge tables
+   and their rows stay. With `--yes-migrate` it refuses the rollback and exits. Stop it once it
+   runs.
+2. Deploy this service as [Deployment](#deployment) says. It applies `20261013_names`.
 
 ### Two sites
 
@@ -735,15 +795,15 @@ each domain to its own port, as the all-in-one example in [Caddy](#caddy) does. 
   on its first start. Its state is kept in `./data/chain`, so restarts keep the contracts, balances
   and registered names. Its keys are anvil's public test keys, so never use it beside a real chain.
 - `postgres`: PostgreSQL 17 on `127.0.0.1:5433`, user `simplex`, database `store_service`, without a
-  password, kept in `./data/postgres`. The service uses it in place of `BADGE_DB_CONN`.
+  password, kept in `./data/postgres`. `BADGE_DB_CONN` in `.env` points the service at it.
 
 From a fresh clone:
 
 ```
 git clone https://github.com/simplex-chat/simplex-chat && cd simplex-chat
-git checkout names && git submodule update --init apps/simplex-domains
+git submodule update --init apps/simplex-domains
 cd scripts/store-service
-echo "COMPOSE_FILE=compose.yml:compose.dev.yml" > .env
+printf '%s\n' COMPOSE_FILE=compose.yml:compose.dev.yml BADGE_DB_CONN=postgresql://simplex@127.0.0.1:5433/store_service > .env
 install -d webapps
 docker compose up -d --build
 ```
@@ -912,8 +972,8 @@ record edits in the database. With `[names]`, the registrar key's ETH balance, i
 allowance, the node's latest block and the terms links are read from the node at start and then
 every minute, and a scrape answers the last read, so a slow or failing node never delays a scrape.
 A part that fails keeps its last value, sets `simplex_store_names_chain_read_ok` to 0 and logs a
-warning. A port that cannot be listened on is logged as an error and leaves the rest of the
-service running.
+warning. When the metrics port cannot be listened on, the failure is logged as an error and, with
+`[group]`, posted in the managed group, and the rest of the service runs on without metrics.
 
 | Metric | Value |
 |---|---|
@@ -924,13 +984,12 @@ service running.
 | `simplex_store_badges_purchases{status}` | badge purchases by status: `acquiring`, `issued`, `superseded` or `failed`, each 0 when it has none |
 | `simplex_store_badges_subscriptions{state}` | App Store and Google Play subscriptions paying for badges, by state: `renewing`, `cancelled`, `billingRetry` or `ended`, each 0 when it has none |
 | `simplex_store_badges_codes_open` | badge codes paid or free, not revoked or expired, with redemptions left |
-| `simplex_store_names_orders{phase}` | name orders in the phase: `unpaid`, `queued`, `committing`, `committed`, `registering`, `registered`, `taken` or `failed`; the queue is `queued` to `registering`, while `unpaid` also counts closed orders kept for 30 days and `failed` every failed order not tried again |
+| `simplex_store_names_orders{phase,reason}` | name orders in the phase: `unpaid`, `closed`, `queued`, `committing`, `committed`, `registering`, `registered`, `taken`, `ended` or `failed`; the queue is `queued` to `registering`, while `closed` counts unpaid orders closed with their invoice, kept for 30 days, and `failed` every failed order not tried again, by `reason`: `registry_refused`, `signature_refused`, `month_ended` or `unread`, each 0 when it has none |
 | `simplex_store_names_queue_oldest_change_timestamp_seconds` | the last change, in Unix seconds, of the order unchanged longest among those the service moves on: `queued`, `committing`, `registering`, and `committed` with the page's reveal stored; absent when there is none |
+| `simplex_store_names_unregistered_oldest_selected_timestamp_seconds` | the oldest selection of a name among the live orders `queued`, `committing`, `committed`, `registering` or `failed`: a payment's settlement, a code order's placement, or a selection after a reset; a month-ended order not counted; absent when there is none |
 | `simplex_store_names_transactions_pending` | registrar transactions sent and not settled, one per nonce, so a fee replacement counts once |
 | `simplex_store_names_transactions_oldest_pending_timestamp_seconds` | when the oldest of them was first signed; absent when none is pending |
 | `simplex_store_names_invoices_open` | open invoices of name orders |
-| `simplex_store_names_balances_held` | balances reserved by an order paying the difference, until that order is paid or closed |
-| `simplex_store_names_balances_held_cents` | the cents of those balances |
 | `simplex_store_names_record_edits_pending` | record edits relayed and not settled |
 | `simplex_store_names_record_edits_oldest_pending_timestamp_seconds` | when the oldest of them was made; absent when none is pending |
 | `simplex_store_names_registrar_balance_wei` | the registrar key's ETH balance, as last read |
@@ -938,9 +997,13 @@ service running.
 | `simplex_store_names_chain_head_block` | the node's latest block number, as last read |
 | `simplex_store_names_chain_head_timestamp_seconds` | that block's time |
 | `simplex_store_names_chain_base_fee_wei` | that block's base fee per gas |
+| `simplex_store_names_max_fee_per_gas_wei` | the fee cap, `[chain] max_fee_per_gas` |
 | `simplex_store_names_terms_held{kind}` | 1 when the service holds the text of the `general` or `community` terms the name policy links, 0 while it cannot fetch it, so names of that kind cannot be ordered; absent while the policy links none |
 | `simplex_store_names_chain_read_timestamp_seconds` | when every part of the read last succeeded |
 | `simplex_store_names_chain_read_ok` | 1 when the last read succeeded in every part, 0 when a part failed or none has finished |
+| `simplex_store_names_month_pass_timestamp_seconds` | when the last month pass that completed started, every 5 minutes; the service's start until the first one completes |
+| `simplex_store_names_credit_pass_timestamp_seconds` | when the last late credit pass that completed started, every `idle_seconds`; the service's start until the first one completes |
+| `simplex_store_names_ended_pass_timestamp_seconds` | when the last ended sweep that completed started, every hour, a sweep whose block read failed not completing (see [Dispute days](#dispute-days)); the service's start until the first one completes |
 
 With `[names]`, the service also counts every name on chain, however it was registered, at start and
 then every 5 minutes, under the metric names of the former `simplex-names-exporter`. At the latest
@@ -949,22 +1012,28 @@ block it reads the base registrar's names (`totalSupply`, `tokenByIndex`), keeps
 registrar (`subnameHook()`) level by level with `getChildren`, keeping subnames whose `ownerOf` is
 not zero. For each name it reads `resolver(node)` on the registry and, on the configured resolver,
 its `simplex.contact` and `simplex.channel` texts. The reads run 16 at a time at that one block. A
-failed census keeps the last one and is counted.
+failed read keeps the last one and is counted.
 
 | Metric | Value |
 |---|---|
 | `simplex_names{level,records}` | live names at `level` 2 (`alice.simplex`), 3 (`shop.alice.simplex`) and below, by `records`: `none`, `contact`, `channel`, `both`, or `other_resolver` for a name whose resolver is not the configured one, whose records are not read; names in the 90-day grace period are not counted |
 | `simplex_name_length` | histogram of label lengths in characters, by `level`, a bucket for each length 1 to 63 |
-| `simplex_names_block` | the block the census read |
-| `simplex_names_refresh_timestamp_seconds` | when the census last succeeded |
-| `simplex_names_refresh_failures_total` | counter of failed censuses since the service started |
+| `simplex_names_block` | the block the names were read at |
+| `simplex_names_refresh_timestamp_seconds` | when the names were last read |
+| `simplex_names_refresh_failures_total` | counter of failed reads of the names since the service started |
 
-Every metric is a gauge, but for the census's histogram and counter. A stuck order, transaction or record edit, a node that cannot be read or
-has stopped following the chain, terms that cannot be shown and a payment provider that cannot be
-read show as:
+Every metric is a gauge, but for the names' histogram and counter. A stuck order, an order whose name is not
+registered 3 hours after its selection, a registrar key that cannot pay for a register with links, a
+base fee above the fee cap, a stuck transaction or record edit, a node that cannot be read or
+has stopped following the chain, terms that cannot be shown, a payment provider that cannot be
+read, names on chain that cannot be counted, a month pass, late credit pass or ended sweep that stopped
+completing and a scrape that fails, such as while the database cannot be read, show as:
 
 ```
 time() - simplex_store_names_queue_oldest_change_timestamp_seconds > 1200
+time() - simplex_store_names_unregistered_oldest_selected_timestamp_seconds > 10800
+simplex_store_names_registrar_balance_wei < 10000000000000000
+simplex_store_names_chain_base_fee_wei > simplex_store_names_max_fee_per_gas_wei
 time() - simplex_store_names_transactions_oldest_pending_timestamp_seconds > 900
 time() - simplex_store_names_record_edits_oldest_pending_timestamp_seconds > 900
 simplex_store_names_chain_read_ok == 0
@@ -972,7 +1041,18 @@ time() - simplex_store_names_chain_head_timestamp_seconds > 120
 simplex_store_names_terms_held == 0
 time() - simplex_store_provider_list_ok_timestamp_seconds > 600
 simplex_store_invoices_overdue > 0
+increase(simplex_names_refresh_failures_total[20m]) > 2
+time() - simplex_store_names_month_pass_timestamp_seconds > 1200
+time() - simplex_store_names_credit_pass_timestamp_seconds > 600
+time() - simplex_store_names_ended_pass_timestamp_seconds > 7800
+up == 0
 ```
+
+`up` is the scrape's own metric, for the job that scrapes the service. The names are counted every
+5 minutes, so more than 2 failures in 20 minutes means most counts failed. Until a month pass, late
+credit pass or ended sweep completes, its gauge is the service's start time, so its alert also fires
+when every pass fails from the start. The ended sweep runs hourly, so its alert fires after two
+passes in a row did not complete.
 
 The overdue count can be above 0 for a few seconds between an invoice's grace ending and the next
 poller pass, so its alert waits, as with `for: 10m`. Mainnet makes a block every 12 seconds, so a
@@ -981,8 +1061,16 @@ head older than 2 minutes means the node has fallen behind.
 An order moves on within minutes: its commit and register are each mined and confirmed, and the
 register waits about a minute after the commit. An order tried again can wait unchanged up to
 `reveal_margin_seconds` (900 by default) for its old commitment to lapse, so the queue alert's
-threshold is above it. Size the alerts on the balance and the allowance to
-the orders expected before a top-up, with the figures in [Fund the key](#fund-the-key).
+threshold is above it. Every 5 minutes the service also logs an error and, with `[group]`, posts in
+the managed group, once for each order whose name was selected 3 hours ago or more, at its payment's
+settlement, its code's placement or a selection after a reset, and still `queued`, `committing`,
+`committed`, `registering` or `failed`: `names: order <id> had its name selected at <time> and is <phase>, not registered, 3
+hours later`. An order whose name is not selected is not alerted, and the 3 hours are counted again from each later selection. When its name is no longer available on chain, the service logs an
+error and posts in the group once: `names worker: registration <id> was taken: its name is no longer
+available on chain`. An order taken at settlement, as someone has taken its name, is logged
+as a note. The alert rule fires for any phase. Below 0.01 ETH the node refuses a register with links (see [Fund the key](#fund-the-key)),
+and while the base fee is above the cap no transaction is signed; size a warning on the balance and the
+allowance to the orders expected before a top-up, with the figures there.
 
 Caddy proxies it on the monitoring site of the host, beside node_exporter, inside that site's
 `handle_path /metrics/*` block:
@@ -1049,7 +1137,7 @@ does not take, and meanwhile `503 terms_unavailable` with `Retry-After` for a te
 
 The terms of a name's kind are unavailable while their link is not set, is not a link the service
 takes, or has a text the service cannot fetch now. An available name's search answer then carries
-`"terms": null`, and an order, a code order, a move or a spend of such a name answers
+`"terms": null`, and an order, a code order or a selection of such a name answers
 `503 terms_unavailable` before any payment, with `Retry-After` while the fetch waits. The service
 logs both links and their hashes at startup, and warns for each that is not set or not a link it
 takes. A names lane reads or fetches both texts at the start and then every hour. A search reads the links only for an available name, and
@@ -1071,8 +1159,8 @@ without a text, and the service warns at startup, when it reads the policy, for 
 name the policy does not list, which is sold as a plain name. Each label must be a valid name in lower case and listed once; each text is
 1 to 200 characters with no control, format or line separator characters, and should not end with a
 full stop, since the page adds one. The service refuses to start, naming the setting, on any other
-entry, on `[community]` without `[names]`, on a key written twice in a section (only the first would
-be read) and on a section header written twice in the file (only the last would be read). It logs
+entry, on `[community]` without `[names]`, on a key written twice in a section and on a section
+header written twice in the file. It logs
 how many community names it loaded.
 
 The `[community]` texts are read only at startup, so an edit applies after a restart; the policy's
@@ -1080,14 +1168,15 @@ list and its terms apply as soon as they change on chain. After a restart, searc
 the names site and check that it shows as a community name.
 
 Every order signs the terms the buyer agreed to: the 64 lower-case hex digits of the hash of the
-terms of the name's kind, without `0x`, after `community/` for a listed name. The service stores them
-with the order, so an open order keeps the terms it signed after a change, and every move signs the
-current terms for the name it moves to, and stores them. An order or a move signed with any other
+terms of the name's kind, without `0x`, after `community/` for a listed name. The request sends them
+as `terms` in its `fields`, `{"communityName": true, "termsHash": "0x…"}`. The service stores them
+with the order, so an open order keeps the terms it signed after a change; a selection of a name is
+signed with the current terms for that name, which are stored with it. An order or a selection signed with any other
 value answers `409 terms_changed` with the current terms of the name's kind, `{"hash", "link"}`, and
 the name's community entry, and the page asks again; an order signed with a terms version, as pages
 before signed, meets it once. An exact resend is still answered after the terms changed.
 
-**Upgrading:** a page that sends no `terms` gets `bad_request` on every order, spend and move, so the
+**Upgrading:** a page that sends no `terms` gets `bad_request` on every order and selection of a name, so the
 page and the service are deployed together.
 
 On chain the order is the same for every name: the service commits, the page signs the reveal, the
@@ -1099,9 +1188,9 @@ register refused for the acceptance (new terms, a used nonce), an acceptance of 
 terms, or one signed for the name policy before a `setNamePolicy`, clears the reveal, and the page
 signs again. A relay that reverts while the policy holds that acceptance for the commitment, as when
 another sent it first, is followed by the register. The page signs the reveal and the acceptance
-with a deadline a week ahead, never before the commitment lapses, and the service keeps them across a
-lapse while the deadline has not passed and the sponsor nonce is unchanged: it commits again and
-registers with no new signature.
+with a deadline a week ahead, the latest the service accepts, so it keeps them across a lapse while the deadline has not
+passed and the sponsor nonce is unchanged: it commits again and registers with no new signature. The
+intent does not cover the secret; the service replaces the stored reveal at a selection of a name and clears it at a close.
 
 ### Codes-only launch
 
@@ -1110,10 +1199,11 @@ who hold them before anyone can pay. It is `off` by default. While it is on:
 
 - `GET /api/config` answers `"mode": "codes"` in place of `"open"`, and the names page then offers
   only codes. The badges site ignores the mode;
-- `POST /api/invoice` for a name and `POST /api/registration/:id/spend` answer
-  `403 {"error": "codes_only"}`, before they read the order, so no order takes money for a name;
-- search, link previews, code checks, code orders (`POST /api/name/register`), the registration
-  view, `find`, the reveal, Try again, another name and record edits work as before. Webhooks and the
+- `POST /api/invoice` for a name answers
+  `403 {"type": "codes_only"}`, before it reads the order,
+  so no order takes money for a name;
+- search, the signing read, link previews, code checks, code orders (`POST /api/name/register`),
+  the registration view, `find`, the reveal, `/retry`, the selection of a name and record edits work as before. Webhooks and the
   poller still settle the invoices already open, and badges sell as before.
 
 The setting is read at startup, so switching it is an edit of the ini and a restart, with the same
@@ -1129,18 +1219,67 @@ cents a year, at which the service sells a name. A chain price under it for the 
 fails the price read, and the service logs a warning with the price:
 
 - a search answers `503 provider_unavailable`;
-- an order or a spend answers `503 name_check_unavailable` before any payment;
-- a move answers `503 name_check_unavailable` and credits nothing.
+- an order answers `503 name_check_unavailable` before any payment;
+- a selection of a name after a reset, for an order paid by invoice, answers `503 name_check_unavailable`.
 
-Code orders and their moves read no price, so the floor does not apply to them. The default is the
+A name selected after a reset, for an order paid by invoice, must have the order's price, as an order's name
+must have the price its page showed: a dearer or a cheaper one answers `409 catalog_changed` with the
+name's price. The price is spent from the order's balance, and a balance that no longer holds it,
+refunded or taken back at a dispute, answers `400 bad_request`.
+
+No price is read for a code order or for a name selected for one, so the floor does not apply to them. The default is the
 launch price of a name of 8 letters or more, $100 for 2 years. One floor bounds every length, so a
 node answering the floor price for a 6- or 7-letter name passes the check even when those names
 cost more on chain. To lower prices on chain below the floor, lower the setting and restart first.
 
+### Dispute days
+
+Each name the sponsor registers has a dispute period, within which the guardian or the controller's
+owner can end the registration if a payment for it is disputed, reversed or refunded in full. Its
+length in days is set when the order is made, by how the order is paid:
+
+| Payment | Days |
+|---|---|
+| card | 120 |
+| BTC, XMR or another BTCPay method | 14 |
+| prepaid code | 14 |
+
+A name selected for a taken order keeps the order's payment, and so its days. The order's
+`disputeDays` are returned in the registration view, signed by the owner in `RegisterName` with the
+reveal of the order or of the selection, and sent by the service in `registerWithCredit`; a reveal
+signed over other days is refused `400 bad_request`. Once the name is registered, the view's
+`registered` phase has `disputeUntil`: the registrar's `disputeUntil(id)` read at the confirmation
+depth, absent for a registration without a dispute period.
+
+The registrar's `disputeUntil(id)` is changed only by `unregister`, which ends a registration within
+its dispute period, and by a later registration of the name. Every hour the service reads the block
+at the confirmation depth and, at that block, `disputeUntil(id)` of each registered order whose
+dispute period has not ended or ended less than 7 days ago, if its registration is older than that
+block. When the value differs from the one read at the registration, the order's phase is set to
+`ended`, and it stays `ended` when the name is registered again. An order whose read fails is read
+again at the next pass, and the other orders are read in the same pass; when the block cannot be
+read, the pass is stopped and does not complete (see [Metrics](#metrics)). The first failed read of
+each pass is logged once, with its order's registration id, and a failed block read with the pass
+stopped. Each order set `ended`, by the pass or by the check below, is logged at note with its
+registration id, the `disputeUntil(id)` read and the end it was compared with.
+
+When an order's register is found mined, by the worker or by `//close`, `disputeUntil(id)` at the
+confirmed block is compared with the end set by its register, its block's timestamp plus the order's
+days; when the two differ, the registration was ended before the confirmed block, possibly followed
+by another, and the order is set `ended` at once, with the expiry and the dispute end set by its
+register stored: its block's timestamp plus the order's duration, and plus its days. While the
+register's block is above the confirmed block, a warning naming both blocks is logged and the order
+is left as it is: the worker checks it again 15 seconds later, and `//close` answers `Nothing
+recorded: the chain could not be read; run //close again.` The view's phase of an ended order is
+`{"type": "ended"}`; its stored times are kept.
+
+This version runs against the contracts with the dispute period (ens-contracts #51): the service
+calls the sponsor's `registerWithCredit` with `disputeDays` and the registrar's `disputeUntil`.
+
 ### Link edits
 
 Each "Edit links" save is one request, relayed by the service as one transaction whose gas it pays
-(see [The gas key](#the-gas-key)): one changed link as `setTextWithSig` (or `clearRecordsWithSig`),
+(see [The gas key](#the-gas-key)): one changed link as `setTextWithSig`,
 both links as the resolver's `multicall` of two `setTextWithSig` calls, which lands both or neither.
 
 A request whose earliest signed deadline is within 10 minutes of the latest block's time is refused
@@ -1152,7 +1291,7 @@ names page signs a deadline one hour ahead.
 any 365 days:
 
 - each accepted request counts once, from when it is stored to be sent, whether it changes one link
-  or both, or clears them;
+  or both;
 - links set at registration ride on the register transaction and count nothing;
 - an edit that reverts on chain (or expires) counts as well, since its transaction may have paid
   gas, so the limit bounds repeats of failing edits too;
@@ -1161,8 +1300,8 @@ any 365 days:
 - an exact resend of an accepted request is answered as before and counts nothing more.
 
 When a name has none left, `POST /api/name/records` answers
-`429 {"error": "edit_limit", "nextAt": <unix seconds>}` before any chain read, and the search answer
-for the name carries `recordEdits: {"left": 0, "nextAt": …}`, from which the page shows when the
+`409 {"type": "edit_limit", "nextAt": <ISO time>}` before any chain read, and the search answer
+for the name has `found.records.edits: {"left": 0, "nextAt": …}`, from which the page shows when the
 owner can edit again. Lowering the setting keeps the edits already counted. The hourly cap of 10
 relayed requests per name still applies.
 
@@ -1170,7 +1309,7 @@ relayed requests per name still applies.
 
 `[chain] service_key` is the registrar key: an Ethereum account (EOA) that sends every names
 transaction, `commit` to the controller, each name's terms acceptance (`commitUnderGeneralTermsWithSig` or `commitUnderCommunityTermsWithSig`) to the name policy, `registerWithCredit` to the sponsor, and the owners' record
-edits (`setTextWithSig`, `clearRecordsWithSig`, or a `multicall` of two) to the resolver. It pays
+edits (`setTextWithSig`, or a `multicall` of two) to the resolver. It pays
 only their gas, in ETH. The names' rent is spent from its allowance on the sponsor, in USD, which the
 guardian sets. It holds no names.
 
@@ -1207,7 +1346,7 @@ sudo cp next/store_service.ini config/store_service.ini && sudo rm -r next
 ```
 
 The address check prints the key's address, as in `0xB2590B3a4fa5bEdda803F5f1F605803438C3F71E`, and
-fails when the line was not replaced. The key is `0x` and 64 hex digits.
+fails when the line was not replaced. The key is `0x` and 64 hex digits in either case.
 
 The ini holds the only copy of the key. It is gitignored, every `*.ini` is kept out of the image,
 and compose mounts its folder read-only. Keep it owned by the service user with mode 600. The
@@ -1308,9 +1447,14 @@ reads, clears and logs its acceptance, as a community name's did:
 | `setTextWithSig`, a new link | 3,026,449 | 3,026,449 | 0.01 ETH |
 | `setTextWithSig`, a link replacing one | 462,289 | 462,289 | 0.0023 ETH |
 | `setTextWithSig`, a link removed | 698,644 | 558,916 | 0.0035 ETH |
-| `clearRecordsWithSig` | 80,312 | 80,312 | 0.0004 ETH |
 | `multicall`, two new links | 6,054,042 | 6,008,868 | 0.01 ETH |
 
+- The figures predate the dispute period (ens-contracts #51), whose `registerWithCredit` also writes
+  the name's `disputeUntil`. That write is estimated, not measured, at about 22,100 gas for a name
+  registered for the first time: a storage slot set from zero, 20,000 gas, and its first access in
+  the transaction, 2,100 (EIP-2200, EIP-2929). Each register's estimate is then about 22,100 gas
+  higher, the two-link register's about 6,813,500, and the gas limit the service sets, a fifth above
+  the estimate, about 26,500 higher.
 - The service sets each transaction's gas limit a fifth above its estimate, within `gas_limit_cap`,
   and its max fee to at most `max_fee_per_gas` (default 5 gwei) and at most 0.01 ETH divided by its
   gas limit, so no transaction can cost more than 0.01 ETH. The node accepts a transaction only while
@@ -1320,14 +1464,15 @@ reads, clears and logs its acceptance, as a community name's did:
   blocks' median tips (`eth_feeHistory`), at least 0.05 gwei: reth's and geth's
   `eth_maxPriorityFeePerGas` sample each block's cheapest transactions and answer near zero.
 - An order is one commit, one acceptance relay and one register: 0.0108 ETH at the cap with two
-  links, 0.0036 ETH with none. The expected orders × 0.0108 ETH, plus 0.01 ETH per expected Save of
-  one or both links, pays for all of them even at the cap. A name's link edits are at most
+  links, 0.0036 ETH with none, and with none about 0.00013 ETH more for the dispute period's write,
+  its 26,500 more gas limit at 5 gwei. The expected orders × 0.0108 ETH, plus 0.01 ETH per expected
+  Save of one or both links, pays for all of them even at the cap. A name's link edits are at most
   `record_edits_per_year` (3) a year, see [Link edits](#link-edits). Below 0.01 ETH the figures scale
   with `max_fee_per_gas`.
 - A Save of both links in one `multicall` uses 26,906 gas less than the same two edits sent as two
   transactions with links of 4096 bytes, and 28,082 less with short links.
-- `gas_limit_cap` (default 8,000,000) must be at least 6,791,417: a transaction whose estimate is
-  above it is not sent.
+- `gas_limit_cap` (default 8,000,000) must be at least 6,791,417, about 6,813,500 with the dispute
+  period's write: a transaction whose estimate is above it is not sent.
 - The 0.01 ETH bound applies above 2,000,000 gas at 5 gwei: registers and edits with long links. It
   also keeps every transaction under reth's and geth's `--rpc.txfeecap`, 1 ETH by default, above which
   the node refuses a transaction and every later one of the key waits behind it. A transaction it
@@ -1377,10 +1522,10 @@ With `metrics_port` set, both are exported before they run out (see [Metrics](#m
   with `InsufficientAllowance`. The order keeps its phase and its register's dry run is tried again
   every 15 seconds, also past its commitment's lapse, so a top-up registers it with no restart, the
   commitment sent again first when it lapsed. The line is logged once per order. An order whose
-  signature expires first, a week after the page signed it, fails, and the buyer can Try again.
-  This holds when the register's dry run is refused. A register that passes its dry run and reverts
-  once mined, as two registers sent while the allowance covers one can, fails its order with no
-  such line; the next order's dry run logs it, and the buyer can Try again.
+  signature expires first, a week after the page signed it, has its reveal cleared, and its page
+  signs again. This holds when the
+  register's dry run is refused. A register that passes its dry run and reverts once mined, as two
+  registers sent while the allowance covers one can, is sent again, and its dry run logs the line.
 - `[WARN …] names sender: the latest block needs <wei> wei per gas, above the fee cap <cap>;
   the transaction waits` when fees are above the fee cap, `max_fee_per_gas` or 0.01 ETH over the gas
   limit. Nothing is signed until they fall.
@@ -1390,15 +1535,50 @@ With `metrics_port` set, both are exported before they run out (see [Metrics](#m
   of their own once it is old enough. The order then ends `taken`: a paid order keeps its price as a
   balance, and a code order keeps its code.
 
-An order sends at most 5 commits, 5 terms acceptances and 5 registers, its moves included, since an
-owner who changes their terms acceptance on chain can make each acceptance and register revert at the
-service's gas. The service's own commits after a lapse, which wait for it, count against that only when
-they revert, so a signature kept for its week registers over several commitment windows; Try again and
-a move count every commit. Past that the order fails, Try again and a move answer `400 bad_request`, and support closes it
-with `//close` (see [Closing a failed order](#closing-a-failed-order)).
-The log line is `[WARN …] names worker: registration <id> failed: it sent <n> transactions of one kind`.
+The order's row keeps the count of its counted dry-run failures and of its sent failures, and its last
+failed attempt of a commit, a terms acceptance or a register: the transaction, the stage (`dry_run`, or
+`sent` for a transaction mined with status 0), the decoded reason and the time, for the caps, the logs
+and the reports; the order's view does not show it. A failure that is not counted is written only when
+its transaction, stage or reason differs from the stored one, so its time is the first in a row.
+A dry run that reverts while the name is available is retried every 15 seconds. Its reason decides:
+- `InvalidSignature`, `DurationTooLong`, `DurationTooShort`, `ResolverRequiredWhenDataSupplied`,
+  `ReverseRecordNotSupported`, `NameTooShort`, `LabelTooLong` and `ReentrantCall` count toward
+  `[names] max_dry_run_failures` (default 5) for the order's commitment;
+- any other reason, a revert without data and `Error(string)` are retried with no count, logged at
+  error at their first time in a row and posted in the managed group after 10 minutes of
+  consecutive failures, as
+  `names worker: registration <id> waits: the register reverts while the name is available, <reason>, failing for 10 minutes`.
 
-Try again or a move of a failed order, and the worker's judgment of a register that did not go
+A commit, relay or register mined with status 0 counts toward `[names] max_sent_failures` (default 5) for the
+commitment, and a commit's dry run that reverts for one of the reasons above toward
+`max_dry_run_failures`. At either cap the order fails with the reason `registryRefused`, logged at error and
+posted in the managed group as `names worker: registration <id> failed: its register failed <n> times
+at its dry run, last: <reason>`, and support closes it with `//close` (see
+[Closing a failed order](#closing-a-failed-order)). Both counts start again at a selection of a name after a reset. Any other
+failure after which the order's phase is kept, such as a node that does not answer, funds, the fee
+cap, the allowance or an exception in its step, is posted in the group after 10 minutes of
+consecutive failures, of any reasons, with the latest reason; an exception is logged at error
+at its first time in a row, and its step is run again in 15 seconds.
+`CommitmentNotFound` commits the order again, and `CommitmentTooOld` past the commitment's lapse
+commits it again, posted in the group as `names worker: registration <id> is committed again: its
+commitment lapsed`. An order whose stored signature was cleared, and whose
+commitment lapses before its page signed again, waits, and its page asks for a new commitment with
+`POST /api/registration/:id/retry`.
+An order waiting for its owner
+fails with the reason `unread` once its page has not read it for 3 days, logged at error and posted
+in the managed group as
+`names worker: registration <id> failed: it waited for its owner, and its page has not read it since <time>`;
+a read of the order or of its invoice is stored at most once an hour. Its page's reveal, its owner
+signing again, queues it to be committed again while it holds its name.
+
+A signature past its deadline is cleared, and the page signs again. A signature within its deadline
+that no longer verifies, as after a change of `[chain] chain_id`, `sponsor` or `resolver`, or of
+`[names] tld`, fails the order before its acceptance relay or its register is sent, with the reason `signatureRefused`; the log line is
+`[ERROR …] names worker: registration <id> failed: its stored signature is refused under the service's current configuration, …`,
+and the same text is posted in the managed group. Its page asks the buyer to contact support. A
+name is selected again only after a reset.
+
+A close of a failed order, and the worker's judgment of a register that did not go
 through, first run `confirmLanded`. It marks the order registered when `ownerOf` at the confirmation
 depth shows the order's owner holding the name, even if this order's register never landed: an
 owner who got the name another way counts as served, and a code order spends its code.
@@ -1505,8 +1685,8 @@ psql "postgresql://simplex@127.0.0.1:5432/badge_service" -c "UPDATE simplex_v1_c
 
 The sender no longer follows them, and at the next start each order is judged from the chain, as
 after a nonce taken by another transaction: a commit or terms acceptance not on chain is sent again
-from the new key, an order whose register did not land fails as after a reverted register and its
-buyer can Try again, and a link edit not applied is sent again before its deadline. The marked
+from the new key, a register that did not land is sent again as after a reverted register, and a
+link edit not applied is sent again before its deadline. The marked
 transactions stay signed and valid: while the old address holds enough ETH, its commits, terms
 acceptances and link edits can still be mined, and its registers revert.
 
@@ -1521,10 +1701,17 @@ touches the service's database.
 The command is sent to the running service in `--run-cli` mode, not a way to start it:
 
 ```
-//issue <badge_type> [months] [paid|unpaid|free]
-//issue supporter 12
+//issue <badge_type> [months <M>] [paid|unpaid|free]
+//issue supporter months 12
 //issue name <length> [years <Y>] [paid|free]
 //issue name 7 years 5
+```
+
+A script passes one command with `--execute`, with the service stopped, and reads the `Code: ...`
+line it prints:
+
+```
+simplex-store-service -d <database> --service-config store_service.ini --execute "//issue name 7"
 ```
 
 `months` defaults to 1 and must be between 1 and 12; the status defaults to `free` and records
@@ -1534,7 +1721,21 @@ code row when the invoice is created, and settlement is what marks it paid.
 
 `//issue name` makes a prepaid name code (`SN<length>-…`): it pays for one name of at least
 `<length>` letters, 6 to 63, for `years` years, 2 to 10 (default 2), or 2 for a community name. Its status is
-`paid` or `free`: nothing marks a name code paid later, so `unpaid` is refused.
+`paid` or `free`: nothing marks a name code paid later, so `unpaid` is refused. Without `[names]`,
+`//issue name` is answered that names are not enabled, and issues nothing. A name code reserves a
+name until 3 calendar months after its issue, and the answer says so: `Code: SN7-…. Valid until
+<time> UTC.` An order already holding the code keeps it past that time, also at a take, so a name
+selected for the order afterwards is accepted with the code until that time or a calendar month
+after the take, whichever is later, then refused `code_expired`, and refused `code_invalid` once
+the code is revoked. A code order not registered a calendar month after its name
+was selected, at its placement or after a reset, fails with the reason `monthEnded`, its code
+released and its name freed.
+
+The console reads the commands by the group's grammar (see [From the group](#from-the-group)), with
+a payment status in place of `uses`, a badge's months also without `months` (`//issue supporter 12`),
+and without `/bulk`. A malformed command is answered with its
+usage, which for `//issue` also lists each kind's bounds and an example of each; an unknown one with
+the usage of every command.
 
 The code is printed once and only its `SHA-256` is stored, so a code that is not copied when it is
 shown cannot be recovered.
@@ -1545,6 +1746,7 @@ A code that leaked, or that was refunded, is withdrawn the same way, badge and n
 //revoke <code>
 ```
 
+The answer names the code, as `/revoke`'s does: `<code>: Revoked.`
 A revoked code answers redemption with `code_invalid`, as if it had never existed, so its holder
 learns nothing from trying. A client that redeemed it before the revoke still gets its own badge
 back when it asks again. Revoking it again answers "already revoked" and fixes its group
@@ -1659,11 +1861,12 @@ them later is logged as not applied and changes nothing.
 
 ## Refunding a name balance
 
-A paid name order keeps its money as a balance when it ends `taken` (another buyer registered the
+A paid name order keeps its money as a balance when it is reset to `taken` (another buyer registered the
 name first, or support closed the failed order with `//close`, which also records the refund; see
-[Closing a failed order](#closing-a-failed-order)), when it moves to a cheaper name (the difference), when a payment reaches its invoice
+[Closing a failed order](#closing-a-failed-order)), when a payment reaches its invoice
 after the invoice closed, and when its invoice was paid more crypto than it asked (the extra). The
-buyer spends a balance on another name from Your names, or asks for it back: the page tells them to
+balance of an order reset by a take is spent only when a name of the order's price is selected for that order,
+at any time, and on no other order. Otherwise the buyer asks for a balance back: the page tells them to
 write to chat@simplex.chat with the order's reference, which is its invoice id, or its registration
 id for an order without an invoice. Nothing is refunded automatically, and the service never learns
 where to send money. A reference is not proof of who paid: a registration id is in the service's
@@ -1689,38 +1892,19 @@ group](#balances-and-failed-orders-in-the-group)):
    Order <id>: balance $100.00 (credited $100.00, refunded $0.00). Paid by: order <id> of <owner>: $100.00 by btc on invoice <invoice id> (provider reference <provider reference>). To record its refund: //record_refund <reference> 10000
    ```
 
-   `Paid by` starts at this order and follows every balance the money came through back to the
-   first order: each order with its owner, the address that signed it, what its invoice paid and by
-   which method (`card`, `btc`, `ln` or `xmr`), the part paid from the balance of the next order listed,
-   and money credited from its invoice later: marked `late` when it arrived after the invoice
-   closed, and `overpaid` when it is the extra of an invoice that paid the order. The provider
+   `Paid by` names this order with its owner, the address that signed it, what its invoice paid and
+   by which method (`card`, `btc`, `ln` or `xmr`), and money credited from its invoice later: marked
+   `late` when it arrived after the invoice closed, and `overpaid` when it is the extra of an
+   invoice that paid the order. The provider
    reference is the BTCPay invoice id or the Stripe PaymentIntent id, which finds the payment in the
    provider's Dashboard.
 2. Run the command the answer ends with. The cents must equal the whole balance: a refund zeroes it,
    and part of a balance is never refunded. Other cents record nothing, and the answer gives the
    balance.
-3. The answer, `Recorded a refund of $100.00 for order <id>. Refund it now, by: …`, repeats the
-   chain. Pay the balance's amount in US dollars back now, by the methods it lists. The refund is
-   recorded first so that the buyer cannot spend the money while it is paid
-   back. The service logs each recorded refund at note with the order's registration id and the
-   cents.
-
-A balance that an open order holds is never refunded: that order is buying another name with it and
-its invoice is waiting for the difference. The command names the order instead, with its invoice's
-expiry unless money reached the invoice:
-
-- `its invoice open until <time>`: if the buyer pays it, the balance is spent; if not, it is released
-  once the invoice expires and the poller, in service mode, closes the order. Run the command again
-  then.
-- `its invoice expired at <time>; start the service so the poller closes that order, 10 minutes
-  after the expiry at the earliest, then stop it and run the command again`: the poller runs only in
-  service mode. Its first pass from 10 minutes after the expiry closes the order and releases the
-  hold; a card order closes only once Stripe accepts the cancel. In the group, where the service
-  runs, the answer is `its invoice expired at <time>; the poller closes that order 10 minutes after
-  the expiry at the earliest; run the command again then`.
-- `whose invoice holds money`: a payment reached the invoice, before or after its expiry; the hold
-  stays until that payment settles, which spends the balance, or the provider closes the invoice,
-  which releases it.
+3. The answer, `Recorded a refund of $100.00 for order <id>. Refund it now, by: …`, repeats what
+   paid. Pay the balance's amount in US dollars back now, by the method it lists. The refund is
+   recorded first so that the money is not spent on a selection of a name while it is paid back. The service logs
+   each recorded refund at note with the order's registration id and the cents.
 
 The commands also answer when the reference matches no order, when the order has no balance, and
 when the cents are not the balance. A refunded balance shows `amount` 0 and its `refunded` total in
@@ -1728,9 +1912,16 @@ Your names; a later late payment credits it again, and a second refund adds to `
 
 ## Closing a failed order
 
-A failed paid order stays live and keeps its money uncredited, so its wallet cannot order the name
-again. When Try again cannot register it, as after 5 sends of a kind or refused links, support closes
-it in `--run-cli` mode with the service stopped, or with `/close` in the group while it runs:
+A failed paid order, after its attempts reached a cap, stays live, holds its name and keeps its money uncredited, so its wallet cannot order the
+name again. So does a paid order whose commitment lapsed before its page signed it, until the page
+asks for a new commitment. A calendar month after its name was selected, at its payment or after a
+reset, clipped to the last day of a shorter
+month, an order that is still `queued`, `committed` or `failed` fails with the reason `monthEnded`:
+the money paid for an order paid by invoice is added to its balance, a code order's code is
+released, its name is released, and the order is final. A pass every 5 minutes does it, logging each order at note; an order sending its commit, or with a
+register transaction sent and not settled, is ended at the first pass after that transaction settles. Support closes a failed or lapsed
+order before then in `--run-cli` mode with the service stopped, or with `/close` in the group while
+it runs; a month-ended order is refused, and its refund is recorded with `//record_refund`:
 
 ```
 //close <reference>
@@ -1740,14 +1931,14 @@ The reference is the order's invoice id, or its registration id. The command rea
 needs `[names]` and `[chain]` in `store_service.ini`; without `[names]` it answers that names are not
 enabled. It:
 
-1. checks the chain first, as Try again does: when a register of the order mined, or its owner holds
+1. checks the chain first: when a register of the order mined, or its owner holds
    the name at the confirmation depth, the order is set `registered`, nothing is refunded, and the
    change is logged at note with its registration id;
-2. otherwise, in one transaction, sets the order `taken`, credits its price to its balance, which may
-   already hold a move's difference or an overpayment, and records all of that balance as refunded,
-   as `//record_refund` does.
+2. otherwise, in one transaction, sets the order `taken`, clears its stored signatures, credits its
+   price to its balance, which may already hold an overpayment or late money, and records all
+   of that balance as refunded, as `//record_refund` does.
 
-The answer, `Closed order <id>, failed at <time>, as taken and recorded a refund of $100.00. Check at
+The answer, `Closed order <id>, failed or lapsed unsigned at <time>, as taken and recorded a refund of $100.00. Check at
 the provider that it was not refunded by hand before; if not, refund it now, by: …`, lists what paid
 for the order, as the answer of `//record_refund` does. Before this command existed, support refunded failed
 orders at the provider by hand, so look for a refund of that payment after the failure time first, and
@@ -1755,22 +1946,22 @@ pay the amount back by those methods only if none is found. The service logs eac
 note with its registration id and the cents.
 
 Before the first version with `//close` is deployed, list the failed paid orders, with the committed
-ones past their signing deadline, which read failed and can be closed too, and find at the provider,
-by the provider reference listed, each one already refunded by hand. An order paid from a balance
-also lists the order whose balance paid it, and one paid wholly from it lists no invoice. After the deploy, close
+ones past their signing deadline, which can be closed too, and find at the provider,
+by the provider reference listed, each one already refunded by hand. After the deploy, close
 the orders refunded by hand with `//close` and pay nothing, so that their records match the money:
 
 ```
-psql "$BADGE_DB_CONN" -Atc "SELECT r.registration_id, r.phase, r.failed_at, r.reveal_before, ni.invoice_id, ni.provider_ref, r.balance_source FROM simplex_v1_chat_schema.sx_badge_service_name_registrations r LEFT JOIN simplex_v1_chat_schema.sx_badge_service_name_invoices ni ON ni.registration_id = r.registration_id WHERE r.name_prepaid_code_id IS NULL AND (r.phase = 'failed' OR (r.phase = 'committed' AND r.label IS NULL AND r.reveal_before < EXTRACT(EPOCH FROM now()))) ORDER BY r.created_at"
+psql "$BADGE_DB_CONN" -Atc "SELECT r.registration_id, r.phase, r.failed_at, r.reveal_before, ni.invoice_id, i.provider_ref FROM simplex_v1_chat_schema.sx_badge_service_name_registrations r LEFT JOIN simplex_v1_chat_schema.sx_badge_service_name_invoices ni ON ni.registration_id = r.registration_id LEFT JOIN simplex_v1_chat_schema.sx_badge_service_invoices i ON i.invoice_id = ni.invoice_id WHERE r.name_prepaid_code_id IS NULL AND (r.phase = 'failed' OR (r.phase = 'committed' AND r.label IS NULL AND r.reveal_before < EXTRACT(EPOCH FROM now()))) ORDER BY r.created_at"
 ```
 
-A closed order reads `taken` in Your names, with its refund. Try again and a move answer
-`400 bad_request`, `//balance` finds nothing to refund, and the wallet can order the name again.
+A closed order reads `taken` in Your names, with its refund. `/retry` answers `400 bad_request`, and so
+does a selection of a name, as the balance no longer holds the price; `//balance` finds nothing to refund, and the
+wallet can order the name again.
 
-The command records nothing for an order that is not failed or was paid with a prepaid code, whose
-code is released 30 days after the order failed; for a failed chain read; for a balance an order
-holds, worded as for `//record_refund`; and for an order or a balance that changed meanwhile. Run the
-command again after the last three.
+The command records nothing for an order that is neither failed nor lapsed unsigned, or was paid with
+a prepaid code, whose code is released when the month from the selection of its name ends; for an order with a
+recorded dispute or refund of its payment, as nothing is refunded; for a failed chain read; and for an
+order or a balance that changed meanwhile. Run the command again after the last two.
 
 ## Balances and failed orders in the group
 
@@ -1784,91 +1975,110 @@ slash:
 ```
 
 The service answers each in the group with the console's answer, which names `/record_refund` and
-`/close` in place of `//record_refund` and `//close`, and says that the running poller closes an
-overdue holder rather than asking to start the service. A command takes the same per-name and
-per-balance locks as Try again, moves and spends, and writes a balance only while it still holds the
-amount read and no order holds it, so a payment settled or an invoice cancelled meanwhile makes it
-refuse rather than write. The group's commands run one at a time, so a `/close` waiting on a slow
+`/close` in place of `//record_refund` and `//close`. A command takes the same per-name and
+per-balance locks as Try again and the selection of a name, and writes a balance only while it still holds the
+amount read, so a late credit meanwhile makes it refuse rather than write. The group's commands run one at a time, so a `/close` waiting on a slow
 chain node delays the group's other replies by up to its three reads' timeouts. `/close` reads the chain through the client the console uses, made at
 start with `[names]`, and without `[names]` answers that names are not enabled.
 
 A member below owner gets no reply and nothing runs; a malformed command from an owner gets the usage
-reply. The reference and the answer, with the orders and invoice ids that paid, are read by every
+reply. The reference and the answer, with the order and invoice id that paid, are read by every
 member and kept in the service's chat database, as codes are, so the group's members must be people
 who may see them. A command the service received but had not run when it stopped is dropped with no
 reply; run it again.
 
 ## Running the webapp's cases against the service
 
-`scripts/store-service/dev/contract-run.sh` runs the names webapp's end-to-end cases that need no
-payment against this service in Chromium, as they run against the webapp's mock. It:
+`scripts/store-service/dev/contract-run.sh` runs the names webapp's end-to-end cases in Chromium
+against this service, as they run against the webapp's mock, with the fake BTCPay and the fake Stripe
+of the service's tests in place of the payment providers. CI runs it in the `names-e2e` scope
+(scripts/ci/README.md). It:
 
-1. starts anvil on 8545 and deploys the contracts with the webapp's `dev/deploy.ts`, with a commitment
-   age of 5 seconds, and the webapp's `dev/serve-terms.ts` on 8098, which serves the texts of the terms'
-   links that the deploy sets;
+1. starts anvil on `RPC_PORT`, mining a block for each transaction and one a second, deploys the
+   contracts with the webapp's `dev/deploy.ts` with a commitment age of 5 seconds, which the cases
+   that watch the wait need, into the webapp's `dev/local-chain-0.json`, which the cases read, and starts the
+   webapp's `dev/serve-terms.ts` on 8098, which serves the texts of the terms' links that the deploy sets;
 2. builds the names site (`vite build`) into the run's folder;
-3. writes an ini for that deployment with `[names]` and `[chain]` and no `[btcpay]` or `[stripe]`,
-   with the one community name `bakers`, which the webapp's community cases search for,
+3. writes an ini for that deployment with `[names]`, `[chain]` with 1 confirmation, and no `[btcpay]`
+   or `[stripe]`, with the one community name `bakers`, which the webapp's community cases search for,
    serving the names site all in one on `SERVICE_PORT` and the badges site, from an empty folder, on
    `BADGES_PORT`, and signing with the test suite's
    public issuer secret (`issuerSecret` in `tests/Bots/StoreService/ConfigTests.hs`), trusted through
    `[issuer] dev_keys`. That secret is public: never use it outside this script;
-4. starts the service once to make its database, stops it, and issues the prepaid codes the cases
-   need with `//issue name` in `--run-cli`;
-5. starts the service on 8180 (the names site) and 8181 (the badges site) and a code server on 8199,
-   and runs the cases with `BASE_URL` at the names site and `MOCK_URL` at the code server.
+4. starts the service from the test suite, `simplex-chat-test -m "/Names page against the store service/"`
+   (tests/Bots/StoreService/NamesPageService.hs): the service as `Main` runs it from that ini, with the
+   fake BTCPay and the fake Stripe in place of `[btcpay]` and `[stripe]`, and an SMP server where nothing
+   listens, so the cases' links read as unread and no case reaches a real server; and the controls the
+   service's process alone can serve, on `RUNNER_PORT`;
+5. starts the mock on 8099, where the webapp's dev server sends `/api` and `/control`;
+6. runs the cases against the webapp's dev server on 5173, which Playwright starts, then
+   `e2e/offline.spec.ts` and `e2e/track.spec.ts` against the production build the service serves, with
+   `BASE_URL` at the names site, as the webapp's own CI runs them against `vite preview`.
 
-The code server answers the cases' `POST /control/code` with the issued codes, the reset of
-`/control/search` that `search.spec.ts` sends after each case as done, and any other `/control/` with
-`501`, which fails the case that sends it. It passes `/api/` to the service with the case's
-`X-Forwarded-For`.
+The mock passes `/api/` to the service with the case's `X-Forwarded-For`, and `/api/config` without
+the Stripe key, so the dev server shows its stand-in card form. Its controls:
 
-It needs bash 5.1 or later (for `wait -n -p`), `cabal` (for the default `STORE_SERVICE_BIN`),
+| Request | Against the service |
+|---|---|
+| `/control/code` `{"minLength", "years", "state"}` | the runner issues a code as `//issue name` does, and with `"state": "revoked"` revokes it as `//revoke` does |
+| `/control/settle/<invoice>` `{"paid"}` | BTCPay settles the invoice, for the coin given or its amount, or, once it is closed, takes the coin as a confirmed late payment; Stripe's payment intent succeeds |
+| `/control/partial/<invoice>` | half the invoice's coin reaches it, unconfirmed |
+| `/control/confirming/<invoice>` | BTCPay processes the invoice paid in full; Stripe processes the card payment |
+| `/control/expire/<invoice>` | BTCPay expires the invoice; Stripe cancels the payment intent |
+| `/control/take` `{"label"}` | the mock's own: the holder registers the name, through a registrar of its own |
+| `/control/general-terms` | the mock's own: the contracts' owner sets the terms |
+| `/control/search` with the reset that `search.spec.ts` sends after each case | answered as done |
+
+After each change at a provider, the runner sends the service that provider's webhook and answers
+once the service has read the change, its late money credited. `/control/refund/<invoice or
+registration>` `{"cents"}` runs support's `//record_refund` for those cents or the whole balance, and
+`/control/take` holds these controls until the name is the holder's. Any other
+`/control/` answers `501`, which fails the case that sends it; `EXCLUDED` in the script names each case
+that cannot run against the service, with the reason.
+
+It needs bash 5.1 or later (for `wait -n -p`), `cabal` (for the default `STORE_TEST_BIN`),
 Foundry's anvil, Node.js 22.18 or later (which runs the webapp's `dev/deploy.ts` as TypeScript, as its
-`dev/start.sh` does), `jq`, `curl` and `python3`; the webapp with its packages and
+`dev/start.sh` does), and `curl`; the webapp with its packages and
 Playwright's Chromium (`npm install`, `npx playwright install chromium`); and the compiled
 `ens-contracts` submodule (simplex-network/ens-contracts#47) of a simplex-namespace-contract checkout
-(brenzi/simplex-namespace-contract main, since #10), whose `test/fixtures/terms/` the deploy links
-as the terms, as the webapp's `dev/start.sh` needs. The cases read the chain's addresses from the webapp's
-`dev/local-chain-0.json`, so the script stops when its deployment differs from it, and writes it when
-the webapp has none. Ports 8545, 8098, 8180, 8181 and 8199 must be free:
-the script stops before starting anything when one of them answers, and stops at once when anvil,
-the terms server, the service or the code server exits before it answers.
+(simplex-chat/simplex-namespace-contract main, since #10), whose `test/fixtures/terms/` the deploy links
+as the terms, as the webapp's `dev/start.sh` needs; the webapp's `dev/Dockerfile` builds both at the
+versions it pins. `RPC_PORT`, `SERVICE_PORT`, `BADGES_PORT`, `RUNNER_PORT`, 8099, 5173 and 8098 must be
+free: the script stops before starting anything when one of them answers, and stops at once when anvil,
+the terms server, the service or the mock exits before it answers.
 
 ```
-cabal build exe:simplex-store-service
+cabal build --enable-tests simplex-chat-test
 ENS_CONTRACTS_DIR=<ens-contracts> ANVIL=<anvil> scripts/store-service/dev/contract-run.sh
 ```
 
 - `WEBAPP_DIR`: the names webapp (default: the `apps/simplex-domains` submodule's `webapp/`).
-- `STORE_SERVICE_BIN`: the service binary (default: `cabal list-bin exe:simplex-store-service`).
-- `SERVICE_PORT`, `BADGES_PORT`, `CODES_PORT`: the service's names and badges ports and the code
-  server's (8180, 8181 and 8199).
-- `STORE_DB`: a Postgres connection string, for a service built with `+client_postgres`, whose
-  database must exist (default: a SQLite database in the run's folder).
-- Arguments, if given, are passed to `playwright test` in place of the default cases' title filter.
+- `STORE_TEST_BIN`: the test suite (default: `cabal list-bin simplex-chat-test`).
+- `RPC_PORT`, `SERVICE_PORT`, `BADGES_PORT`, `RUNNER_PORT`: anvil's, the service's names and badges
+  ports and the runner's (8545, 8180, 8181 and 8182).
+- Arguments, if given, are passed to `playwright test` against the dev server in place of the
+  excluded cases' title filter.
+
+The excluded cases send a control only the mock has, read the mock's memory, send more checkouts or
+cancels than the service takes from one client in a minute, expect the mock's coin amounts or the
+profiles it makes up for its links, or pay late in Monero, which the fake BTCPay's fixture leaves
+unconfirmed.
 
 With `LIGHTNING_ENV` set to the `lightning.env` that `scripts/store-service/dev/lightning.sh` writes,
 the cases are paid ones instead, in every browser project of each site's Playwright config: the names
 webapp's `e2e/lightning-node.spec.ts`, against the names site, and `web/e2e/lightning-node.spec.ts`,
 against the badges site. In each case, an order is placed with Lightning, the BOLT11 of the page's
 wallet link is paid at the payer's node, and the case ends when the page displays the name registered,
-the badge's code, or a cancelled order with what arrived. `[btcpay]` is written from that file, the
-service listens on 0.0.0.0, as BTCPay sends its webhook from its container, and the badges port defaults to
-`STORE_LIGHTNING_SERVICE_PORT`, where the webhook is sent. `BADGES_SITE` is the built badges site
-(`npm run build` in `web/`, its `dist/`), and the browsers are installed with
-`npx playwright install chromium firefox webkit`. CI runs them in store-lightning-e2e.yml.
-
-The default cases cover search answers for an available name, Check your code and its rate-limit
-countdown, code orders to `registered` with and without links, one whose register records its buyer's
-acceptance of the general terms, a code order's name code restored and
-revealed in another browser, Edit links on a name registered with a code (the other Edit links case
-answers its own name and record requests in the page), a link whose data cannot be read now, a
-community name's marker and its Check your order wording, and a code order of a name the contracts'
-owner lists on chain, whose register records its buyer's acceptance of the community terms. "search answers every kind of name" is not among them: it takes the chain down
-with `/control/search`.
+the badge's code, or a cancelled order with what arrived. The service is then the binary
+`STORE_SERVICE_BIN` (default: `cabal list-bin exe:simplex-store-service`), on the Postgres database
+`STORE_DB`, for a service built with `+client_postgres` (default: a SQLite database in the run's folder).
+`[btcpay]` is written from that file, the service listens on 0.0.0.0, as BTCPay sends its webhook from
+its container, and the badges port defaults to `STORE_LIGHTNING_SERVICE_PORT`, where the webhook is
+sent. `BADGES_SITE` is the built badges site (`npm run build` in `web/`, its `dist/`), and the browsers
+are installed with `npx playwright install chromium firefox webkit`. CI runs them in
+store-lightning-e2e.yml.
 
 Each case sends its own `X-Forwarded-For`, and the ini sets `trust_forwarded_for = on`, so each case
 is its own client for the service's per-client limits, as for the mock's code limit. The script stops
 everything it started, deletes its folder when the cases pass, and keeps it with the logs, the ini and
-Playwright's results when they fail.
+Playwright's results when they fail, printing the last 100 lines of each log.

@@ -24,7 +24,7 @@ function cancelControl(): StubElement | undefined {
 cancelTest("main: a cancel the service refuses says so and keeps watching the order", async () => {
   await until(() => headingOf(screenOf(app)).startsWith("Send"), "the payment screen");
   page.confirmAnswer(true);
-  page.respondWith({ status: 500, body: { error: "internal" } });
+  page.respondWith({ status: 500, body: { type: "internal" } });
   const before = fetches.length;
 
   cancelControl()?.click();
@@ -39,7 +39,7 @@ cancelTest("main: a cancel the service refuses says so and keeps watching the or
 
 cancelTest("main: each cancel refusal says which of the two it is", async () => {
   page.confirmAnswer(true);
-  page.respondWith({ status: 409, body: { error: "funded" } });
+  page.respondWith({ status: 409, body: { type: "funded" } });
   cancelControl()?.click();
   await settle();
   await until(() => screenOf(app).textContent.includes(CANCEL_HAS_FUNDS), "money is riding on it");
@@ -54,7 +54,7 @@ cancelTest("main: each cancel refusal says which of the two it is", async () => 
     `a repaint must not take the reason away: ${screenOf(app).textContent.slice(0, 120)}`);
 
   page.confirmAnswer(true);
-  page.respondWith({ status: 409, body: { error: "not_open" } });
+  page.respondWith({ status: 409, body: { type: "not_open" } });
   cancelControl()?.click();
   await settle();
   await until(() => screenOf(app).textContent.includes(CANCEL_NOT_OPEN), "the invoice is simply gone");

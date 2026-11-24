@@ -6,13 +6,11 @@
 module StoreService.Names.Codes
   ( CodeState (..),
     codeState,
-    codeStateText,
     CodeRefusal (..),
     codeRefusal,
-    codeRefusalTag,
     reserveRefusal,
     readPrepaidCode,
-    reserveCode,
+    prepaidCodeHash,
     releaseCode,
     spendLandedCode,
     issueNameCode,
@@ -21,25 +19,27 @@ module StoreService.Names.Codes
 where
 
 import Control.Applicative ((<|>))
-import qualified Control.Exception as E
-import Data.ByteString (ByteString)
+import Control.Logger.Simple (logError, logWarn)
 import Data.Functor ((<&>))
-import Data.Int (Int64)
 import Data.Maybe (fromMaybe, isJust)
 import Data.Text (Text)
-import Data.Time.Clock (UTCTime, getCurrentTime)
-import Simplex.Chat.Badges.Code (NamePrepaidCode, maxNameLength, minNameLength, namePrepaidCodeHash, randomNamePrepaidCode)
+import qualified Data.Text as T
+import Data.Time.Clock (UTCTime)
+import Simplex.Chat.Badges.Code (NameLength, NamePrepaidCode, minNameYears, nameLengthInt, namePrepaidCodeHash, randomNamePrepaidCode)
+import Simplex.Chat.Badges.Ledger (addMonths)
 import Simplex.Chat.Badges.Types (BadgeCodePaymentStatus (..))
 import Simplex.Chat.Bot.Store (withDB')
 import Simplex.Chat.Controller (ChatController (..))
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
-import StoreService.Config (minNameYears)
+import Simplex.Messaging.Encoding.String (TextEncoding (..))
 import StoreService.Group.Command (maxNameYears)
+import StoreService.Names.Chain (Hex32 (..))
 import StoreService.Names.Phases (RegistrationId)
-import StoreService.Names.Store (CodeHashTaken (..), CodeIssuer, NewPrepaidCode (..), PrepaidCode (..), getPrepaidCode, getPrepaidCodeById, insertPrepaidCode, releasePrepaidCode, reservePrepaidCode, revokePrepaidCode, spendLandedPrepaidCode)
+import StoreService.Names.Store (CmdSource, CodeHash, CodeHashTaken (..), CodeId, NewPrepaidCode (..), PrepaidCode (..), getPrepaidCode, getPrepaidCodeById, insertPrepaidCode, releasePrepaidCode, revokePrepaidCode, spendLandedPrepaidCode)
 import StoreService.Names.Turns (Turns, withCodeTurn)
 import StoreService.Store (RevokeResult (..))
+import StoreService.Store.Invoices (currentSecond)
 
 data CodeState = CSUnused | CSReserved | CSUsed | CSRevoked | CSExpired | CSUnpaid
   deriving (Eq, Show, Enum, Bounded)
@@ -54,37 +54,39 @@ codeState now PrepaidCode {pcReservedBy, pcSpentAt, pcRevokedAt, pcPaymentStatus
   | maybe False (<= now) pcExpiresAt = CSExpired
   | otherwise = CSUnused
 
-codeStateText :: CodeState -> Text
-codeStateText = \case
-  CSUnused -> "unused"
-  CSReserved -> "reserved"
-  CSUsed -> "used"
-  CSRevoked -> "revoked"
-  CSExpired -> "expired"
-  CSUnpaid -> "unpaid"
+instance TextEncoding CodeState where
+  textEncode = \case
+    CSUnused -> "unused"
+    CSReserved -> "reserved"
+    CSUsed -> "used"
+    CSRevoked -> "revoked"
+    CSExpired -> "expired"
+    CSUnpaid -> "unpaid"
+  textDecode = \case
+    "unused" -> Just CSUnused
+    "reserved" -> Just CSReserved
+    "used" -> Just CSUsed
+    "revoked" -> Just CSRevoked
+    "expired" -> Just CSExpired
+    "unpaid" -> Just CSUnpaid
+    _ -> Nothing
 
 data CodeRefusal = CRInvalid | CRUsed | CRReserved | CRExpired | CRPaymentPending | CRNotCovering
   deriving (Eq, Show)
 
-codeRefusalTag :: CodeRefusal -> Text
-codeRefusalTag = \case
-  CRInvalid -> "code_invalid"
-  CRUsed -> "code_used"
-  CRReserved -> "code_reserved"
-  CRExpired -> "code_expired"
-  CRPaymentPending -> "payment_pending"
-  CRNotCovering -> "code_not_covering"
-
--- | Why the code cannot pay for the registration's name of this length. A code the registration
--- already holds stays good for it until spent, even if revoked or expired since.
-codeRefusal :: UTCTime -> RegistrationId -> Int -> PrepaidCode -> Maybe CodeRefusal
-codeRefusal now rid len code@PrepaidCode {pcReservedBy, pcSpentAt, pcMinLength}
+-- | Why the registration's name of this length cannot be registered with the code. A code the registration
+-- already holds stays good for it until spent, unless revoked, and past its expiry until a month after the order's take.
+codeRefusal :: UTCTime -> RegistrationId -> Maybe UTCTime -> NameLength -> PrepaidCode -> Maybe CodeRefusal
+codeRefusal now rid takenAt len code@PrepaidCode {pcReservedBy, pcSpentAt, pcRevokedAt, pcExpiresAt, pcMinLength}
   | isJust pcSpentAt = Just CRUsed
-  | pcReservedBy == Just rid = covering
+  | pcReservedBy == Just rid = (CRInvalid <$ pcRevokedAt) <|> heldExpired <|> covering
   | otherwise = stateRefusal (codeState now code) <|> covering
   where
+    heldExpired
+      | maybe False (<= now) pcExpiresAt && maybe True ((<= now) . addMonths 1) takenAt = Just CRExpired
+      | otherwise = Nothing
     covering
-      | len < pcMinLength = Just CRNotCovering
+      | nameLengthInt len < pcMinLength = Just CRNotCovering
       | otherwise = Nothing
 
 stateRefusal :: CodeState -> Maybe CodeRefusal
@@ -97,72 +99,56 @@ stateRefusal = \case
   CSUnpaid -> Just CRPaymentPending
 
 -- | Why a conditional reservation of the code refused it, as the code reads now.
-reserveRefusal :: DB.Connection -> UTCTime -> ByteString -> RegistrationId -> Int -> IO CodeRefusal
-reserveRefusal db now codeHash rid len = maybe CRInvalid (fromMaybe CRReserved . codeRefusal now rid len) <$> getPrepaidCode db codeHash
+reserveRefusal :: DB.Connection -> UTCTime -> CodeHash -> RegistrationId -> Maybe UTCTime -> NameLength -> IO CodeRefusal
+reserveRefusal db now codeHash rid takenAt len = maybe CRInvalid (fromMaybe CRReserved . codeRefusal now rid takenAt len) <$> getPrepaidCode db codeHash
 
 readPrepaidCode :: DBStore -> NamePrepaidCode -> IO (Maybe PrepaidCode)
-readPrepaidCode st code = withTransaction st (`getPrepaidCode` namePrepaidCodeHash code)
+readPrepaidCode st code = withTransaction st (`getPrepaidCode` prepaidCodeHash code)
 
-newtype ReservationRefused = ReservationRefused CodeRefusal
-  deriving (Show)
-
-instance E.Exception ReservationRefused
-
--- | In the code's turn and one transaction, the code is checked, the write runs, then the code is reserved for the
--- registration, so the registration's row is locked before the code's. A refused reservation rolls the write back.
-reserveCode :: Turns -> DBStore -> UTCTime -> ByteString -> RegistrationId -> Int -> (DB.Connection -> IO (Either e a)) -> IO (Either CodeRefusal (Either e a))
-reserveCode turns st now codeHash rid len write =
-  withCodeTurn turns codeHash $ either (\(ReservationRefused refusal) -> Left refusal) id <$> E.try (withTransaction st reserve)
-  where
-    reserve db =
-      getPrepaidCode db codeHash >>= \case
-        Nothing -> pure $ Left CRInvalid
-        Just code@PrepaidCode {pcId, pcReservedBy}
-          | Just refusal <- codeRefusal now rid len code -> pure $ Left refusal
-          | otherwise ->
-              write db >>= \case
-                written@(Right _)
-                  | pcReservedBy /= Just rid ->
-                      reservePrepaidCode db pcId rid now >>= \case
-                        True -> pure $ Right written
-                        -- Only a writer outside this process, which takes no turn here, can refuse it.
-                        False -> E.throwIO . ReservationRefused =<< reserveRefusal db now codeHash rid len
-                written -> pure $ Right written
+prepaidCodeHash :: NamePrepaidCode -> CodeHash
+prepaidCodeHash = Hex32 . namePrepaidCodeHash
 
 -- | The write runs first, and the code is released only if it succeeds. False when the registration did not hold the code.
-releaseCode :: Turns -> DBStore -> Int64 -> RegistrationId -> (DB.Connection -> IO (Either e a)) -> IO (Either e (a, Bool))
+releaseCode :: Turns -> DBStore -> CodeId -> RegistrationId -> (DB.Connection -> IO (Either e a)) -> IO (Either e (a, Bool))
 releaseCode turns st codeId rid = afterWrite turns st codeId (\db -> releasePrepaidCode db codeId rid)
 
 -- | The write runs first, and the code is spent only if it succeeds: the code the registration holds, or one it no longer holds
 -- while still usable, as its register went through. False when the code was released and then spent, revoked or expired meanwhile.
-spendLandedCode :: Turns -> DBStore -> UTCTime -> Int64 -> RegistrationId -> (DB.Connection -> IO (Either e a)) -> IO (Either e (a, Bool))
+spendLandedCode :: Turns -> DBStore -> UTCTime -> CodeId -> RegistrationId -> (DB.Connection -> IO (Either e a)) -> IO (Either e (a, Bool))
 spendLandedCode turns st now codeId rid = afterWrite turns st codeId (\db -> spendLandedPrepaidCode db codeId rid now)
 
-afterWrite :: Turns -> DBStore -> Int64 -> (DB.Connection -> IO Bool) -> (DB.Connection -> IO (Either e a)) -> IO (Either e (a, Bool))
+afterWrite :: Turns -> DBStore -> CodeId -> (DB.Connection -> IO Bool) -> (DB.Connection -> IO (Either e a)) -> IO (Either e (a, Bool))
 afterWrite turns st codeId change write = do
-  codeHash_ <- withTransaction st $ \db -> fmap pcCodeHash <$> getPrepaidCodeById db codeId
-  let run = withTransaction st $ \db -> write db >>= traverse (\a -> (a,) <$> change db)
-  maybe run (\codeHash -> withCodeTurn turns codeHash run) codeHash_
+  PrepaidCode {pcCodeHash} <- withTransaction st (`getPrepaidCodeById` codeId)
+  withCodeTurn turns pcCodeHash $ withTransaction st $ \db -> write db >>= traverse (\a -> (a,) <$> change db)
+
+codeValidMonths :: Integer
+codeValidMonths = 3
 
 -- | The code table keeps only the hash, so the caller must deliver the code.
-issueNameCode :: ChatController -> CodeIssuer -> Int -> Int -> BadgeCodePaymentStatus -> IO (Either String NamePrepaidCode)
+issueNameCode :: ChatController -> CmdSource -> NameLength -> Int -> BadgeCodePaymentStatus -> IO (Either String (NamePrepaidCode, UTCTime))
 issueNameCode cc issuer len years paymentStatus
-  | len < minNameLength || len > maxNameLength = pure $ Left $ "name code length " <> show len <> " is outside " <> show minNameLength <> "-" <> show maxNameLength
-  | years < minNameYears || years > maxNameYears = pure $ Left $ "name code years " <> show years <> " is outside " <> show minNameYears <> "-" <> show maxNameYears
-  | otherwise = do
+  | years < minNameYears || years > maxNameYears = Left outside <$ logError ("names: " <> T.pack outside)
+  | otherwise = issue (3 :: Int)
+  where
+    outside = "name code years " <> show years <> " is outside " <> show minNameYears <> "-" <> show maxNameYears
+    issue retries = do
       code <- randomNamePrepaidCode (random cc) len
-      now <- getCurrentTime
-      let new = NewPrepaidCode {npcCodeHash = namePrepaidCodeHash code, npcMinLength = len, npcYears = years, npcPaymentStatus = paymentStatus, npcExpiresAt = Nothing, npcIssuer = issuer}
-      withDB' "issueNameCode" cc (\db -> insertPrepaidCode db new now) <&> \case
-        Right (Right _) -> Right code
-        Right (Left CodeHashTaken) -> Left "prepaid code hash taken"
-        Left e -> Left e
+      now <- currentSecond
+      let expiresAt = addMonths codeValidMonths now
+          new = NewPrepaidCode {npcCodeHash = prepaidCodeHash code, npcMinLength = nameLengthInt len, npcYears = years, npcPaymentStatus = paymentStatus, npcExpiresAt = Just expiresAt, npcIssuer = issuer}
+      withDB' "issueNameCode" cc (\db -> insertPrepaidCode db new now) >>= \case
+        Right (Right _) -> pure $ Right (code, expiresAt)
+        Right (Left CodeHashTaken)
+          | retries > 0 -> logWarn "names: a new prepaid code's hash is taken, so another code is drawn" >> issue (retries - 1)
+          | otherwise -> Left "prepaid code hash taken" <$ logError "names: the hashes of 4 new prepaid codes in a row are taken, so no code is issued"
+        Left e -> pure $ Left e
 
 -- | Left is a refusal or a failure; both sides are the text to show the operator.
 revokeNameCode :: Turns -> ChatController -> NamePrepaidCode -> IO (Either Text Text)
 revokeNameCode turns cc code = withCodeTurn turns codeHash $ do
-  now <- getCurrentTime
-  withDB' "revokeNameCode" cc (\db -> (,) <$> revokePrepaidCode db codeHash now <*> getPrepaidCode db codeHash) <&> \case
+  now <- currentSecond
+  withDB' "revokeNameCode" cc (\db -> revokePrepaidCode db codeHash now) <&> \case
     Right (Revoked _, Just PrepaidCode {pcReservedBy = Just _}) -> Right "Revoked. The order holding it keeps it."
     Right (Revoked _, _) -> Right "Revoked."
     Right (AlreadyRevoked _, _) -> Right "Already revoked."
@@ -170,4 +156,4 @@ revokeNameCode turns cc code = withCodeTurn turns codeHash $ do
     Right (NoSuchCode, _) -> Left "No such code."
     Left _ -> Left "The code could not be revoked."
   where
-    codeHash = namePrepaidCodeHash code
+    codeHash = prepaidCodeHash code
