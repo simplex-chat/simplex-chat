@@ -90,7 +90,7 @@ Tap a member on the group page and tap "Block for all". Choose for how long:
   the group link while blocked.
 
 On Android and desktop you can select several members. A small clock on the
-block button shows that all selected members can be removed with a block for a
+remove button shows that all selected members can be removed with a block for a
 time; it disappears when you select a member whose app needs an update.
 
 Accept also unblocks a blocked member who waits for approval.

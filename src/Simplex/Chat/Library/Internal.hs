@@ -53,7 +53,7 @@ import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Data.Time (addUTCTime)
 import Data.Time.Calendar (fromGregorian)
-import Data.Time.Clock (NominalDiffTime, UTCTime (..), diffUTCTime, getCurrentTime, nominalDiffTimeToSeconds, secondsToDiffTime)
+import Data.Time.Clock (UTCTime (..), diffUTCTime, getCurrentTime, nominalDiffTimeToSeconds, secondsToDiffTime)
 import Simplex.Chat.Badges (BadgeCredential (..), BadgeInfo (..), ProofPresHeader (..), BadgeProof (..), BadgeProofKind (..), BadgeStatus (..), FileSizeLimits (..), LocalBadge (..), acceptedProof, badgeSndGraceInterval, generateBadgeProof, localBadgeStatus, maxXFTPFileSize, mkBadgeStatus, verifyBadge)
 import Simplex.Chat.Names (SimplexDomainClaim (..), claimDomain)
 import Simplex.Chat.Call
@@ -1269,16 +1269,14 @@ shouldIntroduce m vec mem =
 introduceMember :: User -> GroupInfoKeys -> GroupMember -> [GroupMember] -> Maybe MsgScope -> CM ()
 introduceMember _ _ GroupMember {activeConn = Nothing} _ _ = throwChatError $ CEInternalError "member connection not active"
 introduceMember user gInfo@(GIK g _) toMember@GroupMember {activeConn = Just conn} introduceToMembers msgScope = do
-  void . sendGroupMessage' user gInfo introduceToMembers $ XGrpMemNew (memberInfo g toMember) msgScope
+  void . sendGroupMessage' user gInfo introduceToMembers $ XGrpMemNew (memberInfo g toMember) msgScope (memberRestrictions toMember)
   sendIntroductions introduceToMembers
   where
     sendIntroductions reMembers = do
       updateToMemberVector reMembers
       updateReMembersVectors reMembers
       shuffledReMembers <- liftIO $ shuffleMembers reMembers
-      rounding <- asks $ endTimeRounding . config
-      now <- liftIO getCurrentTime
-      let events = map (memberIntroEvt rounding now g) shuffledReMembers
+      let events = map (memberIntroEvt g) shuffledReMembers
       forM_ (L.nonEmpty events) $ \events' ->
         sendGroupMemberMessages user gInfo conn events'
     updateToMemberVector :: [GroupMember] -> CM ()
@@ -1299,10 +1297,10 @@ introduceMember user gInfo@(GIK g _) toMember@GroupMember {activeConn = Just con
         isAdmin GroupMember {memberRole} = memberRole >= GRAdmin
         hasPicture GroupMember {memberProfile = LocalProfile {image}} = isJust image
 
-memberIntroEvt :: NominalDiffTime -> UTCTime -> GroupInfo -> GroupMember -> ChatMsgEvent 'Json
-memberIntroEvt rounding now gInfo reMember =
+memberIntroEvt :: GroupInfo -> GroupMember -> ChatMsgEvent 'Json
+memberIntroEvt gInfo reMember =
   let mInfo = memberInfo gInfo reMember
-      mRestrictions = memberRestrictions rounding now reMember
+      mRestrictions = memberRestrictions reMember
    in XGrpMemIntro mInfo mRestrictions
 
 -- Forward the saved owner-signed roster verbatim (reusing its signed shared_msg_id), then the
@@ -1338,7 +1336,7 @@ introduceInChannel cxt user g@(GIK gInfo _) subscriber@GroupMember {activeConn =
   (owners, adminsMods) <- withStore' $ \db ->
     (,) <$> getGroupOwners db cxt user gInfo <*> getGroupAdminsMods db cxt user gInfo
   let modMs = owners <> adminsMods
-  void $ sendGroupMessage' user g modMs $ XGrpMemNew (memberInfo gInfo subscriber) Nothing
+  void $ sendGroupMessage' user g modMs $ XGrpMemNew (memberInfo gInfo subscriber) Nothing (memberRestrictions subscriber)
   withStore' $ \db ->
     setMemberVectorNewRelations db subscriber [(indexInGroup m, (IDSubjectIntroduced, MRIntroduced)) | m <- modMs]
   -- owner intros first so the joiner has the owner profile loaded before applying the saved roster (signed by the owner)
@@ -1348,11 +1346,8 @@ introduceInChannel cxt user g@(GIK gInfo _) subscriber@GroupMember {activeConn =
   withStore' $ \db ->
     setMembersVectorsNewRelation db modMs subscriberIdx IDSubjectIntroduced MRIntroduced
   where
-    sendIntros ms = do
-      rounding <- asks $ endTimeRounding . config
-      now <- liftIO getCurrentTime
-      forM_ (L.nonEmpty $ map (memberIntroEvt rounding now gInfo) ms) $ \evts ->
-        sendGroupMemberMessages user g conn evts
+    sendIntros ms = forM_ (L.nonEmpty $ map (memberIntroEvt gInfo) ms) $ \evts ->
+      sendGroupMemberMessages user g conn evts
 
 generateIncognitoProfile :: User -> IO Profile
 generateIncognitoProfile User {profile = LocalProfile {peerType}} = generateRandomProfile peerType

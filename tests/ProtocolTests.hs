@@ -14,6 +14,7 @@ import qualified Data.ByteString.Char8 as B
 import Data.List (isInfixOf)
 import qualified Data.List.NonEmpty as L
 import Data.Maybe (fromMaybe)
+import Data.Time.Clock (UTCTime)
 import Data.Time.Clock.System (SystemTime (..), systemToUTCTime)
 import Simplex.Chat.Call
 import Simplex.Chat.Library.Internal (decodeLinkUserData, encodeShortLinkData)
@@ -190,6 +191,9 @@ testChatPreferences = Just Preferences {voice = Just VoicePreference {allow = FA
 
 testGroupPreferences :: Maybe GroupPreferences
 testGroupPreferences = Just GroupPreferences {timedMessages = Nothing, directMessages = Nothing, reactions = Just ReactionsGroupPreference {enable = FEOn}, voice = Just VoiceGroupPreference {enable = FEOn, role = Nothing}, files = Nothing, fullDelete = Nothing, simplexLinks = Nothing, history = Nothing, reports = Nothing, support = Nothing, sessions = Nothing, comments = Nothing, signMessages = Nothing, commands = Nothing, _json = NoJSON Nothing}
+
+testEndTime :: UTCTime
+testEndTime = systemToUTCTime $ MkSystemTime 1795608000 0
 
 testProfile :: Profile
 testProfile = Profile {displayName = "alice", fullName = "Alice", shortDescr = Nothing, description = Nothing, image = Just (ImageData "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII="), peerType = Nothing, contactLink = Nothing, preferences = testChatPreferences, badge = Nothing, contactDomain = Nothing}
@@ -368,10 +372,13 @@ decodeChatMessageTest = describe "Chat message encoding/decoding" $ do
       #==# XGrpAcpt (MemberId "\1\2\3\4") Nothing (Just testProfile)
   it "x.grp.mem.new" $
     "{\"v\":\"9\",\"event\":\"x.grp.mem.new\",\"params\":{\"memberInfo\":{\"memberRole\":\"admin\",\"memberId\":\"AQIDBA==\",\"profile\":{\"fullName\":\"Alice\",\"displayName\":\"alice\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\",\"preferences\":{\"reactions\":{\"allow\":\"yes\"},\"voice\":{\"allow\":\"yes\"}}}}}}"
-      #==# XGrpMemNew MemberInfo {memberId = MemberId "\1\2\3\4", memberRole = GRAdmin, v = Nothing, profile = testProfile, memberKey = Nothing} Nothing
+      #==# XGrpMemNew MemberInfo {memberId = MemberId "\1\2\3\4", memberRole = GRAdmin, v = Nothing, profile = testProfile, memberKey = Nothing} Nothing Nothing
+  it "x.grp.mem.new with member restrictions" $
+    "{\"v\":\"9\",\"event\":\"x.grp.mem.new\",\"params\":{\"memberRestrictions\":{\"restriction\":\"blocked\",\"expiresAt\":\"2026-11-25T12:00:00Z\"},\"memberInfo\":{\"memberRole\":\"member\",\"memberId\":\"AQIDBA==\",\"profile\":{\"fullName\":\"Alice\",\"displayName\":\"alice\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\",\"preferences\":{\"reactions\":{\"allow\":\"yes\"},\"voice\":{\"allow\":\"yes\"}}}}}}"
+      #==# XGrpMemNew MemberInfo {memberId = MemberId "\1\2\3\4", memberRole = GRMember, v = Nothing, profile = testProfile, memberKey = Nothing} Nothing (Just IntroRestrictions {restriction = MRSBlocked, expiresAt = Just testEndTime})
   it "x.grp.mem.new with member chat version range" $
     "{\"v\":\"9\",\"event\":\"x.grp.mem.new\",\"params\":{\"memberInfo\":{\"memberRole\":\"admin\",\"memberId\":\"AQIDBA==\",\"v\":\"9-23\",\"profile\":{\"fullName\":\"Alice\",\"displayName\":\"alice\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\",\"preferences\":{\"reactions\":{\"allow\":\"yes\"},\"voice\":{\"allow\":\"yes\"}}}}}}"
-      #==# XGrpMemNew MemberInfo {memberId = MemberId "\1\2\3\4", memberRole = GRAdmin, v = Just $ ChatVersionRange supportedChatVRange, profile = testProfile, memberKey = Nothing} Nothing
+      #==# XGrpMemNew MemberInfo {memberId = MemberId "\1\2\3\4", memberRole = GRAdmin, v = Just $ ChatVersionRange supportedChatVRange, profile = testProfile, memberKey = Nothing} Nothing Nothing
   it "x.grp.mem.intro" $
     "{\"v\":\"9\",\"event\":\"x.grp.mem.intro\",\"params\":{\"memberInfo\":{\"memberRole\":\"admin\",\"memberId\":\"AQIDBA==\",\"profile\":{\"fullName\":\"Alice\",\"displayName\":\"alice\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\",\"preferences\":{\"reactions\":{\"allow\":\"yes\"},\"voice\":{\"allow\":\"yes\"}}}}}}"
       #==# XGrpMemIntro MemberInfo {memberId = MemberId "\1\2\3\4", memberRole = GRAdmin, v = Nothing, profile = testProfile, memberKey = Nothing} Nothing
@@ -380,7 +387,10 @@ decodeChatMessageTest = describe "Chat message encoding/decoding" $ do
       #==# XGrpMemIntro MemberInfo {memberId = MemberId "\1\2\3\4", memberRole = GRAdmin, v = Just $ ChatVersionRange supportedChatVRange, profile = testProfile, memberKey = Nothing} Nothing
   it "x.grp.mem.intro with member restrictions" $
     "{\"v\":\"9\",\"event\":\"x.grp.mem.intro\",\"params\":{\"memberRestrictions\":{\"restriction\":\"blocked\"},\"memberInfo\":{\"memberRole\":\"admin\",\"memberId\":\"AQIDBA==\",\"profile\":{\"fullName\":\"Alice\",\"displayName\":\"alice\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\",\"preferences\":{\"reactions\":{\"allow\":\"yes\"},\"voice\":{\"allow\":\"yes\"}}}}}}"
-      #==# XGrpMemIntro MemberInfo {memberId = MemberId "\1\2\3\4", memberRole = GRAdmin, v = Nothing, profile = testProfile, memberKey = Nothing} (Just MemberRestrictions {restriction = MRSBlocked, ttl = Nothing})
+      #==# XGrpMemIntro MemberInfo {memberId = MemberId "\1\2\3\4", memberRole = GRAdmin, v = Nothing, profile = testProfile, memberKey = Nothing} (Just IntroRestrictions {restriction = MRSBlocked, expiresAt = Nothing})
+  it "x.grp.mem.intro with member restrictions and end time" $
+    "{\"v\":\"9\",\"event\":\"x.grp.mem.intro\",\"params\":{\"memberRestrictions\":{\"restriction\":\"blocked\",\"expiresAt\":\"2026-11-25T12:00:00Z\"},\"memberInfo\":{\"memberRole\":\"admin\",\"memberId\":\"AQIDBA==\",\"profile\":{\"fullName\":\"Alice\",\"displayName\":\"alice\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\",\"preferences\":{\"reactions\":{\"allow\":\"yes\"},\"voice\":{\"allow\":\"yes\"}}}}}}"
+      #==# XGrpMemIntro MemberInfo {memberId = MemberId "\1\2\3\4", memberRole = GRAdmin, v = Nothing, profile = testProfile, memberKey = Nothing} (Just IntroRestrictions {restriction = MRSBlocked, expiresAt = Just testEndTime})
   it "x.grp.mem.inv" $
     "{\"v\":\"9\",\"event\":\"x.grp.mem.inv\",\"params\":{\"memberId\":\"AQIDBA==\",\"memberIntro\":{\"groupConnReq\":\"simplex:/invitation#/?v=1&smp=smp%3A%2F%2F1234-w%3D%3D%40smp.simplex.im%3A5223%2F3456-w%3D%3D%23%2F%3Fv%3D1-4%26dh%3DMCowBQYDK2VuAyEAjiswwI3O_NlS8Fk3HJUW870EY2bAwmttMBsvRB9eV3o%253D&e2e=v%3D3%26x3dh%3DMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D%2CMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D\"}}}"
       #==# XGrpMemInv (MemberId "\1\2\3\4") IntroInvitation {groupConnReq = testConnReq}
@@ -411,12 +421,19 @@ decodeChatMessageTest = describe "Chat message encoding/decoding" $ do
   it "x.grp.mem.del with malformed notice" $
     "{\"v\":\"9\",\"event\":\"x.grp.mem.del\",\"params\":{\"memberId\":\"AQIDBA==\",\"notice\":{\"ttl\":\"day\"}}}"
       ==# XGrpMemDel (GrpMemDel (MemberId "\1\2\3\4") False Nothing False Nothing)
+  it "x.grp.mem.del with notice ttl 0 ignores the notice" $
+    "{\"v\":\"9\",\"event\":\"x.grp.mem.del\",\"params\":{\"memberId\":\"AQIDBA==\",\"silent\":true,\"notice\":{\"ttl\":0}}}"
+      ==# XGrpMemDel (GrpMemDel (MemberId "\1\2\3\4") False Nothing True Nothing)
   it "x.grp.mem.restrict" $
     "{\"v\":\"9\",\"event\":\"x.grp.mem.restrict\",\"params\":{\"memberId\":\"AQIDBA==\",\"memberRestrictions\":{\"restriction\":\"blocked\"}}}"
       #==# XGrpMemRestrict (MemberId "\1\2\3\4") MemberRestrictions {restriction = MRSBlocked, ttl = Nothing}
   it "x.grp.mem.restrict with ttl" $
     "{\"v\":\"9\",\"event\":\"x.grp.mem.restrict\",\"params\":{\"memberId\":\"AQIDBA==\",\"memberRestrictions\":{\"restriction\":\"blocked\",\"ttl\":86400}}}"
       #==# XGrpMemRestrict (MemberId "\1\2\3\4") MemberRestrictions {restriction = MRSBlocked, ttl = Just 86400}
+  it "x.grp.mem.restrict with ttl 0 is rejected" $
+    case parseChatMessages "{\"v\":\"9\",\"event\":\"x.grp.mem.restrict\",\"params\":{\"memberId\":\"AQIDBA==\",\"memberRestrictions\":{\"restriction\":\"blocked\",\"ttl\":0}}}" of
+      [Left e] -> e `shouldSatisfy` isInfixOf "ttl must be positive"
+      _ -> expectationFailure "single parse error expected"
   it "x.grp.leave" $
     "{\"v\":\"9\",\"event\":\"x.grp.leave\",\"params\":{}}"
       ==# XGrpLeave

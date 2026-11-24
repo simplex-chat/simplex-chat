@@ -50,7 +50,7 @@ import Data.Maybe (fromMaybe, isJust, isNothing)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
-import Data.Time.Clock (NominalDiffTime, UTCTime, diffUTCTime)
+import Data.Time.Clock (UTCTime)
 import Data.Type.Equality (testEquality, (:~:) (Refl))
 import Data.Typeable (Typeable)
 import Data.Word (Word16)
@@ -1179,12 +1179,16 @@ data MemberRestrictions = MemberRestrictions
   }
   deriving (Eq, Show)
 
-memberRestrictions :: NominalDiffTime -> UTCTime -> GroupMember -> Maybe MemberRestrictions
-memberRestrictions rounding now m
-  | blockedByAdmin m = Just MemberRestrictions {restriction = MRSBlocked, ttl = remainingTtl <$> blockedUntil m}
+data IntroRestrictions = IntroRestrictions
+  { restriction :: MemberRestrictionStatus,
+    expiresAt :: Maybe UTCTime
+  }
+  deriving (Eq, Show)
+
+memberRestrictions :: GroupMember -> Maybe IntroRestrictions
+memberRestrictions m
+  | blockedByAdmin m = Just IntroRestrictions {restriction = MRSBlocked, expiresAt = blockedUntil m}
   | otherwise = Nothing
-  where
-    remainingTtl t = ceiling (diffUTCTime t now / rounding) * round rounding
 
 data ReceivedGroupInvitation = ReceivedGroupInvitation
   { fromMember :: GroupMember,
@@ -2431,7 +2435,14 @@ $(JQ.deriveJSON defaultJSON ''GroupRelayInvitation)
 
 $(JQ.deriveJSON defaultJSON ''IntroInvitation)
 
-$(JQ.deriveJSON defaultJSON ''MemberRestrictions)
+$(JQ.deriveToJSON defaultJSON ''MemberRestrictions)
+
+instance FromJSON MemberRestrictions where
+  parseJSON v = do
+    r@MemberRestrictions {ttl} <- $(JQ.mkParseJSON defaultJSON ''MemberRestrictions) v
+    if maybe False (< 1) ttl then fail "ttl must be positive" else pure r
+
+$(JQ.deriveJSON defaultJSON ''IntroRestrictions)
 
 $(JQ.deriveJSON defaultJSON ''GroupMemberRef)
 

@@ -317,7 +317,20 @@
         "ttl": {
           "type": "integer",
           "metadata": {
-            "format": "seconds from the server timestamp of the message, rounded up to a whole hour"
+            "format": "positive seconds from the server timestamp of the message, rounded up to a whole hour"
+          }
+        }
+      }
+    },
+    "introRestrictions": {
+      "properties": {
+        "restriction": {"ref": "memberRestrictionStatus"}
+      },
+      "optionalProperties": {
+        "expiresAt": {
+          "type": "string",
+          "metadata": {
+            "format": "ISO8601 UTC end time of the block"
           }
         }
       }
@@ -327,7 +340,7 @@
         "ttl": {
           "type": "integer",
           "metadata": {
-            "format": "seconds from the server timestamp of the message, rounded up to a whole hour"
+            "format": "positive seconds from the server timestamp of the message, rounded up to a whole hour"
           }
         }
       }
@@ -627,6 +640,9 @@
         "params": {
           "properties": {
             "memberInfo": {"ref": "memberInfo"}
+          },
+          "optionalProperties": {
+            "memberRestrictions": {"ref": "introRestrictions"}
           }
         }
       }
@@ -639,7 +655,7 @@
             "memberInfo": {"ref": "memberInfo"}
           },
           "optionalProperties": {
-            "memberRestrictions": {"ref": "memberRestrictions"}
+            "memberRestrictions": {"ref": "introRestrictions"}
           }
         }
       }

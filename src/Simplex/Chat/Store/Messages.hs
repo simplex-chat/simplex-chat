@@ -69,6 +69,7 @@ module Simplex.Chat.Store.Messages
     deleteGroupChatItem,
     updateGroupChatItemModerated,
     deleteMemberCIs,
+    deleteChatItemMessages_,
     updateGroupCIBlockedByAdmin,
     markGroupChatItemDeleted,
     markMemberCIsDeleted,
@@ -2952,7 +2953,6 @@ updateGroupCIBlockedByAdmin :: DB.Connection -> User -> GroupInfo -> ChatItem 'C
 updateGroupCIBlockedByAdmin db User {userId} GroupInfo {groupId} ci deletedTs = do
   currentTs <- getCurrentTime
   let itemId = chatItemId' ci
-  deleteChatItemMessages_ db itemId
   deleteChatItemVersions_ db itemId
   liftIO $
     DB.execute

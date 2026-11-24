@@ -244,6 +244,8 @@ Currently members can have one of four roles - `owner`, `admin`, `member` and `o
 
 `x.grp.mem.intro` messages are sent by the inviting user to the invited member, via their group member connection, one message for each existing member. When this message is sent by any other member than the one who invited the recipient it MUST be ignored.
 
+`x.grp.mem.new` and `x.grp.mem.intro` messages MAY include `memberRestrictions` of the announced or introduced member, with the UTC end time of a block in `expiresAt`; a block without `expiresAt` lasts until the member is unblocked. Relays include them when they send a member's profile with the member's messages.
+
 `x.grp.mem.inv` messages are sent by the invited user to the inviting user, one message for each existing member previously introduced with `x.grp.mem.intro` message. When this message is sent by any other member than the one who was invited by the recipient it MUST be ignored.
 
 `x.grp.mem.fwd` message is used by the inviting user to forward the invitations received from invited member in `x.grp.mem.inv` messages to all other members. This message can only be sent by the member who previously announced the new member, otherwise the recipients MUST ignore it.
@@ -252,7 +254,7 @@ Currently members can have one of four roles - `owner`, `admin`, `member` and `o
 
 `x.grp.mem.role` message is sent to update group member role - it is sent to all members by the member who updated the role of the member referenced in this message. This message MUST only be sent by members with `admin` or `owner` role. Receiving clients MUST ignore this message if it is received from member with role less than `admin`.
 
-`x.grp.mem.restrict` message is sent to group members to communicate group member restrictions, such as member being blocked for sending messages. The restrictions MAY include `ttl` (seconds), the duration of the block. Each receiving client ends the block `ttl` seconds after the server timestamp of the message, rounded up to a whole hour. A block also ends when the member is unblocked, and it does not apply to a member who leaves and joins again. A block of a blocked member extends the block when it ends later, and an unblock ends any block. Clients forward messages of a blocked member only to members with `moderator` role or above, without notifications.
+`x.grp.mem.restrict` message is sent to group members to communicate group member restrictions, such as member being blocked for sending messages. The restrictions MAY include `ttl` (positive seconds), the duration of the block; clients MUST ignore the message when `ttl` is 0 or negative. Each receiving client ends the block `ttl` seconds after the server timestamp of the message, rounded up to a whole hour. A block also ends when the member is unblocked, and it does not apply to a member who leaves and joins again. A block of a blocked member extends the block when it ends later, and an unblock ends any block. Clients forward messages of a blocked member only to members with `moderator` role or above, without notifications.
 
 `x.grp.mem.con` message is sent by members connecting inside group to inviting member, to notify the inviting member they have completed the connection and no longer require forwarding messages between them.
 
@@ -272,7 +274,7 @@ Group profile can include optional `chatLayout` property (`classic` or `terminal
 
 ### Link notices
 
-`x.grp.mem.del` and `x.direct.del` messages MAY include `notice` property with optional `ttl` (seconds). The receiving client stores the notice for the link it joined or connected through, as recorded in its own group or contact record, and does not connect via this link until the notice expires. The notice expires `ttl` seconds after the server timestamp of the message, rounded up to a whole hour; a notice without `ttl` does not expire. A new notice for the same link replaces the previous one. Clients MUST ignore a malformed notice and process the message.
+`x.grp.mem.del` and `x.direct.del` messages MAY include `notice` property with optional `ttl` (positive seconds; a notice with `ttl` 0 or negative is malformed). The receiving client stores the notice for the link it joined or connected through, as recorded in its own group or contact record, and does not connect via this link until the notice expires. The notice expires `ttl` seconds after the server timestamp of the message, rounded up to a whole hour; a notice without `ttl` does not expire. A new notice for the same link replaces the previous one. Clients MUST ignore a malformed notice and process the message.
 
 `x.grp.mem.del` and `x.direct.del` messages MAY include `"silent": true` property:
 - the client of the deleted contact does not delete the contact and shows nothing.

@@ -2512,8 +2512,8 @@ increaseGroupMembersRequireAttention db User {userId} g@GroupInfo {groupId, memb
   pure g {membersRequireAttention = membersRequireAttention + 1}
 
 -- | add new member with profile
-createNewGroupMember :: DB.Connection -> StoreCxt -> User -> GroupInfo -> GroupMember -> MemberInfo -> Maybe ProofPresHeader -> GroupMemberCategory -> GroupMemberStatus -> ExceptT StoreError IO GroupMember
-createNewGroupMember db cxt user gInfo invitingMember memInfo@MemberInfo {profile} presHeader_ memCategory memStatus = do
+createNewGroupMember :: DB.Connection -> StoreCxt -> User -> GroupInfo -> GroupMember -> MemberInfo -> Maybe ProofPresHeader -> GroupMemberCategory -> GroupMemberStatus -> Maybe IntroRestrictions -> ExceptT StoreError IO GroupMember
+createNewGroupMember db cxt user gInfo invitingMember memInfo@MemberInfo {profile} presHeader_ memCategory memStatus memRestrictions_ = do
   currentTs <- liftIO getCurrentTime
   (localDisplayName, memProfileId, memProfile, badgeVerified) <- createNewMemberProfile_ db cxt user profile presHeader_ currentTs
   let newMember =
@@ -2521,8 +2521,8 @@ createNewGroupMember db cxt user gInfo invitingMember memInfo@MemberInfo {profil
           { memInfo = (memInfo :: MemberInfo) {profile = memProfile},
             memCategory,
             memStatus,
-            memRestriction = Nothing,
-            memBlockedUntil = Nothing,
+            memRestriction = (\IntroRestrictions {restriction} -> restriction) <$> memRestrictions_,
+            memBlockedUntil = introBlockedUntil =<< memRestrictions_,
             memInvitedBy = IBUnknown,
             memInvitedByGroupMemberId = Just $ groupMemberId' invitingMember,
             localDisplayName,
@@ -2716,7 +2716,7 @@ getMemberRelationsVector db GroupMember {groupMemberId} =
       "SELECT member_relations_vector FROM group_members WHERE group_member_id = ?"
       (Only groupMemberId)
 
-createIntroReMember :: DB.Connection -> StoreCxt -> User -> GroupInfo -> MemberInfo -> Maybe ProofPresHeader -> Maybe MemberRestrictionStatus -> Maybe UTCTime -> ExceptT StoreError IO GroupMember
+createIntroReMember :: DB.Connection -> StoreCxt -> User -> GroupInfo -> MemberInfo -> Maybe ProofPresHeader -> Maybe IntroRestrictions -> ExceptT StoreError IO GroupMember
 createIntroReMember
   db
   cxt
@@ -2724,11 +2724,12 @@ createIntroReMember
   gInfo
   memInfo@(MemberInfo _ _ _ memberProfile _)
   presHeader_
-  memRestriction
-  memBlockedUntil = do
+  memRestrictions_ = do
     currentTs <- liftIO getCurrentTime
     (localDisplayName, memProfileId, memberProfile', badgeVerified) <- createNewMemberProfile_ db cxt user memberProfile presHeader_ currentTs
-    let newMember = NewGroupMember {memInfo = (memInfo :: MemberInfo) {profile = memberProfile'}, memCategory = GCPreMember, memStatus = GSMemIntroduced, memRestriction, memBlockedUntil, memInvitedBy = IBUnknown, memInvitedByGroupMemberId = Nothing, localDisplayName, memContactId = Nothing, memProfileId}
+    let memRestriction = (\IntroRestrictions {restriction} -> restriction) <$> memRestrictions_
+        memBlockedUntil = introBlockedUntil =<< memRestrictions_
+        newMember = NewGroupMember {memInfo = (memInfo :: MemberInfo) {profile = memberProfile'}, memCategory = GCPreMember, memStatus = GSMemIntroduced, memRestriction, memBlockedUntil, memInvitedBy = IBUnknown, memInvitedByGroupMemberId = Nothing, localDisplayName, memContactId = Nothing, memProfileId}
     createNewMember_ db user (groupId' gInfo) newMember badgeVerified currentTs
 
 createIntroReMemberConn :: DB.Connection -> User -> GroupMember -> GroupMember -> VersionChat -> MemberInfo -> (CommandId, ConnId) -> SubscriptionMode -> ExceptT StoreError IO GroupMember

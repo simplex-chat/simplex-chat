@@ -3158,6 +3158,7 @@ processChatCommand cxt nm = \case
       -- TODO [relays] possible optimization is to read only required members + relays
       (Group gInfo members, gks) <- withFastStore $ \db -> getGroupKeys_ db cxt user groupId
       when (selfSelected gInfo) $ throwCmdError "can't block/unblock self"
+      when (maybe False (< 1) ttl) $ throwCmdError "ttl must be positive"
       -- TODO [relays] consider sending restriction to all members (remove filtering), as we do in delivery jobs
       let (blockMems, remainingMems, maxRole, anyAdmin, anyPending) = selectMembers members
       when (length blockMems /= length memberIds) $ throwChatError CEGroupMemberNotFound
@@ -6725,7 +6726,7 @@ cleanupManager = do
           (gInfo, m) <- withStore $ \db -> (,) <$> getGroupInfo db cxt user groupId <*> getGroupMember db cxt user groupId gmId
           when (maybe False (<= ts) (blockedUntil m)) $ do
             m' <- withStore' $ \db -> updateGroupMemberBlocked db user gInfo MRSUnrestricted Nothing m
-            toggleNtf m' True
+            toggleNtf m' (not (memberBlocked m'))
             toView $ CEvtGroupMemberUpdated user gInfo m m'
     cleanupMessages = do
       ts <- liftIO getCurrentTime

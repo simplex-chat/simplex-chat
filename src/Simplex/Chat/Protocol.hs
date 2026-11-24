@@ -318,7 +318,12 @@ data LinkNotice = LinkNotice
   }
   deriving (Eq, Show)
 
-$(JQ.deriveJSON defaultJSON ''LinkNotice)
+$(JQ.deriveToJSON defaultJSON ''LinkNotice)
+
+instance FromJSON LinkNotice where
+  parseJSON v = do
+    n@LinkNotice {ttl} <- $(JQ.mkParseJSON defaultJSON ''LinkNotice) v
+    if maybe False (< 1) ttl then fail "ttl must be positive" else pure n
 
 data GrpMemDel = GrpMemDel
   { memberId :: MemberId,
@@ -505,8 +510,8 @@ data ChatMsgEvent (e :: MsgEncoding) where
   XGrpRelayNew :: ShortLinkContact -> ChatMsgEvent 'Json
   XGrpRelayReject :: RelayRejectionReason -> ChatMsgEvent 'Json
   XGrpRelayCap :: RelayCapabilities -> ChatMsgEvent 'Json
-  XGrpMemNew :: MemberInfo -> Maybe MsgScope -> ChatMsgEvent 'Json
-  XGrpMemIntro :: MemberInfo -> Maybe MemberRestrictions -> ChatMsgEvent 'Json
+  XGrpMemNew :: MemberInfo -> Maybe MsgScope -> Maybe IntroRestrictions -> ChatMsgEvent 'Json
+  XGrpMemIntro :: MemberInfo -> Maybe IntroRestrictions -> ChatMsgEvent 'Json
   XGrpMemInv :: MemberId -> IntroInvitation -> ChatMsgEvent 'Json
   XGrpMemFwd :: MemberInfo -> IntroInvitation -> ChatMsgEvent 'Json
   XGrpMemInfo :: MemberId -> Profile -> ChatMsgEvent 'Json
@@ -1487,7 +1492,7 @@ appJsonToCM fwdDepth AppMessageJson {v, msgId, event, params} = do
         pure $ XGrpRelayTest challenge sig_
       XGrpRelayNew_ -> XGrpRelayNew <$> p "relayLink"
       XGrpRelayReject_ -> XGrpRelayReject <$> p "reason"
-      XGrpMemNew_ -> XGrpMemNew <$> p "memberInfo" <*> opt "scope"
+      XGrpMemNew_ -> XGrpMemNew <$> p "memberInfo" <*> opt "scope" <*> opt "memberRestrictions"
       XGrpMemIntro_ -> XGrpMemIntro <$> p "memberInfo" <*> opt "memberRestrictions"
       XGrpMemInv_ -> XGrpMemInv <$> p "memberId" <*> p "memberIntro"
       XGrpMemFwd_ -> XGrpMemFwd <$> p "memberInfo" <*> p "memberIntro"
@@ -1563,7 +1568,7 @@ chatToAppMessage chatMsg@ChatMessage {chatVRange, msgId, chatMsgEvent} = case en
         ["challenge" .= B64UrlByteString challenge]
       XGrpRelayNew relayLink -> o ["relayLink" .= relayLink]
       XGrpRelayReject reason -> o ["reason" .= reason]
-      XGrpMemNew memInfo scope -> o $ ("scope" .=? scope) ["memberInfo" .= memInfo]
+      XGrpMemNew memInfo scope memRestrictions -> o $ ("memberRestrictions" .=? memRestrictions) $ ("scope" .=? scope) ["memberInfo" .= memInfo]
       XGrpMemIntro memInfo memRestrictions -> o $ ("memberRestrictions" .=? memRestrictions) ["memberInfo" .= memInfo]
       XGrpMemInv memId memIntro -> o ["memberId" .= memId, "memberIntro" .= memIntro]
       XGrpMemFwd memInfo memIntro -> o ["memberInfo" .= memInfo, "memberIntro" .= memIntro]

@@ -1033,6 +1033,11 @@ mrsBlockedUntil rounding base MemberRestrictions {restriction, ttl}
   | mrsBlocked restriction = capExpiry $ ttlEndTime rounding base <$> ttl
   | otherwise = Nothing
 
+introBlockedUntil :: IntroRestrictions -> Maybe UTCTime
+introBlockedUntil IntroRestrictions {restriction, expiresAt}
+  | mrsBlocked restriction = capExpiry expiresAt
+  | otherwise = Nothing
+
 getLinkNotice :: DB.Connection -> UTCTime -> (ConnReqUriHash, ConnReqUriHash) -> IO (Maybe (Maybe UTCTime))
 getLinkNotice db currentTs (linkHash1, linkHash2) =
   maybeFirstRow fromOnly $

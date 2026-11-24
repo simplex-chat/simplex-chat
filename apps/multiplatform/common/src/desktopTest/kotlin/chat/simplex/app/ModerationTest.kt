@@ -349,17 +349,17 @@ class ModerationTest : RecordedApiTest() {
     val unblock = mutableStateOf(false)
     val toMember = mutableStateOf(false)
     val toObserver = mutableStateOf(false)
-    val timed = mutableStateOf(false)
-    recheckItems(groupInfo, selected, listOf(bob, cath), delete, block, unblock, timed, toMember, toObserver)
+    val banAndRemove = mutableStateOf(false)
+    recheckItems(groupInfo, selected, listOf(bob, cath), delete, block, unblock, banAndRemove, toMember, toObserver)
     assertFalse(block.value)
     assertFalse(unblock.value)
     selected.value = setOf(bob.groupMemberId)
-    recheckItems(groupInfo, selected, listOf(bob, cath), delete, block, unblock, timed, toMember, toObserver)
+    recheckItems(groupInfo, selected, listOf(bob, cath), delete, block, unblock, banAndRemove, toMember, toObserver)
     assertTrue(block.value)
   }
 
   @Test
-  fun timedBlockClockFollowsSelection() = recorded("bans/previous-version") {
+  fun banAndRemoveClockFollowsSelection() = recorded("bans/previous-version") {
     val (groupInfo, members) = openGroup()
     val (current, previous) = listOf(member(members, "cath"), member(members, "dan")).partition { it.supportsLinkNotice }
     assertEquals(1, current.size)
@@ -368,14 +368,15 @@ class ModerationTest : RecordedApiTest() {
     val delete = mutableStateOf(false)
     val block = mutableStateOf(false)
     val unblock = mutableStateOf(false)
-    val timed = mutableStateOf(false)
+    val banAndRemove = mutableStateOf(false)
     val toMember = mutableStateOf(false)
     val toObserver = mutableStateOf(false)
-    recheckItems(groupInfo, selected, members, delete, block, unblock, timed, toMember, toObserver)
-    assertTrue(timed.value)
+    recheckItems(groupInfo, selected, members, delete, block, unblock, banAndRemove, toMember, toObserver)
+    assertTrue(banAndRemove.value)
     selected.value = setOf(current[0].groupMemberId, previous[0].groupMemberId)
-    recheckItems(groupInfo, selected, members, delete, block, unblock, timed, toMember, toObserver)
-    assertFalse(timed.value)
+    recheckItems(groupInfo, selected, members, delete, block, unblock, banAndRemove, toMember, toObserver)
+    assertFalse(banAndRemove.value)
+    assertTrue(delete.value)
     assertTrue(block.value)
   }
 

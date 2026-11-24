@@ -1114,8 +1114,8 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                 | memberRole' membership == GROwner && isRelay m'' ->
                     Nothing <$ withStore' (\db -> updateRelayCapabilities db m'' relayCap)
                 | otherwise -> Nothing <$ messageWarning "x.grp.relay.cap: only owner should receive relay capabilities"
-              XGrpMemNew memInfo msgScope -> fmap ctx <$> xGrpMemNew (GIK gInfo' gks) m'' memInfo msgScope msg brokerTs
-              XGrpMemIntro memInfo memRestrictions_ -> Nothing <$ xGrpMemIntro gInfo' m'' memInfo memRestrictions_ brokerTs
+              XGrpMemNew memInfo msgScope memRestrictions_ -> fmap ctx <$> xGrpMemNew (GIK gInfo' gks) m'' memInfo msgScope memRestrictions_ msg brokerTs
+              XGrpMemIntro memInfo memRestrictions_ -> Nothing <$ xGrpMemIntro gInfo' m'' memInfo memRestrictions_
               XGrpMemInv memId introInv -> Nothing <$ xGrpMemInv gInfo' m'' memId introInv
               XGrpMemFwd memInfo introInv -> Nothing <$ xGrpMemFwd (GIK gInfo' gks) m'' memInfo introInv
               XGrpMemRole memId memRole memberKey rosterVer -> fmap ctx <$> xGrpMemRole (GIK gInfo' gks) Nothing m'' memId memRole memberKey rosterVer msg brokerTs
@@ -2030,7 +2030,12 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
     groupMessageFileDescription :: GroupInfo -> Maybe GroupMember -> SharedMsgId -> FileDescr -> Maybe UTCTime -> Maybe BadgeProof -> RcvMessage -> CM (Maybe DeliveryTaskContext)
     groupMessageFileDescription g@GroupInfo {groupId} m_ sharedMsgId fileDescr fileExpires fileBadge msg
       | maybe False (blockedForUser g) m_ = blockedMemberMessage g Nothing msg
-      | otherwise = do
+      | otherwise =
+          fileDescription `catchAllErrors` \case
+            ChatErrorStore (SEFileIdNotFoundBySharedMsgId _) | maybe False blockedByAdmin m_ -> pure Nothing
+            e -> throwError e
+      where
+        fileDescription = do
           (fileId, aci) <- withStore $ \db -> do
             fileId <- getGroupFileIdBySharedMsgId db userId groupId sharedMsgId
             aci <- getChatItemByFileId db cxt user fileId
@@ -2276,7 +2281,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
         | otherwise -> do
             (gInfo', m', scopeInfo) <- mkGetMessageChatScope cxt user gInfo m content msgScope_
             if blockedByAdmin m'
-              then createBlockedByAdmin gInfo' (Just m') scopeInfo $> Nothing
+              then createBlockedByAdmin gInfo' (Just m') scopeInfo $> Just (infoToDeliveryContext gInfo' scopeInfo sentAsGroup)
               else case prohibitedGroupContent gInfo' m' scopeInfo content ft_ fInv_ False of
                 Just f -> rejected gInfo' (Just m') scopeInfo f $> Nothing
                 Nothing ->
@@ -2313,7 +2318,9 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
           | groupFeatureAllowed SGFFullDelete gInfo' = do
               -- ignores member role when blocked by admin
               (ci, cInfo) <- saveRcvCI gInfo' m' scopeInfo (ciContentNoParse CIRcvBlocked) Nothing (timed_ gInfo') False M.empty
-              ci' <- withStore' $ \db -> updateGroupCIBlockedByAdmin db user gInfo' ci brokerTs
+              ci' <- withStore' $ \db -> do
+                unless (isUserGrpFwdRelay gInfo') $ deleteChatItemMessages_ db (chatItemId' ci)
+                updateGroupCIBlockedByAdmin db user gInfo' ci brokerTs
               groupMsgToView cInfo ci'
           | otherwise = do
               file_ <- processFileInv gInfo' m'
@@ -3276,8 +3283,8 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
     isPublicGroupInv :: GroupLinkInvitation -> Bool
     isPublicGroupInv GroupLinkInvitation {groupProfile = GroupProfile {publicGroup}} = isJust publicGroup
 
-    xGrpMemNew :: GroupInfoKeys -> GroupMember -> MemberInfo -> Maybe MsgScope -> RcvMessage -> UTCTime -> CM (Maybe DeliveryJobScope)
-    xGrpMemNew (GIK gInfo gks) m memInfo@(MemberInfo memId memRole _ _ assertedKey_) msgScope_ msg brokerTs = do
+    xGrpMemNew :: GroupInfoKeys -> GroupMember -> MemberInfo -> Maybe MsgScope -> Maybe IntroRestrictions -> RcvMessage -> UTCTime -> CM (Maybe DeliveryJobScope)
+    xGrpMemNew (GIK gInfo gks) m memInfo@(MemberInfo memId memRole _ _ assertedKey_) msgScope_ memRestrictions_ msg brokerTs = do
       unless (useRelays' gInfo) $ checkHostRole m memRole
       let presHeader_ = memberInfoPresHeader gInfo memInfo
       if sameMemberId memId (membership gInfo)
@@ -3296,7 +3303,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                   -- TODO [relays] member: surface relay-key-mismatch as a dedicated event / chat item / relay state
                   when (assertedKey /= memberPubKey unknownMember) $
                     messageWarning $ "x.grp.mem.new: relay asserted key differs from roster-established key, keeping roster key, memberId=" <> safeDecodeUtf8 (strEncode memId)
-                  updatedMember <- withStore $ \db -> updateRosterMemberAnnounced db cxt user m unknownMember memInfo (memberPresHeader gInfo memId (memberPubKey unknownMember)) initialStatus
+                  updatedMember <- withStore $ \db -> updateRosterMemberAnnounced db cxt user m unknownMember memInfo (memberPresHeader gInfo memId (memberPubKey unknownMember)) initialStatus >>= liftIO . setAnnouncedRestrictions db
                   -- roster members can't be pending, so no members-require-attention update
                   gInfo' <- updatePublicGroupData user gInfo gks
                   toView $ CEvtUnknownMemberAnnounced user gInfo' m unknownMember updatedMember
@@ -3307,7 +3314,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                   messageError "x.grp.mem.new: privileged role not established by roster" $> Nothing
               | otherwise -> do
                   (updatedMember, gInfo') <- withStore $ \db -> do
-                    updatedMember <- updateUnknownMemberAnnounced db cxt user m unknownMember memInfo presHeader_ initialStatus
+                    updatedMember <- updateUnknownMemberAnnounced db cxt user m unknownMember memInfo presHeader_ initialStatus >>= liftIO . setAnnouncedRestrictions db
                     gInfo' <-
                       if memberPending updatedMember
                         then liftIO $ increaseGroupMembersRequireAttention db user gInfo
@@ -3325,7 +3332,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
               | useRelays' gInfo && isPrivilegedRole memRole -> messageError "x.grp.mem.new: privileged member not established by roster" $> Nothing
               | otherwise -> do
                   (newMember, gInfo') <- withStore $ \db -> do
-                    newMember <- createNewGroupMember db cxt user gInfo m memInfo presHeader_ GCPostMember initialStatus
+                    newMember <- createNewGroupMember db cxt user gInfo m memInfo presHeader_ GCPostMember initialStatus memRestrictions_
                     gInfo' <-
                       if memberPending newMember
                         then liftIO $ increaseGroupMembersRequireAttention db user gInfo
@@ -3335,6 +3342,9 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                   memberAnnouncedToView newMember gInfo''
                   pure $ deliveryJobScope newMember
       where
+        setAnnouncedRestrictions db announced = case memRestrictions_ of
+          Just r@IntroRestrictions {restriction} -> updateGroupMemberBlocked db user gInfo restriction (introBlockedUntil r) announced
+          Nothing -> pure announced
         initialStatus = case msgScope_ of
           Just (MSMember _) -> GSMemPendingReview
           _ -> GSMemAnnounced
@@ -3359,10 +3369,8 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
             (announcedMember', scopeInfo) <- mkMemberSupportChatInfo announcedMember
             pure (announcedMember', Just scopeInfo)
 
-    xGrpMemIntro :: GroupInfo -> GroupMember -> MemberInfo -> Maybe MemberRestrictions -> UTCTime -> CM ()
-    xGrpMemIntro gInfo@GroupInfo {chatSettings} m@GroupMember {memberRole, localDisplayName = c} memInfo@(MemberInfo memId _ memChatVRange _ _) memRestrictions brokerTs = do
-      blockedUntil_ <- maybe (pure Nothing) (restrictionEndTime brokerTs) memRestrictions
-      let restriction_ = (\MemberRestrictions {restriction} -> restriction) <$> memRestrictions
+    xGrpMemIntro :: GroupInfo -> GroupMember -> MemberInfo -> Maybe IntroRestrictions -> CM ()
+    xGrpMemIntro gInfo@GroupInfo {chatSettings} m@GroupMember {memberRole, localDisplayName = c} memInfo@(MemberInfo memId _ memChatVRange _ _) memRestrictions = do
       case memberCategory m of
         GCHostMember ->
           withStore' (\db -> runExceptT $ getGroupMemberByMemberId db cxt user gInfo memId) >>= \case
@@ -3381,7 +3389,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                         MemberInfo mId mRole v p _
                           | mRole >= GRMember -> MemberInfo mId defaultRole v p Nothing
                         _ -> memInfo
-                  void $ withStore $ \db -> createIntroReMember db cxt user gInfo memInfo' (memberInfoPresHeader gInfo memInfo') restriction_ blockedUntil_
+                  void $ withStore $ \db -> createIntroReMember db cxt user gInfo memInfo' (memberInfoPresHeader gInfo memInfo') memRestrictions
               | otherwise -> do
                   when (memberRole < GRAdmin) $ throwChatError (CEGroupContactRole c)
                   case memChatVRange of
@@ -3391,7 +3399,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                       groupConnIds@(cmdId, connId) <- prepareAgentCreation user CFCreateConnGrpMemInv (chatHasNtfs chatSettings) SCMInvitation
                       let chatV = maybe (minVersion (vr cxt)) (\peerVR -> vr cxt `peerConnChatVersion` fromChatVRange peerVR) memChatVRange
                       void $ withStore $ \db -> do
-                        reMember <- createIntroReMember db cxt user gInfo memInfo (memberInfoPresHeader gInfo memInfo) restriction_ blockedUntil_
+                        reMember <- createIntroReMember db cxt user gInfo memInfo (memberInfoPresHeader gInfo memInfo) memRestrictions
                         createIntroReMemberConn db user m reMember chatV memInfo groupConnIds subMode
                       withAgent $ \a -> createConnectionAsync a (aCorrId cmdId) connId (chatHasNtfs chatSettings) SCMInvitation CR.IKPQOff True subMode
         _ -> messageError "x.grp.mem.intro can be only sent by host member"
@@ -3425,7 +3433,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
             -- member receiving x.grp.mem.fwd should have also received x.grp.mem.new prior to that.
             -- For now, this branch compensates for the lack of delayed message delivery.
             `catchError` \case
-              SEGroupMemberNotFoundByMemberId _ -> createNewGroupMember db cxt user gInfo m memInfo (memberInfoPresHeader gInfo memInfo) GCPostMember GSMemAnnounced
+              SEGroupMemberNotFoundByMemberId _ -> createNewGroupMember db cxt user gInfo m memInfo (memberInfoPresHeader gInfo memInfo) GCPostMember GSMemAnnounced Nothing
               e -> throwError e
         let fromAnnouncer = not (memberRemoved toMember) && (invitedByGroupMemberId toMember == Just (groupMemberId' m) || memberStatus toMember == GSMemUnknown)
         -- TODO [knocking] separate pending statuses from GroupMemberStatus?
@@ -4125,7 +4133,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
             XFileCancel sharedMsgId -> void $ xFileCancelGroup gInfo author_ sharedMsgId
             XInfo p mKey -> withAuthor XInfo_ $ \author -> void $ xInfoMember gInfo author p mKey rcvMsg msgTs
             XGrpRelayNew rl -> withAuthor XGrpRelayNew_ $ \author -> void $ xGrpRelayNew gInfo author rl
-            XGrpMemNew memInfo msgScope -> withAuthor XGrpMemNew_ $ \author -> void $ xGrpMemNew g author memInfo msgScope rcvMsg msgTs
+            XGrpMemNew memInfo msgScope memRestrictions_ -> withAuthor XGrpMemNew_ $ \author -> void $ xGrpMemNew g author memInfo msgScope memRestrictions_ rcvMsg msgTs
             XGrpMemRole memId memRole memberKey rosterVer -> withAuthor XGrpMemRole_ $ \author -> void $ xGrpMemRole g (Just m) author memId memRole memberKey rosterVer rcvMsg msgTs
             XGrpMemRestrict memId memRestrictions -> withAuthor XGrpMemRestrict_ $ \author -> void $ xGrpMemRestrict gInfo author memId memRestrictions rcvMsg msgTs
             XGrpMemDel (GrpMemDel memId withMessages rosterVer silent notice_) -> withAuthor XGrpMemDel_ $ \author -> void $ xGrpMemDel g (Just m) author memId withMessages rosterVer silent notice_ verifiedMsg rcvMsg msgTs True
@@ -4371,7 +4379,7 @@ encodeMemberNew vr gInfo member = case encodeChatMessage maxBatchElementSize cha
       ChatMessage
         { chatVRange = vr,
           msgId = Nothing,
-          chatMsgEvent = XGrpMemNew (memberInfo gInfo member) Nothing
+          chatMsgEvent = XGrpMemNew (memberInfo gInfo member) Nothing (memberRestrictions member)
         }
 
 runDeliveryJobWorker :: AgentClient -> DeliveryWorkerKey -> Worker -> CM ()
@@ -4423,11 +4431,8 @@ runDeliveryJobWorker a deliveryKey Worker {doWork} = do
             sendBodyToMembers
               -- channel
               | useRelays' gInfo = case jobScope of
-                  DJSGroup {jobSpec = DJModerators} -> do
-                    modMs <- currentModerators
-                    unless (null modMs) $ deliver body modMs
                   -- there's no member review in channels, so job spec includePending is ignored
-                  DJSGroup {} -> do
+                  DJSGroup {jobSpec} -> do
                     bucketSize <- asks $ deliveryBucketSize . config
                     senders <- withStore' $ \db ->
                       fmap catMaybes . forM senderGMIds $ \sId ->
@@ -4470,11 +4475,14 @@ runDeliveryJobWorker a deliveryKey Worker {doWork} = do
                       sendLoop bucketSize cursorGMId_ senderVec overflowWithIds inBodySenders extBody activeSenders = do
                         mems <- withStore' $ \db -> getGroupMembersByCursor db cxt user gInfo cursorGMId_ singleSenderGMId_ bucketSize
                         unless (null mems) $ do
-                          let msgReqs = buildMsgReqs mems
+                          let recipients = case jobSpec of
+                                DJModerators -> filter currentModerator mems
+                                _ -> mems
+                              msgReqs = buildMsgReqs recipients
                           unless (null msgReqs) $ void $ withAgent (`sendMessages` msgReqs)
                           -- Mark only (sender, recipient) pairs where the bit was MRNew —
                           -- skip recipients already MRIntroduced (steady-case savings).
-                          let readyMems = [m | m <- mems, isJust (readyMemberConn m)]
+                          let readyMems = [m | m <- recipients, isJust (readyMemberConn m)]
                               markFor sender = do
                                 vec <- M.lookup (groupMemberId' sender) senderVec
                                 let ms = [(indexInGroup r, (IDSubjectIntroduced, MRIntroduced)) | r <- readyMems, getRelation (indexInGroup r) vec == MRNew]
