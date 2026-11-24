@@ -97,8 +97,6 @@ struct ChatInfoView: View {
     @ObservedObject var chat: Chat
     @State var contact: Contact
     @State var localAlias: String
-    @State var featuresAllowed: ContactFeaturesAllowed
-    @State var currentFeaturesAllowed: ContactFeaturesAllowed
     var onSearch: () -> Void
     @State private var connectionStats: ConnectionStats? = nil
     @State private var customUserProfile: Profile? = nil
@@ -111,6 +109,7 @@ struct ChatInfoView: View {
     @State private var sendReceipts = SendReceipts.userDefault(true)
     @State private var sendReceiptsUserDefault = true
     @State private var progressIndicator = false
+    @State private var editedPreferences: (savedPreferences: ContactUserPreferences, featuresAllowed: ContactFeaturesAllowed)? = nil
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
 
     enum ChatInfoViewAlert: Identifiable {
@@ -482,9 +481,9 @@ struct ChatInfoView: View {
     private func contactPreferencesButton() -> some View {
         NavigationLink {
             ContactPreferencesView(
-                contact: $contact,
-                featuresAllowed: $featuresAllowed,
-                currentFeaturesAllowed: $currentFeaturesAllowed,
+                contact: .constant(chatContact),
+                featuresAllowed: Binding(get: { featuresAllowed }, set: { editedPreferences = (savedPreferences: chatContact.mergedPreferences, featuresAllowed: $0) }),
+                currentFeaturesAllowed: .constant(currentFeaturesAllowed),
                 savePreferences: savePreferences
             )
             .navigationBarTitle("Contact preferences")
@@ -618,6 +617,22 @@ struct ChatInfoView: View {
         }
     }
 
+    private var chatContact: Contact {
+        chat.chatInfo.contact ?? contact
+    }
+
+    private var currentFeaturesAllowed: ContactFeaturesAllowed {
+        contactUserPrefsToFeaturesAllowed(chatContact.mergedPreferences)
+    }
+
+    private var featuresAllowed: ContactFeaturesAllowed {
+        if let edited = editedPreferences, edited.savedPreferences == chatContact.mergedPreferences {
+            edited.featuresAllowed
+        } else {
+            currentFeaturesAllowed
+        }
+    }
+
     private func savePreferences() {
         Task {
             do {
@@ -626,7 +641,7 @@ struct ChatInfoView: View {
                     await MainActor.run {
                         contact = toContact
                         chatModel.updateContact(toContact)
-                        currentFeaturesAllowed = featuresAllowed
+                        editedPreferences = nil
                     }
                 }
             } catch {
@@ -1524,8 +1539,6 @@ struct ChatInfoView_Previews: PreviewProvider {
             chat: Chat(chatInfo: ChatInfo.sampleData.direct, chatItems: []),
             contact: Contact.sampleData,
             localAlias: "",
-            featuresAllowed: contactUserPrefsToFeaturesAllowed(Contact.sampleData.mergedPreferences),
-            currentFeaturesAllowed: contactUserPrefsToFeaturesAllowed(Contact.sampleData.mergedPreferences),
              onSearch: {}
         )
     }
