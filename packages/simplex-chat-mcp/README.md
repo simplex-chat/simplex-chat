@@ -73,6 +73,8 @@ You need Node.js 22 or later, Claude Code, and the [SimpleX Chat app](https://si
 
 The agent is tested with Claude Code. Tell us which other apps and models you want to use in [an issue](https://github.com/simplex-chat/simplex-chat/issues), or contribute.
 
+You can switch the model of an agent that a script runs in opencode: start `serve` with `--models` and `--model-file`, then send `/model` in its agent control chat and tap one of the models you listed ([details](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-mcp/REFERENCE.md#the-agents-model)).
+
 ## Own a part of SimpleX
 
 Business is moving into messages, and AI agents follow: an agent can ask a company's agent in a chat instead of opening the company's website, and buy there too. These chats hold plans, purchases and accounts, so with AI everyone feels the need for private and secure communication.

@@ -6,8 +6,9 @@ import {ChatEvent, T} from "@simplex-chat/types"
 import {core} from "simplex-chat"
 import {Action, Actions, Mode, NewAction, ToolError} from "../../src/actions"
 import {Control, cardText, parseCommand} from "../../src/control"
+import {ModelEntry, ModelSelection} from "../../src/files"
 import {ChatItemsWatch, Collected, utcMinutes} from "../../src/messages"
-import {OwnerEntry, waitForCancelledCards} from "../../src/serve"
+import {OwnerEntry, ServeOptions, startServer, waitForCancelledCards} from "../../src/serve"
 import {AgentTools} from "../../src/tools"
 import {FakeChat, actionsWith, contact, data, direct, event, fakeHooks, fileItem, group, groupChat, item, member, settled, signal, user} from "./fixtures"
 
@@ -19,7 +20,7 @@ afterEach(() => jest.restoreAllMocks())
 
 afterAll(() => rmSync(data, {recursive: true, force: true}))
 
-const commandsReply = "Commands: /approve, /reject, /receive, /forward, /revoke, /leave, /delete, /pending, /list. Each card shows its commands."
+const commandsReply = "Commands: /approve, /reject, /receive, /forward, /revoke, /leave, /delete, /pending, /list, /model. Each card shows its commands."
 
 const alice = member(3, "Alice", T.GroupMemberRole.Owner)
 const bob = member(7, "Bob", T.GroupMemberRole.Member)
@@ -45,9 +46,9 @@ function agentChats(): FakeChat {
   return chat
 }
 
-async function controlWith(chat: FakeChat, actions: Actions, owners?: OwnerEntry[], mode: Mode = "requests"): Promise<{control: Control; tools: AgentTools}> {
+async function controlWith(chat: FakeChat, actions: Actions, owners?: OwnerEntry[], mode: Mode = "requests", model?: ModelSelection): Promise<{control: Control; tools: AgentTools}> {
   const tools = new AgentTools({chat: chat.api(), user, actions, watch: new ChatItemsWatch(), controlChat: () => "#10", standingApprover: (chatInfo, standing) => control.standingApprover(chatInfo, standing), refusedFile: (path, chatInfo, chat) => control.refusedFile(path, chatInfo, chat), data}, mode)
-  const control: Control = new Control(chat.api(), group(10, "agent"), {displayName: "agent", owners, registerHint: "hint", qrCode: "small"}, actions, tools)
+  const control: Control = new Control(chat.api(), group(10, "agent"), {displayName: "agent", owners, registerHint: "hint", qrCode: "small", model}, actions, tools)
   await control.load()
   return {control, tools}
 }
@@ -185,7 +186,7 @@ describe("owner commands", () => {
 
   it("answers other commands with the list", async () => {
     const {control} = await setup()
-    const others = ["help", "approve five", "approve", "approve all", "approve #2", "approve 5 6", "approve #2 5 6", "reject #2 all", "reject #2 files", "revoke", "revoke 2", "revoke #2 all", "revoke files", "receive", "receive #2 files", "receive #2 all", "receive 5 all", "receive #2 5 files", "receive off", "forward", "forward #2 all", "forward #2 5 all", "leave", "leave 2", "leave #2 now", "delete", "delete #2", "delete files", "delete #2 all", "pending 5", "list all"]
+    const others = ["help", "approve five", "approve", "approve all", "approve #2", "approve 5 6", "approve #2 5 6", "reject #2 all", "reject #2 files", "revoke", "revoke 2", "revoke #2 all", "revoke files", "receive", "receive #2 files", "receive #2 all", "receive 5 all", "receive #2 5 files", "receive off", "forward", "forward #2 all", "forward #2 5 all", "leave", "leave 2", "leave #2 now", "delete", "delete #2", "delete files", "delete #2 all", "pending 5", "list all", "model a b", "model #2 coder"]
     for (const text of others) {
       expect(await control.ownerCommand(bob, parseCommand(`/${text}`)!)).toBe(commandsReply)
     }
@@ -779,10 +780,100 @@ describe("command menu", () => {
     expect(chat.profiles).toHaveLength(1)
   })
 
+  it("has /model at the end with --models", async () => {
+    const chat = agentChats()
+    const models: ModelEntry[] = [{name: "gemma", model: "llama-swap/gemma-4-26b"}]
+    await controlWith(chat, actionsWith("requests", fakeHooks()), undefined, "requests", {models, file: join(data, "model", "model"), selected: models[0]})
+    expect(chat.profiles.map(({groupProfile}) => groupProfile.groupPreferences?.commands)).toEqual([[...menu, {type: "command", keyword: "model", label: "The agent's model"}]])
+  })
+
   it("answers the /leave template sent unedited with the list of commands", async () => {
     const {control, chat} = await setup()
     expect(await control.ownerCommand(alice, parseCommand("/leave <chat ID>")!)).toBe(commandsReply)
     expect(chat.deleted).toEqual([])
+  })
+})
+
+describe("the agent's model", () => {
+  const file = join(data, "model", "model")
+  const models: ModelEntry[] = [
+    {name: "gemma", model: "llama-swap/gemma-4-26b"},
+    {name: "coder", model: "llama-swap/qwen3-coder-next"},
+    {name: "large", model: "hosted/large-latest"},
+  ]
+  const selected = "The agent's model is `gemma`: `llama-swap/gemma-4-26b`."
+  const toCoder = "The agent's model is `coder`: `llama-swap/qwen3-coder-next`. The agent restarts with it. /'model gemma'"
+
+  async function modelControl(owners?: OwnerEntry[], mode: Mode = "requests", listed: ModelEntry[] = models) {
+    rmSync(dirname(file), {recursive: true, force: true})
+    mkdirSync(dirname(file), {recursive: true})
+    const chat = agentChats()
+    const {control} = await controlWith(chat, actionsWith(mode, fakeHooks()), owners, mode, {models: listed, file, selected: listed[0]})
+    return control
+  }
+
+  it("shows the selected model and a command for each other model, in the order of --models", async () => {
+    const control = await modelControl()
+    expect(await control.ownerCommand(alice, {keyword: "model", params: ""})).toBe(`${selected}\n/'model coder'\n/'model large'`)
+    const single = await modelControl(undefined, "requests", models.slice(0, 1))
+    expect(await single.ownerCommand(alice, {keyword: "model", params: ""})).toBe(selected)
+    expect(existsSync(file)).toBe(false)
+  })
+
+  it("selects a model by its name, writes the file, logs the owner's name on one line and offers the previous model", async () => {
+    const lines: string[] = []
+    jest.spyOn(process.stdout, "write").mockImplementation(text => (lines.push(String(text).trimEnd()), true))
+    const control = await modelControl()
+    const mallory = {...alice, memberProfile: {...alice.memberProfile, displayName: "Mallory\n/'model large'"}}
+    expect(await control.ownerCommand(mallory, {keyword: "model", params: "coder"})).toBe(toCoder)
+    expect(readFileSync(file, "utf8")).toBe("llama-swap/qwen3-coder-next\n")
+    expect(lines.at(-1)).toBe("Model set to coder (llama-swap/qwen3-coder-next) by Mallory /'model large'.")
+    expect(await control.ownerCommand(alice, {keyword: "model", params: ""})).toBe("The agent's model is `coder`: `llama-swap/qwen3-coder-next`.\n/'model gemma'\n/'model large'")
+    expect(await control.ownerCommand(alice, {keyword: "model", params: "gemma"})).toBe("The agent's model is `gemma`: `llama-swap/gemma-4-26b`. The agent restarts with it. /'model coder'")
+    expect(readFileSync(file, "utf8")).toBe("llama-swap/gemma-4-26b\n")
+  })
+
+  it("replies when the model is already selected, without writing the file", async () => {
+    const control = await modelControl()
+    expect(await control.ownerCommand(alice, {keyword: "model", params: "gemma"})).toBe("The agent's model is already `gemma`.")
+    expect(existsSync(file)).toBe(false)
+  })
+
+  it("refuses a name outside --models without repeating it, and a PROVIDER/MODEL value", async () => {
+    const control = await modelControl()
+    for (const params of ["gpt", "CODER", "llama-swap/qwen3-coder-next", "`coder`", "*coder*", "g".repeat(5000)]) {
+      expect(await control.ownerCommand(alice, {keyword: "model", params})).toBe("No such model. /model shows the models.")
+    }
+    expect(existsSync(file)).toBe(false)
+  })
+
+  it("refuses on a server without --models", async () => {
+    const {control} = await setup()
+    for (const params of ["", "coder"]) expect(await control.ownerCommand(alice, {keyword: "model", params})).toBe("This server runs without --models.")
+  })
+
+  it("accepts only approvers", async () => {
+    const unlisted = await modelControl()
+    for (const params of ["", "coder"]) expect(await unlisted.ownerCommand(bob, {keyword: "model", params})).toBe("Only owners approve actions.")
+    const listed = await modelControl([{memberId: 3, name: "Alice"}])
+    expect(await listed.ownerCommand(member(8, "Carol", T.GroupMemberRole.Owner), {keyword: "model", params: "coder"})).toBe("Only the owners listed in --owners approve actions.")
+    expect(existsSync(file)).toBe(false)
+    expect(await listed.ownerCommand(alice, {keyword: "model", params: "coder"})).toBe(toCoder)
+  })
+
+  it("gives the same replies in mode host", async () => {
+    const control = await modelControl(undefined, "host")
+    expect(await control.ownerCommand(alice, {keyword: "model", params: ""})).toBe(`${selected}\n/'model coder'\n/'model large'`)
+    expect(await control.ownerCommand(alice, {keyword: "model", params: "coder"})).toBe(toCoder)
+    expect(readFileSync(file, "utf8")).toBe("llama-swap/qwen3-coder-next\n")
+  })
+
+  it("stops the start before the chat database is created when the folder of --model-file is missing, and releases the lock", async () => {
+    const folder = join(data, "model-start")
+    const options: ServeOptions = {name: "agent", data: folder, dataGiven: true, approve: "requests", expireHours: 23, resetOwners: false, newToken: false, port: 5226, qrCode: "small", stopWait: 10, model: {models, file: join(data, "missing", "model")}}
+    const error = await startServer(options).catch((reason: unknown) => reason)
+    expect((error as NodeJS.ErrnoException).code).toBe("ENOENT")
+    expect(readdirSync(folder).sort()).toEqual(["headers.json", "token"])
   })
 })
 
