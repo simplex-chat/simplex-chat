@@ -456,7 +456,9 @@ CI of the reduced build:
 - the tests of section 8 pass on commit 16 on PostgreSQL, and on SQLite except "verify and overwrite query plans" (https://github.com/evgeny-simplex/simplex-chat/actions/runs/45331833208), whose patch, the plan of the pending jobs count of the test, is commit 17;
 - the expiration test of commit 21 fails without the condition of `delivery_tasks`, on SQLite and PostgreSQL: the row of cath is deleted at the expiration (https://github.com/evgeny-simplex/simplex-chat/actions/runs/45349877773, a temporary branch of commit 21 without the condition);
 - on commit 21, the tests of section 8 pass on PostgreSQL, 486 examples, and on SQLite except "verify and overwrite query plans", 498 examples (https://github.com/evgeny-simplex/simplex-chat/actions/runs/45349740040); its patch, the plans of the 8 queries of group expiration and of the test, is commit 22;
-- the tests of section 8 pass on commit 22, 498 examples on SQLite and 486 on PostgreSQL (https://github.com/evgeny-simplex/simplex-chat/actions/runs/45353654557); on PostgreSQL, the first attempt failed at "delete user", as "completed deleting user" (`DEL_USER` of the agent) was not shown within 20 s, and the re-run of the job passed; the test passed on commit 21.
+- the tests of section 8 pass on commit 22, 498 examples on SQLite and 486 on PostgreSQL (https://github.com/evgeny-simplex/simplex-chat/actions/runs/45353654557); on PostgreSQL, the first attempt failed at "delete user", as "completed deleting user" (`DEL_USER` of the agent) was not shown within 20 s, and the re-run of the job passed; the test passed on commit 21;
+- in the build of the pull request at commit 24 (https://github.com/simplex-chat/simplex-chat/actions/runs/45377163757), the tests of section 8 pass on SQLite, 498 examples, and 1 of 486 examples fails on PostgreSQL: "channels/relay delivery/single relay/should deliver high priority messages of the owner" (`testChannels1RelayDeliverHighPriority`, tests/ChatTests/Groups.hs:11029 at commit 24), a test of #8314 unchanged on this branch, in which `lastSndMsgFlags` returned ["F"] in place of ["T"]; the test fails with the same values on the head of #8314, 37ce00a7f, in the job "ubuntu-24.04-x86_64 (CLI,Desktop), GHC: 9.6.3" on SQLite (https://github.com/simplex-chat/simplex-chat/actions/runs/45331685287);
+- the tests of section 8 pass on commit 24, 498 examples on SQLite and 486 on PostgreSQL (https://github.com/evgeny-simplex/simplex-chat/actions/runs/45384142650, dispatched on the fork).
 
 ## 8. Commits
 
@@ -484,6 +486,7 @@ CI of the reduced build:
 22. `core: update query plans`, from the CI artifact of the generated files of commit 21
 23. `docs: decisions in the chat list plan`
 24. `docs: cut-off of expired messages in the chat list plan`
+25. `docs: CI of the head in the chat list plan`
 
 Tests of the reduced build:
 
