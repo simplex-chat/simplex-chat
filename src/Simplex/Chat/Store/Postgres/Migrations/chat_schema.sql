@@ -1062,8 +1062,7 @@ CREATE TABLE test_chat_schema.group_members (
     member_security_code text,
     member_security_code_verified_at timestamp with time zone,
     invited_via_group_member_id bigint,
-    member_restriction_expires_at timestamp with time zone,
-    member_restriction_by_member_id bytea
+    member_restriction_expires_at timestamp with time zone
 );
 
 
@@ -1228,7 +1227,8 @@ CREATE TABLE test_chat_schema.groups (
     group_domain_verified smallint,
     stored_roster_version bigint,
     applied_complete_roster_version bigint,
-    relay_request_public_group_id bytea
+    relay_request_public_group_id bytea,
+    silently_removed smallint DEFAULT 0 NOT NULL
 );
 
 

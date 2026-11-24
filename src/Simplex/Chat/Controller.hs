@@ -182,6 +182,7 @@ data ChatConfig = ChatConfig
     initialCleanupManagerDelay :: Int64,
     cleanupManagerInterval :: NominalDiffTime,
     cleanupManagerStepDelay :: Int64,
+    endTimeRounding :: NominalDiffTime,
     ciExpirationInterval :: Int64, -- microseconds
     callInvitationTTL :: NominalDiffTime,
     deliveryWorkerDelay :: Int64, -- microseconds

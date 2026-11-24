@@ -215,7 +215,8 @@ CREATE TABLE groups(
   group_domain_verified INTEGER,
   stored_roster_version INTEGER,
   applied_complete_roster_version INTEGER,
-  relay_request_public_group_id BLOB, -- received
+  relay_request_public_group_id BLOB,
+  silently_removed INTEGER NOT NULL DEFAULT 0, -- received
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -265,7 +266,6 @@ CREATE TABLE group_members(
   member_security_code_verified_at TEXT,
   invited_via_group_member_id INTEGER REFERENCES group_members(group_member_id) ON DELETE SET NULL,
   member_restriction_expires_at TEXT,
-  member_restriction_by_member_id BLOB,
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE

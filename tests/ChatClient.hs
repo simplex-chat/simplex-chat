@@ -308,6 +308,7 @@ testCfg =
       testView = True,
       tbqSize = 16,
       channelSubscriberRole = GRObserver,
+      endTimeRounding = 1,
       confirmMigrations = MCYesUp
     }
 

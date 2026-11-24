@@ -104,7 +104,7 @@ A contact that is ready and active, archived or not, is deleted in two dialogs:
 
 Any other contact gets "Confirm contact deletion?" with Confirm (`deleteNotReadyContact`).
 
-"Archive" in the chat list menu (`archiveContact`) moves the contact to Archived contacts without clearing the conversation and marks its messages read (`ChatDeleteMode.Archive`), with no confirmation; after the core confirms it, "Contact archived!" is shown with "You can send messages to <name> from Archived contacts.", or "You can view the conversation with <name> in Archived contacts." for a deleted contact; "Don't show again" sets `showDeleteConversationNotice`.
+"Archive" in the chat list menu (`archiveContact`) moves the contact to Archived contacts without clearing the conversation (`ChatDeleteMode.Archive`), with no confirmation; after the core confirms it, "Contact archived!" is shown with "You can send messages to <name> from Archived contacts.", or "You can view the conversation with <name> in Archived contacts." for a deleted contact; "Don't show again" sets `showDeleteConversationNotice`.
 
 ### Delete and Block
 

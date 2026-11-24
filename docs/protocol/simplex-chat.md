@@ -252,7 +252,7 @@ Currently members can have one of four roles - `owner`, `admin`, `member` and `o
 
 `x.grp.mem.role` message is sent to update group member role - it is sent to all members by the member who updated the role of the member referenced in this message. This message MUST only be sent by members with `admin` or `owner` role. Receiving clients MUST ignore this message if it is received from member with role less than `admin`.
 
-`x.grp.mem.restrict` message is sent to group members to communicate group member restrictions, such as member being blocked for sending messages. The restrictions MAY include `expiresAt` time set by the sender, when the block ends. A block also ends when the member is unblocked, and it does not apply to a member who leaves and joins again. When a block with `expiresAt` ends, the client of the member who set it sends `x.grp.mem.restrict` with `unrestricted` restriction and `expiresAt` of the ended block. Clients with chat protocol version 23 or later ignore this message, as they end the block at `expiresAt`, unless they stored the block without `expiresAt` and its sender is this member or unknown. These clients ignore a block whose `expiresAt` has passed.
+`x.grp.mem.restrict` message is sent to group members to communicate group member restrictions, such as member being blocked for sending messages. The restrictions MAY include `ttl` (seconds), the duration of the block. Each receiving client ends the block `ttl` seconds after the server timestamp of the message, rounded up to a whole hour. A block also ends when the member is unblocked, and it does not apply to a member who leaves and joins again. A block of a blocked member extends the block when it ends later, and an unblock ends any block. Clients forward messages of a blocked member only to members with `moderator` role or above, without notifications.
 
 `x.grp.mem.con` message is sent by members connecting inside group to inviting member, to notify the inviting member they have completed the connection and no longer require forwarding messages between them.
 
@@ -272,7 +272,7 @@ Group profile can include optional `chatLayout` property (`classic` or `terminal
 
 ### Link notices
 
-`x.grp.mem.del` and `x.direct.del` messages MAY include `notice` property with optional `ttl` (seconds). The receiving client stores the notice for the link it joined or connected through, as recorded in its own group or contact record, and does not connect via this link until the notice expires. The notice expires `ttl` seconds after the server timestamp of the message; a notice without `ttl` does not expire. A new notice for the same link replaces the previous one. Clients MUST ignore a malformed notice and process the message.
+`x.grp.mem.del` and `x.direct.del` messages MAY include `notice` property with optional `ttl` (seconds). The receiving client stores the notice for the link it joined or connected through, as recorded in its own group or contact record, and does not connect via this link until the notice expires. The notice expires `ttl` seconds after the server timestamp of the message, rounded up to a whole hour; a notice without `ttl` does not expire. A new notice for the same link replaces the previous one. Clients MUST ignore a malformed notice and process the message.
 
 `x.grp.mem.del` and `x.direct.del` messages MAY include `"silent": true` property:
 - the client of the deleted contact does not delete the contact and shows nothing.

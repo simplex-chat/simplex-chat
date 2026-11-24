@@ -1400,8 +1400,7 @@ processChatCommand cxt nm = \case
             pure $ CRContactDeleted user ct {chatDeleted = True}
           CDMArchive -> do
             when (isJust notice_) $ throwCmdError "notice requires deleting the contact"
-            void $ processChatCommand cxt nm $ APIChatRead cRef
-            withFastStore' $ \db -> updateContactUnreadChat db user ct False >> setContactChatDeleted db user ct True
+            withFastStore' $ \db -> setContactChatDeleted db user ct True
             pure $ CRContactDeleted user ct {chatDeleted = True}
       where
         noticeSupported ct = contactReady ct && contactActive ct && any (\Connection {peerChatVRange} -> maxVersion peerChatVRange >= linkNoticeVersion) (contactConn ct)
@@ -1457,8 +1456,7 @@ processChatCommand cxt nm = \case
                 withFastStore' $ \db -> updateGroupMemberStatus db userId membership GSMemGroupDeleted
                 pure $ CRGroupDeletedUser user gInfo {membership = membership {memberStatus = GSMemGroupDeleted}} msgSigned False
           | otherwise -> throwCmdError "keeping the conversation requires an active owner"
-        CDMMessages -> processChatCommand cxt nm $ APIDeleteChat cRef (CDMFull True) notice_
-        CDMArchive -> throwCmdError "archive is not supported for groups"
+        _ -> throwCmdError "only full deletion or keeping the conversation is supported for groups"
       where
         getRecipients gInfo
           | useRelays' gInfo = do
@@ -3166,12 +3164,7 @@ processChatCommand cxt nm = \case
       when (length memberIds > 1 && anyAdmin) $ throwCmdError "can't block/unblock multiple members when admins selected"
       when (length memberIds > 1 && anyPending) $ throwCmdError "can't block/unblock multiple members when members pending approval selected"
       assertUserGroupRole gInfo $ max GRModerator maxRole
-      now <- liftIO getCurrentTime
-      let mrs
-            | blockFlag = MemberRestrictions {restriction = MRSBlocked, expiresAt = capExpiry $ (`addUTCTime` now) . fromIntegral <$> ttl}
-            | otherwise = MemberRestrictions {restriction = MRSUnrestricted, expiresAt = Nothing}
-      (blocked, msgSigned) <- blockMembers user (GIK gInfo gks) mrs blockMems remainingMems
-      pure CRMembersBlockedForAllUser {user, groupInfo = gInfo, members = blocked, blocked = blockFlag, msgSigned}
+      blockMembers user (GIK gInfo gks) blockMems remainingMems
     where
       selfSelected GroupInfo {membership} = elem (groupMemberId' membership) memberIds
       selectMembers :: [GroupMember] -> ([GroupMember], [GroupMember], GroupMemberRole, Bool, Bool)
@@ -3184,6 +3177,40 @@ processChatCommand cxt nm = \case
                     anyPending' = anyPending || memberPending m
                  in (m : block, remaining, maxRole', anyAdmin', anyPending')
             | otherwise = (block, m : remaining, maxRole, anyAdmin, anyPending)
+      blockMembers :: User -> GroupInfoKeys -> [GroupMember] -> [GroupMember] -> CM ChatResponse
+      blockMembers user g@(GIK gInfo _) blockMems remainingMems = case L.nonEmpty blockMems of
+        Nothing -> throwCmdError "no members to block/unblock"
+        Just blockMems' -> do
+          let mrs = if blockFlag then MRSBlocked else MRSUnrestricted
+              restrictions = MemberRestrictions {restriction = mrs, ttl = if blockFlag then fromIntegral <$> ttl else Nothing}
+              events = L.map (\GroupMember {memberId} -> XGrpMemRestrict memberId restrictions) blockMems'
+          (msgs_, _gsr) <- sendGroupMessages_ user g recipients False events
+          let msgSigned = any (either (const False) (\SndMessage {signedMsg_} -> isJust signedMsg_)) msgs_
+              itemsData = zipWith (fmap . sndItemData) blockMems (L.toList msgs_)
+          cis_ <- saveSndChatItems user (CDGroupSnd gInfo Nothing) False itemsData Nothing False
+          when (length cis_ /= length blockMems) $ logError "blockMembers: blockMems and cis_ length mismatch"
+          let acis = map (AChatItem SCTGroup SMDSnd (GroupChat gInfo Nothing)) $ rights cis_
+          unless (null acis) $ toView $ CEvtNewChatItems user acis
+          now <- liftIO getCurrentTime
+          blockedUntil' <- restrictionEndTime now restrictions
+          (errs, blocked) <- lift $ partitionEithers <$> withStoreBatch' (\db -> map (\m -> updateGroupMemberBlocked db user gInfo mrs (memberBlockedUntil blockedUntil' m) m) blockMems)
+          unless (null errs) $ toView $ CEvtChatErrors errs
+          -- TODO not batched - requires agent batch api
+          forM_ blocked $ \m -> toggleNtf m (not blockFlag)
+          pure CRMembersBlockedForAllUser {user, groupInfo = gInfo, members = blocked, blocked = blockFlag, msgSigned}
+        where
+          recipients = case blockMems of
+            [GroupMember {memberStatus = GSMemPendingApproval}] -> []
+            [GroupMember {memberStatus = GSMemPendingReview}] -> filter (\m -> memberRole' m >= GRModerator && memberCurrent m) remainingMems
+            _ -> filter memberCurrent remainingMems
+          memberBlockedUntil blockedUntil' m@GroupMember {blockedUntil}
+            | blockFlag && blockedByAdmin m && not (longerBlock blockedUntil' blockedUntil) = blockedUntil
+            | otherwise = blockedUntil'
+          sndItemData :: GroupMember -> SndMessage -> NewSndChatItemData c
+          sndItemData GroupMember {groupMemberId, memberProfile} msg =
+            let content = CISndGroupEvent $ SGEMemberBlocked groupMemberId (fromLocalProfile memberProfile) blockFlag
+                ts = ciContentTexts content
+             in NewSndChatItemData msg content ts M.empty Nothing Nothing Nothing
   APIRemoveMembers {groupId, groupMemberIds, withMessages, notice} -> withUser $ \user ->
     withGroupLock "removeMembers" groupId $ do
       -- TODO [relays] possible optimization is to read only required members + relays
@@ -4076,13 +4103,12 @@ processChatCommand cxt nm = \case
     syncSubscriberRelays :: User -> GroupInfo -> [ShortLinkContact] -> CM ()
     syncSubscriberRelays user gInfo currentRelayLinks = void . tryAllErrors $ do
       localRelayMembers <- withFastStore' $ \db -> getGroupRelayMembers db cxt user gInfo
-      ts <- liftIO getCurrentTime
-      hasNotice <- withFastStore' $ \db -> maybe (pure False) (fmap isJust . getLinkNotice db ts . contactCReqHashes) (viaGroupLinkUri gInfo)
+      silentlyRemoved <- withFastStore' $ \db -> getGroupSilentlyRemoved db gInfo
       let activeRelayMembers = filter memberCurrent localRelayMembers
           memberRelayLink GroupMember {relayLink = rl} = rl
           localRelayLinks = mapMaybe memberRelayLink activeRelayMembers
           newRelayLinks = filter (`notElem` localRelayLinks) currentRelayLinks
-      unless hasNotice $ forM_ newRelayLinks $ \rlnk -> void . tryAllErrors $
+      unless silentlyRemoved $ forM_ newRelayLinks $ \rlnk -> void . tryAllErrors $
         connectToRelayAsync user gInfo rlnk
       forM_ localRelayMembers $ \m ->
         case memberRelayLink m of
@@ -6612,35 +6638,6 @@ agentSubscriber = do
 
 type AgentSubResult = Map ConnId (Either AgentErrorType ())
 
-blockMembers :: User -> GroupInfoKeys -> MemberRestrictions -> [GroupMember] -> [GroupMember] -> CM ([GroupMember], Bool)
-blockMembers user g@(GIK gInfo _) mrs@MemberRestrictions {restriction} blockMems remainingMems = case L.nonEmpty blockMems of
-  Nothing -> throwCmdError "no members to block/unblock"
-  Just blockMems' -> do
-    let events = L.map (\GroupMember {memberId} -> XGrpMemRestrict memberId mrs) blockMems'
-    (msgs_, _gsr) <- sendGroupMessages_ user g recipients False events
-    let msgSigned = any (either (const False) (\SndMessage {signedMsg_} -> isJust signedMsg_)) msgs_
-        itemsData = zipWith (fmap . sndItemData) blockMems (L.toList msgs_)
-    cis_ <- saveSndChatItems user (CDGroupSnd gInfo Nothing) False itemsData Nothing False
-    when (length cis_ /= length blockMems) $ logError "blockMembers: blockMems and cis_ length mismatch"
-    let acis = map (AChatItem SCTGroup SMDSnd (GroupChat gInfo Nothing)) $ rights cis_
-    unless (null acis) $ toView $ CEvtNewChatItems user acis
-    (errs, blocked) <- lift $ partitionEithers <$> withStoreBatch' (\db -> map (updateGroupMemberBlocked db user gInfo mrs (Just $ memberId' $ membership gInfo)) blockMems)
-    unless (null errs) $ toView $ CEvtChatErrors errs
-    -- TODO not batched - requires agent batch api
-    forM_ blocked $ \m -> toggleNtf m (not blockFlag)
-    pure (blocked, msgSigned)
-  where
-    blockFlag = mrsBlocked restriction
-    recipients = case blockMems of
-      [GroupMember {memberStatus = GSMemPendingApproval}] -> []
-      [GroupMember {memberStatus = GSMemPendingReview}] -> filter (\m -> memberRole' m >= GRModerator && memberCurrent m) remainingMems
-      _ -> filter memberCurrent remainingMems
-    sndItemData :: GroupMember -> SndMessage -> NewSndChatItemData c
-    sndItemData GroupMember {groupMemberId, memberProfile} msg =
-      let content = CISndGroupEvent $ SGEMemberBlocked groupMemberId (fromLocalProfile memberProfile) blockFlag
-          ts = ciContentTexts content
-       in NewSndChatItemData msg content ts M.empty Nothing Nothing Nothing
-
 cleanupManager :: CM ()
 cleanupManager = do
   interval <- asks (cleanupManagerInterval . config)
@@ -6721,23 +6718,15 @@ cleanupManager = do
       cxt <- chatStoreCxt
       ts <- liftIO getCurrentTime
       members <- withStore' $ \db -> getMembersToUnblock db user ts
-      forM_ members $ \(groupId, gmId, byMemberId_) ->
-        withGroupLock "blockForAll" groupId (unblockMember cxt ts groupId gmId byMemberId_) `catchAllErrors` eToView
+      forM_ members $ \(groupId, gmId) ->
+        withGroupLock "blockForAll" groupId (unblockMember cxt ts groupId gmId) `catchAllErrors` eToView
       where
-        unblockMember cxt ts groupId gmId byMemberId_ = do
-          (gInfo@GroupInfo {membership}, m) <- withStore $ \db -> (,) <$> getGroupInfo db cxt user groupId <*> getGroupMember db cxt user groupId gmId
+        unblockMember cxt ts groupId gmId = do
+          (gInfo, m) <- withStore $ \db -> (,) <$> getGroupInfo db cxt user groupId <*> getGroupMember db cxt user groupId gmId
           when (maybe False (<= ts) (blockedUntil m)) $ do
-            let mrs = MemberRestrictions {restriction = MRSUnrestricted, expiresAt = blockedUntil m}
-            ms' <-
-              if byMemberId_ == Just (memberId' membership) && memberActive membership && memberRole' membership >= max GRModerator (memberRole' m)
-                then do
-                  (Group gInfo' members, gks) <- withStore $ \db -> getGroupKeys_ db cxt user groupId
-                  fst <$> blockMembers user (GIK gInfo' gks) mrs [m] (filter ((gmId /=) . groupMemberId') members)
-                else do
-                  m' <- withStore' $ \db -> updateGroupMemberBlocked db user gInfo mrs Nothing m
-                  toggleNtf m' True
-                  pure [m']
-            forM_ ms' $ toView . CEvtGroupMemberUpdated user gInfo m
+            m' <- withStore' $ \db -> updateGroupMemberBlocked db user gInfo MRSUnrestricted Nothing m
+            toggleNtf m' True
+            toView $ CEvtGroupMemberUpdated user gInfo m m'
     cleanupMessages = do
       ts <- liftIO getCurrentTime
       let cutoffTs = addUTCTime (-(30 * nominalDay)) ts

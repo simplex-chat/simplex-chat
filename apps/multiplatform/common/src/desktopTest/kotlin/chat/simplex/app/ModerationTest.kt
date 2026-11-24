@@ -349,11 +349,33 @@ class ModerationTest : RecordedApiTest() {
     val unblock = mutableStateOf(false)
     val toMember = mutableStateOf(false)
     val toObserver = mutableStateOf(false)
-    recheckItems(groupInfo, selected, listOf(bob, cath), delete, block, unblock, toMember, toObserver)
+    val timed = mutableStateOf(false)
+    recheckItems(groupInfo, selected, listOf(bob, cath), delete, block, unblock, timed, toMember, toObserver)
     assertFalse(block.value)
     assertFalse(unblock.value)
     selected.value = setOf(bob.groupMemberId)
-    recheckItems(groupInfo, selected, listOf(bob, cath), delete, block, unblock, toMember, toObserver)
+    recheckItems(groupInfo, selected, listOf(bob, cath), delete, block, unblock, timed, toMember, toObserver)
+    assertTrue(block.value)
+  }
+
+  @Test
+  fun timedBlockClockFollowsSelection() = recorded("bans/previous-version") {
+    val (groupInfo, members) = openGroup()
+    val (current, previous) = listOf(member(members, "cath"), member(members, "dan")).partition { it.supportsLinkNotice }
+    assertEquals(1, current.size)
+    assertEquals(1, previous.size)
+    val selected = mutableStateOf<Set<Long>?>(setOf(current[0].groupMemberId))
+    val delete = mutableStateOf(false)
+    val block = mutableStateOf(false)
+    val unblock = mutableStateOf(false)
+    val timed = mutableStateOf(false)
+    val toMember = mutableStateOf(false)
+    val toObserver = mutableStateOf(false)
+    recheckItems(groupInfo, selected, members, delete, block, unblock, timed, toMember, toObserver)
+    assertTrue(timed.value)
+    selected.value = setOf(current[0].groupMemberId, previous[0].groupMemberId)
+    recheckItems(groupInfo, selected, members, delete, block, unblock, timed, toMember, toObserver)
+    assertFalse(timed.value)
     assertTrue(block.value)
   }
 
@@ -516,12 +538,10 @@ class ModerationTest : RecordedApiTest() {
   @Test
   fun archiveContact() = recordedAlerts("bans/contact-deletion") {
     ChatController.appPrefs.showDeleteConversationNotice.set(true)
-    val loaded = (recordedResult("/_get chat @2 count=0") as CR.ApiChat).chat
-    val chat = openChat(loaded.copy(chatItems = listOf(ChatItem.getSampleData(dir = CIDirection.DirectRcv(), status = CIStatus.RcvNew())), chatStats = Chat.ChatStats(unreadCount = 1, unreadChat = true)))
+    val chat = openContact("/_get chat @2 count=0")
     archiveContact(chat, ChatModel)
     assertTexts("Contact archived!", "You can send messages to bob from Archived contacts.", "Don't show again", "OK")
     assertTrue((chatInfo(chat.id) as ChatInfo.Direct).contact.chatDeleted)
-    assertEquals(Chat.ChatStats(), ChatModel.chatsContext.chats.value.first { it.id == chat.id }.chatStats)
   }
 
   @Test

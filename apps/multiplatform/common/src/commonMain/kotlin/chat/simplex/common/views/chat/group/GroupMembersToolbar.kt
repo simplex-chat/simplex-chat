@@ -2,6 +2,7 @@ package chat.simplex.common.views.chat.group
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -32,6 +33,7 @@ fun SelectedItemsMembersToolbar(
   val blockForAllEnabled = remember { mutableStateOf(false) }
   val unblockForAllEnabled = remember { mutableStateOf(false) }
   val blockForAllButtonEnabled = remember { derivedStateOf { (blockForAllEnabled.value && !unblockForAllEnabled.value) || (!blockForAllEnabled.value && unblockForAllEnabled.value) } }
+  val timedBlockEnabled = remember { mutableStateOf(false) }
 
   val roleToMemberEnabled = remember { mutableStateOf(false) }
   val roleToObserverEnabled = remember { mutableStateOf(false) }
@@ -69,12 +71,24 @@ fun SelectedItemsMembersToolbar(
       }
 
       IconButton({ blockForAll(blockForAllEnabled.value) }, enabled = blockForAllButtonEnabled.value) {
-        Icon(
-          painterResource(if (unblockForAllEnabled.value && blockForAllButtonEnabled.value) MR.images.ic_do_not_touch else MR.images.ic_back_hand),
-          null,
-          Modifier.size(22.dp),
-          tint = if (!blockForAllButtonEnabled.value) MaterialTheme.colors.secondary else if (blockForAllEnabled.value) MaterialTheme.colors.error else WarningOrange
-        )
+        val unblock = unblockForAllEnabled.value && blockForAllButtonEnabled.value
+        val tint = if (!blockForAllButtonEnabled.value) MaterialTheme.colors.secondary else if (blockForAllEnabled.value) MaterialTheme.colors.error else WarningOrange
+        Box {
+          Icon(
+            painterResource(if (unblock) MR.images.ic_do_not_touch else MR.images.ic_back_hand),
+            null,
+            Modifier.size(22.dp),
+            tint = tint
+          )
+          if (!unblock && timedBlockEnabled.value) {
+            Icon(
+              painterResource(MR.images.ic_schedule_filled),
+              null,
+              Modifier.align(Alignment.BottomEnd).offset(3.dp, 3.dp).background(MaterialTheme.colors.background, CircleShape).padding(1.dp).size(10.dp),
+              tint = tint
+            )
+          }
+        }
       }
 
       IconButton({ changeRole(if (roleToMemberEnabled.value) GroupMemberRole.Member else GroupMemberRole.Observer) }, enabled = roleButtonEnabled.value) {
@@ -89,7 +103,7 @@ fun SelectedItemsMembersToolbar(
     Divider(Modifier.align(Alignment.TopStart))
   }
   LaunchedEffect(groupInfo, activeMembers.value.toList(), selectedItems.value) {
-    recheckItems(groupInfo, selectedItems, activeMembers.value, deleteEnabled, blockForAllEnabled, unblockForAllEnabled, roleToMemberEnabled, roleToObserverEnabled)
+    recheckItems(groupInfo, selectedItems, activeMembers.value, deleteEnabled, blockForAllEnabled, unblockForAllEnabled, timedBlockEnabled, roleToMemberEnabled, roleToObserverEnabled)
   }
 }
 
@@ -100,6 +114,7 @@ internal fun recheckItems(
   deleteEnabled: MutableState<Boolean>,
   blockForAllEnabled: MutableState<Boolean>,
   unblockForAllEnabled: MutableState<Boolean>,
+  timedBlockEnabled: MutableState<Boolean>,
   roleToMemberEnabled: MutableState<Boolean>,
   roleToObserverEnabled: MutableState<Boolean>,
 ) {
@@ -107,6 +122,7 @@ internal fun recheckItems(
   var rDeleteEnabled = true
   var rBlockForAllEnabled = true
   var rUnblockForAllEnabled = true
+  var rTimedBlockEnabled = true
   var rRoleToMemberEnabled = true
   var rRoleToObserverEnabled = true
   var anyPending = false
@@ -116,6 +132,7 @@ internal fun recheckItems(
       rDeleteEnabled = rDeleteEnabled && mem.memberStatus != GroupMemberStatus.MemRemoved && mem.memberStatus != GroupMemberStatus.MemLeft
       rBlockForAllEnabled = rBlockForAllEnabled && !mem.blockedByAdmin
       rUnblockForAllEnabled = rUnblockForAllEnabled && mem.blockedByAdmin
+      rTimedBlockEnabled = rTimedBlockEnabled && mem.supportsLinkNotice
       rRoleToMemberEnabled = rRoleToMemberEnabled && mem.memberRole != GroupMemberRole.Member
       rRoleToObserverEnabled = rRoleToObserverEnabled && mem.memberRole != GroupMemberRole.Observer
       anyPending = anyPending || mem.memberPending
@@ -126,6 +143,7 @@ internal fun recheckItems(
   deleteEnabled.value = rDeleteEnabled
   blockForAllEnabled.value = rBlockForAllEnabled && !pendingAmongSeveral
   unblockForAllEnabled.value = rUnblockForAllEnabled && !pendingAmongSeveral
+  timedBlockEnabled.value = rTimedBlockEnabled && rSelectedItems.isNotEmpty()
   roleToMemberEnabled.value = rRoleToMemberEnabled
   roleToObserverEnabled.value = rRoleToObserverEnabled
   selectedItems.value = rSelectedItems

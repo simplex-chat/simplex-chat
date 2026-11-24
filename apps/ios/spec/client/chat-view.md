@@ -604,7 +604,7 @@ otherwise           deleteNotReadyContact: Confirm contact deletion?
 
 `deleteContactMessage` is the message of both dialog 1 forms: "Contact with **<name>** will be deleted - this cannot be undone!". `deleteContactMaybeErrorAlert` deletes with `deleteContactChat` and an optional `LinkNotice`, then shows `deleteContactNotice` after `.entity`: "Contact deleted!", with "in Archived contacts" for an archived contact (`chatDeleted`) and "in the list of chats" otherwise.
 
-Archive (`archiveContact`): `deleteContactChat` with `.archive` (`/_delete @<id> archive`), then `deleteConversationNotice` through `AlertManager`: "Contact archived!", with the text for an active contact or for a deleted one. For `.entity` and `.archive`, `deleteContactChat` updates the contact in place (`ChatModel.updateContact`), so the chat keeps its items, stats, position and wallpaper files, and moves the chat's preset tag counts from the previous contact to the returned one. For `.archive`, it first marks the chat read (`ChatModel.markAllChatItemsRead`, which also clears `unreadChat`), as the core marks the contact's items read and clears its unread mark.
+Archive (`archiveContact`): `deleteContactChat` with `.archive` (`/_delete @<id> archive`), then `deleteConversationNotice` through `AlertManager`: "Contact archived!", with the text for an active contact or for a deleted one. For `.entity` and `.archive`, `deleteContactChat` updates the contact in place (`ChatModel.updateContact`), so the chat keeps its items, stats, position and wallpaper files, and moves the chat's preset tag counts from the previous contact to the returned one.
 
 Delete and block (`showDeleteAndBanDialog`), with the name and the deletion line of the contact or the customer:
 

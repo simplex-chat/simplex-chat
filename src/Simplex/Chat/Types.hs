@@ -50,7 +50,7 @@ import Data.Maybe (fromMaybe, isJust, isNothing)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
-import Data.Time.Clock (UTCTime)
+import Data.Time.Clock (NominalDiffTime, UTCTime, diffUTCTime)
 import Data.Type.Equality (testEquality, (:~:) (Refl))
 import Data.Typeable (Typeable)
 import Data.Word (Word16)
@@ -1175,14 +1175,16 @@ blockedAt now restriction_ blockedUntil = maybe False mrsBlocked restriction_ &&
 
 data MemberRestrictions = MemberRestrictions
   { restriction :: MemberRestrictionStatus,
-    expiresAt :: Maybe UTCTime
+    ttl :: Maybe Int64
   }
   deriving (Eq, Show)
 
-memberRestrictions :: GroupMember -> Maybe MemberRestrictions
-memberRestrictions m
-  | blockedByAdmin m = Just MemberRestrictions {restriction = MRSBlocked, expiresAt = blockedUntil m}
+memberRestrictions :: NominalDiffTime -> UTCTime -> GroupMember -> Maybe MemberRestrictions
+memberRestrictions rounding now m
+  | blockedByAdmin m = Just MemberRestrictions {restriction = MRSBlocked, ttl = remainingTtl <$> blockedUntil m}
   | otherwise = Nothing
+  where
+    remainingTtl t = ceiling (diffUTCTime t now / rounding) * round rounding
 
 data ReceivedGroupInvitation = ReceivedGroupInvitation
   { fromMember :: GroupMember,
@@ -1321,7 +1323,8 @@ data NewGroupMember = NewGroupMember
   { memInfo :: MemberInfo,
     memCategory :: GroupMemberCategory,
     memStatus :: GroupMemberStatus,
-    memRestriction :: Maybe MemberRestrictions,
+    memRestriction :: Maybe MemberRestrictionStatus,
+    memBlockedUntil :: Maybe UTCTime,
     memInvitedBy :: InvitedBy,
     memInvitedByGroupMemberId :: Maybe GroupMemberId,
     localDisplayName :: ContactName,

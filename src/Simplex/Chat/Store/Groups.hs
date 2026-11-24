@@ -80,7 +80,8 @@ module Simplex.Chat.Store.Groups
     getGroupMembersForExpiration,
     getRemovedMembersToCleanup,
     getMembersToUnblock,
-    getRestrictingMemberId,
+    setGroupSilentlyRemoved,
+    getGroupSilentlyRemoved,
     deleteGroupChatItems,
     deleteGroupMembers,
     cleanupHostGroupLinkConn,
@@ -519,6 +520,7 @@ createGroupInvitation db cxt user@User {userId} inviter peerChatVRange GroupInvi
                         memCategory = GCHostMember,
                         memStatus = GSMemInvited,
                         memRestriction = Nothing,
+                        memBlockedUntil = Nothing,
                         memInvitedBy = IBUnknown,
                         memInvitedByGroupMemberId = Nothing,
                         localDisplayName = hostName,
@@ -1386,22 +1388,26 @@ getRemovedMembersToCleanup db cxt user@User {userId} cutoffTs = do
       (groupMemberQuery <> " WHERE m.user_id = ? AND m.removed_at < ?")
       (userId, cutoffTs)
 
-getMembersToUnblock :: DB.Connection -> User -> UTCTime -> IO [(GroupId, GroupMemberId, Maybe MemberId)]
+getMembersToUnblock :: DB.Connection -> User -> UTCTime -> IO [(GroupId, GroupMemberId)]
 getMembersToUnblock db User {userId} now =
   DB.query
     db
     [sql|
-      SELECT group_id, group_member_id, member_restriction_by_member_id
+      SELECT group_id, group_member_id
       FROM group_members
       WHERE user_id = ? AND member_restriction = ? AND member_restriction_expires_at <= ?
         AND member_status NOT IN (?,?,?,?)
     |]
     (userId, MRSBlocked, now, GSMemRejected, GSMemRemoved, GSMemLeft, GSMemGroupDeleted)
 
-getRestrictingMemberId :: DB.Connection -> GroupMember -> IO (Maybe MemberId)
-getRestrictingMemberId db GroupMember {groupMemberId} =
-  fmap join . maybeFirstRow fromOnly $
-    DB.query db "SELECT member_restriction_by_member_id FROM group_members WHERE group_member_id = ?" (Only groupMemberId)
+setGroupSilentlyRemoved :: DB.Connection -> GroupInfo -> IO ()
+setGroupSilentlyRemoved db GroupInfo {groupId} = do
+  currentTs <- getCurrentTime
+  DB.execute db "UPDATE groups SET silently_removed = 1, updated_at = ? WHERE group_id = ?" (currentTs, groupId)
+
+getGroupSilentlyRemoved :: DB.Connection -> GroupInfo -> IO Bool
+getGroupSilentlyRemoved db GroupInfo {groupId} =
+  fromMaybe False <$> maybeFirstRow fromOnlyBI (DB.query db "SELECT silently_removed FROM groups WHERE group_id = ?" (Only groupId))
 
 getGroupInvitation :: DB.Connection -> StoreCxt -> User -> GroupId -> ExceptT StoreError IO ReceivedGroupInvitation
 getGroupInvitation db cxt user groupId =
@@ -1491,6 +1497,7 @@ createNewMemberViaGroup db gVar cxt user@User {userId} GroupInfo {groupId, membe
               memCategory = GCInviteeMember,
               memStatus = GSMemInvited,
               memRestriction = Nothing,
+              memBlockedUntil = Nothing,
               memInvitedBy = IBUser,
               memInvitedByGroupMemberId = Just $ groupMemberId' membership,
               localDisplayName,
@@ -2515,6 +2522,7 @@ createNewGroupMember db cxt user gInfo invitingMember memInfo@MemberInfo {profil
             memCategory,
             memStatus,
             memRestriction = Nothing,
+            memBlockedUntil = Nothing,
             memInvitedBy = IBUnknown,
             memInvitedByGroupMemberId = Just $ groupMemberId' invitingMember,
             localDisplayName,
@@ -2543,7 +2551,8 @@ createNewMember_
     { memInfo = MemberInfo memberId memberRole memChatVRange memberProfile@Profile {badge} memKey,
       memCategory = memberCategory,
       memStatus = memberStatus,
-      memRestriction,
+      memRestriction = restriction_,
+      memBlockedUntil = blockedUntil,
       memInvitedBy = invitedBy,
       memInvitedByGroupMemberId,
       localDisplayName,
@@ -2557,8 +2566,6 @@ createNewMember_
         memberChatVRange@(VersionRange minV maxV) = maybe chatInitialVRange fromChatVRange memChatVRange
         memberPubKey = (\(MemberKey k) -> k) <$> memKey
         memberProof = verifiedProof badgeVerified badge
-        restriction_ = restriction <$> memRestriction
-        blockedUntil = memRestriction >>= mrsBlockedUntil
     indexInGroup <- getUpdateNextIndexInGroup_ db groupId
     liftIO $
       DB.execute
@@ -2709,7 +2716,7 @@ getMemberRelationsVector db GroupMember {groupMemberId} =
       "SELECT member_relations_vector FROM group_members WHERE group_member_id = ?"
       (Only groupMemberId)
 
-createIntroReMember :: DB.Connection -> StoreCxt -> User -> GroupInfo -> MemberInfo -> Maybe ProofPresHeader -> Maybe MemberRestrictions -> ExceptT StoreError IO GroupMember
+createIntroReMember :: DB.Connection -> StoreCxt -> User -> GroupInfo -> MemberInfo -> Maybe ProofPresHeader -> Maybe MemberRestrictionStatus -> Maybe UTCTime -> ExceptT StoreError IO GroupMember
 createIntroReMember
   db
   cxt
@@ -2717,10 +2724,11 @@ createIntroReMember
   gInfo
   memInfo@(MemberInfo _ _ _ memberProfile _)
   presHeader_
-  memRestrictions_ = do
+  memRestriction
+  memBlockedUntil = do
     currentTs <- liftIO getCurrentTime
     (localDisplayName, memProfileId, memberProfile', badgeVerified) <- createNewMemberProfile_ db cxt user memberProfile presHeader_ currentTs
-    let newMember = NewGroupMember {memInfo = (memInfo :: MemberInfo) {profile = memberProfile'}, memCategory = GCPreMember, memStatus = GSMemIntroduced, memRestriction = memRestrictions_, memInvitedBy = IBUnknown, memInvitedByGroupMemberId = Nothing, localDisplayName, memContactId = Nothing, memProfileId}
+    let newMember = NewGroupMember {memInfo = (memInfo :: MemberInfo) {profile = memberProfile'}, memCategory = GCPreMember, memStatus = GSMemIntroduced, memRestriction, memBlockedUntil, memInvitedBy = IBUnknown, memInvitedByGroupMemberId = Nothing, localDisplayName, memContactId = Nothing, memProfileId}
     createNewMember_ db user (groupId' gInfo) newMember badgeVerified currentTs
 
 createIntroReMemberConn :: DB.Connection -> User -> GroupMember -> GroupMember -> VersionChat -> MemberInfo -> (CommandId, ConnId) -> SubscriptionMode -> ExceptT StoreError IO GroupMember
@@ -3267,18 +3275,17 @@ updateGroupMemberSettings db User {userId} gId gMemberId GroupMemberSettings {sh
     |]
     (BI showMessages, currentTs, userId, gId, gMemberId)
 
-updateGroupMemberBlocked :: DB.Connection -> User -> GroupInfo -> MemberRestrictions -> Maybe MemberId -> GroupMember -> IO GroupMember
-updateGroupMemberBlocked db User {userId} GroupInfo {groupId} mrs@MemberRestrictions {restriction} byMemberId_ m@GroupMember {groupMemberId} = do
+updateGroupMemberBlocked :: DB.Connection -> User -> GroupInfo -> MemberRestrictionStatus -> Maybe UTCTime -> GroupMember -> IO GroupMember
+updateGroupMemberBlocked db User {userId} GroupInfo {groupId} restriction blockedUntil m@GroupMember {groupMemberId} = do
   currentTs <- getCurrentTime
-  let blockedUntil = mrsBlockedUntil mrs
   DB.execute
     db
     [sql|
       UPDATE group_members
-      SET member_restriction = ?, member_restriction_expires_at = ?, member_restriction_by_member_id = ?, updated_at = ?
+      SET member_restriction = ?, member_restriction_expires_at = ?, updated_at = ?
       WHERE user_id = ? AND group_id = ? AND group_member_id = ?
     |]
-    (restriction, blockedUntil, byMemberId_, currentTs, userId, groupId, groupMemberId)
+    (restriction, blockedUntil, currentTs, userId, groupId, groupMemberId)
   pure m {blockedByAdmin = blockedAt currentTs (Just restriction) blockedUntil, blockedUntil}
 
 getHostConnId :: DB.Connection -> User -> GroupId -> ExceptT StoreError IO GroupMemberId

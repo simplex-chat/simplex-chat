@@ -947,7 +947,7 @@ ChatCmdError: Command error (only used in WebSockets API).
 
 ### APIBlockMembersForAll
 
-Block members. Requires Moderator role. With ttl, in seconds, the block ends after this time.
+Block members. Requires Moderator role. With ttl, in seconds, the block ends after this time, counted by each member from the server time of the message and rounded up to a whole hour.
 
 *Network usage*: background.
 
@@ -2413,7 +2413,7 @@ ChatCmdError: Command error (only used in WebSockets API).
 
 ### APIDeleteChat
 
-Delete chat. The archive mode hides a contact's chat and marks its messages read. For groups, the full and messages modes delete the group, the entity mode keeps the conversation and requires the active owner, and the archive mode is refused. A notice is accepted for contacts on version 23 or later and for the customer of a business chat: the deletion is silent, and the peer's app does not connect via the user's address while the notice lasts.
+Delete chat. For groups, the full mode deletes the group, and the entity mode keeps the conversation and requires the active owner; other modes are refused. A notice is accepted for contacts on version 23 or later and for the customer of a business chat: the deletion is silent, and the peer's app does not connect via the user's address while the notice lasts.
 
 *Network usage*: background.
 

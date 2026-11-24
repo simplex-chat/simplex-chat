@@ -314,10 +314,10 @@
         "restriction": {"ref": "memberRestrictionStatus"}
       },
       "optionalProperties": {
-        "expiresAt": {
-          "type": "string",
+        "ttl": {
+          "type": "integer",
           "metadata": {
-            "format": "ISO8601 UTC time when the block ends"
+            "format": "seconds from the server timestamp of the message, rounded up to a whole hour"
           }
         }
       }
@@ -327,7 +327,7 @@
         "ttl": {
           "type": "integer",
           "metadata": {
-            "format": "seconds from the server timestamp of the message"
+            "format": "seconds from the server timestamp of the message, rounded up to a whole hour"
           }
         }
       }

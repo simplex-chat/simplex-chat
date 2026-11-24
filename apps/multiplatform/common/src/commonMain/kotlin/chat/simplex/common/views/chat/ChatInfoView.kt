@@ -418,23 +418,13 @@ fun deleteContact(chat: Chat, chatModel: ChatModel, close: (() -> Unit)?, chatDe
     val ct = chatModel.controller.apiDeleteContact(chatRh, chatInfo.apiId, chatDeleteMode, notice)
     if (ct != null) {
       withContext(Dispatchers.Main) {
-        suspend fun updateContactChat() {
-          chatModel.chatsContext.updateContact(chatRh, ct)
-          chatModel.addPresetChatTags(ChatInfo.Direct(ct), chat.chatStats)
-          chatModel.removePresetChatTags(chatInfo, chat.chatStats)
-        }
         when (chatDeleteMode) {
           is ChatDeleteMode.Full ->
             chatModel.chatsContext.removeChat(chatRh, chatInfo.id)
-          is ChatDeleteMode.Entity ->
-            updateContactChat()
-          is ChatDeleteMode.Archive -> {
-            chatModel.chatsContext.markChatItemsRead(chatRh, chatInfo.id)
-            chatModel.chatsContext.getChat(chatInfo.id)?.let { c ->
-              chatModel.chatsContext.markChatTagRead(c)
-              chatModel.chatsContext.updateChatStats(chatRh, c.id, c.chatStats.copy(unreadChat = false))
-            }
-            updateContactChat()
+          is ChatDeleteMode.Entity, is ChatDeleteMode.Archive -> {
+            chatModel.chatsContext.updateContact(chatRh, ct)
+            chatModel.addPresetChatTags(ChatInfo.Direct(ct), chat.chatStats)
+            chatModel.removePresetChatTags(chatInfo, chat.chatStats)
           }
         }
       }

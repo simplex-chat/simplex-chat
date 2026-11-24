@@ -53,7 +53,7 @@ import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Data.Time (addUTCTime)
 import Data.Time.Calendar (fromGregorian)
-import Data.Time.Clock (UTCTime (..), diffUTCTime, getCurrentTime, nominalDiffTimeToSeconds, secondsToDiffTime)
+import Data.Time.Clock (NominalDiffTime, UTCTime (..), diffUTCTime, getCurrentTime, nominalDiffTimeToSeconds, secondsToDiffTime)
 import Simplex.Chat.Badges (BadgeCredential (..), BadgeInfo (..), ProofPresHeader (..), BadgeProof (..), BadgeProofKind (..), BadgeStatus (..), FileSizeLimits (..), LocalBadge (..), acceptedProof, badgeSndGraceInterval, generateBadgeProof, localBadgeStatus, maxXFTPFileSize, mkBadgeStatus, verifyBadge)
 import Simplex.Chat.Names (SimplexDomainClaim (..), claimDomain)
 import Simplex.Chat.Call
@@ -210,6 +210,15 @@ toggleNtf m ntfOn =
   when (memberActive m) $
     forM_ (memberConnId m) $ \connId ->
       withAgent (\a -> toggleConnectionNtfs a connId ntfOn) `catchAllErrors` eToView
+
+restrictionEndTime :: UTCTime -> MemberRestrictions -> CM (Maybe UTCTime)
+restrictionEndTime brokerTs mrs = do
+  rounding <- asks $ endTimeRounding . config
+  currentTs <- liftIO getCurrentTime
+  pure $ mrsBlockedUntil rounding (min brokerTs currentTs) mrs
+
+longerBlock :: Maybe UTCTime -> Maybe UTCTime -> Bool
+longerBlock blockedUntil' = maybe False (\blockedUntil -> maybe True (> blockedUntil) blockedUntil')
 
 prepareGroupMsg :: DB.Connection -> User -> GroupInfo -> Maybe MsgScope -> ShowGroupAsSender -> MsgContent -> Map MemberName MsgMention -> Maybe ChatItemId -> Maybe CIForwardedFrom -> Maybe FileInvitation -> Maybe CITimed -> Bool -> ExceptT StoreError IO (ChatMsgEvent 'Json, Maybe (CIQuote 'CTGroup))
 prepareGroupMsg db user g@GroupInfo {membership} msgScope showGroupAsSender mc mentions quotedItemId_ itemForwarded fInv_ timed_ live = do
@@ -1267,7 +1276,9 @@ introduceMember user gInfo@(GIK g _) toMember@GroupMember {activeConn = Just con
       updateToMemberVector reMembers
       updateReMembersVectors reMembers
       shuffledReMembers <- liftIO $ shuffleMembers reMembers
-      let events = map (memberIntroEvt g) shuffledReMembers
+      rounding <- asks $ endTimeRounding . config
+      now <- liftIO getCurrentTime
+      let events = map (memberIntroEvt rounding now g) shuffledReMembers
       forM_ (L.nonEmpty events) $ \events' ->
         sendGroupMemberMessages user gInfo conn events'
     updateToMemberVector :: [GroupMember] -> CM ()
@@ -1288,10 +1299,10 @@ introduceMember user gInfo@(GIK g _) toMember@GroupMember {activeConn = Just con
         isAdmin GroupMember {memberRole} = memberRole >= GRAdmin
         hasPicture GroupMember {memberProfile = LocalProfile {image}} = isJust image
 
-memberIntroEvt :: GroupInfo -> GroupMember -> ChatMsgEvent 'Json
-memberIntroEvt gInfo reMember =
+memberIntroEvt :: NominalDiffTime -> UTCTime -> GroupInfo -> GroupMember -> ChatMsgEvent 'Json
+memberIntroEvt rounding now gInfo reMember =
   let mInfo = memberInfo gInfo reMember
-      mRestrictions = memberRestrictions reMember
+      mRestrictions = memberRestrictions rounding now reMember
    in XGrpMemIntro mInfo mRestrictions
 
 -- Forward the saved owner-signed roster verbatim (reusing its signed shared_msg_id), then the
@@ -1337,8 +1348,11 @@ introduceInChannel cxt user g@(GIK gInfo _) subscriber@GroupMember {activeConn =
   withStore' $ \db ->
     setMembersVectorsNewRelation db modMs subscriberIdx IDSubjectIntroduced MRIntroduced
   where
-    sendIntros ms = forM_ (L.nonEmpty $ map (memberIntroEvt gInfo) ms) $ \evts ->
-      sendGroupMemberMessages user g conn evts
+    sendIntros ms = do
+      rounding <- asks $ endTimeRounding . config
+      now <- liftIO getCurrentTime
+      forM_ (L.nonEmpty $ map (memberIntroEvt rounding now gInfo) ms) $ \evts ->
+        sendGroupMemberMessages user g conn evts
 
 generateIncognitoProfile :: User -> IO Profile
 generateIncognitoProfile User {profile = LocalProfile {peerType}} = generateRandomProfile peerType
