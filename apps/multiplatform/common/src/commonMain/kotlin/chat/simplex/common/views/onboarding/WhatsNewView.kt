@@ -992,7 +992,7 @@ private val versionDescriptions: List<VersionDescription> = listOf(
     )
   ),
   VersionDescription(
-    version = "v7.1.4",
+    version = "v7.1.5",
     post = null,
     features = listOf(
       VersionFeature.FeatureDescription(
