@@ -175,7 +175,7 @@ Tool definitions, call handlers, connect plans, perform steps, files.
 | <a id="tools-agenttools-agentchats"></a>`agentChats`, `knownChat` | the agent's chats; a checked chat reference |
 | <a id="tools-agenttools-selfsender"></a>`selfSender`, `toMessages` | the agent's name and peer type in a chat, its incognito name in an incognito chat, or its profile name when the incognito name can't be read; the items of one chat as messages with that name, for the results of `connect`, `send` and `receive` |
 | <a id="tools-classifyplan"></a>`classifyPlan` | `apiConnectPlan` response to a join plan or a known chat |
-| <a id="tools-chatsubject"></a>`chatSubject`, `isConnected`, `readOnlyRole`, `isActive`, `memberCurrent`, `memberCurrentOrPending` | chat and member predicates shared with `control.ts` and `hub.ts`; `readOnlyRole`: the agent's group role, when it is `observer` or `relay` |
+| <a id="tools-chatsubject"></a>`chatSubject`, `isConnected`, `isActive`, `memberCurrent`, `memberCurrentOrPending` | chat and member predicates shared with `control.ts` and `hub.ts` |
 | <a id="tools-customdataof"></a>`customDataOf`, `setChatData`, `ownerOf`, `isHubGroup` | a chat's custom data; the plugin's owner key `simplexMcpOwner`; `mainKey` and `sessionKey`, `simplexMcpMain` of the Main group and `simplexMcpSession` of a session group, which mark the groups of the hub |
 | <a id="tools-fitsmessage"></a>`tooLongText`, `fitsMessage`, `quoteContent` | the refusal text of `send` and `reply` for a message that is too long. `fitsMessage` checks that the message as the core sends it, with its quote, is within `maxMessageLength`, 15602 bytes. The check is used for `send`, `reply`, the post of `/forward`, and the parts and quotes of the plugin's posts. |
 | <a id="tools-realfile"></a>`realFile` | real path, size, inode and change time of a file |
@@ -223,7 +223,7 @@ Hooks are bound in [`startAgent`](../src/serve.ts), where `actions` is created: 
 | <a id="control-control-load"></a>`Control.load` | lost check, group profile and menu through `updateProfile`, and member list |
 | <a id="control-control-rename"></a>`Control.rename`, `Control.describe`, `updateProfile` | the plugin's group name, and its short description. `updateProfile` makes one profile update at a time, and keeps the custom data in memory. A session group is updated from its current profile in the chat database. The agent control chat of `serve` is updated from the profile held in memory since the start, by `changeGroupProfile`. |
 | <a id="control-control-start"></a>`Control.start` | owner setup per `--owners` |
-| <a id="control-control-postrestartnotice"></a>`Control.postRestartNotice` | the restart notice in the control chat and in the chats under a standing approval of messages where the agent can post as itself |
+| <a id="control-control-postrestartnotice"></a>`Control.postRestartNotice` | the restart notice in the control chat |
 | <a id="control-control-refusal"></a>`Control.refusal` | bytes left for the link texts of a connect card and for the input preview of a tool-use card, card size of a send, connect or download, approver presence |
 | <a id="control-control-hasapprover"></a>`Control.hasApprover` | an approver is a member |
 | <a id="control-control-standingapprover"></a>`Control.standingApprover` | approver name of a chat's standing approval of messages or files |
@@ -383,7 +383,7 @@ The core library is downloaded once into `CACHE/core-7.1.3.0/sqlite`, and the No
 13. `server.json` is written ([`startAgent`](../src/serve.ts)).
 14. The server runs the owner setup, `Control.start`; after an error, HTTP is closed and the error is rethrown ([`startAgent`](../src/serve.ts)).
 15. `Listening on http://127.0.0.1:PORT/mcp` ([`startAgent`](../src/serve.ts)).
-16. Unless the control chat is lost, the restart notice is posted in the control chat, then in the chats under a standing approval of messages where the agent can post as itself; a failed post is logged, and the server continues the start ([`startAgent`](../src/serve.ts), [`Control.postRestartNotice`](../src/control.ts), [API: other posts](api.md#23-other-posts)).
+16. Unless the control chat is lost, the restart notice is posted in the control chat; a failed post is logged, and the server continues the start ([`startAgent`](../src/serve.ts), [`Control.postRestartNotice`](../src/control.ts), [API: other posts](api.md#23-other-posts)).
 17. Buffered events are replayed, then live events are dispatched ([`startAgent`](../src/serve.ts), [`bufferEvents`](../src/core.ts)).
 
 After an error inside `startAgent` (steps 4-17) the chat is closed; after any error once the lock is taken, the lock is released ([`startServer`](../src/serve.ts)).
@@ -561,7 +561,7 @@ Outcomes are posted after `done` and `failed` ([`Actions.runPerform`](../src/act
 | mode `host` | nothing stored; reply `Approvals apply in mode requests; this server runs in mode host.` | downloads get no card, so the command has none to act on | [`Control.ownerCommand`](../src/control.ts) |
 | removal | `/revoke CHAT`: the `simplexMcp` key is removed, other keys kept | `/receive CHAT off`: the `simplexMcpFiles` key is removed | [`Control.revoke`](../src/control.ts) |
 | use | mode `requests`, and `approvedById` equal to the `groupMemberId` of a current approver | the same | [`Control.standingApprover`](../src/control.ts) |
-| scope | `send`; the restart notice at each start, when the chat is connected, the agent's group role, if any, is neither `observer` nor `relay`, and the agent is not incognito | `download` of a file whose servers are all known | [`AgentTools.send`, `download`](../src/tools.ts), [`Control.postRestartNotice`](../src/control.ts) |
+| scope | `send` | `download` of a file whose servers are all known | [`AgentTools.send`, `download`](../src/tools.ts) |
 | decider shown | `safeName(approvedBy)` | the same | [`Control.standingApprover`](../src/control.ts) |
 | storage | the chat's custom data; removed with the chat by `leave` | the same | [`AgentTools.leaveChat`](../src/tools.ts) |
 
@@ -676,7 +676,6 @@ The server writes the tappable form `/'...'` only in the card's command line ([`
 - The join link is a group link of the control chat with role `member`, or `observer` with `--owners`; it is printed with a QR code on stdout and deleted at the first join event ([`Control.openLink`, `ownerJoined`, `observerJoined`](../src/control.ts)).
 - At every start the server sets private message routing: `smpProxyMode` `always`, `smpProxyFallback` `allowProtected` ([`prepareCore`](../src/core.ts)).
 - With `incognito: true` the join methods connect incognito ([`AgentTools.join`](../src/tools.ts)); the core then uses a random profile for that chat ([PLAN, Participants](../../../plans/2026-10-19-mcp-server.md#participants)).
-- At every start the server posts its version and the commit of its build in the chats under a standing approval of messages where the agent can post, so their members see both; no notice is posted in an incognito chat ([`Control.postRestartNotice`](../src/control.ts), [`startAgent`](../src/serve.ts)).
 
 ---
 

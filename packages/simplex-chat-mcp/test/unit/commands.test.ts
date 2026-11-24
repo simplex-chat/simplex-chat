@@ -1008,44 +1008,24 @@ describe("restart notice", () => {
   const text = "SimpleX MCP server 0.2.0 (0123456789) started."
   const approval = {simplexMcp: {approvedBy: "Alice", approvedById: 3, approvedAt: "2026-11-12T10:00:00.000Z"}}
 
-  function noticeChats(): FakeChat {
+  function approvedChats(): FakeChat {
     const chat = agentChats()
     const {contact: directory} = chatInfoOf(chat, "@4") as T.ChatInfo.Direct
     const {groupInfo: business} = chatInfoOf(chat, "#2") as T.ChatInfo.Group
     directory.customData = approval
     business.customData = approval
-    chat.chats.set("@5", {chatInfo: direct(contact(5, "Bob")), items: []})
-    chat.chats.set("#7", {chatInfo: groupChat(group(7, "Ridgeline News", member(1, "agent", T.GroupMemberRole.Observer), {useRelays: true, customData: approval})), items: []})
-    chat.chats.set("#8", {chatInfo: groupChat(group(8, "Trail", member(1, "agent", T.GroupMemberRole.Observer), {customData: approval})), items: []})
-    chat.chats.set("#9", {chatInfo: groupChat(group(9, "Ridgeline Relay", member(1, "agent", T.GroupMemberRole.Relay), {useRelays: true, customData: approval})), items: []})
-    chat.chats.set("@6", {chatInfo: direct({...contact(6, "Ask SimpleX Team"), activeConn: undefined, customData: approval}), items: []})
-    chat.chats.set("@11", {chatInfo: direct({...contact(11, "Switchback"), activeConn: {connId: 211, connStatus: {type: "ready"}, customUserProfileId: 900}, customData: approval} as unknown as T.Contact), items: []})
-    chat.chats.set("#12", {chatInfo: groupChat(group(12, "Hikers", {...member(1, "Quiet Fox"), memberContactProfileId: 99}, {customData: approval})), items: []})
     return chat
   }
 
-  const targets = (chat: FakeChat): [T.ChatType, number][] => chat.sent.map(({chat: target}) => target)
-
-  it("is posted in the agent control chat and in the approved chats where the agent can post, not in unapproved, incognito, channel, observer, relay and not connected chats", async () => {
-    const chat = noticeChats()
+  it("is posted only in the agent control chat, not in the chats approved for all messages", async () => {
+    const chat = approvedChats()
     const {control} = await controlWith(chat, actionsWith("requests", fakeHooks()))
     await control.postRestartNotice(text)
-    expect(chat.sent.map(({chat: target, messages: [{msgContent}]}) => [target, msgContent])).toEqual([
-      [[T.ChatType.Group, 10], {type: "text", text}],
-      [[T.ChatType.Direct, 4], {type: "text", text}],
-      [[T.ChatType.Group, 2], {type: "text", text}],
-    ])
-  })
-
-  it("is posted only in the agent control chat in mode host", async () => {
-    const chat = noticeChats()
-    const {control} = await controlWith(chat, actionsWith("host", fakeHooks()), undefined, "host")
-    await control.postRestartNotice(text)
-    expect(targets(chat)).toEqual([[T.ChatType.Group, 10]])
+    expect(chat.sent.map(({chat: target, messages: [{msgContent}]}) => [target, msgContent])).toEqual([[[T.ChatType.Group, 10], {type: "text", text}]])
   })
 
   it("is posted in no chat after the agent lost its control chat", async () => {
-    const chat = noticeChats()
+    const chat = approvedChats()
     const actions = actionsWith("requests", fakeHooks())
     const {control} = await controlWith(chat, actions)
     actions.loseControl()
@@ -1053,18 +1033,13 @@ describe("restart notice", () => {
     expect(chat.sent).toEqual([])
   })
 
-  it("logs a failed post and continues with the other chats", async () => {
-    const errors = jest.spyOn(process.stderr, "write").mockImplementation(() => true)
-    const chat = noticeChats()
-    const send = chat.apiSendMessages.bind(chat)
-    chat.apiSendMessages = async (target, messages) => {
-      if (target[0] === T.ChatType.Direct && target[1] === 4) throw new Error("no connection")
-      return send(target, messages)
+  it("rejects with the error of a failed post, which the start logs", async () => {
+    const chat = approvedChats()
+    chat.apiSendMessages = async () => {
+      throw new Error("no connection")
     }
     const {control} = await controlWith(chat, actionsWith("requests", fakeHooks()))
-    await expect(control.postRestartNotice(text)).resolves.toBeUndefined()
-    expect(errors).toHaveBeenCalledWith("restart notice to @4: no connection\n")
-    expect(targets(chat)).toEqual([[T.ChatType.Group, 10], [T.ChatType.Group, 2]])
+    await expect(control.postRestartNotice(text)).rejects.toThrow("no connection")
   })
 
   it("names the version with the commit of the build, or the version alone without the commit file", () => {

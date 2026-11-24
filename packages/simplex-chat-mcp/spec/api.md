@@ -186,7 +186,7 @@ Tool errors:
 | `as: applies only with file.` | `as` without `file` | [`AgentTools.send`](../src/tools.ts) |
 | `No chat CHAT. list shows the agent's chats.` | invalid reference, the control chat, or a store error when the chat is read | [`AgentTools.knownChat`, `unknownChat`](../src/tools.ts) |
 | `The agent is not connected to CHAT and can't post; list shows connected: false.` | the chat is not connected | [`AgentTools.send`](../src/tools.ts) |
-| `The agent has role ROLE in CHAT and can't post.` | membership role `observer` or `relay` | [`AgentTools.send`, `readOnlyRole`](../src/tools.ts) |
+| `The agent has role ROLE in CHAT and can't post.` | membership role `observer` or `relay` | [`AgentTools.send`](../src/tools.ts) |
 | `reply_to: CHAT has no item N.` | the read of `around=N` fails, or the item is absent from it | [`AgentTools.quotedItem`](../src/tools.ts) |
 | `reply_to: item N in CHAT is not a message.` | the item's content is not `rcvMsgContent` or `sndMsgContent` | [`AgentTools.quotedItem`](../src/tools.ts) |
 | `mention: CHAT is a contact chat; mentions apply to groups and channels.` | `mention` with `@N` | [`AgentTools.mentionedMembers`](../src/tools.ts) |
@@ -529,9 +529,9 @@ An action performed without a card, in mode `host` or under a standing approval,
 | `/forward` of a file that is not received or not posted | ``Action N: the file was not received: `ERROR`.`` | [`Control.forward`](../src/control.ts) |
 | `/forward` in a plugin session group, when the core refuses the post with `feature not allowed NAME`, as for `Files and media` or `Voice messages` | `Action N: NAME are off in the group of this session; its owners can turn them on in the group's preferences.` | [`Control.forward`](../src/control.ts), [`refusedFeature`, `featureOff`](../src/tools.ts) |
 | after the reply to `/leave CHAT`, and after the outcome of a done `leave`, when the folder of CHAT has files | ``Files from KIND NAME (CHAT) are kept in `FOLDER`: K files, SIZE. /'delete CHAT files'`` | [`Control.outcome`, `leave`, `leftChatFilesNote`](../src/control.ts) |
-| each start of `serve`, after `Listening on ...`, unless the control chat is lost; without a log line; also posted in other chats, below | `SimpleX MCP server VERSION started.`, VERSION as in the start line ([3.4](#34-terminal-lines)) | [`Control.postRestartNotice`](../src/control.ts), [`startAgent`](../src/serve.ts) |
+| each start of `serve`, after `Listening on ...`, unless the control chat is lost; without a log line; in this chat only | `SimpleX MCP server VERSION (COMMIT) started.`, with VERSION and ` (COMMIT)` as in the start line ([3.4](#34-terminal-lines)) | [`Control.postRestartNotice`](../src/control.ts), [`startAgent`](../src/serve.ts) |
 
-The restart notice is posted in the control chat first, then in each chat of `list` ([1.6](#16-list)), in its order, with a standing approval of messages that applies ([2.1](#21-commands-and-replies)), connected, where the agent's group role, if any, is neither `observer` nor `relay`, and the agent is not incognito; one post at a time, by `apiSendTextMessage` ([`Control.postRestartNotice`](../src/control.ts), [`readOnlyRole`](../src/tools.ts)). A failed post is logged as `restart notice to CHAT: ERROR`, and the notice is still posted in the remaining chats; a failed read of the chats is logged as `restart notice: ERROR`, and no notice is posted. In both cases the server continues the start ([`Control.postRestartNotice`](../src/control.ts), [`startAgent`](../src/serve.ts)). A posted notice is a sent message item of its chat, so `history` of `receive` returns it among the agent's own messages ([1.4](#14-receive)).
+The restart notice is posted by `apiSendTextMessage`. A failed post is logged as `restart notice: ERROR`, and the server continues the start ([`Control.postRestartNotice`](../src/control.ts), [`startAgent`](../src/serve.ts)).
 
 ### 2.4 Membership messages
 
@@ -670,7 +670,7 @@ stdout ([`log`](../src/log.ts)):
 
 In the plugin's lines with `failed: ERROR.`, logged for the actions of a session, the last period is added only when ERROR does not end with one ([`sentence`](../src/actions.ts)). In `serve`, a period is added after every ERROR of these lines, and after every REASON of the line of a file not sent, as in 0.2.
 
-stderr: `CONTEXT: ERROR` from [`logError`](../src/log.ts), with CONTEXT one of `action N`, `action N card`, `action N card image`, `action N file`, `control chat command`, `EVENT in the agent control chat`, `EVENT event`, `refused file`, `file not sent`, `restart notice`, `restart notice to CHAT`, `download of file N`, `file N`, `moving file N`, `cancelling file N`, `resizing PATH`, `preview`, `MCP`, `HTTP request`, `stop`, `simplex-mcp`. The library's download lines are written to stderr.
+stderr: `CONTEXT: ERROR` from [`logError`](../src/log.ts), with CONTEXT one of `action N`, `action N card`, `action N card image`, `action N file`, `control chat command`, `EVENT in the agent control chat`, `EVENT event`, `refused file`, `file not sent`, `restart notice`, `download of file N`, `file N`, `moving file N`, `cancelling file N`, `resizing PATH`, `preview`, `MCP`, `HTTP request`, `stop`, `simplex-mcp`. The library's download lines are written to stderr.
 
 ---
 

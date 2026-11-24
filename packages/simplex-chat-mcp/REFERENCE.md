@@ -299,11 +299,10 @@ From the next version, at each start, after the owner setup, the agent posts its
 My Agent: SimpleX MCP server VERSION (8e4b6f1c2d) started.
 ```
 
-- It is posted in the agent control chat and, in mode `requests`, in each chat approved for all messages where the agent is connected, can post by its role, and is not incognito.
+- It is posted only in the agent control chat, in both modes; the chats approved for all messages get no notice.
 - VERSION is the package version, and `8e4b6f1c2d` is the commit the package was built from, as `git rev-parse --short=10 HEAD` printed it at `npm pack` or `npm publish`. No commit is written by `npx tsc`: with a build by it alone, the notice is `SimpleX MCP server VERSION started.` The same version is in the first line the server prints: `SimpleX MCP server VERSION (8e4b6f1c2d), agent "my-agent"`.
 - The server posts it by itself: it is not an action, and no card is posted for it. An owner who joins later receives it among the chat's recent messages.
-- In an approved chat, the notice is one of the agent's own messages, so `receive` with `history` returns it with them.
-- A failed post is logged on stderr, for example `restart notice to #9: <error>`, and the server continues the start. After the agent lost its control chat, no notice is posted.
+- A failed post is logged on stderr as `restart notice: <error>`, and the server continues the start. After the agent lost its control chat, no notice is posted.
 
 ## What the agent sees
 
@@ -363,8 +362,6 @@ answer each one in that chat, and call receive again after every answer, until I
 Approve the connection in "My Agent", and accept the request in the app if it asks. On the card of the agent's first answer, tap `all`: its later answers to you need no approval.
 
 In a new Claude Code session, give the same prompt again. The agent can recall the conversation: `receive` with `history` returns up to 50 earlier messages of that chat, its own answers included.
-
-From the next version, when its server starts, the agent posts `SimpleX MCP server VERSION (8e4b6f1c2d) started.` in "My Agent" and in each chat approved with `all` for its messages, such as this one, unless it is incognito there: you see when it restarted, and the version and commit of its build ([restart notice](#restart-notice)).
 
 ## Several agents
 
@@ -478,7 +475,7 @@ One server runs per data folder: a second one exits, because two processes on on
 - Names written by peers are folded to one line, with control and format characters replaced by spaces, in the terminal and in the agent control chat; there, a name that is not a valid display name is shown as code.
 - Without `--owners`, whoever opens the link first becomes an owner. The link works once.
 - With `--owners`, only the listed owners approve.
-- After `/approve #N all`, the agent sends to that chat without asking, files included, and, from the next version, at each start the server posts there its version and the commit of its build, unless the agent is incognito there; `/revoke #N` ends it.
+- After `/approve #N all`, the agent sends to that chat without asking, files included; `/revoke #N` ends it.
 - The server refuses to send private keys, its own files and the files under `~/.simplex-mcp`, where agents keep their data, except the files under `files/` of its own data folder; other files the agent can read are sent after approval.
 - After `/receive #N 7 all`, the agent's later downloads from that chat, of files on its XFTP servers, run without asking; `/receive #N off` ends it. A file on other servers is downloaded only by `/receive` or `/forward` of the card that names them; any other download of it fails, unless the IP address is protected.
 - Peers of a chat connected as the agent see its profile; peers of an incognito chat see a random profile made for that chat only.

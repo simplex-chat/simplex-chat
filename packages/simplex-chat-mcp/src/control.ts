@@ -2,12 +2,12 @@ import {CEvt, ChatEvent, T} from "@simplex-chat/types"
 import {api, core} from "simplex-chat"
 import {Action, ActionHooks, Actions, Answer, DownloadAction, PermissionAction, PlanAction, QuestionAction, Standing, State, Subject, ToolError, hasUnknownServers, leaveVerbs, subjectText, summary} from "./actions"
 import {ExitError, chatErrorOf, errorText, fileError, log, logError, oneLine, serverHostname, shellWord} from "./log"
-import {chatNumber, chatRef, chatType, fileContent, isChatRef, utcMinutes, validName, viewName} from "./messages"
+import {chatRef, fileContent, isChatRef, utcMinutes, validName, viewName} from "./messages"
 import {linkCommand} from "./owner"
 import type {ApprovedTool, Question} from "./protocol"
 import {qrCodeText} from "./qr"
 import type {OwnerEntry, QrCodeSize} from "./serve"
-import {AgentTools, chatSubject, customDataOf, featureOff, fitsMessage, isActive, isConnected, memberCurrent, memberCurrentOrPending, readOnlyRole, refusedFeature, refusedFileReason, setChatData} from "./tools"
+import {AgentTools, chatSubject, customDataOf, featureOff, fitsMessage, isActive, isConnected, memberCurrent, memberCurrentOrPending, refusedFeature, refusedFileReason, setChatData} from "./tools"
 
 export {qrCodeText}
 
@@ -185,10 +185,7 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
   // spec: spec/architecture.md#control-control-postrestartnotice
   async postRestartNotice(text: string): Promise<void> {
     if (this.actions.lost) return
-    const approved = (await this.tools.agentChats()).filter(({chatInfo}) => this.standingApprover(chatInfo, "messages") !== undefined && isConnected(chatInfo) && readOnlyRole(chatInfo) === undefined && !chatSubject(chatInfo).incognito)
-    for (const chat of [this.chatRef, ...approved.map(({chatInfo}) => chatRef(chatInfo)!)]) {
-      await this.chat.apiSendTextMessage([chatType(chat), chatNumber(chat)], text).catch(error => logError(`restart notice to ${chat}`, error))
-    }
+    await this.chat.apiSendTextMessage([T.ChatType.Group, this.groupId], text)
   }
 
   // spec: spec/architecture.md#control-control-refusal

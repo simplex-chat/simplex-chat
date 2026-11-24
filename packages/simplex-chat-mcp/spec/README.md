@@ -24,7 +24,7 @@ The SimpleX core (libsimplex, release `core-7.1.3.0`) runs inside the same Node.
 
 A tool call is held open by the server until the owner decides and, for `connect` and `send`, until the replies arrive, and for `download`, until the file is received or `wait` passes. A repeated call with the same arguments is attached to the same action, so a call that the host ends early is resumed.
 
-From the next version, at each start, after the owner setup and unless the control chat is lost, the server posts `SimpleX MCP server VERSION (COMMIT) started.` in the agent control chat and in the chats under a standing approval of messages where the agent can post as itself. COMMIT is the commit of the build, from `dist/commit.txt` of the package; without the file, ` (COMMIT)` is left out.
+From the next version, at each start, after the owner setup and unless the control chat is lost, the server posts `SimpleX MCP server VERSION (COMMIT) started.` in the agent control chat only. COMMIT is the commit of the build, from `dist/commit.txt` of the package; without the file, ` (COMMIT)` is left out.
 
 The server keeps actions and downloads in memory, and they are lost when the process exits. The action counter and the standing approvals are stored as custom data in the chat database. The token, the headers file for the host, the server record and the lock are files in the data folder; downloaded files are in its `files` folder, one folder per chat.
 

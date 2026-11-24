@@ -109,7 +109,6 @@ sequenceDiagram
   K->>P: join line, QR code, link, QR hint, owner line
   S->>P: Listening on http://127.0.0.1:5226/mcp
   S->>K: postRestartNotice
-  K->>C: apiGetChats USER last 1000000 (no chat under a standing approval)
   K->>C: apiSendTextMessage #35;G "SimpleX MCP server VERSION started."
   O->>C: joins by the link
   C->>S: joinedGroupMember
@@ -2061,25 +2060,20 @@ sequenceDiagram
   participant P as Person
   participant S as serve.ts
   participant K as Control
-  participant T as AgentTools
   participant C as Core
   participant O as Owner
-  participant D as Peer
   P->>S: simplex-mcp serve my-agent
   S->>P: SimpleX MCP server VERSION (COMMIT), agent "my-agent"
   S->>K: start: owner setup
   S->>P: Listening on http://127.0.0.1:5226/mcp
   S->>K: postRestartNotice "SimpleX MCP server VERSION (COMMIT) started."
-  K->>T: agentChats
-  T->>C: apiGetChats USER last 1000000
-  K->>K: standing approval of messages that applies, connected, role neither observer nor relay, as itself: @4, #35;9
   K->>C: apiSendTextMessage #35;G
   C->>O: SimpleX MCP server VERSION (COMMIT) started.
-  K->>C: apiSendTextMessage @4
-  C->>D: SimpleX MCP server VERSION (COMMIT) started.
-  K->>C: apiSendTextMessage #35;9
-  C-->>K: error
-  K->>P: restart notice to #35;9: ERROR (stderr)
+  alt the post failed
+    C-->>K: error
+    K-->>S: error
+    S->>P: restart notice: ERROR (stderr)
+  end
   S->>S: buffered events replayed
 ```
 
@@ -2087,10 +2081,9 @@ Notes:
 
 - COMMIT is the content of `dist/commit.txt`, trimmed, read once when `serve.ts` is loaded. The file is written by the `prepack` script with the output of `git rev-parse --short=10 HEAD`, unless git or the write fails, and deleted by `postpack`. Without the file, ` (COMMIT)` is left out of both lines ([`prepack`, `postpack`](../package.json), [`fullVersion`, `versionWithCommit`](../src/serve.ts)).
 - The package version alone is in the MCP server info (`factory` in [`startAgent`](../src/serve.ts)).
-- In mode `host`, `standingApprover` returns `undefined`, so the notice is posted in the control chat only ([`Control.standingApprover`](../src/control.ts)).
+- The notice is posted only in the agent control chat, in both modes; the chats under a standing approval of messages get none ([`Control.postRestartNotice`](../src/control.ts)).
 - With a lost control chat, no notice is posted ([`Control.postRestartNotice`](../src/control.ts)).
 - The notice is not an action: no action number, card or log line is made for it ([`Control.postRestartNotice`](../src/control.ts)).
-- A failed read of the chats is logged as `restart notice: ERROR`, and no notice is posted ([`startAgent`](../src/serve.ts)).
-- The HTTP listener serves calls to `/mcp` from `started = true`, before `Listening on ...`, also during the posts; the buffered events are replayed after the posts ([`startAgent`](../src/serve.ts)).
+- The HTTP listener serves calls to `/mcp` from `started = true`, before `Listening on ...`, also during the post; the buffered events are replayed after the post ([`startAgent`](../src/serve.ts)).
 
-Source: [`fullVersion`, `startServer`, `startAgent`, `versionWithCommit`](../src/serve.ts), [`Control.postRestartNotice`, `standingApprover`](../src/control.ts), [`AgentTools.agentChats`, `chatSubject`, `isIncognito`, `isConnected`, `readOnlyRole`](../src/tools.ts), [`prepack`, `postpack`](../package.json).
+Source: [`fullVersion`, `startServer`, `startAgent`, `versionWithCommit`](../src/serve.ts), [`Control.postRestartNotice`](../src/control.ts), [`prepack`, `postpack`](../package.json).
