@@ -1084,25 +1084,25 @@ testPaymentLinksMessage ps =
   withNewTestChat ps "alice" aliceProfile $ \alice ->
     withNewTestChatOpts ps testOpts {markRead = False} "bob" bobProfile $ \bob -> do
       connectUsers alice bob
-      alice #> ("@bob " <> message)
-      bob <# ("alice> " <> message)
-      apiFixture "payments/links" bob [] FixtureRequests {frMarkdown = links, frUris = [], frCommands = ["/_get chat @2 count=1"]}
+      alice #> ("@bob " <> paymentMsg)
+      bob <# ("alice> " <> paymentMsg)
+      apiFixture "payments/links" bob [] FixtureRequests {frMarkdown = paymentLinkTexts, frUris = [], frCommands = ["/_get chat @2 count=1"]}
   where
-    message = "donate " <> btc <> ", [Donate](monero:" <> xmr <> ") or " <> invoice
-    links =
-      [ btc,
-        "bitcoin:" <> btc <> "?amount=0.001&label=SimpleX&message=Thank%20you",
-        "[Donate](monero:" <> xmr <> ")",
-        invoice,
+    paymentMsg = "donate " <> btcAddr <> ", [Donate](monero:" <> xmrAddr <> ") or " <> lnInvoice
+    paymentLinkTexts =
+      [ btcAddr,
+        "bitcoin:" <> btcAddr <> "?amount=0.001&label=SimpleX&message=Thank%20you",
+        "[Donate](monero:" <> xmrAddr <> ")",
+        lnInvoice,
         "lightning:lno1pgx9getnwss8vetrw3hhyuckyypwa3eyt44h6txtxquqh7lz5djge4afgfjn7k4rgrkuag0jsd5xvxg",
         "lightning:LNURL1DP68GURN8GHJ7UM9WFMXJCM99E3K7MF0V9CXJ0M385EKVCENXC6R2C35XVUKXEFCV5MKVV34X5EKZD3EV56NYD3HXQURZEPEXEJXXEPNXSCRVWFNV9NXZCN9XQ6XYEFHVGCXXCMYXYMNSERXFQ5FNS",
         "ethereum:0xd7047fe3eecb2f2ff78d839dd927be27bc12c86a",
         "ethereum:0xdAC17F958D2ee523a2206206994597C13D831ec7@1/transfer?address=0xD7047Fe3Eecb2f2FF78d839dD927Be27Bc12c86a&uint256=5000000",
         "solana:7JCf5m3TiHmYKZVr6jCu1KeZVtb9Y1jRMQDU69p5ARnu?amount=0.5"
       ]
-    btc = "bc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66505d4u"
-    xmr = "8A3ZWAXrrQddvnT1fPrtbK86ZAoM4nai3Gjg1LEow3JWcryJtovMnHYZnxTJpCLmAbfWbnPMeTzPmMBjAhyd4xoM89hYq1c"
-    invoice = "lnbc2500u1pvjluezsp5zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zygspp5qqqsyqcyq5rqwzqfqqqsyqcyq5rqwzqfqqqsyqcyq5rqwzqfqypqdq5xysxxatsyp3k7enxv4jsxqzpu9qrsgquk0rl77nj30yxdy8j9vdx85fkpmdla2087ne0xh8nhedh8w27kyke0lp53ut353s06fv3qfegext0eh0ymjpf39tuven09sam30g4vgpfna3rh"
+    btcAddr = "bc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66505d4u"
+    xmrAddr = "8A3ZWAXrrQddvnT1fPrtbK86ZAoM4nai3Gjg1LEow3JWcryJtovMnHYZnxTJpCLmAbfWbnPMeTzPmMBjAhyd4xoM89hYq1c"
+    lnInvoice = "lnbc2500u1pvjluezsp5zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zygspp5qqqsyqcyq5rqwzqfqqqsyqcyq5rqwzqfqqqsyqcyq5rqwzqfqypqdq5xysxxatsyp3k7enxv4jsxqzpu9qrsgquk0rl77nj30yxdy8j9vdx85fkpmdla2087ne0xh8nhedh8w27kyke0lp53ut353s06fv3qfegext0eh0ymjpf39tuven09sam30g4vgpfna3rh"
 
 testSendMulti :: HasCallStack => TestParams -> IO ()
 testSendMulti =
