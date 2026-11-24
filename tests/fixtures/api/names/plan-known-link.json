@@ -578,8 +578,42 @@
     }
   },
   "markdown": {
-    "simplex:/name@alice.simplex": {},
-    "simplex:name@alice.simplex": {}
+    "simplex:/name@alice.simplex": {
+      "formattedText": [
+        {
+          "format": {
+            "nameInfo": {
+              "nameDomain": {
+                "domain": "alice",
+                "nameTLD": "simplex",
+                "subDomain": []
+              },
+              "nameType": "contact"
+            },
+            "type": "simplexName"
+          },
+          "text": "simplex:/name@alice.simplex"
+        }
+      ]
+    },
+    "simplex:name@alice.simplex": {
+      "formattedText": [
+        {
+          "format": {
+            "nameInfo": {
+              "nameDomain": {
+                "domain": "alice",
+                "nameTLD": "simplex",
+                "subDomain": []
+              },
+              "nameType": "contact"
+            },
+            "type": "simplexName"
+          },
+          "text": "simplex:name@alice.simplex"
+        }
+      ]
+    }
   },
   "uris": {}
 }

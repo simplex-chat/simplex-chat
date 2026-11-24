@@ -127,6 +127,14 @@ final class NameAlertsTests: XCTestCase {
         }
     }
 
+    func testNameLinkPasted() throws {
+        try recorded("names/plan-known-link")
+        for link in ["simplex:/name@alice.simplex", "simplex:name@alice.simplex"] {
+            guard case let .name(text, _) = strConnectTarget(link) else { return XCTFail("not a name: \(link)") }
+            XCTAssertEqual(text, link)
+        }
+    }
+
     @MainActor
     func testNameMovedToKnownContact() async throws {
         try recorded("names/plan-moved-known")

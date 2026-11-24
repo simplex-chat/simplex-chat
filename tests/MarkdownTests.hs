@@ -511,6 +511,10 @@ textWithSimplexNames = describe "text with SimpleX names" do
     "@privacy.simplex" <==> sname NTContact TLDSimplex "privacy" [] "privacy.simplex"
     "@my-name.simplex" <==> sname NTContact TLDSimplex "my-name" [] "my-name.simplex"
     "@alice.example.com" <==> sname NTContact TLDWeb "alice.example.com" [] "alice.example.com"
+  it "name links with or without the slash after the scheme" do
+    let name = markdown $ SimplexName $ SimplexNameInfo NTPublicGroup $ SimplexDomain TLDSimplex "privacy" []
+    "simplex:/name#privacy.simplex" <==> name "simplex:/name#privacy.simplex"
+    "simplex:name#privacy.simplex" <==> name "simplex:name#privacy.simplex"
   it "not parsed as names" do
     "#123" <==> "#123"
     "issue #42 is fixed" <==> "issue #42 is fixed"
@@ -518,6 +522,7 @@ textWithSimplexNames = describe "text with SimpleX names" do
     "#secret#" <==> markdown Secret "secret"
     "##double secret##" <==> markdown Secret "#double secret#"
     "#" <==> "#"
+    "https://simplex.chat/name#privacy.simplex" <==> uri "https://simplex.chat/name#privacy.simplex"
 
 multilineMarkdownList :: Spec
 multilineMarkdownList = describe "multiline markdown" do

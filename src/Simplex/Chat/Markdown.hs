@@ -507,9 +507,11 @@ markdownP = joinMarkdown <$> A.many' fragmentP
     linkMD s
       | isUri s' = case strDecode $ encodeUtf8 s' of
           Right cLink -> Just $ res $ markdown (simplexUriFormat Nothing cLink) s'
-          Left _ -> case parseUri $ encodeUtf8 s' of
-            Right _ -> Just $ res $ markdown Uri s'
-            Left _ -> Nothing
+          Left _ -> case strDecode $ encodeUtf8 s' of
+            Right ni -> Just $ res $ markdown (SimplexName ni) s'
+            Left _ -> case parseUri $ encodeUtf8 s' of
+              Right _ -> Just $ res $ markdown Uri s'
+              Left _ -> Nothing
       | isDomain s' = Just $ res $ markdown Uri s'
       | isEmail s' = Just $ res $ markdown Email s'
       | otherwise = Nothing
