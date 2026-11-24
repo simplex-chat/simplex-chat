@@ -328,9 +328,10 @@ Statements:
 - the 3 users list counts;
 - the 30 chat list texts;
 - every statement of section 5.1 with a changed SQLite plan, in its PostgreSQL text;
-- `getFirstUnreadItemId_`, both texts;
+- `getFirstUnreadItemId_`, the text of master and the text of #7969, for a profile with 30,000 unread items and for a profile without unread items;
+- reads by `user_id` only: the message search across chats of the CLI, 4 texts, and the files of a profile;
 - pages, old and new text: main scope and member support scope of group 17 (20,000 items), contact 42 (5,000 items) and the notes, before and after, at the newest, a middle and the oldest item;
-- member cleanup, old and new text, groups 17 and 61;
+- member cleanup, old and new text, group 17 and another group with inactive members;
 - writes: chat item insert, mark read of a contact, of a group and of all chats, TTL deletion;
 - migration up and down: time per statement, on a copy of the `ep/omnibus` database;
 - bytes of the four indexes.
@@ -341,24 +342,40 @@ Acceptance:
 - the page rows equal those of the OR text at every pivot;
 - the cleanup test fails on the commit of the test and passes on the head, on SQLite and PostgreSQL.
 
-Results on SQLite 3.45.1, measured for this plan: copies of the #8314 database with the `ep/omnibus` schema and with the indexes of section 5.1; warm medians of 15 runs, in ms. For pages and member cleanup, the columns are the old and the new text on one database.
+Results at 8f64fbc6c, the code of eeae6a446: `ep/omnibus` against the head, 111 statements on each backend. SQLite 3.45.1: two copies of the #8314 database, one with the `ep/omnibus` schema and one migrated by the up text of the head, both vacuumed; warm medians of 20 runs, 5 for reads with a cold run over 1 s; cold: one run, and the median of 3 cold runs for the first unread lookup and the message search. PostgreSQL 15.20: probe run https://github.com/evgeny-simplex/simplex-chat/actions/runs/45341717900, two databases, data digests equal, medians of 10 runs of planning and execution. In ms.
 
-| read | ep/omnibus | new |
-|---|---|---|
-| users list, contacts count | 118.5 | 3.5 |
-| users list, groups count | 120.0 | 5.3 |
-| direct ChatStats | 12.1 | 0.66 |
-| group ChatStats | 136.2 | 7.2 |
-| ReportCount | 101.3 | 0.63 |
-| direct chat list, all chats | 27.7, cold 258 | 5.1, cold 212 |
-| group chat list, all chats | 266.3, cold 810 | 14.3, cold 282 |
-| unread count of group 17 | 0.24 | 0.24 |
-| first unread lookup with `GROUP BY user_id` | 4.3 | 4.5 |
-| page before the newest item of group 17 | 11.5 | 0.10 |
-| page after the oldest item of group 17 | 5.4 | 0.09 |
-| member cleanup of group 61 | 46.1, 0 rows | 0.41, 7 rows |
+| read | SQLite ep/omnibus | SQLite head | PostgreSQL ep/omnibus | PostgreSQL head |
+|---|---|---|---|---|
+| users list, contacts count | 119.3 | 3.3 | 1.45 | 0.67 |
+| users list, groups count | 205.0 | 8.6 | 5.69 | 5.72 |
+| users list, silent count | 2.63 | 2.70 | 3.39 | 3.38 |
+| direct chat list, all chats | 23.4, cold 252 | 4.1, cold 250 | 14.13 | 3.78 |
+| 15 direct chat list texts | 11.9-23.4 | 1.0-4.1 | 11.24-14.13 | 1.00-3.78 |
+| group chat list, all chats | 238.3, cold 634 | 14.1, cold 285 | 24.87 | 12.25 |
+| group chat list texts: 14 on SQLite, 15 on PostgreSQL | 214.5-246.1 | 9.9-14.1 | 21.99-26.60 | 9.23-13.48 |
+| unread count of group 17 | 0.24 | 0.22 | 0.49 | 0.51 |
+| first unread lookup, profile with 30,000 unread items | 0.049, cold 2.9 | 0.049, cold 4.8 | 7.48 | 7.46 |
+| first unread lookup, profile without unread items | 0.154, cold 2.8 | 44.6, cold 933 | 0.26 | 0.26 |
+| message search, last 100 (`/search`) | 4,201, cold 9,026 | 4,304, cold 9,381 | 367.9 | 365.6 |
+| message search, 100 after the middle item | 2,055, cold 5,342 | 2,002, cold 5,303 | 353.4 | 350.9 |
+| message search, 100 before the middle item | 1,954, cold 4,054 | 2,043, cold 4,025 | 355.5 | 353.6 |
+| last item, empty search (`/last_item_id`) | 3,830, cold 8,898 | 3,750, cold 8,789 | 460.8 | 458.5 |
+| member cleanup of group 17 | 57.8, 0 rows | 0.65, 0 rows | 84.02, 0 rows | 1.82, 5 rows |
+| member cleanup of group 89 on SQLite, 64 on PostgreSQL | 53.8, 0 rows | 0.60, 1 row | 83.83, 0 rows | 1.80, 2 rows |
+| page before the newest item of group 17 | 19.1 | 0.29 | 0.33 | 0.31 |
+| page after the oldest item of group 17 | 9.4 | 0.25 | 0.33 | 0.28 |
+| page before the middle item of group 17 | 5.75 | 0.20 | 4.14 | 0.31 |
+| pages around the newest viewed item of group 17, 75 each | 12.2 | 0.23 | 0.66 | 0.54 |
+| pages around the middle item of group 17, 200 each | 11.5 | 0.46 | 10.25 | 0.75 |
+| pages around the middle item of contact 42, 200 each | 2.9 | 0.35 | 7.70 | 0.67 |
 
-Migration on the same database: 16.1 s for the up text, in two runs of its statements with the first statement of each run cold; quick_check ok.
+- Plans changed since 37187229a, by the saved 3.39.2 plans and by SQLite 3.45.1: the first unread lookup, `idx_chat_items_item_status (item_status=?)` in place of `idx_chat_items_group_scope_stats_all (user_id=? AND item_status=?)`; the 3 message search texts, `idx_chat_items_groups_item_viewed (user_id=?)`, as on `ep/omnibus`; member cleanup, the two delivery conditions. On PostgreSQL, the cleanup plan alone, compared with run https://github.com/evgeny-simplex/simplex-chat/actions/runs/45314570894 of 37187229a: two Nested Loop Anti Joins added, tasks by Bitmap Index Scan of `idx_delivery_tasks_sender_group_member_id`, jobs by Seq Scan, as `delivery_jobs` is empty in the generated data; with 20,000 jobs, Index Scan of `idx_delivery_jobs_next` (https://github.com/evgeny-simplex/simplex-chat/actions/runs/45326908038).
+- Slower than `ep/omnibus` by more than 20% and 2 ms: on SQLite, the first unread lookup of a profile without unread items, while another profile has 30,000 unread items; the unread entries of all profiles are read in `idx_chat_items_item_status` with their table rows. With the text of #7969 on the head schema: 4.36 ms for the profile with unread items, 0.042 ms for the profile without.
+- On PostgreSQL every statement is within the criterion; the largest relative increase is 24%, 0.10 ms: the page before the newest item of the member support scope, 0.43 to 0.53 ms.
+- Rows are equal on both sides, except member cleanup and the files of a profile, whose text has no `ORDER BY`: equal as sets on SQLite, 136,175 rows; one plan on both PostgreSQL databases, with parallel workers.
+- Subqueries of the chat list on SQLite, measured before the review fixes, with the search keys of the head: direct ChatStats 12.1 to 0.66 ms, group ChatStats 136.2 to 7.2 ms, ReportCount 101.3 to 0.63 ms.
+- Writes, rolled back, SQLite and PostgreSQL: mark all chats read 4,445 to 4,386 and 5,906 to 4,657; TTL deletion of group 17 3,378 to 3,196 and 358 to 361; insert of 1,000 items of group 17 324 to 316 and 245 to 243.
+- Migration on SQLite, the up text of the head on a copy of the `ep/omnibus` database, first statement cold: 15.3 s, commit 1.9 s included, then VACUUM 46.6 s (45.7 s on the `ep/omnibus` copy); quick_check ok; the file is 1,560,313,856 bytes after the migration and after VACUUM, as `auto_vacuum` is FULL. PostgreSQL: 5.4 s up, 5.4 s down.
 
 Results on PostgreSQL 15.20: probe run https://github.com/evgeny-simplex/simplex-chat/actions/runs/45296525730 (schema of d27b96924 as new), 1,000,000 items, 30,000 unread, data digests equal in the three databases; medians of 10 runs of planning and execution, in ms.
 
