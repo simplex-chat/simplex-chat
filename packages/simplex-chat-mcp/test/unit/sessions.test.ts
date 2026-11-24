@@ -15,7 +15,7 @@ import {AttachLine} from "../../src/protocol"
 import * as tools from "../../src/tools"
 import {User} from "../../src/user"
 import {version} from "../../src/version"
-import {FakeChat, contact, direct, event, fileItem, group, groupChat, item, member, signal, until, user} from "./fixtures"
+import {FakeChat, clockStart, contact, direct, dueAt, event, fileItem, group, groupChat, item, member, signal, until, user} from "./fixtures"
 
 const unknownCommand = "Unknown command."
 
@@ -516,6 +516,48 @@ describe("session groups", () => {
     expect(await listed(one)).toEqual([])
     expect(await listed(two)).toEqual(["@4"])
     expect(await one.control.ownerCommand(invitedAlice, {keyword: "give", params: "@4 1"})).toBe("No chat @4. /list shows the agent's chats.")
+  })
+
+  it("move the schedules of a chat that /give gives to the receiving session, where only the prompts of its own approvers' schedules become due", async () => {
+    jest.useFakeTimers({now: clockStart, doNotFake: ["setImmediate"]})
+    const chat = new FakeChat()
+    const hub = await hubWith(chat)
+    const one = await openSession(hub, id1, stored(1, "one"))
+    const two = await openSession(hub, id2, stored(2, "two"))
+    const aliceInTwo = member(2003, "Alice", T.GroupMemberRole.Owner)
+    chat.chats.set("@4", {chatInfo: ownedContact(4, "SimpleX Directory", id1), items: []})
+    await withOwner(chat, one)
+    chat.members.set(two.control.groupId, [self, aliceInTwo])
+    await two.control.load()
+    await one.control.ownerCommand(invitedAlice, {keyword: "schedule", params: "@4 * * * * * Search for trail shoes."})
+    jest.advanceTimersByTime(1)
+    expect(await one.control.ownerCommand(invitedAlice, {keyword: "give", params: "@4 2"})).toBe("Gave bot SimpleX Directory (@4) to session 2.")
+    await two.control.ownerCommand(aliceInTwo, {keyword: "schedule", params: "@4 * * * * * Read the news."})
+    jest.advanceTimersByTime(30_000)
+    expect(one.schedules.pending("@4")).toBe(0)
+    expect(two.schedules.take("@4")).toEqual([{prompt: "Read the news.", at: dueAt(7, 0)}])
+    expect(await two.control.ownerCommand(aliceInTwo, {keyword: "give", params: "@4 1"})).toBe("Gave bot SimpleX Directory (@4) to session 1.")
+    jest.advanceTimersByTime(60_000)
+    expect(one.schedules.take("@4")).toEqual([{prompt: "Search for trail shoes.", at: dueAt(7, 1)}])
+    expect(two.schedules.pending("@4")).toBe(0)
+  })
+
+  it("state in /help schedule that a member who approves actions adds a schedule, and make the prompts of an admin's schedule due only while that admin approves actions", async () => {
+    jest.useFakeTimers({now: clockStart, doNotFake: ["setImmediate"]})
+    const chat = new FakeChat()
+    const hub = await hubWith(chat)
+    const session = await openSession(hub, id1, stored(1, "auth"))
+    const dan = member(12, "Dan", T.GroupMemberRole.Admin)
+    chat.chats.set("@4", {chatInfo: ownedContact(4, "SimpleX Directory", id1), items: []})
+    chat.members.set(20, [self, invitedAlice, dan])
+    await session.control.load()
+    expect((await session.control.ownerCommand(dan, {keyword: "help", params: "schedule"}))!.split("\n")).toContain("A member who approves actions adds a schedule, and its prompts become due only while that member approves actions.")
+    await session.control.ownerCommand(dan, {keyword: "schedule", params: "@4 * * * * * Search for trail shoes."})
+    jest.advanceTimersByTime(30_000)
+    expect(session.schedules.take("@4")).toEqual([{prompt: "Search for trail shoes.", at: dueAt(7, 0)}])
+    expect(await session.control.ownerCommand(invitedAlice, {keyword: "observer", params: "#20 12"})).toBe("Dan is an observer and can't send messages.")
+    jest.advanceTimersByTime(60_000)
+    expect(session.schedules.pending("@4")).toBe(0)
   })
 
   it("list and revoke the standing approvals of a closed session in its group", async () => {
@@ -2235,6 +2277,89 @@ describe("session channel", () => {
     ])
     expect(chat.replies).toEqual([unknownCommand, unknownCommand, unknownCommand, unknownCommand])
     expect(answers(chat)).toEqual([43, 44, 47, 48, 49].map(quotedItemId => [{text: commandsApproversOnly, quotedItemId}]))
+  })
+
+  it("answers /help help with the rule of the group, which refuses the /help of a member, also one that reaches the commands", async () => {
+    const chat = new FakeChat()
+    const {session} = await channel(chat)
+    const mia = member(13, "Mia", T.GroupMemberRole.Member)
+    chat.members.set(20, [self, invitedAlice, mia])
+    await session.control.load()
+    session.onMessage(event(sessionGroup, item(40, "/help help", from(invitedAlice))))
+    session.onMessage(event(sessionGroup, item(41, "/help", from(mia))))
+    await session["delivery"]
+    await session.control["ownerCommands"]
+    expect(chat.replies.map(reply => reply.split("\n"))).toEqual([
+      [
+        "/help lists the commands. /'help COMMAND' shows how to use COMMAND, written with or without its `/`, such as /'help schedule'.",
+        "Only admins and owners of this group can send / commands, /help included, and approve actions.",
+      ],
+    ])
+    expect(answers(chat)).toEqual([[{text: commandsApproversOnly, quotedItemId: 41}]])
+    expect(await session.control.ownerCommand(mia, {keyword: "help", params: ""})).toBeUndefined()
+  })
+
+  it("lists /approve N all, /answer N K, /revoke TOOL, /give and /observer in /help before the line of /help, and explains /answer, /give and /observer, each written with or without its slash", async () => {
+    const chat = new FakeChat()
+    const {session} = await channel(chat)
+    const help = async (topic: string): Promise<string[]> => (await session.control.ownerCommand(invitedAlice, {keyword: "help", params: topic}))!.split("\n")
+    const lines = await help("")
+    expect(lines.map(line => /^\/'?(\w+)/.exec(line)![1])).toEqual(["approve", "reject", "receive", "forward", "revoke", "leave", "delete", "pending", "list", "schedule", "unschedule", "schedules", "approve", "answer", "revoke", "give", "observer", "help"])
+    expect(lines.slice(-6)).toEqual([
+      "/'approve N all' allows pending tool use N and approves its tool for the rest of this session.",
+      "/'answer N K' answers Claude Code's question N with option K.",
+      "/'revoke TOOL' ends the approval of all uses of TOOL.",
+      "/'give CHAT N' gives the agent's chat CHAT to session N.",
+      "/'observer #G ID' makes member ID of this group an observer.",
+      "/'help COMMAND' shows how to use COMMAND, such as /'help schedule'.",
+    ])
+    expect(await help("answer")).toEqual([
+      "/'answer N K' answers Claude Code's question N with option K, the number of the option on its card; the card then shows the answer and who gave it. It applies to a card of one question of one choice, where each option shows its command.",
+      "A reply to the card answers in your own words; it is the answer to a card of several questions or of a question of several choices. /'reject N' declines to answer.",
+      "Example: `/answer 14 1`. Related: /'help approve'.",
+    ])
+    expect(await help("give")).toEqual([
+      "/'give CHAT N' gives the agent's chat CHAT to session N, so that only session N and the commands of its group can use CHAT; the pending actions of CHAT here are rejected, and its schedules move to session N without their due prompts.",
+      "CHAT: a chat ID from /list. N: a session number from /sessions in the Main group.",
+      "Example: `/give @3 2`. Related: /list.",
+    ])
+    expect(await help("observer")).toEqual([
+      "/'observer #G ID' makes member ID of this group, #G, an observer, who can't send messages. The member's approvals of all sends or files and of tools, and the member's schedules, stop applying until the member is an admin or owner again.",
+      "Admins and owners use it for another member whose role is not above their own.",
+      "#G and ID: as in Claude's post of the member's rights at a join or a role change, which shows this command for a member who can send, other than an owner.",
+      "Example: `/observer #2 6`. Related: /'help approve', /'help schedule'.",
+    ])
+    for (const topic of ["answer", "give", "observer"]) expect(await help(`/${topic}`)).toEqual(await help(topic))
+  })
+
+  it("explains the approval of a tool and the cards of mode host, plans, links, questions and tool uses approved only in the terminal in /help approve and /help reject before the text of serve, the end of a tool's approval in /help revoke before that text, and its line of /list in /help list after that text, each written with or without its slash", async () => {
+    const chat = new FakeChat()
+    const {session} = await channel(chat)
+    const help = async (topic: string): Promise<string[]> => (await session.control.ownerCommand(invitedAlice, {keyword: "help", params: topic}))!.split("\n")
+    expect(await help("approve")).toEqual([
+      "On the card of a tool use, /'approve N' allows the use, and /'approve N all' also approves its tool for the rest of this session: its later uses run without a card, while you approve actions, until /'revoke TOOL'. A use that Claude Code still asks for gets a card that says so.",
+      "On the card of mode host, /'approve N' sets that mode for this session: Claude Code asks you before each of the agent's actions, and they are performed without approval here.",
+      "On the card of a plan, /'approve N' starts the work, and a reply to the card keeps Claude planning with your text. On the card of an MCP server's link, open the link, then /'approve N'.",
+      "A tool use that Claude Code approves only in its terminal is approved there, and a question is answered with /'answer N K' or a reply, see /'help answer'; /'reject N' rejects either here.",
+      "/'approve N' performs pending action N: a connect, send or leave. /'reject N' rejects pending action N, a download too. Its card then shows the outcome.",
+      "/'approve CHAT N' and /'reject CHAT N' do the same for an action of CHAT, as its card shows.",
+      "/'approve CHAT all' performs the pending sends to CHAT; later ones are performed at once and posted here, while you approve actions, until /'revoke CHAT'. It applies in mode requests only.",
+      "N: the number on the card and in /pending. CHAT: a chat ID from /list, such as `#3`.",
+      "Example: `/approve #3 12`. Related: /'help receive', /'help revoke'.",
+    ])
+    expect(await help("revoke")).toEqual([
+      "/'revoke TOOL' ends the approval of all uses of TOOL given with /'approve N all': each later use of TOOL needs approval again. TOOL: a tool name from /list, such as `Bash`.",
+      "/'revoke CHAT' ends the approval of all sends to CHAT given with /'approve CHAT all': each later send to CHAT needs approval again.",
+      "/'receive CHAT off' ends the approval of all files from CHAT in the same way.",
+      "Example: `/revoke #3`. Related: /list, /'help approve'.",
+    ])
+    expect(await help("list")).toEqual([
+      "/list lists the agent's 100 most recent chats, one line each, such as `#3  group Builders, approved for this chat by Alice`; a chat the agent is not connected to shows `not connected`.",
+      "CHAT in the other commands is a chat ID in this form, `#N` or `@N`. Related: /'help approve', /'help leave'.",
+      "After the chats, /list lists each tool approved for this session, one line each, with the member who approved it.",
+    ])
+    expect(await help("reject")).toEqual(await help("approve"))
+    for (const topic of ["approve", "reject", "revoke", "list"]) expect(await help(`/${topic}`)).toEqual(await help(topic))
   })
 
   it("answers nothing and performs nothing for a / command of a member that reaches the commands past the one refusal", async () => {

@@ -58,6 +58,8 @@ You need Node.js 22 or later, Claude Code, and the [SimpleX Chat app](https://si
 
 3. Each Claude Code session gets its own group, such as "1 · my-project". Join it from the invitation in "Claude Control", and send prompts there.
 
+Send `/help` in the session's group for the commands; the cron fields, the limits and an example are in the reply to `/help schedule`.
+
 [REFERENCE.md](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-mcp/REFERENCE.md) covers the plugin without the channel, several machines or containers, the status line, options, recovery and security.
 
 ## Safety
