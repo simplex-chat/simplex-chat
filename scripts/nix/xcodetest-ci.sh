@@ -25,7 +25,10 @@ log=$derived/xcodetest-run.log
 # Linker-signed products have no app-group entitlement, so the process
 # SIGTRAPs in getWallpaperDirectory(). Sign inside-out. keychain-access-groups
 # is restricted under an ad-hoc signature (AMFI -424) and is not included.
+# The marker is part of the signed bundle. The app then uses the
+# simplex_xcodetest database prefix and suffixed keychain accounts.
 prod=$derived/Build/Products/Debug-iphonesimulator
+: > "$prod/SimpleX.app/xcodetest-isolate"
 python3 - "$prod" "$ent" <<'PY'
 import os, subprocess, sys
 prod, ent = sys.argv[1], sys.argv[2]
@@ -76,6 +79,54 @@ print("platform=iOS Simulator,id=" + pick["udid"])
 PY
 )
 echo "destination $destination" | tee -a "$log"
+udid=${destination#*id=}
+data=$(xcrun simctl get_app_container "$udid" chat.simplex.app data)
+prefs=$data/Library/Preferences
+backup=$derived/ci-prefs-backup
+mkdir -p "$backup"
+for name in chat.simplex.app.plist group.chat.simplex.app.plist; do
+  if [ -f "$prefs/$name" ]; then
+    cp -p "$prefs/$name" "$backup/$name"
+  fi
+done
+group=$(python3 - "$udid" <<'PY'
+import os, plistlib, sys
+udid = sys.argv[1]
+root = f"/Users/ci/Library/Developer/CoreSimulator/Devices/{udid}/data/Containers/Shared/AppGroup"
+found = ""
+for name in os.listdir(root):
+    path = os.path.join(root, name)
+    meta = os.path.join(path, ".com.apple.mobile_container_manager.metadata.plist")
+    if not os.path.isfile(meta):
+        continue
+    with open(meta, "rb") as handle:
+        ident = plistlib.load(handle).get("MCMMetadataIdentifier")
+    if ident == "group.chat.simplex.app":
+        found = path
+        break
+if not found:
+    sys.exit("group.chat.simplex.app container not found")
+print(found)
+PY
+)
+echo "isolate group $group" | tee -a "$log"
+rm -f "$group"/simplex_xcodetest*
+
+restore_ci_state() {
+  local rc=$?
+  set +e
+  rm -f "$group"/simplex_xcodetest*
+  # SIGKILL so cfprefsd cannot flush the suite's defaults over the backup.
+  xcrun simctl spawn "$udid" launchctl kill SIGKILL system/com.apple.cfprefsd.xpc.daemon >/dev/null 2>&1
+  sleep 1
+  for name in chat.simplex.app.plist group.chat.simplex.app.plist; do
+    if [ -f "$backup/$name" ]; then
+      cp -p "$backup/$name" "$prefs/$name"
+    fi
+  done
+  exit "$rc"
+}
+trap restore_ci_state EXIT
 rm -rf "$derived/result.xcresult"
 
 set +e
@@ -95,6 +146,7 @@ xpid=$!
 # The one-pass suite is about eight minutes. A UI-configuration regression
 # is not allowed to occupy the builder for hours.
 (
+  trap - EXIT
   sleep 1200
   cmd=$(ps -p "$xpid" -o command= 2>/dev/null || true)
   case "$cmd" in

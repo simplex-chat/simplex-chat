@@ -68,6 +68,13 @@ public let GROUP_DEFAULT_CHAT_BOTTOM_BAR = "chatBottomBar"
 
 public let APP_GROUP_NAME = "group.chat.simplex.app"
 
+// scripts/nix/xcodetest-ci.sh drops this file into the test host before signing.
+// The suite then uses its own database prefix and keychain accounts so it
+// neither opens nor rekeys the console user's store.
+public func xcodeTestIsolated() -> Bool {
+    FileManager.default.fileExists(atPath: Bundle.main.bundlePath + "/xcodetest-isolate")
+}
+
 public let groupDefaults = UserDefaults(suiteName: APP_GROUP_NAME)!
 
 public let groupAppDefaults: [String: Any] = [

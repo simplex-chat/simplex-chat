@@ -19,7 +19,35 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         removePasscodesIfReinstalled()
         prepareForLaunch()
         deleteOldChatArchive()
+        bootstrapXcodeTestIfNeeded()
         return true
+    }
+
+    // XCTest starts snapshot tests before the 0.15s onAppear init, and a
+    // database with no active user never sets chatRunning. The marker file
+    // is absent from production builds.
+    private func bootstrapXcodeTestIfNeeded() {
+        guard xcodeTestIsolated() else { return }
+        v3DBMigrationDefault.set(.ready)
+        do {
+            try initializeChat(start: false, dbKey: "xcodetest-db-key")
+            let m = ChatModel.shared
+            guard m.chatDbStatus == .ok else {
+                logger.error("xcodetest bootstrap: database status \(String(describing: m.chatDbStatus))")
+                return
+            }
+            if m.currentUser == nil {
+                m.currentUser = try apiCreateActiveUser(Profile(displayName: "Test", fullName: ""))
+            }
+            try startChat()
+            onboardingStageDefault.set(.onboardingComplete)
+            m.onboardingStage = .onboardingComplete
+            m.v3DBMigration = .ready
+            AppChatState.shared.set(.active)
+            logger.error("xcodetest bootstrap: chat active at \(getAppDatabasePath().path)")
+        } catch {
+            logger.error("xcodetest bootstrap failed: \(responseError(error))")
+        }
     }
 
     func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {

@@ -15,11 +15,17 @@ private let DATABASE_PASSWORD_ITEM: String = "databasePassword"
 private let APP_PASSWORD_ITEM: String = "appPassword"
 private let SELF_DESTRUCT_PASSWORD_ITEM: String = "selfDestructPassword"
 
-public let kcDatabasePassword = KeyChainItem(forKey: DATABASE_PASSWORD_ITEM)
+// Same bundle id shares the simulator keychain. A suffixed account keeps the
+// suite from reading or replacing the console user's passphrases.
+private func xcodeTestAccount(_ name: String) -> String {
+    xcodeTestIsolated() ? name + ".xcodetest" : name
+}
 
-public let kcAppPassword = KeyChainItem(forKey: APP_PASSWORD_ITEM)
+public let kcDatabasePassword = KeyChainItem(forKey: xcodeTestAccount(DATABASE_PASSWORD_ITEM))
 
-public let kcSelfDestructPassword = KeyChainItem(forKey: SELF_DESTRUCT_PASSWORD_ITEM)
+public let kcAppPassword = KeyChainItem(forKey: xcodeTestAccount(APP_PASSWORD_ITEM))
+
+public let kcSelfDestructPassword = KeyChainItem(forKey: xcodeTestAccount(SELF_DESTRUCT_PASSWORD_ITEM))
 
 public struct KeyChainItem {
     var forKey: String
