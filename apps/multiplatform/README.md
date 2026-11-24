@@ -17,6 +17,8 @@ git submodule update --init --recursive
 
 ## Build Commands
 
+Before the first build, build the Haskell core library for your target - it is not in the repo and Gradle does not build it, see [building the core library](../../docs/contributing/CORE-LIBS.md).
+
 ```bash
 # Android debug APK, assembleGoogleDebug builds the flavor with the Play Billing dependency
 ./gradlew assembleFossDebug
