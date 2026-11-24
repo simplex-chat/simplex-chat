@@ -6,6 +6,8 @@ import chat.simplex.common.platform.isImageFile
 import chat.simplex.common.platform.isWebpFile
 import java.awt.image.BufferedImage
 import java.io.ByteArrayOutputStream
+import java.net.URI
+import java.nio.file.Path
 import javax.imageio.ImageIO
 import kotlin.test.Test
 import kotlin.test.assertFalse
@@ -38,29 +40,20 @@ class ImageFileTypeTest {
 
   @Test
   fun testAnimatedImagesByHeader() = withTempDir { dir ->
-    fun animated(name: String, bytes: List<Int>): Boolean {
-      val file = dir.resolve(name).toFile()
-      file.writeBytes(bytes.map { it.toByte() }.toByteArray())
-      return isAnimImage(file.toURI(), null)
-    }
-    val vp8x = listOf(0x52, 0x49, 0x46, 0x46, 0x16, 0x00, 0x00, 0x00, 0x57, 0x45, 0x42, 0x50, 0x56, 0x50, 0x38, 0x58, 0x0A, 0x00, 0x00, 0x00)
-    assertTrue(animated("animated.webp", vp8x + listOf(0x12, 0x00, 0x00, 0x00)))
-    assertFalse(animated("still.webp", vp8x + listOf(0x10, 0x00, 0x00, 0x00)))
-    assertFalse(animated("simple.webp", listOf(0x52, 0x49, 0x46, 0x46, 0x16, 0x00, 0x00, 0x00, 0x57, 0x45, 0x42, 0x50, 0x56, 0x50, 0x38, 0x20, 0x0A, 0x00, 0x00, 0x00, 0x12)))
-    assertTrue(animated("image.gif", listOf(0x47, 0x49, 0x46, 0x38, 0x39, 0x61)))
+    assertTrue(isAnimImage(dir.fileUri("animated.webp", webpHeader + byteArrayOf(0x0A, 0, 0, 0, 0x12, 0, 0, 0)), null))
+    assertFalse(isAnimImage(dir.fileUri("still.webp", webpHeader + byteArrayOf(0x0A, 0, 0, 0, 0x10, 0, 0, 0)), null))
+    assertFalse(isAnimImage(dir.fileUri("simple.webp", webpHeader.copyOf(12) + "VP8 ".toByteArray() + byteArrayOf(0x0A, 0, 0, 0, 0x12)), null))
+    assertTrue(isAnimImage(dir.fileUri("image.gif", encoded("gif")), null))
   }
 
   @Test
   fun testWebpFilesBySignature() = withTempDir { dir ->
-    fun webp(name: String, bytes: ByteArray): Boolean {
-      val file = dir.resolve(name).toFile()
-      file.writeBytes(bytes)
-      return isWebpFile(file.toURI())
-    }
-    assertTrue(webp("image.gif", webpHeader))
-    assertFalse(webp("image.webp", encoded("gif")))
-    assertFalse(webp("short.webp", webpHeader.copyOf(11)))
+    assertTrue(isWebpFile(dir.fileUri("image.gif", webpHeader)))
+    assertFalse(isWebpFile(dir.fileUri("image.webp", encoded("gif"))))
+    assertFalse(isWebpFile(dir.fileUri("short.webp", webpHeader.copyOf(11))))
   }
+
+  private fun Path.fileUri(name: String, bytes: ByteArray): URI = resolve(name).toFile().apply { writeBytes(bytes) }.toURI()
 
   private fun encoded(format: String): ByteArray {
     val out = ByteArrayOutputStream()
