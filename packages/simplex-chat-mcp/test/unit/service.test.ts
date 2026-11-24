@@ -81,6 +81,10 @@ function deps(root: string) {
           agent.modes.push(mode)
         },
         permission: request => agent.turns.push(request),
+        ask: async request => {
+          agent.turns.push(request)
+          return {behavior: "allow"}
+        },
         turn: async request => {
           agent.turns.push(request)
         },
@@ -228,6 +232,14 @@ describe("service", () => {
     await register(id1)
     expect(agents.map(({modes}) => modes)).toEqual([["host", "requests"], ["requests"]])
     expect(agents.map(({record}) => record)).toEqual([undefined, undefined])
+  })
+
+  it("passes the global config of a registration and the transcript of a title to the session", async () => {
+    const {d, agents} = deps(root)
+    service = await Service.start(d, readDefaultConfig)
+    await post("/session", {id: id1, project: "/p/app", config: defaultConfig, globalConfig: "/h/.claude.json"})
+    await post("/title", {id: id1, project: "/p/app", transcript: "/c/projects/p/1.jsonl", config: defaultConfig})
+    expect(agents[0]).toMatchObject({globalConfig: "/h/.claude.json", transcript: "/c/projects/p/1.jsonl"})
   })
 
   it("expires due actions at each request that touches sessions", async () => {
@@ -645,6 +657,17 @@ describe("service", () => {
     expect(agents[0].turns).toEqual([permission, text, {id: id1, answer: "Done."}, "ended", "live posts ended"])
     expect(agents[0].onLine).toBeUndefined()
     await expect(post("/turn", {id: id2, answer: "x"})).rejects.toMatchObject({status: 409})
+  })
+
+  it("streams the session's decision of a prompt of the PermissionRequest hook", async () => {
+    const {d, agents} = deps(root)
+    service = await Service.start(d, readDefaultConfig)
+    await register(id1)
+    const prompt = {id: id1, kind: "tool" as const, tool: "Bash", description: "", preview: "ls", agent: "reviewer"}
+    const lines: unknown[] = []
+    await streamLines(socketPath(root), token, "/ask", prompt, line => lines.push(line))
+    expect(lines).toEqual([{decision: {behavior: "allow"}}])
+    expect(agents[0].turns).toEqual([prompt])
   })
 
   it("keeps the tool approvals of a session when its process attaches again, and ends them when another process registers the session and when the session closes", async () => {

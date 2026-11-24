@@ -1,0 +1,15 @@
+{
+  "body": {
+    "kind": "channel",
+    "profile": {
+      "linkProfile": {
+        "displayName": "Bakery news",
+        "fullName": "Daily bakes and opening hours",
+        "kind": "channel",
+        "subscribers": 1204
+      },
+      "type": "ok"
+    }
+  },
+  "status": 200
+}

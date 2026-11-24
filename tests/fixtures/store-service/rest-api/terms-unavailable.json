@@ -1,0 +1,8 @@
+{
+  "body": {
+    "type": "terms_unavailable",
+    "wait": 60
+  },
+  "retryAfter": "60",
+  "status": 503
+}

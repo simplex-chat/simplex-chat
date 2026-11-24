@@ -16,7 +16,7 @@ import Data.Text (Text)
 import Simplex.Chat.Types.UITheme
 import Simplex.Messaging.Client (NetworkConfig, defaultNetworkConfig)
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON)
-import Simplex.Messaging.Util (catchAll_)
+import Simplex.Messaging.Util (catchOwn')
 
 data AppPlatform = APIOS | APAndroid | APDesktop deriving (Show)
 
@@ -290,4 +290,4 @@ instance FromJSON AppSettings where
 readAppSettings :: FilePath -> Maybe AppSettings -> IO AppSettings
 readAppSettings f platformDefaults =
   combineAppSettings (fromMaybe defaultAppSettings platformDefaults) . fromMaybe defaultParseAppSettings
-    <$> (J.decodeFileStrict f `catchAll_` pure Nothing)
+    <$> (J.decodeFileStrict f `catchOwn'` \_ -> pure Nothing)

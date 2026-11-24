@@ -5,6 +5,7 @@ This file is generated automatically.
 - [ACIReaction](#acireaction)
 - [AChat](#achat)
 - [AChatItem](#achatitem)
+- [AChatItemUpdate](#achatitemupdate)
 - [AddRelayResult](#addrelayresult)
 - [AddressSettings](#addresssettings)
 - [AgentCryptoError](#agentcryptoerror)
@@ -15,7 +16,6 @@ This file is generated automatically.
 - [BadgeInfo](#badgeinfo)
 - [BadgeProof](#badgeproof)
 - [BadgeRedeemError](#badgeredeemerror)
-- [BadgeServiceErrorCode](#badgeserviceerrorcode)
 - [BadgeStatus](#badgestatus)
 - [BadgeType](#badgetype)
 - [BlockToken](#blocktoken)
@@ -88,6 +88,7 @@ This file is generated automatically.
 - [CryptoFile](#cryptofile)
 - [CryptoFileArgs](#cryptofileargs)
 - [CtrlAppInfo](#ctrlappinfo)
+- [DomainVerification](#domainverification)
 - [DroppedMsg](#droppedmsg)
 - [E2EInfo](#e2einfo)
 - [ErrorType](#errortype)
@@ -159,7 +160,10 @@ This file is generated automatically.
 - [MsgReceiptStatus](#msgreceiptstatus)
 - [MsgSigStatus](#msgsigstatus)
 - [MsgVerified](#msgverified)
+- [NameChange](#namechange)
 - [NameErrorType](#nameerrortype)
+- [NamePrice](#nameprice)
+- [NameWarning](#namewarning)
 - [NavigationInfo](#navigationinfo)
 - [NetworkConfig](#networkconfig)
 - [NetworkError](#networkerror)
@@ -230,6 +234,7 @@ This file is generated automatically.
 - [SocksMode](#socksmode)
 - [SrvError](#srverror)
 - [StoreError](#storeerror)
+- [StoreServiceErrorCode](#storeserviceerrorcode)
 - [SubscriptionStatus](#subscriptionstatus)
 - [SupportGroupPreference](#supportgrouppreference)
 - [SwitchPhase](#switchphase)
@@ -286,6 +291,18 @@ This file is generated automatically.
 **Record type**:
 - chatInfo: [ChatInfo](#chatinfo)
 - chatItem: [ChatItem](#chatitem)
+
+
+---
+
+## AChatItemUpdate
+
+Updated message, with the message before the update.
+
+**Record type**:
+- chatInfo: [ChatInfo](#chatinfo)
+- chatItem: [ChatItem](#chatitem)
+- prevChatItem: [ChatItem](#chatitem)
 
 
 ---
@@ -492,7 +509,7 @@ StorePurchaseOpen:
 
 ServiceError:
 - type: "serviceError"
-- serviceError: [BadgeServiceErrorCode](#badgeserviceerrorcode)
+- serviceError: [StoreServiceErrorCode](#storeserviceerrorcode)
 
 InvalidResponse:
 - type: "invalidResponse"
@@ -503,33 +520,6 @@ UnknownKeyIndex:
 
 CredentialNotVerified:
 - type: "credentialNotVerified"
-
-
----
-
-## BadgeServiceErrorCode
-
-**Enum type**:
-- "bad_request"
-- "unsupported_version"
-- "unknown_purchase_key"
-- "unknown_offer_id"
-- "offer_disabled"
-- "offer_mismatch"
-- "product_unavailable"
-- "payment_not_entitled"
-- "payment_pending"
-- "provider_unavailable"
-- "provider_not_configured"
-- "rate_limited"
-- "code_invalid"
-- "code_used"
-- "code_expired"
-- "receipt_invalid"
-- "receipt_used"
-- "transfer_limited"
-- "test_purchase"
-- "internal"
 
 
 ---
@@ -2070,10 +2060,12 @@ InvitationLink:
 ContactAddress:
 - type: "contactAddress"
 - contactAddressPlan: [ContactAddressPlan](#contactaddressplan)
+- nameChange: [NameChange](#namechange)?
 
 GroupLink:
 - type: "groupLink"
 - groupLinkPlan: [GroupLinkPlan](#grouplinkplan)
+- nameChange: [NameChange](#namechange)?
 
 Error:
 - type: "error"
@@ -2268,6 +2260,16 @@ Remote controller application info.
 - appVersionRange: [AppVersionRange](#appversionrange)
 - deviceName: string
 - compression: bool
+
+
+---
+
+## DomainVerification
+
+**Enum type**:
+- "failed"
+- "verified"
+- "moved"
 
 
 ---
@@ -2719,7 +2721,7 @@ MemberSupport:
 - rosterVersion: int64?
 - membersRequireAttention: int
 - viaGroupLinkUri: string?
-- groupDomainVerified: bool?
+- groupDomainVerified: [DomainVerification](#domainverification)?
 
 
 ---
@@ -3211,7 +3213,7 @@ Unknown:
 - localBadge: [LocalBadge](#localbadge)?
 - localAlias: string
 - contactDomain: [SimplexDomainClaim](#simplexdomainclaim)?
-- contactDomainVerified: bool?
+- contactDomainVerified: [DomainVerification](#domainverification)?
 
 
 ---
@@ -3467,6 +3469,21 @@ SigMissing:
 
 ---
 
+## NameChange
+
+**Discriminated union type**:
+
+Lapsed:
+- type: "lapsed"
+- nameWarning: [NameWarning](#namewarning)
+
+Moved:
+- type: "moved"
+- knownChat: [ChatInfo](#chatinfo)
+
+
+---
+
 ## NameErrorType
 
 **Discriminated union type**:
@@ -3480,6 +3497,37 @@ NOT_FOUND:
 RESOLVER:
 - type: "RESOLVER"
 - resolverErr: string
+
+
+---
+
+## NamePrice
+
+**Record type**:
+- amount: int64
+- years: int
+
+
+---
+
+## NameWarning
+
+**Discriminated union type**:
+
+Expired:
+- type: "expired"
+- expiredAt: UTCTime
+- graceUntil: UTCTime?
+
+Available:
+- type: "available"
+- price: [NamePrice](#nameprice)
+
+ReservedForCommunity:
+- type: "reservedForCommunity"
+
+NotRegistered:
+- type: "notRegistered"
 
 
 ---
@@ -4374,6 +4422,10 @@ NoValidLink:
 UnknownDomain:
 - type: "unknownDomain"
 
+NameWarning:
+- type: "nameWarning"
+- nameWarning: [NameWarning](#namewarning)
+
 
 ---
 
@@ -4945,6 +4997,33 @@ DeliveryJobNotFound:
 WorkItemError:
 - type: "workItemError"
 - errContext: string
+
+
+---
+
+## StoreServiceErrorCode
+
+**Enum type**:
+- "bad_request"
+- "unsupported_version"
+- "unknown_purchase_key"
+- "unknown_offer_id"
+- "offer_disabled"
+- "offer_mismatch"
+- "product_unavailable"
+- "payment_not_entitled"
+- "payment_pending"
+- "provider_unavailable"
+- "provider_not_configured"
+- "rate_limited"
+- "code_invalid"
+- "code_used"
+- "code_expired"
+- "receipt_invalid"
+- "receipt_used"
+- "transfer_limited"
+- "test_purchase"
+- "internal"
 
 
 ---
