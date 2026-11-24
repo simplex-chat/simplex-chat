@@ -67,6 +67,7 @@ imageTests = do
     it "should decode the first frame of animated WebP" testWebpAnimation
     it "should write the Display P3 profile for Display P3 WebP" testWebpProfile
     it "should apply EXIF orientation of WebP" testWebpOrientation
+    it "should ignore ICCP and EXIF chunks without their VP8X flags" testWebpChunksWithoutFlags
     it "should refuse malformed and oversized WebP" testWebpRefused
   describe "scaling" $ do
     it "should scale and sharpen as the research code" testScaleResearch
@@ -397,6 +398,15 @@ testWebpOrientation = do
       withExif = webpContainer [webpVp8x 0x18 (w, h), B.drop 12 lossless, webpChunk "EXIF" $ orientationTiff True 8 6]
   Right (ImageRGBA8 img, CPNone) <- decodeResizable withExif
   (imageWidth img, imageHeight img, imageData img) `shouldBe` (h, w, imageData rotated)
+
+testWebpChunksWithoutFlags :: IO ()
+testWebpChunksWithoutFlags = do
+  lossless <- B.readFile $ webpFixture "lossless-alpha.webp"
+  Right (ImageRGBA8 upright, CPNone) <- decodeResizable lossless
+  let (w, h) = (imageWidth upright, imageHeight upright)
+      withChunks = webpContainer [webpVp8x 0x10 (w, h), webpChunk "ICCP" p3Profile, B.drop 12 lossless, webpChunk "EXIF" $ orientationTiff True 8 6]
+  Right (ImageRGBA8 img, CPNone) <- decodeResizable withChunks
+  (imageWidth img, imageHeight img, imageData img) `shouldBe` (w, h, imageData upright)
 
 testWebpRefused :: IO ()
 testWebpRefused = do
