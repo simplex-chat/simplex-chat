@@ -523,6 +523,7 @@ textWithSimplexNames = describe "text with SimpleX names" do
     "##double secret##" <==> markdown Secret "#double secret#"
     "#" <==> "#"
     "https://simplex.chat/name#privacy.simplex" <==> uri "https://simplex.chat/name#privacy.simplex"
+    "simplex:nameprivacy" <==> "simplex:nameprivacy"
 
 multilineMarkdownList :: Spec
 multilineMarkdownList = describe "multiline markdown" do
