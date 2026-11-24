@@ -392,7 +392,7 @@ flowchart LR
 | `scripts/nix/sha256map.nix:12` | hash of that commit, computed with submodules |
 | `simplex-chat.cabal:391-394` | `JuicyPixels-webp ==0.1.*` in the library |
 | nix: Android aarch64 and armv7a, iOS, iOS simulator, macOS (flake.nix) | unchanged; the package is built by haskell.nix as `JuicyPixels-spng` is; its licence, BSD-3-Clause, is accepted as declared (flake.nix:73-75 overrides `JuicyPixels-spng` only) |
-| Android armv7a, GHC 8.10.7 (flake.nix:11-13, :344-346) | `JuicyPixels-webp` built and its tests passed with GHC 8.10.7 on ubuntu-22.04 in hs-jpeg-turbo CI ([run](https://github.com/evgeny-simplex/hs-jpeg-turbo/actions/runs/45286775715)); pending: the core built by android-emu with the input `armv7a`; the armv7a build of this branch is stopped by a compilation error of `wide-word`, a dependency unchanged from master, before `JuicyPixels-webp` is built ([run](https://github.com/evgeny-simplex/simplex-chat/actions/runs/45147694496)) |
+| Android armv7a, GHC 8.10.7 (flake.nix:11-13, :344-346) | `JuicyPixels-webp` built and its tests passed with GHC 8.10.7 on ubuntu-22.04 in hs-jpeg-turbo CI ([run](https://github.com/evgeny-simplex/hs-jpeg-turbo/actions/runs/45286775715)); the core built for armv7a, `JuicyPixels-webp` included, by android-emu with the input `armv7a` at `0dd48a1`, the merge of master `de0eaf2cf` with its `wide-word` fix ([run](https://github.com/evgeny-simplex/simplex-chat/actions/runs/45302155723)); built only, without tests |
 | Windows (`.github/workflows/build.yml:1652-1655, 1778, 1820-1822`; `scripts/desktop/build-lib-windows.sh:43`) | unchanged: the libwebp submodule is removed with the others by the glob `dist-newstyle/src/hs-jpeg-t*` |
 | reproducible Android build | unchanged: submodules are updated after checkout (`scripts/simplex-chat-reproduce-builds-android.sh:103`) |
 
@@ -455,7 +455,12 @@ Measured in CI and reported in the pull request before review:
   | `.a`, macOS x86-64, GHC 9.6.3 | 663,776 | | | |
   | `.a`, Windows x86-64, GHC 9.6.3 | 534,588 | | | |
 
-- pending: simplex-chat `libsimplex.so` of android-emu, aarch64 and armv7a, on this branch and on master; armv7a after the `wide-word` fix ("Builds").
+- simplex-chat `libsimplex.so` of android-emu (`ls -la` in build-core.sh): this branch at `0dd48a1` ([run](https://github.com/evgeny-simplex/simplex-chat/actions/runs/45302155723)); master `de0eaf2cf`, built at `eef2f72` of #8316, the same tree ([run](https://github.com/evgeny-simplex/simplex-chat/actions/runs/45253004539)).
+
+  | Build | master, bytes | this branch, bytes | Change |
+  |---|---|---|---|
+  | aarch64, GHC 9.6.3 | 219,906,856 | 219,960,944 | +54,088 |
+  | armv7a, GHC 8.10.7 | 188,557,068 | 188,919,244 | +362,176 |
 
 ## Tests
 
