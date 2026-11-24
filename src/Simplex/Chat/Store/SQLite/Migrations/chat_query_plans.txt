@@ -970,9 +970,9 @@ Query:
             SELECT MIN(chat_item_id)
             FROM chat_items
             WHERE user_id = ? AND item_status = ?
-           GROUP BY user_id
+          
 Plan:
-SEARCH chat_items USING COVERING INDEX idx_chat_items_group_scope_stats_all (user_id=? AND item_status=?)
+SEARCH chat_items USING INDEX idx_chat_items_item_status (item_status=?)
 
 Query: 
             SELECT author_group_member_id, forwarded_by_group_member_id
@@ -1011,7 +1011,7 @@ Query:
             LIMIT ?
           
 Plan:
-SEARCH chat_items USING INDEX idx_chat_items_groups_msg_content_tag_deleted (user_id=?)
+SEARCH chat_items USING INDEX idx_chat_items_groups_item_viewed (user_id=?)
 USE TEMP B-TREE FOR ORDER BY
 
 Query: 
@@ -1022,7 +1022,7 @@ Query:
             LIMIT ?
           
 Plan:
-SEARCH chat_items USING INDEX idx_chat_items_groups_msg_content_tag_deleted (user_id=?)
+SEARCH chat_items USING INDEX idx_chat_items_groups_item_viewed (user_id=?)
 USE TEMP B-TREE FOR ORDER BY
 
 Query: 
@@ -1725,7 +1725,7 @@ Query:
           LIMIT ?
         
 Plan:
-SEARCH chat_items USING INDEX idx_chat_items_groups_msg_content_tag_deleted (user_id=?)
+SEARCH chat_items USING INDEX idx_chat_items_groups_item_viewed (user_id=?)
 USE TEMP B-TREE FOR ORDER BY
 
 Query: 
@@ -6516,11 +6516,24 @@ Query:
                   AND m.member_status IN (?, ?, ?, ?)
                   AND m.removed_at IS NULL
                   AND NOT EXISTS (SELECT 1 FROM chat_items i WHERE i.group_member_id = m.group_member_id)
+                  AND NOT EXISTS (
+                    SELECT 1 FROM delivery_tasks t
+                    WHERE t.sender_group_member_id = m.group_member_id AND t.failed = 0 AND t.task_status = ?
+                  )
+                  AND NOT EXISTS (
+                    SELECT 1 FROM delivery_jobs j
+                    WHERE j.group_id = m.group_id AND j.worker_scope IN (?, ?) AND j.failed = 0 AND j.job_status = ?
+                      AND ',' || j.sender_group_member_ids || ',' LIKE '%,' || m.group_member_id || ',%'
+                  )
               
 Plan:
 SEARCH m USING INDEX idx_group_members_group_id (user_id=? AND group_id=?)
 CORRELATED SCALAR SUBQUERY 1
 SEARCH i USING COVERING INDEX idx_chat_items_group_member_id (group_member_id=?)
+CORRELATED SCALAR SUBQUERY 2
+SEARCH t USING INDEX idx_delivery_tasks_sender_group_member_id (sender_group_member_id=?)
+CORRELATED SCALAR SUBQUERY 3
+SEARCH j USING INDEX idx_delivery_jobs_next (group_id=? AND worker_scope=? AND failed=? AND job_status=?)
 SEARCH p USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH c USING INDEX idx_connections_group_member_id (group_member_id=?) LEFT-JOIN
 SEARCH bp USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
