@@ -2422,11 +2422,13 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
               messageError "x.msg.update: edit too late" $> Nothing
           | otherwise = do
               let changed = mc /= oldMC
+                  shown = isNothing itemDeleted && not (maybe False memberBlocked itemMember_)
                   priority' = if isJust itemDeleted then priority else allowedPriority (rcvPriorityAllowed memberBlocked cd) priority_
-                  newTs_ = if isNothing itemDeleted && not (maybe False memberBlocked itemMember_) then fwdNewTs_ else Nothing
+                  newTs_ = if shown then fwdNewTs_ else Nothing
                   fwdPriority = if hiddenForAll then priority else allowedPriority (rcvPriorityAllowed blockedByAdmin cd) priority_
+                  fwdPrevPriority = if shown || hiddenForAll then Just priority else Nothing
                   fwdNewTs_ = if asNew_ == Just True && isNothing scopeInfo && not hiddenForAll then asNewItemTs (chatItemTs' ci) brokerTs else Nothing
-                  fwdContext = (infoToDeliveryContext gInfo scopeInfo showGroupAsSender :: DeliveryTaskContext) {updateNotification = if isJust fwdNewTs_ then fwdPriority /= MPSilent else fwdPriority == MPHigh && priority /= MPHigh}
+                  fwdContext = (infoToDeliveryContext gInfo scopeInfo showGroupAsSender :: DeliveryTaskContext) {updateNotification = if isJust fwdNewTs_ then fwdPriority /= MPSilent else fwdPriority == MPHigh && fwdPrevPriority /= Just MPHigh}
               if changed || fromMaybe False itemLive || priority' /= priority || isJust newTs_
                 then do
                   (cInfo, ci') <- withStore' $ \db -> do
@@ -2449,7 +2451,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                   pure $ Just fwdContext
                 else do
                   toView $ CEvtChatItemNotChanged user (AChatItem SCTGroup SMDRcv (GroupChat gInfo scopeInfo) ci)
-                  pure $ if fwdPriority /= priority || isJust fwdNewTs_ then Just fwdContext else Nothing
+                  pure $ if fwdPrevPriority /= Just fwdPriority || isJust fwdNewTs_ then Just fwdContext else Nothing
           where
             itemMember_ = chatItemRcvFromMember ci
             hiddenForAll = case itemDeleted of
