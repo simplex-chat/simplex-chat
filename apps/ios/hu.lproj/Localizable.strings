@@ -758,7 +758,7 @@ swipe action */
 "Allow to irreversibly delete sent messages. (24 hours)" = "Az elküldött üzenetek végleges törlése engedélyezve van. (24 óra)";
 
 /* No comment provided by engineer. */
-"Allow to report messsages to moderators." = "Az üzenetek jelentése a moderátorok felé engedélyezve van.";
+"Allow to report messages to moderators." = "Az üzenetek jelentése a moderátorok felé engedélyezve van.";
 
 /* No comment provided by engineer. */
 "Allow to send files and media." = "A fájlok és a médiatartalmak küldése engedélyezve van.";
@@ -4105,7 +4105,7 @@ servers warning */
 "Members can irreversibly delete sent messages. (24 hours)" = "A tagok véglegesen törölhetik az elküldött üzeneteiket. (24 óra)";
 
 /* No comment provided by engineer. */
-"Members can report messsages to moderators." = "A tagok jelenthetik az üzeneteket a moderátorok felé.";
+"Members can report messages to moderators." = "A tagok jelenthetik az üzeneteket a moderátorok felé.";
 
 /* No comment provided by engineer. */
 "Members can send direct messages." = "A tagok küldhetnek egymásnak közvetlen üzeneteket.";
@@ -6537,7 +6537,7 @@ report reason */
 "Subscribers can irreversibly delete sent messages. (24 hours)" = "A feliratkozók véglegesen törölhetik az elküldött üzeneteiket. (24 óra)";
 
 /* No comment provided by engineer. */
-"Subscribers can report messsages to moderators." = "A feliratkozók jelenthetik az üzeneteket a moderátorok felé.";
+"Subscribers can report messages to moderators." = "A feliratkozók jelenthetik az üzeneteket a moderátorok felé.";
 
 /* No comment provided by engineer. */
 "Subscribers can send direct messages." = "A feliratkozók küldhetnek egymásnak közvetlen üzeneteket.";

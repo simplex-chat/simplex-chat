@@ -606,7 +606,7 @@ swipe action */
 "Allow to irreversibly delete sent messages. (24 hours)" = "Sta toe om verzonden berichten definitief te verwijderen. (24 uur)";
 
 /* No comment provided by engineer. */
-"Allow to report messsages to moderators." = "Hiermee kunt u berichten rapporteren aan moderators.";
+"Allow to report messages to moderators." = "Hiermee kunt u berichten rapporteren aan moderators.";
 
 /* No comment provided by engineer. */
 "Allow to send files and media." = "Sta toe om bestanden en media te verzenden.";
@@ -3426,7 +3426,7 @@ servers warning */
 "Members can irreversibly delete sent messages. (24 hours)" = "Groepsleden kunnen verzonden berichten onherroepelijk verwijderen. (24 uur)";
 
 /* No comment provided by engineer. */
-"Members can report messsages to moderators." = "Leden kunnen berichten melden bij moderators.";
+"Members can report messages to moderators." = "Leden kunnen berichten melden bij moderators.";
 
 /* No comment provided by engineer. */
 "Members can send direct messages." = "Groepsleden kunnen directe berichten sturen.";

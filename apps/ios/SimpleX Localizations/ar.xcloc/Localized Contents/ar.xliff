@@ -2150,8 +2150,8 @@
         <source>Allow message reactions only if your contact allows them.</source>
         <target state="translated">اسمح بردود الفعل على الرسائل فقط إذا سمحت جهة اتصالك بذلك.</target>
       </trans-unit>
-      <trans-unit id="Allow to report messsages to moderators." xml:space="preserve" approved="no">
-        <source>Allow to report messsages to moderators.</source>
+      <trans-unit id="Allow to report messages to moderators." xml:space="preserve" approved="no">
+        <source>Allow to report messages to moderators.</source>
         <target state="translated">السماح بالإبلاغ عن الرسائل إلى المشرفين.</target>
       </trans-unit>
       <trans-unit id="Allow your contacts to irreversibly delete sent messages. (24 hours)" xml:space="preserve" approved="no">
