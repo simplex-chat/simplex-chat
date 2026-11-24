@@ -178,6 +178,7 @@ This file is generated automatically.
 - [PaymentNetwork](#paymentnetwork)
 - [PaymentPayee](#paymentpayee)
 - [PaymentRequest](#paymentrequest)
+- [PaymentToken](#paymenttoken)
 - [PendingContactConnection](#pendingcontactconnection)
 - [PlanResolveMode](#planresolvemode)
 - [PrefEnabled](#prefenabled)
@@ -3772,10 +3773,19 @@ Payment URI or address in a message text. amount: in coins of the network; with 
 - payee: [PaymentPayee](#paymentpayee)
 - alternatives: [[LightningPayee](#lightningpayee)]
 - amount: string?
-- token: string?
+- token: [PaymentToken](#paymenttoken)?
 - label: string?
 - message: string?
 - walletUri: string
+
+
+---
+
+## PaymentToken
+
+**Record type**:
+- address: string
+- checksum: [AddressChecksum](#addresschecksum)
 
 
 ---

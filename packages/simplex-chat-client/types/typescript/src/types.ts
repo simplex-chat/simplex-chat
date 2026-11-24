@@ -4107,10 +4107,15 @@ export interface PaymentRequest {
   payee: PaymentPayee
   alternatives: LightningPayee[]
   amount?: string
-  token?: string
+  token?: PaymentToken
   label?: string
   message?: string
   walletUri: string
+}
+
+export interface PaymentToken {
+  address: string
+  checksum: AddressChecksum
 }
 
 export interface PendingContactConnection {

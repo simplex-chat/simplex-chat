@@ -2877,10 +2877,14 @@ class PaymentRequest(TypedDict):
     payee: "PaymentPayee"
     alternatives: list["LightningPayee"]
     amount: NotRequired[str]
-    token: NotRequired[str]
+    token: NotRequired["PaymentToken"]
     label: NotRequired[str]
     message: NotRequired[str]
     walletUri: str
+
+class PaymentToken(TypedDict):
+    address: str
+    checksum: "AddressChecksum"
 
 class PendingContactConnection(TypedDict):
     pccConnId: int  # int64
