@@ -12,7 +12,7 @@ import ChatTests.Utils
 import Codec.Picture (PixelRGBA8 (..), generateImage)
 import Codec.Picture.Png (encodePng)
 import Control.Concurrent (forkIO, newEmptyMVar, putMVar, takeMVar, threadDelay)
-import Control.Concurrent.Async (race_, withAsync)
+import Control.Concurrent.Async (race, race_, withAsync)
 import Control.Concurrent.STM
 import qualified Control.Exception as E
 import Control.Monad
@@ -24,6 +24,7 @@ import qualified Data.ByteString.Builder as BB
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as LB
+import Data.Default (def)
 import Data.IORef
 import Data.List (isInfixOf, isPrefixOf)
 import qualified Data.Text as T
@@ -63,6 +64,7 @@ chatLinkPreviewTests = do
   it "should stop reading the page after og tags" testEndlessBody
   it "should stop reading the page after the head limit" testLargeHead
   it "should fail on slow server" testSlowServer
+  it "should limit preview time when server stops reading" testServerNotReading
   it "should limit preview time by the SOCKS deadline only with SOCKS proxy" testSocksDeadline
   it "should fail on compressed body and oversized image" testRefusedContent
   it "should fail on certificate of unknown CA" testUnknownCA
@@ -242,6 +244,15 @@ testSlowServer ps = do
   cfg@ChatConfig {linkPreviewConfig} <- linkPreviewCfg
   withLinkPreviewChat ps cfg {linkPreviewConfig = linkPreviewConfig {previewDeadline = 2_000000}} testOpts $ \_ alice ->
     previewOf alice (pageUrl ps "/slow") >>= (`shouldBeError` "timeout")
+
+testServerNotReading :: HasCallStack => TestParams -> IO ()
+testServerNotReading ps = do
+  cfg@ChatConfig {linkPreviewConfig} <- linkPreviewCfg
+  withKeyUpdateServer ps $
+    withNewTestChatCfgOpts ps cfg {linkPreviewConfig = linkPreviewConfig {previewDeadline = 2_000000}} testOpts "alice" aliceProfile $ \alice ->
+      race (threadDelay 10_000000) (previewOf alice $ pageUrl ps "/page") >>= \case
+        Right r -> r `shouldBeError` "timeout"
+        Left () -> expectationFailure "no response in 10 s"
 
 testSocksDeadline :: HasCallStack => TestParams -> IO ()
 testSocksDeadline ps = withSocksServer ps $ \socksRequests -> do
@@ -481,14 +492,24 @@ testPng = encodePng $ generateImage (\x y -> PixelRGBA8 (fromIntegral $ x * 16) 
 withSocksServer :: TestParams -> (TVar [SocksRequest] -> IO a) -> IO a
 withSocksServer ps action = do
   socksRequests <- newTVarIO []
-  E.bracket listenSocks close $ \sock ->
-    withAsync (forever $ accept sock >>= \(conn, _) -> forkIO $ serveSocks socksRequests conn `E.finally` close conn) $ \_ ->
-      action socksRequests
+  withTCPServer (socksServerPort ps) [] (serveSocks socksRequests) $ action socksRequests
+
+withKeyUpdateServer :: TestParams -> IO a -> IO a
+withKeyUpdateServer ps action = do
+  Right credential <- TLS.credentialLoadX509 "tests/fixtures/tls/link-preview/server.crt" "tests/fixtures/tls/link-preview/server.key"
+  let params = def {TLS.serverShared = def {TLS.sharedCredentials = TLS.Credentials [credential]}, TLS.serverSupported = def {TLS.supportedVersions = [TLS.TLS13], TLS.supportedCiphers = TE.ciphersuite_strong}}
+      requestKeyUpdates conn = TLS.contextNew conn params >>= \ctx -> TLS.handshake ctx >> forever (TLS.updateKey ctx TLS.TwoWay)
+  withTCPServer (linkServerPort ps) [(RecvBuffer, 1024), (MaxSegment, 512)] requestKeyUpdates action
+
+withTCPServer :: ServiceName -> [(SocketOption, Int)] -> (Socket -> IO ()) -> IO a -> IO a
+withTCPServer port options serve action =
+  E.bracket listenTCP close $ \sock ->
+    withAsync (forever $ accept sock >>= \(conn, _) -> forkIO $ serve conn `E.finally` close conn) $ \_ -> action
   where
-    listenSocks = do
+    listenTCP = do
       sock <- socket AF_INET Stream defaultProtocol
-      setSocketOption sock ReuseAddr 1
-      bind sock $ SockAddrInet (fromIntegral (read $ socksServerPort ps :: Int)) (tupleToHostAddress (127, 0, 0, 1))
+      mapM_ (uncurry $ setSocketOption sock) $ (ReuseAddr, 1) : options
+      bind sock $ SockAddrInet (fromIntegral (read port :: Int)) (tupleToHostAddress (127, 0, 0, 1))
       listen sock 16
       pure sock
 

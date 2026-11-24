@@ -426,6 +426,7 @@ The returned `uri` is the string the app sent, because the apps send `MCLink` on
 | `http-types` | 389 | yes |
 | `uri-bytestring` | 411 | yes |
 | `file-embed` | 387 | yes |
+| `data-default` | 383; added to the test suite | yes |
 | `crypton-x509-store` | added | yes, through simplexmq (mq:simplexmq.cabal:395) |
 | `crypton-x509-validation` | added | yes, through simplexmq (mq:simplexmq.cabal:396) |
 | `iproute` | added | yes, through simplexmq (mq:simplexmq.cabal:405) |
@@ -864,6 +865,7 @@ Core, scenario, `tests/ChatTests/LinkPreviews.hs` (new, in ChatTests.hs), patter
 | endless body after the og tags, sent slowly | response before PREVIEW_DEADLINE; the server sees the connection closed after sending less than MAX_HEAD_BYTES |
 | head beyond MAX_HEAD_BYTES | the server sees the connection closed |
 | slow server, gzip, certificate of another CA, oversized image dimensions | `CELinkPreview`; slow server with a test deadline of 2 s |
+| server that stops reading | a TLS 1.3 server, with `RecvBuffer` 1024 and `MaxSegment` 512 on its listening socket, that requests key updates (`TLS.updateKey ctx TwoWay`) and reads nothing; a test deadline of 2 s: "timeout" within 10 s, with the preview in its own thread |
 | TLS 1.2 with a P-256 key | a preview from a server limited to TLS 1.2, with tests/fixtures/tls/link-preview/server-p256.crt issued by ca.crt; the handshake fails without `P256` in `supportedGroups` (section 3.6); P-384 is left untested, as a server of tls 1.9.0 signs with P-256 keys only (Network/TLS/Handshake/Key.hs, `isDigitalSignaturePair`) |
 | TLS 1.2 key exchange | servers limited to TLS 1.2, with tests/fixtures/tls/link-preview/server-rsa.crt issued by ca.crt: a preview with only an ECDHE suite and with only an RSA suite; with only the DHE suites and a group of its own, the prime of `ffdhe2048` with the generator 5: `CELinkPreview` with the server's alert to the client's hello, and no request |
 | certificate chain keys | a server with tests/fixtures/tls/link-preview/server-intermediate.crt, issued by intermediate-rsa.crt, an intermediate CA with an RSA public exponent of 34 bits issued by ca.crt: `CELinkPreview` "certificate rejected: [InvalidSignature SignatureUnimplemented]", and no request |

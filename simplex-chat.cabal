@@ -931,6 +931,7 @@ test-suite simplex-chat-test
     , crypton-x509 ==1.7.*
     , crypton-x509-store ==1.6.*
     , crypton-x509-validation ==1.6.*
+    , data-default ==0.7.*
     , deepseq ==1.4.*
     , directory ==1.3.*
     , filepath ==1.4.*
