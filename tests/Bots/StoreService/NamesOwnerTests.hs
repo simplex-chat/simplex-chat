@@ -98,7 +98,7 @@ namesOwnerTests = describe "StoreService names: owner" $ do
     it "answers terms_changed for an old version, other terms or the other kind, listed or not, a body differing only in terms included, and selects under the community terms, storing them" testSelectTermsChanged
     it "checks a code order's community name for 2 years, and its next name for its code's years again" testSelectCommunityYears
     it "prices a paid order's community name for 2 years, whatever years it paid for" testSelectCommunityPaidYears
-    it "checks the terms after the timestamp, the duration and the reveal's dispute days, refusing a BTC order's reveal signed over a card's, at the first chain read, answering terms_unavailable while they are not set" testSelectTermsCheckOrder
+    it "checks the terms after the timestamp and the duration, at the first chain read, answering terms_unavailable while they are not set" testSelectTermsCheckOrder
     it "selects a name again after each reset, as often as the order is reset" testSelectAgain
     it "refuses a selection meeting another live order of the wallet's or the commitment with a bare order_exists before its checks, and closes an overdue order of the same wallet and name, as a new order does" testSelectMeetsOrder
     it "runs the order checks on the new fields: invalid_name, the duration, name_taken and name_check_unavailable" testSelectOrderChecks
@@ -106,7 +106,7 @@ namesOwnerTests = describe "StoreService names: owner" $ do
     it "checks a code order's code as a new code order's: code_not_covering for a shorter name, and reserves it for the name selected" testSelectCodeOrder
     it "accepts the code the order holds past its expiry until a month after the take, then refuses it with code_expired, refuses it once revoked with code_invalid, changing nothing, and keeps it from other code orders, checked as expired once refused" testSelectRefusedCode
     it "refuses sealed over 11095 characters, a body over 16384 bytes and malformed fields, accepting the longest" testSelectSizes
-    it "refuses another signer's signature and a stale timestamp, and answers an unknown order 404" testSelectRefusedSigner
+    it "refuses another signer's signature, a BTC order's reveal signed over a card's dispute days and a stale timestamp, answers an unknown order 404, and selects with the order's own" testSelectRefusedSigner
     it "answers registration_changed with the current view when the order changed during the checks, writing nothing" testSelectLostRace
     it "takes both turns in hash order when the order on A selects B while the order on B selects A, without deadlock, each refused as a paid order holds the other's name" testSelectionsCross
   describe "polls" $
@@ -552,7 +552,6 @@ testSelectTermsCheckOrder = withOwner $ \ctx@Ctx {cNode} -> do
   ts <- clockSeconds ctx
   (selectionBodyAt ctx keyA (nrId r) to (ts - signedWindow - 1) >>= postSelection ctx (nrId r)) `shouldReturn` refusedWith 400 "bad_request"
   select ctx keyA r to {oDuration = oDuration to + 3601} `shouldReturn` refusedWith 400 "bad_request"
-  select ctx keyA r to {oMethod = "card"} `shouldReturn` refusedWith 400 "bad_request"
   setFault cNode "eth_call" HttpFailure
   select ctx keyA r to `shouldReturn` refusedWith 503 "name_check_unavailable"
   clearFault cNode "eth_call"
@@ -706,10 +705,12 @@ testSelectRefusedSigner = withOwner $ \ctx -> do
   r <- takenIn ctx aliceOrder id
   to <- selectionOf ctx "alicebakers" 10
   select ctx keyB r to `shouldReturn` refusedWith 400 "bad_request"
+  select ctx keyA r to {oMethod = "card"} `shouldReturn` refusedWith 400 "bad_request"
   (clockSeconds ctx >>= \ts -> selectionBodyAt ctx keyA (nrId r) to (ts - signedWindow - 1) >>= postSelection ctx (nrId r)) `shouldReturn` refusedWith 400 "bad_request"
   stored ctx r `shouldReturn` r
   let unknown = RegistrationId "t2Jk8RmQ4vXw9NcP3yLb6g"
   (selectionBody ctx keyA unknown to >>= postSelection ctx unknown) `shouldReturn` refusedWith 404 "not_found"
+  void $ selected ctx keyA r to
 
 testSelectLostRace :: IO ()
 testSelectLostRace = withOwner $ \ctx@Ctx {cNode} -> do
