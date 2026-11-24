@@ -739,10 +739,10 @@ settleServingLane cc env gid = do
 
 -- It returns once chat has started, while group start-up may still run; the Int is its web listener's port.
 startGroupService :: HasCallStack => GroupSvc -> Maybe GroupConfig -> IO (Async (), ChatController, ServiceState, Int)
-startGroupService svc@GroupSvc {gsCfg} groupCfg = do
+startGroupService svc@GroupSvc {gsCfg, gsPs} groupCfg = do
   (opts, serviceCfg, port) <- groupServiceOpts svc groupCfg
   env <- newServiceState
-  t <- async $ storeService opts (Just serviceCfg) gsCfg env
+  t <- async $ storeService opts (Just serviceCfg) (fst $ testPortsCfg gsPs gsCfg testOpts) env
   -- A service that ends before it is ready fails the test with its own error, not the timeout.
   cc <-
     timeout waitLimit (atomically $ (Right <$> readTMVar (serviceCC env)) `orElse` (Left <$> waitCatchSTM t)) >>= \case
