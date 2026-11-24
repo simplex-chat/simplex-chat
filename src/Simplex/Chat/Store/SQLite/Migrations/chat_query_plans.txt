@@ -8037,6 +8037,10 @@ Query: SELECT COUNT(1) FROM contacts WHERE user_id = ? AND chat_item_ttl > 0
 Plan:
 SEARCH contacts USING INDEX idx_contacts_chat_ts (user_id=?)
 
+Query: SELECT COUNT(1) FROM delivery_jobs WHERE job_status = 'pending'
+Plan:
+SCAN delivery_jobs USING COVERING INDEX idx_delivery_jobs_next
+
 Query: SELECT COUNT(1) FROM group_members WHERE member_role = 'owner' AND member_pub_key IS NOT NULL
 Plan:
 SCAN group_members
