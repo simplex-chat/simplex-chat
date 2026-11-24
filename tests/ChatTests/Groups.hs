@@ -2358,7 +2358,7 @@ testClearChatDeleteLeftMember :: HasCallStack => TestParams -> IO ()
 testClearChatDeleteLeftMember =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
-      createGroup3 "team" alice bob cath
+      createGroup3' "team" alice (bob, GRMember) (cath, GRMember)
       alice #> "@bob hi"
       bob <# "alice> hi"
       cath ##> "/l team"
@@ -2369,8 +2369,8 @@ testClearChatDeleteLeftMember =
           alice <## "#team: cath left the group (signed)",
           bob <## "#team: cath left the group (signed)"
         ]
-      alice #$> ("/clear #team", id, "#team: all messages are removed locally ONLY")
-      withCCTransaction alice (\db -> DB.query_ db "SELECT local_display_name FROM group_members ORDER BY group_member_id" :: IO [[T.Text]])
+      bob #$> ("/clear #team", id, "#team: all messages are removed locally ONLY")
+      withCCTransaction bob (\db -> DB.query_ db "SELECT local_display_name FROM group_members ORDER BY group_member_id" :: IO [[T.Text]])
         `shouldReturn` [["alice"], ["bob"]]
 
 testGroupFileChunkOtherMember :: HasCallStack => TestParams -> IO ()
