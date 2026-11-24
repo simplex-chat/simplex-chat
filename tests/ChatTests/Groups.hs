@@ -305,6 +305,7 @@ chatGroupTests = do
     it "update of deleted item creates item with its priority, of marked deleted item keeps it" testGroupUpdatePriorityDeletedItem
     it "update without priority makes item normal, a later raise notifies once" testGroupUpdateWithoutPriority
     it "forward update with notification flag of its accepted priority" testGroupMsgForwardAcceptedPriority
+    it "forward priority raise of an item the forwarder marked deleted" testGroupMsgForwardRaiseDeletedItem
     it "silent, high priority and raised messages recorded for the apps" testGroupPriorityRecordings
     it "terminal notifies of a raise and of an update as new, not of an edit" testGroupUpdateTerminalNotification
   describe "update as new" $ do
@@ -6722,6 +6723,30 @@ testGroupMsgForwardAcceptedPriority =
       alice <# "#team bob> [edited] hi there"
       cath <# "#team bob> [edited] hi there"
       lastSndMsgFlags alice cathConnId 1 `shouldReturn` ["F"]
+
+testGroupMsgForwardRaiseDeletedItem :: HasCallStack => TestParams -> IO ()
+testGroupMsgForwardRaiseDeletedItem =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+      setupGroupForwarding alice bob cath
+      cath ##> "/set receipts all off"
+      cath <## "ok"
+      cathConnId <- relayConnIdToMember alice "cath"
+      bob ##> "/_send #1 json [{\"msgContent\": {\"type\": \"text\", \"text\": \"done\"}, \"priority\": 1}]"
+      bob <# "#team !! done"
+      alice <# "#team bob!!> done"
+      cath <# "#team bob!!> done [>>]"
+      doneId <- lastItemId bob
+      aliceDoneId <- lastItemId alice
+      alice #$> ("/_delete item #1 " <> aliceDoneId <> " internalMark", id, "message marked deleted")
+      bob ##> ("/_update item #1 " <> doneId <> " text done")
+      bob <# "#team done"
+      cath <# "#team bob> done"
+      bob ##> ("/_update item #1 " <> doneId <> " json {\"msgContent\": {\"type\": \"text\", \"text\": \"done\"}, \"mentions\": {}, \"priority\": 1}")
+      bob <# "#team !! done"
+      cath <# "#team bob!!> done"
+      lastSndMsgFlags alice cathConnId 1 `shouldReturn` ["T"]
 
 testGroupPriorityRecordings :: HasCallStack => TestParams -> IO ()
 testGroupPriorityRecordings ps = do
