@@ -63,13 +63,13 @@ The mode is stored in `ChatModel.notificationMode` and persisted in `GroupDefaul
 
 **File**: [`Shared/Model/NtfManager.swift`](../../Shared/Model/NtfManager.swift)
 
-Central notification coordinator. Singleton: `NtfManager.shared`.
+Central notification coordinator. Singleton: `NtfManager.shared`, a `var` that unit tests replace with a subclass overriding `addNotification`.
 
 ### [Class Definition](../../Shared/Model/NtfManager.swift#L27)
 
 ```swift
 class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
-    static let shared = NtfManager()
+    static var shared = NtfManager()
     public var navigatingToChat = false
     private var granted = false
     private var prevNtfTime: Dictionary<ChatId, Date> = [:]

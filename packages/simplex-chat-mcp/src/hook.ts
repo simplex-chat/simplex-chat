@@ -1,11 +1,12 @@
-import {open} from "fs/promises"
-import {isAbsolute, relative} from "path"
+import {open, readFile} from "fs/promises"
+import {homedir} from "os"
+import {isAbsolute, join, relative} from "path"
 import {ServiceClient} from "./client"
 import {interactive, interactiveEntrypoint, readConfig} from "./config"
 import {dataRoot} from "./files"
 import {errorText, logError, oneLine} from "./log"
 import {duration} from "./messages"
-import {Step, TitleReply, TurnRequest} from "./protocol"
+import {AskLine, Decision, Failure, Prompt, Question, Step, TaskEnd, TaskStatus, TitleReply, TurnRequest} from "./protocol"
 import {qrCodeText} from "./qr"
 import {claudePid} from "./service-request"
 import {SocketError, isNotRunning} from "./socket"
@@ -47,11 +48,34 @@ const teammatePrompt = /^Another Claude session sent a message[^:\n]*:\n<teammat
 const teammateMessage = /<teammate-message teammate_id="([^"]*)"([^>]*)>\n([\s\S]*?)\n<\/teammate-message>/g
 const pluginTools = "mcp__plugin_simplex_simplex__"
 const stepFields = ["description", "query", "url", "file_path", "path", "pattern", "command"]
+// spec: spec/architecture.md#hook-ask
+const maxPreview = 15_000
+// spec: spec/architecture.md#hook-ask
+const artifactUrl = /^https:\/\/claude\.ai\/(?:code\/)?artifact\//
+// spec: spec/architecture.md#hook-failureof
+const recordReadFactor = 10
+// spec: spec/architecture.md#hook-failureof
+const continueNotice = "continuing automatically"
+// spec: spec/architecture.md#hook-agentstart
+const handbackTool = "SubagentHandback"
+// spec: spec/architecture.md#hook-agentstart
+const agentRecordReads = 20
+// spec: spec/architecture.md#hook-agentstart
+const taskStatuses: TaskStatus[] = ["completed", "failed", "killed", "stopped"]
+
+// spec: spec/architecture.md#hook-agentstart
+interface AgentRecord {
+  agentType?: unknown
+  description?: unknown
+  toolUseId?: unknown
+  taskKind?: unknown
+}
 
 // spec: spec/api.md#plugin-options
 interface SessionStartInput {
   session_id: string
   session_title?: string
+  transcript_path?: string
   cwd: string
   model?: string
   source?: string
@@ -69,11 +93,30 @@ interface TurnInput {
   effort?: {level?: string}
   cwd?: string
   agent_id?: string
+  agent_type?: string
+  tool_response?: {[field: string]: unknown}
   tool_name?: string
   tool_input?: {[field: string]: unknown}
   tool_use_id?: string
   duration_ms?: number
   is_interrupt?: boolean
+  error?: string
+  notification_type?: string
+  message?: string
+}
+
+// spec: spec/api.md#plugin-options
+interface AskInput {
+  session_id: string
+  hook_event_name?: string
+  tool_name?: string
+  tool_input?: {[field: string]: unknown}
+  agent_id?: string
+  agent_type?: string
+  mcp_server_name?: string
+  message?: string
+  mode?: string
+  url?: string
 }
 
 // spec: spec/api.md#plugin-options
@@ -93,6 +136,7 @@ interface TranscriptEntry {
   timestamp?: unknown
   compactMetadata?: {trigger?: unknown; preTokens?: unknown; postTokens?: unknown}
   isSidechain?: unknown
+  isApiErrorMessage?: unknown
   promptId?: unknown
   origin?: Origin | null
   turnOrigin?: unknown
@@ -131,8 +175,13 @@ export interface HookOutput {
   systemMessage?: string
 }
 
+// spec: spec/api.md#plugin-options
+export interface AskOutput {
+  hookSpecificOutput: {hookEventName: "PermissionRequest"; decision: {behavior: "allow"; updatedInput?: object} | {behavior: "deny"; message: string}} | {hookEventName: "Elicitation"; action: "accept" | "decline"}
+}
+
 export interface HookDeps {
-  client: Pick<ServiceClient, "ensureService" | "request">
+  client: Pick<ServiceClient, "ensureService" | "request" | "stream">
   nodeVersion: string
 }
 
@@ -149,7 +198,7 @@ export async function sessionStart(stdin: string, env: NodeJS.ProcessEnv = proce
     const config = readConfig(env)
     const client = deps?.client ?? ServiceClient.forRoot(dataRoot(env))
     await client.ensureService(version)
-    const {mainGroup, owner} = await client.request<TitleReply>("POST", "/title", {id: input.session_id, pid: claudePid(env), at, name: input.session_title, project: input.cwd, model: input.source === "compact" ? undefined : input.model, config})
+    const {mainGroup, owner} = await client.request<TitleReply>("POST", "/title", {id: input.session_id, pid: claudePid(env), at, name: input.session_title, project: input.cwd, model: input.source === "compact" ? undefined : input.model, transcript: input.transcript_path, config})
     const {link, owners} = owner
     if (owners.length > 0 || link === undefined) return {}
     return {systemMessage: `SimpleX MCP: scan this QR code with the SimpleX app and tap Join to supervise your agents in "${mainGroup}":\n${qrCodeText(link, "plain")}\n${link}`}
@@ -176,9 +225,10 @@ export async function turn(stdin: string, env: NodeJS.ProcessEnv = process.env, 
   if (!interactive(env)) return {}
   try {
     const input = JSON.parse(stdin) as TurnInput
-    const event = await eventFields(input, at, readMs)
+    const event = await eventFields(input, at, readMs, env)
     if (event === undefined) return {}
-    const request = {id: input.session_id, pid: claudePid(env), at, prompt: cut(input.prompt), answer: cut(input.last_assistant_message), model: input.to_model, switched: input.to_model === undefined ? undefined : true, effort: input.effort?.level, ...event}
+    const lead = input.agent_id === undefined
+    const request = {id: input.session_id, pid: claudePid(env), at, prompt: cut(input.prompt), answer: lead ? cut(input.last_assistant_message) : undefined, model: input.to_model, switched: input.to_model === undefined ? undefined : true, effort: lead ? input.effort?.level : undefined, ...event}
     await client.ensureService(version)
     for (let attempt = 1; ; attempt++) {
       try {
@@ -195,27 +245,139 @@ export async function turn(stdin: string, env: NodeJS.ProcessEnv = process.env, 
   return {}
 }
 
+// spec: spec/architecture.md#hook-ask
+export async function ask(stdin: string, env: NodeJS.ProcessEnv = process.env, client: HookDeps["client"] = ServiceClient.forRoot(dataRoot(env)), at = performance.timeOrigin): Promise<AskOutput | undefined> {
+  if (!interactive(env)) return undefined
+  try {
+    const input = JSON.parse(stdin) as AskInput
+    const prompt = promptOf(input)
+    if (prompt === undefined) return undefined
+    await client.ensureService(version)
+    let decision: Decision | undefined
+    await client.stream("/ask", {id: input.session_id, pid: claudePid(env), at, ...prompt}, line => (decision = (line as AskLine).decision))
+    return decision === undefined ? undefined : askOutput(input, prompt, decision)
+  } catch (error) {
+    logError("SimpleX MCP ask", error)
+    return undefined
+  }
+}
+
+// spec: spec/architecture.md#hook-ask
+function promptOf(input: AskInput): Prompt | undefined {
+  if (input.hook_event_name === "Elicitation") return input.mode === "url" && input.url !== undefined ? {kind: "link", server: input.mcp_server_name ?? "", message: input.message ?? "", url: input.url} : undefined
+  const {tool_name: tool, tool_input: fields = {}, agent_id: agentId, agent_type: agentType} = input
+  if (tool === undefined || tool.startsWith(pluginTools)) return undefined
+  const agent = agentId === undefined ? undefined : (agentType ?? agentId)
+  if (tool === "AskUserQuestion" || tool === "ExitPlanMode") return agent === undefined ? userPrompt(tool, fields) : undefined
+  const terminalOnly = tool === "Artifact" || (tool === "WebFetch" && artifactUrl.test(stringOf(fields.url) ?? ""))
+  if (terminalOnly && agent !== undefined) return undefined
+  return {kind: "tool", tool, description: stringOf(fields.description) ?? "", preview: cut(inputPreview(tool, fields), maxPreview), ...(agent === undefined ? {} : {agent}), ...(terminalOnly ? {terminalOnly} : {})}
+}
+
+// spec: spec/architecture.md#hook-ask
+function userPrompt(tool: "AskUserQuestion" | "ExitPlanMode", fields: {[field: string]: unknown}): Prompt | undefined {
+  if (tool === "ExitPlanMode") return {kind: "plan", plan: cut(stringOf(fields.plan) ?? "")}
+  const given: unknown[] = Array.isArray(fields.questions) ? fields.questions : []
+  const questions = given.flatMap(value => questionOf(value) ?? [])
+  return questions.length > 0 && questions.length === given.length ? {kind: "question", questions} : undefined
+}
+
+// spec: spec/architecture.md#hook-ask
+function questionOf(value: unknown): Question | undefined {
+  const {question, options: given, multiSelect} = (value ?? {}) as {question?: unknown; options?: unknown; multiSelect?: unknown}
+  const options = (Array.isArray(given) ? given : []).flatMap((option: {label?: unknown; description?: unknown} | null) => (typeof option?.label === "string" ? [{label: option.label, description: stringOf(option.description) ?? ""}] : []))
+  return typeof question === "string" && options.length > 0 ? {question, options, multiSelect: multiSelect === true} : undefined
+}
+
+// spec: spec/architecture.md#hook-ask
+function askOutput({tool_input: fields = {}}: AskInput, {kind}: Prompt, decision: Decision): AskOutput {
+  if (kind === "link") return {hookSpecificOutput: {hookEventName: "Elicitation", action: decision.behavior === "allow" ? "accept" : "decline"}}
+  if (decision.behavior === "deny" || kind === "tool") return {hookSpecificOutput: {hookEventName: "PermissionRequest", decision: decision.behavior === "deny" ? decision : {behavior: "allow"}}}
+  return {hookSpecificOutput: {hookEventName: "PermissionRequest", decision: {behavior: "allow", updatedInput: kind === "question" ? {...fields, answers: decision.answers ?? {}} : fields}}}
+}
+
+// spec: spec/architecture.md#hook-ask
+function inputPreview(tool: string, fields: {[field: string]: unknown}): string {
+  switch (tool) {
+    case "Bash":
+    case "PowerShell":
+      return stringOf(fields.command) ?? ""
+    case "Read":
+    case "Write":
+    case "Edit":
+      return stringOf(fields.file_path) ?? ""
+    case "NotebookEdit":
+      return stringOf(fields.notebook_path) ?? ""
+    default:
+      return Object.entries(fields)
+        .filter(([field]) => field !== "description")
+        .map(([field, value]) => `${field}: ${stringOf(value) ?? JSON.stringify(value)}`)
+        .join("\n")
+  }
+}
+
 // spec: spec/architecture.md#hook-turn
-async function eventFields(input: TurnInput, at: number, readMs: number): Promise<Partial<TurnRequest> | undefined> {
+async function eventFields(input: TurnInput, at: number, readMs: number, env: NodeJS.ProcessEnv): Promise<Partial<TurnRequest> | undefined> {
   switch (input.hook_event_name) {
     case "Stop": {
       const {model, usage} = await answerRecord(input, readMs)
       return {model: input.to_model ?? model, usage}
     }
-    case "UserPromptSubmit":
-      return promptKind(input, readMs)
+    case "StopFailure":
+      return {answer: undefined, failure: await failureOf(input, readMs, env)}
+    case "Notification":
+      return input.notification_type === undefined ? undefined : {waiting: {kind: input.notification_type, text: shortened(firstLine(input.message ?? ""))}}
+    case "UserPromptSubmit": {
+      const kind = await promptKind(input, readMs)
+      const task = taskOf(input.prompt)
+      return task === undefined ? kind : {...kind, task}
+    }
     case "PreToolUse":
     case "PostToolUse":
     case "PostToolUseFailure": {
+      if (input.agent_id !== undefined) return agentStep(input)
+      if (input.tool_name === "Agent" || input.tool_name === "Workflow") return leadTask(input)
       const step = stepOf(input)
       return step === undefined ? undefined : {step}
     }
+    case "SubagentStart":
+      return agentStart(input, readMs)
+    case "SubagentStop":
+      return input.agent_id === undefined ? undefined : {agent: {id: input.agent_id, stop: shortened(firstLine(input.last_assistant_message ?? ""))}}
     case "PostCompact": {
       const note = await compactionNote(input, at, readMs)
       return note === undefined ? undefined : {note}
     }
     default:
       return {}
+  }
+}
+
+// spec: spec/architecture.md#hook-failureof
+async function failureOf({error = "unknown", last_assistant_message: message = "", transcript_path: path}: TurnInput, readMs: number, env: NodeJS.ProcessEnv): Promise<Failure> {
+  const limit = error === "rate_limit"
+  const autoContinue = limit && path !== undefined && (await findInTranscript(path, "", answerReads, readMs, tail => (continued(tail.toString()) ? true : undefined))) === true
+  const menu = limit && !autoContinue && (await menuOpen(env, recordReadFactor * readMs))
+  return {error, text: shortened(firstLine(message)), autoContinue, menu}
+}
+
+// spec: spec/architecture.md#hook-failureof
+function continued(tail: string): boolean {
+  const entries = tail.split("\n").flatMap(line => transcriptEntry(line) ?? [])
+  const failed = entries.map(entry => entry.type === "assistant" && entry.isApiErrorMessage === true && entry.isSidechain !== true).lastIndexOf(true)
+  return failed !== -1 && entries.slice(failed + 1).some(entry => entry.type === "system" && typeof entry.content === "string" && entry.content.includes(continueNotice))
+}
+
+// spec: spec/architecture.md#hook-failureof
+async function menuOpen(env: NodeJS.ProcessEnv, ms: number): Promise<boolean> {
+  const pid = claudePid(env)
+  if (pid === undefined) return false
+  await new Promise(resolve => setTimeout(resolve, ms))
+  try {
+    const record = JSON.parse(await readFile(join(env.CLAUDE_CONFIG_DIR || join(homedir(), ".claude"), "sessions", `${pid}.json`), "utf8")) as {waitingFor?: unknown}
+    return record.waitingFor === "dialog open"
+  } catch {
+    return false
   }
 }
 
@@ -444,6 +606,58 @@ function stepOf({tool_use_id: id, tool_name: tool, agent_id: agent, hook_event_n
   return {id, text: small(`${text}${outcome}${ms === undefined ? "" : ` ${duration(ms)}`}`), end: true}
 }
 
+// spec: spec/architecture.md#hook-agentstart
+async function agentStart({agent_id: id, agent_type: type, transcript_path: path}: TurnInput, readMs: number): Promise<Partial<TurnRequest> | undefined> {
+  if (id === undefined || !path) return undefined
+  const folder = join(path.replace(/\.jsonl$/, ""), "subagents")
+  for (let read = 1; read <= agentRecordReads; read++) {
+    const record = await readFile(join(folder, `agent-${id}.meta.json`), "utf8").then(text => (JSON.parse(text) as AgentRecord | null) ?? undefined).catch(() => undefined)
+    if (record !== undefined) {
+      if (record.taskKind !== undefined) return undefined
+      const description = typeof record.description === "string" ? shortened(firstLine(record.description)) : ""
+      return {agent: {id, start: {type: type ?? (typeof record.agentType === "string" ? record.agentType : "agent"), description, ...(typeof record.toolUseId === "string" ? {toolUse: record.toolUseId} : {}), transcript: join(folder, `agent-${id}.jsonl`)}}}
+    }
+    if (read < agentRecordReads) await new Promise(resolve => setTimeout(resolve, readMs))
+  }
+  return undefined
+}
+
+// spec: spec/architecture.md#hook-agentstart
+function agentStep({agent_id: id, tool_use_id: toolUse, tool_name: tool, hook_event_name: event, tool_input: fields = {}, cwd}: TurnInput): Partial<TurnRequest> | undefined {
+  if (id === undefined || toolUse === undefined || tool === undefined) return undefined
+  if (tool === handbackTool) return event === "PreToolUse" ? {agent: {id, report: shortened(firstLine(stringOf(fields.message) ?? ""))}} : undefined
+  return {agent: {id, step: {id: toolUse, text: shortened(stepText(tool, fields, cwd)), ...(event === "PreToolUse" ? {} : {end: true})}}}
+}
+
+// spec: spec/architecture.md#hook-agentstart
+function leadTask({hook_event_name: event, tool_name: tool, tool_use_id: toolUse, tool_response: response = {}, is_interrupt: interrupted}: TurnInput): Partial<TurnRequest> | undefined {
+  if (toolUse === undefined || event === "PreToolUse") return undefined
+  if (tool === "Workflow") {
+    const {runId: run, workflowName: name, transcriptDir: folder} = response
+    return event === "PostToolUse" && typeof run === "string" && typeof name === "string" && typeof folder === "string" ? {workflow: {toolUse, run, name, folder}} : undefined
+  }
+  if (event === "PostToolUseFailure") return {task: {toolUse, status: interrupted === true ? "killed" : "failed"}}
+  const {status, totalTokens: tokens, totalToolUseCount: steps, totalDurationMs: ms} = response
+  return status === "completed" ? {task: {toolUse, status, ...figures(tokens, steps, ms)}} : undefined
+}
+
+// spec: spec/architecture.md#hook-agentstart
+function taskOf(prompt: string | undefined): TaskEnd | undefined {
+  const block = prompt === undefined ? undefined : /<task-notification>([\s\S]*?)<\/task-notification>/.exec(prompt)?.[1]
+  if (block === undefined) return undefined
+  const field = (name: string): string | undefined => new RegExp(`<${name}>([^<]*)</${name}>`).exec(block)?.[1]?.trim()
+  const toolUse = field("tool-use-id")
+  const status = taskStatuses.find(known => known === field("status"))
+  if (toolUse === undefined || status === undefined) return undefined
+  return {toolUse, status, ...figures(Number(field("subagent_tokens")), Number(field("tool_uses")), Number(field("duration_ms")))}
+}
+
+// spec: spec/architecture.md#hook-agentstart
+function figures(tokens: unknown, steps: unknown, ms: unknown): Pick<TaskEnd, "tokens" | "steps" | "ms"> {
+  const of = (value: unknown): number | undefined => (typeof value === "number" && Number.isFinite(value) ? value : undefined)
+  return {tokens: of(tokens), steps: of(steps), ms: of(ms)}
+}
+
 // spec: spec/architecture.md#hook-stepof
 function small(text: string): string {
   return `!- ${text.replaceAll("!", "ǃ")}!`
@@ -529,6 +743,8 @@ function textOf(content: unknown): string {
 }
 
 // spec: spec/api.md#plugin-commands
-function cut(text: string | undefined): string | undefined {
-  return text === undefined || text.length <= maxText ? text : `${text.slice(0, maxText).replace(/[\ud800-\udbff]$/, "")}…`
+function cut(text: string, max?: number): string
+function cut(text: string | undefined, max?: number): string | undefined
+function cut(text: string | undefined, max = maxText): string | undefined {
+  return text === undefined || text.length <= max ? text : `${text.slice(0, max).replace(/[\ud800-\udbff]$/, "")}…`
 }
