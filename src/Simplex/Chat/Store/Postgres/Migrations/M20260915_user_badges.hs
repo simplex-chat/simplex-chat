@@ -7,7 +7,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Text.RawString.QQ (r)
 
--- the same tables in the client and in the badge service; '@' is replaced with the table name prefix
+-- the same tables in the client and in the store service; '@' is replaced with the table name prefix
 badgeSchema :: Text -> Text
 badgeSchema pfx = withPrefix pfx badgeSchemaTables
 

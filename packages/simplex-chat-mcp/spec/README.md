@@ -189,7 +189,7 @@ graph TD
 | [`tools.ts`](../src/tools.ts) | tool schemas, descriptions, handlers, connect plans, perform steps, downloads, files to send, chat owners |
 | [`actions.ts`](../src/actions.ts) | action records, state machine, expiry timers, per-session limits, stop |
 | [`control.ts`](../src/control.ts) | agent control chat and session groups: link, owners, owner commands, cards, counter |
-| [`messages.ts`](../src/messages.ts) | message items and their files, item watch, waits, unread paging, display names, durations |
+| [`messages.ts`](../src/messages.ts) | message items and their files, item watch, waits, unread and history paging, display names, durations |
 | [`audio.ts`](../src/audio.ts) | speech-to-text and text-to-speech requests, the queue of transcriptions, transcript files |
 | [`core.ts`](../src/core.ts) | one SimpleX core: init, user, network config, temp folder, event buffer, profile update |
 | [`files.ts`](../src/files.ts) | data folders, lock, token, `headers.json`, `server.json`, session folders, socket path, service log |

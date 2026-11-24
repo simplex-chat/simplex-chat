@@ -3,7 +3,7 @@ import {homedir} from "os"
 import {join, resolve} from "path"
 import {Mode} from "./actions"
 import {AudioOptions} from "./audio"
-import {sessionStart, turn} from "./hook"
+import {ask, sessionStart, turn} from "./hook"
 import {ExitError, log, logError} from "./log"
 import {validName} from "./messages"
 import {resetOwners, showLink} from "./owner"
@@ -18,6 +18,7 @@ export const helpText = `Usage:
   simplex-mcp service                  the shared SimpleX service of the plugin (started on demand)
   simplex-mcp hook session-start       Claude Code SessionStart hook (run by the plugin)
   simplex-mcp hook turn                Claude Code hooks of prompts, answers, model changes, tool uses and compactions (run by the plugin)
+  simplex-mcp hook ask                 Claude Code PermissionRequest and Elicitation hooks (run by the plugin)
   simplex-mcp link                     show the Main group link, or its owners
   simplex-mcp reset-owners             replace the Main group and its owners
 
@@ -57,7 +58,7 @@ register options:
 `
 
 // spec: spec/architecture.md#cli-plugincommands
-const pluginCommands = ["session", "service", "hook session-start", "hook turn", "link", "reset-owners"] as const
+const pluginCommands = ["session", "service", "hook session-start", "hook turn", "hook ask", "link", "reset-owners"] as const
 
 // spec: spec/architecture.md#cli-command
 export type Command =
@@ -274,6 +275,11 @@ async function main(args: string[]): Promise<void> {
     case "hook turn":
       process.stdout.write(`${JSON.stringify(await turn(await readStdin()))}\n`)
       return
+    case "hook ask": {
+      const output = await ask(await readStdin())
+      if (output !== undefined) process.stdout.write(`${JSON.stringify(output)}\n`)
+      return
+    }
     case "link":
       process.stdout.write(`${await showLink()}\n`)
       return

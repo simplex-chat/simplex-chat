@@ -25,7 +25,7 @@ enum NtfCallAction {
 
 // Spec: spec/services/notifications.md#NtfManager
 class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
-    static let shared = NtfManager()
+    static var shared = NtfManager()
 
     public var navigatingToChat = false
     private var granted = false
@@ -274,7 +274,7 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
         setNtfBadgeCount(max(0, UIApplication.shared.applicationIconBadgeNumber + count))
     }
 
-    private func addNotification(_ content: UNMutableNotificationContent) {
+    func addNotification(_ content: UNMutableNotificationContent) {
         if !granted { return }
         let trigger = UNTimeIntervalNotificationTrigger(timeInterval: ntfTimeInterval, repeats: false)
         let request = UNNotificationRequest(identifier: appNotificationId, content: content, trigger: trigger)
