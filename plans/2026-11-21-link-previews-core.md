@@ -841,7 +841,7 @@ Core, unit, `tests/LinkPreviewTests.hs` (new, registered in tests/Test.hs), patt
 | reference resolution | RFC 3986 5.4.1 and 5.4.2 examples; `//cdn/...`; port kept; default port and trailing dot of the host removed |
 | onion schemes | `http` kept for onion hosts, in links, relative references and redirects; other `http` links fetched as `https`; redirect from an onion page to `http` of another host refused |
 | address policy | each prohibited range, its IPv4-mapped form, public addresses |
-| certificate keys | RSA keys of MAX_RSA_MODULUS_BITS and MAX_RSA_EXPONENT_BITS, EC P-256, Ed25519 and Ed448 keys allowed; RSA keys one bit above either limit or with a negative modulus, and DSA keys refused |
+| certificate keys | RSA keys of MAX_RSA_MODULUS_BITS and MAX_RSA_EXPONENT_BITS, EC P-256, Ed25519 and Ed448 keys allowed; RSA keys one bit above either limit or with a negative exponent, and DSA keys refused |
 | HTTP framing | chunked, `Content-Length`, close; header limits; oversized chunk; 1xx responses skipped within the head limits, 101 final |
 | request | headers, with the UA of Q7; fragment removed; `x.com` UA; `Host` without the default port |
 | charsets | UTF-8, `windows-1252`, unsupported |

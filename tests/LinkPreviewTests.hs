@@ -438,7 +438,7 @@ testCertificateKeys = do
   ed448 <- PubKeyEd448 . Ed448.toPublic <$> Ed448.generateSecretKey
   forM_ [rsa (2 ^ maxRSAModulusBits - 1) (2 ^ maxRSAExponentBits - 1), PubKeyEC $ PubKeyEC_Named SEC_p256r1 $ SerializedPoint "", ed25519, ed448] $ \key ->
     (key, allowedKey key) `shouldBe` (key, True)
-  forM_ [rsa (2 ^ maxRSAModulusBits) 65537, rsa (2 ^ maxRSAModulusBits - 1) (2 ^ maxRSAExponentBits), rsa (-(2 ^ maxRSAModulusBits)) 65537, dsa] $ \key ->
+  forM_ [rsa (2 ^ maxRSAModulusBits) 65537, rsa (2 ^ maxRSAModulusBits - 1) (2 ^ maxRSAExponentBits), rsa (2 ^ maxRSAModulusBits - 1) (-(2 ^ maxRSAModulusBits)), dsa] $ \key ->
     (key, allowedKey key) `shouldBe` (key, False)
   where
     rsa n e = PubKeyRSA RSA.PublicKey {RSA.public_size = 0, RSA.public_n = n, RSA.public_e = e}
