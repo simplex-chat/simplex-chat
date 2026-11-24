@@ -70,7 +70,7 @@ import Simplex.Messaging.Crypto.Ratchet (PQEncryption (..), PQSupport, pattern P
 import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, sumTypeJSON)
-import Simplex.Messaging.ServiceScheme (simplexSchemeP)
+import Simplex.Messaging.ServiceScheme (ServiceScheme)
 import Simplex.Messaging.Util (decodeJSON, encodeJSON, safeDecodeUtf8)
 import Simplex.Messaging.Version
 import Simplex.Messaging.Version.Internal
@@ -1918,7 +1918,7 @@ instance StrEncoding AConnectTarget where
       <|> (aConnectTarget <$> strP)
       <|> (ACTarget SCMContact . CTDomain <$> strP)
     where
-      nameStart = "@" <|> "#" <|> simplexSchemeP *> "name"
+      nameStart = "@" <|> "#" <|> (strP :: A.Parser ServiceScheme) *> "name"
 
 instance ConnectionModeI m => StrEncoding (ConnectTarget m) where
   strEncode t = strEncode $ ACTarget sConnectionMode t
