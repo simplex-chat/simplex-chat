@@ -1,6 +1,6 @@
 # Chat list, profile switch, member cleanup and chat pages on SQLite and PostgreSQL
 
-Status: implemented on `ep/chat-list-queries`, code at 99e84da96; results in section 7. Branch `ep/chat-list-queries`, stacked on #8314 (`ep/omnibus` e3457510f); #7969 by Narasimha-sc is adopted. Problems of q29 in the review of #8314, decided by the maintainer: "q29 - yes, and also adopt the PR by narasimha-sc that makes loading chat list faster - it improved sqlite but not postgres, need to work on both."
+Status: implemented on `ep/chat-list-queries`, code at 058c1311d; results in section 7. Branch `ep/chat-list-queries`, stacked on #8314 (`ep/omnibus` e3457510f); #7969 by Narasimha-sc is adopted. Problems of q29 in the review of #8314, decided by the maintainer: "q29 - yes, and also adopt the PR by narasimha-sc that makes loading chat list faster - it improved sqlite but not postgres, need to work on both."
 
 Code references: this branch at 5727cc7d5, by file and line. SQLite plans: `chat_query_plans.txt`, and `EXPLAIN QUERY PLAN` of SQLite 3.45.1 on empty databases of each schema. PostgreSQL plans: probe runs of #8314, PostgreSQL 15.20, 1,000,000 chat items: review run https://github.com/evgeny-simplex/simplex-chat/actions/runs/45197482204 (schema ce3673792) and fixes run https://github.com/evgeny-simplex/simplex-chat/actions/runs/45229293446 (schema 582d0058d, equal to `ep/omnibus`); pg-plans run of #7969 https://github.com/Narasimha-sc/simplex-chat/actions/runs/41325761174.
 
@@ -244,7 +244,9 @@ flowchart TD
   C -->|"otherwise"| D["deleteGroupMember"]
 ```
 
-Test, in `tests/ChatTests/Groups.hs`, run on both backends: alice, bob and cath are in #team (`createGroup3`); alice and bob send direct messages, so items with NULL `group_member_id` exist; cath leaves #team; alice clears #team; the member row of cath in alice's database is expected to be deleted (`withCCTransaction`). On `ep/omnibus` the row is kept.
+Test, in `tests/ChatTests/Groups.hs`, run on both backends: alice is the owner of #team, bob and cath are members (`createGroup3'`); alice sends bob a direct message, so items with NULL `group_member_id` exist; cath leaves #team; bob clears #team; the member row of cath in bob's database is expected to be deleted (`withCCTransaction`). On `ep/omnibus` the row is kept.
+
+The chat is cleared by bob, not by alice: an admin creates a delivery job for the leave of cath (Subscriber.hs:1033), and the job worker of a group without relays reads its sender with `getGroupMemberById` (Subscriber.hs:4556). When the member row is deleted before the job runs, the job is set to error, and "chat db error: SEGroupMemberNotFound" is shown (run https://github.com/evgeny-simplex/simplex-chat/actions/runs/45299780513, where alice cleared the chat). The same order exists on `ep/omnibus` when a member without items is removed (Internal.hs:2285). Options, for the maintainer: skip the job when its sender is deleted, as the relay path does (Subscriber.hs:4458); or keep members with pending delivery jobs at cleanup.
 
 ### 5.3 Chat pages
 
@@ -367,7 +369,10 @@ Old and new text on the new database:
 - Bytes of the four indexes: 251.6 MB on `ep/omnibus`, 262.8 MB on the new schema; `chat_item_id` is stored in `idx_chat_items_contacts`, as a btree entry of PostgreSQL references the heap tuple.
 - Migration: 4.9 s up, 4.9 s down.
 
-CI of the reduced build: the cleanup test fails on 7ae07e459 on SQLite and PostgreSQL (https://github.com/evgeny-simplex/simplex-chat/actions/runs/45293671447); the tests of section 8 pass on d27b96924 except "verify and overwrite query plans" (https://github.com/evgeny-simplex/simplex-chat/actions/runs/45295704428), whose patch is commit 6.
+CI of the reduced build:
+- the cleanup test, as alice clears the chat, fails on 7ae07e459 on SQLite and PostgreSQL (https://github.com/evgeny-simplex/simplex-chat/actions/runs/45293671447);
+- the cleanup test, as bob clears the chat (commit 8), fails on 7ae07e459 on SQLite and PostgreSQL (https://github.com/evgeny-simplex/simplex-chat/actions/runs/45303423558, a temporary branch of 7ae07e459 and commit 8);
+- the tests of section 8 pass on d27b96924 except "verify and overwrite query plans" (https://github.com/evgeny-simplex/simplex-chat/actions/runs/45295704428), whose patch is commit 6.
 
 ## 8. Commits
 
@@ -378,6 +383,8 @@ CI of the reduced build: the cleanup test fails on 7ae07e459 on SQLite and Postg
 5. `core: faster pages of long chats`
 6. `core: update query plans`, from the CI artifact of the generated files
 7. `docs: PostgreSQL results of the chat list plan`
+8. `tests: clear the chat as a member in the member cleanup test`
+9. `docs: member cleanup test and delivery jobs in the chat list plan`
 
 Tests of the reduced build:
 
