@@ -8,7 +8,7 @@ permalink: "/blog/20261123-trail-of-bits-security-audit-2026-findings.html"
 
 # Trail of Bits security audit 2026: findings and fixes
 
-This page lists all findings of the [Trail of Bits security audit](https://github.com/simplex-chat/simplex-chat/blob/master/docs/SimpleX_Chat_Code_Review_2026_Final_Report_with_Fix_Review.pdf) of SimpleX Chat apps and the simplexmq library, the status assigned by Trail of Bits in their fix review, where and when we fixed each issue, and our comments. See the [blog post](./20261121-simplex-chat-security-audit-trail-of-bits-security-process.md) for the overview.
+This page lists all findings of the [Trail of Bits security audit](https://github.com/simplex-chat/simplex-chat/blob/master/docs/SimpleX_Chat_Code_Review_2026_Final_Report_with_Fix_Review.pdf) of SimpleX Chat apps and the simplexmq library, the status assigned by Trail of Bits in its fix review, where and when we fixed each issue, and our comments. See the [blog post](./20261121-simplex-chat-security-audit-trail-of-bits-security-process.md) for the overview.
 
 ## Summary
 
