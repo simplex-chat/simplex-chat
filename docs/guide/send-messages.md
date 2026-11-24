@@ -16,7 +16,7 @@ You can send, edit and reply to messages in a conversation.
 To send, simply type in the message in the entry box and tap "Send".
 
 On desktop, press Enter to send the message, and Shift+Enter to start a new
-line.
+line. Typing `\` before Enter also starts a new line.
 
 To reply to a message, edit it, add a reaction or forward it, tap and hold the
 message (right-click on desktop) and choose the action. On iOS and Android, you
