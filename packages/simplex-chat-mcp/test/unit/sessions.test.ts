@@ -2331,12 +2331,13 @@ describe("session channel", () => {
     for (const topic of ["answer", "give", "observer"]) expect(await help(`/${topic}`)).toEqual(await help(topic))
   })
 
-  it("explains the approval of a tool and the cards of plans, links, questions and tool uses approved only in the terminal in /help approve and /help reject before the text of serve, the end of a tool's approval in /help revoke before that text, and its line of /list in /help list after that text, each written with or without its slash", async () => {
+  it("explains the approval of a tool and the cards of mode host, plans, links, questions and tool uses approved only in the terminal in /help approve and /help reject before the text of serve, the end of a tool's approval in /help revoke before that text, and its line of /list in /help list after that text, each written with or without its slash", async () => {
     const chat = new FakeChat()
     const {session} = await channel(chat)
     const help = async (topic: string): Promise<string[]> => (await session.control.ownerCommand(invitedAlice, {keyword: "help", params: topic}))!.split("\n")
     expect(await help("approve")).toEqual([
       "On the card of a tool use, /'approve N' allows the use, and /'approve N all' also approves its tool for the rest of this session: its later uses run without a card, while you approve actions, until /'revoke TOOL'. A use that Claude Code still asks for gets a card that says so.",
+      "On the card of mode host, /'approve N' sets that mode for this session: Claude Code asks you before each of the agent's actions, and they are performed without approval here.",
       "On the card of a plan, /'approve N' starts the work, and a reply to the card keeps Claude planning with your text. On the card of an MCP server's link, open the link, then /'approve N'.",
       "A tool use that Claude Code approves only in its terminal is approved there, and a question is answered with /'answer N K' or a reply, see /'help answer'; /'reject N' rejects either here.",
       "/'approve N' performs pending action N: a connect, send or leave. /'reject N' rejects pending action N, a download too. Its card then shows the outcome.",

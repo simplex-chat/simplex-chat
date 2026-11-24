@@ -124,6 +124,7 @@ Admins and owners use it for another member whose role is not above their own.
 Example: \`/observer #2 6\`. Related: /'help approve', /'help schedule'.`
 // spec: spec/api.md#session-groups
 const sessionApproveHelp = `On the card of a tool use, /'approve N' allows the use, and /'approve N all' also approves its tool for the rest of this session: its later uses run without a card, while you approve actions, until /'revoke TOOL'. A use that Claude Code still asks for gets a card that says so.
+On the card of mode host, /'approve N' sets that mode for this session: Claude Code asks you before each of the agent's actions, and they are performed without approval here.
 On the card of a plan, /'approve N' starts the work, and a reply to the card keeps Claude planning with your text. On the card of an MCP server's link, open the link, then /'approve N'.
 A tool use that Claude Code approves only in its terminal is approved there, and a question is answered with /'answer N K' or a reply, see /'help answer'; /'reject N' rejects either here.
 ${approveHelp}`
