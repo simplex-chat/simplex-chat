@@ -137,6 +137,7 @@ chatGroupTests = do
     it "remove member with messages mark deleted" testDeleteMemberMarkMessagesDeleted
     it "remove member - delete messages of left/removed members" testDeleteMemberMessagesLeftRemoved
     it "clear chat - delete left members without messages" testClearChatDeleteLeftMember
+    it "expire chat - keep left members until their messages are forwarded" testExpireChatKeepLeftMemberUntilForwarded
     it "file chunks from a member who did not send the file are ignored" testGroupFileChunkOtherMember
 #if defined(dbPostgres)
     it "should stop a message error update at its time limit" testGroupMsgErrorsTimeLimit
@@ -2381,6 +2382,31 @@ testClearChatDeleteLeftMember =
     cfg = testCfg {deliveryWorkerDelay = 3000000}
     groupMembers cc = withCCTransaction cc (\db -> DB.query_ db "SELECT local_display_name FROM group_members ORDER BY group_member_id" :: IO [[T.Text]])
     pendingJobs cc = withCCTransaction cc (\db -> DB.query_ db "SELECT COUNT(1) FROM delivery_jobs WHERE job_status = 'pending'" :: IO [[Int]])
+
+testExpireChatKeepLeftMemberUntilForwarded :: HasCallStack => TestParams -> IO ()
+testExpireChatKeepLeftMemberUntilForwarded =
+  testChatCfg3 cfg aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3' "team" alice (bob, GRMember) (cath, GRMember)
+      cath ##> "/l team"
+      concurrentlyN_
+        [ do
+            cath <## "#team: you left the group"
+            cath <## "use /d #team to delete the group",
+          alice <## "#team: cath left the group (signed)",
+          bob <## "#team: cath left the group (signed)"
+        ]
+      newTasks alice `shouldEventuallyReturn` [[1]]
+      GroupMember {groupMemberId = cathId} <- getTestMember alice "team" "cath"
+      ts <- addUTCTime (-2 * 86400) <$> getCurrentTime
+      withCCTransaction alice $ \db ->
+        DB.execute db "UPDATE chat_items SET item_ts = ?, created_at = ? WHERE group_member_id = ?" (ts, ts, cathId)
+      alice #$> ("/ttl #team day", id, "ok")
+      groupMembers alice `shouldReturn` [["alice"], ["bob"], ["cath"]]
+  where
+    cfg = testCfg {deliveryWorkerDelay = 3000000}
+    groupMembers cc = withCCTransaction cc (\db -> DB.query_ db "SELECT local_display_name FROM group_members ORDER BY group_member_id" :: IO [[T.Text]])
+    newTasks cc = withCCTransaction cc (\db -> DB.query_ db "SELECT COUNT(1) FROM delivery_tasks WHERE task_status = 'new'" :: IO [[Int]])
 
 testGroupFileChunkOtherMember :: HasCallStack => TestParams -> IO ()
 testGroupFileChunkOtherMember =
