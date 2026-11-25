@@ -589,6 +589,7 @@ func messageText(
         var snippet: UIFont?
         var small: UIFont?
         var mention: UIFont?
+        var sign: UIFont?
         for ft in fts {
             var t = ft.text
             var attrs = plain
@@ -696,6 +697,11 @@ func messageText(
                     attrs[nameAttrKey] = nameInfo
                     handleTaps = true
                 }
+            case let .paymentLink(showText, payment):
+                sign = sign ?? UIFont(descriptor: descr.addingAttributes([.traits: [UIFontDescriptor.TraitKey.weight: UIFont.Weight.semibold]]), size: descr.pointSize)
+                res.append(NSAttributedString(string: payment.payee.sign + "\u{00A0}", attributes: [.font: sign!, .foregroundColor: uiLinkColor]))
+                attrs = linkAttrs()
+                t = payment.shownText(showText)
             case .email:
                 attrs = linkAttrs()
                 if !preview {

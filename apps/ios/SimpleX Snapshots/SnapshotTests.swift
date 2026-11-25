@@ -691,6 +691,7 @@ private func previewScenes() -> [SnapshotScene] {
         SnapshotScene(ClassicOverviewDirect_Previews.self),
         SnapshotScene(ClassicOverviewGroup_Previews.self),
         SnapshotScene(ClassicParagraphs_Previews.self, allSizes: true),
+        SnapshotScene(ClassicPaymentLinks_Previews.self, allSizes: true),
         SnapshotScene(ComposeVoiceView_Previews.self),
         SnapshotScene(ConnectDesktopView_Previews.self, device: true),
         SnapshotScene(ContactConnectionInfo_Previews.self),
@@ -776,6 +777,7 @@ private func previewScenes() -> [SnapshotScene] {
         SnapshotScene(TerminalOverviewChannel_Previews.self),
         SnapshotScene(TerminalOverviewDirect_Previews.self),
         SnapshotScene(TerminalOverviewGroup_Previews.self),
+        SnapshotScene(TerminalPaymentLinks_Previews.self, allSizes: true),
         SnapshotScene(TerminalQuoteThumbnail_Previews.self, allSizes: true),
         SnapshotScene(TerminalRightToLeft_Previews.self),
         SnapshotScene(TerminalRuleOnly_Previews.self, allSizes: true),
@@ -988,6 +990,18 @@ struct ClassicOverviewChannel_Previews: PreviewProvider {
 struct ClassicParagraphs_Previews: PreviewProvider {
     static var previews: some View {
         SnapshotFixtures().paragraphs()
+    }
+}
+
+struct ClassicPaymentLinks_Previews: PreviewProvider {
+    static var previews: some View {
+        SnapshotFixtures().paymentLinks(terminal: false)
+    }
+}
+
+struct TerminalPaymentLinks_Previews: PreviewProvider {
+    static var previews: some View {
+        SnapshotFixtures().paymentLinks(terminal: true)
     }
 }
 
@@ -1580,6 +1594,27 @@ private final class SnapshotFixtures {
         oneText.formattedText = nil
         oneText.markdownBlocks = nil
         return chatRows(direct, [msg(.directRcv, text, -10), oneText], terminal: false)
+    }
+
+    func paymentLinks(terminal: Bool) -> some View {
+        let btc = "bc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66505d4u"
+        let xmr = "8A3ZWAXrrQddvnT1fPrtbK86ZAoM4nai3Gjg1LEow3JWcryJtovMnHYZnxTJpCLmAbfWbnPMeTzPmMBjAhyd4xoM89hYq1c"
+        let eth = "0xD7047Fe3Eecb2f2FF78d839dD927Be27Bc12c86a"
+        let texts = [
+            "Donations: \(btc). Cheers",
+            "Suggested donation: bitcoin:\(btc)?amount=0.001&label=SimpleX Thank you!",
+            "For the coffee: lnbc2500u1pvjluezsp5zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zygspp5qqqsyqcyq5rqwzqfqqqsyqcyq5rqwzqfqqqsyqcyq5rqwzqfqypqdq5xysxxatsyp3k7enxv4jsxqzpu9qrsgquk0rl77nj30yxdy8j9vdx85fkpmdla2087ne0xh8nhedh8w27kyke0lp53ut353s06fv3qfegext0eh0ymjpf39tuven09sam30g4vgpfna3rh thanks!",
+            "If you want to support the project: [Donate](monero:\(xmr)). Cheers",
+            "Or this exact amount: monero:\(xmr)?tx_amount=0.25&recipient_name=SimpleX",
+            "On Ethereum: \(eth)",
+            "Cheaper on Arbitrum: ethereum:\(eth)@42161?value=1e16",
+            "Other networks: t1fwjQW5gpFhDqXNhxqDWyF9j9WeKvVS5Jg, ltc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66snwfdv, D99pV4n9TrPxBPCkQGx4w4SMSa6QjRBxPf, qq6c8vfvxqrk6rhdysgvkhqc24sggkfsx5nqvdlqcg"
+        ]
+        return chatRows(direct, texts.enumerated().map { i, text -> ChatItem in
+            var item = msg(.directRcv, text, Double(i - texts.count))
+            item.formattedText = parseSimpleXMarkdown(text)
+            return item
+        }, terminal: terminal)
     }
 
     func spacingEdgeItems() -> [ChatItem] {

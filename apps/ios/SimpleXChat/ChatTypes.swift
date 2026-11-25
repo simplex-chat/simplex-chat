@@ -6017,6 +6017,7 @@ public enum Format: Decodable, Equatable, Hashable {
     case hyperLink(showText: String?, linkUri: String)
     case simplexLink(showText: String?, linkType: SimplexLinkType, simplexUri: String, smpHosts: [String])
     case simplexName(nameInfo: SimplexNameInfo)
+    case paymentLink(showText: String?, payment: PaymentRequest)
     case command(commandStr: String)
     case mention(memberName: String)
     case modal(modalName: String, text: String)
@@ -6037,6 +6038,112 @@ public enum Format: Decodable, Equatable, Hashable {
             }
         }
     }
+}
+
+public struct PaymentRequest: Decodable, Hashable {
+    public var payee: PaymentPayee
+    public var alternatives: [LightningPayee]
+    public var amount: String?
+    public var token: PaymentToken?
+    public var label: String?
+
+    public func shownText(_ showText: String?) -> String {
+        let addresses = [payee.payeeAddress] + alternatives.map(\.lightningAddress) + (token.map { [$0.address] } ?? [])
+        let shownLabel = [showText, label].compactMap { $0 }.first { l in
+            !addresses.contains { l.range(of: $0, options: .caseInsensitive) != nil }
+        }
+        guard let shownAmount = token == nil ? amount : nil else {
+            return shownLabel ?? shortAddress(payee.payeeAddress)
+        }
+        switch payee {
+        case .lightning:
+            return "\(shownAmount) BTC"
+        case let .address(network, _):
+            if let suffix = shownLabel ?? network.chainName { return "\(shownAmount) · \(suffix)" }
+            return shownAmount
+        }
+    }
+}
+
+public enum PaymentPayee: Decodable, Hashable {
+    case address(network: PaymentNetwork, address: String)
+    case lightning(lightning: LightningPayee)
+
+    public var sign: String {
+        switch self {
+        case let .address(network, _): network.sign
+        case .lightning: "ϟ"
+        }
+    }
+
+    var payeeAddress: String {
+        switch self {
+        case let .address(_, address): address
+        case let .lightning(lightning): lightning.lightningAddress
+        }
+    }
+}
+
+public enum PaymentNetwork: Decodable, Hashable {
+    case bitcoin
+    case ethereum(chainId: Int64?)
+    case monero
+    case zcash
+    case solana
+    case litecoin
+    case dogecoin
+    case bitcoinCash
+
+    var sign: String {
+        switch self {
+        case .bitcoin, .bitcoinCash: "₿"
+        case .ethereum: "Ξ"
+        case .monero: "ɱ"
+        case .zcash: "ⓩ"
+        case .solana: "◎"
+        case .litecoin: "Ł"
+        case .dogecoin: "Ð"
+        }
+    }
+
+    var chainName: String? {
+        if case let .ethereum(chainId?) = self {
+            evmChainNames[chainId] ?? String.localizedStringWithFormat(NSLocalizedString("chain %lld", comment: "payment link network"), chainId)
+        } else {
+            nil
+        }
+    }
+}
+
+public enum LightningPayee: Decodable, Hashable {
+    case invoice(invoice: String)
+    case offer(offer: String)
+    case lnurl(lnurl: String)
+
+    var lightningAddress: String {
+        switch self {
+        case let .invoice(invoice): invoice
+        case let .offer(offer): offer
+        case let .lnurl(lnurl): lnurl
+        }
+    }
+}
+
+public struct PaymentToken: Decodable, Hashable {
+    public var address: String
+}
+
+private let evmChainNames: [Int64: String] = [
+    1: "Ethereum",
+    10: "OP Mainnet",
+    56: "BNB Smart Chain",
+    137: "Polygon",
+    8453: "Base",
+    42161: "Arbitrum One"
+]
+
+private func shortAddress(_ address: String) -> String {
+    address.count > 10 ? "\(address.prefix(6))…\(address.suffix(4))" : address
 }
 
 public enum SimplexLinkType: String, Decodable, Hashable {
