@@ -311,6 +311,8 @@ badgeWebTests = do
     it "serves a names asset with its type" testServesANamesAsset
     it "keeps every traversal spelling on the names port inside the names build" testNamesTraversalRefused
     it "refuses a build folder that is not there, only where it is served" testSiteDirsMustExist
+    it "answers the API to a page on another origin: a preflight on any API path before the rate limits, and the CORS headers on each answer, on both ports" testCorsAnswers
+    it "answers the webhooks and the site files without the CORS headers" testCorsOnlyOnTheApi
   describe "store service settlement" $ do
     it "settles an open invoice: paid, a settled payment row, and the code" testSettlesAnOpenInvoice
     it "settles an expired invoice, because late settlement is routine" testLateSettlementIsLegal
@@ -1409,6 +1411,39 @@ testServesShellsAsBuilt = bounded "shells as built" $ do
     post <- webRequest badges "POST" "/api/config" []
     statusOf post `shouldBe` 405
     headerOf post "Allow" `shouldBe` Just "GET"
+
+corsAnswerHeaders :: [(HeaderName, ByteString)]
+corsAnswerHeaders = [("Access-Control-Allow-Origin", "*"), ("Access-Control-Expose-Headers", "*")]
+
+corsHeadersOf :: Response LB.ByteString -> [Maybe ByteString]
+corsHeadersOf r = map (headerOf r . fst) corsAnswerHeaders
+
+testCorsAnswers :: IO ()
+testCorsAnswers = bounded "cross-origin API" $ withBothSites $ \badges namesSite -> forM_ [badges, namesSite] $ \client -> do
+  preflight <- webRequest client "OPTIONS" "/api/invoice" [("Origin", "https://simplex.domains"), ("Access-Control-Request-Method", "POST"), ("Access-Control-Request-Headers", "content-type")]
+  (statusOf preflight, responseBody preflight) `shouldBe` (200, "")
+  map (headerOf preflight) ["Access-Control-Allow-Origin", "Access-Control-Allow-Methods", "Access-Control-Allow-Headers", "Access-Control-Max-Age"]
+    `shouldBe` map Just ["*", "GET, POST, OPTIONS", "*", "86400"]
+  replicateM_ 70 $ statusOf <$> webRequest client "OPTIONS" "/api/registration/unknown" [] >>= (`shouldBe` 200)
+  forM_ [("/api/config", 200), ("/api/invoice/unknown", 404), ("/api/registration/unknown", 404), ("/api/unknown", 404)] $ \(path, status) -> do
+    r <- webGet client path
+    statusOf r `shouldBe` status
+    corsHeadersOf r `shouldBe` map (Just . snd) corsAnswerHeaders
+  wrongVerb <- webRequestBody client "POST" "/api/config" [] ""
+  statusOf wrongVerb `shouldBe` 405
+  corsHeadersOf wrongVerb `shouldBe` map (Just . snd) corsAnswerHeaders
+
+testCorsOnlyOnTheApi :: IO ()
+testCorsOnlyOnTheApi = bounded "CORS only on the API" $ withBothSites $ \badges namesSite -> forM_ [badges, namesSite] $ \client -> do
+  webhook <- webRequestBody client "POST" "/webhooks/btcpay" [] "{}"
+  statusOf webhook `shouldBe` 400
+  corsHeadersOf webhook `shouldBe` [Nothing, Nothing]
+  webhookPreflight <- webRequest client "OPTIONS" "/webhooks/btcpay" []
+  statusOf webhookPreflight `shouldBe` 405
+  corsHeadersOf webhookPreflight `shouldBe` [Nothing, Nothing]
+  shell <- webGet client "/"
+  statusOf shell `shouldBe` 200
+  corsHeadersOf shell `shouldBe` [Nothing, Nothing]
 
 webGetAt :: WebClient -> ByteString -> String -> IO (Response LB.ByteString)
 webGetAt client host target = webRequest client "GET" target [("Host", host)]
