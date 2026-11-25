@@ -56,15 +56,17 @@ import qualified Data.Aeson as J
 import qualified Data.Aeson.KeyMap as KM
 import qualified Data.Aeson.TH as JQ
 import qualified Data.Aeson.Types as JT
+import Data.Bifunctor (bimap)
 import Data.ByteArray (constEq)
 import Data.ByteArray.Encoding (Base (Base16), convertFromBase)
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Char8 as B8
 import qualified Data.ByteString.Lazy as LB
 import Data.Char (toLower)
+import Data.Either (partitionEithers)
 import Data.Int (Int64)
 import Data.List (find)
-import Data.Maybe (catMaybes, fromMaybe, isNothing, mapMaybe)
+import Data.Maybe (fromMaybe, mapMaybe)
 import Data.Scientific (FPFormat (Fixed), Scientific, base10Exponent, formatScientific, scientific, toBoundedInteger)
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -334,27 +336,30 @@ logStoreMethods env@BTCPayEnv {beCfg} = do
   where
     what = "read store payment methods"
 
+type Prover = GPaymentMethod -> Either String (Text, AddressProof)
+
+data PayeeKeys = PayeeKeys {pkHeld :: Text, pkProver :: Prover}
+
 logPayeeKeys :: BTCPayConfig -> IO ()
-logPayeeKeys BTCPayConfig {bBitcoinKey, bMoneroKey} = do
+logPayeeKeys cfg = do
   unless (null held) $ logNote $ "btcpay: the names page holds: " <> T.intercalate "; " held
-  mapM_ (logError . withoutKeys) $ [CCBtc | isNothing bBitcoinKey] <> [CCXmr | isNothing bMoneroKey]
+  mapM_ logError missing
   where
-    held = catMaybes [("bitcoin receive key " <>) . receiveKeyText <$> bBitcoinKey, ("monero primary address " <>) . primaryAddress <$> bMoneroKey]
+    (missing, held) = partitionEithers [pkHeld <$> payeeKeys cfg cc | cc <- [CCBtc, CCXmr]]
 
-withoutKeys :: CryptoCurrency -> Text
-withoutKeys = \case
-  CCBtc -> refused "btc_xpub and btc_hrp" "Bitcoin"
-  CCXmr -> refused "xmr_address and xmr_view_key" "Monero"
+payeeKeys :: BTCPayConfig -> CryptoCurrency -> Either Text PayeeKeys
+payeeKeys BTCPayConfig {bBitcoinKey, bMoneroKey} = \case
+  CCBtc -> keyed bBitcoinKey "btc_xpub and btc_hrp" "Bitcoin" $ \key ->
+    PayeeKeys ("bitcoin receive key " <> receiveKeyText key) $ \GPaymentMethod {gpmKeyPath} -> maybe (Left "it has no keyPath") (bitcoinPayee key) gpmKeyPath
+  CCXmr -> keyed bMoneroKey "xmr_address and xmr_view_key" "Monero" $ \key ->
+    PayeeKeys ("monero primary address " <> primaryAddress key) $ \GPaymentMethod {gpmSubaddress} -> maybe (Left "it has no accountIndex and addressIndex") (Right . uncurry (moneroPayee key)) gpmSubaddress
   where
-    refused settings coin = "btcpay: [btcpay] sets no " <> settings <> ", so every name invoice in " <> coin <> " is refused"
+    keyed keys settings coin payee = maybe (Left $ "btcpay: [btcpay] sets no " <> settings <> ", so every name invoice in " <> coin <> " is refused") (Right . payee) keys
 
-payeeProof :: BTCPayConfig -> InvoiceKind -> CryptoCurrency -> Either ProviderError (Maybe (GPaymentMethod -> Either String (Text, AddressProof)))
-payeeProof BTCPayConfig {bBitcoinKey, bMoneroKey} kind cc = case (kind, cc) of
-  (IKBadge, _) -> Right Nothing
-  (IKName, CCBtc) -> keyed bBitcoinKey $ \key GPaymentMethod {gpmKeyPath} -> maybe (Left "it has no keyPath") (bitcoinPayee key) gpmKeyPath
-  (IKName, CCXmr) -> keyed bMoneroKey $ \key GPaymentMethod {gpmSubaddress} -> maybe (Left "it has no accountIndex and addressIndex") (Right . uncurry (moneroPayee key)) gpmSubaddress
-  where
-    keyed keys derive = maybe (Left $ ProviderError $ withoutKeys cc) (Right . Just . derive) keys
+payeeProof :: BTCPayConfig -> InvoiceKind -> CryptoCurrency -> Either ProviderError (Maybe Prover)
+payeeProof cfg kind cc = case kind of
+  IKBadge -> Right Nothing
+  IKName -> bimap ProviderError (Just . pkProver) $ payeeKeys cfg cc
 
 createInvoice :: BTCPayEnv -> ServicePaymentMethod -> OrderDraft -> IO (Either ProviderError ProviderInvoice)
 createInvoice env@BTCPayEnv {beCfg} spm OrderDraft {odAmount, odCurrency, odKind} =

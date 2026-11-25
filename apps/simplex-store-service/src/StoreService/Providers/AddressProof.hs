@@ -50,7 +50,7 @@ import Simplex.Messaging.Agent.Store.DB (FromField (..), ToField (..), fromTextF
 import Simplex.Messaging.Crypto (keccak256, sha256Hash)
 import Simplex.Messaging.Encoding.String (TextEncoding (..))
 import Simplex.Messaging.Util (eitherToMaybe)
-import StoreService.Names.Abi (abiWordSize, hex, hexDigits, lowerHexP, parseText)
+import StoreService.Names.Abi (hex, hexDigits, lowerHexP, parseText)
 
 data AddressProof
   = APBitcoin
@@ -85,7 +85,7 @@ instance TextEncoding AddressProof where
   textDecode = eitherToMaybe . parseText proofP
     where
       proofP = (A.string "btc " *> (APBitcoin <$> scalarP)) <|> (A.string "xmr " *> (APMonero <$> scalarP <*> (ViewProof <$> (A.char ' ' *> scalarP) <*> (A.char ' ' *> scalarP))))
-      scalarP = lowerHexP abiWordSize
+      scalarP = lowerHexP scalarSize
 
 instance FromField AddressProof where fromField = fromTextField_ textDecode
 
@@ -221,7 +221,7 @@ moneroKey address viewKey = do
   mkSubaddressPrefix <- maybe (Left "xmr_address must be a wallet's primary address on mainnet, testnet or stagenet") Right $ lookup prefix [(18, 42), (53, 63), (24, 36)]
   let (spend, mkViewPublic) = B.splitAt 32 keys
   mkSpendKey <- either (const $ Left "xmr_address has no spend key") Right $ eitherCryptoError $ Ed.pointDecode spend
-  key <- either (const $ Left "xmr_view_key must be 64 lowercase hex digits") Right $ parseText (lowerHexP abiWordSize) viewKey
+  key <- either (const $ Left "xmr_view_key must be 64 lowercase hex digits") Right $ parseText (lowerHexP scalarSize) viewKey
   let mkViewKey = scalarOf key
   unless (Ed.scalarEncode mkViewKey == key) $ Left "xmr_view_key is not a reduced scalar"
   unless (Ed.pointEncode (Ed.toPoint mkViewKey) == mkViewPublic) $ Left "xmr_view_key is not the view key of xmr_address"
@@ -259,7 +259,10 @@ scalarOf :: ByteString -> Ed.Scalar
 scalarOf = throwCryptoError . Ed.scalarDecodeLong
 
 minusOne :: Ed.Scalar
-minusOne = scalarOf $ B.reverse $ i2ospOf_ 32 $ ed25519Order - 1
+minusOne = scalarOf $ B.reverse $ i2ospOf_ scalarSize $ ed25519Order - 1
+
+scalarSize :: Int
+scalarSize = 32
 
 moneroAddress :: Word8 -> ByteString -> ByteString -> Text
 moneroAddress prefix spend view = moneroBase58Encode $ body <> B.take 4 (keccak256 body)
