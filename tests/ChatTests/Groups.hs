@@ -281,6 +281,7 @@ chatGroupTests = do
     it "group with SimpleX links off refuses a global link and sends a local link" testMsgLinkSimplexLinksOff
     it "global link to a channel post" testMsgLinkChannel
     it "link to a message sent as the group has no author" testMsgLinkAsGroup
+    it "links to two messages with one text" testMsgLinksOneText
   describe "group scoped messages" $ do
     it "should send scoped messages to support (single moderator)" testScopedSupportSingleModerator
     it "should send scoped messages to support (many moderators)" testScopedSupportManyModerators
@@ -8943,6 +8944,26 @@ testMsgLinkAsGroup =
       link `shouldNotContain` "?a="
       bob ##> ("/_msg link plan 1 " <> link <> " chat=#1")
       bob <# "#team> Release 7.2 is out"
+
+testMsgLinksOneText :: HasCallStack => TestParams -> IO ()
+testMsgLinksOneText =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      createGroup2 "team" alice bob
+      bob #> "#team OK"
+      alice <# "#team bob> OK"
+      firstId <- lastItemId alice
+      bob #> "#team OK"
+      alice <# "#team bob> OK"
+      secondId <- lastItemId alice
+      alice ##> ("/_get item link #1 " <> firstId)
+      firstLink <- getTermLine alice
+      alice ##> ("/_get item link #1 " <> secondId)
+      secondLink <- getTermLine alice
+      alice `send` ("#team Results: " <> firstLink <> " and " <> secondLink)
+      alice <# ("#team Results: [OK](" <> firstLink <> ") and [OK](" <> secondLink <> ")")
+      bob <# ("#team alice> Results: [OK](" <> firstLink <> ") and [OK](" <> secondLink <> ")")
+      bob <## "[OK]: OK"
 
 linkTargets :: TestCC -> IO [(T.Text, Maybe T.Text)]
 linkTargets cc =

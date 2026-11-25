@@ -4636,7 +4636,7 @@ processChatCommand cxt nm = \case
       Just ft | any (isJust . segmentMsgLink) ft -> do
         when (length (mapMaybe segmentMsgLink ft) > maxSndLinks) $ throwCmdError "message link: too many links"
         segments <- mapM sndSegment ft
-        let labeled = [(label, [(t, ciLink)]) | (FormattedText (Just MessageLink {showText = Just label}) t, ciLink) <- segments]
+        let labeled = [(label, [ciLink]) | (FormattedText (Just MessageLink {showText = Just label}) _, ciLink) <- segments]
         when (any ((> 1) . length . nubOrd) $ M.fromListWith (<>) labeled) $ throwCmdError "message link: different links with one text"
         let mc' = (mc {text = T.concat $ map (markdownText . fst) segments} :: MsgContent)
         pure (mc', msgContentTexts mc', M.fromList [(label, ciLink) | (FormattedText (Just MessageLink {showText = Just label}) _, Just ciLink) <- segments])
