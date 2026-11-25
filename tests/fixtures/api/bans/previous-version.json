@@ -1,6 +1,6 @@
 {
   "commands": {
-    "/_block #1 3,4 blocked=on ttl=86400": {
+    "/_block #1 3,4 blocked=on": {
       "result": {
         "blocked": true,
         "groupInfo": {
@@ -160,7 +160,6 @@
               "viaGroupLink": false
             },
             "blockedByAdmin": true,
-            "blockedUntil": "2099-01-01T12:00:00Z",
             "createdAt": "1970-01-01T00:00:00Z",
             "groupId": 1,
             "groupMemberId": 3,
@@ -242,7 +241,6 @@
               "viaGroupLink": false
             },
             "blockedByAdmin": true,
-            "blockedUntil": "2099-01-01T12:00:00Z",
             "createdAt": "1970-01-01T00:00:00Z",
             "groupId": 1,
             "groupMemberId": 4,
@@ -996,7 +994,6 @@
               "viaGroupLink": false
             },
             "blockedByAdmin": true,
-            "blockedUntil": "2099-01-01T12:00:00Z",
             "createdAt": "1970-01-01T00:00:00Z",
             "groupId": 1,
             "groupMemberId": 4,
@@ -1078,7 +1075,6 @@
               "viaGroupLink": false
             },
             "blockedByAdmin": true,
-            "blockedUntil": "2099-01-01T12:00:00Z",
             "createdAt": "1970-01-01T00:00:00Z",
             "groupId": 1,
             "groupMemberId": 3,

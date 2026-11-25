@@ -2091,8 +2091,8 @@ func apiMembersRole(_ groupId: Int64, _ memberIds: [Int64], _ memberRole: GroupM
     throw r.unexpected
 }
 
-func apiBlockMembersForAll(_ groupId: Int64, _ memberIds: [Int64], _ blocked: Bool, ttl: Int64? = nil) async throws -> [GroupMember] {
-    let r: ChatResponse2 = try await chatSendCmd(.apiBlockMembersForAll(groupId: groupId, memberIds: memberIds, blocked: blocked, ttl: ttl), bgTask: false)
+func apiBlockMembersForAll(_ groupId: Int64, _ memberIds: [Int64], _ blocked: Bool) async throws -> [GroupMember] {
+    let r: ChatResponse2 = try await chatSendCmd(.apiBlockMembersForAll(groupId: groupId, memberIds: memberIds, blocked: blocked), bgTask: false)
     if case let .membersBlockedForAllUser(_, _, members, _) = r { return members }
     throw r.unexpected
 }

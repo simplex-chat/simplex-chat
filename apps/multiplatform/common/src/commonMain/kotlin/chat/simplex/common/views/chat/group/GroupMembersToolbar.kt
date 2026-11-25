@@ -125,6 +125,7 @@ internal fun recheckItems(
   var rRoleToMemberEnabled = true
   var rRoleToObserverEnabled = true
   var anyPending = false
+  var anyBlocked = false
   val rSelectedItems = mutableSetOf<Long>()
   for (mem in activeMembers) {
     if (selected.contains(mem.groupMemberId) && groupInfo.membership.memberRole >= mem.memberRole && mem.memberRole < GroupMemberRole.Moderator && groupInfo.membership.memberActive) {
@@ -135,6 +136,7 @@ internal fun recheckItems(
       rRoleToMemberEnabled = rRoleToMemberEnabled && mem.memberRole != GroupMemberRole.Member
       rRoleToObserverEnabled = rRoleToObserverEnabled && mem.memberRole != GroupMemberRole.Observer
       anyPending = anyPending || mem.memberPending
+      anyBlocked = anyBlocked || mem.blockedByAdmin
       rSelectedItems.add(mem.groupMemberId) // we are collecting new selected items here to account for any changes in members list
     }
   }
@@ -142,7 +144,7 @@ internal fun recheckItems(
   deleteEnabled.value = rDeleteEnabled
   blockForAllEnabled.value = rBlockForAllEnabled && !pendingAmongSeveral
   unblockForAllEnabled.value = rUnblockForAllEnabled && !pendingAmongSeveral
-  banAndRemoveEnabled.value = rBanAndRemoveEnabled && rSelectedItems.isNotEmpty()
+  banAndRemoveEnabled.value = rBanAndRemoveEnabled && anyBlocked
   roleToMemberEnabled.value = rRoleToMemberEnabled
   roleToObserverEnabled.value = rRoleToObserverEnabled
   selectedItems.value = rSelectedItems

@@ -129,30 +129,21 @@ class ModerationTest : RecordedApiTest() {
   }
 
   @Test
-  fun blockMemberForDay() = recordedAlerts("bans/block-members") {
+  fun blockMember() = recordedAlerts("bans/block-members") {
     val (groupInfo, members) = openGroup()
     banMembersDialog(null, groupInfo, listOf(member(members, "bob")))
     assertTexts(
       "Block member for all?", "bob won't be notified, and if removed, can't rejoin while blocked.",
-      "Block for", "1 day", "Block", "Block and remove", "Block, remove and delete messages", "Cancel"
+      "Block", "Block and remove", "Cancel"
     )
     press("Block")
-    awaitMember("bob") { it.blockedByAdmin && it.blockedUntil != null }
-  }
-
-  @Test
-  fun blockMemberForever() = recordedAlerts("bans/block-members") {
-    val (groupInfo, members) = openGroup()
-    banMembersDialog(null, groupInfo, listOf(member(members, "dan")))
-    selectDuration("Forever")
-    press("Block")
-    awaitMember("dan") { it.blockedByAdmin && it.blockedUntil == null }
+    awaitMember("bob") { it.blockedByAdmin }
   }
 
   @Test
   fun unblockMember() = recordedAlerts("bans/block-members") {
     val (groupInfo, _) = openGroup()
-    val bob = member(blockedMembers("/_block #1 2 blocked=on ttl=86400"), "bob")
+    val bob = member(blockedMembers("/_block #1 2 blocked=on"), "bob")
     replaceMembers(listOf(bob))
     unblockForAllAlert(null, groupInfo, bob)
     assertTexts("Unblock member for all?", "Messages from bob will be shown for all members.", "Cancel", "Unblock for all")
@@ -163,7 +154,7 @@ class ModerationTest : RecordedApiTest() {
   @Test
   fun unblockMembers() = recordedAlerts("bans/block-members") {
     val (groupInfo, members) = openGroup()
-    replaceMembers(blockedMembers("/_block #1 3 blocked=on ttl=604800") + blockedMembers("/_block #1 4 blocked=on"))
+    replaceMembers(blockedMembers("/_block #1 3,4 blocked=on"))
     unblockForAllAlert(null, groupInfo, listOf(member(members, "cath").groupMemberId, member(members, "dan").groupMemberId))
     assertTexts("Unblock members for all?", "Messages from these members will be shown for all members.", "Cancel", "Unblock for all")
     press("Unblock for all")
@@ -172,21 +163,12 @@ class ModerationTest : RecordedApiTest() {
   }
 
   @Test
-  fun memberInfoBlockedUntil() = recorded("bans/block-members") {
+  fun memberInfoBlocked() = recorded("bans/block-members") {
     val (groupInfo, _) = openGroup()
     var unblocked = false
-    showMemberInfo(groupInfo, member(blockedMembers("/_block #1 2 blocked=on ttl=86400"), "bob")) { unblocked = true }
-    onNodeWithText("Blocked until $UNTIL").assertExists()
+    showMemberInfo(groupInfo, member(blockedMembers("/_block #1 2 blocked=on"), "bob")) { unblocked = true }
     onNodeWithText("Unblock for all").performScrollTo().performClick()
     assertTrue(unblocked)
-  }
-
-  @Test
-  fun memberInfoBlockedForever() = recorded("bans/block-members") {
-    val (groupInfo, _) = openGroup()
-    showMemberInfo(groupInfo, member(blockedMembers("/_block #1 4 blocked=on"), "dan")) {}
-    onNodeWithText("Blocked by admin").assertExists()
-    onNodeWithText("Unblock for all").assertExists()
   }
 
   @Test
@@ -196,7 +178,7 @@ class ModerationTest : RecordedApiTest() {
     banMembersDialog(null, groupInfo, listOf(member(members, "bob"), member(members, "cath"))) { selectionCleared = true }
     assertTexts(
       "Block members for all?", "Members won't be notified, and if removed, can't rejoin while blocked.",
-      "Block for", "1 day", "Block", "Block and remove", "Block, remove and delete messages", "Cancel"
+      "Block", "Block and remove", "Cancel"
     )
     press("Block")
     awaitMember("cath") { it.blockedByAdmin }
@@ -209,6 +191,11 @@ class ModerationTest : RecordedApiTest() {
     var closed = false
     banMembersDialog(null, groupInfo, listOf(member(members, "bob")), close = { closed = true })
     press("Block and remove")
+    assertTexts(
+      "Remove member?", "bob won't be notified, and can't rejoin while blocked.",
+      "Block for", "1 day", "Remove", "Remove and delete messages", "Cancel"
+    )
+    press("Remove")
     awaitMember("bob") { it.memberStatus == GroupMemberStatus.MemRemoved }
     waitUntil(timeoutMillis = 5_000) { closed }
   }
@@ -216,7 +203,7 @@ class ModerationTest : RecordedApiTest() {
   @Test
   fun removeBlockedMemberForever() = recordedAlerts("bans/block-members") {
     val (groupInfo, _) = openGroup()
-    val cath = member(blockedMembers("/_block #1 2,3 blocked=on ttl=86400"), "cath")
+    val cath = member(blockedMembers("/_block #1 2,3 blocked=on"), "cath")
     removeMemberAlert(null, groupInfo, cath)
     assertTexts(
       "Remove member?", "cath won't be notified, and can't rejoin while blocked.",
@@ -235,7 +222,7 @@ class ModerationTest : RecordedApiTest() {
   @Test
   fun removeBlockedMembers() = recordedAlerts("bans/block-members") {
     val (groupInfo, _) = openGroup()
-    removeMembersAlert(null, groupInfo, blockedMembers("/_block #1 2,3 blocked=on ttl=86400"))
+    removeMembersAlert(null, groupInfo, blockedMembers("/_block #1 2,3 blocked=on"))
     assertTexts(
       "Remove members?", "Members won't be notified, and can't rejoin while blocked.",
       "Block for", "1 day", "Remove", "Remove and delete messages", "Cancel"
@@ -279,7 +266,7 @@ class ModerationTest : RecordedApiTest() {
     banMembersDialog(null, groupInfo, listOf(member(members, "cath"), member(members, "dan")))
     assertTexts(
       "Block members for all?", "Members won't be notified, and their messages will be hidden for all.",
-      "1 member with previous version: block only", "Block for", "1 day", "Block", "Cancel"
+      "1 member with previous version: block only", "Block", "Cancel"
     )
     press("Block")
     awaitMember("dan") { it.blockedByAdmin }
@@ -291,14 +278,14 @@ class ModerationTest : RecordedApiTest() {
     banMembersDialog(null, groupInfo, listOf(member(members, "cath"), member(members, "dan")))
     assertTexts(
       "Block members for all?", "Members won't be notified, and their messages will be hidden for all.",
-      "Block for", "1 day", "Block", "Cancel"
+      "Block", "Cancel"
     )
   }
 
   @Test
   fun removeBlockedMembersOfPreviousVersion() = recordedAlerts("bans/previous-version") {
     val (groupInfo, _) = openGroup()
-    val blocked = blockedMembers("/_block #1 3,4 blocked=on ttl=86400")
+    val blocked = blockedMembers("/_block #1 3,4 blocked=on")
     removeMembersAlert(null, groupInfo, blocked)
     assertTexts(
       "Remove members?", "Members will be removed from group - this cannot be undone!",
@@ -321,7 +308,7 @@ class ModerationTest : RecordedApiTest() {
   @Test
   fun acceptBlockedPendingMember() = recordedAlerts("bans/pending-member") {
     val (groupInfo, _) = openGroup()
-    val bob = member(blockedMembers("/_block #1 2 blocked=on ttl=86400"), "bob")
+    val bob = member(blockedMembers("/_block #1 2 blocked=on"), "bob")
     replaceMembers(listOf(bob))
     acceptMemberDialog(null, groupInfo, bob)
     assertTexts("Accept member", "Member will be unblocked for all and will join the group, accept member?", "Accept as member", "Accept as observer", "Cancel")
@@ -361,7 +348,8 @@ class ModerationTest : RecordedApiTest() {
   @Test
   fun banAndRemoveClockFollowsSelection() = recorded("bans/previous-version") {
     val (groupInfo, members) = openGroup()
-    val (current, previous) = listOf(member(members, "cath"), member(members, "dan")).partition { it.supportsLinkNotice }
+    val blocked = blockedMembers("/_block #1 3,4 blocked=on")
+    val (current, previous) = blocked.partition { it.supportsLinkNotice }
     assertEquals(1, current.size)
     assertEquals(1, previous.size)
     val selected = mutableStateOf<Set<Long>?>(setOf(current[0].groupMemberId))
@@ -372,12 +360,15 @@ class ModerationTest : RecordedApiTest() {
     val toMember = mutableStateOf(false)
     val toObserver = mutableStateOf(false)
     recheckItems(groupInfo, selected, members, delete, block, unblock, banAndRemove, toMember, toObserver)
+    assertFalse(banAndRemove.value)
+    selected.value = setOf(current[0].groupMemberId)
+    recheckItems(groupInfo, selected, blocked, delete, block, unblock, banAndRemove, toMember, toObserver)
     assertTrue(banAndRemove.value)
     selected.value = setOf(current[0].groupMemberId, previous[0].groupMemberId)
-    recheckItems(groupInfo, selected, members, delete, block, unblock, banAndRemove, toMember, toObserver)
+    recheckItems(groupInfo, selected, blocked, delete, block, unblock, banAndRemove, toMember, toObserver)
     assertFalse(banAndRemove.value)
     assertTrue(delete.value)
-    assertTrue(block.value)
+    assertTrue(unblock.value)
   }
 
   @Test
@@ -386,7 +377,7 @@ class ModerationTest : RecordedApiTest() {
     banMembersDialog(null, groupInfo, listOf(member(members, "cath")))
     assertTexts(
       "Block subscriber for all?", "cath won't be notified, and if removed, can't rejoin while blocked.",
-      "Block for", "1 day", "Block", "Block and remove", "Block, remove and delete messages", "Cancel"
+      "Block", "Block and remove", "Cancel"
     )
     press("Block")
     awaitMember("cath") { it.blockedByAdmin }
@@ -395,7 +386,7 @@ class ModerationTest : RecordedApiTest() {
   @Test
   fun unblockSubscriber() = recordedAlerts("bans/channel") {
     val (groupInfo, _) = openGroup()
-    val cath = member(blockedMembers("/_block #1 3 blocked=on ttl=86400"), "cath")
+    val cath = member(blockedMembers("/_block #1 3 blocked=on"), "cath")
     replaceMembers(listOf(cath))
     unblockForAllAlert(null, groupInfo, cath)
     assertTexts("Unblock subscriber for all?", "Messages from cath will be shown for all subscribers.", "Cancel", "Unblock for all")
@@ -407,8 +398,9 @@ class ModerationTest : RecordedApiTest() {
   fun removeSubscriberForever() = recordedAlerts("bans/channel") {
     val (groupInfo, members) = openGroup()
     banMembersDialog(null, groupInfo, listOf(member(members, "dan")))
-    selectDuration("Forever")
     press("Block and remove")
+    selectDuration("Forever")
+    press("Remove")
     assertTexts("Remove forever?", "dan can't rejoin via the channel link again, except from another app.", "Type yes", "Remove", "Cancel")
     onNode(hasSetTextAction()).performTextInput("yes")
     press("Remove")

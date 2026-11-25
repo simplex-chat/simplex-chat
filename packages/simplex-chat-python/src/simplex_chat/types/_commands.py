@@ -290,17 +290,16 @@ def APIMembersRole_cmd_string(self: APIMembersRole) -> str:
 APIMembersRole_Response = CR.MembersRoleUser | CR.ChatCmdError
 
 
-# Block members. Requires Moderator role. With ttl, in seconds and at least 1, the block ends after this time, counted by each member from the server time of the message and rounded up to a whole hour.
+# Block members. Requires Moderator role.
 # Network usage: background.
 class APIBlockMembersForAll(TypedDict):
     groupId: int  # int64
     groupMemberIds: list[int]  # int64, non-empty
     blocked: bool
-    ttl: NotRequired[int]  # int
 
 
 def APIBlockMembersForAll_cmd_string(self: APIBlockMembersForAll) -> str:
-    return '/_block #' + str(self['groupId']) + ' ' + ','.join(map(str, self['groupMemberIds'])) + ' blocked=' + ('on' if self['blocked'] else 'off') + ((' ttl=' + str(self.get('ttl'))) if self.get('ttl') is not None else '')
+    return '/_block #' + str(self['groupId']) + ' ' + ','.join(map(str, self['groupMemberIds'])) + ' blocked=' + ('on' if self['blocked'] else 'off')
 
 APIBlockMembersForAll_Response = CR.MembersBlockedForAllUser | CR.ChatCmdError
 

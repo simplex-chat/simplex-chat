@@ -329,20 +329,19 @@ export namespace APIMembersRole {
   }
 }
 
-// Block members. Requires Moderator role. With ttl, in seconds and at least 1, the block ends after this time, counted by each member from the server time of the message and rounded up to a whole hour.
+// Block members. Requires Moderator role.
 // Network usage: background.
 export interface APIBlockMembersForAll {
   groupId: number // int64
   groupMemberIds: number[] // int64, non-empty
   blocked: boolean
-  ttl?: number // int
 }
 
 export namespace APIBlockMembersForAll {
   export type Response = CR.MembersBlockedForAllUser | CR.ChatCmdError
 
   export function cmdString(self: APIBlockMembersForAll): string {
-    return '/_block #' + self.groupId + ' ' + self.groupMemberIds.join(',') + ' blocked=' + (self.blocked ? 'on' : 'off') + (self.ttl ? ' ttl=' + self.ttl : '')
+    return '/_block #' + self.groupId + ' ' + self.groupMemberIds.join(',') + ' blocked=' + (self.blocked ? 'on' : 'off')
   }
 }
 

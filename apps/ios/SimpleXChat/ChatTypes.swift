@@ -3456,7 +3456,6 @@ public struct GroupMember: Identifiable, Decodable, Hashable {
     public var memberStatus: GroupMemberStatus
     public var memberSettings: GroupMemberSettings
     public var blockedByAdmin: Bool
-    public var blockedUntil: Date?
     public var invitedBy: InvitedBy
     public var localDisplayName: ContactName
     public var memberProfile: LocalProfile

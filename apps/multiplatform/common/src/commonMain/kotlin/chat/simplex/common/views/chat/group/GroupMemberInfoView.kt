@@ -43,7 +43,6 @@ import chat.simplex.res.*
 import dev.icerock.moko.resources.StringResource
 import kotlinx.datetime.Clock
 import kotlinx.coroutines.*
-import java.time.format.FormatStyle
 
 @Composable
 fun GroupMemberInfoView(
@@ -442,13 +441,6 @@ fun GroupMemberInfoLayout(
       SectionView {
         if (canBlockForAll) {
           if (member.blockedByAdmin) {
-            val blockedUntil = member.blockedUntil
-            SettingsActionItem(
-              painterResource(MR.images.ic_back_hand),
-              if (blockedUntil != null) String.format(generalGetString(MR.strings.member_banned_until), localTimestamp(blockedUntil, FormatStyle.SHORT)) else stringResource(MR.strings.member_blocked_by_admin),
-              click = null,
-              disabled = true
-            )
             UnblockForAllButton(unblockForAll)
           } else {
             BlockForAllButton(blockForAll)
@@ -1096,7 +1088,7 @@ fun updateMemberSettings(rhId: Long?, gInfo: GroupInfo, member: GroupMember, mem
 
 class BanDialogAction(val title: String, val action: (BanDuration) -> Unit)
 
-fun showBanDialog(title: String, text: AnnotatedString, actions: List<BanDialogAction>, warning: String? = null) {
+fun showBanDialog(title: String, text: AnnotatedString, actions: List<BanDialogAction>, warning: String? = null, withDuration: Boolean = true) {
   AlertManager.shared.showAlertDialogButtonsColumn(title) {
     val duration = remember { mutableStateOf(BanDuration.Day) }
     Column(Modifier.verticalScroll(rememberScrollState())) {
@@ -1105,12 +1097,14 @@ fun showBanDialog(title: String, text: AnnotatedString, actions: List<BanDialogA
         PreviousVersionWarning(warning, Modifier.padding(horizontal = DEFAULT_PADDING))
         Spacer(Modifier.height(DEFAULT_PADDING))
       }
-      ExposedDropDownSettingRow(
-        generalGetString(MR.strings.ban_for),
-        BanDuration.entries.map { it to it.text },
-        duration,
-        onSelected = { duration.value = it }
-      )
+      if (withDuration) {
+        ExposedDropDownSettingRow(
+          generalGetString(MR.strings.ban_for),
+          BanDuration.entries.map { it to it.text },
+          duration,
+          onSelected = { duration.value = it }
+        )
+      }
       actions.forEach { a ->
         SectionItemView({
           AlertManager.shared.hideAlert()
@@ -1154,12 +1148,11 @@ fun banMembersDialog(rhId: Long?, gInfo: GroupInfo, members: List<GroupMember>, 
   val canRemove = members.all { it.canBanAndRemove(gInfo) }
   val memberIds = members.map { it.groupMemberId }
   val removed: () -> Unit = { onSuccess(); close?.invoke() }
-  val ban = BanDialogAction(generalGetString(MR.strings.block_member_confirmation)) { blockMemberForAll(rhId, gInfo, memberIds, true, it.ttl, onSuccess) }
+  val ban = BanDialogAction(generalGetString(MR.strings.block_member_confirmation)) { blockMemberForAll(rhId, gInfo, memberIds, true, onSuccess) }
   val actions = if (canRemove) {
     listOf(
       ban,
-      BanDialogAction(generalGetString(MR.strings.ban_and_remove)) { removeBannedMembers(rhId, gInfo, members, it, withMessages = false, removed) },
-      BanDialogAction(generalGetString(MR.strings.ban_remove_and_delete_messages)) { removeBannedMembers(rhId, gInfo, members, it, withMessages = true, removed) }
+      BanDialogAction(generalGetString(MR.strings.ban_and_remove)) { removeBannedMembersDialog(rhId, gInfo, members, removed) }
     )
   } else {
     listOf(ban)
@@ -1180,7 +1173,7 @@ fun banMembersDialog(rhId: Long?, gInfo: GroupInfo, members: List<GroupMember>, 
     AnnotatedString(generalGetString(if (canRemove) MR.strings.ban_members_desc_ban_and_remove else MR.strings.ban_members_desc))
   }
   val warning = if (member == null && gInfo.membership.memberRole >= GroupMemberRole.Admin) previousVersionWarningText(members, MR.strings.member_previous_version_ban_only, MR.strings.members_previous_version_ban_only) else null
-  showBanDialog(title, text, actions, warning)
+  showBanDialog(title, text, actions, warning, withDuration = false)
 }
 
 fun removeBannedMembersDialog(rhId: Long?, gInfo: GroupInfo, members: List<GroupMember>, onSuccess: () -> Unit = {}) {
@@ -1284,9 +1277,9 @@ fun unblockForAllAlert(rhId: Long?, gInfo: GroupInfo, memberIds: List<Long>, onS
   )
 }
 
-fun blockMemberForAll(rhId: Long?, gInfo: GroupInfo, memberIds: List<Long>, blocked: Boolean, ttl: Long? = null, onSuccess: () -> Unit = {}) {
+fun blockMemberForAll(rhId: Long?, gInfo: GroupInfo, memberIds: List<Long>, blocked: Boolean, onSuccess: () -> Unit = {}) {
   withBGApi {
-    val updatedMembers = ChatController.apiBlockMembersForAll(rhId, gInfo.groupId, memberIds, blocked, ttl)
+    val updatedMembers = ChatController.apiBlockMembersForAll(rhId, gInfo.groupId, memberIds, blocked)
     withContext(Dispatchers.Main) {
       updatedMembers.forEach { updatedMember ->
         chatModel.chatsContext.upsertGroupMember(rhId, gInfo, updatedMember)

@@ -480,7 +480,7 @@ data ChatCommand
   | APIAcceptMember {groupId :: GroupId, groupMemberId :: GroupMemberId, memberRole :: GroupMemberRole}
   | APIDeleteMemberSupportChat GroupId GroupMemberId
   | APIMembersRole {groupId :: GroupId, groupMemberIds :: NonEmpty GroupMemberId, memberRole :: GroupMemberRole}
-  | APIBlockMembersForAll {groupId :: GroupId, groupMemberIds :: NonEmpty GroupMemberId, blocked :: Bool, ttl :: Maybe Int}
+  | APIBlockMembersForAll {groupId :: GroupId, groupMemberIds :: NonEmpty GroupMemberId, blocked :: Bool}
   | APIRemoveMembers {groupId :: GroupId, groupMemberIds :: NonEmpty GroupMemberId, withMessages :: Bool, notice :: Maybe LinkNotice}
   | APILeaveGroup {groupId :: GroupId}
   | APIListMembers {groupId :: GroupId}
@@ -629,7 +629,7 @@ data ChatCommand
   | JoinGroup {groupName :: GroupName, enableNtfs :: MsgFilter}
   | AcceptMember GroupName ContactName GroupMemberRole
   | MemberRole GroupName ContactName GroupMemberRole
-  | BlockForAll GroupName ContactName Bool (Maybe Int)
+  | BlockForAll GroupName ContactName Bool
   | RemoveMembers {groupName :: GroupName, members :: NonEmpty ContactName, withMessages :: Bool, notice :: Maybe LinkNotice}
   | LeaveGroup GroupName
   | AllowRelayGroup GroupName

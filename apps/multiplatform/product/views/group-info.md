@@ -110,7 +110,7 @@ Displays `activeSortedMembers` (excluding left/removed members, sorted by role d
 | Role change | Change member role (admin+ only) |
 | Remove member | Remove from group (admin+ only); for a blocked member that supports `LINK_NOTICE_VERSION`, a dialog with "Block for" and removal without notification |
 | Hide messages | Hide a member's messages for self (below moderator); "Show messages" shows them again |
-| Block for all | Moderators: "Block for" 1 day, 1 week or Forever; admins and owners also "Block and remove" and "Block, remove and delete messages"; Forever removal asks to type "yes"; "Unblock for all" ends a block |
+| Block for all | Moderators: "Block"; admins and owners also "Block and remove", which opens the removal dialog with "Block for" 1 day, 1 week or Forever; Forever removal asks to type "yes"; "Unblock for all" ends a block |
 | Direct message | Open direct chat with member |
 
 ### Developer Tools Section

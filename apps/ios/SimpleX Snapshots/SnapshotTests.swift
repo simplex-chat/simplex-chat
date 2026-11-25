@@ -666,8 +666,6 @@ private func previewScenes() -> [SnapshotScene] {
         SnapshotScene(BadgesSupportSimplexView_Previews.self, device: true),
         SnapshotScene(BanMemberDialog_Moderator_Previews.self),
         SnapshotScene(BanMemberDialog_Owner_Previews.self),
-        SnapshotScene(BanMemberForeverDialog_Moderator_Previews.self),
-        SnapshotScene(BanMemberForeverDialog_Owner_Previews.self),
         SnapshotScene(BanSubscriberDialog_Moderator_Previews.self),
         SnapshotScene(BanSubscriberDialog_Owner_Previews.self),
         SnapshotScene(CallSettings_Previews.self, device: true),

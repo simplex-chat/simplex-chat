@@ -18,19 +18,13 @@ CREATE TABLE link_notices(
 
 CREATE UNIQUE INDEX idx_link_notices_link_hash ON link_notices(link_hash);
 
-ALTER TABLE group_members ADD COLUMN member_restriction_expires_at TEXT;
 ALTER TABLE groups ADD COLUMN silently_removed INTEGER NOT NULL DEFAULT 0;
-
-CREATE INDEX idx_group_members_member_restriction_expires_at ON group_members(user_id, member_restriction_expires_at);
 |]
 
 down_m20261107_link_notices :: Query
 down_m20261107_link_notices =
   [sql|
-DROP INDEX idx_group_members_member_restriction_expires_at;
-
 ALTER TABLE groups DROP COLUMN silently_removed;
-ALTER TABLE group_members DROP COLUMN member_restriction_expires_at;
 
 DROP INDEX idx_link_notices_link_hash;
 DROP TABLE link_notices;

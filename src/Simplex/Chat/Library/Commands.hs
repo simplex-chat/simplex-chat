@@ -3153,12 +3153,11 @@ processChatCommand cxt nm = \case
             updMember db m = do
               updateGroupMemberRole db user m newRole
               pure (m :: GroupMember) {memberRole = newRole}
-  APIBlockMembersForAll groupId memberIds blockFlag ttl -> withUser $ \user ->
+  APIBlockMembersForAll groupId memberIds blockFlag -> withUser $ \user ->
     withGroupLock "blockForAll" groupId $ do
       -- TODO [relays] possible optimization is to read only required members + relays
       (Group gInfo members, gks) <- withFastStore $ \db -> getGroupKeys_ db cxt user groupId
       when (selfSelected gInfo) $ throwCmdError "can't block/unblock self"
-      when (maybe False (< 1) ttl) $ throwCmdError "ttl must be positive"
       -- TODO [relays] consider sending restriction to all members (remove filtering), as we do in delivery jobs
       let (blockMems, remainingMems, maxRole, anyAdmin, anyPending) = selectMembers members
       when (length blockMems /= length memberIds) $ throwChatError CEGroupMemberNotFound
@@ -3183,8 +3182,7 @@ processChatCommand cxt nm = \case
         Nothing -> throwCmdError "no members to block/unblock"
         Just blockMems' -> do
           let mrs = if blockFlag then MRSBlocked else MRSUnrestricted
-              restrictions = MemberRestrictions {restriction = mrs, ttl = if blockFlag then fromIntegral <$> ttl else Nothing}
-              events = L.map (\GroupMember {memberId} -> XGrpMemRestrict memberId restrictions) blockMems'
+              events = L.map (\GroupMember {memberId} -> XGrpMemRestrict memberId MemberRestrictions {restriction = mrs}) blockMems'
           (msgs_, _gsr) <- sendGroupMessages_ user g recipients False events
           let msgSigned = any (either (const False) (\SndMessage {signedMsg_} -> isJust signedMsg_)) msgs_
               itemsData = zipWith (fmap . sndItemData) blockMems (L.toList msgs_)
@@ -3192,9 +3190,7 @@ processChatCommand cxt nm = \case
           when (length cis_ /= length blockMems) $ logError "blockMembers: blockMems and cis_ length mismatch"
           let acis = map (AChatItem SCTGroup SMDSnd (GroupChat gInfo Nothing)) $ rights cis_
           unless (null acis) $ toView $ CEvtNewChatItems user acis
-          now <- liftIO getCurrentTime
-          blockedUntil' <- restrictionEndTime now restrictions
-          (errs, blocked) <- lift $ partitionEithers <$> withStoreBatch' (\db -> map (\m -> updateGroupMemberBlocked db user gInfo mrs (memberBlockedUntil blockedUntil' m) m) blockMems)
+          (errs, blocked) <- lift $ partitionEithers <$> withStoreBatch' (\db -> map (updateGroupMemberBlocked db user gInfo mrs) blockMems)
           unless (null errs) $ toView $ CEvtChatErrors errs
           -- TODO not batched - requires agent batch api
           forM_ blocked $ \m -> toggleNtf m (not blockFlag)
@@ -3204,9 +3200,6 @@ processChatCommand cxt nm = \case
             [GroupMember {memberStatus = GSMemPendingApproval}] -> []
             [GroupMember {memberStatus = GSMemPendingReview}] -> filter (\m -> memberRole' m >= GRModerator && memberCurrent m) remainingMems
             _ -> filter memberCurrent remainingMems
-          memberBlockedUntil blockedUntil' m@GroupMember {blockedUntil}
-            | blockFlag && blockedByAdmin m && not (longerBlock blockedUntil' blockedUntil) = blockedUntil
-            | otherwise = blockedUntil'
           sndItemData :: GroupMember -> SndMessage -> NewSndChatItemData c
           sndItemData GroupMember {groupMemberId, memberProfile} msg =
             let content = CISndGroupEvent $ SGEMemberBlocked groupMemberId (fromLocalProfile memberProfile) blockFlag
@@ -3388,7 +3381,7 @@ processChatCommand cxt nm = \case
     processChatCommand cxt nm $ APIJoinGroup groupId enableNtfs
   AcceptMember gName gMemberName memRole -> withMemberName gName gMemberName $ \gId gMemberId -> APIAcceptMember gId gMemberId memRole
   MemberRole gName gMemberName memRole -> withMemberName gName gMemberName $ \gId gMemberId -> APIMembersRole gId [gMemberId] memRole
-  BlockForAll gName gMemberName blocked ttl -> withMemberName gName gMemberName $ \gId gMemberId -> APIBlockMembersForAll gId [gMemberId] blocked ttl
+  BlockForAll gName gMemberName blocked -> withMemberName gName gMemberName $ \gId gMemberId -> APIBlockMembersForAll gId [gMemberId] blocked
   RemoveMembers gName gMemberNames withMessages notice -> withUser $ \user -> do
     (gId, gMemberIds) <- withStore $ \db -> do
       gId <- getGroupIdByName db user gName
@@ -6680,8 +6673,6 @@ cleanupManager = do
       liftIO $ threadDelay' stepDelay
       cleanupRemovedMembers user `catchAllErrors` eToView
       liftIO $ threadDelay' stepDelay
-      unblockMembers user `catchAllErrors` eToView
-      liftIO $ threadDelay' stepDelay
     cleanupTimedItems cleanupInterval user = do
       ts <- liftIO getCurrentTime
       let startTimedThreadCutoff = addUTCTime cleanupInterval ts
@@ -6715,19 +6706,6 @@ cleanupManager = do
       removedMembers <- withStore' $ \db -> getRemovedMembersToCleanup db cxt user cutoffTs
       forM_ removedMembers $ \m ->
         withStore' (\db -> deleteGroupMember db user m) `catchAllErrors` eToView
-    unblockMembers user = do
-      cxt <- chatStoreCxt
-      ts <- liftIO getCurrentTime
-      members <- withStore' $ \db -> getMembersToUnblock db user ts
-      forM_ members $ \(groupId, gmId) ->
-        withGroupLock "blockForAll" groupId (unblockMember cxt ts groupId gmId) `catchAllErrors` eToView
-      where
-        unblockMember cxt ts groupId gmId = do
-          (gInfo, m) <- withStore $ \db -> (,) <$> getGroupInfo db cxt user groupId <*> getGroupMember db cxt user groupId gmId
-          when (maybe False (<= ts) (blockedUntil m)) $ do
-            m' <- withStore' $ \db -> updateGroupMemberBlocked db user gInfo MRSUnrestricted Nothing m
-            toggleNtf m' (not (memberBlocked m'))
-            toView $ CEvtGroupMemberUpdated user gInfo m m'
     cleanupMessages = do
       ts <- liftIO getCurrentTime
       let cutoffTs = addUTCTime (-(30 * nominalDay)) ts
@@ -7014,7 +6992,7 @@ chatCommandP =
       "/_accept member #" *> (APIAcceptMember <$> A.decimal <* A.space <*> A.decimal <*> memberRole),
       "/_delete member chat #" *> (APIDeleteMemberSupportChat <$> A.decimal <* A.space <*> A.decimal),
       "/_member role #" *> (APIMembersRole <$> A.decimal <*> _strP <*> memberRole),
-      "/_block #" *> (APIBlockMembersForAll <$> A.decimal <*> _strP <* " blocked=" <*> onOffP <*> optional (" ttl=" *> A.decimal)),
+      "/_block #" *> (APIBlockMembersForAll <$> A.decimal <*> _strP <* " blocked=" <*> onOffP),
       "/_remove #" *> (APIRemoveMembers <$> A.decimal <*> _strP <*> (" messages=" *> onOffP <|> pure False) <*> optional (" notice=" *> jsonP)),
       "/_leave #" *> (APILeaveGroup <$> A.decimal),
       "/_members #" *> (APIListMembers <$> A.decimal),
@@ -7113,8 +7091,8 @@ chatCommandP =
       ("/join " <|> "/j ") *> char_ '#' *> (JoinGroup <$> displayNameP <*> (" mute" $> MFNone <|> pure MFAll)),
       "/accept member " *> char_ '#' *> (AcceptMember <$> displayNameP <* A.space <* char_ '@' <*> displayNameP <*> (memberRole <|> pure GRMember)),
       ("/member role " <|> "/mr ") *> char_ '#' *> (MemberRole <$> displayNameP <* A.space <* char_ '@' <*> displayNameP <*> memberRole),
-      "/block for all #" *> (BlockForAll <$> displayNameP <* A.space <*> (char_ '@' *> displayNameP) <*> pure True <*> optional (" ttl=" *> A.decimal)),
-      "/unblock for all #" *> (BlockForAll <$> displayNameP <* A.space <*> (char_ '@' *> displayNameP) <*> pure False <*> pure Nothing),
+      "/block for all #" *> (BlockForAll <$> displayNameP <* A.space <*> (char_ '@' *> displayNameP) <*> pure True),
+      "/unblock for all #" *> (BlockForAll <$> displayNameP <* A.space <*> (char_ '@' *> displayNameP) <*> pure False),
       ("/remove " <|> "/rm ") *> char_ '#' *> (RemoveMembers <$> displayNameP <* A.space <*> (L.fromList <$> (char_ '@' *> displayNameP) `A.sepBy1'` A.char ',') <*> (" messages=" *> onOffP <|> pure False) <*> optional (" notice=" *> jsonP)),
       ("/leave " <|> "/l ") *> char_ '#' *> (LeaveGroup <$> displayNameP),
       ("/delete #" <|> "/d #") *> (DeleteGroup <$> displayNameP),

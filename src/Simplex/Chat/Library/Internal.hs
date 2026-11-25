@@ -211,15 +211,6 @@ toggleNtf m ntfOn =
     forM_ (memberConnId m) $ \connId ->
       withAgent (\a -> toggleConnectionNtfs a connId ntfOn) `catchAllErrors` eToView
 
-restrictionEndTime :: UTCTime -> MemberRestrictions -> CM (Maybe UTCTime)
-restrictionEndTime brokerTs mrs = do
-  rounding <- asks $ endTimeRounding . config
-  currentTs <- liftIO getCurrentTime
-  pure $ mrsBlockedUntil rounding (min brokerTs currentTs) mrs
-
-longerBlock :: Maybe UTCTime -> Maybe UTCTime -> Bool
-longerBlock blockedUntil' = maybe False (\blockedUntil -> maybe True (> blockedUntil) blockedUntil')
-
 prepareGroupMsg :: DB.Connection -> User -> GroupInfo -> Maybe MsgScope -> ShowGroupAsSender -> MsgContent -> Map MemberName MsgMention -> Maybe ChatItemId -> Maybe CIForwardedFrom -> Maybe FileInvitation -> Maybe CITimed -> Bool -> ExceptT StoreError IO (ChatMsgEvent 'Json, Maybe (CIQuote 'CTGroup))
 prepareGroupMsg db user g@GroupInfo {membership} msgScope showGroupAsSender mc mentions quotedItemId_ itemForwarded fInv_ timed_ live = do
   (mc', quotedItem_) <- case (quotedItemId_, itemForwarded) of

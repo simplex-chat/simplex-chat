@@ -312,27 +312,6 @@
     "memberRestrictions": {
       "properties": {
         "restriction": {"ref": "memberRestrictionStatus"}
-      },
-      "optionalProperties": {
-        "ttl": {
-          "type": "integer",
-          "metadata": {
-            "format": "positive seconds from the server timestamp of the message, rounded up to a whole hour"
-          }
-        }
-      }
-    },
-    "introRestrictions": {
-      "properties": {
-        "restriction": {"ref": "memberRestrictionStatus"}
-      },
-      "optionalProperties": {
-        "expiresAt": {
-          "type": "string",
-          "metadata": {
-            "format": "ISO8601 UTC end time of the block"
-          }
-        }
       }
     },
     "linkNotice": {
@@ -642,7 +621,7 @@
             "memberInfo": {"ref": "memberInfo"}
           },
           "optionalProperties": {
-            "memberRestrictions": {"ref": "introRestrictions"}
+            "memberRestrictions": {"ref": "memberRestrictions"}
           }
         }
       }
@@ -655,7 +634,7 @@
             "memberInfo": {"ref": "memberInfo"}
           },
           "optionalProperties": {
-            "memberRestrictions": {"ref": "introRestrictions"}
+            "memberRestrictions": {"ref": "memberRestrictions"}
           }
         }
       }

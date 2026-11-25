@@ -630,8 +630,6 @@ struct GroupMemberInfoView: View {
             Section {
                 if canBlockForAll {
                     if mem.blockedByAdmin {
-                        Label(bannedText(mem), systemImage: "hand.raised")
-                            .foregroundColor(theme.colors.secondary)
                         unblockForAllButton(mem)
                     } else {
                         blockForAllButton(mem)
@@ -658,14 +656,6 @@ struct GroupMemberInfoView: View {
             } else {
                 unblockMemberButton(mem)
             }
-        }
-    }
-
-    func bannedText(_ mem: GroupMember) -> String {
-        if let blockedUntil = mem.blockedUntil {
-            String.localizedStringWithFormat(NSLocalizedString("Blocked until %@", comment: "member info"), blockedUntil.formatted(date: .abbreviated, time: .shortened))
-        } else {
-            NSLocalizedString("Blocked by admin", comment: "member info")
         }
     }
 
@@ -913,14 +903,17 @@ struct BanDialog: View {
     var actions: [BanDialogAction]
     var footer: Text
     var close: CloseSheet
+    var withDuration = true
     @State var duration: BanDuration = .day
 
     var body: some View {
         NavigationView {
             List {
                 Section {
-                    WrappedPicker("Block for", selection: $duration) {
-                        ForEach(BanDuration.allCases) { Text($0.text) }
+                    if withDuration {
+                        WrappedPicker("Block for", selection: $duration) {
+                            ForEach(BanDuration.allCases) { Text($0.text) }
+                        }
                     }
                     ForEach(actions.indices, id: \.self) { i in
                         Button(actions[i].title, role: .destructive) {
@@ -947,22 +940,19 @@ func showBanMemberSheet(_ gInfo: GroupInfo, _ mem: GroupMember, dismiss: Dismiss
     }
 }
 
-private func banMemberDialog(_ gInfo: GroupInfo, _ mem: GroupMember, dismiss: DismissAction?, duration: BanDuration = .day, close: @escaping CloseSheet) -> BanDialog {
+private func banMemberDialog(_ gInfo: GroupInfo, _ mem: GroupMember, dismiss: DismissAction?, close: @escaping CloseSheet) -> BanDialog {
     let canRemove = mem.canBanAndRemove(groupInfo: gInfo)
     var actions = [
-        BanDialogAction(title: NSLocalizedString("Block", comment: "ban dialog action")) { duration in
-            blockMemberForAll(gInfo, mem, true, ttl: duration.ttl)
+        BanDialogAction(title: NSLocalizedString("Block", comment: "ban dialog action")) { _ in
+            blockMemberForAll(gInfo, mem, true)
         }
     ]
     if canRemove {
-        actions += [
-            BanDialogAction(title: NSLocalizedString("Block and remove", comment: "ban dialog action")) { duration in
-                removeBannedMember(gInfo, mem, duration, withMessages: false, dismiss: dismiss)
-            },
-            BanDialogAction(title: NSLocalizedString("Block, remove and delete messages", comment: "ban dialog action")) { duration in
-                removeBannedMember(gInfo, mem, duration, withMessages: true, dismiss: dismiss)
+        actions.append(
+            BanDialogAction(title: NSLocalizedString("Block and remove", comment: "ban dialog action")) { _ in
+                showRemoveBannedMemberSheet(gInfo, mem, dismiss: dismiss)
             }
-        ]
+        )
     }
     return BanDialog(
         title: gInfo.useRelays
@@ -973,7 +963,7 @@ private func banMemberDialog(_ gInfo: GroupInfo, _ mem: GroupMember, dismiss: Di
             ? Text("**\(mem.displayName)** won't be notified, and if removed, can't rejoin while blocked.")
             : Text("**\(mem.displayName)** won't be notified, and the messages will be hidden for all."),
         close: close,
-        duration: duration
+        withDuration: false
     )
 }
 
@@ -1034,10 +1024,10 @@ func removeForeverAlert(_ gInfo: GroupInfo, _ mem: GroupMember, withMessages: Bo
     return alert
 }
 
-func blockMemberForAll(_ gInfo: GroupInfo, _ member: GroupMember, _ blocked: Bool, ttl: Int64? = nil, onSuccess: @escaping () -> Void = {}) {
+func blockMemberForAll(_ gInfo: GroupInfo, _ member: GroupMember, _ blocked: Bool, onSuccess: @escaping () -> Void = {}) {
     Task {
         do {
-            let updatedMembers = try await apiBlockMembersForAll(gInfo.groupId, [member.groupMemberId], blocked, ttl: ttl)
+            let updatedMembers = try await apiBlockMembersForAll(gInfo.groupId, [member.groupMemberId], blocked)
             await MainActor.run {
                 updatedMembers.forEach { updatedMember in
                     _ = ChatModel.shared.upsertGroupMember(gInfo, updatedMember)
@@ -1084,18 +1074,6 @@ struct BanMemberDialog_Owner_Previews: PreviewProvider {
 struct BanMemberDialog_Moderator_Previews: PreviewProvider {
     static var previews: some View {
         banMemberDialog(previewGroup(.moderator), previewBannableMember(), dismiss: nil, close: { _ in })
-    }
-}
-
-struct BanMemberForeverDialog_Owner_Previews: PreviewProvider {
-    static var previews: some View {
-        banMemberDialog(previewGroup(.owner), previewBannableMember(), dismiss: nil, duration: .forever, close: { _ in })
-    }
-}
-
-struct BanMemberForeverDialog_Moderator_Previews: PreviewProvider {
-    static var previews: some View {
-        banMemberDialog(previewGroup(.moderator), previewBannableMember(), dismiss: nil, duration: .forever, close: { _ in })
     }
 }
 

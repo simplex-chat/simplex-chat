@@ -81,7 +81,7 @@ enum ChatCommand: ChatCmdProtocol {
     case apiAcceptMember(groupId: Int64, groupMemberId: Int64, memberRole: GroupMemberRole)
     case apiDeleteMemberSupportChat(groupId: Int64, groupMemberId: Int64)
     case apiMembersRole(groupId: Int64, memberIds: [Int64], memberRole: GroupMemberRole)
-    case apiBlockMembersForAll(groupId: Int64, memberIds: [Int64], blocked: Bool, ttl: Int64?)
+    case apiBlockMembersForAll(groupId: Int64, memberIds: [Int64], blocked: Bool)
     case apiRemoveMembers(groupId: Int64, memberIds: [Int64], withMessages: Bool, notice: LinkNotice?)
     case apiLeaveGroup(groupId: Int64)
     case apiListMembers(groupId: Int64)
@@ -301,7 +301,7 @@ enum ChatCommand: ChatCmdProtocol {
             case let .apiAcceptMember(groupId, groupMemberId, memberRole): return "/_accept member #\(groupId) \(groupMemberId) \(memberRole.rawValue)"
             case let .apiDeleteMemberSupportChat(groupId, groupMemberId): return "/_delete member chat #\(groupId) \(groupMemberId)"
             case let .apiMembersRole(groupId, memberIds, memberRole): return "/_member role #\(groupId) \(memberIds.map({ "\($0)" }).joined(separator: ",")) \(memberRole.rawValue)"
-            case let .apiBlockMembersForAll(groupId, memberIds, blocked, ttl): return "/_block #\(groupId) \(memberIds.map({ "\($0)" }).joined(separator: ",")) blocked=\(onOff(blocked))\(ttl.map { " ttl=\($0)" } ?? "")"
+            case let .apiBlockMembersForAll(groupId, memberIds, blocked): return "/_block #\(groupId) \(memberIds.map({ "\($0)" }).joined(separator: ",")) blocked=\(onOff(blocked))"
             case let .apiRemoveMembers(groupId, memberIds, withMessages, notice): return "/_remove #\(groupId) \(memberIds.map({ "\($0)" }).joined(separator: ",")) messages=\(onOff(withMessages))\(notice.map { " notice=\(encodeJSON($0))" } ?? "")"
             case let .apiLeaveGroup(groupId): return "/_leave #\(groupId)"
             case let .apiListMembers(groupId): return "/_members #\(groupId)"

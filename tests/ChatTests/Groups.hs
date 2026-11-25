@@ -168,6 +168,7 @@ chatGroupTests = do
     it "removal with notice shows no item to other members" testRemoveMemberNoticeOtherMembers
     it "removal notice expiry and replacement" testPlanGroupLinkRemovedNoticeReplaced
     it "removed member can re-join after notice expires" testPlanGroupLinkRemovedNoticeExpires
+    it "removal notice with ttl 0 is not stored" testPlanGroupLinkRemovedNoticeTtlZero
     it "removal notice applies only to the link used to join" testPlanGroupLinkRemovedNoticeOtherLinks
     it "app fixtures: group link notice" testGroupNoticeFixtures
     it "group deletion without notice leaves notices unchanged" testPlanGroupLinkDeletedWithoutNotice
@@ -278,17 +279,9 @@ chatGroupTests = do
     it "block left/removed members" testBlockForAllLeftRemoved
     it "mentions of blocked member are ignored" testBlockForAllMentionsIgnored
     it "replies of blocked member are not mentions" testBlockedMemberReplyNotMention
-    it "timed block ends at the end time" testBlockForAllTimed
     it "blocked member rejoins via group link unblocked" testBlockedMemberRejoinsUnblocked
-    it "timed block ends in each app, without unblock message" $
-      runTestCfg3 fastCleanupCfg fastCleanupCfg fastCleanupCfg testBlockForAllEndsInEachApp
-    it "end of timed block keeps notifications off for a hidden member" $
-      runTestCfg3 fastCleanupCfg fastCleanupCfg fastCleanupCfg testBlockForAllEndHiddenMember
     it "blocked pending member can't be accepted" testBlockPendingMember
     it "block of member pending review is sent to moderators only" testBlockPendingReviewMember
-    it "longer block wins, unblock ends any block" testBlockForAllLongerBlockWins
-    it "introduced member stores the host's end time of a block" testBlockForAllTimedIntroduced
-    it "block with ttl below 1 is refused and ignored" testBlockForAllTtlBelowOne
     it "end time before 1970 is stored as 1970" $ \_ ->
       capExpiry (Just $ UTCTime (fromGregorian (-1) 1 1) 0) `shouldBe` Just (UTCTime (fromGregorian 1970 1 1) 0)
     it "end time is rounded up to the hour" $ \_ ->
@@ -3414,6 +3407,23 @@ testPlanGroupLinkRemovedNoticeExpires =
                    WithTime "#team alice> hi [>>]"
                  ]
         ]
+
+testPlanGroupLinkRemovedNoticeTtlZero :: HasCallStack => TestParams -> IO ()
+testPlanGroupLinkRemovedNoticeTtlZero =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      gLink <- createTeamLink alice
+      joinTeamViaLink alice bob gLink "bob"
+
+      alice ##> "/rm team bob notice={\"ttl\":0}"
+      alice <## "#team: you removed bob from the group (signed)"
+      withCCTransaction bob (\db -> DB.query_ db "SELECT count(1) FROM groups WHERE silently_removed = 1") `shouldEventuallyReturn` [[1 :: Int]]
+      bob <// 50000
+      leaveDeleteGroup bob "team"
+      bob ##> ("/_connect plan 1 " <> gLink)
+      bob <## "group link: ok to connect directly"
+      _sLinkData <- getTermLine bob
+      linkNoticesCount bob `shouldReturn` 0
 
 testPlanGroupLinkRemovedNoticeOtherLinks :: HasCallStack => TestParams -> IO ()
 testPlanGroupLinkRemovedNoticeOtherLinks =
@@ -8727,87 +8737,13 @@ testBlockForAllMultipleMembers =
       cath #> "#team 6"
       [alice, bob, dan] *<# "#team cath> 6"
 
-testBlockForAllTimed :: HasCallStack => TestParams -> IO ()
-testBlockForAllTimed =
-  testChat3 aliceProfile bobProfile cathProfile $
-    \alice bob cath -> do
-      createGroup3' "team" alice (bob, GRMember) (cath, GRMember)
-      threadDelay 1000000
-      alice #> "#team hi"
-      [bob, cath] *<# "#team alice> hi"
-
-      alice ##> "/block for all #team bob ttl=4"
-      alice <## "#team: you blocked bob (signed)"
-      cath <## "#team: alice blocked bob (signed)"
-      bob <// 50000
-
-      alice ##> "/ms team"
-      alice
-        <### [ "alice (Alice): owner, you, created group",
-               "bob (Bob): member, invited, connected, blocked by admin",
-               "cath (Catherine): member, invited, connected"
-             ]
-      cath ##> "/ms team"
-      cath
-        <### [ "cath (Catherine): member, you, connected",
-               "alice (Alice): owner, host, connected",
-               "bob (Bob): member, connected"
-             ]
-
-      bob #> "#team 1"
-      alice <# "#team bob> 1 [blocked by admin] <muted>"
-      cath <// 50000
-      alice #$> ("/_get chat #1 count=2", chat, [(1, "blocked bob (signed)"), (0, "1 [blocked by admin]")])
-      cath #$> ("/_get chat #1 count=1", chat, [(0, "hi")])
-
-      threadDelay 5000000
-      bob #> "#team 2"
-      [alice, cath] *<# "#team bob> 2"
-      alice ##> "/ms team"
-      alice
-        <### [ "alice (Alice): owner, you, created group",
-               "bob (Bob): member, invited, connected",
-               "cath (Catherine): member, invited, connected"
-             ]
-
-testBlockForAllTimedIntroduced :: HasCallStack => TestParams -> IO ()
-testBlockForAllTimedIntroduced =
-  testChat3 aliceProfile bobProfile cathProfile $
-    \alice bob cath -> do
-      gLink <- createTeamLink alice
-      joinTeamViaLink alice bob gLink "bob"
-      alice ##> "/block for all #team bob ttl=86400"
-      alice <## "#team: you blocked bob (signed)"
-      bob <// 50000
-      threadDelay 1500000
-
-      cath ##> ("/c " <> gLink)
-      cath <## "connection request sent!"
-      concurrentlyN_
-        [ do
-            alice <## "cath (Catherine): accepting request to join group #team..."
-            alice <## "#team: cath joined the group",
-          cath
-            <### [ "#team: joining the group...",
-                   "#team: you joined the group",
-                   "#team: member bob (Bob) is connected"
-                 ],
-          bob
-            <### [ "#team: alice added cath (Catherine) to the group (connecting...)",
-                   "#team: new member cath is connected"
-                 ]
-        ]
-      endTime <- blockedUntilOf alice "bob"
-      endTime `shouldSatisfy` isJust
-      blockedUntilOf cath "bob" `shouldReturn` endTime
-
 testBlockedMemberRejoinsUnblocked :: HasCallStack => TestParams -> IO ()
 testBlockedMemberRejoinsUnblocked =
   testChat2 aliceProfile bobProfile $
     \alice bob -> do
       gLink <- createTeamLink alice
       joinTeamViaLink alice bob gLink "bob"
-      alice ##> "/block for all #team bob ttl=86400"
+      alice ##> "/block for all #team bob"
       alice <## "#team: you blocked bob (signed)"
       bob <// 50000
 
@@ -8824,123 +8760,6 @@ testBlockedMemberRejoinsUnblocked =
       joinTeamViaLink alice bob gLink "bob_1"
       bob #> "#team hi"
       alice <# "#team bob_1> hi"
-
-testBlockForAllEndHiddenMember :: HasCallStack => TestCC -> TestCC -> TestCC -> IO ()
-testBlockForAllEndHiddenMember alice bob cath = do
-  createGroup3' "team" alice (bob, GRMember) (cath, GRMember)
-  threadDelay 1000000
-
-  [Only bobGMId] <- withCCTransaction cath $ \db -> DB.query_ db "SELECT group_member_id FROM group_members WHERE local_display_name = 'bob'" :: IO [Only Int64]
-  cath ##> ("/_member settings #1 " <> show bobGMId <> " {\"showMessages\": false}")
-  cath <## "ok"
-  bobConnId <- relayConnIdToMember cath "bob"
-  connNtfsOn cath bobConnId `shouldReturn` False
-
-  alice ##> "/block for all #team bob ttl=2"
-  alice <## "#team: you blocked bob (signed)"
-  cath <## "#team: alice blocked bob (signed)"
-  bob <// 50000
-  blockedUntilOf cath "bob" `shouldEventuallyReturn` Nothing
-  connNtfsOn cath bobConnId `shouldReturn` False
-
-testBlockForAllEndsInEachApp :: HasCallStack => TestCC -> TestCC -> TestCC -> IO ()
-testBlockForAllEndsInEachApp alice bob cath = do
-  createGroup3' "team" alice (bob, GRMember) (cath, GRMember)
-  threadDelay 1000000
-
-  alice ##> "/block for all #team bob ttl=2"
-  alice <## "#team: you blocked bob (signed)"
-  cath <## "#team: alice blocked bob (signed)"
-  bob <// 50000
-
-  bobConnId <- relayConnIdToMember cath "bob"
-  connNtfsOn cath bobConnId `shouldReturn` False
-  connNtfsOn cath bobConnId `shouldEventuallyReturn` True
-  threadDelay 2000000
-  alice #$> ("/_get chat #1 count=1", chat, [(1, "blocked bob (signed)")])
-  rcvRestrictCount cath `shouldReturn` 1
-  rcvRestrictCount bob `shouldReturn` 0
-  alice ##> "/ms team"
-  alice
-    <### [ "alice (Alice): owner, you, created group",
-           "bob (Bob): member, invited, connected",
-           "cath (Catherine): member, invited, connected"
-         ]
-
-  bob #> "#team hi"
-  [alice, cath] *<# "#team bob> hi"
-
-testBlockForAllLongerBlockWins :: HasCallStack => TestParams -> IO ()
-testBlockForAllLongerBlockWins =
-  testChat3 aliceProfile bobProfile cathProfile $
-    \alice bob cath -> do
-      createGroup3' "team" alice (bob, GRAdmin) (cath, GRMember)
-      threadDelay 1000000
-
-      alice ##> "/block for all #team cath ttl=2"
-      alice <## "#team: you blocked cath (signed)"
-      bob <## "#team: alice blocked cath (signed)"
-      cath <// 50000
-
-      bob ##> "/block for all #team cath"
-      bob <## "#team: you blocked cath (signed)"
-      cath <// 50000
-      threadDelay 2500000
-      blockedUntilOf alice "cath" `shouldReturn` Nothing
-      alice ##> "/ms team"
-      alice
-        <### [ "alice (Alice): owner, you, created group",
-               "bob (Bob): admin, invited, connected",
-               "cath (Catherine): member, invited, connected, blocked by admin"
-             ]
-
-      alice ##> "/block for all #team cath ttl=1"
-      alice <## "#team: you blocked cath (signed)"
-      bob <// 50000
-      threadDelay 1500000
-      blockedUntilOf bob "cath" `shouldReturn` Nothing
-      bob ##> "/ms team"
-      bob
-        <### [ "bob (Bob): admin, you, connected",
-               "alice (Alice): owner, host, connected",
-               "cath (Catherine): member, connected, blocked by admin"
-             ]
-      cath #> "#team hi"
-      alice <# "#team cath> hi [blocked by admin] <muted>"
-      bob <# "#team cath> hi [blocked by admin] <muted>"
-
-      alice ##> "/unblock for all #team cath"
-      alice <## "#team: you unblocked cath (signed)"
-      bob <## "#team: alice unblocked cath (signed)"
-      cath <// 50000
-      cath #> "#team hello"
-      [alice, bob] *<# "#team cath> hello"
-
-testBlockForAllTtlBelowOne :: HasCallStack => TestParams -> IO ()
-testBlockForAllTtlBelowOne =
-  testChat3 aliceProfile bobProfile cathProfile $
-    \alice bob cath -> do
-      createGroup3' "team" alice (bob, GRAdmin) (cath, GRMember)
-      threadDelay 1000000
-
-      alice ##> "/block for all #team cath ttl=0"
-      alice <## "bad chat command: ttl must be positive"
-
-      cathMemId <- memberIdByName bob "cath"
-      connId <- relayConnIdToMember alice "bob"
-      forM_ [0, -100000000000] $ \ttl -> do
-        agentSendBody alice connId $ chatMsgToBody $ ChatMessage chatInitialVRange Nothing $
-          XGrpMemRestrict cathMemId MemberRestrictions {restriction = MRSBlocked, ttl = Just ttl}
-        bob <# "#team alice> message error: Failed reading: Error in $: Error in $.memberRestrictions: ttl must be positive"
-      bob ##> "/ms team"
-      bob
-        <### [ "bob (Bob): admin, you, connected",
-               "alice (Alice): owner, host, connected",
-               "cath (Catherine): member, connected"
-             ]
-
-      cath #> "#team hi"
-      [alice, bob] *<# "#team cath> hi"
 
 testBlockForAllFileDescrIgnored :: HasCallStack => TestParams -> IO ()
 testBlockForAllFileDescrIgnored ps = do
@@ -9027,23 +8846,10 @@ rcvMsgCountFrom cc name = do
         (Only name)
   pure n
 
-fastCleanupCfg :: ChatConfig
-fastCleanupCfg = testCfg {initialCleanupManagerDelay = 0, cleanupManagerInterval = 1, cleanupManagerStepDelay = 0}
-
 rcvRestrictCount :: TestCC -> IO Int
 rcvRestrictCount cc = do
   [Only n] <- withCCTransaction cc $ \db -> DB.query_ db "SELECT count(1) FROM messages WHERE msg_sent = 0 AND chat_msg_event = 'x.grp.mem.restrict'"
   pure n
-
-blockedUntilOf :: TestCC -> T.Text -> IO (Maybe UTCTime)
-blockedUntilOf cc name = do
-  [Only t] <- withCCTransaction cc $ \db -> DB.query db "SELECT member_restriction_expires_at FROM group_members WHERE local_display_name = ?" (Only name)
-  pure t
-
-connNtfsOn :: TestCC -> ByteString -> IO Bool
-connNtfsOn cc connId = do
-  [Only (n :: Int)] <- withCCAgentTransaction cc $ \db -> DB.query db "SELECT enable_ntfs FROM connections WHERE conn_id = ?" (Only connId)
-  pure $ n == 1
 
 testBlockPendingMember :: HasCallStack => TestParams -> IO ()
 testBlockPendingMember =
@@ -9068,7 +8874,7 @@ testBlockPendingMember =
 
       alice ##> "/unblock for all #team bob"
       alice <##. "#team: you unblocked bob"
-      bansFixture "pending-member" alice ["/_members #1", "/_block #1 2 blocked=on ttl=86400", "/_block #1 2 blocked=off", "/_accept member #1 2 member"]
+      bansFixture "pending-member" alice ["/_members #1", "/_block #1 2 blocked=on", "/_block #1 2 blocked=off", "/_accept member #1 2 member"]
       bob <## "#team: you joined the group"
       dropOutputs [alice, bob]
   where
@@ -9170,12 +8976,11 @@ testBlockMembersFixtures =
             frUris = [],
             frCommands =
               [ "/_members #1",
-                "/_block #1 2 blocked=on ttl=86400",
-                "/_block #1 3 blocked=on ttl=604800",
-                "/_block #1 4 blocked=on",
+                "/_block #1 2 blocked=on",
+                "/_block #1 3,4 blocked=on",
                 "/_block #1 2 blocked=off",
                 "/_block #1 3,4 blocked=off",
-                "/_block #1 2,3 blocked=on ttl=86400",
+                "/_block #1 2,3 blocked=on",
                 "/_remove #1 2 messages=off notice={\"ttl\":86400}",
                 "/_remove #1 3 messages=on notice={}",
                 "/_remove #1 4 messages=off"
@@ -9195,7 +9000,7 @@ testBlockPreviousVersionFixtures ps =
             "previous-version"
             alice
             [ "/_members #1",
-              "/_block #1 3,4 blocked=on ttl=86400",
+              "/_block #1 3,4 blocked=on",
               "/_remove #1 3 messages=off notice={\"ttl\":86400}",
               "/_remove #1 3,4 messages=off"
             ]
@@ -9215,7 +9020,7 @@ testBlockChannelFixtures ps =
             "channel"
             alice
             [ "/_members #1",
-              "/_block #1 3 blocked=on ttl=86400",
+              "/_block #1 3 blocked=on",
               "/_block #1 3 blocked=off",
               "/_remove #1 4 messages=off notice={}",
               "/_delete #1 entity notify=on"
@@ -12901,7 +12706,7 @@ testChannelRestrictFromMemberNotForwarded ps =
             createChannel1Relay "team" alice bob cath dan eve
             promoteChannelMember "team" alice bob cath [dan, eve]
 
-            sendRelaysEvent cath 1 $ XGrpMemRestrict (MemberId "unknown") MemberRestrictions {restriction = MRSUnrestricted, ttl = Nothing}
+            sendRelaysEvent cath 1 $ XGrpMemRestrict (MemberId "unknown") MemberRestrictions {restriction = MRSUnrestricted}
             bob <## "error: x.grp.mem.restrict with insufficient member permissions"
             threadDelay 500000
             alice <// 50000

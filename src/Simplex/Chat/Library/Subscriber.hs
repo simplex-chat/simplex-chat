@@ -3283,7 +3283,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
     isPublicGroupInv :: GroupLinkInvitation -> Bool
     isPublicGroupInv GroupLinkInvitation {groupProfile = GroupProfile {publicGroup}} = isJust publicGroup
 
-    xGrpMemNew :: GroupInfoKeys -> GroupMember -> MemberInfo -> Maybe MsgScope -> Maybe IntroRestrictions -> RcvMessage -> UTCTime -> CM (Maybe DeliveryJobScope)
+    xGrpMemNew :: GroupInfoKeys -> GroupMember -> MemberInfo -> Maybe MsgScope -> Maybe MemberRestrictions -> RcvMessage -> UTCTime -> CM (Maybe DeliveryJobScope)
     xGrpMemNew (GIK gInfo gks) m memInfo@(MemberInfo memId memRole _ _ assertedKey_) msgScope_ memRestrictions_ msg brokerTs = do
       unless (useRelays' gInfo) $ checkHostRole m memRole
       let presHeader_ = memberInfoPresHeader gInfo memInfo
@@ -3343,7 +3343,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                   pure $ deliveryJobScope newMember
       where
         setAnnouncedRestrictions db announced = case memRestrictions_ of
-          Just r@IntroRestrictions {restriction} -> updateGroupMemberBlocked db user gInfo restriction (introBlockedUntil r) announced
+          Just MemberRestrictions {restriction} -> updateGroupMemberBlocked db user gInfo restriction announced
           Nothing -> pure announced
         initialStatus = case msgScope_ of
           Just (MSMember _) -> GSMemPendingReview
@@ -3369,7 +3369,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
             (announcedMember', scopeInfo) <- mkMemberSupportChatInfo announcedMember
             pure (announcedMember', Just scopeInfo)
 
-    xGrpMemIntro :: GroupInfo -> GroupMember -> MemberInfo -> Maybe IntroRestrictions -> CM ()
+    xGrpMemIntro :: GroupInfo -> GroupMember -> MemberInfo -> Maybe MemberRestrictions -> CM ()
     xGrpMemIntro gInfo@GroupInfo {chatSettings} m@GroupMember {memberRole, localDisplayName = c} memInfo@(MemberInfo memId _ memChatVRange _ _) memRestrictions = do
       case memberCategory m of
         GCHostMember ->
@@ -3756,7 +3756,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
       gInfo@GroupInfo {membership = GroupMember {memberId = membershipMemId, memberRole = userRole}}
       m@GroupMember {memberRole = senderRole}
       memId
-      mrs@MemberRestrictions {restriction}
+      MemberRestrictions {restriction}
       msg@RcvMessage {msgSigned}
       brokerTs
         | membershipMemId == memId = pure Nothing -- ignore - XGrpMemRestrict can be sent to restricted member for efficiency
@@ -3765,19 +3765,13 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
             withStore (\db -> getCreateUnknownGMByMemberId db cxt user gInfo memId "" unknownRole True) >>= \case
               Nothing -> messageError "x.grp.mem.restrict: no member" $> Nothing -- shouldn't happen
               Just (bm, unknown) -> do
-                let GroupMember {groupMemberId = bmId, memberRole, blockedByAdmin, blockedUntil, memberProfile = bmp} = bm
-                blockedUntil' <- restrictionEndTime brokerTs mrs
+                let GroupMember {groupMemberId = bmId, memberRole, blockedByAdmin, memberProfile = bmp} = bm
                 if
                   | senderRole < GRModerator || senderRole < memberRole ->
                       messageError "x.grp.mem.restrict with insufficient member permissions" $> Nothing
-                  | blocked && blockedByAdmin -> do
-                      when (longerBlock blockedUntil' blockedUntil) $ do
-                        bm' <- setMemberBlocked bm blockedUntil'
-                        toView $ CEvtGroupMemberUpdated user gInfo bm bm'
-                      pure $ memberEventDeliveryScope bm
                   | blockedByAdmin == blocked -> pure $ memberEventDeliveryScope bm
                   | otherwise -> do
-                      bm' <- setMemberBlocked bm blockedUntil'
+                      bm' <- setMemberBlocked bm
                       toggleNtf bm' (not blocked)
                       let ciContent = CIRcvGroupEvent $ RGEMemberBlocked bmId (fromLocalProfile bmp) blocked
                       (gInfo', m', scopeInfo) <- mkGroupChatScope gInfo m
@@ -3788,7 +3782,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                       toView CEvtMemberBlockedForAll {user, groupInfo = gInfo', byMember = m', member = bm', blocked, msgSigned}
                       pure $ memberEventDeliveryScope bm
         where
-          setMemberBlocked bm blockedUntil' = withStore' $ \db -> updateGroupMemberBlocked db user gInfo restriction blockedUntil' bm
+          setMemberBlocked bm = withStore' $ \db -> updateGroupMemberBlocked db user gInfo restriction bm
           blocked = mrsBlocked restriction
 
     xGrpMemCon :: GroupInfo -> GroupMember -> MemberId -> CM ()

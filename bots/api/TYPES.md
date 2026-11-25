@@ -2816,7 +2816,6 @@ LinkNotice:
 - memberStatus: [GroupMemberStatus](#groupmemberstatus)
 - memberSettings: [GroupMemberSettings](#groupmembersettings)
 - blockedByAdmin: bool
-- blockedUntil: UTCTime?
 - invitedBy: [InvitedBy](#invitedby)
 - invitedByGroupMemberId: int64?
 - localDisplayName: string

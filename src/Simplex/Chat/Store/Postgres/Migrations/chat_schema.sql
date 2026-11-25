@@ -1061,8 +1061,7 @@ CREATE TABLE test_chat_schema.group_members (
     roster_served_version bigint,
     member_security_code text,
     member_security_code_verified_at timestamp with time zone,
-    invited_via_group_member_id bigint,
-    member_restriction_expires_at timestamp with time zone
+    invited_via_group_member_id bigint
 );
 
 
@@ -2806,10 +2805,6 @@ CREATE INDEX idx_group_members_invited_via_group_member_id ON test_chat_schema.g
 
 
 CREATE INDEX idx_group_members_member_profile_id ON test_chat_schema.group_members USING btree (member_profile_id);
-
-
-
-CREATE INDEX idx_group_members_member_restriction_expires_at ON test_chat_schema.group_members USING btree (user_id, member_restriction_expires_at);
 
 
 

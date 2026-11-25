@@ -111,49 +111,29 @@ final class ModerationTests: RecordedAPITestCase {
     }
 
     @MainActor
-    func testBlockMemberForDay() async throws {
+    func testBlockMember() async throws {
         try recorded("bans/block-members")
         let (groupInfo, members) = try openGroup()
         showBanMemberSheet(groupInfo, try member(members, "bob"))
         let dialog = try await sheet(BanDialog.self)
         XCTAssertEqual(dialog.title, "Block member for all?")
-        XCTAssertEqual(dialog.actions.map(\.title), ["Block", "Block and remove", "Block, remove and delete messages"])
+        XCTAssertFalse(dialog.withDuration)
+        XCTAssertEqual(dialog.actions.map(\.title), ["Block", "Block and remove"])
         XCTAssertEqual(shownText(dialog.footer), "bob won't be notified, and if removed, can't rejoin while blocked.")
         dialog.close { dialog.actions[0].action(.day) }
-        try await awaitMember("bob") { $0.blockedByAdmin && $0.blockedUntil != nil }
-    }
-
-    @MainActor
-    func testBlockMemberForever() async throws {
-        try recorded("bans/block-members")
-        let (groupInfo, members) = try openGroup()
-        showBanMemberSheet(groupInfo, try member(members, "dan"))
-        let dialog = try await sheet(BanDialog.self)
-        dialog.close { dialog.actions[0].action(.forever) }
-        try await awaitMember("dan") { $0.blockedByAdmin && $0.blockedUntil == nil }
+        try await awaitMember("bob") { $0.blockedByAdmin }
     }
 
     @MainActor
     func testUnblockMember() async throws {
         try recorded("bans/block-members")
         let (groupInfo, _) = try openGroup()
-        let bob = try member(try blockedMembers("/_block #1 2 blocked=on ttl=86400"), "bob")
+        let bob = try member(try blockedMembers("/_block #1 2 blocked=on"), "bob")
         replaceMembers([bob])
         AlertManager.shared.showAlert(unblockForAllAlert(groupInfo, bob))
         try await assertTexts(["Unblock member for all?", "Messages from bob will be shown for all members.", "Unblock for all", "Cancel"])
         try await press("Unblock for all")
         try await awaitMember("bob") { !$0.blockedByAdmin }
-    }
-
-    @MainActor
-    func testMemberInfoBlockedText() async throws {
-        try recorded("bans/block-members")
-        let (groupInfo, _) = try openGroup()
-        let bob = try member(try blockedMembers("/_block #1 2 blocked=on ttl=86400"), "bob")
-        let dan = try member(try blockedMembers("/_block #1 4 blocked=on"), "dan")
-        let info = GroupMemberInfoView(groupInfo: groupInfo, chat: groupChat(groupInfo), groupMember: GMember(bob), scrollToItemId: .constant(nil))
-        XCTAssertEqual(info.bannedText(bob), "Blocked until \(Self.until)")
-        XCTAssertEqual(info.bannedText(dan), "Blocked by admin")
     }
 
     @MainActor
@@ -163,6 +143,15 @@ final class ModerationTests: RecordedAPITestCase {
         showBanMemberSheet(groupInfo, try member(members, "bob"))
         let dialog = try await sheet(BanDialog.self)
         dialog.close { dialog.actions[1].action(.day) }
+        var removal: BanDialog?
+        try await waitFor {
+            removal = self.sheetContent(BanDialog.self)
+            return removal?.title == "Remove member?"
+        }
+        let removeDialog = try XCTUnwrap(removal)
+        XCTAssertTrue(removeDialog.withDuration)
+        XCTAssertEqual(removeDialog.actions.map(\.title), ["Remove", "Remove and delete messages"])
+        removeDialog.close { removeDialog.actions[0].action(.day) }
         try await awaitMember("bob") { $0.memberStatus == .memRemoved }
     }
 
@@ -170,7 +159,7 @@ final class ModerationTests: RecordedAPITestCase {
     func testRemoveBlockedMemberForever() async throws {
         try recorded("bans/block-members")
         let (groupInfo, _) = try openGroup()
-        let cath = try member(try blockedMembers("/_block #1 2,3 blocked=on ttl=86400"), "cath")
+        let cath = try member(try blockedMembers("/_block #1 2,3 blocked=on"), "cath")
         showRemoveMemberAlert(groupInfo, cath)
         let dialog = try await sheet(BanDialog.self)
         XCTAssertEqual(dialog.title, "Remove member?")
@@ -249,7 +238,7 @@ final class ModerationTests: RecordedAPITestCase {
     func testAcceptBlockedPendingMember() async throws {
         try recorded("bans/pending-member")
         let (groupInfo, _) = try openGroup()
-        let bob = try member(try blockedMembers("/_block #1 2 blocked=on ttl=86400"), "bob")
+        let bob = try member(try blockedMembers("/_block #1 2 blocked=on"), "bob")
         replaceMembers([bob])
         showAcceptMemberAlert(groupInfo, bob)
         try await assertTexts(["Accept member", "Member will be unblocked for all and will join the group, accept member?", "Accept as member", "Accept as observer", "Cancel"])
@@ -287,7 +276,7 @@ final class ModerationTests: RecordedAPITestCase {
         showBanMemberSheet(groupInfo, try member(members, "cath"))
         let dialog = try await sheet(BanDialog.self)
         XCTAssertEqual(dialog.title, "Block subscriber for all?")
-        XCTAssertEqual(dialog.actions.map(\.title), ["Block", "Block and remove", "Block, remove and delete messages"])
+        XCTAssertEqual(dialog.actions.map(\.title), ["Block", "Block and remove"])
         dialog.close { dialog.actions[0].action(.day) }
         try await awaitMember("cath") { $0.blockedByAdmin }
     }
@@ -296,7 +285,7 @@ final class ModerationTests: RecordedAPITestCase {
     func testUnblockSubscriber() async throws {
         try recorded("bans/channel")
         let (groupInfo, _) = try openGroup()
-        let cath = try member(try blockedMembers("/_block #1 3 blocked=on ttl=86400"), "cath")
+        let cath = try member(try blockedMembers("/_block #1 3 blocked=on"), "cath")
         replaceMembers([cath])
         AlertManager.shared.showAlert(unblockForAllAlert(groupInfo, cath))
         try await assertTexts(["Unblock subscriber for all?", "Messages from cath will be shown for all subscribers.", "Unblock for all", "Cancel"])
@@ -310,7 +299,14 @@ final class ModerationTests: RecordedAPITestCase {
         let (groupInfo, members) = try openGroup()
         showBanMemberSheet(groupInfo, try member(members, "dan"))
         let dialog = try await sheet(BanDialog.self)
-        dialog.close { dialog.actions[1].action(.forever) }
+        dialog.close { dialog.actions[1].action(.day) }
+        var removal: BanDialog?
+        try await waitFor {
+            removal = self.sheetContent(BanDialog.self)
+            return removal?.title == "Remove subscriber?"
+        }
+        let removeDialog = try XCTUnwrap(removal)
+        removeDialog.close { removeDialog.actions[0].action(.forever) }
         try await assertTexts(["Remove forever?", "dan can't rejoin via the channel link again, except from another app.", "Cancel", "Remove"])
         let field = try XCTUnwrap((presented() as? UIAlertController)?.textFields?.first)
         field.text = "yes"
@@ -472,8 +468,8 @@ final class ModerationTests: RecordedAPITestCase {
         let (groupInfo, members) = try openGroup()
         showBanMemberSheet(groupInfo, try member(members, "dan"))
         let dialog = try await sheet(BanDialog.self)
-        dialog.close { dialog.actions[0].action(.week) }
-        try await assertRequested { $0 == "/_block #1 4 blocked=on ttl=604800" }
+        dialog.close { dialog.actions[0].action(.day) }
+        try await assertRequested { $0 == "/_block #1 4 blocked=on" }
         try await waitFor { self.shownTexts().contains("Error blocking member for all") }
     }
 

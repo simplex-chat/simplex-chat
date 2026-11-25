@@ -292,7 +292,7 @@
         }
       }
     },
-    "/_block #1 2 blocked=on ttl=86400": {
+    "/_block #1 2 blocked=on": {
       "result": {
         "blocked": true,
         "groupInfo": {
@@ -452,7 +452,6 @@
               "viaGroupLink": false
             },
             "blockedByAdmin": true,
-            "blockedUntil": "2099-01-01T12:00:00Z",
             "createdAt": "1970-01-01T00:00:00Z",
             "groupId": 1,
             "groupMemberId": 2,
@@ -585,7 +584,7 @@
         }
       }
     },
-    "/_block #1 2,3 blocked=on ttl=86400": {
+    "/_block #1 2,3 blocked=on": {
       "result": {
         "blocked": true,
         "groupInfo": {
@@ -745,7 +744,6 @@
               "viaGroupLink": false
             },
             "blockedByAdmin": true,
-            "blockedUntil": "2099-01-01T12:00:00Z",
             "createdAt": "1970-01-01T00:00:00Z",
             "groupId": 1,
             "groupMemberId": 2,
@@ -828,299 +826,6 @@
               "viaGroupLink": false
             },
             "blockedByAdmin": true,
-            "blockedUntil": "2099-01-01T12:00:00Z",
-            "createdAt": "1970-01-01T00:00:00Z",
-            "groupId": 1,
-            "groupMemberId": 3,
-            "indexInGroup": 2,
-            "invitedBy": {
-              "type": "user"
-            },
-            "invitedByGroupMemberId": 1,
-            "localDisplayName": "cath",
-            "memberCategory": "invitee",
-            "memberChatVRange": {
-              "maxVersion": 23,
-              "minVersion": 9
-            },
-            "memberContactId": 3,
-            "memberContactProfileId": 3,
-            "memberId": "memberId2",
-            "memberProfile": {
-              "displayName": "cath",
-              "fullName": "",
-              "localAlias": "",
-              "preferences": {
-                "calls": {
-                  "allow": "yes"
-                },
-                "commands": [],
-                "files": {
-                  "allow": "always"
-                },
-                "fullDelete": {
-                  "allow": "no"
-                },
-                "reactions": {
-                  "allow": "yes"
-                },
-                "sessions": {
-                  "allow": "no"
-                },
-                "timedMessages": {
-                  "allow": "yes"
-                },
-                "voice": {
-                  "allow": "yes"
-                }
-              },
-              "profileId": 3,
-              "shortDescr": "Catherine"
-            },
-            "memberPubKey": "memberPubKey",
-            "memberRole": "member",
-            "memberSettings": {
-              "showMessages": true
-            },
-            "memberStatus": "connected",
-            "updatedAt": "1970-01-01T00:00:00Z"
-          }
-        ],
-        "msgSigned": true,
-        "type": "membersBlockedForAllUser",
-        "user": {
-          "activeOrder": 1,
-          "activeUser": true,
-          "agentUserId": "1",
-          "autoAcceptGroupInvitations": false,
-          "autoAcceptMemberContacts": false,
-          "clientService": false,
-          "fullPreferences": {
-            "calls": {
-              "allow": "yes"
-            },
-            "commands": [],
-            "files": {
-              "allow": "always"
-            },
-            "fullDelete": {
-              "allow": "no"
-            },
-            "reactions": {
-              "allow": "yes"
-            },
-            "sessions": {
-              "allow": "no"
-            },
-            "timedMessages": {
-              "allow": "yes"
-            },
-            "voice": {
-              "allow": "yes"
-            }
-          },
-          "localDisplayName": "alice",
-          "profile": {
-            "displayName": "alice",
-            "fullName": "",
-            "localAlias": "",
-            "preferences": {
-              "calls": {
-                "allow": "yes"
-              },
-              "commands": [],
-              "files": {
-                "allow": "always"
-              },
-              "fullDelete": {
-                "allow": "no"
-              },
-              "reactions": {
-                "allow": "yes"
-              },
-              "sessions": {
-                "allow": "no"
-              },
-              "timedMessages": {
-                "allow": "yes"
-              },
-              "voice": {
-                "allow": "yes"
-              }
-            },
-            "profileId": 1,
-            "shortDescr": "Alice"
-          },
-          "sendRcptsContacts": true,
-          "sendRcptsSmallGroups": true,
-          "showNtfs": true,
-          "userChatRelay": false,
-          "userContactId": 1,
-          "userId": 1
-        }
-      }
-    },
-    "/_block #1 3 blocked=on ttl=604800": {
-      "result": {
-        "blocked": true,
-        "groupInfo": {
-          "chatSettings": {
-            "enableNtfs": "all",
-            "favorite": false
-          },
-          "chatTags": [],
-          "chatTs": "1970-01-01T00:00:00Z",
-          "createdAt": "1970-01-01T00:00:00Z",
-          "fullGroupPreferences": {
-            "commands": [],
-            "comments": {
-              "enable": "off"
-            },
-            "directMessages": {
-              "enable": "on"
-            },
-            "files": {
-              "enable": "on"
-            },
-            "fullDelete": {
-              "enable": "off"
-            },
-            "history": {
-              "enable": "on"
-            },
-            "reactions": {
-              "enable": "on"
-            },
-            "reports": {
-              "enable": "on"
-            },
-            "sessions": {
-              "enable": "off"
-            },
-            "signMessages": {
-              "enable": "off"
-            },
-            "simplexLinks": {
-              "enable": "on"
-            },
-            "support": {
-              "enable": "on"
-            },
-            "timedMessages": {
-              "enable": "off",
-              "ttl": 86400
-            },
-            "voice": {
-              "enable": "on"
-            }
-          },
-          "groupId": 1,
-          "groupProfile": {
-            "displayName": "team",
-            "fullName": "",
-            "groupPreferences": {
-              "directMessages": {
-                "enable": "on"
-              },
-              "history": {
-                "enable": "on"
-              }
-            }
-          },
-          "groupSummary": {
-            "currentMembers": 4
-          },
-          "localAlias": "",
-          "localDisplayName": "team",
-          "membersRequireAttention": 0,
-          "membership": {
-            "blockedByAdmin": false,
-            "createdAt": "1970-01-01T00:00:00Z",
-            "groupId": 1,
-            "groupMemberId": 1,
-            "indexInGroup": 0,
-            "invitedBy": {
-              "type": "user"
-            },
-            "localDisplayName": "alice",
-            "memberCategory": "user",
-            "memberChatVRange": {
-              "maxVersion": 23,
-              "minVersion": 9
-            },
-            "memberContactId": 1,
-            "memberContactProfileId": 1,
-            "memberId": "memberId0",
-            "memberProfile": {
-              "displayName": "alice",
-              "fullName": "",
-              "localAlias": "",
-              "preferences": {
-                "calls": {
-                  "allow": "yes"
-                },
-                "commands": [],
-                "files": {
-                  "allow": "always"
-                },
-                "fullDelete": {
-                  "allow": "no"
-                },
-                "reactions": {
-                  "allow": "yes"
-                },
-                "sessions": {
-                  "allow": "no"
-                },
-                "timedMessages": {
-                  "allow": "yes"
-                },
-                "voice": {
-                  "allow": "yes"
-                }
-              },
-              "profileId": 1,
-              "shortDescr": "Alice"
-            },
-            "memberPubKey": "memberPubKey",
-            "memberRole": "owner",
-            "memberSettings": {
-              "showMessages": true
-            },
-            "memberStatus": "creator",
-            "updatedAt": "1970-01-01T00:00:00Z"
-          },
-          "updatedAt": "1970-01-01T00:00:00Z",
-          "useRelays": false,
-          "userMemberProfileSentAt": "1970-01-01T00:00:00Z"
-        },
-        "members": [
-          {
-            "activeConn": {
-              "agentConnId": "agentConnId",
-              "authErrCounter": 0,
-              "connChatVersion": 23,
-              "connId": 4,
-              "connLevel": 0,
-              "connStatus": {
-                "type": "ready"
-              },
-              "connType": "member",
-              "contactConnInitiated": false,
-              "createdAt": "1970-01-01T00:00:00Z",
-              "entityId": 3,
-              "localAlias": "",
-              "peerChatVRange": {
-                "maxVersion": 23,
-                "minVersion": 9
-              },
-              "pqEncryption": false,
-              "pqSupport": false,
-              "quotaErrCounter": 0,
-              "viaGroupLink": false
-            },
-            "blockedByAdmin": true,
-            "blockedUntil": "2099-01-01T12:00:00Z",
             "createdAt": "1970-01-01T00:00:00Z",
             "groupId": 1,
             "groupMemberId": 3,
@@ -1624,7 +1329,7 @@
         }
       }
     },
-    "/_block #1 4 blocked=on": {
+    "/_block #1 3,4 blocked=on": {
       "result": {
         "blocked": true,
         "groupInfo": {
@@ -1759,6 +1464,87 @@
           "userMemberProfileSentAt": "1970-01-01T00:00:00Z"
         },
         "members": [
+          {
+            "activeConn": {
+              "agentConnId": "agentConnId",
+              "authErrCounter": 0,
+              "connChatVersion": 23,
+              "connId": 4,
+              "connLevel": 0,
+              "connStatus": {
+                "type": "ready"
+              },
+              "connType": "member",
+              "contactConnInitiated": false,
+              "createdAt": "1970-01-01T00:00:00Z",
+              "entityId": 3,
+              "localAlias": "",
+              "peerChatVRange": {
+                "maxVersion": 23,
+                "minVersion": 9
+              },
+              "pqEncryption": false,
+              "pqSupport": false,
+              "quotaErrCounter": 0,
+              "viaGroupLink": false
+            },
+            "blockedByAdmin": true,
+            "createdAt": "1970-01-01T00:00:00Z",
+            "groupId": 1,
+            "groupMemberId": 3,
+            "indexInGroup": 2,
+            "invitedBy": {
+              "type": "user"
+            },
+            "invitedByGroupMemberId": 1,
+            "localDisplayName": "cath",
+            "memberCategory": "invitee",
+            "memberChatVRange": {
+              "maxVersion": 23,
+              "minVersion": 9
+            },
+            "memberContactId": 3,
+            "memberContactProfileId": 3,
+            "memberId": "memberId2",
+            "memberProfile": {
+              "displayName": "cath",
+              "fullName": "",
+              "localAlias": "",
+              "preferences": {
+                "calls": {
+                  "allow": "yes"
+                },
+                "commands": [],
+                "files": {
+                  "allow": "always"
+                },
+                "fullDelete": {
+                  "allow": "no"
+                },
+                "reactions": {
+                  "allow": "yes"
+                },
+                "sessions": {
+                  "allow": "no"
+                },
+                "timedMessages": {
+                  "allow": "yes"
+                },
+                "voice": {
+                  "allow": "yes"
+                }
+              },
+              "profileId": 3,
+              "shortDescr": "Catherine"
+            },
+            "memberPubKey": "memberPubKey",
+            "memberRole": "member",
+            "memberSettings": {
+              "showMessages": true
+            },
+            "memberStatus": "connected",
+            "updatedAt": "1970-01-01T00:00:00Z"
+          },
           {
             "activeConn": {
               "agentConnId": "agentConnId",
@@ -2528,7 +2314,6 @@
               "viaGroupLink": false
             },
             "blockedByAdmin": true,
-            "blockedUntil": "2099-01-01T12:00:00Z",
             "createdAt": "1970-01-01T00:00:00Z",
             "groupId": 1,
             "groupMemberId": 2,
@@ -2821,7 +2606,6 @@
               "viaGroupLink": false
             },
             "blockedByAdmin": true,
-            "blockedUntil": "2099-01-01T12:00:00Z",
             "createdAt": "1970-01-01T00:00:00Z",
             "groupId": 1,
             "groupMemberId": 3,

@@ -3051,7 +3051,6 @@ data class GroupMember (
   val memberStatus: GroupMemberStatus,
   val memberSettings: GroupMemberSettings,
   val blockedByAdmin: Boolean,
-  val blockedUntil: Instant? = null,
   val invitedBy: InvitedBy,
   val localDisplayName: String,
   val memberProfile: LocalProfile,

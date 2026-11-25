@@ -265,7 +265,6 @@ CREATE TABLE group_members(
   member_security_code TEXT,
   member_security_code_verified_at TEXT,
   invited_via_group_member_id INTEGER REFERENCES group_members(group_member_id) ON DELETE SET NULL,
-  member_restriction_expires_at TEXT,
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -1601,10 +1600,6 @@ CREATE UNIQUE INDEX idx_badge_purchases_store_receipt ON badge_purchases(
   badge_store_receipt_id
 );
 CREATE UNIQUE INDEX idx_link_notices_link_hash ON link_notices(link_hash);
-CREATE INDEX idx_group_members_member_restriction_expires_at ON group_members(
-  user_id,
-  member_restriction_expires_at
-);
 CREATE TRIGGER on_group_members_insert_update_summary
 AFTER INSERT ON group_members
 FOR EACH ROW

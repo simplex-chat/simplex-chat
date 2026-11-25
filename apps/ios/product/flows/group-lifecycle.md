@@ -118,12 +118,12 @@ Complete group management in SimpleX Chat iOS: creating groups, inviting members
 ### 7. Block Member for All
 
 1. Moderators, admins and owners can block a member's messages from being visible to all group members.
-2. "Block member for all?" (`showBanMemberSheet`) offers "Block for" 1 day (default), 1 week or Forever; admins and owners also get "Block and remove" and "Block, remove and delete messages". The footer: "**<name>** won't be notified, and the messages will be hidden for all." for moderators, "**<name>** won't be notified, and if removed, can't rejoin while blocked." for admins and owners.
-3. Calls `apiBlockMembersForAll(groupId:memberIds:blocked:ttl:)`; `ttl` is absent for Forever:
+2. "Block member for all?" (`showBanMemberSheet`) offers "Block"; admins and owners also get "Block and remove", which opens the removal sheet of a blocked member (`showRemoveBannedMemberSheet`) with "Block for" 1 day (default), 1 week or Forever. The footer: "**<name>** won't be notified, and the messages will be hidden for all." for moderators, "**<name>** won't be notified, and if removed, can't rejoin while blocked." for admins and owners.
+3. Calls `apiBlockMembersForAll(groupId:memberIds:blocked:)`:
    ```swift
-   func apiBlockMembersForAll(_ groupId: Int64, _ memberIds: [Int64], _ blocked: Bool, ttl: Int64? = nil) async throws -> [GroupMember]
+   func apiBlockMembersForAll(_ groupId: Int64, _ memberIds: [Int64], _ blocked: Bool) async throws -> [GroupMember]
    ```
-4. Core returns `ChatResponse2.membersBlockedForAllUser(user, _, members, _)`; `GroupMember.blockedUntil` is the end time.
+4. Core returns `ChatResponse2.membersBlockedForAllUser(user, _, members, _)`; the block lasts until "Unblock for all" or until the member leaves.
 5. Blocked members' messages are hidden for all members; only moderators and above see placeholders.
 
 ### 8. Leave Group

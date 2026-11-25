@@ -2570,8 +2570,8 @@ object ChatController {
     throw Exception("failed to change member role: ${r.responseType} ${r.details}")
   }
 
-  suspend fun apiBlockMembersForAll(rh: Long?, groupId: Long, memberIds: List<Long>, blocked: Boolean, ttl: Long? = null): List<GroupMember> {
-    val r = sendCmd(rh, CC.ApiBlockMembersForAll(groupId, memberIds, blocked, ttl))
+  suspend fun apiBlockMembersForAll(rh: Long?, groupId: Long, memberIds: List<Long>, blocked: Boolean): List<GroupMember> {
+    val r = sendCmd(rh, CC.ApiBlockMembersForAll(groupId, memberIds, blocked))
     if (r is API.Result && r.res is CR.MembersBlockedForAllUser) return r.res.members
     if (!(networkErrorAlert(r))) {
       apiErrorAlert("apiBlockMembersForAll", generalGetString(MR.strings.error_blocking_member_for_all), r)
@@ -4121,7 +4121,7 @@ sealed class CC {
   class ApiAcceptMember(val groupId: Long, val groupMemberId: Long, val memberRole: GroupMemberRole): CC()
   class ApiDeleteMemberSupportChat(val groupId: Long, val groupMemberId: Long): CC()
   class ApiMembersRole(val groupId: Long, val memberIds: List<Long>, val memberRole: GroupMemberRole): CC()
-  class ApiBlockMembersForAll(val groupId: Long, val memberIds: List<Long>, val blocked: Boolean, val ttl: Long?): CC()
+  class ApiBlockMembersForAll(val groupId: Long, val memberIds: List<Long>, val blocked: Boolean): CC()
   class ApiRemoveMembers(val groupId: Long, val memberIds: List<Long>, val withMessages: Boolean, val notice: LinkNotice?): CC()
   class ApiLeaveGroup(val groupId: Long): CC()
   class ApiListMembers(val groupId: Long): CC()
@@ -4340,7 +4340,7 @@ sealed class CC {
     is ApiAcceptMember -> "/_accept member #$groupId $groupMemberId ${memberRole.memberRole}"
     is ApiDeleteMemberSupportChat -> "/_delete member chat #$groupId $groupMemberId"
     is ApiMembersRole -> "/_member role #$groupId ${memberIds.joinToString(",")} ${memberRole.memberRole}"
-    is ApiBlockMembersForAll -> "/_block #$groupId ${memberIds.joinToString(",")} blocked=${onOff(blocked)}" + (if (ttl != null) " ttl=$ttl" else "")
+    is ApiBlockMembersForAll -> "/_block #$groupId ${memberIds.joinToString(",")} blocked=${onOff(blocked)}"
     is ApiRemoveMembers -> "/_remove #$groupId ${memberIds.joinToString(",")} messages=${onOff(withMessages)}" + (if (notice != null) " notice=${jsonShort.encodeToString(notice)}" else "")
     is ApiLeaveGroup -> "/_leave #$groupId"
     is ApiListMembers -> "/_members #$groupId"

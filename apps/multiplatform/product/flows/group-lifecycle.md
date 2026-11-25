@@ -129,14 +129,14 @@ suspend fun apiRemoveMembers(rh: Long?, groupId: Long, memberIds: List<Long>, wi
 ### 4.2 Block Members for All
 
 ```kotlin
-suspend fun apiBlockMembersForAll(rh: Long?, groupId: Long, memberIds: List<Long>, blocked: Boolean, ttl: Long? = null): List<GroupMember>
+suspend fun apiBlockMembersForAll(rh: Long?, groupId: Long, memberIds: List<Long>, blocked: Boolean): List<GroupMember>
 ```
 
 1. Owner, Admin, or Moderator selects a member and taps "Block for all".
-2. "Block member for all?" (`banMembersDialog`) offers "Block for" 1 day (default), 1 week or Forever; admins and owners also get "Block and remove" and "Block, remove and delete messages". The text: "**<name>** won't be notified, and the messages will be hidden for all." for moderators, "**<name>** won't be notified, and if removed, can't rejoin while blocked." for admins and owners; several members: "Members won't be notified, and …" ("Subscribers" in channels).
-3. `CC.ApiBlockMembersForAll(groupId, memberIds, blocked, ttl)` is sent; `ttl` is absent for Forever.
+2. "Block member for all?" (`banMembersDialog`) offers "Block"; admins and owners also get "Block and remove", which opens `removeBannedMembersDialog` with "Block for" 1 day (default), 1 week or Forever. The text: "**<name>** won't be notified, and the messages will be hidden for all." for moderators, "**<name>** won't be notified, and if removed, can't rejoin while blocked." for admins and owners; several members: "Members won't be notified, and …" ("Subscribers" in channels).
+3. `CC.ApiBlockMembersForAll(groupId, memberIds, blocked)` is sent.
 4. `blocked = true` blocks; `blocked = false` unblocks.
-5. `CR.MembersBlockedForAllUser` returns the updated member list; `GroupMember.blockedUntil` is the end time.
+5. `CR.MembersBlockedForAllUser` returns the updated member list; the block lasts until "Unblock for all" or until the member leaves.
 6. Blocked members' messages are hidden from all group members; only moderators and above see placeholders.
 7. The blocked member can still see the group; the apps of members below moderator delete the member's messages on receipt.
 

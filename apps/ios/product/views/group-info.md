@@ -129,7 +129,7 @@ Shown when `developerTools` is enabled:
 | `cantInviteIncognitoAlert` | Tap invite members while incognito |
 | `largeGroupReceiptsDisabled` | Tap receipts info on large group |
 | `blockMemberAlert` / `unblockMemberAlert` | "Hide messages?" / "Show messages?": hides a member's messages for the user only |
-| `showBanMemberSheet` | "Block member for all?" sheet: "Block for" 1 day (default), 1 week or Forever; "Block"; for admins and owners, when the member supports `LINK_NOTICE_VERSION`, also "Block and remove" and "Block, remove and delete messages" |
+| `showBanMemberSheet` | "Block member for all?" sheet: "Block"; for admins and owners, when the member supports `LINK_NOTICE_VERSION`, also "Block and remove", which opens `showRemoveBannedMemberSheet` |
 | `unblockForAllAlert` | "Unblock member for all?" |
 | `showRemoveBannedMemberSheet` | "Remove member?" for a blocked member that supports `LINK_NOTICE_VERSION`: "Block for", removal without notification |
 | `removeBannedMember` | removal with a block; with Forever, "Remove forever?" asks to type "yes" |

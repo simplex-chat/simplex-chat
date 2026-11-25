@@ -3148,7 +3148,6 @@ export interface GroupMember {
   memberStatus: GroupMemberStatus
   memberSettings: GroupMemberSettings
   blockedByAdmin: boolean
-  blockedUntil?: string // ISO-8601 timestamp
   invitedBy: InvitedBy
   invitedByGroupMemberId?: number // int64
   localDisplayName: string

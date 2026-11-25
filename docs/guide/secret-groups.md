@@ -79,19 +79,23 @@ role.
 
 ## Blocking members
 
-<img src="./images/groups-block-member.png" alt="Block member for all, with Block for 1 day" width="288">
+<img src="./images/groups-block-member.png" alt="Block member for all, with Block and Block and remove" width="288">
 
-Tap a member on the group page and tap "Block for all". Choose for how long:
-1 day, 1 week or forever. A block ends on the hour.
+Tap a member on the group page and tap "Block for all".
 
-- **Block**: other members don't see the member's messages. Moderators,
-  admins and owners still see them hidden. The member is not told.
-- **Block and remove** (admins and owners): the member also can't rejoin via
-  the group link while blocked.
+- **Block**: other members don't see the member's messages until you unblock
+  the member. Moderators, admins and owners still see them hidden. The member
+  is not told.
+- **Block and remove** (admins and owners): choose for how long the member
+  can't rejoin via the group link: 1 day, 1 week or forever. The time ends on
+  the hour.
+
+Removing a blocked member asks the same question.
 
 On Android and desktop you can select several members. A small clock on the
-remove button shows that all selected members can be removed with a block for a
-time; it disappears when you select a member whose app needs an update.
+remove button shows that the selected members will be removed with a block on
+rejoining: it appears when a selected member is blocked, and disappears when
+you select a member whose app needs an update.
 
 Accept also unblocks a blocked member who waits for approval.
 

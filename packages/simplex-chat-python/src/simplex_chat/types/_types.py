@@ -2226,7 +2226,6 @@ class GroupMember(TypedDict):
     memberStatus: "GroupMemberStatus"
     memberSettings: "GroupMemberSettings"
     blockedByAdmin: bool
-    blockedUntil: NotRequired[str]  # ISO-8601 timestamp
     invitedBy: "InvitedBy"
     invitedByGroupMemberId: NotRequired[int]  # int64
     localDisplayName: str

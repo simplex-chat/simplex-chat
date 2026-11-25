@@ -947,7 +947,7 @@ ChatCmdError: Command error (only used in WebSockets API).
 
 ### APIBlockMembersForAll
 
-Block members. Requires Moderator role. With ttl, in seconds and at least 1, the block ends after this time, counted by each member from the server time of the message and rounded up to a whole hour.
+Block members. Requires Moderator role.
 
 *Network usage*: background.
 
@@ -955,20 +955,19 @@ Block members. Requires Moderator role. With ttl, in seconds and at least 1, the
 - groupId: int64
 - groupMemberIds: [int64]
 - blocked: bool
-- ttl: int?
 
 **Syntax**:
 
 ```
-/_block #<groupId> <groupMemberIds[0]>[,<groupMemberIds[1]>...] blocked=on|off[ ttl=<ttl>]
+/_block #<groupId> <groupMemberIds[0]>[,<groupMemberIds[1]>...] blocked=on|off
 ```
 
 ```javascript
-'/_block #' + groupId + ' ' + groupMemberIds.join(',') + ' blocked=' + (blocked ? 'on' : 'off') + (ttl ? ' ttl=' + ttl : '') // JavaScript
+'/_block #' + groupId + ' ' + groupMemberIds.join(',') + ' blocked=' + (blocked ? 'on' : 'off') // JavaScript
 ```
 
 ```python
-'/_block #' + str(groupId) + ' ' + ','.join(map(str, groupMemberIds)) + ' blocked=' + ('on' if blocked else 'off') + ((' ttl=' + str(ttl)) if ttl is not None else '') # Python
+'/_block #' + str(groupId) + ' ' + ','.join(map(str, groupMemberIds)) + ' blocked=' + ('on' if blocked else 'off') # Python
 ```
 
 **Responses**:

@@ -318,12 +318,7 @@ data LinkNotice = LinkNotice
   }
   deriving (Eq, Show)
 
-$(JQ.deriveToJSON defaultJSON ''LinkNotice)
-
-instance FromJSON LinkNotice where
-  parseJSON v = do
-    n@LinkNotice {ttl} <- $(JQ.mkParseJSON defaultJSON ''LinkNotice) v
-    if maybe False (< 1) ttl then fail "ttl must be positive" else pure n
+$(JQ.deriveJSON defaultJSON ''LinkNotice)
 
 data GrpMemDel = GrpMemDel
   { memberId :: MemberId,
@@ -510,8 +505,8 @@ data ChatMsgEvent (e :: MsgEncoding) where
   XGrpRelayNew :: ShortLinkContact -> ChatMsgEvent 'Json
   XGrpRelayReject :: RelayRejectionReason -> ChatMsgEvent 'Json
   XGrpRelayCap :: RelayCapabilities -> ChatMsgEvent 'Json
-  XGrpMemNew :: MemberInfo -> Maybe MsgScope -> Maybe IntroRestrictions -> ChatMsgEvent 'Json
-  XGrpMemIntro :: MemberInfo -> Maybe IntroRestrictions -> ChatMsgEvent 'Json
+  XGrpMemNew :: MemberInfo -> Maybe MsgScope -> Maybe MemberRestrictions -> ChatMsgEvent 'Json
+  XGrpMemIntro :: MemberInfo -> Maybe MemberRestrictions -> ChatMsgEvent 'Json
   XGrpMemInv :: MemberId -> IntroInvitation -> ChatMsgEvent 'Json
   XGrpMemFwd :: MemberInfo -> IntroInvitation -> ChatMsgEvent 'Json
   XGrpMemInfo :: MemberId -> Profile -> ChatMsgEvent 'Json

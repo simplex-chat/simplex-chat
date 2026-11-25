@@ -79,7 +79,6 @@ module Simplex.Chat.Store.Groups
     getGroupRelayMembers,
     getGroupMembersForExpiration,
     getRemovedMembersToCleanup,
-    getMembersToUnblock,
     setGroupSilentlyRemoved,
     getGroupSilentlyRemoved,
     deleteGroupChatItems,
@@ -271,11 +270,11 @@ import Database.SQLite.Simple (Only (..), Query, (:.) (..))
 import Database.SQLite.Simple.QQ (sql)
 #endif
 
-type MaybeGroupMemberRow = (Maybe GroupMemberId, Maybe GroupId, Maybe Int64, Maybe MemberId, Maybe VersionChat, Maybe VersionChat, Maybe GroupMemberRole, Maybe GroupMemberCategory, Maybe GroupMemberStatus, Maybe BoolInt, Maybe MemberRestrictionStatus, Maybe UTCTime) :. (Maybe Int64, Maybe GroupMemberId, Maybe ContactName, Maybe ContactId, Maybe ProfileId) :. ((Maybe ProfileId, Maybe ContactName, Maybe Text, Maybe Text, Maybe Text, Maybe ImageData, Maybe ConnLinkContact, Maybe ChatPeerType, Maybe LocalAlias, Maybe Text, Maybe Text) :. BadgeRow :. ContactDomainRow) :. (Maybe UTCTime, Maybe UTCTime) :. (Maybe UTCTime, Maybe Int64, Maybe Int64, Maybe Int64, Maybe UTCTime, Maybe C.PublicKeyEd25519, Maybe ShortLinkContact, Maybe Text, Maybe UTCTime)
+type MaybeGroupMemberRow = (Maybe GroupMemberId, Maybe GroupId, Maybe Int64, Maybe MemberId, Maybe VersionChat, Maybe VersionChat, Maybe GroupMemberRole, Maybe GroupMemberCategory, Maybe GroupMemberStatus, Maybe BoolInt, Maybe MemberRestrictionStatus) :. (Maybe Int64, Maybe GroupMemberId, Maybe ContactName, Maybe ContactId, Maybe ProfileId) :. ((Maybe ProfileId, Maybe ContactName, Maybe Text, Maybe Text, Maybe Text, Maybe ImageData, Maybe ConnLinkContact, Maybe ChatPeerType, Maybe LocalAlias, Maybe Text, Maybe Text) :. BadgeRow :. ContactDomainRow) :. (Maybe UTCTime, Maybe UTCTime) :. (Maybe UTCTime, Maybe Int64, Maybe Int64, Maybe Int64, Maybe UTCTime, Maybe C.PublicKeyEd25519, Maybe ShortLinkContact, Maybe Text, Maybe UTCTime)
 
 toMaybeGroupMember :: UTCTime -> Int64 -> MaybeGroupMemberRow -> Maybe GroupMember
-toMaybeGroupMember now userContactId ((Just groupMemberId, Just groupId, Just indexInGroup, Just memberId, Just minVer, Just maxVer, Just memberRole, Just memberCategory, Just memberStatus, Just showMessages, memberBlocked', blockedUntil) :. (invitedById, invitedByGroupMemberId, Just localDisplayName, memberContactId, Just memberContactProfileId) :. ((Just profileId, Just displayName, Just fullName, shortDescr, description, image, contactLink, peerType, Just localAlias, encodedPrefs, receivedPrefs) :. badgeRow :. domainRow) :. (Just createdAt, Just updatedAt) :. (supportChatTs, Just supportChatUnread, Just supportChatUnanswered, Just supportChatMentions, supportChatLastMsgFromMemberTs, memberPubKey, relayLink, memberCode_, memberCodeVerifiedAt_)) =
-  Just $ toGroupMember now userContactId ((groupMemberId, groupId, indexInGroup, memberId, minVer, maxVer, memberRole, memberCategory, memberStatus, showMessages, memberBlocked', blockedUntil) :. (invitedById, invitedByGroupMemberId, localDisplayName, memberContactId, memberContactProfileId) :. ((profileId, displayName, fullName, shortDescr, description, image, contactLink, peerType, localAlias, encodedPrefs, receivedPrefs) :. badgeRow :. domainRow) :. (createdAt, updatedAt) :. (supportChatTs, supportChatUnread, supportChatUnanswered, supportChatMentions, supportChatLastMsgFromMemberTs, memberPubKey, relayLink, memberCode_, memberCodeVerifiedAt_))
+toMaybeGroupMember now userContactId ((Just groupMemberId, Just groupId, Just indexInGroup, Just memberId, Just minVer, Just maxVer, Just memberRole, Just memberCategory, Just memberStatus, Just showMessages, memberBlocked') :. (invitedById, invitedByGroupMemberId, Just localDisplayName, memberContactId, Just memberContactProfileId) :. ((Just profileId, Just displayName, Just fullName, shortDescr, description, image, contactLink, peerType, Just localAlias, encodedPrefs, receivedPrefs) :. badgeRow :. domainRow) :. (Just createdAt, Just updatedAt) :. (supportChatTs, Just supportChatUnread, Just supportChatUnanswered, Just supportChatMentions, supportChatLastMsgFromMemberTs, memberPubKey, relayLink, memberCode_, memberCodeVerifiedAt_)) =
+  Just $ toGroupMember now userContactId ((groupMemberId, groupId, indexInGroup, memberId, minVer, maxVer, memberRole, memberCategory, memberStatus, showMessages, memberBlocked') :. (invitedById, invitedByGroupMemberId, localDisplayName, memberContactId, memberContactProfileId) :. ((profileId, displayName, fullName, shortDescr, description, image, contactLink, peerType, localAlias, encodedPrefs, receivedPrefs) :. badgeRow :. domainRow) :. (createdAt, updatedAt) :. (supportChatTs, supportChatUnread, supportChatUnanswered, supportChatMentions, supportChatLastMsgFromMemberTs, memberPubKey, relayLink, memberCode_, memberCodeVerifiedAt_))
 toMaybeGroupMember _ _ _ = Nothing
 
 createGroupLink :: DB.Connection -> TVar ChaChaDRG -> User -> GroupInfo -> ConnId -> CreatedLinkContact -> GroupLinkId -> GroupMemberRole -> SubscriptionMode -> ExceptT StoreError IO GroupLink
@@ -520,7 +519,6 @@ createGroupInvitation db cxt user@User {userId} inviter peerChatVRange GroupInvi
                         memCategory = GCHostMember,
                         memStatus = GSMemInvited,
                         memRestriction = Nothing,
-                        memBlockedUntil = Nothing,
                         memInvitedBy = IBUnknown,
                         memInvitedByGroupMemberId = Nothing,
                         localDisplayName = hostName,
@@ -612,7 +610,6 @@ createContactMemberInv_ db User {userId, userContactId} groupId invitedByGroupMe
         memberStatus,
         memberSettings = defaultMemberSettings,
         blockedByAdmin = False,
-        blockedUntil = Nothing,
         invitedBy,
         invitedByGroupMemberId,
         localDisplayName,
@@ -1388,18 +1385,6 @@ getRemovedMembersToCleanup db cxt user@User {userId} cutoffTs = do
       (groupMemberQuery <> " WHERE m.user_id = ? AND m.removed_at < ?")
       (userId, cutoffTs)
 
-getMembersToUnblock :: DB.Connection -> User -> UTCTime -> IO [(GroupId, GroupMemberId)]
-getMembersToUnblock db User {userId} now =
-  DB.query
-    db
-    [sql|
-      SELECT group_id, group_member_id
-      FROM group_members
-      WHERE user_id = ? AND member_restriction = ? AND member_restriction_expires_at <= ?
-        AND member_status NOT IN (?,?,?,?)
-    |]
-    (userId, MRSBlocked, now, GSMemRejected, GSMemRemoved, GSMemLeft, GSMemGroupDeleted)
-
 setGroupSilentlyRemoved :: DB.Connection -> GroupInfo -> IO ()
 setGroupSilentlyRemoved db GroupInfo {groupId} = do
   currentTs <- getCurrentTime
@@ -1450,7 +1435,6 @@ createNewContactMember db gVar User {userId, userContactId} GroupInfo {groupId, 
             memberStatus = GSMemInvited,
             memberSettings = defaultMemberSettings,
             blockedByAdmin = False,
-            blockedUntil = Nothing,
             invitedBy = IBUser,
             invitedByGroupMemberId = Just invitedByGroupMemberId,
             localDisplayName,
@@ -1497,7 +1481,6 @@ createNewMemberViaGroup db gVar cxt user@User {userId} GroupInfo {groupId, membe
               memCategory = GCInviteeMember,
               memStatus = GSMemInvited,
               memRestriction = Nothing,
-              memBlockedUntil = Nothing,
               memInvitedBy = IBUser,
               memInvitedByGroupMemberId = Just $ groupMemberId' membership,
               localDisplayName,
@@ -2512,7 +2495,7 @@ increaseGroupMembersRequireAttention db User {userId} g@GroupInfo {groupId, memb
   pure g {membersRequireAttention = membersRequireAttention + 1}
 
 -- | add new member with profile
-createNewGroupMember :: DB.Connection -> StoreCxt -> User -> GroupInfo -> GroupMember -> MemberInfo -> Maybe ProofPresHeader -> GroupMemberCategory -> GroupMemberStatus -> Maybe IntroRestrictions -> ExceptT StoreError IO GroupMember
+createNewGroupMember :: DB.Connection -> StoreCxt -> User -> GroupInfo -> GroupMember -> MemberInfo -> Maybe ProofPresHeader -> GroupMemberCategory -> GroupMemberStatus -> Maybe MemberRestrictions -> ExceptT StoreError IO GroupMember
 createNewGroupMember db cxt user gInfo invitingMember memInfo@MemberInfo {profile} presHeader_ memCategory memStatus memRestrictions_ = do
   currentTs <- liftIO getCurrentTime
   (localDisplayName, memProfileId, memProfile, badgeVerified) <- createNewMemberProfile_ db cxt user profile presHeader_ currentTs
@@ -2521,8 +2504,7 @@ createNewGroupMember db cxt user gInfo invitingMember memInfo@MemberInfo {profil
           { memInfo = (memInfo :: MemberInfo) {profile = memProfile},
             memCategory,
             memStatus,
-            memRestriction = (\IntroRestrictions {restriction} -> restriction) <$> memRestrictions_,
-            memBlockedUntil = introBlockedUntil =<< memRestrictions_,
+            memRestriction = restriction <$> memRestrictions_,
             memInvitedBy = IBUnknown,
             memInvitedByGroupMemberId = Just $ groupMemberId' invitingMember,
             localDisplayName,
@@ -2551,8 +2533,7 @@ createNewMember_
     { memInfo = MemberInfo memberId memberRole memChatVRange memberProfile@Profile {badge} memKey,
       memCategory = memberCategory,
       memStatus = memberStatus,
-      memRestriction = restriction_,
-      memBlockedUntil = blockedUntil,
+      memRestriction,
       memInvitedBy = invitedBy,
       memInvitedByGroupMemberId,
       localDisplayName,
@@ -2573,13 +2554,13 @@ createNewMember_
         [sql|
           INSERT INTO group_members
             (group_id, index_in_group, member_id, member_role, member_category, member_status, member_relations_vector,
-            member_restriction, member_restriction_expires_at, invited_by, invited_by_group_member_id,
+            member_restriction, invited_by, invited_by_group_member_id,
             user_id, local_display_name, contact_id, contact_profile_id, member_pub_key, created_at, updated_at,
             peer_chat_min_version, peer_chat_max_version)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         |]
         ( (groupId, indexInGroup, memberId, memberRole, memberCategory, memberStatus, Binary B.empty)
-            :. (restriction_, blockedUntil, invitedById, memInvitedByGroupMemberId)
+            :. (memRestriction, invitedById, memInvitedByGroupMemberId)
             :. (userId, localDisplayName, memberContactId, memberContactProfileId, memberPubKey, createdAt, createdAt)
             :. (minV, maxV)
         )
@@ -2595,8 +2576,7 @@ createNewMember_
           memberCategory,
           memberStatus,
           memberSettings = defaultMemberSettings,
-          blockedByAdmin = blockedAt createdAt restriction_ blockedUntil,
-          blockedUntil,
+          blockedByAdmin = maybe False mrsBlocked memRestriction,
           invitedBy,
           invitedByGroupMemberId = memInvitedByGroupMemberId,
           localDisplayName,
@@ -2716,7 +2696,7 @@ getMemberRelationsVector db GroupMember {groupMemberId} =
       "SELECT member_relations_vector FROM group_members WHERE group_member_id = ?"
       (Only groupMemberId)
 
-createIntroReMember :: DB.Connection -> StoreCxt -> User -> GroupInfo -> MemberInfo -> Maybe ProofPresHeader -> Maybe IntroRestrictions -> ExceptT StoreError IO GroupMember
+createIntroReMember :: DB.Connection -> StoreCxt -> User -> GroupInfo -> MemberInfo -> Maybe ProofPresHeader -> Maybe MemberRestrictions -> ExceptT StoreError IO GroupMember
 createIntroReMember
   db
   cxt
@@ -2727,9 +2707,8 @@ createIntroReMember
   memRestrictions_ = do
     currentTs <- liftIO getCurrentTime
     (localDisplayName, memProfileId, memberProfile', badgeVerified) <- createNewMemberProfile_ db cxt user memberProfile presHeader_ currentTs
-    let memRestriction = (\IntroRestrictions {restriction} -> restriction) <$> memRestrictions_
-        memBlockedUntil = introBlockedUntil =<< memRestrictions_
-        newMember = NewGroupMember {memInfo = (memInfo :: MemberInfo) {profile = memberProfile'}, memCategory = GCPreMember, memStatus = GSMemIntroduced, memRestriction, memBlockedUntil, memInvitedBy = IBUnknown, memInvitedByGroupMemberId = Nothing, localDisplayName, memContactId = Nothing, memProfileId}
+    let memRestriction = restriction <$> memRestrictions_
+        newMember = NewGroupMember {memInfo = (memInfo :: MemberInfo) {profile = memberProfile'}, memCategory = GCPreMember, memStatus = GSMemIntroduced, memRestriction, memInvitedBy = IBUnknown, memInvitedByGroupMemberId = Nothing, localDisplayName, memContactId = Nothing, memProfileId}
     createNewMember_ db user (groupId' gInfo) newMember badgeVerified currentTs
 
 createIntroReMemberConn :: DB.Connection -> User -> GroupMember -> GroupMember -> VersionChat -> MemberInfo -> (CommandId, ConnId) -> SubscriptionMode -> ExceptT StoreError IO GroupMember
@@ -3276,18 +3255,18 @@ updateGroupMemberSettings db User {userId} gId gMemberId GroupMemberSettings {sh
     |]
     (BI showMessages, currentTs, userId, gId, gMemberId)
 
-updateGroupMemberBlocked :: DB.Connection -> User -> GroupInfo -> MemberRestrictionStatus -> Maybe UTCTime -> GroupMember -> IO GroupMember
-updateGroupMemberBlocked db User {userId} GroupInfo {groupId} restriction blockedUntil m@GroupMember {groupMemberId} = do
+updateGroupMemberBlocked :: DB.Connection -> User -> GroupInfo -> MemberRestrictionStatus -> GroupMember -> IO GroupMember
+updateGroupMemberBlocked db User {userId} GroupInfo {groupId} mrs m@GroupMember {groupMemberId} = do
   currentTs <- getCurrentTime
   DB.execute
     db
     [sql|
       UPDATE group_members
-      SET member_restriction = ?, member_restriction_expires_at = ?, updated_at = ?
+      SET member_restriction = ?, updated_at = ?
       WHERE user_id = ? AND group_id = ? AND group_member_id = ?
     |]
-    (restriction, blockedUntil, currentTs, userId, groupId, groupMemberId)
-  pure m {blockedByAdmin = blockedAt currentTs (Just restriction) blockedUntil, blockedUntil}
+    (mrs, currentTs, userId, groupId, groupMemberId)
+  pure m {blockedByAdmin = mrsBlocked mrs}
 
 getHostConnId :: DB.Connection -> User -> GroupId -> ExceptT StoreError IO GroupMemberId
 getHostConnId db user@User {userId} groupId = do

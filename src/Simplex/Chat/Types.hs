@@ -1169,24 +1169,14 @@ mrsBlocked = \case
   MRSBlocked -> True
   _ -> False
 
-blockedAt :: UTCTime -> Maybe MemberRestrictionStatus -> Maybe UTCTime -> Bool
-blockedAt now restriction_ blockedUntil = maybe False mrsBlocked restriction_ && maybe True (now <) blockedUntil
-
 data MemberRestrictions = MemberRestrictions
-  { restriction :: MemberRestrictionStatus,
-    ttl :: Maybe Int64
+  { restriction :: MemberRestrictionStatus
   }
   deriving (Eq, Show)
 
-data IntroRestrictions = IntroRestrictions
-  { restriction :: MemberRestrictionStatus,
-    expiresAt :: Maybe UTCTime
-  }
-  deriving (Eq, Show)
-
-memberRestrictions :: GroupMember -> Maybe IntroRestrictions
+memberRestrictions :: GroupMember -> Maybe MemberRestrictions
 memberRestrictions m
-  | blockedByAdmin m = Just IntroRestrictions {restriction = MRSBlocked, expiresAt = blockedUntil m}
+  | blockedByAdmin m = Just MemberRestrictions {restriction = MRSBlocked}
   | otherwise = Nothing
 
 data ReceivedGroupInvitation = ReceivedGroupInvitation
@@ -1211,7 +1201,6 @@ data GroupMember = GroupMember
     memberStatus :: GroupMemberStatus,
     memberSettings :: GroupMemberSettings,
     blockedByAdmin :: Bool,
-    blockedUntil :: Maybe UTCTime,
     invitedBy :: InvitedBy,
     invitedByGroupMemberId :: Maybe GroupMemberId,
     localDisplayName :: ContactName,
@@ -1327,7 +1316,6 @@ data NewGroupMember = NewGroupMember
     memCategory :: GroupMemberCategory,
     memStatus :: GroupMemberStatus,
     memRestriction :: Maybe MemberRestrictionStatus,
-    memBlockedUntil :: Maybe UTCTime,
     memInvitedBy :: InvitedBy,
     memInvitedByGroupMemberId :: Maybe GroupMemberId,
     localDisplayName :: ContactName,
@@ -2432,14 +2420,7 @@ $(JQ.deriveJSON defaultJSON ''GroupRelayInvitation)
 
 $(JQ.deriveJSON defaultJSON ''IntroInvitation)
 
-$(JQ.deriveToJSON defaultJSON ''MemberRestrictions)
-
-instance FromJSON MemberRestrictions where
-  parseJSON v = do
-    r@MemberRestrictions {ttl} <- $(JQ.mkParseJSON defaultJSON ''MemberRestrictions) v
-    if maybe False (< 1) ttl then fail "ttl must be positive" else pure r
-
-$(JQ.deriveJSON defaultJSON ''IntroRestrictions)
+$(JQ.deriveJSON defaultJSON ''MemberRestrictions)
 
 $(JQ.deriveJSON defaultJSON ''GroupMemberRef)
 
