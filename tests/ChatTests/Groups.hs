@@ -8768,6 +8768,8 @@ testMsgLinkOtherGroup =
       bob #> "#team Approve the deploy plan?"
       [alice, cath] *<# "#team bob> Approve the deploy plan?"
       targetId <- lastItemId alice
+      cath ##> "/set receipts all off"
+      cath <## "ok"
       alice ##> "/item link #team Approve"
       link <- getTermLine alice
       alice `send` ("#club see [q](" <> link <> ")")

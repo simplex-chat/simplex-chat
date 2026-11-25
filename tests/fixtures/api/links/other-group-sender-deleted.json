@@ -182,9 +182,8 @@
                 "itemId": 46,
                 "itemSharedMsgId": "itemSharedMsgId",
                 "itemStatus": {
-                  "msgRcptStatus": "ok",
                   "sndProgress": "complete",
-                  "type": "sndRcvd"
+                  "type": "sndSent"
                 },
                 "itemText": "see [q](simplex:m)",
                 "itemTs": "1970-01-01T00:00:00Z",
