@@ -416,6 +416,8 @@ data ChatCommand
   | APIGetChatContentTypes ChatRef
   | APIGetChatItems {chatPagination :: ChatPagination, search :: Maybe Text}
   | APIGetChatItemInfo {chatRef :: ChatRef, chatItemId :: ChatItemId}
+  | APIGetChatItemLink {chatRef :: ChatRef, chatItemId :: ChatItemId}
+  | APIMsgLinkPlan {userId :: UserId, msgLink :: MsgLink, chatRef_ :: Maybe ChatRef}
   | APISendMessages {sendRef :: SendRef, liveMessage :: Bool, ttl :: Maybe Int, signMessages :: Bool, composedMessages :: NonEmpty ComposedMessage}
   | APICreateChatTag ChatTagData
   | APISetChatTags ChatRef (Maybe (NonEmpty ChatTagId))
@@ -654,6 +656,7 @@ data ChatCommand
   | LastChatItemId (Maybe ChatName) Int -- UserId (not used in UI)
   | ShowChatItem (Maybe ChatItemId) -- UserId (not used in UI)
   | ShowChatItemInfo ChatName Text
+  | ShowChatItemLink ChatName Text
   | ShowLiveItems Bool
   | SendFile ChatName CryptoFile
   | SendImage ChatName CryptoFile
@@ -833,6 +836,8 @@ data ChatResponse
   | CRChatTags {user :: User, userTags :: [ChatTag]}
   | CRChatItems {user :: User, chatName_ :: Maybe ChatName, chatItems :: [AChatItem]}
   | CRChatItemInfo {user :: User, chatItem :: AChatItem, chatItemInfo :: ChatItemInfo}
+  | CRChatItemLink {user :: User, msgLink :: MsgLink}
+  | CRMsgLinkPlan {user :: User, msgLinkPlan :: MsgLinkPlan}
   | CRChatItemId User (Maybe ChatItemId)
   | CRServerTestResult {user :: User, testServer :: AProtoServerWithAuth, testFailure :: Maybe ProtocolTestFailure, serverInfo :: Maybe (Either String ServerPublicInfo)}
   | CRChatRelayTestResult {user :: User, relayProfile :: Maybe RelayProfile, relayTestFailure :: Maybe RelayTestFailure}
@@ -1179,7 +1184,17 @@ data ConnectionPlan
   = CPInvitationLink {invitationLinkPlan :: InvitationLinkPlan}
   | CPContactAddress {contactAddressPlan :: ContactAddressPlan, nameChange :: Maybe NameChange}
   | CPGroupLink {groupLinkPlan :: GroupLinkPlan, nameChange :: Maybe NameChange}
+  | CPUpdateRequired
   | CPError {chatError :: ChatError}
+  deriving (Show)
+
+data MsgLinkPlan
+  = MLPItem {chatItem :: AChatItem, linkText :: Text}
+  | MLPChat {chatInfo :: AChatInfo}
+  | MLPJoin {connTarget :: AConnectTarget}
+  | MLPNotFound
+  | MLPUnknownSource
+  | MLPUnknownLink
   deriving (Show)
 
 data NameChange
@@ -1270,6 +1285,7 @@ connectionPlanProceed = \case
     GLPNoRelays _ -> False
     GLPUpdateRequired _ -> False
     _ -> False
+  CPUpdateRequired -> False
   CPError _ -> True
 
 connectionPlanOwnLink :: ConnectionPlan -> Bool
@@ -1925,6 +1941,8 @@ $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "Chat") ''ChatError)
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "NC") ''NameChange)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "CP") ''ConnectionPlan)
+
+$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "MLP") ''MsgLinkPlan)
 
 $(JQ.deriveJSON defaultJSON ''AppFilePathsConfig)
 

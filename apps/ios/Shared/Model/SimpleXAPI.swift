@@ -506,6 +506,19 @@ func apiGetChatItemInfo(type: ChatType, id: Int64, scope: GroupChatScope?, itemI
     throw r.unexpected
 }
 
+func apiGetChatItemLink(type: ChatType, id: Int64, scope: GroupChatScope?, itemId: Int64) async throws -> String {
+    let r: ChatResponse0 = try await chatSendCmd(.apiGetChatItemLink(type: type, id: id, scope: scope, itemId: itemId))
+    if case let .chatItemLink(_, msgLink) = r { return msgLink }
+    throw r.unexpected
+}
+
+func apiMsgLinkPlan(msgLink: String, chatId: ChatId?) async throws -> MsgLinkPlan {
+    let userId = try currentUserId("apiMsgLinkPlan")
+    let r: ChatResponse0 = try await chatSendCmd(.apiMsgLinkPlan(userId: userId, msgLink: msgLink, chatId: chatId))
+    if case let .msgLinkPlan(_, msgLinkPlan) = r { return msgLinkPlan }
+    throw r.unexpected
+}
+
 func apiPlanForwardChatItems(type: ChatType, id: Int64, scope: GroupChatScope?, itemIds: [Int64]) async throws -> ([Int64], ForwardConfirmation?) {
     let r: ChatResponse1 = try await chatSendCmd(.apiPlanForwardChatItems(fromChatType: type, fromChatId: id, fromScope: scope, itemIds: itemIds))
     if case let .forwardPlan(_, chatItemIds, forwardConfimation) = r { return (chatItemIds, forwardConfimation) }

@@ -98,7 +98,7 @@ import Simplex.Chat.Badges.StorePlan (storePlan)
 import Simplex.Chat.Badges.Types (BadgeCodePaymentStatus (..))
 import Simplex.Chat.Bot (initializeBotAddress')
 import Simplex.Chat.Bot.Store (withDB, withDB')
-import Simplex.Chat.Controller
+import Simplex.Chat.Controller hiding (linkText)
 import Simplex.Chat.Core (sendChatCmd, simplexChatCore)
 import Simplex.Chat.Options (CoreChatOpts (..))
 import Simplex.Chat.Options.DB (dbString)

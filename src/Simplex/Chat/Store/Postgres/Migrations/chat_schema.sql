@@ -357,6 +357,27 @@ ALTER TABLE test_chat_schema.calls ALTER COLUMN call_id ADD GENERATED ALWAYS AS 
 
 
 
+CREATE TABLE test_chat_schema.chat_item_links (
+    chat_item_link_id bigint NOT NULL,
+    chat_item_id bigint NOT NULL,
+    label text NOT NULL,
+    link_text text NOT NULL,
+    target_chat_item_id bigint
+);
+
+
+
+ALTER TABLE test_chat_schema.chat_item_links ALTER COLUMN chat_item_link_id ADD GENERATED ALWAYS AS IDENTITY (
+    SEQUENCE NAME test_chat_schema.chat_item_links_chat_item_link_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
+
+
+
 CREATE TABLE test_chat_schema.chat_item_mentions (
     chat_item_mention_id bigint NOT NULL,
     chat_item_id bigint NOT NULL,
@@ -1870,6 +1891,11 @@ ALTER TABLE ONLY test_chat_schema.calls
 
 
 
+ALTER TABLE ONLY test_chat_schema.chat_item_links
+    ADD CONSTRAINT chat_item_links_pkey PRIMARY KEY (chat_item_link_id);
+
+
+
 ALTER TABLE ONLY test_chat_schema.chat_item_mentions
     ADD CONSTRAINT chat_item_mentions_pkey PRIMARY KEY (chat_item_mention_id);
 
@@ -2290,6 +2316,14 @@ CREATE INDEX idx_calls_contact_id ON test_chat_schema.calls USING btree (contact
 
 
 CREATE INDEX idx_calls_user_id ON test_chat_schema.calls USING btree (user_id);
+
+
+
+CREATE UNIQUE INDEX idx_chat_item_links_chat_item_id_label ON test_chat_schema.chat_item_links USING btree (chat_item_id, label);
+
+
+
+CREATE INDEX idx_chat_item_links_target_chat_item_id ON test_chat_schema.chat_item_links USING btree (target_chat_item_id);
 
 
 
@@ -3110,6 +3144,16 @@ ALTER TABLE ONLY test_chat_schema.calls
 
 ALTER TABLE ONLY test_chat_schema.calls
     ADD CONSTRAINT calls_user_id_fkey FOREIGN KEY (user_id) REFERENCES test_chat_schema.users(user_id) ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY test_chat_schema.chat_item_links
+    ADD CONSTRAINT chat_item_links_chat_item_id_fkey FOREIGN KEY (chat_item_id) REFERENCES test_chat_schema.chat_items(chat_item_id) ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY test_chat_schema.chat_item_links
+    ADD CONSTRAINT chat_item_links_target_chat_item_id_fkey FOREIGN KEY (target_chat_item_id) REFERENCES test_chat_schema.chat_items(chat_item_id) ON DELETE SET NULL;
 
 
 

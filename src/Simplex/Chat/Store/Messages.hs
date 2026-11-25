@@ -64,6 +64,13 @@ module Simplex.Chat.Store.Messages
     updateChatItemSignedMsg,
     createGroupCIMentions,
     updateGroupCIMentions,
+    createCILinks,
+    updateCILinks,
+    getGroupItemIdByAuthor_,
+    getGroupItemIdByAuthor,
+    getGroupIdByMemberId,
+    getDirectItemIdByMsgId,
+    getAChatItemInScope,
     updateGroupCIUserMention,
     deleteGroupChatItem,
     updateGroupChatItemModerated,
@@ -101,6 +108,7 @@ module Simplex.Chat.Store.Messages
     getDirectChatItem,
     getDirectCIWithReactions,
     getDirectChatItemBySharedMsgId,
+    getDirectChatItemIdBySharedMsgId_,
     getGroupChatItemBySharedMsgId_,
     getDirectChatItemsByAgentMsgId,
     getGroupChatItem,
@@ -145,6 +153,7 @@ module Simplex.Chat.Store.Messages
   )
 where
 
+import Control.Applicative ((<|>))
 import qualified Control.Exception as E
 import Control.Monad
 import Control.Monad.Except
@@ -1122,7 +1131,7 @@ toLocalChatItem currentTs ((itemId, itemTs, AMsgDirection msgDir, itemContentTex
         _ -> Nothing
     cItem :: MsgDirectionI d => SMsgDirection d -> CIDirection 'CTLocal d -> CIStatus d -> CIContent d -> Maybe (CIFile d) -> CChatItem 'CTLocal
     cItem d chatDir ciStatus content file =
-      CChatItem d ChatItem {chatDir, meta = ciMeta content ciStatus, content, mentions = M.empty, formattedText, markdownBlocks, quotedItem = Nothing, reactions = [], file}
+      CChatItem d ChatItem {chatDir, meta = ciMeta content ciStatus, content, mentions = M.empty, links = M.empty, formattedText, markdownBlocks, quotedItem = Nothing, reactions = [], file}
       where
         ParsedMarkdown formattedText markdownBlocks = parsedCIContent content itemText
     badItem = Left $ SEBadChatItem itemId (Just itemTs)
@@ -1286,6 +1295,7 @@ safeToDirectItem currentTs itemId = \case
                 meta = dummyMeta itemId ts errorText,
                 content = CIInvalidJSON errorText,
                 mentions = M.empty,
+                links = M.empty,
                 formattedText = Nothing,
                 markdownBlocks = Nothing,
                 quotedItem = Nothing,
@@ -1633,6 +1643,7 @@ safeToGroupItem currentTs itemId = \case
                 meta = dummyMeta itemId ts errorText,
                 content = CIInvalidJSON errorText,
                 mentions = M.empty,
+                links = M.empty,
                 formattedText = Nothing,
                 markdownBlocks = Nothing,
                 quotedItem = Nothing,
@@ -1874,6 +1885,7 @@ safeToLocalItem currentTs itemId = \case
                 meta = dummyMeta itemId ts errorText,
                 content = CIInvalidJSON errorText,
                 mentions = M.empty,
+                links = M.empty,
                 formattedText = Nothing,
                 markdownBlocks = Nothing,
                 quotedItem = Nothing,
@@ -2335,7 +2347,7 @@ toDirectChatItem currentTs (((itemId, itemTs, AMsgDirection msgDir, itemContentT
         _ -> Nothing
     cItem :: MsgDirectionI d => SMsgDirection d -> CIDirection 'CTDirect d -> CIStatus d -> CIContent d -> Maybe (CIFile d) -> CChatItem 'CTDirect
     cItem d chatDir ciStatus content file =
-      CChatItem d ChatItem {chatDir, meta = ciMeta content ciStatus, content, mentions = M.empty, formattedText, markdownBlocks, quotedItem = toDirectQuote quoteRow, reactions = [], file}
+      CChatItem d ChatItem {chatDir, meta = ciMeta content ciStatus, content, mentions = M.empty, links = M.empty, formattedText, markdownBlocks, quotedItem = toDirectQuote quoteRow, reactions = [], file}
       where
         ParsedMarkdown formattedText markdownBlocks = parsedCIContent content itemText
     badItem = Left $ SEBadChatItem itemId (Just itemTs)
@@ -2429,7 +2441,7 @@ toGroupChatItem
           _ -> Nothing
       cItem :: MsgDirectionI d => SMsgDirection d -> CIDirection 'CTGroup d -> CIStatus d -> CIContent d -> Maybe (CIFile d) -> CChatItem 'CTGroup
       cItem d chatDir ciStatus content file =
-        CChatItem d ChatItem {chatDir, meta = ciMeta content ciStatus, content, mentions = M.empty, formattedText, markdownBlocks, quotedItem = toGroupQuote quoteRow quotedMember_, reactions = [], file}
+        CChatItem d ChatItem {chatDir, meta = ciMeta content ciStatus, content, mentions = M.empty, links = M.empty, formattedText, markdownBlocks, quotedItem = toGroupQuote quoteRow quotedMember_, reactions = [], file}
         where
           ParsedMarkdown formattedText markdownBlocks = parsedCIContent content itemText
       badItem = Left $ SEBadChatItem itemId (Just itemTs)
@@ -2705,7 +2717,7 @@ getDirectChatItemIdBySharedMsgId_ db userId contactId sharedMsgId =
 getDirectChatItem :: DB.Connection -> User -> Int64 -> ChatItemId -> ExceptT StoreError IO (CChatItem 'CTDirect)
 getDirectChatItem db User {userId} contactId itemId = ExceptT $ do
   currentTs <- getCurrentTime
-  firstRow' (toDirectChatItem currentTs) (SEChatItemNotFound itemId) getItem
+  firstRow' (toDirectChatItem currentTs) (SEChatItemNotFound itemId) getItem >>= mapM (withCILinks db)
   where
     getItem =
       DB.query
@@ -3116,7 +3128,7 @@ getGroupChatItemsByAgentMsgId db user groupId connId msgId = do
 getGroupChatItem :: DB.Connection -> User -> Int64 -> ChatItemId -> ExceptT StoreError IO (CChatItem 'CTGroup)
 getGroupChatItem db User {userId, userContactId} groupId itemId = ExceptT $ do
   currentTs <- getCurrentTime
-  firstRow' (toGroupChatItem currentTs userContactId) (SEChatItemNotFound itemId) getItem
+  firstRow' (toGroupChatItem currentTs userContactId) (SEChatItemNotFound itemId) getItem >>= mapM (withCILinks db)
   where
     getItem =
       DB.query
@@ -3229,7 +3241,7 @@ getGroupChatItemIdByText' db User {userId} groupId msg =
 getLocalChatItem :: DB.Connection -> User -> Int64 -> ChatItemId -> ExceptT StoreError IO (CChatItem 'CTLocal)
 getLocalChatItem db User {userId} folderId itemId = ExceptT $ do
   currentTs <- getCurrentTime
-  firstRow' (toLocalChatItem currentTs) (SEChatItemNotFound itemId) getItem
+  firstRow' (toLocalChatItem currentTs) (SEChatItemNotFound itemId) getItem >>= mapM (withCILinks db)
   where
     getItem =
       DB.query
@@ -3442,6 +3454,97 @@ getGroupCIReactions db GroupInfo {groupId} itemMemberId itemSharedMsgId =
         GROUP BY reaction
       |]
       (groupId, itemMemberId, itemSharedMsgId)
+
+withCILinks :: DB.Connection -> CChatItem c -> IO (CChatItem c)
+withCILinks db cci@(CChatItem md ci) = do
+  links <- getCILinks db (chatItemId' ci)
+  pure $ if null links then cci else CChatItem md ci {links}
+
+getCILinks :: DB.Connection -> ChatItemId -> IO (Map LinkLabel CILink)
+getCILinks db ciId =
+  M.fromList . map toCILink
+    <$> DB.query
+      db
+      [sql|
+        SELECT l.label, l.link_text, t.chat_item_id, t.contact_id, t.group_id, t.note_folder_id
+        FROM chat_item_links l
+        LEFT JOIN chat_items t ON t.chat_item_id = l.target_chat_item_id
+        WHERE l.chat_item_id = ?
+      |]
+      (Only ciId)
+  where
+    toCILink :: (LinkLabel, Text, Maybe ChatItemId, Maybe ContactId, Maybe GroupId, Maybe NoteFolderId) -> (LinkLabel, CILink)
+    toCILink (label, text, targetItemId_, contactId_, groupId_, folderId_) = (label, CILink {text, target})
+      where
+        target = do
+          chatItemId <- targetItemId_
+          (chatType, chatId) <- (CTDirect,) <$> contactId_ <|> (CTGroup,) <$> groupId_ <|> (CTLocal,) <$> folderId_
+          pure CILinkTarget {chatType, chatId, chatItemId}
+
+createCILinks :: forall c d. DB.Connection -> ChatItem c d -> Map LinkLabel CILink -> IO (ChatItem c d)
+createCILinks db ci links = do
+  DB.executeMany db "INSERT INTO chat_item_links (chat_item_id, label, link_text, target_chat_item_id) VALUES (?, ?, ?, ?)" rows
+  pure (ci :: ChatItem c d) {links}
+  where
+    rows = map (\(label, CILink {text, target}) -> (chatItemId' ci, label, text, (\CILinkTarget {chatItemId} -> chatItemId) <$> target)) $ M.assocs links
+
+updateCILinks :: forall c d. DB.Connection -> ChatItem c d -> Map LinkLabel CILink -> IO (ChatItem c d)
+updateCILinks db ci@ChatItem {links} links'
+  | links' == links = pure ci
+  | otherwise = do
+      unless (null links) $ DB.execute db "DELETE FROM chat_item_links WHERE chat_item_id = ?" (Only $ chatItemId' ci)
+      if null links' then pure (ci :: ChatItem c d) {links = links'} else createCILinks db ci links'
+
+getGroupItemIdByAuthor_ :: DB.Connection -> User -> GroupId -> Maybe MemberId -> SharedMsgId -> IO (Maybe ChatItemId)
+getGroupItemIdByAuthor_ db user gId author_ msgId = case author_ of
+  Nothing -> getGroupChatItemBySharedMsgId_ db user gId Nothing msgId
+  Just mId ->
+    getGroupMemberViaMemberId_ db user gId mId >>= \case
+      Just (gmId, category) ->
+        let gmId_ = if category == GCUserMember then Nothing else Just gmId
+         in getGroupChatItemBySharedMsgId_ db user gId gmId_ msgId
+      Nothing -> pure Nothing
+
+getGroupItemIdByAuthor :: DB.Connection -> User -> MemberId -> SharedMsgId -> IO (Maybe (GroupId, ChatItemId))
+getGroupItemIdByAuthor db User {userId} memberId sharedMsgId =
+  maybeFirstRow id $
+    DB.query
+      db
+      [sql|
+        SELECT i.group_id, i.chat_item_id
+        FROM chat_items i
+        JOIN group_members m ON m.group_id = i.group_id
+                            AND ((i.group_member_id IS NULL AND m.member_category = ?)
+                                OR i.group_member_id = m.group_member_id)
+        WHERE m.user_id = ? AND m.member_id = ? AND i.shared_msg_id = ?
+        ORDER BY i.chat_item_id ASC
+        LIMIT 1
+      |]
+      (GCUserMember, userId, memberId, sharedMsgId)
+
+getGroupIdByMemberId :: DB.Connection -> User -> MemberId -> IO (Maybe GroupId)
+getGroupIdByMemberId db User {userId} memberId =
+  maybeFirstRow fromOnly $
+    DB.query db "SELECT group_id FROM group_members WHERE user_id = ? AND member_id = ? ORDER BY group_member_id ASC LIMIT 1" (userId, memberId)
+
+getDirectItemIdByMsgId :: DB.Connection -> User -> SharedMsgId -> IO (Maybe (ContactId, ChatItemId))
+getDirectItemIdByMsgId db User {userId} sharedMsgId =
+  maybeFirstRow id $
+    DB.query
+      db
+      [sql|
+        SELECT contact_id, chat_item_id
+        FROM chat_items
+        WHERE user_id = ? AND contact_id IS NOT NULL AND shared_msg_id = ?
+        ORDER BY chat_item_id ASC
+        LIMIT 1
+      |]
+      (userId, sharedMsgId)
+
+getAChatItemInScope :: DB.Connection -> StoreCxt -> User -> ChatRef -> ChatItemId -> ExceptT StoreError IO AChatItem
+getAChatItemInScope db cxt user chatRef@(ChatRef cType chatId _) itemId = case cType of
+  CTGroup -> getGroupChatScopeForItem_ db itemId >>= \scope -> getAChatItem db cxt user (ChatRef CTGroup chatId scope) itemId
+  _ -> getAChatItem db cxt user chatRef itemId
 
 getGroupCIMentions :: DB.Connection -> ChatItemId -> IO (Map MemberName CIMention)
 getGroupCIMentions db ciId =

@@ -183,6 +183,37 @@ export namespace APIChatItemReaction {
   }
 }
 
+// Get message link: global for a public chat, local otherwise. Message links are sent in texts as [label](link).
+// Network usage: no.
+export interface APIGetChatItemLink {
+  chatRef: T.ChatRef
+  chatItemId: number // int64
+}
+
+export namespace APIGetChatItemLink {
+  export type Response = CR.ChatItemLink | CR.ChatCmdError
+
+  export function cmdString(self: APIGetChatItemLink): string {
+    return '/_get item link ' + T.ChatRef.cmdString(self.chatRef) + ' ' + self.chatItemId
+  }
+}
+
+// Get the message of a link, its chat when the message is absent, or the public chat to join.
+// Network usage: no.
+export interface APIMsgLinkPlan {
+  userId: number // int64
+  msgLink: string
+  chatRef_?: T.ChatRef
+}
+
+export namespace APIMsgLinkPlan {
+  export type Response = CR.MsgLinkPlan | CR.ChatCmdError
+
+  export function cmdString(self: APIMsgLinkPlan): string {
+    return '/_msg link plan ' + self.userId + ' ' + self.msgLink + (self.chatRef_ ? ' chat=' + T.ChatRef.cmdString(self.chatRef_) : '')
+  }
+}
+
 // Share user address card
 // Network usage: no.
 export interface APIShareMyAddress {

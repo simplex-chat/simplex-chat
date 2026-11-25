@@ -283,6 +283,7 @@ fun ChatPreviewView(
           else -> null
         },
         mentions = ci.mentions,
+        links = ci.links,
         userMemberId = when {
           cInfo is ChatInfo.Group -> cInfo.groupInfo.membership.memberId
           else -> null

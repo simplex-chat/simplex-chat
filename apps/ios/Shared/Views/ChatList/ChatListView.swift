@@ -868,6 +868,15 @@ struct ChatListSearchBar: View {
                     searchChatFilteredBySimplexLink = []
                     connectNameCandidate = nil
                     connect(text)
+                case let .msgLink(msgLinkType, msgLink):
+                    nameSearchTask?.cancel()
+                    nameSearchTask = nil
+                    searchFocussed = false
+                    ignoreSearchTextChange = true
+                    searchText = ""
+                    searchChatFilteredBySimplexLink = []
+                    connectNameCandidate = nil
+                    openMsgLink(msgLink, msgLinkType, chatId: nil, target: nil, theme: theme)
                 default:
                     // not a link: a recognized SimpleX name shows the connect-by-name row (in place of the
                     // list tags) and, debounced, resolves locally per keystroke to narrow the list to the

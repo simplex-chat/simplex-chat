@@ -75,6 +75,7 @@ chatDirectTests = do
     it "delete conversation keeping contact" testDeleteConversationKeepContact
     it "direct message quoted replies" testDirectMessageQuotedReply
     it "direct message update" testDirectMessageUpdate
+    it "message links to the same chat and to a group" testDirectMessageLinks
     it "updated item event has the previous item" testDirectMessageUpdatePrevItem
     it "direct message edit history" testDirectMessageEditHistory
     it "direct message delete" testDirectMessageDelete
@@ -798,6 +799,30 @@ testDirectMessageEditHistory =
       bob <##. "received at: "
       bob <## "message history:"
       bob .<## ": hey there"
+
+testDirectMessageLinks :: HasCallStack => TestParams -> IO ()
+testDirectMessageLinks =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      createGroup2 "team" alice bob
+      alice #> "@bob Approve the deploy plan?"
+      bob <# "alice> Approve the deploy plan?"
+      alice ##> "/item link @bob Approve"
+      link <- getTermLine alice
+      link `shouldStartWith` "simplex:/m#d/"
+      alice #> ("@bob see [q](" <> link <> ")")
+      bob <# ("alice> see [q](" <> link <> ")")
+      bob <## "[q]: Approve the deploy plan?"
+      bob ##> ("/_msg link plan 1 " <> link <> " chat=@2")
+      bob <# "alice> Approve the deploy plan?"
+      bob #> "#team Release notes 7.2"
+      alice <# "#team bob> Release notes 7.2"
+      alice ##> "/item link #team Release"
+      groupLink <- getTermLine alice
+      alice `send` ("@bob see [r](" <> groupLink <> ")")
+      alice <# "@bob see [r](simplex:/m)"
+      bob <# "alice> see [r](simplex:/m)"
+      bob <## "[r]: Release notes 7.2"
 
 testDirectMessageUpdatePrevItem :: HasCallStack => TestParams -> IO ()
 testDirectMessageUpdatePrevItem ps = do

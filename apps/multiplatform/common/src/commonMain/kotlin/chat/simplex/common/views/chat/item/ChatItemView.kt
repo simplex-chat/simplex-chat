@@ -406,6 +406,7 @@ fun ChatItemView(
                   }
                 }
                 cItem.content.msgContent != null && cItem.id >= 0 && !cItem.isReport -> {
+                  val clipboard = LocalClipboardManager.current
                   DefaultDropdownMenu(showMenu) {
                     if (cInfo.featureEnabled(ChatFeature.Reactions) && cItem.allowAddReaction) {
                       MsgReactionsMenu()
@@ -420,7 +421,6 @@ fun ChatItemView(
                         showMenu.value = false
                       })
                     }
-                    val clipboard = LocalClipboardManager.current
                     val cachedRemoteReqs = remember { CIFile.cachedRemoteFileRequests }
                     val copyAndShareAllowed = when {
                       cItem.content.text.isNotEmpty() -> true
@@ -450,6 +450,18 @@ fun ChatItemView(
                     if (copyAndShareAllowed) {
                       ItemAction(stringResource(MR.strings.copy_verb), painterResource(MR.images.ic_content_copy), onClick = {
                         copyItemToClipboard(cItem, clipboard)
+                        showMenu.value = false
+                      })
+                    }
+                    if (cItem.meta.itemDeleted == null && !live) {
+                      ItemAction(stringResource(MR.strings.copy_link), painterResource(MR.images.ic_link), onClick = {
+                        withApi {
+                          val link = controller.apiGetChatItemLink(rhId, cInfo.chatType, cInfo.apiId, cInfo.groupChatScope(), cItem.id)
+                          if (link != null) {
+                            clipboard.setText(AnnotatedString(link))
+                            showToast(generalGetString(MR.strings.copied))
+                          }
+                        }
                         showMenu.value = false
                       })
                     }
@@ -1511,12 +1523,13 @@ fun BubblePreview(content: @Composable () -> Unit) {
 @Preview
 @Composable
 fun PreviewChatItemView(
-  chatItem: ChatItem = ChatItem.getSampleData(1, CIDirection.DirectSnd(), previewDate, "hello")
+  chatItem: ChatItem = ChatItem.getSampleData(1, CIDirection.DirectSnd(), previewDate, "hello"),
+  chat: Chat = Chat.sampleData
 ) = BubblePreview {
   ChatItemView(
     chatsCtx = ChatModel.ChatsContext(secondaryContextFilter = null),
     rhId = null,
-    Chat.sampleData,
+    chat,
     chatItem,
     useLinkPreviews = true,
     linkMode = SimplexLinkMode.DESCRIPTION,
@@ -1596,6 +1609,23 @@ fun PreviewChatItemViewEmptyLines() = PreviewChatItemView(
 fun PreviewChatItemViewEmptyLinesTerminal() = CompositionLocalProvider(LocalTerminalLayout provides true) {
   PreviewChatItemViewEmptyLines()
 }
+
+@Preview
+@Composable
+fun PreviewChatItemViewMessageLinks() = PreviewChatItemView(
+  ChatItem.getSampleData(1, CIDirection.DirectRcv(), previewDate, "Before the release: [Approve the deploy plan?](simplex:/m#d/UXhQdlR3WmNrTjhyRDFtYQ) and [the draft](simplex:/m)").copy(
+    formattedText = listOf(
+      FormattedText("Before the release: "),
+      FormattedText("[Approve the deploy plan?](simplex:/m#d/UXhQdlR3WmNrTjhyRDFtYQ)", Format.MessageLink("Approve the deploy plan?", MsgLinkType.direct, "simplex:/m#d/UXhQdlR3WmNrTjhyRDFtYQ")),
+      FormattedText(" and "),
+      FormattedText("[the draft](simplex:/m)", Format.MessageLink("the draft", MsgLinkType.unknownSource, "simplex:/m"))
+    ),
+    links = mapOf(
+      "Approve the deploy plan?" to CILink("Approve the deploy plan?"),
+      "the draft" to CILink("Draft of the 7.2 announcement")
+    )
+  )
+)
 
 @Preview
 @Composable

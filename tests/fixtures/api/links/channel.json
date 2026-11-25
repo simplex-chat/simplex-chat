@@ -1,0 +1,312 @@
+{
+  "commands": {
+    "/_connect plan 1 CHANNEL_LINK": {
+      "result": {
+        "connLink": {
+          "connFullLink": "connFullLink",
+          "connShortLink": "connShortLink"
+        },
+        "connectionPlan": {
+          "groupLinkPlan": {
+            "groupSLinkData_": {
+              "groupProfile": {
+                "displayName": "team",
+                "fullName": "",
+                "groupPreferences": {
+                  "directMessages": {
+                    "enable": "on"
+                  },
+                  "history": {
+                    "enable": "on"
+                  },
+                  "support": {
+                    "enable": "off"
+                  }
+                },
+                "publicGroup": {
+                  "groupLink": "groupLink",
+                  "groupType": "channel",
+                  "publicGroupId": "publicGroupId"
+                }
+              },
+              "publicGroupData": {
+                "publicMemberCount": 2
+              }
+            },
+            "groupSLinkInfo_": {
+              "direct": false,
+              "groupRelays": [
+                "groupRelay"
+              ],
+              "publicGroupId": "publicGroupId"
+            },
+            "type": "ok"
+          },
+          "type": "groupLink"
+        },
+        "type": "connectionPlan",
+        "user": {
+          "activeOrder": 1,
+          "activeUser": true,
+          "agentUserId": "1",
+          "autoAcceptGroupInvitations": false,
+          "autoAcceptMemberContacts": false,
+          "clientService": false,
+          "fullPreferences": {
+            "calls": {
+              "allow": "yes"
+            },
+            "commands": [],
+            "files": {
+              "allow": "always"
+            },
+            "fullDelete": {
+              "allow": "no"
+            },
+            "reactions": {
+              "allow": "yes"
+            },
+            "sessions": {
+              "allow": "no"
+            },
+            "timedMessages": {
+              "allow": "yes"
+            },
+            "voice": {
+              "allow": "yes"
+            }
+          },
+          "localDisplayName": "dan",
+          "profile": {
+            "displayName": "dan",
+            "fullName": "",
+            "localAlias": "",
+            "preferences": {
+              "calls": {
+                "allow": "yes"
+              },
+              "commands": [],
+              "files": {
+                "allow": "always"
+              },
+              "fullDelete": {
+                "allow": "no"
+              },
+              "reactions": {
+                "allow": "yes"
+              },
+              "sessions": {
+                "allow": "no"
+              },
+              "timedMessages": {
+                "allow": "yes"
+              },
+              "voice": {
+                "allow": "yes"
+              }
+            },
+            "profileId": 1,
+            "shortDescr": "Daniel"
+          },
+          "sendRcptsContacts": true,
+          "sendRcptsSmallGroups": true,
+          "showNtfs": true,
+          "userChatRelay": false,
+          "userContactId": 1,
+          "userId": 1
+        }
+      }
+    },
+    "/_connect plan 1 SITE_LINK": {
+      "result": {
+        "connLink": {
+          "connFullLink": "connFullLink",
+          "connShortLink": "connShortLink"
+        },
+        "connectionPlan": {
+          "type": "updateRequired"
+        },
+        "type": "connectionPlan",
+        "user": {
+          "activeOrder": 1,
+          "activeUser": true,
+          "agentUserId": "1",
+          "autoAcceptGroupInvitations": false,
+          "autoAcceptMemberContacts": false,
+          "clientService": false,
+          "fullPreferences": {
+            "calls": {
+              "allow": "yes"
+            },
+            "commands": [],
+            "files": {
+              "allow": "always"
+            },
+            "fullDelete": {
+              "allow": "no"
+            },
+            "reactions": {
+              "allow": "yes"
+            },
+            "sessions": {
+              "allow": "no"
+            },
+            "timedMessages": {
+              "allow": "yes"
+            },
+            "voice": {
+              "allow": "yes"
+            }
+          },
+          "localDisplayName": "dan",
+          "profile": {
+            "displayName": "dan",
+            "fullName": "",
+            "localAlias": "",
+            "preferences": {
+              "calls": {
+                "allow": "yes"
+              },
+              "commands": [],
+              "files": {
+                "allow": "always"
+              },
+              "fullDelete": {
+                "allow": "no"
+              },
+              "reactions": {
+                "allow": "yes"
+              },
+              "sessions": {
+                "allow": "no"
+              },
+              "timedMessages": {
+                "allow": "yes"
+              },
+              "voice": {
+                "allow": "yes"
+              }
+            },
+            "profileId": 1,
+            "shortDescr": "Daniel"
+          },
+          "sendRcptsContacts": true,
+          "sendRcptsSmallGroups": true,
+          "showNtfs": true,
+          "userChatRelay": false,
+          "userContactId": 1,
+          "userId": 1
+        }
+      }
+    },
+    "/_msg link plan 1 CHANNEL_MSG_LINK": {
+      "result": {
+        "msgLinkPlan": {
+          "connTarget": "CHANNEL_LINK",
+          "type": "join"
+        },
+        "type": "msgLinkPlan",
+        "user": {
+          "activeOrder": 1,
+          "activeUser": true,
+          "agentUserId": "1",
+          "autoAcceptGroupInvitations": false,
+          "autoAcceptMemberContacts": false,
+          "clientService": false,
+          "fullPreferences": {
+            "calls": {
+              "allow": "yes"
+            },
+            "commands": [],
+            "files": {
+              "allow": "always"
+            },
+            "fullDelete": {
+              "allow": "no"
+            },
+            "reactions": {
+              "allow": "yes"
+            },
+            "sessions": {
+              "allow": "no"
+            },
+            "timedMessages": {
+              "allow": "yes"
+            },
+            "voice": {
+              "allow": "yes"
+            }
+          },
+          "localDisplayName": "dan",
+          "profile": {
+            "displayName": "dan",
+            "fullName": "",
+            "localAlias": "",
+            "preferences": {
+              "calls": {
+                "allow": "yes"
+              },
+              "commands": [],
+              "files": {
+                "allow": "always"
+              },
+              "fullDelete": {
+                "allow": "no"
+              },
+              "reactions": {
+                "allow": "yes"
+              },
+              "sessions": {
+                "allow": "no"
+              },
+              "timedMessages": {
+                "allow": "yes"
+              },
+              "voice": {
+                "allow": "yes"
+              }
+            },
+            "profileId": 1,
+            "shortDescr": "Daniel"
+          },
+          "sendRcptsContacts": true,
+          "sendRcptsSmallGroups": true,
+          "showNtfs": true,
+          "userChatRelay": false,
+          "userContactId": 1,
+          "userId": 1
+        }
+      }
+    }
+  },
+  "markdown": {
+    "CHANNEL_LINK": {
+      "formattedText": [
+        {
+          "format": {
+            "linkType": "channel",
+            "simplexUri": "simplexUri",
+            "smpHosts": [
+              "localhost"
+            ],
+            "type": "simplexLink"
+          },
+          "text": "CHANNEL_LINK"
+        }
+      ]
+    },
+    "CHANNEL_MSG_LINK": {
+      "formattedText": [
+        {
+          "format": {
+            "msgLink": "CHANNEL_MSG_LINK",
+            "msgLinkType": "publicGroup",
+            "type": "messageLink"
+          },
+          "text": "CHANNEL_MSG_LINK"
+        }
+      ]
+    }
+  },
+  "uris": {}
+}

@@ -155,7 +155,7 @@ class MarkdownBlocksTest {
 
   private fun parsed(s: String): ParsedFormattedText = json.decodeFromString(ParsedFormattedText.serializer(), s)
 
-  private fun display(ft: FormattedText): String = segmentDisplayText(ft, null, SimplexLinkMode.DESCRIPTION)
+  private fun display(ft: FormattedText): String = segmentDisplayText(ft, null, null, SimplexLinkMode.DESCRIPTION)
 
   private fun texts(p: ParsedFormattedText): List<Pair<Pair<Int, Int>, Boolean>> =
     blockTextRanges(p.markdownBlocks!!).map { it.range.pair to it.inRow }

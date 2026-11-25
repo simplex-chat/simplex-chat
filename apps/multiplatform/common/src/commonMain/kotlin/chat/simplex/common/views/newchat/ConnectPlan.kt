@@ -14,11 +14,13 @@ import dev.icerock.moko.resources.compose.stringResource
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.chat.item.openBrowserAlert
+import chat.simplex.common.views.chat.item.showQuotedItemDoesNotExistAlert
 import chat.simplex.common.views.chat.subscriberCountStr
 import chat.simplex.common.views.chatlist.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.usersettings.simplexTeamUri
 import chat.simplex.res.*
+import dev.icerock.moko.resources.StringResource
 import kotlinx.coroutines.*
 
 enum class ConnectionLinkType {
@@ -46,6 +48,11 @@ suspend fun planAndConnect(
         return CompletableDeferred(false)
       }
     }
+    is ConnectTarget.MsgLink -> {
+      openMsgLink(rhId, null, target.link, null, close)
+      cleanup?.invoke()
+      return CompletableDeferred(true)
+    }
     // A SimplexName falls through to apiConnectPlan, which resolves it on the
     // core (the /_connect plan command accepts a name target, not only a link).
     is ConnectTarget.Name, null -> {}
@@ -57,6 +64,39 @@ suspend fun planAndConnect(
     cleanup?.invoke()
   }
   return planAndConnectTask(rhId, shortOrFullLink, linkOwnerSig, close, cleanup, filterKnownContact, filterKnownGroup, showLocalChats, inProgress)
+}
+
+sealed class MsgLinkAction {
+  class OpenItem(val target: CILinkTarget): MsgLinkAction()
+  class OpenChat(val chatInfo: ChatInfo): MsgLinkAction()
+  class Connect(val connTarget: String): MsgLinkAction()
+  class Alert(val title: StringResource): MsgLinkAction()
+}
+
+fun msgLinkAction(plan: MsgLinkPlan, target: CILinkTarget?): MsgLinkAction = when (plan) {
+  is MsgLinkPlan.Item -> MsgLinkAction.OpenItem(CILinkTarget(plan.chatItem.chatInfo.chatType, plan.chatItem.chatInfo.apiId, plan.chatItem.chatItem.id))
+  is MsgLinkPlan.Chat -> MsgLinkAction.OpenChat(plan.chatInfo)
+  is MsgLinkPlan.Join -> MsgLinkAction.Connect(plan.connTarget)
+  MsgLinkPlan.NotFound -> MsgLinkAction.Alert(MR.strings.msg_link_not_found)
+  MsgLinkPlan.UnknownSource -> if (target != null) MsgLinkAction.OpenItem(target) else MsgLinkAction.Alert(MR.strings.msg_link_unknown_source)
+  MsgLinkPlan.UnknownLink -> MsgLinkAction.Alert(MR.strings.app_link_not_supported)
+}
+
+suspend fun openMsgLink(rhId: Long?, chatInfo: ChatInfo?, link: Format.MessageLink, target: CILinkTarget?, close: (() -> Unit)? = null) {
+  val plan = if (link.msgLinkType == MsgLinkType.unknownSource) MsgLinkPlan.UnknownSource else chatModel.controller.apiMsgLinkPlan(rhId, link.msgLink, chatInfo) ?: return
+  when (val action = msgLinkAction(plan, target)) {
+    is MsgLinkAction.OpenItem -> {
+      close?.invoke()
+      openChat(secondaryChatsCtx = null, rhId, action.target.chatType, action.target.chatId, action.target.chatItemId)
+    }
+    is MsgLinkAction.OpenChat -> {
+      close?.invoke()
+      openChat(secondaryChatsCtx = null, rhId, action.chatInfo)
+      showQuotedItemDoesNotExistAlert()
+    }
+    is MsgLinkAction.Connect -> planAndConnect(rhId, action.connTarget, close = close)
+    is MsgLinkAction.Alert -> AlertManager.shared.showAlertMsg(action.title)
+  }
 }
 
 private fun namePrice(price: NamePrice): String {
@@ -471,6 +511,14 @@ private suspend fun planAndConnectTask(
           }
         }
       }
+      ConnectionPlan.UpdateRequired -> {
+        Log.d(TAG, "planAndConnect, .UpdateRequired")
+        AlertManager.privacySensitive.showAlertMsg(
+          generalGetString(MR.strings.app_update_required),
+          generalGetString(MR.strings.site_link_requires_newer_version)
+        )
+        cleanup()
+      }
       is ConnectionPlan.Error -> {
         Log.d(TAG, "planAndConnect, error ${connectionPlan.chatError}")
         askCurrentOrIncognitoProfileAlert(
@@ -523,6 +571,7 @@ fun planToConnectionLinkType(connectionPlan: ConnectionPlan): ConnectionLinkType
     is ConnectionPlan.InvitationLink -> ConnectionLinkType.INVITATION
     is ConnectionPlan.ContactAddress -> ConnectionLinkType.CONTACT
     is ConnectionPlan.GroupLink -> ConnectionLinkType.GROUP
+    ConnectionPlan.UpdateRequired -> null
     is ConnectionPlan.Error -> null
   }
 }

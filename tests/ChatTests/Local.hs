@@ -28,6 +28,9 @@ chatLocalChatsTests = do
     it "create multiple messages with files" testCreateMultiFiles
   describe "link content filter" $ do
     it "filter notes by link content" testLinkContentFilter
+  describe "message links" $ do
+    it "links in notes and links to notes" testNoteMessageLinks
+    it "link to a file note without text has the file name as its label" testNoteLinkFileName
 
 testNotes :: TestParams -> IO ()
 testNotes ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
@@ -234,6 +237,45 @@ testCreateMultiFiles ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
   alice ##> "/_get chat *1 count=3"
   r <- chatF <$> getTermLine alice
   r `shouldBe` [((1, "message without file"), Nothing), ((1, "sending file 1"), Just "test.jpg"), ((1, "sending file 2"), Just "test.pdf")]
+
+testNoteMessageLinks :: TestParams -> IO ()
+testNoteMessageLinks =
+  testChat2 aliceProfile bobProfile $ \alice bob -> do
+    createCCNoteFolder alice
+    createGroup2 "team" alice bob
+    bob #> "#team Approve the deploy plan?"
+    alice <# "#team bob> Approve the deploy plan?"
+    bob #> "@alice Release notes 7.2"
+    alice <# "bob> Release notes 7.2"
+    alice ##> "/item link #team Approve"
+    groupLink <- getTermLine alice
+    alice ##> "/item link @bob Release"
+    directLink <- getTermLine alice
+    let note = "see [q](" <> groupLink <> ") and [r](" <> directLink <> ")"
+    alice >* note
+    alice ##> ("/_msg link plan 1 " <> groupLink <> " chat=*1")
+    alice <# "#team bob> Approve the deploy plan?"
+    alice ##> ("/_msg link plan 1 " <> directLink <> " chat=*1")
+    alice <# "bob> Release notes 7.2"
+    alice ##> "/item link * see"
+    noteLink <- getTermLine alice
+    noteLink `shouldStartWith` "simplex:/m#n/"
+    alice ##> ("/_msg link plan 1 " <> noteLink)
+    alice <# ("* " <> note)
+
+testNoteLinkFileName :: TestParams -> IO ()
+testNoteLinkFileName ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
+  createCCNoteFolder alice
+  let files = tmpFile ps "alice_app_files"
+  alice #$> ("/_files_folder " <> files, id, "ok")
+  copyFile "./tests/fixtures/test.pdf" (files </> "report_2026.pdf")
+  alice ##> "/_create *1 json [{\"filePath\": \"report_2026.pdf\", \"msgContent\": {\"type\": \"file\", \"text\": \"\"}}]"
+  alice <# "* file 1 (report_2026.pdf)"
+  fileItemId <- lastItemId alice
+  alice ##> ("/_get item link *1 " <> fileItemId)
+  noteLink <- getTermLine alice
+  alice `send` ("/* see " <> noteLink)
+  alice <# ("* see [report_2026.pdf](" <> noteLink <> ")")
 
 testLinkContentFilter :: TestParams -> IO ()
 testLinkContentFilter ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do

@@ -119,12 +119,16 @@
         <data android:path="/c" />
         <data android:path="/g" />
         <data android:path="/i" />
+        <data android:path="/p" />
+        <data android:path="/s" />
         <data android:pathPrefix="/invitation/" />
         <data android:pathPrefix="/contact/" />
         <data android:pathPrefix="/a/" />
         <data android:pathPrefix="/c/" />
         <data android:pathPrefix="/g/" />
         <data android:pathPrefix="/i/" />
+        <data android:pathPrefix="/p/" />
+        <data android:pathPrefix="/s/" />
       </intent-filter>
       <!-- Receive files from other apps -->
       <intent-filter>

@@ -715,6 +715,7 @@ private func previewScenes() -> [SnapshotScene] {
         SnapshotScene(FramedCIVoiceView_Previews.self, allSizes: true),
         SnapshotScene(FramedItemView_Deleted_Previews.self, allSizes: true),
         SnapshotScene(FramedItemView_Edited_Previews.self, allSizes: true),
+        SnapshotScene(FramedItemView_MessageLinks_Previews.self, allSizes: true),
         SnapshotScene(FramedItemView_Previews.self, allSizes: true),
         SnapshotScene(GetStakeBanner_Previews.self),
         SnapshotScene(GroupChatInfoView_Previews.self, device: true),

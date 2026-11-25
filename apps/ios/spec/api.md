@@ -84,6 +84,8 @@ The `ChatCommand` enum ([`AppAPITypes.swift` L15](../Shared/Model/AppAPITypes.sw
 | `apiGetChat` | `chatId, scope, contentTag, pagination, search` | Get messages for a chat | [L45](../Shared/Model/AppAPITypes.swift#L45) |
 | `apiGetChatContentTypes` | `chatId, scope` | Get content type counts for a chat | [L46](../Shared/Model/AppAPITypes.swift#L46) |
 | `apiGetChatItemInfo` | `type, id, scope, itemId` | Get detailed info for a message | [L47](../Shared/Model/AppAPITypes.swift#L47) |
+| `apiGetChatItemLink` | `type, id, scope, itemId` | Get the link of a message | [L49](../Shared/Model/AppAPITypes.swift#L49) |
+| `apiMsgLinkPlan` | `userId, msgLink, chatId` | Resolve a message link; `chatId` is the chat of the tap | [L50](../Shared/Model/AppAPITypes.swift#L50) |
 | `apiSendMessages` | `type, id, scope, sendAsGroup, live, ttl, composedMessages` | Send one or more messages; `sendAsGroup` sends as channel owner | [L48](../Shared/Model/AppAPITypes.swift#L48) |
 | `apiCreateChatItems` | `noteFolderId, composedMessages` | Create items in notes folder | [L54](../Shared/Model/AppAPITypes.swift#L54) |
 | `apiUpdateChatItem` | `type, id, scope, itemId, updatedMessage, live` | Edit a sent message | [L56](../Shared/Model/AppAPITypes.swift#L56) |
@@ -311,6 +313,8 @@ Synchronous query responses ([`AppAPITypes.swift` L657](../Shared/Model/AppAPITy
 | `apiChat` | `user, chat: ChatData, navInfo` | Single chat with messages | [L664](../Shared/Model/AppAPITypes.swift#L664) |
 | `chatTags` | `user, userTags: [ChatTag]` | User's chat tags | [L666](../Shared/Model/AppAPITypes.swift#L666) |
 | `chatItemInfo` | `user, chatItem, chatItemInfo` | Message detail info | [L667](../Shared/Model/AppAPITypes.swift#L667) |
+| `chatItemLink` | `user, msgLink` | Link of a message | [L796](../Shared/Model/AppAPITypes.swift#L796) |
+| `msgLinkPlan` | `user, msgLinkPlan: MsgLinkPlan` | Plan of a message link | [L797](../Shared/Model/AppAPITypes.swift#L797) |
 | `serverTestResult` | `user, testServer, testFailure` | Server test result | [L668](../Shared/Model/AppAPITypes.swift#L668) |
 | `userServersValidation` | `user, serverErrors: [UserServersError], serverWarnings: [UserServersWarning]` | Server validation result with errors and warnings | [L671](../Shared/Model/AppAPITypes.swift#L671) |
 | `networkConfig` | `networkConfig: NetCfg` | Current network config | [L674](../Shared/Model/AppAPITypes.swift#L674) |

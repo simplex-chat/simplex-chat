@@ -431,6 +431,7 @@ struct FramedItemView: View {
             textStyle: .body,
             meta: ci.meta,
             mentions: ci.mentions,
+            links: ci.links,
             userMemberId: chat.chatInfo.groupInfo?.membership.memberId,
             rightToLeft: rtl,
             prefix: txtPrefix,
@@ -598,6 +599,30 @@ struct FramedItemView_Edited_Previews: PreviewProvider {
         }
         .environment(\.revealed, false)
         .previewLayout(.fixed(width: 360, height: 200))
+    }
+}
+
+struct FramedItemView_MessageLinks_Previews: PreviewProvider {
+    static var previews: some View {
+        let sameChatLink = "simplex:/m#g/UXhQdlR3WmNrTjhyRDFtYQ?a=UWRoR05KMk16UG1hSGRpag"
+        let text = "Before the release: [Approve the deploy plan?](\(sameChatLink)) and [the draft](simplex:/m)"
+        let ci = ChatItem(
+            chatDir: .groupRcv(groupMember: GroupMember.sampleData),
+            meta: CIMeta.getSample(1, previewDate, text, .rcvRead),
+            content: .rcvMsgContent(msgContent: .text(text)),
+            formattedText: [
+                FormattedText(text: "Before the release: "),
+                FormattedText(text: "[Approve the deploy plan?](\(sameChatLink))", format: .messageLink(showText: "Approve the deploy plan?", msgLinkType: .group, msgLink: sameChatLink)),
+                FormattedText(text: " and "),
+                FormattedText(text: "[the draft](simplex:/m)", format: .messageLink(showText: "the draft", msgLinkType: .unknownSource, msgLink: "simplex:/m"))
+            ],
+            links: [
+                "Approve the deploy plan?": CILink(text: "Approve the deploy plan?", target: nil),
+                "the draft": CILink(text: "Draft of the 7.2 announcement", target: nil)
+            ]
+        )
+        FramedItemView(chat: Chat.sampleData, im: ItemsModel.shared, chatItem: ci, scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil), allowMenu: Binding.constant(true)).modifier(ChatItemClipped(ci, tailVisible: true))
+            .previewLayout(.fixed(width: 360, height: 200))
     }
 }
 

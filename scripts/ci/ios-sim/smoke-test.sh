@@ -5,7 +5,8 @@
 # For an app in the derived data of a build, it then renders the previews of the SimpleX Snapshots tests to the snapshots
 # folder of the output dir (snapshots.sh).
 # With "images" it then turns off the encryption of local files, creates a group and sends tests/fixtures/test.jpg and
-# logo-large-rgba.png picked in the photo library, and checks the pixel sizes of the sent files.
+# logo-large-rgba.png picked in the photo library, and checks the pixel sizes of the sent files; then it opens the menu
+# of the sent PNG and checks that "Copy link" follows "Copy" and puts the message's link on the clipboard.
 # Usage: scripts/ci/ios-sim/smoke-test.sh <path to SimpleX.app> <output dir> [images]
 # Each step saves a screenshot and an accessibility tree to the output dir and prints the tree to the log.
 # Later steps of the job get SIM_UDID and UI_OUT, with the simulator still running.
@@ -23,6 +24,8 @@ logo_x=200
 photo_y=412
 picker_done_x=363
 picker_done_y=144
+sent_png_x=250
+sent_png_y=734
 mkdir -p "$UI_OUT"
 
 axe --version
@@ -170,6 +173,28 @@ send_image() {
   echo "$ext: the picked image was previewed and sent as a $size .$ext file"
 }
 
+copy_link() {
+  local tree link type before x y w h copied deadline
+  "$ui" clipboard ""
+  "$ui" long-press "$sent_png_x" "$sent_png_y"
+  "$ui" shot menu-png
+  tree=$("$ui" tree)
+  link=$(grep -E '^[A-Za-z]+ "Copy link" ' <<< "$tree" | head -n 1 || true)
+  [ -n "$link" ] || fail "no \"Copy link\" in the message menu"
+  type=${link%% *}
+  before=$(grep -E "^$type \"" <<< "$tree" | grep -B 1 -xF "$link" | head -n 1 || true)
+  [[ "$before" == "$type \"Copy\" "* ]] || fail "\"Copy link\" follows $before, not \"Copy\", in the message menu"
+  read -r x y w h < <(sed -E 's/.* at (-?[0-9]+),(-?[0-9]+) size ([0-9]+)x([0-9]+).*/\1 \2 \3 \4/' <<< "$link")
+  "$ui" tap-xy $((x + w / 2)) $((y + h / 2))
+  deadline=$((SECONDS + 10))
+  until copied=$(xcrun simctl pbpaste "$SIM_UDID") && grep -qE '^simplex:/m#g/[A-Za-z0-9_-]+\?a=[A-Za-z0-9_-]+$' <<< "$copied"; do
+    [ "$SECONDS" -lt "$deadline" ] || fail "\"Copy link\" put \"$copied\" on the clipboard, not the message's link"
+    sleep 1
+  done
+  "$ui" shot link-copied
+  echo "the menu of the sent image has \"Copy link\" after \"Copy\", and it copied $copied"
+}
+
 xcrun simctl install "$SIM_UDID" "$app"
 # private routing to unknown servers only: the preset servers that would proxy name lookups can't reach the test SMP
 # server on localhost
@@ -228,4 +253,6 @@ if [ "$cases" = images ]; then
   send_image jpg "$test_card_x" 1280x720
   send_image png "$logo_x" 1630x466
   echo "smoke test passed: images"
+  copy_link
+  echo "smoke test passed: Copy link"
 fi

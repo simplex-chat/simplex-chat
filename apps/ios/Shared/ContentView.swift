@@ -464,9 +464,13 @@ struct ContentView: View {
         // an app link must not tear down a redemption in flight
         if isAppLink(url) && isBadgeLinkIssuing() { return }
         dismissAllSheets() {
+            let path = url.path
+            let link = url.absoluteString.replacingOccurrences(of: "///\(path.dropFirst())", with: "/\(path.dropFirst())")
             if isAppLink(url) {
                 // branched on the scheme before the connection dispatch, which an app link must never reach
                 openAppLink(url)
+            } else if let parsedMd = parseSimpleXMarkdown(link), parsedMd.count == 1, case let .messageLink(_, msgLinkType, msgLink) = parsedMd[0].format {
+                openMsgLink(msgLink, msgLinkType, chatId: nil, target: nil, theme: theme)
             } else if connectionLinkPath(url) == "/r" {
                 showAlert(
                     NSLocalizedString("Relay address", comment: "alert title"),
@@ -500,7 +504,7 @@ struct ContentView: View {
     }
 }
 
-// the app's own scheme, for every link that is not a connection link, which stays on simplex:
+// the app's own scheme, for app-specific deep links such as badge links; SimpleX network links (connections, names, files, messages) use simplex:
 private let appLinkScheme = "simplexchat"
 private let badgeLinkPath = "/badge/code/"
 
@@ -514,7 +518,7 @@ private func connectionLinkPath(_ url: URL) -> String {
 
 func openedConnectionLink(_ url: URL) -> String? {
     var path = connectionLinkPath(url)
-    guard path == "/contact" || path == "/invitation" || path == "/a" || path == "/c" || path == "/g" || path == "/i" || path.hasPrefix("/name") else { return nil }
+    guard path == "/contact" || path == "/invitation" || path == "/a" || path == "/c" || path == "/g" || path == "/i" || path == "/p" || path == "/s" || path.hasPrefix("/name") else { return nil }
     path.removeFirst()
     return url.absoluteString.replacingOccurrences(of: "///\(path)", with: "/\(path)")
 }

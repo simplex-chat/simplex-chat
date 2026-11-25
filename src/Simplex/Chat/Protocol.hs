@@ -461,7 +461,7 @@ signChatMsgBody MsgSigning {bindingTag, bindingData, keyRef, privKey} msgBody =
 data ChatMsgEvent (e :: MsgEncoding) where
   XMsgNew :: MsgContainer -> ChatMsgEvent 'Json
   XMsgFileDescr :: {msgId :: SharedMsgId, fileDescr :: FileDescr, fileExpires :: Maybe UTCTime, fileBadge :: Maybe BadgeProof} -> ChatMsgEvent 'Json
-  XMsgUpdate :: {msgId :: SharedMsgId, content :: MsgContent, mentions :: Map MemberName MsgMention, ttl :: Maybe Int, live :: Maybe Bool, scope :: Maybe MsgScope, asGroup :: Maybe Bool} -> ChatMsgEvent 'Json
+  XMsgUpdate :: {msgId :: SharedMsgId, content :: MsgContent, mentions :: Map MemberName MsgMention, links :: Map LinkLabel MsgLinkEntry, ttl :: Maybe Int, live :: Maybe Bool, scope :: Maybe MsgScope, asGroup :: Maybe Bool} -> ChatMsgEvent 'Json
   XMsgDel :: {msgId :: SharedMsgId, memberId :: Maybe MemberId, scope :: Maybe MsgScope, onlyHistory :: Bool} -> ChatMsgEvent 'Json
   XMsgDeleted :: ChatMsgEvent 'Json
   XMsgReact :: {msgId :: SharedMsgId, memberId :: Maybe MemberId, scope :: Maybe MsgScope, reaction :: MsgReaction, add :: Bool} -> ChatMsgEvent 'Json
@@ -695,6 +695,7 @@ data MsgContainer = MsgContainer
     -- Suffixes _1, _2 should be appended to make names locally unique.
     -- It should be done in the UI, as they will be part of the text, and validated in the API.
     mentions :: MsgMentions,
+    links :: MsgLinks,
     file :: Maybe FileInvitation,
     ttl :: Maybe Int,
     live :: Maybe Bool,
@@ -721,6 +722,7 @@ mcSimple content =
   MsgContainer
     { content,
       mentions = MsgMentions M.empty,
+      links = MsgLinks M.empty,
       file = Nothing,
       ttl = Nothing,
       live = Nothing,
@@ -833,6 +835,14 @@ data MsgMention = MsgMention {memberId :: MemberId}
 newtype MsgMentions = MsgMentions (Map MemberName MsgMention)
   deriving (Eq, Show)
 
+type LinkLabel = Text
+
+data MsgLinkEntry = MsgLinkEntry {text :: Text}
+  deriving (Eq, Show)
+
+newtype MsgLinks = MsgLinks (Map LinkLabel MsgLinkEntry)
+  deriving (Eq, Show)
+
 $(JQ.deriveJSON defaultJSON ''InlineFileInvitation)
 
 $(JQ.deriveJSON (taggedObjectJSON $ dropPrefix "MCL") ''MsgChatLink)
@@ -853,6 +863,17 @@ instance ToJSON MsgMentions where
 toMaybeMap :: Map k v -> Maybe (Map k v)
 toMaybeMap m = if M.null m then Nothing else Just m
 {-# INLINE toMaybeMap #-}
+
+$(JQ.deriveJSON defaultJSON ''MsgLinkEntry)
+
+instance FromJSON MsgLinks where
+  parseJSON v = MsgLinks <$> parseJSON v
+  omittedField = Just $ MsgLinks M.empty
+
+instance ToJSON MsgLinks where
+  toJSON (MsgLinks m) = toJSON $ toMaybeMap m
+  toEncoding (MsgLinks m) = toEncoding $ toMaybeMap m
+  omitField (MsgLinks m) = M.null m
 
 $(JQ.deriveJSON defaultJSON ''QuotedMsg)
 
@@ -1428,11 +1449,12 @@ appJsonToCM fwdDepth AppMessageJson {v, msgId, event, params} = do
         msgId' <- p "msgId"
         content <- p "content"
         mentions <- fromMaybe M.empty <$> opt "mentions"
+        links <- fromMaybe M.empty <$> opt "links"
         ttl <- opt "ttl"
         live <- opt "live"
         scope <- opt "scope"
         asGroup <- opt "asGroup"
-        pure XMsgUpdate {msgId = msgId', content, mentions, ttl, live, scope, asGroup}
+        pure XMsgUpdate {msgId = msgId', content, mentions, links, ttl, live, scope, asGroup}
       XMsgDel_ -> XMsgDel <$> p "msgId" <*> opt "memberId" <*> opt "scope" <*> (fromMaybe False <$> opt "onlyHistory")
       XMsgDeleted_ -> pure XMsgDeleted
       XMsgReact_ -> XMsgReact <$> p "msgId" <*> opt "memberId" <*> opt "scope" <*> p "reaction" <*> p "add"
@@ -1517,7 +1539,7 @@ chatToAppMessage chatMsg@ChatMessage {chatVRange, msgId, chatMsgEvent} = case en
         J.Object obj -> obj
         _ -> JM.empty
       XMsgFileDescr msgId' fileDescr fileExpires fileBadge -> o $ ("fileExpires" .=? fileExpires) $ ("fileBadge" .=? fileBadge) ["msgId" .= msgId', "fileDescr" .= fileDescr]
-      XMsgUpdate {msgId = msgId', content, mentions, ttl, live, scope, asGroup} -> o $ ("asGroup" .=? asGroup) $ ("ttl" .=? ttl) $ ("live" .=? live) $ ("scope" .=? scope) $ ("mentions" .=? nonEmptyMap mentions) ["msgId" .= msgId', "content" .= content]
+      XMsgUpdate {msgId = msgId', content, mentions, links, ttl, live, scope, asGroup} -> o $ ("asGroup" .=? asGroup) $ ("ttl" .=? ttl) $ ("live" .=? live) $ ("scope" .=? scope) $ ("mentions" .=? nonEmptyMap mentions) $ ("links" .=? nonEmptyMap links) ["msgId" .= msgId', "content" .= content]
       XMsgDel msgId' memberId scope onlyHistory -> o $ ("memberId" .=? memberId) $ ("scope" .=? scope) $ ("onlyHistory" .=? justTrue onlyHistory) ["msgId" .= msgId']
       XMsgDeleted -> JM.empty
       XMsgReact msgId' memberId scope reaction add -> o $ ("memberId" .=? memberId) $ ("scope" .=? scope) ["msgId" .= msgId', "reaction" .= reaction, "add" .= add]

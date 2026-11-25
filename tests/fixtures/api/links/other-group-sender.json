@@ -1,0 +1,282 @@
+{
+  "commands": {
+    "/_get chat #2 count=1": {
+      "result": {
+        "chat": {
+          "chatInfo": {
+            "groupInfo": {
+              "chatSettings": {
+                "enableNtfs": "all",
+                "favorite": false
+              },
+              "chatTags": [],
+              "chatTs": "1970-01-01T00:00:00Z",
+              "createdAt": "1970-01-01T00:00:00Z",
+              "fullGroupPreferences": {
+                "commands": [],
+                "comments": {
+                  "enable": "off"
+                },
+                "directMessages": {
+                  "enable": "on"
+                },
+                "files": {
+                  "enable": "on"
+                },
+                "fullDelete": {
+                  "enable": "off"
+                },
+                "history": {
+                  "enable": "on"
+                },
+                "reactions": {
+                  "enable": "on"
+                },
+                "reports": {
+                  "enable": "on"
+                },
+                "sessions": {
+                  "enable": "off"
+                },
+                "signMessages": {
+                  "enable": "off"
+                },
+                "simplexLinks": {
+                  "enable": "on"
+                },
+                "support": {
+                  "enable": "on"
+                },
+                "timedMessages": {
+                  "enable": "off",
+                  "ttl": 86400
+                },
+                "voice": {
+                  "enable": "on"
+                }
+              },
+              "groupId": 2,
+              "groupProfile": {
+                "displayName": "club",
+                "fullName": "",
+                "groupPreferences": {
+                  "directMessages": {
+                    "enable": "on"
+                  },
+                  "history": {
+                    "enable": "on"
+                  }
+                }
+              },
+              "groupSummary": {
+                "currentMembers": 2
+              },
+              "localAlias": "",
+              "localDisplayName": "club",
+              "membersRequireAttention": 0,
+              "membership": {
+                "blockedByAdmin": false,
+                "createdAt": "1970-01-01T00:00:00Z",
+                "groupId": 2,
+                "groupMemberId": 4,
+                "indexInGroup": 0,
+                "invitedBy": {
+                  "type": "user"
+                },
+                "localDisplayName": "alice",
+                "memberCategory": "user",
+                "memberChatVRange": {
+                  "maxVersion": 22,
+                  "minVersion": 9
+                },
+                "memberContactId": 1,
+                "memberContactProfileId": 1,
+                "memberId": "memberId",
+                "memberProfile": {
+                  "displayName": "alice",
+                  "fullName": "",
+                  "localAlias": "",
+                  "preferences": {
+                    "calls": {
+                      "allow": "yes"
+                    },
+                    "commands": [],
+                    "files": {
+                      "allow": "always"
+                    },
+                    "fullDelete": {
+                      "allow": "no"
+                    },
+                    "reactions": {
+                      "allow": "yes"
+                    },
+                    "sessions": {
+                      "allow": "no"
+                    },
+                    "timedMessages": {
+                      "allow": "yes"
+                    },
+                    "voice": {
+                      "allow": "yes"
+                    }
+                  },
+                  "profileId": 1,
+                  "shortDescr": "Alice"
+                },
+                "memberPubKey": "memberPubKey",
+                "memberRole": "owner",
+                "memberSettings": {
+                  "showMessages": true
+                },
+                "memberStatus": "creator",
+                "updatedAt": "1970-01-01T00:00:00Z"
+              },
+              "updatedAt": "1970-01-01T00:00:00Z",
+              "useRelays": false,
+              "userMemberProfileSentAt": "1970-01-01T00:00:00Z"
+            },
+            "type": "group"
+          },
+          "chatItems": [
+            {
+              "chatDir": {
+                "type": "groupSnd"
+              },
+              "content": {
+                "msgContent": {
+                  "text": "see [q](simplex:/m)",
+                  "type": "text"
+                },
+                "type": "sndMsgContent"
+              },
+              "formattedText": [
+                {
+                  "text": "see "
+                },
+                {
+                  "format": {
+                    "msgLink": "simplex:/m",
+                    "msgLinkType": "unknownSource",
+                    "showText": "q",
+                    "type": "messageLink"
+                  },
+                  "text": "[q](simplex:/m)"
+                }
+              ],
+              "links": {
+                "q": {
+                  "target": {
+                    "chatId": 1,
+                    "chatItemId": 45,
+                    "chatType": "group"
+                  },
+                  "text": "Approve the deploy plan?"
+                }
+              },
+              "mentions": {},
+              "meta": {
+                "createdAt": "1970-01-01T00:00:00Z",
+                "deletable": true,
+                "editable": true,
+                "hasLink": true,
+                "itemEdited": false,
+                "itemId": 46,
+                "itemSharedMsgId": "itemSharedMsgId",
+                "itemStatus": {
+                  "sndProgress": "complete",
+                  "type": "sndSent"
+                },
+                "itemText": "see [q](simplex:/m)",
+                "itemTs": "1970-01-01T00:00:00Z",
+                "showGroupAsSender": false,
+                "updatedAt": "1970-01-01T00:00:00Z",
+                "userMention": false
+              },
+              "reactions": []
+            }
+          ],
+          "chatStats": {
+            "minUnreadItemId": 0,
+            "reportsCount": 0,
+            "unreadChat": false,
+            "unreadCount": 0,
+            "unreadMentions": 0
+          }
+        },
+        "type": "apiChat",
+        "user": {
+          "activeOrder": 1,
+          "activeUser": true,
+          "agentUserId": "1",
+          "autoAcceptGroupInvitations": false,
+          "autoAcceptMemberContacts": false,
+          "clientService": false,
+          "fullPreferences": {
+            "calls": {
+              "allow": "yes"
+            },
+            "commands": [],
+            "files": {
+              "allow": "always"
+            },
+            "fullDelete": {
+              "allow": "no"
+            },
+            "reactions": {
+              "allow": "yes"
+            },
+            "sessions": {
+              "allow": "no"
+            },
+            "timedMessages": {
+              "allow": "yes"
+            },
+            "voice": {
+              "allow": "yes"
+            }
+          },
+          "localDisplayName": "alice",
+          "profile": {
+            "displayName": "alice",
+            "fullName": "",
+            "localAlias": "",
+            "preferences": {
+              "calls": {
+                "allow": "yes"
+              },
+              "commands": [],
+              "files": {
+                "allow": "always"
+              },
+              "fullDelete": {
+                "allow": "no"
+              },
+              "reactions": {
+                "allow": "yes"
+              },
+              "sessions": {
+                "allow": "no"
+              },
+              "timedMessages": {
+                "allow": "yes"
+              },
+              "voice": {
+                "allow": "yes"
+              }
+            },
+            "profileId": 1,
+            "shortDescr": "Alice"
+          },
+          "sendRcptsContacts": true,
+          "sendRcptsSmallGroups": true,
+          "showNtfs": true,
+          "userChatRelay": false,
+          "userContactId": 1,
+          "userId": 1
+        }
+      }
+    }
+  },
+  "markdown": {},
+  "uris": {}
+}

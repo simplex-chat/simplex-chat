@@ -471,7 +471,7 @@ fun ComposeView(
 
   fun getMessageLinks(parsedMsg: List<FormattedText>?): Pair<String?, Boolean> {
     if (parsedMsg == null) return null to false
-    val simplexLink = parsedMsg.any { ft -> ft.format is Format.SimplexLink }
+    val simplexLink = parsedMsg.any { ft -> ft.format?.isSimplexLink == true }
     for (ft in parsedMsg) {
       val link = ft.linkUri
       if (link != null && !cancelledLinks.contains(link) && !isSimplexLink(link)) {

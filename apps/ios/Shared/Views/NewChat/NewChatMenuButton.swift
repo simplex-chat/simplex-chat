@@ -404,6 +404,13 @@ struct ContactsListSearchBar: View {
                     searchChatFilteredBySimplexLink = nil
                     connectNameCandidate = nil
                     connect(text)
+                case let .msgLink(msgLinkType, msgLink):
+                    searchFocussed = false
+                    ignoreSearchTextChange = true
+                    searchText = ""
+                    searchChatFilteredBySimplexLink = nil
+                    connectNameCandidate = nil
+                    openMsgLink(msgLink, msgLinkType, chatId: nil, target: nil, theme: theme)
                 default:
                     // A name is resolved only when its "Connect to …" row is tapped, not on every keystroke.
                     // The simplex-name filter is chat-list only: this contacts/deleted view is a scoped

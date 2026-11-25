@@ -813,7 +813,7 @@ fun connectIfOpenedViaUri(rhId: Long?, uri: String, chatModel: ChatModel) {
   }
 }
 
-// the app's own scheme, for every link that is not a connection link, which stays on simplex:
+// simplexchat: is the scheme of app-specific deep links, and simplex: of URIs in the SimpleX network: connection links, SimpleX names, files and message links
 internal const val appLinkScheme = "simplexchat"
 internal const val connectionLinkScheme = "simplex"
 private const val badgeLinkPath = "/badge/code/"
@@ -895,6 +895,9 @@ private fun ChatListSearchBar(listState: LazyListState, searchText: MutableState
               searchShowingSimplexLink.value = true
               searchChatFilteredBySimplexLink.value = emptySet()
               connectNameCandidate.value = null
+              connect(target.text, searchChatFilteredBySimplexLink) { searchText.value = TextFieldValue() }
+            } else if (target is ConnectTarget.MsgLink) {
+              hideKeyboard(view)
               connect(target.text, searchChatFilteredBySimplexLink) { searchText.value = TextFieldValue() }
             } else {
               val candidate = nameSearchCandidate(it.trim())

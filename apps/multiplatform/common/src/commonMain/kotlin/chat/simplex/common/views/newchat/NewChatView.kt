@@ -684,6 +684,11 @@ private fun PasteLinkView(rhId: Long?, pastedLink: MutableState<String>, showQRC
           showQRCodeScanner.value = false
           withBGApi { connect(rhId, target.text, close) { pastedLink.value = "" } }
         }
+        is ConnectTarget.MsgLink -> {
+          pastedLink.value = target.text
+          showQRCodeScanner.value = false
+          withBGApi { connect(rhId, target.text, close) { pastedLink.value = "" } }
+        }
         null -> AlertManager.shared.showAlertMsg(
           title = generalGetString(MR.strings.invalid_contact_link),
           text = generalGetString(MR.strings.the_text_you_pasted_is_not_a_link)
@@ -823,17 +828,20 @@ private fun createInvitation(
 
 fun strIsSimplexLink(str: String): Boolean {
   val parsedMd = parseToMarkdown(str)
-  return parsedMd != null && parsedMd.size == 1 && parsedMd[0].format is Format.SimplexLink
+  return parsedMd != null && parsedMd.size == 1 && (parsedMd[0].format is Format.SimplexLink || parsedMd[0].format is Format.MessageLink)
 }
 
 sealed class ConnectTarget {
   class Link(val text: String, val linkType: SimplexLinkType, val linkText: String) : ConnectTarget()
   class Name(val text: String, val nameInfo: SimplexNameInfo) : ConnectTarget()
+  class MsgLink(val text: String, val link: Format.MessageLink) : ConnectTarget()
 }
 
 fun strConnectTarget(str: String): ConnectTarget? {
   val parsedMd = parseToMarkdown(str) ?: return null
-  val links = parsedMd.filter { it.format?.isSimplexLink ?: false }
+  val msgLink = parsedMd.singleOrNull()?.format as? Format.MessageLink
+  if (msgLink != null) return ConnectTarget.MsgLink(str, msgLink)
+  val links = parsedMd.filter { it.format is Format.SimplexLink }
   if (links.size == 1) {
     val fmt = links[0].format as Format.SimplexLink
     val text = if (fmt.showText != null) fmt.simplexUri else links[0].text

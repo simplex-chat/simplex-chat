@@ -143,6 +143,14 @@ test('plain text and inline formatting without blocks', () => {
   check([{ format: { type: 'bold', singleStar: true }, text: 'a' }, plain('\nb')], undefined, '<strong>a</strong><br>b');
 });
 
+test('message links of public chats are links, other message links are their labels', () => {
+  const msgLink = (showText, msgLinkType, link) => ({ format: { type: 'messageLink', showText, msgLinkType, msgLink: link }, text: `[${showText}](${link})` });
+  const nameLink = 'simplex:/name#privacy.simplex?m=YWJjZGVmZ2hpamtsbW5vcA';
+  check([msgLink('Release notes', 'publicGroup', nameLink)], undefined, `<a href="${nameLink}" target="_blank" rel="noopener">Release notes</a>`);
+  check([msgLink('q', 'group', 'simplex:/m#g/YWJjZGVmZ2hpamtsbW5vcA?a=MTIzNDU2Nzg5MDEyMzQ1Ng')], undefined, 'q');
+  check([msgLink('the draft', 'unknownSource', 'simplex:/m')], undefined, 'the draft');
+});
+
 test('invalid blocks are drawn as text', () => {
   check([plain('a'), paragraphBreak(2), plain('b')], [{ type: 'unknown' }], 'a<br><br>b');
 });

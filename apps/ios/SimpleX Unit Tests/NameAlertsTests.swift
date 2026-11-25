@@ -254,6 +254,41 @@ final class NameAlertsTests: XCTestCase {
     }
 
     @MainActor
+    func testSiteLinkRequiresUpdate() async throws {
+        try recorded("links/channel")
+        connect("SITE_LINK")
+        try await assertTexts(["App update required", "This site requires a newer version of the app. Please update the app to open it.", "Ok"])
+        try await assertRequested { $0 == "markdown SITE_LINK" }
+    }
+
+    @MainActor
+    func testMessageLinkErrorShowsAlert() async throws {
+        var user = User.sampleData
+        user.userId = 2
+        ChatModel.shared.currentUser = user
+        try recorded("links/same-group")
+        openMsgLink("GROUP_MSG_LINK", .group, chatId: nil, target: nil, theme: CurrentColors.toAppTheme())
+        try? await waitFor { self.shownTexts().contains("Error opening link") }
+        XCTAssertTrue(shownTexts().contains("Error opening link"), "\(shownTexts())")
+    }
+
+    @MainActor
+    func testChannelPostLinkPastedInSearchJoinsChannel() async throws {
+        try recorded("links/channel")
+        let state = SearchState()
+        let window = UIWindow(windowScene: try XCTUnwrap(UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first))
+        window.rootViewController = UIHostingController(rootView: SearchHost(state: state))
+        window.isHidden = false
+        defer { window.isHidden = true }
+        try await Task.sleep(nanoseconds: 100_000_000)
+        state.searchText = "CHANNEL_MSG_LINK"
+        try? await waitFor { self.shownTexts().contains("Open channel") }
+        XCTAssertTrue(shownTexts().contains("Open channel"), "\(shownTexts())")
+        XCTAssertTrue(shownTexts().contains("team"), "\(shownTexts())")
+        XCTAssertEqual(state.searchText, "")
+    }
+
+    @MainActor
     func testRejectedContactInChatList() async throws {
         try recorded("connect/request-rejected")
         ChatModel.shared.updateChats(try apiGetChats())

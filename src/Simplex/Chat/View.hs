@@ -162,6 +162,14 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, showFullLinks, te
   CRNewChatItems u chatItems -> viewChatItems ttyUser unmuted u chatItems ts tz testView
   CRChatItems u _ chatItems -> ttyUser u $ concatMap (\(AChatItem _ _ chat item) -> viewChatItem chat item True ts tz <> viewItemReactions item <> viewTestInfo testView item) chatItems
   CRChatItemInfo u ci ciInfo -> ttyUser u $ viewChatItemInfo ci ciInfo tz
+  CRChatItemLink u msgLink -> ttyUser u [plain $ strEncode msgLink]
+  CRMsgLinkPlan u plan -> ttyUser u $ case plan of
+    MLPItem (AChatItem _ _ chat item) _ -> viewChatItem chat item True ts tz
+    MLPChat (AChatInfo _ chat) -> ["message link: the message is not in " <> viewChatName chat]
+    MLPJoin target -> ["message link: connect with " <> plain (strEncode target)]
+    MLPNotFound -> ["message link: not in your chats"]
+    MLPUnknownSource -> ["message link: unknown source"]
+    MLPUnknownLink -> ["message link: unknown link type"]
   CRChatItemId u itemId -> ttyUser u [plain $ maybe "no item" show itemId]
   CRChatItemUpdated u (AChatItem _ _ chat item) -> ttyUser u $ unmuted u chat item $ viewItemUpdate chat item liveItems ts tz
   CRChatItemNotChanged u ci -> ttyUser u $ viewItemNotChanged ci
@@ -712,9 +720,12 @@ viewChatItems ttyUser unmuted u chatItems ts tz testView
   | otherwise = ttyUser u [sShow (length chatItems) <> " new messages created"]
 
 viewChatItem :: forall c d. MsgDirectionI d => ChatInfo c -> ChatItem c d -> Bool -> CurrentTime -> TimeZone -> [StyledString]
-viewChatItem chat ci@ChatItem {chatDir, meta = meta@CIMeta {itemForwarded, forwardedByMember, userMention, msgVerified}, content, quotedItem, file} doShow ts tz =
-  withGroupMsgForwarded . withItemDeleted <$> viewCI
+viewChatItem chat ci@ChatItem {chatDir, meta = meta@CIMeta {itemForwarded, forwardedByMember, userMention, msgVerified}, content, quotedItem, file, links} doShow ts tz =
+  (withGroupMsgForwarded . withItemDeleted <$> viewCI) <> rcvLinks
   where
+    rcvLinks
+      | toMsgDirection (msgDirection @d) == MDRcv = map (\(l, CILink {text = t}) -> plain $ "[" <> l <> "]: " <> t) $ M.assocs links
+      | otherwise = []
     viewCI = case chat of
       DirectChat c -> case chatDir of
         CIDirectSnd -> case content of
@@ -2336,6 +2347,7 @@ viewConnectionPlan ChatConfig {logLevel, testView} _connLink planSimplexName = \
       grpOrBiz GroupInfo {businessChat} = case businessChat of
         Just _ -> "business"
         Nothing -> "group"
+  CPUpdateRequired -> ["this site requires a newer version of the app"]
   CPError e -> viewChatError False logLevel testView e
   where
     viewNameChange :: Bool -> Maybe NameChange -> [StyledString]
@@ -3138,6 +3150,13 @@ ttyGroup g = styled (colored Blue) $ "#" <> viewName g
 
 ttyGroup' :: GroupInfo -> StyledString
 ttyGroup' = ttyGroup . groupName'
+
+viewChatName :: ChatInfo c -> StyledString
+viewChatName = \case
+  DirectChat ct -> "@" <> ttyContact' ct
+  GroupChat g _ -> ttyGroup' g
+  LocalChat _ -> "notes"
+  _ -> "chat"
 
 viewContactName :: Contact -> Text
 viewContactName = viewName . localDisplayName'

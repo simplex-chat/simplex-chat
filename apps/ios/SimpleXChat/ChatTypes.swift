@@ -761,12 +761,24 @@ public struct UserProfileUpdateSummary: Decodable, Hashable {
     public var changedContacts: [Contact]
 }
 
-public enum ChatType: String, Hashable {
+public enum ChatType: String, Hashable, Decodable {
     case direct = "@"
     case group = "#"
     case local = "*"
     case contactRequest = "<@"
     case contactConnection = ":"
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        switch try container.decode(String.self) {
+        case "direct": self = .direct
+        case "group": self = .group
+        case "local": self = .local
+        case "contactRequest": self = .contactRequest
+        case "contactConnection": self = .contactConnection
+        case let s: throw DecodingError.dataCorruptedError(in: container, debugDescription: "Invalid chat type: \(s)")
+        }
+    }
 }
 
 public protocol NamedChat {
@@ -3939,6 +3951,22 @@ public struct CIMention: Decodable, Hashable {
     }
 }
 
+public struct CILink: Decodable, Hashable {
+    public var text: String
+    public var target: CILinkTarget?
+
+    public init(text: String, target: CILinkTarget?) {
+        self.text = text
+        self.target = target
+    }
+}
+
+public struct CILinkTarget: Decodable, Hashable {
+    public var chatType: ChatType
+    public var chatId: Int64
+    public var chatItemId: Int64
+}
+
 public struct ACIReaction: Decodable, Hashable {
     public var chatInfo: ChatInfo
     public var chatReaction: CIReaction
@@ -3957,13 +3985,14 @@ public struct CIReaction: Decodable, Hashable {
 }
 
 public struct ChatItem: Identifiable, Decodable, Hashable {
-    public init(chatDir: CIDirection, meta: CIMeta, content: CIContent, formattedText: [FormattedText]? = nil, markdownBlocks: [MarkdownBlock]? = nil, mentions: [String: CIMention]? = nil, quotedItem: CIQuote? = nil, reactions: [CIReactionCount] = [], file: CIFile? = nil) {
+    public init(chatDir: CIDirection, meta: CIMeta, content: CIContent, formattedText: [FormattedText]? = nil, markdownBlocks: [MarkdownBlock]? = nil, mentions: [String: CIMention]? = nil, links: [String: CILink]? = nil, quotedItem: CIQuote? = nil, reactions: [CIReactionCount] = [], file: CIFile? = nil) {
         self.chatDir = chatDir
         self.meta = meta
         self.content = content
         self.formattedText = formattedText
         self.markdownBlocks = markdownBlocks
         self.mentions = mentions
+        self.links = links
         self.quotedItem = quotedItem
         self.reactions = reactions
         self.file = file
@@ -3975,6 +4004,7 @@ public struct ChatItem: Identifiable, Decodable, Hashable {
     public var formattedText: [FormattedText]?
     public var markdownBlocks: [MarkdownBlock]?
     public var mentions: [String: CIMention]?
+    public var links: [String: CILink]?
     public var quotedItem: CIQuote?
     public var reactions: [CIReactionCount]
     public var file: CIFile?
@@ -3983,7 +4013,7 @@ public struct ChatItem: Identifiable, Decodable, Hashable {
     public var isLiveDummy: Bool = false
 
     private enum CodingKeys: String, CodingKey {
-        case chatDir, meta, content, formattedText, markdownBlocks, mentions, quotedItem, reactions, file
+        case chatDir, meta, content, formattedText, markdownBlocks, mentions, links, quotedItem, reactions, file
     }
 
     public var id: Int64 { meta.itemId }
@@ -6017,6 +6047,7 @@ public enum Format: Decodable, Equatable, Hashable {
     case hyperLink(showText: String?, linkUri: String)
     case simplexLink(showText: String?, linkType: SimplexLinkType, simplexUri: String, smpHosts: [String])
     case simplexName(nameInfo: SimplexNameInfo)
+    case messageLink(showText: String?, msgLinkType: MsgLinkType, msgLink: String)
     case command(commandStr: String)
     case mention(memberName: String)
     case modal(modalName: String, text: String)
@@ -6033,6 +6064,7 @@ public enum Format: Decodable, Equatable, Hashable {
         get {
             switch (self) {
             case .simplexLink: return true
+            case .messageLink(_, .publicGroup, _): return true
             default: return false
             }
         }
@@ -6045,6 +6077,8 @@ public enum SimplexLinkType: String, Decodable, Hashable {
     case group
     case channel
     case relay
+    case publicGroup
+    case site
 
     public var description: String {
         switch self {
@@ -6053,8 +6087,19 @@ public enum SimplexLinkType: String, Decodable, Hashable {
         case .group: return NSLocalizedString("SimpleX group link", comment: "simplex link type")
         case .channel: return NSLocalizedString("SimpleX channel link", comment: "simplex link type")
         case .relay: return NSLocalizedString("SimpleX relay address", comment: "simplex link type")
+        case .publicGroup: return NSLocalizedString("SimpleX public group link", comment: "simplex link type")
+        case .site: return NSLocalizedString("SimpleX site link", comment: "simplex link type")
         }
     }
+}
+
+public enum MsgLinkType: String, Decodable, Hashable {
+    case publicGroup
+    case group
+    case direct
+    case note
+    case unknownSource
+    case unsupported
 }
 
 public struct SimplexNameInfo: Codable, Equatable, Hashable {

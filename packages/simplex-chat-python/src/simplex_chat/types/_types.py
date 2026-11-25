@@ -734,6 +734,17 @@ class CIGroupInvitation(TypedDict):
 
 CIGroupInvitationStatus = Literal["pending", "accepted", "rejected", "expired"]
 
+# Short text of a message link, by its label in the message text. The target is the linked message, only in the sender's or forwarder's copy of a link sent as simplex:/m.
+
+class CILink(TypedDict):
+    text: str
+    target: NotRequired["CILinkTarget"]
+
+class CILinkTarget(TypedDict):
+    chatType: "ChatType"
+    chatId: int  # int64
+    chatItemId: int  # int64
+
 class CIMention(TypedDict):
     memberId: str
     memberRef: NotRequired["CIMentionMember"]
@@ -1305,6 +1316,7 @@ class ChatItem(TypedDict):
     meta: "CIMeta"
     content: "CIContent"
     mentions: dict[str, "CIMention"]
+    links: dict[str, "CILink"]
     formattedText: NotRequired[list["FormattedText"]]
     markdownBlocks: NotRequired[list["MarkdownBlock"]]  # non-empty
     quotedItem: NotRequired["CIQuote"]
@@ -1641,6 +1653,9 @@ class ConnectionPlan_groupLink(TypedDict):
     groupLinkPlan: "GroupLinkPlan"
     nameChange: NotRequired["NameChange"]
 
+class ConnectionPlan_updateRequired(TypedDict):
+    type: Literal["updateRequired"]
+
 class ConnectionPlan_error(TypedDict):
     type: Literal["error"]
     chatError: "ChatError"
@@ -1649,10 +1664,11 @@ ConnectionPlan = (
     ConnectionPlan_invitationLink
     | ConnectionPlan_contactAddress
     | ConnectionPlan_groupLink
+    | ConnectionPlan_updateRequired
     | ConnectionPlan_error
 )
 
-ConnectionPlan_Tag = Literal["invitationLink", "contactAddress", "groupLink", "error"]
+ConnectionPlan_Tag = Literal["invitationLink", "contactAddress", "groupLink", "updateRequired", "error"]
 
 class ConnectionStats(TypedDict):
     connAgentVersion: int  # int
@@ -2002,6 +2018,12 @@ class Format_simplexName(TypedDict):
     type: Literal["simplexName"]
     nameInfo: "SimplexNameInfo"
 
+class Format_messageLink(TypedDict):
+    type: Literal["messageLink"]
+    showText: NotRequired[str]
+    msgLinkType: "MsgLinkType"
+    msgLink: str
+
 class Format_command(TypedDict):
     type: Literal["command"]
     commandStr: str
@@ -2035,6 +2057,7 @@ Format = (
     | Format_hyperLink
     | Format_simplexLink
     | Format_simplexName
+    | Format_messageLink
     | Format_command
     | Format_mention
     | Format_email
@@ -2043,7 +2066,7 @@ Format = (
     | Format_markup
 )
 
-Format_Tag = Literal["bold", "italic", "strikeThrough", "snippet", "secret", "small", "colored", "uri", "hyperLink", "simplexLink", "simplexName", "command", "mention", "email", "phone", "escape", "markup"]
+Format_Tag = Literal["bold", "italic", "strikeThrough", "snippet", "secret", "small", "colored", "uri", "hyperLink", "simplexLink", "simplexName", "messageLink", "command", "mention", "email", "phone", "escape", "markup"]
 
 class FormattedText(TypedDict):
     format: NotRequired["Format"]
@@ -2611,6 +2634,41 @@ MsgErrorType = (
 MsgErrorType_Tag = Literal["msgSkipped", "msgBadId", "msgBadHash", "msgDuplicate"]
 
 MsgFilter = Literal["none", "all", "mentions"]
+
+class MsgLinkPlan_item(TypedDict):
+    type: Literal["item"]
+    chatItem: "AChatItem"
+    linkText: str
+
+class MsgLinkPlan_chat(TypedDict):
+    type: Literal["chat"]
+    chatInfo: "ChatInfo"
+
+class MsgLinkPlan_join(TypedDict):
+    type: Literal["join"]
+    connTarget: str
+
+class MsgLinkPlan_notFound(TypedDict):
+    type: Literal["notFound"]
+
+class MsgLinkPlan_unknownSource(TypedDict):
+    type: Literal["unknownSource"]
+
+class MsgLinkPlan_unknownLink(TypedDict):
+    type: Literal["unknownLink"]
+
+MsgLinkPlan = (
+    MsgLinkPlan_item
+    | MsgLinkPlan_chat
+    | MsgLinkPlan_join
+    | MsgLinkPlan_notFound
+    | MsgLinkPlan_unknownSource
+    | MsgLinkPlan_unknownLink
+)
+
+MsgLinkPlan_Tag = Literal["item", "chat", "join", "notFound", "unknownSource", "unknownLink"]
+
+MsgLinkType = Literal["publicGroup", "group", "direct", "note", "unknownSource", "unsupported"]
 
 class MsgReaction_emoji(TypedDict):
     type: Literal["emoji"]
@@ -3375,7 +3433,7 @@ class SimplexDomainProof(TypedDict):
     presHeader: str
     signature: str
 
-SimplexLinkType = Literal["contact", "invitation", "group", "channel", "relay"]
+SimplexLinkType = Literal["contact", "invitation", "group", "channel", "relay", "publicGroup", "site"]
 
 class SimplexNameInfo(TypedDict):
     nameType: "SimplexNameType"

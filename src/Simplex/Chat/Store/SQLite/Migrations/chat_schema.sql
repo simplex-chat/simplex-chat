@@ -1021,6 +1021,13 @@ CREATE TABLE badge_store_receipts(
   hold_kind TEXT NOT NULL DEFAULT 'purchase',
   UNIQUE(provider, transaction_ref)
 ) STRICT;
+CREATE TABLE chat_item_links(
+  chat_item_link_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  chat_item_id INTEGER NOT NULL REFERENCES chat_items ON DELETE CASCADE,
+  label TEXT NOT NULL,
+  link_text TEXT NOT NULL,
+  target_chat_item_id INTEGER REFERENCES chat_items ON DELETE SET NULL
+) STRICT;
 CREATE INDEX contact_profiles_index ON contact_profiles(
   display_name,
   full_name
@@ -1590,6 +1597,13 @@ CREATE INDEX idx_group_members_invited_via_group_member_id ON group_members(
 CREATE INDEX idx_badge_store_receipts_user ON badge_store_receipts(user_id);
 CREATE UNIQUE INDEX idx_badge_purchases_store_receipt ON badge_purchases(
   badge_store_receipt_id
+);
+CREATE UNIQUE INDEX idx_chat_item_links_chat_item_id_label ON chat_item_links(
+  chat_item_id,
+  label
+);
+CREATE INDEX idx_chat_item_links_target_chat_item_id ON chat_item_links(
+  target_chat_item_id
 );
 CREATE TRIGGER on_group_members_insert_update_summary
 AFTER INSERT ON group_members

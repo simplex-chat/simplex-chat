@@ -25,6 +25,11 @@ class ChatItemInfo(TypedDict):
     chatItem: "T.AChatItem"
     chatItemInfo: "T.ChatItemInfo"
 
+class ChatItemLink(TypedDict):
+    type: Literal["chatItemLink"]
+    user: "T.User"
+    msgLink: str
+
 class ChatItemNotChanged(TypedDict):
     type: Literal["chatItemNotChanged"]
     user: "T.User"
@@ -243,6 +248,11 @@ class MembersRoleUser(TypedDict):
     toRole: "T.GroupMemberRole"
     msgSigned: bool
 
+class MsgLinkPlan(TypedDict):
+    type: Literal["msgLinkPlan"]
+    user: "T.User"
+    msgLinkPlan: "T.MsgLinkPlan"
+
 class NetworkConfig(TypedDict):
     type: Literal["networkConfig"]
     networkConfig: "T.NetworkConfig"
@@ -419,6 +429,7 @@ ChatResponse = (
     | ActiveUser
     | ApiChat
     | ChatItemInfo
+    | ChatItemLink
     | ChatItemNotChanged
     | ChatItemReaction
     | ChatItemUpdated
@@ -458,6 +469,7 @@ ChatResponse = (
     | MemberAccepted
     | MembersBlockedForAllUser
     | MembersRoleUser
+    | MsgLinkPlan
     | NetworkConfig
     | NewChatItems
     | NewMemberContact
@@ -490,4 +502,4 @@ ChatResponse = (
     | ApiChats
 )
 
-ChatResponse_Tag = Literal["acceptingContactRequest", "activeUser", "apiChat", "chatItemInfo", "chatItemNotChanged", "chatItemReaction", "chatItemUpdated", "chatItemsDeleted", "chatMsgContent", "chatRunning", "chatStarted", "chatStopped", "cmdOk", "chatCmdError", "connectionPlan", "contactAlreadyExists", "contactConnectionDeleted", "contactDeleted", "contactInfo", "contactPrefsUpdated", "contactRequestRejected", "contactsList", "groupDeletedUser", "groupLink", "groupLinkCreated", "groupLinkDeleted", "groupCreated", "publicGroupCreated", "publicGroupCreationFailed", "groupRelays", "groupRelaysAdded", "groupRelaysAddFailed", "relayGroupAllowed", "groupMembers", "groupUpdated", "groupsList", "groupDomainVerified", "invitation", "itemsReadForChat", "leftMemberUser", "memberAccepted", "membersBlockedForAllUser", "membersRoleUser", "networkConfig", "newChatItems", "newMemberContact", "newMemberContactSentInv", "newPreparedChat", "rcvFileAccepted", "rcvFileAcceptedSndCancelled", "rcvFileCancelled", "remoteCtrlConnected", "remoteCtrlConnecting", "sentConfirmation", "sentGroupInvitation", "sentGroupInvitationViaGroup", "sentInvitation", "sentInvitationToContact", "serviceReplyAccepted", "sndFileCancelled", "startedConnectionToContact", "startedConnectionToGroup", "userAcceptedGroupSent", "userContactLink", "userContactLinkCreated", "userContactLinkDeleted", "userContactLinkUpdated", "userDeletedMembers", "userProfileUpdated", "userProfileNoChange", "userServers", "usersList", "apiChats"]
+ChatResponse_Tag = Literal["acceptingContactRequest", "activeUser", "apiChat", "chatItemInfo", "chatItemLink", "chatItemNotChanged", "chatItemReaction", "chatItemUpdated", "chatItemsDeleted", "chatMsgContent", "chatRunning", "chatStarted", "chatStopped", "cmdOk", "chatCmdError", "connectionPlan", "contactAlreadyExists", "contactConnectionDeleted", "contactDeleted", "contactInfo", "contactPrefsUpdated", "contactRequestRejected", "contactsList", "groupDeletedUser", "groupLink", "groupLinkCreated", "groupLinkDeleted", "groupCreated", "publicGroupCreated", "publicGroupCreationFailed", "groupRelays", "groupRelaysAdded", "groupRelaysAddFailed", "relayGroupAllowed", "groupMembers", "groupUpdated", "groupsList", "groupDomainVerified", "invitation", "itemsReadForChat", "leftMemberUser", "memberAccepted", "membersBlockedForAllUser", "membersRoleUser", "msgLinkPlan", "networkConfig", "newChatItems", "newMemberContact", "newMemberContactSentInv", "newPreparedChat", "rcvFileAccepted", "rcvFileAcceptedSndCancelled", "rcvFileCancelled", "remoteCtrlConnected", "remoteCtrlConnecting", "sentConfirmation", "sentGroupInvitation", "sentGroupInvitationViaGroup", "sentInvitation", "sentInvitationToContact", "serviceReplyAccepted", "sndFileCancelled", "startedConnectionToContact", "startedConnectionToGroup", "userAcceptedGroupSent", "userContactLink", "userContactLinkCreated", "userContactLinkDeleted", "userContactLinkUpdated", "userDeletedMembers", "userProfileUpdated", "userProfileNoChange", "userServers", "usersList", "apiChats"]

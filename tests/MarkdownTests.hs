@@ -16,12 +16,12 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Simplex.Chat.Markdown
-import Simplex.Chat.Messages (parsedMsgContent)
+import Simplex.Chat.Messages (parsedMsgContent, shortLinkText)
 import Simplex.Chat.Protocol (MsgContent (..), ReportReason (..))
-import Simplex.Chat.Types (BoolDef (..))
-import Simplex.Messaging.Agent.Protocol (SimplexDomain (..), SimplexNameInfo (..), SimplexNameType (..), SimplexTLD (..))
+import Simplex.Chat.Types (BoolDef (..), MsgLink, MsgLinkType (..), toMsgLinkType)
+import Simplex.Messaging.Agent.Protocol (AConnectionLink, SimplexDomain (..), SimplexNameInfo (..), SimplexNameType (..), SimplexTLD (..))
 import Simplex.Messaging.Encoding.String
-import Simplex.Messaging.Util ((<$$>))
+import Simplex.Messaging.Util (safeDecodeUtf8, (<$$>))
 import System.Console.ANSI.Types
 import Test.Hspec
 import qualified URI.ByteString as U
@@ -34,6 +34,7 @@ markdownTests = do
   textColor
   textWithUri
   textWithHyperlink
+  textWithMessageLinks
   obfuscatedSimplexLinks
   textWithEmail
   textWithPhone
@@ -356,6 +357,77 @@ textWithHyperlink = describe "text with HyperLink without link text" do
   it "ignored as markdown" do
     "[click here](example.com)" <==> "[click here](" <> uri "example.com" <> ")"
     "[click here](https://example.com )" <==> "[click here](" <> uri "https://example.com" <> " )"
+
+messageLink :: Maybe Text -> Text -> Text -> Markdown
+messageLink showText uriText = case strDecode $ encodeUtf8 uriText of
+  Right ml -> Markdown $ Just MessageLink {showText, msgLinkType = toMsgLinkType ml, msgLink = ml}
+  Left e -> error e
+
+msgLinkType_ :: Text -> Either String MsgLinkType
+msgLinkType_ = fmap toMsgLinkType . strDecode . encodeUtf8
+
+textWithMessageLinks :: Spec
+textWithMessageLinks = describe "text with message links" do
+  let msgId = "YWJjZGVmZ2hpamtsbW5vcA"
+      author = "MTIzNDU2Nzg5MDEyMzQ1Ng"
+      key = "MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY"
+      groupLink = "simplex:/m#g/" <> msgId <> "?a=" <> author
+      directLink = "simplex:/m#d/" <> msgId
+      channelLink = "https://smp.simplex.im/c#" <> key
+      publicGroupLink = "https://smp.simplex.im/p#" <> key
+  it "local links" do
+    ("[Should I merge?](" <> groupLink <> ")") <==> messageLink (Just "Should I merge?") groupLink ("[Should I merge?](" <> groupLink <> ")")
+    msgLinkType_ groupLink `shouldBe` Right MLTGroup
+    "[the draft](simplex:/m)" <==> messageLink (Just "the draft") "simplex:/m" "[the draft](simplex:/m)"
+    msgLinkType_ "simplex:/m" `shouldBe` Right MLTUnknownSource
+    "simplex:/m#n/12?f=1" <==> messageLink Nothing "simplex:/m#n/12?f=1" "simplex:/m#n/12?f=1"
+    msgLinkType_ "simplex:/m#n/12?f=1" `shouldBe` Right MLTNote
+    "see [the plan] now" <==> "see [the plan] now"
+  it "global links" do
+    let channelMsgLink = channelLink <> "?m=" <> msgId
+        groupMsgLink = publicGroupLink <> "?m=" <> msgId <> "&a=" <> author
+        simplexMsgLink = "simplex:/c#" <> key <> "?h=smp.simplex.im&m=" <> msgId
+        nameMsgLink = "simplex:/name#privacy.simplex?m=" <> msgId
+    forM_ ([channelMsgLink, groupMsgLink, simplexMsgLink, nameMsgLink] :: [Text]) $ \l -> do
+      l <==> messageLink Nothing l l
+      ("[Release notes 7.2](" <> l <> ")") <==> messageLink (Just "Release notes 7.2") l ("[Release notes 7.2](" <> l <> ")")
+      msgLinkType_ l `shouldBe` Right MLTPublicGroup
+    channelLink <==> simplexLink XLChannel ("simplex:/c#" <> key <> "?h=smp.simplex.im") ["smp.simplex.im"] channelLink
+    publicGroupLink <==> simplexLink XLPublicGroup ("simplex:/p#" <> key <> "?h=smp.simplex.im") ["smp.simplex.im"] publicGroupLink
+    ("https://smp.simplex.im/s#" <> key) <==> simplexLink XLSite ("simplex:/s#" <> key <> "?h=smp.simplex.im") ["smp.simplex.im"] ("https://smp.simplex.im/s#" <> key)
+  it "global link is parsed as the chat link by earlier cores" $
+    (strDecode (encodeUtf8 $ channelLink <> "?m=" <> msgId) :: Either String AConnectionLink) `shouldBe` strDecode (encodeUtf8 channelLink)
+  it "bare links and punctuation" do
+    ("see " <> directLink <> ".") <==> "see " <> messageLink Nothing directLink directLink <> "."
+    let dashLink = "simplex:/m#d/YWJjZGVmZ2hpams-"
+    ("see " <> dashLink) <==> "see " <> messageLink Nothing dashLink dashLink
+    "simplex:/m#x/abc" <==> messageLink Nothing "simplex:/m#x/abc" "simplex:/m#x/abc"
+    msgLinkType_ "simplex:/m#x/abc" `shouldBe` Right MLTUnsupported
+  it "link in link text" $
+    ("[https://example.com](" <> directLink <> ")") <==> "[https://example.com](" <> messageLink Nothing directLink directLink <> ")"
+  it "encodes and parses link URIs" do
+    let roundTrip :: Text -> Either String Text
+        roundTrip l = safeDecodeUtf8 . strEncode <$> (strDecode (encodeUtf8 l) :: Either String MsgLink)
+    forM_
+      ([ channelLink <> "?m=" <> msgId,
+        publicGroupLink <> "?m=" <> msgId <> "&a=" <> author,
+        "simplex:/c#" <> key <> "?h=smp.simplex.im&m=" <> msgId,
+        "simplex:/name#privacy.simplex?m=" <> msgId <> "&a=" <> author,
+        groupLink,
+        directLink,
+        "simplex:/m#n/48213?f=1",
+        "simplex:/m",
+        "simplex:/m#x/abc"
+      ] :: [Text])
+      $ \l -> roundTrip l `shouldBe` Right l
+    roundTrip ("simplex:m#d/" <> msgId) `shouldBe` Right directLink
+    roundTrip ("simplex:name#privacy.simplex?m=" <> msgId) `shouldBe` Right ("simplex:/name#privacy.simplex?m=" <> msgId)
+  it "short text of a linked message" do
+    shortLinkText "*Approve* the plan?\nsecond line" `shouldBe` "Approve the plan?"
+    shortLinkText "\n  the code is #1234# now  " `shouldBe` "the code is … now"
+    shortLinkText "see [the draft](simplex:/m)" `shouldBe` "see the draft"
+    shortLinkText (T.replicate 100 "a") `shouldBe` (T.replicate 79 "a" <> "…")
+    shortLinkText (T.replicate 80 "a") `shouldBe` T.replicate 80 "a"
 
 obfuscatedSimplexLinks :: Spec
 obfuscatedSimplexLinks = describe "SimpleX links obfuscated with whitespace" do

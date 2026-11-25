@@ -262,6 +262,7 @@ data ChatItem (c :: ChatType) (d :: MsgDirection) = ChatItem
     -- The `mentions` map prevents loading all members from UI.
     -- The key is a name used in the message text, used to look up CIMention.
     mentions :: Map MemberName CIMention,
+    links :: Map LinkLabel CILink,
     formattedText :: Maybe MarkdownList,
     markdownBlocks :: Maybe (NonEmpty MarkdownBlock),
     quotedItem :: Maybe (CIQuote c),
@@ -269,6 +270,19 @@ data ChatItem (c :: ChatType) (d :: MsgDirection) = ChatItem
     file :: Maybe (CIFile d)
   }
   deriving (Show)
+
+data CILink = CILink
+  { text :: Text,
+    target :: Maybe CILinkTarget
+  }
+  deriving (Eq, Ord, Show)
+
+data CILinkTarget = CILinkTarget
+  { chatType :: ChatType,
+    chatId :: Int64,
+    chatItemId :: ChatItemId
+  }
+  deriving (Eq, Ord, Show)
 
 data CIMention = CIMention
   { memberId :: MemberId,
@@ -638,6 +652,49 @@ parsedMsgContent mc = parsedMarkdown $ case mc of
 
 parsedCIContent :: CIContent d -> Text -> ParsedMarkdown
 parsedCIContent content t = maybe (parsedMarkdown t) parsedMsgContent $ ciMsgContent content
+
+itemMsgLink :: ChatInfo c -> ChatItem c d -> Either String MsgLink
+itemMsgLink cInfo ci@ChatItem {meta = CIMeta {itemId, itemSharedMsgId}} = case (cInfo, itemSharedMsgId) of
+  (DirectChat _, Just msgId) -> Right $ MLDirect msgId
+  (GroupChat g scope, Just msgId) -> case (publicGroup' g, scope) of
+    (Just PublicGroupProfile {groupLink}, Nothing) -> Right $ MLPublicGroup (CTLink groupLink) (memberId' <$> chatItemMember g ci) msgId
+    _ -> maybe (Left "message has no author") (Right . (`MLGroup` msgId) . memberId') $ chatItemMember g ci
+  (LocalChat NoteFolder {noteFolderId}, _) -> Right $ MLNote noteFolderId itemId
+  _ -> Left "message has no link"
+
+ciLinkTarget :: ChatInfo c -> ChatItem c d -> Maybe CILinkTarget
+ciLinkTarget cInfo ci = (\ChatRef {chatType, chatId} -> CILinkTarget {chatType, chatId, chatItemId = chatItemId' ci}) <$> chatInfoToRef cInfo
+
+ciLinkText :: ChatItem c d -> Text
+ciLinkText ChatItem {content, file} = case ciMsgContent content of
+  Just mc
+    | T.null (msgContentText mc) -> maybe "" (\CIFile {fileName} -> shortLinkText $ T.pack fileName) file
+    | otherwise -> shortLinkText $ msgContentText mc
+  Nothing -> shortLinkText $ ciContentToText content
+
+shortLinkText :: Text -> Text
+shortLinkText t = if T.length s > maxLinkTextLength then T.take (maxLinkTextLength - 1) s `T.snoc` '…' else s
+  where
+    s = T.strip $ T.filter (not . isBidiControl) $ T.takeWhile (not . isLineBreak) $ T.stripStart shown
+    shown = maybe t (T.concat . map shownText) $ parseMaybeMarkdownList t
+    shownText (FormattedText f_ ft) = case f_ of
+      Just Secret -> "…"
+      Just Escape -> ""
+      Just HyperLink {showText = Just l} -> l
+      Just SimplexLink {showText = Just l} -> l
+      Just MessageLink {showText = Just l} -> l
+      Just (Markup tkn) -> case tkn of
+        LineBreak -> "\n"
+        SoftBreak -> "\n"
+        HardBreak -> "\n"
+        ParagraphBreak _ -> "\n"
+        _ -> ""
+      _ -> ft
+    isLineBreak c = c `elem` ['\n', '\r', '\v', '\f', '\x85', '\x2028', '\x2029']
+    isBidiControl c = ('\x202A' <= c && c <= '\x202E') || ('\x2066' <= c && c <= '\x2069')
+
+maxLinkTextLength :: Int
+maxLinkTextLength = 80
 
 mkCIQuote :: CIQDirection c -> Maybe ChatItemId -> Maybe SharedMsgId -> UTCTime -> MsgContent -> CIQuote c
 mkCIQuote chatDir itemId sharedMsgId sentAt content = CIQuote {chatDir, itemId, sharedMsgId, sentAt, content, formattedText, markdownBlocks}
@@ -1540,6 +1597,10 @@ $(JQ.deriveJSON defaultJSON ''CIReactionCount)
 $(JQ.deriveJSON defaultJSON ''CIMentionMember)
 
 $(JQ.deriveJSON defaultJSON ''CIMention)
+
+$(JQ.deriveJSON defaultJSON ''CILinkTarget)
+
+$(JQ.deriveJSON defaultJSON ''CILink)
 
 instance (ChatTypeI c, MsgDirectionI d) => FromJSON (ChatItem c d) where
   parseJSON = $(JQ.mkParseJSON defaultJSON ''ChatItem)
