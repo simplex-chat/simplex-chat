@@ -12,13 +12,18 @@ vlc_dir=$root_dir/apps/multiplatform/common/src/commonMain/cpp/desktop/libs/linu
 
 mkdir $vlc_dir || exit 0
 
-vlc_tag='v3.0.23-2'
+vlc_tag='v3.0.24-simplex'
 vlc_url="https://github.com/simplex-chat/vlc/releases/download/${vlc_tag}/vlc-linux-${ARCH}.appimage"
+case "$ARCH" in
+  x86_64) vlc_sha256='cdcd71c6bbd35bb4fddadf7cd9aeff25078df79d5d9c6a5e03b8fb196f82ee91' ;;
+  aarch64) vlc_sha256='8a4ca4617cd1a16e09f09f0a1e34162cf5fbfd3048e67cccb738a1a476441bbc' ;;
+esac
 
 cd /tmp
 mkdir tmp 2>/dev/null || true
 cd tmp
 curl --tlsv1.2 "${vlc_url}" -L -o appimage
+echo "${vlc_sha256}  appimage" | sha256sum -c -
 chmod +x appimage
 ./appimage --appimage-extract
 cp -r squashfs-root/usr/lib/* $vlc_dir
