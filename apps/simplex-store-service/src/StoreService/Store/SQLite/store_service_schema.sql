@@ -21,7 +21,8 @@ CREATE TABLE sx_badge_service_invoices(
   updated_at TEXT NOT NULL
   ,
   product TEXT NOT NULL DEFAULT 'badge',
-  provider_ref TEXT NOT NULL DEFAULT ''
+  provider_ref TEXT NOT NULL DEFAULT '',
+  payment_address_proof TEXT
 ) STRICT;
 CREATE TABLE sx_badge_service_payments(
   payment_id TEXT NOT NULL PRIMARY KEY,

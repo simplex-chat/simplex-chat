@@ -292,10 +292,10 @@ cancelAtProvider Provider {pCancelInvoice} ref =
     Right () -> pure ()
 
 nameInvoiceView :: OrdersEnv -> Maybe Int -> InvoiceRow -> NameRegistration -> IO J.Value
-nameInvoiceView OrdersEnv {oeStore, oeConfig, oeContracts, oeNow} confirmations row@InvoiceRow {irInvoiceId = InvoiceId invId} r = do
+nameInvoiceView OrdersEnv {oeStore, oeConfig, oeContracts, oeNow} confirmations row@InvoiceRow {irInvoiceId = InvoiceId invId, irAddressProof} r = do
   now <- oeNow
   view <- registrationView oeStore oeConfig oeContracts now r
-  pure $ J.object $ ["invoiceId" .= invId, "kind" .= ("name" :: Text), "registration" .= view] <> invoicePairs confirmations row
+  pure $ J.object $ ["invoiceId" .= invId, "kind" .= ("name" :: Text), "registration" .= view] <> invoicePairs confirmations row <> maybe [] (\p -> ["addressProof" .= p]) irAddressProof
 
 orderRefusal :: OrderRefusal -> NameRefusal
 orderRefusal = \case

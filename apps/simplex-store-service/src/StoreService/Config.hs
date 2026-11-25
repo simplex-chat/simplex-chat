@@ -68,7 +68,7 @@ import Simplex.Messaging.Util (eitherToMaybe, tshow)
 import StoreService.Names.Abi (abiWordSize, parseText)
 import StoreService.Names.Chain (ChainConfig (..))
 import StoreService.Names.Label (LabelError (..), validLabel)
-import StoreService.Providers.AddressProof (BitcoinKey, MoneroKey)
+import StoreService.Providers.AddressProof (BitcoinKey, MoneroKey, bitcoinKey, moneroKey)
 import System.IO.Error (ioeGetErrorString)
 import Text.Read (readMaybe)
 
@@ -399,7 +399,7 @@ knownSettings :: [(Text, [Text])]
 knownSettings =
   -- The retired keys are known, so parseConfig refuses them rather than a warning calling them ignored.
   [ ("listener", ["host", "badges_port", "badges_static_dir", "serve_webapp", "trust_forwarded_for", "metrics_port"] <> namesListenerKeys <> map fst retiredListenerKeys),
-    ("btcpay", ["host", "api_key", "store_id", "webhook_secret", "expiry_minutes", "speed_policy", "payment_tolerance"]),
+    ("btcpay", ["host", "api_key", "store_id", "webhook_secret", "expiry_minutes", "speed_policy", "payment_tolerance", "btc_xpub", "btc_hrp", "xmr_address", "xmr_view_key"]),
     ("stripe", ["secret_key", "publishable_key", "webhook_secret", "session_minutes"]),
     ("poll", ["waiting_seconds", "idle_seconds"]),
     ("apple", ["bundle_id", "root_certificates", "api_key_id", "api_issuer_id", "api_private_key_file", "api_host"]),
@@ -563,7 +563,13 @@ parseConfig ini = do
           bExpiryMinutes <- num "btcpay" "expiry_minutes" 1 maxBound defaultExpiryMinutes
           bSpeedPolicy <- speedPolicy
           bPaymentTolerance <- tolerance
-          pure (Just BTCPayConfig {bHost, bApiKey, bStoreId, bWebhookSecret, bExpiryMinutes, bSpeedPolicy, bPaymentTolerance, bTimeoutMicros = providerTimeoutMicros, bCheckoutTimeoutMicros = providerCheckoutTimeoutMicros, bBitcoinKey = Nothing, bMoneroKey = Nothing})
+          bBitcoinKey <- payeeKey "btc_xpub" "btc_hrp" bitcoinKey
+          bMoneroKey <- payeeKey "xmr_address" "xmr_view_key" moneroKey
+          pure (Just BTCPayConfig {bHost, bApiKey, bStoreId, bWebhookSecret, bExpiryMinutes, bSpeedPolicy, bPaymentTolerance, bTimeoutMicros = providerTimeoutMicros, bCheckoutTimeoutMicros = providerCheckoutTimeoutMicros, bBitcoinKey, bMoneroKey})
+    payeeKey k v parse = case (present "btcpay" k, present "btcpay" v) of
+      (Nothing, Nothing) -> Right Nothing
+      (Just key, Just value) -> Just <$> first ("btcpay." <>) (parse key value)
+      _ -> Left ("btcpay." <> T.unpack k <> " and btcpay." <> T.unpack v <> " are required together")
     speedPolicy = case look "btcpay" "speed_policy" of
       Nothing -> Right MediumSpeed
       Just v -> case textDecode (T.strip v) of

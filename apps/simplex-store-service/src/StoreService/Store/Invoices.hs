@@ -190,9 +190,9 @@ qInsertInvoice =
   mkQuery $
     "INSERT INTO @invoices "
       <> "(invoice_id, provider, provider_ref, product, price, discount_amount, credit_amount, amount, currency, "
-      <> "payment_url, payment_address, payment_crypto_currency, payment_crypto_amount, "
+      <> "payment_url, payment_address, payment_crypto_currency, payment_crypto_amount, payment_address_proof, "
       <> "expires_at, status, created_at, updated_at) "
-      <> "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
+      <> "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
 
 qInsertBadgeCodeInvoice :: Query
 qInsertBadgeCodeInvoice =
@@ -212,7 +212,8 @@ invoiceRowSelect =
   "SELECT i.invoice_id, i.provider, i.product, i.provider_ref, "
     <> "i.price, i.amount, i.currency, i.payment_url, i.payment_address, i.payment_crypto_currency, "
     <> "i.payment_crypto_amount, i.expires_at, i.status, i.created_at, "
-    <> "p.amount, p.crypto_paid, p.crypto_due, p.paid_in_full, p.status, p.updated_at, p.confirmed_amount, p.confirmed_units, p.received_units "
+    <> "p.amount, p.crypto_paid, p.crypto_due, p.paid_in_full, p.status, p.updated_at, p.confirmed_amount, p.confirmed_units, p.received_units, "
+    <> "i.payment_address_proof "
     <> "FROM @invoices i "
     <> "LEFT JOIN @payments p ON p.invoice_id = i.invoice_id "
 
@@ -414,7 +415,7 @@ type InvoiceCols =
     :. (Word32, Word32, Text, Maybe Text, Maybe Text, Maybe CryptoCurrency)
     :. (Maybe Text, UTCTime, InvoiceStatus, UTCTime)
     :. (Maybe Word32, Maybe Text, Maybe Text, Maybe Int, Maybe Text, Maybe UTCTime, Maybe Word32, Maybe Int64)
-    :. Only (Maybe Int64)
+    :. (Maybe Int64, Maybe AddressProof)
 
 mkInvoiceRow :: Maybe InvoiceProduct -> InvoiceCols -> Either Text InvoiceRow
 mkInvoiceRow
@@ -423,7 +424,7 @@ mkInvoiceRow
       :. (price, amount, currency, url, addr, cryptoCur)
       :. (cryptoAmt, expiresAt, status, createdAt)
       :. (pAmount, pCryptoPaid, pCryptoDue, pPaidInFull, pStatus, pUpdatedAt, pConfirmedAmount, pConfirmedUnits)
-      :. Only pUnits
+      :. (pUnits, addressProof)
     ) = do
     provider <- note "invoices.provider" (textDecode providerTxt)
     invoiceProduct <- note ("invoice product: " <> invId) product_
@@ -438,7 +439,7 @@ mkInvoiceRow
           irAmount = CurrencyAmount amount,
           irCurrency = currency,
           irDestination = destination,
-          irAddressProof = Nothing,
+          irAddressProof = addressProof,
           irExpiresAt = expiresAt,
           irStatus = status,
           irCreatedAt = createdAt,
@@ -511,7 +512,7 @@ insertInvoiceRows db NewInvoice {..} = do
       BadgePriceId priceId = niPriceId
       offerId = (\(BadgeOfferId o) -> o) <$> niOfferId
       months = fromIntegral niMonths :: Word32
-  insertInvoiceRow db niInvoiceId niProvider niProviderRef IKBadge price amount niCurrency niDestination niExpiresAt createdAt
+  insertInvoiceRow db niInvoiceId niProvider niProviderRef IKBadge price amount niCurrency niDestination Nothing niExpiresAt createdAt
   DB.execute
     db
     qInsertBadgeCode
@@ -525,17 +526,17 @@ insertInvoiceRows db NewInvoice {..} = do
 -- | A name is sold at its chain price, with no discount.
 insertNameInvoice :: DB.Connection -> NewNameInvoice -> IO ()
 insertNameInvoice db NewNameInvoice {..} =
-  insertInvoiceRow db nniInvoiceId nniProvider nniProviderRef IKName amount amount nniCurrency nniDestination nniExpiresAt nniCreatedAt
+  insertInvoiceRow db nniInvoiceId nniProvider nniProviderRef IKName amount amount nniCurrency nniDestination nniAddressProof nniExpiresAt nniCreatedAt
   where
     CurrencyAmount amount = nniAmount
 
-insertInvoiceRow :: DB.Connection -> InvoiceId -> PaymentProvider -> Text -> InvoiceKind -> Word32 -> Word32 -> Text -> ServicePaymentDestination -> UTCTime -> UTCTime -> IO ()
-insertInvoiceRow db (InvoiceId invId) provider providerRef kind price amount currency destination expiresAt' createdAt' =
+insertInvoiceRow :: DB.Connection -> InvoiceId -> PaymentProvider -> Text -> InvoiceKind -> Word32 -> Word32 -> Text -> ServicePaymentDestination -> Maybe AddressProof -> UTCTime -> UTCTime -> IO ()
+insertInvoiceRow db (InvoiceId invId) provider providerRef kind price amount currency destination addressProof expiresAt' createdAt' =
   DB.execute
     db
     qInsertInvoice
     ( (invId, textEncode provider, providerRef, kind, price, price - amount, Nothing :: Maybe Word32, amount, currency)
-        :. (url, addr, cryptoCur, cryptoAmt, truncateToSecond expiresAt', ISOpen, createdAt, createdAt)
+        :. (url, addr, cryptoCur, cryptoAmt, addressProof, truncateToSecond expiresAt', ISOpen, createdAt, createdAt)
     )
   where
     (url, addr, cryptoCur, cryptoAmt) = destinationCols destination

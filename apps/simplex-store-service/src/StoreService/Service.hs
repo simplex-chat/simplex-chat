@@ -61,7 +61,7 @@ import StoreService.Names.Worker (CloseRefusal (..), Closed (..), closeRegistrat
 import StoreService.Options
 import StoreService.Poller (PollerEnv (peCreditPassAt, peListedOk), newPollerEnv, newReadHints, runPoller)
 import StoreService.Providers (Provider (pProvider), minorDecimal)
-import StoreService.Providers.BTCPay (btcpayProvider)
+import StoreService.Providers.BTCPay (btcpayProvider, logPayeeKeys)
 import StoreService.Providers.Stripe (stripeProvider)
 import StoreService.Store
 import StoreService.Store.Invoices (currentSecond, seedCatalog, truncateToSecond)
@@ -313,6 +313,7 @@ storeService opts serviceCfg baseCfg env = do
       -- Seed before the listener accepts anything, since every checkout is priced from these.
       seedServiceCatalog chatStore
       btc <- maybe (pure []) (fmap (: []) . btcpayProvider) (btcpay sc)
+      when (isJust $ names sc) $ mapM_ logPayeeKeys (btcpay sc)
       str <- maybe (pure []) (fmap (: []) . stripeProvider) (stripe sc)
       let providers = btc <> str
       hints <- newReadHints
