@@ -31,7 +31,8 @@ import StoreService.Providers
 import StoreService.Providers.BTCPay (AdditionalStatus (..), BTCPayPaymentStatus (..), BTCPayStatus (..), btcMethodId, btcpayProvider, listSignals, logPayeeKeys, minorToDecimal, paymentMethodsSignal, verifyBTCPaySig, xmrMethodId)
 import StoreService.Config (SpeedPolicy (..))
 import Bots.StoreService.FakeBTCPay
-import Bots.StoreService.NamesAddressProofTests (addressProofHolds)
+import Bots.StoreService.NamesAddressProofTests (addressProofHolds, devBitcoinAddresses, devMoneroAddress, devReceiveKey, stagenetSubaddresses)
+import StoreService.Names.Abi (hex)
 import Bots.StoreService.WebTests (capturingStderr)
 import Bots.StoreService.FakeHttp (withResetServer)
 import Network.HTTP.Client.TLS (newTlsManager)
@@ -740,8 +741,8 @@ nameDraft :: OrderDraft
 nameDraft = fiftyFourDollars {odReference = "name:0x01", odKind = IKName}
 
 devBtcAddress, devXmrAddress :: Text
-devBtcAddress = "bcrt1q6rz28mcfaxtmd6v789l9rrlrusdprr9pz3cppk"
-devXmrAddress = "7AeQwvrLtPeYoXVPRkEu8oEL7N9wnqHjYKwSvTf6YKbHgYmw6AJMsjggzVLo21egMK9qcoV1mxCTfP4FbaGb7JEMDfpLetk"
+devBtcAddress = maybe (error "no dev address 0/0") id $ lookup "0/0" devBitcoinAddresses
+devXmrAddress = maybe (error "no dev subaddress (0, 1)") id $ lookup (0, 1) stagenetSubaddresses
 
 exampleCeiling :: Int
 exampleCeiling = 20000000
@@ -814,9 +815,9 @@ testFakeBadgeAddressAsGiven = forM_ [(CCBtc, "payment-methods-btc", btcAddress, 
 testLogPayeeKeys :: IO ()
 testLogPayeeKeys = withFakeBTCPay $ \fake -> do
   held <- capturingStderr $ logPayeeKeys (fbConfig fake)
-  held `shouldSatisfy` T.isInfixOf "btcpay: the names page holds: bitcoin receive key 0x036bf340760eb0da07d4d2bbb9d9aee7b7c27891cb72b6388cc0ee8d2a82d33e46; monero primary address 52jzuBBUMty3xPL3JsQxGP74LDuV6E1LS8Zda1PbdqQjGzFmH6N9ep9McbFKMALujVT9S5mKpbEgC5VPhfoAiVj8LdAqbp6"
+  held `shouldSatisfy` T.isInfixOf ("btcpay: the names page holds: bitcoin receive key " <> hex devReceiveKey <> "; monero primary address " <> devMoneroAddress)
   bitcoinOnly <- capturingStderr $ logPayeeKeys (fbConfig fake) {bMoneroKey = Nothing}
-  bitcoinOnly `shouldSatisfy` T.isInfixOf "btcpay: the names page holds: bitcoin receive key 0x036bf340760eb0da07d4d2bbb9d9aee7b7c27891cb72b6388cc0ee8d2a82d33e46"
+  bitcoinOnly `shouldSatisfy` T.isInfixOf ("btcpay: the names page holds: bitcoin receive key " <> hex devReceiveKey)
   bitcoinOnly `shouldNotSatisfy` T.isInfixOf "monero primary address"
   bitcoinOnly `shouldSatisfy` T.isInfixOf "xmr_address and xmr_view_key"
   none <- capturingStderr $ logPayeeKeys (fbConfig fake) {bBitcoinKey = Nothing, bMoneroKey = Nothing}

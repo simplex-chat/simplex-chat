@@ -6,8 +6,9 @@
 module Bots.StoreService.ConfigTests where
 
 import Bots.StoreService.FakeEthNode (address)
-import Bots.StoreService.NamesAddressProofTests (devBitcoinHrp, devBitcoinXpub, devMoneroAddress, devMoneroViewKey)
+import Bots.StoreService.NamesAddressProofTests (devBitcoinHrp, devBitcoinXpub, devMoneroAddress, devMoneroViewKey, devReceiveKey)
 import StoreService.Config
+import StoreService.Names.Abi (hex)
 import StoreService.Providers.AddressProof (primaryAddress, receiveKeyText)
 import Control.Logger.Simple (LogLevel (..))
 import Control.Monad (forM_, void)
@@ -738,7 +739,7 @@ testPayeeKeys = do
           Right ServiceConfig {btcpay = Just BTCPayConfig {bBitcoinKey, bMoneroKey}} -> pure (receiveKeyText <$> bBitcoinKey, primaryAddress <$> bMoneroKey)
           Right _ -> fail "[btcpay] was present but not read"
           Left e -> fail ("must boot, but: " <> e)
-      receiveKey = Just "0x036bf340760eb0da07d4d2bbb9d9aee7b7c27891cb72b6388cc0ee8d2a82d33e46"
+      receiveKey = Just $ hex devReceiveKey
   keysOf payeeKeys `shouldReturn` (receiveKey, Just devMoneroAddress)
   keysOf (take 2 payeeKeys) `shouldReturn` (receiveKey, Nothing)
   keysOf (drop 2 payeeKeys) `shouldReturn` (Nothing, Just devMoneroAddress)

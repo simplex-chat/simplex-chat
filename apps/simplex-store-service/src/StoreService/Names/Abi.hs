@@ -14,6 +14,7 @@ module StoreService.Names.Abi
     addressWord,
     selector,
     hex,
+    hexDigits,
     lowerHexP,
     parseText,
     decodeUint256,
@@ -89,7 +90,10 @@ selector = B.take 4 . keccak256
 
 -- | Data of any length as JSON-RPC takes it.
 hex :: ByteString -> Text
-hex bs = "0x" <> decodeLatin1 (convertToBase Base16 bs)
+hex = ("0x" <>) . hexDigits
+
+hexDigits :: ByteString -> Text
+hexDigits = decodeLatin1 . convertToBase Base16
 
 lowerHexP :: Int -> A.Parser ByteString
 lowerHexP n = A.count (2 * n) (A.satisfy lowerHexDigit) >>= either fail pure . convertFromBase Base16 . BC.pack

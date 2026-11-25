@@ -5,7 +5,8 @@
 module StoreService.Providers.AddressProof
   ( AddressProof (..),
     ViewProof (..),
-    ExtendedPublicKey (..),
+    ExtendedPublicKey,
+    xpChainCode,
     BitcoinKey,
     MoneroKey,
     extendedPublicKey,
@@ -37,7 +38,6 @@ import qualified Data.Aeson as J
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import Data.Bits (shiftL, shiftR, testBit, xor, (.&.), (.|.))
 import qualified Data.ByteArray as BA
-import Data.ByteArray.Encoding (Base (Base16), convertToBase)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Char8 as BC
@@ -45,13 +45,12 @@ import Data.Char (ord)
 import Data.List (elemIndex, foldl')
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Text.Encoding (decodeLatin1)
 import Data.Word (Word32, Word8)
 import Simplex.Messaging.Agent.Store.DB (FromField (..), ToField (..), fromTextField_)
 import Simplex.Messaging.Crypto (keccak256, sha256Hash)
 import Simplex.Messaging.Encoding.String (TextEncoding (..))
 import Simplex.Messaging.Util (eitherToMaybe)
-import StoreService.Names.Abi (abiWordSize, hex, lowerHexP, parseText)
+import StoreService.Names.Abi (abiWordSize, hex, hexDigits, lowerHexP, parseText)
 
 data AddressProof
   = APBitcoin
@@ -91,9 +90,6 @@ instance TextEncoding AddressProof where
 instance FromField AddressProof where fromField = fromTextField_ textDecode
 
 instance ToField AddressProof where toField = toField . textEncode
-
-hexDigits :: ByteString -> Text
-hexDigits = decodeLatin1 . convertToBase Base16
 
 data ExtendedPublicKey = ExtendedPublicKey {xpKey :: ECC.Point, xpChainCode :: ByteString}
   deriving (Eq, Show)

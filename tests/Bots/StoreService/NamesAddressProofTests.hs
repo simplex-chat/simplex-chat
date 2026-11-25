@@ -11,6 +11,7 @@ module Bots.StoreService.NamesAddressProofTests
     devBitcoinKey,
     devMoneroKey,
     devBitcoinAddresses,
+    devReceiveKey,
     stagenetSubaddresses,
     addressProofHolds,
   )
@@ -26,7 +27,7 @@ import qualified Crypto.PubKey.ECC.Prim as ECC
 import qualified Crypto.PubKey.ECC.Types as ECC
 import Data.Aeson ((.=))
 import qualified Data.Aeson as J
-import Data.ByteArray.Encoding (Base (Base16), convertFromBase, convertToBase)
+import Data.ByteArray.Encoding (Base (Base16), convertFromBase)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Char8 as BC
@@ -35,10 +36,11 @@ import Data.List (elemIndex, foldl')
 import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Text.Encoding (decodeLatin1, encodeUtf8)
+import Data.Text.Encoding (encodeUtf8)
 import Data.Word (Word32)
 import Simplex.Messaging.Crypto (keccak256)
 import Simplex.Messaging.Encoding.String (TextEncoding (..))
+import StoreService.Names.Abi (hex, hexDigits)
 import StoreService.Providers.AddressProof
 import Test.Hspec
 
@@ -123,9 +125,9 @@ mainnetViewKey = "6d9056aa2c096bfcd2f272759555e5764ba204dd362604a983fa3e0aafd359
 testBip32Vector1 :: IO ()
 testBip32Vector1 = do
   Right parent <- pure $ extendedPublicKey xpubVersion bip32Parent
-  Just (_, child@ExtendedPublicKey {xpChainCode}) <- pure $ childKey parent 1
+  Just (_, child) <- pure $ childKey parent 1
   compressedKey child `shouldBe` unhex "03501e454bf00751f24b1b489aa925215d66af2234e3891c3b21a52bedb3cd711c"
-  xpChainCode `shouldBe` unhex "2a7857631386ba23dacac34180dd1983734e444fdbf774041578e9b6adb37c19"
+  xpChainCode child `shouldBe` unhex "2a7857631386ba23dacac34180dd1983734e444fdbf774041578e9b6adb37c19"
   childKey parent 0x80000000 `shouldBe` Nothing
 
 testBip173 :: IO ()
@@ -142,7 +144,7 @@ testBip84 = do
 
 testDevBitcoin :: IO ()
 testDevBitcoin = do
-  receiveKeyText devBitcoinKey `shouldBe` "0x036bf340760eb0da07d4d2bbb9d9aee7b7c27891cb72b6388cc0ee8d2a82d33e46"
+  receiveKeyText devBitcoinKey `shouldBe` hex devReceiveKey
   map (fmap fst . bitcoinPayee devBitcoinKey) devKeyPaths `shouldBe` map (Right . snd) devBitcoinAddresses
   fmap fst (bitcoinKey devBitcoinXpub "tb" >>= (`bitcoinPayee` "0/0")) `shouldBe` Right "tb1q6rz28mcfaxtmd6v789l9rrlrusdprr9pqcpvkl"
   forM_ devKeyPaths $ \keyPath -> do
@@ -218,14 +220,14 @@ testFixtures = do
   dev <- forM devKeyPaths $ bitcoinVector devBitcoinKey
   xmr <- forM devSubaddresses moneroVector
   Right parent <- pure $ extendedPublicKey xpubVersion bip32Parent
-  Just (_, child@ExtendedPublicKey {xpChainCode}) <- pure $ childKey parent 1
+  Just (_, child) <- pure $ childKey parent 1
   let bitcoinSection key xpub hrp invoices = J.object ["hrp" .= (hrp :: Text), "invoices" .= invoices, "receiveKey" .= receiveKeyText key, "xpub" .= (xpub :: Text)]
   writeFixture "store-service/rest-api/vectors-address-proofs" $
     J.object
       [ "bitcoin"
           .= J.object
-            [ "bip173" .= [J.object ["address" .= p2wpkhAddress hrp bip173Key, "hrp" .= hrp, "publicKey" .= hexText bip173Key] | (hrp, _) <- bip173Addresses],
-              "bip32" .= J.object ["chainCode" .= hexText xpChainCode, "index" .= (1 :: Int), "publicKey" .= hexText (compressedKey child), "xpub" .= bip32Parent],
+            [ "bip173" .= [J.object ["address" .= p2wpkhAddress hrp bip173Key, "hrp" .= hrp, "publicKey" .= hex bip173Key] | (hrp, _) <- bip173Addresses],
+              "bip32" .= J.object ["chainCode" .= hex (xpChainCode child), "index" .= (1 :: Int), "publicKey" .= hex (compressedKey child), "xpub" .= bip32Parent],
               "bip84" .= bitcoinSection bip84Key bip84Xpub "bc" bip84,
               "dev" .= bitcoinSection devBitcoinKey devBitcoinXpub devBitcoinHrp dev
             ],
@@ -324,9 +326,3 @@ blockSizes = [0, 2, 3, 5, 6, 7, 9, 10, 11]
 
 unhex :: Text -> ByteString
 unhex t = either error id $ convertFromBase Base16 $ encodeUtf8 $ fromMaybe t $ T.stripPrefix "0x" t
-
-hexDigits :: ByteString -> Text
-hexDigits = decodeLatin1 . convertToBase Base16
-
-hexText :: ByteString -> Text
-hexText = ("0x" <>) . hexDigits

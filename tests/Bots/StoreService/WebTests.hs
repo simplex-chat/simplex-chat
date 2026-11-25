@@ -79,6 +79,7 @@ import Bots.StoreService.CatalogTests (WebOffer (..), WebPrice (..), parseCatalo
 import Bots.StoreService.ConfigTests (chainSection, namesSection, parsedNames, resolverAddr, sponsorAddr)
 import Bots.StoreService.FakeBTCPay
 import Bots.StoreService.FakeHttp (withResetServer)
+import Bots.StoreService.NamesAddressProofTests (devBitcoinAddresses)
 import Bots.StoreService.FakeStripe (FakeStripe (..), fakeIntentStatus, setIntentState, stripeEvent, stripeSigHeader, withFakeStripe)
 import ChatTests.Utils (writeFixture)
 import Control.Concurrent (ThreadId, forkIO, forkOn, getNumCapabilities, threadDelay)
@@ -4348,7 +4349,7 @@ scenarioBadgeAddressAsGiven = forM_ [id, \c -> c {bBitcoinKey = Nothing, bMonero
         (derived, _) <- buyBadge env client 1 sampleCode
         usePaymentMethodsFixture fake "payment-methods-btc"
         (given, givenRef) <- buyBadge env client 2 "YDC8AYGQTMPUYZ92TUXQ"
-        forM_ [(derived, "bcrt1q6rz28mcfaxtmd6v789l9rrlrusdprr9pz3cppk"), (given, "bc1qar0srrr7xfkvy5l643lydnw9re59gtzzwf5mdq")] $ \(iid, address) -> do
+        forM_ [(derived, maybe (error "no dev address 0/0") id $ lookup "0/0" devBitcoinAddresses), (given, "bc1qar0srrr7xfkvy5l643lydnw9re59gtzzwf5mdq")] $ \(iid, address) -> do
           o <- viewInvoice client iid
           sort (map K.toText (KM.keys o))
             `shouldBe` sort ["status", "badgeType", "months", "amount", "currency", "expiresAt", "address", "cryptoAmount", "cryptoCurrency", "requiredConfirmations"]
