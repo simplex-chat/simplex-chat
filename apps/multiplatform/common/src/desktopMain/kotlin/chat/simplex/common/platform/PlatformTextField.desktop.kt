@@ -122,15 +122,13 @@ actual fun PlatformTextField(
       .focusRequester(focusReq)
       .onPreviewKeyEvent {
         if ((it.key == Key.Enter || it.key == Key.NumPadEnter) && it.type == KeyEventType.KeyDown) {
-          if (it.isShiftPressed) {
-            val start = if (minOf(textFieldValue.selection.min) == 0) "" else textFieldValue.text.substring(0 until textFieldValue.selection.min)
-            val newText = start + "\n" +
-                  textFieldValue.text.substring(textFieldValue.selection.max, textFieldValue.text.length)
+          val lineBreak = cs.message.lineBreakOnEnter(it.isShiftPressed)
+          if (lineBreak != null) {
             textFieldValueState = textFieldValue.copy(
-              text = newText,
-              selection = TextRange(textFieldValue.selection.min + 1)
+              text = lineBreak.text,
+              selection = lineBreak.selection
             )
-            onMessageChange(ComposeMessage(newText, textFieldValueState.selection))
+            onMessageChange(lineBreak)
           } else if (!sendMsgButtonDisabled) {
             onDone()
           }
@@ -207,6 +205,15 @@ actual fun PlatformTextField(
   } else if (disabledText != null) {
     ComposeOverlay(disabledText, textStyle, padding)
   }
+}
+
+fun ComposeMessage.lineBreakOnEnter(shiftPressed: Boolean): ComposeMessage? {
+  val start = when {
+    shiftPressed -> selection.min
+    text.getOrNull(selection.min - 1) == '\\' -> selection.min - 1
+    else -> return null
+  }
+  return ComposeMessage(text.replaceRange(start, selection.max, "\n"), TextRange(start + 1))
 }
 
 @Composable

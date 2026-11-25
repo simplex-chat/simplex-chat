@@ -471,12 +471,12 @@ struct ContentView: View {
                 openAppLink(url)
             } else if let parsedMd = parseSimpleXMarkdown(link), parsedMd.count == 1, case let .messageLink(_, msgLinkType, msgLink) = parsedMd[0].format {
                 openMsgLink(msgLink, msgLinkType, chatId: nil, target: nil, theme: theme)
-            } else if path == "/r" {
+            } else if connectionLinkPath(url) == "/r" {
                 showAlert(
                     NSLocalizedString("Relay address", comment: "alert title"),
                     message: NSLocalizedString("This is a chat relay address, it cannot be used to connect.", comment: "alert message")
                 )
-            } else if (path == "/contact" || path == "/invitation" || path == "/a" || path == "/c" || path == "/g" || path == "/i" || path == "/p" || path == "/s") {
+            } else if let link = openedConnectionLink(url) {
                 planAndConnect(
                     link,
                     theme: theme,
@@ -510,6 +510,17 @@ private let badgeLinkPath = "/badge/code/"
 
 func isAppLink(_ url: URL) -> Bool {
     url.scheme?.lowercased() == appLinkScheme
+}
+
+private func connectionLinkPath(_ url: URL) -> String {
+    url.path.hasPrefix("/") ? url.path : "/" + (URLComponents(url: url, resolvingAgainstBaseURL: false)?.path ?? "")
+}
+
+func openedConnectionLink(_ url: URL) -> String? {
+    var path = connectionLinkPath(url)
+    guard path == "/contact" || path == "/invitation" || path == "/a" || path == "/c" || path == "/g" || path == "/i" || path == "/p" || path == "/s" || path.hasPrefix("/name") else { return nil }
+    path.removeFirst()
+    return url.absoluteString.replacingOccurrences(of: "///\(path)", with: "/\(path)")
 }
 
 // a link type added in a later version reaches this build too, so an unknown path asks for an update

@@ -4,9 +4,9 @@ const path = require('node:path');
 const test = require('node:test');
 const vm = require('node:vm');
 
-const lib = {};
+const lib = { navigator: { userAgent: '' }, URLSearchParams };
 vm.runInNewContext(fs.readFileSync(path.join(__dirname, '../src/js/simplex-lib.jsc'), 'utf8'), lib);
-const { escapeHtml, renderMarkdown } = lib;
+const { escapeHtml, renderMarkdown, platformSimplexUri } = lib;
 
 const plain = (text) => ({ text });
 const markup = (type, text, fields) => ({ format: { type: 'markup', token: { type, ...fields } }, text });
@@ -164,4 +164,11 @@ test('text outside messages keeps one gap between blocks', () => {
   page([plain('a'), paragraphBreak(2), listMark('- '), plain('b')], [paragraph(0, 1), list(entry(3, 4))], div('a') + gap + li('b'));
   page([listMark('- '), plain('a'), paragraphBreak(2), listMark('- '), plain('b')], [list(entry(1, 2), entry(4, 5))], li('a') + li('b'));
   page([paragraphBreak(2), plain('a'), paragraphBreak(2)], [paragraph(1, 2)], div('a'));
+});
+
+test('simplex: links without the slash after the scheme open as links with it', () => {
+  const link = 'c#grcfG3ulVI4Sh6ow33qBsmSk7uEy3gRSl2KkJ5ER6tA?h=smp18.simplex.im';
+  assert.strictEqual(platformSimplexUri('simplex:' + link), platformSimplexUri('simplex:/' + link));
+  assert.strictEqual(platformSimplexUri('simplex:contact#/?v=2'), 'https://simplex.chat/contact#/?v=2');
+  check([{ format: { type: 'uri' }, text: 'simplex:' + link }], undefined, `<a href="simplex:${link}" target="_blank" rel="noopener">simplex:${link}</a>`);
 });
