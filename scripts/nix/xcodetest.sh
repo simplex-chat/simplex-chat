@@ -85,6 +85,8 @@ cp -a apps/ios/Libraries/sim/*.a apps/ios/Libraries/
 bash scripts/ios/update-pbxproj.sh
 
 derived=$work/DerivedData
+# GitHub Actions links stub archives and has no libcrypto. This build links
+# the nix openssl archive, so only this invocation passes -lcrypto.
 xcodebuild build-for-testing \
   -project apps/ios/SimpleX.xcodeproj \
   -scheme "SimpleX (iOS)" \
@@ -97,7 +99,8 @@ xcodebuild build-for-testing \
   -IDEPackageSupportDisableManifestSandbox=1 \
   -IDEPackageSupportDisablePluginExecutionSandbox=1 \
   ARCHS="$archs" \
-  CODE_SIGNING_ALLOWED=NO
+  CODE_SIGNING_ALLOWED=NO \
+  SIMPLEX_EXTRA_LDFLAGS=-lcrypto
 
 mkdir -p "$out"
 mkdir -p "$out/xctest"

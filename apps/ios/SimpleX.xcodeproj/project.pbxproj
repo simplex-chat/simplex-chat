@@ -2622,7 +2622,8 @@
 					"$(PROJECT_DIR)/Libraries/sim",
 				);
 				LLVM_LTO = NO;
-				OTHER_LDFLAGS = "-lcrypto";
+				SIMPLEX_EXTRA_LDFLAGS = "";
+				OTHER_LDFLAGS = "$(SIMPLEX_EXTRA_LDFLAGS)";
 				MARKETING_VERSION = 7.1.4;
 				PRODUCT_BUNDLE_IDENTIFIER = chat.simplex.SimpleXChat;
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
@@ -2675,7 +2676,8 @@
 					"$(PROJECT_DIR)/Libraries/sim",
 				);
 				LLVM_LTO = NO;
-				OTHER_LDFLAGS = "-lcrypto";
+				SIMPLEX_EXTRA_LDFLAGS = "";
+				OTHER_LDFLAGS = "$(SIMPLEX_EXTRA_LDFLAGS)";
 				MARKETING_VERSION = 7.1.4;
 				PRODUCT_BUNDLE_IDENTIFIER = chat.simplex.SimpleXChat;
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
