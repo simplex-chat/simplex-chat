@@ -34,7 +34,7 @@ import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Char (isDigit)
-import Data.Containers.ListUtils (nubOrd)
+import Data.Containers.ListUtils (nubOrd, nubOrdOn)
 import Data.Either (partitionEithers, rights)
 import Data.Fixed (div')
 import Data.Foldable (foldr')
@@ -369,10 +369,13 @@ msgEventLinks = \case
   ACME _ XMsgUpdate {links} -> links
   _ -> M.empty
 
-rcvCILinks :: Map LinkLabel MsgLinkEntry -> Maybe MarkdownList -> Map LinkLabel CILink
-rcvCILinks entries ft_ = M.fromList $ take maxRcvLinks $ mapMaybe linkEntry $ nubOrd $ maybe [] linkedLabels ft_
+rcvCILinks :: DB.Connection -> User -> ChatInfo c -> Map LinkLabel MsgLinkEntry -> Maybe MarkdownList -> IO (Map LinkLabel CILink)
+rcvCILinks db user cInfo entries ft_ = M.fromList <$> mapM ciLink (take maxRcvLinks $ nubOrdOn fst linked)
   where
-    linkEntry label = (\MsgLinkEntry {text} -> (label, CILink {text = shortLinkText text, target = Nothing})) <$> M.lookup label entries
+    linked = [(label, (ml, text)) | (Just label, ml) <- maybe [] (mapMaybe segmentMsgLink) ft_, Just MsgLinkEntry {text} <- [M.lookup label entries]]
+    ciLink (label, (ml, text)) = do
+      inChat <- maybe (pure False) (\chatRef -> msgLinkInChat db user chatRef ml) $ chatInfoToRef cInfo
+      pure (label, CILink {text = shortLinkText text, target = if inChat then ciLinkTarget cInfo Nothing else Nothing})
 
 ciLinkEntries :: Map LinkLabel CILink -> Map LinkLabel MsgLinkEntry
 ciLinkEntries = M.map $ \CILink {text} -> MsgLinkEntry {text}
@@ -3137,7 +3140,7 @@ saveRcvChatItem' user cd msg@RcvMessage {chatMsgEvent, msgSigned, forwardedByMem
     ci' <- case toChatInfo cd of
       GroupChat g _ | not (null mentions') -> createGroupCIMentions db g ci mentions'
       _ -> pure ci
-    let links = rcvCILinks (msgEventLinks chatMsgEvent) ft_
+    links <- rcvCILinks db user (toChatInfo cd) (msgEventLinks chatMsgEvent) ft_
     ci'' <- if null links then pure ci' else createCILinks db ci' links
     pure (ci'', cInfo')
   where

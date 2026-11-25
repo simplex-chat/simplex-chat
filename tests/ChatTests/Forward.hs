@@ -396,7 +396,7 @@ testMsgLinkForward =
       alice <# "cath> -> forwarded"
       alice <## "      see [q](simplex:m)"
       alice <## "[q]: Approve the deploy plan?"
-      linkTargets cath `shouldReturn` [("q", Nothing), ("q", Just "Approve the deploy plan?")]
+      linkTargets cath `shouldReturn` [("q", True, Nothing), ("q", True, Just "Approve the deploy plan?")]
 
 testForwardMsgLinkTargetCopied :: HasCallStack => TestParams -> IO ()
 testForwardMsgLinkTargetCopied =
@@ -418,7 +418,7 @@ testForwardMsgLinkTargetCopied =
       cath <# "alice> -> forwarded"
       cath <## "      see [q](simplex:m)"
       cath <## "[q]: Approve the deploy plan?"
-      linkTargets alice `shouldReturn` [("q", Just "Approve the deploy plan?"), ("q", Just "Approve the deploy plan?")]
+      linkTargets alice `shouldReturn` [("q", True, Just "Approve the deploy plan?"), ("q", True, Just "Approve the deploy plan?")]
 
 testForwardGlobalMsgLink :: HasCallStack => TestParams -> IO ()
 testForwardGlobalMsgLink ps =
@@ -450,7 +450,7 @@ testForwardGlobalMsgLink ps =
           cath <# "#club see [r](simplex:m)"
           dan <# "#club cath> see [r](simplex:m)"
           dan <## "[r]: Release notes 7.2"
-          linkTargets cath `shouldReturn` [("r", Nothing), ("r", Nothing), ("r", Just "Release notes 7.2")]
+          linkTargets cath `shouldReturn` [("r", False, Nothing), ("r", False, Nothing), ("r", True, Just "Release notes 7.2")]
 
 testForwardPreserveInfo :: HasCallStack => TestParams -> IO ()
 testForwardPreserveInfo =

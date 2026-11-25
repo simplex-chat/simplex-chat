@@ -29,7 +29,7 @@ chatLocalChatsTests = do
   describe "link content filter" $ do
     it "filter notes by link content" testLinkContentFilter
   describe "message links" $ do
-    it "links in notes and links to notes" testNoteMessageLinks
+    it "links in notes and links to notes, and the notes of a deleted note" testNoteMessageLinks
     it "link to a file note without text has the file name as its label" testNoteLinkFileName
 
 testNotes :: TestParams -> IO ()
@@ -257,11 +257,15 @@ testNoteMessageLinks =
     alice <# "#team bob> Approve the deploy plan?"
     alice ##> ("/_msg link plan 1 " <> directLink <> " chat=*1")
     alice <# "bob> Release notes 7.2"
+    noteId <- lastItemId alice
     alice ##> "/item link * see"
     noteLink <- getTermLine alice
     noteLink `shouldStartWith` "simplex:m#n/"
     alice ##> ("/_msg link plan 1 " <> noteLink)
     alice <# ("* " <> note)
+    alice #$> ("/_delete item *1 " <> noteId <> " internal", id, "message deleted")
+    alice ##> ("/_msg link plan 1 " <> noteLink)
+    alice <## "message link: the message is not in notes"
 
 testNoteLinkFileName :: TestParams -> IO ()
 testNoteLinkFileName ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do

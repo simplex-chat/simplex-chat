@@ -280,7 +280,7 @@ data CILink = CILink
 data CILinkTarget = CILinkTarget
   { chatType :: ChatType,
     chatId :: Int64,
-    chatItemId :: ChatItemId
+    chatItemId :: Maybe ChatItemId
   }
   deriving (Eq, Ord, Show)
 
@@ -662,8 +662,8 @@ itemMsgLink cInfo ci@ChatItem {meta = CIMeta {itemId, itemSharedMsgId}} = case (
   (LocalChat NoteFolder {noteFolderId}, _) -> Right $ MLNote noteFolderId itemId
   _ -> Left "message has no link"
 
-ciLinkTarget :: ChatInfo c -> ChatItem c d -> Maybe CILinkTarget
-ciLinkTarget cInfo ci = (\ChatRef {chatType, chatId} -> CILinkTarget {chatType, chatId, chatItemId = chatItemId' ci}) <$> chatInfoToRef cInfo
+ciLinkTarget :: ChatInfo c -> Maybe ChatItemId -> Maybe CILinkTarget
+ciLinkTarget cInfo chatItemId = (\ChatRef {chatType, chatId} -> CILinkTarget {chatType, chatId, chatItemId}) <$> chatInfoToRef cInfo
 
 ciLinkText :: ChatItem c d -> Text
 ciLinkText ChatItem {content, file} = case ciMsgContent content of

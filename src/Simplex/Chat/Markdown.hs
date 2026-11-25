@@ -118,11 +118,6 @@ mentionedNames = mapMaybe (\(FormattedText f _) -> mentionedName =<< f)
       Mention name -> Just name
       _ -> Nothing
 
-linkedLabels :: MarkdownList -> [Text]
-linkedLabels = mapMaybe $ \case
-  FormattedText (Just MessageLink {showText = Just label}) _ -> Just label
-  _ -> Nothing
-
 segmentMsgLink :: FormattedText -> Maybe (Maybe Text, MsgLink)
 segmentMsgLink = \case
   FormattedText (Just MessageLink {showText, msgLink}) _ -> Just (showText, msgLink)

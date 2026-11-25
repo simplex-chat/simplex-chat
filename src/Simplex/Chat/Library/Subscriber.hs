@@ -2139,7 +2139,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                             edited = itemLive /= Just True
                             (_, ParsedMarkdown ft_ _) = msgContentTexts mc
                         ci' <- updateDirectChatItem' db user contactId ciR content edited live Nothing (Just msgId)
-                        (ciR,) <$> updateCILinks db ci' (rcvCILinks (msgEventLinks chatMsgEvent) ft_)
+                        (ciR,) <$> (updateCILinks db ci' =<< rcvCILinks db user (DirectChat ct) (msgEventLinks chatMsgEvent) ft_)
                       toView $ CEvtChatItemUpdated user (AChatItemUpdate SCTDirect SMDRcv (DirectChat ct) ci' ciR)
                       startUpdatedTimedItemThread user (ChatRef CTDirect contactId Nothing) ci ci'
                     else toView $ CEvtChatItemNotChanged user (AChatItem SCTDirect SMDRcv (DirectChat ct) ci)
@@ -2418,7 +2418,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                 ci' <- updateGroupChatItem db user groupId ci {reactions} content edited live $ Just msgId
                 updateChatItemSignedMsg db (chatItemId' ci) signedMsg_ signedByGMId_
                 ci'' <- updateGroupCIMentions db gInfo ci' ciMentions >>= updateGroupCIUserMention db cxt user gInfo scopeInfo
-                updateCILinks db ci'' $ rcvCILinks (msgEventLinks chatMsgEvent) ft_
+                updateCILinks db ci'' =<< rcvCILinks db user (GroupChat gInfo scopeInfo) (msgEventLinks chatMsgEvent) ft_
               toView $ CEvtChatItemUpdated user (AChatItemUpdate SCTGroup SMDRcv (GroupChat gInfo scopeInfo) ci' ci)
               startUpdatedTimedItemThread user (ChatRef CTGroup groupId $ toChatScope <$> scopeInfo) ci ci'
               pure $ Just $ infoToDeliveryContext gInfo scopeInfo showGroupAsSender

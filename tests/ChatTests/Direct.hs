@@ -75,7 +75,7 @@ chatDirectTests = do
     it "delete conversation keeping contact" testDeleteConversationKeepContact
     it "direct message quoted replies" testDirectMessageQuotedReply
     it "direct message update" testDirectMessageUpdate
-    it "message links to the same chat and to a group" testDirectMessageLinks
+    it "message links to the same chat and to a group, and the chat of a deleted message" testDirectMessageLinks
     it "updated item event has the previous item" testDirectMessageUpdatePrevItem
     it "direct message edit history" testDirectMessageEditHistory
     it "direct message delete" testDirectMessageDelete
@@ -807,6 +807,7 @@ testDirectMessageLinks =
       createGroup2 "team" alice bob
       alice #> "@bob Approve the deploy plan?"
       bob <# "alice> Approve the deploy plan?"
+      targetId <- lastItemId bob
       alice ##> "/item link @bob Approve"
       link <- getTermLine alice
       link `shouldStartWith` "simplex:m#d/"
@@ -815,6 +816,9 @@ testDirectMessageLinks =
       bob <## "[q]: Approve the deploy plan?"
       bob ##> ("/_msg link plan 1 " <> link <> " chat=@2")
       bob <# "alice> Approve the deploy plan?"
+      bob #$> ("/_delete item @2 " <> targetId <> " internal", id, "message deleted")
+      bob ##> ("/_msg link plan 1 " <> link <> " chat=@2")
+      bob <## "message link: the message is not in @alice"
       bob #> "#team Release notes 7.2"
       alice <# "#team bob> Release notes 7.2"
       alice ##> "/item link #team Release"

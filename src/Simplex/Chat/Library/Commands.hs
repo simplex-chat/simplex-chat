@@ -1163,7 +1163,8 @@ processChatCommand cxt nm = \case
                 MLUnknownSource -> pure $ unknownSource label_ ((\(_, CILink {text}) -> text) <$> itemLink_) ((\(_, CILink {target}) -> target) =<< itemLink_)
                 _ ->
                   msgLinkPlan user (Just fromChat) msgLink <&> \case
-                    MLPItem (AChatItem _ _ cInfo ci) t -> unknownSource label_ (((\(_, CILink {text}) -> text) <$> itemLink_) <|> Just t) (ciLinkTarget cInfo ci)
+                    MLPItem (AChatItem _ _ cInfo ci) t -> unknownSource label_ (((\(_, CILink {text}) -> text) <$> itemLink_) <|> Just t) (ciLinkTarget cInfo (Just $ chatItemId' ci))
+                    MLPChat (AChatInfo _ cInfo) -> unknownSource label_ ((\(_, CILink {text}) -> text) <$> itemLink_) (ciLinkTarget cInfo Nothing)
                     _ -> unknownSource label_ ((\(_, CILink {text}) -> text) <$> itemLink_) Nothing
             Nothing -> pure (ft, Nothing)
           unknownSource :: Maybe LinkLabel -> Maybe Text -> Maybe CILinkTarget -> (FormattedText, Maybe (LinkLabel, CILink))
@@ -4600,33 +4601,39 @@ processChatCommand cxt nm = \case
             GLPKnown {groupInfo} -> Just groupInfo
             GLPOwnLink {groupInfo} -> Just groupInfo
             _ -> Nothing
-      MLGroup author_ msgId -> do
+      ml@(MLGroup author_ msgId) -> do
         inChat_ <- case chatRef_ of
           Just (ChatRef CTGroup gId _) -> fmap (gId,) <$> withFastStore' (\db -> getGroupItemIdByAuthor_ db user gId author_ msgId)
           _ -> pure Nothing
         maybe (withFastStore' $ \db -> pure author_ $>>= \author -> getGroupItemIdByAuthor db user author msgId) (pure . Just) inChat_ >>= \case
           Just (gId, itemId) -> planItem (ChatRef CTGroup gId Nothing) itemId
           Nothing ->
-            withFastStore' (\db -> pure author_ $>>= getGroupIdByMemberId db user) >>= \case
+            withFastStore' (\db -> linkChatId db ml $ pure author_ $>>= getGroupIdByMemberId db user) >>= \case
               Just gId -> MLPChat . AChatInfo SCTGroup . (`GroupChat` Nothing) <$> withFastStore (\db -> getGroupInfo db cxt user gId)
               Nothing -> pure MLPNotFound
-      MLDirect msgId -> do
+      ml@(MLDirect msgId) -> do
         inChat_ <- case chatRef_ of
           Just (ChatRef CTDirect ctId _) -> fmap (ctId,) . eitherToMaybe <$> withFastStore' (\db -> runExceptT $ getDirectChatItemIdBySharedMsgId_ db userId ctId msgId)
           _ -> pure Nothing
         maybe (withFastStore' $ \db -> getDirectItemIdByMsgId db user msgId) (pure . Just) inChat_ >>= \case
           Just (ctId, itemId) -> planItem (ChatRef CTDirect ctId Nothing) itemId
-          Nothing -> pure MLPNotFound
+          Nothing ->
+            withFastStore' (\db -> linkChatId db ml $ pure Nothing) >>= \case
+              Just ctId -> MLPChat . AChatInfo SCTDirect . DirectChat <$> withFastStore (\db -> getContact db cxt user ctId)
+              Nothing -> pure MLPNotFound
       MLNote folderId itemId ->
         withFastStore' (\db -> runExceptT $ getLocalChatItem db user folderId itemId) >>= \case
           Right _ -> planItem (ChatRef CTLocal folderId Nothing) itemId
-          Left _ -> pure MLPNotFound
+          Left _ -> either (const MLPNotFound) (MLPChat . AChatInfo SCTLocal . LocalChat) <$> withFastStore' (\db -> runExceptT $ getNoteFolder db user folderId)
       MLUnknownSource -> pure MLPUnknownSource
       MLUnsupported _ -> pure MLPUnknownLink
       where
         planItem chatRef itemId = do
           aci@(AChatItem _ _ _ ci) <- withFastStore $ \db -> getAChatItemInScope db cxt user chatRef itemId
           pure $ MLPItem aci (ciLinkText ci)
+        linkChatId db ml otherChatId = case chatRef_ of
+          Just chatRef@ChatRef {chatId} -> ifM (msgLinkInChat db user chatRef ml) (pure $ Just chatId) otherChatId
+          Nothing -> otherChatId
     composedLinks :: User -> ChatRef -> ComposedMessage -> CM (ComposedMessage, (Text, ParsedMarkdown), Map LinkLabel CILink)
     composedLinks user chatRef cm@ComposedMessage {msgContent} = do
       (mc, ts, links) <- contentLinks user chatRef M.empty msgContent
@@ -4649,11 +4656,11 @@ processChatCommand cxt nm = \case
             msgLinkPlan user (Just chatRef) msgLink >>= \case
               MLPItem (AChatItem _ _ cInfo ci) t -> do
                 let label = fromMaybe (msgLinkLabel t) label_
-                    sameChat = chatType == CTLocal || chatInfoToRef cInfo == Just chatRef
+                    sameChat ml = chatInfoToRef cInfo == Just chatRef || (chatType == CTLocal && not (inChatOnly ml))
                 case itemMsgLink cInfo ci of
                   Right ml@MLPublicGroup {} -> pure (msgLinkSegment label ml, Just $ CILink t Nothing)
-                  Right ml | sameChat -> pure (msgLinkSegment label ml, Just $ CILink t Nothing)
-                  Right _ -> pure (msgLinkSegment label MLUnknownSource, Just $ CILink t (ciLinkTarget cInfo ci))
+                  Right ml | sameChat ml -> pure (msgLinkSegment label ml, Just $ CILink t (ciLinkTarget cInfo Nothing))
+                  Right _ -> pure (msgLinkSegment label MLUnknownSource, Just $ CILink t (ciLinkTarget cInfo (Just $ chatItemId' ci)))
                   Left e -> throwCmdError $ "message link: " <> e
               MLPUnknownSource -> pure (ft, (`M.lookup` itemLinks) =<< label_)
               MLPChat {} | isGlobal msgLink -> pure (ft, Nothing)
@@ -4662,6 +4669,9 @@ processChatCommand cxt nm = \case
           Nothing -> pure (ft, Nothing)
         isGlobal = \case
           MLPublicGroup {} -> True
+          _ -> False
+        inChatOnly = \case
+          MLGroup Nothing _ -> True
           _ -> False
     connectPlan :: User -> AConnectTarget -> PlanResolveMode -> Maybe LinkOwnerSig -> Maybe (Either ChatError NameRecord) -> CM (ACreatedConnLink, Maybe SimplexNameInfo, Maybe SimplexNameInfo, ConnectionPlan)
     connectPlan user (ACTarget SCMInvitation (CTInv cLink)) _ sig_ _ = case cLink of

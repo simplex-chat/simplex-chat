@@ -734,7 +734,7 @@ class CIGroupInvitation(TypedDict):
 
 CIGroupInvitationStatus = Literal["pending", "accepted", "rejected", "expired"]
 
-# Short text of a message link, by its label in the message text. The target is the linked message, only in the sender's or forwarder's copy of a link sent as simplex:/m.
+# Short text of a message link, by its label in the message text. The target is the chat where a link to a group, contact or notes message leads, and, in the sender's or forwarder's copy of a link sent as simplex:m, the linked message too. Such a link without a target leads nowhere.
 
 class CILink(TypedDict):
     text: str
@@ -743,7 +743,7 @@ class CILink(TypedDict):
 class CILinkTarget(TypedDict):
     chatType: "ChatType"
     chatId: int  # int64
-    chatItemId: int  # int64
+    chatItemId: NotRequired[int]  # int64
 
 class CIMention(TypedDict):
     memberId: str
