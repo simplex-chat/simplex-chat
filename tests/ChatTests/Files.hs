@@ -1432,7 +1432,7 @@ testXFTPRedeliveredDescription ps = do
         bob <# "alice> sends file test.pdf (266.0 KiB / 272376 bytes)"
         bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
         alice <## "completed uploading file 1 (test.pdf) for bob"
-        readMVar descrReady
+        timeout 10000000 (readMVar descrReady) `shouldReturn` Just ()
         bob ##> "/_stop"
         bob <## "chat stopped"
         bob ##> "/_start"
