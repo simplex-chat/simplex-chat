@@ -348,10 +348,11 @@ line is `stripe: intent <id> is cancelled after 3 declined card payments in a ro
 cannot be tried on it one after another, and the buyer starts a new checkout. Add Radar rules in the
 Dashboard too, such as blocking a card fingerprint or IP address that has failed several times.
 
-Both pages read `publishable_key` from `GET /api/config`, which every port answers with
-`{"mode": "open" | "codes", "stripePublishableKey": "pk_…" | null}`, so the ini is the only place
-the key is set and the built pages are served as they are. With no `[stripe]` section the key is
-`null` and the page shows its development stand-in card form. The dev mock
+The badges page reads `publishable_key` from `GET /api/config`, which every port answers with
+`{"stripePublishableKey": "pk_…" | null, "names": {…} | null}`, so the ini is the only place the
+badges page's key is set and its build is served as it is. With no `[stripe]` section the key is
+`null` and the page shows its development stand-in card form. The names page holds its Stripe key
+in its code (see [Values the names page holds](#values-the-names-page-holds)). The dev mock
 (`web/mock/server.py`) answers the same route from `$STRIPE_PUBLISHABLE_KEY`, since it runs
 without an ini.
 
@@ -1202,8 +1203,9 @@ intent does not cover the secret; the service replaces the stored reveal at a se
 `[names] codes_only = on` lets only prepaid codes register names, as for the launch to the investors
 who hold them before anyone can pay. It is `off` by default. While it is on:
 
-- `GET /api/config` answers `"mode": "codes"` in place of `"open"`, and the names page then offers
-  only codes. The badges site ignores the mode;
+- `GET /api/config` answers `names.codesOnly: true`; the names page holds its own mode and offers
+  only codes while it holds `codesOnly`, so the setting changes with a page release (see
+  [Values the names page holds](#values-the-names-page-holds)). The badges site ignores it;
 - `POST /api/invoice` for a name answers
   `403 {"type": "codes_only"}`, before it reads the order,
   so no order takes money for a name;
