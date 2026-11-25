@@ -58,7 +58,7 @@ import Data.Text.Encoding (decodeUtf8')
 import Data.Time.Clock (UTCTime, addUTCTime, getCurrentTime)
 import Data.Time.Clock.System (systemSeconds, utcToSystemTime)
 import Data.Word (Word64, Word8)
-import Network.HTTP.Types (Header, Status, hCacheControl, hContentType, status200, status400, status409, status413, status500)
+import Network.HTTP.Types (Header, Status, hCacheControl, hContentType, methodOptions, status200, status400, status409, status413, status500)
 import Network.Wai
 import qualified Network.Wai.Handler.Warp as Warp
 import Simplex.Chat.Badges (BadgeType)
@@ -137,7 +137,25 @@ webhookResponse st = responseLBS st [(hCacheControl, "no-store")] ""
 
 -- | The badges port's app.
 webApp :: WebEnv -> Application
-webApp env = siteApp env (lBadgesSite $ listenerConfig env)
+webApp env = apiCors $ siteApp env (lBadgesSite $ listenerConfig env)
+
+apiCors :: Middleware
+apiCors app req respond = case pathInfo req of
+  "api" : _
+    | requestMethod req == methodOptions -> respond $ responseLBS status200 corsPreflightHeaders ""
+    | otherwise -> app req $ respond . mapResponseHeaders (corsHeaders <>)
+  _ -> app req respond
+
+corsHeaders :: [Header]
+corsHeaders = [("Access-Control-Allow-Origin", "*"), ("Access-Control-Expose-Headers", "*")]
+
+corsPreflightHeaders :: [Header]
+corsPreflightHeaders =
+  [ ("Access-Control-Allow-Origin", "*"),
+    ("Access-Control-Allow-Methods", "GET, POST, OPTIONS"),
+    ("Access-Control-Allow-Headers", "*"),
+    ("Access-Control-Max-Age", "86400")
+  ]
 
 -- | Every port answers the API and the webhooks, and serves its own site's files.
 siteApp :: WebEnv -> Maybe FilePath -> Application
@@ -541,7 +559,7 @@ logRequestException _ e = when (Warp.defaultShouldDisplayException e) $ logError
 
 -- | Each port with its app: the badges site's, and the names site's when it is served.
 webListeners :: WebEnv -> [(Int, Application)]
-webListeners env = (lBadgesPort, webApp env) : [(port, siteApp env (Just dir)) | Just (port, dir) <- [lNamesSite]]
+webListeners env = (lBadgesPort, webApp env) : [(port, apiCors $ siteApp env (Just dir)) | Just (port, dir) <- [lNamesSite]]
   where
     ListenerConfig {lBadgesPort, lNamesSite} = listenerConfig env
 
