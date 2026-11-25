@@ -809,7 +809,7 @@ testDirectMessageLinks =
       bob <# "alice> Approve the deploy plan?"
       alice ##> "/item link @bob Approve"
       link <- getTermLine alice
-      link `shouldStartWith` "simplex:/m#d/"
+      link `shouldStartWith` "simplex:m#d/"
       alice #> ("@bob see [q](" <> link <> ")")
       bob <# ("alice> see [q](" <> link <> ")")
       bob <## "[q]: Approve the deploy plan?"
@@ -820,8 +820,8 @@ testDirectMessageLinks =
       alice ##> "/item link #team Release"
       groupLink <- getTermLine alice
       alice `send` ("@bob see [r](" <> groupLink <> ")")
-      alice <# "@bob see [r](simplex:/m)"
-      bob <# "alice> see [r](simplex:/m)"
+      alice <# "@bob see [r](simplex:m)"
+      bob <# "alice> see [r](simplex:m)"
       bob <## "[r]: Release notes 7.2"
 
 testDirectMessageUpdatePrevItem :: HasCallStack => TestParams -> IO ()

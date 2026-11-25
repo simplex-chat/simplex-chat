@@ -392,9 +392,9 @@ testMsgLinkForward =
       cath <## "[q]: Approve the deploy plan?"
       cath `send` "@alice <- #team see"
       cath <# "@alice <- #team"
-      cath <## "      see [q](simplex:/m)"
+      cath <## "      see [q](simplex:m)"
       alice <# "cath> -> forwarded"
-      alice <## "      see [q](simplex:/m)"
+      alice <## "      see [q](simplex:m)"
       alice <## "[q]: Approve the deploy plan?"
       linkTargets cath `shouldReturn` [("q", Nothing), ("q", Just "Approve the deploy plan?")]
 
@@ -409,14 +409,14 @@ testForwardMsgLinkTargetCopied =
       alice ##> "/item link #team Approve"
       link <- getTermLine alice
       alice `send` ("#club see [q](" <> link <> ")")
-      alice <# "#club see [q](simplex:/m)"
-      cath <# "#club alice> see [q](simplex:/m)"
+      alice <# "#club see [q](simplex:m)"
+      cath <# "#club alice> see [q](simplex:m)"
       cath <## "[q]: Approve the deploy plan?"
       alice `send` "@cath <- #club see"
       alice <# "@cath <- you #club"
-      alice <## "      see [q](simplex:/m)"
+      alice <## "      see [q](simplex:m)"
       cath <# "alice> -> forwarded"
-      cath <## "      see [q](simplex:/m)"
+      cath <## "      see [q](simplex:m)"
       cath <## "[q]: Approve the deploy plan?"
       linkTargets alice `shouldReturn` [("q", Just "Approve the deploy plan?"), ("q", Just "Approve the deploy plan?")]
 
@@ -447,8 +447,8 @@ testForwardGlobalMsgLink ps =
           dan <# ("cath> see [r](" <> link <> ")")
           dan <## "[r]: Release notes 7.2"
           cath `send` "#club <- * see"
-          cath <# "#club see [r](simplex:/m)"
-          dan <# "#club cath> see [r](simplex:/m)"
+          cath <# "#club see [r](simplex:m)"
+          dan <# "#club cath> see [r](simplex:m)"
           dan <## "[r]: Release notes 7.2"
           linkTargets cath `shouldReturn` [("r", Nothing), ("r", Nothing), ("r", Just "Release notes 7.2")]
 

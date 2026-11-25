@@ -8731,7 +8731,7 @@ testMsgLinkSameGroup =
       [alice, cath] *<# "#team bob> Approve the deploy plan?"
       alice ##> "/item link #team Approve"
       link <- getTermLine alice
-      link `shouldStartWith` "simplex:/m#g/"
+      link `shouldStartWith` "simplex:m#g/"
       alice #> ("#team see [q](" <> link <> ")")
       bob <# ("#team alice> see [q](" <> link <> ")")
       bob <## "[q]: Approve the deploy plan?"
@@ -8749,9 +8749,9 @@ testMsgLinkSameGroup =
           frUris = [],
           frCommands =
             [ "/_msg link plan 1 " <> link <> " chat=#1",
-              "/_msg link plan 1 simplex:/m",
-              "/_msg link plan 1 simplex:/m#x/abc",
-              "/_msg link plan 1 simplex:/m#g/YWJjZGVmZ2hpamtsbW5vcA?a=MTIzNDU2Nzg5MDEyMzQ1Ng",
+              "/_msg link plan 1 simplex:m",
+              "/_msg link plan 1 simplex:m#x/abc",
+              "/_msg link plan 1 simplex:m#g/YWJjZGVmZ2hpamtsbW5vcA?a=MTIzNDU2Nzg5MDEyMzQ1Ng",
               "/_msg link plan 2 " <> link,
               "/_get chat #1 count=1",
               "/_get item link #1 " <> seeItemId
@@ -8769,12 +8769,12 @@ testMsgLinkOtherGroup =
       alice ##> "/item link #team Approve"
       link <- getTermLine alice
       alice `send` ("#club see [q](" <> link <> ")")
-      alice <# "#club see [q](simplex:/m)"
-      cath <# "#club alice> see [q](simplex:/m)"
+      alice <# "#club see [q](simplex:m)"
+      cath <# "#club alice> see [q](simplex:m)"
       cath <## "[q]: Approve the deploy plan?"
       linkTargets alice `shouldReturn` [("q", Just "Approve the deploy plan?")]
       linkTargets cath `shouldReturn` [("q", Nothing)]
-      cath ##> "/_msg link plan 1 simplex:/m chat=#2"
+      cath ##> "/_msg link plan 1 simplex:m chat=#2"
       cath <## "message link: unknown source"
       apiFixture "links/other-group-sender" alice [] FixtureRequests {frMarkdown = [], frUris = [], frCommands = ["/_get chat #2 count=1"]}
       apiFixture "links/other-group-recipient" cath [] FixtureRequests {frMarkdown = [], frUris = [], frCommands = ["/_get chat #2 count=1"]}
@@ -8784,7 +8784,7 @@ testMsgLinkRefused =
   testChat2 aliceProfile bobProfile $
     \alice bob -> do
       createGroup2 "team" alice bob
-      alice ##> "#team see [q](simplex:/m#g/YWJjZGVmZ2hpamtsbW5vcA?a=MTIzNDU2Nzg5MDEyMzQ1Ng)"
+      alice ##> "#team see [q](simplex:m#g/YWJjZGVmZ2hpamtsbW5vcA?a=MTIzNDU2Nzg5MDEyMzQ1Ng)"
       alice <## "bad chat command: message link: not in your chats"
       bob #> "#team hello"
       alice <# "#team bob> hello"
@@ -8804,17 +8804,17 @@ testMsgLinkEdit =
       alice ##> "/item link #team Approve"
       link <- getTermLine alice
       alice `send` ("#club see [q](" <> link <> ")")
-      alice <# "#club see [q](simplex:/m)"
-      cath <# "#club alice> see [q](simplex:/m)"
+      alice <# "#club see [q](simplex:m)"
+      cath <# "#club alice> see [q](simplex:m)"
       cath <## "[q]: Approve the deploy plan?"
-      alice ##> "! #club see [q](simplex:/m) and [p](simplex:/m)"
-      alice <# "#club [edited] see [q](simplex:/m) and [p](simplex:/m)"
-      cath <# "#club alice> [edited] see [q](simplex:/m) and [p](simplex:/m)"
+      alice ##> "! #club see [q](simplex:m) and [p](simplex:m)"
+      alice <# "#club [edited] see [q](simplex:m) and [p](simplex:m)"
+      cath <# "#club alice> [edited] see [q](simplex:m) and [p](simplex:m)"
       linkTargets alice `shouldReturn` [("q", Just "Approve the deploy plan?")]
       linkTargets cath `shouldReturn` [("q", Nothing)]
-      alice ##> "! #club see [r](simplex:/m)"
-      alice <# "#club [edited] see [r](simplex:/m)"
-      cath <# "#club alice> [edited] see [r](simplex:/m)"
+      alice ##> "! #club see [r](simplex:m)"
+      alice <# "#club [edited] see [r](simplex:m)"
+      cath <# "#club alice> [edited] see [r](simplex:m)"
       linkTargets alice `shouldReturn` []
       linkTargets cath `shouldReturn` []
 
@@ -8939,7 +8939,7 @@ testMsgLinkAsGroup =
       bob <# "#team> Release 7.2 is out"
       bob ##> "/item link #team Release"
       link <- getTermLine bob
-      link `shouldStartWith` "simplex:/m#g/"
+      link `shouldStartWith` "simplex:m#g/"
       link `shouldNotContain` "?a="
       bob ##> ("/_msg link plan 1 " <> link <> " chat=#1")
       bob <# "#team> Release 7.2 is out"

@@ -1966,10 +1966,10 @@ instance StrEncoding MsgLink where
             CTName ni -> "simplex:/name" <> strEncode ni
           sep = if B.elem '?' uri then "&" else "?"
        in uri <> sep <> "m=" <> U.encodeUnpadded msgId <> maybe "" (\(MemberId a) -> "&a=" <> U.encodeUnpadded a) author_
-    MLGroup author_ (SharedMsgId msgId) -> "simplex:/m#g/" <> U.encodeUnpadded msgId <> maybe "" (\(MemberId a) -> "?a=" <> U.encodeUnpadded a) author_
-    MLDirect (SharedMsgId msgId) -> "simplex:/m#d/" <> U.encodeUnpadded msgId
-    MLNote folderId itemId -> "simplex:/m#n/" <> B.pack (show itemId) <> "?f=" <> B.pack (show folderId)
-    MLUnknownSource -> "simplex:/m"
+    MLGroup author_ (SharedMsgId msgId) -> "simplex:m#g/" <> U.encodeUnpadded msgId <> maybe "" (\(MemberId a) -> "?a=" <> U.encodeUnpadded a) author_
+    MLDirect (SharedMsgId msgId) -> "simplex:m#d/" <> U.encodeUnpadded msgId
+    MLNote folderId itemId -> "simplex:m#n/" <> B.pack (show itemId) <> "?f=" <> B.pack (show folderId)
+    MLUnknownSource -> "simplex:m"
     MLUnsupported t -> encodeUtf8 t
   strP = localLinkP <|> nameLinkP <|> shortLinkP
     where

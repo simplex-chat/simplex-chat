@@ -371,8 +371,8 @@ textWithMessageLinks = describe "text with message links" do
   let msgId = "YWJjZGVmZ2hpamtsbW5vcA"
       author = "MTIzNDU2Nzg5MDEyMzQ1Ng"
       key = "MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY"
-      groupLink = "simplex:/m#g/" <> msgId <> "?a=" <> author
-      directLink = "simplex:/m#d/" <> msgId
+      groupLink = "simplex:m#g/" <> msgId <> "?a=" <> author
+      directLink = "simplex:m#d/" <> msgId
       channelLink = "https://smp.simplex.im/c#" <> key
       publicGroupLink = "https://smp.simplex.im/p#" <> key
   it "local links" do
@@ -415,14 +415,14 @@ textWithMessageLinks = describe "text with message links" do
         "simplex:/c#" <> key <> "?h=smp.simplex.im&m=" <> msgId,
         "simplex:/name#privacy.simplex?m=" <> msgId <> "&a=" <> author,
         groupLink,
-        "simplex:/m#g/" <> msgId,
+        "simplex:m#g/" <> msgId,
         directLink,
-        "simplex:/m#n/48213?f=1",
-        "simplex:/m",
+        "simplex:m#n/48213?f=1",
+        "simplex:m",
         "simplex:/m#x/abc"
       ] :: [Text])
       $ \l -> roundTrip l `shouldBe` Right l
-    roundTrip ("simplex:m#d/" <> msgId) `shouldBe` Right directLink
+    roundTrip ("simplex:/m#d/" <> msgId) `shouldBe` Right directLink
     roundTrip ("simplex:name#privacy.simplex?m=" <> msgId) `shouldBe` Right ("simplex:/name#privacy.simplex?m=" <> msgId)
   it "short text of a linked message" do
     shortLinkText "*Approve* the plan?\nsecond line" `shouldBe` "Approve the plan?"

@@ -1169,7 +1169,7 @@ processChatCommand cxt nm = \case
           unknownSource :: Maybe LinkLabel -> Maybe Text -> Maybe CILinkTarget -> (FormattedText, Maybe (LinkLabel, CILink))
           unknownSource label_ text_ target = case label_ <|> (msgLinkLabel <$> text_) of
             Just label -> (msgLinkSegment label MLUnknownSource, (\t -> (label, CILink t target)) <$> text_)
-            Nothing -> (FormattedText (Just $ MessageLink Nothing MLTUnknownSource MLUnknownSource) "simplex:/m", Nothing)
+            Nothing -> (FormattedText (Just $ MessageLink Nothing MLTUnknownSource MLUnknownSource) (safeDecodeUtf8 $ strEncode MLUnknownSource), Nothing)
       prepareForward :: User -> CM [ComposedMessageReq]
       prepareForward user = case fromCType of
         CTDirect -> withContactLock "forwardChatItem, from contact" fromChatId $ do

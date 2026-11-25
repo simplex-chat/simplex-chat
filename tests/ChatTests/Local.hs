@@ -259,7 +259,7 @@ testNoteMessageLinks =
     alice <# "bob> Release notes 7.2"
     alice ##> "/item link * see"
     noteLink <- getTermLine alice
-    noteLink `shouldStartWith` "simplex:/m#n/"
+    noteLink `shouldStartWith` "simplex:m#n/"
     alice ##> ("/_msg link plan 1 " <> noteLink)
     alice <# ("* " <> note)
 
