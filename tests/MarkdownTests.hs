@@ -428,6 +428,7 @@ textWithMessageLinks = describe "text with message links" do
     shortLinkText "*Approve* the plan?\nsecond line" `shouldBe` "Approve the plan?"
     shortLinkText "\n  the code is #1234# now  " `shouldBe` "the code is … now"
     shortLinkText "see [the draft](simplex:/m)" `shouldBe` "see the draft"
+    shortLinkText "[WIP] Deploy" `shouldBe` "WIP Deploy"
     shortLinkText (T.replicate 100 "a") `shouldBe` (T.replicate 79 "a" <> "…")
     shortLinkText (T.replicate 80 "a") `shouldBe` T.replicate 80 "a"
 

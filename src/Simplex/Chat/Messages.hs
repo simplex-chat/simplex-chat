@@ -675,7 +675,7 @@ ciLinkText ChatItem {content, file} = case ciMsgContent content of
 shortLinkText :: Text -> Text
 shortLinkText t = if T.length s > maxLinkTextLength then T.take (maxLinkTextLength - 1) s `T.snoc` '…' else s
   where
-    s = T.strip $ T.filter (not . isBidiControl) $ T.takeWhile (not . isLineBreak) $ T.stripStart shown
+    s = T.strip $ T.filter (\c -> not (isBidiControl c) && c /= '[' && c /= ']') $ T.takeWhile (not . isLineBreak) $ T.stripStart shown
     shown = maybe t (T.concat . map shownText) $ parseMaybeMarkdownList t
     shownText (FormattedText f_ ft) = case f_ of
       Just Secret -> "…"

@@ -132,7 +132,7 @@ msgLinkSegment :: Text -> MsgLink -> FormattedText
 msgLinkSegment label ml = FormattedText (Just $ MessageLink (Just label) (toMsgLinkType ml) ml) $ T.concat ["[", label, "](", safeDecodeUtf8 (strEncode ml), ")"]
 
 msgLinkLabel :: Text -> Text
-msgLinkLabel t = let label = T.filter (\c -> c /= '[' && c /= ']') t in if T.null label then "…" else label
+msgLinkLabel t = if T.null t then "…" else t
 
 data SimplexLinkType = XLContact | XLInvitation | XLGroup | XLChannel | XLRelay | XLPublicGroup | XLSite
   deriving (Eq, Show)
