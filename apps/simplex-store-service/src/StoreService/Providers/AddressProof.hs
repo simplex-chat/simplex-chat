@@ -229,7 +229,7 @@ moneroKey address viewKey = do
 
 moneroPayee :: MoneroKey -> Word32 -> Word32 -> (Text, AddressProof)
 moneroPayee MoneroKey {mkSubaddressPrefix, mkSpendKey, mkViewPublic, mkViewKey} i j =
-  (moneroAddress mkSubaddressPrefix dBytes cBytes, APMonero {spendTweak = Ed.scalarEncode m, viewProof = ViewProof {challenge = Ed.scalarEncode c, response = scalarBytes s}})
+  (moneroAddress mkSubaddressPrefix dBytes cBytes, APMonero {spendTweak = Ed.scalarEncode m, viewProof = ViewProof {challenge = Ed.scalarEncode c, response = Ed.scalarEncode s}})
   where
     viewKey :: ByteString
     viewKey = Ed.scalarEncode mkViewKey
@@ -240,7 +240,7 @@ moneroPayee MoneroKey {mkSubaddressPrefix, mkSpendKey, mkViewPublic, mkViewKey} 
     cBytes = Ed.pointEncode $ Ed.pointMul mkViewKey d
     k = hashScalar $ "simplex.domains view proof nonce" <> viewKey <> dBytes
     c = hashScalar $ "simplex.domains view proof" <> mkViewPublic <> dBytes <> cBytes <> Ed.pointEncode (Ed.toPoint k) <> Ed.pointEncode (Ed.pointMul k d)
-    s = (scalarInteger k - scalarInteger c * scalarInteger mkViewKey) `mod` ed25519Order
+    s = Ed.scalarAdd k (Ed.scalarMul c (Ed.scalarMul minusOne mkViewKey))
     le32 = B.reverse . i2ospOf_ 4 . toInteger
 
 primaryAddress :: MoneroKey -> Text
@@ -258,11 +258,8 @@ hashScalar = scalarOf . keccak256
 scalarOf :: ByteString -> Ed.Scalar
 scalarOf = throwCryptoError . Ed.scalarDecodeLong
 
-scalarInteger :: Ed.Scalar -> Integer
-scalarInteger s = os2ip $ B.reverse (Ed.scalarEncode s :: ByteString)
-
-scalarBytes :: Integer -> ByteString
-scalarBytes = B.reverse . i2ospOf_ 32
+minusOne :: Ed.Scalar
+minusOne = scalarOf $ B.reverse $ i2ospOf_ 32 $ ed25519Order - 1
 
 moneroAddress :: Word8 -> ByteString -> ByteString -> Text
 moneroAddress prefix spend view = moneroBase58Encode $ body <> B.take 4 (keccak256 body)
