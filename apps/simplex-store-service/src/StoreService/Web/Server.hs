@@ -82,6 +82,7 @@ data SiteConfig = SiteConfig
 
 data NamesSite = NamesSite
   { codesOnly :: Bool,
+    downtime :: Bool,
     chainId :: Word64,
     resolver :: Address,
     sponsor :: Address,
@@ -193,8 +194,8 @@ siteConfig ServiceConfig {names, stripe} =
       names = namesSite <$> names
     }
   where
-    namesSite NamesConfig {nCodesOnly, nTLD, nTermStart, nChain = ChainConfig {cChainId, cResolver, cSponsor}} =
-      NamesSite {codesOnly = nCodesOnly, chainId = cChainId, resolver = cResolver, sponsor = cSponsor, tld = tldLabel nTLD, termStart = RoundedSystemTime $ systemSeconds $ utcToSystemTime nTermStart}
+    namesSite NamesConfig {nCodesOnly, nDowntime, nTLD, nTermStart, nChain = ChainConfig {cChainId, cResolver, cSponsor}} =
+      NamesSite {codesOnly = nCodesOnly, downtime = nDowntime, chainId = cChainId, resolver = cResolver, sponsor = cSponsor, tld = tldLabel nTLD, termStart = RoundedSystemTime $ systemSeconds $ utcToSystemTime nTermStart}
 
 resolveInside :: FilePath -> [Text] -> IO (Maybe (FilePath, FilePath))
 resolveInside dir segments = either ioFailed id <$> E.try attempt

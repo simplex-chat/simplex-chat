@@ -106,6 +106,7 @@ refusalResponse r = responseLBS status (retryAfterHeader <> apiHeaders) (J.encod
       NRCatalogChanged {} -> status409
       NRTermsChanged {} -> status409
       NRCodesOnly -> status403
+      NRDowntime -> status503
       NRCodeInvalid -> status400
       NRCodeUsed -> status409
       NRCodeReserved -> status409
@@ -128,6 +129,7 @@ refusalResponse r = responseLBS status (retryAfterHeader <> apiHeaders) (J.encod
 -- | POST /api/invoice for a name, its body already read and its kind checked.
 nameInvoiceHandler :: OrdersEnv -> HttpEnv -> CheckoutClient -> ServiceConfig -> [Provider] -> Waiters -> J.Object -> Respond -> IO ResponseReceived
 nameInvoiceHandler env http client cfg providers waiters body respond
+  | nDowntime (oeConfig env) = sendAnswer respond =<< refuse ORDowntime
   | nCodesOnly (oeConfig env) = sendAnswer respond =<< refuse ORCodesOnly
   | otherwise = sendAnswer respond =<< case parseBody "order" (J.Object body) >>= invoiceOrder of
     Left refusal -> refuse refusal
@@ -234,8 +236,9 @@ answerOrder OrdersEnv {oeStore, oeTurns, oeNow} what order@OrderRequest {orOwner
 
 -- | POST /api/name/register, an order paid with a prepaid code, in the contract's order of checks.
 codeOrderHandler :: OrdersEnv -> [Provider] -> Waiters -> Request -> Respond -> IO ResponseReceived
-codeOrderHandler env@OrdersEnv {oeStore} providers waiters req respond =
-  readBoundedBody nameBodyBytes req >>= ordered >>= sendAnswer respond
+codeOrderHandler env@OrdersEnv {oeStore, oeConfig} providers waiters req respond
+  | nDowntime oeConfig = sendAnswer respond =<< refuse ORDowntime
+  | otherwise = readBoundedBody nameBodyBytes req >>= ordered >>= sendAnswer respond
   where
     what = "POST /api/name/register"
     ordered = \case
@@ -316,3 +319,4 @@ orderRefusal = \case
   ORTermsChanged terms community -> NRTermsChanged (termsLink terms) community
   ORTermsUnavailable wait -> NRTermsUnavailable wait
   ORCodesOnly -> NRCodesOnly
+  ORDowntime -> NRDowntime

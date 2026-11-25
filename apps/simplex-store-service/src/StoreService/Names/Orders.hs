@@ -123,6 +123,7 @@ data OrderRefusal
     ORTermsChanged Terms (Maybe Community)
   | ORTermsUnavailable (Maybe Int)
   | ORCodesOnly
+  | ORDowntime
   deriving (Eq, Show)
 
 newtype OrderRefused = OrderRefused OrderRefusal

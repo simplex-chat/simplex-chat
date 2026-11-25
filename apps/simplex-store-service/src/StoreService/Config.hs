@@ -409,7 +409,7 @@ knownSettings =
     ("dev", ["accept_unverified_store_receipts", "check_store_during_coverage", "credit_test_purchases"]),
     ("issuer", ["index", "private_key", "dev_keys"]),
     ("log", ["level"]),
-    ("names", ["tld", "years", "term_start", "term_slack_seconds", "reveal_margin_seconds", "max_dry_run_failures", "max_sent_failures", "codes_only", "record_edits_per_year", "min_price_cents_per_year"]),
+    ("names", ["tld", "years", "term_start", "term_slack_seconds", "reveal_margin_seconds", "max_dry_run_failures", "max_sent_failures", "codes_only", "downtime", "record_edits_per_year", "min_price_cents_per_year"]),
     ("chain", ["rpc_url", "chain_id", "controller", "sponsor", "base_registrar", "resolver", "service_key", "confirmations", "gas_limit_cap", "max_fee_per_gas"])
   ]
 
@@ -658,11 +658,12 @@ parseConfig ini = do
           nMaxDryRunFailures <- num "names" "max_dry_run_failures" 1 maxBound 5
           nMaxSentFailures <- num "names" "max_sent_failures" 1 maxBound 5
           nCodesOnly <- bool "names" "codes_only" False
+          nDowntime <- bool "names" "downtime" False
           nRecordEditsPerYear <- num "names" "record_edits_per_year" minRecordEditsPerYear maxRecordEditsPerYear defaultRecordEditsPerYear
           nMinPriceCentsPerYear <- num "names" "min_price_cents_per_year" 1 maxBound defaultMinPriceCentsPerYear
           nCommunity <- communityList nTLD
           nChain <- chainSection
-          pure (Just NamesConfig {nTLD, nYears, nTermStart, nTermSlackSeconds, nRevealMarginSeconds, nMaxDryRunFailures, nMaxSentFailures, nCodesOnly, nDowntime = False, nRecordEditsPerYear, nMinPriceCentsPerYear, nCommunity, nChain})
+          pure (Just NamesConfig {nTLD, nYears, nTermStart, nTermSlackSeconds, nRevealMarginSeconds, nMaxDryRunFailures, nMaxSentFailures, nCodesOnly, nDowntime, nRecordEditsPerYear, nMinPriceCentsPerYear, nCommunity, nChain})
     tldSetting =
       required "names" "tld" >>= \case
         "simplex" -> Right TLDSimplex

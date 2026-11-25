@@ -328,16 +328,17 @@ storeService opts serviceCfg baseCfg env = do
       pure $ [runWebListeners webEnv, runPoller pollerEnv] <> nameLanes <> metricsLane
 
 startNames :: ChatController -> Turns -> Waiters -> [Provider] -> (T.Text -> IO ()) -> NamesConfig -> IO NamesEnv
-startNames cc@ChatController {chatStore} turns waiters providers report nc@NamesConfig {nTLD, nCodesOnly, nMinPriceCentsPerYear, nChain = ChainConfig {cChainId}} =
+startNames cc@ChatController {chatStore} turns waiters providers report nc@NamesConfig {nTLD, nCodesOnly, nDowntime, nMinPriceCentsPerYear, nChain = ChainConfig {cChainId}} =
   readTVarIO (currentUser cc) >>= \case
     Nothing -> putStrLn "No current user" >> exitFailure
     Just user -> do
-      logNote $ "names: on, TLD " <> safeDecodeUtf8 (strEncode nTLD) <> ", chain " <> tshow cChainId <> ", price floor " <> tshow nMinPriceCentsPerYear <> " cents a year" <> codesOnlyNote
+      logNote $ "names: on, TLD " <> safeDecodeUtf8 (strEncode nTLD) <> ", chain " <> tshow cChainId <> ", price floor " <> tshow nMinPriceCentsPerYear <> " cents a year" <> codesOnlyNote <> downtimeNote
       ne@NamesEnv {neContracts} <- newNamesEnv cc user nc chatStore turns waiters providers report
       logNamePolicy nc neContracts
       pure ne
   where
     codesOnlyNote = if nCodesOnly then ", codes only: registration needs a prepaid code" else ""
+    downtimeNote = if nDowntime then ", downtime: name invoices, code orders and selections are refused" else ""
 
 logNamePolicy :: NamesConfig -> Contracts -> IO ()
 logNamePolicy NamesConfig {nCommunity} ct =

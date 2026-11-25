@@ -27,6 +27,7 @@ import Simplex.Messaging.Crypto.Secp256k1 (RecoverableSignature)
 import Simplex.Messaging.Eth.Address (Address)
 import Simplex.Messaging.Parsers (defaultJSON)
 import Simplex.Messaging.SimplexName (LabelHash (..))
+import StoreService.Config (NamesConfig (nDowntime))
 import StoreService.Names.Chain (Hex32 (..))
 import StoreService.Names.Orders
 import StoreService.Names.Phases (RegistrationId (..), publish)
@@ -100,8 +101,9 @@ foundOrder NameRegistration {nrId, nrPayment, nrPhase, nrCreatedAt, nrLabelHash 
 
 -- | POST /api/registration/:id/name, a name selected for a taken order, under the turns of both names, with a new order's checks.
 selectNameHandler :: OrdersEnv -> [Provider] -> Waiters -> RegistrationId -> Request -> Respond -> IO ResponseReceived
-selectNameHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oeNow} providers waiters rid@(RegistrationId ridText) req respond =
-  readBoundedBody nameBodyBytes req >>= requested >>= sendAnswer respond
+selectNameHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oeNow} providers waiters rid@(RegistrationId ridText) req respond
+  | nDowntime oeConfig = sendAnswer respond =<< refuse ORDowntime
+  | otherwise = readBoundedBody nameBodyBytes req >>= requested >>= sendAnswer respond
   where
     requested = \case
       Just body | Just v <- J.decode body -> either refuse signed (parseBody "selection" v >>= \SelectionRequest {srSigned, srReveal} -> (,srReveal) <$> signedFields srSigned)
