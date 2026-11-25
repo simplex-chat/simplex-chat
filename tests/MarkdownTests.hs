@@ -330,6 +330,13 @@ textWithUri = describe "text with Uri" do
     let gr = "/contact#/?v=2&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FWHV0YU1sYlU7NqiEHkHDB6gxO1ofTync%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAWbebOqVYuBXaiqHcXYjEHCpYi6VzDlu6CVaijDTmsQU%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion&data=%7B%22type%22%3A%22group%22%2C%22groupLinkId%22%3A%22mL-7Divb94GGmGmRBef5Dg%3D%3D%22%7D"
     ("https://simplex.chat" <> gr) <==> simplexLink XLGroup ("simplex:" <> gr) ["smp4.simplex.im", "o5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion"] ("https://simplex.chat" <> gr)
     ("simplex:" <> gr) <==> simplexLink XLGroup ("simplex:" <> gr) ["smp4.simplex.im", "o5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion"] ("simplex:" <> gr)
+  it "SimpleX links without the slash after the scheme" do
+    let inv = "invitation#/?v=1&smp=smp%3A%2F%2F1234-w%3D%3D%40smp.simplex.im%3A5223%2F3456-w%3D%3D%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAjiswwI3O_NlS8Fk3HJUW870EY2bAwmttMBsvRB9eV3o%253D&e2e=v%3D2%26x3dh%3DMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D%2CMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D"
+        ct = "contact#/?v=2&smp=smp%3A%2F%2F1234-w%3D%3D%40smp.simplex.im%3A5223%2F3456-w%3D%3D%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAjiswwI3O_NlS8Fk3HJUW870EY2bAwmttMBsvRB9eV3o%253D"
+        ch = "c#grcfG3ulVI4Sh6ow33qBsmSk7uEy3gRSl2KkJ5ER6tA?h=smp18.simplex.im"
+    ("simplex:" <> inv) <==> simplexLink XLInvitation ("simplex:/" <> inv) ["smp.simplex.im"] ("simplex:" <> inv)
+    ("simplex:" <> ct) <==> simplexLink XLContact ("simplex:/" <> ct) ["smp.simplex.im"] ("simplex:" <> ct)
+    ("simplex:" <> ch) <==> simplexLink XLChannel ("simplex:/" <> ch) ["smp18.simplex.im"] ("simplex:" <> ch)
 
 web :: Text -> Text -> Text -> Markdown
 web t u = Markdown $ Just HyperLink {showText = Just t, linkUri = u}
@@ -507,6 +514,10 @@ textWithSimplexNames = describe "text with SimpleX names" do
     "@privacy.simplex" <==> sname NTContact TLDSimplex "privacy" [] "privacy.simplex"
     "@my-name.simplex" <==> sname NTContact TLDSimplex "my-name" [] "my-name.simplex"
     "@alice.example.com" <==> sname NTContact TLDWeb "alice.example.com" [] "alice.example.com"
+  it "name links with or without the slash after the scheme" do
+    let name = markdown $ SimplexName $ SimplexNameInfo NTPublicGroup $ SimplexDomain TLDSimplex "privacy" []
+    "simplex:/name#privacy.simplex" <==> name "simplex:/name#privacy.simplex"
+    "simplex:name#privacy.simplex" <==> name "simplex:name#privacy.simplex"
   it "not parsed as names" do
     "#123" <==> "#123"
     "issue #42 is fixed" <==> "issue #42 is fixed"
@@ -514,6 +525,8 @@ textWithSimplexNames = describe "text with SimpleX names" do
     "#secret#" <==> markdown Secret "secret"
     "##double secret##" <==> markdown Secret "#double secret#"
     "#" <==> "#"
+    "https://simplex.chat/name#privacy.simplex" <==> uri "https://simplex.chat/name#privacy.simplex"
+    "simplex:nameprivacy" <==> "simplex:nameprivacy"
 
 pay :: PaymentRequest -> Text -> Markdown
 pay = markdown . PaymentLink Nothing

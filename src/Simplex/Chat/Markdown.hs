@@ -522,7 +522,12 @@ markdownP = joinMarkdown <$> A.many' fragmentP
     linkMD :: Text -> Maybe Markdown
     linkMD s
       | isUri s' = case strDecode $ encodeUtf8 s' of
-          Right cLink -> Just $ res $ markdown (simplexUriFormat Nothing cLink) s'
+          Right (ACTarget m t) -> Just $ res $ flip markdown s' $ case t of
+            CTShortContact (CTName ni) -> SimplexName ni
+            CTShortContact (CTLink sLnk) -> simplexUriFormat Nothing $ ACL m $ CLShort sLnk
+            CTFullContact cReq -> simplexUriFormat Nothing $ ACL m $ CLFull cReq
+            CTInv cLink -> simplexUriFormat Nothing $ ACL m cLink
+            CTDomain _ -> Uri
           Left _ -> case parseUri $ encodeUtf8 s' of
             Right _ -> Just $ res $ markdown Uri s'
             Left _ -> Nothing
@@ -547,7 +552,7 @@ markdownP = joinMarkdown <$> A.many' fragmentP
       '_' -> False
       '!' -> False
       c -> isPunctuation c
-    isUri s = T.length s >= 10 && any (`T.isPrefixOf` s) ["http://", "https://", "simplex:/"]
+    isUri s = T.length s >= 10 && any (`T.isPrefixOf` s) ["http://", "https://", "simplex:"]
     -- matches what is likely to be a domain, not all valid domain names
     isDomain s = case T.splitOn "." s of
       [name, tld] -> isDomain_ name tld
