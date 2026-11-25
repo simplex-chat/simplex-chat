@@ -464,18 +464,15 @@ struct ContentView: View {
         // an app link must not tear down a redemption in flight
         if isAppLink(url) && isBadgeLinkIssuing() { return }
         dismissAllSheets() {
-            var path = url.path
             if isAppLink(url) {
                 // branched on the scheme before the connection dispatch, which an app link must never reach
                 openAppLink(url)
-            } else if path == "/r" {
+            } else if connectionLinkPath(url) == "/r" {
                 showAlert(
                     NSLocalizedString("Relay address", comment: "alert title"),
                     message: NSLocalizedString("This is a chat relay address, it cannot be used to connect.", comment: "alert message")
                 )
-            } else if (path == "/contact" || path == "/invitation" || path == "/a" || path == "/c" || path == "/g" || path == "/i") {
-                path.removeFirst()
-                let link = url.absoluteString.replacingOccurrences(of: "///\(path)", with: "/\(path)")
+            } else if let link = openedConnectionLink(url) {
                 planAndConnect(
                     link,
                     theme: theme,
@@ -509,6 +506,17 @@ private let badgeLinkPath = "/badge/code/"
 
 func isAppLink(_ url: URL) -> Bool {
     url.scheme?.lowercased() == appLinkScheme
+}
+
+private func connectionLinkPath(_ url: URL) -> String {
+    url.path.hasPrefix("/") ? url.path : "/" + (URLComponents(url: url, resolvingAgainstBaseURL: false)?.path ?? "")
+}
+
+func openedConnectionLink(_ url: URL) -> String? {
+    var path = connectionLinkPath(url)
+    guard path == "/contact" || path == "/invitation" || path == "/a" || path == "/c" || path == "/g" || path == "/i" || path.hasPrefix("/name") else { return nil }
+    path.removeFirst()
+    return url.absoluteString.replacingOccurrences(of: "///\(path)", with: "/\(path)")
 }
 
 // a link type added in a later version reaches this build too, so an unknown path asks for an update
