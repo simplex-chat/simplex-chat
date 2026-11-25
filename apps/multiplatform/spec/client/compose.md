@@ -251,7 +251,7 @@ fun SendMsgView(
 
 The view is a `Box` containing:
 
-1. **PlatformTextField:** Multiline text input (platform-specific `expect`). Handles text changes via `onMessageChange`, up-arrow to `editPrevMessage`, file paste via `onFilesPasted`, and Enter to send.
+1. **PlatformTextField:** Multiline text input (platform-specific `expect`). Handles text changes via `onMessageChange`, up-arrow to `editPrevMessage`, file paste via `onFilesPasted`, and Enter to send. On desktop, Shift+Enter replaces the selection with a line break, and Enter after `\` replaces the `\` and the selection with a line break ([`lineBreakOnEnter()`](../../common/src/desktopMain/kotlin/chat/simplex/common/platform/PlatformTextField.desktop.kt#L210-L217)).
 2. **DeleteTextButton:** Shown when text is long; clears the field.
 3. **Action area** (bottom-right, stacked):
    - **Progress indicator:** Shown when `progressByTimeout` is true.

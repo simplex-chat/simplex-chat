@@ -702,6 +702,9 @@ testPlanKnownNameStale = withAliceName $ \reg (shortLink, _) alice bob -> do
   bob ##> "/_connect plan 1 @alice.simplex"
   knownAlicePlan bob
   nameFixture "plan-known" bob "@alice.simplex"
+  apiFixture "names/plan-known-link" bob [] FixtureRequests {frMarkdown = nameLinks, frUris = [], frCommands = map ("/_connect plan 1 " <>) nameLinks}
+  where
+    nameLinks = ["simplex:/name@alice.simplex", "simplex:name@alice.simplex"]
 
 testPlanNameResolvedEveryCall :: HasCallStack => TestParams -> IO ()
 testPlanNameResolvedEveryCall = withAliceName $ \reg (shortLink, _) _alice bob -> do
