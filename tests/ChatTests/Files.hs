@@ -10,10 +10,11 @@ import ChatClient
 import ChatTests.DBUtils
 import ChatTests.Profiles (addTestBadge, futureDate, issueTestBadge, issueTestBadgeType, testBadgeKeys)
 import ChatTests.Utils
-import Control.Concurrent (threadDelay)
+import Control.Concurrent (newEmptyMVar, readMVar, threadDelay, tryPutMVar)
 import Control.Concurrent.Async (concurrently_)
 import Control.Concurrent.STM (TVar, atomically, check, modifyTVar', newTVarIO, readTVar, readTVarIO, writeTVar)
 import Control.Logger.Simple
+import Control.Monad (forever, when)
 import Control.Monad.Except (runExceptT)
 import Control.Monad.Reader (runReaderT)
 import qualified Data.Aeson as J
@@ -90,6 +91,7 @@ chatFileTests = do
     it "continue receiving file after restart" testXFTPContinueRcv
     it "receive file marked to receive on chat start" testXFTPMarkToReceive
     it "error receiving file" testXFTPRcvError
+    it "receive file after its description is delivered again" testXFTPRedeliveredDescription
     it "cancel receiving file, repeat receive" testXFTPCancelRcvRepeat
     it "receiving file from unknown relays resets it, the event has the previous item" testXFTPRcvRelaysNotApproved
     it "should accept file automatically with CLI option" testAutoAcceptFile
@@ -1410,6 +1412,37 @@ testXFTPRcvError ps = do
 
       bob ##> "/fs 1"
       bob <## "receiving file 1 (test.pdf) error: FileErrAuth"
+
+testXFTPRedeliveredDescription :: HasCallStack => TestParams -> IO ()
+testXFTPRedeliveredDescription ps = do
+  descrReady <- newEmptyMVar
+  let hook _ evt = do
+        case evt of
+          Right CEvtRcvFileDescrReady {} -> do
+            first <- tryPutMVar descrReady ()
+            when first $ forever $ threadDelay 1000000
+          _ -> pure ()
+        pure evt
+  withXFTPServer ps $
+    withNewTestChat ps "alice" aliceProfile $ \alice ->
+      withNewTestChatCfg ps testCfg {chatHooks = defaultChatHooks {eventHook = Just hook}} "bob" bobProfile $ \bob -> do
+        connectUsers alice bob
+        alice #> "/f @bob ./tests/fixtures/test.pdf"
+        alice <## "use /fc 1 to cancel sending"
+        bob <# "alice> sends file test.pdf (266.0 KiB / 272376 bytes)"
+        bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+        alice <## "completed uploading file 1 (test.pdf) for bob"
+        readMVar descrReady
+        bob ##> "/_stop"
+        bob <## "chat stopped"
+        bob ##> "/_start"
+        bob <### ["chat started", "subscribed 1 connections on server localhost"]
+        bob ##> ("/fr 1 " <> tmpDir ps)
+        bob
+          <### [ ConsoleString $ "saving file 1 from alice to " <> tmpFile ps "test.pdf",
+                 "started receiving file 1 (test.pdf) from alice"
+               ]
+        bob <## "completed receiving file 1 (test.pdf) from alice"
 
 testXFTPCancelRcvRepeat :: HasCallStack => TestParams -> IO ()
 testXFTPCancelRcvRepeat =
