@@ -33,7 +33,7 @@ The compose module handles all message creation, editing, and forwarding. It sit
 ComposeView
 ├── Context banner (reply quote / edit indicator / forward indicator)
 ├── Attachment preview (image / video / file / voice waveform)
-├── Text input (NativeTextEditor with markdown support)
+├── Text input (NativeTextEditor with native markdown formatting edit menu and auto-growing height)
 ├── Action buttons
 │   ├── Attachment menu (camera, photo library, file picker)
 │   ├── Voice record button (hold or toggle)
@@ -365,6 +365,7 @@ When `chat.chatInfo.groupInfo?.useRelays == true` (channel mode), compose behave
 |------|------|--------------|------|
 | Compose view | [`ComposeView.swift`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift) | `ComposeView` | [L329](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L329) |
 | Send message UI | [`SendMessageView.swift`](../../Shared/Views/Chat/ComposeMessage/SendMessageView.swift) | `SendMessageView` | [L15](../../Shared/Views/Chat/ComposeMessage/SendMessageView.swift#L15) |
+| Text input | [`NativeTextEditor.swift`](../../Shared/Views/Chat/ComposeMessage/NativeTextEditor.swift) | `NativeTextEditor`, `CustomUITextField` | [L14](../../Shared/Views/Chat/ComposeMessage/NativeTextEditor.swift#L14) |
 | Image preview | [`ComposeImageView.swift`](../../Shared/Views/Chat/ComposeMessage/ComposeImageView.swift) | `ComposeImageView` | [L12](../../Shared/Views/Chat/ComposeMessage/ComposeImageView.swift#L12) |
 | File preview | [`ComposeFileView.swift`](../../Shared/Views/Chat/ComposeMessage/ComposeFileView.swift) | `ComposeFileView` | [L11](../../Shared/Views/Chat/ComposeMessage/ComposeFileView.swift#L11) |
 | Voice preview | [`ComposeVoiceView.swift`](../../Shared/Views/Chat/ComposeMessage/ComposeVoiceView.swift) | `ComposeVoiceView` | [L26](../../Shared/Views/Chat/ComposeMessage/ComposeVoiceView.swift#L26) |
