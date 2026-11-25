@@ -75,15 +75,14 @@ revealHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oePhases, 
     Just body -> case J.eitherDecode body of
       Right request ->
         withTransaction oeStore (`getRegistration` rid) >>= \case
+          Just r@NameRegistration {nrOwner} ->
+            revealSigned oeConfig nrOwner (ofDuration $ orderFieldsOf r) (nrDisputeDays r) request >>= \case
+              True -> withRegistrationTurn oeStore oeTurns r (revealed request) >>= answer . maybe RDGone (either (const RDChanged) id)
+              False -> respond $ refusalResponse NRNotFound
           Nothing -> respond $ refusalResponse NRNotFound
-          Just r -> withRegistrationTurn oeStore oeTurns r (decide request) >>= answer . maybe RDGone (either (const RDChanged) id)
       Left e -> logNote ("POST /api/registration/:id/reveal refused: a malformed reveal: " <> T.pack e) >> respond (refusalResponse NRBadRequest)
     Nothing -> answer $ RDRefused (ORBadRequest "the body is over its size limit")
   where
-    decide request r@NameRegistration {nrOwner} =
-      revealSigned oeConfig nrOwner (ofDuration $ orderFieldsOf r) (nrDisputeDays r) request >>= \case
-        False -> pure RDGone
-        True -> revealed request r
     revealed request r@NameRegistration {nrReveal} = do
       now <- oeNow
       case nrReveal of
