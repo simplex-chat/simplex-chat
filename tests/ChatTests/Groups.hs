@@ -6468,11 +6468,11 @@ testGroupMsgForwardBlockedToModerators =
           bob <## "#team: alice changed the role of cath from moderator to member (signed)",
           cath <## "#team: alice changed your role from moderator to member (signed)"
         ]
-      sent <- sndMsgCount alice cathConnId
+      sent <- lastSndMsgId alice cathConnId
       bob #> "#team spam again"
       alice <# "#team bob> spam again [blocked by admin] <muted>"
       cath <// 500000
-      sndMsgCount alice cathConnId `shouldReturn` sent
+      lastSndMsgId alice cathConnId `shouldReturn` sent
 
 setupGroupForwarding :: TestCC -> TestCC -> TestCC -> IO ()
 setupGroupForwarding host invitee1 invitee2 = do
@@ -12166,7 +12166,7 @@ testChannelBlockedMemberToModerators ps =
 
             danConnId <- relayConnIdToMember bob "dan"
             aliceConnId <- relayConnIdToMember bob "alice"
-            sentToDan <- sndMsgCount bob danConnId
+            sentToDan <- lastSndMsgId bob danConnId
             cath #> "#team spam"
             alice <# "#team cath> spam [blocked by admin] [>>] <muted>"
             lastSndMsgFlags bob aliceConnId 1 `shouldReturn` ["F"]
@@ -12174,7 +12174,7 @@ testChannelBlockedMemberToModerators ps =
             bob <// 50000
             dan <// 50000
             eve <// 50000
-            sndMsgCount bob danConnId `shouldReturn` sentToDan
+            lastSndMsgId bob danConnId `shouldReturn` sentToDan
             dan #$> ("/_get chat #1 count=1", chat, [(0, "hello from cath")])
 
 checkMemberRow :: HasCallStack => TestCC -> T.Text -> Maybe T.Text -> IO ()
@@ -15058,10 +15058,10 @@ lastSndMsgFlags cc connId n = do
       (connId, Binary ("M" :: ByteString), n)
   pure $ reverse $ map fromOnly rows
 
-sndMsgCount :: TestCC -> ByteString -> IO Int
-sndMsgCount cc connId = do
+lastSndMsgId :: TestCC -> ByteString -> IO Int
+lastSndMsgId cc connId = do
   [Only n] <- withCCAgentTransaction cc $ \db ->
-    DB.query db "SELECT count(1) FROM messages WHERE conn_id = ? AND internal_snd_id IS NOT NULL" (Only connId)
+    DB.query db "SELECT last_internal_snd_msg_id FROM connections WHERE conn_id = ?" (Only connId)
   pure n
 
 lastJobNotification :: TestCC -> IO Bool

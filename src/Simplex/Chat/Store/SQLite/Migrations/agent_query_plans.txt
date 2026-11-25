@@ -1478,6 +1478,10 @@ Query: SELECT last_insert_rowid()
 Plan:
 SCAN CONSTANT ROW
 
+Query: SELECT last_internal_snd_msg_id FROM connections WHERE conn_id = ?
+Plan:
+SEARCH connections USING PRIMARY KEY (conn_id=?)
+
 Query: SELECT msg_flags FROM messages WHERE conn_id = ? AND internal_snd_id IS NOT NULL AND msg_type = ? ORDER BY internal_id DESC LIMIT ?
 Plan:
 SEARCH messages USING PRIMARY KEY (conn_id=?)
