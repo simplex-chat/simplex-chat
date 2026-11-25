@@ -4311,6 +4311,8 @@ runDeliveryTaskWorker a deliveryKey Worker {doWork} = do
         processDeliveryTask :: MessageDeliveryTask -> CM ()
         processDeliveryTask task@MessageDeliveryTask {jobScope} =
           case jobScopeImpliedSpec jobScope of
+            DJDeliveryJob _includePending -> deliverTasks True
+            DJModerators -> deliverTasks False
             -- DJRelayRemoved is allowed when RSInactive - it forwards XGrpMemDel about relay's own deletion
             DJRelayRemoved
               | workerScope /= DWSGroup ->
@@ -4323,17 +4325,16 @@ runDeliveryTaskWorker a deliveryKey Worker {doWork} = do
                     createMsgDeliveryJob db gInfo jobScope [senderGMId] (msgHasNotification verifiedMsg) body
                     updateDeliveryTaskStatus db (deliveryTaskId task) DTSProcessed
                   lift . void $ getDeliveryJobWorker True deliveryKey
-            jobSpec
-              | not (relayServesGroup gInfo) -> do
+          where
+            deliverTasks withNotifications
+              | not (relayServesGroup gInfo) = do
                   logWarn "delivery task worker: relay inactive"
                   withStore' $ \db -> setDeliveryTaskErrStatus db (deliveryTaskId task) "relay inactive"
-              | otherwise ->
+              | otherwise =
                   withWorkItems a doWork (withStoreIsolation' RepeatableRead $ \db -> getNextDeliveryTasks db gInfo task) $ \nextTasks -> do
                     let (body_, acceptedTasks, largeTasks) = batchDeliveryTasks1 (vr cxt) maxForwardBatchLength nextTasks
                         senderGMIds = S.toList . S.fromList $ map (\MessageDeliveryTask {senderGMId} -> senderGMId) acceptedTasks
-                        notification = case jobSpec of
-                          DJModerators -> False
-                          _ -> any (\MessageDeliveryTask {verifiedMsg} -> msgHasNotification verifiedMsg) acceptedTasks
+                        notification = withNotifications && any (\MessageDeliveryTask {verifiedMsg} -> msgHasNotification verifiedMsg) acceptedTasks
                     withStore' $ \db -> do
                       forM_ body_ $ \body -> createMsgDeliveryJob db gInfo jobScope senderGMIds notification body
                       forM_ acceptedTasks $ \t -> updateDeliveryTaskStatus db (deliveryTaskId t) DTSProcessed
@@ -4403,6 +4404,8 @@ runDeliveryJobWorker a deliveryKey Worker {doWork} = do
         processDeliveryJob :: MessageDeliveryJob -> CM ()
         processDeliveryJob job =
           case jobScopeImpliedSpec jobScope of
+            DJDeliveryJob _includePending -> deliverJob
+            DJModerators -> deliverJob
             -- DJRelayRemoved is allowed when RSInactive - it forwards XGrpMemDel about relay's own deletion
             DJRelayRemoved
               | workerScope /= DWSGroup ->
@@ -4411,14 +4414,14 @@ runDeliveryJobWorker a deliveryKey Worker {doWork} = do
                   sendBodyToMembers
                   deleteGroupConnections user gInfo True
                   withStore' $ \db -> updateDeliveryJobStatus db jobId DJSComplete
-            _
-              | not (relayServesGroup gInfo) -> do
+          where
+            deliverJob
+              | not (relayServesGroup gInfo) = do
                   logWarn "delivery job worker: relay inactive"
                   withStore' $ \db -> setDeliveryJobErrStatus db (deliveryJobId job) "relay inactive"
-              | otherwise -> do
+              | otherwise = do
                   sendBodyToMembers
                   withStore' $ \db -> updateDeliveryJobStatus db jobId DJSComplete
-          where
             MessageDeliveryJob {jobId, jobScope, senderGMIds, body, notification, cursorGMId_ = startingCursor} = job
             singleSenderGMId_ = case senderGMIds of
               [s] -> Just s
