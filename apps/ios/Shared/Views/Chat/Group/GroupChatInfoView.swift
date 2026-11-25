@@ -1062,7 +1062,7 @@ func showRemoveMemberAlert(_ groupInfo: GroupInfo, _ mem: GroupMember, dismiss: 
 
 func cannotBlockWarning(_ mem: GroupMember) -> String {
     mem.blockedByAdmin && mem.versionRange.maxVersion < LINK_NOTICE_VERSION
-        ? "\n\n" + NSLocalizedString("1 member with previous version: cannot block", comment: "alert message")
+        ? "\n\n" + NSLocalizedString("1 member with the previous version: cannot block", comment: "alert message")
         : ""
 }
 

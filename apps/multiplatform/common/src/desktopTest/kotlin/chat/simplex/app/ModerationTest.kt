@@ -280,7 +280,7 @@ class ModerationTest : RecordedApiTest() {
     banMembersDialog(null, groupInfo, listOf(member(members, "cath"), member(members, "dan")))
     assertTexts(
       "Block members for all?", "Members won't be notified, and their messages will be hidden for all.",
-      "1 member with previous version: block only", "Block", "Cancel"
+      "� 1 member with the previous version: block only", "Block", "Cancel"
     )
     press("Block")
     awaitMember("dan") { it.blockedByAdmin }
@@ -303,7 +303,7 @@ class ModerationTest : RecordedApiTest() {
     removeMembersAlert(null, groupInfo, blocked)
     assertTexts(
       "Remove members?", "Members will be removed from group - this cannot be undone!",
-      "1 member with previous version: cannot block", "Remove", "Remove and delete messages", "Cancel"
+      "� 1 member with the previous version: cannot block", "Remove", "Remove and delete messages", "Cancel"
     )
     press("Remove")
     awaitMember("dan") { it.memberStatus == GroupMemberStatus.MemRemoved }
@@ -315,7 +315,7 @@ class ModerationTest : RecordedApiTest() {
     removeMemberAlert(null, groupInfo, member(blockedMembers("/_block #1 3,4 blocked=on"), "cath"))
     assertTexts(
       "Remove member?", "Member will be removed from group - this cannot be undone!",
-      "1 member with previous version: cannot block", "Remove", "Remove and delete messages", "Cancel"
+      "� 1 member with the previous version: cannot block", "Remove", "Remove and delete messages", "Cancel"
     )
   }
 
@@ -338,6 +338,17 @@ class ModerationTest : RecordedApiTest() {
     assertTexts("Accept member", "Member will be unblocked for all and will join the group, accept member?", "Accept as member", "Accept as observer", "Cancel")
     press("Accept as member")
     awaitMember("bob") { !it.memberPending && !it.blockedByAdmin }
+  }
+
+  @Test
+  fun promotionOfBlockedMemberAsksToUnblock() = recordedAlerts("bans/block-members") {
+    val (groupInfo, _) = openGroup()
+    val bob = member(blockedMembers("/_block #1 2 blocked=on"), "bob")
+    replaceMembers(listOf(bob))
+    unblockBeforeRoleChangeAlert(null, groupInfo, bob)
+    assertTexts("Unblock first", "Unblock bob for all before changing the role to moderator or above.", "Cancel", "Unblock")
+    press("Unblock")
+    awaitMember("bob") { !it.blockedByAdmin }
   }
 
   @Test

@@ -132,3 +132,5 @@ Swipe a contact left on iOS, tap and hold it on Android, or right-click it on de
 - **Archive** to hide the chat without telling the contact. You can find it in Archived contacts, under the pencil button.
 - **Delete**, and turn on **Keep conversation** to keep the messages.
 - **Delete and block** a contact who connected via your address. The contact is not notified and can't connect via your address again for 1 day, 1 week or forever. On iOS this button is called **Block**.
+
+If a contact deleted you this way, the app shows "Not allowed" when you open the contact's address.

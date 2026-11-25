@@ -2121,10 +2121,12 @@
   <string name="ban_member_desc_ban_and_remove">%s won\'t be notified, and if removed, can\'t rejoin while blocked.</string>
   <string name="ban_members_desc">Members won\'t be notified, and their messages will be hidden for all.</string>
   <string name="ban_members_desc_ban_and_remove">Members won\'t be notified, and if removed, can\'t rejoin while blocked.</string>
-  <string name="member_previous_version_ban_only">1 member with previous version: block only</string>
-  <string name="members_previous_version_ban_only">%d members with previous version: block only</string>
-  <string name="member_previous_version_cannot_ban">1 member with previous version: cannot block</string>
-  <string name="members_previous_version_cannot_ban">%d members with previous version: cannot block</string>
+  <string name="member_previous_version_ban_only">1 member with the previous version: block only</string>
+  <string name="members_previous_version_ban_only">%d members with the previous version: block only</string>
+  <string name="member_previous_version_cannot_ban">1 member with the previous version: cannot block</string>
+  <string name="members_previous_version_cannot_ban">%d members with the previous version: cannot block</string>
+  <string name="unblock_first">Unblock first</string>
+  <string name="unblock_before_role_change">Unblock %s for all before changing the role to moderator or above.</string>
   <string name="ban_subscribers_desc">Subscribers won\'t be notified, and their messages will be hidden for all.</string>
   <string name="ban_subscribers_desc_ban_and_remove">Subscribers won\'t be notified, and if removed, can\'t rejoin while blocked.</string>
   <string name="remove_banned_member_desc">%s won\'t be notified, and can\'t rejoin while blocked.</string>

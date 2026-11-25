@@ -81,31 +81,17 @@ role.
 
 <img src="./images/groups-block-member.png" alt="Block member for all, with Block and Block and remove" width="288">
 
-Tap a member on the group page and tap "Block for all".
+When a member spams or abuses your group, tap the member on the group page,
+then "Block for all". The member's messages are hidden for everyone, and the
+member is not told.
 
-- **Block**: other members don't see the member's messages until you unblock
-  the member. Moderators, admins and owners still see them hidden. The member
-  is not told.
-- **Block and remove** (admins and owners): choose for how long the member
-  can't rejoin via the group link: 1 day, 1 week or forever. The time ends on
-  the hour.
-
-Removing a blocked member asks the same question.
-
-On Android and desktop you can select several members. A small clock on the
-remove button shows that the selected members will be removed with a block on
-rejoining: it appears when a selected member is blocked, and disappears when
-you select a member whose app needs an update.
-
-Accept also unblocks a blocked member who waits for approval.
+To stop the member coming back, admins tap "Block and remove": the member
+can't rejoin via the group link for 1 day, 1 week or forever.
 
 <img src="./images/groups-not-allowed.png" alt="Not allowed: blocked by the admins of this group until a date" width="288">
 
-If an admin removed you with a block, the link shows "Not allowed" and when the block ends. The
-block is stored only in your app, for that link: no IDs are shared, and other
-links and invitations still work.
-
-The same applies to the address of a contact or business that deleted you with a block.
+If you were removed this way, the app shows "Not allowed" when you open the
+link. The block is kept only in your app, and other links still work.
 
 ## Link to join group
 

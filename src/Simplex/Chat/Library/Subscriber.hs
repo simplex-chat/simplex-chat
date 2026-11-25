@@ -2812,7 +2812,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
     xDirectDel :: Contact -> Bool -> Maybe LinkNotice -> RcvMessage -> MsgMeta -> CM ()
     xDirectDel c silent notice_ msg msgMeta = do
       forM_ notice_ $ \notice -> do
-        rounding <- asks $ endTimeRounding . config
+        rounding <- asks $ linkNoticeEndTimeRounding . config
         withStore' $ \db -> setContactLinkNotice db c rounding brokerTs notice
       unless silent $
         if directOrUsed c
@@ -3343,8 +3343,9 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                   pure $ deliveryJobScope newMember
       where
         setAnnouncedRestrictions db announced = case memRestrictions_ of
-          Just MemberRestrictions {restriction} -> updateGroupMemberBlocked db user gInfo restriction announced
-          Nothing -> pure announced
+          Just MemberRestrictions {restriction}
+            | not (useRelays' gInfo && memberRole' announced >= GRModerator) -> updateGroupMemberBlocked db user gInfo restriction announced
+          _ -> pure announced
         initialStatus = case msgScope_ of
           Just (MSMember _) -> GSMemPendingReview
           _ -> GSMemAnnounced
@@ -3370,7 +3371,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
             pure (announcedMember', Just scopeInfo)
 
     xGrpMemIntro :: GroupInfo -> GroupMember -> MemberInfo -> Maybe MemberRestrictions -> CM ()
-    xGrpMemIntro gInfo@GroupInfo {chatSettings} m@GroupMember {memberRole, localDisplayName = c} memInfo@(MemberInfo memId _ memChatVRange _ _) memRestrictions = do
+    xGrpMemIntro gInfo@GroupInfo {chatSettings} m@GroupMember {memberRole, localDisplayName = c} memInfo@(MemberInfo memId memRole memChatVRange _ _) memRestrictions = do
       case memberCategory m of
         GCHostMember ->
           withStore' (\db -> runExceptT $ getGroupMemberByMemberId db cxt user gInfo memId) >>= \case
@@ -3389,7 +3390,8 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                         MemberInfo mId mRole v p _
                           | mRole >= GRMember -> MemberInfo mId defaultRole v p Nothing
                         _ -> memInfo
-                  void $ withStore $ \db -> createIntroReMember db cxt user gInfo memInfo' (memberInfoPresHeader gInfo memInfo') memRestrictions
+                      restrictions = if memRole >= GRModerator then Nothing else memRestrictions
+                  void $ withStore $ \db -> createIntroReMember db cxt user gInfo memInfo' (memberInfoPresHeader gInfo memInfo') restrictions
               | otherwise -> do
                   when (memberRole < GRAdmin) $ throwChatError (CEGroupContactRole c)
                   case memChatVRange of
@@ -3801,7 +3803,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
         then applyAtRosterVersion g fwdRelay_ m rosterVer_ $ checkRole membership $ do
           deleteGroupLinkIfExists user gInfo
           when (trusted membership) $ forM_ notice_ $ \notice -> do
-            rounding <- asks $ endTimeRounding . config
+            rounding <- asks $ linkNoticeEndTimeRounding . config
             withStore' $ \db -> setGroupLinkNotice db gInfo rounding brokerTs notice
           if silent' membership && not (isUserGrpFwdRelay gInfo)
             then do

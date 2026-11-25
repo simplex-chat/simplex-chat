@@ -28,19 +28,19 @@ import qualified Data.ByteString.Char8 as B
 import Data.Maybe (fromMaybe, isJust, maybeToList)
 import Data.Time (UTCTime (..), fromGregorian, getCurrentTime)
 import Data.Int (Int64)
-import Data.List (intercalate, isInfixOf, isSubsequenceOf, isSuffixOf)
+import Data.List (find, intercalate, isInfixOf, isSubsequenceOf, isSuffixOf)
 import qualified Data.Map.Strict as M
 import qualified Data.Text as T
 import Simplex.Chat.Badges (FileSizeLimits (..))
 import Simplex.Chat.Controller (ChatController (ChatController, smpAgent, subscriptionMode), ChatConfig (..), ChatError (ChatErrorStore), ChatEvent (CEvtChatItemUpdated, CEvtDuplicateGroupMessage), ChatHooks (..), ChatLogLevel (..), defaultChatHooks, withAgent, withStore, withStore')
-import Simplex.Chat.Library.Internal (chatStoreCxt, encodeConnInfo, getShortLinkConnReq, sendDirectMemberMessage, sendGroupMessage', uniqueMsgMentions, updatedMentionNames)
+import Simplex.Chat.Library.Internal (chatStoreCxt, encodeConnInfo, getShortLinkConnReq, memberInfo, sendDirectMemberMessage, sendGroupMessage', uniqueMsgMentions, updatedMentionNames)
 import Simplex.Chat.Markdown (parseMaybeMarkdownList)
 import Simplex.Chat.Messages (AChatItemUpdate (..), CIMention (..), CIMentionMember (..), ChatItem (ChatItem, mentions), ChatItemId, isUserMention)
 import Simplex.Chat.Messages.Batch (encodeBinaryBatch, encodeFwdElement)
 import Simplex.Chat.Messages.CIContent (publicGroupNoE2EText)
 import Simplex.Chat.Options
 import Simplex.Chat.Protocol (ChatMessage (ChatMessage), ChatMsgEvent (BFileChunk, XFile, XGrpMemDel, XGrpMemFwd, XGrpMemIntro, XGrpMemNew, XGrpMemRestrict, XGrpRelayInv, XInfo, XMember, XMsgFileDescr, XMsgUpdate, XMsgNew, XMsgDel), FileChunk (..), FwdSender (FwdMember, FwdChannel), GrpMemDel (..), GrpMsgForward (GrpMsgForward), LinkNotice (..), MsgContainer (..), MsgEncodingI, MsgMention (..), MsgContent (..), VerifiedMsg (VMUnsigned), chatMsgToBody, mcSimple, msgContentText, supportedChatVRange)
-import Simplex.Chat.Store.Groups (getGroupRelayMembers)
+import Simplex.Chat.Store.Groups (getGroupMembers, getGroupRelayMembers)
 import Simplex.Chat.Store.Shared (StoreError (SEFileIdNotFoundBySharedMsgId), capExpiry, getGroupInfoKeys, ttlEndTime)
 import Simplex.Chat.Types
 import Simplex.Chat.Types.MemberRelations (MemberRelation (..), getRelation, setRelation)
@@ -414,6 +414,7 @@ chatGroupTests = do
         it "role transitions update the roster (mod <-> admin, admin -> non-roster)" testChannelRoleTransitionsUpdateRoster
         it "malicious relay cannot downgrade or re-key a roster-established moderator via XGrpMemNew" testChannelRelayCannotDowngradeRosterMember
         it "malicious relay cannot forge a privileged member via XGrpMemNew forwarded as the owner" testChannelRelayCannotForgePrivilegedMember
+        it "malicious relay cannot block a roster-established moderator via XGrpMemNew" testChannelRelayCannotBlockRosterModerator
         it "relay introduction of the subscriber's own member keeps the subscriber's profile" testChannelOwnMemberIntroKeepsProfile
         it "owner promotion with a different member key keeps the member role" testChannelPromotionDifferentKeyKeepsRole
         it "owner promotion pins the key of a member known without a key" testChannelPromotionPinsMemberKey
@@ -12409,6 +12410,40 @@ testChannelRelayCannotDowngradeRosterMember ps =
       case rows of
         [Only k] -> pure k
         _ -> fail $ "expected one row for " <> T.unpack name
+
+testChannelRelayCannotBlockRosterModerator :: HasCallStack => TestParams -> IO ()
+testChannelRelayCannotBlockRosterModerator ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath ->
+        withNewTestChat ps "frank" frankProfile $ \frank -> do
+          (shortLink, fullLink) <- prepareChannel1Relay "team" alice bob
+          memberJoinChannel "team" [bob] [alice] shortLink fullLink cath
+          memberJoinChannel "team" [bob] [alice] shortLink fullLink frank
+          threadDelay 1000000
+          alice ##> "/mr #team cath moderator"
+          alice <## "#team: you changed the role of cath to moderator (signed)"
+          concurrentlyN_
+            [ bob <## "#team: alice changed the role of cath from observer to moderator (signed)",
+              cath <## "#team: alice changed your role from observer to moderator (signed)",
+              frank <### [EndsWith "to moderator (signed)"]
+            ]
+          threadDelay 100000
+          withCCUser bob $ \user -> do
+            let sendMemNew = do
+                  cxt <- chatStoreCxt
+                  g@(GIK gInfo _) <- withStore $ \db -> getGroupInfoKeys db cxt user 1
+                  members <- withStore' $ \db -> getGroupMembers db cxt user gInfo
+                  let named n = find (\GroupMember {localDisplayName = ldn} -> ldn == n) members
+                  case (named "cath", named "frank") of
+                    (Just cathMem, Just frankMem) ->
+                      void $ sendGroupMessage' user g [frankMem] $ XGrpMemNew (memberInfo gInfo cathMem) Nothing (Just MemberRestrictions {restriction = MRSBlocked})
+                    _ -> error "members not found"
+            runExceptT sendMemNew `runReaderT` chatController bob >>= either (fail . show) pure
+          frank <### [EndsWith "updated to cath"]
+          frank <## "#team: bob introduced cath (Catherine) in the channel"
+          threadDelay 100000
+          withCCTransaction frank (\db -> DB.query_ db "SELECT member_restriction FROM group_members WHERE local_display_name = 'cath'") `shouldReturn` [Only (Nothing :: Maybe T.Text)]
 
 testChannelRelayCannotForgePrivilegedMember :: HasCallStack => TestParams -> IO ()
 testChannelRelayCannotForgePrivilegedMember ps =

@@ -59,6 +59,7 @@ struct GroupMemberInfoView: View {
         case blockMemberAlert(mem: GroupMember)
         case unblockMemberAlert(mem: GroupMember)
         case unblockForAllAlert(mem: GroupMember)
+        case unblockBeforeRoleChangeAlert(mem: GroupMember)
         case changeMemberRoleAlert(mem: GroupMember, role: GroupMemberRole)
         case switchAddressAlert
         case abortSwitchAddressAlert
@@ -72,6 +73,7 @@ struct GroupMemberInfoView: View {
             case let .blockMemberAlert(mem): return "blockMemberAlert \(mem.groupMemberId)"
             case let .unblockMemberAlert(mem): return "unblockMemberAlert \(mem.groupMemberId)"
             case let .unblockForAllAlert(mem): return "unblockForAllAlert \(mem.groupMemberId)"
+            case let .unblockBeforeRoleChangeAlert(mem): return "unblockBeforeRoleChangeAlert \(mem.groupMemberId)"
             case let .changeMemberRoleAlert(mem, role): return "changeMemberRoleAlert \(mem.groupMemberId) \(role.rawValue)"
             case .switchAddressAlert: return "switchAddressAlert"
             case .abortSwitchAddressAlert: return "abortSwitchAddressAlert"
@@ -324,9 +326,14 @@ struct GroupMemberInfoView: View {
                     }
                 }
             }
-            .onChange(of: newRole) { newRole in
-                if newRole != member.memberRole {
-                    alert = .changeMemberRoleAlert(mem: member, role: newRole)
+            .onChange(of: newRole) { role in
+                if role != member.memberRole {
+                    if role >= .moderator && member.blockedByAdmin {
+                        newRole = member.memberRole
+                        alert = .unblockBeforeRoleChangeAlert(mem: member)
+                    } else {
+                        alert = .changeMemberRoleAlert(mem: member, role: role)
+                    }
                 }
             }
             .onChange(of: member.memberRole) { role in
@@ -338,6 +345,7 @@ struct GroupMemberInfoView: View {
                 case let .blockMemberAlert(mem): return blockMemberAlert(groupInfo, mem)
                 case let .unblockMemberAlert(mem): return unblockMemberAlert(groupInfo, mem)
                 case let .unblockForAllAlert(mem): return unblockForAllAlert(groupInfo, mem)
+                case let .unblockBeforeRoleChangeAlert(mem): return unblockBeforeRoleChangeAlert(groupInfo, mem)
                 case let .changeMemberRoleAlert(mem, _): return changeMemberRoleAlert(mem)
                 case .switchAddressAlert: return switchAddressAlert(switchMemberAddress)
                 case .abortSwitchAddressAlert: return abortSwitchAddressAlert(abortSwitchMemberAddress)
@@ -886,6 +894,17 @@ func unblockForAllAlert(_ gInfo: GroupInfo, _ mem: GroupMember) -> Alert {
             ? Text("Messages from \(mem.displayName) will be shown for all subscribers.")
             : Text("Messages from \(mem.displayName) will be shown for all members."),
         primaryButton: .default(Text("Unblock for all")) {
+            blockMemberForAll(gInfo, mem, false)
+        },
+        secondaryButton: .cancel()
+    )
+}
+
+func unblockBeforeRoleChangeAlert(_ gInfo: GroupInfo, _ mem: GroupMember) -> Alert {
+    Alert(
+        title: Text("Unblock first"),
+        message: Text("Unblock **\(mem.displayName)** for all before changing the role to moderator or above."),
+        primaryButton: .default(Text("Unblock")) {
             blockMemberForAll(gInfo, mem, false)
         },
         secondaryButton: .cancel()

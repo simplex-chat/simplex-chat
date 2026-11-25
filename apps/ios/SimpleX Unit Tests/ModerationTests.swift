@@ -137,6 +137,18 @@ final class ModerationTests: RecordedAPITestCase {
     }
 
     @MainActor
+    func testPromotionOfBlockedMemberAsksToUnblock() async throws {
+        try recorded("bans/block-members")
+        let (groupInfo, _) = try openGroup()
+        let bob = try member(try blockedMembers("/_block #1 2 blocked=on"), "bob")
+        replaceMembers([bob])
+        AlertManager.shared.showAlert(unblockBeforeRoleChangeAlert(groupInfo, bob))
+        try await assertTexts(["Unblock first", "Unblock bob for all before changing the role to moderator or above.", "Unblock", "Cancel"])
+        try await press("Unblock")
+        try await awaitMember("bob") { !$0.blockedByAdmin }
+    }
+
+    @MainActor
     func testBlockAndRemoveMember() async throws {
         try recorded("bans/block-members")
         let (groupInfo, members) = try openGroup()
@@ -229,7 +241,7 @@ final class ModerationTests: RecordedAPITestCase {
         showRemoveMemberAlert(groupInfo, try member(try blockedMembers("/_block #1 3,4 blocked=on"), "cath"))
         try await assertTexts([
             "Remove member?",
-            "Member will be removed from group - this cannot be undone!\n\n1 member with previous version: cannot block",
+            "Member will be removed from group - this cannot be undone!\n\n1 member with the previous version: cannot block",
             "Remove", "Remove and delete messages", "Cancel"
         ])
     }

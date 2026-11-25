@@ -151,6 +151,10 @@ fun GroupMemberInfoView(
       deleteMemberMessages = { deleteMemberMessagesDialog(rhId, groupInfo, member, chatModel, close) },
       onRoleSelected = {
         if (it == newRole.value) return@GroupMemberInfoLayout
+        if (it >= GroupMemberRole.Moderator && member.blockedByAdmin) {
+          unblockBeforeRoleChangeAlert(rhId, groupInfo, member)
+          return@GroupMemberInfoLayout
+        }
         val prevValue = newRole.value
         newRole.value = it
         updateMemberRoleDialog(it, groupInfo, member.memberCurrent, onDismiss = {
@@ -992,6 +996,16 @@ fun updateMembersRole(newRole: GroupMemberRole, rhId: Long?, groupInfo: GroupInf
   }
 }
 
+fun unblockBeforeRoleChangeAlert(rhId: Long?, gInfo: GroupInfo, member: GroupMember) {
+  AlertManager.shared.showAlertDialog(
+    title = generalGetString(MR.strings.unblock_first),
+    text = String.format(generalGetString(MR.strings.unblock_before_role_change), member.displayName),
+    confirmText = generalGetString(MR.strings.unblock_member_confirmation),
+    onConfirm = { blockMemberForAll(rhId, gInfo, listOf(member.groupMemberId), false) },
+    parseHtml = false
+  )
+}
+
 fun updateMemberRoleDialog(
   newRole: GroupMemberRole,
   groupInfo: GroupInfo,
@@ -1132,11 +1146,22 @@ private fun BanDialogText(text: AnnotatedString) {
 
 @Composable
 fun PreviousVersionWarning(text: String, modifier: Modifier = Modifier) {
-  Row(modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
-    Icon(painterResource(MR.images.ic_warning), null, Modifier.size(18.dp), tint = WarningOrange)
-    Spacer(Modifier.width(DEFAULT_SPACE_AFTER_ICON))
-    Text(text, fontSize = 16.sp, color = MaterialTheme.colors.secondary)
-  }
+  Text(
+    buildAnnotatedString {
+      appendInlineContent(id = "warningIcon")
+      append(" ")
+      append(text)
+    },
+    modifier.fillMaxWidth(),
+    inlineContent = mapOf(
+      "warningIcon" to InlineTextContent(Placeholder(18.sp, 18.sp, PlaceholderVerticalAlign.TextCenter)) {
+        Icon(painterResource(MR.images.ic_warning), null, tint = WarningOrange)
+      }
+    ),
+    fontSize = 16.sp,
+    textAlign = TextAlign.Center,
+    color = MaterialTheme.colors.secondary
+  )
 }
 
 fun previousVersionWarningText(members: List<GroupMember>, one: StringResource, many: StringResource): String? =
