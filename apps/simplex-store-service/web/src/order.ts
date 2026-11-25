@@ -42,27 +42,33 @@ export type HistoryRow =
   | { kind: "open"; order: UnpaidOrder }
   | { kind: "partPaid"; order: UnpaidOrder }
   | { kind: "processing"; order: UnpaidOrder }
+  | { kind: "settling"; order: UnpaidOrder }
   | { kind: "canceled"; order: UnpaidOrder }
+  | { kind: "canceledPaid"; order: UnpaidOrder }
   | { kind: "expired"; order: UnpaidOrder };
 
 export function historyRows(entries: readonly OrderRecord[]): HistoryRow[] {
   return entries.map((e) => {
     const order = withoutCode(e);
-    // A canceled order wins over the expired or open status the server left behind, but a paid order
-    // keeps its code even where a cancel lost to settlement.
+    // A cancel takes precedence over an open or expired status, and a settlement over a cancel.
     switch (orderPhase(e)) {
       case "paid":
         return e.code !== undefined ? { kind: "paid" as const, order, code: e.code } : { kind: "paidNoCode" as const, order };
       case "expired":
-        return e.canceled === true ? { kind: "canceled" as const, order } : { kind: "expired" as const, order };
+        if (e.canceled !== true) return { kind: "expired" as const, order };
+        return receivedMoney(e) ? { kind: "canceledPaid" as const, order } : { kind: "canceled" as const, order };
       case "processing":
-        return { kind: "processing" as const, order };
+        return e.method === "ln" ? { kind: "settling" as const, order } : { kind: "processing" as const, order };
       case "partPaid":
         return { kind: "partPaid" as const, order };
       case "awaiting":
         return e.canceled === true ? { kind: "canceled" as const, order } : { kind: "open" as const, order };
     }
   });
+}
+
+export function receivedMoney(e: Partial<Pick<OrderServerState, "amountPaid" | "cryptoAmountPaid" | "paidInFull">> | undefined): boolean {
+  return e?.paidInFull === true || e?.cryptoAmountPaid !== undefined || (e?.amountPaid ?? 0) > 0;
 }
 
 export function recordFromView(orderId: string, view: InvoiceView, nowMs: number): OrderRecord {

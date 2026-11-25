@@ -374,6 +374,8 @@ mainTest("main: the provider-unavailable screen notice does not outlive the chec
   page.respondWith({ status: 503, body: { type: "provider_unavailable" } });
   primary(inView())!.click();
   await until(() => inView().textContent.includes("temporarily unavailable"), "the provider-unavailable screen again");
+  assert.ok(inView().textContent.includes("Bitcoin is temporarily unavailable"), inView().textContent);
+  assert.ok(inView().textContent.includes("with Monero"), "Bitcoin falls back to Monero, as before Lightning was offered");
   history.back();
   history.back();
   history.back();
@@ -381,6 +383,13 @@ mainTest("main: the provider-unavailable screen notice does not outlive the chec
   walk();
   assert.equal(heading(inView()), "Check your order");
   assert.ok(!inView().textContent.includes("temporarily unavailable"), inView().textContent);
+
+  inView().all("button.choice").find((c) => c.textContent.includes("Lightning"))!.click();
+  page.respondWith({ status: 503, body: { type: "provider_unavailable" } });
+  primary(inView())!.click();
+  await until(() => inView().textContent.includes("temporarily unavailable"), "the provider-unavailable screen for Lightning");
+  assert.ok(inView().textContent.includes("Lightning is temporarily unavailable"), inView().textContent);
+  assert.ok(inView().textContent.includes("with Bitcoin"), "Lightning falls back to Bitcoin");
 });
 
 mainTest("main: nothing is left running when the page has been navigated away from", async () => {

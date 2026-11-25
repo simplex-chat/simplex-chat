@@ -50,7 +50,7 @@ badgeConfigTests = describe "store service config" $ do
   it "accepts a poll cadence and refuses a zero or negative one" testPollCadence
   it "accepts an expiry window and refuses a zero or negative one" testExpiryMinutes
   it "accepts a payment tolerance and refuses one that settles for a satoshi" testPaymentTolerance
-  it "refuses a host that would send the api key in the clear or that the HTTP client cannot parse, in any case of the scheme" testHostMustBeHttps
+  it "refuses a BTCPay host that would send the api key in the clear off the machine or that the HTTP client cannot parse, takes http on loopback, in any case of the scheme" testHostMustBeHttps
   it "names a setting nothing reads, in every section it parses" testUnknownKeysAreNamed
   it "ignores a section nothing reads rather than refusing the file" testUnknownSectionStillBoots
   it "refuses a line that is neither a header, a setting nor a comment, naming its line" testMalformedLineRefused
@@ -376,13 +376,11 @@ testPaymentTolerance = do
 
 testHostMustBeHttps :: IO ()
 testHostMustBeHttps = do
-  withIni (T.replace "https://" "http://" fullIni) $ \p ->
-    readServiceConfig p >>= \r -> case r of
-      Left e -> e `shouldContain` "https"
-      Right _ -> expectationFailure "an http host carries the api key in the clear"
-  void <$> parseIni (withHost "https://btcpay.example.org:port") `shouldReturn` Left "btcpay.host must be an absolute https URL"
-  Right ServiceConfig {btcpay = Just BTCPayConfig {bHost}} <- parseIni (withHost "HTTPS://btcpay.example.org")
-  bHost `shouldBe` "HTTPS://btcpay.example.org"
+  forM_ ["http://btcpay.example.org", "http://127.0.0.1.example.org:49392", "http://localhost@btcpay.example.org", "http://10.0.0.5:49392", "https://btcpay.example.org:port"] $ \host ->
+    void <$> parseIni (withHost host) `shouldReturn` Left "btcpay.host must be an https URL, or http to BTCPay on loopback: 127.0.0.1, ::1 or localhost"
+  forM_ ["http://127.0.0.1:49392", "http://localhost:49392", "http://[::1]:49392", "HTTPS://btcpay.example.org"] $ \host -> do
+    Right ServiceConfig {btcpay = Just BTCPayConfig {bHost}} <- parseIni (withHost host)
+    bHost `shouldBe` host
   where
     withHost host = T.replace "host = https://btcpay.example.org" ("host = " <> host) fullIni
 

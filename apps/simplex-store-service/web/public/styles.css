@@ -775,7 +775,7 @@ p.row-line { margin: 16px 0 0; }
   .badge-art { max-width: 56px; }
 }
 
-/* the order summary's method row: the same three-across grid, with a 30px mark sitting almost
+/* the order summary's method row: the same four-across grid, with a 30px mark sitting almost
    on its label, the line box's own half-leading being most of the gap. */
 .choice.method { padding: 18px 6px 19px; }
 .mark { display: block; width: 30px; height: 30px; margin: 0 auto 2px; }
@@ -1167,10 +1167,11 @@ p.row-line { margin: 16px 0 0; }
 .entry-row:nth-child(2) { margin-top: 5px; }
 .entry-row > .status,
 .entry-row > .secondary { margin-left: auto; }
-/* The state is one short phrase and reads as a label, so it keeps its own line
-   and lets the title take the wrap. Allowed to wrap, "this invoice expired"
-   becomes a two-line block on a phone and squeezes the title beside it. */
-.entry-row > .status { flex: 0 0 auto; white-space: nowrap; }
+/* The state is one short phrase and reads as a label: beside the title where its
+   one line fits there, under the title where it does not, and wrapped only where
+   it is wider than the card. */
+.entry-row:first-child { flex-wrap: wrap; row-gap: 6px; }
+.entry-row > .status { flex: 0 1 auto; text-align: center; }
 .entry-row > .secondary {
   flex: 0 0 auto;
   width: auto;
@@ -1237,6 +1238,8 @@ p.row-line { margin: 16px 0 0; }
   .choice .name { font-size: .875rem; }
   .choice .badge-art + .name { font-size: 1rem; }
   .choice .badge-art ~ .price { font-size: .875rem; }
+  .choice.method { padding: 14px 2px 16px; }
+  .choice.method .name, .choice.method .feature { font-size: .75rem; }
 
   /* `.choice .price` is not the selector to step here: `.choice.term .price`
      and `.choice .badge-art ~ .price` both out-specify it, so the rule that

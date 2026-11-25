@@ -5,6 +5,7 @@ export const NOW = Date.parse("2026-08-28T12:00:00Z");
 export const HELD_CODE = "SB-YDC8A-YGQTM-PUYZ9-2TUXP";
 export const ADDRESS = "48HqK2XmVexampleAddress9fRtWc";
 export const ORDER_ID = "inv_open";
+export const BOLT11 = "lnbc500u1pfakeinvoicedestinationforthetestsonly";
 
 // Written straight into the map, since the stores worth seeding are the ones whose setItem throws or drops.
 export function seededStorage<S extends MemStorage>(into: S = new MemStorage() as S): S {

@@ -88,7 +88,7 @@ import Simplex.Messaging.Encoding.String (strDecode, strEncode, textEncode)
 import Simplex.Messaging.Transport.Client (TransportHost (..))
 import Simplex.Messaging.Util (safeDecodeUtf8, stateTVar', tshow)
 import StoreService.Config (BTCPayConfig (..), ListenerConfig (..), ServiceConfig (..), SpeedPolicy (..), StripeConfig (..), defaultExpiryMinutes, defaultSessionMinutes)
-import StoreService.Providers (Provider (..), providerNamed)
+import StoreService.Providers (Provider (..), providerNamed, settlesOnReceipt)
 import StoreService.Store.Invoices (InvoicePayment (..), InvoiceRow (..), paymentHolds)
 
 data HttpEnv = HttpEnv
@@ -392,7 +392,7 @@ destinationPairs confirmations = \case
       "cryptoAmount" .= cryptoAmount,
       "cryptoCurrency" .= (textEncode currency :: Text)
     ]
-      <> maybe [] (\n -> ["requiredConfirmations" .= n]) confirmations
+      <> [("requiredConfirmations" .= n) | Just n <- [confirmations], not (settlesOnReceipt currency)]
 
 amountJSON :: CurrencyAmount -> J.Value
 amountJSON (CurrencyAmount a) = J.toJSON a

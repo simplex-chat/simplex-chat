@@ -486,6 +486,17 @@ qrTest("qr: a Bitcoin BIP-21 URI round-trips", () => {
   roundTrip(uri, "the Bitcoin URI");
 });
 
+const LONGEST_BOLT11 = 400;
+const VERSION_FOR_LONGEST_BOLT11 = 15;
+const BECH32_CHARSET = "qpzry9x8gf2tvdw0s3jn54khce6mua7l";
+
+qrTest(`qr: a ${LONGEST_BOLT11}-character BOLT11 is scanned as its lightning: link, which a phone camera opens in a wallet`, () => {
+  const bolt11 = "lnbc500u1".padEnd(LONGEST_BOLT11, BECH32_CHARSET);
+  const uri = paymentUri("ln", bolt11, "0.00050000")!;
+  assert.equal(uri, `lightning:${bolt11}`, "the amount is part of the invoice, so the link has none");
+  assert.equal(roundTrip(uri, "the Lightning link").version, VERSION_FOR_LONGEST_BOLT11);
+});
+
 qrTest("qr: a badge code round-trips exactly, hyphens and all", () => {
   const decoded = roundTrip(BADGE_CODE, "the badge code");
   assert.equal(BADGE_CODE.length, 26);
@@ -521,6 +532,8 @@ qrTest("qr: paymentUri refuses half a destination", () => {
   assert.equal(paymentUri("xmr", "", "1.482"), null, "no address is nothing to scan");
   assert.equal(paymentUri("xmr", MONERO_ADDRESS, ""), null, "and a bare address does not prefill an amount");
   assert.equal(paymentUri("btc", BITCOIN_ADDRESS, "0.5"), `bitcoin:${BITCOIN_ADDRESS}?amount=0.5`);
+  assert.equal(paymentUri("ln", "", "0.00050000"), null, "no invoice is nothing to scan");
+  assert.equal(paymentUri("ln", "lnbc500u1p", ""), null, "nor an invoice without the amount owed");
 });
 
 // A fresh regex each time, since matchAll and replace share lastIndex on one object.

@@ -1,0 +1,149 @@
+name: store-lightning
+
+services:
+  postgres:
+    image: postgres:18.1
+    environment:
+      POSTGRES_HOST_AUTH_METHOD: trust
+    command: ["-c", "fsync=off", "-c", "synchronous_commit=off", "-c", "full_page_writes=off"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 2s
+      timeout: 2s
+      retries: 30
+
+  bitcoind:
+    image: btcpayserver/bitcoin:31.1-1
+    environment:
+      BITCOIN_NETWORK: regtest
+      BITCOIN_RPCUSERS: lnd
+      BITCOIN_WALLETDIR: "/data/wallets"
+      BITCOIN_EXTRA_ARGS: |-
+        rpcuser=ceiwHEbqWI83
+        rpcpassword=DwubwWsoo3
+        rpcport=43782
+        rpcbind=0.0.0.0:43782
+        rpcallowip=0.0.0.0/0
+        port=39388
+        whitelist=0.0.0.0/0
+        zmqpubrawblock=tcp://0.0.0.0:28332
+        zmqpubrawtx=tcp://0.0.0.0:28333
+        deprecatedrpc=signrawtransaction
+        fallbackfee=0.0002
+        minrelaytxfee=0.00001000
+        unsafesqlitesync=1
+    ports:
+      - "127.0.0.1:43782:43782"
+    volumes:
+      - "bitcoin_datadir:/data"
+
+  nbxplorer:
+    image: nicolasdorier/nbxplorer:2.6.10
+    restart: unless-stopped
+    environment:
+      NBXPLORER_NETWORK: regtest
+      NBXPLORER_CHAINS: "btc"
+      NBXPLORER_BTCRPCURL: http://bitcoind:43782/
+      NBXPLORER_BTCNODEENDPOINT: bitcoind:39388
+      NBXPLORER_BTCRPCUSER: ceiwHEbqWI83
+      NBXPLORER_BTCRPCPASSWORD: DwubwWsoo3
+      NBXPLORER_BIND: 0.0.0.0:32838
+      NBXPLORER_MINGAPSIZE: 5
+      NBXPLORER_MAXGAPSIZE: 10
+      NBXPLORER_POSTGRES: User ID=postgres;Include Error Detail=true;Host=postgres;Port=5432;Database=nbxplorer
+      NBXPLORER_EXPOSERPC: 1
+      NBXPLORER_NOAUTH: 1
+    depends_on:
+      bitcoind:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+
+  merchant_lnd:
+    image: btcpayserver/lnd:v0.21.3-beta-1
+    environment:
+      LND_CHAIN: "btc"
+      LND_ENVIRONMENT: "regtest"
+      LND_EXPLORERURL: "http://nbxplorer:32838/"
+      LND_REST_LISTEN_HOST: http://merchant_lnd:8080
+      RPCUSER_FILE: /deps/.bitcoin/RPCUsers/lnd
+      LND_EXTRA_ARGS: |
+        restlisten=merchant_lnd:8080
+        rpclisten=127.0.0.1:10008
+        rpclisten=merchant_lnd:10009
+        bitcoin.node=bitcoind
+        bitcoind.rpchost=bitcoind:43782
+        bitcoind.rpcuser=lnd
+        bitcoind.zmqpubrawblock=tcp://bitcoind:28332
+        bitcoind.zmqpubrawtx=tcp://bitcoind:28333
+        externalip=merchant_lnd:9735
+        bitcoin.defaultchanconfs=1
+        no-macaroons=1
+        trickledelay=1000
+        no-rest-tls=1
+    ports:
+      - "127.0.0.1:35531:8080"
+    volumes:
+      - "merchant_lnd_datadir:/data"
+      - "bitcoin_datadir:/deps/.bitcoin"
+    depends_on:
+      - bitcoind
+
+  payer_lnd:
+    image: btcpayserver/lnd:v0.21.3-beta-1
+    environment:
+      LND_CHAIN: "btc"
+      LND_ENVIRONMENT: "regtest"
+      LND_EXPLORERURL: "http://nbxplorer:32838/"
+      LND_REST_LISTEN_HOST: http://payer_lnd:8080
+      RPCUSER_FILE: /deps/.bitcoin/RPCUsers/lnd
+      LND_EXTRA_ARGS: |
+        restlisten=payer_lnd:8080
+        rpclisten=127.0.0.1:10008
+        rpclisten=payer_lnd:10009
+        bitcoin.node=bitcoind
+        bitcoind.rpchost=bitcoind:43782
+        bitcoind.rpcuser=lnd
+        bitcoind.zmqpubrawblock=tcp://bitcoind:28332
+        bitcoind.zmqpubrawtx=tcp://bitcoind:28333
+        externalip=payer_lnd:9735
+        bitcoin.defaultchanconfs=1
+        no-macaroons=1
+        trickledelay=1000
+        no-rest-tls=1
+    ports:
+      - "127.0.0.1:35532:8080"
+    volumes:
+      - "payer_lnd_datadir:/root/.lnd"
+      - "bitcoin_datadir:/deps/.bitcoin"
+    depends_on:
+      - bitcoind
+
+  btcpay:
+    image: btcpayserver/btcpayserver:2.4.4
+    restart: unless-stopped
+    environment:
+      BTCPAY_NETWORK: regtest
+      BTCPAY_BIND: 0.0.0.0:49392
+      BTCPAY_ROOTPATH: /
+      BTCPAY_CHAINS: btc
+      BTCPAY_BTCEXPLORERURL: http://nbxplorer:32838/
+      BTCPAY_POSTGRES: User ID=postgres;Include Error Detail=true;Host=postgres;Port=5432;Database=btcpayserver
+      BTCPAY_EXPLORERPOSTGRES: User ID=postgres;Include Error Detail=true;Host=postgres;Port=5432;Database=nbxplorer
+      BTCPAY_BTCLIGHTNING: "type=lnd-rest;server=http://merchant_lnd:8080/;allowinsecure=true"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "127.0.0.1:49392:49392"
+    depends_on:
+      nbxplorer:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+      merchant_lnd:
+        condition: service_started
+
+volumes:
+  bitcoin_datadir:
+  merchant_lnd_datadir:
+  payer_lnd_datadir:

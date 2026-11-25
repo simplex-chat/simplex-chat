@@ -5,7 +5,8 @@ import assert from "node:assert/strict";
 const domTest = timedTest(2000);
 
 import { StubElement, installDocument } from "./stub-dom.js";
-import { historyRows, withoutCode } from "../src/order.js";
+import { BOLT11 } from "./open-order.js";
+import { historyRows, receivedMoney, withoutCode } from "../src/order.js";
 type UnpaidOrder = import("../src/order.js").UnpaidOrder;
 
 const { clipboard } = installDocument();
@@ -47,6 +48,11 @@ const openXmr: View = {
   status: "open", badgeType: "legend", months: 12, amount: 42000,
   currency: "usd", expiresAt: "2026-08-28T12:58:12Z",
   address: "48HqK2XmVexampleAddress9fRtWc", cryptoAmount: "1.482", cryptoCurrency: "xmr",
+};
+const openLn: View = {
+  status: "open", badgeType: "supporter", months: 1, amount: 700,
+  currency: "usd", expiresAt: "2026-08-28T12:58:12Z",
+  address: BOLT11, cryptoAmount: "0.00050000", cryptoCurrency: "ln",
 };
 const NOW = Date.parse("2026-08-28T12:00:00Z");
 const HELD_CODE = "SB-YDC8A-YGQTM-PUYZ9-2TUXP";
@@ -156,13 +162,13 @@ domTest("screens: the order summary is the summary and the method row, with the 
     onSelect: noop, onPay: noop, onBack: noop,
   }));
   for (const line of ["Check your order", "Your badge", "Legend", "Duration", "12 months", "Total", "$420.00",
-    "Pay with", "Bitcoin", "Monero", "Card", "Pay $420.00 with Monero",
+    "Pay with", "Bitcoin", "Lightning", "Monero", "Card", "Pay $420.00 with Monero",
     "Back"]) {
     assert.ok(p.textContent.includes(line), `the order summary is missing: ${line}`);
   }
   assert.ok(!p.textContent.includes("Stripe"), "with a coin chosen, the processor note is not shown");
   assert.equal(p.all("div.notes.slot").length, 1, "but its slot is, so the line's absence moves nothing");
-  assert.deepEqual(p.all("button.choice").map((c) => c.textContent), ["Card", "Bitcoin", "Monero"]);
+  assert.deepEqual(p.all("button.choice").map((c) => c.textContent), ["Card", "Bitcoin", "Lightning", "Monero"]);
   const card = render(screens.orderSummary({ canKeepTheCode: true,
     badgeType: "legend", months: 12, total: "$420.00", selected: "card",
     onSelect: noop, onPay: noop, onBack: noop,
@@ -226,7 +232,7 @@ domTest("screens: the provider-unavailable screen shows the unavailable method d
   const monero = p.all("button.choice").find((c) => c.textContent.startsWith("Monero"))!;
   assert.ok(monero.hasAttribute("disabled"));
   assert.ok(monero.textContent.includes("unavailable"));
-  assert.equal(p.all("button.choice").length, 3, "the method is shown, not dropped");
+  assert.equal(p.all("button.choice").length, 4, "the method is shown, not dropped");
 });
 
 domTest("screens: the order summary links to an order already waiting for payment", () => {
@@ -520,6 +526,152 @@ domTest("screens: the payment screen offers the amount and a wallet link, both c
   assert.ok(p.textContent.includes("Amount in XMR"), p.textContent);
   for (const b of p.all("button.secondary")) b.click();
   assert.deepEqual(copied, ["1.482", "48HqK2XmVexampleAddress9fRtWc"]);
+});
+
+domTest("screens: Lightning is offered in the order summary, and the buyer who chooses it pays with Lightning", () => {
+  const chosen: string[] = [];
+  const p = render(screens.orderSummary({ canKeepTheCode: true,
+    badgeType: "supporter", months: 1, total: "$7.00", selected: "xmr",
+    onSelect: (m) => { chosen.push(m); }, onPay: noop, onBack: noop,
+  }));
+  const lightning = p.all("button.choice").find((c) => c.textContent === "Lightning");
+  assert.ok(lightning !== undefined, "Lightning is its own option, not folded into Bitcoin");
+  assert.equal(lightning.all("svg.mark").length, 1, "with a mark like the others");
+  lightning.click();
+  assert.deepEqual(chosen, ["ln"]);
+  const selected = render(screens.orderSummary({ canKeepTheCode: true,
+    badgeType: "supporter", months: 1, total: "$7.00", selected: "ln",
+    onSelect: noop, onPay: noop, onBack: noop,
+  }));
+  assert.ok(selected.textContent.includes("Pay $7.00 with Lightning"), selected.textContent);
+  const pressed = selected.all("button.choice").filter((c) => c.getAttribute("aria-pressed") === "true");
+  assert.deepEqual(pressed.map((c) => c.textContent), ["Lightning"]);
+});
+
+domTest("screens: on a Lightning payment screen the BOLT11 is offered as a lightning: link, and confirmations are never mentioned", () => {
+  copied.length = 0;
+  const p = renderAwaitingPayment({
+    order: unpaidRecord(), invoice: openLn, method: "ln", nowMs: NOW, resumed: false, onCancel: noopAsync,
+  });
+  const link = p.all("a.wallet-link")[0];
+  assert.ok(link !== undefined, "the Lightning payment screen has no wallet link");
+  assert.equal(link.getAttribute("href"), `lightning:${BOLT11}`, "the amount is part of the invoice, so none is added to the URI");
+  for (const line of ["Send 0.00050000 BTC", "Amount in BTC", "Lightning invoice", screens.shownDestination("ln", BOLT11),
+    "Waiting for the payment", "Bookmark this page — the invoice and the countdown both live on this URL."]) {
+    assert.ok(p.textContent.includes(line), `the Lightning payment screen is missing: ${line}`);
+  }
+  assert.ok(!p.textContent.includes(BOLT11), "the BOLT11 is shown shortened; Copy, the QR code and the wallet link hold all of it");
+  assert.ok(!/confirm/i.test(p.textContent), `a Lightning payment has no confirmations to wait for: ${p.textContent}`);
+  assert.ok(!p.textContent.includes("Lightning address"), "a BOLT11 is an invoice, not a Lightning address");
+  for (const b of p.all("button.secondary")) b.click();
+  assert.deepEqual(copied, ["0.00050000", BOLT11]);
+});
+
+domTest("screens: a Lightning invoice is shown as its first 8 and last 6 characters, an on-chain address in full", () => {
+  const bolt11 = `lnbcrt1562500n1p${"q".repeat(300)}qpw0frsq`;
+  assert.equal(screens.shownDestination("ln", bolt11), "lnbcrt15…w0frsq");
+  const address = "bcrt1qw508d6qejxtdg4y5r3zarvary0c5xw7kygt080";
+  assert.equal(screens.shownDestination("btc", address), address);
+  assert.equal(screens.shownDestination("xmr", address), address);
+});
+
+domTest("screens: on the Lightning confirming screen the buyer is told to wait for settlement, and a confirmation count is omitted even if one is sent", () => {
+  const paid = { ...openLn, amountPaid: 700, cryptoAmountPaid: "0.00050000", paidInFull: true, requiredConfirmations: 1 };
+  const p = render(screens.awaitingConfirmation({
+    order: smuggled(), invoice: paid, method: "ln", gaveUp: false, onCheckAgain: noop,
+  }));
+  for (const line of ["Payment received", "Waiting for the payment to settle.",
+    "This usually takes a few seconds. The page updates itself.", "0.00050000 BTC"]) {
+    assert.ok(p.textContent.includes(line), `the Lightning confirming screen is missing: ${line}`);
+  }
+  for (const leak of ["confirmation", "blockchain", "block,", "network to confirm"]) {
+    assert.ok(!p.textContent.includes(leak), `"${leak}" is shown on the Lightning confirming screen: ${p.textContent}`);
+  }
+  assertNoCode(p, "the Lightning confirming screen");
+});
+
+domTest("screens: on the Lightning give-up screen the payment is described as not settled, not as unconfirmed", () => {
+  const ln = render(screens.awaitingConfirmation({ invoice: undefined, method: "ln", order: smuggled(), gaveUp: true, onCheckAgain: noop }));
+  assert.ok(ln.textContent.includes("The payment has not settled. This page keeps working"), ln.textContent);
+  assert.ok(!/confirm/i.test(ln.textContent), ln.textContent);
+  for (const method of ["btc", "xmr", "card", undefined] as const) {
+    const other = render(screens.awaitingConfirmation({ invoice: undefined, method, order: smuggled(), gaveUp: true, onCheckAgain: noop }));
+    assert.ok(other.textContent.includes("The payment has not been confirmed."), `${method ?? "no method"}: ${other.textContent}`);
+  }
+});
+
+domTest("screens: a Lightning row still settling is labelled so in Your codes, and the words of every other row are unchanged", () => {
+  const funded = { amountPaid: 42000, paidInFull: true } as const;
+  const rows = historyRows([
+    record({ orderId: "inv_ln", method: "ln", ...funded }),
+    record({ orderId: "inv_btc", method: "btc", ...funded }),
+    record({ orderId: "inv_ln_open", method: "ln" }),
+  ]);
+  assert.deepEqual(rows.map((r) => r.kind), ["settling", "processing", "open"]);
+  const p = render(screens.purchaseHistory({ rows, keepsNewCodes: true, onOpen: noop, onStart: noop, onForget: noop }));
+  const statuses = p.all("span.status").map((s) => s.textContent);
+  assert.deepEqual(statuses, ["payment received, waiting to settle", "payment received, waiting to confirm", "waiting for payment"]);
+  assert.equal(p.all("span.status.pending").length, 3, "the Lightning row is drawn in the pending tone");
+});
+
+domTest("screens: the buyer who cancels is asked with the Lightning wording for a Lightning invoice, and with the address wording for every other method", () => {
+  assert.equal(screens.cancelConfirmation("ln"), screens.CANCEL_CONFIRM_LIGHTNING);
+  for (const method of ["btc", "xmr", "card"] as const) {
+    assert.equal(screens.cancelConfirmation(method), screens.CANCEL_CONFIRM, method);
+  }
+});
+
+domTest("screens: for a closed Lightning order with nothing received, the buyer is told not to pay its invoice, at any clock time", () => {
+  const nothing = render(screens.windowClosed({ onNewInvoice: noop,
+    order: unpaidRecord({ status: "expired", method: "ln" }),
+    invoice: { status: "expired", amount: 700, currency: "usd" },
+  }));
+  assert.ok(nothing.textContent.includes("Nothing was received, and nothing was charged."), nothing.textContent);
+  assert.ok(nothing.textContent.includes(screens.LIGHTNING_DO_NOT_PAY), "read from the order, since the destination is absent from a closed view");
+
+  const canceled = render(screens.windowClosed({ onNewInvoice: noop, canceled: true,
+    order: unpaidRecord({ status: "expired", method: "ln" }),
+    invoice: { status: "expired", amount: 700, currency: "usd", expiresAt: "2026-08-28T12:58:12Z" },
+  }));
+  assert.ok(canceled.textContent.includes("You canceled this invoice. Nothing was charged."), canceled.textContent);
+  assert.ok(canceled.textContent.includes(screens.LIGHTNING_DO_NOT_PAY), canceled.textContent);
+
+  const onChain = render(screens.windowClosed({ onNewInvoice: noop,
+    order: unpaidRecord({ status: "expired", method: "btc" }),
+    invoice: { status: "expired", amount: 700, currency: "usd" },
+  }));
+  assert.ok(!onChain.textContent.includes("Lightning"), onChain.textContent);
+
+  const funded = render(screens.windowClosed({ onNewInvoice: noop,
+    order: smuggled({ status: "expired" }),
+    invoice: { ...openLn, status: "expired", amountPaid: 700, cryptoAmountPaid: "0.00050000", paidInFull: true },
+  }));
+  assert.ok(funded.textContent.includes("0.00050000 BTC arrived after the window closed"), funded.textContent);
+  for (const leak of ["not the full amount", "shortfall", "settled", screens.LIGHTNING_DO_NOT_PAY]) {
+    assert.ok(!funded.textContent.includes(leak), `a whole Lightning payment settled after the invoice was closed: "${leak}"`);
+  }
+  assert.ok(funded.textContent.includes("inv_9f3a"), "and the reference support works from");
+  assertNoCode(funded, "the expired Lightning order");
+});
+
+domTest("screens: for a canceled invoice paid after the cancellation, the buyer is shown what arrived, never that nothing was charged", () => {
+  const paidAfterCancel = render(screens.windowClosed({ onNewInvoice: noop, canceled: true,
+    order: smuggled({ status: "expired" }),
+    invoice: { ...openLn, status: "expired", amountPaid: 700, cryptoAmountPaid: "0.00050000", paidInFull: true },
+  }));
+  for (const line of ["Invoice canceled", "0.00050000 BTC arrived for this canceled invoice", "Quote the reference below and we will sort it out."]) {
+    assert.ok(paidAfterCancel.textContent.includes(line), `missing "${line}": ${paidAfterCancel.textContent}`);
+  }
+  for (const untrue of ["Nothing was charged", "expired", "window"]) {
+    assert.ok(!paidAfterCancel.textContent.includes(untrue), `a canceled invoice paid afterwards is not described with "${untrue}": ${paidAfterCancel.textContent}`);
+  }
+  assert.ok(paidAfterCancel.textContent.includes("inv_9f3a"), "with the reference support works from");
+
+  const empty = render(screens.windowClosed({ onNewInvoice: noop, canceled: true,
+    order: smuggled({ status: "expired" }),
+    invoice: { status: "expired", amount: 700, currency: "usd" },
+  }));
+  assert.ok(empty.textContent.includes("You canceled this invoice. Nothing was charged."), empty.textContent);
 });
 
 domTest("screens: the confirming screen waits, and promises not to expire while it does", () => {
@@ -874,6 +1026,28 @@ domTest("screens: the four the history list states are told apart by their own g
     ["paid", "paid, and the code was not saved here", "waiting for payment", "this invoice expired"]);
   assert.deepEqual(drawn.map((_, i) => status(i).getAttribute("class")),
     ["status settled", "status lost", "status pending", "status lost"]);
+});
+
+domTest("order: an invoice has received money when it has any one of its full verdict, a crypto figure or a charged amount", () => {
+  for (const reached of [{ paidInFull: true }, { cryptoAmountPaid: "0" }, { amountPaid: 1 }]) {
+    assert.equal(receivedMoney(reached), true, JSON.stringify(reached));
+  }
+  for (const nothing of [undefined, {}, { amountPaid: 0 }, { paidInFull: false }]) {
+    assert.equal(receivedMoney(nothing), false, JSON.stringify(nothing));
+  }
+});
+
+domTest("screens: a canceled order paid afterwards is listed as canceled with a payment and its Open link, an empty one as canceled", () => {
+  const rows = historyRows([
+    record({ orderId: "paid_after_cancel", status: "expired", method: "ln", canceled: true, amountPaid: 700, cryptoAmountPaid: "0.00050000", paidInFull: true }),
+    record({ orderId: "empty_cancel", status: "expired", method: "ln", canceled: true }),
+  ]);
+  assert.deepEqual(rows.map((r) => r.kind), ["canceledPaid", "canceled"]);
+  const drawn = render(screens.purchaseHistory({ onForget: () => {}, keepsNewCodes: true, rows, onOpen: noop, onStart: noop })).all("li.entry");
+  assert.ok(drawn[0]!.textContent.includes("canceled, then paid"), drawn[0]!.textContent);
+  assert.ok(!drawn[0]!.textContent.includes("expired"), drawn[0]!.textContent);
+  assert.equal(drawn[0]!.all("a").filter((a) => a.textContent === "Open").length, 1, "from the funded row the buyer opens the screen on which the payment is shown");
+  assert.equal(drawn[1]!.all("a").filter((a) => a.textContent === "Open").length, 0);
 });
 
 domTest("screens: a row missing the method or the price shows what it has", () => {

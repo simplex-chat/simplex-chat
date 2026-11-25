@@ -1,9 +1,9 @@
 import { money, countdown, outstanding, startedAgo, type Outstanding } from "./format.js";
 import { badgeIcon, chevronLeft, hamburger, hasBadgeArt, methodMark, wefunderMark } from "./icons.js";
 import { paymentUri, qrSvg } from "./qr.js";
-import type { HistoryRow, UnpaidOrder } from "./order.js";
+import { type HistoryRow, receivedMoney, type UnpaidOrder } from "./order.js";
 import type { InvoiceView } from "./api.js";
-import { THEMES, type App, type Method, type Theme } from "./domain.js";
+import { THEMES, type App, type Chain, type Method, type Theme } from "./domain.js";
 import type { CardFailure } from "./stripe.js";
 import { CROWDFUNDING_ACTIVE, WEFUNDER_URL, dollars } from "./crowdfunding.js";
 
@@ -54,11 +54,14 @@ export const KEEPS_WAITING = "This page keeps checking. The invoice will not exp
 export class CancelRefused extends Error {}
 
 export const PAID_IN_FULL_TITLE = "The full amount has arrived";
+export const LIGHTNING_DO_NOT_PAY = "Do not pay its Lightning invoice: a wallet can pay it until it expires, and such a payment is refunded by hand.";
+const SORT_IT_OUT = "Quote the reference below and we will sort it out.";
 export const CANCEL_NOT_OPEN = "This invoice is no longer open, so there is nothing to cancel.";
 export const CANCEL_HAS_FUNDS = "This invoice has a payment on it, so it cannot be cancelled.";
-export const CANCEL_STILL_OPEN = "This invoice was cancelled, but the service still shows it open. Do not send anything more to the address.";
+export const CANCEL_STILL_OPEN = "This invoice was cancelled, but the service still shows it open. Do not pay it.";
 export const CANCEL_INVOICE = "Cancel this invoice";
 export const CANCEL_CONFIRM = "Cancel this invoice? The address stops accepting payment, and anything sent to it afterwards is lost.";
+export const CANCEL_CONFIRM_LIGHTNING = "Cancel this invoice? Its Lightning invoice stays payable until it expires. Do not pay it afterwards: such a payment is refunded by hand.";
 export const CANCEL_PENDING = "Cancelling\u2026";
 export const CANCEL_FAILED = "Could not cancel it. Check the invoice before sending anything more.";
 
@@ -396,8 +399,8 @@ export function durations(o: DurationsOptions): HTMLElement {
   return withInvest(p, investPanel(o.perk));
 }
 
-const METHOD_NAMES: Readonly<Record<Method, string>> = { btc: "Bitcoin", xmr: "Monero", card: "Card" };
-export const METHOD_ORDER: readonly Method[] = ["card", "btc", "xmr"];
+const METHOD_NAMES: Readonly<Record<Method, string>> = { btc: "Bitcoin", ln: "Lightning", xmr: "Monero", card: "Card" };
+const METHOD_ORDER: readonly Method[] = ["card", "btc", "ln", "xmr"];
 
 export const NOT_KEPT_TITLE = "This browser will not keep your code";
 
@@ -558,8 +561,25 @@ function offlineNote(): HTMLElement {
   return el("p", { class: "muted offline", role: "status" }, OFFLINE_NOTE);
 }
 
-const CRYPTO_NAMES: Readonly<Record<"btc" | "xmr", string>> = { btc: "Bitcoin", xmr: "Monero" };
-const CRYPTO_TICKERS: Readonly<Record<"btc" | "xmr", string>> = { btc: "BTC", xmr: "XMR" };
+const CRYPTO_NAMES: Readonly<Record<Chain, string>> = { btc: "Bitcoin", ln: "Lightning", xmr: "Monero" };
+const CRYPTO_TICKERS: Readonly<Record<Chain, string>> = { btc: "BTC", ln: "BTC", xmr: "XMR" };
+const DESTINATIONS: Readonly<Record<Chain, string>> = { btc: "address", ln: "invoice", xmr: "address" };
+const INVOICE_HEAD = 8;
+const INVOICE_TAIL = 6;
+
+export function shownDestination(method: Chain, address: string): string {
+  return method === "ln" ? `${address.slice(0, INVOICE_HEAD)}…${address.slice(-INVOICE_TAIL)}` : address;
+}
+
+const AWAITING: Readonly<Record<Chain, string>> = {
+  btc: "Waiting for the payment to confirm",
+  ln: "Waiting for the payment",
+  xmr: "Waiting for the payment to confirm",
+};
+
+export function cancelConfirmation(method: Method): string {
+  return method === "ln" ? CANCEL_CONFIRM_LIGHTNING : CANCEL_CONFIRM;
+}
 
 function cancelControl(onCancel: () => Promise<void>, notice: string | undefined): Node[] {
   const status = el("p", { class: "muted cancel-status", role: "status" }, notice ?? "");
@@ -583,7 +603,7 @@ function cancelControl(onCancel: () => Promise<void>, notice: string | undefined
 export interface AwaitingPaymentOptions {
   order: UnpaidOrder;
   invoice: InvoiceView;
-  method: "btc" | "xmr";
+  method: Chain;
   nowMs: number;
   now?: () => number;
   resumed: boolean;
@@ -615,6 +635,7 @@ export function awaitingPayment(o: AwaitingPaymentOptions): { node: HTMLElement;
     : outstanding(o.invoice.cryptoAmountDue);
   const owed = left.kind === "owed" ? left.amount : undefined;
   const ticker = CRYPTO_TICKERS[o.method];
+  const destination = DESTINATIONS[o.method];
   const rate = el("p", { class: "lede rate", "aria-live": "off" }, rateLine);
   p.append(
     el("h1", { class: "tight" }, owed !== undefined ? `Send ${owed} ${ticker}`
@@ -640,7 +661,7 @@ export function awaitingPayment(o: AwaitingPaymentOptions): { node: HTMLElement;
   const amountCopy = copyControl("Copy", owed ?? "", "secondary inline");
   const details = el("div", { class: "details" },
     ...(owed === undefined ? [] : [copyableField(`Amount in ${ticker}`, owed, amountCopy.control, amountCopy.status)]),
-    copyableField(`${CRYPTO_NAMES[o.method]} address`, o.invoice.address ?? "",
+    copyableField(`${CRYPTO_NAMES[o.method]} ${destination}`, shownDestination(o.method, o.invoice.address ?? ""),
       address.control, address.status),
     reference(o.order.orderId),
   );
@@ -651,11 +672,11 @@ export function awaitingPayment(o: AwaitingPaymentOptions): { node: HTMLElement;
   const partly = paidSoFar !== undefined && left.kind !== "covered";
   const waiting = el("p", { class: "awaiting", role: "status" },
     el("span", { class: "pulse", "aria-hidden": "true" }),
-    partly ? "Waiting for the rest of the payment" : "Waiting for the payment to confirm");
+    partly ? "Waiting for the rest of the payment" : AWAITING[o.method]);
   p.append(split, waiting);
   if (o.offline === true) p.append(offlineNote());
   p.append(
-    el("p", { class: "muted" }, "Bookmark this page — the address and the countdown both live on this URL."),
+    el("p", { class: "muted" }, `Bookmark this page — the ${destination} and the countdown both live on this URL.`),
   );
   p.append(...cancelControl(o.onCancel, o.notice));
 
@@ -681,31 +702,46 @@ export interface AwaitingConfirmationOptions {
   onCheckAgain: () => void;
 }
 
-const CONFIRMING: Readonly<Record<Method, { status: string; wait: string }>> = {
+const NOT_CONFIRMED = "The payment has not been confirmed.";
+
+const CONFIRMING: Readonly<Record<Method, { status: string; wait: string; unsettled: string; countsConfirmations: boolean }>> = {
   card: {
     status: "Waiting for the card network to confirm.",
     wait: "This usually takes a few seconds. The page updates itself.",
+    unsettled: NOT_CONFIRMED,
+    countsConfirmations: false,
   },
   btc: {
     status: "Waiting for the Bitcoin network to confirm.",
     wait: "This takes a block, usually about ten minutes. The page updates itself.",
+    unsettled: NOT_CONFIRMED,
+    countsConfirmations: true,
+  },
+  ln: {
+    status: "Waiting for the payment to settle.",
+    wait: "This usually takes a few seconds. The page updates itself.",
+    unsettled: "The payment has not settled.",
+    countsConfirmations: false,
   },
   xmr: {
     status: "Waiting for the Monero network to confirm.",
     wait: "This takes a block, usually a couple of minutes. The page updates itself.",
+    unsettled: NOT_CONFIRMED,
+    countsConfirmations: true,
   },
 };
 
 export function awaitingConfirmation(o: AwaitingConfirmationOptions): HTMLElement {
+  const method = o.method ?? "card";
   if (o.gaveUp) {
     return panel(
       el("h1", { class: "tight" }, "This is taking longer than expected"),
-      el("p", { class: "lede" }, "The payment has not been confirmed. This page keeps working: come back to it later, or quote the reference below."),
+      el("p", { class: "lede" },
+        `${CONFIRMING[method].unsettled} This page keeps working: come back to it later, or quote the reference below.`),
       reference(o.order.orderId),
       button("Check again", o.onCheckAgain),
     );
   }
-  const method = o.method ?? "card";
   const p = panel(
     el("h1", { class: "tight" }, "Payment received"),
     el("p", { class: "awaiting", role: "status" },
@@ -714,7 +750,7 @@ export function awaitingConfirmation(o: AwaitingConfirmationOptions): HTMLElemen
     notice("Still processing", CONFIRMING[method].wait),
   );
   const needed = o.invoice?.requiredConfirmations;
-  if (needed !== undefined && needed > 0 && method !== "card") {
+  if (needed !== undefined && needed > 0 && method !== "card" && CONFIRMING[method].countsConfirmations) {
     p.append(el("p", { class: "muted" },
       `This is settled once the payment has ${needed === 1 ? "1 confirmation" : `${needed} confirmations`} on the ${CRYPTO_NAMES[method]} blockchain.`));
   }
@@ -746,20 +782,22 @@ export interface DetailsUnavailableOptions {
 
 export function windowClosed(o: WindowClosedOptions): HTMLElement {
   const buyNewCode = button(BUY_NEW_CODE, o.onNewInvoice, "primary outline");
-  if (o.canceled === true) {
+  // A payment can land after the window closes, so this screen must count any crypto figure as money
+  // and not tell the buyer nothing arrived.
+  const funded = receivedMoney(o.invoice);
+  const lightningNote = (o.invoice?.cryptoCurrency ?? o.order.method) === "ln" ? [el("p", { class: "muted" }, LIGHTNING_DO_NOT_PAY)] : [];
+  if (o.canceled === true && !funded) {
     return panel(
       el("h1", { class: "tight" }, "Invoice canceled"),
       el("p", { class: "lede" }, "You canceled this invoice. Nothing was charged."),
+      ...lightningNote,
       reference(o.order.orderId),
       buyNewCode,
     );
   }
   const paid = o.invoice?.amountPaid;
-  // A payment can land after the window closes, so this screen must count any crypto figure as money
-  // and not tell the buyer nothing arrived.
-  const funded = o.invoice?.paidInFull === true || o.invoice?.cryptoAmountPaid !== undefined;
-  const p = panel(el("h1", { class: "tight" }, "This invoice expired"));
-  if (funded || (paid !== undefined && paid > 0)) {
+  const p = panel(el("h1", { class: "tight" }, o.canceled === true ? "Invoice canceled" : "This invoice expired"));
+  if (funded) {
     const crypto = o.invoice?.cryptoAmountPaid;
     const ticker = o.invoice?.cryptoCurrency;
     const arrived = crypto !== undefined && ticker !== undefined
@@ -767,15 +805,17 @@ export function windowClosed(o: WindowClosedOptions): HTMLElement {
       : "A payment";
     const total = o.invoice?.amount;
     const short = o.invoice?.paidInFull !== true && (paid === undefined || total === undefined || paid < total);
-    p.append(warning(
-      short ? `${arrived} arrived, which is not the full amount` : `${arrived} arrived after the window closed`,
-      short
-        ? "The rate window has closed, so the shortfall is no longer meaningful."
-        : "The rate window had already closed when it arrived.",
-      "Quote the reference below and we will sort it out."));
+    p.append(o.canceled === true
+      ? warning(`${arrived} arrived for this canceled invoice`, SORT_IT_OUT)
+      : warning(
+        short ? `${arrived} arrived, which is not the full amount` : `${arrived} arrived after the window closed`,
+        short
+          ? "The rate window has closed, so the shortfall is no longer meaningful."
+          : "The rate window had already closed when it arrived.",
+        SORT_IT_OUT));
     p.append(reference(o.order.orderId));
   } else {
-    p.append(el("p", { class: "lede" }, "Nothing was received, and nothing was charged."));
+    p.append(el("p", { class: "lede" }, "Nothing was received, and nothing was charged."), ...lightningNote);
   }
   if (o.offline === true) p.append(offlineNote());
   p.append(buyNewCode);
@@ -902,8 +942,7 @@ export function paidNoCode(o: PaidNoCodeOptions): HTMLElement {
   );
   const p = panel(
     el("h1", { class: "tight" }, "This code is not on this device"),
-    notice("The code was generated in the browser it was bought in, and is not stored anywhere else.",
-      "Quote the reference below and we will sort it out."),
+    notice("The code was generated in the browser it was bought in, and is not stored anywhere else.", SORT_IT_OUT),
     summary,
   );
   const settled = calendarDate(o.settledAt);
@@ -926,7 +965,9 @@ const ENTRY_STATES: Readonly<Record<HistoryRow["kind"], { text: string; tone: st
   open: { text: "waiting for payment", tone: "pending" },
   partPaid: { text: "part of the amount received", tone: "pending" },
   processing: { text: "payment received, waiting to confirm", tone: "pending" },
+  settling: { text: "payment received, waiting to settle", tone: "pending" },
   canceled: { text: "canceled", tone: "lost" },
+  canceledPaid: { text: "canceled, then paid", tone: "lost" },
   expired: { text: "this invoice expired", tone: "lost" },
 };
 
@@ -1026,7 +1067,7 @@ export function detailsUnavailable(o: DetailsUnavailableOptions): HTMLElement {
   return panel(
     el("h1", { class: "tight" }, "The payment details are not available"),
     el("p", { class: "lede" }, "This order is open and unpaid, and the payment details did not arrive."),
-    el("p", { class: "lede" }, "Quote the reference below and we will sort it out."),
+    el("p", { class: "lede" }, SORT_IT_OUT),
     reference(o.order.orderId),
     button("Check again", o.onCheckAgain),
     button(BUY_NEW_CODE, o.onNewInvoice, "secondary"),

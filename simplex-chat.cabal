@@ -795,6 +795,7 @@ test-suite simplex-chat-test
       Bots.StoreService.FakeStripe
       Bots.StoreService.GroupIntegrationTests
       Bots.StoreService.GroupTests
+      Bots.StoreService.LightningE2ETests
       Bots.StoreService.MetricsTests
       Bots.StoreService.NameRegistrationTests
       Bots.StoreService.NamesBalancesTests

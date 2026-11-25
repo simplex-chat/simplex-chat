@@ -269,6 +269,12 @@ httpsUrl k v
   | maybe False HTTP.secure (httpUrl v) = Right v
   | otherwise = Left (k <> " must be an absolute https URL")
 
+-- | To an http host, the API key is sent in the clear on every call, so such a host is accepted only on loopback.
+btcpayHost :: Text -> Either String Text
+btcpayHost v = case httpUrl v of
+  Just req | HTTP.secure req || onLoopback req -> Right v
+  _ -> Left "btcpay.host must be an https URL, or http to BTCPay on loopback: 127.0.0.1, ::1 or localhost"
+
 publishableKey :: Text -> Bool
 publishableKey k = case T.stripPrefix "pk_live_" k <|> T.stripPrefix "pk_test_" k of
   Just rest -> not (T.null rest) && T.all (\c -> isAsciiUpper c || isAsciiLower c || isDigit c) rest
@@ -553,7 +559,7 @@ parseConfig ini = do
     btcpaySection
       | not (hasSection "btcpay") = Right Nothing
       | otherwise = do
-          bHost <- required "btcpay" "host" >>= httpsUrl "btcpay.host"
+          bHost <- required "btcpay" "host" >>= btcpayHost
           bApiKey <- required "btcpay" "api_key"
           bStoreId <- required "btcpay" "store_id"
           bWebhookSecret <- required "btcpay" "webhook_secret"

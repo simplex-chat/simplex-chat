@@ -2,7 +2,7 @@ import { CATALOG, SINGLE_MONTH, offerTotal, savingPercent, type Offer, type Pric
 import { minimumFor, perkAmount } from "./crowdfunding.js";
 import { generate, hash } from "./codes.js";
 import { Flow, type CheckoutOutcome, type Selection } from "./flow.js";
-import { applyView, historyRows, selectionFromOrder, type PaymentView, withoutDestination } from "./order.js";
+import { applyView, historyRows, receivedMoney, selectionFromOrder, type PaymentView, withoutDestination } from "./order.js";
 import { money, moneyCompact } from "./format.js";
 import * as api from "./api.js";
 import { appCodeLink, readHash, resolveLoad } from "./routing.js";
@@ -523,7 +523,7 @@ async function pay(): Promise<void> {
     }
     case "providerUnavailable":
       unavailableMethod = outcome.method;
-      store.saveSession({ method: firstAvailable(outcome.method) });
+      store.saveSession({ method: FALLBACK_METHOD[outcome.method] });
       rebuild(CHECKOUT_INDEX);
       return;
     case "failed":
@@ -545,11 +545,8 @@ function payTotal(): string {
   return total === undefined ? "" : money(total.amount, price?.currency ?? "usd");
 }
 
-// A coin that is down falls back to the other coin, and the card to the first coin: a buyer who
-// chose a coin is not moved to a card.
-function firstAvailable(down: Method): Method {
-  return screens.METHOD_ORDER.find((m) => m !== "card" && m !== down) ?? "card";
-}
+// A buyer who chose a coin is offered another coin, never the card.
+const FALLBACK_METHOD: Readonly<Record<Method, Method>> = { card: "btc", btc: "xmr", ln: "btc", xmr: "btc" };
 
 let cancelNotice: { orderId: string; epoch: number; message: string } | undefined;
 
@@ -561,8 +558,8 @@ function refuseCancel(orderId: string, resume: Parameters<typeof flow.watch>[1],
 
 let cancelInFlight = false;
 
-async function cancelInvoice(orderId: string): Promise<void> {
-  if (!window.confirm(screens.CANCEL_CONFIRM)) return;
+async function cancelInvoice(orderId: string, method: Method): Promise<void> {
+  if (!window.confirm(screens.cancelConfirmation(method))) return;
   cancelNotice = undefined;
   const { record: _record, ...resume } = flow.liveWatches().find((w) => w.orderId === orderId)?.restartOptions() ?? {};
   flow.stopAll();
@@ -602,7 +599,7 @@ async function cancelInvoice(orderId: string): Promise<void> {
     cancelNotice = { orderId, epoch: flow.epoch, message: screens.CANCEL_STILL_OPEN };
     refuseCancel(orderId, resume, screens.CANCEL_STILL_OPEN);
   }
-  if (cancelled.paidInFull === true || cancelled.cryptoAmountPaid !== undefined) {
+  if (receivedMoney(cancelled)) {
     flow.watch(orderId, resume);
     return;
   }
@@ -611,11 +608,11 @@ async function cancelInvoice(orderId: string): Promise<void> {
 }
 
 // The Cancel button's disabled attribute does not survive a repaint, so this flag allows one cancel at a time.
-async function cancelInvoiceOnce(orderId: string): Promise<void> {
+async function cancelInvoiceOnce(orderId: string, method: Method): Promise<void> {
   if (cancelInFlight) return;
   cancelInFlight = true;
   try {
-    await cancelInvoice(orderId);
+    await cancelInvoice(orderId, method);
   } finally {
     cancelInFlight = false;
   }
@@ -679,7 +676,7 @@ function paint(view: PaymentView): void {
       const awaitingPayment = screens.awaitingPayment({
         order: view.order, invoice: view.invoice, method: view.method,
         nowMs: Date.now(), resumed: view.resumed, offline: isOffline(),
-        onCancel: () => cancelInvoiceOnce(view.order.orderId),
+        onCancel: () => cancelInvoiceOnce(view.order.orderId, view.method),
         ...(cancelNotice?.orderId === view.order.orderId && cancelNotice.epoch === flow.epoch
           ? { notice: cancelNotice.message } : {}),
       });
@@ -787,7 +784,7 @@ function showCardForm(view: CardView, key: string | null): void {
   const shell = (body: HTMLElement): HTMLElement => screens.cardForm({
     order: view.order, invoice: view.invoice, resumed: view.resumed, body,
     // A PaymentIntent is only cancelable before it confirms, so the button is inert once a confirm is in flight.
-    onCancel: () => (cardConfirmPending ? Promise.resolve() : cancelInvoiceOnce(view.order.orderId)),
+    onCancel: () => (cardConfirmPending ? Promise.resolve() : cancelInvoiceOnce(view.order.orderId, "card")),
     ...(cancelNotice?.orderId === view.order.orderId && cancelNotice.epoch === flow.epoch
       ? { notice: cancelNotice.message } : {}),
   });

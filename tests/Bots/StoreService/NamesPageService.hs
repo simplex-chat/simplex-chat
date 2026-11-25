@@ -156,6 +156,7 @@ coinPlaces :: CryptoCurrency -> Int
 coinPlaces = \case
   CCBtc -> 8
   CCXmr -> 12
+  CCLn -> 8
 
 btcpayControl :: PageControls -> InvoiceId -> Text -> Text -> Int -> Bool -> Scientific -> Scientific -> IO ControlAnswer
 btcpayControl pc@PageControls {pcBTCPay} invId action ref places open amount paid = case action of

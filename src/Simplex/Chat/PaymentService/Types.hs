@@ -86,16 +86,18 @@ data StoreTransactionRef = StoreTransactionRef {provider :: PaymentProvider, tra
 data CardProvider = CPStripe
   deriving (Eq, Show)
 
-data CryptoCurrency = CCBtc | CCXmr
+data CryptoCurrency = CCBtc | CCXmr | CCLn
   deriving (Eq, Ord, Show)
 
 instance TextEncoding CryptoCurrency where
   textEncode = \case
     CCBtc -> "btc"
     CCXmr -> "xmr"
+    CCLn -> "ln"
   textDecode = \case
     "btc" -> Just CCBtc
     "xmr" -> Just CCXmr
+    "ln" -> Just CCLn
     _ -> Nothing
 
 instance FromField CryptoCurrency where fromField = fromTextField_ textDecode

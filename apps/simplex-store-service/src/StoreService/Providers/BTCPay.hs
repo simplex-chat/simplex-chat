@@ -8,6 +8,7 @@ module StoreService.Providers.BTCPay
   ( btcpayProvider,
     btcMethodId,
     xmrMethodId,
+    lnMethodId,
     minorToDecimal,
     BTCPayStatus (..),
     BTCPayPaymentStatus (..),
@@ -41,6 +42,7 @@ import StoreService.Providers
     providerCall,
     providerErrorText,
     settleWindow,
+    settlesOnReceipt,
     unitDecimals,
     WebhookError (..),
     WebhookEvent (..),
@@ -113,12 +115,13 @@ $(JQ.deriveFromJSON (defaultJSON {J.sumEncoding = J.UntaggedValue, J.constructor
 --   invoiceSettledConfirmationThreshold, so a Settled XMR payment shows a confirmation only when it is at least 1;
 -- - the store's rates, GET stores/{storeId}/rates?currencyPair=BTC_USD: Controllers/GreenField/GreenfieldStoreRatesController.cs and
 --   Models/StoreRateResult.cs, a list of {currencyPair, errors, rate}, rate null when errors is not empty; it needs canviewstoresettings.
-btcMethodId, xmrMethodId :: Text
+btcMethodId, xmrMethodId, lnMethodId :: Text
 btcMethodId = "BTC-CHAIN"
 xmrMethodId = "XMR-CHAIN"
+lnMethodId = "BTC-LN"
 
 methodCurrencies :: [(Text, CryptoCurrency)]
-methodCurrencies = [(btcMethodId, CCBtc), (xmrMethodId, CCXmr)]
+methodCurrencies = [(btcMethodId, CCBtc), (xmrMethodId, CCXmr), (lnMethodId, CCLn)]
 
 knownMethodIds :: [Text]
 knownMethodIds = map fst methodCurrencies
@@ -156,6 +159,7 @@ cryptoTarget :: ServicePaymentMethod -> Either ProviderError (Text, CryptoCurren
 cryptoTarget = \case
   SPMCrypto CCBtc -> Right (btcMethodId, CCBtc)
   SPMCrypto CCXmr -> Right (xmrMethodId, CCXmr)
+  SPMCrypto CCLn -> Right (lnMethodId, CCLn)
   SPMCard _ -> Left (ProviderError "btcpay offers no card payment method")
 
 -- BTCPay sends numbers as JSON strings; keep the exact text as sent, plus a decimal to compute with.
@@ -302,10 +306,10 @@ btcpayProvider cfg = do
         pVerifyWebhook = \_ hdrs body -> fmap WEPayment <$> verifyBTCPaySig (bWebhookSecret cfg) hdrs body
       }
 
--- enabledOnly returns only enabled methods, so the boot log shows what the store can actually use.
+-- With onlyEnabled, BTCPay returns only enabled methods, so the methods the store can use are logged at start-up.
 logStoreMethods :: BTCPayEnv -> IO ()
 logStoreMethods env@BTCPayEnv {beCfg} = do
-  r <- greenfield env what methodGet ["payment-methods"] [("enabledOnly", Just "true")] Nothing
+  r <- greenfield env what methodGet ["payment-methods"] [("onlyEnabled", Just "true")] Nothing
   case r >>= decodeAnswer what of
     Left e -> do
       logWarn ("btcpay: could not read the payment methods of store " <> bStoreId beCfg <> ": " <> providerErrorText e)
@@ -351,7 +355,8 @@ createInvoice env@BTCPayEnv {beCfg} spm OrderDraft {odAmount, odCurrency} =
                 "expirationMinutes" J..= bExpiryMinutes beCfg,
                 "speedPolicy" J..= textEncode (bSpeedPolicy beCfg),
                 "paymentTolerance" J..= bPaymentTolerance beCfg,
-                "paymentMethods" J..= [methodId]
+                "paymentMethods" J..= [methodId],
+                "lazyPaymentMethods" J..= False
               ]
         ]
     destination methodId cc ref ms = do
@@ -373,8 +378,8 @@ cancelInvoice env ref =
   fmap (fmap (const ())) $ greenfield env what methodPost ["invoices", ref, "status"] [] (Just body)
   where
     what = "cancel invoice"
-    -- Invalid, not Archive: archiving only hides the invoice, and BTCPay keeps crediting
-    -- payments to it
+    -- The status is Invalid, as an archived invoice is only hidden. An Invalid invoice is closed, though BTCPay still records
+    -- a payment to it, and a Lightning invoice stays payable at the node until it expires
     body = J.object ["status" J..= ("Invalid" :: Text)]
 
 readInvoice :: BTCPayEnv -> Text -> IO (Either ProviderError (Maybe PaymentSignal))
@@ -456,19 +461,21 @@ invoiceSignal now ref status additional policy ms = do
   rate <- positive =<< priced "rate" gpmRate
   paid <- priced "paymentMethodPaid" gpmPaid
   let decimals = unitDecimals cc
-      confirming = maybe False (`elem` confirmingPolicies) policy
+      confirming = settlesOnReceipt cc || maybe False (`elem` confirmingPolicies) policy
       shown = cc /= CCXmr || maybe False (>= 1) gpmSettledThreshold
       crypto = receivedOf decimals confirming shown (status == BSSettled) rate paid gpmAmount gpmDue gpmPayments
       received = RCrypto crypto
-      -- BTCPay never settles an invoice it has closed, so only its additional status tells that the whole amount reached it.
-      -- Its paid amount counts unconfirmed payments too, so a due at 0 or less does not.
-      closedFunded = if maybe False (`elem` closedInFullStatuses) additional then PaidInFull else PaidInPart
+      -- BTCPay never settles an invoice it has closed. On chain, receipt of the whole amount is read from the additional status only.
+      -- A Lightning payment is recorded only once settled, so there the invoice is paid in full when the due is 0 or less.
+      settledInFull = settlesOnReceipt cc && maybe False ((<= 0) . wnValue) gpmDue
+      fundedIf inFull = if inFull then PaidInFull else PaidInPart
+      closedFunded = fundedIf (maybe False (`elem` closedInFullStatuses) additional || settledInFull)
   case status of
     BSSettled -> Right (Just (SigSettled received (fromMaybe now (latestSettledAt m))))
     BSProcessing -> Right (Just (SigFunded received PaidInFull))
     BSExpired -> Right (Just (SigClosed received closedFunded))
     BSInvalid -> Right (Just (SigClosed received closedFunded))
-    BSNew -> Right (SigFunded received PaidInPart <$ crPaid crypto)
+    BSNew -> Right (SigFunded received (fundedIf settledInFull) <$ crPaid crypto)
     BSUnknown other -> Left (ProviderError ("btcpay invoice " <> ref <> ": unknown status " <> other))
   where
     priced field =
@@ -547,6 +554,7 @@ currentRate env cc = (>>= rateOf) <$> greenfield env what methodGet ["rates"] [(
     coinCode = case cc of
       CCBtc -> "BTC"
       CCXmr -> "XMR"
+      CCLn -> "BTC"
     rateOf body = do
       rates :: [GRate] <- decodeAnswer what body
       GRate {grErrors, grRate} <- maybe (failed "the answer has no such pair") Right (find ((== pair) . grPair) rates)

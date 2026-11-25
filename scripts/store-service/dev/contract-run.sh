@@ -9,12 +9,24 @@ shopt -s inherit_errexit
 WEBAPP_DIR="${WEBAPP_DIR:-$(cd "$(dirname "$0")/../../.." && pwd)/apps/simplex-domains/webapp}"
 : "${ENS_CONTRACTS_DIR:?set ENS_CONTRACTS_DIR to the compiled ens-contracts submodule of a simplex-namespace-contract checkout, as for the webapp dev/start.sh}"
 ANVIL="${ANVIL:-anvil}"
+LIGHTNING_ENV="${LIGHTNING_ENV:-}"
+if [ -n "$LIGHTNING_ENV" ]; then
+  set -a
+  # shellcheck disable=SC1090
+  . "$LIGHTNING_ENV"
+  set +a
+fi
 RPC_PORT="${RPC_PORT:-8545}"
 SERVICE_PORT="${SERVICE_PORT:-8180}"
-BADGES_PORT="${BADGES_PORT:-8181}"
+BADGES_PORT="${BADGES_PORT:-${STORE_LIGHTNING_SERVICE_PORT:-8181}}"
 RUNNER_PORT="${RUNNER_PORT:-8182}"
 REPO="$(cd "$(dirname "$0")/../../.." && pwd)"
-STORE_TEST_BIN="${STORE_TEST_BIN:-$(cd "$REPO" && cabal list-bin simplex-chat-test)}"
+if [ -n "$LIGHTNING_ENV" ]; then
+  STORE_SERVICE_BIN="${STORE_SERVICE_BIN:-$(cd "$REPO" && cabal list-bin exe:simplex-store-service)}"
+else
+  STORE_TEST_BIN="${STORE_TEST_BIN:-$(cd "$REPO" && cabal list-bin simplex-chat-test)}"
+fi
+BADGES_SITE="${BADGES_SITE:-}"
 
 RPC_URL="http://127.0.0.1:$RPC_PORT"
 CHAIN_ID=31337
@@ -154,6 +166,11 @@ EXCLUDED=(
 RUN_DIR="$(mktemp -d "${TMPDIR:-/tmp}/names-contract-run.XXXXXX")"
 INI="$RUN_DIR/store_service.ini"
 CHAIN="$WEBAPP_DIR/dev/local-chain-0.json"
+if [ -n "${STORE_DB:-}" ]; then
+  DB_ARGS=(-d "$STORE_DB" --create-schema --yes-migrate)
+else
+  DB_ARGS=(-d "$RUN_DIR/db")
+fi
 
 # Only jobs still running are stopped, so a PID reused since one ended is never killed. The run's
 # folder is kept when the run fails, for its logs.
@@ -223,12 +240,17 @@ deployed() {
 }
 
 write_ini() {
-  mkdir -p "$RUN_DIR/badges"
+  local host=127.0.0.1 badges="$BADGES_SITE"
+  if [ -n "$LIGHTNING_ENV" ]; then host=0.0.0.0; fi
+  if [ -z "$badges" ]; then
+    badges="$RUN_DIR/badges"
+    mkdir -p "$badges"
+  fi
   cat > "$INI" <<INI
 [listener]
-host = 127.0.0.1
+host = $host
 badges_port = $BADGES_PORT
-badges_static_dir = $RUN_DIR/badges
+badges_static_dir = $badges
 serve_webapp = on
 names_static_dir = $RUN_DIR/names
 names_port = $SERVICE_PORT
@@ -255,10 +277,26 @@ resolver = $(deployed resolver)
 service_key = $(deployed registrarKey)
 confirmations = 1
 INI
+  if [ -n "$LIGHTNING_ENV" ]; then
+    cat >> "$INI" <<INI
+
+[btcpay]
+host = $STORE_LIGHTNING_BTCPAY_URL
+api_key = $STORE_LIGHTNING_BTCPAY_API_KEY
+store_id = $STORE_LIGHTNING_BTCPAY_STORE_ID
+webhook_secret = $STORE_LIGHTNING_BTCPAY_WEBHOOK_SECRET
+INI
+  fi
   chmod 600 "$INI"
 }
 
 start_service() {
+  if [ -n "$LIGHTNING_ENV" ]; then
+    "$STORE_SERVICE_BIN" --no-address --service-config "$INI" "${DB_ARGS[@]}" >> "$RUN_DIR/service.log" 2>&1 &
+    SERVICE_PID=$!
+    answering "$SERVICE_PID" "$SERVICE_URL/"
+    return
+  fi
   (cd "$REPO" && NAMES_PAGE_RUN_DIR="$RUN_DIR" NAMES_PAGE_CONTROL_PORT="$RUNNER_PORT" \
     exec "$STORE_TEST_BIN" -m "/Names page against the store service/") >> "$RUN_DIR/service.log" 2>&1 &
   SERVICE_PID=$!
@@ -402,6 +440,13 @@ run_cases() {
   (cd "$WEBAPP_DIR" && BASE_URL="$SERVICE_URL" MOCK_URL="$MOCK_URL" npx playwright test --project=chromium --output "$RUN_DIR/build-results" "${filter[@]}" e2e/offline.spec.ts e2e/track.spec.ts)
 }
 
+run_lightning_cases() {
+  (cd "$WEBAPP_DIR" && BASE_URL="$SERVICE_URL" MOCK_URL="$MOCK_URL" LIGHTNING_PAYER_URL="$STORE_LIGHTNING_PAYER_URL" \
+    npx playwright test e2e/lightning-node.spec.ts --output "$RUN_DIR/names-results")
+  (cd "$REPO/apps/simplex-store-service/web" && BASE_URL="$BADGES_URL" LIGHTNING_PAYER_URL="$STORE_LIGHTNING_PAYER_URL" \
+    npx playwright test --output "$RUN_DIR/badges-results")
+}
+
 refuse_taken_ports
 start_chain
 start_terms
@@ -409,4 +454,8 @@ build_site
 write_ini
 start_service
 start_mock
-run_cases "$@"
+if [ -n "$LIGHTNING_ENV" ]; then
+  run_lightning_cases
+else
+  run_cases "$@"
+fi

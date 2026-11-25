@@ -9,6 +9,7 @@ import Bots.StoreService.CatalogTests
 import Bots.StoreService.ConfigTests
 import Bots.StoreService.GroupIntegrationTests
 import Bots.StoreService.GroupTests
+import Bots.StoreService.LightningE2ETests
 import Bots.StoreService.MetricsTests
 import Bots.StoreService.NameRegistrationTests
 import Bots.StoreService.NamesBalancesTests
@@ -162,6 +163,7 @@ main = do
       namesStoreTests
       namesWiringTests
       namesWorkerTests
+      sequential storeLightningE2ETests
       namesPageServiceTests
       describe "SimpleX chat markdown" markdownTests
       describe "JSON Tests" jsonTests
