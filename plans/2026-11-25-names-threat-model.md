@@ -18,7 +18,7 @@ Buyers order names on the names page. The page signs each registration with the 
 ## Global assumptions
 
 - The buyer's device and browser are not compromised, and the buyer keeps the name code.
-- The deployed contracts are as verified, and the keys of the admin and guardian Safes are not compromised.
+- The deployed contracts are as verified, and the keys that own and guard them, those of the admin and guardian Safes included, are not compromised.
 - The spending keys of SimpleX's Bitcoin and Monero wallets, and the Stripe account's dashboard, are not on the service host.
 - The Stripe account has Connect disabled, and the service's key has only the permissions above.
 - Etherscan, or another explorer the buyer chooses, shows the chain's state.
@@ -52,7 +52,9 @@ The host: code, database, keys and BTCPay. The pages served by GitHub are intact
 
 - direct a crypto payment to an address outside SimpleX's wallets, or a card payment to another Stripe account: the page shows only addresses it derives from its held keys, and the card page mounts only PaymentIntents of its held key with the held amount.
 
-- make the page sign a registration for other contracts, chain, terms, price, dispute days, duration, resolver or owner.
+- show an invoice for another amount than the held price.
+
+- make the page sign a registration for other contracts, chain, terms, dispute days, resolver or owner.
 
 - learn the name code or the name key, change a registered name's records, or transfer it: each needs the owner's signature.
 
@@ -89,6 +91,24 @@ Through the simplex.domains repository, GitHub Pages or DNS. The service is inta
 - reach owners who do not open it.
 
 - change what Etherscan shows when the buyer opens it directly.
+
+## An attacker who controls the card page
+
+Through the card page's repository, GitHub Pages or the DNS of `pay.simplex.domains`. The names page and the service are intact.
+
+*can:*
+
+- show its own card form in the frame, and take the card payments made in it.
+
+- tell the names page that a payment was made; the order's status still follows the service.
+
+*cannot:*
+
+- read the name codes, or sign anything as an owner: the card page runs on another origin.
+
+- change the crypto payment details the names page shows.
+
+- make the service register a name without a payment the service received or a valid code.
 
 ## An attacker who controls both
 

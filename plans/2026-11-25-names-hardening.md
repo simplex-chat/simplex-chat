@@ -6,8 +6,8 @@ Threat model of the result: [2026-11-25-names-threat-model.md](./2026-11-25-name
 
 Repositories changed:
 
-- simplex-chat/simplex.domains: the names page (`webapp/`), its CI, its hosting;
-- a second repository for the card page on `pay.simplex.domains` (6.5);
+- simplex-chat/simplex.domains: the names page (`webapp/`) and the card page's source, their CI, their hosting;
+- a second repository, which deploys the card page on `pay.simplex.domains` from a pinned simplex.domains commit (6.5);
 - simplex-chat/simplex-chat: the store service (`apps/simplex-store-service`), its docs, the `apps/simplex-domains` submodule.
 
 Unchanged: simplexmq, simplex-network/ens-contracts, simplex-namespace-contract, the badges page, the Pay with ETH dApp (app.simplex.domains).
@@ -40,7 +40,7 @@ interface Deployment {
   codesOnly: boolean
   priceBaseCentsPerYear: number
   priceExceptions: PriceException[]
-  currency: "USD"
+  currency: "usd"
   generalTerms: Terms
   communityTerms: Terms
   stripeKey: string
@@ -77,10 +77,10 @@ interface PriceException {
 | termStart | 1798761600 (2027-01-01 00:00 UTC) | service ini `term_start` | `durationFor` |
 | paidYears | 2 | service ini `years`; controller `MIN_REGISTRATION`, 730 days | search answer, duration |
 | communityYears | 2 | `Names/Community.hs` `communityYears` | search answer |
-| minCodeYears, maxCodeYears | 2, 10 | `Badges/Code.hs` `minNameYears`, `Group/Command.hs` `maxNameYears` | code check answer |
+| minCodeYears, maxCodeYears | 2, 10 | `src/Simplex/Chat/Badges/Code.hs` `minNameYears`, `Group/Command.hs` `maxNameYears` | code check answer |
 | codesOnly | true until paid sales open | service ini `codes_only` | search, checkout |
 | priceBaseCentsPerYear, priceExceptions | 5000, none: $100 for 2 years, every name | the price oracle's base and exceptions | search answer, `catalog_changed`, invoice |
-| currency | USD | `Catalog.hs` `catalogCurrency` | invoice |
+| currency | usd | `Catalog.hs` `catalogCurrency` | invoice |
 | generalTerms | hash `0x70e0396b0a83f6c4e624b2e43d537b7c9816c6868bf705080237d93f5aa2541d`, link `https://raw.githubusercontent.com/simplex-chat/simplex-chat/7cfd522f0f26454fc913f978a45f5f6028017b10/docs/NAMES-CONDITIONS.md#sha256=6871119c6e4088d2b6f2d7890443a82a4b8e65dd1ccb73456ce8f13c3434e6ee` | policy `generalTermsLink()`, `generalTermsHash()` | search, sign answer, terms text |
 | communityTerms | the same hash and link | policy `communityTermsLink()`, `communityTermsHash()` | same |
 | stripeKey | `pk_live_…` | production ini `[stripe] publishable_key` | the card page (6.5) |
@@ -110,7 +110,7 @@ interface PriceException {
 ### 3.4 Selection
 
 - `SITE = import.meta.env.MODE === "production" ? MAINNET : LOCAL`; Vite replaces the condition at build, so the production bundle contains `MAINNET` alone.
-- `npm run build` builds with `MAINNET`; test builds use `vite build --mode local`: the step "Production build tests" of `webapp.yml`, compose's `preview` service, and `build_site` of simplex-chat's `scripts/store-service/dev/contract-run.sh`; the dev server runs in development mode, with `LOCAL`.
+- `npm run build` builds with `MAINNET`; test builds use `vite build --mode devchain`, as Vite reserves the mode name `local`: the step "Production build tests" of `webapp.yml`, compose's `preview` service, and `build_site` of simplex-chat's `scripts/store-service/dev/contract-run.sh`; the dev server runs in development mode, with `LOCAL`.
 - `test/build.test.ts`, as for the stand-in card form: the production build contains the mainnet sponsor and only `MAINNET`'s addresses.
 
 ### 3.5 What stays fetched
@@ -122,13 +122,16 @@ Downtime, `downtime` true:
 | Screen | Shown |
 |---|---|
 | search | each name's row without Register, and "New orders open again soon." under the search |
-| checkout, code check, name selection | not reached; "New orders open again soon." |
-| an open invoice | status; the payment details and the card form withheld; "Payment opens again soon." |
-| a committed or registered order | as outside the downtime |
+| checkout, its code check included, name selection | not reached; "New orders open again soon." |
+| an open invoice | status; the payment details withheld, and the card form unless already mounted; "Payment opens again soon." |
+| a committed order | status; its reveal signed after the downtime |
+| a registered order, Your names, Check your code | as outside the downtime |
+
+A page that read `downtime: true` loads again when it reads `downtime: false`, so that a tab loaded before a page release signs with the released `SITE`. The conditions are those of `views/served-mode.ts` `reloadKeeps`, whose trigger becomes the downtime flag in place of `codesOnly`.
 
 ### 3.6 How a held value changes
 
-A change of a held value is made in a downtime. The service enters it first; the page follows at its next read of `/api/config`. Merging a simplex.domains pull request to master deploys the page (8.2), so a page release and its merge are one step.
+A change of a held value other than a payee key (3.8) is made in a downtime. The service enters it first; the page follows at its next read of `/api/config`. Merging a simplex.domains pull request to master deploys the page (8.2), so a page release and its merge are one step.
 
 | Step | Who | What |
 |---|---|---|
@@ -136,13 +139,14 @@ A change of a held value is made in a downtime. The service enters it first; the
 | 2 | Operator | the capped drain (3.7) |
 | 3 | Owner, Safe signers | chain changes: terms by `setGeneralTerms` or `setCommunityTerms`, prices by the price oracle |
 | 4 | Operator | the service released from its prepared, tested pull request, with `downtime = true`; payee keys in BTCPay and the ini |
-| 5 | Owner | simplex.domains pull request with the new values, merged |
-| 6 | Operator | the service restarted with `downtime = false` |
+| 5 | Owner | simplex.domains pull request with the new values, merged; with a new Stripe key, the card page's repository moved to that merge |
+| 6 | Operator | the service restarted with `downtime = false`, once step 5's `pages` jobs have completed and 600 seconds have passed, the `max-age` GitHub Pages serves with |
 | 7 | Buyers | open orders signed again (3.7) |
 | 8 | Owner | simplex-chat pull request: `apps/simplex-domains` moved to step 5's merge, merged |
 
+- The Safe transactions of step 3 are signed before step 1 and executed at step 3.
 - Step 8's CI runs the page's tests against the released service; before step 5, the service's tests against the pinned page fail where a held value changed.
-- A service ini value the page holds (`term_start`, `years`, `codes_only`, `tld`, the `[chain]` addresses, the payee keys) changes only in step 4; the README lists them.
+- The service ini values the page holds change only in step 4; the README lists them: `[names]` `term_start`, `years`, `codes_only` and `tld`; `[chain]` `chain_id` and the contract addresses; the payee keys; `[stripe] publishable_key`.
 - Before step 5, `dev/check-mainnet.ts` is run by hand: the controller's `sponsor()`, `defaultResolver()`, `namePolicy()`, `tldSuffix()`, the price oracle's base and exceptions, and the policy's terms links and hashes are read through a public RPC and compared with `MAINNET`.
 - The contract addresses are the proxies', which stay the same across an upgrade; an upgrade that changes an EIP-712 type is a chain change of step 3.
 - The steps are documented in the service README, "Changing a value the names page holds", and in the page README, Hosting.
@@ -176,14 +180,16 @@ sequenceDiagram
 Drain, step 2:
 
 1. The worker registers the orders already queued with their stored reveals; the providers settle the payments in progress.
-2. The operator waits until `simplex_store_names_orders` reads 0 for the phases queued, committing, committed and registering, or until the cap, 15 minutes, passes.
+2. The operator waits until `simplex_store_names_queue_oldest_change_timestamp_seconds` is absent, as no order the service moves on is left, or until the cap, 15 minutes, passes.
 
-Signed again, step 7, through the path the worker uses for a refused terms acceptance:
+Signed again, step 7, through the path the worker uses for a refused terms acceptance, for a change of the sponsor, the chain id, the name policy or the terms:
 
 1. The worker clears a stored reveal that the current values refuse, and the order waits, committed, for its page to sign again: on a terms mismatch, a refused acceptance, an acceptance for another policy, or an expired signature (`judge`, `relayAcceptance`, `sendRegister`), and, with this change, on a `RegisterName` refused under the service's current configuration (`intentRefused`), in place of failing the order with `FRSignatureRefused`.
-2. The page of the order's buyer reads the committed view without a reveal, and signs `RegisterName` and the acceptance again with `SITE`'s values; with changed terms, the buyer accepts them first (`termsChanged`).
-3. A commitment past its age is committed again (`judge`, `commitAgain`).
+2. The page of the order's buyer, loaded after step 5, reads the committed view without a reveal, and signs `RegisterName` and the acceptance again with `SITE`'s values; with changed terms, the buyer accepts them first (`termsChanged`).
+3. A commitment past its age is committed again through the page's `/retry` (`retryDue`, `retryRegistration`).
 4. An order whose page has not read it for 3 days fails with `unread`; its buyer's Continue signs it again (`revealHandler`).
+
+A change of the resolver or the TLD changes every open order's commitment (`registrationOf`, `makeCommitment`), so those orders cannot be signed again: the drain of step 2 runs without the cap, and an order still open after it is closed by support's `//close`, its payment kept as balance or refunded.
 
 ```mermaid
 stateDiagram-v2
@@ -230,7 +236,7 @@ stateDiagram-v2
 | same | text | sha256 equal to the link's `#sha256=` |
 | `POST /api/code/check` (`api.checkCode`) | years | from `minCodeYears` to `maxCodeYears` |
 | `POST /api/invoice`, `GET /api/invoice/:id`, cancel (`checkedInvoice`) | amount | equal to the price the page sent, itself the held price |
-| same | currency | `USD` |
+| same | currency | `usd` |
 | same | cryptoCurrency, clientSecret | the method asked for: `clientSecret` alone for a card; `cryptoCurrency` equal to the coin otherwise |
 | same | address of an open invoice | proven from `SITE` keys (6.1, 6.2) |
 | same | clientSecret | PaymentIntent compared in the card page (6.4) |
@@ -252,7 +258,7 @@ The name and the name address of an order are the page's own: the name from the 
 
 | Rule not met | Function | What the buyer sees |
 |---|---|---|
-| search: terms, years or price | `api.searchName`, `flow.orderable` | the name's row with Register off and "Names can't be ordered right now. Please try again later." |
+| search: terms, years or price | `api.searchName`, `flow.orderable` | the name's row with Register off and the existing line "Names can't be ordered right now. Try again later." |
 | code check: years | `api.checkCode` | "The code could not be checked" |
 | sign answer: policy, terms hash or kind | `api.signFor`, `flow.orderRequest` | the order is not sent; Check your order shows its failure line |
 | `terms_changed` body: terms | `api.signingTerms` | same |
@@ -291,7 +297,7 @@ flowchart TD
 | | | duration | `durationFor(years, SITE.termStart, now)`, years checked (4.1) |
 | | | resolver | `SITE.resolver` |
 | | | data | the buyer's links on `namehash(SITE.tld, label)` |
-| | | disputeDays | `DISPUTE_DAYS` of the buyer's own method (5.2) |
+| | | disputeDays | `DISPUTE_DAYS` of the order's own method (5.2) |
 | | | nonce | service |
 | | | deadline | page's clock + 7 days |
 | `AcceptGeneralTerms`, `AcceptCommunityTerms` | `SimplexNamePolicy`, `SITE.chainId`, `SITE.namePolicy` | commitment | page |
@@ -303,13 +309,13 @@ flowchart TD
 | | | nonce | service |
 | | | deadline | page's clock + 1 hour |
 
-`SITE` is read inside the signing functions, and is used in place of `namesSite`, `readSite` and `loadedSite` at their call sites. `ChainInfo` is removed from `api.ts`; `chain` and `termStart` are removed from `session.Checkout`, `flow.Draft`, `registrationOf`, `signedReveal`, `saveLinks` and `quoteOf`; in the inline first-frame script of `index.html`, the tests of `c.chain` and `c.termStart` are removed.
+`SITE` is read inside the signing functions, and is used in place of `namesSite`, `readSite` and `loadedSite` at their call sites, `quoteOf`'s read of the chain id included. `ChainInfo` is removed from `api.ts`; `chain` and `termStart` are removed from `session.Checkout`, `flow.Draft`, `registrationOf`, `signedReveal` and `saveLinks`; in the inline first-frame script of `index.html`, the tests of `c.chain` and `c.termStart` are removed.
 
-### 5.2 Dispute days of the buyer's own payment
+### 5.2 Dispute days of the order's own method
 
 - The sealed order includes `method` (`card`, `btc`, `xmr` or `code`) beside `label`, `contact` and `channel`; it is authenticated by AES-GCM under the code's key.
 - At an order, the invoice's method equals the method asked for (4.1), and the record is given the method asked for, in place of `paidWith`'s reading of the answer.
-- In a record restored by `reopen` or adopted by `adoptSibling`, the method is the unsealed order's; for sealed data written before the change, the service's payment type is taken.
+- In a record restored by `reopen`, the method is the unsealed order's; for sealed data written before the change, the service's payment type is taken.
 - Precedent of the method check: the badges page's `api.ts`, where `clientSecret` is compared with `address`, `cryptoAmount` and `cryptoCurrency` per method.
 
 ### 5.3 A reveal signed again
@@ -320,7 +326,7 @@ flowchart TD
 ```mermaid
 flowchart TD
   O[order placed in this browser] --> M1[method = the one asked for; invoice's method must equal it]
-  R[order restored or adopted] --> U{unsealed order has method}
+  R[order restored] --> U{unsealed order has method}
   U -->|yes| M2[method from the sealed order]
   U -->|sealed before the change| M3[service's payment type]
   M1 --> D[DISPUTE_DAYS of the method]
@@ -367,11 +373,11 @@ Keys:
 - W, the public key of its receiving branch, child 0; c0, that branch's chain code;
 - the page holds W alone.
 
-Service, at invoice creation (`Providers/BTCPay.hs` `createInvoice`):
+Service, at a name invoice's creation (`Providers/BTCPay.hs` `createInvoice`):
 
 1. reads `additionalData.keyPath` (`0/i`) of the `BTC-CHAIN` payment method, which BTCPay 2.4.5 answers without `includeSensitive`;
 2. computes `(IL, IR) = HMAC-SHA512(c0, serP(W) ‖ ser32(i))` and `t = IL`, with `t < n`;
-3. computes `K = W + t·G` and `bech32(hrp, 0, RIPEMD160(SHA256(serP(K))))`;
+3. computes `K = W + t·G` and `bech32(btc_hrp, 0, RIPEMD160(SHA256(serP(K))))`, with `btc_hrp` of 9.1;
 4. compares that address with BTCPay's `destination`; when they differ, cancels the invoice, as in `cancelCreated` for an invoice whose address cannot be read, and answers `503 provider_unavailable`;
 5. stores `t` with the invoice.
 
@@ -397,7 +403,7 @@ Definitions:
 - `m = Hs("SubAddr\0" ‖ a ‖ u32le(i) ‖ u32le(j))`;
 - the subaddress `(D, C)`: `D = B + m·G`, `C = a·D`.
 
-Service, at invoice creation:
+Service, at a name invoice's creation:
 
 1. reads `additionalData.accountIndex` (i) and `addressIndex` (j) of `XMR-CHAIN` (Monero plugin 1.4.0, `MoneroLikeOnChainPaymentMethodDetails`);
 2. computes m with the view key, D, C and `base58xmr(prefix ‖ D ‖ C ‖ checksum)`, and compares it with `destination`, as 6.1 step 4;
@@ -473,6 +479,7 @@ sequenceDiagram
 Stripe.js loads from js.stripe.com and is neither bundled nor self-hosted (`webapp/src/stripe.ts`). It runs in a page on another origin, in an iframe, so that the browser keeps the name codes' storage apart from it.
 
 - Origin: `SITE.cardOrigin`, `https://pay.simplex.domains`; the card page is served by GitHub Pages from a second repository, as one repository has one Pages site.
+- Source: `webapp/card/` in simplex.domains, built with `SITE` beside the names page; the second repository pins a simplex.domains commit, and its `pages` job builds and deploys the card page from it.
 - The card page: one HTML file and its script, which loads Stripe.js, holds `SITE.stripeKey`, `SITE.stripeLive` and the names page's origin, stores nothing, and draws nothing until a `mount` message from the names page's origin.
 - The names page: Stripe.js, js.stripe.com and hooks.stripe.com leave its CSP; `frame-src` names `SITE.cardOrigin` alone.
 - The PaymentIntent check of 6.4 runs in the card page.
@@ -486,7 +493,7 @@ names page -> card page
 card page -> names page
   ready     the frame loaded
   height    pixels, as the form grows for 3-D Secure
-  paid      the PaymentIntent id
+  paid      the PaymentIntent id, once it succeeded or is processing
   failed    a reason for the warning of 4.2 or the card-not-confirmed screen
 ```
 
@@ -502,8 +509,8 @@ sequenceDiagram
   C->>T: retrievePaymentIntent with the held key
   T-->>C: amount, currency, livemode, types
   alt they match
-    C->>C: card form mounted
-    C->>T: confirmCardPayment, 3-D Secure in the frame
+    C->>C: Payment Element mounted
+    C->>T: confirmPayment, 3-D Secure in the frame
     T-->>C: succeeded
     C-->>N: paid
   else they differ
@@ -551,8 +558,8 @@ flowchart LR
 
 ### 8.2 Build and deploy
 
-- A job `pages` in `.github/workflows/webapp.yml`, on a push to master, after `unit` and `e2e` pass: `npm ci`, `npm run build` (production, `MAINNET`), `actions/upload-pages-artifact` with `webapp/dist`, `actions/deploy-pages`.
-- Repository settings: Pages source GitHub Actions; custom domain `simplex.domains`; Enforce HTTPS; environment `github-pages` deployable from master alone; a required review on master.
+- A job `pages` in `.github/workflows/webapp.yml`, on a push to master, after `unit` passes: `npm ci`, `npm run build` (production, `MAINNET`), `actions/upload-pages-artifact` with `webapp/dist`, `actions/deploy-pages`. The pull request's `e2e` ran on the same tree, as branches must be up to date before merging.
+- Repository settings: Pages source GitHub Actions; custom domain `simplex.domains`; Enforce HTTPS; environment `github-pages` deployable from master alone; a required review on master; branches up to date before merging.
 - Organization settings: `simplex.domains` verified for GitHub Pages.
 - The card page's repository: the same settings, custom domain `pay.simplex.domains`.
 - Precedent: app.simplex.domains, on GitHub Pages, with its CSP in a meta element.
@@ -579,7 +586,7 @@ flowchart LR
 
 - DNS: `simplex.domains` and `pay.simplex.domains` to GitHub Pages; `api.simplex.domains` to the service host; CAA records naming the certificate authorities in use.
 - DNS credentials of `simplex.domains` are kept off the service host; its Caddy obtains the certificate of `api.simplex.domains` by an HTTP or TLS-ALPN challenge.
-- Caddy serves `api.simplex.domains` alone; its `simplex.domains` site is removed; `serve_webapp` stays off.
+- Caddy's `simplex.domains` block is replaced by `api.simplex.domains`; the `badges.simplex.chat` block stays; `serve_webapp` stays off.
 
 ## 9. Store service changes
 
@@ -589,6 +596,8 @@ flowchart LR
 [btcpay]
 ; the account extended public key of the store's Bitcoin wallet, as BTCPay shows its derivation scheme: single signature, native SegWit
 btc_xpub = xpub…
+; the bech32 prefix of the wallet's network: bc, tb or bcrt
+btc_hrp = bc
 ; the Monero wallet's primary address and private view key, as given to BTCPay's view-only wallet
 xmr_address = 4…
 xmr_view_key = <64 hex digits>
@@ -599,8 +608,9 @@ downtime = false
 ```
 
 - Parsed at start; the start stops on a value that does not parse, as for `chain.service_key` (`Config.hs`).
-- Without a coin's keys, that coin's checkouts are answered `503 provider_unavailable`, and an error is logged at start, as a method the store has not enabled is logged in `logStoreMethods`.
-- `downtime` is read as `codes_only` is, and is listed in the known `[names]` keys.
+- Without a coin's keys, that coin's name checkouts are answered `503 provider_unavailable`, and an error is logged at start, as a method the store has not enabled is logged in `logStoreMethods`.
+- `downtime` is read as `codes_only` is; the new keys are added to the known keys of their sections (`Config.hs`).
+- Badge invoices are created, stored and answered as before: the address derivation, its comparison and the proof apply to name invoices alone.
 
 ### 9.2 Types
 
@@ -617,7 +627,7 @@ data ViewProof = ViewProof
     response :: ByteString }
 ```
 
-- `SPDCrypto`, in `Simplex.Chat.PaymentService.Types` and used by the store service alone, is extended by `addressProof :: Maybe AddressProof`.
+- `SPDCrypto`, in `Simplex.Chat.PaymentService.Types`, is unchanged, as it is part of the badge invoice of the chat protocol (`STPBadgeInvoice`); the proof is read beside it for a name invoice.
 - `BTCPayConfig` is extended by the parsed keys of 9.1.
 - Derivations, encodings and the view proof: `StoreService/Providers/AddressProof.hs`, beside `BTCPay.hs` and `Stripe.hs`, with crypton's `Crypto.PubKey.ECC.Prim` on `SEC_p256k1`, `Crypto.ECC.Edwards25519`, `Crypto.Hash` (`SHA256`, `RIPEMD160`, `Keccak_256`) and `Crypto.MAC.HMAC`, and the Base58Check, Monero Base58 and bech32 encodings.
 
@@ -629,8 +639,8 @@ Column, added by a migration in the store's migration lists, as the names migrat
 @invoices.payment_address_proof TEXT NULL
 ```
 
-- Written with the other destination columns in `destinationCols`, read in `mkDestination`.
-- In the invoice view (`destinationPairs`), for a crypto destination with a proof:
+- Written for a name invoice when it is created; null for a badge invoice.
+- In a name invoice's view, for a crypto destination, beside the pairs of `destinationPairs`:
 
 ```
 "addressProof": {
@@ -687,8 +697,8 @@ The name leads to its orders; an order reference leads to nothing outside the se
 | `POST /api/registration/ID/retry` | signed `retry` |
 | `GET /api/invoice/ID`, name invoice | signed `read` |
 | `POST /api/invoice/ID/cancel`, name invoice | signed `cancel` |
-| `POST /api/registration/ID/name` | signed selection; its refusals answer the view only after the signature is checked |
-| `POST /api/registration/ID/reveal` | signed `RegisterName`; its refusals answer the view only after the signer is checked |
+| `POST /api/registration/ID/name` | signed selection; every refusal before the signature is checked answers as an unknown id |
+| `POST /api/registration/ID/reveal` | signed `RegisterName`; every refusal before the signer is checked answers as an unknown id |
 | `GET /api/invoice/ID`, `POST /api/invoice/ID/cancel`, badge invoice | as before: a badge order has no name key |
 
 Signature:
@@ -703,8 +713,10 @@ signer       recovered from the signature; must equal the order's owner
 ```
 
 - Query parameters keep a `GET` a simple CORS request, with no preflight.
-- An unsigned request, a stale timestamp, another signer and an unknown id all get the same answer: `404 not_found`, the same body, after the same rate limit.
+- A timestamp outside the window is answered `400 bad_request` before the id is looked up, as `find` answers it (`checkTimestamp`); the page signs once more after its clock is set from that answer's `Date`.
+- An unsigned request, another signer and an unknown id all get the same answer: `404 not_found`, the same body, after the same rate limit.
 - The page signs each request, polls included, with the wallet of the record's name code. Without the name code it sends none, and an order's link shows "This order's name code is not in this browser. Enter it to see the order."
+- `adoptSibling`, `buildNotOnDevice` and the branch of `registeredLead` without a record, which read a view's `owner`, are removed; an order made in another browser is found by `newerOrder`, through `find` signed with the name code.
 
 ```mermaid
 sequenceDiagram
@@ -712,16 +724,18 @@ sequenceDiagram
   participant S as Service
   P->>P: sign "simplex.domains order ID read T" with the name key
   P->>S: GET /api/registration/ID?seenVersion=V&timestamp=T&signature=SIG
-  alt signer = order's owner, T in the window
+  alt T outside the window
+    S-->>P: 400 bad_request, Date
+  else signer = order's owner
     S-->>P: view
-  else unsigned, stale, other signer, unknown ID
+  else unsigned, other signer, unknown ID
     S-->>P: 404 not_found, one body for all
   end
 ```
 
 ### 9.8 Docs
 
-- `README.md`: the keys of 9.1; the log line of 9.4; "Values the names page holds" (`term_start`, `years`, `codes_only`, `min_price_cents_per_year`, `tld`, the `[chain]` addresses, the payee keys, the Stripe publishable key), each changed with a page release; "Changing a value the names page holds", the steps of 3.6 and 3.7; "Rotating a payee key", 3.8; deployment: the pages on GitHub Pages, Caddy for the API host alone, DNS credentials off the host.
+- `README.md`: the keys of 9.1; the log line of 9.4; "Values the names page holds", the list of 3.6, each changed with a page release; "Changing a value the names page holds", the steps of 3.6 and 3.7; "Rotating a payee key", 3.8; deployment: the pages on GitHub Pages, Caddy's `api.simplex.domains` block in place of `simplex.domains`, DNS credentials off the host.
 - `docs/names.md`: the system diagram with the pages on GitHub Pages and the API on its own origin; `addressProof`; the downtime; the signed order requests; the reveal cleared by `intentRefused` in the life of an order.
 - `store_service.ini.example`: the keys of 9.1.
 
@@ -733,25 +747,25 @@ Each commit's tests are committed before its code and fail on the commit before 
 
 | Commit | Content | Tests |
 |---|---|---|
-| `store: prove the address of each Bitcoin and Monero invoice` | 9.1 to 9.4; `keyPath`, Monero indices and addresses of the dev keys returned by the fake BTCPay of the tests and of `contract-run.sh` | BIP-32 test vector 1, `m/0H/1` from the xpub of `m/0H`; BIP-173 P2WPKH vectors; a Monero stagenet subaddress with its indices and view key, made with `monero-wallet-cli`; the view proof verified, and a changed C rejected; a BTCPay destination outside the keys: invoice cancelled, 503; a coin without keys: 503 and the start error; badge rows unchanged after the migration; recorded fixtures `invoice-btc-open.json`, `invoice-xmr-open.json`, `vectors-address-proofs.json`, and `deployment.json` with the public values the page holds for the fixtures |
+| `store: prove the address of each Bitcoin and Monero name invoice` | 9.1 to 9.4; `keyPath`, Monero indices and addresses of the dev keys returned by the fake BTCPay of the tests and of `contract-run.sh` | BIP-32 test vector 1, `m/0H/1` from the xpub of `m/0H`; BIP-173 P2WPKH vectors; a Monero stagenet subaddress with its indices and view key, made with `monero-wallet-cli`; the view proof verified, and a changed C rejected; a BTCPay destination outside the keys: name invoice cancelled, 503; a coin without keys: 503 for a name checkout and the start error; a badge crypto checkout and its view unchanged, with and without keys; badge rows unchanged after the migration; recorded fixtures `invoice-btc-open.json`, `invoice-xmr-open.json`, `vectors-address-proofs.json`, and `deployment.json` with the public values the page holds for the fixtures |
 | `store: answer the names page's API from another origin` | 9.5 | `OPTIONS /api/invoice`: 200 with the headers; `GET /api/config` with the headers; `/webhooks/btcpay` without them |
 | `store: names downtime` | 9.6, downtime | with `downtime`: a name invoice, a code order and a selection refused with 503; a reveal, a read and a cancel answered; `/api/config` with `downtime` |
-| `store: ask for a reveal signed again when the deployment's values change` | 9.6, `intentRefused` | a stored reveal over another sponsor or resolver: its reveal cleared and the order committed, without a failure; a new reveal accepted and registered; a new reveal over the old values refused |
-| `store: answer order requests only when signed with the name key` | 9.7 | for each route, an unsigned request, a stale one, one by another key and one for an unknown id get identical answers; the owner's signed request gets the view; a badge invoice is read and cancelled unsigned |
+| `store: ask for a reveal signed again when the deployment's values change` | 9.6, `intentRefused` | a stored reveal over another sponsor: its reveal cleared and the order committed, without a failure; a new reveal accepted and registered; a new reveal over the old sponsor refused |
+| `store: answer order requests only when signed with the name key` | 9.7 | for each route, an unsigned request, one by another key and one for an unknown id get identical answers; a stale timestamp gets `400 bad_request` for a known and an unknown id alike; for the name and reveal routes, each refusal before the signer check answers as an unknown id; the owner's signed request gets the view; a badge invoice is read and cancelled unsigned |
 | `docs: the names page on GitHub Pages` | 9.8 | |
-| `store: the names page holds its deployment's values` | `apps/simplex-domains` at the merge of 10.2; `contract-run.sh`: `vite build --mode local`, and `btc_xpub`, `xmr_address`, `xmr_view_key` of the dev keys in its ini | scope `names-page`: the page's contract tests with the new fixtures; scope `names-e2e` |
+| `store: the names page holds its deployment's values` | `apps/simplex-domains` at the head of the 10.2 pull request, moved to its merge at step 8 of 3.6; `contract-run.sh`: `vite build --mode devchain`, and `btc_xpub`, `btc_hrp`, `xmr_address`, `xmr_view_key` of the dev keys in its ini | scope `names-page`: the page's contract tests with the new fixtures; scope `names-e2e` |
 
 ### 10.2 simplex-chat/simplex.domains: one pull request
 
 | Commit | Content | Tests |
 |---|---|---|
-| `webapp: hold the deployment's chain, contracts, terms and mode in the page` | 3.1 to 3.4, 5.1 | `test/config.test.ts`: with another sponsor, resolver, chain, Stripe key or mode in the `/api/config` answer, only the downtime differs; `test/build.test.ts`: the production build contains only `MAINNET`'s addresses; `test/flow.test.ts`: digests signed over `SITE`; the `dev/deploy.ts` comparison; e2e terms changes moved to the held alternates |
+| `webapp: hold the deployment's values in the page` | 3.1 to 3.4, 5.1 | `test/config.test.ts`: with another sponsor, resolver, chain, Stripe key or mode in the `/api/config` answer, only the downtime differs; `test/build.test.ts`: the production build contains only `MAINNET`'s addresses; `test/flow.test.ts`: digests signed over `SITE`; the `dev/deploy.ts` comparison; e2e terms changes moved to the held alternates |
 | `webapp: offer and sign only the deployment's terms, prices and years` | 4.1 rules of search, sign answer, terms, code years, `terms_changed`, `catalog_changed`; 5.3 | unit: each rule, in `test/api.test.ts` and `test/flow.test.ts`; e2e: a price below and a price above the held one (mock control); chain terms outside `SITE`; another policy, and another terms hash, in the sign answer, with no order recorded by the mock; a committed view with another policy, with no reveal recorded by the mock and "could not be signed" after three |
-| `webapp: follow the service's downtime` | 3.5 | e2e, the mock in downtime: no Register, no order or selection recorded by the mock; an open invoice drawn without its payment details; a committed order without a reveal signed again with `SITE`'s values after the downtime; screenshot baselines of search, checkout and an open invoice in downtime |
-| `webapp: sign the dispute days of the buyer's own payment` | 5.2 | unit: seal and unseal with the method, and sealed data of before the change; e2e: a card order restored in a second browser context while the mock reports Bitcoin, the mock receiving a reveal over 120 days; an invoice of another method than asked, not drawn |
+| `webapp: follow the service's downtime` | 3.5; `views/served-mode.ts` on the downtime flag | e2e, the mock in downtime: no Register, no order, selection or reveal recorded by the mock; an open invoice drawn without its payment details; the tab loaded again when the downtime ends; a committed order without a reveal signed again with `SITE`'s values after the downtime; `e2e/mode-cache.spec.ts` moved to the downtime flag; screenshot baselines of search, checkout and an open invoice in downtime |
+| `webapp: sign the dispute days of the order's own method` | 5.2 | unit: seal and unseal with the method, and sealed data of before the change; e2e: a card order restored in a second browser context while the mock reports Bitcoin, the mock receiving a reveal over 120 days; an invoice of another method than asked, not drawn |
 | `webapp: show payment details only with their proof from the page's keys` | 6.1, 6.2, `src/crypto/payees.ts`, the warning of 4.2; addresses and proofs derived by the mock from the dev keys; mock control `/control/mismatch` | unit: BIP-32, BIP-173 and Monero vectors; contract: the recorded fixtures verified with `deployment.json`; e2e: open BTC and XMR invoices with an address outside the keys, the address withheld and the warning drawn; an amount other than the price, the same |
-| `webapp: the card form on its own origin` | 6.4, 6.5; the card page in its repository | `test/stripe.test.ts`, with a fake Stripe global: with each PaymentIntent field changed, the form stays unmounted; the e2e tests of 6.5 |
-| `webapp: sign every request for an order with its name key` | 9.7 | e2e: every request for an order recorded by the mock with a valid signature of the order's owner; an order's link without the name code: no request sent, the line of 9.7 drawn |
+| `webapp: the card form on its own origin` | 6.4, 6.5; the card page's source in `webapp/card/`, built with `SITE` | `test/stripe.test.ts`, with a fake Stripe global: with each PaymentIntent field changed, the form stays unmounted; the e2e tests of 6.5 |
+| `webapp: sign every request for an order with its name key` | 9.7; `adoptSibling`, `buildNotOnDevice` and the branch of `registeredLead` without a record removed | e2e: every request for an order recorded by the mock with a valid signature of the order's owner; an order's link without the name code: no request sent, the line of 9.7 drawn; a device clock 20 minutes off: the order drawn after one more signature |
 | `webapp: show the name address and its names on Etherscan` | 7 | e2e: the name address beside each name code; the link's `href` from `SITE.baseRegistrar` and the name address; screenshot baselines |
 | `webapp: serve the page from GitHub Pages with the API on its own origin` | 8.2, 8.3, README Hosting | e2e: a production build with `VITE_API_ORIGIN` at the mock's port, the mock sending the service's CORS headers: an order placed, the clock read from `Date`, no CSP violation reported; e2e: the page in a frame, only the link drawn; `test/sw.test.ts`: the API origin's config network first; `test/build.test.ts`: the CSP meta element with the API origin, the card origin and the inline hashes |
 
@@ -779,13 +793,13 @@ The steps of 3.6, with the first deployment's own parts:
 
 | Step | What |
 |---|---|
-| 0 | both pull requests and the card page prepared and tested; the `pages` jobs and Pages settings in place; `api.simplex.domains` in DNS, served by Caddy beside `simplex.domains`; the Stripe account's settings of 6.4 verified in the Dashboard |
-| 1 | the service released from the prepared pull request, with `btc_xpub`, `xmr_address`, `xmr_view_key`, CORS and `downtime = true` |
+| 0 | both pull requests prepared and tested; the `pages` jobs and Pages settings in place; `api.simplex.domains` in DNS, served by Caddy beside `simplex.domains`; `pay.simplex.domains` in DNS and the card page deployed from the simplex.domains pull request's head, its certificate issued; the TTL of `simplex.domains` lowered; the Stripe account's settings of 6.4 verified in the Dashboard |
+| 1 | the service released from the prepared pull request, with `btc_xpub`, `btc_hrp`, `xmr_address`, `xmr_view_key`, CORS and `downtime = true` |
 | 2 | the capped drain (3.7) |
-| 5 | simplex.domains pull request merged; the `pages` jobs deploy the names page and the card page; `simplex.domains` and `pay.simplex.domains` DNS moved to GitHub Pages |
-| 6 | the service restarted with `downtime = false` |
+| 5 | simplex.domains pull request merged; the `pages` job deploys the names page; the card page's repository moved to that merge; `simplex.domains` DNS moved to GitHub Pages |
+| 6 | the service restarted with `downtime = false`, once GitHub Pages has issued the certificate of `simplex.domains`, Enforce HTTPS is on, and the wait of 3.6 has passed |
 | 7 | open orders signed again (3.7) |
 | 8 | simplex-chat pull request: submodule moved to step 5's merge, merged |
 
 - The service is released with its keys before the page, as the page draws an open crypto invoice only with its proof.
-- Between steps 1 and 5, the page served by Caddy reads no order, as its requests for orders are unsigned.
+- Between steps 1 and 5, the page served by Caddy shows no order; its buyers open their orders again after step 5.
