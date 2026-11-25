@@ -31,6 +31,7 @@ import Test.Hspec
 
 namesSignedTests :: Spec
 namesSignedTests = describe "StoreService names: signed order requests" $ do
+  it "signs the message simplex.domains order <id> <action> <timestamp>" testMessage
   it "answers a registration read unsigned, by another key, over another action or id, and for an unknown id alike, a timestamp outside the window 400 for a known and an unknown id alike, and the owner's read with the view" testRegistrationRead
   it "answers a retry unsigned, by another key, over another action or id, and for an unknown id alike, writing nothing, a timestamp outside the window 400 alike, and retries the owner's" testRetry
   it "answers a name invoice read unsigned, by another key, over another action or id, and for an unknown id alike, a timestamp outside the window 400 alike, and the owner's read with the view" testInvoiceRead
@@ -119,6 +120,14 @@ registrationRoute = registrationPath . RegistrationId
 
 invoiceRoute :: Text -> String
 invoiceRoute iid = "/api/invoice/" <> T.unpack iid
+
+testMessage :: IO ()
+testMessage =
+  map (\action -> orderRequestMessage unknownRid action 1792828800) [OARead, OACancel, OARetry]
+    `shouldBe` [ "simplex.domains order t2Jk8RmQ4vXw9NcP3yLb6g read 1792828800",
+                 "simplex.domains order t2Jk8RmQ4vXw9NcP3yLb6g cancel 1792828800",
+                 "simplex.domains order t2Jk8RmQ4vXw9NcP3yLb6g retry 1792828800"
+               ]
 
 testRegistrationRead :: IO ()
 testRegistrationRead = withSigned $ \ctx -> do
