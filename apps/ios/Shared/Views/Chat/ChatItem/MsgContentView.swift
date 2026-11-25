@@ -705,23 +705,26 @@ func messageText(
                     handleTaps = true
                 }
             case let .messageLink(text, msgLinkType, msgLink):
-                attrs = linkAttrs()
                 let ciLink = text.flatMap { links?[$0] }
-                if msgLinkType == .unknownSource && ciLink?.target == nil {
-                    attrs[.foregroundColor] = uiLinkColor.withAlphaComponent(0.7)
-                }
-                if !preview {
-                    attrs[msgLinkAttrKey] = Format.messageLink(showText: text, msgLinkType: msgLinkType, msgLink: msgLink)
-                    if let target = ciLink?.target { attrs[msgLinkTargetAttrKey] = target }
-                    handleTaps = true
+                if !msgLinkType.leadsNowhere(ciLink) {
+                    attrs = linkAttrs()
+                    if !preview {
+                        attrs[msgLinkAttrKey] = Format.messageLink(showText: text, msgLinkType: msgLinkType, msgLink: msgLink)
+                        if let target = ciLink?.target { attrs[msgLinkTargetAttrKey] = target }
+                        handleTaps = true
+                    }
                 }
                 if let text {
                     t = text
-                    if let linkText = ciLink?.text, linkText != text {
-                        res.append(NSAttributedString(string: text + " ", attributes: attrs))
-                        italic = italic ?? UIFont(descriptor: descr.withSymbolicTraits(.traitItalic) ?? descr, size: descr.pointSize)
-                        attrs[.font] = italic
-                        t = "(\(linkText))"
+                    if let linkText = ciLink?.text {
+                        if linkText == text {
+                            t = "“\(text)”"
+                        } else {
+                            res.append(NSAttributedString(string: text, attributes: attrs))
+                            attrs = plain
+                            attrs[.foregroundColor] = UIColor.secondaryLabel
+                            t = " “\(linkText)”"
+                        }
                     }
                 }
             case .email:

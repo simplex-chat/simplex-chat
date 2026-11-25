@@ -3964,7 +3964,13 @@ public struct CILink: Decodable, Hashable {
 public struct CILinkTarget: Decodable, Hashable {
     public var chatType: ChatType
     public var chatId: Int64
-    public var chatItemId: Int64
+    public var chatItemId: Int64?
+
+    public init(chatType: ChatType, chatId: Int64, chatItemId: Int64?) {
+        self.chatType = chatType
+        self.chatId = chatId
+        self.chatItemId = chatItemId
+    }
 }
 
 public struct ACIReaction: Decodable, Hashable {
@@ -6100,6 +6106,13 @@ public enum MsgLinkType: String, Decodable, Hashable {
     case note
     case unknownSource
     case unsupported
+
+    public func leadsNowhere(_ link: CILink?) -> Bool {
+        switch self {
+        case .publicGroup, .unsupported: false
+        case .group, .direct, .note, .unknownSource: link?.target == nil
+        }
+    }
 }
 
 public struct SimplexNameInfo: Codable, Equatable, Hashable {

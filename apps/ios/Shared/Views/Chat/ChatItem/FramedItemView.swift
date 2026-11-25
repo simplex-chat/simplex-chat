@@ -604,8 +604,8 @@ struct FramedItemView_Edited_Previews: PreviewProvider {
 
 struct FramedItemView_MessageLinks_Previews: PreviewProvider {
     static var previews: some View {
-        let sameChatLink = "simplex:/m#g/UXhQdlR3WmNrTjhyRDFtYQ?a=UWRoR05KMk16UG1hSGRpag"
-        let text = "Before the release: [Approve the deploy plan?](\(sameChatLink)) and [the draft](simplex:/m)"
+        let sameChatLink = "simplex:m#g/UXhQdlR3WmNrTjhyRDFtYQ?a=UWRoR05KMk16UG1hSGRpag"
+        let text = "Before the release: [Approve the deploy plan?](\(sameChatLink)) and [the draft](simplex:m)"
         let ci = ChatItem(
             chatDir: .groupRcv(groupMember: GroupMember.sampleData),
             meta: CIMeta.getSample(1, previewDate, text, .rcvRead),
@@ -614,10 +614,10 @@ struct FramedItemView_MessageLinks_Previews: PreviewProvider {
                 FormattedText(text: "Before the release: "),
                 FormattedText(text: "[Approve the deploy plan?](\(sameChatLink))", format: .messageLink(showText: "Approve the deploy plan?", msgLinkType: .group, msgLink: sameChatLink)),
                 FormattedText(text: " and "),
-                FormattedText(text: "[the draft](simplex:/m)", format: .messageLink(showText: "the draft", msgLinkType: .unknownSource, msgLink: "simplex:/m"))
+                FormattedText(text: "[the draft](simplex:m)", format: .messageLink(showText: "the draft", msgLinkType: .unknownSource, msgLink: "simplex:m"))
             ],
             links: [
-                "Approve the deploy plan?": CILink(text: "Approve the deploy plan?", target: nil),
+                "Approve the deploy plan?": CILink(text: "Approve the deploy plan?", target: CILinkTarget(chatType: .group, chatId: 1, chatItemId: nil)),
                 "the draft": CILink(text: "Draft of the 7.2 announcement", target: nil)
             ]
         )
