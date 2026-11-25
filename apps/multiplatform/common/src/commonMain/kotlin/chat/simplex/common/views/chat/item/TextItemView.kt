@@ -127,7 +127,7 @@ fun segmentDisplayText(ft: FormattedText, mentions: Map<String, CIMention>?, lin
         ?: if (linkMode == SimplexLinkMode.DESCRIPTION) ft.format.linkType.description else null
       if (t != null) "$t ${ft.format.viaHosts}" else ft.text
     }
-    is Format.MessageLink -> msgLinkTexts(ft.text, ft.format, links).let { (label, shortText) -> if (shortText == null) label else "$label ($shortText)" }
+    is Format.MessageLink -> msgLinkTexts(ft.text, ft.format, links).let { (label, shortText) -> if (shortText == null) label else "$label “$shortText”" }
     is Format.Command -> ft.text
     is Format.Escape -> ""
     is Format.Markup -> ft.format.token.drawnText
@@ -135,8 +135,9 @@ fun segmentDisplayText(ft: FormattedText, mentions: Map<String, CIMention>?, lin
   }
 
 private fun msgLinkTexts(text: String, link: Format.MessageLink, links: Map<String, CILink>?): Pair<String, String?> {
-  val label = link.showText ?: text
-  return label to link.ciLink(links)?.text?.takeIf { it != label }
+  val label = link.showText ?: return text to null
+  val shortText = link.ciLink(links)?.text
+  return if (shortText == label) "“$label”" to null else label to shortText
 }
 
 class ItemDisplay(val parts: List<Pair<String, String>>, val bases: List<Int>)
@@ -430,19 +431,17 @@ fun MarkdownText (
               }
             }
             is Format.MessageLink -> {
-              val unknownSource = ft.format.msgLinkType == MsgLinkType.unknownSource && ft.format.ciLink(links)?.target == null
-              val ftStyle = Format.linkStyle.let { if (unknownSource) it.copy(color = it.color.copy(alpha = 0.7f)) else it }
+              val ftStyle = Format.linkStyle
               val (label, shortText) = msgLinkTexts(ft.text, ft.format, links)
-              val appendLink = {
+              if (ft.format.msgLinkType.leadsNowhere(ft.format.ciLink(links))) {
+                append(label)
+              } else if (onMsgLinkClick == null) {
                 withStyle(ftStyle) { append(label) }
-                if (shortText != null) withStyle(ftStyle.copy(fontStyle = FontStyle.Italic)) { append(" ($shortText)") }
-              }
-              if (onMsgLinkClick == null) {
-                appendLink()
               } else {
                 hasLinks = true
-                withAnnotation(tag = "MESSAGE_LINK", annotation = i.toString()) { appendLink() }
+                withAnnotation(tag = "MESSAGE_LINK", annotation = i.toString()) { withStyle(ftStyle) { append(label) } }
               }
+              if (shortText != null) withStyle(SpanStyle(color = MaterialTheme.colors.secondary)) { append(" “$shortText”") }
             }
             is Format.Email -> {
               hasLinks = true

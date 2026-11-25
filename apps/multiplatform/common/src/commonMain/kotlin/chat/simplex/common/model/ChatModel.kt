@@ -3604,7 +3604,7 @@ data class CILink(
 data class CILinkTarget(
   val chatType: ChatType,
   val chatId: Long,
-  val chatItemId: Long
+  val chatItemId: Long? = null
 )
 
 @Serializable
@@ -5568,7 +5568,12 @@ enum class MsgLinkType {
   @SerialName("direct") direct,
   @SerialName("note") note,
   @SerialName("unknownSource") unknownSource,
-  @SerialName("unsupported") unsupported
+  @SerialName("unsupported") unsupported;
+
+  fun leadsNowhere(link: CILink?): Boolean = when (this) {
+    publicGroup, unsupported -> false
+    group, direct, note, unknownSource -> link?.target == null
+  }
 }
 
 @Serializable
