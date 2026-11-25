@@ -9,7 +9,7 @@ module Bots.StoreService.NamesRevealTests (namesRevealTests) where
 
 import Bots.StoreService.FakeEthNode
 import Bots.StoreService.NamesContractsTests (noncesCall)
-import Bots.StoreService.NamesOrdersTests (Ctx (..), Order (..), aliceOrder, blockedRequests, communityTerms, configured, invoiceRegistration, keyA, orderSeconds, orderTime, placed, post, recordingHandlers, registrationOf, settleNow, settled, withOrders)
+import Bots.StoreService.NamesOrdersTests (Ctx (..), Order (..), aliceOrder, blockedRequests, communityTerms, configured, invoiceRegistration, keyA, movedSponsor, orderSeconds, orderTime, otherSponsor, placed, post, recordingHandlers, registrationOf, settleNow, settled, withOrders)
 import Bots.StoreService.NamesOwnerTests (answerFree, postSelection, selectionBody, selectionOf)
 import Bots.StoreService.NamesPhasesTests (change, held, registrationPath, seenVersion, woken)
 import Bots.StoreService.NamesStoreTests (hashFixture, ownerA)
@@ -41,6 +41,7 @@ import Simplex.Messaging.Agent.Store.Common (withTransaction)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.Secp256k1 (RecoverableSignature (..), Secp256k1PrivateKey, signRecoverable)
 import Simplex.Messaging.Encoding (Encoding (..))
+import Simplex.Messaging.Eth.Address (Address)
 import Simplex.Messaging.SimplexName (SimplexTLD (..), labelHash)
 import Simplex.Messaging.SystemTime (RoundedSystemTime (..))
 import StoreService.Config (NamesConfig (nDowntime))
@@ -72,6 +73,7 @@ namesRevealTests = describe "StoreService names: reveal" $ do
   describe "refused" $ do
     it "refuses a high-s intent, a wrong signer, a stale nonce, a deadline before revealBefore or over a week ahead, writing nothing, and accepts one a week ahead" testIntentRefusals
     it "refuses an intent signed over other dispute days than the order's, writing nothing" testOtherDisputeDays
+    it "refuses an intent signed over the sponsor the service used before, writing nothing, and accepts one over its current sponsor" testOtherSponsor
     it "refuses a label not of the order, another secret or other links, writing nothing" testCommitmentRefusals
     it "refuses a commitment of another duration than the order's" testWrongDuration
     it "refuses a list of links for a key as bad_request, recording nothing" testSecondLink
@@ -177,8 +179,11 @@ signIntent :: Ctx -> Secp256k1PrivateKey -> Registration -> Word64 -> Word64 -> 
 signIntent ctx key r = signIntentOver ctx key r minDisputeDays
 
 signIntentOver :: Ctx -> Secp256k1PrivateKey -> Registration -> DisputeDays -> Word64 -> Word64 -> IO RecoverableSignature
-signIntentOver Ctx {cRandom} key r days nonce deadline =
-  either error id <$> signRecoverable cRandom key (registerIntentDigest (sponsorDomain fakeChainId fakeSponsor) r days nonce $ RoundedSystemTime $ fromIntegral deadline)
+signIntentOver = signIntentFor fakeSponsor
+
+signIntentFor :: Address -> Ctx -> Secp256k1PrivateKey -> Registration -> DisputeDays -> Word64 -> Word64 -> IO RecoverableSignature
+signIntentFor sponsor Ctx {cRandom} key r days nonce deadline =
+  either error id <$> signRecoverable cRandom key (registerIntentDigest (sponsorDomain fakeChainId sponsor) r days nonce $ RoundedSystemTime $ fromIntegral deadline)
 
 bodyOf :: RecoverableSignature -> Registration -> Word64 -> Word64 -> J.Object
 bodyOf sig Registration {rLabel, rSecret, rContactLink, rChannelLink} nonce deadline =
@@ -468,6 +473,18 @@ testOtherDisputeDays = withReveals $ \Fx {fCtx = ctx} -> do
   reveal ctx rid (withAcceptance acceptance $ bodyOf sig alice 0 revealBefore) `shouldReturn` badRequest
   unwritten <$> stored ctx rid `shouldReturn` unchanged
   ownerReveal ctx rid alice `shouldReturn` accepted
+
+testOtherSponsor :: IO ()
+testOtherSponsor = withReveals $ \Fx {fCtx = open} -> do
+  rid <- committed open (orderOf alice)
+  unchanged <- unwritten <$> stored open rid
+  serveReveals (configured movedSponsor open) $ \Fx {fCtx = ctx} -> do
+    ownerReveal ctx rid alice `shouldReturn` badRequest
+    unwritten <$> stored ctx rid `shouldReturn` unchanged
+    acceptance <- acceptanceOf ctx keyA alice False fakeGeneralTerms 0 revealBefore
+    sig <- signIntentFor otherSponsor ctx keyA alice minDisputeDays 0 revealBefore
+    reveal ctx rid (withAcceptance acceptance $ bodyOf sig alice 0 revealBefore) `shouldReturn` accepted
+    fmap rvLabel . nrReveal <$> stored ctx rid `shouldReturn` Just "alicebakery"
 
 testCommitmentRefusals :: IO ()
 testCommitmentRefusals = withReveals $ \Fx {fCtx = ctx} -> do

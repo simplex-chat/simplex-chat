@@ -17,6 +17,8 @@ module Bots.StoreService.NamesOrdersTests
     configured,
     testNamesConfig,
     codesOnly,
+    movedSponsor,
+    otherSponsor,
     aliceOrder,
     secretOf,
     orderRegistration,
@@ -498,6 +500,12 @@ configured change ctx@Ctx {cOrders, cWeb} = ctx {cOrders = orders, cWeb = cWeb {
 
 codesOnly :: NamesConfig -> NamesConfig
 codesOnly cfg = cfg {nCodesOnly = True}
+
+movedSponsor :: NamesConfig -> NamesConfig
+movedSponsor cfg@NamesConfig {nChain} = cfg {nChain = nChain {cSponsor = otherSponsor}}
+
+otherSponsor :: Address
+otherSponsor = address "0x0b306bf915c4d645ff596e518faf3f9669b97016"
 
 -- | Another server of the orders routes over the context with its names settings changed.
 withSettings :: (NamesConfig -> NamesConfig) -> Ctx -> (Ctx -> IO a) -> IO a

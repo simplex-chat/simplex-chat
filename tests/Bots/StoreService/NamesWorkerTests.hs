@@ -105,8 +105,8 @@ workerTests = describe "StoreService names: worker" $ do
     it "fails an order at its fifth register mined with status 0 for its commitment, sending nothing, and refuses its Try again and a selection of a name" testSendsCapped
     it "clears the reveal on InvalidNonce or TermsNotAccepted, staying committed, and reads the name policy again on TermsNotAccepted" testInvalidNonce
     it "relays no intent past its deadline, clearing the reveal and staying committed" testExpiredIntent
-    it "fails an order at once, logging and reporting it, when its stored signature is refused under another chain id, sending nothing, and refuses a selection of any name for it" testSignatureUnderOtherConfig
-    it "fails an order at once, before relaying its acceptance, when its stored signature is refused under another chain id, sending nothing" testRelayUnderOtherConfig
+    it "clears a stored reveal refused under another sponsor, the order committed without a failure, sending nothing, then registers the reveal signed again over that sponsor" testSignatureUnderOtherConfig
+    it "clears a stored reveal refused under another sponsor before relaying its acceptance, sending nothing" testRelayUnderOtherConfig
     it "keeps the phase when a read of the final check fails" testCheckUnread
     it "waits a second when the dry run reverts CommitmentTooNew" testCommitmentTooNew
     it "commits again with its reveal when the dry run reverts CommitmentNotFound, and when it reverts CommitmentTooOld past the lapse, reporting that" testCommitAgain
@@ -247,9 +247,12 @@ revealBeforeOf = fmap (fromIntegral . roundedSeconds . cmRevealBefore) . phaseCo
 
 -- | The reveal the page sends, its intent signed with the owner's key.
 signedReveal :: Ctx -> Secp256k1PrivateKey -> NameReveal -> NameRegistration -> IO NameReveal
-signedReveal Ctx {cRandom, cOrders, cNode} key rv r@NameRegistration {nrCommitment, nrOwner} = do
+signedReveal = signedRevealOver fakeSponsor
+
+signedRevealOver :: Address -> Ctx -> Secp256k1PrivateKey -> NameReveal -> NameRegistration -> IO NameReveal
+signedRevealOver sponsor Ctx {cRandom, cOrders, cNode} key rv r@NameRegistration {nrCommitment, nrOwner} = do
   let RegisterIntent {riRegistration, riDisputeDays} = intentOf (oeConfig cOrders) nrOwner (nrDuration r) (nrDisputeDays r) rv
-  sig <- either (error . show) id <$> signRecoverable cRandom key (registerIntentDigest (sponsorDomain fakeChainId fakeSponsor) riRegistration riDisputeDays (rvNonce rv) (rvDeadline rv))
+  sig <- either (error . show) id <$> signRecoverable cRandom key (registerIntentDigest (sponsorDomain fakeChainId sponsor) riRegistration riDisputeDays (rvNonce rv) (rvDeadline rv))
   answerCall cNode fakeNamePolicy (selector "acceptedTerms(bytes32,address)" <> unHex32 nrCommitment <> addressWord nrOwner) $ Returns $ unHex32 $ termsHash $ rvAcceptance rv
   pure rv {rvSignature = sig}
 
@@ -1091,35 +1094,37 @@ testExpiredIntent = withWorker $ \w@W {wCtx = ctx} -> do
   sent w `shouldReturn` []
 
 testSignatureUnderOtherConfig :: IO ()
-testSignatureUnderOtherConfig = withWorker $ \W {wCtx = ctx@Ctx {cOrders}, wSender} -> do
+testSignatureUnderOtherConfig = withWorker $ \W {wCtx = open} -> do
   reports <- newTVarIO []
-  r <- paidIn ctx aliceOrder openPhase >>= revealed ctx keyA "alicebakery"
-  let NamesConfig {nChain} = oeConfig cOrders
-      moved = cOrders {oeConfig = (oeConfig cOrders) {nChain = nChain {cChainId = cChainId nChain + 1}}, oeReport = \t -> atomically $ modifyTVar' reports (t :)}
-  worker <- newWorker moved wSender
-  logs <- capturingStderr $ void $ stepRegistration worker (nrId r)
-  now <- nowOf ctx
-  nrPhase <$> stored ctx r `shouldReturn` OFailed now FRSignatureRefused
+  r <- paidIn open aliceOrder openPhase >>= revealed open keyA "alicebakery"
+  let moved@Ctx {cOrders} = configured movedSponsor open
+  w@W {wCtx = ctx} <- started moved {cOrders = cOrders {oeReport = \t -> atomically $ modifyTVar' reports (t :)}}
+  answerAvailable w True
+  logs <- capturingStderr $ void $ published w r (steps w r) >>= waitingUntil
   let RegistrationId rid = nrId r
-      failed = T.isInfixOf ("registration " <> rid <> " failed: its stored signature is refused under the service's current configuration")
-  logs `shouldSatisfy` failed
-  map failed <$> readTVarIO reports `shouldReturn` [True]
-  sentTransactions (cNode ctx) `shouldReturn` []
-  answerFree ctx "alicebakers"
-  failedOrder <- stored ctx r
-  forM_ (zip ["alicebakers", "alicebakery"] [20, 21]) $ \(label, n) -> do
-    to <- selectionOf ctx label n
-    select ctx keyA failedOrder to `shouldReturn` refusedWith 400 "bad_request"
-  stored ctx r `shouldReturn` failedOrder
+  logs `shouldSatisfy` T.isInfixOf ("registration " <> rid <> ": its stored signature is refused under the service's current configuration, ")
+  logs `shouldSatisfy` T.isInfixOf ", so its page signs again"
+  logs `shouldNotSatisfy` T.isInfixOf (rid <> " failed")
+  readTVarIO reports `shouldReturn` []
+  x <- stored ctx r
+  (nrPhase x, nrReveal x) `shouldBe` (nrPhase r, Nothing)
+  sent w `shouldReturn` []
+  signedAgain <- signedRevealOver otherSponsor ctx keyA reveal {rvLabel = "alicebakery"} x >>= \rv -> rewrite ctx x (\o -> o {nrReveal = Just rv})
+  void $ steps w signedAgain >>= awaiting
+  [registerRaw] <- sent w
+  (txTo <$> decodeSignedTx registerRaw) `shouldBe` Right otherSponsor
+  answerExpiry ctx "alicebakery" expiry
+  void $ mineRegister w
+  steps w signedAgain >>= done
+  namePhase . nrPhase <$> stored ctx r `shouldReturn` PRegistered
 
 testRelayUnderOtherConfig :: IO ()
 testRelayUnderOtherConfig = withWorker $ \W {wCtx = ctx@Ctx {cOrders}, wSender} -> do
   r <- paidIn ctx aliceOrder openPhase >>= acceptedReveal ctx
-  let NamesConfig {nChain} = oeConfig cOrders
-  worker <- newWorker cOrders {oeConfig = (oeConfig cOrders) {nChain = nChain {cChainId = cChainId nChain + 1}}} wSender
+  worker <- newWorker cOrders {oeConfig = movedSponsor (oeConfig cOrders)} wSender
   void $ capturingStderr $ void $ stepRegistration worker (nrId r)
-  now <- nowOf ctx
-  nrPhase <$> stored ctx r `shouldReturn` OFailed now FRSignatureRefused
+  x <- stored ctx r
+  (nrPhase x, nrReveal x) `shouldBe` (nrPhase r, Nothing)
   sentTransactions (cNode ctx) `shouldReturn` []
 
 testFailedOnlySettled :: IO ()
