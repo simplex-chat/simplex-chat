@@ -2116,16 +2116,19 @@ of the service's tests in place of the payment providers. CI runs it in the `nam
    contracts with the webapp's `dev/deploy.ts` with a commitment age of 5 seconds, which the cases
    that watch the wait need, into the webapp's `dev/local-chain-0.json`, which the cases read, and starts the
    webapp's `dev/serve-terms.ts` on 8098, which serves the texts of the terms' links that the deploy sets;
-2. builds the names site (`vite build`) into the run's folder;
-3. writes an ini for that deployment with `[names]`, `[chain]` with 1 confirmation, and no `[btcpay]`
-   or `[stripe]`, with the one community name `bakers`, which the webapp's community cases search for,
+2. builds the names site with the dev chain's values (`vite build --mode devchain`) into the run's
+   folder;
+3. writes an ini for that deployment with `[names]`, `[chain]` with 1 confirmation, `[btcpay]` with
+   the payee keys of the dev keys, read from `tests/fixtures/store-service/rest-api/vectors-address-proofs.json`,
+   and no `[stripe]`, with the one community name `bakers`, which the webapp's community cases search for,
    serving the names site all in one on `SERVICE_PORT` and the badges site, from an empty folder, on
    `BADGES_PORT`, and signing with the test suite's
    public issuer secret (`issuerSecret` in `tests/Bots/StoreService/ConfigTests.hs`), trusted through
    `[issuer] dev_keys`. That secret is public: never use it outside this script;
 4. starts the service from the test suite, `simplex-chat-test -m "/Names page against the store service/"`
    (tests/Bots/StoreService/NamesPageService.hs): the service as `Main` runs it from that ini, with the
-   fake BTCPay and the fake Stripe in place of `[btcpay]` and `[stripe]`, and an SMP server where nothing
+   fake BTCPay, keeping the ini's payee keys, and the fake Stripe in place of `[btcpay]` and `[stripe]`,
+   and an SMP server where nothing
    listens, so the cases' links read as unread and no case reaches a real server; and the controls the
    service's process alone can serve, on `RUNNER_PORT`;
 5. starts the mock on 8099, where the webapp's dev server sends `/api` and `/control`;

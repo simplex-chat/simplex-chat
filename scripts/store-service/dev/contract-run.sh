@@ -215,11 +215,15 @@ start_terms() {
 }
 
 build_site() {
-  (cd "$WEBAPP_DIR" && npx vite build --outDir "$RUN_DIR/names" --emptyOutDir --logLevel warn) > "$RUN_DIR/build.log" 2>&1
+  (cd "$WEBAPP_DIR" && npx vite build --mode devchain --outDir "$RUN_DIR/names" --emptyOutDir --logLevel warn) > "$RUN_DIR/build.log" 2>&1
 }
 
 deployed() {
   node -p "require(process.argv[1]).$1" "$CHAIN"
+}
+
+dev_key() {
+  node -p "require(process.argv[1]).$1" "$REPO/tests/fixtures/store-service/rest-api/vectors-address-proofs.json"
 }
 
 write_ini() {
@@ -238,6 +242,16 @@ trust_forwarded_for = on
 index = $DEV_ISSUER_INDEX
 private_key = $DEV_ISSUER_SECRET
 dev_keys = $DEV_ISSUER_INDEX:$DEV_ISSUER_SECRET
+
+[btcpay]
+host = https://127.0.0.1
+api_key = replaced-by-the-fake
+store_id = replaced-by-the-fake
+webhook_secret = replaced-by-the-fake
+btc_xpub = $(dev_key bitcoin.dev.xpub)
+btc_hrp = $(dev_key bitcoin.dev.hrp)
+xmr_address = $(dev_key monero.dev.primaryAddress)
+xmr_view_key = $(dev_key monero.dev.viewKey)
 
 [names]
 tld = $(deployed tld)
