@@ -122,10 +122,10 @@ mainnetViewKey = "6d9056aa2c096bfcd2f272759555e5764ba204dd362604a983fa3e0aafd359
 
 testBip32Vector1 :: IO ()
 testBip32Vector1 = do
-  Right parent <- pure $ extendedKey xpubVersion bip32Parent
-  Just (_, child@ExtendedKey {xkChainCode}) <- pure $ childKey parent 1
+  Right parent <- pure $ extendedPublicKey xpubVersion bip32Parent
+  Just (_, child@ExtendedPublicKey {xpChainCode}) <- pure $ childKey parent 1
   compressedKey child `shouldBe` unhex "03501e454bf00751f24b1b489aa925215d66af2234e3891c3b21a52bedb3cd711c"
-  xkChainCode `shouldBe` unhex "2a7857631386ba23dacac34180dd1983734e444fdbf774041578e9b6adb37c19"
+  xpChainCode `shouldBe` unhex "2a7857631386ba23dacac34180dd1983734e444fdbf774041578e9b6adb37c19"
   childKey parent 0x80000000 `shouldBe` Nothing
 
 testBip173 :: IO ()
@@ -133,7 +133,7 @@ testBip173 = forM_ bip173Addresses $ \(hrp, address) -> p2wpkhAddress hrp bip173
 
 testBip84 :: IO ()
 testBip84 = do
-  Right account <- pure $ extendedKey zpubVersion bip84Zpub
+  Right account <- pure $ extendedPublicKey zpubVersion bip84Zpub
   Just (_, receive) <- pure $ childKey account 0
   map (fmap (p2wpkhAddress "bc" . compressedKey . snd) . childKey receive) [0, 1]
     `shouldBe` [Just "bc1qcr8te4kr609gcawutmrza0j4xv80jy8z306fyu", Just "bc1qnjg0jd8228aq7egyzacy8cys3knf9xvrerkf9g"]
@@ -217,15 +217,15 @@ testFixtures = do
   bip84 <- forM ["0/0", "0/1"] $ bitcoinVector bip84Key
   dev <- forM devKeyPaths $ bitcoinVector devBitcoinKey
   xmr <- forM devSubaddresses moneroVector
-  Right parent <- pure $ extendedKey xpubVersion bip32Parent
-  Just (_, child@ExtendedKey {xkChainCode}) <- pure $ childKey parent 1
+  Right parent <- pure $ extendedPublicKey xpubVersion bip32Parent
+  Just (_, child@ExtendedPublicKey {xpChainCode}) <- pure $ childKey parent 1
   let bitcoinSection key xpub hrp invoices = J.object ["hrp" .= (hrp :: Text), "invoices" .= invoices, "receiveKey" .= receiveKeyText key, "xpub" .= (xpub :: Text)]
   writeFixture "store-service/rest-api/vectors-address-proofs" $
     J.object
       [ "bitcoin"
           .= J.object
             [ "bip173" .= [J.object ["address" .= p2wpkhAddress hrp bip173Key, "hrp" .= hrp, "publicKey" .= hexText bip173Key] | (hrp, _) <- bip173Addresses],
-              "bip32" .= J.object ["chainCode" .= hexText xkChainCode, "index" .= (1 :: Int), "publicKey" .= hexText (compressedKey child), "xpub" .= bip32Parent],
+              "bip32" .= J.object ["chainCode" .= hexText xpChainCode, "index" .= (1 :: Int), "publicKey" .= hexText (compressedKey child), "xpub" .= bip32Parent],
               "bip84" .= bitcoinSection bip84Key bip84Xpub "bc" bip84,
               "dev" .= bitcoinSection devBitcoinKey devBitcoinXpub devBitcoinHrp dev
             ],

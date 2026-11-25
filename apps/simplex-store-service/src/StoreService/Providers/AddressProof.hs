@@ -5,10 +5,10 @@
 module StoreService.Providers.AddressProof
   ( AddressProof (..),
     ViewProof (..),
-    ExtendedKey (..),
+    ExtendedPublicKey (..),
     BitcoinKey,
     MoneroKey,
-    extendedKey,
+    extendedPublicKey,
     childKey,
     compressedKey,
     p2wpkhAddress,
@@ -95,10 +95,10 @@ instance ToField AddressProof where toField = toField . textEncode
 hexDigits :: ByteString -> Text
 hexDigits = decodeLatin1 . convertToBase Base16
 
-data ExtendedKey = ExtendedKey {xkKey :: ECC.Point, xkChainCode :: ByteString}
+data ExtendedPublicKey = ExtendedPublicKey {xpKey :: ECC.Point, xpChainCode :: ByteString}
   deriving (Eq, Show)
 
-data BitcoinKey = BitcoinKey {bkHrp :: Text, bkReceive :: ExtendedKey}
+data BitcoinKey = BitcoinKey {bkHrp :: Text, bkReceive :: ExtendedPublicKey}
   deriving (Eq)
 
 data MoneroKey = MoneroKey
@@ -135,23 +135,23 @@ parseP b = case B.uncons b of
       y = expFast ySquared ((fieldPrime + 1) `div` 4) fieldPrime
   _ -> Nothing
 
-extendedKey :: ByteString -> Text -> Either String ExtendedKey
-extendedKey version t = do
+extendedPublicKey :: ByteString -> Text -> Either String ExtendedPublicKey
+extendedPublicKey version t = do
   raw <- maybe (Left "not base58") Right $ base58Decode t
   let (payload, checksum) = B.splitAt 78 raw
   unless (B.length raw == 82 && B.take 4 (sha256Hash $ sha256Hash payload) == checksum) $ Left "not an extended key with its checksum"
   unless (B.take 4 payload == version) $ Left "another network's or another kind's extended key"
   key <- maybe (Left "its key is not a point") Right $ parseP $ B.drop 45 payload
-  pure ExtendedKey {xkKey = key, xkChainCode = B.take 32 $ B.drop 13 payload}
+  pure ExtendedPublicKey {xpKey = key, xpChainCode = B.take 32 $ B.drop 13 payload}
 
-childKey :: ExtendedKey -> Word32 -> Maybe (ByteString, ExtendedKey)
-childKey ExtendedKey {xkKey, xkChainCode} i
+childKey :: ExtendedPublicKey -> Word32 -> Maybe (ByteString, ExtendedPublicKey)
+childKey ExtendedPublicKey {xpKey, xpChainCode} i
   | testBit i 31 || t >= curveOrder || ECC.isPointAtInfinity key = Nothing
-  | otherwise = Just (il, ExtendedKey {xkKey = key, xkChainCode = ir})
+  | otherwise = Just (il, ExtendedPublicKey {xpKey = key, xpChainCode = ir})
   where
-    (il, ir) = B.splitAt 32 $ BA.convert (hmac xkChainCode (serP xkKey <> i2ospOf_ 4 (toInteger i)) :: HMAC SHA512)
+    (il, ir) = B.splitAt 32 $ BA.convert (hmac xpChainCode (serP xpKey <> i2ospOf_ 4 (toInteger i)) :: HMAC SHA512)
     t = os2ip il
-    key = ECC.pointAdd secp256k1 (ECC.pointBaseMul secp256k1 t) xkKey
+    key = ECC.pointAdd secp256k1 (ECC.pointBaseMul secp256k1 t) xpKey
 
 p2wpkhAddress :: Text -> ByteString -> Text
 p2wpkhAddress hrp = segwitV0 hrp . BA.convert . hashWith RIPEMD160 . sha256Hash
@@ -159,7 +159,7 @@ p2wpkhAddress hrp = segwitV0 hrp . BA.convert . hashWith RIPEMD160 . sha256Hash
 bitcoinKey :: Text -> Text -> Either String BitcoinKey
 bitcoinKey xpub hrp = do
   version <- maybe (Left "btc_hrp must be bc, tb or bcrt") Right $ lookup hrp [("bc", "\x04\x88\xB2\x1E"), ("tb", "\x04\x35\x87\xCF"), ("bcrt", "\x04\x35\x87\xCF")]
-  account <- either (Left . ("btc_xpub must be the derivation scheme of a single-signature native SegWit wallet, an xpub for bc or a tpub for tb and bcrt with nothing after it: " <>)) Right $ extendedKey version xpub
+  account <- either (Left . ("btc_xpub must be the derivation scheme of a single-signature native SegWit wallet, an xpub for bc or a tpub for tb and bcrt with nothing after it: " <>)) Right $ extendedPublicKey version xpub
   (_, bkReceive) <- maybe (Left "btc_xpub derives no receiving branch") Right $ childKey account 0
   pure BitcoinKey {bkHrp = hrp, bkReceive}
 
@@ -167,11 +167,11 @@ bitcoinPayee :: BitcoinKey -> Text -> Either String (Text, AddressProof)
 bitcoinPayee BitcoinKey {bkHrp, bkReceive} keyPath = do
   i <- either (const $ Left $ "the key path " <> T.unpack keyPath <> " is not 0/i") Right $ parseText (A.string "0/" *> A.decimal) keyPath
   unless (i < 2 ^ (31 :: Int)) $ Left $ "the key path " <> T.unpack keyPath <> " is not of a receiving address"
-  (t, ExtendedKey {xkKey}) <- maybe (Left $ "the key path " <> T.unpack keyPath <> " derives no key") Right $ childKey bkReceive (fromInteger i)
-  pure (p2wpkhAddress bkHrp (serP xkKey), APBitcoin {keyTweak = t})
+  (t, ExtendedPublicKey {xpKey}) <- maybe (Left $ "the key path " <> T.unpack keyPath <> " derives no key") Right $ childKey bkReceive (fromInteger i)
+  pure (p2wpkhAddress bkHrp (serP xpKey), APBitcoin {keyTweak = t})
 
-compressedKey :: ExtendedKey -> ByteString
-compressedKey = serP . xkKey
+compressedKey :: ExtendedPublicKey -> ByteString
+compressedKey = serP . xpKey
 
 receiveKeyText :: BitcoinKey -> Text
 receiveKeyText = hex . compressedKey . bkReceive
