@@ -695,8 +695,9 @@ sequenceDiagram
   alt T more than 600 s from the service's clock
     W-->>P: 400 bad_request, Date
   else
+    W->>W: recover the signer
     W->>D: registration ID
-    alt the signer recovered is the order's owner
+    alt the signer is the order's owner
       W->>D: read noted
       W-->>P: view, or held while the version is V
     else unsigned, another signer, or an unknown ID
@@ -716,8 +717,10 @@ Notes:
 | `POST /api/registration/ID/name` | the selection's own signature, checked first after the id is looked up |
 | `POST /api/registration/ID/reveal` | the owner's `RegisterName`, recovered over the order's owner, duration and dispute days before any other check of the stored order |
 
-- The message is `simplex.domains order <ID> <action> <T>`, with the route's id, `read`, `cancel` or `retry`, and the timestamp in seconds; the digest is EIP-191's, as `find`'s ([`Names/Signatures.hs`](../src/StoreService/Names/Signatures.hs) `orderRequestMessage`, [`Web/Names/Registration.hs`](../src/StoreService/Web/Names/Registration.hs) `signedRegistration`).
-- The answers of an unsigned request, of one by another key or over another id, action or timestamp, and of one for an unknown id are one answer, `404 not_found`, after the route's rate limit, which is taken before the handler runs. A malformed body of a selection or a reveal is answered `400 bad_request` before its id is looked up.
+- The message is `simplex.domains order <ID> <action> <T>`, with the route's id, `read`, `cancel` or `retry`, and the timestamp in seconds; the digest is EIP-191's, as `find`'s ([`Names/Signatures.hs`](../src/StoreService/Names/Signatures.hs) `orderRequestMessage`, [`Web/Names/Registration.hs`](../src/StoreService/Web/Names/Registration.hs) `orderSigner`, `ownedRegistration`). The signer is recovered before the id is looked up, for a known and an unknown id alike.
+- `timestamp` is a decimal in a query and a JSON number in a body; `signature` is a string of `0x` and 130 lowercase hex digits, r, s and v, with s in the lower half of the group order and v 27 or 28. Any other value reads as unsigned.
+- The answers of an unsigned request, of one by another key or over another id, action or timestamp, and of one for an unknown id are one answer, `404 not_found`, after the route's rate limit, which is taken before the handler runs.
+- Before its id is looked up, a selection is answered `400 bad_request` for a malformed body or a sealed name over its limit and `400 invalid_name` for a length no name has, and a reveal `400 bad_request` for a malformed body or one over the body cap. In a downtime a selection is answered `503 downtime` before its body is read.
 - Only a signed read notes the order's read, which keeps a committed order from failing as `unread` (3.2).
 - A badge invoice is read and cancelled unsigned; its invoice id is its credential.
 
