@@ -19,6 +19,10 @@ on:
         description: Also build the core library for 32-bit Arm (armeabi-v7a)
         type: boolean
         default: false
+      compare:
+        description: Run ID of an android-emu run whose app the screen tour compares with, such as the base branch's
+        type: string
+        default: ""
 
 permissions:
   contents: read
@@ -273,6 +277,7 @@ jobs:
         if: ${{ !cancelled() && steps.core.outcome == 'success' }}
         working-directory: apps/multiplatform
         run: |
+          sudo ../../scripts/android/install-ndk.sh "$ANDROID_HOME"
           ./gradlew --no-daemon --console=plain -Psimplex.assets.dir=../../assets -Pandroid.injected.build.abi=arm64-v8a :android:assembleFossDebug
           mkdir -p "$RUNNER_TEMP/apk"
           cp "android/build/intermediates/apk/foss/debug/$APK" "$RUNNER_TEMP/apk"
@@ -340,6 +345,38 @@ jobs:
           name: android-smoke-test
           path: ${{ runner.temp }}/smoke-test
           retention-days: 3
+          if-no-files-found: warn
+
+      - name: Download the compared app
+        id: compared
+        if: ${{ !cancelled() && inputs.compare != '' && steps.build.outcome == 'success' }}
+        uses: actions/download-artifact@v8
+        with:
+          name: android-app
+          path: ${{ runner.temp }}/compared-apk
+          run-id: ${{ inputs.compare }}
+          github-token: ${{ github.token }}
+
+      - name: Tour the compared app and this app
+        if: ${{ !cancelled() && steps.compared.outcome == 'success' }}
+        run: |
+          UI_OUT="$RUNNER_TEMP/smoke-test" scripts/ci/android/ui stop || true
+          for side in base head; do
+            apk=$RUNNER_TEMP/apk/$APK
+            [ "$side" = base ] && apk=$RUNNER_TEMP/compared-apk/$APK
+            adb uninstall chat.simplex.app || true
+            UI_STATE="$RUNNER_TEMP/tour-state-$side" scripts/ci/android/smoke-test.sh "$apk" "$RUNNER_TEMP/tour/$side" tour || true
+            UI_STATE="$RUNNER_TEMP/tour-state-$side" UI_OUT="$RUNNER_TEMP/tour/$side" scripts/ci/android/ui stop || true
+          done
+          scripts/ci/tour-compare.sh "$RUNNER_TEMP/tour/base" "$RUNNER_TEMP/tour/head" "$RUNNER_TEMP/tour/pairs"
+
+      - name: Upload tour
+        if: ${{ !cancelled() && steps.compared.outcome == 'success' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: android-tour
+          path: ${{ runner.temp }}/tour
+          retention-days: 14
           if-no-files-found: warn
 
       - name: Upload backend logs

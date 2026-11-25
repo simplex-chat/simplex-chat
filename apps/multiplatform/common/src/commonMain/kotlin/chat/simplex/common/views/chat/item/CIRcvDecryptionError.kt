@@ -165,7 +165,7 @@ fun DecryptionErrorItemFixButton(
               }
             },
             color = if (syncSupported) MaterialTheme.colors.primary else MaterialTheme.colors.secondary,
-            style = LocalTextStyle.current.merge(bubbleLineHeight(16.sp * INTER_LINE_HEIGHT))
+            style = LocalTextStyle.current.merge(bubbleLineHeight(16.sp * INTER_LINE_HEIGHT, LocalTextStyle.current.fontSize))
           )
         }
       }

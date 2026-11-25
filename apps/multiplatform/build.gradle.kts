@@ -85,38 +85,6 @@ plugins {
     id("org.jetbrains.kotlin.plugin.serialization") apply false
 }
 
-// https://raymondctc.medium.com/configuring-your-sourcecompatibility-targetcompatibility-and-kotlinoptions-jvmtarget-all-at-once-66bf2198145f
-val jvmVersion: Provider<String> = providers.gradleProperty("kotlin.jvm.target")
-
-configure(subprojects) {
-    // Apply compileOptions to subprojects
-    plugins.withType<com.android.build.gradle.BasePlugin>().configureEach {
-        extensions.findByType<com.android.build.gradle.BaseExtension>()?.apply {
-            jvmVersion.map { JavaVersion.toVersion(it) }.orNull?.let {
-                compileOptions {
-                    sourceCompatibility = it
-                    targetCompatibility = it
-                }
-            }
-        }
-    }
-
-    // Apply kotlinOptions.jvmTarget to subprojects
-    tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
-        kotlinOptions {
-            if (jvmVersion.isPresent) jvmTarget = jvmVersion.get()
-        }
-    }
-
-    configurations.configureEach {
-        resolutionStrategy.eachDependency {
-            if (requested.group == "org.jetbrains.skiko" && requested.version == "0.9.4.2") {
-                useVersion("0.9.24")
-            }
-        }
-    }
-}
-
 tasks.register("clean", Delete::class) {
-    delete(rootProject.buildDir)
+    delete(rootProject.layout.buildDirectory)
 }

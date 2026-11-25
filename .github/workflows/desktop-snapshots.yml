@@ -1,0 +1,96 @@
+name: desktop-snapshots
+
+on:
+  workflow_dispatch:
+    inputs:
+      base:
+        description: Commit to compare with; the merge base with master when empty
+        type: string
+        default: ""
+
+permissions:
+  contents: read
+
+concurrency:
+  group: desktop-snapshots-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  JAVA_VER: 17
+  PYTHON_VER: "3.12"
+
+jobs:
+  snapshots:
+    name: desktop tests and previews on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-latest, windows-latest]
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          submodules: recursive
+
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: corretto
+          java-version: ${{ env.JAVA_VER }}
+
+      - name: Setup Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: ${{ env.PYTHON_VER }}
+
+      - name: Check out the base
+        env:
+          BASE: ${{ inputs.base }}
+        run: |
+          git fetch --no-tags "$GITHUB_SERVER_URL/simplex-chat/simplex-chat" master
+          base=${BASE:-$(git merge-base HEAD FETCH_HEAD)}
+          echo "base: $base, head: $(git rev-parse HEAD)" | tee -a "$GITHUB_STEP_SUMMARY"
+          git worktree add "$RUNNER_TEMP/base" "$base"
+          git -C "$RUNNER_TEMP/base" submodule update --init --recursive
+
+      - name: Run desktop tests
+        id: tests
+        working-directory: apps/multiplatform
+        env:
+          SNAPSHOT_DIR: ${{ runner.temp }}/snapshots/head
+        run: ./gradlew --no-daemon --console=plain -Psimplex.assets.dir=../../assets -Pkotlin.daemon.jvmargs=-Xmx4g :common:desktopTest
+
+      - name: Report desktop tests
+        if: ${{ !cancelled() }}
+        run: python scripts/ci/desktop-linux/test-summary.py apps/multiplatform/common/build/test-results/desktopTest
+
+      - name: Run the base's desktop tests
+        if: ${{ !cancelled() }}
+        id: base-tests
+        working-directory: ${{ runner.temp }}/base/apps/multiplatform
+        env:
+          SNAPSHOT_DIR: ${{ runner.temp }}/snapshots/base
+        run: ./gradlew --no-daemon --console=plain -Psimplex.assets.dir=../../assets -Pkotlin.daemon.jvmargs=-Xmx4g :common:desktopTest
+
+      - name: Report the base's desktop tests
+        if: ${{ !cancelled() }}
+        run: python scripts/ci/desktop-linux/test-summary.py "$RUNNER_TEMP/base/apps/multiplatform/common/build/test-results/desktopTest"
+
+      - name: Compare previews with the base
+        if: ${{ !cancelled() }}
+        run: python scripts/ci/snapshots-compare.py "$RUNNER_TEMP/snapshots/base" "$RUNNER_TEMP/snapshots/head" "$RUNNER_TEMP/snapshots/diff" || true
+
+      - name: Upload previews
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: desktop-snapshots-${{ matrix.os }}
+          path: ${{ runner.temp }}/snapshots
+          retention-days: 14
+          if-no-files-found: warn

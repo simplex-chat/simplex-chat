@@ -17,8 +17,9 @@ import uk.co.caprica.vlcj.player.embedded.videosurface.callback.BufferFormat
 import uk.co.caprica.vlcj.player.embedded.videosurface.callback.BufferFormatCallback
 import uk.co.caprica.vlcj.player.embedded.videosurface.callback.RenderCallback
 import uk.co.caprica.vlcj.player.embedded.videosurface.callback.format.RV32BufferFormat
+import kotlinx.coroutines.Dispatchers
 import java.nio.ByteBuffer
-import javax.swing.SwingUtilities
+import kotlin.coroutines.EmptyCoroutineContext
 
 // https://github.com/JetBrains/compose-multiplatform/pull/3336/files
 internal class SkiaBitmapVideoSurface : VideoSurface(VideoSurfaceAdapters.getVideoSurfaceAdapter()) {
@@ -144,7 +145,7 @@ internal class SkiaBitmapVideoSurface : VideoSurface(VideoSurfaceAdapters.getVid
       val bytes = frameBytes
       if (needed > bytes.size || buffer.remaining().toLong() < needed) return
       buffer.get(bytes, 0, needed.toInt())
-      SwingUtilities.invokeLater {
+      Dispatchers.Main.dispatch(EmptyCoroutineContext) {
         // installPixels reports whether skia took the pixels; publishing the bitmap when it did not
         // would hand compose a bitmap with no pixels behind it
         if (skiaBitmap.installPixels(info, bytes, rowBytes.toInt())) {

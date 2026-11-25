@@ -21,5 +21,5 @@ if [ -n "${ASSETS_DIR:-}" ]; then
 else
   set --
 fi
-./gradlew "$@" packageDmg
-./gradlew "$@" notarizeDmg
+./gradlew "$@" :desktop:packageDmg
+./gradlew "$@" :desktop:notarizeDmg

@@ -67,7 +67,7 @@ actual fun DatabaseEncryptionFooter(
     SectionTextFooter(generalGetString(MR.strings.database_is_not_encrypted))
   } else if (useKeychain.value) {
     if (storedKey.value) {
-      SectionTextFooter(generalGetString(MR.strings.settings_is_storing_in_clear_text))
+      SectionTextFooter(generalGetString(if (keyStorage != null) MR.strings.settings_is_storing_encrypted_with_keyring else MR.strings.settings_is_storing_in_clear_text))
       if (initialRandomDBPassphrase.value && !migration) {
         SectionTextFooter(generalGetString(MR.strings.encrypted_with_random_passphrase))
       } else {

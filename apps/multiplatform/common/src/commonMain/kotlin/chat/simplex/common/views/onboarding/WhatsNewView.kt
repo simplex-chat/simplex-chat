@@ -31,6 +31,7 @@ import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextLinkStyles
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -121,10 +122,8 @@ fun ModalData.WhatsNewView(updatedConditions: Boolean = false, viaSettings: Bool
             append(generalGetString(descrId))
             if (learnMoreLink != null) {
               append(" ")
-              withLink(LinkAnnotation.Url(learnMoreLink) { uriHandler.openExternalLink(learnMoreLink) }) {
-                withStyle(SpanStyle(color = MaterialTheme.colors.primary)) {
-                  append(generalGetString(MR.strings.whats_new_learn_more))
-                }
+              withLink(LinkAnnotation.Url(learnMoreLink, TextLinkStyles(SpanStyle(color = MaterialTheme.colors.primary))) { uriHandler.openExternalLink(learnMoreLink) }) {
+                append(generalGetString(MR.strings.whats_new_learn_more))
               }
             }
           },
@@ -1260,10 +1259,8 @@ fun GetStakeView(showFirstImage: Boolean, inCenterOfWindow: Boolean = false, clo
       buildAnnotatedString {
         append(getStakeSlides[0].text)
         // only the link is clickable, the rest of the paragraph is not
-        withLink(LinkAnnotation.Url(WEFUNDER_URL) { uriHandler.openUriCatching(WEFUNDER_URL) }) {
-          withStyle(SpanStyle(color = MaterialTheme.colors.primary, fontWeight = FontWeight.Bold)) {
-            append(" Learn more and invest on Wefunder.")
-          }
+        withLink(LinkAnnotation.Url(WEFUNDER_URL, TextLinkStyles(SpanStyle(color = MaterialTheme.colors.primary, fontWeight = FontWeight.Bold))) { uriHandler.openUriCatching(WEFUNDER_URL) }) {
+          append(" Learn more and invest on Wefunder.")
         }
       },
       Modifier.padding(top = if (showFirstImage) 8.dp else 0.dp),

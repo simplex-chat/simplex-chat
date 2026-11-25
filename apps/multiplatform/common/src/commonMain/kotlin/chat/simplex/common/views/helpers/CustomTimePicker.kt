@@ -152,6 +152,7 @@ private sealed class DropdownSelection {
           is Custom -> this is Custom
         }
 
+  @Suppress("USELESS_CAST")
   override fun hashCode(): Int =
     // DO NOT REMOVE the as? cast as it will turn them into recursive hashCode calls
     // https://youtrack.jetbrains.com/issue/KT-31239

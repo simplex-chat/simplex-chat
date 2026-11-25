@@ -411,17 +411,29 @@ Delegates to the standard Compose function which reads `Configuration.uiMode`.
 private val detector: OsThemeDetector? = systemThemeDetector
   ?.apply { registerListener(::reactOnDarkThemeChanges) }
 
+private val linuxTheme: LinuxTheme? =
+  if (desktopPlatform.isLinux()) LinuxTheme.apply { observe(::reactOnDarkThemeChanges) } else null
+
 @Composable
-actual fun isSystemInDarkTheme(): Boolean = try {
+actual fun isSystemInDarkTheme(): Boolean = linuxTheme?.isDark ?: try {
   detector?.isDark ?: false
 } catch (e: Exception) {
-  false  // Fallback for macOS exceptions
+  false
 }
 ```
 
-Uses the [jSystemThemeDetector](https://github.com/Dansoftowner/jSystemThemeDetector) library (`OsThemeDetector`). The detector also registers a listener that calls `reactOnDarkThemeChanges()` proactively when the OS theme changes, ensuring the app responds even outside of composition.
+macOS and Windows use the [jSystemThemeDetector](https://github.com/Dansoftowner/jSystemThemeDetector) library (`OsThemeDetector`). The detector also registers a listener that calls `reactOnDarkThemeChanges()` proactively when the OS theme changes, ensuring the app responds even outside of composition.
 
-`systemThemeDetector` is declared in `Resources.desktop.kt` as `OsThemeDetector.getDetector()` guarded by `catch (_: LinkageError)`. It is `null` when JNA's native library cannot be loaded; the app then starts with the light theme, `isInNightMode()` and `isSystemInDarkTheme()` return `false`, and no listener is registered.
+`systemThemeDetector` is declared in `Resources.desktop.kt` as `OsThemeDetector.getDetector()` guarded by `catch (_: LinkageError)`, and is `null` on Linux. It is `null` when JNA's native library cannot be loaded; the app then starts with the light theme, `isInNightMode()` and `isSystemInDarkTheme()` return `false`, and no listener is registered.
+
+Linux uses [`LinuxTheme`](../../common/src/desktopMain/kotlin/chat/simplex/common/platform/LinuxTheme.desktop.kt), without child processes:
+
+| Source | Read |
+|---|---|
+| desktop portal `org.freedesktop.appearance color-scheme` (Nucleus `darkmode-detector`) | at start and on each `SettingChanged` signal, delivered on `Dispatchers.Main` |
+| GSettings `org.gnome.desktop.interface gtk-theme`, through GIO in `libsimplex_linux.so` | once |
+
+The theme is dark when the portal says prefer-dark (1) or the GTK theme name contains "dark", ignoring case.
 
 ### reactOnDarkThemeChanges
 
@@ -500,5 +512,5 @@ Uses the [kaml](https://github.com/charleskorn/kaml) YAML library for serializat
 | `ThemeManager.kt` | [`common/src/commonMain/.../ui/theme/ThemeManager.kt`](../../common/src/commonMain/kotlin/chat/simplex/common/ui/theme/ThemeManager.kt) | 241 | Theme resolution, persistence, color/wallpaper management |
 | `Theme.kt` | [`common/src/commonMain/.../ui/theme/Theme.kt`](../../common/src/commonMain/kotlin/chat/simplex/common/ui/theme/Theme.kt) | 848 | Type definitions, color palettes, `SimpleXTheme` composable |
 | `Theme.android.kt` | [`common/src/androidMain/.../ui/theme/Theme.android.kt`](../../common/src/androidMain/kotlin/chat/simplex/common/ui/theme/Theme.android.kt) | 6 | Android `isSystemInDarkTheme` |
-| `Theme.desktop.kt` | [`common/src/desktopMain/.../ui/theme/Theme.desktop.kt`](../../common/src/desktopMain/kotlin/chat/simplex/common/ui/theme/Theme.desktop.kt) | 25 | Desktop `isSystemInDarkTheme` via OsThemeDetector |
+| `Theme.desktop.kt` | [`common/src/desktopMain/.../ui/theme/Theme.desktop.kt`](../../common/src/desktopMain/kotlin/chat/simplex/common/ui/theme/Theme.desktop.kt) | 29 | Desktop `isSystemInDarkTheme` via LinuxTheme on Linux and OsThemeDetector elsewhere |
 | `Files.kt` | [`common/src/commonMain/.../platform/Files.kt`](../../common/src/commonMain/kotlin/chat/simplex/common/platform/Files.kt) | 191 | `readThemeOverrides()` (L125), `writeThemeOverrides()` (L151) |

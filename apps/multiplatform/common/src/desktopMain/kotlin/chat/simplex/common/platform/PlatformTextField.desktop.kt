@@ -26,8 +26,8 @@ import chat.simplex.res.*
 import dev.icerock.moko.resources.StringResource
 import kotlinx.coroutines.delay
 import java.awt.Image
-import java.awt.Toolkit
 import java.awt.datatransfer.DataFlavor
+import java.awt.datatransfer.Transferable
 import java.awt.datatransfer.UnsupportedFlavorException
 import java.awt.image.BufferedImage
 import java.io.ByteArrayOutputStream
@@ -143,9 +143,8 @@ actual fun PlatformTextField(
               onFilesPasted(parseToFiles(clipboard.getText()))
               true
             } else {
-              // It's much faster to getData instead of getting transferable first
               val image = try {
-                Toolkit.getDefaultToolkit().systemClipboard.getData(DataFlavor.imageFlavor) as Image
+                (clipboard.getClip()?.nativeClipEntry as? Transferable)?.getTransferData(DataFlavor.imageFlavor) as? Image
               } catch (e: UnsupportedFlavorException) {
                 null
               }

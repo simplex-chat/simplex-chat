@@ -1,12 +1,14 @@
 package chat.simplex.app
 
 import chat.simplex.common.FILE_TIME_TOLERANCE
+import chat.simplex.common.MAX_ACTIVATION_TOKEN_BYTES
 import chat.simplex.common.MAX_LINK_BYTES
 import chat.simplex.common.SHOW_FILE
 import chat.simplex.common.SHOW_TMP_SUFFIX
 import chat.simplex.common.ShowSignal
 import chat.simplex.common.TAKEN_SHOW_FILE
 import chat.simplex.common.deleteStaleSignalFiles
+import chat.simplex.common.parseSignal
 import chat.simplex.common.signalRunningInstance
 import chat.simplex.common.startDespiteRunningInstance
 import chat.simplex.common.takeSignal
@@ -43,6 +45,7 @@ import kotlin.test.assertTrue
 private const val SIGNAL_WAIT_SECONDS = 15L
 // short, as the running instance in these tests never answers within the wait
 private const val RUNNING_INSTANCE_WAIT_MILLIS = 300L
+private const val ACTIVATION_TOKEN = "gnome-shell/simplex/1234-5-host_TIME2345"
 
 class SingleInstanceTest {
   @Test
@@ -139,6 +142,45 @@ class SingleInstanceTest {
     assertNull(signal.link, "an empty signal carries no link")
     assertEquals(listOf(), fileNames(dir), "taking the signal must leave no file behind")
     assertNull(takeSignal(dir), "a signal already taken must not be taken again")
+  }
+
+  @Test
+  fun signalCarriesTheActivationTokenWithTheLink() = withTempDir { dir ->
+    signalRunningInstance(dir, BADGE_LINK, ACTIVATION_TOKEN)
+    val signal = takeSignal(dir)
+    assertEquals(BADGE_LINK, signal?.link)
+    assertEquals(ACTIVATION_TOKEN, signal?.activationToken)
+  }
+
+  @Test
+  fun signalCarriesTheActivationTokenWithoutALink() = withTempDir { dir ->
+    signalRunningInstance(dir, null, ACTIVATION_TOKEN)
+    val signal = takeSignal(dir)
+    assertNull(signal?.link, "a signal without a link carries no link")
+    assertEquals(ACTIVATION_TOKEN, signal?.activationToken)
+  }
+
+  @Test
+  fun signalWithoutTokenIsTheLinkAlone() = withTempDir { dir ->
+    signalRunningInstance(dir, BADGE_LINK)
+    assertEquals(BADGE_LINK, Files.readString(dir.resolve(SHOW_FILE)), "a signal without a token keeps the format of earlier versions")
+    assertNull(takeSignal(dir)?.activationToken)
+  }
+
+  @Test
+  fun activationTokenWithSpacesOrControlCharactersIsDropped() {
+    for (token in listOf("with space", "tab\there", "")) {
+      val signal = parseSignal("$token\n$BADGE_LINK")
+      assertNull(signal.activationToken, "token \"$token\" must be dropped")
+      assertEquals(BADGE_LINK, signal.link, "the link must survive a dropped token")
+    }
+  }
+
+  @Test
+  fun activationTokenOverTheBoundIsDropped() {
+    val token = "a".repeat(MAX_ACTIVATION_TOKEN_BYTES + 1)
+    assertNull(parseSignal("$token\n$BADGE_LINK").activationToken)
+    assertEquals(MAX_ACTIVATION_TOKEN_BYTES, parseSignal("${"a".repeat(MAX_ACTIVATION_TOKEN_BYTES)}\n").activationToken?.length)
   }
 
   @Test

@@ -25,6 +25,8 @@ import java.io.File
 
 fun main(args: Array<String>) {
   try {
+    if (desktopPlatform.isLinux()) prepareLinuxRuntime()
+    rejectBitmapFonts()
     val link = linkFromArgs(args)
     if (!acquireSingleInstance(link)) return
     link?.let { chatModel.appOpenUrl.value = null to it }
@@ -33,6 +35,7 @@ fun main(args: Array<String>) {
     // Clean shared temp dirs only in the owning instance (not in a Files.desktop val
     // initializer, which a transient second instance would also run). Early: before settings writes.
     preferencesTmpDir.deleteRecursively()
+    restrictPreferencesDir()
     // Disable hardware acceleration
     //System.setProperty("skiko.renderApi", "SOFTWARE")
     initHaskell()
@@ -41,7 +44,7 @@ fun main(args: Array<String>) {
     initApp()
     registerLinkSchemes()
     tmpDir.deleteRecursively()
-    tmpDir.mkdir()
+    createTmpDir()
     // Only the owning instance cleans tmpDir on exit (see preferencesTmpDir above).
     tmpDir.deleteOnExit()
     // installOpenUriHandler and showApp stay inside the try: whichever touches AWT first makes the process's

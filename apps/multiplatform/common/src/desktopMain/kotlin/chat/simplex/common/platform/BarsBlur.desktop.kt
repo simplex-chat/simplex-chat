@@ -2,13 +2,12 @@ package chat.simplex.common.platform
 
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.BlurEffect
 import androidx.compose.ui.graphics.asComposeCanvas
 import androidx.compose.ui.graphics.drawscope.CanvasDrawScope
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.drawscope.scale
-import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.graphics.skiaCanvas
 import androidx.compose.ui.unit.Density
 import org.jetbrains.skia.*
 import kotlin.math.ceil
@@ -28,6 +27,9 @@ private const val MIN_NARROWED_SIGMA = 1.5f
 // The rows are halved as well, with the vertical sigma halved to match, which is only sound because the copy is drawn at
 // that size rather than scaled afterwards. A bar has few rows to begin with, so it is not reduced past this.
 private const val MIN_BLUR_HEIGHT = 24
+
+private const val BLUR_SIGMA_SCALE = 0.57735f
+private const val BLUR_SIGMA_OFFSET = 0.5f
 
 // The panes of the desktop window have different widths, so bars of several sizes are drawn in the same frame and a single
 // pair of surfaces would be reallocated for each of them. Keeping one pair per size, with the least recently drawn size
@@ -59,11 +61,14 @@ private fun narrowing(sigma: Float, barWidth: Float): Int {
   return scale
 }
 
+private fun blurSigma(radius: Float): Float =
+  if (radius > 0) BLUR_SIGMA_SCALE * radius + BLUR_SIGMA_OFFSET else 0f
+
 private fun shortening(sigma: Float, barHeight: Float): Int =
   if (sigma / 2 >= MIN_NARROWED_SIGMA && barHeight / 2 >= MIN_BLUR_HEIGHT) 2 else 1
 
 actual fun DrawScope.drawBarsBlurred(radiusPx: Float, barWidth: Float, barHeight: Float, drawBar: DrawScope.() -> Unit) {
-  val sigma = BlurEffect.convertRadiusToSigma(radiusPx)
+  val sigma = blurSigma(radiusPx)
   val scale = narrowing(sigma, barWidth)
   val rows = shortening(sigma, barHeight)
   val width = ceil(barWidth / scale).toInt()
@@ -83,7 +88,7 @@ actual fun DrawScope.drawBarsBlurred(radiusPx: Float, barWidth: Float, barHeight
 
   // The surface is whole pixels while the bar is not, so only the bar's own area is taken from it.
   drawIntoCanvas {
-    it.nativeCanvas.drawImageRect(
+    it.skiaCanvas.drawImageRect(
       surface.makeImageSnapshot(),
       Rect.makeWH(barWidth / scale, barHeight / rows),
       Rect.makeWH(barWidth, barHeight),
