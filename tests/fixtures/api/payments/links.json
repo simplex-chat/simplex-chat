@@ -563,7 +563,7 @@
         }
       ]
     },
-    "Other networks: t1fwjQW5gpFhDqXNhxqDWyF9j9WeKvVS5Jg, ltc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66snwfdv, D99pV4n9TrPxBPCkQGx4w4SMSa6QjRBxPf, qq6c8vfvxqrk6rhdysgvkhqc24sggkfsx5nqvdlqcg": {
+    "Other networks: t1fwjQW5gpFhDqXNhxqDWyF9j9WeKvVS5Jg, ltc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66snwfdv, D99pV4n9TrPxBPCkQGx4w4SMSa6QjRBxPf, qq6c8vfvxqrk6rhdysgvkhqc24sggkfsx5nqvdlqcg, solana:7JCf5m3TiHmYKZVr6jCu1KeZVtb9Y1jRMQDU69p5ARnu": {
       "formattedText": [
         {
           "text": "Other networks: "
@@ -648,6 +648,27 @@
             "type": "paymentLink"
           },
           "text": "qq6c8vfvxqrk6rhdysgvkhqc24sggkfsx5nqvdlqcg"
+        },
+        {
+          "text": ", "
+        },
+        {
+          "format": {
+            "payment": {
+              "alternatives": [],
+              "payee": {
+                "address": "7JCf5m3TiHmYKZVr6jCu1KeZVtb9Y1jRMQDU69p5ARnu",
+                "checksum": "unchecked",
+                "network": {
+                  "type": "solana"
+                },
+                "type": "address"
+              },
+              "walletUri": "solana:7JCf5m3TiHmYKZVr6jCu1KeZVtb9Y1jRMQDU69p5ARnu"
+            },
+            "type": "paymentLink"
+          },
+          "text": "solana:7JCf5m3TiHmYKZVr6jCu1KeZVtb9Y1jRMQDU69p5ARnu"
         }
       ]
     },

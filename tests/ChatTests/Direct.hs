@@ -1106,7 +1106,7 @@ testPaymentLinksMessage ps =
         "Or this exact amount: monero:" <> xmrAddr <> "?tx_amount=0.25&recipient_name=SimpleX",
         "On Ethereum: " <> ethAddr,
         "Cheaper on Arbitrum: ethereum:" <> ethAddr <> "@42161?value=1e16",
-        "Other networks: t1fwjQW5gpFhDqXNhxqDWyF9j9WeKvVS5Jg, ltc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66snwfdv, D99pV4n9TrPxBPCkQGx4w4SMSa6QjRBxPf, qq6c8vfvxqrk6rhdysgvkhqc24sggkfsx5nqvdlqcg",
+        "Other networks: t1fwjQW5gpFhDqXNhxqDWyF9j9WeKvVS5Jg, ltc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66snwfdv, D99pV4n9TrPxBPCkQGx4w4SMSa6QjRBxPf, qq6c8vfvxqrk6rhdysgvkhqc24sggkfsx5nqvdlqcg, solana:7JCf5m3TiHmYKZVr6jCu1KeZVtb9Y1jRMQDU69p5ARnu",
         "[" <> btcAddr <> "](bitcoin:" <> btcAddr <> ")",
         "<bitcoin:" <> btcAddr <> "?amount=0.001&label=SimpleX>"
       ]
