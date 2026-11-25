@@ -11,7 +11,7 @@ module StoreService.Web.Names.Registration
     registrationRefusal,
     heldFor,
     versionParam,
-    OrderSigner (OSOutsideWindow),
+    OrderSigner (..),
     unsigned,
     querySigner,
     bodySigner,
@@ -48,7 +48,7 @@ import StoreService.Config (boundedDecimal)
 import StoreService.Names.Orders (OrderRefusal (..), OrdersEnv (..), WriteRefusal (..), checkTimestamp, noteRead, orderFieldsOf, versionWritten)
 import StoreService.Names.Phases (RegistrationId (..), awaitChange, publish)
 import StoreService.Names.Reveal (checkReveal, isRepeat, revealSigned)
-import StoreService.Names.Signatures (OrderAction (..), OrderFields (..), orderRequestMessage, personalDigest)
+import StoreService.Names.Signatures (OrderAction (..), orderRequestMessage, personalDigest)
 import StoreService.Names.Store (BrokenInvariant (..), Commit (..), FailReason (..), NameRegistration (..), OrderPhase (..), getRegistration, noHistory, updateRegistration)
 import StoreService.Names.Turns (withRegistrationTurn)
 import StoreService.Names.View (NameRefusal (..), RegistrationView, lapseMoment, lapsedAt, registrationVersion, registrationView)
@@ -61,7 +61,7 @@ registrationHandler :: OrdersEnv -> HttpEnv -> Int -> RegistrationId -> Request 
 registrationHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oePhases, oeNow} http hold rid@(RegistrationId ridText) req respond =
   querySigner env ridText OARead req >>= \case
     OSOutsideWindow -> respond $ refusalResponse NRBadRequest
-    signer ->
+    OSSigner signer ->
       readNow signer >>= \case
         Nothing -> respond $ refusalResponse NRNotFound
         Just (now, r@NameRegistration {nrVersion})
@@ -88,7 +88,7 @@ revealHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oePhases, 
       Right request ->
         withTransaction oeStore (`getRegistration` rid) >>= \case
           Just r@NameRegistration {nrOwner} ->
-            revealSigned oeConfig nrOwner (ofDuration $ orderFieldsOf r) (nrDisputeDays r) request >>= \case
+            revealSigned oeConfig nrOwner (nrDuration r) (nrDisputeDays r) request >>= \case
               True -> withRegistrationTurn oeStore oeTurns r (decide request) >>= answer . maybe RDGone (either (const RDChanged) id)
               False -> respond $ refusalResponse NRNotFound
           Nothing -> respond $ refusalResponse NRNotFound
@@ -131,7 +131,7 @@ retryHandler :: OrdersEnv -> RegistrationId -> Request -> Respond -> IO Response
 retryHandler env@OrdersEnv {oeStore, oeTurns, oePhases} rid@(RegistrationId ridText) req respond =
   readBoundedBody maxBodyBytes req >>= bodySigner env ridText OARetry >>= \case
     OSOutsideWindow -> respond $ refusalResponse NRBadRequest
-    signer ->
+    OSSigner signer ->
       ownedRegistration env rid signer >>= \case
         Just r -> withRegistrationTurn oeStore oeTurns r (retryRegistration env) >>= maybe (respond $ refusalResponse NRNotFound) (answer . either (const RTChanged) id)
         Nothing -> respond $ refusalResponse NRNotFound
@@ -196,8 +196,8 @@ orderSigner OrdersEnv {oeNow} oid action timestamp signature =
     (Just t, Just s) -> OSSigner . eitherToMaybe <$> recoverAddress s (personalDigest $ orderRequestMessage oid action t)
     _ -> pure unsigned
 
-ownedRegistration :: OrdersEnv -> RegistrationId -> OrderSigner -> IO (Maybe NameRegistration)
+ownedRegistration :: OrdersEnv -> RegistrationId -> Maybe Address -> IO (Maybe NameRegistration)
 ownedRegistration OrdersEnv {oeStore} rid signer =
   withTransaction oeStore (`getRegistration` rid) <&> \case
-    Just r@NameRegistration {nrOwner} | OSSigner (Just owner) <- signer, owner == nrOwner -> Just r
+    Just r@NameRegistration {nrOwner} | signer == Just nrOwner -> Just r
     _ -> Nothing

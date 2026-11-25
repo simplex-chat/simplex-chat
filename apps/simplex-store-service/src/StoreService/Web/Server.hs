@@ -36,7 +36,7 @@ import StoreService.Waiters (Seen, Waiters, awaitStatus)
 import StoreService.Web.Http
 import StoreService.Web.Names (namesApp, namesRoutes)
 import StoreService.Web.Names.Orders (nameInvoiceHandler, nameInvoiceView, refusalResponse)
-import StoreService.Web.Names.Registration (OrderSigner (OSOutsideWindow), bodySigner, heldFor, ownedRegistration, querySigner, registrationChanged, unsigned, versionParam)
+import StoreService.Web.Names.Registration (OrderSigner (..), bodySigner, heldFor, ownedRegistration, querySigner, registrationChanged, unsigned, versionParam)
 import Control.Concurrent.Async (race)
 import Control.Concurrent.STM (atomically)
 import qualified Control.Exception as E
@@ -241,7 +241,7 @@ readInvoiceHandler :: WebEnv -> InvoiceId -> Request -> Respond -> IO ResponseRe
 readInvoiceHandler env@WebEnv {weStore} invId@(InvoiceId invText) req respond =
   maybe (pure unsigned) (\orders -> querySigner orders invText OARead req) (weOrders env) >>= \case
     OSOutsideWindow -> respond badRequest
-    signer ->
+    OSSigner signer ->
       getInvoice weStore invId >>= \case
         Nothing -> respond notFound
         Just row@InvoiceRow {irProduct = IPName rid} | Just orders <- weOrders env -> readNameInvoice env orders row rid signer req respond
@@ -259,7 +259,7 @@ readInvoiceHandler env@WebEnv {weStore} invId@(InvoiceId invText) req respond =
 
 -- | A name invoice also holds while its registration's version is seenVersion, a paid one on that alone,
 -- except one paid after its order closed, which has nothing more to wait for.
-readNameInvoice :: WebEnv -> OrdersEnv -> InvoiceRow -> RegistrationId -> OrderSigner -> Request -> Respond -> IO ResponseReceived
+readNameInvoice :: WebEnv -> OrdersEnv -> InvoiceRow -> RegistrationId -> Maybe Address -> Request -> Respond -> IO ResponseReceived
 readNameInvoice env@WebEnv {weConfig, weWaiters, weHoldMicros, weHttp} orders@OrdersEnv {oeStore, oeNow, oePhases} stored@InvoiceRow {irInvoiceId = invId} rid signer req respond =
   ownedRegistration orders rid signer >>= traverse (readName orders stored) >>= \case
     Nothing -> respond notFound
@@ -336,7 +336,7 @@ cancelInvoiceHandler env@WebEnv {weStore, weProviders} invId@(InvoiceId invText)
   body <- readBoundedBody maxBodyBytes req
   maybe (pure unsigned) (\orders -> bodySigner orders invText OACancel body) (weOrders env) >>= \case
     OSOutsideWindow -> respond badRequest
-    signer ->
+    OSSigner signer ->
       getInvoice weStore invId >>= \case
         Nothing -> respond notFound
         Just row@InvoiceRow {irProduct = IPName rid} | Just orders <- weOrders env -> ownedRegistration orders rid signer >>= maybe (respond notFound) (const $ cancelRow row)
