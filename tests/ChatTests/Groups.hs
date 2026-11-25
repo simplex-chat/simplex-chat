@@ -15202,15 +15202,15 @@ rcvItemPrioritiesCfg = do
   let hook cc evt = do
         case evt of
           Right (CEvtNewChatItems _ cis) -> do
-            items <- sequence [(msgContentText mc,priority,) <$> rcvMsgFlags cc itemId | AChatItem _ d _ ChatItem {content, meta = CIMeta {itemId, priority}} <- cis, toMsgDirection d == MDRcv, Just mc <- [ciMsgContent content]]
+            items <- sequence [(msgContentText mc,priority,) <$> rcvMsgFlags cc ciId | AChatItem _ d _ ChatItem {content, meta = CIMeta {itemId = ciId, priority}} <- cis, toMsgDirection d == MDRcv, Just mc <- [ciMsgContent content]]
             atomically $ modifyTVar' rcvItems (<> items)
           _ -> pure ()
         pure evt
   pure (rcvItems, testCfg {chatHooks = defaultChatHooks {eventHook = Just hook}})
 
 rcvMsgFlags :: ChatController -> ChatItemId -> IO (Maybe T.Text)
-rcvMsgFlags ChatController {chatStore, smpAgent} itemId =
-  withTransaction chatStore (\db -> maybeFirstRow id $ DB.query db "SELECT c.agent_conn_id, d.agent_msg_id FROM chat_items i JOIN msg_deliveries d ON d.message_id = i.created_by_msg_id JOIN connections c ON c.connection_id = d.connection_id WHERE i.chat_item_id = ?" (Only itemId))
+rcvMsgFlags ChatController {chatStore, smpAgent} ciId =
+  withTransaction chatStore (\db -> maybeFirstRow id $ DB.query db "SELECT c.agent_conn_id, d.agent_msg_id FROM chat_items i JOIN msg_deliveries d ON d.message_id = i.created_by_msg_id JOIN connections c ON c.connection_id = d.connection_id WHERE i.chat_item_id = ?" (Only ciId))
     $>>= \(connId :: ByteString, msgId :: Int64) -> withTransaction (agentClientStore smpAgent) $ \db ->
       maybeFirstRow fromOnly $ DB.query db "SELECT msg_flags FROM messages WHERE conn_id = ? AND internal_id = ?" (connId, msgId)
 
