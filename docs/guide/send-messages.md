@@ -31,6 +31,10 @@ You can format messages with markdown. The formats are listed in the [app
 settings](./app-settings.md#opening-the-app-settings), in "Help & support" >
 "How to use it".
 
+Payment addresses and links in messages, such as Bitcoin, Lightning, Ethereum
+and Monero, are shown with the sign of their network, such as ₿, and with the
+amount, the label or a shortened address.
+
 ### Sending images and files
 
 - Tap 📎 (paperclip) button on the left of the message entry box.
