@@ -1695,7 +1695,7 @@ An order waiting for its owner
 fails with the reason `unread` once its page has not read it for 3 days, logged at error and posted
 in the managed group as
 `names worker: registration <id> failed: it waited for its owner, and its page has not read it since <time>`;
-a read of the order or of its invoice is stored at most once an hour. Its page's reveal, its owner
+a signed read of the order or of its invoice is stored at most once an hour. Its page's reveal, its owner
 signing again, queues it to be committed again while it holds its name.
 
 A signature past its deadline is cleared, and the page signs again. A signature within its deadline
