@@ -30,7 +30,7 @@ import Data.Char (chr, digitToInt, isAlphaNum, isAscii, isDigit, isHexDigit, isL
 import Data.Either (rights)
 import Data.Int (Int64)
 import Data.List (find, foldl')
-import Data.Maybe (fromMaybe, isJust, isNothing, listToMaybe, maybeToList)
+import Data.Maybe (catMaybes, fromMaybe, isJust, isNothing, listToMaybe, maybeToList)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeUtf8', encodeUtf8)
@@ -133,7 +133,9 @@ paymentUri (scheme, schemeRequest) body = do
   when (any (B.isPrefixOf "req-" . paramKey) params) $ Left "unknown required parameter"
   (keys, request) <- schemeRequest path params
   when (any (\k -> k `notElem` ["lightning", "lno"] && length (paramValues k params) > 1) keys) $ Left "repeated parameter"
-  pure $ request $ safeDecodeUtf8 $ scheme <> ":" <> path <> walletQuery keys params
+  let r@PaymentRequest {label, message} = request $ safeDecodeUtf8 $ scheme <> ":" <> path <> walletQuery keys params
+  when (any (hasOtherAddress r) $ catMaybes [label, message]) $ Left "other payment address in label or message"
+  pure r
   where
     (path, query) = B.break (== '?') $ fromMaybe body $ B.stripPrefix "//" body
 

@@ -607,6 +607,9 @@ paymentLinks = describe "payment links" do
     isText $ "ethereum:" <> usdt <> "/approve?address=" <> eth <> "&uint256=1"
     isText $ "ethereum:" <> usdt <> "@1/transfer?address=" <> eth <> "&uint256=1&value=1"
     isText "ethereum:donate.simplexchat.eth"
+    isText $ "bitcoin:" <> btc <> "?label=" <> otherBtc
+    isText $ "<bitcoin:" <> btc <> "?label=" <> otherBtc <> ">"
+    isText $ "bitcoin:" <> btc <> "?message=" <> otherBtc
   it "hyperlinks and autolinks" do
     ("[Donate](monero:" <> xmr <> ")") <==> markdown (PaymentLink (Just "Donate") $ onChain PNMonero xmr $ "monero:" <> xmr) ("[Donate](monero:" <> xmr <> ")")
     ("[" <> btc <> "](bitcoin:" <> btc <> ")") <==> markdown (PaymentLink (Just btc) $ onChain PNBitcoin btc $ "bitcoin:" <> btc) ("[" <> btc <> "](bitcoin:" <> btc <> ")")
@@ -624,6 +627,7 @@ paymentLinks = describe "payment links" do
   where
     btc = "bc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66505d4u"
     btcPayee = PPAddress PNBitcoin btc ACVerified
+    otherBtc = "bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4"
     p2sh = "37116639cErLzxER6tL3a6EH2DbdETwTxd"
     ltc = "ltc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66snwfdv"
     ltcM = "MFNwCCkQTusV1FN9aWcN6jNfoLu53NkfUg"
