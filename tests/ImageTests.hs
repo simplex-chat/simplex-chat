@@ -11,14 +11,14 @@ import Control.Exception (bracket)
 import Control.Monad (forM_, when)
 import Control.Monad.Except (runExceptT)
 import Crypto.Hash (Digest, MD5, hashlazy)
-import Data.Bits (complement, shiftR, testBit, xor)
+import Data.Bits (complement, shiftL, shiftR, testBit, xor, (.&.), (.|.))
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Base64.Lazy as LB64
 import qualified Data.ByteString.Builder as BB
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Either (isLeft, isRight)
 import qualified Data.Text as T
-import Data.Word (Word32, Word8)
+import Data.Word (Word32, Word64, Word8)
 import Simplex.Chat.Image
 import Simplex.Chat.Library.Commands (fixedImagePreview, imagePreview)
 import Simplex.Chat.Types (ImageData (..))
@@ -373,7 +373,8 @@ testWebpDisplaySize = do
     images =
       [ ("lossy-8641x16.webp", (4320, 8), PixelRGBA8 200 100 50 255),
         ("lossless-alpha-16383x16.webp", (4096, 4), PixelRGBA8 200 100 50 128),
-        ("lossy-alpha-4321x16.webp", (2160, 8), PixelRGBA8 200 100 50 128)
+        ("lossy-alpha-4321x16.webp", (2160, 8), PixelRGBA8 200 100 50 128),
+        ("lossless-alpha-9000x9000.webp", (2250, 2250), PixelRGBA8 200 100 50 128)
       ]
     closeTo (PixelRGBA8 r g b a) (PixelRGBA8 r' g' b' a') = and $ zipWith (\x y -> abs (fromIntegral x - fromIntegral y :: Int) <= 2) [r, g, b, a] [r', g', b', a']
 
@@ -431,13 +432,12 @@ testWebpChunksWithoutFlags = do
 testWebpRefused :: IO ()
 testWebpRefused = do
   lossy <- B.readFile $ webpFixture "lossy.webp"
-  lossless <- B.readFile $ webpFixture "lossless-alpha-9000x9000.webp"
   let paddedTo size = webpContainer [webpVp8x 0 (128, 128), webpChunk "ABCD" $ B.replicate (size - 26 - B.length lossy) 0, B.drop 12 lossy]
   Right (img, CPNone) <- decodeResizable $ paddedTo $ 16 * 1048576
   imageSize img `shouldBe` (128, 128)
   forM_
     [ (webpAnimation (16385, 128) [((0, 0), (128, 128), lossy)], "image side exceeds 16384"),
-      (lossless, "image is too large"),
+      (webpHuffmanGroups, "image is too large"),
       (paddedTo $ 16 * 1048576 + 2, "image file is too large"),
       (B.take (B.length lossy `div` 2) lossy, "invalid WebP container"),
       (B.init lossy, "invalid WebP container"),
@@ -472,6 +472,41 @@ webpContainer chunks = "RIFF" <> littleEndianInt 4 (4 + B.length body) <> "WEBP"
 
 webpChunk :: B.ByteString -> B.ByteString -> B.ByteString
 webpChunk fourcc payload = fourcc <> littleEndianInt 4 (B.length payload) <> payload <> B.replicate (B.length payload `mod` 2) 0
+
+webpHuffmanGroups :: B.ByteString
+webpHuffmanGroups = webpContainer [webpChunk "VP8L" $ vp8lBits fields <> B.replicate 8 0]
+  where
+    fields =
+      [(0x2f, 8), (16383, 14), (16383, 14), (1, 1), (0, 3)]
+        <> transform 0
+        <> transform 1
+        <> [(0, 1), (0, 1), (1, 1), (4, 3), (0, 1)]
+        <> byteCode
+        <> byteCode
+        <> concatMap simpleCode [0, 0, 0]
+        <> concat [[(reversed $ g .&. 0xff, 8), (reversed $ g `shiftR` 8, 8)] | g <- groups]
+        <> concatMap (oneSymbolGroup . (.&. 0xff)) groups
+    groups = [0 .. 65535]
+    transform t = [(1, 1), (t, 2), (0, 3), (0, 1)] <> oneSymbolGroup 0
+    oneSymbolGroup green = concatMap simpleCode [green, 64, 32, 255, 0]
+    simpleCode symbol = [(1, 1), (0, 1), (1, 1), (symbol, 8)]
+    byteCode =
+      [(0, 1), (8, 4)]
+        <> [(if s == 8 || s == 16 then 1 else 0, 3) | s <- [17, 18, 0, 1, 2, 3, 4, 5, 16, 6, 7, 8 :: Int]]
+        <> [(1, 1), (2, 3), (42, 6), (0, 1)]
+        <> concat (replicate 42 [(1, 1), (3, 2)])
+        <> [(1, 1), (0, 2)]
+    reversed v = foldl (\r i -> r .|. (((v `shiftR` i) .&. 1) `shiftL` (7 - i))) 0 [0 .. 7]
+
+vp8lBits :: [(Int, Int)] -> B.ByteString
+vp8lBits = B.pack . go 0 0
+  where
+    go :: Word64 -> Int -> [(Int, Int)] -> [Word8]
+    go acc n fs
+      | n >= 8 = fromIntegral acc : go (acc `shiftR` 8) (n - 8) fs
+      | otherwise = case fs of
+          (v, k) : rest -> go (acc .|. (fromIntegral v `shiftL` n)) (n + k) rest
+          [] -> [fromIntegral acc | n > 0]
 
 littleEndianInt :: Int -> Int -> B.ByteString
 littleEndianInt n = B.reverse . bigEndian n
