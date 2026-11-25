@@ -686,12 +686,12 @@ withBTCPayOrders payeeKeys action = withFakeBTCPay $ \fake -> do
   btcpay <- btcpayProvider $ payeeKeys $ fbConfig fake
   withOrdersVia (const btcpay) $ action fake
 
-dynamisOrder :: Order
-dynamisOrder = aliceOrder {oLabel = "dynamis", oPrice = 20000, oSecret = secretOf 2}
+xmrOrder :: Order
+xmrOrder = aliceOrder {oLabel = "dynamis", oPrice = 20000, oSecret = secretOf 2, oMethod = "xmr"}
 
 testProvenInvoices :: IO ()
 testProvenInvoices = withBTCPayOrders id $ \_ ctx ->
-  forM_ [("invoice-btc-open", aliceOrder), ("invoice-xmr-open", dynamisOrder {oMethod = "xmr"})] $ \(fixture, o) -> do
+  forM_ [("invoice-btc-open", aliceOrder), ("invoice-xmr-open", xmrOrder)] $ \(fixture, o) -> do
     (_, v) <- placed ctx o
     Just (J.String payTo) <- pure $ fieldOf v "address"
     Just proof <- pure $ fieldOf v "addressProof" >>= JT.parseMaybe addressProofP
@@ -709,7 +709,7 @@ testProvenInvoices = withBTCPayOrders id $ \_ ctx ->
 
 testUnprovenInvoice :: IO ()
 testUnprovenInvoice = withBTCPayOrders id $ \fake ctx -> do
-  forM_ [("payment-methods-btc", aliceOrder), ("payment-methods-xmr", dynamisOrder {oMethod = "xmr"})] $ \(fixture, o) -> do
+  forM_ [("payment-methods-btc", aliceOrder), ("payment-methods-xmr", xmrOrder)] $ \(fixture, o) -> do
     usePaymentMethodsFixture fake fixture
     placeOrder ctx o `shouldReturn` refusedWith 503 "provider_unavailable"
   refs <- fakeInvoiceIds fake

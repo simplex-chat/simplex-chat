@@ -358,7 +358,7 @@ payeeProof BTCPayConfig {bBitcoinKey, bMoneroKey} kind cc = case (kind, cc) of
 
 createInvoice :: BTCPayEnv -> ServicePaymentMethod -> OrderDraft -> IO (Either ProviderError ProviderInvoice)
 createInvoice env@BTCPayEnv {beCfg} spm OrderDraft {odAmount, odCurrency, odKind} =
-  case cryptoTarget spm >>= \(methodId, cc) -> (\prove -> (methodId, cc, prove)) <$> payeeProof beCfg odKind cc of
+  case target of
     Left e -> pure (Left e)
     Right (methodId, cc, prove) -> do
       created <- greenfield checkout what methodPost ["invoices"] [] (Just (body methodId))
@@ -370,6 +370,10 @@ createInvoice env@BTCPayEnv {beCfg} spm OrderDraft {odAmount, odCurrency, odKind
           ms <- greenfield checkout what methodGet ["invoices", gcId, "payment-methods"] [] Nothing
           either (cancelCreated gcId) (pure . Right) (ms >>= destination methodId cc prove gcId)
   where
+    target = do
+      (methodId, cc) <- cryptoTarget spm
+      prove <- payeeProof beCfg odKind cc
+      pure (methodId, cc, prove)
     what = "create invoice"
     checkout = env {beCfg = beCfg {bTimeoutMicros = bCheckoutTimeoutMicros beCfg}}
     cancelCreated ref e = do

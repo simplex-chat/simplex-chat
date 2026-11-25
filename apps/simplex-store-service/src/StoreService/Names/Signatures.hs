@@ -1,3 +1,4 @@
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
@@ -95,13 +96,19 @@ selectionMessage (RegistrationId rid) order timestamp = message $ ["name", rid] 
 
 data OrderAction = OARead | OACancel | OARetry
 
+instance TextEncoding OrderAction where
+  textEncode = \case
+    OARead -> "read"
+    OACancel -> "cancel"
+    OARetry -> "retry"
+  textDecode = \case
+    "read" -> Just OARead
+    "cancel" -> Just OACancel
+    "retry" -> Just OARetry
+    _ -> Nothing
+
 orderRequestMessage :: Text -> OrderAction -> Word64 -> ByteString
-orderRequestMessage oid action timestamp = message ["order", oid, actionWord, tshow timestamp]
-  where
-    actionWord = case action of
-      OARead -> "read"
-      OACancel -> "cancel"
-      OARetry -> "retry"
+orderRequestMessage oid action timestamp = message ["order", oid, textEncode action, tshow timestamp]
 
 message :: [Text] -> ByteString
 message = encodeUtf8 . T.unwords . ("simplex.domains" :)

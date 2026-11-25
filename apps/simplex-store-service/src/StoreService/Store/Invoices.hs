@@ -8,7 +8,6 @@
 module StoreService.Store.Invoices
   ( InvoiceRow (..),
     InvoiceProduct (..),
-    InvoiceKind (..),
     InvoicePayment (..),
     paymentHolds,
     note,
