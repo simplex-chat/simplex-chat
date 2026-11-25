@@ -40,7 +40,7 @@ import StoreService.Names.View (NameRefusal (..), RegistrationView, lapseMoment,
 import StoreService.Names.Worker (Retried (..), RetryRefusal (..), retryRegistration)
 import StoreService.Web.Http (HttpEnv, Respond, holdsFullSeconds, jsonResponse, maxBodyBytes, readBoundedBody, withHoldSlot)
 import StoreService.Web.Names.Orders (orderRefusal, refusalResponse)
-import StoreService.Web.Names.Signed (bodySignature, outsideWindow, querySignature, signedByOwner)
+import StoreService.Web.Names.Signed (bodySignature, outsideWindow, ownerSigned, querySignature)
 
 -- | GET /api/registration/:id, held while its version is seenVersion.
 registrationHandler :: OrdersEnv -> HttpEnv -> Int -> RegistrationId -> Request -> Respond -> IO ResponseReceived
@@ -57,8 +57,7 @@ registrationHandler OrdersEnv {oeStore, oeConfig, oeContracts, oePhases, oeNow} 
           | otherwise -> answer (now, r)
   where
     signature = querySignature req
-    readNow = oeNow >>= \now -> withTransaction oeStore (`getRegistration` rid) >>= ownersOnly >>= traverse (\r -> (now, r) <$ noteRead oeStore now r)
-    ownersOnly = maybe (pure Nothing) (\r -> (\owned -> if owned then Just r else Nothing) <$> signedByOwner ridText OARead signature r)
+    readNow = oeNow >>= \now -> withTransaction oeStore (`getRegistration` rid) >>= ownerSigned ridText OARead signature >>= traverse (\r -> (now, r) <$ noteRead oeStore now r)
     answer (now, r) = respond . jsonResponse status200 . J.toJSON =<< registrationView oeStore oeConfig oeContracts now r
 
 -- | What a reveal decided in the name's turn, with the version it wrote; the publish and the answer come after the turn.
@@ -121,11 +120,8 @@ retryHandler env@OrdersEnv {oeStore, oeTurns, oePhases, oeNow} rid@(Registration
   ((`outsideWindow` signature) <$> oeNow) >>= \case
     True -> respond $ refusalResponse NRBadRequest
     False ->
-      withTransaction oeStore (`getRegistration` rid) >>= \case
-        Just r ->
-          signedByOwner ridText OARetry signature r >>= \case
-            True -> withRegistrationTurn oeStore oeTurns r (retryRegistration env) >>= maybe (respond $ refusalResponse NRNotFound) (answer . either (const RTChanged) id)
-            False -> respond $ refusalResponse NRNotFound
+      withTransaction oeStore (`getRegistration` rid) >>= ownerSigned ridText OARetry signature >>= \case
+        Just r -> withRegistrationTurn oeStore oeTurns r (retryRegistration env) >>= maybe (respond $ refusalResponse NRNotFound) (answer . either (const RTChanged) id)
         Nothing -> respond $ refusalResponse NRNotFound
   where
     answer = \case

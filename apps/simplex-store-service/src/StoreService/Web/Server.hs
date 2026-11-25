@@ -37,7 +37,7 @@ import StoreService.Web.Http
 import StoreService.Web.Names (namesApp, namesRoutes)
 import StoreService.Web.Names.Orders (nameInvoiceHandler, nameInvoiceView, refusalResponse)
 import StoreService.Web.Names.Registration (heldFor, registrationChanged, versionParam)
-import StoreService.Web.Names.Signed (OrderSignature, bodySignature, outsideWindow, querySignature, signedByOwner)
+import StoreService.Web.Names.Signed (OrderSignature, bodySignature, outsideWindow, ownerSigned, querySignature, signedByOwner)
 import Control.Concurrent.Async (race)
 import Control.Concurrent.STM (atomically)
 import qualified Control.Exception as E
@@ -52,7 +52,7 @@ import qualified Data.ByteString.Lazy as LB
 import Data.Char (toLower)
 import Data.Functor ((<&>))
 import Data.List (isPrefixOf)
-import Data.Maybe (catMaybes, fromMaybe)
+import Data.Maybe (catMaybes, fromMaybe, isJust)
 import Data.String (fromString)
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -352,7 +352,7 @@ cancelInvoiceHandler env@WebEnv {weStore, weProviders} invId@(InvoiceId invText)
             False -> respond notFound
   where
     cancelledByOwner signature = \case
-      InvoiceRow {irProduct = IPName rid} | Just OrdersEnv {oeStore} <- weOrders env -> withTransaction oeStore (`getRegistration` rid) >>= maybe (pure False) (signedByOwner invText OACancel signature)
+      InvoiceRow {irProduct = IPName rid} | Just OrdersEnv {oeStore} <- weOrders env -> isJust <$> (withTransaction oeStore (`getRegistration` rid) >>= ownerSigned invText OACancel signature)
       _ -> pure True
     cancelRow = \case
       InvoiceRow {irStatus} | irStatus /= ISOpen -> respond (jsonError status409 "not_open")

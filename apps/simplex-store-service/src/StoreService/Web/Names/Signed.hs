@@ -1,3 +1,4 @@
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
@@ -7,6 +8,7 @@ module StoreService.Web.Names.Signed
     bodySignature,
     outsideWindow,
     signedByOwner,
+    ownerSigned,
   )
 where
 
@@ -58,3 +60,8 @@ signedByOwner :: Text -> OrderAction -> OrderSignature -> NameRegistration -> IO
 signedByOwner oid action OrderSignature {osTimestamp, osSignature} NameRegistration {nrOwner} = case (osTimestamp, osSignature) of
   (Just timestamp, Just signature) -> (== Right nrOwner) <$> recoverAddress signature (personalDigest $ orderRequestMessage oid action timestamp)
   _ -> pure False
+
+ownerSigned :: Text -> OrderAction -> OrderSignature -> Maybe NameRegistration -> IO (Maybe NameRegistration)
+ownerSigned oid action signed = \case
+  Just r -> (\owned -> if owned then Just r else Nothing) <$> signedByOwner oid action signed r
+  Nothing -> pure Nothing
