@@ -108,6 +108,7 @@ namesOwnerTests = describe "StoreService names: owner" $ do
     it "refuses another signer's signature and a stale timestamp, and answers an unknown order 404" testSelectRefusedSigner
     it "answers registration_changed with the current view when the order changed during the checks, writing nothing" testSelectLostRace
     it "takes both turns in hash order when the order on A selects B while the order on B selects A, without deadlock, each refused as a paid order holds the other's name" testSelectionsCross
+    it "refuses a selection with 503 downtime, writing nothing, and answers the order's view" testSelectDowntime
   describe "polls" $
     it "wakes a held registration poll by a selection of a name" testPollsWoken
 
@@ -401,6 +402,18 @@ testSelectRefusedPhases = withOwner $ \ctx -> do
   forM_ [failedOrder, lapsed] $ \x -> do
     select ctx keyA x to `shouldReturn` refusedWith 400 "bad_request"
     stored ctx x `shouldReturn` x
+
+testSelectDowntime :: IO ()
+testSelectDowntime = withOwner $ \open -> do
+  answerFree open "alicebakers"
+  r <- takenIn open aliceOrder id
+  to <- selectionOf open "alicebakers" 11
+  serveOwner (configured (\c -> c {nDowntime = True}) open) $ \ctx -> do
+    select ctx keyA r to `shouldReturn` refusedWith 503 "downtime"
+    stored ctx r `shouldReturn` r
+    v <- getView ctx r
+    fieldOf v "phase" `shouldBe` Just (phaseValue "taken" [])
+  void $ selected open keyA r to
 
 testSelectAnyTime :: IO ()
 testSelectAnyTime = withOwner $ \ctx -> do

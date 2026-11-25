@@ -60,7 +60,7 @@ module Bots.StoreService.WebTests
 where
 
 import StoreService.Catalog (catalogCurrency, defaultCatalog)
-import StoreService.Config (BTCPayConfig (..), ListenerConfig (..), NamesConfig, PollConfig (..), ServiceConfig (..), SpeedPolicy (..), StripeConfig (..), defaultLogLevel, providerCheckoutTimeoutMicros, providerTimeoutMicros)
+import StoreService.Config (BTCPayConfig (..), ListenerConfig (..), NamesConfig (nDowntime), PollConfig (..), ServiceConfig (..), SpeedPolicy (..), StripeConfig (..), defaultLogLevel, providerCheckoutTimeoutMicros, providerTimeoutMicros)
 import StoreService.Names.Signatures (AgreedTerms)
 import StoreService.Names.Store (BrokenInvariant (..))
 import StoreService.Orders (cancelOpenInvoice, codeLifetime, expireOverdue, settleOrder)
@@ -1374,11 +1374,15 @@ configOf :: WebClient -> IO (Int, Maybe ByteString, Maybe J.Value)
 configOf client = (\r -> (statusOf r, headerOf r hCacheControl, J.decode (responseBody r))) <$> webGet client "/api/config"
 
 siteConfigJson :: Maybe Bool -> Maybe Text -> Maybe J.Value
-siteConfigJson codesOnly key = Just $ J.object ["stripePublishableKey" J..= key, "names" J..= (namesSiteJson <$> codesOnly)]
+siteConfigJson = siteConfigJsonIn False
+
+siteConfigJsonIn :: Bool -> Maybe Bool -> Maybe Text -> Maybe J.Value
+siteConfigJsonIn downtime codesOnly key = Just $ J.object ["stripePublishableKey" J..= key, "names" J..= (namesSiteJson <$> codesOnly)]
   where
     namesSiteJson on =
       J.object
         [ "codesOnly" J..= on,
+          "downtime" J..= downtime,
           "chainId" J..= (31337 :: Int),
           "resolver" J..= resolverAddr,
           "sponsor" J..= sponsorAddr,
@@ -1396,6 +1400,7 @@ testServesSiteConfig = bounded "site config" $ do
   answers (\cfg -> cfg {names = Just codesOnly, stripe = Just publishTestStripe}) (siteConfigJson (Just True) (Just "pk_test_injected"))
   answers (\cfg -> cfg {names = Just open, stripe = Just publishTestStripe}) (siteConfigJson (Just False) (Just "pk_test_injected"))
   answers (\cfg -> cfg {names = Nothing}) (siteConfigJson Nothing Nothing)
+  answers (\cfg -> cfg {names = Just open {nDowntime = True}, stripe = Just publishTestStripe}) (siteConfigJsonIn True (Just False) (Just "pk_test_injected"))
   let fixture name settings = withBothSitesAs settings $ \_ namesSite -> webGet namesSite "/api/config" >>= responseFixture name
   fixture "config" (\cfg -> cfg {names = Just open, stripe = Just publishTestStripe})
   fixture "config-codes-only" (\cfg -> cfg {names = Just codesOnly})

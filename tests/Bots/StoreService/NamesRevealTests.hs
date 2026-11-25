@@ -9,7 +9,7 @@ module Bots.StoreService.NamesRevealTests (namesRevealTests) where
 
 import Bots.StoreService.FakeEthNode
 import Bots.StoreService.NamesContractsTests (noncesCall)
-import Bots.StoreService.NamesOrdersTests (Ctx (..), Order (..), aliceOrder, blockedRequests, communityTerms, invoiceRegistration, keyA, orderSeconds, orderTime, placed, post, recordingHandlers, registrationOf, settleNow, settled, withOrders)
+import Bots.StoreService.NamesOrdersTests (Ctx (..), Order (..), aliceOrder, blockedRequests, communityTerms, configured, invoiceRegistration, keyA, orderSeconds, orderTime, placed, post, recordingHandlers, registrationOf, settleNow, settled, withOrders)
 import Bots.StoreService.NamesOwnerTests (answerFree, postSelection, selectionBody, selectionOf)
 import Bots.StoreService.NamesPhasesTests (change, held, registrationPath, seenVersion, woken)
 import Bots.StoreService.NamesStoreTests (hashFixture, ownerA)
@@ -43,6 +43,7 @@ import Simplex.Messaging.Crypto.Secp256k1 (RecoverableSignature (..), Secp256k1P
 import Simplex.Messaging.Encoding (Encoding (..))
 import Simplex.Messaging.SimplexName (SimplexTLD (..), labelHash)
 import Simplex.Messaging.SystemTime (RoundedSystemTime (..))
+import StoreService.Config (NamesConfig (nDowntime))
 import StoreService.Names.Abi (hex, uint256)
 import StoreService.Names.Chain (Hex32 (..), TxHash (..))
 import StoreService.Names.Phases (RegistrationId (..))
@@ -62,6 +63,7 @@ namesRevealTests = describe "StoreService names: reveal" $ do
   describe "accepted" $ do
     it "accepts a reveal with links, setting the label at a new version and waking a held poll" testWithLinks
     it "accepts a reveal without links" testWithoutLinks
+    it "accepts a reveal in the downtime" testRevealDowntime
     it "accepts the reveal the page signs, as viem signs it" testViemReveal
     it "accepts a reveal with two records at the link bound, within the body cap" testRecordsAtBound
     it "answers an identical repeat in a later phase, and refuses a different one" testRepeats
@@ -91,8 +93,12 @@ data Fx = Fx {fCtx :: Ctx, fApp :: Application}
 
 -- | The registration routes as namesRoutes registers them, the reveal's and the selection's included.
 withReveals :: (Fx -> IO a) -> IO a
-withReveals action = withOrders $ \ctx@Ctx {cNode, cOrders, cWeb, cHandlers} -> do
+withReveals action = withOrders $ \ctx@Ctx {cNode} -> do
   answerCall cNode fakeSponsor noncesCall $ Returns $ uint256 (0 :: Int)
+  serveReveals ctx action
+
+serveReveals :: Ctx -> (Fx -> IO a) -> IO a
+serveReveals ctx@Ctx {cOrders, cWeb, cHandlers} action = do
   let web = cWeb {weOrders = Just cOrders}
       routes = \case
         ["api", "registration", rid] -> Just Route {rMethod = "GET", rLimit = readLimit, rHandler = registrationHandler cOrders (weHttp web) holdMicros (RegistrationId rid)}
@@ -359,6 +365,14 @@ testWithoutLinks = withReveals $ \Fx {fCtx = ctx} -> do
   ownerReveal ctx rid bare `shouldReturn` accepted
   fmap (\NameReveal {rvLabel, rvContactLink, rvChannelLink} -> (rvLabel, rvContactLink, rvChannelLink)) . nrReveal <$> stored ctx rid
     `shouldReturn` Just ("alicebakery", Nothing, Nothing)
+
+testRevealDowntime :: IO ()
+testRevealDowntime = withReveals $ \Fx {fCtx = open} -> do
+  let bare = alice {rContactLink = Nothing, rChannelLink = Nothing}
+  rid <- committed open (orderOf bare)
+  serveReveals (configured (\c -> c {nDowntime = True}) open) $ \Fx {fCtx = ctx} ->
+    ownerReveal ctx rid bare `shouldReturn` accepted
+  fmap rvLabel . nrReveal <$> stored open rid `shouldReturn` Just "alicebakery"
 
 -- | The webapp's dynamis order (NamesSignatureTests), revealed with viem 2.57.5's signTypedData by the webapp's wallet, account 0.
 testViemReveal :: IO ()

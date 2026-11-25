@@ -223,6 +223,9 @@ namesOrdersTests = describe "StoreService names: orders" $ do
     it "reads at most a pass's share of the provider in a cleanup, carrying the rest to the next pass" testCleanupCapped
     it "runs the day's cleanup again at the next pass when reading its orders fails" testCleanupReadFails
     it "answers 503 for a name invoice while names are off, cancelling nothing" testNamesOff
+  describe "downtime" $ do
+    it "refuses a name invoice and a code order with 503 downtime before reading them, reaching no provider and reserving no code" testDowntimeRefusesOrders
+    it "answers an open invoice's read and cancel in the downtime" testDowntimeAnswersInvoices
   describe "codes only" $ do
     it "answers a name invoice 403 codes_only before reading the order, reaching no provider and writing nothing" testInvoiceCodesOnly
     it "sells a badge as before" testBadgeCodesOnly
@@ -434,6 +437,7 @@ testNamesConfig node =
       nMaxDryRunFailures = 5,
       nMaxSentFailures = 5,
       nCodesOnly = False,
+      nDowntime = False,
       nRecordEditsPerYear = 3,
       nMinPriceCentsPerYear = minPriceCentsPerYear,
       nCommunity = M.empty,
@@ -1591,6 +1595,34 @@ testInvoiceCodesOnly = withOrders $ \open -> withSettings codesOnly open $ \ctx 
   registrationsOf ctx ownerA `shouldReturn` []
   -- nothing the refusals left meets the same order placed with codes_only off
   void $ placed open aliceOrder
+
+downtime :: NamesConfig -> NamesConfig
+downtime cfg = cfg {nDowntime = True}
+
+testDowntimeRefusesOrders :: IO ()
+testDowntimeRefusesOrders = withOrders $ \open -> do
+  (codeText, code) <- issueCode open 8 2 id
+  withSettings downtime open $ \ctx -> do
+    refusal <- placeOrder ctx aliceOrder
+    refusal `shouldBe` refusedWith 503 "downtime"
+    answerFixture "invoice-downtime" refusal
+    postOrder ctx (KM.fromList [("kind", "name")]) `shouldReturn` refusedWith 503 "downtime"
+    register ctx codeText aliceOrder `shouldReturn` refusedWith 503 "downtime"
+    postRegister ctx KM.empty `shouldReturn` refusedWith 503 "downtime"
+    stubCalls (cStub ctx) `shouldReturn` []
+    registrationsOf ctx ownerA `shouldReturn` []
+    readCode ctx code `shouldReturn` code
+  void $ registered open codeText aliceOrder
+
+testDowntimeAnswersInvoices :: IO ()
+testDowntimeAnswersInvoices = withOrders $ \open -> do
+  (InvoiceId invId, _) <- placed open aliceOrder
+  withSettings downtime open $ \ctx -> do
+    let path = "/api/invoice/" <> T.unpack invId
+    (status, v) <- answerOf <$> webGet (cClient ctx) path
+    (status, (`fieldOf` "status") =<< v) `shouldBe` (200 :: Int, Just "open")
+    (cancelled, view) <- post ctx (path <> "/cancel") ""
+    (cancelled, (`fieldOf` "status") =<< view) `shouldBe` (200, Just "expired")
 
 testBadgeCodesOnly :: IO ()
 testBadgeCodesOnly = withOrders $ \open -> withSettings codesOnly open $ \ctx@Ctx {cStore} -> do

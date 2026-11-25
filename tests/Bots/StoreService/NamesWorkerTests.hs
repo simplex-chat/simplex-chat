@@ -21,7 +21,7 @@ import Control.Concurrent.Async (asyncThreadId, wait, withAsync)
 import qualified Control.Exception as E
 import Control.Concurrent.MVar (newEmptyMVar, putMVar, takeMVar)
 import Control.Concurrent.STM (atomically, check, modifyTVar', newTVarIO, readTVar, readTVarIO, retry)
-import Control.Monad (forM_, replicateM_, void, when)
+import Control.Monad (forM_, replicateM_, void, when, (>=>))
 import Data.ByteString (ByteString)
 import qualified Data.Aeson as J
 import qualified Data.Aeson.KeyMap as KM
@@ -160,6 +160,7 @@ workerTests = describe "StoreService names: worker" $ do
     it "refuses /retry of any order but a lapsed unsigned one with bad_request, a failed or signed one included, changing nothing, and answers an unknown order 404" testRetryNotFailed
     it "requeues a lapsed committed order, whose view says it lapsed, answering an old version at once after it and keeping its code" testRetryLapsed
     it "runs in the name's turn, answering registration_changed for an order whose name was selected meanwhile" testRetryInNameTurn
+    it "requeues a lapsed order in the downtime" testRetryDowntime
   describe "close" $ do
     it "closes a failed paid order taken, not live, its price credited and refunded, its reveal cleared, then refuses /retry, a selection of a name and a second refund, and accepts a new order for the name" testCloseFailed
     it "closes a lapsed unsigned committed order, naming its lapse as its end" testCloseLapsed
@@ -186,10 +187,14 @@ withWorker = withWorkerAs id
 -- | With the names settings changed, as the service reads them at startup.
 withWorkerAs :: (NamesConfig -> NamesConfig) -> (W -> IO a) -> IO a
 withWorkerAs settings action = withOrders $ \open -> do
-  let ctx@Ctx {cNode, cOrders, cWeb, cHandlers} = configured settings open
+  let ctx@Ctx {cNode} = configured settings open
   answerCall cNode fakeController minCommitmentAgeCall $ Returns $ uint256 minAge
   answerCall cNode fakeController maxCommitmentAgeCall $ Returns $ uint256 maxAge
   answerUnowned ctx "alicebakery"
+  serveWorker ctx $ started >=> action
+
+serveWorker :: Ctx -> (Ctx -> IO a) -> IO a
+serveWorker ctx@Ctx {cOrders, cWeb, cHandlers} action = do
   let web = cWeb {weOrders = Just cOrders}
       routes path = registrationRoute path <|> codeRoutes cOrders (weProviders web) (weWaiters web) path
       registrationRoute = \case
@@ -198,7 +203,7 @@ withWorkerAs settings action = withOrders $ \open -> do
         ["api", "registration", rid, "name"] -> Just Route {rMethod = "POST", rLimit = createLimit, rHandler = selectNameHandler cOrders (weProviders web) (weWaiters web) (RegistrationId rid)}
         _ -> Nothing
       app req respond = fromMaybe (webApp web req respond) (namesApp (weHttp web) routes req respond)
-  withApp (recordingHandlers cHandlers app) $ \client -> started ctx {cWeb = web, cClient = client} >>= action
+  withApp (recordingHandlers cHandlers app) $ \client -> action ctx {cWeb = web, cClient = client}
 
 -- | A new sender and worker over the same store, as after a restart.
 started :: Ctx -> IO W
@@ -1636,6 +1641,14 @@ testRetryLapsed = withWorker $ \w@W {wCtx = ctx@Ctx {cClient}} -> do
   answerCommitment w r $ fromJust (revealBeforeOf r) - maxAge
   void $ steps w r >>= awaiting
   namePhase . nrPhase <$> stored ctx r `shouldReturn` PCommitting
+
+testRetryDowntime :: IO ()
+testRetryDowntime = withWorker $ \W {wCtx = open} -> do
+  r <- paidIn open aliceOrder committedPhase
+  advance open $ day + 1
+  serveWorker (configured (\c -> c {nDowntime = True}) open) $ \ctx -> do
+    (status, v) <- retryOf ctx r
+    (status, phaseOf =<< v) `shouldBe` (200, Just "queued")
 
 testRetryInNameTurn :: IO ()
 testRetryInNameTurn = withWorker $ \W {wCtx = ctx@Ctx {cOrders}} -> do

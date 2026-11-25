@@ -717,6 +717,7 @@ namesConfigTests = describe "StoreService names: config" $ do
   it "takes an http rpc_url only to a node on loopback, any other only as https, in any case of the scheme, and refuses one the HTTP client cannot parse" testNamesRpcUrlHttps
   it "refuses a [names] or [chain] setting nothing reads, terms_version among them, naming each" testNamesUnknownKeys
   it "reads codes_only on and off as a known setting, off when absent, and refuses any other value" testNamesCodesOnly
+  it "reads downtime on and off as a known setting, off when absent, and refuses any other value" testNamesDowntime
   it "reads record_edits_per_year as a known setting, 3 when absent, and refuses a value outside 1-100" testNamesRecordEdits
   it "reads min_price_cents_per_year as a known setting, 5000 when absent, and refuses a value below 1" testNamesPriceFloor
   it "accepts [issuer] dev_keys on chain 31337 only, with [names] on" testDevKeysLocalChain
@@ -993,6 +994,17 @@ testNamesCodesOnly = do
     NamesConfig {nCodesOnly} <- parsedNames ns chainSection
     (value, nCodesOnly) `shouldBe` (value, expected)
   namesRefusal (namesSection <> ["codes_only = yes"]) chainSection `shouldReturn` "codes_only must be on or off, not yes"
+
+testNamesDowntime :: IO ()
+testNamesDowntime = do
+  NamesConfig {nDowntime = absent} <- parsedNames namesSection chainSection
+  absent `shouldBe` False
+  forM_ [("on", True), ("off", False)] $ \(value, expected) -> do
+    let ns = namesSection <> ["downtime = " <> value]
+    unknownIn (namesIni ns chainSection) `shouldBe` []
+    NamesConfig {nDowntime} <- parsedNames ns chainSection
+    (value, nDowntime) `shouldBe` (value, expected)
+  namesRefusal (namesSection <> ["downtime = yes"]) chainSection `shouldReturn` "downtime must be on or off, not yes"
 
 testNamesRecordEdits :: IO ()
 testNamesRecordEdits = do
