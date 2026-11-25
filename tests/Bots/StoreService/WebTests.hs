@@ -509,12 +509,12 @@ testAddressProofColumn = withServiceStore $ \st -> do
   columnsOf st "sx_badge_service_invoices" >>= (`shouldSatisfy` elem "payment_address_proof")
   seedBadgePrice st "price1"
   createInvoiceRows st sampleInvoice `shouldReturn` Right ()
-  before <- getInvoice st invId
-  irAddressProof <$> before `shouldBe` Just Nothing
+  badgeRow <- getInvoice st invId
+  irAddressProof <$> badgeRow `shouldBe` Just Nothing
   runMigrations st $ MTRDown (mapMaybe toDownMigration proofColumn)
   columnsOf st "sx_badge_service_invoices" >>= (`shouldNotSatisfy` elem "payment_address_proof")
   runMigrations st $ MTRUp proofColumn
-  getInvoice st invId `shouldReturn` before
+  getInvoice st invId `shouldReturn` badgeRow
 
 testGroupOpsRedeemCounts :: IO ()
 testGroupOpsRedeemCounts = withServiceStore $ \st -> do
