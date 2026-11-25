@@ -34,6 +34,13 @@ module Bots.StoreService.NamesOrdersTests
     placeOrder,
     placed,
     post,
+    postRaw,
+    signedGet,
+    readInvoice,
+    cancelInvoice,
+    signWith,
+    signedPath,
+    signedRequestBody,
     settleNow,
     settled,
     invoiceRegistration,
@@ -80,7 +87,7 @@ import Control.Concurrent.MVar (newEmptyMVar, putMVar, takeMVar)
 import Control.Concurrent.STM (TVar, atomically, modifyTVar', newTVarIO, readTVarIO, writeTVar)
 import qualified Control.Exception as E
 import Control.Arrow ((&&&))
-import Control.Monad (forM_, replicateM_, void)
+import Control.Monad (filterM, forM_, replicateM_, void)
 import Crypto.Random (ChaChaDRG)
 import Data.Aeson ((.=))
 import qualified Data.Aeson as J
@@ -93,14 +100,15 @@ import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.IORef (IORef, atomicModifyIORef', modifyIORef', newIORef, readIORef, writeIORef)
 import Data.List (sort)
 import qualified Data.Map.Strict as M
-import Data.Maybe (fromJust, fromMaybe, isJust, isNothing)
+import Data.Functor ((<&>))
+import Data.Maybe (fromJust, fromMaybe, isJust, isNothing, listToMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime, diffUTCTime, getCurrentTime)
 import Data.Time.Clock.POSIX (posixSecondsToUTCTime, utcTimeToPOSIXSeconds)
 import Data.Word (Word64)
-import Network.HTTP.Client (defaultManagerSettings, newManager, responseHeaders)
+import Network.HTTP.Client (Response, defaultManagerSettings, newManager, responseHeaders)
 import Network.HTTP.Types (hContentType, status404)
 import Network.Wai (Application, requestHeaders)
 import qualified Network.Wai.Handler.Warp as Warp
@@ -113,7 +121,7 @@ import qualified Simplex.Messaging.Agent.Store.DB as DB
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.Secp256k1 (Secp256k1PrivateKey, mkPrivateKey, signRecoverable)
 import Simplex.Messaging.Encoding.String (TextEncoding (textDecode), strEncode)
-import Simplex.Messaging.Eth.Address (Address)
+import Simplex.Messaging.Eth.Address (Address, addressFromPrivateKey)
 import Simplex.Messaging.Encoding (Encoding (..))
 import Simplex.Messaging.Names.Record (USDCents)
 import Simplex.Messaging.SimplexName (LabelHash (..), SimplexTLD (..), labelHash)
@@ -129,7 +137,7 @@ import StoreService.Names.Orders (OrdersEnv (..))
 import qualified StoreService.Names.Orders as Orders
 import StoreService.Names.Phases (RegistrationId (..), awaitChange, newPhases)
 import StoreService.Names.Registration (DisputeDays, Registration (..), acceptanceDigest, makeCommitment, methodDisputeDays, minDisputeDays, policyDomain, registerIntentDigest, sponsorDomain, termsKind)
-import StoreService.Names.Signatures (AgreedTerms (..), OrderFields (..), orderMessage, parseChecksumAddress, personalDigest)
+import StoreService.Names.Signatures (AgreedTerms (..), OrderAction (..), OrderFields (..), orderMessage, orderRequestMessage, parseChecksumAddress, personalDigest)
 import StoreService.Names.Store
 import StoreService.Names.Turns (newTurns, withCodeTurn)
 import StoreService.Names.View (PaidWith (PWInvoice), PhaseView (PVClosed, PVCommitted, PVEnded, PVFailed, PVRegistered, PVTaken, PVUnpaid), RegistrationView (..), Signing (SAwaiting, SLapsed, SSigned), ToSign (TSRead, TSUnread), phaseView, readToSign, registrationView, toRegistrationView)
@@ -548,10 +556,57 @@ dynamisReservedCall = unhex "389c074878b602f03f164366531da963764c1f2fdfd588d0487
 
 -- | Each request from its own client network, so the create and checkout limits count none twice.
 post :: Ctx -> String -> LB.ByteString -> IO (Int, Maybe J.Object)
-post Ctx {cClient, cIps} path body = do
+post ctx path body = answerOf <$> postRaw ctx path body
+
+postRaw :: Ctx -> String -> LB.ByteString -> IO (Response LB.ByteString)
+postRaw Ctx {cClient, cIps} path body = do
   n <- atomicModifyIORef' cIps (\i -> (i + 1, i))
   let ip = "198." <> show (n `div` 250) <> "." <> show (n `mod` 250 + 1) <> ".1"
-  answerOf <$> webRequestBody cClient "POST" path [(hContentType, "application/json"), ("X-Forwarded-For", BC.pack ip)] body
+  webRequestBody cClient "POST" path [(hContentType, "application/json"), ("X-Forwarded-For", BC.pack ip)] body
+
+signedGet :: Ctx -> String -> IO (Response LB.ByteString)
+signedGet ctx@Ctx {cClient} path = webGet cClient =<< signedPath ctx path
+
+readInvoice :: Ctx -> InvoiceId -> IO (Int, Maybe J.Object)
+readInvoice ctx (InvoiceId t) = answerOf <$> signedGet ctx ("/api/invoice/" <> T.unpack t)
+
+cancelInvoice :: Ctx -> InvoiceId -> IO (Int, Maybe J.Object)
+cancelInvoice ctx (InvoiceId t) = post ctx path =<< signedRequestBody ctx path OACancel
+  where
+    path = "/api/invoice/" <> T.unpack t <> "/cancel"
+
+signWith :: Ctx -> Secp256k1PrivateKey -> ByteString -> IO Text
+signWith Ctx {cRandom} key msg = hex . smpEncode . either (error . show) id <$> signRecoverable cRandom key (personalDigest msg)
+
+signedPath :: Ctx -> String -> IO String
+signedPath ctx path =
+  requestSignature ctx route OARead <&> \case
+    Just (t, sig) -> route <> (if null query then "?" else query <> "&") <> "timestamp=" <> show t <> "&signature=" <> T.unpack sig
+    Nothing -> path
+  where
+    (route, query) = break (== '?') path
+
+signedRequestBody :: Ctx -> String -> OrderAction -> IO LB.ByteString
+signedRequestBody ctx route action = maybe "" (\(t, sig) -> J.encode $ J.object ["timestamp" .= t, "signature" .= sig]) <$> requestSignature ctx route action
+
+requestSignature :: Ctx -> String -> OrderAction -> IO (Maybe (Word64, Text))
+requestSignature ctx@Ctx {cStore, cRandom, cClock} route action = case T.splitOn "/" (T.pack route) of
+  "" : "api" : "registration" : rid : _ -> ownedBy rid $ pure $ Just $ RegistrationId rid
+  "" : "api" : "invoice" : iid : _ ->
+    ownedBy iid $
+      getInvoice cStore (InvoiceId iid) <&> \case
+        Just InvoiceRow {irProduct = IPName rid} -> Just rid
+        _ -> Nothing
+  _ -> pure Nothing
+  where
+    ownedBy oid readRid =
+      readRid >>= maybe (pure Nothing) (\rid -> withTransaction cStore (`getRegistration` rid)) >>= \case
+        Just NameRegistration {nrOwner} -> ownerKey nrOwner >>= traverse (signedAt oid)
+        Nothing -> pure Nothing
+    ownerKey owner = listToMaybe <$> filterM (fmap (== owner) . addressFromPrivateKey cRandom) [keyA, keyB]
+    signedAt oid key = do
+      t <- seconds <$> readIORef cClock
+      (\sig -> (t, sig)) <$> signWith ctx key (orderRequestMessage oid action t)
 
 postOrder :: Ctx -> J.Object -> IO (Int, Maybe J.Object)
 postOrder ctx = post ctx "/api/invoice" . J.encode
@@ -1081,7 +1136,7 @@ testResendAfterBump = withOrders $ \ctx -> do
   postOrder ctx body `shouldReturn` (200, Just view)
   placed ctx later `shouldReturn` (invId, view)
   placeOrder ctx later {oTerms = newerTerms} `shouldReturn` refusedWith 409 "order_exists"
-  fst <$> post ctx ("/api/invoice/" <> T.unpack invText <> "/cancel") "" `shouldReturn` 200
+  fst <$> cancelInvoice ctx invId `shouldReturn` 200
   (newer, _) <- placed ctx later {oTerms = newerTerms}
   newer `shouldNotBe` invId
   [n, o] <- mapM (invoiceRegistration ctx) [newer, invId]
@@ -1412,8 +1467,8 @@ testSlowReaderHoldsNoTurn = withOrders $ \ctx@Ctx {cWeb, cOrders} -> do
 
 testOrderAfterCancel :: IO ()
 testOrderAfterCancel = withOrders $ \ctx -> do
-  (invId@(InvoiceId invText), _) <- placed ctx aliceOrder
-  (status, v) <- post ctx ("/api/invoice/" <> T.unpack invText <> "/cancel") ""
+  (invId, _) <- placed ctx aliceOrder
+  (status, v) <- cancelInvoice ctx invId
   status `shouldBe` 200
   ((`fieldOf` "status") =<< v) `shouldBe` Just "expired"
   ((`fieldOf` "version") . registrationOf =<< v) `shouldBe` Just (J.Number 2)
@@ -1443,12 +1498,11 @@ testOverdueClosed = withOrders $ \ctx -> do
 
 testClosedNamesNoOther :: IO ()
 testClosedNamesNoOther = withOrders $ \ctx -> do
-  let invoiceText (InvoiceId t) = t
   (firstInv, _) <- placed ctx aliceOrder
-  fst <$> post ctx ("/api/invoice/" <> T.unpack (invoiceText firstInv) <> "/cancel") "" `shouldReturn` 200
+  fst <$> cancelInvoice ctx firstInv `shouldReturn` 200
   now <- readIORef (cClock ctx)
   (secondInv, _) <- placed ctx aliceOrder {oSecret = secretOf 2, oTimestamp = seconds now, oDuration = durationAt now}
-  (_, view) <- answerOf <$> webGet (cClient ctx) ("/api/invoice/" <> T.unpack (invoiceText firstInv))
+  (_, view) <- readInvoice ctx firstInv
   let closed = registrationOf <$> view
   (closed >>= (`fieldOf` "phase")) `shouldBe` Just (J.object ["type" J..= ("closed" :: Text), "closedBy" J..= ("cancelled" :: Text)])
   (closed >>= (`fieldOf` "replacedBy")) `shouldBe` Nothing
@@ -1541,7 +1595,7 @@ testOneLateAlert = withOrders $ \ctx@Ctx {cStore = st, cWeb} -> do
 
 testCancelAnswers :: IO ()
 testCancelAnswers = withOrders $ \ctx -> do
-  let cancel = cancelAt ctx
+  let cancel = cancelInvoice ctx
   (funded, _) <- placed ctx aliceOrder
   settleNow ctx funded (SigFunded (rcv 5000 (Just "0.00078")) PaidInPart) `shouldReturn` ISOpen
   cancel funded `shouldReturn` refusedWith 409 "funded"
@@ -1552,16 +1606,14 @@ testCancelAnswers = withOrders $ \ctx -> do
   -- the provider settles the invoice, or reads a payment into it, while taking the cancel
   withOrdersCancelling settled $ \ctx' -> do
     (invId, _) <- placed ctx' aliceOrder
-    (status, v) <- cancelAt ctx' invId
+    (status, v) <- cancelInvoice ctx' invId
     (status, (`fieldOf` "status") =<< v, phaseOf . registrationOf =<< v) `shouldBe` (200, Just "paid", Just "queued")
   withOrdersCancelling (SigFunded (rcv 0 Nothing) PaidInFull) $ \ctx' -> do
     (invId, _) <- placed ctx' aliceOrder
-    (status, v) <- cancelAt ctx' invId
+    (status, v) <- cancelInvoice ctx' invId
     (status, (`fieldOf` "status") =<< v, (`fieldOf` "paidInFull") =<< v) `shouldBe` (200, Just "expired", Just (J.Bool True))
     r <- invoiceRegistration ctx' invId
     (orderLive r, nrVersion r) `shouldBe` (False, 2)
-  where
-    cancelAt c (InvoiceId t) = post c ("/api/invoice/" <> T.unpack t <> "/cancel") ""
 
 -- | Cancel takes the invoice row and decides on the payment it then reads, as settlement does.
 testCancelAlertsFunded :: IO ()
@@ -1570,14 +1622,13 @@ testCancelAlertsFunded = withOrdersCancelling (SigFunded paid PaidInPart) $ \ctx
   Just InvoiceRow {irProviderRef} <- getInvoice (cStore ctx) invId
   let alert = "invoice " <> irProviderRef <> " received money after"
   logs <- capturingStderr $ do
-    (status, v) <- post ctx ("/api/invoice/" <> T.unpack (invoiceText invId) <> "/cancel") ""
+    (status, v) <- cancelInvoice ctx invId
     (status, (`fieldOf` "status") =<< v, (`fieldOf` "cryptoAmountPaid") =<< v) `shouldBe` (200, Just "expired", Just "0.00078")
   length (T.breakOnAll alert logs) `shouldBe` 1
   capturingStderr (settleNow ctx invId (SigClosed paid PaidInPart) `shouldReturn` ISExpired) >>= (`shouldNotSatisfy` T.isInfixOf alert)
   nrPhase <$> invoiceRegistration ctx invId `shouldReturn` OClosed ICCancelled
   where
     paid = rcv 5000 (Just "0.00078")
-    invoiceText (InvoiceId t) = t
 
 testNamesOff :: IO ()
 testNamesOff = withOrders $ \ctx -> do
@@ -1624,12 +1675,11 @@ testDowntimeRefusesOrders = withOrders $ \open -> do
 
 testDowntimeAnswersInvoices :: IO ()
 testDowntimeAnswersInvoices = withOrders $ \open -> do
-  (InvoiceId invId, _) <- placed open aliceOrder
+  (invId, _) <- placed open aliceOrder
   withSettings downtime open $ \ctx -> do
-    let path = "/api/invoice/" <> T.unpack invId
-    (status, v) <- answerOf <$> webGet (cClient ctx) path
-    (status, (`fieldOf` "status") =<< v) `shouldBe` (200 :: Int, Just "open")
-    (cancelled, view) <- post ctx (path <> "/cancel") ""
+    (status, v) <- readInvoice ctx invId
+    (status, (`fieldOf` "status") =<< v) `shouldBe` (200, Just "open")
+    (cancelled, view) <- cancelInvoice ctx invId
     (cancelled, (`fieldOf` "status") =<< view) `shouldBe` (200, Just "expired")
 
 testBadgeCodesOnly :: IO ()

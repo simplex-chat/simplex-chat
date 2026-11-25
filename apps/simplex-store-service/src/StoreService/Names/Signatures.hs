@@ -12,6 +12,8 @@ module StoreService.Names.Signatures
     orderMessage,
     findMessage,
     selectionMessage,
+    OrderAction (..),
+    orderRequestMessage,
     parseChecksumAddress,
     parseAnyCaseAddress,
   )
@@ -90,6 +92,16 @@ findMessage owner timestamp = message ["find", hex $ unAddress owner, tshow time
 
 selectionMessage :: RegistrationId -> OrderFields -> Word64 -> ByteString
 selectionMessage (RegistrationId rid) order timestamp = message $ ["name", rid] <> orderWords order <> [tshow timestamp]
+
+data OrderAction = OARead | OACancel | OARetry
+
+orderRequestMessage :: Text -> OrderAction -> Word64 -> ByteString
+orderRequestMessage oid action timestamp = message ["order", oid, actionWord, tshow timestamp]
+  where
+    actionWord = case action of
+      OARead -> "read"
+      OACancel -> "cancel"
+      OARetry -> "retry"
 
 message :: [Text] -> ByteString
 message = encodeUtf8 . T.unwords . ("simplex.domains" :)

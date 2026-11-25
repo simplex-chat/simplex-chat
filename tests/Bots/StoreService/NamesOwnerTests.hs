@@ -24,9 +24,11 @@ module Bots.StoreService.NamesOwnerTests
     rewrite,
     select,
     selectionBody,
+    selectionBodyAt,
     selectionOf,
     sentRegister,
     stored,
+    takenIn,
   )
 where
 
@@ -35,7 +37,7 @@ import Bots.StoreService.NamesContractsTests (registrarOf, rentPriceAnswer, rent
 import Bots.StoreService.NamesOrdersTests
 import Bots.StoreService.NamesStoreTests (hashFixture, order, ownerA, reveal, t0)
 import Bots.StoreService.NamesPhasesTests (held, registrationPath, seenVersion, woken)
-import Bots.StoreService.WebTests (StubCall (..), agreed, answerFixture, bounded, fieldOf, stubCalls, jsonObject, refusedWith, phaseOf, phaseValue, storeFixture, webGet, withApp)
+import Bots.StoreService.WebTests (StubCall (..), agreed, answerFixture, bounded, fieldOf, stubCalls, jsonObject, refusedWith, phaseOf, phaseValue, storeFixture, withApp)
 import Control.Applicative ((<|>))
 import Control.Arrow ((&&&))
 import Control.Concurrent.Async (async, wait)
@@ -105,7 +107,7 @@ namesOwnerTests = describe "StoreService names: owner" $ do
     it "checks a code order's code as a new code order's: code_not_covering for a shorter name, and reserves it for the name selected" testSelectCodeOrder
     it "accepts the code the order holds past its expiry until a month after the take, then refuses it with code_expired, refuses it once revoked with code_invalid, changing nothing, and keeps it from other code orders" testSelectRefusedCode
     it "refuses sealed over 11095 characters, a body over 16384 bytes and malformed fields, accepting the longest" testSelectSizes
-    it "refuses another signer's signature and a stale timestamp, and answers an unknown order 404" testSelectRefusedSigner
+    it "answers another signer's selection as an unknown order, 404, writing nothing, and a stale timestamp 400 for a known and an unknown order alike" testSelectRefusedSigner
     it "answers registration_changed with the current view when the order changed during the checks, writing nothing" testSelectLostRace
     it "takes both turns in hash order when the order on A selects B while the order on B selects A, without deadlock, each refused as a paid order holds the other's name" testSelectionsCross
     it "refuses a selection with 503 downtime, writing nothing, and answers the order's view" testSelectDowntime
@@ -137,9 +139,6 @@ ownerRoutes orders WebEnv {weHttp, weProviders, weWaiters} = \case
   ["api", "registration", rid] -> Just Route {rMethod = "GET", rLimit = readLimit, rHandler = registrationHandler orders weHttp holdMicros (RegistrationId rid)}
   ["api", "registration", rid, "name"] -> Just Route {rMethod = "POST", rLimit = createLimit, rHandler = selectNameHandler orders weProviders weWaiters (RegistrationId rid)}
   _ -> Nothing
-
-signWith :: Ctx -> Secp256k1PrivateKey -> ByteString -> IO Text
-signWith Ctx {cRandom} key msg = hex . smpEncode . either (error . show) id <$> signRecoverable cRandom key (personalDigest msg)
 
 clockSeconds :: Ctx -> IO Word64
 clockSeconds Ctx {cClock} = seconds <$> readIORef cClock
@@ -282,7 +281,7 @@ selected ctx key r o =
     other -> error $ "selection refused: " <> show other
 
 getView :: Ctx -> NameRegistration -> IO J.Object
-getView ctx NameRegistration {nrId} = webGet (cClient ctx) (registrationPath nrId) >>= jsonObject
+getView ctx NameRegistration {nrId} = signedGet ctx (registrationPath nrId) >>= jsonObject
 
 findBody :: Ctx -> Secp256k1PrivateKey -> Text -> Word64 -> IO J.Object
 findBody ctx key owner timestamp = do
@@ -713,10 +712,13 @@ testSelectRefusedSigner = withOwner $ \ctx -> do
   answerFree ctx "alicebakers"
   r <- takenIn ctx aliceOrder id
   to <- selectionOf ctx "alicebakers" 10
-  select ctx keyB r to `shouldReturn` refusedWith 400 "bad_request"
-  stored ctx r `shouldReturn` r
   let unknown = RegistrationId "t2Jk8RmQ4vXw9NcP3yLb6g"
   (selectionBody ctx keyA unknown to >>= postSelection ctx unknown) `shouldReturn` refusedWith 404 "not_found"
+  select ctx keyB r to `shouldReturn` refusedWith 404 "not_found"
+  stored ctx r `shouldReturn` r
+  ts <- clockSeconds ctx
+  forM_ [nrId r, unknown] $ \rid ->
+    (selectionBodyAt ctx keyA rid to (ts - signedWindow - 1) >>= postSelection ctx rid) `shouldReturn` refusedWith 400 "bad_request"
 
 testSelectLostRace :: IO ()
 testSelectLostRace = withOwner $ \ctx@Ctx {cNode} -> do

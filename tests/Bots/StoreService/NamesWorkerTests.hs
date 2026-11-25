@@ -3,7 +3,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TupleSections #-}
 
-module Bots.StoreService.NamesWorkerTests (namesWorkerTests) where
+module Bots.StoreService.NamesWorkerTests (namesWorkerTests, serveWorker) where
 
 import Bots.StoreService.FakeEthNode
 import Bots.StoreService.NamesBalancesTests (figures)
@@ -12,7 +12,7 @@ import Bots.StoreService.NamesOrdersTests
 import Bots.StoreService.NamesOwnerTests (answerDisputeUntil, answerExpiry, answerFree, answerOwner, answerUnowned, byB, codeIn, committedPhase, dynamisOrder, failedPhase, labelBytes, ownerOfSelector, paidIn, rewrite, select, selectionOf, sentRegister, stored)
 import Bots.StoreService.NamesPhasesTests (held, prompt, registrationPath, woken)
 import Bots.StoreService.NamesStoreTests (hashFixture, reveal)
-import Bots.StoreService.WebTests (answerOf, blockedInSTM, capturingStderr, fieldOf, jsonObject, lengthOf, phaseOf, phaseValue, refusedWith, renameTable, statusOf, storeFixture, stubCalls, webGet, withApp)
+import Bots.StoreService.WebTests (answerOf, blockedInSTM, capturingStderr, fieldOf, jsonObject, lengthOf, phaseOf, phaseValue, refusedWith, renameTable, statusOf, storeFixture, stubCalls, withApp)
 import Control.Applicative ((<|>))
 import Control.Arrow ((&&&))
 import Control.Concurrent (threadDelay)
@@ -55,6 +55,7 @@ import StoreService.Names.Registration (RegisterIntent (..), TermsAcceptance (..
 import StoreService.Names.Reveal (intentOf)
 import StoreService.Names.Revert (RevertName (..), RevertReason (..), actedReverts)
 import StoreService.Names.Sender
+import StoreService.Names.Signatures (OrderAction (..))
 import StoreService.Names.Store
 import StoreService.Names.Turns (withBalanceTurn, withLabelTurn)
 import StoreService.Names.Worker
@@ -376,17 +377,17 @@ testCommitWaitRegister = withWorker $ \w@W {wCtx = ctx} -> do
   isJust . pcSpentAt <$> codeOf ctx code `shouldReturn` True
 
 testPaidRegister :: IO ()
-testPaidRegister = withWorker $ \w@W {wCtx = ctx@Ctx {cClient}} -> do
+testPaidRegister = withWorker $ \w@W {wCtx = ctx} -> do
   (invId, _) <- placed ctx aliceOrder
   settleNow ctx invId settled `shouldReturn` ISPaid
   r <- invoiceRegistration ctx invId
   commitWaitRegister w r
-  (status, view) <- answerOf <$> webGet cClient (registrationPath $ nrId r)
+  (status, view) <- answerOf <$> signedGet ctx (registrationPath $ nrId r)
   (status, phaseOf =<< view, (`fieldOf` "label") =<< view) `shouldBe` (200, Just "registered", Just "alicebakery")
   viewFixture "registration-registered" view
 
 testCodesOnlyRegister :: IO ()
-testCodesOnlyRegister = withWorkerAs codesOnly $ \w@W {wCtx = ctx@Ctx {cClient}} -> do
+testCodesOnlyRegister = withWorkerAs codesOnly $ \w@W {wCtx = ctx} -> do
   (text, code) <- issueCode ctx 8 2 id
   (status, coverage) <- post ctx "/api/code/check" (J.encode $ J.object ["code" J..= text])
   (status, (`fieldOf` "state") =<< coverage) `shouldBe` (200, Just "unused")
@@ -394,7 +395,7 @@ testCodesOnlyRegister = withWorkerAs codesOnly $ \w@W {wCtx = ctx@Ctx {cClient}}
   r <- registrationById ctx =<< registered ctx text aliceOrder
   commitWaitRegister w r
   isJust . pcSpentAt <$> codeOf ctx code `shouldReturn` True
-  (status', view) <- answerOf <$> webGet cClient (registrationPath $ nrId r)
+  (status', view) <- answerOf <$> signedGet ctx (registrationPath $ nrId r)
   (status', phaseOf =<< view) `shouldBe` (200, Just "registered")
   stubCalls (cStub ctx) `shouldReturn` []
 
@@ -435,7 +436,7 @@ commitWaitRegister w@W {wCtx = ctx} r = do
   published w r (steps w r) >>= done
   x <- stored ctx r
   (nrPhase x, nrHistory x, orderLive x) `shouldBe` (ORegistered expirySeconds (Just $ RoundedSystemTime $ fromIntegral disputeEnd) now, TxHistory {thCommitTx = Just commitHash, thRegisterTx = Just registerTx}, False)
-  view <- webGet (cClient ctx) (registrationPath $ nrId r) >>= jsonObject
+  view <- signedGet ctx (registrationPath $ nrId r) >>= jsonObject
   (fieldOf view "disputeDays", fieldOf view "phase") `shouldBe` (Just (J.Number 14), Just $ phaseValue "registered" [("expiresAt", J.toJSON expiry), ("disputeUntil", J.toJSON disputeEnd)])
   steps w r >>= done
 
@@ -1351,18 +1352,18 @@ testMonthFromSelection = withWorker $ \W {wCtx = ctx@Ctx {cStore, cOrders}, wSen
   nrPhase <$> stored ctx r `shouldReturn` OFailed now FRMonthEnded
 
 testUnreadFails :: IO ()
-testUnreadFails = withWorker $ \w@W {wCtx = ctx@Ctx {cClient}} -> do
+testUnreadFails = withWorker $ \w@W {wCtx = ctx} -> do
   r <- paidIn ctx aliceOrder committedPhase
   let readAt = fmap nrReadAt . stored ctx
-      InvoiceId invId = fromJust $ paymentInvoice $ nrPayment r
+      invId = fromJust $ paymentInvoice $ nrPayment r
   advance ctx $ 2 * day
-  void $ webGet cClient $ registrationPath $ nrId r
+  void $ signedGet ctx $ registrationPath $ nrId r
   readAt r `shouldReturn` addUTCTime (2 * day) orderTime
   advance ctx 1800
-  void $ webGet cClient $ registrationPath $ nrId r
+  void $ signedGet ctx $ registrationPath $ nrId r
   readAt r `shouldReturn` addUTCTime (2 * day) orderTime
   advance ctx 1800
-  void $ webGet cClient $ "/api/invoice/" <> T.unpack invId
+  void $ readInvoice ctx invId
   readAt r `shouldReturn` addUTCTime (2 * day + 3600) orderTime
   advance ctx $ 3 * day
   void $ steps w r
@@ -1594,7 +1595,9 @@ testEndedPassFails = withWorker $ \W {wCtx = ctx@Ctx {cStore, cOrders}, wWorker}
 -- retry
 
 retryOf :: Ctx -> NameRegistration -> IO (Int, Maybe J.Object)
-retryOf ctx NameRegistration {nrId} = post ctx (registrationPath nrId <> "/retry") ""
+retryOf ctx NameRegistration {nrId} = post ctx path =<< signedRequestBody ctx path OARetry
+  where
+    path = registrationPath nrId <> "/retry"
 
 -- | The view of an accepted /retry, failing the test otherwise.
 retried :: Ctx -> NameRegistration -> IO J.Object
@@ -1604,7 +1607,7 @@ retried ctx r =
     other -> fail $ "retry refused: " <> show other
 
 viewOf :: Ctx -> NameRegistration -> IO J.Object
-viewOf Ctx {cClient} NameRegistration {nrId} = webGet cClient (registrationPath nrId) >>= jsonObject
+viewOf ctx NameRegistration {nrId} = signedGet ctx (registrationPath nrId) >>= jsonObject
 
 viewFixture :: String -> Maybe J.Object -> IO ()
 viewFixture name view = storeFixture name 200 (J.Object . KM.insert "id" "registration" <$> view) Nothing
@@ -1626,7 +1629,7 @@ testRetryNotFailed = withWorker $ \W {wCtx = ctx} -> do
   retryOf ctx queued {nrId = RegistrationId "t2Jk8RmQ4vXw9NcP3yLb6g"} `shouldReturn` refusedWith 404 "not_found"
 
 testRetryLapsed :: IO ()
-testRetryLapsed = withWorker $ \w@W {wCtx = ctx@Ctx {cClient}} -> do
+testRetryLapsed = withWorker $ \w@W {wCtx = ctx} -> do
   (r, code) <- codeIn ctx 8 aliceOrder committedPhase
   advance ctx $ day + 1
   (`fieldOf` "phase") <$> viewOf ctx r
@@ -1639,7 +1642,7 @@ testRetryLapsed = withWorker $ \w@W {wCtx = ctx@Ctx {cClient}} -> do
   (status, view) <- woken "the poll held at the lapse" poll
   (status, phaseOf view) `shouldBe` (200, Just "queued")
   -- prompt is far below the 30-second hold
-  (status', view') <- timeout prompt (webGet cClient path >>= \resp -> (statusOf resp,) <$> jsonObject resp) >>= maybe (fail "the old version was held") pure
+  (status', view') <- timeout prompt (signedGet ctx path >>= \resp -> (statusOf resp,) <$> jsonObject resp) >>= maybe (fail "the old version was held") pure
   (status', fieldOf view' "version") `shouldBe` (200, Just (J.toJSON $ nrVersion r + 1))
   pcReservedBy <$> codeOf ctx code `shouldReturn` Just (nrId r)
   -- the commitment lapsed, so the worker commits it again

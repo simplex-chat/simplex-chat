@@ -817,6 +817,7 @@ test-suite simplex-chat-test
       Bots.StoreService.NamesSearchTests
       Bots.StoreService.NamesSenderTests
       Bots.StoreService.NamesSignatureTests
+      Bots.StoreService.NamesSignedTests
       Bots.StoreService.NamesStoreTests
       Bots.StoreService.NamesWiringTests
       Bots.StoreService.NamesWorkerTests

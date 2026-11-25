@@ -67,17 +67,17 @@ namesRevealTests = describe "StoreService names: reveal" $ do
     it "accepts a reveal in the downtime" testRevealDowntime
     it "accepts the reveal the page signs, as viem signs it" testViemReveal
     it "accepts a reveal with two records at the link bound, within the body cap" testRecordsAtBound
-    it "answers an identical repeat in a later phase, and refuses a different one" testRepeats
+    it "answers an identical repeat in a later phase, refuses a different one by the owner, and answers one the owner did not sign as an unknown order" testRepeats
     it "answers after the name's turn, so a slow reader of one answer holds no other reveal" testAnswersAfterTurn
     it "continues an order failed with its page unread: queued again with the reveal stored and its transactions cleared, and refuses one failed otherwise" testUnreadContinues
   describe "refused" $ do
-    it "refuses a high-s intent, a wrong signer, a stale nonce, a deadline before revealBefore or over a week ahead, writing nothing, and accepts one a week ahead" testIntentRefusals
-    it "refuses an intent signed over other dispute days than the order's, writing nothing" testOtherDisputeDays
-    it "refuses an intent signed over the sponsor the service used before, writing nothing, and accepts one over its current sponsor" testOtherSponsor
+    it "refuses a high-s intent, answers a wrong signer as an unknown order, refuses a stale nonce, a deadline before revealBefore or over a week ahead, writing nothing, and accepts one a week ahead" testIntentRefusals
+    it "answers an intent signed over other dispute days than the order's as an unknown order, writing nothing" testOtherDisputeDays
+    it "answers an intent signed over the sponsor the service used before as an unknown order, writing nothing, and accepts one over its current sponsor" testOtherSponsor
     it "refuses a label not of the order, another secret or other links, writing nothing" testCommitmentRefusals
     it "refuses a commitment of another duration than the order's" testWrongDuration
     it "refuses a list of links for a key as bad_request, recording nothing" testSecondLink
-    it "refuses an unknown id, a registration not committed or lapsed, and malformed bodies" testStateAndFormat
+    it "answers an unknown id 404, a malformed body 400 for a known and an unknown id alike, and refuses a registration not committed or lapsed" testStateAndFormat
     it "answers provider_unavailable when the nonce read fails, writing nothing" testNonceUnavailable
   describe "terms acceptance" $ do
     it "stores the owner's acceptance of the policy's current community terms, at the intent's deadline, with a listed name's reveal" testAcceptanceStored
@@ -218,6 +218,9 @@ accepted = (200, Just KM.empty)
 
 badRequest :: (Int, Maybe J.Object)
 badRequest = refusedWith 400 "bad_request"
+
+notFound :: (Int, Maybe J.Object)
+notFound = refusedWith 404 "not_found"
 
 stored :: Ctx -> RegistrationId -> IO NameRegistration
 stored Ctx {cStore} rid = withTransaction cStore $ \db -> fromJust <$> getRegistration db rid
@@ -417,7 +420,7 @@ testRepeats = withReveals $ \Fx {fCtx = ctx} -> do
   reveal ctx rid body `shouldReturn` accepted
   resigned <- (\sig -> KM.insert "acceptance" (fromJust $ KM.lookup "acceptance" body) $ bodyOf sig alice 0 revealBefore) <$> signIntent ctx keyA alice 1 revealBefore
   reveal ctx rid resigned `shouldReturn` badRequest
-  reveal ctx rid (KM.insert "label" "alicebakerz" body) `shouldReturn` badRequest
+  reveal ctx rid (KM.insert "label" "alicebakerz" body) `shouldReturn` notFound
   nrVersion <$> stored ctx rid `shouldReturn` v
 
 -- | A response held before it is written, as for a client that reads it slowly, must not hold the name's turn.
@@ -449,12 +452,12 @@ testIntentRefusals = withReveals $ \Fx {fCtx = ctx@Ctx {cNode}} -> do
   acceptance <- acceptanceOf ctx keyA alice False fakeGeneralTerms 0 revealBefore
   lateAcceptance <- acceptanceOf ctx keyA alice False fakeGeneralTerms 0 pastWeek
   forM_
-    [ ("high s", withAcceptance acceptance $ bodyOf (highS sig) alice 0 revealBefore),
-      ("another signer", withAcceptance acceptance $ bodyOf other alice 0 revealBefore),
-      ("a deadline a second before revealBefore", withAcceptance acceptance $ bodyOf early alice 0 (revealBefore - 1)),
-      ("a deadline a week and the signed request slack ahead, and a second", withAcceptance lateAcceptance $ bodyOf late alice 0 pastWeek)
+    [ ("high s", withAcceptance acceptance $ bodyOf (highS sig) alice 0 revealBefore, badRequest),
+      ("another signer", withAcceptance acceptance $ bodyOf other alice 0 revealBefore, notFound),
+      ("a deadline a second before revealBefore", withAcceptance acceptance $ bodyOf early alice 0 (revealBefore - 1), badRequest),
+      ("a deadline a week and the signed request slack ahead, and a second", withAcceptance lateAcceptance $ bodyOf late alice 0 pastWeek, badRequest)
     ]
-    $ \(what, body) -> (what,) <$> reveal ctx rid body `shouldReturn` (what :: String, badRequest)
+    $ \(what, body, refusal) -> (what,) <$> reveal ctx rid body `shouldReturn` (what :: String, refusal)
   answerCall cNode fakeSponsor noncesCall $ Returns $ uint256 (1 :: Int)
   reveal ctx rid (withAcceptance acceptance $ bodyOf sig alice 0 revealBefore) `shouldReturn` badRequest
   unwritten <$> stored ctx rid `shouldReturn` unchanged
@@ -470,7 +473,7 @@ testOtherDisputeDays = withReveals $ \Fx {fCtx = ctx} -> do
   nrDisputeDays <$> stored ctx rid `shouldReturn` minDisputeDays
   acceptance <- acceptanceOf ctx keyA alice False fakeGeneralTerms 0 revealBefore
   sig <- signIntentOver ctx keyA alice maxDisputeDays 0 revealBefore
-  reveal ctx rid (withAcceptance acceptance $ bodyOf sig alice 0 revealBefore) `shouldReturn` badRequest
+  reveal ctx rid (withAcceptance acceptance $ bodyOf sig alice 0 revealBefore) `shouldReturn` notFound
   unwritten <$> stored ctx rid `shouldReturn` unchanged
   ownerReveal ctx rid alice `shouldReturn` accepted
 
@@ -479,7 +482,7 @@ testOtherSponsor = withReveals $ \Fx {fCtx = open} -> do
   rid <- committed open (orderOf alice)
   unchanged <- unwritten <$> stored open rid
   serveReveals (configured movedSponsor open) $ \Fx {fCtx = ctx} -> do
-    ownerReveal ctx rid alice `shouldReturn` badRequest
+    ownerReveal ctx rid alice `shouldReturn` notFound
     unwritten <$> stored ctx rid `shouldReturn` unchanged
     acceptance <- acceptanceOf ctx keyA alice False fakeGeneralTerms 0 revealBefore
     sig <- signIntentFor otherSponsor ctx keyA alice minDisputeDays 0 revealBefore
@@ -522,7 +525,8 @@ testSecondLink = withReveals $ \Fx {fCtx = ctx} -> do
 testStateAndFormat :: IO ()
 testStateAndFormat = withReveals $ \Fx {fCtx = ctx@Ctx {cClock}} -> do
   body <- ownerBody ctx alice
-  reveal ctx (RegistrationId "t2Jk8RmQ4vXw9NcP3yLb6g") body `shouldReturn` refusedWith 404 "not_found"
+  let unknown = RegistrationId "t2Jk8RmQ4vXw9NcP3yLb6g"
+  reveal ctx unknown body `shouldReturn` notFound
   NameRegistration {nrId = rid} <- paidOrder ctx (orderOf alice)
   reveal ctx rid body `shouldReturn` badRequest
   _ <- change ctx rid $ \r -> r {nrPhase = OCommitted openWindow}
@@ -543,9 +547,9 @@ testStateAndFormat = withReveals $ \Fx {fCtx = ctx@Ctx {cClock}} -> do
       ("records not an object", KM.insert "records" (J.toJSON [contactLink]) body),
       ("a link that is not text", KM.insert "records" (J.object ["contact" .= J.Number 1, "channel" .= channelLink]) body)
     ]
-    $ \(what, b) -> (what,) <$> reveal ctx rid b `shouldReturn` (what :: String, badRequest)
+    $ \(what, b) -> forM_ [rid, unknown] $ \r -> (what, r == rid,) <$> reveal ctx r b `shouldReturn` (what :: String, r == rid, badRequest)
   forM_ [("not an object", "[]"), ("not JSON", "label=alicebakery"), ("over the cap", J.encode $ KM.insert "pad" (J.String $ T.replicate maxBodyBytes "a") body)] $
-    \(what, b) -> (what,) <$> post ctx (revealPath rid) b `shouldReturn` (what :: String, badRequest)
+    \(what, b) -> forM_ [rid, unknown] $ \r -> (what, r == rid,) <$> post ctx (revealPath r) b `shouldReturn` (what :: String, r == rid, badRequest)
   unwritten <$> stored ctx rid `shouldReturn` unchanged
   -- signed past revealBefore, so only the lapse refuses it
   let deadline = revealBefore + 3600
