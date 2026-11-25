@@ -580,6 +580,95 @@ final class ModerationTests: RecordedAPITestCase {
     }
 
     @MainActor
+    func testContactDeletionSettingExport() {
+        privacyContactDeletionDefault.set(.notify)
+        XCTAssertEqual(AppSettings.current.prepareForExport().privacyContactDeletion, .notify)
+        privacyContactDeletionDefault.set(.ask)
+        XCTAssertNil(AppSettings.current.prepareForExport().privacyContactDeletion)
+        var imported = AppSettings()
+        imported.privacyContactDeletion = .notify
+        imported.importIntoApp()
+        XCTAssertEqual(privacyContactDeletionDefault.get(), .notify)
+    }
+
+    func testContentReportReason() throws {
+        XCTAssertEqual(ReportReason.content.text, "Inappropriate content")
+        XCTAssertEqual(encodeJSON(ReportReason.content), "\"content\"")
+        XCTAssertEqual(try jsonDecoder.decode(ReportReason.self, from: Data("\"content\"".utf8)), .content)
+        XCTAssertEqual(try jsonDecoder.decode(ReportReason.self, from: Data("\"illegal\"".utf8)), .content)
+    }
+
+    @MainActor
+    func testGroupMembersLoadFailure() async throws {
+        try recorded("bans/block-members")
+        var (groupInfo, _) = try openGroup()
+        groupInfo.groupId = 9
+        ChatModel.shared.chatId = groupInfo.id
+        await ChatModel.shared.loadGroupMembers(groupInfo)
+        try await assertRequested { $0 == "/_members #9" }
+        XCTAssertTrue(ChatModel.shared.groupMembers.isEmpty)
+    }
+
+    @MainActor
+    func testContactCardConnectionError() async throws {
+        try recorded("bans/connect-contact-notice")
+        _ = await apiConnectContactViaAddress(incognito: false, contactId: 9)
+        try await assertRequested { $0 == "/_connect contact 1 incognito=off 9" }
+        try await waitFor { self.shownTexts().contains("Connection error") }
+    }
+
+    @MainActor
+    func testDeleteGroupFails() async throws {
+        try recorded("bans/group-deletion")
+        var (groupInfo, _) = try openGroup()
+        groupInfo.groupId = 9
+        let deleted = await deleteChat(groupChat(groupInfo))
+        XCTAssertFalse(deleted)
+        try await assertRequested { $0 == "/_delete #9 full notify=on" }
+        try await waitFor { self.shownTexts().contains("Error deleting chat!") }
+    }
+
+    @MainActor
+    func testAcceptPendingMemberAsObserverFails() async throws {
+        try recorded("bans/pending-member")
+        let (groupInfo, members) = try openGroup()
+        showAcceptMemberAlert(groupInfo, try member(members, "bob"))
+        try await press("Accept as observer")
+        try await assertRequested { $0 == "/_accept member #1 2 observer" }
+        try await waitFor { self.shownTexts().contains("Error accepting member") }
+    }
+
+    @MainActor
+    func testRemoveSubscriberNotBlocked() async throws {
+        try recorded("bans/channel")
+        let (groupInfo, members) = try openGroup()
+        showRemoveMemberAlert(groupInfo, try member(members, "dan"))
+        try await assertTexts(["Remove subscriber?", "Subscriber will be removed from channel - this cannot be undone!", "Remove", "Remove and delete messages", "Cancel"])
+    }
+
+    @MainActor
+    func testNoticeAlertOpensGuide() async throws {
+        try recorded("bans/contact-notices")
+        connect("ALICE_LINK")
+        try await assertTexts(["Not allowed", "Blocked by this contact until \(Self.until).", "Ok", "How it works"])
+        let opened = try await openedURLs { try await self.press("How it works") }
+        XCTAssertEqual(opened, [bansGuideLink])
+    }
+
+    @MainActor
+    func testClosingClosedSheet() async throws {
+        try recorded("bans/block-members")
+        let (groupInfo, members) = try openGroup()
+        showBanMemberSheet(groupInfo, try member(members, "bob"))
+        let dialog = try await sheet(BanDialog.self)
+        var closed = 0
+        dialog.close { closed += 1 }
+        try await waitFor { closed == 1 && self.presented() == nil }
+        dialog.close { closed += 1 }
+        try await waitFor { closed == 2 }
+    }
+
+    @MainActor
     func testContactNotViaAddressCantBeBlocked() async throws {
         try recorded("bans/contact-deletion")
         let (_, contact) = try openContact("/_get chat @5 count=0")
@@ -716,6 +805,26 @@ final class ModerationTests: RecordedAPITestCase {
         try await Task.sleep(nanoseconds: 100_000_000)
         try await test(state)
     }
+
+    @MainActor
+    private func openedURLs(_ action: () async throws -> Void) async throws -> [URL] {
+        let method = try XCTUnwrap(class_getInstanceMethod(UIApplication.self, #selector(UIApplication.open(_:options:completionHandler:))))
+        let original = method_getImplementation(method)
+        let opened = OpenedURLs()
+        let replacement: @convention(block) (UIApplication, NSURL, NSDictionary, (@convention(block) (Bool) -> Void)?) -> Void = { _, url, _, completion in
+            opened.urls.append(url as URL)
+            completion?(true)
+        }
+        method_setImplementation(method, imp_implementationWithBlock(replacement))
+        defer { method_setImplementation(method, original) }
+        try await action()
+        try await waitFor { !opened.urls.isEmpty }
+        return opened.urls
+    }
+}
+
+private final class OpenedURLs {
+    var urls: [URL] = []
 }
 
 private struct UnexpectedRecording: Error {
