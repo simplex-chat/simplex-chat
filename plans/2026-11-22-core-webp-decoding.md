@@ -47,7 +47,7 @@ Evidence at review:
 - the test "should apply EXIF orientation of WebP" fails at `2c4ca02`, the commit before the fix, with sides 1000×307 for the expected 307×1000 ([run](https://github.com/simplex-chat/simplex-chat/actions/runs/45287298996));
 - the tests of display sizes and of the input limit fail at the commit with the tests alone, before the change (Tests; [run](https://github.com/evgeny-simplex/simplex-chat/actions/runs/45468115635) of `4e4e757cb2` on `ep/core-webp-tests`: decoded at 8641×16 for the expected 4320×8, and `lossless-alpha-9000x9000.webp` decoded where `image is too large` was expected at libwebp `v1.6.0`);
 - the display-size test with `lossless-alpha-9000x9000.webp` at 2250×2250 fails at `363f407`, the tests alone with the binding of libwebp `v1.6.0`, whose decoder memory refuses it; the other 62 examples pass, the refusal of `webpHuffmanGroups` among them ([run](https://github.com/evgeny-simplex/simplex-chat/actions/runs/45518444182), a dispatch on `ep/core-webp`);
-- hs-jpeg-turbo CI, the full matrix and the armv7 job ([run](https://github.com/evgeny-simplex/hs-jpeg-turbo/actions/runs/45515214076) of `78286d4`, a dispatch with the input `full`):
+- hs-jpeg-turbo CI, the full matrix and the armv7 job ([run](https://github.com/evgeny-simplex/hs-jpeg-turbo/actions/runs/45529038082) of `24f5cda`, a dispatch with the input `full`):
   - the package built and its tests passed with GHC 8.10.7 and 9.6.3 on Linux x86-64, with GHC 9.6.3 on Linux aarch64, macOS aarch64 and x86-64, and Windows, the counted memory of each kind within 1 MiB on each;
   - the conformance files decoded to the md5 of libwebp's test data;
   - two tall images: the lossless one decoded to its source pixels by the package tests and by the armv7, aarch64 and sanitizer builds; the alpha of the lossy one equal to its source in the package tests, its outputs identical in the three builds; both decoded at half size to the averages of the full decode; the line coverage of libwebp's scaling and window functions and of the count in the job summary;
@@ -108,7 +108,7 @@ The other rows are recommendations to the product owner.
 | D12 | **Licence notices.** libwebp's BSD-3-Clause `COPYING` and its `PATENTS` grant; details in "Licence notices". | |
 | D13 | **Security: limits, libwebp `68dd1c30` pinned (Q1), conformance and sanitizer runs in CI.** Threat model and measures in "Security". | |
 | D14 | **Binary size measured in CI.** Method in "Binary size"; figures in the pull request before review. | |
-| D15 | **Every allocation of a decode counted (a).** `cbits/hs_webp.c` of the binding compiles libwebp's `utils.c` with `malloc`, `calloc` and `free` defined as functions that count each block, its 16-byte header included, against the limit of the calling thread's decode; the demuxer, the decoder and the output image share one limit; an allocation beyond it returns NULL, libwebp returns its error, and `decodeWebp` returns `image is too large`. Details in "Decoding". | (a) the binding's allocator: `hs_webp.c`, 80 lines, and `hs_webp.h`, 20 lines, with two entry points; libwebp unchanged.<br>(b) a formula of the decoder's memory checked before decoding, as at `v1.6.0`: the Huffman tables are allocated in segments while the groups are read (huffman_utils.c:235-269, vp8l_dec.c:503-516), so only the group count bounds them, at about 1.2 GiB: 65,536 groups of 5,004 entries of 4 bytes (vp8l_dec.c:85-90).<br>(c) a libwebp patch: the pinned commit differs from Chrome's, and each update needs the patch audited again.<br>(d) libwebp's `MALLOC_LIMIT` with `PRINT_MEM_INFO` (utils.c:27-52): a debugging build, one count for all threads, read from an environment variable, and a list search at each free (:147-167).<br>(e) the linker's `--wrap=malloc`: it redirects every `malloc` of the library that the binding is linked into, not only libwebp's.<br>(f) a separate process or a sandbox: the input and the output copied across, and process management on iOS and Android. |
+| D15 | **Every allocation of a decode counted (a).** `cbits/hs_webp.c` of the binding compiles libwebp's `utils.c` with `malloc`, `calloc` and `free` defined as functions that count each block, its 16-byte header included, against the limit of the decode in progress, one at a time; the demuxer, the decoder and the output image share one limit; an allocation beyond it returns NULL, libwebp returns its error, and `decodeWebp` returns `image is too large`. Details in "Decoding". | (a) the binding's allocator: `hs_webp.c`, 86 lines, and `hs_webp.h`, 20 lines, with two entry points, and a lock in `Webp.hsc`; libwebp unchanged; concurrent decodes wait for each other.<br>(b) a formula of the decoder's memory checked before decoding, as at `v1.6.0`: the Huffman tables are allocated in segments while the groups are read (huffman_utils.c:235-269, vp8l_dec.c:503-516), so only the group count bounds them, at about 1.2 GiB: 65,536 groups of 5,004 entries of 4 bytes (vp8l_dec.c:85-90).<br>(c) a libwebp patch: the pinned commit differs from Chrome's, and each update needs the patch audited again.<br>(d) libwebp's `MALLOC_LIMIT` with `PRINT_MEM_INFO` (utils.c:27-52): a debugging build, one count for all threads, read from an environment variable, and a list search at each free (:147-167).<br>(e) the linker's `--wrap=malloc`: it redirects every `malloc` of the library that the binding is linked into, not only libwebp's.<br>(f) a separate process or a sandbox: the input and the output copied across, and process management on iOS and Android. |
 | D16 | **libwebp compiled with `-DNDEBUG` (a).** As Chrome's release builds (build/config/BUILD.gn:130-131 at `159.0.8154.34`). | (a) `NDEBUG`: libwebp's `assert` calls compiled out.<br>(b) assertions kept: an assertion that a stream fails stops the chat process. |
 
 ## Open questions
@@ -219,13 +219,13 @@ sequenceDiagram
   participant C as hs_webp.c
   participant W as libwebp
   H->>C: HsWebPDemux, HsWebPMemory with limit maxMemoryMB MiB
-  C->>W: WebPDemux, the count active on the calling thread
+  C->>W: WebPDemux, the count active, under countLock
   W->>C: malloc, calloc and free of utils.c
   C-->>W: the block, or NULL beyond the limit, refused set
   C-->>H: the demuxer; used, the demuxer's bytes
   H->>H: used and the output bytes within the limit; the limit lowered by the output bytes
   H->>C: HsWebPDecode of frame 1, the same HsWebPMemory
-  C->>W: WebPDecode, the count active on the calling thread
+  C->>W: WebPDecode, the count active, under countLock
   C-->>H: the status; refused; peak
   H->>W: WebPDemuxDelete, outside the count
 ```
@@ -246,12 +246,13 @@ Pixels (D4):
 
 Memory count (D15), `cbits/hs_webp.c`:
 - `utils.c` of libwebp is compiled inside `hs_webp.c`, after `#define`s of `malloc`, `calloc` and `free` as the functions `allocate` and `release`; `hs_webp.c` takes the place of `utils.c` in `c-sources`. libwebp calls these three only in `utils.c` (utils.c:211, 222, 232, and :92, 127, 164 under `PRINT_MEM_INFO`, undefined), in `WebPSafeMalloc`, `WebPSafeCalloc` and `WebPSafeFree`, through which the other files allocate.
-- `HsWebPMemory`: `limit`, `used`, `peak`, `refused`. `HsWebPDemux` and `HsWebPDecode` set a `_Thread_local` pointer to it for the duration of `WebPDemux` and `WebPDecode`.
-- `allocate`: NULL without a count, or when the block and its 16-byte header would take `used` above `limit`, with `refused` set; otherwise the block with its size in the header, `used` and `peak` updated. `release`: `used` lowered by the block's size when a count is active; the block freed.
-- Every allocation of a decode is made inside these two calls: `WebPDemuxGetI`, `WebPDemuxGetFrame`, `WebPDemuxGetChunk`, `WebPGetFeatures` and `WebPInitDecoderConfig` allocate nothing (`WebPSafe*` of demux.c only in `NewFrame`, `ParseAnimationFrame`, `StoreChunk`, `ParseSingleImage`, `CreateRawImageDemuxer`, `WebPDemuxInternal` and `WebPDemuxDelete`, none in webp_dec.c); `WebPDemuxDelete` frees outside a count.
+- `HsWebPMemory`: `limit`, `used`, `peak`, `refused`. `HsWebPDemux` and `HsWebPDecode` set a static pointer to it for the duration of `WebPDemux` and `WebPDecode`; `decodeWebp` makes these calls under one lock of the package, `countLock`, an `MVar`, so that one count is active at a time.
+- `allocate`: NULL without an active count, or when the block and its 16-byte header would take `used` above `limit`, with `refused` set; otherwise the block, with its size and its `HsWebPMemory` in the header, `used` and `peak` updated. `release`: `used` of the block's `HsWebPMemory` lowered by its size; the block freed.
+- Every allocation of a decode is made inside these two calls: `WebPDemuxGetI`, `WebPDemuxGetFrame`, `WebPDemuxGetChunk`, `WebPGetFeatures` and `WebPInitDecoderConfig` allocate nothing (`WebPSafe*` of demux.c only in `NewFrame`, `ParseAnimationFrame`, `StoreChunk`, `ParseSingleImage`, `CreateRawImageDemuxer`, `WebPDemuxInternal` and `WebPDemuxDelete`, none in webp_dec.c); `WebPDemuxDelete` frees outside the lock, inside the `allocaBytes` of the `HsWebPMemory` of its blocks.
+- Thread-local storage is avoided: with `_Thread_local`, GHC 8.10.7's loader for Template Haskell of the armv7a build failed to find `__emutls_get_address` in `JuicyPixels-libwebp` ([run](https://github.com/evgeny-simplex/simplex-chat/actions/runs/45523564517), job "core library for Android armv7a").
 - `decodeWebp`: the limit `maxMemoryMB` MiB for the demuxer; the demuxer's `used` and the output bytes within it, otherwise `image is too large` before the output is allocated; the limit lowered by the output bytes for `WebPDecode`; a NULL demuxer or a failed decode with `refused` set: `image is too large`.
 - 16-byte headers keep the alignment of `malloc` up to 16 bytes; the allocator's own bytes per block are not counted (RSS in "Memory").
-- `use_threads` 0, so libwebp allocates on the calling thread only; `WEBP_USE_THREAD` defined, for the locked DSP initialisation (src/dsp/cpu.h:213-263): an SRW lock on Windows, which needs `_WIN32_WINNT` 0x0600 or later (:214-219), a pthread mutex elsewhere.
+- `use_threads` 0, so libwebp allocates on the calling thread only, under the lock; `WEBP_USE_THREAD` defined, for the locked DSP initialisation (src/dsp/cpu.h:213-263): an SRW lock on Windows, which needs `_WIN32_WINNT` 0x0600 or later (:214-219), a pthread mutex elsewhere.
 
 Limits (D6), at libwebp `68dd1c30`:
 - canvas sides at most 16384, the value of `maxImageSide` (Image.hs:315-316), read from the demuxer and checked before the output is allocated; frames are at most 16384 per side by format (format_constants.h:29), canvases up to 2^24 per side and below 2^32 pixels (demux.c:565-569, format_constants.h:88-89)
@@ -327,7 +328,7 @@ Package `JuicyPixels-libwebp`:
 - `cbits/hs_webp.h`: `HsWebPMemory`, `HsWebPDemux` and `HsWebPDecode`; `cbits/hs_webp.c`: the count of "Decoding" (D15), and `utils.c` of libwebp
 - the demuxer and the iterators released with `bracket` on every path; `HsWebPMemory` in `allocaBytes`
 - the output a pinned vector that becomes the image data without a copy, as in `Spng.decodePng` (Spng.hsc:56-63)
-- `scaledSpan`: the rectangle of frame 1 on the output; `refusal`: `image is too large` when `refused` is set, the given error otherwise
+- `scaledSpan`: the rectangle of frame 1 on the output; `refusal`: `image is too large` when `refused` is set, the given error otherwise; `counted`: `HsWebPDemux` and `HsWebPDecode` under `countLock`
 - the `ICCP` and `EXIF` payloads slices of the input bytes
 
 C sources (D7), as `dec_srcs`, `demux_srcs`, `dsp_dec_srcs` and `utils_dec_srcs` of libwebp's Android.mk:47-106 and 162-172, without MIPS, MSA and `src/demux/anim_decode.c`, whose `WebPAnimDecoder` functions `decodeWebp` does not call; 24,319 lines at `68dd1c30`; `utils.c` compiled inside `cbits/hs_webp.c`:
@@ -383,6 +384,7 @@ Package tests, `JuicyPixels-libwebp/test/WebpTest.hs` (tasty, as `SpngTest.hs`):
 - metadata: the payloads of the `ICCP` and `EXIF` chunks of a `VP8X` container are returned; with the chunks and the ICC and EXIF flags of `VP8X` unset, or without the chunks, `Nothing`, as the demuxer stores the chunks only with their flags (src/demux/demux.c:508-515)
 - limits, each decoded within the stated memory and refused with `image is too large` within 1 MiB less: a 512×512 canvas of a lossy frame, 2 MiB, its output 1 MiB; `tall-lossless.webp`, 25 MiB, counted 24.3 MiB; `tall-lossy-alpha.webp`, 19 MiB, counted 18.3 MiB; `tall-lossless.webp` decoded at 4×16, 1/256 of its sides, and refused at 3×16 and 4×15; a canvas side of 16385, `maxMemoryMB` 0, an `outputSize` of `Left` and output sizes outside the canvas refused
 - memory, each refused with `image is too large` and decoded within more memory: a 1024×1024 lossless stream written in the test with 65,536 Huffman groups of one symbol each, refused within 256 MiB, decoded within 512 MiB; a `VP8X` container with 1,000,000 empty chunks, refused within 32 MiB by the demuxer's count, decoded within 64 MiB
+- concurrent: `tall-lossless.webp` decoded by 4 threads at once, each within 25 MiB
 - malformed input, refused: empty input, `RIFF` without `WEBP`, truncations, a `RIFF` size beyond the input
 
 ## Apps (Q2 b)
@@ -433,7 +435,7 @@ flowchart LR
 | `scripts/nix/sha256map.nix:12` | hash of that commit, computed with submodules |
 | `simplex-chat.cabal:391-394` | `JuicyPixels-libwebp ==0.1.*` in the library |
 | nix: Android aarch64 and armv7a, iOS, iOS simulator, macOS (flake.nix) | unchanged; the package is built by haskell.nix as `JuicyPixels-spng` is; its licence, BSD-3-Clause, is accepted as declared (flake.nix:73-75 overrides `JuicyPixels-spng` only) |
-| Android armv7a, GHC 8.10.7 (flake.nix:11-13, :344-346) | `JuicyPixels-libwebp` built and its tests passed with GHC 8.10.7 on ubuntu-22.04 in hs-jpeg-turbo CI ([run](https://github.com/evgeny-simplex/hs-jpeg-turbo/actions/runs/45515214076)); `hs_webp.c` and the count built for armv7 and run by webp-check.sh in the same run; the core built for armv7a, `JuicyPixels-libwebp` included, by android-emu with the input `armv7a` at the head of the pull request (its description); built only, without tests |
+| Android armv7a, GHC 8.10.7 (flake.nix:11-13, :344-346) | `JuicyPixels-libwebp` built and its tests passed with GHC 8.10.7 on ubuntu-22.04 in hs-jpeg-turbo CI ([run](https://github.com/evgeny-simplex/hs-jpeg-turbo/actions/runs/45529038082)); `hs_webp.c` and the count built for armv7 and run by webp-check.sh in the same run; the core built for armv7a, `JuicyPixels-libwebp` included, by android-emu with the input `armv7a` at the head of the pull request (its description); built only, without tests |
 | Windows (`.github/workflows/build.yml:1652-1655, 1778, 1820-1822`; `scripts/desktop/build-lib-windows.sh:43`) | unchanged: the libwebp submodule is removed with the others by the glob `dist-newstyle/src/hs-jpeg-t*` |
 | reproducible Android build | unchanged: the script builds the core with nix (`scripts/simplex-chat-reproduce-builds-android.sh:193`, `scripts/android/build-android.sh:123`), and nix fetches hs-jpeg-turbo with its submodules, libwebp included, by the hash of `scripts/nix/sha256map.nix:12` (flake.nix:52), as for mozjpeg and libspng |
 
@@ -473,57 +475,57 @@ Threat model:
 
 ### Memory
 
-Measured in CI ([run](https://github.com/evgeny-simplex/hs-jpeg-turbo/actions/runs/45516114187) of `30ff590`, `.github/scripts/measure-memory.sh` of branch `ep/webp-measure`, with the binding's `78286d4`, libwebp `68dd1c30`): `.github/scripts/webp.c` decodes as `decodeWebp` does, built with the 49 C files of the package and its `cc-options`, with the limit of mobile builds, 256 MiB, and with 4096 MiB, which these images do not reach; at full size, and at the display size, the canvas halved while a side exceeds 4320, as `displaySize`. Counted: the peak of the count during the decode, the demuxer and the output included; RSS: the maximum resident set of the process, the input included. Images encoded by libwebp's encoder of the same commit in the run (`measure-encode.c`, the encoder's method; its statistics in the log), and written bit by bit (`measure-craft.c`): the predictor and cross-colour images at the finest precision, and the Huffman image at the finest precision with 2 groups, or with 65,536 groups of one symbol each; 16 MiB of empty chunks of an unknown type after `VP8X`, the WebP input limit.
+Measured in CI ([run](https://github.com/evgeny-simplex/hs-jpeg-turbo/actions/runs/45529153591) of `70305d2`, `.github/scripts/measure-memory.sh` of branch `ep/webp-measure`, with the binding's `24f5cda`, libwebp `68dd1c30`): `.github/scripts/webp.c` decodes as `decodeWebp` does, built with the 49 C files of the package and its `cc-options`, with the limit of mobile builds, 256 MiB, and with 4096 MiB, which these images do not reach; at full size, and at the display size, the canvas halved while a side exceeds 4320, as `displaySize`. Counted: the peak of the count during the decode, the demuxer and the output included; RSS: the maximum resident set of the process, the input included. Images encoded by libwebp's encoder of the same commit in the run (`measure-encode.c`, the encoder's method; its statistics in the log), and written bit by bit (`measure-craft.c`): the predictor and cross-colour images at the finest precision, and the Huffman image at the finest precision with 2 groups, or with 65,536 groups of one symbol each; 16 MiB of empty chunks of an unknown type after `VP8X`, the WebP input limit.
 
 MiB; the display size where it differs from the full size:
 
 | Image | Size | Output | Demuxer | 256 MiB: result | counted | RSS | 4096 MiB: counted | RSS |
 |---|---|---|---|---|---|---|---|---|
-| lossy, 16383×8191, method 4 | full | 383.9 | 0.0 | refused before the decode | 0.0 | 4.8 | 385.3 | 389.9 |
-| | display, 4096×2048 | 24.0 | 0.0 | decoded | 25.3 | 30.0 | 25.3 | 30.0 |
-| lossy, alpha, 16383×8191, method 4 | full | 511.9 | 0.0 | refused before the decode | 0.0 | 4.8 | 516.9 | 520.1 |
-| | display, 4096×2048 | 32.0 | 0.0 | decoded | 37.0 | 41.4 | 37.0 | 41.4 |
-| lossy, alpha without filtering, 16383×8191, method 4 | full | 511.9 | 0.0 | refused before the decode | 0.0 | 4.8 | 526.3 | 529.3 |
-| | display, 4096×2048 | 32.0 | 0.0 | decoded | 46.3 | 50.7 | 46.3 | 50.8 |
-| lossless, opaque, 16383×16383, method 4 | full | 767.9 | 0.0 | refused before the decode | 0.0 | 2.1 | 780.5 | 782.7 |
-| | display, 4096×4096 | 48.0 | 0.0 | decoded | 60.7 | 62.8 | 60.7 | 62.8 |
-| lossless, alpha, 16383×16383, method 4 | full | 1023.9 | 0.0 | refused before the decode | 0.0 | 2.4 | 1036.5 | 1038.6 |
-| | display, 4096×4096 | 64.0 | 0.0 | decoded | 76.7 | 78.8 | 76.7 | 78.9 |
-| lossless, alpha, 4320×4320, method 6 | full | 71.2 | 0.0 | decoded | 80.5 | 82.3 | 80.5 | 82.3 |
-| written, lossless, images at the finest precision, 16384×16384 | full | 1024.0 | 0.0 | refused before the decode | 0.0 | 2.2 | 1227.6 | 1230.4 |
-| | display, 4096×4096 | 64.0 | 0.0 | refused by the count | 192.0 | 129.9 | 267.7 | 269.5 |
-| written, alpha, images at the finest precision, 16383×8191 | full | 511.9 | 0.0 | refused before the decode | 0.0 | 2.3 | 622.3 | 622.9 |
-| | display, 4096×2048 | 32.0 | 0.0 | decoded | 142.3 | 144.4 | 142.3 | 144.4 |
-| written, lossless, 65,536 groups, 1024×1024 | full | 4.0 | 0.0 | refused by the count | 255.7 | 254.9 | 333.4 | 337.4 |
-| written, alpha, 65,536 groups, 1024×1024 | full | 4.0 | 0.0 | refused by the count | 255.9 | 254.9 | 333.6 | 337.5 |
-| written, lossless, 65,536 groups, the predictor and cross-colour images at the finest precision, the Huffman image at precision 6, 16384×16384 | full | 1024.0 | 0.0 | refused before the decode | 0.0 | 2.6 | 1488.4 | 1493.3 |
-| | display, 4096×4096 | 64.0 | 0.0 | refused by the count | 255.7 | 191.4 | 528.5 | 532.6 |
-| 16 MiB, 2,097,144 empty chunks, lossless 16×16 | full | 0.0 | 80.0 | decoded | 80.0 | 114.1 | 80.0 | 114.1 |
-| 16 MiB, 2,024,433 empty chunks, lossless, 65,536 groups, 1024×1024 | full | 4.0 | 77.2 | refused by the count | 255.6 | 284.0 | 410.6 | 445.6 |
+| lossy, 16383×8191, method 4 | full | 383.9 | 0.0 | refused before the decode | 0.0 | 4.8 | 385.3 | 390.1 |
+| | display, 4096×2048 | 24.0 | 0.0 | decoded | 25.3 | 30.1 | 25.3 | 30.1 |
+| lossy, alpha, 16383×8191, method 4 | full | 511.9 | 0.0 | refused before the decode | 0.0 | 4.8 | 516.9 | 520.2 |
+| | display, 4096×2048 | 32.0 | 0.0 | decoded | 37.0 | 41.6 | 37.0 | 41.6 |
+| lossy, alpha without filtering, 16383×8191, method 4 | full | 511.9 | 0.0 | refused before the decode | 0.0 | 4.9 | 526.3 | 529.5 |
+| | display, 4096×2048 | 32.0 | 0.0 | decoded | 46.3 | 50.8 | 46.3 | 50.8 |
+| lossless, opaque, 16383×16383, method 4 | full | 767.9 | 0.0 | refused before the decode | 0.0 | 2.4 | 780.5 | 782.7 |
+| | display, 4096×4096 | 48.0 | 0.0 | decoded | 60.7 | 62.8 | 60.7 | 62.9 |
+| lossless, alpha, 16383×16383, method 4 | full | 1023.9 | 0.0 | refused before the decode | 0.0 | 2.4 | 1036.5 | 1038.7 |
+| | display, 4096×4096 | 64.0 | 0.0 | decoded | 76.7 | 79.0 | 76.7 | 78.8 |
+| lossless, alpha, 4320×4320, method 6 | full | 71.2 | 0.0 | decoded | 80.5 | 82.4 | 80.5 | 82.4 |
+| written, lossless, images at the finest precision, 16384×16384 | full | 1024.0 | 0.0 | refused before the decode | 0.0 | 2.3 | 1227.6 | 1230.4 |
+| | display, 4096×4096 | 64.0 | 0.0 | refused by the count | 192.0 | 130.1 | 267.7 | 269.7 |
+| written, alpha, images at the finest precision, 16383×8191 | full | 511.9 | 0.0 | refused before the decode | 0.0 | 2.5 | 622.3 | 623.1 |
+| | display, 4096×2048 | 32.0 | 0.0 | decoded | 142.3 | 144.5 | 142.3 | 144.4 |
+| written, lossless, 65,536 groups, 1024×1024 | full | 4.0 | 0.0 | refused by the count | 255.7 | 255.1 | 333.4 | 337.5 |
+| written, alpha, 65,536 groups, 1024×1024 | full | 4.0 | 0.0 | refused by the count | 255.9 | 255.1 | 333.6 | 337.7 |
+| written, lossless, 65,536 groups, the predictor and cross-colour images at the finest precision, the Huffman image at precision 6, 16384×16384 | full | 1024.0 | 0.0 | refused before the decode | 0.0 | 2.7 | 1488.4 | 1493.2 |
+| | display, 4096×4096 | 64.0 | 0.0 | refused by the count | 255.7 | 191.4 | 528.5 | 532.7 |
+| 16 MiB, 2,097,144 empty chunks, lossless 16×16 | full | 0.0 | 80.0 | decoded | 80.0 | 114.3 | 80.0 | 114.2 |
+| 16 MiB, 2,024,433 empty chunks, lossless, 65,536 groups, 1024×1024 | full | 4.0 | 77.2 | refused by the count | 255.6 | 284.3 | 410.6 | 445.7 |
 
 - Within 256 MiB, the count stays at most 255.9 MiB in every case; every image of libwebp's encoder decodes at the display size, with at most 80.5 MiB counted.
 - Without the limit, streams written bit by bit reach 267.7 to 528.5 MiB at the display size; derived: about 1.2 GiB with 65,536 groups of the largest tables ("Decoding").
-- The 16-byte headers of 2,097,144 records: 32 MiB of the 80.0 MiB; RSS above the count, the input less: 18.1 MiB, the allocator's bytes per block and the process's own.
-- The whole decode beside the input in mobile builds: at most 256 MiB counted, the allocator's bytes per block and the process's own, 18.1 MiB measured with 2 million blocks, and one copy of the output (orientation or premultiplication), at most 71.2 MiB: 345.3 MiB of `maxDecodeMemoryMB`'s 512; measured at most 268.2 MiB of RSS (284.2 at the display size, less the 16 MiB input).
-- The counted values of the run equal those of the [run](https://github.com/evgeny-simplex/hs-jpeg-turbo/actions/runs/45514832350) before it to 0.1 MiB; RSS differs by at most 0.3 MiB.
+- The 16-byte headers of 2,097,144 records: 32 MiB of the 80.0 MiB; RSS above the count, the input less: 18.3 MiB, the allocator's bytes per block and the process's own.
+- The whole decode beside the input in mobile builds: at most 256 MiB counted, the allocator's bytes per block and the process's own, 18.3 MiB measured with 2 million blocks, and one copy of the output (orientation or premultiplication), at most 71.2 MiB: 345.5 MiB of `maxDecodeMemoryMB`'s 512; measured at most 268.3 MiB of RSS (284.3 less the 16 MiB input).
+- The counted values of the run equal those of the runs [45514832350](https://github.com/evgeny-simplex/hs-jpeg-turbo/actions/runs/45514832350) and [45516114187](https://github.com/evgeny-simplex/hs-jpeg-turbo/actions/runs/45516114187), with the count of `_Thread_local` at `78286d4`, to 0.1 MiB; RSS differs by at most 0.3 MiB.
 - On armv7, the count is lower: the tall lossless image 25,492,736 bytes, against 25,493,016 on aarch64 (webp-check.sh, the armv7 job's summary).
 - libwebp `68dd1c30` with the five commits of Q4 and `WEBP_ALWAYS_INLINE` of `bd19f549` (jobs `later-fixes-tests` and `later-fixes-check` of the run): the applied diff, 13 files, 87 lines added and 40 removed, sha256 `46236b39…`; the package tests and `webp-check.sh` pass; the counts of the tall images equal those of `68dd1c30`; the fuzzed copies decode 4,252 of 12,544 times, against 4,271 at `68dd1c30`.
 
 ## Binary size
 
 Measured in CI and reported in the pull request before review:
-- hs-jpeg-turbo, [run](https://github.com/evgeny-simplex/hs-jpeg-turbo/actions/runs/45515214076) of `78286d4`, libwebp `68dd1c30` with `NDEBUG`: `size` of the 49 decoder objects for armv7 and aarch64, `hs_webp.c` with `utils.c` one of them (webp-check.sh); size of `libHSJuicyPixels-libwebp-*.a` on each matrix OS; the full matrix runs for a pull request ready for review and for a dispatch with the input `full` (hs-jpeg-turbo build.yml, job `build-full`).
+- hs-jpeg-turbo, [run](https://github.com/evgeny-simplex/hs-jpeg-turbo/actions/runs/45529038082) of `24f5cda`, libwebp `68dd1c30` with `NDEBUG`: `size` of the 49 decoder objects for armv7 and aarch64, `hs_webp.c` with `utils.c` one of them (webp-check.sh); size of `libHSJuicyPixels-libwebp-*.a` on each matrix OS; the full matrix runs for a pull request ready for review and for a dispatch with the input `full` (hs-jpeg-turbo build.yml, job `build-full`).
 
   | Build | Bytes | text | data | bss |
   |---|---|---|---|---|
-  | 49 objects, armv7 C code paths, GCC 13 `-O2` | | 100,378 | 148 | 1,688 |
-  | 49 objects, aarch64 Neon, GCC 13 `-O2` | | 163,971 | 304 | 2,752 |
-  | `.a`, Linux x86-64, GHC 9.6.3 | 465,314 | 247,357 | 3,664 | 2,864 |
-  | `.a`, Linux x86-64, GHC 8.10.7 | 476,508 | 251,659 | 4,136 | 2,896 |
-  | `.a`, Linux aarch64, GHC 9.6.3 | 434,022 | 192,295 | 3,736 | 2,728 |
-  | `.a`, macOS aarch64, GHC 9.6.3 | 411,592 | | | |
-  | `.a`, macOS x86-64, GHC 9.6.3 | 523,520 | | | |
-  | `.a`, Windows x86-64, GHC 9.6.3 | 472,396 | | | |
+  | 49 objects, armv7 C code paths, GCC 13 `-O2` | | 100,350 | 148 | 1,688 |
+  | 49 objects, aarch64 Neon, GCC 13 `-O2` | | 164,003 | 304 | 2,752 |
+  | `.a`, Linux x86-64, GHC 9.6.3 | 469,826 | 249,673 | 3,744 | 2,864 |
+  | `.a`, Linux x86-64, GHC 8.10.7 | 481,652 | 254,415 | 4,224 | 2,896 |
+  | `.a`, Linux aarch64, GHC 9.6.3 | 442,014 | 194,867 | 3,816 | 2,728 |
+  | `.a`, macOS aarch64, GHC 9.6.3 | 416,944 | | | |
+  | `.a`, macOS x86-64, GHC 9.6.3 | 529,712 | | | |
+  | `.a`, Windows x86-64, GHC 9.6.3 | 475,510 | | | |
 
 - simplex-chat `libsimplex.so` of android-emu (`ls -la` in build-core.sh), for aarch64 and armv7a, at the head of the pull request and at master: in the description of the pull request.
 
@@ -647,6 +649,7 @@ Commits, without the updates of this plan:
 22. `core: decode WebP at the display size with libwebp 1.6.0`: binding pin, `decodeResizable`, docs/dependencies
 23. `tests: decode large WebP within the memory count of libwebp 68dd1c30`: the tests alone, run before the change
 24. `core: limit all memory of WebP decoding with libwebp 68dd1c30`: binding pin, docs/dependencies
+25. `core: pin the WebP binding that loads on armv7a`: binding pin, docs/dependencies
 
 hs-jpeg-turbo, branch `ep/webp`, after `1691888`:
 1. `JuicyPixels-libwebp: limit all memory of decoding with libwebp 68dd1c30`: the submodule at `68dd1c30`, `hs_webp.c`, `hs_webp.h`, `Webp.hsc`, the cabal file, tests, CHANGELOG, `webp.c`, `webp-check.sh`
@@ -654,6 +657,7 @@ hs-jpeg-turbo, branch `ep/webp`, after `1691888`:
 3. `ci: report the coverage of WebP sliding windows and memory count`
 4. `JuicyPixels-libwebp: test the counted memory of WebP images within 1 MiB`
 5. `ci: print the counted memory of the tall WebP files at half size`
+6. `JuicyPixels-libwebp: count allocations without thread-local storage`: the lock, the owner in each header, the concurrent test
 
 ## Out of scope
 
