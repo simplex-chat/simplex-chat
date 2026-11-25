@@ -127,6 +127,7 @@ fun segmentDisplayText(ft: FormattedText, mentions: Map<String, CIMention>?, lin
         ?: if (linkMode == SimplexLinkMode.DESCRIPTION) ft.format.linkType.description else null
       if (t != null) "$t ${ft.format.viaHosts}" else ft.text
     }
+    is Format.PaymentLink -> "${ft.format.payment.payee.sign}\u00A0${ft.format.payment.shownText(ft.format.showText)}"
     is Format.Command -> ft.text
     is Format.Escape -> ""
     is Format.Markup -> ft.format.token.drawnText
@@ -420,6 +421,11 @@ fun MarkdownText (
               withAnnotation(tag = "SIMPLEX_NAME", annotation = i.toString()) {
                 withStyle(ftStyle) { append(ft.text) }
               }
+            }
+            is Format.PaymentLink -> {
+              val ftStyle = Format.linkStyle
+              withStyle(ftStyle.copy(fontWeight = FontWeight.SemiBold, textDecoration = TextDecoration.None)) { append("${ft.format.payment.payee.sign}\u00A0") }
+              withStyle(ftStyle) { append(ft.format.payment.shownText(ft.format.showText)) }
             }
             is Format.Email -> {
               hasLinks = true

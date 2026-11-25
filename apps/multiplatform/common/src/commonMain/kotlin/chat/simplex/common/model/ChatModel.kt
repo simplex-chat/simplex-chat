@@ -5398,6 +5398,7 @@ sealed class Format {
       "(${String.format(generalGetString(MR.strings.simplex_link_connection), smpHosts.firstOrNull() ?: "?")})"
   }
   @Serializable @SerialName("simplexName") class SimplexName(val nameInfo: SimplexNameInfo): Format()
+  @Serializable @SerialName("paymentLink") class PaymentLink(val showText: String?, val payment: PaymentRequest): Format()
   @Serializable @SerialName("command") class Command(val commandStr: String): Format()
   @Serializable @SerialName("mention") class Mention(val memberName: String): Format()
   @Serializable @SerialName("modal") class Modal(val modalName: String, val text: String): Format() {
@@ -5423,6 +5424,7 @@ sealed class Format {
     is HyperLink -> linkStyle
     is SimplexLink -> linkStyle
     is SimplexName -> linkStyle
+    is PaymentLink -> linkStyle
     is Command -> SpanStyle(color = MaterialTheme.colors.primary, fontFamily = FontFamily.Monospace)
     is Mention -> SpanStyle(fontWeight = FontWeight.Medium)
     is Email -> linkStyle
@@ -5439,6 +5441,80 @@ sealed class Format {
     val linkStyle @Composable get() = SpanStyle(color = MaterialTheme.colors.primary, textDecoration = TextDecoration.Underline)
   }
 }
+
+@Serializable
+class PaymentRequest(val payee: PaymentPayee, val alternatives: List<LightningPayee>, val amount: String?, val token: PaymentToken?, val label: String?) {
+  fun shownText(showText: String?): String {
+    val addresses = listOf(payee.payeeAddress) + alternatives.map { it.lightningAddress } + listOfNotNull(token?.address)
+    val shownLabel = listOfNotNull(showText, label).firstOrNull { l -> addresses.none { l.contains(it, ignoreCase = true) } }
+    val shownAmount = if (token == null) amount else null
+    return if (shownAmount == null) shownLabel ?: shortAddress(payee.payeeAddress)
+    else when (payee) {
+      is PaymentPayee.Lightning -> "$shownAmount BTC"
+      is PaymentPayee.Address -> (shownLabel ?: payee.network.chainName)?.let { "$shownAmount · $it" } ?: shownAmount
+    }
+  }
+}
+
+@Serializable
+sealed class PaymentPayee {
+  @Serializable @SerialName("address") class Address(val network: PaymentNetwork, val address: String): PaymentPayee()
+  @Serializable @SerialName("lightning") class Lightning(val lightning: LightningPayee): PaymentPayee()
+
+  val sign: String get() = when (this) {
+    is Address -> network.sign
+    is Lightning -> "ϟ"
+  }
+
+  val payeeAddress: String get() = when (this) {
+    is Address -> address
+    is Lightning -> lightning.lightningAddress
+  }
+}
+
+@Serializable
+sealed class PaymentNetwork {
+  @Serializable @SerialName("bitcoin") object Bitcoin: PaymentNetwork()
+  @Serializable @SerialName("ethereum") class Ethereum(val chainId: Long?): PaymentNetwork()
+  @Serializable @SerialName("monero") object Monero: PaymentNetwork()
+  @Serializable @SerialName("zcash") object Zcash: PaymentNetwork()
+  @Serializable @SerialName("solana") object Solana: PaymentNetwork()
+  @Serializable @SerialName("litecoin") object Litecoin: PaymentNetwork()
+  @Serializable @SerialName("dogecoin") object Dogecoin: PaymentNetwork()
+  @Serializable @SerialName("bitcoinCash") object BitcoinCash: PaymentNetwork()
+
+  val sign: String get() = when (this) {
+    Bitcoin, BitcoinCash -> "₿"
+    is Ethereum -> "Ξ"
+    Monero -> "ɱ"
+    Zcash -> "ⓩ"
+    Solana -> "◎"
+    Litecoin -> "Ł"
+    Dogecoin -> "Ð"
+  }
+
+  val chainName: String? get() = (this as? Ethereum)?.chainId?.let { evmChainNames[it] ?: String.format(generalGetString(MR.strings.payment_link_chain), it) }
+}
+
+@Serializable
+sealed class LightningPayee {
+  @Serializable @SerialName("invoice") class Invoice(val invoice: String): LightningPayee()
+  @Serializable @SerialName("offer") class Offer(val offer: String): LightningPayee()
+  @Serializable @SerialName("lnurl") class Lnurl(val lnurl: String): LightningPayee()
+
+  val lightningAddress: String get() = when (this) {
+    is Invoice -> invoice
+    is Offer -> offer
+    is Lnurl -> lnurl
+  }
+}
+
+@Serializable
+class PaymentToken(val address: String)
+
+private val evmChainNames = mapOf(1L to "Ethereum", 10L to "OP Mainnet", 56L to "BNB Smart Chain", 137L to "Polygon", 8453L to "Base", 42161L to "Arbitrum One")
+
+private fun shortAddress(address: String): String = if (address.length > 10) "${address.take(6)}…${address.takeLast(4)}" else address
 
 @Serializable
 sealed class BlockToken {

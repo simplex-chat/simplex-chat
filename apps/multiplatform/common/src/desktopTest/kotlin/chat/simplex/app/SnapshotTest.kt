@@ -144,6 +144,11 @@ private val roundnessScenes = listOf(
   SnapshotScene("Roundness.TerminalDefects", roundness = 0.3f) { PreviewGroupChatLayoutTerminalDefects() },
 )
 
+private val paymentLinkScenes = listOf(
+  SnapshotScene("PaymentLinks.Messages", chatItemFontScales) { PaymentLinkMessages() },
+  SnapshotScene("PaymentLinks.MessagesTerminal", chatItemFontScales) { CompositionLocalProvider(LocalTerminalLayout provides true) { PaymentLinkMessages() } },
+)
+
 private val previewsCallingCore = listOf(
   "AddChannelView.PreviewAddChannelView",
   "AddGroupView.PreviewAddGroupLayout",
@@ -194,7 +199,7 @@ class SnapshotTest {
       for (base in listOf(DefaultTheme.LIGHT, DefaultTheme.DARK)) {
         ThemeManager.applyTheme(base.themeName)
         val themeName = base.name.lowercase()
-        for (scene in previewScenes + avatarScenes + roundnessScenes) {
+        for (scene in previewScenes + avatarScenes + roundnessScenes + paymentLinkScenes) {
           appPrefs.chatItemRoundness.set(scene.roundness)
           for (scale in scene.fontScales) {
             appPrefs.fontScale.set(scale)
