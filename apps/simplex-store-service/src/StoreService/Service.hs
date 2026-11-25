@@ -436,11 +436,13 @@ showRefund source cc ref =
     Right (Just (RegistrationId rid, Nothing)) -> Left $ "Order " <> rid <> " has no balance."
     Right (Just (RegistrationId rid, Just (balance@Balance {blAmount, blCredited, blRefunded}, link))) ->
       Right $
-        "Order " <> rid <> ": balance " <> dollars blAmount <> " (credited " <> dollars blCredited <> ", refunded " <> dollars blRefunded
-          <> "). Paid by: " <> linkText link <> ". " <> nextStep balance
+        "Order " <> rid <> phaseOf link <> ": balance " <> dollars blAmount <> " (credited " <> dollars blCredited <> ", refunded " <> dollars blRefunded
+          <> reversedOf link <> "). Paid by: " <> linkText link <> ". " <> nextStep balance
     Left _ -> Left "The balance could not be read."
   where
     withLink db (rid, balance_) = (rid,) <$> mapM (\balance -> (balance,) <$> balanceLink db rid) balance_
+    phaseOf = foldMap $ \BalanceLink {lkPhase} -> ", " <> textEncode lkPhase
+    reversedOf = foldMap $ \BalanceLink {lkReversedCents} -> ", reversed " <> dollars lkReversedCents
     nextStep Balance {blAmount}
       | blAmount > 0 = "To record its refund: " <> spelledCmd source "record_refund" <> " " <> ref <> " " <> tshow (toInteger blAmount)
       | otherwise = "Nothing to refund."

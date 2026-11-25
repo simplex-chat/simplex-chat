@@ -45,9 +45,11 @@ $(JQ.deriveToJSON defaultJSON ''TermsLink)
 
 communityFor :: NamesConfig -> LabelHash -> Maybe Text
 communityFor NamesConfig {nCommunity} lh = M.lookup lh nCommunity
+{-# INLINE communityFor #-}
 
 termsFor :: CommunityName -> Terms -> AgreedTerms
 termsFor community Terms {tmHash} = AgreedTerms community tmHash
+{-# INLINE termsFor #-}
 
 -- | Nothing for plain terms.
 communityOf :: NamesConfig -> LabelHash -> CommunityName -> Maybe Community
@@ -62,6 +64,7 @@ yearsFor community years = if community then communityYears else years
 
 termsLink :: Terms -> TermsLink
 termsLink Terms {tmLink, tmHash} = TermsLink {link = tmLink, hash = tmHash}
+{-# INLINE termsLink #-}
 
 -- | Whether the policy lists the name, and the terms it is sold under: the community terms for a listed name, else the
 -- general terms.

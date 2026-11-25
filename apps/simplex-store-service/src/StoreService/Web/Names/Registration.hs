@@ -33,7 +33,7 @@ import StoreService.Config (boundedDecimal)
 import StoreService.Names.Orders (OrderRefusal (..), OrdersEnv (..), WriteRefusal (..), noteRead, orderFieldsOf, versionWritten)
 import StoreService.Names.Phases (RegistrationId (..), awaitChange, publish)
 import StoreService.Names.Reveal (checkReveal, isRepeat)
-import StoreService.Names.Store (BrokenInvariant (..), Commit (..), FailReason (..), NameRegistration (..), OrderPhase (..), getRegistration, noHistory, updateRegistration)
+import StoreService.Names.Store (BrokenInvariant (..), Commit (..), FailReason (..), NameRegistrationOrder (..), OrderPhase (..), getRegistration, noHistory, updateRegistration)
 import StoreService.Names.Turns (withRegistrationTurn)
 import StoreService.Names.View (NameRefusal (..), RegistrationView, lapseMoment, lapsedAt, registrationVersion, registrationView)
 import StoreService.Names.Worker (Retried (..), RetryRefusal (..), retryRegistration)
@@ -45,7 +45,7 @@ registrationHandler :: OrdersEnv -> HttpEnv -> Int -> RegistrationId -> Request 
 registrationHandler OrdersEnv {oeStore, oeConfig, oeContracts, oePhases, oeNow} http hold rid req respond =
   readNow >>= \case
     Nothing -> respond $ refusalResponse NRNotFound
-    Just (now, r@NameRegistration {nrVersion})
+    Just (now, r@NameRegistrationOrder {nrVersion})
       | versionParam req == Just nrVersion ->
           withHoldSlot http (awaitChange oePhases rid (registrationVersion oeStore rid) nrVersion (heldFor hold now $ maybeToList $ lapseMoment r))
             >>= maybe (respond $ refusalResponse $ NRRateLimited holdsFullSeconds) (const $ readNow >>= maybe (respond $ refusalResponse NRNotFound) answer)
@@ -73,7 +73,7 @@ revealHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oePhases, 
           Left e -> logNote ("POST /api/registration/:id/reveal refused: a malformed reveal: " <> T.pack e) >> respond (refusalResponse NRBadRequest)
         Nothing -> answer $ RDRefused (ORBadRequest "the body is over its size limit")
   where
-    decide request r@NameRegistration {nrReveal} = do
+    decide request r@NameRegistrationOrder {nrReveal} = do
       now <- oeNow
       case nrReveal of
         Just stored -> pure $ if isRepeat request stored then RDAccepted Nothing else RDRefused (ORBadRequest "another reveal is stored")
@@ -127,10 +127,12 @@ retryRefusal = \case
 -- | The registration's current view, for a request that lost the race to change it.
 registrationChanged :: OrdersEnv -> RegistrationId -> IO NameRefusal
 registrationChanged env = registrationRefusal env NRRegistrationChanged
+{-# INLINE registrationChanged #-}
 
 -- | A refusal with the registration's current view, so the page follows its state.
 registrationRefusal :: OrdersEnv -> (RegistrationView -> NameRefusal) -> RegistrationId -> IO NameRefusal
 registrationRefusal env refusal rid = maybe NRNotFound refusal <$> currentView env rid
+{-# INLINE registrationRefusal #-}
 
 -- | The registration's view as it reads now.
 currentView :: OrdersEnv -> RegistrationId -> IO (Maybe RegistrationView)
@@ -146,3 +148,4 @@ heldFor hold now moments = fromInteger $ minimum $ toInteger hold : [ceiling (di
 -- | Nothing unless seenVersion is a decimal version, so any other value answers at once.
 versionParam :: Request -> Maybe Int64
 versionParam req = join (lookup "seenVersion" $ queryString req) >>= eitherToMaybe . parseAll (boundedDecimal 0 maxBound)
+{-# INLINE versionParam #-}

@@ -46,13 +46,15 @@ data CodeState = CSUnused | CSReserved | CSUsed | CSRevoked | CSExpired | CSUnpa
 
 -- | A code revoked while its order held it can still be spent by that order, so a spent code reads as used.
 codeState :: UTCTime -> PrepaidCode -> CodeState
-codeState now PrepaidCode {pcReservedBy, pcSpentAt, pcRevokedAt, pcPaymentStatus, pcExpiresAt}
+codeState now PrepaidCode {pcReservedBy, pcHolderTakenAt, pcSpentAt, pcRevokedAt, pcPaymentStatus, pcExpiresAt}
   | isJust pcSpentAt = CSUsed
   | isJust pcRevokedAt = CSRevoked
-  | isJust pcReservedBy = CSReserved
+  | isJust pcReservedBy && not (expired && maybe False ((<= now) . addMonths 1) pcHolderTakenAt) = CSReserved
   | CPSUnpaid <- pcPaymentStatus = CSUnpaid
-  | maybe False (<= now) pcExpiresAt = CSExpired
+  | expired = CSExpired
   | otherwise = CSUnused
+  where
+    expired = maybe False (<= now) pcExpiresAt
 
 instance TextEncoding CodeState where
   textEncode = \case
@@ -101,21 +103,26 @@ stateRefusal = \case
 -- | Why a conditional reservation of the code refused it, as the code reads now.
 reserveRefusal :: DB.Connection -> UTCTime -> CodeHash -> RegistrationId -> Maybe UTCTime -> NameLength -> IO CodeRefusal
 reserveRefusal db now codeHash rid takenAt len = maybe CRInvalid (fromMaybe CRReserved . codeRefusal now rid takenAt len) <$> getPrepaidCode db codeHash
+{-# INLINE reserveRefusal #-}
 
 readPrepaidCode :: DBStore -> NamePrepaidCode -> IO (Maybe PrepaidCode)
 readPrepaidCode st code = withTransaction st (`getPrepaidCode` prepaidCodeHash code)
+{-# INLINE readPrepaidCode #-}
 
 prepaidCodeHash :: NamePrepaidCode -> CodeHash
 prepaidCodeHash = Hex32 . namePrepaidCodeHash
+{-# INLINE prepaidCodeHash #-}
 
 -- | The write runs first, and the code is released only if it succeeds. False when the registration did not hold the code.
 releaseCode :: Turns -> DBStore -> CodeId -> RegistrationId -> (DB.Connection -> IO (Either e a)) -> IO (Either e (a, Bool))
 releaseCode turns st codeId rid = afterWrite turns st codeId (\db -> releasePrepaidCode db codeId rid)
+{-# INLINE releaseCode #-}
 
 -- | The write runs first, and the code is spent only if it succeeds: the code the registration holds, or one it no longer holds
 -- while still usable, as its register went through. False when the code was released and then spent, revoked or expired meanwhile.
 spendLandedCode :: Turns -> DBStore -> UTCTime -> CodeId -> RegistrationId -> (DB.Connection -> IO (Either e a)) -> IO (Either e (a, Bool))
 spendLandedCode turns st now codeId rid = afterWrite turns st codeId (\db -> spendLandedPrepaidCode db codeId rid now)
+{-# INLINE spendLandedCode #-}
 
 afterWrite :: Turns -> DBStore -> CodeId -> (DB.Connection -> IO Bool) -> (DB.Connection -> IO (Either e a)) -> IO (Either e (a, Bool))
 afterWrite turns st codeId change write = do
