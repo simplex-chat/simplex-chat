@@ -37,7 +37,7 @@ struct NetworkAndServers: View {
     @EnvironmentObject var theme: AppTheme
     @EnvironmentObject var ss: SaveableSettings
     @State private var sheetItem: NetworkAndServersSheet? = nil
-    @State private var justOpened = true
+    @State var justOpened = true
     @State private var showSaveDialog = false
 
     var body: some View {
@@ -513,7 +513,12 @@ func updateOperatorsConditionsAcceptance(_ usvs: Binding<[UserOperatorServers]>,
 
 struct NetworkServersView_Previews: PreviewProvider {
     static var previews: some View {
-        NetworkAndServers()
-            .environmentObject(SaveableSettings())
+        var flux = UserOperatorServers.sampleData1
+        flux.operator_ = ServerOperator(operatorId: 2, operatorTag: .flux, tradeName: "Flux", legalName: nil, serverDomains: [], conditionsAcceptance: .accepted(acceptedAt: nil, autoAccepted: false), enabled: true, smpRoles: ServerRoles(storage: false, proxy: true, names: true), xftpRoles: ServerRoles(storage: true, proxy: true, names: true))
+        let servers = [UserOperatorServers.sampleData1, flux, UserOperatorServers.sampleDataNilOperator]
+        let ss = SaveableSettings()
+        ss.servers = ServerSettings(currUserServers: servers, userServers: servers, serverErrors: [], serverWarnings: [])
+        return NetworkAndServers(justOpened: false)
+            .environmentObject(ss)
     }
 }
