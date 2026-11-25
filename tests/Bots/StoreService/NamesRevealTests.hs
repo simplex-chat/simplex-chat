@@ -50,7 +50,9 @@ import StoreService.Names.Chain (Hex32 (..), TxHash (..))
 import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Registration (DisputeDays, Registration (..), TermsAcceptance (..), acceptanceDigest, linkMaxBytes, makeCommitment, maxDisputeDays, minDisputeDays, policyDomain, registerIntentDigest, sponsorDomain, termsKind)
 import StoreService.Names.Reveal (RevealRequest (..))
+import StoreService.Names.Orders (OrdersEnv (oeTurns))
 import StoreService.Names.Store (Commit (..), FailReason (..), NameRegistration (..), NameReveal (..), OrderPhase (..), TxHistory (..), getRegistration, noHistory)
+import StoreService.Names.Turns (withLabelTurn)
 import StoreService.Web.Http (createLimit, holdMicros, maxBodyBytes, readLimit)
 import StoreService.Web.Names (Route (..), namesApp)
 import StoreService.Web.Names.Owner (selectNameHandler)
@@ -87,6 +89,7 @@ namesRevealTests = describe "StoreService names: reveal" $ do
     it "answers 503 for a listed name's reveal while its listing or the owner's policy nonce cannot be read, or before the policy has community terms, storing nothing" testAcceptanceUnavailable
   describe "races" $ do
     it "answers registration_changed with the current view when the registration changed during the checks" testLostRace
+    it "answers a reveal by another signer as an unknown order without waiting for the order's turn" testOtherSignerOutsideTurn
     it "runs one at a time with /name for the name, exactly one of them taking effect" testRacesName
 
 -- fixtures
@@ -418,7 +421,7 @@ testRepeats = withReveals $ \Fx {fCtx = ctx} -> do
   reveal ctx rid body `shouldReturn` accepted
   v <- change ctx rid $ \r -> r {nrPhase = ORegistering openWindow $ TxHash $ hashFixture 9}
   reveal ctx rid body `shouldReturn` accepted
-  resigned <- (\sig -> KM.insert "acceptance" (fromJust $ KM.lookup "acceptance" body) $ bodyOf sig alice 0 revealBefore) <$> signIntent ctx keyA alice 1 revealBefore
+  resigned <- (\sig -> KM.insert "acceptance" (fromJust $ KM.lookup "acceptance" body) $ bodyOf sig alice 1 revealBefore) <$> signIntent ctx keyA alice 1 revealBefore
   reveal ctx rid resigned `shouldReturn` badRequest
   reveal ctx rid (KM.insert "label" "alicebakerz" body) `shouldReturn` notFound
   nrVersion <$> stored ctx rid `shouldReturn` v
@@ -585,6 +588,15 @@ testLostRace = bounded "lost race" $ withReveals $ \Fx {fCtx = ctx} -> do
   (status, (`fieldOf` "type") =<< answer, fieldOf view "version", fieldOf view "label", phaseFieldOf view "revealBefore")
     `shouldBe` (409, Just "registration_changed", Just (J.toJSON v), Just J.Null, Just (J.toJSON $ revealBefore + 60))
   unwritten <$> stored ctx rid `shouldReturn` (v, Nothing)
+
+testOtherSignerOutsideTurn :: IO ()
+testOtherSignerOutsideTurn = bounded "another signer outside the turn" $ withReveals $ \Fx {fCtx = ctx@Ctx {cOrders}} -> do
+  rid <- committed ctx (orderOf alice)
+  NameRegistration {nrLabelHash} <- stored ctx rid
+  sig <- signIntent ctx fakeRegistrarKey alice 0 revealBefore
+  acceptance <- acceptanceOf ctx keyA alice False fakeGeneralTerms 0 revealBefore
+  withLabelTurn (oeTurns cOrders) nrLabelHash (timeout 2000000 $ reveal ctx rid $ withAcceptance acceptance $ bodyOf sig alice 0 revealBefore)
+    `shouldReturn` Just notFound
 
 testRacesName :: IO ()
 testRacesName = bounded "races /name" $ withReveals $ \Fx {fCtx = ctx} -> do

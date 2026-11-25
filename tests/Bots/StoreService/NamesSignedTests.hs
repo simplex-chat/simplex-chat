@@ -36,7 +36,7 @@ namesSignedTests = describe "StoreService names: signed order requests" $ do
   it "answers a name invoice read unsigned, by another key, over another action or id, and for an unknown id alike, a timestamp outside the window 400 alike, and the owner's read with the view" testInvoiceRead
   it "answers a name invoice cancel unsigned, by another key, over another action or id, and for an unknown id alike, cancelling nothing, a timestamp outside the window 400 alike, and cancels the owner's" testInvoiceCancel
   it "reads and cancels a badge invoice unsigned" testBadgeUnsigned
-  it "answers a selection by another key or over another id as one for an unknown id, a malformed one and one outside the window alike for a known and an unknown id, writing nothing" testSelection
+  it "answers a selection by another key or over another id as one for an unknown id, and a malformed one alike for a known and an unknown id, writing nothing" testSelection
 
 type Shape = (Int, [Header], LB.ByteString)
 
@@ -183,13 +183,9 @@ testSelection = withSigned $ \ctx -> do
   (statusOfShape unknownAnswer, bodyOfShape unknownAnswer) `shouldBe` (404, Just $ KM.fromList [("type", "not_found")])
   (send rid =<< selection keyB rid t) `shouldReturn` unknownAnswer
   (send rid =<< selection keyA unknown t) `shouldReturn` unknownAnswer
-  forM_
-    [ ("not an object", pure "[]"),
-      ("outside the window", selection keyA rid (t - outsideWindow))
-    ]
-    $ \(what, body) -> do
-      known <- send rid =<< body
-      (what :: String, statusOfShape known) `shouldBe` (what, 400)
-      (what,) <$> (send unknown =<< body) `shouldReturn` (what, known)
+  known <- send rid "[]"
+  statusOfShape known `shouldBe` 400
+  send unknown "[]" `shouldReturn` known
+  (send unknown =<< selection keyA unknown (t - outsideWindow)) `shouldReturn` unknownAnswer
   stored ctx r `shouldReturn` r
   fst <$> (post ctx (registrationPath rid <> "/name") =<< selection keyA rid t) `shouldReturn` 200

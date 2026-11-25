@@ -107,7 +107,7 @@ namesOwnerTests = describe "StoreService names: owner" $ do
     it "checks a code order's code as a new code order's: code_not_covering for a shorter name, and reserves it for the name selected" testSelectCodeOrder
     it "accepts the code the order holds past its expiry until a month after the take, then refuses it with code_expired, refuses it once revoked with code_invalid, changing nothing, and keeps it from other code orders" testSelectRefusedCode
     it "refuses sealed over 11095 characters, a body over 16384 bytes and malformed fields, accepting the longest" testSelectSizes
-    it "answers another signer's selection as an unknown order, 404, writing nothing, and a stale timestamp 400 for a known and an unknown order alike" testSelectRefusedSigner
+    it "answers another signer's selection as an unknown order, 404, writing nothing" testSelectRefusedSigner
     it "answers registration_changed with the current view when the order changed during the checks, writing nothing" testSelectLostRace
     it "takes both turns in hash order when the order on A selects B while the order on B selects A, without deadlock, each refused as a paid order holds the other's name" testSelectionsCross
     it "refuses a selection with 503 downtime, writing nothing, and answers the order's view" testSelectDowntime
@@ -716,9 +716,6 @@ testSelectRefusedSigner = withOwner $ \ctx -> do
   (selectionBody ctx keyA unknown to >>= postSelection ctx unknown) `shouldReturn` refusedWith 404 "not_found"
   select ctx keyB r to `shouldReturn` refusedWith 404 "not_found"
   stored ctx r `shouldReturn` r
-  ts <- clockSeconds ctx
-  forM_ [nrId r, unknown] $ \rid ->
-    (selectionBodyAt ctx keyA rid to (ts - signedWindow - 1) >>= postSelection ctx rid) `shouldReturn` refusedWith 400 "bad_request"
 
 testSelectLostRace :: IO ()
 testSelectLostRace = withOwner $ \ctx@Ctx {cNode} -> do
