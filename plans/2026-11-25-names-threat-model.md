@@ -48,6 +48,8 @@ The host: code, database, keys and BTCPay. The pages served by GitHub are intact
 
 - see every Bitcoin receiving address and every incoming Monero payment, from the extended public key and the view key.
 
+- show an address derived from SimpleX's keys with a tweak that comes from no wallet index, which the wallet does not scan, and then delete the tweak: the page checks the address against its held keys, not against a wallet index. A payment to that address can be recovered only while the buyer's browser keeps the order's record, where the page stores the address and its `addressProof` as received, and from which the order page puts the proof into the text the buyer sends to support. A restore with the name code reads the order from the service, so it does not bring the tweak back.
+
 *cannot:*
 
 - direct a crypto payment to an address outside SimpleX's wallets, or a card payment to another Stripe account: the page shows only addresses it derives from its held keys, and the card page mounts only PaymentIntents of its held key with the held amount.
@@ -129,6 +131,14 @@ The service host and the names page.
 - reach owners who do not open the page.
 
 - change the contracts or what Etherscan shows.
+
+## An attacker on the buyer's network
+
+The pages, the service and the DNS are intact.
+
+*can:*
+
+- serve a lookalike page over `http://` to a buyer who opens simplex.domains without `https://`: GitHub Pages does not send the headers that Caddy sent with the page on the service host, so the browser keeps no record that the domain is served over HTTPS. The headers no longer sent: `Strict-Transport-Security`, `X-Content-Type-Options: nosniff` and `Cross-Origin-Opener-Policy`.
 
 ## Someone who has an order reference
 

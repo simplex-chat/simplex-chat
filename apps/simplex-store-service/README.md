@@ -220,6 +220,40 @@ lets whoever has it mark an invoice settled by hand, and the service takes a `Se
 paid, so they get the badge code or the name without paying. The service logs `btcpay: invoice <ref>
 additionalStatus Marked` at note only when it reads that invoice on its own, not from BTCPay's list.
 
+**Payee keys.** With `[names]`, the service proves each name invoice's Bitcoin or Monero address
+from the store's wallet keys, and the names page shows the address only with that proof, checked
+against the keys it holds. The keys are set in `[btcpay]`, each pair together or not at all:
+
+- `btc_xpub`: the account extended public key of the store's Bitcoin wallet, as BTCPay shows its
+  derivation scheme: a single-signature native SegWit (P2WPKH) wallet, an `xpub` for `bc` or a
+  `tpub` for `tb` and `bcrt`, with nothing after it;
+- `btc_hrp`: the bech32 prefix of the wallet's network: `bc`, `tb` or `bcrt`;
+- `xmr_address`: the primary address of the Monero wallet that BTCPay's view-only wallet watches,
+  on mainnet, testnet or stagenet;
+- `xmr_view_key`: that wallet's private view key, 64 lowercase hex digits.
+
+A value that does not parse, or one of a pair without the other, stops the service at start,
+naming the key. Without a coin's pair, every name invoice in that coin is answered `503
+provider_unavailable` before BTCPay is asked, and the start logs `btcpay: [btcpay] sets no btc_xpub
+and btc_hrp, so every name invoice in Bitcoin is refused`, or the same for `xmr_address and
+xmr_view_key` and Monero. Badge invoices are created and answered as before, with the keys or
+without them.
+
+With the keys, the start logs the values the names page holds, at note:
+`btcpay: the names page holds: bitcoin receive key <0x and 66 hex digits>; monero primary address
+<address>`. The receive key is the public key of the account's receiving branch, `0`. Compare both
+with the names page's `MAINNET` before a release (see
+[Values the names page holds](#values-the-names-page-holds)).
+
+At a name invoice's creation the service derives its address from BTCPay's `keyPath` (`0/i`) for
+Bitcoin, or from its `accountIndex` and `addressIndex` for Monero, and compares it with the address
+BTCPay answered. An invoice whose address differs, or whose indices BTCPay does not answer, is
+cancelled at BTCPay and answered `503 provider_unavailable`, with the error `POST /api/invoice
+(name) failed at the provider: create invoice: <method> on invoice <ref> is not proven from the
+payee keys: <reason>; invoice <ref> is cancelled`. The proof is stored with the invoice and
+answered in its view as `addressProof`: the Bitcoin key tweak, or the Monero spend tweak and a view
+proof (`docs/names.md`, 3.1).
+
 **`speed_policy = HighSpeed` is refused beside `[names]`**: under it BTCPay marks a payment `Settled`
 with no confirmation, which a double spend would turn into a free name, and crypto reaching a name
 invoice after it closed could never be credited. The service judges each invoice by the policy it was
@@ -375,15 +409,16 @@ version does not affect the card lane.
 
 The browser in `web/` is the only client of the `/api` routes; the two webhooks below are the
 providers', one each for BTCPay and Stripe.
-The invoice id is the only credential for reading or cancelling an order: it is 16 random bytes,
+The invoice id is the only credential for reading or cancelling a badge order (a name order's
+requests are signed with its name key, as [Order requests signed with the name key](#order-requests-signed-with-the-name-key) states): it is 16 random bytes,
 it travels in the path, and anything that logs request paths logs it. It is also what the buyer
 is shown as their reference and asked to quote, so support sees it: losing it lets someone cancel
 an invoice, which is why the code, which lets them take the badge, is never printed until the
 service says the invoice is paid. The service keeps it out of its own logs: a line about an invoice
 names the provider's reference (the BTCPay invoice id or the Stripe PaymentIntent id), which opens
 nothing in this service's API. A line about a name order without its invoice, from the worker or
-`//record_refund`, names the registration id, which reads the order and asks for a lapsed commitment to be sent again, so keep the logs to
-the service's operators.
+`//record_refund`, names the registration id, which opens nothing in the API without the order's
+name key. Keep the logs to the service's operators all the same.
 
 | Route | Answers |
 |---|---|
@@ -607,8 +642,9 @@ the repository root), `compose.yml` and the ini template `store_service.ini.exam
 the scripts of the dev setup and the webapp's cases. The service
 runs with `+client_postgres` and host networking, and serves the API and the webhooks. A second
 container, `webapps`, copies both built sites into `scripts/store-service/webapps/`, as `badges/`
-and `names/`, at every `docker compose up` and exits; one Caddy serves those folders and proxies
-the API to the service. The service writes no file of either site.
+and `names/`, at every `docker compose up` and exits; one Caddy serves `badges/` and proxies the
+API to the service, while GitHub Pages serves the names page (see [Caddy](#caddy)). The service
+writes no file of either site.
 
 `webapps` is built from the same `Dockerfile` (target `webapps`) and runs
 `rsync -rlpt --delete-after --delay-updates`: every new file is renamed into place at the end, so
@@ -761,8 +797,10 @@ The names site is on when, and only when, the ini has `[names]`. Its `[listener]
 The service refuses to start with any of these keys but no `[names]`, and with `names_port` and
 `serve_webapp = off`. It also refuses to start when a build it serves is not a directory, naming
 the setting, so a local run that keeps a default path stops there. It never writes to either build:
-both pages read what differs between deployments, the names mode and the Stripe publishable key,
-from `GET /api/config`.
+the badges page reads its Stripe publishable key from `GET /api/config`, and the names page holds
+its deployment's values and reads only `names.downtime` there (see
+[Values the names page holds](#values-the-names-page-holds)). In production the names page is served
+by GitHub Pages, not by this host (see [Caddy](#caddy)).
 
 With `serve_webapp = on` (all in one), the service listens on both ports, and each serves only its
 own site: every path outside `/api/` and `/webhooks/` is a file of that site, `/` and `/index.html`
@@ -868,15 +906,8 @@ badges.simplex.chat {
 	}
 }
 
-simplex.domains {
+api.simplex.domains {
 	encode zstd gzip
-	header {
-		Content-Security-Policy "default-src 'self'; script-src 'self' 'sha256-i5ar+ITNdQiucbmin4/AN6DAY5LbAWeq3at+RiFoUoY=' 'sha256-lxURZtAGLIPkeIfIfFjl4UIJp4ElJWSbFqE1ktKB8hk=' 'sha256-djvAKNENifE9sLU9+NrLdzdGftMgCwpvCvH/MAbkElY=' https://js.stripe.com https://*.js.stripe.com; frame-src https://js.stripe.com https://*.js.stripe.com https://hooks.stripe.com; connect-src 'self' https://api.stripe.com; img-src 'self' data: https://*.stripe.com; style-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'"
-		Strict-Transport-Security "max-age=63072000; includeSubDomains"
-		X-Content-Type-Options "nosniff"
-		Referrer-Policy "strict-origin-when-cross-origin"
-		Cross-Origin-Opener-Policy "same-origin-allow-popups"
-	}
 
 	@backend path /api /api/*
 	handle @backend {
@@ -884,56 +915,42 @@ simplex.domains {
 	}
 
 	handle {
-		@assets path /assets/*
-		header @assets {
-			Cache-Control "public, max-age=31536000, immutable"
-			match status 2xx
-		}
-		@rest not path /assets/*
-		header @rest Cache-Control "no-cache"
-		header /manifest.webmanifest Content-Type "application/manifest+json"
-
-		root * /path/to/webapps/names
-		file_server
+		respond 404
 	}
 }
 ```
 
-- Both sites call `/api/*` on their own origin, so there is no CORS.
+- The names page is served by GitHub Pages at simplex.domains, and its card page at
+  pay.simplex.domains, each from its repository (simplex.domains README, "Hosting"); this host
+  serves the names API alone, at api.simplex.domains. The DNS credentials of simplex.domains are
+  kept off this host: Caddy obtains the certificate of api.simplex.domains by an HTTP or TLS-ALPN
+  challenge, its default.
+- The badges site calls `/api/*` on its own origin. The names page calls api.simplex.domains, on
+  another origin: every `/api/` answer carries `Access-Control-Allow-Origin: *` and
+  `Access-Control-Expose-Headers: *`, so the page reads `Date` and `Retry-After`, and `OPTIONS` on
+  any `/api/` path is answered 200 without a body, before the rate limits, with
+  `Access-Control-Allow-Methods: GET, POST, OPTIONS`, `Access-Control-Allow-Headers: *` and
+  `Access-Control-Max-Age: 86400`. The webhooks answer without them. An answer Warp writes for a
+  handler's exception, a 500, carries none.
 - `/webhooks/*` is proxied on badges.simplex.chat only. BTCPay and Stripe send every event there,
   names payments included.
 - `/assets/*` file names carry a content hash, so they are kept a year, and only when found: a
-  missing asset is a 404 that is not cached. Everything else, the shells and `/sw.js` among them, is
-  `no-cache`, since the shells name the build's hashed files and Caddy's `file_server` sends no
+  missing asset is a 404 that is not cached. Everything else, the shell and `/sw.js` among them, is
+  `no-cache`, since the shell names the build's hashed files and Caddy's `file_server` sends no
   `Cache-Control` of its own.
-- There is no `try_files` fallback to `index.html`: neither page routes by path (badges uses `?order=`
-  and `#…`, names `#/…`), and the fallback would answer a missing `/assets/*` file with the shell,
+- There is no `try_files` fallback to `index.html`: the badges page routes not by path but by
+  `?order=` and `#…`, and the fallback would answer a missing `/assets/*` file with the shell,
   status 200, kept a year under that asset's URL.
-- `file_server` sends no type for `.webmanifest`, which the names site's manifest needs.
-- The badges policy is `web/README.md`'s. The names policy is the names webapp's (its README,
-  "Hosting"), with `https://*.stripe.com` added to `img-src` beside `data:`, which the link
-  profiles' pictures need. Its hashes are those of the inline scripts in the names `index.html`,
-  and change with them. It allows no inline style.
-- Stripe.js runs on simplex.domains itself, in the document that keeps the owner codes and prepaid
-  codes in `localStorage`. The owner accepted this on 2026-10-20, rather than a Checkout redirect
-  or a separate card origin. Scripts and frames are allowed only from this origin and Stripe's
-  hosts.
+- The badges policy is `web/README.md`'s.
 
-With `serve_webapp = on`, the service serves both sites itself, as in development, so each host
-block proxies everything to its site's port, `badges_port` and `names_port`, keeping the security
-headers above:
+With `serve_webapp = on`, the service serves both sites itself, as in development, so the badges
+host block proxies everything to `badges_port`, keeping its policy header:
 
 ```
 badges.simplex.chat {
 	encode zstd gzip
 	reverse_proxy 127.0.0.1:8080
 	# the Content-Security-Policy header of the badges.simplex.chat block above
-}
-
-simplex.domains {
-	encode zstd gzip
-	reverse_proxy 127.0.0.1:8081
-	# the last header { } block, the policy with it, of the simplex.domains block above
 }
 ```
 
@@ -1194,6 +1211,120 @@ The setting is read at startup, so switching it is an edit of the ini and a rest
 build. Codes for investors come from the group (needs `[group]`, see
 [From the group](#from-the-group)) or from `//issue name` in `--run-cli` (see
 [From the command line](#from-the-command-line)).
+
+### Order requests signed with the name key
+
+A request that names a name order is signed with the order's name key, the key of its owner's name
+code. The names page signs each one, polls included.
+
+| Route | Signed |
+|---|---|
+| `GET /api/registration/:id` | `read` |
+| `POST /api/registration/:id/retry` | `retry` |
+| `GET /api/invoice/:id`, a name invoice | `read` |
+| `POST /api/invoice/:id/cancel`, a name invoice | `cancel` |
+| `POST /api/registration/:id/name` | the selection's own signature |
+| `POST /api/registration/:id/reveal` | the owner's `RegisterName` |
+
+- The message is `simplex.domains order <id> <action> <timestamp>`, with the route's id and the
+  timestamp in seconds, signed as `find` is, with EIP-191 `personal_sign`.
+- A `GET` sends `timestamp` and `signature` as query parameters, beside `seenVersion` and the
+  invoice's `wait` parameters; a `POST` sends them as fields of its JSON body.
+- A timestamp more than 600 seconds from the service's clock is answered `400 bad_request` before
+  the id is looked up, as `find` answers it.
+- An unsigned request, one signed by another key, or for another id, action or timestamp, and one
+  for an unknown id all get the same answer, `404 not_found`, after the same rate limit.
+- A selection or a reveal with a malformed body is answered `400 bad_request` before its id is looked
+  up; one signed by another key is answered as one for an unknown id; its other refusals come after
+  its signer is checked.
+- Only a signed read counts as the page's read of an order, which keeps a committed order from
+  failing as `unread`.
+- A badge invoice is read and cancelled unsigned, as before.
+
+### Values the names page holds
+
+The names page holds every value on which the destination of a buyer's signature or payment
+depends, in its code (`webapp/src/config.ts` `MAINNET` in simplex.domains), and reads only
+`names.downtime` from `GET /api/config`. Of this service's settings it holds these, so each changes
+only with a page release:
+
+- `[names]` `term_start`, `years`, `codes_only` and `tld`;
+- `[chain]` `chain_id` and the contract addresses;
+- the payee keys of `[btcpay]`: the receive key of `btc_xpub`, `btc_hrp`, and `xmr_address`;
+- `[stripe] publishable_key`.
+
+It also holds the chain's terms and prices, the name policy's and the base registrar's addresses,
+and the dispute days of each method.
+
+### Changing a value the names page holds
+
+A held value other than a payee key changes in a downtime: the service enters it first, and the
+page follows at its next read of `/api/config`.
+
+1. Restart the service with `[names] downtime = on`.
+2. Drain: the worker registers the queued orders with their stored reveals, and the providers settle
+   the payments in progress. Wait until `simplex_store_names_queue_oldest_change_timestamp_seconds`
+   is absent, or for 15 minutes.
+3. The Safe's signers execute the chain changes, signed before step 1: terms by `setGeneralTerms` or
+   `setCommunityTerms`, prices by the price oracle.
+4. Release the service from its prepared, tested pull request, still with `downtime = on`, with new
+   payee keys in BTCPay and the ini.
+5. The owner merges the simplex.domains pull request with the new values, and its `pages` job deploys
+   the page; with a new Stripe key, the card page's repository moves to that merge.
+6. Once step 5's `pages` jobs have completed and 600 seconds have passed, the `max-age` GitHub Pages
+   serves with, restart the service with `downtime = off`.
+7. Buyers' pages sign the open orders again.
+8. The owner merges a pull request here that moves `apps/simplex-domains` to step 5's merge.
+
+With `downtime = on`:
+
+- `GET /api/config` answers `names.downtime: true`, and the start line `names: on, …` ends with
+  `, downtime: name invoices, code orders and selections are refused`;
+- a name invoice (`POST /api/invoice` for a name), a code order (`POST /api/name/register`) and a
+  selection of a name (`POST /api/registration/:id/name`) are answered `503 {"type": "downtime"}`
+  before their bodies are read;
+- reveals, `/retry`, reads and cancels are answered as before, and the worker, the poller and the
+  webhooks run as before.
+
+Step 7: the worker clears a stored reveal that the current values refuse, and the order waits,
+committed, for its page to sign again: after a change of `[chain] chain_id` or `sponsor`, its
+`RegisterName`, logged at warning as `names worker: registration <id>: its stored signature is
+refused under the service's current configuration, …, so its page signs again`, and after a change
+of the terms or the name policy, its acceptance. The buyer's page, loaded after step 5, signs
+the order again with the new values; a commitment past its age is committed again through the page's
+`/retry`, and an order its page has not read for 3 days fails as `unread` until its buyer's Continue.
+A change of `[chain] resolver` or `[names] tld` changes every open order's commitment, so those orders
+cannot be signed again: the drain runs without the 15 minutes' cap, and support closes a paid order
+still open after it with `//close` once its commitment lapses.
+
+```mermaid
+sequenceDiagram
+  participant X as Operator
+  participant S as Service
+  participant P as Names page
+  participant O as Owner
+  participant C as Chain
+  participant B as Buyer
+  X->>S: restart with downtime = on
+  P->>S: GET /api/config
+  S-->>P: downtime: true
+  X->>S: drain, at most 15 minutes
+  O->>C: terms or prices changed by the Safe
+  X->>S: release, downtime = on, payee keys in the ini
+  O->>P: simplex.domains pull request merged, deployed by GitHub Pages
+  X->>S: restart with downtime = off, 600 s after the deploy
+  B->>P: open order loaded
+  P->>S: POST /api/registration/ID/reveal, signed with the new values
+```
+
+### Rotating a payee key
+
+A payee key changes without a downtime, as the page holds a list of each coin's keys:
+
+1. A page release adds the new Bitcoin receive key or Monero primary address beside the old one.
+2. BTCPay and the ini's `[btcpay]` keys switch to the new wallet, and the service restarts; its
+   start line names the new values.
+3. Once the old wallet's last invoice has expired, a page release removes the old key.
 
 ### Price floor
 
