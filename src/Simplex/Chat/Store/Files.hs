@@ -582,7 +582,7 @@ createRcvFD_ db userId currentTs FileDescr {fileDescrText, fileDescrPartNo, file
     insertedRowId db
   pure RcvFileDescr {fileDescrId, fileDescrPartNo, fileDescrText, fileDescrComplete}
 
-appendRcvFD :: DB.Connection -> UserId -> FileTransferId -> FileDescr -> ExceptT StoreError IO RcvFileDescr
+appendRcvFD :: DB.Connection -> UserId -> FileTransferId -> FileDescr -> ExceptT StoreError IO (Maybe RcvFileDescr)
 appendRcvFD db userId fileId fd@FileDescr {fileDescrText, fileDescrPartNo, fileDescrComplete} = do
   currentTs <- liftIO getCurrentTime
   liftIO (getRcvFileDescrByRcvFileId_ db fileId) >>= \case
@@ -593,7 +593,9 @@ appendRcvFD db userId fileId fd@FileDescr {fileDescrText, fileDescrPartNo, fileD
           db
           "UPDATE rcv_files SET file_descr_id = ?, updated_at = ? WHERE file_id = ?"
           (fileDescrId, currentTs, fileId)
-      pure rfd
+      pure $ Just rfd
+    Just RcvFileDescr {fileDescrText = rfdText, fileDescrPartNo = rfdPNo}
+      | fileDescrPartNo == rfdPNo && fileDescrText `T.isSuffixOf` rfdText -> pure Nothing
     Just
       RcvFileDescr
         { fileDescrId,
@@ -612,7 +614,7 @@ appendRcvFD db userId fileId fd@FileDescr {fileDescrText, fileDescrPartNo, fileD
               WHERE file_descr_id = ?
             |]
             (fileDescrText', fileDescrPartNo, BI fileDescrComplete, fileDescrId)
-        pure RcvFileDescr {fileDescrId, fileDescrText = fileDescrText', fileDescrPartNo, fileDescrComplete}
+        pure $ Just RcvFileDescr {fileDescrId, fileDescrText = fileDescrText', fileDescrPartNo, fileDescrComplete}
 
 -- Upper bounds sized above the largest legitimate received description; derived from simplexmq's
 -- chunk tiers and redundancy, so a change there must revisit them.
