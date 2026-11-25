@@ -403,8 +403,9 @@ textWithMessageLinks = describe "text with message links" do
     ("see " <> dashLink) <==> "see " <> messageLink Nothing dashLink dashLink
     "simplex:/m#x/abc" <==> messageLink Nothing "simplex:/m#x/abc" "simplex:/m#x/abc"
     msgLinkType_ "simplex:/m#x/abc" `shouldBe` Right MLTUnsupported
-  it "link in link text" $
-    ("[https://example.com](" <> directLink <> ")") <==> "[https://example.com](" <> messageLink Nothing directLink directLink <> ")"
+  it "link text that looks like a link" do
+    ("[https://example.com](" <> directLink <> ")") <==> messageLink (Just "https://example.com") directLink ("[https://example.com](" <> directLink <> ")")
+    ("[see report.pdf](" <> directLink <> ")") <==> messageLink (Just "see report.pdf") directLink ("[see report.pdf](" <> directLink <> ")")
   it "encodes and parses link URIs" do
     let roundTrip :: Text -> Either String Text
         roundTrip l = safeDecodeUtf8 . strEncode <$> (strDecode (encodeUtf8 l) :: Either String MsgLink)

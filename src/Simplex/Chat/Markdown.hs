@@ -470,9 +470,7 @@ markdownP = joinMarkdown <$> A.many' fragmentP
       t <- enclosedP '[' ']' (\c -> c == '[' || c == '\n')
       l <- enclosedP '(' ')' isSpace
       f <- case msgLinkFormat (Just t) l of
-        Just f'
-          | hasLinks (parseMarkdownList t) -> fail "link in message link text"
-          | otherwise -> pure f'
+        Just f' -> pure f'
         Nothing -> do
           let hasPunct = T.any (\c -> isPunctuation c && c /= '-' && c /= '_') t
           when (hasPunct && t /= l && ("https://" <> t) /= l) $ fail "punctuation in hyperlink text"

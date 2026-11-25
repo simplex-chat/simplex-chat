@@ -268,14 +268,14 @@ testNoteLinkFileName ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
   createCCNoteFolder alice
   let files = tmpFile ps "alice_app_files"
   alice #$> ("/_files_folder " <> files, id, "ok")
-  copyFile "./tests/fixtures/test.pdf" (files </> "report_2026.pdf")
-  alice ##> "/_create *1 json [{\"filePath\": \"report_2026.pdf\", \"msgContent\": {\"type\": \"file\", \"text\": \"\"}}]"
-  alice <# "* file 1 (report_2026.pdf)"
+  copyFile "./tests/fixtures/test.pdf" (files </> "report.pdf")
+  alice ##> "/_create *1 json [{\"filePath\": \"report.pdf\", \"msgContent\": {\"type\": \"file\", \"text\": \"\"}}]"
+  alice <# "* file 1 (report.pdf)"
   fileItemId <- lastItemId alice
   alice ##> ("/_get item link *1 " <> fileItemId)
   noteLink <- getTermLine alice
   alice `send` ("/* see " <> noteLink)
-  alice <# ("* see [report_2026.pdf](" <> noteLink <> ")")
+  alice <# ("* see [report.pdf](" <> noteLink <> ")")
 
 testLinkContentFilter :: TestParams -> IO ()
 testLinkContentFilter ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
