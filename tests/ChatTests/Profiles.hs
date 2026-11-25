@@ -2636,7 +2636,8 @@ testContactDeletionFixtures =
           "/_delete @2 entity notify=on",
           "/_delete @3 entity notify=off notice={\"ttl\":86400}",
           "/_delete @4 full notify=off notice={}",
-          "/_delete @5 full notify=on"
+          "/_delete @5 full notify=on",
+          "/_create user {\n    \"profile\": {\n        \"displayName\": \"frank\",\n        \"fullName\": \"\",\n        \"localAlias\": \"\"\n    },\n    \"pastTimestamp\": false,\n    \"userChatRelay\": false\n}"
         ]
       dropOutputs [alice, bob, cath, dan, eve]
 

@@ -1,31 +1,63 @@
 package chat.simplex.app
 
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.test.ComposeUiTest
 import androidx.compose.ui.test.ExperimentalTestApi
+import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasSetTextAction
+import androidx.compose.ui.test.isRoot
 import androidx.compose.ui.test.isToggleable
+import androidx.compose.ui.test.longClick
+import androidx.compose.ui.test.onLast
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performKeyInput
+import androidx.compose.ui.test.performMouseInput
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.pressKey
+import androidx.compose.ui.test.rightClick
 import chat.simplex.common.model.*
+import chat.simplex.common.platform.chatParseMarkdown
 import chat.simplex.common.ui.theme.SimpleXTheme
+import chat.simplex.common.views.chat.ComposeContextItem
+import chat.simplex.common.views.chat.ComposeState
+import chat.simplex.common.views.chat.ComposeView
+import chat.simplex.common.views.chat.SendReceipts
 import chat.simplex.common.views.chat.acceptMemberDialog
 import chat.simplex.common.views.chat.archiveContact
 import chat.simplex.common.views.chat.deleteAndBanContactDialog
 import chat.simplex.common.views.chat.deleteContactDialog
 import chat.simplex.common.views.chat.group.*
+import chat.simplex.common.views.chat.item.FramedItemView
+import chat.simplex.common.views.chat.item.MarkedDeletedItemView
+import chat.simplex.common.views.chat.item.markedDeletedText
+import chat.simplex.common.views.chatlist.ArchiveContactAction
+import chat.simplex.common.views.chatlist.DeleteAndBanAction
+import chat.simplex.common.views.chatlist.TagListAction
 import chat.simplex.common.views.chatlist.TagListView
+import chat.simplex.common.views.chatlist.acceptGroupInvitationAlertDialog
+import chat.simplex.common.views.chatlist.setGroupMembers
+import chat.simplex.common.views.contacts.ContactListNavLinkView
+import chat.simplex.common.views.createProfileOnboarding
+import chat.simplex.common.views.helpers.AlertManager
 import chat.simplex.common.views.helpers.AppBarHandler
 import chat.simplex.common.views.helpers.AppBarHeight
 import chat.simplex.common.views.helpers.LocalAppBarHandler
+import chat.simplex.common.views.helpers.ModalData
+import chat.simplex.common.views.helpers.ModalManager
 import chat.simplex.common.views.helpers.rememberAppBarHandler
 import chat.simplex.common.views.newchat.LinkNoticeTarget
+import chat.simplex.common.views.newchat.showLinkNoticeAlert
 import chat.simplex.common.views.usersettings.PrivacySettingsView
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
@@ -506,6 +538,8 @@ class ModerationTest : RecordedApiTest() {
     val (groupInfo, _) = openGroup("/_members #3")
     deleteAndBanCustomer(groupChat(groupInfo), groupInfo)
     assertTexts("Can't block", "dan left this chat or uses an older app version.", "OK")
+    press("OK")
+    assertTexts()
   }
 
   @Test
@@ -666,6 +700,314 @@ class ModerationTest : RecordedApiTest() {
   @Test
   fun reportReasonIsContent() {
     assertEquals("/_report #1 2 reason=content spam", CC.ApiReportMessage(1, 2, ReportReason.Content, "spam").cmdString)
+    assertEquals("Inappropriate content", ReportReason.Content.text)
+    assertIs<ReportReason.Content>(json.decodeFromString(ReportReasonSerializer, "\"illegal\""))
+    assertIs<ReportReason.Content>(json.decodeFromString(ReportReasonSerializer, "\"content\""))
+  }
+
+  @Test
+  fun composeShowsContentReportHeader() = recorded("bans/contact-deletion") {
+    chatParseMarkdown = { _ -> "{}" }
+    val chat = openContact("/_get chat @2 count=0")
+    val reported = ComposeContextItem.ReportedItem(ChatItem.getSampleData(dir = CIDirection.DirectRcv()), ReportReason.Content)
+    showView { ComposeViewFor(chat, ComposeState(contextItem = reported, useLinkPreviews = false)) }
+    onNodeWithText("Report content: only group moderators will see it.").assertExists()
+  }
+
+  @Test
+  fun composeJoinsPreparedGroup() = recorded("bans/connect-group-notice") {
+    chatParseMarkdown = { _ -> "{}" }
+    val chat = (recordedResult("/_get chat #2 count=0") as CR.ApiChat).chat
+    openChat(chat)
+    setContent {
+      SimpleXTheme {
+        ComposeViewFor(chat, ComposeState(useLinkPreviews = false))
+        AlertManager.shared.showInView()
+        AlertManager.privacySensitive.showInView()
+      }
+    }
+    press("Join group")
+    waitUntil(timeoutMillis = 5_000) { shownTexts().contains("Not allowed") }
+  }
+
+  @Test
+  fun onboardingProfileNotifiesOnContactDeletion() = recorded("bans/contact-deletion") {
+    ChatController.appPrefs.privacyContactDeletion.set(ContactDeletion.Ask)
+    createProfileOnboarding(ChatModel, "frank") {}
+    waitUntil(timeoutMillis = 5_000) { ChatController.appPrefs.privacyContactDeletion.get() == ContactDeletion.Notify }
+  }
+
+  @Test
+  fun localTimestampDefaultsToMediumTime() {
+    val t = Instant.parse("2099-01-01T12:00:00Z")
+    assertEquals(localTimestamp(t, FormatStyle.MEDIUM), localTimestamp(t))
+  }
+
+  @Test
+  fun contactDeletionSettingIsExportedAndImported() {
+    ChatController.appPrefs.privacyContactDeletion.set(ContactDeletion.Notify)
+    assertEquals(ContactDeletion.Notify, AppSettings.current.prepareForExport().privacyContactDeletion)
+    ChatController.appPrefs.privacyContactDeletion.set(ContactDeletion.Ask)
+    assertNull(AppSettings.current.prepareForExport().privacyContactDeletion)
+    AppSettings(privacyContactDeletion = ContactDeletion.Notify).importIntoApp()
+    assertEquals(ContactDeletion.Notify, ChatController.appPrefs.privacyContactDeletion.get())
+  }
+
+  @Test
+  fun connectViaAddressFailureShowsError() = recordedAlerts("bans/connect-contact-notice") {
+    runBlocking { ChatController.apiConnectContactViaAddress(null, incognito = false, contactId = 9) }
+    assertRequested { it.startsWith("/_connect contact 1 incognito=off 9") }
+    assertEquals("Connection error", shownTexts().first())
+  }
+
+  @Test
+  fun deleteConnectionFailureShowsError() = recordedAlerts("bans/contact-deletion") {
+    runBlocking { ChatController.apiDeleteChat(null, ChatType.ContactConnection, 9) }
+    assertRequested { it.startsWith("/_delete :9") }
+    assertEquals("Error deleting pending contact connection", shownTexts().first())
+  }
+
+  @Test
+  fun deleteGroupFailureShowsError() = recordedAlerts("bans/group-deletion") {
+    val (groupInfo, _) = openGroup()
+    deleteGroupChat(null, groupInfo.copy(groupId = 9), ChatDeleteMode.Full(notify = true), notice = null, close = null)
+    assertRequested("/_delete #9 full notify=on")
+    assertEquals("Error deleting group", shownTexts().first())
+  }
+
+  @Test
+  fun deleteOwnGroupCancelled() = recordedAlerts("bans/group-deletion") {
+    val (groupInfo, _) = openGroup()
+    deleteGroupDialog(groupChat(groupInfo), groupInfo, ChatModel)
+    press("Cancel")
+    assertTexts()
+  }
+
+  @Test
+  fun deleteInvitedGroup() = recordedAlerts("bans/group-deletion-member") {
+    val (groupInfo, _) = openGroup()
+    acceptGroupInvitationAlertDialog(null, groupInfo, ChatModel)
+    press("Delete")
+    waitUntil(timeoutMillis = 5_000) { !chatIds().contains(groupInfo.id) }
+  }
+
+  @Test
+  fun acceptPendingMemberAsObserver() = recordedAlerts("bans/pending-member") {
+    val (groupInfo, members) = openGroup()
+    acceptMemberDialog(null, groupInfo, member(members, "bob"))
+    press("Accept as observer")
+    assertRequested("/_accept member #1 2 observer")
+  }
+
+  @Test
+  fun removeBlockedSubscriberOfPreviousVersion() = recordedAlerts("bans/channel") {
+    val (groupInfo, _) = openGroup()
+    val cath = member(blockedMembers("/_block #1 3 blocked=on"), "cath")
+    val previousRange = VersionRange(1, LINK_NOTICE_VERSION - 1)
+    val previous = cath.copy(memberChatVRange = previousRange, activeConn = cath.activeConn?.copy(peerChatVRange = previousRange))
+    val texts = arrayOf(
+      "Remove subscriber?", "Subscriber will be removed from channel - this cannot be undone!",
+      "� 1 member with the previous version: cannot block", "Remove", "Remove and delete messages", "Cancel"
+    )
+    removeMemberAlert(null, groupInfo, previous)
+    assertTexts(*texts)
+    press("Cancel")
+    removeMemberDialog(null, groupInfo, previous, ChatModel)
+    assertTexts(*texts)
+    press("Cancel")
+    removeMemberDialog(null, groupInfo, cath, ChatModel)
+    assertTexts(
+      "Remove subscriber?", "cath won't be notified, and can't rejoin while blocked.",
+      "Block for", "1 day", "Remove", "Remove and delete messages", "Cancel"
+    )
+  }
+
+  @Test
+  fun removeBlockedMemberOfPreviousVersionFromMemberInfo() = recordedAlerts("bans/previous-version") {
+    val (groupInfo, _) = openGroup()
+    removeMemberDialog(null, groupInfo, member(blockedMembers("/_block #1 3,4 blocked=on"), "cath"), ChatModel)
+    assertTexts(
+      "Remove member?", "Member will be removed from group - this cannot be undone!",
+      "� 1 member with the previous version: cannot block", "Remove", "Remove and delete messages", "Cancel"
+    )
+  }
+
+  @Test
+  fun blockSubscribers() = recordedAlerts("bans/channel") {
+    val (groupInfo, members) = openGroup()
+    banMembersDialog(null, groupInfo, listOf(member(members, "cath"), member(members, "dan")))
+    assertEquals("Block subscribers for all?", shownTexts().first())
+  }
+
+  @Test
+  fun removeBlockedMembersForeverCancelled() = recordedAlerts("bans/block-members") {
+    val (groupInfo, _) = openGroup()
+    removeMembersAlert(null, groupInfo, blockedMembers("/_block #1 2,3 blocked=on"))
+    selectDuration("Forever")
+    press("Remove")
+    assertTexts("Remove forever?", "Members can't rejoin via the group link again, except from another app.", "Type yes", "Remove", "Cancel")
+    press("Cancel")
+    assertTexts()
+  }
+
+  @Test
+  fun selectionToolbarRemovesAndBlocks() = recorded("bans/block-members") {
+    chatParseMarkdown = { _ -> "{}" }
+    val (groupInfo, _) = openGroup()
+    replaceMembers(blockedMembers("/_block #1 2,3 blocked=on"))
+    val selected = mutableStateOf<Set<Long>?>(setOf(2L, 3L))
+    showGroupInfo(groupInfo, selected)
+    pressToolbarButton(0)
+    waitUntil(timeoutMillis = 5_000) { shownTexts().contains("Remove members?") }
+    press("Cancel")
+    selected.value = setOf(4L)
+    waitForIdle()
+    pressToolbarButton(1)
+    waitUntil(timeoutMillis = 5_000) { shownTexts().contains("Block member for all?") }
+  }
+
+  @Test
+  fun memberMenuBlocksForAll() = recordedAlerts("bans/block-members") {
+    val (groupInfo, _) = openGroup()
+    showGroupInfo(groupInfo, mutableStateOf(null))
+    onNodeWithText("dan").performTouchInput { longClick() }
+    press("Block for all")
+    waitUntil(timeoutMillis = 5_000) { shownTexts().contains("Block member for all?") }
+  }
+
+  @Test
+  fun memberMenuShowsHiddenMessages() = recordedAlerts("bans/hide-messages") {
+    val (groupInfo, members) = openGroup()
+    val cath = member(members, "cath").let { it.copy(memberSettings = it.memberSettings.copy(showMessages = false)) }
+    replaceMembers(listOf(cath))
+    showGroupInfo(groupInfo, mutableStateOf(null))
+    onNodeWithText("hidden").assertExists()
+    onNodeWithText("cath").performTouchInput { longClick() }
+    press("Show messages")
+    waitUntil(timeoutMillis = 5_000) { shownTexts().contains("Show messages?") }
+  }
+
+  @Test
+  fun memberInfoShowsHiddenMessages() = recorded("bans/hide-messages") {
+    chatParseMarkdown = { _ -> "{}" }
+    val (groupInfo, members) = openGroup()
+    var shown = false
+    val cath = member(members, "cath").let { it.copy(memberSettings = it.memberSettings.copy(showMessages = false)) }
+    showMemberInfo(groupInfo, cath, unblockMember = { shown = true }) {}
+    onNodeWithText("Show messages").performScrollTo().performClick()
+    assertTrue(shown)
+  }
+
+  @Test
+  fun businessChatInfoDeletesAndBlocks() = recorded("bans/business") {
+    chatParseMarkdown = { _ -> "{}" }
+    val (groupInfo, _) = openGroup()
+    setContent {
+      SimpleXTheme {
+        AppBarHandler.appBarMaxHeightPx = with(LocalDensity.current) { AppBarHeight.roundToPx() }
+        CompositionLocalProvider(LocalAppBarHandler provides rememberAppBarHandler()) {
+          val modalData = remember { ModalData().apply { appBarHandler.listState = LazyListState(Int.MAX_VALUE) } }
+          modalData.GroupChatInfoView(ChatModel.chatsContext, null, groupInfo.id, null, true, remember { mutableStateOf(null) }, remember { mutableStateOf(null) }, remember { mutableStateOf(null) }, {}, {}, {})
+        }
+        AlertManager.shared.showInView()
+      }
+    }
+    onNodeWithText("Delete and block").performScrollTo().performClick()
+    waitUntil(timeoutMillis = 5_000) { shownTexts().contains("Delete and block?") }
+  }
+
+  @Test
+  fun memberInfoBlocksAndAsksToUnblockBeforePromotion() = recordedAlerts("bans/block-members") {
+    val (groupInfo, members) = openGroup()
+    showMemberInfoView(groupInfo, member(members, "dan"))
+    onNodeWithText("Block for all").performScrollTo().performClick()
+    waitUntil(timeoutMillis = 5_000) { shownTexts().contains("Block member for all?") }
+    press("Cancel")
+    val bob = member(blockedMembers("/_block #1 2 blocked=on"), "bob")
+    replaceMembers(listOf(bob))
+    showMemberInfoView(groupInfo, bob)
+    onNodeWithText("member").performScrollTo().performClick()
+    press("moderator")
+    waitUntil(timeoutMillis = 5_000) { shownTexts().contains("Unblock first") }
+  }
+
+  @Test
+  fun hiddenItemsAreShownAsHidden() = recorded("bans/hide-messages") {
+    val (groupInfo, _) = openGroup()
+    val chat = groupChat(groupInfo)
+    val items = listOf(1L, 2L).map { ChatItem.getSampleData(id = it, dir = CIDirection.DirectRcv(), itemDeleted = CIDeleted.Blocked(deletedTs = null)) }
+    runBlocking { withContext(Dispatchers.Main) { ChatModel.chatsContext.chatItems.replaceAll(items) } }
+    assertEquals("hidden", markedDeletedText(items[0], chat.chatInfo))
+    showView {
+      Column {
+        MarkedDeletedItemView(ChatModel.chatsContext, items[1], chat.chatInfo, null, remember { mutableStateOf(false) }, showViaProxy = false, showTimestamp = false)
+        FramedItemView(ChatModel.chatsContext, chat, items[0], linkMode = SimplexLinkMode.DESCRIPTION, showViaProxy = false, showMenu = remember { mutableStateOf(false) }, showTimestamp = false, receiveFile = {}, scrollToItemId = remember { mutableStateOf(null) })
+      }
+    }
+    onNodeWithText("2 messages hidden").assertExists()
+  }
+
+  @Test
+  fun chatListActions() = recordedAlerts("bans/contact-deletion") {
+    val chat = openContact("/_get chat @2 count=0")
+    val contact = (chat.chatInfo as ChatInfo.Direct).contact
+    var deleteAndBan = false
+    setContent {
+      SimpleXTheme {
+        val showMenu = remember { mutableStateOf(true) }
+        Column {
+          TagListAction(chat, showMenu)
+          ArchiveContactAction(chat, contact, ChatModel, showMenu)
+          DeleteAndBanAction(showMenu) { deleteAndBan = true }
+        }
+        ModalManager.start.showInView()
+        AlertManager.shared.showInView()
+      }
+    }
+    press("Delete and block")
+    assertTrue(deleteAndBan)
+    press("Add to list")
+    onNodeWithText("Favorites").assertExists()
+    runBlocking { withContext(Dispatchers.Main) { ModalManager.start.closeModals() } }
+    press("Archive")
+    waitUntil(timeoutMillis = 5_000) { (chatInfo(chat.id) as ChatInfo.Direct).contact.chatDeleted }
+  }
+
+  @Test
+  fun contactListMenuOffersDeleteAndBlock() = recorded("bans/contact-deletion") {
+    val archived = (recordedResult("/_delete @2 archive") as CR.ContactDeleted).contact
+    val chat = openChat(Chat(remoteHostId = null, chatInfo = ChatInfo.Direct(archived), chatItems = emptyList()))
+    showView { ContactListNavLinkView(chat, remember { mutableStateOf(false) }, showDeletedChatIcon = false) }
+    onNodeWithText("bob").performMouseInput { rightClick() }
+    onNodeWithText("Delete and block").assertExists()
+  }
+
+  @Test
+  fun setGroupMembersLoadsMembers() = recorded("bans/block-members") {
+    val (groupInfo, members) = openGroup()
+    ChatModel.groupMembers.value = emptyList()
+    runBlocking { setGroupMembers(null, groupInfo, ChatModel) }
+    assertEquals(members.map { it.groupMemberId }.toSet(), ChatModel.groupMembers.value.map { it.groupMemberId }.toSet())
+  }
+
+  @Test
+  fun noticeAlertHowItWorksAndDismiss() = recordedAlerts("bans/contact-notices") {
+    var cleanups = 0
+    showLinkNoticeAlert(LinkNoticeTarget.valueOf("Group"), expiresAt = null, cleanup = { cleanups++ })
+    press("How it works")
+    assertEquals(1, cleanups)
+    showLinkNoticeAlert(LinkNoticeTarget.Group, expiresAt = null, cleanup = { cleanups++ })
+    waitForIdle()
+    onAllNodes(isRoot()).onLast().performKeyInput { pressKey(Key.Escape) }
+    waitUntil(timeoutMillis = 5_000) { cleanups == 2 }
+    assertEquals(4, LinkNoticeTarget.entries.size)
+  }
+
+  @Test
+  fun groupNoticePlanWithoutParsedLink() = recordedAlerts("bans/plan-group-notice") {
+    chatParseMarkdown = { _ -> "null" }
+    connect("GROUP_LINK")
+    assertTexts("Not allowed", "Blocked by the admins of this group until $UNTIL.", "OK", "How it works")
   }
 
   private fun ComposeUiTest.connectPreparedGroup(chatCmd: String) {
@@ -688,7 +1030,85 @@ class ModerationTest : RecordedApiTest() {
     }
   }
 
-  private fun ComposeUiTest.showMemberInfo(groupInfo: GroupInfo, member: GroupMember, unblockForAll: () -> Unit) {
+  @Composable
+  private fun ComposeViewFor(chat: Chat, state: ComposeState) {
+    ComposeView(null, ChatModel, ChatModel.chatsContext, chat, remember { mutableStateOf(state) }, remember { mutableStateOf(false) }, remember { mutableStateOf(null) }, {}, remember { FocusRequester() })
+  }
+
+  private fun ComposeUiTest.showGroupInfo(groupInfo: GroupInfo, selectedItems: androidx.compose.runtime.MutableState<Set<Long>?>) {
+    setContent {
+      SimpleXTheme {
+        AppBarHandler.appBarMaxHeightPx = with(LocalDensity.current) { AppBarHeight.roundToPx() }
+        CompositionLocalProvider(LocalAppBarHandler provides rememberAppBarHandler()) {
+          val modalData = remember { ModalData().apply { appBarHandler.listState = LazyListState(Int.MAX_VALUE) } }
+          modalData.GroupChatInfoLayout(
+            chat = groupChat(groupInfo),
+            groupInfo = groupInfo,
+            User.sampleData,
+            sendReceipts = remember { mutableStateOf(SendReceipts.Yes) },
+            setSendReceipts = {},
+            chatItemTTL = remember { mutableStateOf(ChatItemTTL.fromSeconds(0)) },
+            setChatItemTTL = {},
+            activeSortedMembers = ChatModel.groupMembers.value,
+            developerTools = false,
+            onLocalAliasChanged = {},
+            groupLink = null,
+            groupLinkLoaded = true,
+            selectedItems = selectedItems,
+            appBar = remember { mutableStateOf(null) },
+            scrollToItemId = remember { mutableStateOf(null) },
+            addMembers = {},
+            showMemberInfo = { _, _ -> },
+            editGroupProfile = {},
+            addOrEditWelcomeMessage = {},
+            openMemberSupport = {},
+            openPreferences = {},
+            deleteGroup = {},
+            deleteAndBan = {},
+            clearChat = {},
+            leaveGroup = {},
+            manageGroupLink = {},
+            manageWebPage = {},
+            onSearchClicked = {},
+            setSimplexName = {},
+            deletingItems = remember { mutableStateOf(false) }
+          )
+        }
+        AlertManager.shared.showInView()
+      }
+    }
+  }
+
+  private fun ComposeUiTest.pressToolbarButton(index: Int) {
+    val buttons = onAllNodes(hasClickAction())
+    val count = buttons.fetchSemanticsNodes().size
+    buttons[count - 3 + index].performClick()
+    waitForIdle()
+  }
+
+  private fun ComposeUiTest.showMemberInfoView(groupInfo: GroupInfo, member: GroupMember) {
+    setContent {
+      SimpleXTheme {
+        AppBarHandler.appBarMaxHeightPx = with(LocalDensity.current) { AppBarHeight.roundToPx() }
+        CompositionLocalProvider(LocalAppBarHandler provides rememberAppBarHandler()) {
+          GroupMemberInfoView(
+            null, groupInfo, member,
+            scrollToItemId = remember { mutableStateOf(null) },
+            connStats = remember { mutableStateOf(null) },
+            connectionCode = remember { mutableStateOf(null) },
+            connectionLoaded = remember { mutableStateOf(true) },
+            chatModel = ChatModel,
+            openedFromSupportChat = false,
+            close = {},
+            closeAll = {}
+          )
+        }
+        AlertManager.shared.showInView()
+      }
+    }
+  }
+
+  private fun ComposeUiTest.showMemberInfo(groupInfo: GroupInfo, member: GroupMember, unblockMember: () -> Unit = {}, unblockForAll: () -> Unit) {
     showView {
       GroupMemberInfoLayout(
         rhId = null,
@@ -705,7 +1125,7 @@ class ModerationTest : RecordedApiTest() {
         createMemberContact = {},
         connectViaAddress = {},
         blockMember = {},
-        unblockMember = {},
+        unblockMember = unblockMember,
         blockForAll = {},
         unblockForAll = unblockForAll,
         removeMember = {},

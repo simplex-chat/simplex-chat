@@ -1,5 +1,55 @@
 {
   "commands": {
+    "/_create user {\n    \"profile\": {\n        \"displayName\": \"frank\",\n        \"fullName\": \"\",\n        \"localAlias\": \"\"\n    },\n    \"pastTimestamp\": false,\n    \"userChatRelay\": false\n}": {
+      "result": {
+        "type": "activeUser",
+        "user": {
+          "activeOrder": 2,
+          "activeUser": true,
+          "agentUserId": "2",
+          "autoAcceptGroupInvitations": false,
+          "autoAcceptMemberContacts": false,
+          "clientService": false,
+          "fullPreferences": {
+            "calls": {
+              "allow": "yes"
+            },
+            "commands": [],
+            "files": {
+              "allow": "always"
+            },
+            "fullDelete": {
+              "allow": "no"
+            },
+            "reactions": {
+              "allow": "yes"
+            },
+            "sessions": {
+              "allow": "no"
+            },
+            "timedMessages": {
+              "allow": "yes"
+            },
+            "voice": {
+              "allow": "yes"
+            }
+          },
+          "localDisplayName": "frank",
+          "profile": {
+            "displayName": "frank",
+            "fullName": "",
+            "localAlias": "",
+            "profileId": 4
+          },
+          "sendRcptsContacts": true,
+          "sendRcptsSmallGroups": true,
+          "showNtfs": true,
+          "userChatRelay": false,
+          "userContactId": 6,
+          "userId": 2
+        }
+      }
+    },
     "/_delete @2 archive": {
       "result": {
         "contact": {
