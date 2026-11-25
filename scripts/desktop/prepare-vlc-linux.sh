@@ -26,6 +26,7 @@ curl --tlsv1.2 "${vlc_url}" -L -o appimage
 echo "${vlc_sha256}  appimage" | sha256sum -c -
 chmod +x appimage
 ./appimage --appimage-extract
+chmod -R a+rX squashfs-root/usr/lib
 cp -r squashfs-root/usr/lib/* $vlc_dir
 cd ../
 rm -rf tmp
