@@ -3176,6 +3176,8 @@ Unknown:
 
 ## LinkNotice
 
+The app of the removed member or deleted contact does not join or connect via the link for `ttl` seconds, rounded up to a whole hour; a notice without `ttl` does not expire. `ttl` must be positive.
+
 **Record type**:
 - ttl: int64?
 

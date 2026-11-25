@@ -201,6 +201,20 @@ class ModerationTest : RecordedApiTest() {
   }
 
   @Test
+  fun blockAndRemoveMembersCancelled() = recordedAlerts("bans/block-members") {
+    val (groupInfo, members) = openGroup()
+    banMembersDialog(null, groupInfo, listOf(member(members, "bob"), member(members, "cath")))
+    press("Block and remove")
+    assertTexts(
+      "Remove members?", "Members won't be notified, and can't rejoin while blocked.",
+      "Block for", "1 day", "Remove", "Remove and delete messages", "Cancel"
+    )
+    press("Cancel")
+    assertTexts()
+    assertFalse(member(ChatModel.groupMembers.value, "bob").blockedByAdmin)
+  }
+
+  @Test
   fun removeBlockedMemberForever() = recordedAlerts("bans/block-members") {
     val (groupInfo, _) = openGroup()
     val cath = member(blockedMembers("/_block #1 2,3 blocked=on"), "cath")
@@ -293,6 +307,16 @@ class ModerationTest : RecordedApiTest() {
     )
     press("Remove")
     awaitMember("dan") { it.memberStatus == GroupMemberStatus.MemRemoved }
+  }
+
+  @Test
+  fun removeBlockedMemberOfPreviousVersion() = recordedAlerts("bans/previous-version") {
+    val (groupInfo, _) = openGroup()
+    removeMemberAlert(null, groupInfo, member(blockedMembers("/_block #1 3,4 blocked=on"), "cath"))
+    assertTexts(
+      "Remove member?", "Member will be removed from group - this cannot be undone!",
+      "1 member with previous version: cannot block", "Remove", "Remove and delete messages", "Cancel"
+    )
   }
 
   @Test

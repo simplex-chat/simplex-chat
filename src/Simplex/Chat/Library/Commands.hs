@@ -1371,6 +1371,7 @@ processChatCommand cxt nm = \case
   APIDeleteChat cRef@(ChatRef cType chatId scope) cdm notice_ -> withUser $ \user@User {userId} -> case cType of
     CTDirect -> do
       ct <- withFastStore $ \db -> getContact db cxt user chatId
+      when (any invalidNotice notice_) $ throwCmdError "notice ttl must be positive"
       when (isJust notice_ && not (noticeSupported ct)) $ throwCmdError "contact does not support notice"
       filesInfo <- withFastStore' $ \db -> getContactFileInfo db user ct
       withContactLock "deleteChat direct" chatId $
@@ -3073,6 +3074,8 @@ processChatCommand cxt nm = \case
       when (length memberIds > 1 && (anyAdmin || newRole >= GRAdmin)) $
         throwCmdError "can't change role of multiple members when admins selected, or new role is admin"
       when anyPending $ throwCmdError "can't change role of members pending approval"
+      when (newRole >= GRModerator && any blockedByAdmin (invitedMems <> currentMems <> unchangedMems)) $
+        throwCmdError "can't make blocked member a moderator or above, unblock first"
       when (anyRelay || newRole == GRRelay) $ throwCmdError "relay role can't be changed"
       -- TODO [multi-owner] allow once owners are added via link data - until then promoted owner would lack link authority
       when (useRelays' gInfo && newRole == GROwner) $ throwCmdError "owner role can't be assigned in channels"
@@ -3217,6 +3220,7 @@ processChatCommand cxt nm = \case
       assertUserGroupRole gInfo $ max GRAdmin maxRole
       when (useRelays' gInfo && anyPrivilegedRemoved && memberRole' (membership gInfo) /= GROwner) $
         throwCmdError "only the group owner can remove members, moderators and admins"
+      when (any invalidNotice notice) $ throwCmdError "notice ttl must be positive"
       when (isJust notice && any noticeUnsupported (invitedMems <> pendingApprvMems <> pendingRvwMems <> currentMems)) $
         throwCmdError "notice is not supported for moderators, admins, owners, relays, members on old versions and members not in the group"
       (errs1, deleted1) <- deleteInvitedMems user invitedMems

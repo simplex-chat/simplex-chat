@@ -274,7 +274,7 @@ Group profile can include optional `chatLayout` property (`classic` or `terminal
 
 ### Link notices
 
-`x.grp.mem.del` and `x.direct.del` messages MAY include `notice` property with optional `ttl` (positive seconds; clients MUST NOT store a notice with `ttl` 0 or negative). The receiving client stores the notice for the link it joined or connected through, as recorded in its own group or contact record, and does not connect via this link until the notice expires. The notice expires `ttl` seconds after the server timestamp of the message, rounded up to a whole hour; a notice without `ttl` does not expire. A new notice for the same link replaces the previous one. Clients MUST ignore a malformed notice and process the message.
+`x.grp.mem.del` and `x.direct.del` messages MAY include `notice` property with optional `ttl` (positive seconds; clients MUST NOT store a notice with `ttl` 0 or negative). The receiving client stores the notice for the link it joined or connected through, as recorded in its own group or contact record, and does not connect via this link until the notice expires. The notice expires `ttl` seconds after the earlier of the server timestamp of the message and the time the client receives it, rounded up to a whole hour; a notice without `ttl` does not expire. A new notice for the same link replaces the previous one. Clients MUST ignore a malformed notice and process the message.
 
 `x.grp.mem.del` and `x.direct.del` messages MAY include `"silent": true` property:
 - the client of the deleted contact does not delete the contact and shows nothing.

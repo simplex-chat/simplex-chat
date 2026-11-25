@@ -331,7 +331,7 @@ chatTypesDocsData =
     (sti @InvitedBy, STUnion, "IB", [], "", ""),
     (sti @KeepAliveOpts, STRecord, "", [], "", ""),
     (sti @LinkContent, STUnion, "LC", [], "", ""),
-    (sti @LinkNotice, STRecord, "", [], "", ""),
+    (sti @LinkNotice, STRecord, "", [], "", "The app of the removed member or deleted contact does not join or connect via the link for `ttl` seconds, rounded up to a whole hour; a notice without `ttl` does not expire. `ttl` must be positive."),
     (sti @LinkOwnerSig, STRecord, "", [], "", ""),
     (sti @LinkPreview, STRecord, "", [], "", ""),
     (sti @ListEntry, STRecord, "", [], "", ""),

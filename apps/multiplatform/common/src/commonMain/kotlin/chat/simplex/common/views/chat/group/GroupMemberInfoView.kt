@@ -285,6 +285,7 @@ fun removeMemberDialog(rhId: Long?, groupInfo: GroupInfo, member: GroupMember, c
     AlertManager.shared.showAlertDialogButtonsColumn(
       generalGetString(MR.strings.button_remove_subscriber_question),
       generalGetString(MR.strings.subscriber_will_be_removed_from_channel_cannot_be_undone),
+      belowTextContent = { CannotBlockWarning(listOf(member)) },
       buttons = {
         Column {
           SectionItemView({
@@ -314,6 +315,7 @@ fun removeMemberDialog(rhId: Long?, groupInfo: GroupInfo, member: GroupMember, c
     AlertManager.shared.showAlertDialogButtonsColumn(
       generalGetString(MR.strings.button_remove_member_question),
       generalGetString(messageId),
+      belowTextContent = { CannotBlockWarning(listOf(member)) },
       buttons = {
         Column {
           SectionItemView({
@@ -1143,6 +1145,15 @@ fun previousVersionWarningText(members: List<GroupMember>, one: StringResource, 
     1 -> generalGetString(one)
     else -> String.format(generalGetString(many), count)
   }
+
+@Composable
+fun CannotBlockWarning(members: List<GroupMember>) {
+  val warning = if (members.any { it.blockedByAdmin }) previousVersionWarningText(members, MR.strings.member_previous_version_cannot_ban, MR.strings.members_previous_version_cannot_ban) else null
+  if (warning != null) {
+    Spacer(Modifier.height(DEFAULT_PADDING_HALF))
+    PreviousVersionWarning(warning)
+  }
+}
 
 fun banMembersDialog(rhId: Long?, gInfo: GroupInfo, members: List<GroupMember>, close: (() -> Unit)? = null, onSuccess: () -> Unit = {}) {
   val canRemove = members.all { it.canBanAndRemove(gInfo) }

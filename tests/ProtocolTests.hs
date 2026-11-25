@@ -423,6 +423,9 @@ decodeChatMessageTest = describe "Chat message encoding/decoding" $ do
   it "x.grp.mem.del with malformed notice" $
     "{\"v\":\"9\",\"event\":\"x.grp.mem.del\",\"params\":{\"memberId\":\"AQIDBA==\",\"notice\":{\"ttl\":\"day\"}}}"
       ==# XGrpMemDel (GrpMemDel (MemberId "\1\2\3\4") False Nothing False Nothing)
+  it "x.grp.mem.del with notice ttl 0 is parsed" $
+    "{\"v\":\"9\",\"event\":\"x.grp.mem.del\",\"params\":{\"memberId\":\"AQIDBA==\",\"silent\":true,\"notice\":{\"ttl\":0}}}"
+      #==# XGrpMemDel (GrpMemDel (MemberId "\1\2\3\4") False Nothing True (Just LinkNotice {ttl = Just 0}))
   it "x.grp.mem.restrict" $
     "{\"v\":\"9\",\"event\":\"x.grp.mem.restrict\",\"params\":{\"memberId\":\"AQIDBA==\",\"memberRestrictions\":{\"restriction\":\"blocked\"}}}"
       #==# XGrpMemRestrict (MemberId "\1\2\3\4") MemberRestrictions {restriction = MRSBlocked}

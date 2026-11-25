@@ -223,6 +223,18 @@ final class ModerationTests: RecordedAPITestCase {
     }
 
     @MainActor
+    func testRemoveBlockedMemberOfPreviousVersion() async throws {
+        try recorded("bans/previous-version")
+        let (groupInfo, _) = try openGroup()
+        showRemoveMemberAlert(groupInfo, try member(try blockedMembers("/_block #1 3,4 blocked=on"), "cath"))
+        try await assertTexts([
+            "Remove member?",
+            "Member will be removed from group - this cannot be undone!\n\n1 member with previous version: cannot block",
+            "Remove", "Remove and delete messages", "Cancel"
+        ])
+    }
+
+    @MainActor
     func testBlockPendingMember() async throws {
         try recorded("bans/pending-member")
         let (groupInfo, members) = try openGroup()

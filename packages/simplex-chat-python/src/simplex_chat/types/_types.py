@@ -2435,6 +2435,8 @@ LinkContent = LinkContent_page | LinkContent_image | LinkContent_video | LinkCon
 
 LinkContent_Tag = Literal["page", "image", "video", "unknown"]
 
+# The app of the removed member or deleted contact does not join or connect via the link for `ttl` seconds, rounded up to a whole hour; a notice without `ttl` does not expire. `ttl` must be positive.
+
 class LinkNotice(TypedDict):
     ttl: NotRequired[int]  # int64
 

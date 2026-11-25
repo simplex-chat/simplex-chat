@@ -1030,7 +1030,7 @@ func showRemoveMemberAlert(_ groupInfo: GroupInfo, _ mem: GroupMember, dismiss: 
     } else if groupInfo.useRelays {
         showAlert(
             NSLocalizedString("Remove subscriber?", comment: "alert title"),
-            message: NSLocalizedString("Subscriber will be removed from channel - this cannot be undone!", comment: "alert message"),
+            message: NSLocalizedString("Subscriber will be removed from channel - this cannot be undone!", comment: "alert message") + cannotBlockWarning(mem),
             actions: {[
                 UIAlertAction(title: NSLocalizedString("Remove", comment: "alert action"), style: .destructive) { _ in
                     removeMember(groupInfo, mem, withMessages: false, dismiss: dismiss)
@@ -1044,9 +1044,9 @@ func showRemoveMemberAlert(_ groupInfo: GroupInfo, _ mem: GroupMember, dismiss: 
     } else {
         showAlert(
             NSLocalizedString("Remove member?", comment: "alert title"),
-            message: groupInfo.businessChat == nil
+            message: (groupInfo.businessChat == nil
                 ? NSLocalizedString("Member will be removed from group - this cannot be undone!", comment: "alert message")
-                : NSLocalizedString("Member will be removed from chat - this cannot be undone!", comment: "alert message"),
+                : NSLocalizedString("Member will be removed from chat - this cannot be undone!", comment: "alert message")) + cannotBlockWarning(mem),
             actions: {[
                 UIAlertAction(title: NSLocalizedString("Remove", comment: "alert action"), style: .destructive) { _ in
                     removeMember(groupInfo, mem, withMessages: false, dismiss: dismiss)
@@ -1058,6 +1058,12 @@ func showRemoveMemberAlert(_ groupInfo: GroupInfo, _ mem: GroupMember, dismiss: 
             ]}
         )
     }
+}
+
+func cannotBlockWarning(_ mem: GroupMember) -> String {
+    mem.blockedByAdmin && mem.versionRange.maxVersion < LINK_NOTICE_VERSION
+        ? "\n\n" + NSLocalizedString("1 member with previous version: cannot block", comment: "alert message")
+        : ""
 }
 
 func removeMember(_ groupInfo: GroupInfo, _ mem: GroupMember, withMessages: Bool, notice: LinkNotice? = nil, dismiss: DismissAction?) {

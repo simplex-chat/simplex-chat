@@ -168,13 +168,18 @@ chatGroupTests = do
     it "removal with notice shows no item to other members" testRemoveMemberNoticeOtherMembers
     it "removal notice expiry and replacement" testPlanGroupLinkRemovedNoticeReplaced
     it "removed member can re-join after notice expires" testPlanGroupLinkRemovedNoticeExpires
-    it "removal notice with ttl 0 is not stored" testPlanGroupLinkRemovedNoticeTtlZero
+    it "removal notice with ttl 0 or below is refused" testPlanGroupLinkRemovedNoticeTtlZero
+    it "notice end time before 1970 is stored as 1970" $ \_ ->
+      capExpiry (Just $ UTCTime (fromGregorian (-1) 1 1) 0) `shouldBe` Just (UTCTime (fromGregorian 1970 1 1) 0)
+    it "notice end time is rounded up to the hour" $ \_ ->
+      ttlEndTime 3600 (UTCTime (fromGregorian 2026 1 1) 1) 86400 `shouldBe` UTCTime (fromGregorian 2026 1 2) 3600
     it "removal notice applies only to the link used to join" testPlanGroupLinkRemovedNoticeOtherLinks
     it "app fixtures: group link notice" testGroupNoticeFixtures
     it "group deletion without notice leaves notices unchanged" testPlanGroupLinkDeletedWithoutNotice
     it "rejected pending member with notice can't re-join" testPlanGroupLinkRejectedNotice
     it "removal of a moderator with notice is refused" testRemoveModeratorNoticeRefused
-    it "silent removal with notice forwarded by host is applied" testPlanGroupLinkForwardedRemovalNotice
+    it "silent removal with notice forwarded by host is applied" $ testPlanGroupLinkForwardedRemovalNotice 86400 1
+    it "notice with ttl below 0 forwarded by host is not stored" $ testPlanGroupLinkForwardedRemovalNotice (-1) 0
     it "silent removal forwarded by a host below the removed member's role is shown" testPlanGroupLinkForwardedRemovalBelowRole
     it "removal with notice of a member on previous version is prohibited" $
       runTestCfg2 testCfg testCfgVPrev testRemoveMemberNoticePrevVersion
@@ -281,11 +286,8 @@ chatGroupTests = do
     it "replies of blocked member are not mentions" testBlockedMemberReplyNotMention
     it "blocked member rejoins via group link unblocked" testBlockedMemberRejoinsUnblocked
     it "blocked pending member can't be accepted" testBlockPendingMember
+    it "blocked member can't be made moderator" testBlockedMemberPromotionRefused
     it "block of member pending review is sent to moderators only" testBlockPendingReviewMember
-    it "end time before 1970 is stored as 1970" $ \_ ->
-      capExpiry (Just $ UTCTime (fromGregorian (-1) 1 1) 0) `shouldBe` Just (UTCTime (fromGregorian 1970 1 1) 0)
-    it "end time is rounded up to the hour" $ \_ ->
-      ttlEndTime 3600 (UTCTime (fromGregorian 2026 1 1) 1) 86400 `shouldBe` UTCTime (fromGregorian 2026 1 2) 3600
     it "blocked member's update leaves no rows on regular members" testBlockForAllNoRowsForMembers
     it "blocked member's file description without a file is ignored by moderators" testBlockForAllFileDescrIgnored
     it "blocked member's edit of an earlier message is not applied for regular members" testBlockForAllEditNotApplied
@@ -3415,15 +3417,12 @@ testPlanGroupLinkRemovedNoticeTtlZero =
       gLink <- createTeamLink alice
       joinTeamViaLink alice bob gLink "bob"
 
-      alice ##> "/rm team bob notice={\"ttl\":0}"
-      alice <## "#team: you removed bob from the group (signed)"
-      withCCTransaction bob (\db -> DB.query_ db "SELECT count(1) FROM groups WHERE silently_removed = 1") `shouldEventuallyReturn` [[1 :: Int]]
+      forM_ ["0", "-1"] $ \ttl -> do
+        alice ##> ("/rm team bob notice={\"ttl\":" <> ttl <> "}")
+        alice <## "bad chat command: notice ttl must be positive"
       bob <// 50000
-      leaveDeleteGroup bob "team"
-      bob ##> ("/_connect plan 1 " <> gLink)
-      bob <## "group link: ok to connect directly"
-      _sLinkData <- getTermLine bob
-      linkNoticesCount bob `shouldReturn` 0
+      alice #> "#team hello"
+      bob <# "#team alice> hello"
 
 testPlanGroupLinkRemovedNoticeOtherLinks :: HasCallStack => TestParams -> IO ()
 testPlanGroupLinkRemovedNoticeOtherLinks =
@@ -3521,8 +3520,8 @@ testRemoveModeratorNoticeRefused =
       alice ##> "/rm team bob notice={\"ttl\":86400}"
       alice <## "bad chat command: notice is not supported for moderators, admins, owners, relays, members on old versions and members not in the group"
 
-testPlanGroupLinkForwardedRemovalNotice :: HasCallStack => TestParams -> IO ()
-testPlanGroupLinkForwardedRemovalNotice =
+testPlanGroupLinkForwardedRemovalNotice :: HasCallStack => Int64 -> Int -> TestParams -> IO ()
+testPlanGroupLinkForwardedRemovalNotice noticeTtl notices =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       gLink <- createTeamLink alice
@@ -3551,9 +3550,10 @@ testPlanGroupLinkForwardedRemovalNotice =
       cathMemId <- memberIdByName alice "cath"
       connId <- relayConnIdToMember alice "cath"
       ts <- getCurrentTime
-      let chatMsg = ChatMessage chatInitialVRange (Just $ SharedMsgId "\1\2\3\4") $ XGrpMemDel (GrpMemDel cathMemId False Nothing True (Just LinkNotice {ttl = Just 86400}))
+      let chatMsg = ChatMessage chatInitialVRange (Just $ SharedMsgId "\1\2\3\4") $ XGrpMemDel (GrpMemDel cathMemId False Nothing True (Just LinkNotice {ttl = Just noticeTtl}))
       agentSendBody alice connId $ encodeBinaryBatch [encodeFwdElement (GrpMsgForward (FwdMember bobMemId "bob") ts) (VMUnsigned chatMsg)]
-      linkNoticesCount cath `shouldEventuallyReturn` 1
+      withCCTransaction cath (\db -> DB.query_ db "SELECT count(1) FROM groups WHERE silently_removed = 1") `shouldEventuallyReturn` [[1 :: Int]]
+      linkNoticesCount cath `shouldReturn` notices
       cath <// 50000
 
 testPlanGroupLinkForwardedRemovalBelowRole :: HasCallStack => TestParams -> IO ()
@@ -8850,6 +8850,20 @@ rcvRestrictCount :: TestCC -> IO Int
 rcvRestrictCount cc = do
   [Only n] <- withCCTransaction cc $ \db -> DB.query_ db "SELECT count(1) FROM messages WHERE msg_sent = 0 AND chat_msg_event = 'x.grp.mem.restrict'"
   pure n
+
+testBlockedMemberPromotionRefused :: HasCallStack => TestParams -> IO ()
+testBlockedMemberPromotionRefused =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      createGroup2' "team" alice (bob, GRMember) True
+      alice ##> "/block for all #team bob"
+      alice <## "#team: you blocked bob (signed)"
+      bob <// 50000
+      alice ##> "/mr team bob moderator"
+      alice <## "bad chat command: can't make blocked member a moderator or above, unblock first"
+      alice ##> "/mr team bob observer"
+      alice <## "#team: you changed the role of bob to observer (signed)"
+      bob <## "#team: alice changed your role from member to observer (signed)"
 
 testBlockPendingMember :: HasCallStack => TestParams -> IO ()
 testBlockPendingMember =

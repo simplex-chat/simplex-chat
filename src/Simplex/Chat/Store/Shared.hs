@@ -37,7 +37,7 @@ import Data.Type.Equality
 import Simplex.Chat.Badges (BadgeRow, MaybeBadgeProofRow, ProofPresHeader, badgeToRow, maybeRowToBadgeProof, rowToBadge)
 import Simplex.Chat.Names (SimplexDomainProof, SimplexDomainClaim (..), claimDomain)
 import Simplex.Chat.Messages
-import Simplex.Chat.Protocol (LinkNotice (..))
+import Simplex.Chat.Protocol (LinkNotice (..), invalidNotice)
 import Simplex.Chat.Remote.Types
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
@@ -1003,7 +1003,7 @@ setContactLinkNotice db ct rounding brokerTs notice =
       >>= mapM_ (\linkHash -> upsertLinkNotice db linkHash rounding brokerTs notice)
 
 upsertLinkNotice :: DB.Connection -> ConnReqUriHash -> NominalDiffTime -> UTCTime -> LinkNotice -> IO ()
-upsertLinkNotice db linkHash rounding brokerTs LinkNotice {ttl} = unless (maybe False (<= 0) ttl) $ do
+upsertLinkNotice db linkHash rounding brokerTs notice@LinkNotice {ttl} = unless (invalidNotice notice) $ do
   currentTs <- getCurrentTime
   let expiresAt = capExpiry $ ttlEndTime rounding (min brokerTs currentTs) <$> ttl
   DB.execute

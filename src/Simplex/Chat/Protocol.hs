@@ -320,6 +320,9 @@ data LinkNotice = LinkNotice
 
 $(JQ.deriveJSON defaultJSON ''LinkNotice)
 
+invalidNotice :: LinkNotice -> Bool
+invalidNotice LinkNotice {ttl} = maybe False (<= 0) ttl
+
 data GrpMemDel = GrpMemDel
   { memberId :: MemberId,
     messages :: Bool,

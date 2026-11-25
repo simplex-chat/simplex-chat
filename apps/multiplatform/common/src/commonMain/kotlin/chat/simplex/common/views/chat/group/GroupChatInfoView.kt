@@ -390,6 +390,7 @@ fun removeMemberAlert(rhId: Long?, groupInfo: GroupInfo, mem: GroupMember) {
     AlertManager.shared.showAlertDialogButtonsColumn(
       generalGetString(MR.strings.button_remove_subscriber_question),
       generalGetString(MR.strings.subscriber_will_be_removed_from_channel_cannot_be_undone),
+      belowTextContent = { CannotBlockWarning(listOf(mem)) },
       buttons = {
         Column {
           SectionItemView({
@@ -420,6 +421,7 @@ fun removeMemberAlert(rhId: Long?, groupInfo: GroupInfo, mem: GroupMember) {
     AlertManager.shared.showAlertDialogButtonsColumn(
       generalGetString(titleId),
       generalGetString(messageId),
+      belowTextContent = { CannotBlockWarning(listOf(mem)) },
       buttons = {
         Column {
           SectionItemView({
@@ -454,16 +456,10 @@ internal fun removeMembersAlert(rhId: Long?, groupInfo: GroupInfo, members: List
     MR.strings.members_will_be_removed_from_group_cannot_be_undone
   else
     MR.strings.members_will_be_removed_from_chat_cannot_be_undone
-  val warning = if (members.any { it.blockedByAdmin }) previousVersionWarningText(members, MR.strings.member_previous_version_cannot_ban, MR.strings.members_previous_version_cannot_ban) else null
   AlertManager.shared.showAlertDialogButtonsColumn(
     generalGetString(MR.strings.button_remove_members_question),
     generalGetString(messageId),
-    belowTextContent = {
-      if (warning != null) {
-        Spacer(Modifier.height(DEFAULT_PADDING_HALF))
-        PreviousVersionWarning(warning)
-      }
-    },
+    belowTextContent = { CannotBlockWarning(members) },
     buttons = {
       Column {
         SectionItemView({

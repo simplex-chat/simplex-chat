@@ -629,6 +629,8 @@ testDeleteContactInvitationNotice =
       connectUsers alice bob
       alice ##> "/_delete @2 messages notice={\"ttl\":86400}"
       alice <## "bad chat command: notice requires deleting the contact"
+      alice ##> "/_delete @2 full notice={\"ttl\":0}"
+      alice <## "bad chat command: notice ttl must be positive"
       alice ##> "/_delete @2 full notice={\"ttl\":86400}"
       alice <## "bob: contact is deleted"
       bob <// 500000
