@@ -273,15 +273,13 @@ chatGroupTests = do
     describe "updatedMentionNames" testUpdatedMentionNames
   describe "message links" $ do
     it "link to a message of the same group" testMsgLinkSameGroup
-    it "link to a message of another group is sent without its reference, and keeps its chat after the message is deleted" testMsgLinkOtherGroup
+    it "link to a message of another group is sent without its reference" testMsgLinkOtherGroup
     it "link that is not in the sender's chats is refused" testMsgLinkRefused
     it "edit keeps the target of a kept link and removes a changed link" testMsgLinkEdit
     it "history sends the short texts of links" testMsgLinkHistory
     it "short text is kept after the target is edited, and the plan is the chat after it is deleted" testMsgLinkTargetChanged
     it "group with SimpleX links off refuses a global link and sends a local link" testMsgLinkSimplexLinksOff
     it "global link to a channel post" testMsgLinkChannel
-    it "link to a message sent as the group has no author" testMsgLinkAsGroup
-    it "links to two messages with one text" testMsgLinksOneText
   describe "group scoped messages" $ do
     it "should send scoped messages to support (single moderator)" testScopedSupportSingleModerator
     it "should send scoped messages to support (many moderators)" testScopedSupportManyModerators
@@ -8732,7 +8730,7 @@ testMsgLinkSameGroup =
       [alice, cath] *<# "#team bob> Approve the deploy plan?"
       alice ##> "/item link #team Approve"
       link <- getTermLine alice
-      link `shouldStartWith` "simplex:m#g/"
+      link `shouldStartWith` "simplex:/m#g/"
       alice #> ("#team see [q](" <> link <> ")")
       bob <# ("#team alice> see [q](" <> link <> ")")
       bob <## "[q]: Approve the deploy plan?"
@@ -8750,9 +8748,9 @@ testMsgLinkSameGroup =
           frUris = [],
           frCommands =
             [ "/_msg link plan 1 " <> link <> " chat=#1",
-              "/_msg link plan 1 simplex:m",
-              "/_msg link plan 1 simplex:m#x/abc",
-              "/_msg link plan 1 simplex:m#g/YWJjZGVmZ2hpamtsbW5vcA?a=MTIzNDU2Nzg5MDEyMzQ1Ng",
+              "/_msg link plan 1 simplex:/m",
+              "/_msg link plan 1 simplex:/m#x/abc",
+              "/_msg link plan 1 simplex:/m#g/YWJjZGVmZ2hpamtsbW5vcA?a=MTIzNDU2Nzg5MDEyMzQ1Ng",
               "/_msg link plan 2 " <> link,
               "/_get chat #1 count=1",
               "/_get item link #1 " <> seeItemId
@@ -8767,31 +8765,25 @@ testMsgLinkOtherGroup =
       createGroup2' "club" alice (cath, GRAdmin) False
       bob #> "#team Approve the deploy plan?"
       [alice, cath] *<# "#team bob> Approve the deploy plan?"
-      targetId <- lastItemId alice
-      cath ##> "/set receipts all off"
-      cath <## "ok"
       alice ##> "/item link #team Approve"
       link <- getTermLine alice
       alice `send` ("#club see [q](" <> link <> ")")
-      alice <# "#club see [q](simplex:m)"
-      cath <# "#club alice> see [q](simplex:m)"
+      alice <# "#club see [q](simplex:/m)"
+      cath <# "#club alice> see [q](simplex:/m)"
       cath <## "[q]: Approve the deploy plan?"
-      linkTargets alice `shouldReturn` [("q", True, Just "Approve the deploy plan?")]
-      linkTargets cath `shouldReturn` [("q", False, Nothing)]
-      cath ##> "/_msg link plan 1 simplex:m chat=#2"
+      linkTargets alice `shouldReturn` [("q", Just "Approve the deploy plan?")]
+      linkTargets cath `shouldReturn` [("q", Nothing)]
+      cath ##> "/_msg link plan 1 simplex:/m chat=#2"
       cath <## "message link: unknown source"
       apiFixture "links/other-group-sender" alice [] FixtureRequests {frMarkdown = [], frUris = [], frCommands = ["/_get chat #2 count=1"]}
       apiFixture "links/other-group-recipient" cath [] FixtureRequests {frMarkdown = [], frUris = [], frCommands = ["/_get chat #2 count=1"]}
-      alice #$> ("/_delete item #1 " <> targetId <> " internal", id, "message deleted")
-      linkTargets alice `shouldReturn` [("q", True, Nothing)]
-      apiFixture "links/other-group-sender-deleted" alice [] FixtureRequests {frMarkdown = [], frUris = [], frCommands = ["/_get chat #2 count=1"]}
 
 testMsgLinkRefused :: HasCallStack => TestParams -> IO ()
 testMsgLinkRefused =
   testChat2 aliceProfile bobProfile $
     \alice bob -> do
       createGroup2 "team" alice bob
-      alice ##> "#team see [q](simplex:m#g/YWJjZGVmZ2hpamtsbW5vcA?a=MTIzNDU2Nzg5MDEyMzQ1Ng)"
+      alice ##> "#team see [q](simplex:/m#g/YWJjZGVmZ2hpamtsbW5vcA?a=MTIzNDU2Nzg5MDEyMzQ1Ng)"
       alice <## "bad chat command: message link: not in your chats"
       bob #> "#team hello"
       alice <# "#team bob> hello"
@@ -8811,17 +8803,17 @@ testMsgLinkEdit =
       alice ##> "/item link #team Approve"
       link <- getTermLine alice
       alice `send` ("#club see [q](" <> link <> ")")
-      alice <# "#club see [q](simplex:m)"
-      cath <# "#club alice> see [q](simplex:m)"
+      alice <# "#club see [q](simplex:/m)"
+      cath <# "#club alice> see [q](simplex:/m)"
       cath <## "[q]: Approve the deploy plan?"
-      alice ##> "! #club see [q](simplex:m) and [p](simplex:m)"
-      alice <# "#club [edited] see [q](simplex:m) and [p](simplex:m)"
-      cath <# "#club alice> [edited] see [q](simplex:m) and [p](simplex:m)"
-      linkTargets alice `shouldReturn` [("q", True, Just "Approve the deploy plan?")]
-      linkTargets cath `shouldReturn` [("q", False, Nothing)]
-      alice ##> "! #club see [r](simplex:m)"
-      alice <# "#club [edited] see [r](simplex:m)"
-      cath <# "#club alice> [edited] see [r](simplex:m)"
+      alice ##> "! #club see [q](simplex:/m) and [p](simplex:/m)"
+      alice <# "#club [edited] see [q](simplex:/m) and [p](simplex:/m)"
+      cath <# "#club alice> [edited] see [q](simplex:/m) and [p](simplex:/m)"
+      linkTargets alice `shouldReturn` [("q", Just "Approve the deploy plan?")]
+      linkTargets cath `shouldReturn` [("q", Nothing)]
+      alice ##> "! #club see [r](simplex:/m)"
+      alice <# "#club [edited] see [r](simplex:/m)"
+      cath <# "#club alice> [edited] see [r](simplex:/m)"
       linkTargets alice `shouldReturn` []
       linkTargets cath `shouldReturn` []
 
@@ -8936,45 +8928,10 @@ testMsgLinkChannel ps =
           dan ##> ("/_msg link plan 1 " <> link)
           dan <# "#team> Release notes 7.2 [>>]"
 
-testMsgLinkAsGroup :: HasCallStack => TestParams -> IO ()
-testMsgLinkAsGroup =
-  testChat2 aliceProfile bobProfile $
-    \alice bob -> do
-      createGroup2 "team" alice bob
-      alice ##> "/_send #1(as_group=on) text Release 7.2 is out"
-      alice <# "#team Release 7.2 is out"
-      bob <# "#team> Release 7.2 is out"
-      bob ##> "/item link #team Release"
-      link <- getTermLine bob
-      link `shouldStartWith` "simplex:m#g/"
-      link `shouldNotContain` "?a="
-      bob ##> ("/_msg link plan 1 " <> link <> " chat=#1")
-      bob <# "#team> Release 7.2 is out"
-
-testMsgLinksOneText :: HasCallStack => TestParams -> IO ()
-testMsgLinksOneText =
-  testChat2 aliceProfile bobProfile $
-    \alice bob -> do
-      createGroup2 "team" alice bob
-      bob #> "#team OK"
-      alice <# "#team bob> OK"
-      firstId <- lastItemId alice
-      bob #> "#team OK"
-      alice <# "#team bob> OK"
-      secondId <- lastItemId alice
-      alice ##> ("/_get item link #1 " <> firstId)
-      firstLink <- getTermLine alice
-      alice ##> ("/_get item link #1 " <> secondId)
-      secondLink <- getTermLine alice
-      alice `send` ("#team Results: " <> firstLink <> " and " <> secondLink)
-      alice <# ("#team Results: [OK](" <> firstLink <> ") and [OK](" <> secondLink <> ")")
-      bob <# ("#team alice> Results: [OK](" <> firstLink <> ") and [OK](" <> secondLink <> ")")
-      bob <## "[OK]: OK"
-
-linkTargets :: TestCC -> IO [(T.Text, Bool, Maybe T.Text)]
+linkTargets :: TestCC -> IO [(T.Text, Maybe T.Text)]
 linkTargets cc =
   withCCTransaction cc $ \db ->
-    DB.query_ db "SELECT l.label, COALESCE(l.target_contact_id, l.target_group_id, l.target_note_folder_id) IS NOT NULL, t.item_text FROM chat_item_links l LEFT JOIN chat_items t ON t.chat_item_id = l.target_chat_item_id ORDER BY l.chat_item_link_id"
+    DB.query_ db "SELECT l.label, t.item_text FROM chat_item_links l LEFT JOIN chat_items t ON t.chat_item_id = l.target_chat_item_id ORDER BY l.chat_item_link_id"
 
 testScopedSupportSingleModerator :: HasCallStack => TestParams -> IO ()
 testScopedSupportSingleModerator =

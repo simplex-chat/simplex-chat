@@ -362,9 +362,6 @@ CREATE TABLE test_chat_schema.chat_item_links (
     chat_item_id bigint NOT NULL,
     label text NOT NULL,
     link_text text NOT NULL,
-    target_contact_id bigint,
-    target_group_id bigint,
-    target_note_folder_id bigint,
     target_chat_item_id bigint
 );
 
@@ -2330,18 +2327,6 @@ CREATE INDEX idx_chat_item_links_target_chat_item_id ON test_chat_schema.chat_it
 
 
 
-CREATE INDEX idx_chat_item_links_target_contact_id ON test_chat_schema.chat_item_links USING btree (target_contact_id);
-
-
-
-CREATE INDEX idx_chat_item_links_target_group_id ON test_chat_schema.chat_item_links USING btree (target_group_id);
-
-
-
-CREATE INDEX idx_chat_item_links_target_note_folder_id ON test_chat_schema.chat_item_links USING btree (target_note_folder_id);
-
-
-
 CREATE INDEX idx_chat_item_mentions_chat_item_id ON test_chat_schema.chat_item_mentions USING btree (chat_item_id);
 
 
@@ -3169,21 +3154,6 @@ ALTER TABLE ONLY test_chat_schema.chat_item_links
 
 ALTER TABLE ONLY test_chat_schema.chat_item_links
     ADD CONSTRAINT chat_item_links_target_chat_item_id_fkey FOREIGN KEY (target_chat_item_id) REFERENCES test_chat_schema.chat_items(chat_item_id) ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY test_chat_schema.chat_item_links
-    ADD CONSTRAINT chat_item_links_target_contact_id_fkey FOREIGN KEY (target_contact_id) REFERENCES test_chat_schema.contacts(contact_id) ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY test_chat_schema.chat_item_links
-    ADD CONSTRAINT chat_item_links_target_group_id_fkey FOREIGN KEY (target_group_id) REFERENCES test_chat_schema.groups(group_id) ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY test_chat_schema.chat_item_links
-    ADD CONSTRAINT chat_item_links_target_note_folder_id_fkey FOREIGN KEY (target_note_folder_id) REFERENCES test_chat_schema.note_folders(note_folder_id) ON DELETE SET NULL;
 
 
 

@@ -187,7 +187,7 @@ copy_link() {
   read -r x y w h < <(sed -E 's/.* at (-?[0-9]+),(-?[0-9]+) size ([0-9]+)x([0-9]+).*/\1 \2 \3 \4/' <<< "$link")
   "$ui" tap-xy $((x + w / 2)) $((y + h / 2))
   deadline=$((SECONDS + 10))
-  until copied=$(xcrun simctl pbpaste "$SIM_UDID") && grep -qE '^simplex:m#g/[A-Za-z0-9_-]+\?a=[A-Za-z0-9_-]+$' <<< "$copied"; do
+  until copied=$(xcrun simctl pbpaste "$SIM_UDID") && grep -qE '^simplex:/m#g/[A-Za-z0-9_-]+\?a=[A-Za-z0-9_-]+$' <<< "$copied"; do
     [ "$SECONDS" -lt "$deadline" ] || fail "\"Copy link\" put \"$copied\" on the clipboard, not the message's link"
     sleep 1
   done

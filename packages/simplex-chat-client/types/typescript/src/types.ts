@@ -1053,7 +1053,7 @@ export enum CIGroupInvitationStatus {
   Rejected = "rejected",
   Expired = "expired",
 }
-// Short text of a message link, by its label in the message text. The target is the chat where a link to a group, contact or notes message leads, and, in the sender's or forwarder's copy of a link sent as simplex:m, the linked message too. Such a link without a target leads nowhere.
+// Short text of a message link, by its label in the message text. The target is the linked message, only in the sender's or forwarder's copy of a link sent as simplex:/m.
 
 export interface CILink {
   text: string
@@ -1063,7 +1063,7 @@ export interface CILink {
 export interface CILinkTarget {
   chatType: ChatType
   chatId: number // int64
-  chatItemId?: number // int64
+  chatItemId: number // int64
 }
 
 export interface CIMention {

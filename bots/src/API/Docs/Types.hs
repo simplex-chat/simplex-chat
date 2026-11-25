@@ -254,7 +254,7 @@ chatTypesDocsData =
     (sti @CIForwardedFrom, STUnion, "CIFF", [], "", ""),
     (sti @CIGroupInvitation, STRecord, "", [], "", ""),
     (sti @CIGroupInvitationStatus, STEnum, "CIGIS", [], "", ""),
-    (sti @CILink, STRecord, "", [], "", "Short text of a message link, by its label in the message text. The target is the chat where a link to a group, contact or notes message leads, and, in the sender's or forwarder's copy of a link sent as simplex:m, the linked message too. Such a link without a target leads nowhere."),
+    (sti @CILink, STRecord, "", [], "", "Short text of a message link, by its label in the message text. The target is the linked message, only in the sender's or forwarder's copy of a link sent as simplex:/m."),
     (sti @CILinkTarget, STRecord, "", [], "", ""),
     (sti @CIMention, STRecord, "", [], "", ""),
     (sti @CIMentionMember, STRecord, "", [], "", ""),

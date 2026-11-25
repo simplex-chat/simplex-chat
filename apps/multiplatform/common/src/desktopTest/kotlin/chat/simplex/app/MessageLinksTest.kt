@@ -34,6 +34,7 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import java.util.Locale
 import java.util.concurrent.CopyOnWriteArrayList
+import kotlin.math.roundToInt
 import kotlin.test.*
 
 @OptIn(ExperimentalTestApi::class)
@@ -67,13 +68,13 @@ class MessageLinksTest {
   }
 
   @Test
-  fun receivedLinkHasShortTextAndChat() = recorded("links/same-group") {
-    assertEquals(mapOf("q" to CILink("Approve the deploy plan?", CILinkTarget(ChatType.Group, 1))), lastItem(groupId = 1).links)
+  fun receivedLinkHasShortText() = recorded("links/same-group") {
+    assertEquals(mapOf("q" to CILink("Approve the deploy plan?")), lastItem(groupId = 1).links)
   }
 
   @Test
   fun messageLinkIsShownWithShortText() = recorded("links/same-group") {
-    assertEquals(listOf("see ", "q “Approve the deploy plan?”"), itemDisplay(lastItem(groupId = 1), SimplexLinkMode.DESCRIPTION)?.parts?.map { it.first })
+    assertEquals(listOf("see ", "q (Approve the deploy plan?)"), itemDisplay(lastItem(groupId = 1), SimplexLinkMode.DESCRIPTION)?.parts?.map { it.first })
   }
 
   @Test
@@ -85,23 +86,23 @@ class MessageLinksTest {
 
   @Test
   fun linkToMessageGoneFromKnownChatOpensChat() = recorded("links/same-group") {
-    val action = msgLinkAction(MsgLinkPlan.Chat(lastChat(groupId = 1).chatInfo), null) as MsgLinkAction.OpenChat
-    assertEquals(ChatType.Group to 1L, action.chatType to action.chatId)
+    val chatInfo = lastChat(groupId = 1).chatInfo
+    assertEquals(chatInfo, (msgLinkAction(MsgLinkPlan.Chat(chatInfo), null) as MsgLinkAction.OpenChat).chatInfo)
   }
 
   @Test
   fun linkFromUnknownSourceShowsAlert() = recorded("links/same-group") {
-    assertEquals("This link is from an unknown source.", alertTitle(plan("simplex:m"), null))
+    assertEquals("This link is from an unknown source.", alertTitle(plan("simplex:/m"), null))
   }
 
   @Test
   fun linkToMessageNotInChatsShowsAlert() = recorded("links/same-group") {
-    assertEquals("This message is not in your chats.", alertTitle(plan("simplex:m#g/YWJjZGVmZ2hpamtsbW5vcA?a=MTIzNDU2Nzg5MDEyMzQ1Ng"), null))
+    assertEquals("This message is not in your chats.", alertTitle(plan("simplex:/m#g/YWJjZGVmZ2hpamtsbW5vcA?a=MTIzNDU2Nzg5MDEyMzQ1Ng"), null))
   }
 
   @Test
   fun linkOfUnknownKindAsksForUpdate() = recorded("links/same-group") {
-    assertEquals("Update the app to open this link.", alertTitle(plan("simplex:m#x/abc"), null))
+    assertEquals("Update the app to open this link.", alertTitle(plan("simplex:/m#x/abc"), null))
   }
 
   @Test
@@ -112,32 +113,20 @@ class MessageLinksTest {
   }
 
   @Test
-  fun sendersLinkToDeletedMessageOpensItsChat() = recorded("links/other-group-sender-deleted") {
-    val target = assertNotNull(lastItem(groupId = 2).links?.get("q")?.target)
-    assertEquals(CILinkTarget(ChatType.Group, 1), target)
-    val action = msgLinkAction(MsgLinkPlan.UnknownSource, target) as MsgLinkAction.OpenChat
-    assertEquals(ChatType.Group to 1L, action.chatType to action.chatId)
-  }
-
-  @Test
   fun recipientsLinkToOtherChatHasNoTarget() = recorded("links/other-group-recipient") {
     assertEquals(mapOf("q" to CILink("Approve the deploy plan?")), lastItem(groupId = 2).links)
   }
 
   @Test
-  fun linkThatLeadsNowhereIsText() = runComposeUiTest {
+  fun linkFromUnknownSourceIsMuted() = runComposeUiTest {
     useRecording("links/other-group-recipient")
-    val text = itemText(runBlocking { lastItem(groupId = 2) })
-    assertEquals("see q “Approve the deploy plan?”", text.text)
-    assertEquals(listOf(), text.spanStyles.filter { it.item.textDecoration == TextDecoration.Underline })
-    assertEquals(listOf(), text.getStringAnnotations("MESSAGE_LINK", 0, text.length))
+    assertEquals(listOf(7, 7), linkAlphas(runBlocking { lastItem(groupId = 2) }))
   }
 
   @Test
-  fun sendersLinkToOtherChatIsLink() = runComposeUiTest {
+  fun sendersLinkToOtherChatIsNotMuted() = runComposeUiTest {
     useRecording("links/other-group-sender")
-    val text = itemText(runBlocking { lastItem(groupId = 2) })
-    assertEquals(listOf("q"), text.spanStyles.filter { it.item.textDecoration == TextDecoration.Underline }.map { text.text.substring(it.start, it.end) })
+    assertEquals(listOf(10, 10), linkAlphas(runBlocking { lastItem(groupId = 2) }))
   }
 
   @Test
@@ -249,9 +238,10 @@ class MessageLinksTest {
 
   private fun alertTitle(plan: MsgLinkPlan, target: CILinkTarget?): String = generalGetString((msgLinkAction(plan, target) as MsgLinkAction.Alert).title)
 
-  private fun ComposeUiTest.itemText(item: ChatItem): AnnotatedString {
-    setContent { MarkdownText(item.text, item.formattedText, links = item.links, toggleSecrets = false, onMsgLinkClick = {}, linkMode = SimplexLinkMode.DESCRIPTION) }
-    return onAllNodes(SemanticsMatcher.keyIsDefined(SemanticsProperties.Text), useUnmergedTree = true).fetchSemanticsNodes().single().config[SemanticsProperties.Text].single()
+  private fun ComposeUiTest.linkAlphas(item: ChatItem): List<Int> {
+    setContent { MarkdownText(item.text, item.formattedText, links = item.links, toggleSecrets = false, linkMode = SimplexLinkMode.DESCRIPTION) }
+    val text = onAllNodes(SemanticsMatcher.keyIsDefined(SemanticsProperties.Text), useUnmergedTree = true).fetchSemanticsNodes().single().config[SemanticsProperties.Text].single()
+    return text.spanStyles.filter { it.item.textDecoration == TextDecoration.Underline }.map { (it.item.color.alpha * 10).roundToInt() }
   }
 
   private fun ComposeUiTest.assertTexts(vararg texts: String) {

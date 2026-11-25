@@ -49,7 +49,7 @@ Each type has a dedicated view in `Shared/Views/Chat/ChatItem/`:
 
 | Type | View | Description |
 |---|---|---|
-| Text | `MsgContentView` | Rendered with markdown (bold, italic, code, links, mentions); a message link shows its label and, in quotes in the secondary colour, the short text of the linked message, and a tap opens the message; a link that leads nowhere is text without a tap |
+| Text | `MsgContentView` | Rendered with markdown (bold, italic, code, links, mentions); a message link shows its label and, in italics in parentheses, the short text of the linked message, and a tap opens the message; a link from an unknown source is muted |
 | Image | `CIImageView` | Thumbnail with tap-to-fullscreen via `FullScreenMediaView` |
 | Video | `CIVideoView` | Video thumbnail with play button; inline playback |
 | Voice | `CIVoiceView` / `FramedCIVoiceView` | Waveform visualization with playback controls and duration |

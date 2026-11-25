@@ -29,9 +29,9 @@ final class MessageLinkTests: XCTestCase {
     func testItemShowsLinkWithShortText() throws {
         let item = try lastItem("links/same-group", "/_get chat #1 count=1")
         XCTAssertEqual(item.formattedText?.last?.format, Format.messageLink(showText: "q", msgLinkType: .group, msgLink: "GROUP_MSG_LINK"))
-        XCTAssertEqual(item.links, ["q": CILink(text: "Approve the deploy plan?", target: CILinkTarget(chatType: .group, chatId: 1, chatItemId: nil))])
-        let r = itemText(item)
-        XCTAssertEqual(r.string.string, "see q “Approve the deploy plan?”")
+        XCTAssertEqual(item.links, ["q": CILink(text: "Approve the deploy plan?", target: nil)])
+        let r = messageText(item.text, item.formattedText, sender: nil, mentions: nil, links: item.links, userMemberId: nil, showSecrets: nil, backgroundColor: .white)
+        XCTAssertEqual(r.string.string, "see q (Approve the deploy plan?)")
         XCTAssertTrue(r.handleTaps)
     }
 
@@ -50,46 +50,31 @@ final class MessageLinkTests: XCTestCase {
     @MainActor
     func testLinkToOtherChatOpensTargetOfSenderCopy() async throws {
         let item = try lastItem("links/other-group-sender", "/_get chat #2 count=1")
-        XCTAssertEqual(item.formattedText?.last?.format, Format.messageLink(showText: "q", msgLinkType: .unknownSource, msgLink: "simplex:m"))
+        XCTAssertEqual(item.formattedText?.last?.format, Format.messageLink(showText: "q", msgLinkType: .unknownSource, msgLink: "simplex:/m"))
         let link = try XCTUnwrap(item.links?["q"])
         XCTAssertEqual(link.text, "Approve the deploy plan?")
         let target = try XCTUnwrap(link.target)
         XCTAssertEqual(target.chatType, .group)
         XCTAssertEqual(target.chatId, 1)
-        let itemId = try XCTUnwrap(target.chatItemId)
-        XCTAssertEqual(msgLinkAction(.unknownSource, target: target), .openItem(chatId: "#1", itemId: itemId))
+        XCTAssertEqual(msgLinkAction(.unknownSource, target: target), .openItem(chatId: "#1", itemId: target.chatItemId))
         try recorded("links/other-group-sender")
-        openMsgLink("simplex:m", .unknownSource, chatId: "#2", target: target, theme: CurrentColors.toAppTheme())
-        try await assertRequested(["/_get chat #1 around=\(itemId) count=50"])
-    }
-
-    func testSendersLinkToDeletedMessageOpensItsChat() throws {
-        let target = try XCTUnwrap(try lastItem("links/other-group-sender-deleted", "/_get chat #2 count=1").links?["q"]?.target)
-        XCTAssertEqual(target, CILinkTarget(chatType: .group, chatId: 1, chatItemId: nil))
-        XCTAssertEqual(msgLinkAction(.unknownSource, target: target), .openChat(chatId: "#1"))
+        openMsgLink("simplex:/m", .unknownSource, chatId: "#2", target: target, theme: CurrentColors.toAppTheme())
+        try await assertRequested(["/_get chat #1 around=\(target.chatItemId) count=50"])
     }
 
     func testLinkToOtherChatIsFromUnknownSourceForRecipient() throws {
         let item = try lastItem("links/other-group-recipient", "/_get chat #2 count=1")
-        XCTAssertEqual(item.formattedText?.last?.format, Format.messageLink(showText: "q", msgLinkType: .unknownSource, msgLink: "simplex:m"))
+        XCTAssertEqual(item.formattedText?.last?.format, Format.messageLink(showText: "q", msgLinkType: .unknownSource, msgLink: "simplex:/m"))
         XCTAssertEqual(item.links, ["q": CILink(text: "Approve the deploy plan?", target: nil)])
-        XCTAssertEqual(msgLinkAction(try linkPlan("links/same-group", "/_msg link plan 1 simplex:m"), target: nil), .alert(title: "This link is from an unknown source."))
+        XCTAssertEqual(msgLinkAction(try linkPlan("links/same-group", "/_msg link plan 1 simplex:/m"), target: nil), .alert(title: "This link is from an unknown source."))
     }
 
-    func testLinkThatLeadsNowhereIsText() throws {
-        let r = itemText(try lastItem("links/other-group-recipient", "/_get chat #2 count=1"))
-        XCTAssertEqual(r.string.string, "see q “Approve the deploy plan?”")
-        XCTAssertEqual(attribute(r, .foregroundColor, "q") as? UIColor, UIColor.label)
-        XCTAssertNil(attribute(r, .underlineStyle, "q"))
-        XCTAssertEqual(attribute(r, .foregroundColor, "Approve") as? UIColor, UIColor.secondaryLabel)
-        XCTAssertFalse(r.handleTaps)
+    func testLinkFromUnknownSourceIsMuted() throws {
+        XCTAssertEqual(labelColor(try lastItem("links/other-group-recipient", "/_get chat #2 count=1")), uiLinkColor.withAlphaComponent(0.7))
     }
 
-    func testSendersLinkToOtherChatIsLink() throws {
-        let r = itemText(try lastItem("links/other-group-sender", "/_get chat #2 count=1"))
-        XCTAssertEqual(attribute(r, .foregroundColor, "q") as? UIColor, uiLinkColor)
-        XCTAssertNil(attribute(r, .underlineStyle, "Approve"))
-        XCTAssertTrue(r.handleTaps)
+    func testSendersLinkToOtherChatIsNotMuted() throws {
+        XCTAssertEqual(labelColor(try lastItem("links/other-group-sender", "/_get chat #2 count=1")), uiLinkColor)
     }
 
     @MainActor
@@ -104,12 +89,12 @@ final class MessageLinkTests: XCTestCase {
     }
 
     func testLinkNotInChatsShowsAlert() throws {
-        let plan = try linkPlan("links/same-group", "/_msg link plan 1 simplex:m#g/YWJjZGVmZ2hpamtsbW5vcA?a=MTIzNDU2Nzg5MDEyMzQ1Ng")
+        let plan = try linkPlan("links/same-group", "/_msg link plan 1 simplex:/m#g/YWJjZGVmZ2hpamtsbW5vcA?a=MTIzNDU2Nzg5MDEyMzQ1Ng")
         XCTAssertEqual(msgLinkAction(plan, target: nil), .alert(title: "This message is not in your chats."))
     }
 
     func testLinkOfLaterVersionAsksForUpdate() throws {
-        XCTAssertEqual(msgLinkAction(try linkPlan("links/same-group", "/_msg link plan 1 simplex:m#x/abc"), target: nil), .alert(title: "Update the app to open this link."))
+        XCTAssertEqual(msgLinkAction(try linkPlan("links/same-group", "/_msg link plan 1 simplex:/m#x/abc"), target: nil), .alert(title: "Update the app to open this link."))
     }
 
     func testChannelPostLinkOfNonSubscriberJoinsChannel() throws {
@@ -154,12 +139,9 @@ final class MessageLinkTests: XCTestCase {
         try XCTUnwrap(try lastChat(fixture, cmd).chatItems.last, "no chat item in \(fixture)")
     }
 
-    private func itemText(_ item: ChatItem) -> MsgTextResult {
-        messageText(item.text, item.formattedText, sender: nil, mentions: nil, links: item.links, userMemberId: nil, showSecrets: nil, backgroundColor: .white)
-    }
-
-    private func attribute(_ r: MsgTextResult, _ key: NSAttributedString.Key, _ text: String) -> Any? {
-        r.string.attribute(key, at: (r.string.string as NSString).range(of: text).location, effectiveRange: nil)
+    private func labelColor(_ item: ChatItem) -> UIColor? {
+        let r = messageText(item.text, item.formattedText, sender: nil, mentions: nil, links: item.links, userMemberId: nil, showSecrets: nil, backgroundColor: .white)
+        return r.string.attribute(.foregroundColor, at: (r.string.string as NSString).range(of: "q").location, effectiveRange: nil) as? UIColor
     }
 
     private func parsedMarkdown(_ fixture: String, _ text: String) throws -> ParsedMarkdown {

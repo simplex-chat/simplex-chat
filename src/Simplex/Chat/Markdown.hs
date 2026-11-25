@@ -118,6 +118,11 @@ mentionedNames = mapMaybe (\(FormattedText f _) -> mentionedName =<< f)
       Mention name -> Just name
       _ -> Nothing
 
+linkedLabels :: MarkdownList -> [Text]
+linkedLabels = mapMaybe $ \case
+  FormattedText (Just MessageLink {showText = Just label}) _ -> Just label
+  _ -> Nothing
+
 segmentMsgLink :: FormattedText -> Maybe (Maybe Text, MsgLink)
 segmentMsgLink = \case
   FormattedText (Just MessageLink {showText, msgLink}) _ -> Just (showText, msgLink)
@@ -127,7 +132,7 @@ msgLinkSegment :: Text -> MsgLink -> FormattedText
 msgLinkSegment label ml = FormattedText (Just $ MessageLink (Just label) (toMsgLinkType ml) ml) $ T.concat ["[", label, "](", safeDecodeUtf8 (strEncode ml), ")"]
 
 msgLinkLabel :: Text -> Text
-msgLinkLabel t = if T.null t then "…" else t
+msgLinkLabel t = let label = T.filter (\c -> c /= '[' && c /= ']') t in if T.null label then "…" else label
 
 data SimplexLinkType = XLContact | XLInvitation | XLGroup | XLChannel | XLRelay | XLPublicGroup | XLSite
   deriving (Eq, Show)
@@ -465,7 +470,9 @@ markdownP = joinMarkdown <$> A.many' fragmentP
       t <- enclosedP '[' ']' (\c -> c == '[' || c == '\n')
       l <- enclosedP '(' ')' isSpace
       f <- case msgLinkFormat (Just t) l of
-        Just f' -> pure f'
+        Just f'
+          | hasLinks (parseMarkdownList t) -> fail "link in message link text"
+          | otherwise -> pure f'
         Nothing -> do
           let hasPunct = T.any (\c -> isPunctuation c && c /= '-' && c /= '_') t
           when (hasPunct && t /= l && ("https://" <> t) /= l) $ fail "punctuation in hyperlink text"

@@ -1046,7 +1046,7 @@ GroupLink:
 
 ## CILink
 
-Short text of a message link, by its label in the message text. The target is the chat where a link to a group, contact or notes message leads, and, in the sender's or forwarder's copy of a link sent as simplex:m, the linked message too. Such a link without a target leads nowhere.
+Short text of a message link, by its label in the message text. The target is the linked message, only in the sender's or forwarder's copy of a link sent as simplex:/m.
 
 **Record type**:
 - text: string
@@ -1060,7 +1060,7 @@ Short text of a message link, by its label in the message text. The target is th
 **Record type**:
 - chatType: [ChatType](#chattype)
 - chatId: int64
-- chatItemId: int64?
+- chatItemId: int64
 
 
 ---

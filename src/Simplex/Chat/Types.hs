@@ -72,7 +72,7 @@ import Simplex.Messaging.Crypto.Ratchet (PQEncryption (..), PQSupport, pattern P
 import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, sumTypeJSON)
-import Simplex.Messaging.Util (decodeJSON, encodeJSON, safeDecodeUtf8, ($>>=), (<$?>))
+import Simplex.Messaging.Util (decodeJSON, encodeJSON, safeDecodeUtf8, (<$?>))
 import Simplex.Messaging.Version
 import Simplex.Messaging.Version.Internal
 #if defined(dbPostgres)
@@ -1938,7 +1938,7 @@ aConnectTarget (ACL SCMContact cl) = ACTarget SCMContact $ case cl of
 
 data MsgLink
   = MLPublicGroup ContactNameOrLink (Maybe MemberId) SharedMsgId
-  | MLGroup (Maybe MemberId) SharedMsgId
+  | MLGroup MemberId SharedMsgId
   | MLDirect SharedMsgId
   | MLNote NoteFolderId Int64
   | MLUnknownSource
@@ -1966,10 +1966,10 @@ instance StrEncoding MsgLink where
             CTName ni -> "simplex:/name" <> strEncode ni
           sep = if B.elem '?' uri then "&" else "?"
        in uri <> sep <> "m=" <> U.encodeUnpadded msgId <> maybe "" (\(MemberId a) -> "&a=" <> U.encodeUnpadded a) author_
-    MLGroup author_ (SharedMsgId msgId) -> "simplex:m#g/" <> U.encodeUnpadded msgId <> maybe "" (\(MemberId a) -> "?a=" <> U.encodeUnpadded a) author_
-    MLDirect (SharedMsgId msgId) -> "simplex:m#d/" <> U.encodeUnpadded msgId
-    MLNote folderId itemId -> "simplex:m#n/" <> B.pack (show itemId) <> "?f=" <> B.pack (show folderId)
-    MLUnknownSource -> "simplex:m"
+    MLGroup (MemberId author) (SharedMsgId msgId) -> "simplex:/m#g/" <> U.encodeUnpadded msgId <> "?a=" <> U.encodeUnpadded author
+    MLDirect (SharedMsgId msgId) -> "simplex:/m#d/" <> U.encodeUnpadded msgId
+    MLNote folderId itemId -> "simplex:/m#n/" <> B.pack (show itemId) <> "?f=" <> B.pack (show folderId)
+    MLUnknownSource -> "simplex:/m"
     MLUnsupported t -> encodeUtf8 t
   strP = localLinkP <|> nameLinkP <|> shortLinkP
     where
@@ -1979,7 +1979,7 @@ instance StrEncoding MsgLink where
         (prefix, kind_) <- A.match $ schemeP *> A.char 'm' *> optional (A.char '#' *> A.anyChar)
         case kind_ of
           Nothing -> MLUnknownSource <$ (A.endOfInput <|> (() <$ lookAhead (A.satisfy A.isSpace)))
-          Just 'g' -> A.char '/' *> (flip MLGroup <$> strP <*> (optional queryP $>>= queryParam_ "a"))
+          Just 'g' -> A.char '/' *> (flip MLGroup <$> strP <*> (queryP >>= queryParam "a"))
           Just 'd' -> A.char '/' *> (MLDirect <$> strP) <* optional queryP
           Just 'n' -> A.char '/' *> (flip MLNote <$> A.decimal <*> (queryP >>= queryParamParser A.decimal "f"))
           Just _ -> MLUnsupported . safeDecodeUtf8 . (prefix <>) <$> A.takeTill A.isSpace

@@ -54,7 +54,7 @@ Each type has a dedicated composable in `views/chat/item/`:
 
 | Type | Composable | Description |
 |---|---|---|
-| Text | `FramedItemView` | Rendered with markdown (bold, italic, code, links, `@mentions`) via `CIMarkdownText`; a message link shows its label and, in quotes in the secondary colour, the short text of the linked message; a link that leads nowhere is text without a tap |
+| Text | `FramedItemView` | Rendered with markdown (bold, italic, code, links, `@mentions`) via `CIMarkdownText`; a message link shows its label and, in italics in parentheses, the short text of the linked message; a link from an unknown source is muted |
 | Image | `CIImageView` | Thumbnail with tap-to-fullscreen via `ImageFullScreenView`; animated GIFs play inline and full screen |
 | Video | `CIVideoView` | Video thumbnail with play button; inline playback via `VideoPlayerHolder` |
 | Voice | `CIVoiceView` | Waveform visualization with playback controls and duration |

@@ -4156,12 +4156,14 @@ SEARCH p USING COVERING INDEX idx_badge_purchases_user (user_id=? AND rowid=?)
 SEARCH l USING INDEX idx_badge_ledger_purchase (badge_purchase_id=?)
 
 Query: 
-        SELECT label, link_text, target_contact_id, target_group_id, target_note_folder_id, target_chat_item_id
-        FROM chat_item_links
-        WHERE chat_item_id = ?
+        SELECT l.label, l.link_text, t.chat_item_id, t.contact_id, t.group_id, t.note_folder_id
+        FROM chat_item_links l
+        LEFT JOIN chat_items t ON t.chat_item_id = l.target_chat_item_id
+        WHERE l.chat_item_id = ?
       
 Plan:
-SEARCH chat_item_links USING INDEX idx_chat_item_links_chat_item_id_label (chat_item_id=?)
+SEARCH l USING INDEX idx_chat_item_links_chat_item_id_label (chat_item_id=?)
+SEARCH t USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
 
 Query: 
         SELECT m.group_member_id
@@ -7267,7 +7269,6 @@ SEARCH contacts USING COVERING INDEX idx_contacts_contact_request_id (contact_re
 Query: DELETE FROM contacts WHERE user_id = ? AND contact_id = ?
 Plan:
 SEARCH contacts USING INTEGER PRIMARY KEY (rowid=?)
-SEARCH chat_item_links USING COVERING INDEX idx_chat_item_links_target_contact_id (target_contact_id=?)
 SEARCH chat_tags_chats USING COVERING INDEX idx_chat_tags_chats_chat_tag_id_contact_id (contact_id=?)
 SEARCH received_probes USING COVERING INDEX idx_received_probes_contact_id (contact_id=?)
 SEARCH sent_probe_hashes USING COVERING INDEX idx_sent_probe_hashes_contact_id (contact_id=?)
@@ -7434,7 +7435,6 @@ SEARCH contacts USING COVERING INDEX idx_contacts_contact_group_member_id (conta
 Query: DELETE FROM groups WHERE user_id = ? AND group_id = ?
 Plan:
 SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
-SEARCH chat_item_links USING COVERING INDEX idx_chat_item_links_target_group_id (target_group_id=?)
 SEARCH rcv_roster_transfers USING COVERING INDEX idx_rcv_roster_transfers_group_id_from_member_id (group_id=?)
 SEARCH group_relays USING COVERING INDEX idx_group_relays_group_id (group_id=?)
 SEARCH delivery_jobs USING COVERING INDEX idx_delivery_jobs_group_id (group_id=?)
@@ -7600,7 +7600,7 @@ Plan:
 SCAN badge_ledger
 SEARCH badge_issuances USING COVERING INDEX idx_badge_issuances_entry (entry_id=?)
 
-Query: INSERT INTO chat_item_links (chat_item_id, label, link_text, target_contact_id, target_group_id, target_note_folder_id, target_chat_item_id) VALUES (?, ?, ?, ?, ?, ?, ?)
+Query: INSERT INTO chat_item_links (chat_item_id, label, link_text, target_chat_item_id) VALUES (?, ?, ?, ?)
 Plan:
 
 Query: INSERT INTO chat_item_mentions (chat_item_id, group_id, member_id, display_name) VALUES (?, ?, ?, ?)
@@ -8174,7 +8174,7 @@ Query: SELECT item_status FROM chat_items WHERE item_text = ?
 Plan:
 SCAN chat_items
 
-Query: SELECT l.label, COALESCE(l.target_contact_id, l.target_group_id, l.target_note_folder_id) IS NOT NULL, t.item_text FROM chat_item_links l LEFT JOIN chat_items t ON t.chat_item_id = l.target_chat_item_id ORDER BY l.chat_item_link_id
+Query: SELECT l.label, t.item_text FROM chat_item_links l LEFT JOIN chat_items t ON t.chat_item_id = l.target_chat_item_id ORDER BY l.chat_item_link_id
 Plan:
 SCAN l
 SEARCH t USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN

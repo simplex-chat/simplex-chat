@@ -280,7 +280,7 @@ data CILink = CILink
 data CILinkTarget = CILinkTarget
   { chatType :: ChatType,
     chatId :: Int64,
-    chatItemId :: Maybe ChatItemId
+    chatItemId :: ChatItemId
   }
   deriving (Eq, Ord, Show)
 
@@ -658,12 +658,12 @@ itemMsgLink cInfo ci@ChatItem {meta = CIMeta {itemId, itemSharedMsgId}} = case (
   (DirectChat _, Just msgId) -> Right $ MLDirect msgId
   (GroupChat g scope, Just msgId) -> case (publicGroup' g, scope) of
     (Just PublicGroupProfile {groupLink}, Nothing) -> Right $ MLPublicGroup (CTLink groupLink) (memberId' <$> chatItemMember g ci) msgId
-    _ -> Right $ MLGroup (memberId' <$> chatItemMember g ci) msgId
+    _ -> maybe (Left "message has no author") (Right . (`MLGroup` msgId) . memberId') $ chatItemMember g ci
   (LocalChat NoteFolder {noteFolderId}, _) -> Right $ MLNote noteFolderId itemId
   _ -> Left "message has no link"
 
-ciLinkTarget :: ChatInfo c -> Maybe ChatItemId -> Maybe CILinkTarget
-ciLinkTarget cInfo chatItemId = (\ChatRef {chatType, chatId} -> CILinkTarget {chatType, chatId, chatItemId}) <$> chatInfoToRef cInfo
+ciLinkTarget :: ChatInfo c -> ChatItem c d -> Maybe CILinkTarget
+ciLinkTarget cInfo ci = (\ChatRef {chatType, chatId} -> CILinkTarget {chatType, chatId, chatItemId = chatItemId' ci}) <$> chatInfoToRef cInfo
 
 ciLinkText :: ChatItem c d -> Text
 ciLinkText ChatItem {content, file} = case ciMsgContent content of
@@ -675,7 +675,7 @@ ciLinkText ChatItem {content, file} = case ciMsgContent content of
 shortLinkText :: Text -> Text
 shortLinkText t = if T.length s > maxLinkTextLength then T.take (maxLinkTextLength - 1) s `T.snoc` '…' else s
   where
-    s = T.strip $ T.filter (\c -> not (isBidiControl c) && c /= '[' && c /= ']') $ T.takeWhile (not . isLineBreak) $ T.stripStart shown
+    s = T.strip $ T.filter (not . isBidiControl) $ T.takeWhile (not . isLineBreak) $ T.stripStart shown
     shown = maybe t (T.concat . map shownText) $ parseMaybeMarkdownList t
     shownText (FormattedText f_ ft) = case f_ of
       Just Secret -> "…"

@@ -371,8 +371,8 @@ textWithMessageLinks = describe "text with message links" do
   let msgId = "YWJjZGVmZ2hpamtsbW5vcA"
       author = "MTIzNDU2Nzg5MDEyMzQ1Ng"
       key = "MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY"
-      groupLink = "simplex:m#g/" <> msgId <> "?a=" <> author
-      directLink = "simplex:m#d/" <> msgId
+      groupLink = "simplex:/m#g/" <> msgId <> "?a=" <> author
+      directLink = "simplex:/m#d/" <> msgId
       channelLink = "https://smp.simplex.im/c#" <> key
       publicGroupLink = "https://smp.simplex.im/p#" <> key
   it "local links" do
@@ -403,9 +403,8 @@ textWithMessageLinks = describe "text with message links" do
     ("see " <> dashLink) <==> "see " <> messageLink Nothing dashLink dashLink
     "simplex:/m#x/abc" <==> messageLink Nothing "simplex:/m#x/abc" "simplex:/m#x/abc"
     msgLinkType_ "simplex:/m#x/abc" `shouldBe` Right MLTUnsupported
-  it "link text that looks like a link" do
-    ("[https://example.com](" <> directLink <> ")") <==> messageLink (Just "https://example.com") directLink ("[https://example.com](" <> directLink <> ")")
-    ("[see report.pdf](" <> directLink <> ")") <==> messageLink (Just "see report.pdf") directLink ("[see report.pdf](" <> directLink <> ")")
+  it "link in link text" $
+    ("[https://example.com](" <> directLink <> ")") <==> "[https://example.com](" <> messageLink Nothing directLink directLink <> ")"
   it "encodes and parses link URIs" do
     let roundTrip :: Text -> Either String Text
         roundTrip l = safeDecodeUtf8 . strEncode <$> (strDecode (encodeUtf8 l) :: Either String MsgLink)
@@ -415,20 +414,18 @@ textWithMessageLinks = describe "text with message links" do
         "simplex:/c#" <> key <> "?h=smp.simplex.im&m=" <> msgId,
         "simplex:/name#privacy.simplex?m=" <> msgId <> "&a=" <> author,
         groupLink,
-        "simplex:m#g/" <> msgId,
         directLink,
-        "simplex:m#n/48213?f=1",
-        "simplex:m",
+        "simplex:/m#n/48213?f=1",
+        "simplex:/m",
         "simplex:/m#x/abc"
       ] :: [Text])
       $ \l -> roundTrip l `shouldBe` Right l
-    roundTrip ("simplex:/m#d/" <> msgId) `shouldBe` Right directLink
+    roundTrip ("simplex:m#d/" <> msgId) `shouldBe` Right directLink
     roundTrip ("simplex:name#privacy.simplex?m=" <> msgId) `shouldBe` Right ("simplex:/name#privacy.simplex?m=" <> msgId)
   it "short text of a linked message" do
     shortLinkText "*Approve* the plan?\nsecond line" `shouldBe` "Approve the plan?"
     shortLinkText "\n  the code is #1234# now  " `shouldBe` "the code is … now"
     shortLinkText "see [the draft](simplex:/m)" `shouldBe` "see the draft"
-    shortLinkText "[WIP] Deploy" `shouldBe` "WIP Deploy"
     shortLinkText (T.replicate 100 "a") `shouldBe` (T.replicate 79 "a" <> "…")
     shortLinkText (T.replicate 80 "a") `shouldBe` T.replicate 80 "a"
 

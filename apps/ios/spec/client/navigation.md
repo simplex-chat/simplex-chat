@@ -204,9 +204,9 @@ App links use the app's own scheme, `simplexchat:`, for app-specific deep links,
 
 ### Message Link
 
-A message link (`Format.messageLink`) is shown by `messageText()` as its label, followed by the short text of the item's `links` entry of that label in quotes in `secondaryLabel` when the two differ; a label equal to its short text is shown in quotes. A link to a group, contact or notes message and a `simplex:m` link lead nowhere without a target in that entry (`MsgLinkType.leadsNowhere()`): the label is drawn as text, without the link colour and a tap. The core sets the target to the chat where the link leads when the message is sent or received, and to the linked message in the sender's or forwarder's copy of a link sent as `simplex:m`.
+A message link (`Format.messageLink`) is shown by `messageText()` as its label, followed by the short text of the item's `links` entry of that label in italics in parentheses when the two differ. A `simplex:/m` link without a target in that entry, a link from an unknown source, is drawn in `uiLinkColor` at 70% opacity.
 
-`openMsgLink()` takes the plan `unknownSource` for a `simplex:m` link, and otherwise calls `apiMsgLinkPlan()`: with the open chat at a tap, without a chat for a URL opened from outside that the core parses as one message link, before the path switch of `connectViaUrl_()`. `msgLinkAction()` maps the plan and the target of the item's link entry:
+`openMsgLink()` takes the plan `unknownSource` for a `simplex:/m` link, and otherwise calls `apiMsgLinkPlan()`: with the open chat at a tap, without a chat for a URL opened from outside that the core parses as one message link, before the path switch of `connectViaUrl_()`. `msgLinkAction()` maps the plan and the target of the item's link entry, which is present in the sender's or forwarder's copy of a link sent as `simplex:/m`:
 
 | `MsgLinkPlan` | `MsgLinkAction` |
 |---|---|
@@ -214,8 +214,7 @@ A message link (`Format.messageLink`) is shown by `messageText()` as its label, 
 | `chat` | `openChat`: the chat opened, then the alert *No message* |
 | `join` | `connect`: `planAndConnect()` with the public chat's link or name |
 | `notFound` | alert *This message is not in your chats.* |
-| `unknownSource`, with a target message | `openItem` at the target |
-| `unknownSource`, with a target chat, the message deleted | `openChat` of the target |
+| `unknownSource`, with a target | `openItem` at the target |
 | `unknownSource`, without a target | alert *This link is from an unknown source.* |
 | `unknownLink` | alert *Update the app to open this link.* |
 

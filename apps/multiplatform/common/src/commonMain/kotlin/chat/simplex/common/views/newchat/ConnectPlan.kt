@@ -68,21 +68,17 @@ suspend fun planAndConnect(
 
 sealed class MsgLinkAction {
   class OpenItem(val target: CILinkTarget): MsgLinkAction()
-  class OpenChat(val chatType: ChatType, val chatId: Long): MsgLinkAction()
+  class OpenChat(val chatInfo: ChatInfo): MsgLinkAction()
   class Connect(val connTarget: String): MsgLinkAction()
   class Alert(val title: StringResource): MsgLinkAction()
 }
 
 fun msgLinkAction(plan: MsgLinkPlan, target: CILinkTarget?): MsgLinkAction = when (plan) {
   is MsgLinkPlan.Item -> MsgLinkAction.OpenItem(CILinkTarget(plan.chatItem.chatInfo.chatType, plan.chatItem.chatInfo.apiId, plan.chatItem.chatItem.id))
-  is MsgLinkPlan.Chat -> MsgLinkAction.OpenChat(plan.chatInfo.chatType, plan.chatInfo.apiId)
+  is MsgLinkPlan.Chat -> MsgLinkAction.OpenChat(plan.chatInfo)
   is MsgLinkPlan.Join -> MsgLinkAction.Connect(plan.connTarget)
   MsgLinkPlan.NotFound -> MsgLinkAction.Alert(MR.strings.msg_link_not_found)
-  MsgLinkPlan.UnknownSource -> when {
-    target == null -> MsgLinkAction.Alert(MR.strings.msg_link_unknown_source)
-    target.chatItemId == null -> MsgLinkAction.OpenChat(target.chatType, target.chatId)
-    else -> MsgLinkAction.OpenItem(target)
-  }
+  MsgLinkPlan.UnknownSource -> if (target != null) MsgLinkAction.OpenItem(target) else MsgLinkAction.Alert(MR.strings.msg_link_unknown_source)
   MsgLinkPlan.UnknownLink -> MsgLinkAction.Alert(MR.strings.app_link_not_supported)
 }
 
@@ -95,7 +91,7 @@ suspend fun openMsgLink(rhId: Long?, chatInfo: ChatInfo?, link: Format.MessageLi
     }
     is MsgLinkAction.OpenChat -> {
       close?.invoke()
-      openChat(secondaryChatsCtx = null, rhId, action.chatType, action.chatId)
+      openChat(secondaryChatsCtx = null, rhId, action.chatInfo)
       showQuotedItemDoesNotExistAlert()
     }
     is MsgLinkAction.Connect -> planAndConnect(rhId, action.connTarget, close = close)

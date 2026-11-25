@@ -1613,15 +1613,15 @@ fun PreviewChatItemViewEmptyLinesTerminal() = CompositionLocalProvider(LocalTerm
 @Preview
 @Composable
 fun PreviewChatItemViewMessageLinks() = PreviewChatItemView(
-  ChatItem.getSampleData(1, CIDirection.DirectRcv(), previewDate, "Before the release: [Approve the deploy plan?](simplex:m#d/UXhQdlR3WmNrTjhyRDFtYQ) and [the draft](simplex:m)").copy(
+  ChatItem.getSampleData(1, CIDirection.DirectRcv(), previewDate, "Before the release: [Approve the deploy plan?](simplex:/m#d/UXhQdlR3WmNrTjhyRDFtYQ) and [the draft](simplex:/m)").copy(
     formattedText = listOf(
       FormattedText("Before the release: "),
-      FormattedText("[Approve the deploy plan?](simplex:m#d/UXhQdlR3WmNrTjhyRDFtYQ)", Format.MessageLink("Approve the deploy plan?", MsgLinkType.direct, "simplex:m#d/UXhQdlR3WmNrTjhyRDFtYQ")),
+      FormattedText("[Approve the deploy plan?](simplex:/m#d/UXhQdlR3WmNrTjhyRDFtYQ)", Format.MessageLink("Approve the deploy plan?", MsgLinkType.direct, "simplex:/m#d/UXhQdlR3WmNrTjhyRDFtYQ")),
       FormattedText(" and "),
-      FormattedText("[the draft](simplex:m)", Format.MessageLink("the draft", MsgLinkType.unknownSource, "simplex:m"))
+      FormattedText("[the draft](simplex:/m)", Format.MessageLink("the draft", MsgLinkType.unknownSource, "simplex:/m"))
     ),
     links = mapOf(
-      "Approve the deploy plan?" to CILink("Approve the deploy plan?", CILinkTarget(ChatType.Direct, 1)),
+      "Approve the deploy plan?" to CILink("Approve the deploy plan?"),
       "the draft" to CILink("Draft of the 7.2 announcement")
     )
   )

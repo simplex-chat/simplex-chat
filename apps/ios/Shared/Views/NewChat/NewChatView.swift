@@ -1776,10 +1776,8 @@ func msgLinkAction(_ plan: MsgLinkPlan, target: CILinkTarget?) -> MsgLinkAction 
     case let .join(connTarget): .connect(target: connTarget)
     case .notFound: .alert(title: NSLocalizedString("This message is not in your chats.", comment: "alert title"))
     case .unknownSource:
-        if let target, let itemId = target.chatItemId {
-            .openItem(chatId: "\(target.chatType.rawValue)\(target.chatId)", itemId: itemId)
-        } else if let target {
-            .openChat(chatId: "\(target.chatType.rawValue)\(target.chatId)")
+        if let target {
+            .openItem(chatId: "\(target.chatType.rawValue)\(target.chatId)", itemId: target.chatItemId)
         } else {
             .alert(title: NSLocalizedString("This link is from an unknown source.", comment: "alert title"))
         }

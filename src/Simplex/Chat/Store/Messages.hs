@@ -69,7 +69,6 @@ module Simplex.Chat.Store.Messages
     getGroupItemIdByAuthor_,
     getGroupItemIdByAuthor,
     getGroupIdByMemberId,
-    msgLinkInChat,
     getDirectItemIdByMsgId,
     getAChatItemInScope,
     updateGroupCIUserMention,
@@ -3467,31 +3466,27 @@ getCILinks db ciId =
     <$> DB.query
       db
       [sql|
-        SELECT label, link_text, target_contact_id, target_group_id, target_note_folder_id, target_chat_item_id
-        FROM chat_item_links
-        WHERE chat_item_id = ?
+        SELECT l.label, l.link_text, t.chat_item_id, t.contact_id, t.group_id, t.note_folder_id
+        FROM chat_item_links l
+        LEFT JOIN chat_items t ON t.chat_item_id = l.target_chat_item_id
+        WHERE l.chat_item_id = ?
       |]
       (Only ciId)
   where
-    toCILink :: (LinkLabel, Text, Maybe ContactId, Maybe GroupId, Maybe NoteFolderId, Maybe ChatItemId) -> (LinkLabel, CILink)
-    toCILink (label, text, contactId_, groupId_, folderId_, chatItemId) = (label, CILink {text, target})
+    toCILink :: (LinkLabel, Text, Maybe ChatItemId, Maybe ContactId, Maybe GroupId, Maybe NoteFolderId) -> (LinkLabel, CILink)
+    toCILink (label, text, targetItemId_, contactId_, groupId_, folderId_) = (label, CILink {text, target})
       where
         target = do
+          chatItemId <- targetItemId_
           (chatType, chatId) <- (CTDirect,) <$> contactId_ <|> (CTGroup,) <$> groupId_ <|> (CTLocal,) <$> folderId_
           pure CILinkTarget {chatType, chatId, chatItemId}
 
 createCILinks :: forall c d. DB.Connection -> ChatItem c d -> Map LinkLabel CILink -> IO (ChatItem c d)
 createCILinks db ci links = do
-  DB.executeMany db "INSERT INTO chat_item_links (chat_item_id, label, link_text, target_contact_id, target_group_id, target_note_folder_id, target_chat_item_id) VALUES (?, ?, ?, ?, ?, ?, ?)" rows
+  DB.executeMany db "INSERT INTO chat_item_links (chat_item_id, label, link_text, target_chat_item_id) VALUES (?, ?, ?, ?)" rows
   pure (ci :: ChatItem c d) {links}
   where
-    rows = map (\(label, CILink {text, target}) -> (chatItemId' ci, label, text) :. targetRow target) $ M.assocs links
-    targetRow :: Maybe CILinkTarget -> (Maybe ContactId, Maybe GroupId, Maybe NoteFolderId, Maybe ChatItemId)
-    targetRow = \case
-      Just CILinkTarget {chatType = CTDirect, chatId, chatItemId} -> (Just chatId, Nothing, Nothing, chatItemId)
-      Just CILinkTarget {chatType = CTGroup, chatId, chatItemId} -> (Nothing, Just chatId, Nothing, chatItemId)
-      Just CILinkTarget {chatType = CTLocal, chatId, chatItemId} -> (Nothing, Nothing, Just chatId, chatItemId)
-      _ -> (Nothing, Nothing, Nothing, Nothing)
+    rows = map (\(label, CILink {text, target}) -> (chatItemId' ci, label, text, (\CILinkTarget {chatItemId} -> chatItemId) <$> target)) $ M.assocs links
 
 updateCILinks :: forall c d. DB.Connection -> ChatItem c d -> Map LinkLabel CILink -> IO (ChatItem c d)
 updateCILinks db ci@ChatItem {links} links'
@@ -3531,12 +3526,6 @@ getGroupIdByMemberId :: DB.Connection -> User -> MemberId -> IO (Maybe GroupId)
 getGroupIdByMemberId db User {userId} memberId =
   maybeFirstRow fromOnly $
     DB.query db "SELECT group_id FROM group_members WHERE user_id = ? AND member_id = ? ORDER BY group_member_id ASC LIMIT 1" (userId, memberId)
-
-msgLinkInChat :: DB.Connection -> User -> ChatRef -> MsgLink -> IO Bool
-msgLinkInChat db user (ChatRef cType chatId _) = \case
-  MLGroup author_ _ | cType == CTGroup -> maybe (pure True) (fmap isJust . getGroupMemberViaMemberId_ db user chatId) author_
-  MLDirect _ -> pure $ cType == CTDirect
-  _ -> pure False
 
 getDirectItemIdByMsgId :: DB.Connection -> User -> SharedMsgId -> IO (Maybe (ContactId, ChatItemId))
 getDirectItemIdByMsgId db User {userId} sharedMsgId =

@@ -224,10 +224,6 @@
               ],
               "links": {
                 "q": {
-                  "target": {
-                    "chatId": 1,
-                    "chatType": "group"
-                  },
                   "text": "Approve the deploy plan?"
                 }
               },
@@ -691,7 +687,7 @@
         }
       }
     },
-    "/_msg link plan 1 simplex:m": {
+    "/_msg link plan 1 simplex:/m": {
       "result": {
         "msgLinkPlan": {
           "type": "unknownSource"
@@ -769,7 +765,7 @@
         }
       }
     },
-    "/_msg link plan 1 simplex:m#g/YWJjZGVmZ2hpamtsbW5vcA?a=MTIzNDU2Nzg5MDEyMzQ1Ng": {
+    "/_msg link plan 1 simplex:/m#g/YWJjZGVmZ2hpamtsbW5vcA?a=MTIzNDU2Nzg5MDEyMzQ1Ng": {
       "result": {
         "msgLinkPlan": {
           "type": "notFound"
@@ -847,7 +843,7 @@
         }
       }
     },
-    "/_msg link plan 1 simplex:m#x/abc": {
+    "/_msg link plan 1 simplex:/m#x/abc": {
       "result": {
         "msgLinkPlan": {
           "type": "unknownLink"
