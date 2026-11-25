@@ -29,7 +29,7 @@ import StoreService.Names.Store (NamePhase (..), NameRegistration (..), getRegis
 import StoreService.Names.View (lapseMoment, registrationVersion)
 import StoreService.Orders (RegistrationChanged (..), cancelOpenInvoice)
 import StoreService.Poller (ReadHints, queueReadHint)
-import StoreService.Providers (OrderDraft (..), Provider (..), ProviderInvoice (..), WebhookError (..), WebhookEvent (..), providerErrorText, providerNamed)
+import StoreService.Providers (InvoiceKind (..), OrderDraft (..), Provider (..), ProviderInvoice (..), WebhookError (..), WebhookEvent (..), providerErrorText, providerNamed)
 import StoreService.Store.Invoices (CreateError (..), InvoicePayment (..), InvoiceProduct (..), InvoiceRow (..), NewInvoice (..), codeHashExists, createInvoiceRows, currentSecond, getInvoice, getInvoiceByProviderRef, newInvoiceId, paymentHolds, readCatalogRows, truncateToSecond)
 import StoreService.Waiters (Seen, Waiters, awaitStatus)
 import StoreService.Web.Http
@@ -391,7 +391,7 @@ createAtProvider WebEnv {weStore, weConfig, weHttp} client provider CreateReques
       -- truncate once, so the response, the row and the provider get the same value
       now <- truncateToSecond <$> getCurrentTime
       let expiresAt = addUTCTime (invoiceWindow weConfig crMethod) now
-          draft = OrderDraft {odAmount = poAmount priced, odCurrency = poCurrency priced, odReference = orderId}
+          draft = OrderDraft {odAmount = poAmount priced, odCurrency = poCurrency priced, odReference = orderId, odKind = IKBadge}
       pCreateInvoice provider crMethod draft >>= \case
         Left e -> failed ("at the provider: " <> providerErrorText e) providerUnavailable
         Right ProviderInvoice {piProviderRef, piDestination} -> do

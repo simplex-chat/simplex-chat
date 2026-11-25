@@ -57,7 +57,7 @@ import StoreService.Names.Store (BrokenInvariant (..), NameRegistration (..), Na
 import StoreService.Names.Turns (withLabelTurn)
 import StoreService.Names.View (NameRefusal (..), registrationView)
 import StoreService.Orders (cancelNameInvoices, publishRegistration)
-import StoreService.Providers (OrderDraft (..), Provider (..), ProviderInvoice (..), expiresItself, providerErrorText, providerNamed)
+import StoreService.Providers (InvoiceKind (..), OrderDraft (..), Provider (..), ProviderInvoice (..), expiresItself, providerErrorText, providerNamed)
 import StoreService.Store.Invoices (InvoiceRow (..), NewNameInvoice (..), getInvoice, insertNameInvoice, newInvoiceId)
 import StoreService.Waiters (Waiters, publish)
 import StoreService.Web.Http (CheckoutClient, HttpEnv, Respond, apiHeaders, confirmationsFor, invoiceAt, invoicePairs, invoiceWindow, jsonResponse, limitedCheckout, nameBodyBytes, providerFor, readBoundedBody)
@@ -166,13 +166,13 @@ createAtProvider env@OrdersEnv {oeStore, oeConfig} http client cfg providers wai
     Just provider -> limitedCheckout http client ivMethod (pure . refusalAnswer . NRRateLimited) $ do
       invId <- newInvoiceId
       let amount = CurrencyAmount $ fromIntegral ivPrice
-      pCreateInvoice provider ivMethod OrderDraft {odAmount = amount, odCurrency = catalogCurrency, odReference = "name:" <> safeDecodeUtf8 (strEncode ivOrderHash)} >>= \case
+      pCreateInvoice provider ivMethod OrderDraft {odAmount = amount, odCurrency = catalogCurrency, odReference = "name:" <> safeDecodeUtf8 (strEncode ivOrderHash), odKind = IKName} >>= \case
         Left e -> do
           logError (what <> " failed at the provider: " <> providerErrorText e)
           pure $ refusalAnswer NRProviderUnavailable
-        Right ProviderInvoice {piProviderRef, piDestination} -> do
+        Right ProviderInvoice {piProviderRef, piDestination, piAddressProof} -> do
           rid <- newRegistrationId
-          let invoice = NewNameInvoice {nniInvoiceId = invId, nniProvider = pProvider provider, nniProviderRef = piProviderRef, nniAmount = amount, nniCurrency = catalogCurrency, nniDestination = piDestination, nniExpiresAt = addUTCTime (invoiceWindow cfg ivMethod) now, nniCreatedAt = now}
+          let invoice = NewNameInvoice {nniInvoiceId = invId, nniProvider = pProvider provider, nniProviderRef = piProviderRef, nniAmount = amount, nniCurrency = catalogCurrency, nniDestination = piDestination, nniAddressProof = piAddressProof, nniExpiresAt = addUTCTime (invoiceWindow cfg ivMethod) now, nniCreatedAt = now}
               registration = NewRegistration {nrgId = rid, nrgOwner = orOwner, nrgOrder = orFields, nrgReveal = ivReveal, nrgYears = nYears oeConfig, nrgOrderHash = ivOrderHash}
               paid = PaidOrder {poMethod = ivMethod, poPrice = ivPrice, poInvoiceId = invId}
           placeOrder env now req (\db at -> insertNameInvoice db invoice >> ivInsert registration paid db at)

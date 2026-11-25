@@ -271,7 +271,7 @@ createInvoice env (SPMCard CPStripe) OrderDraft {odAmount = CurrencyAmount minor
   (replayed, keyed) <- create [("Idempotency-Key", B8.intercalate ":" [reference, amount, currency])]
   created <- if replayed then replayedIntent (snd <$> create []) keyed else pure keyed
   pure $ created >>= decodeAnswer what <&> \CreatedIntent {ciId, ciClientSecret} ->
-    ProviderInvoice {piProviderRef = ciId, piDestination = SPDCard CPStripe ciClientSecret}
+    ProviderInvoice {piProviderRef = ciId, piDestination = SPDCard CPStripe ciClientSecret, piAddressProof = Nothing}
   where
     what = "create intent"
     -- Stripe replays a key's first answer for 24 hours, so an error or an intent cancelled since would fail every resend.

@@ -1,5 +1,5 @@
 {
-  "_fixture": "GET /api/v1/stores/{storeId}/invoices/{invoiceId}/payment-methods -- InvoicePaymentMethodDataModel[] for the Monero PLUGIN, from the same documented shape. NOT captured from a live instance -- the plugin is the likeliest of these files to diverge, XMR coming from btcpayserver-monero-plugin rather than BTCPay itself, and the likeliest to need replacing with a recorded body. `totalPaid` is deliberately NOT equal to `paymentMethodPaid`.",
+  "_fixture": "GET /api/v1/stores/{storeId}/invoices/{invoiceId}/payment-methods -- InvoicePaymentMethodDataModel[] for the Monero PLUGIN, from the same documented shape. NOT captured from a live instance -- the plugin is the likeliest of these files to diverge, XMR coming from btcpayserver-monero-plugin rather than BTCPay itself, and the likeliest to need replacing with a recorded body. `totalPaid` is deliberately NOT equal to `paymentMethodPaid`. `additionalData` holds the subaddress's `accountIndex` and `addressIndex`, as the plugin 1.4.0's MoneroLikeOnChainPaymentMethodDetails has them; this address is not the one the fake's keys derive at them, so the fake serves its dev keys' address unless a test names this fixture.",
   "response": [
     {
       "paymentMethodId": "XMR-CHAIN",
@@ -23,7 +23,7 @@
           "destination": "44AFFq5kSiGBoZ4NMDwYtN18obc8AemS33DBLWs3H7otXft3XjrpDtQGv7SqSsaBYBb98uNbr2VBBEt7f2wfn3RVGQBEP3A"
         }
       ],
-      "additionalData": {}
+      "additionalData": {"accountIndex": 0, "addressIndex": 1}
     }
   ]
 }

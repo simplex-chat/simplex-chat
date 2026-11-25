@@ -8,6 +8,7 @@ module Bots.StoreService.BTCPayTests (badgeBTCPayTests) where
 import StoreService.Config (BTCPayConfig (..))
 import StoreService.Providers
   ( Funded (..),
+    InvoiceKind (..),
     ListPass (..),
     OrderDraft (..),
     PaymentSignal (..),
@@ -27,9 +28,11 @@ import StoreService.Providers
     receivedAmount,
     settleWindow,
   )
-import StoreService.Providers.BTCPay (AdditionalStatus (..), BTCPayPaymentStatus (..), BTCPayStatus (..), btcMethodId, btcpayProvider, listSignals, minorToDecimal, paymentMethodsSignal, verifyBTCPaySig, xmrMethodId)
+import StoreService.Providers.BTCPay (AdditionalStatus (..), BTCPayPaymentStatus (..), BTCPayStatus (..), btcMethodId, btcpayProvider, listSignals, logPayeeKeys, minorToDecimal, paymentMethodsSignal, verifyBTCPaySig, xmrMethodId)
 import StoreService.Config (SpeedPolicy (..))
 import Bots.StoreService.FakeBTCPay
+import Bots.StoreService.NamesAddressProofTests (addressProofHolds)
+import Bots.StoreService.WebTests (capturingStderr)
 import Bots.StoreService.FakeHttp (withResetServer)
 import Network.HTTP.Client.TLS (newTlsManager)
 import Control.Exception (evaluate)
@@ -137,6 +140,11 @@ badgeBTCPayTests = describe "badge btcpay adapter" $ do
     it "makes a 500 on a read a ProviderError the next read recovers from" testFakeRead500
     it "makes a connection reset while an answer is read a ProviderError" testProviderCallReset
     it "verifies a webhook with the secret it was configured with" testFakeWebhookSecretWiring
+    it "proves a name invoice's Bitcoin and Monero address from the payee keys, as the names page checks it" testFakeProvesNameInvoices
+    it "cancels a name invoice whose address the payee keys do not derive, naming it" testFakeCancelsUnprovenNameInvoice
+    it "refuses a name invoice in a coin without payee keys before BTCPay is asked, and still sells badges" testFakeNameInvoiceWithoutKeys
+    it "takes a badge invoice's address as BTCPay gives it, with no proof, also one the payee keys do not derive" testFakeBadgeAddressAsGiven
+    it "logs the values the names page holds, and an error for each coin without payee keys" testLogPayeeKeys
     it "keeps totalPaid distinguishable in every fixture an amount is asserted from" testFixturesGuardTotalPaid
     it "keeps due distinguishable from paymentMethodFee, so the wrong field cannot be read" testFixturesGuardDue
   describe "rates and speed policies against the fake Greenfield" $ do
@@ -724,8 +732,16 @@ fiftyFourDollars =
   OrderDraft
     { odAmount = CurrencyAmount 5400,
       odCurrency = "usd",
-      odReference = "badge:0x01"
+      odReference = "badge:0x01",
+      odKind = IKBadge
     }
+
+nameDraft :: OrderDraft
+nameDraft = fiftyFourDollars {odReference = "name:0x01", odKind = IKName}
+
+devBtcAddress, devXmrAddress :: Text
+devBtcAddress = "bcrt1q6rz28mcfaxtmd6v789l9rrlrusdprr9pz3cppk"
+devXmrAddress = "7AeQwvrLtPeYoXVPRkEu8oEL7N9wnqHjYKwSvTf6YKbHgYmw6AJMsjggzVLo21egMK9qcoV1mxCTfP4FbaGb7JEMDfpLetk"
 
 exampleCeiling :: Int
 exampleCeiling = 20000000
@@ -750,21 +766,63 @@ createdInvoice p spm =
 
 testFakeCreatesBtc :: IO ()
 testFakeCreatesBtc = withProvider $ \fake p -> do
-  ProviderInvoice {piProviderRef, piDestination} <- createdInvoice p (SPMCrypto CCBtc)
+  ProviderInvoice {piProviderRef, piDestination, piAddressProof} <- createdInvoice p (SPMCrypto CCBtc)
   fakeInvoiceIds fake `shouldReturn` [piProviderRef]
-  piDestination `shouldBe` SPDCrypto CCBtc btcAddress "0.00050000"
+  (piDestination, piAddressProof) `shouldBe` (SPDCrypto CCBtc devBtcAddress "0.00050000", Nothing)
   ms <- apiRequests fake "GET" ["invoices", piProviderRef, "payment-methods"]
   length ms `shouldBe` 1
 
 testFakeCreatesXmr :: IO ()
 testFakeCreatesXmr = withProvider $ \fake p -> do
-  ProviderInvoice {piProviderRef, piDestination} <- createdInvoice p (SPMCrypto CCXmr)
-  piDestination `shouldBe` SPDCrypto CCXmr xmrAddress "0.32095000"
+  ProviderInvoice {piProviderRef, piDestination, piAddressProof} <- createdInvoice p (SPMCrypto CCXmr)
+  (piDestination, piAddressProof) `shouldBe` (SPDCrypto CCXmr devXmrAddress "0.32095000", Nothing)
   posts <- apiRequests fake "POST" ["invoices"]
   case posts of
     [created] -> chosenPaymentMethods (frBody created) `shouldBe` Just ["XMR-CHAIN"]
     _ -> expectationFailure ("expected one create, got " <> show (length posts))
   fakeInvoiceIds fake `shouldReturn` [piProviderRef]
+
+testFakeProvesNameInvoices :: IO ()
+testFakeProvesNameInvoices = withProvider $ \_ p -> forM_ [CCBtc, CCXmr] $ \cc -> do
+  Right ProviderInvoice {piDestination = SPDCrypto _ address _, piAddressProof = Just proof} <- pCreateInvoice p (SPMCrypto cc) nameDraft
+  addressProofHolds address proof `shouldBe` True
+
+testFakeCancelsUnprovenNameInvoice :: IO ()
+testFakeCancelsUnprovenNameInvoice = forM_ [(CCBtc, "payment-methods-btc"), (CCXmr, "payment-methods-xmr")] $ \(cc, fixture) -> withProvider $ \fake p -> do
+  usePaymentMethodsFixture fake fixture
+  r <- pCreateInvoice p (SPMCrypto cc) nameDraft
+  [created] <- fakeInvoiceIds fake
+  r `shouldSatisfy` namesInError "is not proven from the payee keys"
+  r `shouldSatisfy` namesInError ("; invoice " <> created <> " is cancelled")
+  length <$> apiRequests fake "POST" ["invoices", created, "status"] `shouldReturn` 1
+
+testFakeNameInvoiceWithoutKeys :: IO ()
+testFakeNameInvoiceWithoutKeys = withProviderConfigured (\c -> c {bBitcoinKey = Nothing, bMoneroKey = Nothing}) $ \fake p -> do
+  forM_ [(CCBtc, "btc_xpub and btc_hrp"), (CCXmr, "xmr_address and xmr_view_key")] $ \(cc, keys) ->
+    pCreateInvoice p (SPMCrypto cc) nameDraft >>= (`shouldSatisfy` namesInError keys)
+  apiRequests fake "POST" ["invoices"] `shouldReturn` []
+  ProviderInvoice {piAddressProof} <- createdInvoice p (SPMCrypto CCXmr)
+  piAddressProof `shouldBe` Nothing
+
+testFakeBadgeAddressAsGiven :: IO ()
+testFakeBadgeAddressAsGiven = forM_ [(CCBtc, "payment-methods-btc", btcAddress, "0.00050000"), (CCXmr, "payment-methods-xmr", xmrAddress, "0.32095000")] $ \(cc, fixture, address, amount) -> withProvider $ \fake p -> do
+  usePaymentMethodsFixture fake fixture
+  ProviderInvoice {piProviderRef, piDestination, piAddressProof} <- createdInvoice p (SPMCrypto cc)
+  (piDestination, piAddressProof) `shouldBe` (SPDCrypto cc address amount, Nothing)
+  apiRequests fake "POST" ["invoices", piProviderRef, "status"] `shouldReturn` []
+
+testLogPayeeKeys :: IO ()
+testLogPayeeKeys = withFakeBTCPay $ \fake -> do
+  held <- capturingStderr $ logPayeeKeys (fbConfig fake)
+  held `shouldSatisfy` T.isInfixOf "btcpay: the names page holds: bitcoin receive key 0x036bf340760eb0da07d4d2bbb9d9aee7b7c27891cb72b6388cc0ee8d2a82d33e46; monero primary address 52jzuBBUMty3xPL3JsQxGP74LDuV6E1LS8Zda1PbdqQjGzFmH6N9ep9McbFKMALujVT9S5mKpbEgC5VPhfoAiVj8LdAqbp6"
+  bitcoinOnly <- capturingStderr $ logPayeeKeys (fbConfig fake) {bMoneroKey = Nothing}
+  bitcoinOnly `shouldSatisfy` T.isInfixOf "btcpay: the names page holds: bitcoin receive key 0x036bf340760eb0da07d4d2bbb9d9aee7b7c27891cb72b6388cc0ee8d2a82d33e46"
+  bitcoinOnly `shouldNotSatisfy` T.isInfixOf "monero primary address"
+  bitcoinOnly `shouldSatisfy` T.isInfixOf "xmr_address and xmr_view_key"
+  none <- capturingStderr $ logPayeeKeys (fbConfig fake) {bBitcoinKey = Nothing, bMoneroKey = Nothing}
+  none `shouldSatisfy` T.isInfixOf "btc_xpub and btc_hrp"
+  none `shouldSatisfy` T.isInfixOf "xmr_address and xmr_view_key"
+  none `shouldNotSatisfy` T.isInfixOf "the names page holds"
 
 chosenPaymentMethods :: LB.ByteString -> Maybe [Text]
 chosenPaymentMethods body = case J.decode body of

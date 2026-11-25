@@ -6,6 +6,7 @@
 
 module StoreService.Providers.BTCPay
   ( btcpayProvider,
+    logPayeeKeys,
     btcMethodId,
     xmrMethodId,
     minorToDecimal,
@@ -322,6 +323,9 @@ logStoreMethods env@BTCPayEnv {beCfg} = do
   where
     what = "read store payment methods"
 
+logPayeeKeys :: BTCPayConfig -> IO ()
+logPayeeKeys _ = pure ()
+
 createInvoice :: BTCPayEnv -> ServicePaymentMethod -> OrderDraft -> IO (Either ProviderError ProviderInvoice)
 createInvoice env@BTCPayEnv {beCfg} spm OrderDraft {odAmount, odCurrency} =
   case cryptoTarget spm of
@@ -361,7 +365,8 @@ createInvoice env@BTCPayEnv {beCfg} spm OrderDraft {odAmount, odCurrency} =
       pure
         ProviderInvoice
           { piProviderRef = ref,
-            piDestination = SPDCrypto cc addr (wnText payable)
+            piDestination = SPDCrypto cc addr (wnText payable),
+            piAddressProof = Nothing
           }
       where
         required field =

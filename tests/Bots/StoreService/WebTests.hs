@@ -225,6 +225,7 @@ badgeWebTests = do
     it "M20260918 defaults a fresh code to one use with none spent" testGroupOpsRedeemCounts
     it "declares its migrations in name order, master's badge migrations before the names ones, each with a down migration" testMigrationOrder
     it "rolls back only the group migration and re-applies it, keeping a code redeemed twice spent" testGroupOpsDownUp
+    it "M20261125 adds the address proof column, keeping each badge invoice as it was" testAddressProofColumn
   describe "store service store" $ do
     it "writes the invoice, its code and their link atomically" testCreationIsAtomic
     it "newInvoiceId is 128 CSPRNG bits, base64url, and two calls differ" testNewInvoiceIdRandom
@@ -434,6 +435,7 @@ badgeWebTests = do
     it "closes an invalid invoice as expired, on the same screen" scenarioInvalidClosesAsExpired
     it "refuses a second invoice for one code hash, creating none at BTCPay" scenarioCodeConflictCreatesNothing
     it "settles with no webhook delivered, by reading the invoice it is waiting on" scenarioNoWebhookAnywhere
+    it "sells a badge in crypto as before, with the payee keys and without, also at an address the keys do not derive" scenarioBadgeAddressAsGiven
 
 testServiceColumns :: IO ()
 testServiceColumns = withServiceStore $ \st -> do
@@ -478,7 +480,7 @@ testMigrationOrder = do
   [(a, b) | (a, b) <- zip declared (drop 1 declared), a >= b] `shouldBe` []
   let (badges, ours) = span (`elem` badgeMigrations) (map name storeServiceSchemaMigrations)
   badges `shouldBe` badgeMigrations
-  ours `shouldBe` ["20261013_names"]
+  ours `shouldBe` ["20261013_names", "20261125_invoice_address_proof"]
   length (mapMaybe toDownMigration storeServiceSchemaMigrations) `shouldBe` length storeServiceSchemaMigrations
   where
     badgeMigrations = ["20260915_badge_service_schema", "20260918_badge_group_ops", "20260925_badge_store_receipts", "20261012_badge_subscriptions"]
@@ -498,6 +500,21 @@ testGroupOpsDownUp = withServiceStore $ \st -> do
   runMigrations st $ MTRUp groupOps
   codeCounts st redeemedHash `shouldReturn` Just (1, 1)
   codeCounts st unredeemedHash `shouldReturn` Just (1, 0)
+
+testAddressProofColumn :: IO ()
+testAddressProofColumn = withServiceStore $ \st -> do
+  let proofColumn = [m | m@Migration {name = "20261125_invoice_address_proof"} <- storeServiceSchemaMigrations]
+      invId = niInvoiceId sampleInvoice
+  length proofColumn `shouldBe` 1
+  columnsOf st "sx_badge_service_invoices" >>= (`shouldSatisfy` elem "payment_address_proof")
+  seedBadgePrice st "price1"
+  createInvoiceRows st sampleInvoice `shouldReturn` Right ()
+  before <- getInvoice st invId
+  irAddressProof <$> before `shouldBe` Just Nothing
+  runMigrations st $ MTRDown (mapMaybe toDownMigration proofColumn)
+  columnsOf st "sx_badge_service_invoices" >>= (`shouldNotSatisfy` elem "payment_address_proof")
+  runMigrations st $ MTRUp proofColumn
+  getInvoice st invId `shouldReturn` before
 
 testGroupOpsRedeemCounts :: IO ()
 testGroupOpsRedeemCounts = withServiceStore $ \st -> do
@@ -1187,10 +1204,10 @@ setVerifyThrows :: IORef StubState -> Bool -> IO ()
 setVerifyThrows ref throws = atomicModifyIORef' ref $ \s -> (s {ssVerifyThrows = throws}, ())
 
 sampleDraft :: OrderDraft
-sampleDraft = OrderDraft {odAmount = CurrencyAmount 500, odCurrency = "usd", odReference = "badge:0x01"}
+sampleDraft = OrderDraft {odAmount = CurrencyAmount 500, odCurrency = "usd", odReference = "badge:0x01", odKind = IKBadge}
 
 sampleProviderInvoice :: ProviderInvoice
-sampleProviderInvoice = ProviderInvoice {piProviderRef = "pref-1", piDestination = SPDCrypto CCBtc "bc1qexampleaddress" "0.00050000"}
+sampleProviderInvoice = ProviderInvoice {piProviderRef = "pref-1", piDestination = SPDCrypto CCBtc "bc1qexampleaddress" "0.00050000", piAddressProof = Nothing}
 
 testStubProviderRecordsCalls :: IO ()
 testStubProviderRecordsCalls = do
@@ -2117,7 +2134,9 @@ testBTCPayConfig =
       bSpeedPolicy = MediumSpeed,
       bPaymentTolerance = 0.5,
       bTimeoutMicros = providerTimeoutMicros,
-      bCheckoutTimeoutMicros = providerCheckoutTimeoutMicros
+      bCheckoutTimeoutMicros = providerCheckoutTimeoutMicros,
+      bBitcoinKey = Nothing,
+      bMoneroKey = Nothing
     }
 
 supporterPriceId, legendPriceId, disabledPriceId :: Text
@@ -4274,6 +4293,28 @@ scenarioNoWebhookAnywhere = bounded "scenario: no webhook" $ withFakePoller $ \f
   bcPaymentStatus <$> settledCode (weStore env) iid `shouldReturn` CPSPaid
   byId <- apiRequests fake "GET" ["invoices", ref]
   byId `shouldSatisfy` (not . null)
+
+scenarioBadgeAddressAsGiven :: IO ()
+scenarioBadgeAddressAsGiven = forM_ [id, \c -> c {bBitcoinKey = Nothing, bMoneroKey = Nothing}] $ \payeeKeys ->
+  bounded "scenario: badge address as given" $ withFakeBTCPay $ \fake -> withServiceStore $ \st -> do
+    createDirectoryIfMissing True "tests/tmp"
+    withTempDirectory "tests/tmp" "badge-payee" $ \root -> do
+      staticDir <- prepareStaticDir root
+      seedCheckoutCatalog st
+      let btcpayCfg = payeeKeys (fbConfig fake)
+          cfg = (testServiceConfig staticDir True) {btcpay = Just btcpayCfg}
+      provider <- btcpayProvider btcpayCfg
+      withListener [provider] True holdMicros st cfg $ \env client -> do
+        (derived, _) <- buyBadge env client 1 sampleCode
+        usePaymentMethodsFixture fake "payment-methods-btc"
+        (given, givenRef) <- buyBadge env client 2 "YDC8AYGQTMPUYZ92TUXQ"
+        forM_ [(derived, "bcrt1q6rz28mcfaxtmd6v789l9rrlrusdprr9pz3cppk"), (given, "bc1qar0srrr7xfkvy5l643lydnw9re59gtzzwf5mdq")] $ \(iid, address) -> do
+          o <- viewInvoice client iid
+          sort (map K.toText (KM.keys o))
+            `shouldBe` sort ["status", "badgeType", "months", "amount", "currency", "expiresAt", "address", "cryptoAmount", "cryptoCurrency", "requiredConfirmations"]
+          fieldOf o "address" `shouldBe` Just (J.String address)
+          fmap irAddressProof <$> getInvoice st iid `shouldReturn` Just Nothing
+        apiRequests fake "POST" ["invoices", givenRef, "status"] `shouldReturn` []
 
 cancelPath :: InvoiceId -> String
 cancelPath iid = invoicePath iid <> "/cancel"

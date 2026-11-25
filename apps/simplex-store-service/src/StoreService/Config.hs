@@ -68,6 +68,7 @@ import Simplex.Messaging.Util (eitherToMaybe, tshow)
 import StoreService.Names.Abi (abiWordSize, parseText)
 import StoreService.Names.Chain (ChainConfig (..))
 import StoreService.Names.Label (LabelError (..), validLabel)
+import StoreService.Providers.AddressProof (BitcoinKey, MoneroKey)
 import System.IO.Error (ioeGetErrorString)
 import Text.Read (readMaybe)
 
@@ -110,7 +111,9 @@ data BTCPayConfig = BTCPayConfig
     bSpeedPolicy :: SpeedPolicy,
     bPaymentTolerance :: Double,
     bTimeoutMicros :: Int,
-    bCheckoutTimeoutMicros :: Int
+    bCheckoutTimeoutMicros :: Int,
+    bBitcoinKey :: Maybe BitcoinKey,
+    bMoneroKey :: Maybe MoneroKey
   }
   deriving (Eq)
 
@@ -560,7 +563,7 @@ parseConfig ini = do
           bExpiryMinutes <- num "btcpay" "expiry_minutes" 1 maxBound defaultExpiryMinutes
           bSpeedPolicy <- speedPolicy
           bPaymentTolerance <- tolerance
-          pure (Just BTCPayConfig {bHost, bApiKey, bStoreId, bWebhookSecret, bExpiryMinutes, bSpeedPolicy, bPaymentTolerance, bTimeoutMicros = providerTimeoutMicros, bCheckoutTimeoutMicros = providerCheckoutTimeoutMicros})
+          pure (Just BTCPayConfig {bHost, bApiKey, bStoreId, bWebhookSecret, bExpiryMinutes, bSpeedPolicy, bPaymentTolerance, bTimeoutMicros = providerTimeoutMicros, bCheckoutTimeoutMicros = providerCheckoutTimeoutMicros, bBitcoinKey = Nothing, bMoneroKey = Nothing})
     speedPolicy = case look "btcpay" "speed_policy" of
       Nothing -> Right MediumSpeed
       Just v -> case textDecode (T.strip v) of

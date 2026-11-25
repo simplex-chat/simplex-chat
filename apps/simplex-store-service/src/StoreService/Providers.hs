@@ -27,6 +27,7 @@ module StoreService.Providers
     PaymentSignal (..),
     ProviderInvoice (..),
     Funded (..),
+    InvoiceKind (..),
     OrderDraft (..),
     ListPass (..),
     settleWindow,
@@ -53,7 +54,9 @@ import Network.HTTP.Types (Status (..))
 import Network.HTTP.Types.Header (Header)
 import Simplex.Chat.PaymentService.Types (CryptoCurrency (..), CurrencyAmount (..), PaymentProvider (..), ServicePaymentDestination, ServicePaymentMethod)
 import Simplex.Messaging.Agent.Store.DB (FromField (..), ToField (..), fromTextField_)
+import Simplex.Messaging.Encoding.String (TextEncoding (..))
 import Simplex.Messaging.Util (AnyError (..), safeDecodeUtf8, tryAllOwnErrors', tshow)
+import StoreService.Providers.AddressProof (AddressProof)
 import System.Timeout (timeout)
 import Text.Read (readMaybe)
 
@@ -219,7 +222,8 @@ data PaymentSignal
 
 data ProviderInvoice = ProviderInvoice
   { piProviderRef :: Text,
-    piDestination :: ServicePaymentDestination
+    piDestination :: ServicePaymentDestination,
+    piAddressProof :: Maybe AddressProof
   }
   deriving (Eq, Show)
 
@@ -233,11 +237,28 @@ expiresItself = \case
 settleWindow :: NominalDiffTime
 settleWindow = 72 * 3600
 
+data InvoiceKind = IKBadge | IKName
+  deriving (Eq, Show)
+
+instance TextEncoding InvoiceKind where
+  textEncode = \case
+    IKBadge -> "badge"
+    IKName -> "name"
+  textDecode = \case
+    "badge" -> Just IKBadge
+    "name" -> Just IKName
+    _ -> Nothing
+
+instance FromField InvoiceKind where fromField = fromTextField_ textDecode
+
+instance ToField InvoiceKind where toField = toField . textEncode
+
 -- | odReference names the order at the provider, so support can find it there; a badge order's is its invoice id.
 data OrderDraft = OrderDraft
   { odAmount :: CurrencyAmount,
     odCurrency :: Text,
-    odReference :: Text
+    odReference :: Text,
+    odKind :: InvoiceKind
   }
   deriving (Eq, Show)
 

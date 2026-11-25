@@ -67,13 +67,13 @@ import Simplex.Chat.Badges.Types (BadgeCodePaymentStatus (..), BadgeItemStatus (
 import Simplex.Chat.Store.Shared (insertedRowId)
 import Simplex.Chat.PaymentService.Types (CardProvider (..), CryptoCurrency, CurrencyAmount (..), InvoiceId (..), InvoiceStatus (..), PaymentProvider (..), PaymentStatus (..), ServicePaymentDestination (..))
 import Simplex.Messaging.Agent.Store.Common (DBStore, withConnection, withTransaction)
-import Simplex.Messaging.Agent.Store.DB (FromField (..), ToField (..), fromTextField_)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Encoding.String (TextEncoding (..))
 import Simplex.Messaging.SystemTime (getSystemSeconds, roundedToUTCTime)
 import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
 import StoreService.Names.Phases (RegistrationId (..))
-import StoreService.Providers (Confirmed (..), CryptoReceived (..), Received (..), Units, receivedAmount, receivedConfirmed)
+import StoreService.Providers (Confirmed (..), CryptoReceived (..), InvoiceKind (..), Received (..), Units, receivedAmount, receivedConfirmed)
+import StoreService.Providers.AddressProof (AddressProof)
 
 #if defined(dbPostgres)
 import StoreService.Store.Postgres.Migrations (servicePrefix, withPrefix)
@@ -96,6 +96,7 @@ data InvoiceRow = InvoiceRow
     irAmount :: CurrencyAmount,
     irCurrency :: Text,
     irDestination :: ServicePaymentDestination,
+    irAddressProof :: Maybe AddressProof,
     irExpiresAt :: UTCTime,
     irStatus :: InvoiceStatus,
     irCreatedAt :: UTCTime,
@@ -106,22 +107,6 @@ data InvoiceRow = InvoiceRow
 -- | A badge's type and months, or the name registration the invoice pays for.
 data InvoiceProduct = IPBadge BadgeType Word8 | IPName RegistrationId
   deriving (Eq, Show)
-
-data InvoiceKind = IKBadge | IKName
-  deriving (Eq, Show)
-
-instance TextEncoding InvoiceKind where
-  textEncode = \case
-    IKBadge -> "badge"
-    IKName -> "name"
-  textDecode = \case
-    "badge" -> Just IKBadge
-    "name" -> Just IKName
-    _ -> Nothing
-
-instance FromField InvoiceKind where fromField = fromTextField_ textDecode
-
-instance ToField InvoiceKind where toField = toField . textEncode
 
 paymentHolds :: InvoicePayment -> Bool
 paymentHolds InvoicePayment {ipAmount, ipCryptoPaid, ipPaidInFull} =
@@ -165,6 +150,7 @@ data NewNameInvoice = NewNameInvoice
     nniAmount :: CurrencyAmount,
     nniCurrency :: Text,
     nniDestination :: ServicePaymentDestination,
+    nniAddressProof :: Maybe AddressProof,
     nniExpiresAt :: UTCTime,
     nniCreatedAt :: UTCTime
   }
@@ -452,6 +438,7 @@ mkInvoiceRow
           irAmount = CurrencyAmount amount,
           irCurrency = currency,
           irDestination = destination,
+          irAddressProof = Nothing,
           irExpiresAt = expiresAt,
           irStatus = status,
           irCreatedAt = createdAt,

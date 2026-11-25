@@ -65,8 +65,9 @@ module Bots.StoreService.NamesOrdersTests
   )
 where
 
-import Bots.StoreService.FakeBTCPay (FakeBTCPay (..), setInvoiceState, withFakeBTCPay)
+import Bots.StoreService.FakeBTCPay (FakeBTCPay (..), apiRequests, fakeInvoiceIds, setInvoiceState, usePaymentMethodsFixture, withFakeBTCPay)
 import Bots.StoreService.FakeEthNode
+import Bots.StoreService.NamesAddressProofTests (addressProofHolds)
 import Bots.StoreService.FakeHttp (nextFakeId)
 import Bots.StoreService.NamesContractsTests (alice, answerRegistered, answerRegistrar, minPriceCentsPerYear, nameExpiresCall, noncesCall, registrarOf, rentPriceAnswer, rentPriceCall, reservedNamesCall)
 import Bots.StoreService.NamesStoreTests (btc, codeReg, commitFixture, hashFixture, order, ownerA, ownerB, placeCode, placePaid, reveal, t0)
@@ -82,6 +83,7 @@ import Crypto.Random (ChaChaDRG)
 import Data.Aeson ((.=))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.KeyMap as KM
+import qualified Data.Aeson.Types as JT
 import qualified Data.ByteArray as BA
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as BC
@@ -92,6 +94,7 @@ import qualified Data.Map.Strict as M
 import Data.Maybe (fromJust, fromMaybe, isJust, isNothing)
 import Data.Text (Text)
 import qualified Data.Text as T
+import Data.Text.Encoding (encodeUtf8)
 import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime, diffUTCTime, getCurrentTime)
 import Data.Time.Clock.POSIX (posixSecondsToUTCTime, utcTimeToPOSIXSeconds)
 import Data.Word (Word64)
@@ -114,7 +117,7 @@ import Simplex.Messaging.Names.Record (USDCents)
 import Simplex.Messaging.SimplexName (LabelHash (..), SimplexTLD (..), labelHash)
 import Simplex.Messaging.SystemTime (RoundedSystemTime (..), SystemSeconds, roundedToUTCTime)
 import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
-import StoreService.Config (ChainConfig (..), NamesConfig (..), ServiceConfig (..))
+import StoreService.Config (BTCPayConfig (..), ChainConfig (..), NamesConfig (..), ServiceConfig (..))
 import StoreService.Names.Abi (AbiValue (..), abiBytes, abiTuple, hex, selector, uint256)
 import StoreService.Names.Chain (Hex32 (..), TxHash (..))
 import StoreService.Names.Contracts (Contracts (ctDeadline, ctViewSlots), newContracts)
@@ -131,7 +134,8 @@ import StoreService.Names.View (PaidWith (PWInvoice), PhaseView (PVClosed, PVCom
 import StoreService.Orders (cancelOpenInvoice, expireOverdue, settleOrder)
 import StoreService.Poller (cleanupInterval, cleanupReadsPerPass, cleanupUnpaid, drainHints, newPollerEnv, newReadHints, queueReadHint, runOnePass, unpaidRetention)
 import StoreService.Providers.BTCPay (btcpayProvider)
-import StoreService.Providers (Funded (..), OrderDraft (..), PaymentSignal (..), Provider (..), ProviderError (..), ProviderInvoice (..))
+import StoreService.Providers (Funded (..), InvoiceKind (..), OrderDraft (..), PaymentSignal (..), Provider (..), ProviderError (..), ProviderInvoice (..))
+import StoreService.Providers.AddressProof (AddressProof (APBitcoin, APMonero), ViewProof (ViewProof))
 import StoreService.Store.Invoices (CreateError (..), InvoicePayment (..), InvoiceProduct (..), InvoiceRow (..), NewInvoice (..), OverdueInvoice (..), createInvoiceRows, getInvoice, getInvoiceByProviderRef, overdueInvoices, unpaidRefs)
 import StoreService.Waiters (Waiters, newWaiters)
 import StoreService.Web.Http (Limit (..), codeLimit, invoicesLimit, takeToken)
@@ -167,6 +171,10 @@ namesOrdersTests = describe "StoreService names: orders" $ do
     it "refuses a malformed owner, an unknown method, price or kind, and an order outside 6-63 letters" testFormats
     it "parses an order only with every field well formed, sealed of at most 11095 characters and terms of the agreed format" testOrderFormats
     it "answers after the name's turn, so a slow reader of one answer holds no other order for the name, paid or by code, answered at once" testSlowReaderHoldsNoTurn
+  describe "address proofs" $ do
+    it "answers a Bitcoin and a Monero name invoice with the proof of its address, recorded for the names page" testProvenInvoices
+    it "answers provider_unavailable to a name invoice whose address the payee keys do not derive, cancelling it and writing no order" testUnprovenInvoice
+    it "answers provider_unavailable to a name invoice in a coin without payee keys, asking BTCPay nothing" testNoPayeeKeys
   describe "code orders" $ do
     it "places a code order as a queued live registration holding its code, answering only its id" testCodeOrder
     it "answers an exact resend with its id in any phase, the code spent or not, also after the terms changed on chain, before any chain read" testCodeResend
@@ -600,11 +608,53 @@ testPaidOrder = withOrders $ \ctx -> do
   fieldOf r "duration" `shouldBe` Just (J.toJSON $ durationAt orderTime)
   fieldOf r "terms" `shouldBe` Just (J.toJSON $ agreed plainTerms)
   let reference = "name:" <> hex (unHex32 $ orderHash ownerA (fieldsOf aliceOrder) (OTInvoice (SPMCrypto CCBtc) 10000))
-  stubCalls (cStub ctx) `shouldReturn` [StubCreate (SPMCrypto CCBtc) OrderDraft {odAmount = CurrencyAmount 10000, odCurrency = "usd", odReference = reference}]
+  stubCalls (cStub ctx) `shouldReturn` [StubCreate (SPMCrypto CCBtc) OrderDraft {odAmount = CurrencyAmount 10000, odCurrency = "usd", odReference = reference, odKind = IKName}]
   reg <- invoiceRegistration ctx invId
   (nrPhase reg, nrVersion reg, nrYears reg, nrPrice reg, nrPayment reg) `shouldBe` (OUnpaid invId, 1, 2, 10000, OPInvoice (SPMCrypto CCBtc) invId)
   nrOrderHash reg `shouldBe` orderHash ownerA (fieldsOf aliceOrder) (OTInvoice (SPMCrypto CCBtc) 10000)
   nrAgreedTerms reg `shouldBe` agreed plainTerms
+
+withBTCPayOrders :: (BTCPayConfig -> BTCPayConfig) -> (FakeBTCPay -> Ctx -> IO a) -> IO a
+withBTCPayOrders payeeKeys action = withFakeBTCPay $ \fake -> do
+  btcpay <- btcpayProvider $ payeeKeys $ fbConfig fake
+  withOrdersVia (const btcpay) $ action fake
+
+dynamisOrder :: Order
+dynamisOrder = aliceOrder {oLabel = "dynamis", oPrice = 20000, oSecret = secretOf 2}
+
+testProvenInvoices :: IO ()
+testProvenInvoices = withBTCPayOrders id $ \_ ctx ->
+  forM_ [("invoice-btc-open", aliceOrder), ("invoice-xmr-open", dynamisOrder {oMethod = "xmr"})] $ \(fixture, o) -> do
+    (_, v) <- placed ctx o
+    Just (J.String payTo) <- pure $ fieldOf v "address"
+    Just proof <- pure $ fieldOf v "addressProof" >>= JT.parseMaybe addressProofP
+    addressProofHolds payTo proof `shouldBe` True
+    answerFixture fixture (200, Just $ KM.insert "invoiceId" "invoice" v)
+  where
+    addressProofP = J.withObject "addressProof" $ \o ->
+      (o J..: "type" :: JT.Parser Text) >>= \case
+        "btc" -> APBitcoin <$> (hexBytes =<< o J..: "keyTweak")
+        "xmr" -> APMonero <$> (hexBytes =<< o J..: "spendTweak") <*> (o J..: "viewProof" >>= J.withObject "viewProof" (\p -> ViewProof <$> (hexBytes =<< p J..: "challenge") <*> (hexBytes =<< p J..: "response")))
+        other -> fail $ "no proof of type " <> T.unpack other
+    hexBytes t
+      | T.length t == 64 && T.all (`elem` ['0' .. '9'] <> ['a' .. 'f']) t = pure $ unhex $ encodeUtf8 t
+      | otherwise = fail "not 64 lowercase hex digits"
+
+testUnprovenInvoice :: IO ()
+testUnprovenInvoice = withBTCPayOrders id $ \fake ctx -> do
+  forM_ [("payment-methods-btc", aliceOrder), ("payment-methods-xmr", dynamisOrder {oMethod = "xmr"})] $ \(fixture, o) -> do
+    usePaymentMethodsFixture fake fixture
+    placeOrder ctx o `shouldReturn` refusedWith 503 "provider_unavailable"
+  refs <- fakeInvoiceIds fake
+  length refs `shouldBe` 2
+  forM_ refs $ \ref -> length <$> apiRequests fake "POST" ["invoices", ref, "status"] `shouldReturn` 1
+  length <$> registrationsOf ctx ownerA `shouldReturn` 0
+
+testNoPayeeKeys :: IO ()
+testNoPayeeKeys = withBTCPayOrders (\c -> c {bMoneroKey = Nothing}) $ \fake ctx -> do
+  placeOrder ctx aliceOrder {oMethod = "xmr"} `shouldReturn` refusedWith 503 "provider_unavailable"
+  apiRequests fake "POST" ["invoices"] `shouldReturn` []
+  void $ placed ctx aliceOrder
 
 -- | Appendix C's order: alicebakery with no links, signed with the general terms' hash.
 vectorOrder :: Order
