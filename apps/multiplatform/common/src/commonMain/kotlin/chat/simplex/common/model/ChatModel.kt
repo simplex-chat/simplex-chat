@@ -5487,7 +5487,7 @@ sealed class PaymentNetwork {
     Bitcoin, BitcoinCash -> "₿"
     is Ethereum -> "Ξ"
     Monero -> "ɱ"
-    Zcash -> "ⓩ"
+    Zcash -> "Ƶ"
     Solana -> "◎"
     Litecoin -> "Ł"
     Dogecoin -> "Ð"
@@ -5514,7 +5514,7 @@ class PaymentToken(val address: String)
 
 private val evmChainNames = mapOf(1L to "Ethereum", 10L to "OP Mainnet", 56L to "BNB Smart Chain", 137L to "Polygon", 8453L to "Base", 42161L to "Arbitrum One")
 
-private fun shortAddress(address: String): String = if (address.length > 10) "${address.take(6)}…${address.takeLast(4)}" else address
+private fun shortAddress(address: String): String = if (address.length > 10) "${address.take(6)}…\u2060${address.takeLast(4)}" else address
 
 @Serializable
 sealed class BlockToken {

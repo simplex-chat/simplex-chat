@@ -6099,7 +6099,7 @@ public enum PaymentNetwork: Decodable, Hashable {
         case .bitcoin, .bitcoinCash: "₿"
         case .ethereum: "Ξ"
         case .monero: "ɱ"
-        case .zcash: "ⓩ"
+        case .zcash: "Ƶ"
         case .solana: "◎"
         case .litecoin: "Ł"
         case .dogecoin: "Ð"
@@ -6143,7 +6143,7 @@ private let evmChainNames: [Int64: String] = [
 ]
 
 private func shortAddress(_ address: String) -> String {
-    address.count > 10 ? "\(address.prefix(6))…\(address.suffix(4))" : address
+    address.count > 10 ? "\(address.prefix(6))…\u{2060}\(address.suffix(4))" : address
 }
 
 public enum SimplexLinkType: String, Decodable, Hashable {

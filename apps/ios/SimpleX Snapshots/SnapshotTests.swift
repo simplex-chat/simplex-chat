@@ -1608,7 +1608,7 @@ private final class SnapshotFixtures {
             "Or this exact amount: monero:\(xmr)?tx_amount=0.25&recipient_name=SimpleX",
             "On Ethereum: \(eth)",
             "Cheaper on Arbitrum: ethereum:\(eth)@42161?value=1e16",
-            "Other networks: t1fwjQW5gpFhDqXNhxqDWyF9j9WeKvVS5Jg, ltc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66snwfdv, D99pV4n9TrPxBPCkQGx4w4SMSa6QjRBxPf, qq6c8vfvxqrk6rhdysgvkhqc24sggkfsx5nqvdlqcg"
+            "Other networks: t1fwjQW5gpFhDqXNhxqDWyF9j9WeKvVS5Jg, ltc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66snwfdv, D99pV4n9TrPxBPCkQGx4w4SMSa6QjRBxPf, qq6c8vfvxqrk6rhdysgvkhqc24sggkfsx5nqvdlqcg, solana:7JCf5m3TiHmYKZVr6jCu1KeZVtb9Y1jRMQDU69p5ARnu"
         ]
         return chatRows(direct, texts.enumerated().map { i, text -> ChatItem in
             var item = msg(.directRcv, text, Double(i - texts.count))

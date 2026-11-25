@@ -43,22 +43,22 @@ class PaymentLinksTest {
       mapOf(
         "<bitcoin:$BTC?amount=0.001&label=SimpleX>" to "₿\u00A00.001 · SimpleX",
         "Cheaper on Arbitrum: ethereum:$ETH@42161?value=1e16" to "Cheaper on Arbitrum: Ξ\u00A00.01 · Arbitrum One",
-        "Donations: $BTC. Cheers" to "Donations: ₿\u00A0bc1q2g…5d4u. Cheers",
+        "Donations: $BTC. Cheers" to "Donations: ₿\u00A0bc1q2g…\u20605d4u. Cheers",
         "For the coffee: $INVOICE thanks!" to "For the coffee: ϟ\u00A00.0025 BTC thanks!",
         "If you want to support the project: [Donate](monero:$XMR). Cheers" to "If you want to support the project: ɱ\u00A0Donate. Cheers",
-        "On Ethereum: $ETH" to "On Ethereum: Ξ\u00A00xD704…c86a",
+        "On Ethereum: $ETH" to "On Ethereum: Ξ\u00A00xD704…\u2060c86a",
         "Or this exact amount: monero:$XMR?tx_amount=0.25&recipient_name=SimpleX" to "Or this exact amount: ɱ\u00A00.25 · SimpleX",
-        "Other networks: t1fwjQW5gpFhDqXNhxqDWyF9j9WeKvVS5Jg, ltc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66snwfdv, D99pV4n9TrPxBPCkQGx4w4SMSa6QjRBxPf, qq6c8vfvxqrk6rhdysgvkhqc24sggkfsx5nqvdlqcg" to
-          "Other networks: ⓩ\u00A0t1fwjQ…S5Jg, Ł\u00A0ltc1q2…wfdv, Ð\u00A0D99pV4…BxPf, ₿\u00A0qq6c8v…lqcg",
+        "Other networks: t1fwjQW5gpFhDqXNhxqDWyF9j9WeKvVS5Jg, ltc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66snwfdv, D99pV4n9TrPxBPCkQGx4w4SMSa6QjRBxPf, qq6c8vfvxqrk6rhdysgvkhqc24sggkfsx5nqvdlqcg, solana:7JCf5m3TiHmYKZVr6jCu1KeZVtb9Y1jRMQDU69p5ARnu" to
+          "Other networks: Ƶ\u00A0t1fwjQ…\u2060S5Jg, Ł\u00A0ltc1q2…\u2060wfdv, Ð\u00A0D99pV4…\u2060BxPf, ₿\u00A0qq6c8v…\u2060lqcg, ◎\u00A07JCf5m…\u2060ARnu",
         "Suggested donation: bitcoin:$BTC?amount=0.001&label=SimpleX Thank you!" to "Suggested donation: ₿\u00A00.001 · SimpleX Thank you!",
         "[Donate](monero:$XMR)" to "ɱ\u00A0Donate",
-        "[$BTC](bitcoin:$BTC)" to "₿\u00A0bc1q2g…5d4u",
-        BTC to "₿\u00A0bc1q2g…5d4u",
+        "[$BTC](bitcoin:$BTC)" to "₿\u00A0bc1q2g…\u20605d4u",
+        BTC to "₿\u00A0bc1q2g…\u20605d4u",
         "bitcoin:$BTC?amount=0.001&label=SimpleX&message=Thank%20you" to "₿\u00A00.001 · SimpleX",
-        "ethereum:0xd7047fe3eecb2f2ff78d839dd927be27bc12c86a" to "Ξ\u00A00xD704…c86a",
-        "ethereum:0xdAC17F958D2ee523a2206206994597C13D831ec7@1/transfer?address=$ETH&uint256=5000000" to "Ξ\u00A00xD704…c86a",
-        "lightning:LNURL1DP68GURN8GHJ7UM9WFMXJCM99E3K7MF0V9CXJ0M385EKVCENXC6R2C35XVUKXEFCV5MKVV34X5EKZD3EV56NYD3HXQURZEPEXEJXXEPNXSCRVWFNV9NXZCN9XQ6XYEFHVGCXXCMYXYMNSERXFQ5FNS" to "ϟ\u00A0lnurl1…5fns",
-        "lightning:lno1pgx9getnwss8vetrw3hhyuckyypwa3eyt44h6txtxquqh7lz5djge4afgfjn7k4rgrkuag0jsd5xvxg" to "ϟ\u00A0lno1pg…xvxg",
+        "ethereum:0xd7047fe3eecb2f2ff78d839dd927be27bc12c86a" to "Ξ\u00A00xD704…\u2060c86a",
+        "ethereum:0xdAC17F958D2ee523a2206206994597C13D831ec7@1/transfer?address=$ETH&uint256=5000000" to "Ξ\u00A00xD704…\u2060c86a",
+        "lightning:LNURL1DP68GURN8GHJ7UM9WFMXJCM99E3K7MF0V9CXJ0M385EKVCENXC6R2C35XVUKXEFCV5MKVV34X5EKZD3EV56NYD3HXQURZEPEXEJXXEPNXSCRVWFNV9NXZCN9XQ6XYEFHVGCXXCMYXYMNSERXFQ5FNS" to "ϟ\u00A0lnurl1…\u20605fns",
+        "lightning:lno1pgx9getnwss8vetrw3hhyuckyypwa3eyt44h6txtxquqh7lz5djge4afgfjn7k4rgrkuag0jsd5xvxg" to "ϟ\u00A0lno1pg…\u2060xvxg",
         INVOICE to "ϟ\u00A00.0025 BTC",
         "solana:7JCf5m3TiHmYKZVr6jCu1KeZVtb9Y1jRMQDU69p5ARnu?amount=0.5" to "◎\u00A00.5"
       ),
@@ -71,7 +71,7 @@ class PaymentLinksTest {
     val commands = recorded().getValue("commands").jsonObject
     chatSendCmdRetry = { _, cmd, _ -> commands.getValue(cmd).toString() }
     val item = runBlocking { ChatController.apiGetChat(null, ChatType.Direct, 2, null, pagination = ChatPagination.Last(1)) }!!.first.chatItems.single()
-    val shown = "donate ₿\u00A0bc1q2g…5d4u, ɱ\u00A0Donate or ϟ\u00A00.0025 BTC"
+    val shown = "donate ₿\u00A0bc1q2g…\u20605d4u, ɱ\u00A0Donate or ϟ\u00A00.0025 BTC"
     setContent { MarkdownText(item.text, item.formattedText, toggleSecrets = false, linkMode = SimplexLinkMode.DESCRIPTION) }
     onNodeWithText(shown).assertExists()
     assertEquals(shown, itemDisplay(item, SimplexLinkMode.DESCRIPTION)!!.parts.joinToString("") { it.first })
