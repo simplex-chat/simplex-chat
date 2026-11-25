@@ -4155,17 +4155,7 @@ Plan:
 SEARCH p USING COVERING INDEX idx_badge_purchases_user (user_id=? AND rowid=?)
 SEARCH l USING INDEX idx_badge_ledger_purchase (badge_purchase_id=?)
 
-Query: 
-        SELECT l.label, l.link_text, t.chat_item_id, t.contact_id, t.group_id, t.note_folder_id
-        FROM chat_item_links l
-        LEFT JOIN chat_items t ON t.chat_item_id = l.target_chat_item_id
-        WHERE l.chat_item_id = ?
-      
-Plan:
-SEARCH l USING INDEX idx_chat_item_links_chat_item_id_label (chat_item_id=?)
-SEARCH t USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
-
-Query: 
+Query:
         SELECT m.group_member_id
         FROM group_members m
         JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id)
@@ -7600,9 +7590,6 @@ Plan:
 SCAN badge_ledger
 SEARCH badge_issuances USING COVERING INDEX idx_badge_issuances_entry (entry_id=?)
 
-Query: INSERT INTO chat_item_links (chat_item_id, label, link_text, target_chat_item_id) VALUES (?, ?, ?, ?)
-Plan:
-
 Query: INSERT INTO chat_item_mentions (chat_item_id, group_id, member_id, display_name) VALUES (?, ?, ?, ?)
 Plan:
 
@@ -8173,11 +8160,6 @@ SCAN files USING COVERING INDEX idx_files_chat_item_id
 Query: SELECT item_status FROM chat_items WHERE item_text = ?
 Plan:
 SCAN chat_items
-
-Query: SELECT l.label, t.item_text FROM chat_item_links l LEFT JOIN chat_items t ON t.chat_item_id = l.target_chat_item_id ORDER BY l.chat_item_link_id
-Plan:
-SCAN l
-SEARCH t USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
 
 Query: SELECT last_insert_rowid()
 Plan:
