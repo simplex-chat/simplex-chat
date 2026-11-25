@@ -354,6 +354,13 @@ extension RecordedAPITestCase {
     }
 
     @MainActor
+    func assertRequested(_ expected: [String], file: StaticString = #filePath, line: UInt = #line) async throws {
+        try? await waitFor { self.requests().sorted() == expected.sorted() }
+        XCTAssertEqual(requests().sorted(), expected.sorted(), file: file, line: line)
+        locked { unrecorded.removeAll() }
+    }
+
+    @MainActor
     func assertTexts(_ texts: [String], file: StaticString = #filePath, line: UInt = #line) async throws {
         try? await waitFor { self.shownTexts().sorted() == texts.sorted() }
         let shown = shownTexts()

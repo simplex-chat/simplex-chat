@@ -8,6 +8,7 @@ final class ModerationTests: RecordedAPITestCase {
     private let contactDeletion = privacyContactDeletionDefault.get()
     private let showDeleteContactNotice = showDeleteContactNoticeDefault.get()
     private let showDeleteConversationNotice = showDeleteConversationNoticeDefault.get()
+    private let oneHandUI = groupDefaults.bool(forKey: GROUP_DEFAULT_ONE_HAND_UI)
     private static let until = ISO8601DateFormatter().date(from: "2099-01-01T12:00:00Z")!.formatted(date: .abbreviated, time: .shortened)
 
     @MainActor
@@ -15,6 +16,7 @@ final class ModerationTests: RecordedAPITestCase {
         privacyContactDeletionDefault.set(contactDeletion)
         showDeleteContactNoticeDefault.set(showDeleteContactNotice)
         showDeleteConversationNoticeDefault.set(showDeleteConversationNotice)
+        groupDefaults.set(oneHandUI, forKey: GROUP_DEFAULT_ONE_HAND_UI)
         ChatModel.shared.groupMembers = []
         ChatModel.shared.groupMembersIndexes = [:]
         ChatModel.shared.userAddress = nil
@@ -120,7 +122,7 @@ final class ModerationTests: RecordedAPITestCase {
         XCTAssertFalse(dialog.withDuration)
         XCTAssertEqual(dialog.actions.map(\.title), ["Block", "Block and remove"])
         XCTAssertEqual(shownText(dialog.footer), "bob won't be notified, and if removed, can't rejoin while blocked.")
-        dialog.close { dialog.actions[0].action(.day) }
+        try await activate("Block")
         try await awaitMember("bob") { $0.blockedByAdmin }
     }
 
@@ -430,7 +432,7 @@ final class ModerationTests: RecordedAPITestCase {
         try await press("Delete")
         let dialog = try await sheet(KeepConversationDialog.self)
         XCTAssertEqual(shownText(dialog.footer), "eve will be notified, and can reconnect via your address.")
-        dialog.close { dialog.delete(false) }
+        try await activate("Delete")
         try await waitFor { ChatModel.shared.getChat(chat.id) == nil }
     }
 
@@ -669,6 +671,404 @@ final class ModerationTests: RecordedAPITestCase {
     }
 
     @MainActor
+    func testContactInfoAsksWhetherToNotify() async throws {
+        try recorded("bans/contact-deletion")
+        privacyContactDeletionDefault.set(.ask)
+        let (chat, contact) = try openContact("/_get chat @5 count=0")
+        try await hosting(contactInfo(chat, contact), loads: ["/_info @5"]) {
+            try await activate("Delete contact")
+            try await assertTexts(["Delete contact?", "Contact with eve will be deleted - this cannot be undone!", "Delete and notify", "Delete silently", "Cancel"])
+        }
+    }
+
+    @MainActor
+    func testContactInfoDeleteKeepingConversation() async throws {
+        try recorded("bans/contact-deletion")
+        privacyContactDeletionDefault.set(.notify)
+        showDeleteContactNoticeDefault.set(true)
+        let (chat, contact) = try openContact("/_get chat @2 count=0")
+        try await hosting(contactInfo(chat, contact), loads: ["/_info @2"]) {
+            try await activate("Delete contact")
+            try await press("Delete")
+            _ = try await sheet(KeepConversationDialog.self)
+            try await activate("Keep conversation")
+            try await activate("Delete")
+            try await waitFor { ChatModel.shared.chatId == nil && AlertManager.shared.presentAlert }
+        }
+    }
+
+    @MainActor
+    func testContactInfoDeleteAndBlock() async throws {
+        try recorded("bans/contact-deletion")
+        let (chat, contact) = try openContact("/_get chat @3 count=0")
+        try await hosting(contactInfo(chat, contact), loads: ["/_info @3"]) {
+            try await activate("Delete and block")
+            let dialog = try await sheet(BanDialog.self)
+            XCTAssertEqual(dialog.title, "Delete and block?")
+            try await activate("Delete and block")
+            let keep = try await sheet(KeepConversationDialog.self)
+            XCTAssertEqual(keep.title, "Delete and block?")
+            try await activate("Keep conversation")
+            try await activate("Delete and block")
+            try await waitFor { ChatModel.shared.chatId == nil }
+        }
+    }
+
+    @MainActor
+    func testCustomerInfoDeleteAndBlock() async throws {
+        try recorded("bans/business")
+        let (groupInfo, _) = try openGroup()
+        try await hosting(groupInfoView(groupInfo), loads: ["/_get link #1"]) {
+            try await activate("Delete and block")
+            _ = try await sheet(BanDialog.self)
+            try await activate("Delete and block")
+            _ = try await sheet(KeepConversationDialog.self)
+            try await activate("Delete and block")
+            try await waitFor { ChatModel.shared.chatId == nil && ChatModel.shared.getChat(groupInfo.id) == nil }
+        }
+    }
+
+    @MainActor
+    func testCustomerInfoDeleteKeepingConversation() async throws {
+        try recorded("bans/business")
+        let (groupInfo, _) = try openGroup("/_members #2")
+        try await hosting(groupInfoView(groupInfo), loads: ["/_get link #2"]) {
+            try await activate("Delete chat")
+            try await press("Delete")
+            _ = try await sheet(KeepConversationDialog.self)
+            try await activate("Keep conversation")
+            try await activate("Delete")
+            try await waitFor { ChatModel.shared.chatId == nil && self.groupInfo(groupInfo.id)?.membership.memberStatus == .memGroupDeleted }
+        }
+    }
+
+    @MainActor
+    func testMemberInfoBlockForAll() async throws {
+        try recorded("bans/block-members")
+        let (groupInfo, members) = try openGroup()
+        let bob = try XCTUnwrap(ChatModel.shared.getGroupMember(try member(members, "bob").groupMemberId))
+        try await hosting(memberInfo(groupInfo, bob), loads: ["/_info #1 2"]) {
+            try await activate("Block for all")
+            _ = try await sheet(BanDialog.self)
+            try await activate("Block")
+            try await awaitMember("bob") { $0.blockedByAdmin }
+        }
+    }
+
+    @MainActor
+    func testMemberInfoHidesMessages() async throws {
+        try recorded("bans/hide-messages")
+        let (groupInfo, members) = try openGroup()
+        let cath = try XCTUnwrap(ChatModel.shared.getGroupMember(try member(members, "cath").groupMemberId))
+        try await hosting(memberInfo(groupInfo, cath), loads: ["/_info #1 3"]) {
+            try await activate("Hide messages")
+            try await assertTexts(["Hide messages?", "All new messages from cath will be hidden!", "Hide", "Cancel"])
+        }
+    }
+
+    @MainActor
+    func testMemberInfoShowsMessages() async throws {
+        try recorded("bans/hide-messages")
+        let (groupInfo, members) = try openGroup()
+        var hidden = try member(members, "cath")
+        hidden.memberSettings.showMessages = false
+        replaceMembers([hidden])
+        let cath = try XCTUnwrap(ChatModel.shared.getGroupMember(hidden.groupMemberId))
+        try await hosting(memberInfo(groupInfo, cath), loads: ["/_info #1 3"]) {
+            try await activate("Show messages")
+            try await assertTexts(["Show messages?", "Messages from cath will be shown!", "Show", "Cancel"])
+        }
+    }
+
+    @MainActor
+    func testJoinPreparedGroupWithNotice() async throws {
+        try recorded("bans/connect-group-notice")
+        let r: ChatResponse0 = try recordedResult("/_get chat #2 count=0")
+        guard case let .apiChat(_, chatData, _) = r else { return XCTFail("no group") }
+        let chat = openChat(Chat(chatData))
+        try await hosting(composeView(chat, ComposeState())) {
+            try await activate("Join group")
+            try await assertTexts(["Not allowed", "Blocked by the admins of this group until \(Self.until).", "Ok", "How it works"])
+        }
+    }
+
+    @MainActor
+    func testReportContentInCompose() async throws {
+        try recorded("bans/block-members")
+        let (groupInfo, _) = try openGroup()
+        let item = ChatItem.getSample(1, .directRcv, .now, "hello")
+        try await hosting(composeView(groupChat(groupInfo), ComposeState(contextItem: .reportedItem(chatItem: item, reason: .content)))) {
+            try await waitFor { self.accessibilityElement("Report content: only group moderators will see it.") != nil }
+        }
+    }
+
+    @MainActor
+    func testMemberInfoAsksToUnblockBeforePromotion() async throws {
+        try recorded("bans/block-members")
+        let (groupInfo, _) = try openGroup()
+        let blocked = try member(try blockedMembers("/_block #1 2 blocked=on"), "bob")
+        replaceMembers([blocked])
+        let bob = try XCTUnwrap(ChatModel.shared.getGroupMember(blocked.groupMemberId))
+        try await hosting(memberInfo(groupInfo, bob), loads: ["/_info #1 2"]) {
+            try await selectMenuItem("moderator")
+            try await assertTexts(["Unblock first", "Unblock bob for all before changing the role to moderator or above.", "Unblock", "Cancel"])
+            try await press("Cancel")
+            try await selectMenuItem("observer")
+            try await waitFor { self.shownTexts().contains("Change role?") }
+        }
+    }
+
+    @MainActor
+    func testMemberRowBlockForAll() async throws {
+        try recorded("bans/block-members")
+        let (groupInfo, _) = try openGroup()
+        try await hosting(groupInfoView(groupInfo), loads: ["/_get link #1"]) {
+            try await swipe("Block for all", row: "bob")
+            let dialog = try await sheet(BanDialog.self)
+            XCTAssertEqual(dialog.title, "Block member for all?")
+        }
+    }
+
+    @MainActor
+    func testMemberRowHidesMessages() async throws {
+        try recorded("bans/hide-messages")
+        let (groupInfo, _) = try openGroup()
+        try await hosting(groupInfoView(groupInfo), loads: ["/_get link #1"]) {
+            try await swipe("Hide messages", row: "cath")
+            try await assertTexts(["Hide messages?", "All new messages from cath will be hidden!", "Hide", "Cancel"])
+        }
+    }
+
+    @MainActor
+    func testMemberRowShowsMessages() async throws {
+        try recorded("bans/hide-messages")
+        let (groupInfo, members) = try openGroup()
+        var cath = try member(members, "cath")
+        cath.memberSettings.showMessages = false
+        replaceMembers([cath])
+        try await hosting(groupInfoView(groupInfo), loads: ["/_get link #1"]) {
+            try await swipe("Show messages", row: "cath")
+            try await assertTexts(["Show messages?", "Messages from cath will be shown!", "Show", "Cancel"])
+        }
+    }
+
+    @MainActor
+    func testContactRowBlocks() async throws {
+        try recorded("bans/contact-deletion")
+        let (chat, _) = try openContact("/_get chat @3 count=0")
+        try await hosting(chatRow(chat)) {
+            try await swipe("Block")
+            let dialog = try await sheet(BanDialog.self)
+            XCTAssertEqual(dialog.title, "Delete and block?")
+        }
+    }
+
+    @MainActor
+    func testContactRowArchives() async throws {
+        try recorded("bans/contact-deletion")
+        let (chat, _) = try openContact("/_get chat @3 count=0")
+        try await hosting(chatRow(chat)) {
+            try await swipe("Archive")
+            try await assertRequested { $0 == "/_delete @3 archive" }
+        }
+    }
+
+    @MainActor
+    func testContactRowAsksWhetherToNotify() async throws {
+        try recorded("bans/contact-deletion")
+        privacyContactDeletionDefault.set(.ask)
+        let (chat, _) = try openContact("/_get chat @5 count=0")
+        try await hosting(chatRow(chat)) {
+            try await swipe("Delete")
+            try await assertTexts(["Delete contact?", "Contact with eve will be deleted - this cannot be undone!", "Delete and notify", "Delete silently", "Cancel"])
+        }
+    }
+
+    @MainActor
+    func testContactRowMoreOptions() async throws {
+        try recorded("bans/contact-deletion")
+        let (_, contact) = try openContact("/_get chat @3 count=0")
+        let chat = openChat(Chat(chatInfo: .direct(contact: contact), chatItems: [ChatItem.getSample(1, .directRcv, .now, "hello")]))
+        try await hosting(chatRow(chat)) {
+            try await swipe("More")
+            try await assertTexts(["cath", "Clear", "Archive", "Cancel"])
+            try await press("Archive")
+            try await assertRequested { $0 == "/_delete @3 archive" }
+            try await waitFor { AlertManager.shared.presentAlert }
+            AlertManager.shared.presentAlert = false
+            try await swipe("More")
+            try await press("Clear")
+            try await waitFor { AlertManager.shared.presentAlert }
+        }
+    }
+
+    @MainActor
+    func testContactRowLists() async throws {
+        try recorded("bans/contact-deletion")
+        let (chat, _) = try openContact("/_get chat @3 count=0")
+        let state = ParentSheetState()
+        try await hosting(ChatRowHost(state: state, chat: chat)) {
+            try await swipe("List")
+            try await waitFor { state.sheet?.id == "lists sheet" }
+        }
+    }
+
+    @MainActor
+    func testContactCardRowAsksToConfirm() async throws {
+        try recorded("bans/contact-deletion")
+        let chat = openChat(Chat(chatInfo: .direct(contact: contactCard())))
+        try await hosting(chatRow(chat)) {
+            try await swipe("Delete")
+            try await assertTexts(["Confirm contact deletion?", "alice", "Confirm", "Cancel"])
+        }
+    }
+
+    @MainActor
+    func testRemovedMemberRequestRowAsksToConfirm() async throws {
+        try recorded("bans/contact-deletion")
+        let chat = openChat(Chat(chatInfo: .direct(contact: removedMemberRequest())))
+        try await hosting(chatRow(chat)) {
+            try await swipe("Delete")
+            try await assertTexts(["Confirm contact deletion?", "alice", "Confirm", "Cancel"])
+        }
+    }
+
+    @MainActor
+    func testCustomerRowBlocks() async throws {
+        try recorded("bans/business")
+        let (groupInfo, _) = try openGroup()
+        try await hosting(chatRow(groupChat(groupInfo))) {
+            try await swipe("Block")
+            let dialog = try await sheet(BanDialog.self)
+            XCTAssertEqual(dialog.title, "Delete and block?")
+        }
+    }
+
+    @MainActor
+    func testCustomerRowDeletes() async throws {
+        try recorded("bans/business")
+        let (groupInfo, _) = try openGroup()
+        try await hosting(chatRow(groupChat(groupInfo))) {
+            try await swipe("Delete")
+            try await waitFor { AlertManager.shared.presentAlert }
+        }
+    }
+
+    @MainActor
+    func testCustomerRowMoreOptions() async throws {
+        try recorded("bans/business")
+        let (groupInfo, _) = try openGroup()
+        let chat = Chat(chatInfo: .group(groupInfo: groupInfo, groupChatScope: nil), chatItems: [ChatItem.getSample(1, .directRcv, .now, "hello")], chatStats: ChatStats(reportsCount: 1))
+        try await hosting(chatRow(chat)) {
+            for option in ["Leave", "Archive reports"] {
+                AlertManager.shared.presentAlert = false
+                try await swipe("More")
+                try await assertTexts(["bob", "Clear", "Leave", "Archive reports", "Cancel"])
+                try await press(option)
+                try await waitFor { AlertManager.shared.presentAlert }
+            }
+        }
+    }
+
+    @MainActor
+    func testGroupRowClears() async throws {
+        try recorded("bans/block-members")
+        let (groupInfo, _) = try openGroup()
+        let chat = Chat(chatInfo: .group(groupInfo: groupInfo, groupChatScope: nil), chatItems: [ChatItem.getSample(1, .directRcv, .now, "hello")])
+        try await hosting(chatRow(chat)) {
+            try await swipe("Clear")
+            try await waitFor { AlertManager.shared.presentAlert }
+        }
+    }
+
+    @MainActor
+    func testGroupRowArchivesReports() async throws {
+        try recorded("bans/block-members")
+        let (groupInfo, _) = try openGroup()
+        let chat = Chat(chatInfo: .group(groupInfo: groupInfo, groupChatScope: nil), chatStats: ChatStats(reportsCount: 1))
+        try await hosting(chatRow(chat)) {
+            try await swipe("Archive reports")
+            try await waitFor { AlertManager.shared.presentAlert }
+        }
+    }
+
+    @MainActor
+    func testContactListRowAsksWhetherToNotify() async throws {
+        try recorded("bans/contact-deletion")
+        privacyContactDeletionDefault.set(.ask)
+        let (chat, _) = try openContact("/_get chat @5 count=0")
+        try await hosting(contactRow(chat)) {
+            try await swipe("Delete")
+            try await assertTexts(["Delete contact?", "Contact with eve will be deleted - this cannot be undone!", "Delete and notify", "Delete silently", "Cancel"])
+        }
+    }
+
+    @MainActor
+    func testContactListArchivedRow() async throws {
+        try recorded("bans/contact-deletion")
+        privacyContactDeletionDefault.set(.ask)
+        let r: ChatResponse1 = try recordedResult("/_delete @2 archive")
+        guard case let .contactDeleted(_, archived) = r else { return XCTFail("archive not recorded") }
+        let chat = openChat(Chat(chatInfo: .direct(contact: archived)))
+        try await hosting(contactRow(chat)) {
+            try await swipe("Delete")
+            try await assertTexts(["Delete contact?", "Contact with bob will be deleted - this cannot be undone!", "Delete and notify", "Delete silently", "Cancel"])
+            try await dismissPresented()
+            try await swipe("Block")
+            let dialog = try await sheet(BanDialog.self)
+            XCTAssertEqual(dialog.title, "Delete and block?")
+        }
+    }
+
+    @MainActor
+    func testContactListCardRowAsksToConfirm() async throws {
+        try recorded("bans/contact-deletion")
+        let chat = openChat(Chat(chatInfo: .direct(contact: contactCard())))
+        try await hosting(contactRow(chat)) {
+            try await swipe("Delete")
+            try await assertTexts(["Confirm contact deletion?", "alice", "Confirm", "Cancel"])
+        }
+    }
+
+    @MainActor
+    func testContactListRequestRowAsksToConfirm() async throws {
+        try recorded("bans/contact-deletion")
+        let chat = openChat(Chat(chatInfo: .direct(contact: removedMemberRequest())))
+        try await hosting(contactRow(chat)) {
+            try await swipe("Delete")
+            try await assertTexts(["Confirm contact deletion?", "alice", "Confirm", "Cancel"])
+        }
+    }
+
+    @MainActor
+    func testHiddenItemHeader() async throws {
+        let item = ChatItem.getSample(1, .directRcv, .now, "hello", .rcvRead, itemDeleted: .blocked(deletedTs: .now))
+        let view = FramedItemView(chat: Chat.sampleData, im: ItemsModel(secondaryIMFilter: nil), chatItem: item, scrollToItem: { _ in }, scrollToItemId: .constant(nil), allowMenu: .constant(true))
+        try await hosting(view) {
+            try await waitFor { self.accessibilityLabels().contains { $0.contains("hidden") } }
+        }
+    }
+
+    @MainActor
+    func testHiddenItemsMerged() async throws {
+        let im = ItemsModel(secondaryIMFilter: nil)
+        im.reversedChatItems = ([1, 2] as [Int64]).map { ChatItem.getSample($0, .directRcv, .now, "hello", .rcvRead, itemDeleted: .blocked(deletedTs: .now)) }
+        try await hosting(MarkedDeletedItemView(chat: Chat.sampleData, im: im, chatItem: im.reversedChatItems[0])) {
+            try await waitFor { self.accessibilityLabels().contains { $0.contains("2 messages hidden") } }
+        }
+    }
+
+    @MainActor
+    func testFavoritesInListsSheet() async throws {
+        try recorded("bans/contact-deletion")
+        let (chat, _) = try openContact("/_get chat @2 count=0")
+        try await hosting(NavigationView { TagListView(chat: chat) }) {
+            try await activate("Favorites")
+            try await assertRequested { $0.hasPrefix("/_settings @2 ") }
+        }
+    }
+
+    @MainActor
     func testContactNotViaAddressCantBeBlocked() async throws {
         try recorded("bans/contact-deletion")
         let (_, contact) = try openContact("/_get chat @5 count=0")
@@ -807,6 +1207,148 @@ final class ModerationTests: RecordedAPITestCase {
     }
 
     @MainActor
+    private func hosting<V: View>(_ view: V, loads: [String] = [], _ test: () async throws -> Void) async throws {
+        _ = accessibilityEnabled
+        let scene = try XCTUnwrap(UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first)
+        let keyWindow = scene.windows.first { $0.isKeyWindow }
+        let window = UIWindow(windowScene: scene)
+        window.rootViewController = UIHostingController(rootView: view
+            .environmentObject(ChatModel.shared)
+            .environmentObject(ChatTagsModel.shared)
+            .environmentObject(AppTheme.shared))
+        window.frame = CGRect(x: 0, y: 0, width: scene.screen.bounds.width, height: 2400)
+        window.makeKeyAndVisible()
+        defer {
+            window.isHidden = true
+            keyWindow?.makeKey()
+        }
+        if !loads.isEmpty { try await assertRequested(loads) }
+        try await test()
+    }
+
+    @MainActor
+    private func accessibilityElement(_ label: String) -> NSObject? {
+        _ = accessibilityEnabled
+        let root = presented()?.view ?? UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first?.windows.first { $0.isKeyWindow }
+        return root.flatMap { view in findAccessibilityElement(view) { $0.accessibilityLabel == label } }
+    }
+
+    @MainActor
+    private func accessibilityLabels() -> [String] {
+        _ = accessibilityEnabled
+        guard let window = UIApplication.shared.connectedScenes.compactMap({ $0 as? UIWindowScene }).first?.windows.first(where: { $0.isKeyWindow }) else { return [] }
+        var labels: [String] = []
+        _ = findAccessibilityElement(window) { e in
+            if let label = e.accessibilityLabel { labels.append(label) }
+            return false
+        }
+        return labels
+    }
+
+    @MainActor
+    private func activate(_ label: String, file: StaticString = #filePath, line: UInt = #line) async throws {
+        var element: NSObject?
+        try? await waitFor {
+            element = self.accessibilityElement(label)
+            return element != nil
+        }
+        let found = try XCTUnwrap(element, "no element \(label)", file: file, line: line)
+        XCTAssertTrue(found.accessibilityActivate(), "\(label) not activated", file: file, line: line)
+    }
+
+    private func contactInfo(_ chat: Chat, _ contact: Contact) -> ChatInfoView {
+        let features = contactUserPrefsToFeaturesAllowed(contact.mergedPreferences)
+        return ChatInfoView(chat: chat, contact: contact, localAlias: "", featuresAllowed: features, currentFeaturesAllowed: features, onSearch: {})
+    }
+
+    private func groupInfoView(_ groupInfo: GroupInfo) -> GroupChatInfoView {
+        GroupChatInfoView(chat: groupChat(groupInfo), groupInfo: .constant(groupInfo), scrollToItemId: .constant(nil), composeState: .constant(ComposeState()), onSearch: {}, localAlias: "")
+    }
+
+    private func memberInfo(_ groupInfo: GroupInfo, _ member: GMember) -> GroupMemberInfoView {
+        GroupMemberInfoView(groupInfo: groupInfo, chat: groupChat(groupInfo), groupMember: member, scrollToItemId: .constant(nil))
+    }
+
+    private func composeView(_ chat: Chat, _ state: ComposeState) -> ComposeView {
+        ComposeView(chat: chat, im: ItemsModel.shared, composeState: .constant(state), showCommandsMenu: .constant(false), keyboardVisible: .constant(false), keyboardHiddenDate: .constant(Date.now), selectedRange: .constant(NSRange()))
+    }
+
+    private func chatRow(_ chat: Chat) -> ChatRowHost {
+        groupDefaults.set(false, forKey: GROUP_DEFAULT_ONE_HAND_UI)
+        return ChatRowHost(state: ParentSheetState(), chat: chat)
+    }
+
+    private func contactRow(_ chat: Chat) -> some View {
+        List { ContactListNavLink(chat: chat, showDeletedChatIcon: true) }
+    }
+
+    private func contactCard() -> Contact {
+        var card = Contact.sampleData
+        card.contactId = 9
+        card.activeConn = nil
+        card.profile.contactLink = "CONTACT_LINK"
+        return card
+    }
+
+    private func removedMemberRequest() -> Contact {
+        var contact = Contact.sampleData
+        contact.contactId = 10
+        contact.activeConn = nil
+        var invitation = GroupDirectInvitation.sampleData
+        invitation.fromGroupId_ = nil
+        contact.groupDirectInv = invitation
+        return contact
+    }
+
+    @MainActor
+    private func swipe(_ title: String, row: String? = nil, file: StaticString = #filePath, line: UInt = #line) async throws {
+        var found: (UIContextualAction, UIView)?
+        try? await waitFor {
+            found = self.swipeAction(title, row: row)
+            return found != nil
+        }
+        let (action, view) = try XCTUnwrap(found, "no swipe action \(title)", file: file, line: line)
+        action.handler(action, view) { _ in }
+    }
+
+    @MainActor
+    private func swipeAction(_ title: String, row: String?) -> (UIContextualAction, UIView)? {
+        _ = accessibilityEnabled
+        guard let window = UIApplication.shared.connectedScenes.compactMap({ $0 as? UIWindowScene }).first?.windows.first(where: { $0.isKeyWindow }) else { return nil }
+        for list in allViews(window).compactMap({ $0 as? UICollectionView }) {
+            for indexPath in list.indexPathsForVisibleItems.sorted() {
+                if let row {
+                    guard let cell = list.cellForItem(at: indexPath),
+                          findAccessibilityElement(cell, { $0.accessibilityLabel?.contains(row) == true }) != nil else { continue }
+                }
+                for name in ["_leadingSwipeActionsConfigurationForIndexPath:", "_trailingSwipeActionsConfigurationForIndexPath:"] {
+                    let selector = NSSelectorFromString(name)
+                    guard list.collectionViewLayout.responds(to: selector),
+                          let configuration = list.collectionViewLayout.perform(selector, with: indexPath)?.takeUnretainedValue() as? UISwipeActionsConfiguration,
+                          let action = configuration.actions.first(where: { $0.title == title }) else { continue }
+                    return (action, list)
+                }
+            }
+        }
+        return nil
+    }
+
+    @MainActor
+    private func selectMenuItem(_ title: String, file: StaticString = #filePath, line: UInt = #line) async throws {
+        var found: UIAction?
+        try? await waitFor {
+            found = UIApplication.shared.connectedScenes.compactMap({ $0 as? UIWindowScene }).first?.windows.first(where: { $0.isKeyWindow })
+                .flatMap { window in
+                    allViews(window).compactMap { ($0 as? UIButton)?.menu }.flatMap(\.children).compactMap { $0 as? UIAction }.first { $0.title == title }
+                }
+            return found != nil
+        }
+        let action = try XCTUnwrap(found, "no menu item \(title)", file: file, line: line)
+        let handler = try XCTUnwrap(action.value(forKey: "handler"), file: file, line: line)
+        unsafeBitCast(handler as AnyObject, to: (@convention(block) (UIAction) -> Void).self)(action)
+    }
+
+    @MainActor
     private func openedURLs(_ action: () async throws -> Void) async throws -> [URL] {
         let method = try XCTUnwrap(class_getInstanceMethod(UIApplication.self, #selector(UIApplication.open(_:options:completionHandler:))))
         let original = method_getImplementation(method)
@@ -825,6 +1367,53 @@ final class ModerationTests: RecordedAPITestCase {
 
 private final class OpenedURLs {
     var urls: [URL] = []
+}
+
+private final class ParentSheetState: ObservableObject {
+    @Published var sheet: SomeSheet<AnyView>?
+}
+
+private struct ChatRowHost: View {
+    @ObservedObject var state: ParentSheetState
+    var chat: Chat
+
+    var body: some View {
+        List { ChatListNavLink(chat: chat, parentSheet: $state.sheet) }
+    }
+}
+
+private func allViews(_ view: UIView) -> [UIView] {
+    [view] + view.subviews.flatMap(allViews)
+}
+
+private let accessibilityEnabled: Void = {
+    let root = ProcessInfo.processInfo.environment["IPHONE_SIMULATOR_ROOT"] ?? ""
+    guard let lib = dlopen(root + "/usr/lib/libAccessibility.dylib", RTLD_NOW) else { return }
+    typealias SetEnabled = @convention(c) (Int32) -> Void
+    for name in ["_AXSSetAutomationEnabled", "_AXSApplicationAccessibilitySetEnabled"] {
+        if let f = dlsym(lib, name) { unsafeBitCast(f, to: SetEnabled.self)(1) }
+    }
+}()
+
+@MainActor
+private func findAccessibilityElement(_ root: NSObject, _ match: (NSObject) -> Bool) -> NSObject? {
+    var visited = Set<ObjectIdentifier>()
+    var queue = [root]
+    while !queue.isEmpty {
+        let e = queue.removeFirst()
+        guard visited.insert(ObjectIdentifier(e)).inserted else { continue }
+        if e.isAccessibilityElement && match(e) { return e }
+        if let elements = e.accessibilityElements {
+            queue += elements.compactMap { $0 as? NSObject }
+        } else {
+            let count = e.accessibilityElementCount()
+            if count != NSNotFound && count > 0 {
+                queue += (0..<count).compactMap { e.accessibilityElement(at: $0) as? NSObject }
+            }
+        }
+        if let view = e as? UIView { queue += view.subviews }
+    }
+    return nil
 }
 
 private struct UnexpectedRecording: Error {
