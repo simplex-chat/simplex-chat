@@ -30,7 +30,7 @@ where
 
 import StoreService.Config (BTCPayConfig (..), SpeedPolicy (..), providerCheckoutTimeoutMicros, providerTimeoutMicros)
 import Bots.StoreService.FakeHttp (nextFakeId, setSwitch, stalledAnswer)
-import Bots.StoreService.NamesAddressProofTests (devBitcoinKey, devMoneroKey)
+import Bots.StoreService.NamesAddressProofTests (devBitcoinAddresses, devBitcoinKey, devMoneroKey, stagenetSubaddresses)
 import Control.Applicative ((<|>))
 import Control.Concurrent.STM
 import Control.Monad (join)
@@ -153,12 +153,11 @@ initialState fsPayees =
       fsPayees
     }
 
-devPayees :: IO [(Text, [Payee])]
-devPayees = do
-  vectors <- J.eitherDecodeFileStrict "tests/fixtures/store-service/rest-api/vectors-address-proofs.json" >>= either fail pure
-  let invoices coin = [o | Just (J.Object dev) <- [objectField coin vectors >>= objectField "dev"], Just (J.Array vs) <- [KM.lookup "invoices" dev], J.Object o <- foldr (:) [] vs]
-      payee keys o = [Payee {pyAddress, pyIndex = KM.filterWithKey (\k _ -> k `elem` keys) o} | Just pyAddress <- [textField "address" o]]
-  pure [(btcMethod, concatMap (payee ["keyPath"]) (invoices "bitcoin")), (xmrMethod, concatMap (payee ["accountIndex", "addressIndex"]) (invoices "monero"))]
+devPayees :: [(Text, [Payee])]
+devPayees =
+  [ (btcMethod, [Payee {pyAddress, pyIndex = KM.fromList [("keyPath", J.String keyPath)]} | (keyPath, pyAddress) <- devBitcoinAddresses]),
+    (xmrMethod, [Payee {pyAddress, pyIndex = KM.fromList [("accountIndex", J.toJSON i), ("addressIndex", J.toJSON j)]} | ((i, j), pyAddress) <- stagenetSubaddresses])
+  ]
 
 data FakeBTCPay = FakeBTCPay
   { fbConfig :: BTCPayConfig,
@@ -171,7 +170,7 @@ data FakeBTCPay = FakeBTCPay
 -- earlier run and the test would pass against that instead.
 withFakeBTCPay :: (FakeBTCPay -> IO a) -> IO a
 withFakeBTCPay action = do
-  fbState <- newTVarIO . initialState =<< devPayees
+  fbState <- newTVarIO $ initialState devPayees
   fbManager <- HTTP.newManager HTTP.defaultManagerSettings
   Warp.testWithApplication (pure (fakeApp fbState)) $ \prt -> do
     let fbBaseUrl = "http://127.0.0.1:" <> show prt

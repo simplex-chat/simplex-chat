@@ -10,6 +10,8 @@ module Bots.StoreService.NamesAddressProofTests
     devMoneroViewKey,
     devBitcoinKey,
     devMoneroKey,
+    devBitcoinAddresses,
+    stagenetSubaddresses,
     addressProofHolds,
   )
 where
@@ -73,7 +75,15 @@ devReceiveKey :: ByteString
 devReceiveKey = unhex "036bf340760eb0da07d4d2bbb9d9aee7b7c27891cb72b6388cc0ee8d2a82d33e46"
 
 devKeyPaths :: [Text]
-devKeyPaths = ["0/0", "0/1", "0/2", "0/3"]
+devKeyPaths = map fst devBitcoinAddresses
+
+devBitcoinAddresses :: [(Text, Text)]
+devBitcoinAddresses =
+  [ ("0/0", "bcrt1q6rz28mcfaxtmd6v789l9rrlrusdprr9pz3cppk"),
+    ("0/1", "bcrt1qd7spv5q28348xl4myc8zmh983w5jx32cs707jh"),
+    ("0/2", "bcrt1qxdyjf6h5d6qxap4n2dap97q4j5ps6ua8jkxz0z"),
+    ("0/3", "bcrt1qynpgs6wap6h9uvy7j0xlesew2w82qn039tzepj")
+  ]
 
 devSubaddresses :: [(Word32, Word32)]
 devSubaddresses = [(0, 1), (0, 2), (0, 3), (1, 0)]
@@ -133,8 +143,7 @@ testBip84 = do
 testDevBitcoin :: IO ()
 testDevBitcoin = do
   receiveKeyText devBitcoinKey `shouldBe` "0x036bf340760eb0da07d4d2bbb9d9aee7b7c27891cb72b6388cc0ee8d2a82d33e46"
-  map (fmap fst . bitcoinPayee devBitcoinKey) devKeyPaths
-    `shouldBe` map Right ["bcrt1q6rz28mcfaxtmd6v789l9rrlrusdprr9pz3cppk", "bcrt1qd7spv5q28348xl4myc8zmh983w5jx32cs707jh", "bcrt1qxdyjf6h5d6qxap4n2dap97q4j5ps6ua8jkxz0z", "bcrt1qynpgs6wap6h9uvy7j0xlesew2w82qn039tzepj"]
+  map (fmap fst . bitcoinPayee devBitcoinKey) devKeyPaths `shouldBe` map (Right . snd) devBitcoinAddresses
   fmap fst (bitcoinKey devBitcoinXpub "tb" >>= (`bitcoinPayee` "0/0")) `shouldBe` Right "tb1q6rz28mcfaxtmd6v789l9rrlrusdprr9pqcpvkl"
   forM_ devKeyPaths $ \keyPath -> do
     Right (address, proof) <- pure $ bitcoinPayee devBitcoinKey keyPath
