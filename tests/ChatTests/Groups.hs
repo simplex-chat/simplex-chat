@@ -280,6 +280,7 @@ chatGroupTests = do
     it "short text is kept after the target is edited, and the plan is the chat after it is deleted" testMsgLinkTargetChanged
     it "group with SimpleX links off refuses a global link and sends a local link" testMsgLinkSimplexLinksOff
     it "global link to a channel post" testMsgLinkChannel
+    it "link to a message sent as the group has no author" testMsgLinkAsGroup
   describe "group scoped messages" $ do
     it "should send scoped messages to support (single moderator)" testScopedSupportSingleModerator
     it "should send scoped messages to support (many moderators)" testScopedSupportManyModerators
@@ -8927,6 +8928,21 @@ testMsgLinkChannel ps =
           dan <# "#team> Release notes 7.2 [>>]"
           dan ##> ("/_msg link plan 1 " <> link)
           dan <# "#team> Release notes 7.2 [>>]"
+
+testMsgLinkAsGroup :: HasCallStack => TestParams -> IO ()
+testMsgLinkAsGroup =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      createGroup2 "team" alice bob
+      alice ##> "/_send #1(as_group=on) text Release 7.2 is out"
+      alice <# "#team Release 7.2 is out"
+      bob <# "#team> Release 7.2 is out"
+      bob ##> "/item link #team Release"
+      link <- getTermLine bob
+      link `shouldStartWith` "simplex:/m#g/"
+      link `shouldNotContain` "?a="
+      bob ##> ("/_msg link plan 1 " <> link <> " chat=#1")
+      bob <# "#team> Release 7.2 is out"
 
 linkTargets :: TestCC -> IO [(T.Text, Maybe T.Text)]
 linkTargets cc =

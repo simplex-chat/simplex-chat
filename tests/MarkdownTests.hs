@@ -414,6 +414,7 @@ textWithMessageLinks = describe "text with message links" do
         "simplex:/c#" <> key <> "?h=smp.simplex.im&m=" <> msgId,
         "simplex:/name#privacy.simplex?m=" <> msgId <> "&a=" <> author,
         groupLink,
+        "simplex:/m#g/" <> msgId,
         directLink,
         "simplex:/m#n/48213?f=1",
         "simplex:/m",

@@ -658,7 +658,7 @@ itemMsgLink cInfo ci@ChatItem {meta = CIMeta {itemId, itemSharedMsgId}} = case (
   (DirectChat _, Just msgId) -> Right $ MLDirect msgId
   (GroupChat g scope, Just msgId) -> case (publicGroup' g, scope) of
     (Just PublicGroupProfile {groupLink}, Nothing) -> Right $ MLPublicGroup (CTLink groupLink) (memberId' <$> chatItemMember g ci) msgId
-    _ -> maybe (Left "message has no author") (Right . (`MLGroup` msgId) . memberId') $ chatItemMember g ci
+    _ -> Right $ MLGroup (memberId' <$> chatItemMember g ci) msgId
   (LocalChat NoteFolder {noteFolderId}, _) -> Right $ MLNote noteFolderId itemId
   _ -> Left "message has no link"
 

@@ -4600,14 +4600,14 @@ processChatCommand cxt nm = \case
             GLPKnown {groupInfo} -> Just groupInfo
             GLPOwnLink {groupInfo} -> Just groupInfo
             _ -> Nothing
-      MLGroup author msgId -> do
+      MLGroup author_ msgId -> do
         inChat_ <- case chatRef_ of
-          Just (ChatRef CTGroup gId _) -> fmap (gId,) <$> withFastStore' (\db -> getGroupItemIdByAuthor_ db user gId (Just author) msgId)
+          Just (ChatRef CTGroup gId _) -> fmap (gId,) <$> withFastStore' (\db -> getGroupItemIdByAuthor_ db user gId author_ msgId)
           _ -> pure Nothing
-        maybe (withFastStore' $ \db -> getGroupItemIdByAuthor db user author msgId) (pure . Just) inChat_ >>= \case
+        maybe (withFastStore' $ \db -> pure author_ $>>= \author -> getGroupItemIdByAuthor db user author msgId) (pure . Just) inChat_ >>= \case
           Just (gId, itemId) -> planItem (ChatRef CTGroup gId Nothing) itemId
           Nothing ->
-            withFastStore' (\db -> getGroupIdByMemberId db user author) >>= \case
+            withFastStore' (\db -> pure author_ $>>= getGroupIdByMemberId db user) >>= \case
               Just gId -> MLPChat . AChatInfo SCTGroup . (`GroupChat` Nothing) <$> withFastStore (\db -> getGroupInfo db cxt user gId)
               Nothing -> pure MLPNotFound
       MLDirect msgId -> do
