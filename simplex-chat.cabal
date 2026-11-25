@@ -484,6 +484,7 @@ executable simplex-store-service
       StoreService.Orders
       StoreService.Poller
       StoreService.Providers
+      StoreService.Providers.AddressProof
       StoreService.Providers.BTCPay
       StoreService.Providers.Stripe
       StoreService.Service
@@ -797,6 +798,7 @@ test-suite simplex-chat-test
       Bots.StoreService.GroupTests
       Bots.StoreService.MetricsTests
       Bots.StoreService.NameRegistrationTests
+      Bots.StoreService.NamesAddressProofTests
       Bots.StoreService.NamesBalancesTests
       Bots.StoreService.NamesChainTests
       Bots.StoreService.NamesCodesTests
@@ -867,6 +869,7 @@ test-suite simplex-chat-test
       StoreService.Orders
       StoreService.Poller
       StoreService.Providers
+      StoreService.Providers.AddressProof
       StoreService.Providers.BTCPay
       StoreService.Providers.Stripe
       StoreService.Service

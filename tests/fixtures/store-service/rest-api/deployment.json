@@ -1,0 +1,10 @@
+{
+  "bitcoinHrp": "bcrt",
+  "bitcoinReceiveKeys": [
+    "0x036bf340760eb0da07d4d2bbb9d9aee7b7c27891cb72b6388cc0ee8d2a82d33e46"
+  ],
+  "moneroPrimaryAddresses": [
+    "52jzuBBUMty3xPL3JsQxGP74LDuV6E1LS8Zda1PbdqQjGzFmH6N9ep9McbFKMALujVT9S5mKpbEgC5VPhfoAiVj8LdAqbp6"
+  ],
+  "moneroSubaddressPrefix": 36
+}
