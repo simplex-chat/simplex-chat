@@ -11,11 +11,11 @@ module StoreService.Web.Names.Registration
     registrationRefusal,
     heldFor,
     versionParam,
-    OrderSignature,
-    querySignature,
-    bodySignature,
-    outsideWindow,
-    signedRegistration,
+    OrderSigner (OSOutsideWindow),
+    unsigned,
+    querySigner,
+    bodySigner,
+    ownedRegistration,
   )
 where
 
@@ -28,6 +28,7 @@ import qualified Data.Aeson.KeyMap as KM
 import qualified Data.Aeson.Types as JT
 import qualified Data.ByteString.Lazy as LB
 import Data.Either (isLeft)
+import Data.Functor ((<&>))
 import Data.Int (Int64)
 import Data.Maybe (maybeToList)
 import Data.Text (Text)
@@ -39,14 +40,15 @@ import Network.Wai (Request, ResponseReceived, queryString)
 import Simplex.Messaging.Agent.Store.Common (withTransaction)
 import Simplex.Messaging.Crypto.Secp256k1 (RecoverableSignature)
 import Simplex.Messaging.Encoding.String (StrEncoding (..))
+import Simplex.Messaging.Eth.Address (Address, recoverAddress)
 import Simplex.Messaging.Parsers (parseAll)
 import Simplex.Messaging.SystemTime (roundedToUTCTime)
 import Simplex.Messaging.Util (eitherToMaybe, tshow)
 import StoreService.Config (boundedDecimal)
-import StoreService.Names.Orders (OrderRefusal (..), OrdersEnv (..), WriteRefusal (..), checkSigner, checkTimestamp, noteRead, orderFieldsOf, versionWritten)
+import StoreService.Names.Orders (OrderRefusal (..), OrdersEnv (..), WriteRefusal (..), checkTimestamp, noteRead, orderFieldsOf, versionWritten)
 import StoreService.Names.Phases (RegistrationId (..), awaitChange, publish)
 import StoreService.Names.Reveal (checkReveal, isRepeat, revealSigned)
-import StoreService.Names.Signatures (OrderAction (..), OrderFields (..), orderRequestMessage)
+import StoreService.Names.Signatures (OrderAction (..), OrderFields (..), orderRequestMessage, personalDigest)
 import StoreService.Names.Store (BrokenInvariant (..), Commit (..), FailReason (..), NameRegistration (..), OrderPhase (..), getRegistration, noHistory, updateRegistration)
 import StoreService.Names.Turns (withRegistrationTurn)
 import StoreService.Names.View (NameRefusal (..), RegistrationView, lapseMoment, lapsedAt, registrationVersion, registrationView)
@@ -57,19 +59,18 @@ import StoreService.Web.Names.Orders (orderRefusal, refusalResponse)
 -- | GET /api/registration/:id, held while its version is seenVersion.
 registrationHandler :: OrdersEnv -> HttpEnv -> Int -> RegistrationId -> Request -> Respond -> IO ResponseReceived
 registrationHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oePhases, oeNow} http hold rid@(RegistrationId ridText) req respond =
-  outsideWindow env signature >>= \case
-    True -> respond $ refusalResponse NRBadRequest
-    False ->
-      readNow >>= \case
+  querySigner env ridText OARead req >>= \case
+    OSOutsideWindow -> respond $ refusalResponse NRBadRequest
+    signer ->
+      readNow signer >>= \case
         Nothing -> respond $ refusalResponse NRNotFound
         Just (now, r@NameRegistration {nrVersion})
           | versionParam req == Just nrVersion ->
               withHoldSlot http (awaitChange oePhases rid (registrationVersion oeStore rid) nrVersion (heldFor hold now $ maybeToList $ lapseMoment r))
-                >>= maybe (respond $ refusalResponse $ NRRateLimited holdsFullSeconds) (const $ readNow >>= maybe (respond $ refusalResponse NRNotFound) answer)
+                >>= maybe (respond $ refusalResponse $ NRRateLimited holdsFullSeconds) (const $ readNow signer >>= maybe (respond $ refusalResponse NRNotFound) answer)
           | otherwise -> answer (now, r)
   where
-    signature = querySignature req
-    readNow = oeNow >>= \now -> signedRegistration env rid ridText OARead signature >>= traverse (\r -> (now, r) <$ noteRead oeStore now r)
+    readNow signer = oeNow >>= \now -> ownedRegistration env rid signer >>= traverse (\r -> (now, r) <$ noteRead oeStore now r)
     answer (now, r) = respond . jsonResponse status200 . J.toJSON =<< registrationView oeStore oeConfig oeContracts now r
 
 -- | What a reveal decided in the name's turn, with the version it wrote; the publish and the answer come after the turn.
@@ -127,12 +128,11 @@ revealHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oePhases, 
 
 -- | POST /api/registration/:id/retry, a lapsed order committed again, in the name's turn; the publish and the answer come after the turn.
 retryHandler :: OrdersEnv -> RegistrationId -> Request -> Respond -> IO ResponseReceived
-retryHandler env@OrdersEnv {oeStore, oeTurns, oePhases} rid@(RegistrationId ridText) req respond = do
-  signature <- bodySignature <$> readBoundedBody maxBodyBytes req
-  outsideWindow env signature >>= \case
-    True -> respond $ refusalResponse NRBadRequest
-    False ->
-      signedRegistration env rid ridText OARetry signature >>= \case
+retryHandler env@OrdersEnv {oeStore, oeTurns, oePhases} rid@(RegistrationId ridText) req respond =
+  readBoundedBody maxBodyBytes req >>= bodySigner env ridText OARetry >>= \case
+    OSOutsideWindow -> respond $ refusalResponse NRBadRequest
+    signer ->
+      ownedRegistration env rid signer >>= \case
         Just r -> withRegistrationTurn oeStore oeTurns r (retryRegistration env) >>= maybe (respond $ refusalResponse NRNotFound) (answer . either (const RTChanged) id)
         Nothing -> respond $ refusalResponse NRNotFound
   where
@@ -172,35 +172,32 @@ heldFor hold now moments = fromInteger $ minimum $ toInteger hold : [ceiling (di
 versionParam :: Request -> Maybe Int64
 versionParam req = join (lookup "seenVersion" $ queryString req) >>= eitherToMaybe . parseAll (boundedDecimal 0 maxBound)
 
-data OrderSignature = OrderSignature
-  { osTimestamp :: Maybe Word64,
-    osSignature :: Maybe RecoverableSignature
-  }
+data OrderSigner = OSOutsideWindow | OSSigner (Maybe Address)
 
-querySignature :: Request -> OrderSignature
-querySignature req =
-  OrderSignature
-    { osTimestamp = param "timestamp" >>= eitherToMaybe . parseAll (boundedDecimal 0 maxBound),
-      osSignature = param "signature" >>= eitherToMaybe . strDecode
-    }
+unsigned :: OrderSigner
+unsigned = OSSigner Nothing
+
+querySigner :: OrdersEnv -> Text -> OrderAction -> Request -> IO OrderSigner
+querySigner env oid action req = orderSigner env oid action (param "timestamp" >>= eitherToMaybe . parseAll (boundedDecimal 0 maxBound)) (param "signature" >>= eitherToMaybe . strDecode)
   where
     param k = join $ lookup k $ queryString req
 
-bodySignature :: Maybe LB.ByteString -> OrderSignature
-bodySignature body = OrderSignature {osTimestamp = field "timestamp", osSignature = field "signature"}
+bodySigner :: OrdersEnv -> Text -> OrderAction -> Maybe LB.ByteString -> IO OrderSigner
+bodySigner env oid action body = orderSigner env oid action (field "timestamp") (field "signature")
   where
     object = body >>= J.decode :: Maybe J.Object
     field :: J.FromJSON a => J.Key -> Maybe a
     field k = object >>= KM.lookup k >>= JT.parseMaybe J.parseJSON
 
-outsideWindow :: OrdersEnv -> OrderSignature -> IO Bool
-outsideWindow OrdersEnv {oeNow} OrderSignature {osTimestamp} = (\now -> maybe False (isLeft . checkTimestamp now) osTimestamp) <$> oeNow
+orderSigner :: OrdersEnv -> Text -> OrderAction -> Maybe Word64 -> Maybe RecoverableSignature -> IO OrderSigner
+orderSigner OrdersEnv {oeNow} oid action timestamp signature =
+  oeNow >>= \now -> case (timestamp, signature) of
+    (Just t, _) | isLeft (checkTimestamp now t) -> pure OSOutsideWindow
+    (Just t, Just s) -> OSSigner . eitherToMaybe <$> recoverAddress s (personalDigest $ orderRequestMessage oid action t)
+    _ -> pure unsigned
 
-signedRegistration :: OrdersEnv -> RegistrationId -> Text -> OrderAction -> OrderSignature -> IO (Maybe NameRegistration)
-signedRegistration OrdersEnv {oeStore} rid oid action OrderSignature {osTimestamp, osSignature} =
-  withTransaction oeStore (`getRegistration` rid) >>= \case
-    Just r@NameRegistration {nrOwner}
-      | Just timestamp <- osTimestamp,
-        Just signature <- osSignature ->
-          (\signed -> r <$ eitherToMaybe signed) <$> checkSigner nrOwner (orderRequestMessage oid action timestamp) signature
-    _ -> pure Nothing
+ownedRegistration :: OrdersEnv -> RegistrationId -> OrderSigner -> IO (Maybe NameRegistration)
+ownedRegistration OrdersEnv {oeStore} rid signer =
+  withTransaction oeStore (`getRegistration` rid) <&> \case
+    Just r@NameRegistration {nrOwner} | OSSigner (Just owner) <- signer, owner == nrOwner -> Just r
+    _ -> Nothing
