@@ -8237,6 +8237,10 @@ Query: SELECT member_relations_vector FROM group_members WHERE group_member_id =
 Plan:
 SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
 
+Query: SELECT member_restriction FROM group_members WHERE local_display_name = 'cath'
+Plan:
+SCAN group_members
+
 Query: SELECT member_role FROM group_members WHERE local_display_name = ?
 Plan:
 SCAN group_members
