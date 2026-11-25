@@ -716,7 +716,7 @@ Notes:
 | `POST /api/registration/ID/name` | the selection's own signature, checked first after the id is looked up |
 | `POST /api/registration/ID/reveal` | the owner's `RegisterName`, recovered over the order's owner, duration and dispute days before any other check of the stored order |
 
-- The message is `simplex.domains order <ID> <action> <T>`, with the route's id, `read`, `cancel` or `retry`, and the timestamp in seconds; the digest is EIP-191's, as `find`'s ([`Names/Signatures.hs`](../src/StoreService/Names/Signatures.hs) `orderRequestMessage`, [`Web/Names/Signed.hs`](../src/StoreService/Web/Names/Signed.hs)).
+- The message is `simplex.domains order <ID> <action> <T>`, with the route's id, `read`, `cancel` or `retry`, and the timestamp in seconds; the digest is EIP-191's, as `find`'s ([`Names/Signatures.hs`](../src/StoreService/Names/Signatures.hs) `orderRequestMessage`, [`Web/Names/Registration.hs`](../src/StoreService/Web/Names/Registration.hs) `signedRegistration`).
 - The answers of an unsigned request, of one by another key or over another id, action or timestamp, and of one for an unknown id are one answer, `404 not_found`, after the route's rate limit, which is taken before the handler runs. A malformed body of a selection or a reveal is answered `400 bad_request` before its id is looked up.
 - Only a signed read notes the order's read, which keeps a committed order from failing as `unread` (3.2).
 - A badge invoice is read and cancelled unsigned; its invoice id is its credential.

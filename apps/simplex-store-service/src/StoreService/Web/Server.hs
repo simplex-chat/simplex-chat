@@ -36,8 +36,7 @@ import StoreService.Waiters (Seen, Waiters, awaitStatus)
 import StoreService.Web.Http
 import StoreService.Web.Names (namesApp, namesRoutes)
 import StoreService.Web.Names.Orders (nameInvoiceHandler, nameInvoiceView, refusalResponse)
-import StoreService.Web.Names.Registration (heldFor, registrationChanged, versionParam)
-import StoreService.Web.Names.Signed (OrderSignature, bodySignature, outsideWindow, ownerSigned, querySignature, signedByOwner)
+import StoreService.Web.Names.Registration (OrderSignature, bodySignature, heldFor, outsideWindow, querySignature, registrationChanged, signedRegistration, versionParam)
 import Control.Concurrent.Async (race)
 import Control.Concurrent.STM (atomically)
 import qualified Control.Exception as E
@@ -263,7 +262,7 @@ readInvoiceHandler env@WebEnv {weStore} invId req respond =
 -- except one paid after its order closed, which has nothing more to wait for.
 readNameInvoice :: WebEnv -> OrdersEnv -> InvoiceRow -> RegistrationId -> OrderSignature -> Request -> Respond -> IO ResponseReceived
 readNameInvoice env@WebEnv {weConfig, weWaiters, weHoldMicros, weHttp} orders@OrdersEnv {oeStore, oeNow, oePhases} stored@InvoiceRow {irInvoiceId = invId@(InvoiceId invText)} rid signature req respond =
-  readName orders (signedByOwner invText OARead signature) stored rid >>= \case
+  signedRegistration orders rid invText OARead signature >>= traverse (readName orders stored) >>= \case
     Nothing -> respond notFound
     Just (now, row, r) -> case waitParam req of
       Just wait | holds wait row r -> withHoldSlot weHttp (hold now row r) >>= maybe (respond holdsFull) (const $ respondCurrent env invId respond)
@@ -285,15 +284,10 @@ readNameInvoice env@WebEnv {weConfig, weWaiters, weHoldMicros, weHttp} orders@Or
         (_, Nothing) -> void onStatus
 
 -- | The invoice and its registration as a read now shows them.
-readName :: OrdersEnv -> (NameRegistration -> IO Bool) -> InvoiceRow -> RegistrationId -> IO (Maybe (UTCTime, InvoiceRow, NameRegistration))
-readName OrdersEnv {oeStore, oeNow} allowed row rid = do
+readName :: OrdersEnv -> InvoiceRow -> NameRegistration -> IO (UTCTime, InvoiceRow, NameRegistration)
+readName OrdersEnv {oeStore, oeNow} row r = do
   now <- oeNow
-  withTransaction oeStore (`getRegistration` rid) >>= \case
-    Just r ->
-      allowed r >>= \case
-        True -> Just (now, invoiceAt now row, r) <$ noteRead oeStore now r
-        False -> pure Nothing
-    Nothing -> pure Nothing
+  (now, invoiceAt now row, r) <$ noteRead oeStore now r
 
 -- | The counter a hold watches starts at zero, so a payment recorded before this request arrived cannot wake it.
 samePayment :: Request -> InvoiceRow -> Bool
@@ -324,8 +318,8 @@ invoiceViewOf env@WebEnv {weConfig} row@InvoiceRow {irProviderRef, irProduct} = 
   IPBadge badgeType months -> pure $ Right $ badgeInvoiceView (confirmationsFor weConfig) badgeType months row
   IPName rid -> case weOrders env of
     Nothing -> Left providerUnavailable <$ namesOff irProviderRef
-    Just orders ->
-      readName orders (const $ pure True) row rid >>= \case
+    Just orders@OrdersEnv {oeStore} ->
+      withTransaction oeStore (`getRegistration` rid) >>= traverse (readName orders row) >>= \case
         Nothing -> pure $ Left notFound
         Just (_, row', r) -> Right <$> nameInvoiceView orders (confirmationsFor weConfig) row' r
 
@@ -352,7 +346,7 @@ cancelInvoiceHandler env@WebEnv {weStore, weProviders} invId@(InvoiceId invText)
             False -> respond notFound
   where
     cancelledByOwner signature = \case
-      InvoiceRow {irProduct = IPName rid} | Just OrdersEnv {oeStore} <- weOrders env -> isJust <$> (withTransaction oeStore (`getRegistration` rid) >>= ownerSigned invText OACancel signature)
+      InvoiceRow {irProduct = IPName rid} | Just orders <- weOrders env -> isJust <$> signedRegistration orders rid invText OACancel signature
       _ -> pure True
     cancelRow = \case
       InvoiceRow {irStatus} | irStatus /= ISOpen -> respond (jsonError status409 "not_open")
@@ -375,7 +369,7 @@ cancelInvoiceHandler env@WebEnv {weStore, weProviders} invId@(InvoiceId invText)
         Right _ -> respondCurrent env invId respond
 
 outsideWindowFor :: WebEnv -> OrderSignature -> IO Bool
-outsideWindowFor env signature = maybe (pure False) (\OrdersEnv {oeNow} -> (`outsideWindow` signature) <$> oeNow) (weOrders env)
+outsideWindowFor env signature = maybe (pure False) (`outsideWindow` signature) (weOrders env)
 
 paidParam :: Request -> Maybe (Text, Bool)
 paidParam req = case lookup "seenPaid" (queryString req) of

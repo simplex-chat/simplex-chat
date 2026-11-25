@@ -348,20 +348,19 @@ withoutKeys = \case
   where
     refused settings coin = "btcpay: [btcpay] sets no " <> settings <> ", so every name invoice in " <> coin <> " is refused"
 
-payeeProof :: BTCPayConfig -> InvoiceKind -> ServicePaymentMethod -> Either ProviderError (Maybe (GPaymentMethod -> Either String (Text, AddressProof)))
-payeeProof BTCPayConfig {bBitcoinKey, bMoneroKey} kind spm = case (kind, spm) of
+payeeProof :: BTCPayConfig -> InvoiceKind -> CryptoCurrency -> Either ProviderError (Maybe (GPaymentMethod -> Either String (Text, AddressProof)))
+payeeProof BTCPayConfig {bBitcoinKey, bMoneroKey} kind cc = case (kind, cc) of
   (IKBadge, _) -> Right Nothing
-  (IKName, SPMCard _) -> Right Nothing
-  (IKName, SPMCrypto CCBtc) -> keyed CCBtc bBitcoinKey $ \key GPaymentMethod {gpmKeyPath} -> maybe (Left "it has no keyPath") (bitcoinPayee key) gpmKeyPath
-  (IKName, SPMCrypto CCXmr) -> keyed CCXmr bMoneroKey $ \key GPaymentMethod {gpmSubaddress} -> maybe (Left "it has no accountIndex and addressIndex") (Right . uncurry (moneroPayee key)) gpmSubaddress
+  (IKName, CCBtc) -> keyed bBitcoinKey $ \key GPaymentMethod {gpmKeyPath} -> maybe (Left "it has no keyPath") (bitcoinPayee key) gpmKeyPath
+  (IKName, CCXmr) -> keyed bMoneroKey $ \key GPaymentMethod {gpmSubaddress} -> maybe (Left "it has no accountIndex and addressIndex") (Right . uncurry (moneroPayee key)) gpmSubaddress
   where
-    keyed cc keys derive = maybe (Left $ ProviderError $ withoutKeys cc) (Right . Just . derive) keys
+    keyed keys derive = maybe (Left $ ProviderError $ withoutKeys cc) (Right . Just . derive) keys
 
 createInvoice :: BTCPayEnv -> ServicePaymentMethod -> OrderDraft -> IO (Either ProviderError ProviderInvoice)
 createInvoice env@BTCPayEnv {beCfg} spm OrderDraft {odAmount, odCurrency, odKind} =
-  case (,) <$> cryptoTarget spm <*> payeeProof beCfg odKind spm of
+  case cryptoTarget spm >>= \(methodId, cc) -> (\prove -> (methodId, cc, prove)) <$> payeeProof beCfg odKind cc of
     Left e -> pure (Left e)
-    Right ((methodId, cc), prove) -> do
+    Right (methodId, cc, prove) -> do
       created <- greenfield checkout what methodPost ["invoices"] [] (Just (body methodId))
       case created >>= decodeAnswer what of
         Left e -> do
