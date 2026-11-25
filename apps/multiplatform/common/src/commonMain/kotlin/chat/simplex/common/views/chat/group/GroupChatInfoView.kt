@@ -2,6 +2,7 @@ package chat.simplex.common.views.chat.group
 
 import CARD_PADDING
 import InfoRow
+import LocalCardScreen
 import SectionBottomSpacer
 import SectionItemView
 import SectionItemViewLongClickable
@@ -874,7 +875,8 @@ fun ModalData.GroupChatInfoLayout(
       itemsIndexed(filteredMembers.value, key = { _, m -> m.groupMemberId }) { index, member ->
         val isLast = index == filteredMembers.value.lastIndex
         val shape = if (isLast) RoundedCornerShape(bottomStart = 16.dp, bottomEnd = 16.dp) else RectangleShape
-        Column(Modifier.padding(horizontal = CARD_PADDING).fillMaxWidth().clip(shape).background(sectionCardColor())) {
+        val cardModifier = if (LocalCardScreen.current) Modifier.padding(horizontal = CARD_PADDING).fillMaxWidth().clip(shape).background(sectionCardColor()) else Modifier.fillMaxWidth()
+        Column(cardModifier) {
           Divider()
           val showMenu = remember { mutableStateOf(false) }
           val canBeSelected = groupInfo.membership.memberRole >= member.memberRole && member.memberRole < GroupMemberRole.Moderator
@@ -1572,40 +1574,38 @@ fun PreviewBusinessChatInfoLayout() {
 
 @Composable
 private fun ModalData.GroupChatInfoLayoutPreview(chat: Chat, groupInfo: GroupInfo, members: List<GroupMember>) {
-  ModalView(close = {}, showAppBar = false, cardScreen = true) {
-    GroupChatInfoLayout(
-      chat = chat,
-      groupInfo = groupInfo,
-      User.sampleData,
-      sendReceipts = remember { mutableStateOf(SendReceipts.Yes) },
-      setSendReceipts = {},
-      chatItemTTL = remember { mutableStateOf(ChatItemTTL.fromSeconds(0)) },
-      setChatItemTTL = {},
-      activeSortedMembers = members,
-      developerTools = false,
-      onLocalAliasChanged = {},
-      groupLink = null,
-      groupLinkLoaded = true,
-      selectedItems = remember { mutableStateOf(null) },
-      appBar = remember { mutableStateOf(null) },
-      scrollToItemId = remember { mutableStateOf(null) },
-      addMembers = {},
-      showMemberInfo = { _, _ -> },
-      editGroupProfile = {},
-      addOrEditWelcomeMessage = {},
-      openMemberSupport = {},
-      openPreferences = {},
-      deleteGroup = {},
-      deleteAndBan = {},
-      clearChat = {},
-      leaveGroup = {},
-      manageGroupLink = {},
-      manageWebPage = {},
-      onSearchClicked = {},
-      setSimplexName = {},
-      deletingItems = remember { mutableStateOf(true) }
-    )
-  }
+  GroupChatInfoLayout(
+    chat = chat,
+    groupInfo = groupInfo,
+    User.sampleData,
+    sendReceipts = remember { mutableStateOf(SendReceipts.Yes) },
+    setSendReceipts = {},
+    chatItemTTL = remember { mutableStateOf(ChatItemTTL.fromSeconds(0)) },
+    setChatItemTTL = {},
+    activeSortedMembers = members,
+    developerTools = false,
+    onLocalAliasChanged = {},
+    groupLink = null,
+    groupLinkLoaded = true,
+    selectedItems = remember { mutableStateOf(null) },
+    appBar = remember { mutableStateOf(null) },
+    scrollToItemId = remember { mutableStateOf(null) },
+    addMembers = {},
+    showMemberInfo = { _, _ -> },
+    editGroupProfile = {},
+    addOrEditWelcomeMessage = {},
+    openMemberSupport = {},
+    openPreferences = {},
+    deleteGroup = {},
+    deleteAndBan = {},
+    clearChat = {},
+    leaveGroup = {},
+    manageGroupLink = {},
+    manageWebPage = {},
+    onSearchClicked = {},
+    setSimplexName = {},
+    deletingItems = remember { mutableStateOf(true) }
+  )
 }
 
 val previewOwnerGroupInfo = GroupInfo.sampleData.copy(

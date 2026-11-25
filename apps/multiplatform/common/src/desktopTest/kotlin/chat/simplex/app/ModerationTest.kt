@@ -71,12 +71,18 @@ class ModerationTest : RecordedApiTest() {
   private val contactDeletion = ChatController.appPrefs.privacyContactDeletion.get()
   private val showDeleteContactNotice = ChatController.appPrefs.showDeleteContactNotice.get()
   private val showDeleteConversationNotice = ChatController.appPrefs.showDeleteConversationNotice.get()
+  private val onboardingStage = ChatController.appPrefs.onboardingStage.get()
+  private val showEncryption = ChatController.appPrefs.privacyShowEncryption.get()
+  private val localUserCreated = ChatModel.localUserCreated.value
 
   @AfterTest
   fun restorePrefs() {
     ChatController.appPrefs.privacyContactDeletion.set(contactDeletion)
     ChatController.appPrefs.showDeleteContactNotice.set(showDeleteContactNotice)
     ChatController.appPrefs.showDeleteConversationNotice.set(showDeleteConversationNotice)
+    ChatController.appPrefs.onboardingStage.set(onboardingStage)
+    ChatController.appPrefs.privacyShowEncryption.set(showEncryption)
+    ChatModel.localUserCreated.value = localUserCreated
     ChatModel.groupMembers.value = emptyList()
     ChatModel.groupMembersIndexes.value = emptyMap()
     ChatModel.userAddress.value = null
