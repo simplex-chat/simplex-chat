@@ -908,6 +908,10 @@ badges.simplex.chat {
 
 api.simplex.domains {
 	encode zstd gzip
+	header {
+		Strict-Transport-Security "max-age=63072000"
+		X-Content-Type-Options "nosniff"
+	}
 
 	@backend path /api /api/*
 	handle @backend {
@@ -1234,9 +1238,9 @@ code. The names page signs each one, polls included.
   the id is looked up, as `find` answers it.
 - An unsigned request, one signed by another key, or for another id, action or timestamp, and one
   for an unknown id all get the same answer, `404 not_found`, after the same rate limit.
-- A selection or a reveal with a malformed body is answered `400 bad_request` before its id is looked
-  up; one signed by another key is answered as one for an unknown id; its other refusals come after
-  its signer is checked.
+- A selection or a reveal with a malformed body is answered `400 bad_request`, and in a downtime a
+  selection `503 downtime`, before its id is looked up; one signed by another key is answered as one
+  for an unknown id; its other refusals come after its signer is checked.
 - Only a signed read counts as the page's read of an order, which keeps a committed order from
   failing as `unread`.
 - A badge invoice is read and cancelled unsigned, as before.
@@ -1282,7 +1286,7 @@ With `downtime = on`:
   `, downtime: name invoices, code orders and selections are refused`;
 - a name invoice (`POST /api/invoice` for a name), a code order (`POST /api/name/register`) and a
   selection of a name (`POST /api/registration/:id/name`) are answered `503 {"type": "downtime"}`
-  before their bodies are read;
+  before their orders are read;
 - reveals, `/retry`, reads and cancels are answered as before, and the worker, the poller and the
   webhooks run as before.
 
@@ -1988,8 +1992,8 @@ at any time, and on no other order. Otherwise the buyer asks for a balance back:
 write to chat@simplex.chat with the order's reference, which is its invoice id, or its registration
 id for an order without an invoice. Nothing is refunded automatically, and the service never learns
 where to send money. A reference is not proof of who paid: a registration id is in the service's
-logs, and anyone holding a reference reads the balance and the order's name from `/api/invoice/:id`,
-or from `/api/registration/:id` for a registration id. Neither provider holds a name order's
+logs, and the API answers a name order's reads only to requests signed with its name key, so ask
+the buyer for the order's name address too. Neither provider holds a name order's
 reference: its Stripe payment carries `name:0x<order hash>`, and its BTCPay invoice nothing of the
 order, while a badge order's Stripe payment carries its invoice id. Only a card refund
 is safe on the reference alone, as Stripe returns it to

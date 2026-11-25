@@ -138,7 +138,7 @@ The pages, the service and the DNS are intact.
 
 *can:*
 
-- serve a lookalike page over `http://` to a buyer who opens simplex.domains without `https://`: GitHub Pages does not send the headers that Caddy sent with the page on the service host, so the browser keeps no record that the domain is served over HTTPS. The headers no longer sent: `Strict-Transport-Security`, `X-Content-Type-Options: nosniff` and `Cross-Origin-Opener-Policy`.
+- serve a lookalike page over `http://` to a buyer who opens simplex.domains without `https://`, in a browser that holds no unexpired record from the service host's earlier `Strict-Transport-Security`: GitHub Pages does not send the headers that Caddy sent with the page on the service host, so no new record is made. The headers no longer sent: `Strict-Transport-Security`, `X-Content-Type-Options: nosniff` and `Cross-Origin-Opener-Policy`.
 
 ## Someone who has an order reference
 
