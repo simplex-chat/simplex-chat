@@ -32,26 +32,33 @@ import Simplex.Messaging.Util (eitherToMaybe, tshow)
 import StoreService.Config (boundedDecimal)
 import StoreService.Names.Orders (OrderRefusal (..), OrdersEnv (..), WriteRefusal (..), noteRead, orderFieldsOf, versionWritten)
 import StoreService.Names.Phases (RegistrationId (..), awaitChange, publish)
-import StoreService.Names.Reveal (checkReveal, isRepeat)
+import StoreService.Names.Reveal (checkReveal, isRepeat, revealSigned)
+import StoreService.Names.Signatures (OrderAction (..), OrderFields (..))
 import StoreService.Names.Store (BrokenInvariant (..), Commit (..), FailReason (..), NameRegistration (..), OrderPhase (..), getRegistration, noHistory, updateRegistration)
 import StoreService.Names.Turns (withRegistrationTurn)
 import StoreService.Names.View (NameRefusal (..), RegistrationView, lapseMoment, lapsedAt, registrationVersion, registrationView)
 import StoreService.Names.Worker (Retried (..), RetryRefusal (..), retryRegistration)
 import StoreService.Web.Http (HttpEnv, Respond, holdsFullSeconds, jsonResponse, maxBodyBytes, readBoundedBody, withHoldSlot)
 import StoreService.Web.Names.Orders (orderRefusal, refusalResponse)
+import StoreService.Web.Names.Signed (bodySignature, outsideWindow, querySignature, signedByOwner)
 
 -- | GET /api/registration/:id, held while its version is seenVersion.
 registrationHandler :: OrdersEnv -> HttpEnv -> Int -> RegistrationId -> Request -> Respond -> IO ResponseReceived
-registrationHandler OrdersEnv {oeStore, oeConfig, oeContracts, oePhases, oeNow} http hold rid req respond =
-  readNow >>= \case
-    Nothing -> respond $ refusalResponse NRNotFound
-    Just (now, r@NameRegistration {nrVersion})
-      | versionParam req == Just nrVersion ->
-          withHoldSlot http (awaitChange oePhases rid (registrationVersion oeStore rid) nrVersion (heldFor hold now $ maybeToList $ lapseMoment r))
-            >>= maybe (respond $ refusalResponse $ NRRateLimited holdsFullSeconds) (const $ readNow >>= maybe (respond $ refusalResponse NRNotFound) answer)
-      | otherwise -> answer (now, r)
+registrationHandler OrdersEnv {oeStore, oeConfig, oeContracts, oePhases, oeNow} http hold rid@(RegistrationId ridText) req respond =
+  ((`outsideWindow` signature) <$> oeNow) >>= \case
+    True -> respond $ refusalResponse NRBadRequest
+    False ->
+      readNow >>= \case
+        Nothing -> respond $ refusalResponse NRNotFound
+        Just (now, r@NameRegistration {nrVersion})
+          | versionParam req == Just nrVersion ->
+              withHoldSlot http (awaitChange oePhases rid (registrationVersion oeStore rid) nrVersion (heldFor hold now $ maybeToList $ lapseMoment r))
+                >>= maybe (respond $ refusalResponse $ NRRateLimited holdsFullSeconds) (const $ readNow >>= maybe (respond $ refusalResponse NRNotFound) answer)
+          | otherwise -> answer (now, r)
   where
-    readNow = oeNow >>= \now -> withTransaction oeStore (`getRegistration` rid) >>= traverse (\r -> (now, r) <$ noteRead oeStore now r)
+    signature = querySignature req
+    readNow = oeNow >>= \now -> withTransaction oeStore (`getRegistration` rid) >>= ownersOnly >>= traverse (\r -> (now, r) <$ noteRead oeStore now r)
+    ownersOnly = maybe (pure Nothing) (\r -> (\owned -> if owned then Just r else Nothing) <$> signedByOwner ridText OARead signature r)
     answer (now, r) = respond . jsonResponse status200 . J.toJSON =<< registrationView oeStore oeConfig oeContracts now r
 
 -- | What a reveal decided in the name's turn, with the version it wrote; the publish and the answer come after the turn.
@@ -64,16 +71,20 @@ data RevealDecision
 -- | POST /api/registration/:id/reveal, its checks in the contract's order, from the stored commitment in the name's turn.
 revealHandler :: OrdersEnv -> RegistrationId -> Request -> Respond -> IO ResponseReceived
 revealHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oePhases, oeNow} rid@(RegistrationId ridText) req respond =
-  withTransaction oeStore (`getRegistration` rid) >>= \case
-    Nothing -> respond $ refusalResponse NRNotFound
-    Just r ->
-      readBoundedBody maxBodyBytes req >>= \case
-        Just body -> case J.eitherDecode body of
-          Right request -> withRegistrationTurn oeStore oeTurns r (decide request) >>= answer . maybe RDGone (either (const RDChanged) id)
-          Left e -> logNote ("POST /api/registration/:id/reveal refused: a malformed reveal: " <> T.pack e) >> respond (refusalResponse NRBadRequest)
-        Nothing -> answer $ RDRefused (ORBadRequest "the body is over its size limit")
+  readBoundedBody maxBodyBytes req >>= \case
+    Just body -> case J.eitherDecode body of
+      Right request ->
+        withTransaction oeStore (`getRegistration` rid) >>= \case
+          Nothing -> respond $ refusalResponse NRNotFound
+          Just r -> withRegistrationTurn oeStore oeTurns r (decide request) >>= answer . maybe RDGone (either (const RDChanged) id)
+      Left e -> logNote ("POST /api/registration/:id/reveal refused: a malformed reveal: " <> T.pack e) >> respond (refusalResponse NRBadRequest)
+    Nothing -> answer $ RDRefused (ORBadRequest "the body is over its size limit")
   where
-    decide request r@NameRegistration {nrReveal} = do
+    decide request r@NameRegistration {nrOwner} =
+      revealSigned oeConfig nrOwner (ofDuration $ orderFieldsOf r) (nrDisputeDays r) request >>= \case
+        False -> pure RDGone
+        True -> revealed request r
+    revealed request r@NameRegistration {nrReveal} = do
       now <- oeNow
       case nrReveal of
         Just stored -> pure $ if isRepeat request stored then RDAccepted Nothing else RDRefused (ORBadRequest "another reveal is stored")
@@ -106,10 +117,17 @@ revealHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oePhases, 
 
 -- | POST /api/registration/:id/retry, a lapsed order committed again, in the name's turn; the publish and the answer come after the turn.
 retryHandler :: OrdersEnv -> RegistrationId -> Request -> Respond -> IO ResponseReceived
-retryHandler env@OrdersEnv {oeStore, oeTurns, oePhases} rid _ respond =
-  withTransaction oeStore (`getRegistration` rid) >>= \case
-    Nothing -> respond $ refusalResponse NRNotFound
-    Just r -> withRegistrationTurn oeStore oeTurns r (retryRegistration env) >>= maybe (respond $ refusalResponse NRNotFound) (answer . either (const RTChanged) id)
+retryHandler env@OrdersEnv {oeStore, oeTurns, oePhases, oeNow} rid@(RegistrationId ridText) req respond = do
+  signature <- bodySignature <$> readBoundedBody maxBodyBytes req
+  ((`outsideWindow` signature) <$> oeNow) >>= \case
+    True -> respond $ refusalResponse NRBadRequest
+    False ->
+      withTransaction oeStore (`getRegistration` rid) >>= \case
+        Just r ->
+          signedByOwner ridText OARetry signature r >>= \case
+            True -> withRegistrationTurn oeStore oeTurns r (retryRegistration env) >>= maybe (respond $ refusalResponse NRNotFound) (answer . either (const RTChanged) id)
+            False -> respond $ refusalResponse NRNotFound
+        Nothing -> respond $ refusalResponse NRNotFound
   where
     answer = \case
       RTWritten v -> do

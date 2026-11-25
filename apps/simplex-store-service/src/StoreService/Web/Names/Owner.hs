@@ -109,14 +109,17 @@ selectNameHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oeNow}
       Just body | Just v <- J.decode body -> either refuse signed (parseBody "selection" v >>= \SelectionRequest {srSigned, srReveal} -> (,srReveal) <$> signedFields srSigned)
       _ -> refuse $ ORBadRequest "a malformed selection"
     signed ((fields, timestamp, signature), reveal) =
-      withTransaction oeStore (`getRegistration` rid) >>= \case
-        Nothing -> pure $ refusalAnswer NRNotFound
-        Just r@NameRegistration {nrOwner} ->
-          checkSigner nrOwner (selectionMessage rid fields timestamp) signature >>= \case
-            Left refusal -> refuse refusal
-            Right () ->
-              withRegistrationTurns oeStore oeTurns r (ofLabelHash fields) (inTurns OrderRequest {orOwner = nrOwner, orFields = fields, orTimestamp = timestamp, orSignature = signature} reveal)
-                >>= maybe (pure $ refusalAnswer NRNotFound) (either (const changed) pure)
+      (`checkTimestamp` timestamp) <$> oeNow >>= \case
+        Left refusal -> refuse refusal
+        Right () ->
+          withTransaction oeStore (`getRegistration` rid) >>= \case
+            Nothing -> pure $ refusalAnswer NRNotFound
+            Just r@NameRegistration {nrOwner} ->
+              checkSigner nrOwner (selectionMessage rid fields timestamp) signature >>= \case
+                Left _ -> pure $ refusalAnswer NRNotFound
+                Right () ->
+                  withRegistrationTurns oeStore oeTurns r (ofLabelHash fields) (inTurns OrderRequest {orOwner = nrOwner, orFields = fields, orTimestamp = timestamp, orSignature = signature} reveal)
+                    >>= maybe (pure $ refusalAnswer NRNotFound) (either (const changed) pure)
     inTurns order reveal stored = do
       now <- oeNow
       select now stored order reveal
