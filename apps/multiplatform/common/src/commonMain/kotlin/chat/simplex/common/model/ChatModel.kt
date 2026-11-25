@@ -5443,10 +5443,9 @@ sealed class Format {
 }
 
 @Serializable
-class PaymentRequest(val payee: PaymentPayee, val alternatives: List<LightningPayee>, val amount: String?, val token: PaymentToken?, val label: String?) {
+class PaymentRequest(val payee: PaymentPayee, val amount: String?, val token: PaymentToken?, val label: String?) {
   fun shownText(showText: String?): String {
-    val addresses = listOf(payee.payeeAddress) + alternatives.map { it.lightningAddress } + listOfNotNull(token?.address)
-    val shownLabel = listOfNotNull(showText, label).firstOrNull { l -> addresses.none { l.contains(it, ignoreCase = true) } }
+    val shownLabel = showText ?: label
     val shownAmount = if (token == null) amount else null
     return if (shownAmount == null) shownLabel ?: shortAddress(payee.payeeAddress)
     else when (payee) {
@@ -5510,7 +5509,7 @@ sealed class LightningPayee {
 }
 
 @Serializable
-class PaymentToken(val address: String)
+class PaymentToken
 
 private val evmChainNames = mapOf(1L to "Ethereum", 10L to "OP Mainnet", 56L to "BNB Smart Chain", 137L to "Polygon", 8453L to "Base", 42161L to "Arbitrum One")
 

@@ -13,11 +13,12 @@ module Simplex.Chat.Payments
     PaymentToken (..),
     AddressChecksum (..),
     hasOtherAddress,
+    hasRequestAddress,
   )
 where
 
 import Control.Applicative (optional, (<|>))
-import Control.Monad (guard, join, unless, when)
+import Control.Monad (guard, join, mfilter, unless, when)
 import qualified Data.Aeson.TH as JQ
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import Data.Bifunctor (first)
@@ -93,10 +94,15 @@ instance StrEncoding PaymentRequest where
   strP = strDecode <$?> A.takeTill (\c -> c == ' ' || c == '\n')
 
 hasOtherAddress :: PaymentRequest -> Text -> Bool
-hasOtherAddress PaymentRequest {payee, alternatives, token} t = any (`notElem` requestAddresses) textAddresses
+hasOtherAddress r t = any (`notElem` requestAddresses r) textAddresses
   where
-    requestAddresses = payeeAddress payee : map lightningAddress alternatives <> [address | PaymentToken {address} <- maybeToList token]
     textAddresses = [payeeAddress p | w <- T.split (not . isAlphaNum) t, not (T.null w), PaymentRequest {payee = p} <- addressRequests $ encodeUtf8 w]
+
+hasRequestAddress :: PaymentRequest -> Text -> Bool
+hasRequestAddress r t = any ((`T.isInfixOf` T.toLower t) . T.toLower) $ requestAddresses r
+
+requestAddresses :: PaymentRequest -> [Text]
+requestAddresses PaymentRequest {payee, alternatives, token} = payeeAddress payee : map lightningAddress alternatives <> [address | PaymentToken {address} <- maybeToList token]
 
 addressRequests :: ByteString -> [PaymentRequest]
 addressRequests s
@@ -135,7 +141,7 @@ paymentUri (scheme, schemeRequest) body = do
   when (any (\k -> k `notElem` ["lightning", "lno"] && length (paramValues k params) > 1) keys) $ Left "repeated parameter"
   let r@PaymentRequest {label, message} = request $ safeDecodeUtf8 $ scheme <> ":" <> path <> walletQuery keys params
   when (any (hasOtherAddress r) $ catMaybes [label, message]) $ Left "other payment address in label or message"
-  pure r
+  pure r {label = mfilter (not . hasRequestAddress r) label}
   where
     (path, query) = B.break (== '?') $ fromMaybe body $ B.stripPrefix "//" body
 

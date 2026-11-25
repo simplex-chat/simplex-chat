@@ -390,7 +390,6 @@
               },
               "walletUri": "bitcoin:bc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66505d4u?amount=0.001&label=SimpleX"
             },
-            "showText": "bitcoin:bc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66505d4u?amount=0.001&label=SimpleX",
             "type": "paymentLink"
           },
           "text": "<bitcoin:bc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66505d4u?amount=0.001&label=SimpleX>"
@@ -741,7 +740,6 @@
               },
               "walletUri": "bitcoin:bc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66505d4u"
             },
-            "showText": "bc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66505d4u",
             "type": "paymentLink"
           },
           "text": "[bc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66505d4u](bitcoin:bc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66505d4u)"

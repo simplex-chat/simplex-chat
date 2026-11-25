@@ -577,6 +577,8 @@ paymentLinks = describe "payment links" do
     ("bitcoin:" <> btc <> "?amount=0.001&Label=SimpleX%20Chat&message=Donation&pop=app%3A")
       `paysTo` PaymentRequest btcPayee [] (Just "0.001") Nothing (Just "SimpleX Chat") (Just "Donation") ("bitcoin:" <> btc <> "?amount=0.001&label=SimpleX%20Chat&message=Donation&pop=app%3A")
     ("bitcoin:" <> btc <> "?lightning=" <> coffee) `paysTo` PaymentRequest btcPayee [coffeeInvoice] Nothing Nothing Nothing Nothing ("bitcoin:" <> btc <> "?lightning=" <> coffee)
+    ("bitcoin:" <> btc <> "?lightning=" <> coffee <> "&label=" <> coffee)
+      `paysTo` PaymentRequest btcPayee [coffeeInvoice] Nothing Nothing Nothing Nothing ("bitcoin:" <> btc <> "?lightning=" <> coffee <> "&label=" <> coffee)
     ("bitcoin:?lightning=" <> coffee) `paysTo` PaymentRequest (PPLightning coffeeInvoice) [] (Just "0.0025") Nothing Nothing Nothing ("bitcoin:?lightning=" <> coffee)
     ("dogecoin://" <> doge) `paysTo` onChain PNDogecoin doge ("dogecoin:" <> doge)
     ("bitcoincash:" <> bch) `paysTo` onChain PNBitcoinCash bch ("bitcoincash:" <> bch)
@@ -612,13 +614,16 @@ paymentLinks = describe "payment links" do
     isText $ "bitcoin:" <> btc <> "?message=" <> otherBtc
   it "hyperlinks and autolinks" do
     ("[Donate](monero:" <> xmr <> ")") <==> markdown (PaymentLink (Just "Donate") $ onChain PNMonero xmr $ "monero:" <> xmr) ("[Donate](monero:" <> xmr <> ")")
-    ("[" <> btc <> "](bitcoin:" <> btc <> ")") <==> markdown (PaymentLink (Just btc) $ onChain PNBitcoin btc $ "bitcoin:" <> btc) ("[" <> btc <> "](bitcoin:" <> btc <> ")")
+    ("[" <> btc <> "](bitcoin:" <> btc <> ")") <==> pay (onChain PNBitcoin btc $ "bitcoin:" <> btc) ("[" <> btc <> "](bitcoin:" <> btc <> ")")
+    ("[" <> T.toUpper btc <> "](bitcoin:" <> btc <> ")") <==> pay (onChain PNBitcoin btc $ "bitcoin:" <> btc) ("[" <> T.toUpper btc <> "](bitcoin:" <> btc <> ")")
+    ("[" <> usdt <> "](" <> usdtTransfer <> ")")
+      <==> pay (PaymentRequest (PPAddress (PNEthereum $ Just 1) eth ACVerified) [] (Just "5000000") (Just $ PaymentToken usdt ACVerified) Nothing Nothing usdtTransfer) ("[" <> usdt <> "](" <> usdtTransfer <> ")")
     ("[bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4](bitcoin:" <> btc <> ")") <==> "[bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4](" <> pay (onChain PNBitcoin btc $ "bitcoin:" <> btc) ("bitcoin:" <> btc) <> ")"
     ("[Donate!](monero:" <> xmr <> ")") <==> "[Donate!](" <> pay (onChain PNMonero xmr $ "monero:" <> xmr) ("monero:" <> xmr) <> ")"
     ("[Donate](" <> btc <> ")") <==> "[Donate](" <> pay (onChain PNBitcoin btc $ "bitcoin:" <> btc) btc <> ")"
     isText $ "<" <> btc <> ">"
     ("<zcash:" <> zecU <> "?amount=0.1>")
-      <==> markdown (PaymentLink (Just $ "zcash:" <> zecU <> "?amount=0.1") $ PaymentRequest (PPAddress PNZcash zecU ACVerified) [] (Just "0.1") Nothing Nothing Nothing $ "zcash:" <> zecU <> "?amount=0.1") ("<zcash:" <> zecU <> "?amount=0.1>")
+      <==> pay (PaymentRequest (PPAddress PNZcash zecU ACVerified) [] (Just "0.1") Nothing Nothing Nothing $ "zcash:" <> zecU <> "?amount=0.1") ("<zcash:" <> zecU <> "?amount=0.1>")
   it "payment links are links" do
     hasLinks <$> parseMaybeMarkdownList ("donate: " <> btc) `shouldBe` Just True
   it "linear time in the number of addresses" do
@@ -635,6 +640,7 @@ paymentLinks = describe "payment links" do
     bch = "qq6c8vfvxqrk6rhdysgvkhqc24sggkfsx5nqvdlqcg"
     eth = "0xD7047Fe3Eecb2f2FF78d839dD927Be27Bc12c86a"
     usdt = "0xdAC17F958D2ee523a2206206994597C13D831ec7"
+    usdtTransfer = "ethereum:" <> usdt <> "@1/transfer?address=" <> eth <> "&uint256=5000000"
     usdc = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
     zecT = "t1fwjQW5gpFhDqXNhxqDWyF9j9WeKvVS5Jg"
     zecU = "u16rnvkflumf5uw9frngc2lymvmzgdr2mmc9unyu0l44unwfmdcpfm0axujd2w34ct3ye709azxsqge45705lpvvqu264ltzvfay55ygyq"

@@ -37,7 +37,7 @@ import Data.String
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
-import Simplex.Chat.Payments (PaymentRequest, hasOtherAddress)
+import Simplex.Chat.Payments (PaymentRequest, hasOtherAddress, hasRequestAddress)
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent.Protocol (AConnectionLink (..), ConnReqUriData (..), ConnShortLink (..), ConnectionLink (..), ConnectionRequestUri (..), ContactConnType (..), SMPQueue (..), SimplexNameInfo (..), simplexConnReqUri, simplexShortLink)
 import Simplex.Messaging.Encoding.String
@@ -468,8 +468,9 @@ markdownP = joinMarkdown <$> A.many' fragmentP
       Left _ -> case paymentRequest l of
         Right p
           | T.all (/= ':') l -> fail "payment address without scheme in hyperlink"
-          | t /= l && hasOtherAddress p t -> fail "other payment address in hyperlink text"
-          | otherwise -> pure $ PaymentLink (Just t) p
+          | t == l -> pure $ PaymentLink Nothing p
+          | hasOtherAddress p t -> fail "other payment address in hyperlink text"
+          | otherwise -> pure $ PaymentLink (mfilter (not . hasRequestAddress p) $ Just t) p
         Left _ -> case parseUri $ encodeUtf8 l of
           Right _ -> pure $ HyperLink (Just t) l
           Left e -> fail $ "not uri: " <> T.unpack e

@@ -6042,16 +6042,12 @@ public enum Format: Decodable, Equatable, Hashable {
 
 public struct PaymentRequest: Decodable, Hashable {
     public var payee: PaymentPayee
-    public var alternatives: [LightningPayee]
     public var amount: String?
     public var token: PaymentToken?
     public var label: String?
 
     public func shownText(_ showText: String?) -> String {
-        let addresses = [payee.payeeAddress] + alternatives.map(\.lightningAddress) + (token.map { [$0.address] } ?? [])
-        let shownLabel = [showText, label].compactMap { $0 }.first { l in
-            !addresses.contains { l.range(of: $0, options: .caseInsensitive) != nil }
-        }
+        let shownLabel = showText ?? label
         guard let shownAmount = token == nil ? amount : nil else {
             return shownLabel ?? shortAddress(payee.payeeAddress)
         }
@@ -6129,9 +6125,7 @@ public enum LightningPayee: Decodable, Hashable {
     }
 }
 
-public struct PaymentToken: Decodable, Hashable {
-    public var address: String
-}
+public struct PaymentToken: Decodable, Hashable {}
 
 private let evmChainNames: [Int64: String] = [
     1: "Ethereum",
