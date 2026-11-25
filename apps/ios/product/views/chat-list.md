@@ -87,7 +87,14 @@ When a relay address link (`/r` path) is opened via URL deep link, `ContentView.
 
 - **Trailing swipe**: Mute/unmute, pin/unpin, tag management
 - **Leading swipe**: Mark as read/unread
-- **Context menu** (long press): Full set of actions including delete, clear chat, toggle favorite
+
+### Context Menu & Preview
+
+- **Long press (Haptic Touch)**: Triggers native system context menu with centered chat history preview (`ChatHistoryPreviewView`).
+- **Preview content**: Displays recent 5–10 messages of the conversation scrolled to the bottom, including text, media thumbnails, voice durations, file names, and timestamps.
+- **Privacy & State isolation**: Preview strictly queries local storage without sending read receipts over the network and without altering message read status in the database or unread count in UI.
+- **Commit**: Tapping the preview smoothly transitions into the full conversation view.
+- **Key actions**: Mark as read/unread, Mute/unmute notifications, Favorite/unfavorite, Clear chat, Delete contact / Leave group.
 
 ### Floating Elements
 

@@ -52,6 +52,9 @@
 | Shared/SimpleXApp.swift | PC1 through PC31 | High | App entry point — initialization affects everything |
 | Shared/AppDelegate.swift | PC18 | Medium | Push notification registration |
 | Shared/Views/ChatList/ChatListView.swift | PC1, PC28 | High | Main screen rendering and filtering |
+| Shared/Views/ChatList/ChatListNavLink.swift | PC1 | High | Row navigation, swipe actions, and context menu |
+| Shared/Views/ChatList/ChatHistoryPreviewView.swift | PC1 | Medium | Context menu message history preview card |
+| Shared/Views/ChatList/ChatContextMenuModifier.swift | PC1 | Medium | UIContextMenuInteraction bridge and menu action provider |
 | Shared/Views/ChatList/GetStakeBanner.swift | PC1 | Low | Crowdfunding banner and shared banner card chrome |
 | Shared/Views/Chat/ChatView.swift | PC2, PC3, PC4, PC5, PC6, PC7, PC8, PC9, PC11, PC31 | High | Core conversation UI — most messaging features, channel message rendering |
 | Shared/Views/Chat/ComposeMessage/ComposeView.swift | PC4, PC6, PC9, PC11, PC31 | High | Message composition — send path for all messages, channel sendAsGroup |
