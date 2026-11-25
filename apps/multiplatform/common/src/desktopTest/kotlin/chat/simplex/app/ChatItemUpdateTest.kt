@@ -7,6 +7,7 @@ import chat.simplex.common.platform.chatSendCmdRetry
 import chat.simplex.common.platform.ntfManager
 import chat.simplex.common.simplexWindowState
 import chat.simplex.common.views.call.RcvCallInvitation
+import chat.simplex.common.views.helpers.withBGApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
@@ -95,6 +96,9 @@ class ChatItemUpdateTest {
   fun mentionEditsInAnotherProfileChangeItsUnreadCount() = recorded("updates/group-mention") { (received, mentioned, unmentioned) ->
     ChatModel.currentUser.value = User.sampleData.copy(userId = 2)
     receive(received)
+    withBGApi {}.join()
+    withContext(Dispatchers.Main) {}
+    assertEquals(0, ChatModel.users[0].unreadCount)
     receive(mentioned)
     assertEquals(1, ChatModel.users[0].unreadCount)
     receive(unmentioned)
