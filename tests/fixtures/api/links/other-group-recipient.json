@@ -203,7 +203,7 @@
               },
               "content": {
                 "msgContent": {
-                  "text": "see [q](simplex:/m)",
+                  "text": "see [q](simplex:m)",
                   "type": "text"
                 },
                 "type": "rcvMsgContent"
@@ -214,12 +214,12 @@
                 },
                 {
                   "format": {
-                    "msgLink": "simplex:/m",
+                    "msgLink": "simplex:m",
                     "msgLinkType": "unknownSource",
                     "showText": "q",
                     "type": "messageLink"
                   },
-                  "text": "[q](simplex:/m)"
+                  "text": "[q](simplex:m)"
                 }
               ],
               "links": {
@@ -239,7 +239,7 @@
                 "itemStatus": {
                   "type": "rcvRead"
                 },
-                "itemText": "see [q](simplex:/m)",
+                "itemText": "see [q](simplex:m)",
                 "itemTs": "1970-01-01T00:00:00Z",
                 "showGroupAsSender": false,
                 "updatedAt": "1970-01-01T00:00:00Z",
