@@ -16,6 +16,7 @@ import Data.Time.Clock (UTCTime)
 import NameResolver
 import Simplex.Chat.Controller (NamePrice (..), NameWarning (..))
 import Simplex.Chat.Library.Commands (nameRecordOrWarning)
+import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Names.Record (NamePricing (..), NameRecord, NameRegistration (..), NameReservedReason (..), USDCents (..))
 import Simplex.Messaging.SimplexName (SimplexDomain (..), SimplexNameInfo (..), SimplexNameType (..), SimplexTLD (..))
 import Simplex.Messaging.SystemTime (RoundedSystemTime (..), roundedToUTCTime)
@@ -859,6 +860,7 @@ testPlanKnownNameLinkFailed = withKnownAliceName $ \reg alice bob cath -> do
   cath ##> "/da"
   cath <## "Your chat address is deleted - accepted contacts will remain connected."
   cath <## "To create a new chat address use /ad"
+  (withCCAgentTransaction cath $ \db -> DB.query_ db "SELECT count(1) FROM connections" :: IO [[Int]]) `shouldEventuallyReturn` [[0]]
   bob ##> "/_connect plan 1 @alice.simplex"
   knownAlicePlan bob
   alice ##> "/_connect plan 1 @alice.simplex"
