@@ -38,7 +38,6 @@ import qualified Data.Aeson as J
 import qualified Data.Aeson.Encoding as JE
 import qualified Data.Aeson.TH as JQ
 import qualified Data.Attoparsec.ByteString.Char8 as A
-import Data.Attoparsec.Combinator (lookAhead)
 import qualified Data.ByteString.Base64 as B64
 import Data.ByteString.Char8 (ByteString, pack, unpack)
 import qualified Data.ByteString.Char8 as B
@@ -1918,11 +1917,9 @@ instance StrEncoding AConnectTarget where
     CTDomain d -> strEncode d
     CTInv l -> strEncode l
   strP =
-    (ACTarget SCMContact . CTShortContact . CTName <$> (lookAhead nameStart *> strP))
+    (ACTarget SCMContact . CTShortContact . CTName <$> strP)
       <|> (aConnectTarget <$> strP)
       <|> (ACTarget SCMContact . CTDomain <$> strP)
-    where
-      nameStart = "@" <|> "#" <|> "simplex:/name"
 
 instance ConnectionModeI m => StrEncoding (ConnectTarget m) where
   strEncode t = strEncode $ ACTarget sConnectionMode t
