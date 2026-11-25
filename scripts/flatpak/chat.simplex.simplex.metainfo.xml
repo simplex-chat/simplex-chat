@@ -38,6 +38,19 @@
   </description>
 
   <releases>
+    <release version="7.1.5" date="2026-11-25">
+      <url type="details">https://simplex.chat/blog/20261121-simplex-chat-security-audit-trail-of-bits-security-process.html</url>
+      <description>
+        <p>New in v7.1-7.1.5:</p>
+        <p>Security audit by Trail of Bits is completed! Please ask your contacts to upgrade.</p>
+        <ul>
+          <li>Supporter badges: larger files, available for longer.</li>
+          <li>SimpleX public names: sale starts on December 12.</li>
+          <li>Safer channels: add moderators and sign every message.</li>
+          <li>Flat layout and markdown: enable in Appearance settings.</li>
+        </ul>
+      </description>
+    </release>
     <release version="7.1.3" date="2026-11-11">
       <url type="details">https://simplex.chat/badges/</url>
       <description>
