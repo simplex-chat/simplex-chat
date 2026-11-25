@@ -1098,6 +1098,7 @@ testPaymentLinksMessage ps =
         "lightning:LNURL1DP68GURN8GHJ7UM9WFMXJCM99E3K7MF0V9CXJ0M385EKVCENXC6R2C35XVUKXEFCV5MKVV34X5EKZD3EV56NYD3HXQURZEPEXEJXXEPNXSCRVWFNV9NXZCN9XQ6XYEFHVGCXXCMYXYMNSERXFQ5FNS",
         "ethereum:0xd7047fe3eecb2f2ff78d839dd927be27bc12c86a",
         "ethereum:0xdAC17F958D2ee523a2206206994597C13D831ec7@1/transfer?address=0xD7047Fe3Eecb2f2FF78d839dD927Be27Bc12c86a&uint256=5000000",
+        "ethereum:" <> ethAddr <> "@100?value=1e16",
         "solana:7JCf5m3TiHmYKZVr6jCu1KeZVtb9Y1jRMQDU69p5ARnu?amount=0.5",
         "Donations: " <> btcAddr <> ". Cheers",
         "Suggested donation: bitcoin:" <> btcAddr <> "?amount=0.001&label=SimpleX Thank you!",

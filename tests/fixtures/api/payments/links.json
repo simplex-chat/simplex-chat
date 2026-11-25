@@ -793,6 +793,30 @@
         }
       ]
     },
+    "ethereum:0xD7047Fe3Eecb2f2FF78d839dD927Be27Bc12c86a@100?value=1e16": {
+      "formattedText": [
+        {
+          "format": {
+            "payment": {
+              "alternatives": [],
+              "amount": "0.01",
+              "payee": {
+                "address": "0xD7047Fe3Eecb2f2FF78d839dD927Be27Bc12c86a",
+                "checksum": "verified",
+                "network": {
+                  "chainId": 100,
+                  "type": "ethereum"
+                },
+                "type": "address"
+              },
+              "walletUri": "ethereum:0xD7047Fe3Eecb2f2FF78d839dD927Be27Bc12c86a@100?value=1e16"
+            },
+            "type": "paymentLink"
+          },
+          "text": "ethereum:0xD7047Fe3Eecb2f2FF78d839dD927Be27Bc12c86a@100?value=1e16"
+        }
+      ]
+    },
     "ethereum:0xd7047fe3eecb2f2ff78d839dd927be27bc12c86a": {
       "formattedText": [
         {

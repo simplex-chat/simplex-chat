@@ -35,6 +35,7 @@ final class PaymentLinksTests: XCTestCase {
             "[\(btc)](bitcoin:\(btc))": "₿\u{00A0}bc1q2g…\u{2060}5d4u",
             btc: "₿\u{00A0}bc1q2g…\u{2060}5d4u",
             "bitcoin:\(btc)?amount=0.001&label=SimpleX&message=Thank%20you": "₿\u{00A0}0.001 · SimpleX",
+            "ethereum:\(eth)@100?value=1e16": "Ξ\u{00A0}0.01 · chain 100",
             "ethereum:0xd7047fe3eecb2f2ff78d839dd927be27bc12c86a": "Ξ\u{00A0}0xD704…\u{2060}c86a",
             "ethereum:0xdAC17F958D2ee523a2206206994597C13D831ec7@1/transfer?address=\(eth)&uint256=5000000": "Ξ\u{00A0}0xD704…\u{2060}c86a",
             "lightning:LNURL1DP68GURN8GHJ7UM9WFMXJCM99E3K7MF0V9CXJ0M385EKVCENXC6R2C35XVUKXEFCV5MKVV34X5EKZD3EV56NYD3HXQURZEPEXEJXXEPNXSCRVWFNV9NXZCN9XQ6XYEFHVGCXXCMYXYMNSERXFQ5FNS": "ϟ\u{00A0}lnurl1…\u{2060}5fns",

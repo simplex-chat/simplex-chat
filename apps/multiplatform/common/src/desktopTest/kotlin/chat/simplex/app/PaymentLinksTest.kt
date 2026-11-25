@@ -55,6 +55,7 @@ class PaymentLinksTest {
         "[$BTC](bitcoin:$BTC)" to "₿\u00A0bc1q2g…\u20605d4u",
         BTC to "₿\u00A0bc1q2g…\u20605d4u",
         "bitcoin:$BTC?amount=0.001&label=SimpleX&message=Thank%20you" to "₿\u00A00.001 · SimpleX",
+        "ethereum:$ETH@100?value=1e16" to "Ξ\u00A00.01 · chain 100",
         "ethereum:0xd7047fe3eecb2f2ff78d839dd927be27bc12c86a" to "Ξ\u00A00xD704…\u2060c86a",
         "ethereum:0xdAC17F958D2ee523a2206206994597C13D831ec7@1/transfer?address=$ETH&uint256=5000000" to "Ξ\u00A00xD704…\u2060c86a",
         "lightning:LNURL1DP68GURN8GHJ7UM9WFMXJCM99E3K7MF0V9CXJ0M385EKVCENXC6R2C35XVUKXEFCV5MKVV34X5EKZD3EV56NYD3HXQURZEPEXEJXXEPNXSCRVWFNV9NXZCN9XQ6XYEFHVGCXXCMYXYMNSERXFQ5FNS" to "ϟ\u00A0lnurl1…\u20605fns",
