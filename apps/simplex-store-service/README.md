@@ -1556,11 +1556,14 @@ a read of the order or of its invoice is stored at most once an hour. Its page's
 signing again, queues it to be committed again while it holds its name.
 
 A signature past its deadline is cleared, and the page signs again. A signature within its deadline
-that no longer verifies, as after a change of `[chain] chain_id`, `sponsor` or `resolver`, or of
-`[names] tld`, fails the order before its acceptance relay or its register is sent, with the reason `signatureRefused`; the log line is
-`[ERROR …] names worker: registration <id> failed: its stored signature is refused under the service's current configuration, …`,
-and the same text is posted in the managed group. Its page asks the buyer to contact support. A
-name is selected again only after a reset.
+that no longer verifies, as after a change of `[chain] chain_id` or `sponsor`, is cleared before its
+acceptance relay or its register is sent, and the order waits, committed, for its page to sign again
+with the current values; the log line is
+`[WARN …] names worker: registration <id>: its stored signature is refused under the service's current configuration, …, so its page signs again`.
+A change of `[chain] resolver` or `[names] tld` changes the commitment of every open order, so its
+page cannot sign it again: support closes such a paid order with `//close` once its commitment
+lapses. The reason
+`signatureRefused` remains only on orders failed by earlier releases.
 
 A close of a failed order, and the worker's judgment of a register that did not go
 through, first run `confirmLanded`. It marks the order registered when `ownerOf` at the confirmation

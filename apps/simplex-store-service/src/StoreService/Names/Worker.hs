@@ -411,9 +411,11 @@ sendRegister w@Worker {wkOrders = OrdersEnv {oeConfig = cfg@NamesConfig {nChain 
             Left e -> pure $ failure r $ SFSend e
 
 intentRefused :: Worker -> UTCTime -> NameRegistration -> NameReveal -> IO (Maybe Next)
-intentRefused w@Worker {wkOrders = OrdersEnv {oeConfig = cfg@NamesConfig {nChain = ChainConfig {cChainId, cSponsor}}}} now r rv =
+intentRefused w@Worker {wkOrders = OrdersEnv {oeConfig = cfg@NamesConfig {nChain = ChainConfig {cChainId, cSponsor}}}} now r@NameRegistration {nrId = RegistrationId rid} rv =
   verifyRegisterIntent (sponsorDomain cChainId cSponsor) now (intentOf cfg (nrOwner r) (nrDuration r) (nrDisputeDays r) rv) >>= \case
-    Left refusal -> Just <$> inTurn w r (failOrder w now r FRSignatureRefused $ "its stored signature is refused under the service's current configuration, " <> T.pack refusal)
+    Left refusal -> do
+      logWarn $ "names worker: registration " <> rid <> ": its stored signature is refused under the service's current configuration, " <> T.pack refusal <> ", so its page signs again"
+      Just <$> save w now r {nrReveal = Nothing}
     Right () -> pure Nothing
 
 registerSent :: Worker -> UTCTime -> NameRegistration -> Commit -> PendingTx -> IO Next
