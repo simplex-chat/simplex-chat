@@ -405,6 +405,35 @@ class Base64ImagePainterTest {
   }
 
   @Test
+  fun testVideoIsShownAsItsPreviewWithoutAPlayer() {
+    val picture = base64Png(327, 173)
+    val name = "received-video-test-${UUID.randomUUID()}.mp4"
+    val video = File(appFilesDir, name)
+    try {
+      appFilesDir.mkdirs()
+      video.writeBytes(ByteArray(100))
+      val file = CIFile.getSample(fileName = name, fileSize = 100, filePath = name)
+      val content = MsgContent.MCVideo("", picture, 10)
+      val chat = Chat.sampleData.copy(chatItems = listOf(ChatItem.getSampleData(1, CIDirection.DirectRcv(), text = content.text, file = file).copy(content = CIContent.RcvMsgContent(content))))
+      withMediaBlurRadius(0) {
+        scene(ROW_WIDTH, ROW_HEIGHT) { ReceivedItem(content, file) }.use { scene ->
+          assertTrue(scene.renderUntil { it.hasRedOnRow(20) })
+        }
+        scene(ROW_WIDTH, 150) {
+          SimpleXTheme {
+            ChatPreviewView(chat, true, null, null, "", disabled = false, linkMode = SimplexLinkMode.DESCRIPTION, inProgress = false, progressByTimeout = false, {})
+          }
+        }.use { scene ->
+          assertTrue(scene.renderUntil { it.hasRedIn(0 until 150) })
+        }
+      }
+      assertTrue(VideoPlayerHolder.players.isEmpty())
+    } finally {
+      video.delete()
+    }
+  }
+
+  @Test
   fun testFullScreenVideoIsNotPlayedWhileItsPreviewIsDecoded() {
     simplexWindowState.windowState = WindowState(size = DpSize(SCENE_SIZE.dp, SCENE_SIZE.dp))
     val video = ProviderMedia.Video(File(appFilesDir, "received-video-test.mp4").toURI(), null, base64Png(311, 189))
