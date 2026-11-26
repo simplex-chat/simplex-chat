@@ -372,6 +372,7 @@ chatGroupTests = do
     it "introduce member via user to later joiner" testViaMemberLaterJoiner
     it "joiner of previous version creates unknown member" testViaMemberPrevVersionJoiner
     it "host forwards messages and updates of member via another member until its invitee connects to that member" testViaMemberOtherAdmin
+    it "host forwards messages of blocked member via another member to moderators only, without notifications" testViaMemberBlockedToModerators
     it "introduce member via another member after that member" testViaMemberIntroOrder
     it "reply to and mention of member via user resolve to that member" testViaMemberReply
     it "priority and edit window of messages sent as member follow member role at sender and receivers" testViaMemberRoleRules
@@ -17050,6 +17051,51 @@ testViaMemberOtherAdmin =
       alice ##> ("/_update item #1 " <> hiId <> " text hello")
       alice <# "#team [edited] hello"
       [bob, cath] *<# "#team reviewer> [edited] hello"
+
+testViaMemberBlockedToModerators :: HasCallStack => TestParams -> IO ()
+testViaMemberBlockedToModerators =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup2 "team" alice bob
+      connectUsers bob cath
+      addMember "team" bob cath GRMember
+      cath ##> "/j team"
+      concurrentlyN_
+        [ bob <## "#team: cath joined the group",
+          do
+            cath <## "#team: you joined the group"
+            cath <## "#team: member alice (Alice) is connected",
+          do
+            alice <## "#team: bob added cath (Catherine) to the group (connecting...)"
+            alice <## "#team: new member cath is connected"
+        ]
+      setupGroupForwarding bob alice cath
+      cath ##> "/set receipts all off"
+      cath <## "ok"
+      cathConnId <- relayConnIdToMember bob "cath"
+      addViaMember alice "member"
+      viaMemberAdded [bob, cath]
+      bob ##> "/block for all #team reviewer"
+      bob <## "#team: you blocked reviewer (signed)"
+      alice <## "#team: bob blocked reviewer (signed)"
+      cath <## "#team: bob blocked reviewer (signed)"
+      sent <- lastSndMsgId bob cathConnId
+      alice ##> "/_send #1(as_member=4) text spam"
+      alice <# "#team spam"
+      bob <# "#team reviewer> spam [blocked by admin] [>>] <muted>"
+      cath <// 500000
+      lastSndMsgId bob cathConnId `shouldReturn` sent
+      bob ##> "/mr team cath moderator"
+      concurrentlyN_
+        [ bob <## "#team: you changed the role of cath to moderator (signed)",
+          alice <## "#team: bob changed the role of cath from member to moderator (signed)",
+          cath <## "#team: bob changed your role from member to moderator (signed)"
+        ]
+      alice ##> "/_send #1(as_member=4) text spam again"
+      alice <# "#team spam again"
+      bob <# "#team reviewer> spam again [blocked by admin] [>>] <muted>"
+      cath <# "#team reviewer> spam again [blocked by admin] [>>] <muted>"
+      lastSndMsgFlags bob cathConnId 1 `shouldReturn` ["F"]
 
 testViaMemberIntroOrder :: HasCallStack => TestParams -> IO ()
 testViaMemberIntroOrder =
