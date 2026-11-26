@@ -25,6 +25,7 @@ jobs:
     outputs:
       release: ${{ github.event_name == 'workflow_dispatch' || steps.raised.outputs.release == 'true' }}
       testflight: ${{ steps.testflight.outputs.open }}
+      core-hash: ${{ steps.core-hash.outputs.hash }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
@@ -73,6 +74,30 @@ jobs:
             echo "::notice title=TestFlight::the App Store has $released, so the TestFlight train of $version is closed: the iOS upload is skipped until MARKETING_VERSION is above $released"
           fi
 
+      - name: Hash of the core and the app's fixed part, for the UI updates
+        id: core-hash
+        run: echo "hash=${{ hashFiles('src/**', 'cabal.project', 'simplex-chat.cabal', 'PRIVACY.md', 'libsimplex.dll.def', 'apps/multiplatform/common/src/commonMain/cpp/desktop/**', 'apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/platform/CoreBindings.kt', 'apps/multiplatform/common/src/desktopMain/kotlin/chat/simplex/common/views/helpers/UiUpdates.kt') }}" >> "$GITHUB_OUTPUT"
+
+  test-android:
+    name: Android app tests
+    needs: start
+    if: needs.start.outputs.release == 'true'
+    uses: ./.github/workflows/android-emu.yml
+    with:
+      armv7a: true
+
+  test-desktop:
+    name: Desktop app tests
+    needs: start
+    if: needs.start.outputs.release == 'true'
+    uses: ./.github/workflows/desktop-linux.yml
+
+  test-ios:
+    name: iOS app tests
+    needs: start
+    if: needs.start.outputs.release == 'true'
+    uses: ./.github/workflows/ios-sim.yml
+
   desktop-linux:
     name: Desktop Ubuntu ${{ matrix.os }} ${{ matrix.arch }}
     needs: start
@@ -93,6 +118,25 @@ jobs:
         with:
           submodules: recursive
 
+      - name: Core library name
+        id: core
+        run: echo "name=desktop-linux-core-ubuntu-${{ matrix.os }}-${{ matrix.arch }}-${{ hashFiles('src/**', 'cabal.project', 'simplex-chat.cabal', 'PRIVACY.md', 'scripts/desktop/build-lib-linux.sh', 'scripts/ci/desktop-linux/build-core.sh', 'Dockerfile.build') }}" >> "$GITHUB_OUTPUT"
+
+      - name: Find core library
+        id: earlier
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: scripts/ci/desktop-linux/earlier-run.sh "${{ steps.core.outputs.name }}"
+
+      - name: Download core library
+        if: steps.earlier.outputs.run-id != ''
+        uses: actions/download-artifact@v8
+        with:
+          name: ${{ steps.core.outputs.name }}
+          path: core
+          run-id: ${{ steps.earlier.outputs.run-id }}
+          github-token: ${{ github.token }}
+
       - name: Free disk space
         run: scripts/ci/linux_util_free_space.sh
 
@@ -102,16 +146,34 @@ jobs:
             --build-arg USER_UID="$(id -u)" --build-arg USER_GID="$(id -g)" .
           docker run -t -d --device /dev/fuse --cap-add SYS_ADMIN --security-opt apparmor:unconfined --name builder \
             -v /home/runner/work/_temp:/home/runner/work/_temp -v "$GITHUB_WORKSPACE:/project" build
-          printf 'ignore-project: False\npackage direct-sqlcipher\n    flags: +openssl\n' > cabal.project.local
+
+      - name: Build core library
+        if: steps.earlier.outputs.run-id == ''
+        shell: docker exec -t builder sh -eu {0}
+        run: |
+          cabal update
+          scripts/ci/desktop-linux/build-core.sh core/desktop-core.tar.gz
+
+      - name: Upload core library
+        if: steps.earlier.outputs.run-id == ''
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ steps.core.outputs.name }}
+          path: core/desktop-core.tar.gz
+          compression-level: 0
+          retention-days: 30
+          if-no-files-found: error
 
       - name: Build the deb and the AppImage
         shell: docker exec -t builder sh -eu {0}
         run: |
-          cabal update
-          ASSETS_DIR=../../assets scripts/desktop/make-deb-linux.sh
+          scripts/ci/desktop-linux/install-core.sh core/desktop-core.tar.gz
+          scripts/desktop/prepare-vlc-linux.sh
+          echo "${{ needs.start.outputs.core-hash }}" > apps/multiplatform/common/src/commonMain/cpp/desktop/libs/linux-${{ matrix.arch }}/core-hash
+          SKIP_LIB=1 ASSETS_DIR=../../assets scripts/desktop/make-deb-linux.sh
           [ "${{ matrix.os }}" != 22.04 ] || ASSETS_DIR=../../assets scripts/desktop/make-appimage-linux.sh
 
-      - name: Name the packages
+      - name: Name the packages and make the UI update
         env:
           OS: ${{ matrix.os }}
           ARCH: ${{ matrix.arch }}
@@ -121,11 +183,13 @@ jobs:
           if [ "$OS" = 22.04 ]; then
             cp apps/multiplatform/release/main/*imple*.AppImage "out/simplex-desktop-$ARCH.AppImage"
           fi
+          app=apps/multiplatform/extracted/opt/simplex
+          python3 scripts/ci/internal-release/ui-zip.py "$app/lib/app" "$app/lib/runtime/release" out
 
       - name: Upload the packages
         uses: actions/upload-artifact@v7
         with:
-          name: desktop-ubuntu-${{ matrix.os }}-${{ matrix.arch }}
+          name: packages-ubuntu-${{ matrix.os }}-${{ matrix.arch }}
           path: out
           retention-days: 30
           if-no-files-found: error
@@ -140,8 +204,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { arch: aarch64, runner: macos-latest, openssl: /opt/homebrew/opt }
-          - { arch: x86_64, runner: macos-15-intel, openssl: /usr/local/opt }
+          - { arch: aarch64, compose: arm64, runner: macos-latest, openssl: /opt/homebrew/opt }
+          - { arch: x86_64, compose: x64, runner: macos-15-intel, openssl: /usr/local/opt }
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
@@ -151,11 +215,53 @@ jobs:
       - name: Point Command Line Tools SDK to Xcode SDK
         run: sudo ln -sfn "$(xcrun --sdk macosx --show-sdk-path)" /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk
 
+      - name: Core library name
+        id: core
+        run: echo "name=desktop-macos-core-${{ matrix.arch }}-$({ sw_vers -productVersion; clang --version; } | shasum -a 256 | cut -c1-16)-${{ hashFiles('src/**', 'cabal.project', 'simplex-chat.cabal', 'PRIVACY.md', 'scripts/desktop/build-lib-mac.sh') }}" >> "$GITHUB_OUTPUT"
+
+      - name: Find core library
+        id: earlier
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: scripts/ci/desktop-linux/earlier-run.sh "${{ steps.core.outputs.name }}"
+
+      - name: Download core library
+        if: steps.earlier.outputs.run-id != ''
+        uses: actions/download-artifact@v8
+        with:
+          name: ${{ steps.core.outputs.name }}
+          path: core
+          run-id: ${{ steps.earlier.outputs.run-id }}
+          github-token: ${{ github.token }}
+
       - name: Setup Haskell
+        if: steps.earlier.outputs.run-id == ''
         uses: simplex-chat/setup-haskell-action@v2
         with:
           ghc-version: 9.6.3
           cabal-version: 3.10.2.0
+
+      - name: Build core library
+        if: steps.earlier.outputs.run-id == ''
+        env:
+          OPENSSL: ${{ matrix.openssl }}/openssl@3.0
+        run: |
+          brew install openssl@3.0
+          printf 'ignore-project: False\npackage simplexmq\n    extra-include-dirs: %s/include\n    extra-lib-dirs: %s/lib\n\npackage direct-sqlcipher\n    extra-include-dirs: %s/include\n    extra-lib-dirs: %s/lib\n    flags: +openssl\n' \
+            "$OPENSSL" "$OPENSSL" "$OPENSSL" "$OPENSSL" > cabal.project.local
+          SKIP_VLC=1 scripts/desktop/build-lib-mac.sh
+          mkdir -p core
+          tar -C apps/multiplatform/common/src/commonMain/cpp/desktop/libs/mac-${{ matrix.arch }} -czf core/desktop-core.tar.gz .
+
+      - name: Upload core library
+        if: steps.earlier.outputs.run-id == ''
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ steps.core.outputs.name }}
+          path: core/desktop-core.tar.gz
+          compression-level: 0
+          retention-days: 30
+          if-no-files-found: error
 
       - name: Setup Java
         uses: actions/setup-java@v5
@@ -163,35 +269,35 @@ jobs:
           distribution: corretto
           java-version: 17
 
-      - name: OpenSSL
-        env:
-          OPENSSL: ${{ matrix.openssl }}/openssl@3.0
-        run: |
-          brew install openssl@3.0
-          printf 'ignore-project: False\npackage simplexmq\n    extra-include-dirs: %s/include\n    extra-lib-dirs: %s/lib\n\npackage direct-sqlcipher\n    extra-include-dirs: %s/include\n    extra-lib-dirs: %s/lib\n    flags: +openssl\n' \
-            "$OPENSSL" "$OPENSSL" "$OPENSSL" "$OPENSSL" > cabal.project.local
-
-      - name: Build the dmg, signed and notarized on master
+      - name: Build the dmg, signed and notarized on master, and the UI update
         env:
           APPLE_SIMPLEX_SIGNING_KEYCHAIN: ${{ github.ref == 'refs/heads/master' && secrets.APPLE_SIMPLEX_SIGNING_KEYCHAIN || '' }}
           APPLE_SIMPLEX_NOTARIZATION_APPLE_ID: ${{ github.ref == 'refs/heads/master' && secrets.APPLE_SIMPLEX_NOTARIZATION_APPLE_ID || '' }}
           APPLE_SIMPLEX_NOTARIZATION_PASSWORD: ${{ github.ref == 'refs/heads/master' && secrets.APPLE_SIMPLEX_NOTARIZATION_PASSWORD || '' }}
           ASSETS_DIR: ../../assets
+          SKIP_LIB: 1
         run: |
+          libs=apps/multiplatform/common/src/commonMain/cpp/desktop/libs/mac-${{ matrix.arch }}
+          mkdir -p "$libs" apps/multiplatform/build/links
+          tar -C "$libs" -xzf core/desktop-core.tar.gz
+          ln -sfn "../../common/src/commonMain/cpp/desktop/libs/mac-${{ matrix.arch }}/" apps/multiplatform/build/links/macos-${{ matrix.compose }}
+          scripts/desktop/prepare-vlc-mac.sh
+          echo "${{ needs.start.outputs.core-hash }}" > "$libs/core-hash"
           if [ -n "$APPLE_SIMPLEX_SIGNING_KEYCHAIN" ]; then
             scripts/ci/build-desktop-mac.sh
           else
             echo "::notice title=macOS::APPLE_SIMPLEX_* are not set: the dmg is not signed"
-            scripts/desktop/build-lib-mac.sh
             (cd apps/multiplatform && ./gradlew -Psimplex.assets.dir="$ASSETS_DIR" packageDmg)
           fi
           mkdir out
           cp apps/multiplatform/release/main/dmg/SimpleX-*.dmg "out/simplex-desktop-macos-${{ matrix.arch }}.dmg"
+          app=apps/multiplatform/release/main/app/SimpleX.app/Contents
+          python3 scripts/ci/internal-release/ui-zip.py "$app/app" "$app/runtime/Contents/Home/release" out
 
       - name: Upload the dmg
         uses: actions/upload-artifact@v7
         with:
-          name: desktop-macos-${{ matrix.arch }}
+          name: packages-macos-${{ matrix.arch }}
           path: out
           retention-days: 30
           if-no-files-found: error
@@ -208,25 +314,6 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Setup Haskell
-        uses: simplex-chat/setup-haskell-action@v2
-        with:
-          ghc-version: 9.6.3
-          cabal-version: 3.10.2.0
-
-      - name: Setup Java
-        uses: actions/setup-java@v5
-        with:
-          distribution: corretto
-          java-version: 17
-
-      - name: Configure pagefile
-        uses: simplex-chat/configure-pagefile-action@v1.4
-        with:
-          minimum-size: 16GB
-          maximum-size: 16GB
-          disk-root: "C:"
-
       - name: Setup MSYS2
         uses: simplex-chat/setup-msys2@v2
         with:
@@ -240,65 +327,98 @@ jobs:
           pacboy: >-
             toolchain:p
             cmake:p
+            python:p
 
-      - name: Build the msi
+      - name: Core library name
+        id: core
+        shell: msys2 {0}
+        run: echo "name=desktop-windows-core-$(gcc --version | sha256sum | cut -c1-16)-${{ hashFiles('src/**', 'cabal.project', 'simplex-chat.cabal', 'PRIVACY.md', 'libsimplex.dll.def', 'scripts/desktop/build-lib-windows.sh', 'scripts/desktop/prepare-openssl-windows.sh') }}" >> "$GITHUB_OUTPUT"
+
+      - name: Find core library
+        id: earlier
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: scripts/ci/desktop-linux/earlier-run.sh "${{ steps.core.outputs.name }}"
+
+      - name: Download core library
+        if: steps.earlier.outputs.run-id != ''
+        uses: actions/download-artifact@v8
+        with:
+          name: ${{ steps.core.outputs.name }}
+          path: core
+          run-id: ${{ steps.earlier.outputs.run-id }}
+          github-token: ${{ github.token }}
+
+      - name: Setup Haskell
+        if: steps.earlier.outputs.run-id == ''
+        uses: simplex-chat/setup-haskell-action@v2
+        with:
+          ghc-version: 9.6.3
+          cabal-version: 3.10.2.0
+
+      - name: Configure pagefile
+        if: steps.earlier.outputs.run-id == ''
+        uses: simplex-chat/configure-pagefile-action@v1.4
+        with:
+          minimum-size: 16GB
+          maximum-size: 16GB
+          disk-root: "C:"
+
+      - name: Build core library
+        if: steps.earlier.outputs.run-id == ''
+        shell: msys2 {0}
+        run: |
+          export PATH=$PATH:/c/ghcup/bin:$(echo /c/tools/ghc-*/bin || echo)
+          SKIP_VLC=1 scripts/desktop/build-lib-windows.sh
+          mkdir -p core
+          tar -C apps/multiplatform/common/src/commonMain/cpp/desktop/libs/windows-x86_64 -czf core/desktop-core.tar.gz .
+
+      - name: Upload core library
+        if: steps.earlier.outputs.run-id == ''
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ steps.core.outputs.name }}
+          path: core/desktop-core.tar.gz
+          compression-level: 0
+          retention-days: 30
+          if-no-files-found: error
+
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: corretto
+          java-version: 17
+
+      - name: Build the msi and the UI update
         shell: msys2 {0}
         env:
           SIMPLEX_INTERNAL_RELEASE: true
         run: |
-          export PATH=$PATH:/c/ghcup/bin:$(echo /c/tools/ghc-*/bin || echo)
-          scripts/desktop/build-lib-windows.sh
-          (cd apps/multiplatform && ./gradlew -Psimplex.assets.dir=../../assets packageMsi)
+          libs=apps/multiplatform/common/src/commonMain/cpp/desktop/libs/windows-x86_64
+          mkdir -p "$libs" apps/multiplatform/build/links
+          tar -C "$libs" -xzf core/desktop-core.tar.gz
+          scripts/desktop/prepare-vlc-windows.sh
+          echo "${{ needs.start.outputs.core-hash }}" > "$libs/core-hash"
+          rm -rf apps/multiplatform/build/links/windows-x64
+          ln -sfT "../../common/src/commonMain/cpp/desktop/libs/windows-x86_64/" apps/multiplatform/build/links/windows-x64
+          (cd apps/multiplatform && ./gradlew -Psimplex.assets.dir=../../assets createDistributable packageMsi)
           mkdir out
           cp apps/multiplatform/release/main/msi/*imple*.msi out/simplex-desktop-windows-x86_64.msi
+          app=apps/multiplatform/release/main/app/SimpleX
+          python scripts/ci/internal-release/ui-zip.py "$app/app" "$app/runtime/release" out
 
       - name: Upload the msi
         uses: actions/upload-artifact@v7
         with:
-          name: desktop-windows-x86_64
+          name: packages-windows-x86_64
           path: out
-          retention-days: 30
-          if-no-files-found: error
-
-  android-core:
-    name: Android core ${{ matrix.arch }}
-    needs: start
-    if: needs.start.outputs.release == 'true'
-    runs-on: ubuntu-24.04
-    timeout-minutes: 360
-    strategy:
-      fail-fast: false
-      matrix:
-        arch: [aarch64, armv7a]
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-          filter: tree:0
-
-      - name: Setup swap
-        if: matrix.arch == 'armv7a'
-        uses: ./.github/actions/swap
-        with:
-          swap-size-gb: 30
-
-      - name: Build the core
-        run: |
-          sudo sysctl -w kernel.pid_max=65535
-          scripts/ci/android/build-core.sh "$RUNNER_TEMP/core/android-core-${{ matrix.arch }}.tar.gz" ${{ matrix.arch }}
-
-      - name: Upload the core
-        uses: actions/upload-artifact@v7
-        with:
-          name: android-core-${{ matrix.arch }}
-          path: ${{ runner.temp }}/core
           retention-days: 30
           if-no-files-found: error
 
   android-build:
     name: Android APKs and Play bundle
-    needs: android-core
+    needs: test-android
     runs-on: ubuntu-24.04
     timeout-minutes: 90
     steps:
@@ -313,21 +433,27 @@ jobs:
           distribution: corretto
           java-version: 17
 
-      - name: Download the cores
+      - name: Download core library
         uses: actions/download-artifact@v8
         with:
-          pattern: android-core-*
+          name: ${{ needs.test-android.outputs.core }}
           path: ${{ runner.temp }}/core
-          merge-multiple: true
+          run-id: ${{ needs.test-android.outputs.core-run || github.run_id }}
+          github-token: ${{ github.token }}
+
+      - name: Download core library for armv7a
+        uses: actions/download-artifact@v8
+        with:
+          name: android-core-armeabi-v7a
+          path: ${{ runner.temp }}/core
 
       - name: Build the APKs and the bundle
-        working-directory: apps/multiplatform
         run: |
-          libs=common/src/commonMain/cpp/android/libs
+          scripts/ci/android/install-core.sh "$RUNNER_TEMP/core/android-core-arm64-v8a.tar.gz"
+          scripts/ci/android/install-core.sh "$RUNNER_TEMP/core/android-core-armeabi-v7a.tar.gz" armeabi-v7a
+          mkdir -p "$RUNNER_TEMP/apk" "$RUNNER_TEMP/bundle"
+          cd apps/multiplatform
           echo compression.level=5 > local.properties
-          mkdir -p "$libs/arm64-v8a" "$libs/armeabi-v7a" "$RUNNER_TEMP/apk" "$RUNNER_TEMP/bundle"
-          tar -C "$libs/arm64-v8a" -xzf "$RUNNER_TEMP/core/android-core-aarch64.tar.gz"
-          tar -C "$libs/armeabi-v7a" -xzf "$RUNNER_TEMP/core/android-core-armv7a.tar.gz"
           ./gradlew --no-daemon -Psimplex.assets.dir=../../assets :android:assembleFossRelease
           ./gradlew --no-daemon -Psimplex.assets.dir=../../assets :android:bundleGoogleRelease
           cp android/build/outputs/apk/foss/release/android-foss-arm64-v8a-release-unsigned.apk "$RUNNER_TEMP/apk/simplex-aarch64.apk"
@@ -363,6 +489,25 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v6
 
+      - name: Core library name
+        id: core
+        run: echo "name=ios-core-${{ hashFiles('src/**', 'cabal.project', 'simplex-chat.cabal', 'PRIVACY.md', 'flake.nix', 'flake.lock', 'scripts/nix/**') }}" >> "$GITHUB_OUTPUT"
+
+      - name: Find core library
+        id: earlier
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: scripts/ci/ios-sim/earlier-run.sh "${{ steps.core.outputs.name }}"
+
+      - name: Download core library
+        if: steps.earlier.outputs.run-id != ''
+        uses: actions/download-artifact@v8
+        with:
+          name: ${{ steps.core.outputs.name }}
+          path: ${{ runner.temp }}/ios
+          run-id: ${{ steps.earlier.outputs.run-id }}
+          github-token: ${{ github.token }}
+
       - name: Use the macOS 26 SDK
         run: scripts/ci/ios-sim/use-macos26-sdk.sh
 
@@ -377,6 +522,16 @@ jobs:
       - name: Build the archive
         run: scripts/ci/internal-release/ios-archive.sh "$RUNNER_TEMP/ios" ${{ env.HAS_ART_KEY == 'true' && 'simplex-chat-art' || '' }}
 
+      - name: Upload core library
+        if: steps.earlier.outputs.run-id == ''
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ steps.core.outputs.name }}
+          path: ${{ runner.temp }}/ios/pkg-ios-aarch64-swift-json.zip
+          compression-level: 0
+          retention-days: 30
+          if-no-files-found: error
+
       - name: Upload the archive
         uses: actions/upload-artifact@v7
         with:
@@ -388,7 +543,7 @@ jobs:
 
   ios:
     name: TestFlight
-    needs: [start, ios-build, android-build, desktop-linux, desktop-macos, desktop-windows]
+    needs: [start, test-android, test-desktop, test-ios, ios-build, android-build, desktop-linux, desktop-macos, desktop-windows]
     if: needs.start.outputs.testflight == 'true'
     runs-on: macos-26
     timeout-minutes: 60
@@ -419,7 +574,7 @@ jobs:
 
   android:
     name: Google Play internal testing
-    needs: [ios-build, android-build, desktop-linux, desktop-macos, desktop-windows]
+    needs: [test-android, test-desktop, test-ios, ios-build, android-build, desktop-linux, desktop-macos, desktop-windows]
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     environment: internal-release
@@ -444,7 +599,7 @@ jobs:
 
   publish:
     name: simplex-chat-test release
-    needs: [ios-build, android-build, desktop-linux, desktop-macos, desktop-windows]
+    needs: [test-android, test-desktop, test-ios, ios-build, android-build, desktop-linux, desktop-macos, desktop-windows]
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     environment: internal-release
@@ -455,7 +610,7 @@ jobs:
       - name: Download the desktop apps
         uses: actions/download-artifact@v8
         with:
-          pattern: desktop-*
+          pattern: packages-*
           path: ${{ runner.temp }}/desktop
           merge-multiple: true
 
@@ -465,8 +620,9 @@ jobs:
           name: android-apks-unsigned
           path: ${{ runner.temp }}/android
 
-      - name: Sign the test APKs and publish
+      - name: Sign the test APKs and UI updates, and publish
         env:
+          DESKTOP_UI_UPDATE_KEY: ${{ secrets.DESKTOP_UI_UPDATE_KEY }}
           ANDROID_TEST_KEYSTORE: ${{ secrets.ANDROID_TEST_KEYSTORE }}
           ANDROID_TEST_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_TEST_KEYSTORE_PASSWORD }}
           ANDROID_TEST_KEY_ALIAS: ${{ secrets.ANDROID_TEST_KEY_ALIAS }}

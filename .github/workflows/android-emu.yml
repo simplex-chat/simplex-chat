@@ -2,7 +2,7 @@ name: android-emu
 
 on:
   workflow_dispatch:
-    inputs:
+    inputs: &inputs
       claude:
         description: Also run the Claude job, which spends the Claude subscription's usage limits
         type: boolean
@@ -19,13 +19,20 @@ on:
         description: Also build the core library for 32-bit Arm (armeabi-v7a)
         type: boolean
         default: false
+  workflow_call:
+    inputs: *inputs
+    outputs:
+      core:
+        value: ${{ jobs.plan.outputs.core }}
+      core-run:
+        value: ${{ jobs.plan.outputs.core-run }}
 
 permissions:
   contents: read
   actions: read
 
 concurrency:
-  group: android-emu-${{ github.ref }}
+  group: android-emu-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 env:
