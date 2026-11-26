@@ -490,7 +490,8 @@ sender row         the name line topGap (terminalRowGap) below the row top, as o
                    at CHAT_ITEM_TEXT_PADDING − TERMINAL_AVATAR_OVERSHOOT (10dp), 2dp into the screen padding, as round
                    glyphs pass flat ones (user)
   name             name and badge (body1 size, semibold; primary for own messages, secondary otherwise), role label (the
-                   same size); start padding CHAT_ITEM_TEXT_PADDING; text style chatTextStyle(body1 size); at the
+                   same size); start and end padding CHAT_ITEM_TEXT_PADDING, so that the name line ends where the time
+                   ends; text style chatTextStyle(body1 size); at the
                    message column, terminalGutter(chatInfo), so in groups it starts TERMINAL_AVATAR_GAP (10dp) after the
                    avatar, at 47dp; in the width less the column
 one padding        12dp (user, I26): screen edge to the text in chats without avatars, time to the screen edge

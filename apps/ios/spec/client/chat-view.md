@@ -389,6 +389,7 @@ sender row         the name, as tall as its line; the avatar is its overlay
                    role label in the body text style, medium, secondary, 15pt after the name; line box of the body font
                    start padding terminalColumn(avatarSize) + chatItemTextPadding: terminalAvatarGap (10pt) after the
                    avatar, at the text start (50pt); without an avatar chatItemTextPadding
+                   end padding chatItemTextPadding, so that the name line ends where the time ends
   below            terminalParagraphGap when the content starts with a card (contentStartsWithCard:
                    terminalItemStartsWithCard), otherwise 0, as the bottom padding
 content            below the name line, after terminalColumn(avatarSize): avatarSize + terminalAvatarGap −

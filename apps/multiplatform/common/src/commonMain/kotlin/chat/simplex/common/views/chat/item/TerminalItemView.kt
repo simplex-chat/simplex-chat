@@ -426,7 +426,7 @@ fun TerminalChatItemRow(
       Box {
         if (sender != null) {
           ProvideTextStyle(LocalTextStyle.current.merge(chatTextStyle(MaterialTheme.typography.body1.fontSize))) {
-            SenderNameAndRole(sender, Modifier.padding(start = CHAT_ITEM_TEXT_PADDING))
+            SenderNameAndRole(sender, Modifier.padding(horizontal = CHAT_ITEM_TEXT_PADDING))
           }
         }
       }

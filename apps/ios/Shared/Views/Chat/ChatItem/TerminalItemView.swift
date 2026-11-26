@@ -416,6 +416,7 @@ struct TerminalChatItemRow<Content: View>: View {
             if let sender {
                 senderNameAndRole(sender)
                     .padding(.leading, terminalColumn(avatarSize) + chatItemTextPadding)
+                    .padding(.trailing, chatItemTextPadding)
                     .overlay(alignment: .leading) {
                         if avatarSize > 0, let image = sender.image {
                             image.padding(.leading, chatItemTextPadding - terminalAvatarOvershoot)
