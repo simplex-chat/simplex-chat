@@ -719,6 +719,7 @@ namesConfigTests = describe "StoreService names: config" $ do
   it "reads codes_only on and off as a known setting, off when absent, and refuses any other value" testNamesCodesOnly
   it "reads record_edits_per_year as a known setting, 3 when absent, and refuses a value outside 1-100" testNamesRecordEdits
   it "reads min_price_cents_per_year as a known setting, 5000 when absent, and refuses a value below 1" testNamesPriceFloor
+  it "reads unavailable as a known setting of words separated by commas, none when absent, and refuses a word of other than letters a to z, quoting none" testNamesUnavailable
   it "accepts [issuer] dev_keys on chain 31337 only, with [names] on" testDevKeysLocalChain
   it "refuses a malformed dev_keys entry or an index named twice, quoting no secret" testDevKeysMalformed
   it "accepts [issuer] dev_keys beside Stripe test keys and a BTCPay on loopback" testDevKeysTestPayments
@@ -989,6 +990,17 @@ testNamesPriceFloor = do
   forM_ ["0", "-5000"] $ \v ->
     namesRefusal (namesSection <> ["min_price_cents_per_year = " <> v]) chainSection `shouldReturn` "names.min_price_cents_per_year must be a whole number of at least 1"
   namesRefusal (namesSection <> ["min_price_cents_per_year = 50.00"]) chainSection `shouldReturn` "names.min_price_cents_per_year must be a whole number of at least 1"
+
+testNamesUnavailable :: IO ()
+testNamesUnavailable = do
+  NamesConfig {nUnavailable = absent} <- parsedNames namesSection chainSection
+  absent `shouldBe` []
+  let ns = namesSection <> ["unavailable = bakery, cakes ,pie"]
+  unknownIn (namesIni ns chainSection) `shouldBe` []
+  NamesConfig {nUnavailable} <- parsedNames ns chainSection
+  nUnavailable `shouldBe` ["bakery", "cakes", "pie"]
+  forM_ ["bakery, Cakes", "bakery, cak3s", "bakery, ca-kes", "bakery,, cakes", "bakery, caké"] $ \v ->
+    namesRefusal (namesSection <> ["unavailable = " <> v]) chainSection `shouldReturn` "names.unavailable must be words of letters a to z, separated by commas"
 
 -- | Names on the local chain with no payment provider, as a run with dev keys has.
 localNamesIni :: [T.Text] -> T.Text

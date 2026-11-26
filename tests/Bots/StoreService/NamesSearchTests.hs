@@ -81,6 +81,7 @@ namesSearchTests = describe "StoreService names: search" $ do
     it "answers an available name's terms null while the terms of its kind cannot be read: not set, of a link the service does not take, or of a text not fetched now" $ testTermsUnavailable g
     it "answers a name the policy lists without an ini line as a community name without its text" $ testCommunityWithoutText g
     it "answers a listed name's price for its community's 2 years, whatever years the configuration gives" $ testCommunityYears g
+    it "answers a name with a word the service refuses at the order as available, as for any name" $ testUnavailableAtOrderOnly g
     it "takes the first 5 short links of a record's kind, splitting on ';', and none from other values" testRecordLinks
     it "answers a registered name's record edits left and when the next one returns, counting the edits of 365 days, reverted too" $ testRecordEdits g
     it "answers provider_unavailable to any failed chain read, records and price included, and to a price under the floor, and reads no terms link for a registered name" $ testFailedReads g
@@ -314,6 +315,12 @@ testAvailable g = withSearch g id id $ \s@Search {node} -> do
   answerCall node fakeController (rentPriceCall 6) $ Returns $ rentPriceAnswer 40000
   searchFixture "search-available" s 12 `shouldReturn` availableAnswer 10000
   searchAlice s 6 `shouldReturn` availableAnswer 40000
+
+testUnavailableAtOrderOnly :: TVar ChaChaDRG -> IO ()
+testUnavailableAtOrderOnly g = withSearch g (\c -> c {nUnavailable = ["bakery"]}) id $ \s@Search {node} -> do
+  available node
+  answerCall node fakeController (rentPriceCall 12) $ Returns $ rentPriceAnswer 10000
+  searchAlice s 12 `shouldReturn` availableAnswer 10000
 
 testTaken :: TVar ChaChaDRG -> IO ()
 testTaken g = withSearch g id id $ \s@Search {node, store} -> do

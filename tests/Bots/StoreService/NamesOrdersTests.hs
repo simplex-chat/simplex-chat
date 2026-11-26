@@ -162,6 +162,7 @@ namesOrdersTests = describe "StoreService names: orders" $ do
     it "answers catalog_changed with the chain price" testCatalogChanged
     it "counts toward the checkouts of every client only an order that reaches the provider, and a card order past the spent BTCPay ones" testOrdersLimitForAll
     it "answers name_taken for a registered, reserved or being registered name" testNameTaken
+    it "answers name_taken for a name with a listed word in its letters, at a paid and a code order, and the search answers it available" testNameUnavailable
     it "answers name_check_unavailable when a status or price read fails, or the price is under the floor, reaching no provider" testNameCheckUnavailable
     it "refuses a body over 16384 bytes, accepting the longest order" testSizes
     it "refuses a malformed owner, an unknown method, price or kind, and an order outside 6-63 letters" testFormats
@@ -429,6 +430,7 @@ testNamesConfig node =
       nRecordEditsPerYear = 3,
       nMinPriceCentsPerYear = minPriceCentsPerYear,
       nCommunity = M.empty,
+      nUnavailable = [],
       nChain = fakeChainConfig node
     }
 
@@ -809,6 +811,17 @@ testNameTaken = withOrders $ \ctx@Ctx {cNode = node} -> do
   stubCalls (cStub ctx) `shouldReturn` []
   where
     cResolverOf = cResolver . fakeChainConfig
+
+testNameUnavailable :: IO ()
+testNameUnavailable = withOrders $ \ctx0 -> withSettings (\c -> c {nUnavailable = ["bakery"]}) ctx0 $ \ctx -> do
+  (code, issued) <- issueCode ctx 8 2 id
+  placeOrder ctx aliceOrder `shouldReturn` refusedWith 409 "name_taken"
+  register ctx code aliceOrder `shouldReturn` refusedWith 409 "name_taken"
+  forM_ (zip [2 ..] ["alic-bakery", "ali3bak3ery"]) $ \(n, label) ->
+    placeOrder ctx aliceOrder {oLabel = label, oSecret = secretOf n} `shouldReturn` refusedWith 409 "name_taken"
+  stubCalls (cStub ctx) `shouldReturn` []
+  pcReservedBy <$> readCode ctx issued `shouldReturn` Nothing
+  void $ placed ctx aliceOrder {oLabel = "alicebakers", oSecret = secretOf 4}
 
 testNameCheckUnavailable :: IO ()
 testNameCheckUnavailable = withOrders $ \ctx@Ctx {cNode = node} -> do

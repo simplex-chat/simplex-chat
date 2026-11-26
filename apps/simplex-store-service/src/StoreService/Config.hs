@@ -193,6 +193,7 @@ data NamesConfig = NamesConfig
     nMinPriceCentsPerYear :: Int,
     -- | What each community name is for, keyed by the label hash, as search receives a name.
     nCommunity :: Map LabelHash Text,
+    nUnavailable :: [Text],
     nChain :: ChainConfig
   }
   deriving (Eq)
@@ -659,7 +660,7 @@ parseConfig now ini = do
           nMinPriceCentsPerYear <- num "names" "min_price_cents_per_year" 1 maxBound defaultMinPriceCentsPerYear
           nCommunity <- communityList nTLD
           nChain <- chainSection
-          pure (Just NamesConfig {nTLD, nYears, nTermStart, nTermSlackSeconds, nRevealMarginSeconds, nMaxDryRunFailures, nMaxSentFailures, nCodesOnly, nRecordEditsPerYear, nMinPriceCentsPerYear, nCommunity, nChain})
+          pure (Just NamesConfig {nTLD, nYears, nTermStart, nTermSlackSeconds, nRevealMarginSeconds, nMaxDryRunFailures, nMaxSentFailures, nCodesOnly, nRecordEditsPerYear, nMinPriceCentsPerYear, nCommunity, nUnavailable = [], nChain})
     tldSetting =
       required "names" "tld" >>= \case
         "simplex" -> Right TLDSimplex
