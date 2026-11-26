@@ -6,6 +6,8 @@
 
 | 30/03/2023 | EN, [FR](/docs/lang/fr/README.md), [CZ](/docs/lang/cs/README.md), [PL](/docs/lang/pl/README.md) |
 
+> **Building from source:** run the stable branch, or a release tag on master. Database migrations on master can be changed before a release, so run master itself only if you know what you are doing.
+
 <img src="images/github-banner.jpg" alt="SimpleX logo" width="100%">
 
 Invest in SimpleX Chat. [Learn more on Wefunder](https://wefunder.com/simplex.chat?utm_source=github).
