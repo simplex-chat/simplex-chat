@@ -24,14 +24,16 @@ import Control.Concurrent.STM (atomically)
 import qualified Control.Exception as E
 import Control.Logger.Simple (logError, logNote, logWarn)
 import Control.Monad (forM_, unless)
-import Control.Monad.Except (ExceptT (..), runExceptT)
+import Control.Monad.Except (ExceptT (..), runExceptT, throwError)
 import Data.Aeson ((.:), (.=))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.TH as JQ
 import qualified Data.Aeson.Types as JT
 import qualified Data.ByteString.Char8 as B
+import Data.Char (isAsciiLower)
 import Data.Foldable (toList)
 import Data.Text (Text)
+import qualified Data.Text as T
 import Data.Time.Clock (UTCTime, addUTCTime)
 import Data.Word (Word32)
 import Network.HTTP.Types (status200, status400, status403, status404, status409, status429, status500, status503, status504)
@@ -53,7 +55,7 @@ import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Registration (DisputeDays, codeDisputeDays, methodDisputeDays)
 import StoreService.Names.Reveal (RevealRequest, orderReveal)
 import StoreService.Names.Signatures (OrderFields (..), orderMessage)
-import StoreService.Names.Store (BrokenInvariant (..), NameRegistrationOrder (..), NameReveal, NewRegistration (..), OrderHash, OrderPayment (..), OrderTerms (..), PaidOrder (..), PrepaidCode (..), createPaidRegistration, getRegistration, newRegistrationId, orderHash, paymentInvoice)
+import StoreService.Names.Store (BrokenInvariant (..), NameRegistrationOrder (..), NameReveal (..), NewRegistration (..), OrderHash, OrderPayment (..), OrderTerms (..), PaidOrder (..), PrepaidCode (..), createPaidRegistration, getRegistration, newRegistrationId, orderHash, paymentInvoice)
 import StoreService.Names.Turns (withLabelTurn)
 import StoreService.Names.View (NameRefusal (..), registrationView)
 import StoreService.Orders (cancelNameInvoices, publishRegistration)
@@ -272,7 +274,8 @@ orderChecked OrdersEnv {oeStore, oeConfig, oeContracts} now OrderRequest {orOwne
         checkNameFree oeContracts oeStore ofLabelHash
       ]
         <> map (checkPrice oeContracts ofLength years) (toList price)
-    ExceptT $ orderReveal oeConfig oeContracts now orOwner fields days accepted reveal
+    rv@NameReveal {rvLabel} <- ExceptT $ orderReveal oeConfig oeContracts now orOwner fields days accepted reveal
+    if any (`T.isInfixOf` T.filter isAsciiLower rvLabel) (nUnavailable oeConfig) then throwError ORNameTaken else pure rv
 
 -- | After the commit, the closed orders' invoices and versions are published, and their invoices cancelled at the provider,
 -- best effort, as the poller's sweep would cancel them.

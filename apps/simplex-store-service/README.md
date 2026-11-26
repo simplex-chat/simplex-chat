@@ -1242,6 +1242,14 @@ launch price of a name of 8 letters or more, $100 for 2 years. One floor bounds 
 node answering the floor price for a 6- or 7-letter name passes the check even when those names
 cost more on chain. To lower prices on chain below the floor, lower the setting and restart first.
 
+### Unavailable names
+
+`[names] unavailable` (none by default, read at startup) is a list of words of letters a to z, separated
+by commas. An order whose name's letters, without its digits and hyphens, contain one of them answers
+`409 name_taken` before any payment: a paid order, a code order and a selection of a name after a reset.
+A search answers such a name as any other, as it receives only the name's hash. An error about the
+setting quotes none of its words.
+
 ### Dispute days
 
 Each name the sponsor registers has a dispute period, within which the guardian or the controller's

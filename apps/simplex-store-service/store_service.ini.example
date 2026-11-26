@@ -126,6 +126,11 @@ idle_seconds = 60
 ; search, order or selection of a name. Lower it before lowering prices on chain below it
 ;min_price_cents_per_year = 5000
 ;
+; words of letters a to z, separated by commas: an order whose name's letters, without its digits
+; and hyphens, contain one is answered 409 name_taken before any payment; a search answers the name
+; as any other
+;unavailable =
+;
 ; what each community name is for, with [names] only (the name policy on chain lists the names):
 ; one line per name, `<label> = <what it is for>`, the label in
 ; lower case and listed once, the text 1 to 200 characters without a full stop at the end, which
