@@ -20,7 +20,7 @@ import kotlin.math.max
 private val vlcFactoryLock = Any()
 internal val vlcFactory: MediaPlayerFactory by lazy { synchronized(vlcFactoryLock) { MediaPlayerFactory() } }
 // No hardware acceleration - more secure for previews
-internal val vlcPreviewFactory: MediaPlayerFactory by lazy { synchronized(vlcFactoryLock) { MediaPlayerFactory("--avcodec-hw=none") } }
+internal val vlcPreviewFactory: MediaPlayerFactory by lazy { synchronized(vlcFactoryLock) { MediaPlayerFactory("--avcodec-hw=none", "--no-drop-late-frames") } }
 
 actual class RecorderNative: RecorderInterface {
   private var player: MediaPlayer? = null
