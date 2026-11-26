@@ -1517,7 +1517,7 @@ val previewClaude: GroupMember get() = GroupMember.sampleData.copy(
   memberContactProfileId = 5
 )
 
-fun previewViaClaude(id: Long, name: String): GroupMember = GroupMember.sampleData.copy(
+fun previewClaudeSubmember(id: Long, name: String): GroupMember = GroupMember.sampleData.copy(
   groupMemberId = id,
   memberId = name,
   localDisplayName = name,

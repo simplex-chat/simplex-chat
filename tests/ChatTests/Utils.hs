@@ -1090,7 +1090,7 @@ writeFixture fixture = testGenerate ("tests/fixtures/" <> fixture <> ".json") . 
 stableJSON :: J.Value -> J.Value
 stableJSON value = stable value
   where
-    hostIds = viaMemberIds value
+    hostIds = memberViaValues value
     stable = \case
       J.Object o -> J.Object $ JM.mapWithKey stableField o
       J.Array a -> J.Array $ fmap stable a
@@ -1108,9 +1108,9 @@ stableJSON value = stable value
     secondFraction ts = case T.breakOn "." ts of
       (_, "") -> "Z"
       (_, fraction) -> fraction
-    viaMemberIds = \case
-      J.Object o -> toList (JM.lookup "memberVia" o) <> foldMap viaMemberIds o
-      J.Array a -> foldMap viaMemberIds a
+    memberViaValues = \case
+      J.Object o -> toList (JM.lookup "memberVia" o) <> foldMap memberViaValues o
+      J.Array a -> foldMap memberViaValues a
       _ -> []
     memberIdKeys = ["memberId", "businessId", "customerId"]
     memberIds = nub $ memberIdValues value

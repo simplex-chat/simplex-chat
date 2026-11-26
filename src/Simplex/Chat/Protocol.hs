@@ -91,7 +91,7 @@ import Simplex.Messaging.Version hiding (version)
 -- 21 - command keywords with any characters (2026-09-27)
 -- 22 - owner-signed relay invitations, group invitations via member connections (2026-10-10)
 -- 23 - link notices restricting reconnection via links (2026-10-20)
--- 24 - members via another member (2026-11-22)
+-- 24 - submembers (2026-11-22)
 
 -- This should not be used directly in code, instead use `maxVersion chatVRange` from ChatConfig.
 -- This indirection is needed for backward/forward compatibility testing.
@@ -154,8 +154,8 @@ groupInvVersion = VersionChat 22
 linkNoticeVersion :: VersionChat
 linkNoticeVersion = VersionChat 23
 
-memberViaVersion :: VersionChat
-memberViaVersion = VersionChat 24
+submemberVersion :: VersionChat
+submemberVersion = VersionChat 24
 
 data ConnectionEntity
   = RcvDirectMsgConnection {entityConnection :: Connection, contact :: Maybe Contact}

@@ -25,7 +25,7 @@ import kotlinx.serialization.json.jsonObject
 import kotlin.test.*
 
 @OptIn(ExperimentalTestApi::class)
-class ViaMemberTest {
+class SubmemberTest {
   private val sendCmd = chatSendCmdRetry
 
   @AfterTest
@@ -35,21 +35,21 @@ class ViaMemberTest {
   }
 
   @Test
-  fun memberViaUserIsDecoded() = runBlocking {
-    replay("via/members")
+  fun userSubmemberIsDecoded() = runBlocking {
+    replay("submembers/members")
     val reviewer = ChatController.apiListMembers(null, 1).orEmpty().single { it.memberProfile.displayName == "reviewer" }
     assertEquals("memberVia", reviewer.memberVia)
   }
 
   @Test
   fun itemSentAsMemberIsDecoded() = runBlocking {
-    replay("via/members")
+    replay("submembers/members")
     val (chat, _) = assertNotNull(ChatController.apiGetChat(null, ChatType.Group, 1, null, pagination = ChatPagination.Last(1)))
     assertEquals("reviewer", chat.chatItems.single().meta.sentAsMember?.memberProfile?.displayName)
   }
 
   @Test
-  fun headerAndQuoteOfViaMemberNameHost() = runComposeUiTest {
+  fun headerAndQuoteOfSubmemberNameHost() = runComposeUiTest {
     val chat = receivedChat()
     val (hi, reply) = chat.chatItems
     setContent {
@@ -79,7 +79,7 @@ class ViaMemberTest {
   }
 
   @Test
-  fun memberInfoOfViaMemberOffersNoChatCallsOrCode() = runComposeUiTest {
+  fun memberInfoOfSubmemberOffersNoChatCallsOrCode() = runComposeUiTest {
     val groupInfo = (receivedChat().chatInfo as ChatInfo.Group).groupInfo
     val reviewer = ChatModel.groupMembers.value.single { it.displayName == "reviewer" }
     setContent {
@@ -92,7 +92,7 @@ class ViaMemberTest {
   }
 
   private fun receivedChat(): Chat = runBlocking {
-    replay("via/received")
+    replay("submembers/received")
     ChatModel.groupMembers.value = ChatController.apiListMembers(null, 1).orEmpty()
     assertNotNull(ChatController.apiGetChat(null, ChatType.Group, 1, null, pagination = ChatPagination.Last(2))).first
   }

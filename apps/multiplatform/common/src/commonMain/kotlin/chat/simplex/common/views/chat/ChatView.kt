@@ -4119,14 +4119,14 @@ fun PreviewGroupChatLayoutTerminalSession() = CompositionLocalProvider(LocalTerm
 
 @Preview
 @Composable
-fun PreviewGroupChatLayoutViaMember() = GroupMembersPreview(listOf(previewClaude)) {
-  GroupChatLayoutPreview(viaMemberPreview())
+fun PreviewGroupChatLayoutSubmember() = GroupMembersPreview(listOf(previewClaude)) {
+  GroupChatLayoutPreview(submemberPreview())
 }
 
 @Preview
 @Composable
-fun PreviewGroupChatLayoutTerminalViaMember() = CompositionLocalProvider(LocalTerminalLayout provides true) {
-  PreviewGroupChatLayoutViaMember()
+fun PreviewGroupChatLayoutTerminalSubmember() = CompositionLocalProvider(LocalTerminalLayout provides true) {
+  PreviewGroupChatLayoutSubmember()
 }
 
 private fun previewMember(id: Long, name: String) =
@@ -4240,8 +4240,8 @@ fun PreviewUnreadScrollButtons() {
   }
 }
 
-private fun viaMemberPreview(): List<ChatItem> {
-  val reviewer = previewViaClaude(6, "reviewer")
+private fun submemberPreview(): List<ChatItem> {
+  val reviewer = previewClaudeSubmember(6, "reviewer")
   val question = "Shall I fix them?"
   return listOf(
     previewRcv(1, previewClaude, 0, previewText("reviewer is running the tests.")),
@@ -4251,7 +4251,7 @@ private fun viaMemberPreview(): List<ChatItem> {
     previewSnd(5, 360, "Fix and push.", CIStatus.SndSent(SndCIStatusProgress.Complete)).copy(
       quotedItem = CIQuote(CIDirection.GroupRcv(reviewer), 3, sentAt = previewDate.plus(190, DateTimeUnit.SECOND), content = MsgContent.MCText(question))
     ),
-    previewRcv(6, previewViaClaude(7, "postgres-integration-test-investigator"), 480, previewText("Both fail on a missing index."))
+    previewRcv(6, previewClaudeSubmember(7, "postgres-integration-test-investigator"), 480, previewText("Both fail on a missing index."))
   )
 }
 

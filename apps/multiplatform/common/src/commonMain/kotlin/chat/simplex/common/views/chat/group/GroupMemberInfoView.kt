@@ -35,7 +35,7 @@ import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.*
 import chat.simplex.common.views.chat.item.GroupMembersPreview
 import chat.simplex.common.views.chat.item.previewClaude
-import chat.simplex.common.views.chat.item.previewViaClaude
+import chat.simplex.common.views.chat.item.previewClaudeSubmember
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.newchat.*
 import chat.simplex.common.views.usersettings.SettingsActionItem
@@ -1344,9 +1344,9 @@ fun PreviewGroupMemberInfoLayout() = GroupMemberInfoLayoutPreview(GroupMember.sa
 
 @Preview
 @Composable
-fun PreviewGroupMemberInfoLayoutViaMember() = GroupMembersPreview(listOf(previewClaude)) {
+fun PreviewGroupMemberInfoLayoutSubmember() = GroupMembersPreview(listOf(previewClaude)) {
   val admin = GroupMember.sampleData.copy(memberRole = GroupMemberRole.Admin)
-  GroupMemberInfoLayoutPreview(previewViaClaude(6, "reviewer"), connectionCode = null, groupInfo = GroupInfo.sampleData.copy(membership = admin))
+  GroupMemberInfoLayoutPreview(previewClaudeSubmember(6, "reviewer"), connectionCode = null, groupInfo = GroupInfo.sampleData.copy(membership = admin))
 }
 
 @Composable

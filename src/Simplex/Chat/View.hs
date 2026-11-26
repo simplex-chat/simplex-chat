@@ -211,7 +211,7 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, showFullLinks, te
   CRGroupsList u gs -> ttyUser u $ viewGroupsList gs
   CRSentGroupInvitation u g c _ -> ttyUser u $ viewSentGroupInvitation g c
   CRSentGroupInvitationViaGroup u g _ viaG viaM -> ttyUser u ["invitation to join the group " <> ttyGroup' g <> " sent to " <> ttyMember viaM <> " in " <> ttyGroup' viaG]
-  CRViaMemberAdded u g m -> ttyUser u [ttyGroup' g <> ": you added " <> ttyFullMember m <> " to the group"]
+  CRSubmemberAdded u g m -> ttyUser u [ttyGroup' g <> ": you added " <> ttyFullMember m <> " to the group"]
   CRFileTransferStatus u ftStatus -> ttyUser u $ viewFileTransferStatus ftStatus
   CRFileTransferStatusXFTP u ci -> ttyUser u $ viewFileTransferStatusXFTP ci
   CRUserProfile u@User {profile = LocalProfile {localBadge}} p -> ttyUser u $ viewUserProfile localBadge p

@@ -1081,7 +1081,7 @@ struct GroupMemberInfoView_Previews: PreviewProvider {
     }
 }
 
-struct GroupMemberInfoView_ViaMember_Previews: PreviewProvider {
+struct GroupMemberInfoView_Submember_Previews: PreviewProvider {
     static var previews: some View {
         var claude = GroupMember.sampleData
         claude.groupMemberId = 2

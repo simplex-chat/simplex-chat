@@ -50,7 +50,7 @@ struct MemberVia: View {
     var nameSize: CGFloat
 
     var body: some View {
-        Text(verbatim: " " + String.localizedStringWithFormat(NSLocalizedString("via %@", comment: "member via another member"), name))
+        Text(verbatim: " " + String.localizedStringWithFormat(NSLocalizedString("via %@", comment: "submember"), name))
             .font(.system(size: nameSize * 0.84))
             .italic()
             .lineLimit(1)

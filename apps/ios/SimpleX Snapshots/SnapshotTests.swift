@@ -708,7 +708,7 @@ private func previewScenes() -> [SnapshotScene] {
         SnapshotScene(ClassicOverviewGroup_Previews.self),
         SnapshotScene(ClassicParagraphs_Previews.self, allSizes: true),
         SnapshotScene(ClassicPriority_Previews.self, allSizes: true),
-        SnapshotScene(ClassicViaMember_Previews.self, allSizes: true),
+        SnapshotScene(ClassicSubmember_Previews.self, allSizes: true),
         SnapshotScene(ComposeVoiceView_Previews.self),
         SnapshotScene(ConnectDesktopView_Previews.self, device: true),
         SnapshotScene(ContactArchivedAlert_Previews.self, alert: true),
@@ -750,10 +750,10 @@ private func previewScenes() -> [SnapshotScene] {
         SnapshotScene(GroupChatInfoView_DeleteAndBan_Previews.self),
         SnapshotScene(GroupChatInfoView_Members_Previews.self),
         SnapshotScene(GroupChatInfoView_Previews.self, device: true),
-        SnapshotScene(GroupChatInfoView_ViaMember_Previews.self),
+        SnapshotScene(GroupChatInfoView_Submember_Previews.self),
         SnapshotScene(GroupLinkView_Previews.self),
         SnapshotScene(GroupMemberInfoView_Previews.self, device: true),
-        SnapshotScene(GroupMemberInfoView_ViaMember_Previews.self, device: true),
+        SnapshotScene(GroupMemberInfoView_Submember_Previews.self, device: true),
         SnapshotScene(GroupPreferencesView_Previews.self, device: true),
         SnapshotScene(GroupProfileView_Previews.self, device: true),
         SnapshotScene(GroupWelcomeView_Previews.self),
@@ -828,7 +828,7 @@ private func previewScenes() -> [SnapshotScene] {
         SnapshotScene(TerminalRuleOnly_Previews.self, allSizes: true),
         SnapshotScene(TerminalSession_Previews.self),
         SnapshotScene(TerminalSpacing_Previews.self, allSizes: true),
-        SnapshotScene(TerminalViaMember_Previews.self, allSizes: true),
+        SnapshotScene(TerminalSubmember_Previews.self, allSizes: true),
         SnapshotScene(UserAddressLearnMore_Previews.self),
         SnapshotScene(UserAddressView_Previews.self),
         SnapshotScene(UserPicker_Previews.self, fitting: true),
@@ -1054,15 +1054,15 @@ struct TerminalPriority_Previews: PreviewProvider {
     }
 }
 
-struct TerminalViaMember_Previews: PreviewProvider {
+struct TerminalSubmember_Previews: PreviewProvider {
     static var previews: some View {
-        SnapshotFixtures().viaMember(terminal: true)
+        SnapshotFixtures().submember(terminal: true)
     }
 }
 
-struct ClassicViaMember_Previews: PreviewProvider {
+struct ClassicSubmember_Previews: PreviewProvider {
     static var previews: some View {
-        SnapshotFixtures().viaMember(terminal: false)
+        SnapshotFixtures().submember(terminal: false)
     }
 }
 
@@ -1721,7 +1721,7 @@ private final class SnapshotFixtures {
         ], terminal: true)
     }
 
-    func viaMember(terminal: Bool) -> some View {
+    func submember(terminal: Bool) -> some View {
         var claude = Self.member(5, "Claude", .owner)
         claude.memberProfile.peerType = .agent
         var reviewer = Self.member(6, "reviewer", .member)

@@ -134,9 +134,9 @@ The message list is a `LazyColumnWithScrollBar` with `reverseLayout = true`, mea
 - **Direct messages:** Symmetric padding (76dp opposite side).
 - **Terminal layout:** When `LocalTerminalLayout.current` is true, all chat types render through `TerminalChatItemRow`, which wraps `ChatItemView`, instead of the branches above (see section 10). The selection offset applies to sent items too.
 
-### Members via another member
+### Submembers
 
-A member with `memberVia` is shown with its host: the member whose `memberId` is `memberVia`, from the loaded `groupMembers` ([`ChatModel.memberViaName`](../../common/src/commonMain/kotlin/chat/simplex/common/model/ChatModel.kt#L435-L436)).
+A submember, a member with `memberVia`, is shown with its host: the member whose `memberId` is `memberVia`, from the loaded `groupMembers` ([`ChatModel.memberViaName`](../../common/src/commonMain/kotlin/chat/simplex/common/model/ChatModel.kt#L435-L436)).
 
 ```
 place                   shown
@@ -146,8 +146,8 @@ quotes                  "via <host>" after the quoted member's name (FramedItemV
 member list             "via <host>" in place of the status (MemberRow.memberConnStatus, member_via)
 member info             row "Via" (info_row_via) with the host's name, after the role; the message, call and video
                         buttons and "Chat with member" hidden; the security code not requested (GroupMember.canVerifyCode)
-loading                 ChatItemsList loads the members when an item or its quote is from a member via another member and
-                        the members are not loaded
+loading                 ChatItemsList loads the members when an item or its quote is from a submember and the members
+                        are not loaded
 ```
 
 ---

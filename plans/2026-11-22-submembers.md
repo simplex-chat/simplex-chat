@@ -1,4 +1,4 @@
-# Members via another member: teammates as group members without connections
+# Submembers: teammates as group members without connections
 
 Status: plan only. Code references: master `dbd3fd7ca`, by file and line. Nothing of this plan is in the release of 2026-11-23. Decided by the maintainer on 2026-11-22:
 - design A only: a member is in the group only via another member, not directly; the representation is permanent, stored and shown on every member's side;
@@ -17,7 +17,7 @@ Status: plan only. Code references: master `dbd3fd7ca`, by file and line. Nothin
 
 Facts about Claude Code are those recorded in `plans/2026-11-14-mcp-teammate-profiles.md` (branch `ep/mcp-teammate-profiles`, facts 1 to 9, F1 and F2).
 
-Terms: "a member via V" is a member whose messages are sent only by V, as forwards; V is "the member it is via". In this plan V is Claude and the member via V is a teammate.
+Terms: a submember of V, "a member via V" below, is a member whose messages are sent only by V, as forwards; V is "the member it is via". In this plan V is Claude and its submember is a teammate.
 
 ## 1. Goal
 

@@ -250,7 +250,7 @@ chatGroupTests = do
   describe "group message forwarding" $ do
     it "forward messages between invitee and introduced (x.msg.new)" testGroupMsgForwardMessage
     it "reject forwarded content attributed to own membership" testGroupMsgForwardOwnMembershipRejected
-    it "reject forwarded content of unknown member via own membership or from a forwarder that is neither host nor that member" testGroupMsgForwardViaRejected
+    it "reject forwarded content of unknown submember of own membership or from a forwarder that is neither host nor the member named as via" testGroupMsgForwardViaRejected
     it "forward batched messages" testGroupMsgForwardBatched
     it "forward reports to moderators, don't forward to members (x.msg.new, MCReport)" testGroupMsgForwardReport
     it "forward blocked member's messages to moderators only, without notifications" testGroupMsgForwardBlockedToModerators
@@ -366,29 +366,29 @@ chatGroupTests = do
     it "sender deletes within the window margin" testGroupDeleteSenderWindow
     it "sender edits within the custom duration" testGroupEditsCustomDuration
     it "message editing preference is hidden and kept by profile updates" testGroupEditsPreferenceHidden
-  describe "members via another member" $ do
-    it "announce member via user and send messages as member" testViaMemberMessages
-    it "update message sent as member" testViaMemberUpdate
-    it "introduce member via user to later joiner" testViaMemberLaterJoiner
-    it "joiner of previous version creates unknown member" testViaMemberPrevVersionJoiner
-    it "host forwards messages and updates of member via another member until its invitee connects to that member" testViaMemberOtherAdmin
-    it "host forwards messages of blocked member via another member to moderators only, without notifications" testViaMemberBlockedToModerators
-    it "introduce member via another member after that member" testViaMemberIntroOrder
-    it "reply to and mention of member via user resolve to that member" testViaMemberReply
-    it "priority and edit window of messages sent as member follow member role at sender and receivers" testViaMemberRoleRules
-    it "remove member via user" testViaMemberRemove
-    it "remove member via user by another admin" testViaMemberRemoveByAdmin
-    it "refuse role above user role, member not via user, user below admin and incognito membership" testViaMemberRefused
-    it "refuse announcement against via rules and forward with another via" testViaMemberAnnounceRefused
-    it "refuse introduction against via rules" testViaMemberIntroRefused
-    it "refuse support scope, files, quotes and broadcast delete as member; moderation names member" testViaMemberSendRefused
-    it "sign messages and updates of member via user with user key" testViaMemberSigned
-    it "deliver messages sent as member unsigned to members of previous version" testViaMemberSignedPrevVersion
-    it "deliver pending messages sent as member unsigned" testViaMemberSignedPending
-    it "joiner records via and verifies signed history of removed member via another member" testViaMemberSignedHistory
-    it "refuse in channels" testViaMemberRefusedChannel
-    it "members via another member recorded for the apps" testViaMemberRecordings
-    it "down migration removes members via user and announces members via another member" testViaMemberMigrationDown
+  describe "submembers" $ do
+    it "announce user's submember and send messages as member" testSubmemberMessages
+    it "update message sent as member" testSubmemberUpdate
+    it "introduce user's submember to later joiner" testSubmemberLaterJoiner
+    it "joiner of previous version creates unknown member" testSubmemberPrevVersionJoiner
+    it "host forwards messages and updates of another member's submember until its invitee connects to that member" testSubmemberOtherAdmin
+    it "host forwards messages of another member's blocked submember to moderators only, without notifications" testSubmemberBlockedToModerators
+    it "introduce another member's submember after that member" testSubmemberIntroOrder
+    it "reply to and mention of user's submember resolve to that submember" testSubmemberReply
+    it "priority and edit window of messages sent as member follow member role at sender and receivers" testSubmemberRoleRules
+    it "remove user's submember" testSubmemberRemove
+    it "remove user's submember by another admin" testSubmemberRemoveByAdmin
+    it "refuse role above user role, member that is not user's submember, user below admin and incognito membership" testSubmemberRefused
+    it "refuse announcement against via rules and forward with another via" testSubmemberAnnounceRefused
+    it "refuse introduction against via rules" testSubmemberIntroRefused
+    it "refuse support scope, files, quotes and broadcast delete as member; moderation names member" testSubmemberSendRefused
+    it "sign messages and updates of user's submember with user key" testSubmemberSigned
+    it "deliver messages sent as member unsigned to members of previous version" testSubmemberSignedPrevVersion
+    it "deliver pending messages sent as member unsigned" testSubmemberSignedPending
+    it "joiner records via and verifies signed history of another member's removed submember" testSubmemberSignedHistory
+    it "refuse in channels" testSubmemberRefusedChannel
+    it "submembers recorded for the apps" testSubmemberRecordings
+    it "down migration removes user's submembers and announces other members' submembers" testSubmemberMigrationDown
   describe "group scoped messages" $ do
     it "should send scoped messages to support (single moderator)" testScopedSupportSingleModerator
     it "should send scoped messages to support (many moderators)" testScopedSupportManyModerators
@@ -8066,7 +8066,7 @@ testGroupHistorySignedHighPriority :: HasCallStack => TestParams -> IO ()
 testGroupHistorySignedHighPriority =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
-      createViaSignedGroup alice bob
+      createSignedGroup alice bob
       threadDelay 1000000
       bob ##> "/_send #1 json [{\"msgContent\": {\"type\": \"text\", \"text\": \"hey!\"}, \"priority\": 1}]"
       bob <# "#team !! hey! (signed)"
@@ -16909,21 +16909,21 @@ testGroupLinkContentFilter =
       cath <## "Chat content types: link, text"
       cath #$> ("/_get chat #1 content=link count=100", chat, [(0, "https://simplex.chat"), (0, "check out https://example.com")])
 
-addViaMember :: HasCallStack => TestCC -> String -> IO ()
-addViaMember cc role = do
-  cc ##> ("/_add via #1 " <> role <> " json {\"displayName\": \"reviewer\", \"fullName\": \"\"}")
+addSubmember :: HasCallStack => TestCC -> String -> IO ()
+addSubmember cc role = do
+  cc ##> ("/_add submember #1 " <> role <> " json {\"displayName\": \"reviewer\", \"fullName\": \"\"}")
   cc <## "#team: you added reviewer to the group"
 
-viaMemberAdded :: HasCallStack => [TestCC] -> IO ()
-viaMemberAdded = mapM_ (<## "#team: alice added reviewer to the group (via alice)")
+submemberAdded :: HasCallStack => [TestCC] -> IO ()
+submemberAdded = mapM_ (<## "#team: alice added reviewer to the group (via alice)")
 
-testViaMemberMessages :: HasCallStack => TestParams -> IO ()
-testViaMemberMessages =
+testSubmemberMessages :: HasCallStack => TestParams -> IO ()
+testSubmemberMessages =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       createGroup3 "team" alice bob cath
-      addViaMember alice "member"
-      viaMemberAdded [bob, cath]
+      addSubmember alice "member"
+      submemberAdded [bob, cath]
       alice ##> "/ms team"
       alice
         <### [ "alice (Alice): owner, you, created group",
@@ -16942,13 +16942,13 @@ testViaMemberMessages =
       alice <# "#team hi"
       [bob, cath] *<# "#team reviewer> hi [>>]"
 
-testViaMemberUpdate :: HasCallStack => TestParams -> IO ()
-testViaMemberUpdate =
+testSubmemberUpdate :: HasCallStack => TestParams -> IO ()
+testSubmemberUpdate =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       createGroup3 "team" alice bob cath
-      addViaMember alice "member"
-      viaMemberAdded [bob, cath]
+      addSubmember alice "member"
+      submemberAdded [bob, cath]
       alice ##> "/_send #1(as_member=4) text hi"
       alice <# "#team hi"
       [bob, cath] *<# "#team reviewer> hi [>>]"
@@ -16957,13 +16957,13 @@ testViaMemberUpdate =
       alice <# "#team [edited] hello"
       [bob, cath] *<# "#team reviewer> [edited] hello"
 
-testViaMemberLaterJoiner :: HasCallStack => TestParams -> IO ()
-testViaMemberLaterJoiner =
+testSubmemberLaterJoiner :: HasCallStack => TestParams -> IO ()
+testSubmemberLaterJoiner =
   testChat4 aliceProfile bobProfile cathProfile danProfile $
     \alice bob cath dan -> do
       createGroup3 "team" alice bob cath
-      addViaMember alice "member"
-      viaMemberAdded [bob, cath]
+      addSubmember alice "member"
+      submemberAdded [bob, cath]
       alice ##> "/_send #1(as_member=4) text hi"
       alice <# "#team hi"
       [bob, cath] *<# "#team reviewer> hi [>>]"
@@ -16997,14 +16997,14 @@ testViaMemberLaterJoiner =
       alice <# "#team hello"
       [bob, cath, dan] *<# "#team reviewer> hello [>>]"
 
-testViaMemberPrevVersionJoiner :: HasCallStack => TestParams -> IO ()
-testViaMemberPrevVersionJoiner ps =
+testSubmemberPrevVersionJoiner :: HasCallStack => TestParams -> IO ()
+testSubmemberPrevVersionJoiner ps =
   withNewTestChat ps "alice" aliceProfile $ \alice ->
     withNewTestChat ps "bob" bobProfile $ \bob ->
       withNewTestChatCfg ps testCfgVPrev "dan" danProfile $ \dan -> do
         createGroup2 "team" alice bob
-        addViaMember alice "member"
-        viaMemberAdded [bob]
+        addSubmember alice "member"
+        submemberAdded [bob]
         alice ##> "/_send #1(as_member=3) text hi"
         alice <# "#team hi"
         bob <# "#team reviewer> hi [>>]"
@@ -17024,8 +17024,8 @@ testViaMemberPrevVersionJoiner ps =
               bob <## "#team: new member dan is connected"
           ]
 
-testViaMemberOtherAdmin :: HasCallStack => TestParams -> IO ()
-testViaMemberOtherAdmin =
+testSubmemberOtherAdmin :: HasCallStack => TestParams -> IO ()
+testSubmemberOtherAdmin =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       createGroup2 "team" alice bob
@@ -17042,8 +17042,8 @@ testViaMemberOtherAdmin =
             alice <## "#team: new member cath is connected"
         ]
       setupGroupForwarding bob alice cath
-      addViaMember alice "member"
-      viaMemberAdded [bob, cath]
+      addSubmember alice "member"
+      submemberAdded [bob, cath]
       alice ##> "/_send #1(as_member=4) text hi"
       alice <# "#team hi"
       [bob, cath] *<# "#team reviewer> hi [>>]"
@@ -17052,8 +17052,8 @@ testViaMemberOtherAdmin =
       alice <# "#team [edited] hello"
       [bob, cath] *<# "#team reviewer> [edited] hello"
 
-testViaMemberBlockedToModerators :: HasCallStack => TestParams -> IO ()
-testViaMemberBlockedToModerators =
+testSubmemberBlockedToModerators :: HasCallStack => TestParams -> IO ()
+testSubmemberBlockedToModerators =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       createGroup2 "team" alice bob
@@ -17073,8 +17073,8 @@ testViaMemberBlockedToModerators =
       cath ##> "/set receipts all off"
       cath <## "ok"
       cathConnId <- relayConnIdToMember bob "cath"
-      addViaMember alice "member"
-      viaMemberAdded [bob, cath]
+      addSubmember alice "member"
+      submemberAdded [bob, cath]
       bob ##> "/block for all #team reviewer"
       bob <## "#team: you blocked reviewer (signed)"
       alice <## "#team: bob blocked reviewer (signed)"
@@ -17097,12 +17097,12 @@ testViaMemberBlockedToModerators =
       cath <# "#team reviewer> spam again [blocked by admin] [>>] <muted>"
       lastSndMsgFlags bob cathConnId 1 `shouldReturn` ["F"]
 
-testViaMemberIntroOrder :: HasCallStack => TestParams -> IO ()
-testViaMemberIntroOrder =
+testSubmemberIntroOrder :: HasCallStack => TestParams -> IO ()
+testSubmemberIntroOrder =
   testChat3 aliceProfile bobProfile danProfile $
     \alice bob dan -> do
       createGroup2 "team" alice bob
-      bob ##> "/_add via #1 admin json {\"displayName\": \"assistant\", \"fullName\": \"\"}"
+      bob ##> "/_add submember #1 admin json {\"displayName\": \"assistant\", \"fullName\": \"\"}"
       bob <## "#team: you added assistant to the group"
       alice <## "#team: bob added assistant to the group (via bob)"
       connectUsers alice dan
@@ -17125,13 +17125,13 @@ testViaMemberIntroOrder =
                "assistant: admin, via bob, connected"
              ]
 
-testViaMemberReply :: HasCallStack => TestParams -> IO ()
-testViaMemberReply =
+testSubmemberReply :: HasCallStack => TestParams -> IO ()
+testSubmemberReply =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       createGroup3 "team" alice bob cath
-      addViaMember alice "member"
-      viaMemberAdded [bob, cath]
+      addSubmember alice "member"
+      submemberAdded [bob, cath]
       alice ##> "/_send #1(as_member=4) text hi"
       alice <# "#team hi"
       [bob, cath] *<# "#team reviewer> hi [>>]"
@@ -17167,15 +17167,15 @@ testViaMemberReply =
               pure (quotedId, quotedGMId, [gmId | CIMention {memberRef = Just CIMentionMember {groupMemberId = gmId}} <- M.elems mentions])
         _ -> fail $ show r
 
-testViaMemberRoleRules :: HasCallStack => TestParams -> IO ()
-testViaMemberRoleRules =
+testSubmemberRoleRules :: HasCallStack => TestParams -> IO ()
+testSubmemberRoleRules =
   testChat2 aliceProfile bobProfile $
     \alice bob -> do
       createGroup2 "team" alice bob
       threadDelay 1000000
       setGroupEdits alice "{\"enable\": \"on\", \"role\": \"owner\"}"
-      addViaMember alice "member"
-      viaMemberAdded [bob]
+      addSubmember alice "member"
+      submemberAdded [bob]
       alice ##> "/_send #1(as_member=3) json [{\"msgContent\": {\"type\": \"text\", \"text\": \"hi\"}, \"priority\": 1}]"
       alice <# "#team hi"
       bob <# "#team reviewer> hi [>>]"
@@ -17197,24 +17197,24 @@ testViaMemberRoleRules =
       agentSendBody alice connId $ encodeBinaryBatch [encodeFwdElement (GrpMsgForward (FwdMemberVia reviewerId "reviewer" aliceId) ts) (VMUnsigned urgentMsg)]
       bob <# "#team reviewer> urgent [>>]"
 
-testViaMemberRemove :: HasCallStack => TestParams -> IO ()
-testViaMemberRemove =
+testSubmemberRemove :: HasCallStack => TestParams -> IO ()
+testSubmemberRemove =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       createGroup3 "team" alice bob cath
-      addViaMember alice "member"
-      viaMemberAdded [bob, cath]
+      addSubmember alice "member"
+      submemberAdded [bob, cath]
       alice ##> "/_remove #1 4"
       alice <## "#team: you removed reviewer from the group (signed)"
       mapM_ (<## "#team: alice removed reviewer from the group (signed)") [bob, cath]
 
-testViaMemberRemoveByAdmin :: HasCallStack => TestParams -> IO ()
-testViaMemberRemoveByAdmin =
+testSubmemberRemoveByAdmin :: HasCallStack => TestParams -> IO ()
+testSubmemberRemoveByAdmin =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       createGroup3 "team" alice bob cath
-      addViaMember alice "member"
-      viaMemberAdded [bob, cath]
+      addSubmember alice "member"
+      submemberAdded [bob, cath]
       alice ##> "/_send #1(as_member=4) text hi"
       alice <# "#team hi"
       [bob, cath] *<# "#team reviewer> hi [>>]"
@@ -17224,31 +17224,31 @@ testViaMemberRemoveByAdmin =
       alice ##> "/_send #1(as_member=4) text hey"
       alice <## "your group connection is not active yet, try later"
 
-testViaMemberRefused :: HasCallStack => TestParams -> IO ()
-testViaMemberRefused =
+testSubmemberRefused :: HasCallStack => TestParams -> IO ()
+testSubmemberRefused =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       createGroup3' "team" alice (bob, GRAdmin) (cath, GRMember)
-      bob ##> "/_add via #1 owner json {\"displayName\": \"reviewer\", \"fullName\": \"\"}"
+      bob ##> "/_add submember #1 owner json {\"displayName\": \"reviewer\", \"fullName\": \"\"}"
       bob <## "#team: you have insufficient permissions for this action, the required role is owner"
       alice ##> "/_send #1(as_member=2) text hi"
-      alice <## "bad chat command: member is not via you"
-      cath ##> "/_add via #1 member json {\"displayName\": \"reviewer\", \"fullName\": \"\"}"
+      alice <## "bad chat command: member is not your submember"
+      cath ##> "/_add submember #1 member json {\"displayName\": \"reviewer\", \"fullName\": \"\"}"
       cath <## "#team: you have insufficient permissions for this action, the required role is admin"
       alice ##> "/g i club"
       aliceIncognito <- getTermLine alice
       alice <## ("group #club is created, your incognito profile for this group is " <> aliceIncognito)
       alice <## "to add members use /create link #club"
-      alice ##> "/_add via #2 member json {\"displayName\": \"reviewer\", \"fullName\": \"\"}"
+      alice ##> "/_add submember #2 member json {\"displayName\": \"reviewer\", \"fullName\": \"\"}"
       alice <## "you are using an incognito profile for this group - prohibited to invite contacts"
 
-testViaMemberAnnounceRefused :: HasCallStack => TestParams -> IO ()
-testViaMemberAnnounceRefused =
+testSubmemberAnnounceRefused :: HasCallStack => TestParams -> IO ()
+testSubmemberAnnounceRefused =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       createGroup3 "team" alice bob cath
-      addViaMember alice "admin"
-      viaMemberAdded [bob, cath]
+      addSubmember alice "admin"
+      submemberAdded [bob, cath]
       aliceId <- memberIdByName bob "alice"
       cathId <- memberIdByName alice "cath"
       reviewerId <- memberIdByName alice "reviewer"
@@ -17258,20 +17258,20 @@ testViaMemberAnnounceRefused =
       let reviewerFwd fwdHdr fwdMsgId fwdEvt =
             agentSendBody alice aliceConnId $ encodeBinaryBatch [encodeFwdElement (GrpMsgForward fwdHdr ts) (VMUnsigned $ ChatMessage chatInitialVRange (Just $ SharedMsgId fwdMsgId) fwdEvt)]
       agentSendBody bob bobConnId $ chatMsgToBody $ ChatMessage supportedChatVRange Nothing (XGrpMemNew (MemberInfo (MemberId "new_1") GRMember Nothing danProfile Nothing (Just aliceId)) Nothing Nothing)
-      cath <## "error: x.grp.mem.new: member is not via the announcing member"
+      cath <## "error: x.grp.mem.new: member is not a submember of the announcing member"
       reviewerFwd (FwdMember reviewerId "reviewer") "new_2" (XGrpMemNew (MemberInfo (MemberId "new_2") GRMember Nothing danProfile Nothing Nothing) Nothing Nothing)
-      bob <## "error: x.grp.mem.new: member via another member cannot add members"
+      bob <## "error: x.grp.mem.new: submember cannot add members"
       reviewerFwd (FwdMemberVia reviewerId "reviewer" cathId) "via_msg" (XMsgNew $ mcSimple $ MCText "forged")
       alice #> "#team hello"
       [bob, cath] *<# "#team alice> hello"
 
-testViaMemberIntroRefused :: HasCallStack => TestParams -> IO ()
-testViaMemberIntroRefused =
+testSubmemberIntroRefused :: HasCallStack => TestParams -> IO ()
+testSubmemberIntroRefused =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       createGroup3' "team" alice (bob, GROwner) (cath, GRAdmin)
-      addViaMember alice "admin"
-      viaMemberAdded [bob, cath]
+      addSubmember alice "admin"
+      submemberAdded [bob, cath]
       bobId <- memberIdByName alice "bob"
       cathId <- memberIdByName alice "cath"
       reviewerId <- memberIdByName alice "reviewer"
@@ -17299,13 +17299,13 @@ testViaMemberIntroRefused =
       sendIntro "intro_5" GRMember cathId
       bob <## "contact alice has insufficient permissions for this group action"
 
-testViaMemberSendRefused :: HasCallStack => TestParams -> IO ()
-testViaMemberSendRefused =
+testSubmemberSendRefused :: HasCallStack => TestParams -> IO ()
+testSubmemberSendRefused =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       createGroup3 "team" alice bob cath
-      addViaMember alice "member"
-      viaMemberAdded [bob, cath]
+      addSubmember alice "member"
+      submemberAdded [bob, cath]
       alice ##> "/_send #1(as_member=4) text hi"
       alice <# "#team hi"
       [bob, cath] *<# "#team reviewer> hi [>>]"
@@ -17330,8 +17330,8 @@ testViaMemberSendRefused =
       alice <## "message marked deleted by you"
       [bob, cath] *<# "#team reviewer> [marked deleted by alice] hey"
 
-createViaSignedGroup :: HasCallStack => TestCC -> TestCC -> IO ()
-createViaSignedGroup alice bob = do
+createSignedGroup :: HasCallStack => TestCC -> TestCC -> IO ()
+createSignedGroup alice bob = do
   connectUsers alice bob
   alice ##> "/_group 1 {\"displayName\": \"team\", \"fullName\": \"\", \"groupPreferences\": {\"directMessages\": {\"enable\": \"on\"}, \"history\": {\"enable\": \"on\"}, \"signMessages\": {\"enable\": \"on\"}}}"
   alice <## "group #team is created"
@@ -17342,13 +17342,13 @@ createViaSignedGroup alice bob = do
     (alice <## "#team: bob joined the group")
     (bob <## "#team: you joined the group")
 
-testViaMemberSigned :: HasCallStack => TestParams -> IO ()
-testViaMemberSigned =
+testSubmemberSigned :: HasCallStack => TestParams -> IO ()
+testSubmemberSigned =
   testChat2 aliceProfile bobProfile $
     \alice bob -> do
-      createViaSignedGroup alice bob
-      addViaMember alice "member"
-      viaMemberAdded [bob]
+      createSignedGroup alice bob
+      addSubmember alice "member"
+      submemberAdded [bob]
       alice ##> "/_send #1(as_member=3) text hi"
       alice <# "#team hi (signed)"
       bob <# "#team reviewer> hi (signed) [>>]"
@@ -17369,24 +17369,24 @@ testViaMemberSigned =
       agentSendBody alice connId $ encodeBinaryBatch [encodeFwdElement fwd (VMSigned MSSVerified signedMsg chatMsg)]
       (bob ##> "/_get chat #1 count=100 search=bad signature" >> chat <$> getTermLine bob) `shouldEventuallyReturn` [(0, "message rejected: bad signature")]
 
-testViaMemberSignedPrevVersion :: HasCallStack => TestParams -> IO ()
-testViaMemberSignedPrevVersion ps =
+testSubmemberSignedPrevVersion :: HasCallStack => TestParams -> IO ()
+testSubmemberSignedPrevVersion ps =
   withNewTestChat ps "alice" aliceProfile $ \alice ->
     withNewTestChatCfg ps testCfgVPrev "bob" bobProfile $ \bob -> do
-      createViaSignedGroup alice bob
-      addViaMember alice "member"
-      viaMemberAdded [bob]
+      createSignedGroup alice bob
+      addSubmember alice "member"
+      submemberAdded [bob]
       alice ##> "/_send #1(as_member=3) text hi"
       alice <# "#team hi (signed)"
       bob <# "#team reviewer> hi (signature missing) [>>]"
 
-testViaMemberSignedPending :: HasCallStack => TestParams -> IO ()
-testViaMemberSignedPending =
+testSubmemberSignedPending :: HasCallStack => TestParams -> IO ()
+testSubmemberSignedPending =
   testChat2 aliceProfile bobProfile $
     \alice bob -> do
-      createViaSignedGroup alice bob
-      addViaMember alice "member"
-      viaMemberAdded [bob]
+      createSignedGroup alice bob
+      addSubmember alice "member"
+      submemberAdded [bob]
       threadDelay 1000000
       GroupMember {activeConn = Just bobConn} <- getTestMember alice "team" "bob"
       withCCTransaction alice $ \db -> withCCUser alice $ \user -> setQuotaErrCounter db user bobConn quotaErrInactiveCount
@@ -17398,13 +17398,13 @@ testViaMemberSignedPending =
       bob <# "#team alice> ping (signature missing)"
       bob <# "#team reviewer> hi (signature missing) [>>]"
 
-testViaMemberSignedHistory :: HasCallStack => TestParams -> IO ()
-testViaMemberSignedHistory =
+testSubmemberSignedHistory :: HasCallStack => TestParams -> IO ()
+testSubmemberSignedHistory =
   testChat3 aliceProfile bobProfile danProfile $
     \alice bob dan -> do
-      createViaSignedGroup alice bob
-      addViaMember alice "member"
-      viaMemberAdded [bob]
+      createSignedGroup alice bob
+      addSubmember alice "member"
+      submemberAdded [bob]
       alice ##> "/_send #1(as_member=3) text hi"
       alice <# "#team hi (signed)"
       bob <# "#team reviewer> hi (signed) [>>]"
@@ -17434,39 +17434,39 @@ testViaMemberSignedHistory =
                "reviewer: author, via alice, status unknown"
              ]
 
-testViaMemberRefusedChannel :: HasCallStack => TestParams -> IO ()
-testViaMemberRefusedChannel ps =
+testSubmemberRefusedChannel :: HasCallStack => TestParams -> IO ()
+testSubmemberRefusedChannel ps =
   withNewTestChat ps "alice" aliceProfile $ \alice ->
     withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob -> do
       _ <- prepareChannel1Relay "team" alice bob
-      alice ##> "/_add via #1 member json {\"displayName\": \"reviewer\", \"fullName\": \"\"}"
-      alice <## "bad chat command: members via another member are not supported in channels"
+      alice ##> "/_add submember #1 member json {\"displayName\": \"reviewer\", \"fullName\": \"\"}"
+      alice <## "bad chat command: submembers are not supported in channels"
 
-testViaMemberRecordings :: HasCallStack => TestParams -> IO ()
-testViaMemberRecordings =
+testSubmemberRecordings :: HasCallStack => TestParams -> IO ()
+testSubmemberRecordings =
   testChat2 aliceProfile bobProfile $
     \alice bob -> do
       createGroup2 "team" alice bob
-      addViaMember alice "member"
-      viaMemberAdded [bob]
+      addSubmember alice "member"
+      submemberAdded [bob]
       alice ##> "/_send #1(as_member=3) text hi"
       alice <# "#team hi"
       bob <# "#team reviewer> hi [>>]"
-      apiFixture "via/members" alice [] FixtureRequests {frMarkdown = [], frUris = [], frCommands = ["/_members #1", "/_get chat #1 count=1"]}
+      apiFixture "submembers/members" alice [] FixtureRequests {frMarkdown = [], frUris = [], frCommands = ["/_members #1", "/_get chat #1 count=1"]}
       bob `send` "> #team @reviewer (hi) fix it"
       bob <# "#team > reviewer hi"
       bob <## "      fix it"
       alice <# "#team bob> > reviewer hi"
       alice <## "      fix it"
-      apiFixture "via/received" bob [] FixtureRequests {frMarkdown = [], frUris = [], frCommands = ["/_members #1", "/_get chat #1 count=2"]}
+      apiFixture "submembers/received" bob [] FixtureRequests {frMarkdown = [], frUris = [], frCommands = ["/_members #1", "/_get chat #1 count=2"]}
 
-testViaMemberMigrationDown :: HasCallStack => TestParams -> IO ()
-testViaMemberMigrationDown ps = do
+testSubmemberMigrationDown :: HasCallStack => TestParams -> IO ()
+testSubmemberMigrationDown ps = do
   withNewTestChat ps "alice" aliceProfile $ \alice ->
     withNewTestChat ps "bob" bobProfile $ \bob -> do
       createGroup2 "team" alice bob
-      addViaMember alice "member"
-      viaMemberAdded [bob]
+      addSubmember alice "member"
+      submemberAdded [bob]
       alice ##> "/_send #1(as_member=3) text hi"
       alice <# "#team hi"
       bob <# "#team reviewer> hi [>>]"

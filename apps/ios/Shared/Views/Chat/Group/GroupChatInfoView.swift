@@ -1289,7 +1289,7 @@ struct GroupChatInfoView_Previews: PreviewProvider {
     }
 }
 
-struct GroupChatInfoView_ViaMember_Previews: PreviewProvider {
+struct GroupChatInfoView_Submember_Previews: PreviewProvider {
     static var previews: some View {
         let groupInfo = GroupInfo.sampleData
         let chat = Chat(chatInfo: ChatInfo.sampleData.group, chatItems: [])

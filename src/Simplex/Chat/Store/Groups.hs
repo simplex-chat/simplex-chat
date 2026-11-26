@@ -92,7 +92,7 @@ module Simplex.Chat.Store.Groups
     getGroupInvitation,
     createNewContactMember,
     createNewMemberViaGroup,
-    createViaMember,
+    createSubmember,
     createGroupRelayRecord,
     getGroupRelayById,
     getGroupRelayByGMId,
@@ -1505,8 +1505,8 @@ createNewMemberViaGroup db gVar cxt user@User {userId} GroupInfo {groupId, membe
       void $ createMemberConnection_ db userId groupMemberId agentConnId connChatVersion peerChatVRange Nothing 0 createdAt subMode
     pure member
 
-createViaMember :: DB.Connection -> TVar ChaChaDRG -> StoreCxt -> User -> GroupInfo -> GroupMemberRole -> Profile -> ExceptT StoreError IO GroupMember
-createViaMember db gVar cxt user GroupInfo {groupId, membership} memberRole p =
+createSubmember :: DB.Connection -> TVar ChaChaDRG -> StoreCxt -> User -> GroupInfo -> GroupMemberRole -> Profile -> ExceptT StoreError IO GroupMember
+createSubmember db gVar cxt user GroupInfo {groupId, membership} memberRole p =
   createWithRandomId' db gVar $ \memId -> runExceptT $ do
     createdAt <- liftIO getCurrentTime
     (localDisplayName, memProfileId, profile, badgeVerified) <- createNewMemberProfile_ db cxt user p Nothing createdAt

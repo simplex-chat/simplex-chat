@@ -2,7 +2,7 @@ import XCTest
 @testable import SimpleX
 @testable import SimpleXChat
 
-final class ViaMemberTests: XCTestCase {
+final class SubmemberTests: XCTestCase {
     private let sendCmd = sendSimpleXCmdStr
 
     @MainActor
@@ -12,8 +12,8 @@ final class ViaMemberTests: XCTestCase {
     }
 
     @MainActor
-    func testMemberViaUserIsDecoded() async throws {
-        try replay("via/members")
+    func testUserSubmemberIsDecoded() async throws {
+        try replay("submembers/members")
         let members = await apiListMembers(1) ?? []
         let reviewer = try XCTUnwrap(members.first { $0.memberProfile.displayName == "reviewer" })
         XCTAssertEqual(reviewer.memberVia, "memberVia")
@@ -21,14 +21,14 @@ final class ViaMemberTests: XCTestCase {
 
     @MainActor
     func testItemSentAsMemberIsDecoded() async throws {
-        try replay("via/members")
+        try replay("submembers/members")
         let (chat, _) = try await apiGetChat(chatId: "#1", scope: nil, pagination: .last(count: 1))
         XCTAssertEqual(chat.chatItems.first?.meta.sentAsMember?.memberProfile.displayName, "reviewer")
     }
 
     @MainActor
     func testHeaderQuoteAndMemberRowsNameHost() async throws {
-        try replay("via/received")
+        try replay("submembers/received")
         ChatModel.shared.groupMembers = (await apiListMembers(1) ?? []).map(GMember.init)
         let (chat, _) = try await apiGetChat(chatId: "#1", scope: nil, pagination: .last(count: 2))
         guard case let .groupRcv(sender) = chat.chatItems.first?.chatDir,
@@ -41,8 +41,8 @@ final class ViaMemberTests: XCTestCase {
     }
 
     @MainActor
-    func testCodeOfViaMemberIsNotRequested() async throws {
-        try replay("via/received")
+    func testCodeOfSubmemberIsNotRequested() async throws {
+        try replay("submembers/received")
         let members = await apiListMembers(1) ?? []
         let (chat, _) = try await apiGetChat(chatId: "#1", scope: nil, pagination: .last(count: 2))
         guard case let .group(groupInfo, _) = chat.chatInfo else { return XCTFail("not a group: \(chat.chatInfo.id)") }

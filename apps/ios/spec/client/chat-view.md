@@ -166,9 +166,9 @@ Key differences from `.groupRcv`:
 - [`showMemberImage()`](../../Shared/Views/Chat/ChatView.swift#L2116) returns `true` when previous item is `.channelRcv` (different sender type)
 - [`memberToModerate()`](../../SimpleXChat/ChatTypes.swift#L3297) returns `nil` for `.channelRcv` (no per-member moderation)
 
-### Members via another member
+### Submembers
 
-A member with `memberVia` is shown with its host: the member whose `memberId` is `memberVia`, from the loaded `groupMembers` ([`ChatModel.memberViaName`](../../Shared/Model/ChatModel.swift#L613)).
+A submember, a member with `memberVia`, is shown with its host: the member whose `memberId` is `memberVia`, from the loaded `groupMembers` ([`ChatModel.memberViaName`](../../Shared/Model/ChatModel.swift#L613)).
 
 ```
 place                   shown
@@ -178,8 +178,8 @@ quotes                  "via <host>" after the quoted member's name (FramedItemV
 member list             "via <host>" in place of the status (MemberRowView.memberConnStatus)
 member info             row "Via" with the host's name, after the role; the message, call and video buttons and "Chat
                         with member" hidden; the security code not requested (GroupMember.canVerifyCode)
-loading                 ChatView loads the members when an item or its quote is from a member via another member and the
-                        members are not loaded (viaHostsNotLoaded)
+loading                 ChatView loads the members when an item or its quote is from a submember and the members are not
+                        loaded (viaHostsNotLoaded)
 ```
 
 ---

@@ -2974,15 +2974,15 @@ processChatCommand cxt nm = \case
                 pure $ CRSentGroupInvitationViaGroup user gInfo member {memberRole = memRole} viaGInfo m
               Nothing -> throwChatError $ CEGroupCantResendInvitation gInfo mName
         | otherwise -> throwChatError $ CEGroupDuplicateMember mName
-  APIAddViaMember groupId memRole profile -> withUser $ \user -> withGroupLock "addViaMember" groupId $ do
+  APIAddSubmember groupId memRole profile -> withUser $ \user -> withGroupLock "addSubmember" groupId $ do
     (Group gInfo members, gks) <- withFastStore $ \db -> getGroupKeys_ db cxt user groupId
-    assertViaAllowed gInfo
+    assertSubmembersAllowed gInfo
     assertUserGroupRole gInfo $ max GRAdmin memRole
     when (incognitoMembership gInfo) $ throwChatError CEGroupIncognitoCantInvite
     gVar <- asks random
-    member <- withFastStore $ \db -> createViaMember db gVar cxt user gInfo memRole profile
+    member <- withFastStore $ \db -> createSubmember db gVar cxt user gInfo memRole profile
     void $ sendGroupMessage user (GIK gInfo gks) Nothing (filter memberCurrent members) False $ XGrpMemNew (memberInfo gInfo member) Nothing Nothing
-    pure $ CRViaMemberAdded user gInfo member
+    pure $ CRSubmemberAdded user gInfo member
   APIJoinGroup groupId enableNtfs -> withUser $ \user@User {userId} -> do
     withGroupLock "joinGroup" groupId $ do
       (invitation, ct_) <- withFastStore $ \db -> do
@@ -4355,13 +4355,13 @@ processChatCommand cxt nm = \case
       when (memberStatus membership == GSMemInvited) $ throwChatError (CEGroupNotJoined g)
       when (memberRemoved membership) $ throwChatError CEGroupMemberUserRemoved
       unless (memberActive membership) $ throwChatError CEGroupMemberNotActive
-    assertViaAllowed :: GroupInfo -> CM ()
-    assertViaAllowed g = when (useRelays' g) $ throwCmdError "members via another member are not supported in channels"
+    assertSubmembersAllowed :: GroupInfo -> CM ()
+    assertSubmembersAllowed g = when (useRelays' g) $ throwCmdError "submembers are not supported in channels"
     assertSendAsMember :: GroupInfo -> GroupMember -> CM ()
     assertSendAsMember g m = do
-      assertViaAllowed g
+      assertSubmembersAllowed g
       assertUserGroupRole g GRAdmin
-      unless (memberViaUser g m) $ throwCmdError "member is not via you"
+      unless (memberViaUser g m) $ throwCmdError "member is not your submember"
       unless (memberCurrent m) $ throwChatError CEGroupMemberNotActive
       when (memberRole' m <= GRObserver) $ throwCmdError "member is not allowed to send messages"
     delGroupChatItemsForMembers :: User -> GroupInfoKeys -> Maybe GroupChatScopeInfo -> [GroupMember] -> [CChatItem 'CTGroup] -> CM [ChatItemDeletion]
@@ -7035,7 +7035,7 @@ chatCommandP =
       "/_ntf conn messages " *> (APIGetConnNtfMessages <$> connMsgsP),
       "/_add #" *> (APIAddMember <$> A.decimal <* A.space <*> A.decimal <*> memberRole),
       "/_add #" *> (APIAddMemberViaGroup <$> A.decimal <* " #" <*> A.decimal <* A.space <*> A.decimal <*> memberRole),
-      "/_add via #" *> (APIAddViaMember <$> A.decimal <*> memberRole <* " json " <*> jsonP),
+      "/_add submember #" *> (APIAddSubmember <$> A.decimal <*> memberRole <* " json " <*> jsonP),
       "/_join #" *> (APIJoinGroup <$> A.decimal <*> pure MFAll), -- needs to be changed to support in UI
       "/_accept member #" *> (APIAcceptMember <$> A.decimal <* A.space <*> A.decimal <*> memberRole),
       "/_delete member chat #" *> (APIDeleteMemberSupportChat <$> A.decimal <* A.space <*> A.decimal),

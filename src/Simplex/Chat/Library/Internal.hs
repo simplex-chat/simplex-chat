@@ -1268,12 +1268,12 @@ introduceMember user gInfo@(GIK g _) toMember@GroupMember {activeConn = Just con
       updateToMemberVector reMembers
       updateReMembersVectors reMembers
       shuffledReMembers <- liftIO $ shuffleMembers reMembers
-      let (viaMembers, otherMembers) = partition (isJust . memberVia) $ filter introducedToMember shuffledReMembers
-          events = map (memberIntroEvt g) $ otherMembers <> viaMembers
+      let (submembers, otherMembers) = partition (isJust . memberVia) $ filter introducedToMember shuffledReMembers
+          events = map (memberIntroEvt g) $ otherMembers <> submembers
       forM_ (L.nonEmpty events) $ \events' ->
         sendGroupMemberMessages user gInfo conn events'
     introducedToMember :: GroupMember -> Bool
-    introducedToMember GroupMember {memberVia} = isNothing memberVia || toMember `supportsVersion` memberViaVersion
+    introducedToMember GroupMember {memberVia} = isNothing memberVia || toMember `supportsVersion` submemberVersion
     updateToMemberVector :: [GroupMember] -> CM ()
     updateToMemberVector reMembers = do
       let relations = map (\GroupMember {indexInGroup} -> (indexInGroup, (IDReferencedIntroduced, MRIntroduced))) reMembers
@@ -1580,7 +1580,7 @@ memberFwdSender m@GroupMember {memberVia} =
 
 memberFwdSenderTo :: GroupMember -> GroupMember -> FwdSender
 memberFwdSenderTo recipient author
-  | recipient `supportsVersion` memberViaVersion = memberFwdSender author
+  | recipient `supportsVersion` submemberVersion = memberFwdSender author
   | otherwise = FwdMember (memberId' author) (memberShortenedName author)
 
 memberFwdEvent :: GroupMember -> CM (ChatMsgEvent 'Json -> ChatMsgEvent 'Json)
@@ -2886,7 +2886,7 @@ sendGroupSignedMessages_ gInfo@GroupInfo {groupId} recipientMembers msgFlags sig
           | otherwise -> case a of
               MSASend conn ->
                 let mode
-                      | fwdElements && not (m `supportsVersion` memberViaVersion) = BMJson
+                      | fwdElements && not (m `supportsVersion` submemberVersion) = BMJson
                       | otherwise = batchMode gInfo m
                     toSend' = case mode of
                       BMBinary -> ((m, conn) : toSendBin, toSendJson)

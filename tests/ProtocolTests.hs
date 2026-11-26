@@ -425,7 +425,7 @@ decodeChatMessageTest = describe "Chat message encoding/decoding" $ do
   it "x.grp.mem.new with member chat version range" $
     "{\"v\":\"9\",\"event\":\"x.grp.mem.new\",\"params\":{\"memberInfo\":{\"memberRole\":\"admin\",\"memberId\":\"AQIDBA==\",\"v\":\"9-24\",\"profile\":{\"fullName\":\"Alice\",\"displayName\":\"alice\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\",\"preferences\":{\"reactions\":{\"allow\":\"yes\"},\"voice\":{\"allow\":\"yes\"}}}}}}"
       #==# XGrpMemNew MemberInfo {memberId = MemberId "\1\2\3\4", memberRole = GRAdmin, v = Just $ ChatVersionRange supportedChatVRange, profile = testProfile, memberKey = Nothing, via = Nothing} Nothing Nothing
-  it "x.grp.mem.new with member via another member" $
+  it "x.grp.mem.new with submember" $
     "{\"v\":\"9\",\"event\":\"x.grp.mem.new\",\"params\":{\"memberInfo\":{\"memberRole\":\"member\",\"memberId\":\"AQIDBA==\",\"via\":\"BQYHCA==\",\"profile\":{\"fullName\":\"Alice\",\"displayName\":\"alice\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\",\"preferences\":{\"reactions\":{\"allow\":\"yes\"},\"voice\":{\"allow\":\"yes\"}}}}}}"
       #==# XGrpMemNew MemberInfo {memberId = MemberId "\1\2\3\4", memberRole = GRMember, v = Nothing, profile = testProfile, memberKey = Nothing, via = Just $ MemberId "\5\6\7\8"} Nothing Nothing
   it "x.grp.mem.intro" $
@@ -499,12 +499,12 @@ decodeChatMessageTest = describe "Chat message encoding/decoding" $ do
       #==# XGrpMsgForward
         (GrpMsgForward (FwdMember (MemberId "\1\2\3\4") "alice") (systemToUTCTime $ MkSystemTime 1 1))
         (ChatMessage chatInitialVRange (Just $ SharedMsgId "\1\2\3\4") (XMsgNew (mcSimple (MCText "hello"))))
-  it "x.grp.msg.forward of member via another member" $
+  it "x.grp.msg.forward of submember" $
     "{\"v\":\"9\",\"event\":\"x.grp.msg.forward\",\"params\":{\"memberId\":\"AQIDBA==\",\"memberName\":\"alice\",\"via\":\"BQYHCA==\",\"msg\":{\"v\":\"9\",\"msgId\":\"AQIDBA==\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello\",\"type\":\"text\"}}},\"msgTs\":\"1970-01-01T00:00:01.000000001Z\"}}"
       #==# XGrpMsgForward
         (GrpMsgForward (FwdMemberVia (MemberId "\1\2\3\4") "alice" (MemberId "\5\6\7\8")) (systemToUTCTime $ MkSystemTime 1 1))
         (ChatMessage chatInitialVRange (Just $ SharedMsgId "\1\2\3\4") (XMsgNew (mcSimple (MCText "hello"))))
-  it "binary forward header of member via another member" $
+  it "binary forward header of submember" $
     let fwd = GrpMsgForward (FwdMemberVia (MemberId "\1\2\3\4") "alice" (MemberId "\5\6\7\8")) (systemToUTCTime $ MkSystemTime 1 0)
      in smpDecode (smpEncode fwd) `shouldBe` Right fwd
   it "x.info.probe" $
