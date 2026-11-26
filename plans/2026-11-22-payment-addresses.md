@@ -402,13 +402,92 @@ URI              as written, with
 
 ## Apps
 
+### Link text
+
+The text of a payment link in the bubble, in link style; addresses are shortened to 6 and 4 characters.
+
+| Link | Text |
+|---|---|
+| `bitcoin:bc1qar0s…5mdq?amount=0.0012` | ₿0.0012 |
+| `bitcoin:bc1qar0s…5mdq` | ₿bc1qar…5mdq |
+| `lightning:lnbc12u1p…` | ϟ0.000012 |
+| `monero:4AdUnd…mRVj?tx_amount=0.25` | XMR 0.25 |
+| `monero:4AdUnd…mRVj` | XMR 4AdUnd…mRVj |
+| `litecoin:ltc1q…?amount=0.1` | LTC 0.1 |
+| `bitcoincash:qp3w…?amount=0.01` | BCH 0.01 |
+| `solana:7xKX…?amount=10&spl-token=EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v` | USDC 10 · Solana |
+| `ethereum:0xfb69…d359@1?value=1e16` | ETH 0.01 |
+| `ethereum:0xfb69…d359@42161?value=1e16` | ETH 0.01 · Arbitrum |
+| `ethereum:0xfb69…d359@137?value=5e18` | POL 5 · Polygon |
+| `ethereum:0xc2132D05D31c914a87C6611C10748AEb04B58e8F@137/transfer?address=0xfb69…d359&uint256=10000000` | USDT 10 · Polygon |
+| `ethereum:0xfb69…d359@99999?value=1e16` | Q6 |
+| `ethereum:0xfb69…d359?value=1e16` | Q6 |
+
+```mermaid
+flowchart LR
+  L[link] --> S{scheme}
+  S -->|bitcoin| B[₿]
+  S -->|lightning| N[ϟ, amount in BTC]
+  S -->|monero, zcash, litecoin, dogecoin, bitcoincash, solana| T[ticker of the scheme]
+  S -->|ethereum| C{chain ID in the chain table}
+  C -->|value| V[ticker of the chain]
+  C -->|transfer| K{chain and contract in the token table}
+  T -->|spl-token| K
+  K --> TK[ticker and decimals of the token]
+  C -->|absent or unknown| Q[Q6]
+  K -->|unknown| Q
+```
+
+Tickers of the schemes, by SLIP-44 [S37]:
+
+| Scheme | Text |
+|---|---|
+| `bitcoin` | ₿ |
+| `lightning` | ϟ |
+| `monero` | XMR |
+| `zcash` | ZEC |
+| `litecoin` | LTC |
+| `dogecoin` | DOGE |
+| `bitcoincash` | BCH |
+| `solana` | SOL |
+| `ethereum` | the chain table |
+
+Chains, by ethereum-lists/chains [S34]; the name follows ` · `, except for chain 1:
+
+| Chain ID | Name | Ticker |
+|---|---|---|
+| 1 | Ethereum | ETH |
+| 10 | OP Mainnet | ETH |
+| 56 | BNB Smart Chain | BNB |
+| 137 | Polygon | POL |
+| 8453 | Base | ETH |
+| 42161 | Arbitrum | ETH |
+
+Tokens, by the Uniswap token list [S38] and the Solana token list [S39]; an ERC-20 `uint256` is divided by 10^decimals:
+
+| Chain | Contract | Ticker | Decimals |
+|---|---|---|---|
+| 1 | `0xdAC17F958D2ee523a2206206994597C13D831ec7` | USDT | 6 |
+| 1 | `0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48` | USDC | 6 |
+| 10 | `0x94b008aA00579c1307B0EF2c499aD98a8ce58e58` | USDT | 6 |
+| 10 | `0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85` | USDC | 6 |
+| 56 | `0x55d398326f99059fF775485246999027B3197955` | USDT | 18 |
+| 56 | `0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d` | USDC | 18 |
+| 137 | `0xc2132D05D31c914a87C6611C10748AEb04B58e8F` | USDT | 6 |
+| 137 | `0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359` | USDC | 6 |
+| 8453 | `0xfde4C96c8593536E31F229EA8f37b2ADa2699bb2` | USDT | 6 |
+| 8453 | `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913` | USDC | 6 |
+| 42161 | `0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9` | USDT0 | 6 |
+| 42161 | `0xaf88d065e77c8cC2239327C5EDb3A432268e5831` | USDC | 6 |
+| Solana | `Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB` | USDT | 6 |
+| Solana | `EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v` | USDC | 6 |
+
 ### Presentation
 
 | Element | Proposal |
 |---|---|
-| bubble, address or URI | the text as written, in link style |
+| bubble, address or URI | section Link text |
 | bubble, `[label](URI)` | the label and the network in italics, `Donate (Monero)`, as `(via host)` of SimpleX links (MsgContentView.swift:653-665, TextItemView.kt:401-416) |
-| bubble, bare invoice or LNURL | `Lightning invoice (0.0025 BTC)` or `Lightning link (host)`, as SimpleX links in description mode (MsgContentView.swift:660) |
 | tap | the sheet; the wallet is opened only from its button |
 | sheet title | by the payee: `Bitcoin address`, `Lightning invoice`, `Ethereum token transfer` |
 | sheet line 2 | `From alice`, then the marks `Forwarded`, `Edited` and `Signed` of the item (Messages.hs:530-541) |
@@ -478,7 +557,7 @@ sequenceDiagram
 ## Privacy
 
 - A payment link is sent as message text and parsed by each recipient's core when the item is read (Store/Messages.hs:2338-2340, 2432-2434).
-- The core and the apps send no request for a payment link; names (BIP-353, Lightning Address, ENS), LNURL and token decimals are resolved only by the wallet.
+- The core and the apps send no request for a payment link; names (BIP-353, Lightning Address, ENS), LNURL and the tokens outside the token table are resolved only by the wallet.
 - At Open in wallet, the app passes the address, amount, label and message to the app that the OS chooses; on iOS, that app is undefined among several [S17].
 - At Copy, the address is placed on the clipboard, where other apps can read it [S32].
 
@@ -539,6 +618,7 @@ Each question is a principle with its consequences; the recommended option is in
 | Q3 | What the app requests | a. nothing: names are not recognised in v1, LNURL is resolved by the wallet, and its host is named in the sheet<br>b. a, and names handed to wallets as `lightning:user@domain`, a form left undefined by LUD-16 [S8] | **a** |
 | Q4 | Networks in v1 | a. Bitcoin, Lightning, Ethereum with the other EVM chains, Monero, Zcash, Solana, Litecoin, Dogecoin, Bitcoin Cash: the networks of README.md:151-158, Lightning and Litecoin<br>b. Bitcoin, Lightning and Monero: a smaller parser and fewer tests; other addresses are text | **a** |
 | Q5 | Whether payment links are links | a. yes: new items with a payment link are in the Links filter (ChatView.swift:3410-3436, Store/Messages.hs:1551-1578); groups get no new preference in v1<br>b. no, as e-mail addresses and phone numbers (Markdown.hs:320-326)<br>c. a, and a group preference that prohibits them, a protocol change | **a** |
+| Q6 | Text of a link outside the tables: an unknown chain ID or token, or an `ethereum:` link without a chain ID, in which the wallet's current chain is used [S9] | a. the shortened address and ` · chain 99999` or ` · token`, without a ticker or an amount: nothing is shown that the link does not state<br>b. as a, and `ETH` for a link without a chain ID: the amount is shown, the currency may be wrong | **a** |
 
 ## Sources
 
@@ -580,3 +660,6 @@ Each question is a principle with its consequences; the recommended option is in
 | S34 | ethereum-lists/chains, `_data/chains/eip155-<id>.json`, https://github.com/ethereum-lists/chains |
 | S35 | Bitcoin Design Guide, "Wallet selector", https://bitcoin.design/guide/how-it-works/wallet-selector/ |
 | S36 | simplexmq at d38bcf50131d59f027d170731e4ea22031650611, the commit of cabal.project:24: src/Simplex/Messaging/Eth/Address.hs:40-48, src/Simplex/Messaging/Crypto.hs:1035-1057 |
+| S37 | SLIP-44, https://github.com/satoshilabs/slips/blob/master/slip-0044.md |
+| S38 | Uniswap token list, https://tokens.uniswap.org, schema https://github.com/Uniswap/token-lists/blob/main/src/tokenlist.schema.json, read on 2026-11-26 |
+| S39 | Solana token list, https://github.com/solana-labs/token-list/blob/main/src/tokens/solana.tokenlist.json |
