@@ -234,7 +234,8 @@ against the keys it holds. The keys are set in `[btcpay]`, each pair together or
 
 A value that does not parse, or one of a pair without the other, stops the service at start,
 naming the key. Without a coin's pair, every name invoice in that coin is answered `503
-provider_unavailable` before BTCPay is asked, and the start logs `btcpay: [btcpay] sets no btc_xpub
+provider_unavailable` before BTCPay is asked and before the checkout's rate limits are taken, and
+the start logs `btcpay: [btcpay] sets no btc_xpub
 and btc_hrp, so every name invoice in Bitcoin is refused`, or the same for `xmr_address and
 xmr_view_key` and Monero. Badge invoices are created and answered as before, with the keys or
 without them.
@@ -1229,13 +1230,15 @@ code. The names page signs each one, polls included.
 | `POST /api/registration/:id/retry` | `retry` |
 | `GET /api/invoice/:id`, a name invoice | `read` |
 | `POST /api/invoice/:id/cancel`, a name invoice | `cancel` |
+| `POST /api/registration/:id/reveal` | `reveal` |
 | `POST /api/registration/:id/name` | the selection's own signature |
-| `POST /api/registration/:id/reveal` | the owner's `RegisterName` |
 
 - The message is `simplex.domains order <id> <action> <timestamp>`, with the route's id and the
   timestamp in seconds, signed as `find` is, with EIP-191 `personal_sign`.
 - A `GET` sends `timestamp` and `signature` as query parameters, beside `seenVersion` and the
-  invoice's `wait` parameters; a `POST` sends them as fields of its JSON body.
+  invoice's `wait` parameters; a `POST` sends them as fields of its JSON body, and a reveal as the
+  fields of the object `request` in its body, beside the reveal's own `signature`, the owner's
+  `RegisterName`.
 - `timestamp` is a decimal in a query and a JSON number in a body; `signature` is a string of `0x`
   and 130 lowercase hex digits, with s in the lower half of the group order and v 27 or 28. Any
   other value reads as unsigned.
@@ -1243,11 +1246,14 @@ code. The names page signs each one, polls included.
   the id is looked up, as `find` answers it. The signer is then recovered, also for an unknown id.
 - An unsigned request, one signed by another key, or for another id, action or timestamp, and one
   for an unknown id all get the same answer, `404 not_found`, after the same rate limit.
+- A reveal whose body is not a JSON object within the body cap reads as unsigned. Its other
+  refusals, a malformed reveal and a `RegisterName` refused included, come after its request's
+  signer is checked.
 - Before its id is looked up, a selection is answered `400 bad_request` for a malformed body or a
-  sealed name over its limit and `400 invalid_name` for a length no name has, and a reveal
-  `400 bad_request` for a malformed body or one over the body cap; in a downtime a selection is
-  answered `503 downtime` before its body is read. A selection or a reveal signed by another key
-  is answered as one for an unknown id; their other refusals come after the signer is checked.
+  sealed name over its limit and `400 invalid_name` for a length no name has, and in a downtime
+  `503 downtime` before its body is read. Its signer is then recovered, also for an unknown id; a
+  selection signed by another key is answered as one for an unknown id, and its other refusals
+  come after its signer is checked.
 - Only a signed read counts as the page's read of an order, which keeps a committed order from
   failing as `unread`.
 - A badge invoice is read and cancelled unsigned, as before; with `[names]` on, a `timestamp`
@@ -1307,8 +1313,9 @@ of the terms or the name policy, its acceptance. The buyer's page, loaded after 
 the order again with the new values; a commitment past its age is committed again through the page's
 `/retry`, and an order its page has not read for 3 days fails as `unread` until its buyer's Continue.
 A change of `[chain] resolver` or `[names] tld` changes every open order's commitment, so those orders
-cannot be signed again: the drain runs without the 15 minutes' cap, and support closes a paid order
-still open after it with `//close` once its commitment lapses.
+cannot be signed again: the drain runs without the 15 minutes' cap, an order with a stored reveal
+fails as `signatureRefused` and is reported, and support closes a paid order with `//close` once it
+failed or its commitment lapsed.
 
 ```mermaid
 sequenceDiagram
@@ -1375,8 +1382,7 @@ length in days is set when the order is made, by how the order is paid:
 A name selected for a taken order keeps the order's payment, and so its days. The order's
 `disputeDays` are returned in the registration view, signed by the owner in `RegisterName` with the
 reveal of the order or of the selection, and sent by the service in `registerWithCredit`; a reveal
-signed over other days is answered `404 not_found` at `/reveal`, as one signed by another key, and
-`400 bad_request` inside an order or a selection. Once the name is registered, the view's
+signed over other days is refused `400 bad_request`. Once the name is registered, the view's
 `registered` phase has `disputeUntil`: the registrar's `disputeUntil(id)` read at the confirmation
 depth, absent for a registration without a dispute period.
 
@@ -1706,9 +1712,11 @@ acceptance relay or its register is sent, and the order waits, committed, for it
 with the current values; the log line is
 `[WARN …] names worker: registration <id>: its stored signature is refused under the service's current configuration, …, so its page signs again`.
 A change of `[chain] resolver` or `[names] tld` changes the commitment of every open order, so its
-page cannot sign it again: support closes such a paid order with `//close` once its commitment
-lapses. The reason
-`signatureRefused` remains only on orders failed by earlier releases.
+page cannot sign it again. Such an order with a stored reveal fails with the reason
+`signatureRefused`, logged at error and posted in the managed group as
+`names worker: registration <id> failed: its commitment is not the one the service's current configuration makes, so its stored signature is refused, …`,
+and support closes a paid one with `//close`; one without a stored reveal waits, and support closes
+a paid one with `//close` once its commitment lapses.
 
 A close of a failed order, and the worker's judgment of a register that did not go
 through, first run `confirmLanded`. It marks the order registered when `ownerOf` at the confirmation

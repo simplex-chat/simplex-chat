@@ -144,10 +144,14 @@ The pages, the service and the DNS are intact.
 
 Anyone who sees an order's reference or link. The reference is the service's own invoice or registration id; the payment providers receive only "name:" and the order's hash. The service and the pages are intact.
 
+*can:*
+
+- tell a reference that names an order from an unknown one by the time of the answer alone: on the invoice routes the order of a known name invoice is read in further queries, and a selection by another key is logged, before the same answer is sent.
+
 *cannot:*
 
 - learn whether the reference names an order: an unsigned request for an order gets the same answer as a request for an unknown one.
 
-- learn the order's name, name address, status, price or links: every request that names an order is signed with the order's name key.
+- learn the order's name, name address, status, price or links: every request that names an order is signed with the order's name key, a reveal included, so a reveal copied from a registration on chain is answered as one for an unknown order.
 
 - cancel the order's invoice, retry the order or choose a name for it.
