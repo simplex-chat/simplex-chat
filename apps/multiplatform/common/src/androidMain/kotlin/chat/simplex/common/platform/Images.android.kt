@@ -58,7 +58,7 @@ private fun <T : Any> readBase64Image(base64ImageString: String, read: (imageByt
     .removePrefix("data:image/png;base64,")
     .removePrefix("data:image/jpg;base64,")
   val imageBytes = Base64.decode(imageString, Base64.NO_WRAP)
-  if (!isImageFile(imageBytes)) return null
+  if (!isJpegOrPng(imageBytes)) return null
   val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
   BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size, options)
   if (options.outWidth <= 0 || options.outHeight <= 0 || options.outWidth > MAX_IMAGE_DIMENSION || options.outHeight > MAX_IMAGE_DIMENSION || options.outHeight > options.outWidth * 256) return null

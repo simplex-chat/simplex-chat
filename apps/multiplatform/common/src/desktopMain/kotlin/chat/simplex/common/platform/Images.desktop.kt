@@ -6,7 +6,6 @@ import androidx.compose.ui.unit.IntSize
 import boofcv.io.image.ConvertBufferedImage
 import boofcv.struct.image.GrayU8
 import chat.simplex.common.views.helpers.decodeBoundedBufferedImage
-import chat.simplex.common.views.helpers.gifMetadataWithinLimits
 import chat.simplex.common.views.helpers.imageSampleSize
 import chat.simplex.res.*
 import org.jetbrains.skia.Image
@@ -73,7 +72,7 @@ private fun <T : Any> readBase64Image(base64ImageString: String, read: (reader: 
     .removePrefix("data:image/png;base64,")
     .removePrefix("data:image/jpg;base64,")
   val bytes = Base64.getMimeDecoder().decode(imageString)
-  if (ImageFileType.GIF.matches(bytes) && !gifMetadataWithinLimits(bytes)) return null
+  if (!isJpegOrPng(bytes)) return null
   return MemoryCacheImageInputStream(ByteArrayInputStream(bytes)).use { stream ->
     val reader = receivedImageReader(stream)
     try {

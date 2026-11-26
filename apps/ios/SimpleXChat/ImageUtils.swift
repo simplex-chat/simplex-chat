@@ -449,6 +449,7 @@ public func imageFromBase64(_ base64Encoded: String?) -> UIImage? {
         if let img = imageCache.object(forKey: base64Encoded as NSString) {
             return img
         } else if let data = Data(base64Encoded: dropImagePrefix(base64Encoded)),
+            ImageFileType.jpeg.matches(data) || ImageFileType.png.matches(data),
             let image = imageSource(data, maxSide: MAX_IMAGE_DIMENSION),
             let img = image.side > MAX_PREVIEW_DIMENSION ? downsampleImage(image.source, maxPixelSize: MAX_PREVIEW_DIMENSION as NSNumber) : UIImage(data: data) {
             imageCacheQueue.async {

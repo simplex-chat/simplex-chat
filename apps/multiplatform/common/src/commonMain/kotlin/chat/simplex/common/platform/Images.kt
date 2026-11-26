@@ -57,6 +57,8 @@ enum class ImageFileType(val signatures: List<List<Int?>>) {
 
 fun isImageFile(data: ByteArray): Boolean = ImageFileType.entries.any { it.matches(data) }
 
+fun isJpegOrPng(data: ByteArray): Boolean = ImageFileType.JPEG.matches(data) || ImageFileType.PNG.matches(data)
+
 private fun ascii(s: String): List<Int?> = s.map { it.code }
 
 expect fun loadImageBitmap(inputStream: InputStream): ImageBitmap

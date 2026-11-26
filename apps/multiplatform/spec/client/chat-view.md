@@ -269,8 +269,8 @@ received `.webp` renders only as the sender's preview and never opens full scree
 
 The pictures that messages contain as base64 are drawn by `rememberBase64ImagePainter` in `platform/Images.kt`:
 previews of images, videos and links, quoted pictures, profile pictures and the pictures of chat links. A picture in
-the cache of decoded pictures is drawn at once, and so is the error picture of a picture whose header cannot be read
-or exceeds the size limits. For any other picture, the size of the decoded picture is read from its header
+the cache of decoded pictures is drawn at once, and so is the error picture of a picture that is not a JPEG or PNG
+(`isJpegOrPng`) or whose header cannot be read or exceeds the size limits. For any other picture, the size of the decoded picture is read from its header
 (`base64BitmapSize`), the picture's area has that size and is blank, and the picture is decoded on one background
 thread (`base64ImageDecoder`); the other parts of the item, such as file status icons, are drawn meanwhile. A picture
 whose view leaves the composition before its decoding starts is not decoded. A picture whose header is readable keeps
