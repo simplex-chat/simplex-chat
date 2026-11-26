@@ -27,8 +27,6 @@ class AddRelayResult(TypedDict):
     relay: "UserChatRelay"
     relayError: NotRequired["ChatError"]
 
-AddressChecksum = Literal["verified", "unchecked"]
-
 class AddressSettings(TypedDict):
     businessAddress: bool
     autoAccept: NotRequired["AutoAccept"]
@@ -838,6 +836,43 @@ CIStatus_Tag = Literal["sndNew", "sndSent", "sndRcvd", "sndErrorAuth", "sndError
 class CITimed(TypedDict):
     ttl: int  # int
     deleteAt: NotRequired[str]  # ISO-8601 timestamp
+
+# Chain address or URI in a message text. currency: what the link text names, resolved from the core's tables of chains and tokens. walletUri: the URI to open in a wallet.
+
+class ChainAddress(TypedDict):
+    currency: "ChainCurrency"
+    address: str
+    label: NotRequired[str]
+    walletUri: str
+
+# amount: in BTC for bitcoin and lightning, in units of the ticker for ticker. chainName: the EVM chain other than Ethereum, or Solana for a Solana token. unlisted: the chain or token is outside the core's tables; the amount is omitted.
+
+class ChainCurrency_bitcoin(TypedDict):
+    type: Literal["bitcoin"]
+    amount: NotRequired[str]
+
+class ChainCurrency_lightning(TypedDict):
+    type: Literal["lightning"]
+    amount: NotRequired[str]
+
+class ChainCurrency_ticker(TypedDict):
+    type: Literal["ticker"]
+    ticker: str
+    chainName: NotRequired[str]
+    amount: NotRequired[str]
+
+class ChainCurrency_unlisted(TypedDict):
+    type: Literal["unlisted"]
+    unlisted: "UnlistedCurrency"
+
+ChainCurrency = (
+    ChainCurrency_bitcoin
+    | ChainCurrency_lightning
+    | ChainCurrency_ticker
+    | ChainCurrency_unlisted
+)
+
+ChainCurrency_Tag = Literal["bitcoin", "lightning", "ticker", "unlisted"]
 
 class ChatBotCommand_command(TypedDict):
     type: Literal["command"]
@@ -2023,10 +2058,10 @@ class Format_simplexName(TypedDict):
     type: Literal["simplexName"]
     nameInfo: "SimplexNameInfo"
 
-class Format_paymentLink(TypedDict):
-    type: Literal["paymentLink"]
+class Format_chainAddressLink(TypedDict):
+    type: Literal["chainAddressLink"]
     showText: NotRequired[str]
-    payment: "PaymentRequest"
+    chainAddress: "ChainAddress"
 
 class Format_command(TypedDict):
     type: Literal["command"]
@@ -2061,7 +2096,7 @@ Format = (
     | Format_hyperLink
     | Format_simplexLink
     | Format_simplexName
-    | Format_paymentLink
+    | Format_chainAddressLink
     | Format_command
     | Format_mention
     | Format_email
@@ -2070,7 +2105,7 @@ Format = (
     | Format_markup
 )
 
-Format_Tag = Literal["bold", "italic", "strikeThrough", "snippet", "secret", "small", "colored", "uri", "hyperLink", "simplexLink", "simplexName", "paymentLink", "command", "mention", "email", "phone", "escape", "markup"]
+Format_Tag = Literal["bold", "italic", "strikeThrough", "snippet", "secret", "small", "colored", "uri", "hyperLink", "simplexLink", "simplexName", "chainAddressLink", "command", "mention", "email", "phone", "escape", "markup"]
 
 class FormattedText(TypedDict):
     format: NotRequired["Format"]
@@ -2423,25 +2458,6 @@ class KeepAliveOpts(TypedDict):
     keepIdle: int  # int
     keepIntvl: int  # int
     keepCnt: int  # int
-
-class LightningPayee_invoice(TypedDict):
-    type: Literal["invoice"]
-    invoice: str
-    description: NotRequired[str]
-    expiresAt: str  # ISO-8601 timestamp
-
-class LightningPayee_offer(TypedDict):
-    type: Literal["offer"]
-    offer: str
-
-class LightningPayee_lnurl(TypedDict):
-    type: Literal["lnurl"]
-    lnurl: str
-    host: str
-
-LightningPayee = LightningPayee_invoice | LightningPayee_offer | LightningPayee_lnurl
-
-LightningPayee_Tag = Literal["invoice", "offer", "lnurl"]
 
 class LinkContent_page(TypedDict):
     type: Literal["page"]
@@ -2847,73 +2863,6 @@ PaginationByTime_Tag = Literal["last"]
 
 def PaginationByTime_cmd_string(self: PaginationByTime) -> str:
     return 'count=' + str(self['count'])  # type: ignore[typeddict-item]
-
-class PaymentNetwork_bitcoin(TypedDict):
-    type: Literal["bitcoin"]
-
-class PaymentNetwork_ethereum(TypedDict):
-    type: Literal["ethereum"]
-    chainId: NotRequired[int]  # int64
-
-class PaymentNetwork_monero(TypedDict):
-    type: Literal["monero"]
-
-class PaymentNetwork_zcash(TypedDict):
-    type: Literal["zcash"]
-
-class PaymentNetwork_solana(TypedDict):
-    type: Literal["solana"]
-
-class PaymentNetwork_litecoin(TypedDict):
-    type: Literal["litecoin"]
-
-class PaymentNetwork_dogecoin(TypedDict):
-    type: Literal["dogecoin"]
-
-class PaymentNetwork_bitcoinCash(TypedDict):
-    type: Literal["bitcoinCash"]
-
-PaymentNetwork = (
-    PaymentNetwork_bitcoin
-    | PaymentNetwork_ethereum
-    | PaymentNetwork_monero
-    | PaymentNetwork_zcash
-    | PaymentNetwork_solana
-    | PaymentNetwork_litecoin
-    | PaymentNetwork_dogecoin
-    | PaymentNetwork_bitcoinCash
-)
-
-PaymentNetwork_Tag = Literal["bitcoin", "ethereum", "monero", "zcash", "solana", "litecoin", "dogecoin", "bitcoinCash"]
-
-class PaymentPayee_address(TypedDict):
-    type: Literal["address"]
-    network: "PaymentNetwork"
-    address: str
-    checksum: "AddressChecksum"
-
-class PaymentPayee_lightning(TypedDict):
-    type: Literal["lightning"]
-    lightning: "LightningPayee"
-
-PaymentPayee = PaymentPayee_address | PaymentPayee_lightning
-
-PaymentPayee_Tag = Literal["address", "lightning"]
-
-# Payment URI or address in a message text. amount: in coins of the network; with token, in base units of the ERC-20 token or in units of the SPL token. walletUri: the URI to open in a wallet.
-
-class PaymentRequest(TypedDict):
-    payee: "PaymentPayee"
-    alternatives: list["LightningPayee"]
-    amount: NotRequired[str]
-    token: NotRequired["PaymentToken"]
-    label: NotRequired[str]
-    message: NotRequired[str]
-    walletUri: str
-
-class PaymentToken(TypedDict):
-    address: str
-    checksum: "AddressChecksum"
 
 class PendingContactConnection(TypedDict):
     pccConnId: int  # int64
@@ -4185,6 +4134,8 @@ class UIThemeEntityOverrides(TypedDict):
     light: NotRequired["UIThemeEntityOverride"]
     dark: NotRequired["UIThemeEntityOverride"]
     chatLayout: NotRequired["ChatLayout"]
+
+UnlistedCurrency = Literal["chain", "token", "chainAndToken"]
 
 class UpdatedMessage(TypedDict):
     msgContent: "MsgContent"

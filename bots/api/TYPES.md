@@ -7,7 +7,6 @@ This file is generated automatically.
 - [AChatItem](#achatitem)
 - [AChatItemUpdate](#achatitemupdate)
 - [AddRelayResult](#addrelayresult)
-- [AddressChecksum](#addresschecksum)
 - [AddressSettings](#addresssettings)
 - [AgentCryptoError](#agentcryptoerror)
 - [AgentErrorType](#agenterrortype)
@@ -43,6 +42,8 @@ This file is generated automatically.
 - [CIReactionCount](#cireactioncount)
 - [CIStatus](#cistatus)
 - [CITimed](#citimed)
+- [ChainAddress](#chainaddress)
+- [ChainCurrency](#chaincurrency)
 - [ChatBotCommand](#chatbotcommand)
 - [ChatDeleteMode](#chatdeletemode)
 - [ChatError](#chaterror)
@@ -141,7 +142,6 @@ This file is generated automatically.
 - [InvitationLinkPlan](#invitationlinkplan)
 - [InvitedBy](#invitedby)
 - [KeepAliveOpts](#keepaliveopts)
-- [LightningPayee](#lightningpayee)
 - [LinkContent](#linkcontent)
 - [LinkNotice](#linknotice)
 - [LinkOwnerSig](#linkownersig)
@@ -176,10 +176,6 @@ This file is generated automatically.
 - [OperatorTag](#operatortag)
 - [OwnerVerification](#ownerverification)
 - [PaginationByTime](#paginationbytime)
-- [PaymentNetwork](#paymentnetwork)
-- [PaymentPayee](#paymentpayee)
-- [PaymentRequest](#paymentrequest)
-- [PaymentToken](#paymenttoken)
 - [PendingContactConnection](#pendingcontactconnection)
 - [PlanResolveMode](#planresolvemode)
 - [PrefEnabled](#prefenabled)
@@ -254,6 +250,7 @@ This file is generated automatically.
 - [UIColors](#uicolors)
 - [UIThemeEntityOverride](#uithemeentityoverride)
 - [UIThemeEntityOverrides](#uithemeentityoverrides)
+- [UnlistedCurrency](#unlistedcurrency)
 - [UpdatedMessage](#updatedmessage)
 - [User](#user)
 - [UserChatRelay](#userchatrelay)
@@ -319,15 +316,6 @@ Updated message, with the message before the update.
 **Record type**:
 - relay: [UserChatRelay](#userchatrelay)
 - relayError: [ChatError](#chaterror)?
-
-
----
-
-## AddressChecksum
-
-**Enum type**:
-- "verified"
-- "unchecked"
 
 
 ---
@@ -1183,6 +1171,46 @@ Invalid:
 **Record type**:
 - ttl: int
 - deleteAt: UTCTime?
+
+
+---
+
+## ChainAddress
+
+Chain address or URI in a message text. currency: what the link text names, resolved from the core's tables of chains and tokens. walletUri: the URI to open in a wallet.
+
+**Record type**:
+- currency: [ChainCurrency](#chaincurrency)
+- address: string
+- label: string?
+- walletUri: string
+
+
+---
+
+## ChainCurrency
+
+amount: in BTC for bitcoin and lightning, in units of the ticker for ticker. chainName: the EVM chain other than Ethereum, or Solana for a Solana token. unlisted: the chain or token is outside the core's tables; the amount is omitted.
+
+**Discriminated union type**:
+
+Bitcoin:
+- type: "bitcoin"
+- amount: string?
+
+Lightning:
+- type: "lightning"
+- amount: string?
+
+Ticker:
+- type: "ticker"
+- ticker: string
+- chainName: string?
+- amount: string?
+
+Unlisted:
+- type: "unlisted"
+- unlisted: [UnlistedCurrency](#unlistedcurrency)
 
 
 ---
@@ -2568,10 +2596,10 @@ SimplexName:
 - type: "simplexName"
 - nameInfo: [SimplexNameInfo](#simplexnameinfo)
 
-PaymentLink:
-- type: "paymentLink"
+ChainAddressLink:
+- type: "chainAddressLink"
 - showText: string?
-- payment: [PaymentRequest](#paymentrequest)
+- chainAddress: [ChainAddress](#chainaddress)
 
 Command:
 - type: "command"
@@ -3172,28 +3200,6 @@ Unknown:
 
 ---
 
-## LightningPayee
-
-**Discriminated union type**:
-
-Invoice:
-- type: "invoice"
-- invoice: string
-- description: string?
-- expiresAt: UTCTime
-
-Offer:
-- type: "offer"
-- offer: string
-
-Lnurl:
-- type: "lnurl"
-- lnurl: string
-- host: string
-
-
----
-
 ## LinkContent
 
 **Discriminated union type**:
@@ -3739,80 +3745,6 @@ count=<count>
 ```python
 'count=' + str(count) # Python
 ```
-
-
----
-
-## PaymentNetwork
-
-**Discriminated union type**:
-
-Bitcoin:
-- type: "bitcoin"
-
-Ethereum:
-- type: "ethereum"
-- chainId: int64?
-
-Monero:
-- type: "monero"
-
-Zcash:
-- type: "zcash"
-
-Solana:
-- type: "solana"
-
-Litecoin:
-- type: "litecoin"
-
-Dogecoin:
-- type: "dogecoin"
-
-BitcoinCash:
-- type: "bitcoinCash"
-
-
----
-
-## PaymentPayee
-
-**Discriminated union type**:
-
-Address:
-- type: "address"
-- network: [PaymentNetwork](#paymentnetwork)
-- address: string
-- checksum: [AddressChecksum](#addresschecksum)
-
-Lightning:
-- type: "lightning"
-- lightning: [LightningPayee](#lightningpayee)
-
-
----
-
-## PaymentRequest
-
-Payment URI or address in a message text. amount: in coins of the network; with token, in base units of the ERC-20 token or in units of the SPL token. walletUri: the URI to open in a wallet.
-
-**Record type**:
-- payee: [PaymentPayee](#paymentpayee)
-- alternatives: [[LightningPayee](#lightningpayee)]
-- amount: string?
-- token: [PaymentToken](#paymenttoken)?
-- label: string?
-- message: string?
-- walletUri: string
-
-
----
-
-## PaymentToken
-
-**Record type**:
-- address: string
-- checksum: [AddressChecksum](#addresschecksum)
 
 
 ---
@@ -5320,6 +5252,16 @@ Handshake:
 - light: [UIThemeEntityOverride](#uithemeentityoverride)?
 - dark: [UIThemeEntityOverride](#uithemeentityoverride)?
 - chatLayout: [ChatLayout](#chatlayout)?
+
+
+---
+
+## UnlistedCurrency
+
+**Enum type**:
+- "chain"
+- "token"
+- "chainAndToken"
 
 
 ---

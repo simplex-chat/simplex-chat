@@ -205,19 +205,14 @@
                 },
                 {
                   "format": {
-                    "payment": {
-                      "alternatives": [],
-                      "payee": {
-                        "address": "bc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66505d4u",
-                        "checksum": "verified",
-                        "network": {
-                          "type": "bitcoin"
-                        },
-                        "type": "address"
+                    "chainAddress": {
+                      "address": "bc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66505d4u",
+                      "currency": {
+                        "type": "bitcoin"
                       },
                       "walletUri": "bitcoin:bc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66505d4u"
                     },
-                    "type": "paymentLink"
+                    "type": "chainAddressLink"
                   },
                   "text": "bc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66505d4u"
                 },
@@ -226,20 +221,16 @@
                 },
                 {
                   "format": {
-                    "payment": {
-                      "alternatives": [],
-                      "payee": {
-                        "address": "8A3ZWAXrrQddvnT1fPrtbK86ZAoM4nai3Gjg1LEow3JWcryJtovMnHYZnxTJpCLmAbfWbnPMeTzPmMBjAhyd4xoM89hYq1c",
-                        "checksum": "verified",
-                        "network": {
-                          "type": "monero"
-                        },
-                        "type": "address"
+                    "chainAddress": {
+                      "address": "8A3ZWAXrrQddvnT1fPrtbK86ZAoM4nai3Gjg1LEow3JWcryJtovMnHYZnxTJpCLmAbfWbnPMeTzPmMBjAhyd4xoM89hYq1c",
+                      "currency": {
+                        "ticker": "XMR",
+                        "type": "ticker"
                       },
                       "walletUri": "monero:8A3ZWAXrrQddvnT1fPrtbK86ZAoM4nai3Gjg1LEow3JWcryJtovMnHYZnxTJpCLmAbfWbnPMeTzPmMBjAhyd4xoM89hYq1c"
                     },
                     "showText": "Donate",
-                    "type": "paymentLink"
+                    "type": "chainAddressLink"
                   },
                   "text": "[Donate](monero:8A3ZWAXrrQddvnT1fPrtbK86ZAoM4nai3Gjg1LEow3JWcryJtovMnHYZnxTJpCLmAbfWbnPMeTzPmMBjAhyd4xoM89hYq1c)"
                 },
@@ -248,21 +239,15 @@
                 },
                 {
                   "format": {
-                    "payment": {
-                      "alternatives": [],
-                      "amount": "0.0025",
-                      "payee": {
-                        "lightning": {
-                          "description": "1 cup coffee",
-                          "expiresAt": "2099-01-01T12:00:00Z",
-                          "invoice": "lnbc2500u1pvjluezsp5zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zygspp5qqqsyqcyq5rqwzqfqqqsyqcyq5rqwzqfqqqsyqcyq5rqwzqfqypqdq5xysxxatsyp3k7enxv4jsxqzpu9qrsgquk0rl77nj30yxdy8j9vdx85fkpmdla2087ne0xh8nhedh8w27kyke0lp53ut353s06fv3qfegext0eh0ymjpf39tuven09sam30g4vgpfna3rh",
-                          "type": "invoice"
-                        },
+                    "chainAddress": {
+                      "address": "lnbc2500u1pvjluezsp5zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zygspp5qqqsyqcyq5rqwzqfqqqsyqcyq5rqwzqfqqqsyqcyq5rqwzqfqypqdq5xysxxatsyp3k7enxv4jsxqzpu9qrsgquk0rl77nj30yxdy8j9vdx85fkpmdla2087ne0xh8nhedh8w27kyke0lp53ut353s06fv3qfegext0eh0ymjpf39tuven09sam30g4vgpfna3rh",
+                      "currency": {
+                        "amount": "0.0025",
                         "type": "lightning"
                       },
                       "walletUri": "lightning:lnbc2500u1pvjluezsp5zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zygspp5qqqsyqcyq5rqwzqfqqqsyqcyq5rqwzqfqqqsyqcyq5rqwzqfqypqdq5xysxxatsyp3k7enxv4jsxqzpu9qrsgquk0rl77nj30yxdy8j9vdx85fkpmdla2087ne0xh8nhedh8w27kyke0lp53ut353s06fv3qfegext0eh0ymjpf39tuven09sam30g4vgpfna3rh"
                     },
-                    "type": "paymentLink"
+                    "type": "chainAddressLink"
                   },
                   "text": "lnbc2500u1pvjluezsp5zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zygspp5qqqsyqcyq5rqwzqfqqqsyqcyq5rqwzqfqqqsyqcyq5rqwzqfqypqdq5xysxxatsyp3k7enxv4jsxqzpu9qrsgquk0rl77nj30yxdy8j9vdx85fkpmdla2087ne0xh8nhedh8w27kyke0lp53ut353s06fv3qfegext0eh0ymjpf39tuven09sam30g4vgpfna3rh"
                 }
@@ -376,21 +361,16 @@
       "formattedText": [
         {
           "format": {
-            "payment": {
-              "alternatives": [],
-              "amount": "0.001",
-              "label": "SimpleX",
-              "payee": {
-                "address": "bc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66505d4u",
-                "checksum": "verified",
-                "network": {
-                  "type": "bitcoin"
-                },
-                "type": "address"
+            "chainAddress": {
+              "address": "bc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66505d4u",
+              "currency": {
+                "amount": "0.001",
+                "type": "bitcoin"
               },
+              "label": "SimpleX",
               "walletUri": "bitcoin:bc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66505d4u?amount=0.001&label=SimpleX"
             },
-            "type": "paymentLink"
+            "type": "chainAddressLink"
           },
           "text": "<bitcoin:bc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66505d4u?amount=0.001&label=SimpleX>"
         }
@@ -403,21 +383,17 @@
         },
         {
           "format": {
-            "payment": {
-              "alternatives": [],
-              "amount": "0.01",
-              "payee": {
-                "address": "0xD7047Fe3Eecb2f2FF78d839dD927Be27Bc12c86a",
-                "checksum": "verified",
-                "network": {
-                  "chainId": 42161,
-                  "type": "ethereum"
-                },
-                "type": "address"
+            "chainAddress": {
+              "address": "0xD7047Fe3Eecb2f2FF78d839dD927Be27Bc12c86a",
+              "currency": {
+                "amount": "0.01",
+                "chainName": "Arbitrum One",
+                "ticker": "ETH",
+                "type": "ticker"
               },
               "walletUri": "ethereum:0xD7047Fe3Eecb2f2FF78d839dD927Be27Bc12c86a@42161?value=1e16"
             },
-            "type": "paymentLink"
+            "type": "chainAddressLink"
           },
           "text": "ethereum:0xD7047Fe3Eecb2f2FF78d839dD927Be27Bc12c86a@42161?value=1e16"
         }
@@ -430,19 +406,14 @@
         },
         {
           "format": {
-            "payment": {
-              "alternatives": [],
-              "payee": {
-                "address": "bc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66505d4u",
-                "checksum": "verified",
-                "network": {
-                  "type": "bitcoin"
-                },
-                "type": "address"
+            "chainAddress": {
+              "address": "bc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66505d4u",
+              "currency": {
+                "type": "bitcoin"
               },
               "walletUri": "bitcoin:bc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66505d4u"
             },
-            "type": "paymentLink"
+            "type": "chainAddressLink"
           },
           "text": "bc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66505d4u"
         },
@@ -458,21 +429,15 @@
         },
         {
           "format": {
-            "payment": {
-              "alternatives": [],
-              "amount": "0.0025",
-              "payee": {
-                "lightning": {
-                  "description": "1 cup coffee",
-                  "expiresAt": "2099-01-01T12:00:00Z",
-                  "invoice": "lnbc2500u1pvjluezsp5zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zygspp5qqqsyqcyq5rqwzqfqqqsyqcyq5rqwzqfqqqsyqcyq5rqwzqfqypqdq5xysxxatsyp3k7enxv4jsxqzpu9qrsgquk0rl77nj30yxdy8j9vdx85fkpmdla2087ne0xh8nhedh8w27kyke0lp53ut353s06fv3qfegext0eh0ymjpf39tuven09sam30g4vgpfna3rh",
-                  "type": "invoice"
-                },
+            "chainAddress": {
+              "address": "lnbc2500u1pvjluezsp5zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zygspp5qqqsyqcyq5rqwzqfqqqsyqcyq5rqwzqfqqqsyqcyq5rqwzqfqypqdq5xysxxatsyp3k7enxv4jsxqzpu9qrsgquk0rl77nj30yxdy8j9vdx85fkpmdla2087ne0xh8nhedh8w27kyke0lp53ut353s06fv3qfegext0eh0ymjpf39tuven09sam30g4vgpfna3rh",
+              "currency": {
+                "amount": "0.0025",
                 "type": "lightning"
               },
               "walletUri": "lightning:lnbc2500u1pvjluezsp5zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zygspp5qqqsyqcyq5rqwzqfqqqsyqcyq5rqwzqfqqqsyqcyq5rqwzqfqypqdq5xysxxatsyp3k7enxv4jsxqzpu9qrsgquk0rl77nj30yxdy8j9vdx85fkpmdla2087ne0xh8nhedh8w27kyke0lp53ut353s06fv3qfegext0eh0ymjpf39tuven09sam30g4vgpfna3rh"
             },
-            "type": "paymentLink"
+            "type": "chainAddressLink"
           },
           "text": "lnbc2500u1pvjluezsp5zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zygspp5qqqsyqcyq5rqwzqfqqqsyqcyq5rqwzqfqqqsyqcyq5rqwzqfqypqdq5xysxxatsyp3k7enxv4jsxqzpu9qrsgquk0rl77nj30yxdy8j9vdx85fkpmdla2087ne0xh8nhedh8w27kyke0lp53ut353s06fv3qfegext0eh0ymjpf39tuven09sam30g4vgpfna3rh"
         },
@@ -488,20 +453,16 @@
         },
         {
           "format": {
-            "payment": {
-              "alternatives": [],
-              "payee": {
-                "address": "8A3ZWAXrrQddvnT1fPrtbK86ZAoM4nai3Gjg1LEow3JWcryJtovMnHYZnxTJpCLmAbfWbnPMeTzPmMBjAhyd4xoM89hYq1c",
-                "checksum": "verified",
-                "network": {
-                  "type": "monero"
-                },
-                "type": "address"
+            "chainAddress": {
+              "address": "8A3ZWAXrrQddvnT1fPrtbK86ZAoM4nai3Gjg1LEow3JWcryJtovMnHYZnxTJpCLmAbfWbnPMeTzPmMBjAhyd4xoM89hYq1c",
+              "currency": {
+                "ticker": "XMR",
+                "type": "ticker"
               },
               "walletUri": "monero:8A3ZWAXrrQddvnT1fPrtbK86ZAoM4nai3Gjg1LEow3JWcryJtovMnHYZnxTJpCLmAbfWbnPMeTzPmMBjAhyd4xoM89hYq1c"
             },
             "showText": "Donate",
-            "type": "paymentLink"
+            "type": "chainAddressLink"
           },
           "text": "[Donate](monero:8A3ZWAXrrQddvnT1fPrtbK86ZAoM4nai3Gjg1LEow3JWcryJtovMnHYZnxTJpCLmAbfWbnPMeTzPmMBjAhyd4xoM89hYq1c)"
         },
@@ -517,19 +478,15 @@
         },
         {
           "format": {
-            "payment": {
-              "alternatives": [],
-              "payee": {
-                "address": "0xD7047Fe3Eecb2f2FF78d839dD927Be27Bc12c86a",
-                "checksum": "verified",
-                "network": {
-                  "type": "ethereum"
-                },
-                "type": "address"
+            "chainAddress": {
+              "address": "0xD7047Fe3Eecb2f2FF78d839dD927Be27Bc12c86a",
+              "currency": {
+                "type": "unlisted",
+                "unlisted": "chain"
               },
               "walletUri": "ethereum:0xD7047Fe3Eecb2f2FF78d839dD927Be27Bc12c86a"
             },
-            "type": "paymentLink"
+            "type": "chainAddressLink"
           },
           "text": "0xD7047Fe3Eecb2f2FF78d839dD927Be27Bc12c86a"
         }
@@ -542,21 +499,17 @@
         },
         {
           "format": {
-            "payment": {
-              "alternatives": [],
-              "amount": "0.25",
-              "label": "SimpleX",
-              "payee": {
-                "address": "8A3ZWAXrrQddvnT1fPrtbK86ZAoM4nai3Gjg1LEow3JWcryJtovMnHYZnxTJpCLmAbfWbnPMeTzPmMBjAhyd4xoM89hYq1c",
-                "checksum": "verified",
-                "network": {
-                  "type": "monero"
-                },
-                "type": "address"
+            "chainAddress": {
+              "address": "8A3ZWAXrrQddvnT1fPrtbK86ZAoM4nai3Gjg1LEow3JWcryJtovMnHYZnxTJpCLmAbfWbnPMeTzPmMBjAhyd4xoM89hYq1c",
+              "currency": {
+                "amount": "0.25",
+                "ticker": "XMR",
+                "type": "ticker"
               },
+              "label": "SimpleX",
               "walletUri": "monero:8A3ZWAXrrQddvnT1fPrtbK86ZAoM4nai3Gjg1LEow3JWcryJtovMnHYZnxTJpCLmAbfWbnPMeTzPmMBjAhyd4xoM89hYq1c?tx_amount=0.25&recipient_name=SimpleX"
             },
-            "type": "paymentLink"
+            "type": "chainAddressLink"
           },
           "text": "monero:8A3ZWAXrrQddvnT1fPrtbK86ZAoM4nai3Gjg1LEow3JWcryJtovMnHYZnxTJpCLmAbfWbnPMeTzPmMBjAhyd4xoM89hYq1c?tx_amount=0.25&recipient_name=SimpleX"
         }
@@ -569,19 +522,15 @@
         },
         {
           "format": {
-            "payment": {
-              "alternatives": [],
-              "payee": {
-                "address": "t1fwjQW5gpFhDqXNhxqDWyF9j9WeKvVS5Jg",
-                "checksum": "verified",
-                "network": {
-                  "type": "zcash"
-                },
-                "type": "address"
+            "chainAddress": {
+              "address": "t1fwjQW5gpFhDqXNhxqDWyF9j9WeKvVS5Jg",
+              "currency": {
+                "ticker": "ZEC",
+                "type": "ticker"
               },
               "walletUri": "zcash:t1fwjQW5gpFhDqXNhxqDWyF9j9WeKvVS5Jg"
             },
-            "type": "paymentLink"
+            "type": "chainAddressLink"
           },
           "text": "t1fwjQW5gpFhDqXNhxqDWyF9j9WeKvVS5Jg"
         },
@@ -590,19 +539,15 @@
         },
         {
           "format": {
-            "payment": {
-              "alternatives": [],
-              "payee": {
-                "address": "ltc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66snwfdv",
-                "checksum": "verified",
-                "network": {
-                  "type": "litecoin"
-                },
-                "type": "address"
+            "chainAddress": {
+              "address": "ltc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66snwfdv",
+              "currency": {
+                "ticker": "LTC",
+                "type": "ticker"
               },
               "walletUri": "litecoin:ltc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66snwfdv"
             },
-            "type": "paymentLink"
+            "type": "chainAddressLink"
           },
           "text": "ltc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66snwfdv"
         },
@@ -611,19 +556,15 @@
         },
         {
           "format": {
-            "payment": {
-              "alternatives": [],
-              "payee": {
-                "address": "D99pV4n9TrPxBPCkQGx4w4SMSa6QjRBxPf",
-                "checksum": "verified",
-                "network": {
-                  "type": "dogecoin"
-                },
-                "type": "address"
+            "chainAddress": {
+              "address": "D99pV4n9TrPxBPCkQGx4w4SMSa6QjRBxPf",
+              "currency": {
+                "ticker": "DOGE",
+                "type": "ticker"
               },
               "walletUri": "dogecoin:D99pV4n9TrPxBPCkQGx4w4SMSa6QjRBxPf"
             },
-            "type": "paymentLink"
+            "type": "chainAddressLink"
           },
           "text": "D99pV4n9TrPxBPCkQGx4w4SMSa6QjRBxPf"
         },
@@ -632,19 +573,15 @@
         },
         {
           "format": {
-            "payment": {
-              "alternatives": [],
-              "payee": {
-                "address": "qq6c8vfvxqrk6rhdysgvkhqc24sggkfsx5nqvdlqcg",
-                "checksum": "verified",
-                "network": {
-                  "type": "bitcoinCash"
-                },
-                "type": "address"
+            "chainAddress": {
+              "address": "qq6c8vfvxqrk6rhdysgvkhqc24sggkfsx5nqvdlqcg",
+              "currency": {
+                "ticker": "BCH",
+                "type": "ticker"
               },
               "walletUri": "bitcoincash:qq6c8vfvxqrk6rhdysgvkhqc24sggkfsx5nqvdlqcg"
             },
-            "type": "paymentLink"
+            "type": "chainAddressLink"
           },
           "text": "qq6c8vfvxqrk6rhdysgvkhqc24sggkfsx5nqvdlqcg"
         },
@@ -653,19 +590,15 @@
         },
         {
           "format": {
-            "payment": {
-              "alternatives": [],
-              "payee": {
-                "address": "7JCf5m3TiHmYKZVr6jCu1KeZVtb9Y1jRMQDU69p5ARnu",
-                "checksum": "unchecked",
-                "network": {
-                  "type": "solana"
-                },
-                "type": "address"
+            "chainAddress": {
+              "address": "7JCf5m3TiHmYKZVr6jCu1KeZVtb9Y1jRMQDU69p5ARnu",
+              "currency": {
+                "ticker": "SOL",
+                "type": "ticker"
               },
               "walletUri": "solana:7JCf5m3TiHmYKZVr6jCu1KeZVtb9Y1jRMQDU69p5ARnu"
             },
-            "type": "paymentLink"
+            "type": "chainAddressLink"
           },
           "text": "solana:7JCf5m3TiHmYKZVr6jCu1KeZVtb9Y1jRMQDU69p5ARnu"
         }
@@ -678,21 +611,16 @@
         },
         {
           "format": {
-            "payment": {
-              "alternatives": [],
-              "amount": "0.001",
-              "label": "SimpleX",
-              "payee": {
-                "address": "bc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66505d4u",
-                "checksum": "verified",
-                "network": {
-                  "type": "bitcoin"
-                },
-                "type": "address"
+            "chainAddress": {
+              "address": "bc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66505d4u",
+              "currency": {
+                "amount": "0.001",
+                "type": "bitcoin"
               },
+              "label": "SimpleX",
               "walletUri": "bitcoin:bc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66505d4u?amount=0.001&label=SimpleX"
             },
-            "type": "paymentLink"
+            "type": "chainAddressLink"
           },
           "text": "bitcoin:bc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66505d4u?amount=0.001&label=SimpleX"
         },
@@ -705,20 +633,16 @@
       "formattedText": [
         {
           "format": {
-            "payment": {
-              "alternatives": [],
-              "payee": {
-                "address": "8A3ZWAXrrQddvnT1fPrtbK86ZAoM4nai3Gjg1LEow3JWcryJtovMnHYZnxTJpCLmAbfWbnPMeTzPmMBjAhyd4xoM89hYq1c",
-                "checksum": "verified",
-                "network": {
-                  "type": "monero"
-                },
-                "type": "address"
+            "chainAddress": {
+              "address": "8A3ZWAXrrQddvnT1fPrtbK86ZAoM4nai3Gjg1LEow3JWcryJtovMnHYZnxTJpCLmAbfWbnPMeTzPmMBjAhyd4xoM89hYq1c",
+              "currency": {
+                "ticker": "XMR",
+                "type": "ticker"
               },
               "walletUri": "monero:8A3ZWAXrrQddvnT1fPrtbK86ZAoM4nai3Gjg1LEow3JWcryJtovMnHYZnxTJpCLmAbfWbnPMeTzPmMBjAhyd4xoM89hYq1c"
             },
             "showText": "Donate",
-            "type": "paymentLink"
+            "type": "chainAddressLink"
           },
           "text": "[Donate](monero:8A3ZWAXrrQddvnT1fPrtbK86ZAoM4nai3Gjg1LEow3JWcryJtovMnHYZnxTJpCLmAbfWbnPMeTzPmMBjAhyd4xoM89hYq1c)"
         }
@@ -728,19 +652,14 @@
       "formattedText": [
         {
           "format": {
-            "payment": {
-              "alternatives": [],
-              "payee": {
-                "address": "bc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66505d4u",
-                "checksum": "verified",
-                "network": {
-                  "type": "bitcoin"
-                },
-                "type": "address"
+            "chainAddress": {
+              "address": "bc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66505d4u",
+              "currency": {
+                "type": "bitcoin"
               },
               "walletUri": "bitcoin:bc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66505d4u"
             },
-            "type": "paymentLink"
+            "type": "chainAddressLink"
           },
           "text": "[bc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66505d4u](bitcoin:bc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66505d4u)"
         }
@@ -750,19 +669,14 @@
       "formattedText": [
         {
           "format": {
-            "payment": {
-              "alternatives": [],
-              "payee": {
-                "address": "bc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66505d4u",
-                "checksum": "verified",
-                "network": {
-                  "type": "bitcoin"
-                },
-                "type": "address"
+            "chainAddress": {
+              "address": "bc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66505d4u",
+              "currency": {
+                "type": "bitcoin"
               },
               "walletUri": "bitcoin:bc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66505d4u"
             },
-            "type": "paymentLink"
+            "type": "chainAddressLink"
           },
           "text": "bc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66505d4u"
         }
@@ -772,24 +686,36 @@
       "formattedText": [
         {
           "format": {
-            "payment": {
-              "alternatives": [],
-              "amount": "0.001",
-              "label": "SimpleX",
-              "message": "Thank you",
-              "payee": {
-                "address": "bc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66505d4u",
-                "checksum": "verified",
-                "network": {
-                  "type": "bitcoin"
-                },
-                "type": "address"
+            "chainAddress": {
+              "address": "bc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66505d4u",
+              "currency": {
+                "amount": "0.001",
+                "type": "bitcoin"
               },
+              "label": "SimpleX",
               "walletUri": "bitcoin:bc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66505d4u?amount=0.001&label=SimpleX&message=Thank%20you"
             },
-            "type": "paymentLink"
+            "type": "chainAddressLink"
           },
           "text": "bitcoin:bc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66505d4u?amount=0.001&label=SimpleX&message=Thank%20you"
+        }
+      ]
+    },
+    "ethereum:0x1111111111111111111111111111111111111111@137/transfer?address=0xD7047Fe3Eecb2f2FF78d839dD927Be27Bc12c86a&uint256=10000000": {
+      "formattedText": [
+        {
+          "format": {
+            "chainAddress": {
+              "address": "0xD7047Fe3Eecb2f2FF78d839dD927Be27Bc12c86a",
+              "currency": {
+                "type": "unlisted",
+                "unlisted": "token"
+              },
+              "walletUri": "ethereum:0x1111111111111111111111111111111111111111@137/transfer?address=0xD7047Fe3Eecb2f2FF78d839dD927Be27Bc12c86a&uint256=10000000"
+            },
+            "type": "chainAddressLink"
+          },
+          "text": "ethereum:0x1111111111111111111111111111111111111111@137/transfer?address=0xD7047Fe3Eecb2f2FF78d839dD927Be27Bc12c86a&uint256=10000000"
         }
       ]
     },
@@ -797,23 +723,37 @@
       "formattedText": [
         {
           "format": {
-            "payment": {
-              "alternatives": [],
-              "amount": "0.01",
-              "payee": {
-                "address": "0xD7047Fe3Eecb2f2FF78d839dD927Be27Bc12c86a",
-                "checksum": "verified",
-                "network": {
-                  "chainId": 100,
-                  "type": "ethereum"
-                },
-                "type": "address"
+            "chainAddress": {
+              "address": "0xD7047Fe3Eecb2f2FF78d839dD927Be27Bc12c86a",
+              "currency": {
+                "type": "unlisted",
+                "unlisted": "chain"
               },
               "walletUri": "ethereum:0xD7047Fe3Eecb2f2FF78d839dD927Be27Bc12c86a@100?value=1e16"
             },
-            "type": "paymentLink"
+            "type": "chainAddressLink"
           },
           "text": "ethereum:0xD7047Fe3Eecb2f2FF78d839dD927Be27Bc12c86a@100?value=1e16"
+        }
+      ]
+    },
+    "ethereum:0xc2132D05D31c914a87C6611C10748AEb04B58e8F@137/transfer?address=0xD7047Fe3Eecb2f2FF78d839dD927Be27Bc12c86a&uint256=10000000": {
+      "formattedText": [
+        {
+          "format": {
+            "chainAddress": {
+              "address": "0xD7047Fe3Eecb2f2FF78d839dD927Be27Bc12c86a",
+              "currency": {
+                "amount": "10",
+                "chainName": "Polygon",
+                "ticker": "USDT",
+                "type": "ticker"
+              },
+              "walletUri": "ethereum:0xc2132D05D31c914a87C6611C10748AEb04B58e8F@137/transfer?address=0xD7047Fe3Eecb2f2FF78d839dD927Be27Bc12c86a&uint256=10000000"
+            },
+            "type": "chainAddressLink"
+          },
+          "text": "ethereum:0xc2132D05D31c914a87C6611C10748AEb04B58e8F@137/transfer?address=0xD7047Fe3Eecb2f2FF78d839dD927Be27Bc12c86a&uint256=10000000"
         }
       ]
     },
@@ -821,19 +761,15 @@
       "formattedText": [
         {
           "format": {
-            "payment": {
-              "alternatives": [],
-              "payee": {
-                "address": "0xD7047Fe3Eecb2f2FF78d839dD927Be27Bc12c86a",
-                "checksum": "unchecked",
-                "network": {
-                  "type": "ethereum"
-                },
-                "type": "address"
+            "chainAddress": {
+              "address": "0xD7047Fe3Eecb2f2FF78d839dD927Be27Bc12c86a",
+              "currency": {
+                "type": "unlisted",
+                "unlisted": "chain"
               },
               "walletUri": "ethereum:0xd7047fe3eecb2f2ff78d839dd927be27bc12c86a"
             },
-            "type": "paymentLink"
+            "type": "chainAddressLink"
           },
           "text": "ethereum:0xd7047fe3eecb2f2ff78d839dd927be27bc12c86a"
         }
@@ -843,27 +779,55 @@
       "formattedText": [
         {
           "format": {
-            "payment": {
-              "alternatives": [],
-              "amount": "5000000",
-              "payee": {
-                "address": "0xD7047Fe3Eecb2f2FF78d839dD927Be27Bc12c86a",
-                "checksum": "verified",
-                "network": {
-                  "chainId": 1,
-                  "type": "ethereum"
-                },
-                "type": "address"
-              },
-              "token": {
-                "address": "0xdAC17F958D2ee523a2206206994597C13D831ec7",
-                "checksum": "verified"
+            "chainAddress": {
+              "address": "0xD7047Fe3Eecb2f2FF78d839dD927Be27Bc12c86a",
+              "currency": {
+                "amount": "5",
+                "ticker": "USDT",
+                "type": "ticker"
               },
               "walletUri": "ethereum:0xdAC17F958D2ee523a2206206994597C13D831ec7@1/transfer?address=0xD7047Fe3Eecb2f2FF78d839dD927Be27Bc12c86a&uint256=5000000"
             },
-            "type": "paymentLink"
+            "type": "chainAddressLink"
           },
           "text": "ethereum:0xdAC17F958D2ee523a2206206994597C13D831ec7@1/transfer?address=0xD7047Fe3Eecb2f2FF78d839dD927Be27Bc12c86a&uint256=5000000"
+        }
+      ]
+    },
+    "ethereum:0xdAC17F958D2ee523a2206206994597C13D831ec7@99999/transfer?address=0xD7047Fe3Eecb2f2FF78d839dD927Be27Bc12c86a&uint256=10000000": {
+      "formattedText": [
+        {
+          "format": {
+            "chainAddress": {
+              "address": "0xD7047Fe3Eecb2f2FF78d839dD927Be27Bc12c86a",
+              "currency": {
+                "type": "unlisted",
+                "unlisted": "chainAndToken"
+              },
+              "walletUri": "ethereum:0xdAC17F958D2ee523a2206206994597C13D831ec7@99999/transfer?address=0xD7047Fe3Eecb2f2FF78d839dD927Be27Bc12c86a&uint256=10000000"
+            },
+            "type": "chainAddressLink"
+          },
+          "text": "ethereum:0xdAC17F958D2ee523a2206206994597C13D831ec7@99999/transfer?address=0xD7047Fe3Eecb2f2FF78d839dD927Be27Bc12c86a&uint256=10000000"
+        }
+      ]
+    },
+    "flux:t1fwjQW5gpFhDqXNhxqDWyF9j9WeKvVS5Jg?amount=5&message=Thanks": {
+      "formattedText": [
+        {
+          "format": {
+            "chainAddress": {
+              "address": "t1fwjQW5gpFhDqXNhxqDWyF9j9WeKvVS5Jg",
+              "currency": {
+                "amount": "5",
+                "ticker": "FLUX",
+                "type": "ticker"
+              },
+              "walletUri": "flux:t1fwjQW5gpFhDqXNhxqDWyF9j9WeKvVS5Jg?amount=5&message=Thanks"
+            },
+            "type": "chainAddressLink"
+          },
+          "text": "flux:t1fwjQW5gpFhDqXNhxqDWyF9j9WeKvVS5Jg?amount=5&message=Thanks"
         }
       ]
     },
@@ -871,19 +835,14 @@
       "formattedText": [
         {
           "format": {
-            "payment": {
-              "alternatives": [],
-              "payee": {
-                "lightning": {
-                  "host": "service.com",
-                  "lnurl": "lnurl1dp68gurn8ghj7um9wfmxjcm99e3k7mf0v9cxj0m385ekvcenxc6r2c35xvukxefcv5mkvv34x5ekzd3ev56nyd3hxqurzepexejxxepnxscrvwfnv9nxzcn9xq6xyefhvgcxxcmyxymnserxfq5fns",
-                  "type": "lnurl"
-                },
+            "chainAddress": {
+              "address": "lnurl1dp68gurn8ghj7um9wfmxjcm99e3k7mf0v9cxj0m385ekvcenxc6r2c35xvukxefcv5mkvv34x5ekzd3ev56nyd3hxqurzepexejxxepnxscrvwfnv9nxzcn9xq6xyefhvgcxxcmyxymnserxfq5fns",
+              "currency": {
                 "type": "lightning"
               },
               "walletUri": "lightning:LNURL1DP68GURN8GHJ7UM9WFMXJCM99E3K7MF0V9CXJ0M385EKVCENXC6R2C35XVUKXEFCV5MKVV34X5EKZD3EV56NYD3HXQURZEPEXEJXXEPNXSCRVWFNV9NXZCN9XQ6XYEFHVGCXXCMYXYMNSERXFQ5FNS"
             },
-            "type": "paymentLink"
+            "type": "chainAddressLink"
           },
           "text": "lightning:LNURL1DP68GURN8GHJ7UM9WFMXJCM99E3K7MF0V9CXJ0M385EKVCENXC6R2C35XVUKXEFCV5MKVV34X5EKZD3EV56NYD3HXQURZEPEXEJXXEPNXSCRVWFNV9NXZCN9XQ6XYEFHVGCXXCMYXYMNSERXFQ5FNS"
         }
@@ -893,18 +852,14 @@
       "formattedText": [
         {
           "format": {
-            "payment": {
-              "alternatives": [],
-              "payee": {
-                "lightning": {
-                  "offer": "lno1pgx9getnwss8vetrw3hhyuckyypwa3eyt44h6txtxquqh7lz5djge4afgfjn7k4rgrkuag0jsd5xvxg",
-                  "type": "offer"
-                },
+            "chainAddress": {
+              "address": "lno1pgx9getnwss8vetrw3hhyuckyypwa3eyt44h6txtxquqh7lz5djge4afgfjn7k4rgrkuag0jsd5xvxg",
+              "currency": {
                 "type": "lightning"
               },
               "walletUri": "lightning:lno1pgx9getnwss8vetrw3hhyuckyypwa3eyt44h6txtxquqh7lz5djge4afgfjn7k4rgrkuag0jsd5xvxg"
             },
-            "type": "paymentLink"
+            "type": "chainAddressLink"
           },
           "text": "lightning:lno1pgx9getnwss8vetrw3hhyuckyypwa3eyt44h6txtxquqh7lz5djge4afgfjn7k4rgrkuag0jsd5xvxg"
         }
@@ -914,21 +869,15 @@
       "formattedText": [
         {
           "format": {
-            "payment": {
-              "alternatives": [],
-              "amount": "0.0025",
-              "payee": {
-                "lightning": {
-                  "description": "1 cup coffee",
-                  "expiresAt": "2099-01-01T12:00:00Z",
-                  "invoice": "lnbc2500u1pvjluezsp5zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zygspp5qqqsyqcyq5rqwzqfqqqsyqcyq5rqwzqfqqqsyqcyq5rqwzqfqypqdq5xysxxatsyp3k7enxv4jsxqzpu9qrsgquk0rl77nj30yxdy8j9vdx85fkpmdla2087ne0xh8nhedh8w27kyke0lp53ut353s06fv3qfegext0eh0ymjpf39tuven09sam30g4vgpfna3rh",
-                  "type": "invoice"
-                },
+            "chainAddress": {
+              "address": "lnbc2500u1pvjluezsp5zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zygspp5qqqsyqcyq5rqwzqfqqqsyqcyq5rqwzqfqqqsyqcyq5rqwzqfqypqdq5xysxxatsyp3k7enxv4jsxqzpu9qrsgquk0rl77nj30yxdy8j9vdx85fkpmdla2087ne0xh8nhedh8w27kyke0lp53ut353s06fv3qfegext0eh0ymjpf39tuven09sam30g4vgpfna3rh",
+              "currency": {
+                "amount": "0.0025",
                 "type": "lightning"
               },
               "walletUri": "lightning:lnbc2500u1pvjluezsp5zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zygspp5qqqsyqcyq5rqwzqfqqqsyqcyq5rqwzqfqqqsyqcyq5rqwzqfqypqdq5xysxxatsyp3k7enxv4jsxqzpu9qrsgquk0rl77nj30yxdy8j9vdx85fkpmdla2087ne0xh8nhedh8w27kyke0lp53ut353s06fv3qfegext0eh0ymjpf39tuven09sam30g4vgpfna3rh"
             },
-            "type": "paymentLink"
+            "type": "chainAddressLink"
           },
           "text": "lnbc2500u1pvjluezsp5zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zygspp5qqqsyqcyq5rqwzqfqqqsyqcyq5rqwzqfqqqsyqcyq5rqwzqfqypqdq5xysxxatsyp3k7enxv4jsxqzpu9qrsgquk0rl77nj30yxdy8j9vdx85fkpmdla2087ne0xh8nhedh8w27kyke0lp53ut353s06fv3qfegext0eh0ymjpf39tuven09sam30g4vgpfna3rh"
         }
@@ -938,22 +887,75 @@
       "formattedText": [
         {
           "format": {
-            "payment": {
-              "alternatives": [],
-              "amount": "0.5",
-              "payee": {
-                "address": "7JCf5m3TiHmYKZVr6jCu1KeZVtb9Y1jRMQDU69p5ARnu",
-                "checksum": "unchecked",
-                "network": {
-                  "type": "solana"
-                },
-                "type": "address"
+            "chainAddress": {
+              "address": "7JCf5m3TiHmYKZVr6jCu1KeZVtb9Y1jRMQDU69p5ARnu",
+              "currency": {
+                "amount": "0.5",
+                "ticker": "SOL",
+                "type": "ticker"
               },
               "walletUri": "solana:7JCf5m3TiHmYKZVr6jCu1KeZVtb9Y1jRMQDU69p5ARnu?amount=0.5"
             },
-            "type": "paymentLink"
+            "type": "chainAddressLink"
           },
           "text": "solana:7JCf5m3TiHmYKZVr6jCu1KeZVtb9Y1jRMQDU69p5ARnu?amount=0.5"
+        }
+      ]
+    },
+    "solana:7JCf5m3TiHmYKZVr6jCu1KeZVtb9Y1jRMQDU69p5ARnu?amount=10&spl-token=EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v": {
+      "formattedText": [
+        {
+          "format": {
+            "chainAddress": {
+              "address": "7JCf5m3TiHmYKZVr6jCu1KeZVtb9Y1jRMQDU69p5ARnu",
+              "currency": {
+                "amount": "10",
+                "chainName": "Solana",
+                "ticker": "USDC",
+                "type": "ticker"
+              },
+              "walletUri": "solana:7JCf5m3TiHmYKZVr6jCu1KeZVtb9Y1jRMQDU69p5ARnu?amount=10&spl-token=EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
+            },
+            "type": "chainAddressLink"
+          },
+          "text": "solana:7JCf5m3TiHmYKZVr6jCu1KeZVtb9Y1jRMQDU69p5ARnu?amount=10&spl-token=EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
+        }
+      ]
+    },
+    "za19w5tpzrsd8x250l6h8qdxv70kg4an9ywljf4cqs5qk2hkw5ej5jw0zc0htg7qxws8vgm6xs3pj3": {
+      "formattedText": [
+        {
+          "format": {
+            "chainAddress": {
+              "address": "za19w5tpzrsd8x250l6h8qdxv70kg4an9ywljf4cqs5qk2hkw5ej5jw0zc0htg7qxws8vgm6xs3pj3",
+              "currency": {
+                "ticker": "FLUX",
+                "type": "ticker"
+              },
+              "walletUri": "flux:za19w5tpzrsd8x250l6h8qdxv70kg4an9ywljf4cqs5qk2hkw5ej5jw0zc0htg7qxws8vgm6xs3pj3"
+            },
+            "type": "chainAddressLink"
+          },
+          "text": "za19w5tpzrsd8x250l6h8qdxv70kg4an9ywljf4cqs5qk2hkw5ej5jw0zc0htg7qxws8vgm6xs3pj3"
+        }
+      ]
+    },
+    "zel:t1fwjQW5gpFhDqXNhxqDWyF9j9WeKvVS5Jg?amount=5": {
+      "formattedText": [
+        {
+          "format": {
+            "chainAddress": {
+              "address": "t1fwjQW5gpFhDqXNhxqDWyF9j9WeKvVS5Jg",
+              "currency": {
+                "amount": "5",
+                "ticker": "FLUX",
+                "type": "ticker"
+              },
+              "walletUri": "zel:t1fwjQW5gpFhDqXNhxqDWyF9j9WeKvVS5Jg?amount=5"
+            },
+            "type": "chainAddressLink"
+          },
+          "text": "zel:t1fwjQW5gpFhDqXNhxqDWyF9j9WeKvVS5Jg?amount=5"
         }
       ]
     }
