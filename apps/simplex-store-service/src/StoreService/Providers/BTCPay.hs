@@ -323,7 +323,7 @@ logStoreMethods env@BTCPayEnv {beCfg} = do
     what = "read store payment methods"
 
 createInvoice :: BTCPayEnv -> ServicePaymentMethod -> OrderDraft -> IO (Either ProviderError ProviderInvoice)
-createInvoice env@BTCPayEnv {beCfg} spm OrderDraft {odAmount, odCurrency} =
+createInvoice env@BTCPayEnv {beCfg} spm OrderDraft {odAmount, odCurrency, odReference} =
   case cryptoTarget spm of
     Left e -> pure (Left e)
     Right (methodId, cc) -> do
@@ -345,6 +345,7 @@ createInvoice env@BTCPayEnv {beCfg} spm OrderDraft {odAmount, odCurrency} =
       J.object
         [ "amount" J..= minorToDecimal odAmount,
           "currency" J..= T.toUpper odCurrency,
+          "metadata" J..= J.object ["orderId" J..= odReference],
           "checkout"
             J..= J.object
               [ -- the listener derives the row's expires_at from this same key

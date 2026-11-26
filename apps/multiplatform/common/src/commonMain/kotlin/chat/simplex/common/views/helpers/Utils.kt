@@ -6,6 +6,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.platform.*
 import androidx.compose.ui.text.*
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
@@ -110,6 +111,15 @@ fun annotatedStringResource(id: StringResource, vararg args: Any?): AnnotatedStr
   val density = LocalDensity.current
   return remember(id, args) {
     escapedHtmlToAnnotatedString(id.localized().format(args = args), density)
+  }
+}
+
+private const val NAME_PLACEHOLDER = "\u0000"
+
+fun formatWithBoldName(format: String, name: String, vararg args: Any?): AnnotatedString = buildAnnotatedString {
+  format.format(NAME_PLACEHOLDER, *args).split(NAME_PLACEHOLDER).forEachIndexed { i, part ->
+    if (i > 0) withStyle(SpanStyle(fontWeight = FontWeight.Bold)) { append(name) }
+    append(part)
   }
 }
 

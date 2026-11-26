@@ -48,7 +48,7 @@ import StoreService.Names.Chain (Hex32 (..), TxHash (..))
 import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Registration (DisputeDays, Registration (..), TermsAcceptance (..), acceptanceDigest, linkMaxBytes, makeCommitment, maxDisputeDays, minDisputeDays, policyDomain, registerIntentDigest, sponsorDomain, termsKind)
 import StoreService.Names.Reveal (RevealRequest (..))
-import StoreService.Names.Store (Commit (..), FailReason (..), NameRegistration (..), NameReveal (..), OrderPhase (..), TxHistory (..), getRegistration, noHistory)
+import StoreService.Names.Store (Commit (..), FailReason (..), NameRegistrationOrder (..), NameReveal (..), OrderPhase (..), TxHistory (..), getRegistration, noHistory)
 import StoreService.Web.Http (createLimit, holdMicros, maxBodyBytes, readLimit)
 import StoreService.Web.Names (Route (..), namesApp)
 import StoreService.Web.Names.Owner (selectNameHandler)
@@ -83,7 +83,7 @@ namesRevealTests = describe "StoreService names: reveal" $ do
     it "answers 503 for a listed name's reveal while its listing or the owner's policy nonce cannot be read, or before the policy has community terms, storing nothing" testAcceptanceUnavailable
   describe "races" $ do
     it "answers registration_changed with the current view when the registration changed during the checks" testLostRace
-    it "runs one at a time with /name for the name, exactly one of them taking effect" testRacesName
+    it "holds the name's turn while it reads the nonce, so a /name sent meanwhile waits, then is refused, and the reveal is stored" testRacesName
 
 -- fixtures
 
@@ -150,7 +150,7 @@ orderOf Registration {rLabel, rSecret, rContactLink, rChannelLink} = aliceOrder 
 -- | Ordered, paid, and committed by the worker with its reveal window open.
 committed :: Ctx -> Order -> IO RegistrationId
 committed ctx o = do
-  NameRegistration {nrId} <- paidOrder ctx o
+  NameRegistrationOrder {nrId} <- paidOrder ctx o
   _ <- change ctx nrId $ \r -> r {nrPhase = OCommitted openWindow}
   pure nrId
 
@@ -159,11 +159,11 @@ committedUnchecked ctx r = do
   rid <- committed ctx $ orderOf r {rContactLink = Nothing, rChannelLink = Nothing}
   rid <$ change ctx rid (\x -> x {nrCommitment = makeCommitment r})
 
-paidOrder :: Ctx -> Order -> IO NameRegistration
+paidOrder :: Ctx -> Order -> IO NameRegistrationOrder
 paidOrder ctx o = do
   (inv, _) <- placed ctx o
   settleNow ctx inv settled `shouldReturn` ISPaid
-  NameRegistration {nrId} <- invoiceRegistration ctx inv
+  NameRegistrationOrder {nrId} <- invoiceRegistration ctx inv
   _ <- change ctx nrId $ \r -> r {nrReveal = Nothing}
   stored ctx nrId
 
@@ -208,7 +208,7 @@ accepted = (200, Just KM.empty)
 badRequest :: (Int, Maybe J.Object)
 badRequest = refusedWith 400 "bad_request"
 
-stored :: Ctx -> RegistrationId -> IO NameRegistration
+stored :: Ctx -> RegistrationId -> IO NameRegistrationOrder
 stored Ctx {cStore} rid = withTransaction cStore $ \db -> fromJust <$> getRegistration db rid
 
 -- | Alice's name listed by the policy, and her policy nonce at 2.
@@ -314,8 +314,8 @@ testAcceptanceUnavailable = withListedReveals $ \Fx {fCtx = ctx@Ctx {cNode}} -> 
   reveal ctx rid body `shouldReturn` accepted
 
 -- | The fields a refused reveal must leave as they were.
-unwritten :: NameRegistration -> (Int64, Maybe NameReveal)
-unwritten NameRegistration {nrVersion, nrReveal} = (nrVersion, nrReveal)
+unwritten :: NameRegistrationOrder -> (Int64, Maybe NameReveal)
+unwritten NameRegistrationOrder {nrVersion, nrReveal} = (nrVersion, nrReveal)
 
 -- | The same signature with s mirrored to n - s, which recovers the same signer.
 highS :: RecoverableSignature -> RecoverableSignature
@@ -328,12 +328,12 @@ highS sig@RecoverableSignature {rsS, rsRecId} = sig {rsS = i2ospOf_ 32 (n - os2i
 testWithLinks :: IO ()
 testWithLinks = bounded "with links" $ withReveals $ \Fx {fCtx = ctx} -> do
   rid <- committed ctx (orderOf alice)
-  NameRegistration {nrVersion = v} <- stored ctx rid
+  NameRegistrationOrder {nrVersion = v} <- stored ctx rid
   poll <- held ctx (0, 1) $ registrationPath rid <> seenVersion v
   sig <- signIntent ctx keyA alice 0 revealBefore
   acceptance <- acceptanceOf ctx keyA alice False fakeGeneralTerms 0 revealBefore
   reveal ctx rid (withAcceptance acceptance $ bodyOf sig alice 0 revealBefore) `shouldReturn` accepted
-  NameRegistration {nrVersion, nrPhase, nrReveal} <- stored ctx rid
+  NameRegistrationOrder {nrVersion, nrPhase, nrReveal} <- stored ctx rid
   (nrVersion, nrPhase) `shouldBe` (v + 1, OCommitted openWindow)
   nrReveal
     `shouldBe` Just NameReveal {rvLabel = "alicebakery", rvSecret = rSecret alice, rvContactLink = Just contactLink, rvChannelLink = Just channelLink, rvNonce = 0, rvDeadline = RoundedSystemTime $ fromIntegral revealBefore, rvSignature = sig, rvAcceptance = acceptance}
@@ -342,14 +342,14 @@ testWithLinks = bounded "with links" $ withReveals $ \Fx {fCtx = ctx} -> do
 
 testUnreadContinues :: IO ()
 testUnreadContinues = withReveals $ \Fx {fCtx = ctx} -> do
-  NameRegistration {nrId = rid} <- paidOrder ctx (orderOf alice)
+  NameRegistrationOrder {nrId = rid} <- paidOrder ctx (orderOf alice)
   let failedAt = orderTime
       commitTx = TxHistory {thCommitTx = Just $ TxHash $ hashFixture 7, thRegisterTx = Nothing}
   _ <- change ctx rid $ \r -> r {nrPhase = OFailed failedAt FRRegistryRefused, nrHistory = commitTx}
   ownerReveal ctx rid alice `shouldReturn` badRequest
   _ <- change ctx rid $ \r -> r {nrPhase = OFailed failedAt FRUnread}
   ownerReveal ctx rid alice `shouldReturn` accepted
-  (\NameRegistration {nrPhase, nrHistory, nrReveal} -> (nrPhase, nrHistory, rvLabel <$> nrReveal)) <$> stored ctx rid
+  (\NameRegistrationOrder {nrPhase, nrHistory, nrReveal} -> (nrPhase, nrHistory, rvLabel <$> nrReveal)) <$> stored ctx rid
     `shouldReturn` (OQueued, noHistory, Just "alicebakery")
 
 testWithoutLinks :: IO ()
@@ -492,7 +492,7 @@ testStateAndFormat :: IO ()
 testStateAndFormat = withReveals $ \Fx {fCtx = ctx@Ctx {cClock}} -> do
   body <- ownerBody ctx alice
   reveal ctx (RegistrationId "t2Jk8RmQ4vXw9NcP3yLb6g") body `shouldReturn` refusedWith 404 "not_found"
-  NameRegistration {nrId = rid} <- paidOrder ctx (orderOf alice)
+  NameRegistrationOrder {nrId = rid} <- paidOrder ctx (orderOf alice)
   reveal ctx rid body `shouldReturn` badRequest
   _ <- change ctx rid $ \r -> r {nrPhase = OCommitted openWindow}
   unchanged <- unwritten <$> stored ctx rid
@@ -563,5 +563,5 @@ testRacesName = bounded "races /name" $ withReveals $ \Fx {fCtx = ctx} -> do
   releaseGate gate
   wait inFlight `shouldReturn` accepted
   wait selection `shouldReturn` badRequest
-  NameRegistration {nrLabelHash, nrReveal} <- stored ctx rid
+  NameRegistrationOrder {nrLabelHash, nrReveal} <- stored ctx rid
   (nrLabelHash, rvLabel <$> nrReveal) `shouldBe` (labelHash "alicebakery", Just "alicebakery")

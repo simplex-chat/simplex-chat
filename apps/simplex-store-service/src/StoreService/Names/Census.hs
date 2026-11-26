@@ -118,6 +118,8 @@ childrenOf env@ReadsAt {raSubnames} parents = do
 
 readAt :: ReadsAt -> Address -> ByteString -> ByteString -> (ByteString -> Either AbiError a) -> IO (Either ChainError a)
 readAt ReadsAt {raContracts, raAt} to signature args = callAt raContracts raAt to (signature, args)
+{-# INLINE readAt #-}
 
 readAll :: [IO (Either ChainError a)] -> ExceptT ChainError IO [a]
 readAll calls = concatMap L.toList <$> mapM (ExceptT . fmap sequence . mapConcurrently id) (toChunks readsAtOnce calls)
+{-# INLINE readAll #-}

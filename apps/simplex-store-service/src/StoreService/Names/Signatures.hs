@@ -77,6 +77,7 @@ communityTermsPrefix = "community/"
 
 parseSignature :: Text -> Either String RecoverableSignature
 parseSignature = strDecode . encodeUtf8
+{-# INLINE parseSignature #-}
 
 -- | EIP-191 @personal_sign@ digest.
 personalDigest :: ByteString -> ByteString
@@ -87,12 +88,14 @@ orderMessage order timestamp = message $ ["order"] <> orderWords order <> [tshow
 
 findMessage :: Address -> Word64 -> ByteString
 findMessage owner timestamp = message ["find", hex $ unAddress owner, tshow timestamp]
+{-# INLINE findMessage #-}
 
 selectionMessage :: RegistrationId -> OrderFields -> Word64 -> ByteString
 selectionMessage (RegistrationId rid) order timestamp = message $ ["name", rid] <> orderWords order <> [tshow timestamp]
 
 message :: [Text] -> ByteString
 message = encodeUtf8 . T.unwords . ("simplex.domains" :)
+{-# INLINE message #-}
 
 orderWords :: OrderFields -> [Text]
 orderWords OrderFields {ofLabelHash = LabelHash lh, ofLength, ofDuration, ofCommitment, ofSealed, ofAgreedTerms} =

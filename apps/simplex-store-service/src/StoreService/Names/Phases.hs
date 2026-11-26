@@ -25,19 +25,23 @@ newtype Phases = Phases (TMap RegistrationId Watch)
 
 newPhases :: IO Phases
 newPhases = Phases <$> TM.emptyIO
+{-# INLINE newPhases #-}
 
 -- | Call after the transaction that wrote this version commits.
 publish :: Phases -> RegistrationId -> Int64 -> STM ()
 publish (Phases watches) rid version =
   TM.lookup rid watches >>= mapM_ (\Watch {wVersion} -> modifyTVar' wVersion (max version))
+{-# INLINE publish #-}
 
 -- | The registrations with a waiter.
 phasesCount :: Phases -> IO Int
 phasesCount (Phases watches) = Map.size <$> readTVarIO watches
+{-# INLINE phasesCount #-}
 
 -- | The waiters across all registrations.
 phasesWaiting :: Phases -> STM Int
 phasesWaiting (Phases watches) = readTVar watches >>= fmap sum . mapM (\Watch {wRefs} -> readTVar wRefs) . Map.elems
+{-# INLINE phasesWaiting #-}
 
 subscribe :: Phases -> RegistrationId -> STM Watch
 subscribe (Phases watches) rid =

@@ -176,13 +176,16 @@ ethCallAt c tag to calldata = rpc c "eth_call" [J.object ["to" .= to, "data" .= 
 
 nodeChainId :: ChainClient -> IO (Either ChainError Word64)
 nodeChainId c = rpc c "eth_chainId" [] quantity
+{-# INLINE nodeChainId #-}
 
 latestBlock :: ChainClient -> IO (Either ChainError Block)
 latestBlock c = blockByNumber c Latest
+{-# INLINE latestBlock #-}
 
 -- | A block the node does not have is a failed read.
 blockAt :: ChainClient -> Word64 -> IO (Either ChainError Block)
 blockAt c = blockByNumber c . AtBlock
+{-# INLINE blockAt #-}
 
 -- | The newest block at the configured confirmation depth below this latest one, as the sender counts it.
 confirmedNumber :: ChainClient -> Word64 -> Word64
@@ -209,12 +212,15 @@ transactionReceipt c h =
 transactionKnown :: ChainClient -> TxHash -> IO (Either ChainError Bool)
 transactionKnown c h =
   rpc c "eth_getTransactionByHash" [J.toJSON h] $ fmap isJust . nullable (J.withObject "transaction" $ \_ -> pure ())
+{-# INLINE transactionKnown #-}
 
 transactionCount :: ChainClient -> Address -> BlockTag -> IO (Either ChainError Word64)
 transactionCount c a tag = rpc c "eth_getTransactionCount" [J.toJSON a, blockTagParam tag] quantity
+{-# INLINE transactionCount #-}
 
 registrarBalance :: ChainClient -> IO (Either ChainError Integer)
 registrarBalance c@ChainClient {ccRegistrar} = rpc c "eth_getBalance" [J.toJSON ccRegistrar, blockTagParam Latest] natural
+{-# INLINE registrarBalance #-}
 
 blockTagParam :: BlockTag -> J.Value
 blockTagParam = \case
@@ -252,6 +258,7 @@ signTransaction g ChainClient {ccConfig = ChainConfig {cServiceKey}} tx = fmap s
 
 decodeSignedTx :: ByteString -> Either String Eip1559Tx
 decodeSignedTx = fmap fst . decodeEip1559Tx
+{-# INLINE decodeSignedTx #-}
 
 transactionSigner :: ByteString -> IO (Either String (Eip1559Tx, Address))
 transactionSigner raw = case decodeEip1559Tx raw of
@@ -260,6 +267,7 @@ transactionSigner raw = case decodeEip1559Tx raw of
 
 sendRawTransaction :: ChainClient -> ByteString -> IO (Either ChainError TxHash)
 sendRawTransaction c raw = rpc c "eth_sendRawTransaction" [J.String $ hex raw] J.parseJSON
+{-# INLINE sendRawTransaction #-}
 
 -- | The answer is parsed within the timeout, so a slow parse is bounded too.
 rpc :: ChainClient -> Text -> [J.Value] -> (J.Value -> JT.Parser a) -> IO (Either ChainError a)
@@ -348,6 +356,8 @@ natural = J.withText "quantity" $ \t ->
 
 bytes :: J.Value -> JT.Parser ByteString
 bytes = nodeHex "data" "not hex data" $ A.takeWhile isHexDigit >>= either fail pure . convertFromBase Base16
+{-# INLINE bytes #-}
 
 nodeHex :: String -> String -> A.Parser a -> J.Value -> JT.Parser a
 nodeHex name failure p = J.withText name $ either (const $ fail failure) pure . parseText (A.string "0x" *> p)
+{-# INLINE nodeHex #-}

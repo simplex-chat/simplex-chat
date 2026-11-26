@@ -1,0 +1,108 @@
+{
+  "commands": {
+    "/_connect plan 1 CHANNEL_LINK": {
+      "result": {
+        "connLink": {
+          "connFullLink": "connFullLink",
+          "connShortLink": "connShortLink"
+        },
+        "connectionPlan": {
+          "groupLinkPlan": {
+            "expiresAt": "2099-01-01T12:00:00Z",
+            "type": "linkNotice"
+          },
+          "type": "groupLink"
+        },
+        "type": "connectionPlan",
+        "user": {
+          "activeOrder": 1,
+          "activeUser": true,
+          "agentUserId": "1",
+          "autoAcceptGroupInvitations": false,
+          "autoAcceptMemberContacts": false,
+          "clientService": false,
+          "fullPreferences": {
+            "calls": {
+              "allow": "yes"
+            },
+            "commands": [],
+            "files": {
+              "allow": "always"
+            },
+            "fullDelete": {
+              "allow": "no"
+            },
+            "reactions": {
+              "allow": "yes"
+            },
+            "sessions": {
+              "allow": "no"
+            },
+            "timedMessages": {
+              "allow": "yes"
+            },
+            "voice": {
+              "allow": "yes"
+            }
+          },
+          "localDisplayName": "cath",
+          "profile": {
+            "displayName": "cath",
+            "fullName": "",
+            "localAlias": "",
+            "preferences": {
+              "calls": {
+                "allow": "yes"
+              },
+              "commands": [],
+              "files": {
+                "allow": "always"
+              },
+              "fullDelete": {
+                "allow": "no"
+              },
+              "reactions": {
+                "allow": "yes"
+              },
+              "sessions": {
+                "allow": "no"
+              },
+              "timedMessages": {
+                "allow": "yes"
+              },
+              "voice": {
+                "allow": "yes"
+              }
+            },
+            "profileId": 1,
+            "shortDescr": "Catherine"
+          },
+          "sendRcptsContacts": true,
+          "sendRcptsSmallGroups": true,
+          "showNtfs": true,
+          "userChatRelay": false,
+          "userContactId": 1,
+          "userId": 1
+        }
+      }
+    }
+  },
+  "markdown": {
+    "CHANNEL_LINK": {
+      "formattedText": [
+        {
+          "format": {
+            "linkType": "channel",
+            "simplexUri": "simplexUri",
+            "smpHosts": [
+              "localhost"
+            ],
+            "type": "simplexLink"
+          },
+          "text": "CHANNEL_LINK"
+        }
+      ]
+    }
+  },
+  "uris": {}
+}

@@ -9,6 +9,8 @@ import SectionView
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.InlineTextContent
 import androidx.compose.foundation.text.appendInlineContent
@@ -16,6 +18,7 @@ import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalUriHandler
@@ -142,12 +145,16 @@ fun GroupMemberInfoView(
       },
       blockMember = { blockMemberAlert(rhId, groupInfo, member) },
       unblockMember = { unblockMemberAlert(rhId, groupInfo, member) },
-      blockForAll = { blockForAllAlert(rhId, groupInfo, member) },
+      blockForAll = { banMembersDialog(rhId, groupInfo, listOf(member), close) },
       unblockForAll = { unblockForAllAlert(rhId, groupInfo, member) },
       removeMember = { removeMemberDialog(rhId, groupInfo, member, chatModel, close) },
       deleteMemberMessages = { deleteMemberMessagesDialog(rhId, groupInfo, member, chatModel, close) },
       onRoleSelected = {
         if (it == newRole.value) return@GroupMemberInfoLayout
+        if (it >= GroupMemberRole.Moderator && member.blockedByAdmin) {
+          unblockBeforeRoleChangeAlert(rhId, groupInfo, member)
+          return@GroupMemberInfoLayout
+        }
         val prevValue = newRole.value
         newRole.value = it
         updateMemberRoleDialog(it, groupInfo, member.memberCurrent, onDismiss = {
@@ -276,10 +283,13 @@ fun removeMemberDialog(rhId: Long?, groupInfo: GroupInfo, member: GroupMember, c
           }
         }
       })
+  } else if (member.blockedByAdmin && member.canBanAndRemove(groupInfo)) {
+    removeBannedMembersDialog(rhId, groupInfo, listOf(member)) { close?.invoke() }
   } else if (groupInfo.useRelays) {
     AlertManager.shared.showAlertDialogButtonsColumn(
       generalGetString(MR.strings.button_remove_subscriber_question),
       generalGetString(MR.strings.subscriber_will_be_removed_from_channel_cannot_be_undone),
+      belowTextContent = { CannotBlockWarning(listOf(member)) },
       buttons = {
         Column {
           SectionItemView({
@@ -309,6 +319,7 @@ fun removeMemberDialog(rhId: Long?, groupInfo: GroupInfo, member: GroupMember, c
     AlertManager.shared.showAlertDialogButtonsColumn(
       generalGetString(MR.strings.button_remove_member_question),
       generalGetString(messageId),
+      belowTextContent = { CannotBlockWarning(listOf(member)) },
       buttons = {
         Column {
           SectionItemView({
@@ -804,8 +815,8 @@ fun GroupMemberInfoHeader(member: GroupMember) {
 @Composable
 fun BlockMemberButton(onClick: () -> Unit) {
   SettingsActionItem(
-    painterResource(MR.images.ic_back_hand),
-    stringResource(MR.strings.block_member_button),
+    painterResource(MR.images.ic_visibility_off),
+    stringResource(MR.strings.hide_messages_button),
     click = onClick,
     textColor = Color.Red,
     iconColor = Color.Red,
@@ -815,8 +826,8 @@ fun BlockMemberButton(onClick: () -> Unit) {
 @Composable
 fun UnblockMemberButton(onClick: () -> Unit) {
   SettingsActionItem(
-    painterResource(MR.images.ic_do_not_touch),
-    stringResource(MR.strings.unblock_member_button),
+    painterResource(MR.images.ic_visibility),
+    stringResource(MR.strings.show_messages_button),
     click = onClick
   )
 }
@@ -983,6 +994,16 @@ fun updateMembersRole(newRole: GroupMemberRole, rhId: Long?, groupInfo: GroupInf
   }
 }
 
+fun unblockBeforeRoleChangeAlert(rhId: Long?, gInfo: GroupInfo, member: GroupMember) {
+  AlertManager.shared.showAlertDialog(
+    title = generalGetString(MR.strings.unblock_first),
+    text = String.format(generalGetString(MR.strings.unblock_before_role_change), member.displayName),
+    confirmText = generalGetString(MR.strings.unblock_member_confirmation),
+    onConfirm = { blockMemberForAll(rhId, gInfo, listOf(member.groupMemberId), false) },
+    parseHtml = false
+  )
+}
+
 fun updateMemberRoleDialog(
   newRole: GroupMemberRole,
   groupInfo: GroupInfo,
@@ -1039,9 +1060,9 @@ fun connectViaMemberAddressAlert(rhId: Long?, connReqUri: String) {
 
 fun blockMemberAlert(rhId: Long?, gInfo: GroupInfo, mem: GroupMember) {
   AlertManager.shared.showAlertDialog(
-    title = generalGetString(MR.strings.block_member_question),
-    text = generalGetString(MR.strings.block_member_desc).format(mem.chatViewName),
-    confirmText = generalGetString(MR.strings.block_member_confirmation),
+    title = generalGetString(MR.strings.hide_messages_question),
+    text = generalGetString(MR.strings.block_member_desc).format(mem.displayName),
+    confirmText = generalGetString(MR.strings.hide_verb),
     onConfirm = {
       toggleShowMemberMessages(rhId, gInfo, mem, false)
     },
@@ -1051,9 +1072,9 @@ fun blockMemberAlert(rhId: Long?, gInfo: GroupInfo, mem: GroupMember) {
 
 fun unblockMemberAlert(rhId: Long?, gInfo: GroupInfo, mem: GroupMember) {
   AlertManager.shared.showAlertDialog(
-    title = generalGetString(MR.strings.unblock_member_question),
-    text = generalGetString(MR.strings.unblock_member_desc).format(mem.chatViewName),
-    confirmText = generalGetString(MR.strings.unblock_member_confirmation),
+    title = generalGetString(MR.strings.show_messages_question),
+    text = generalGetString(MR.strings.unblock_member_desc).format(mem.displayName),
+    confirmText = generalGetString(MR.strings.show_verb),
     onConfirm = {
       toggleShowMemberMessages(rhId, gInfo, mem, true)
     },
@@ -1079,36 +1100,199 @@ fun updateMemberSettings(rhId: Long?, gInfo: GroupInfo, member: GroupMember, mem
   }
 }
 
-fun blockForAllAlert(rhId: Long?, gInfo: GroupInfo, mem: GroupMember) {
-  val titleId = if (gInfo.useRelays) MR.strings.block_subscriber_for_all_question else MR.strings.block_for_all_question
-  AlertManager.shared.showAlertDialog(
-    title = generalGetString(titleId),
-    text = generalGetString(MR.strings.block_member_desc).format(mem.chatViewName),
-    confirmText = generalGetString(MR.strings.block_for_all),
-    onConfirm = {
-      blockMemberForAll(rhId, gInfo, listOf(mem.groupMemberId), true)
+class BanDialogAction(val title: String, val action: (BanDuration) -> Unit)
+
+fun showBanDialog(title: String, text: AnnotatedString, actions: List<BanDialogAction>, warning: String? = null, withDuration: Boolean = true) {
+  AlertManager.shared.showAlertDialogButtonsColumn(title) {
+    val duration = remember { mutableStateOf(BanDuration.Day) }
+    Column(Modifier.verticalScroll(rememberScrollState())) {
+      BanDialogText(text)
+      if (warning != null) {
+        PreviousVersionWarning(warning, Modifier.padding(horizontal = DEFAULT_PADDING))
+        Spacer(Modifier.height(DEFAULT_PADDING))
+      }
+      if (withDuration) {
+        ExposedDropDownSettingRow(
+          generalGetString(MR.strings.ban_for),
+          BanDuration.entries.map { it to it.text },
+          duration,
+          onSelected = { duration.value = it }
+        )
+      }
+      actions.forEach { a ->
+        SectionItemView({
+          AlertManager.shared.hideAlert()
+          a.action(duration.value)
+        }) {
+          Text(a.title, Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = Color.Red)
+        }
+      }
+      SectionItemView({
+        AlertManager.shared.hideAlert()
+      }) {
+        Text(generalGetString(MR.strings.cancel_verb), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+      }
+    }
+  }
+}
+
+@Composable
+private fun BanDialogText(text: AnnotatedString) {
+  Text(text, Modifier.fillMaxWidth().padding(horizontal = DEFAULT_PADDING), fontSize = 16.sp, textAlign = TextAlign.Center, color = MaterialTheme.colors.secondary)
+  Spacer(Modifier.height(DEFAULT_PADDING))
+}
+
+@Composable
+fun PreviousVersionWarning(text: String, modifier: Modifier = Modifier) {
+  Text(
+    buildAnnotatedString {
+      appendInlineContent(id = "warningIcon")
+      append(" ")
+      append(text)
     },
-    destructive = true,
+    modifier.fillMaxWidth(),
+    inlineContent = mapOf(
+      "warningIcon" to InlineTextContent(Placeholder(18.sp, 18.sp, PlaceholderVerticalAlign.TextCenter)) {
+        Icon(painterResource(MR.images.ic_warning), null, tint = WarningOrange)
+      }
+    ),
+    fontSize = 16.sp,
+    textAlign = TextAlign.Center,
+    color = MaterialTheme.colors.secondary
   )
 }
 
-fun blockForAllAlert(rhId: Long?, gInfo: GroupInfo, memberIds: List<Long>, onSuccess: () -> Unit = {}) {
-  AlertManager.shared.showAlertDialog(
-    title = generalGetString(MR.strings.block_members_for_all_question),
-    text = generalGetString(MR.strings.block_members_desc),
-    confirmText = generalGetString(MR.strings.block_for_all),
-    onConfirm = {
-      blockMemberForAll(rhId, gInfo, memberIds, true, onSuccess)
-    },
-    destructive = true,
+fun previousVersionWarningText(members: List<GroupMember>, one: StringResource, many: StringResource): String? =
+  when (val count = members.count { !it.supportsLinkNotice }) {
+    0 -> null
+    1 -> generalGetString(one)
+    else -> String.format(generalGetString(many), count)
+  }
+
+@Composable
+fun CannotBlockWarning(members: List<GroupMember>) {
+  val warning = if (members.any { it.blockedByAdmin }) previousVersionWarningText(members, MR.strings.member_previous_version_cannot_ban, MR.strings.members_previous_version_cannot_ban) else null
+  if (warning != null) {
+    Spacer(Modifier.height(DEFAULT_PADDING_HALF))
+    PreviousVersionWarning(warning)
+  }
+}
+
+fun banMembersDialog(rhId: Long?, gInfo: GroupInfo, members: List<GroupMember>, close: (() -> Unit)? = null, onSuccess: () -> Unit = {}) {
+  val canRemove = members.all { it.canBanAndRemove(gInfo) }
+  val memberIds = members.map { it.groupMemberId }
+  val removed: () -> Unit = { onSuccess(); close?.invoke() }
+  val ban = BanDialogAction(generalGetString(MR.strings.block_member_confirmation)) { blockMemberForAll(rhId, gInfo, memberIds, true, onSuccess) }
+  val actions = if (canRemove) {
+    listOf(
+      ban,
+      BanDialogAction(generalGetString(MR.strings.ban_and_remove)) { removeBannedMembersDialog(rhId, gInfo, members, removed) }
+    )
+  } else {
+    listOf(ban)
+  }
+  val member = members.singleOrNull()
+  val title = generalGetString(
+    if (member != null) {
+      if (gInfo.useRelays) MR.strings.block_subscriber_for_all_question else MR.strings.block_for_all_question
+    } else {
+      if (gInfo.useRelays) MR.strings.block_subscribers_for_all_question else MR.strings.block_members_for_all_question
+    }
   )
+  val text = if (member != null) {
+    formatWithBoldName(generalGetString(if (canRemove) MR.strings.ban_member_desc_ban_and_remove else MR.strings.ban_member_desc), member.displayName)
+  } else if (gInfo.useRelays) {
+    AnnotatedString(generalGetString(if (canRemove) MR.strings.ban_subscribers_desc_ban_and_remove else MR.strings.ban_subscribers_desc))
+  } else {
+    AnnotatedString(generalGetString(if (canRemove) MR.strings.ban_members_desc_ban_and_remove else MR.strings.ban_members_desc))
+  }
+  val warning = if (member == null && gInfo.membership.memberRole >= GroupMemberRole.Admin) previousVersionWarningText(members, MR.strings.member_previous_version_ban_only, MR.strings.members_previous_version_ban_only) else null
+  showBanDialog(title, text, actions, warning, withDuration = false)
+}
+
+fun removeBannedMembersDialog(rhId: Long?, gInfo: GroupInfo, members: List<GroupMember>, onSuccess: () -> Unit = {}) {
+  val title = generalGetString(
+    if (members.size == 1) {
+      if (gInfo.useRelays) MR.strings.button_remove_subscriber_question else MR.strings.button_remove_member_question
+    } else {
+      MR.strings.button_remove_members_question
+    }
+  )
+  val member = members.singleOrNull()
+  val text = if (member != null) {
+    formatWithBoldName(generalGetString(MR.strings.remove_banned_member_desc), member.displayName)
+  } else {
+    AnnotatedString(generalGetString(if (gInfo.useRelays) MR.strings.remove_banned_subscribers_desc else MR.strings.remove_banned_members_desc))
+  }
+  showBanDialog(
+    title,
+    text,
+    listOf(
+      BanDialogAction(generalGetString(MR.strings.remove_member_confirmation)) { removeBannedMembers(rhId, gInfo, members, it, withMessages = false, onSuccess) },
+      BanDialogAction(generalGetString(MR.strings.remove_member_delete_messages_confirmation)) { removeBannedMembers(rhId, gInfo, members, it, withMessages = true, onSuccess) }
+    )
+  )
+}
+
+const val FOREVER_CONFIRMATION_WORD = "yes"
+
+fun removeBannedMembers(rhId: Long?, gInfo: GroupInfo, members: List<GroupMember>, duration: BanDuration, withMessages: Boolean, onSuccess: () -> Unit = {}) {
+  val memberIds = members.map { it.groupMemberId }
+  if (duration == BanDuration.Forever) {
+    val member = members.singleOrNull()
+    val desc = if (member != null) {
+      formatWithBoldName(generalGetString(if (gInfo.useRelays) MR.strings.remove_forever_subscriber_desc else MR.strings.remove_forever_desc), member.displayName)
+    } else {
+      AnnotatedString(generalGetString(if (gInfo.useRelays) MR.strings.remove_forever_subscribers_desc else MR.strings.remove_forever_members_desc))
+    }
+    showTypedConfirmationDialog(
+      title = generalGetString(MR.strings.remove_forever_question),
+      text = desc,
+      word = FOREVER_CONFIRMATION_WORD,
+      confirmText = generalGetString(MR.strings.remove_member_confirmation)
+    ) {
+      removeMembers(rhId, gInfo, memberIds, withMessages, duration.notice, onSuccess)
+    }
+  } else {
+    removeMembers(rhId, gInfo, memberIds, withMessages, duration.notice, onSuccess)
+  }
+}
+
+fun showTypedConfirmationDialog(title: String, text: AnnotatedString, word: String, confirmText: String, content: @Composable () -> Unit = {}, confirm: () -> Unit) {
+  AlertManager.shared.showAlertDialogButtonsColumn(title) {
+    val field = remember { mutableStateOf("") }
+    val matches = field.value.trim().lowercase() == word
+    Column(Modifier.verticalScroll(rememberScrollState())) {
+      BanDialogText(text)
+      content()
+      val focusRequester = remember { FocusRequester() }
+      TextEditor(field, Modifier, String.format(generalGetString(MR.strings.type_to_confirm), word), focusRequester = focusRequester, maxLines = 1)
+      LaunchedEffect(Unit) {
+        delay(300)
+        focusRequester.requestFocus()
+      }
+      Spacer(Modifier.height(DEFAULT_PADDING_HALF))
+      SectionItemView({
+        AlertManager.shared.hideAlert()
+        confirm()
+      }, disabled = !matches) {
+        Text(confirmText, Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = if (matches) Color.Red else MaterialTheme.colors.secondary)
+      }
+      SectionItemView({
+        AlertManager.shared.hideAlert()
+      }) {
+        Text(generalGetString(MR.strings.cancel_verb), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+      }
+    }
+  }
 }
 
 fun unblockForAllAlert(rhId: Long?, gInfo: GroupInfo, mem: GroupMember) {
   val titleId = if (gInfo.useRelays) MR.strings.unblock_subscriber_for_all_question else MR.strings.unblock_for_all_question
+  val textId = if (gInfo.useRelays) MR.strings.lift_ban_subscriber_desc else MR.strings.lift_ban_desc
   AlertManager.shared.showAlertDialog(
     title = generalGetString(titleId),
-    text = generalGetString(MR.strings.unblock_member_desc).format(mem.chatViewName),
+    text = generalGetString(textId).format(mem.displayName),
     confirmText = generalGetString(MR.strings.unblock_for_all),
     onConfirm = {
       blockMemberForAll(rhId, gInfo, listOf(mem.groupMemberId), false)
@@ -1119,10 +1303,10 @@ fun unblockForAllAlert(rhId: Long?, gInfo: GroupInfo, mem: GroupMember) {
 fun unblockForAllAlert(rhId: Long?, gInfo: GroupInfo, memberIds: List<Long>, onSuccess: () -> Unit = {}) {
   AlertManager.shared.showAlertDialog(
     title = generalGetString(MR.strings.unblock_members_for_all_question),
-    text = generalGetString(MR.strings.unblock_members_desc),
+    text = generalGetString(if (gInfo.useRelays) MR.strings.unblock_subscribers_desc else MR.strings.unblock_members_desc),
     confirmText = generalGetString(MR.strings.unblock_for_all),
     onConfirm = {
-      blockMemberForAll(rhId, gInfo, memberIds, false, onSuccess)
+      blockMemberForAll(rhId, gInfo, memberIds, false, onSuccess = onSuccess)
     },
   )
 }
@@ -1178,3 +1362,73 @@ fun PreviewGroupMemberInfoLayout() {
     )
   }
 }
+
+private val previewModeratorGroupInfo = previewOwnerGroupInfo.copy(membership = previewOwnerGroupInfo.membership.copy(memberRole = GroupMemberRole.Moderator))
+
+private val previewChannelModeratorInfo = previewChannelInfo.copy(membership = previewChannelInfo.membership.copy(memberRole = GroupMemberRole.Moderator))
+
+private val previewBannedMembers = listOf(previewBanMember.copy(blockedByAdmin = true), previewBanMember.copy(groupMemberId = 3, blockedByAdmin = true))
+
+@Preview
+@Composable
+fun PreviewBanMemberDialog() = AlertPreview { banMembersDialog(null, previewOwnerGroupInfo, listOf(previewBanMember)) }
+
+@Preview
+@Composable
+fun PreviewBanMemberDialogModerator() = AlertPreview { banMembersDialog(null, previewModeratorGroupInfo, listOf(previewBanMember)) }
+
+@Preview
+@Composable
+fun PreviewBanMembersDialog() = AlertPreview { banMembersDialog(null, previewOwnerGroupInfo, listOf(previewBanMember, previewBanMember.copy(groupMemberId = 3))) }
+
+@Preview
+@Composable
+fun PreviewBanMembersDialogPreviousVersion() = AlertPreview { banMembersDialog(null, previewOwnerGroupInfo, listOf(previewBanMember) + previewPreviousVersionMembers) }
+
+@Preview
+@Composable
+fun PreviewRemoveBannedMemberDialog() = AlertPreview { removeBannedMembersDialog(null, previewOwnerGroupInfo, previewBannedMembers.take(1)) }
+
+@Preview
+@Composable
+fun PreviewRemoveBannedMembersDialog() = AlertPreview { removeBannedMembersDialog(null, previewOwnerGroupInfo, previewBannedMembers) }
+
+@Preview
+@Composable
+fun PreviewRemoveForeverDialog() = AlertPreview { removeBannedMembers(null, previewOwnerGroupInfo, previewBannedMembers.take(1), BanDuration.Forever, withMessages = false) }
+
+@Preview
+@Composable
+fun PreviewLiftBanAlert() = AlertPreview { unblockForAllAlert(null, previewOwnerGroupInfo, previewBannedMembers.first()) }
+
+@Preview
+@Composable
+fun PreviewLiftBanMembersAlert() = AlertPreview { unblockForAllAlert(null, previewOwnerGroupInfo, previewBannedMembers.map { it.groupMemberId }) }
+
+@Preview
+@Composable
+fun PreviewHideMessagesAlert() = AlertPreview { blockMemberAlert(null, GroupInfo.sampleData, previewBanMember) }
+
+@Preview
+@Composable
+fun PreviewShowMessagesAlert() = AlertPreview { unblockMemberAlert(null, GroupInfo.sampleData, previewBanMember.copy(memberSettings = GroupMemberSettings(showMessages = false))) }
+
+@Preview
+@Composable
+fun PreviewBanSubscriberDialog() = AlertPreview { banMembersDialog(null, previewChannelInfo, listOf(previewBanMember)) }
+
+@Preview
+@Composable
+fun PreviewBanSubscriberDialogModerator() = AlertPreview { banMembersDialog(null, previewChannelModeratorInfo, listOf(previewBanMember)) }
+
+@Preview
+@Composable
+fun PreviewRemoveBannedSubscriberDialog() = AlertPreview { removeBannedMembersDialog(null, previewChannelInfo, previewBannedMembers.take(1)) }
+
+@Preview
+@Composable
+fun PreviewRemoveSubscriberForeverDialog() = AlertPreview { removeBannedMembers(null, previewChannelInfo, previewBannedMembers.take(1), BanDuration.Forever, withMessages = false) }
+
+@Preview
+@Composable
+fun PreviewLiftBanSubscriberAlert() = AlertPreview { unblockForAllAlert(null, previewChannelInfo, previewBannedMembers.first()) }
