@@ -715,38 +715,31 @@ suspend fun importArchive(
   val archivePath = saveArchiveFromURI(importedArchiveURI)
   if (archivePath != null) {
     try {
-      m.controller.apiDeleteStorage()
-      wallpapersDir.mkdirs()
-      try {
-        val config = ArchiveConfig(archivePath, parentTempDirectory = databaseExportDir.toString())
-        val archiveErrors = m.controller.apiImportArchive(config)
-        appPrefs.shouldImportAppSettings.set(true)
-        DatabaseUtils.ksDatabasePassword.remove()
-        appFilesCountAndSize.value = directoryFileCountAndSize(appFilesDir.absolutePath)
-        if (archiveErrors.isEmpty()) {
-          operationEnded(m, progressIndicator) {
-            AlertManager.shared.showAlertMsg(generalGetString(MR.strings.chat_database_imported), text = generalGetString(MR.strings.restart_the_app_to_use_imported_chat_database))
-          }
-          if (chatModel.localUserCreated.value == false) {
-            chatModel.chatRunning.value = false
-          }
-          return true
-        } else {
-          operationEnded(m, progressIndicator) {
-            showArchiveImportedWithErrorsAlert(archiveErrors)
-          }
-          return migration
-        }
-      } catch (e: Error) {
+      val config = ArchiveConfig(archivePath, parentTempDirectory = databaseExportDir.toString(), replaceStorage = true)
+      val archiveErrors = m.controller.apiImportArchive(config)
+      appPrefs.shouldImportAppSettings.set(true)
+      DatabaseUtils.ksDatabasePassword.remove()
+      appFilesCountAndSize.value = directoryFileCountAndSize(appFilesDir.absolutePath)
+      if (archiveErrors.isEmpty()) {
         operationEnded(m, progressIndicator) {
-          AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_importing_database), e.toString())
+          AlertManager.shared.showAlertMsg(generalGetString(MR.strings.chat_database_imported), text = generalGetString(MR.strings.restart_the_app_to_use_imported_chat_database))
         }
+        if (chatModel.localUserCreated.value == false) {
+          chatModel.chatRunning.value = false
+        }
+        return true
+      } else {
+        operationEnded(m, progressIndicator) {
+          showArchiveImportedWithErrorsAlert(archiveErrors)
+        }
+        return migration
       }
-    } catch (e: Error) {
+    } catch (e: Exception) {
       operationEnded(m, progressIndicator) {
-        AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_deleting_database), e.toString())
+        AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_importing_database), e.toString())
       }
     } finally {
+      wallpapersDir.mkdirs()
       File(archivePath).delete()
     }
   } else {

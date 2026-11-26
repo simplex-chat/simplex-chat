@@ -285,7 +285,8 @@ All functions below are `suspend fun` members of `ChatController` ([SimpleXAPI.k
 class ArchiveConfig(
   val archivePath: String,
   val disableCompression: Boolean? = null,
-  val parentTempDirectory: String? = null
+  val parentTempDirectory: String? = null,
+  val replaceStorage: Boolean? = null
 )
 ```
 
