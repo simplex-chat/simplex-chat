@@ -7,7 +7,7 @@ module Bots.StoreService.NamesWorkerTests (namesWorkerTests, serveWorker) where
 
 import Bots.StoreService.FakeEthNode
 import Bots.StoreService.NamesBalancesTests (figures)
-import Bots.StoreService.NamesContractsTests (availableCall, maxCommitmentAgeCall, minCommitmentAgeCall, newPolicy, registrarOf)
+import Bots.StoreService.NamesContractsTests (availableCall, maxCommitmentAgeCall, minCommitmentAgeCall, newPolicy, otherResolver, registrarOf)
 import Bots.StoreService.NamesOrdersTests
 import Bots.StoreService.NamesOwnerTests (answerDisputeUntil, answerExpiry, answerFree, answerOwner, answerUnowned, byB, codeIn, committedPhase, dynamisOrder, failedPhase, labelBytes, ownerOfSelector, paidIn, rewrite, select, selectionOf, sentRegister, stored)
 import Bots.StoreService.NamesPhasesTests (held, prompt, registrationPath, woken)
@@ -44,14 +44,14 @@ import Simplex.Messaging.Names.Record (USDCents)
 import Simplex.Messaging.SimplexName (labelHash)
 import Simplex.Messaging.SystemTime (RoundedSystemTime (..), SystemSeconds)
 import Simplex.Messaging.Util (tshow)
-import StoreService.Config (NamesConfig (..))
+import StoreService.Config (ChainConfig (..), NamesConfig (..))
 import StoreService.Names.Abi (AbiValue (..), abiBytes, abiTuple, addressWord, selector, uint256)
 import StoreService.Names.Balances (RefundRecord (..), RefundRefusal (..), recordRefund)
 import StoreService.Names.Chain (Block (..), ChainClient, ChainError (..), Hex32 (..), TxHash (..), blockAt, decodeSignedTx, newChainClient)
 import StoreService.Names.Contracts (namePolicy)
 import StoreService.Names.Orders (Landing (..), OrdersEnv (..), confirmLanded)
 import StoreService.Names.Phases (RegistrationId (..), awaitChange)
-import StoreService.Names.Registration (RegisterIntent (..), TermsAcceptance (..), acceptCalldata, acceptanceDigest, commitCalldata, policyDomain, registerIntentDigest, registerWithCreditCalldata, sponsorDomain, termsKind)
+import StoreService.Names.Registration (RegisterIntent (..), TermsAcceptance (..), acceptCalldata, acceptanceDigest, commitCalldata, makeCommitment, policyDomain, registerIntentDigest, registerWithCreditCalldata, sponsorDomain, termsKind)
 import StoreService.Names.Reveal (intentOf)
 import StoreService.Names.Revert (RevertName (..), RevertReason (..), actedReverts)
 import StoreService.Names.Sender
@@ -108,6 +108,7 @@ workerTests = describe "StoreService names: worker" $ do
     it "relays no intent past its deadline, clearing the reveal and staying committed" testExpiredIntent
     it "clears a stored reveal refused under another sponsor, the order committed without a failure, sending nothing, then registers the reveal signed again over that sponsor" testSignatureUnderOtherConfig
     it "clears a stored reveal refused under another sponsor before relaying its acceptance, sending nothing" testRelayUnderOtherConfig
+    it "fails and reports an order whose stored reveal is refused under another resolver, as its commitment is not the one the configuration makes, sending nothing" testRevealUnderOtherResolver
     it "keeps the phase when a read of the final check fails" testCheckUnread
     it "waits a second when the dry run reverts CommitmentTooNew" testCommitmentTooNew
     it "commits again with its reveal when the dry run reverts CommitmentNotFound, and when it reverts CommitmentTooOld past the lapse, reporting that" testCommitAgain
@@ -260,6 +261,10 @@ signedRevealOver sponsor Ctx {cRandom, cOrders, cNode} key rv r@NameRegistration
 -- | The registration with the page's reveal of the label accepted.
 revealed :: Ctx -> Secp256k1PrivateKey -> Text -> NameRegistration -> IO NameRegistration
 revealed ctx key label r = signedReveal ctx key reveal {rvLabel = label} r >>= \rv -> rewrite ctx r (\o -> o {nrReveal = Just rv})
+
+matchingCommitment :: Ctx -> Text -> NameRegistration -> IO NameRegistration
+matchingCommitment ctx@Ctx {cOrders} label r =
+  rewrite ctx r $ \o -> o {nrCommitment = makeCommitment $ riRegistration $ intentOf (oeConfig cOrders) (nrOwner o) (nrDuration o) (nrDisputeDays o) reveal {rvLabel = label}}
 
 -- | Steps until the worker has nothing to do at once.
 steps :: W -> NameRegistration -> IO Next
@@ -1097,7 +1102,7 @@ testExpiredIntent = withWorker $ \w@W {wCtx = ctx} -> do
 testSignatureUnderOtherConfig :: IO ()
 testSignatureUnderOtherConfig = withWorker $ \W {wCtx = open} -> do
   reports <- newTVarIO []
-  r <- paidIn open aliceOrder openPhase >>= revealed open keyA "alicebakery"
+  r <- paidIn open aliceOrder openPhase >>= matchingCommitment open "alicebakery" >>= revealed open keyA "alicebakery"
   let moved@Ctx {cOrders} = configured movedSponsor open
   w@W {wCtx = ctx} <- started moved {cOrders = cOrders {oeReport = \t -> atomically $ modifyTVar' reports (t :)}}
   answerAvailable w True
@@ -1121,11 +1126,27 @@ testSignatureUnderOtherConfig = withWorker $ \W {wCtx = open} -> do
 
 testRelayUnderOtherConfig :: IO ()
 testRelayUnderOtherConfig = withWorker $ \W {wCtx = ctx@Ctx {cOrders}, wSender} -> do
-  r <- paidIn ctx aliceOrder openPhase >>= acceptedReveal ctx
+  r <- paidIn ctx aliceOrder openPhase >>= matchingCommitment ctx "alicebakery" >>= acceptedReveal ctx
   worker <- newWorker cOrders {oeConfig = movedSponsor (oeConfig cOrders)} wSender
   void $ capturingStderr $ void $ stepRegistration worker (nrId r)
   x <- stored ctx r
   (nrPhase x, nrReveal x) `shouldBe` (nrPhase r, Nothing)
+  sentTransactions (cNode ctx) `shouldReturn` []
+
+testRevealUnderOtherResolver :: IO ()
+testRevealUnderOtherResolver = withWorker $ \W {wCtx = ctx@Ctx {cOrders}, wSender} -> do
+  reports <- newTVarIO []
+  r <- paidIn ctx aliceOrder openPhase >>= matchingCommitment ctx "alicebakery" >>= revealed ctx keyA "alicebakery"
+  let NamesConfig {nChain} = oeConfig cOrders
+      moved = cOrders {oeConfig = (oeConfig cOrders) {nChain = nChain {cResolver = otherResolver}}, oeReport = \t -> atomically $ modifyTVar' reports (t :)}
+  worker <- newWorker moved wSender
+  logs <- capturingStderr $ void $ stepRegistration worker (nrId r)
+  now <- nowOf ctx
+  nrPhase <$> stored ctx r `shouldReturn` OFailed now FRSignatureRefused
+  let RegistrationId rid = nrId r
+      failed = T.isInfixOf ("registration " <> rid <> " failed: its commitment is not the one the service's current configuration makes, so its stored signature is refused, ")
+  logs `shouldSatisfy` failed
+  map failed <$> readTVarIO reports `shouldReturn` [True]
   sentTransactions (cNode ctx) `shouldReturn` []
 
 testFailedOnlySettled :: IO ()
