@@ -1,6 +1,6 @@
 # Payment addresses in messages
 
-Date: 2026-11-22. References are to master at 8f5dfa3d4. Haskell paths without a directory are in `src/Simplex/Chat/`. Sources are listed at the end as [S1]–[S36], read on 2026-11-22.
+Date: 2026-11-22, revised 2026-11-26. References are to master at 8f5dfa3d4; those of section Bare forms are to master at 94e9d08f5. Haskell paths without a directory are in `src/Simplex/Chat/`. Sources are listed at the end as [S1]–[S39], read on 2026-11-22 and 2026-11-26.
 
 ## Problem
 
@@ -21,6 +21,7 @@ A payment address or request in a message is plain text. A reader copies it into
 | A5 | a hyperlink whose label contains a payment address other than its target is refused: the label is shown as text, the target as a bare payment link | text |
 | A6 | the core and the apps send no request for a payment link: previews, DNS, ENS, LNURL and exchange rates are not requested | — |
 | A7 | earlier apps show the text as now; the message protocol and the database are unchanged | — |
+| A8 | a bare word is validated at most once, by the form that its prefix, case and length select; a word that no form selects is text without a checksum computed; the parse time of section Timing is reported | — |
 
 ## Options
 
@@ -203,30 +204,6 @@ bitcoincash:
                 message
 ```
 
-```
-bare form       network
-bc1             Bitcoin
-1               Bitcoin
-3               Bitcoin
-lnbc            Lightning
-lnurl1          Lightning
-0x, EIP-55      Ethereum, chain not stated
-4               Monero
-8               Monero
-t1              Zcash
-t3              Zcash
-zs1             Zcash
-u1              Zcash
-ltc1            Litecoin
-L               Litecoin
-M               Litecoin
-D               Dogecoin
-9               Dogecoin
-A               Dogecoin
-q               Bitcoin Cash, checked with the prefix bitcoincash
-p               Bitcoin Cash, checked with the prefix bitcoincash
-```
-
 Examples:
 
 ```
@@ -238,6 +215,50 @@ ethereum:0xdAC17F958D2ee523a2206206994597C13D831ec7@1/transfer?address=0xD7047Fe
 lightning:lnbc2500u1pvjluezsp5zyg3…fna3rh
 solana:7JCf5m3TiHmYKZVr6jCu1KeZVtb9Y1jRMQDU69p5ARnu?amount=0.5
 <zcash:u16rnvkflumf5uw9frngc2lymvmzgdr2mmc9unyu0l44unwfmdcpfm0axujd2w34ct3ye709azxsqge45705lpvvqu264ltzvfay55ygyq?amount=0.1>
+```
+
+### Bare forms
+
+A bare word is recognised by a sequence of guards and one validation: the guards select at most one form, and only the checksum of that form is computed.
+
+```
+G0    the word without its final punctuation
+        14 or more characters
+        ASCII letters and digits only
+G1    the first form whose prefix, case and length hold
+
+form  prefix                     case      length       network        validation
+F1    bc1                        one case  14-90        Bitcoin        bech32 v0, bech32m v1-16
+F2    1, 3                       -         25-36        Bitcoin        Base58Check, version 0x00 or 0x05
+F3    lnbc                       one case  37 or more   Lightning      BOLT 11 bech32, HRP amount, fields d and x
+F4    lnurl1                     one case  any          Lightning      bech32 of an https or onion URL
+F5    4, 8                       -         95, 106      Monero         Keccak-256 check, network byte 18, 42 or 19
+F6    t1, t3                     -         25-36        Zcash          Base58Check, version 0x1CB8 or 0x1CBD
+F7    zs1                        one case  78           Zcash          bech32, 43 bytes
+F8    u1                         one case  any          Zcash          bech32m
+F9    ltc1                       one case  14-90        Litecoin       bech32 v0, bech32m v1-16
+F10   L, M                       -         25-36        Litecoin       Base58Check, version 48 or 50
+F11   D, 9, A                    -         25-36        Dogecoin       Base58Check, version 30 or 22
+F12   q, p                       one case  42           Bitcoin Cash   CashAddr with the prefix bitcoincash
+F13   0x and 40 hex digits       mixed     42           EVM            EIP-55
+none                                                                   text, without a validation
+```
+
+- A prefix of a one-case form is matched in lower or upper case, as bech32 and CashAddr require; a mixed-case word is not tried.
+- F3, F4 and F9 precede F10, so `LNBC…`, `LNURL1…` and `LTC1…` are never decoded as Base58; F3 starts at 37 characters, one more than the longest Base58 form, so a Litecoin address that starts with `LNBC` is decoded by F10.
+- `3…` is Bitcoin only (F2); `litecoin:` URIs accept version 5 as well (section Syntax).
+- An EVM address in one case matches no form and is text, as now (rule B1).
+- A URI is not a bare word: its scheme selects the network, and the prefixes and lengths of this table select one address form of that network.
+
+```mermaid
+flowchart TD
+  W["word without its final punctuation"] --> G0{"G0: 14 or more ASCII letters and digits?"}
+  G0 -->|no| T["text"]
+  G0 -->|yes| G1{"G1: the first form F1-F13 whose prefix, case and length hold"}
+  G1 -->|none| T
+  G1 -->|one form| V["the validation of that form only"]
+  V -->|valid| L["chain address link"]
+  V -->|invalid| T
 ```
 
 ### Rules
@@ -287,8 +308,8 @@ flowchart TD
   S -->|yes| U["URI parser of the scheme"]
   S -->|no| H{"target of a hyperlink?"}
   H -->|"yes: L3"| X["hyperlink refused: its text is parsed as words"]
-  H -->|no| B{"bare form with a checksum?"}
-  B -->|yes| V["decode; check checksum, network byte or HRP"]
+  H -->|no| B{"one form selected by the guards of section Bare forms?"}
+  B -->|yes| V["the validation of that form only"]
   B -->|no| O["message link, SimpleX link, web link, domain, e-mail, as now"]
   U -->|valid| L{"target of a hyperlink?"}
   U -->|"invalid by U1-U6"| T["text"]
@@ -356,14 +377,13 @@ data Format
 - Amounts: `1*DIGIT ["." 1*DIGIT]`, the grammar of ZIP-321, for every scheme but `ethereum:`.
 - Codecs in `Payments.hs`: Base58 and Base58Check; the Monero block variant, 8 bytes in 11 characters; bech32 and bech32m without a length limit; CashAddr; the BOLT 11 fields `d` and `x`. Hashes: `sha256Hash` and `keccak256` (simplexmq Crypto.hs:1035-1057); the EIP-55 check of `strP` of `Simplex.Messaging.Eth.Address` (simplexmq Eth/Address.hs:40-48) [S36].
 - Chain names and coin symbols, in the apps, for `chainId` 1, 10, 56, 137, 8453 and 42161: Ethereum, OP Mainnet, BNB Smart Chain, Polygon, Base, Arbitrum One; ETH, BNB, POL [S34]. Another chain is shown by its number.
-- Each word is tested for the prefixes of the bech32, Lightning and `0x` forms, and for the lengths of the Base58, CashAddr and Monero forms, before it is decoded.
-- The schemes and their parsers are one list, `schemeRequests`: a URI is parsed by the parser of its scheme, and a bare word by each parser in the order of the list, so Bitcoin is tried before Litecoin for a `3…` address.
+- The schemes and their parsers are one list: a URI is parsed by the parser of its scheme. The bare forms are a second list of guards and validations, in the order of section Bare forms: a bare word is validated by the first form whose guard holds, or by none.
 
 ## Parser changes
 
 ```
-fragmentP     digit branch: a word with a PaymentLink, then phoneP, then wordP (Markdown.hs:363)
-linkMD        after the web URI branch, before isDomain: paymentLink of the link text (Markdown.hs:506-518)
+fragmentP     digit branch: a word that a form of section Bare forms selects, then phoneP, then wordP (Markdown.hs:363)
+linkMD        after the web URI branch, before isDomain: the one validation of the link text (Markdown.hs:506-518)
 hyperLinkFormat
               after the SimpleX link branch, before parseUri: paymentLink of the target,
               with the label rules L1, L2 and L3 (Markdown.hs:450-467)
@@ -371,7 +391,7 @@ isLink        PaymentLink, as decided in Q5 (Markdown.hs:320-326)
 markdownText  PaymentLink -> the source text (Markdown.hs:965-986)
 ```
 
-- For a word that starts with a digit, `phoneP` is tried before `wordP`, and a Base58 or Monero address that starts with 7 or more digits is split by it (Markdown.hs:363, 484-494); the payment word is tried before both.
+- For a word that starts with a digit, `phoneP` is tried before `wordP`, and a Base58 or Monero address that starts with 7 or more digits is split by it (Markdown.hs:363, 484-494). A word that a form selects is taken whole before both, by the guards only; `linkMD` then makes its one validation. A selected digit word is 25 or more letters and digits without separators, and `phoneP` accepts at most 22 (Markdown.hs:489), so no phone number is lost.
 - `<URI>` is parsed by `hyperLinkFormat` with the URI as its label (Markdown.hs:457-460), as now.
 
 ## Wallet URI
@@ -576,11 +596,43 @@ Each test that expects a payment link fails on master.
 | | `[Donate](monero:8A3Z…q1c)` is parsed as `PaymentLink (Just "Donate")`; `[bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4](bitcoin:bc1q2gy6…)`, a valid address of BIP-173 as the label, is parsed as label text and a bare `PaymentLink` (L2); `[Donate](bc1q2gy6…)` is parsed as text and a bare `PaymentLink`, and `<bc1q2gy6…>` as text (L3) |
 | | text: `ThereAreMany32ByteKeysHereButNoneAreChecked`; `0xd7047fe3eecb2f2ff78d839dd927be27bc12c86a` bare; `tb1…`; `monero-wallet:…?spend_key=…`; `monero:A;B?tx_amount=1;2`; `zcash:t1fwj…?memo=…`; `` `bc1q2gy6…` ``; `alice@getalby.com` as e-mail |
 | | `hasLinks` of a payment link, as decided in Q5; linear time: 10000 words of 34 Base58 characters |
+| | the guards: a word of each form F1-F13 with one character changed is text; a word of 34 Base58 characters after each of `1`, `3`, `L`, `M`, `D`, `9`, `A` with a wrong checksum is text; `LTC1…` in upper case is a Litecoin bech32 address |
+| | `parse time`, section Timing |
 | tests/JSONTests.hs | the JSON of a `bitcoin:` URI with `lightning=`, an `ethereum:` URI with a chain and a token transfer is decoded to the same value |
 | tests/ChatTests/Direct.hs | `filter chat by link content`: a message with a bare address is in the Links filter, as decided in Q5 |
 | tests/ChatTests/Direct.hs | `payment links in a received message`: alice sends a bare address, `[Donate](monero:…)` and a bare invoice; `apiFixture` (tests/ChatTests/Utils.hs:999-1004) records bob's `/_get chat @2 count=1`, whose item has `PaymentLink` in `formattedText`, and the markdown of each payee kind, to tests/fixtures/api/payments/links.json; its pattern is in "App test fixtures" (scripts/ci/README.md:51) |
 | tests/APIDocs.hs | the bots API files, generated again with the new types |
 | app tests on tests/fixtures/api/payments/links.json | `Format.paymentLink` is decoded; each payee kind is mapped to its link text and alert text; a mocked open failure is followed by the alert `No wallet app` |
+
+### Timing
+
+The cost of the guards is measured before review, on the branch and on master.
+
+```
+texts         10,000 words each, separated by spaces
+                ordinary words, cycled from one fixed English paragraph
+                each form F1-F13, valid
+                34 Base58 characters with a wrong checksum, after each of 1, 3, L, M, D, 9, A
+                each URI scheme, valid
+test          parse time, tests/MarkdownTests.hs
+                parseMaybeMarkdownList of each text, forced by the count of its segments
+                milliseconds by getMonotonicTime, printed per text
+                no assertion on the segments, so the test compiles and runs on master
+runs          the reduced build, TESTS='/parse time/', -O0 as in CI
+                ep/payment-addresses
+                a fork branch from master with only this test
+result        the pull request body: text, master ms, branch ms, ratio
+```
+
+```mermaid
+sequenceDiagram
+  participant A as Agent
+  participant F as Fork CI
+  A->>F: dispatch /parse time/ on ep/payment-addresses
+  A->>F: dispatch /parse time/ on a fork branch from master with the test only
+  F-->>A: the milliseconds of each text, from both job logs
+  A->>A: the table of master, branch and ratio in the pull request body
+```
 
 ## Stages
 
@@ -612,7 +664,7 @@ Each question is a principle with its consequences; the recommended option is in
 
 | ID | Principle | Options and consequences | Recommendation |
 |---|---|---|---|
-| Q1 | What is shown as a payment link | a. URIs of the nine schemes, their hyperlinks and autolinks, and bare forms with a checksum on mainnet: a random word is shown as a link with probability 2^-30 or less for Base58Check, bech32 and CashAddr forms, about 2^-15 for a mixed-case `0x` word; Solana and one-case EVM addresses only in URIs; a Lightning Address stays an e-mail link<br>b. URIs, hyperlinks and autolinks only: the bare addresses of README.md:151-158 are text<br>c. a, and bare forms without a checksum: `ThereAreMany32ByteKeysHereButNoneAreChecked` is shown as a Solana link | **a** |
+| Q1 | What is shown as a payment link | decided (items 11717-11723): a, with bare forms recognised by the guards of section Bare forms and one validation per word; the cost is measured as section Timing states<br>a. URIs of the nine schemes, their hyperlinks and autolinks, and bare forms with a checksum on mainnet: a random word is shown as a link with probability 2^-30 or less for Base58Check, bech32 and CashAddr forms, about 2^-15 for a mixed-case `0x` word; Solana and one-case EVM addresses only in URIs; a Lightning Address stays an e-mail link<br>b. URIs, hyperlinks and autolinks only: the bare addresses of README.md:151-158 are text<br>c. a, and bare forms without a checksum: `ThereAreMany32ByteKeysHereButNoneAreChecked` is shown as a Solana link | — |
 | Q2 | What a tap shows | decided: the alert `Open in wallet?` of section Presentation | — |
 | Q3 | What the app requests | a. nothing: names are not recognised in v1, LNURL is resolved by the wallet<br>b. a, and names handed to wallets as `lightning:user@domain`, a form left undefined by LUD-16 [S8] | **a** |
 | Q4 | Networks in v1 | a. Bitcoin, Lightning, Ethereum with the other EVM chains, Monero, Zcash, Solana, Litecoin, Dogecoin, Bitcoin Cash: the networks of README.md:151-158, Lightning and Litecoin<br>b. Bitcoin, Lightning and Monero: a smaller parser and fewer tests; other addresses are text | **a** |
