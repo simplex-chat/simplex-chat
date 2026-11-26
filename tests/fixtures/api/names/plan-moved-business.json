@@ -13,9 +13,9 @@
                 "businessDomain": {
                   "domain": "alice.simplex"
                 },
-                "businessId": "businessId",
+                "businessId": "memberId0",
                 "chatType": "business",
-                "customerId": "customerId"
+                "customerId": "memberId1"
               },
               "chatSettings": {
                 "enableNtfs": "all",
@@ -146,7 +146,7 @@
                 },
                 "memberContactId": 1,
                 "memberContactProfileId": 1,
-                "memberId": "memberId",
+                "memberId": "memberId1",
                 "memberProfile": {
                   "displayName": "bob",
                   "fullName": "",

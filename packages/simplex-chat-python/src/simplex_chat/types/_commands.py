@@ -319,16 +319,17 @@ def APIBlockMembersForAll_cmd_string(self: APIBlockMembersForAll) -> str:
 APIBlockMembersForAll_Response = CR.MembersBlockedForAllUser | CR.ChatCmdError
 
 
-# Remove members. Requires Admin role.
+# Remove members. Requires Admin role. With notice, the removal is silent, and the removed member's app does not rejoin via the group link while the notice lasts. A notice is refused for relays, members with Moderator role or above, members that are not current or pending, and members on versions before 23.
 # Network usage: background.
 class APIRemoveMembers(TypedDict):
     groupId: int  # int64
     groupMemberIds: list[int]  # int64, non-empty
     withMessages: bool
+    notice: NotRequired["T.LinkNotice"]
 
 
 def APIRemoveMembers_cmd_string(self: APIRemoveMembers) -> str:
-    return '/_remove #' + str(self['groupId']) + ' ' + ','.join(map(str, self['groupMemberIds'])) + (' messages=on' if self['withMessages'] else '')
+    return '/_remove #' + str(self['groupId']) + ' ' + ','.join(map(str, self['groupMemberIds'])) + (' messages=on' if self['withMessages'] else '') + ((' notice=' + json.dumps(self.get('notice'))) if self.get('notice') is not None else '')
 
 APIRemoveMembers_Response = CR.UserDeletedMembers | CR.ChatCmdError
 
@@ -790,15 +791,16 @@ def APIGetChatItemInfo_cmd_string(self: APIGetChatItemInfo) -> str:
 APIGetChatItemInfo_Response = CR.ChatItemInfo | CR.ChatCmdError
 
 
-# Delete chat.
+# Delete chat. For groups, the full mode deletes the group, and the entity mode keeps the conversation and requires the active owner; other modes are refused. A notice is accepted for contacts on version 23 or later and for the customer of a business chat: the deletion is silent, and the peer's app does not connect via the user's address while the notice lasts.
 # Network usage: background.
 class APIDeleteChat(TypedDict):
     chatRef: "T.ChatRef"
     chatDeleteMode: "T.ChatDeleteMode"
+    notice: NotRequired["T.LinkNotice"]
 
 
 def APIDeleteChat_cmd_string(self: APIDeleteChat) -> str:
-    return '/_delete ' + T.ChatRef_cmd_string(self['chatRef']) + ' ' + T.ChatDeleteMode_cmd_string(self['chatDeleteMode'])
+    return '/_delete ' + T.ChatRef_cmd_string(self['chatRef']) + ' ' + T.ChatDeleteMode_cmd_string(self['chatDeleteMode']) + ((' notice=' + json.dumps(self.get('notice'))) if self.get('notice') is not None else '')
 
 APIDeleteChat_Response = CR.ContactDeleted | CR.ContactConnectionDeleted | CR.GroupDeletedUser | CR.ChatCmdError
 

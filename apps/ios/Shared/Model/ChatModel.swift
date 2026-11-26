@@ -612,7 +612,7 @@ final class ChatModel: ObservableObject {
     }
 
     func loadGroupMembers(_ groupInfo: GroupInfo, updateView: @escaping () -> Void = {}) async {
-        let groupMembers = await apiListMembers(groupInfo.groupId)
+        let groupMembers = await apiListMembers(groupInfo.groupId) ?? []
         await MainActor.run {
             if chatId == groupInfo.id {
                 self.groupMembers = groupMembers.map { GMember.init($0) }

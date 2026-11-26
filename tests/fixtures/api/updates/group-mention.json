@@ -98,7 +98,7 @@
                 },
                 "memberContactId": 1,
                 "memberContactProfileId": 1,
-                "memberId": "memberId",
+                "memberId": "memberId0",
                 "memberProfile": {
                   "displayName": "alice",
                   "fullName": "",
@@ -187,7 +187,7 @@
                 },
                 "memberContactId": 2,
                 "memberContactProfileId": 2,
-                "memberId": "memberId",
+                "memberId": "memberId1",
                 "memberProfile": {
                   "displayName": "bob",
                   "fullName": "",
@@ -430,7 +430,7 @@
               },
               "memberContactId": 1,
               "memberContactProfileId": 1,
-              "memberId": "memberId",
+              "memberId": "memberId0",
               "memberProfile": {
                 "displayName": "alice",
                 "fullName": "",
@@ -496,7 +496,7 @@
               },
               "memberContactId": 2,
               "memberContactProfileId": 2,
-              "memberId": "memberId",
+              "memberId": "memberId1",
               "memberProfile": {
                 "displayName": "bob",
                 "fullName": "",
@@ -560,7 +560,7 @@
           ],
           "mentions": {
             "alice": {
-              "memberId": "memberId",
+              "memberId": "memberId0",
               "memberRef": {
                 "displayName": "alice",
                 "groupMemberId": 1,
@@ -608,7 +608,7 @@
               },
               "memberContactId": 2,
               "memberContactProfileId": 2,
-              "memberId": "memberId",
+              "memberId": "memberId1",
               "memberProfile": {
                 "displayName": "bob",
                 "fullName": "",
@@ -850,7 +850,7 @@
               },
               "memberContactId": 1,
               "memberContactProfileId": 1,
-              "memberId": "memberId",
+              "memberId": "memberId0",
               "memberProfile": {
                 "displayName": "alice",
                 "fullName": "",
@@ -916,7 +916,7 @@
               },
               "memberContactId": 2,
               "memberContactProfileId": 2,
-              "memberId": "memberId",
+              "memberId": "memberId1",
               "memberProfile": {
                 "displayName": "bob",
                 "fullName": "",
@@ -1006,7 +1006,7 @@
               },
               "memberContactId": 2,
               "memberContactProfileId": 2,
-              "memberId": "memberId",
+              "memberId": "memberId1",
               "memberProfile": {
                 "displayName": "bob",
                 "fullName": "",
@@ -1070,7 +1070,7 @@
           ],
           "mentions": {
             "alice": {
-              "memberId": "memberId",
+              "memberId": "memberId0",
               "memberRef": {
                 "displayName": "alice",
                 "groupMemberId": 1,

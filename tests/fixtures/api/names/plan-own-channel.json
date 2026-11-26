@@ -119,7 +119,7 @@
                 },
                 "memberContactId": 1,
                 "memberContactProfileId": 1,
-                "memberId": "memberId",
+                "memberId": "memberId0",
                 "memberProfile": {
                   "contactDomain": {
                     "domain": "team.simplex"

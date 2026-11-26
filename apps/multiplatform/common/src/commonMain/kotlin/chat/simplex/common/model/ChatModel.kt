@@ -370,7 +370,7 @@ object ChatModel {
     }
   }
 
-  private fun addPresetChatTags(chatInfo: ChatInfo, chatStats: Chat.ChatStats) {
+  fun addPresetChatTags(chatInfo: ChatInfo, chatStats: Chat.ChatStats) {
     for (tag in PresetTagKind.entries) {
       if (presetTagMatchesChat(tag, chatInfo, chatStats)) {
         presetTags[tag] = (presetTags[tag] ?: 0) + 1
@@ -2048,6 +2048,8 @@ data class Contact(
   override val nextConnect get() = sendMsgToConnect
   val nextSendGrpInv get() = contactGroupMemberId != null && !contactGrpInvSent
   val callReconnectSupported get() = (activeConn?.peerChatVRange?.maxVersion ?: 0) >= CALL_RECONNECT_VERSION
+  val canDeleteAndBan get() =
+    sndReady && active && activeConn?.viaUserContactLink != null && activeConn.peerChatVRange.maxVersion >= LINK_NOTICE_VERSION
   override val nextConnectPrepared get() = active && preparedContact != null && (activeConn == null || activeConn.connStatus == ConnStatus.Prepared)
   override val profileChangeProhibited get() = activeConn != null
   val nextAcceptContactRequest get() =
@@ -2196,6 +2198,7 @@ data class Connection(
   val connStatus: ConnStatus,
   val connLevel: Int,
   val viaGroupLink: Boolean,
+  val viaUserContactLink: Long? = null,
   val customUserProfileId: Long? = null,
   val connectionCode: SecurityCode? = null,
   val pqSupport: Boolean,
@@ -2808,6 +2811,9 @@ data class GroupInfo (
   val isOwner: Boolean
     get() = membership.memberRole == GroupMemberRole.Owner && membership.memberCurrent
 
+  val isCustomerChatOwner: Boolean
+    get() = isOwner && membership.memberActive && businessChat?.chatType == BusinessChatType.Customer
+
   val canDelete: Boolean
     get() = membership.memberRole == GroupMemberRole.Owner || !membership.memberCurrentOrPending
 
@@ -3233,6 +3239,8 @@ data class GroupMember (
   val memberCurrentOrPending: Boolean get() =
     memberCurrent || memberPending
 
+  val supportsLinkNotice: Boolean get() = versionRange.maxVersion >= LINK_NOTICE_VERSION
+
   fun canBeRemoved(groupInfo: GroupInfo): Boolean {
     val userRole = groupInfo.membership.memberRole
     return userRole >= GroupMemberRole.Admin && userRole >= memberRole && groupInfo.membership.memberActive
@@ -3252,11 +3260,14 @@ data class GroupMember (
     val userRole = groupInfo.membership.memberRole
     return memberRole != GroupMemberRole.Relay && memberRole < GroupMemberRole.Moderator
         && userRole >= GroupMemberRole.Moderator && userRole >= memberRole && groupInfo.membership.memberActive
-        && !memberPending
+        && memberStatus !in listOf(GroupMemberStatus.MemRejected, GroupMemberStatus.MemRemoved, GroupMemberStatus.MemLeft, GroupMemberStatus.MemGroupDeleted)
   }
 
   fun canVerifyCode(groupInfo: GroupInfo): Boolean =
     memberVia == null && (memberActive || (groupInfo.useRelays && memberCurrent)) && memberRole != GroupMemberRole.Relay
+
+  fun canBanAndRemove(groupInfo: GroupInfo): Boolean =
+    canBeRemoved(groupInfo) && memberCurrentOrPending && memberRole < GroupMemberRole.Moderator && supportsLinkNotice
 
   val supportChatNotRead: Boolean get() =
     if (supportChat != null)
@@ -4298,10 +4309,10 @@ fun getTimestampText(t: Instant, shortFormat: Boolean = false): String {
   return time.toJavaLocalDateTime().format(dateFormatter)
 }
 
-fun localTimestamp(t: Instant): String {
+fun localTimestamp(t: Instant, timeStyle: FormatStyle = FormatStyle.MEDIUM): String {
   val tz = TimeZone.currentSystemDefault()
   val ts: LocalDateTime = t.toLocalDateTime(tz)
-  val dateFormatter = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM)
+  val dateFormatter = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM, timeStyle)
   return ts.toJavaLocalDateTime().format(dateFormatter)
 }
 
@@ -5700,19 +5711,19 @@ enum class FormatColor(val color: String) {
 @Serializable(with = ReportReasonSerializer::class)
 sealed class ReportReason {
   @Serializable @SerialName("spam") object Spam: ReportReason()
-  @Serializable @SerialName("illegal") object Illegal: ReportReason()
+  @Serializable @SerialName("content") object Content: ReportReason()
   @Serializable @SerialName("community") object Community: ReportReason()
   @Serializable @SerialName("profile") object Profile: ReportReason()
   @Serializable @SerialName("other") object Other: ReportReason()
   @Serializable @SerialName("unknown") data class Unknown(val type: String): ReportReason()
 
   companion object {
-    val supportedReasons: List<ReportReason> = listOf(Spam, Illegal, Community, Profile, Other)
+    val supportedReasons: List<ReportReason> = listOf(Spam, Content, Community, Profile, Other)
   }
 
   val text: String get() = when (this) {
     Spam -> generalGetString(MR.strings.report_reason_spam)
-    Illegal -> generalGetString(MR.strings.report_reason_illegal)
+    Content -> generalGetString(MR.strings.report_reason_illegal)
     Community -> generalGetString(MR.strings.report_reason_community)
     Profile -> generalGetString(MR.strings.report_reason_profile)
     Other -> generalGetString(MR.strings.report_reason_other)
@@ -5727,7 +5738,7 @@ object ReportReasonSerializer : KSerializer<ReportReason> {
   override fun deserialize(decoder: Decoder): ReportReason {
     return when (val value = decoder.decodeString()) {
       "spam" -> ReportReason.Spam
-      "illegal" -> ReportReason.Illegal
+      "content", "illegal" -> ReportReason.Content
       "community" -> ReportReason.Community
       "profile" -> ReportReason.Profile
       "other" -> ReportReason.Other
@@ -5738,7 +5749,7 @@ object ReportReasonSerializer : KSerializer<ReportReason> {
   override fun serialize(encoder: Encoder, value: ReportReason) {
     val stringValue = when (value) {
       is ReportReason.Spam -> "spam"
-      is ReportReason.Illegal -> "illegal"
+      is ReportReason.Content -> "content"
       is ReportReason.Community -> "community"
       is ReportReason.Profile -> "profile"
       is ReportReason.Other -> "other"

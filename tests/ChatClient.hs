@@ -309,6 +309,7 @@ testCfg =
       testView = True,
       tbqSize = 16,
       channelSubscriberRole = GRObserver,
+      linkNoticeEndTimeRounding = 1,
       confirmMigrations = MCYesUp
     }
 

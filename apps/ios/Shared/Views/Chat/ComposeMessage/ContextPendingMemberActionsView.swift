@@ -54,22 +54,32 @@ func showRejectMemberAlert(_ groupInfo: GroupInfo, _ member: GroupMember, dismis
 }
 
 func showAcceptMemberAlert(_ groupInfo: GroupInfo, _ member: GroupMember, dismiss: DismissAction? = nil) {
+    let blocked = (ChatModel.shared.getGroupMember(member.groupMemberId)?.wrapped ?? member).blockedByAdmin
+    let accept: (GroupMemberRole) -> Void = { role in
+        if blocked {
+            blockMemberForAll(groupInfo, member, false) { acceptMember(groupInfo, member, role, dismiss: dismiss) }
+        } else {
+            acceptMember(groupInfo, member, role, dismiss: dismiss)
+        }
+    }
     showAlert(
         NSLocalizedString("Accept member", comment: "alert title"),
-        message: NSLocalizedString("Member will join the group, accept member?", comment: "alert message"),
+        message: blocked
+            ? NSLocalizedString("Member will be unblocked for all and will join the group, accept member?", comment: "alert message")
+            : NSLocalizedString("Member will join the group, accept member?", comment: "alert message"),
         actions: {[
             UIAlertAction(
                 title: NSLocalizedString("Accept as member", comment: "alert action"),
                 style: .default,
                 handler: { _ in
-                    acceptMember(groupInfo, member, .member, dismiss: dismiss)
+                    accept(.member)
                 }
             ),
             UIAlertAction(
                 title: NSLocalizedString("Accept as observer", comment: "alert action"),
                 style: .default,
                 handler: { _ in
-                    acceptMember(groupInfo, member, .observer, dismiss: dismiss)
+                    accept(.observer)
                 }
             ),
             cancelAlertAction

@@ -1,5 +1,7 @@
 # Names service: the gaps of A1-1 and A1-7
 
+Superseded where it differs: plans/2026-11-18-names-order-rules.md and apps/simplex-store-service/docs/names.md state the current rules and code.
+
 Branch `ep/names-gaps-a6`, from `ep/names-fixes-a2` at 750589fef. Decisions: decisions-data.json `newRows` "A1-1:OrderPhase+Commit" and `changed` "A1-7:Rate"; the lead's rulings of 2026-11-17.
 
 ## A1-1: the phase holds its transactions

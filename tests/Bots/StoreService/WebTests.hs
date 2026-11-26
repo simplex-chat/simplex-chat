@@ -286,7 +286,7 @@ badgeWebTests = do
     it "answers at once when it holds a payment the page has not seen" testHoldAnswersAPaymentThePageHasNotSeen
     it "answers a verdict that arrived with no figure to go with it" testHoldAnswersAVerdictWithNoFigure
     it "holds ?wait=open, and is woken by publish rather than polled" testHoldIsWokenNotPolled
-    it "refuses over sixty reads a minute from one IP" testReadRateLimit
+    it "refuses over sixty reads a minute from one IP, with the wait in Retry-After and retryAfter" testReadRateLimit
     it "takes the client from X-Forwarded-For only when it is trusted" testForwardedForOnlyWhenTrusted
     it "uses a forwarded client only when it parses as an IP address, an IPv4 one in its canonical form" testForwardedForMustBeAnAddress
     it "keys an IPv6 client by its /64 and an IPv4-mapped one by its IPv4 address" testIPv6ClientKey
@@ -310,6 +310,7 @@ badgeWebTests = do
     it "serves a names asset with its type" testServesANamesAsset
     it "keeps every traversal spelling on the names port inside the names build" testNamesTraversalRefused
     it "refuses a build folder that is not there, only where it is served" testSiteDirsMustExist
+    it "warns at start when the names site is served on a host other than loopback" testNamesSiteExposedWarned
   describe "store service settlement" $ do
     it "settles an open invoice: paid, a settled payment row, and the code" testSettlesAnOpenInvoice
     it "settles an expired invoice, because late settlement is routine" testLateSettlementIsLegal
@@ -409,7 +410,7 @@ badgeWebTests = do
     it "refuses a body over the size cap before reading it all" testOversizedBodyCostsNothing
     it "answers method card with provider_unavailable when no Stripe provider is configured" testCardUnconfigured503
     it "answers a provider that failed to create with provider_unavailable, writing nothing" testProviderFailureWritesNothing
-    it "refuses the sixth create in a minute, without reaching the provider" testCreateRateLimit
+    it "refuses the sixth create in a minute, with the wait in Retry-After and retryAfter, without reaching the provider" testCreateRateLimit
   describe "store service card" $ do
     it "creates a Stripe PaymentIntent, carrying its clientSecret and a stripe invoice row" testCardCreatesSession
     it "cancels an overdue card order's intent at Stripe before expiring it" testCardSweepCancelsTheIntent
@@ -1473,6 +1474,13 @@ testSiteDirsMustExist = do
     checkSiteDirs lc {lNamesSite = Just (8081, absent)} `shouldReturn` missing "names" absent
     checkSiteDirs lc {lBadgesSite = Just (root </> "secret.txt")} `shouldReturn` missing "badges" (root </> "secret.txt")
 
+testNamesSiteExposedWarned :: IO ()
+testNamesSiteExposedWarned = do
+  let lc = (listener (testServiceConfig "/srv/badges" False)) {lNamesSite = Just (8081, "/srv/names")}
+  capturingStderr (warnIfNamesSiteIsExposed lc {lHost = "0.0.0.0"})
+    >>= (`shouldSatisfy` T.isInfixOf "the listener binds 0.0.0.0 and serves the names site without the security headers")
+  mapM (capturingStderr . warnIfNamesSiteIsExposed) [lc {lHost = "127.0.0.1"}, lc {lHost = "0.0.0.0", lNamesSite = Nothing}] `shouldReturn` ["", ""]
+
 type WebClient = (Manager, String)
 
 withWebApp :: (WebEnv -> WebClient -> IO a) -> IO a
@@ -1879,7 +1887,7 @@ testReadRateLimit = bounded "read rate limit" $ withWebApp $ \_ client -> do
   allowed `shouldSatisfy` all (== 404)
   refused <- webGet client target
   statusOf refused `shouldBe` 429
-  responseBody refused `shouldBe` "{\"type\":\"rate_limited\"}"
+  J.decode (responseBody refused) `shouldBe` Just (J.object ["type" .= ("rate_limited" :: Text), "retryAfter" .= (headerOf refused "Retry-After" >>= readMaybe . BC.unpack :: Maybe Int)])
   case headerOf refused "Retry-After" >>= (readMaybe . BC.unpack) of
     Just seconds -> seconds `shouldSatisfy` \s -> s >= (1 :: Int) && s <= 60
     Nothing -> expectationFailure ("Retry-After is " <> show (headerOf refused "Retry-After"))
@@ -2552,8 +2560,8 @@ testCreateRateLimit = bounded "create rate limit" $ withCheckoutProvider distinc
   allowed `shouldSatisfy` all (== 200)
   refused <- attempt (createsPerMinute + 1)
   statusOf refused `shouldBe` 429
-  responseBody refused `shouldBe` errorBody "rate_limited"
-  storeFixture "invoice-rate-limited" (statusOf refused) (J.decode $ responseBody refused) Nothing
+  J.decode (responseBody refused) `shouldBe` Just (J.object ["type" .= ("rate_limited" :: Text), "retryAfter" .= (headerOf refused "Retry-After" >>= readMaybe . BC.unpack :: Maybe Int)])
+  storeFixture "invoice-rate-limited" (statusOf refused) (J.Object . KM.delete "retryAfter" <$> J.decode (responseBody refused)) Nothing
   headerOf refused hCacheControl `shouldBe` Just "no-store"
   case headerOf refused "Retry-After" >>= (readMaybe . BC.unpack) of
     Just seconds -> seconds `shouldSatisfy` \s -> s >= (1 :: Int) && s <= 60
