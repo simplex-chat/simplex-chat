@@ -51,6 +51,8 @@ jobs:
       claude-backend: ${{ steps.scope.outputs.backend }}
       core: ${{ steps.names.outputs.core }}
       core-run: ${{ steps.core.outputs.run-id }}
+      core32: ${{ steps.names.outputs.core32 }}
+      core32-run: ${{ steps.core32.outputs.run-id }}
       backend: ${{ steps.names.outputs.backend }}
       backend-run: ${{ steps.backend.outputs.run-id }}
     steps:
@@ -94,7 +96,9 @@ jobs:
       - name: Artifact names
         id: names
         run: |
-          echo "core=android-core-${{ hashFiles('src/**', 'cabal.project', 'simplex-chat.cabal', 'PRIVACY.md', 'flake.nix', 'flake.lock', 'scripts/nix/**', 'scripts/ci/android/build-core.sh') }}" >> "$GITHUB_OUTPUT"
+          core_hash=${{ hashFiles('src/**', 'cabal.project', 'simplex-chat.cabal', 'PRIVACY.md', 'flake.nix', 'flake.lock', 'scripts/nix/**', 'scripts/ci/android/build-core.sh') }}
+          echo "core=android-core-$core_hash" >> "$GITHUB_OUTPUT"
+          echo "core32=android-core-armeabi-v7a-$core_hash" >> "$GITHUB_OUTPUT"
           echo "backend=desktop-linux-backend-${{ hashFiles('src/**', 'apps/simplex-chat/**', 'apps/simplex-directory-service/Main.hs', 'apps/simplex-directory-service/src/**', 'cabal.project', 'simplex-chat.cabal', 'scripts/ci/desktop-linux/build-backend.sh') }}" >> "$GITHUB_OUTPUT"
 
       - name: Find core library
@@ -102,6 +106,13 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: scripts/ci/desktop-linux/earlier-run.sh "${{ steps.names.outputs.core }}"
+
+      - name: Find core library for armv7a
+        id: core32
+        if: steps.jobs.outputs.armv7a == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: scripts/ci/desktop-linux/earlier-run.sh "${{ steps.names.outputs.core32 }}"
 
       - name: Find backend
         id: backend
@@ -185,7 +196,7 @@ jobs:
   core-armv7a:
     name: core library for Android armv7a
     needs: plan
-    if: needs.plan.outputs.run-armv7a == 'true'
+    if: needs.plan.outputs.run-armv7a == 'true' && needs.plan.outputs.core32-run == ''
     runs-on: ubuntu-24.04
     timeout-minutes: 150
     steps:
@@ -208,15 +219,16 @@ jobs:
       - name: Upload core library
         uses: actions/upload-artifact@v7
         with:
-          name: android-core-armeabi-v7a
+          name: ${{ needs.plan.outputs.core32 }}
           path: ~/core/${{ env.CORE32_PKG }}
           compression-level: 0
-          retention-days: 14
+          retention-days: 30
           if-no-files-found: error
 
   app-armv7a:
     name: Android app for armv7a
-    needs: core-armv7a
+    needs: [plan, core-armv7a]
+    if: ${{ !cancelled() && !failure() && needs.plan.outputs.run-armv7a == 'true' && needs.core-armv7a.result != 'cancelled' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
@@ -228,8 +240,10 @@ jobs:
       - name: Download core library
         uses: actions/download-artifact@v8
         with:
-          name: android-core-armeabi-v7a
+          name: ${{ needs.plan.outputs.core32 }}
           path: ~/core
+          run-id: ${{ needs.plan.outputs.core32-run || github.run_id }}
+          github-token: ${{ github.token }}
 
       - name: Install core library
         run: scripts/ci/android/install-core.sh ~/core/${{ env.CORE32_PKG }} armeabi-v7a
