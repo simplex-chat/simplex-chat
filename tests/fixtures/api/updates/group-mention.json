@@ -86,12 +86,12 @@
                 "localDisplayName": "alice",
                 "memberCategory": "user",
                 "memberChatVRange": {
-                  "maxVersion": 22,
+                  "maxVersion": 23,
                   "minVersion": 9
                 },
                 "memberContactId": 1,
                 "memberContactProfileId": 1,
-                "memberId": "memberId",
+                "memberId": "memberId0",
                 "memberProfile": {
                   "displayName": "alice",
                   "fullName": "",
@@ -143,7 +143,7 @@
                 "activeConn": {
                   "agentConnId": "agentConnId",
                   "authErrCounter": 0,
-                  "connChatVersion": 22,
+                  "connChatVersion": 23,
                   "connId": 2,
                   "connLevel": 0,
                   "connStatus": {
@@ -155,7 +155,7 @@
                   "entityId": 2,
                   "localAlias": "",
                   "peerChatVRange": {
-                    "maxVersion": 22,
+                    "maxVersion": 23,
                     "minVersion": 9
                   },
                   "pqEncryption": false,
@@ -175,12 +175,12 @@
                 "localDisplayName": "bob",
                 "memberCategory": "invitee",
                 "memberChatVRange": {
-                  "maxVersion": 22,
+                  "maxVersion": 23,
                   "minVersion": 9
                 },
                 "memberContactId": 2,
                 "memberContactProfileId": 2,
-                "memberId": "memberId",
+                "memberId": "memberId1",
                 "memberProfile": {
                   "displayName": "bob",
                   "fullName": "",
@@ -411,12 +411,12 @@
               "localDisplayName": "alice",
               "memberCategory": "user",
               "memberChatVRange": {
-                "maxVersion": 22,
+                "maxVersion": 23,
                 "minVersion": 9
               },
               "memberContactId": 1,
               "memberContactProfileId": 1,
-              "memberId": "memberId",
+              "memberId": "memberId0",
               "memberProfile": {
                 "displayName": "alice",
                 "fullName": "",
@@ -477,12 +477,12 @@
               "localDisplayName": "bob",
               "memberCategory": "invitee",
               "memberChatVRange": {
-                "maxVersion": 22,
+                "maxVersion": 23,
                 "minVersion": 9
               },
               "memberContactId": 2,
               "memberContactProfileId": 2,
-              "memberId": "memberId",
+              "memberId": "memberId1",
               "memberProfile": {
                 "displayName": "bob",
                 "fullName": "",
@@ -546,7 +546,7 @@
           ],
           "mentions": {
             "alice": {
-              "memberId": "memberId",
+              "memberId": "memberId0",
               "memberRef": {
                 "displayName": "alice",
                 "groupMemberId": 1,
@@ -589,12 +589,12 @@
               "localDisplayName": "bob",
               "memberCategory": "invitee",
               "memberChatVRange": {
-                "maxVersion": 22,
+                "maxVersion": 23,
                 "minVersion": 9
               },
               "memberContactId": 2,
               "memberContactProfileId": 2,
-              "memberId": "memberId",
+              "memberId": "memberId1",
               "memberProfile": {
                 "displayName": "bob",
                 "fullName": "",
@@ -824,12 +824,12 @@
               "localDisplayName": "alice",
               "memberCategory": "user",
               "memberChatVRange": {
-                "maxVersion": 22,
+                "maxVersion": 23,
                 "minVersion": 9
               },
               "memberContactId": 1,
               "memberContactProfileId": 1,
-              "memberId": "memberId",
+              "memberId": "memberId0",
               "memberProfile": {
                 "displayName": "alice",
                 "fullName": "",
@@ -890,12 +890,12 @@
               "localDisplayName": "bob",
               "memberCategory": "invitee",
               "memberChatVRange": {
-                "maxVersion": 22,
+                "maxVersion": 23,
                 "minVersion": 9
               },
               "memberContactId": 2,
               "memberContactProfileId": 2,
-              "memberId": "memberId",
+              "memberId": "memberId1",
               "memberProfile": {
                 "displayName": "bob",
                 "fullName": "",
@@ -980,12 +980,12 @@
               "localDisplayName": "bob",
               "memberCategory": "invitee",
               "memberChatVRange": {
-                "maxVersion": 22,
+                "maxVersion": 23,
                 "minVersion": 9
               },
               "memberContactId": 2,
               "memberContactProfileId": 2,
-              "memberId": "memberId",
+              "memberId": "memberId1",
               "memberProfile": {
                 "displayName": "bob",
                 "fullName": "",
@@ -1049,7 +1049,7 @@
           ],
           "mentions": {
             "alice": {
-              "memberId": "memberId",
+              "memberId": "memberId0",
               "memberRef": {
                 "displayName": "alice",
                 "groupMemberId": 1,

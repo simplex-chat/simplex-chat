@@ -218,9 +218,11 @@ nameRecords ct@Contracts {ctChain} lh RegisteredName {rnOwner, rnResolver}
 -- | The default resolver's record, "" when unset.
 textRecord :: Contracts -> LabelHash -> ByteString -> IO (Either ChainError Text)
 textRecord ct lh = textRecordAt ct Latest (nodeArg ct lh)
+{-# INLINE textRecord #-}
 
 textRecordAt :: Contracts -> BlockTag -> ByteString -> ByteString -> IO (Either ChainError Text)
 textRecordAt ct tag node key = callAt ct tag (resolver ct) ("text(bytes32,string)", abiTuple [Static node, Dynamic $ abiBytes key]) decodeString
+{-# INLINE textRecordAt #-}
 
 -- | Cents for a label of this length and these years. The oracle prices by length only,
 -- so a placeholder label of that length keeps the label from the RPC node. A price under the floor for these years is refused: a node
@@ -238,6 +240,7 @@ chainPriceCents ct@Contracts {ctMinPriceCentsPerYear} len years = fmap (>>= chec
 
 sponsorNonce :: Contracts -> Address -> IO (Either ChainError Word64)
 sponsorNonce ct owner = call ct (cSponsor $ chainConfig ct) ("nonces(address)", addressWord owner) decodeWord64
+{-# INLINE sponsorNonce #-}
 
 registrarFunds :: Contracts -> IO (Either ChainError RegistrarFunds)
 registrarFunds ct@Contracts {ctChain = c@ChainClient {ccRegistrar}} =
@@ -247,6 +250,7 @@ registrarFunds ct@Contracts {ctChain = c@ChainClient {ccRegistrar}} =
 
 resolverNonce :: Contracts -> BlockTag -> Address -> IO (Either ChainError Word64)
 resolverNonce ct tag owner = callAt ct tag (resolver ct) ("nonces(address)", addressWord owner) decodeWord64
+{-# INLINE resolverNonce #-}
 
 -- | The policy holding the reserved and the community names, read once: as the service starts, or on first use after that
 -- read failed, found none set, or was forgotten as a register reverted TermsNotAccepted.
@@ -260,6 +264,7 @@ forgetNamePolicy Contracts {ctNamePolicy} = atomicModifyIORef' ctNamePolicy $ \(
 
 communityName :: Contracts -> LabelHash -> IO (Either ChainError CommunityName)
 communityName ct lh = policyCall ct Latest ("communityNames(bytes32)", labelHashArg lh) decodeBool
+{-# INLINE communityName #-}
 
 termsLinks :: Contracts -> IO (Either ChainError (Maybe Terms, Maybe Terms))
 termsLinks ct@Contracts {ctChain, ctTermsLinks} = runExceptT $ do
@@ -386,6 +391,7 @@ fetchText ChainClient {ccManager, ccTimeout} maxBytes url =
 
 policyNonce :: Contracts -> Address -> IO (Either ChainError Word64)
 policyNonce ct owner = policyCall ct Latest ("nonces(address)", addressWord owner) decodeWord64
+{-# INLINE policyNonce #-}
 
 -- | The terms hash the owner accepted for the commitment, all zeros when none.
 acceptedTerms :: Contracts -> Commitment -> Address -> IO (Either ChainError TermsHash)
@@ -399,6 +405,7 @@ policyCall ct tag args decode = runExceptT $ do
 -- | The newest block at the configured confirmation depth, so a read there sees only what a reorg cannot undo.
 confirmedTag :: Contracts -> IO (Either ChainError BlockTag)
 confirmedTag Contracts {ctChain} = fmap (AtBlock . confirmedNumber ctChain . blockNumber) <$> latestBlock ctChain
+{-# INLINE confirmedTag #-}
 
 -- | Nothing when nobody holds the name: @ownerOf@ then fails the registrar's bare @require@ on the expiry,
 -- a revert without data. Any other revert is a failed read.
@@ -410,19 +417,22 @@ ownerOfToken ct tag lh =
 
 nameExpires :: Contracts -> BlockTag -> LabelHash -> IO (Either ChainError SystemSeconds)
 nameExpires ct tag lh = callAt ct tag (baseRegistrar ct) ("nameExpires(uint256)", labelHashArg lh) decodeSeconds
+{-# INLINE nameExpires #-}
 
 disputeUntil :: Contracts -> BlockTag -> LabelHash -> IO (Either ChainError (Maybe SystemSeconds))
-disputeUntil ct tag lh = fmap unlessZero <$> callAt ct tag (baseRegistrar ct) ("disputeUntil(uint256)", labelHashArg lh) decodeSeconds
+disputeUntil ct tag lh = fmap nonZero <$> callAt ct tag (baseRegistrar ct) ("disputeUntil(uint256)", labelHashArg lh) decodeSeconds
+  where
+    nonZero t = if t == RoundedSystemTime 0 then Nothing else Just t
 
 -- | The block time of the commitment, Nothing when the controller holds none.
 commitmentTime :: Contracts -> Commitment -> IO (Either ChainError (Maybe SystemSeconds))
-commitmentTime ct (Hex32 commitment) = fmap unlessZero <$> call ct (controller ct) ("commitments(bytes32)", commitment) decodeSeconds
-
-unlessZero :: SystemSeconds -> Maybe SystemSeconds
-unlessZero t = if t == RoundedSystemTime 0 then Nothing else Just t
+commitmentTime ct (Hex32 commitment) = fmap nonZero <$> call ct (controller ct) ("commitments(bytes32)", commitment) decodeSeconds
+  where
+    nonZero t = if t == RoundedSystemTime 0 then Nothing else Just t
 
 controllerAvailable :: Contracts -> BlockTag -> Text -> IO (Either ChainError Bool)
 controllerAvailable ct tag label = callAt ct tag (controller ct) ("available(string)", abiTuple [Dynamic $ abiBytes $ encodeUtf8 label]) decodeBool
+{-# INLINE controllerAvailable #-}
 
 commitmentAges :: Contracts -> IO (Either ChainError CommitmentAges)
 commitmentAges ct@Contracts {ctCommitmentAges} = readOnce ctCommitmentAges $ runExceptT $ do
@@ -446,15 +456,18 @@ readOnce ref readChain =
 -- | Reads run at once; the first failure in argument order is the answer.
 together :: Compose Concurrently (Either ChainError) a -> IO (Either ChainError a)
 together = runConcurrently . getCompose
+{-# INLINE together #-}
 
 concurrent :: IO (Either ChainError a) -> Compose Concurrently (Either ChainError) a
 concurrent = Compose . Concurrently
+{-# INLINE concurrent #-}
 
 withinDeadline :: Contracts -> Text -> IO (Either ChainError a) -> IO (Either ChainError a)
 withinDeadline Contracts {ctDeadline} what action = fromMaybe (Left $ ChainUnavailable $ what <> ": timed out") <$> timeout ctDeadline action
 
 call :: Contracts -> Address -> (ByteString, ByteString) -> (ByteString -> Either AbiError a) -> IO (Either ChainError a)
 call ct = callAt ct Latest
+{-# INLINE call #-}
 
 -- | An answer that does not decode is a node failure, as an RPC error is.
 callAt :: Contracts -> BlockTag -> Address -> (ByteString, ByteString) -> (ByteString -> Either AbiError a) -> IO (Either ChainError a)
@@ -465,17 +478,24 @@ callAt Contracts {ctChain} tag to (signature, args) decode =
 
 labelHashArg :: LabelHash -> ByteString
 labelHashArg (LabelHash h) = h
+{-# INLINE labelHashArg #-}
 
 nodeArg :: Contracts -> LabelHash -> ByteString
 nodeArg Contracts {ctTLD} = nodeBytes . labelNode ctTLD
+{-# INLINE nodeArg #-}
 
 isZeroAddress :: Address -> Bool
 isZeroAddress = B.all (== '\NUL') . unAddress
+{-# INLINE isZeroAddress #-}
 
 chainConfig :: Contracts -> ChainConfig
 chainConfig = ccConfig . ctChain
+{-# INLINE chainConfig #-}
 
 controller, resolver, baseRegistrar :: Contracts -> Address
 controller = cController . chainConfig
+{-# INLINE controller #-}
 resolver = cResolver . chainConfig
+{-# INLINE resolver #-}
 baseRegistrar = cBaseRegistrar . chainConfig
+{-# INLINE baseRegistrar #-}

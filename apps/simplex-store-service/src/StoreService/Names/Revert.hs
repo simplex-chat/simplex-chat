@@ -130,6 +130,7 @@ otherRevertSignatures =
 
 signatureName :: ByteString -> Text
 signatureName = decodeLatin1 . BC.takeWhile (/= '(')
+{-# INLINE signatureName #-}
 
 instance TextEncoding RevertName where
   textEncode = signatureName . revertSignature

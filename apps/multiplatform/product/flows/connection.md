@@ -88,6 +88,7 @@ sealed class NameChange {
    - `ConnectingProhibit(contact)`: Connection in progress, cannot duplicate.
    - `Known(contact)`: Already a contact.
    - `ContactViaAddress(contact)`: Contact already exists via this address.
+   - `LinkNotice(expiresAt, contactSLinkData_)`: The user is blocked from this address (see 2.4).
 
 6. For `GroupLinkPlan`:
    - `Ok`: Fresh group link, safe to join.
@@ -95,6 +96,7 @@ sealed class NameChange {
    - `ConnectingConfirmReconnect`: Was connecting, offer to retry.
    - `ConnectingProhibit(groupInfo_)`: Connection in progress.
    - `Known(groupInfo)`: Already a member.
+   - `LinkNotice(expiresAt)`: The user is blocked from this link (see 2.4).
 
 ### 2.2 High-Level Connect Flow: planAndConnect
 
@@ -137,6 +139,22 @@ suspend fun apiConnect(rh: Long?, incognito: Boolean, connLink: CreatedConnLink)
 4. The connect progress indicator is shown via `ConnectProgressManager`.
 
 ---
+
+### 2.4 Blocked Link (Link Notice)
+
+The core stores a notice for the link the user joined or connected through when a group admin removes the user with a block, or a contact or business deletes the user with a block. The plan returns `LinkNotice`, and a connect call (`apiConnect`, `apiConnectPreparedContact`, `apiConnectPreparedGroup`, `apiConnectContactViaAddress`) returns `ChatErrorType.LinkNotice(expiresAt)`. No connection is attempted.
+
+`showLinkNoticeAlert(target, expiresAt, cleanup, hostDevice, connectOtherButton, onConnectOther)` in `ConnectPlan.kt` shows "Not allowed":
+- by target (`LinkNoticeTarget`): group "Blocked by the admins of this group.", channel "Blocked by the owners of this channel.", contact "Blocked by this contact.", business "Blocked by this business."
+- with an end time: "until <time>" before the full stop
+- for a plan: the device label (`hostDevice(rhId)`), as the other plan alerts
+- buttons: OK; "Connect to @<name>" or "Join channel #<name>" when the plan of a SimpleX name has the other kind of chat (`otherSimplexName`), which plans that name; How it works opens the user guide section "Blocking members" (`bansGuideLink`)
+
+Target:
+- plan `LinkNotice`: from the link type (`SimplexLinkType.group`, `channel`, contact otherwise); a SimpleX channel name gives channel; business when the address link data has `business`
+- `apiConnect`: from the link type of the connection link
+- `apiConnectPreparedGroup`: from the group (business chat, channel, group)
+- `apiConnectPreparedContact`, `apiConnectContactViaAddress`: contact
 
 ## 3. Connection Handshake Completion
 

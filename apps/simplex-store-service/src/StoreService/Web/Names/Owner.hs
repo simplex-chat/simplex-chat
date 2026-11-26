@@ -32,7 +32,7 @@ import StoreService.Names.Orders
 import StoreService.Names.Phases (RegistrationId (..), publish)
 import StoreService.Names.Reveal (RevealRequest)
 import StoreService.Names.Signatures (OrderFields (..), findMessage, parseAnyCaseAddress, selectionMessage)
-import StoreService.Names.Store (NamePhase (..), NameRegistration (..), OrderPhase (..), findRegistrations, getRegistration, namePhase, paymentInvoice)
+import StoreService.Names.Store (NamePhase (..), NameRegistrationOrder (..), OrderPhase (..), findRegistrations, getRegistration, namePhase, paymentInvoice)
 import StoreService.Names.Turns (withRegistrationTurns)
 import StoreService.Names.View (NameRefusal (..), registrationView)
 import StoreService.Web.Http (Respond, jsonResponse, maxBodyBytes, nameBodyBytes, readBoundedBody)
@@ -87,8 +87,8 @@ findHandler OrdersEnv {oeStore, oeNow} req respond =
           pure $ answerNow $ jsonResponse status200 $ J.toJSON FindAnswer {registrations = map foundOrder rs}
     refuse = refused "POST /api/registration/find"
 
-foundOrder :: NameRegistration -> FoundOrder
-foundOrder NameRegistration {nrId, nrPayment, nrPhase, nrCreatedAt, nrLabelHash = LabelHash lh, nrSealed} =
+foundOrder :: NameRegistrationOrder -> FoundOrder
+foundOrder NameRegistrationOrder {nrId, nrPayment, nrPhase, nrCreatedAt, nrLabelHash = LabelHash lh, nrSealed} =
   FoundOrder
     { registrationId = nrId,
       invoiceId = paymentInvoice nrPayment,
@@ -109,7 +109,7 @@ selectNameHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oeNow}
     signed ((fields, timestamp, signature), reveal) =
       withTransaction oeStore (`getRegistration` rid) >>= \case
         Nothing -> pure $ refusalAnswer NRNotFound
-        Just r@NameRegistration {nrOwner} ->
+        Just r@NameRegistrationOrder {nrOwner} ->
           checkSigner nrOwner (selectionMessage rid fields timestamp) signature >>= \case
             Left refusal -> refuse refusal
             Right () ->
@@ -118,7 +118,7 @@ selectNameHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oeNow}
     inTurns order reveal stored = do
       now <- oeNow
       select now stored order reveal
-    select now r@NameRegistration {nrYears, nrPrice, nrPayment, nrDisputeDays, nrReveal} order@OrderRequest {orFields} reveal
+    select now r@NameRegistrationOrder {nrYears, nrPrice, nrPayment, nrDisputeDays, nrReveal} order@OrderRequest {orFields} reveal
       | orderFieldsOf r == orFields = answerNow . jsonResponse status200 . J.toJSON <$> registrationView oeStore oeConfig oeContracts now r
       | OTaken takenAt <- nrPhase r =
           withTransaction oeStore (\db -> overdueOrdersMet db order now) >>= \case
@@ -135,7 +135,7 @@ selectNameHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oeNow}
         Left (WRRefused refusal) -> refuse refusal
     selectedAnswer now closed =
       withTransaction oeStore (`getRegistration` rid) >>= \case
-        Just r@NameRegistration {nrVersion} -> heldAfter closed . written env rid nrVersion . answerNow . jsonResponse status200 . J.toJSON <$> registrationView oeStore oeConfig oeContracts now r
+        Just r@NameRegistrationOrder {nrVersion} -> heldAfter closed . written env rid nrVersion . answerNow . jsonResponse status200 . J.toJSON <$> registrationView oeStore oeConfig oeContracts now r
         Nothing -> refusalAnswer NRInternal <$ logError ("POST /api/registration/:id/name: order " <> ridText <> " is not readable after its selection")
     changed = refusalAnswer <$> registrationChanged env rid
     heldAfter closed a@Answer {aAfter} = a {aAfter = aAfter >> announceHeld env providers waiters closed rid}
@@ -145,4 +145,5 @@ selectNameHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oeNow}
 -- | Published after the turn, as the answer is sent.
 written :: OrdersEnv -> RegistrationId -> Int64 -> Answer -> Answer
 written OrdersEnv {oePhases} rid v a = a {aAfter = atomically $ publish oePhases rid v}
+{-# INLINE written #-}
 

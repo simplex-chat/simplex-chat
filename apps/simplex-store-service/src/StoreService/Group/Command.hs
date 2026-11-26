@@ -32,14 +32,13 @@ import Simplex.Chat.Types.Shared (GroupMemberRole (..))
 import Simplex.Messaging.Encoding.String (TextEncoding (..))
 import Simplex.Messaging.Names.Record (USDCents)
 import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
-import StoreService.Config (boundedDecimal)
+import StoreService.Config (boundedDecimal, maxNameYears)
 import StoreService.Names.Store (CmdSource (..))
 
-maxBulk, maxUses, maxMonths, maxNameYears :: Int
+maxBulk, maxUses, maxMonths :: Int
 maxBulk = 100
 maxUses = 1000
 maxMonths = 12
-maxNameYears = 10
 
 data GroupCmd
   = GCIssue BadgeType Int Int BadgeCodePaymentStatus

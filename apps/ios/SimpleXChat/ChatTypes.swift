@@ -21,6 +21,10 @@ public let GROUP_KNOCKING_VERSION = 15
 
 public let CALL_RECONNECT_VERSION = 22
 
+public let LINK_NOTICE_VERSION = 23
+
+public let bansGuideLink = URL(string: "https://simplex.chat/docs/guide/secret-groups.html#blocking-members")!
+
 public let contentModerationPostLink = URL(string: "https://simplex.chat/blog/20250114-simplex-network-large-groups-privacy-preserving-content-moderation.html#preventing-server-abuse-without-compromising-e2e-encryption")!
 
 public let previewDate = Date(timeIntervalSince1970: 1_736_936_100)
@@ -2644,6 +2648,9 @@ public struct Contact: Identifiable, Decodable, NamedChat, Hashable {
     public var active: Bool { get { contactStatus == .active } }
     public var nextSendGrpInv: Bool { get { contactGroupMemberId != nil && !contactGrpInvSent } }
     public var callReconnectSupported: Bool { (activeConn?.peerChatVRange.maxVersion ?? 0) >= CALL_RECONNECT_VERSION }
+    public var canDeleteAndBan: Bool {
+        sndReady && active && activeConn?.viaUserContactLink != nil && (activeConn?.peerChatVRange.maxVersion ?? 0) >= LINK_NOTICE_VERSION
+    }
     public var nextConnectPrepared: Bool { active && preparedContact != nil && (activeConn == nil || activeConn?.connStatus == .prepared) }
     public var profileChangeProhibited: Bool { activeConn != nil }
     public var nextAcceptContactRequest: Bool {
@@ -2778,6 +2785,7 @@ public struct Connection: Decodable, Hashable {
     public var peerChatVRange: VersionRange
     public var connStatus: ConnStatus
     public var connLevel: Int
+    public var viaUserContactLink: Int64?
     public var viaGroupLink: Bool
     public var customUserProfileId: Int64?
     public var connectionCode: SecurityCode?
@@ -2791,7 +2799,7 @@ public struct Connection: Decodable, Hashable {
     public var connectionStats: ConnectionStats? = nil
 
     private enum CodingKeys: String, CodingKey {
-        case connId, agentConnId, peerChatVRange, connStatus, connLevel, viaGroupLink, customUserProfileId, connectionCode, pqSupport, pqEncryption, pqSndEnabled, pqRcvEnabled, authErrCounter, quotaErrCounter
+        case connId, agentConnId, peerChatVRange, connStatus, connLevel, viaUserContactLink, viaGroupLink, customUserProfileId, connectionCode, pqSupport, pqEncryption, pqSndEnabled, pqRcvEnabled, authErrCounter, quotaErrCounter
     }
 
     public var id: ChatId { get { ":\(connId)" } }
@@ -3061,6 +3069,14 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat, Hashable {
 
     public var isOwner: Bool {
         return membership.memberRole == .owner && membership.memberCurrent
+    }
+
+    public var isCustomerChatOwner: Bool {
+        isOwner && membership.memberActive && businessChat?.chatType == .customer
+    }
+
+    public func canDeleteAndBanCustomer(_ members: [GroupMember]) -> Bool {
+        isCustomerChatOwner && members.contains { $0.memberId == businessChat?.customerId && $0.canBanAndRemove(groupInfo: self) }
     }
 
     public var canDelete: Bool {
@@ -3418,6 +3434,12 @@ public struct BusinessChatInfo: Decodable, Hashable {
     public var businessId: String
     public var customerId: String
     public var businessDomain: SimplexDomainClaim?
+
+    public static let sampleData = BusinessChatInfo(
+        chatType: .customer,
+        businessId: "business",
+        customerId: "customer"
+    )
 }
 
 public enum BusinessChatType: String, Codable, Hashable {
@@ -3584,7 +3606,11 @@ public struct GroupMember: Identifiable, Decodable, Hashable {
         let userRole = groupInfo.membership.memberRole
         return memberRole != .relay && memberRole < .moderator
             && userRole >= .moderator && userRole >= memberRole && groupInfo.membership.memberActive
-            && !memberPending
+            && ![.memRejected, .memRemoved, .memLeft, .memGroupDeleted].contains(memberStatus)
+    }
+
+    public func canBanAndRemove(groupInfo: GroupInfo) -> Bool {
+        canBeRemoved(groupInfo: groupInfo) && memberCurrentOrPending && memberRole < .moderator && versionRange.maxVersion >= LINK_NOTICE_VERSION
     }
 
     public var canReceiveReports: Bool {
@@ -6247,18 +6273,18 @@ public enum FormatColor: String, Decodable, Hashable {
 
 public enum ReportReason: Hashable {
     case spam
-    case illegal
+    case content
     case community
     case profile
     case other
     case unknown(type: String)
 
-    public static var supportedReasons: [ReportReason] = [.spam, .illegal, .community, .profile, .other]
+    public static var supportedReasons: [ReportReason] = [.spam, .content, .community, .profile, .other]
 
     public var text: String {
         switch self {
         case .spam: return NSLocalizedString("Spam", comment: "report reason")
-        case .illegal: return NSLocalizedString("Inappropriate content", comment: "report reason")
+        case .content: return NSLocalizedString("Inappropriate content", comment: "report reason")
         case .community: return NSLocalizedString("Community guidelines violation", comment: "report reason")
         case .profile: return NSLocalizedString("Inappropriate profile", comment: "report reason")
         case .other: return NSLocalizedString("Another reason", comment: "report reason")
@@ -6280,7 +6306,7 @@ extension ReportReason: Encodable {
         var container = encoder.singleValueContainer()
         switch self {
         case .spam: try container.encode("spam")
-        case .illegal: try container.encode("illegal")
+        case .content: try container.encode("content")
         case .community: try container.encode("community")
         case .profile: try container.encode("profile")
         case .other: try container.encode("other")
@@ -6295,7 +6321,7 @@ extension ReportReason: Decodable {
         let type = try container.decode(String.self)
         switch type {
         case "spam": self = .spam
-        case "illegal": self = .illegal
+        case "content", "illegal": self = .content
         case "community": self = .community
         case "profile": self = .profile
         case "other": self = .other
