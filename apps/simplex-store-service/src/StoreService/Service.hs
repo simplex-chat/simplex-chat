@@ -46,7 +46,7 @@ import StoreService.Config (AppleStoreConfig (..), BadgeIssuerKey (..), ChainCon
 import StoreService.Group (GroupEvent, ensureManagedGroup, fmtTime, groupEvent, hasTracker, joinerAcceptance, refreshTracker, reportToGroup, runCmd, runGroupLane)
 import StoreService.Group.Command (MoneyCmd (..), consoleCmd, spelledCmd)
 import StoreService.Metrics (MetricsEnv (..), runMetrics)
-import StoreService.Names.Balances (RefundRecord (..), RefundRefusal (..), recordRefund)
+import StoreService.Names.Balances (RefundRecord (..), RefundRefusal (..), dollars, recordRefund)
 import StoreService.Names.Chain (ChainClient, newChainClient, nodeChainId)
 import StoreService.Names.Contracts (Contracts, Terms (..), communityName, namePolicy, newContracts, runTermsFetch, termsLinks)
 import StoreService.Names.Env (NamesEnv (..), newNamesEnv)
@@ -60,7 +60,7 @@ import StoreService.Names.View (addressText)
 import StoreService.Names.Worker (CloseRefusal (..), Closed (..), closeRegistration, newWorker, runEndedSweep, runMonthEnds, runUnregisteredAlerts, runWorkers)
 import StoreService.Options
 import StoreService.Poller (PollerEnv (peCreditPassAt, peListedOk), newPollerEnv, newReadHints, runPoller)
-import StoreService.Providers (Provider (pProvider), minorDecimal)
+import StoreService.Providers (Provider (pProvider))
 import StoreService.Providers.BTCPay (btcpayProvider)
 import StoreService.Providers.Stripe (stripeProvider)
 import StoreService.Store
@@ -513,9 +513,6 @@ linkText = maybe "" $ \BalanceLink {lkRegistration = RegistrationId rid, lkOwner
               -- an order its invoice paid is credited only the extra of an overpayment
               kind = if cents > 0 then " overpaid" else " late"
            in [dollars cents <> by | cents > 0] <> [dollars late <> kind <> by | late > 0]
-
-dollars :: USDCents -> T.Text
-dollars = ("$" <>) . minorDecimal
 
 processQueuedRequests :: BadgeIssuerKey -> Maybe (TQueue GroupEvent) -> ServiceState -> IO ()
 processQueuedRequests key trackerQ_ env = do
