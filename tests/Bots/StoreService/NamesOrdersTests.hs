@@ -693,12 +693,12 @@ xmrOrder = aliceOrder {oLabel = "dynamis", oPrice = 20000, oSecret = secretOf 2,
 
 testProvenInvoices :: IO ()
 testProvenInvoices = withBTCPayOrders id $ \_ ctx ->
-  forM_ [(["invoice-btc-open", "invoice-view-btc"], aliceOrder), (["invoice-xmr-open"], xmrOrder)] $ \(fixtures, o) -> do
+  forM_ [("invoice-btc-open", aliceOrder), ("invoice-xmr-open", xmrOrder)] $ \(fixture, o) -> do
     (_, v) <- placed ctx o
     Just (J.String payTo) <- pure $ fieldOf v "address"
     Just proof <- pure $ fieldOf v "addressProof" >>= JT.parseMaybe addressProofP
     addressProofHolds payTo proof `shouldBe` True
-    forM_ fixtures $ \fixture -> answerFixture fixture (200, Just $ KM.insert "invoiceId" "invoice" v)
+    answerFixture fixture (200, Just $ KM.insert "invoiceId" "invoice" v)
   where
     addressProofP = J.withObject "addressProof" $ \o ->
       (o J..: "type" :: JT.Parser Text) >>= \case
