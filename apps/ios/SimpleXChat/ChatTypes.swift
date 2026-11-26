@@ -4189,7 +4189,7 @@ public struct ChatItem: Identifiable, Decodable, Hashable {
         }
     }
 
-    public var chainAddressVerified: Bool {
+    public var messageSigned: Bool {
         switch chatDir {
         case .groupSnd, .groupRcv, .channelRcv: meta.msgVerified?.verified == true
         default: true

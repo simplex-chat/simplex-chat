@@ -91,7 +91,7 @@ class ChainAddressesTest : RecordedApiTest() {
     assertEquals(
       listOf("SimpleX ⚠\u00A0bc1q2g…\u20605d4u (not signed)", "⚠\u00A00xD704…\u2060c86a (unknown chain, not signed)"),
       listOf("<bitcoin:$BTC?amount=0.001&label=SimpleX>", "ethereum:$ETH@100?value=1e16").map { key ->
-        markdown.getValue(key).formattedText!!.joinToString("") { segmentDisplayText(it, null, SimplexLinkMode.DESCRIPTION, chainAddressVerified = false) }
+        markdown.getValue(key).formattedText!!.joinToString("") { segmentDisplayText(it, null, SimplexLinkMode.DESCRIPTION, messageSigned = false) }
       }
     )
   }

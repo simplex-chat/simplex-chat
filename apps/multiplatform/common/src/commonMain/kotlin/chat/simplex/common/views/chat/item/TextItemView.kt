@@ -114,7 +114,7 @@ private fun typing(w: FontWeight = FontWeight.Light): AnnotatedString =
   AnnotatedString(".", SpanStyle(fontWeight = w))
 
 // Display text for a single formatted segment — must be coordinated with MarkdownText.
-fun segmentDisplayText(ft: FormattedText, mentions: Map<String, CIMention>?, linkMode: SimplexLinkMode, chainAddressVerified: Boolean = true): String =
+fun segmentDisplayText(ft: FormattedText, mentions: Map<String, CIMention>?, linkMode: SimplexLinkMode, messageSigned: Boolean = true): String =
   when (ft.format) {
     is Format.Mention -> {
       val mention = mentions?.get(ft.format.memberName)
@@ -132,7 +132,7 @@ fun segmentDisplayText(ft: FormattedText, mentions: Map<String, CIMention>?, lin
         ?: if (linkMode == SimplexLinkMode.DESCRIPTION) ft.format.linkType.description else null
       if (t != null) "$t ${ft.format.viaHosts}" else ft.text
     }
-    is Format.ChainAddressLink -> ft.format.chainAddress.linkText(ft.format.showText, chainAddressVerified).shown
+    is Format.ChainAddressLink -> ft.format.chainAddress.linkText(ft.format.showText, messageSigned).shown
     is Format.Command -> ft.text
     is Format.Escape -> ""
     is Format.Markup -> ft.format.token.drawnText
@@ -144,7 +144,7 @@ class ItemDisplay(val parts: List<Pair<String, String>>, val bases: List<Int>)
 fun itemDisplay(ci: ChatItem, linkMode: SimplexLinkMode): ItemDisplay? {
   val fts = ci.formattedText ?: return null
   val segment = { ft: FormattedText ->
-    val display = segmentDisplayText(ft, ci.mentions, linkMode, ci.chainAddressVerified)
+    val display = segmentDisplayText(ft, ci.mentions, linkMode, ci.messageSigned)
     display to if (ft.format is Format.Markup) display else ft.text
   }
   val blocks = ci.markdownBlocks ?: return ItemDisplay(fts.map(segment), listOf(0))
@@ -763,7 +763,7 @@ fun chainAddressSender(ci: ChatItem, chatInfo: ChatInfo): ChainAddressSender {
     is CIDirection.GroupRcv -> dir.groupMember.displayName
     is CIDirection.GroupSnd -> if (ci.meta.showGroupAsSender) chatInfo.displayName else (chatInfo as? ChatInfo.Group)?.groupInfo?.membership?.displayName ?: ""
   }
-  return ChainAddressSender(name, forwarded = ci.meta.itemForwarded != null, verified = ci.chainAddressVerified)
+  return ChainAddressSender(name, forwarded = ci.meta.itemForwarded != null, verified = ci.messageSigned)
 }
 
 fun showOpenWalletAlert(sender: ChainAddressSender, link: Format.ChainAddressLink, uriHandler: UriHandler, clipboard: ClipboardManager) {

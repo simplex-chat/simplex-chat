@@ -394,7 +394,7 @@ func chainAddressSender(_ ci: ChatItem, _ chatInfo: ChatInfo) -> ChainAddressSen
     case let .groupRcv(groupMember): groupMember.displayName
     case .groupSnd: ci.meta.showGroupAsSender ? chatInfo.displayName : chatInfo.groupInfo?.membership.displayName ?? ""
     }
-    return ChainAddressSender(name: name, forwarded: ci.meta.itemForwarded != nil, verified: ci.chainAddressVerified)
+    return ChainAddressSender(name: name, forwarded: ci.meta.itemForwarded != nil, verified: ci.messageSigned)
 }
 
 struct ChainAddressTap {

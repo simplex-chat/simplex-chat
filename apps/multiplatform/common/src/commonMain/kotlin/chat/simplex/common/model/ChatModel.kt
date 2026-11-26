@@ -3671,7 +3671,7 @@ data class ChatItem (
 
   val localNote: Boolean = chatDir is CIDirection.LocalSnd || chatDir is CIDirection.LocalRcv
 
-  val chainAddressVerified: Boolean get() =
+  val messageSigned: Boolean get() =
     when (chatDir) {
       is CIDirection.GroupSnd, is CIDirection.GroupRcv, is CIDirection.ChannelRcv -> meta.msgVerified?.verified == true
       else -> true
