@@ -643,10 +643,10 @@ badge without paying.
 the repository root), `compose.yml` and the ini template `store_service.ini.example`; `dev/` holds
 the scripts of the dev setup and the webapp's cases. The service
 runs with `+client_postgres` and host networking, and serves the API and the webhooks. A second
-container, `webapps`, copies both built sites into `scripts/store-service/webapps/`, as `badges/`
-and `names/`, at every `docker compose up` and exits; one Caddy serves `badges/` and proxies the
-API to the service, while GitHub Pages serves the names page (see [Caddy](#caddy)). The service
-writes no file of either site.
+container, `webapps`, copies the built badges site into `scripts/store-service/webapps/badges/` at
+every `docker compose up` and exits; one Caddy serves `badges/` and proxies the API to the
+service, while GitHub Pages serves the names page (see [Caddy](#caddy)). The service writes no file
+of either site.
 
 `webapps` is built from the same `Dockerfile` (target `webapps`) and runs
 `rsync -rlpt --delete-after --delay-updates`: every new file is renamed into place at the end, so
@@ -712,7 +712,7 @@ The rename to StoreService changed what the operator runs:
 | the binary `simplex-badge-service` | `simplex-store-service` |
 | `port = 8080` | `badges_port = 8080`, the default, which can be omitted |
 | `static_dir = /srv/web` | `badges_static_dir = /srv/badges`, the image's build and the default, which can be omitted in Docker |
-| `webapp_export_dir = /srv/webapp`, host folder `web` | removed: the `webapps` container writes host folder `webapps`, with `badges` and `names` in it |
+| `webapp_export_dir = /srv/webapp`, host folder `web` | removed: the `webapps` container writes host folder `webapps`, with `badges` in it |
 | `names_hosts`, the hosts that got the names site by `Host` | `names_port = 8081`, the default: the names site on its own port (see [Two sites](#two-sites)) |
 
 The service refuses to start with a key from the left column, naming the key that replaced it.
@@ -767,18 +767,24 @@ in a shape this service does not read. It is upgraded in two steps:
 
 ### Two sites
 
-Both images carry the badges build at `/srv/badges` and the names build at `/srv/names`: the
-`webapps` image to copy them out for Caddy, and the service's for `serve_webapp = on`, where they
-are the defaults of `badges_static_dir` and `names_static_dir`; a run outside the image sets both. The names
-site (simplex.domains) comes from the `apps/simplex-domains` submodule, the simplex.domains
-repository, and is configured beside the badges site in `[listener]`. Fetch the submodule before
-building the image:
+The service's image carries the badges build at `/srv/badges` and the names build at `/srv/names`,
+the defaults of `badges_static_dir` and `names_static_dir` for `serve_webapp = on`; a run outside
+the image sets both. The `webapps` image carries the badges build alone, which it copies out for
+Caddy: in production GitHub Pages serves the names page (see [Caddy](#caddy)). The names site
+(simplex.domains) comes from the `apps/simplex-domains` submodule, the simplex.domains repository,
+and is configured beside the badges site in `[listener]`. The image builds it with
+`--mode devchain`, for [Development with a local chain](#development-with-a-local-chain): that
+build signs for the local chain's contracts and calls the API on its own origin. Fetch the
+submodule before building the image:
 
 ```
 git submodule update --init apps/simplex-domains
 ```
 
-A new names site ships by moving the submodule to its commit and committing that here:
+The submodule pins the page that the local chain's deployment serves and that CI runs against this
+service, in the scopes `names-page` and `names-e2e` (`scripts/ci/README.md`); the names page of
+production ships from the simplex.domains repository (see
+[Values the names page holds](#values-the-names-page-holds)). The pin moves to a page commit with:
 
 ```
 git -C apps/simplex-domains fetch origin
@@ -786,9 +792,8 @@ git -C apps/simplex-domains checkout <commit>
 git add apps/simplex-domains
 ```
 
-`.gitmodules` names `branch = sh/names-webapp`, the branch of simplex.domains#6, which is not merged
-yet; it only sets what `git submodule update --remote` fetches, and moves to the main branch once
-that pull request merges. The commit committed here is what builds.
+`.gitmodules` names `branch = names`; it only sets what `git submodule update --remote` fetches.
+The commit committed here is what builds.
 
 The names site is on when, and only when, the ini has `[names]`. Its `[listener]` keys:
 
