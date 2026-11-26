@@ -179,11 +179,7 @@ class ChainAddressesTest : RecordedApiTest() {
 
   @Test
   fun openWithoutWalletOffersCopyAndQRCode() = recorded("chain-addresses/links") {
-    val copied = mutableListOf<String>()
-    val clipboard = object : ClipboardManager {
-      override fun setText(annotatedString: AnnotatedString) { copied += annotatedString.text }
-      override fun getText(): AnnotatedString? = null
-    }
+    val clipboard = TestClipboard()
     val wallet = NoWalletApp()
     setContent {
       CompositionLocalProvider(LocalClipboardManager provides clipboard) {
@@ -199,8 +195,8 @@ class ChainAddressesTest : RecordedApiTest() {
     onNodeWithText("No wallet app").assertExists()
     onNodeWithText("Copy the address or scan the QR code with a wallet.").assertExists()
     press("Copy")
-    assertEquals(listOf(BTC), copied)
-    showNoWalletAlert(previewChainAddress)
+    assertEquals(listOf(BTC), clipboard.copied)
+    showNoWalletAlert(previewChainAddress, clipboard)
     waitForIdle()
     press("QR code")
     val qrCodeShown = ModalManager.end.hasModalsOpen()
@@ -210,7 +206,7 @@ class ChainAddressesTest : RecordedApiTest() {
 
   private fun ComposeUiTest.alertMessage(sender: ChainAddressSender, link: Format.ChainAddressLink): String {
     val before = shownTexts()
-    showOpenWalletAlert(sender, link, NoWalletApp())
+    showOpenWalletAlert(sender, link, NoWalletApp(), TestClipboard())
     waitForIdle()
     val alert = shownTexts().filter { it !in before }
     AlertManager.shared.hideAllAlerts()
@@ -235,6 +231,13 @@ private class NoWalletApp : UriHandler {
     opened += uri
     throw IllegalArgumentException("no app for $uri")
   }
+}
+
+private class TestClipboard : ClipboardManager {
+  val copied = mutableListOf<String>()
+
+  override fun setText(annotatedString: AnnotatedString) { copied += annotatedString.text }
+  override fun getText(): AnnotatedString? = null
 }
 
 private fun chainLinks(formattedText: List<FormattedText>?): List<Format.ChainAddressLink> =
@@ -264,8 +267,8 @@ fun ChainAddressMessages() = SimpleXTheme {
 
 @Composable
 fun OpenInWalletAlertPreview() = AlertPreview {
-  showOpenWalletAlert(ChainAddressSender("Tom", forwarded = false, verified = true), Format.ChainAddressLink("Dinner", previewChainAddress), NoWalletApp())
+  showOpenWalletAlert(ChainAddressSender("Tom", forwarded = false, verified = true), Format.ChainAddressLink("Dinner", previewChainAddress), NoWalletApp(), TestClipboard())
 }
 
 @Composable
-fun NoWalletAlertPreview() = AlertPreview { showNoWalletAlert(previewChainAddress) }
+fun NoWalletAlertPreview() = AlertPreview { showNoWalletAlert(previewChainAddress, TestClipboard()) }

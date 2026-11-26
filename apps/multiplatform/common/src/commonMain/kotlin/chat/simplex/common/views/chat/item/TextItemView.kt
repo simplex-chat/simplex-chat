@@ -325,8 +325,9 @@ fun MarkdownText (
       var hasCommands = false
       var hasModals = false
       var hasChainAddresses = false
+      val clipboard = LocalClipboardManager.current
       val openChainAddress: ((Format.ChainAddressLink) -> Unit)? =
-        if (chainAddressSender != null && uriHandler != null) ({ link -> showOpenWalletAlert(chainAddressSender, link, uriHandler) }) else null
+        if (chainAddressSender != null && uriHandler != null) ({ link -> showOpenWalletAlert(chainAddressSender, link, uriHandler, clipboard) }) else null
       val hiddenSecrets = mutableListOf<IntRange>()
       val annotatedText = buildAnnotatedString {
         inlineContent?.first?.invoke(this)
@@ -765,7 +766,7 @@ fun chainAddressSender(ci: ChatItem, chatInfo: ChatInfo): ChainAddressSender {
   return ChainAddressSender(name, forwarded = ci.meta.itemForwarded != null, verified = ci.chainAddressVerified)
 }
 
-fun showOpenWalletAlert(sender: ChainAddressSender, link: Format.ChainAddressLink, uriHandler: UriHandler) {
+fun showOpenWalletAlert(sender: ChainAddressSender, link: Format.ChainAddressLink, uriHandler: UriHandler, clipboard: ClipboardManager) {
   val linkText = link.chainAddress.linkText(link.showText, verified = true)
   val text = linkText.toAddress?.let { String.format(generalGetString(MR.strings.chain_address_to_address), linkText.shown, it) } ?: linkText.shown
   AlertManager.shared.showAlertDialogButtonsColumn(
@@ -779,7 +780,7 @@ fun showOpenWalletAlert(sender: ChainAddressSender, link: Format.ChainAddressLin
           try {
             uriHandler.openUri(link.chainAddress.walletUri)
           } catch (_: Exception) {
-            showNoWalletAlert(link.chainAddress)
+            showNoWalletAlert(link.chainAddress, clipboard)
           }
         }) { Text(generalGetString(MR.strings.open_verb)) }
       }
@@ -787,12 +788,11 @@ fun showOpenWalletAlert(sender: ChainAddressSender, link: Format.ChainAddressLin
   )
 }
 
-fun showNoWalletAlert(chainAddress: ChainAddress) {
+fun showNoWalletAlert(chainAddress: ChainAddress, clipboard: ClipboardManager) {
   AlertManager.shared.showAlertDialogButtonsColumn(
     title = generalGetString(MR.strings.no_wallet_app),
     text = generalGetString(MR.strings.no_wallet_app_desc),
     buttons = {
-      val clipboard = LocalClipboardManager.current
       Column {
         SectionItemView({
           AlertManager.shared.hideAlert()
