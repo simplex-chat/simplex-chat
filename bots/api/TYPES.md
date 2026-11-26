@@ -250,7 +250,7 @@ This file is generated automatically.
 - [UIColors](#uicolors)
 - [UIThemeEntityOverride](#uithemeentityoverride)
 - [UIThemeEntityOverrides](#uithemeentityoverrides)
-- [UnlistedCurrency](#unlistedcurrency)
+- [UnknownCurrency](#unknowncurrency)
 - [UpdatedMessage](#updatedmessage)
 - [User](#user)
 - [UserChatRelay](#userchatrelay)
@@ -1190,7 +1190,7 @@ Chain address or URI in a message text. currency: what the link text names, reso
 
 ## ChainCurrency
 
-amount: in BTC for bitcoin and lightning, in units of the ticker for ticker. chainName: the EVM chain other than Ethereum, or Solana for a Solana token. unlisted: the chain or token is outside the core's tables; the amount is omitted.
+amount: in BTC for bitcoin and lightning, in units of the ticker for ticker. chainName: the EVM chain other than Ethereum, or Solana for a Solana token. unknown: the chain or token is outside the core's tables; the amount is omitted.
 
 **Discriminated union type**:
 
@@ -1208,9 +1208,9 @@ Ticker:
 - chainName: string?
 - amount: string?
 
-Unlisted:
-- type: "unlisted"
-- unlisted: [UnlistedCurrency](#unlistedcurrency)
+Unknown:
+- type: "unknown"
+- unknown: [UnknownCurrency](#unknowncurrency)
 
 
 ---
@@ -5256,7 +5256,7 @@ Handshake:
 
 ---
 
-## UnlistedCurrency
+## UnknownCurrency
 
 **Enum type**:
 - "chain"

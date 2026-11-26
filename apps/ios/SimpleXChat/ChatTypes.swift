@@ -6093,7 +6093,7 @@ public struct ChainAddress: Decodable, Hashable {
             ChainLinkText(label: shownLabel, sign: "⚠\u{FE0E}", text: "\(shortAddress) (\(reasons.joined(separator: ", ")))", chainName: nil, warning: true, toAddress: nil)
         }
         switch currency {
-        case let .unlisted(unlisted): return warning([unlisted.text] + notSigned)
+        case let .unknown(unknown): return warning([unknown.text] + notSigned)
         case _ where !verified: return warning(notSigned)
         case let .bitcoin(amount): return link("₿", amount ?? shortAddress, toAddress: amount != nil)
         case let .lightning(amount): return link("ϟ", amount ?? shortAddress, toAddress: false)
@@ -6106,10 +6106,10 @@ public enum ChainCurrency: Decodable, Hashable {
     case bitcoin(amount: String?)
     case lightning(amount: String?)
     case ticker(ticker: String, chainName: String?, amount: String?)
-    case unlisted(unlisted: UnlistedCurrency)
+    case unknown(unknown: UnknownCurrency)
 }
 
-public enum UnlistedCurrency: String, Decodable, Hashable {
+public enum UnknownCurrency: String, Decodable, Hashable {
     case chain
     case token
     case chainAndToken

@@ -5471,12 +5471,12 @@ class ChainAddress(val currency: ChainCurrency, val address: String, val label: 
     fun warning(reasons: List<String>) =
       ChainLinkText(shownLabel, "⚠", "$shortAddress (${reasons.joinToString(", ")})", chainName = null, warning = true, toAddress = null)
     val c = currency
-    if (!verified && c !is ChainCurrency.Unlisted) return warning(notSigned)
+    if (!verified && c !is ChainCurrency.Unknown) return warning(notSigned)
     return when (c) {
       is ChainCurrency.Bitcoin -> link("₿", c.amount ?: shortAddress, toAddress = c.amount != null)
       is ChainCurrency.Lightning -> link("ϟ", c.amount ?: shortAddress, toAddress = false)
       is ChainCurrency.Ticker -> link(null, "${c.ticker}\u00A0${c.amount ?: shortAddress}", c.chainName, toAddress = c.amount != null)
-      is ChainCurrency.Unlisted -> warning(listOf(c.unlisted.text) + notSigned)
+      is ChainCurrency.Unknown -> warning(listOf(c.unknown.text) + notSigned)
     }
   }
 }
@@ -5486,11 +5486,11 @@ sealed class ChainCurrency {
   @Serializable @SerialName("bitcoin") class Bitcoin(val amount: String?): ChainCurrency()
   @Serializable @SerialName("lightning") class Lightning(val amount: String?): ChainCurrency()
   @Serializable @SerialName("ticker") class Ticker(val ticker: String, val chainName: String?, val amount: String?): ChainCurrency()
-  @Serializable @SerialName("unlisted") class Unlisted(val unlisted: UnlistedCurrency): ChainCurrency()
+  @Serializable @SerialName("unknown") class Unknown(val unknown: UnknownCurrency): ChainCurrency()
 }
 
 @Serializable
-enum class UnlistedCurrency {
+enum class UnknownCurrency {
   @SerialName("chain") Chain,
   @SerialName("token") Token,
   @SerialName("chainAndToken") ChainAndToken;

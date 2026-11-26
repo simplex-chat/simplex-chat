@@ -481,8 +481,8 @@
             "chainAddress": {
               "address": "0xD7047Fe3Eecb2f2FF78d839dD927Be27Bc12c86a",
               "currency": {
-                "type": "unlisted",
-                "unlisted": "chain"
+                "type": "unknown",
+                "unknown": "chain"
               },
               "walletUri": "ethereum:0xD7047Fe3Eecb2f2FF78d839dD927Be27Bc12c86a"
             },
@@ -657,8 +657,8 @@
             "chainAddress": {
               "address": "0xD7047Fe3Eecb2f2FF78d839dD927Be27Bc12c86a",
               "currency": {
-                "type": "unlisted",
-                "unlisted": "chain"
+                "type": "unknown",
+                "unknown": "chain"
               },
               "walletUri": "ethereum:0xD7047Fe3Eecb2f2FF78d839dD927Be27Bc12c86a@99999"
             },
@@ -748,8 +748,8 @@
             "chainAddress": {
               "address": "0xD7047Fe3Eecb2f2FF78d839dD927Be27Bc12c86a",
               "currency": {
-                "type": "unlisted",
-                "unlisted": "token"
+                "type": "unknown",
+                "unknown": "token"
               },
               "walletUri": "ethereum:0x1111111111111111111111111111111111111111@137/transfer?address=0xD7047Fe3Eecb2f2FF78d839dD927Be27Bc12c86a&uint256=10000000"
             },
@@ -766,8 +766,8 @@
             "chainAddress": {
               "address": "0xD7047Fe3Eecb2f2FF78d839dD927Be27Bc12c86a",
               "currency": {
-                "type": "unlisted",
-                "unlisted": "chain"
+                "type": "unknown",
+                "unknown": "chain"
               },
               "walletUri": "ethereum:0xD7047Fe3Eecb2f2FF78d839dD927Be27Bc12c86a@100?value=1e16"
             },
@@ -804,8 +804,8 @@
             "chainAddress": {
               "address": "0xD7047Fe3Eecb2f2FF78d839dD927Be27Bc12c86a",
               "currency": {
-                "type": "unlisted",
-                "unlisted": "chain"
+                "type": "unknown",
+                "unknown": "chain"
               },
               "walletUri": "ethereum:0xd7047fe3eecb2f2ff78d839dd927be27bc12c86a"
             },
@@ -841,8 +841,8 @@
             "chainAddress": {
               "address": "0xD7047Fe3Eecb2f2FF78d839dD927Be27Bc12c86a",
               "currency": {
-                "type": "unlisted",
-                "unlisted": "chainAndToken"
+                "type": "unknown",
+                "unknown": "chainAndToken"
               },
               "walletUri": "ethereum:0xdAC17F958D2ee523a2206206994597C13D831ec7@99999/transfer?address=0xD7047Fe3Eecb2f2FF78d839dD927Be27Bc12c86a&uint256=10000000"
             },

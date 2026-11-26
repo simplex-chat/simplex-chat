@@ -845,7 +845,7 @@ class ChainAddress(TypedDict):
     label: NotRequired[str]
     walletUri: str
 
-# amount: in BTC for bitcoin and lightning, in units of the ticker for ticker. chainName: the EVM chain other than Ethereum, or Solana for a Solana token. unlisted: the chain or token is outside the core's tables; the amount is omitted.
+# amount: in BTC for bitcoin and lightning, in units of the ticker for ticker. chainName: the EVM chain other than Ethereum, or Solana for a Solana token. unknown: the chain or token is outside the core's tables; the amount is omitted.
 
 class ChainCurrency_bitcoin(TypedDict):
     type: Literal["bitcoin"]
@@ -861,18 +861,18 @@ class ChainCurrency_ticker(TypedDict):
     chainName: NotRequired[str]
     amount: NotRequired[str]
 
-class ChainCurrency_unlisted(TypedDict):
-    type: Literal["unlisted"]
-    unlisted: "UnlistedCurrency"
+class ChainCurrency_unknown(TypedDict):
+    type: Literal["unknown"]
+    unknown: "UnknownCurrency"
 
 ChainCurrency = (
     ChainCurrency_bitcoin
     | ChainCurrency_lightning
     | ChainCurrency_ticker
-    | ChainCurrency_unlisted
+    | ChainCurrency_unknown
 )
 
-ChainCurrency_Tag = Literal["bitcoin", "lightning", "ticker", "unlisted"]
+ChainCurrency_Tag = Literal["bitcoin", "lightning", "ticker", "unknown"]
 
 class ChatBotCommand_command(TypedDict):
     type: Literal["command"]
@@ -4135,7 +4135,7 @@ class UIThemeEntityOverrides(TypedDict):
     dark: NotRequired["UIThemeEntityOverride"]
     chatLayout: NotRequired["ChatLayout"]
 
-UnlistedCurrency = Literal["chain", "token", "chainAndToken"]
+UnknownCurrency = Literal["chain", "token", "chainAndToken"]
 
 class UpdatedMessage(TypedDict):
     msgContent: "MsgContent"

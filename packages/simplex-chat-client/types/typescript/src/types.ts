@@ -1194,16 +1194,16 @@ export interface ChainAddress {
   label?: string
   walletUri: string
 }
-// amount: in BTC for bitcoin and lightning, in units of the ticker for ticker. chainName: the EVM chain other than Ethereum, or Solana for a Solana token. unlisted: the chain or token is outside the core's tables; the amount is omitted.
+// amount: in BTC for bitcoin and lightning, in units of the ticker for ticker. chainName: the EVM chain other than Ethereum, or Solana for a Solana token. unknown: the chain or token is outside the core's tables; the amount is omitted.
 
-export type ChainCurrency = 
+export type ChainCurrency =
   | ChainCurrency.Bitcoin
   | ChainCurrency.Lightning
   | ChainCurrency.Ticker
-  | ChainCurrency.Unlisted
+  | ChainCurrency.Unknown
 
 export namespace ChainCurrency {
-  export type Tag = "bitcoin" | "lightning" | "ticker" | "unlisted"
+  export type Tag = "bitcoin" | "lightning" | "ticker" | "unknown"
 
   interface Interface {
     type: Tag
@@ -1226,9 +1226,9 @@ export namespace ChainCurrency {
     amount?: string
   }
 
-  export interface Unlisted extends Interface {
-    type: "unlisted"
-    unlisted: UnlistedCurrency
+  export interface Unknown extends Interface {
+    type: "unknown"
+    unknown: UnknownCurrency
   }
 }
 
@@ -5923,7 +5923,7 @@ export interface UIThemeEntityOverrides {
   chatLayout?: ChatLayout
 }
 
-export enum UnlistedCurrency {
+export enum UnknownCurrency {
   Chain = "chain",
   Token = "token",
   ChainAndToken = "chainAndToken",

@@ -564,7 +564,7 @@ chainAddresses = describe "chain addresses" do
     zecU `linksTo` onChain (coin "ZEC") zecU ("zcash:" <> zecU)
     fluxZ `linksTo` onChain (coin "FLUX") fluxZ ("flux:" <> fluxZ)
     doge `linksTo` onChain (coin "DOGE") doge ("dogecoin:" <> doge)
-    eth `linksTo` onChain (CYUnlisted ULChain) eth ("ethereum:" <> eth)
+    eth `linksTo` onChain (CYUnknown UCChain) eth ("ethereum:" <> eth)
     coffee `linksTo` onChain (CYLightning $ Just "0.0025") coffee ("lightning:" <> coffee)
     lnurlUpper `linksTo` onChain (CYLightning Nothing) (T.toLower lnurlUpper) ("lightning:" <> lnurlUpper)
   it "text: a wrong checksum, no checksum, a testnet, code, a Lightning Address" do
@@ -605,14 +605,14 @@ chainAddresses = describe "chain addresses" do
     ("zcash:" <> zecU <> "?amount=0.1&memo=" <> memo) `linksTo` onChain (CYTicker "ZEC" Nothing $ Just "0.1") zecU ("zcash:" <> zecU <> "?amount=0.1&memo=" <> memo)
     ("solana:" <> sol <> "?amount=0.5") `linksTo` onChain (CYTicker "SOL" Nothing $ Just "0.5") sol ("solana:" <> sol <> "?amount=0.5")
     ("solana:" <> sol <> "?amount=1.5&spl-token=" <> usdc) `linksTo` onChain (CYTicker "USDC" (Just "Solana") $ Just "1.5") sol ("solana:" <> sol <> "?amount=1.5&spl-token=" <> usdc)
-    ("solana:" <> sol <> "?amount=10&spl-token=" <> sol) `linksTo` onChain (CYUnlisted ULToken) sol ("solana:" <> sol <> "?amount=10&spl-token=" <> sol)
-  it "EVM URIs: chains and tokens of the tables, and unlisted ones" do
+    ("solana:" <> sol <> "?amount=10&spl-token=" <> sol) `linksTo` onChain (CYUnknown UCToken) sol ("solana:" <> sol <> "?amount=10&spl-token=" <> sol)
+  it "EVM URIs: chains and tokens of the tables, and unknown ones" do
     ("ethereum:" <> eth <> "@42161?value=1e16") `linksTo` onChain (CYTicker "ETH" (Just "Arbitrum One") $ Just "0.01") eth ("ethereum:" <> eth <> "@42161?value=1e16")
     ("ethereum:" <> eth <> "@1?value=1e16") `linksTo` onChain (CYTicker "ETH" Nothing $ Just "0.01") eth ("ethereum:" <> eth <> "@1?value=1e16")
     ("ethereum:" <> eth <> "@137?value=5e18") `linksTo` onChain (CYTicker "POL" (Just "Polygon") $ Just "5") eth ("ethereum:" <> eth <> "@137?value=5e18")
-    ("ethereum:" <> eth <> "@99999?value=1e16") `linksTo` onChain (CYUnlisted ULChain) eth ("ethereum:" <> eth <> "@99999?value=1e16")
-    ("ethereum:" <> eth <> "?value=1e16") `linksTo` onChain (CYUnlisted ULChain) eth ("ethereum:" <> eth <> "?value=1e16")
-    ("ethereum:" <> T.toLower eth) `linksTo` onChain (CYUnlisted ULChain) eth ("ethereum:" <> T.toLower eth)
+    ("ethereum:" <> eth <> "@99999?value=1e16") `linksTo` onChain (CYUnknown UCChain) eth ("ethereum:" <> eth <> "@99999?value=1e16")
+    ("ethereum:" <> eth <> "?value=1e16") `linksTo` onChain (CYUnknown UCChain) eth ("ethereum:" <> eth <> "?value=1e16")
+    ("ethereum:" <> T.toLower eth) `linksTo` onChain (CYUnknown UCChain) eth ("ethereum:" <> T.toLower eth)
     usdtTransfer `linksTo` onChain (CYTicker "USDT" Nothing $ Just "5") eth usdtTransfer
     ("ethereum:" <> T.toLower usdt <> "@1/transfer?address=" <> eth <> "&uint256=5000000")
       `linksTo` onChain (CYTicker "USDT" Nothing $ Just "5") eth ("ethereum:" <> T.toLower usdt <> "@1/transfer?address=" <> eth <> "&uint256=5000000")
@@ -621,9 +621,9 @@ chainAddresses = describe "chain addresses" do
     ("ethereum:0x55d398326f99059fF775485246999027B3197955@56/transfer?address=" <> eth <> "&uint256=1500000000000000000")
       `linksTo` onChain (CYTicker "USDT" (Just "BNB Smart Chain") $ Just "1.5") eth ("ethereum:0x55d398326f99059fF775485246999027B3197955@56/transfer?address=" <> eth <> "&uint256=1500000000000000000")
     ("ethereum:0x1111111111111111111111111111111111111111@137/transfer?address=" <> eth <> "&uint256=1")
-      `linksTo` onChain (CYUnlisted ULToken) eth ("ethereum:0x1111111111111111111111111111111111111111@137/transfer?address=" <> eth <> "&uint256=1")
-    ("ethereum:" <> usdt <> "@99999/transfer?address=" <> eth <> "&uint256=1") `linksTo` onChain (CYUnlisted ULChainAndToken) eth ("ethereum:" <> usdt <> "@99999/transfer?address=" <> eth <> "&uint256=1")
-    ("ethereum:" <> usdt <> "/transfer?address=" <> eth <> "&uint256=1") `linksTo` onChain (CYUnlisted ULChainAndToken) eth ("ethereum:" <> usdt <> "/transfer?address=" <> eth <> "&uint256=1")
+      `linksTo` onChain (CYUnknown UCToken) eth ("ethereum:0x1111111111111111111111111111111111111111@137/transfer?address=" <> eth <> "&uint256=1")
+    ("ethereum:" <> usdt <> "@99999/transfer?address=" <> eth <> "&uint256=1") `linksTo` onChain (CYUnknown UCChainAndToken) eth ("ethereum:" <> usdt <> "@99999/transfer?address=" <> eth <> "&uint256=1")
+    ("ethereum:" <> usdt <> "/transfer?address=" <> eth <> "&uint256=1") `linksTo` onChain (CYUnknown UCChainAndToken) eth ("ethereum:" <> usdt <> "/transfer?address=" <> eth <> "&uint256=1")
   it "Flux URIs, by ZIP-321, with transparent and Sapling addresses" do
     ("flux:" <> zecT <> "?amount=5&message=Thanks") `linksTo` onChain (CYTicker "FLUX" Nothing $ Just "5") zecT ("flux:" <> zecT <> "?amount=5&message=Thanks")
     ("zel:" <> zecT <> "?amount=5") `linksTo` onChain (CYTicker "FLUX" Nothing $ Just "5") zecT ("zel:" <> zecT <> "?amount=5")

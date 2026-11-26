@@ -235,7 +235,7 @@ chatTypesDocsData =
     (sti @BusinessChatInfo, STRecord, "", [], "", ""),
     (sti @BusinessChatType, STEnum, "BC", [], "", ""),
     (sti @ChainAddress, STRecord, "", [], "", "Chain address or URI in a message text. currency: what the link text names, resolved from the core's tables of chains and tokens. walletUri: the URI to open in a wallet."),
-    (sti @ChainCurrency, STUnion, "CY", [], "", "amount: in BTC for bitcoin and lightning, in units of the ticker for ticker. chainName: the EVM chain other than Ethereum, or Solana for a Solana token. unlisted: the chain or token is outside the core's tables; the amount is omitted."),
+    (sti @ChainCurrency, STUnion, "CY", [], "", "amount: in BTC for bitcoin and lightning, in units of the ticker for ticker. chainName: the EVM chain other than Ethereum, or Solana for a Solana token. unknown: the chain or token is outside the core's tables; the amount is omitted."),
     (sti @ChatBotCommand, STUnion, "CBC", [], "", ""),
     (sti @ChatDeleteMode, STUnion, "CDM", [], Param "type" <> Choice "self" [("messages", ""), ("archive", "")] (OnOffParam "notify" "notify" (Just True)), ""),
     (sti @ChatError, STUnion, "Chat", ["ChatErrorDatabase", "ChatErrorRemoteHost", "ChatErrorRemoteCtrl"], "", ""),
@@ -434,7 +434,7 @@ chatTypesDocsData =
     (sti @UIColors, STRecord, "", [], "", ""),
     (sti @UIThemeEntityOverride, STRecord, "", [], "", ""),
     (sti @UIThemeEntityOverrides, STRecord, "", [], "", ""),
-    (sti @UnlistedCurrency, STEnum, "UL", [], "", ""),
+    (sti @UnknownCurrency, STEnum, "UC", [], "", ""),
     (sti @UpdatedMessage, STRecord, "", [], "", ""),
     (sti @User, STRecord, "", [], "", ""),
     ((sti @UserChatRelay) {typeName = "UserChatRelay"}, STRecord, "", [], "", ""),
@@ -704,7 +704,7 @@ deriving instance Generic UIColorMode
 deriving instance Generic UIColors
 deriving instance Generic UIThemeEntityOverride
 deriving instance Generic UIThemeEntityOverrides
-deriving instance Generic UnlistedCurrency
+deriving instance Generic UnknownCurrency
 deriving instance Generic UpdatedMessage
 deriving instance Generic User
 deriving instance Generic (UserChatRelay' 'DBStored)

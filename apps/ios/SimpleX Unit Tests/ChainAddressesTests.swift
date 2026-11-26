@@ -8,7 +8,7 @@ private let xmr = "8A3ZWAXrrQddvnT1fPrtbK86ZAoM4nai3Gjg1LEow3JWcryJtovMnHYZnxTJp
 private let eth = "0xD7047Fe3Eecb2f2FF78d839dD927Be27Bc12c86a"
 private let invoice = "lnbc2500u1pvjluezsp5zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zygspp5qqqsyqcyq5rqwzqfqqqsyqcyq5rqwzqfqqqsyqcyq5rqwzqfqypqdq5xysxxatsyp3k7enxv4jsxqzpu9qrsgquk0rl77nj30yxdy8j9vdx85fkpmdla2087ne0xh8nhedh8w27kyke0lp53ut353s06fv3qfegext0eh0ymjpf39tuven09sam30g4vgpfna3rh"
 private let labeledToken = "[Dinner](ethereum:0xc2132D05D31c914a87C6611C10748AEb04B58e8F@137/transfer?address=\(eth)&uint256=10000000)"
-private let labeledUnlisted = "[Donate](ethereum:\(eth)@99999)"
+private let labeledUnknownChain = "[Donate](ethereum:\(eth)@99999)"
 
 final class ChainAddressesTests: RecordedAPITestCase {
     func testLinkTextOfEachCurrency() throws {
@@ -26,7 +26,7 @@ final class ChainAddressesTests: RecordedAPITestCase {
             "Suggested donation: bitcoin:\(btc)?amount=0.001&label=SimpleX Thank you!": "Suggested donation: SimpleX ₿\u{00A0}0.001 Thank you!",
             "[Donate](monero:\(xmr))": "Donate XMR\u{00A0}8A3ZWA…\u{2060}Yq1c",
             labeledToken: "Dinner USDT\u{00A0}10 (Polygon)",
-            labeledUnlisted: "Donate ⚠\u{FE0E}\u{00A0}0xD704…\u{2060}c86a (unknown chain)",
+            labeledUnknownChain: "Donate ⚠\u{FE0E}\u{00A0}0xD704…\u{2060}c86a (unknown chain)",
             "[\(btc)](bitcoin:\(btc))": "₿\u{00A0}bc1q2g…\u{2060}5d4u",
             btc: "₿\u{00A0}bc1q2g…\u{2060}5d4u",
             "bitcoin:\(btc)?amount=0.001&label=SimpleX&message=Thank%20you": "SimpleX ₿\u{00A0}0.001",
@@ -48,15 +48,15 @@ final class ChainAddressesTests: RecordedAPITestCase {
         XCTAssertEqual(shown, expected)
     }
 
-    func testUnlistedCurrencyIsOrange() throws {
+    func testUnknownCurrencyIsOrange() throws {
         let markdown = try recordedMarkdown()
-        let listed = draw(try XCTUnwrap(markdown["Donations: \(btc). Cheers"])).string
-        let unlisted = draw(try XCTUnwrap(markdown["On Ethereum: \(eth)"])).string
-        XCTAssertEqual(linkColors(listed), [uiLinkColor])
-        XCTAssertEqual(linkColors(unlisted), [.systemOrange])
-        let sign = (listed.string as NSString).range(of: "₿").location
-        XCTAssertNil(listed.attribute(.underlineStyle, at: sign, effectiveRange: nil))
-        XCTAssertNotNil(listed.attribute(.underlineStyle, at: sign + 2, effectiveRange: nil))
+        let bitcoin = draw(try XCTUnwrap(markdown["Donations: \(btc). Cheers"])).string
+        let unknownChain = draw(try XCTUnwrap(markdown["On Ethereum: \(eth)"])).string
+        XCTAssertEqual(linkColors(bitcoin), [uiLinkColor])
+        XCTAssertEqual(linkColors(unknownChain), [.systemOrange])
+        let sign = (bitcoin.string as NSString).range(of: "₿").location
+        XCTAssertNil(bitcoin.attribute(.underlineStyle, at: sign, effectiveRange: nil))
+        XCTAssertNotNil(bitcoin.attribute(.underlineStyle, at: sign + 2, effectiveRange: nil))
     }
 
     func testSignAfterLabelIsUnderlinedAndChainNameIsItalic() throws {
@@ -68,7 +68,7 @@ final class ChainAddressesTests: RecordedAPITestCase {
         XCTAssertTrue(chainFont.fontDescriptor.symbolicTraits.contains(.traitItalic))
     }
 
-    func testNotSignedKeepsLabelAndUnlistedReason() throws {
+    func testNotSignedKeepsLabelAndUnknownReason() throws {
         let markdown = try recordedMarkdown()
         let unsigned = ChainAddressSender(name: "alice", forwarded: false, verified: false)
         let drawn = try ["<bitcoin:\(btc)?amount=0.001&label=SimpleX>", "ethereum:\(eth)@100?value=1e16"].map { draw(try XCTUnwrap(markdown[$0]), unsigned).string.string }

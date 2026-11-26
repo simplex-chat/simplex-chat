@@ -37,7 +37,7 @@ private const val USDT_POLYGON = "ethereum:0xc2132D05D31c914a87C6611C10748AEb04B
 private const val UNKNOWN_TOKEN = "ethereum:0x1111111111111111111111111111111111111111@137/transfer?address=$ETH&uint256=10000000"
 private const val UNKNOWN_CHAIN_AND_TOKEN = "ethereum:0xdAC17F958D2ee523a2206206994597C13D831ec7@99999/transfer?address=$ETH&uint256=10000000"
 private const val LABELED_TOKEN = "[Dinner]($USDT_POLYGON)"
-private const val LABELED_UNLISTED = "[Donate](ethereum:$ETH@99999)"
+private const val LABELED_UNKNOWN_CHAIN = "[Donate](ethereum:$ETH@99999)"
 
 private val pageMessages = listOf("Donations:", "Suggested donation:", "For the coffee:", "If you want to support the project:", "Or this exact amount:", "On Ethereum:", "Cheaper on Arbitrum:", "Other networks:")
 
@@ -62,7 +62,7 @@ class ChainAddressesTest : RecordedApiTest() {
         "Suggested donation: bitcoin:$BTC?amount=0.001&label=SimpleX Thank you!" to "Suggested donation: SimpleX ₿\u00A00.001 Thank you!",
         "[Donate](monero:$XMR)" to "Donate XMR\u00A08A3ZWA…\u2060Yq1c",
         LABELED_TOKEN to "Dinner USDT\u00A010 (Polygon)",
-        LABELED_UNLISTED to "Donate ⚠\u00A00xD704…\u2060c86a (unknown chain)",
+        LABELED_UNKNOWN_CHAIN to "Donate ⚠\u00A00xD704…\u2060c86a (unknown chain)",
         "[$BTC](bitcoin:$BTC)" to "₿\u00A0bc1q2g…\u20605d4u",
         BTC to "₿\u00A0bc1q2g…\u20605d4u",
         "bitcoin:$BTC?amount=0.001&label=SimpleX&message=Thank%20you" to "SimpleX ₿\u00A00.001",
@@ -86,7 +86,7 @@ class ChainAddressesTest : RecordedApiTest() {
   }
 
   @Test
-  fun notSignedKeepsLabelAndUnlistedReason() {
+  fun notSignedKeepsLabelAndUnknownReason() {
     val markdown = recordedMarkdown()
     assertEquals(
       listOf("SimpleX ⚠\u00A0bc1q2g…\u20605d4u (not signed)", "⚠\u00A00xD704…\u2060c86a (unknown chain, not signed)"),
@@ -135,7 +135,7 @@ class ChainAddressesTest : RecordedApiTest() {
   }
 
   @Test
-  fun unlistedCurrencyIsOrange() = recorded("chain-addresses/links") {
+  fun unknownCurrencyIsOrange() = recorded("chain-addresses/links") {
     val markdown = recordedMarkdown()
     setContent {
       Column {
@@ -256,7 +256,7 @@ private fun recordedChat(fixture: String, cmd: String): Chat {
 @Composable
 fun ChainAddressMessages() = SimpleXTheme {
   val markdown = recordedMarkdown()
-  val texts = pageMessages.map { prefix -> markdown.keys.first { it.startsWith(prefix) } } + listOf(USDT_POLYGON, UNKNOWN_TOKEN, UNKNOWN_CHAIN_AND_TOKEN, LABELED_TOKEN, LABELED_UNLISTED)
+  val texts = pageMessages.map { prefix -> markdown.keys.first { it.startsWith(prefix) } } + listOf(USDT_POLYGON, UNKNOWN_TOKEN, UNKNOWN_CHAIN_AND_TOKEN, LABELED_TOKEN, LABELED_UNKNOWN_CHAIN)
   Column {
     texts.forEachIndexed { i, text ->
       PreviewChatItemView(ChatItem.getSampleData(i + 1L, CIDirection.DirectRcv(), previewDate, text, CIStatus.RcvRead()).copy(formattedText = markdown.getValue(text).formattedText))
