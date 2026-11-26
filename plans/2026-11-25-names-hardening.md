@@ -135,12 +135,12 @@ A change of a held value other than a payee key (3.8) is made in a downtime. The
 
 | Step | Who | What |
 |---|---|---|
-| 1 | Operator | the service restarted with `[names] downtime = true` (9.6) |
+| 1 | Operator | the service restarted with `[names] downtime = on` (9.6) |
 | 2 | Operator | the capped drain (3.7) |
 | 3 | Owner, Safe signers | chain changes: terms by `setGeneralTerms` or `setCommunityTerms`, prices by the price oracle |
-| 4 | Operator | the service released from its prepared, tested pull request, with `downtime = true`; payee keys in BTCPay and the ini |
+| 4 | Operator | the service released from its prepared, tested pull request, with `downtime = on`; payee keys in BTCPay and the ini |
 | 5 | Owner | simplex.domains pull request with the new values, merged; with a new Stripe key, the card page's repository moved to that merge |
-| 6 | Operator | the service restarted with `downtime = false`, once step 5's `pages` jobs have completed and 600 seconds have passed, the `max-age` GitHub Pages serves with |
+| 6 | Operator | the service restarted with `downtime = off`, once step 5's `pages` jobs have completed and 600 seconds have passed, the `max-age` GitHub Pages serves with |
 | 7 | Buyers | open orders signed again (3.7) |
 | 8 | Owner | simplex-chat pull request: `apps/simplex-domains` moved to step 5's merge, merged |
 
@@ -161,15 +161,15 @@ sequenceDiagram
   participant R as simplex.domains
   participant B as Buyer
   participant M as simplex-chat
-  X->>S: restart with downtime = true
+  X->>S: restart with downtime = on
   P->>S: GET /api/config
   S-->>P: downtime: true
   P->>P: Register off, payment details withheld
   X->>S: capped drain (3.7)
   O->>C: terms or prices changed by the Safe
-  X->>S: service released, downtime = true; payee keys in the ini
+  X->>S: service released, downtime = on; payee keys in the ini
   O->>R: PR with the new values, merged; GitHub Pages deploys it
-  X->>S: restart with downtime = false
+  X->>S: restart with downtime = off
   B->>P: open order: reveal signed again with the new values
   P->>S: POST /api/registration/ID/reveal
   O->>M: PR: page pin moved to that merge, merged
@@ -604,7 +604,7 @@ xmr_view_key = <64 hex digits>
 
 [names]
 ; new orders, selections and invoices refused while the names page's values change
-downtime = false
+downtime = off
 ```
 
 - Parsed at start; the start stops on a value that does not parse, as for `chain.service_key` (`Config.hs`).
@@ -684,7 +684,7 @@ sequenceDiagram
 ### 9.6 Downtime and orders signed again
 
 - `GET /api/config`: `names.downtime`, the ini value.
-- With `downtime` true: `POST /api/invoice` for a name, a code order and `POST /api/registration/ID/name` are refused with `503 downtime`, as `ORCodesOnly` is refused; reveals, retries, reads and cancels are answered.
+- With `downtime = on`: `POST /api/invoice` for a name, a code order and `POST /api/registration/ID/name` are refused with `503 downtime`, as `ORCodesOnly` is refused; reveals, retries, reads and cancels are answered.
 - `intentRefused` (`Names/Worker.hs`): a stored `RegisterName` refused under the service's current configuration clears the reveal, as `judge` does on `RNTermsMismatch`, and the order waits, committed, for its page to sign again.
 
 ### 9.7 Signed order requests
@@ -794,10 +794,10 @@ The steps of 3.6, with the first deployment's own parts:
 | Step | What |
 |---|---|
 | 0 | both pull requests prepared and tested; the `pages` jobs and Pages settings in place; `api.simplex.domains` in DNS, served by Caddy beside `simplex.domains`; `pay.simplex.domains` in DNS and the card page deployed from the simplex.domains pull request's head, its certificate issued; the TTL of `simplex.domains` lowered; the Stripe account's settings of 6.4 verified in the Dashboard |
-| 1 | the service released from the prepared pull request, with `btc_xpub`, `btc_hrp`, `xmr_address`, `xmr_view_key`, CORS and `downtime = true` |
+| 1 | the service released from the prepared pull request, with `btc_xpub`, `btc_hrp`, `xmr_address`, `xmr_view_key`, CORS and `downtime = on` |
 | 2 | the capped drain (3.7) |
 | 5 | simplex.domains pull request merged; the `pages` job deploys the names page; the card page's repository moved to that merge; `simplex.domains` DNS moved to GitHub Pages |
-| 6 | the service restarted with `downtime = false`, once GitHub Pages has issued the certificate of `simplex.domains`, Enforce HTTPS is on, and the wait of 3.6 has passed |
+| 6 | the service restarted with `downtime = off`, once GitHub Pages has issued the certificate of `simplex.domains`, Enforce HTTPS is on, and the wait of 3.6 has passed |
 | 7 | open orders signed again (3.7) |
 | 8 | simplex-chat pull request: submodule moved to step 5's merge, merged |
 
