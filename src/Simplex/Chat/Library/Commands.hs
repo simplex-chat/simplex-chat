@@ -2981,7 +2981,7 @@ processChatCommand cxt nm = \case
     when (incognitoMembership gInfo) $ throwChatError CEGroupIncognitoCantInvite
     gVar <- asks random
     member <- withFastStore $ \db -> createViaMember db gVar cxt user gInfo memRole profile
-    void $ sendGroupMessage user (GIK gInfo gks) Nothing (filter memberCurrent members) False $ XGrpMemNew (memberInfo gInfo member) Nothing
+    void $ sendGroupMessage user (GIK gInfo gks) Nothing (filter memberCurrent members) False $ XGrpMemNew (memberInfo gInfo member) Nothing Nothing
     pure $ CRViaMemberAdded user gInfo member
   APIJoinGroup groupId enableNtfs -> withUser $ \user@User {userId} -> do
     withGroupLock "joinGroup" groupId $ do

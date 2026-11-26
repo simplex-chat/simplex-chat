@@ -45,7 +45,7 @@ import Simplex.Chat.Messages (AChat (..), AChatItem (..), AChatItemUpdate (..), 
 import Simplex.Chat.Messages.Batch (encodeBinaryBatch, encodeFwdElement)
 import Simplex.Chat.Messages.CIContent (MsgDirection (MDRcv), ciMsgContent, publicGroupNoE2EText, toMsgDirection)
 import Simplex.Chat.Options
-import Simplex.Chat.Protocol (ChatBinding (CBGroup), ChatMessage (ChatMessage), ChatMsgEvent (BFileChunk, XFile, XGrpMemDel, XGrpMemFwd, XGrpMemIntro, XGrpMemNew, XGrpMemRestrict, XGrpRelayInv, XInfo, XMember, XMsgFileDescr, XMsgUpdate, XMsgNew, XMsgDel), FileChunk (..), FwdSender (FwdMember, FwdMemberVia, FwdChannel), GrpMemDel (..), GrpMsgForward (GrpMsgForward), KeyRef (KRMember), LinkNotice (..), MsgContainer (..), MsgEncodingI, MsgMention (..), MsgContent (..), MsgPriority (..), MsgSigning (MsgSigning), VerifiedMsg (VMSigned, VMUnsigned), chatMsgToBody, groupInvVersion, mcSimple, msgContentText, signChatMsgBody, supportedChatVRange)
+import Simplex.Chat.Protocol (ChatBinding (CBGroup), ChatMessage (ChatMessage), ChatMsgEvent (BFileChunk, XFile, XGrpMemDel, XGrpMemFwd, XGrpMemIntro, XGrpMemNew, XGrpMemRestrict, XGrpRelayInv, XInfo, XMember, XMsgFileDescr, XMsgUpdate, XMsgNew, XMsgDel), FileChunk (..), FwdSender (FwdMember, FwdMemberVia, FwdChannel), GrpMemDel (..), GrpMsgForward (GrpMsgForward), KeyRef (KRMember), LinkNotice (..), MsgContainer (..), MsgEncodingI, MsgMention (..), MsgContent (..), MsgPriority (..), MsgSigning (MsgSigning), VerifiedMsg (VMSigned, VMUnsigned), chatMsgToBody, mcSimple, msgContentText, signChatMsgBody, supportedChatVRange)
 import qualified Simplex.Chat.Store as Store
 import Simplex.Chat.Store.Direct (setQuotaErrCounter)
 import Simplex.Chat.Store.Groups (getGroupMembers, getGroupRelayMembers)
@@ -6342,8 +6342,6 @@ testInviteMemberViaGroupPrevVersion ps =
       GroupMember {groupMemberId = bobId} <- getTestMember alice "team" "bob"
       alice ##> ("/_add #2 #1 " <> show bobId <> " member")
       alice <## "peer chat protocol version range incompatible"
-  where
-    oldCfg = testCfg {chatVRange = mkVersionRange (VersionChat 9) (prevVersion groupInvVersion)}
 
 createClub :: HasCallStack => TestCC -> IO ()
 createClub cc = do
@@ -9923,7 +9921,7 @@ testBlockForAllNoRowsForMembers =
       alice <# "#team bob> hi [blocked by admin] <muted>"
       connId <- relayConnIdToMember bob "cath"
       agentSendBody bob connId $ chatMsgToBody $ ChatMessage chatInitialVRange (Just $ SharedMsgId "\1\2\3\4") $
-        XMsgUpdate (SharedMsgId "\5\6\7\8") (MCText "edit") M.empty Nothing Nothing Nothing Nothing
+        XMsgUpdate (SharedMsgId "\5\6\7\8") (MCText "edit") M.empty Nothing Nothing Nothing Nothing MPNormal Nothing
       cath <// 1000000
 
       alice ##> "/unblock for all #team bob"
@@ -17213,9 +17211,9 @@ testViaMemberAnnounceRefused =
       ts <- getCurrentTime
       let reviewerFwd fwdHdr fwdMsgId fwdEvt =
             agentSendBody alice aliceConnId $ encodeBinaryBatch [encodeFwdElement (GrpMsgForward fwdHdr ts) (VMUnsigned $ ChatMessage chatInitialVRange (Just $ SharedMsgId fwdMsgId) fwdEvt)]
-      agentSendBody bob bobConnId $ chatMsgToBody $ ChatMessage supportedChatVRange Nothing (XGrpMemNew (MemberInfo (MemberId "new_1") GRMember Nothing danProfile Nothing (Just aliceId)) Nothing)
+      agentSendBody bob bobConnId $ chatMsgToBody $ ChatMessage supportedChatVRange Nothing (XGrpMemNew (MemberInfo (MemberId "new_1") GRMember Nothing danProfile Nothing (Just aliceId)) Nothing Nothing)
       cath <## "error: x.grp.mem.new: member is not via the announcing member"
-      reviewerFwd (FwdMember reviewerId "reviewer") "new_2" (XGrpMemNew (MemberInfo (MemberId "new_2") GRMember Nothing danProfile Nothing Nothing) Nothing)
+      reviewerFwd (FwdMember reviewerId "reviewer") "new_2" (XGrpMemNew (MemberInfo (MemberId "new_2") GRMember Nothing danProfile Nothing Nothing) Nothing Nothing)
       bob <## "error: x.grp.mem.new: member via another member cannot add members"
       reviewerFwd (FwdMemberVia reviewerId "reviewer" cathId) "via_msg" (XMsgNew $ mcSimple $ MCText "forged")
       alice #> "#team hello"

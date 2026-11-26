@@ -1765,7 +1765,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
 
     blockedMemberMessage :: GroupInfo -> Maybe MsgScope -> RcvMessage -> CM (Maybe DeliveryTaskContext)
     blockedMemberMessage gInfo msgScope_ msg
-      | isUserGrpFwdRelay gInfo && isNothing msgScope_ = pure $ Just DeliveryTaskContext {jobScope = DJSGroup {jobSpec = DJModerators}, sentAsGroup = False}
+      | isUserGrpFwdRelay gInfo && isNothing msgScope_ = pure $ Just DeliveryTaskContext {jobScope = DJSGroup {jobSpec = DJModerators}, sentAsGroup = False, updateNotification = False}
       | otherwise = Nothing <$ deleteRcvMsg msg
 
     deleteRcvMsg :: RcvMessage -> CM ()
@@ -4422,7 +4422,7 @@ runDeliveryTaskWorker a deliveryKey Worker {doWork} = do
                   withWorkItems a doWork (withStoreIsolation' RepeatableRead $ \db -> getNextDeliveryTasks db gInfo task) $ \nextTasks -> do
                     let (body_, acceptedTasks, largeTasks) = batchDeliveryTasks1 (vr cxt) maxForwardBatchLength nextTasks
                         senderGMIds = S.toList . S.fromList $ map (\MessageDeliveryTask {senderGMId} -> senderGMId) acceptedTasks
-                        notification = withNotifications && any (\MessageDeliveryTask {verifiedMsg} -> msgHasNotification verifiedMsg) acceptedTasks
+                        notification = withNotifications && any taskHasNotification acceptedTasks
                     withStore' $ \db -> do
                       forM_ body_ $ \body -> createMsgDeliveryJob db gInfo jobScope senderGMIds notification body
                       forM_ acceptedTasks $ \t -> updateDeliveryTaskStatus db (deliveryTaskId t) DTSProcessed
