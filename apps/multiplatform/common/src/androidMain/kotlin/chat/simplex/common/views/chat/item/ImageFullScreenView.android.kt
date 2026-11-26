@@ -68,7 +68,7 @@ actual fun FullScreenVideoView(player: VideoPlayer, modifier: Modifier, close: (
 private val imageLoader = ImageLoader.Builder(androidAppContext)
   .networkObserverEnabled(false)
   .components {
-    if (Build.VERSION.SDK_INT >= 28) {
+    if (Build.VERSION.SDK_INT >= 30) {
       add(ImageDecoderDecoder.Factory())
     } else {
       add(GifDecoder.Factory())

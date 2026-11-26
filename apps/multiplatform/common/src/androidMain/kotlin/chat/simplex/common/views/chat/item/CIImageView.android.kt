@@ -51,7 +51,7 @@ actual fun SimpleAndAnimatedImageView(
 private val imageLoader = ImageLoader.Builder(androidAppContext)
   .networkObserverEnabled(false)
   .components {
-    if (SDK_INT >= 28) {
+    if (SDK_INT >= 30) {
       add(ImageDecoderDecoder.Factory())
     } else {
       add(GifDecoder.Factory())

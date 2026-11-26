@@ -256,7 +256,8 @@ Both layouts: `MarkdownText` draws message text in [`messageTextColor()`](../../
 ### Animated Images
 
 `SimpleAndAnimatedImageView` is `expect`/`actual`. Android delegates to coil, which drives the animation
-itself. Desktop decodes frames with Skia's `Codec` in `platform/AnimatedImage.desktop.kt`, where
+itself: from Android 11 it decodes GIF and animated WebP with `ImageDecoderDecoder`; on earlier versions it decodes GIF
+with `GifDecoder` and shows an animated WebP as a still image. Desktop decodes frames with Skia's `Codec` in `platform/AnimatedImage.desktop.kt`, where
 `rememberAnimatedImage(data, still, hidden)` returns the frame to draw and falls back to the still image when
 the data is not an animation, exceeds the decode bounds, or fails before showing a frame. Decoding runs off the UI thread
 on two threads of the shared pool, and pauses while the window is minimized or hidden, while the image is behind the
