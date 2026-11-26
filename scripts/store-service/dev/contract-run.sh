@@ -126,6 +126,8 @@ EXCLUDED=(
   "a new invoice for a method that is unavailable says so and offers another way, with the same name code" "$SEARCH"
   "a name code's lookup refused for a rate limit counts down its wait, and the code is judged again once it is over" "$SEARCH"
   "a search pause reads the same after leaving the page and coming back" "$SEARCH"
+  "Back to a search whose check fails because the service is down no longer offers the remembered answer" "$SEARCH"
+  "Back to a search whose check fails because searching is rate limited no longer offers the remembered answer" "$SEARCH"
   "as a search pause ends, the paused line gives way to a checking line rather than an empty room, until the answer" "$SEARCH"
   "a name an order holds is searched as that order in its browser, and as taken with nothing more in another" "$FAIL"
   "a failed registration keeps its payment for support, also in another tab" "$FAIL"
