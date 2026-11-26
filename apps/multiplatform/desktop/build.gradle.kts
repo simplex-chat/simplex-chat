@@ -85,6 +85,8 @@ compose {
           iconFile.set(project.file("src/jvmMain/resources/distribute/simplex.icns"))
           appCategory = "public.app-category.social-networking"
           bundleID = "chat.simplex.app"
+          // MACOS_DEPLOYMENT_TARGET of scripts/simplex_build/macos.py, the minimum macOS of the app's libraries
+          minimumSystemVersion = "11.0"
           infoPlist {
             extraKeysRawXml = """
               <key>NSMicrophoneUsageDescription</key>
@@ -132,6 +134,9 @@ compose {
         val split = adjustedVersion.split(".")
         adjustedVersion = split[0] + "." + (split.getOrNull(1) ?: "0") + "." + (split.getOrNull(2) ?: "0")
         version = adjustedVersion
+        if (System.getenv("SIMPLEX_INTERNAL_RELEASE") == "true") {
+          windows.msiPackageVersion = split[0] + "." + (split.getOrNull(1) ?: "0") + "." + rootProject.extra["desktop.version_code"]
+        }
       }
     }
   }

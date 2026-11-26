@@ -1,0 +1,32 @@
+name: Earlier artifact
+description: >-
+  Downloads the artifact with this name of the run that scripts/ci/desktop-linux/earlier-run.sh finds, when it finds one.
+inputs:
+  name:
+    description: The artifact's name
+    required: true
+  path:
+    description: Where the artifact is downloaded
+    required: true
+outputs:
+  found:
+    description: Whether the artifact is found and downloaded
+    value: ${{ steps.find.outputs.run-id != '' }}
+runs:
+  using: composite
+  steps:
+    - name: Find ${{ inputs.name }}
+      id: find
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: scripts/ci/desktop-linux/earlier-run.sh "${{ inputs.name }}"
+
+    - name: Download ${{ inputs.name }}
+      if: steps.find.outputs.run-id != ''
+      uses: actions/download-artifact@v8
+      with:
+        name: ${{ inputs.name }}
+        path: ${{ inputs.path }}
+        run-id: ${{ steps.find.outputs.run-id }}
+        github-token: ${{ github.token }}

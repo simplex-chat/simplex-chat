@@ -92,6 +92,7 @@ SCOPE_CHANGES = {
     "support-bot-light": ["apps/simplex-support-bot-light/**", "packages/simplex-chat-python/**"],
     "names-page": ["apps/simplex-domains", "tests/fixtures/store-service/rest-api/**"],
     "names-e2e": ["apps/simplex-store-service/**", "tests/Bots/StoreService/**", "tests/fixtures/store-service/rest-api/**", "apps/simplex-domains", "scripts/store-service/**"],
+    "build-tool": ["scripts/simplex-chat-build.py", "scripts/simplex_build/**"],
 }
 CABAL_FILE = "simplex-chat.cabal"
 CABAL_VERSION = re.compile(r"^(version:\s*)(\S+)", re.M)
@@ -114,8 +115,8 @@ LIBS_ASSETS = [
 ADDON_RUNNERS = {
     "linux-aarch64": "ubuntu-22.04-arm",
     "linux-x86_64": "ubuntu-22.04",
-    "macos-aarch64": "macos-latest",
-    "macos-x86_64": "macos-15-intel",
+    "macos-aarch64": "macos-26",
+    "macos-x86_64": "macos-26-intel",
     "windows-x86_64": "windows-latest",
 }
 ADDON_PLATFORMS = list(ADDON_RUNNERS)

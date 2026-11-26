@@ -59,8 +59,14 @@ case "${1:-}" in
     ulimit -c 0
     ENS_CONTRACTS_DIR="$tools/ens-contracts" ANVIL="$tools/anvil" scripts/store-service/dev/contract-run.sh
     ;;
+  build-tool)
+    python3 -m unittest discover -s scripts/simplex_build -t scripts
+    python3 -m pip install --quiet mypy==1.18.2 ruff==0.14.0
+    python3 -m mypy --strict --exclude '(^|/)(test_.*|testing)\.py$' scripts/simplex_build
+    python3 -m ruff check scripts/simplex-chat-build.py scripts/simplex_build
+    ;;
   *)
-    echo "usage: $0 badge-web | ci-scripts | website | mcp | support-bot | support-bot-light | names-page | names-e2e" >&2
+    echo "usage: $0 badge-web | ci-scripts | website | mcp | support-bot | support-bot-light | names-page | names-e2e | build-tool" >&2
     exit 1
     ;;
 esac

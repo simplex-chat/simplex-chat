@@ -1,9 +1,6 @@
 name: "Prebuilt steps for build"
 description: "Reusable steps for multiple jobs"
 inputs:
-   java_ver:
-     required: true
-     description: "Java version to install"
    ghc_ver:
      required: true
      description: "GHC version to install"
@@ -28,10 +25,7 @@ runs:
         ghc-version: ${{ inputs.ghc_ver }}
         cabal-version: ${{ inputs.cabal_ver }}
 
+    # the pinned JDK of build-apps.yml, so the release's runtime and launcher are the reproducible ones
     - name: Setup Java
       if: startsWith(inputs.github_ref, 'refs/tags/v')
-      uses: actions/setup-java@v3
-      with:
-        distribution: 'corretto'
-        java-version: ${{ inputs.java_ver }}
-        cache: 'gradle'
+      uses: ./.github/actions/setup-corretto

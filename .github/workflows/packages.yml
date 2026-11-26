@@ -55,6 +55,10 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v6
 
+      - name: Use the release Xcode
+        if: runner.os == 'macOS'
+        uses: ./.github/actions/xcode
+
       - name: Setup Node.js
         uses: actions/setup-node@v7
         with:

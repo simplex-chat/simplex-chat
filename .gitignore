@@ -91,3 +91,4 @@ apps/multiplatform/.kotlin/sessions
 store_service.ini
 # a local ini under its name before the store service rename holds the same secrets
 badge_service.ini
+__pycache__/

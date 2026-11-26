@@ -1,9 +1,9 @@
 #!/bin/bash
 
-# Installs a pinned emulator, platform-tools and the Google APIs x86_64 system image of API 34 from Google's repository,
-# each checked against the SHA-1 its repository manifest lists and the SHA-256 recorded when it was pinned, and creates
-# the AVD "ci" for that image.
-# Usage: scripts/ci/android/install-sdk.sh <sdk dir>
+# Installs a pinned emulator, platform-tools and the Google APIs x86_64 system image of API 34 (or 30) from Google's
+# repository, each checked against the SHA-1 its repository manifest lists and the SHA-256 recorded when it was pinned,
+# and creates the AVD "ci" for that image.
+# Usage: scripts/ci/android/install-sdk.sh <sdk dir> [api]
 # Puts ANDROID_SDK_ROOT, ANDROID_HOME and ANDROID_AVD_HOME in GITHUB_ENV and the emulator and adb on GITHUB_PATH.
 
 set -euo pipefail
@@ -11,7 +11,17 @@ set -euo pipefail
 mkdir -p "$1"
 sdk=$(cd "$1" && pwd)
 repo=https://dl.google.com/android/repository
-api=34
+api=${2:-34}
+
+# API 30 is the last x86_64 image that translates 32-bit ARM code, which the armv7a APK needs
+case $api in
+  34) image=(x86_64-34_r14.zip e0f6c9a0691aa27bd597d0deb1bcfdc943ac8ca7 783a40134baf4f3012d4464fbe1571b1612a0dbd2e7a44d14bd8328923443833) ;;
+  30) image=(x86_64-30_r16.zip 6ae21030eaadc041078444d3798e4b399f3e787d daae27654be74ae83a484daea4db2c0c77b4f4ad661a645bd5f36d96ce03e4d5) ;;
+  *)
+    echo "error: no pinned system image for API $api"
+    exit 1
+    ;;
+esac
 
 install() {
   local dest=$1 url=$2 sha1=$3 sha256=$4 zip
@@ -30,8 +40,7 @@ install "$sdk" "$repo/emulator-linux_x64-16428233.zip" \
   cd7362ea55dfb86a418958138dc396e74165dd01 b08fc43d8608d2955f607f1b287beb525041e730086bdca3af152accac3af9c1
 install "$sdk" "$repo/platform-tools_r37.0.1-linux.zip" \
   477254aa5f903c15cf51001717bdf347fb6b53e0 d230f13842f60f782a8645f9c813f8f845bf36089ea7289f28c48f17979313f1
-install "$sdk/system-images/android-$api/google_apis" "$repo/sys-img/google_apis/x86_64-34_r14.zip" \
-  e0f6c9a0691aa27bd597d0deb1bcfdc943ac8ca7 783a40134baf4f3012d4464fbe1571b1612a0dbd2e7a44d14bd8328923443833
+install "$sdk/system-images/android-$api/google_apis" "$repo/sys-img/google_apis/${image[0]}" "${image[1]}" "${image[2]}"
 
 # avdmanager needs the package.xml that only sdkmanager writes
 avd_home=$sdk/avd
