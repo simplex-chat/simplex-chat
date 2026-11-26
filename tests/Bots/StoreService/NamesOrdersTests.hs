@@ -185,7 +185,7 @@ namesOrdersTests = describe "StoreService names: orders" $ do
   describe "address proofs" $ do
     it "answers a Bitcoin and a Monero name invoice with the proof of its address, recorded for the names page" testProvenInvoices
     it "answers provider_unavailable to a name invoice whose address the payee keys do not derive, cancelling it and writing no order" testUnprovenInvoice
-    it "answers provider_unavailable to a name invoice in a coin without payee keys, asking BTCPay nothing" testNoPayeeKeys
+    it "answers provider_unavailable to a name invoice in a coin without payee keys, asking BTCPay nothing and taking no checkout token" testNoPayeeKeys
   describe "code orders" $ do
     it "places a code order as a queued live registration holding its code, answering only its id" testCodeOrder
     it "answers an exact resend with its id in any phase, the code spent or not, also after the terms changed on chain, before any chain read" testCodeResend
@@ -720,7 +720,8 @@ testUnprovenInvoice = withBTCPayOrders id $ \fake ctx -> do
 
 testNoPayeeKeys :: IO ()
 testNoPayeeKeys = withBTCPayOrders (\c -> c {bMoneroKey = Nothing}) $ \fake ctx -> do
-  placeOrder ctx aliceOrder {oMethod = "xmr"} `shouldReturn` refusedWith 503 "provider_unavailable"
+  replicateM_ (lmPerMinute $ invoicesLimit $ SPMCrypto CCXmr) $
+    placeOrder ctx aliceOrder {oMethod = "xmr"} `shouldReturn` refusedWith 503 "provider_unavailable"
   apiRequests fake "POST" ["invoices"] `shouldReturn` []
   void $ placed ctx aliceOrder
 
