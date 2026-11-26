@@ -629,6 +629,46 @@
         }
       ]
     },
+    "[Dinner](ethereum:0xc2132D05D31c914a87C6611C10748AEb04B58e8F@137/transfer?address=0xD7047Fe3Eecb2f2FF78d839dD927Be27Bc12c86a&uint256=10000000)": {
+      "formattedText": [
+        {
+          "format": {
+            "chainAddress": {
+              "address": "0xD7047Fe3Eecb2f2FF78d839dD927Be27Bc12c86a",
+              "currency": {
+                "amount": "10",
+                "chainName": "Polygon",
+                "ticker": "USDT",
+                "type": "ticker"
+              },
+              "walletUri": "ethereum:0xc2132D05D31c914a87C6611C10748AEb04B58e8F@137/transfer?address=0xD7047Fe3Eecb2f2FF78d839dD927Be27Bc12c86a&uint256=10000000"
+            },
+            "showText": "Dinner",
+            "type": "chainAddressLink"
+          },
+          "text": "[Dinner](ethereum:0xc2132D05D31c914a87C6611C10748AEb04B58e8F@137/transfer?address=0xD7047Fe3Eecb2f2FF78d839dD927Be27Bc12c86a&uint256=10000000)"
+        }
+      ]
+    },
+    "[Donate](ethereum:0xD7047Fe3Eecb2f2FF78d839dD927Be27Bc12c86a@99999)": {
+      "formattedText": [
+        {
+          "format": {
+            "chainAddress": {
+              "address": "0xD7047Fe3Eecb2f2FF78d839dD927Be27Bc12c86a",
+              "currency": {
+                "type": "unlisted",
+                "unlisted": "chain"
+              },
+              "walletUri": "ethereum:0xD7047Fe3Eecb2f2FF78d839dD927Be27Bc12c86a@99999"
+            },
+            "showText": "Donate",
+            "type": "chainAddressLink"
+          },
+          "text": "[Donate](ethereum:0xD7047Fe3Eecb2f2FF78d839dD927Be27Bc12c86a@99999)"
+        }
+      ]
+    },
     "[Donate](monero:8A3ZWAXrrQddvnT1fPrtbK86ZAoM4nai3Gjg1LEow3JWcryJtovMnHYZnxTJpCLmAbfWbnPMeTzPmMBjAhyd4xoM89hYq1c)": {
       "formattedText": [
         {
