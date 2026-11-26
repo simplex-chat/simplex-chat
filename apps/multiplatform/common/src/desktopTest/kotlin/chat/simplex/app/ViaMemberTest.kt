@@ -37,7 +37,7 @@ class ViaMemberTest {
   @Test
   fun memberViaUserIsDecoded() = runBlocking {
     replay("via/members")
-    val reviewer = ChatController.apiListMembers(null, 1).single { it.memberProfile.displayName == "reviewer" }
+    val reviewer = ChatController.apiListMembers(null, 1).orEmpty().single { it.memberProfile.displayName == "reviewer" }
     assertEquals("memberVia", reviewer.memberVia)
   }
 
@@ -93,7 +93,7 @@ class ViaMemberTest {
 
   private fun receivedChat(): Chat = runBlocking {
     replay("via/received")
-    ChatModel.groupMembers.value = ChatController.apiListMembers(null, 1)
+    ChatModel.groupMembers.value = ChatController.apiListMembers(null, 1).orEmpty()
     assertNotNull(ChatController.apiGetChat(null, ChatType.Group, 1, null, pagination = ChatPagination.Last(2))).first
   }
 
