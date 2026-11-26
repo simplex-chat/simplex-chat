@@ -4189,6 +4189,13 @@ public struct ChatItem: Identifiable, Decodable, Hashable {
         }
     }
 
+    public var chainAddressVerified: Bool {
+        switch chatDir {
+        case .groupSnd, .groupRcv, .channelRcv: meta.msgVerified?.verified == true
+        default: true
+        }
+    }
+
     public func memberToModerate(_ chatInfo: ChatInfo) -> (GroupInfo, GroupMember?)? {
         switch (chatInfo, chatDir) {
         case let (.group(groupInfo, _), .groupRcv(groupMember)):
@@ -6043,7 +6050,7 @@ public enum Format: Decodable, Equatable, Hashable {
     case hyperLink(showText: String?, linkUri: String)
     case simplexLink(showText: String?, linkType: SimplexLinkType, simplexUri: String, smpHosts: [String])
     case simplexName(nameInfo: SimplexNameInfo)
-    case paymentLink(showText: String?, payment: PaymentRequest)
+    case chainAddressLink(showText: String?, chainAddress: ChainAddress)
     case command(commandStr: String)
     case mention(memberName: String)
     case modal(modalName: String, text: String)
@@ -6066,104 +6073,68 @@ public enum Format: Decodable, Equatable, Hashable {
     }
 }
 
-public struct PaymentRequest: Decodable, Hashable {
-    public var payee: PaymentPayee
-    public var amount: String?
-    public var token: PaymentToken?
+public struct ChainAddress: Decodable, Hashable {
+    public var currency: ChainCurrency
+    public var address: String
     public var label: String?
+    public var walletUri: String
 
-    public func shownText(_ showText: String?) -> String {
+    var shortAddress: String {
+        address.count > 10 ? "\(address.prefix(6))…\u{2060}\(address.suffix(4))" : address
+    }
+
+    public func linkText(_ showText: String?, verified: Bool) -> ChainLinkText {
         let shownLabel = showText ?? label
-        guard let shownAmount = token == nil ? amount : nil else {
-            return shownLabel ?? shortAddress(payee.payeeAddress)
+        func text(_ amount: String?, _ chainName: String? = nil) -> String {
+            let named = [amount, shownLabel].compactMap { $0 }
+            return ((named.isEmpty ? [shortAddress] : named) + (shownLabel == nil ? [chainName].compactMap { $0 } : [])).joined(separator: " · ")
         }
-        switch payee {
-        case .lightning:
-            return "\(shownAmount) BTC"
-        case let .address(network, _):
-            if let suffix = shownLabel ?? network.chainName { return "\(shownAmount) · \(suffix)" }
-            return shownAmount
+        func to(_ amount: String?) -> String? {
+            amount == nil && shownLabel == nil ? nil : shortAddress
         }
-    }
-}
-
-public enum PaymentPayee: Decodable, Hashable {
-    case address(network: PaymentNetwork, address: String)
-    case lightning(lightning: LightningPayee)
-
-    public var sign: String {
-        switch self {
-        case let .address(network, _): network.sign
-        case .lightning: "ϟ"
+        func warning(_ reason: String) -> ChainLinkText {
+            ChainLinkText(sign: "⚠\u{FE0E}", text: "\(shortAddress) \(reason)", warning: true, toAddress: nil)
         }
-    }
-
-    var payeeAddress: String {
-        switch self {
-        case let .address(_, address): address
-        case let .lightning(lightning): lightning.lightningAddress
+        if !verified { return warning(NSLocalizedString("(not signed)", comment: "chain address link")) }
+        switch currency {
+        case let .bitcoin(amount): return ChainLinkText(sign: "₿", text: text(amount), warning: false, toAddress: to(amount))
+        case let .lightning(amount): return ChainLinkText(sign: "ϟ", text: text(amount.map { "\($0) BTC" }), warning: false, toAddress: nil)
+        case let .ticker(ticker, chainName, amount): return ChainLinkText(sign: nil, text: "\(ticker)\u{00A0}\(text(amount, chainName))", warning: false, toAddress: to(amount))
+        case let .unlisted(unlisted): return warning(unlisted.text)
         }
     }
 }
 
-public enum PaymentNetwork: Decodable, Hashable {
-    case bitcoin
-    case ethereum(chainId: Int64?)
-    case monero
-    case zcash
-    case solana
-    case litecoin
-    case dogecoin
-    case bitcoinCash
+public enum ChainCurrency: Decodable, Hashable {
+    case bitcoin(amount: String?)
+    case lightning(amount: String?)
+    case ticker(ticker: String, chainName: String?, amount: String?)
+    case unlisted(unlisted: UnlistedCurrency)
+}
 
-    var sign: String {
+public enum UnlistedCurrency: String, Decodable, Hashable {
+    case chain
+    case token
+    case chainAndToken
+
+    var text: String {
         switch self {
-        case .bitcoin, .bitcoinCash: "₿"
-        case .ethereum: "Ξ"
-        case .monero: "ɱ"
-        case .zcash: "Ƶ"
-        case .solana: "◎"
-        case .litecoin: "Ł"
-        case .dogecoin: "Ð"
-        }
-    }
-
-    var chainName: String? {
-        if case let .ethereum(chainId?) = self {
-            evmChainNames[chainId] ?? String.localizedStringWithFormat(NSLocalizedString("chain %lld", comment: "payment link network"), chainId)
-        } else {
-            nil
+        case .chain: NSLocalizedString("(unknown chain)", comment: "chain address link")
+        case .token: NSLocalizedString("(unknown token)", comment: "chain address link")
+        case .chainAndToken: NSLocalizedString("(unknown chain and token)", comment: "chain address link")
         }
     }
 }
 
-public enum LightningPayee: Decodable, Hashable {
-    case invoice(invoice: String)
-    case offer(offer: String)
-    case lnurl(lnurl: String)
+public struct ChainLinkText {
+    public var sign: String?
+    public var text: String
+    public var warning: Bool
+    public var toAddress: String?
 
-    var lightningAddress: String {
-        switch self {
-        case let .invoice(invoice): invoice
-        case let .offer(offer): offer
-        case let .lnurl(lnurl): lnurl
-        }
+    public var shown: String {
+        (sign.map { "\($0)\u{00A0}" } ?? "") + text
     }
-}
-
-public struct PaymentToken: Decodable, Hashable {}
-
-private let evmChainNames: [Int64: String] = [
-    1: "Ethereum",
-    10: "OP Mainnet",
-    56: "BNB Smart Chain",
-    137: "Polygon",
-    8453: "Base",
-    42161: "Arbitrum One"
-]
-
-private func shortAddress(_ address: String) -> String {
-    address.count > 10 ? "\(address.prefix(6))…\u{2060}\(address.suffix(4))" : address
 }
 
 public enum SimplexLinkType: String, Decodable, Hashable {

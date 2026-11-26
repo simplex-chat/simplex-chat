@@ -432,6 +432,7 @@ struct FramedItemView: View {
             meta: ci.meta,
             mentions: ci.mentions,
             userMemberId: chat.chatInfo.groupInfo?.membership.memberId,
+            chainAddressSender: chainAddressSender(ci, chat.chatInfo),
             rightToLeft: rtl,
             prefix: txtPrefix,
             stripLink: stripLink,

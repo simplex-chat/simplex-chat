@@ -1,13 +1,16 @@
 package chat.simplex.common.views.chat.item
 
 import SectionItemView
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.text.InlineTextContent
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
+import androidx.compose.material.TextButton
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
@@ -40,10 +43,12 @@ import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.CurrentColors
 import chat.simplex.common.ui.theme.DEFAULT_PADDING
+import chat.simplex.common.ui.theme.WarningOrange
 import chat.simplex.common.ui.theme.appColors
 import chat.simplex.common.views.chat.ItemSelection
 import chat.simplex.common.views.chat.SelectionHighlightColor
 import chat.simplex.common.views.helpers.*
+import chat.simplex.common.views.newchat.QRCode
 import chat.simplex.res.*
 import kotlinx.coroutines.*
 
@@ -109,7 +114,7 @@ private fun typing(w: FontWeight = FontWeight.Light): AnnotatedString =
   AnnotatedString(".", SpanStyle(fontWeight = w))
 
 // Display text for a single formatted segment — must be coordinated with MarkdownText.
-fun segmentDisplayText(ft: FormattedText, mentions: Map<String, CIMention>?, linkMode: SimplexLinkMode): String =
+fun segmentDisplayText(ft: FormattedText, mentions: Map<String, CIMention>?, linkMode: SimplexLinkMode, chainAddressVerified: Boolean = true): String =
   when (ft.format) {
     is Format.Mention -> {
       val mention = mentions?.get(ft.format.memberName)
@@ -127,7 +132,7 @@ fun segmentDisplayText(ft: FormattedText, mentions: Map<String, CIMention>?, lin
         ?: if (linkMode == SimplexLinkMode.DESCRIPTION) ft.format.linkType.description else null
       if (t != null) "$t ${ft.format.viaHosts}" else ft.text
     }
-    is Format.PaymentLink -> "${ft.format.payment.payee.sign}\u00A0${ft.format.payment.shownText(ft.format.showText)}"
+    is Format.ChainAddressLink -> ft.format.chainAddress.linkText(ft.format.showText, chainAddressVerified).shown
     is Format.Command -> ft.text
     is Format.Escape -> ""
     is Format.Markup -> ft.format.token.drawnText
@@ -139,7 +144,7 @@ class ItemDisplay(val parts: List<Pair<String, String>>, val bases: List<Int>)
 fun itemDisplay(ci: ChatItem, linkMode: SimplexLinkMode): ItemDisplay? {
   val fts = ci.formattedText ?: return null
   val segment = { ft: FormattedText ->
-    val display = segmentDisplayText(ft, ci.mentions, linkMode)
+    val display = segmentDisplayText(ft, ci.mentions, linkMode, ci.chainAddressVerified)
     display to if (ft.format is Format.Markup) display else ft.text
   }
   val blocks = ci.markdownBlocks ?: return ItemDisplay(fts.map(segment), listOf(0))
@@ -183,6 +188,7 @@ fun MarkdownText (
   signedFileVerified: Boolean? = null,
   mentions: Map<String, CIMention>? = null,
   userMemberId: String? = null,
+  chainAddressSender: ChainAddressSender? = null,
   toggleSecrets: Boolean,
   sendCommandMsg: ((String) -> Unit)? = null,
   style: TextStyle = MaterialTheme.typography.body1.copy(color = messageTextColor(), lineHeight = 22.sp),
@@ -229,7 +235,7 @@ fun MarkdownText (
           MarkdownText(
             text, formattedText, markdownBlocks, sender = if (index == 0) sender else null, meta = if (last) meta else null, chatTTL = chatTTL,
             encrypted = encrypted, signedFileVerified = signedFileVerified,
-            mentions = mentions, userMemberId = userMemberId, toggleSecrets = toggleSecrets, sendCommandMsg = sendCommandMsg, style = blockStyle,
+            mentions = mentions, userMemberId = userMemberId, chainAddressSender = chainAddressSender, toggleSecrets = toggleSecrets, sendCommandMsg = sendCommandMsg, style = blockStyle,
             uriHandler = uriHandler, senderBold = senderBold, modifier = blockModifier, linkMode = linkMode, onLinkLongClick = onLinkLongClick,
             showViaProxy = showViaProxy, showTimestamp = showTimestamp, prefix = if (index == 0) prefix else null,
             selection = selection, textIndex = index, range = r.from until r.to, softWrap = blockSoftWrap, parentDirection = direction
@@ -318,6 +324,9 @@ fun MarkdownText (
       var hasSecrets = false
       var hasCommands = false
       var hasModals = false
+      var hasChainAddresses = false
+      val openChainAddress: ((Format.ChainAddressLink) -> Unit)? =
+        if (chainAddressSender != null && uriHandler != null) ({ link -> showOpenWalletAlert(chainAddressSender, link, uriHandler) }) else null
       val hiddenSecrets = mutableListOf<IntRange>()
       val annotatedText = buildAnnotatedString {
         inlineContent?.first?.invoke(this)
@@ -422,10 +431,14 @@ fun MarkdownText (
                 withStyle(ftStyle) { append(ft.text) }
               }
             }
-            is Format.PaymentLink -> {
-              val ftStyle = Format.linkStyle
-              withStyle(ftStyle.copy(fontWeight = FontWeight.SemiBold, textDecoration = TextDecoration.None)) { append("${ft.format.payment.payee.sign}\u00A0") }
-              withStyle(ftStyle) { append(ft.format.payment.shownText(ft.format.showText)) }
+            is Format.ChainAddressLink -> {
+              hasChainAddresses = true
+              val linkText = ft.format.chainAddress.linkText(ft.format.showText, chainAddressSender?.verified ?: true)
+              val ftStyle = if (linkText.warning) Format.linkStyle.copy(color = WarningOrange) else Format.linkStyle
+              withAnnotation(tag = "CHAIN_ADDRESS", annotation = i.toString()) {
+                if (linkText.sign != null) withStyle(ftStyle.copy(fontWeight = FontWeight.SemiBold, textDecoration = TextDecoration.None)) { append("${linkText.sign}\u00A0") }
+                withStyle(ftStyle) { append(linkText.text) }
+              }
             }
             is Format.Email -> {
               hasLinks = true
@@ -479,7 +492,7 @@ fun MarkdownText (
           drawContent()
           drawSecretPattern(hiddenSecrets, layoutResult.value)
         })
-      if ((hasLinks && uriHandler != null) || hasSecrets || (hasCommands && sendCommandMsg != null) || hasModals) {
+      if ((hasLinks && uriHandler != null) || hasSecrets || (hasCommands && sendCommandMsg != null) || hasModals || (hasChainAddresses && openChainAddress != null)) {
         val icon = remember { mutableStateOf(PointerIcon.Text) }
         ClickableText(annotatedText, style = style, selectionRange = clampedRange, modifier = textModifier.pointerHoverIcon(icon.value), softWrap = softWrap, maxLines = maxLines, overflow = overflow,
           onLongClick = { offset ->
@@ -522,10 +535,15 @@ fun MarkdownText (
                 (a.item.toIntOrNull()?.let { formattedText.getOrNull(it)?.format } as? Format.Modal)?.let { openMarkdownModal(it) }
               }
             }
+            if (hasChainAddresses && openChainAddress != null) {
+              withAnnotation("CHAIN_ADDRESS") { a ->
+                (a.item.toIntOrNull()?.let { formattedText.getOrNull(it)?.format } as? Format.ChainAddressLink)?.let(openChainAddress)
+              }
+            }
           },
           onHover = { offset ->
             val hasAnnotation: (String) -> Boolean = { tag -> annotatedText.hasStringAnnotations(tag, start = offset, end = offset) }
-            val hand = hasAnnotation("WEB_URL") || hasAnnotation("SIMPLEX_URL") || hasAnnotation("OTHER_URL") || hasAnnotation("SIMPLEX_NAME") || hasAnnotation("SECRET") || hasAnnotation("COMMAND") || hasAnnotation("MODAL")
+            val hand = hasAnnotation("WEB_URL") || hasAnnotation("SIMPLEX_URL") || hasAnnotation("OTHER_URL") || hasAnnotation("SIMPLEX_NAME") || hasAnnotation("SECRET") || hasAnnotation("COMMAND") || hasAnnotation("MODAL") || (openChainAddress != null && hasAnnotation("CHAIN_ADDRESS"))
             icon.value = if (hand) PointerIcon.Hand else PointerIcon.Text
           },
           onHoverExit = {
@@ -537,6 +555,7 @@ fun MarkdownText (
                 || annotatedText.hasStringAnnotations(tag = "SIMPLEX_URL", start = offset, end = offset)
                 || annotatedText.hasStringAnnotations(tag = "OTHER_URL", start = offset, end = offset)
                 || annotatedText.hasStringAnnotations(tag = "MODAL", start = offset, end = offset)
+                || (openChainAddress != null && annotatedText.hasStringAnnotations(tag = "CHAIN_ADDRESS", start = offset, end = offset))
           },
           onTextLayout = onTextLayout
         )
@@ -730,6 +749,70 @@ fun openBrowserAlert(uri: String, uriHandler: UriHandler) {
       })
     }
   }
+}
+
+class ChainAddressSender(val name: String, val forwarded: Boolean, val verified: Boolean)
+
+fun chainAddressSender(ci: ChatItem, chatInfo: ChatInfo): ChainAddressSender {
+  val name = when (val dir = ci.chatDir) {
+    is CIDirection.DirectRcv, is CIDirection.ChannelRcv -> chatInfo.displayName
+    is CIDirection.DirectSnd, is CIDirection.LocalSnd, is CIDirection.LocalRcv -> chatModel.currentUser.value?.displayName ?: ""
+    is CIDirection.GroupRcv -> dir.groupMember.displayName
+    is CIDirection.GroupSnd -> if (ci.meta.showGroupAsSender) chatInfo.displayName else (chatInfo as? ChatInfo.Group)?.groupInfo?.membership?.displayName ?: ""
+  }
+  return ChainAddressSender(name, forwarded = ci.meta.itemForwarded != null, verified = ci.chainAddressVerified)
+}
+
+fun showOpenWalletAlert(sender: ChainAddressSender, link: Format.ChainAddressLink, uriHandler: UriHandler) {
+  val linkText = link.chainAddress.linkText(link.showText, verified = true)
+  val text = linkText.toAddress?.let { String.format(generalGetString(MR.strings.chain_address_to_address), linkText.shown, it) } ?: linkText.shown
+  AlertManager.shared.showAlertDialogButtonsColumn(
+    title = generalGetString(MR.strings.open_in_wallet_question),
+    text = formatWithBoldName(generalGetString(if (sender.forwarded) MR.strings.chain_address_alert_text_forwarded else MR.strings.chain_address_alert_text), sender.name, text),
+    buttons = {
+      Row(Modifier.fillMaxWidth().padding(horizontal = DEFAULT_PADDING), horizontalArrangement = Arrangement.SpaceBetween) {
+        TextButton(onClick = { AlertManager.shared.hideAlert() }) { Text(generalGetString(MR.strings.cancel_verb)) }
+        TextButton(onClick = {
+          AlertManager.shared.hideAlert()
+          try {
+            uriHandler.openUri(link.chainAddress.walletUri)
+          } catch (_: Exception) {
+            showNoWalletAlert(link.chainAddress)
+          }
+        }) { Text(generalGetString(MR.strings.open_verb)) }
+      }
+    }
+  )
+}
+
+fun showNoWalletAlert(chainAddress: ChainAddress) {
+  AlertManager.shared.showAlertDialogButtonsColumn(
+    title = generalGetString(MR.strings.no_wallet_app),
+    text = generalGetString(MR.strings.no_wallet_app_desc),
+    buttons = {
+      val clipboard = LocalClipboardManager.current
+      Column {
+        SectionItemView({
+          AlertManager.shared.hideAlert()
+          clipboard.setText(AnnotatedString(chainAddress.address))
+          showToast(generalGetString(MR.strings.copied))
+        }) {
+          Text(generalGetString(MR.strings.copy_verb), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+        }
+        SectionItemView({
+          AlertManager.shared.hideAlert()
+          ModalManager.end.showModal { QRCode(chainAddress.walletUri, withLogo = false) }
+        }) {
+          Text(generalGetString(MR.strings.qr_code), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+        }
+        SectionItemView({
+          AlertManager.shared.hideAlert()
+        }) {
+          Text(generalGetString(MR.strings.cancel_verb), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+        }
+      }
+    }
+  )
 }
 
 fun safeOpenUri(uri: String, uriHandler: UriHandler) {
