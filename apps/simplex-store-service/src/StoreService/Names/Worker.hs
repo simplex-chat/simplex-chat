@@ -57,14 +57,14 @@ import Simplex.Messaging.TMap (TMap)
 import qualified Simplex.Messaging.TMap as TM
 import Simplex.Messaging.Util (catchOwn', tshow, ($>>=))
 import StoreService.Config (ChainConfig (..), NamesConfig (..))
-import StoreService.Names.Balances (RefundRecord (..))
+import StoreService.Names.Balances (RefundRecord (..), dollars)
 import StoreService.Names.Chain (Block (..), BlockTag (..), ChainError (..), TxHash, blockAt, latestBlock)
 import StoreService.Names.Codes (releaseCode)
 import StoreService.Names.Contracts (CommitmentAges (..), Contracts (..), acceptedTerms, commitmentAges, commitmentTime, communityName, confirmedTag, controllerAvailable, disputeUntil, forgetNamePolicy, namePolicy)
 import StoreService.Names.Orders (Landing (..), OrderRefusal, OrdersEnv (..), WriteRefusal (..), checkLanded, confirmLanded, versionWritten)
 import StoreService.Names.Phases (RegistrationId (..), awaitChange, publish)
 import StoreService.Names.Records (deepBlock)
-import StoreService.Names.Registration (TermsAcceptance (..), acceptCalldata, commitCalldata, disputeSeconds, policyDomain, registerWithCreditCalldata, sponsorDomain, termsKind, verifyAcceptance, verifyRegisterIntent)
+import StoreService.Names.Registration (TermsAcceptance (..), acceptCalldata, commitCalldata, disputeSeconds, policyDomain, registerWithCreditCalldata, sponsorDomain, termsKind, tldLabel, verifyAcceptance, verifyRegisterIntent)
 import StoreService.Names.Reveal (intentOf)
 import StoreService.Names.Revert (RevertName (..), RevertReason (..))
 import StoreService.Names.Sender (PendingTx, SendError (..), Sender, awaitOutcome, inFlightTransaction, ptHash, submitTransaction, submitTransactionIf)
@@ -447,10 +447,10 @@ data Availability = AvailableAtLatest | TakenAtDepth | TakenOnlyAboveDepth
 -- name as gone, the attempt is stored and retried, and a permanent reason or a mined failure at its stage's cap fails the order;
 -- committed for the page without a reveal.
 judge :: Worker -> UTCTime -> NameRegistrationOrder -> Commit -> RegistrationTx -> Maybe RevertReason -> IO Next
-judge w@Worker {wkOrders = oe@OrdersEnv {oeContracts, oeReport}} now r@NameRegistrationOrder {nrId = RegistrationId rid, nrReveal} c tx reason =
+judge w@Worker {wkOrders = oe@OrdersEnv {oeConfig = NamesConfig {nTLD}, oeContracts, oeReport}} now r@NameRegistrationOrder {nrId = RegistrationId rid, nrReveal, nrPayment, nrPrice} c tx reason =
   inTurn w r $
     confirmLanded oe r >>= \case
-      LRegistered v -> pure (Just v, Again)
+      LRegistered v -> (Just v, Again) <$ oeReport ("names worker: registration " <> rid <> " completed: " <> name <> ", " <> payment)
       LEnded v -> (Just v, Again) <$ oeReport ("names worker: registration " <> rid <> " was set ended: its registration was ended in its dispute period")
       LChanged -> pure (Nothing, Again)
       LUnread -> pure (Nothing, failure r SFUnread)
@@ -469,6 +469,10 @@ judge w@Worker {wkOrders = oe@OrdersEnv {oeContracts, oeReport}} now r@NameRegis
         Just (RRNamed RNNameReserved) -> notRegistered True
         _ -> notRegistered False
   where
+    name = maybe "label not stored" (\NameReveal {rvLabel} -> rvLabel <> "." <> tldLabel nTLD) nrReveal
+    payment = case nrPayment of
+      OPInvoice method _ -> dollars nrPrice <> " paid by " <> textEncode method
+      OPCode _ -> "with a code"
     clearReveal = store w now r {nrReveal = Nothing}
     commitAgain reported why = do
       let again = "names worker: registration " <> rid <> " is committed again: " <> why
