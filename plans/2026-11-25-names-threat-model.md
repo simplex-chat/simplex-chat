@@ -138,7 +138,7 @@ The pages, the service and the DNS are intact.
 
 *can:*
 
-- serve a lookalike page over `http://` to a buyer who opens simplex.domains without `https://`, in a browser that holds no unexpired record from the service host's earlier `Strict-Transport-Security`: GitHub Pages does not send the headers that Caddy sent with the page on the service host, so no new record is made. The headers no longer sent: `Strict-Transport-Security`, `X-Content-Type-Options: nosniff` and `Cross-Origin-Opener-Policy`. `Content-Security-Policy` and `Referrer-Policy` are no longer sent as headers either: the page carries both as meta elements, and in place of `frame-ancestors 'none'`, which a meta element cannot carry, the page draws only a link to itself inside a frame ([8.3](./2026-11-25-names-hardening.md#83-what-the-page-does)).
+- serve a lookalike page over `http://` to a buyer who opens simplex.domains without `https://`, in a browser that holds no unexpired record from the service host's earlier `Strict-Transport-Security`: GitHub Pages does not send the headers that Caddy sent with the page on the service host, so no new record is made. The headers no longer sent: `Strict-Transport-Security`, `X-Content-Type-Options: nosniff` and `Cross-Origin-Opener-Policy`. `Content-Security-Policy` and `Referrer-Policy` are no longer sent as headers either: both are set by meta elements of the page, and as `frame-ancestors 'none'` is ignored in a meta element, the page draws only a link to itself inside a frame ([8.3](./2026-11-25-names-hardening.md#83-what-the-page-does)).
 
 ## Someone who has an order reference
 

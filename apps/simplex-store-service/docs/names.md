@@ -208,7 +208,7 @@ Notes:
 - Unpaid: 10 minutes past the expiry the poller's sweep expires the invoice and closes the order, after it cancels a Stripe intent; BTCPay expires its own invoice. The unpaid order is deleted 30 days after the expiry, and a read held on it then answers `not_found` ([`Poller.hs:396-430`](../src/StoreService/Poller.hs#L396-L430), [`Poller.hs:62-76`](../src/StoreService/Poller.hs#L62-L76), [`Poller.hs:295-345`](../src/StoreService/Poller.hs#L295-L345), [`Orders.hs:265-275`](../src/StoreService/Orders.hs#L265-L275), [`Providers.hs:96-100`](../src/StoreService/Providers.hs#L96-L100)).
 - Under `codes_only = on` this route is refused with `403 codes_only` ([`Web/Names/Orders.hs:88`](../src/StoreService/Web/Names/Orders.hs#L88)).
 - Under `downtime = on` this route, a code order and a selection of a name are refused with `503 downtime` before the order is read, while reveals, `/retry`, reads and cancels are answered; `GET /api/config` answers `names.downtime: true`, so that the page offers no new order while the deployment's values change (`nameInvoiceHandler`, `codeOrderHandler` and `selectNameHandler`; README, Changing a value the names page holds).
-- A Bitcoin or Monero name invoice's address is proven from the `[btcpay]` payee keys. Bitcoin: from BTCPay's `keyPath` `0/i`, the tweak `t` of BIP-32's public child derivation from the receiving branch's key `W`, and the address `bech32(btc_hrp, 0, hash160(W + t·G))`. Monero: from BTCPay's `accountIndex` `i` and `addressIndex` `j`, `m = Hs("SubAddr\0" ‖ a ‖ i ‖ j)`, with `i` and `j` 4 bytes little-endian, `D = B + m·G` and `C = a·D`, with a Chaum-Pedersen proof that `log_G A = log_D C`. An address other than BTCPay's cancels the invoice, answered `503 provider_unavailable`. The view answers `addressProof`: `{"type": "btc", "keyTweak"}` or `{"type": "xmr", "spendTweak", "viewProof": {"challenge", "response"}}`, each 64 lowercase hex digits: `keyTweak` is BIP-32's `I_L`, big-endian; `spendTweak` (`m`), `challenge` and `response` are little-endian scalars, as Monero encodes them. A badge invoice has none (`payeeKeys`, `payeeProof` in [`Providers/BTCPay.hs`](../src/StoreService/Providers/BTCPay.hs), [`Providers/AddressProof.hs`](../src/StoreService/Providers/AddressProof.hs)).
+- A Bitcoin or Monero name invoice's address is proven from the `[btcpay]` payee keys. Bitcoin: from BTCPay's `keyPath` `0/i`, the tweak `t` of BIP-32's public child derivation from the receiving branch's key `W`, and the address `bech32(btc_hrp, 0, hash160(W + t·G))`. Monero: from BTCPay's `accountIndex` `i` and `addressIndex` `j`, `m = Hs("SubAddr\0" ‖ a ‖ i ‖ j)`, with `Hs` Keccak-256 reduced mod L and `i` and `j` 4 bytes little-endian, `D = B + m·G` and `C = a·D`, with a Chaum-Pedersen proof that `log_G A = log_D C`: `k = Hs("simplex.domains view proof nonce" ‖ a ‖ D)`, `c = Hs("simplex.domains view proof" ‖ A ‖ D ‖ C ‖ k·G ‖ k·D)` and `s = k − c·a`, points in their 32-byte encodings. An address other than BTCPay's cancels the invoice, answered `503 provider_unavailable`. The view has `addressProof`: `{"type": "btc", "keyTweak"}` or `{"type": "xmr", "spendTweak", "viewProof": {"challenge", "response"}}`, each 64 lowercase hex digits: `keyTweak` is BIP-32's `I_L`, big-endian; `spendTweak` (`m`), `challenge` and `response` are little-endian scalars, as Monero encodes them. A badge invoice has none (`payeeKeys`, `payeeProof` in [`Providers/BTCPay.hs`](../src/StoreService/Providers/BTCPay.hs), [`Providers/AddressProof.hs`](../src/StoreService/Providers/AddressProof.hs)).
 
 ---
 
@@ -684,7 +684,7 @@ Notes:
 
 ### 3.13 A request for an order signed with its name key
 
-An order's id alone opens nothing: each request that names an order is signed with the order's name key, and any other request gets the answer an unknown id gets.
+An order's id alone gives access to nothing: each request that names an order is signed with the order's name key, and any other request is answered as one for an unknown id.
 
 ```mermaid
 sequenceDiagram
@@ -723,7 +723,7 @@ Notes:
 - The answers of an unsigned request, of one by another key or over another id, action or timestamp, and of one for an unknown id are one answer, `404 not_found`, after the route's rate limit, which is taken before the handler runs.
 - Before its id is looked up, a selection is answered `400 bad_request` for a malformed body or a sealed name over its limit and `400 invalid_name` for a length no name has, and a reveal `400 bad_request` for a malformed body or one over the body cap. In a downtime a selection is answered `503 downtime` before its body is read.
 - Only a signed read notes the order's read, which keeps a committed order from failing as `unread` (3.2).
-- A badge invoice is read and cancelled unsigned; its invoice id is its credential. A `timestamp` outside the window is answered `400 bad_request` for it too, as the window is checked before the invoice is read.
+- A badge invoice is read and cancelled unsigned; its invoice id is its credential. With `[names]` on, a `timestamp` outside the window is answered `400 bad_request` for it too, as the window is checked before the invoice is read.
 
 ---
 

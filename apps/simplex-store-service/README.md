@@ -931,12 +931,12 @@ api.simplex.domains {
   kept off this host: Caddy obtains the certificate of api.simplex.domains by an HTTP or TLS-ALPN
   challenge, its default.
 - The badges site calls `/api/*` on its own origin. The names page calls api.simplex.domains, on
-  another origin: every `/api/` answer carries `Access-Control-Allow-Origin: *` and
+  another origin: every `/api/` answer is sent with `Access-Control-Allow-Origin: *` and
   `Access-Control-Expose-Headers: *`, so the page reads `Date` and `Retry-After`, and `OPTIONS` on
   any `/api/` path is answered 200 without a body, before the rate limits, with
   `Access-Control-Allow-Methods: GET, POST, OPTIONS`, `Access-Control-Allow-Headers: *` and
-  `Access-Control-Max-Age: 86400`. The webhooks answer without them. An answer Warp writes for a
-  handler's exception, a 500, carries none.
+  `Access-Control-Max-Age: 86400`. The webhooks are answered without them, and so is the 500 that
+  Warp writes for a handler's exception.
 - `/webhooks/*` is proxied on badges.simplex.chat only. BTCPay and Stripe send every event there,
   names payments included.
 - `/assets/*` file names carry a content hash, so they are kept a year, and only when found: a
@@ -1250,8 +1250,9 @@ code. The names page signs each one, polls included.
   is answered as one for an unknown id; their other refusals come after the signer is checked.
 - Only a signed read counts as the page's read of an order, which keeps a committed order from
   failing as `unread`.
-- A badge invoice is read and cancelled unsigned, as before; a `timestamp` outside the window is
-  answered `400 bad_request` for it too, as the window is checked before the invoice is read.
+- A badge invoice is read and cancelled unsigned, as before; with `[names]` on, a `timestamp`
+  outside the window is answered `400 bad_request` for it too, as the window is checked before the
+  invoice is read.
 
 ### Values the names page holds
 
@@ -1298,7 +1299,7 @@ With `downtime = on`:
 - reveals, `/retry`, reads and cancels are answered as before, and the worker, the poller and the
   webhooks run as before.
 
-Step 7: the worker clears a stored reveal that the current values refuse, and the order waits,
+Step 7: the worker clears a stored reveal that is refused under the current values, and the order waits,
 committed, for its page to sign again: after a change of `[chain] chain_id` or `sponsor`, its
 `RegisterName`, logged at warning as `names worker: registration <id>: its stored signature is
 refused under the service's current configuration, …, so its page signs again`, and after a change

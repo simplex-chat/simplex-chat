@@ -109,7 +109,7 @@ private_key = replace-me
 ;max_sent_failures = 5
 ; on: only prepaid codes register names, and every paid name order answers 403 codes_only
 ;codes_only = off
-; on: name invoices, code orders and selections of a name answer 503 downtime while the names page's values change
+; on: name invoices, code orders and selections of a name are answered 503 downtime while the names page's values change
 ;downtime = off
 ; the owner's link edits relayed for one name in any 365 days, each a transaction whose gas the
 ; service pays; 1 to 100. A request refused, never sent or reverted on chain does not count
