@@ -41,13 +41,14 @@ jobs:
           git fetch -q --depth=1 origin "$BEFORE"
           scripts/ci/internal-release/build-numbers.sh raised "$BEFORE" HEAD >> "$GITHUB_OUTPUT"
 
-      - name: build.yml passed on the commit before the bump
+      - name: build.yml passed on the commit, or on the commit before the bump
         if: github.event_name == 'workflow_dispatch' || steps.raised.outputs.release == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           commit=HEAD
-          if [ -z "$(git diff --name-only HEAD^ HEAD -- . ':!apps/multiplatform/gradle.properties' ':!apps/ios/SimpleX.xcodeproj/project.pbxproj')" ]; then
+          if [ -z "$(git diff --name-only HEAD^ HEAD -- . ':!apps/multiplatform/gradle.properties' ':!apps/ios/SimpleX.xcodeproj/project.pbxproj')" ] &&
+            [ "$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/build.yml/runs?head_sha=$(git rev-parse HEAD)&event=push" --jq .total_count)" = 0 ]; then
             commit=HEAD^
           fi
           sha=$(git rev-parse "$commit")

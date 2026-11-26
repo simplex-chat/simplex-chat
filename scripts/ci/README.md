@@ -290,7 +290,7 @@ flowchart LR
   D[daily-bump.yml] -->|commit: build numbers + 1| M[master]
   D -->|workflow_dispatch| R
   P[Person] -->|push: build numbers + 1| M
-  M -->|push: every build number raised,<br>version names kept| R[internal-release.yml:<br>build.yml passed<br>on the commit before]
+  M -->|push: every build number raised,<br>version names kept| R[internal-release.yml:<br>build.yml passed<br>on the commit or the one before]
   R --> B[desktop, Android and iOS builds,<br>macOS apps signed and notarized on master]
   R --> S[android-emu, desktop-linux and ios-sim<br>on the commit]
   S -->|approval| I
@@ -308,7 +308,7 @@ flowchart LR
 | `daily-bump.yml` | 04:17 UTC<br>a manual run, input `branch`, default master | when the branch has commits after the last change of a build number: commits + 1 to `android.version_code` and `desktop.version_code` (apps/multiplatform/gradle.properties) and to every `CURRENT_PROJECT_VERSION` (apps/ios/SimpleX.xcodeproj/project.pbxproj), pushes with GITHUB_TOKEN, then starts `internal-release.yml` on the branch, as GitHub starts no workflow for that push |
 | `internal-release.yml` | a push to master that raises the three build numbers and keeps `android.version_name`, `desktop.version_name` and `MARKETING_VERSION`<br>a manual run | builds the commit with the release scripts of build.yml and runs the app workflows on it, then signs and uploads the apps |
 
-A release starts only when build.yml passed in its push run on the commit before the bump: the parent of a commit that changes only the build numbers, or else the commit itself. The job `start` waits up to 3 hours for that run to complete.
+A release starts only when build.yml passed in its push run on the commit, or on the parent of a commit that changes only the build numbers and has no push run of its own, as a commit of `daily-bump.yml`. The job `start` waits up to 3 hours for that run to complete.
 
 GitHub runs a scheduled workflow only from the default branch, master.
 
