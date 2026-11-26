@@ -141,7 +141,7 @@
                 "localDisplayName": "bob",
                 "memberCategory": "user",
                 "memberChatVRange": {
-                  "maxVersion": 23,
+                  "maxVersion": 24,
                   "minVersion": 9
                 },
                 "memberContactId": 1,

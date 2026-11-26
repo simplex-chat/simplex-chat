@@ -93,7 +93,7 @@
                 "localDisplayName": "alice",
                 "memberCategory": "user",
                 "memberChatVRange": {
-                  "maxVersion": 23,
+                  "maxVersion": 24,
                   "minVersion": 9
                 },
                 "memberContactId": 1,
@@ -184,11 +184,11 @@
                   "localDisplayName": "reviewer",
                   "memberCategory": "invitee",
                   "memberChatVRange": {
-                    "maxVersion": 23,
+                    "maxVersion": 24,
                     "minVersion": 9
                   },
                   "memberContactProfileId": 3,
-                  "memberId": "memberId",
+                  "memberId": "memberId1",
                   "memberProfile": {
                     "displayName": "reviewer",
                     "fullName": "",
@@ -385,7 +385,7 @@
               "localDisplayName": "alice",
               "memberCategory": "user",
               "memberChatVRange": {
-                "maxVersion": 23,
+                "maxVersion": 24,
                 "minVersion": 9
               },
               "memberContactId": 1,
@@ -439,7 +439,7 @@
               "activeConn": {
                 "agentConnId": "agentConnId",
                 "authErrCounter": 0,
-                "connChatVersion": 23,
+                "connChatVersion": 24,
                 "connId": 2,
                 "connLevel": 0,
                 "connStatus": {
@@ -451,7 +451,7 @@
                 "entityId": 2,
                 "localAlias": "",
                 "peerChatVRange": {
-                  "maxVersion": 23,
+                  "maxVersion": 24,
                   "minVersion": 9
                 },
                 "pqEncryption": false,
@@ -471,12 +471,12 @@
               "localDisplayName": "bob",
               "memberCategory": "invitee",
               "memberChatVRange": {
-                "maxVersion": 23,
+                "maxVersion": 24,
                 "minVersion": 9
               },
               "memberContactId": 2,
               "memberContactProfileId": 2,
-              "memberId": "memberId",
+              "memberId": "memberId2",
               "memberProfile": {
                 "displayName": "bob",
                 "fullName": "",
@@ -530,11 +530,11 @@
               "localDisplayName": "reviewer",
               "memberCategory": "invitee",
               "memberChatVRange": {
-                "maxVersion": 23,
+                "maxVersion": 24,
                 "minVersion": 9
               },
               "memberContactProfileId": 3,
-              "memberId": "memberId",
+              "memberId": "memberId1",
               "memberProfile": {
                 "displayName": "reviewer",
                 "fullName": "",
