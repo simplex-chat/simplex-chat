@@ -149,8 +149,12 @@ let
   };
 
   darwin = lib.optionalAttrs pkgs.stdenv.hostPlatform.isDarwin {
-    xcodetest = xcodetest;
     "test:ios-archive-converter" = iosArchiveConverter;
+  } // lib.optionalAttrs (system == "aarch64-darwin") {
+    # The Intel builders' Xcode has no iOS 26.5 simulator platform, so
+    # generic/platform=iOS Simulator has no destination. The suite runs
+    # where that platform and the ci console session exist.
+    xcodetest = xcodetest;
   } // lib.optionalAttrs (system == "x86_64-darwin") {
     "test:ghc-macho-info-tables" = import ./check-macho-info-tables.nix {
       inherit pkgs compiler;

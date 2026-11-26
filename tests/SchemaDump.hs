@@ -66,7 +66,10 @@ sqliteSchemaDumpTest migrations skipComparisonForDown testDBOpts srcSchemaPath =
 
 testVerifySchemaDump :: [Migration] -> DBOpts -> FilePath -> IO ()
 testVerifySchemaDump migrations testDBOpts@DBOpts {dbFilePath} srcSchemaPath = do
-  savedSchema <- ifM (doesFileExist srcSchemaPath) (readFile srcSchemaPath) (pure "")
+  -- A failed comparison used to skip removeFile, and the next test then
+  -- died on Right st <- createDBStore because the database was still there.
+  whenM (doesFileExist dbFilePath) $ removeFile dbFilePath
+  savedSchema <- normalizeSchema <$> ifM (doesFileExist srcSchemaPath) (readFile srcSchemaPath) (pure "")
   savedSchema `deepseq` pure ()
   void $ createDBStore testDBOpts migrations (MigrationConfig MCError Nothing)
   getSchema dbFilePath srcSchemaPath `shouldReturn` savedSchema
@@ -82,6 +85,7 @@ testVerifyLintFKeyIndexes = do
 
 testSchemaMigrations :: [Migration] -> [String] -> DBOpts -> IO ()
 testSchemaMigrations migrations skipComparisonForDown testDBOpts@DBOpts {dbFilePath} = do
+  whenM (doesFileExist dbFilePath) $ removeFile dbFilePath
   let noDownMigrations = dropWhileEnd (\Migration {down} -> isJust down) migrations
   Right st <- createDBStore testDBOpts noDownMigrations (MigrationConfig MCError Nothing)
   mapM_ (testDownMigration st) $ drop (length noDownMigrations) migrations
@@ -158,7 +162,17 @@ getSchema :: FilePath -> FilePath -> IO String
 getSchema dbPath schemaPath = do
   void $ readCreateProcess (shell $ "sqlite3 " <> dbPath <> " '.schema --indent' > " <> schemaPath) ""
   sch <- readFile schemaPath
-  sch `deepseq` pure sch
+  sch `deepseq` pure (normalizeSchema sch)
+
+-- SQLite 3.51 wraps a long WHERE and a short IN list differently from the
+-- CLI that wrote the golden files. The tokens are the schema.
+normalizeSchema :: String -> String
+normalizeSchema = dropSpaceAroundParens . unwords . words
+  where
+    dropSpaceAroundParens [] = []
+    dropSpaceAroundParens ('(' : ' ' : rest) = '(' : dropSpaceAroundParens rest
+    dropSpaceAroundParens (' ' : ')' : rest) = ')' : dropSpaceAroundParens rest
+    dropSpaceAroundParens (c : rest) = c : dropSpaceAroundParens rest
 
 getLintFKeyIndexes :: FilePath -> FilePath -> IO String
 getLintFKeyIndexes dbPath lintPath = do

@@ -1,23 +1,18 @@
 --- a/src/Simplex/Messaging/Transport/Server.hs
 +++ b/src/Simplex/Messaging/Transport/Server.hs
-@@ -32,7 +32,6 @@
-   )
+@@ -46,6 +46,5 @@
  where
  
 -import Control.Applicative ((<|>))
  import Control.Logger.Simple
  import Control.Monad
- import qualified Crypto.Store.X509 as SX
-@@ -41,7 +40,7 @@
- import Data.IntMap.Strict (IntMap)
- import qualified Data.IntMap.Strict as IM
+ import qualified Crypto.PubKey.ECC.Prim as ECC
+@@ -62,3 +61,3 @@
  import Data.List (find)
 -import Data.Maybe (fromJust, fromMaybe, maybeToList)
 +import Data.Maybe (fromMaybe, maybeToList)
- import qualified Data.X509 as X
- import Data.X509.Validation (Fingerprint (..))
- import qualified Data.X509.Validation as XV
-@@ -241,18 +240,33 @@
+ import Data.Text (Text)
+@@ -292,18 +291,33 @@
    where
      resolve =
        let hints = defaultHints {addrFlags = [AI_PASSIVE], addrSocketType = Stream}
