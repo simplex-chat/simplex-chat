@@ -6085,22 +6085,19 @@ public struct ChainAddress: Decodable, Hashable {
 
     public func linkText(_ showText: String?, verified: Bool) -> ChainLinkText {
         let shownLabel = showText ?? label
-        func text(_ amount: String?, _ chainName: String? = nil) -> String {
-            let named = [amount, shownLabel].compactMap { $0 }
-            return ((named.isEmpty ? [shortAddress] : named) + (shownLabel == nil ? [chainName].compactMap { $0 } : [])).joined(separator: " · ")
+        let notSigned = verified ? [] : [NSLocalizedString("not signed", comment: "chain address link")]
+        func link(_ sign: String?, _ text: String, chainName: String? = nil, toAddress: Bool) -> ChainLinkText {
+            ChainLinkText(label: shownLabel, sign: sign, text: text, chainName: chainName, warning: false, toAddress: toAddress ? shortAddress : nil)
         }
-        func to(_ amount: String?) -> String? {
-            amount == nil && shownLabel == nil ? nil : shortAddress
+        func warning(_ reasons: [String]) -> ChainLinkText {
+            ChainLinkText(label: shownLabel, sign: "⚠\u{FE0E}", text: "\(shortAddress) (\(reasons.joined(separator: ", ")))", chainName: nil, warning: true, toAddress: nil)
         }
-        func warning(_ reason: String) -> ChainLinkText {
-            ChainLinkText(sign: "⚠\u{FE0E}", text: "\(shortAddress) \(reason)", warning: true, toAddress: nil)
-        }
-        if !verified { return warning(NSLocalizedString("(not signed)", comment: "chain address link")) }
         switch currency {
-        case let .bitcoin(amount): return ChainLinkText(sign: "₿", text: text(amount), warning: false, toAddress: to(amount))
-        case let .lightning(amount): return ChainLinkText(sign: "ϟ", text: text(amount.map { "\($0) BTC" }), warning: false, toAddress: nil)
-        case let .ticker(ticker, chainName, amount): return ChainLinkText(sign: nil, text: "\(ticker)\u{00A0}\(text(amount, chainName))", warning: false, toAddress: to(amount))
-        case let .unlisted(unlisted): return warning(unlisted.text)
+        case let .unlisted(unlisted): return warning([unlisted.text] + notSigned)
+        case _ where !verified: return warning(notSigned)
+        case let .bitcoin(amount): return link("₿", amount ?? shortAddress, toAddress: amount != nil)
+        case let .lightning(amount): return link("ϟ", amount ?? shortAddress, toAddress: false)
+        case let .ticker(ticker, chainName, amount): return link(nil, "\(ticker)\u{00A0}\(amount ?? shortAddress)", chainName: chainName, toAddress: amount != nil)
         }
     }
 }
@@ -6119,21 +6116,23 @@ public enum UnlistedCurrency: String, Decodable, Hashable {
 
     var text: String {
         switch self {
-        case .chain: NSLocalizedString("(unknown chain)", comment: "chain address link")
-        case .token: NSLocalizedString("(unknown token)", comment: "chain address link")
-        case .chainAndToken: NSLocalizedString("(unknown chain and token)", comment: "chain address link")
+        case .chain: NSLocalizedString("unknown chain", comment: "chain address link")
+        case .token: NSLocalizedString("unknown token", comment: "chain address link")
+        case .chainAndToken: NSLocalizedString("unknown chain and token", comment: "chain address link")
         }
     }
 }
 
 public struct ChainLinkText {
+    public var label: String?
     public var sign: String?
     public var text: String
+    public var chainName: String?
     public var warning: Bool
     public var toAddress: String?
 
     public var shown: String {
-        (sign.map { "\($0)\u{00A0}" } ?? "") + text
+        [label, (sign.map { "\($0)\u{00A0}" } ?? "") + text, chainName.map { "(\($0))" }].compactMap { $0 }.joined(separator: " ")
     }
 }
 

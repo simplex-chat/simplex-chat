@@ -1147,6 +1147,8 @@ testChainAddressesMessage ps =
       [ btcAddr,
         "bitcoin:" <> btcAddr <> "?amount=0.001&label=SimpleX&message=Thank%20you",
         "[Donate](monero:" <> xmrAddr <> ")",
+        "[Dinner](ethereum:0xc2132D05D31c914a87C6611C10748AEb04B58e8F@137/transfer?address=" <> ethAddr <> "&uint256=10000000)",
+        "[Donate](ethereum:" <> ethAddr <> "@99999)",
         lnInvoice,
         "lightning:lno1pgx9getnwss8vetrw3hhyuckyypwa3eyt44h6txtxquqh7lz5djge4afgfjn7k4rgrkuag0jsd5xvxg",
         "lightning:LNURL1DP68GURN8GHJ7UM9WFMXJCM99E3K7MF0V9CXJ0M385EKVCENXC6R2C35XVUKXEFCV5MKVV34X5EKZD3EV56NYD3HXQURZEPEXEJXXEPNXSCRVWFNV9NXZCN9XQ6XYEFHVGCXXCMYXYMNSERXFQ5FNS",

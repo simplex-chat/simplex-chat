@@ -5465,18 +5465,18 @@ class ChainAddress(val currency: ChainCurrency, val address: String, val label: 
 
   fun linkText(showText: String?, verified: Boolean): ChainLinkText {
     val shownLabel = showText ?: label
-    fun text(amount: String?, chainName: String? = null): String {
-      val named = listOfNotNull(amount, shownLabel)
-      return (named.ifEmpty { listOf(shortAddress) } + if (shownLabel == null) listOfNotNull(chainName) else emptyList()).joinToString(" · ")
-    }
-    fun to(amount: String?): String? = if (amount == null && shownLabel == null) null else shortAddress
-    fun warning(reason: String) = ChainLinkText("⚠", "$shortAddress $reason", warning = true, toAddress = null)
-    if (!verified) return warning(generalGetString(MR.strings.chain_address_not_signed))
-    return when (val c = currency) {
-      is ChainCurrency.Bitcoin -> ChainLinkText("₿", text(c.amount), warning = false, toAddress = to(c.amount))
-      is ChainCurrency.Lightning -> ChainLinkText("ϟ", text(c.amount?.let { "$it BTC" }), warning = false, toAddress = null)
-      is ChainCurrency.Ticker -> ChainLinkText(null, "${c.ticker}\u00A0${text(c.amount, c.chainName)}", warning = false, toAddress = to(c.amount))
-      is ChainCurrency.Unlisted -> warning(c.unlisted.text)
+    val notSigned = if (verified) emptyList() else listOf(generalGetString(MR.strings.chain_address_not_signed))
+    fun link(sign: String?, text: String, chainName: String? = null, toAddress: Boolean) =
+      ChainLinkText(shownLabel, sign, text, chainName, warning = false, toAddress = if (toAddress) shortAddress else null)
+    fun warning(reasons: List<String>) =
+      ChainLinkText(shownLabel, "⚠", "$shortAddress (${reasons.joinToString(", ")})", chainName = null, warning = true, toAddress = null)
+    val c = currency
+    if (!verified && c !is ChainCurrency.Unlisted) return warning(notSigned)
+    return when (c) {
+      is ChainCurrency.Bitcoin -> link("₿", c.amount ?: shortAddress, toAddress = c.amount != null)
+      is ChainCurrency.Lightning -> link("ϟ", c.amount ?: shortAddress, toAddress = false)
+      is ChainCurrency.Ticker -> link(null, "${c.ticker}\u00A0${c.amount ?: shortAddress}", c.chainName, toAddress = c.amount != null)
+      is ChainCurrency.Unlisted -> warning(listOf(c.unlisted.text) + notSigned)
     }
   }
 }
@@ -5504,8 +5504,8 @@ enum class UnlistedCurrency {
   )
 }
 
-class ChainLinkText(val sign: String?, val text: String, val warning: Boolean, val toAddress: String?) {
-  val shown: String get() = if (sign == null) text else "$sign\u00A0$text"
+class ChainLinkText(val label: String?, val sign: String?, val text: String, val chainName: String?, val warning: Boolean, val toAddress: String?) {
+  val shown: String get() = listOfNotNull(label, if (sign == null) text else "$sign\u00A0$text", chainName?.let { "($it)" }).joinToString(" ")
 }
 
 @Serializable

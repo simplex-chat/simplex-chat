@@ -1055,7 +1055,7 @@ private let previewChainAddress = ChainAddress(
 struct OpenInWalletAlert_Previews: PreviewProvider {
     static var previews: some View {
         Color.clear.background(AlertControllerPreview {
-            openWalletAlert(ChainAddressTap(sender: ChainAddressSender(name: "Tom", forwarded: false, verified: true), showText: nil, chainAddress: previewChainAddress))
+            openWalletAlert(ChainAddressTap(sender: ChainAddressSender(name: "Tom", forwarded: false, verified: true), showText: "Dinner", chainAddress: previewChainAddress))
         })
     }
 }
@@ -1737,7 +1737,9 @@ private final class SnapshotFixtures {
             "Cheaper on Arbitrum: ethereum:\(eth)@42161?value=1e16",
             "Stablecoins: ethereum:0xc2132D05D31c914a87C6611C10748AEb04B58e8F@137/transfer?address=\(eth)&uint256=10000000",
             "Other networks: t1fwjQW5gpFhDqXNhxqDWyF9j9WeKvVS5Jg, ltc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66snwfdv, D99pV4n9TrPxBPCkQGx4w4SMSa6QjRBxPf, qq6c8vfvxqrk6rhdysgvkhqc24sggkfsx5nqvdlqcg, solana:7JCf5m3TiHmYKZVr6jCu1KeZVtb9Y1jRMQDU69p5ARnu",
-            "Unknown: \(eth), ethereum:0x1111111111111111111111111111111111111111@137/transfer?address=\(eth)&uint256=10000000, ethereum:0xdAC17F958D2ee523a2206206994597C13D831ec7@99999/transfer?address=\(eth)&uint256=10000000"
+            "Unknown: \(eth), ethereum:0x1111111111111111111111111111111111111111@137/transfer?address=\(eth)&uint256=10000000, ethereum:0xdAC17F958D2ee523a2206206994597C13D831ec7@99999/transfer?address=\(eth)&uint256=10000000",
+            "[Dinner](ethereum:0xc2132D05D31c914a87C6611C10748AEb04B58e8F@137/transfer?address=\(eth)&uint256=10000000)",
+            "[Donate](ethereum:\(eth)@99999)"
         ]
         func parsed(_ item: ChatItem) -> ChatItem {
             var item = item
