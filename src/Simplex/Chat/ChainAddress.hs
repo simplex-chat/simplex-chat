@@ -1,5 +1,4 @@
 {-# LANGUAGE DuplicateRecordFields #-}
-{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
@@ -8,35 +7,40 @@
 module Simplex.Chat.ChainAddress
   ( ChainAddress (..),
     ChainCurrency (..),
-    UnlistedCurrency (..),
+    UnknownCurrency (..),
     bareAddressForm,
     hyperlinkAddress,
   )
 where
 
 import Control.Applicative (optional, (<|>))
-import Control.Monad (guard, join, mfilter, unless, when)
+import Control.Monad (foldM, guard, join, mfilter, void, (<=<))
 import qualified Data.Aeson.TH as JQ
+import Data.Attoparsec.ByteString.Char8 (Parser)
 import qualified Data.Attoparsec.ByteString.Char8 as A
+import Data.Attoparsec.Combinator (lookAhead)
 import Data.Bifunctor (first)
 import Data.Bits (bit, shiftL, shiftR, testBit, xor, (.&.), (.|.))
 import qualified Data.ByteString as BW
 import qualified Data.ByteString.Base64.URL as B64U
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
-import Data.Char (chr, digitToInt, isAlphaNum, isAscii, isDigit, isHexDigit, isLower, isUpper, toLower)
+import Data.Char (chr, digitToInt, isAlphaNum, isAscii, isDigit, isHexDigit, isLower, isUpper, toLower, toUpper)
+import Data.Either (isRight)
 import Data.Int (Int64)
-import Data.List (find, foldl')
-import Data.Maybe (catMaybes, fromMaybe, isJust, isNothing, listToMaybe, maybeToList)
+import Data.List (elemIndex, find, foldl', unfoldr)
+import Data.List.NonEmpty (NonEmpty (..))
+import Data.Maybe (catMaybes, fromMaybe, isJust, isNothing, maybeToList)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeUtf8', encodeUtf8)
 import Data.Word (Word64, Word8)
+import qualified Network.HTTP.Types as Q
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String (StrEncoding (..))
 import Simplex.Messaging.Eth.Address (Address)
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, parseAll, sumTypeJSON)
-import Simplex.Messaging.Util (eitherToMaybe, safeDecodeUtf8, tshow, (<$?>))
+import Simplex.Messaging.Util (eitherToMaybe, safeDecodeUtf8, tshow, (<$$>), (<$?>))
 import qualified URI.ByteString as U
 
 data ChainAddress = ChainAddress
@@ -51,438 +55,373 @@ data ChainCurrency
   = CYBitcoin {amount :: Maybe Text}
   | CYLightning {amount :: Maybe Text}
   | CYTicker {ticker :: Text, chainName :: Maybe Text, amount :: Maybe Text}
-  | CYUnlisted {unlisted :: UnlistedCurrency}
+  | CYUnknown {unknown :: UnknownCurrency}
   deriving (Eq, Show)
 
-data UnlistedCurrency = ULChain | ULToken | ULChainAndToken
+data UnknownCurrency = UCChain | UCToken | UCChainAndToken
   deriving (Eq, Show)
 
 instance StrEncoding ChainAddress where
   strEncode ChainAddress {walletUri} = encodeUtf8 walletUri
-  strDecode s = maybe (bareAddress s) (fmap fst) $ uriAddress s
-  strP = strDecode <$?> A.takeTill (\c -> c == ' ' || c == '\n')
+  strP = fst <$> chainUriP <|> bareAddressP
 
-hyperlinkAddress :: Text -> Text -> Maybe (Either String (Maybe Text, ChainAddress))
-hyperlinkAddress t l = (>>= shownText) <$> uriAddress (encodeUtf8 l)
+hyperlinkAddress :: Text -> Text -> Either String (Maybe Text, ChainAddress)
+hyperlinkAddress t l = shownText =<< parseAll chainUriP (encodeUtf8 l)
   where
     shownText (a, addresses)
       | t == l = Right (Nothing, a)
       | hasOtherAddress addresses t = Left "other address in hyperlink text"
       | otherwise = Right (mfilter (not . hasAddress addresses) (Just t), a)
 
-hasOtherAddress :: [Text] -> Text -> Bool
-hasOtherAddress addresses t = any otherAddress $ T.split (\c -> not (isAscii c && isAlphaNum c)) t
-  where
-    otherAddress w = addressLike (encodeUtf8 w) && T.toLower w `notElem` map T.toLower addresses
-
-hasAddress :: [Text] -> Text -> Bool
-hasAddress addresses t = any ((`T.isInfixOf` T.toLower t) . T.toLower) addresses
-
-data BareForm = BareForm
-  { selects :: ByteString -> Bool,
-    scheme :: ByteString,
-    validate :: ByteString -> Maybe (ChainCurrency, Text)
-  }
-
-bareForms :: [BareForm]
-bareForms =
-  [ coinForm (oneCase ["bc1"] $ between 14 90) "bitcoin" bitcoin $ segwitAddress "bc",
-    coinForm (anyCase ["1", "3"] $ between 25 36) "bitcoin" bitcoin $ base58Address ["\0", "\5"],
-    BareForm (oneCase ["lnbc"] (>= 37)) "lightning" $ fmap (\(a, amount) -> (CYLightning amount, a)) . invoicePayee,
-    coinForm (oneCase ["lnurl1"] $ const True) "lightning" (CYLightning Nothing) lnurlPayee,
-    coinForm (anyCase ["4", "8"] (`elem` [95, 106])) "monero" (coin "XMR") moneroAddress,
-    coinForm (anyCase ["t1", "t3"] $ between 25 36) "zcash" (coin "ZEC") transparentAddress,
-    coinForm (oneCase ["zs1"] (== 78)) "zcash" (coin "ZEC") $ saplingAddress "zs",
-    coinForm (oneCase ["u1"] $ const True) "zcash" (coin "ZEC") unifiedAddress,
-    coinForm (oneCase ["ltc1"] $ between 14 90) "litecoin" (coin "LTC") $ segwitAddress "ltc",
-    coinForm (anyCase ["L", "M"] $ between 25 36) "litecoin" (coin "LTC") $ base58Address ["\48", "\50"],
-    coinForm (anyCase ["D", "9", "A"] $ between 25 36) "dogecoin" (coin "DOGE") dogecoinAddress,
-    coinForm (oneCase ["q", "p"] (== 42)) "bitcoincash" (coin "BCH") cashAddress,
-    coinForm mixedCaseHex "ethereum" (CYUnlisted ULChain) evmAddress,
-    coinForm (oneCase ["za1"] (== 78)) "flux" (coin "FLUX") $ saplingAddress "za"
-  ]
-  where
-    coinForm selects' scheme' currency address_ = BareForm selects' scheme' $ fmap (currency,) . address_
-    bitcoin = CYBitcoin Nothing
-    coin t = CYTicker t Nothing Nothing
-    mixedCaseHex s = B.length s == 42 && "0x" `B.isPrefixOf` s && B.all isHexDigit (B.drop 2 s) && not (singleCase $ B.drop 2 s)
-
-bareForm :: ByteString -> Maybe BareForm
-bareForm s = if alnumWord s then find (`selects` s) bareForms else Nothing
-
 bareAddressForm :: ByteString -> Bool
-bareAddressForm = isJust . bareForm
+bareAddressForm = isRight . parseAll bareSchemeP
 
-bareAddress :: ByteString -> Either String ChainAddress
-bareAddress s = do
-  BareForm {scheme, validate} <- required "not an address" $ bareForm s
-  (currency, address) <- required "invalid address" $ validate s
-  pure ChainAddress {currency, address, label = Nothing, walletUri = safeDecodeUtf8 $ scheme <> ":" <> s}
-
-addressLike :: ByteString -> Bool
-addressLike s = isJust (bareForm s) || alnumWord s && any ($ s) uncheckedForms
+bareAddressP :: Parser ChainAddress
+bareAddressP = walletAddress <$?> A.match bareSchemeP
   where
-    uncheckedForms =
-      [ \w -> between 32 44 (B.length w) && B.all (`B.elem` base58Chars) w,
-        \w -> B.length w == 42 && "0x" `B.isPrefixOf` w && B.all isHexDigit (B.drop 2 w),
-        oneCase ["lno1"] $ const True
+    walletAddress (word, scheme) = fst <$> parseAll chainUriP (scheme <> ":" <> word)
+
+bareSchemeP :: Parser ByteString
+bareSchemeP =
+  lookAhead (mfilter ((>= 14) . B.length) $ A.takeWhile1 isAsciiAlphaNum)
+    *> A.choice
+      [ "bitcoin" <$ segwitP "bc",
+        "bitcoin" <$ bitcoinBase58P,
+        "lightning" <$ invoiceP,
+        "lightning" <$ lnurlP,
+        "monero" <$ moneroP,
+        "zcash" <$ transparentP,
+        "zcash" <$ saplingP "zs",
+        "zcash" <$ unifiedP,
+        "litecoin" <$ segwitP "ltc",
+        "litecoin" <$ base58CheckP ["L", "M"] ["\48", "\50"],
+        "dogecoin" <$ dogecoinP,
+        "bitcoincash" <$ cashAddrP,
+        "ethereum" <$ mfilter (not . singleCase . B.drop 2) evmWordP,
+        "flux" <$ saplingP "za"
       ]
 
-alnumWord :: ByteString -> Bool
-alnumWord s = B.length s >= 14 && B.all (\c -> isAscii c && isAlphaNum c) s
-
-oneCase :: [ByteString] -> (Int -> Bool) -> ByteString -> Bool
-oneCase prefixes validLength s = singleCase s && validLength (B.length s) && any (`B.isPrefixOf` B.map toLower s) prefixes
-
-anyCase :: [ByteString] -> (Int -> Bool) -> ByteString -> Bool
-anyCase prefixes validLength s = validLength (B.length s) && any (`B.isPrefixOf` s) prefixes
-
-between :: Int -> Int -> Int -> Bool
-between from to n = from <= n && n <= to
-
-data UriAddress = UriAddress
-  { currency :: ChainCurrency,
-    address :: Text,
-    otherAddresses :: [Text],
-    label :: Maybe Text,
-    message :: Maybe Text
-  }
-
-type QueryParam = (ByteString, ByteString)
-
-type SchemeParser = ByteString -> [QueryParam] -> Either String ([ByteString], UriAddress)
-
-uriAddress :: ByteString -> Maybe (Either String (ChainAddress, [Text]))
-uriAddress s = do
-  guard $ not $ B.null rest
-  parser <- lookup scheme' schemeParsers
-  pure $ chainUri scheme' parser $ B.drop 1 rest
+chainUriP :: Parser (ChainAddress, NonEmpty Text)
+chainUriP =
+  A.choice
+    [ uriP "bitcoin" (bip21Keys <> ["lightning", "lno"]) $ bitcoinLink <$> optional (addressP [segwitP "bc", bitcoinBase58P]),
+      uriP "lightning" [] $ lightningLink <$> addressP [invoiceP, (,Nothing) <$$> lnurlP, (,Nothing) <$$> offerP],
+      uriP "ethereum" ["value", "address", "uint256"] ethereumP,
+      uriP "monero" ["tx_amount", "recipient_name", "tx_description"] $ moneroLink <$> addressP [moneroP],
+      uriP "zcash" zip321Keys $ zip321Link "ZEC" zcashAddressP <$> optional zcashAddressP,
+      uriP "litecoin" bip21Keys $ coinLink "LTC" <$> addressP [segwitP "ltc", base58CheckP ["L", "M", "3"] ["\48", "\50", "\5"]],
+      uriP "dogecoin" bip21Keys $ coinLink "DOGE" <$> addressP [dogecoinP],
+      uriP "bitcoincash" bip21Keys $ coinLink "BCH" <$> addressP [cashAddrP],
+      uriP "solana" ["amount", "spl-token", "label", "message", "memo"] $ solanaLink <$> addressP [solanaKeyP],
+      uriP "flux" fluxKeys $ fluxLink <$> optional fluxAddressP,
+      uriP "zel" fluxKeys $ zelLink <$> optional fluxAddressP
+    ]
   where
-    (scheme', rest) = first (B.map toLower) $ B.break (== ':') s
+    bip21Keys = ["amount", "label", "message"]
+    zip321Keys = bip21Keys <> ["address", "memo"]
+    fluxKeys = zip321Keys <> ["action", "coin"]
 
-chainUri :: ByteString -> SchemeParser -> ByteString -> Either String (ChainAddress, [Text])
-chainUri scheme' parser body = do
-  unless (B.all uriChar body) $ Left "invalid URI character"
-  params <- queryParams $ B.drop 1 query
-  when (any (B.isPrefixOf "req-" . paramKey) params) $ Left "unknown required parameter"
-  (keys, UriAddress {currency, address, otherAddresses, label, message}) <- parser path params
-  when (any (\k -> k `notElem` ["lightning", "lno"] && length (paramValues k params) > 1) keys) $ Left "repeated parameter"
-  let addresses = address : otherAddresses
-  when (any (hasOtherAddress addresses) $ catMaybes [label, message]) $ Left "other address in label or message"
-  pure (ChainAddress {currency, address, label = mfilter (not . hasAddress addresses) label, walletUri = safeDecodeUtf8 $ scheme' <> ":" <> path <> walletQuery keys params}, addresses)
+uriP :: ByteString -> [ByteString] -> Parser (Q.Query -> Parser (Text -> ChainAddress, NonEmpty Text)) -> Parser (ChainAddress, NonEmpty Text)
+uriP scheme keys pathP = do
+  (path, link) <- A.stringCI scheme *> A.char ':' *> optional (A.string "//") *> A.match pathP
+  query <- queryP
+  first ($ normalizedUri path query) <$> link query
   where
-    (path, query) = B.break (== '?') $ fromMaybe body $ B.stripPrefix "//" body
+    normalizedUri path query = safeDecodeUtf8 $ scheme <> ":" <> path <> queryText query
+    queryText query
+      | null query = ""
+      | otherwise = "?" <> B.intercalate "&" (map queryItem query)
+    queryItem (k, v) = knownKey k <> maybe "" ("=" <>) v
+    knownKey k = fromMaybe k $ find (== B.map toLower k) keys
 
-queryParams :: ByteString -> Either String [QueryParam]
-queryParams q
-  | B.null q = Right []
-  | otherwise = mapM queryParam $ B.split '&' q
+queryP :: Parser Q.Query
+queryP = A.option [] $ A.char '?' *> paramP `A.sepBy` A.char '&'
   where
-    queryParam p = case B.break (== '=') p of
-      (k, v) | not (B.null k) -> Right (k, v)
-      _ -> Left "empty parameter"
+    paramP = (,) <$> keyP <*> optional (A.char '=' *> A.takeWhile valueChar)
+    keyP = mfilter (not . ("req-" `B.isPrefixOf`) . B.map toLower) $ A.takeWhile1 (\c -> valueChar c && c /= '=')
+    valueChar c = isAscii c && (isAlphaNum c || c `B.elem` "-._~:/?@!$'()*+,;=%")
 
-paramKey :: QueryParam -> ByteString
-paramKey = B.map toLower . fst
+param :: Parser a -> ByteString -> Q.Query -> Parser (Maybe a)
+param p key query = case paramValues key query of
+  [] -> pure Nothing
+  [v] -> Just <$> valueP p v
+  _ -> fail "repeated parameter"
 
-paramValues :: ByteString -> [QueryParam] -> [ByteString]
-paramValues k ps = [B.drop 1 v | p@(_, v) <- ps, paramKey p == k]
+params :: Parser a -> ByteString -> Q.Query -> Parser [a]
+params p key = traverse (valueP p) . paramValues key
 
-param :: ByteString -> [QueryParam] -> Maybe ByteString
-param k = listToMaybe . paramValues k
+paramValues :: ByteString -> Q.Query -> [ByteString]
+paramValues key query = [fromMaybe "" v | (k, v) <- query, B.map toLower k == key]
 
-paramText :: ByteString -> [QueryParam] -> Either String (Maybe Text)
-paramText k ps = join <$> traverse percentText (param k ps)
+valueP :: Parser a -> ByteString -> Parser a
+valueP p = either fail pure . parseAll p
 
-walletQuery :: [ByteString] -> [QueryParam] -> ByteString
-walletQuery keys = \case
-  [] -> ""
-  ps -> "?" <> B.intercalate "&" (map normalized ps)
+textParam :: ByteString -> Q.Query -> Parser (Maybe Text)
+textParam key query = join <$> param uriTextP key query
+
+chainLink :: ChainCurrency -> NonEmpty Text -> Maybe Text -> [Maybe Text] -> Parser (Text -> ChainAddress, NonEmpty Text)
+chainLink currency addresses@(payee :| _) label texts
+  | any (hasOtherAddress addresses) (catMaybes $ label : texts) = fail "other address in label or message"
+  | otherwise = pure (ChainAddress currency payee $ mfilter (not . hasAddress addresses) label, addresses)
+
+bitcoinLink :: Maybe Text -> Q.Query -> Parser (Text -> ChainAddress, NonEmpty Text)
+bitcoinLink address query = do
+  instructions <- (<>) <$> params (addressP [invoiceP, (,Nothing) <$$> lnurlP]) "lightning" query <*> params ((,Nothing) <$> addressP [offerP]) "lno" query
+  case (address, instructions) of
+    (Just a, _) -> bip21Link CYBitcoin (a :| map fst instructions) [] query
+    (Nothing, (payee, invoiceAmount) : more) -> bip21Link (CYLightning . (<|> invoiceAmount)) (payee :| map fst more) [] query
+    (Nothing, []) -> fail "no payee"
+
+coinLink :: Text -> Text -> Q.Query -> Parser (Text -> ChainAddress, NonEmpty Text)
+coinLink ticker address = bip21Link (CYTicker ticker Nothing) (address :| []) []
+
+bip21Link :: (Maybe Text -> ChainCurrency) -> NonEmpty Text -> [Maybe Text] -> Q.Query -> Parser (Text -> ChainAddress, NonEmpty Text)
+bip21Link currency addresses texts query = do
+  amount <- param (amountP 8) "amount" query
+  label <- textParam "label" query
+  message <- textParam "message" query
+  chainLink (currency amount) addresses label (message : texts)
+
+lightningLink :: (Text, Maybe Text) -> Q.Query -> Parser (Text -> ChainAddress, NonEmpty Text)
+lightningLink (payee, amount) _ = chainLink (CYLightning amount) (payee :| []) Nothing []
+
+ethereumP :: Parser (Q.Query -> Parser (Text -> ChainAddress, NonEmpty Text))
+ethereumP = do
+  target <- optional (A.string "pay-") *> addressP [evmP]
+  chain <- (>>= (`lookup` evmChains)) <$> optional (A.char '@' *> chainIdP)
+  transferLink target chain <$ A.string "/transfer" <|> pure (valueLink target chain)
   where
-    normalized p@(k, v) = (if paramKey p `elem` keys then paramKey p else k) <> v
+    chainIdP = mfilter (between 1 $ toInteger (maxBound :: Int64)) $ digitsInteger <$> A.takeWhile1 isDigit
 
-bip21Keys :: [ByteString]
-bip21Keys = ["amount", "label", "message"]
+valueLink :: Text -> Maybe ChainInfo -> Q.Query -> Parser (Text -> ChainAddress, NonEmpty Text)
+valueLink payee chain query = do
+  value <- param evmIntegerP "value" query
+  let currency = maybe (CYUnknown UCChain) (\ChainInfo {chainName, coin} -> CYTicker coin chainName $ decimalText 18 <$> value) chain
+  chainLink currency (payee :| []) Nothing []
 
-bip21Params :: [QueryParam] -> Either String (Maybe Text, Maybe Text, Maybe Text)
-bip21Params ps = (,,) <$> traverse (decimalAmount 8) (param "amount" ps) <*> paramText "label" ps <*> paramText "message" ps
+transferLink :: Text -> Maybe ChainInfo -> Q.Query -> Parser (Text -> ChainAddress, NonEmpty Text)
+transferLink token chain query = do
+  guard $ null $ paramValues "value" query
+  payee <- maybe (fail "no payee") pure =<< param (addressP [evmP]) "address" query
+  units <- param evmIntegerP "uint256" query
+  let currency = case chain of
+        Just ChainInfo {chainName, tokens} -> maybe (CYUnknown UCToken) (\ChainToken {ticker, decimals} -> CYTicker ticker chainName $ decimalText decimals <$> units) $ lookup token tokens
+        Nothing -> CYUnknown UCChainAndToken
+  chainLink currency (payee :| [token]) Nothing []
 
-schemeParsers :: [(ByteString, SchemeParser)]
-schemeParsers =
-  [ ("bitcoin", bitcoinParser),
-    ("lightning", lightningParser),
-    ("ethereum", ethereumParser),
-    ("monero", moneroParser),
-    ("zcash", zip321Parser "ZEC" transparentAddress $ \s -> saplingAddress "zs" s <|> unifiedAddress s),
-    ("litecoin", coinParser "LTC" litecoinAddress),
-    ("dogecoin", coinParser "DOGE" dogecoinAddress),
-    ("bitcoincash", coinParser "BCH" cashAddress),
-    ("solana", solanaParser),
-    ("flux", fluxParser),
-    ("zel", zelParser)
-  ]
+moneroLink :: Text -> Q.Query -> Parser (Text -> ChainAddress, NonEmpty Text)
+moneroLink address query = do
+  guard $ all (maybe True (B.notElem ';') . snd) query
+  amount <- param (amountP 12) "tx_amount" query
+  label <- textParam "recipient_name" query
+  message <- textParam "tx_description" query
+  chainLink (CYTicker "XMR" Nothing amount) (address :| []) label [message]
 
-coinParser :: Text -> (ByteString -> Maybe Text) -> SchemeParser
-coinParser ticker address_ path ps = do
-  a <- required "invalid address" $ address_ path
-  (amount, label, message) <- bip21Params ps
-  pure (bip21Keys, UriAddress (CYTicker ticker Nothing amount) a [] label message)
-
-bitcoinParser :: SchemeParser
-bitcoinParser path ps = do
-  invoices <- mapM (required "invalid lightning payment" . lightningPayee) $ paramValues "lightning" ps
-  offers <- mapM (required "invalid offer" . fmap (,Nothing) . offerPayee) $ paramValues "lno" ps
-  let instructions = invoices <> offers
-  (amount, label, message) <- bip21Params ps
-  (currency, a, others) <-
-    if B.null path
-      then case instructions of
-        (p, invoiceAmount') : more -> Right (CYLightning (amount <|> invoiceAmount'), p, map fst more)
-        [] -> Left "no payee"
-      else (\a -> (CYBitcoin amount, a, map fst instructions)) <$> required "invalid address" (bitcoinAddress path)
-  pure (bip21Keys <> ["lightning", "lno"], UriAddress currency a others label message)
-
-lightningParser :: SchemeParser
-lightningParser path _ = do
-  (a, amount) <- required "invalid lightning payment" $ lightningPayee path <|> (,Nothing) <$> offerPayee path
-  pure ([], UriAddress (CYLightning amount) a [] Nothing Nothing)
-
-moneroParser :: SchemeParser
-moneroParser path ps = do
-  when (B.elem ';' path || any (B.elem ';' . snd) ps) $ Left "several recipients"
-  a <- required "invalid address" $ moneroAddress path
-  amount <- traverse (decimalAmount 12) $ param "tx_amount" ps
-  label <- paramText "recipient_name" ps
-  message <- paramText "tx_description" ps
-  pure (["tx_amount", "recipient_name", "tx_description"], UriAddress (CYTicker "XMR" Nothing amount) a [] label message)
-
-zip321Parser :: Text -> (ByteString -> Maybe Text) -> (ByteString -> Maybe Text) -> SchemeParser
-zip321Parser ticker transparent shielded path ps = do
-  when (any (B.elem '.' . fst) ps) $ Left "several payments"
-  addressText <- case (B.null path, param "address" ps) of
-    (True, Just a) -> Right a
-    (False, Nothing) -> Right path
-    _ -> Left "one address required"
-  (a, memoAllowed) <- required "invalid address" $ (,False) <$> transparent addressText <|> (,True) <$> shielded addressText
-  memo <- traverse memoText $ param "memo" ps
-  when (isJust memo && not memoAllowed) $ Left "memo with a transparent address"
-  (amount, label, message) <- bip21Params ps
-  pure (bip21Keys <> ["address", "memo"], UriAddress (CYTicker ticker Nothing amount) a [] label (message <|> join memo))
-
-fluxParser :: SchemeParser
-fluxParser path ps = do
-  unless (maybe True (== "pay") $ lowerParam "action") $ Left "action other than pay"
-  unless (isNothing $ param "callback" ps) $ Left "callback"
-  unless (maybe True (`elem` ["flux", "zelcash", "zel"]) $ lowerParam "coin") $ Left "coin other than Flux"
-  first (<> ["action", "coin"]) <$> zip321Parser "FLUX" transparentAddress (saplingAddress "za") path ps
+zip321Link :: Text -> Parser (Text, Bool) -> Maybe (Text, Bool) -> Q.Query -> Parser (Text -> ChainAddress, NonEmpty Text)
+zip321Link ticker payeeP path query = do
+  guard $ not $ any (B.elem '.' . fst) query
+  (payee, shielded) <- oneAddress =<< param payeeP "address" query
+  memo <- param memoP "memo" query
+  guard $ shielded || isNothing memo
+  bip21Link (CYTicker ticker Nothing) (payee :| []) [join memo] query
   where
-    lowerParam k = B.map toLower <$> param k ps
+    oneAddress addressParam = case (path, addressParam) of
+      (Just a, Nothing) -> pure a
+      (Nothing, Just a) -> pure a
+      _ -> fail "one address required"
 
-zelParser :: SchemeParser
-zelParser path ps = do
-  when (B.null path && isNothing (param "coin" ps)) $ Left "pay action without a coin"
-  fluxParser path ps
+zcashAddressP :: Parser (Text, Bool)
+zcashAddressP = (,False) <$> addressP [transparentP] <|> (,True) <$> addressP [saplingP "zs", unifiedP]
 
-solanaParser :: SchemeParser
-solanaParser path ps = do
-  a <- required "invalid address" $ solanaAddress path
-  mint <- traverse (required "invalid token" . solanaAddress) $ param "spl-token" ps
+fluxAddressP :: Parser (Text, Bool)
+fluxAddressP = (,False) <$> addressP [transparentP] <|> (,True) <$> addressP [saplingP "za"]
+
+fluxLink :: Maybe (Text, Bool) -> Q.Query -> Parser (Text -> ChainAddress, NonEmpty Text)
+fluxLink path query = do
+  _ <- param (A.stringCI "pay") "action" query
+  guard $ null $ paramValues "callback" query
+  _ <- param (A.choice $ map A.stringCI ["flux", "zelcash", "zel"]) "coin" query
+  zip321Link "FLUX" fluxAddressP path query
+
+zelLink :: Maybe (Text, Bool) -> Q.Query -> Parser (Text -> ChainAddress, NonEmpty Text)
+zelLink path query = do
+  guard $ isJust path || not (null $ paramValues "coin" query)
+  fluxLink path query
+
+solanaLink :: Text -> Q.Query -> Parser (Text -> ChainAddress, NonEmpty Text)
+solanaLink address query = do
+  mint <- param (addressP [solanaKeyP]) "spl-token" query
   currency <- case mint of
     Nothing -> CYTicker "SOL" Nothing <$> amountWith 9
-    Just m -> case lookup m solanaTokens of
-      Just ListedToken {symbol, decimals} -> CYTicker symbol (Just "Solana") <$> amountWith decimals
-      Nothing -> CYUnlisted ULToken <$ amountWith maxBound
-  label <- paramText "label" ps
-  message <- paramText "message" ps
-  memo <- paramText "memo" ps
-  pure (["amount", "spl-token", "label", "message", "memo"], UriAddress currency a (maybeToList mint) label (message <|> memo))
+    Just m -> maybe (CYUnknown UCToken <$ amountWith maxBound) (\ChainToken {ticker, decimals} -> CYTicker ticker (Just "Solana") <$> amountWith decimals) $ lookup m solanaTokens
+  label <- textParam "label" query
+  message <- textParam "message" query
+  memo <- textParam "memo" query
+  chainLink currency (address :| maybeToList mint) label [message, memo]
   where
-    amountWith places = traverse (decimalAmount places) $ param "amount" ps
+    amountWith places = param (amountP places) "amount" query
 
-ethereumParser :: SchemeParser
-ethereumParser path ps = do
-  (target, chainId, function) <- parseAll ethereumPathP path
-  targetAddress <- required "invalid address" $ evmAddress target
-  let chain = (`lookup` evmChains) =<< chainId
-  case function of
-    Nothing -> do
-      value <- traverse evmInteger $ param "value" ps
-      let currency = maybe (CYUnlisted ULChain) (\ListedChain {shownName, coin} -> CYTicker coin shownName $ decimalText 18 <$> value) chain
-      pure (["value"], UriAddress currency targetAddress [] Nothing Nothing)
-    Just "transfer" -> do
-      unless (isNothing $ param "value" ps) $ Left "value in a token transfer"
-      payee <- required "invalid address" $ evmAddress =<< param "address" ps
-      units <- traverse evmInteger $ param "uint256" ps
-      let currency = case chain of
-            Just ListedChain {shownName, tokens} -> maybe (CYUnlisted ULToken) (\ListedToken {symbol, decimals} -> CYTicker symbol shownName $ decimalText decimals <$> units) $ lookup targetAddress tokens
-            Nothing -> CYUnlisted ULChainAndToken
-      pure (["address", "uint256"], UriAddress currency payee [targetAddress] Nothing Nothing)
-    Just _ -> Left "unsupported function"
+addressP :: [Parser (Maybe a)] -> Parser a
+addressP forms = maybe (fail "invalid address") pure =<< A.choice forms
 
-ethereumPathP :: A.Parser (ByteString, Maybe Int64, Maybe ByteString)
-ethereumPathP = do
-  target <- optional (A.string "pay-") *> A.takeWhile1 (\c -> c /= '@' && c /= '/')
-  chainId <- optional $ A.char '@' *> chainIdP
-  function <- optional $ A.char '/' *> A.takeByteString
-  pure (target, chainId, function)
+segwitP :: ByteString -> Parser (Maybe Text)
+segwitP hrp = segwitAddress hrp <$> oneCaseP [hrp <> "1"] (between 14 90)
+
+bitcoinBase58P :: Parser (Maybe Text)
+bitcoinBase58P = base58CheckP ["1", "3"] ["\0", "\5"]
+
+transparentP :: Parser (Maybe Text)
+transparentP = base58CheckP ["t1", "t3"] ["\x1c\xb8", "\x1c\xbd"]
+
+dogecoinP :: Parser (Maybe Text)
+dogecoinP = base58CheckP ["D", "9", "A"] ["\30", "\22"]
+
+base58CheckP :: [ByteString] -> [ByteString] -> Parser (Maybe Text)
+base58CheckP prefixes versions = base58CheckAddress versions <$> wordP prefixes (between 25 36)
+
+invoiceP :: Parser (Maybe (Text, Maybe Text))
+invoiceP = invoicePayee <$> oneCaseP ["lnbc"] (>= 37)
+
+lnurlP :: Parser (Maybe Text)
+lnurlP = lnurlPayee <$> oneCaseP ["lnurl1"] (>= 14)
+
+offerP :: Parser (Maybe Text)
+offerP = offerPayee <$> oneCaseP ["lno1"] (>= 14)
+
+moneroP :: Parser (Maybe Text)
+moneroP = moneroAddress <$> wordP ["4", "8"] (`elem` [95, 106])
+
+saplingP :: ByteString -> Parser (Maybe Text)
+saplingP hrp = bech32Address hrp bech32Const (== 43) <$> oneCaseP [hrp <> "1"] (== 78)
+
+unifiedP :: Parser (Maybe Text)
+unifiedP = bech32Address "u" bech32mConst (> 0) <$> oneCaseP ["u1"] (>= 14)
+
+cashAddrP :: Parser (Maybe Text)
+cashAddrP = cashAddress <$> oneCaseP ["q", "p"] (== 42)
+
+evmP :: Parser (Maybe Text)
+evmP = evmAddress <$> evmWordP
+
+solanaKeyP :: Parser (Maybe Text)
+solanaKeyP = solanaAddress <$> mfilter (\w -> between 32 44 (B.length w) && B.all (`B.elem` base58Chars) w) (A.takeWhile1 isAsciiAlphaNum)
+
+wordP :: [ByteString] -> (Int -> Bool) -> Parser ByteString
+wordP prefixes validLength = mfilter (validLength . B.length) $ fst <$> A.match (A.choice (map A.string prefixes) *> A.takeWhile isAsciiAlphaNum)
+
+oneCaseP :: [ByteString] -> (Int -> Bool) -> Parser ByteString
+oneCaseP prefixes = mfilter singleCase . wordP (prefixes <> map (B.map toUpper) prefixes)
+
+evmWordP :: Parser ByteString
+evmWordP = mfilter (B.all isHexDigit . B.drop 2) $ wordP ["0x"] (== 42)
+
+addressLike :: ByteString -> Bool
+addressLike = isRight . parseAll (void bareSchemeP <|> void solanaKeyP <|> void evmWordP <|> void offerP)
+
+hasOtherAddress :: NonEmpty Text -> Text -> Bool
+hasOtherAddress addresses = any otherAddress . T.split (not . isAsciiAlphaNum)
   where
-    chainIdP =
-      A.takeWhile1 isDigit >>= \digits -> case B.readInteger digits of
-        Just (n, "") | n > 0 && n <= toInteger (maxBound :: Int64) -> pure $ fromInteger n
-        _ -> fail "invalid chain ID"
+    otherAddress w = addressLike (encodeUtf8 w) && T.toLower w `notElem` fmap T.toLower addresses
 
-data ListedChain = ListedChain {shownName :: Maybe Text, coin :: Text, tokens :: [(Text, ListedToken)]}
+hasAddress :: NonEmpty Text -> Text -> Bool
+hasAddress addresses t = any ((`T.isInfixOf` T.toLower t) . T.toLower) addresses
 
-data ListedToken = ListedToken {symbol :: Text, decimals :: Int}
+data ChainInfo = ChainInfo {chainName :: Maybe Text, coin :: Text, tokens :: [(Text, ChainToken)]}
 
-evmChains :: [(Int64, ListedChain)]
+data ChainToken = ChainToken {ticker :: Text, decimals :: Int}
+
+evmChains :: [(Integer, ChainInfo)]
 evmChains =
-  [ (1, ListedChain Nothing "ETH" [usdt "0xdAC17F958D2ee523a2206206994597C13D831ec7" 6, usdc "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48" 6]),
-    (10, ListedChain (Just "OP Mainnet") "ETH" [usdt "0x94b008aA00579c1307B0EF2c499aD98a8ce58e58" 6, usdc "0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85" 6]),
-    (56, ListedChain (Just "BNB Smart Chain") "BNB" [usdt "0x55d398326f99059fF775485246999027B3197955" 18, usdc "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d" 18]),
-    (137, ListedChain (Just "Polygon") "POL" [usdt "0xc2132D05D31c914a87C6611C10748AEb04B58e8F" 6, usdc "0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359" 6]),
-    (8453, ListedChain (Just "Base") "ETH" [usdt "0xfde4C96c8593536E31F229EA8f37b2ADa2699bb2" 6, usdc "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913" 6]),
-    (42161, ListedChain (Just "Arbitrum One") "ETH" [usdt "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9" 6, usdc "0xaf88d065e77c8cC2239327C5EDb3A432268e5831" 6])
+  [ (1, ChainInfo Nothing "ETH" [usdt "0xdAC17F958D2ee523a2206206994597C13D831ec7" 6, usdc "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48" 6]),
+    (10, ChainInfo (Just "OP Mainnet") "ETH" [usdt "0x94b008aA00579c1307B0EF2c499aD98a8ce58e58" 6, usdc "0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85" 6]),
+    (56, ChainInfo (Just "BNB Smart Chain") "BNB" [usdt "0x55d398326f99059fF775485246999027B3197955" 18, usdc "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d" 18]),
+    (137, ChainInfo (Just "Polygon") "POL" [usdt "0xc2132D05D31c914a87C6611C10748AEb04B58e8F" 6, usdc "0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359" 6]),
+    (8453, ChainInfo (Just "Base") "ETH" [usdt "0xfde4C96c8593536E31F229EA8f37b2ADa2699bb2" 6, usdc "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913" 6]),
+    (42161, ChainInfo (Just "Arbitrum One") "ETH" [usdt "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9" 6, usdc "0xaf88d065e77c8cC2239327C5EDb3A432268e5831" 6])
   ]
   where
-    usdt contract = (contract,) . ListedToken "USDT"
-    usdc contract = (contract,) . ListedToken "USDC"
+    usdt contract = (contract,) . ChainToken "USDT"
+    usdc contract = (contract,) . ChainToken "USDC"
 
-solanaTokens :: [(Text, ListedToken)]
+solanaTokens :: [(Text, ChainToken)]
 solanaTokens =
-  [ ("Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB", ListedToken "USDT" 6),
-    ("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v", ListedToken "USDC" 6)
+  [ ("Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB", ChainToken "USDT" 6),
+    ("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v", ChainToken "USDC" 6)
   ]
-
-bitcoinAddress :: ByteString -> Maybe Text
-bitcoinAddress s = segwitAddress "bc" s <|> base58Address ["\0", "\5"] s
-
-litecoinAddress :: ByteString -> Maybe Text
-litecoinAddress s = segwitAddress "ltc" s <|> base58Address ["\48", "\50", "\5"] s
-
-dogecoinAddress :: ByteString -> Maybe Text
-dogecoinAddress = base58Address ["\30", "\22"]
-
-transparentAddress :: ByteString -> Maybe Text
-transparentAddress = base58Address ["\x1c\xb8", "\x1c\xbd"]
-
-saplingAddress :: ByteString -> ByteString -> Maybe Text
-saplingAddress hrp = bech32Address hrp Bech32 (== 43)
-
-unifiedAddress :: ByteString -> Maybe Text
-unifiedAddress = bech32Address "u" Bech32m (> 0)
-
-cashAddress :: ByteString -> Maybe Text
-cashAddress s = do
-  guard $ B.length s == 42 && singleCase s
-  values <- mapM bech32Value $ B.unpack $ B.map toLower s
-  guard $ bchPolymod 35 cashAddrGenerators (map (.&. 31) (BW.unpack "bitcoincash") <> [0] <> values) == 1
-  payload <- fromBase32 $ take 34 values
-  guard $ B.length payload == 21 && B.take 1 payload `elem` ["\0", "\8"]
-  pure $ lowerText s
-
-moneroAddress :: ByteString -> Maybe Text
-moneroAddress s = do
-  networks <- lookup (B.length s) [(95, ["\18", "\42"]), (106, ["\19"])]
-  bytes <- B.concat <$> mapM moneroBlock (blocks s)
-  let (payload, check) = B.splitAt (B.length bytes - 4) bytes
-  guard $ check == B.take 4 (C.keccak256 payload) && B.take 1 payload `elem` networks
-  pure $ safeDecodeUtf8 s
-  where
-    blocks b = if B.null b then [] else B.take 11 b : blocks (B.drop 11 b)
-    moneroBlock block = do
-      size <- lookup (B.length block) [(2, 1), (3, 2), (5, 3), (6, 4), (7, 5), (9, 6), (10, 7), (11, 8)]
-      n <- base58Integer block
-      guard $ n < 256 ^ size
-      pure $ integerBytes size n
-
-solanaAddress :: ByteString -> Maybe Text
-solanaAddress s = do
-  guard $ B.length s >= 32 && B.length s <= 44
-  bytes <- base58Decode s
-  guard $ B.length bytes == 32
-  pure $ safeDecodeUtf8 s
-
-evmAddress :: ByteString -> Maybe Text
-evmAddress s = do
-  guard $ "0x" `B.isPrefixOf` s
-  a <- eitherToMaybe (strDecode s :: Either String Address)
-  pure $ safeDecodeUtf8 $ strEncode a
-
-lightningPayee :: ByteString -> Maybe (Text, Maybe Text)
-lightningPayee s = invoicePayee s <|> (,Nothing) <$> lnurlPayee s
-
-invoicePayee :: ByteString -> Maybe (Text, Maybe Text)
-invoicePayee s = do
-  hrp <- B.stripSuffix "1" $ fst $ B.breakEnd (== '1') $ B.map toLower s
-  amount <- invoiceAmount =<< B.stripPrefix "lnbc" hrp
-  (Bech32, values) <- bech32Decode hrp s
-  guard $ length values >= 7 + 104
-  pure (lowerText s, amount)
-
-invoiceAmount :: ByteString -> Maybe (Maybe Text)
-invoiceAmount hrpAmount
-  | B.null hrpAmount = Just Nothing
-  | otherwise = do
-      let (digits, multiplier) = B.span isDigit hrpAmount
-      guard $ not $ B.null digits
-      places <- case multiplier of
-        "" -> Just 0
-        "m" -> Just 3
-        "u" -> Just 6
-        "n" -> Just 9
-        "p" | "0" `B.isSuffixOf` digits -> Just 12
-        _ -> Nothing
-      Just $ Just $ decimalText places $ digitsInteger digits
-
-lnurlPayee :: ByteString -> Maybe Text
-lnurlPayee s = do
-  (Bech32, values) <- bech32Decode "lnurl" s
-  U.URI {uriScheme = U.Scheme scheme', uriAuthority = Just U.Authority {authorityHost = U.Host h}} <- eitherToMaybe . U.parseURI U.laxURIParserOptions =<< fromBase32 values
-  guard $ B.map toLower scheme' == "https" || (B.map toLower scheme' == "http" && ".onion" `B.isSuffixOf` B.map toLower h)
-  pure $ lowerText s
-
-offerPayee :: ByteString -> Maybe Text
-offerPayee s = do
-  offerData <- B.stripPrefix "lno1" $ B.map toLower s
-  guard $ singleCase s && not (B.null offerData) && B.all (`B.elem` bech32Chars) offerData
-  pure $ lowerText s
-
-data Bech32Encoding = Bech32 | Bech32m
-  deriving (Eq)
 
 segwitAddress :: ByteString -> ByteString -> Maybe Text
 segwitAddress hrp s = do
-  guard $ B.length s <= 90
-  (encoding, version : program5) <- bech32Decode hrp s
+  (hrp', residue, version : program5) <- bech32 s
   program <- fromBase32 program5
-  let len = B.length program
-  guard $ version <= 16 && len >= 2 && len <= 40 && if version == 0 then encoding == Bech32 && (len == 20 || len == 32) else encoding == Bech32m
-  pure $ lowerText s
+  let size = B.length program
+  lowerText s
+    <$ guard
+      ( hrp' == hrp
+          && version <= 16
+          && between 2 40 size
+          && residue == (if version == 0 then bech32Const else bech32mConst)
+          && (version /= 0 || size == 20 || size == 32)
+      )
 
-bech32Address :: ByteString -> Bech32Encoding -> (Int -> Bool) -> ByteString -> Maybe Text
-bech32Address hrp encoding validLength s = do
-  (encoding', values) <- bech32Decode hrp s
+bech32Address :: ByteString -> Word64 -> (Int -> Bool) -> ByteString -> Maybe Text
+bech32Address hrp constant validLength s = do
+  (hrp', residue, values) <- bech32 s
   bytes <- fromBase32 values
-  guard $ encoding' == encoding && validLength (B.length bytes)
-  pure $ lowerText s
+  lowerText s <$ guard (hrp' == hrp && residue == constant && validLength (B.length bytes))
 
-bech32Decode :: ByteString -> ByteString -> Maybe (Bech32Encoding, [Word8])
-bech32Decode hrp s = do
-  dataPart <- B.stripPrefix (hrp <> "1") $ B.map toLower s
-  guard $ singleCase s && B.length dataPart >= 6
-  values <- mapM bech32Value $ B.unpack dataPart
-  encoding <- case bchPolymod 25 bech32Generators (map (`shiftR` 5) (BW.unpack hrp) <> [0] <> map (.&. 31) (BW.unpack hrp) <> values) of
-    1 -> Just Bech32
-    0x2bc830a3 -> Just Bech32m
-    _ -> Nothing
-  pure (encoding, take (length values - 6) values)
+invoicePayee :: ByteString -> Maybe (Text, Maybe Text)
+invoicePayee s = do
+  (hrp, residue, values) <- bech32 s
+  invoiceAmount <- eitherToMaybe $ parseAll invoiceAmountP hrp
+  (lowerText s, invoiceAmount) <$ guard (residue == bech32Const && length values >= 7 + 104)
+
+invoiceAmountP :: Parser (Maybe Text)
+invoiceAmountP = A.string "lnbc" *> optional (A.takeWhile1 isDigit >>= btcAmountP)
+  where
+    btcAmountP digits = (`decimalText` digitsInteger digits) <$> A.option 0 (3 <$ A.char 'm' <|> 6 <$ A.char 'u' <|> 9 <$ A.char 'n' <|> 12 <$ (guard ("0" `B.isSuffixOf` digits) *> A.char 'p'))
+
+lnurlPayee :: ByteString -> Maybe Text
+lnurlPayee s = do
+  (hrp, residue, values) <- bech32 s
+  guard $ hrp == "lnurl" && residue == bech32Const
+  U.URI {uriScheme = U.Scheme scheme, uriAuthority = Just U.Authority {authorityHost = U.Host host}} <- eitherToMaybe . U.parseURI U.laxURIParserOptions =<< fromBase32 values
+  lowerText s <$ guard (B.map toLower scheme == "https" || B.map toLower scheme == "http" && ".onion" `B.isSuffixOf` B.map toLower host)
+
+offerPayee :: ByteString -> Maybe Text
+offerPayee s = lowerText s <$ guard (B.all (`B.elem` bech32Chars) $ B.drop 4 $ B.map toLower s)
+
+cashAddress :: ByteString -> Maybe Text
+cashAddress s = do
+  values <- traverse bech32Value $ B.unpack $ B.map toLower s
+  payload <- fromBase32 $ take 34 values
+  lowerText s
+    <$ guard
+      ( bchPolymod 35 cashAddrGenerators (map (.&. 31) (BW.unpack "bitcoincash") <> [0] <> values) == 1
+          && B.length payload == 21
+          && B.take 1 payload `elem` ["\0", "\8"]
+      )
+
+bech32 :: ByteString -> Maybe (ByteString, Word64, [Word8])
+bech32 s = do
+  hrp <- B.stripSuffix "1" hrpAndSeparator
+  values <- traverse bech32Value $ B.unpack dataPart
+  guard $ length values >= 6
+  pure (hrp, bchPolymod 25 bech32Generators (expandedHrp hrp <> values), take (length values - 6) values)
+  where
+    (hrpAndSeparator, dataPart) = B.breakEnd (== '1') $ B.map toLower s
+    expandedHrp hrp = map (`shiftR` 5) (BW.unpack hrp) <> [0] <> map (.&. 31) (BW.unpack hrp)
 
 bech32Value :: Char -> Maybe Word8
 bech32Value c = fromIntegral <$> B.elemIndex c bech32Chars
 
 bech32Chars :: ByteString
 bech32Chars = "qpzry9x8gf2tvdw0s3jn54khce6mua7l"
+
+bech32Const :: Word64
+bech32Const = 1
+
+bech32mConst :: Word64
+bech32mConst = 0x2bc830a3
 
 bech32Generators :: [Word64]
 bech32Generators = [0x3b6a57b2, 0x26508e6d, 0x1ea119fa, 0x3d4233dd, 0x2a1462b3]
@@ -493,34 +432,49 @@ cashAddrGenerators = [0x98f2bc8e61, 0x79b76d99e2, 0xf33e5fb3c4, 0xae2eabe2a8, 0x
 bchPolymod :: Int -> [Word64] -> [Word8] -> Word64
 bchPolymod top generators = foldl' step 1
   where
-    step c v = foldl' (\c' (i, g) -> if testBit c (top + i) then c' `xor` g else c') (((c .&. (bit top - 1)) `shiftL` 5) `xor` fromIntegral v) (zip [0 ..] generators)
+    step c v = foldl' xor ((c .&. (bit top - 1)) `shiftL` 5 `xor` fromIntegral v) [g | (i, g) <- zip [top ..] generators, testBit c i]
 
 fromBase32 :: [Word8] -> Maybe ByteString
-fromBase32 = go 0 0 []
+fromBase32 values = BW.pack (reverse bytes) <$ guard (pending < 5 && rest == 0)
   where
-    go :: Word64 -> Int -> [Word8] -> [Word8] -> Maybe ByteString
-    go acc bits out = \case
-      v : vs
-        | bits >= 3 -> go (acc' .&. (bit bits' - 1)) bits' (fromIntegral (acc' `shiftR` bits') : out) vs
-        | otherwise -> go acc' (bits + 5) out vs
-        where
-          acc' = (acc `shiftL` 5) .|. fromIntegral v
-          bits' = bits - 3
-      [] -> if bits < 5 && acc == 0 then Just $ BW.pack $ reverse out else Nothing
+    (rest, pending, bytes) = foldl' regroup (0 :: Word64, 0 :: Int, []) values
+    regroup (acc, n, out) v
+      | n >= 3 = (acc' .&. (bit (n - 3) - 1), n - 3, fromIntegral (acc' `shiftR` (n - 3)) : out)
+      | otherwise = (acc', n + 5, out)
+      where
+        acc' = acc `shiftL` 5 .|. fromIntegral v
 
-base58Address :: [ByteString] -> ByteString -> Maybe Text
-base58Address versions s = do
-  guard $ B.length s >= 25 && B.length s <= 36
+base58CheckAddress :: [ByteString] -> ByteString -> Maybe Text
+base58CheckAddress versions s = do
   bytes <- base58Decode s
   let (payload, check) = B.splitAt (B.length bytes - 4) bytes
-  guard $ check == B.take 4 (C.sha256Hash $ C.sha256Hash payload) && any (\v -> B.length payload == B.length v + 20 && v `B.isPrefixOf` payload) versions
-  pure $ safeDecodeUtf8 s
+  safeDecodeUtf8 s <$ guard (check == B.take 4 (C.sha256Hash $ C.sha256Hash payload) && any (\v -> B.length payload == B.length v + 20 && v `B.isPrefixOf` payload) versions)
+
+moneroAddress :: ByteString -> Maybe Text
+moneroAddress s = do
+  networks <- lookup (B.length s) [(95, ["\18", "\42"]), (106, ["\19"])]
+  bytes <- mconcat <$> traverse moneroBlock (unfoldr (\b -> B.splitAt 11 b <$ guard (not $ B.null b)) s)
+  let (payload, check) = B.splitAt (B.length bytes - 4) bytes
+  safeDecodeUtf8 s <$ guard (check == B.take 4 (C.keccak256 payload) && B.take 1 payload `elem` networks)
+  where
+    moneroBlock block = do
+      size <- elemIndex (B.length block) [0, 2, 3, 5, 6, 7, 9, 10, 11]
+      n <- base58Integer block
+      integerBytes size n <$ guard (n < 256 ^ size)
+
+solanaAddress :: ByteString -> Maybe Text
+solanaAddress s = safeDecodeUtf8 s <$ guard ((B.length <$> base58Decode s) == Just 32)
+
+evmAddress :: ByteString -> Maybe Text
+evmAddress s = safeDecodeUtf8 . strEncode <$> eitherToMaybe (strDecode s :: Either String Address)
 
 base58Decode :: ByteString -> Maybe ByteString
-base58Decode s = (\n -> B.replicate (B.length $ B.takeWhile (== '1') s) '\0' <> integerBytes (length $ takeWhile (> 0) $ iterate (`shiftR` 8) n) n) <$> base58Integer s
+base58Decode s = (\n -> B.replicate (B.length $ B.takeWhile (== '1') s) '\0' <> integerBytes (byteLength n) n) <$> base58Integer s
+  where
+    byteLength = length . takeWhile (> 0) . iterate (`shiftR` 8)
 
 base58Integer :: ByteString -> Maybe Integer
-base58Integer = B.foldl' (\n c -> (\n' d -> n' * 58 + toInteger d) <$> n <*> B.elemIndex c base58Chars) (Just 0)
+base58Integer = foldM (\n c -> (n * 58 +) . toInteger <$> B.elemIndex c base58Chars) 0 . B.unpack
 
 base58Chars :: ByteString
 base58Chars = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
@@ -528,24 +482,23 @@ base58Chars = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
 integerBytes :: Int -> Integer -> ByteString
 integerBytes size n = BW.pack [fromInteger $ n `shiftR` (8 * i) .&. 255 | i <- [size - 1, size - 2 .. 0]]
 
-evmInteger :: ByteString -> Either String Integer
-evmInteger = parseAll $ do
-  whole <- A.takeWhile isDigit
-  fraction <- A.option "" $ A.char '.' *> A.takeWhile1 isDigit
-  power <- A.option "" $ A.satisfy (\c -> c == 'e' || c == 'E') *> A.takeWhile1 isDigit
-  let digits = whole <> fraction
-      scale = fromInteger (digitsInteger power) - B.length fraction
-      (q, r) = if scale >= 0 then (digitsInteger digits * 10 ^ scale, 0) else digitsInteger digits `quotRem` (10 ^ negate scale)
-  guard $ not (B.null digits) && B.length digits <= 78 && B.length power <= 2 && r == 0 && q < 2 ^ (256 :: Int)
-  pure q
+amountP :: Int -> Parser Text
+amountP places = safeDecodeUtf8 . fst <$> A.match (A.takeWhile1 isDigit *> optional (A.char '.' *> mfilter ((<= places) . B.length) (A.takeWhile1 isDigit)))
 
-decimalAmount :: Int -> ByteString -> Either String Text
-decimalAmount places s = case B.split '.' s of
-  [whole] | decimalDigits whole -> Right $ safeDecodeUtf8 s
-  [whole, fraction] | decimalDigits whole && decimalDigits fraction && B.length fraction <= places -> Right $ safeDecodeUtf8 s
-  _ -> Left "invalid amount"
+evmIntegerP :: Parser Integer
+evmIntegerP = do
+  (digits, places) <- mfilter (between 1 78 . B.length . fst) $ (\whole fraction -> (whole <> fraction, B.length fraction)) <$> A.takeWhile isDigit <*> A.option "" (A.char '.' *> A.takeWhile1 isDigit)
+  power <- A.option 0 $ A.satisfy (\c -> c == 'e' || c == 'E') *> (fromInteger . digitsInteger <$> mfilter ((<= 2) . B.length) (A.takeWhile1 isDigit))
+  let (n, remainder) = (digitsInteger digits * 10 ^ max 0 (power - places)) `quotRem` (10 ^ max 0 (places - power))
+  n <$ guard (remainder == 0 && n < 2 ^ (256 :: Int))
+
+uriTextP :: Parser (Maybe Text)
+uriTextP = (fmap nonEmptyText . first show . decodeUtf8' . B.concat) <$?> A.many' (A.takeWhile1 (/= '%') <|> B.singleton <$> (A.char '%' *> hexByteP))
   where
-    decimalDigits d = not (B.null d) && B.all isDigit d
+    hexByteP = (\high low -> chr $ digitToInt high * 16 + digitToInt low) <$> A.satisfy isHexDigit <*> A.satisfy isHexDigit
+
+memoP :: Parser (Maybe Text)
+memoP = (nonEmptyText <=< eitherToMaybe . decodeUtf8') <$> mfilter ((<= 512) . B.length) (B64U.decodeUnpadded <$?> A.takeByteString)
 
 decimalText :: Int -> Integer -> Text
 decimalText places n = case T.dropWhileEnd (== '0') $ T.justifyRight places '0' $ tshow fraction of
@@ -557,26 +510,8 @@ decimalText places n = case T.dropWhileEnd (== '0') $ T.justifyRight places '0' 
 digitsInteger :: ByteString -> Integer
 digitsInteger = B.foldl' (\n c -> n * 10 + toInteger (digitToInt c)) 0
 
-memoText :: ByteString -> Either String (Maybe Text)
-memoText v = do
-  memo <- B64U.decodeUnpadded v
-  when (B.length memo > 512) $ Left "memo is too long"
-  pure $ nonEmptyText =<< eitherToMaybe (decodeUtf8' memo)
-
-percentText :: ByteString -> Either String (Maybe Text)
-percentText v = nonEmptyText <$> (first show . decodeUtf8' =<< percentDecode v)
-
-percentDecode :: ByteString -> Either String ByteString
-percentDecode = fmap B.concat . chunks
-  where
-    chunks s = case B.break (== '%') s of
-      (before, "") -> Right [before]
-      (before, rest) -> case B.unpack $ B.take 3 rest of
-        [_, h, l] | isHexDigit h && isHexDigit l -> ([before, B.singleton $ chr $ digitToInt h * 16 + digitToInt l] <>) <$> chunks (B.drop 3 rest)
-        _ -> Left "invalid percent-encoding"
-
-uriChar :: Char -> Bool
-uriChar c = isAscii c && (isAlphaNum c || c `B.elem` "-._~:/?@!$&'()*+,;=%")
+nonEmptyText :: Text -> Maybe Text
+nonEmptyText = mfilter (not . T.null) . Just
 
 singleCase :: ByteString -> Bool
 singleCase s = not (B.any isUpper s && B.any isLower s)
@@ -584,13 +519,13 @@ singleCase s = not (B.any isUpper s && B.any isLower s)
 lowerText :: ByteString -> Text
 lowerText = safeDecodeUtf8 . B.map toLower
 
-nonEmptyText :: Text -> Maybe Text
-nonEmptyText t = if T.null t then Nothing else Just t
+isAsciiAlphaNum :: Char -> Bool
+isAsciiAlphaNum c = isAscii c && isAlphaNum c
 
-required :: String -> Maybe a -> Either String a
-required e = maybe (Left e) Right
+between :: Ord a => a -> a -> a -> Bool
+between from to n = from <= n && n <= to
 
-$(JQ.deriveJSON (enumJSON $ dropPrefix "UL") ''UnlistedCurrency)
+$(JQ.deriveJSON (enumJSON $ dropPrefix "UC") ''UnknownCurrency)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "CY") ''ChainCurrency)
 

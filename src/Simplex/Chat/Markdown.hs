@@ -471,8 +471,8 @@ markdownP = joinMarkdown <$> A.many' fragmentP
         CLShort _ -> pure $ simplexUriFormat (Just t) lnk
         CLFull _ -> fail "full SimpleX link in hyperlink"
       Left _ -> case hyperlinkAddress t l of
-        Just r -> either fail (pure . uncurry ChainAddressLink) r
-        Nothing -> case parseUri $ encodeUtf8 l of
+        Right r -> pure $ uncurry ChainAddressLink r
+        Left _ -> case parseUri $ encodeUtf8 l of
           Right _ -> pure $ HyperLink (Just t) l
           Left e -> fail $ "not uri: " <> T.unpack e
     enclosedP open close stop = A.char open *> A.takeWhile1 (\c -> c /= close && not (stop c)) <* A.char close
@@ -503,9 +503,7 @@ markdownP = joinMarkdown <$> A.many' fragmentP
     conc4 s1 s2 s3 s4 = s1 <> s2 <> s3 <> s4
     phoneSep = " " <|> "-" <|> "." <|> ""
     addressWordP :: Parser Markdown
-    addressWordP = do
-      s <- wordTextP
-      if bareAddressForm $ encodeUtf8 $ T.dropEnd (linkEndLength s) s then pure $ wordMD s else fail "not an address"
+    addressWordP = wordMD <$> mfilter (\s -> bareAddressForm $ encodeUtf8 $ T.dropEnd (linkEndLength s) s) wordTextP
     wordP :: Parser Markdown
     wordP = wordMD <$> wordTextP
     wordTextP :: Parser Text
