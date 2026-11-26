@@ -19,6 +19,9 @@
             "directMessages": {
               "enable": "on"
             },
+            "edits": {
+              "enable": "off"
+            },
             "files": {
               "enable": "on"
             },
@@ -27,6 +30,10 @@
             },
             "history": {
               "enable": "on"
+            },
+            "msgPriority": {
+              "enable": "on",
+              "role": "admin"
             },
             "reactions": {
               "enable": "on"
@@ -85,7 +92,7 @@
             "localDisplayName": "alice",
             "memberCategory": "user",
             "memberChatVRange": {
-              "maxVersion": 23,
+              "maxVersion": 24,
               "minVersion": 9
             },
             "memberContactId": 1,
@@ -139,7 +146,7 @@
             "activeConn": {
               "agentConnId": "agentConnId",
               "authErrCounter": 0,
-              "connChatVersion": 23,
+              "connChatVersion": 24,
               "connId": 2,
               "connLevel": 0,
               "connStatus": {
@@ -151,7 +158,7 @@
               "entityId": 2,
               "localAlias": "",
               "peerChatVRange": {
-                "maxVersion": 23,
+                "maxVersion": 24,
                 "minVersion": 9
               },
               "pqEncryption": false,
@@ -171,7 +178,7 @@
             "localDisplayName": "bob",
             "memberCategory": "invitee",
             "memberChatVRange": {
-              "maxVersion": 23,
+              "maxVersion": 24,
               "minVersion": 9
             },
             "memberContactId": 2,
@@ -311,6 +318,9 @@
             "directMessages": {
               "enable": "on"
             },
+            "edits": {
+              "enable": "off"
+            },
             "files": {
               "enable": "on"
             },
@@ -319,6 +329,10 @@
             },
             "history": {
               "enable": "on"
+            },
+            "msgPriority": {
+              "enable": "on",
+              "role": "admin"
             },
             "reactions": {
               "enable": "on"
@@ -377,7 +391,7 @@
             "localDisplayName": "alice",
             "memberCategory": "user",
             "memberChatVRange": {
-              "maxVersion": 23,
+              "maxVersion": 24,
               "minVersion": 9
             },
             "memberContactId": 1,
@@ -431,7 +445,7 @@
             "activeConn": {
               "agentConnId": "agentConnId",
               "authErrCounter": 0,
-              "connChatVersion": 23,
+              "connChatVersion": 24,
               "connId": 2,
               "connLevel": 0,
               "connStatus": {
@@ -443,7 +457,7 @@
               "entityId": 2,
               "localAlias": "",
               "peerChatVRange": {
-                "maxVersion": 23,
+                "maxVersion": 24,
                 "minVersion": 9
               },
               "pqEncryption": false,
@@ -463,7 +477,7 @@
             "localDisplayName": "bob",
             "memberCategory": "invitee",
             "memberChatVRange": {
-              "maxVersion": 23,
+              "maxVersion": 24,
               "minVersion": 9
             },
             "memberContactId": 2,
@@ -603,6 +617,9 @@
             "directMessages": {
               "enable": "on"
             },
+            "edits": {
+              "enable": "off"
+            },
             "files": {
               "enable": "on"
             },
@@ -611,6 +628,10 @@
             },
             "history": {
               "enable": "on"
+            },
+            "msgPriority": {
+              "enable": "on",
+              "role": "admin"
             },
             "reactions": {
               "enable": "on"
@@ -669,7 +690,7 @@
             "localDisplayName": "alice",
             "memberCategory": "user",
             "memberChatVRange": {
-              "maxVersion": 23,
+              "maxVersion": 24,
               "minVersion": 9
             },
             "memberContactId": 1,
@@ -723,7 +744,7 @@
             "activeConn": {
               "agentConnId": "agentConnId",
               "authErrCounter": 0,
-              "connChatVersion": 23,
+              "connChatVersion": 24,
               "connId": 2,
               "connLevel": 0,
               "connStatus": {
@@ -735,7 +756,7 @@
               "entityId": 2,
               "localAlias": "",
               "peerChatVRange": {
-                "maxVersion": 23,
+                "maxVersion": 24,
                 "minVersion": 9
               },
               "pqEncryption": false,
@@ -755,7 +776,7 @@
             "localDisplayName": "bob",
             "memberCategory": "invitee",
             "memberChatVRange": {
-              "maxVersion": 23,
+              "maxVersion": 24,
               "minVersion": 9
             },
             "memberContactId": 2,
@@ -805,7 +826,7 @@
             "activeConn": {
               "agentConnId": "agentConnId",
               "authErrCounter": 0,
-              "connChatVersion": 23,
+              "connChatVersion": 24,
               "connId": 4,
               "connLevel": 0,
               "connStatus": {
@@ -817,7 +838,7 @@
               "entityId": 3,
               "localAlias": "",
               "peerChatVRange": {
-                "maxVersion": 23,
+                "maxVersion": 24,
                 "minVersion": 9
               },
               "pqEncryption": false,
@@ -837,7 +858,7 @@
             "localDisplayName": "cath",
             "memberCategory": "invitee",
             "memberChatVRange": {
-              "maxVersion": 23,
+              "maxVersion": 24,
               "minVersion": 9
             },
             "memberContactId": 3,
@@ -976,6 +997,9 @@
             "directMessages": {
               "enable": "on"
             },
+            "edits": {
+              "enable": "off"
+            },
             "files": {
               "enable": "on"
             },
@@ -984,6 +1008,10 @@
             },
             "history": {
               "enable": "on"
+            },
+            "msgPriority": {
+              "enable": "on",
+              "role": "admin"
             },
             "reactions": {
               "enable": "on"
@@ -1042,7 +1070,7 @@
             "localDisplayName": "alice",
             "memberCategory": "user",
             "memberChatVRange": {
-              "maxVersion": 23,
+              "maxVersion": 24,
               "minVersion": 9
             },
             "memberContactId": 1,
@@ -1096,7 +1124,7 @@
             "activeConn": {
               "agentConnId": "agentConnId",
               "authErrCounter": 0,
-              "connChatVersion": 23,
+              "connChatVersion": 24,
               "connId": 4,
               "connLevel": 0,
               "connStatus": {
@@ -1108,7 +1136,7 @@
               "entityId": 3,
               "localAlias": "",
               "peerChatVRange": {
-                "maxVersion": 23,
+                "maxVersion": 24,
                 "minVersion": 9
               },
               "pqEncryption": false,
@@ -1128,7 +1156,7 @@
             "localDisplayName": "cath",
             "memberCategory": "invitee",
             "memberChatVRange": {
-              "maxVersion": 23,
+              "maxVersion": 24,
               "minVersion": 9
             },
             "memberContactId": 3,
@@ -1177,7 +1205,7 @@
             "activeConn": {
               "agentConnId": "agentConnId",
               "authErrCounter": 0,
-              "connChatVersion": 23,
+              "connChatVersion": 24,
               "connId": 6,
               "connLevel": 0,
               "connStatus": {
@@ -1189,7 +1217,7 @@
               "entityId": 4,
               "localAlias": "",
               "peerChatVRange": {
-                "maxVersion": 23,
+                "maxVersion": 24,
                 "minVersion": 9
               },
               "pqEncryption": false,
@@ -1209,7 +1237,7 @@
             "localDisplayName": "dan",
             "memberCategory": "invitee",
             "memberChatVRange": {
-              "maxVersion": 23,
+              "maxVersion": 24,
               "minVersion": 9
             },
             "memberContactId": 4,
@@ -1348,6 +1376,9 @@
             "directMessages": {
               "enable": "on"
             },
+            "edits": {
+              "enable": "off"
+            },
             "files": {
               "enable": "on"
             },
@@ -1356,6 +1387,10 @@
             },
             "history": {
               "enable": "on"
+            },
+            "msgPriority": {
+              "enable": "on",
+              "role": "admin"
             },
             "reactions": {
               "enable": "on"
@@ -1414,7 +1449,7 @@
             "localDisplayName": "alice",
             "memberCategory": "user",
             "memberChatVRange": {
-              "maxVersion": 23,
+              "maxVersion": 24,
               "minVersion": 9
             },
             "memberContactId": 1,
@@ -1468,7 +1503,7 @@
             "activeConn": {
               "agentConnId": "agentConnId",
               "authErrCounter": 0,
-              "connChatVersion": 23,
+              "connChatVersion": 24,
               "connId": 4,
               "connLevel": 0,
               "connStatus": {
@@ -1480,7 +1515,7 @@
               "entityId": 3,
               "localAlias": "",
               "peerChatVRange": {
-                "maxVersion": 23,
+                "maxVersion": 24,
                 "minVersion": 9
               },
               "pqEncryption": false,
@@ -1500,7 +1535,7 @@
             "localDisplayName": "cath",
             "memberCategory": "invitee",
             "memberChatVRange": {
-              "maxVersion": 23,
+              "maxVersion": 24,
               "minVersion": 9
             },
             "memberContactId": 3,
@@ -1549,7 +1584,7 @@
             "activeConn": {
               "agentConnId": "agentConnId",
               "authErrCounter": 0,
-              "connChatVersion": 23,
+              "connChatVersion": 24,
               "connId": 6,
               "connLevel": 0,
               "connStatus": {
@@ -1561,7 +1596,7 @@
               "entityId": 4,
               "localAlias": "",
               "peerChatVRange": {
-                "maxVersion": 23,
+                "maxVersion": 24,
                 "minVersion": 9
               },
               "pqEncryption": false,
@@ -1581,7 +1616,7 @@
             "localDisplayName": "dan",
             "memberCategory": "invitee",
             "memberChatVRange": {
-              "maxVersion": 23,
+              "maxVersion": 24,
               "minVersion": 9
             },
             "memberContactId": 4,
@@ -1720,6 +1755,9 @@
               "directMessages": {
                 "enable": "on"
               },
+              "edits": {
+                "enable": "off"
+              },
               "files": {
                 "enable": "on"
               },
@@ -1728,6 +1766,10 @@
               },
               "history": {
                 "enable": "on"
+              },
+              "msgPriority": {
+                "enable": "on",
+                "role": "admin"
               },
               "reactions": {
                 "enable": "on"
@@ -1786,7 +1828,7 @@
               "localDisplayName": "alice",
               "memberCategory": "user",
               "memberChatVRange": {
-                "maxVersion": 23,
+                "maxVersion": 24,
                 "minVersion": 9
               },
               "memberContactId": 1,
@@ -1840,7 +1882,7 @@
               "activeConn": {
                 "agentConnId": "agentConnId",
                 "authErrCounter": 0,
-                "connChatVersion": 23,
+                "connChatVersion": 24,
                 "connId": 2,
                 "connLevel": 0,
                 "connStatus": {
@@ -1852,7 +1894,7 @@
                 "entityId": 2,
                 "localAlias": "",
                 "peerChatVRange": {
-                  "maxVersion": 23,
+                  "maxVersion": 24,
                   "minVersion": 9
                 },
                 "pqEncryption": false,
@@ -1872,7 +1914,7 @@
               "localDisplayName": "bob",
               "memberCategory": "invitee",
               "memberChatVRange": {
-                "maxVersion": 23,
+                "maxVersion": 24,
                 "minVersion": 9
               },
               "memberContactId": 2,
@@ -1922,7 +1964,7 @@
               "activeConn": {
                 "agentConnId": "agentConnId",
                 "authErrCounter": 0,
-                "connChatVersion": 23,
+                "connChatVersion": 24,
                 "connId": 4,
                 "connLevel": 0,
                 "connStatus": {
@@ -1934,7 +1976,7 @@
                 "entityId": 3,
                 "localAlias": "",
                 "peerChatVRange": {
-                  "maxVersion": 23,
+                  "maxVersion": 24,
                   "minVersion": 9
                 },
                 "pqEncryption": false,
@@ -1954,7 +1996,7 @@
               "localDisplayName": "cath",
               "memberCategory": "invitee",
               "memberChatVRange": {
-                "maxVersion": 23,
+                "maxVersion": 24,
                 "minVersion": 9
               },
               "memberContactId": 3,
@@ -2003,7 +2045,7 @@
               "activeConn": {
                 "agentConnId": "agentConnId",
                 "authErrCounter": 0,
-                "connChatVersion": 23,
+                "connChatVersion": 24,
                 "connId": 6,
                 "connLevel": 0,
                 "connStatus": {
@@ -2015,7 +2057,7 @@
                 "entityId": 4,
                 "localAlias": "",
                 "peerChatVRange": {
-                  "maxVersion": 23,
+                  "maxVersion": 24,
                   "minVersion": 9
                 },
                 "pqEncryption": false,
@@ -2035,7 +2077,7 @@
               "localDisplayName": "dan",
               "memberCategory": "invitee",
               "memberChatVRange": {
-                "maxVersion": 23,
+                "maxVersion": 24,
                 "minVersion": 9
               },
               "memberContactId": 4,
@@ -2173,6 +2215,9 @@
             "directMessages": {
               "enable": "on"
             },
+            "edits": {
+              "enable": "off"
+            },
             "files": {
               "enable": "on"
             },
@@ -2181,6 +2226,10 @@
             },
             "history": {
               "enable": "on"
+            },
+            "msgPriority": {
+              "enable": "on",
+              "role": "admin"
             },
             "reactions": {
               "enable": "on"
@@ -2239,7 +2288,7 @@
             "localDisplayName": "alice",
             "memberCategory": "user",
             "memberChatVRange": {
-              "maxVersion": 23,
+              "maxVersion": 24,
               "minVersion": 9
             },
             "memberContactId": 1,
@@ -2293,7 +2342,7 @@
             "activeConn": {
               "agentConnId": "agentConnId",
               "authErrCounter": 0,
-              "connChatVersion": 23,
+              "connChatVersion": 24,
               "connId": 2,
               "connLevel": 0,
               "connStatus": {
@@ -2305,7 +2354,7 @@
               "entityId": 2,
               "localAlias": "",
               "peerChatVRange": {
-                "maxVersion": 23,
+                "maxVersion": 24,
                 "minVersion": 9
               },
               "pqEncryption": false,
@@ -2325,7 +2374,7 @@
             "localDisplayName": "bob",
             "memberCategory": "invitee",
             "memberChatVRange": {
-              "maxVersion": 23,
+              "maxVersion": 24,
               "minVersion": 9
             },
             "memberContactId": 2,
@@ -2465,6 +2514,9 @@
             "directMessages": {
               "enable": "on"
             },
+            "edits": {
+              "enable": "off"
+            },
             "files": {
               "enable": "on"
             },
@@ -2473,6 +2525,10 @@
             },
             "history": {
               "enable": "on"
+            },
+            "msgPriority": {
+              "enable": "on",
+              "role": "admin"
             },
             "reactions": {
               "enable": "on"
@@ -2531,7 +2587,7 @@
             "localDisplayName": "alice",
             "memberCategory": "user",
             "memberChatVRange": {
-              "maxVersion": 23,
+              "maxVersion": 24,
               "minVersion": 9
             },
             "memberContactId": 1,
@@ -2585,7 +2641,7 @@
             "activeConn": {
               "agentConnId": "agentConnId",
               "authErrCounter": 0,
-              "connChatVersion": 23,
+              "connChatVersion": 24,
               "connId": 4,
               "connLevel": 0,
               "connStatus": {
@@ -2597,7 +2653,7 @@
               "entityId": 3,
               "localAlias": "",
               "peerChatVRange": {
-                "maxVersion": 23,
+                "maxVersion": 24,
                 "minVersion": 9
               },
               "pqEncryption": false,
@@ -2617,7 +2673,7 @@
             "localDisplayName": "cath",
             "memberCategory": "invitee",
             "memberChatVRange": {
-              "maxVersion": 23,
+              "maxVersion": 24,
               "minVersion": 9
             },
             "memberContactId": 3,
@@ -2756,6 +2812,9 @@
             "directMessages": {
               "enable": "on"
             },
+            "edits": {
+              "enable": "off"
+            },
             "files": {
               "enable": "on"
             },
@@ -2764,6 +2823,10 @@
             },
             "history": {
               "enable": "on"
+            },
+            "msgPriority": {
+              "enable": "on",
+              "role": "admin"
             },
             "reactions": {
               "enable": "on"
@@ -2822,7 +2885,7 @@
             "localDisplayName": "alice",
             "memberCategory": "user",
             "memberChatVRange": {
-              "maxVersion": 23,
+              "maxVersion": 24,
               "minVersion": 9
             },
             "memberContactId": 1,
@@ -2876,7 +2939,7 @@
             "activeConn": {
               "agentConnId": "agentConnId",
               "authErrCounter": 0,
-              "connChatVersion": 23,
+              "connChatVersion": 24,
               "connId": 6,
               "connLevel": 0,
               "connStatus": {
@@ -2888,7 +2951,7 @@
               "entityId": 4,
               "localAlias": "",
               "peerChatVRange": {
-                "maxVersion": 23,
+                "maxVersion": 24,
                 "minVersion": 9
               },
               "pqEncryption": false,
@@ -2908,7 +2971,7 @@
             "localDisplayName": "dan",
             "memberCategory": "invitee",
             "memberChatVRange": {
-              "maxVersion": 23,
+              "maxVersion": 24,
               "minVersion": 9
             },
             "memberContactId": 4,
