@@ -19,9 +19,10 @@ import kotlin.math.max
 // enumeration and throws NoSuchElementException from CompoundEnumeration.nextElement.
 private val vlcFactoryLock = Any()
 private const val VLC_DEMUX = "--demux=mp4,mkv,avi,es,ps"
-internal val vlcFactory: MediaPlayerFactory by lazy { synchronized(vlcFactoryLock) { MediaPlayerFactory(VLC_DEMUX) } }
+private const val VLC_QUIET = "--quiet"
+internal val vlcFactory: MediaPlayerFactory by lazy { synchronized(vlcFactoryLock) { MediaPlayerFactory(VLC_DEMUX, VLC_QUIET) } }
 // No hardware acceleration - more secure for previews
-internal val vlcPreviewFactory: MediaPlayerFactory by lazy { synchronized(vlcFactoryLock) { MediaPlayerFactory("--avcodec-hw=none", VLC_DEMUX) } }
+internal val vlcPreviewFactory: MediaPlayerFactory by lazy { synchronized(vlcFactoryLock) { MediaPlayerFactory("--avcodec-hw=none", VLC_DEMUX, VLC_QUIET) } }
 
 actual class RecorderNative: RecorderInterface {
   private var player: MediaPlayer? = null
