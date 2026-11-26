@@ -30,7 +30,7 @@ where
 
 import StoreService.Codes (issueFailedText, issueOneCode, revokeBadgeCode, singleUse)
 import StoreService.Config (GroupConfig (..))
-import StoreService.Group.Command (CmdAction (..), GroupCmd (..), MoneyCmd, groupCmdAction, groupCommands)
+import StoreService.Group.Command (CmdAction (..), GroupCmd (..), MoneyCmd, NameListCmd, groupCmdAction, groupCommands)
 import StoreService.Names.Codes (issueNameCode, revokeNameCode)
 import StoreService.Names.Store (CmdSource (..), groupNameCodesIssuedSince)
 import StoreService.Names.Turns (Turns)
@@ -233,8 +233,8 @@ coalesceTrackerRefreshes = snd . foldr keepLast (S.empty, [])
 logUncaught :: HasCallStack => IO () -> IO ()
 logUncaught a = a `catchOwn'` withFrozenCallStack (logError . tshow)
 
-handleGroupEvent :: ChatController -> Turns -> Maybe Int -> (MoneyCmd -> IO (Either Text Text)) -> GroupId -> GroupEvent -> IO ()
-handleGroupEvent cc turns nameCodesPerDay_ runMoney groupId ev = logUncaught (handle ev)
+handleGroupEvent :: ChatController -> Turns -> Maybe Int -> (MoneyCmd -> IO (Either Text Text)) -> (NameListCmd -> IO (Either Text Text)) -> GroupId -> GroupEvent -> IO ()
+handleGroupEvent cc turns nameCodesPerDay_ runMoney runNameList groupId ev = logUncaught (handle ev)
   where
     handle = \case
       GEInGroup gid action
@@ -243,7 +243,7 @@ handleGroupEvent cc turns nameCodesPerDay_ runMoney groupId ev = logUncaught (ha
             GAJoined -> promoteOwner cc groupId
             GAProfileUpdated -> restoreServiceProfile cc groupId
             GACommand role t -> case groupCmdAction role t of
-              RunCmd cmd -> runGroupCmd cc turns nameCodesPerDay_ runMoney groupId cmd
+              RunCmd cmd -> runGroupCmd cc turns nameCodesPerDay_ runMoney runNameList groupId cmd
               ReplyText txt -> void $ sendGroupText cc groupId "command reply" txt
               IgnoreMsg -> pure ()
       GETracker badgeCodeId code -> updateTracker cc groupId badgeCodeId code
@@ -265,15 +265,15 @@ promoteFirstOwner cc g@GroupInfo {groupId, groupProfile} member =
     _ -> pure ()
 
 -- Nothing is a group that is not served, so its events are drained.
-runGroupLane :: ChatController -> Turns -> Maybe Int -> (MoneyCmd -> IO (Either Text Text)) -> TQueue GroupEvent -> Maybe GroupId -> IO ()
-runGroupLane cc turns nameCodesPerDay_ runMoney q groupId_ = case groupId_ of
+runGroupLane :: ChatController -> Turns -> Maybe Int -> (MoneyCmd -> IO (Either Text Text)) -> (NameListCmd -> IO (Either Text Text)) -> TQueue GroupEvent -> Maybe GroupId -> IO ()
+runGroupLane cc turns nameCodesPerDay_ runMoney runNameList q groupId_ = case groupId_ of
   Just groupId -> do
     promoteOwner cc groupId
     -- Reconciling precedes the first batch, so queued events write after the correction.
     reconcileTrackers cc groupId
     forever $ do
       evs <- atomically $ (:) <$> readTQueue q <*> flushTQueue q
-      mapM_ (handleGroupEvent cc turns nameCodesPerDay_ runMoney groupId) (coalesceTrackerRefreshes evs)
+      mapM_ (handleGroupEvent cc turns nameCodesPerDay_ runMoney runNameList groupId) (coalesceTrackerRefreshes evs)
   Nothing -> forever $ void $ atomically (readTQueue q)
 
 -- The earliest joined member is promoted, not the one who just joined, so a join the lane never handled
@@ -303,8 +303,8 @@ noOwnerHint gName =
   "the badge group has no member owner, make one with /mr #" <> viewName gName <> " <member> owner in --run-cli mode"
     <> ", or a member pending review with /accept member #" <> viewName gName <> " @<member> owner in --run-cli mode"
 
-runGroupCmd :: ChatController -> Turns -> Maybe Int -> (MoneyCmd -> IO (Either Text Text)) -> GroupId -> GroupCmd -> IO ()
-runGroupCmd cc turns nameCodesPerDay_ runMoney groupId = \case
+runGroupCmd :: ChatController -> Turns -> Maybe Int -> (MoneyCmd -> IO (Either Text Text)) -> (NameListCmd -> IO (Either Text Text)) -> GroupId -> GroupCmd -> IO ()
+runGroupCmd cc turns nameCodesPerDay_ runMoney runNameList groupId = \case
   GCIssue bt months uses status
     | hasTracker uses ->
         issueOneCode cc bt months status uses >>= \case
@@ -317,7 +317,7 @@ runGroupCmd cc turns nameCodesPerDay_ runMoney groupId = \case
   cmd@GCMoney {} -> answer cmd >>= void . sendGroupText cc groupId "money reply, /balance shows what was recorded"
   cmd -> answer cmd >>= reply
   where
-    answer = fmap (either id id) . runCmd FromGroup cc turns (isJust nameCodesPerDay_) runMoney
+    answer = fmap (either id id) . runCmd FromGroup cc turns (isJust nameCodesPerDay_) runMoney runNameList
     reply = void . sendGroupText cc groupId "reply, any codes in it are lost"
     withinNameCodes nameCodesPerDay issue = do
       since <- addUTCTime (negate nominalDay) <$> getCurrentTime
@@ -329,8 +329,8 @@ runGroupCmd cc turns nameCodesPerDay_ runMoney groupId = \case
 
 type NamesOn = Bool
 
-runCmd :: CmdSource -> ChatController -> Turns -> NamesOn -> (MoneyCmd -> IO (Either Text Text)) -> GroupCmd -> IO (Either Text Text)
-runCmd source cc turns namesOn runMoney = \case
+runCmd :: CmdSource -> ChatController -> Turns -> NamesOn -> (MoneyCmd -> IO (Either Text Text)) -> (NameListCmd -> IO (Either Text Text)) -> GroupCmd -> IO (Either Text Text)
+runCmd source cc turns namesOn runMoney runNameList = \case
   GCIssue bt months uses status -> codeReply formatBadgeCode . fmap fst <$> issueOneCode cc bt months status uses
   GCBulk bt months count -> Right <$> issueMany count (fmap (formatBadgeCode . fst) <$> issueOneCode cc bt months CPSFree singleUse)
   GCIssueName {} | not namesOn -> pure $ Left namesOffText
@@ -339,6 +339,7 @@ runCmd source cc turns namesOn runMoney = \case
   GCRevoke code -> named (formatBadgeCode code) <$> revokeWithTracker cc code
   GCRevokeName code -> named (formatNameCode code) <$> revokeNameCode turns cc code
   GCMoney cmd -> runMoney cmd
+  GCNameList cmd -> runNameList cmd
   where
     codeReply format = bimap (const issueFailedText) (("Code: " <>) . format)
     named shown = let prefixed = ((shown <> ": ") <>) in bimap prefixed prefixed

@@ -118,6 +118,12 @@ badgeGroupTests = describe "badge group" $ do
       Just six <- pure $ nameLength 6
       map (`groupCmdAction` "/issue name 6") [GRMember, GRModerator, GRAdmin, GROwner]
         `shouldBe` [IgnoreMsg, RunCmd (GCIssueName six 2 CPSFree), RunCmd (GCIssueName six 2 CPSFree), RunCmd (GCIssueName six 2 CPSFree)]
+    it "runs /unavailable and /available with the rest of the message as the name for an admin and an owner, saying nothing to others, and answers either without a name with its usage" $ do
+      let roles = [GRMember, GRModerator, GRAdmin, GROwner]
+          adminUp cmd = replicate 2 IgnoreMsg <> replicate 2 (RunCmd (GCNameList cmd))
+      map (`groupCmdAction` "/unavailable Boko Haram") roles `shouldBe` adminUp (NLUnavailable "Boko Haram")
+      map (`groupCmdAction` "/available hamas") roles `shouldBe` adminUp (NLAvailable "hamas")
+      map p ["/unavailable", "/available"] `shouldBe` [ReplyText "Usage: /unavailable <name>", ReplyText "Usage: /available <name>"]
     it "runs /balance, /record_refund and /close only for an owner, saying nothing to others" $ do
       let roles = [GRMember, GRModerator, GRAdmin, GROwner]
           ownerOnly cmd = replicate 3 IgnoreMsg <> [RunCmd (GCMoney cmd)]

@@ -92,6 +92,7 @@ import qualified Data.Map.Strict as M
 import Data.Maybe (fromJust, fromMaybe, isJust, isNothing)
 import Data.Text (Text)
 import qualified Data.Text as T
+import qualified Data.Text.IO as TIO
 import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime, diffUTCTime, getCurrentTime)
 import Data.Time.Clock.POSIX (posixSecondsToUTCTime, utcTimeToPOSIXSeconds)
 import Data.Word (Word64)
@@ -127,6 +128,7 @@ import StoreService.Names.Registration (DisputeDays, Registration (..), acceptan
 import StoreService.Names.Signatures (AgreedTerms (..), OrderFields (..), orderMessage, parseChecksumAddress, personalDigest)
 import StoreService.Names.Store
 import StoreService.Names.Turns (newTurns, withCodeTurn)
+import StoreService.Names.Unavailable (ListRefusal (..), addUnavailable, matchesEntry, normalizedName, readUnavailable, removeUnavailable, unavailableName)
 import StoreService.Names.View (PaidWith (PWInvoice), PhaseView (PVClosed, PVCommitted, PVEnded, PVFailed, PVRegistered, PVTaken, PVUnpaid), RegistrationView (..), Signing (SAwaiting, SLapsed, SSigned), ToSign (TSRead, TSUnread), phaseView, readToSign, registrationView, toRegistrationView)
 import StoreService.Orders (cancelOpenInvoice, expireOverdue, settleOrder)
 import StoreService.Poller (cleanupInterval, cleanupReadsPerPass, cleanupUnpaid, drainHints, newPollerEnv, newReadHints, queueReadHint, runOnePass, unpaidRetention)
@@ -162,7 +164,9 @@ namesOrdersTests = describe "StoreService names: orders" $ do
     it "answers catalog_changed with the chain price" testCatalogChanged
     it "counts toward the checkouts of every client only an order that reaches the provider, and a card order past the spent BTCPay ones" testOrdersLimitForAll
     it "answers name_taken for a registered, reserved or being registered name" testNameTaken
-    it "answers name_taken for a name with a listed word in its letters, digits and hyphens left out, at a paid and a code order, before any provider call or code reservation" testNameUnavailable
+    it "answers name_taken for a name containing an entry of the list, or equal to a short one, at a paid and a code order, before any provider call or code reservation, as entries are added and removed" testNameUnavailable
+    it "reads a name's letters and digits in lower case, each digit as the letter it stands for, and matches an entry of 5 letters or more anywhere in it, a shorter one only as the whole name" testNormalizedNames
+    it "keeps the list in its file: an entry added is appended, one removed is left out, a repeat, one without letters or no file is refused, and a line without letters stops the start" testUnavailableFile
     it "answers name_check_unavailable when a status or price read fails, or the price is under the floor, reaching no provider" testNameCheckUnavailable
     it "refuses a body over 16384 bytes, accepting the longest order" testSizes
     it "refuses a malformed owner, an unknown method, price or kind, and an order outside 6-63 letters" testFormats
@@ -430,7 +434,7 @@ testNamesConfig node =
       nRecordEditsPerYear = 3,
       nMinPriceCentsPerYear = minPriceCentsPerYear,
       nCommunity = M.empty,
-      nUnavailable = [],
+      nUnavailableFile = Nothing,
       nChain = fakeChainConfig node
     }
 
@@ -466,8 +470,9 @@ withOrdersOn cOpenStore via action = cOpenStore >>= \cStore -> withFakeEthNode $
   createDirectoryIfMissing True "tests/tmp"
   withTempDirectory "tests/tmp" "names-orders" $ \root -> do
     staticDir <- prepareStaticDir root
+    Right unavailable <- readUnavailable (Just $ root <> "/unavailable.txt")
     let cfg = (testServiceConfig staticDir True) {btcpay = Just testBTCPayConfig}
-        cOrders = OrdersEnv {oeStore = cStore, oeConfig = testNamesConfig cNode, oeContracts = ct, oeTurns = turns, oePhases = phases, oeNow = readIORef cClock, oeReport = \_ -> pure ()}
+        cOrders = OrdersEnv {oeStore = cStore, oeConfig = testNamesConfig cNode, oeContracts = ct, oeTurns = turns, oePhases = phases, oeNow = readIORef cClock, oeReport = \_ -> pure (), oeUnavailable = unavailable}
         crypto = via $ freshRefs (stubProvider cStub)
         card = via $ freshRefs (stubProvider cStub) {pProvider = PPStripe}
     waiters <- newWaiters
@@ -813,19 +818,50 @@ testNameTaken = withOrders $ \ctx@Ctx {cNode = node} -> do
     cResolverOf = cResolver . fakeChainConfig
 
 testNameUnavailable :: IO ()
-testNameUnavailable = withOrders $ \ctx0 -> withSettings (\c -> c {nUnavailable = ["bakery"]}) ctx0 $ \ctx@Ctx {cNode = node} -> do
-  forM_ ["alic-bakery", "ali3bak3ery", "alicebakers"] $ \label -> do
+testNameUnavailable = withOrders $ \ctx@Ctx {cNode = node, cOrders = OrdersEnv {oeUnavailable}} -> do
+  forM_ ["alic-bakery", "alicebak3ry", "i-s-i-s", "alicebakers", "crisisplans"] $ \label -> do
     let LabelHash h = labelHash label
     answerCall node (registrarOf node) (selector "nameExpires(uint256)" <> h) $ Returns $ uint256 (0 :: Int)
     answerCall node fakeNamePolicy (selector "reservedNames(bytes32)" <> h) $ Returns $ uint256 (0 :: Int)
+  addUnavailable oeUnavailable "Bakery" `shouldReturn` Right "bakery"
+  addUnavailable oeUnavailable "ISIS" `shouldReturn` Right "isis"
   (code, issued) <- issueCode ctx 8 2 id
   placeOrder ctx aliceOrder `shouldReturn` refusedWith 409 "name_taken"
   register ctx code aliceOrder `shouldReturn` refusedWith 409 "name_taken"
-  forM_ (zip [2 ..] ["alic-bakery", "ali3bak3ery"]) $ \(n, label) ->
-    placeOrder ctx aliceOrder {oLabel = label, oSecret = secretOf n} `shouldReturn` refusedWith 409 "name_taken"
+  forM_ (zip [2 ..] [("alic-bakery", alicePrice), ("alicebak3ry", alicePrice), ("i-s-i-s", 20000)]) $ \(n, (label, price)) ->
+    placeOrder ctx aliceOrder {oLabel = label, oPrice = price, oSecret = secretOf n} `shouldReturn` refusedWith 409 "name_taken"
   stubCalls (cStub ctx) `shouldReturn` []
   pcReservedBy <$> readCode ctx issued `shouldReturn` Nothing
-  void $ placed ctx aliceOrder {oLabel = "alicebakers", oSecret = secretOf 4}
+  forM_ (zip [5 ..] ["alicebakers", "crisisplans"]) $ \(n, label) -> void $ placed ctx aliceOrder {oLabel = label, oSecret = secretOf n}
+  removeUnavailable oeUnavailable "bakery" `shouldReturn` Right "bakery"
+  void $ placed ctx aliceOrder {oSecret = secretOf 7}
+
+testNormalizedNames :: IO ()
+testNormalizedNames = do
+  map normalizedName ["Ali-ce", "h4m4s", "1s1s", "b0k0-h4r4m", "x2y6z7", "8a9e"] `shouldBe` ["alice", "hamas", "lsls", "bokoharam", "xzybzt", "bage"]
+  map (matchesEntry "crisisplans") ["isis", "crisis", "plans"] `shouldBe` [False, True, True]
+  map (`matchesEntry` "isis") ["isis", "isisa"] `shouldBe` [True, False]
+
+testUnavailableFile :: IO ()
+testUnavailableFile = do
+  createDirectoryIfMissing True "tests/tmp"
+  withTempDirectory "tests/tmp" "unavailable" $ \dir -> do
+    let path = dir <> "/unavailable.txt"
+    Right u <- readUnavailable (Just path)
+    addUnavailable u "Hamas" `shouldReturn` Right "hamas"
+    addUnavailable u "Boko-Haram" `shouldReturn` Right "bokoharam"
+    addUnavailable u "h4m4s" `shouldReturn` Left (LRListed "hamas")
+    addUnavailable u "--" `shouldReturn` Left LRNoLetters
+    removeUnavailable u "HAMAS" `shouldReturn` Right "hamas"
+    removeUnavailable u "hamas" `shouldReturn` Left (LRNotListed "hamas")
+    T.lines <$> TIO.readFile path `shouldReturn` ["bokoharam"]
+    Right again <- readUnavailable (Just path)
+    unavailableName again "boko-haram1" `shouldReturn` True
+    unavailableName again "hamas1" `shouldReturn` False
+    TIO.writeFile path "bokoharam\n\n--\n"
+    either id (const "read") <$> readUnavailable (Just path) `shouldReturn` "names.unavailable_file: line 3 has no letters or digits"
+  Right none <- readUnavailable Nothing
+  addUnavailable none "hamas" `shouldReturn` Left LRNoFile
 
 testNameCheckUnavailable :: IO ()
 testNameCheckUnavailable = withOrders $ \ctx@Ctx {cNode = node} -> do

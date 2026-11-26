@@ -1244,11 +1244,27 @@ cost more on chain. To lower prices on chain below the floor, lower the setting 
 
 ### Unavailable names
 
-`[names] unavailable` (none by default, read at startup) is a list of words of letters a to z, separated
-by commas. An order whose name's letters, without its digits and hyphens, contain one of them answers
-`409 name_taken` before any payment: a paid order, a code order and a selection of a name after a reset.
-A search answers such a name as any other, as it receives only the name's hash. An error about the
-setting quotes none of its words.
+`[names] unavailable_file` (none by default) is a file of entries, one per line, which the service reads
+at startup and keeps in memory. A name and an entry are compared in one form: lower case, letters and
+digits only, each digit read as a letter (0 o, 1 l, 2 z, 3 e, 4 a, 5 s, 6 b, 7 t, 8 b, 9 g). An entry of 5
+letters or more matches a name that contains it, a shorter one only a name equal to it. An order of a
+matching name answers `409 name_taken` before any payment: a paid order, a code order and a selection of
+a name after a reset. A search answers such a name as any other, as it receives only the name's hash. A
+line without letters or digits stops the start, naming its line number and not its text.
+
+The group's admins and owners change the list while the service runs, and the console's operator with
+two slashes:
+
+```
+/unavailable <name>
+/available <name>
+```
+
+`/unavailable` appends the entry to the file and answers the sold names that match it: each name, its
+order, its phase and its `disputeUntil`, for an unregister within the dispute period. `/available`
+rewrites the file without the entry. Both refuse an entry without letters or digits, and answer that
+nothing changed while `unavailable_file` is not set. Without `[names]`, both answer that names are not
+enabled.
 
 ### Dispute days
 

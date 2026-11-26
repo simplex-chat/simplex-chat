@@ -193,7 +193,7 @@ data NamesConfig = NamesConfig
     nMinPriceCentsPerYear :: Int,
     -- | What each community name is for, keyed by the label hash, as search receives a name.
     nCommunity :: Map LabelHash Text,
-    nUnavailable :: [Text],
+    nUnavailableFile :: Maybe FilePath,
     nChain :: ChainConfig
   }
   deriving (Eq)
@@ -411,7 +411,7 @@ knownSettings =
     ("dev", ["accept_unverified_store_receipts", "check_store_during_coverage", "credit_test_purchases"]),
     ("issuer", ["index", "private_key", "dev_keys"]),
     ("log", ["level"]),
-    ("names", ["tld", "years", "term_start", "term_slack_seconds", "reveal_margin_seconds", "max_dry_run_failures", "max_sent_failures", "codes_only", "record_edits_per_year", "min_price_cents_per_year", "unavailable"]),
+    ("names", ["tld", "years", "term_start", "term_slack_seconds", "reveal_margin_seconds", "max_dry_run_failures", "max_sent_failures", "codes_only", "record_edits_per_year", "min_price_cents_per_year", "unavailable_file"]),
     ("chain", ["rpc_url", "chain_id", "controller", "sponsor", "base_registrar", "resolver", "service_key", "confirmations", "gas_limit_cap", "max_fee_per_gas"])
   ]
 
@@ -659,9 +659,9 @@ parseConfig now ini = do
           nRecordEditsPerYear <- num "names" "record_edits_per_year" minRecordEditsPerYear maxRecordEditsPerYear defaultRecordEditsPerYear
           nMinPriceCentsPerYear <- num "names" "min_price_cents_per_year" 1 maxBound defaultMinPriceCentsPerYear
           nCommunity <- communityList nTLD
-          nUnavailable <- unavailableWords
+          let nUnavailableFile = T.unpack <$> present "names" "unavailable_file"
           nChain <- chainSection
-          pure (Just NamesConfig {nTLD, nYears, nTermStart, nTermSlackSeconds, nRevealMarginSeconds, nMaxDryRunFailures, nMaxSentFailures, nCodesOnly, nRecordEditsPerYear, nMinPriceCentsPerYear, nCommunity, nUnavailable, nChain})
+          pure (Just NamesConfig {nTLD, nYears, nTermStart, nTermSlackSeconds, nRevealMarginSeconds, nMaxDryRunFailures, nMaxSentFailures, nCodesOnly, nRecordEditsPerYear, nMinPriceCentsPerYear, nCommunity, nUnavailableFile, nChain})
     tldSetting =
       required "names" "tld" >>= \case
         "simplex" -> Right TLDSimplex
@@ -670,11 +670,6 @@ parseConfig now ini = do
     termStart =
       maybe (Left ("names.term_start must be an ISO 8601 UTC time such as " <> defaultTermStart)) Right $
         iso8601ParseM (maybe defaultTermStart T.unpack (present "names" "term_start"))
-    unavailableWords = case map T.strip . T.splitOn "," <$> present "names" "unavailable" of
-      Nothing -> Right []
-      Just ws
-        | all (\w -> not (T.null w) && T.all isAsciiLower w) ws -> Right ws
-        | otherwise -> Left "names.unavailable must be words of letters a to z, separated by commas"
     communityList tld = M.fromList <$> mapM (communityEntry tld) (maybe [] M.keys (M.lookup "community" ini))
     communityEntry tld label = do
       let k = "community." <> T.unpack label

@@ -44,7 +44,7 @@ where
 import StoreService.Catalog (StoreProduct (..), defaultCatalog, storeProduct)
 import StoreService.Config (AppleStoreConfig (..), BadgeIssuerKey (..), ChainConfig (..), GroupConfig (..), ListenerConfig (..), NamesConfig (..), PlayStoreConfig (..), ServiceConfig (..), localChainId, readServiceConfig)
 import StoreService.Group (GroupEvent, ensureManagedGroup, fmtTime, groupEvent, hasTracker, joinerAcceptance, refreshTracker, reportToGroup, runCmd, runGroupLane)
-import StoreService.Group.Command (MoneyCmd (..), consoleCmd, spelledCmd)
+import StoreService.Group.Command (MoneyCmd (..), NameListCmd (..), consoleCmd, spelledCmd)
 import StoreService.Metrics (MetricsEnv (..), runMetrics)
 import StoreService.Names.Balances (RefundRecord (..), RefundRefusal (..), recordRefund)
 import StoreService.Names.Chain (ChainClient, newChainClient, nodeChainId)
@@ -53,9 +53,11 @@ import StoreService.Names.Env (NamesEnv (..), newNamesEnv)
 import StoreService.Names.Orders (ordersEnv)
 import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Records (runRecordEdits)
+import StoreService.Names.Registration (tldLabel)
 import StoreService.Names.Sender (checkPendingSignatures, runSender)
-import StoreService.Names.Store (Balance (..), BalanceLink (..), CmdSource (..), LateCredit (..), OrderPayment (..), balanceByReference, balanceLink, creditCents)
+import StoreService.Names.Store (Balance (..), BalanceLink (..), CmdSource (..), LateCredit (..), OrderPayment (..), balanceByReference, balanceLink, creditCents, labelledOrders)
 import StoreService.Names.Turns (Turns, newTurns)
+import StoreService.Names.Unavailable (ListRefusal (..), Unavailable, addUnavailable, matchesEntry, normalizedName, readUnavailable, removeUnavailable)
 import StoreService.Names.View (addressText)
 import StoreService.Names.Worker (CloseRefusal (..), Closed (..), closeRegistration, newWorker, runEndedSweep, runMonthEnds, runUnregisteredAlerts, runWorkers)
 import StoreService.Options
@@ -282,6 +284,7 @@ storeService opts serviceCfg baseCfg env = do
   turns <- newTurns
   startedCC <- newEmptyTMVarIO
   consoleChain <- mapM newConsoleChain (serviceCfg >>= names)
+  unavailable <- readUnavailable (nUnavailableFile =<< names =<< serviceCfg) >>= orExit
   requestEnv <- configureStoreVerifier serviceCfg env
   let groupCfg = serviceCfg >>= \ServiceConfig {group} -> group
       trackerQ_ = groupEventQ env <$ groupCfg
@@ -294,29 +297,29 @@ storeService opts serviceCfg baseCfg env = do
               | isJust groupCfg -> forM_ (groupEvent ev) $ atomically . writeTQueue (groupEventQ env)
             _ -> pure ()
       startLanes cc = do
-        lanes <- maybe (pure []) (serviceLanes waiters turns (reportToGroup trackerQ_) cc) serviceCfg
+        lanes <- maybe (pure []) (serviceLanes waiters turns (reportToGroup trackerQ_) unavailable cc) serviceCfg
         -- The group is resolved before the other lanes start, so a failed lookup exits at once rather than waiting for them to end.
-        groupLane_ <- forM groupCfg $ \gc -> runGroupLane cc turns (gNameCodesPerDay gc <$ consoleChain) (runMoneyCmd FromGroup turns consoleChain cc) (groupEventQ env) <$> ensureManagedGroup cc gc
+        groupLane_ <- forM groupCfg $ \gc -> runGroupLane cc turns (gNameCodesPerDay gc <$ consoleChain) (runMoneyCmd FromGroup turns consoleChain cc) (runNameListCmd consoleChain unavailable cc) (groupEventQ env) <$> ensureManagedGroup cc gc
         raceAny_ $ processQueuedRequests key trackerQ_ requestEnv : maybeToList groupLane_ <> lanes
       chatHooks =
         defaultChatHooks
           { preStartHook = Just $ badgePreStartHook opts (serviceCfg >>= names) startedCC,
             postStartHook = Just $ badgePostStartHook opts env,
-            preCmdHook = Just $ badgeCmdHook turns consoleChain,
+            preCmdHook = Just $ badgeCmdHook turns consoleChain unavailable,
             acceptMember = Just $ joinerAcceptance startedCC
           }
   -- The reader runs from the start and must not block, since outputQ carries every chat event and a full queue stalls the core.
   simplexChatCore cfg {chatHooks} (mkChatOpts opts) $ \_ cc -> raceAny_ [readEvents cc, startLanes cc]
   where
-    serviceLanes :: Waiters -> Turns -> (T.Text -> IO ()) -> ChatController -> ServiceConfig -> IO [IO ()]
-    serviceLanes ws turns report cc@ChatController {chatStore} sc = do
+    serviceLanes :: Waiters -> Turns -> (T.Text -> IO ()) -> Unavailable -> ChatController -> ServiceConfig -> IO [IO ()]
+    serviceLanes ws turns report unavailable cc@ChatController {chatStore} sc = do
       -- Seed before the listener accepts anything, since every checkout is priced from these.
       seedServiceCatalog chatStore
       btc <- maybe (pure []) (fmap (: []) . btcpayProvider) (btcpay sc)
       str <- maybe (pure []) (fmap (: []) . stripeProvider) (stripe sc)
       let providers = btc <> str
       hints <- newReadHints
-      namesEnv <- forM (names sc) (startNames cc turns ws providers report)
+      namesEnv <- forM (names sc) (startNames cc turns ws providers report unavailable)
       webEnv <- newWebEnv chatStore sc ws hints providers namesEnv
       pollerEnv <- newPollerEnv chatStore ws (nePhases <$> namesEnv) hints providers (poll sc)
       monthPassAt <- newTVarIO =<< getCurrentTime
@@ -326,13 +329,13 @@ storeService opts serviceCfg baseCfg env = do
           metricsLane = [runMetrics (listener sc) port metricsEnv | Just port <- [lMetricsPort $ listener sc]]
       pure $ [runWebListeners webEnv, runPoller pollerEnv] <> nameLanes <> metricsLane
 
-startNames :: ChatController -> Turns -> Waiters -> [Provider] -> (T.Text -> IO ()) -> NamesConfig -> IO NamesEnv
-startNames cc@ChatController {chatStore} turns waiters providers report nc@NamesConfig {nTLD, nCodesOnly, nMinPriceCentsPerYear, nChain = ChainConfig {cChainId}} =
+startNames :: ChatController -> Turns -> Waiters -> [Provider] -> (T.Text -> IO ()) -> Unavailable -> NamesConfig -> IO NamesEnv
+startNames cc@ChatController {chatStore} turns waiters providers report unavailable nc@NamesConfig {nTLD, nCodesOnly, nMinPriceCentsPerYear, nChain = ChainConfig {cChainId}} =
   readTVarIO (currentUser cc) >>= \case
     Nothing -> putStrLn "No current user" >> exitFailure
     Just user -> do
       logNote $ "names: on, TLD " <> safeDecodeUtf8 (strEncode nTLD) <> ", chain " <> tshow cChainId <> ", price floor " <> tshow nMinPriceCentsPerYear <> " cents a year" <> codesOnlyNote
-      ne@NamesEnv {neContracts} <- newNamesEnv cc user nc chatStore turns waiters providers report
+      ne@NamesEnv {neContracts} <- newNamesEnv cc user nc chatStore turns waiters providers report unavailable
       logNamePolicy nc neContracts
       pure ne
   where
@@ -384,6 +387,7 @@ storeServiceCLI opts serviceCfg = do
   turns <- newTurns
   startedCC <- newEmptyTMVarIO
   consoleChain <- mapM newConsoleChain (serviceCfg >>= names)
+  unavailable <- readUnavailable (nUnavailableFile =<< names =<< serviceCfg) >>= orExit
   let eventHook _cc = \case
         Right (CEvtServiceRequest u reqId sigKey reqData) -> do
           atomically $ writeTQueue (serviceRequestQ env) (u, reqId, sigKey, reqData)
@@ -393,7 +397,7 @@ storeServiceCLI opts serviceCfg = do
         defaultChatHooks
           { preStartHook = Just $ badgePreStartHook opts Nothing startedCC,
             postStartHook = Just $ badgePostStartHook opts env,
-            preCmdHook = Just $ badgeCmdHook turns consoleChain,
+            preCmdHook = Just $ badgeCmdHook turns consoleChain unavailable,
             eventHook = Just eventHook,
             acceptMember = Just $ joinerAcceptance startedCC
           }
@@ -408,19 +412,48 @@ shownServiceRequest reqData = case KM.lookup "request" reqData of
   Just (J.Object cmd) | Just t <- KM.lookup "type" cmd -> KM.singleton "request" $ J.object ["type" J..= t]
   _ -> KM.empty
 
-badgeCmdHook :: Turns -> Maybe (SimplexTLD, Int, ChainClient) -> ChatController -> ChatCommand -> IO (Either (Either ChatError ChatResponse) ChatCommand)
-badgeCmdHook turns chain_ cc = \case
-  CustomChatCommand cmd -> Left <$> runBadgeCmd turns chain_ cc cmd
+badgeCmdHook :: Turns -> Maybe (SimplexTLD, Int, ChainClient) -> Unavailable -> ChatController -> ChatCommand -> IO (Either (Either ChatError ChatResponse) ChatCommand)
+badgeCmdHook turns chain_ unavailable cc = \case
+  CustomChatCommand cmd -> Left <$> runBadgeCmd turns chain_ unavailable cc cmd
   cmd -> pure $ Right cmd
 
-runBadgeCmd :: Turns -> Maybe (SimplexTLD, Int, ChainClient) -> ChatController -> ByteString -> IO (Either ChatError ChatResponse)
-runBadgeCmd turns chain_ cc cmd = case consoleCmd (safeDecodeUtf8 cmd) of
-  Right c -> textReply <$> runCmd FromConsole cc turns (isJust chain_) (runMoneyCmd FromConsole turns chain_ cc) c
+runBadgeCmd :: Turns -> Maybe (SimplexTLD, Int, ChainClient) -> Unavailable -> ChatController -> ByteString -> IO (Either ChatError ChatResponse)
+runBadgeCmd turns chain_ unavailable cc cmd = case consoleCmd (safeDecodeUtf8 cmd) of
+  Right c -> textReply <$> runCmd FromConsole cc turns (isJust chain_) (runMoneyCmd FromConsole turns chain_ cc) (runNameListCmd chain_ unavailable cc) c
   Left usage -> pure $ chatCmdError $ T.unpack usage
   where
     textReply = \case
       Right response -> Right CRCustomChatResponse {user_ = Nothing, response}
       Left e -> chatCmdError (T.unpack e)
+
+runNameListCmd :: Maybe (SimplexTLD, Int, ChainClient) -> Unavailable -> ChatController -> NameListCmd -> IO (Either T.Text T.Text)
+runNameListCmd chain_ unavailable cc cmd = case chain_ of
+  Nothing -> pure $ Left "Names are not enabled on this service."
+  Just (tld, _, _) -> case cmd of
+    NLUnavailable typed ->
+      addUnavailable unavailable typed >>= \case
+        Right entry -> do
+          logNote $ "names: " <> entry <> " made unavailable"
+          sold <- withDB' "labelledOrders" cc labelledOrders
+          pure $ Right $ "Added " <> entry <> ". Sold names containing it: " <> soldText tld entry sold <> "."
+        Left refusal -> pure $ Left $ refusalText refusal
+    NLAvailable typed ->
+      removeUnavailable unavailable typed >>= \case
+        Right entry -> Right ("Removed " <> entry <> ".") <$ logNote ("names: " <> entry <> " made available again")
+        Left refusal -> pure $ Left $ refusalText refusal
+  where
+    soldText tld entry = \case
+      Right orders -> case [o | o@(_, label, _, _) <- orders, matchesEntry (normalizedName label) entry] of
+        [] -> "none"
+        matched -> T.intercalate "; " $ map (orderText tld) matched
+      Left _ -> "they could not be read"
+    orderText tld (RegistrationId rid, label, phase, disputeUntil) =
+      label <> "." <> tldLabel tld <> ", order " <> rid <> ", " <> textEncode phase <> foldMap ((", disputeUntil " <>) . tshow) disputeUntil
+    refusalText = \case
+      LRNoFile -> "Nothing changed: [names] unavailable_file is not set."
+      LRNoLetters -> "Nothing changed: the name has no letters or digits."
+      LRListed entry -> entry <> " is already listed."
+      LRNotListed entry -> entry <> " is not listed."
 
 runMoneyCmd :: CmdSource -> Turns -> Maybe (SimplexTLD, Int, ChainClient) -> ChatController -> MoneyCmd -> IO (Either T.Text T.Text)
 runMoneyCmd source turns chain_ cc = \case

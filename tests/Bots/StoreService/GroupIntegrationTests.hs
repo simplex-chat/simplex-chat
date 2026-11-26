@@ -1817,7 +1817,9 @@ expectedCommands =
     CBCCommand "revoke" "Revoke a code" (Just "<code>"),
     CBCCommand "balance" "Show an order's balance" (Just "<reference>"),
     CBCCommand "record_refund" "Record a balance refund" (Just "<reference> <cents>"),
-    CBCCommand "close" "Close a failed order" (Just "<reference>")
+    CBCCommand "close" "Close a failed order" (Just "<reference>"),
+    CBCCommand "unavailable" "Make a name unavailable" (Just "<name>"),
+    CBCCommand "available" "Make a name available again" (Just "<name>")
   ]
 
 advertisedCommands :: HasCallStack => ChatController -> Int64 -> IO (Maybe [ChatBotCommand])

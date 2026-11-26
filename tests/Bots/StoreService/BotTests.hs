@@ -1911,7 +1911,7 @@ testRevokeRejectsTrailingInput ps =
 
 -- The text is spelled out rather than taken from the service, so a change there fails here.
 badgeCmdUsage :: Text
-badgeCmdUsage = "Usage:\n//issue <name <length>|supporter|legend|investor> [years|months <N>] [paid|unpaid|free]\n//revoke <code>\n//balance <reference>\n//record_refund <reference> <cents>\n//close <reference>"
+badgeCmdUsage = "Usage:\n//issue <name <length>|supporter|legend|investor> [years|months <N>] [paid|unpaid|free]\n//revoke <code>\n//balance <reference>\n//record_refund <reference> <cents>\n//close <reference>\n//unavailable <name>\n//available <name>"
 
 consoleIssueUsage :: Text
 consoleIssueUsage = "Usage: //issue <kind> [<length>] [years <Y> | months <M>] [paid|unpaid|free]\nname <length>: length 6–63, years 2–10, paid|free\nsupporter, legend, investor: months 1–12, paid|unpaid|free\ne.g. //issue name 6 years 5 · //issue supporter months 12"
