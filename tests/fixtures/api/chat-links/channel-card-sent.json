@@ -8,7 +8,7 @@
               "activeConn": {
                 "agentConnId": "agentConnId",
                 "authErrCounter": 0,
-                "connChatVersion": 22,
+                "connChatVersion": 23,
                 "connId": 3,
                 "connLevel": 0,
                 "connStatus": {
@@ -20,7 +20,7 @@
                 "entityId": 2,
                 "localAlias": "",
                 "peerChatVRange": {
-                  "maxVersion": 22,
+                  "maxVersion": 23,
                   "minVersion": 9
                 },
                 "pqEncryption": true,

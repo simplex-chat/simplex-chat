@@ -88,12 +88,12 @@
                 "localDisplayName": "cath",
                 "memberCategory": "user",
                 "memberChatVRange": {
-                  "maxVersion": 22,
+                  "maxVersion": 23,
                   "minVersion": 9
                 },
                 "memberContactId": 1,
                 "memberContactProfileId": 1,
-                "memberId": "memberId",
+                "memberId": "memberId0",
                 "memberProfile": {
                   "displayName": "cath",
                   "fullName": "",
@@ -154,11 +154,11 @@
                   "localDisplayName": "bob",
                   "memberCategory": "pre",
                   "memberChatVRange": {
-                    "maxVersion": 22,
+                    "maxVersion": 23,
                     "minVersion": 9
                   },
                   "memberContactProfileId": 3,
-                  "memberId": "memberId",
+                  "memberId": "memberId1",
                   "memberProfile": {
                     "displayName": "bob",
                     "fullName": "",
@@ -233,12 +233,12 @@
                   "localDisplayName": "alice",
                   "memberCategory": "host",
                   "memberChatVRange": {
-                    "maxVersion": 22,
+                    "maxVersion": 23,
                     "minVersion": 9
                   },
                   "memberContactId": 2,
                   "memberContactProfileId": 2,
-                  "memberId": "memberId",
+                  "memberId": "memberId2",
                   "memberProfile": {
                     "displayName": "alice",
                     "fullName": "",
@@ -332,11 +332,11 @@
                   "localDisplayName": "bob",
                   "memberCategory": "pre",
                   "memberChatVRange": {
-                    "maxVersion": 22,
+                    "maxVersion": 23,
                     "minVersion": 9
                   },
                   "memberContactProfileId": 3,
-                  "memberId": "memberId",
+                  "memberId": "memberId1",
                   "memberProfile": {
                     "displayName": "bob",
                     "fullName": "",
@@ -411,12 +411,12 @@
                   "localDisplayName": "alice",
                   "memberCategory": "host",
                   "memberChatVRange": {
-                    "maxVersion": 22,
+                    "maxVersion": 23,
                     "minVersion": 9
                   },
                   "memberContactId": 2,
                   "memberContactProfileId": 2,
-                  "memberId": "memberId",
+                  "memberId": "memberId2",
                   "memberProfile": {
                     "displayName": "alice",
                     "fullName": "",
@@ -510,11 +510,11 @@
                   "localDisplayName": "bob",
                   "memberCategory": "pre",
                   "memberChatVRange": {
-                    "maxVersion": 22,
+                    "maxVersion": 23,
                     "minVersion": 9
                   },
                   "memberContactProfileId": 3,
-                  "memberId": "memberId",
+                  "memberId": "memberId1",
                   "memberProfile": {
                     "displayName": "bob",
                     "fullName": "",
@@ -578,12 +578,12 @@
                   "localDisplayName": "alice",
                   "memberCategory": "host",
                   "memberChatVRange": {
-                    "maxVersion": 22,
+                    "maxVersion": 23,
                     "minVersion": 9
                   },
                   "memberContactId": 2,
                   "memberContactProfileId": 2,
-                  "memberId": "memberId",
+                  "memberId": "memberId2",
                   "memberProfile": {
                     "displayName": "alice",
                     "fullName": "",
