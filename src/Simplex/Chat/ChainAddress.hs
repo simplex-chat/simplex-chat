@@ -103,19 +103,20 @@ bareSchemeP =
 
 chainUriP :: Parser (ChainAddress, NonEmpty Text)
 chainUriP =
-  A.choice
-    [ uriP "bitcoin" (bip21Keys <> ["lightning", "lno"]) $ bitcoinLink <$> optional (addressP [segwitP "bc", bitcoinBase58P]),
-      uriP "lightning" [] $ lightningLink <$> addressP [invoiceP, (,Nothing) <$$> lnurlP, (,Nothing) <$$> offerP],
-      uriP "ethereum" ["value", "address", "uint256"] ethereumP,
-      uriP "monero" ["tx_amount", "recipient_name", "tx_description"] $ moneroLink <$> addressP [moneroP],
-      uriP "zcash" zip321Keys $ zip321Link "ZEC" zcashAddressP <$> optional zcashAddressP,
-      uriP "litecoin" bip21Keys $ coinLink "LTC" <$> addressP [segwitP "ltc", base58CheckP ["L", "M", "3"] ["\48", "\50", "\5"]],
-      uriP "dogecoin" bip21Keys $ coinLink "DOGE" <$> addressP [dogecoinP],
-      uriP "bitcoincash" bip21Keys $ coinLink "BCH" <$> addressP [cashAddrP],
-      uriP "solana" ["amount", "spl-token", "label", "message", "memo"] $ solanaLink <$> addressP [solanaKeyP],
-      uriP "flux" fluxKeys $ fluxLink <$> optional fluxAddressP,
-      uriP "zel" fluxKeys $ zelLink <$> optional fluxAddressP
-    ]
+  lookAhead (A.takeWhile1 (A.inClass "a-zA-Z") *> A.char ':')
+    *> A.choice
+      [ uriP "bitcoin" (bip21Keys <> ["lightning", "lno"]) $ bitcoinLink <$> optional (addressP [segwitP "bc", bitcoinBase58P]),
+        uriP "lightning" [] $ lightningLink <$> addressP [invoiceP, (,Nothing) <$$> lnurlP, (,Nothing) <$$> offerP],
+        uriP "ethereum" ["value", "address", "uint256"] ethereumP,
+        uriP "monero" ["tx_amount", "recipient_name", "tx_description"] $ moneroLink <$> addressP [moneroP],
+        uriP "zcash" zip321Keys $ zip321Link "ZEC" zcashAddressP <$> optional zcashAddressP,
+        uriP "litecoin" bip21Keys $ coinLink "LTC" <$> addressP [segwitP "ltc", base58CheckP ["L", "M", "3"] ["\48", "\50", "\5"]],
+        uriP "dogecoin" bip21Keys $ coinLink "DOGE" <$> addressP [dogecoinP],
+        uriP "bitcoincash" bip21Keys $ coinLink "BCH" <$> addressP [cashAddrP],
+        uriP "solana" ["amount", "spl-token", "label", "message", "memo"] $ solanaLink <$> addressP [solanaKeyP],
+        uriP "flux" fluxKeys $ fluxLink <$> optional fluxAddressP,
+        uriP "zel" fluxKeys $ zelLink <$> optional fluxAddressP
+      ]
   where
     bip21Keys = ["amount", "label", "message"]
     zip321Keys = bip21Keys <> ["address", "memo"]
