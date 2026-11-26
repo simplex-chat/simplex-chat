@@ -14,6 +14,7 @@ import {chatErrorOf, errorText, log, logError, oneLine} from "./log"
 import {BoardSession, MainGroup, SessionGroups, createMainGroup, findMainGroup} from "./main-group"
 import {Changes, ChatItemsWatch, ReplyTo, ToolCall, duration, getChat, isLive, nextChange, quoteLine, storedName, toReplyTo, validName} from "./messages"
 import {AgentEvent, AskRequest, AttachLine, Decision, Failure, LimitWindow, Limits, OwnerState, PermissionRequest, Prompt, ResetReply, Step, TaskEnd, TextBatch, TurnRequest, Waiting, WorkflowRun} from "./protocol"
+import {Schedules} from "./schedule"
 import {waitForCancelledCards} from "./serve"
 import {Machine, limitParts, machineParts, machineState} from "./status-line"
 import {AgentTools, ToolName, featureOff, fitsMessage, maxMessageLength, ownerOf, refusedFeature, sessionKey} from "./tools"
@@ -167,6 +168,7 @@ export class Session {
   readonly actions: Actions
   readonly tools: AgentTools
   readonly control: Control
+  readonly schedules: Schedules
   readonly number: number
   private name: string
   private readonly pushed: {text: string; item: T.ChatItem; at: number; quoted?: boolean}[] = []
@@ -233,6 +235,7 @@ export class Session {
       outcome: action => this.control.outcome(action),
       perform: (action, signal) => this.tools.perform(action, signal),
     }, hubTexts)
+    this.schedules = new Schedules(memberId => this.control.isCurrentApprover(memberId))
     const agent = {
       chat,
       user,
@@ -247,15 +250,16 @@ export class Session {
       replyChat: `#${group.groupId}`,
       setMode: (next: Mode) => this.setMode(next),
       pending: (connId: number) => this.savePending(connId),
+      schedules: this.schedules,
     }
     this.tools = new AgentTools(agent, () => this.actions.mode, number)
     const session = {
       approves: (member: T.GroupMember) => this.approves(member),
-      ownerOf: (n: number) => hub.sessionId(n),
+      ownerOf: (n: number) => hub.numbered(n),
       isUser: (member: T.GroupMember) => this.isUser(member),
       toolsChanged: () => this.sendTools(),
     }
-    this.control = new Control(chat, group, {displayName: group.groupProfile.displayName, session, registerHint: "", qrCode: "small"}, this.actions, this.tools)
+    this.control = new Control(chat, group, {displayName: group.groupProfile.displayName, session, registerHint: "", qrCode: "small"}, this.actions, this.tools, this.schedules)
   }
 
   get displayName(): string {
@@ -1350,14 +1354,15 @@ export class Hub implements SessionGroups {
     const session = new Session(this, id, stored, group, sessionDataOf(group.customData) ?? {session: stored.number})
     this.sessions.set(stored.number, session)
     await session.control.load()
+    session.schedules.start()
     if (known === undefined) {
       for (const owner of this.main.owners()) await session.invite(owner, T.GroupMemberRole.Owner).catch(error => logError(`invitation to session ${stored.number}`, error))
     }
     return session
   }
 
-  sessionId(number: number): string | undefined {
-    return this.sessions.get(number)?.id
+  numbered(number: number): Session | undefined {
+    return this.sessions.get(number)
   }
 
   // spec: spec/api.md#list-of-sessions
@@ -1419,6 +1424,7 @@ export class Hub implements SessionGroups {
     this.stopped = true
     clearInterval(this.listTimer)
     const sessions = [...this.sessions.values()]
+    for (const {schedules} of sessions) schedules.stop()
     const stopped = await Promise.all(sessions.map(async ({actions}) => ({lost: actions.lost, cancelled: await actions.stop()})))
     await this.controlEvents
     await this.listing
