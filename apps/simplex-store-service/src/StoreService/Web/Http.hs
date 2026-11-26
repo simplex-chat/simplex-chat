@@ -320,7 +320,7 @@ retryAfterError st code seconds =
   responseLBS
     st
     (("Retry-After", B.pack (show seconds)) : apiHeaders)
-    (J.encode (J.object ["type" .= code]))
+    (J.encode (J.object ["type" .= code, "retryAfter" .= seconds]))
 
 methodNotAllowed :: Method -> Response
 methodNotAllowed allow = responseLBS status405 (("Allow", allow) : apiHeaders) (J.encode (J.object ["type" .= ("method_not_allowed" :: Text)]))

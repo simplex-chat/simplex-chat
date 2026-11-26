@@ -215,7 +215,8 @@ CREATE TABLE groups(
   group_domain_verified INTEGER,
   stored_roster_version INTEGER,
   applied_complete_roster_version INTEGER,
-  relay_request_public_group_id BLOB, -- received
+  relay_request_public_group_id BLOB,
+  silently_removed INTEGER NOT NULL DEFAULT 0, -- received
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -1021,6 +1022,13 @@ CREATE TABLE badge_store_receipts(
   hold_kind TEXT NOT NULL DEFAULT 'purchase',
   UNIQUE(provider, transaction_ref)
 ) STRICT;
+CREATE TABLE link_notices(
+  link_notice_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  link_hash BLOB NOT NULL,
+  expires_at TEXT,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+) STRICT;
 CREATE INDEX contact_profiles_index ON contact_profiles(
   display_name,
   full_name
@@ -1591,6 +1599,7 @@ CREATE INDEX idx_badge_store_receipts_user ON badge_store_receipts(user_id);
 CREATE UNIQUE INDEX idx_badge_purchases_store_receipt ON badge_purchases(
   badge_store_receipt_id
 );
+CREATE UNIQUE INDEX idx_link_notices_link_hash ON link_notices(link_hash);
 CREATE TRIGGER on_group_members_insert_update_summary
 AFTER INSERT ON group_members
 FOR EACH ROW

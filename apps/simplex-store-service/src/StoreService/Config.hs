@@ -24,6 +24,7 @@ module StoreService.Config
     providerCheckoutTimeoutMicros,
     defaultLogLevel,
     localChainId,
+    maxNameYears,
     isLoopbackHost,
     boundedDecimal,
     readServiceConfig,
@@ -52,7 +53,7 @@ import Data.Maybe (fromMaybe, isJust)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeLatin1, decodeUtf8', encodeUtf8)
-import Data.Time.Clock (UTCTime)
+import Data.Time.Clock (UTCTime, addUTCTime, getCurrentTime)
 import Data.Time.Format.ISO8601 (iso8601ParseM)
 import Data.Word (Word64)
 import qualified Network.HTTP.Client as HTTP
@@ -308,6 +309,9 @@ defaultMaxFeePerGas = 5_000_000_000
 defaultTermStart :: String
 defaultTermStart = "2027-01-01T00:00:00Z"
 
+maxNameYears :: Int
+maxNameYears = 10
+
 -- | The builds' paths in the Docker image; a run outside it sets both.
 defaultBadgesStaticDir, defaultNamesStaticDir :: FilePath
 defaultBadgesStaticDir = "/srv/badges"
@@ -364,9 +368,10 @@ readServiceConfig path =
     readText text = case iniSections text of
       Left e -> pure (Left e)
       Right written -> do
+        now <- getCurrentTime
         let (sales, ignored) = partition salesKey (unknownKeys written)
             cfg
-              | null sales = parseConfig $ M.fromList $ map (fmap M.fromList) written
+              | null sales = parseConfig now $ M.fromList $ map (fmap M.fromList) written
               | otherwise = Left ("nothing reads " <> T.unpack (T.intercalate ", " sales) <> ", and a mistyped [names] or [chain] setting would change what is sold: correct or remove it")
         mapM_ (\k -> logWarn (T.pack path <> ": nothing reads " <> k <> ", so it was ignored")) ignored
         forM_ (eitherToMaybe cfg >>= names) $ \NamesConfig {nCommunity} ->
@@ -427,8 +432,8 @@ unknownKeys written = beforeAnySection <> unknownSections <> settings
           key `notElem` known
       ]
 
-parseConfig :: Map Text (Map Text Text) -> Either String ServiceConfig
-parseConfig ini = do
+parseConfig :: UTCTime -> Map Text (Map Text Text) -> Either String ServiceConfig
+parseConfig now ini = do
   case [e | (k, e) <- retiredListenerKeys, isJust (look "listener" k)] of
     [] -> pure ()
     es -> Left (intercalate "; " es)
@@ -641,9 +646,11 @@ parseConfig ini = do
       | not (hasSection "chain") = Left "[names] needs a [chain] section"
       | otherwise = do
           nTLD <- tldSetting
-          nYears <- num "names" "years" minNameYears maxBound minNameYears
+          nYears <- num "names" "years" minNameYears maxNameYears minNameYears
           nTermStart <- termStart
           nTermSlackSeconds <- num "names" "term_slack_seconds" 0 maxBound 3600
+          when (addUTCTime (fromIntegral nTermSlackSeconds) nTermStart > addUTCTime (365 * 86400) now) $
+            Left "names.term_start, with names.term_slack_seconds, must be at most 365 days ahead, as the controller registers a name for at most 4015 days, a community name for 1095"
           nRevealMarginSeconds <- num "names" "reveal_margin_seconds" 0 maxBound 900
           nMaxDryRunFailures <- num "names" "max_dry_run_failures" 1 maxBound 5
           nMaxSentFailures <- num "names" "max_sent_failures" 1 maxBound 5

@@ -14,12 +14,15 @@ import qualified Control.Exception as E
 import Control.Logger.Simple (setLogLevel)
 import Control.Monad (unless)
 import qualified Data.Aeson as J
+import qualified Data.Aeson.KeyMap as KM
 import qualified Data.Aeson.Types as JT
 import qualified Data.ByteString.Lazy as LB
+import Data.Functor ((<&>))
 import Data.Maybe (fromMaybe)
 import Data.Scientific (FPFormat (Fixed), Scientific, formatScientific, scientific)
 import Data.Text (Text)
 import qualified Data.Text as T
+import Data.Time.Clock (getCurrentTime)
 import Data.Time.Clock.POSIX (getPOSIXTime)
 import qualified Network.HTTP.Client as HTTP
 import Network.HTTP.Types (Header, Status, badRequest400, conflict409, hContentType, internalServerError500, notFound404, ok200, status501, statusCode)
@@ -33,10 +36,16 @@ import Simplex.Chat.Core (sendChatCmdStr)
 import Simplex.Chat.PaymentService.Types (CryptoCurrency (..), InvoiceId (..), InvoiceStatus (..), PaymentProvider (..), ServicePaymentDestination (..))
 import Simplex.Chat.Terminal (terminalChatConfig)
 import Simplex.Messaging.Agent.Store.Common (withTransaction)
+import Simplex.Messaging.Crypto (keccak256)
+import Simplex.Messaging.Eth.Address (unAddress)
 import Simplex.Messaging.Names.Record (USDCents (..))
-import StoreService.Config (BTCPayConfig (..), ListenerConfig (..), ServiceConfig (..), StripeConfig (..), readServiceConfig)
+import Simplex.Messaging.SystemTime (RoundedSystemTime (..), getSystemSeconds)
+import StoreService.Config (BTCPayConfig (..), ListenerConfig (..), NamesConfig (..), ServiceConfig (..), StripeConfig (..), readServiceConfig)
+import StoreService.Names.Abi (addressWord, hex, uint256)
+import StoreService.Names.Chain (ChainConfig (..))
 import StoreService.Names.Codes (issueNameCode)
-import StoreService.Names.Store (Balance (..), CmdSource (..), LatePending (..), balanceByReference, latePending)
+import StoreService.Names.Phases (RegistrationId (..))
+import StoreService.Names.Store (Balance (..), CmdSource (..), Commit (..), LatePending (..), NameRegistrationOrder (..), NameReveal (..), OrderPhase (..), VersionWrite (..), balanceByReference, getRegistration, latePending, updateRegistration)
 import StoreService.Options (storeServiceOpts)
 import StoreService.Service (ServiceState (..), newServiceState, storeService)
 import StoreService.Store.Invoices (InvoicePayment (..), InvoiceRow (..), getInvoice)
@@ -61,7 +70,8 @@ data PageControls = PageControls
     pcBTCPay :: FakeBTCPay,
     pcStripe :: FakeStripe,
     pcManager :: HTTP.Manager,
-    pcWebhooks :: String
+    pcWebhooks :: String,
+    pcChain :: ChainConfig
   }
 
 type ControlAnswer = Either (Status, Text) J.Value
@@ -71,6 +81,7 @@ serveNamesPage dir controlPort =
   withFakeBTCPay $ \pcBTCPay -> withFakeStripe $ \pcStripe -> do
     let ini = dir </> "store_service.ini"
     cfg <- readServiceConfig ini >>= either (fail . ((ini <> ": ") <>)) pure
+    NamesConfig {nChain = pcChain} <- maybe (fail $ ini <> ": no [names]") pure $ names cfg
     let cfg' = cfg {btcpay = Just (fbConfig pcBTCPay), stripe = Just (fsConfig pcStripe)}
         ListenerConfig {lHost, lBadgesPort} = listener cfg'
         pcWebhooks = "http://" <> T.unpack lHost <> ":" <> show lBadgesPort <> "/webhooks/"
@@ -82,7 +93,7 @@ serveNamesPage dir controlPort =
     race_ (storeService opts (Just cfg') terminalChatConfig env) $ do
       pcService <- atomically $ readTMVar (serviceCC env)
       Warp.runSettings (Warp.setHost "127.0.0.1" $ Warp.setPort controlPort Warp.defaultSettings) $
-        controlApp PageControls {pcService, pcBTCPay, pcStripe, pcManager, pcWebhooks}
+        controlApp PageControls {pcService, pcBTCPay, pcStripe, pcManager, pcWebhooks, pcChain}
 
 controlApp :: PageControls -> Application
 controlApp pc req respond = do
@@ -96,6 +107,8 @@ controlApp pc req respond = do
     control body = case (requestMethod req, pathInfo req) of
       ("POST", ["control", "code"]) -> withObject body (codeControl pc)
       ("POST", ["control", "refund", ref]) -> withObject body (refundControl pc ref)
+      ("POST", ["control", "stale", rid]) -> staleControl pc (RegistrationId rid)
+      ("POST", ["control", "lapse", rid]) -> lapseControl pc (RegistrationId rid)
       ("POST", ["control", action, invId])
         | action `elem` ["settle", "partial", "confirming", "expire"] -> withObject body (invoiceControl pc action (InvoiceId invId))
       _ -> pure $ Left (status501, "the service's runner has no such control")
@@ -136,6 +149,41 @@ refundControl PageControls {pcService} ref o = case JT.parseEither (J..:? "cents
         sendChatCmdStr pcService ("//record_refund " <> T.unpack ref <> " " <> show cents) >>= \case
           Right (CRCustomChatResponse _ answer) -> pure $ Right $ J.object ["cents" J..= cents, "answer" J..= answer]
           r -> pure $ Left (conflict409, T.pack (show (() <$ r)))
+
+staleControl :: PageControls -> RegistrationId -> IO ControlAnswer
+staleControl pc@PageControls {pcService, pcChain = ChainConfig {cSponsor}} rid@(RegistrationId ridText) =
+  withTransaction (chatStore pcService) (`getRegistration` rid) >>= \case
+    Nothing -> pure $ Left (notFound404, "no order " <> ridText)
+    Just NameRegistrationOrder {nrReveal = Nothing} -> pure $ Left (conflict409, "order " <> ridText <> " has no stored reveal")
+    Just NameRegistrationOrder {nrOwner, nrReveal = Just NameReveal {rvNonce}} -> do
+      let slot = keccak256 $ addressWord nrOwner <> uint256 sponsorNoncesSlot
+      chainRpc pc "anvil_setStorageAt" [hex $ unAddress cSponsor, hex slot, hex $ uint256 (rvNonce + 1)]
+      pure $ Right $ J.object ["nonce" J..= (rvNonce + 1)]
+
+sponsorNoncesSlot :: Int
+sponsorNoncesSlot = 1
+
+lapseControl :: PageControls -> RegistrationId -> IO ControlAnswer
+lapseControl PageControls {pcService} rid@(RegistrationId ridText) = do
+  now <- getCurrentTime
+  lapsed <- RoundedSystemTime . subtract 1 . roundedSeconds <$> getSystemSeconds
+  withTransaction (chatStore pcService) $ \db ->
+    getRegistration db rid >>= \case
+      Nothing -> pure $ Left (notFound404, "no order " <> ridText)
+      Just r@NameRegistrationOrder {nrPhase = OCommitted c} ->
+        updateRegistration db r {nrPhase = OCommitted c {cmRevealBefore = lapsed}} now <&> \case
+          Written v -> Right $ J.object ["version" J..= v]
+          w -> Left (conflict409, T.pack (show w))
+      Just _ -> pure $ Left (conflict409, "order " <> ridText <> " is not committed")
+
+chainRpc :: PageControls -> Text -> [Text] -> IO ()
+chainRpc PageControls {pcManager, pcChain = ChainConfig {cRpcUrl}} method params = do
+  req <- HTTP.parseRequest cRpcUrl
+  let body = J.object ["jsonrpc" J..= ("2.0" :: Text), "id" J..= (1 :: Int), "method" J..= method, "params" J..= params]
+  r <- HTTP.httpLbs req {HTTP.method = "POST", HTTP.requestHeaders = [(hContentType, "application/json")], HTTP.requestBody = HTTP.RequestBodyLBS (J.encode body)} pcManager
+  case J.decode (HTTP.responseBody r) of
+    Just (o :: J.Object) | KM.member "result" o -> pure ()
+    _ -> fail ("the chain answered " <> T.unpack method <> " with " <> show (HTTP.responseBody r))
 
 invoiceControl :: PageControls -> Text -> InvoiceId -> J.Object -> IO ControlAnswer
 invoiceControl pc action invId o =

@@ -1,5 +1,7 @@
 # Names service: fixes of the reviewed findings, A4
 
+Superseded where it differs: plans/2026-11-18-names-order-rules.md and apps/simplex-store-service/docs/names.md state the current rules and code.
+
 Branch `ep/names-fixes-a4`, from `ep/names-review-fixes` at 16114b784. Decisions: the user's, 2026-11-16, on the review of https://github.com/simplex-chat/simplex-chat/pull/7703, and the type rule of plans/2026-11-16-names-review-fixes.md. Line references are at b13968b61.
 
 Each finding is one commit, `store: <change>`, `core: <change>` for src/, `ios, android, desktop: <change>` for the apps.

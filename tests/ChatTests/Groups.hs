@@ -26,20 +26,22 @@ import Data.Bifunctor (second)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as B
 import Data.Maybe (fromMaybe, isJust, maybeToList)
-import Data.Time (UTCTime, getCurrentTime)
+import Data.Time (UTCTime (..), fromGregorian, getCurrentTime)
 import Data.Int (Int64)
-import Data.List (intercalate, isInfixOf, isSubsequenceOf, isSuffixOf)
+import Data.List (find, intercalate, isInfixOf, isSubsequenceOf, isSuffixOf)
 import qualified Data.Map.Strict as M
 import qualified Data.Text as T
 import Simplex.Chat.Badges (FileSizeLimits (..))
-import Simplex.Chat.Controller (ChatController (ChatController, smpAgent, subscriptionMode), ChatConfig (..), ChatEvent (CEvtChatItemUpdated, CEvtDuplicateGroupMessage), ChatHooks (..), ChatLogLevel (..), defaultChatHooks, withAgent)
-import Simplex.Chat.Library.Internal (encodeConnInfo, getShortLinkConnReq, sendDirectMemberMessage, uniqueMsgMentions, updatedMentionNames)
+import Simplex.Chat.Controller (ChatController (ChatController, smpAgent, subscriptionMode), ChatConfig (..), ChatError (ChatErrorStore), ChatEvent (CEvtChatItemUpdated, CEvtDuplicateGroupMessage), ChatHooks (..), ChatLogLevel (..), defaultChatHooks, withAgent, withStore, withStore')
+import Simplex.Chat.Library.Internal (chatStoreCxt, encodeConnInfo, getShortLinkConnReq, memberInfo, sendDirectMemberMessage, sendGroupMessage', uniqueMsgMentions, updatedMentionNames)
 import Simplex.Chat.Markdown (parseMaybeMarkdownList)
 import Simplex.Chat.Messages (AChatItemUpdate (..), CIMention (..), CIMentionMember (..), ChatItem (ChatItem, mentions), ChatItemId, isUserMention)
 import Simplex.Chat.Messages.Batch (encodeBinaryBatch, encodeFwdElement)
 import Simplex.Chat.Messages.CIContent (publicGroupNoE2EText)
 import Simplex.Chat.Options
-import Simplex.Chat.Protocol (ChatMessage (ChatMessage), ChatMsgEvent (BFileChunk, XFile, XGrpMemFwd, XGrpMemIntro, XGrpMemNew, XGrpRelayInv, XInfo, XMember, XMsgUpdate, XMsgNew, XMsgDel), FileChunk (..), FwdSender (FwdMember, FwdChannel), GrpMsgForward (GrpMsgForward), MsgContainer (..), MsgMention (..), MsgContent (..), MsgScope (..), ReportReason (..), VerifiedMsg (VMUnsigned), chatMsgToBody, mcSimple, msgContentText, supportedChatVRange)
+import Simplex.Chat.Protocol (ChatMessage (ChatMessage), ChatMsgEvent (BFileChunk, XFile, XGrpMemDel, XGrpMemFwd, XGrpMemIntro, XGrpMemNew, XGrpMemRestrict, XGrpRelayInv, XInfo, XMember, XMsgFileDescr, XMsgUpdate, XMsgNew, XMsgDel), FileChunk (..), FwdSender (FwdMember, FwdChannel), GrpMemDel (..), GrpMsgForward (GrpMsgForward), LinkNotice (..), MsgContainer (..), MsgEncodingI, MsgMention (..), MsgContent (..), MsgScope (..), ReportReason (..), VerifiedMsg (VMUnsigned), chatMsgToBody, mcSimple, msgContentText, supportedChatVRange)
+import Simplex.Chat.Store.Groups (getGroupMembers, getGroupRelayMembers)
+import Simplex.Chat.Store.Shared (StoreError (SEFileIdNotFoundBySharedMsgId), capExpiry, getGroupInfoKeys, ttlEndTime)
 import Simplex.Chat.Types
 import Simplex.Chat.Types.MemberRelations (MemberRelation (..), getRelation, setRelation)
 import Simplex.Chat.Types.Shared (GroupMemberRole (..), GroupAcceptance (..))
@@ -163,6 +165,27 @@ chatGroupTests = do
     it "own group link" testPlanGroupLinkOwn
     it "group link without contact - connecting" testPlanGroupLinkConnecting
     it "re-join existing group after leaving" testPlanGroupLinkLeaveRejoin
+    it "removed member with notice can't re-join" testPlanGroupLinkRemovedNotice
+    it "removal with notice shows no item to other members" testRemoveMemberNoticeOtherMembers
+    it "removal notice expiry and replacement" testPlanGroupLinkRemovedNoticeReplaced
+    it "removed member can re-join after notice expires" testPlanGroupLinkRemovedNoticeExpires
+    it "removal notice with ttl 0 or below is refused" testPlanGroupLinkRemovedNoticeTtlZero
+    it "notice end time before 1970 is stored as 1970" $ \_ ->
+      capExpiry (Just $ UTCTime (fromGregorian (-1) 1 1) 0) `shouldBe` Just (UTCTime (fromGregorian 1970 1 1) 0)
+    it "notice end time is rounded up to the hour" $ \_ ->
+      ttlEndTime 3600 (UTCTime (fromGregorian 2026 1 1) 1) 86400 `shouldBe` UTCTime (fromGregorian 2026 1 2) 3600
+    it "removal notice applies only to the link used to join" testPlanGroupLinkRemovedNoticeOtherLinks
+    it "app fixtures: group link notice" testGroupNoticeFixtures
+    it "group deletion without notice leaves notices unchanged" testPlanGroupLinkDeletedWithoutNotice
+    it "rejected pending member with notice can't re-join" testPlanGroupLinkRejectedNotice
+    it "removal of a moderator with notice is refused" testRemoveModeratorNoticeRefused
+    it "silent removal with notice forwarded by host is applied" $ testPlanGroupLinkForwardedRemovalNotice 86400 1
+    it "notice with ttl below 0 forwarded by host is not stored" $ testPlanGroupLinkForwardedRemovalNotice (-1) 0
+    it "silent removal forwarded by a host below the removed member's role is shown" testPlanGroupLinkForwardedRemovalBelowRole
+    it "removal with notice of a member on previous version is prohibited" $
+      runTestCfg2 testCfg testCfgVPrev testRemoveMemberNoticePrevVersion
+    it "group deleted with kept conversation" testGroupDeleteKeepConversation
+    it "app fixtures: group deletion" testGroupDeletionFixtures
 #if !defined(dbPostgres)
   -- TODO [postgres] restore from outdated db backup (same as in agent)
   describe "group message errors" $ do
@@ -210,6 +233,7 @@ chatGroupTests = do
     it "reject forwarded content attributed to own membership" testGroupMsgForwardOwnMembershipRejected
     it "forward batched messages" testGroupMsgForwardBatched
     it "forward reports to moderators, don't forward to members (x.msg.new, MCReport)" testGroupMsgForwardReport
+    it "forward blocked member's messages to moderators only, without notifications" testGroupMsgForwardBlockedToModerators
     it "deduplicate forwarded messages" testGroupMsgForwardDeduplicate
     it "report duplicate when forwarded copy is received after direct copy" testGroupMsgForwardDuplicateEvent
     it "report duplicate when direct copy is received after forwarded copy" testGroupMsgDirectDuplicateEvent
@@ -264,8 +288,17 @@ chatGroupTests = do
     it "replies of blocked member are not mentions" testBlockedMemberReplyNotMention
     it "message updates of blocked member are marked blocked" testBlockedMemberUpdatesMarkedBlocked
     it "mentions in message updates of blocked member are ignored" testBlockedMemberUpdateMentionsIgnored
-    it "message updates of member blocked by admin are ignored" testBlockedByAdminUpdatesIgnored
     it "images of blocked members are marked blocked" testBlockedMemberImages
+    it "blocked member rejoins via group link unblocked" testBlockedMemberRejoinsUnblocked
+    it "blocked pending member can't be accepted" testBlockPendingMember
+    it "blocked member can't be made moderator" testBlockedMemberPromotionRefused
+    it "block of member pending review is sent to moderators only" testBlockPendingReviewMember
+    it "blocked member's update leaves no rows on regular members" testBlockForAllNoRowsForMembers
+    it "blocked member's file description without a file is ignored by moderators" testBlockForAllFileDescrIgnored
+    it "blocked member's edit of an earlier message is not applied for regular members" testBlockForAllEditNotApplied
+    it "app fixtures: block, unblock, remove and hide" testBlockMembersFixtures
+    it "app fixtures: members of the previous version" testBlockPreviousVersionFixtures
+    it "app fixtures: channel subscribers" testBlockChannelFixtures
   describe "group member inactivity" $ do
     it "mark member inactive on reaching quota" testGroupMemberInactive
   describe "group member reports" $ do
@@ -351,7 +384,12 @@ chatGroupTests = do
       it "should update channel preferences (signed)" testChannelUpdatePrefsSigned
       it "should change member role (signed)" testChannelChangeRoleSigned
       it "should block member for all (signed)" testChannelBlockMemberSigned
+      it "should forward blocked member's messages to moderators only" testChannelBlockedMemberToModerators
+      it "should introduce blocked member with the block to moderator who joined after the block" testChannelBlockedMemberToNewModerator
       it "should remove member (signed)" testChannelRemoveMemberSigned
+      it "should prevent removed member with notice from re-joining" testChannelRemoveMemberNotice
+      it "should not connect silently removed member to added relay after notice ends" testChannelRemoveMemberNoticeNewRelay
+      it "should not forward restriction from member below moderator" testChannelRestrictFromMemberNotForwarded
       it "should verify member security code via membership keys" testChannelMemberSecurityCode
       it "should delete channel (signed)" testChannelDeleteGroupSigned
       it "should delete channel and clean up relay connections" testChannelDeleteGroupCleanup
@@ -386,6 +424,7 @@ chatGroupTests = do
         it "role transitions update the roster (mod <-> admin, admin -> non-roster)" testChannelRoleTransitionsUpdateRoster
         it "malicious relay cannot downgrade or re-key a roster-established moderator via XGrpMemNew" testChannelRelayCannotDowngradeRosterMember
         it "malicious relay cannot forge a privileged member via XGrpMemNew forwarded as the owner" testChannelRelayCannotForgePrivilegedMember
+        it "malicious relay cannot block a roster-established moderator via XGrpMemNew" testChannelRelayCannotBlockRosterModerator
         it "relay introduction of the subscriber's own member keeps the subscriber's profile" testChannelOwnMemberIntroKeepsProfile
         it "owner promotion with a different member key keeps the member role" testChannelPromotionDifferentKeyKeepsRole
         it "owner promotion pins the key of a member known without a key" testChannelPromotionPinsMemberKey
@@ -3274,6 +3313,422 @@ testPlanGroupLinkLeaveRejoin =
       bob <## "group link: known group #team_1"
       bob <## "use #team_1 <message> to send messages"
 
+testPlanGroupLinkRemovedNotice :: HasCallStack => TestParams -> IO ()
+testPlanGroupLinkRemovedNotice =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      gLink <- createTeamLink alice
+      joinTeamViaLink alice bob gLink "bob"
+
+      alice ##> "/rm team bob notice={\"ttl\":86400}"
+      silentlyRemovedFromTeam alice bob "bob" 1
+
+      bob ##> ("/_connect plan 1 " <> gLink)
+      bob <## "group link: known group #team"
+      bob <## "use #team <message> to send messages"
+      bob ##> ("/c " <> gLink)
+      bob <## "group link: known group #team"
+      bob <## "use #team <message> to send messages"
+      bob #> "#team hello"
+      alice <// 50000
+
+      leaveDeleteGroup bob "team"
+      bob ##> ("/_connect plan 1 " <> gLink)
+      bob <##. "group link: blocked until "
+      bob ##> ("/_connect plan 1 " <> linkAnotherSchema gLink)
+      bob <##. "group link: blocked until "
+      bob ##> ("/c " <> gLink)
+      bob <##. "group link: blocked until "
+      bob ##> ("/_connect 1 " <> gLink)
+      bob <##. "connection link: blocked until "
+
+      bob ##> "/create user robert"
+      showActiveUser bob "robert"
+      bob ##> ("/_connect plan 2 " <> gLink)
+      bob <##. "group link: blocked until "
+
+testRemoveMemberNoticeOtherMembers :: HasCallStack => TestParams -> IO ()
+testRemoveMemberNoticeOtherMembers =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3' "team" alice (bob, GRMember) (cath, GRMember)
+      alice #> "#team hi"
+      [bob, cath] *<# "#team alice> hi"
+
+      alice ##> "/rm team bob notice={\"ttl\":86400}"
+      concurrentlyN_
+        [ alice <## "#team: you removed bob from the group (signed)",
+          cath <## "#team: alice removed bob from the group (signed)"
+        ]
+      bob <// 50000
+      cath #$> ("/_get chat #1 count=1", chat, [(0, "hi")])
+
+testPlanGroupLinkRemovedNoticeReplaced :: HasCallStack => TestParams -> IO ()
+testPlanGroupLinkRemovedNoticeReplaced =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      gLink <- createTeamLink alice
+      joinTeamViaLink alice bob gLink "bob"
+
+      alice ##> "/rm team bob"
+      concurrentlyN_
+        [ alice <## "#team: you removed bob from the group (signed)",
+          do
+            bob <## "#team: alice removed you from the group (signed)"
+            bob <## "use /d #team to delete the group"
+        ]
+      bob ##> ("/_connect plan 1 " <> gLink)
+      bob <## "group link: ok to connect directly"
+      _sLinkData <- getTermLine bob
+      linkNoticesCount bob `shouldReturn` 0
+
+      bob ##> "/d #team"
+      bob <## "#team: you deleted your local copy of the group"
+      joinTeamViaLink alice bob gLink "bob_1"
+
+      alice ##> "/rm team bob_1 notice={\"ttl\":1}"
+      silentlyRemovedFromTeam alice bob "bob_1" 1
+      leaveDeleteGroup bob "team"
+      threadDelay 2000000
+      bob ##> ("/_connect plan 1 " <> gLink)
+      bob <## "group link: ok to connect directly"
+      _sLinkData <- getTermLine bob
+      linkNoticesCount bob `shouldReturn` 1
+
+      joinTeamViaLink alice bob gLink "bob_2"
+
+      alice ##> "/rm team bob_2 notice={}"
+      alice <## "#team: you removed bob_2 from the group (signed)"
+      withCCTransaction bob (\db -> DB.query_ db "SELECT count(1) FROM link_notices WHERE expires_at IS NULL") `shouldEventuallyReturn` [[1 :: Int]]
+      bob <// 50000
+      leaveDeleteGroup bob "team"
+      bob ##> ("/_connect plan 1 " <> gLink)
+      bob <## "group link: blocked permanently"
+      linkNoticesCount bob `shouldReturn` 1
+
+testPlanGroupLinkRemovedNoticeExpires :: HasCallStack => TestParams -> IO ()
+testPlanGroupLinkRemovedNoticeExpires =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      gLink <- createTeamLink alice
+      joinTeamViaLink alice bob gLink "bob"
+      alice #> "#team hi"
+      bob <# "#team alice> hi"
+
+      alice ##> "/rm team bob notice={\"ttl\":6}"
+      silentlyRemovedFromTeam alice bob "bob" 1
+      bob #$> ("/_get chat #1 count=1", chat, [(0, "hi")])
+      leaveDeleteGroup bob "team"
+      bob ##> ("/_connect plan 1 " <> gLink)
+      bob <##. "group link: blocked until "
+      bob ##> ("/c " <> gLink)
+      bob <##. "group link: blocked until "
+
+      threadDelay 6000000
+      bob ##> ("/c " <> gLink)
+      bob <## "connection request sent!"
+      alice <## "bob_1 (Bob): accepting request to join group #team..."
+      concurrentlyN_
+        [ alice <## "#team: bob_1 joined the group",
+          bob
+            <### [ "#team: joining the group...",
+                   "#team: you joined the group",
+                   WithTime "#team alice> hi [>>]"
+                 ]
+        ]
+
+testPlanGroupLinkRemovedNoticeTtlZero :: HasCallStack => TestParams -> IO ()
+testPlanGroupLinkRemovedNoticeTtlZero =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      gLink <- createTeamLink alice
+      joinTeamViaLink alice bob gLink "bob"
+
+      forM_ ["0", "-1"] $ \ttl -> do
+        alice ##> ("/rm team bob notice={\"ttl\":" <> ttl <> "}")
+        alice <## "bad chat command: notice ttl must be positive"
+      bob <// 50000
+      alice #> "#team hello"
+      bob <# "#team alice> hello"
+
+testPlanGroupLinkRemovedNoticeOtherLinks :: HasCallStack => TestParams -> IO ()
+testPlanGroupLinkRemovedNoticeOtherLinks =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      gLink <- createTeamLink alice
+      joinTeamViaLink alice bob gLink "bob"
+      alice ##> "/g club"
+      alice <## "group #club is created"
+      alice <## "to add members use /a club <name> or /create link #club"
+      alice ##> "/create link #club"
+      clubLink <- getGroupLink alice "club" GRMember True
+
+      alice ##> "/rm team bob notice={\"ttl\":86400}"
+      silentlyRemovedFromTeam alice bob "bob" 1
+      leaveDeleteGroup bob "team"
+      bob ##> ("/_connect plan 1 " <> gLink)
+      bob <##. "group link: blocked until "
+      bob ##> ("/_connect plan 1 " <> clubLink)
+      bob <## "group link: ok to connect directly"
+      _sLinkData <- getTermLine bob
+
+      createGroup2' "news" alice (cath, GRMember) True
+      alice ##> "/rm news cath notice={\"ttl\":86400}"
+      alice <## "#news: you removed cath from the group (signed)"
+      cath <// 1000000
+      linkNoticesCount cath `shouldReturn` 0
+
+testGroupNoticeFixtures :: HasCallStack => TestParams -> IO ()
+testGroupNoticeFixtures =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      threadDelay 100000
+      alice ##> "/g team"
+      alice <## "group #team is created"
+      alice <## "to add members use /a team <name> or /create link #team"
+      alice ##> "/create link #team"
+      (gLink, gFullLink) <- getGroupLinks alice "team" GRMember True
+      bob ##> ("/_connect plan 1 " <> gLink)
+      bob <## "group link: ok to connect directly"
+      gLinkData <- getTermLine bob
+      joinTeamViaLink alice bob gFullLink "bob"
+      alice ##> "/rm team bob notice={\"ttl\":86400}"
+      silentlyRemovedFromTeam alice bob "bob" 1
+      leaveDeleteGroup bob "team"
+      apiFixture "bans/plan-group-notice" bob [(gLink, "GROUP_LINK")] FixtureRequests {frMarkdown = [gLink], frUris = [], frCommands = ["/_connect plan 1 " <> gLink]}
+      bob ##> ("/_prepare group 1 " <> gFullLink <> " " <> gLink <> " direct=on " <> gLinkData)
+      bob <## "#team: group is prepared"
+      bansFixture "connect-group-notice" bob ["/_get chat #2 count=0", "/_connect group #2 incognito=off"]
+
+testPlanGroupLinkDeletedWithoutNotice :: HasCallStack => TestParams -> IO ()
+testPlanGroupLinkDeletedWithoutNotice =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      gLink <- createTeamLink alice
+      joinTeamViaLink alice bob gLink "bob"
+      alice ##> "/d #team"
+      concurrentlyN_
+        [ alice <## "#team: you deleted the group (signed)",
+          do
+            bob <## "#team: alice deleted the group (signed)"
+            bob <## "use /d #team to delete the local copy of the group"
+        ]
+      linkNoticesCount bob `shouldReturn` 0
+
+testPlanGroupLinkRejectedNotice :: HasCallStack => TestParams -> IO ()
+testPlanGroupLinkRejectedNotice =
+  testChatCfg2 cfg aliceProfile bobProfile $
+    \alice bob -> do
+      gLink <- createTeamLink alice
+      bob ##> ("/c " <> gLink)
+      bob <## "connection request sent!"
+      alice <## "bob (Bob): accepting request to join group #team..."
+      concurrentlyN_
+        [ alice <## "#team: bob connected and pending approval, use /_accept member #1 2 <role> to accept member",
+          do
+            bob <## "#team: joining the group..."
+            bob <## "#team: you joined the group, pending approval"
+        ]
+
+      alice ##> "/rm team bob notice={\"ttl\":3600}"
+      silentlyRemovedFromTeam alice bob "bob" 1
+      leaveDeleteGroup bob "team"
+
+      bob ##> ("/_connect plan 1 " <> gLink)
+      bob <##. "group link: blocked until "
+  where
+    cfg = testCfg {chatHooks = defaultChatHooks {acceptMember = Just (\_ _ _ -> pure $ Right (GAPendingApproval, GRObserver))}}
+
+testRemoveModeratorNoticeRefused :: HasCallStack => TestParams -> IO ()
+testRemoveModeratorNoticeRefused =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      createGroup2' "team" alice (bob, GRModerator) True
+      alice ##> "/rm team bob notice={\"ttl\":86400}"
+      alice <## "bad chat command: notice is not supported for moderators, admins, owners, relays, members on old versions and members not in the group"
+
+testPlanGroupLinkForwardedRemovalNotice :: HasCallStack => Int64 -> Int -> TestParams -> IO ()
+testPlanGroupLinkForwardedRemovalNotice noticeTtl notices =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      gLink <- createTeamLink alice
+      joinTeamViaLink alice bob gLink "bob"
+      alice ##> "/mr team bob admin"
+      alice <## "#team: you changed the role of bob to admin (signed)"
+      bob <## "#team: alice changed your role from member to admin (signed)"
+      cath ##> ("/c " <> gLink)
+      cath <## "connection request sent!"
+      concurrentlyN_
+        [ do
+            alice <## "cath (Catherine): accepting request to join group #team..."
+            alice <## "#team: cath joined the group",
+          cath
+            <### [ "#team: joining the group...",
+                   "#team: you joined the group",
+                   "#team: member bob (Bob) is connected"
+                 ],
+          bob
+            <### [ "#team: alice added cath (Catherine) to the group (connecting...)",
+                   "#team: new member cath is connected"
+                 ]
+        ]
+
+      bobMemId <- memberIdByName alice "bob"
+      cathMemId <- memberIdByName alice "cath"
+      connId <- relayConnIdToMember alice "cath"
+      ts <- getCurrentTime
+      let chatMsg = ChatMessage chatInitialVRange (Just $ SharedMsgId "\1\2\3\4") $ XGrpMemDel (GrpMemDel cathMemId False Nothing True (Just LinkNotice {ttl = Just noticeTtl}))
+      agentSendBody alice connId $ encodeBinaryBatch [encodeFwdElement (GrpMsgForward (FwdMember bobMemId "bob") ts) (VMUnsigned chatMsg)]
+      withCCTransaction cath (\db -> DB.query_ db "SELECT count(1) FROM groups WHERE silently_removed = 1") `shouldEventuallyReturn` [[1 :: Int]]
+      linkNoticesCount cath `shouldReturn` notices
+      cath <// 50000
+
+testPlanGroupLinkForwardedRemovalBelowRole :: HasCallStack => TestParams -> IO ()
+testPlanGroupLinkForwardedRemovalBelowRole =
+  testChat4 aliceProfile bobProfile cathProfile danProfile $
+    \alice bob cath dan -> do
+      gLink <- createTeamLink alice
+      joinTeamViaLink alice bob gLink "bob"
+      alice ##> "/mr team bob admin"
+      alice <## "#team: you changed the role of bob to admin (signed)"
+      bob <## "#team: alice changed your role from member to admin (signed)"
+      dan ##> ("/c " <> gLink)
+      dan <## "connection request sent!"
+      concurrentlyN_
+        [ do
+            alice <## "dan (Daniel): accepting request to join group #team..."
+            alice <## "#team: dan joined the group",
+          dan
+            <### [ "#team: joining the group...",
+                   "#team: you joined the group",
+                   "#team: member bob (Bob) is connected"
+                 ],
+          bob
+            <### [ "#team: alice added dan (Daniel) to the group (connecting...)",
+                   "#team: new member dan is connected"
+                 ]
+        ]
+      alice ##> "/mr team dan owner"
+      alice <## "#team: you changed the role of dan to owner (signed)"
+      concurrentlyN_
+        [ bob <## "#team: alice changed the role of dan from member to owner (signed)",
+          dan <## "#team: alice changed your role from member to owner (signed)"
+        ]
+      bob ##> "/create link #team"
+      bLink <- getGroupLink bob "team" GRMember True
+      cath ##> ("/c " <> bLink)
+      cath <## "connection request sent!"
+      concurrentlyN_
+        [ do
+            bob <## "cath (Catherine): accepting request to join group #team..."
+            bob <## "#team: cath joined the group",
+          cath
+            <### [ "#team: joining the group...",
+                   "#team: you joined the group",
+                   "#team: member alice (Alice) is connected",
+                   "#team: member dan (Daniel) is connected"
+                 ],
+          alice
+            <### [ "#team: bob added cath (Catherine) to the group (connecting...)",
+                   "#team: new member cath is connected"
+                 ],
+          dan
+            <### [ "#team: bob added cath (Catherine) to the group (connecting...)",
+                   "#team: new member cath is connected"
+                 ]
+        ]
+
+      aliceMemId <- memberIdByName bob "alice"
+      danMemId <- memberIdByName bob "dan"
+      connId <- relayConnIdToMember bob "cath"
+      ts <- getCurrentTime
+      let chatMsg = ChatMessage chatInitialVRange (Just $ SharedMsgId "\1\2\3\5") $ XGrpMemDel (GrpMemDel danMemId False Nothing True Nothing)
+      agentSendBody bob connId $ encodeBinaryBatch [encodeFwdElement (GrpMsgForward (FwdMember aliceMemId "alice") ts) (VMUnsigned chatMsg)]
+      cath <## "#team: alice removed dan from the group"
+      cath #$> ("/_get chat #1 count=1", chat, [(0, "removed dan")])
+
+testRemoveMemberNoticePrevVersion :: HasCallStack => TestCC -> TestCC -> IO ()
+testRemoveMemberNoticePrevVersion alice bob = do
+  createGroup2' "team" alice (bob, GRMember) True
+  alice ##> "/rm team bob notice={}"
+  alice <## "bad chat command: notice is not supported for moderators, admins, owners, relays, members on old versions and members not in the group"
+  alice ##> "/rm team bob"
+  concurrentlyN_
+    [ alice <## "#team: you removed bob from the group (signed)",
+      do
+        bob <## "#team: alice removed you from the group (signed)"
+        bob <## "use /d #team to delete the group"
+    ]
+
+testGroupDeleteKeepConversation :: HasCallStack => TestParams -> IO ()
+testGroupDeleteKeepConversation =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      createGroup2' "team" alice (bob, GRMember) True
+      alice #> "#team hi"
+      bob <# "#team alice> hi"
+
+      bob ##> "/_delete #1 entity"
+      bob <## "#team: you have insufficient permissions for this action, the required role is owner"
+      alice ##> "/_delete #1 archive"
+      alice <## "bad chat command: only full deletion or keeping the conversation is supported for groups"
+      alice ##> "/_delete #1 messages"
+      alice <## "bad chat command: only full deletion or keeping the conversation is supported for groups"
+
+      alice ##> "/_delete #1 entity"
+      alice <## "#team: you deleted the group (signed)"
+      bob <## "#team: alice deleted the group (signed)"
+      bob <## "use /d #team to delete the local copy of the group"
+      alice #$> ("/_get chat #1 count=1", chat, [(1, "hi")])
+      alice ##> "#team hello"
+      alice <## "bad chat command: not current member"
+      alice ##> "/_delete #1 entity"
+      alice <## "bad chat command: keeping the conversation requires an active owner"
+      alice ##> "/d #team"
+      alice <## "#team: you deleted your local copy of the group"
+
+testGroupDeletionFixtures :: HasCallStack => TestParams -> IO ()
+testGroupDeletionFixtures =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      createGroup2' "team" alice (bob, GRMember) True
+      createGroup2' "club" alice (bob, GRMember) False
+      bansFixture "group-deletion" alice ["/_members #1", "/_members #2", "/_delete #1 full notify=on", "/_delete #2 entity notify=on"]
+      bob <## "#team: alice deleted the group (signed)"
+      bob <## "use /d #team to delete the local copy of the group"
+      bob <## "#club: alice deleted the group (signed)"
+      bob <## "use /d #club to delete the local copy of the group"
+      bansFixture "group-deletion-member" bob ["/_members #1", "/_delete #1 full notify=on"]
+
+createTeamLink :: HasCallStack => TestCC -> IO String
+createTeamLink alice = do
+  threadDelay 100000
+  alice ##> "/g team"
+  alice <## "group #team is created"
+  alice <## "to add members use /a team <name> or /create link #team"
+  alice ##> "/create link #team"
+  getGroupLink alice "team" GRMember True
+
+joinTeamViaLink :: HasCallStack => TestCC -> TestCC -> String -> String -> IO ()
+joinTeamViaLink alice bob gLink bobName = do
+  bob ##> ("/c " <> gLink)
+  bob <## "connection request sent!"
+  alice <## (bobName <> " (Bob): accepting request to join group #team...")
+  concurrentlyN_
+    [ alice <## ("#team: " <> bobName <> " joined the group"),
+      bob
+        <### [ "#team: joining the group...",
+               "#team: you joined the group"
+             ]
+    ]
+  threadDelay 100000
+
+silentlyRemovedFromTeam :: HasCallStack => TestCC -> TestCC -> String -> Int -> IO ()
+silentlyRemovedFromTeam alice bob bobName noticesCount = do
+  alice <## ("#team: you removed " <> bobName <> " from the group (signed)")
+  linkNoticesCount bob `shouldEventuallyReturn` noticesCount
+  bob <// 50000
+
 testGroupLinkLargeGroupProfile :: HasCallStack => TestParams -> IO ()
 testGroupLinkLargeGroupProfile =
   testChatOpts2 testOptsNoFullLinks aliceProfile bobProfile $
@@ -5819,7 +6274,7 @@ testInviteMemberViaGroupProhibited =
 testInviteMemberViaGroupPrevVersion :: HasCallStack => TestParams -> IO ()
 testInviteMemberViaGroupPrevVersion ps =
   withNewTestChat ps "alice" aliceProfile $ \alice ->
-    withNewTestChatCfg ps testCfgVPrev "bob" bobProfile $ \bob -> do
+    withNewTestChatCfg ps testCfg {chatVRange = mkVersionRange (VersionChat 9) (VersionChat 21)} "bob" bobProfile $ \bob -> do
       createGroup2 "team" alice bob
       createClub alice
       GroupMember {groupMemberId = bobId} <- getTestMember alice "team" "bob"
@@ -6012,6 +6467,49 @@ testGroupMsgForwardReport =
       cath #> "#team hey team"
       alice <# "#team cath> hey team"
       bob <# "#team cath> hey team [>>]"
+
+testGroupMsgForwardBlockedToModerators :: HasCallStack => TestParams -> IO ()
+testGroupMsgForwardBlockedToModerators =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+      setupGroupForwarding alice bob cath
+      cathConnId <- relayConnIdToMember alice "cath"
+
+      alice ##> "/mr team bob member"
+      concurrentlyN_
+        [ alice <## "#team: you changed the role of bob to member (signed)",
+          bob <## "#team: alice changed your role from admin to member (signed)",
+          cath <## "#team: alice changed the role of bob from admin to member (signed)"
+        ]
+      alice ##> "/mr team cath moderator"
+      concurrentlyN_
+        [ alice <## "#team: you changed the role of cath to moderator (signed)",
+          bob <## "#team: alice changed the role of cath from admin to moderator (signed)",
+          cath <## "#team: alice changed your role from admin to moderator (signed)"
+        ]
+      alice ##> "/block for all #team bob"
+      alice <## "#team: you blocked bob (signed)"
+      cath <## "#team: alice blocked bob (signed)"
+      bob <// 50000
+
+      bob #> "#team spam"
+      alice <# "#team bob> spam [blocked by admin] <muted>"
+      cath <# "#team bob> spam [blocked by admin] [>>] <muted>"
+      lastSndMsgFlags alice cathConnId 1 `shouldReturn` ["F"]
+      lastJobNotification alice `shouldReturn` False
+
+      alice ##> "/mr team cath member"
+      concurrentlyN_
+        [ alice <## "#team: you changed the role of cath to member (signed)",
+          bob <## "#team: alice changed the role of cath from moderator to member (signed)",
+          cath <## "#team: alice changed your role from moderator to member (signed)"
+        ]
+      sent <- lastSndMsgId alice cathConnId
+      bob #> "#team spam again"
+      alice <# "#team bob> spam again [blocked by admin] <muted>"
+      cath <// 500000
+      lastSndMsgId alice cathConnId `shouldReturn` sent
 
 setupGroupForwarding :: TestCC -> TestCC -> TestCC -> IO ()
 setupGroupForwarding host invitee1 invitee2 = do
@@ -8060,48 +8558,6 @@ testBlockedMemberUpdateMentionsIgnored =
       itemMentionsCount alice `shouldReturn` 2
       itemMentionsCount cath `shouldReturn` 0
 
-testBlockedByAdminUpdatesIgnored :: HasCallStack => TestParams -> IO ()
-testBlockedByAdminUpdatesIgnored =
-  testChat3 aliceProfile bobProfile cathProfile $
-    \alice bob cath -> do
-      createGroup3 "team" alice bob cath
-
-      alice ##> "/set delete #team on"
-      alice <## "updated group preferences:"
-      alice <## "Full deletion: on"
-      concurrentlyN_
-        [ do
-            bob <## "alice updated group #team: (signed)"
-            bob <## "updated group preferences:"
-            bob <## "Full deletion: on",
-          do
-            cath <## "alice updated group #team: (signed)"
-            cath <## "updated group preferences:"
-            cath <## "Full deletion: on"
-        ]
-
-      threadDelay 1000000
-
-      bob #> "#team hello"
-      [alice, cath] *<# "#team bob> hello"
-      msgItemId <- lastItemId bob
-
-      threadDelay 1000000
-
-      alice ##> "/block for all #team bob"
-      alice <## "#team: you blocked bob (signed)"
-      cath <## "#team: alice blocked bob (signed)"
-      bob <// 50000
-
-      bob ##> ("/_update item #1 " <> msgItemId <> " text hello again")
-      bob <# "#team [edited] hello again"
-      bob #> "#team 1"
-      alice <# "#team bob> blocked [blocked by admin] <muted>"
-      cath <# "#team bob> blocked [blocked by admin] <muted>"
-
-      alice #$> ("/_get chat #1 count=3", chat, [(0, "hello"), (1, "blocked bob (signed)"), (0, "blocked [blocked by admin]")])
-      cath #$> ("/_get chat #1 count=3", chat, [(0, "hello"), (0, "blocked bob (signed)"), (0, "blocked [blocked by admin]")])
-
 testBlockedMemberImages :: HasCallStack => TestParams -> IO ()
 testBlockedMemberImages =
   testChat3 aliceProfile bobProfile cathProfile $
@@ -8424,12 +8880,14 @@ testBlockForAllMultipleMembers =
 
       -- bob and cath don't know they are blocked and receive each other's messages
       bob #> "#team 3"
-      [alice, dan] *<# "#team bob> 3 [blocked by admin] <muted>"
+      alice <# "#team bob> 3 [blocked by admin] <muted>"
       cath <# "#team bob> 3"
+      dan <// 50000
 
       cath #> "#team 4"
-      [alice, dan] *<# "#team cath> 4 [blocked by admin] <muted>"
+      alice <# "#team cath> 4 [blocked by admin] <muted>"
       bob <# "#team cath> 4"
+      dan <// 50000
 
       alice ##> "/_block #1 2,3 blocked=off"
       alice <## "#team: you unblocked 2 members (signed)"
@@ -8443,6 +8901,203 @@ testBlockForAllMultipleMembers =
 
       cath #> "#team 6"
       [alice, bob, dan] *<# "#team cath> 6"
+
+testBlockedMemberRejoinsUnblocked :: HasCallStack => TestParams -> IO ()
+testBlockedMemberRejoinsUnblocked =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      gLink <- createTeamLink alice
+      joinTeamViaLink alice bob gLink "bob"
+      alice ##> "/block for all #team bob"
+      alice <## "#team: you blocked bob (signed)"
+      bob <// 50000
+
+      bob ##> "/l team"
+      concurrentlyN_
+        [ do
+            bob <## "#team: you left the group"
+            bob <## "use /d #team to delete the group",
+          alice <## "#team: bob left the group (signed)"
+        ]
+      bob ##> "/d #team"
+      bob <## "#team: you deleted your local copy of the group"
+
+      joinTeamViaLink alice bob gLink "bob_1"
+      bob #> "#team hi"
+      alice <# "#team bob_1> hi"
+
+testBlockForAllFileDescrIgnored :: HasCallStack => TestParams -> IO ()
+testBlockForAllFileDescrIgnored ps = do
+  fileErrors <- newTVarIO (0 :: Int)
+  let hook _ evt = do
+        case evt of
+          Left (ChatErrorStore (SEFileIdNotFoundBySharedMsgId _)) -> atomically $ modifyTVar' fileErrors (+ 1)
+          _ -> pure ()
+        pure evt
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChat ps "bob" bobProfile $ \bob ->
+      withNewTestChatCfg ps testCfg {chatHooks = defaultChatHooks {eventHook = Just hook}} "cath" cathProfile $ \cath -> do
+        createGroup3' "team" alice (bob, GRMember) (cath, GRModerator)
+        threadDelay 1000000
+        alice ##> "/block for all #team bob"
+        alice <## "#team: you blocked bob (signed)"
+        cath <## "#team: alice blocked bob (signed)"
+        bob <// 50000
+
+        connId <- relayConnIdToMember bob "cath"
+        agentSendBody bob connId $ chatMsgToBody $ ChatMessage chatInitialVRange (Just $ SharedMsgId "\1\2\3\6") $
+          XMsgFileDescr (SharedMsgId "\1\2\3\7") FileDescr {fileDescrText = "abc", fileDescrPartNo = 0, fileDescrComplete = True} Nothing Nothing
+        cath <// 500000
+        readTVarIO fileErrors `shouldReturn` 0
+
+testBlockForAllNoRowsForMembers :: HasCallStack => TestParams -> IO ()
+testBlockForAllNoRowsForMembers =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3' "team" alice (bob, GRMember) (cath, GRMember)
+      threadDelay 1000000
+      alice #> "#team hello"
+      [bob, cath] *<# "#team alice> hello"
+
+      alice ##> "/block for all #team bob"
+      alice <## "#team: you blocked bob (signed)"
+      cath <## "#team: alice blocked bob (signed)"
+      bob <// 50000
+      rows <- rcvMsgCountFrom cath "bob"
+
+      bob #> "#team hi"
+      alice <# "#team bob> hi [blocked by admin] <muted>"
+      connId <- relayConnIdToMember bob "cath"
+      agentSendBody bob connId $ chatMsgToBody $ ChatMessage chatInitialVRange (Just $ SharedMsgId "\1\2\3\4") $
+        XMsgUpdate (SharedMsgId "\5\6\7\8") (MCText "edit") M.empty Nothing Nothing Nothing Nothing
+      cath <// 1000000
+
+      alice ##> "/unblock for all #team bob"
+      alice <## "#team: you unblocked bob (signed)"
+      cath <## "#team: alice unblocked bob (signed)"
+      bob #> "#team after"
+      [alice, cath] *<# "#team bob> after"
+      rcvMsgCountFrom cath "bob" `shouldReturn` (rows + 1)
+      cath #$> ("/_get chat #1 count=2", chat, [(0, "hello"), (0, "after")])
+
+testBlockForAllEditNotApplied :: HasCallStack => TestParams -> IO ()
+testBlockForAllEditNotApplied =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3' "team" alice (bob, GRMember) (cath, GRMember)
+      threadDelay 1000000
+      bob #> "#team hello"
+      [alice, cath] *<# "#team bob> hello"
+
+      alice ##> "/block for all #team bob"
+      alice <## "#team: you blocked bob (signed)"
+      cath <## "#team: alice blocked bob (signed)"
+      bob <// 50000
+
+      bob ##> "! #team hello there"
+      bob <# "#team [edited] hello there"
+      edited <- getTermLine alice
+      edited `shouldContain` "#team bob> [edited] hello there"
+      cath <// 1000000
+      cath #$> ("/_get chat #1 count=1", chat, [(0, "hello")])
+
+rcvMsgCountFrom :: TestCC -> T.Text -> IO Int
+rcvMsgCountFrom cc name = do
+  [Only n] <-
+    withCCTransaction cc $ \db ->
+      DB.query
+        db
+        "SELECT count(1) FROM messages m JOIN group_members gm ON gm.group_member_id = m.author_group_member_id WHERE m.msg_sent = 0 AND gm.local_display_name = ?"
+        (Only name)
+  pure n
+
+rcvRestrictCount :: TestCC -> IO Int
+rcvRestrictCount cc = do
+  [Only n] <- withCCTransaction cc $ \db -> DB.query_ db "SELECT count(1) FROM messages WHERE msg_sent = 0 AND chat_msg_event = 'x.grp.mem.restrict'"
+  pure n
+
+testBlockedMemberPromotionRefused :: HasCallStack => TestParams -> IO ()
+testBlockedMemberPromotionRefused =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      createGroup2' "team" alice (bob, GRMember) True
+      alice ##> "/block for all #team bob"
+      alice <## "#team: you blocked bob (signed)"
+      bob <// 50000
+      alice ##> "/mr team bob moderator"
+      alice <## "bad chat command: can't make blocked member a moderator or above, unblock first"
+      alice ##> "/mr team bob observer"
+      alice <## "#team: you changed the role of bob to observer (signed)"
+      bob <## "#team: alice changed your role from member to observer (signed)"
+
+testBlockPendingMember :: HasCallStack => TestParams -> IO ()
+testBlockPendingMember =
+  testChatCfg2 cfg aliceProfile bobProfile $
+    \alice bob -> do
+      gLink <- createTeamLink alice
+      bob ##> ("/c " <> gLink)
+      bob <## "connection request sent!"
+      alice <## "bob (Bob): accepting request to join group #team..."
+      concurrentlyN_
+        [ alice <## "#team: bob connected and pending approval, use /_accept member #1 2 <role> to accept member",
+          do
+            bob <## "#team: joining the group..."
+            bob <## "#team: you joined the group, pending approval"
+        ]
+
+      alice ##> "/block for all #team bob"
+      alice <##. "#team: you blocked bob"
+      bob <// 50000
+      alice ##> "/_accept member #1 2 member"
+      alice <## "bad chat command: can't accept blocked member, unblock first"
+
+      alice ##> "/unblock for all #team bob"
+      alice <##. "#team: you unblocked bob"
+      bansFixture "pending-member" alice ["/_members #1", "/_block #1 2 blocked=on", "/_block #1 2 blocked=off", "/_accept member #1 2 member"]
+      bob <## "#team: you joined the group"
+      dropOutputs [alice, bob]
+  where
+    cfg = testCfg {chatHooks = defaultChatHooks {acceptMember = Just (\_ _ _ -> pure $ Right (GAPendingApproval, GRObserver))}}
+
+testBlockPendingReviewMember :: HasCallStack => TestParams -> IO ()
+testBlockPendingReviewMember =
+  testChat4 aliceProfile bobProfile cathProfile danProfile $
+    \alice bob cath dan -> do
+      createGroup3' "team" alice (bob, GRMember) (cath, GRModerator)
+      alice ##> "/set admission review #team all"
+      alice <## "changed member admission rules"
+      concurrentlyN_
+        [ do
+            bob <## "alice updated group #team: (signed)"
+            bob <## "changed member admission rules",
+          do
+            cath <## "alice updated group #team: (signed)"
+            cath <## "changed member admission rules"
+        ]
+
+      alice ##> "/create link #team"
+      gLink <- getGroupLink alice "team" GRMember True
+      dan ##> ("/c " <> gLink)
+      dan <## "connection request sent!"
+      alice <## "dan (Daniel): accepting request to join group #team..."
+      concurrentlyN_
+        [ alice <## "#team: dan connected and pending review",
+          dan
+            <### [ "#team: alice accepted you to the group, pending review",
+                   "#team: joining the group...",
+                   "#team: you joined the group, connecting to group moderators for admission to group",
+                   "#team: member cath (Catherine) is connected"
+                 ],
+          do
+            cath <## "#team: alice added dan (Daniel) to the group (connecting and pending review...), use /_accept member #1 4 <role> to accept member"
+            cath <## "#team: new member dan is connected and pending review, use /_accept member #1 4 <role> to accept member"
+        ]
+
+      alice ##> "/block for all #team dan"
+      alice <##. "#team: you blocked dan"
+      cath <## "#team: alice blocked dan (signed)"
+      bob <// 50000
+      dan <// 50000
 
 testBlockForAllLeftRemoved :: HasCallStack => TestParams -> IO ()
 testBlockForAllLeftRemoved =
@@ -8476,6 +9131,80 @@ testBlockForAllLeftRemoved =
       alice ##> "/block for all #team dan"
       alice <## "#team: you blocked dan (signed)"
       bob <## "#team: alice blocked dan (signed)"
+
+testBlockMembersFixtures :: HasCallStack => TestParams -> IO ()
+testBlockMembersFixtures =
+  testChat4 aliceProfile bobProfile cathProfile danProfile $
+    \alice bob cath dan -> do
+      createGroup4 "team" alice (bob, GRMember) (cath, GRMember) (dan, GRMember)
+      bansFixture
+        "hide-messages"
+        bob
+        [ "/_members #1",
+          "/_member settings #1 3 {\"showMessages\":false}",
+          "/_member settings #1 3 {\"showMessages\":true}",
+          "/_member settings #1 3 {\n    \"showMessages\": false\n}",
+          "/_member settings #1 3 {\n    \"showMessages\": true\n}"
+        ]
+      apiFixture
+        "bans/block-members"
+        alice
+        []
+        FixtureRequests
+          { frMarkdown = ["Bob", "Daniel"],
+            frUris = [],
+            frCommands =
+              [ "/_members #1",
+                "/_block #1 2 blocked=on",
+                "/_block #1 3,4 blocked=on",
+                "/_block #1 2 blocked=off",
+                "/_block #1 3,4 blocked=off",
+                "/_block #1 2,3 blocked=on",
+                "/_remove #1 2 messages=off notice={\"ttl\":86400}",
+                "/_remove #1 3 messages=on notice={}",
+                "/_remove #1 4 messages=off"
+              ]
+          }
+      dropOutputs [alice, bob, cath, dan]
+
+testBlockPreviousVersionFixtures :: HasCallStack => TestParams -> IO ()
+testBlockPreviousVersionFixtures ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChat ps "bob" bobProfile $ \bob ->
+      withNewTestChatCfg ps testCfgVPrev "cath" cathProfile $ \cath ->
+        withNewTestChat ps "dan" danProfile $ \dan -> do
+          createGroup4 "team" alice (bob, GRModerator) (cath, GRMember) (dan, GRMember)
+          bansFixture "previous-version-moderator" bob ["/_members #1"]
+          bansFixture
+            "previous-version"
+            alice
+            [ "/_members #1",
+              "/_block #1 3,4 blocked=on",
+              "/_remove #1 3 messages=off notice={\"ttl\":86400}",
+              "/_remove #1 3,4 messages=off"
+            ]
+          dropOutputs [alice, bob, cath, dan]
+
+testBlockChannelFixtures :: HasCallStack => TestParams -> IO ()
+testBlockChannelFixtures ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath ->
+        withNewTestChat ps "dan" danProfile $ \dan -> do
+          (shortLink, fullLink) <- prepareChannel1Relay "team" alice bob
+          memberJoinChannel "team" [bob] [alice] shortLink fullLink cath
+          memberJoinChannel "team" [bob] [alice] shortLink fullLink dan
+          threadDelay 1000000
+          bansFixture
+            "channel"
+            alice
+            [ "/_members #1",
+              "/_block #1 3 blocked=on",
+              "/_block #1 3 blocked=off",
+              "/_remove #1 4 messages=off notice={}",
+              "/_delete #1 entity notify=on"
+            ]
+          dropOutputs [alice, bob, cath, dan]
 
 testGroupMemberInactive :: HasCallStack => TestParams -> IO ()
 testGroupMemberInactive ps = do
@@ -11466,10 +12195,10 @@ testChannelBlockMemberSigned ps =
                 eve <## "#team: alice blocked cath (signed)"
               ]
             alice #$> ("/_get chat #1 count=1", chat, [(1, "blocked cath (signed)")])
-            bob #$> ("/_get chat #1 count=1", chat, [(0, "blocked cath (signed)")])
+            bob #$> ("/_get chat #1 count=1", chat, [(0, "hello from cath")])
             cath #$> ("/_get chat #1 count=1", chat, [(1, "hello from cath")]) -- was blocked - no "blocked" chat item
-            dan #$> ("/_get chat #1 count=1", chat, [(0, "blocked cath (signed)")])
-            eve #$> ("/_get chat #1 count=1", chat, [(0, "blocked cath (signed)")])
+            dan #$> ("/_get chat #1 count=1", chat, [(0, "hello from cath")])
+            eve #$> ("/_get chat #1 count=1", chat, [(0, "hello from cath")])
 
             -- TODO [relays] member: in channels - don't create unknown member record and chat item? (just ignore)
             -- block silent member (other members create unknown member record and can verify)
@@ -11486,16 +12215,87 @@ testChannelBlockMemberSigned ps =
                   eve .<##. ("#team: alice blocked", "(signed)")
               ]
             alice #$> ("/_get chat #1 count=1", chat, [(1, "blocked dan (signed)")])
-            bob #$> ("/_get chat #1 count=1", chat, [(0, "blocked dan (signed)")])
-            cath ##> "/_get chat #1 count=1"
-            [(0, r1)] <- chat <$> getTermLine cath
-            r1 `shouldStartWith` "blocked"
-            r1 `shouldEndWith` "(signed)"
-            dan #$> ("/_get chat #1 count=1", chat, [(0, "blocked cath (signed)")]) -- was blocked - no new chat item
-            eve ##> "/_get chat #1 count=1"
-            [(0, r2)] <- chat <$> getTermLine eve
-            r2 `shouldStartWith` "blocked"
-            r2 `shouldEndWith` "(signed)"
+            bob #$> ("/_get chat #1 count=1", chat, [(0, "hello from cath")])
+            cath #$> ("/_get chat #1 count=1", chat, [(1, "hello from cath")])
+            dan #$> ("/_get chat #1 count=1", chat, [(0, "hello from cath")])
+            eve #$> ("/_get chat #1 count=1", chat, [(0, "hello from cath")])
+
+testChannelBlockedMemberToNewModerator :: HasCallStack => TestParams -> IO ()
+testChannelBlockedMemberToNewModerator ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath ->
+        withNewTestChat ps "dan" danProfile $ \dan -> do
+          (shortLink, fullLink) <- prepareChannel1Relay "team" alice bob
+          memberJoinChannel "team" [bob] [alice] shortLink fullLink cath
+          promoteChannelMember "team" alice bob cath []
+          threadDelay 1000000
+          alice ##> "/block for all #team cath"
+          alice <## "#team: you blocked cath (signed)"
+          bob <## "#team: alice blocked cath (signed)"
+
+          memberJoinChannel "team" [bob] [alice] shortLink fullLink dan
+          threadDelay 1000000
+          alice ##> "/mr #team dan moderator"
+          alice <## "#team: you changed the role of dan to moderator (signed)"
+          concurrentlyN_
+            [ bob <## "#team: alice changed the role of dan from observer to moderator (signed)",
+              dan <## "#team: alice changed your role from observer to moderator (signed)",
+              cath <### [EndsWith "to moderator (signed)"]
+            ]
+
+          threadDelay 1000000
+          cath #> "#team spam"
+          alice <# "#team cath> spam [blocked by admin] [>>] <muted>"
+          dan <### [EndsWith "updated to cath"]
+          dan <## "#team: bob introduced cath (Catherine) in the channel"
+          dan <# "#team cath> spam [blocked by admin] [>>] <muted>"
+
+testChannelBlockedMemberToModerators :: HasCallStack => TestParams -> IO ()
+testChannelBlockedMemberToModerators ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath ->
+        withNewTestChat ps "dan" danProfile $ \dan ->
+          withNewTestChat ps "eve" eveProfile $ \eve -> do
+            createChannel1Relay "team" alice bob cath dan eve
+            promoteChannelMember "team" alice bob cath [dan, eve]
+            threadDelay 1000000
+            cath #> "#team hello from cath"
+            bob <# "#team cath> hello from cath"
+            concurrentlyN_
+              [ alice <# "#team cath> hello from cath [>>]",
+                do
+                  dan <### [EndsWith "updated to cath"]
+                  dan <## "#team: bob introduced cath (Catherine) in the channel"
+                  dan <# "#team cath> hello from cath [>>]",
+                do
+                  eve <### [EndsWith "updated to cath"]
+                  eve <## "#team: bob introduced cath (Catherine) in the channel"
+                  eve <# "#team cath> hello from cath [>>]"
+              ]
+
+            threadDelay 1000000
+            alice ##> "/block for all #team cath"
+            alice <## "#team: you blocked cath (signed)"
+            bob <## "#team: alice blocked cath (signed)"
+            concurrentlyN_
+              [ dan <## "#team: alice blocked cath (signed)",
+                eve <## "#team: alice blocked cath (signed)"
+              ]
+
+            danConnId <- relayConnIdToMember bob "dan"
+            aliceConnId <- relayConnIdToMember bob "alice"
+            sentToDan <- lastSndMsgId bob danConnId
+            cath #> "#team spam"
+            alice <# "#team cath> spam [blocked by admin] [>>] <muted>"
+            lastSndMsgFlags bob aliceConnId 1 `shouldReturn` ["F"]
+            lastJobNotification bob `shouldReturn` False
+            bob <// 50000
+            dan <// 50000
+            eve <// 50000
+            lastSndMsgId bob danConnId `shouldReturn` sentToDan
+            dan #$> ("/_get chat #1 count=1", chat, [(0, "hello from cath")])
 
 checkMemberRow :: HasCallStack => TestCC -> T.Text -> Maybe T.Text -> IO ()
 checkMemberRow cc name expectedRole = memberRoles cc name `shouldReturn` maybeToList expectedRole
@@ -11911,6 +12711,40 @@ testChannelRelayCannotDowngradeRosterMember ps =
         [Only k] -> pure k
         _ -> fail $ "expected one row for " <> T.unpack name
 
+testChannelRelayCannotBlockRosterModerator :: HasCallStack => TestParams -> IO ()
+testChannelRelayCannotBlockRosterModerator ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath ->
+        withNewTestChat ps "frank" frankProfile $ \frank -> do
+          (shortLink, fullLink) <- prepareChannel1Relay "team" alice bob
+          memberJoinChannel "team" [bob] [alice] shortLink fullLink cath
+          memberJoinChannel "team" [bob] [alice] shortLink fullLink frank
+          threadDelay 1000000
+          alice ##> "/mr #team cath moderator"
+          alice <## "#team: you changed the role of cath to moderator (signed)"
+          concurrentlyN_
+            [ bob <## "#team: alice changed the role of cath from observer to moderator (signed)",
+              cath <## "#team: alice changed your role from observer to moderator (signed)",
+              frank <### [EndsWith "to moderator (signed)"]
+            ]
+          threadDelay 100000
+          withCCUser bob $ \user -> do
+            let sendMemNew = do
+                  cxt <- chatStoreCxt
+                  g@(GIK gInfo _) <- withStore $ \db -> getGroupInfoKeys db cxt user 1
+                  members <- withStore' $ \db -> getGroupMembers db cxt user gInfo
+                  let named n = find (\GroupMember {localDisplayName = ldn} -> ldn == n) members
+                  case (named "cath", named "frank") of
+                    (Just cathMem, Just frankMem) ->
+                      void $ sendGroupMessage' user g [frankMem] $ XGrpMemNew (memberInfo gInfo cathMem) Nothing (Just MemberRestrictions {restriction = MRSBlocked})
+                    _ -> error "members not found"
+            runExceptT sendMemNew `runReaderT` chatController bob >>= either (fail . show) pure
+          frank <### [EndsWith "updated to cath"]
+          frank <## "#team: bob introduced cath (Catherine) in the channel"
+          threadDelay 100000
+          withCCTransaction frank (\db -> DB.query_ db "SELECT member_restriction FROM group_members WHERE local_display_name = 'cath'") `shouldReturn` [Only (Nothing :: Maybe T.Text)]
+
 testChannelRelayCannotForgePrivilegedMember :: HasCallStack => TestParams -> IO ()
 testChannelRelayCannotForgePrivilegedMember ps =
   withNewTestChat ps "alice" aliceProfile $ \alice ->
@@ -11940,7 +12774,7 @@ testChannelRelayCannotForgePrivilegedMember ps =
                   profile = forgedProfile,
                   memberKey = Just (MemberKey attackerPub)
                 }
-            chatMsg = ChatMessage chatInitialVRange Nothing (XGrpMemNew memInfo Nothing)
+            chatMsg = ChatMessage chatInitialVRange Nothing (XGrpMemNew memInfo Nothing Nothing)
             fwd = GrpMsgForward (FwdMember ownerMemId "alice") ts
             body = encodeBinaryBatch [encodeFwdElement fwd (VMUnsigned chatMsg)]
         sent <- runExceptT $ sendMessages bobAgent [(connId, PQEncOff, MsgFlags False, vrValue body)]
@@ -12005,7 +12839,7 @@ testChannelPromotionDifferentKeyKeepsRole ps =
           kp <- atomically $ C.generateKeyPair g
           let relayKey = fst kp :: C.PublicKeyEd25519
               memInfo = MemberInfo {memberId = danId, memberRole = GRObserver, v = Nothing, profile = danProfile, memberKey = Just (MemberKey relayKey)}
-          agentSendBody bob connId $ chatMsgToBody $ ChatMessage chatInitialVRange Nothing (XGrpMemNew memInfo Nothing)
+          agentSendBody bob connId $ chatMsgToBody $ ChatMessage chatInitialVRange Nothing (XGrpMemNew memInfo Nothing Nothing)
           cath <## "#team: bob introduced dan (Daniel) in the channel"
           threadDelay 1000000
           alice ##> "/mr #team dan admin"
@@ -12134,6 +12968,111 @@ testChannelRemoveMemberSigned ps =
             cath ##> "/_get group link data #1"
             cath <## "group ID: 1"
             cath <## "subscribers: 2"
+
+testChannelRemoveMemberNotice :: HasCallStack => TestParams -> IO ()
+testChannelRemoveMemberNotice ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath -> do
+        (shortLink, fullLink) <- prepareChannel1Relay "team" alice bob
+        memberJoinChannel "team" [bob] [alice] shortLink fullLink cath
+
+        threadDelay 1000000
+        alice ##> "/rm #team bob notice={}"
+        alice <## "bad chat command: notice is not supported for moderators, admins, owners, relays, members on old versions and members not in the group"
+        alice ##> "/rm #team cath notice={\"ttl\":86400}"
+        alice <## "#team: you removed cath from the group (signed)"
+        bob <## "#team: alice removed cath from the group (signed)"
+        linkNoticesCount cath `shouldEventuallyReturn` 1
+        cath <// 50000
+
+        cath ##> ("/_connect plan 1 " <> shortLink)
+        cath <## "group link: known group #team"
+        cath <## "use #team <message> to send messages"
+        cath ##> "/_connect group #1"
+        cath <##. "connection link: blocked until "
+        bansFixture "connect-channel-notice" cath ["/_get chat #1 count=0", "/_connect group #1 incognito=off"]
+
+        leaveDeleteGroup cath "team"
+        apiFixture "bans/plan-channel-notice" cath [(shortLink, "CHANNEL_LINK")] FixtureRequests {frMarkdown = [shortLink], frUris = [], frCommands = ["/_connect plan 1 " <> shortLink]}
+        cath ##> ("/_connect plan 1 " <> shortLink)
+        cath <##. "group link: blocked until "
+
+testChannelRemoveMemberNoticeNewRelay :: HasCallStack => TestParams -> IO ()
+testChannelRemoveMemberNoticeNewRelay ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChatOpts ps relayTestOpts "cath" cathProfile $ \cath ->
+        withNewTestChat ps "dan" danProfile $ \dan -> do
+          (shortLink, fullLink) <- prepareChannel1Relay "team" alice bob
+          memberJoinChannel "team" [bob] [alice] shortLink fullLink dan
+
+          threadDelay 1000000
+          alice ##> "/rm #team dan notice={\"ttl\":1}"
+          alice <## "#team: you removed dan from the group (signed)"
+          bob <## "#team: alice removed dan from the group (signed)"
+          linkNoticesCount dan `shouldEventuallyReturn` 1
+          dan <// 50000
+          relayConnStatuses <- withCCTransaction dan $ \db -> map fromOnly <$> DB.query_ db "SELECT conn_status FROM connections WHERE group_member_id IS NOT NULL"
+          relayConnStatuses `shouldBe` ["deleted" :: String]
+          threadDelay 2000000
+
+          cath ##> "/ad"
+          (cathSLink, _cLink) <- getContactLinks cath True
+          alice ##> ("/relays name=cath " <> cathSLink)
+          alice <## "ok"
+          alice ##> "/_add relays #1 2"
+          alice <## "#team: group relays:"
+          alice <## "  - relay id 1: active"
+          alice <## "  - relay id 2: invited"
+          concurrentlyN_
+            [ do
+                alice <## "#team: group link relays updated, current relays:"
+                alice
+                  <### [ "  - relay id 1: active",
+                         "  - relay id 2: active"
+                       ]
+                alice <## "group link:"
+                void $ getTermLine alice,
+              cath <## "#team: you joined the group as relay"
+            ]
+
+          waitQueuedLinkUpdates alice
+          dan ##> "/_get group link data #1"
+          dan <## "group ID: 1"
+          void $ getTermLine dan
+          dan <// 500000
+          cath <// 50000
+          withCCTransaction dan (\db -> map fromOnly <$> DB.query_ db "SELECT conn_status FROM connections WHERE group_member_id IS NOT NULL") `shouldReturn` ["deleted" :: String]
+
+testChannelRestrictFromMemberNotForwarded :: HasCallStack => TestParams -> IO ()
+testChannelRestrictFromMemberNotForwarded ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath ->
+        withNewTestChat ps "dan" danProfile $ \dan ->
+          withNewTestChat ps "eve" eveProfile $ \eve -> do
+            createChannel1Relay "team" alice bob cath dan eve
+            promoteChannelMember "team" alice bob cath [dan, eve]
+
+            sendRelaysEvent cath 1 $ XGrpMemRestrict (MemberId "unknown") MemberRestrictions {restriction = MRSUnrestricted}
+            bob <## "error: x.grp.mem.restrict with insufficient member permissions"
+            threadDelay 500000
+            alice <// 50000
+            dan <// 50000
+            eve <// 50000
+            rcvRestrictCount dan `shouldReturn` 0
+            rcvRestrictCount eve `shouldReturn` 0
+
+sendRelaysEvent :: MsgEncodingI e => TestCC -> GroupId -> ChatMsgEvent e -> IO ()
+sendRelaysEvent cc groupId evt =
+  withCCUser cc $ \user -> do
+    let sendToRelays = do
+          cxt <- chatStoreCxt
+          g@(GIK gInfo _) <- withStore $ \db -> getGroupInfoKeys db cxt user groupId
+          relays <- withStore' $ \db -> getGroupRelayMembers db cxt user gInfo
+          void $ sendGroupMessage' user g relays evt
+    runExceptT sendToRelays `runReaderT` chatController cc >>= either (fail . show) pure
 
 -- asserts the member row is GSMemRemoved, with removed_at set (TTL tombstone) or NULL (permanent)
 checkRemovedMember :: HasCallStack => TestCC -> String -> Bool -> Expectation
@@ -14286,6 +15225,12 @@ lastSndMsgFlags cc connId n = do
       "SELECT msg_flags FROM messages WHERE conn_id = ? AND internal_snd_id IS NOT NULL AND msg_type = ? ORDER BY internal_id DESC LIMIT ?"
       (connId, Binary ("M" :: ByteString), n)
   pure $ reverse $ map fromOnly rows
+
+lastSndMsgId :: TestCC -> ByteString -> IO Int
+lastSndMsgId cc connId = do
+  [Only n] <- withCCAgentTransaction cc $ \db ->
+    DB.query db "SELECT last_internal_snd_msg_id FROM connections WHERE conn_id = ?" (Only connId)
+  pure n
 
 lastJobNotification :: TestCC -> IO Bool
 lastJobNotification cc = do

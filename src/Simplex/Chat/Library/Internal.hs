@@ -1270,7 +1270,7 @@ shouldIntroduce m vec mem =
 introduceMember :: User -> GroupInfoKeys -> GroupMember -> [GroupMember] -> Maybe MsgScope -> CM ()
 introduceMember _ _ GroupMember {activeConn = Nothing} _ _ = throwChatError $ CEInternalError "member connection not active"
 introduceMember user gInfo@(GIK g _) toMember@GroupMember {activeConn = Just conn} introduceToMembers msgScope = do
-  void . sendGroupMessage' user gInfo introduceToMembers $ XGrpMemNew (memberInfo g toMember) msgScope
+  void . sendGroupMessage' user gInfo introduceToMembers $ XGrpMemNew (memberInfo g toMember) msgScope (memberRestrictions toMember)
   sendIntroductions introduceToMembers
   where
     sendIntroductions reMembers = do
@@ -1337,7 +1337,7 @@ introduceInChannel cxt user g@(GIK gInfo _) subscriber@GroupMember {activeConn =
   (owners, adminsMods) <- withStore' $ \db ->
     (,) <$> getGroupOwners db cxt user gInfo <*> getGroupAdminsMods db cxt user gInfo
   let modMs = owners <> adminsMods
-  void $ sendGroupMessage' user g modMs $ XGrpMemNew (memberInfo gInfo subscriber) Nothing
+  void $ sendGroupMessage' user g modMs $ XGrpMemNew (memberInfo gInfo subscriber) Nothing (memberRestrictions subscriber)
   withStore' $ \db ->
     setMemberVectorNewRelations db subscriber [(indexInGroup m, (IDSubjectIntroduced, MRIntroduced)) | m <- modMs]
   -- owner intros first so the joiner has the owner profile loaded before applying the saved roster (signed by the owner)
@@ -2720,8 +2720,8 @@ applyRosterDelta delta current = case delta of
 -- onto the served roster (so it excludes demoted/removed members). Returns the reserved version for the delta
 -- that follows. The blob send is best-effort - a failed send heals on the next change or on resume.
 broadcastRoster :: User -> GroupInfoKeys -> RosterDelta -> CM VersionRoster
-broadcastRoster user g@(GIK gInfo _) delta = do
-  let rosterVer = maybe (VersionRoster 0) (\(VersionRoster n) -> VersionRoster (n + 1)) (rosterVersion gInfo)
+broadcastRoster user g@(GIK gInfo@GroupInfo {rosterVersion} _) delta = do
+  let rosterVer = maybe (VersionRoster 0) (\(VersionRoster n) -> VersionRoster (n + 1)) rosterVersion
   withStore' $ \db -> setGroupRosterVersion db gInfo rosterVer
   sendRosterBlob rosterVer `catchAllErrors` eToView
   pure rosterVer
@@ -2735,8 +2735,8 @@ broadcastRoster user g@(GIK gInfo _) delta = do
 
 -- Send the current roster (no version bump) to a newly added relay so it can serve joiners.
 sendGroupRosterToRelay :: User -> GroupInfoKeys -> GroupMember -> CM ()
-sendGroupRosterToRelay user g@(GIK gInfo _) relayMember =
-  forM_ (rosterVersion gInfo) $ \rosterVer -> do
+sendGroupRosterToRelay user g@(GIK gInfo@GroupInfo {rosterVersion} _) relayMember =
+  forM_ rosterVersion $ \rosterVer -> do
     cxt <- chatStoreCxt
     rosterMems <- withStore' $ \db -> getGroupRosterMembers db cxt user gInfo
     sendRoster user g [relayMember] rosterVer (buildGroupRoster rosterMems)

@@ -1429,9 +1429,7 @@ testCapthaScreening ps =
         (bob </)
         cath ##> "/ms privacy"
         cath <## "cath (Catherine): observer, you, connected"
-        cath <## "'SimpleX Directory': admin, host, connected"
-        cath <## "bob (Bob): owner, connected"
-        cath <## (pastMember <> ": author, status unknown")
+        cath <### ["'SimpleX Directory': admin, host, connected", "bob (Bob): owner, connected", ConsoleString (pastMember <> ": author, status unknown")]
   where
     join cath groupLink = do
       cath ##> ("/c " <> groupLink)

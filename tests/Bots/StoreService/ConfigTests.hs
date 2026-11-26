@@ -17,7 +17,8 @@ import Data.Maybe (isNothing)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Data.Time.Calendar (fromGregorian)
-import Data.Time.Clock (UTCTime (..))
+import Data.Time.Clock (UTCTime (..), addUTCTime, getCurrentTime)
+import Data.Time.Format.ISO8601 (iso8601Show)
 import Simplex.Messaging.Crypto.Secp256k1 (mkPrivateKey)
 import Simplex.Messaging.Encoding.String (strDecode)
 import Simplex.Messaging.SimplexName (SimplexTLD (..))
@@ -706,8 +707,9 @@ namesConfigTests = describe "StoreService names: config" $ do
   it "reads metrics_port, off when absent, also without [names], and refuses one outside 1-65535 or on the badges_port or names_port" testMetricsPort
   it "leaves the names side off when [names] is absent" testNamesAbsent
   it "refuses [names] without [chain], and [chain] without [names]" testNamesNeedsChain
-  it "refuses years below 2" testNamesYearsBelowTwo
+  it "refuses years below 2 or above 10" testNamesYearsBelowTwo
   it "refuses a term_start that is not an ISO 8601 UTC time" testNamesBadTermStart
+  it "refuses a term_start that, with its slack, is more than 365 days ahead" testNamesTermStartAhead
   it "refuses a TLD other than simplex or testing" testNamesBadTLD
   it "refuses a bad or wrongly checksummed contract address, naming the key" testNamesBadAddress
   it "reads the service key's hex digits in either case, and refuses a bad key without quoting it" testNamesBadServiceKey
@@ -862,9 +864,19 @@ testNamesNeedsChain = do
 
 testNamesYearsBelowTwo :: IO ()
 testNamesYearsBelowTwo = do
-  mapM_ (\v -> namesRefusal (namesSection <> ["years = " <> v]) chainSection `shouldReturn` "names.years must be a whole number of at least 2") ["1", "0", "-2"]
+  mapM_ (\v -> namesRefusal (namesSection <> ["years = " <> v]) chainSection `shouldReturn` "names.years must be a whole number from 2 to 10") ["1", "0", "-2", "11"]
   NamesConfig {nYears} <- parsedNames (namesSection <> ["years = 2"]) chainSection
   nYears `shouldBe` 2
+  NamesConfig {nYears = most} <- parsedNames (namesSection <> ["years = 10"]) chainSection
+  most `shouldBe` 10
+
+testNamesTermStartAhead :: IO ()
+testNamesTermStartAhead = do
+  now <- getCurrentTime
+  let termStartIn days = namesSection <> ["term_start = " <> T.pack (iso8601Show (addUTCTime (days * 86400) now))]
+  namesRefusal (termStartIn 365) chainSection
+    `shouldReturn` "names.term_start, with names.term_slack_seconds, must be at most 365 days ahead, as the controller registers a name for at most 4015 days, a community name for 1095"
+  void $ parsedNames (termStartIn 364) chainSection
 
 testNamesBadTermStart :: IO ()
 testNamesBadTermStart =
