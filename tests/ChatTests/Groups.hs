@@ -663,15 +663,21 @@ testGroupLargeMessage =
       bob <## "profile image updated"
 
 testGroupChainAddressSigned :: HasCallStack => TestParams -> IO ()
-testGroupChainAddressSigned =
-  testChat3 aliceProfile bobProfile cathProfile $
-    \alice bob cath -> do
-      createGroup3 "team" alice bob cath
-      alice `send` "#team donate bc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66505d4u"
-      alice <# "#team donate bc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66505d4u (signed)"
-      [bob, cath] *<# "#team alice> donate bc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66505d4u (signed)"
-      alice #> "#team thanks"
-      [bob, cath] *<# "#team alice> thanks"
+testGroupChainAddressSigned ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps testOpts {markRead = False} "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath -> do
+        createGroup3 "team" alice bob cath
+        alice `send` "#team donate bc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66505d4u"
+        alice <# "#team donate bc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66505d4u (signed)"
+        [bob, cath] *<# "#team alice> donate bc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66505d4u (signed)"
+        alice #> "#team thanks"
+        [bob, cath] *<# "#team alice> thanks"
+        thanksId <- lastItemId alice
+        alice ##> ("/_update item #1 " <> thanksId <> " text thanks, or ltc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66snwfdv")
+        alice <# "#team [edited] thanks, or ltc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66snwfdv"
+        [bob, cath] *<# "#team alice> [edited] thanks, or ltc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66snwfdv"
+        apiFixture "chain-addresses/group" bob [] FixtureRequests {frMarkdown = [], frUris = [], frCommands = ["/_get chat #1 count=2"]}
 
 testNewGroupIncognito :: HasCallStack => TestParams -> IO ()
 testNewGroupIncognito =
