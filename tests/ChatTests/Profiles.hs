@@ -32,7 +32,7 @@ import Simplex.Chat.Badges (BadgeCredential, BadgeInfo (..), BadgeProof, BadgePu
 import Simplex.Chat.Controller (CM, ChatConfig (..), ChatController (ChatController, smpAgent), ChatHooks (..), defaultChatHooks, storeCxt, withAgent)
 import Simplex.Chat.Library.Internal (encodeConnInfo, encodeShortLinkData, getShortLinkConnReq, groupMemberKey, redactedMemberProfile, sendDirectContactMessage, sendGroupMessage')
 import Simplex.Chat.Options (ChatOpts (..), CoreChatOpts (..))
-import Simplex.Chat.Protocol (ChatBinding (..), ChatMsgEvent (XContact, XInfo, XOk), ContactShortLinkData (ContactShortLinkData), GroupShortLinkData (GroupShortLinkData), LinkOwnerSig, MsgChatLink (..), MsgContent (..), encodeChatBinding)
+import Simplex.Chat.Protocol (ChatBinding (..), ChatMsgEvent (XContact, XInfo, XOk), ContactShortLinkData (ContactShortLinkData), GroupShortLinkData (GroupShortLinkData), LinkOwnerSig, MsgChatLink (..), MsgContent (..), encodeChatBinding, linkNoticeVersion)
 import Simplex.Chat.Store.Groups (getGroupMembers)
 import Simplex.Chat.Store.Shared (createContact, getGroupInfoKeys)
 import Simplex.Chat.Types (AgentConnId (..), B64UrlByteString (..), ChatPeerType (..), ConnStatus (..), GroupId, GroupInfo (..), GroupInfoKeys (..), GroupMember (..), GroupProfile (publicGroup), GroupType (..), ImageData (..), Profile (..), PublicGroupProfile (PublicGroupProfile), GroupRejectionReason (..), ShortLinkContact, User (..), aUserId, fromLocalProfile, profileFromName, userProfileDirect, pattern VersionChat)
@@ -137,7 +137,7 @@ chatProfileTests = do
     it "contact via short address" testPlanAddressContactViaShortAddress
     it "contact deleted silently with notice can't re-connect" testPlanAddressContactDeletedNoticeSilent
     it "silent notice is not sent to previous version" $
-      runTestCfg2 testCfg testCfgVPrev testPlanAddressContactDeletedNoticePrevVersion
+      runTestCfg2 testCfg testCfgVPrev {chatVRange = mkVersionRange (VersionChat 9) (prevVersion linkNoticeVersion)} testPlanAddressContactDeletedNoticePrevVersion
     it "app fixtures: contact link notices" testContactNoticeFixtures
     it "app fixtures: contact deletion" testContactDeletionFixtures
   describe "incognito" $ do
