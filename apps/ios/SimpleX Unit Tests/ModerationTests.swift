@@ -945,6 +945,16 @@ final class ModerationTests: RecordedAPITestCase {
     }
 
     @MainActor
+    func testLeftCustomerRowCantBlock() async throws {
+        try recorded("bans/business")
+        let (groupInfo, _) = try openGroup("/_members #3")
+        try await hosting(chatRow(groupChat(groupInfo))) {
+            try await swipe("Block")
+            try await waitFor { AlertManager.shared.presentAlert }
+        }
+    }
+
+    @MainActor
     func testCustomerRowDeletes() async throws {
         try recorded("bans/business")
         let (groupInfo, _) = try openGroup()
