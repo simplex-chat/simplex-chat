@@ -223,6 +223,14 @@ link preview from the website. The first time you type a link, the app asks
 - Tap on "Your privacy".
 - Toggle on "Send link previews".
 
+#### Contact deletion
+
+Choose whether a contact you delete is notified: _Notify_, or _Ask_ each time.
+
+- [Open the app settings](#opening-the-app-settings).
+- Tap on "Your privacy".
+- Choose "Contact deletion".
+
 #### SimpleX Links
 
 This option is in [Developer tools](#developer-tools), in the section
