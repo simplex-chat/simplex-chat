@@ -23,7 +23,7 @@ A payment address or request in a message is plain text. A reader copies it into
 | A7 | earlier apps show the text as now; the message protocol and the database are unchanged | — |
 | A8 | a bare word is validated at most once, by the form that its prefix, case and length select; a word that no form selects is text without a checksum computed; the parse time of section Timing is reported | — |
 | A9 | a link whose chain or token is outside the tables of section Link text, and an EVM link without a chain ID, are shown in orange as ⚠, the shortened address and `(unknown chain)`, `(unknown token)` or `(unknown chain and token)`, without an amount | — |
-| A10 | in a group, a message with a chain address is signed with the sender's member key; a received group item shows its chain addresses as links only when its signature is verified | — |
+| A10 | in a group, a message with a chain address is signed with the sender's member key; a received group item without a verified signature shows its chain addresses as the orange link `(not signed)`, and the alert warns (Q7 c) | — |
 
 ## Options
 
@@ -216,7 +216,7 @@ zel:
                 memo, with a Sapling address only
                 address
                 action: absent or pay
-                coin: absent, flux, zelcash or zel
+                coin: flux, zelcash or zel; absent only in flux: or with an address in the path
 ```
 
 Examples:
@@ -308,7 +308,8 @@ U6  solana: with an https link, a transaction request, is text
 U7  flux: and zel: are parsed by ZIP-321, as zcash:, with Flux addresses; a URI is text when
       its action is not pay
       it has a callback
-      its coin is not flux, zelcash or zel (Q9)
+      its coin is not flux, zelcash or zel
+      it is zel: with the address in a parameter and without a coin, Bitcoin in Zelcore (Q9)
 U8  a URI is text when its label or message has an address-like run other than
       its payee, an alternative or the token
 L1  [label](URI): the punctuation rule of web hyperlinks is applied (Markdown.hs:453-454)
@@ -709,15 +710,16 @@ send      sendGroupContentMessages_ sets signMsgs also when a composed message h
             edits keep reuseSign (Commands.hs:872): an edit of an unsigned item stays unsigned
 receive   withVerifiedMsg verifies the signature, as now (Subscriber.hs:4148-4167)
             the item stores msgVerified (Internal.hs:3120, Store/Messages.hs:576)
-            the rest of receive and show is built after Q7 is answered:
-              hasLink of a group item counts a chain address only when msgVerified is verified (Internal.hs:3116)
-show      a chain address of a group item is a link only when meta.msgVerified is verified,
-            the condition of the signature mark (CIMetaView.swift:169, CIMetaView.kt:130)
-            otherwise it is shown as Q7 decides
+            the apps receive it as meta.msgVerified: absent when unsigned, signed with sigStatus
+              verified or signedNoKey, or sigMissing where signing is required (Types/Shared.hs:134, 152-172)
+            hasLink is unchanged: the address stays a link (Q7 c)
+show      Q7 c: a chain address of a group item whose meta.msgVerified is not signed and verified
+            is the orange link "(not signed)", and its alert has a warning; the wording is designed
+            separately, and the apps build it
 direct    unchanged: direct chats and local notes
 ```
 
-- Built in the core stage: send. Test `chain addresses in group messages are signed` (tests/ChatTests/Groups.hs): in a group without the signing preference, the item with a bare address is shown as `(signed)` to the sender and both members; a plain message is not signed.
+- Built in the core stage: send, and the recorded state. Test `chain addresses in group messages are signed` (tests/ChatTests/Groups.hs): in a group without the signing preference, the item with a bare address is shown as `(signed)` to the sender and both members; a plain message is not signed; its edit that adds an address stays unsigned (`reuseSign`); bob's two items are recorded to tests/fixtures/api/chain-addresses/group.json, one with `msgVerified` verified and one without it.
 
 - XMsgNew is a content event that a member may sign (`signableContent`, Protocol.hs:1403-1408); `requiresSignature` lists events by tag in relay groups (Protocol.hs:1386-1400, Subscriber.hs:4167) and is not changed, as a requirement on the content of XMsgNew is a rule of the receiving app.
 - A sent item is verified when it is signed (Internal.hs:3085), so the sender sees the link.
@@ -772,9 +774,8 @@ Each test that expects a payment link fails on master.
 | tests/ChatTests/Direct.hs | `chain addresses in a received message`: alice sends a bare address, `[Donate](monero:…)` and a bare invoice; `apiFixture` (tests/ChatTests/Utils.hs:1015-1030) records bob's `/_get chat @2 count=1`, whose item has `ChainAddressLink` in `formattedText`, and the markdown of each `ChainCurrency` constructor and `UnlistedCurrency` value, to tests/fixtures/api/chain-addresses/links.json; its pattern is in "App test fixtures" (scripts/ci/README.md:51) |
 | tests/APIDocs.hs | the bots API files, generated again with the new types |
 | app tests on tests/fixtures/api/chain-addresses/links.json | `Format.chainAddressLink` is decoded; each `ChainCurrency` constructor is mapped to its link text and alert text; a mocked open failure is followed by the alert `No wallet app` |
-| tests/ChatTests/Groups.hs | `chain addresses in group messages are signed`: alice sends a bare address to a group without the signing preference; the item is `(signed)` for alice, bob and cath; a plain message after it is not signed |
-| tests/ChatTests/Groups.hs, after Q7 | a member whose chat version range ends at 19 sends a chain address; bob's item is not verified and is shown as Q7 decides; `apiFixture` records both items to tests/fixtures/api/chain-addresses/group.json |
-| app tests on tests/fixtures/api/chain-addresses/group.json, after Q7 | the chain address of the verified item is a link; that of the unsigned item is shown as Q7 decides |
+| tests/ChatTests/Groups.hs | `chain addresses in group messages are signed`: alice sends a bare address to a group without the signing preference; the item is `(signed)` for alice, bob and cath; a plain message after it is not signed, and its edit that adds a Litecoin address stays unsigned; `apiFixture` records bob's `/_get chat #1 count=2` to tests/fixtures/api/chain-addresses/group.json |
+| app tests on tests/fixtures/api/chain-addresses/group.json | the chain address of the verified item is a link; that of the unsigned item is the orange link `(not signed)` (Q7 c) |
 
 ### Timing
 
@@ -842,10 +843,10 @@ Each question is a principle with its consequences; the recommended option is in
 | Q4 | Networks in v1 | decided (items 11702, 11737, 11754): a, and Flux in `flux:` and `zel:` URIs<br>a. Bitcoin, Lightning, Ethereum with the other EVM chains, Monero, Zcash, Solana, Litecoin, Dogecoin, Bitcoin Cash: the networks of README.md:151-158, Lightning and Litecoin<br>b. Bitcoin, Lightning and Monero: a smaller parser and fewer tests; other addresses are text | — |
 | Q5 | Whether payment links are links | a. yes: new items with a payment link are in the Links filter (ChatView.swift:3410-3436, Store/Messages.hs:1551-1578); groups get no new preference in v1<br>b. no, as e-mail addresses and phone numbers (Markdown.hs:320-326)<br>c. a, and a group preference that prohibits them, a protocol change | **a** |
 | Q6 | Text of a link outside the tables: an unknown chain ID or token, or an `ethereum:` link without a chain ID, in which the wallet's current chain is used [S9] | decided (items 11664, 11667): an orange ⚠, the shortened address and `(unknown chain)`, `(unknown token)` or `(unknown chain and token)`, without an amount; the whole link in orange (section Link text) | — |
-| Q7 | What a group item shows when its message has a chain address and no verified signature: unsigned, signed by a member whose key is unknown, or from a member below version 20 (section Groups) | a. the chain address as text, as now; the rest of the message as usual<br>b. the message replaced by the event "bad signature", as for an unsigned edit of a signed item (Subscriber.hs:2431): the whole message is lost<br>c. the link drawn as for Q6, with `(not signed)`, and the alert as usual: a tap still opens the wallet | **a** |
-| Q8 | Text of a link with both a label and a chain name; the chain name follows ` · ` (items 11458, 11489), and the text built in this branch puts the label in its place (ChatTypes.swift:6084, ChatModel.kt:5464) | a. `ETH 0.01 · Arbitrum One · Dinner`: the chain name next to the amount it qualifies, the label last<br>b. `ETH 0.01 · Dinner · Arbitrum One`<br>c. the label is left out when a chain name is shown: `ETH 0.01 · Arbitrum One` | **a** |
-| Q9 | Which `zel:` links are Flux links. Zelcore's specification defines `zel:` as actions with the address in a parameter, `zel:?action=pay&coin=zelcash&address=t1…&amount=3`, where an absent `coin` is Bitcoin [S41]; four RunOnFlux apps build this form, and CumulusVPN states that Zelcore registers it with the OS [S42]; none of the four builds `zel:t1…?amount=`. With ZIP-321 parsing (item 11796), the `address` parameter is read, so the pay action is a FLUX link | a. ZIP-321 only: `zel:?action=sign&address=t1…&callback=…` is a FLUX link too, and Open passes the sign action to the wallet<br>b. ZIP-321, and a URI with an action other than `pay`, a `callback` or a coin other than `flux`, `zelcash` and `zel` is text (U7); built in the core stage | **b** |
-| Q10 | Keys of `flux:` and `zel:` links | decided (item 11796, "flux wallets support it all"): the keys of ZIP-321, `address`, `amount`, `label`, `message` and `memo` | — |
+| Q7 | What a group item shows when its message has a chain address and no verified signature: unsigned, signed by a member whose key is unknown, or from a member below version 20 (section Groups) | decided (item 11878): c, with a warning in the alert; a message with an address is signed, and the sender is warned before sending (the warnings are designed separately)<br>a. the chain address as text, as now; the rest of the message as usual<br>b. the message replaced by the event "bad signature", as for an unsigned edit of a signed item (Subscriber.hs:2431): the whole message is lost<br>c. the link drawn as for Q6, with `(not signed)`, and the alert as usual: a tap still opens the wallet | — |
+| Q8 | Text of a link with both a label and a chain name; the chain name follows ` · ` (items 11458, 11489), and the text built in this branch puts the label in its place (ChatTypes.swift:6084, ChatModel.kt:5464) | answered (item 11878): the label precedes the amount, a chain name is shown when there is no amount, and rule L2 stays; the text is designed separately. The core keeps the hyperlink text (`showText`), the URI label (`label`) and the chain name (`chainName`) as separate fields<br>a. `ETH 0.01 · Arbitrum One · Dinner`<br>b. `ETH 0.01 · Dinner · Arbitrum One`<br>c. the label is left out when a chain name is shown: `ETH 0.01 · Arbitrum One` | — |
+| Q9 | Which `zel:` links are Flux links. Zelcore's specification defines `zel:` as actions with the address in a parameter, `zel:?action=pay&coin=zelcash&address=t1…&amount=3`, where an absent `coin` is Bitcoin [S41]; four RunOnFlux apps build this form, and CumulusVPN states that Zelcore registers it with the OS [S42]; none of the four builds `zel:t1…?amount=`. With ZIP-321 parsing (item 11796), the `address` parameter is read, so the pay action is a FLUX link | decided (item 11878): b<br>a. ZIP-321 only: `zel:?action=sign&address=t1…&callback=…` is a FLUX link too, and Open passes the sign action to the wallet<br>b. ZIP-321, and a URI with an action other than `pay`, a `callback`, a coin other than `flux`, `zelcash` and `zel`, or `zel:` with the address in a parameter and no coin, is text (U7) | — |
+| Q10 | Keys of `flux:` and `zel:` links | decided (items 11796, 11878): `amount`, `label` and `message`, with `address` and `memo` of ZIP-321 | — |
 
 ## Sources
 
