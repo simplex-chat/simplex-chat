@@ -1,6 +1,6 @@
 # Payment addresses in messages
 
-Date: 2026-11-22, revised 2026-11-26. References are to master at 8f5dfa3d4; those of section Bare forms and of the alert rows of sections Presentation and Parts are to master at 94e9d08f5. Haskell paths without a directory are in `src/Simplex/Chat/`. Sources are listed at the end as [S1]–[S43], read on 2026-11-22 and 2026-11-26.
+Date: 2026-11-22, revised 2026-11-26. References are to master at 8f5dfa3d4; those of sections Bare forms and Groups and of the alert rows of sections Presentation and Parts are to master at 94e9d08f5. Haskell paths without a directory are in `src/Simplex/Chat/`. Sources are listed at the end as [S1]–[S43], read on 2026-11-22 and 2026-11-26.
 
 ## Problem
 
@@ -23,6 +23,7 @@ A payment address or request in a message is plain text. A reader copies it into
 | A7 | earlier apps show the text as now; the message protocol and the database are unchanged | — |
 | A8 | a bare word is validated at most once, by the form that its prefix, case and length select; a word that no form selects is text without a checksum computed; the parse time of section Timing is reported | — |
 | A9 | a link whose chain or token is outside the tables of section Link text, and an EVM link without a chain ID, are shown in orange as ⚠, the shortened address and `(unknown chain)`, `(unknown token)` or `(unknown chain and token)`, without an amount | — |
+| A10 | in a group, a message with a chain address is signed with the sender's member key; a received group item shows its chain addresses as links only when its signature is verified | — |
 
 ## Options
 
@@ -672,6 +673,45 @@ sequenceDiagram
 - Bots API: `ChainAddressLink`, `ChainAddress`, `ChainCurrency` and `UnknownCurrency` in bots/src/API/Docs/Types.hs, in place of the six types of this branch; bots/api and the TypeScript and Python types are generated again.
 - Renamed with the types: the fixture tests/fixtures/api/payments/links.json to tests/fixtures/api/chain-addresses/links.json, the test `payment links in a received message` to `chain addresses in a received message` with its line in scripts/ci/README.md, the app tests PaymentLinksTests.swift and PaymentLinksTest.kt, the snapshots `ClassicPaymentLinks`, `TerminalPaymentLinks` and `PaymentLinks.Messages`, and the `ci-tests` block of the pull request body. The string `payment_link_chain` and the iOS string `chain %lld` are removed: a chain outside the table is shown as Q6 decides.
 
+## Groups
+
+In groups, a message with a chain address is signed with the member key, and the signature is required (item 9544). Master's signing and verification are used as they are: the message protocol is unchanged.
+
+```
+send      sendGroupContentMessages_ sets signMsgs also when a composed message has a ChainAddressLink (Commands.hs:5120)
+            groupMsgSigning then signs its XMsgNew with the member key (Internal.hs:2417-2429)
+            edits keep reuseSign (Commands.hs:872): an edit of an unsigned item stays unsigned
+receive   withVerifiedMsg verifies the signature, as now (Subscriber.hs:4148-4167)
+            the item stores msgVerified (Internal.hs:3120, Store/Messages.hs:576)
+            hasLink of a group item counts a chain address only when msgVerified is verified (Internal.hs:3116)
+show      a chain address of a group item is a link only when meta.msgVerified is verified,
+            the condition of the signature mark (CIMetaView.swift:169, CIMetaView.kt:130)
+            otherwise it is shown as Q7 decides
+direct    unchanged: direct chats and local notes
+```
+
+- XMsgNew is a content event that a member may sign (`signableContent`, Protocol.hs:1403-1408); `requiresSignature` lists events by tag in relay groups (Protocol.hs:1386-1400, Subscriber.hs:4167) and is not changed, as a requirement on the content of XMsgNew is a rule of the receiving app.
+- A sent item is verified when it is signed (Internal.hs:3085), so the sender sees the link.
+- A post shown as the channel is signed by an owner with the group binding (Internal.hs:2419) and verified with the owner's key.
+- Signatures are not sent in JSON batches, to members below version 18 (Batch.hs:70, Internal.hs:2892-2895); member keys of p2p groups are distributed from version 20 (`groupMemberKeyVersion`, Protocol.hs:143-145), and a signed message of a member whose key is unknown is stored as signed without a key (Subscriber.hs:4161). Such items show chain addresses as Q7 decides.
+- The apps pass the condition to `messageText` (MsgContentView.swift:504) and `MarkdownText` (TextItemView.kt) as one parameter.
+
+```mermaid
+sequenceDiagram
+  participant S as Sender core
+  participant R as Recipient core
+  participant A as Recipient app
+  S->>S: a composed group message has a ChainAddressLink: signMsgs
+  S->>R: XMsgNew signed with the member key
+  R->>R: withVerifiedMsg; msgVerified stored with the item
+  R->>A: item with formattedText and meta.msgVerified
+  alt msgVerified verified
+    A->>A: the chain address is a link
+  else unsigned, no key, or missing
+    A->>A: as Q7 decides
+  end
+```
+
 ## Privacy
 
 - A payment link is sent as message text and parsed by each recipient's core when the item is read (Store/Messages.hs:2338-2340, 2432-2434).
@@ -703,6 +743,8 @@ Each test that expects a payment link fails on master.
 | tests/ChatTests/Direct.hs | `chain addresses in a received message`: alice sends a bare address, `[Donate](monero:…)` and a bare invoice; `apiFixture` (tests/ChatTests/Utils.hs:1015-1030) records bob's `/_get chat @2 count=1`, whose item has `ChainAddressLink` in `formattedText`, and the markdown of each `ChainCurrency` constructor and `UnknownCurrency` value, to tests/fixtures/api/chain-addresses/links.json; its pattern is in "App test fixtures" (scripts/ci/README.md:51) |
 | tests/APIDocs.hs | the bots API files, generated again with the new types |
 | app tests on tests/fixtures/api/chain-addresses/links.json | `Format.chainAddressLink` is decoded; each `ChainCurrency` constructor is mapped to its link text and alert text; a mocked open failure is followed by the alert `No wallet app` |
+| tests/ChatTests/Groups.hs | `chain addresses in group messages`: alice sends a bare address to a group without the signing preference; bob's item has `msgVerified` verified; a member of version 19 sends one, and bob's item has no `msgVerified` and is not in the Links filter; `apiFixture` records both items to tests/fixtures/api/chain-addresses/group.json |
+| app tests on tests/fixtures/api/chain-addresses/group.json | the chain address of the verified item is a link; that of the unsigned item is shown as Q7 decides |
 
 ### Timing
 
@@ -770,6 +812,7 @@ Each question is a principle with its consequences; the recommended option is in
 | Q4 | Networks in v1 | decided (items 11702, 11737, 11754): a, and Flux in `flux:` and `zel:` URIs<br>a. Bitcoin, Lightning, Ethereum with the other EVM chains, Monero, Zcash, Solana, Litecoin, Dogecoin, Bitcoin Cash: the networks of README.md:151-158, Lightning and Litecoin<br>b. Bitcoin, Lightning and Monero: a smaller parser and fewer tests; other addresses are text | — |
 | Q5 | Whether payment links are links | a. yes: new items with a payment link are in the Links filter (ChatView.swift:3410-3436, Store/Messages.hs:1551-1578); groups get no new preference in v1<br>b. no, as e-mail addresses and phone numbers (Markdown.hs:320-326)<br>c. a, and a group preference that prohibits them, a protocol change | **a** |
 | Q6 | Text of a link outside the tables: an unknown chain ID or token, or an `ethereum:` link without a chain ID, in which the wallet's current chain is used [S9] | decided (items 11664, 11667): an orange ⚠, the shortened address and `(unknown chain)`, `(unknown token)` or `(unknown chain and token)`, without an amount; the whole link in orange (section Link text) | — |
+| Q7 | What a group item shows when its message has a chain address and no verified signature: unsigned, signed by a member whose key is unknown, or from a member below version 20 (section Groups) | a. the chain address as text, as now; the rest of the message as usual<br>b. the message replaced by the event "bad signature", as for an unsigned edit of a signed item (Subscriber.hs:2431): the whole message is lost<br>c. the link drawn as for Q6, with `(not signed)`, and the alert as usual: a tap still opens the wallet | **a** |
 | Q8 | Text of a link with both a label and a chain name; the chain name follows ` · ` (items 11458, 11489), and the text built in this branch puts the label in its place (ChatTypes.swift:6084, ChatModel.kt:5464) | a. `ETH 0.01 · Arbitrum One · Dinner`: the chain name next to the amount it qualifies, the label last<br>b. `ETH 0.01 · Dinner · Arbitrum One`<br>c. the label is left out when a chain name is shown: `ETH 0.01 · Arbitrum One` | **a** |
 | Q9 | Which `zel:` links are Flux links. Zelcore's specification defines `zel:` as actions with the address in a parameter, `zel:?action=pay&coin=zelcash&address=t1…&amount=3`, where an absent `coin` is Bitcoin [S41]; four RunOnFlux apps build this form, and CumulusVPN states that Zelcore registers it with the OS [S42]; none of the four builds `zel:t1…?amount=` | a. `zel:` parsed as `flux:`, as instructed: the pay-action links of Zelcore and CumulusVPN are text (U7)<br>b. a, and the pay action, absent or `pay`, with `coin` `flux`, `zelcash` or `zel` and a Flux `address`: shown as `FLUX`; the `sign` and `getaddress` actions, other coins and a pay action with a `callback` URL are text | **b** |
 | Q10 | Keys of `flux:` and `zel:` links. CumulusVPN uses `amount` and `message` [S42], Zelcore's pay action `address`, `amount`, `coin` and `message` [S41], SSP Wallet reads only the address [S43]; no source uses `label` | a. `amount`, `label` and `message`, the BIP-21 keys; `label` is an assumption<br>b. `amount` and `message` only | **a** |
