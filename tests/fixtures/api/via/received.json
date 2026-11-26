@@ -95,12 +95,12 @@
                 "localDisplayName": "bob",
                 "memberCategory": "user",
                 "memberChatVRange": {
-                  "maxVersion": 23,
+                  "maxVersion": 24,
                   "minVersion": 9
                 },
                 "memberContactId": 1,
                 "memberContactProfileId": 1,
-                "memberId": "memberId",
+                "memberId": "memberId0",
                 "memberProfile": {
                   "displayName": "bob",
                   "fullName": "",
@@ -167,7 +167,7 @@
                     "minVersion": 9
                   },
                   "memberContactProfileId": 3,
-                  "memberId": "memberId",
+                  "memberId": "memberId1",
                   "memberProfile": {
                     "displayName": "reviewer",
                     "fullName": "",
@@ -261,7 +261,7 @@
                       "minVersion": 9
                     },
                     "memberContactProfileId": 3,
-                    "memberId": "memberId",
+                    "memberId": "memberId1",
                     "memberProfile": {
                       "displayName": "reviewer",
                       "fullName": "",
@@ -467,12 +467,12 @@
               "localDisplayName": "bob",
               "memberCategory": "user",
               "memberChatVRange": {
-                "maxVersion": 23,
+                "maxVersion": 24,
                 "minVersion": 9
               },
               "memberContactId": 1,
               "memberContactProfileId": 1,
-              "memberId": "memberId",
+              "memberId": "memberId0",
               "memberProfile": {
                 "displayName": "bob",
                 "fullName": "",
@@ -522,7 +522,7 @@
               "activeConn": {
                 "agentConnId": "agentConnId",
                 "authErrCounter": 0,
-                "connChatVersion": 23,
+                "connChatVersion": 24,
                 "connId": 2,
                 "connLevel": 0,
                 "connStatus": {
@@ -534,7 +534,7 @@
                 "entityId": 1,
                 "localAlias": "",
                 "peerChatVRange": {
-                  "maxVersion": 23,
+                  "maxVersion": 24,
                   "minVersion": 9
                 },
                 "pqEncryption": false,
@@ -553,7 +553,7 @@
               "localDisplayName": "alice",
               "memberCategory": "host",
               "memberChatVRange": {
-                "maxVersion": 23,
+                "maxVersion": 24,
                 "minVersion": 9
               },
               "memberContactId": 2,
@@ -615,7 +615,7 @@
                 "minVersion": 9
               },
               "memberContactProfileId": 3,
-              "memberId": "memberId",
+              "memberId": "memberId1",
               "memberProfile": {
                 "displayName": "reviewer",
                 "fullName": "",

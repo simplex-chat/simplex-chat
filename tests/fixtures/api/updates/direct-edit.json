@@ -8,7 +8,7 @@
               "activeConn": {
                 "agentConnId": "agentConnId",
                 "authErrCounter": 0,
-                "connChatVersion": 23,
+                "connChatVersion": 24,
                 "connId": 1,
                 "connLevel": 0,
                 "connStatus": {
@@ -20,7 +20,7 @@
                 "entityId": 2,
                 "localAlias": "",
                 "peerChatVRange": {
-                  "maxVersion": 23,
+                  "maxVersion": 24,
                   "minVersion": 9
                 },
                 "pqEncryption": true,
@@ -302,7 +302,7 @@
             "activeConn": {
               "agentConnId": "agentConnId",
               "authErrCounter": 0,
-              "connChatVersion": 23,
+              "connChatVersion": 24,
               "connId": 1,
               "connLevel": 0,
               "connStatus": {
@@ -314,7 +314,7 @@
               "entityId": 2,
               "localAlias": "",
               "peerChatVRange": {
-                "maxVersion": 23,
+                "maxVersion": 24,
                 "minVersion": 9
               },
               "pqEncryption": true,
@@ -627,7 +627,7 @@
               "activeConn": {
                 "agentConnId": "agentConnId",
                 "authErrCounter": 0,
-                "connChatVersion": 23,
+                "connChatVersion": 24,
                 "connId": 1,
                 "connLevel": 0,
                 "connStatus": {
@@ -639,7 +639,7 @@
                 "entityId": 2,
                 "localAlias": "",
                 "peerChatVRange": {
-                  "maxVersion": 23,
+                  "maxVersion": 24,
                   "minVersion": 9
                 },
                 "pqEncryption": true,
@@ -921,7 +921,7 @@
             "activeConn": {
               "agentConnId": "agentConnId",
               "authErrCounter": 0,
-              "connChatVersion": 23,
+              "connChatVersion": 24,
               "connId": 1,
               "connLevel": 0,
               "connStatus": {
@@ -933,7 +933,7 @@
               "entityId": 2,
               "localAlias": "",
               "peerChatVRange": {
-                "maxVersion": 23,
+                "maxVersion": 24,
                 "minVersion": 9
               },
               "pqEncryption": true,

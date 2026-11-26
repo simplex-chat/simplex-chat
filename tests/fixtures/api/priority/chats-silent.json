@@ -98,12 +98,12 @@
                   "localDisplayName": "bob",
                   "memberCategory": "user",
                   "memberChatVRange": {
-                    "maxVersion": 23,
+                    "maxVersion": 24,
                     "minVersion": 9
                   },
                   "memberContactId": 1,
                   "memberContactProfileId": 1,
-                  "memberId": "memberId",
+                  "memberId": "memberId0",
                   "memberProfile": {
                     "displayName": "bob",
                     "fullName": "",
@@ -165,12 +165,12 @@
                     "localDisplayName": "alice",
                     "memberCategory": "host",
                     "memberChatVRange": {
-                      "maxVersion": 23,
+                      "maxVersion": 24,
                       "minVersion": 9
                     },
                     "memberContactId": 2,
                     "memberContactProfileId": 2,
-                    "memberId": "memberId",
+                    "memberId": "memberId1",
                     "memberProfile": {
                       "displayName": "alice",
                       "fullName": "",
@@ -257,7 +257,7 @@
                 "activeConn": {
                   "agentConnId": "agentConnId",
                   "authErrCounter": 0,
-                  "connChatVersion": 23,
+                  "connChatVersion": 24,
                   "connId": 1,
                   "connLevel": 0,
                   "connStatus": {
@@ -269,7 +269,7 @@
                   "entityId": 2,
                   "localAlias": "",
                   "peerChatVRange": {
-                    "maxVersion": 23,
+                    "maxVersion": 24,
                     "minVersion": 9
                   },
                   "pqEncryption": true,
