@@ -47,6 +47,7 @@ library
       Simplex.Chat.Badges.Types
       Simplex.Chat.Names
       Simplex.Chat.Call
+      Simplex.Chat.ChainAddress
       Simplex.Chat.Controller
       Simplex.Chat.Delivery
       Simplex.Chat.Files
@@ -71,7 +72,6 @@ library
       Simplex.Chat.Options.DB
       Simplex.Chat.PaymentService
       Simplex.Chat.PaymentService.Types
-      Simplex.Chat.Payments
       Simplex.Chat.ProfileGenerator
       Simplex.Chat.Protocol
       Simplex.Chat.Remote

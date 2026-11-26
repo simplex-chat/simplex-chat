@@ -33,7 +33,7 @@ import Simplex.Chat.Protocol
 import Simplex.Chat.Store.Profiles
 import Simplex.Chat.Store.Shared
 import Simplex.Chat.Operators
-import Simplex.Chat.Payments
+import Simplex.Chat.ChainAddress
 import Simplex.Messaging.Agent.Store.Entity (DBStored (..))
 import Simplex.Chat.Badges
 import Simplex.Chat.StoreService
@@ -220,7 +220,6 @@ chatTypesDocsData =
     (sti @(ContactUserPreference SimplePreference), STRecord, "", [], "", ""),
     (sti @(CreatedConnLink 'CMContact), STRecord, "", [], Param "connFullLink" <> Optional "" (" " <> Param "$0") "connShortLink", ""),
     (sti @AddRelayResult, STRecord, "", [], "", ""),
-    (sti @AddressChecksum, STEnum, "AC", [], "", ""),
     (sti @AddressSettings, STRecord, "", [], "", ""),
     (sti @AgentCryptoError, STUnion, "", ["RATCHET_EARLIER", "RATCHET_SKIPPED"], "", ""), -- TODO add fields to types
     (sti @AgentErrorType, STUnion, "", [], "", ""),
@@ -235,6 +234,8 @@ chatTypesDocsData =
     (sti @BrokerErrorType, STUnion, "", [], "", ""),
     (sti @BusinessChatInfo, STRecord, "", [], "", ""),
     (sti @BusinessChatType, STEnum, "BC", [], "", ""),
+    (sti @ChainAddress, STRecord, "", [], "", "Chain address or URI in a message text. currency: what the link text names, resolved from the core's tables of chains and tokens. walletUri: the URI to open in a wallet."),
+    (sti @ChainCurrency, STUnion, "CY", [], "", "amount: in BTC for bitcoin and lightning, in units of the ticker for ticker. chainName: the EVM chain other than Ethereum, or Solana for a Solana token. unlisted: the chain or token is outside the core's tables; the amount is omitted."),
     (sti @ChatBotCommand, STUnion, "CBC", [], "", ""),
     (sti @ChatDeleteMode, STUnion, "CDM", [], Param "type" <> Choice "self" [("messages", ""), ("archive", "")] (OnOffParam "notify" "notify" (Just True)), ""),
     (sti @ChatError, STUnion, "Chat", ["ChatErrorDatabase", "ChatErrorRemoteHost", "ChatErrorRemoteCtrl"], "", ""),
@@ -332,7 +333,6 @@ chatTypesDocsData =
     (sti @InvitationLinkPlan, STUnion, "ILP", [], "", ""),
     (sti @InvitedBy, STUnion, "IB", [], "", ""),
     (sti @KeepAliveOpts, STRecord, "", [], "", ""),
-    (sti @LightningPayee, STUnion, "LP", [], "", ""),
     (sti @LinkContent, STUnion, "LC", [], "", ""),
     (sti @LinkNotice, STRecord, "", [], "", "The app of the removed member or deleted contact does not join or connect via the link for `ttl` seconds, rounded up to a whole hour; a notice without `ttl` does not expire. `ttl` must be positive."),
     (sti @LinkOwnerSig, STRecord, "", [], "", ""),
@@ -363,10 +363,6 @@ chatTypesDocsData =
     (sti @NoteFolder, STRecord, "", [], "", ""),
     (sti @OperatorTag, STEnum, "OT", [], "", ""),
     (sti @OwnerVerification, STUnion, "OV", [], "", ""),
-    (sti @PaymentNetwork, STUnion, "PN", [], "", ""),
-    (sti @PaymentPayee, STUnion, "PP", [], "", ""),
-    (sti @PaymentRequest, STRecord, "", [], "", "Payment URI or address in a message text. amount: in coins of the network; with token, in base units of the ERC-20 token or in units of the SPL token. walletUri: the URI to open in a wallet."),
-    (sti @PaymentToken, STRecord, "", [], "", ""),
     (sti @PendingContactConnection, STRecord, "", [], "", ""),
     (sti @PlanResolveMode, STEnum, "PRM", [], Choice "self" [("allGroups", " resolve=allGroups"), ("never", " resolve=never")] "", ""),
     (sti @PrefEnabled, STRecord, "", [], "", ""),
@@ -438,6 +434,7 @@ chatTypesDocsData =
     (sti @UIColors, STRecord, "", [], "", ""),
     (sti @UIThemeEntityOverride, STRecord, "", [], "", ""),
     (sti @UIThemeEntityOverrides, STRecord, "", [], "", ""),
+    (sti @UnlistedCurrency, STEnum, "UL", [], "", ""),
     (sti @UpdatedMessage, STRecord, "", [], "", ""),
     (sti @User, STRecord, "", [], "", ""),
     ((sti @UserChatRelay) {typeName = "UserChatRelay"}, STRecord, "", [], "", ""),
@@ -489,7 +486,6 @@ deriving instance Generic (ContactUserPref p)
 deriving instance Generic (ContactUserPreference p)
 deriving instance Generic (CreatedConnLink m)
 deriving instance Generic AddRelayResult
-deriving instance Generic AddressChecksum
 deriving instance Generic AddressSettings
 deriving instance Generic AgentCryptoError
 deriving instance Generic AgentErrorType
@@ -505,6 +501,8 @@ deriving instance Generic BusinessChatInfo
 deriving instance Generic BusinessChatType
 deriving instance Generic BadgeStatus
 deriving instance Generic BadgeType
+deriving instance Generic ChainAddress
+deriving instance Generic ChainCurrency
 deriving instance Generic ChatBotCommand
 deriving instance Generic ChatDeleteMode
 deriving instance Generic ChatError
@@ -607,7 +605,6 @@ deriving instance Generic JSONCIDirection
 deriving instance Generic JSONCIFileStatus
 deriving instance Generic JSONCIStatus
 deriving instance Generic KeepAliveOpts
-deriving instance Generic LightningPayee
 deriving instance Generic LinkContent
 deriving instance Generic LinkNotice
 deriving instance Generic LinkOwnerSig
@@ -638,10 +635,6 @@ deriving instance Generic NewUser
 deriving instance Generic NoteFolder
 deriving instance Generic OperatorTag
 deriving instance Generic OwnerVerification
-deriving instance Generic PaymentNetwork
-deriving instance Generic PaymentPayee
-deriving instance Generic PaymentRequest
-deriving instance Generic PaymentToken
 deriving instance Generic PendingContactConnection
 deriving instance Generic PlanResolveMode
 deriving instance Generic PrefEnabled
@@ -711,6 +704,7 @@ deriving instance Generic UIColorMode
 deriving instance Generic UIColors
 deriving instance Generic UIThemeEntityOverride
 deriving instance Generic UIThemeEntityOverrides
+deriving instance Generic UnlistedCurrency
 deriving instance Generic UpdatedMessage
 deriving instance Generic User
 deriving instance Generic (UserChatRelay' 'DBStored)

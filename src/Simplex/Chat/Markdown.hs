@@ -26,7 +26,7 @@ import Data.Bifunctor (first)
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import Data.Char (isAlpha, isAlphaNum, isAscii, isAsciiLower, isDigit, isPunctuation, isSpace, isSymbol)
-import Data.Either (fromRight, isLeft, isRight, lefts)
+import Data.Either (fromRight, isLeft, lefts)
 import Data.Functor (($>))
 import Data.List (intercalate)
 import Data.List.NonEmpty (NonEmpty (..))
@@ -37,7 +37,7 @@ import Data.String
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
-import Simplex.Chat.Payments (PaymentRequest, hasOtherAddress, hasRequestAddress)
+import Simplex.Chat.ChainAddress (ChainAddress, bareAddressForm, hyperlinkAddress)
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent.Protocol (AConnectionLink (..), ConnReqUriData (..), ConnShortLink (..), ConnectionLink (..), ConnectionRequestUri (..), ContactConnType (..), SMPQueue (..), SimplexNameInfo (..), simplexConnReqUri, simplexShortLink)
 import Simplex.Messaging.Encoding.String
@@ -64,7 +64,7 @@ data Format
   | HyperLink {showText :: Maybe Text, linkUri :: Text}
   | SimplexLink {showText :: Maybe Text, linkType :: SimplexLinkType, simplexUri :: AConnectionLink, smpHosts :: NonEmpty Text}
   | SimplexName {nameInfo :: SimplexNameInfo}
-  | PaymentLink {showText :: Maybe Text, payment :: PaymentRequest}
+  | ChainAddressLink {showText :: Maybe Text, chainAddress :: ChainAddress}
   | Command {commandStr :: Text}
   | Mention {memberName :: Text}
   | Email
@@ -325,11 +325,16 @@ isLink = \case
   HyperLink {} -> True
   SimplexLink {} -> True
   SimplexName {} -> True
-  PaymentLink {} -> True
+  ChainAddressLink {} -> True
   _ -> False
 
 hasLinks :: MarkdownList -> Bool
 hasLinks = any $ \(FormattedText f _) -> maybe False isLink f
+
+hasChainAddress :: MarkdownList -> Bool
+hasChainAddress = any $ \case
+  FormattedText (Just ChainAddressLink {}) _ -> True
+  _ -> False
 
 hasObfuscatedSimplexLink :: Text -> Bool
 hasObfuscatedSimplexLink t =
@@ -363,7 +368,7 @@ markdownP = joinMarkdown <$> A.many' fragmentP
           '<' -> autolinkP <|> wordP
           '\\' -> escapeP <|> wordP
           _
-            | isDigit c -> paymentWordP <|> phoneP <|> wordP
+            | isDigit c -> addressWordP <|> phoneP <|> wordP
             | otherwise -> wordP
         Nothing -> fail ""
     formattedP :: Char -> Format -> Parser Markdown
@@ -465,17 +470,11 @@ markdownP = joinMarkdown <$> A.many' fragmentP
       Right lnk@(ACL _ cLink) -> case cLink of
         CLShort _ -> pure $ simplexUriFormat (Just t) lnk
         CLFull _ -> fail "full SimpleX link in hyperlink"
-      Left _ -> case paymentRequest l of
-        Right p
-          | T.all (/= ':') l -> fail "payment address without scheme in hyperlink"
-          | t == l -> pure $ PaymentLink Nothing p
-          | hasOtherAddress p t -> fail "other payment address in hyperlink text"
-          | otherwise -> pure $ PaymentLink (mfilter (not . hasRequestAddress p) $ Just t) p
-        Left _ -> case parseUri $ encodeUtf8 l of
+      Left _ -> case hyperlinkAddress t l of
+        Just r -> either fail (pure . uncurry ChainAddressLink) r
+        Nothing -> case parseUri $ encodeUtf8 l of
           Right _ -> pure $ HyperLink (Just t) l
           Left e -> fail $ "not uri: " <> T.unpack e
-    paymentRequest :: Text -> Either String PaymentRequest
-    paymentRequest = strDecode . encodeUtf8
     enclosedP open close stop = A.char open *> A.takeWhile1 (\c -> c /= close && not (stop c)) <* A.char close
     colorP =
       A.anyChar >>= \case
@@ -503,10 +502,10 @@ markdownP = joinMarkdown <$> A.many' fragmentP
       | otherwise = optional ((<>) <$> phoneSep <*> A.takeWhile1 isDigit) >>= maybe (pure s) (segmentsP . (s <>))
     conc4 s1 s2 s3 s4 = s1 <> s2 <> s3 <> s4
     phoneSep = " " <|> "-" <|> "." <|> ""
-    paymentWordP :: Parser Markdown
-    paymentWordP = do
+    addressWordP :: Parser Markdown
+    addressWordP = do
       s <- wordTextP
-      if isRight $ paymentRequest $ T.dropEnd (linkEndLength s) s then pure $ wordMD s else fail "not a payment link"
+      if bareAddressForm $ encodeUtf8 $ T.dropEnd (linkEndLength s) s then pure $ wordMD s else fail "not an address"
     wordP :: Parser Markdown
     wordP = wordMD <$> wordTextP
     wordTextP :: Parser Text
@@ -532,7 +531,7 @@ markdownP = joinMarkdown <$> A.many' fragmentP
           Left _ -> case parseUri $ encodeUtf8 s' of
             Right _ -> Just $ res $ markdown Uri s'
             Left _ -> Nothing
-      | Right p <- paymentRequest s' = Just $ res $ markdown (PaymentLink Nothing p) s'
+      | Right a <- strDecode (encodeUtf8 s') = Just $ res $ markdown (ChainAddressLink Nothing a) s'
       | isDomain s' = Just $ res $ markdown Uri s'
       | isEmail s' = Just $ res $ markdown Email s'
       | otherwise = Nothing
@@ -1000,7 +999,7 @@ markdownText (FormattedText f_ t) = case f_ of
     HyperLink {} -> t
     SimplexLink {} -> t
     SimplexName {} -> t
-    PaymentLink {} -> t
+    ChainAddressLink {} -> t
     Mention _ -> t
     Command _ -> t
     Email -> t

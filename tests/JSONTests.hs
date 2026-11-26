@@ -91,9 +91,9 @@ markdownBlocksJSONTests = do
     let ParsedMarkdown ft blocks = parsedMarkdown "# a #\nb\n===\n- *c*\n  1. d\n> e\n\n| x | y |\n|:-|-:|\n| 1 |\n```bash\ncode\n```\n---\ne  \nf\\\ng\n- \\*h\n  i"
     J.eitherDecode (J.encode ft) `shouldBe` Right ft
     J.eitherDecode (J.encode blocks) `shouldBe` Right blocks
-  it "should decode payment links" $ do
-    let ParsedMarkdown ft _ = parsedMarkdown "bitcoin:bc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66505d4u?lightning=lnbc2500u1pvjluezsp5zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zygspp5qqqsyqcyq5rqwzqfqqqsyqcyq5rqwzqfqqqsyqcyq5rqwzqfqypqdq5xysxxatsyp3k7enxv4jsxqzpu9qrsgquk0rl77nj30yxdy8j9vdx85fkpmdla2087ne0xh8nhedh8w27kyke0lp53ut353s06fv3qfegext0eh0ymjpf39tuven09sam30g4vgpfna3rh ethereum:0xD7047Fe3Eecb2f2FF78d839dD927Be27Bc12c86a@42161?value=1e16 ethereum:0xdAC17F958D2ee523a2206206994597C13D831ec7@1/transfer?address=0xD7047Fe3Eecb2f2FF78d839dD927Be27Bc12c86a&uint256=5000000"
-    length <$> ft `shouldBe` Just 5
+  it "should decode chain address links" $ do
+    let ParsedMarkdown ft _ = parsedMarkdown "bitcoin:bc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66505d4u?lightning=lnbc2500u1pvjluezsp5zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zygspp5qqqsyqcyq5rqwzqfqqqsyqcyq5rqwzqfqqqsyqcyq5rqwzqfqypqdq5xysxxatsyp3k7enxv4jsxqzpu9qrsgquk0rl77nj30yxdy8j9vdx85fkpmdla2087ne0xh8nhedh8w27kyke0lp53ut353s06fv3qfegext0eh0ymjpf39tuven09sam30g4vgpfna3rh ethereum:0xD7047Fe3Eecb2f2FF78d839dD927Be27Bc12c86a@42161?value=1e16 ethereum:0xdAC17F958D2ee523a2206206994597C13D831ec7@1/transfer?address=0xD7047Fe3Eecb2f2FF78d839dD927Be27Bc12c86a&uint256=5000000 ethereum:0xdAC17F958D2ee523a2206206994597C13D831ec7@99999/transfer?address=0xD7047Fe3Eecb2f2FF78d839dD927Be27Bc12c86a&uint256=1 [Donate](monero:8A3ZWAXrrQddvnT1fPrtbK86ZAoM4nai3Gjg1LEow3JWcryJtovMnHYZnxTJpCLmAbfWbnPMeTzPmMBjAhyd4xoM89hYq1c)"
+    length <$> ft `shouldBe` Just 9
     J.eitherDecode (J.encode ft) `shouldBe` Right ft
   it "should decode an unknown block" $
     J.eitherDecode "{\"type\":\"future\"}" `shouldBe` Right (UnknownBlock $ J.object ["type" J..= ("future" :: String)])
