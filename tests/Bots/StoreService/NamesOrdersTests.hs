@@ -249,6 +249,7 @@ namesOrdersTests = describe "StoreService names: orders" $ do
     it "answers every field of a failed, a requeued and a taken order" testViewStates
     it "has the terms the order signed" testViewTerms
     it "reads the intent nonce and the acceptance of the terms of the name's kind only while a committed order awaits its signature, unread when either read fails" testViewReads
+    it "records the view of each phase the names page reads" testViewFixtures
     it "reads the chain only in a free view slot and within one deadline, else answers unread" testViewReadsBounded
     it "reads the order's balance, none before its first credit, and its refunded cents after a refund" testViewBalance
 
@@ -692,12 +693,12 @@ xmrOrder = aliceOrder {oLabel = "dynamis", oPrice = 20000, oSecret = secretOf 2,
 
 testProvenInvoices :: IO ()
 testProvenInvoices = withBTCPayOrders id $ \_ ctx ->
-  forM_ [("invoice-btc-open", aliceOrder), ("invoice-xmr-open", xmrOrder)] $ \(fixture, o) -> do
+  forM_ [(["invoice-btc-open", "invoice-view-btc"], aliceOrder), (["invoice-xmr-open"], xmrOrder)] $ \(fixtures, o) -> do
     (_, v) <- placed ctx o
     Just (J.String payTo) <- pure $ fieldOf v "address"
     Just proof <- pure $ fieldOf v "addressProof" >>= JT.parseMaybe addressProofP
     addressProofHolds payTo proof `shouldBe` True
-    answerFixture fixture (200, Just $ KM.insert "invoiceId" "invoice" v)
+    forM_ fixtures $ \fixture -> answerFixture fixture (200, Just $ KM.insert "invoiceId" "invoice" v)
   where
     addressProofP = J.withObject "addressProof" $ \o ->
       (o J..: "type" :: JT.Parser Text) >>= \case
@@ -2067,6 +2068,37 @@ testViewReads = withServiceStore $ \st -> withFakeEthNode $ \node -> do
 
 readToSignOf :: Contracts -> NameRegistration -> IO ToSign
 readToSignOf ct NameRegistration {nrOwner, nrLabelHash} = readToSign ct "the view" nrOwner nrLabelHash
+
+testViewFixtures :: IO ()
+testViewFixtures = withServiceStore $ \st -> withFakeEthNode $ \node -> do
+  g <- C.newRandom
+  ct <- newContracts st TLDSimplex minPriceCentsPerYear =<< fakeChainClient g node
+  answerCall node fakeSponsor noncesCall $ Returns $ uint256 (4 :: Int)
+  answerCall node fakeNamePolicy noncesCall $ Returns $ uint256 (2 :: Int)
+  Right () <- placePaid st "r1" ownerA (order "alicebakery" 1) (addUTCTime 3600 t0)
+  let rid = RegistrationId "r1"
+      current = withTransaction st $ \db -> fromJust <$> getRegistration db rid
+      written change = do
+        Written _ <- current >>= \r -> withTransaction st $ \db -> updateRegistration db (change r) t0
+        current
+      recorded name now r = registrationView st (testNamesConfig node) ct now r >>= \v -> storeFixture name 200 (Just $ withId $ J.toJSON v) Nothing
+      withId = \case
+        J.Object o -> J.Object $ KM.insert "id" "registration" o
+        v -> v
+  recorded "registration-unpaid" t0 =<< current
+  committed <- written $ \r -> r {nrPhase = OCommitted commitFixture, nrReveal = Nothing}
+  recorded "registration-committed-awaiting" t0 committed
+  listCommunityName node $ labelHash "alicebakery"
+  recorded "registration-committed-awaiting-community" t0 committed
+  setCommunityTerms node ""
+  recorded "registration-committed-unread" t0 committed
+  setCommunityTerms node fakeCommunityTermsText
+  recorded "registration-committed-signed" t0 committed {nrReveal = Just reveal}
+  recorded "registration-committed-lapsed" (addUTCTime 1 $ roundedToUTCTime $ cmRevealBefore commitFixture) committed
+  recorded "registration-closed-cancelled" t0 =<< written (\r -> r {nrPhase = OClosed ICCancelled})
+  recorded "registration-failed" t0 =<< written (\r -> r {nrPhase = OFailed t0 FRRegistryRefused})
+  withTransaction st $ \db -> setSettledAt db rid t0
+  recorded "registration-failed-held" t0 =<< written (\r -> r {nrPhase = OFailed t0 FRUnread})
 
 testViewReadsBounded :: IO ()
 testViewReadsBounded = withServiceStore $ \st -> withFakeEthNode $ \node -> do
