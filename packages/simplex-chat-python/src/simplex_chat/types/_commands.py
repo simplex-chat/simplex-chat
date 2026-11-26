@@ -251,18 +251,18 @@ def APIAddMemberViaGroup_cmd_string(self: APIAddMemberViaGroup) -> str:
 APIAddMemberViaGroup_Response = CR.SentGroupInvitationViaGroup | CR.ChatCmdError
 
 
-# Add member via bot, without a connection: bot sends member's messages with /_send #<groupId>(as_member=<groupMemberId>). Requires bot to have Admin role and a role not lower than member role, not supported in channels.
+# Add submember of bot, without a connection: bot sends submember's messages with /_send #<groupId>(as_member=<groupMemberId>). Requires bot to have Admin role and a role not lower than submember role, not supported in channels.
 # Network usage: background.
-class APIAddViaMember(TypedDict):
+class APIAddSubmember(TypedDict):
     groupId: int  # int64
     memberRole: "T.GroupMemberRole"
     profile: "T.Profile"
 
 
-def APIAddViaMember_cmd_string(self: APIAddViaMember) -> str:
-    return '/_add via #' + str(self['groupId']) + ' ' + str(self['memberRole']) + ' json ' + json.dumps(self['profile'])
+def APIAddSubmember_cmd_string(self: APIAddSubmember) -> str:
+    return '/_add submember #' + str(self['groupId']) + ' ' + str(self['memberRole']) + ' json ' + json.dumps(self['profile'])
 
-APIAddViaMember_Response = CR.ViaMemberAdded | CR.ChatCmdError
+APIAddSubmember_Response = CR.SubmemberAdded | CR.ChatCmdError
 
 
 # Join group.

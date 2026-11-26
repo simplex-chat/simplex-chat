@@ -26,7 +26,7 @@ This file is generated automatically.
 [Group commands](#group-commands)
 - [APIAddMember](#apiaddmember)
 - [APIAddMemberViaGroup](#apiaddmemberviagroup)
-- [APIAddViaMember](#apiaddviamember)
+- [APIAddSubmember](#apiaddsubmember)
 - [APIJoinGroup](#apijoingroup)
 - [APIAcceptMember](#apiacceptmember)
 - [APIMembersRole](#apimembersrole)
@@ -824,9 +824,9 @@ ChatCmdError: Command error (only used in WebSockets API).
 ---
 
 
-### APIAddViaMember
+### APIAddSubmember
 
-Add member via bot, without a connection: bot sends member's messages with /_send #<groupId>(as_member=<groupMemberId>). Requires bot to have Admin role and a role not lower than member role, not supported in channels.
+Add submember of bot, without a connection: bot sends submember's messages with /_send #<groupId>(as_member=<groupMemberId>). Requires bot to have Admin role and a role not lower than submember role, not supported in channels.
 
 *Network usage*: background.
 
@@ -838,21 +838,21 @@ Add member via bot, without a connection: bot sends member's messages with /_sen
 **Syntax**:
 
 ```
-/_add via #<groupId> relay|observer|author|member|moderator|admin|owner json <json(profile)>
+/_add submember #<groupId> relay|observer|author|member|moderator|admin|owner json <json(profile)>
 ```
 
 ```javascript
-'/_add via #' + groupId + ' ' + memberRole + ' json ' + JSON.stringify(profile) // JavaScript
+'/_add submember #' + groupId + ' ' + memberRole + ' json ' + JSON.stringify(profile) // JavaScript
 ```
 
 ```python
-'/_add via #' + str(groupId) + ' ' + str(memberRole) + ' json ' + json.dumps(profile) # Python
+'/_add submember #' + str(groupId) + ' ' + str(memberRole) + ' json ' + json.dumps(profile) # Python
 ```
 
 **Responses**:
 
-ViaMemberAdded: Member via bot added.
-- type: "viaMemberAdded"
+SubmemberAdded: Submember of bot added.
+- type: "submemberAdded"
 - user: [User](./TYPES.md#user)
 - groupInfo: [GroupInfo](./TYPES.md#groupinfo)
 - member: [GroupMember](./TYPES.md#groupmember)

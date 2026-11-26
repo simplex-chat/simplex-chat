@@ -284,19 +284,19 @@ export namespace APIAddMemberViaGroup {
   }
 }
 
-// Add member via bot, without a connection: bot sends member's messages with /_send #<groupId>(as_member=<groupMemberId>). Requires bot to have Admin role and a role not lower than member role, not supported in channels.
+// Add submember of bot, without a connection: bot sends submember's messages with /_send #<groupId>(as_member=<groupMemberId>). Requires bot to have Admin role and a role not lower than submember role, not supported in channels.
 // Network usage: background.
-export interface APIAddViaMember {
+export interface APIAddSubmember {
   groupId: number // int64
   memberRole: T.GroupMemberRole
   profile: T.Profile
 }
 
-export namespace APIAddViaMember {
-  export type Response = CR.ViaMemberAdded | CR.ChatCmdError
+export namespace APIAddSubmember {
+  export type Response = CR.SubmemberAdded | CR.ChatCmdError
 
-  export function cmdString(self: APIAddViaMember): string {
-    return '/_add via #' + self.groupId + ' ' + self.memberRole + ' json ' + JSON.stringify(self.profile)
+  export function cmdString(self: APIAddSubmember): string {
+    return '/_add submember #' + self.groupId + ' ' + self.memberRole + ' json ' + JSON.stringify(self.profile)
   }
 }
 
