@@ -123,6 +123,7 @@ class LinkAlertsTest {
             openMemberSupport = {},
             openPreferences = {},
             deleteGroup = {},
+            deleteAndBan = {},
             clearChat = {},
             leaveGroup = {},
             manageGroupLink = {},
