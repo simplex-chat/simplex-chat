@@ -7,6 +7,7 @@
 module StoreService.Names.Balances
   ( RefundRefusal (..),
     RefundRecord (..),
+    dollars,
     recordRefund,
     reverseOrder,
     warnOfFraud,
@@ -35,7 +36,7 @@ import StoreService.Names.Store (Balance (..), BalanceLink, BrokenInvariant (..)
 import StoreService.Names.Turns (Turns, withBalanceTurn, withRegistrationTurn)
 import StoreService.Names.View (addressText)
 import StoreService.Orders (RegistrationChanged (..))
-import StoreService.Providers (Reversal (..))
+import StoreService.Providers (Reversal (..), minorDecimal)
 import StoreService.Store.Invoices (InvoiceRow (..), lockInvoice)
 
 -- | RefundAmount: the balance's amount now, which is not the cents given.
@@ -166,3 +167,6 @@ idText (RegistrationId t) = t
 
 centsText :: USDCents -> Text
 centsText cents = tshow (toInteger cents) <> " cents"
+
+dollars :: USDCents -> Text
+dollars = ("$" <>) . minorDecimal

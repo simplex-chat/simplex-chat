@@ -1078,7 +1078,8 @@ settlement, its code's placement or a selection after a reset, and still `queued
 hours later`. An order whose name is not selected is not alerted, and the 3 hours are counted again from each later selection. When its name is no longer available on chain, the service logs an
 error and posts in the group once: `names worker: registration <id> was taken: its name is no longer
 available on chain`. An order taken at settlement, as someone has taken its name, is logged
-as a note. The alert rule fires for any phase. Below 0.01 ETH the node refuses a register with links (see [Fund the key](#fund-the-key)),
+as a note. When its register is confirmed, the service posts in the group once: `names worker: registration <id>
+completed: <label>.<tld>, with a code` for a code order, or `…, $100.00 paid by <method>` with the order's price. The alert rule fires for any phase. Below 0.01 ETH the node refuses a register with links (see [Fund the key](#fund-the-key)),
 and while the base fee is above the cap no transaction is signed; size a warning on the balance and the
 allowance to the orders expected before a top-up, with the figures there.
 

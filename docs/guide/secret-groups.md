@@ -56,7 +56,8 @@ You can also leave the group from the group page:
 
 After you leave, the group stays in the list of the conversations. To delete it
 from your device, tap "Delete group" on the group page. Owners can tap "Delete
-group" without leaving, to delete the group for all members.
+group" without leaving, to delete the group for all members, and turn on "Keep
+conversation" in the next dialog to keep its messages on their device.
 
 ## Member permissions
 
@@ -75,6 +76,22 @@ Open a group and tap on group's name to view members list, there you can tap on 
 
 Moderators, admins and owners can act only on members with the same or a lower
 role.
+
+## Blocking members
+
+<img src="./images/groups-block-member.png" alt="Block member for all, with Block and Block and remove" width="288">
+
+When a member spams or abuses your group, tap the member on the group page,
+then "Block for all". The member's messages are hidden for everyone, and the
+member is not told.
+
+To stop the member coming back, admins tap "Block and remove": the member
+can't rejoin via the group link for 1 day, 1 week or forever.
+
+<img src="./images/groups-not-allowed.png" alt="Not allowed: blocked by the admins of this group until a date" width="288">
+
+If you were removed this way, the app shows "Not allowed" when you open the
+link. The block is kept only in your app, and other links still work.
 
 ## Link to join group
 
