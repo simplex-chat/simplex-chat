@@ -37,6 +37,7 @@ import Simplex.Chat.Library.Commands
 import Simplex.Chat.Operators
 import Simplex.Chat.Options
 import Simplex.Chat.Options.DB
+import Simplex.Chat.Protocol (linkNoticeVersion)
 import Simplex.Chat.Store
 import Simplex.Chat.Store.Profiles
 import Simplex.Chat.Terminal
@@ -337,6 +338,9 @@ testCfgVPrev =
     { chatVRange = prevRange $ chatVRange testCfg,
       agentConfig = testAgentCfgVPrev
     }
+
+testCfgVPrevLinkNotice :: ChatConfig
+testCfgVPrevLinkNotice = testCfgVPrev {chatVRange = mkVersionRange (VersionChat 9) (prevVersion linkNoticeVersion)}
 
 testCfgV1 :: ChatConfig
 testCfgV1 =

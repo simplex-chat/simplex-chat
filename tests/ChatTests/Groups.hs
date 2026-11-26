@@ -45,7 +45,7 @@ import Simplex.Chat.Messages (AChat (..), AChatItem (..), AChatItemUpdate (..), 
 import Simplex.Chat.Messages.Batch (encodeBinaryBatch, encodeFwdElement)
 import Simplex.Chat.Messages.CIContent (MsgDirection (MDRcv), ciMsgContent, publicGroupNoE2EText, toMsgDirection)
 import Simplex.Chat.Options
-import Simplex.Chat.Protocol (ChatBinding (CBGroup), ChatMessage (ChatMessage), ChatMsgEvent (BFileChunk, XFile, XGrpMemDel, XGrpMemFwd, XGrpMemIntro, XGrpMemNew, XGrpMemRestrict, XGrpRelayInv, XInfo, XMember, XMsgFileDescr, XMsgUpdate, XMsgNew, XMsgDel), FileChunk (..), FwdSender (FwdMember, FwdMemberVia, FwdChannel), GrpMemDel (..), GrpMsgForward (GrpMsgForward), KeyRef (KRMember), LinkNotice (..), MsgContainer (..), MsgEncodingI, MsgMention (..), MsgContent (..), MsgPriority (..), MsgSigning (MsgSigning), VerifiedMsg (VMSigned, VMUnsigned), chatMsgToBody, linkNoticeVersion, mcSimple, msgContentText, signChatMsgBody, supportedChatVRange)
+import Simplex.Chat.Protocol (ChatBinding (CBGroup), ChatMessage (ChatMessage), ChatMsgEvent (BFileChunk, XFile, XGrpMemDel, XGrpMemFwd, XGrpMemIntro, XGrpMemNew, XGrpMemRestrict, XGrpRelayInv, XInfo, XMember, XMsgFileDescr, XMsgUpdate, XMsgNew, XMsgDel), FileChunk (..), FwdSender (FwdMember, FwdMemberVia, FwdChannel), GrpMemDel (..), GrpMsgForward (GrpMsgForward), KeyRef (KRMember), LinkNotice (..), MsgContainer (..), MsgEncodingI, MsgMention (..), MsgContent (..), MsgPriority (..), MsgSigning (MsgSigning), VerifiedMsg (VMSigned, VMUnsigned), chatMsgToBody, mcSimple, msgContentText, signChatMsgBody, supportedChatVRange)
 import qualified Simplex.Chat.Store as Store
 import Simplex.Chat.Store.Direct (setQuotaErrCounter)
 import Simplex.Chat.Store.Groups (getGroupMembers, getGroupRelayMembers)
@@ -202,7 +202,7 @@ chatGroupTests = do
     it "notice with ttl below 0 forwarded by host is not stored" $ testPlanGroupLinkForwardedRemovalNotice (-1) 0
     it "silent removal forwarded by a host below the removed member's role is shown" testPlanGroupLinkForwardedRemovalBelowRole
     it "removal with notice of a member on previous version is prohibited" $
-      runTestCfg2 testCfg testCfgVPrev {chatVRange = mkVersionRange (VersionChat 9) (prevVersion linkNoticeVersion)} testRemoveMemberNoticePrevVersion
+      runTestCfg2 testCfg testCfgVPrevLinkNotice testRemoveMemberNoticePrevVersion
     it "group deleted with kept conversation" testGroupDeleteKeepConversation
     it "app fixtures: group deletion" testGroupDeletionFixtures
 #if !defined(dbPostgres)
@@ -10124,7 +10124,7 @@ testBlockPreviousVersionFixtures :: HasCallStack => TestParams -> IO ()
 testBlockPreviousVersionFixtures ps =
   withNewTestChat ps "alice" aliceProfile $ \alice ->
     withNewTestChat ps "bob" bobProfile $ \bob ->
-      withNewTestChatCfg ps testCfgVPrev {chatVRange = mkVersionRange (VersionChat 9) (prevVersion linkNoticeVersion)} "cath" cathProfile $ \cath ->
+      withNewTestChatCfg ps testCfgVPrevLinkNotice "cath" cathProfile $ \cath ->
         withNewTestChat ps "dan" danProfile $ \dan -> do
           createGroup4 "team" alice (bob, GRModerator) (cath, GRMember) (dan, GRMember)
           bansFixture "previous-version-moderator" bob ["/_members #1"]
