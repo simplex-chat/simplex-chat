@@ -28,6 +28,7 @@ import qualified Data.ByteString.Char8 as B
 import Data.Char (chr, digitToInt, isAlphaNum, isAscii, isDigit, isHexDigit, isLower, isUpper, toLower, toUpper)
 import Data.Either (isRight)
 import Data.Int (Int64)
+import Data.Ix (inRange)
 import Data.List (elemIndex, find, foldl', unfoldr)
 import Data.List.NonEmpty (NonEmpty (..))
 import Data.Maybe (catMaybes, fromMaybe, isJust, isNothing, maybeToList)
@@ -192,7 +193,7 @@ ethereumP = do
   chain <- (>>= (`lookup` evmChains)) <$> optional (A.char '@' *> chainIdP)
   transferLink target chain <$ A.string "/transfer" <|> pure (valueLink target chain)
   where
-    chainIdP = mfilter (between 1 $ toInteger (maxBound :: Int64)) $ digitsInteger <$> A.takeWhile1 isDigit
+    chainIdP = mfilter (inRange (1, toInteger (maxBound :: Int64))) $ digitsInteger <$> A.takeWhile1 isDigit
 
 valueLink :: Text -> Maybe ChainInfo -> Q.Query -> Parser (Text -> ChainAddress, NonEmpty Text)
 valueLink payee chain query = do
@@ -266,7 +267,7 @@ addressP :: [Parser (Maybe a)] -> Parser a
 addressP forms = maybe (fail "invalid address") pure =<< A.choice forms
 
 segwitP :: ByteString -> Parser (Maybe Text)
-segwitP hrp = segwitAddress hrp <$> oneCaseP [hrp <> "1"] (between 14 90)
+segwitP hrp = segwitAddress hrp <$> oneCaseP [hrp <> "1"] (inRange (14, 90))
 
 bitcoinBase58P :: Parser (Maybe Text)
 bitcoinBase58P = base58CheckP ["1", "3"] ["\0", "\5"]
@@ -278,7 +279,7 @@ dogecoinP :: Parser (Maybe Text)
 dogecoinP = base58CheckP ["D", "9", "A"] ["\30", "\22"]
 
 base58CheckP :: [ByteString] -> [ByteString] -> Parser (Maybe Text)
-base58CheckP prefixes versions = base58CheckAddress versions <$> wordP prefixes (between 25 36)
+base58CheckP prefixes versions = base58CheckAddress versions <$> wordP prefixes (inRange (25, 36))
 
 invoiceP :: Parser (Maybe (Text, Maybe Text))
 invoiceP = invoicePayee <$> oneCaseP ["lnbc"] (>= 37)
@@ -305,7 +306,7 @@ evmP :: Parser (Maybe Text)
 evmP = evmAddress <$> evmWordP
 
 solanaKeyP :: Parser (Maybe Text)
-solanaKeyP = solanaAddress <$> mfilter (\w -> between 32 44 (B.length w) && B.all (`B.elem` base58Chars) w) (A.takeWhile1 isAsciiAlphaNum)
+solanaKeyP = solanaAddress <$> mfilter (\w -> inRange (32, 44) (B.length w) && B.all (`B.elem` base58Chars) w) (A.takeWhile1 isAsciiAlphaNum)
 
 wordP :: [ByteString] -> (Int -> Bool) -> Parser ByteString
 wordP prefixes validLength = mfilter (validLength . B.length) $ fst <$> A.match (A.choice (map A.string prefixes) *> A.takeWhile isAsciiAlphaNum)
@@ -359,7 +360,7 @@ segwitAddress hrp s = do
     <$ guard
       ( hrp' == hrp
           && version <= 16
-          && between 2 40 size
+          && inRange (2, 40) size
           && residue == (if version == 0 then bech32Const else bech32mConst)
           && (version /= 0 || size == 20 || size == 32)
       )
@@ -488,7 +489,7 @@ amountP places = safeDecodeUtf8 . fst <$> A.match (A.takeWhile1 isDigit *> optio
 
 evmIntegerP :: Parser Integer
 evmIntegerP = do
-  (digits, places) <- mfilter (between 1 78 . B.length . fst) $ (\whole fraction -> (whole <> fraction, B.length fraction)) <$> A.takeWhile isDigit <*> A.option "" (A.char '.' *> A.takeWhile1 isDigit)
+  (digits, places) <- mfilter (inRange (1, 78) . B.length . fst) $ (\whole fraction -> (whole <> fraction, B.length fraction)) <$> A.takeWhile isDigit <*> A.option "" (A.char '.' *> A.takeWhile1 isDigit)
   power <- A.option 0 $ A.satisfy (\c -> c == 'e' || c == 'E') *> (fromInteger . digitsInteger <$> mfilter ((<= 2) . B.length) (A.takeWhile1 isDigit))
   let (n, remainder) = (digitsInteger digits * 10 ^ max 0 (power - places)) `quotRem` (10 ^ max 0 (places - power))
   n <$ guard (remainder == 0 && n < 2 ^ (256 :: Int))
@@ -522,9 +523,6 @@ lowerText = safeDecodeUtf8 . B.map toLower
 
 isAsciiAlphaNum :: Char -> Bool
 isAsciiAlphaNum c = isAscii c && isAlphaNum c
-
-between :: Ord a => a -> a -> a -> Bool
-between from to n = from <= n && n <= to
 
 $(JQ.deriveJSON (enumJSON $ dropPrefix "UC") ''UnknownCurrency)
 
