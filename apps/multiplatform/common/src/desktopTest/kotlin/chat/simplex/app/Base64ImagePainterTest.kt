@@ -188,10 +188,10 @@ class Base64ImagePainterTest {
   }
 
   @Test
-  fun testGifPictureWithTooManyMetadataBlocksIsShownAsTheErrorPicture() {
-    assertEquals(IntSize(2, 2), base64BitmapSize(base64GifWithComment(1000)))
-    assertNull(base64BitmapSize(base64GifWithComment(1025)))
-    assertSame(errorImageBitmap, base64ToBitmap(base64GifWithComment(1025)))
+  fun testGifPictureIsShownAsTheErrorPicture() {
+    val picture = Base64.getEncoder().encodeToString(encodeImage(2, 2, "gif"))
+    assertNull(base64BitmapSize(picture))
+    assertSame(errorImageBitmap, base64ToBitmap(picture))
   }
 
   @Test
@@ -513,14 +513,6 @@ class Base64ImagePainterTest {
 
   private fun base64Png(width: Int, height: Int): String =
     "data:image/png;base64," + Base64.getEncoder().encodeToString(png(width, height))
-
-  private fun base64GifWithComment(subBlocks: Int): String {
-    val gif = encodeImage(2, 2, "gif")
-    val flags = gif[10].toInt()
-    val headerSize = 13 + if (flags and 0x80 != 0) 3 shl ((flags and 7) + 1) else 0
-    val comment = byteArrayOf(0x21, 0xFE.toByte()) + ByteArray(subBlocks * 2) { if (it % 2 == 0) 1 else 'x'.code.toByte() } + byteArrayOf(0)
-    return Base64.getEncoder().encodeToString(gif.copyOf(headerSize) + comment + gif.copyOfRange(headerSize, gif.size))
-  }
 
   private fun png(width: Int, height: Int): ByteArray = encodeImage(width, height, "png")
 

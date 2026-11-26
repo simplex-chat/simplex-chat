@@ -38,6 +38,13 @@ final class ReceivedPicturesTests: XCTestCase {
         XCTAssertNil(try imageFromBase64(base64Png(1, 4321)))
     }
 
+    func testBase64PicturesAreDecodedOnlyAsJpegOrPng() throws {
+        let image = try XCTUnwrap(UIImage(data: pngData(40, 30))?.cgImage)
+        XCTAssertEqual(try imageFromBase64("data:image/jpg;base64," + imageData(image, "public.jpeg").base64EncodedString())?.size, CGSize(width: 40, height: 30))
+        XCTAssertNil(try imageFromBase64("data:image/png;base64," + imageData(image, "com.compuserve.gif").base64EncodedString()))
+        XCTAssertNil(try imageFromBase64("data:image/png;base64," + imageData(image, "public.tiff").base64EncodedString()))
+    }
+
     func testSharedPictureFileIsDownsampled() throws {
         let url = FileManager.default.temporaryDirectory.appendingPathComponent("shared-picture-test.png")
         try grayPngData(400, 300).write(to: url)
@@ -114,8 +121,12 @@ private func grayPngData(_ width: Int, _ height: Int) throws -> Data {
     let bytesPerRow = (width + 7) / 8
     let provider = try XCTUnwrap(CGDataProvider(data: Data(count: bytesPerRow * height) as CFData))
     let image = try XCTUnwrap(CGImage(width: width, height: height, bitsPerComponent: 1, bitsPerPixel: 1, bytesPerRow: bytesPerRow, space: CGColorSpaceCreateDeviceGray(), bitmapInfo: [], provider: provider, decode: nil, shouldInterpolate: false, intent: .defaultIntent))
+    return try imageData(image, "public.png")
+}
+
+private func imageData(_ image: CGImage, _ type: String) throws -> Data {
     let data = NSMutableData()
-    let destination = try XCTUnwrap(CGImageDestinationCreateWithData(data as CFMutableData, "public.png" as CFString, 1, nil))
+    let destination = try XCTUnwrap(CGImageDestinationCreateWithData(data as CFMutableData, type as CFString, 1, nil))
     CGImageDestinationAddImage(destination, image, nil)
     XCTAssertTrue(CGImageDestinationFinalize(destination))
     return data as Data
