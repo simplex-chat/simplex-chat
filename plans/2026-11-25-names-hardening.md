@@ -274,7 +274,7 @@ The warning: "The payment details of this order could not be checked, so they ar
 flowchart TD
   A[answer of the service] --> P{parsed against SITE}
   P -->|search: terms, years, price| S[row drawn, Register off]
-  P -->|sign answer, terms_changed| C[order not sent: failure line]
+  P -->|terms_changed| C[order not sent: failure line]
   P -->|invoice: amount, currency, method, address proof| W[warning; payment details and card form withheld]
   P -->|committed view: toSign, duration| R[reveal not sent, counted refused; after 3: could not be signed]
   K[card page: PaymentIntent read with SITE.stripeKey] -->|amount, currency, livemode or types differ| W
