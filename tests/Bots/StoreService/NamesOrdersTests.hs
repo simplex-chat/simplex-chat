@@ -2095,10 +2095,10 @@ testViewFixtures = withServiceStore $ \st -> withFakeEthNode $ \node -> do
   setCommunityTerms node fakeCommunityTermsText
   recorded "registration-committed-signed" t0 committed {nrReveal = Just reveal}
   recorded "registration-committed-lapsed" (addUTCTime 1 $ roundedToUTCTime $ cmRevealBefore commitFixture) committed
-  recorded "registration-closed-cancelled" t0 =<< written (\r -> r {nrPhase = OClosed ICCancelled})
   recorded "registration-failed" t0 =<< written (\r -> r {nrPhase = OFailed t0 FRRegistryRefused})
   withTransaction st $ \db -> setSettledAt db rid t0
   recorded "registration-failed-held" t0 =<< written (\r -> r {nrPhase = OFailed t0 FRUnread})
+  recorded "registration-closed-cancelled" t0 =<< written (\r -> r {nrPhase = OClosed ICCancelled})
 
 testViewReadsBounded :: IO ()
 testViewReadsBounded = withServiceStore $ \st -> withFakeEthNode $ \node -> do
