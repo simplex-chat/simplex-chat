@@ -24,7 +24,7 @@ import Network.Wai (Request, ResponseReceived)
 import Simplex.Chat.PaymentService.Types (InvoiceId)
 import Simplex.Messaging.Agent.Store.Common (withTransaction)
 import Simplex.Messaging.Crypto.Secp256k1 (RecoverableSignature)
-import Simplex.Messaging.Eth.Address (Address)
+import Simplex.Messaging.Eth.Address (Address, recoverAddress)
 import Simplex.Messaging.Parsers (defaultJSON)
 import Simplex.Messaging.SimplexName (LabelHash (..))
 import StoreService.Config (NamesConfig (nDowntime))
@@ -32,7 +32,7 @@ import StoreService.Names.Chain (Hex32 (..))
 import StoreService.Names.Orders
 import StoreService.Names.Phases (RegistrationId (..), publish)
 import StoreService.Names.Reveal (RevealRequest)
-import StoreService.Names.Signatures (OrderFields (..), findMessage, parseAnyCaseAddress, selectionMessage)
+import StoreService.Names.Signatures (OrderFields (..), findMessage, parseAnyCaseAddress, personalDigest, selectionMessage)
 import StoreService.Names.Store (NamePhase (..), NameRegistration (..), OrderPhase (..), findRegistrations, getRegistration, namePhase, paymentInvoice)
 import StoreService.Names.Turns (withRegistrationTurns)
 import StoreService.Names.View (NameRefusal (..), registrationView)
@@ -108,15 +108,15 @@ selectNameHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oeNow}
     requested = \case
       Just body | Just v <- J.decode body -> either refuse signed (parseBody "selection" v >>= \SelectionRequest {srSigned, srReveal} -> (,srReveal) <$> signedFields srSigned)
       _ -> refuse $ ORBadRequest "a malformed selection"
-    signed ((fields, timestamp, signature), reveal) =
+    signed ((fields, timestamp, signature), reveal) = do
+      signer <- recoverAddress signature $ personalDigest $ selectionMessage rid fields timestamp
       withTransaction oeStore (`getRegistration` rid) >>= \case
         Nothing -> pure $ refusalAnswer NRNotFound
-        Just r@NameRegistration {nrOwner} ->
-          checkSigner nrOwner (selectionMessage rid fields timestamp) signature >>= \case
-            Left refusal -> refusalAnswer NRNotFound <$ refuse refusal
-            Right () ->
+        Just r@NameRegistration {nrOwner}
+          | signer == Right nrOwner ->
               withRegistrationTurns oeStore oeTurns r (ofLabelHash fields) (inTurns OrderRequest {orOwner = nrOwner, orFields = fields, orTimestamp = timestamp, orSignature = signature} reveal)
                 >>= maybe (pure $ refusalAnswer NRNotFound) (either (const changed) pure)
+          | otherwise -> refusalAnswer NRNotFound <$ refuse (ORBadRequest "the signature is not the owner's")
     inTurns order reveal stored = do
       now <- oeNow
       select now stored order reveal
