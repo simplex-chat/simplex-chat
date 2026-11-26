@@ -132,6 +132,7 @@ stripeProvider cfg = do
   pure
     Provider
       { pProvider = PPStripe,
+        pRefusal = \_ _ -> Nothing,
         pCreateInvoice = createInvoice env,
         pReadInvoice = readInvoice env,
         pCancelInvoice = cancelInvoice env,

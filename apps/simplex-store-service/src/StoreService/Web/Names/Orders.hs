@@ -165,13 +165,12 @@ createAtProvider env@OrdersEnv {oeStore, oeConfig} http client cfg providers wai
     Nothing -> do
       logNote (what <> " refused: no provider configured for " <> tshow ivMethod)
       pure $ refusalAnswer NRProviderUnavailable
+    Just provider | Just e <- pRefusal provider ivMethod IKName -> failedAtProvider e
     Just provider -> limitedCheckout http client ivMethod (pure . refusalAnswer . NRRateLimited) $ do
       invId <- newInvoiceId
       let amount = CurrencyAmount $ fromIntegral ivPrice
       pCreateInvoice provider ivMethod OrderDraft {odAmount = amount, odCurrency = catalogCurrency, odReference = "name:" <> safeDecodeUtf8 (strEncode ivOrderHash), odKind = IKName} >>= \case
-        Left e -> do
-          logError (what <> " failed at the provider: " <> providerErrorText e)
-          pure $ refusalAnswer NRProviderUnavailable
+        Left e -> failedAtProvider e
         Right ProviderInvoice {piProviderRef, piDestination, piAddressProof} -> do
           rid <- newRegistrationId
           let invoice = NewNameInvoice {nniInvoiceId = invId, nniProvider = pProvider provider, nniProviderRef = piProviderRef, nniAmount = amount, nniCurrency = catalogCurrency, nniDestination = piDestination, nniAddressProof = piAddressProof, nniExpiresAt = addUTCTime (invoiceWindow cfg ivMethod) now, nniCreatedAt = now}
@@ -191,6 +190,9 @@ createAtProvider env@OrdersEnv {oeStore, oeConfig} http client cfg providers wai
                 _ -> Left NRInternal <$ logError (what <> ": the order of invoice " <> piProviderRef <> " is not readable after its commit")
               pure Answer {aResponse = response, aAfter = announceClosed env providers waiters closed}
   where
+    failedAtProvider e = do
+      logError (what <> " failed at the provider: " <> providerErrorText e)
+      pure $ refusalAnswer NRProviderUnavailable
     -- An invoice created at the provider for an order that was not written would stay payable with nothing watching it.
     strandedBy :: Provider -> Text -> E.SomeException -> IO a
     strandedBy provider ref e = do

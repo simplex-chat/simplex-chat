@@ -1151,6 +1151,7 @@ stubProvider :: IORef StubState -> Provider
 stubProvider ref =
   Provider
     { pProvider = PPCrypto,
+      pRefusal = \_ _ -> Nothing,
       pCreateInvoice = \method draft -> do
         record ref (StubCreate method draft)
         ssCreateResult <$> readIORef ref,

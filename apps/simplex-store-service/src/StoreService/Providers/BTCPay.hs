@@ -308,6 +308,7 @@ btcpayProvider cfg = do
   pure
     Provider
       { pProvider = PPCrypto,
+        pRefusal = invoiceRefusal cfg,
         pCreateInvoice = createInvoice env,
         pReadInvoice = readInvoice env,
         pCancelInvoice = cancelInvoice env,
@@ -355,6 +356,9 @@ payeeKeys BTCPayConfig {bBitcoinKey, bMoneroKey} = \case
     PayeeKeys ("monero primary address " <> primaryAddress key) $ \GPaymentMethod {gpmSubaddress} -> maybe (Left "it has no accountIndex and addressIndex") (Right . uncurry (moneroPayee key)) gpmSubaddress
   where
     keyed keys settings coin payee = maybe (Left $ "btcpay: [btcpay] sets no " <> settings <> ", so every name invoice in " <> coin <> " is refused") (Right . payee) keys
+
+invoiceRefusal :: BTCPayConfig -> ServicePaymentMethod -> InvoiceKind -> Maybe ProviderError
+invoiceRefusal cfg spm kind = either Just (const Nothing) $ cryptoTarget spm >>= payeeProof cfg kind . snd
 
 payeeProof :: BTCPayConfig -> InvoiceKind -> CryptoCurrency -> Either ProviderError (Maybe Prover)
 payeeProof cfg kind cc = case kind of

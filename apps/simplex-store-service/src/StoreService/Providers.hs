@@ -270,6 +270,7 @@ data ListPass = ListPass
 
 data Provider = Provider
   { pProvider :: PaymentProvider,
+    pRefusal :: ServicePaymentMethod -> InvoiceKind -> Maybe ProviderError,
     pCreateInvoice :: ServicePaymentMethod -> OrderDraft -> IO (Either ProviderError ProviderInvoice),
     pReadInvoice :: Text -> IO (Either ProviderError (Maybe PaymentSignal)),
     -- Stops the provider from accepting payment for this order.
