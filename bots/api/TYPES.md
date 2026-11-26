@@ -141,6 +141,7 @@ This file is generated automatically.
 - [InvitedBy](#invitedby)
 - [KeepAliveOpts](#keepaliveopts)
 - [LinkContent](#linkcontent)
+- [LinkNotice](#linknotice)
 - [LinkOwnerSig](#linkownersig)
 - [LinkPreview](#linkpreview)
 - [ListEntry](#listentry)
@@ -1204,18 +1205,21 @@ Entity:
 Messages:
 - type: "messages"
 
+Archive:
+- type: "archive"
+
 **Syntax**:
 
 ```
-full|entity|messages[ notify=off]
+full|entity|messages|archive[ notify=off]
 ```
 
 ```javascript
-type + (type == 'messages' ? '' : (!notify ? ' notify=off' : '')) // JavaScript
+type + (type == 'messages' ? '' : type == 'archive' ? '' : (!notify ? ' notify=off' : '')) // JavaScript
 ```
 
 ```python
-str(type) + ('' if str(type) == 'messages' else (' notify=off' if not notify else '')) # Python
+str(type) + ('' if str(type) == 'messages' else '' if str(type) == 'archive' else (' notify=off' if not notify else '')) # Python
 ```
 
 
@@ -1334,6 +1338,10 @@ UnsupportedConnReq:
 
 ConnReqMessageProhibited:
 - type: "connReqMessageProhibited"
+
+LinkNotice:
+- type: "linkNotice"
+- expiresAt: UTCTime?
 
 ContactNotReady:
 - type: "contactNotReady"
@@ -2145,6 +2153,11 @@ ContactViaAddress:
 - type: "contactViaAddress"
 - contact: [Contact](#contact)
 
+LinkNotice:
+- type: "linkNotice"
+- expiresAt: UTCTime?
+- contactSLinkData_: [ContactShortLinkData](#contactshortlinkdata)?
+
 
 ---
 
@@ -2784,6 +2797,10 @@ UpdateRequired:
 - type: "updateRequired"
 - groupSLinkData_: [GroupShortLinkData](#groupshortlinkdata)?
 
+LinkNotice:
+- type: "linkNotice"
+- expiresAt: UTCTime?
+
 
 ---
 
@@ -3153,6 +3170,16 @@ Unknown:
 - type: "unknown"
 - tag: string
 - json: JSONObject
+
+
+---
+
+## LinkNotice
+
+The app of the removed member or deleted contact does not join or connect via the link for `ttl` seconds, rounded up to a whole hour; a notice without `ttl` does not expire. `ttl` must be positive.
+
+**Record type**:
+- ttl: int64?
 
 
 ---

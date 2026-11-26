@@ -42,7 +42,6 @@ module StoreService.Names.Orders
     versionWritten,
     confirmLanded,
     checkLanded,
-    confirmedBlock,
   )
 where
 
@@ -79,11 +78,10 @@ import StoreService.Names.Community (Community, communityOf, nameTerms, readable
 import StoreService.Names.Contracts (Contracts (ctChain), NameStatus (..), Terms, chainPriceCents, disputeUntil, nameExpires, nameStatus, ownerOfToken, secondsPerYear)
 import StoreService.Names.Env (NamesEnv (..))
 import StoreService.Names.Phases (Phases, RegistrationId (..))
-import StoreService.Names.Chain (Block (..), BlockTag (..), ChainError, Hex32 (..), TxHash, blockAt, latestBlock)
-import StoreService.Names.Records (deepBlock)
+import StoreService.Names.Chain (Block (..), BlockTag (..), Hex32 (..), TxHash, blockAt, confirmedNumber, latestBlock)
 import StoreService.Names.Registration (Commitment, LinkKind, disputeSeconds)
 import StoreService.Names.Signatures (AgreedTerms (..), OrderFields (..), parseChecksumAddress, personalDigest)
-import StoreService.Names.Store (CodeInsertRefused (..), LiveOrder (..), NameRegistration (..), NameReveal, NewRegistration (..), OrderHash, OrderPayment (..), OrderPhase (..), PrepaidCode (..), TxHistory (..), NameTransaction (..), RegistrationTx (..), TxFor (..), TxSettlement (..), TxState (..), VersionWrite (..), closeOverdue, createCodeRegistration, getLiveOrders, getPrepaidCode, getPrepaidCodeById, getRegistrationByOrderHash, labelHolder, markRead, registrationTransactions, reservePrepaidCode, selectRegistration, spendBalance, updateRegistration)
+import StoreService.Names.Store (CodeInsertRefused (..), LiveOrder (..), NameRegistrationOrder (..), NameReveal, NewRegistration (..), OrderHash, OrderPayment (..), OrderPhase (..), PrepaidCode (..), TxHistory (..), NameTransaction (..), RegistrationTx (..), TxFor (..), TxSettlement (..), TxState (..), VersionWrite (..), closeOverdue, createCodeRegistration, getLiveOrders, getPrepaidCode, getPrepaidCodeById, getRegistrationByOrderHash, labelHolder, markRead, registrationTransactions, reservePrepaidCode, selectRegistration, spendBalance, updateRegistration)
 import StoreService.Names.Turns (Turns, withBalanceTurn, withCodeTurn)
 import StoreService.Orders (RegistrationChanged (..))
 import StoreService.Store.Invoices (currentSecond)
@@ -101,6 +99,7 @@ data OrdersEnv = OrdersEnv
 ordersEnv :: NamesEnv -> OrdersEnv
 ordersEnv NamesEnv {neStore, neConfig, neContracts, neTurns, nePhases, neReport} =
   OrdersEnv {oeStore = neStore, oeConfig = neConfig, oeContracts = neContracts, oeTurns = neTurns, oePhases = nePhases, oeNow = currentSecond, oeReport = neReport}
+{-# INLINE ordersEnv #-}
 
 -- | The fields both kinds of order carry, with the owner's signature over them.
 data OrderRequest = OrderRequest
@@ -132,17 +131,17 @@ instance E.Exception OrderRefused
 
 -- | An exact resend of a stored order, live or not; a new order, which closes the overdue orders of the same wallet and name;
 -- or one meeting another live order.
-data ExistingOrder = EOResent NameRegistration | EONew | EOMeets
+data ExistingOrder = EOResent NameRegistrationOrder | EONew | EOMeets
 
 -- | An overdue order a new order closed, at its new version; its invoice is now expired.
-data ClosedOrder = ClosedOrder {coRegistration :: NameRegistration, coVersion :: Int64}
+data ClosedOrder = ClosedOrder {coRegistration :: NameRegistrationOrder, coVersion :: Int64}
 
 -- | Why an owner's write changed nothing: the registration changed since it was read, or a refusal.
 data WriteRefusal = WRChanged | WRRefused OrderRefusal
   deriving (Eq, Show)
 
 -- | What the register check found on the order's current name: no register through, the order registered or ended at a new version,
--- the order changed since it was read, or a failed chain read.
+-- the order changed since it was read, or nothing judged yet: a failed chain read, or a register above the confirmed block.
 data Landing = LNotLanded | LRegistered Int64 | LEnded Int64 | LChanged | LUnread
   deriving (Eq, Show)
 
@@ -184,6 +183,7 @@ instance J.FromJSON SentOrder where
 
 orderRequest :: SentOrder -> Either OrderRefusal OrderRequest
 orderRequest SentOrder {soOwner, soSigned} = (\(orFields, orTimestamp, orSignature) -> OrderRequest {orOwner = soOwner, orFields, orTimestamp, orSignature}) <$> signedFields soSigned
+{-# INLINE orderRequest #-}
 
 -- | Every format check; the length's range refuses after the formats a kind of order adds.
 signedFields :: SignedFields -> Either OrderRefusal SignedOrderFields
@@ -198,6 +198,7 @@ parseBody what = first (\e -> ORBadRequest $ "a malformed " <> what <> ": " <> T
 
 textWith :: (Text -> Either String a) -> J.Value -> JT.Parser a
 textWith f = J.withText "string" $ either fail pure . f
+{-# INLINE textWith #-}
 
 -- | The owner's EIP-191 signature over the message.
 checkSigner :: Address -> ByteString -> RecoverableSignature -> IO (Either OrderRefusal ())
@@ -214,12 +215,12 @@ existingOrder db req hash now =
 
 -- | The live orders of the request's commitment, or of its owner and label hash, when all are overdue orders of the same wallet and name;
 -- Nothing when any other live order holds them.
-overdueOrdersMet :: DB.Connection -> OrderRequest -> UTCTime -> IO (Maybe [NameRegistration])
+overdueOrdersMet :: DB.Connection -> OrderRequest -> UTCTime -> IO (Maybe [NameRegistrationOrder])
 overdueOrdersMet db OrderRequest {orOwner, orFields = OrderFields {ofLabelHash, ofCommitment}} now = do
   orders <- getLiveOrders db ofCommitment orOwner ofLabelHash now
   pure $ if all closable orders then Just (map loRegistration orders) else Nothing
   where
-    closable LiveOrder {loRegistration = NameRegistration {nrOwner, nrLabelHash}, loOverdue} =
+    closable LiveOrder {loRegistration = NameRegistrationOrder {nrOwner, nrLabelHash}, loOverdue} =
       loOverdue && nrOwner == orOwner && nrLabelHash == ofLabelHash
 
 -- | In one transaction, the overdue orders the request meets are closed, then the order is inserted.
@@ -273,6 +274,7 @@ checkDuration NamesConfig {nTermStart, nTermSlackSeconds} now years duration = d
 -- for any other name.
 orderYears :: OrderFields -> Int -> Int
 orderYears OrderFields {ofAgreedTerms = AgreedTerms {communityName}} = yearsFor communityName
+{-# INLINE orderYears #-}
 
 -- | The terms the order signed must be the current ones for its name, the community terms for a name the policy lists,
 -- which cannot be ordered while a buyer cannot read them.
@@ -307,19 +309,20 @@ checkPrice ct len years price =
 readNoteSeconds :: NominalDiffTime
 readNoteSeconds = 3600
 
-noteRead :: DBStore -> UTCTime -> NameRegistration -> IO ()
-noteRead st now NameRegistration {nrId, nrReadAt} =
+noteRead :: DBStore -> UTCTime -> NameRegistrationOrder -> IO ()
+noteRead st now NameRegistrationOrder {nrId, nrReadAt} =
   when (diffUTCTime now nrReadAt >= readNoteSeconds) $ withTransaction st $ \db -> markRead db nrId (addUTCTime (negate readNoteSeconds) now) now
 
-orderFieldsOf :: NameRegistration -> OrderFields
-orderFieldsOf NameRegistration {nrLabelHash, nrLength, nrDuration, nrCommitment, nrSealed, nrAgreedTerms} =
+orderFieldsOf :: NameRegistrationOrder -> OrderFields
+orderFieldsOf NameRegistrationOrder {nrLabelHash, nrLength, nrDuration, nrCommitment, nrSealed, nrAgreedTerms} =
   OrderFields {ofLabelHash = nrLabelHash, ofLength = nrLength, ofDuration = nrDuration, ofCommitment = nrCommitment, ofSealed = nrSealed, ofAgreedTerms = nrAgreedTerms}
+{-# INLINE orderFieldsOf #-}
 
 -- | A name selected for a taken order, written as a new order is placed, a compare-and-set on the version read: a paid order's price
 -- is spent from its own balance in the balance's turn, and a code order's code is checked and reserved in the code's turn, good past its expiry
 -- until a month after the take.
-selectName :: OrdersEnv -> OrderRequest -> NameRegistration -> UTCTime -> NameReveal -> IO (Either WriteRefusal [ClosedOrder])
-selectName env@OrdersEnv {oeStore, oeTurns, oeNow} req@OrderRequest {orFields = fields@OrderFields {ofLength}} r@NameRegistration {nrId, nrPayment, nrPrice} takenAt reveal =
+selectName :: OrdersEnv -> OrderRequest -> NameRegistrationOrder -> UTCTime -> NameReveal -> IO (Either WriteRefusal [ClosedOrder])
+selectName env@OrdersEnv {oeStore, oeTurns, oeNow} req@OrderRequest {orFields = fields@OrderFields {ofLength}} r@NameRegistrationOrder {nrId, nrPayment, nrPrice} takenAt reveal =
   E.handle (\(RegistrationChanged _) -> pure $ Left WRChanged) $
     first WRRefused <$> case nrPayment of
       OPInvoice {} -> do
@@ -349,20 +352,16 @@ versionWritten = \case
   LiveOrderExists -> Left $ WRRefused OROrderExists
   NotLive -> Left $ WRRefused $ ORBadRequest "the order is closed"
 
-confirmLanded :: OrdersEnv -> NameRegistration -> IO Landing
+confirmLanded :: OrdersEnv -> NameRegistrationOrder -> IO Landing
 confirmLanded OrdersEnv {oeStore, oeContracts, oeTurns, oeNow} = checkLanded oeStore oeContracts oeTurns oeNow
-
-confirmedBlock :: Contracts -> IO (Either ChainError Block)
-confirmedBlock ct = runExceptT $ ExceptT (latestBlock c) >>= ExceptT . deepBlock c
-  where
-    c = ctChain ct
+{-# INLINE confirmLanded #-}
 
 -- | The register check, on the order's current name: a register mined with status 1, or the owner holding the name at the confirmation depth,
 -- went through with only its confirmation lost. The order then becomes registered by a compare-and-set on the version read, a code order spending its code;
 -- ended instead when disputeUntil(id) at the confirmation depth is not the end its mined register set.
 -- The caller holds the turn of the order's label hash.
-checkLanded :: DBStore -> Contracts -> Turns -> IO UTCTime -> NameRegistration -> IO Landing
-checkLanded st ct turns clock r@NameRegistration {nrId, nrOwner, nrLabelHash, nrPayment, nrHistory, nrDuration, nrDisputeDays} = do
+checkLanded :: DBStore -> Contracts -> Turns -> IO UTCTime -> NameRegistrationOrder -> IO Landing
+checkLanded st ct turns clock r@NameRegistrationOrder {nrId, nrOwner, nrLabelHash, nrPayment, nrHistory, nrDisputeDays} = do
   txs <- withTransaction st (`registrationTransactions` nrId)
   let mined = [(ntHash, block) | NameTransaction {ntFor = TxRegistration RTRegister _, ntState = TxSettled (TSMinedAt block), ntHash} <- txs]
   runExceptT (landed mined) >>= \case
@@ -370,12 +369,12 @@ checkLanded st ct turns clock r@NameRegistration {nrId, nrOwner, nrLabelHash, nr
     Right Nothing -> pure LNotLanded
     Right (Just (how, Right (expiry, disputeEnd))) -> either (const LChanged) LRegistered <$> markLanded how (ORegistered expiry disputeEnd)
     Right (Just (how, Left (registerTime, disputeEnd))) ->
-      markLanded how (const $ OEnded (laterBy nrDuration registerTime) (registerEnd registerTime)) >>= \case
+      markLanded how (const OEnded) >>= \case
         Right v -> LEnded v <$ logNote ("names: registration " <> ridText nrId <> " set ended: disputeUntil(id) read at the confirmed block is " <> secondsText disputeEnd <> ", not its register's end " <> tshow (roundedSeconds $ registerEnd registerTime))
         Left _ -> pure LChanged
   where
     landed mined = do
-      Block {blockNumber = confirmed} <- chainRead $ confirmedBlock ct
+      confirmed <- confirmedNumber (ctChain ct) . blockNumber <$> chainRead (latestBlock $ ctChain ct)
       let tag = AtBlock confirmed
       how <- case mined of
         (_, block) : _ | block > confirmed -> throwError $ "names: a register check waits for confirmation: the register's block " <> tshow block <> " is above the confirmed block " <> tshow confirmed
@@ -388,8 +387,7 @@ checkLanded st ct turns clock r@NameRegistration {nrId, nrOwner, nrLabelHash, nr
           Just t | disputeEnd /= Just (registerEnd t) -> pure $ Left (t, disputeEnd)
           _ -> (\expiry -> Right (expiry, disputeEnd)) <$> chainRead (nameExpires ct tag nrLabelHash)
     chainRead = withExceptT (("names: a register check's chain read failed: " <>) . tshow) . ExceptT
-    registerEnd = laterBy $ disputeSeconds nrDisputeDays
-    laterBy seconds t = RoundedSystemTime $ roundedSeconds t + fromIntegral seconds
+    registerEnd t = RoundedSystemTime $ roundedSeconds t + fromIntegral (disputeSeconds nrDisputeDays)
     secondsText = maybe "0" (tshow . roundedSeconds)
     markLanded how phaseAt = do
       now <- clock

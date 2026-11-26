@@ -26,11 +26,12 @@ import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Encoding.String (StrEncoding (..), textEncode)
 import Simplex.Messaging.Names.Record (USDCents)
+import Simplex.Messaging.SystemTime (RoundedSystemTime (..))
 import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
 import StoreService.Names.Orders (OrdersEnv (..))
 import StoreService.Names.Phases (RegistrationId (..), publish)
 import StoreService.Names.Registration (TermsAcceptance (..))
-import StoreService.Names.Store (Balance (..), BalanceLink, BrokenInvariant (..), InvoiceClose (..), NamePhase (..), NameRegistration (..), NameReveal (..), NameTransaction (..), OrderPhase (..), RegistrationTx (..), TxFor (..), TxSettlement (..), TxState (..), VersionWrite (..), balanceByReference, balanceLink, getBalance, getRegistration, lockRegistration, namePhase, orderLive, recordReversal, refundBalance, registerTxSent, registrationTransactions, takeBackBalance, updateRegistration)
+import StoreService.Names.Store (Balance (..), BalanceLink, BrokenInvariant (..), InvoiceClose (..), NamePhase (..), NameRegistrationOrder (..), NameReveal (..), NameTransaction (..), OrderPhase (..), RegistrationTx (..), TxFor (..), TxSettlement (..), TxState (..), VersionWrite (..), balanceByReference, balanceLink, getBalance, getRegistration, lockRegistration, namePhase, orderLive, recordReversal, refundBalance, registerTxSent, registrationTransactions, takeBackBalance, updateRegistration)
 import StoreService.Names.Turns (Turns, withBalanceTurn, withRegistrationTurn)
 import StoreService.Names.View (addressText)
 import StoreService.Orders (RegistrationChanged (..))
@@ -75,8 +76,8 @@ recordRefund turns st ref cents now =
 
 data ReversalCase = RCUnpaid | RCCancel | RCRefunded | RCTakeBack
 
-reversalCase :: NameRegistration -> Bool -> Bool -> ReversalCase
-reversalCase r@NameRegistration {nrPhase} sent refunded
+reversalCase :: NameRegistrationOrder -> Bool -> Bool -> ReversalCase
+reversalCase r@NameRegistrationOrder {nrPhase} sent refunded
   | namePhase nrPhase == PUnpaid = RCUnpaid
   | orderLive r && not sent = RCCancel
   | refunded = RCRefunded
@@ -92,7 +93,7 @@ reverseOrder oe@OrdersEnv {oeNow} row@InvoiceRow {irInvoiceId} rid event reversa
     what = case reversal of
       RVDispute dispute (CurrencyAmount amount) -> "card dispute " <> dispute <> " of " <> tshow amount <> " cents"
       RVRefund charge (CurrencyAmount total) -> "refund of charge " <> charge <> " to " <> tshow total <> " cents in all"
-    reversed db now r@NameRegistration {nrId} cents = do
+    reversed db now r@NameRegistrationOrder {nrId} cents = do
       locked <- lockRegistration db r
       unless locked $ E.throwIO $ RegistrationChanged nrId
       sent <- registerTxSent db nrId
@@ -117,7 +118,7 @@ reverseOrder oe@OrdersEnv {oeNow} row@InvoiceRow {irInvoiceId} rid event reversa
 warnOfFraud :: OrdersEnv -> InvoiceRow -> RegistrationId -> Text -> IO ()
 warnOfFraud oe row rid warning = inOrderTurn oe row rid ("early fraud warning, " <> warning) $ \_ _ -> pure $ Just (Nothing, "nothing changed")
 
-inOrderTurn :: OrdersEnv -> InvoiceRow -> RegistrationId -> Text -> (DB.Connection -> NameRegistration -> IO (Maybe (Maybe Int64, Text))) -> IO ()
+inOrderTurn :: OrdersEnv -> InvoiceRow -> RegistrationId -> Text -> (DB.Connection -> NameRegistrationOrder -> IO (Maybe (Maybe Int64, Text))) -> IO ()
 inOrderTurn oe@OrdersEnv {oeStore, oeTurns, oePhases, oeReport} row@InvoiceRow {irProviderRef} rid what change =
   withTransaction oeStore (`getRegistration` rid) >>= \case
     Nothing -> logError $ "names: the " <> what <> " on payment " <> irProviderRef <> " has no order " <> idText rid
@@ -132,14 +133,17 @@ inOrderTurn oe@OrdersEnv {oeStore, oeTurns, oePhases, oeReport} row@InvoiceRow {
         Just (Left _) -> inOrderTurn oe row rid what change
         Nothing -> logError $ "names: the " <> what <> " on payment " <> irProviderRef <> " has no order " <> idText rid
 
-orderEvidence :: DB.Connection -> InvoiceRow -> NameRegistration -> IO Text
-orderEvidence db InvoiceRow {irProviderRef, irAmount = CurrencyAmount amount, irStatus} NameRegistration {nrId, nrOwner, nrOrderHash, nrSettledAt, nrReveal} = do
+orderEvidence :: DB.Connection -> InvoiceRow -> NameRegistrationOrder -> IO Text
+orderEvidence db InvoiceRow {irProviderRef, irAmount = CurrencyAmount amount, irStatus} NameRegistrationOrder {nrId, nrOwner, nrOrderHash, nrSettledAt, nrReveal, nrPhase} = do
   txs <- registrationTransactions db nrId
   pure $
     T.intercalate
       "; "
       [ "payment " <> irProviderRef <> " of " <> tshow amount <> " cents, invoice " <> textEncode irStatus <> maybe ", payment time not recorded" ((", paid at " <>) . tshow) nrSettledAt,
         "ordered by " <> addressText nrOwner <> ", order hash " <> encoded nrOrderHash,
+        maybe "label not stored" (\NameReveal {rvLabel} -> "label " <> rvLabel) nrReveal <> case nrPhase of
+          ORegistered _ (Just disputeEnd) _ -> ", disputeUntil " <> tshow (roundedSeconds disputeEnd)
+          _ -> ", no dispute period stored",
         maybe "its signed registration is no longer stored" (\NameReveal {rvSignature, rvAcceptance = TermsAcceptance {termsHash}} -> "registration signed " <> encoded rvSignature <> " with terms " <> encoded termsHash) nrReveal,
         transactions "commit" RTCommit txs,
         transactions "register" RTRegister txs
@@ -158,6 +162,7 @@ orderEvidence db InvoiceRow {irProviderRef, irAmount = CurrencyAmount amount, ir
 
 idText :: RegistrationId -> Text
 idText (RegistrationId t) = t
+{-# INLINE idText #-}
 
 centsText :: USDCents -> Text
 centsText cents = tshow (toInteger cents) <> " cents"

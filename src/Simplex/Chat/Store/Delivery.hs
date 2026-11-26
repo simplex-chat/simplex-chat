@@ -66,12 +66,14 @@ jobScopeRow_ = \case
   DJSGroup {jobSpec} -> case jobSpec of
     DJDeliveryJob {includePending} -> (DWSGroup, Just DJSTDeliveryJob, Just (BI includePending), Nothing)
     DJRelayRemoved -> (DWSGroup, Just DJSTRelayRemoved, Nothing, Nothing)
+    DJModerators -> (DWSGroup, Just DJSTModerators, Nothing, Nothing)
   DJSMemberSupport {supportGMId} -> (DWSMemberSupport, Nothing, Nothing, Just supportGMId)
 
 toJobScope_ :: DeliveryJobScopeRow -> Maybe DeliveryJobScope
 toJobScope_ = \case
   (DWSGroup, Just DJSTDeliveryJob, Just (BI includePending), Nothing) -> Just $ DJSGroup {jobSpec = DJDeliveryJob {includePending}}
   (DWSGroup, Just DJSTRelayRemoved, Nothing, Nothing) -> Just $ DJSGroup {jobSpec = DJRelayRemoved}
+  (DWSGroup, Just DJSTModerators, Nothing, Nothing) -> Just $ DJSGroup {jobSpec = DJModerators}
   (DWSMemberSupport, Nothing, Nothing, Just supportGMId) -> Just $ DJSMemberSupport {supportGMId}
   _ -> Nothing
 

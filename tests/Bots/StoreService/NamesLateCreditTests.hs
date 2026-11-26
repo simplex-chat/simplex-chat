@@ -237,7 +237,7 @@ testFundedThenSettledLate = withLate $ \l@Late {lStore = st} -> do
 meetsLiveOrder :: DBStore -> Text -> IO ()
 meetsLiveOrder st r = do
   withTransaction st $ \db -> DB.execute_ db "DROP INDEX sx_badge_service_idx_name_registrations_live_commitment"
-  NameRegistration {nrCommitment} <- reg st r
+  NameRegistrationOrder {nrCommitment} <- reg st r
   placeOrderRow st "twin" False 20000 (at 60)
   withTransaction st $ \db -> DB.execute db "UPDATE sx_badge_service_name_registrations SET commitment = ? WHERE registration_id = 'twin'" (Only nrCommitment)
 

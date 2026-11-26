@@ -79,6 +79,8 @@ module Simplex.Chat.Store.Groups
     getGroupRelayMembers,
     getGroupMembersForExpiration,
     getRemovedMembersToCleanup,
+    setGroupSilentlyRemoved,
+    getGroupSilentlyRemoved,
     deleteGroupChatItems,
     deleteGroupMembers,
     cleanupHostGroupLinkConn,
@@ -1383,6 +1385,15 @@ getRemovedMembersToCleanup db cxt user@User {userId} cutoffTs = do
       (groupMemberQuery <> " WHERE m.user_id = ? AND m.removed_at < ?")
       (userId, cutoffTs)
 
+setGroupSilentlyRemoved :: DB.Connection -> GroupInfo -> IO ()
+setGroupSilentlyRemoved db GroupInfo {groupId} = do
+  currentTs <- getCurrentTime
+  DB.execute db "UPDATE groups SET silently_removed = 1, updated_at = ? WHERE group_id = ?" (currentTs, groupId)
+
+getGroupSilentlyRemoved :: DB.Connection -> GroupInfo -> IO Bool
+getGroupSilentlyRemoved db GroupInfo {groupId} =
+  fromMaybe False <$> maybeFirstRow fromOnlyBI (DB.query db "SELECT silently_removed FROM groups WHERE group_id = ?" (Only groupId))
+
 getGroupInvitation :: DB.Connection -> StoreCxt -> User -> GroupId -> ExceptT StoreError IO ReceivedGroupInvitation
 getGroupInvitation db cxt user groupId =
   getConnRec_ user >>= \case
@@ -2484,8 +2495,8 @@ increaseGroupMembersRequireAttention db User {userId} g@GroupInfo {groupId, memb
   pure g {membersRequireAttention = membersRequireAttention + 1}
 
 -- | add new member with profile
-createNewGroupMember :: DB.Connection -> StoreCxt -> User -> GroupInfo -> GroupMember -> MemberInfo -> Maybe ProofPresHeader -> GroupMemberCategory -> GroupMemberStatus -> ExceptT StoreError IO GroupMember
-createNewGroupMember db cxt user gInfo invitingMember memInfo@MemberInfo {profile} presHeader_ memCategory memStatus = do
+createNewGroupMember :: DB.Connection -> StoreCxt -> User -> GroupInfo -> GroupMember -> MemberInfo -> Maybe ProofPresHeader -> GroupMemberCategory -> GroupMemberStatus -> Maybe MemberRestrictions -> ExceptT StoreError IO GroupMember
+createNewGroupMember db cxt user gInfo invitingMember memInfo@MemberInfo {profile} presHeader_ memCategory memStatus memRestrictions_ = do
   currentTs <- liftIO getCurrentTime
   (localDisplayName, memProfileId, memProfile, badgeVerified) <- createNewMemberProfile_ db cxt user profile presHeader_ currentTs
   let newMember =
@@ -2493,7 +2504,7 @@ createNewGroupMember db cxt user gInfo invitingMember memInfo@MemberInfo {profil
           { memInfo = (memInfo :: MemberInfo) {profile = memProfile},
             memCategory,
             memStatus,
-            memRestriction = Nothing,
+            memRestriction = restriction <$> memRestrictions_,
             memInvitedBy = IBUnknown,
             memInvitedByGroupMemberId = Just $ groupMemberId' invitingMember,
             localDisplayName,
