@@ -44,7 +44,7 @@ import qualified Data.ByteArray as BA
 import Data.ByteArray.Encoding (Base (..), convertFromBase)
 import qualified Data.ByteString.Char8 as B
 import Data.Char (GeneralCategory (..), generalCategory, isAsciiLower, isAsciiUpper, isControl, isDigit, isHexDigit)
-import Data.List (intercalate, nub, partition)
+import Data.List (intercalate, isSuffixOf, nub, partition)
 import Data.List.NonEmpty (NonEmpty)
 import qualified Data.List.NonEmpty as L
 import Data.Map.Strict (Map)
@@ -665,9 +665,18 @@ parseConfig now ini = do
         "simplex" -> Right TLDSimplex
         "testing" -> Right TLDTesting
         other -> Left ("names.tld must be simplex or testing, not " <> T.unpack other)
-    termStart =
-      maybe (Left ("names.term_start must be an ISO 8601 UTC time such as " <> defaultTermStart)) Right $
-        iso8601ParseM (maybe defaultTermStart T.unpack (present "names" "term_start"))
+    termStart = do
+      let raw = maybe defaultTermStart T.unpack (present "names" "term_start")
+          refuse = Left ("names.term_start must be an ISO 8601 UTC time such as " <> defaultTermStart)
+      -- time-1.15 parses a bare date and a zoneless datetime. A term boundary
+      -- is an instant, so the text needs a time and an explicit UTC designator.
+      if utcInstant raw
+        then maybe refuse Right (iso8601ParseM raw :: Maybe UTCTime)
+        else refuse
+    utcInstant s = case break (\c -> c == 'T' || c == 't') s of
+      (_, _ : time) -> not (null time) && utcSuffix time
+      _ -> False
+    utcSuffix time = any (`isSuffixOf` time) ["Z", "z", "+00:00", "-00:00"]
     communityList tld = M.fromList <$> mapM (communityEntry tld) (maybe [] M.keys (M.lookup "community" ini))
     communityEntry tld label = do
       let k = "community." <> T.unpack label

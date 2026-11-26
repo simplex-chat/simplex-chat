@@ -2569,7 +2569,10 @@ processChatCommand cxt nm = \case
   APIDeleteMyAddress userId -> withUserProfileLock "deleteMyAddress" $ withUserId userId $ \user@User {profile = p} -> do
     conn <- withFastStore $ \db -> getUserAddressConnection db cxt user
     withChatLock "deleteMyAddress" $ do
-      deleteAgentConnectionAsync $ aConnId conn
+      -- Return only after the server drops the queue. The async delete marks
+      -- the connection deleted and removes the queue later, so a prepared
+      -- contact can still join in that window.
+      withAgent $ \a -> deleteConnection a NRMInteractive (aConnId conn)
       withFastStore' (`deleteUserAddress` user)
     let p' = (fromLocalProfile p :: Profile) {contactLink = Nothing, contactDomain = Nothing}
     r <- updateProfile_ user p' False $ withFastStore' $ \db -> setUserProfileContactLink db user Nothing

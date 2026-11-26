@@ -584,6 +584,9 @@ connectBobByName name alice bob = do
   concurrently_
     (bob <## "alice (Alice): contact is connected")
     (alice <## "bob (Bob): contact is connected")
+  -- CON clears contact_conn_initiated after the connected line is delivered.
+  -- The Linux builder can still read the flag as set until that update commits.
+  waitConnectedContactsSettled bob
 
 testPrepareNameNotClaimed :: HasCallStack => TestParams -> IO ()
 testPrepareNameNotClaimed = withAliceName $ \_reg (shortLink, fullLink) _alice bob -> do

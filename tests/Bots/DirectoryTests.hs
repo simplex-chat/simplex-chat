@@ -1431,12 +1431,14 @@ testCapthaScreening ps =
       cath <## "      Correct, you joined the group privacy"
       cath <## "#privacy: you joined the group"
 
-testVoiceCaptchaScreening :: HasCallStack => TestParams -> IO ()
-testVoiceCaptchaScreening ps@TestParams {tmpPath} = do
-  let mockScript = tmpPath </> "mock_voice_gen.py"
-  -- Mock script writes a dummy audio file, prints path and duration
-  writeFile mockScript $ unlines
-    [ "#!/usr/bin/env python3",
+-- The directory service execs this path. A `#!/usr/bin/env python3` script
+-- dies in the nix Linux sandbox, which has no /usr/bin/env. /bin/sh is the
+-- sandbox shell, and the Cabal check puts python3 on PATH.
+writeVoiceCaptchaMock :: FilePath -> IO ()
+writeVoiceCaptchaMock path = do
+  writeFile path $ unlines
+    [ "#!/bin/sh",
+      "exec python3 - \"$@\" <<'PY'",
       "import os, tempfile",
       "out = os.environ.get('VOICE_CAPTCHA_OUT')",
       "if not out:",
@@ -1444,9 +1446,16 @@ testVoiceCaptchaScreening ps@TestParams {tmpPath} = do
       "    os.close(fd)",
       "open(out, 'wb').write(b'\\x00' * 100)",
       "print(out)",
-      "print(5)"
+      "print(5)",
+      "PY"
     ]
-  setPermissions mockScript $ setOwnerExecutable True $ setOwnerReadable True $ setOwnerWritable True emptyPermissions
+  setPermissions path $ setOwnerExecutable True $ setOwnerReadable True $ setOwnerWritable True emptyPermissions
+
+testVoiceCaptchaScreening :: HasCallStack => TestParams -> IO ()
+testVoiceCaptchaScreening ps@TestParams {tmpPath} = do
+  let mockScript = tmpPath </> "mock_voice_gen.py"
+  -- Mock script writes a dummy audio file, prints path and duration
+  writeVoiceCaptchaMock mockScript
   withDirectoryServiceVoiceCaptcha ps mockScript $ \superUser dsLink ->
     withNewTestChat ps "bob" bobProfile $ \bob ->
       withNewTestChat ps "cath" cathProfile $ \cath -> do
@@ -1494,18 +1503,7 @@ testVoiceCaptchaScreening ps@TestParams {tmpPath} = do
 testVoiceCaptchaRetry :: HasCallStack => TestParams -> IO ()
 testVoiceCaptchaRetry ps@TestParams {tmpPath} = do
   let mockScript = tmpPath </> "mock_voice_gen_retry.py"
-  writeFile mockScript $ unlines
-    [ "#!/usr/bin/env python3",
-      "import os, tempfile",
-      "out = os.environ.get('VOICE_CAPTCHA_OUT')",
-      "if not out:",
-      "    fd, out = tempfile.mkstemp(suffix='.m4a')",
-      "    os.close(fd)",
-      "open(out, 'wb').write(b'\\x00' * 100)",
-      "print(out)",
-      "print(5)"
-    ]
-  setPermissions mockScript $ setOwnerExecutable True $ setOwnerReadable True $ setOwnerWritable True emptyPermissions
+  writeVoiceCaptchaMock mockScript
   withDirectoryServiceVoiceCaptcha ps mockScript $ \superUser dsLink ->
     withNewTestChat ps "bob" bobProfile $ \bob ->
       withNewTestChat ps "cath" cathProfile $ \cath -> do
@@ -1546,18 +1544,7 @@ testVoiceCaptchaRetry ps@TestParams {tmpPath} = do
 testVoiceCaptchaVoiceDisabled :: HasCallStack => TestParams -> IO ()
 testVoiceCaptchaVoiceDisabled ps@TestParams {tmpPath} = do
   let mockScript = tmpPath </> "mock_voice_gen_vdisabled.py"
-  writeFile mockScript $ unlines
-    [ "#!/usr/bin/env python3",
-      "import os, tempfile",
-      "out = os.environ.get('VOICE_CAPTCHA_OUT')",
-      "if not out:",
-      "    fd, out = tempfile.mkstemp(suffix='.m4a')",
-      "    os.close(fd)",
-      "open(out, 'wb').write(b'\\x00' * 100)",
-      "print(out)",
-      "print(5)"
-    ]
-  setPermissions mockScript $ setOwnerExecutable True $ setOwnerReadable True $ setOwnerWritable True emptyPermissions
+  writeVoiceCaptchaMock mockScript
   withDirectoryServiceVoiceCaptcha ps mockScript $ \superUser dsLink ->
     withNewTestChat ps "bob" bobProfile $ \bob ->
       withNewTestChat ps "cath" cathProfile $ \cath -> do
@@ -1603,18 +1590,7 @@ testVoiceCaptchaVoiceDisabled ps@TestParams {tmpPath} = do
 testVoiceCaptchaOldClient :: HasCallStack => TestParams -> IO ()
 testVoiceCaptchaOldClient ps@TestParams {tmpPath} = do
   let mockScript = tmpPath </> "mock_voice_gen_oldclient.py"
-  writeFile mockScript $ unlines
-    [ "#!/usr/bin/env python3",
-      "import os, tempfile",
-      "out = os.environ.get('VOICE_CAPTCHA_OUT')",
-      "if not out:",
-      "    fd, out = tempfile.mkstemp(suffix='.m4a')",
-      "    os.close(fd)",
-      "open(out, 'wb').write(b'\\x00' * 100)",
-      "print(out)",
-      "print(5)"
-    ]
-  setPermissions mockScript $ setOwnerExecutable True $ setOwnerReadable True $ setOwnerWritable True emptyPermissions
+  writeVoiceCaptchaMock mockScript
   withDirectoryServiceVoiceCaptcha ps mockScript $ \superUser dsLink ->
     withNewTestChat ps "bob" bobProfile $ \bob ->
       withNewTestChatCfg ps testCfg {chatVRange = (chatVRange testCfg) {maxVersion = prevVersion memberSupportVoiceVersion}} "cath" cathProfile $ \cath -> do

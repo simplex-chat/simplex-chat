@@ -42,7 +42,7 @@ welcomeMessage = "Hello! I am a simple squaring bot.\nIf you send me a number, I
 mySquaringBot :: User -> ChatController -> IO ()
 mySquaringBot _user cc = do
   initializeBotAddress cc
-  race_ (forever $ void getLine) . forever $ do
+  race_ waitUntilStdinCloses . forever $ do
     (_, evt) <- atomically . readTBQueue $ outputQ cc
     case evt of
       Right (CEvtContactConnected _ contact _) -> do

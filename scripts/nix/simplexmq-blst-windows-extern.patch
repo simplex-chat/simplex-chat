@@ -1,0 +1,55 @@
+BLST already defines and initializes __blst_platform_cap in its C server.
+COFF assembly must reference that storage instead of adding COMMON storage.
+This keeps the existing CPU detection and cryptographic operations unchanged.
+
+--- a/cbits/blst/build/coff/ctq_inverse_mod_384-x86_64.s
++++ b/cbits/blst/build/coff/ctq_inverse_mod_384-x86_64.s
+@@ -1,4 +1,4 @@
+-.comm	__blst_platform_cap,4
++.extern	__blst_platform_cap
+ .text	
+ 
+ .globl	ct_inverse_mod_384
+--- a/cbits/blst/build/coff/mulq_mont_256-x86_64.s
++++ b/cbits/blst/build/coff/mulq_mont_256-x86_64.s
+@@ -1,4 +1,4 @@
+-.comm	__blst_platform_cap,4
++.extern	__blst_platform_cap
+ .text	
+ 
+ .globl	mul_mont_sparse_256
+--- a/cbits/blst/build/coff/mulq_mont_384-x86_64.s
++++ b/cbits/blst/build/coff/mulq_mont_384-x86_64.s
+@@ -1,4 +1,4 @@
+-.comm	__blst_platform_cap,4
++.extern	__blst_platform_cap
+ .text	
+ 
+ 
+--- a/cbits/blst/build/coff/sha256-armv8.S
++++ b/cbits/blst/build/coff/sha256-armv8.S
+@@ -15,7 +15,7 @@
+ //
+ // See original module at CRYPTOGAMS for further details.
+ 
+-.comm	__blst_platform_cap,4
++.extern	__blst_platform_cap
+ .text
+ 
+ .p2align	6
+--- a/cbits/blst/build/coff/sha256-portable-x86_64.s
++++ b/cbits/blst/build/coff/sha256-portable-x86_64.s
+@@ -1,4 +1,4 @@
+-.comm	__blst_platform_cap,4
++.extern	__blst_platform_cap
+ .text	
+ 
+ .globl	blst_sha256_block_data_order
+--- a/cbits/blst/build/coff/sha256-x86_64.s
++++ b/cbits/blst/build/coff/sha256-x86_64.s
+@@ -1,4 +1,4 @@
+-.comm	__blst_platform_cap,4
++.extern	__blst_platform_cap
+ 
+ .section	.rdata
+ .p2align	6
