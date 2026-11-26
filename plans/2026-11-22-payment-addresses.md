@@ -27,7 +27,7 @@ A payment address or request in a message is plain text. A reader copies it into
 
 | Option | Cost |
 |---|---|
-| A. The core parses payment URIs and checksum-valid addresses into one `Format` constructor with a parsed request; the apps render its fields | a core module of codecs and parsers, a `Format` constructor with its JSON, the bots API types, one renderer and one alert in each app |
+| A. The core parses payment URIs and checksum-valid addresses into one `Format` constructor, `ChainAddressLink`, with the currency resolved from the core's tables; the apps render its fields | a core module of codecs, parsers and tables, a `Format` constructor with its JSON, the bots API types, one renderer and one alert in each app |
 | B. The core accepts payment schemes as `HyperLink` targets; each app parses the URI for its link text | URI and checksum parsers written in Swift and in Kotlin, a third parser for bare addresses, results that can differ between platforms, a string only for bots |
 | C. A message content type with a structured request, as `MCChat` (Protocol.hs:752) | a protocol type, a compose UI, a card UI, fallback text for earlier clients; addresses in texts, profile descriptions and channel posts are still shown as text |
 
@@ -149,9 +149,7 @@ lightning:
                 BOLT 12 offer lno1
                 LUD-01 LNURL lnurl1
   read          invoice amount in the HRP
-                invoice field d
-                invoice timestamp and field x
-                host of the decoded LNURL
+  checked       the decoded LNURL is an https URL, or an http URL of an onion host
 ethereum:
   payee         [pay-]0x and 40 hex digits, EIP-55 when in mixed case
   parameters    @chain_id
@@ -230,7 +228,7 @@ G1    the first form whose prefix, case and length hold
 form  prefix                     case      length       network        validation
 F1    bc1                        one case  14-90        Bitcoin        bech32 v0, bech32m v1-16
 F2    1, 3                       -         25-36        Bitcoin        Base58Check, version 0x00 or 0x05
-F3    lnbc                       one case  37 or more   Lightning      BOLT 11 bech32, HRP amount, fields d and x
+F3    lnbc                       one case  37 or more   Lightning      BOLT 11 bech32, HRP amount
 F4    lnurl1                     one case  any          Lightning      bech32 of an https or onion URL
 F5    4, 8                       -         95, 106      Monero         Keccak-256 check, network byte 18, 42 or 19
 F6    t1, t3                     -         25-36        Zcash          Base58Check, version 0x1CB8 or 0x1CBD
@@ -313,54 +311,59 @@ flowchart TD
   B -->|no| O["message link, SimpleX link, web link, domain, e-mail, as now"]
   U -->|valid| L{"target of a hyperlink?"}
   U -->|"invalid by U1-U6"| T["text"]
-  V -->|valid| P["PaymentLink"]
+  V -->|valid| P["ChainAddressLink"]
   V -->|invalid| O
   L -->|no| P
   L -->|"label accepted by L1 and L2"| P
-  L -->|"label refused by L1 or L2"| R["label as text, URI as a bare PaymentLink"]
+  L -->|"label refused by L1 or L2"| R["label as text, URI as a bare ChainAddressLink"]
 ```
 
 ## Types
 
-`Payments.hs`, a new module:
+`ChainAddress.hs`, module `Simplex.Chat.ChainAddress`, renamed from `Payments.hs`. No type, constructor, field, module or JSON tag contains "payment" or "pay" (item 11737).
 
 ```haskell
-data PaymentRequest = PaymentRequest
-  { payee :: PaymentPayee,
-    alternatives :: [LightningPayee], -- lightning= and lno= beside a bitcoin: address
-    amount :: Maybe Text, -- decimal: coins of the network, or base units of the token
-    token :: Maybe PaymentToken, -- ERC-20 contract or SPL mint
-    label :: Maybe Text, -- recipient in the link
-    message :: Maybe Text, -- description in the link
-    walletUri :: Text -- handed to the OS
+data ChainAddress = ChainAddress
+  { currency :: ChainCurrency,
+    address :: Text,
+    label :: Maybe Text,
+    message :: Maybe Text,
+    walletUri :: Text
   }
 
-data PaymentPayee
-  = PPAddress {network :: PaymentNetwork, address :: Text, checksum :: AddressChecksum}
-  | PPLightning {lightning :: LightningPayee}
+data ChainCurrency
+  = CCBitcoin {amount :: Maybe Text}
+  | CCLightning {amount :: Maybe Text}
+  | CCTicker {ticker :: Text, chainName :: Maybe Text, amount :: Maybe Text}
+  | CCUnknown {unknown :: UnknownCurrency}
 
-data PaymentNetwork
-  = PNBitcoin
-  | PNEthereum {chainId :: Maybe Int64} -- Nothing: chain not stated
-  | PNMonero
-  | PNZcash
-  | PNSolana
-  | PNLitecoin
-  | PNDogecoin
-  | PNBitcoinCash
+data UnknownCurrency = UCChain | UCToken | UCChainAndToken
 
-data LightningPayee
-  = LPInvoice {invoice :: Text, description :: Maybe Text, expiresAt :: UTCTime} -- BOLT 11
-  | LPOffer {offer :: Text} -- BOLT 12
-  | LPLnurl {lnurl :: Text, host :: Text} -- LUD-01
+instance StrEncoding ChainAddress
 
-data PaymentToken = PaymentToken {address :: Text, checksum :: AddressChecksum}
+bareAddressForm :: ByteString -> Bool
 
-data AddressChecksum = ACVerified | ACUnchecked -- ACUnchecked: Solana, or an EVM address in one case
+hyperlinkAddress :: Text -> Text -> Maybe (Either String (Maybe Text, ChainAddress))
+```
 
-instance StrEncoding PaymentRequest -- strDecode: a URI or a bare word; strEncode: walletUri; strDecode . strEncode = Right
-
-hasOtherAddress :: PaymentRequest -> Text -> Bool -- rule L2
+```
+ChainAddress
+  currency            what the link text names, resolved by the core from the tables of section Link text
+  address             the payee: an address, or the Lightning invoice, offer or LNURL
+  label               label or recipient_name, without one that contains an address of the link
+  message             message, tx_description, a Solana memo, or a UTF-8 Zcash memo
+  walletUri           section Wallet URI
+ChainCurrency
+  CCBitcoin           ₿, the amount in BTC
+  CCLightning         ϟ, the amount of the invoice in BTC
+  CCTicker            the ticker, the chain name, the amount in units of the ticker
+  CCUnknown           a chain or token outside the tables, without an amount
+strDecode             a URI, or a bare word by section Bare forms
+strEncode             walletUri; strDecode . strEncode = Right
+bareAddressForm       G0 and G1 of section Bare forms, without a validation
+hyperlinkAddress t l  Nothing: l is not a chain address URI
+                      Left: refused by L2 or L3
+                      Right: the text to show, Nothing when t == l
 ```
 
 Markdown.hs:
@@ -368,15 +371,57 @@ Markdown.hs:
 ```haskell
 data Format
   = ...
-  | PaymentLink {showText :: Maybe Text, payment :: PaymentRequest}
+  | ChainAddressLink {showText :: Maybe Text, chainAddress :: ChainAddress}
 ```
 
-- JSON: `sumTypeJSON fstToLower` for the sums and `defaultJSON` for the records, as for `Format` (Markdown.hs:1040-1043); in a core of an earlier version, the constructor is decoded as `Unknown` (Markdown.hs:1042-1043).
-- `message` is set from `message`, `tx_description`, the Solana `memo`, or the Zcash `memo` when it is UTF-8; `label` from `label` or `recipient_name`.
+The core resolves each link into `ChainCurrency` and `address`:
+
+```
+link                                            currency                                    address
+bitcoin: with an address; F1, F2                CCBitcoin                                   the address
+lightning:; bitcoin: without an address; F3, F4 CCLightning, the amount of the invoice      the invoice, offer or LNURL
+monero: zcash: litecoin: dogecoin:              CCTicker, the ticker of the scheme          the address
+  bitcoincash:; F5-F12
+solana: without spl-token                       CCTicker SOL                                the address
+solana: spl-token of the token table            CCTicker, the token, chain name Solana      the address
+solana: another spl-token                       CCUnknown UCToken                           the address
+ethereum: value; chain of the chain table       CCTicker, the chain's ticker and name,      the address
+                                                  value / 10^18
+ethereum: value; chain absent or another; F13   CCUnknown UCChain                           the address
+ethereum: transfer; chain and contract of the   CCTicker, the token, the chain name,        the address parameter
+  token table                                     uint256 / 10^decimals
+ethereum: transfer; chain of the chain table,   CCUnknown UCToken                           the address parameter
+  another contract
+ethereum: transfer; chain absent or another     CCUnknown UCChainAndToken                   the address parameter
+```
+
+```mermaid
+flowchart TD
+  P["link parsed and checked"] --> S{"scheme or bare form"}
+  S -->|"bitcoin with an address, F1, F2"| B["CCBitcoin"]
+  S -->|"lightning, bitcoin without an address, F3, F4"| N["CCLightning"]
+  S -->|"monero, zcash, litecoin, dogecoin, bitcoincash, F5-F12"| T["CCTicker: ticker of the scheme"]
+  S -->|solana| SP{"spl-token?"}
+  SP -->|no| SOL["CCTicker SOL"]
+  SP -->|"in the token table"| ST["CCTicker: token, Solana"]
+  SP -->|other| UT["CCUnknown UCToken"]
+  S -->|"ethereum, F13"| C{"chain ID in the chain table?"}
+  C -->|"yes, value"| CV["CCTicker: ticker and name of the chain, value / 10^18"]
+  C -->|"yes, transfer"| K{"contract in the token table of the chain?"}
+  K -->|yes| KT["CCTicker: token, chain name, uint256 / 10^decimals"]
+  K -->|no| UT
+  C -->|"absent or other, value"| UC["CCUnknown UCChain"]
+  C -->|"absent or other, transfer"| UCT["CCUnknown UCChainAndToken"]
+```
+
+- The tables of section Link text are in ChainAddress.hs, the one source of tickers, chain names and token decimals; the apps contain the signs ₿ and ϟ, the shortening of addresses and the localized words of `CCUnknown`.
+- Tokens are matched by the EVM contract in lower case with its chain, and by the Solana mint as written.
+- Amounts: `1*DIGIT ["." 1*DIGIT]`, the grammar of ZIP-321, as written in the URI for every scheme but `ethereum:`; an `ethereum:` value or `uint256` divided by 10^18 or 10^decimals, as decimal text; a Solana token amount has at most the decimals of its token (rule U1).
+- The parser keeps what it checks inside the module: rule L2 compares the label with the payee, the Lightning alternatives and the token contract, so these are not fields of `ChainAddress`.
 - `address`: bech32, bech32m and CashAddr in lower case, an EVM address in its EIP-55 case, other forms as written; rule L2 compares these forms.
-- Amounts: `1*DIGIT ["." 1*DIGIT]`, the grammar of ZIP-321, for every scheme but `ethereum:`.
-- Codecs in `Payments.hs`: Base58 and Base58Check; the Monero block variant, 8 bytes in 11 characters; bech32 and bech32m without a length limit; CashAddr; the BOLT 11 fields `d` and `x`. Hashes: `sha256Hash` and `keccak256` (simplexmq Crypto.hs:1035-1057); the EIP-55 check of `strP` of `Simplex.Messaging.Eth.Address` (simplexmq Eth/Address.hs:40-48) [S36].
-- Chain names and coin symbols, in the apps, for `chainId` 1, 10, 56, 137, 8453 and 42161: Ethereum, OP Mainnet, BNB Smart Chain, Polygon, Base, Arbitrum One; ETH, BNB, POL [S34]. Another chain is shown by its number.
+- JSON: `sumTypeJSON` with the prefix `CC` dropped, `enumJSON` with `UC` dropped, `defaultJSON` for `ChainAddress`, as for `Format` (Markdown.hs:1040-1043); in a core of an earlier version, the constructor is decoded as `Unknown` (Markdown.hs:1042-1043). Example: `{"type":"chainAddressLink","chainAddress":{"currency":{"type":"ticker","ticker":"ETH","chainName":"Arbitrum One","amount":"0.01"},"address":"0xD7047Fe3Eecb2f2FF78d839dD927Be27Bc12c86a","walletUri":"ethereum:0xD7047Fe3Eecb2f2FF78d839dD927Be27Bc12c86a@42161?value=1e16"}}`.
+- Removed: `PaymentRequest`, `PaymentPayee`, `PaymentNetwork`, `LightningPayee`, `PaymentToken`, `AddressChecksum`, and the exports `hasOtherAddress` and `hasRequestAddress`, which `hyperlinkAddress` replaces.
+- Codecs in `ChainAddress.hs`: Base58 and Base58Check; the Monero block variant, 8 bytes in 11 characters; bech32 and bech32m without a length limit; CashAddr; the BOLT 11 amount of the HRP. The BOLT 11 fields `d` and `x` and the LNURL host are not read: no field shows them. Hashes: `sha256Hash` and `keccak256` (simplexmq Crypto.hs:1035-1057); the EIP-55 check of `strP` of `Simplex.Messaging.Eth.Address` (simplexmq Eth/Address.hs:40-48) [S36].
 - The schemes and their parsers are one list: a URI is parsed by the parser of its scheme. The bare forms are a second list of guards and validations, in the order of section Bare forms: a bare word is validated by the first form whose guard holds, or by none.
 
 ## Parser changes
@@ -385,10 +430,10 @@ data Format
 fragmentP     digit branch: a word that a form of section Bare forms selects, then phoneP, then wordP (Markdown.hs:363)
 linkMD        after the web URI branch, before isDomain: the one validation of the link text (Markdown.hs:506-518)
 hyperLinkFormat
-              after the SimpleX link branch, before parseUri: paymentLink of the target,
-              with the label rules L1, L2 and L3 (Markdown.hs:450-467)
-isLink        PaymentLink, as decided in Q5 (Markdown.hs:320-326)
-markdownText  PaymentLink -> the source text (Markdown.hs:965-986)
+              after the SimpleX link branch, before parseUri: hyperlinkAddress of the label and the target,
+              with the label rules L2 and L3; L1 stays in sowLinkP (Markdown.hs:450-467)
+isLink        ChainAddressLink, as decided in Q5 (Markdown.hs:320-326)
+markdownText  ChainAddressLink -> the source text (Markdown.hs:965-986)
 ```
 
 - For a word that starts with a digit, `phoneP` is tried before `wordP`, and a Base58 or Monero address that starts with 7 or more digits is split by it (Markdown.hs:363, 484-494). A word that a form selects is taken whole before both, by the guards only; `linkMD` then makes its one validation. A selected digit word is 25 or more letters and digits without separators, and `phoneP` accepts at most 22 (Markdown.hs:489), so no phone number is lost.
@@ -424,7 +469,18 @@ URI              as written, with
 
 ### Link text
 
-The text of a payment link in the bubble, in link style; a sign or ticker is followed by a no-break space; addresses are shortened to 6 and 4 characters.
+The text of a payment link in the bubble, in link style; a sign or ticker is followed by a no-break space; addresses are shortened to 6 and 4 characters. The apps compose it from `ChainCurrency`, `address` and the shown label, `showText` of the hyperlink or `label`:
+
+```
+CCBitcoin     ₿ then the text
+CCLightning   ϟ then the text, with " BTC" after the amount
+CCTicker      the ticker then the text, then " · " and the chain name when present
+text          the amount, then " · " and the shown label when present
+              or the shown label
+              or the shortened address
+```
+
+A link with both a label and a chain name is shown as Q8 decides.
 
 | Link | Text |
 |---|---|
@@ -445,20 +501,19 @@ The text of a payment link in the bubble, in link style; a sign or ticker is fol
 
 ```mermaid
 flowchart LR
-  L[link] --> S{scheme}
-  S -->|bitcoin| B[₿]
-  S -->|lightning| N[ϟ, amount in BTC]
-  S -->|monero, zcash, litecoin, dogecoin, bitcoincash, solana| T[ticker of the scheme]
-  S -->|ethereum| C{chain ID in the chain table}
-  C -->|value| V[ticker of the chain]
-  C -->|transfer| K{chain and contract in the token table}
-  T -->|spl-token| K
-  K --> TK[ticker and decimals of the token]
-  C -->|absent or unknown| Q[Q6]
-  K -->|unknown| Q
+  subgraph Core
+    P["link parsed and checked"] --> R["ChainCurrency and address, from the tables below"]
+  end
+  subgraph Apps
+    R --> K{"constructor"}
+    K -->|CCBitcoin| B["₿ text"]
+    K -->|CCLightning| N["ϟ text, BTC after the amount"]
+    K -->|CCTicker| T["ticker text, · chain name"]
+    K -->|CCUnknown| Q["Q6"]
+  end
 ```
 
-Tickers of the schemes, by SLIP-44 [S37]:
+Tickers of the schemes, by SLIP-44 [S37]; the apps draw the signs ₿ and ϟ, and the core sends the tickers:
 
 | Scheme | Text |
 |---|---|
@@ -507,7 +562,7 @@ Tokens, by the Uniswap token list [S38] and the Solana token list [S39]; an ERC-
 | Element | Proposal |
 |---|---|
 | bubble, address or URI | section Link text |
-| bubble, `[label](URI)` | the label and the network in italics, `Donate (Monero)`, as `(via host)` of SimpleX links (MsgContentView.swift:653-665, TextItemView.kt:401-416) |
+| bubble, `[label](URI)` | the hyperlink text is the shown label of section Link text: `[Donate](monero:…)` is `XMR Donate`, and with `tx_amount=0.25`, `XMR 0.25 · Donate` |
 | tap | alert `Open in wallet?`; the wallet is opened only from Open |
 | alert text | `<name>: <link text> to <address>`; ` to <address>` is left out when the link text is the address and for a Lightning invoice |
 | alert text, forwarded item | `<name> forwarded: <link text> to <address>` |
@@ -561,17 +616,19 @@ sequenceDiagram
 
 | Part | iOS | Android and desktop |
 |---|---|---|
-| types | `Format.paymentLink` and the types above, SimpleXChat/ChatTypes.swift:6008-6027 | `Format.PaymentLink`, ChatModel.kt:5382-5412, style `linkStyle` |
-| rendering | a branch in `appendSegments` with an attribute key for the payment (MsgContentView.swift:595-722) | the annotation `PAYMENT` (TextItemView.kt:336-452); the same text in `segmentDisplayText` (TextItemView.kt:112-134) |
-| tap | the alert is shown from `attributedStringLink` for the key, before the URL branch in which `mailto:` and `tel:` are opened directly (MsgContentView.swift:300-344) | `PAYMENT` is handled in `onClick`, `onHover` and `shouldConsumeEvent` (TextItemView.kt:489-534) |
+| types | `Format.chainAddressLink`, `ChainAddress`, `ChainCurrency`, `UnknownCurrency` in SimpleXChat/ChatTypes.swift, in place of `PaymentRequest` and its types of this branch (ChatTypes.swift:6046, 6069-6167) | `Format.ChainAddressLink` and the same three types in ChatModel.kt, in place of ChatModel.kt:5412, 5457-5527; style `linkStyle` |
+| link text | one function of `ChainAddress` and the shown label, section Link text, used by the bubble and the alert; the chain table and the token table of this branch are removed from the app | the same |
+| rendering | a branch in `appendSegments` with an attribute key for the chain address (MsgContentView.swift:595-722) | the annotation `CHAIN_ADDRESS` (TextItemView.kt:336-452); the same text in `segmentDisplayText` (TextItemView.kt:112-134) |
+| tap | the alert is shown from `attributedStringLink` for the key, before the URL branch in which `mailto:` and `tel:` are opened directly (MsgContentView.swift:300-344) | `CHAIN_ADDRESS` is handled in `onClick`, `onHover` and `shouldConsumeEvent` (TextItemView.kt:489-534) |
 | alert | `showAlert` with Cancel and Open (ShareSheet.swift:61-71) | `AlertManager.shared.showAlertDialog` (AlertManager.kt:126-174) |
 | open | `UIApplication.shared.open(url) { success in … }`; the alert when `success` is false [S18] | `uriHandler.openUri` in `try`; the alert on an exception (TextItemView.kt:729-738) |
 | previews | `linkUri` is unchanged, so a payment link is never previewed (ChatTypes.swift:5883-5889, ComposeView.swift:1929-1939) | the same (ChatModel.kt:5369-5374, ComposeView.kt:472-482) |
 
 - Remote desktop: an app of an earlier version fails to decode the new `Format`; `minRemoteCtrlVersion` and `minRemoteHostVersion` (Remote.hs:77-82) are raised to the release version by the release commit, as by `d7d180a42 core: 7.1.0.16`.
-- Website: the payment schemes are added to `SAFE_URI_SCHEME` (website/src/js/simplex-lib.jsc:26), and `paymentLink` is rendered as a link to `walletUri` in `renderSegments` (simplex-lib.jsc:225-301).
+- Website: the payment schemes are added to `SAFE_URI_SCHEME` (website/src/js/simplex-lib.jsc:26), and `chainAddressLink` is rendered as a link to `walletUri` in `renderSegments` (simplex-lib.jsc:225-301).
 - CLI: the text is printed as now (Styled.hs:71-79).
-- Bots API: `PaymentLink` and its types are added in bots/src/API/Docs/Types.hs:298; bots/api and the TypeScript and Python types are generated again.
+- Bots API: `ChainAddressLink`, `ChainAddress`, `ChainCurrency` and `UnknownCurrency` in bots/src/API/Docs/Types.hs, in place of the six types of this branch; bots/api and the TypeScript and Python types are generated again.
+- Renamed with the types: the fixture tests/fixtures/api/payments/links.json to tests/fixtures/api/chain-addresses/links.json, the test `payment links in a received message` to `chain addresses in a received message` with its line in scripts/ci/README.md, the app tests PaymentLinksTests.swift and PaymentLinksTest.kt, the snapshots `ClassicPaymentLinks`, `TerminalPaymentLinks` and `PaymentLinks.Messages`, and the `ci-tests` block of the pull request body. The string `payment_link_chain` and the iOS string `chain %lld` are removed: a chain outside the table is shown as Q6 decides.
 
 ## Privacy
 
@@ -586,23 +643,23 @@ Each test that expects a payment link fails on master.
 
 | File | Test |
 |---|---|
-| tests/MarkdownTests.hs | `bc1q2gy6…505d4u` and its upper-case form are parsed as `PaymentLink` with `walletUri` `bitcoin:` and the address; the address with its last character changed is text |
+| tests/MarkdownTests.hs | `bc1q2gy6…505d4u` and its upper-case form are parsed as `ChainAddressLink` with `CCBitcoin Nothing`, the address in lower case and `walletUri` `bitcoin:` and the address; the address with its last character changed is text |
 | | `BITCOIN:BC1Q2GY6…?AMOUNT=0.001` is parsed with `walletUri` `bitcoin:BC1Q2GY6…?amount=0.001`; `amount=0.000000001` and `amount=1,000` are text |
-| | `37116639cErLzxER6tL3a6EH2DbdETwTxd`, a P2SH address made for the test from random bytes, which starts with 8 digits, is one `PaymentLink`; on master it is split by `phoneP` (Markdown.hs:363, 484-494) |
-| | the README.md:151-158 addresses, bare and as URIs: Monero byte 42, CashAddr with and without its prefix, EIP-55, `t1`, `u1`, Dogecoin; `solana:7JCf…ARnu?amount=0.5`; with `spl-token`, a token without a checksum |
-| | `strDecode (strEncode r) == Right r` for each request of these tests |
-| | the BOLT 11 example "Please send $3 for a cup of coffee to the same peer, within one minute" [S4]: amount 0.0025 BTC, description `1 cup coffee`, `expiresAt` 2017-06-01T10:58:38Z; its example "Bech32 checksum is invalid" is text |
-| | `ethereum:0xD704…c86a@42161?value=1e16`: chain 42161, amount 0.01; the USDT `transfer` example: token with its checksum, payee, `5000000`; the same with the token contract in lower case: a token without a checksum; `/approve?…` and a `transfer` with `value` are text; the address with the case of one letter changed is text |
-| | `[Donate](monero:8A3Z…q1c)` is parsed as `PaymentLink (Just "Donate")`; `[bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4](bitcoin:bc1q2gy6…)`, a valid address of BIP-173 as the label, is parsed as label text and a bare `PaymentLink` (L2); `[Donate](bc1q2gy6…)` is parsed as text and a bare `PaymentLink`, and `<bc1q2gy6…>` as text (L3) |
+| | `37116639cErLzxER6tL3a6EH2DbdETwTxd`, a P2SH address made for the test from random bytes, which starts with 8 digits, is one `ChainAddressLink`; on master it is split by `phoneP` (Markdown.hs:363, 484-494) |
+| | the README.md:151-158 addresses, bare and as URIs: Monero byte 42 as `CCTicker "XMR"`, CashAddr with and without its prefix as `BCH`, EIP-55 as `CCUnknown UCChain`, `t1` and `u1` as `ZEC`, Dogecoin as `DOGE`; `solana:7JCf…ARnu?amount=0.5` as `CCTicker "SOL" Nothing (Just "0.5")`; with the USDC mint of the token table, `CCTicker "USDC" (Just "Solana")`; with another mint, `CCUnknown UCToken` |
+| | `strDecode (strEncode a) == Right a` for each chain address of these tests |
+| | the BOLT 11 example "Please send $3 for a cup of coffee to the same peer, within one minute" [S4]: `CCLightning (Just "0.0025")`; its example "Bech32 checksum is invalid" is text |
+| | `ethereum:0xD704…c86a@42161?value=1e16`: `CCTicker "ETH" (Just "Arbitrum One") (Just "0.01")`; `@1`: chain name `Nothing`; `@99999` and no chain ID: `CCUnknown UCChain`; the USDT `transfer` example on chain 1: `CCTicker "USDT" Nothing (Just "5")` with the payee as `address`; the same with the token contract in lower case: the same value; another contract on chain 1: `UCToken`; on chain 99999: `UCChainAndToken`; `/approve?…` and a `transfer` with `value` are text; the address with the case of one letter changed is text |
+| | `[Donate](monero:8A3Z…q1c)` is parsed as `ChainAddressLink (Just "Donate")`; `[bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4](bitcoin:bc1q2gy6…)`, a valid address of BIP-173 as the label, is parsed as label text and a bare `ChainAddressLink` (L2); `[Donate](bc1q2gy6…)` is parsed as text and a bare `ChainAddressLink`, and `<bc1q2gy6…>` as text (L3) |
 | | text: `ThereAreMany32ByteKeysHereButNoneAreChecked`; `0xd7047fe3eecb2f2ff78d839dd927be27bc12c86a` bare; `tb1…`; `monero-wallet:…?spend_key=…`; `monero:A;B?tx_amount=1;2`; `zcash:t1fwj…?memo=…`; `` `bc1q2gy6…` ``; `alice@getalby.com` as e-mail |
 | | `hasLinks` of a payment link, as decided in Q5; linear time: 10000 words of 34 Base58 characters |
 | | the guards: a word of each form F1-F13 with one character changed is text; a word of 34 Base58 characters after each of `1`, `3`, `L`, `M`, `D`, `9`, `A` with a wrong checksum is text; `LTC1…` in upper case is a Litecoin bech32 address |
 | | `parse time`, section Timing |
 | tests/JSONTests.hs | the JSON of a `bitcoin:` URI with `lightning=`, an `ethereum:` URI with a chain and a token transfer is decoded to the same value |
 | tests/ChatTests/Direct.hs | `filter chat by link content`: a message with a bare address is in the Links filter, as decided in Q5 |
-| tests/ChatTests/Direct.hs | `payment links in a received message`: alice sends a bare address, `[Donate](monero:…)` and a bare invoice; `apiFixture` (tests/ChatTests/Utils.hs:999-1004) records bob's `/_get chat @2 count=1`, whose item has `PaymentLink` in `formattedText`, and the markdown of each payee kind, to tests/fixtures/api/payments/links.json; its pattern is in "App test fixtures" (scripts/ci/README.md:51) |
+| tests/ChatTests/Direct.hs | `chain addresses in a received message`: alice sends a bare address, `[Donate](monero:…)` and a bare invoice; `apiFixture` (tests/ChatTests/Utils.hs:1015-1030) records bob's `/_get chat @2 count=1`, whose item has `ChainAddressLink` in `formattedText`, and the markdown of each `ChainCurrency` constructor and `UnknownCurrency` value, to tests/fixtures/api/chain-addresses/links.json; its pattern is in "App test fixtures" (scripts/ci/README.md:51) |
 | tests/APIDocs.hs | the bots API files, generated again with the new types |
-| app tests on tests/fixtures/api/payments/links.json | `Format.paymentLink` is decoded; each payee kind is mapped to its link text and alert text; a mocked open failure is followed by the alert `No wallet app` |
+| app tests on tests/fixtures/api/chain-addresses/links.json | `Format.chainAddressLink` is decoded; each `ChainCurrency` constructor is mapped to its link text and alert text; a mocked open failure is followed by the alert `No wallet app` |
 
 ### Timing
 
@@ -638,7 +695,7 @@ sequenceDiagram
 
 | Part | Stage |
 |---|---|
-| core: `Payments.hs`, `Format.PaymentLink`, parser changes, `walletUri`, tests, bots API types, fixtures | v1 |
+| core: `ChainAddress.hs` with its tables, `Format.ChainAddressLink`, parser changes, `walletUri`, tests, bots API types, fixtures | v1 |
 | iOS, Android, desktop: rendering, alerts, open, QR code, app tests | v1, in the same pull request |
 | remote versions | the release commit |
 | website renderer | v1 |
@@ -646,7 +703,7 @@ sequenceDiagram
 | a group preference that prohibits payment links | later, a protocol preference (Types/Preferences.hs:206-218) |
 | a wallet selector with schemes of individual wallets [S35] | later |
 | QR codes in upper case for bech32-only URIs [S25] | later |
-| further networks, each a constructor of `PaymentNetwork` and its parser | later |
+| further networks, each a row of the scheme table with its parser, and further chains and tokens, rows of their tables | later |
 
 ```mermaid
 flowchart LR
@@ -670,6 +727,7 @@ Each question is a principle with its consequences; the recommended option is in
 | Q4 | Networks in v1 | a. Bitcoin, Lightning, Ethereum with the other EVM chains, Monero, Zcash, Solana, Litecoin, Dogecoin, Bitcoin Cash: the networks of README.md:151-158, Lightning and Litecoin<br>b. Bitcoin, Lightning and Monero: a smaller parser and fewer tests; other addresses are text | **a** |
 | Q5 | Whether payment links are links | a. yes: new items with a payment link are in the Links filter (ChatView.swift:3410-3436, Store/Messages.hs:1551-1578); groups get no new preference in v1<br>b. no, as e-mail addresses and phone numbers (Markdown.hs:320-326)<br>c. a, and a group preference that prohibits them, a protocol change | **a** |
 | Q6 | Text of a link outside the tables: an unknown chain ID or token, or an `ethereum:` link without a chain ID, in which the wallet's current chain is used [S9] | a. the shortened address and ` · chain 99999` or ` · token`, without a ticker or an amount: nothing is shown that the link does not state<br>b. as a, and `ETH` for a link without a chain ID: the amount is shown, the currency may be wrong | **a** |
+| Q8 | Text of a link with both a label and a chain name; the chain name follows ` · ` (items 11458, 11489), and the text built in this branch puts the label in its place (ChatTypes.swift:6084, ChatModel.kt:5464) | a. `ETH 0.01 · Arbitrum One · Dinner`: the chain name next to the amount it qualifies, the label last<br>b. `ETH 0.01 · Dinner · Arbitrum One`<br>c. the label is left out when a chain name is shown: `ETH 0.01 · Arbitrum One` | **a** |
 
 ## Sources
 
