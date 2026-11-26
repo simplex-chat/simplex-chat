@@ -228,9 +228,9 @@ stateDiagram-v2
 | same | community, the flag | as given |
 | same | registered: owner, resolver, expiresAt, records | as given |
 | same | records.own.nonce | as given; a transaction with a wrong nonce reverts |
-| `GET /api/name/:hash/sign` (`api.signFor`) | acceptance.policy | equal to `SITE.namePolicy` |
-| same | acceptance.termsHash | equal to the hash the buyer ticked, itself in `SITE` |
-| same | acceptance.community | equal to the kind of the ticked terms |
+| `GET /api/name/:hash/sign` (`api.signFor`) | acceptance.policy | not used: the acceptance is signed over `SITE.namePolicy` |
+| same | acceptance.termsHash | not used: the acceptance is signed over the hash the buyer ticked, itself in `SITE`; a terms change during checkout is answered by the service's `terms_changed` |
+| same | acceptance.community | not used: the acceptance is signed for the kind of the ticked terms |
 | same | intentNonce, acceptance.nonce | as given; a transaction with a wrong nonce reverts |
 | `GET /api/terms/:hash` (`api.termsText`, `currentTermsOf`) | link | in `SITE` |
 | same | text | sha256 equal to the link's `#sha256=` |
@@ -260,7 +260,7 @@ The name and the name address of an order are the page's own: the name from the 
 |---|---|---|
 | search: terms, years or price | `api.searchName`, `flow.orderable` | the name's row with Register off and the existing line "Names can't be ordered right now. Try again later." |
 | code check: years | `api.checkCode` | "The code could not be checked" |
-| sign answer: policy, terms hash or kind | `api.signFor`, `flow.orderRequest` | the order is not sent; Check your order shows its failure line |
+| sign answer naming other held terms | `api.signFor`, `flow.orderRequest` | nothing at signing: the acceptance is signed over the ticked terms and `SITE.namePolicy`, and a terms change is answered by the service's `terms_changed`, as the next row says |
 | `terms_changed` body: terms | `api.signingTerms` | same |
 | invoice: amount, currency, method or address proof | `checkedInvoice` | the warning below; the payment details and the card form withheld |
 | card: PaymentIntent | the card page | same |
