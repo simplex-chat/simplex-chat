@@ -90,7 +90,7 @@ revealHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oePhases, 
           Just r@NameRegistration {nrOwner} ->
             revealSigned oeConfig nrOwner (nrDuration r) (nrDisputeDays r) request >>= \case
               True -> withRegistrationTurn oeStore oeTurns r (decide request) >>= answer . maybe RDGone (either (const RDChanged) id)
-              False -> respond $ refusalResponse NRNotFound
+              False -> logNote "POST /api/registration/:id/reveal refused: the intent is not signed by the order's owner" >> respond (refusalResponse NRNotFound)
           Nothing -> respond $ refusalResponse NRNotFound
       Left e -> logNote ("POST /api/registration/:id/reveal refused: a malformed reveal: " <> T.pack e) >> respond (refusalResponse NRBadRequest)
     Nothing -> answer $ RDRefused (ORBadRequest "the body is over its size limit")

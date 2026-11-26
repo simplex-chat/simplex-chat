@@ -113,7 +113,7 @@ selectNameHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oeNow}
         Nothing -> pure $ refusalAnswer NRNotFound
         Just r@NameRegistration {nrOwner} ->
           checkSigner nrOwner (selectionMessage rid fields timestamp) signature >>= \case
-            Left _ -> pure $ refusalAnswer NRNotFound
+            Left refusal -> refusalAnswer NRNotFound <$ refuse refusal
             Right () ->
               withRegistrationTurns oeStore oeTurns r (ofLabelHash fields) (inTurns OrderRequest {orOwner = nrOwner, orFields = fields, orTimestamp = timestamp, orSignature = signature} reveal)
                 >>= maybe (pure $ refusalAnswer NRNotFound) (either (const changed) pure)
