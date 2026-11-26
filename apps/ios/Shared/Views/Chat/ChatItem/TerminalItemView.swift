@@ -433,7 +433,7 @@ struct TerminalChatItemRow<Content: View>: View {
 
     private func senderNameAndRole(_ sender: ChatItemSender) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: 0) {
-            NameWithBadge(sender.name.font(.body.weight(.semibold)), sender.badge, via: sender.via)
+            NameWithBadge(filledWhenTruncated(sender.name.font(.body.weight(.semibold))), sender.badge, via: sender.via)
                 .foregroundColor(sender.own ? theme.colors.primary : theme.colors.secondary)
                 .lineLimit(1)
             if let role = sender.role {
@@ -446,6 +446,17 @@ struct TerminalChatItemRow<Content: View>: View {
             }
         }
         .modifier(terminalLineBox(UIFont.preferredFont(forTextStyle: .body), nil, theme))
+    }
+
+    @ViewBuilder private func filledWhenTruncated(_ name: Text) -> some View {
+        if #available(iOS 16, *) {
+            ViewThatFits(in: .horizontal) {
+                name
+                name.frame(maxWidth: .infinity, alignment: .leading)
+            }
+        } else {
+            name
+        }
     }
 }
 

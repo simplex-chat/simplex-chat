@@ -19,14 +19,14 @@ private let badgeBaselineOffsetRatio: CGFloat = 0.05
 // (font, weight, color, even a verification shield concatenated into the Text); the badge is sized to
 // the given text style and sits on the name's baseline. Use this everywhere a name may carry a badge.
 // Pass onTap to make the badge open the info alert. The badge hides itself for a nil/long-expired badge.
-struct NameWithBadge: View {
-    let name: Text
+struct NameWithBadge<Name: View>: View {
+    let name: Name
     var badge: LocalBadge?
     var textStyle: UIFont.TextStyle = .body
     var via: String? = nil
     var onTap: (() -> Void)? = nil
 
-    init(_ name: Text, _ badge: LocalBadge?, _ textStyle: UIFont.TextStyle = .body, via: String? = nil, onTap: (() -> Void)? = nil) {
+    init(_ name: Name, _ badge: LocalBadge?, _ textStyle: UIFont.TextStyle = .body, via: String? = nil, onTap: (() -> Void)? = nil) {
         self.name = name
         self.badge = badge
         self.textStyle = textStyle
