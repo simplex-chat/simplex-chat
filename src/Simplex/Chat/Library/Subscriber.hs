@@ -4185,8 +4185,10 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                 members <- withStore $ \db -> do
                   vec <- getMemberRelationsVector db m
                   liftIO $ getGroupMembersByIndexes db cxt user gInfo $ getRelationsIndexes MRIntroduced vec
-                let msgFlags = MsgFlags {notification = updateNotification || msgHasNotification verifiedMsg}
-                forM_ (filter memberCurrent members) $ \member ->
+                let (recipients, msgFlags)
+                      | blockedByAdmin author = (filter (\mem -> memberCurrent mem && memberRole' mem >= GRModerator) members, MsgFlags {notification = False})
+                      | otherwise = (filter memberCurrent members, MsgFlags {notification = updateNotification || msgHasNotification verifiedMsg})
+                forM_ recipients $ \member ->
                   sendFwdMemberMessageFlags member GrpMsgForward {fwdSender = memberFwdSenderTo member author, fwdBrokerTs = msgTs} msgFlags verifiedMsg
           _ -> pure ()
         -- Forwards are only expected from the member that introduced us to the author: our host, or
