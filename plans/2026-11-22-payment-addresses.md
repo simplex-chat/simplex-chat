@@ -288,6 +288,7 @@ U1  a URI is text when
         FLUX 8
         XMR 12
         SOL 9, without spl-token
+        the decimals of the token table, with an spl-token of the table
       an EIP-681 value or uint256 is not an integer
 U2  unknown keys without req- are kept in the wallet URI and not shown
 U3  ethereum: function calls other than transfer are text
@@ -324,7 +325,7 @@ flowchart TD
   B -->|yes| V["the validation of that form only"]
   B -->|no| O["message link, SimpleX link, web link, domain, e-mail, as now"]
   U -->|valid| L{"target of a hyperlink?"}
-  U -->|"invalid by U1-U6"| T["text"]
+  U -->|"invalid by U1-U7"| T["text"]
   V -->|valid| P["ChainAddressLink"]
   V -->|invalid| O
   L -->|no| P
