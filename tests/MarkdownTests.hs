@@ -631,6 +631,7 @@ chainAddresses = describe "chain addresses" do
     ("flux:" <> fluxZ <> "?amount=1&memo=" <> memo) `linksTo` onChain (CYTicker "FLUX" Nothing $ Just "1") fluxZ ("flux:" <> fluxZ <> "?amount=1&memo=" <> memo)
     ("zel:?action=pay&coin=flux&address=" <> zecT <> "&amount=3")
       `linksTo` onChain (CYTicker "FLUX" Nothing $ Just "3") zecT ("zel:?action=pay&coin=flux&address=" <> zecT <> "&amount=3")
+    ("flux:?address=" <> zecT <> "&amount=3") `linksTo` onChain (CYTicker "FLUX" Nothing $ Just "3") zecT ("flux:?address=" <> zecT <> "&amount=3")
   it "URIs that are text" do
     isText $ "bitcoin:" <> btc <> "?amount=0.000000001"
     isText $ "bitcoin:" <> btc <> "?amount=1,000"
@@ -657,6 +658,7 @@ chainAddresses = describe "chain addresses" do
     isText $ "zel:?action=sign&address=" <> zecT <> "&callback=https://example.com"
     isText $ "zel:?action=getaddress&address=" <> zecT
     isText $ "zel:?action=pay&coin=bitcoin&address=" <> zecT
+    isText $ "zel:?action=pay&address=" <> zecT <> "&amount=3"
     isText $ "zel:?action=pay&coin=flux&address=" <> zecT <> "&callback=https://example.com"
   it "hyperlinks and autolinks" do
     ("[Donate](monero:" <> xmr <> ")") <==> markdown (ChainAddressLink (Just "Donate") $ onChain (coin "XMR") xmr $ "monero:" <> xmr) ("[Donate](monero:" <> xmr <> ")")

@@ -219,7 +219,7 @@ schemeParsers =
     ("bitcoincash", coinParser "BCH" cashAddress),
     ("solana", solanaParser),
     ("flux", fluxParser),
-    ("zel", fluxParser)
+    ("zel", zelParser)
   ]
 
 coinParser :: Text -> (ByteString -> Maybe Text) -> SchemeParser
@@ -277,6 +277,11 @@ fluxParser path ps = do
   first (<> ["action", "coin"]) <$> zip321Parser "FLUX" transparentAddress (saplingAddress "za") path ps
   where
     lowerParam k = B.map toLower <$> param k ps
+
+zelParser :: SchemeParser
+zelParser path ps = do
+  when (B.null path && isNothing (param "coin" ps)) $ Left "pay action without a coin"
+  fluxParser path ps
 
 solanaParser :: SchemeParser
 solanaParser path ps = do
