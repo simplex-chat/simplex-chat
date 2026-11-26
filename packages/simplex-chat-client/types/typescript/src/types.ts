@@ -5178,6 +5178,8 @@ export type StoreError =
   | StoreError.DeliveryTaskNotFound
   | StoreError.InvalidDeliveryJob
   | StoreError.DeliveryJobNotFound
+  | StoreError.WalletNotFound
+  | StoreError.DuplicateWallet
   | StoreError.WorkItemError
 
 export namespace StoreError {
@@ -5270,6 +5272,8 @@ export namespace StoreError {
     | "deliveryTaskNotFound"
     | "invalidDeliveryJob"
     | "deliveryJobNotFound"
+    | "walletNotFound"
+    | "duplicateWallet"
     | "workItemError"
 
   interface Interface {
@@ -5700,6 +5704,14 @@ export namespace StoreError {
   export interface DeliveryJobNotFound extends Interface {
     type: "deliveryJobNotFound"
     jobId: number // int64
+  }
+
+  export interface WalletNotFound extends Interface {
+    type: "walletNotFound"
+  }
+
+  export interface DuplicateWallet extends Interface {
+    type: "duplicateWallet"
   }
 
   export interface WorkItemError extends Interface {
