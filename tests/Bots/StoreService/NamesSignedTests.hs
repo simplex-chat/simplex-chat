@@ -8,8 +8,10 @@ module Bots.StoreService.NamesSignedTests (namesSignedTests) where
 import Bots.StoreService.NamesOrdersTests (Ctx (..), advance, aliceOrder, invoiceRegistration, keyA, keyB, placed, post, postRaw, seconds, signWith, withOrders)
 import Bots.StoreService.NamesOwnerTests (answerFree, committedPhase, paidIn, selectionBodyAt, selectionOf, stored, takenIn)
 import Bots.StoreService.NamesPhasesTests (registrationPath)
+import Bots.StoreService.NamesRevealTests (Fx (..), alice, committed, orderOf, ownerBody, revealStored, withReveals)
 import Bots.StoreService.NamesWorkerTests (serveWorker)
-import Bots.StoreService.WebTests (StubCall (..), answerOf, codeHashText, createBody, fieldOf, phaseOf, sampleCode, seedCheckoutCatalog, statusOf, stubCalls, supporterPriceId, webGet)
+import Bots.StoreService.WebTests (StubCall (..), answerFixture, answerOf, codeHashText, createBody, fieldOf, phaseOf, sampleCode, seedCheckoutCatalog, statusOf, stubCalls, supporterPriceId, webGet)
+import ChatTests.Utils (writeFixture)
 import Control.Monad (forM_)
 import Data.Aeson ((.=))
 import qualified Data.Aeson as J
@@ -18,22 +20,26 @@ import qualified Data.ByteString.Lazy as LB
 import Data.IORef (readIORef)
 import Data.Text (Text)
 import qualified Data.Text as T
+import Data.Text.Encoding (decodeLatin1)
 import Data.Word (Word64)
 import Network.HTTP.Client (Response, responseBody, responseHeaders)
 import Network.HTTP.Types (Header, hDate)
 import Simplex.Chat.PaymentService.Types (InvoiceId (..))
 import Simplex.Messaging.Crypto.Secp256k1 (Secp256k1PrivateKey)
+import Simplex.Messaging.Encoding.String (TextEncoding (..))
+import StoreService.Names.Abi (hex)
 import StoreService.Names.Orders (signedRequestSeconds)
 import StoreService.Names.Phases (RegistrationId (..))
-import StoreService.Names.Signatures (OrderAction (..), orderRequestMessage)
+import StoreService.Names.Signatures (OrderAction (..), orderRequestMessage, personalDigest)
 import StoreService.Names.Store (NameRegistration (..))
 import Test.Hspec
 
 namesSignedTests :: Spec
 namesSignedTests = describe "StoreService names: signed order requests" $ do
-  it "signs the message simplex.domains order <id> <action> <timestamp>" testMessage
+  it "signs the message simplex.domains order <id> <action> <timestamp>, recorded for the names page" testMessage
   it "answers a registration read unsigned, by another key, over another action or id, and for an unknown id alike, a timestamp outside the window 400 for a known and an unknown id alike, and the owner's read with the view" testRegistrationRead
   it "answers a retry unsigned, by another key, over another action or id, and for an unknown id alike, writing nothing, a timestamp outside the window 400 alike, and retries the owner's" testRetry
+  it "answers a reveal whose request is unsigned, by another key, over another action or id, and for an unknown id alike, writing nothing, a timestamp outside the window 400 alike, and accepts the owner's" testReveal
   it "answers a name invoice read unsigned, by another key, over another action or id, and for an unknown id alike, a timestamp outside the window 400 alike, and the owner's read with the view" testInvoiceRead
   it "answers a name invoice cancel unsigned, by another key, over another action or id, and for an unknown id alike, cancelling nothing, a timestamp outside the window 400 alike, and cancels the owner's" testInvoiceCancel
   it "reads and cancels a badge invoice unsigned" testBadgeUnsigned
@@ -77,9 +83,13 @@ readRoute Ctx {cClient} path = Signed {sPath = path, sAction = OARead, sSend = \
     query (t, sig) = "?timestamp=" <> show t <> "&signature=" <> T.unpack sig
 
 changeRoute :: Ctx -> OrderAction -> (Text -> String) -> Signed
-changeRoute ctx action path = Signed {sPath = path, sAction = action, sSend = \p sig -> shapeOf <$> postRaw ctx p (maybe "" body sig)}
-  where
-    body (t, sig) = J.encode $ J.object ["timestamp" .= t, "signature" .= sig]
+changeRoute ctx action path = Signed {sPath = path, sAction = action, sSend = \p sig -> shapeOf <$> postRaw ctx p (maybe "" (J.encode . requestFields) sig)}
+
+revealRoute :: Ctx -> J.Object -> Signed
+revealRoute ctx body = Signed {sPath = (<> "/reveal") . registrationRoute, sAction = OAReveal, sSend = \p sig -> shapeOf <$> postRaw ctx p (J.encode $ maybe body (\s -> KM.insert "request" (requestFields s) body) sig)}
+
+requestFields :: (Word64, Text) -> J.Value
+requestFields (t, sig) = J.object ["timestamp" .= t, "signature" .= sig]
 
 otherAction :: OrderAction -> OrderAction
 otherAction = \case
@@ -122,12 +132,24 @@ invoiceRoute :: Text -> String
 invoiceRoute iid = "/api/invoice/" <> T.unpack iid
 
 testMessage :: IO ()
-testMessage =
-  map (\action -> orderRequestMessage unknownRid action 1792828800) [OARead, OACancel, OARetry]
+testMessage = do
+  map message actions
     `shouldBe` [ "simplex.domains order t2Jk8RmQ4vXw9NcP3yLb6g read 1792828800",
                  "simplex.domains order t2Jk8RmQ4vXw9NcP3yLb6g cancel 1792828800",
-                 "simplex.domains order t2Jk8RmQ4vXw9NcP3yLb6g retry 1792828800"
+                 "simplex.domains order t2Jk8RmQ4vXw9NcP3yLb6g retry 1792828800",
+                 "simplex.domains order t2Jk8RmQ4vXw9NcP3yLb6g reveal 1792828800"
                ]
+  writeFixture "store-service/rest-api/vectors-order-requests" $
+    J.object
+      [ "id" .= unknownRid,
+        "timestamp" .= timestamp,
+        "windowSeconds" .= signedRequestSeconds,
+        "messages" .= [J.object ["action" .= textEncode action, "text" .= decodeLatin1 (message action), "digest" .= hex (personalDigest $ message action)] | action <- actions]
+      ]
+  where
+    actions = [OARead, OACancel, OARetry, OAReveal]
+    timestamp = 1792828800 :: Word64
+    message action = orderRequestMessage unknownRid action timestamp
 
 testRegistrationRead :: IO ()
 testRegistrationRead = withSigned $ \ctx -> do
@@ -147,6 +169,16 @@ testRetry = withSigned $ \ctx -> do
   stored ctx r `shouldReturn` r
   (status, view) <- ownerSends ctx route rid
   (status, phaseOf =<< view) `shouldBe` (200, Just "queued")
+
+testReveal :: IO ()
+testReveal = withReveals $ \Fx {fCtx = ctx} -> do
+  rid@(RegistrationId ridText) <- committed ctx (orderOf alice)
+  route <- revealRoute ctx <$> ownerBody ctx alice
+  refusedUnlessOwner ctx route ridText unknownRid
+  unsignedAnswer <- sSend route (sPath route ridText) Nothing
+  answerFixture "reveal-not-found" (statusOfShape unsignedAnswer, bodyOfShape unsignedAnswer)
+  revealStored ctx rid `shouldReturn` Nothing
+  ownerSends ctx route ridText `shouldReturn` (200, Just KM.empty)
 
 testInvoiceRead :: IO ()
 testInvoiceRead = withSigned $ \ctx -> do

@@ -94,17 +94,19 @@ findMessage owner timestamp = message ["find", hex $ unAddress owner, tshow time
 selectionMessage :: RegistrationId -> OrderFields -> Word64 -> ByteString
 selectionMessage (RegistrationId rid) order timestamp = message $ ["name", rid] <> orderWords order <> [tshow timestamp]
 
-data OrderAction = OARead | OACancel | OARetry
+data OrderAction = OARead | OACancel | OARetry | OAReveal
 
 instance TextEncoding OrderAction where
   textEncode = \case
     OARead -> "read"
     OACancel -> "cancel"
     OARetry -> "retry"
+    OAReveal -> "reveal"
   textDecode = \case
     "read" -> Just OARead
     "cancel" -> Just OACancel
     "retry" -> Just OARetry
+    "reveal" -> Just OAReveal
     _ -> Nothing
 
 orderRequestMessage :: Text -> OrderAction -> Word64 -> ByteString

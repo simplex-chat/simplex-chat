@@ -41,6 +41,7 @@ module Bots.StoreService.NamesOrdersTests
     signWith,
     signedPath,
     signedRequestBody,
+    requestSignature,
     settleNow,
     settled,
     invoiceRegistration,

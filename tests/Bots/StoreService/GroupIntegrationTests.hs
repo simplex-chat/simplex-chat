@@ -304,7 +304,7 @@ testNamesBoot ps = do
     coded <- request "/api/registration/t2Jk8RmQ4vXw9NcP3yLb6g/code"
     answer coded {method = "POST", requestBody = RequestBodyLBS "{}"} `shouldReturn` refusedWith 404 "not_found"
     revealed <- request "/api/registration/t2Jk8RmQ4vXw9NcP3yLb6g/reveal"
-    answer revealed {method = "POST", requestBody = RequestBodyLBS "{}"} `shouldReturn` refusedWith 400 "bad_request"
+    answer revealed {method = "POST", requestBody = RequestBodyLBS "{}"} `shouldReturn` refusedWith 404 "not_found"
     revealedByGet <- httpLbs revealed mgr
     (statusOf revealedByGet, lookup "Allow" $ responseHeaders revealedByGet) `shouldBe` (405, Just "POST")
     retried <- request "/api/registration/t2Jk8RmQ4vXw9NcP3yLb6g/retry"
