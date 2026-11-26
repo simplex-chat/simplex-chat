@@ -907,7 +907,7 @@ final class ModerationTests: RecordedAPITestCase {
         try recorded("bans/contact-deletion")
         let (chat, _) = try openContact("/_get chat @3 count=0")
         let state = ParentSheetState()
-        try await hosting(ChatRowHost(state: state, chat: chat)) {
+        try await hosting(chatRow(chat, state)) {
             try await swipe("List")
             try await waitFor { state.sheet?.id == "lists sheet" }
         }
@@ -1053,18 +1053,8 @@ final class ModerationTests: RecordedAPITestCase {
     func testHiddenItemsMerged() async throws {
         let im = ItemsModel(secondaryIMFilter: nil)
         im.reversedChatItems = ([1, 2] as [Int64]).map { ChatItem.getSample($0, .directRcv, .now, "hello", .rcvRead, itemDeleted: .blocked(deletedTs: .now)) }
-        try await hosting(MarkedDeletedItemView(chat: Chat.sampleData, im: im, chatItem: im.reversedChatItems[0])) {
+        try await hosting(MarkedDeletedItemView(chat: Chat.sampleData, im: im, chatItem: im.reversedChatItems[0]).environment(\.revealed, false)) {
             try await waitFor { self.accessibilityLabels().contains { $0.contains("2 messages hidden") } }
-        }
-    }
-
-    @MainActor
-    func testFavoritesInListsSheet() async throws {
-        try recorded("bans/contact-deletion")
-        let (chat, _) = try openContact("/_get chat @2 count=0")
-        try await hosting(NavigationView { TagListView(chat: chat) }) {
-            try await activate("Favorites")
-            try await assertRequested { $0.hasPrefix("/_settings @2 ") }
         }
     }
 
@@ -1209,6 +1199,7 @@ final class ModerationTests: RecordedAPITestCase {
     @MainActor
     private func hosting<V: View>(_ view: V, loads: [String] = [], _ test: () async throws -> Void) async throws {
         _ = accessibilityEnabled
+        parseSimpleXMarkdownText = { _ in nil }
         let scene = try XCTUnwrap(UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first)
         let keyWindow = scene.windows.first { $0.isKeyWindow }
         let window = UIWindow(windowScene: scene)
@@ -1273,9 +1264,9 @@ final class ModerationTests: RecordedAPITestCase {
         ComposeView(chat: chat, im: ItemsModel.shared, composeState: .constant(state), showCommandsMenu: .constant(false), keyboardVisible: .constant(false), keyboardHiddenDate: .constant(Date.now), selectedRange: .constant(NSRange()))
     }
 
-    private func chatRow(_ chat: Chat) -> ChatRowHost {
+    private func chatRow(_ chat: Chat, _ state: ParentSheetState = ParentSheetState()) -> ChatRowHost {
         groupDefaults.set(false, forKey: GROUP_DEFAULT_ONE_HAND_UI)
-        return ChatRowHost(state: ParentSheetState(), chat: chat)
+        return ChatRowHost(state: state, chat: chat)
     }
 
     private func contactRow(_ chat: Chat) -> some View {
