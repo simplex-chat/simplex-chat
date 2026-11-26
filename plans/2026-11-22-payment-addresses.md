@@ -15,8 +15,8 @@ A payment address or request in a message is plain text. A reader copies it into
 | # | After the change | Before |
 |---|---|---|
 | A1 | a URI of the schemes of section Syntax, `[label](URI)`, `<URI>`, and a bare address or invoice whose format has a checksum, are shown as payment links | text |
-| A2 | at a tap, the app opens a sheet with the network, the full address in groups of 4 characters, the amount, the label and message of the link as quoted text, the sender, and the marks Forwarded, Edited and Signed; the wallet is opened only from its button | — |
-| A3 | at Open in wallet, the app hands a normalised URI to the OS; when no app opens it, an alert offers Copy and the QR code | — |
+| A2 | at a tap, the app shows the alert `Open in wallet?` with the sender, the link text and the shortened address; the wallet is opened only from Open | — |
+| A3 | at Open, the app hands a normalised URI to the OS; when no app opens it, an alert offers Copy and the QR code | — |
 | A4 | an address with a wrong checksum, a testnet address, a wallet-restore URI (`monero-wallet:`), an EIP-681 call other than `transfer`, and a request to several recipients are shown as text | text |
 | A5 | a hyperlink whose label contains a payment address other than its target is refused: the label is shown as text, the target as a bare payment link | text |
 | A6 | the core and the apps send no request for a payment link: previews, DNS, ENS, LNURL and exchange rates are not requested | — |
@@ -26,8 +26,8 @@ A payment address or request in a message is plain text. A reader copies it into
 
 | Option | Cost |
 |---|---|
-| A. The core parses payment URIs and checksum-valid addresses into one `Format` constructor with a parsed request; the apps render its fields | a core module of codecs and parsers, a `Format` constructor with its JSON, the bots API types, one renderer and one sheet in each app |
-| B. The core accepts payment schemes as `HyperLink` targets; each app parses the URI for its sheet | URI and checksum parsers written in Swift and in Kotlin, a third parser for bare addresses, results that can differ between platforms, a string only for bots |
+| A. The core parses payment URIs and checksum-valid addresses into one `Format` constructor with a parsed request; the apps render its fields | a core module of codecs and parsers, a `Format` constructor with its JSON, the bots API types, one renderer and one alert in each app |
+| B. The core accepts payment schemes as `HyperLink` targets; each app parses the URI for its link text | URI and checksum parsers written in Swift and in Kotlin, a third parser for bare addresses, results that can differ between platforms, a string only for bots |
 | C. A message content type with a structured request, as `MCChat` (Protocol.hs:752) | a protocol type, a compose UI, a card UI, fallback text for earlier clients; addresses in texts, profile descriptions and channel posts are still shown as text |
 
 A is chosen: the text is parsed once, where `formattedText` is produced (Messages.hs:633-640), and every text that the apps render with markdown is covered.
@@ -110,17 +110,17 @@ Each donation address of README.md:151-158 was checked by these rules before thi
 
 | Risk | Evidence | Mitigation in this plan |
 |---|---|---|
-| address substitution in the clipboard | Android/Clipper.C, found on Google Play in February 2019, replaced Bitcoin and Ethereum addresses copied by users [S32] | Open in wallet is the first action; the URI is passed to the wallet without the clipboard |
-| look-alike addresses | "approximately 270 million attack attempts targeting 17 million victims" on Ethereum and BSC, July 2022 to June 2024; wallets show "the first and last few characters" [S33] | the full address is shown in the sheet in groups of 4, in a monospaced font, and in the bubble as written |
+| address substitution in the clipboard | Android/Clipper.C, found on Google Play in February 2019, replaced Bitcoin and Ethereum addresses copied by users [S32] | Open is the only action of the alert; the URI is passed to the wallet without the clipboard |
+| look-alike addresses | "approximately 270 million attack attempts targeting 17 million victims" on Ethereum and BSC, July 2022 to June 2024; wallets show "the first and last few characters" [S33] | the alert names the sender of the link |
 | a label that differs from its target | `[bc1qGOOD](bitcoin:bc1qEVIL)` is accepted by the punctuation rule of `sowLinkP` (Markdown.hs:453-454) | rule L2 of section Syntax |
-| an address changed by an edit | messages are edited after they are read (`itemEdited`, Messages.hs:532) | the Edited mark in the sheet; the earlier versions are in the item info (Messages.hs:1388-1410) |
-| a request forwarded by a person other than the payee | `itemForwarded` (Messages.hs:530) | the Forwarded mark and the source in the sheet |
+| an address changed by an edit | messages are edited after they are read (`itemEdited`, Messages.hs:532) | the edited mark of the item; the earlier versions are in the item info (Messages.hs:1388-1410) |
+| a request forwarded by a person other than the payee | `itemForwarded` (Messages.hs:530) | `<name> forwarded:` in the alert |
 | token approvals and contract calls | any function call can be encoded in EIP-681 [S9] | only `transfer` with `address` and `uint256` is parsed; other calls are text |
 | a wallet restored with the keys of another party | `monero-wallet:` with `spend_key`, `view_key` or `seed` [S12], registered by Cake Wallet [S24] | the scheme is text |
-| a payment on a wrong EVM chain | without `chain_id`, the current network of the wallet is used [S9]; one address is given for Ethereum and Arbitrum One (README.md:154) | the warning "Network not stated" in the sheet |
-| requests by the wallet to third parties | LNURL and Solana transaction request URLs are fetched by the wallet [S6], [S11] | the LNURL host is named in the sheet; `solana:https…` is text |
+| a payment on a wrong EVM chain | without `chain_id`, the current network of the wallet is used [S9]; one address is given for Ethereum and Arbitrum One (README.md:154) | Q6 |
+| requests by the wallet to third parties | LNURL and Solana transaction request URLs are fetched by the wallet [S6], [S11] | the wallet is opened only from Open; `solana:https…` is text |
 | injection in descriptions, labels and messages | "Payment descriptions are user-defined and provide a potential avenue for injection attacks" [S4] | the apps render them as plain attributed text; in the website renderer, they are escaped by `escapeHtml` (website/src/js/simplex-lib.jsc:225-301) |
-| invisible characters in the label or message | format characters are shown as `[U+XXXX]` in web links (CILinkView.swift:104-121) | the same markers in the sheet |
+| invisible characters in the label or message | format characters are shown as `[U+XXXX]` in web links (CILinkView.swift:104-121) | the message of the link is not shown; in the label of the link text, the same markers |
 
 ## Syntax
 
@@ -376,7 +376,7 @@ markdownText  PaymentLink -> the source text (Markdown.hs:965-986)
 
 ## Wallet URI
 
-`walletUri` is the URI of Open in wallet and of the QR code:
+`walletUri` is the URI of Open and of the QR code:
 
 ```
 written          walletUri
@@ -404,20 +404,20 @@ URI              as written, with
 
 ### Link text
 
-The text of a payment link in the bubble, in link style; addresses are shortened to 6 and 4 characters.
+The text of a payment link in the bubble, in link style; a sign or ticker is followed by a no-break space; addresses are shortened to 6 and 4 characters.
 
 | Link | Text |
 |---|---|
-| `bitcoin:bc1qar0s…5mdq?amount=0.0012` | ₿0.0012 |
-| `bitcoin:bc1qar0s…5mdq` | ₿bc1qar…5mdq |
-| `lightning:lnbc12u1p…` | ϟ0.000012 |
+| `bitcoin:bc1qar0s…5mdq?amount=0.0012` | ₿ 0.0012 |
+| `bitcoin:bc1qar0s…5mdq` | ₿ bc1qar…5mdq |
+| `lightning:lnbc12u1p…` | ϟ 0.000012 BTC |
 | `monero:4AdUnd…mRVj?tx_amount=0.25` | XMR 0.25 |
 | `monero:4AdUnd…mRVj` | XMR 4AdUnd…mRVj |
 | `litecoin:ltc1q…?amount=0.1` | LTC 0.1 |
 | `bitcoincash:qp3w…?amount=0.01` | BCH 0.01 |
 | `solana:7xKX…?amount=10&spl-token=EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v` | USDC 10 · Solana |
 | `ethereum:0xfb69…d359@1?value=1e16` | ETH 0.01 |
-| `ethereum:0xfb69…d359@42161?value=1e16` | ETH 0.01 · Arbitrum |
+| `ethereum:0xfb69…d359@42161?value=1e16` | ETH 0.01 · Arbitrum One |
 | `ethereum:0xfb69…d359@137?value=5e18` | POL 5 · Polygon |
 | `ethereum:0xc2132D05D31c914a87C6611C10748AEb04B58e8F@137/transfer?address=0xfb69…d359&uint256=10000000` | USDT 10 · Polygon |
 | `ethereum:0xfb69…d359@99999?value=1e16` | Q6 |
@@ -461,7 +461,7 @@ Chains, by ethereum-lists/chains [S34]; the name follows ` · `, except for chai
 | 56 | BNB Smart Chain | BNB |
 | 137 | Polygon | POL |
 | 8453 | Base | ETH |
-| 42161 | Arbitrum | ETH |
+| 42161 | Arbitrum One | ETH |
 
 Tokens, by the Uniswap token list [S38] and the Solana token list [S39]; an ERC-20 `uint256` is divided by 10^decimals:
 
@@ -488,30 +488,31 @@ Tokens, by the Uniswap token list [S38] and the Solana token list [S39]; an ERC-
 |---|---|
 | bubble, address or URI | section Link text |
 | bubble, `[label](URI)` | the label and the network in italics, `Donate (Monero)`, as `(via host)` of SimpleX links (MsgContentView.swift:653-665, TextItemView.kt:401-416) |
-| tap | the sheet; the wallet is opened only from its button |
-| sheet title | by the payee: `Bitcoin address`, `Lightning invoice`, `Ethereum token transfer` |
-| sheet line 2 | `From alice`, then the marks `Forwarded`, `Edited` and `Signed` of the item (Messages.hs:530-541) |
-| address | full, in groups of 4, monospaced, selectable |
-| amount | `0.001 BTC`; a token: `5000000 units` and the full token contract; none: `Not specified` |
-| alternatives | a `bitcoin:` URI with `lightning=` or `lno=`: `Lightning is offered too.` |
-| label and message | under `In the link`, in quotes, with `[U+XXXX]` for format characters |
-| warnings, at most 2 lines | `Network not stated. Your wallet will use its current network.`; `This address has no checksum.`; `Your wallet will contact host.`; `This invoice expired.` |
-| buttons | **Open in wallet**; Copy address; QR code, shown open on desktop |
+| tap | alert `Open in wallet?`; the wallet is opened only from Open |
+| alert text | `<name>: <link text> to <address>`; ` to <address>` is left out when the link text is the address and for a Lightning invoice |
+| alert text, forwarded item | `<name> forwarded: <link text> to <address>` |
+| `<name>` | the display name of the sender, bold on Android and desktop; plain on iOS, where the alert text is a string (ShareSheet.swift:61-71) |
+| `<address>` | shortened as in section Link text; the full address is shown by the wallet |
+| buttons | Cancel; Open |
 | no app | alert `No wallet app`, text `Copy the address or scan the QR code with a wallet.`, buttons Copy, QR code, Cancel |
 
+Alert texts:
+
+| Item | Text |
+|---|---|
+| from Tom, `bitcoin:bc1q2g…5d4u?amount=0.0012` | Tom: ₿ 0.0012 to bc1q2g…5d4u |
+| from SimpleX Support, `monero:8A3ZWA…Yq1c` | SimpleX Support: XMR 8A3ZWA…Yq1c |
+| forwarded by Mum, `bitcoin:bc1qw5…f3t4?amount=0.02` | Mum forwarded: ₿ 0.02 to bc1qw5…f3t4 |
+| from Ana, the USDT `transfer` on chain 137 | Ana: USDT 10 · Polygon to 0xD704…c86a |
+| from Café Luna, `lightning:lnbc2500u1…` | Café Luna: ϟ 0.0025 BTC |
+
 ```
-┌──────────────────────────────────────┐
-│ Bitcoin address                      │
-│ From alice · Forwarded               │
-│                                      │
-│ bc1q 2gy6 f02n n6vv cxs0 pnu2        │
-│ 9tpn pyz0 qf66 505d 4u               │
-│ Amount        0.001 BTC              │
-│ In the link   "SimpleX"              │
-│                                      │
-│ [         Open in wallet         ]   │
-│ [ Copy address ]   [ QR code ]       │
-└──────────────────────────────────────┘
+┌──────────────────────────────────┐
+│         Open in wallet?          │
+│  Tom: ₿ 0.0012 to bc1q2g…5d4u    │
+├─────────────────┬────────────────┤
+│     Cancel      │      Open      │
+└─────────────────┴────────────────┘
 ```
 
 ```mermaid
@@ -521,20 +522,18 @@ sequenceDiagram
   participant O as OS
   participant W as Wallet
   U->>A: tap a payment link
-  A->>U: sheet of the PaymentLink fields and the item's marks
-  alt Open in wallet
+  A->>U: alert "Open in wallet?" with the sender and the link text
+  alt Open
     A->>O: open walletUri
     alt an app is registered for the scheme
       O->>W: walletUri
-      W->>U: payment screen, confirmed in the wallet
+      W->>U: payment screen with the full address, confirmed in the wallet
     else none
       O-->>A: false, or an exception
       A->>U: alert with Copy and QR code
     end
-  else Copy address
-    A->>A: address on the clipboard
-  else QR code
-    A->>U: QR code of walletUri
+  else Cancel
+    A->>U: alert closed
   end
 ```
 
@@ -544,8 +543,8 @@ sequenceDiagram
 |---|---|---|
 | types | `Format.paymentLink` and the types above, SimpleXChat/ChatTypes.swift:6008-6027 | `Format.PaymentLink`, ChatModel.kt:5382-5412, style `linkStyle` |
 | rendering | a branch in `appendSegments` with an attribute key for the payment (MsgContentView.swift:595-722) | the annotation `PAYMENT` (TextItemView.kt:336-452); the same text in `segmentDisplayText` (TextItemView.kt:112-134) |
-| tap | the sheet is opened from `attributedStringLink` for the key, before the URL branch in which `mailto:` and `tel:` are opened directly (MsgContentView.swift:300-344) | `PAYMENT` is handled in `onClick`, `onHover` and `shouldConsumeEvent` (TextItemView.kt:489-534) |
-| sheet | `appSheet`, as for the profile description (MsgContentView.swift:393) | `ModalManager.center` (ModalView.kt:267) |
+| tap | the alert is shown from `attributedStringLink` for the key, before the URL branch in which `mailto:` and `tel:` are opened directly (MsgContentView.swift:300-344) | `PAYMENT` is handled in `onClick`, `onHover` and `shouldConsumeEvent` (TextItemView.kt:489-534) |
+| alert | `showAlert` with Cancel and Open (ShareSheet.swift:61-71) | `AlertManager.shared.showAlertDialog` (AlertManager.kt:126-174) |
 | open | `UIApplication.shared.open(url) { success in … }`; the alert when `success` is false [S18] | `uriHandler.openUri` in `try`; the alert on an exception (TextItemView.kt:729-738) |
 | previews | `linkUri` is unchanged, so a payment link is never previewed (ChatTypes.swift:5883-5889, ComposeView.swift:1929-1939) | the same (ChatModel.kt:5369-5374, ComposeView.kt:472-482) |
 
@@ -558,7 +557,7 @@ sequenceDiagram
 
 - A payment link is sent as message text and parsed by each recipient's core when the item is read (Store/Messages.hs:2338-2340, 2432-2434).
 - The core and the apps send no request for a payment link; names (BIP-353, Lightning Address, ENS), LNURL and the tokens outside the token table are resolved only by the wallet.
-- At Open in wallet, the app passes the address, amount, label and message to the app that the OS chooses; on iOS, that app is undefined among several [S17].
+- At Open, the app passes the address, amount, label and message to the app that the OS chooses; on iOS, that app is undefined among several [S17].
 - At Copy, the address is placed on the clipboard, where other apps can read it [S32].
 
 ## Tests
@@ -581,14 +580,14 @@ Each test that expects a payment link fails on master.
 | tests/ChatTests/Direct.hs | `filter chat by link content`: a message with a bare address is in the Links filter, as decided in Q5 |
 | tests/ChatTests/Direct.hs | `payment links in a received message`: alice sends a bare address, `[Donate](monero:…)` and a bare invoice; `apiFixture` (tests/ChatTests/Utils.hs:999-1004) records bob's `/_get chat @2 count=1`, whose item has `PaymentLink` in `formattedText`, and the markdown of each payee kind, to tests/fixtures/api/payments/links.json; its pattern is in "App test fixtures" (scripts/ci/README.md:51) |
 | tests/APIDocs.hs | the bots API files, generated again with the new types |
-| app tests on tests/fixtures/api/payments/links.json | `Format.paymentLink` is decoded; each payee kind is mapped to its sheet title, grouped address, amount, warnings and marks; a mocked open failure is followed by the alert |
+| app tests on tests/fixtures/api/payments/links.json | `Format.paymentLink` is decoded; each payee kind is mapped to its link text and alert text; a mocked open failure is followed by the alert `No wallet app` |
 
 ## Stages
 
 | Part | Stage |
 |---|---|
 | core: `Payments.hs`, `Format.PaymentLink`, parser changes, `walletUri`, tests, bots API types, fixtures | v1 |
-| iOS, Android, desktop: rendering, sheet, open, alert, QR code, app tests | v1, in the same pull request |
+| iOS, Android, desktop: rendering, alerts, open, QR code, app tests | v1, in the same pull request |
 | remote versions | the release commit |
 | website renderer | v1 |
 | names: `₿user@domain`, Lightning Address, ENS, handed to the wallet | later, once wallets accept a URI form for them |
@@ -614,8 +613,8 @@ Each question is a principle with its consequences; the recommended option is in
 | ID | Principle | Options and consequences | Recommendation |
 |---|---|---|---|
 | Q1 | What is shown as a payment link | a. URIs of the nine schemes, their hyperlinks and autolinks, and bare forms with a checksum on mainnet: a random word is shown as a link with probability 2^-30 or less for Base58Check, bech32 and CashAddr forms, about 2^-15 for a mixed-case `0x` word; Solana and one-case EVM addresses only in URIs; a Lightning Address stays an e-mail link<br>b. URIs, hyperlinks and autolinks only: the bare addresses of README.md:151-158 are text<br>c. a, and bare forms without a checksum: `ThereAreMany32ByteKeysHereButNoneAreChecked` is shown as a Solana link | **a** |
-| Q2 | What a tap shows | a. the sheet of section Apps: full grouped address, network, amount, quoted label and message, marks, warnings; Open in wallet first; bare invoices shown by their amount in the bubble<br>b. a, with Copy and QR code only for an EVM address without a chain<br>c. the "Open link?" alert of web links (CILinkView.swift:52-89) with the URI: less code; the address ungrouped, without network or checksum state | **a** |
-| Q3 | What the app requests | a. nothing: names are not recognised in v1, LNURL is resolved by the wallet, and its host is named in the sheet<br>b. a, and names handed to wallets as `lightning:user@domain`, a form left undefined by LUD-16 [S8] | **a** |
+| Q2 | What a tap shows | decided: the alert `Open in wallet?` of section Presentation | — |
+| Q3 | What the app requests | a. nothing: names are not recognised in v1, LNURL is resolved by the wallet<br>b. a, and names handed to wallets as `lightning:user@domain`, a form left undefined by LUD-16 [S8] | **a** |
 | Q4 | Networks in v1 | a. Bitcoin, Lightning, Ethereum with the other EVM chains, Monero, Zcash, Solana, Litecoin, Dogecoin, Bitcoin Cash: the networks of README.md:151-158, Lightning and Litecoin<br>b. Bitcoin, Lightning and Monero: a smaller parser and fewer tests; other addresses are text | **a** |
 | Q5 | Whether payment links are links | a. yes: new items with a payment link are in the Links filter (ChatView.swift:3410-3436, Store/Messages.hs:1551-1578); groups get no new preference in v1<br>b. no, as e-mail addresses and phone numbers (Markdown.hs:320-326)<br>c. a, and a group preference that prohibits them, a protocol change | **a** |
 | Q6 | Text of a link outside the tables: an unknown chain ID or token, or an `ethereum:` link without a chain ID, in which the wallet's current chain is used [S9] | a. the shortened address and ` · chain 99999` or ` · token`, without a ticker or an amount: nothing is shown that the link does not state<br>b. as a, and `ETH` for a link without a chain ID: the amount is shown, the currency may be wrong | **a** |
