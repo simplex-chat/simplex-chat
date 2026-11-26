@@ -618,6 +618,7 @@ sequenceDiagram
   C->>U: callback with the controller
   U->>D: badge catalog seeded
   U->>V: store payment methods read and logged
+  U->>U: with [names], the payee keys the names page holds logged, and an error per coin without them
   U->>D: sender loads saved transactions without an outcome
   U->>E: name policy, community names and terms links read and logged
   U->>U: managed group found or created
@@ -722,7 +723,7 @@ Notes:
 - The answers of an unsigned request, of one by another key or over another id, action or timestamp, and of one for an unknown id are one answer, `404 not_found`, after the route's rate limit, which is taken before the handler runs.
 - Before its id is looked up, a selection is answered `400 bad_request` for a malformed body or a sealed name over its limit and `400 invalid_name` for a length no name has, and a reveal `400 bad_request` for a malformed body or one over the body cap. In a downtime a selection is answered `503 downtime` before its body is read.
 - Only a signed read notes the order's read, which keeps a committed order from failing as `unread` (3.2).
-- A badge invoice is read and cancelled unsigned; its invoice id is its credential.
+- A badge invoice is read and cancelled unsigned; its invoice id is its credential. A `timestamp` outside the window is answered `400 bad_request` for it too, as the window is checked before the invoice is read.
 
 ---
 

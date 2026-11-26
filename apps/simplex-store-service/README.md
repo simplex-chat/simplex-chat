@@ -1250,7 +1250,8 @@ code. The names page signs each one, polls included.
   is answered as one for an unknown id; their other refusals come after the signer is checked.
 - Only a signed read counts as the page's read of an order, which keeps a committed order from
   failing as `unread`.
-- A badge invoice is read and cancelled unsigned, as before.
+- A badge invoice is read and cancelled unsigned, as before; a `timestamp` outside the window is
+  answered `400 bad_request` for it too, as the window is checked before the invoice is read.
 
 ### Values the names page holds
 
