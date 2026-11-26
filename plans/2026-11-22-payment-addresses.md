@@ -1,6 +1,6 @@
 # Payment addresses in messages
 
-Date: 2026-11-22, revised 2026-11-26. References are to master at 8f5dfa3d4; those of section Bare forms are to master at 94e9d08f5. Haskell paths without a directory are in `src/Simplex/Chat/`. Sources are listed at the end as [S1]–[S39], read on 2026-11-22 and 2026-11-26.
+Date: 2026-11-22, revised 2026-11-26. References are to master at 8f5dfa3d4; those of section Bare forms and of the alert rows of sections Presentation and Parts are to master at 94e9d08f5. Haskell paths without a directory are in `src/Simplex/Chat/`. Sources are listed at the end as [S1]–[S39], read on 2026-11-22 and 2026-11-26.
 
 ## Problem
 
@@ -576,9 +576,9 @@ Tokens, by the Uniswap token list [S38] and the Solana token list [S39]; an ERC-
 | bubble, address or URI | section Link text |
 | bubble, `[label](URI)` | the hyperlink text is the shown label of section Link text: `[Donate](monero:…)` is `XMR Donate`, and with `tx_amount=0.25`, `XMR 0.25 · Donate` |
 | tap | alert `Open in wallet?`; the wallet is opened only from Open |
-| alert text | `<name>: <link text> to <address>`; ` to <address>` is left out when the link text is the address and for a Lightning invoice |
+| alert text | `<name>: <link text> to <address>`; ` to <address>` is left out for `CCLightning`, for `CCUnknown`, whose link text contains the address, and when the link text is the shortened address |
 | alert text, forwarded item | `<name> forwarded: <link text> to <address>` |
-| `<name>` | the display name of the sender, bold on Android and desktop; plain on iOS, where the alert text is a string (ShareSheet.swift:61-71) |
+| `<name>` | the display name of the item's sender: the contact, the group member, the channel for a post shown as the channel, the user's own name or incognito name for a sent item; bold on Android and desktop; plain on iOS, where the alert text is a string (ShareSheet.swift:38-55) |
 | `<address>` | shortened as in section Link text; the full address is shown by the wallet |
 | buttons | Cancel; Open |
 | no app | alert `No wallet app`, text `Copy the address or scan the QR code with a wallet.`, buttons Copy, QR code, Cancel |
@@ -593,6 +593,20 @@ Alert texts:
 | from Ana, the USDT `transfer` on chain 137 | Ana: USDT 10 · Polygon to 0xD704…c86a |
 | from Café Luna, `lightning:lnbc2500u1…` | Café Luna: ϟ 0.0025 BTC |
 | from Ana, `ethereum:0xD704…c86a?value=1e16`, without a chain ID | Ana: ⚠ 0xD704…c86a (unknown chain) |
+
+```mermaid
+flowchart LR
+  I["tapped item"] --> N{"sender"}
+  N -->|"contact, member, channel post, own item"| NM["display name"]
+  NM --> F{"forwarded item?"}
+  F -->|yes| P1["name forwarded:"]
+  F -->|no| P2["name:"]
+  P1 --> LT["link text"]
+  P2 --> LT
+  LT --> A{"CCLightning, CCUnknown, or the text is the shortened address?"}
+  A -->|yes| E["end"]
+  A -->|no| TO["to the shortened address"]
+```
 
 ```
 ┌──────────────────────────────────┐
@@ -633,7 +647,7 @@ sequenceDiagram
 | link text | one function of `ChainAddress` and the shown label, section Link text, used by the bubble and the alert; the chain table and the token table of this branch are removed from the app | the same |
 | rendering | a branch in `appendSegments` with an attribute key for the chain address (MsgContentView.swift:595-722) | the annotation `CHAIN_ADDRESS` (TextItemView.kt:336-452); the same text in `segmentDisplayText` (TextItemView.kt:112-134) |
 | tap | the alert is shown from `attributedStringLink` for the key, before the URL branch in which `mailto:` and `tel:` are opened directly (MsgContentView.swift:300-344) | `CHAIN_ADDRESS` is handled in `onClick`, `onHover` and `shouldConsumeEvent` (TextItemView.kt:489-534) |
-| alert | `showAlert` with Cancel and Open (ShareSheet.swift:61-71) | `AlertManager.shared.showAlertDialog` (AlertManager.kt:126-174) |
+| alert | `showAlert(title:message:buttonTitle:buttonAction:cancelButton:)` with Open and Cancel (ShareSheet.swift:38-55) | `AlertManager.shared.showAlertDialogButtonsColumn` with `text: AnnotatedString` (AlertManager.kt:105-124) and a row of Cancel and Open; the text is built by `formatWithBoldName` (Utils.kt:119-124), so the name is bold and the name and the label are shown as literal text, as AlertManager.kt:81 and :135 require for user-controlled text |
 | open | `UIApplication.shared.open(url) { success in … }`; the alert when `success` is false [S18] | `uriHandler.openUri` in `try`; the alert on an exception (TextItemView.kt:729-738) |
 | previews | `linkUri` is unchanged, so a payment link is never previewed (ChatTypes.swift:5883-5889, ComposeView.swift:1929-1939) | the same (ChatModel.kt:5369-5374, ComposeView.kt:472-482) |
 
