@@ -5117,7 +5117,7 @@ processChatCommand cxt nm = \case
       assertGroupContentAllowed
       processComposedMessages
       where
-        signMsgs = sign || groupFeatureAllowed SGFSignMessages gInfo
+        signMsgs = sign || groupFeatureAllowed SGFSignMessages gInfo || any (\(_, _, (_, ParsedMarkdown ft _), _) -> maybe False hasChainAddress ft) cmrs
         allowedRole :: Maybe GroupMemberRole
         allowedRole = case scope of
           Nothing -> Just GRAuthor
