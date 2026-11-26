@@ -1,6 +1,6 @@
 # Payment addresses in messages
 
-Date: 2026-11-22, revised 2026-11-26. References are to master at 8f5dfa3d4; those of section Bare forms and of the alert rows of sections Presentation and Parts are to master at 94e9d08f5. Haskell paths without a directory are in `src/Simplex/Chat/`. Sources are listed at the end as [S1]–[S39], read on 2026-11-22 and 2026-11-26.
+Date: 2026-11-22, revised 2026-11-26. References are to master at 8f5dfa3d4; those of section Bare forms and of the alert rows of sections Presentation and Parts are to master at 94e9d08f5. Haskell paths without a directory are in `src/Simplex/Chat/`. Sources are listed at the end as [S1]–[S43], read on 2026-11-22 and 2026-11-26.
 
 ## Problem
 
@@ -54,6 +54,8 @@ A is chosen: the text is parsed once, where `formattedText` is produced (Message
 | `litecoin:`, `dogecoin:` | the BIP-21 form of Litecoin Core and Dogecoin Core [S14] | master | address | `amount` | `label`, `message`; `dogecoin://` is rewritten as `dogecoin:` by Dogecoin Core |
 | `bitcoincash:` | CashAddr [S15] | — | the prefix is part of the address and of its 40-bit checksum, and "may be omitted" when shown | `amount` | mixed case "must be rejected" |
 | CAIP-10 | CAIP-10 [S16] | Final, created 2020-03-13 | `chain_id:account_address`, such as `eip155:1:0x…` | — | account identifiers, not a URI scheme |
+| `flux:` | the BIP-21 form built by RunOnFlux's CumulusVPN [S42]; no specification | — | Flux transparent address, versions 0x1CB8 (`t1`) and 0x1CBD (`t3`), the Zcash versions [S40] | `amount`, 8 decimals [S40] | `message` [S42]; SSP Wallet reads only the address of a scanned URI [S43] |
+| `zel:` | Zelcore's "Zel protocol specifications" [S41] | — | `address` parameter of the action `pay`, the default action; `coin` names the asset, Bitcoin by default, and `flux`, `zelcash` and `zel` name Flux [S41] | `amount` | `message`; the actions `sign` and `getaddress` post a signature or the user's address to a `callback` URL [S41] |
 
 ### Wallets and operating systems
 
@@ -201,6 +203,13 @@ bitcoincash:
   parameters    amount
                 label
                 message
+flux:
+zel:
+  payee         Base58Check version 0x1CB8, t1
+                Base58Check version 0x1CBD, t3
+  parameters    amount
+                label
+                message
 ```
 
 Examples:
@@ -246,6 +255,7 @@ none                                                                   text, wit
 - A prefix of a one-case form is matched in lower or upper case, as bech32 and CashAddr require; a mixed-case word is not tried.
 - F3, F4 and F9 precede F10, so `LNBC…`, `LNURL1…` and `LTC1…` are never decoded as Base58; F3 starts at 37 characters, one more than the longest Base58 form, so a Litecoin address that starts with `LNBC` is decoded by F10.
 - `3…` is Bitcoin only (F2); `litecoin:` URIs accept version 5 as well (section Syntax).
+- Flux transparent addresses have the Zcash versions 0x1CB8 and 0x1CBD (fluxd src/chainparams.cpp:200-202 [S40]): a bare `t1…` or `t3…` is Zcash (F6), and Flux is recognised in `flux:` and `zel:` URIs only.
 - An EVM address in one case matches no form and is text, as now (rule B1).
 - A URI is not a bare word: its scheme selects the network, and the prefixes and lengths of this table select one address form of that network.
 
@@ -274,6 +284,7 @@ U1  a URI is text when
         DOGE 8
         BCH 8
         ZEC 8
+        FLUX 8
         XMR 12
         SOL 9, without spl-token
       an EIP-681 value or uint256 is not an integer
@@ -285,6 +296,7 @@ U4  monero: with ";" is text: several recipients
     zcash: with a paramindex is text: several payments
 U5  zcash: memo with a transparent address is text, as ZIP-321 requires
 U6  solana: with an https link, a transaction request, is text
+U7  zel: is parsed as flux:, so its pay action, with the address in a parameter, is text (Q9)
 L1  [label](URI): the punctuation rule of web hyperlinks is applied (Markdown.hs:453-454)
 L2  [label](URI): each alphanumeric run of the label that is an address of the nine forms,
     with or without a checksum, equals the payee, an alternative or the token,
@@ -382,7 +394,7 @@ link                                            currency                        
 bitcoin: with an address; F1, F2                CCBitcoin                                   the address
 lightning:; bitcoin: without an address; F3, F4 CCLightning, the amount of the invoice      the invoice, offer or LNURL
 monero: zcash: litecoin: dogecoin:              CCTicker, the ticker of the scheme          the address
-  bitcoincash:; F5-F12
+  bitcoincash: flux: zel:; F5-F12
 solana: without spl-token                       CCTicker SOL                                the address
 solana: spl-token of the token table            CCTicker, the token, chain name Solana      the address
 solana: another spl-token                       CCUnknown UCToken                           the address
@@ -401,7 +413,7 @@ flowchart TD
   P["link parsed and checked"] --> S{"scheme or bare form"}
   S -->|"bitcoin with an address, F1, F2"| B["CCBitcoin"]
   S -->|"lightning, bitcoin without an address, F3, F4"| N["CCLightning"]
-  S -->|"monero, zcash, litecoin, dogecoin, bitcoincash, F5-F12"| T["CCTicker: ticker of the scheme"]
+  S -->|"monero, zcash, litecoin, dogecoin, bitcoincash, flux, zel, F5-F12"| T["CCTicker: ticker of the scheme"]
   S -->|solana| SP{"spl-token?"}
   SP -->|no| SOL["CCTicker SOL"]
   SP -->|"in the token table"| ST["CCTicker: token, Solana"]
@@ -464,6 +476,7 @@ URI              as written, with
 - The scheme in lower case: Android matches schemes case-sensitively [S21]; QR codes are often written in upper case [S2].
 - The keys in lower case: Bitcoin Core compares them as written [S14].
 - `//` removed: BOLT 11 [S4]; `dogecoin://` is rewritten by Dogecoin Core [S14].
+- `zel:` stays `zel:` and `flux:` stays `flux:`: each opens the wallets that register it.
 - The wallet URI is encoded in the QR code without the app logo (`withLogo: false`, QRCode.swift:60-108, QRCode.kt:66-72).
 
 ## Apps
@@ -497,6 +510,7 @@ A link with both a label and a chain name is shown as Q8 decides.
 | `monero:4AdUnd…mRVj` | XMR 4AdUnd…mRVj |
 | `litecoin:ltc1q…?amount=0.1` | LTC 0.1 |
 | `bitcoincash:qp3w…?amount=0.01` | BCH 0.01 |
+| `flux:t1fwjQ…S5Jg?amount=5`, `zel:t1fwjQ…S5Jg?amount=5` | FLUX 5 |
 | `solana:7xKX…?amount=10&spl-token=EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v` | USDC 10 · Solana |
 | `ethereum:0xfb69…d359@1?value=1e16` | ETH 0.01 |
 | `ethereum:0xfb69…d359@42161?value=1e16` | ETH 0.01 · Arbitrum One |
@@ -537,6 +551,7 @@ Tickers of the schemes, by SLIP-44 [S37]; the apps draw the signs ₿ and ϟ, an
 | `dogecoin` | DOGE |
 | `bitcoincash` | BCH |
 | `solana` | SOL |
+| `flux`, `zel` | FLUX |
 | `ethereum` | the chain table |
 
 Chains, by ethereum-lists/chains [S34]; the name follows ` · `, except for chain 1:
@@ -674,6 +689,7 @@ Each test that expects a payment link fails on master.
 | | `BITCOIN:BC1Q2GY6…?AMOUNT=0.001` is parsed with `walletUri` `bitcoin:BC1Q2GY6…?amount=0.001`; `amount=0.000000001` and `amount=1,000` are text |
 | | `37116639cErLzxER6tL3a6EH2DbdETwTxd`, a P2SH address made for the test from random bytes, which starts with 8 digits, is one `ChainAddressLink`; on master it is split by `phoneP` (Markdown.hs:363, 484-494) |
 | | the README.md:151-158 addresses, bare and as URIs: Monero byte 42 as `CCTicker "XMR"`, CashAddr with and without its prefix as `BCH`, EIP-55 as `CCUnknown UCChain`, `t1` and `u1` as `ZEC`, Dogecoin as `DOGE`; `solana:7JCf…ARnu?amount=0.5` as `CCTicker "SOL" Nothing (Just "0.5")`; with the USDC mint of the token table, `CCTicker "USDC" (Just "Solana")`; with another mint, `CCUnknown UCToken` |
+| | `flux:t1fwj…S5Jg?amount=5&message=Thanks` and `zel:t1fwj…S5Jg?amount=5` as `CCTicker "FLUX" Nothing (Just "5")`, with `walletUri` in their own schemes; the bare `t1fwj…S5Jg` as `ZEC`; `flux:` with a Zcash `zs1…` or `u1…` address, and `zel:?action=pay&coin=zelcash&address=t1fwj…S5Jg&amount=5` (U7), are text |
 | | `strDecode (strEncode a) == Right a` for each chain address of these tests |
 | | the BOLT 11 example "Please send $3 for a cup of coffee to the same peer, within one minute" [S4]: `CCLightning (Just "0.0025")`; its example "Bech32 checksum is invalid" is text |
 | | `ethereum:0xD704…c86a@42161?value=1e16`: `CCTicker "ETH" (Just "Arbitrum One") (Just "0.01")`; `@1`: chain name `Nothing`; `@99999` and no chain ID: `CCUnknown UCChain`; the USDT `transfer` example on chain 1: `CCTicker "USDT" Nothing (Just "5")` with the payee as `address`; the same with the token contract in lower case: the same value; another contract on chain 1: `UCToken`; on chain 99999: `UCChainAndToken`; `/approve?…` and a `transfer` with `value` are text; the address with the case of one letter changed is text |
@@ -751,10 +767,12 @@ Each question is a principle with its consequences; the recommended option is in
 | Q1 | What is shown as a payment link | decided (items 11717-11723): a, with bare forms recognised by the guards of section Bare forms and one validation per word; the cost is measured as section Timing states<br>a. URIs of the nine schemes, their hyperlinks and autolinks, and bare forms with a checksum on mainnet: a random word is shown as a link with probability 2^-30 or less for Base58Check, bech32 and CashAddr forms, about 2^-15 for a mixed-case `0x` word; Solana and one-case EVM addresses only in URIs; a Lightning Address stays an e-mail link<br>b. URIs, hyperlinks and autolinks only: the bare addresses of README.md:151-158 are text<br>c. a, and bare forms without a checksum: `ThereAreMany32ByteKeysHereButNoneAreChecked` is shown as a Solana link | — |
 | Q2 | What a tap shows | decided: the alert `Open in wallet?` of section Presentation | — |
 | Q3 | What the app requests | a. nothing: names are not recognised in v1, LNURL is resolved by the wallet<br>b. a, and names handed to wallets as `lightning:user@domain`, a form left undefined by LUD-16 [S8] | **a** |
-| Q4 | Networks in v1 | a. Bitcoin, Lightning, Ethereum with the other EVM chains, Monero, Zcash, Solana, Litecoin, Dogecoin, Bitcoin Cash: the networks of README.md:151-158, Lightning and Litecoin<br>b. Bitcoin, Lightning and Monero: a smaller parser and fewer tests; other addresses are text | **a** |
+| Q4 | Networks in v1 | decided (items 11702, 11737, 11754): a, and Flux in `flux:` and `zel:` URIs<br>a. Bitcoin, Lightning, Ethereum with the other EVM chains, Monero, Zcash, Solana, Litecoin, Dogecoin, Bitcoin Cash: the networks of README.md:151-158, Lightning and Litecoin<br>b. Bitcoin, Lightning and Monero: a smaller parser and fewer tests; other addresses are text | — |
 | Q5 | Whether payment links are links | a. yes: new items with a payment link are in the Links filter (ChatView.swift:3410-3436, Store/Messages.hs:1551-1578); groups get no new preference in v1<br>b. no, as e-mail addresses and phone numbers (Markdown.hs:320-326)<br>c. a, and a group preference that prohibits them, a protocol change | **a** |
 | Q6 | Text of a link outside the tables: an unknown chain ID or token, or an `ethereum:` link without a chain ID, in which the wallet's current chain is used [S9] | decided (items 11664, 11667): an orange ⚠, the shortened address and `(unknown chain)`, `(unknown token)` or `(unknown chain and token)`, without an amount; the whole link in orange (section Link text) | — |
 | Q8 | Text of a link with both a label and a chain name; the chain name follows ` · ` (items 11458, 11489), and the text built in this branch puts the label in its place (ChatTypes.swift:6084, ChatModel.kt:5464) | a. `ETH 0.01 · Arbitrum One · Dinner`: the chain name next to the amount it qualifies, the label last<br>b. `ETH 0.01 · Dinner · Arbitrum One`<br>c. the label is left out when a chain name is shown: `ETH 0.01 · Arbitrum One` | **a** |
+| Q9 | Which `zel:` links are Flux links. Zelcore's specification defines `zel:` as actions with the address in a parameter, `zel:?action=pay&coin=zelcash&address=t1…&amount=3`, where an absent `coin` is Bitcoin [S41]; four RunOnFlux apps build this form, and CumulusVPN states that Zelcore registers it with the OS [S42]; none of the four builds `zel:t1…?amount=` | a. `zel:` parsed as `flux:`, as instructed: the pay-action links of Zelcore and CumulusVPN are text (U7)<br>b. a, and the pay action, absent or `pay`, with `coin` `flux`, `zelcash` or `zel` and a Flux `address`: shown as `FLUX`; the `sign` and `getaddress` actions, other coins and a pay action with a `callback` URL are text | **b** |
+| Q10 | Keys of `flux:` and `zel:` links. CumulusVPN uses `amount` and `message` [S42], Zelcore's pay action `address`, `amount`, `coin` and `message` [S41], SSP Wallet reads only the address [S43]; no source uses `label` | a. `amount`, `label` and `message`, the BIP-21 keys; `label` is an assumption<br>b. `amount` and `message` only | **a** |
 
 ## Sources
 
@@ -799,3 +817,7 @@ Each question is a principle with its consequences; the recommended option is in
 | S37 | SLIP-44, https://github.com/satoshilabs/slips/blob/master/slip-0044.md |
 | S38 | Uniswap token list, https://tokens.uniswap.org, schema https://github.com/Uniswap/token-lists/blob/main/src/tokenlist.schema.json, read on 2026-11-26 |
 | S39 | Solana token list, https://github.com/solana-labs/token-list/blob/main/src/tokens/solana.tokenlist.json |
+| S40 | fluxd, https://github.com/RunOnFlux/fluxd, default branch on 2026-11-26: src/chainparams.cpp:200-202, `{0x1C,0xB8}` and `{0x1C,0xBD}`, last changed in ecd71624f; src/amount.h:17, `COIN = 100000000` |
+| S41 | Zelcore, https://github.com/ZelCore-io/Zelcore at a3ce1645: ZelProtocolSpecifications.md, sections "Basic protocol scheme", "Pay action", "Sign action", "GetAddress Action"; coinsSimple.js:16-25, Flux with `uri: ["flux", "zelcash", "zel"]`, `pubKeyHash: "1cb8"`, `scriptHash: "1cbd"`, `unit: "FLUX"` |
+| S42 | RunOnFlux apps: CumulusVPN, https://github.com/RunOnFlux/cumulusvpn at 13fc543c, clients/core-ts/src/paymentCode.ts:88-144, `zel:?action=pay&coin=flux&address=…&amount=…&message=…` and `flux:<address>?amount=…&message=…`; FluxOS frontend, https://github.com/RunOnFlux/fluxos-frontend at 68937d67, src/utils/walletService.js:1019; Deploy with Git, https://github.com/RunOnFlux/deploy-with-git-frontend at b11361db, src/components/wizard/Step6Payment.jsx:254; Palworld server website, https://github.com/RunOnFlux/palworld-server-website at 57b13ea6, src/services/walletService.js:176, with `icon` and `callback` in the pay action |
+| S43 | SSP Wallet, https://github.com/RunOnFlux/ssp-wallet at af53d58d: src/pages/SendFlow/SendFlow.tsx:1193-1201, the address portion of a scanned `<scheme>:` URI |
