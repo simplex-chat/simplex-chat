@@ -22,6 +22,7 @@ A payment address or request in a message is plain text. A reader copies it into
 | A6 | the core and the apps send no request for a payment link: previews, DNS, ENS, LNURL and exchange rates are not requested | — |
 | A7 | earlier apps show the text as now; the message protocol and the database are unchanged | — |
 | A8 | a bare word is validated at most once, by the form that its prefix, case and length select; a word that no form selects is text without a checksum computed; the parse time of section Timing is reported | — |
+| A9 | a link whose chain or token is outside the tables of section Link text, and an EVM link without a chain ID, are shown in orange as ⚠, the shortened address and `(unknown chain)`, `(unknown token)` or `(unknown chain and token)`, without an amount | — |
 
 ## Options
 
@@ -118,7 +119,7 @@ Each donation address of README.md:151-158 was checked by these rules before thi
 | a request forwarded by a person other than the payee | `itemForwarded` (Messages.hs:530) | `<name> forwarded:` in the alert |
 | token approvals and contract calls | any function call can be encoded in EIP-681 [S9] | only `transfer` with `address` and `uint256` is parsed; other calls are text |
 | a wallet restored with the keys of another party | `monero-wallet:` with `spend_key`, `view_key` or `seed` [S12], registered by Cake Wallet [S24] | the scheme is text |
-| a payment on a wrong EVM chain | without `chain_id`, the current network of the wallet is used [S9]; one address is given for Ethereum and Arbitrum One (README.md:154) | Q6 |
+| a payment on a wrong EVM chain | without `chain_id`, the current network of the wallet is used [S9]; one address is given for Ethereum and Arbitrum One (README.md:154) | the orange warning `(unknown chain)` without an amount, section Link text (Q6) |
 | requests by the wallet to third parties | LNURL and Solana transaction request URLs are fetched by the wallet [S6], [S11] | the wallet is opened only from Open; `solana:https…` is text |
 | injection in descriptions, labels and messages | "Payment descriptions are user-defined and provide a potential avenue for injection attacks" [S4] | the apps render them as plain attributed text; in the website renderer, they are escaped by `escapeHtml` (website/src/js/simplex-lib.jsc:225-301) |
 | invisible characters in the label or message | format characters are shown as `[U+XXXX]` in web links (CILinkView.swift:104-121) | the message of the link is not shown; in the label of the link text, the same markers |
@@ -475,6 +476,11 @@ The text of a payment link in the bubble, in link style; a sign or ticker is fol
 CCBitcoin     ₿ then the text
 CCLightning   ϟ then the text, with " BTC" after the amount
 CCTicker      the ticker then the text, then " · " and the chain name when present
+CCUnknown     ⚠ then the shortened address, a space and one of
+                (unknown chain)
+                (unknown token)
+                (unknown chain and token)
+              without an amount or a label; the whole link in orange
 text          the amount, then " · " and the shown label when present
               or the shown label
               or the shortened address
@@ -496,8 +502,11 @@ A link with both a label and a chain name is shown as Q8 decides.
 | `ethereum:0xfb69…d359@42161?value=1e16` | ETH 0.01 · Arbitrum One |
 | `ethereum:0xfb69…d359@137?value=5e18` | POL 5 · Polygon |
 | `ethereum:0xc2132D05D31c914a87C6611C10748AEb04B58e8F@137/transfer?address=0xfb69…d359&uint256=10000000` | USDT 10 · Polygon |
-| `ethereum:0xfb69…d359@99999?value=1e16` | Q6 |
-| `ethereum:0xfb69…d359?value=1e16` | Q6 |
+| `ethereum:0xfb69…d359@99999?value=1e16` | ⚠ 0xfb69…d359 (unknown chain), in orange |
+| `ethereum:0xfb69…d359?value=1e16`, and the bare `0xfb69…d359` in mixed case | ⚠ 0xfb69…d359 (unknown chain), in orange |
+| `ethereum:0x1111…1111@137/transfer?address=0xfb69…d359&uint256=10000000` | ⚠ 0xfb69…d359 (unknown token), in orange |
+| `ethereum:0xc213…8e8F@99999/transfer?address=0xfb69…d359&uint256=10000000` | ⚠ 0xfb69…d359 (unknown chain and token), in orange |
+| `solana:7JCf5m3TiHmYKZVr6jCu1KeZVtb9Y1jRMQDU69p5ARnu?amount=10&spl-token=<a mint outside the table>` | ⚠ 7JCf5m…ARnu (unknown token), in orange |
 
 ```mermaid
 flowchart LR
@@ -509,9 +518,12 @@ flowchart LR
     K -->|CCBitcoin| B["₿ text"]
     K -->|CCLightning| N["ϟ text, BTC after the amount"]
     K -->|CCTicker| T["ticker text, · chain name"]
-    K -->|CCUnknown| Q["Q6"]
+    K -->|CCUnknown| Q["⚠ address (unknown chain, token, or chain and token), all in orange"]
   end
 ```
+
+- Orange: `WarningOrange` (Color.kt:30) on Android and desktop, the system orange on iOS; the sign, the address and the words, in place of the link colour (items 11664, 11667).
+- The three words are localized strings of each app; the core sends only `UnknownCurrency`.
 
 Tickers of the schemes, by SLIP-44 [S37]; the apps draw the signs ₿ and ϟ, and the core sends the tickers:
 
@@ -580,6 +592,7 @@ Alert texts:
 | forwarded by Mum, `bitcoin:bc1qw5…f3t4?amount=0.02` | Mum forwarded: ₿ 0.02 to bc1qw5…f3t4 |
 | from Ana, the USDT `transfer` on chain 137 | Ana: USDT 10 · Polygon to 0xD704…c86a |
 | from Café Luna, `lightning:lnbc2500u1…` | Café Luna: ϟ 0.0025 BTC |
+| from Ana, `ethereum:0xD704…c86a?value=1e16`, without a chain ID | Ana: ⚠ 0xD704…c86a (unknown chain) |
 
 ```
 ┌──────────────────────────────────┐
@@ -726,7 +739,7 @@ Each question is a principle with its consequences; the recommended option is in
 | Q3 | What the app requests | a. nothing: names are not recognised in v1, LNURL is resolved by the wallet<br>b. a, and names handed to wallets as `lightning:user@domain`, a form left undefined by LUD-16 [S8] | **a** |
 | Q4 | Networks in v1 | a. Bitcoin, Lightning, Ethereum with the other EVM chains, Monero, Zcash, Solana, Litecoin, Dogecoin, Bitcoin Cash: the networks of README.md:151-158, Lightning and Litecoin<br>b. Bitcoin, Lightning and Monero: a smaller parser and fewer tests; other addresses are text | **a** |
 | Q5 | Whether payment links are links | a. yes: new items with a payment link are in the Links filter (ChatView.swift:3410-3436, Store/Messages.hs:1551-1578); groups get no new preference in v1<br>b. no, as e-mail addresses and phone numbers (Markdown.hs:320-326)<br>c. a, and a group preference that prohibits them, a protocol change | **a** |
-| Q6 | Text of a link outside the tables: an unknown chain ID or token, or an `ethereum:` link without a chain ID, in which the wallet's current chain is used [S9] | a. the shortened address and ` · chain 99999` or ` · token`, without a ticker or an amount: nothing is shown that the link does not state<br>b. as a, and `ETH` for a link without a chain ID: the amount is shown, the currency may be wrong | **a** |
+| Q6 | Text of a link outside the tables: an unknown chain ID or token, or an `ethereum:` link without a chain ID, in which the wallet's current chain is used [S9] | decided (items 11664, 11667): an orange ⚠, the shortened address and `(unknown chain)`, `(unknown token)` or `(unknown chain and token)`, without an amount; the whole link in orange (section Link text) | — |
 | Q8 | Text of a link with both a label and a chain name; the chain name follows ` · ` (items 11458, 11489), and the text built in this branch puts the label in its place (ChatTypes.swift:6084, ChatModel.kt:5464) | a. `ETH 0.01 · Arbitrum One · Dinner`: the chain name next to the amount it qualifies, the label last<br>b. `ETH 0.01 · Dinner · Arbitrum One`<br>c. the label is left out when a chain name is shown: `ETH 0.01 · Arbitrum One` | **a** |
 
 ## Sources
