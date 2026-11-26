@@ -242,6 +242,8 @@ A **job worker** reads the body and delivers it to subscribers in paginated batc
 
 For subsequent subscribers in a batch, the agent uses a value reference to the first subscriber's message body, avoiding redundant data transmission to the SMP server.
 
+Messages and events of a blocked member are delivered only to moderators and owners, without notifications. As with other senders, the relay adds the member's profile in `x.grp.mem.new` for a recipient that has no record of the member, with the block in `memberRestrictions`, so that a moderator who joined after the block shows the messages as blocked.
+
 ### Message deduplication
 
 When multiple relays serve the same channel, each subscriber receives the same message from each relay independently. Deduplication is performed at the subscriber's client level using the message's shared message ID:

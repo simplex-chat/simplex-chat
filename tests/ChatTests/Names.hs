@@ -55,6 +55,7 @@ chatNamesTests = do
     it "own channel expired, joined channel moved to a new channel, new channel joined" testPlanChannelNameMoved
     it "joined channel moved to a channel with no relays" testPlanChannelNameMovedNoRelays
     it "no local chat, the channel has no relays" testPlanNameChannelNoRelays
+    it "no local chat, removed from the channel with a notice" testPlanChannelNameNotice
     it "known chats, the name's link differs only in its key hash" testPlanNameLinkKeyHash
     it "known chats, the name's link differs only in its server address" testPlanNameLinkServer
     it "local chats, before and after the name expired" testPlanLocalChats
@@ -945,6 +946,27 @@ testPlanNameChannelNoRelays = withChannelChats $ \reg alice cath bob -> do
   _ <- getTermLine bob
   bob ##> "/_connect plan 1 @nobody.simplex resolve=never"
   bob <## "no matching chat found, name resolution is disabled"
+
+testPlanChannelNameNotice :: HasCallStack => TestParams -> IO ()
+testPlanChannelNameNotice = withChannelChats $ \reg alice cath bob -> do
+  (shortLink, fullLink) <- prepareChannel1Relay "team" alice cath
+  alice ##> "/ad"
+  (contactLink, _) <- getContactLinks alice True
+  registerName reg teamSimplexName (contactAndChannelNameRecord "team.simplex" (T.pack contactLink) (T.pack shortLink))
+  setChannelDomain alice cath "alice" "team" "team.simplex"
+  alice ##> "/_set domain 1 team.simplex"
+  alice <## "new contact address set"
+  memberJoinChannel "team" [cath] [alice] shortLink fullLink bob
+  alice ##> "/rm #team bob notice={\"ttl\":86400}"
+  alice <## "#team: you removed bob from the group (signed)"
+  cath <## "#team: alice removed bob from the group (signed)"
+  linkNoticesCount bob `shouldEventuallyReturn` 1
+  bob <// 50000
+  leaveDeleteGroup bob "team"
+  bob ##> "/_connect plan 1 team.simplex"
+  bob <##. "group link: blocked until "
+  bob <## "You can also connect to @team.simplex in direct chat"
+  apiFixture "names/plan-channel-notice" bob [] FixtureRequests {frMarkdown = ["team.simplex", "@team.simplex"], frUris = [], frCommands = ["/_connect plan 1 team.simplex", "/_connect plan 1 @team.simplex"]}
 
 testPlanNameLinkKeyHash :: HasCallStack => TestParams -> IO ()
 testPlanNameLinkKeyHash = withTeamChats $ \reg contactLink channelLink _alice bob -> do

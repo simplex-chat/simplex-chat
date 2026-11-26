@@ -35,6 +35,7 @@ module Simplex.Chat.Store.Messages
     getPendingGroupMessages,
     deletePendingGroupMessage,
     deleteOldMessages,
+    deleteRcvMessage,
     MemberAttention (..),
     updateChatTsStats,
     setSupportChatTs,
@@ -68,6 +69,7 @@ module Simplex.Chat.Store.Messages
     deleteGroupChatItem,
     updateGroupChatItemModerated,
     deleteMemberCIs,
+    deleteChatItemMessages_,
     updateGroupCIBlockedByAdmin,
     markGroupChatItemDeleted,
     markMemberCIsDeleted,
@@ -395,6 +397,9 @@ deletePendingGroupMessage db groupMemberId messageId =
 deleteOldMessages :: DB.Connection -> UTCTime -> IO ()
 deleteOldMessages db createdAtCutoff = do
   DB.execute db "DELETE FROM messages WHERE created_at <= ?" (Only createdAtCutoff)
+
+deleteRcvMessage :: DB.Connection -> MessageId -> IO ()
+deleteRcvMessage db msgId = DB.execute db "DELETE FROM messages WHERE message_id = ?" (Only msgId)
 
 type NewQuoteRow = (Maybe SharedMsgId, Maybe UTCTime, Maybe MsgContent, Maybe Bool, Maybe MemberId)
 
@@ -2948,7 +2953,6 @@ updateGroupCIBlockedByAdmin :: DB.Connection -> User -> GroupInfo -> ChatItem 'C
 updateGroupCIBlockedByAdmin db User {userId} GroupInfo {groupId} ci deletedTs = do
   currentTs <- getCurrentTime
   let itemId = chatItemId' ci
-  deleteChatItemMessages_ db itemId
   deleteChatItemVersions_ db itemId
   liftIO $
     DB.execute

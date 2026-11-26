@@ -345,19 +345,20 @@ export namespace APIBlockMembersForAll {
   }
 }
 
-// Remove members. Requires Admin role.
+// Remove members. Requires Admin role. With notice, the removal is silent, and the removed member's app does not rejoin via the group link while the notice lasts. A notice is refused for relays, members with Moderator role or above, members that are not current or pending, and members on versions before 23.
 // Network usage: background.
 export interface APIRemoveMembers {
   groupId: number // int64
   groupMemberIds: number[] // int64, non-empty
   withMessages: boolean
+  notice?: T.LinkNotice
 }
 
 export namespace APIRemoveMembers {
   export type Response = CR.UserDeletedMembers | CR.ChatCmdError
 
   export function cmdString(self: APIRemoveMembers): string {
-    return '/_remove #' + self.groupId + ' ' + self.groupMemberIds.join(',') + (self.withMessages ? ' messages=on' : '')
+    return '/_remove #' + self.groupId + ' ' + self.groupMemberIds.join(',') + (self.withMessages ? ' messages=on' : '') + (self.notice ? ' notice=' + JSON.stringify(self.notice) : '')
   }
 }
 
@@ -883,18 +884,19 @@ export namespace APIGetChatItemInfo {
   }
 }
 
-// Delete chat.
+// Delete chat. For groups, the full mode deletes the group, and the entity mode keeps the conversation and requires the active owner; other modes are refused. A notice is accepted for contacts on version 23 or later and for the customer of a business chat: the deletion is silent, and the peer's app does not connect via the user's address while the notice lasts.
 // Network usage: background.
 export interface APIDeleteChat {
   chatRef: T.ChatRef
   chatDeleteMode: T.ChatDeleteMode
+  notice?: T.LinkNotice
 }
 
 export namespace APIDeleteChat {
   export type Response = CR.ContactDeleted | CR.ContactConnectionDeleted | CR.GroupDeletedUser | CR.ChatCmdError
 
   export function cmdString(self: APIDeleteChat): string {
-    return '/_delete ' + T.ChatRef.cmdString(self.chatRef) + ' ' + T.ChatDeleteMode.cmdString(self.chatDeleteMode)
+    return '/_delete ' + T.ChatRef.cmdString(self.chatRef) + ' ' + T.ChatDeleteMode.cmdString(self.chatDeleteMode) + (self.notice ? ' notice=' + JSON.stringify(self.notice) : '')
   }
 }
 
