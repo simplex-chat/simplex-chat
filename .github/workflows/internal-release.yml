@@ -445,8 +445,10 @@ jobs:
       - name: Download core library for armv7a
         uses: actions/download-artifact@v8
         with:
-          name: android-core-armeabi-v7a
+          name: ${{ needs.test-android.outputs.core32 }}
           path: ${{ runner.temp }}/core
+          run-id: ${{ needs.test-android.outputs.core32-run || github.run_id }}
+          github-token: ${{ github.token }}
 
       - name: Build the APKs and the bundle
         run: |

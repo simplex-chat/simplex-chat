@@ -316,7 +316,7 @@ GitHub runs a scheduled workflow only from the default branch, master.
 
 ### Jobs
 
-The builds use the scripts of build.yml's tag builds. Each core library is an artifact named after a hash of its sources and toolchain, which a later run reuses, found by `earlier-run.sh` as the app workflows find theirs (30 days); the Android cores are those of android-emu, which builds the armv7a core in each run. The jobs `ios`, `android` and `publish` run in the environment `internal-release`, and start after a reviewer approves them, all three at once, when every build and the app workflows have passed.
+The builds use the scripts of build.yml's tag builds. Each core library is an artifact named after a hash of its sources and toolchain, which a later run reuses, found by `earlier-run.sh` as the app workflows find theirs (30 days); the Android cores are those of android-emu. The jobs `ios`, `android` and `publish` run in the environment `internal-release`, and start after a reviewer approves them, all three at once, when every build and the app workflows have passed.
 
 | Job | Builds or does | Core library artifact | Secrets |
 |---|---|---|---|
@@ -324,7 +324,7 @@ The builds use the scripts of build.yml's tag builds. Each core library is an ar
 | `desktop-linux` | the desktop deb of Ubuntu 22.04 and 24.04, x86_64 and aarch64, and the AppImage of 22.04: scripts/desktop/make-deb-linux.sh and make-appimage-linux.sh in the Dockerfile.build container | `desktop-linux-core-ubuntu-<version>-<arch>-<hash>`: scripts/ci/desktop-linux/build-core.sh in the container, then install-core.sh | |
 | `desktop-macos` | the dmg of aarch64 and x86_64: scripts/ci/build-desktop-mac.sh, signed with the Developer ID and notarized on master; unsigned elsewhere | `desktop-macos-core-<arch>-<toolchain>-<hash>`: scripts/desktop/build-lib-mac.sh | `APPLE_SIMPLEX_*`, the repository secrets of build.yml |
 | `desktop-windows` | the msi: `packageMsi` | `desktop-windows-core-<toolchain>-<hash>`: scripts/desktop/build-lib-windows.sh | |
-| `android-build` | the foss APKs (`assembleFossRelease`) and the Play bundle (`bundleGoogleRelease`), unsigned | android-emu's `android-core-<hash>`, and its `android-core-armeabi-v7a` of the run, built in each run | |
+| `android-build` | the foss APKs (`assembleFossRelease`) and the Play bundle (`bundleGoogleRelease`), unsigned | android-emu's `android-core-<hash>` and `android-core-armeabi-v7a-<hash>` | |
 | `ios-build` | the iOS archive: scripts/ci/internal-release/ios-archive.sh, with the brand assets of simplex-chat-art, and each bundle signed ad hoc with its entitlements | `ios-core-<hash>`: the Nix job `aarch64-darwin-ios:lib:simplex-chat` | `SIMPLEX_ART_SSH_KEY`, a repository secret: a read-only deploy key of simplex-chat-art; without it, the archive has the default icons |
 | `ios` | the archive exported with the Apple Distribution certificate and uploaded for internal testing only (`testFlightInternalTestingOnly`) | | `IOS_*`, `APP_STORE_CONNECT_*` |
 | `android` | the Play bundle signed with the upload key and released to the internal track; while a Play update is in review, the upload fails and the review continues (`changesInReviewBehavior=ERROR_IF_IN_REVIEW`) | | `ANDROID_UPLOAD_*`, `GOOGLE_PLAY_SERVICE_ACCOUNT` |

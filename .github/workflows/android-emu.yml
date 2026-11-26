@@ -26,6 +26,10 @@ on:
         value: ${{ jobs.plan.outputs.core }}
       core-run:
         value: ${{ jobs.plan.outputs.core-run }}
+      core32:
+        value: ${{ jobs.plan.outputs.core32 }}
+      core32-run:
+        value: ${{ jobs.plan.outputs.core32-run }}
 
 permissions:
   contents: read
