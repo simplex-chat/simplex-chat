@@ -464,7 +464,8 @@ flowchart TD
 
 ```
 strP              the URI grammar, or the bare grammar
-URI grammar       one alternative per scheme of section Syntax:
+URI grammar       letters and ":" at the start, checked once before the alternatives
+                  one alternative per scheme of section Syntax:
                     the scheme in any case
                     ":"
                     "//" when written
