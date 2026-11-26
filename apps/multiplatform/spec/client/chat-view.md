@@ -283,6 +283,12 @@ Notifications of contact requests and incoming calls decode the contact's pictur
 created. The Android call service shows the app icon until the picture is decoded on the background thread. The
 compose area decodes the user's own pictures on the UI thread (`ComposeImageView`, `ComposeLinkView`).
 
+### Videos
+
+On desktop, the player (`VideoPlayer`) of a video item whose file is not encrypted is created when the video is played;
+until then, the item shows the sender's preview (`CIVideoView`). On Android, the player of such an item is created with
+its view and reads the file when the video is played.
+
 ---
 
 ## 6. Context Menu Actions

@@ -85,16 +85,17 @@ fun CIVideoView(
       }
 
       val uri = remember(filePath) { getAppFileUri(f.substringAfterLast(File.separator))  }
-      val uriDecrypted = remember(filePath) { mutableStateOf(if (file.fileSource?.cryptoArgs == null) uri else file.fileSource.decryptedGet()) }
+      val uriDecrypted = remember(filePath) { mutableStateOf(if (file.fileSource?.cryptoArgs == null) uri.takeIf { appPlatform.isAndroid } else file.fileSource.decryptedGet()) }
+      val playableUri = { if (file.fileSource?.cryptoArgs == null) uri else file.fileSource.decryptedGetOrCreate() }
       val decrypted = uriDecrypted.value
       if (decrypted != null && smallView) {
         SmallVideoView(decrypted, file, preview, duration * 1000L, autoPlay, blurred, sizeMultiplier, openFullscreen = openFullscreen)
       } else if (decrypted != null) {
         VideoView(decrypted, file, preview, duration * 1000L, autoPlay, showMenu, blurred, openFullscreen = openFullscreen)
       } else if (smallView) {
-        SmallVideoViewEncrypted(uriDecrypted, file, preview, autoPlay, showMenu, blurred, sizeMultiplier, openFullscreen = openFullscreen)
+        SmallVideoViewEncrypted(uriDecrypted, playableUri, file, preview, autoPlay, showMenu, blurred, sizeMultiplier, openFullscreen = openFullscreen)
       } else {
-        VideoViewEncrypted(uriDecrypted, file, preview, duration * 1000L, autoPlay, showMenu, blurred, openFullscreen = openFullscreen)
+        VideoViewEncrypted(uriDecrypted, playableUri, file, preview, duration * 1000L, autoPlay, showMenu, blurred, openFullscreen = openFullscreen)
       }
     } else {
       Box {
@@ -150,6 +151,7 @@ fun CIVideoView(
 @Composable
 private fun VideoViewEncrypted(
   uriUnencrypted: MutableState<URI?>,
+  playableUri: () -> URI?,
   file: CIFile,
   defaultPreview: ImageBitmap,
   defaultDuration: Long,
@@ -164,7 +166,7 @@ private fun VideoViewEncrypted(
     decryptionInProgress = true
     withBGApi {
       try {
-        uriUnencrypted.value = file.fileSource?.decryptedGetOrCreate()
+        uriUnencrypted.value = playableUri()
         autoPlay.value = uriUnencrypted.value != null
       } finally {
         decryptionInProgress = false
@@ -188,6 +190,7 @@ private fun VideoViewEncrypted(
 @Composable
 private fun SmallVideoViewEncrypted(
   uriUnencrypted: MutableState<URI?>,
+  playableUri: () -> URI?,
   file: CIFile,
   defaultPreview: ImageBitmap,
   autoPlay: MutableState<Boolean>,
@@ -202,7 +205,7 @@ private fun SmallVideoViewEncrypted(
     decryptionInProgress = true
     withBGApi {
       try {
-        uriUnencrypted.value = file.fileSource?.decryptedGetOrCreate()
+        uriUnencrypted.value = playableUri()
         autoPlay.value = uriUnencrypted.value != null
       } finally {
         decryptionInProgress = false
