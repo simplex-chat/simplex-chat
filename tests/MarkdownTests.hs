@@ -7,6 +7,7 @@
 module MarkdownTests where
 
 import Control.Applicative ((<|>))
+import Control.Exception (evaluate)
 import Control.Monad (forM_)
 import Data.List (intercalate)
 import Data.List.NonEmpty (NonEmpty)
@@ -16,6 +17,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Data.Time.Clock.POSIX (posixSecondsToUTCTime)
+import GHC.Clock (getMonotonicTime)
 import Simplex.Chat.Markdown
 import Simplex.Chat.Messages (parsedMsgContent)
 import Simplex.Chat.Payments
@@ -59,6 +61,7 @@ markdownTests = do
   liveMessages
   markdownConsumers
   linearTimeParsing
+  parseTime
   testSanitizeUri
 
 infixr 1 ==>, <==, <==>, ==>>, <<==, <<==>>
@@ -626,6 +629,12 @@ paymentLinks = describe "payment links" do
       <==> pay (PaymentRequest (PPAddress PNZcash zecU ACVerified) [] (Just "0.1") Nothing Nothing Nothing $ "zcash:" <> zecU <> "?amount=0.1") ("<zcash:" <> zecU <> "?amount=0.1>")
   it "payment links are links" do
     hasLinks <$> parseMaybeMarkdownList ("donate: " <> btc) `shouldBe` Just True
+  it "Flux URIs and bare Flux Sapling addresses are links" do
+    let links t = hasLinks <$> parseMaybeMarkdownList t
+    links ("flux:" <> zecT <> "?amount=5&message=Thanks") `shouldBe` Just True
+    links ("zel:" <> zecT <> "?amount=5") `shouldBe` Just True
+    links ("flux:" <> fluxZ <> "?amount=1&memo=" <> memo) `shouldBe` Just True
+    links fluxZ `shouldBe` Just True
   it "linear time in the number of addresses" do
     let fts = fromMaybe [] $ parseMaybeMarkdownList $ T.unwords $ replicate 10000 p2sh
     length [() | FormattedText (Just PaymentLink {}) _ <- fts] `shouldBe` 10000
@@ -644,6 +653,7 @@ paymentLinks = describe "payment links" do
     usdc = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
     zecT = "t1fwjQW5gpFhDqXNhxqDWyF9j9WeKvVS5Jg"
     zecU = "u16rnvkflumf5uw9frngc2lymvmzgdr2mmc9unyu0l44unwfmdcpfm0axujd2w34ct3ye709azxsqge45705lpvvqu264ltzvfay55ygyq"
+    fluxZ = "za19w5tpzrsd8x250l6h8qdxv70kg4an9ywljf4cqs5qk2hkw5ej5jw0zc0htg7qxws8vgm6xs3pj3"
     memo = "VGhpcyBpcyBhIHNpbXBsZSBtZW1vLg"
     doge = "D99pV4n9TrPxBPCkQGx4w4SMSa6QjRBxPf"
     sol = "7JCf5m3TiHmYKZVr6jCu1KeZVtb9Y1jRMQDU69p5ARnu"
@@ -1255,6 +1265,56 @@ linearTimeParsing = describe "bounded scans for linear-time parsing" do
   it "large adversarial texts" do
     forM_ (["1 ", "[ ", "[a]( ", "< ", "a\n", ">\n", "- a\n", "|\n", "|-|\n", "*a\n"] :: [Text]) $ \p ->
       length (show $ parseMaybeMarkdownList $ "|a|\n|-|\n" <> T.replicate 4000 p) `shouldSatisfy` (> 0)
+
+parseTime :: Spec
+parseTime = it "parse time" $ forM_ texts $ \(name, ws) -> do
+  t <- evaluate $ T.unwords $ take 10000 $ cycle ws
+  start <- getMonotonicTime
+  segments <- evaluate $ maybe 0 length $ parseMaybeMarkdownList t
+  end <- getMonotonicTime
+  putStrLn $ "parse time | " <> name <> " | " <> show (round ((end - start) * 1000) :: Int) <> " ms | " <> show segments <> " segments"
+  where
+    texts :: [(String, [Text])]
+    texts =
+      [ ("ordinary words", T.words "Thank you for the help with the move, it was a long day and we could not have done it without you. See you on Friday at the usual place."),
+        ("F1 bc1", ["bc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66505d4u"]),
+        ("F2 1, 3", ["37116639cErLzxER6tL3a6EH2DbdETwTxd"]),
+        ("F3 lnbc", [invoice]),
+        ("F4 lnurl1", ["LNURL1DP68GURN8GHJ7UM9WFMXJCM99E3K7MF0V9CXJ0M385EKVCENXC6R2C35XVUKXEFCV5MKVV34X5EKZD3EV56NYD3HXQURZEPEXEJXXEPNXSCRVWFNV9NXZCN9XQ6XYEFHVGCXXCMYXYMNSERXFQ5FNS"]),
+        ("F5 4, 8", [xmr]),
+        ("F6 t1, t3", [zecT]),
+        ("F7 zs1", ["zs154n8cqvglz0qnqf5uz5cza4jznfsjafq58chy8n6mqnnhm3wwuqxy86yx5kmue8nnvlgj7c7p9d"]),
+        ("F8 u1", [zecU]),
+        ("F9 ltc1", [ltc]),
+        ("F10 L, M", ["MFNwCCkQTusV1FN9aWcN6jNfoLu53NkfUg"]),
+        ("F11 D, 9, A", [doge]),
+        ("F12 q, p", [bch]),
+        ("F13 0x", [eth]),
+        ("F14 za1", ["za19w5tpzrsd8x250l6h8qdxv70kg4an9ywljf4cqs5qk2hkw5ej5jw0zc0htg7qxws8vgm6xs3pj3"]),
+        ("Base58 with a wrong checksum", map (`T.cons` "Hk7pQz3RwXy9TbNcV2mJ4fGd8sLaE6uKe") "13LMD9A"),
+        ( "URIs of each scheme",
+          [ "bitcoin:bc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66505d4u?amount=0.001&label=SimpleX",
+            "lightning:" <> invoice,
+            "ethereum:" <> eth <> "@42161?value=1e16",
+            "monero:" <> xmr <> "?tx_amount=0.25",
+            "zcash:" <> zecU <> "?amount=0.1",
+            "solana:7JCf5m3TiHmYKZVr6jCu1KeZVtb9Y1jRMQDU69p5ARnu?amount=0.5",
+            "litecoin:" <> ltc <> "?amount=0.1",
+            "dogecoin:" <> doge <> "?amount=100",
+            "bitcoincash:" <> bch <> "?amount=0.01",
+            "flux:" <> zecT <> "?amount=5",
+            "zel:" <> zecT <> "?amount=5"
+          ]
+        )
+      ]
+    invoice = "lnbc2500u1pvjluezsp5zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zygspp5qqqsyqcyq5rqwzqfqqqsyqcyq5rqwzqfqqqsyqcyq5rqwzqfqypqdq5xysxxatsyp3k7enxv4jsxqzpu9qrsgquk0rl77nj30yxdy8j9vdx85fkpmdla2087ne0xh8nhedh8w27kyke0lp53ut353s06fv3qfegext0eh0ymjpf39tuven09sam30g4vgpfna3rh"
+    xmr = "8A3ZWAXrrQddvnT1fPrtbK86ZAoM4nai3Gjg1LEow3JWcryJtovMnHYZnxTJpCLmAbfWbnPMeTzPmMBjAhyd4xoM89hYq1c"
+    zecT = "t1fwjQW5gpFhDqXNhxqDWyF9j9WeKvVS5Jg"
+    zecU = "u16rnvkflumf5uw9frngc2lymvmzgdr2mmc9unyu0l44unwfmdcpfm0axujd2w34ct3ye709azxsqge45705lpvvqu264ltzvfay55ygyq"
+    ltc = "ltc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66snwfdv"
+    doge = "D99pV4n9TrPxBPCkQGx4w4SMSa6QjRBxPf"
+    bch = "qq6c8vfvxqrk6rhdysgvkhqc24sggkfsx5nqvdlqcg"
+    eth = "0xD7047Fe3Eecb2f2FF78d839dD927Be27Bc12c86a"
 
 markdownConsumers :: Spec
 markdownConsumers = describe "consumers of parsed Markdown" do

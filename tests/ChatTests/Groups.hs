@@ -88,6 +88,7 @@ chatGroupTests = do
     it "mark multiple messages as read" testMarkReadGroup
     it "initial chat pagination" testChatPaginationInitial
     it "send large message" testGroupLargeMessage
+    it "chain addresses in group messages are signed" testGroupChainAddressSigned
     it "create group with incognito membership" testNewGroupIncognito
     it "create and join group with 4 members" testGroup2
     it "create and delete group" testGroupDelete
@@ -660,6 +661,17 @@ testGroupLargeMessage =
       alice <## "profile image updated"
       bob <## "alice updated group #team: (signed)"
       bob <## "profile image updated"
+
+testGroupChainAddressSigned :: HasCallStack => TestParams -> IO ()
+testGroupChainAddressSigned =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+      alice `send` "#team donate bc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66505d4u"
+      alice <# "#team donate bc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66505d4u (signed)"
+      [bob, cath] *<# "#team alice> donate bc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66505d4u (signed)"
+      alice #> "#team thanks"
+      [bob, cath] *<# "#team alice> thanks"
 
 testNewGroupIncognito :: HasCallStack => TestParams -> IO ()
 testNewGroupIncognito =
