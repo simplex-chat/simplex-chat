@@ -11,7 +11,6 @@ module StoreService.Names.Reveal
     isRepeat,
     checkReveal,
     orderReveal,
-    revealSigned,
     intentOf,
   )
 where
@@ -40,7 +39,7 @@ import StoreService.Names.Orders (OrderRefusal (..), signedRequestSeconds)
 import StoreService.Names.Community (AcceptanceAsked (..), currentAcceptance)
 import StoreService.Names.Contracts (Contracts, sponsorNonce)
 import StoreService.Names.Label (validLabel)
-import StoreService.Names.Registration (DisputeDays, LinkKind (..), RegisterIntent (..), Registration (..), TermsAcceptance (..), makeCommitment, nameLink, policyDomain, registerIntentSigner, sponsorDomain, termsKind, verifyAcceptance, verifyRegisterIntent)
+import StoreService.Names.Registration (DisputeDays, LinkKind (..), RegisterIntent (..), Registration (..), TermsAcceptance (..), makeCommitment, nameLink, policyDomain, sponsorDomain, termsKind, verifyAcceptance, verifyRegisterIntent)
 import StoreService.Names.Signatures (OrderFields (..))
 import StoreService.Names.Store (NameReveal (..))
 
@@ -75,20 +74,12 @@ orderReveal cfg ct now owner fields days accepted request =
   checkReveal cfg ct now owner fields days now request <&> (>>= \rv -> maybe (Right rv) (Left . ORInvalidLink) (refusedLink accepted rv))
 
 committedReveal :: NamesConfig -> Address -> OrderFields -> RevealRequest -> Either OrderRefusal NameReveal
-committedReveal cfg@NamesConfig {nTLD} owner OrderFields {ofLabelHash, ofLength, ofDuration, ofCommitment} request@RevealRequest {label = sentLabel} = do
+committedReveal cfg@NamesConfig {nTLD} owner OrderFields {ofLabelHash, ofLength, ofDuration, ofCommitment} RevealRequest {label = sentLabel, signature, secret, records = RevealLinks {contact, channel}, nonce, deadline, acceptance} = do
   label <- first (ORBadRequest . ("the label is not a name: " <>) . tshow) $ validLabel nTLD sentLabel
   unless (labelHash label == ofLabelHash && T.length label == nameLengthInt ofLength) $ Left $ ORBadRequest "the label is not the order's"
-  let rv = (requestReveal request) {rvLabel = label}
+  let rv = NameReveal {rvLabel = label, rvSecret = secret, rvContactLink = contact, rvChannelLink = channel, rvNonce = nonce, rvDeadline = deadline, rvSignature = signature, rvAcceptance = acceptance}
   unless (makeCommitment (registrationOf cfg owner ofDuration rv) == ofCommitment) $ Left $ ORBadRequest "the reveal is not the order's commitment"
   pure rv
-
-requestReveal :: RevealRequest -> NameReveal
-requestReveal RevealRequest {label, signature, secret, records = RevealLinks {contact, channel}, nonce, deadline, acceptance} =
-  NameReveal {rvLabel = label, rvSecret = secret, rvContactLink = contact, rvChannelLink = channel, rvNonce = nonce, rvDeadline = deadline, rvSignature = signature, rvAcceptance = acceptance}
-
-revealSigned :: NamesConfig -> Address -> Word64 -> DisputeDays -> RevealRequest -> IO Bool
-revealSigned cfg@NamesConfig {nChain = ChainConfig {cChainId, cSponsor}} owner duration days request =
-  (== Right owner) <$> registerIntentSigner (sponsorDomain cChainId cSponsor) (intentOf cfg owner duration days $ requestReveal request)
 
 -- | The deadline and the owner's signature first, so a request nobody signed reads nothing from the chain.
 -- A deadline before revealBefore would expire while the commitment can still register.

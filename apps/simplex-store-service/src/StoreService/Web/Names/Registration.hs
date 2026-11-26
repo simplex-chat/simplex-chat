@@ -26,7 +26,6 @@ import Control.Monad (join)
 import qualified Data.Aeson as J
 import qualified Data.Aeson.KeyMap as KM
 import qualified Data.Aeson.Types as JT
-import qualified Data.ByteString.Lazy as LB
 import Data.Either (isLeft)
 import Data.Functor ((<&>))
 import Data.Int (Int64)
@@ -47,7 +46,7 @@ import Simplex.Messaging.Util (eitherToMaybe, tshow)
 import StoreService.Config (boundedDecimal)
 import StoreService.Names.Orders (OrderRefusal (..), OrdersEnv (..), WriteRefusal (..), checkTimestamp, noteRead, orderFieldsOf, versionWritten)
 import StoreService.Names.Phases (RegistrationId (..), awaitChange, publish)
-import StoreService.Names.Reveal (checkReveal, isRepeat, revealSigned)
+import StoreService.Names.Reveal (checkReveal, isRepeat)
 import StoreService.Names.Signatures (OrderAction (..), orderRequestMessage, personalDigest)
 import StoreService.Names.Store (BrokenInvariant (..), Commit (..), FailReason (..), NameRegistration (..), OrderPhase (..), getRegistration, noHistory, updateRegistration)
 import StoreService.Names.Turns (withRegistrationTurn)
@@ -82,18 +81,16 @@ data RevealDecision
 
 -- | POST /api/registration/:id/reveal, its checks in the contract's order, from the stored commitment in the name's turn.
 revealHandler :: OrdersEnv -> RegistrationId -> Request -> Respond -> IO ResponseReceived
-revealHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oePhases, oeNow} rid@(RegistrationId ridText) req respond =
-  readBoundedBody maxBodyBytes req >>= \case
-    Just body -> case J.eitherDecode body of
-      Right request ->
-        withTransaction oeStore (`getRegistration` rid) >>= \case
-          Just r@NameRegistration {nrOwner} ->
-            revealSigned oeConfig nrOwner (nrDuration r) (nrDisputeDays r) request >>= \case
-              True -> withRegistrationTurn oeStore oeTurns r (decide request) >>= answer . maybe RDGone (either (const RDChanged) id)
-              False -> logNote "POST /api/registration/:id/reveal refused: the intent is not signed by the order's owner" >> respond (refusalResponse NRNotFound)
-          Nothing -> respond $ refusalResponse NRNotFound
-      Left e -> logNote ("POST /api/registration/:id/reveal refused: a malformed reveal: " <> T.pack e) >> respond (refusalResponse NRBadRequest)
-    Nothing -> answer $ RDRefused (ORBadRequest "the body is over its size limit")
+revealHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oePhases, oeNow} rid@(RegistrationId ridText) req respond = do
+  fields <- (>>= J.decode) <$> readBoundedBody maxBodyBytes req
+  bodySigner env ridText OAReveal (fields >>= KM.lookup "request" >>= JT.parseMaybe J.parseJSON) >>= \case
+    OSOutsideWindow -> respond $ refusalResponse NRBadRequest
+    OSSigner signer ->
+      ownedRegistration env rid signer >>= \case
+        Just r | Just body <- fields -> case JT.parseEither J.parseJSON (J.Object body) of
+          Right request -> withRegistrationTurn oeStore oeTurns r (decide request) >>= answer . maybe RDGone (either (const RDChanged) id)
+          Left e -> logNote ("POST /api/registration/:id/reveal refused: a malformed reveal: " <> T.pack e) >> respond (refusalResponse NRBadRequest)
+        _ -> respond $ refusalResponse NRNotFound
   where
     decide request r@NameRegistration {nrReveal} = do
       now <- oeNow
@@ -129,7 +126,7 @@ revealHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oePhases, 
 -- | POST /api/registration/:id/retry, a lapsed order committed again, in the name's turn; the publish and the answer come after the turn.
 retryHandler :: OrdersEnv -> RegistrationId -> Request -> Respond -> IO ResponseReceived
 retryHandler env@OrdersEnv {oeStore, oeTurns, oePhases} rid@(RegistrationId ridText) req respond =
-  readBoundedBody maxBodyBytes req >>= bodySigner env ridText OARetry >>= \case
+  readBoundedBody maxBodyBytes req >>= bodySigner env ridText OARetry . (>>= J.decode) >>= \case
     OSOutsideWindow -> respond $ refusalResponse NRBadRequest
     OSSigner signer ->
       ownedRegistration env rid signer >>= \case
@@ -182,12 +179,11 @@ querySigner env oid action req = orderSigner env oid action (param "timestamp" >
   where
     param k = join $ lookup k $ queryString req
 
-bodySigner :: OrdersEnv -> Text -> OrderAction -> Maybe LB.ByteString -> IO OrderSigner
-bodySigner env oid action body = orderSigner env oid action (field "timestamp") (field "signature")
+bodySigner :: OrdersEnv -> Text -> OrderAction -> Maybe J.Object -> IO OrderSigner
+bodySigner env oid action fields = orderSigner env oid action (field "timestamp") (field "signature")
   where
-    object = body >>= J.decode :: Maybe J.Object
     field :: J.FromJSON a => J.Key -> Maybe a
-    field k = object >>= KM.lookup k >>= JT.parseMaybe J.parseJSON
+    field k = fields >>= KM.lookup k >>= JT.parseMaybe J.parseJSON
 
 orderSigner :: OrdersEnv -> Text -> OrderAction -> Maybe Word64 -> Maybe RecoverableSignature -> IO OrderSigner
 orderSigner OrdersEnv {oeNow} oid action timestamp signature =

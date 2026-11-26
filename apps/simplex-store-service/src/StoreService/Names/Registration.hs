@@ -42,7 +42,6 @@ module StoreService.Names.Registration
     registerWithCreditCalldata,
     registerNameType,
     registerIntentDigest,
-    registerIntentSigner,
     verifyRegisterIntent,
     acceptanceDigest,
     verifyAcceptance,
@@ -240,14 +239,10 @@ registerIntentDigest domain r@Registration {rLabel, rOwner, rDuration, rResolver
       VUint $ fromIntegral $ roundedSeconds deadline
     ]
 
-registerIntentSigner :: Eip712Domain -> RegisterIntent -> IO (Either String Address)
-registerIntentSigner domain RegisterIntent {riRegistration, riDisputeDays, riNonce, riDeadline, riSignature} =
-  recoverAddress riSignature $ registerIntentDigest domain riRegistration riDisputeDays riNonce riDeadline
-
 verifyRegisterIntent :: Eip712Domain -> UTCTime -> RegisterIntent -> IO (Either String ())
-verifyRegisterIntent domain now intent@RegisterIntent {riRegistration = Registration {rOwner}, riDeadline} = runExceptT $ do
+verifyRegisterIntent domain now RegisterIntent {riRegistration = r@Registration {rOwner}, riDisputeDays, riNonce, riDeadline, riSignature} = runExceptT $ do
   when (now > roundedToUTCTime riDeadline) $ throwError "intent expired"
-  signer <- ExceptT $ registerIntentSigner domain intent
+  signer <- ExceptT $ recoverAddress riSignature $ registerIntentDigest domain r riDisputeDays riNonce riDeadline
   unless (signer == rOwner) $ throwError "intent is not signed by the owner"
 
 acceptanceDigest :: Eip712Domain -> TermsKind -> Commitment -> TermsHash -> Word64 -> SystemSeconds -> ByteString

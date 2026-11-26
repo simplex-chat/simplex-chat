@@ -334,7 +334,7 @@ paymentMark InvoiceRow {irPayment} =
 cancelInvoiceHandler :: WebEnv -> InvoiceId -> Request -> Respond -> IO ResponseReceived
 cancelInvoiceHandler env@WebEnv {weStore, weProviders} invId@(InvoiceId invText) req respond = do
   body <- readBoundedBody maxBodyBytes req
-  maybe (pure unsigned) (\orders -> bodySigner orders invText OACancel body) (weOrders env) >>= \case
+  maybe (pure unsigned) (\orders -> bodySigner orders invText OACancel (body >>= J.decode)) (weOrders env) >>= \case
     OSOutsideWindow -> respond badRequest
     OSSigner signer ->
       getInvoice weStore invId >>= \case
