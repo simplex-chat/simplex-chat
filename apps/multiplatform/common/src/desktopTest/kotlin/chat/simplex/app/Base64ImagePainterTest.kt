@@ -407,6 +407,7 @@ class Base64ImagePainterTest {
   @Test
   fun testVideoIsShownAsItsPreviewWithoutAPlayer() {
     val picture = base64Png(327, 173)
+    base64ToBitmap(picture)
     val name = "received-video-test-${UUID.randomUUID()}.mp4"
     val video = File(appFilesDir, name)
     try {
