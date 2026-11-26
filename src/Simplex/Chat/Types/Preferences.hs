@@ -803,6 +803,9 @@ data MsgPriorityGroupPreference = MsgPriorityGroupPreference
   {enable :: GroupFeatureEnabled, role :: Maybe GroupMemberRole}
   deriving (Eq, Show)
 
+-- Message editing and deletion. `duration` is time in seconds since message creation within which members can edit
+-- and delete their messages; `Nothing` or a value below 1 means 86400, as when the preference is absent.
+-- With `enable` on, members with `role` or above (any member when `role` is `Nothing`) edit and delete without a time limit.
 data EditsGroupPreference = EditsGroupPreference
   {enable :: GroupFeatureEnabled, role :: Maybe GroupMemberRole, duration :: Maybe Int}
   deriving (Eq, Show)
