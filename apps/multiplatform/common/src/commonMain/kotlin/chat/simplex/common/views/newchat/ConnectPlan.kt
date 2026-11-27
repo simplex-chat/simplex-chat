@@ -18,6 +18,7 @@ import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.chat.item.bansGuideLink
 import chat.simplex.common.views.chat.item.openBrowserAlert
+import chat.simplex.common.views.chat.item.previewDate
 import chat.simplex.common.views.chat.subscriberCountStr
 import chat.simplex.common.views.chatlist.*
 import chat.simplex.common.views.helpers.*
@@ -143,13 +144,35 @@ private fun namePrice(price: NamePrice): String {
 
 private fun openNameHowTo(uriHandler: UriHandler) = openBrowserAlert("https://simplex.domains", uriHandler)
 
+fun showNameNotFoundAlert() = AlertManager.shared.showAlertDialogButtonsColumn(
+  title = generalGetString(MR.strings.simplex_name_not_found),
+  text = generalGetString(MR.strings.simplex_name_not_registered_desc),
+  buttons = {
+    Column {
+      val uriHandler = LocalUriHandler.current
+      SectionItemView({
+        AlertManager.shared.hideAlert()
+        openBrowserAlert("https://simplex.domains", uriHandler)
+      }) {
+        Text(stringResource(MR.strings.open_simplex_domains), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+      }
+      SectionItemView({
+        AlertManager.shared.hideAlert()
+      }) {
+        Text(stringResource(MR.strings.ok), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+      }
+    }
+  }
+)
+
 fun showNameWarningAlert(
   rhId: Long?,
   domain: SimplexDomain,
   warning: NameWarning,
   own: Boolean,
   openExistingChat: (() -> Unit)?,
-  cleanup: (() -> Unit)?
+  cleanup: (() -> Unit)?,
+  now: Instant = Clock.System.now()
 ) {
   val nameStr = domain.fullDomainName
   fun dismiss() {
@@ -193,19 +216,24 @@ fun showNameWarningAlert(
       else String.format(generalGetString(MR.strings.simplex_name_own_expired_no_date_desc), nameStr, badgeDateText(warning.expiredAt)),
       generalGetString(MR.strings.simplex_name_renew) to ::openNameHowTo
     )
-    is NameWarning.Available -> if (Clock.System.now() < simplexNameSaleStart) alert(
-      generalGetString(if (own) MR.strings.simplex_name_own_expired else if (openExistingChat == null) MR.strings.simplex_name_not_registered else MR.strings.simplex_name_no_longer_registered),
-      String.format(generalGetString(if (own) MR.strings.simplex_name_own_not_registered_link_desc else MR.strings.simplex_name_not_registered_link_desc), nameStr),
-      generalGetString(MR.strings.open_simplex_domains) to ::openNameHowTo
-    ) else if (!own) alert(
-      generalGetString(if (openExistingChat == null) MR.strings.simplex_name_not_registered else MR.strings.simplex_name_no_longer_registered),
-      String.format(generalGetString(MR.strings.simplex_name_available_desc), nameStr, namePrice(warning.price)),
-      generalGetString(MR.strings.simplex_name_register) to ::openNameHowTo
-    ) else alert(
-      generalGetString(MR.strings.simplex_name_own_expired),
-      String.format(generalGetString(MR.strings.simplex_name_own_available_desc), nameStr, namePrice(warning.price)),
-      generalGetString(MR.strings.simplex_name_re_register) to ::openNameHowTo
-    )
+    is NameWarning.Available -> {
+      val title = generalGetString(
+        if (own) MR.strings.simplex_name_own_expired
+        else if (openExistingChat == null) MR.strings.simplex_name_not_registered
+        else MR.strings.simplex_name_no_longer_registered
+      )
+      if (now < simplexNameSaleStart) {
+        val text = if (own) String.format(generalGetString(MR.strings.simplex_name_own_not_registered_link_desc), nameStr)
+        else String.format(generalGetString(MR.strings.simplex_name_not_registered_link_desc), nameStr)
+        alert(title, text, generalGetString(MR.strings.open_simplex_domains) to ::openNameHowTo)
+      } else if (own) {
+        val text = String.format(generalGetString(MR.strings.simplex_name_own_available_desc), nameStr, namePrice(warning.price))
+        alert(title, text, generalGetString(MR.strings.simplex_name_re_register) to ::openNameHowTo)
+      } else {
+        val text = String.format(generalGetString(MR.strings.simplex_name_available_desc), nameStr, namePrice(warning.price))
+        alert(title, text, generalGetString(MR.strings.simplex_name_register) to ::openNameHowTo)
+      }
+    }
     NameWarning.ReservedForCommunity -> alert(
       generalGetString(MR.strings.simplex_name_not_registered),
       String.format(generalGetString(MR.strings.simplex_name_reserved_community_desc), nameStr),
@@ -1001,3 +1029,34 @@ fun PreviewLinkNoticeAlertGroup() = AlertPreview(AlertManager.privacySensitive) 
 @Preview
 @Composable
 fun PreviewLinkNoticeAlertContact() = AlertPreview(AlertManager.privacySensitive) { showLinkNoticeAlert(LinkNoticeTarget.Contact, expiresAt = null) }
+
+private val previewSimplexDomain = SimplexDomain(SimplexTLD.simplex, "alice", listOf())
+private val previewNameAvailable = NameWarning.Available(NamePrice(amount = 10000, years = 2))
+
+@Preview
+@Composable
+fun PreviewNameNotFoundAlert() = AlertPreview { showNameNotFoundAlert() }
+
+@Preview
+@Composable
+fun PreviewNameAvailableAlertBeforeSale() = AlertPreview(AlertManager.privacySensitive) {
+  showNameWarningAlert(null, previewSimplexDomain, previewNameAvailable, own = false, openExistingChat = null, cleanup = null, now = previewDate)
+}
+
+@Preview
+@Composable
+fun PreviewNameAvailableAlert() = AlertPreview(AlertManager.privacySensitive) {
+  showNameWarningAlert(null, previewSimplexDomain, previewNameAvailable, own = false, openExistingChat = null, cleanup = null, now = simplexNameSaleStart)
+}
+
+@Preview
+@Composable
+fun PreviewOwnNameAvailableAlertBeforeSale() = AlertPreview(AlertManager.privacySensitive) {
+  showNameWarningAlert(null, previewSimplexDomain, previewNameAvailable, own = true, openExistingChat = null, cleanup = null, now = previewDate)
+}
+
+@Preview
+@Composable
+fun PreviewOwnNameAvailableAlert() = AlertPreview(AlertManager.privacySensitive) {
+  showNameWarningAlert(null, previewSimplexDomain, previewNameAvailable, own = true, openExistingChat = null, cleanup = null, now = simplexNameSaleStart)
+}

@@ -767,6 +767,9 @@ private func previewScenes() -> [SnapshotScene] {
         SnapshotScene(MigrateToDevice_Previews.self, device: true),
         SnapshotScene(MigrateToGroupView_Previews.self),
         SnapshotScene(MsgContentView_Previews.self, allSizes: true),
+        SnapshotScene(NameAvailableAlert_Previews.self, alert: true),
+        SnapshotScene(NameAvailableAlertBeforeSale_Previews.self, alert: true),
+        SnapshotScene(NameNotFoundAlert_Previews.self, alert: true),
         SnapshotScene(NativeTextEditor_Previews.self),
         SnapshotScene(NetworkServersView_Previews.self),
         SnapshotScene(NewChatMenuButton_Previews.self),
@@ -778,6 +781,8 @@ private func previewScenes() -> [SnapshotScene] {
         SnapshotScene(OnboardingStepsView_Previews.self),
         SnapshotScene(OneHandUICard_Previews.self),
         SnapshotScene(OperatorView_Previews.self),
+        SnapshotScene(OwnNameAvailableAlert_Previews.self, alert: true),
+        SnapshotScene(OwnNameAvailableAlertBeforeSale_Previews.self, alert: true),
         SnapshotScene(PasscodeEntry_Previews.self),
         SnapshotScene(PasscodeViewView_Previews.self),
         SnapshotScene(PeerTypePlaceholders_Previews.self),
@@ -1042,6 +1047,49 @@ struct LinkNoticeContactAlert_Previews: PreviewProvider {
     static var previews: some View {
         Color.clear.background(AlertControllerPreview {
             linkNoticeAlert(.contact, expiresAt: nil, cleanup: nil)
+        })
+    }
+}
+
+private let previewSimplexDomain = SimplexDomain(nameTLD: .simplex, domain: "alice", subDomain: [])
+private let previewNameAvailable = NameWarning.available(price: NamePrice(amount: 10000, years: 2))
+
+struct NameNotFoundAlert_Previews: PreviewProvider {
+    static var previews: some View {
+        Color.clear.background(AlertControllerPreview {
+            nameNotFoundAlert()
+        })
+    }
+}
+
+struct NameAvailableAlertBeforeSale_Previews: PreviewProvider {
+    static var previews: some View {
+        Color.clear.background(AlertControllerPreview {
+            nameWarningAlert(domain: previewSimplexDomain, warning: previewNameAvailable, own: false, openExistingChat: nil, cleanup: nil, now: previewDate)
+        })
+    }
+}
+
+struct NameAvailableAlert_Previews: PreviewProvider {
+    static var previews: some View {
+        Color.clear.background(AlertControllerPreview {
+            nameWarningAlert(domain: previewSimplexDomain, warning: previewNameAvailable, own: false, openExistingChat: nil, cleanup: nil, now: simplexNameSaleStart)
+        })
+    }
+}
+
+struct OwnNameAvailableAlertBeforeSale_Previews: PreviewProvider {
+    static var previews: some View {
+        Color.clear.background(AlertControllerPreview {
+            nameWarningAlert(domain: previewSimplexDomain, warning: previewNameAvailable, own: true, openExistingChat: nil, cleanup: nil, now: previewDate)
+        })
+    }
+}
+
+struct OwnNameAvailableAlert_Previews: PreviewProvider {
+    static var previews: some View {
+        Color.clear.background(AlertControllerPreview {
+            nameWarningAlert(domain: previewSimplexDomain, warning: previewNameAvailable, own: true, openExistingChat: nil, cleanup: nil, now: simplexNameSaleStart)
         })
     }
 }

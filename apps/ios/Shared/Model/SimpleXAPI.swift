@@ -1187,16 +1187,7 @@ private func apiConnectResponseAlert<R>(_ r: APIResult<R>, noticeTarget: LinkNot
         case let .errorAgent(.SMP(serverAddress, .NAME(nameErr))):
             switch nameErr {
             case .NOT_FOUND:
-                showAlert(
-                    NSLocalizedString("Name not registered", comment: "alert title"),
-                    message: NSLocalizedString("This SimpleX name is not registered. See if it is available at simplex.domains.", comment: "alert message"),
-                    actions: {[
-                        UIAlertAction(title: NSLocalizedString("Open simplex.domains", comment: "alert action"), style: .default) { _ in
-                            openBrowserAlert(uri: "https://simplex.domains")
-                        },
-                        okAlertAction
-                    ]}
-                )
+                getTopViewController()?.present(nameNotFoundAlert(), animated: true)
             case .NO_RESOLVER:
                 showAlert(
                     NSLocalizedString("SimpleX name error", comment: ""),
