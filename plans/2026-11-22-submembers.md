@@ -133,15 +133,16 @@ The receiver of x.msg.new or x.msg.update (Subscriber.hs:1093-1103), and of the 
 ```
 asMember                                    result
 absent                                      the sender's message, unchanged
-present, group with relays                  rejected
+present, group with relays                  rejected: "member is not allowed to send as member"
+present, sender below admin or a submember  rejected: "member is not allowed to send as member"
 present, M = the member with memberId:
   M absent                                  M created as an unknown member named memberName, member_via = the sender's member ID
   M's member_via /= the sender's member ID  rejected: "member is not a submember of the sender"
-  M not current                             rejected
+  M removed                                 ignored
   otherwise                                 processed as M's message: M's role, block, moderation, edit window and priority
-    M blocked by an admin                   delivered to moderators only, without notifications (DJModerators, Subscriber.hs:1168-1172)
+    M blocked by an admin                   delivered to moderators only, without notifications (moderatorsContext, Delivery.hs)
 ```
-The sender is V when the message is received from V, and the member named by the forward header when it is forwarded. The item is saved as received from M, without the forward mark.
+The sender is V when the message is received from V, and the member named by the forward header when it is forwarded. The item is saved as received from M; the forward mark is shown only when another member forwards V's message (checkSendAsMember, Subscriber.hs).
 
 Forwarding, by the rules of every message of V: an admin creates delivery tasks for V's message (Subscriber.hs:1033-1039); the delivery job sends it to its members introduced to V and not yet connected to V (MRIntroduced in V's relation vector) as a forward of V's message, with `asMember` in the inner message (Q5 B).
 
@@ -505,28 +506,28 @@ The separate core, its folder `ROOT/_sessions/ID/agents`, the per-teammate users
 
 Each core test fails on master, where the commands do not parse; each plugin test fails on master, where the teammate routes are absent.
 
-With `asMember` (4.4): `testGroupMsgForwardViaRejected` and `testSubmemberSignedPrevVersion` are removed; `testSubmemberAnnounceRefused`, `testSubmemberSigned`, `testSubmemberSignedPending` (shown signed), `testSubmemberSignedHistory`, `testSubmemberPrevVersionJoiner` and `testSubmemberRoleRules` send or expect x.msg.new and x.msg.update with `asMember`; new: `asMember` round trips in ProtocolTests, and refusals of `asMember` naming a member whose via is not the sender, a member not current, and a group with relays.
+With `asMember` (4.4): `testGroupMsgForwardViaRejected` and `testSubmemberSignedPrevVersion` are removed; the submember tests send or expect x.msg.new and x.msg.update with `asMember`; a message received from V has no forward mark, and a message forwarded by another member or in history has it; new: `asMember` round trips in ProtocolTests, and refusals of `asMember` naming a member whose via is not the sender and a removed submember. A group with relays is refused by the sender's API (`testSubmemberRefusedChannel`); its receiver rule has no test.
 
-Core, tests/ChatTests/Groups.hs, `describe "members via another member"`, groups of alice, bob and cath (createGroup3):
-- `testSubmemberMessages`: `/_add submember #1 member json {...reviewer...}`; bob and cath see `#team: alice added reviewer to the group (via alice)`; `/_send #1(as_member=M) text hi` → `#team reviewer> hi [>>]` for bob and cath; `/ms team` of bob lists reviewer via alice.
-- `testSubmemberLiveUpdate`: send as member with live=on, two updates, the last with live=off → bob's item from reviewer has the final text and itemLive false.
-- `testSubmemberLaterJoiner`: dan joins by alice's invitation after the message → dan's output has no "added" or "unknown member" line for reviewer, has `#team reviewer> hi [>>]` from history, and `/ms team` lists reviewer via alice.
-- `testSubmemberOtherAdmin`: cath is bob's invitee, not connected to alice → bob forwards reviewer's message and its update to cath.
+Core, tests/ChatTests/Groups.hs, `describe "submembers"`, groups of alice, bob and cath (createGroup3):
+- `testSubmemberMessages`: `/_add submember #1 member json {...reviewer...}`; bob and cath see `#team: alice added reviewer to the group (via alice)`; `/_send #1(as_member=M) text hi` → `#team reviewer> hi` for bob and cath; `/ms team` of bob lists reviewer via alice.
+- `testSubmemberUpdate`: an update of the message sent as member → bob and cath see `#team reviewer> [edited] hello`.
+- `testSubmemberLaterJoiner`: dan joins by alice's invitation after the message → dan's output has no "added" or "unknown member" line for reviewer, has `#team reviewer> hi [>>]` from history, and `/ms team` lists reviewer via alice; the next message as reviewer reaches dan without the forward mark.
+- `testSubmemberOtherAdmin`: cath is bob's invitee, not connected to alice → bob receives reviewer's message from alice and forwards it and its update to cath, who shows it with the forward mark.
+- `testSubmemberBlockedToModerators`: bob blocks reviewer → bob forwards reviewer's messages to moderators only, without notifications.
 - `testSubmemberIntroOrder`: bob adds assistant (admin) via bob; dan joins by alice's invitation → dan records assistant via bob.
 - `testSubmemberPrevVersionJoiner`: dan with chat version range up to 23 joins → reviewer is not introduced; dan creates it as an unknown member from history.
+- `testSubmemberPrevVersionMember`: bob with chat version range up to 23 → reviewer is not announced to bob; bob creates it as an unknown member from its first message.
 - `testSubmemberReply`: bob replies to reviewer's message and mentions @reviewer → on alice and cath, the item's quotedItem has the item ID of reviewer's item and direction groupRcv reviewer, and its mention has reviewer's group member ID.
-- `testSubmemberRoleRules`: reviewer is a member, owners are exempt from the edit window → alice's priority 1 as reviewer is stored normal; bob drops alice's edit of the item aged 79 hours on bob ("edit too late"); alice cannot edit the item aged 100 hours on alice; a forwarded priority 1 of reviewer arrives normal at bob.
+- `testSubmemberRoleRules`: reviewer is a member, owners are exempt from the edit window → alice's priority 1 as reviewer is stored normal; bob drops alice's edit of the item aged 79 hours on bob ("edit too late"); alice cannot edit the item aged 100 hours on alice; a priority 1 that alice sends as reviewer arrives normal at bob.
 - `testSubmemberRemove`: `/_remove #1 M` → bob and cath see "alice removed reviewer".
-- `testSubmemberRemoveByAdmin`: bob removes reviewer → alice and cath see "bob removed reviewer"; alice's send as reviewer → "not active yet".
+- `testSubmemberRemoveByAdmin`: bob removes reviewer → alice and cath see "bob removed reviewer"; alice's send as reviewer → "not active yet"; a message that alice sends as reviewer after that is ignored by bob and cath.
 - `testSubmemberRefused`: bob (admin) adds an owner via bob → refused; send as bob's group member ID → "member is not via you"; cath (member) adds → refused; alice adds in an incognito group → refused.
 - `testSubmemberRefusedChannel`: in a channel → refused.
-- `testSubmemberAnnounceRefused`: x.grp.mem.new with via of another member, x.grp.mem.new from reviewer → refused; a forward of reviewer with via cath → dropped.
+- `testSubmemberAnnounceRefused`: x.grp.mem.new with via of another member, x.grp.mem.new from reviewer → refused; cath's message as reviewer → bob refuses it, "member is not a submember of the sender".
 - `testSubmemberIntroRefused`: x.grp.mem.intro with via naming the user, reviewer, an owner role above cath's, an unknown member, and from a host demoted to member → refused.
 - `testSubmemberSendRefused`: send as reviewer in a support scope, with a file, with a quote, and its broadcast delete → refused; bob's moderation → alice sees "[marked deleted by bob]"; alice's moderation → bob and cath see "[marked deleted by alice]".
-- `testSubmemberSigned`: "sign messages" on → bob shows reviewer's message and its update signed; a forward signed by another key → bad signature.
-- `testSubmemberSignedPrevVersion`: bob with chat version range up to 23 → reviewer's message arrives with "(signature missing)".
-- `testSubmemberSignedPending`: bob's connection inactive → reviewer's message is sent as pending and arrives with "(signature missing)".
-- `testGroupMsgForwardViaRejected` (`describe "group message forwarding"`): a forward of an unknown member with via naming the recipient, or from a forwarder that is neither the host nor the named member → via not recorded.
+- `testSubmemberSigned`: "sign messages" on → bob shows reviewer's message and its update signed; a message as reviewer signed by another key → bad signature.
+- `testSubmemberSignedPending`: bob's connection inactive → reviewer's message is sent as pending and arrives signed.
 - `testSubmemberSignedHistory`: reviewer removed; dan joins → dan creates reviewer from history with via alice and shows the item signed.
 - `testSubmemberRestart`: alice restarts → reviewer listed via alice; send as member works.
 - Migrations: tests/MigrationTests up and down with the schema dump; down of a database with members via the user and via another member.
@@ -574,13 +575,14 @@ Q6. Groups with "sign messages" on.
 - C: V keeps a key per member and signs as it; key storage on V's side.
 - D, decided, as changed on 2026-11-26: V signs its messages sent as a submember as its own messages; receivers verify them with V's key (4.4).
 
-Q7. Notifications on iOS for a message of a submember. The notification service routes a received item to the service instance that expects a message on the item's connection, named by `cItem.meta.forwardedByMember ?? cItem.chatDir.groupMemberId` (NotificationService.swift:1092-1098); an item on a connection that no instance expects is dropped (NotificationService.swift:185-201). A submember has no connection, and its message arrives on V's connection. Decided: no forward mark (2026-11-26).
-- A: the core sets forwardedByMember = V; the apps omit "[>>]" when forwardedByMember is the author's via member: a condition in the terminal view and in both apps; forwardedByMember then names the member that delivered a direct message.
-- B, recommended: the apps receive, with a submember, the local group member ID of the member it is via, and the notification service routes by it; the forward mark is unchanged.
-- C: the core reports, with each received item, the member whose connection delivered it.
+Q7. Notifications on iOS for a message of a submember. The notification service routes a received item to the service instance that expects a message on the item's connection, named by `cItem.meta.forwardedByMember ?? cItem.chatDir.groupMemberId` (NotificationService.swift:1092-1098); an item on a connection that no instance expects is dropped (NotificationService.swift:185-201). A submember has no connection, and its message arrives on V's connection; forwardedByMember is set only for forwards (Internal.hs, saveGroupFwdRcvMsg). The apps do not show forwardedByMember; the terminal view shows it as "[>>]" (View.hs:787-789). Android shows notifications from received items without routing (SimpleXAPI.kt:3147, 3885). Decided: no forward mark (2026-11-26).
+- A: the core sets forwardedByMember = V on these items: one line in the core, no change in the apps; the terminal view shows "[>>]", and the stored item names V as the member that forwarded a direct message.
+- B: the apps receive, with a submember, the local group member ID of the member it is via, and the notification service routes by it: a new field in the core and in the apps.
+- C: the core reports, with each received item, the member whose connection delivered it: a new field in the core and in the apps.
+- D, recommended: the notification service routes an item of a submember to the connection of the member it is via, which it finds among the connections it receives messages on by the submember's `memberVia` (ChatTypes.swift:3496, in the JSON today): about 8 lines in the notification service, no change in the core or the API.
 
 Q8. Names of the new field and its type.
-- A, recommended: field `asMember`, as `asGroup`; type `MemberRef {memberId :: MemberId, memberName :: ContactName}`, a reference to a member by its ID and display name.
+- A, decided on 2026-11-27 ("yes, ok"): field `asMember`, as `asGroup`; type `MemberRef {memberId :: MemberId, memberName :: ContactName}`, a reference to a member by its ID and display name.
 - B: other names.
 
 ## 10. Changes by file
@@ -629,9 +631,9 @@ adding                     no chat item on V's side, as APIAddMember creates non
 forwarding by the host     by the delivery tasks of V's messages (4.4), as decided on 2026-11-26
 ```
 
-## 13. State: core to be changed to asMember, plugin next
+## 13. State: core sends asMember, iOS notifications and plugin next
 
-The core part is on `ep/omnibus` (#8314). Its messages of submembers are still forwards; the change to `asMember` (4.4, 4.5) follows the maintainer's approval of this plan. The plugin stages (section 7) use these commands.
+The core part is on `ep/omnibus` (#8314). Messages of submembers are V's messages with `asMember` (4.4, 4.5); the routing of their notifications on iOS follows the maintainer's answer to Q7. The plugin stages (section 7) use these commands.
 
 ```
 operation                  command                                                                                         response
