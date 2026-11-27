@@ -3348,7 +3348,7 @@ processChatCommand cxt nm = \case
               void $ removeSubmembers db cxt user gInfo m
               pure m {memberStatus = GSMemRemoved}
       deleteMessages user gInfo@GroupInfo {membership} ms = do
-        delMems <- (ms <>) . concat <$> withFastStore' (\db -> mapM (getSubmembers db cxt user gInfo . memberId') ms)
+        delMems <- (ms <>) . concat <$> withFastStore' (\db -> mapM (getSubmembers db cxt user gInfo) ms)
         if groupFeatureUserAllowed SGFFullDelete gInfo
           then deleteGroupMembersCIs user gInfo delMems
           else markGroupMembersCIsDeleted user gInfo delMems membership

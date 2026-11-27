@@ -1367,14 +1367,14 @@ getGroupRelayMembers db cxt user@User {userId, userContactId} GroupInfo {groupId
       (groupMemberQuery <> " WHERE m.user_id = ? AND m.group_id = ? AND m.contact_id IS DISTINCT FROM ? AND m.member_role = ?")
       (userId, groupId, userContactId, GRRelay)
 
-getSubmembers :: DB.Connection -> StoreCxt -> User -> GroupInfo -> MemberId -> IO [GroupMember]
-getSubmembers db cxt user@User {userId} GroupInfo {groupId} viaId = do
+getSubmembers :: DB.Connection -> StoreCxt -> User -> GroupInfo -> GroupMember -> IO [GroupMember]
+getSubmembers db cxt user@User {userId} GroupInfo {groupId} GroupMember {memberId} = do
   currentTs <- getCurrentTime
   map (toContactMember currentTs cxt user)
     <$> DB.query
       db
       (groupMemberQuery <> " WHERE m.user_id = ? AND m.group_id = ? AND m.member_via = ?")
-      (userId, groupId, viaId)
+      (userId, groupId, memberId)
 
 getGroupMembersForExpiration :: DB.Connection -> StoreCxt -> User -> GroupInfo -> IO [GroupMember]
 getGroupMembersForExpiration db cxt user@User {userId, userContactId} GroupInfo {groupId} = do
