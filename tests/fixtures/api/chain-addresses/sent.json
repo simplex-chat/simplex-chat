@@ -263,8 +263,9 @@
                 "itemId": 8,
                 "itemSharedMsgId": "itemSharedMsgId",
                 "itemStatus": {
+                  "msgRcptStatus": "ok",
                   "sndProgress": "complete",
-                  "type": "sndSent"
+                  "type": "sndRcvd"
                 },
                 "itemText": "donate bc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66505d4u, [Donate](monero:8A3ZWAXrrQddvnT1fPrtbK86ZAoM4nai3Gjg1LEow3JWcryJtovMnHYZnxTJpCLmAbfWbnPMeTzPmMBjAhyd4xoM89hYq1c) or lnbc2500u1pvjluezsp5zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zygspp5qqqsyqcyq5rqwzqfqqqsyqcyq5rqwzqfqqqsyqcyq5rqwzqfqypqdq5xysxxatsyp3k7enxv4jsxqzpu9qrsgquk0rl77nj30yxdy8j9vdx85fkpmdla2087ne0xh8nhedh8w27kyke0lp53ut353s06fv3qfegext0eh0ymjpf39tuven09sam30g4vgpfna3rh",
                 "itemTs": "1970-01-01T00:00:00Z",
