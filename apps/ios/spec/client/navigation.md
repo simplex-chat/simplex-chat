@@ -198,7 +198,7 @@ SimpleX links (`simplex:/chat#...`) are handled via [`connectViaUrl()`](../../Sh
 }
 ```
 
-URL processing routes to the appropriate connection flow (join group, add contact, etc.) via [`planAndConnect()`](../../Shared/Views/NewChat/NewChatView.swift#L1181).
+URL processing routes to the appropriate connection flow (join group, add contact, etc.) via [`planAndConnect()`](../../Shared/Views/NewChat/NewChatView.swift#L1181). `openedConnectionLink()` returns the link to connect to, and nil for another path, which shows "Error: URL is invalid". It reads the link type from the URL components when the URL path has no leading `/`, so `simplex:c#…` opens as `simplex:/c#…` does, and it also accepts name links, such as `simplex:/name@…` and `simplex:name@…`, which the core resolves.
 
 App links use the app's own scheme, `simplexchat:`, for everything that is not a connection link. `connectViaUrl_()` branches on that scheme before the path switch, so an app link never reaches `planAndConnect()`, and `openAppLink()` dispatches on its path. A badge link (`simplexchat:/badge/code/<code>`) goes to `openBadgeLink()` in [`BadgesRedeemCodeView.swift`](../../Shared/Views/Badges/BadgesRedeemCodeView.swift), which presents `BadgesRedeemLinkView` as an app sheet. The sheet names the active profile and asks before redeeming, since any web page can send the link and a profile holds one badge at a time. On *Add badge* it redeems the code into that profile and then shows `BadgesView`; *Cancel* sends nothing. If that profile already shows a badge (read from `BadgeModel` when the sheet renders), which core would refuse, the sheet does not offer to add it: it says nothing was added, says where a code for another badge is (on the page it was bought on, under *Show code*), and offers *View your badge*; it cannot tell a repeated link for the badge it shows from another badge's code, so it asserts neither. While the code is being redeemed, *Dismiss* or a swipe closes the sheet without cancelling anything; if the redemption then succeeds with the sheet closed or covered, an alert says the badge was added and names the profile, unless the profile is hidden and no longer active, when nothing is shown (`showBadgeAddedAlert()`, which the store lane shares). While the sheet shows a redemption in flight (`isBadgeLinkIssuing()`), `connectViaUrl_()` ignores a further app link; otherwise it dismisses the sheets as for any link, which replaces an earlier badge link sheet. Any other path is a link type from a later version, and gets an alert asking to check for app updates. An app link can carry a secret, so `onOpenURL` logs it as "app link" rather than the URL.
 
@@ -337,6 +337,10 @@ if path == "/r" {
 ```
 
 Similarly, in `planAndConnect()` (`NewChatView.swift`), `.simplexLink(_, .relay, _, _)` patterns trigger the same alert and block connection.
+
+### Blocked link
+
+`planAndConnect()` handles `.contactAddress(.linkNotice)` and `.groupLink(.linkNotice)` with [`showLinkNoticeAlert()`](../../Shared/Views/NewChat/NewChatView.swift#L946-L948), which presents the alert that [`linkNoticeAlert()`](../../Shared/Views/NewChat/NewChatView.swift#L950-L980) builds, and connects nothing. [`LinkNoticeTarget`](../../Shared/Views/NewChat/NewChatView.swift#L923-L944) picks the text of the alert: from the link type, from the group of a prepared chat, or contact. `apiConnectResponseAlert()` and `apiConnectContactViaAddress()` in `SimpleXAPI.swift` show the same alert for `ChatErrorType.linkNotice`.
 
 ## 11. Channel-Specific NewChatView Behavior
 

@@ -1,5 +1,7 @@
 # Names service: fixes of the reviewed findings
 
+Superseded where it differs: plans/2026-11-18-names-order-rules.md and apps/simplex-store-service/docs/names.md state the current rules and code.
+
 Branch `ep/names-review-fixes`, from `names` at b13968b61, for a draft pull request to `names`. Decisions: the user's, 2026-11-16, on the review of https://github.com/simplex-chat/simplex-chat/pull/7703. Line references are at b13968b61.
 
 Type rule, as approved:

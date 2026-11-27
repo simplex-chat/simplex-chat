@@ -10,6 +10,10 @@ import java.net.URI
 import java.net.URLEncoder
 import chat.simplex.res.*
 import java.awt.Desktop
+import java.awt.Toolkit
+import java.awt.datatransfer.DataFlavor
+import java.awt.datatransfer.StringSelection
+import java.awt.datatransfer.UnsupportedFlavorException
 
 actual fun UriHandler.sendEmail(subject: String, body: CharSequence) {
   val subjectEncoded = URLEncoder.encode(subject, "UTF-8").replace("+", "%20")
@@ -21,6 +25,24 @@ actual fun ClipboardManager.shareText(text: String) {
   setText(AnnotatedString(text))
   showToast(MR.strings.copied.localized())
 }
+
+actual fun copyToPrimarySelection(text: String) {
+  try {
+    Toolkit.getDefaultToolkit().systemSelection?.setContents(StringSelection(text), null)
+  } catch (e: Exception) {
+    Log.e(TAG, "Unable to set the primary selection: ${e.stackTraceToString()}")
+  }
+}
+
+fun primarySelectionText(): String? =
+  try {
+    Toolkit.getDefaultToolkit().systemSelection?.getData(DataFlavor.stringFlavor) as? String
+  } catch (e: UnsupportedFlavorException) {
+    null
+  } catch (e: Exception) {
+    Log.e(TAG, "Unable to read the primary selection: ${e.stackTraceToString()}")
+    null
+  }
 
 actual fun shareFile(text: String, fileSource: CryptoFile) {
   withLongRunningApi {

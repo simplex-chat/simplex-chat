@@ -314,6 +314,16 @@
         "restriction": {"ref": "memberRestrictionStatus"}
       }
     },
+    "linkNotice": {
+      "optionalProperties": {
+        "ttl": {
+          "type": "integer",
+          "metadata": {
+            "format": "positive seconds from the server timestamp of the message, rounded up to a whole hour"
+          }
+        }
+      }
+    },
     "memberRestrictionStatus": {
       "enum": ["blocked", "unrestricted"]
     },
@@ -552,7 +562,11 @@
       "properties": {
         "msgId": {"ref": "base64url"},
         "params": {
-          "properties": {}
+          "properties": {},
+          "optionalProperties": {
+            "silent": {"type": "boolean"},
+            "notice": {"ref": "linkNotice"}
+          }
         }
       }
     },
@@ -605,6 +619,9 @@
         "params": {
           "properties": {
             "memberInfo": {"ref": "memberInfo"}
+          },
+          "optionalProperties": {
+            "memberRestrictions": {"ref": "memberRestrictions"}
           }
         }
       }
@@ -693,6 +710,12 @@
         "params": {
           "properties": {
             "memberId": {"ref": "base64url"}
+          },
+          "optionalProperties": {
+            "messages": {"type": "boolean"},
+            "rosterVersion": {"type": "integer"},
+            "silent": {"type": "boolean"},
+            "notice": {"ref": "linkNotice"}
           }
         }
       }

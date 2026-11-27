@@ -28,7 +28,7 @@ By design. No system can provide encrypted messages, scalable broadcast and priv
 
 ## Is SimpleX audited?
 
-Yes. Trail of Bits assessed the implementation in October 2022 and reviewed the cryptographic design in July 2024. A third audit was completed in 2026 and will be published. Reports: [2022](https://github.com/simplex-chat/simplex-chat/blob/stable/docs/SimpleX_Chat_Final_Report_11_03_2022.pdf), [2024](https://github.com/simplex-chat/simplex-chat/blob/stable/docs/SimpleX_Design_Review_2024_Summary_Report_12_08_2024.pdf).
+Yes. Trail of Bits assessed the implementation in October 2022, reviewed the cryptographic design in July 2024, and audited the apps and the protocols' implementation in 2026: 75 findings, all fixes released by v7.1.4. Reports: [2022](https://github.com/simplex-chat/simplex-chat/blob/stable/docs/SimpleX_Chat_Final_Report_11_03_2022.pdf), [2024](https://github.com/simplex-chat/simplex-chat/blob/stable/docs/SimpleX_Design_Review_2024_Summary_Report_12_08_2024.pdf), [2026](https://github.com/simplex-chat/simplex-chat/blob/master/docs/SimpleX_Chat_Code_Review_2026_Final_Report_with_Fix_Review.pdf). The 2026 findings and fixes: [Trail of Bits security audit 2026](https://simplex.chat/blog/20261123-trail-of-bits-security-audit-2026-findings.md).
 
 ## What are SimpleX's limitations?
 

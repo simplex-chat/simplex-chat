@@ -25,7 +25,7 @@ import qualified Simplex.Messaging.Agent.Store.DB as DB
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String (TextEncoding (..))
 import StoreService.Config (ListenerConfig (..))
-import StoreService.Group.Command (CmdAction (..), GroupCmd (..), groupCmdAction)
+import StoreService.Group.Command (CmdAction (..), GroupCmd (..), consoleCmd, groupCmdAction)
 import StoreService.Names.Chain (Hex32 (..))
 import StoreService.Names.Codes
 import StoreService.Names.Orders (OrderRefusal (..))
@@ -41,7 +41,7 @@ import Test.Hspec
 namesCodesTests :: Spec
 namesCodesTests = describe "StoreService names: prepaid codes" $ do
   describe "state" $
-    it "reads each state from the code's row, a spent code as used even if revoked while held" testCodeStates
+    it "reads each state from the code's row, a spent code as used even if revoked while held, and one a taken order holds as expired past its expiry and the month after the take" testCodeStates
   describe "check" $ do
     it "folds a code typed in lower case with spaces to the issued one, and changes no code" testCheckFolded
     it "answers code_invalid to an unknown code, an owner code or other text" testCheckInvalid
@@ -50,7 +50,7 @@ namesCodesTests = describe "StoreService names: prepaid codes" $ do
     it "encodes each refusal of a code by its tag" testCodeRefusalTags
     it "releases and spends a code only after the write, and only for its holder" testReleaseSpend
   describe "group commands" $ do
-    it "parses /issue name with the length only, answering the usage to years and to /bulk name" testGroupNameCommands
+    it "parses /issue name with its length and years, answering the usage to /bulk name" testGroupNameCommands
     it "answers the usage to a bad length, years or count, or a badge option" testGroupNameCommandsRefused
     it "parses /revoke of a prepaid code, telling a moderator it was not revoked" testGroupRevokeNameCommand
 
@@ -70,6 +70,7 @@ baseCode =
       pcPaymentStatus = CPSPaid,
       pcReservedBy = Nothing,
       pcReservedAt = Nothing,
+      pcHolderTakenAt = Nothing,
       pcSpentAt = Nothing,
       pcRevokedAt = Nothing,
       pcExpiresAt = Nothing,
@@ -94,6 +95,11 @@ testCodeStates = do
   stateOf baseCode {pcPaymentStatus = CPSUnpaid, pcExpiresAt = Just tNow} `shouldBe` CSUnpaid
   stateOf baseCode {pcExpiresAt = Just tNow} `shouldBe` CSExpired
   stateOf held {pcExpiresAt = Just tNow} `shouldBe` CSReserved
+  let takenHeld at = held {pcHolderTakenAt = Just at}
+      monthAgo = UTCTime (fromGregorian 2026 9 21) 3600
+  stateOf (takenHeld monthAgo) `shouldBe` CSReserved
+  stateOf (takenHeld monthAgo) {pcExpiresAt = Just tNow} `shouldBe` CSExpired
+  stateOf (takenHeld $ addUTCTime 1 monthAgo) {pcExpiresAt = Just tNow} `shouldBe` CSReserved
 
 -- The route as namesRoutes registers it, since a NamesEnv needs a running chat controller.
 withCodeCheck :: (DBStore -> Client -> IO a) -> IO a
@@ -205,10 +211,13 @@ testReleaseSpend = withOrders $ \turns st -> do
 testGroupNameCommands :: IO ()
 testGroupNameCommands = do
   let p = groupCmdAction GRAdmin
-  p "/issue name 8" `shouldBe` RunCmd (GCIssueName (lengthOf 8) 2 CPSFree)
-  p "/issue name 63" `shouldBe` RunCmd (GCIssueName (lengthOf 63) 2 CPSFree)
-  p "/issue name 6 years 2" `shouldBe` RunCmd (GCIssueName (lengthOf 6) 2 CPSFree)
-  p "/issue name 63 years 10" `shouldBe` RunCmd (GCIssueName (lengthOf 63) 10 CPSFree)
+  p "/issue name 8" `shouldBe` RunCmd (GCIssueName (lengthOf 8) 2 CPSFree Nothing)
+  p "/issue name 63" `shouldBe` RunCmd (GCIssueName (lengthOf 63) 2 CPSFree Nothing)
+  p "/issue name 6 years 2" `shouldBe` RunCmd (GCIssueName (lengthOf 6) 2 CPSFree Nothing)
+  p "/issue name 63 years 10" `shouldBe` RunCmd (GCIssueName (lengthOf 63) 10 CPSFree Nothing)
+  p "/issue name 8 until 2027-03-31" `shouldBe` RunCmd (GCIssueName (lengthOf 8) 2 CPSFree (Just $ UTCTime (fromGregorian 2027 3 31) 86399))
+  p "/issue name 6 years 5 until 2030-12-31" `shouldBe` RunCmd (GCIssueName (lengthOf 6) 5 CPSFree (Just $ UTCTime (fromGregorian 2030 12 31) 86399))
+  consoleCmd "issue name 7 years 3 paid until 2027-03-31" `shouldBe` Right (GCIssueName (lengthOf 7) 3 CPSPaid (Just $ UTCTime (fromGregorian 2027 3 31) 86399))
   map p ["/bulk name 7 count 3", "/bulk name 12 years 2 count 100", "/bulk name 6 count 1"] `shouldBe` replicate 3 bulkUsage
   groupCmdAction GRMember "/issue name 8" `shouldBe` IgnoreMsg
 
@@ -223,11 +232,11 @@ testGroupRevokeNameCommand = do
 testGroupNameCommandsRefused :: IO ()
 testGroupNameCommandsRefused = do
   let p = groupCmdAction GRModerator
-  forM_ ["name", "name 5", "name 64", "name 06", "name 8 years 1", "name 8 years 0", "name 8 years 11", "name 8 uses 2", "name 8 months 2", "name 8 paid", "name 8 years 18446744073709551618", "name 8 count 2", "name 8 count 1"] $ \args ->
+  forM_ ["name", "name 5", "name 64", "name 06", "name 8 years 1", "name 8 years 0", "name 8 years 11", "name 8 uses 2", "name 8 months 2", "name 8 paid", "name 8 years 18446744073709551618", "name 8 count 2", "name 8 count 1", "name 8 until", "name 8 until 2027-13-01", "name 8 until 31-03-2027", "name 8 until 2027-03-31 years 2", "supporter until 2027-03-31"] $ \args ->
     (args, p ("/issue " <> args)) `shouldBe` (args, issueUsage)
   forM_ ["name 8", "name 8 count 0", "name 8 count 101", "name 8 years 1 count 2", "name 5 count 2", "name 08 count 2", "name 8 months 2 count 2", "name 8 count 2 uses 2", "name 8 uses 2 count 2", "name 8 count 2 years 5", "name count 2"] $ \args ->
     (args, p ("/bulk " <> args)) `shouldBe` (args, bulkUsage)
 
 issueUsage, bulkUsage :: CmdAction
-issueUsage = ReplyText "Usage: /issue <kind> [<length>] [years <Y> | months <M>] [uses <N>]\nname <length>: length 6–63, years 2–10\nsupporter, legend, investor: months 1–12, uses 1–1000\ne.g. /issue name 6 years 5 · /issue supporter months 12"
+issueUsage = ReplyText "Usage: /issue <kind> [<length>] [years <Y> | months <M>] [uses <N>] [until <YYYY-MM-DD>]\nname <length>: length 6–63, years 2–10, until <YYYY-MM-DD>\nsupporter, legend, investor: months 1–12, uses 1–1000\ne.g. /issue name 6 years 5 · /issue supporter months 12"
 bulkUsage = ReplyText "Usage: /bulk <kind> [months <M>] count <N>\nsupporter, legend, investor: months 1–12, count 1–100\ne.g. /bulk legend months 3 count 10"

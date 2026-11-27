@@ -80,12 +80,14 @@ abiArray items = uint256 (length items) <> abiTuple (map Dynamic items)
 
 uint256 :: Integral a => a -> ByteString
 uint256 = i2ospOf_ abiWordSize . toInteger
+{-# INLINE uint256 #-}
 
 addressWord :: Address -> ByteString
 addressWord a = B.replicate addressPadding 0 <> unAddress a
 
 selector :: ByteString -> ByteString
 selector = B.take 4 . keccak256
+{-# INLINE selector #-}
 
 -- | Data of any length as JSON-RPC takes it.
 hex :: ByteString -> Text
@@ -98,15 +100,19 @@ lowerHexP n = A.count (2 * n) (A.satisfy lowerHexDigit) >>= either fail pure . c
 
 parseText :: A.Parser a -> Text -> Either String a
 parseText p = parseAll p . encodeUtf8
+{-# INLINE parseText #-}
 
 decodeUint256 :: ByteString -> Either AbiError Integer
 decodeUint256 = uintAt 0
+{-# INLINE decodeUint256 #-}
 
 decodeWord64 :: ByteString -> Either AbiError Word64
 decodeWord64 = decodeBounded
+{-# INLINE decodeWord64 #-}
 
 decodeSeconds :: ByteString -> Either AbiError SystemSeconds
 decodeSeconds = fmap RoundedSystemTime . decodeBounded
+{-# INLINE decodeSeconds #-}
 
 decodeBounded :: forall a. (Integral a, Bounded a) => ByteString -> Either AbiError a
 decodeBounded ret = do
@@ -128,12 +134,15 @@ decodeBool ret =
 
 decodeBytes32 :: ByteString -> Either AbiError ByteString
 decodeBytes32 = wordAt 0
+{-# INLINE decodeBytes32 #-}
 
 decodeBytes :: ByteString -> Either AbiError ByteString
 decodeBytes ret = offsetAt 0 ret >>= bytesAt ret
+{-# INLINE decodeBytes #-}
 
 decodeString :: ByteString -> Either AbiError Text
 decodeString ret = decodeBytes ret >>= first (const AENotUtf8) . decodeUtf8'
+{-# INLINE decodeString #-}
 
 -- | A return of a bytes32[] and a string[] of the same length, paired.
 decodeLabels :: ByteString -> Either AbiError [(ByteString, Text)]
@@ -154,6 +163,7 @@ wordAt o ret
 
 uintAt :: Int -> ByteString -> Either AbiError Integer
 uintAt o ret = os2ip <$> wordAt o ret
+{-# INLINE uintAt #-}
 
 -- an offset or a length, never more than the data's size, so it fits an Int
 offsetAt :: Int -> ByteString -> Either AbiError Int

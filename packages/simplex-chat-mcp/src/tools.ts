@@ -1530,7 +1530,7 @@ function connRef(response: JoinResponse): ConnRef {
 // spec: spec/architecture.md#tools-classifyplan
 export function classifyPlan(r: ConnectionPlan, {target, message}: ConnectInput): Plan {
   const [plan, connLink, planSimplexName] = r
-  const named = target.startsWith("@") || target.startsWith("#") || target.startsWith("simplex:/name")
+  const named = target.startsWith("@") || target.startsWith("#") || /^simplex:\/?name/.test(target)
   const simplexName = named ? target : undefined
   const domain = planSimplexName === undefined ? undefined : fullDomainName(planSimplexName.nameDomain)
   const connect: JoinMethod = {type: "connect", connLink}

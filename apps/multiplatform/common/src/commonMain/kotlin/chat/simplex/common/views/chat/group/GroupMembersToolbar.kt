@@ -2,6 +2,7 @@ package chat.simplex.common.views.chat.group
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -32,6 +33,7 @@ fun SelectedItemsMembersToolbar(
   val blockForAllEnabled = remember { mutableStateOf(false) }
   val unblockForAllEnabled = remember { mutableStateOf(false) }
   val blockForAllButtonEnabled = remember { derivedStateOf { (blockForAllEnabled.value && !unblockForAllEnabled.value) || (!blockForAllEnabled.value && unblockForAllEnabled.value) } }
+  val banAndRemoveEnabled = remember { mutableStateOf(false) }
 
   val roleToMemberEnabled = remember { mutableStateOf(false) }
   val roleToObserverEnabled = remember { mutableStateOf(false) }
@@ -60,12 +62,23 @@ fun SelectedItemsMembersToolbar(
       verticalAlignment = Alignment.CenterVertically
     ) {
       IconButton(delete, enabled = deleteEnabled.value) {
-        Icon(
-          painterResource(MR.images.ic_delete),
-          null,
-          Modifier.size(22.dp),
-          tint = if (!deleteEnabled.value) MaterialTheme.colors.secondary else MaterialTheme.colors.error
-        )
+        val tint = if (!deleteEnabled.value) MaterialTheme.colors.secondary else MaterialTheme.colors.error
+        Box {
+          Icon(
+            painterResource(MR.images.ic_delete),
+            null,
+            Modifier.size(22.dp),
+            tint = tint
+          )
+          if (banAndRemoveEnabled.value) {
+            Icon(
+              painterResource(MR.images.ic_schedule_filled),
+              null,
+              Modifier.align(Alignment.BottomEnd).offset(3.dp, 3.dp).background(MaterialTheme.colors.background, CircleShape).padding(1.dp).size(10.dp),
+              tint = tint
+            )
+          }
+        }
       }
 
       IconButton({ blockForAll(blockForAllEnabled.value) }, enabled = blockForAllButtonEnabled.value) {
@@ -89,17 +102,18 @@ fun SelectedItemsMembersToolbar(
     Divider(Modifier.align(Alignment.TopStart))
   }
   LaunchedEffect(groupInfo, activeMembers.value.toList(), selectedItems.value) {
-    recheckItems(groupInfo, selectedItems, activeMembers.value, deleteEnabled, blockForAllEnabled, unblockForAllEnabled, roleToMemberEnabled, roleToObserverEnabled)
+    recheckItems(groupInfo, selectedItems, activeMembers.value, deleteEnabled, blockForAllEnabled, unblockForAllEnabled, banAndRemoveEnabled, roleToMemberEnabled, roleToObserverEnabled)
   }
 }
 
-private fun recheckItems(
+internal fun recheckItems(
   groupInfo: GroupInfo,
   selectedItems: MutableState<Set<Long>?>,
   activeMembers: List<GroupMember>,
   deleteEnabled: MutableState<Boolean>,
   blockForAllEnabled: MutableState<Boolean>,
   unblockForAllEnabled: MutableState<Boolean>,
+  banAndRemoveEnabled: MutableState<Boolean>,
   roleToMemberEnabled: MutableState<Boolean>,
   roleToObserverEnabled: MutableState<Boolean>,
 ) {
@@ -107,22 +121,30 @@ private fun recheckItems(
   var rDeleteEnabled = true
   var rBlockForAllEnabled = true
   var rUnblockForAllEnabled = true
+  var rBanAndRemoveEnabled = true
   var rRoleToMemberEnabled = true
   var rRoleToObserverEnabled = true
+  var anyPending = false
+  var anyBlocked = false
   val rSelectedItems = mutableSetOf<Long>()
   for (mem in activeMembers) {
     if (selected.contains(mem.groupMemberId) && groupInfo.membership.memberRole >= mem.memberRole && mem.memberRole < GroupMemberRole.Moderator && groupInfo.membership.memberActive) {
       rDeleteEnabled = rDeleteEnabled && mem.memberStatus != GroupMemberStatus.MemRemoved && mem.memberStatus != GroupMemberStatus.MemLeft
       rBlockForAllEnabled = rBlockForAllEnabled && !mem.blockedByAdmin
       rUnblockForAllEnabled = rUnblockForAllEnabled && mem.blockedByAdmin
+      rBanAndRemoveEnabled = rBanAndRemoveEnabled && mem.canBanAndRemove(groupInfo)
       rRoleToMemberEnabled = rRoleToMemberEnabled && mem.memberRole != GroupMemberRole.Member
       rRoleToObserverEnabled = rRoleToObserverEnabled && mem.memberRole != GroupMemberRole.Observer
+      anyPending = anyPending || mem.memberPending
+      anyBlocked = anyBlocked || mem.blockedByAdmin
       rSelectedItems.add(mem.groupMemberId) // we are collecting new selected items here to account for any changes in members list
     }
   }
+  val pendingAmongSeveral = anyPending && rSelectedItems.size > 1
   deleteEnabled.value = rDeleteEnabled
-  blockForAllEnabled.value = rBlockForAllEnabled
-  unblockForAllEnabled.value = rUnblockForAllEnabled
+  blockForAllEnabled.value = rBlockForAllEnabled && !pendingAmongSeveral
+  unblockForAllEnabled.value = rUnblockForAllEnabled && !pendingAmongSeveral
+  banAndRemoveEnabled.value = rBanAndRemoveEnabled && anyBlocked
   roleToMemberEnabled.value = rRoleToMemberEnabled
   roleToObserverEnabled.value = rRoleToObserverEnabled
   selectedItems.value = rSelectedItems

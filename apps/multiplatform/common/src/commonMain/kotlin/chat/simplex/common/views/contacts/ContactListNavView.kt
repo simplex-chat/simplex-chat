@@ -1,11 +1,16 @@
 package chat.simplex.common.views.contacts
 
+import androidx.compose.desktop.ui.tooling.preview.Preview
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
+import chat.simplex.common.ui.theme.SimpleXTheme
 import chat.simplex.common.views.chat.*
 import chat.simplex.common.views.chat.item.ItemAction
 import chat.simplex.common.views.chatlist.*
@@ -93,7 +98,7 @@ fun ContactListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>, showDel
                                 DeleteContactAction(chat, chatModel, showMenu)
                             }
                         } else {
-                            DeleteContactAction(chat, chatModel, showMenu)
+                            ContactDeleteActions(chat, chat.chatInfo.contact, contactType, showMenu)
                         }
                     }
                 },
@@ -140,6 +145,14 @@ fun ContactListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>, showDel
 }
 
 @Composable
+private fun ContactDeleteActions(chat: Chat, contact: Contact, contactType: ContactType, showMenu: MutableState<Boolean>) {
+    DeleteContactAction(chat, chatModel, showMenu)
+    if (contactType == ContactType.CHAT_DELETED && contact.canDeleteAndBan) {
+        DeleteAndBanAction(showMenu) { deleteAndBanContactDialog(chat, contact, chatModel) }
+    }
+}
+
+@Composable
 fun DeleteContactAction(chat: Chat, chatModel: ChatModel, showMenu: MutableState<Boolean>) {
     ItemAction(
         stringResource(MR.strings.delete_contact_menu_action),
@@ -150,4 +163,25 @@ fun DeleteContactAction(chat: Chat, chatModel: ChatModel, showMenu: MutableState
         },
         color = Color.Red
     )
+}
+
+@Preview
+@Composable
+fun PreviewArchivedContactMenu() {
+    val contact = Contact.sampleData.copy(chatDeleted = true, activeConn = Connection.sampleData.copy(viaUserContactLink = 1, peerChatVRange = VersionRange(1, LINK_NOTICE_VERSION)))
+    val chat = Chat(remoteHostId = null, chatInfo = ChatInfo.Direct(contact), chatItems = listOf())
+    val showMenu = remember { mutableStateOf(true) }
+    SimpleXTheme {
+        Column(Modifier.fillMaxSize()) {
+            ChatListNavLinkLayout(
+                chatLinkPreview = { ContactPreviewView(chat, disabled = false, showDeletedChatIcon = true) },
+                click = {},
+                dropdownMenuItems = { ContactDeleteActions(chat, contact, ContactType.CHAT_DELETED, showMenu) },
+                showMenu = showMenu,
+                disabled = false,
+                selectedChat = remember { mutableStateOf(false) },
+                nextChatSelected = remember { mutableStateOf(false) },
+            )
+        }
+    }
 }

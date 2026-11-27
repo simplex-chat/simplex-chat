@@ -17,7 +17,7 @@ import StoreService.Names.Codes (issueNameCode, prepaidCodeHash, revokeNameCode)
 import StoreService.Names.Abi (addressWord, selector, uint256)
 import StoreService.Names.Chain (Hex32 (..), SignedTx (..), TxHash (..), newChainClient, signTransaction)
 import StoreService.Names.Phases (RegistrationId (..))
-import StoreService.Names.Store (CmdSource (..), FailReason (..), NamePhase (PEnded), NameRegistration (nrPhase), NewTransaction (..), OrderPhase (OFailed), PrepaidCode (..), RegistrationTx (..), TxFor (..), TxSettlement (..), TxStatus (..), VersionWrite (Written), getPrepaidCode, insertTransaction, namePhase, recordTransactionOutcome, reservePrepaidCode, spendLandedPrepaidCode)
+import StoreService.Names.Store (CmdSource (..), FailReason (..), NamePhase (PEnded), NameRegistrationOrder (nrPhase), NewTransaction (..), OrderPhase (OFailed), PrepaidCode (..), RegistrationTx (..), TxFor (..), TxSettlement (..), TxStatus (..), VersionWrite (Written), getPrepaidCode, insertTransaction, namePhase, recordTransactionOutcome, reservePrepaidCode, spendLandedPrepaidCode)
 import StoreService.Names.Turns (newTurns, withCodeTurn)
 import StoreService.Names.View (addressText)
 import StoreService.Options (StoreServiceOpts (..))
@@ -57,7 +57,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Data.Time.Calendar (fromGregorian)
-import Data.Time.Clock (NominalDiffTime, UTCTime (..), addUTCTime, getCurrentTime)
+import Data.Time.Clock (NominalDiffTime, UTCTime (..), addUTCTime, getCurrentTime, nominalDay)
 import Data.Time.Format (defaultTimeLocale, formatTime)
 import Network.HTTP.Client (RequestBody (..), defaultManagerSettings, httpLbs, method, newManager, parseRequest, requestBody, requestHeaders, responseBody, responseHeaders)
 import Network.Socket (Family (..), SockAddr (..), SocketType (..), close, connect, defaultProtocol, socket, tupleToHostAddress)
@@ -407,7 +407,7 @@ testWorkerBoot ps = withFakeEthNode $ \node@FakeEthNode {fnUrl} -> do
 
 namesCodesChatTests :: SpecWith TestParams
 namesCodesChatTests = describe "StoreService names: prepaid codes" $ do
-  it "issues a prepaid code on /issue name for 2 years by default and for the years given, answering the usage to /bulk name" testGroupNameCodes
+  it "issues a prepaid code on /issue name for 2 years by default and for the years given, valid until the day given, answering the usage to /bulk name" testGroupNameCodes
   it "issues at most name_codes_per_day name codes a day in the group, not counting console codes" testGroupNameCodesPerDay
   it "issues prepaid codes on //issue name, checks them through the names router and revokes them on //revoke" testOperatorNameCodes
   it "revokes a prepaid code in the code's turn, after a reservation holding it" testRevokeTakesCodeTurn
@@ -424,9 +424,15 @@ testGroupNameCodes ps = do
     (expiry, issued) `shouldBe` (addMonths 3 pcCreatedAt, "Code: " <> formatNameCode one <> ". Valid until " <> fmtTime expiry <> ".")
     five <- prepaidIn . T.stripPrefix "Code: " =<< replyTo cc alice "/issue name 7 years 5"
     prepaidTerms cc five `shouldReturn` Just (7, 5, CPSFree)
+    lastDay <- utctDay . addUTCTime (40 * nominalDay) <$> getCurrentTime
+    dated <- replyTo cc alice ("/issue name 7 until " <> show lastDay)
+    datedCode <- prepaidIn $ T.stripPrefix "Code: " dated
+    dated `shouldBe` "Code: " <> formatNameCode datedCode <> ". Valid until " <> tshow lastDay <> " 23:59 UTC."
+    (pcExpiresAt =<<) <$> withTransaction (chatStore cc) (`getPrepaidCode` prepaidCodeHash datedCode) `shouldReturn` Just (UTCTime lastDay 86399)
+    replyTo cc alice "/issue name 7 until 2020-01-01" `shouldReturn` "Not issued: the date is in the past."
     replyTo cc alice "/bulk name 6 count 3" `shouldReturn` bulkUsage
     replyTo cc alice "/issue name 8 years 11" `shouldReturn` issueUsage
-    countRows cc "sx_badge_service_name_prepaid_codes" () `shouldReturn` 2
+    countRows cc "sx_badge_service_name_prepaid_codes" () `shouldReturn` 3
 
 testGroupNameCodesPerDay :: HasCallStack => TestParams -> IO ()
 testGroupNameCodesPerDay ps = do
@@ -448,7 +454,8 @@ testOperatorNameCodes ps = do
     forM_ ["name", "name 5", "name 64", "name 07", "name 7 years 1", "name 7 years 11", "name 7 gratis", "name 6 unpaid"] $ \args ->
       (args,) <$> issueRaw cc args `shouldReturn` (args, Left consoleIssueUsage)
     forM_ [1, 11] $ \years ->
-      (years,) . isLeft <$> issueNameCode cc FromConsole (fromJust $ nameLength 7) years CPSFree `shouldReturn` (years, True)
+      (years,) . isLeft <$> issueNameCode cc FromConsole (fromJust $ nameLength 7) years CPSFree Nothing `shouldReturn` (years, True)
+    issueRaw cc "name 7 until 2020-01-01" `shouldReturn` Left "Not issued: the date is in the past."
     countRows cc "sx_badge_service_name_prepaid_codes" () `shouldReturn` 0
     paid <- issueNameRaw cc "name 7 years 3 paid"
     prepaidTerms cc paid `shouldReturn` Just (7, 3, CPSPaid)
@@ -504,7 +511,7 @@ testRevokeTakesCodeTurn ps = do
 
 namesRefundChatTests :: SpecWith TestParams
 namesRefundChatTests = describe "StoreService names: operator refund" $ do
-  it "shows a balance with what paid for it, and records refunds by registration or invoice id, adding them up" testRefundRecorded
+  it "shows a balance with its order's phase, the cents reversed and what paid for it, and records refunds by registration or invoice id, adding them up" testRefundRecorded
   it "refuses an unknown reference, an order without a balance and another amount, and answers the usage to a malformed command" testRefundRefusals
   it "answers an owner's /balance, /record_refund and /close in the group, worded for the group, refusing as the console does" testGroupMoneyCmds
   it "closes a failed paid order by its invoice id, recording the refund of its price, refuses an unknown reference and an order no longer failed, and answers an order whose registration was ended as ended" testCloseRecorded
@@ -544,7 +551,7 @@ testCloseRecorded ps = withFakeEthNode $ \node@FakeEthNode {fnUrl} -> do
     logs `shouldSatisfy` T.isInfixOf "names: closed order f and recorded a refund of 10000 cents"
     closeRaw cc "f" `shouldReturn` Left "Nothing recorded: the order of f is not a failed or lapsed unsigned order paid by invoice."
     Balances.figures st "f" `shouldReturn` Just (0, 10000, 10000)
-    balanceRaw cc "f" `shouldReturn` Right ("Order f: balance $0.00 (credited $100.00, refunded $100.00). Paid by: " <> paidBy <> ". Nothing to refund.")
+    balanceRaw cc "f" `shouldReturn` Right ("Order f, taken: balance $0.00 (credited $100.00, refunded $100.00, reversed $0.00). Paid by: " <> paidBy <> ". Nothing to refund.")
     Balances.placeOrderRow st "g" False 10000 (addUTCTime 3600 now)
     unpaidG <- reg st "g"
     write st unpaidG {nrPhase = OFailed t0 FRRegistryRefused} `shouldReturn` Written 2
@@ -584,7 +591,7 @@ testGroupMoneyCmds ps = withFakeEthNode $ \node@FakeEthNode {fnUrl} -> do
       `shouldReturn` ("Closed order s, failed or lapsed unsigned at " <> minuteText t0 <> ", as taken and recorded a refund of $100.00. Check at the provider that it was not refunded by hand before; if not, refund it now, by: " <> paidByBtc "s" <> ".")
     Balances.credit st "s" 2505
     replyTo cc alice "/balance s"
-      `shouldReturn` ("Order s: balance $25.05 (credited $125.05, refunded $100.00). Paid by: " <> paidByBtc "s" <> ". To record its refund: /record_refund s 2505")
+      `shouldReturn` ("Order s, taken: balance $25.05 (credited $125.05, refunded $100.00, reversed $0.00). Paid by: " <> paidByBtc "s" <> ". To record its refund: /record_refund s 2505")
     replyTo cc alice "/record_refund inv-s 2500" `shouldReturn` "Nothing recorded: the balance is $25.05 now, not $25.00."
     replyTo cc alice "/record_refund inv-s 2505" `shouldReturn` ("Recorded a refund of $25.05 for order s. Refund it now, by: " <> paidByBtc "s" <> ".")
     Balances.figures st "s" `shouldReturn` Just (0, 12505, 12505)
@@ -605,11 +612,11 @@ testRefundRecorded ps = withStoreService ps $ \_ _ cc -> do
   let st = chatStore cc
       paidBy = paidByBtc "s"
   Balances.source st "s" 10000
-  balanceRaw cc "inv-s" `shouldReturn` Right ("Order s: balance $100.00 (credited $100.00, refunded $0.00). Paid by: " <> paidBy <> ". To record its refund: //record_refund inv-s 10000")
+  balanceRaw cc "inv-s" `shouldReturn` Right ("Order s, taken: balance $100.00 (credited $100.00, refunded $0.00, reversed $0.00). Paid by: " <> paidBy <> ". To record its refund: //record_refund inv-s 10000")
   logs <- capturingStderr $ recordRefundRaw cc "inv-s 10000" `shouldReturn` Right ("Recorded a refund of $100.00 for order s. Refund it now, by: " <> paidBy <> ".")
   T.lines logs `shouldSatisfy` any (T.isSuffixOf "names: recorded a refund of 10000 cents for order s")
   Balances.figures st "s" `shouldReturn` Just (0, 10000, 10000)
-  balanceRaw cc "inv-s" `shouldReturn` Right ("Order s: balance $0.00 (credited $100.00, refunded $100.00). Paid by: " <> paidBy <> ". Nothing to refund.")
+  balanceRaw cc "inv-s" `shouldReturn` Right ("Order s, taken: balance $0.00 (credited $100.00, refunded $100.00, reversed $0.00). Paid by: " <> paidBy <> ". Nothing to refund.")
   Balances.credit st "s" 2505
   recordRefundRaw cc "s 2505" `shouldReturn` Right ("Recorded a refund of $25.05 for order s. Refund it now, by: " <> paidBy <> ".")
   Balances.figures st "s" `shouldReturn` Just (0, 12505, 12505)
@@ -739,10 +746,10 @@ settleServingLane cc env gid = do
 
 -- It returns once chat has started, while group start-up may still run; the Int is its web listener's port.
 startGroupService :: HasCallStack => GroupSvc -> Maybe GroupConfig -> IO (Async (), ChatController, ServiceState, Int)
-startGroupService svc@GroupSvc {gsCfg} groupCfg = do
+startGroupService svc@GroupSvc {gsCfg, gsPs} groupCfg = do
   (opts, serviceCfg, port) <- groupServiceOpts svc groupCfg
   env <- newServiceState
-  t <- async $ storeService opts (Just serviceCfg) gsCfg env
+  t <- async $ storeService opts (Just serviceCfg) (fst $ testPortsCfg gsPs gsCfg testOpts) env
   -- A service that ends before it is ready fails the test with its own error, not the timeout.
   cc <-
     timeout waitLimit (atomically $ (Right <$> readTMVar (serviceCC env)) `orElse` (Left <$> waitCatchSTM t)) >>= \case
@@ -1804,7 +1811,7 @@ singleRow sql = \case
   _ -> error $ "more than one row from: " <> sql
 
 issueUsage :: Text
-issueUsage = "Usage: /issue <kind> [<length>] [years <Y> | months <M>] [uses <N>]\nname <length>: length 6–63, years 2–10\nsupporter, legend, investor: months 1–12, uses 1–1000\ne.g. /issue name 6 years 5 · /issue supporter months 12"
+issueUsage = "Usage: /issue <kind> [<length>] [years <Y> | months <M>] [uses <N>] [until <YYYY-MM-DD>]\nname <length>: length 6–63, years 2–10, until <YYYY-MM-DD>\nsupporter, legend, investor: months 1–12, uses 1–1000\ne.g. /issue name 6 years 5 · /issue supporter months 12"
 
 bulkUsage :: Text
 bulkUsage = "Usage: /bulk <kind> [months <M>] count <N>\nsupporter, legend, investor: months 1–12, count 1–100\ne.g. /bulk legend months 3 count 10"
@@ -1812,12 +1819,14 @@ bulkUsage = "Usage: /bulk <kind> [months <M>] count <N>\nsupporter, legend, inve
 -- The list is spelled out rather than taken from the service, so a change there fails here.
 expectedCommands :: [ChatBotCommand]
 expectedCommands =
-  [ CBCCommand "issue" "Generate a code" (Just "<name <length>|supporter|legend|investor> [years|months <N>] [uses <N>]"),
+  [ CBCCommand "issue" "Generate a code" (Just "<name <length>|supporter|legend|investor> [years|months <N>] [uses <N>] [until <YYYY-MM-DD>]"),
     CBCCommand "bulk" "Generate many codes" (Just "<supporter|legend|investor> [months <N>] count <N>"),
     CBCCommand "revoke" "Revoke a code" (Just "<code>"),
     CBCCommand "balance" "Show an order's balance" (Just "<reference>"),
     CBCCommand "record_refund" "Record a balance refund" (Just "<reference> <cents>"),
-    CBCCommand "close" "Close a failed order" (Just "<reference>")
+    CBCCommand "close" "Close a failed order" (Just "<reference>"),
+    CBCCommand "unavailable" "Make a name unavailable" (Just "<name>"),
+    CBCCommand "available" "Make a name available again" (Just "<name>")
   ]
 
 advertisedCommands :: HasCallStack => ChatController -> Int64 -> IO (Maybe [ChatBotCommand])
