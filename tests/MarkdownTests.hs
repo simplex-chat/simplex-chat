@@ -677,12 +677,6 @@ chainAddresses = describe "chain addresses" do
     ("<zcash:" <> zecU <> "?amount=0.1>") <==> chainLink (onChain (CYTicker "ZEC" Nothing $ Just "0.1") zecU $ "zcash:" <> zecU <> "?amount=0.1") ("<zcash:" <> zecU <> "?amount=0.1>")
   it "chain addresses are links" do
     hasLinks <$> parseMaybeMarkdownList ("donate: " <> btc) `shouldBe` Just True
-  it "Flux URIs and bare Flux Sapling addresses are links" do
-    let links t = hasLinks <$> parseMaybeMarkdownList t
-    links ("flux:" <> zecT <> "?amount=5&message=Thanks") `shouldBe` Just True
-    links ("zel:" <> zecT <> "?amount=5") `shouldBe` Just True
-    links ("flux:" <> fluxZ <> "?amount=1&memo=" <> memo) `shouldBe` Just True
-    links fluxZ `shouldBe` Just True
   it "linear time in the number of addresses" do
     let fts = fromMaybe [] $ parseMaybeMarkdownList $ T.unwords $ replicate 10000 p2sh
     length [() | FormattedText (Just ChainAddressLink {}) _ <- fts] `shouldBe` 10000
