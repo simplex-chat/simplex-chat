@@ -395,7 +395,7 @@ hyperlinkAddress t l  Left: l is not a valid URI of section Syntax, or t is refu
 
 - Names: `CYUnknown` and `UnknownCurrency` (item 12197); `UC` is also the prefix of `Uncreditable` of the store service (apps/simplex-store-service/src/StoreService/Providers.hs:177), and `unknown` is also the tag of `Format.Unknown`, both in other types.
 - `CryptoCurrency` and `ServicePaymentDestination.SPDCrypto` (PaymentService/Types.hs:89, 127-131) are the currencies and the invoice destination of the store service, stored in its database; `ChainAddress` is a link in a message text, resolved for display. They have no common producer or consumer, so they stay separate types.
-- The label and the message of a URI (label, recipient_name, message, tx_description, a Solana or Zcash memo) are not fields: a link shows only the hyperlink text of `[text](URI)` (item 15005). They are decoded for rule U8 only.
+- The label and the message of a URI (label, recipient_name, message, tx_description, a Solana or Zcash memo) are not fields: a link shows only the hyperlink text of `[text](URI)` (item 15005). They are decoded for rule U8; the memo of zcash:, flux: and zel: also for rule U5.
 
 Markdown.hs:
 
@@ -472,13 +472,15 @@ query             key or key=value, joined by "&"; keys of letters, digits and -
                     a req- key is rejected;
                     the keys read by the scheme in lower case, the values as written;
                     the result is QueryStringParams of simplexmq without escaping (item 15005)
-parameter         read by its key with queryParamParser and queryParamStr, parsed by its value grammar:
+parameter         read by its key, parsed by its value grammar:
                     amount
                     percent-encoded text
                     ZIP-321 memo
                     EIP-681 integer
                     an address form
-                  a read key that is repeated is rejected
+                  param: one value; a repeated key is rejected
+                  params: all values, for lightning and lno
+                  queryParamStr: presence only, for value, callback and coin
 form              the grammar of a word: its prefix, case and length, the guards of section Bare forms
                   its result: the validation of the word, computed only when the address is used
 payee grammar     the first form whose guards hold, then its validation
@@ -766,7 +768,7 @@ receive   withVerifiedMsg verifies the signature, as now (Subscriber.hs:4148-416
             the item stores msgVerified (Internal.hs:3120, Store/Messages.hs:576)
             the apps receive it as meta.msgVerified: absent when unsigned, signed with sigStatus
               verified or signedNoKey, or sigMissing where signing is required (Types/Shared.hs:134, 152-172)
-            hasLink is false for a chain address (Q5 b)
+            a chain address does not set hasLink (Q5 b)
 show      Q7 c: a chain address of a group or channel item whose meta.msgVerified is not signed and verified
             is the orange link "(not signed)" of section Link text, in the bubble and in the alert text
 direct    unchanged: direct chats and local notes
