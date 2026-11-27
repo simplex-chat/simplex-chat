@@ -61,6 +61,17 @@ class SubmemberTest {
   }
 
   @Test
+  fun submemberIsRemovedWhenUserLeaves() = runBlocking {
+    replay("submembers/left")
+    ChatModel.chatId.value = "#1"
+    ChatModel.groupMembers.value = ChatController.apiListMembers(null, 1).orEmpty()
+    ChatModel.populateGroupMembersIndexes()
+    val reviewer = ChatModel.groupMembers.value.single { it.displayName == "reviewer" }
+    ChatController.leaveGroup(null, 1)
+    assertEquals(GroupMemberStatus.MemRemoved, ChatModel.getGroupMember(reviewer.groupMemberId)?.memberStatus)
+  }
+
+  @Test
   fun userSubmemberIsDecoded() = runBlocking {
     replay("submembers/members")
     val reviewer = ChatController.apiListMembers(null, 1).orEmpty().single { it.memberProfile.displayName == "reviewer" }

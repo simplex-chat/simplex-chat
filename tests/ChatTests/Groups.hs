@@ -17704,6 +17704,8 @@ testSubmemberRecordings =
       alice <# "#team bob> > reviewer hi"
       alice <## "      fix it"
       apiFixture "submembers/received" bob [] FixtureRequests {frMarkdown = [], frUris = [], frCommands = ["/_members #1", "/_get chat #1 count=2"]}
+      apiFixture "submembers/left" alice [] FixtureRequests {frMarkdown = [], frUris = [], frCommands = ["/_members #1", "/_leave #1"]}
+      bob <## "#team: alice left the group (signed)"
 
 testSubmemberMigrationDown :: HasCallStack => TestParams -> IO ()
 testSubmemberMigrationDown ps = do

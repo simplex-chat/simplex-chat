@@ -194,7 +194,7 @@ other                      the author
   ```
   As removed members, they are excluded from introductions (shouldIntroduce, Internal.hs). A silent removal of an admin user is processed as a removal (isUserGrpFwdRelay in xGrpMemDel), so the user's submembers are removed; on a silent removal of a user below admin, the user's status and the user's submembers are kept. A removal of V with messages deletes or marks deleted the items of V's submembers with V's items, before their records are removed (deleteMessages in xGrpMemDel and APIRemoveMembers, Q10 A); submembers are found by getSubmembers, by the partial index idx_group_members_member_via (5.7, Q11 A).
   Transactions: V's record and the records of its submembers are updated in one transaction in xGrpLeave, in xGrpMemDel for another member, in APIRemoveMembers (delMember) and in APILeaveGroup. In the removal of the user (xGrpMemDel), the user's status is updated, then deleteMessages runs, then the submembers' records are updated.
-  Apps: the events leftMember, deletedMember and deletedMemberUser and the response of apiRemoveMembers mark the loaded submembers of the member removed (removeSubmembers, ChatModel.swift and ChatModel.kt); with messages, the loaded items of its submembers are marked deleted or deleted with its items (removeMemberItems).
+  Apps: the events leftMember, deletedMember and deletedMemberUser and the responses of apiRemoveMembers and apiLeaveGroup mark the loaded submembers of the member removed (removeSubmembers, ChatModel.swift and ChatModel.kt); with messages, the loaded items of its submembers are marked deleted or deleted with its items (removeMemberItems).
 - History items of a removed submember: `asMember` holds its name, so a joining member creates it as an unknown member with that name and member_via = V (4.4).
 
 ### 4.6 Scope
@@ -580,6 +580,9 @@ Apps, on the recorded events `submembers/via-removed` (iOS SubmemberTests.swift;
 - `testItemOfSubmemberIsMarkedDeletedWithItsViaMember`, `itemOfSubmemberIsMarkedDeletedWithItsViaMember`: reviewer's item, then bob's removal with messages → reviewer's item is marked deleted by cath.
 - `testSubmemberIsRemovedWithItsViaMember`, `submemberIsRemovedWithItsViaMember`: the same events → reviewer's status in the member list is removed.
 
+Apps, on alice's recorded responses `submembers/left` (`/_members #1`, then `/_leave #1`), with reviewer loaded in the member list and the chat open:
+- `testSubmemberIsRemovedWhenUserLeaves`, `submemberIsRemovedWhenUserLeaves`: alice leaves the group → reviewer's status in the member list is removed.
+
 Plugin:
 - unit, teammates.test.ts: start, post, step (send with live=on, update), end and adopt make the commands of 7.1 and 7.2.
 - unit, hook.test.ts: SubagentStart with a named record → teammate start; without a name → card; SendMessage to team-lead → message.
@@ -667,7 +670,7 @@ packages/simplex-chat-mcp: src/teammates.ts (new), hook.ts, hub.ts, protocol.ts,
 scripts/ci/scope-tests.sh, scripts/ci/README.md       mcp with the branch's core
 ```
 
-Apps: `via` is shown as stated in Q2 C. iOS notification service (apps/ios/SimpleX NSE/NotificationService.swift): itemNtfEntityId and NSEThreads.connEntities (Q7 D). Removal with V (4.5): removeSubmembers and removeMemberItems in ChatModel.swift and ChatModel.kt, called from the event handlers (SimpleXAPI.swift, SimpleXAPI.kt) and after apiRemoveMembers (GroupChatInfoView.swift, GroupChatInfoView.kt, GroupMemberInfoView.kt).
+Apps: `via` is shown as stated in Q2 C. iOS notification service (apps/ios/SimpleX NSE/NotificationService.swift): itemNtfEntityId and NSEThreads.connEntities (Q7 D). Removal with V (4.5): removeSubmembers and removeMemberItems in ChatModel.swift and ChatModel.kt, called from the event handlers (SimpleXAPI.swift, SimpleXAPI.kt), after apiRemoveMembers (GroupChatInfoView.swift, GroupChatInfoView.kt, GroupMemberInfoView.kt) and after apiLeaveGroup (leaveGroup, SimpleXAPI.swift, SimpleXAPI.kt).
 
 ## 11. Estimate
 

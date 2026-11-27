@@ -104,6 +104,18 @@ final class SubmemberTests: XCTestCase {
     }
 
     @MainActor
+    func testSubmemberIsRemovedWhenUserLeaves() async throws {
+        try replay("submembers/left")
+        ChatModel.shared.chatId = "#1"
+        ChatModel.shared.groupMembers = (await apiListMembers(1) ?? []).map(GMember.init)
+        ChatModel.shared.populateGroupMembersIndexes()
+        let reviewer = try XCTUnwrap(ChatModel.shared.groupMembers.first { $0.displayName == "reviewer" })
+        await leaveGroup(1)
+        try? await waitFor { reviewer.wrapped.memberStatus == .memRemoved }
+        XCTAssertEqual(ChatModel.shared.getGroupMember(reviewer.groupMemberId)?.wrapped.memberStatus, .memRemoved)
+    }
+
+    @MainActor
     private func receiveRemovalOfViaMember() async throws -> GroupMember? {
         let events = try recordedEvents("submembers/via-removed")
         guard case let .newChatItems(_, items) = events[0], let aci = items.first,

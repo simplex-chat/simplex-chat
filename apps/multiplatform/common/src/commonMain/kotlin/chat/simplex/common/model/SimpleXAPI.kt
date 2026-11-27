@@ -3801,6 +3801,7 @@ object ChatController {
     if (groupInfo != null) {
       withContext(Dispatchers.Main) {
         chatModel.chatsContext.updateGroup(rh, groupInfo)
+        chatModel.chatsContext.removeSubmembers(rh, groupInfo, groupInfo.membership)
       }
     }
   }

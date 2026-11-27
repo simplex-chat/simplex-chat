@@ -2100,7 +2100,10 @@ func apiBlockMembersForAll(_ groupId: Int64, _ memberIds: [Int64], _ blocked: Bo
 func leaveGroup(_ groupId: Int64) async {
     do {
         let groupInfo = try await apiLeaveGroup(groupId)
-        DispatchQueue.main.async { ChatModel.shared.updateGroup(groupInfo) }
+        DispatchQueue.main.async {
+            ChatModel.shared.updateGroup(groupInfo)
+            ChatModel.shared.removeSubmembers(groupInfo, groupInfo.membership)
+        }
     } catch let error {
         logger.error("leaveGroup error: \(responseError(error))")
     }
