@@ -128,6 +128,7 @@ defaultChatConfig =
       initialCleanupManagerDelay = 30 * 1000000, -- 30 seconds
       cleanupManagerInterval = 30 * 60, -- 30 minutes
       cleanupManagerStepDelay = 3 * 1000000, -- 3 seconds
+      linkNoticeEndTimeRounding = 60 * 60, -- 1 hour
       ciExpirationInterval = 30 * 60 * 1000000, -- 30 minutes
       callInvitationTTL = 180, -- 3 minutes, the apps stop ringing for older invitations
       highlyAvailable = False,

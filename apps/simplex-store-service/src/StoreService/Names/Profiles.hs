@@ -141,6 +141,7 @@ newProfiles limits@ProfileLimits {searchFetchSlots, previewFetchSlots, hostLooku
 
 monotonicSeconds :: IO Word64
 monotonicSeconds = (`div` 1000000000) <$> getMonotonicTimeNSec
+{-# INLINE monotonicSeconds #-}
 
 -- | A time on the monotonic clock, in nanoseconds.
 newtype Deadline = Deadline Word64
@@ -166,6 +167,7 @@ takeSlot slots = readTVar slots >>= \n -> check (n > 0) >> writeTVar slots (n - 
 
 releaseSlot :: TVar Int -> STM ()
 releaseSlot slots = modifyTVar' slots (+ 1)
+{-# INLINE releaseSlot #-}
 
 -- | Nothing when no slot frees before the deadline, or the action does not end by it.
 withSlot :: Deadline -> TVar Int -> IO a -> IO (Maybe a)
@@ -228,6 +230,7 @@ linkEntity ps@Profiles {searchSlots} t link = do
 -- | A link preview, within the preview bound.
 linkPreview :: Profiles -> LinkKind -> ConnShortLink 'CMContact -> IO Preview
 linkPreview ps@Profiles {previewSlots, previewLookups} t sl = Preview t <$> boundedProfile ps previewSlots [previewLookups] t sl
+{-# INLINE linkPreview #-}
 
 -- | Each host lookup also takes a slot of every pool given, beside the shared one.
 boundedProfile :: Profiles -> TVar Int -> [TVar Int] -> LinkKind -> ConnShortLink 'CMContact -> IO ProfileRead
@@ -272,6 +275,7 @@ linkProfileOf = \case
 
 shortLinkHosts :: ConnShortLink 'CMContact -> NonEmpty TransportHost
 shortLinkHosts (CSLContact _ _ ProtocolServer {host} _) = host
+{-# INLINE shortLinkHosts #-}
 
 -- | Reads the link data without connecting.
 chatProfile :: ChatController -> User -> ProfileFetcher
@@ -289,6 +293,7 @@ data HostCheck = HostPublic | HostRefused | HostUnanswered
 -- does not resolve here, is allowed, as the proxy reaches it.
 checkHosts :: Profiles -> Deadline -> NonEmpty TransportHost -> IO HostCheck
 checkHosts ps = checkHostsIn ps []
+{-# INLINE checkHosts #-}
 
 checkHostsIn :: Profiles -> [TVar Int] -> Deadline -> NonEmpty TransportHost -> IO HostCheck
 checkHostsIn ps pools deadline = checkAll . L.toList
@@ -372,6 +377,7 @@ nat64Word = 0x0064ff9b
 
 publicIPv4 :: Word32 -> Bool
 publicIPv4 a = not $ any (inPrefix a) refusedIPv4
+{-# INLINE publicIPv4 #-}
 
 -- | An address that carries an IPv4 address in its last 32 bits is judged by it: IPv4-mapped, IPv4-compatible (with @::@ and @::1@) and NAT64.
 publicIPv6 :: (Word32, Word32, Word32, Word32) -> Bool
@@ -388,3 +394,4 @@ ipv4Word (a, b, c, d) = fromIntegral a `shiftL` 24 .|. fromIntegral b `shiftL` 1
 
 systemResolver :: HostResolver
 systemResolver name = mapMaybe (sockHost . addrAddress) <$> getAddrInfo (Just defaultHints {addrSocketType = Stream}) (Just name) Nothing
+{-# INLINE systemResolver #-}

@@ -74,8 +74,16 @@ fun PrivacySettingsView(
         stringResource(MR.strings.sanitize_links_toggle),
         chatModel.controller.appPrefs.privacySanitizeLinks
       )
+      ExposedDropDownSettingRow(
+        stringResource(MR.strings.privacy_contact_deletion),
+        ContactDeletion.entries.map { it to it.text },
+        remember { appPrefs.privacyContactDeletion.state },
+        icon = painterResource(MR.images.ic_person_off),
+        onSelected = { appPrefs.privacyContactDeletion.set(it) }
+      )
     }
     SectionTextFooter(stringResource(MR.strings.without_socks_proxy_website_sees_ip_address))
+    SectionTextFooter(stringResource(MR.strings.privacy_contact_deletion_footer))
     SectionDividerSpaced()
 
     SectionView(stringResource(MR.strings.settings_section_title_files)) {

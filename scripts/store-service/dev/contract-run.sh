@@ -39,8 +39,8 @@ COMMUNITY_TEXT="bakers and bakeries in Portugal"
 STATE="reads the mock's memory at /control/state or /control/mode"
 MODE="switches the mock to codes only at /control/mode; the service reads codes_only from its ini at start"
 SEARCH="injects a fault with /control/search: a chain down, a rate limit, a provider's refusal, an unsent transaction, an unread chain, a slow write or link read, or refused links"
-STALE="drops an order's signed reveal with /control/stale, which only the mock does"
 FAIL="fails an order's next commit or register with /control/fail, which only the mock does"
+RELAYED="expects the name policy's nonce unspent after /control/stale: the mock clears the reveal before the terms acceptance is relayed, while the service relays it before its register reverts on the spent sponsor nonce"
 COMMUNITY="lists a community name with what it is for at /control/community; the service reads that text from its ini at start"
 OVERDUE="ends an invoice's rate window at once with /control/overdue; the service's clock ends it"
 LATE="holds a late payment's credit with /control/late; the service credits it on its own"
@@ -52,7 +52,7 @@ LIMIT="sends more checkouts or cancels than the service takes from one client in
 AMOUNTS="expects the mock's coin amounts, a price at the invoice's rate, or its decimal text; the fake BTCPay answers its fixtures' amounts, written to 8 places as BTCPay writes them"
 PROFILES="expects the profiles the mock makes up for its links; the service reads a link's profile from the link's server, which these links are not on"
 MONERO="pays late in Monero, which the service credits only when BTCPay's Monero settled-confirmation threshold is 1 or more; the fake BTCPay's Monero fixture sets none"
-UNREGISTER="ends a registration with /control/unregister, which only the mock does; on chain, unregister takes the cold key"
+UNREGISTER="ends a registration with /control/unregister, which only the mock does; the service sets ended only in its hourly sweep or at a register check, which the run does not reach after an unregister"
 
 EXCLUDED=(
   "the service's mode is at /api/config: open by default, codes once the mock takes codes only, the page the same in both" "$STATE"
@@ -77,7 +77,7 @@ EXCLUDED=(
   "a failed code order opened again after its code was used elsewhere offers no other name, and from the first frame the time after" "$FAIL"
   "a failed code order is drawn before its code is checked, and says the code is kept only once the check answers" "$FAIL"
   "a failed code order whose code check meets the rate limit counts down its wait, then says the code is kept" "$FAIL"
-  "a code held by this browser's failed order says it is in use and links to the order; a revoked code says SimpleX withdrew it" "$FAIL"
+  "a code held by this browser's failed order is noted as held by it, with a link to the order; one another order holds is refused; a revoked code says SimpleX withdrew it" "$FAIL"
   "a failed code order whose code is revoked or past its date while still held by it says the code is kept" "$FAIL"
   "an order restored in a browser without its code promises nothing of the code" "$FAIL"
   "a view whose sponsor nonce could not be read is read again after 5 then 15 seconds, without holding, and then signed" "$SEARCH"
@@ -99,8 +99,8 @@ EXCLUDED=(
   "a code order closes an overdue invoice of its wallet and name with nothing received" "$OVERDUE"
   "a code check answers every state, revoked included, and an unknown code is code_invalid" "$CODE_STATE"
   "a taken code order's own code is accepted past its expiry within the month after the take, and refused once revoked" "$CODE_STATE"
-  "a held poll wakes on a new version, and of two retries at once of a lapsed order one wins and the other is registration_changed with the view" "$SEARCH"
-  "a name is selected only for a paid order taken first, at its own price, again after each take with no limit; a repeat changes nothing" "$STALE"
+  "a held poll wakes on a new version, and of two retries at once of a lapsed order one wins and the other is bad_request, as the order is no longer lapsed" "$SEARCH"
+  "a name is selected only for a paid order taken first, at its own price, again after each take with no limit; a repeat changes nothing" "$FAIL"
   "support's refund takes the whole balance by invoice id or registration id, and refuses other cents or none left" "$REFUND_ANSWER"
   "a paid order taken first keeps its whole price as its balance until support refunds it, after which no name is selected for it" "$REFUND_ANSWER"
   "a late payment is credited once settled, each confirmed figure once, at the lower of its invoice's rate and the current one" "$AMOUNTS"
@@ -111,19 +111,19 @@ EXCLUDED=(
   "an order signs the terms of its name's kind: the other kind or other terms is terms_changed with the terms and community now, a malformed one bad_request" "$LIMIT"
   "a selection signs the new name's terms: a community name needs the community terms, which are stored; the same body again is a repeat, also after the terms changed" "$COMMUNITY"
   "a code order meets changed terms before the code's state" "$CODE_STATE"
-  "a committed community name's view asks for the owner's acceptance of the community terms on chain; its reveal without one, or with one for another nonce, terms, kind or policy, is bad_request, and with it the register records it" "$STALE"
-  "a plain name's committed view asks for the owner's acceptance of the general terms; its reveal without one or with the other kind is bad_request, and with it the register records it" "$STALE"
+  "a committed community name's view asks for the owner's acceptance of the community terms on chain; its reveal without one, or with one for another nonce, terms, kind or policy, is bad_request, and with it the register records it" "$COMMUNITY"
+  "a plain name's committed view asks for the owner's acceptance of the general terms; its reveal without one or with the other kind is bad_request, and with it the register records it" "$RELAYED"
   "a Bitcoin order pays in two parts, registers on chain, takes its links on Edit links, and the code owns it" "$EDITS"
   "a purchase walks the steps a buyer expects, and the links set before paying are on chain" "$PROFILES"
   "a link's late preview never fills the field once it holds another link, whose own preview it waits for" "$SEARCH"
   "a link's profile comes in the very box its place held while it was read, at a laptop's and a phone's width" "$SEARCH"
   "Continue pressed while a link is checked is busy where it stands, says so, and goes on once the check ends" "$SEARCH"
-  "the owner code restores an order in another browser, and a bad code is refused" "$STALE"
   "a part payment on a closed invoice, once credited, says so and gets an invoice for the whole price of the same name in the main button's place" "$AMOUNTS"
   "an invoice past its rate window that part of the payment reached stays open, asks for no more, and registers once paid" "$OVERDUE"
   "a browser restored before another browser made a new invoice carries on with that invoice" "$STATE"
   "a forgotten order whose code's lookup is rate limited waits as asked, then answers" "$SEARCH"
   "a code order's selection refused for its code says why in that refusal's words" "$CODE_STATE"
+  "a code applied to the tab is taken off once Your names or Check your code reads it as one that cannot be used" "$CODE_STATE"
   "money paid after the close that the service cannot credit by itself sends the buyer to support, and the page stops reading it" "$LATE"
   "an order left before its wait ends asks for this browser in Your names" "$STATE"
   "Find the order shows a wait met elsewhere in the tab" "$SEARCH"
@@ -140,7 +140,6 @@ EXCLUDED=(
   "an order whose commitment lapses before its page signs is committed again by that page, which signs it then" "$STATE"
   "an order failed while its page was not read says until when the name stays its, and Continue signs it again and registers it" "$STATE"
   "a chain that sends nothing for a moment keeps the order where it was, then registers it" "$STATE"
-  "a chain that sends nothing for longer than its resends fails the order in plain words, leaving it to support" "$SEARCH"
   "the home keeps its headline and search still as each kind of answer comes, at a laptop's and a phone's size" "$SEARCH"
   "the words under the registering page's clock are centred on its icon" "$SEARCH"
   "a commit that does not move on for longer than usual says so in its words' place, and nothing moves" "$SEARCH"
@@ -148,7 +147,6 @@ EXCLUDED=(
   "a whole payment after the close, once credited, says so and offers a new invoice beside the refund" "$MONERO"
   "a registration ended in its dispute period is shown with Register with code alone, as the other endings are" "$MODE"
   "a registration ended in its dispute period is shown as ended on its order's page, in Your names and in Edit links, and its name is available again" "$UNREGISTER"
-  "a reveal signed over other dispute days than its order's payment's is bad_request, and the name is registered with the reveal over its payment's" "$STALE"
 )
 
 RUN_DIR="$(mktemp -d "${TMPDIR:-/tmp}/names-contract-run.XXXXXX")"
@@ -280,7 +278,7 @@ const [guardian, rival] = [1, 4].map((addressIndex) => mnemonicToAccount(ANVIL_M
 const ALLOWANCE = 1_000_000n * 10n ** 18n
 const TAKE_SECONDS = 60
 const SEARCH_RESET = { chainDown: false, limitSeconds: 0, invoiceError: null, findLimitSeconds: 0 }
-const RUNNER_CONTROL = /^\/control\/(code|(settle|partial|confirming|expire|refund)\/[^/]+)$/
+const RUNNER_CONTROL = /^\/control\/(code|(settle|partial|confirming|expire|refund|stale|lapse)\/[^/]+)$/
 
 writeFileSync(rivalChainFile, JSON.stringify({ ...JSON.parse(readFileSync(chainFile, "utf8")), registrarKey: toHex(rival.getHdKey().privateKey) }))
 process.env.LOCAL_CHAIN_OUT = rivalChainFile
@@ -388,6 +386,18 @@ escape_regex() {
   sed 's/[][\\.*+?^${}()|/]/\\&/g' <<< "$1"
 }
 
+check_excluded() {
+  local listed i missing=()
+  listed="$(cd "$WEBAPP_DIR" && MOCK_URL="$MOCK_URL" SLOTS=1 npx playwright test --project=chromium --list)"
+  for ((i = 0; i < ${#EXCLUDED[@]}; i += 2)); do
+    if [[ $'\n'"$listed"$'\n' != *" ${EXCLUDED[i]}"$'\n'* ]]; then missing+=("${EXCLUDED[i]}"); fi
+  done
+  if [ "${#missing[@]}" -gt 0 ]; then
+    printf 'EXCLUDED names a case the webapp does not have: %s\n' "${missing[@]}" >&2
+    exit 1
+  fi
+}
+
 run_cases() {
   if [ "$#" -gt 0 ]; then
     (cd "$WEBAPP_DIR" && MOCK_URL="$MOCK_URL" SLOTS=1 npx playwright test --project=chromium --output "$RUN_DIR/test-results" "$@")
@@ -404,6 +414,7 @@ run_cases() {
 
 refuse_taken_ports
 start_chain
+check_excluded
 start_terms
 build_site
 write_ini

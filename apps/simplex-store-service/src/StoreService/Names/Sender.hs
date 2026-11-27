@@ -178,6 +178,7 @@ checkPendingSignatures g ChainConfig {cChainId, cServiceKey} st = do
 -- | Dry run, the next nonce, the market's fees, the signature, saved, then sent. A failed send is retried by 'followTransactions'.
 submitTransaction :: Sender -> TxFor -> Address -> ByteString -> IO (Either SendError PendingTx)
 submitTransaction s for = submitTransactionIf s for (\_ -> pure True)
+{-# INLINE submitTransaction #-}
 
 submitTransactionIf :: Sender -> TxFor -> (DB.Connection -> IO Bool) -> Address -> ByteString -> IO (Either SendError PendingTx)
 submitTransactionIf s@Sender {snChain = c@ChainClient {ccRegistrar, ccConfig = ChainConfig {cChainId}}, snRandom, snStore, snNow, snQueue, snNextNonce, snInFlight} for unchanged to calldata =
@@ -235,6 +236,7 @@ awaitOutcome micros PendingTx {ptOutcome} = do
 
 runSender :: Sender -> IO ()
 runSender s = forever $ senderRound s >> threadDelay followInterval
+{-# INLINE runSender #-}
 
 -- | A round that fails is logged, so the lane goes on to the next one.
 senderRound :: Sender -> IO ()
@@ -328,6 +330,7 @@ settle Sender {snStore, snInFlight} nonce InFlight {ifHashes, ifOutcome} outcome
 
 update :: Sender -> Word64 -> (InFlight -> InFlight) -> IO ()
 update Sender {snInFlight} nonce f = atomically $ TM.adjust f nonce snInFlight
+{-# INLINE update #-}
 
 -- | The recent blocks' median tip, at least minTip, and the latest base fee, as Integer so that no fee arithmetic wraps.
 marketFees :: ChainClient -> IO (Either ChainError (Integer, Integer))

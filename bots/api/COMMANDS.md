@@ -1029,7 +1029,7 @@ ChatCmdError: Command error (only used in WebSockets API).
 
 ### APIRemoveMembers
 
-Remove members. Requires Admin role.
+Remove members. Requires Admin role. With notice, the removal is silent, and the removed member's app does not rejoin via the group link while the notice lasts. A notice is refused for relays, members with Moderator role or above, members that are not current or pending, and members on versions before 23.
 
 *Network usage*: background.
 
@@ -1037,19 +1037,20 @@ Remove members. Requires Admin role.
 - groupId: int64
 - groupMemberIds: [int64]
 - withMessages: bool
+- notice: [LinkNotice](./TYPES.md#linknotice)?
 
 **Syntax**:
 
 ```
-/_remove #<groupId> <groupMemberIds[0]>[,<groupMemberIds[1]>...][ messages=on]
+/_remove #<groupId> <groupMemberIds[0]>[,<groupMemberIds[1]>...][ messages=on][ notice=<json(notice)>]
 ```
 
 ```javascript
-'/_remove #' + groupId + ' ' + groupMemberIds.join(',') + (withMessages ? ' messages=on' : '') // JavaScript
+'/_remove #' + groupId + ' ' + groupMemberIds.join(',') + (withMessages ? ' messages=on' : '') + (notice ? ' notice=' + JSON.stringify(notice) : '') // JavaScript
 ```
 
 ```python
-'/_remove #' + str(groupId) + ' ' + ','.join(map(str, groupMemberIds)) + (' messages=on' if withMessages else '') # Python
+'/_remove #' + str(groupId) + ' ' + ','.join(map(str, groupMemberIds)) + (' messages=on' if withMessages else '') + ((' notice=' + json.dumps(notice)) if notice is not None else '') # Python
 ```
 
 **Responses**:
@@ -2451,26 +2452,27 @@ ChatCmdError: Command error (only used in WebSockets API).
 
 ### APIDeleteChat
 
-Delete chat.
+Delete chat. For groups, the full mode deletes the group, and the entity mode keeps the conversation and requires the active owner; other modes are refused. A notice is accepted for contacts on version 23 or later and for the customer of a business chat: the deletion is silent, and the peer's app does not connect via the user's address while the notice lasts.
 
 *Network usage*: background.
 
 **Parameters**:
 - chatRef: [ChatRef](./TYPES.md#chatref)
 - chatDeleteMode: [ChatDeleteMode](./TYPES.md#chatdeletemode)
+- notice: [LinkNotice](./TYPES.md#linknotice)?
 
 **Syntax**:
 
 ```
-/_delete <str(chatRef)> <str(chatDeleteMode)>
+/_delete <str(chatRef)> <str(chatDeleteMode)>[ notice=<json(notice)>]
 ```
 
 ```javascript
-'/_delete ' + ChatRef.cmdString(chatRef) + ' ' + ChatDeleteMode.cmdString(chatDeleteMode) // JavaScript
+'/_delete ' + ChatRef.cmdString(chatRef) + ' ' + ChatDeleteMode.cmdString(chatDeleteMode) + (notice ? ' notice=' + JSON.stringify(notice) : '') // JavaScript
 ```
 
 ```python
-'/_delete ' + ChatRef_cmd_string(chatRef) + ' ' + ChatDeleteMode_cmd_string(chatDeleteMode) # Python
+'/_delete ' + ChatRef_cmd_string(chatRef) + ' ' + ChatDeleteMode_cmd_string(chatDeleteMode) + ((' notice=' + json.dumps(notice)) if notice is not None else '') # Python
 ```
 
 **Responses**:

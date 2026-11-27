@@ -14,6 +14,7 @@ module StoreService.Web.Server
     webListeners,
     webSettings,
     runWebListeners,
+    warnIfNamesSiteIsExposed,
     checkSiteDirs,
   )
 where
@@ -25,7 +26,7 @@ import StoreService.Names.Env (NamesEnv)
 import StoreService.Names.Orders (OrdersEnv (..), noteRead, ordersEnv)
 import StoreService.Names.Phases (RegistrationId, awaitChange)
 import StoreService.Names.Registration (tldLabel)
-import StoreService.Names.Store (NamePhase (..), NameRegistration (..), getRegistration, namePhase)
+import StoreService.Names.Store (NamePhase (..), NameRegistrationOrder (..), getRegistration, namePhase)
 import StoreService.Names.View (lapseMoment, registrationVersion)
 import StoreService.Orders (RegistrationChanged (..), cancelOpenInvoice)
 import StoreService.Poller (ReadHints, queueReadHint)
@@ -50,7 +51,7 @@ import qualified Data.ByteString.Lazy as LB
 import Data.Char (toLower)
 import Data.Functor ((<&>))
 import Data.List (isPrefixOf)
-import Data.Maybe (catMaybes, fromMaybe)
+import Data.Maybe (catMaybes, fromMaybe, isJust)
 import Data.String (fromString)
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -245,7 +246,7 @@ readNameInvoice env@WebEnv {weConfig, weWaiters, weHoldMicros, weHttp} orders@Or
       _ -> respond . jsonResponse status200 =<< nameInvoiceView orders (confirmationsFor weConfig) row r
   where
     seenVersion = versionParam req
-    holds wait row@InvoiceRow {irStatus} NameRegistration {nrPhase, nrVersion} =
+    holds wait row@InvoiceRow {irStatus} NameRegistrationOrder {nrPhase, nrVersion} =
       wait == irStatus
         && not (irStatus == ISPaid && namePhase nrPhase `elem` [PUnpaid, PClosed])
         && samePayment req row
@@ -260,7 +261,7 @@ readNameInvoice env@WebEnv {weConfig, weWaiters, weHoldMicros, weHttp} orders@Or
         (_, Nothing) -> void onStatus
 
 -- | The invoice and its registration as a read now shows them.
-readName :: OrdersEnv -> InvoiceRow -> RegistrationId -> IO (Maybe (UTCTime, InvoiceRow, NameRegistration))
+readName :: OrdersEnv -> InvoiceRow -> RegistrationId -> IO (Maybe (UTCTime, InvoiceRow, NameRegistrationOrder))
 readName OrdersEnv {oeStore, oeNow} row rid = do
   now <- oeNow
   withTransaction oeStore (`getRegistration` rid) >>= traverse (\r -> (now, invoiceAt now row, r) <$ noteRead oeStore now r)
@@ -548,6 +549,7 @@ webListeners env = (lBadgesPort, webApp env) : [(port, siteApp env (Just dir)) |
 runWebListeners :: WebEnv -> IO ()
 runWebListeners env = do
   warnIfHeaderTrustIsExposed lc
+  warnIfNamesSiteIsExposed lc
   raceAny_ [Warp.runSettings (Warp.setPort port (webSettings lc)) app | (port, app) <- webListeners env]
   where
     lc = listenerConfig env
@@ -567,3 +569,8 @@ warnIfHeaderTrustIsExposed :: ListenerConfig -> IO ()
 warnIfHeaderTrustIsExposed ListenerConfig {lHost, lTrustForwardedFor} =
   when (lTrustForwardedFor && not (isLoopbackHost lHost)) $
     logWarn ("store service: trust_forwarded_for is on and the listener binds " <> lHost <> "; every caller can then choose its own rate limit bucket unless a proxy sets the header")
+
+warnIfNamesSiteIsExposed :: ListenerConfig -> IO ()
+warnIfNamesSiteIsExposed ListenerConfig {lHost, lNamesSite} =
+  when (isJust lNamesSite && not (isLoopbackHost lHost)) $
+    logWarn ("store service: the listener binds " <> lHost <> " and serves the names site without the security headers of the README's Caddy block; serve it only through a proxy that sets them")

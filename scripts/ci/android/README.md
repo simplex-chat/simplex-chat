@@ -14,7 +14,7 @@ Every run builds the core library, and the backend when it's asked for, from the
 |---|---|---|
 | `plan` | reads the inputs, finds earlier core and backend builds | 10 s |
 | `core` | `build-core.sh`: `lib:simplex-chat` and `lib:support` for aarch64-android with Nix, as `scripts/android/build-android.sh` builds them | skipped when reused, about 27 min not |
-| `app` | the debug APK (`:android:assembleFossDebug` for arm64-v8a only), the emulator, `smoke-test.sh` | about 13 min: APK 7–8, emulator 1.5, smoke test 3.5 (4 with the backend case, after 2.5 to start the backend) |
+| `app` | the debug APK (`:android:assembleFossDebug` for arm64-v8a only), `check-imports.py`, the emulator, `smoke-test.sh` | about 13 min: APK 7–8, emulator 1.5, smoke test 3.5 (4 with the backend case, after 2.5 to start the backend) |
 | `claude` (opt-in) | after `app` passed: its APK in a new emulator at the first screen, then Claude Code drives it | about 5 min, Claude 2.5 |
 | `backend` (opt-in) | desktop-linux's `build-backend.sh` | about 30 min, skipped when reused |
 | `release` (opt-in) | the latest release's arm64 APK, its signer checked against SimpleX's key, onboarding only | about 4 min |
@@ -32,6 +32,7 @@ A Google APIs x86_64 system image of API 34 (revision 14) with KVM, on the x86_6
 - `smoke-test.sh <apk> <out dir> [start|onboarding|layouts|backend]`: the scripted cases; the default is onboarding, a local group, both layouts, and `tests/fixtures/test.jpg` and `logo-large-rgba.png` pushed to Pictures, picked in the system's picker, resized by the core, previewed and sent in the group. Onboarding on Android includes the app's instant notifications alert and the system's battery dialog. `backend` also adds the test SMP server under Your servers and checks that it passes Test servers.
 - `install-sdk.sh`, `emulator.sh`: the emulator, above.
 - `build-core.sh`, `install-core.sh`, `release-apk.sh`: builds and the release.
+- `check-imports.py <apk> <abi> <stubs dir>`: fails when `libsimplex.so` or `libsupport.so` of the APK imports a global symbol that neither the NDK's API 26 (Android 8.0) stubs of `libc.so`, `libm.so` and `libdl.so` nor a library of the APK defines, as the Android linker requires every such import at load; weak imports pass. The `app` job passes the stubs of `$ANDROID_NDK_LATEST_HOME`, the runner's NDK.
 - `claude-test.md` (the prompt) and `claude-scope` (whether it uses the test backend): the Claude job, which runs desktop-linux's `claude-test.sh`, `claude-guard.py` and `claude-usage.py`.
 
 ## The test backend

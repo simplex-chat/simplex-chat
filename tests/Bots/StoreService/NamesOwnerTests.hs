@@ -53,7 +53,7 @@ import qualified Data.Text as T
 import Data.Time.Clock (addUTCTime, diffUTCTime)
 import Data.Word (Word64, Word8)
 import Simplex.Chat.Badges.Ledger (addMonths)
-import Simplex.Chat.PaymentService.Types (InvoiceId (..), InvoiceStatus (..))
+import Simplex.Chat.PaymentService.Types (CurrencyAmount (..), InvoiceId (..), InvoiceStatus (..))
 import Simplex.Messaging.Agent.Store.Common (withTransaction)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Crypto.Secp256k1 (Secp256k1PrivateKey, signRecoverable)
@@ -66,12 +66,14 @@ import Simplex.Messaging.Util (tshow)
 import StoreService.Config (NamesConfig (..))
 import StoreService.Names.Abi (addressWord, hex, selector, uint256)
 import StoreService.Names.Chain (TxHash (..))
+import StoreService.Names.Codes (CodeState (..), codeState)
 import StoreService.Names.Orders (OrdersEnv (..), signedRequestSeconds)
 import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Signatures (OrderFields (..), findMessage, parseAnyCaseAddress, personalDigest, selectionMessage)
 import StoreService.Names.Store hiding (findLimit)
 import StoreService.Names.Turns (withLabelTurn)
 import StoreService.Names.View (addressText)
+import StoreService.Providers (PaymentSignal (..), Received (..))
 import StoreService.Store (RevokeResult (..))
 import StoreService.Web.Http (createLimit, findLimit, holdMicros, readLimit)
 import StoreService.Web.Names (Route (..), namesApp)
@@ -103,9 +105,10 @@ namesOwnerTests = describe "StoreService names: owner" $ do
     it "runs the order checks on the new fields: invalid_name, the duration, name_taken and name_check_unavailable" testSelectOrderChecks
     it "answers a name of another price catalog_changed with its price, one priced under the floor name_check_unavailable, a balance short of the price bad_request, and selects at the order's price, spent from its balance" testSelectPrice
     it "checks a code order's code as a new code order's: code_not_covering for a shorter name, and reserves it for the name selected" testSelectCodeOrder
-    it "accepts the code the order holds past its expiry until a month after the take, then refuses it with code_expired, refuses it once revoked with code_invalid, changing nothing, and keeps it from other code orders" testSelectRefusedCode
+    it "accepts the code the order holds past its expiry until a month after the take, then refuses it with code_expired, refuses it once revoked with code_invalid, changing nothing, and keeps it from other code orders, checked as expired once refused" testSelectRefusedCode
     it "refuses sealed over 11095 characters, a body over 16384 bytes and malformed fields, accepting the longest" testSelectSizes
     it "refuses another signer's signature and a stale timestamp, and answers an unknown order 404" testSelectRefusedSigner
+    it "selects a name for a taken card order with a reveal over its 120 dispute days, refusing one over 14" testSelectCardDays
     it "answers registration_changed with the current view when the order changed during the checks, writing nothing" testSelectLostRace
     it "takes both turns in hash order when the order on A selects B while the order on B selects A, without deadlock, each refused as a paid order holds the other's name" testSelectionsCross
   describe "polls" $
@@ -177,8 +180,8 @@ answerDisputeUntil :: Ctx -> Text -> Word64 -> IO ()
 answerDisputeUntil Ctx {cNode} label t = answerCall cNode (registrarOf cNode) (selector "disputeUntil(uint256)" <> labelBytes label) $ Returns $ uint256 t
 
 -- | A register transaction of the order as the sender saves it, then moved to this outcome.
-sentRegister :: Ctx -> NameRegistration -> Word8 -> TxSettlement -> IO TxHash
-sentRegister Ctx {cStore} NameRegistration {nrId} n settlement = withTransaction cStore $ \db -> do
+sentRegister :: Ctx -> NameRegistrationOrder -> Word8 -> TxSettlement -> IO TxHash
+sentRegister Ctx {cStore} NameRegistrationOrder {nrId} n settlement = withTransaction cStore $ \db -> do
   let h = TxHash $ hashFixture n
   void $ insertTransaction db (TxRegistration RTRegister nrId) NewTransaction {ntxRaw = "raw", ntxHash = h, ntxNonce = fromIntegral n} orderTime
   recordTransactionOutcome db h TSPending settlement `shouldReturn` True
@@ -196,7 +199,7 @@ answerReserved Ctx {cNode} label reason = do
     LabelHash lh = labelHash label
 
 -- | A paid order, settled, then written as the worker would write it, without the signature its order stored, as after a rare path cleared it.
-paidIn :: Ctx -> Order -> (NameRegistration -> NameRegistration) -> IO NameRegistration
+paidIn :: Ctx -> Order -> (NameRegistrationOrder -> NameRegistrationOrder) -> IO NameRegistrationOrder
 paidIn ctx o change = do
   (invId, _) <- placed ctx o
   settleNow ctx invId settled `shouldReturn` ISPaid
@@ -204,18 +207,18 @@ paidIn ctx o change = do
   rewrite ctx r (change . unsigned)
 
 -- | A code order of a code of this length, then written as paidIn writes it.
-codeIn :: Ctx -> Int -> Order -> (NameRegistration -> NameRegistration) -> IO (NameRegistration, PrepaidCode)
+codeIn :: Ctx -> Int -> Order -> (NameRegistrationOrder -> NameRegistrationOrder) -> IO (NameRegistrationOrder, PrepaidCode)
 codeIn ctx len o change = do
   (text, code) <- issueCode ctx len 2 id
   r <- registrationById ctx =<< registered ctx text o
   (,code) <$> rewrite ctx r (change . unsigned)
 
-unsigned :: NameRegistration -> NameRegistration
+unsigned :: NameRegistrationOrder -> NameRegistrationOrder
 unsigned r = r {nrReveal = Nothing}
 
 -- | A write outside the turns, as the worker's, at the stored version.
-rewrite :: Ctx -> NameRegistration -> (NameRegistration -> NameRegistration) -> IO NameRegistration
-rewrite Ctx {cStore, cClock} NameRegistration {nrId} change = do
+rewrite :: Ctx -> NameRegistrationOrder -> (NameRegistrationOrder -> NameRegistrationOrder) -> IO NameRegistrationOrder
+rewrite Ctx {cStore, cClock} NameRegistrationOrder {nrId} change = do
   t <- readIORef cClock
   withTransaction cStore $ \db -> do
     current <- fromJust <$> getRegistration db nrId
@@ -224,23 +227,23 @@ rewrite Ctx {cStore, cClock} NameRegistration {nrId} change = do
       refused -> error $ "not written: " <> show refused
 
 -- | The amount and credited of the order's balance.
-balanceOf :: Ctx -> NameRegistration -> IO (Maybe (USDCents, USDCents))
-balanceOf Ctx {cStore} NameRegistration {nrId} = fmap (\Balance {blAmount, blCredited} -> (blAmount, blCredited)) <$> withTransaction cStore (`getBalance` nrId)
+balanceOf :: Ctx -> NameRegistrationOrder -> IO (Maybe (USDCents, USDCents))
+balanceOf Ctx {cStore} NameRegistrationOrder {nrId} = fmap (\Balance {blAmount, blCredited} -> (blAmount, blCredited)) <$> withTransaction cStore (`getBalance` nrId)
 
-stored :: Ctx -> NameRegistration -> IO NameRegistration
+stored :: Ctx -> NameRegistrationOrder -> IO NameRegistrationOrder
 stored ctx = registrationById ctx . nrId
 
-failedPhase, registeredPhase, committedPhase, takenPhase :: NameRegistration -> NameRegistration
+failedPhase, registeredPhase, committedPhase, takenPhase :: NameRegistrationOrder -> NameRegistrationOrder
 failedPhase r = r {nrPhase = OFailed orderTime FRRegistryRefused}
 registeredPhase r = r {nrPhase = ORegistered (RoundedSystemTime $ fromIntegral $ seconds orderTime + 3 * 31536000) Nothing orderTime}
 committedPhase r = r {nrPhase = OCommitted committedCommit}
 takenPhase r = r {nrPhase = OTaken orderTime}
 
 -- | A paid order reset to taken as the taken write sets it, its price credited to its balance.
-takenIn :: Ctx -> Order -> (NameRegistration -> NameRegistration) -> IO NameRegistration
+takenIn :: Ctx -> Order -> (NameRegistrationOrder -> NameRegistrationOrder) -> IO NameRegistrationOrder
 takenIn ctx o change = paidIn ctx o change >>= retaken ctx
 
-retaken :: Ctx -> NameRegistration -> IO NameRegistration
+retaken :: Ctx -> NameRegistrationOrder -> IO NameRegistrationOrder
 retaken ctx@Ctx {cStore} r = do
   t <- rewrite ctx r takenPhase
   t <$ withTransaction cStore (\db -> case nrPayment t of
@@ -270,18 +273,18 @@ selectionBodyAt ctx@Ctx {cRandom} key rid o timestamp = do
 postSelection :: Ctx -> RegistrationId -> J.Object -> IO (Int, Maybe J.Object)
 postSelection ctx rid = post ctx (registrationPath rid <> "/name") . J.encode
 
-select :: Ctx -> Secp256k1PrivateKey -> NameRegistration -> Order -> IO (Int, Maybe J.Object)
-select ctx key NameRegistration {nrId} o = selectionBody ctx key nrId o >>= postSelection ctx nrId
+select :: Ctx -> Secp256k1PrivateKey -> NameRegistrationOrder -> Order -> IO (Int, Maybe J.Object)
+select ctx key NameRegistrationOrder {nrId} o = selectionBody ctx key nrId o >>= postSelection ctx nrId
 
 -- | The view of an accepted selection, failing the test otherwise.
-selected :: Ctx -> Secp256k1PrivateKey -> NameRegistration -> Order -> IO J.Object
+selected :: Ctx -> Secp256k1PrivateKey -> NameRegistrationOrder -> Order -> IO J.Object
 selected ctx key r o =
   select ctx key r o >>= \case
     (200, Just v) -> pure v
     other -> error $ "selection refused: " <> show other
 
-getView :: Ctx -> NameRegistration -> IO J.Object
-getView ctx NameRegistration {nrId} = webGet (cClient ctx) (registrationPath nrId) >>= jsonObject
+getView :: Ctx -> NameRegistrationOrder -> IO J.Object
+getView ctx NameRegistrationOrder {nrId} = webGet (cClient ctx) (registrationPath nrId) >>= jsonObject
 
 findBody :: Ctx -> Secp256k1PrivateKey -> Text -> Word64 -> IO J.Object
 findBody ctx key owner timestamp = do
@@ -680,6 +683,8 @@ testSelectRefusedCode = withOwner $ \ctx@Ctx {cStore} -> do
   answerFixture "select-code-expired" lateAnswer
   stored ctx lateOrder `shouldReturn` lateOrder
   codeRow ctx late `shouldReturn` lateRow
+  now <- readIORef (cClock ctx)
+  mapM (fmap (codeState now) . codeRow ctx) [late, inMonth] `shouldReturn` [CSExpired, CSReserved]
 
 testSelectSizes :: IO ()
 testSelectSizes = withOwner $ \ctx -> do
@@ -690,6 +695,7 @@ testSelectSizes = withOwner $ \ctx -> do
   body <- selectionBody ctx keyA (nrId r) longest
   postSelection ctx (nrId r) (KM.insert "owner" (J.String $ T.replicate 5300 "0") body) `shouldReturn` refusedWith 400 "bad_request"
   post ctx (registrationPath (nrId r) <> "/name") "[]" `shouldReturn` refusedWith 400 "bad_request"
+  select ctx keyA r to {oSealed = T.replicate 11096 "s"} `shouldReturn` refusedWith 400 "bad_request"
   stored ctx r `shouldReturn` r
   -- an owner in the body is ignored
   (status, v) <- postSelection ctx (nrId r) (KM.insert "owner" (J.String ownerBText) body)
@@ -701,9 +707,22 @@ testSelectRefusedSigner = withOwner $ \ctx -> do
   r <- takenIn ctx aliceOrder id
   to <- selectionOf ctx "alicebakers" 10
   select ctx keyB r to `shouldReturn` refusedWith 400 "bad_request"
+  (clockSeconds ctx >>= \ts -> selectionBodyAt ctx keyA (nrId r) to (ts - signedWindow - 1) >>= postSelection ctx (nrId r)) `shouldReturn` refusedWith 400 "bad_request"
   stored ctx r `shouldReturn` r
   let unknown = RegistrationId "t2Jk8RmQ4vXw9NcP3yLb6g"
   (selectionBody ctx keyA unknown to >>= postSelection ctx unknown) `shouldReturn` refusedWith 404 "not_found"
+
+testSelectCardDays :: IO ()
+testSelectCardDays = withOwner $ \ctx -> do
+  answerFree ctx "alicebakers"
+  (invId, _) <- placed ctx aliceOrder {oMethod = "card"}
+  settleNow ctx invId (SigSettled RCard {rcAmount = CurrencyAmount 10000, rcConfirmed = CurrencyAmount 10000} orderTime) `shouldReturn` ISPaid
+  r <- invoiceRegistration ctx invId >>= retaken ctx
+  to <- selectionOf ctx "alicebakers" 10
+  select ctx keyA r to `shouldReturn` refusedWith 400 "bad_request"
+  stored ctx r `shouldReturn` r
+  v <- selected ctx keyA r to {oMethod = "card"}
+  fieldOf v "disputeDays" `shouldBe` Just (J.Number 120)
 
 testSelectLostRace :: IO ()
 testSelectLostRace = withOwner $ \ctx@Ctx {cNode} -> do

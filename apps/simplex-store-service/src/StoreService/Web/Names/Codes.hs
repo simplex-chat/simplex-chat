@@ -39,6 +39,7 @@ codeCheckHandler st req respond =
 
 codeField :: LB.ByteString -> Either String Text
 codeField body = J.eitherDecode body >>= JT.parseEither (J.withObject "code check" (.: "code"))
+{-# INLINE codeField #-}
 
 codeAnswer :: UTCTime -> PrepaidCode -> Response
 codeAnswer now code@PrepaidCode {pcMinLength, pcYears} =
