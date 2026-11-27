@@ -382,17 +382,16 @@ let chainAddressAttrKey = NSAttributedString.Key("chat.simplex.app.chainAddress"
 typealias MsgTextResult = (string: NSMutableAttributedString, hasSecrets: Bool, handleTaps: Bool)
 
 struct ChainAddressSender {
-    var name: String
+    var name: String?
     var forwarded: Bool
     var messageSigned: Bool
 }
 
 func chainAddressSender(_ ci: ChatItem, _ chatInfo: ChatInfo) -> ChainAddressSender {
-    let name = switch ci.chatDir {
+    let name: String? = switch ci.chatDir {
     case .directRcv, .channelRcv: chatInfo.displayName
-    case .directSnd, .localSnd, .localRcv: ChatModel.shared.currentUser?.displayName ?? ""
     case let .groupRcv(groupMember): groupMember.displayName
-    case .groupSnd: ci.meta.showGroupAsSender ? chatInfo.displayName : chatInfo.groupInfo?.membership.displayName ?? ""
+    case .directSnd, .groupSnd, .localSnd, .localRcv: nil
     }
     return ChainAddressSender(name: name, forwarded: ci.meta.itemForwarded != nil, messageSigned: ci.messageSigned)
 }
@@ -406,12 +405,20 @@ struct ChainAddressTap {
 func openWalletAlert(_ tap: ChainAddressTap) -> UIAlertController {
     let link = tap.chainAddress.linkText(tap.showText, messageSigned: tap.sender.messageSigned)
     let text = link.toAddress.map { String.localizedStringWithFormat(NSLocalizedString("%@ to %@", comment: "alert message: chain address link text, shortened address"), link.shown, $0) } ?? link.shown
-    let message = tap.sender.forwarded
-        ? NSLocalizedString("%@ forwarded: %@", comment: "alert message: sender name, chain address")
-        : NSLocalizedString("%@: %@", comment: "alert message: sender name, chain address")
+    let message = if let name = tap.sender.name {
+        String.localizedStringWithFormat(
+            tap.sender.forwarded
+                ? NSLocalizedString("%@ forwarded: %@", comment: "alert message: sender name, chain address")
+                : NSLocalizedString("%@: %@", comment: "alert message: sender name, chain address"),
+            name,
+            text
+        )
+    } else {
+        text
+    }
     return alertController(
         NSLocalizedString("Open in wallet?", comment: "alert title"),
-        message: String.localizedStringWithFormat(message, tap.sender.name, text),
+        message: message,
         actions: [
             cancelAlertAction,
             UIAlertAction(title: NSLocalizedString("Open", comment: "alert button"), style: .default) { _ in openWallet(tap.chainAddress) }

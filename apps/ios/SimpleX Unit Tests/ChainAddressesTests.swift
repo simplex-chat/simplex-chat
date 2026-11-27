@@ -122,6 +122,15 @@ final class ChainAddressesTests: RecordedAPITestCase {
     }
 
     @MainActor
+    func testAlertOfOwnItemHasNoName() async throws {
+        try recorded("chain-addresses/sent")
+        let (chat, _) = try await apiGetChat(chatId: "@2", scope: nil, pagination: .last(count: 1))
+        let item = try XCTUnwrap(chat.chatItems.first)
+        let r = draw(item.formattedText, chainAddressSender(item, chat.chatInfo))
+        XCTAssertEqual(taps(r.string).map(alertMessage), ["₿\u{00A0}bc1q2g…\u{2060}5d4u", "Donate XMR\u{00A0}8A3ZWA…\u{2060}Yq1c", "ϟ\u{00A0}0.0025"])
+    }
+
+    @MainActor
     func testOpenWithoutWalletOffersCopyAndQRCode() async throws {
         try recorded("chain-addresses/links")
         let (chat, _) = try await apiGetChat(chatId: "@2", scope: nil, pagination: .last(count: 1))

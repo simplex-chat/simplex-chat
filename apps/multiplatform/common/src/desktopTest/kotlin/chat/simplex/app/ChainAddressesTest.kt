@@ -188,6 +188,17 @@ class ChainAddressesTest : RecordedApiTest() {
   }
 
   @Test
+  fun alertOfOwnItemHasNoName() = recordedAlerts("chain-addresses/sent") {
+    val chat = recordedChat("chain-addresses/sent", "/_get chat @2 count=1")
+    val item = chat.chatItems.single()
+    val own = chainAddressSender(item, chat.chatInfo)
+    assertNull(own.name)
+    val links = chainLinks(item.formattedText)
+    assertEquals(3, links.size)
+    assertEquals(links.map { alertMessage(alice, it).removePrefix("alice: ") }, links.map { alertMessage(own, it) })
+  }
+
+  @Test
   fun openWithoutWalletOffersCopyAndQRCode() = recorded("chain-addresses/links") {
     val clipboard = TestClipboard()
     val wallet = NoWalletApp()

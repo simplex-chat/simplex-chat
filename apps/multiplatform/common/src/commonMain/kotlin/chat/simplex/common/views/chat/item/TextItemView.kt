@@ -753,14 +753,13 @@ fun openBrowserAlert(uri: String, uriHandler: UriHandler) {
   }
 }
 
-class ChainAddressSender(val name: String, val forwarded: Boolean, val messageSigned: Boolean)
+class ChainAddressSender(val name: String?, val forwarded: Boolean, val messageSigned: Boolean)
 
 fun chainAddressSender(ci: ChatItem, chatInfo: ChatInfo): ChainAddressSender {
   val name = when (val dir = ci.chatDir) {
     is CIDirection.DirectRcv, is CIDirection.ChannelRcv -> chatInfo.displayName
-    is CIDirection.DirectSnd, is CIDirection.LocalSnd, is CIDirection.LocalRcv -> chatModel.currentUser.value?.displayName ?: ""
     is CIDirection.GroupRcv -> dir.groupMember.displayName
-    is CIDirection.GroupSnd -> if (ci.meta.showGroupAsSender) chatInfo.displayName else (chatInfo as? ChatInfo.Group)?.groupInfo?.membership?.displayName ?: ""
+    is CIDirection.DirectSnd, is CIDirection.GroupSnd, is CIDirection.LocalSnd, is CIDirection.LocalRcv -> null
   }
   return ChainAddressSender(name, forwarded = ci.meta.itemForwarded != null, messageSigned = ci.messageSigned)
 }
@@ -770,7 +769,7 @@ fun showOpenWalletAlert(sender: ChainAddressSender, link: Format.ChainAddressLin
   val text = linkText.toAddress?.let { String.format(generalGetString(MR.strings.chain_address_to_address), linkText.shown, it) } ?: linkText.shown
   AlertManager.shared.showAlertDialogButtonsColumn(
     title = generalGetString(MR.strings.open_in_wallet_question),
-    text = formatWithBoldName(generalGetString(if (sender.forwarded) MR.strings.chain_address_alert_text_forwarded else MR.strings.chain_address_alert_text), sender.name, text),
+    text = if (sender.name == null) AnnotatedString(text) else formatWithBoldName(generalGetString(if (sender.forwarded) MR.strings.chain_address_alert_text_forwarded else MR.strings.chain_address_alert_text), sender.name, text),
     buttons = {
       Row(Modifier.fillMaxWidth().padding(horizontal = DEFAULT_PADDING), horizontalArrangement = Arrangement.SpaceBetween) {
         TextButton(onClick = { AlertManager.shared.hideAlert() }) { Text(generalGetString(MR.strings.cancel_verb)) }
