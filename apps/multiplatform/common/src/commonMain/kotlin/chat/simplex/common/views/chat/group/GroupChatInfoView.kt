@@ -421,7 +421,7 @@ fun removeMemberAlert(rhId: Long?, groupInfo: GroupInfo, mem: GroupMember) {
       MR.strings.member_will_be_removed_from_chat_cannot_be_undone
     AlertManager.shared.showAlertDialogButtonsColumn(
       generalGetString(titleId),
-      generalGetString(messageId),
+      generalGetString(messageId) + removedSubmembersText(listOf(mem)),
       belowTextContent = { CannotBlockWarning(listOf(mem)) },
       buttons = {
         Column {
@@ -459,7 +459,7 @@ internal fun removeMembersAlert(rhId: Long?, groupInfo: GroupInfo, members: List
     MR.strings.members_will_be_removed_from_chat_cannot_be_undone
   AlertManager.shared.showAlertDialogButtonsColumn(
     generalGetString(MR.strings.button_remove_members_question),
-    generalGetString(messageId),
+    generalGetString(messageId) + removedSubmembersText(members),
     belowTextContent = { CannotBlockWarning(members) },
     buttons = {
       Column {
@@ -1679,6 +1679,12 @@ fun PreviewCantBanCustomerAlert() = AlertPreview { showCantBanCustomerAlert(prev
 @Preview
 @Composable
 fun PreviewRemoveMembersPreviousVersion() = AlertPreview { removeMembersAlert(null, previewOwnerGroupInfo, (listOf(previewBanMember) + previewPreviousVersionMembers).map { it.copy(blockedByAdmin = true) }) }
+
+@Preview
+@Composable
+fun PreviewRemoveMemberWithSubmembers() = GroupMembersPreview(listOf(previewClaude, previewClaudeSubmember(6, "reviewer"), previewClaudeSubmember(7, "tester"))) {
+  AlertPreview { removeMemberAlert(null, previewOwnerGroupInfo, previewClaude) }
+}
 
 @Composable
 private fun MemberMenuPreview(groupInfo: GroupInfo, member: GroupMember) {

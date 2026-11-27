@@ -1045,28 +1045,40 @@ func showRemoveMemberAlert(_ groupInfo: GroupInfo, _ mem: GroupMember, dismiss: 
             ]}
         )
     } else {
-        showAlert(
-            NSLocalizedString("Remove member?", comment: "alert title"),
-            message: (groupInfo.businessChat == nil
-                ? NSLocalizedString("Member will be removed from group - this cannot be undone!", comment: "alert message")
-                : NSLocalizedString("Member will be removed from chat - this cannot be undone!", comment: "alert message")) + cannotBlockWarning(mem),
-            actions: {[
-                UIAlertAction(title: NSLocalizedString("Remove", comment: "alert action"), style: .destructive) { _ in
-                    removeMember(groupInfo, mem, withMessages: false, dismiss: dismiss)
-                },
-                UIAlertAction(title: NSLocalizedString("Remove and delete messages", comment: "alert action"), style: .destructive) { _ in
-                    removeMember(groupInfo, mem, withMessages: true, dismiss: dismiss)
-                },
-                cancelAlertAction
-            ]}
-        )
+        getTopViewController()?.present(removeMemberAlert(groupInfo, mem, dismiss: dismiss), animated: true)
     }
+}
+
+func removeMemberAlert(_ groupInfo: GroupInfo, _ mem: GroupMember, dismiss: DismissAction?) -> UIAlertController {
+    alertController(
+        NSLocalizedString("Remove member?", comment: "alert title"),
+        message: (groupInfo.businessChat == nil
+            ? NSLocalizedString("Member will be removed from group - this cannot be undone!", comment: "alert message")
+            : NSLocalizedString("Member will be removed from chat - this cannot be undone!", comment: "alert message")) + cannotBlockWarning(mem) + removedSubmembersText(mem),
+        actions: [
+            UIAlertAction(title: NSLocalizedString("Remove", comment: "alert action"), style: .destructive) { _ in
+                removeMember(groupInfo, mem, withMessages: false, dismiss: dismiss)
+            },
+            UIAlertAction(title: NSLocalizedString("Remove and delete messages", comment: "alert action"), style: .destructive) { _ in
+                removeMember(groupInfo, mem, withMessages: true, dismiss: dismiss)
+            },
+            cancelAlertAction
+        ]
+    )
 }
 
 func cannotBlockWarning(_ mem: GroupMember) -> String {
     mem.blockedByAdmin && mem.versionRange.maxVersion < LINK_NOTICE_VERSION
         ? "\n\n" + NSLocalizedString("1 member with the previous version: cannot block", comment: "alert message")
         : ""
+}
+
+func removedSubmembersText(_ mem: GroupMember) -> String {
+    switch ChatModel.shared.groupMembers.filter({ $0.wrapped.memberCurrent && $0.wrapped.memberVia == mem.memberId }).count {
+    case 0: ""
+    case 1: "\n" + NSLocalizedString("1 submember will be removed too.", comment: "alert message")
+    case let count: "\n" + String.localizedStringWithFormat(NSLocalizedString("%d submembers will be removed too.", comment: "alert message"), count)
+    }
 }
 
 func removeMember(_ groupInfo: GroupInfo, _ mem: GroupMember, withMessages: Bool, notice: LinkNotice? = nil, dismiss: DismissAction?) {

@@ -1009,7 +1009,7 @@ private func removeBannedMemberDialog(_ gInfo: GroupInfo, _ mem: GroupMember, di
                 removeBannedMember(gInfo, mem, duration, withMessages: true, dismiss: dismiss)
             }
         ],
-        footer: Text("**\(mem.displayName)** won't be notified, and can't rejoin while blocked."),
+        footer: Text("**\(mem.displayName)** won't be notified, and can't rejoin while blocked.") + Text(removedSubmembersText(mem)),
         close: close,
         duration: duration
     )
@@ -1029,7 +1029,7 @@ func removeForeverAlert(_ gInfo: GroupInfo, _ mem: GroupMember, withMessages: Bo
     let format = gInfo.useRelays
         ? NSLocalizedString("%@ can't rejoin via the channel link again, except from another app.", comment: "remove forever alert")
         : NSLocalizedString("%@ can't rejoin via the group link again, except from another app.", comment: "remove forever alert")
-    let alert = UIAlertController(title: NSLocalizedString("Remove forever?", comment: "alert title"), message: String.localizedStringWithFormat(format, mem.displayName), preferredStyle: .alert)
+    let alert = UIAlertController(title: NSLocalizedString("Remove forever?", comment: "alert title"), message: String.localizedStringWithFormat(format, mem.displayName) + removedSubmembersText(mem), preferredStyle: .alert)
     let remove = UIAlertAction(title: NSLocalizedString("Remove", comment: "alert action"), style: .destructive) { _ in
         removeMember(gInfo, mem, withMessages: withMessages, notice: BanDuration.forever.notice, dismiss: dismiss)
     }

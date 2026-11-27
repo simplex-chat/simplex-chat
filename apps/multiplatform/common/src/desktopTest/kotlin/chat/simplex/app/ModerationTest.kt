@@ -358,6 +358,42 @@ class ModerationTest : RecordedApiTest() {
   }
 
   @Test
+  fun removeMemberWithSubmembers() = recordedAlerts("submembers/remove-via") {
+    val (groupInfo, members) = openGroup()
+    removeMemberAlert(null, groupInfo, member(members, "bob"))
+    assertTexts("Remove member?", "Member will be removed from group - this cannot be undone!\n2 submembers will be removed too.", "Remove", "Remove and delete messages", "Cancel")
+  }
+
+  @Test
+  fun removeMemberWithSubmemberFromMemberInfo() = recordedAlerts("submembers/forwarded") {
+    val (groupInfo, members) = openGroup()
+    removeMemberDialog(null, groupInfo, member(members, "alice"), ChatModel)
+    assertTexts("Remove member?", "Member will be removed from group - this cannot be undone!\n1 submember will be removed too.", "Remove", "Remove and delete messages", "Cancel")
+  }
+
+  @Test
+  fun removeMembersWithSubmembers() = recordedAlerts("submembers/remove-via") {
+    val (groupInfo, members) = openGroup()
+    removeMembersAlert(null, groupInfo, listOf(member(members, "alice"), member(members, "bob")))
+    assertTexts("Remove members?", "Members will be removed from group - this cannot be undone!\n2 submembers will be removed too.", "Remove", "Remove and delete messages", "Cancel")
+  }
+
+  @Test
+  fun removeBlockedMemberWithSubmembersForever() = recordedAlerts("submembers/remove-via") {
+    val (groupInfo, members) = openGroup()
+    val bob = member(members, "bob").copy(memberRole = GroupMemberRole.Member, blockedByAdmin = true)
+    replaceMembers(listOf(bob))
+    removeMemberAlert(null, groupInfo, bob)
+    assertTexts(
+      "Remove member?", "bob won't be notified, and can't rejoin while blocked.\n2 submembers will be removed too.",
+      "Block for", "1 day", "Remove", "Remove and delete messages", "Cancel"
+    )
+    selectDuration("Forever")
+    press("Remove")
+    assertTexts("Remove forever?", "bob can't rejoin via the group link again, except from another app.\n2 submembers will be removed too.", "Type yes", "Remove", "Cancel")
+  }
+
+  @Test
   fun blockPendingMember() = recordedAlerts("bans/pending-member") {
     val (groupInfo, members) = openGroup()
     val bob = member(members, "bob")

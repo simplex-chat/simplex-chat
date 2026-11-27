@@ -105,6 +105,7 @@ private val previewScenes = listOf(
   SnapshotScene("GroupChatInfoView.PreviewDeleteAndBanCustomerDialog") { PreviewDeleteAndBanCustomerDialog() },
   SnapshotScene("GroupChatInfoView.PreviewCantBanCustomerAlert") { PreviewCantBanCustomerAlert() },
   SnapshotScene("GroupChatInfoView.PreviewRemoveMembersPreviousVersion") { PreviewRemoveMembersPreviousVersion() },
+  SnapshotScene("GroupChatInfoView.PreviewRemoveMemberWithSubmembers") { PreviewRemoveMemberWithSubmembers() },
   SnapshotScene("GroupChatInfoView.PreviewMemberMenuOwner") { PreviewMemberMenuOwner() },
   SnapshotScene("GroupChatInfoView.PreviewBannedMemberMenuOwner") { PreviewBannedMemberMenuOwner() },
   SnapshotScene("GroupChatInfoView.PreviewMemberMenuMember") { PreviewMemberMenuMember() },

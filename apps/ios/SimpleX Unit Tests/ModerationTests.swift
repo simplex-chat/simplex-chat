@@ -249,6 +249,37 @@ final class ModerationTests: RecordedAPITestCase {
     }
 
     @MainActor
+    func testRemoveMemberWithSubmembers() async throws {
+        try recorded("submembers/remove-via")
+        let (groupInfo, members) = try openGroup()
+        showRemoveMemberAlert(groupInfo, try member(members, "bob"))
+        try await assertTexts(["Remove member?", "Member will be removed from group - this cannot be undone!\n2 submembers will be removed too.", "Remove", "Remove and delete messages", "Cancel"])
+    }
+
+    @MainActor
+    func testRemoveMemberWithSubmember() async throws {
+        try recorded("submembers/forwarded")
+        let (groupInfo, members) = try openGroup()
+        showRemoveMemberAlert(groupInfo, try member(members, "alice"))
+        try await assertTexts(["Remove member?", "Member will be removed from group - this cannot be undone!\n1 submember will be removed too.", "Remove", "Remove and delete messages", "Cancel"])
+    }
+
+    @MainActor
+    func testRemoveBlockedMemberWithSubmembersForever() async throws {
+        try recorded("submembers/remove-via")
+        let (groupInfo, members) = try openGroup()
+        var bob = try member(members, "bob")
+        bob.memberRole = .member
+        bob.blockedByAdmin = true
+        replaceMembers([bob])
+        showRemoveMemberAlert(groupInfo, bob)
+        let dialog = try await sheet(BanDialog.self)
+        XCTAssertEqual(shownText(dialog.footer), "bob won't be notified, and can't rejoin while blocked.\n2 submembers will be removed too.")
+        dialog.close { dialog.actions[0].action(.forever) }
+        try await assertTexts(["Remove forever?", "bob can't rejoin via the group link again, except from another app.\n2 submembers will be removed too.", "Cancel", "Remove"])
+    }
+
+    @MainActor
     func testBlockPendingMember() async throws {
         try recorded("bans/pending-member")
         let (groupInfo, members) = try openGroup()
@@ -1095,6 +1126,11 @@ final class ModerationTests: RecordedAPITestCase {
 
     private func shownText(_ text: Text?) -> String? {
         guard let text else { return nil }
+        if let storage = Mirror(reflecting: text).descendant("storage"), let payload = Mirror(reflecting: storage).children.first?.value {
+            if let verbatim = payload as? String { return verbatim }
+            let parts = Mirror(reflecting: payload).children.compactMap { $0.value as? Text }
+            if !parts.isEmpty { return parts.compactMap(shownText).joined() }
+        }
         let description = String(describing: text)
         guard let start = description.range(of: ">: \""), let end = description.range(of: "\"), modifiers", options: .backwards) else { return description }
         return String(description[start.upperBound..<end.lowerBound])

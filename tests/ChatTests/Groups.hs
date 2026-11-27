@@ -17406,11 +17406,14 @@ testSubmemberViaRemoved ps = do
         createGroup3 "team" alice bob cath
         addSubmember bob "member"
         mapM_ (<## "#team: bob added reviewer to the group (via bob)") [alice, cath]
+        bob ##> "/_add submember #1 member json {\"displayName\": \"tester\", \"fullName\": \"\"}"
+        bob <## "#team: you added tester to the group"
+        mapM_ (<## "#team: bob added tester to the group (via bob)") [alice, cath]
         GroupMember {groupMemberId = reviewerId} <- getTestMember bob "team" "reviewer"
         bob ##> ("/_send #1(as_member=" <> show reviewerId <> ") text hi")
         bob <# "#team hi"
         [alice, cath] *<# "#team reviewer> hi"
-        GroupMember {groupMemberId = bobId} <- getTestMember cath "team" "bob"
+        apiFixture "submembers/remove-via" cath [] FixtureRequests {frMarkdown = [], frUris = [], frCommands = ["/_members #1"]}
         eventsFixture "submembers/removed" events $ do
           cath ##> "+1 #team hi"
           cath <## "added 👍"
@@ -17418,9 +17421,10 @@ testSubmemberViaRemoved ps = do
           alice <## "    + 👍"
           bob <# "#team cath> > bob hi"
           bob <## "    + 👍"
-          apiFixture "submembers/remove-via" cath [] FixtureRequests {frMarkdown = [], frUris = [], frCommands = ["/_members #1", "/_get chat #1 count=1", "/_remove #1 " <> show bobId <> " messages=off"]}
+          cath ##> "/rm team bob"
           concurrentlyN_
-            [ alice <## "#team: cath removed bob from the group (signed)",
+            [ cath <## "#team: you removed bob from the group (signed)",
+              alice <## "#team: cath removed bob from the group (signed)",
               do
                 bob <## "#team: cath removed you from the group (signed)"
                 bob <## "use /d #team to delete the group"

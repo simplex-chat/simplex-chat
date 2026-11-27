@@ -799,6 +799,7 @@ private func previewScenes() -> [SnapshotScene] {
         SnapshotScene(RemoveBannedMemberDialog_Previews.self),
         SnapshotScene(RemoveBannedSubscriberDialog_Previews.self),
         SnapshotScene(RemoveForeverAlert_Previews.self, alert: true),
+        SnapshotScene(RemoveMemberWithSubmembersAlert_Previews.self, alert: true),
         SnapshotScene(RemoveSubscriberForeverAlert_Previews.self, alert: true),
         SnapshotScene(RTCServers_Previews.self),
         SnapshotScene(ScanCodeView_Previews.self),
@@ -1086,6 +1087,26 @@ struct RemoveForeverAlert_Previews: PreviewProvider {
     static var previews: some View {
         Color.clear.background(AlertControllerPreview(typedText: foreverConfirmationWord) {
             removeForeverAlert(previewGroup(.owner), previewBannableMember(), withMessages: false, dismiss: nil)
+        })
+    }
+}
+
+struct RemoveMemberWithSubmembersAlert_Previews: PreviewProvider {
+    static var previews: some View {
+        var claude = GroupMember.sampleData
+        claude.memberId = "Claude"
+        claude.memberProfile = LocalProfile(profileId: 2, displayName: "Claude", fullName: "", localAlias: "")
+        let submembers: [GMember] = [3, 4].map { id in
+            var submember = GroupMember.sampleData
+            submember.groupMemberId = id
+            submember.memberVia = claude.memberId
+            return GMember(submember)
+        }
+        return Color.clear.background(AlertControllerPreview {
+            let members = ChatModel.shared.groupMembers
+            ChatModel.shared.groupMembers = submembers
+            defer { ChatModel.shared.groupMembers = members }
+            return removeMemberAlert(previewGroup(.owner), claude, dismiss: nil)
         })
     }
 }

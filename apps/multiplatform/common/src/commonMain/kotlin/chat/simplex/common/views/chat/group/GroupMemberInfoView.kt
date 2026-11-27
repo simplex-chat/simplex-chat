@@ -321,7 +321,7 @@ fun removeMemberDialog(rhId: Long?, groupInfo: GroupInfo, member: GroupMember, c
       MR.strings.member_will_be_removed_from_chat_cannot_be_undone
     AlertManager.shared.showAlertDialogButtonsColumn(
       generalGetString(MR.strings.button_remove_member_question),
-      generalGetString(messageId),
+      generalGetString(messageId) + removedSubmembersText(listOf(member)),
       belowTextContent = { CannotBlockWarning(listOf(member)) },
       buttons = {
         Column {
@@ -1179,6 +1179,13 @@ fun previousVersionWarningText(members: List<GroupMember>, one: StringResource, 
     else -> String.format(generalGetString(many), count)
   }
 
+fun removedSubmembersText(members: List<GroupMember>): String =
+  when (val count = ChatModel.groupMembers.value.count { m -> m.memberCurrent && members.any { it.memberId == m.memberVia } }) {
+    0 -> ""
+    1 -> "\n" + generalGetString(MR.strings.submember_will_be_removed_too)
+    else -> "\n" + String.format(generalGetString(MR.strings.submembers_will_be_removed_too), count)
+  }
+
 @Composable
 fun CannotBlockWarning(members: List<GroupMember>) {
   val warning = if (members.any { it.blockedByAdmin }) previousVersionWarningText(members, MR.strings.member_previous_version_cannot_ban, MR.strings.members_previous_version_cannot_ban) else null
@@ -1236,7 +1243,7 @@ fun removeBannedMembersDialog(rhId: Long?, gInfo: GroupInfo, members: List<Group
   }
   showBanDialog(
     title,
-    text,
+    text + AnnotatedString(removedSubmembersText(members)),
     listOf(
       BanDialogAction(generalGetString(MR.strings.remove_member_confirmation)) { removeBannedMembers(rhId, gInfo, members, it, withMessages = false, onSuccess) },
       BanDialogAction(generalGetString(MR.strings.remove_member_delete_messages_confirmation)) { removeBannedMembers(rhId, gInfo, members, it, withMessages = true, onSuccess) }
@@ -1257,7 +1264,7 @@ fun removeBannedMembers(rhId: Long?, gInfo: GroupInfo, members: List<GroupMember
     }
     showTypedConfirmationDialog(
       title = generalGetString(MR.strings.remove_forever_question),
-      text = desc,
+      text = desc + AnnotatedString(removedSubmembersText(members)),
       word = FOREVER_CONFIRMATION_WORD,
       confirmText = generalGetString(MR.strings.remove_member_confirmation)
     ) {
