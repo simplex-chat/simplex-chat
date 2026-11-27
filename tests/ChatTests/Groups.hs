@@ -376,6 +376,7 @@ chatGroupTests = do
     it "host forwards messages of another member's blocked submember to moderators only, without notifications" testSubmemberBlockedToModerators
     it "messages and edits of blocked member sent as its submember are its own blocked messages" testSubmemberViaBlocked
     it "joiner gets no history of submembers of blocked member" testSubmemberViaBlockedHistory
+    it "member connected to blocked member gets no messages it sends as its submember" testSubmemberViaBlockedMember
     it "introduce another member's submember after that member" testSubmemberIntroOrder
     it "reply to and mention of user's submember resolve to that submember" testSubmemberReply
     it "priority and edit window of messages sent as member follow member role at sender and receivers" testSubmemberRoleRules
@@ -17206,6 +17207,23 @@ testSubmemberViaBlockedHistory =
       r <- chat <$> getTermLine dan
       r `shouldNotContain` [(0, "hi")]
       r `shouldNotContain` [(0, "hi [blocked by admin]")]
+
+testSubmemberViaBlockedMember :: HasCallStack => TestParams -> IO ()
+testSubmemberViaBlockedMember =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3' "team" alice (bob, GRAdmin) (cath, GRMember)
+      addSubmember bob "member"
+      mapM_ (<## "#team: bob added reviewer to the group (via bob)") [alice, cath]
+      GroupMember {groupMemberId = reviewerId} <- getTestMember bob "team" "reviewer"
+      alice ##> "/block for all #team bob"
+      alice <## "#team: you blocked bob (signed)"
+      cath <## "#team: alice blocked bob (signed)"
+      bob ##> ("/_send #1(as_member=" <> show reviewerId <> ") text spam")
+      bob <# "#team spam"
+      alice <# "#team bob> spam [blocked by admin] <muted>"
+      cath <// 500000
+      cath #$> ("/_get chat #1 count=1", chat, [(0, "blocked bob (signed)")])
 
 testSubmemberIntroOrder :: HasCallStack => TestParams -> IO ()
 testSubmemberIntroOrder =
