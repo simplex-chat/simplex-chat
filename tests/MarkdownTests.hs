@@ -637,6 +637,8 @@ chainAddresses = describe "chain addresses" do
     isText $ "bitcoin:" <> btc <> "?amount=1,000"
     isText $ "bitcoin:" <> btc <> "?amount=1&amount=2"
     isText $ "bitcoin:" <> btc <> "?req-pop=callback"
+    isText $ "bitcoin:" <> btc <> "?x%41=1"
+    isText $ "bitcoin:" <> btc <> "?a:b=1"
     isText $ "monero-wallet:" <> xmr <> "?spend_key=029c559cd7669f14e91fd835144916009f8697ab5ac5c7f7c06e1ff869c17b0b"
     isText $ "monero:" <> xmr <> ";" <> xmr <> "?tx_amount=1;2"
     isText $ "monero:" <> xmr <> "?tx_description=a;b"

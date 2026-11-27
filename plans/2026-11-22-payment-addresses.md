@@ -468,7 +468,8 @@ URI grammar       letters and ":" at the start, checked once before the alternat
                     the query
 path              the payee grammar of the scheme
                   ethereum: the target, "@" and the chain ID, "/transfer"
-query             key or key=value, joined by "&", of RFC 3986 query characters; a req- key is rejected;
+query             key or key=value, joined by "&"; keys of letters, digits and -._~, values of RFC 3986 query characters;
+                    a req- key is rejected;
                     the keys read by the scheme in lower case, the values as written;
                     the result is QueryStringParams of simplexmq without escaping (item 15005)
 parameter         read by its key with queryParamParser and queryParamStr, parsed by its value grammar:
@@ -534,8 +535,7 @@ URI              as written, with
                    the scheme in lower case
                    "//" after the scheme removed
                    the keys read by the parser in lower case
-                   values unchanged
-                   in other keys, characters other than letters, digits and -_.~ percent-encoded
+                   other keys and values unchanged
                    a key without a value followed by "="
 ```
 
@@ -543,7 +543,7 @@ URI              as written, with
 - The keys in lower case: Bitcoin Core compares them as written [S14].
 - `//` removed: BOLT 11 [S4]; `dogecoin://` is rewritten by Dogecoin Core [S14].
 - `zel:` stays `zel:` and `flux:` stays `flux:`: each opens the wallets that register it.
-- The query is written by `strEncode` of `QueryStringParams` without escaping (simplexmq Agent/QueryString.hs), which encodes the keys and writes the values as they are; the module's own `strP` is not used: it splits on ";" too, so rule U4 could not see ";", and it decodes the values, so the wallet URI would be written again with other escapes.
+- The query is written by `strEncode` of `QueryStringParams` without escaping (simplexmq Agent/QueryString.hs), which writes the keys and the values as they are; the module's own `strP` is not used: it splits on ";" too, so rule U4 could not see ";", and it decodes the values, so the wallet URI would be written again with other escapes.
 - The wallet URI is encoded in the QR code without the app logo (`withLogo: false`, QRCode.swift:60-108, QRCode.kt:66-72).
 
 ## Apps
@@ -809,7 +809,7 @@ Each test that expects a payment link fails on master.
 | File | Test |
 |---|---|
 | tests/MarkdownTests.hs | `bc1q2gy6…505d4u` and its upper-case form are parsed as `ChainAddressLink` with `CYBitcoin Nothing`, the address in lower case and `walletUri` `bitcoin:` and the address; the address with its last character changed is text; the BIP-350 Taproot address `bc1p0xlx…zk5jj0` is a link, and the same program with a bech32 checksum, `bc1p0xlx…h2y7hd`, is text |
-| | `BITCOIN:BC1Q2GY6…?AMOUNT=0.001` is parsed with `walletUri` `bitcoin:BC1Q2GY6…?amount=0.001`; `amount=0.000000001` and `amount=1,000` are text |
+| | `BITCOIN:BC1Q2GY6…?AMOUNT=0.001` is parsed with `walletUri` `bitcoin:BC1Q2GY6…?amount=0.001`; `amount=0.000000001` and `amount=1,000` are text; so are the keys `x%41` and `a:b` |
 | | `37116639cErLzxER6tL3a6EH2DbdETwTxd`, a P2SH address made for the test from random bytes, which starts with 8 digits, is one `ChainAddressLink`, also before a final dot; on master it is split by `phoneP` (Markdown.hs:363, 484-494) |
 | | the README.md:151-158 addresses, bare and as URIs: Monero byte 42 as `CYTicker "XMR"`, CashAddr with and without its prefix as `BCH`, EIP-55 as `CYUnknown UCChain`, `t1` and `u1` as `ZEC`, Dogecoin as `DOGE`; `solana:7JCf…ARnu?amount=0.5` as `CYTicker "SOL" Nothing (Just "0.5")`; with the USDC mint of the token table, `CYTicker "USDC" (Just "Solana")`; with another mint, `CYUnknown UCToken` |
 | | `flux:t1fwj…S5Jg?amount=5&message=Thanks` and `zel:t1fwj…S5Jg?amount=5` as `CYTicker "FLUX" Nothing (Just "5")`, with `walletUri` in their own schemes; `flux:za19w5…pj3?amount=1&memo=…`, a Flux Sapling address made for the test from random bytes, and the bare `za19w5…pj3` as `FLUX`; `zel:?action=pay&coin=flux&address=t1fwj…S5Jg&amount=3` as `FLUX`; the bare `t1fwj…S5Jg` as `ZEC`; text (U5, U7): `flux:` with a Zcash `zs1…` or `u1…` address or with a memo and a transparent address, `zcash:za1…`, the `sign` and `getaddress` actions, the coin `bitcoin`, and a `callback` |
