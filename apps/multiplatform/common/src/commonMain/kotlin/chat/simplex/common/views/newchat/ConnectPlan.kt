@@ -193,20 +193,19 @@ fun showNameWarningAlert(
       else String.format(generalGetString(MR.strings.simplex_name_own_expired_no_date_desc), nameStr, badgeDateText(warning.expiredAt)),
       generalGetString(MR.strings.simplex_name_renew) to ::openNameHowTo
     )
-    is NameWarning.Available -> {
-      val beforeSale = Clock.System.now() < simplexNameSaleStart
-      if (!own) alert(
-        generalGetString(if (openExistingChat == null) MR.strings.simplex_name_not_registered else MR.strings.simplex_name_no_longer_registered),
-        if (beforeSale) String.format(generalGetString(MR.strings.simplex_name_not_registered_link_desc), nameStr)
-        else String.format(generalGetString(MR.strings.simplex_name_available_desc), nameStr, namePrice(warning.price)),
-        generalGetString(if (beforeSale) MR.strings.open_simplex_domains else MR.strings.simplex_name_register) to ::openNameHowTo
-      ) else alert(
-        generalGetString(MR.strings.simplex_name_own_expired),
-        if (beforeSale) String.format(generalGetString(MR.strings.simplex_name_own_not_registered_link_desc), nameStr)
-        else String.format(generalGetString(MR.strings.simplex_name_own_available_desc), nameStr, namePrice(warning.price)),
-        generalGetString(if (beforeSale) MR.strings.open_simplex_domains else MR.strings.simplex_name_re_register) to ::openNameHowTo
-      )
-    }
+    is NameWarning.Available -> if (Clock.System.now() < simplexNameSaleStart) alert(
+      generalGetString(if (own) MR.strings.simplex_name_own_expired else if (openExistingChat == null) MR.strings.simplex_name_not_registered else MR.strings.simplex_name_no_longer_registered),
+      String.format(generalGetString(if (own) MR.strings.simplex_name_own_not_registered_link_desc else MR.strings.simplex_name_not_registered_link_desc), nameStr),
+      generalGetString(MR.strings.open_simplex_domains) to ::openNameHowTo
+    ) else if (!own) alert(
+      generalGetString(if (openExistingChat == null) MR.strings.simplex_name_not_registered else MR.strings.simplex_name_no_longer_registered),
+      String.format(generalGetString(MR.strings.simplex_name_available_desc), nameStr, namePrice(warning.price)),
+      generalGetString(MR.strings.simplex_name_register) to ::openNameHowTo
+    ) else alert(
+      generalGetString(MR.strings.simplex_name_own_expired),
+      String.format(generalGetString(MR.strings.simplex_name_own_available_desc), nameStr, namePrice(warning.price)),
+      generalGetString(MR.strings.simplex_name_re_register) to ::openNameHowTo
+    )
     NameWarning.ReservedForCommunity -> alert(
       generalGetString(MR.strings.simplex_name_not_registered),
       String.format(generalGetString(MR.strings.simplex_name_reserved_community_desc), nameStr),
