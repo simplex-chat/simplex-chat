@@ -105,7 +105,7 @@ interface PriceException {
 - cardOrigin: the card page on a second local port;
 - `bcrt` and 36 (stagenet subaddress), with the public keys of the dev keys in `dev/mock/addresses.ts`;
 - apiOrigin empty, for Vite's proxy; `VITE_API_ORIGIN` for the cross-origin test;
-- appOrigin as on mainnet, for the link's test.
+- appOrigin `http://127.0.0.1:5181`, a loopback port nothing serves.
 
 ### 3.4 Selection
 
@@ -121,10 +121,10 @@ Downtime, `downtime` true:
 
 | Screen | Shown |
 |---|---|
-| search | each name's row without Register, and "New orders open again soon." under the search |
-| checkout, its code check included, name selection | not reached; "New orders open again soon." |
-| an open invoice | status; the payment details withheld, and the card form unless already mounted; "Payment opens again soon." |
-| a committed order | status; its reveal signed after the downtime |
+| search | each name's row without Register, and "You will be able to order names again soon." under the search |
+| checkout, its code check included, name selection | not reached; "You will be able to order names again soon." |
+| an open invoice | status; the payment details withheld, and the card form unless already mounted; "You will be able to pay again soon." |
+| a committed order | status; "You will be able to continue the registration soon."; its reveal signed after the downtime |
 | a registered order, Your names, Check your code | as outside the downtime |
 
 A page that read `downtime: true` loads again when it reads `downtime: false`, so that a tab loaded before a page release signs with the released `SITE`. The conditions are those of `views/served-mode.ts` `reloadKeeps`, whose trigger becomes the downtime flag in place of `codesOnly`.
@@ -268,7 +268,7 @@ The name and the name address of an order are the page's own: the name from the 
 | the page inside a frame | `main.ts` | one line, with a link to the page in its own tab (8.3) |
 | `downtime` | `flow.orderable`, `revealFor`, selection, invoice | 3.5 |
 
-The warning: "The payment details of this order could not be checked, so they are not shown. Contact support with the order reference."
+The warning: "Sorry, the payment details of this order could not be checked, so they are not shown. Please contact support with the order reference."
 
 ```mermaid
 flowchart TD
@@ -523,11 +523,11 @@ Tests: e2e with the card page on a second local port: a `mount` from another ori
 ## 7. The name address and the dApp
 
 - The name address: the checksummed address of the name code's wallet (`walletOf`, `checksumAddress`).
-- It is shown wherever the name code is shown, with "Your name address is public. Send it with any support requests."
+- It is shown wherever the name code is shown, with "Your name address is public. Please include it in any support request."
 - The link: `${SITE.appOrigin}/${nameAddress}`, the dApp's page of that address, served by GitHub Pages from simplex-chat/simplex-domains-app-v3. Etherscan, opened directly, stays the view of the chain independent of SimpleX (threat model).
 - The label and the address are the page's own: the label from the record or the sealed order, the address from the name code.
 - Placement: the registered order page, under "Registered until …"; each registered row of Your names.
-- Text: "Open your names in the SimpleX names app. Check that this name is listed. If it is not, contact support.", with "Open your names in the SimpleX names app" as the link.
+- Text: "Please open your names in the SimpleX Names app and check that this name is listed. If it is not, please contact support.", with "open your names in the SimpleX Names app" as the link.
 - The page reads nothing from the chain.
 - New screenshot baselines: `order-registered-*`, the `names-rows-*` screens with a registered row, `checkout-code-*`, `names-check-*` with a name code.
 
@@ -577,7 +577,7 @@ flowchart LR
   - `base-uri 'none'`
   - `form-action 'none'`
 - `<meta name="referrer" content="strict-origin-when-cross-origin">`.
-- Framing: `frame-ancestors` is ignored in a meta CSP, and GitHub Pages sends a fixed set of headers; inside a frame, one line is drawn (`main.ts`), "This page opens only in its own tab.", with a link to the page.
+- Framing: `frame-ancestors` is ignored in a meta CSP, and GitHub Pages sends a fixed set of headers; inside a frame, one line is drawn (`main.ts`), "This page can be used only in its own tab. Please open it in a new tab.", with a link to the page.
 - `SITE.apiOrigin` is used by `api.ts` `call`, `config.ts` `readConfig` and the preload of `index.html`.
 - Service worker: the API origin is written into `sw.js` by `sw/plugin.ts`; in `strategyFor`, `${apiOrigin}/api/config` is routed as `config`, and other cross-origin requests are left to the network.
 - Subresources: the build's scripts, styles, fonts, images and jsQR from the page's origin.
