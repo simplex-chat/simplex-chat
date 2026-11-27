@@ -13,6 +13,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.chatModel
+import chat.simplex.common.views.chat.group.blockMemberForAll
 import chat.simplex.common.views.chat.group.removeMember
 import chat.simplex.common.views.chat.group.removeMemberDialog
 import chat.simplex.common.views.helpers.*
@@ -82,22 +83,30 @@ fun rejectMemberDialog(rhId: Long?, groupInfo: GroupInfo, member: GroupMember, c
 }
 
 fun acceptMemberDialog(rhId: Long?, groupInfo: GroupInfo, member: GroupMember, close: (() -> Unit)? = null) {
+  val blocked = (chatModel.getGroupMember(member.groupMemberId) ?: member).blockedByAdmin
+  val accept: (GroupMemberRole) -> Unit = { role ->
+    if (blocked) {
+      blockMemberForAll(rhId, groupInfo, listOf(member.groupMemberId), false) { acceptMember(rhId, groupInfo, member, role, close) }
+    } else {
+      acceptMember(rhId, groupInfo, member, role, close)
+    }
+  }
   AlertManager.shared.showAlertDialogButtonsColumn(
     title = generalGetString(MR.strings.accept_pending_member_alert_title),
-    text = generalGetString(MR.strings.accept_pending_member_alert_question),
+    text = generalGetString(if (blocked) MR.strings.accept_blocked_pending_member_alert_question else MR.strings.accept_pending_member_alert_question),
     buttons = {
       Column {
         // Accept as member
         SectionItemView({
           AlertManager.shared.hideAlert()
-          acceptMember(rhId, groupInfo, member, GroupMemberRole.Member, close)
+          accept(GroupMemberRole.Member)
         }) {
           Text(generalGetString(MR.strings.accept_pending_member_alert_confirmation_as_member), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
         }
         // Accept as observer
         SectionItemView({
           AlertManager.shared.hideAlert()
-          acceptMember(rhId, groupInfo, member, GroupMemberRole.Observer, close)
+          accept(GroupMemberRole.Observer)
         }) {
           Text(generalGetString(MR.strings.accept_pending_member_alert_confirmation_as_observer), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
         }

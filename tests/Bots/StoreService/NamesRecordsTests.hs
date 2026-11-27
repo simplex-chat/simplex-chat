@@ -74,7 +74,7 @@ namesRecordsTests = describe "StoreService names: records" $ do
     it "signs and encodes SetText edits as viem does" $ testViemVectors g
     it "encodes two edits as one multicall as viem does" $ testViemMulticall g
     it "reads a request's formats, then its link, then its signature" testRequestOrder
-    it "takes one or two edits of distinct keys with consecutive nonces, and a clear only alone" testRequestEdits
+    it "takes one or two edits of distinct keys with consecutive nonces, and refuses a clear" testRequestEdits
     it "bounds a link at 1024 bytes and takes only a link of the key's kind" testLinkBound
   describe "relay" $ do
     it "relays an edit with viem's calldata and answers its hash once mined" $ testRelayMined g
@@ -313,7 +313,6 @@ testRequestEdits = do
       ("three edits", [contactAt 4, channelAt 5, edit channelKind "" 6]),
       ("one key twice", [channelAt 4, edit channelKind "" 5]),
       ("a clear", [clearAt 4]),
-      ("a clear after a set", [contactAt 4, clearAt 5]),
       ("a nonce skipped", [contactAt 4, channelAt 6]),
       ("nonces reversed", [contactAt 5, channelAt 4]),
       ("one nonce twice", [contactAt 4, channelAt 4])

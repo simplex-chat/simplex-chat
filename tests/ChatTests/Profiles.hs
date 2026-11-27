@@ -125,6 +125,8 @@ chatProfileTests = do
     describe "business address" $ do
       it "create and connect via business address" testBusinessAddress
       it "update profiles with business address" testBusinessUpdateProfiles
+      it "customer removed or chat deleted with notice can't re-connect" testBusinessAddressNotice
+      it "app fixtures: business chat deletion and notice" testBusinessFixtures
   describe "contact address connection plan" $ do
     it "contact address ok to connect; known contact" testPlanAddressOkKnown
     it "own contact address" testPlanAddressOwn
@@ -132,6 +134,11 @@ chatProfileTests = do
     it "re-connect with deleted contact" testPlanAddressContactDeletedReconnected
     it "contact via address" testPlanAddressContactViaAddress
     it "contact via short address" testPlanAddressContactViaShortAddress
+    it "contact deleted silently with notice can't re-connect" testPlanAddressContactDeletedNoticeSilent
+    it "silent notice is not sent to previous version" $
+      runTestCfg2 testCfg testCfgVPrev testPlanAddressContactDeletedNoticePrevVersion
+    it "app fixtures: contact link notices" testContactNoticeFixtures
+    it "app fixtures: contact deletion" testContactDeletionFixtures
   describe "incognito" $ do
     it "connect incognito via invitation link" testConnectIncognitoInvitationLink
     it "connect incognito via contact address" testConnectIncognitoContactAddress
@@ -2259,6 +2266,57 @@ testBusinessUpdateProfiles = testChat4 businessProfile aliceProfile bobProfile c
     bob #$> ("/_get chat #1 count=1", chat, [(0, "Full deletion: on")])
     cath #$> ("/_get chat #1 count=1", chat, [(0, "Full deletion: on")])
 
+testBusinessAddressNotice :: HasCallStack => TestParams -> IO ()
+testBusinessAddressNotice = testChat3 businessProfile bobProfile cathProfile $
+  \biz bob cath -> do
+    biz ##> "/ad"
+    cLink <- getContactLink biz True
+    biz ##> "/auto_accept on business"
+    biz <## "auto_accept on, business"
+
+    connectBusinessCustomer biz bob cLink "bob" "Bob"
+    biz ##> "/rm #bob bob_1 notice={\"ttl\":86400}"
+    biz <## "#bob: you removed bob_1 from the group (signed)"
+    linkNoticesCount bob `shouldEventuallyReturn` 1
+    bob <// 50000
+    bob ##> ("/_connect plan 1 " <> cLink)
+    bob <## "business address: known business #biz"
+    bob <## "use #biz <message> to send messages"
+    leaveDeleteGroup bob "biz"
+    bob ##> ("/_connect plan 1 " <> cLink)
+    bob <##. "contact address: blocked until "
+    bob ##> ("/_connect 1 " <> cLink)
+    bob <##. "connection link: blocked until "
+
+    connectBusinessCustomer biz cath cLink "cath" "Catherine"
+    biz ##> "/_delete #2 full notice={}"
+    biz <## "#cath: you deleted the group (signed)"
+    linkNoticesCount cath `shouldEventuallyReturn` 1
+    cath <// 50000
+    cath ##> ("/_connect plan 1 " <> cLink)
+    cath <## "business address: known business #biz"
+    cath <## "use #biz <message> to send messages"
+    leaveDeleteGroup cath "biz"
+    cath ##> ("/_connect plan 1 " <> cLink)
+    cath <## "contact address: blocked permanently"
+    cath ##> ("/c " <> cLink)
+    cath <## "contact address: blocked permanently"
+    cath ##> ("/_connect 1 " <> cLink)
+    cath <## "connection link: blocked permanently"
+
+connectBusinessCustomer :: HasCallStack => TestCC -> TestCC -> String -> String -> String -> IO ()
+connectBusinessCustomer biz customer cLink name fullName = do
+  customer ##> ("/c " <> cLink)
+  customer <## "connection request sent!"
+  biz <## ("#" <> name <> " (" <> fullName <> "): accepting business address request...")
+  concurrentlyN_
+    [ biz <## ("#" <> name <> ": " <> name <> "_1 joined the group"),
+      customer
+        <### [ "#biz: joining the group...",
+               "#biz: you joined the group"
+             ]
+    ]
+
 testPlanAddressOkKnown :: HasCallStack => TestParams -> IO ()
 testPlanAddressOkKnown =
   testChat2 aliceProfile bobProfile $
@@ -2452,6 +2510,176 @@ testPlanAddressContactDeletedReconnected =
       bob ##> ("/c " <> cLink)
       bob <## "contact address: known contact alice_1"
       bob <## "use @alice_1 <message> to send messages"
+
+testPlanAddressContactDeletedNoticeSilent :: HasCallStack => TestParams -> IO ()
+testPlanAddressContactDeletedNoticeSilent =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      cLink <- connectViaAddress alice bob
+
+      alice ##> "/_delete @2 full notice={\"ttl\":86400}"
+      alice <## "bob: contact is deleted"
+      linkNoticesCount bob `shouldEventuallyReturn` 1
+      bob <// 50000
+
+      bob ##> ("/_connect plan 1 " <> cLink)
+      bob <## "contact address: known contact alice"
+      bob <## "use @alice <message> to send messages"
+      bob @@@ [("@alice", "hey")]
+
+      bob ##> "/d alice"
+      bob <## "alice: contact is deleted"
+      bob ##> ("/_connect plan 1 " <> cLink)
+      bob <##. "contact address: blocked until "
+      bob ##> ("/_connect plan 1 " <> linkAnotherSchema cLink)
+      bob <##. "contact address: blocked until "
+      bob ##> ("/c " <> cLink)
+      bob <##. "contact address: blocked until "
+      bob ##> ("/_connect 1 " <> cLink)
+      bob <##. "connection link: blocked until "
+      connectUsers alice bob
+      alice <##> bob
+
+testPlanAddressContactDeletedNoticePrevVersion :: HasCallStack => TestCC -> TestCC -> IO ()
+testPlanAddressContactDeletedNoticePrevVersion alice bob = do
+  cLink <- connectViaAddress alice bob
+
+  alice ##> "/_delete @2 full notify=off notice={\"ttl\":86400}"
+  alice <## "bad chat command: contact does not support notice"
+
+  bob ##> ("/_connect plan 1 " <> cLink)
+  bob <## "contact address: known contact alice"
+  bob <## "use @alice <message> to send messages"
+  linkNoticesCount bob `shouldReturn` 0
+
+connectViaAddress :: HasCallStack => TestCC -> TestCC -> IO String
+connectViaAddress alice bob = do
+  alice ##> "/ad"
+  cLink <- getContactLink alice True
+  connectViaLink alice bob cLink
+  alice <##> bob
+  pure cLink
+
+connectViaLink :: HasCallStack => TestCC -> TestCC -> String -> IO ()
+connectViaLink owner cc link = do
+  cc ##> ("/c " <> link)
+  owner <#? cc
+  ownerName <- showName owner
+  ccName <- userName cc
+  ccFullName <- showName cc
+  owner ##> ("/ac " <> ccName)
+  owner <## (ccFullName <> ": accepting contact request, you can send messages to contact")
+  concurrently_
+    (cc <## (ownerName <> ": contact is connected"))
+    (owner <## (ccFullName <> ": contact is connected"))
+
+testContactNoticeFixtures :: HasCallStack => TestParams -> IO ()
+testContactNoticeFixtures =
+  testChat4 aliceProfile bobProfile cathProfile danProfile $
+    \alice bob cath dan -> do
+      alice ##> "/ad"
+      (aliceLink, aliceFullLink) <- getContactLinks alice True
+      bob ##> ("/_connect plan 1 " <> aliceLink)
+      bob <## "contact address: ok to connect"
+      aliceLinkData <- getTermLine bob
+      connectViaLink alice bob aliceLink
+      cath ##> "/ad"
+      (cathLink, _) <- getContactLinks cath True
+      connectViaLink cath bob cathLink
+      connectUsers bob dan
+      alice ##> "/_delete @2 full notify=off notice={\"ttl\":86400}"
+      alice <## "bob: contact is deleted"
+      cath ##> "/_delete @2 full notify=off notice={}"
+      cath <## "bob: contact is deleted"
+      dan ##> "/_delete @2 full notify=on"
+      dan <## "bob: contact is deleted"
+      bob <## "dan (Daniel) deleted contact with you"
+      linkNoticesCount bob `shouldEventuallyReturn` 2
+      apiFixture
+        "bans/contact-notices"
+        bob
+        [(aliceFullLink, "ALICE_FULL_LINK"), (aliceLink, "ALICE_LINK"), (cathLink, "CATH_LINK")]
+        FixtureRequests
+          { frMarkdown = [aliceLink, cathLink],
+            frUris = [],
+            frCommands =
+              [ "/_get chat @2 count=0",
+                "/_get chat @4 count=0",
+                "/_delete @2 full notify=off",
+                "/_delete @3 full notify=off",
+                "/_delete @4 full notify=off",
+                "/_connect plan 1 " <> aliceLink,
+                "/_connect plan 1 " <> cathLink,
+                "/_connect 1 incognito=off " <> aliceFullLink <> " " <> aliceLink
+              ]
+          }
+      bob ##> ("/_prepare contact 1 " <> aliceFullLink <> " " <> aliceLink <> " " <> aliceLinkData)
+      bob <## "alice: contact is prepared"
+      case A.parseOnly strP (B.pack aliceLink) of
+        Left _ -> error "error parsing contact link"
+        Right shortLink -> void $ withCCUser bob $ \user -> withCCTransaction bob $ \db -> runExceptT $ createContact db (storeCxt $ chatController bob) user aliceProfile {contactLink = Just shortLink}
+      bansFixture "connect-contact-notice" bob ["/_connect contact @5 incognito=off", "/_connect contact 1 incognito=off 6"]
+
+testContactDeletionFixtures :: HasCallStack => TestParams -> IO ()
+testContactDeletionFixtures =
+  testChat5 aliceProfile bobProfile cathProfile danProfile eveProfile $
+    \alice bob cath dan eve -> do
+      alice ##> "/ad"
+      (aliceLink, _) <- getContactLinks alice True
+      mapM_ (\cc -> connectViaLink alice cc aliceLink) [bob, cath, dan]
+      connectUsers alice eve
+      bansFixture
+        "contact-deletion"
+        alice
+        [ "/_show_address 1",
+          "/_get chat @2 count=0",
+          "/_get chat @3 count=0",
+          "/_get chat @4 count=0",
+          "/_get chat @5 count=0",
+          "/_settings @2 {\n    \"enableNtfs\": \"all\",\n    \"favorite\": true\n}",
+          "/_delete @2 archive",
+          "/_delete @2 entity notify=on",
+          "/_delete @3 entity notify=off notice={\"ttl\":86400}",
+          "/_delete @4 full notify=off notice={}",
+          "/_delete @5 full notify=on",
+          "/_create user {\n    \"profile\": {\n        \"displayName\": \"frank\",\n        \"fullName\": \"\",\n        \"localAlias\": \"\"\n    },\n    \"pastTimestamp\": false,\n    \"userChatRelay\": false\n}"
+        ]
+      dropOutputs [alice, bob, cath, dan, eve]
+
+testBusinessFixtures :: HasCallStack => TestParams -> IO ()
+testBusinessFixtures = testChat4 businessProfile bobProfile cathProfile danProfile $
+  \biz bob cath dan -> do
+    biz ##> "/ad"
+    (bizLink, bizFullLink) <- getContactLinks biz True
+    biz ##> "/auto_accept on business"
+    biz <## "auto_accept on, business"
+    bob ##> ("/_connect plan 1 " <> bizLink)
+    bob <## "business address: ok to connect"
+    bizLinkData <- getTermLine bob
+    connectBusinessCustomer biz bob bizLink "bob" "Bob"
+    connectBusinessCustomer biz cath bizLink "cath" "Catherine"
+    connectBusinessCustomer biz dan bizLink "dan" "Daniel"
+    dan ##> "/l #biz"
+    dan <## "#biz: you left the group"
+    dan <## "use /d #biz to delete the group"
+    biz <##. "#dan: dan_1 left the group"
+    bansFixture
+      "business"
+      biz
+      [ "/_show_address 1",
+        "/_members #1",
+        "/_members #2",
+        "/_members #3",
+        "/_delete #1 full notify=off notice={\"ttl\":86400}",
+        "/_delete #2 entity notify=on"
+      ]
+    linkNoticesCount bob `shouldEventuallyReturn` 1
+    leaveDeleteGroup bob "biz"
+    apiFixture "bans/plan-business-notice" bob [(bizLink, "BUSINESS_LINK")] FixtureRequests {frMarkdown = [bizLink], frUris = [], frCommands = ["/_connect plan 1 " <> bizLink]}
+    bob ##> ("/_prepare contact 1 " <> bizFullLink <> " " <> bizLink <> " " <> bizLinkData)
+    bob <## "#biz: group is prepared"
+    bansFixture "connect-business-notice" bob ["/_get chat #2 count=0", "/_connect group #2 incognito=off"]
+    dropOutputs [biz, bob, cath, dan]
 
 testPlanAddressContactViaAddress :: HasCallStack => TestParams -> IO ()
 testPlanAddressContactViaAddress =

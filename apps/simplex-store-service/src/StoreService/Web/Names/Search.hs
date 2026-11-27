@@ -113,6 +113,7 @@ signHandler ct hashText req respond = case (LabelHash . unHex32 <$> strDecode (e
 -- | Nothing unless @length@ is a decimal integer in the label's bounds.
 queryLength :: Request -> Maybe NameLength
 queryLength req = join (lookup "length" $ queryString req) >>= eitherToMaybe . parseAll (boundedDecimal 0 maxBound) >>= nameLength
+{-# INLINE queryLength #-}
 
 searchAnswer :: NamesConfig -> DBStore -> Profiles -> IO UTCTime -> LabelHash -> CommunityName -> Either NameFound (RegisteredName, Maybe NameRecords) -> IO Response
 searchAnswer cfg@NamesConfig {nRecordEditsPerYear} st ps clock lh community f = do
@@ -136,6 +137,7 @@ recordEntities ps NameRecords {rdContact, rdChannel} =
 
 recordLinks :: LinkKind -> Text -> [(LinkKind, ConnShortLink 'CMContact)]
 recordLinks kind = take maxEntitiesPerKey . filter ((kind ==) . fst) . mapMaybe (nameLink . T.strip) . T.splitOn linkSeparator
+{-# INLINE recordLinks #-}
 
 linkSeparator :: Text
 linkSeparator = ";"

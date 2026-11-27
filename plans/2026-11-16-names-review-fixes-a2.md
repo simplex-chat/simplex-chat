@@ -1,5 +1,7 @@
 # Names service: A2 fixes (chain)
 
+Superseded where it differs: plans/2026-11-18-names-order-rules.md and apps/simplex-store-service/docs/names.md state the current rules and code.
+
 Branch `ep/names-fixes-a2`, from `ep/names-review-fixes` at 16114b784. Findings A2-1 … A2-38 of the review of https://github.com/simplex-chat/simplex-chat/pull/7703, decided by the user on 2026-11-16 under the type rule of plans/2026-11-16-names-review-fixes.md. Each finding is one commit, `store: <change>`.
 
 ## Errors and reverts

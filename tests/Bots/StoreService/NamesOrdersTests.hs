@@ -147,7 +147,7 @@ import UnliftIO.Temporary (withTempDirectory)
 namesOrdersTests :: Spec
 namesOrdersTests = describe "StoreService names: orders" $ do
   describe "paid orders" $ do
-    it "places an order as an unpaid live registration and answers the name invoice view" testPaidOrder
+    it "places an order as an unpaid live registration and answers the name invoice view, recorded for the page" testPaidOrder
     it "answers an exact resend with its invoice, also with a new timestamp and signature, and after the timestamp window" testExactResend
     it "answers an exact resend after its order went past unpaid, before any chain read" testResendPastUnpaid
     it "reads an exact resend's unpaid invoice past its expiry as expired, and its lapsed commitment as lapsed, writing neither" testResendReadsTime
@@ -171,7 +171,7 @@ namesOrdersTests = describe "StoreService names: orders" $ do
     it "places a code order as a queued live registration holding its code, answering only its id" testCodeOrder
     it "answers an exact resend with its id in any phase, the code spent or not, also after the terms changed on chain, before any chain read" testCodeResend
     it "refuses a resend differing in any one field, the code included, with a bare order_exists" testCodeOneFieldDiffers
-    it "refuses a bad signature, or another signer's, after the code check, and a refused link, reserving nothing" testCodeBadSignature
+    it "refuses a bad signature, or another signer's, after the code check, a reveal signed over a card's dispute days, and a refused link, reserving nothing" testCodeBadSignature
     it "refuses a code order meeting an open invoice for the name with order_exists" testCodeMeetsInvoice
     it "closes an overdue paid order of the same wallet and name, removing its reveal and cancelling its invoice after" testCodeClosesOverdue
     it "refuses each code that cannot pay with its tag" testCodeRefusals
@@ -208,7 +208,7 @@ namesOrdersTests = describe "StoreService names: orders" $ do
     it "ends taken an order paid while another paid order holds its name, the money paid for it added to its balance" testSettledWhileHeld
     it "holds the name for a failed paid order: a new order of it is refused name_taken, and a payment for it ends taken" testFailedHoldsName
     it "holds the name from a code order's placement, cancelling the name's other open invoices" testCodeOrderHoldsName
-    it "takes the invoice's row before recording a payment that moves no status" testSettlementLocksInvoice
+    it "writes the invoice's row when it records a payment that moves no status" testSettlementLocksInvoice
     it "sweeps each invoice on its own, skipping one whose order cannot be read" testSweepSkipsBadRow
     it "keeps out of a pass's sweep only the invoices whose read or settlement failed" testPassSweepsAroundFailures
     it "cleans up unpaid orders after 30 days, reading the provider first" testCleanup
@@ -223,7 +223,7 @@ namesOrdersTests = describe "StoreService names: orders" $ do
     it "reads and sweeps name invoices with the badge ones" testPollerQueries
     it "agrees between the sweep and the overdue close on which invoices hold money" testFundedAgreement
   describe "registration view" $ do
-    it "has the contract's fields" testViewFields
+    it "has the contract's fields, its view in each phase recorded for the page" testViewFields
     it "answers every field of a failed, a requeued and a taken order" testViewStates
     it "has the terms the order signed" testViewTerms
     it "reads the intent nonce and the acceptance of the terms of the name's kind only while a committed order awaits its signature, unread when either read fails" testViewReads
@@ -554,10 +554,10 @@ registrationOf v = case KM.lookup "registration" v of
 advance :: Ctx -> NominalDiffTime -> IO ()
 advance Ctx {cClock} by = modifyIORef' cClock (addUTCTime by)
 
-registrationsOf :: Ctx -> Address -> IO [NameRegistration]
+registrationsOf :: Ctx -> Address -> IO [NameRegistrationOrder]
 registrationsOf Ctx {cStore} owner = withTransaction cStore (`findRegistrations` owner)
 
-invoiceRegistration :: Ctx -> InvoiceId -> IO NameRegistration
+invoiceRegistration :: Ctx -> InvoiceId -> IO NameRegistrationOrder
 invoiceRegistration Ctx {cStore} invId =
   getInvoice cStore invId >>= \case
     Just InvoiceRow {irProduct = IPName rid} -> withTransaction cStore $ \db -> fromJust <$> getRegistration db rid
@@ -605,6 +605,7 @@ testPaidOrder = withOrders $ \ctx -> do
   (nrPhase reg, nrVersion reg, nrYears reg, nrPrice reg, nrPayment reg) `shouldBe` (OUnpaid invId, 1, 2, 10000, OPInvoice (SPMCrypto CCBtc) invId)
   nrOrderHash reg `shouldBe` orderHash ownerA (fieldsOf aliceOrder) (OTInvoice (SPMCrypto CCBtc) 10000)
   nrAgreedTerms reg `shouldBe` agreed plainTerms
+  answerFixture "invoice-view-btc" (200, Just $ KM.insert "invoiceId" "invoice" v)
 
 -- | Appendix C's order: alicebakery with no links, signed with the general terms' hash.
 vectorOrder :: Order
@@ -679,7 +680,9 @@ testOneFieldDiffers = withOrders $ \ctx -> do
   let variants =
         [ aliceOrder {oLabel = "dynamis", oCommitment = Just aliceCommitment},
           aliceOrder {oSecret = secretOf 2},
-          aliceOrder {oMethod = "xmr"}
+          aliceOrder {oMethod = "xmr"},
+          aliceOrder {oDuration = oDuration aliceOrder + 1},
+          aliceOrder {oSealed = "sealed-alicebakery-2"}
         ]
   forM_ variants $ \o -> placeOrder ctx o `shouldReturn` refusedWith 409 "order_exists"
   length <$> stubCalls (cStub ctx) `shouldReturn` 1
@@ -1081,7 +1084,7 @@ registered ctx code o =
 registrationAnswer :: RegistrationId -> (Int, Maybe J.Object)
 registrationAnswer (RegistrationId rid) = (200, Just $ KM.fromList [("registrationId", J.String rid)])
 
-registrationById :: Ctx -> RegistrationId -> IO NameRegistration
+registrationById :: Ctx -> RegistrationId -> IO NameRegistrationOrder
 registrationById Ctx {cStore} rid = withTransaction cStore $ \db -> fromJust <$> getRegistration db rid
 
 testCodeOrder :: IO ()
@@ -1164,6 +1167,8 @@ testCodeOneFieldDiffers = withOrders $ \ctx -> do
   let variants =
         [ (code, aliceOrder {oLabel = "dynamis", oCommitment = Just aliceCommitment}),
           (code, aliceOrder {oSecret = secretOf 2}),
+          (code, aliceOrder {oDuration = oDuration aliceOrder + 1}),
+          (code, aliceOrder {oSealed = "sealed-alicebakery-2"}),
           (other, aliceOrder)
         ]
   forM_ variants $ \(c, o) -> register ctx c o `shouldReturn` refusedWith 409 "order_exists"
@@ -1180,6 +1185,7 @@ testCodeBadSignature = withOrders $ \ctx -> do
   postRegister ctx (inOrder (KM.delete "signature") good) `shouldReturn` refusedWith 400 "bad_request"
   unknown <- unissuedCode ctx 8
   register ctx unknown aliceOrder {oKey = keyB} `shouldReturn` refusedWith 400 "code_invalid"
+  register ctx code aliceOrder {oMethod = "card"} `shouldReturn` refusedWith 400 "bad_request"
   register ctx code aliceOrder {oContact = Just "https://smp8.simplex.im/a#contact"} `shouldReturn` (400, Just $ KM.fromList [("type", "invalid_link"), ("kind", "contact")])
   pcReservedBy <$> readCode ctx issued `shouldReturn` Nothing
   length <$> registrationsOf ctx ownerA `shouldReturn` 0
@@ -1566,7 +1572,7 @@ withOrdersCancelling signal action = withOrders $ \ctx -> do
 testSettlementQueues :: IO ()
 testSettlementQueues = withOrders $ \ctx -> do
   (invId, _) <- placed ctx aliceOrder
-  NameRegistration {nrId} <- invoiceRegistration ctx invId
+  NameRegistrationOrder {nrId} <- invoiceRegistration ctx invId
   parked <- newEmptyMVar
   -- the version read is pinned, so only a publish can wake the waiter
   waiter <- async $ awaitChange (oePhases $ cOrders ctx) nrId (putMVar parked () >> pure 1) 1 10000000
@@ -1605,7 +1611,7 @@ testSettledWhileHeld = withOrders $ \ctx@Ctx {cStore = st} -> do
   settleNow ctx aliceInv settled `shouldReturn` ISPaid
   settleNow ctx bobInv settled `shouldReturn` ISPaid
   nrPhase <$> invoiceRegistration ctx aliceInv `shouldReturn` OQueued
-  NameRegistration {nrId, nrPhase} <- invoiceRegistration ctx bobInv
+  NameRegistrationOrder {nrId, nrPhase} <- invoiceRegistration ctx bobInv
   nrPhase `shouldBe` OTaken orderTime
   fmap blAmount <$> withTransaction st (`getBalance` nrId) `shouldReturn` Just alicePrice
 
@@ -1644,7 +1650,7 @@ testSweepSkipsBadRow :: IO ()
 testSweepSkipsBadRow = withOrders $ \ctx@Ctx {cStore = st} -> do
   (bad, _) <- placed ctx aliceOrder
   (good, _) <- placed ctx aliceOrder {oLabel = "dynamis", oPrice = 20000, oSecret = secretOf 2}
-  NameRegistration {nrId = RegistrationId badId} <- invoiceRegistration ctx bad
+  NameRegistrationOrder {nrId = RegistrationId badId} <- invoiceRegistration ctx bad
   withConnection st $ \db -> DB.execute db "UPDATE sx_badge_service_name_registrations SET phase = 'lost' WHERE registration_id = ? AND phase = ?" (badId, "unpaid" :: Text)
   let later = addUTCTime 3600 orderTime
   overdue@[OverdueInvoice {oiProviderRef = badRef}, _] <- mapM (overdueOf st) [bad, good]
@@ -1670,7 +1676,7 @@ testPassSweepsAroundFailures = do
     (poisoned, _) <- placed ctx $ at' aliceOrder
     (unread, _) <- placed ctx $ at' aliceOrder {oLabel = "dynamis", oPrice = 20000, oSecret = secretOf 2}
     (good, _) <- placed ctx $ at' aliceOrder {oOwner = ownerBText, oKey = keyB, oSecret = secretOf 3}
-    NameRegistration {nrId = RegistrationId poisonedId} <- invoiceRegistration ctx poisoned
+    NameRegistrationOrder {nrId = RegistrationId poisonedId} <- invoiceRegistration ctx poisoned
     withConnection st $ \db -> DB.execute db "UPDATE sx_badge_service_name_registrations SET phase = 'lost' WHERE registration_id = ? AND phase = ?" (poisonedId, "unpaid" :: Text)
     poisonedRef <- refOf poisoned
     refOf unread >>= writeIORef unreadable
@@ -1839,6 +1845,18 @@ testViewFields = withServiceStore $ \st -> withFakeEthNode $ \node -> do
   map J.toJSON [FRSignatureRefused, FRMonthEnded, FRUnread] `shouldBe` ["signatureRefused", "monthEnded", "unread"]
   map J.toJSON [ICExpired, ICCancelled, ICReversed] `shouldBe` ["expired", "cancelled", "reversed"]
   map J.toJSON [PUnpaid, PClosed, PRegistered, PEnded] `shouldBe` ["unpaid", "closed", "registered", "ended"]
+  forM_
+    [ ("unpaid", PVUnpaid),
+      ("committed-awaiting", awaiting $ acceptance False fakeGeneralTerms),
+      ("committed-awaiting-community", awaiting $ acceptance True fakeCommunityTerms),
+      ("committed-unread", committed $ SAwaiting TSUnread),
+      ("committed-signed", committed SSigned),
+      ("committed-lapsed", committed SLapsed),
+      ("closed-cancelled", PVClosed ICCancelled),
+      ("failed", PVFailed FRRegistryRefused Nothing),
+      ("failed-held", PVFailed FRUnread (Just t0))
+    ]
+    $ \(name, phase) -> storeFixture ("registration-" <> name) 200 (Just $ J.toJSON $ viewWith Nothing phase) Nothing
 
 testViewStates :: IO ()
 testViewStates = withServiceStore $ \st -> withFakeEthNode $ \node -> do
@@ -1923,8 +1941,8 @@ testViewReads = withServiceStore $ \st -> withFakeEthNode $ \node -> do
   phaseView ct t0 taken `shouldReturn` PVTaken
   phaseView ct t0 committed `shouldReturn` awaiting TSUnread
 
-readToSignOf :: Contracts -> NameRegistration -> IO ToSign
-readToSignOf ct NameRegistration {nrOwner, nrLabelHash} = readToSign ct "the view" nrOwner nrLabelHash
+readToSignOf :: Contracts -> NameRegistrationOrder -> IO ToSign
+readToSignOf ct NameRegistrationOrder {nrOwner, nrLabelHash} = readToSign ct "the view" nrOwner nrLabelHash
 
 testViewReadsBounded :: IO ()
 testViewReadsBounded = withServiceStore $ \st -> withFakeEthNode $ \node -> do
