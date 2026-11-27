@@ -3297,8 +3297,7 @@ object ChatController {
       is CR.DeletedMemberUser -> // TODO update user member
         if (active(r.user)) {
           withContext(Dispatchers.Main) {
-            chatModel.chatsContext.updateGroup(rhId, r.groupInfo)
-            chatModel.chatsContext.removeSubmembers(rhId, r.groupInfo, r.groupInfo.membership)
+            chatModel.chatsContext.upsertGroupMember(rhId, r.groupInfo, r.groupInfo.membership)
             if (r.withMessages) {
               chatModel.chatsContext.removeMemberItems(rhId, r.groupInfo.membership, byMember = r.member, r.groupInfo)
             }
@@ -3314,7 +3313,6 @@ object ChatController {
           withContext(Dispatchers.Main) {
             chatModel.chatsContext.updateGroup(rhId, r.groupInfo)
             chatModel.chatsContext.upsertGroupMember(rhId, r.groupInfo, r.deletedMember)
-            chatModel.chatsContext.removeSubmembers(rhId, r.groupInfo, r.deletedMember)
             if (r.withMessages) {
               chatModel.chatsContext.removeMemberItems(rhId, r.deletedMember, byMember = r.byMember, r.groupInfo)
             }
@@ -3331,7 +3329,6 @@ object ChatController {
           withContext(Dispatchers.Main) {
             chatModel.chatsContext.updateGroup(rhId, r.groupInfo)
             chatModel.chatsContext.upsertGroupMember(rhId, r.groupInfo, r.member)
-            chatModel.chatsContext.removeSubmembers(rhId, r.groupInfo, r.member)
           }
           withContext(Dispatchers.Main) {
             chatModel.secondaryChatsContext.value?.upsertGroupMember(rhId, r.groupInfo, r.member)
@@ -3800,8 +3797,7 @@ object ChatController {
     val groupInfo = apiLeaveGroup(rh, groupId)
     if (groupInfo != null) {
       withContext(Dispatchers.Main) {
-        chatModel.chatsContext.updateGroup(rh, groupInfo)
-        chatModel.chatsContext.removeSubmembers(rh, groupInfo, groupInfo.membership)
+        chatModel.chatsContext.upsertGroupMember(rh, groupInfo, groupInfo.membership)
       }
     }
   }

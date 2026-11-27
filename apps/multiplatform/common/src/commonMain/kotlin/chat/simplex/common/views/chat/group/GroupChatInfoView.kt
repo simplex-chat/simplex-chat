@@ -1516,7 +1516,6 @@ fun removeMembers(rhId: Long?, groupInfo: GroupInfo, memberIds: List<Long>, with
         chatModel.chatsContext.updateGroup(rhId, updatedGroupInfo)
         updatedMembers.forEach { updatedMember ->
           chatModel.chatsContext.upsertGroupMember(rhId, updatedGroupInfo, updatedMember)
-          chatModel.chatsContext.removeSubmembers(rhId, updatedGroupInfo, updatedMember)
           if (withMessages) {
             chatModel.chatsContext.removeMemberItems(rhId, updatedMember, byMember = groupInfo.membership, groupInfo)
           }

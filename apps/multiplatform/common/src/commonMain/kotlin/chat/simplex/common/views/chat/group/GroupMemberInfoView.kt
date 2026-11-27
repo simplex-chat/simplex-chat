@@ -368,7 +368,6 @@ fun removeMember(rhId: Long?, groupInfo: GroupInfo, member: GroupMember, withMes
         chatModel.chatsContext.updateGroup(rhId, updatedGroupInfo)
         removedMembers.forEach { removedMember ->
           chatModel.chatsContext.upsertGroupMember(rhId, updatedGroupInfo, removedMember)
-          chatModel.chatsContext.removeSubmembers(rhId, updatedGroupInfo, removedMember)
           if (withMessages) {
             chat.simplex.common.platform.chatModel.chatsContext.removeMemberItems(rhId, removedMember, byMember = groupInfo.membership, groupInfo)
           }

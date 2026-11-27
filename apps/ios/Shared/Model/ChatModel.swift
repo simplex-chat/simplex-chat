@@ -1415,6 +1415,9 @@ final class ChatModel: ObservableObject {
     }
 
     func upsertGroupMember(_ groupInfo: GroupInfo, _ member: GroupMember) -> Bool {
+        if member.memberStatus == .memLeft || member.memberStatus == .memRemoved {
+            removeSubmembers(groupInfo, member)
+        }
         // user member was updated
         if groupInfo.membership.groupMemberId == member.groupMemberId {
             updateGroup(groupInfo)
@@ -1446,7 +1449,7 @@ final class ChatModel: ObservableObject {
         }
     }
 
-    func removeSubmembers(_ groupInfo: GroupInfo, _ member: GroupMember) {
+    private func removeSubmembers(_ groupInfo: GroupInfo, _ member: GroupMember) {
         for gMember in groupMembers where gMember.wrapped.memberVia == member.memberId {
             var submember = gMember.wrapped
             submember.memberStatus = .memRemoved

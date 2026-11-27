@@ -2100,10 +2100,7 @@ func apiBlockMembersForAll(_ groupId: Int64, _ memberIds: [Int64], _ blocked: Bo
 func leaveGroup(_ groupId: Int64) async {
     do {
         let groupInfo = try await apiLeaveGroup(groupId)
-        DispatchQueue.main.async {
-            ChatModel.shared.updateGroup(groupInfo)
-            ChatModel.shared.removeSubmembers(groupInfo, groupInfo.membership)
-        }
+        DispatchQueue.main.async { _ = ChatModel.shared.upsertGroupMember(groupInfo, groupInfo.membership) }
     } catch let error {
         logger.error("leaveGroup error: \(responseError(error))")
     }
@@ -2906,8 +2903,7 @@ func processReceivedMsg(_ res: ChatEvent) async {
     case let .deletedMemberUser(user, groupInfo, member, withMessages): // TODO update user member
         if active(user) {
             await MainActor.run {
-                m.updateGroup(groupInfo)
-                m.removeSubmembers(groupInfo, groupInfo.membership)
+                _ = m.upsertGroupMember(groupInfo, groupInfo.membership)
                 if withMessages {
                     m.removeMemberItems(groupInfo.membership, byMember: member, groupInfo)
                 }
@@ -2918,7 +2914,6 @@ func processReceivedMsg(_ res: ChatEvent) async {
             await MainActor.run {
                 m.updateGroup(groupInfo)
                 _ = m.upsertGroupMember(groupInfo, deletedMember)
-                m.removeSubmembers(groupInfo, deletedMember)
                 if withMessages {
                     m.removeMemberItems(deletedMember, byMember: byMember, groupInfo)
                 }
@@ -2929,7 +2924,6 @@ func processReceivedMsg(_ res: ChatEvent) async {
             await MainActor.run {
                 m.updateGroup(groupInfo)
                 _ = m.upsertGroupMember(groupInfo, member)
-                m.removeSubmembers(groupInfo, member)
             }
         }
     case let .groupDeleted(user, groupInfo, _): // TODO update user member

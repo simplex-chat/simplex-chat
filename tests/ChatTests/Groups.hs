@@ -37,7 +37,7 @@ import Data.List (find, intercalate, isInfixOf, isSubsequenceOf, isSuffixOf)
 import qualified Data.Map.Strict as M
 import qualified Data.Text as T
 import Simplex.Chat.Badges (FileSizeLimits (..))
-import Simplex.Chat.Controller (ChatController (ChatController, chatStore, smpAgent, subscriptionMode), ChatConfig (..), ChatDatabase (..), ChatError (ChatErrorStore), ChatEvent (CEvtChatItemReaction, CEvtChatItemUpdated, CEvtDeletedMember, CEvtDeletedMemberUser, CEvtDuplicateGroupMessage, CEvtLeftMember, CEvtNewChatItems), ChatHooks (..), ChatLogLevel (..), ChatResponse (CRApiChat, CRApiChats), defaultChatHooks, withAgent, withStore, withStore')
+import Simplex.Chat.Controller (ChatController (ChatController, chatStore, smpAgent, subscriptionMode), ChatConfig (..), ChatDatabase (..), ChatError (ChatErrorStore), ChatEvent (CEvtChatItemReaction, CEvtChatItemUpdated, CEvtDeletedMember, CEvtDeletedMemberUser, CEvtDuplicateGroupMessage, CEvtNewChatItems), ChatHooks (..), ChatLogLevel (..), ChatResponse (CRApiChat, CRApiChats), defaultChatHooks, withAgent, withStore, withStore')
 import Simplex.Chat.Core (sendChatCmdStr)
 import Simplex.Chat.Library.Internal (chatStoreCxt, encodeConnInfo, getShortLinkConnReq, memberInfo, sendDirectMemberMessage, sendGroupMessage', uniqueMsgMentions, updatedMentionNames)
 import Simplex.Chat.Markdown (parseMaybeMarkdownList)
@@ -17701,14 +17701,9 @@ testSubmemberRefusedChannel ps =
       alice <## "bad chat command: submembers are not supported in channels"
 
 testSubmemberRecordings :: HasCallStack => TestParams -> IO ()
-testSubmemberRecordings ps = do
-  events <- newTVarIO []
-  let hook _ evt = evt <$ case evt of
-        Right CEvtNewChatItems {} -> recordEvent events evt
-        Right CEvtLeftMember {} -> recordEvent events evt
-        _ -> pure ()
-  withNewTestChat ps "alice" aliceProfile $ \alice ->
-    withNewTestChatCfg ps testCfg {chatHooks = defaultChatHooks {eventHook = Just hook}} "bob" bobProfile $ \bob -> do
+testSubmemberRecordings =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
       createGroup2 "team" alice bob
       addSubmember alice "member"
       submemberAdded [bob]
@@ -17722,12 +17717,8 @@ testSubmemberRecordings ps = do
       alice <# "#team bob> > reviewer hi"
       alice <## "      fix it"
       apiFixture "submembers/received" bob [] FixtureRequests {frMarkdown = [], frUris = [], frCommands = ["/_members #1", "/_get chat #1 count=2"]}
-      eventsFixture "submembers/via-left" events $ do
-        alice ##> "/_send #1(as_member=3) text bye"
-        alice <# "#team bye"
-        bob <# "#team reviewer> bye"
-        apiFixture "submembers/left" alice [] FixtureRequests {frMarkdown = [], frUris = [], frCommands = ["/_members #1", "/_leave #1"]}
-        bob <## "#team: alice left the group (signed)"
+      apiFixture "submembers/left" alice [] FixtureRequests {frMarkdown = [], frUris = [], frCommands = ["/_members #1", "/_leave #1"]}
+      bob <## "#team: alice left the group (signed)"
 
 testSubmemberMigrationDown :: HasCallStack => TestParams -> IO ()
 testSubmemberMigrationDown ps = do

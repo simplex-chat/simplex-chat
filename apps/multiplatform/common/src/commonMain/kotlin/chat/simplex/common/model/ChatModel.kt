@@ -1069,6 +1069,9 @@ object ChatModel {
     }
 
     suspend fun upsertGroupMember(rhId: Long?, groupInfo: GroupInfo, member: GroupMember): Boolean {
+      if (member.memberStatus == GroupMemberStatus.MemLeft || member.memberStatus == GroupMemberStatus.MemRemoved) {
+        removeSubmembers(rhId, groupInfo, member)
+      }
       // user member was updated
       if (groupInfo.membership.groupMemberId == member.groupMemberId) {
         updateGroup(rhId, groupInfo)
@@ -1115,7 +1118,7 @@ object ChatModel {
       }
     }
 
-    suspend fun removeSubmembers(rhId: Long?, groupInfo: GroupInfo, member: GroupMember) {
+    private suspend fun removeSubmembers(rhId: Long?, groupInfo: GroupInfo, member: GroupMember) {
       groupMembers.value.filter { it.memberVia == member.memberId }.forEach {
         upsertGroupMember(rhId, groupInfo, it.copy(memberStatus = GroupMemberStatus.MemRemoved))
       }
