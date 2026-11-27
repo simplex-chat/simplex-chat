@@ -7,6 +7,7 @@ module Bots.StoreService.StripeTests (badgeStripeTests) where
 import StoreService.Config (StripeConfig (..))
 import StoreService.Providers
   ( Funded (..),
+    InvoiceKind (..),
     ListPass (..),
     OrderDraft (..),
     PaymentSignal (..),
@@ -90,7 +91,7 @@ badgeStripeTests = describe "badge stripe adapter" $ do
     it "accepts a signature up to 15 minutes from now, either way, and refuses one further out" testWebhookTimestampWindow
 
 fiftyFourDollars :: OrderDraft
-fiftyFourDollars = OrderDraft {odAmount = CurrencyAmount 5400, odCurrency = "usd", odReference = sampleReference}
+fiftyFourDollars = OrderDraft {odAmount = CurrencyAmount 5400, odCurrency = "usd", odReference = sampleReference, odKind = IKBadge}
 
 sampleReference :: Text
 sampleReference = "Xq3v9TzK2mB7wR4yLp8cNd"

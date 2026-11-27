@@ -7,7 +7,7 @@ module Bots.StoreService.NamesPhasesTests (namesPhasesTests, change, held, woken
 
 import Bots.StoreService.NamesOrdersTests
 import Bots.StoreService.NamesStoreTests (hashFixture, order, ownerA, placePaid, reveal, t0)
-import Bots.StoreService.WebTests (bounded, capturingStderr, fieldOf, jsonObject, phaseOf, phaseValue, rcv, statusOf, webGet)
+import Bots.StoreService.WebTests (bounded, capturingStderr, fieldOf, jsonObject, phaseOf, phaseValue, rcv, statusOf)
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (Async, async, cancel, wait, waitCatchSTM)
 import qualified Control.Concurrent.Async as Async
@@ -100,7 +100,7 @@ shortHold :: Int
 shortHold = 500000
 
 get :: Ctx -> String -> IO (Int, J.Object)
-get Ctx {cClient} path = webGet cClient path >>= \r -> (statusOf r,) <$> jsonObject r
+get ctx path = signedGet ctx path >>= \r -> (statusOf r,) <$> jsonObject r
 
 -- | The holds the server has taken: invoices held on a payment, and waiters on a registration's version.
 subscriptions :: Ctx -> STM (Int, Int)
@@ -201,7 +201,7 @@ testPaidHoldsOnVersion = bounded "paid holds on version" $ withPolls holdMicros 
 testLatePaidAnswersAtOnce :: IO ()
 testLatePaidAnswersAtOnce = bounded "late paid" $ withPolls holdMicros $ \Polls {pCtx = ctx} -> do
   (inv, _) <- placed ctx aliceOrder
-  fst <$> post ctx (invoicePath inv <> "/cancel") "" `shouldReturn` 200
+  fst <$> cancelInvoice ctx inv `shouldReturn` 200
   settleNow ctx inv settled `shouldReturn` ISPaid
   NameRegistration {nrVersion} <- invoiceRegistration ctx inv
   (status, o) <- answeredAtOnce ctx $ invoicePath inv <> following ISPaid nrVersion settledPaid True

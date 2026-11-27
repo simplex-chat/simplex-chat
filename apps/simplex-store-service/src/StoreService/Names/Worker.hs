@@ -63,7 +63,7 @@ import StoreService.Names.Codes (releaseCode)
 import StoreService.Names.Contracts (CommitmentAges (..), Contracts (..), acceptedTerms, commitmentAges, commitmentTime, communityName, confirmedTag, controllerAvailable, disputeUntil, forgetNamePolicy, namePolicy)
 import StoreService.Names.Orders (Landing (..), OrderRefusal, OrdersEnv (..), WriteRefusal (..), checkLanded, confirmLanded, confirmedBlock, versionWritten)
 import StoreService.Names.Phases (RegistrationId (..), awaitChange, publish)
-import StoreService.Names.Registration (TermsAcceptance (..), acceptCalldata, commitCalldata, disputeSeconds, policyDomain, registerWithCreditCalldata, sponsorDomain, termsKind, verifyAcceptance, verifyRegisterIntent)
+import StoreService.Names.Registration (RegisterIntent (..), TermsAcceptance (..), acceptCalldata, commitCalldata, disputeSeconds, makeCommitment, policyDomain, registerWithCreditCalldata, sponsorDomain, termsKind, verifyAcceptance, verifyRegisterIntent)
 import StoreService.Names.Reveal (intentOf)
 import StoreService.Names.Revert (RevertName (..), RevertReason (..))
 import StoreService.Names.Sender (PendingTx, SendError (..), Sender, awaitOutcome, inFlightTransaction, ptHash, submitTransaction, submitTransactionIf)
@@ -411,10 +411,17 @@ sendRegister w@Worker {wkOrders = OrdersEnv {oeConfig = cfg@NamesConfig {nChain 
             Left e -> pure $ failure r $ SFSend e
 
 intentRefused :: Worker -> UTCTime -> NameRegistration -> NameReveal -> IO (Maybe Next)
-intentRefused w@Worker {wkOrders = OrdersEnv {oeConfig = cfg@NamesConfig {nChain = ChainConfig {cChainId, cSponsor}}}} now r rv =
-  verifyRegisterIntent (sponsorDomain cChainId cSponsor) now (intentOf cfg (nrOwner r) (nrDuration r) (nrDisputeDays r) rv) >>= \case
-    Left refusal -> Just <$> inTurn w r (failOrder w now r FRSignatureRefused $ "its stored signature is refused under the service's current configuration, " <> T.pack refusal)
+intentRefused w@Worker {wkOrders = OrdersEnv {oeConfig = cfg@NamesConfig {nChain = ChainConfig {cChainId, cSponsor}}}} now r@NameRegistration {nrId = RegistrationId rid, nrCommitment} rv =
+  verifyRegisterIntent (sponsorDomain cChainId cSponsor) now intent >>= \case
+    Left refusal
+      | makeCommitment (riRegistration intent) /= nrCommitment ->
+          Just <$> inTurn w r (failOrder w now r FRSignatureRefused $ "its commitment is not the one the service's current configuration makes, so its stored signature is refused, " <> T.pack refusal)
+      | otherwise -> do
+          logWarn $ "names worker: registration " <> rid <> ": its stored signature is refused under the service's current configuration, " <> T.pack refusal <> ", so its page signs again"
+          Just <$> save w now r {nrReveal = Nothing}
     Right () -> pure Nothing
+  where
+    intent = intentOf cfg (nrOwner r) (nrDuration r) (nrDisputeDays r) rv
 
 registerSent :: Worker -> UTCTime -> NameRegistration -> Commit -> PendingTx -> IO Next
 registerSent w now r@NameRegistration {nrPhase} c p

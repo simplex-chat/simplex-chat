@@ -1,3 +1,4 @@
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
@@ -12,6 +13,8 @@ module StoreService.Names.Signatures
     orderMessage,
     findMessage,
     selectionMessage,
+    OrderAction (..),
+    orderRequestMessage,
     parseChecksumAddress,
     parseAnyCaseAddress,
   )
@@ -90,6 +93,24 @@ findMessage owner timestamp = message ["find", hex $ unAddress owner, tshow time
 
 selectionMessage :: RegistrationId -> OrderFields -> Word64 -> ByteString
 selectionMessage (RegistrationId rid) order timestamp = message $ ["name", rid] <> orderWords order <> [tshow timestamp]
+
+data OrderAction = OARead | OACancel | OARetry | OAReveal
+
+instance TextEncoding OrderAction where
+  textEncode = \case
+    OARead -> "read"
+    OACancel -> "cancel"
+    OARetry -> "retry"
+    OAReveal -> "reveal"
+  textDecode = \case
+    "read" -> Just OARead
+    "cancel" -> Just OACancel
+    "retry" -> Just OARetry
+    "reveal" -> Just OAReveal
+    _ -> Nothing
+
+orderRequestMessage :: Text -> OrderAction -> Word64 -> ByteString
+orderRequestMessage oid action timestamp = message ["order", oid, textEncode action, tshow timestamp]
 
 message :: [Text] -> ByteString
 message = encodeUtf8 . T.unwords . ("simplex.domains" :)

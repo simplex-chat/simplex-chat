@@ -61,7 +61,7 @@ import StoreService.Names.Worker (CloseRefusal (..), Closed (..), closeRegistrat
 import StoreService.Options
 import StoreService.Poller (PollerEnv (peCreditPassAt, peListedOk), newPollerEnv, newReadHints, runPoller)
 import StoreService.Providers (Provider (pProvider), minorDecimal)
-import StoreService.Providers.BTCPay (btcpayProvider)
+import StoreService.Providers.BTCPay (btcpayProvider, logPayeeKeys)
 import StoreService.Providers.Stripe (stripeProvider)
 import StoreService.Store
 import StoreService.Store.Invoices (currentSecond, seedCatalog, truncateToSecond)
@@ -313,6 +313,7 @@ storeService opts serviceCfg baseCfg env = do
       -- Seed before the listener accepts anything, since every checkout is priced from these.
       seedServiceCatalog chatStore
       btc <- maybe (pure []) (fmap (: []) . btcpayProvider) (btcpay sc)
+      when (isJust $ names sc) $ mapM_ logPayeeKeys (btcpay sc)
       str <- maybe (pure []) (fmap (: []) . stripeProvider) (stripe sc)
       let providers = btc <> str
       hints <- newReadHints
@@ -327,16 +328,17 @@ storeService opts serviceCfg baseCfg env = do
       pure $ [runWebListeners webEnv, runPoller pollerEnv] <> nameLanes <> metricsLane
 
 startNames :: ChatController -> Turns -> Waiters -> [Provider] -> (T.Text -> IO ()) -> NamesConfig -> IO NamesEnv
-startNames cc@ChatController {chatStore} turns waiters providers report nc@NamesConfig {nTLD, nCodesOnly, nMinPriceCentsPerYear, nChain = ChainConfig {cChainId}} =
+startNames cc@ChatController {chatStore} turns waiters providers report nc@NamesConfig {nTLD, nCodesOnly, nDowntime, nMinPriceCentsPerYear, nChain = ChainConfig {cChainId}} =
   readTVarIO (currentUser cc) >>= \case
     Nothing -> putStrLn "No current user" >> exitFailure
     Just user -> do
-      logNote $ "names: on, TLD " <> safeDecodeUtf8 (strEncode nTLD) <> ", chain " <> tshow cChainId <> ", price floor " <> tshow nMinPriceCentsPerYear <> " cents a year" <> codesOnlyNote
+      logNote $ "names: on, TLD " <> safeDecodeUtf8 (strEncode nTLD) <> ", chain " <> tshow cChainId <> ", price floor " <> tshow nMinPriceCentsPerYear <> " cents a year" <> codesOnlyNote <> downtimeNote
       ne@NamesEnv {neContracts} <- newNamesEnv cc user nc chatStore turns waiters providers report
       logNamePolicy nc neContracts
       pure ne
   where
     codesOnlyNote = if nCodesOnly then ", codes only: registration needs a prepaid code" else ""
+    downtimeNote = if nDowntime then ", downtime: name invoices, code orders and selections are refused" else ""
 
 logNamePolicy :: NamesConfig -> Contracts -> IO ()
 logNamePolicy NamesConfig {nCommunity} ct =

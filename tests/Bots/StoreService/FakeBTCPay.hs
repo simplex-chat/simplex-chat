@@ -30,6 +30,7 @@ where
 
 import StoreService.Config (BTCPayConfig (..), SpeedPolicy (..), providerCheckoutTimeoutMicros, providerTimeoutMicros)
 import Bots.StoreService.FakeHttp (nextFakeId, setSwitch, stalledAnswer)
+import Bots.StoreService.NamesAddressProofTests (devBitcoinAddresses, devBitcoinKey, devMoneroKey, stagenetSubaddresses)
 import Control.Applicative ((<|>))
 import Control.Concurrent.STM
 import Control.Monad (join)
@@ -112,8 +113,12 @@ data InvoiceState = InvoiceState
     -- | The method's amount, when a test sets one other than the fixture's.
     isAmount :: Maybe Text,
     isSpeedPolicy :: Maybe Text,
-    isPayments :: Maybe J.Value
+    isPayments :: Maybe J.Value,
+    isPayee :: Maybe Payee
   }
+  deriving (Eq, Show)
+
+data Payee = Payee {pyAddress :: Text, pyIndex :: J.Object}
   deriving (Eq, Show)
 
 data FailPlan = FailPlan {fpSkip :: Int, fpCalls :: Int, fpStatus :: Int}
@@ -129,11 +134,12 @@ data FakeState = FakeState
     fsStalled :: Bool,
     -- | The rates answer set by a test, else each pair asked at the fixtures' rate.
     fsRates :: Maybe J.Value,
-    fsRequests :: [FakeRequest]
+    fsRequests :: [FakeRequest],
+    fsPayees :: [(Text, [Payee])]
   }
 
-initialState :: FakeState
-initialState =
+initialState :: [(Text, [Payee])] -> FakeState
+initialState fsPayees =
   FakeState
     { fsInvoices = M.empty,
       fsFail = FailPlan {fpSkip = 0, fpCalls = 0, fpStatus = 0},
@@ -143,8 +149,15 @@ initialState =
       fsOversize = False,
       fsStalled = False,
       fsRates = Nothing,
-      fsRequests = []
+      fsRequests = [],
+      fsPayees
     }
+
+devPayees :: [(Text, [Payee])]
+devPayees =
+  [ (btcMethod, [Payee {pyAddress, pyIndex = KM.fromList [("keyPath", J.String keyPath)]} | (keyPath, pyAddress) <- devBitcoinAddresses]),
+    (xmrMethod, [Payee {pyAddress, pyIndex = KM.fromList [("accountIndex", J.toJSON i), ("addressIndex", J.toJSON j)]} | ((i, j), pyAddress) <- stagenetSubaddresses])
+  ]
 
 data FakeBTCPay = FakeBTCPay
   { fbConfig :: BTCPayConfig,
@@ -157,7 +170,7 @@ data FakeBTCPay = FakeBTCPay
 -- earlier run and the test would pass against that instead.
 withFakeBTCPay :: (FakeBTCPay -> IO a) -> IO a
 withFakeBTCPay action = do
-  fbState <- newTVarIO initialState
+  fbState <- newTVarIO $ initialState devPayees
   fbManager <- HTTP.newManager HTTP.defaultManagerSettings
   Warp.testWithApplication (pure (fakeApp fbState)) $ \prt -> do
     let fbBaseUrl = "http://127.0.0.1:" <> show prt
@@ -174,7 +187,9 @@ fakeConfig host =
       bSpeedPolicy = MediumSpeed,
       bPaymentTolerance = 0.5,
       bTimeoutMicros = providerTimeoutMicros,
-      bCheckoutTimeoutMicros = providerCheckoutTimeoutMicros
+      bCheckoutTimeoutMicros = providerCheckoutTimeoutMicros,
+      bBitcoinKey = Just devBitcoinKey,
+      bMoneroKey = Just devMoneroKey
     }
 
 -- | A BTCPay webhook delivery shaped as its documentation shows. Both suites sign this exact
@@ -409,7 +424,7 @@ fakeApp stv req respond = do
       ["invoices", invId, "payment-methods"] | isGet ->
         withInvoice invId $ \inv -> do
           override <- fsMethods <$> readTVarIO stv
-          serve (fromMaybe (methodsFixture (isMethodId inv)) override) (patchMethods inv)
+          serve (methodsName override inv) (patchMethods inv . payeeOf override inv)
       ["invoices", invId, "status"] | isPost ->
         withInvoice invId $ \inv -> do
           let marked = inv {isStatus = fromMaybe (isStatus inv) (J.decode body >>= objectField "status" >>= asText)}
@@ -443,10 +458,19 @@ fakeApp stv req respond = do
     methodsName override inv = fromMaybe (methodsFixture (isMethodId inv)) override
 
     listedInvoice cache override (invId, inv) =
-      setField "paymentMethods" (patchMethods inv (cached (methodsName override inv))) $
+      setField "paymentMethods" (patchMethods inv (payeeOf override inv (cached (methodsName override inv)))) $
         patchInvoice invId inv (cached (invoiceFixture (isStatus inv)))
       where
         cached name = fromMaybe J.Null (M.lookup name cache)
+
+    payeeOf override inv = case (override, isPayee inv) of
+      (Nothing, Just Payee {pyAddress, pyIndex}) -> \case
+        J.Array vs -> J.Array (fmap (setField "destination" (J.String pyAddress) . withIndex pyIndex) vs)
+        other -> other
+      _ -> id
+    withIndex index = \case
+      J.Object o -> J.Object (KM.insert "additionalData" (J.Object (index <> fromMaybe mempty (objectField "additionalData" (J.Object o) >>= asObject))) o)
+      other -> other
 
     serve name patch = do
       oversize <- fsOversize <$> readTVarIO stv
@@ -478,7 +502,10 @@ fakeApp stv req respond = do
                     isDue = Nothing,
                     isAmount = Nothing,
                     isSpeedPolicy = J.decode body >>= objectField "checkout" >>= objectField "speedPolicy" >>= asText,
-                    isPayments = Nothing
+                    isPayments = Nothing,
+                    isPayee = case lookup methodId (fsPayees st) of
+                      Just payees@(_ : _) -> Just $ payees !! (M.size (fsInvoices st) `mod` length payees)
+                      _ -> Nothing
                   }
           writeTVar stv st {fsInvoices = M.insert invId inv (fsInvoices st)}
           pure (invId, inv)
@@ -513,6 +540,11 @@ chosenMethod v = case objectField "checkout" v >>= objectField "paymentMethods" 
 asText :: J.Value -> Maybe Text
 asText = \case
   J.String t -> Just t
+  _ -> Nothing
+
+asObject :: J.Value -> Maybe J.Object
+asObject = \case
+  J.Object o -> Just o
   _ -> Nothing
 
 objectField :: Key -> J.Value -> Maybe J.Value

@@ -51,7 +51,7 @@ interface Deployment {
   moneroSubaddressPrefix: number
   moneroPrimaryAddresses: string[]
   apiOrigin: string
-  explorer: string
+  appOrigin: string
 }
 
 interface PriceException {
@@ -73,7 +73,7 @@ interface PriceException {
 | sponsor | `0xeC9a522C756e46FB3E44d3405FFDd9368501Eb78` | controller `sponsor()` | `RegisterName` domain |
 | resolver | `0x9BDa37F19b59Cbc58BA75932B3c598947fD88B0A` | controller `defaultResolver()` | registration's resolver, `SetText` domain |
 | namePolicy | `0x5147b65F547b766DBaf520127e8f59834475021E` | controller `namePolicy()` | acceptance domain |
-| baseRegistrar | `0x4c0589dbC22862Babb25EB72D11bBA49d84AAbE8` | deployments.mainnet.simplex.json | explorer link |
+| baseRegistrar | `0x4c0589dbC22862Babb25EB72D11bBA49d84AAbE8` | deployments.mainnet.simplex.json | none: the name address link holds the address alone (7) |
 | termStart | 1798761600 (2027-01-01 00:00 UTC) | service ini `term_start` | `durationFor` |
 | paidYears | 2 | service ini `years`; controller `MIN_REGISTRATION`, 730 days | search answer, duration |
 | communityYears | 2 | `Names/Community.hs` `communityYears` | search answer |
@@ -91,7 +91,7 @@ interface PriceException {
 | moneroSubaddressPrefix | 42 | Monero mainnet subaddress network byte | address check |
 | moneroPrimaryAddresses | the primary address of each wallet in use | the operator, from the wallet | B and A of the address check |
 | apiOrigin | `https://api.simplex.domains` | DNS | API calls, CSP, preload, service worker |
-| explorer | `https://etherscan.io` | | explorer link |
+| appOrigin | `https://app.simplex.domains` | DNS | name address link (7) |
 
 ### 3.3 Local values
 
@@ -105,7 +105,7 @@ interface PriceException {
 - cardOrigin: the card page on a second local port;
 - `bcrt` and 36 (stagenet subaddress), with the public keys of the dev keys in `dev/mock/addresses.ts`;
 - apiOrigin empty, for Vite's proxy; `VITE_API_ORIGIN` for the cross-origin test;
-- explorer as on mainnet, for the link's test.
+- appOrigin `http://127.0.0.1:5181`, a loopback port nothing serves.
 
 ### 3.4 Selection
 
@@ -121,10 +121,10 @@ Downtime, `downtime` true:
 
 | Screen | Shown |
 |---|---|
-| search | each name's row without Register, and "New orders open again soon." under the search |
-| checkout, its code check included, name selection | not reached; "New orders open again soon." |
-| an open invoice | status; the payment details withheld, and the card form unless already mounted; "Payment opens again soon." |
-| a committed order | status; its reveal signed after the downtime |
+| search | each name's row without Register, and "You will be able to order names again soon." under the search |
+| checkout, its code check included, name selection | not reached; the heading "You will be able to order names again soon", then "Nothing was charged." |
+| an open invoice | status; the payment details withheld, and the card form unless already mounted; "You will be able to pay again soon." |
+| a committed order | status; "You will be able to continue the registration soon."; its reveal signed after the downtime |
 | a registered order, Your names, Check your code | as outside the downtime |
 
 A page that read `downtime: true` loads again when it reads `downtime: false`, so that a tab loaded before a page release signs with the released `SITE`. The conditions are those of `views/served-mode.ts` `reloadKeeps`, whose trigger becomes the downtime flag in place of `codesOnly`.
@@ -135,12 +135,12 @@ A change of a held value other than a payee key (3.8) is made in a downtime. The
 
 | Step | Who | What |
 |---|---|---|
-| 1 | Operator | the service restarted with `[names] downtime = true` (9.6) |
+| 1 | Operator | the service restarted with `[names] downtime = on` (9.6) |
 | 2 | Operator | the capped drain (3.7) |
 | 3 | Owner, Safe signers | chain changes: terms by `setGeneralTerms` or `setCommunityTerms`, prices by the price oracle |
-| 4 | Operator | the service released from its prepared, tested pull request, with `downtime = true`; payee keys in BTCPay and the ini |
+| 4 | Operator | the service released from its prepared, tested pull request, with `downtime = on`; payee keys in BTCPay and the ini |
 | 5 | Owner | simplex.domains pull request with the new values, merged; with a new Stripe key, the card page's repository moved to that merge |
-| 6 | Operator | the service restarted with `downtime = false`, once step 5's `pages` jobs have completed and 600 seconds have passed, the `max-age` GitHub Pages serves with |
+| 6 | Operator | the service restarted with `downtime = off`, once step 5's `pages` jobs have completed and 600 seconds have passed, the `max-age` GitHub Pages serves with |
 | 7 | Buyers | open orders signed again (3.7) |
 | 8 | Owner | simplex-chat pull request: `apps/simplex-domains` moved to step 5's merge, merged |
 
@@ -161,15 +161,15 @@ sequenceDiagram
   participant R as simplex.domains
   participant B as Buyer
   participant M as simplex-chat
-  X->>S: restart with downtime = true
+  X->>S: restart with downtime = on
   P->>S: GET /api/config
   S-->>P: downtime: true
   P->>P: Register off, payment details withheld
   X->>S: capped drain (3.7)
   O->>C: terms or prices changed by the Safe
-  X->>S: service released, downtime = true; payee keys in the ini
+  X->>S: service released, downtime = on; payee keys in the ini
   O->>R: PR with the new values, merged; GitHub Pages deploys it
-  X->>S: restart with downtime = false
+  X->>S: restart with downtime = off
   B->>P: open order: reveal signed again with the new values
   P->>S: POST /api/registration/ID/reveal
   O->>M: PR: page pin moved to that merge, merged
@@ -228,9 +228,9 @@ stateDiagram-v2
 | same | community, the flag | as given |
 | same | registered: owner, resolver, expiresAt, records | as given |
 | same | records.own.nonce | as given; a transaction with a wrong nonce reverts |
-| `GET /api/name/:hash/sign` (`api.signFor`) | acceptance.policy | equal to `SITE.namePolicy` |
-| same | acceptance.termsHash | equal to the hash the buyer ticked, itself in `SITE` |
-| same | acceptance.community | equal to the kind of the ticked terms |
+| `GET /api/name/:hash/sign` (`api.signFor`) | acceptance.policy | not used: the acceptance is signed over `SITE.namePolicy` |
+| same | acceptance.termsHash | not used: the acceptance is signed over the hash the buyer ticked, itself in `SITE`; a terms change during checkout is answered by the service's `terms_changed` |
+| same | acceptance.community | not used: the acceptance is signed for the kind of the ticked terms |
 | same | intentNonce, acceptance.nonce | as given; a transaction with a wrong nonce reverts |
 | `GET /api/terms/:hash` (`api.termsText`, `currentTermsOf`) | link | in `SITE` |
 | same | text | sha256 equal to the link's `#sha256=` |
@@ -258,9 +258,9 @@ The name and the name address of an order are the page's own: the name from the 
 
 | Rule not met | Function | What the buyer sees |
 |---|---|---|
-| search: terms, years or price | `api.searchName`, `flow.orderable` | the name's row with Register off and the existing line "Names can't be ordered right now. Try again later." |
-| code check: years | `api.checkCode` | "The code could not be checked" |
-| sign answer: policy, terms hash or kind | `api.signFor`, `flow.orderRequest` | the order is not sent; Check your order shows its failure line |
+| search: terms, years or price | `api.searchName`, `flow.orderable` | the name's row with Register off and the existing line "Names can't be ordered right now. Please try again later." |
+| code check: years | `api.checkCode` | "The code could not be checked now", then "Please try again in a moment." |
+| sign answer naming other held terms | `api.signFor`, `flow.orderRequest` | nothing at signing: the acceptance is signed over the ticked terms and `SITE.namePolicy`, and a terms change is answered by the service's `terms_changed`, as the next row says |
 | `terms_changed` body: terms | `api.signingTerms` | same |
 | invoice: amount, currency, method or address proof | `checkedInvoice` | the warning below; the payment details and the card form withheld |
 | card: PaymentIntent | the card page | same |
@@ -268,13 +268,13 @@ The name and the name address of an order are the page's own: the name from the 
 | the page inside a frame | `main.ts` | one line, with a link to the page in its own tab (8.3) |
 | `downtime` | `flow.orderable`, `revealFor`, selection, invoice | 3.5 |
 
-The warning: "The payment details of this order could not be checked, so they are not shown. Contact support with the order reference."
+The warning: "Sorry, the payment details of this order could not be checked, so they are not shown. Please contact support with the order reference."
 
 ```mermaid
 flowchart TD
   A[answer of the service] --> P{parsed against SITE}
   P -->|search: terms, years, price| S[row drawn, Register off]
-  P -->|sign answer, terms_changed| C[order not sent: failure line]
+  P -->|terms_changed| C[order not sent: failure line]
   P -->|invoice: amount, currency, method, address proof| W[warning; payment details and card form withheld]
   P -->|committed view: toSign, duration| R[reveal not sent, counted refused; after 3: could not be signed]
   K[card page: PaymentIntent read with SITE.stripeKey] -->|amount, currency, livemode or types differ| W
@@ -520,14 +520,14 @@ sequenceDiagram
 
 Tests: e2e with the card page on a second local port: a `mount` from another origin is ignored; a PaymentIntent of another amount is not mounted; `paid` from another origin is ignored by the names page; the names page's CSP reports no violation and admits no Stripe host.
 
-## 7. The name address and Etherscan
+## 7. The name address and the dApp
 
 - The name address: the checksummed address of the name code's wallet (`walletOf`, `checksumAddress`).
-- It is shown wherever the name code is shown, with "Your name address is public. Send it with any support requests."
-- The link: `${SITE.explorer}/token/${SITE.baseRegistrar}?a=${nameAddress}`, Etherscan's page of the registrar's tokens held by that address.
+- It is shown wherever the name code is shown, with "Your name address is public. Please include it in any support request."
+- The link: `${SITE.appOrigin}/${nameAddress}`, the dApp's page of that address, served by GitHub Pages from simplex-chat/simplex-domains-app-v3. Etherscan, opened directly, stays the view of the chain independent of SimpleX (threat model).
 - The label and the address are the page's own: the label from the record or the sealed order, the address from the name code.
 - Placement: the registered order page, under "Registered until …"; each registered row of Your names.
-- Text: "Open your names on Etherscan. Check that this name is listed. If it is not, contact support.", with "Open your names on Etherscan" as the link.
+- Text: "Please open your names in the SimpleX Names app and check that this name is listed. If it is not, please contact support.", with "open your names in the SimpleX Names app" as the link.
 - The page reads nothing from the chain.
 - New screenshot baselines: `order-registered-*`, the `names-rows-*` screens with a registered row, `checkout-code-*`, `names-check-*` with a name code.
 
@@ -544,7 +544,7 @@ flowchart LR
   T["Stripe<br/>js.stripe.com, api.stripe.com"]
   V["BTCPay<br/>BTC, XMR"]
   E["Ethereum<br/>names contracts"]
-  X[etherscan.io]
+  X["GitHub Pages: app.simplex.domains<br/>the dApp"]
   B -->|page, scripts, fonts, sw.js| G
   B -->|card frame| Q
   B -->|/api with CORS| A
@@ -577,7 +577,7 @@ flowchart LR
   - `base-uri 'none'`
   - `form-action 'none'`
 - `<meta name="referrer" content="strict-origin-when-cross-origin">`.
-- Framing: `frame-ancestors` is ignored in a meta CSP, and GitHub Pages sends a fixed set of headers; inside a frame, one line is drawn (`main.ts`), "This page opens only in its own tab.", with a link to the page.
+- Framing: `frame-ancestors` is ignored in a meta CSP, and GitHub Pages sends a fixed set of headers; inside a frame, one line is drawn (`main.ts`), "This page can be used only in its own tab. Please open it in a new tab.", with a link to the page.
 - `SITE.apiOrigin` is used by `api.ts` `call`, `config.ts` `readConfig` and the preload of `index.html`.
 - Service worker: the API origin is written into `sw.js` by `sw/plugin.ts`; in `strategyFor`, `${apiOrigin}/api/config` is routed as `config`, and other cross-origin requests are left to the network.
 - Subresources: the build's scripts, styles, fonts, images and jsQR from the page's origin.
@@ -604,7 +604,7 @@ xmr_view_key = <64 hex digits>
 
 [names]
 ; new orders, selections and invoices refused while the names page's values change
-downtime = false
+downtime = off
 ```
 
 - Parsed at start; the start stops on a value that does not parse, as for `chain.service_key` (`Config.hs`).
@@ -684,7 +684,7 @@ sequenceDiagram
 ### 9.6 Downtime and orders signed again
 
 - `GET /api/config`: `names.downtime`, the ini value.
-- With `downtime` true: `POST /api/invoice` for a name, a code order and `POST /api/registration/ID/name` are refused with `503 downtime`, as `ORCodesOnly` is refused; reveals, retries, reads and cancels are answered.
+- With `downtime = on`: `POST /api/invoice` for a name, a code order and `POST /api/registration/ID/name` are refused with `503 downtime`, as `ORCodesOnly` is refused; reveals, retries, reads and cancels are answered.
 - `intentRefused` (`Names/Worker.hs`): a stored `RegisterName` refused under the service's current configuration clears the reveal, as `judge` does on `RNTermsMismatch`, and the order waits, committed, for its page to sign again.
 
 ### 9.7 Signed order requests
@@ -715,7 +715,7 @@ signer       recovered from the signature; must equal the order's owner
 - Query parameters keep a `GET` a simple CORS request, with no preflight.
 - A timestamp outside the window is answered `400 bad_request` before the id is looked up, as `find` answers it (`checkTimestamp`); the page signs once more after its clock is set from that answer's `Date`.
 - An unsigned request, another signer and an unknown id all get the same answer: `404 not_found`, the same body, after the same rate limit.
-- The page signs each request, polls included, with the wallet of the record's name code. Without the name code it sends none, and an order's link shows "This order's name code is not in this browser. Enter it to see the order."
+- The page signs each request, polls included, with the wallet of the record's name code. Without the name code it sends none, and an order's link shows "The name code is not in this browser", then "Please enter the name code you saved for this order."
 - `adoptSibling`, `buildNotOnDevice` and the branch of `registeredLead` without a record, which read a view's `owner`, are removed; an order made in another browser is found by `newerOrder`, through `find` signed with the name code.
 
 ```mermaid
@@ -766,7 +766,7 @@ Each commit's tests are committed before its code and fail on the commit before 
 | `webapp: show payment details only with their proof from the page's keys` | 6.1, 6.2, `src/crypto/payees.ts`, the warning of 4.2; addresses and proofs derived by the mock from the dev keys; mock control `/control/mismatch` | unit: BIP-32, BIP-173 and Monero vectors; contract: the recorded fixtures verified with `deployment.json`; e2e: open BTC and XMR invoices with an address outside the keys, the address withheld and the warning drawn; an amount other than the price, the same |
 | `webapp: the card form on its own origin` | 6.4, 6.5; the card page's source in `webapp/card/`, built with `SITE` | `test/stripe.test.ts`, with a fake Stripe global: with each PaymentIntent field changed, the form stays unmounted; the e2e tests of 6.5 |
 | `webapp: sign every request for an order with its name key` | 9.7; `adoptSibling`, `buildNotOnDevice` and the branch of `registeredLead` without a record removed | e2e: every request for an order recorded by the mock with a valid signature of the order's owner; an order's link without the name code: no request sent, the line of 9.7 drawn; a device clock 20 minutes off: the order drawn after one more signature |
-| `webapp: show the name address and its names on Etherscan` | 7 | e2e: the name address beside each name code; the link's `href` from `SITE.baseRegistrar` and the name address; screenshot baselines |
+| `webapp: show the name address and its names on the dApp` | 7 | e2e: the name address beside each name code; the link's `href` from `SITE.appOrigin` and the name address; screenshot baselines |
 | `webapp: serve the page from GitHub Pages with the API on its own origin` | 8.2, 8.3, README Hosting | e2e: a production build with `VITE_API_ORIGIN` at the mock's port, the mock sending the service's CORS headers: an order placed, the clock read from `Date`, no CSP violation reported; e2e: the page in a frame, only the link drawn; `test/sw.test.ts`: the API origin's config network first; `test/build.test.ts`: the CSP meta element with the API origin, the card origin and the inline hashes |
 
 `README.md` (Layout, the checks, the mock's controls, Hosting) and `TODO.md` item 1 are updated in the commits they concern.
@@ -794,10 +794,10 @@ The steps of 3.6, with the first deployment's own parts:
 | Step | What |
 |---|---|
 | 0 | both pull requests prepared and tested; the `pages` jobs and Pages settings in place; `api.simplex.domains` in DNS, served by Caddy beside `simplex.domains`; `pay.simplex.domains` in DNS and the card page deployed from the simplex.domains pull request's head, its certificate issued; the TTL of `simplex.domains` lowered; the Stripe account's settings of 6.4 verified in the Dashboard |
-| 1 | the service released from the prepared pull request, with `btc_xpub`, `btc_hrp`, `xmr_address`, `xmr_view_key`, CORS and `downtime = true` |
+| 1 | the service released from the prepared pull request, with `btc_xpub`, `btc_hrp`, `xmr_address`, `xmr_view_key`, CORS and `downtime = on` |
 | 2 | the capped drain (3.7) |
 | 5 | simplex.domains pull request merged; the `pages` job deploys the names page; the card page's repository moved to that merge; `simplex.domains` DNS moved to GitHub Pages |
-| 6 | the service restarted with `downtime = false`, once GitHub Pages has issued the certificate of `simplex.domains`, Enforce HTTPS is on, and the wait of 3.6 has passed |
+| 6 | the service restarted with `downtime = off`, once GitHub Pages has issued the certificate of `simplex.domains`, Enforce HTTPS is on, and the wait of 3.6 has passed |
 | 7 | open orders signed again (3.7) |
 | 8 | simplex-chat pull request: submodule moved to step 5's merge, merged |
 

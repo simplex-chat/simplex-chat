@@ -6,6 +6,7 @@
 
 module StoreService.Providers.BTCPay
   ( btcpayProvider,
+    logPayeeKeys,
     btcMethodId,
     xmrMethodId,
     minorToDecimal,
@@ -32,6 +33,7 @@ import StoreService.Providers
     ProviderError (..),
     ProviderInvoice (..),
     Funded (..),
+    InvoiceKind (..),
     Rate (..),
     Received (..),
     Uncreditable (..),
@@ -45,6 +47,7 @@ import StoreService.Providers
     WebhookError (..),
     WebhookEvent (..),
   )
+import StoreService.Providers.AddressProof (AddressProof, bitcoinPayee, moneroPayee, primaryAddress, receiveKeyText)
 import Control.Logger.Simple (logError, logNote, logWarn)
 import Control.Monad (unless, (<=<))
 import Crypto.Hash (Digest, SHA256)
@@ -53,12 +56,14 @@ import qualified Data.Aeson as J
 import qualified Data.Aeson.KeyMap as KM
 import qualified Data.Aeson.TH as JQ
 import qualified Data.Aeson.Types as JT
+import Data.Bifunctor (bimap)
 import Data.ByteArray (constEq)
 import Data.ByteArray.Encoding (Base (Base16), convertFromBase)
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Char8 as B8
 import qualified Data.ByteString.Lazy as LB
 import Data.Char (toLower)
+import Data.Either (partitionEithers)
 import Data.Int (Int64)
 import Data.List (find)
 import Data.Maybe (fromMaybe, mapMaybe)
@@ -223,12 +228,15 @@ data GPaymentMethod = GPaymentMethod
     gpmPaid :: Maybe WireNum,
     gpmDue :: Maybe WireNum,
     gpmPayments :: [GPayment],
-    gpmSettledThreshold :: Maybe Int
+    gpmSettledThreshold :: Maybe Int,
+    gpmKeyPath :: Maybe Text,
+    gpmSubaddress :: Maybe (Word32, Word32)
   }
   deriving (Show)
 
 instance J.FromJSON GPaymentMethod where
-  parseJSON = J.withObject "payment method" $ \o ->
+  parseJSON = J.withObject "payment method" $ \o -> do
+    additional <- additionalData <$> o J..:? "additionalData"
     GPaymentMethod
       <$> o J..: "paymentMethodId"
       <*> o J..:? "destination"
@@ -237,11 +245,17 @@ instance J.FromJSON GPaymentMethod where
       <*> o J..:? "paymentMethodPaid"
       <*> o J..:? "due"
       <*> (fromMaybe [] <$> o J..:? "payments")
-      <*> (settledThreshold <$> o J..:? "additionalData")
+      <*> pure (bounded "invoiceSettledConfirmationThreshold" additional)
+      <*> pure (case KM.lookup "keyPath" additional of Just (J.String p) -> Just p; _ -> Nothing)
+      <*> pure ((,) <$> bounded "accountIndex" additional <*> bounded "addressIndex" additional)
     where
       -- read leniently: another plugin's additionalData must not fail the read
-      settledThreshold = \case
-        Just (J.Object d) | Just (J.Number n) <- KM.lookup "invoiceSettledConfirmationThreshold" d -> toBoundedInteger n
+      additionalData = \case
+        Just (J.Object d) -> d
+        _ -> KM.empty
+      bounded :: (Integral a, Bounded a) => J.Key -> J.Object -> Maybe a
+      bounded k d = case KM.lookup k d of
+        Just (J.Number n) -> toBoundedInteger n
         _ -> Nothing
 
 -- | A payment without a value is read, and only its units cannot be counted.
@@ -294,6 +308,7 @@ btcpayProvider cfg = do
   pure
     Provider
       { pProvider = PPCrypto,
+        pRefusal = invoiceRefusal cfg,
         pCreateInvoice = createInvoice env,
         pReadInvoice = readInvoice env,
         pCancelInvoice = cancelInvoice env,
@@ -322,11 +337,39 @@ logStoreMethods env@BTCPayEnv {beCfg} = do
   where
     what = "read store payment methods"
 
+type Prover = GPaymentMethod -> Either String (Text, AddressProof)
+
+data PayeeKeys = PayeeKeys {pkHeld :: Text, pkProver :: Prover}
+
+logPayeeKeys :: BTCPayConfig -> IO ()
+logPayeeKeys cfg = do
+  unless (null held) $ logNote $ "btcpay: the names page holds: " <> T.intercalate "; " held
+  mapM_ logError missing
+  where
+    (missing, held) = partitionEithers [pkHeld <$> payeeKeys cfg cc | cc <- [CCBtc, CCXmr]]
+
+payeeKeys :: BTCPayConfig -> CryptoCurrency -> Either Text PayeeKeys
+payeeKeys BTCPayConfig {bBitcoinKey, bMoneroKey} = \case
+  CCBtc -> keyed bBitcoinKey "btc_xpub and btc_hrp" "Bitcoin" $ \key ->
+    PayeeKeys ("bitcoin receive key " <> receiveKeyText key) $ \GPaymentMethod {gpmKeyPath} -> maybe (Left "it has no keyPath") (bitcoinPayee key) gpmKeyPath
+  CCXmr -> keyed bMoneroKey "xmr_address and xmr_view_key" "Monero" $ \key ->
+    PayeeKeys ("monero primary address " <> primaryAddress key) $ \GPaymentMethod {gpmSubaddress} -> maybe (Left "it has no accountIndex and addressIndex") (Right . uncurry (moneroPayee key)) gpmSubaddress
+  where
+    keyed keys settings coin payee = maybe (Left $ "btcpay: [btcpay] sets no " <> settings <> ", so every name invoice in " <> coin <> " is refused") (Right . payee) keys
+
+invoiceRefusal :: BTCPayConfig -> ServicePaymentMethod -> InvoiceKind -> Maybe ProviderError
+invoiceRefusal cfg spm kind = either Just (const Nothing) $ cryptoTarget spm >>= payeeProof cfg kind . snd
+
+payeeProof :: BTCPayConfig -> InvoiceKind -> CryptoCurrency -> Either ProviderError (Maybe Prover)
+payeeProof cfg kind cc = case kind of
+  IKBadge -> Right Nothing
+  IKName -> bimap ProviderError (Just . pkProver) $ payeeKeys cfg cc
+
 createInvoice :: BTCPayEnv -> ServicePaymentMethod -> OrderDraft -> IO (Either ProviderError ProviderInvoice)
-createInvoice env@BTCPayEnv {beCfg} spm OrderDraft {odAmount, odCurrency} =
-  case cryptoTarget spm of
+createInvoice env@BTCPayEnv {beCfg} spm OrderDraft {odAmount, odCurrency, odKind} =
+  case target of
     Left e -> pure (Left e)
-    Right (methodId, cc) -> do
+    Right (methodId, cc, prove) -> do
       created <- greenfield checkout what methodPost ["invoices"] [] (Just (body methodId))
       case created >>= decodeAnswer what of
         Left e -> do
@@ -334,8 +377,12 @@ createInvoice env@BTCPayEnv {beCfg} spm OrderDraft {odAmount, odCurrency} =
           pure (Left e)
         Right GCreated {gcId} -> do
           ms <- greenfield checkout what methodGet ["invoices", gcId, "payment-methods"] [] Nothing
-          either (cancelCreated gcId) (pure . Right) (ms >>= destination methodId cc gcId)
+          either (cancelCreated gcId) (pure . Right) (ms >>= destination methodId cc prove gcId)
   where
+    target = do
+      (methodId, cc) <- cryptoTarget spm
+      prove <- payeeProof beCfg odKind cc
+      pure (methodId, cc, prove)
     what = "create invoice"
     checkout = env {beCfg = beCfg {bTimeoutMicros = bCheckoutTimeoutMicros beCfg}}
     cancelCreated ref e = do
@@ -354,18 +401,26 @@ createInvoice env@BTCPayEnv {beCfg} spm OrderDraft {odAmount, odCurrency} =
                 "paymentMethods" J..= [methodId]
               ]
         ]
-    destination methodId cc ref ms = do
+    destination methodId cc prove ref ms = do
       m <- findMethod what ref methodId ms
       addr <- required "destination" (gpmDestination m)
       payable <- required "amount" (gpmAmount m)
+      proof <- mapM (\derive -> provenAs addr (derive m)) prove
       pure
         ProviderInvoice
           { piProviderRef = ref,
-            piDestination = SPDCrypto cc addr (wnText payable)
+            piDestination = SPDCrypto cc addr (wnText payable),
+            piAddressProof = proof
           }
       where
         required field =
           maybe (Left (ProviderError (what <> ": " <> methodId <> " on invoice " <> ref <> " has no " <> field))) Right
+        provenAs addr = \case
+          Right (derived, proof)
+            | derived == addr -> Right proof
+            | otherwise -> unproven $ "it pays to " <> addr <> ", not to " <> derived
+          Left e -> unproven $ T.pack e
+        unproven why = Left (ProviderError (what <> ": " <> methodId <> " on invoice " <> ref <> " is not proven from the payee keys: " <> why))
 
 -- | Needs the API key's canmodifyinvoices permission, which the read and create calls do not.
 cancelInvoice :: BTCPayEnv -> Text -> IO (Either ProviderError ())

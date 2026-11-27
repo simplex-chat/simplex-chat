@@ -22,6 +22,16 @@ webhook_secret = replace-me
 expiry_minutes = 60
 speed_policy = MediumSpeed
 payment_tolerance = 0.5
+; with [names]: the keys each name invoice's address is proven from, each pair set together; without a
+; coin's pair, every name invoice in that coin is refused
+; the account extended public key of the store's Bitcoin wallet, as BTCPay shows its derivation scheme:
+; single signature, native SegWit, an xpub for bc or a tpub for tb and bcrt
+;btc_xpub = xpub…
+; the bech32 prefix of the wallet's network: bc, tb or bcrt
+;btc_hrp = bc
+; the Monero wallet's primary address and private view key, as given to BTCPay's view-only wallet
+;xmr_address = 4…
+;xmr_view_key = <64 lowercase hex digits>
 
 ; optional; omit the whole [stripe] section to disable card payments
 [stripe]
@@ -99,6 +109,8 @@ private_key = replace-me
 ;max_sent_failures = 5
 ; on: only prepaid codes register names, and every paid name order answers 403 codes_only
 ;codes_only = off
+; on: name invoices, code orders and selections of a name are answered 503 downtime while the names page's values change
+;downtime = off
 ; the owner's link edits relayed for one name in any 365 days, each a transaction whose gas the
 ; service pays; 1 to 100. A request refused, never sent or reverted on chain does not count
 ;record_edits_per_year = 3

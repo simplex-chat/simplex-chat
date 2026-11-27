@@ -25,17 +25,18 @@ import StoreService.Names.Env (NamesEnv)
 import StoreService.Names.Orders (OrdersEnv (..), noteRead, ordersEnv)
 import StoreService.Names.Phases (RegistrationId, awaitChange)
 import StoreService.Names.Registration (tldLabel)
+import StoreService.Names.Signatures (OrderAction (..))
 import StoreService.Names.Store (NamePhase (..), NameRegistration (..), getRegistration, namePhase)
 import StoreService.Names.View (lapseMoment, registrationVersion)
 import StoreService.Orders (RegistrationChanged (..), cancelOpenInvoice)
 import StoreService.Poller (ReadHints, queueReadHint)
-import StoreService.Providers (OrderDraft (..), Provider (..), ProviderInvoice (..), WebhookError (..), WebhookEvent (..), providerErrorText, providerNamed)
+import StoreService.Providers (InvoiceKind (..), OrderDraft (..), Provider (..), ProviderInvoice (..), WebhookError (..), WebhookEvent (..), providerErrorText, providerNamed)
 import StoreService.Store.Invoices (CreateError (..), InvoicePayment (..), InvoiceProduct (..), InvoiceRow (..), NewInvoice (..), codeHashExists, createInvoiceRows, currentSecond, getInvoice, getInvoiceByProviderRef, newInvoiceId, paymentHolds, readCatalogRows, truncateToSecond)
 import StoreService.Waiters (Seen, Waiters, awaitStatus)
 import StoreService.Web.Http
 import StoreService.Web.Names (namesApp, namesRoutes)
 import StoreService.Web.Names.Orders (nameInvoiceHandler, nameInvoiceView, refusalResponse)
-import StoreService.Web.Names.Registration (heldFor, registrationChanged, versionParam)
+import StoreService.Web.Names.Registration (OrderSigner (..), bodySigner, heldFor, ownedRegistration, querySigner, registrationChanged, unsigned, versionParam)
 import Control.Concurrent.Async (race)
 import Control.Concurrent.STM (atomically)
 import qualified Control.Exception as E
@@ -58,7 +59,7 @@ import Data.Text.Encoding (decodeUtf8')
 import Data.Time.Clock (UTCTime, addUTCTime, getCurrentTime)
 import Data.Time.Clock.System (systemSeconds, utcToSystemTime)
 import Data.Word (Word64, Word8)
-import Network.HTTP.Types (Header, Status, hCacheControl, hContentType, status200, status400, status409, status413, status500)
+import Network.HTTP.Types (Header, Status, hCacheControl, hContentType, methodOptions, status200, status400, status409, status413, status500)
 import Network.Wai
 import qualified Network.Wai.Handler.Warp as Warp
 import Simplex.Chat.Badges (BadgeType)
@@ -82,6 +83,7 @@ data SiteConfig = SiteConfig
 
 data NamesSite = NamesSite
   { codesOnly :: Bool,
+    downtime :: Bool,
     chainId :: Word64,
     resolver :: Address,
     sponsor :: Address,
@@ -137,7 +139,25 @@ webhookResponse st = responseLBS st [(hCacheControl, "no-store")] ""
 
 -- | The badges port's app.
 webApp :: WebEnv -> Application
-webApp env = siteApp env (lBadgesSite $ listenerConfig env)
+webApp env = apiCors $ siteApp env (lBadgesSite $ listenerConfig env)
+
+apiCors :: Middleware
+apiCors app req respond = case pathInfo req of
+  "api" : _
+    | requestMethod req == methodOptions -> respond $ responseLBS status200 corsPreflightHeaders ""
+    | otherwise -> app req $ respond . mapResponseHeaders (corsHeaders <>)
+  _ -> app req respond
+
+corsHeaders :: [Header]
+corsHeaders = [("Access-Control-Allow-Origin", "*"), ("Access-Control-Expose-Headers", "*")]
+
+corsPreflightHeaders :: [Header]
+corsPreflightHeaders =
+  [ ("Access-Control-Allow-Origin", "*"),
+    ("Access-Control-Allow-Methods", "GET, POST, OPTIONS"),
+    ("Access-Control-Allow-Headers", "*"),
+    ("Access-Control-Max-Age", "86400")
+  ]
 
 -- | Every port answers the API and the webhooks, and serves its own site's files.
 siteApp :: WebEnv -> Maybe FilePath -> Application
@@ -146,7 +166,7 @@ siteApp env@WebEnv {weHttp} served req respond = case pathInfo req of
   ["api", "config"] -> only "GET" req respond $ limited weHttp readLimit req respond $ respond $ jsonResponse status200 $ siteConfig $ weConfig env
   ["api", "invoice"] -> only "POST" req respond $ limited weHttp createLimit req respond $ createInvoiceHandler env req respond
   ["api", "invoice", iid] -> only "GET" req respond $ limited weHttp readLimit req respond $ readInvoiceHandler env (InvoiceId iid) req respond
-  ["api", "invoice", iid, "cancel"] -> only "POST" req respond $ limited weHttp createLimit req respond $ cancelInvoiceHandler env (InvoiceId iid) respond
+  ["api", "invoice", iid, "cancel"] -> only "POST" req respond $ limited weHttp createLimit req respond $ cancelInvoiceHandler env (InvoiceId iid) req respond
   ["webhooks", "btcpay"] -> only "POST" req respond $ webhookHandler env PPCrypto "POST /webhooks/btcpay" req respond
   ["webhooks", "stripe"] -> only "POST" req respond $ webhookHandler env PPStripe "POST /webhooks/stripe" req respond
   _ -> fromMaybe (respond notFound) names
@@ -175,8 +195,8 @@ siteConfig ServiceConfig {names, stripe} =
       names = namesSite <$> names
     }
   where
-    namesSite NamesConfig {nCodesOnly, nTLD, nTermStart, nChain = ChainConfig {cChainId, cResolver, cSponsor}} =
-      NamesSite {codesOnly = nCodesOnly, chainId = cChainId, resolver = cResolver, sponsor = cSponsor, tld = tldLabel nTLD, termStart = RoundedSystemTime $ systemSeconds $ utcToSystemTime nTermStart}
+    namesSite NamesConfig {nCodesOnly, nDowntime, nTLD, nTermStart, nChain = ChainConfig {cChainId, cResolver, cSponsor}} =
+      NamesSite {codesOnly = nCodesOnly, downtime = nDowntime, chainId = cChainId, resolver = cResolver, sponsor = cSponsor, tld = tldLabel nTLD, termStart = RoundedSystemTime $ systemSeconds $ utcToSystemTime nTermStart}
 
 resolveInside :: FilePath -> [Text] -> IO (Maybe (FilePath, FilePath))
 resolveInside dir segments = either ioFailed id <$> E.try attempt
@@ -218,16 +238,19 @@ contentTypeFor file = case map toLower (takeExtension file) of
   _ -> "application/octet-stream"
 
 readInvoiceHandler :: WebEnv -> InvoiceId -> Request -> Respond -> IO ResponseReceived
-readInvoiceHandler env@WebEnv {weStore} invId req respond =
-  getInvoice weStore invId >>= \case
-    Nothing -> respond notFound
-    Just row@InvoiceRow {irProduct = IPName rid} | Just orders <- weOrders env -> readNameInvoice env orders row rid req respond
-    Just row -> case holdFor row of
-      Nothing -> respondInvoice env row respond
-      Just seen ->
-        -- Settlement publishes after it commits, so the row read below is at least as new as whatever woke us.
-        withHoldSlot (weHttp env) (awaitStatus (weWaiters env) invId (readSeen env invId (pure id)) seen (weHoldMicros env))
-          >>= maybe (respond holdsFull) (const $ respondCurrent env invId respond)
+readInvoiceHandler env@WebEnv {weStore} invId@(InvoiceId invText) req respond =
+  maybe (pure unsigned) (\orders -> querySigner orders invText OARead req) (weOrders env) >>= \case
+    OSOutsideWindow -> respond badRequest
+    OSSigner signer ->
+      getInvoice weStore invId >>= \case
+        Nothing -> respond notFound
+        Just row@InvoiceRow {irProduct = IPName rid} | Just orders <- weOrders env -> readNameInvoice env orders row rid signer req respond
+        Just row -> case holdFor row of
+          Nothing -> respondInvoice env row respond
+          Just seen ->
+            -- Settlement publishes after it commits, so the row read below is at least as new as whatever woke us.
+            withHoldSlot (weHttp env) (awaitStatus (weWaiters env) invId (readSeen env invId (pure id)) seen (weHoldMicros env))
+              >>= maybe (respond holdsFull) (const $ respondCurrent env invId respond)
   where
     holdFor :: InvoiceRow -> Maybe Seen
     holdFor row@InvoiceRow {irStatus} = case waitParam req of
@@ -236,9 +259,9 @@ readInvoiceHandler env@WebEnv {weStore} invId req respond =
 
 -- | A name invoice also holds while its registration's version is seenVersion, a paid one on that alone,
 -- except one paid after its order closed, which has nothing more to wait for.
-readNameInvoice :: WebEnv -> OrdersEnv -> InvoiceRow -> RegistrationId -> Request -> Respond -> IO ResponseReceived
-readNameInvoice env@WebEnv {weConfig, weWaiters, weHoldMicros, weHttp} orders@OrdersEnv {oeStore, oeNow, oePhases} stored@InvoiceRow {irInvoiceId = invId} rid req respond =
-  readName orders stored rid >>= \case
+readNameInvoice :: WebEnv -> OrdersEnv -> InvoiceRow -> RegistrationId -> Maybe Address -> Request -> Respond -> IO ResponseReceived
+readNameInvoice env@WebEnv {weConfig, weWaiters, weHoldMicros, weHttp} orders@OrdersEnv {oeStore, oeNow, oePhases} stored@InvoiceRow {irInvoiceId = invId} rid signer req respond =
+  ownedRegistration orders rid signer >>= traverse (readName orders stored) >>= \case
     Nothing -> respond notFound
     Just (now, row, r) -> case waitParam req of
       Just wait | holds wait row r -> withHoldSlot weHttp (hold now row r) >>= maybe (respond holdsFull) (const $ respondCurrent env invId respond)
@@ -260,10 +283,10 @@ readNameInvoice env@WebEnv {weConfig, weWaiters, weHoldMicros, weHttp} orders@Or
         (_, Nothing) -> void onStatus
 
 -- | The invoice and its registration as a read now shows them.
-readName :: OrdersEnv -> InvoiceRow -> RegistrationId -> IO (Maybe (UTCTime, InvoiceRow, NameRegistration))
-readName OrdersEnv {oeStore, oeNow} row rid = do
+readName :: OrdersEnv -> InvoiceRow -> NameRegistration -> IO (UTCTime, InvoiceRow, NameRegistration)
+readName OrdersEnv {oeStore, oeNow} row r = do
   now <- oeNow
-  withTransaction oeStore (`getRegistration` rid) >>= traverse (\r -> (now, invoiceAt now row, r) <$ noteRead oeStore now r)
+  (now, invoiceAt now row, r) <$ noteRead oeStore now r
 
 -- | The counter a hold watches starts at zero, so a payment recorded before this request arrived cannot wake it.
 samePayment :: Request -> InvoiceRow -> Bool
@@ -294,8 +317,8 @@ invoiceViewOf env@WebEnv {weConfig} row@InvoiceRow {irProviderRef, irProduct} = 
   IPBadge badgeType months -> pure $ Right $ badgeInvoiceView (confirmationsFor weConfig) badgeType months row
   IPName rid -> case weOrders env of
     Nothing -> Left providerUnavailable <$ namesOff irProviderRef
-    Just orders ->
-      readName orders row rid >>= \case
+    Just orders@OrdersEnv {oeStore} ->
+      withTransaction oeStore (`getRegistration` rid) >>= traverse (readName orders row) >>= \case
         Nothing -> pure $ Left notFound
         Just (_, row', r) -> Right <$> nameInvoiceView orders (confirmationsFor weConfig) row' r
 
@@ -308,23 +331,30 @@ paymentMark InvoiceRow {irPayment} =
   (maybe "" (fromMaybe "" . ipCryptoPaid) irPayment, maybe False ipPaidInFull irPayment)
 
 -- | The provider is cancelled first, because cancelling our record first would leave an address the buyer can still pay into with nothing watching it.
-cancelInvoiceHandler :: WebEnv -> InvoiceId -> Respond -> IO ResponseReceived
-cancelInvoiceHandler env@WebEnv {weStore, weProviders} invId respond =
-  getInvoice weStore invId >>= \case
-    Nothing -> respond notFound
-    Just InvoiceRow {irStatus} | irStatus /= ISOpen -> respond (jsonError status409 "not_open")
-    Just row | funded row -> respond (jsonError status409 "funded")
-    -- refused before the provider's cancel, since the answer could not show the order
-    Just InvoiceRow {irProduct = IPName _, irProviderRef} | Nothing <- weOrders env -> namesOff irProviderRef >> respond providerUnavailable
-    Just InvoiceRow {irProvider, irProviderRef} -> case providerNamed weProviders irProvider of
-      Nothing -> respond providerUnavailable
-      Just Provider {pCancelInvoice} ->
-        pCancelInvoice irProviderRef >>= \case
-          Left e -> do
-            logError $ "cancel order " <> irProviderRef <> ": " <> providerErrorText e
-            respond providerUnavailable
-          Right () -> finish
+cancelInvoiceHandler :: WebEnv -> InvoiceId -> Request -> Respond -> IO ResponseReceived
+cancelInvoiceHandler env@WebEnv {weStore, weProviders} invId@(InvoiceId invText) req respond = do
+  body <- readBoundedBody maxBodyBytes req
+  maybe (pure unsigned) (\orders -> bodySigner orders invText OACancel (body >>= J.decode)) (weOrders env) >>= \case
+    OSOutsideWindow -> respond badRequest
+    OSSigner signer ->
+      getInvoice weStore invId >>= \case
+        Nothing -> respond notFound
+        Just row@InvoiceRow {irProduct = IPName rid} | Just orders <- weOrders env -> ownedRegistration orders rid signer >>= maybe (respond notFound) (const $ cancelRow row)
+        Just row -> cancelRow row
   where
+    cancelRow = \case
+      InvoiceRow {irStatus} | irStatus /= ISOpen -> respond (jsonError status409 "not_open")
+      row | funded row -> respond (jsonError status409 "funded")
+      -- refused before the provider's cancel, since the answer could not show the order
+      InvoiceRow {irProduct = IPName _, irProviderRef} | Nothing <- weOrders env -> namesOff irProviderRef >> respond providerUnavailable
+      InvoiceRow {irProvider, irProviderRef} -> case providerNamed weProviders irProvider of
+        Nothing -> respond providerUnavailable
+        Just Provider {pCancelInvoice} ->
+          pCancelInvoice irProviderRef >>= \case
+            Left e -> do
+              logError $ "cancel order " <> irProviderRef <> ": " <> providerErrorText e
+              respond providerUnavailable
+            Right () -> finish
     funded InvoiceRow {irPayment} = maybe False paymentHolds irPayment
     finish = do
       now <- currentSecond
@@ -391,7 +421,7 @@ createAtProvider WebEnv {weStore, weConfig, weHttp} client provider CreateReques
       -- truncate once, so the response, the row and the provider get the same value
       now <- truncateToSecond <$> getCurrentTime
       let expiresAt = addUTCTime (invoiceWindow weConfig crMethod) now
-          draft = OrderDraft {odAmount = poAmount priced, odCurrency = poCurrency priced, odReference = orderId}
+          draft = OrderDraft {odAmount = poAmount priced, odCurrency = poCurrency priced, odReference = orderId, odKind = IKBadge}
       pCreateInvoice provider crMethod draft >>= \case
         Left e -> failed ("at the provider: " <> providerErrorText e) providerUnavailable
         Right ProviderInvoice {piProviderRef, piDestination} -> do
@@ -541,7 +571,7 @@ logRequestException _ e = when (Warp.defaultShouldDisplayException e) $ logError
 
 -- | Each port with its app: the badges site's, and the names site's when it is served.
 webListeners :: WebEnv -> [(Int, Application)]
-webListeners env = (lBadgesPort, webApp env) : [(port, siteApp env (Just dir)) | Just (port, dir) <- [lNamesSite]]
+webListeners env = (lBadgesPort, webApp env) : [(port, apiCors $ siteApp env (Just dir)) | Just (port, dir) <- [lNamesSite]]
   where
     ListenerConfig {lBadgesPort, lNamesSite} = listenerConfig env
 

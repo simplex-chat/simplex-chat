@@ -190,7 +190,8 @@ CREATE TABLE test_store_service_schema.sx_badge_service_invoices (
     created_at timestamp with time zone NOT NULL,
     updated_at timestamp with time zone NOT NULL,
     product text DEFAULT 'badge'::text NOT NULL,
-    provider_ref text NOT NULL
+    provider_ref text NOT NULL,
+    payment_address_proof text
 );
 
 

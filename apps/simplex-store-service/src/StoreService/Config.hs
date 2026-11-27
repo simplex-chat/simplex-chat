@@ -68,6 +68,7 @@ import Simplex.Messaging.Util (eitherToMaybe, tshow)
 import StoreService.Names.Abi (abiWordSize, parseText)
 import StoreService.Names.Chain (ChainConfig (..))
 import StoreService.Names.Label (LabelError (..), validLabel)
+import StoreService.Providers.AddressProof (BitcoinKey, MoneroKey, bitcoinKey, moneroKey)
 import System.IO.Error (ioeGetErrorString)
 import Text.Read (readMaybe)
 
@@ -110,7 +111,9 @@ data BTCPayConfig = BTCPayConfig
     bSpeedPolicy :: SpeedPolicy,
     bPaymentTolerance :: Double,
     bTimeoutMicros :: Int,
-    bCheckoutTimeoutMicros :: Int
+    bCheckoutTimeoutMicros :: Int,
+    bBitcoinKey :: Maybe BitcoinKey,
+    bMoneroKey :: Maybe MoneroKey
   }
   deriving (Eq)
 
@@ -187,6 +190,7 @@ data NamesConfig = NamesConfig
     nMaxSentFailures :: Int,
     -- | Names are registered only with prepaid codes: every order that would take money for one is refused.
     nCodesOnly :: Bool,
+    nDowntime :: Bool,
     -- | The owner record edits relayed for one name in any 365 days, each a transaction whose gas the service pays.
     nRecordEditsPerYear :: Int,
     nMinPriceCentsPerYear :: Int,
@@ -396,7 +400,7 @@ knownSettings :: [(Text, [Text])]
 knownSettings =
   -- The retired keys are known, so parseConfig refuses them rather than a warning calling them ignored.
   [ ("listener", ["host", "badges_port", "badges_static_dir", "serve_webapp", "trust_forwarded_for", "metrics_port"] <> namesListenerKeys <> map fst retiredListenerKeys),
-    ("btcpay", ["host", "api_key", "store_id", "webhook_secret", "expiry_minutes", "speed_policy", "payment_tolerance"]),
+    ("btcpay", ["host", "api_key", "store_id", "webhook_secret", "expiry_minutes", "speed_policy", "payment_tolerance", "btc_xpub", "btc_hrp", "xmr_address", "xmr_view_key"]),
     ("stripe", ["secret_key", "publishable_key", "webhook_secret", "session_minutes"]),
     ("poll", ["waiting_seconds", "idle_seconds"]),
     ("apple", ["bundle_id", "root_certificates", "api_key_id", "api_issuer_id", "api_private_key_file", "api_host"]),
@@ -405,7 +409,7 @@ knownSettings =
     ("dev", ["accept_unverified_store_receipts", "check_store_during_coverage", "credit_test_purchases"]),
     ("issuer", ["index", "private_key", "dev_keys"]),
     ("log", ["level"]),
-    ("names", ["tld", "years", "term_start", "term_slack_seconds", "reveal_margin_seconds", "max_dry_run_failures", "max_sent_failures", "codes_only", "record_edits_per_year", "min_price_cents_per_year"]),
+    ("names", ["tld", "years", "term_start", "term_slack_seconds", "reveal_margin_seconds", "max_dry_run_failures", "max_sent_failures", "codes_only", "downtime", "record_edits_per_year", "min_price_cents_per_year"]),
     ("chain", ["rpc_url", "chain_id", "controller", "sponsor", "base_registrar", "resolver", "service_key", "confirmations", "gas_limit_cap", "max_fee_per_gas"])
   ]
 
@@ -560,7 +564,13 @@ parseConfig ini = do
           bExpiryMinutes <- num "btcpay" "expiry_minutes" 1 maxBound defaultExpiryMinutes
           bSpeedPolicy <- speedPolicy
           bPaymentTolerance <- tolerance
-          pure (Just BTCPayConfig {bHost, bApiKey, bStoreId, bWebhookSecret, bExpiryMinutes, bSpeedPolicy, bPaymentTolerance, bTimeoutMicros = providerTimeoutMicros, bCheckoutTimeoutMicros = providerCheckoutTimeoutMicros})
+          bBitcoinKey <- payeeKey "btc_xpub" "btc_hrp" bitcoinKey
+          bMoneroKey <- payeeKey "xmr_address" "xmr_view_key" moneroKey
+          pure (Just BTCPayConfig {bHost, bApiKey, bStoreId, bWebhookSecret, bExpiryMinutes, bSpeedPolicy, bPaymentTolerance, bTimeoutMicros = providerTimeoutMicros, bCheckoutTimeoutMicros = providerCheckoutTimeoutMicros, bBitcoinKey, bMoneroKey})
+    payeeKey k v parse = case (present "btcpay" k, present "btcpay" v) of
+      (Nothing, Nothing) -> Right Nothing
+      (Just key, Just value) -> Just <$> first ("btcpay." <>) (parse key value)
+      _ -> Left ("btcpay." <> T.unpack k <> " and btcpay." <> T.unpack v <> " are required together")
     speedPolicy = case look "btcpay" "speed_policy" of
       Nothing -> Right MediumSpeed
       Just v -> case textDecode (T.strip v) of
@@ -648,11 +658,12 @@ parseConfig ini = do
           nMaxDryRunFailures <- num "names" "max_dry_run_failures" 1 maxBound 5
           nMaxSentFailures <- num "names" "max_sent_failures" 1 maxBound 5
           nCodesOnly <- bool "names" "codes_only" False
+          nDowntime <- bool "names" "downtime" False
           nRecordEditsPerYear <- num "names" "record_edits_per_year" minRecordEditsPerYear maxRecordEditsPerYear defaultRecordEditsPerYear
           nMinPriceCentsPerYear <- num "names" "min_price_cents_per_year" 1 maxBound defaultMinPriceCentsPerYear
           nCommunity <- communityList nTLD
           nChain <- chainSection
-          pure (Just NamesConfig {nTLD, nYears, nTermStart, nTermSlackSeconds, nRevealMarginSeconds, nMaxDryRunFailures, nMaxSentFailures, nCodesOnly, nRecordEditsPerYear, nMinPriceCentsPerYear, nCommunity, nChain})
+          pure (Just NamesConfig {nTLD, nYears, nTermStart, nTermSlackSeconds, nRevealMarginSeconds, nMaxDryRunFailures, nMaxSentFailures, nCodesOnly, nDowntime, nRecordEditsPerYear, nMinPriceCentsPerYear, nCommunity, nChain})
     tldSetting =
       required "names" "tld" >>= \case
         "simplex" -> Right TLDSimplex

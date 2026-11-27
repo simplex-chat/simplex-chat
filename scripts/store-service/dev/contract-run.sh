@@ -7,7 +7,7 @@ set -euo pipefail
 shopt -s inherit_errexit
 
 WEBAPP_DIR="${WEBAPP_DIR:-$(cd "$(dirname "$0")/../../.." && pwd)/apps/simplex-domains/webapp}"
-: "${ENS_CONTRACTS_DIR:?set ENS_CONTRACTS_DIR to the compiled ens-contracts submodule of a simplex-namespace-contract checkout, as for the webapp dev/start.sh}"
+: "${ENS_CONTRACTS_DIR:?set ENS_CONTRACTS_DIR to a compiled ens-contracts checkout, as for the webapp dev/start.sh}"
 ANVIL="${ANVIL:-anvil}"
 RPC_PORT="${RPC_PORT:-8545}"
 SERVICE_PORT="${SERVICE_PORT:-8180}"
@@ -53,12 +53,14 @@ AMOUNTS="expects the mock's coin amounts, a price at the invoice's rate, or its 
 PROFILES="expects the profiles the mock makes up for its links; the service reads a link's profile from the link's server, which these links are not on"
 MONERO="pays late in Monero, which the service credits only when BTCPay's Monero settled-confirmation threshold is 1 or more; the fake BTCPay's Monero fixture sets none"
 UNREGISTER="ends a registration with /control/unregister, which only the mock does; on chain, unregister takes the cold key"
+HELD="reads an order as the mock holds it at /control/invoice or /control/registration, which only the mock has"
+MISMATCH="makes the mock answer other values than the page holds with /control/mismatch, which only the mock does"
+DOWNTIME="switches the mock's downtime at /control/downtime; the service reads downtime from its ini at start"
 
 EXCLUDED=(
   "the service's mode is at /api/config: open by default, codes once the mock takes codes only, the page the same in both" "$STATE"
   "the mock refuses every payment in codes-only mode, as the service does" "$MODE"
   "each mode's home is drawn from its first frame, never the other mode's first, however slowly the config answers" "$MODE"
-  "a load asks the service's mode once, as the preload's answer is the one the page reads" "$MODE"
   "without a code, the home's search is greyed, takes no pointer, focus or Enter, and Register with code leads on" "$MODE"
   "#/code opens Check your code from a cold load, its field ready for the code" "$MODE"
   "a valid prepaid code opens the search for the names it covers and registers one as a free code order" "$MODE"
@@ -66,10 +68,6 @@ EXCLUDED=(
   "an order paid before codes only shows no new invoice or other name, only Register with code and the refund" "$MODE"
   "a page opened before codes only, refused as it pays, says registration is by code and leads to a code" "$MODE"
   "a closed invoice's page opened before codes only, refused a new invoice, says so with a way to a code" "$MODE"
-  "a checkout open as the service takes codes only loads again in codes mode with its name, links, name code and terms" "$MODE"
-  "an order paid as the service takes codes only loads again with its invoice, and registers" "$MODE"
-  "a codes-only page open as the service opens loads again with the search on" "$MODE"
-  "a closed invoice's page holding changed terms ticked again stays as the service takes codes only, until the reader leaves it" "$MODE"
   "Edit links saves both links with the last edit left, then keeps Save off until the edits return" "$EDITS"
   "a Save of both links from a tab opened before the name's edits ran out says when they return, and changes neither link" "$EDITS"
   "a code on Check your order that is not valid, used, too short for the name or a name code says why, and the order is paid once it is removed" "$CODE_STATE"
@@ -77,7 +75,6 @@ EXCLUDED=(
   "a failed code order opened again after its code was used elsewhere offers no other name, and from the first frame the time after" "$FAIL"
   "a failed code order is drawn before its code is checked, and says the code is kept only once the check answers" "$FAIL"
   "a failed code order whose code check meets the rate limit counts down its wait, then says the code is kept" "$FAIL"
-  "a code held by this browser's failed order says it is in use and links to the order; a revoked code says SimpleX withdrew it" "$FAIL"
   "a failed code order whose code is revoked or past its date while still held by it says the code is kept" "$FAIL"
   "an order restored in a browser without its code promises nothing of the code" "$FAIL"
   "a view whose sponsor nonce could not be read is read again after 5 then 15 seconds, without holding, and then signed" "$SEARCH"
@@ -86,7 +83,6 @@ EXCLUDED=(
   "Your names draws a community name's row with its marker on the name's last line, its popup saying what the name is for" "$COMMUNITY"
   "community terms changed on chain between the order and its reveal are agreed to again on the order's page before it signs, and the name registers under them" "$COMMUNITY"
   "changed community terms whose searches fail for now are asked for once a search is made again after a pause" "$COMMUNITY"
-  "changed community terms are asked for by the hash the order's view asks to accept, the view read again while the service has no terms of that hash" "$COMMUNITY"
   "changed community terms of the name an order holds are asked for whatever a search answers for the name" "$COMMUNITY"
   "community terms changed after the reveal, before its relay, are agreed to again and the name registers under them" "$SEARCH"
   "the marker stands where the mockup draws it in the search's rows, available and taken" "$COMMUNITY"
@@ -99,7 +95,6 @@ EXCLUDED=(
   "a code order closes an overdue invoice of its wallet and name with nothing received" "$OVERDUE"
   "a code check answers every state, revoked included, and an unknown code is code_invalid" "$CODE_STATE"
   "a taken code order's own code is accepted past its expiry within the month after the take, and refused once revoked" "$CODE_STATE"
-  "a held poll wakes on a new version, and of two retries at once of a lapsed order one wins and the other is registration_changed with the view" "$SEARCH"
   "a name is selected only for a paid order taken first, at its own price, again after each take with no limit; a repeat changes nothing" "$STALE"
   "support's refund takes the whole balance by invoice id or registration id, and refuses other cents or none left" "$REFUND_ANSWER"
   "a paid order taken first keeps its whole price as its balance until support refunds it, after which no name is selected for it" "$REFUND_ANSWER"
@@ -111,7 +106,6 @@ EXCLUDED=(
   "an order signs the terms of its name's kind: the other kind or other terms is terms_changed with the terms and community now, a malformed one bad_request" "$LIMIT"
   "a selection signs the new name's terms: a community name needs the community terms, which are stored; the same body again is a repeat, also after the terms changed" "$COMMUNITY"
   "a code order meets changed terms before the code's state" "$CODE_STATE"
-  "a committed community name's view asks for the owner's acceptance of the community terms on chain; its reveal without one, or with one for another nonce, terms, kind or policy, is bad_request, and with it the register records it" "$STALE"
   "a plain name's committed view asks for the owner's acceptance of the general terms; its reveal without one or with the other kind is bad_request, and with it the register records it" "$STALE"
   "a Bitcoin order pays in two parts, registers on chain, takes its links on Edit links, and the code owns it" "$EDITS"
   "a purchase walks the steps a buyer expects, and the links set before paying are on chain" "$PROFILES"
@@ -132,15 +126,14 @@ EXCLUDED=(
   "a new invoice for a method that is unavailable says so and offers another way, with the same name code" "$SEARCH"
   "a name code's lookup refused for a rate limit counts down its wait, and the code is judged again once it is over" "$SEARCH"
   "a search pause reads the same after leaving the page and coming back" "$SEARCH"
-  "as a search pause ends, the paused line gives way to a checking line rather than an empty room, until the answer" "$SEARCH"
   "Back to a search whose check fails because the service is down no longer offers the remembered answer" "$SEARCH"
   "Back to a search whose check fails because searching is rate limited no longer offers the remembered answer" "$SEARCH"
+  "as a search pause ends, the paused line gives way to a checking line rather than an empty room, until the answer" "$SEARCH"
   "a name an order holds is searched as that order in its browser, and as taken with nothing more in another" "$FAIL"
   "a failed registration keeps its payment for support, also in another tab" "$FAIL"
   "an order whose commitment lapses before its page signs is committed again by that page, which signs it then" "$STATE"
   "an order failed while its page was not read says until when the name stays its, and Continue signs it again and registers it" "$STATE"
   "a chain that sends nothing for a moment keeps the order where it was, then registers it" "$STATE"
-  "a chain that sends nothing for longer than its resends fails the order in plain words, leaving it to support" "$SEARCH"
   "the home keeps its headline and search still as each kind of answer comes, at a laptop's and a phone's size" "$SEARCH"
   "the words under the registering page's clock are centred on its icon" "$SEARCH"
   "a commit that does not move on for longer than usual says so in its words' place, and nothing moves" "$SEARCH"
@@ -149,6 +142,50 @@ EXCLUDED=(
   "a registration ended in its dispute period is shown with Register with code alone, as the other endings are" "$MODE"
   "a registration ended in its dispute period is shown as ended on its order's page, in Your names and in Edit links, and its name is available again" "$UNREGISTER"
   "a reveal signed over other dispute days than its order's payment's is bad_request, and the name is registered with the reveal over its payment's" "$STALE"
+  "a load asks the service's config once, as the preload's answer is the one the page reads" "$MODE"
+  "a prepaid code from Check your code shows a name as Free and registers it with nothing to pay" "$HELD"
+  "a prepaid code registers a name with its links, which its records on chain then hold, its register recording the owner's acceptance of the general terms" "$HELD"
+  "a prepaid code registers a name the contracts' owner listed on chain, its register recording the owner's acceptance of the community terms" "$HELD"
+  "a prepaid code for 5 years registers a community name for its 2 years and the free days, saying the code's other years are not used" "$HELD"
+  "a code held by this browser's failed order is noted as held by it, with a link to the order; one another order holds is refused; a revoked code says SimpleX withdrew it" "$FAIL"
+  "a code applied to the tab is taken off once Your names or Check your code reads it as one that cannot be used" "$CODE_STATE"
+  "an order refused for terms changed meanwhile unticks the box and says so in place, the box and Pay staying put, and signs the new terms once ticked" "$HELD"
+  "a new invoice for the same name signs the order's own terms without asking while they are the name's, also restored elsewhere, and asks first once they changed" "$HELD"
+  "a card form that did not load asks for changed terms before cancelling its invoice, which stays open until the buyer agrees" "$HELD"
+  "changed community terms are asked for by the hash the order's view asks to accept, as the page holds them, whatever the service answers for that hash" "$COMMUNITY"
+  "a held poll wakes on a new version, and of two retries at once of a lapsed order one wins and the other is bad_request, as the order is no longer lapsed" "$STALE"
+  "a committed community name's view asks for the owner's acceptance of the community terms on chain; its reveal without one, or with one for another nonce, terms or kind, is bad_request, and with it the register records it" "$COMMUNITY"
+  "a reveal without its order request signed by the order's name key, or by another key, is not_found, one signed too long ago bad_request, and the signed one registers the name" "$STALE"
+  "a name whose search answers a price below or above the one the page holds can't be ordered, and shows the held price, unless a code registers it" "$MISMATCH"
+  "an order whose sign answer asks for the acceptance under another policy is not sent, and Check your order says names can't be ordered now" "$MISMATCH"
+  "an order whose sign answer asks for the acceptance of other terms is not sent, and Check your order says names can't be ordered now" "$MISMATCH"
+  "an open invoice of another payment than its order asked for is drawn without its payment details, which could not be checked" "$MISMATCH"
+  "an open Bitcoin invoice with an address of a key the page does not hold is drawn without its payment details, which could not be checked" "$MISMATCH"
+  "an open Monero invoice with an address of a key the page does not hold is drawn without its payment details, which could not be checked" "$MISMATCH"
+  "an open Bitcoin invoice with an amount other than its name's price is drawn without its payment details, which could not be checked" "$MISMATCH"
+  "an open Monero invoice with an amount other than its name's price is drawn without its payment details, which could not be checked" "$MISMATCH"
+  "an order's page gives support its address proof with its reference, as the service sent it, also when the address could not be checked" "$MISMATCH"
+  "a card order reopened with its name code in another browser signs its reveal over a card's dispute days, whatever payment the service reports" "$MISMATCH"
+  "a committed order whose view asks for the acceptance under another policy is not signed, and after three tries its page says the name could not be signed" "$HELD"
+  "a committed order whose reveal the service answers as another signer's, not_found, says after three tries that the name could not be signed" "$HELD"
+  "in the service's downtime the home says new orders open again soon and offers no Register, and Check your order says so, with no order made" "$DOWNTIME"
+  "in the service's downtime a taken order's search for another name offers no Register, and the order stays taken" "$DOWNTIME"
+  "an open invoice's page in the service's downtime withholds its payment details, and shows them once the downtime is over" "$DOWNTIME"
+  "a committed order signs no reveal in the service's downtime, and is signed and registered once the downtime is over" "$HELD"
+  "Back is in the window and reached by the keyboard on every screen that has one, at a laptop's and a phone's size" "$HELD"
+  "a Monero invoice's wallet link is monero:// for Monero GUI on a laptop and monero: on a phone, and its QR keeps monero:" "$HELD"
+  "a forgotten empty invoice never leads back to the older invoice it replaced" "$HELD"
+  "a card form that does not load says so and offers a new invoice" "$HELD"
+  "a registration link of an order paid by invoice points at its payment link" "$HELD"
+  "a selection refused for a name taken meanwhile says the name is no longer available, and the next search is for the same order" "$HELD"
+  "a drawn order that a newer order of its name replaces keeps its place until the newer one is read, and the end links stay" "$HELD"
+  "every request for an order is signed with its owner's name key, polls, cancels and the reads to the name registered" "$STATE"
+  "an order's link in a browser without its name code sends no request for the order and asks for the code" "$HELD"
+  "a name taken first keeps its payment as its balance, with which a name selected for the order is registered, owned by the same code" "$HELD"
+  "a taken order offers another name for it without searching its own name" "$HELD"
+  "an order failed unread offers Continue only outside the service's downtime, asks at Continue for terms changed since, and signs and registers it once they are accepted" "$HELD"
+  "a name of another price than a taken order's cannot be registered for it, and its search says the price the payment covers" "$HELD"
+  "Edit links keeps still and fits both windows as it saves, for a name of 63 wide letters, and Check your code fits them refusing a code" "$HELD"
 )
 
 RUN_DIR="$(mktemp -d "${TMPDIR:-/tmp}/names-contract-run.XXXXXX")"
@@ -215,11 +252,15 @@ start_terms() {
 }
 
 build_site() {
-  (cd "$WEBAPP_DIR" && npx vite build --outDir "$RUN_DIR/names" --emptyOutDir --logLevel warn) > "$RUN_DIR/build.log" 2>&1
+  (cd "$WEBAPP_DIR" && npx vite build --mode devchain --outDir "$RUN_DIR/names" --emptyOutDir --logLevel warn) > "$RUN_DIR/build.log" 2>&1
 }
 
 deployed() {
   node -p "require(process.argv[1]).$1" "$CHAIN"
+}
+
+dev_key() {
+  node -p "require(process.argv[1]).$1" "$REPO/tests/fixtures/store-service/rest-api/vectors-address-proofs.json"
 }
 
 write_ini() {
@@ -238,6 +279,16 @@ trust_forwarded_for = on
 index = $DEV_ISSUER_INDEX
 private_key = $DEV_ISSUER_SECRET
 dev_keys = $DEV_ISSUER_INDEX:$DEV_ISSUER_SECRET
+
+[btcpay]
+host = https://127.0.0.1
+api_key = replaced-by-the-fake
+store_id = replaced-by-the-fake
+webhook_secret = replaced-by-the-fake
+btc_xpub = $(dev_key bitcoin.dev.xpub)
+btc_hrp = $(dev_key bitcoin.dev.hrp)
+xmr_address = $(dev_key monero.dev.primaryAddress)
+xmr_view_key = $(dev_key monero.dev.viewKey)
 
 [names]
 tld = $(deployed tld)

@@ -1,0 +1,52 @@
+{
+  "body": {
+    "address": "73YMtNiQmazP56aYSAR2SjT6uCfCNEBFnfYc4PHUUJaqC8urLbipC1Z3NUUqoraQV4PJmLRHV81cnadnoUAcLiqD8jQB4mL",
+    "addressProof": {
+      "spendTweak": "04385366e565cad14d4dcc1128ff618e808549380ca6dc0f53ba6f024d81120b",
+      "type": "xmr",
+      "viewProof": {
+        "challenge": "430fb5871b8ae5fda8169ec3d540c6a55a2b9de2474046d194c90d46dfee920f",
+        "response": "a5196e08746d1854268558af1544bc19e3b2d3e234feed5ebaa9bf4a33f6d00c"
+      }
+    },
+    "amount": 20000,
+    "cryptoAmount": "0.32095000",
+    "cryptoCurrency": "xmr",
+    "currency": "usd",
+    "expiresAt": "2026-10-21T10:00:00Z",
+    "invoiceId": "invoice",
+    "kind": "name",
+    "registration": {
+      "balance": null,
+      "commitTx": null,
+      "commitment": "0xadaeb1bf756720728106de625a13100c6a384e6dacb6b883e4e26b8e442be73f",
+      "community": null,
+      "disputeDays": 14,
+      "duration": 69259500,
+      "id": "registration",
+      "label": null,
+      "labelHash": "0x78b602f03f164366531da963764c1f2fdfd588d0487daf2aa261ca799e5ffe33",
+      "latePayment": null,
+      "owner": "0x014f9c09CcEeDEF1B713110d04D3a07d5B5D9b73",
+      "payment": {
+        "method": "xmr",
+        "type": "invoice"
+      },
+      "phase": {
+        "type": "unpaid"
+      },
+      "price": 20000,
+      "registerTx": null,
+      "sealed": "sealed-alicebakery-1",
+      "terms": {
+        "communityName": false,
+        "termsHash": "0x67b989cccc7ae150142daa4029304c7b7e78ab0a4ccebeba2ec1ef8a30f8147e"
+      },
+      "version": 1,
+      "years": 2
+    },
+    "requiredConfirmations": 1,
+    "status": "open"
+  },
+  "status": 200
+}

@@ -13,7 +13,8 @@ Buyers order names on the names page. The page signs each registration with the 
 | Card page | the Stripe publishable key; Stripe.js, on its own origin, apart from the name codes |
 | Store service host | the database of orders and codes; the registrar key, which spends the sponsor's allowance and pays gas; the Stripe restricted key (PaymentIntents write, Charges read); the BTCPay API key; the Bitcoin extended public key and the Monero private view key |
 | Contracts | the allowance, set by the guardian Safe; dispute days from 14 to 120; the guardian Safe can end a registration within its dispute period |
-| Etherscan | an independent view of the chain: the registrar's tokens and their holders |
+| The dApp | app.simplex.domains, served by GitHub Pages from simplex-chat/simplex-domains-app-v3, in the DNS zone of simplex.domains: the names a name address holds, the check the names page links a registered name's address to |
+| Etherscan, opened directly | a view of the chain independent of SimpleX: the registrar's tokens and their holders |
 
 ## Global assumptions
 
@@ -21,7 +22,7 @@ Buyers order names on the names page. The page signs each registration with the 
 - The deployed contracts are as verified, and the keys that own and guard them, those of the admin and guardian Safes included, are not compromised.
 - The spending keys of SimpleX's Bitcoin and Monero wallets, and the Stripe account's dashboard, are not on the service host.
 - The Stripe account has Connect disabled, and the service's key has only the permissions above.
-- Etherscan, or another explorer the buyer chooses, shows the chain's state.
+- Etherscan, or another explorer the buyer opens directly, shows the chain's state.
 - The cryptographic primitives in use are not broken.
 
 ## An attacker who controls the service
@@ -48,6 +49,8 @@ The host: code, database, keys and BTCPay. The pages served by GitHub are intact
 
 - see every Bitcoin receiving address and every incoming Monero payment, from the extended public key and the view key.
 
+- show an address derived from SimpleX's keys with a tweak that comes from no wallet index, which the wallet does not scan, and then delete the tweak: the page checks the address against its held keys, not against a wallet index. A payment to that address can be recovered only while the buyer's browser keeps the order's record, where the page stores the address and its `addressProof` as received, and from which the order page puts the proof into the text the buyer sends to support. A restore with the name code reads the order from the service, so it does not bring the tweak back.
+
 *cannot:*
 
 - direct a crypto payment to an address outside SimpleX's wallets, or a card payment to another Stripe account: the page shows only addresses it derives from its held keys, and the card page mounts only PaymentIntents of its held key with the held amount.
@@ -62,7 +65,7 @@ The host: code, database, keys and BTCPay. The pages served by GitHub are intact
 
 - keep the guardian Safe from ending, within its dispute period, a registration it made for itself.
 
-- hide from the buyer, on Etherscan, that the name is not held by the buyer's name address.
+- hide from the buyer, on the dApp, or on Etherscan opened directly, that the name is not held by the buyer's name address.
 
 - change the pages.
 
@@ -78,9 +81,11 @@ Through the simplex.domains repository, GitHub Pages or DNS. The service is inta
 
 - sign a buyer's order for a name address it controls, so the service registers the paid name to that address.
 
-- show any status, and a false Etherscan link and name address.
+- show any status, and a false dApp link and name address.
 
 - send every lookup and the buyer's IP address elsewhere.
+
+- through the DNS of simplex.domains, also control the dApp, which is in the same zone, so that only Etherscan opened directly shows that buyer the chain.
 
 *cannot:*
 
@@ -90,7 +95,7 @@ Through the simplex.domains repository, GitHub Pages or DNS. The service is inta
 
 - reach owners who do not open it.
 
-- change what Etherscan shows when the buyer opens it directly.
+- change what Etherscan shows when the buyer opens it directly, or, other than through the DNS of simplex.domains, what the dApp shows.
 
 ## An attacker who controls the card page
 
@@ -128,16 +133,28 @@ The service host and the names page.
 
 - reach owners who do not open the page.
 
-- change the contracts or what Etherscan shows.
+- change the contracts or what Etherscan shows when the buyer opens it directly.
+
+## An attacker on the buyer's network
+
+The pages, the service and the DNS are intact.
+
+*can:*
+
+- serve a lookalike page over `http://` to a buyer who opens simplex.domains without `https://`, in a browser that holds no unexpired record from the service host's earlier `Strict-Transport-Security`: GitHub Pages does not send the headers that Caddy sent with the page on the service host, so no new record is made. The headers no longer sent: `Strict-Transport-Security`, `X-Content-Type-Options: nosniff` and `Cross-Origin-Opener-Policy`. `Content-Security-Policy` and `Referrer-Policy` are no longer sent as headers either: both are set by meta elements of the page, and as `frame-ancestors 'none'` is ignored in a meta element, the page draws only a link to itself inside a frame ([8.3](./2026-11-25-names-hardening.md#83-what-the-page-does)).
 
 ## Someone who has an order reference
 
 Anyone who sees an order's reference or link. The reference is the service's own invoice or registration id; the payment providers receive only "name:" and the order's hash. The service and the pages are intact.
 
+*can:*
+
+- tell a reference that names an order from an unknown one by the time of the answer alone: on the invoice routes the order of a known name invoice is read in further queries, and a selection by another key is logged, before the same answer is sent.
+
 *cannot:*
 
 - learn whether the reference names an order: an unsigned request for an order gets the same answer as a request for an unknown one.
 
-- learn the order's name, name address, status, price or links: every request that names an order is signed with the order's name key.
+- learn the order's name, name address, status, price or links: every request that names an order is signed with the order's name key, a reveal included, so a reveal copied from a registration on chain is answered as one for an unknown order.
 
 - cancel the order's invoice, retry the order or choose a name for it.

@@ -71,7 +71,8 @@ serveNamesPage dir controlPort =
   withFakeBTCPay $ \pcBTCPay -> withFakeStripe $ \pcStripe -> do
     let ini = dir </> "store_service.ini"
     cfg <- readServiceConfig ini >>= either (fail . ((ini <> ": ") <>)) pure
-    let cfg' = cfg {btcpay = Just (fbConfig pcBTCPay), stripe = Just (fsConfig pcStripe)}
+    let withPayeeKeys BTCPayConfig {bBitcoinKey, bMoneroKey} = (fbConfig pcBTCPay) {bBitcoinKey, bMoneroKey}
+        cfg' = cfg {btcpay = Just $ maybe (fbConfig pcBTCPay) withPayeeKeys (btcpay cfg), stripe = Just (fsConfig pcStripe)}
         ListenerConfig {lHost, lBadgesPort} = listener cfg'
         pcWebhooks = "http://" <> T.unpack lHost <> ":" <> show lBadgesPort <> "/webhooks/"
         args = ["--no-address", "-d", dir </> "db", "-s", unreachableSmpServer, "--smp-proxy", "always", "--smp-proxy-fallback", "no"]

@@ -25,6 +25,7 @@
    10. [A registered name's links edited](#310-a-registered-names-links-edited)
    11. [Service start](#311-service-start)
    12. [A card dispute or a refund](#312-a-card-dispute-or-a-refund)
+   13. [A request for an order signed with its name key](#313-a-request-for-an-order-signed-with-its-name-key)
 4. [The life of an order](#4-the-life-of-an-order)
 
 ---
@@ -34,6 +35,7 @@
 ```mermaid
 flowchart LR
   ops["Operators<br/>support, group admins"]
+  pages["GitHub Pages<br/>simplex.domains: names page, deployment's values<br/>pay.simplex.domains: card page"]
   page["Names page<br/>simplex.domains in the browser"]
   pay["BTCPay and Stripe"]
   subgraph proc["simplex-store-service: one process per database"]
@@ -50,7 +52,8 @@ flowchart LR
   smp["SMP servers<br/>through an SMP proxy"]
   git["git.simplex.chat or GitHub<br/>terms texts"]
 
-  page -->|"/api calls"| web
+  pages -->|"page, card frame"| page
+  page -->|"/api calls on api.simplex.domains, CORS,<br/>order requests signed with the name key"| web
   page -.->|"card or crypto payment"| pay
   pay -->|"signed webhooks"| web
   web -->|"create, cancel invoice"| pay
@@ -75,7 +78,7 @@ flowchart LR
 
 How a request flows:
 
-1. The page calls `/api/*` on its own origin. The API and both webhooks are answered on every listener port. The template sets `serve_webapp = off`, and Caddy serves both sites from `./webapps`; with `serve_webapp = on`, the names site is also served on the names port, as built: the page reads the mode and the Stripe key from `GET /api/config`. Caddy proxies each domain to its port and is configured outside this repository ([`Web/Server.hs:124-151`](../src/StoreService/Web/Server.hs#L124-L151), [`Config.hs:505-514`](../src/StoreService/Config.hs#L505-L514), [`store_service.ini.example:8-11`](../../../scripts/store-service/store_service.ini.example#L8-L11), [`README.md:702-795`](../README.md#L702-L795)).
+1. The names page is served by GitHub Pages at simplex.domains, built from its repository with the deployment's values: chain, contracts, terms, prices, the mode, the Stripe key and the payee keys. It calls `/api/*` on api.simplex.domains, another origin, which the service answers with CORS headers (`apiCors` in [`Web/Server.hs`](../src/StoreService/Web/Server.hs)); from `GET /api/config` it reads only `names.downtime`. The badges site calls `/api/*` on its own origin. The API and both webhooks are answered on every listener port. The template sets `serve_webapp = off`, and Caddy serves the badges site from `./webapps` and proxies api.simplex.domains to the service; it is configured outside this repository ([`store_service.ini.example`](../../../scripts/store-service/store_service.ini.example), README, Caddy).
 2. A route is matched, its method checked, one token of its per-client limit taken (webhooks and site files take none), then its handler run ([`Web/Names.hs:46-51`](../src/StoreService/Web/Names.hs#L46-L51), [`Web/Http.hs:209-222`](../src/StoreService/Web/Http.hs#L209-L222)).
 3. An order is checked against the contracts with `eth_call`, a provider invoice is created, and the order is written with its invoice in one transaction ([`Web/Names/Orders.hs:86-173`](../src/StoreService/Web/Names/Orders.hs#L86-L173)).
 4. On a webhook only a read is queued. The poller reads the provider and settles the invoice in one transaction; a paid order is moved from `unpaid` to `queued` ([`Web/Server.hs:500-554`](../src/StoreService/Web/Server.hs#L500-L554), [`Poller.hs:248-263`](../src/StoreService/Poller.hs#L248-L263), [`Orders.hs:95-213`](../src/StoreService/Orders.hs#L95-L213)).
@@ -109,8 +112,8 @@ How a request flows:
 | Group lane | With `[group]`: one managed group. `/issue`, `/issue name` included, and `/bulk` are taken from moderators, `/revoke` from admins, `/balance`, `/record_refund` and `/close` from owners; `/bulk` issues badge codes only. A name code command is refused once the name codes the group issued in the last 24 hours would pass 10. `/balance`, `/record_refund` and `/close` run the console's handlers in the service's locks, with the console's chain client. Once the first promotion was attempted, every joiner waits for a moderator's review, decided when the join request arrives. | [`Group.hs:91-346`](../src/StoreService/Group.hs#L91-L346), [`Group/Command.hs:65-90`](../src/StoreService/Group/Command.hs#L65-L90), [`Group/Command.hs:275-282`](../src/StoreService/Group/Command.hs#L275-L282), [`Service.hs:414-418`](../src/StoreService/Service.hs#L414-L418) |
 | Console | The same binary under `--run-cli`, or `--execute` for one command, while the service is stopped: the terminal chat and the badge request lanes only, with `//issue`, `//issue name`, `//revoke`, `//balance`, `//record_refund` and `//close`. They are read by the group's grammar, with a payment status in place of `uses`, and run by the group's dispatch, without its tracker and its daily cap; `//issue name` and `//close` are refused without `[names]`. `//close` reads the chain through a client of its own, made at start with `[names]`. | [`Main.hs:23-29`](../Main.hs#L23-L29), [`Service.hs:365-418`](../src/StoreService/Service.hs#L365-L418), [`Group/Command.hs:72-118`](../src/StoreService/Group/Command.hs#L72-L118), [`Group.hs:324-346`](../src/StoreService/Group.hs#L324-L346) |
 | PostgreSQL | One database (`BADGE_DB_CONN`) with the chat core's schema and the `sx_badge_service_` tables. Names tables: prepaid codes, registrations, balances, name invoices, late credits, record edits and their changes, transactions, terms texts; the one names migration also adds the product and the provider reference to the generic invoices. A registration's primary key is an integer, `name_registration_id`, by which orders of one second are told apart, newest first; its public id `registration_id` is unique, and the other tables reference it. Partial unique indexes admit one active order (`live = 1`) per commitment and per owner and label hash. | [`Store/Postgres/Migrations.hs:276-506`](../src/StoreService/Store/Postgres/Migrations.hs#L276-L506), [`compose.yml:16`](../../../scripts/store-service/compose.yml#L16) |
-| Names page | simplex.domains, in the submodule `apps/simplex-domains`, outside this checkout. `/api/*` is called on its own origin, and the owner's EIP-191 and EIP-712 signatures are sent from it. | [`.gitmodules:4-7`](../../../.gitmodules#L4-L7), [`Web/Names.hs:28-44`](../src/StoreService/Web/Names.hs#L28-L44) |
-| BTCPay | Bitcoin and Monero invoices through Greenfield: create, read, list, cancel (status `Invalid`), store rates; webhooks signed with `BTCPay-Sig`. Each call, its body read included, fails after 10 s, 30 s when it creates an invoice; the host-name lookup is outside that bound. An invoice whose address cannot be read after it was created is cancelled. | [`Providers/BTCPay.hs:269-371`](../src/StoreService/Providers/BTCPay.hs#L269-L371), [`Providers/BTCPay.hs:529-543`](../src/StoreService/Providers/BTCPay.hs#L529-L543), [`Providers/BTCPay.hs:560-583`](../src/StoreService/Providers/BTCPay.hs#L560-L583), [`Providers/BTCPay.hs:585-623`](../src/StoreService/Providers/BTCPay.hs#L585-L623) |
+| Names page | simplex.domains, served by GitHub Pages, in the submodule `apps/simplex-domains`, outside this checkout. It holds the deployment's values and shows an answer only once it matches them: a crypto address only with its `addressProof` from the payee keys it holds. `/api/*` is called on api.simplex.domains, and the owner's EIP-191 and EIP-712 signatures are sent from it, each request for an order signed with the order's name key (3.13). The card form runs in the card page, pay.simplex.domains, in a frame. | [`.gitmodules:4-7`](../../../.gitmodules#L4-L7), [`Web/Names.hs:28-44`](../src/StoreService/Web/Names.hs#L28-L44) |
+| BTCPay | Bitcoin and Monero invoices through Greenfield: create, read, list, cancel (status `Invalid`), store rates; webhooks signed with `BTCPay-Sig`. Each call, its body read included, fails after 10 s, 30 s when it creates an invoice; the host-name lookup is outside that bound. An invoice whose address cannot be read after it was created is cancelled, as is a name invoice whose address is not the one derived from the payee keys (3.1). | [`Providers/BTCPay.hs`](../src/StoreService/Providers/BTCPay.hs) `btcpayProvider`, `createInvoice`, `payeeProof`, `cancelInvoice`, [`Providers/AddressProof.hs`](../src/StoreService/Providers/AddressProof.hs) |
 | Stripe | Card PaymentIntents: create with an `Idempotency-Key`, read, list, cancel, also after 3 declined charges; webhooks signed with `Stripe-Signature`, within 15 minutes. Each call, its body read included, fails after 10 s, 30 s when it creates a payment; the host-name lookup is outside that bound. | [`Providers/Stripe.hs:103-304`](../src/StoreService/Providers/Stripe.hs#L103-L304), [`Providers/Stripe.hs:378-424`](../src/StoreService/Providers/Stripe.hs#L378-L424) |
 | Ethereum node and names contracts | `[chain] rpc_url`: https, or http to a node on loopback. Controller, sponsor, base registrar and resolver are set in `[chain]`; the registry is read from `ens()`, the name policy from `namePolicy()`. The registrar key's USD allowance on the sponsor is raised outside the service with `setRegistrarAllowance`; on an `InsufficientAllowance` revert the order waits and an error is logged. | [`Config.hs:186-198`](../src/StoreService/Config.hs#L186-L198), [`Config.hs:698-703`](../src/StoreService/Config.hs#L698-L703), [`Names/Contracts.hs:150-220`](../src/StoreService/Names/Contracts.hs#L150-L220), [`Names/Worker.hs:341`](../src/StoreService/Names/Worker.hs#L341) |
 | SMP servers and proxy | Hold the bot address, the group's queues and the data of buyers' short links. Private routing for unknown servers, with a protected fallback, is preset by `terminalChatConfig`. | [`Chat/Terminal.hs:41-63`](../../../src/Simplex/Chat/Terminal.hs#L41-L63), [`Chat/Library/Internal.hs:1723-1726`](../../../src/Simplex/Chat/Library/Internal.hs#L1723-L1726) |
@@ -173,9 +176,10 @@ sequenceDiagram
   W->>E: eth_call: terms of the name's kind, name status, rentPriceUSD
   W->>E: reveal, checked over the method's disputeDays: sponsor nonce, current terms, policy nonce
   W->>V: create invoice for the price
-  W->>D: one transaction: invoice open, registration unpaid with its reveal
-  W-->>P: 200 invoice view: clientSecret, or address and cryptoAmount
-  P->>W: GET /api/invoice/ID with wait and seenVersion, held up to 30 s
+  W->>W: crypto: address derived from the payee keys, equal to BTCPay's, else the invoice cancelled
+  W->>D: one transaction: invoice open with its address proof, registration unpaid with its reveal
+  W-->>P: 200 invoice view: clientSecret, or address, cryptoAmount and addressProof
+  P->>W: GET /api/invoice/ID with wait and seenVersion, a read signed with the name key, held up to 30 s
   P->>V: card payment with the clientSecret, or crypto to the address
   alt webhook
     V->>W: POST /webhooks/btcpay or /webhooks/stripe, signature verified
@@ -200,9 +204,11 @@ Notes:
 - Stripe is sent `metadata[order]` = `name:0x<order hash>` and an `Idempotency-Key`; BTCPay is sent the amount, the currency and the checkout settings ([`Providers/Stripe.hs:240-269`](../src/StoreService/Providers/Stripe.hs#L240-L269), [`Providers/BTCPay.hs:303-339`](../src/StoreService/Providers/BTCPay.hs#L303-L339)).
 - On a webhook only a read is queued, and 200 is answered ([`Web/Server.hs:500-554`](../src/StoreService/Web/Server.hs#L500-L554)).
 - A paid order holds its name from `queued` to `registering`, and `failed`, until support closes it as `taken` or the month from the selection of its name ends; an open invoice holds only its price, and one paid order holds a name at a time ([`Names/Store.hs`](../src/StoreService/Names/Store.hs) `labelHolder` and the index `idx_name_registrations_held_label`). When the payment settles, the poller cancels the name's other open invoices at their providers and closes their orders `cancelled`; the web API does so once a code order is placed, and once a name is selected after a reset. A payment that settles while another paid order holds the name resets its order to `taken`, the money paid for it added to its balance ([`Orders.hs`](../src/StoreService/Orders.hs) `nameSettled`, `cancelNameInvoices`).
-- An open invoice without money can be cancelled with `POST /api/invoice/ID/cancel`: the provider is told first, then the row is expired and the order closed ([`Web/Server.hs:358-381`](../src/StoreService/Web/Server.hs#L358-L381), [`Orders.hs:244-263`](../src/StoreService/Orders.hs#L244-L263)).
+- An open invoice without money can be cancelled with `POST /api/invoice/ID/cancel`, signed with the name key (3.13): the provider is told first, then the row is expired and the order closed (`cancelInvoiceHandler` in [`Web/Server.hs`](../src/StoreService/Web/Server.hs), [`Orders.hs:244-263`](../src/StoreService/Orders.hs#L244-L263)).
 - Unpaid: 10 minutes past the expiry the poller's sweep expires the invoice and closes the order, after it cancels a Stripe intent; BTCPay expires its own invoice. The unpaid order is deleted 30 days after the expiry, and a read held on it then answers `not_found` ([`Poller.hs:396-430`](../src/StoreService/Poller.hs#L396-L430), [`Poller.hs:62-76`](../src/StoreService/Poller.hs#L62-L76), [`Poller.hs:295-345`](../src/StoreService/Poller.hs#L295-L345), [`Orders.hs:265-275`](../src/StoreService/Orders.hs#L265-L275), [`Providers.hs:96-100`](../src/StoreService/Providers.hs#L96-L100)).
 - Under `codes_only = on` this route is refused with `403 codes_only` ([`Web/Names/Orders.hs:88`](../src/StoreService/Web/Names/Orders.hs#L88)).
+- Under `downtime = on` this route, a code order and a selection of a name are refused with `503 downtime` before the order is read, while reveals, `/retry`, reads and cancels are answered; `GET /api/config` answers `names.downtime: true`, so that the page offers no new order while the deployment's values change (`nameInvoiceHandler`, `codeOrderHandler` and `selectNameHandler`; README, Changing a value the names page holds).
+- A Bitcoin or Monero name invoice's address is proven from the `[btcpay]` payee keys. Bitcoin: from BTCPay's `keyPath` `0/i`, the tweak `t` of BIP-32's public child derivation from the receiving branch's key `W`, and the address `bech32(btc_hrp, 0, hash160(W + t·G))`. Monero: from BTCPay's `accountIndex` `i` and `addressIndex` `j`, `m = Hs("SubAddr\0" ‖ a ‖ i ‖ j)`, with `Hs` Keccak-256 reduced mod L and `i` and `j` 4 bytes little-endian, `D = B + m·G` and `C = a·D`, with a Chaum-Pedersen proof that `log_G A = log_D C`: `k = Hs("simplex.domains view proof nonce" ‖ a ‖ D)`, `c = Hs("simplex.domains view proof" ‖ A ‖ D ‖ C ‖ k·G ‖ k·D)` and `s = k − c·a`, points in their 32-byte encodings. An address other than BTCPay's cancels the invoice, answered `503 provider_unavailable`. The view has `addressProof`: `{"type": "btc", "keyTweak"}` or `{"type": "xmr", "spendTweak", "viewProof": {"challenge", "response"}}`, each 64 lowercase hex digits: `keyTweak` is BIP-32's `I_L`, big-endian; `spendTweak` (`m`), `challenge` and `response` are little-endian scalars, as Monero encodes them. A badge invoice has none (`payeeKeys`, `payeeProof` in [`Providers/BTCPay.hs`](../src/StoreService/Providers/BTCPay.hs), [`Providers/AddressProof.hs`](../src/StoreService/Providers/AddressProof.hs)).
 
 ---
 
@@ -224,13 +230,13 @@ sequenceDiagram
   S->>E: dry run, nonce, fees, signed, saved, eth_sendRawTransaction
   S-->>K: receipt at the confirmation depth (default 3)
   K->>D: phase committed, reveal window set
-  P->>W: GET /api/registration/ID, held while the version is unchanged
+  P->>W: GET /api/registration/ID, a read signed with the name key, held while the version is unchanged
   alt reveal stored
     W-->>P: committed, signed
   else reveal cleared
     W-->>P: committed: the reveal window, the intent nonce and the terms acceptance to sign, disputeDays
     P->>P: owner signs RegisterName with disputeDays and the terms acceptance (EIP-712)
-    P->>W: POST /api/registration/ID/reveal: label, secret, links, signatures
+    P->>W: POST /api/registration/ID/reveal: label, secret, links, signatures, the request signed with the name key
     W->>E: sponsor nonce, current terms, policy nonce
     W->>D: reveal stored, version published
   end
@@ -248,13 +254,14 @@ Notes:
 - `RegisterName` is signed in the EIP-712 domain `SimplexSponsor`, the acceptance in `SimplexNamePolicy`, as `AcceptGeneralTerms` or `AcceptCommunityTerms` ([`Names/Registration.hs:80-111`](../src/StoreService/Names/Registration.hs#L80-L111)).
 - `RegisterName` covers the order's dispute days, set by its payment when the order is made: 120 for a card, 14 for BTC, XMR and a code; a name selected after a reset keeps the order's days. The view gives them as `disputeDays`, and a reveal signed over other days is refused as not the owner's signature (`methodDisputeDays` in [`Names/Registration.hs`](../src/StoreService/Names/Registration.hs), `orderChecked` in [`Web/Names/Orders.hs`](../src/StoreService/Web/Names/Orders.hs); README, Dispute days).
 - The registered phase gives `disputeUntil`, the registrar's `disputeUntil(id)` read with the expiry at the confirmed block, absent for a registration without a dispute period. A register whose block is above the confirmed block is checked again later, and an order whose `disputeUntil(id)` there is not the end its register set, its block's time plus its days, is set `ended` instead, as T28 says (`checkLanded` in [`Names/Orders.hs`](../src/StoreService/Names/Orders.hs)).
+- A `/reveal` carries an order request signed with the order's name key, checked before the order is read, as `/retry`'s is; one unsigned or signed by another key is answered `404 not_found` (3.13).
 - The reveal, of an order or of `/reveal`, is checked in the contract's order: the label, its hash and length, the commitment rebuilt from the owner, duration and default resolver; the intent's deadline not before the service's clock for an order, or `revealBefore` for `/reveal`, and at most a week and 600 s after the service's clock, its signer and the sponsor nonce; the acceptance against the current terms and policy nonce; the links' kinds last ([`Names/Reveal.hs`](../src/StoreService/Names/Reveal.hs) `checkReveal`).
 - The names page signs the intent and the acceptance with a deadline a week after the service's clock, so a signature serves across commitments the service sends again within that week. The intent does not cover the secret, and it stays valid until its deadline or until the owner's sponsor nonce changes; a selection of a name stores its reveal in place of the old one, and a close clears it ([`Names/Store.hs`](../src/StoreService/Names/Store.hs) `selectRegistration`, [`Names/Worker.hs`](../src/StoreService/Names/Worker.hs) `sendRegister`).
 - A `/reveal` checks no link: the links were checked at the order, and the commitment fixes them, so a reveal of other links is refused as not the order's commitment.
 - The acceptance relay is `commitUnderGeneralTermsWithSig` or `commitUnderCommunityTermsWithSig`. It is sent once the order is committed with a reveal stored, without waiting for `revealAfter`, while `revealBefore` has not passed, unless the policy already holds that acceptance. The register is sent after the relay settles and `revealAfter` has passed ([`Names/Worker.hs:254-272`](../src/StoreService/Names/Worker.hs#L254-L272)).
 - The links are set by `setText` calls for `simplex.contact` and `simplex.channel` in the register's data ([`Names/Registration.hs:212-235`](../src/StoreService/Names/Registration.hs#L212-L235)).
-- The stored reveal is cleared when its deadline passes, on `InvalidNonce`, `TermsNotAccepted` or `TermsMismatch` (3.5), and when its acceptance is refused for another policy or kind of terms. Without a reveal by `revealBefore` the order waits, and its view's signature reads `lapsed`; the page with the code then sends `POST /api/registration/ID/retry`, which queues it to be committed again (3.6) ([`Names/Worker.hs:255-264`](../src/StoreService/Names/Worker.hs#L255-L264), [`Names/View.hs:127-143`](../src/StoreService/Names/View.hs#L127-L143)).
-- An order waiting for its owner, committed without a reveal, fails with the reason `unread` once its page has not read it for 3 days. A read is `GET /api/registration/ID` or the order's `GET /api/invoice/ID`, stored in `read_at` at most once an hour; an order starts read at its placement (`noteRead` in [`Names/Orders.hs`](../src/StoreService/Names/Orders.hs), `committed` in [`Names/Worker.hs`](../src/StoreService/Names/Worker.hs)). A reveal of such an order, checked as at an order (3.1), is stored and queues the order to be committed again (`revealHandler` in [`Web/Names/Registration.hs`](../src/StoreService/Web/Names/Registration.hs)).
+- The stored reveal is cleared when its deadline passes, on `InvalidNonce`, `TermsNotAccepted` or `TermsMismatch` (3.5), when its acceptance is refused for another policy or kind of terms, and when its `RegisterName` no longer verifies under the service's chain id and sponsor, as after a change of the deployment's values, before the relay or the register is sent, unless the order's commitment is no longer the one the current values make, which fails the order (T31) (`intentRefused`). Without a reveal by `revealBefore` the order waits, and its view's signature reads `lapsed`; the page with the code then sends `POST /api/registration/ID/retry`, which queues it to be committed again (3.6) ([`Names/Worker.hs:255-264`](../src/StoreService/Names/Worker.hs#L255-L264), [`Names/View.hs:127-143`](../src/StoreService/Names/View.hs#L127-L143)).
+- An order waiting for its owner, committed without a reveal, fails with the reason `unread` once its page has not read it for 3 days. A read is `GET /api/registration/ID` or the order's `GET /api/invoice/ID`, signed with the order's name key (3.13), stored in `read_at` at most once an hour; an order starts read at its placement (`noteRead` in [`Names/Orders.hs`](../src/StoreService/Names/Orders.hs), `committed` in [`Names/Worker.hs`](../src/StoreService/Names/Worker.hs)). A reveal of such an order, checked as at an order (3.1), is stored and queues the order to be committed again (`revealHandler` in [`Web/Names/Registration.hs`](../src/StoreService/Web/Names/Registration.hs)).
 - The view of a failed order that still holds its name gives `heldUntil` in its phase: a calendar month after the selection of its name. The view of an order whose name is not selected gives its phase alone, `{"type": "taken"}` (3.6) (`phaseView` in [`Names/View.hs`](../src/StoreService/Names/View.hs)).
 - The view gives the name of its stored reveal in `label` only once the order is settled, its payment settled or its code order placed (`toRegistrationView` in [`Names/View.hs`](../src/StoreService/Names/View.hs)).
 - After a restart every phase is resumed from the stored order and the sender's saved transactions ([`Names/Sender.hs:123-131`](../src/StoreService/Names/Sender.hs#L123-L131), [`Names/Worker.hs:6-8`](../src/StoreService/Names/Worker.hs#L6-L8)).
@@ -304,7 +311,7 @@ Notes:
 - The code is spent when the name is registered. Until then it stays reserved by its order: when the order is reset to `taken`, when a name is selected for the order, accepted past its expiry until a calendar month after the reset and refused once revoked (3.6), and with a failed order, or with a lapsed unsigned one for `/retry`, until a calendar month after the selection of its name, when the month pass fails the order `monthEnded` and releases the code in the same write (`endOrder` and `endMonths` in [`Names/Worker.hs`](../src/StoreService/Names/Worker.hs)).
 - A name code is issued valid for 3 calendar months, and the answer names its expiry: `Code: SN6-…. Valid until <time> UTC.` (`issueNameCode` in [`Names/Codes.hs`](../src/StoreService/Names/Codes.hs)).
 - A name code is withdrawn by `//revoke` unless it is spent; a code an order already holds stays usable by that order for its current name, and is refused for a name selected for the order later (3.6) ([`Names/Codes.hs:162-173`](../src/StoreService/Names/Codes.hs#L162-L173), [`Names/Codes.hs:78-88`](../src/StoreService/Names/Codes.hs#L78-L88)).
-- Under `codes_only = on`, `GET /api/config` answers `names.codesOnly` true, which the page reads, and paid orders are answered `403 codes_only` (`siteConfig` in [`Web/Server.hs`](../src/StoreService/Web/Server.hs), `nameInvoiceHandler` in [`Web/Names/Orders.hs`](../src/StoreService/Web/Names/Orders.hs)).
+- Under `codes_only = on`, `GET /api/config` answers `names.codesOnly` true, the page holds the same mode in its code, and paid orders are answered `403 codes_only` (`siteConfig` in [`Web/Server.hs`](../src/StoreService/Web/Server.hs), `nameInvoiceHandler` in [`Web/Names/Orders.hs`](../src/StoreService/Web/Names/Orders.hs)).
 
 ---
 
@@ -394,7 +401,7 @@ Notes:
 
 - Whether the name was registered after all is checked first: on a register mined with status 1, or with the name held by the owner at the confirmation depth, the order is set `registered`, or `ended` when the registrar's `disputeUntil` at the confirmed block is not the end set by its register ([`Names/Orders.hs:365-400`](../src/StoreService/Names/Orders.hs#L365-L400), [`Names/Worker.hs:329-336`](../src/StoreService/Names/Worker.hs#L329-L336)).
 - An `InsufficientAllowance` revert waits for the registrar key's allowance on the sponsor to be raised outside the service, also past the commitment's lapse, as the sponsor checks the allowance before the commitment. The reveal is cleared once its intent's deadline passes, and the page signs again ([`Names/Worker.hs:359`](../src/StoreService/Names/Worker.hs#L359), [`Names/Worker.hs:307-321`](../src/StoreService/Names/Worker.hs#L307-L321)).
-- A stored intent within its deadline that no longer verifies, as after a change of `[chain] chain_id`, `sponsor` or `resolver`, or of `[names] tld`, fails the order with the reason `signatureRefused` before its acceptance relay or its register is sent, logged as an error and reported in the managed group (`intentRefused` in [`Names/Worker.hs`](../src/StoreService/Names/Worker.hs)). No name is selected for such an order: `POST /api/registration/ID/name` with other fields answers `400 bad_request`, as for any order that is not `taken`, and support settles it.
+- A stored intent within its deadline that no longer verifies, as after a change of `[chain] chain_id` or `sponsor`, is cleared before its acceptance relay or its register is sent, logged at warning, and the order waits, committed, for its page to sign again with the current values (`intentRefused` in [`Names/Worker.hs`](../src/StoreService/Names/Worker.hs), T20). A change of `[chain] resolver` or `[names] tld` changes the order's commitment, so its page cannot sign it again: an order with a stored reveal fails with the reason `signatureRefused`, logged at error and reported, and support closes a paid one with `//close` (T31); one without waits, and support closes a paid one once its commitment lapses.
 - `CommitmentTooOld` is reverted only after the intent's and the allowance's checks. The order is set `committing` with its reveal kept, or, while `revealBefore` has not passed by the service's clock, the dry run is tried again a second later; the commit is sent again, and the register follows once it has aged, with no new signature while the signature's week lasts (3.2) ([`Names/Worker.hs:356-358`](../src/StoreService/Names/Worker.hs#L356-L358), [`Names/Worker.hs:199-215`](../src/StoreService/Names/Worker.hs#L199-L215)).
 - On `CommitmentTooNew` the register is retried 1 s later. While the name is taken only above the confirmation depth, or is reported gone by the dry run while `available(label)` is true, the order is retried every 15 s ([`Names/Worker.hs:340-352`](../src/StoreService/Names/Worker.hs#L340-L352)).
 - A code order reset to `taken` keeps its code reserved, and no balance is credited ([`Names/Worker.hs:361-368`](../src/StoreService/Names/Worker.hs#L361-L368)).
@@ -433,7 +440,7 @@ sequenceDiagram
 
 Notes:
 
-- `/retry` is sent with the registration id alone. It is refused with `400 bad_request` for any order but one whose commitment lapsed with no reveal stored. A lapsed order keeps its payment and its code, so `/retry` reads no chain and checks no code ([`Web/Names/Registration.hs:111-132`](../src/StoreService/Web/Names/Registration.hs#L111-L132), [`Names/Worker.hs:434-454`](../src/StoreService/Names/Worker.hs#L434-L454)). At the next scan a new commit is sent, a second past the old commitment's lapse ([`Names/Worker.hs:174-215`](../src/StoreService/Names/Worker.hs#L174-L215)).
+- `/retry` is signed with the order's name key, `retry` (3.13). It is refused with `400 bad_request` for any order but one whose commitment lapsed with no reveal stored. A lapsed order keeps its payment and its code, so `/retry` reads no chain and checks no code (`retryHandler` in [`Web/Names/Registration.hs`](../src/StoreService/Web/Names/Registration.hs), `retryRegistration` in [`Names/Worker.hs`](../src/StoreService/Names/Worker.hs)). At the next scan a new commit is sent, a second past the old commitment's lapse ([`Names/Worker.hs:174-215`](../src/StoreService/Names/Worker.hs#L174-L215)).
 - A take, at settlement (T4) or on chain (T18), writes the order `taken` with the taken name's fields kept, which its view shows: the order is not live, so its name is free for other orders, a paid order's price is credited to its balance, and a code order keeps its code reserved. Only the selection of a name makes the order live again (`taken` and `endOrder` in [`Names/Worker.hs`](../src/StoreService/Names/Worker.hs), `nameSettled` in [`Orders.hs`](../src/StoreService/Orders.hs), `updateRegistration` in [`Names/Store.hs`](../src/StoreService/Names/Store.hs)).
 - A name is selected only for an order whose name is not selected, with no window and no limit; every other order is answered `400 bad_request`. A repeat of the order's current fields is answered with its view before the phase and the new order's checks. The order's register was checked before the take reset it, or never sent, so none is checked at the selection (`selectNameHandler` in [`Web/Names/Owner.hs`](../src/StoreService/Web/Names/Owner.hs), `judge` in [`Names/Worker.hs`](../src/StoreService/Names/Worker.hs)).
 - A new order's checks are run at the selection, by their functions: the live orders of the commitment, or of the owner and name, met as a new order meets them, so an overdue unpaid order of the same wallet and name is closed and any other answered `409 order_exists`; then the timestamp, the duration for the order's years, the terms, the name free, a paid order's price and the reveal, for the order's owner (3.1) (`overdueOrdersMet` and `placeOrder` in [`Names/Orders.hs`](../src/StoreService/Names/Orders.hs), `orderChecked` in [`Web/Names/Orders.hs`](../src/StoreService/Web/Names/Orders.hs)).
@@ -521,7 +528,7 @@ Notes:
 
 - The refund must equal the whole balance ([`Names/Balances.hs`](../src/StoreService/Names/Balances.hs) `recordRefund`, [`Names/Store.hs`](../src/StoreService/Names/Store.hs) `refundBalance`).
 - A balance is credited when a paid order is set `taken` or fails at the end of its month (its whole price), when support closes a failed order, and with late or extra money; it is spent only on a name selected for its own order after a reset (3.6), and on no other order ([`Names/Worker.hs`](../src/StoreService/Names/Worker.hs) `endOrder`, `refundTaken`, [`Names/LateCredits.hs`](../src/StoreService/Names/LateCredits.hs), [`Names/Orders.hs`](../src/StoreService/Names/Orders.hs) `selectName`).
-- The provider interface offers create, read, cancel, list, rate and webhook verification, so the money is paid back by hand ([`Providers.hs:120-130`](../src/StoreService/Providers.hs#L120-L130)). The buyer's email to chat@simplex.chat is described in the README; the page code is in the submodule ([`README.md:1371-1411`](../README.md#L1371-L1411)).
+- The provider interface offers create, the refusal of an invoice it cannot make, read, cancel, list, rate and webhook verification, so the money is paid back by hand ([`Providers.hs:120-130`](../src/StoreService/Providers.hs#L120-L130)). The buyer's email to chat@simplex.chat is described in the README; the page code is in the submodule ([`README.md:1371-1411`](../README.md#L1371-L1411)).
 - The console starts only while the service is stopped, as the database lock is held by one process ([`Store/Migrate.hs:46-54`](../src/StoreService/Store/Migrate.hs#L46-L54)).
 - While the service runs, a group owner sends the same commands with one slash, `/balance`, `/record_refund` and `/close`. The group lane runs the console's handlers in the service's per-name and per-balance locks and answers in the group; the answers name the one-slash commands ([`Service.hs`](../src/StoreService/Service.hs) `runMoneyCmd`, [`Group.hs`](../src/StoreService/Group.hs)).
 
@@ -611,6 +618,7 @@ sequenceDiagram
   C->>U: callback with the controller
   U->>D: badge catalog seeded
   U->>V: store payment methods read and logged
+  U->>U: with [names], the payee keys the names page holds logged, and an error per coin without them
   U->>D: sender loads saved transactions without an outcome
   U->>E: name policy, community names and terms links read and logged
   U->>U: managed group found or created
@@ -674,6 +682,53 @@ Notes:
 
 ---
 
+### 3.13 A request for an order signed with its name key
+
+An order's id alone gives access to nothing: each request that names an order is signed with the order's name key, and any other request is answered as one for an unknown id.
+
+```mermaid
+sequenceDiagram
+  participant P as Names page with the name code
+  participant W as Web API
+  participant D as PostgreSQL
+  P->>P: sign "simplex.domains order ID read T" with the name key (EIP-191)
+  P->>W: GET /api/registration/ID?seenVersion=V&timestamp=T&signature=SIG
+  alt T more than 600 s from the service's clock
+    W-->>P: 400 bad_request, Date
+  else
+    W->>W: recover the signer
+    W->>D: registration ID
+    alt the signer is the order's owner
+      W->>D: read noted
+      W-->>P: view, or held while the version is V
+    else unsigned, another signer, or an unknown ID
+      W-->>P: 404 not_found, one answer for all
+    end
+  end
+```
+
+Notes:
+
+| Route | Signed |
+|---|---|
+| `GET /api/registration/ID` | `read`, as query parameters `timestamp` and `signature` |
+| `POST /api/registration/ID/retry` | `retry`, as fields `timestamp` and `signature` of the JSON body |
+| `GET /api/invoice/ID`, a name invoice | `read`, as query parameters |
+| `POST /api/invoice/ID/cancel`, a name invoice | `cancel`, as body fields |
+| `POST /api/registration/ID/reveal` | `reveal`, as fields `timestamp` and `signature` of the object `request` in the JSON body, beside the reveal's own `signature`, the owner's `RegisterName` |
+| `POST /api/registration/ID/name` | the selection's own signature, its signer recovered before the id is looked up |
+
+- The message is `simplex.domains order <ID> <action> <T>`, with the route's id, `read`, `cancel`, `retry` or `reveal`, and the timestamp in seconds; the digest is EIP-191's, as `find`'s ([`Names/Signatures.hs`](../src/StoreService/Names/Signatures.hs) `orderRequestMessage`, [`Web/Names/Registration.hs`](../src/StoreService/Web/Names/Registration.hs) `orderSigner`, `ownedRegistration`). The signer is recovered before the id is looked up, for a known and an unknown id alike.
+- `timestamp` is a decimal in a query and a JSON number in a body; `signature` is a string of `0x` and 130 lowercase hex digits, r, s and v, with s in the lower half of the group order and v 27 or 28. Any other value reads as unsigned.
+- The answers of an unsigned request, of one by another key or over another id, action or timestamp, and of one for an unknown id are one answer, `404 not_found`, after the route's rate limit, which is taken before the handler runs.
+- A reveal whose body is not a JSON object within the body cap reads as unsigned; a malformed reveal and a refused `RegisterName` are answered after its request's signer is checked.
+- Before its id is looked up, a selection is answered `400 bad_request` for a malformed body or a sealed name over its limit and `400 invalid_name` for a length no name has. In a downtime a selection is answered `503 downtime` before its body is read.
+- A request by another key takes the steps of one for an unknown id, except that an invoice route reads a known name invoice's order in further queries, and a selection by another key is logged; so the answer's time can differ while the answer does not. The threat model states this.
+- Only a signed read notes the order's read, which keeps a committed order from failing as `unread` (3.2).
+- A badge invoice is read and cancelled unsigned; its invoice id is its credential. With `[names]` on, a `timestamp` outside the window is answered `400 bad_request` for it too, as the window is checked before the invoice is read.
+
+---
+
 ## 4. The life of an order
 
 Every state of a name order and every transition between them. An order is held from `queued` to `registering`, and while `failed` within its month: no other order through the service can be placed for its name, and a payment for the name is settled as `taken`. An order has two parts, set independently: its name, selected or not, and its payment or code. A take, or support's close, resets only the name (T4, T18, T26), and a selection sets it again (T24). `settled_at` is the payment's settlement, or a code order's placement, written once; the dispute evidence of a paid order reads it as "paid at" (3.12). `selected_at` is the latest selection of the order's name with its payment or code in place: written with `settled_at` at the settlement and the placement, and alone at a selection after a reset. The month is one calendar month from `selected_at`. `taken_at` is the time of the reset, stored with the phase `taken` and cleared with it; a selection accepts a code order's code past its expiry until a calendar month after it (T24).
@@ -688,7 +743,7 @@ stateDiagram-v2
   state "registering" as registering
   state "registered" as registered
   state "taken: name not selected" as taken
-  state "failed: registry refused, signature refused or unread" as failed
+  state "failed: registry refused or unread" as failed
   state "failed: month ended" as monthEnded
   state "ended: registration ended in its dispute period" as ended
   [*] --> unpaid: T1
@@ -701,7 +756,7 @@ stateDiagram-v2
   queued --> committed: T10
   committing --> committed: T10
   committing --> queued: T11
-  committed --> committed: T12
+  committed --> committed: T12, T20
   committed --> queued: T13, T14
   committed --> registering: T15
   committed --> registered: T16
@@ -711,7 +766,7 @@ stateDiagram-v2
   registering --> taken: T18
   queued --> failed: T19
   committing --> failed: T19
-  committed --> failed: T19, T20, T21
+  committed --> failed: T19, T21
   registering --> failed: T19
   failed --> queued: T22
   taken --> queued: T24
@@ -729,6 +784,7 @@ stateDiagram-v2
   registering --> ended: T28
   failed --> ended: T29
   registered --> ended: T30
+  committed --> failed: T31
 ```
 
 | | From → to | Trigger | Effect |
@@ -752,7 +808,7 @@ stateDiagram-v2
 | T17 | registering → committed | Every register transaction is settled, none with status 1, and the name is read as free, below the cap. | The mined failure is stored as an attempt; the register is sent again (`judge`, `failedAttempt`). |
 | T18 | committed or registering → taken | The chain reverts a register or relay while the name is not available at the confirmation depth. | The order is reset; a paid order's price is credited to its balance; a code stays reserved; logged and reported (`taken`). |
 | T19 | queued, committing, committed or registering → failed, registry refused | Failed attempts are counted to a cap: 5 dry runs reverted for a permanent reason, or 5 transactions mined with status 0, among the commitment's commits, relays and registers. | Logged and reported; the order still holds its name (`failedAttempt`). |
-| T20 | committed → failed, signature refused | The service cannot verify the stored signature, within its deadline, under its chain id and sponsor, before the relay or the register. | Logged and reported; nothing is sent (`intentRefused`). |
+| T20 | committed → committed | The service cannot verify the stored signature, within its deadline, under its chain id and sponsor, before the relay or the register, as after a change of the deployment's values, while the order's commitment is the one the current values make. | The signature is cleared, logged at warning; nothing is sent; the order waits for its page to sign again with the current values, and the view's signature reads `awaiting`, or `lapsed` once its window has passed (`intentRefused`). |
 | T21 | committed → failed, unread | The order is committed without a signature, and its page has not read it for 3 days. | Logged and reported; the order still holds its name (`committed`). |
 | T22 | failed, unread → queued | The page sends the owner's signature (Continue). | Queued with the signature (`revealHandler` in [`Web/Names/Registration.hs`](../src/StoreService/Web/Names/Registration.hs)). |
 | T23 | queued, committed or failed → failed, month ended | A calendar month passed since the selection of the order's name, and no register transaction of the order is pending. | The order is no longer live; a paid order's price is credited to its balance; a code is released; logged and reported (`endMonths`). |
@@ -763,6 +819,7 @@ stateDiagram-v2
 | T28 | committed or registering → ended | As T16 for a mined register, but the registrar's `disputeUntil(id)` at the confirmed block is not the end the register set: its block's time plus the order's dispute days. | The expiry and the dispute end the register set are stored; a code is spent; logged at note (`checkLanded`). |
 | T29 | failed → ended | At support's close, as T28. | As T28 (`closeRegistration`). |
 | T30 | registered → ended | The hourly sweep reads the registrar's `disputeUntil(id)` at the confirmed block other than the stored dispute end, for an order registered before that block whose dispute period has not ended or ended less than 7 days ago. | Logged at note (`sweepEndedRegistrations`). |
+| T31 | committed → failed, signature refused | As T20, but the order's commitment is not the one the current values make, as after a change of `[chain] resolver` or `[names] tld`, so no signature of its page can register it. | Logged at error and reported; nothing is sent; support closes a paid order with `//close` (T26) (`intentRefused`). |
 
 The functions named are in [`Names/Worker.hs`](../src/StoreService/Names/Worker.hs), [`Names/Orders.hs`](../src/StoreService/Names/Orders.hs), [`Orders.hs`](../src/StoreService/Orders.hs), [`Web/Names/Orders.hs`](../src/StoreService/Web/Names/Orders.hs), [`Names/Store.hs`](../src/StoreService/Names/Store.hs), [`Names/Balances.hs`](../src/StoreService/Names/Balances.hs) and [`Names/LateCredits.hs`](../src/StoreService/Names/LateCredits.hs).
 

@@ -1,8 +1,8 @@
 # Store service deployment
 
 - `compose.yml`: the service, built from `Dockerfile`, with `./config` mounted read-only, and the
-  webapps service, which copies both built sites into `./webapps/badges` and `./webapps/names` for
-  Caddy with rsync and exits.
+  webapps service, which copies the built badges site into `./webapps/badges` for Caddy with rsync
+  and exits; GitHub Pages serves the names page.
 - `compose.dev.yml`: adds a local chain and database to `compose.yml`, for development.
 - `Dockerfile`, `Dockerfile.dockerignore`: the image, built from the repository root.
 - `store_service.ini.example`: the template of `config/store_service.ini`.

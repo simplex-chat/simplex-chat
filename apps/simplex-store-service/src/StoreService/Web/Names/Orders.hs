@@ -57,7 +57,7 @@ import StoreService.Names.Store (BrokenInvariant (..), NameRegistration (..), Na
 import StoreService.Names.Turns (withLabelTurn)
 import StoreService.Names.View (NameRefusal (..), registrationView)
 import StoreService.Orders (cancelNameInvoices, publishRegistration)
-import StoreService.Providers (OrderDraft (..), Provider (..), ProviderInvoice (..), expiresItself, providerErrorText, providerNamed)
+import StoreService.Providers (InvoiceKind (..), OrderDraft (..), Provider (..), ProviderInvoice (..), expiresItself, providerErrorText, providerNamed)
 import StoreService.Store.Invoices (InvoiceRow (..), NewNameInvoice (..), getInvoice, insertNameInvoice, newInvoiceId)
 import StoreService.Waiters (Waiters, publish)
 import StoreService.Web.Http (CheckoutClient, HttpEnv, Respond, apiHeaders, confirmationsFor, invoiceAt, invoicePairs, invoiceWindow, jsonResponse, limitedCheckout, nameBodyBytes, providerFor, readBoundedBody)
@@ -106,6 +106,7 @@ refusalResponse r = responseLBS status (retryAfterHeader <> apiHeaders) (J.encod
       NRCatalogChanged {} -> status409
       NRTermsChanged {} -> status409
       NRCodesOnly -> status403
+      NRDowntime -> status503
       NRCodeInvalid -> status400
       NRCodeUsed -> status409
       NRCodeReserved -> status409
@@ -128,6 +129,7 @@ refusalResponse r = responseLBS status (retryAfterHeader <> apiHeaders) (J.encod
 -- | POST /api/invoice for a name, its body already read and its kind checked.
 nameInvoiceHandler :: OrdersEnv -> HttpEnv -> CheckoutClient -> ServiceConfig -> [Provider] -> Waiters -> J.Object -> Respond -> IO ResponseReceived
 nameInvoiceHandler env http client cfg providers waiters body respond
+  | nDowntime (oeConfig env) = sendAnswer respond =<< refuse ORDowntime
   | nCodesOnly (oeConfig env) = sendAnswer respond =<< refuse ORCodesOnly
   | otherwise = sendAnswer respond =<< case parseBody "order" (J.Object body) >>= invoiceOrder of
     Left refusal -> refuse refusal
@@ -163,16 +165,15 @@ createAtProvider env@OrdersEnv {oeStore, oeConfig} http client cfg providers wai
     Nothing -> do
       logNote (what <> " refused: no provider configured for " <> tshow ivMethod)
       pure $ refusalAnswer NRProviderUnavailable
+    Just provider | Just e <- pRefusal provider ivMethod IKName -> failedAtProvider e
     Just provider -> limitedCheckout http client ivMethod (pure . refusalAnswer . NRRateLimited) $ do
       invId <- newInvoiceId
       let amount = CurrencyAmount $ fromIntegral ivPrice
-      pCreateInvoice provider ivMethod OrderDraft {odAmount = amount, odCurrency = catalogCurrency, odReference = "name:" <> safeDecodeUtf8 (strEncode ivOrderHash)} >>= \case
-        Left e -> do
-          logError (what <> " failed at the provider: " <> providerErrorText e)
-          pure $ refusalAnswer NRProviderUnavailable
-        Right ProviderInvoice {piProviderRef, piDestination} -> do
+      pCreateInvoice provider ivMethod OrderDraft {odAmount = amount, odCurrency = catalogCurrency, odReference = "name:" <> safeDecodeUtf8 (strEncode ivOrderHash), odKind = IKName} >>= \case
+        Left e -> failedAtProvider e
+        Right ProviderInvoice {piProviderRef, piDestination, piAddressProof} -> do
           rid <- newRegistrationId
-          let invoice = NewNameInvoice {nniInvoiceId = invId, nniProvider = pProvider provider, nniProviderRef = piProviderRef, nniAmount = amount, nniCurrency = catalogCurrency, nniDestination = piDestination, nniExpiresAt = addUTCTime (invoiceWindow cfg ivMethod) now, nniCreatedAt = now}
+          let invoice = NewNameInvoice {nniInvoiceId = invId, nniProvider = pProvider provider, nniProviderRef = piProviderRef, nniAmount = amount, nniCurrency = catalogCurrency, nniDestination = piDestination, nniAddressProof = piAddressProof, nniExpiresAt = addUTCTime (invoiceWindow cfg ivMethod) now, nniCreatedAt = now}
               registration = NewRegistration {nrgId = rid, nrgOwner = orOwner, nrgOrder = orFields, nrgReveal = ivReveal, nrgYears = nYears oeConfig, nrgOrderHash = ivOrderHash}
               paid = PaidOrder {poMethod = ivMethod, poPrice = ivPrice, poInvoiceId = invId}
           placeOrder env now req (\db at -> insertNameInvoice db invoice >> ivInsert registration paid db at)
@@ -189,6 +190,9 @@ createAtProvider env@OrdersEnv {oeStore, oeConfig} http client cfg providers wai
                 _ -> Left NRInternal <$ logError (what <> ": the order of invoice " <> piProviderRef <> " is not readable after its commit")
               pure Answer {aResponse = response, aAfter = announceClosed env providers waiters closed}
   where
+    failedAtProvider e = do
+      logError (what <> " failed at the provider: " <> providerErrorText e)
+      pure $ refusalAnswer NRProviderUnavailable
     -- An invoice created at the provider for an order that was not written would stay payable with nothing watching it.
     strandedBy :: Provider -> Text -> E.SomeException -> IO a
     strandedBy provider ref e = do
@@ -234,8 +238,9 @@ answerOrder OrdersEnv {oeStore, oeTurns, oeNow} what order@OrderRequest {orOwner
 
 -- | POST /api/name/register, an order paid with a prepaid code, in the contract's order of checks.
 codeOrderHandler :: OrdersEnv -> [Provider] -> Waiters -> Request -> Respond -> IO ResponseReceived
-codeOrderHandler env@OrdersEnv {oeStore} providers waiters req respond =
-  readBoundedBody nameBodyBytes req >>= ordered >>= sendAnswer respond
+codeOrderHandler env@OrdersEnv {oeStore, oeConfig} providers waiters req respond
+  | nDowntime oeConfig = sendAnswer respond =<< refuse ORDowntime
+  | otherwise = readBoundedBody nameBodyBytes req >>= ordered >>= sendAnswer respond
   where
     what = "POST /api/name/register"
     ordered = \case
@@ -292,10 +297,10 @@ cancelAtProvider Provider {pCancelInvoice} ref =
     Right () -> pure ()
 
 nameInvoiceView :: OrdersEnv -> Maybe Int -> InvoiceRow -> NameRegistration -> IO J.Value
-nameInvoiceView OrdersEnv {oeStore, oeConfig, oeContracts, oeNow} confirmations row@InvoiceRow {irInvoiceId = InvoiceId invId} r = do
+nameInvoiceView OrdersEnv {oeStore, oeConfig, oeContracts, oeNow} confirmations row@InvoiceRow {irInvoiceId = InvoiceId invId, irAddressProof} r = do
   now <- oeNow
   view <- registrationView oeStore oeConfig oeContracts now r
-  pure $ J.object $ ["invoiceId" .= invId, "kind" .= ("name" :: Text), "registration" .= view] <> invoicePairs confirmations row
+  pure $ J.object $ ["invoiceId" .= invId, "kind" .= ("name" :: Text), "registration" .= view] <> invoicePairs confirmations row <> maybe [] (\p -> ["addressProof" .= p]) irAddressProof
 
 orderRefusal :: OrderRefusal -> NameRefusal
 orderRefusal = \case
@@ -316,3 +321,4 @@ orderRefusal = \case
   ORTermsChanged terms community -> NRTermsChanged (termsLink terms) community
   ORTermsUnavailable wait -> NRTermsUnavailable wait
   ORCodesOnly -> NRCodesOnly
+  ORDowntime -> NRDowntime

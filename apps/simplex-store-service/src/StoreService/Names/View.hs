@@ -128,6 +128,7 @@ data NameRefusal
   | NRCatalogChanged {price :: USDCents}
   | NRTermsChanged {terms :: TermsLink, community :: Maybe Community}
   | NRCodesOnly
+  | NRDowntime
   | NRCodeInvalid
   | NRCodeUsed
   | NRCodeReserved

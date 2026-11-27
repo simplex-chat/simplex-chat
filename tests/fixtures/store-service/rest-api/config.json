@@ -3,6 +3,7 @@
     "names": {
       "chainId": 31337,
       "codesOnly": false,
+      "downtime": false,
       "resolver": "0x8A791620dd6260079BF849Dc5567aDC3F2FdC318",
       "sponsor": "0x0B306BF915C4d645ff596e518fAf3F9669b97016",
       "termStart": 1798761600,

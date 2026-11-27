@@ -3,16 +3,16 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TupleSections #-}
 
-module Bots.StoreService.NamesWorkerTests (namesWorkerTests) where
+module Bots.StoreService.NamesWorkerTests (namesWorkerTests, serveWorker) where
 
 import Bots.StoreService.FakeEthNode
 import Bots.StoreService.NamesBalancesTests (figures)
-import Bots.StoreService.NamesContractsTests (availableCall, maxCommitmentAgeCall, minCommitmentAgeCall, newPolicy, registrarOf)
+import Bots.StoreService.NamesContractsTests (availableCall, maxCommitmentAgeCall, minCommitmentAgeCall, newPolicy, otherResolver, registrarOf)
 import Bots.StoreService.NamesOrdersTests
 import Bots.StoreService.NamesOwnerTests (answerDisputeUntil, answerExpiry, answerFree, answerOwner, answerUnowned, byB, codeIn, committedPhase, dynamisOrder, failedPhase, labelBytes, ownerOfSelector, paidIn, rewrite, select, selectionOf, sentRegister, stored)
 import Bots.StoreService.NamesPhasesTests (held, prompt, registrationPath, woken)
 import Bots.StoreService.NamesStoreTests (hashFixture, reveal)
-import Bots.StoreService.WebTests (answerOf, blockedInSTM, capturingStderr, fieldOf, jsonObject, lengthOf, phaseOf, phaseValue, refusedWith, renameTable, statusOf, storeFixture, stubCalls, webGet, withApp)
+import Bots.StoreService.WebTests (answerOf, blockedInSTM, capturingStderr, fieldOf, jsonObject, lengthOf, phaseOf, phaseValue, refusedWith, renameTable, statusOf, storeFixture, stubCalls, withApp)
 import Control.Applicative ((<|>))
 import Control.Arrow ((&&&))
 import Control.Concurrent (threadDelay)
@@ -21,7 +21,7 @@ import Control.Concurrent.Async (asyncThreadId, wait, withAsync)
 import qualified Control.Exception as E
 import Control.Concurrent.MVar (newEmptyMVar, putMVar, takeMVar)
 import Control.Concurrent.STM (atomically, check, modifyTVar', newTVarIO, readTVar, readTVarIO, retry)
-import Control.Monad (forM_, replicateM_, void, when)
+import Control.Monad (forM_, replicateM_, void, when, (>=>))
 import Data.ByteString (ByteString)
 import qualified Data.Aeson as J
 import qualified Data.Aeson.KeyMap as KM
@@ -33,7 +33,7 @@ import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime, diffUTCTime)
 import Simplex.Chat.Badges.Ledger (addMonths)
 import Data.Time.Clock.POSIX (posixSecondsToUTCTime)
 import Data.Word (Word8, Word64)
-import Simplex.Chat.PaymentService.Types (CurrencyAmount (..), InvoiceId (..), InvoiceStatus (..))
+import Simplex.Chat.PaymentService.Types (CurrencyAmount (..), InvoiceStatus (..))
 import Simplex.Messaging.Agent.Store.Common (withTransaction)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Crypto (keccak256)
@@ -51,10 +51,11 @@ import StoreService.Names.Chain (Block (..), ChainClient, ChainError (..), Hex32
 import StoreService.Names.Contracts (namePolicy)
 import StoreService.Names.Orders (Landing (..), OrdersEnv (..), confirmLanded)
 import StoreService.Names.Phases (RegistrationId (..), awaitChange)
-import StoreService.Names.Registration (RegisterIntent (..), TermsAcceptance (..), acceptCalldata, acceptanceDigest, commitCalldata, policyDomain, registerIntentDigest, registerWithCreditCalldata, sponsorDomain, termsKind)
+import StoreService.Names.Registration (RegisterIntent (..), TermsAcceptance (..), acceptCalldata, acceptanceDigest, commitCalldata, makeCommitment, policyDomain, registerIntentDigest, registerWithCreditCalldata, sponsorDomain, termsKind)
 import StoreService.Names.Reveal (intentOf)
 import StoreService.Names.Revert (RevertName (..), RevertReason (..), actedReverts)
 import StoreService.Names.Sender
+import StoreService.Names.Signatures (OrderAction (..))
 import StoreService.Names.Store
 import StoreService.Names.Turns (withBalanceTurn, withLabelTurn)
 import StoreService.Names.Worker
@@ -105,8 +106,9 @@ workerTests = describe "StoreService names: worker" $ do
     it "fails an order at its fifth register mined with status 0 for its commitment, sending nothing, and refuses its Try again and a selection of a name" testSendsCapped
     it "clears the reveal on InvalidNonce or TermsNotAccepted, staying committed, and reads the name policy again on TermsNotAccepted" testInvalidNonce
     it "relays no intent past its deadline, clearing the reveal and staying committed" testExpiredIntent
-    it "fails an order at once, logging and reporting it, when its stored signature is refused under another chain id, sending nothing, and refuses a selection of any name for it" testSignatureUnderOtherConfig
-    it "fails an order at once, before relaying its acceptance, when its stored signature is refused under another chain id, sending nothing" testRelayUnderOtherConfig
+    it "clears a stored reveal refused under another sponsor, the order committed without a failure, sending nothing, then registers the reveal signed again over that sponsor" testSignatureUnderOtherConfig
+    it "clears a stored reveal refused under another sponsor before relaying its acceptance, sending nothing" testRelayUnderOtherConfig
+    it "fails and reports an order whose stored reveal is refused under another resolver, as its commitment is not the one the configuration makes, sending nothing" testRevealUnderOtherResolver
     it "keeps the phase when a read of the final check fails" testCheckUnread
     it "waits a second when the dry run reverts CommitmentTooNew" testCommitmentTooNew
     it "commits again with its reveal when the dry run reverts CommitmentNotFound, and when it reverts CommitmentTooOld past the lapse, reporting that" testCommitAgain
@@ -160,6 +162,7 @@ workerTests = describe "StoreService names: worker" $ do
     it "refuses /retry of any order but a lapsed unsigned one with bad_request, a failed or signed one included, changing nothing, and answers an unknown order 404" testRetryNotFailed
     it "requeues a lapsed committed order, whose view says it lapsed, answering an old version at once after it and keeping its code" testRetryLapsed
     it "runs in the name's turn, answering registration_changed for an order whose name was selected meanwhile" testRetryInNameTurn
+    it "requeues a lapsed order in the downtime" testRetryDowntime
   describe "close" $ do
     it "closes a failed paid order taken, not live, its price credited and refunded, its reveal cleared, then refuses /retry, a selection of a name and a second refund, and accepts a new order for the name" testCloseFailed
     it "closes a lapsed unsigned committed order, naming its lapse as its end" testCloseLapsed
@@ -186,10 +189,14 @@ withWorker = withWorkerAs id
 -- | With the names settings changed, as the service reads them at startup.
 withWorkerAs :: (NamesConfig -> NamesConfig) -> (W -> IO a) -> IO a
 withWorkerAs settings action = withOrders $ \open -> do
-  let ctx@Ctx {cNode, cOrders, cWeb, cHandlers} = configured settings open
+  let ctx@Ctx {cNode} = configured settings open
   answerCall cNode fakeController minCommitmentAgeCall $ Returns $ uint256 minAge
   answerCall cNode fakeController maxCommitmentAgeCall $ Returns $ uint256 maxAge
   answerUnowned ctx "alicebakery"
+  serveWorker ctx $ started >=> action
+
+serveWorker :: Ctx -> (Ctx -> IO a) -> IO a
+serveWorker ctx@Ctx {cOrders, cWeb, cHandlers} action = do
   let web = cWeb {weOrders = Just cOrders}
       routes path = registrationRoute path <|> codeRoutes cOrders (weProviders web) (weWaiters web) path
       registrationRoute = \case
@@ -198,7 +205,7 @@ withWorkerAs settings action = withOrders $ \open -> do
         ["api", "registration", rid, "name"] -> Just Route {rMethod = "POST", rLimit = createLimit, rHandler = selectNameHandler cOrders (weProviders web) (weWaiters web) (RegistrationId rid)}
         _ -> Nothing
       app req respond = fromMaybe (webApp web req respond) (namesApp (weHttp web) routes req respond)
-  withApp (recordingHandlers cHandlers app) $ \client -> started ctx {cWeb = web, cClient = client} >>= action
+  withApp (recordingHandlers cHandlers app) $ \client -> action ctx {cWeb = web, cClient = client}
 
 -- | A new sender and worker over the same store, as after a restart.
 started :: Ctx -> IO W
@@ -242,15 +249,22 @@ revealBeforeOf = fmap (fromIntegral . roundedSeconds . cmRevealBefore) . phaseCo
 
 -- | The reveal the page sends, its intent signed with the owner's key.
 signedReveal :: Ctx -> Secp256k1PrivateKey -> NameReveal -> NameRegistration -> IO NameReveal
-signedReveal Ctx {cRandom, cOrders, cNode} key rv r@NameRegistration {nrCommitment, nrOwner} = do
+signedReveal = signedRevealOver fakeSponsor
+
+signedRevealOver :: Address -> Ctx -> Secp256k1PrivateKey -> NameReveal -> NameRegistration -> IO NameReveal
+signedRevealOver sponsor Ctx {cRandom, cOrders, cNode} key rv r@NameRegistration {nrCommitment, nrOwner} = do
   let RegisterIntent {riRegistration, riDisputeDays} = intentOf (oeConfig cOrders) nrOwner (nrDuration r) (nrDisputeDays r) rv
-  sig <- either (error . show) id <$> signRecoverable cRandom key (registerIntentDigest (sponsorDomain fakeChainId fakeSponsor) riRegistration riDisputeDays (rvNonce rv) (rvDeadline rv))
+  sig <- either (error . show) id <$> signRecoverable cRandom key (registerIntentDigest (sponsorDomain fakeChainId sponsor) riRegistration riDisputeDays (rvNonce rv) (rvDeadline rv))
   answerCall cNode fakeNamePolicy (selector "acceptedTerms(bytes32,address)" <> unHex32 nrCommitment <> addressWord nrOwner) $ Returns $ unHex32 $ termsHash $ rvAcceptance rv
   pure rv {rvSignature = sig}
 
 -- | The registration with the page's reveal of the label accepted.
 revealed :: Ctx -> Secp256k1PrivateKey -> Text -> NameRegistration -> IO NameRegistration
 revealed ctx key label r = signedReveal ctx key reveal {rvLabel = label} r >>= \rv -> rewrite ctx r (\o -> o {nrReveal = Just rv})
+
+matchingCommitment :: Ctx -> Text -> NameRegistration -> IO NameRegistration
+matchingCommitment ctx@Ctx {cOrders} label r =
+  rewrite ctx r $ \o -> o {nrCommitment = makeCommitment $ riRegistration $ intentOf (oeConfig cOrders) (nrOwner o) (nrDuration o) (nrDisputeDays o) reveal {rvLabel = label}}
 
 -- | Steps until the worker has nothing to do at once.
 steps :: W -> NameRegistration -> IO Next
@@ -368,17 +382,17 @@ testCommitWaitRegister = withWorker $ \w@W {wCtx = ctx} -> do
   isJust . pcSpentAt <$> codeOf ctx code `shouldReturn` True
 
 testPaidRegister :: IO ()
-testPaidRegister = withWorker $ \w@W {wCtx = ctx@Ctx {cClient}} -> do
+testPaidRegister = withWorker $ \w@W {wCtx = ctx} -> do
   (invId, _) <- placed ctx aliceOrder
   settleNow ctx invId settled `shouldReturn` ISPaid
   r <- invoiceRegistration ctx invId
   commitWaitRegister w r
-  (status, view) <- answerOf <$> webGet cClient (registrationPath $ nrId r)
+  (status, view) <- answerOf <$> signedGet ctx (registrationPath $ nrId r)
   (status, phaseOf =<< view, (`fieldOf` "label") =<< view) `shouldBe` (200, Just "registered", Just "alicebakery")
   viewFixture "registration-registered" view
 
 testCodesOnlyRegister :: IO ()
-testCodesOnlyRegister = withWorkerAs codesOnly $ \w@W {wCtx = ctx@Ctx {cClient}} -> do
+testCodesOnlyRegister = withWorkerAs codesOnly $ \w@W {wCtx = ctx} -> do
   (text, code) <- issueCode ctx 8 2 id
   (status, coverage) <- post ctx "/api/code/check" (J.encode $ J.object ["code" J..= text])
   (status, (`fieldOf` "state") =<< coverage) `shouldBe` (200, Just "unused")
@@ -386,7 +400,7 @@ testCodesOnlyRegister = withWorkerAs codesOnly $ \w@W {wCtx = ctx@Ctx {cClient}}
   r <- registrationById ctx =<< registered ctx text aliceOrder
   commitWaitRegister w r
   isJust . pcSpentAt <$> codeOf ctx code `shouldReturn` True
-  (status', view) <- answerOf <$> webGet cClient (registrationPath $ nrId r)
+  (status', view) <- answerOf <$> signedGet ctx (registrationPath $ nrId r)
   (status', phaseOf =<< view) `shouldBe` (200, Just "registered")
   stubCalls (cStub ctx) `shouldReturn` []
 
@@ -427,7 +441,7 @@ commitWaitRegister w@W {wCtx = ctx} r = do
   published w r (steps w r) >>= done
   x <- stored ctx r
   (nrPhase x, nrHistory x, orderLive x) `shouldBe` (ORegistered expirySeconds (Just $ RoundedSystemTime $ fromIntegral disputeEnd) now, TxHistory {thCommitTx = Just commitHash, thRegisterTx = Just registerTx}, False)
-  view <- webGet (cClient ctx) (registrationPath $ nrId r) >>= jsonObject
+  view <- signedGet ctx (registrationPath $ nrId r) >>= jsonObject
   (fieldOf view "disputeDays", fieldOf view "phase") `shouldBe` (Just (J.Number 14), Just $ phaseValue "registered" [("expiresAt", J.toJSON expiry), ("disputeUntil", J.toJSON disputeEnd)])
   steps w r >>= done
 
@@ -1086,35 +1100,53 @@ testExpiredIntent = withWorker $ \w@W {wCtx = ctx} -> do
   sent w `shouldReturn` []
 
 testSignatureUnderOtherConfig :: IO ()
-testSignatureUnderOtherConfig = withWorker $ \W {wCtx = ctx@Ctx {cOrders}, wSender} -> do
+testSignatureUnderOtherConfig = withWorker $ \W {wCtx = open} -> do
   reports <- newTVarIO []
-  r <- paidIn ctx aliceOrder openPhase >>= revealed ctx keyA "alicebakery"
+  r <- paidIn open aliceOrder openPhase >>= matchingCommitment open "alicebakery" >>= revealed open keyA "alicebakery"
+  let moved@Ctx {cOrders} = configured movedSponsor open
+  w@W {wCtx = ctx} <- started moved {cOrders = cOrders {oeReport = \t -> atomically $ modifyTVar' reports (t :)}}
+  answerAvailable w True
+  logs <- capturingStderr $ void $ published w r (steps w r) >>= waitingUntil
+  let RegistrationId rid = nrId r
+  logs `shouldSatisfy` T.isInfixOf ("registration " <> rid <> ": its stored signature is refused under the service's current configuration, ")
+  logs `shouldSatisfy` T.isInfixOf ", so its page signs again"
+  logs `shouldNotSatisfy` T.isInfixOf (rid <> " failed")
+  readTVarIO reports `shouldReturn` []
+  x <- stored ctx r
+  (nrPhase x, nrReveal x) `shouldBe` (nrPhase r, Nothing)
+  sent w `shouldReturn` []
+  signedAgain <- signedRevealOver otherSponsor ctx keyA reveal {rvLabel = "alicebakery"} x >>= \rv -> rewrite ctx x (\o -> o {nrReveal = Just rv})
+  void $ steps w signedAgain >>= awaiting
+  [registerRaw] <- sent w
+  (txTo <$> decodeSignedTx registerRaw) `shouldBe` Right otherSponsor
+  answerExpiry ctx "alicebakery" expiry
+  void $ mineRegister w
+  steps w signedAgain >>= done
+  namePhase . nrPhase <$> stored ctx r `shouldReturn` PRegistered
+
+testRelayUnderOtherConfig :: IO ()
+testRelayUnderOtherConfig = withWorker $ \W {wCtx = ctx@Ctx {cOrders}, wSender} -> do
+  r <- paidIn ctx aliceOrder openPhase >>= matchingCommitment ctx "alicebakery" >>= acceptedReveal ctx
+  worker <- newWorker cOrders {oeConfig = movedSponsor (oeConfig cOrders)} wSender
+  void $ capturingStderr $ void $ stepRegistration worker (nrId r)
+  x <- stored ctx r
+  (nrPhase x, nrReveal x) `shouldBe` (nrPhase r, Nothing)
+  sentTransactions (cNode ctx) `shouldReturn` []
+
+testRevealUnderOtherResolver :: IO ()
+testRevealUnderOtherResolver = withWorker $ \W {wCtx = ctx@Ctx {cOrders}, wSender} -> do
+  reports <- newTVarIO []
+  r <- paidIn ctx aliceOrder openPhase >>= matchingCommitment ctx "alicebakery" >>= revealed ctx keyA "alicebakery"
   let NamesConfig {nChain} = oeConfig cOrders
-      moved = cOrders {oeConfig = (oeConfig cOrders) {nChain = nChain {cChainId = cChainId nChain + 1}}, oeReport = \t -> atomically $ modifyTVar' reports (t :)}
+      moved = cOrders {oeConfig = (oeConfig cOrders) {nChain = nChain {cResolver = otherResolver}}, oeReport = \t -> atomically $ modifyTVar' reports (t :)}
   worker <- newWorker moved wSender
   logs <- capturingStderr $ void $ stepRegistration worker (nrId r)
   now <- nowOf ctx
   nrPhase <$> stored ctx r `shouldReturn` OFailed now FRSignatureRefused
   let RegistrationId rid = nrId r
-      failed = T.isInfixOf ("registration " <> rid <> " failed: its stored signature is refused under the service's current configuration")
+      failed = T.isInfixOf ("registration " <> rid <> " failed: its commitment is not the one the service's current configuration makes, so its stored signature is refused, ")
   logs `shouldSatisfy` failed
   map failed <$> readTVarIO reports `shouldReturn` [True]
-  sentTransactions (cNode ctx) `shouldReturn` []
-  answerFree ctx "alicebakers"
-  failedOrder <- stored ctx r
-  forM_ (zip ["alicebakers", "alicebakery"] [20, 21]) $ \(label, n) -> do
-    to <- selectionOf ctx label n
-    select ctx keyA failedOrder to `shouldReturn` refusedWith 400 "bad_request"
-  stored ctx r `shouldReturn` failedOrder
-
-testRelayUnderOtherConfig :: IO ()
-testRelayUnderOtherConfig = withWorker $ \W {wCtx = ctx@Ctx {cOrders}, wSender} -> do
-  r <- paidIn ctx aliceOrder openPhase >>= acceptedReveal ctx
-  let NamesConfig {nChain} = oeConfig cOrders
-  worker <- newWorker cOrders {oeConfig = (oeConfig cOrders) {nChain = nChain {cChainId = cChainId nChain + 1}}} wSender
-  void $ capturingStderr $ void $ stepRegistration worker (nrId r)
-  now <- nowOf ctx
-  nrPhase <$> stored ctx r `shouldReturn` OFailed now FRSignatureRefused
   sentTransactions (cNode ctx) `shouldReturn` []
 
 testFailedOnlySettled :: IO ()
@@ -1341,18 +1373,18 @@ testMonthFromSelection = withWorker $ \W {wCtx = ctx@Ctx {cStore, cOrders}, wSen
   nrPhase <$> stored ctx r `shouldReturn` OFailed now FRMonthEnded
 
 testUnreadFails :: IO ()
-testUnreadFails = withWorker $ \w@W {wCtx = ctx@Ctx {cClient}} -> do
+testUnreadFails = withWorker $ \w@W {wCtx = ctx} -> do
   r <- paidIn ctx aliceOrder committedPhase
   let readAt = fmap nrReadAt . stored ctx
-      InvoiceId invId = fromJust $ paymentInvoice $ nrPayment r
+      invId = fromJust $ paymentInvoice $ nrPayment r
   advance ctx $ 2 * day
-  void $ webGet cClient $ registrationPath $ nrId r
+  void $ signedGet ctx $ registrationPath $ nrId r
   readAt r `shouldReturn` addUTCTime (2 * day) orderTime
   advance ctx 1800
-  void $ webGet cClient $ registrationPath $ nrId r
+  void $ signedGet ctx $ registrationPath $ nrId r
   readAt r `shouldReturn` addUTCTime (2 * day) orderTime
   advance ctx 1800
-  void $ webGet cClient $ "/api/invoice/" <> T.unpack invId
+  void $ readInvoice ctx invId
   readAt r `shouldReturn` addUTCTime (2 * day + 3600) orderTime
   advance ctx $ 3 * day
   void $ steps w r
@@ -1584,7 +1616,9 @@ testEndedPassFails = withWorker $ \W {wCtx = ctx@Ctx {cStore, cOrders}, wWorker}
 -- retry
 
 retryOf :: Ctx -> NameRegistration -> IO (Int, Maybe J.Object)
-retryOf ctx NameRegistration {nrId} = post ctx (registrationPath nrId <> "/retry") ""
+retryOf ctx NameRegistration {nrId} = post ctx path =<< signedRequestBody ctx path OARetry
+  where
+    path = registrationPath nrId <> "/retry"
 
 -- | The view of an accepted /retry, failing the test otherwise.
 retried :: Ctx -> NameRegistration -> IO J.Object
@@ -1594,7 +1628,7 @@ retried ctx r =
     other -> fail $ "retry refused: " <> show other
 
 viewOf :: Ctx -> NameRegistration -> IO J.Object
-viewOf Ctx {cClient} NameRegistration {nrId} = webGet cClient (registrationPath nrId) >>= jsonObject
+viewOf ctx NameRegistration {nrId} = signedGet ctx (registrationPath nrId) >>= jsonObject
 
 viewFixture :: String -> Maybe J.Object -> IO ()
 viewFixture name view = storeFixture name 200 (J.Object . KM.insert "id" "registration" <$> view) Nothing
@@ -1616,7 +1650,7 @@ testRetryNotFailed = withWorker $ \W {wCtx = ctx} -> do
   retryOf ctx queued {nrId = RegistrationId "t2Jk8RmQ4vXw9NcP3yLb6g"} `shouldReturn` refusedWith 404 "not_found"
 
 testRetryLapsed :: IO ()
-testRetryLapsed = withWorker $ \w@W {wCtx = ctx@Ctx {cClient}} -> do
+testRetryLapsed = withWorker $ \w@W {wCtx = ctx} -> do
   (r, code) <- codeIn ctx 8 aliceOrder committedPhase
   advance ctx $ day + 1
   (`fieldOf` "phase") <$> viewOf ctx r
@@ -1629,13 +1663,21 @@ testRetryLapsed = withWorker $ \w@W {wCtx = ctx@Ctx {cClient}} -> do
   (status, view) <- woken "the poll held at the lapse" poll
   (status, phaseOf view) `shouldBe` (200, Just "queued")
   -- prompt is far below the 30-second hold
-  (status', view') <- timeout prompt (webGet cClient path >>= \resp -> (statusOf resp,) <$> jsonObject resp) >>= maybe (fail "the old version was held") pure
+  (status', view') <- timeout prompt (signedGet ctx path >>= \resp -> (statusOf resp,) <$> jsonObject resp) >>= maybe (fail "the old version was held") pure
   (status', fieldOf view' "version") `shouldBe` (200, Just (J.toJSON $ nrVersion r + 1))
   pcReservedBy <$> codeOf ctx code `shouldReturn` Just (nrId r)
   -- the commitment lapsed, so the worker commits it again
   answerCommitment w r $ fromJust (revealBeforeOf r) - maxAge
   void $ steps w r >>= awaiting
   namePhase . nrPhase <$> stored ctx r `shouldReturn` PCommitting
+
+testRetryDowntime :: IO ()
+testRetryDowntime = withWorker $ \W {wCtx = open} -> do
+  r <- paidIn open aliceOrder committedPhase
+  advance open $ day + 1
+  serveWorker (configured (\c -> c {nDowntime = True}) open) $ \ctx -> do
+    (status, v) <- retryOf ctx r
+    (status, phaseOf =<< v) `shouldBe` (200, Just "queued")
 
 testRetryInNameTurn :: IO ()
 testRetryInNameTurn = withWorker $ \W {wCtx = ctx@Ctx {cOrders}} -> do

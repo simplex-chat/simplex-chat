@@ -1,0 +1,115 @@
+{
+  "bitcoin": {
+    "bip173": [
+      {
+        "address": "bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4",
+        "hrp": "bc",
+        "publicKey": "0x0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798"
+      },
+      {
+        "address": "tb1qw508d6qejxtdg4y5r3zarvary0c5xw7kxpjzsx",
+        "hrp": "tb",
+        "publicKey": "0x0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798"
+      }
+    ],
+    "bip32": {
+      "chainCode": "0x2a7857631386ba23dacac34180dd1983734e444fdbf774041578e9b6adb37c19",
+      "index": 1,
+      "publicKey": "0x03501e454bf00751f24b1b489aa925215d66af2234e3891c3b21a52bedb3cd711c",
+      "xpub": "xpub68Gmy5EdvgibQVfPdqkBBCHxA5htiqg55crXYuXoQRKfDBFA1WEjWgP6LHhwBZeNK1VTsfTFUHCdrfp1bgwQ9xv5ski8PX9rL2dZXvgGDnw"
+    },
+    "bip84": {
+      "hrp": "bc",
+      "invoices": [
+        {
+          "address": "bc1qcr8te4kr609gcawutmrza0j4xv80jy8z306fyu",
+          "keyPath": "0/0",
+          "keyTweak": "c9b09e1484caf1c1499d88e19eecf368e2f13bb4c2ffa6c5f44c72fb8fa3c954"
+        },
+        {
+          "address": "bc1qnjg0jd8228aq7egyzacy8cys3knf9xvrerkf9g",
+          "keyPath": "0/1",
+          "keyTweak": "b37c9957c51eff5fced3271d8251c5db65c9ba761c9202b7c18f45e0610ba60c"
+        }
+      ],
+      "receiveKey": "0x02360e9ef11126e1a27808ce81206c264de9326f8fa5a4d2c63bf20f235ecf650b",
+      "xpub": "xpub6CatWdiZiodmUeTDp8LT5or8nmbKNcuyvz7WyksVFkKB4RHwCD3XyuvPEbvqAQY3rAPshWcMLoP2fMFMKHPJ4ZeZXYVUhLv1VMrjPC7PW6V"
+    },
+    "dev": {
+      "hrp": "bcrt",
+      "invoices": [
+        {
+          "address": "bcrt1q6rz28mcfaxtmd6v789l9rrlrusdprr9pz3cppk",
+          "keyPath": "0/0",
+          "keyTweak": "666a528c9ee053cf96cae2a21232c8458be9686738729b6a26037b27caada972"
+        },
+        {
+          "address": "bcrt1qd7spv5q28348xl4myc8zmh983w5jx32cs707jh",
+          "keyPath": "0/1",
+          "keyTweak": "0c45f0820be2ab1d790510970aab4faab00b6ea23f0f8224723d7e078dcdfa5a"
+        },
+        {
+          "address": "bcrt1qxdyjf6h5d6qxap4n2dap97q4j5ps6ua8jkxz0z",
+          "keyPath": "0/2",
+          "keyTweak": "35bc068ce9c473c9d90dd13e18f21f21ac835d829c6c5e48393b3f93b233066b"
+        },
+        {
+          "address": "bcrt1qynpgs6wap6h9uvy7j0xlesew2w82qn039tzepj",
+          "keyPath": "0/3",
+          "keyTweak": "ad57c61c7ae969c151a0cc9c20a567c1d97f7db5658adedbfa39b4376251c630"
+        }
+      ],
+      "receiveKey": "0x036bf340760eb0da07d4d2bbb9d9aee7b7c27891cb72b6388cc0ee8d2a82d33e46",
+      "xpub": "tpubDC8msFGeGuwnKG9Upg7DM2b4DaRqg3CUZa5g8v2SRQ6K4NSkxUgd7HsL2XVWbVm39yBA4LAxysQAm397zwQSQoQgewGiYZqrA9DsP4zbQ1M"
+    }
+  },
+  "monero": {
+    "dev": {
+      "invoices": [
+        {
+          "accountIndex": 0,
+          "address": "7AeQwvrLtPeYoXVPRkEu8oEL7N9wnqHjYKwSvTf6YKbHgYmw6AJMsjggzVLo21egMK9qcoV1mxCTfP4FbaGb7JEMDfpLetk",
+          "addressIndex": 1,
+          "spendTweak": "a3ef01217924f949738026a9803be31c45e1c2806f41224136bb971a8c5e740f",
+          "viewProof": {
+            "challenge": "437e7ad7b7951cdb43faa898a9a72b159d55b732b0a967498c79148db82a1f0f",
+            "response": "259d290075af76c3a8f80217e53c4eaaebc254415a8ed5bde5e6af3db4347708"
+          }
+        },
+        {
+          "accountIndex": 0,
+          "address": "73YMtNiQmazP56aYSAR2SjT6uCfCNEBFnfYc4PHUUJaqC8urLbipC1Z3NUUqoraQV4PJmLRHV81cnadnoUAcLiqD8jQB4mL",
+          "addressIndex": 2,
+          "spendTweak": "04385366e565cad14d4dcc1128ff618e808549380ca6dc0f53ba6f024d81120b",
+          "viewProof": {
+            "challenge": "430fb5871b8ae5fda8169ec3d540c6a55a2b9de2474046d194c90d46dfee920f",
+            "response": "a5196e08746d1854268558af1544bc19e3b2d3e234feed5ebaa9bf4a33f6d00c"
+          }
+        },
+        {
+          "accountIndex": 0,
+          "address": "7Ab6cPPwU97LD8HwX1X8QSJGLtkLq4vYHG5RFYiLXAvvX74yHoMxPGYXPchEmeQaVGjT72mXBYouNA8HLSvnxdP9LD931f3",
+          "addressIndex": 3,
+          "spendTweak": "aab790534f25025857fff3be55859813196de5097b1836fcb557a1354897e004",
+          "viewProof": {
+            "challenge": "120d14eab751be99b0cd3abb44524a7cca866a321fe148c7b197382238fbc10a",
+            "response": "765f197da4a3f234e6095ea6e47d982d8b612d930a463b9aa7c168c102693700"
+          }
+        },
+        {
+          "accountIndex": 1,
+          "address": "73WqhTXVZM6Rq9TLi2EQHGK5jwopSRNHheT6JXCfmg9DVPps4um6En5Yn1RMcKezSM3iyUZYDEnEdamWPABSpRS1Eq7gnsr",
+          "addressIndex": 0,
+          "spendTweak": "814528a318bba07d6030849472441acf4bd126248eda56fb8fa5d3d71e72e102",
+          "viewProof": {
+            "challenge": "91f33a5a08fe06852d688a61308623b9ff4cf838c32dc86b3dbcb47e3415160b",
+            "response": "cd1a35e6d63ca14040d81708528beb441f122d8f7c356775ffafb21df069600b"
+          }
+        }
+      ],
+      "primaryAddress": "52jzuBBUMty3xPL3JsQxGP74LDuV6E1LS8Zda1PbdqQjGzFmH6N9ep9McbFKMALujVT9S5mKpbEgC5VPhfoAiVj8LdAqbp6",
+      "subaddressPrefix": 36,
+      "viewKey": "fd5c0d25f8f994268079a4f7844274dc870a7c2b88fbfc24ba318375e1d9430f"
+    }
+  }
+}

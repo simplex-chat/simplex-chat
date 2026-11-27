@@ -201,7 +201,7 @@ badgeTables = map ("sx_badge_service_" <>) ["invoices", "payments", "badge_price
 
 testNamesDownUp :: IO ()
 testNamesDownUp = withServiceStore $ \st -> do
-  let names = dropWhile ((/= "20261013_names") . name) storeServiceSchemaMigrations
+  let names = [m | m@Migration {name = "20261013_names"} <- storeServiceSchemaMigrations]
       badgeColumns = mapM (fmap sort . columnsOf st) badgeTables
   map name names `shouldBe` ["20261013_names"]
   seedBadgePrice st "price1"

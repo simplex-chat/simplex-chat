@@ -17,6 +17,8 @@ module Bots.StoreService.NamesOrdersTests
     configured,
     testNamesConfig,
     codesOnly,
+    movedSponsor,
+    otherSponsor,
     aliceOrder,
     secretOf,
     orderRegistration,
@@ -32,6 +34,14 @@ module Bots.StoreService.NamesOrdersTests
     placeOrder,
     placed,
     post,
+    postRaw,
+    signedGet,
+    readInvoice,
+    cancelInvoice,
+    signWith,
+    signedPath,
+    signedRequestBody,
+    requestSignature,
     settleNow,
     settled,
     invoiceRegistration,
@@ -65,8 +75,9 @@ module Bots.StoreService.NamesOrdersTests
   )
 where
 
-import Bots.StoreService.FakeBTCPay (FakeBTCPay (..), setInvoiceState, withFakeBTCPay)
+import Bots.StoreService.FakeBTCPay (FakeBTCPay (..), apiRequests, fakeInvoiceIds, setInvoiceState, usePaymentMethodsFixture, withFakeBTCPay)
 import Bots.StoreService.FakeEthNode
+import Bots.StoreService.NamesAddressProofTests (addressProofHolds)
 import Bots.StoreService.FakeHttp (nextFakeId)
 import Bots.StoreService.NamesContractsTests (alice, answerRegistered, answerRegistrar, minPriceCentsPerYear, nameExpiresCall, noncesCall, registrarOf, rentPriceAnswer, rentPriceCall, reservedNamesCall)
 import Bots.StoreService.NamesStoreTests (btc, codeReg, commitFixture, hashFixture, order, ownerA, ownerB, placeCode, placePaid, reveal, t0)
@@ -77,11 +88,12 @@ import Control.Concurrent.MVar (newEmptyMVar, putMVar, takeMVar)
 import Control.Concurrent.STM (TVar, atomically, modifyTVar', newTVarIO, readTVarIO, writeTVar)
 import qualified Control.Exception as E
 import Control.Arrow ((&&&))
-import Control.Monad (forM_, replicateM_, void)
+import Control.Monad (filterM, forM_, replicateM_, void)
 import Crypto.Random (ChaChaDRG)
 import Data.Aeson ((.=))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.KeyMap as KM
+import qualified Data.Aeson.Types as JT
 import qualified Data.ByteArray as BA
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as BC
@@ -89,13 +101,15 @@ import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.IORef (IORef, atomicModifyIORef', modifyIORef', newIORef, readIORef, writeIORef)
 import Data.List (sort)
 import qualified Data.Map.Strict as M
-import Data.Maybe (fromJust, fromMaybe, isJust, isNothing)
+import Data.Functor ((<&>))
+import Data.Maybe (fromJust, fromMaybe, isJust, isNothing, listToMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
+import Data.Text.Encoding (encodeUtf8)
 import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime, diffUTCTime, getCurrentTime)
 import Data.Time.Clock.POSIX (posixSecondsToUTCTime, utcTimeToPOSIXSeconds)
 import Data.Word (Word64)
-import Network.HTTP.Client (defaultManagerSettings, newManager, responseHeaders)
+import Network.HTTP.Client (Response, defaultManagerSettings, newManager, responseHeaders)
 import Network.HTTP.Types (hContentType, status404)
 import Network.Wai (Application, requestHeaders)
 import qualified Network.Wai.Handler.Warp as Warp
@@ -108,13 +122,13 @@ import qualified Simplex.Messaging.Agent.Store.DB as DB
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.Secp256k1 (Secp256k1PrivateKey, mkPrivateKey, signRecoverable)
 import Simplex.Messaging.Encoding.String (TextEncoding (textDecode), strEncode)
-import Simplex.Messaging.Eth.Address (Address)
+import Simplex.Messaging.Eth.Address (Address, addressFromPrivateKey)
 import Simplex.Messaging.Encoding (Encoding (..))
 import Simplex.Messaging.Names.Record (USDCents)
 import Simplex.Messaging.SimplexName (LabelHash (..), SimplexTLD (..), labelHash)
 import Simplex.Messaging.SystemTime (RoundedSystemTime (..), SystemSeconds, roundedToUTCTime)
 import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
-import StoreService.Config (ChainConfig (..), NamesConfig (..), ServiceConfig (..))
+import StoreService.Config (BTCPayConfig (..), ChainConfig (..), NamesConfig (..), ServiceConfig (..))
 import StoreService.Names.Abi (AbiValue (..), abiBytes, abiTuple, hex, selector, uint256)
 import StoreService.Names.Chain (Hex32 (..), TxHash (..))
 import StoreService.Names.Contracts (Contracts (ctDeadline, ctViewSlots), newContracts)
@@ -124,14 +138,15 @@ import StoreService.Names.Orders (OrdersEnv (..))
 import qualified StoreService.Names.Orders as Orders
 import StoreService.Names.Phases (RegistrationId (..), awaitChange, newPhases)
 import StoreService.Names.Registration (DisputeDays, Registration (..), acceptanceDigest, makeCommitment, methodDisputeDays, minDisputeDays, policyDomain, registerIntentDigest, sponsorDomain, termsKind)
-import StoreService.Names.Signatures (AgreedTerms (..), OrderFields (..), orderMessage, parseChecksumAddress, personalDigest)
+import StoreService.Names.Signatures (AgreedTerms (..), OrderAction (..), OrderFields (..), orderMessage, orderRequestMessage, parseChecksumAddress, personalDigest)
 import StoreService.Names.Store
 import StoreService.Names.Turns (newTurns, withCodeTurn)
 import StoreService.Names.View (PaidWith (PWInvoice), PhaseView (PVClosed, PVCommitted, PVEnded, PVFailed, PVRegistered, PVTaken, PVUnpaid), RegistrationView (..), Signing (SAwaiting, SLapsed, SSigned), ToSign (TSRead, TSUnread), phaseView, readToSign, registrationView, toRegistrationView)
 import StoreService.Orders (cancelOpenInvoice, expireOverdue, settleOrder)
 import StoreService.Poller (cleanupInterval, cleanupReadsPerPass, cleanupUnpaid, drainHints, newPollerEnv, newReadHints, queueReadHint, runOnePass, unpaidRetention)
 import StoreService.Providers.BTCPay (btcpayProvider)
-import StoreService.Providers (Funded (..), OrderDraft (..), PaymentSignal (..), Provider (..), ProviderError (..), ProviderInvoice (..))
+import StoreService.Providers (Funded (..), InvoiceKind (..), OrderDraft (..), PaymentSignal (..), Provider (..), ProviderError (..), ProviderInvoice (..))
+import StoreService.Providers.AddressProof (AddressProof (APBitcoin, APMonero), ViewProof (ViewProof))
 import StoreService.Store.Invoices (CreateError (..), InvoicePayment (..), InvoiceProduct (..), InvoiceRow (..), NewInvoice (..), OverdueInvoice (..), createInvoiceRows, getInvoice, getInvoiceByProviderRef, overdueInvoices, unpaidRefs)
 import StoreService.Waiters (Waiters, newWaiters)
 import StoreService.Web.Http (Limit (..), codeLimit, invoicesLimit, takeToken)
@@ -167,6 +182,10 @@ namesOrdersTests = describe "StoreService names: orders" $ do
     it "refuses a malformed owner, an unknown method, price or kind, and an order outside 6-63 letters" testFormats
     it "parses an order only with every field well formed, sealed of at most 11095 characters and terms of the agreed format" testOrderFormats
     it "answers after the name's turn, so a slow reader of one answer holds no other order for the name, paid or by code, answered at once" testSlowReaderHoldsNoTurn
+  describe "address proofs" $ do
+    it "answers a Bitcoin and a Monero name invoice with the proof of its address, recorded for the names page" testProvenInvoices
+    it "answers provider_unavailable to a name invoice whose address the payee keys do not derive, cancelling it and writing no order" testUnprovenInvoice
+    it "answers provider_unavailable to a name invoice in a coin without payee keys, asking BTCPay nothing and taking no checkout token" testNoPayeeKeys
   describe "code orders" $ do
     it "places a code order as a queued live registration holding its code, answering only its id" testCodeOrder
     it "answers an exact resend with its id in any phase, the code spent or not, also after the terms changed on chain, before any chain read" testCodeResend
@@ -215,6 +234,9 @@ namesOrdersTests = describe "StoreService names: orders" $ do
     it "reads at most a pass's share of the provider in a cleanup, carrying the rest to the next pass" testCleanupCapped
     it "runs the day's cleanup again at the next pass when reading its orders fails" testCleanupReadFails
     it "answers 503 for a name invoice while names are off, cancelling nothing" testNamesOff
+  describe "downtime" $ do
+    it "refuses a name invoice and a code order with 503 downtime before reading them, reaching no provider and reserving no code" testDowntimeRefusesOrders
+    it "answers an open invoice's read and cancel in the downtime" testDowntimeAnswersInvoices
   describe "codes only" $ do
     it "answers a name invoice 403 codes_only before reading the order, reaching no provider and writing nothing" testInvoiceCodesOnly
     it "sells a badge as before" testBadgeCodesOnly
@@ -227,6 +249,7 @@ namesOrdersTests = describe "StoreService names: orders" $ do
     it "answers every field of a failed, a requeued and a taken order" testViewStates
     it "has the terms the order signed" testViewTerms
     it "reads the intent nonce and the acceptance of the terms of the name's kind only while a committed order awaits its signature, unread when either read fails" testViewReads
+    it "records the view of each phase the names page reads" testViewFixtures
     it "reads the chain only in a free view slot and within one deadline, else answers unread" testViewReadsBounded
     it "reads the order's balance, none before its first credit, and its refunded cents after a refund" testViewBalance
 
@@ -426,6 +449,7 @@ testNamesConfig node =
       nMaxDryRunFailures = 5,
       nMaxSentFailures = 5,
       nCodesOnly = False,
+      nDowntime = False,
       nRecordEditsPerYear = 3,
       nMinPriceCentsPerYear = minPriceCentsPerYear,
       nCommunity = M.empty,
@@ -487,6 +511,12 @@ configured change ctx@Ctx {cOrders, cWeb} = ctx {cOrders = orders, cWeb = cWeb {
 codesOnly :: NamesConfig -> NamesConfig
 codesOnly cfg = cfg {nCodesOnly = True}
 
+movedSponsor :: NamesConfig -> NamesConfig
+movedSponsor cfg@NamesConfig {nChain} = cfg {nChain = nChain {cSponsor = otherSponsor}}
+
+otherSponsor :: Address
+otherSponsor = Bots.StoreService.FakeEthNode.address "0x0b306bf915c4d645ff596e518faf3f9669b97016"
+
 -- | Another server of the orders routes over the context with its names settings changed.
 withSettings :: (NamesConfig -> NamesConfig) -> Ctx -> (Ctx -> IO a) -> IO a
 withSettings change ctx action = do
@@ -528,10 +558,57 @@ dynamisReservedCall = unhex "389c074878b602f03f164366531da963764c1f2fdfd588d0487
 
 -- | Each request from its own client network, so the create and checkout limits count none twice.
 post :: Ctx -> String -> LB.ByteString -> IO (Int, Maybe J.Object)
-post Ctx {cClient, cIps} path body = do
+post ctx path body = answerOf <$> postRaw ctx path body
+
+postRaw :: Ctx -> String -> LB.ByteString -> IO (Response LB.ByteString)
+postRaw Ctx {cClient, cIps} path body = do
   n <- atomicModifyIORef' cIps (\i -> (i + 1, i))
   let ip = "198." <> show (n `div` 250) <> "." <> show (n `mod` 250 + 1) <> ".1"
-  answerOf <$> webRequestBody cClient "POST" path [(hContentType, "application/json"), ("X-Forwarded-For", BC.pack ip)] body
+  webRequestBody cClient "POST" path [(hContentType, "application/json"), ("X-Forwarded-For", BC.pack ip)] body
+
+signedGet :: Ctx -> String -> IO (Response LB.ByteString)
+signedGet ctx@Ctx {cClient} path = webGet cClient =<< signedPath ctx path
+
+readInvoice :: Ctx -> InvoiceId -> IO (Int, Maybe J.Object)
+readInvoice ctx (InvoiceId t) = answerOf <$> signedGet ctx ("/api/invoice/" <> T.unpack t)
+
+cancelInvoice :: Ctx -> InvoiceId -> IO (Int, Maybe J.Object)
+cancelInvoice ctx (InvoiceId t) = post ctx path =<< signedRequestBody ctx path OACancel
+  where
+    path = "/api/invoice/" <> T.unpack t <> "/cancel"
+
+signWith :: Ctx -> Secp256k1PrivateKey -> ByteString -> IO Text
+signWith Ctx {cRandom} key msg = hex . smpEncode . either (error . show) id <$> signRecoverable cRandom key (personalDigest msg)
+
+signedPath :: Ctx -> String -> IO String
+signedPath ctx path =
+  requestSignature ctx route OARead <&> \case
+    Just (t, sig) -> route <> (if null query then "?" else query <> "&") <> "timestamp=" <> show t <> "&signature=" <> T.unpack sig
+    Nothing -> path
+  where
+    (route, query) = break (== '?') path
+
+signedRequestBody :: Ctx -> String -> OrderAction -> IO LB.ByteString
+signedRequestBody ctx route action = maybe "" (\(t, sig) -> J.encode $ J.object ["timestamp" .= t, "signature" .= sig]) <$> requestSignature ctx route action
+
+requestSignature :: Ctx -> String -> OrderAction -> IO (Maybe (Word64, Text))
+requestSignature ctx@Ctx {cStore, cRandom, cClock} route action = case T.splitOn "/" (T.pack route) of
+  "" : "api" : "registration" : rid : _ -> ownedBy rid $ pure $ Just $ RegistrationId rid
+  "" : "api" : "invoice" : iid : _ ->
+    ownedBy iid $
+      getInvoice cStore (InvoiceId iid) <&> \case
+        Just InvoiceRow {irProduct = IPName rid} -> Just rid
+        _ -> Nothing
+  _ -> pure Nothing
+  where
+    ownedBy oid readRid =
+      readRid >>= maybe (pure Nothing) (\rid -> withTransaction cStore (`getRegistration` rid)) >>= \case
+        Just NameRegistration {nrOwner} -> ownerKey nrOwner >>= traverse (signedAt oid)
+        Nothing -> pure Nothing
+    ownerKey owner = listToMaybe <$> filterM (fmap (== owner) . addressFromPrivateKey cRandom) [keyA, keyB]
+    signedAt oid key = do
+      t <- seconds <$> readIORef cClock
+      (\sig -> (t, sig)) <$> signWith ctx key (orderRequestMessage oid action t)
 
 postOrder :: Ctx -> J.Object -> IO (Int, Maybe J.Object)
 postOrder ctx = post ctx "/api/invoice" . J.encode
@@ -600,11 +677,54 @@ testPaidOrder = withOrders $ \ctx -> do
   fieldOf r "duration" `shouldBe` Just (J.toJSON $ durationAt orderTime)
   fieldOf r "terms" `shouldBe` Just (J.toJSON $ agreed plainTerms)
   let reference = "name:" <> hex (unHex32 $ orderHash ownerA (fieldsOf aliceOrder) (OTInvoice (SPMCrypto CCBtc) 10000))
-  stubCalls (cStub ctx) `shouldReturn` [StubCreate (SPMCrypto CCBtc) OrderDraft {odAmount = CurrencyAmount 10000, odCurrency = "usd", odReference = reference}]
+  stubCalls (cStub ctx) `shouldReturn` [StubCreate (SPMCrypto CCBtc) OrderDraft {odAmount = CurrencyAmount 10000, odCurrency = "usd", odReference = reference, odKind = IKName}]
   reg <- invoiceRegistration ctx invId
   (nrPhase reg, nrVersion reg, nrYears reg, nrPrice reg, nrPayment reg) `shouldBe` (OUnpaid invId, 1, 2, 10000, OPInvoice (SPMCrypto CCBtc) invId)
   nrOrderHash reg `shouldBe` orderHash ownerA (fieldsOf aliceOrder) (OTInvoice (SPMCrypto CCBtc) 10000)
   nrAgreedTerms reg `shouldBe` agreed plainTerms
+
+withBTCPayOrders :: (BTCPayConfig -> BTCPayConfig) -> (FakeBTCPay -> Ctx -> IO a) -> IO a
+withBTCPayOrders payeeKeys action = withFakeBTCPay $ \fake -> do
+  btcpay <- btcpayProvider $ payeeKeys $ fbConfig fake
+  withOrdersVia (const btcpay) $ action fake
+
+xmrOrder :: Order
+xmrOrder = aliceOrder {oLabel = "dynamis", oPrice = 20000, oSecret = secretOf 2, oMethod = "xmr"}
+
+testProvenInvoices :: IO ()
+testProvenInvoices = withBTCPayOrders id $ \_ ctx ->
+  forM_ [("invoice-btc-open", aliceOrder), ("invoice-xmr-open", xmrOrder)] $ \(fixture, o) -> do
+    (_, v) <- placed ctx o
+    Just (J.String payTo) <- pure $ fieldOf v "address"
+    Just proof <- pure $ fieldOf v "addressProof" >>= JT.parseMaybe addressProofP
+    addressProofHolds payTo proof `shouldBe` True
+    answerFixture fixture (200, Just $ KM.insert "invoiceId" "invoice" v)
+  where
+    addressProofP = J.withObject "addressProof" $ \o ->
+      (o J..: "type" :: JT.Parser Text) >>= \case
+        "btc" -> APBitcoin <$> (hexBytes =<< o J..: "keyTweak")
+        "xmr" -> APMonero <$> (hexBytes =<< o J..: "spendTweak") <*> (o J..: "viewProof" >>= J.withObject "viewProof" (\p -> ViewProof <$> (hexBytes =<< p J..: "challenge") <*> (hexBytes =<< p J..: "response")))
+        other -> fail $ "no proof of type " <> T.unpack other
+    hexBytes t
+      | T.length t == 64 && T.all (`elem` ['0' .. '9'] <> ['a' .. 'f']) t = pure $ unhex $ encodeUtf8 t
+      | otherwise = fail "not 64 lowercase hex digits"
+
+testUnprovenInvoice :: IO ()
+testUnprovenInvoice = withBTCPayOrders id $ \fake ctx -> do
+  forM_ [("payment-methods-btc", aliceOrder), ("payment-methods-xmr", xmrOrder)] $ \(fixture, o) -> do
+    usePaymentMethodsFixture fake fixture
+    placeOrder ctx o `shouldReturn` refusedWith 503 "provider_unavailable"
+  refs <- fakeInvoiceIds fake
+  length refs `shouldBe` 2
+  forM_ refs $ \ref -> length <$> apiRequests fake "POST" ["invoices", ref, "status"] `shouldReturn` 1
+  length <$> registrationsOf ctx ownerA `shouldReturn` 0
+
+testNoPayeeKeys :: IO ()
+testNoPayeeKeys = withBTCPayOrders (\c -> c {bMoneroKey = Nothing}) $ \fake ctx -> do
+  replicateM_ (lmPerMinute $ invoicesLimit $ SPMCrypto CCXmr) $
+    placeOrder ctx aliceOrder {oMethod = "xmr"} `shouldReturn` refusedWith 503 "provider_unavailable"
+  apiRequests fake "POST" ["invoices"] `shouldReturn` []
+  void $ placed ctx aliceOrder
 
 -- | Appendix C's order: alicebakery with no links, signed with the general terms' hash.
 vectorOrder :: Order
@@ -1019,7 +1139,7 @@ testResendAfterBump = withOrders $ \ctx -> do
   postOrder ctx body `shouldReturn` (200, Just view)
   placed ctx later `shouldReturn` (invId, view)
   placeOrder ctx later {oTerms = newerTerms} `shouldReturn` refusedWith 409 "order_exists"
-  fst <$> post ctx ("/api/invoice/" <> T.unpack invText <> "/cancel") "" `shouldReturn` 200
+  fst <$> cancelInvoice ctx invId `shouldReturn` 200
   (newer, _) <- placed ctx later {oTerms = newerTerms}
   newer `shouldNotBe` invId
   [n, o] <- mapM (invoiceRegistration ctx) [newer, invId]
@@ -1350,8 +1470,8 @@ testSlowReaderHoldsNoTurn = withOrders $ \ctx@Ctx {cWeb, cOrders} -> do
 
 testOrderAfterCancel :: IO ()
 testOrderAfterCancel = withOrders $ \ctx -> do
-  (invId@(InvoiceId invText), _) <- placed ctx aliceOrder
-  (status, v) <- post ctx ("/api/invoice/" <> T.unpack invText <> "/cancel") ""
+  (invId, _) <- placed ctx aliceOrder
+  (status, v) <- cancelInvoice ctx invId
   status `shouldBe` 200
   ((`fieldOf` "status") =<< v) `shouldBe` Just "expired"
   ((`fieldOf` "version") . registrationOf =<< v) `shouldBe` Just (J.Number 2)
@@ -1381,12 +1501,11 @@ testOverdueClosed = withOrders $ \ctx -> do
 
 testClosedNamesNoOther :: IO ()
 testClosedNamesNoOther = withOrders $ \ctx -> do
-  let invoiceText (InvoiceId t) = t
   (firstInv, _) <- placed ctx aliceOrder
-  fst <$> post ctx ("/api/invoice/" <> T.unpack (invoiceText firstInv) <> "/cancel") "" `shouldReturn` 200
+  fst <$> cancelInvoice ctx firstInv `shouldReturn` 200
   now <- readIORef (cClock ctx)
   (secondInv, _) <- placed ctx aliceOrder {oSecret = secretOf 2, oTimestamp = seconds now, oDuration = durationAt now}
-  (_, view) <- answerOf <$> webGet (cClient ctx) ("/api/invoice/" <> T.unpack (invoiceText firstInv))
+  (_, view) <- readInvoice ctx firstInv
   let closed = registrationOf <$> view
   (closed >>= (`fieldOf` "phase")) `shouldBe` Just (J.object ["type" J..= ("closed" :: Text), "closedBy" J..= ("cancelled" :: Text)])
   (closed >>= (`fieldOf` "replacedBy")) `shouldBe` Nothing
@@ -1479,7 +1598,7 @@ testOneLateAlert = withOrders $ \ctx@Ctx {cStore = st, cWeb} -> do
 
 testCancelAnswers :: IO ()
 testCancelAnswers = withOrders $ \ctx -> do
-  let cancel = cancelAt ctx
+  let cancel = cancelInvoice ctx
   (funded, _) <- placed ctx aliceOrder
   settleNow ctx funded (SigFunded (rcv 5000 (Just "0.00078")) PaidInPart) `shouldReturn` ISOpen
   cancel funded `shouldReturn` refusedWith 409 "funded"
@@ -1490,16 +1609,14 @@ testCancelAnswers = withOrders $ \ctx -> do
   -- the provider settles the invoice, or reads a payment into it, while taking the cancel
   withOrdersCancelling settled $ \ctx' -> do
     (invId, _) <- placed ctx' aliceOrder
-    (status, v) <- cancelAt ctx' invId
+    (status, v) <- cancelInvoice ctx' invId
     (status, (`fieldOf` "status") =<< v, phaseOf . registrationOf =<< v) `shouldBe` (200, Just "paid", Just "queued")
   withOrdersCancelling (SigFunded (rcv 0 Nothing) PaidInFull) $ \ctx' -> do
     (invId, _) <- placed ctx' aliceOrder
-    (status, v) <- cancelAt ctx' invId
+    (status, v) <- cancelInvoice ctx' invId
     (status, (`fieldOf` "status") =<< v, (`fieldOf` "paidInFull") =<< v) `shouldBe` (200, Just "expired", Just (J.Bool True))
     r <- invoiceRegistration ctx' invId
     (orderLive r, nrVersion r) `shouldBe` (False, 2)
-  where
-    cancelAt c (InvoiceId t) = post c ("/api/invoice/" <> T.unpack t <> "/cancel") ""
 
 -- | Cancel takes the invoice row and decides on the payment it then reads, as settlement does.
 testCancelAlertsFunded :: IO ()
@@ -1508,14 +1625,13 @@ testCancelAlertsFunded = withOrdersCancelling (SigFunded paid PaidInPart) $ \ctx
   Just InvoiceRow {irProviderRef} <- getInvoice (cStore ctx) invId
   let alert = "invoice " <> irProviderRef <> " received money after"
   logs <- capturingStderr $ do
-    (status, v) <- post ctx ("/api/invoice/" <> T.unpack (invoiceText invId) <> "/cancel") ""
+    (status, v) <- cancelInvoice ctx invId
     (status, (`fieldOf` "status") =<< v, (`fieldOf` "cryptoAmountPaid") =<< v) `shouldBe` (200, Just "expired", Just "0.00078")
   length (T.breakOnAll alert logs) `shouldBe` 1
   capturingStderr (settleNow ctx invId (SigClosed paid PaidInPart) `shouldReturn` ISExpired) >>= (`shouldNotSatisfy` T.isInfixOf alert)
   nrPhase <$> invoiceRegistration ctx invId `shouldReturn` OClosed ICCancelled
   where
     paid = rcv 5000 (Just "0.00078")
-    invoiceText (InvoiceId t) = t
 
 testNamesOff :: IO ()
 testNamesOff = withOrders $ \ctx -> do
@@ -1541,6 +1657,33 @@ testInvoiceCodesOnly = withOrders $ \open -> withSettings codesOnly open $ \ctx 
   registrationsOf ctx ownerA `shouldReturn` []
   -- nothing the refusals left meets the same order placed with codes_only off
   void $ placed open aliceOrder
+
+downtime :: NamesConfig -> NamesConfig
+downtime cfg = cfg {nDowntime = True}
+
+testDowntimeRefusesOrders :: IO ()
+testDowntimeRefusesOrders = withOrders $ \open -> do
+  (codeText, code) <- issueCode open 8 2 id
+  withSettings downtime open $ \ctx -> do
+    refusal <- placeOrder ctx aliceOrder
+    refusal `shouldBe` refusedWith 503 "downtime"
+    answerFixture "invoice-downtime" refusal
+    postOrder ctx (KM.fromList [("kind", "name")]) `shouldReturn` refusedWith 503 "downtime"
+    register ctx codeText aliceOrder `shouldReturn` refusedWith 503 "downtime"
+    postRegister ctx KM.empty `shouldReturn` refusedWith 503 "downtime"
+    stubCalls (cStub ctx) `shouldReturn` []
+    registrationsOf ctx ownerA `shouldReturn` []
+    readCode ctx code `shouldReturn` code
+  void $ registered open codeText aliceOrder
+
+testDowntimeAnswersInvoices :: IO ()
+testDowntimeAnswersInvoices = withOrders $ \open -> do
+  (invId, _) <- placed open aliceOrder
+  withSettings downtime open $ \ctx -> do
+    (status, v) <- readInvoice ctx invId
+    (status, (`fieldOf` "status") =<< v) `shouldBe` (200, Just "open")
+    (cancelled, view) <- cancelInvoice ctx invId
+    (cancelled, (`fieldOf` "status") =<< view) `shouldBe` (200, Just "expired")
 
 testBadgeCodesOnly :: IO ()
 testBadgeCodesOnly = withOrders $ \open -> withSettings codesOnly open $ \ctx@Ctx {cStore} -> do
@@ -1925,6 +2068,37 @@ testViewReads = withServiceStore $ \st -> withFakeEthNode $ \node -> do
 
 readToSignOf :: Contracts -> NameRegistration -> IO ToSign
 readToSignOf ct NameRegistration {nrOwner, nrLabelHash} = readToSign ct "the view" nrOwner nrLabelHash
+
+testViewFixtures :: IO ()
+testViewFixtures = withServiceStore $ \st -> withFakeEthNode $ \node -> do
+  g <- C.newRandom
+  ct <- newContracts st TLDSimplex minPriceCentsPerYear =<< fakeChainClient g node
+  answerCall node fakeSponsor noncesCall $ Returns $ uint256 (4 :: Int)
+  answerCall node fakeNamePolicy noncesCall $ Returns $ uint256 (2 :: Int)
+  Right () <- placePaid st "r1" ownerA (order "alicebakery" 1) (addUTCTime 3600 t0)
+  let rid = RegistrationId "r1"
+      current = withTransaction st $ \db -> fromJust <$> getRegistration db rid
+      written change = do
+        Written _ <- current >>= \r -> withTransaction st $ \db -> updateRegistration db (change r) t0
+        current
+      recorded name now r = registrationView st (testNamesConfig node) ct now r >>= \v -> storeFixture name 200 (Just $ withId $ J.toJSON v) Nothing
+      withId = \case
+        J.Object o -> J.Object $ KM.insert "id" "registration" o
+        v -> v
+  recorded "registration-unpaid" t0 =<< current
+  committed <- written $ \r -> r {nrPhase = OCommitted commitFixture, nrReveal = Nothing}
+  recorded "registration-committed-awaiting" t0 committed
+  listCommunityName node $ labelHash "alicebakery"
+  recorded "registration-committed-awaiting-community" t0 committed
+  setCommunityTerms node ""
+  recorded "registration-committed-unread" t0 committed
+  setCommunityTerms node fakeCommunityTermsText
+  recorded "registration-committed-signed" t0 committed {nrReveal = Just reveal}
+  recorded "registration-committed-lapsed" (addUTCTime 1 $ roundedToUTCTime $ cmRevealBefore commitFixture) committed
+  recorded "registration-failed" t0 =<< written (\r -> r {nrPhase = OFailed t0 FRRegistryRefused})
+  withTransaction st $ \db -> setSettledAt db rid t0
+  recorded "registration-failed-held" t0 =<< written (\r -> r {nrPhase = OFailed t0 FRUnread})
+  recorded "registration-closed-cancelled" t0 =<< written (\r -> r {nrPhase = OClosed ICCancelled})
 
 testViewReadsBounded :: IO ()
 testViewReadsBounded = withServiceStore $ \st -> withFakeEthNode $ \node -> do

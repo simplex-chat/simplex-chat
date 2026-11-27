@@ -6,7 +6,10 @@
 module Bots.StoreService.ConfigTests where
 
 import Bots.StoreService.FakeEthNode (address)
+import Bots.StoreService.NamesAddressProofTests (devBitcoinHrp, devBitcoinXpub, devMoneroAddress, devMoneroViewKey, devReceiveKey)
 import StoreService.Config
+import StoreService.Names.Abi (hex)
+import StoreService.Providers.AddressProof (primaryAddress, receiveKeyText)
 import Control.Logger.Simple (LogLevel (..))
 import Control.Monad (forM_, void)
 import qualified Data.ByteArray as BA
@@ -715,6 +718,7 @@ namesConfigTests = describe "StoreService names: config" $ do
   it "takes an http rpc_url only to a node on loopback, any other only as https, in any case of the scheme, and refuses one the HTTP client cannot parse" testNamesRpcUrlHttps
   it "refuses a [names] or [chain] setting nothing reads, terms_version among them, naming each" testNamesUnknownKeys
   it "reads codes_only on and off as a known setting, off when absent, and refuses any other value" testNamesCodesOnly
+  it "reads downtime on and off as a known setting, off when absent, and refuses any other value" testNamesDowntime
   it "reads record_edits_per_year as a known setting, 3 when absent, and refuses a value outside 1-100" testNamesRecordEdits
   it "reads min_price_cents_per_year as a known setting, 5000 when absent, and refuses a value below 1" testNamesPriceFloor
   it "accepts [issuer] dev_keys on chain 31337 only, with [names] on" testDevKeysLocalChain
@@ -722,6 +726,46 @@ namesConfigTests = describe "StoreService names: config" $ do
   it "accepts [issuer] dev_keys beside Stripe test keys and a BTCPay on loopback" testDevKeysTestPayments
   it "refuses [issuer] dev_keys beside a live Stripe key or a remote BTCPay, naming which and quoting no key" testDevKeysLivePayments
   it "accepts Stripe test keys with [names] only on chain 31337 or 11155111, and live keys on any chain" testStripeTestKeysChain
+  it "reads [btcpay]'s Bitcoin account key and Monero view key, each coin's alone, and neither" testPayeeKeys
+  it "refuses a payee key without its pair, or one that does not parse, naming the key and quoting none" testPayeeKeyRefusals
+
+payeeKeys :: [T.Text]
+payeeKeys = ["btc_xpub = " <> devBitcoinXpub, "btc_hrp = " <> devBitcoinHrp, "xmr_address = " <> devMoneroAddress, "xmr_view_key = " <> devMoneroViewKey]
+
+testPayeeKeys :: IO ()
+testPayeeKeys = do
+  let keysOf ks =
+        parseIni (fullIni <> T.unlines ks) >>= \case
+          Right ServiceConfig {btcpay = Just BTCPayConfig {bBitcoinKey, bMoneroKey}} -> pure (receiveKeyText <$> bBitcoinKey, primaryAddress <$> bMoneroKey)
+          Right _ -> fail "[btcpay] was present but not read"
+          Left e -> fail ("must boot, but: " <> e)
+      receiveKey = Just $ hex devReceiveKey
+  keysOf payeeKeys `shouldReturn` (receiveKey, Just devMoneroAddress)
+  keysOf (take 2 payeeKeys) `shouldReturn` (receiveKey, Nothing)
+  keysOf (drop 2 payeeKeys) `shouldReturn` (Nothing, Just devMoneroAddress)
+  keysOf [] `shouldReturn` (Nothing, Nothing)
+
+testPayeeKeyRefusals :: IO ()
+testPayeeKeyRefusals = do
+  let refusal ks = void <$> parseIni (fullIni <> T.unlines ks)
+      bitcoinPair = Left "btcpay.btc_xpub and btcpay.btc_hrp are required together"
+      moneroPair = Left "btcpay.xmr_address and btcpay.xmr_view_key are required together"
+  forM_ (zip payeeKeys [bitcoinPair, bitcoinPair, moneroPair, moneroPair]) $ \(k, refused) -> refusal [k] `shouldReturn` refused
+  forM_
+    [ ("btcpay.btc_xpub", ["btc_xpub = " <> T.init devBitcoinXpub <> "N", "btc_hrp = " <> devBitcoinHrp]),
+      ("btcpay.btc_xpub", ["btc_xpub = " <> devBitcoinXpub, "btc_hrp = bc"]),
+      ("btcpay.btc_xpub", ["btc_xpub = " <> devBitcoinXpub <> "-[legacy]", "btc_hrp = " <> devBitcoinHrp]),
+      ("btcpay.btc_hrp", ["btc_xpub = " <> devBitcoinXpub, "btc_hrp = ltc"]),
+      ("btcpay.xmr_address", ["xmr_address = " <> T.init devMoneroAddress <> "7", "xmr_view_key = " <> devMoneroViewKey]),
+      ("btcpay.xmr_view_key", ["xmr_address = " <> devMoneroAddress, "xmr_view_key = " <> T.replicate 64 "1"]),
+      ("btcpay.xmr_view_key", ["xmr_address = " <> devMoneroAddress, "xmr_view_key = " <> T.toUpper devMoneroViewKey])
+    ]
+    $ \(key, ks) ->
+      refusal ks >>= \case
+        Left e -> do
+          T.pack e `shouldSatisfy` T.isPrefixOf key
+          forM_ [devBitcoinXpub, devMoneroViewKey, T.toUpper devMoneroViewKey, T.replicate 64 "1"] $ \secret -> T.pack e `shouldNotSatisfy` T.isInfixOf secret
+        Right () -> expectationFailure (T.unpack key <> " must not boot")
 
 rpcUrl :: T.Text
 rpcUrl = "https://eth.example.org/v2/rpc-token-value"
@@ -951,6 +995,17 @@ testNamesCodesOnly = do
     NamesConfig {nCodesOnly} <- parsedNames ns chainSection
     (value, nCodesOnly) `shouldBe` (value, expected)
   namesRefusal (namesSection <> ["codes_only = yes"]) chainSection `shouldReturn` "codes_only must be on or off, not yes"
+
+testNamesDowntime :: IO ()
+testNamesDowntime = do
+  NamesConfig {nDowntime = absent} <- parsedNames namesSection chainSection
+  absent `shouldBe` False
+  forM_ [("on", True), ("off", False)] $ \(value, expected) -> do
+    let ns = namesSection <> ["downtime = " <> value]
+    unknownIn (namesIni ns chainSection) `shouldBe` []
+    NamesConfig {nDowntime} <- parsedNames ns chainSection
+    (value, nDowntime) `shouldBe` (value, expected)
+  namesRefusal (namesSection <> ["downtime = yes"]) chainSection `shouldReturn` "downtime must be on or off, not yes"
 
 testNamesRecordEdits :: IO ()
 testNamesRecordEdits = do
