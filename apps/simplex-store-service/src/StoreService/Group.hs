@@ -31,7 +31,7 @@ where
 import StoreService.Codes (issueFailedText, issueOneCode, revokeBadgeCode, singleUse)
 import StoreService.Config (GroupConfig (..))
 import StoreService.Group.Command (CmdAction (..), GroupCmd (..), MoneyCmd, NameListCmd, groupCmdAction, groupCommands)
-import StoreService.Names.Codes (codeExpiry, issueNameCode, revokeNameCode)
+import StoreService.Names.Codes (issueNameCode, revokeNameCode)
 import StoreService.Names.Store (CmdSource (..), groupNameCodesIssuedSince)
 import StoreService.Names.Turns (Turns)
 import StoreService.Store (CodeTracker (..), ManagedGroup (..), RevokeResult (..), clearCodeGroupItems, getCodeTracker, getEditableTrackers, getManagedGroup, insertManagedGroup, markOwnerBootstrapped, setCodeGroupItem)
@@ -334,11 +334,11 @@ runCmd source cc turns namesOn runMoney runNameList = \case
   GCIssue bt months uses status -> codeReply formatBadgeCode . fmap fst <$> issueOneCode cc bt months status uses
   GCBulk bt months count -> Right <$> issueMany count (fmap (formatBadgeCode . fst) <$> issueOneCode cc bt months CPSFree singleUse)
   GCIssueName {} | not namesOn -> pure $ Left namesOffText
-  GCIssueName len years status lastDay -> do
+  GCIssueName len years status expiresAt_ -> do
     now <- getCurrentTime
-    if codeExpiry now lastDay <= now
+    if maybe False (<= now) expiresAt_
       then pure $ Left "Not issued: the date is in the past."
-      else codeReply (\(code, expiresAt) -> formatNameCode code <> ". Valid until " <> fmtTime expiresAt <> ".") <$> issueNameCode cc source len years status lastDay
+      else codeReply (\(code, expiresAt) -> formatNameCode code <> ". Valid until " <> fmtTime expiresAt <> ".") <$> issueNameCode cc source len years status expiresAt_
   -- Naming the code tells concurrent revokes apart; the command already made it public.
   GCRevoke code -> named (formatBadgeCode code) <$> revokeWithTracker cc code
   GCRevokeName code -> named (formatNameCode code) <$> revokeNameCode turns cc code

@@ -215,9 +215,9 @@ testGroupNameCommands = do
   p "/issue name 63" `shouldBe` RunCmd (GCIssueName (lengthOf 63) 2 CPSFree Nothing)
   p "/issue name 6 years 2" `shouldBe` RunCmd (GCIssueName (lengthOf 6) 2 CPSFree Nothing)
   p "/issue name 63 years 10" `shouldBe` RunCmd (GCIssueName (lengthOf 63) 10 CPSFree Nothing)
-  p "/issue name 8 until 2027-03-31" `shouldBe` RunCmd (GCIssueName (lengthOf 8) 2 CPSFree (Just $ fromGregorian 2027 3 31))
-  p "/issue name 6 years 5 until 2030-12-31" `shouldBe` RunCmd (GCIssueName (lengthOf 6) 5 CPSFree (Just $ fromGregorian 2030 12 31))
-  consoleCmd "issue name 7 years 3 paid until 2027-03-31" `shouldBe` Right (GCIssueName (lengthOf 7) 3 CPSPaid (Just $ fromGregorian 2027 3 31))
+  p "/issue name 8 until 2027-03-31" `shouldBe` RunCmd (GCIssueName (lengthOf 8) 2 CPSFree (Just $ UTCTime (fromGregorian 2027 3 31) 86399))
+  p "/issue name 6 years 5 until 2030-12-31" `shouldBe` RunCmd (GCIssueName (lengthOf 6) 5 CPSFree (Just $ UTCTime (fromGregorian 2030 12 31) 86399))
+  consoleCmd "issue name 7 years 3 paid until 2027-03-31" `shouldBe` Right (GCIssueName (lengthOf 7) 3 CPSPaid (Just $ UTCTime (fromGregorian 2027 3 31) 86399))
   map p ["/bulk name 7 count 3", "/bulk name 12 years 2 count 100", "/bulk name 6 count 1"] `shouldBe` replicate 3 bulkUsage
   groupCmdAction GRMember "/issue name 8" `shouldBe` IgnoreMsg
 

@@ -25,7 +25,7 @@ import Data.Maybe (fromMaybe, maybeToList)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
-import Data.Time.Calendar (Day)
+import Data.Time.Clock (UTCTime (..))
 import Data.Time.Format (defaultTimeLocale, parseTimeM)
 import Simplex.Chat.Badges (BadgeType (..))
 import Simplex.Chat.Badges.Code (BadgeCode, NameLength, NamePrepaidCode, maxNameLength, minNameLength, minNameYears, nameLength, parseBadgeCode, parseNameCode)
@@ -46,7 +46,7 @@ maxMonths = 12
 data GroupCmd
   = GCIssue BadgeType Int Int BadgeCodePaymentStatus
   | GCBulk BadgeType Int Int
-  | GCIssueName NameLength Int BadgeCodePaymentStatus (Maybe Day)
+  | GCIssueName NameLength Int BadgeCodePaymentStatus (Maybe UTCTime)
   | GCRevoke BadgeCode
   | GCRevokeName NamePrepaidCode
   | GCMoney MoneyCmd
@@ -154,9 +154,8 @@ optValueP opt = A.string (encodeUtf8 (optKey opt)) *> A.space *> boundedInt opt
 nameCodeP :: A.Parser (NameLength, Int)
 nameCodeP = A.string (encodeUtf8 nameKind) *> A.char ' ' *> ((,) <$> nameLengthP <*> optP yearsOpt)
 
--- | "until <YYYY-MM-DD>", the last day a name code is valid.
-untilP :: A.Parser Day
-untilP = A.space *> A.string (encodeUtf8 untilKey) *> A.space *> (A.takeWhile1 (not . isSpace) >>= maybe (fail "not a date") pure . parseTimeM False defaultTimeLocale "%Y-%m-%d" . T.unpack . safeDecodeUtf8)
+untilP :: A.Parser UTCTime
+untilP = A.space *> A.string (encodeUtf8 untilKey) *> A.space *> (A.takeWhile1 (not . isSpace) >>= maybe (fail "not a date") (pure . (`UTCTime` 86399)) . parseTimeM False defaultTimeLocale "%Y-%m-%d" . T.unpack . safeDecodeUtf8)
 
 untilKey, untilArg :: Text
 untilKey = "until"
