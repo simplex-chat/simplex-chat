@@ -398,7 +398,7 @@ cashAddress s = do
   payload <- fromBase32 $ take 34 values
   lowerText s
     <$ guard
-      ( bchPolymod 35 cashAddrGenerators (map (.&. 31) (BW.unpack "bitcoincash") <> [0] <> values) == 1
+      ( polymod 35 cashAddrGenerators (map (.&. 31) (BW.unpack "bitcoincash") <> [0] <> values) == 1
           && B.length payload == 21
           && B.take 1 payload `elem` ["\0", "\8"]
       )
@@ -408,7 +408,7 @@ bech32 s = do
   hrp <- B.stripSuffix "1" hrpAndSeparator
   values <- traverse bech32Value $ B.unpack dataPart
   guard $ length values >= 6
-  pure (hrp, bchPolymod 25 bech32Generators (expandedHrp hrp <> values), take (length values - 6) values)
+  pure (hrp, polymod 25 bech32Generators (expandedHrp hrp <> values), take (length values - 6) values)
   where
     (hrpAndSeparator, dataPart) = B.breakEnd (== '1') $ B.map toLower s
     expandedHrp hrp = map (`shiftR` 5) (BW.unpack hrp) <> [0] <> map (.&. 31) (BW.unpack hrp)
@@ -431,8 +431,8 @@ bech32Generators = [0x3b6a57b2, 0x26508e6d, 0x1ea119fa, 0x3d4233dd, 0x2a1462b3]
 cashAddrGenerators :: [Word64]
 cashAddrGenerators = [0x98f2bc8e61, 0x79b76d99e2, 0xf33e5fb3c4, 0xae2eabe2a8, 0x1e4f43e470]
 
-bchPolymod :: Int -> [Word64] -> [Word8] -> Word64
-bchPolymod top generators = foldl' step 1
+polymod :: Int -> [Word64] -> [Word8] -> Word64
+polymod top generators = foldl' step 1
   where
     step c v = foldl' xor ((c .&. (bit top - 1)) `shiftL` 5 `xor` fromIntegral v) [g | (i, g) <- zip [top ..] generators, testBit c i]
 
