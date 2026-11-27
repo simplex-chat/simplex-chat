@@ -121,7 +121,7 @@ infoToDeliveryContext GroupInfo {membership} scopeInfo sentAsGroup = DeliveryTas
 moderatorsContext :: DeliveryTaskContext -> Maybe DeliveryTaskContext
 moderatorsContext ctx@DeliveryTaskContext {jobScope} = case jobScope of
   DJSGroup {jobSpec = DJRelayRemoved} -> Nothing
-  DJSGroup {} -> Just ctx {jobScope = DJSGroup {jobSpec = DJModerators}}
+  DJSGroup {} -> Just (ctx :: DeliveryTaskContext) {jobScope = DJSGroup {jobSpec = DJModerators}}
   DJSMemberSupport {} -> Nothing
 
 memberEventDeliveryScope :: GroupMember -> Maybe DeliveryJobScope
