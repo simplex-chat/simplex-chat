@@ -82,7 +82,7 @@ Organized in sections:
 | Show last messages | `privacyShowChatPreviews` | Show message previews in chat list |
 | Message draft | `privacySaveLastDraft` | Save unsent message draft for each chat |
 
-Footer of the Chats section: "Without a SOCKS proxy, the website sees your IP address."
+Footer of the Chats section, above the footer of Contact deletion: "Without a SOCKS proxy, the website sees your IP address."
 
 **Files Section**:
 
