@@ -47,6 +47,10 @@ private val previewChainAddress = ChainAddress(ChainCurrency.Bitcoin("0.0012"), 
 
 private val alice = ChainAddressSender("alice", forwarded = false, messageSigned = true)
 
+private val nbsp = Char(0xA0)
+
+private val wj = Char(0x2060)
+
 @OptIn(ExperimentalTestApi::class)
 class ChainAddressesTest : RecordedApiTest() {
   @Test
@@ -86,25 +90,6 @@ class ChainAddressesTest : RecordedApiTest() {
         "zel:t1fwjQW5gpFhDqXNhxqDWyF9j9WeKvVS5Jg?amount=5" to "FLUX\u00A05"
       ),
       shown
-    )
-  }
-
-  @Test
-  fun alertOfOwnItemHasNoName() = recordedAlerts("chain-addresses/sent") {
-    val chat = recordedChat("chain-addresses/sent", "/_get chat @2 count=1")
-    val item = chat.chatItems.single()
-    assertEquals(
-      listOf("₿\u00A0bc1q2g…\u20605d4u", "Donate XMR\u00A08A3ZWA…\u2060Yq1c", "ϟ\u00A00.0025"),
-      chainLinks(item.formattedText).map { alertMessage(chainAddressSender(item, chat.chatInfo), it) }
-    )
-  }
-
-  @Test
-  fun alertOfOwnGroupItemHasNoName() = recordedAlerts("chain-addresses/group-sent") {
-    val chat = recordedChat("chain-addresses/group-sent", "/_get chat #1 count=2")
-    assertEquals(
-      listOf("₿\u00A0bc1q2g…\u20605d4u", "⚠\u00A0ltc1q2…\u2060wfdv (not signed)"),
-      chat.chatItems.flatMap { item -> chainLinks(item.formattedText).map { alertMessage(chainAddressSender(item, chat.chatInfo), it) } }
     )
   }
 
@@ -203,6 +188,25 @@ class ChainAddressesTest : RecordedApiTest() {
         "ethereum:$ETH@100?value=1e16" to alice,
         "lightning:$LNURL" to alice
       ).flatMap { (key, s) -> chainLinks(markdown.getValue(key).formattedText).map { alertMessage(s, it) } }
+    )
+  }
+
+  @Test
+  fun alertOfOwnItemHasNoName() = recordedAlerts("chain-addresses/sent") {
+    val chat = recordedChat("chain-addresses/sent", "/_get chat @2 count=1")
+    val item = chat.chatItems.single()
+    assertEquals(
+      listOf("₿${nbsp}bc1q2g…${wj}5d4u", "Donate XMR${nbsp}8A3ZWA…${wj}Yq1c", "ϟ${nbsp}0.0025"),
+      chainLinks(item.formattedText).map { alertMessage(chainAddressSender(item, chat.chatInfo), it) }
+    )
+  }
+
+  @Test
+  fun alertOfOwnGroupItemHasNoName() = recordedAlerts("chain-addresses/group-sent") {
+    val chat = recordedChat("chain-addresses/group-sent", "/_get chat #1 count=2")
+    assertEquals(
+      listOf("₿${nbsp}bc1q2g…${wj}5d4u", "⚠${nbsp}ltc1q2…${wj}wfdv (not signed)"),
+      chat.chatItems.flatMap { item -> chainLinks(item.formattedText).map { alertMessage(chainAddressSender(item, chat.chatInfo), it) } }
     )
   }
 
