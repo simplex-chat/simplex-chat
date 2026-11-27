@@ -1,4 +1,5 @@
 import XCTest
+import SwiftUI
 import UIKit
 @testable import SimpleX
 @testable import SimpleXChat
@@ -9,6 +10,7 @@ private let eth = "0xD7047Fe3Eecb2f2FF78d839dD927Be27Bc12c86a"
 private let invoice = "lnbc2500u1pvjluezsp5zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zygspp5qqqsyqcyq5rqwzqfqqqsyqcyq5rqwzqfqqqsyqcyq5rqwzqfqypqdq5xysxxatsyp3k7enxv4jsxqzpu9qrsgquk0rl77nj30yxdy8j9vdx85fkpmdla2087ne0xh8nhedh8w27kyke0lp53ut353s06fv3qfegext0eh0ymjpf39tuven09sam30g4vgpfna3rh"
 private let labeledToken = "[Dinner](ethereum:0xc2132D05D31c914a87C6611C10748AEb04B58e8F@137/transfer?address=\(eth)&uint256=10000000)"
 private let labeledUnknownChain = "[Donate](ethereum:\(eth)@99999)"
+private let alice = ChainAddressSender(name: "alice", forwarded: false, messageSigned: true)
 
 final class ChainAddressesTests: RecordedAPITestCase {
     func testLinkTextOfEachCurrency() throws {
@@ -75,6 +77,14 @@ final class ChainAddressesTests: RecordedAPITestCase {
         XCTAssertEqual(drawn, ["SimpleX ⚠\u{FE0E}\u{00A0}bc1q2g…\u{2060}5d4u (not signed)", "⚠\u{FE0E}\u{00A0}0xD704…\u{2060}c86a (unknown chain, not signed)"])
     }
 
+    func testAddressInProfileDescriptionIsText() throws {
+        try recorded("chain-addresses/links")
+        let r = try XCTUnwrap(markdownProfileDescription(shortDescr: nil, description: "Donations: \(btc). Cheers", backgroundColor: .white))
+        XCTAssertEqual(r.string.string, "Donations: \(btc). Cheers")
+        XCTAssertEqual(linkColors(r.string), [])
+        XCTAssertFalse(r.handleTaps)
+    }
+
     @MainActor
     func testGroupAddressWithoutVerifiedSignatureIsNotSigned() async throws {
         try recorded("chain-addresses/group")
@@ -94,7 +104,6 @@ final class ChainAddressesTests: RecordedAPITestCase {
         XCTAssertTrue(r.handleTaps)
         XCTAssertEqual(taps(r.string).map(alertMessage), ["alice: ₿\u{00A0}bc1q2g…\u{2060}5d4u", "alice: Donate XMR\u{00A0}8A3ZWA…\u{2060}Yq1c", "alice: ϟ\u{00A0}0.0025"])
         let markdown = try recordedMarkdown()
-        let alice = ChainAddressSender(name: "alice", forwarded: false, messageSigned: true)
         let forwarded = ChainAddressSender(name: "alice", forwarded: true, messageSigned: true)
         let messages = try [
             ("<bitcoin:\(btc)?amount=0.001&label=SimpleX>", alice),
@@ -133,7 +142,7 @@ final class ChainAddressesTests: RecordedAPITestCase {
         }
     }
 
-    private func draw(_ formattedText: [FormattedText]?, _ sender: ChainAddressSender? = nil) -> MsgTextResult {
+    private func draw(_ formattedText: [FormattedText]?, _ sender: ChainAddressSender = alice) -> MsgTextResult {
         messageText("", formattedText, sender: nil, mentions: nil, userMemberId: nil, chainAddressSender: sender, showSecrets: nil, backgroundColor: .white)
     }
 

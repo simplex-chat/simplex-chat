@@ -13,11 +13,13 @@ import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextDecoration
 import chat.simplex.common.model.*
 import chat.simplex.common.ui.theme.SimpleXTheme
 import chat.simplex.common.ui.theme.WarningOrange
+import chat.simplex.common.views.chat.ProfileDescriptionText
 import chat.simplex.common.views.chat.item.*
 import chat.simplex.common.views.helpers.AlertManager
 import chat.simplex.common.views.helpers.AlertPreview
@@ -42,6 +44,8 @@ private const val LABELED_UNKNOWN_CHAIN = "[Donate](ethereum:$ETH@99999)"
 private val pageMessages = listOf("Donations:", "Suggested donation:", "For the coffee:", "If you want to support the project:", "Or this exact amount:", "On Ethereum:", "Cheaper on Arbitrum:", "Other networks:")
 
 private val previewChainAddress = ChainAddress(ChainCurrency.Bitcoin("0.0012"), BTC, null, "bitcoin:$BTC?amount=0.0012")
+
+private val alice = ChainAddressSender("alice", forwarded = false, messageSigned = true)
 
 @OptIn(ExperimentalTestApi::class)
 class ChainAddressesTest : RecordedApiTest() {
@@ -97,12 +101,19 @@ class ChainAddressesTest : RecordedApiTest() {
   }
 
   @Test
+  fun addressInProfileDescriptionIsText() = recorded("chain-addresses/links") {
+    setContent { ProfileDescriptionText(shortDescr = null, description = "Donations: $BTC. Cheers", style = TextStyle()) }
+    assertEquals(listOf("Donations: $BTC. Cheers"), shownTexts())
+    assertEquals(listOf(listOf<String>()), spanTexts { true })
+  }
+
+  @Test
   fun signAfterLabelIsUnderlinedAndChainNameIsItalic() = recorded("chain-addresses/links") {
     val markdown = recordedMarkdown()
     setContent {
       Column {
         listOf("Donations: $BTC. Cheers", "<bitcoin:$BTC?amount=0.001&label=SimpleX>", LABELED_TOKEN).forEach { key ->
-          MarkdownText(key, markdown.getValue(key).formattedText, toggleSecrets = false, linkMode = SimplexLinkMode.DESCRIPTION)
+          MarkdownText(key, markdown.getValue(key).formattedText, chainAddressSender = alice, toggleSecrets = false, linkMode = SimplexLinkMode.DESCRIPTION)
         }
       }
     }
@@ -140,7 +151,7 @@ class ChainAddressesTest : RecordedApiTest() {
     setContent {
       Column {
         listOf("Donations: $BTC. Cheers", "On Ethereum: $ETH").forEach { key ->
-          MarkdownText(key, markdown.getValue(key).formattedText, toggleSecrets = false, linkMode = SimplexLinkMode.DESCRIPTION)
+          MarkdownText(key, markdown.getValue(key).formattedText, chainAddressSender = alice, toggleSecrets = false, linkMode = SimplexLinkMode.DESCRIPTION)
         }
       }
     }
@@ -157,7 +168,6 @@ class ChainAddressesTest : RecordedApiTest() {
       chainLinks(item.formattedText).map { alertMessage(sender, it) }
     )
     val markdown = recordedMarkdown()
-    val alice = ChainAddressSender("alice", forwarded = false, messageSigned = true)
     val forwarded = ChainAddressSender("alice", forwarded = true, messageSigned = true)
     assertEquals(
       listOf(
@@ -183,7 +193,7 @@ class ChainAddressesTest : RecordedApiTest() {
     val wallet = NoWalletApp()
     setContent {
       CompositionLocalProvider(LocalClipboardManager provides clipboard) {
-        MarkdownText(BTC, recordedMarkdown().getValue(BTC).formattedText, chainAddressSender = ChainAddressSender("alice", forwarded = false, messageSigned = true), toggleSecrets = false, linkMode = SimplexLinkMode.DESCRIPTION, uriHandler = wallet)
+        MarkdownText(BTC, recordedMarkdown().getValue(BTC).formattedText, chainAddressSender = alice, toggleSecrets = false, linkMode = SimplexLinkMode.DESCRIPTION, uriHandler = wallet)
         AlertManager.shared.showInView()
       }
     }

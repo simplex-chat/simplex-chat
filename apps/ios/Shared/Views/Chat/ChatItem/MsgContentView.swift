@@ -769,33 +769,35 @@ func messageText(
                     handleTaps = true
                 }
             case let .chainAddressLink(showText, chainAddress):
-                let linkText = chainAddress.linkText(showText, messageSigned: chainAddressSender?.messageSigned ?? true)
-                attrs = linkAttrs()
-                if linkText.warning {
-                    attrs[.foregroundColor] = UIColor.systemOrange
-                }
-                if !preview, let chainAddressSender {
-                    attrs[chainAddressAttrKey] = ChainAddressTap(sender: chainAddressSender, showText: showText, chainAddress: chainAddress)
-                    handleTaps = true
-                }
-                if let label = linkText.label {
-                    res.append(NSAttributedString(string: label + " ", attributes: attrs))
-                }
-                if let s = linkText.sign {
-                    sign = sign ?? UIFont(descriptor: descr.addingAttributes([.traits: [UIFontDescriptor.TraitKey.weight: UIFont.Weight.semibold]]), size: descr.pointSize)
-                    var signAttrs = attrs
-                    signAttrs[.font] = sign
-                    if linkText.label == nil {
-                        signAttrs[.underlineStyle] = nil
+                if let chainAddressSender {
+                    let linkText = chainAddress.linkText(showText, messageSigned: chainAddressSender.messageSigned)
+                    attrs = linkAttrs()
+                    if linkText.warning {
+                        attrs[.foregroundColor] = UIColor.systemOrange
                     }
-                    res.append(NSAttributedString(string: s + "\u{00A0}", attributes: signAttrs))
-                }
-                t = linkText.text
-                if let chainName = linkText.chainName {
-                    res.append(NSAttributedString(string: t, attributes: attrs))
-                    italic = italic ?? UIFont(descriptor: descr.withSymbolicTraits(.traitItalic) ?? descr, size: descr.pointSize)
-                    attrs[.font] = italic
-                    t = " (\(chainName))"
+                    if !preview {
+                        attrs[chainAddressAttrKey] = ChainAddressTap(sender: chainAddressSender, showText: showText, chainAddress: chainAddress)
+                        handleTaps = true
+                    }
+                    if let label = linkText.label {
+                        res.append(NSAttributedString(string: label + " ", attributes: attrs))
+                    }
+                    if let s = linkText.sign {
+                        sign = sign ?? UIFont(descriptor: descr.addingAttributes([.traits: [UIFontDescriptor.TraitKey.weight: UIFont.Weight.semibold]]), size: descr.pointSize)
+                        var signAttrs = attrs
+                        signAttrs[.font] = sign
+                        if linkText.label == nil {
+                            signAttrs[.underlineStyle] = nil
+                        }
+                        res.append(NSAttributedString(string: s + "\u{00A0}", attributes: signAttrs))
+                    }
+                    t = linkText.text
+                    if let chainName = linkText.chainName {
+                        res.append(NSAttributedString(string: t, attributes: attrs))
+                        italic = italic ?? UIFont(descriptor: descr.withSymbolicTraits(.traitItalic) ?? descr, size: descr.pointSize)
+                        attrs[.font] = italic
+                        t = " (\(chainName))"
+                    }
                 }
             case .email:
                 attrs = linkAttrs()

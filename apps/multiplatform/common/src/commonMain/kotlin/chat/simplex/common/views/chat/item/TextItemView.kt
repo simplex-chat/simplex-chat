@@ -432,17 +432,20 @@ fun MarkdownText (
                 withStyle(ftStyle) { append(ft.text) }
               }
             }
-            is Format.ChainAddressLink -> {
-              hasChainAddresses = true
-              val linkText = ft.format.chainAddress.linkText(ft.format.showText, chainAddressSender?.messageSigned ?: true)
-              val ftStyle = if (linkText.warning) Format.linkStyle.copy(color = WarningOrange) else Format.linkStyle
-              withAnnotation(tag = "CHAIN_ADDRESS", annotation = i.toString()) {
-                if (linkText.label != null) withStyle(ftStyle) { append("${linkText.label} ") }
-                if (linkText.sign != null) withStyle(ftStyle.copy(fontWeight = FontWeight.SemiBold, textDecoration = if (linkText.label == null) TextDecoration.None else ftStyle.textDecoration)) { append("${linkText.sign}\u00A0") }
-                withStyle(ftStyle) { append(linkText.text) }
-                if (linkText.chainName != null) withStyle(ftStyle.copy(fontStyle = FontStyle.Italic)) { append(" (${linkText.chainName})") }
+            is Format.ChainAddressLink ->
+              if (chainAddressSender == null) {
+                append(ft.text)
+              } else {
+                hasChainAddresses = true
+                val linkText = ft.format.chainAddress.linkText(ft.format.showText, chainAddressSender.messageSigned)
+                val ftStyle = if (linkText.warning) Format.linkStyle.copy(color = WarningOrange) else Format.linkStyle
+                withAnnotation(tag = "CHAIN_ADDRESS", annotation = i.toString()) {
+                  if (linkText.label != null) withStyle(ftStyle) { append("${linkText.label} ") }
+                  if (linkText.sign != null) withStyle(ftStyle.copy(fontWeight = FontWeight.SemiBold, textDecoration = if (linkText.label == null) TextDecoration.None else ftStyle.textDecoration)) { append("${linkText.sign}\u00A0") }
+                  withStyle(ftStyle) { append(linkText.text) }
+                  if (linkText.chainName != null) withStyle(ftStyle.copy(fontStyle = FontStyle.Italic)) { append(" (${linkText.chainName})") }
+                }
               }
-            }
             is Format.Email -> {
               hasLinks = true
               val ftStyle = Format.linkStyle
