@@ -91,7 +91,7 @@ final class SubmemberTests: XCTestCase {
 
     @MainActor
     func testItemOfSubmemberIsMarkedDeletedWithItsViaMember() async throws {
-        _ = try await receiveRemovalOfViaMember()
+        _ = try await receiveRemovalOfViaMember("submembers/via-removed")
         let hi = try XCTUnwrap(ChatModel.shared.im.reversedChatItems.first { $0.text == "hi" })
         guard case let .moderated(_, byGroupMember)? = hi.meta.itemDeleted else { return XCTFail("not moderated: \(String(describing: hi.meta.itemDeleted))") }
         XCTAssertEqual(byGroupMember.displayName, "cath")
@@ -99,7 +99,13 @@ final class SubmemberTests: XCTestCase {
 
     @MainActor
     func testSubmemberIsRemovedWithItsViaMember() async throws {
-        guard let reviewer = try await receiveRemovalOfViaMember() else { return }
+        guard let reviewer = try await receiveRemovalOfViaMember("submembers/via-removed") else { return }
+        XCTAssertEqual(ChatModel.shared.getGroupMember(reviewer.groupMemberId)?.wrapped.memberStatus, .memRemoved)
+    }
+
+    @MainActor
+    func testSubmemberIsRemovedWhenViaMemberLeaves() async throws {
+        guard let reviewer = try await receiveRemovalOfViaMember("submembers/via-left") else { return }
         XCTAssertEqual(ChatModel.shared.getGroupMember(reviewer.groupMemberId)?.wrapped.memberStatus, .memRemoved)
     }
 
@@ -116,8 +122,38 @@ final class SubmemberTests: XCTestCase {
     }
 
     @MainActor
-    private func receiveRemovalOfViaMember() async throws -> GroupMember? {
-        let events = try recordedEvents("submembers/via-removed")
+    func testSubmemberIsRemovedWhenUserIsRemoved() async throws {
+        let events = try recordedEvents("submembers/removed")
+        guard case let .chatItemReaction(_, _, reaction) = events[0], case let .group(groupInfo, _) = reaction.chatInfo,
+              let reviewer = reaction.chatReaction.chatItem.meta.sentAsMember else {
+            return XCTFail("no item sent as a submember: \(events[0].responseType)")
+        }
+        ChatModel.shared.currentUser = User.sampleData
+        ChatModel.shared.users = [UserInfo(user: User.sampleData, unreadCount: 0)]
+        ChatModel.shared.chatId = groupInfo.id
+        _ = ChatModel.shared.upsertGroupMember(groupInfo, reviewer)
+        await processReceivedMsg(try XCTUnwrap(events.last))
+        XCTAssertEqual(ChatModel.shared.getGroupMember(reviewer.groupMemberId)?.wrapped.memberStatus, .memRemoved)
+    }
+
+    @MainActor
+    func testSubmemberIsRemovedWhenUserRemovesViaMember() async throws {
+        try replay("submembers/remove-via")
+        let (chat, _) = try await apiGetChat(chatId: "#1", scope: nil, pagination: .last(count: 1))
+        guard case let .group(groupInfo, _) = chat.chatInfo else { return XCTFail("not a group: \(chat.chatInfo.id)") }
+        ChatModel.shared.chatId = groupInfo.id
+        ChatModel.shared.groupMembers = (await apiListMembers(1) ?? []).map(GMember.init)
+        ChatModel.shared.populateGroupMembersIndexes()
+        let bob = try XCTUnwrap(ChatModel.shared.groupMembers.first { $0.displayName == "bob" })
+        let reviewer = try XCTUnwrap(ChatModel.shared.groupMembers.first { $0.displayName == "reviewer" })
+        removeMember(groupInfo, bob.wrapped, withMessages: false, dismiss: nil)
+        try? await waitFor { reviewer.wrapped.memberStatus == .memRemoved }
+        XCTAssertEqual(ChatModel.shared.getGroupMember(reviewer.groupMemberId)?.wrapped.memberStatus, .memRemoved)
+    }
+
+    @MainActor
+    private func receiveRemovalOfViaMember(_ fixture: String) async throws -> GroupMember? {
+        let events = try recordedEvents(fixture)
         guard case let .newChatItems(_, items) = events[0], let aci = items.first,
               case let .group(groupInfo, _) = aci.chatInfo, case let .groupRcv(reviewer) = aci.chatItem.chatDir else {
             XCTFail("no item of a submember: \(events[0].responseType)")
@@ -130,7 +166,7 @@ final class SubmemberTests: XCTestCase {
         ChatModel.shared.chatId = aci.chatInfo.id
         _ = ChatModel.shared.upsertGroupMember(groupInfo, reviewer)
         await processReceivedMsg(events[0])
-        await processReceivedMsg(events[2])
+        await processReceivedMsg(try XCTUnwrap(events.last))
         return reviewer
     }
 

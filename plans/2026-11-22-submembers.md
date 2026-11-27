@@ -549,7 +549,7 @@ Core, tests/ChatTests/Groups.hs, `describe "submembers"`, groups of alice, bob a
 - `testSubmemberViaBlockedHistory`: bob adds reviewer and sends a message as reviewer; alice blocks bob; dan joins as a moderator by alice's invitation → dan receives no item of reviewer's message in history.
 - `testSubmemberViaBlockedMember`: cath (member) is connected to bob; alice blocks bob → bob's message as reviewer is shown to alice as bob's, blocked; cath shows nothing.
 - `testSubmemberViaLeft`: bob adds reviewer, sends a message as reviewer and leaves → `/ms team` of alice and of bob prints alice and cath only; dan joins by alice's invitation → dan's client prints "you joined the group" and "member cath (Catherine) is connected" only, and `/ms team` of dan prints dan, alice and cath.
-- `testSubmemberViaRemoved`: bob adds reviewer and sends a message as reviewer; cath removes bob → reviewer's record is kept with status removed on the sides of alice, bob and cath.
+- `testSubmemberViaRemoved`: bob adds reviewer and sends a message as reviewer; cath reacts to it and removes bob → reviewer's record is kept with status removed on the sides of alice, bob and cath; bob's events of the reaction and of the removal are recorded as `submembers/removed`, and cath's members, last item and removal of bob as `submembers/remove-via`.
 - `testSubmemberViaRemovedWithMessages`: bob adds reviewer and sends a message as reviewer; cath removes bob with messages → reviewer's message is marked deleted by cath on the sides of alice, bob and cath; alice's events of the message and of the removal are recorded as `submembers/via-removed`.
 - `testSubmemberViaRemovedFullDelete`: full deletion on; bob adds reviewer and sends a message as reviewer; cath removes bob with messages → reviewer's message and record are deleted on the sides of alice, bob and cath.
 - `testSubmemberIntroOrder`: bob adds assistant (admin) via bob; dan joins by alice's invitation → dan records assistant via bob.
@@ -580,8 +580,11 @@ Apps, on the recorded events `submembers/via-removed` (iOS SubmemberTests.swift;
 - `testItemOfSubmemberIsMarkedDeletedWithItsViaMember`, `itemOfSubmemberIsMarkedDeletedWithItsViaMember`: reviewer's item, then bob's removal with messages → reviewer's item is marked deleted by cath.
 - `testSubmemberIsRemovedWithItsViaMember`, `submemberIsRemovedWithItsViaMember`: the same events → reviewer's status in the member list is removed.
 
-Apps, on alice's recorded responses `submembers/left` (`/_members #1`, then `/_leave #1`), with reviewer loaded in the member list and the chat open:
-- `testSubmemberIsRemovedWhenUserLeaves`, `submemberIsRemovedWhenUserLeaves`: alice leaves the group → reviewer's status in the member list is removed.
+Apps, with reviewer loaded in the member list and the chat open, each test → reviewer's status in the member list is removed:
+- `testSubmemberIsRemovedWhenViaMemberLeaves`, `submemberIsRemovedWhenViaMemberLeaves`: bob's recorded events `submembers/via-left` of a message as reviewer and alice's leave (testSubmemberRecordings).
+- `testSubmemberIsRemovedWhenUserLeaves`, `submemberIsRemovedWhenUserLeaves`: alice's recorded responses `submembers/left`, `/_members #1`, then `/_leave #1` (testSubmemberRecordings).
+- `testSubmemberIsRemovedWhenUserIsRemoved`, `submemberIsRemovedWhenUserIsRemoved`: bob's recorded events `submembers/removed`; reviewer is loaded from bob's item in the reaction event.
+- `testSubmemberIsRemovedWhenUserRemovesViaMember` (removeMember), `submemberIsRemovedWhenUserRemovesViaMembers` (removeMembers) and `submemberIsRemovedWhenUserRemovesViaMember` (removeMember): cath's recorded responses `submembers/remove-via`.
 
 Plugin:
 - unit, teammates.test.ts: start, post, step (send with live=on, update), end and adopt make the commands of 7.1 and 7.2.

@@ -37,7 +37,7 @@ import Data.List (find, intercalate, isInfixOf, isSubsequenceOf, isSuffixOf)
 import qualified Data.Map.Strict as M
 import qualified Data.Text as T
 import Simplex.Chat.Badges (FileSizeLimits (..))
-import Simplex.Chat.Controller (ChatController (ChatController, chatStore, smpAgent, subscriptionMode), ChatConfig (..), ChatDatabase (..), ChatError (ChatErrorStore), ChatEvent (CEvtChatItemUpdated, CEvtDeletedMember, CEvtDuplicateGroupMessage, CEvtNewChatItems), ChatHooks (..), ChatLogLevel (..), ChatResponse (CRApiChat, CRApiChats), defaultChatHooks, withAgent, withStore, withStore')
+import Simplex.Chat.Controller (ChatController (ChatController, chatStore, smpAgent, subscriptionMode), ChatConfig (..), ChatDatabase (..), ChatError (ChatErrorStore), ChatEvent (CEvtChatItemReaction, CEvtChatItemUpdated, CEvtDeletedMember, CEvtDeletedMemberUser, CEvtDuplicateGroupMessage, CEvtLeftMember, CEvtNewChatItems), ChatHooks (..), ChatLogLevel (..), ChatResponse (CRApiChat, CRApiChats), defaultChatHooks, withAgent, withStore, withStore')
 import Simplex.Chat.Core (sendChatCmdStr)
 import Simplex.Chat.Library.Internal (chatStoreCxt, encodeConnInfo, getShortLinkConnReq, memberInfo, sendDirectMemberMessage, sendGroupMessage', uniqueMsgMentions, updatedMentionNames)
 import Simplex.Chat.Markdown (parseMaybeMarkdownList)
@@ -17394,25 +17394,38 @@ testSubmemberViaLeft =
       dan <### ["dan (Daniel): member, you, connected", "alice (Alice): owner, host, connected", "cath (Catherine): admin, connected"]
 
 testSubmemberViaRemoved :: HasCallStack => TestParams -> IO ()
-testSubmemberViaRemoved =
-  testChat3 aliceProfile bobProfile cathProfile $
-    \alice bob cath -> do
-      createGroup3 "team" alice bob cath
-      addSubmember bob "member"
-      mapM_ (<## "#team: bob added reviewer to the group (via bob)") [alice, cath]
-      GroupMember {groupMemberId = reviewerId} <- getTestMember bob "team" "reviewer"
-      bob ##> ("/_send #1(as_member=" <> show reviewerId <> ") text hi")
-      bob <# "#team hi"
-      [alice, cath] *<# "#team reviewer> hi"
-      cath ##> "/rm team bob"
-      concurrentlyN_
-        [ cath <## "#team: you removed bob from the group (signed)",
-          alice <## "#team: cath removed bob from the group (signed)",
-          do
-            bob <## "#team: cath removed you from the group (signed)"
-            bob <## "use /d #team to delete the group"
-        ]
-      forM_ [alice, bob, cath] $ \cc -> reviewerStatus cc `shouldReturn` ["removed"]
+testSubmemberViaRemoved ps = do
+  events <- newTVarIO []
+  let hook _ evt = evt <$ case evt of
+        Right CEvtChatItemReaction {} -> recordEvent events evt
+        Right CEvtDeletedMemberUser {} -> recordEvent events evt
+        _ -> pure ()
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatCfg ps testCfg {chatHooks = defaultChatHooks {eventHook = Just hook}} "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath -> do
+        createGroup3 "team" alice bob cath
+        addSubmember bob "member"
+        mapM_ (<## "#team: bob added reviewer to the group (via bob)") [alice, cath]
+        GroupMember {groupMemberId = reviewerId} <- getTestMember bob "team" "reviewer"
+        bob ##> ("/_send #1(as_member=" <> show reviewerId <> ") text hi")
+        bob <# "#team hi"
+        [alice, cath] *<# "#team reviewer> hi"
+        GroupMember {groupMemberId = bobId} <- getTestMember cath "team" "bob"
+        eventsFixture "submembers/removed" events $ do
+          cath ##> "+1 #team hi"
+          cath <## "added 👍"
+          alice <# "#team cath> > reviewer hi"
+          alice <## "    + 👍"
+          bob <# "#team cath> > bob hi"
+          bob <## "    + 👍"
+          apiFixture "submembers/remove-via" cath [] FixtureRequests {frMarkdown = [], frUris = [], frCommands = ["/_members #1", "/_get chat #1 count=1", "/_remove #1 " <> show bobId <> " messages=off"]}
+          concurrentlyN_
+            [ alice <## "#team: cath removed bob from the group (signed)",
+              do
+                bob <## "#team: cath removed you from the group (signed)"
+                bob <## "use /d #team to delete the group"
+            ]
+        forM_ [alice, bob, cath] $ \cc -> reviewerStatus cc `shouldReturn` ["removed"]
 
 testSubmemberViaRemovedWithMessages :: HasCallStack => TestParams -> IO ()
 testSubmemberViaRemovedWithMessages ps = do
@@ -17688,9 +17701,14 @@ testSubmemberRefusedChannel ps =
       alice <## "bad chat command: submembers are not supported in channels"
 
 testSubmemberRecordings :: HasCallStack => TestParams -> IO ()
-testSubmemberRecordings =
-  testChat2 aliceProfile bobProfile $
-    \alice bob -> do
+testSubmemberRecordings ps = do
+  events <- newTVarIO []
+  let hook _ evt = evt <$ case evt of
+        Right CEvtNewChatItems {} -> recordEvent events evt
+        Right CEvtLeftMember {} -> recordEvent events evt
+        _ -> pure ()
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatCfg ps testCfg {chatHooks = defaultChatHooks {eventHook = Just hook}} "bob" bobProfile $ \bob -> do
       createGroup2 "team" alice bob
       addSubmember alice "member"
       submemberAdded [bob]
@@ -17704,8 +17722,12 @@ testSubmemberRecordings =
       alice <# "#team bob> > reviewer hi"
       alice <## "      fix it"
       apiFixture "submembers/received" bob [] FixtureRequests {frMarkdown = [], frUris = [], frCommands = ["/_members #1", "/_get chat #1 count=2"]}
-      apiFixture "submembers/left" alice [] FixtureRequests {frMarkdown = [], frUris = [], frCommands = ["/_members #1", "/_leave #1"]}
-      bob <## "#team: alice left the group (signed)"
+      eventsFixture "submembers/via-left" events $ do
+        alice ##> "/_send #1(as_member=3) text bye"
+        alice <# "#team bye"
+        bob <# "#team reviewer> bye"
+        apiFixture "submembers/left" alice [] FixtureRequests {frMarkdown = [], frUris = [], frCommands = ["/_members #1", "/_leave #1"]}
+        bob <## "#team: alice left the group (signed)"
 
 testSubmemberMigrationDown :: HasCallStack => TestParams -> IO ()
 testSubmemberMigrationDown ps = do

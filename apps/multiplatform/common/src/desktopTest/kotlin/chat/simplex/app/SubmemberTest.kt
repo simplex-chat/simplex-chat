@@ -15,6 +15,8 @@ import chat.simplex.common.platform.chatSendCmdRetry
 import chat.simplex.common.platform.ntfManager
 import chat.simplex.common.views.chat.group.GroupMemberInfoLayoutPreview
 import chat.simplex.common.views.chat.group.MemberRow
+import chat.simplex.common.views.chat.group.removeMember
+import chat.simplex.common.views.chat.group.removeMembers
 import chat.simplex.common.views.chat.item.FramedItemView
 import chat.simplex.common.views.chat.item.TerminalChatItemRow
 import chat.simplex.common.views.chat.item.chatItemSender
@@ -49,15 +51,21 @@ class SubmemberTest {
 
   @Test
   fun itemOfSubmemberIsMarkedDeletedWithItsViaMember() {
-    receiveRemovalOfViaMember()
+    receiveRemovalOfViaMember("submembers/via-removed")
     val hi = ChatModel.chatsContext.chatItems.value.single { it.text == "hi" }
     assertEquals("cath", (hi.meta.itemDeleted as? CIDeleted.Moderated)?.byGroupMember?.displayName)
   }
 
   @Test
   fun submemberIsRemovedWithItsViaMember() {
-    val reviewer = receiveRemovalOfViaMember()
+    val reviewer = receiveRemovalOfViaMember("submembers/via-removed")
     assertEquals(GroupMemberStatus.MemRemoved, ChatModel.groupMembers.value.single { it.groupMemberId == reviewer.groupMemberId }.memberStatus)
+  }
+
+  @Test
+  fun submemberIsRemovedWhenViaMemberLeaves() {
+    val reviewer = receiveRemovalOfViaMember("submembers/via-left")
+    assertEquals(GroupMemberStatus.MemRemoved, ChatModel.getGroupMember(reviewer.groupMemberId)?.memberStatus)
   }
 
   @Test
@@ -69,6 +77,35 @@ class SubmemberTest {
     val reviewer = ChatModel.groupMembers.value.single { it.displayName == "reviewer" }
     ChatController.leaveGroup(null, 1)
     assertEquals(GroupMemberStatus.MemRemoved, ChatModel.getGroupMember(reviewer.groupMemberId)?.memberStatus)
+  }
+
+  @Test
+  fun submemberIsRemovedWhenUserIsRemoved() = recorded("submembers/removed") { events ->
+    val reaction = (events.first().result as CR.ChatItemReaction).reaction
+    val groupInfo = (reaction.chatInfo as ChatInfo.Group).groupInfo
+    val reviewer = assertNotNull(reaction.chatReaction.chatItem.meta.sentAsMember)
+    ChatModel.currentUser.value = User.sampleData
+    ChatModel.users.add(UserInfo(User.sampleData, 0))
+    withContext(Dispatchers.Main) {
+      ChatModel.chatId.value = groupInfo.id
+      ChatModel.chatsContext.upsertGroupMember(null, groupInfo, reviewer)
+    }
+    ChatController.processReceivedMsg(events.last())
+    assertEquals(GroupMemberStatus.MemRemoved, ChatModel.getGroupMember(reviewer.groupMemberId)?.memberStatus)
+  }
+
+  @Test
+  fun submemberIsRemovedWhenUserRemovesViaMembers() = runBlocking {
+    val (groupInfo, bob, reviewer) = membersOfViaMember()
+    removeMembers(null, groupInfo, listOf(bob.groupMemberId), withMessages = false)
+    assertEventually(GroupMemberStatus.MemRemoved) { ChatModel.getGroupMember(reviewer.groupMemberId)?.memberStatus }
+  }
+
+  @Test
+  fun submemberIsRemovedWhenUserRemovesViaMember() = runBlocking {
+    val (groupInfo, bob, reviewer) = membersOfViaMember()
+    removeMember(null, groupInfo, bob, withMessages = false, ChatModel)
+    assertEventually(GroupMemberStatus.MemRemoved) { ChatModel.getGroupMember(reviewer.groupMemberId)?.memberStatus }
   }
 
   @Test
@@ -128,10 +165,10 @@ class SubmemberTest {
     assertEquals(emptyList(), offered.filter { onAllNodesWithText(it).fetchSemanticsNodes().isNotEmpty() })
   }
 
-  private fun receiveRemovalOfViaMember(): GroupMember {
+  private fun receiveRemovalOfViaMember(fixture: String): GroupMember {
     lateinit var reviewer: GroupMember
-    recorded("submembers/via-removed") { (hi, _, deleted) ->
-      val aci = (hi.result as CR.NewChatItems).chatItems.single()
+    recorded(fixture) { events ->
+      val aci = (events.first().result as CR.NewChatItems).chatItems.single()
       val groupInfo = (aci.chatInfo as ChatInfo.Group).groupInfo
       reviewer = (aci.chatItem.chatDir as CIDirection.GroupRcv).groupMember
       ntfManager = recordingNtfManager {}
@@ -142,11 +179,21 @@ class SubmemberTest {
         ChatModel.chatId.value = aci.chatInfo.id
         ChatModel.chatsContext.upsertGroupMember(null, groupInfo, reviewer)
       }
-      ChatController.processReceivedMsg(hi)
-      assertEventually(listOf("hi")) { ChatModel.chatsContext.chatItems.value.map { it.text } }
-      ChatController.processReceivedMsg(deleted)
+      ChatController.processReceivedMsg(events.first())
+      assertEventually(listOf(aci.chatItem.text)) { ChatModel.chatsContext.chatItems.value.map { it.text } }
+      ChatController.processReceivedMsg(events.last())
     }
     return reviewer
+  }
+
+  private suspend fun membersOfViaMember(): Triple<GroupInfo, GroupMember, GroupMember> {
+    replay("submembers/remove-via")
+    val (chat, _) = assertNotNull(ChatController.apiGetChat(null, ChatType.Group, 1, null, pagination = ChatPagination.Last(1)))
+    ChatModel.chatId.value = chat.id
+    ChatModel.groupMembers.value = ChatController.apiListMembers(null, 1).orEmpty()
+    ChatModel.populateGroupMembersIndexes()
+    val members = ChatModel.groupMembers.value
+    return Triple((chat.chatInfo as ChatInfo.Group).groupInfo, members.single { it.displayName == "bob" }, members.single { it.displayName == "reviewer" })
   }
 
   private fun receivedChat(): Chat = runBlocking {
