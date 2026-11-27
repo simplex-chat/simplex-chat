@@ -325,7 +325,6 @@ isLink = \case
   HyperLink {} -> True
   SimplexLink {} -> True
   SimplexName {} -> True
-  ChainAddressLink {} -> True
   _ -> False
 
 hasLinks :: MarkdownList -> Bool

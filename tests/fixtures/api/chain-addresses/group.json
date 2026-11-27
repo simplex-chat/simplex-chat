@@ -232,7 +232,7 @@
                 "createdAt": "1970-01-01T00:00:00Z",
                 "deletable": false,
                 "editable": false,
-                "hasLink": true,
+                "hasLink": false,
                 "itemEdited": false,
                 "itemId": 24,
                 "itemSharedMsgId": "itemSharedMsgId",

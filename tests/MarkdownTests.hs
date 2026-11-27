@@ -674,8 +674,8 @@ chainAddresses = describe "chain addresses" do
     ("[Donate](" <> btc <> ")") <==> "[Donate](" <> chainLink (ChainAddress bitcoin btc $ "bitcoin:" <> btc) btc <> ")"
     isText $ "<" <> btc <> ">"
     ("<zcash:" <> zecU <> "?amount=0.1>") <==> chainLink (ChainAddress (CYTicker "ZEC" Nothing $ Just "0.1") zecU $ "zcash:" <> zecU <> "?amount=0.1") ("<zcash:" <> zecU <> "?amount=0.1>")
-  it "chain addresses are links" do
-    hasLinks <$> parseMaybeMarkdownList ("donate: " <> btc) `shouldBe` Just True
+  it "chain addresses are not links" do
+    hasLinks <$> parseMaybeMarkdownList ("donate: " <> btc) `shouldBe` Just False
   it "linear time in the number of addresses" do
     let fts = fromMaybe [] $ parseMaybeMarkdownList $ T.unwords $ replicate 10000 p2sh
     length [() | FormattedText (Just ChainAddressLink {}) _ <- fts] `shouldBe` 10000
