@@ -395,6 +395,7 @@
   <string name="get_simplex_name_beta">Get SimpleX name (BETA)</string>
   <string name="channel_simplex_name">Channel SimpleX name</string>
   <string name="register_test_name">How to register a test name</string>
+  <string name="register_name_how">How to register a name</string>
   <string name="simplex_name_sales">SimpleX name sale starts in</string>
   <string name="until_register_simplex_domain">until you can register a SimpleX domain</string>
   <string name="update_app_register_simplex_domain">Update the app to register a SimpleX domain</string>
