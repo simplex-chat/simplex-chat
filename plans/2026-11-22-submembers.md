@@ -192,8 +192,8 @@ other                      the author
   the user is V and leaves         V                    APILeaveGroup
   the user is V and is removed     V                    xGrpMemDel, the removal of the user
   ```
-  As removed members, they are excluded from introductions (shouldIntroduce, Internal.hs). On a silent removal of the user, the user's submembers are kept, as the user's own status is.
-- History items of a removed submember: `asMember` holds its name, so a joining member creates it as an unknown member with that name and member_via = V (4.4).
+  As removed members, they are excluded from introductions (shouldIntroduce, Internal.hs). On a silent removal of the user, the user's submembers are kept, as the user's own status is. A removal of V with messages deletes or marks deleted the items of V's submembers with V's items, before their records are removed (deleteMessages in xGrpMemDel and APIRemoveMembers, Q10 A); submembers are found by getSubmembers, by the partial index idx_group_members_member_via (5.7, Q11 A).
+- History items of a removed submember: `asMember` holds its name, so a joining member creates it as an unknown member with that name and member_via = V (4.4). While V is not a current member, these items are skipped in sendHistory (Q9 A).
 
 ### 4.6 Scope
 
@@ -368,11 +368,12 @@ apps                               memberVia decoded and shown as stated in Q2 C
 
 ### 5.7 Migration
 
-`M20261122_member_via` (SQLite and Postgres; chat_schema.sql updated).
+In `M20261113_item_priority` (SQLite and Postgres; chat_schema.sql updated).
 
 Up:
 ```sql
 ALTER TABLE group_members ADD COLUMN member_via BLOB;
+CREATE INDEX idx_group_members_member_via ON group_members(user_id, group_id, member_via) WHERE member_via IS NOT NULL;
 ```
 
 Down, so that an older core reads and processes the rows as it would have created them:
@@ -386,6 +387,7 @@ UPDATE group_members SET member_status = 'announced'
 WHERE member_via IS NOT NULL AND member_status = 'connected';
 -- sent items: an older core assumes NULL (Store/Messages.hs:712)
 UPDATE chat_items SET group_member_id = NULL WHERE item_sent = 1 AND group_member_id IS NOT NULL;
+DROP INDEX idx_group_members_member_via;
 ALTER TABLE group_members DROP COLUMN member_via;
 ```
 
@@ -542,8 +544,9 @@ Core, tests/ChatTests/Groups.hs, `describe "submembers"`, groups of alice, bob a
 - `testSubmemberOtherAdmin`: cath is bob's invitee, not connected to alice → bob receives reviewer's message from alice and forwards it and its update to cath, who shows it with the forward mark; cath's members and last two items, reviewer's forwarded item and bob's message, are recorded as `submembers/forwarded`.
 - `testSubmemberBlockedToModerators`: bob blocks reviewer → bob forwards reviewer's messages to moderators only, without notifications.
 - `testSubmemberViaBlocked`: bob (admin) adds reviewer; cath is alice's invitee, not connected to bob; alice (owner) blocks bob → bob's message as reviewer is shown to alice as bob's, blocked; alice forwards it to moderators only; after cath is made a moderator, cath shows it as bob's, blocked, with the forward mark.
-- `testSubmemberViaLeft`: bob adds reviewer and leaves → `/ms team` of alice and of bob prints alice and cath only; dan joins by alice's invitation → dan is introduced to cath only, and `/ms team` of dan prints dan, alice and cath.
+- `testSubmemberViaLeft`: bob adds reviewer, sends a message as reviewer and leaves → `/ms team` of alice and of bob prints alice and cath only; dan joins by alice's invitation → dan's client prints "you joined the group" and "member cath (Catherine) is connected" only, and `/ms team` of dan prints dan, alice and cath.
 - `testSubmemberViaRemoved`: bob adds reviewer and sends a message as reviewer; cath removes bob → reviewer's record is kept with status removed on the sides of alice, bob and cath.
+- `testSubmemberViaRemovedWithMessages`: bob adds reviewer and sends a message as reviewer; cath removes bob with messages → reviewer's message is marked deleted by cath on the sides of alice, bob and cath.
 - `testSubmemberIntroOrder`: bob adds assistant (admin) via bob; dan joins by alice's invitation → dan records assistant via bob.
 - `testSubmemberPrevVersionJoiner`: dan with chat version range up to 23 joins → reviewer is not introduced; dan creates it as an unknown member from history.
 - `testSubmemberPrevVersionMember`: bob with chat version range up to 23 → reviewer is not announced to bob; bob creates it as an unknown member from its first message.
@@ -621,16 +624,16 @@ Q8. Names of the new field and its type.
 - B: other names.
 
 Q9. History of a removed submember after V left or was removed. V's record is kept (xGrpLeave; xGrpMemDel while V has items), so a host sends the submember's items as V's messages with `asMember` (sendHistory, Internal.hs:1470-1473); the joiner records V as an unknown member with role author and refuses them: "member is not allowed to send as member" (checkSendAsMember).
-- A, recommended: these items are skipped in sendHistory when V is not a current member, as they are when V's record is deleted.
-- B: as now: the joiner shows the error and no item.
+- A, decided on 2026-11-27: these items are skipped in sendHistory when V is not a current member, as they are when V's record is deleted.
+- B: these items are sent; the joiner shows the error and no item.
 
-Q10. Removal of V with messages: V's own items are deleted or marked deleted (deleteMessages in xGrpMemDel and APIRemoveMembers); the items of its submembers are kept.
-- A, recommended: the items of V's submembers are deleted or marked deleted with V's.
-- B: as now.
+Q10. Removal of V with messages: V's own items are deleted or marked deleted (deleteMessages in xGrpMemDel and APIRemoveMembers).
+- A, built on 2026-11-27 from the decision on blocked via members, to be confirmed: the items of V's submembers are deleted or marked deleted with V's, as V's messages.
+- B: the items of V's submembers are kept.
 
-Q11. At each leave and removal, the member rows of the group are read by idx_group_members_group_id in getSubmembers, also in channels.
-- A, recommended: a partial index on group_members (user_id, group_id, member_via) WHERE member_via IS NOT NULL, in M20261113_item_priority.
-- B: as now.
+Q11. At each leave and removal, the member rows of the group are read in getSubmembers, also in channels.
+- A, decided on 2026-11-27: a partial index on group_members (user_id, group_id, member_via) WHERE member_via IS NOT NULL, in M20261113_item_priority (5.7).
+- B: the rows are read by idx_group_members_group_id.
 
 ## 10. Changes by file
 
@@ -645,7 +648,7 @@ src/Simplex/Chat/Library/Internal.hs                  memberSendAction, memberIn
 src/Simplex/Chat/Library/Subscriber.hs                xGrpMemNew, xGrpMemIntro, xGrpMemInv and xGrpMemFwd for members via V; checkSendAsMember; removeSubmembers in xGrpLeave and xGrpMemDel
 src/Simplex/Chat/Store/Groups.hs                      createSubmember; member_via in member creation; getSubmembers
 src/Simplex/Chat/Store/{Shared,Messages,Connections}.hs   member_via in the member column lists; createNewChatItem_ group_member_id; toGroupChatItem sentAsMember
-src/Simplex/Chat/Store/{SQLite,Postgres}/Migrations   M20261122_member_via; chat_schema.sql
+src/Simplex/Chat/Store/{SQLite,Postgres}/Migrations   M20261113_item_priority: member_via, idx_group_members_member_via; chat_schema.sql
 src/Simplex/Chat/View.hs                              "via <name>"; CRSubmemberAdded
 bots/src/API/{TypeInfo.hs,Docs/*.hs}                  6.5
 bots/api/*, packages/simplex-chat-client, packages/simplex-chat-python, packages/simplex-chat-nodejs/src/api.ts   generated, apiAddSubmember
