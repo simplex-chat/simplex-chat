@@ -20,6 +20,11 @@ Decided by the maintainer on 2026-11-26 (in conversation): "Yes, switching is a 
 - with "sign messages" on, V signs its messages sent as a submember as its own messages, and receivers verify them with V's key;
 - a message of a submember is direct, so it is shown without the forward mark "[>>]" (Q3 of 2026-11-26: "I don't think we want >> mark, as it's about transport. These messages are direct.").
 
+Decided by the maintainer on 2026-11-27 (in conversation):
+- the iOS notification service matches an item of a submember to the connection of the member it is via, found by group and member ID among the connections it was woken for; a forward is matched to the forwarder first (Q7 D);
+- while V is blocked by an admin, V's messages sent as a submember are V's own blocked messages ("yes, it makes sense");
+- when V leaves or is removed, its submembers are removed with it ("ok").
+
 Facts about Claude Code are those recorded in `plans/2026-11-14-mcp-teammate-profiles.md` (branch `ep/mcp-teammate-profiles`, facts 1 to 9, F1 and F2).
 
 Terms: a submember of V, "a member via V" below, is a member whose messages are sent only by V, as V's own messages with `asMember`; V is "the member it is via". In this plan V is Claude and its submember is a teammate.
@@ -133,6 +138,7 @@ The receiver of x.msg.new or x.msg.update (Subscriber.hs:1093-1103), and of the 
 ```
 asMember                                    result
 absent                                      the sender's message, unchanged
+present, sender blocked by an admin         the sender's message, blocked as its other messages (checkSendAsMember)
 present, group with relays                  rejected: "member is not allowed to send as member"
 present, sender below admin or a submember  rejected: "member is not allowed to send as member"
 present, M = the member with memberId:
@@ -164,13 +170,29 @@ Signing: V signs a message sent as a submember as its own message (groupMsgSigni
 
 Notifications and delivery receipts: those of x.msg.new and x.msg.update (hasNotification, hasDeliveryReceipt).
 
-Notifications on iOS: Q7.
+Notifications on iOS (Q7 D): the notification service matches each received item to the connection it was received on (itemNtfEntityId, NotificationService.swift):
+```
+item                       entity
+forwarded                  the forwarder (forwardedByMember)
+of a submember             the member it is via: the connection entity of the same group whose member ID is the submember's memberVia, among the entities of the active service instances (NSEThreads.connEntities)
+other                      the author
+```
 
 ### 4.5 Updates, history, end
 
 - Update: x.msg.update with `asMember`; the receiver applies it to M's item, found by M's member ID and the shared message ID (groupMessageUpdate), live flag included.
 - History: V sends items sent as a submember as its own messages with `asMember` (sendHistory); another admin forwards a received item of a submember as a forward of V's message, with `asMember`; signed items are sent with their stored bytes, signed by V.
 - End: `x.grp.mem.del` from V, by the existing removal (APIRemoveMembers; xGrpMemDel): "Claude removed reviewer".
+- End with V: when V leaves or is removed, every member removes V's submembers with it, without items of their own; a record is kept, with status removed, while it has items, as for other removed members. In removeSubmembers (Internal.hs), deleteOrUpdateMemberRecordIO is applied to the members of getSubmembers (by group and member_via), at each place where the leave or removal is recorded:
+  ```
+  event                            side                 function
+  V leaves                         other members        xGrpLeave
+  V is removed                     other members        xGrpMemDel
+  the user removes V               the user             APIRemoveMembers
+  the user is V and leaves         V                    APILeaveGroup
+  the user is V and is removed     V                    xGrpMemDel, the removal of the user
+  ```
+  As removed members, they are excluded from introductions (shouldIntroduce, Internal.hs). On a silent removal of the user, the user's submembers are kept, as the user's own status is.
 - History items of a removed submember: `asMember` holds its name, so a joining member creates it as an unknown member with that name and member_via = V (4.4).
 
 ### 4.6 Scope
@@ -183,6 +205,8 @@ Notifications on iOS: Q7.
 - V sends x.grp.mem.new with `via` only to members of version 24 (APIAddSubmember), and hosts introduce submembers only to joiners of version 24 (4.3). A host forwards V's x.grp.mem.new to the members it introduced and that are not yet connected to V, of any version, as V's other messages (4.2); members before version 24 ignore `via` and list the submember as connecting. Members before version 24 ignore `asMember` and show V's messages under V.
 - An admin before version 24 knows no submembers, so it introduces none. Its joiners of version 24 create a submember from the first message with `asMember` (4.4).
 - A host before version 24 forwards V's messages by its delivery tasks. A signed message keeps its bytes, `asMember` included. An unsigned one is encoded again from the parsed message, without `asMember`, so its recipients show it under V.
+- Members before version 24 show V's messages sent as a submember under V, so they are blocked as V's other messages.
+- Members before version 24 keep a submember that they list as connecting when V leaves or is removed.
 
 ### 4.8 Threat model
 
@@ -293,9 +317,12 @@ stateDiagram-v2
   connected --> connected: send or update as member, role change, restart
   connected --> removed: APIRemoveMembers, member with items
   connected --> [*]: APIRemoveMembers, member without items
+  connected --> removed: V leaves or is removed, member with items
+  connected --> [*]: V leaves or is removed, member without items
   removed --> [*]: group deleted
 ```
 
+- V leaves or is removed: its submembers are removed with it on every member's side, without items of their own (4.5).
 - Restart of V's core: rows and items persist in the database, the core's only state of these members; the plugin re-adopts current members via the user by name (5.3).
 - Teammate end (7.1): the plugin removes the member; a later teammate with the same name gets a new member.
 - Sessions that do not attach within the idle-close interval after a service start (10 minutes, service.ts:20 and 473-484) remove their members.
@@ -312,7 +339,7 @@ memberInfo                         Internal.hs:1356-1366           via = memberV
 x.grp.mem.new                      Subscriber.hs:3254-3335         via = announcer check; announcer not via another member; member_via; status connected
 x.grp.mem.intro                    Subscriber.hs:3337-3370         via branch of 4.3: record without connection; V not via another member
 x.grp.mem.inv, x.grp.mem.fwd       Subscriber.hs:3379-3423         rejected for a member with memberVia
-x.msg.new, x.msg.update            Subscriber.hs:1093-1103         asMember: author M when M's member_via is the sender; also for a forwarded message (4.4)
+x.msg.new, x.msg.update            Subscriber.hs:1093-1103         asMember: author M when M's member_via is the sender, the sender while it is blocked by an admin; also for a forwarded message (4.4)
 sends as a member                  prepareGroupMsg                 asMember in x.msg.new; x.msg.update with asMember
 signing                            groupMsgSigning                 unchanged: V's binding and key
 history                            sendHistory                     items of a submember sent as V's messages with asMember (4.5)
@@ -320,7 +347,7 @@ quote by the user                  Internal.hs:235-242             quoteData: an
 item author                        Messages.hs:374-380             chatItemMember: CIGroupSnd with sentAsMember M -> M
 forwarding by admins               Subscriber.hs:4476-4503         unchanged: readyMemberConn excludes members via V
 role change                        Commands.hs:3033-3122           unchanged: x.grp.mem.role from the user
-removal                            Commands.hs:3241-3279           unchanged
+removal                            Commands.hs:3241-3279           unchanged for a submember; the submembers of a removed or leaving member removed with it (4.5)
 broadcast delete of its item       Commands.hs:928-940             refused for items sent as a member
 member list text                   View.hs:1463-1467               "via <name>" or "via you" in place of the category text
 announcement text                  View.hs:1403                    "added NAME to the group (via V)" in place of "(connecting...)"
@@ -512,8 +539,11 @@ Core, tests/ChatTests/Groups.hs, `describe "submembers"`, groups of alice, bob a
 - `testSubmemberMessages`: `/_add submember #1 member json {...reviewer...}`; bob and cath see `#team: alice added reviewer to the group (via alice)`; `/_send #1(as_member=M) text hi` → `#team reviewer> hi` for bob and cath; `/ms team` of bob lists reviewer via alice.
 - `testSubmemberUpdate`: an update of the message sent as member → bob and cath see `#team reviewer> [edited] hello`.
 - `testSubmemberLaterJoiner`: dan joins by alice's invitation after the message → dan's output has no "added" or "unknown member" line for reviewer, has `#team reviewer> hi [>>]` from history, and `/ms team` lists reviewer via alice; the next message as reviewer reaches dan without the forward mark.
-- `testSubmemberOtherAdmin`: cath is bob's invitee, not connected to alice → bob receives reviewer's message from alice and forwards it and its update to cath, who shows it with the forward mark.
+- `testSubmemberOtherAdmin`: cath is bob's invitee, not connected to alice → bob receives reviewer's message from alice and forwards it and its update to cath, who shows it with the forward mark; cath's members and last two items, reviewer's forwarded item and bob's message, are recorded as `submembers/forwarded`.
 - `testSubmemberBlockedToModerators`: bob blocks reviewer → bob forwards reviewer's messages to moderators only, without notifications.
+- `testSubmemberViaBlocked`: bob (admin) adds reviewer; cath is alice's invitee, not connected to bob; alice (owner) blocks bob → bob's message as reviewer is shown to alice as bob's, blocked; alice forwards it to moderators only; after cath is made a moderator, cath shows it as bob's, blocked, with the forward mark.
+- `testSubmemberViaLeft`: bob adds reviewer and leaves → `/ms team` of alice and of bob prints alice and cath only; dan joins by alice's invitation → dan is introduced to cath only, and `/ms team` of dan prints dan, alice and cath.
+- `testSubmemberViaRemoved`: bob adds reviewer and sends a message as reviewer; cath removes bob → reviewer's record is kept with status removed on the sides of alice, bob and cath.
 - `testSubmemberIntroOrder`: bob adds assistant (admin) via bob; dan joins by alice's invitation → dan records assistant via bob.
 - `testSubmemberPrevVersionJoiner`: dan with chat version range up to 23 joins → reviewer is not introduced; dan creates it as an unknown member from history.
 - `testSubmemberPrevVersionMember`: bob with chat version range up to 23 → reviewer is not announced to bob; bob creates it as an unknown member from its first message.
@@ -532,6 +562,11 @@ Core, tests/ChatTests/Groups.hs, `describe "submembers"`, groups of alice, bob a
 - `testSubmemberSignedHistory`: reviewer removed; dan joins → dan creates reviewer from history with via alice and shows the item signed.
 - Migrations: tests/MigrationTests up and down with the schema dump; down of a database with members via the user and via another member.
 - API docs: tests/APIDocs.hs regenerates the files of 6.5.
+
+iOS, SimpleX Unit Tests, SubmemberTests.swift, itemNtfEntityId with the connection entities of the recorded members (4.4, Q7 D):
+- `testSubmemberItemIsMatchedToViaMemberConnection`: `submembers/received`, reviewer's item received from alice → alice's entity.
+- `testForwardedItemIsMatchedToForwarderConnection`: `submembers/forwarded`, reviewer's item forwarded by bob, with the entities of alice and bob → bob's entity.
+- `testMemberItemIsMatchedToMemberConnection`: `submembers/forwarded`, bob's item → bob's entity.
 
 Plugin:
 - unit, teammates.test.ts: start, post, step (send with live=on, update), end and adopt make the commands of 7.1 and 7.2.
@@ -579,11 +614,23 @@ Q7. Notifications on iOS for a message of a submember. The notification service 
 - A: the core sets forwardedByMember = V on these items: one line in the core, no change in the apps; the terminal view shows "[>>]", and the stored item names V as the member that forwarded a direct message.
 - B: the apps receive, with a submember, the local group member ID of the member it is via, and the notification service routes by it: a new field in the core and in the apps.
 - C: the core reports, with each received item, the member whose connection delivered it: a new field in the core and in the apps.
-- D, recommended: the notification service routes an item of a submember to the connection of the member it is via, which it finds among the connections it receives messages on by the submember's `memberVia` (ChatTypes.swift:3496, in the JSON today): about 8 lines in the notification service, no change in the core or the API.
+- D, decided on 2026-11-27: the notification service routes an item of a submember to the connection of the member it is via, which it finds among the connections it receives messages on by the submember's `memberVia` (ChatTypes.swift:3496, in the JSON today); a forward is routed to the forwarder first (4.4). The core and the API are unchanged.
 
 Q8. Names of the new field and its type.
 - A, decided on 2026-11-27 ("yes, ok"): field `asMember`, as `asGroup`; type `MemberRef {memberId :: MemberId, memberName :: ContactName}`, a reference to a member by its ID and display name.
 - B: other names.
+
+Q9. History of a removed submember after V left or was removed. V's record is kept (xGrpLeave; xGrpMemDel while V has items), so a host sends the submember's items as V's messages with `asMember` (sendHistory, Internal.hs:1470-1473); the joiner records V as an unknown member with role author and refuses them: "member is not allowed to send as member" (checkSendAsMember).
+- A, recommended: these items are skipped in sendHistory when V is not a current member, as they are when V's record is deleted.
+- B: as now: the joiner shows the error and no item.
+
+Q10. Removal of V with messages: V's own items are deleted or marked deleted (deleteMessages in xGrpMemDel and APIRemoveMembers); the items of its submembers are kept.
+- A, recommended: the items of V's submembers are deleted or marked deleted with V's.
+- B: as now.
+
+Q11. At each leave and removal, the member rows of the group are read by idx_group_members_group_id in getSubmembers, also in channels.
+- A, recommended: a partial index on group_members (user_id, group_id, member_via) WHERE member_via IS NOT NULL, in M20261113_item_priority.
+- B: as now.
 
 ## 10. Changes by file
 
@@ -593,10 +640,10 @@ src/Simplex/Chat/Protocol.hs                          submemberVersion 24
 src/Simplex/Chat/Types.hs                             MemberInfo.via; GroupMember.memberVia
 src/Simplex/Chat/Messages.hs                          SendAs; CIMeta.sentAsMember; mkCIMeta; chatItemMember; sendAsGroup'
 src/Simplex/Chat/Controller.hs                        SendRef; APIAddSubmember; CRSubmemberAdded
-src/Simplex/Chat/Library/Commands.hs                  command, checks, send and update as member, delete refusal, parsers
-src/Simplex/Chat/Library/Internal.hs                  memberSendAction, memberIntroEvt, memberInfo, sendHistory, quoteData, createSndMessages, send chain
-src/Simplex/Chat/Library/Subscriber.hs                xGrpMemNew, xGrpMemIntro, xGrpMemInv and xGrpMemFwd for members via V
-src/Simplex/Chat/Store/Groups.hs                      createSubmember; member_via in member creation
+src/Simplex/Chat/Library/Commands.hs                  command, checks, send and update as member, delete refusal, parsers; removeSubmembers in APIRemoveMembers and APILeaveGroup
+src/Simplex/Chat/Library/Internal.hs                  memberSendAction, memberIntroEvt, memberInfo, sendHistory, quoteData, createSndMessages, send chain; removeSubmembers
+src/Simplex/Chat/Library/Subscriber.hs                xGrpMemNew, xGrpMemIntro, xGrpMemInv and xGrpMemFwd for members via V; checkSendAsMember; removeSubmembers in xGrpLeave and xGrpMemDel
+src/Simplex/Chat/Store/Groups.hs                      createSubmember; member_via in member creation; getSubmembers
 src/Simplex/Chat/Store/{Shared,Messages,Connections}.hs   member_via in the member column lists; createNewChatItem_ group_member_id; toGroupChatItem sentAsMember
 src/Simplex/Chat/Store/{SQLite,Postgres}/Migrations   M20261122_member_via; chat_schema.sql
 src/Simplex/Chat/View.hs                              "via <name>"; CRSubmemberAdded
@@ -608,7 +655,7 @@ packages/simplex-chat-mcp: src/teammates.ts (new), hook.ts, hub.ts, protocol.ts,
 scripts/ci/scope-tests.sh, scripts/ci/README.md       mcp with the branch's core
 ```
 
-Apps: `via` is shown as stated in Q2 C.
+Apps: `via` is shown as stated in Q2 C. iOS notification service (apps/ios/SimpleX NSE/NotificationService.swift): itemNtfEntityId and NSEThreads.connEntities (Q7 D).
 
 ## 11. Estimate
 
@@ -631,9 +678,9 @@ adding                     no chat item on V's side, as APIAddMember creates non
 forwarding by the host     by the delivery tasks of V's messages (4.4), as decided on 2026-11-26
 ```
 
-## 13. State: core sends asMember, iOS notifications and plugin next
+## 13. State: core and iOS notifications done, plugin next
 
-The core part is on `ep/omnibus` (#8314). Messages of submembers are V's messages with `asMember` (4.4, 4.5); the routing of their notifications on iOS follows the maintainer's answer to Q7. The plugin stages (section 7) use these commands.
+The core part is on `ep/omnibus` (#8314). Messages of submembers are V's messages with `asMember` (4.4, 4.5); while V is blocked by an admin, they are V's own blocked messages (4.4); when V leaves or is removed, its submembers are removed with it (4.5). On iOS, their notifications are matched to the connection of V, or of the member that forwarded them (Q7 D). The plugin stages (section 7) use these commands.
 
 ```
 operation                  command                                                                                         response
