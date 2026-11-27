@@ -36,7 +36,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeUtf8', encodeUtf8)
 import Data.Word (Word64, Word8)
-import Simplex.Messaging.Agent.QueryString (QSPEscaping (..), QueryStringParams (..), queryParamParser, queryParamStr)
+import Simplex.Messaging.Agent.QueryString (QSPEscaping (..), QueryStringParams (..), queryParamStr)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String (StrEncoding (..))
 import Simplex.Messaging.Eth.Address (Address)
@@ -142,10 +142,11 @@ queryP keys = QSP QNoEscaping <$> A.option [] (A.char '?' *> paramP `A.sepBy` A.
     valueChar c = isAscii c && (isAlphaNum c || c `B.elem` "-._~:/?@!$'()*+,;=%")
 
 param :: Parser a -> ByteString -> QueryStringParams -> Parser (Maybe a)
-param p key query = case paramValues key query of
-  [] -> pure Nothing
-  [_] -> Just <$> queryParamParser p key query
-  _ -> fail "repeated parameter"
+param p key query = params p key query >>= oneValue
+  where
+    oneValue [] = pure Nothing
+    oneValue [a] = pure (Just a)
+    oneValue _ = fail "repeated parameter"
 
 params :: Parser a -> ByteString -> QueryStringParams -> Parser [a]
 params p key = traverse (either fail pure . parseAll p) . paramValues key
