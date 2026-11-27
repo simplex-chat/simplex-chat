@@ -90,6 +90,16 @@ class ChainAddressesTest : RecordedApiTest() {
   }
 
   @Test
+  fun alertOfOwnItemHasNoName() = recordedAlerts("chain-addresses/sent") {
+    val chat = recordedChat("chain-addresses/sent", "/_get chat @2 count=1")
+    val item = chat.chatItems.single()
+    assertEquals(
+      listOf("₿\u00A0bc1q2g…\u20605d4u", "Donate XMR\u00A08A3ZWA…\u2060Yq1c", "ϟ\u00A00.0025"),
+      chainLinks(item.formattedText).map { alertMessage(chainAddressSender(item, chat.chatInfo), it) }
+    )
+  }
+
+  @Test
   fun alertOfOwnGroupItemHasNoName() = recordedAlerts("chain-addresses/group-sent") {
     val chat = recordedChat("chain-addresses/group-sent", "/_get chat #1 count=2")
     assertEquals(
@@ -194,17 +204,6 @@ class ChainAddressesTest : RecordedApiTest() {
         "lightning:$LNURL" to alice
       ).flatMap { (key, s) -> chainLinks(markdown.getValue(key).formattedText).map { alertMessage(s, it) } }
     )
-  }
-
-  @Test
-  fun alertOfOwnItemHasNoName() = recordedAlerts("chain-addresses/sent") {
-    val chat = recordedChat("chain-addresses/sent", "/_get chat @2 count=1")
-    val item = chat.chatItems.single()
-    val own = chainAddressSender(item, chat.chatInfo)
-    assertNull(own.name)
-    val links = chainLinks(item.formattedText)
-    assertEquals(3, links.size)
-    assertEquals(links.map { alertMessage(alice, it).removePrefix("alice: ") }, links.map { alertMessage(own, it) })
   }
 
   @Test
