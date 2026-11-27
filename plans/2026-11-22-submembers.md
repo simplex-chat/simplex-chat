@@ -60,7 +60,7 @@ B and C, the costs that exclude them: each teammate joins as a full member, so t
 
 ## 4. Protocol
 
-New chat version 24, `memberViaVersion` (Protocol.hs:97-150): members via another member.
+New chat version 24, `submemberVersion` (Protocol.hs:97-150): members via another member.
 
 ### 4.1 MemberInfo.via
 
@@ -150,7 +150,7 @@ The receiver, with unchanged rules:
 - accepts the unsigned inner message: `signatureOptional = not (useRelays' gInfo) || not (requiresSignature tag)` (withVerifiedMsg, Subscriber.hs:4115-4118);
 - saves the item as received from the member, forwarded by V, at msgTs (processForwardedMsg, Subscriber.hs:4066-4078); deduplicates it by the inner msgId (saveGroupFwdRcvMsg, Internal.hs:3013-3036).
 
-Members without a ready connection to V get nothing from V, as for any x.grp.msg.forward (Internal.hs:2926). Their host, when it is an admin, forwards each x.msg.new and x.msg.update of a member via V that it receives from V and accepts to its members introduced to V and not yet connected to V (MRIntroduced in V's relation vector), one forward element per member (forwardViaMemberMsg, sendFwdMemberMessageFlags), with the notification flag of a delivery task of that message; the header is chosen by the version of each member, so delivery tasks are not used.
+Members without a ready connection to V get nothing from V, as for any x.grp.msg.forward (Internal.hs:2926). Their host, when it is an admin, forwards each x.msg.new and x.msg.update of a member via V that it receives from V and accepts to its members introduced to V and not yet connected to V (MRIntroduced in V's relation vector), one forward element per member (forwardSubmemberMsg, sendFwdMemberMessageFlags), with the notification flag of a delivery task of that message; the header is chosen by the version of each member, so delivery tasks are not used.
 
 ```mermaid
 sequenceDiagram
@@ -200,7 +200,7 @@ sequenceDiagram
   participant B as Bob (Claude's invitee)
   participant X as Xavier (admin)
   participant N as Nina (Xavier's invitee, joins later)
-  P->>C: /_add via #G member json PROFILE
+  P->>C: /_add submember #G member json PROFILE
   C->>C: member row: invitee, connected, member_via = Claude
   C->>B: x.grp.mem.new (reviewer, via Claude)
   C->>X: x.grp.mem.new (reviewer, via Claude)
@@ -229,7 +229,7 @@ sequenceDiagram
 `group_members` gets one column, `member_via` (BLOB in SQLite, BYTEA in Postgres), the member ID of the member it is via. GroupMember gets `memberVia :: Maybe MemberId`. The column is added to groupMemberQuery and the 8 member column lists (Store/Shared.hs:782, 812, 859; Store/Messages.hs:734, 3142, 3151, 3158; Store/Connections.hs:172, 178), as `member_security_code` was (M20260714_member_security_code). The categories are unchanged (GroupMemberCategory, Types.hs:1404-1436), so older cores parse every row.
 
 ```
-group_members, on V's side (created by APIAddViaMember)
+group_members, on V's side (created by APIAddSubmember)
   member_id                   12 random bytes (createWithRandomId', Store/Shared.hs:641-642)
   member_role                 the API's role, up to the user's role
   member_category             invitee
@@ -289,7 +289,7 @@ The core records only which member a member is via. The plugin keeps a map from 
 
 ```mermaid
 stateDiagram-v2
-  [*] --> connected: APIAddViaMember
+  [*] --> connected: APIAddSubmember
   connected --> connected: send or update as member, role change, restart
   connected --> removed: APIRemoveMembers, member with items
   connected --> [*]: APIRemoveMembers, member without items
@@ -383,8 +383,8 @@ data SendRef
   | SRGroup GroupId (Maybe GroupChatScope) (SendAs GroupMemberId)
 
 -- Controller.hs, new command and response
-APIAddViaMember {groupId :: GroupId, memberRole :: GroupMemberRole, profile :: Profile}
-CRViaMemberAdded {user :: User, groupInfo :: GroupInfo, member :: GroupMember}
+APIAddSubmember {groupId :: GroupId, memberRole :: GroupMemberRole, profile :: Profile}
+CRSubmemberAdded {user :: User, groupInfo :: GroupInfo, member :: GroupMember}
 
 -- Messages.hs:523-547, CIMeta: showGroupAsSender stays for the apps' JSON
 sentAsMember :: Maybe GroupMember
@@ -398,7 +398,7 @@ sentAsMember :: Maybe GroupMember
 ### 6.2 Commands
 
 ```
-/_add via #<groupId> <role> json <profile>               APIAddViaMember -> CRViaMemberAdded
+/_add submember #<groupId> <role> json <profile>               APIAddSubmember -> CRSubmemberAdded
 /_send #<groupId>(as_member=<groupMemberId>) [live=on] json [...]
 /_send #<groupId>(as_group=on) json [...]                 unchanged syntax, SAGroup
 /_update item #<groupId> <itemId> [live=on] json {...}    unchanged syntax; the sender is the item's
@@ -415,16 +415,16 @@ sendAsP = ("(as_group=" *> (bool SAUser SAGroup <$> onOffP) <* A.char ')') <|> (
 
 ```
 command               condition                                        error
-APIAddViaMember       group with relays                                 "members via another member are not supported in channels"
-APIAddViaMember       user role below admin or below the member's role  CEGroupUserRole (assertUserGroupRole gInfo (max GRAdmin role), as APIAddMember, Commands.hs:2887)
-APIAddViaMember       incognito membership                              CEGroupIncognitoCantInvite (as Commands.hs:2873)
+APIAddSubmember       group with relays                                 "members via another member are not supported in channels"
+APIAddSubmember       user role below admin or below the member's role  CEGroupUserRole (assertUserGroupRole gInfo (max GRAdmin role), as APIAddMember, Commands.hs:2887)
+APIAddSubmember       incognito membership                              CEGroupIncognitoCantInvite (as Commands.hs:2873)
 send as member        member of another group or unknown                SEGroupMemberNotFound
 send as member        memberVia other than the user's member ID         "member is not via you"
 send as member        member not current                                CEGroupMemberNotActive
 send as member        member role observer                              "member is not allowed to send messages" (receivers' memberCanSend, Subscriber.hs:1771-1773)
 send as member        chat scope set                                    "cannot send as member in support scope" (as as_group, Commands.hs:782)
 send as member        a file, or a quoted item                          "files and quotes cannot be sent as member"
-send as member        group with relays                                 as APIAddViaMember
+send as member        group with relays                                 as APIAddSubmember
 update of its item    member not current                                CEGroupMemberNotActive
 delete of its item    broadcast or history mode                         CEInvalidChatItemDelete
 ```
@@ -433,7 +433,7 @@ delete of its item    broadcast or history mode                         CEInvali
 
 ```
 operation                       stage      core
-add a member via the user       1          APIAddViaMember (new)
+add a member via the user       1          APIAddSubmember (new)
 send as member                  1, 2       APISendMessages with SAMember; live=on for step lines
 update its item                 2          APIUpdateChatItem: the item's sentAsMember selects the envelope (Commands.hs:850-885)
 remove                          1          APIRemoveMembers
@@ -445,11 +445,11 @@ Excluded: reactions as a member (the plugin's tools are connect, send, receive, 
 ### 6.5 Bot API docs and clients
 
 Generated by tests/APIDocs.hs: bots/api/COMMANDS.md, TYPES.md, packages/simplex-chat-client/types/typescript/src, packages/simplex-chat-python/src/simplex_chat/types.
-- APIAddViaMember and CRViaMemberAdded documented (bots/src/API/Docs/Commands.hs, Responses.hs).
+- APIAddSubmember and CRSubmemberAdded documented (bots/src/API/Docs/Commands.hs, Responses.hs).
 - SendRef documented as a record of chatType, chatId, chatScope and sendAs (bots/src/API/TypeInfo.hs:189 maps it to ChatRef today), with syntax `<chatType><chatId>[<chatScope>][<sendAs>]`.
 - SendAs: `Choice` syntax, as ChatDeleteMode (bots/src/API/Docs/Types.hs:238): group `(as_group=on)`, member `(as_member=<groupMemberId>)`.
 - GroupMember gets memberVia; CIMeta gets sentAsMember.
-- simplex-chat-nodejs: apiSendMessages accepts the SendRef with sendAs (api.ts:448-462); new apiAddViaMember.
+- simplex-chat-nodejs: apiSendMessages accepts the SendRef with sendAs (api.ts:448-462); new apiAddSubmember.
 
 ## 7. Plugin
 
@@ -471,7 +471,7 @@ flowchart LR
 
 ```
 Claude Code event                                   service                                      core
-SubagentStart, record with name (fact 3, F1)        Teammates.start(agent ID, name, description)  /_add via #G member json PROFILE
+SubagentStart, record with name (fact 3, F1)        Teammates.start(agent ID, name, description)  /_add submember #G member json PROFILE
 teammate's PostToolUse SendMessage to team-lead     post as the teammate                          /_send #G(as_member=M) json [...]
 teammate's SubagentHandback (F2)                    report as the teammate, then end              /_send #G(as_member=M) json [...]
 lead's copy of a teammate's message or report       dropped for a started teammate                -
@@ -507,27 +507,27 @@ The separate core, its folder `ROOT/_sessions/ID/agents`, the per-teammate users
 Each core test fails on master, where the commands do not parse; each plugin test fails on master, where the teammate routes are absent.
 
 Core, tests/ChatTests/Groups.hs, `describe "members via another member"`, groups of alice, bob and cath (createGroup3):
-- `testViaMemberMessages`: `/_add via #1 member json {...reviewer...}`; bob and cath see `#team: alice added reviewer to the group (via alice)`; `/_send #1(as_member=M) text hi` → `#team reviewer> hi [>>]` for bob and cath; `/ms team` of bob lists reviewer via alice.
-- `testViaMemberLiveUpdate`: send as member with live=on, two updates, the last with live=off → bob's item from reviewer has the final text and itemLive false.
-- `testViaMemberLaterJoiner`: dan joins by alice's invitation after the message → dan's output has no "added" or "unknown member" line for reviewer, has `#team reviewer> hi [>>]` from history, and `/ms team` lists reviewer via alice.
-- `testViaMemberOtherAdmin`: cath is bob's invitee, not connected to alice → bob forwards reviewer's message and its update to cath.
-- `testViaMemberIntroOrder`: bob adds assistant (admin) via bob; dan joins by alice's invitation → dan records assistant via bob.
-- `testViaMemberPrevVersionJoiner`: dan with chat version range up to 23 joins → reviewer is not introduced; dan creates it as an unknown member from history.
-- `testViaMemberReply`: bob replies to reviewer's message and mentions @reviewer → on alice and cath, the item's quotedItem has the item ID of reviewer's item and direction groupRcv reviewer, and its mention has reviewer's group member ID.
-- `testViaMemberRoleRules`: reviewer is a member, owners are exempt from the edit window → alice's priority 1 as reviewer is stored normal; bob drops alice's edit of the item aged 79 hours on bob ("edit too late"); alice cannot edit the item aged 100 hours on alice; a forwarded priority 1 of reviewer arrives normal at bob.
-- `testViaMemberRemove`: `/_remove #1 M` → bob and cath see "alice removed reviewer".
-- `testViaMemberRemoveByAdmin`: bob removes reviewer → alice and cath see "bob removed reviewer"; alice's send as reviewer → "not active yet".
-- `testViaMemberRefused`: bob (admin) adds an owner via bob → refused; send as bob's group member ID → "member is not via you"; cath (member) adds → refused; alice adds in an incognito group → refused.
-- `testViaMemberRefusedChannel`: in a channel → refused.
-- `testViaMemberAnnounceRefused`: x.grp.mem.new with via of another member, x.grp.mem.new from reviewer → refused; a forward of reviewer with via cath → dropped.
-- `testViaMemberIntroRefused`: x.grp.mem.intro with via naming the user, reviewer, an owner role above cath's, an unknown member, and from a host demoted to member → refused.
-- `testViaMemberSendRefused`: send as reviewer in a support scope, with a file, with a quote, and its broadcast delete → refused; bob's moderation → alice sees "[marked deleted by bob]"; alice's moderation → bob and cath see "[marked deleted by alice]".
-- `testViaMemberSigned`: "sign messages" on → bob shows reviewer's message and its update signed; a forward signed by another key → bad signature.
-- `testViaMemberSignedPrevVersion`: bob with chat version range up to 23 → reviewer's message arrives with "(signature missing)".
-- `testViaMemberSignedPending`: bob's connection inactive → reviewer's message is sent as pending and arrives with "(signature missing)".
+- `testSubmemberMessages`: `/_add submember #1 member json {...reviewer...}`; bob and cath see `#team: alice added reviewer to the group (via alice)`; `/_send #1(as_member=M) text hi` → `#team reviewer> hi [>>]` for bob and cath; `/ms team` of bob lists reviewer via alice.
+- `testSubmemberLiveUpdate`: send as member with live=on, two updates, the last with live=off → bob's item from reviewer has the final text and itemLive false.
+- `testSubmemberLaterJoiner`: dan joins by alice's invitation after the message → dan's output has no "added" or "unknown member" line for reviewer, has `#team reviewer> hi [>>]` from history, and `/ms team` lists reviewer via alice.
+- `testSubmemberOtherAdmin`: cath is bob's invitee, not connected to alice → bob forwards reviewer's message and its update to cath.
+- `testSubmemberIntroOrder`: bob adds assistant (admin) via bob; dan joins by alice's invitation → dan records assistant via bob.
+- `testSubmemberPrevVersionJoiner`: dan with chat version range up to 23 joins → reviewer is not introduced; dan creates it as an unknown member from history.
+- `testSubmemberReply`: bob replies to reviewer's message and mentions @reviewer → on alice and cath, the item's quotedItem has the item ID of reviewer's item and direction groupRcv reviewer, and its mention has reviewer's group member ID.
+- `testSubmemberRoleRules`: reviewer is a member, owners are exempt from the edit window → alice's priority 1 as reviewer is stored normal; bob drops alice's edit of the item aged 79 hours on bob ("edit too late"); alice cannot edit the item aged 100 hours on alice; a forwarded priority 1 of reviewer arrives normal at bob.
+- `testSubmemberRemove`: `/_remove #1 M` → bob and cath see "alice removed reviewer".
+- `testSubmemberRemoveByAdmin`: bob removes reviewer → alice and cath see "bob removed reviewer"; alice's send as reviewer → "not active yet".
+- `testSubmemberRefused`: bob (admin) adds an owner via bob → refused; send as bob's group member ID → "member is not via you"; cath (member) adds → refused; alice adds in an incognito group → refused.
+- `testSubmemberRefusedChannel`: in a channel → refused.
+- `testSubmemberAnnounceRefused`: x.grp.mem.new with via of another member, x.grp.mem.new from reviewer → refused; a forward of reviewer with via cath → dropped.
+- `testSubmemberIntroRefused`: x.grp.mem.intro with via naming the user, reviewer, an owner role above cath's, an unknown member, and from a host demoted to member → refused.
+- `testSubmemberSendRefused`: send as reviewer in a support scope, with a file, with a quote, and its broadcast delete → refused; bob's moderation → alice sees "[marked deleted by bob]"; alice's moderation → bob and cath see "[marked deleted by alice]".
+- `testSubmemberSigned`: "sign messages" on → bob shows reviewer's message and its update signed; a forward signed by another key → bad signature.
+- `testSubmemberSignedPrevVersion`: bob with chat version range up to 23 → reviewer's message arrives with "(signature missing)".
+- `testSubmemberSignedPending`: bob's connection inactive → reviewer's message is sent as pending and arrives with "(signature missing)".
 - `testGroupMsgForwardViaRejected` (`describe "group message forwarding"`): a forward of an unknown member with via naming the recipient, or from a forwarder that is neither the host nor the named member → via not recorded.
-- `testViaMemberSignedHistory`: reviewer removed; dan joins → dan creates reviewer from history with via alice and shows the item signed.
-- `testViaMemberRestart`: alice restarts → reviewer listed via alice; send as member works.
+- `testSubmemberSignedHistory`: reviewer removed; dan joins → dan creates reviewer from history with via alice and shows the item signed.
+- `testSubmemberRestart`: alice restarts → reviewer listed via alice; send as member works.
 - Migrations: tests/MigrationTests up and down with the schema dump; down of a database with members via the user and via another member.
 - API docs: tests/APIDocs.hs regenerates the files of 6.5.
 
@@ -577,19 +577,19 @@ Q6. Groups with "sign messages" on.
 
 ```
 file                                                  change
-src/Simplex/Chat/Protocol.hs                          memberViaVersion 24
+src/Simplex/Chat/Protocol.hs                          submemberVersion 24
 src/Simplex/Chat/Types.hs                             MemberInfo.via; GroupMember.memberVia
 src/Simplex/Chat/Messages.hs                          SendAs; CIMeta.sentAsMember; mkCIMeta; chatItemMember; sendAsGroup'
-src/Simplex/Chat/Controller.hs                        SendRef; APIAddViaMember; CRViaMemberAdded
+src/Simplex/Chat/Controller.hs                        SendRef; APIAddSubmember; CRSubmemberAdded
 src/Simplex/Chat/Library/Commands.hs                  command, checks, send and update as member, delete refusal, parsers
 src/Simplex/Chat/Library/Internal.hs                  memberSendAction, memberIntroEvt, memberInfo, sendHistory, quoteData, createSndMessages, send chain
 src/Simplex/Chat/Library/Subscriber.hs                xGrpMemNew, xGrpMemIntro, xGrpMemInv and xGrpMemFwd for members via V
-src/Simplex/Chat/Store/Groups.hs                      createViaMember; member_via in member creation
+src/Simplex/Chat/Store/Groups.hs                      createSubmember; member_via in member creation
 src/Simplex/Chat/Store/{Shared,Messages,Connections}.hs   member_via in the member column lists; createNewChatItem_ group_member_id; toGroupChatItem sentAsMember
 src/Simplex/Chat/Store/{SQLite,Postgres}/Migrations   M20261122_member_via; chat_schema.sql
-src/Simplex/Chat/View.hs                              "via <name>"; CRViaMemberAdded
+src/Simplex/Chat/View.hs                              "via <name>"; CRSubmemberAdded
 bots/src/API/{TypeInfo.hs,Docs/*.hs}                  6.5
-bots/api/*, packages/simplex-chat-client, packages/simplex-chat-python, packages/simplex-chat-nodejs/src/api.ts   generated, apiAddViaMember
+bots/api/*, packages/simplex-chat-client, packages/simplex-chat-python, packages/simplex-chat-nodejs/src/api.ts   generated, apiAddSubmember
 docs/protocol/simplex-chat.md                         members via another member
 tests/ChatTests/Groups.hs, ChatRelays.hs, MigrationTests   section 8
 packages/simplex-chat-mcp: src/teammates.ts (new), hook.ts, hub.ts, protocol.ts, session.ts, messages.ts, service.ts, tools.ts, hooks/hooks.json, test/, spec/, README.md, REFERENCE.md, TESTING.md
@@ -610,7 +610,7 @@ Accepted by the maintainer, 2026-11-22.
 area                       implementation
 send chain (6.1)           sendGroupMessages keeps the Bool showGroupAsSender; a pending profile update may be sent with a message sent as a member
 MemberInfo.v (5.5)         x.grp.mem.new of a member via V omits v: memberInfo takes v from the connection
-bot API (6.5)              SendRef is documented as before; nodejs and python helpers for sendAs and apiAddViaMember are absent
+bot API (6.5)              SendRef is documented as before; nodejs and python helpers for sendAs and apiAddSubmember are absent
 send and update as member  require the user to be admin; files and quotes as a member are refused
 receivers                  refuse via in channels, an x.grp.mem.intro whose via is the receiver, and x.grp.mem.fwd of a member via another member
 restrictions               restrictions of x.grp.mem.intro are stored for a member via another member
@@ -625,7 +625,7 @@ The core part is on `ep/members-via`; the plugin stages (section 7) use these co
 
 ```
 operation                  command                                                                                         response
-add a teammate             /_add via #<groupId> <role> json <profile>                                                      viaMemberAdded: member.groupMemberId = M
+add a teammate             /_add submember #<groupId> <role> json <profile>                                                      submemberAdded: member.groupMemberId = M
 post as the teammate       /_send #<groupId>(as_member=<M>)[ live=on][ ttl=<seconds>][ sign=on] json [<composedMessage>]   newChatItems: sent items, meta.sentAsMember = the member M
 edit its item              /_update item #<groupId> <itemId>[ live=on][ as_new=on] json <updatedMessage>                   chatItemUpdated: sent as M, the item's meta.sentAsMember
 end the teammate           /_remove #<groupId> <M>                                                                         userDeletedMembers; members see "<user> removed <name>"
@@ -644,5 +644,5 @@ updatedMessage     {"msgContent": {...}, "mentions": {...}, "priority": <n>}
 - With "sign messages" on, the core signs each message as the member with the user's key; `sign=on` is not needed.
 - Priority and the edit window of a message sent as the member follow the member's role, as at the receivers.
 - Excluded: deletes as the member (broadcast delete of its item: CEInvalidChatItemDelete) and reactions as the member (APIChatItemReaction reacts as the user).
-- Replies to and mentions of a teammate (stage 3): a received item's quotedItem has the item ID of the item sent as M and direction groupRcv of M; mentions have M's group member ID (5.2; testViaMemberReply).
-- Display of `via` in the apps: Q2 C, with app tests on the recorded fixture `via/received` and snapshot references of both apps.
+- Replies to and mentions of a teammate (stage 3): a received item's quotedItem has the item ID of the item sent as M and direction groupRcv of M; mentions have M's group member ID (5.2; testSubmemberReply).
+- Display of `via` in the apps: Q2 C, with app tests on the recorded fixture `submembers/received` and snapshot references of both apps.
