@@ -70,7 +70,7 @@ final class ChainAddressesTests: RecordedAPITestCase {
 
     func testNotSignedKeepsLabelAndUnknownReason() throws {
         let markdown = try recordedMarkdown()
-        let unsigned = ChainAddressSender(name: "alice", forwarded: false, verified: false)
+        let unsigned = ChainAddressSender(name: "alice", forwarded: false, messageSigned: false)
         let drawn = try ["<bitcoin:\(btc)?amount=0.001&label=SimpleX>", "ethereum:\(eth)@100?value=1e16"].map { draw(try XCTUnwrap(markdown[$0]), unsigned).string.string }
         XCTAssertEqual(drawn, ["SimpleX ⚠\u{FE0E}\u{00A0}bc1q2g…\u{2060}5d4u (not signed)", "⚠\u{FE0E}\u{00A0}0xD704…\u{2060}c86a (unknown chain, not signed)"])
     }
@@ -94,8 +94,8 @@ final class ChainAddressesTests: RecordedAPITestCase {
         XCTAssertTrue(r.handleTaps)
         XCTAssertEqual(taps(r.string).map(alertMessage), ["alice: ₿\u{00A0}bc1q2g…\u{2060}5d4u", "alice: Donate XMR\u{00A0}8A3ZWA…\u{2060}Yq1c", "alice: ϟ\u{00A0}0.0025"])
         let markdown = try recordedMarkdown()
-        let alice = ChainAddressSender(name: "alice", forwarded: false, verified: true)
-        let forwarded = ChainAddressSender(name: "alice", forwarded: true, verified: true)
+        let alice = ChainAddressSender(name: "alice", forwarded: false, messageSigned: true)
+        let forwarded = ChainAddressSender(name: "alice", forwarded: true, messageSigned: true)
         let messages = try [
             ("<bitcoin:\(btc)?amount=0.001&label=SimpleX>", alice),
             ("<bitcoin:\(btc)?amount=0.001&label=SimpleX>", forwarded),

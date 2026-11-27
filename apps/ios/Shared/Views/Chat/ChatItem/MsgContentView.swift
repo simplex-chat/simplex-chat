@@ -384,7 +384,7 @@ typealias MsgTextResult = (string: NSMutableAttributedString, hasSecrets: Bool, 
 struct ChainAddressSender {
     var name: String
     var forwarded: Bool
-    var verified: Bool
+    var messageSigned: Bool
 }
 
 func chainAddressSender(_ ci: ChatItem, _ chatInfo: ChatInfo) -> ChainAddressSender {
@@ -394,7 +394,7 @@ func chainAddressSender(_ ci: ChatItem, _ chatInfo: ChatInfo) -> ChainAddressSen
     case let .groupRcv(groupMember): groupMember.displayName
     case .groupSnd: ci.meta.showGroupAsSender ? chatInfo.displayName : chatInfo.groupInfo?.membership.displayName ?? ""
     }
-    return ChainAddressSender(name: name, forwarded: ci.meta.itemForwarded != nil, verified: ci.messageSigned)
+    return ChainAddressSender(name: name, forwarded: ci.meta.itemForwarded != nil, messageSigned: ci.messageSigned)
 }
 
 struct ChainAddressTap {
@@ -404,7 +404,7 @@ struct ChainAddressTap {
 }
 
 func openWalletAlert(_ tap: ChainAddressTap) -> UIAlertController {
-    let link = tap.chainAddress.linkText(tap.showText, verified: true)
+    let link = tap.chainAddress.linkText(tap.showText, messageSigned: true)
     let text = link.toAddress.map { String.localizedStringWithFormat(NSLocalizedString("%@ to %@", comment: "alert message: chain address link text, shortened address"), link.shown, $0) } ?? link.shown
     let message = tap.sender.forwarded
         ? NSLocalizedString("%@ forwarded: %@", comment: "alert message: sender name, chain address")
@@ -769,7 +769,7 @@ func messageText(
                     handleTaps = true
                 }
             case let .chainAddressLink(showText, chainAddress):
-                let linkText = chainAddress.linkText(showText, verified: chainAddressSender?.verified ?? true)
+                let linkText = chainAddress.linkText(showText, messageSigned: chainAddressSender?.messageSigned ?? true)
                 attrs = linkAttrs()
                 if linkText.warning {
                     attrs[.foregroundColor] = UIColor.systemOrange

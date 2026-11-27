@@ -114,7 +114,7 @@ class ChainAddressesTest : RecordedApiTest() {
   fun groupAddressWithoutVerifiedSignatureIsNotSigned() = recorded("chain-addresses/group") {
     val chat = recordedChat("chain-addresses/group", "/_get chat #1 count=2")
     val senders = chat.chatItems.map { chainAddressSender(it, chat.chatInfo) }
-    assertEquals(listOf(true, false), senders.map { it.verified })
+    assertEquals(listOf(true, false), senders.map { it.messageSigned })
     assertEquals(
       listOf("donate ₿\u00A0bc1q2g…\u20605d4u", "thanks, or ⚠\u00A0ltc1q2…\u2060wfdv (not signed)"),
       chat.chatItems.map { item -> itemDisplay(item, SimplexLinkMode.DESCRIPTION)!!.parts.joinToString("") { it.first } }
@@ -157,8 +157,8 @@ class ChainAddressesTest : RecordedApiTest() {
       chainLinks(item.formattedText).map { alertMessage(sender, it) }
     )
     val markdown = recordedMarkdown()
-    val alice = ChainAddressSender("alice", forwarded = false, verified = true)
-    val forwarded = ChainAddressSender("alice", forwarded = true, verified = true)
+    val alice = ChainAddressSender("alice", forwarded = false, messageSigned = true)
+    val forwarded = ChainAddressSender("alice", forwarded = true, messageSigned = true)
     assertEquals(
       listOf(
         "alice: SimpleX ₿\u00A00.001 to bc1q2g…\u20605d4u",
@@ -183,7 +183,7 @@ class ChainAddressesTest : RecordedApiTest() {
     val wallet = NoWalletApp()
     setContent {
       CompositionLocalProvider(LocalClipboardManager provides clipboard) {
-        MarkdownText(BTC, recordedMarkdown().getValue(BTC).formattedText, chainAddressSender = ChainAddressSender("alice", forwarded = false, verified = true), toggleSecrets = false, linkMode = SimplexLinkMode.DESCRIPTION, uriHandler = wallet)
+        MarkdownText(BTC, recordedMarkdown().getValue(BTC).formattedText, chainAddressSender = ChainAddressSender("alice", forwarded = false, messageSigned = true), toggleSecrets = false, linkMode = SimplexLinkMode.DESCRIPTION, uriHandler = wallet)
         AlertManager.shared.showInView()
       }
     }
@@ -267,7 +267,7 @@ fun ChainAddressMessages() = SimpleXTheme {
 
 @Composable
 fun OpenInWalletAlertPreview() = AlertPreview {
-  showOpenWalletAlert(ChainAddressSender("Tom", forwarded = false, verified = true), Format.ChainAddressLink("Dinner", previewChainAddress), NoWalletApp(), TestClipboard())
+  showOpenWalletAlert(ChainAddressSender("Tom", forwarded = false, messageSigned = true), Format.ChainAddressLink("Dinner", previewChainAddress), NoWalletApp(), TestClipboard())
 }
 
 @Composable

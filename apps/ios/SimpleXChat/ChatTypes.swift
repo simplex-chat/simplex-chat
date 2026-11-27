@@ -6083,9 +6083,9 @@ public struct ChainAddress: Decodable, Hashable {
         address.count > 10 ? "\(address.prefix(6))…\u{2060}\(address.suffix(4))" : address
     }
 
-    public func linkText(_ showText: String?, verified: Bool) -> ChainLinkText {
+    public func linkText(_ showText: String?, messageSigned: Bool) -> ChainLinkText {
         let shownLabel = showText ?? label
-        let notSigned = verified ? [] : [NSLocalizedString("not signed", comment: "chain address link")]
+        let notSigned = messageSigned ? [] : [NSLocalizedString("not signed", comment: "chain address link")]
         func link(_ sign: String?, _ text: String, chainName: String? = nil, toAddress: Bool) -> ChainLinkText {
             ChainLinkText(label: shownLabel, sign: sign, text: text, chainName: chainName, warning: false, toAddress: toAddress ? shortAddress : nil)
         }
@@ -6094,7 +6094,7 @@ public struct ChainAddress: Decodable, Hashable {
         }
         switch currency {
         case let .unknown(unknown): return warning([unknown.text] + notSigned)
-        case _ where !verified: return warning(notSigned)
+        case _ where !messageSigned: return warning(notSigned)
         case let .bitcoin(amount): return link("₿", amount ?? shortAddress, toAddress: amount != nil)
         case let .lightning(amount): return link("ϟ", amount ?? shortAddress, toAddress: false)
         case let .ticker(ticker, chainName, amount): return link(nil, "\(ticker)\u{00A0}\(amount ?? shortAddress)", chainName: chainName, toAddress: amount != nil)

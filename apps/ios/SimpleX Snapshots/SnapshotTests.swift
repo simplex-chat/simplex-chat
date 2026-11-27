@@ -1055,7 +1055,7 @@ private let previewChainAddress = ChainAddress(
 struct OpenInWalletAlert_Previews: PreviewProvider {
     static var previews: some View {
         Color.clear.background(AlertControllerPreview {
-            openWalletAlert(ChainAddressTap(sender: ChainAddressSender(name: "Tom", forwarded: false, verified: true), showText: "Dinner", chainAddress: previewChainAddress))
+            openWalletAlert(ChainAddressTap(sender: ChainAddressSender(name: "Tom", forwarded: false, messageSigned: true), showText: "Dinner", chainAddress: previewChainAddress))
         })
     }
 }

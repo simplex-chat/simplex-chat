@@ -434,7 +434,7 @@ fun MarkdownText (
             }
             is Format.ChainAddressLink -> {
               hasChainAddresses = true
-              val linkText = ft.format.chainAddress.linkText(ft.format.showText, chainAddressSender?.verified ?: true)
+              val linkText = ft.format.chainAddress.linkText(ft.format.showText, chainAddressSender?.messageSigned ?: true)
               val ftStyle = if (linkText.warning) Format.linkStyle.copy(color = WarningOrange) else Format.linkStyle
               withAnnotation(tag = "CHAIN_ADDRESS", annotation = i.toString()) {
                 if (linkText.label != null) withStyle(ftStyle) { append("${linkText.label} ") }
@@ -754,7 +754,7 @@ fun openBrowserAlert(uri: String, uriHandler: UriHandler) {
   }
 }
 
-class ChainAddressSender(val name: String, val forwarded: Boolean, val verified: Boolean)
+class ChainAddressSender(val name: String, val forwarded: Boolean, val messageSigned: Boolean)
 
 fun chainAddressSender(ci: ChatItem, chatInfo: ChatInfo): ChainAddressSender {
   val name = when (val dir = ci.chatDir) {
@@ -763,11 +763,11 @@ fun chainAddressSender(ci: ChatItem, chatInfo: ChatInfo): ChainAddressSender {
     is CIDirection.GroupRcv -> dir.groupMember.displayName
     is CIDirection.GroupSnd -> if (ci.meta.showGroupAsSender) chatInfo.displayName else (chatInfo as? ChatInfo.Group)?.groupInfo?.membership?.displayName ?: ""
   }
-  return ChainAddressSender(name, forwarded = ci.meta.itemForwarded != null, verified = ci.messageSigned)
+  return ChainAddressSender(name, forwarded = ci.meta.itemForwarded != null, messageSigned = ci.messageSigned)
 }
 
 fun showOpenWalletAlert(sender: ChainAddressSender, link: Format.ChainAddressLink, uriHandler: UriHandler, clipboard: ClipboardManager) {
-  val linkText = link.chainAddress.linkText(link.showText, verified = true)
+  val linkText = link.chainAddress.linkText(link.showText, messageSigned = true)
   val text = linkText.toAddress?.let { String.format(generalGetString(MR.strings.chain_address_to_address), linkText.shown, it) } ?: linkText.shown
   AlertManager.shared.showAlertDialogButtonsColumn(
     title = generalGetString(MR.strings.open_in_wallet_question),

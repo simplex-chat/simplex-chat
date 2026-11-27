@@ -5463,15 +5463,15 @@ sealed class Format {
 class ChainAddress(val currency: ChainCurrency, val address: String, val label: String?, val walletUri: String) {
   val shortAddress: String get() = if (address.length > 10) "${address.take(6)}…\u2060${address.takeLast(4)}" else address
 
-  fun linkText(showText: String?, verified: Boolean): ChainLinkText {
+  fun linkText(showText: String?, messageSigned: Boolean): ChainLinkText {
     val shownLabel = showText ?: label
-    val notSigned = if (verified) emptyList() else listOf(generalGetString(MR.strings.chain_address_not_signed))
+    val notSigned = if (messageSigned) emptyList() else listOf(generalGetString(MR.strings.chain_address_not_signed))
     fun link(sign: String?, text: String, chainName: String? = null, toAddress: Boolean) =
       ChainLinkText(shownLabel, sign, text, chainName, warning = false, toAddress = if (toAddress) shortAddress else null)
     fun warning(reasons: List<String>) =
       ChainLinkText(shownLabel, "⚠", "$shortAddress (${reasons.joinToString(", ")})", chainName = null, warning = true, toAddress = null)
     val c = currency
-    if (!verified && c !is ChainCurrency.Unknown) return warning(notSigned)
+    if (!messageSigned && c !is ChainCurrency.Unknown) return warning(notSigned)
     return when (c) {
       is ChainCurrency.Bitcoin -> link("₿", c.amount ?: shortAddress, toAddress = c.amount != null)
       is ChainCurrency.Lightning -> link("ϟ", c.amount ?: shortAddress, toAddress = false)
