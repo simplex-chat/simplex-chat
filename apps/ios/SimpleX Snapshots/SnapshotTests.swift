@@ -1096,7 +1096,7 @@ struct RemoveMemberWithSubmembersAlert_Previews: PreviewProvider {
         var claude = GroupMember.sampleData
         claude.memberId = "Claude"
         claude.memberProfile = LocalProfile(profileId: 2, displayName: "Claude", fullName: "", localAlias: "")
-        let submembers: [GMember] = [3, 4].map { id in
+        let submembers = [Int64(3), 4].map { id -> GMember in
             var submember = GroupMember.sampleData
             submember.groupMemberId = id
             submember.memberVia = claude.memberId
