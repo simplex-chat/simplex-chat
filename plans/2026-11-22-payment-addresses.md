@@ -902,7 +902,7 @@ Each question is a principle with its consequences; the recommended option is in
 | S1 | BIP-21, https://github.com/bitcoin/bips/blob/master/bip-0021.mediawiki |
 | S2 | BIP-321, https://github.com/bitcoin/bips/blob/master/bip-0321.mediawiki, sections "General Format", "Query Keys", "Examples" |
 | S3 | BIP-353, https://github.com/bitcoin/bips/blob/master/bip-0353.mediawiki |
-| S4 | BOLT 11, https://github.com/lightning/bolts/blob/master/11-payment-encoding.md, sections "Encoding Overview", "Human-Readable Part", "Security Considerations for Payment Descriptions", "Examples", "Examples of Invalid Invoices" |
+| S4 | BOLT 11, https://github.com/lightning/bolts/blob/master/11-payment-encoding.md, sections "Encoding Overview", "Human-Readable Part", "Examples", "Examples of Invalid Invoices" |
 | S5 | BOLT 12, https://github.com/lightning/bolts/blob/master/12-offer-encoding.md |
 | S6 | LUD-01, https://github.com/lnurl/luds/blob/luds/01.md |
 | S7 | LUD-17, https://github.com/lnurl/luds/blob/luds/17.md |
