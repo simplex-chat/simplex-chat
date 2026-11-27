@@ -384,6 +384,7 @@ chatGroupTests = do
     it "remove submembers of member that leaves; joiner gets no introduction and no history of them" testSubmemberViaLeft
     it "remove submembers of member removed by admin, on every member's side" testSubmemberViaRemoved
     it "removal of member with messages marks messages of its submembers deleted" testSubmemberViaRemovedWithMessages
+    it "removal of member with messages under full deletion deletes messages and records of its submembers" testSubmemberViaRemovedFullDelete
     it "refuse role above user role, member that is not user's submember, user below admin and incognito membership" testSubmemberRefused
     it "refuse announcement against via rules and messages as a member that is not a submember of the sender" testSubmemberAnnounceRefused
     it "refuse introduction against via rules" testSubmemberIntroRefused
@@ -16901,6 +16902,9 @@ addSubmember cc role = do
 submemberAdded :: HasCallStack => [TestCC] -> IO ()
 submemberAdded = mapM_ (<## "#team: alice added reviewer to the group (via alice)")
 
+reviewerStatus :: TestCC -> IO [T.Text]
+reviewerStatus cc = withCCTransaction cc $ \db -> map fromOnly <$> DB.query_ db "SELECT member_status FROM group_members WHERE local_display_name = 'reviewer'"
+
 testSubmemberMessages :: HasCallStack => TestParams -> IO ()
 testSubmemberMessages =
   testChat3 aliceProfile bobProfile cathProfile $
@@ -17391,9 +17395,6 @@ testSubmemberViaRemoved =
             bob <## "use /d #team to delete the group"
         ]
       forM_ [alice, bob, cath] $ \cc -> reviewerStatus cc `shouldReturn` ["removed"]
-  where
-    reviewerStatus :: TestCC -> IO [T.Text]
-    reviewerStatus cc = withCCTransaction cc $ \db -> map fromOnly <$> DB.query_ db "SELECT member_status FROM group_members WHERE local_display_name = 'reviewer'"
 
 testSubmemberViaRemovedWithMessages :: HasCallStack => TestParams -> IO ()
 testSubmemberViaRemovedWithMessages ps = do
@@ -17422,6 +17423,35 @@ testSubmemberViaRemovedWithMessages ps = do
         alice #$> ("/_get chat #1 count=2", chat, [(0, "hi [marked deleted by cath]"), (0, "removed bob (signed)")])
         bob #$> ("/_get chat #1 count=2", chat, [(1, "hi [marked deleted by cath]"), (0, "removed you (signed)")])
         cath #$> ("/_get chat #1 count=2", chat, [(0, "hi [marked deleted by you]"), (1, "removed bob (signed)")])
+
+testSubmemberViaRemovedFullDelete :: HasCallStack => TestParams -> IO ()
+testSubmemberViaRemovedFullDelete =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+      addSubmember bob "member"
+      mapM_ (<## "#team: bob added reviewer to the group (via bob)") [alice, cath]
+      alice ##> "/set delete #team on"
+      alice <## "updated group preferences:"
+      alice <## "Full deletion: on"
+      forM_ [bob, cath] $ \cc -> do
+        cc <## "alice updated group #team: (signed)"
+        cc <## "updated group preferences:"
+        cc <## "Full deletion: on"
+      GroupMember {groupMemberId = reviewerId} <- getTestMember bob "team" "reviewer"
+      bob ##> ("/_send #1(as_member=" <> show reviewerId <> ") text hi")
+      bob <# "#team hi"
+      [alice, cath] *<# "#team reviewer> hi"
+      threadDelay 1000000
+      cath ##> "/rm #team bob messages=on"
+      cath <## "#team: you removed bob from the group with all messages (signed)"
+      bob <## "#team: cath removed you from the group with all messages (signed)"
+      bob <## "use /d #team to delete the group"
+      alice <## "#team: cath removed bob from the group with all messages (signed)"
+      alice #$> ("/_get chat #1 count=2", chat, [(1, "Full deletion: on"), (0, "removed bob (signed)")])
+      bob #$> ("/_get chat #1 count=2", chat, [(0, "Full deletion: on"), (0, "removed you (signed)")])
+      cath #$> ("/_get chat #1 count=2", chat, [(0, "Full deletion: on"), (1, "removed bob (signed)")])
+      forM_ [alice, bob, cath] $ \cc -> reviewerStatus cc `shouldReturn` []
 
 testSubmemberRefused :: HasCallStack => TestParams -> IO ()
 testSubmemberRefused =
