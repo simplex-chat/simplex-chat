@@ -37,6 +37,16 @@ on:
       - "packages/simplex-chat-client/types/typescript/**"
       - "packages/simplex-chat-python/**"
       - "scripts/ci/package-tests.sh"
+      - ".github/workflows/android-emu.yml"
+      - "scripts/ci/android/**"
+      - "scripts/ci/desktop-linux/earlier-run.sh"
+      - "flake.nix"
+      - "flake.lock"
+      - "scripts/nix/**"
+      - ".github/workflows/desktop-linux.yml"
+      - "scripts/ci/desktop-linux/**"
+      - ".github/workflows/ios-sim.yml"
+      - "scripts/ci/ios-sim/**"
       - "apps/simplex-store-service/web/**"
       - "scripts/ci/packages_release.py"
       - "scripts/ci/test_packages_release.py"
@@ -128,6 +138,9 @@ jobs:
       haskell: ${{ steps.changes.outputs.haskell }}
       kotlin: ${{ steps.changes.outputs.kotlin }}
       ios: ${{ steps.changes.outputs.ios }}
+      android: ${{ steps.changes.outputs.android }}
+      desktop-linux: ${{ steps.changes.outputs.desktop-linux }}
+      ios-sim: ${{ steps.changes.outputs.ios-sim }}
       addon_tag: ${{ steps.addon.outputs.tag }}
       addon_draft: ${{ steps.addon.outputs.draft }}
       libs_latest: ${{ steps.latest_libs.outputs.tag }}
@@ -1722,6 +1735,36 @@ jobs:
             CODE_SIGN_IDENTITY=- \
             DEVELOPMENT_TEAM= \
             PROVISIONING_PROFILE_SPECIFIER=
+
+# =========================
+#      App workflows
+# =========================
+
+  android-emu:
+    needs: maybe-release
+    if: needs.maybe-release.outputs.android == 'true'
+    permissions:
+      contents: read
+      actions: read
+    uses: ./.github/workflows/android-emu.yml
+    with:
+      armv7a: true
+
+  desktop-linux:
+    needs: maybe-release
+    if: needs.maybe-release.outputs.desktop-linux == 'true'
+    permissions:
+      contents: read
+      actions: read
+    uses: ./.github/workflows/desktop-linux.yml
+
+  ios-sim:
+    needs: maybe-release
+    if: needs.maybe-release.outputs.ios-sim == 'true'
+    permissions:
+      contents: read
+      actions: read
+    uses: ./.github/workflows/ios-sim.yml
 
 # =========================
 #      Windows Build

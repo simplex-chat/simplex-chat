@@ -19,6 +19,11 @@ on:
         description: Also build the core library for 32-bit Arm (armeabi-v7a)
         type: boolean
         default: false
+  workflow_call:
+    inputs:
+      armv7a:
+        type: boolean
+        default: false
 
 permissions:
   contents: read

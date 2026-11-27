@@ -488,8 +488,23 @@ class ChangesTest(GitRepoTest):
     def test_other_ci_script_builds_the_core(self):
         self.assertEqual(self.builds("scripts/ci/prune-old-builds.sh"), {"haskell"})
 
-    def test_app_test_scripts_build_nothing(self):
-        self.assertEqual(self.builds("scripts/ci/ios-sim/smoke-test.sh", "scripts/ci/desktop-linux/smoke-test.sh", "scripts/ci/android/ui", "scripts/ci/snapshots-compare.py", "scripts/ci/README.md"), set())
+    def test_app_test_scripts_run_their_app_workflows(self):
+        self.assertEqual(self.builds("scripts/ci/ios-sim/smoke-test.sh", "scripts/ci/desktop-linux/smoke-test.sh", "scripts/ci/android/ui"), {"ios-sim", "desktop-linux", "android"})
+
+    def test_app_workflow_change_runs_only_that_workflow(self):
+        self.assertEqual(self.builds(".github/workflows/android-emu.yml"), {"android"})
+
+    def test_shared_earlier_run_script_runs_desktop_and_android_workflows(self):
+        self.assertEqual(self.builds("scripts/ci/desktop-linux/earlier-run.sh"), {"desktop-linux", "android"})
+
+    def test_nix_change_runs_the_android_workflow(self):
+        self.assertEqual(self.builds("flake.lock", "scripts/nix/sha256map.nix"), {"android"})
+
+    def test_dependency_change_builds_the_core_and_runs_the_android_workflow(self):
+        self.assertEqual(self.builds("cabal.project"), {"haskell", "android"})
+
+    def test_app_test_docs_and_shared_ci_files_build_nothing(self):
+        self.assertEqual(self.builds("scripts/ci/android/README.md", "scripts/ci/desktop-linux/README.md", "scripts/ci/ios-sim/README.md", "scripts/ci/snapshots-compare.py", "scripts/ci/README.md"), set())
 
     def test_build_image_change_builds_the_core_and_kotlin(self):
         self.assertEqual(self.builds("Dockerfile.build"), {"haskell", "kotlin"})

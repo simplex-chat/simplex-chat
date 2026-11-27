@@ -272,7 +272,7 @@ The app built from a branch, its core included, driven on a device by scripts an
 | `android-emu` | debug APK in an Android emulator | onboarding<br>a local group<br>both layouts<br>images sent | claude-test.md, claude-scope | [android](../../scripts/ci/android/README.md) |
 
 - Write: a scripted case in the workflow's `smoke-test.sh`, with its `ui` driver; a Claude plan in the files of the table, with `backend: yes` in claude-scope when the cases use the test backend.
-- Run: by hand only, on any branch: [CI guide, Starting a run](../../scripts/ci/README.md#starting-a-run). Each run uploads the app for manual tests.
+- Run: by hand, on any branch: [CI guide, Starting a run](../../scripts/ci/README.md#starting-a-run); build.yml runs a workflow for a pull request that changes its CI files: [CI guide, app workflows](../../scripts/ci/README.md#app-workflows). Each run uploads the app for manual tests.
 - Pitfalls:
   - A run with `claude` and `backend: yes` in claude-scope also requires the input `backend`, or its plan job fails.
   - A Claude run requires the branch rule of the GitHub environment `app-sim-claude` to include the branch.
