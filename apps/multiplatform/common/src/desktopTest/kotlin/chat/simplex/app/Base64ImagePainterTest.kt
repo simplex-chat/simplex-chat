@@ -44,6 +44,7 @@ import chat.simplex.common.views.chat.item.ImageGalleryProvider
 import chat.simplex.common.views.chatlist.ChatPreviewView
 import chat.simplex.common.views.helpers.ProfileImage
 import chat.simplex.common.views.helpers.decodeBoundedBufferedImage
+import chat.simplex.common.views.helpers.getAppFileUri
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -391,12 +392,7 @@ class Base64ImagePainterTest {
   @Test
   fun testVideoIsNotPlayedWhileItsPreviewIsDecoded() {
     val picture = base64Png(309, 191)
-    val name = "received-video-test-${UUID.randomUUID()}.mp4"
-    val video = File(appFilesDir, name)
-    try {
-      appFilesDir.mkdirs()
-      video.writeBytes(ByteArray(100))
-      val file = CIFile.getSample(fileName = name, fileSize = 100, filePath = name)
+    withVideoFile { file ->
       withMediaBlurRadius(0) {
         whileDecoderIsBusy {
           scene(ROW_WIDTH, ROW_HEIGHT) { ReceivedItem(MsgContent.MCVideo("", picture, 10), file) }.use { scene ->
@@ -405,8 +401,6 @@ class Base64ImagePainterTest {
           }
         }
       }
-    } finally {
-      video.delete()
     }
   }
 
@@ -414,12 +408,7 @@ class Base64ImagePainterTest {
   fun testVideoIsShownAsItsPreviewWithoutAPlayer() {
     val picture = base64Png(327, 173)
     base64ToBitmap(picture)
-    val name = "received-video-test-${UUID.randomUUID()}.mp4"
-    val video = File(appFilesDir, name)
-    try {
-      appFilesDir.mkdirs()
-      video.writeBytes(ByteArray(100))
-      val file = CIFile.getSample(fileName = name, fileSize = 100, filePath = name)
+    withVideoFile { file ->
       val content = MsgContent.MCVideo("", picture, 10)
       val chat = Chat.sampleData.copy(chatItems = listOf(ChatItem.getSampleData(1, CIDirection.DirectRcv(), text = content.text, file = file).copy(content = CIContent.RcvMsgContent(content))))
       withMediaBlurRadius(0) {
@@ -435,8 +424,27 @@ class Base64ImagePainterTest {
         }
       }
       assertTrue(VideoPlayerHolder.players.isEmpty())
-    } finally {
-      video.delete()
+    }
+  }
+
+  @Test
+  fun testVideoPlayerIsCreatedWhenTheVideoIsPlayed() {
+    val picture = base64Png(329, 171)
+    base64ToBitmap(picture)
+    val placed = mutableMapOf<String, Placed>()
+    withVideoFile { file ->
+      withMediaBlurRadius(0) {
+        scene(ROW_WIDTH, ROW_HEIGHT) { Box(Modifier.record(placed, "item")) { ReceivedItem(MsgContent.MCVideo("", picture, 10), file) } }.use { scene ->
+          assertTrue(scene.renderUntil { it.hasRedOnRow(20) })
+          assertTrue(VideoPlayerHolder.players.isEmpty())
+          val item = placed.getValue("item")
+          val center = Offset(item.x + item.width / 2f, item.y + item.height / 2f)
+          scene.sendPointerEvent(PointerEventType.Press, center, type = PointerType.Touch)
+          scene.sendPointerEvent(PointerEventType.Release, center, type = PointerType.Touch)
+          assertTrue(scene.renderUntil { VideoPlayerHolder.players.isNotEmpty() })
+        }
+      }
+      assertEquals(setOf(getAppFileUri(file.fileName) to false), VideoPlayerHolder.players.keys)
     }
   }
 
@@ -493,6 +501,18 @@ class Base64ImagePainterTest {
       return block()
     } finally {
       appPrefs.privacyMediaBlurRadius.set(blurRadius)
+    }
+  }
+
+  private fun withVideoFile(block: (CIFile) -> Unit) {
+    val name = "received-video-test-${UUID.randomUUID()}.mp4"
+    val video = File(appFilesDir, name)
+    try {
+      appFilesDir.mkdirs()
+      video.writeBytes(ByteArray(100))
+      block(CIFile.getSample(fileName = name, fileSize = 100, filePath = name))
+    } finally {
+      video.delete()
     }
   }
 
