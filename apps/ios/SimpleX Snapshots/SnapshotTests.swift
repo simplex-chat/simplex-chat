@@ -769,7 +769,6 @@ private func previewScenes() -> [SnapshotScene] {
         SnapshotScene(MsgContentView_Previews.self, allSizes: true),
         SnapshotScene(NameAvailableAlert_Previews.self, alert: true),
         SnapshotScene(NameAvailableAlertBeforeSale_Previews.self, alert: true),
-        SnapshotScene(NameNotFoundAlert_Previews.self, alert: true),
         SnapshotScene(NativeTextEditor_Previews.self),
         SnapshotScene(NetworkServersView_Previews.self),
         SnapshotScene(NewChatMenuButton_Previews.self),
@@ -1051,46 +1050,71 @@ struct LinkNoticeContactAlert_Previews: PreviewProvider {
     }
 }
 
-private let previewSimplexDomain = SimplexDomain(nameTLD: .simplex, domain: "alice", subDomain: [])
-private let previewNameAvailable = NameWarning.available(price: NamePrice(amount: 10000, years: 2))
-
-struct NameNotFoundAlert_Previews: PreviewProvider {
-    static var previews: some View {
-        Color.clear.background(AlertControllerPreview {
-            nameNotFoundAlert()
-        })
-    }
+private func showNameAvailableAlert(own: Bool, saleStart: Date) {
+    let start = simplexNameSaleStart
+    simplexNameSaleStart = saleStart
+    showNameWarningAlert(
+        domain: SimplexDomain(nameTLD: .simplex, domain: "alice", subDomain: []),
+        warning: .available(price: NamePrice(amount: 10000, years: 2)),
+        own: own,
+        openExistingChat: nil,
+        cleanup: nil
+    )
+    simplexNameSaleStart = start
 }
 
 struct NameAvailableAlertBeforeSale_Previews: PreviewProvider {
     static var previews: some View {
-        Color.clear.background(AlertControllerPreview {
-            nameWarningAlert(domain: previewSimplexDomain, warning: previewNameAvailable, own: false, openExistingChat: nil, cleanup: nil, now: previewDate)
-        })
+        Color.clear.background(ShownAlertPreview { showNameAvailableAlert(own: false, saleStart: .distantFuture) })
     }
 }
 
 struct NameAvailableAlert_Previews: PreviewProvider {
     static var previews: some View {
-        Color.clear.background(AlertControllerPreview {
-            nameWarningAlert(domain: previewSimplexDomain, warning: previewNameAvailable, own: false, openExistingChat: nil, cleanup: nil, now: simplexNameSaleStart)
-        })
+        Color.clear.background(ShownAlertPreview { showNameAvailableAlert(own: false, saleStart: .distantPast) })
     }
 }
 
 struct OwnNameAvailableAlertBeforeSale_Previews: PreviewProvider {
     static var previews: some View {
-        Color.clear.background(AlertControllerPreview {
-            nameWarningAlert(domain: previewSimplexDomain, warning: previewNameAvailable, own: true, openExistingChat: nil, cleanup: nil, now: previewDate)
-        })
+        Color.clear.background(ShownAlertPreview { showNameAvailableAlert(own: true, saleStart: .distantFuture) })
     }
 }
 
 struct OwnNameAvailableAlert_Previews: PreviewProvider {
     static var previews: some View {
-        Color.clear.background(AlertControllerPreview {
-            nameWarningAlert(domain: previewSimplexDomain, warning: previewNameAvailable, own: true, openExistingChat: nil, cleanup: nil, now: simplexNameSaleStart)
-        })
+        Color.clear.background(ShownAlertPreview { showNameAvailableAlert(own: true, saleStart: .distantPast) })
+    }
+}
+
+private struct ShownAlertPreview: UIViewControllerRepresentable {
+    var show: () -> Void
+
+    func makeUIViewController(context: Context) -> ShownAlertPresenter {
+        ShownAlertPresenter(show)
+    }
+
+    func updateUIViewController(_ presenter: ShownAlertPresenter, context: Context) {}
+}
+
+private final class ShownAlertPresenter: UIViewController {
+    private let show: () -> Void
+
+    init(_ show: @escaping () -> Void) {
+        self.show = show
+        super.init(nibName: nil, bundle: nil)
+    }
+
+    required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        if presentedViewController == nil {
+            let topViewController = getTopViewController
+            getTopViewController = { self }
+            UIView.performWithoutAnimation(show)
+            getTopViewController = topViewController
+        }
     }
 }
 

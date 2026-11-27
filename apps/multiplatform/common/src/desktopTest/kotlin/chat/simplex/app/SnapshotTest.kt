@@ -160,7 +160,6 @@ private val previewScenes = listOf(
   SnapshotScene("SimpleButton.PreviewShareButton") { PreviewShareButton() },
   SnapshotScene("ConnectPlan.PreviewLinkNoticeAlertGroup") { PreviewLinkNoticeAlertGroup() },
   SnapshotScene("ConnectPlan.PreviewLinkNoticeAlertContact") { PreviewLinkNoticeAlertContact() },
-  SnapshotScene("ConnectPlan.PreviewNameNotFoundAlert") { PreviewNameNotFoundAlert() },
   SnapshotScene("ConnectPlan.PreviewNameAvailableAlertBeforeSale") { PreviewNameAvailableAlertBeforeSale() },
   SnapshotScene("ConnectPlan.PreviewNameAvailableAlert") { PreviewNameAvailableAlert() },
   SnapshotScene("ConnectPlan.PreviewOwnNameAvailableAlertBeforeSale") { PreviewOwnNameAvailableAlertBeforeSale() },

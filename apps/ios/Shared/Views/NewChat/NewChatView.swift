@@ -1362,19 +1362,6 @@ private func namePrice(_ price: NamePrice) -> String {
     return String.localizedStringWithFormat(NSLocalizedString("%1$@ for %2$d years", comment: "name price"), dollars, price.years)
 }
 
-func nameNotFoundAlert() -> UIAlertController {
-    alertController(
-        NSLocalizedString("Name not registered", comment: "alert title"),
-        message: NSLocalizedString("This SimpleX name is not registered. See if it is available at simplex.domains.", comment: "alert message"),
-        actions: [
-            UIAlertAction(title: NSLocalizedString("Open simplex.domains", comment: "alert action"), style: .default) { _ in
-                openBrowserAlert(uri: "https://simplex.domains")
-            },
-            okAlertAction
-        ]
-    )
-}
-
 func showNameWarningAlert(
     domain: SimplexDomain,
     warning: NameWarning,
@@ -1382,24 +1369,13 @@ func showNameWarningAlert(
     openExistingChat: (() -> Void)?,
     cleanup: (() -> Void)?
 ) {
-    getTopViewController()?.present(nameWarningAlert(domain: domain, warning: warning, own: own, openExistingChat: openExistingChat, cleanup: cleanup), animated: true)
-}
-
-func nameWarningAlert(
-    domain: SimplexDomain,
-    warning: NameWarning,
-    own: Bool,
-    openExistingChat: (() -> Void)?,
-    cleanup: (() -> Void)?,
-    now: Date = .now
-) -> UIAlertController {
     let nameStr = domain.fullDomainName
-    func alert(_ title: String, _ message: String, action: (title: String, handler: () -> Void)? = nil) -> UIAlertController {
-        alertController(title, message: message, actions: [
+    func alert(_ title: String, _ message: String, action: (title: String, handler: () -> Void)? = nil) {
+        showAlert(title, message: message, actions: {[
             action.map { action in UIAlertAction(title: action.title, style: .default) { _ in action.handler(); cleanup?() } },
             openExistingChat.map { open in UIAlertAction(title: NSLocalizedString("Open chat", comment: "new chat action"), style: .default) { _ in open() } },
             okCleanupAlertAction(cleanup: cleanup)
-        ].compactMap { $0 })
+        ].compactMap { $0 }})
     }
     let openHowTo = { openBrowserAlert(uri: "https://simplex.domains") }
     switch warning {
@@ -1409,17 +1385,17 @@ func nameWarningAlert(
         } else {
             String.localizedStringWithFormat(NSLocalizedString("%1$@ expired on %2$@.", comment: "alert message"), nameStr, badgeDateText(expiredAt))
         }
-        return alert(NSLocalizedString("Name expired", comment: "alert title"), message)
+        alert(NSLocalizedString("Name expired", comment: "alert title"), message)
     case let .expired(expiredAt, graceUntil):
         let message = if let graceUntil {
             String.localizedStringWithFormat(NSLocalizedString("Your name %1$@ expired on %2$@. Renew it before %3$@.", comment: "alert message"), nameStr, badgeDateText(expiredAt), badgeDateText(graceUntil))
         } else {
             String.localizedStringWithFormat(NSLocalizedString("Your name %1$@ expired on %2$@.", comment: "alert message"), nameStr, badgeDateText(expiredAt))
         }
-        return alert(NSLocalizedString("Your name has expired", comment: "alert title"), message, action: (NSLocalizedString("Renew", comment: "alert action"), openHowTo))
+        alert(NSLocalizedString("Your name has expired", comment: "alert title"), message, action: (NSLocalizedString("Renew", comment: "alert action"), openHowTo))
     case let .available(price) where !own:
-        let beforeSale = now < simplexNameSaleStart
-        return alert(
+        let beforeSale = Date.now < simplexNameSaleStart
+        alert(
             openExistingChat == nil ? NSLocalizedString("Name not registered", comment: "alert title") : NSLocalizedString("Name no longer registered", comment: "alert title"),
             beforeSale
             ? String.localizedStringWithFormat(NSLocalizedString("%@ is not registered. See if it is available at simplex.domains.", comment: "alert message"), nameStr)
@@ -1427,8 +1403,8 @@ func nameWarningAlert(
             action: (beforeSale ? NSLocalizedString("Open simplex.domains", comment: "alert action") : NSLocalizedString("Register", comment: "alert action"), openHowTo)
         )
     case let .available(price):
-        let beforeSale = now < simplexNameSaleStart
-        return alert(
+        let beforeSale = Date.now < simplexNameSaleStart
+        alert(
             NSLocalizedString("Your name has expired", comment: "alert title"),
             beforeSale
             ? String.localizedStringWithFormat(NSLocalizedString("Your name %@ is no longer registered. See if it is available at simplex.domains.", comment: "alert message"), nameStr)
@@ -1436,7 +1412,7 @@ func nameWarningAlert(
             action: (beforeSale ? NSLocalizedString("Open simplex.domains", comment: "alert action") : NSLocalizedString("Re-register", comment: "alert action"), openHowTo)
         )
     case .reservedForCommunity:
-        return alert(
+        alert(
             NSLocalizedString("Name not registered", comment: "alert title"),
             String.localizedStringWithFormat(NSLocalizedString("%@ is reserved for community. Please contact SimpleX Chat if you are interested in using it.", comment: "alert message"), nameStr),
             action: (NSLocalizedString("Connect to SimpleX team", comment: "alert action"), {
@@ -1444,7 +1420,7 @@ func nameWarningAlert(
             })
         )
     case .notRegistered:
-        return alert(NSLocalizedString("Name not registered", comment: "alert title"), NSLocalizedString("This SimpleX name is not registered. Please check the name.", comment: ""))
+        alert(NSLocalizedString("Name not registered", comment: "alert title"), NSLocalizedString("This SimpleX name is not registered. Please check the name.", comment: ""))
     }
 }
 
