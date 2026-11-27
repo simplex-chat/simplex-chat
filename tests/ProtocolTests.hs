@@ -26,7 +26,7 @@ import Simplex.Messaging.Agent.Protocol
 import Simplex.Messaging.Compression (compress1)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.Ratchet
-import Simplex.Messaging.Encoding (smpDecode, smpEncode)
+import Simplex.Messaging.Encoding (smpEncode)
 import Simplex.Messaging.Encoding.String (strDecode)
 import Simplex.Messaging.Protocol (EntityId (..), supportedSMPClientVRange)
 import Simplex.Messaging.ServiceScheme
@@ -207,8 +207,11 @@ testChatPreferences = Just Preferences {voice = Just VoicePreference {allow = FA
 testGroupPreferences :: Maybe GroupPreferences
 testGroupPreferences = Just GroupPreferences {timedMessages = Nothing, directMessages = Nothing, reactions = Just ReactionsGroupPreference {enable = FEOn}, voice = Just VoiceGroupPreference {enable = FEOn, role = Nothing}, files = Nothing, fullDelete = Nothing, simplexLinks = Nothing, history = Nothing, reports = Nothing, support = Nothing, sessions = Nothing, comments = Nothing, signMessages = Nothing, commands = Nothing, msgPriority = Nothing, edits = Nothing, _json = NoJSON Nothing}
 
+testMemberRef :: MemberRef
+testMemberRef = MemberRef {memberId = MemberId "\1\2\3\4", memberName = "reviewer"}
+
 testProfile :: Profile
-testProfile = Profile {displayName = "alice", fullName = "Alice", shortDescr = Nothing, description = Nothing, image = Just (ImageData "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII="), peerType = Nothing, contactLink = Nothing, preferences = testChatPreferences, badge = Nothing, contactDomain = Nothing}
+testProfile =Profile {displayName = "alice", fullName = "Alice", shortDescr = Nothing, description = Nothing, image = Just (ImageData "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII="), peerType = Nothing, contactLink = Nothing, preferences = testChatPreferences, badge = Nothing, contactDomain = Nothing}
 
 testGroupProfile :: GroupProfile
 testGroupProfile = GroupProfile {displayName = "team", fullName = "Team", description = Nothing, shortDescr = Nothing, image = Nothing, publicGroup = Nothing, groupPreferences = testGroupPreferences, memberAdmission = Nothing, chatLayout = Nothing}
@@ -258,11 +261,11 @@ decodeChatMessageTest = describe "Chat message encoding/decoding" $ do
     map (allowedPriority False) priorities `shouldBe` [MPSilent, MPNormal, MPNormal]
     map (allowedPriority True) priorities `shouldBe` priorities
   it "x.msg.update priority sets no notification flag" $ do
-    let msgUpdate p = XMsgUpdate (SharedMsgId "\1\2\3\4") (MCText "hello") [] Nothing Nothing Nothing Nothing p Nothing
+    let msgUpdate p = XMsgUpdate (SharedMsgId "\1\2\3\4") (MCText "hello") [] Nothing Nothing Nothing Nothing Nothing p Nothing
     map (eventHasNotification . msgUpdate) [MPSilent, MPNormal, MPHigh] `shouldBe` [False, False, False]
-  it "x.grp.msg.forward has the notification of the forwarded message" $ do
-    let fwd p = XGrpMsgForward (GrpMsgForward (FwdMember (MemberId "\1\2\3\4") "alice") (systemToUTCTime $ MkSystemTime 1 0)) $ ChatMessage chatInitialVRange Nothing $ XMsgNew ((mcSimple (MCText "hello")) {priority = p})
-    map (eventHasNotification . fwd) [MPSilent, MPNormal, MPHigh] `shouldBe` [False, True, True]
+  it "x.msg.new sent as submember" $
+    "{\"v\":\"9\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello\",\"type\":\"text\"},\"asMember\":{\"memberId\":\"AQIDBA==\",\"memberName\":\"reviewer\"}}}"
+      #==# XMsgNew ((mcSimple (MCText "hello")) {asMember = Just testMemberRef})
   it "x.msg.new simple link" $
     "{\"v\":\"9\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"https://simplex.chat\",\"type\":\"link\",\"preview\":{\"description\":\"SimpleX Chat\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgA\",\"title\":\"SimpleX Chat\",\"uri\":\"https://simplex.chat\"}}}}"
       #==# XMsgNew (mcSimple (MCLink "https://simplex.chat" $ LinkPreview {uri = "https://simplex.chat", title = "SimpleX Chat", description = "SimpleX Chat", image = ImageData "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgA", content = Nothing}))
@@ -337,16 +340,19 @@ decodeChatMessageTest = describe "Chat message encoding/decoding" $ do
       ##==## ChatMessage chatInitialVRange (Just $ SharedMsgId "\1\2\3\4") (XMsgNew $ (mcForward Nothing (MCText "hello")) {file = Just FileInvitation {fileName = "photo.jpg", fileSize = 12345, fileDigest = Nothing, fileConnReq = Nothing, fileInline = Nothing, fileDescr = Nothing, fileBadge = Nothing}})
   it "x.msg.update" $
     "{\"v\":\"9\",\"event\":\"x.msg.update\",\"params\":{\"msgId\":\"AQIDBA==\", \"content\":{\"text\":\"hello\",\"type\":\"text\"}}}"
-      #==# XMsgUpdate (SharedMsgId "\1\2\3\4") (MCText "hello") [] Nothing Nothing Nothing Nothing MPNormal Nothing
+      #==# XMsgUpdate (SharedMsgId "\1\2\3\4") (MCText "hello") [] Nothing Nothing Nothing Nothing Nothing MPNormal Nothing
   it "x.msg.update - high priority" $
     "{\"v\":\"9\",\"event\":\"x.msg.update\",\"params\":{\"msgId\":\"AQIDBA==\",\"content\":{\"text\":\"hello\",\"type\":\"text\"},\"priority\":1}}"
-      #==# XMsgUpdate (SharedMsgId "\1\2\3\4") (MCText "hello") [] Nothing Nothing Nothing Nothing MPHigh Nothing
+      #==# XMsgUpdate (SharedMsgId "\1\2\3\4") (MCText "hello") [] Nothing Nothing Nothing Nothing Nothing MPHigh Nothing
   it "x.msg.update - as new" $
     "{\"v\":\"9\",\"event\":\"x.msg.update\",\"params\":{\"msgId\":\"AQIDBA==\",\"content\":{\"text\":\"hello\",\"type\":\"text\"},\"asNew\":true}}"
-      #==# XMsgUpdate (SharedMsgId "\1\2\3\4") (MCText "hello") [] Nothing Nothing Nothing Nothing MPNormal (Just True)
+      #==# XMsgUpdate (SharedMsgId "\1\2\3\4") (MCText "hello") [] Nothing Nothing Nothing Nothing Nothing MPNormal (Just True)
   it "x.msg.update - silent as new" $
     "{\"v\":\"9\",\"event\":\"x.msg.update\",\"params\":{\"msgId\":\"AQIDBA==\",\"content\":{\"text\":\"hello\",\"type\":\"text\"},\"priority\":-1,\"asNew\":true}}"
-      #==# XMsgUpdate (SharedMsgId "\1\2\3\4") (MCText "hello") [] Nothing Nothing Nothing Nothing MPSilent (Just True)
+      #==# XMsgUpdate (SharedMsgId "\1\2\3\4") (MCText "hello") [] Nothing Nothing Nothing Nothing Nothing MPSilent (Just True)
+  it "x.msg.update sent as submember" $
+    "{\"v\":\"9\",\"event\":\"x.msg.update\",\"params\":{\"msgId\":\"AQIDBA==\",\"content\":{\"text\":\"hello\",\"type\":\"text\"},\"asMember\":{\"memberId\":\"AQIDBA==\",\"memberName\":\"reviewer\"}}}"
+      #==# XMsgUpdate (SharedMsgId "\1\2\3\4") (MCText "hello") [] Nothing Nothing Nothing Nothing (Just testMemberRef) MPNormal Nothing
   it "x.msg.update priority is encoded as -1, absent or 1" $ do
     let msgUpdate p = "{\"v\":\"9\",\"event\":\"x.msg.update\",\"params\":{\"msgId\":\"AQIDBA==\",\"content\":{\"text\":\"hello\",\"type\":\"text\"}" <> p <> "}}"
         reencoded (p, p') = case parseChatMessages (msgUpdate $ ",\"priority\":" <> p) of
@@ -499,14 +505,6 @@ decodeChatMessageTest = describe "Chat message encoding/decoding" $ do
       #==# XGrpMsgForward
         (GrpMsgForward (FwdMember (MemberId "\1\2\3\4") "alice") (systemToUTCTime $ MkSystemTime 1 1))
         (ChatMessage chatInitialVRange (Just $ SharedMsgId "\1\2\3\4") (XMsgNew (mcSimple (MCText "hello"))))
-  it "x.grp.msg.forward of submember" $
-    "{\"v\":\"9\",\"event\":\"x.grp.msg.forward\",\"params\":{\"memberId\":\"AQIDBA==\",\"memberName\":\"alice\",\"via\":\"BQYHCA==\",\"msg\":{\"v\":\"9\",\"msgId\":\"AQIDBA==\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello\",\"type\":\"text\"}}},\"msgTs\":\"1970-01-01T00:00:01.000000001Z\"}}"
-      #==# XGrpMsgForward
-        (GrpMsgForward (FwdMemberVia (MemberId "\1\2\3\4") "alice" (MemberId "\5\6\7\8")) (systemToUTCTime $ MkSystemTime 1 1))
-        (ChatMessage chatInitialVRange (Just $ SharedMsgId "\1\2\3\4") (XMsgNew (mcSimple (MCText "hello"))))
-  it "binary forward header of submember" $
-    let fwd = GrpMsgForward (FwdMemberVia (MemberId "\1\2\3\4") "alice" (MemberId "\5\6\7\8")) (systemToUTCTime $ MkSystemTime 1 0)
-     in smpDecode (smpEncode fwd) `shouldBe` Right fwd
   it "x.info.probe" $
     "{\"v\":\"9\",\"event\":\"x.info.probe\",\"params\":{\"probe\":\"AQIDBA==\"}}"
       #==# XInfoProbe (Probe "\1\2\3\4")

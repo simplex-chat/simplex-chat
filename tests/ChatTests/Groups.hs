@@ -42,10 +42,10 @@ import Simplex.Chat.Core (sendChatCmdStr)
 import Simplex.Chat.Library.Internal (chatStoreCxt, encodeConnInfo, getShortLinkConnReq, memberInfo, sendDirectMemberMessage, sendGroupMessage', uniqueMsgMentions, updatedMentionNames)
 import Simplex.Chat.Markdown (parseMaybeMarkdownList)
 import Simplex.Chat.Messages (AChat (..), AChatItem (..), AChatItemUpdate (..), CChatItem (..), CIMention (..), CIMentionMember (..), CIMeta (CIMeta, itemId, priority, userMention), CIQuote (CIQuote, chatDir, itemId), Chat (Chat, chatInfo, chatItems, chatStats), ChatItem (ChatItem, content, mentions, meta, quotedItem), ChatItemId, ChatStats (..), ChatType (CTGroup), JSONCIDirection (JCIGroupRcv), JSONChatInfo (JCInfoGroup), highPriority, isUserMention, jsonCIQDirection, jsonChatInfo, toChatType)
-import Simplex.Chat.Messages.Batch (encodeBinaryBatch, encodeFwdElement)
+import Simplex.Chat.Messages.Batch (encodeBatchElement, encodeBinaryBatch, encodeFwdElement)
 import Simplex.Chat.Messages.CIContent (MsgDirection (MDRcv), ciMsgContent, publicGroupNoE2EText, toMsgDirection)
 import Simplex.Chat.Options
-import Simplex.Chat.Protocol (ChatBinding (CBGroup), ChatMessage (ChatMessage), ChatMsgEvent (BFileChunk, XFile, XGrpMemDel, XGrpMemFwd, XGrpMemIntro, XGrpMemNew, XGrpMemRestrict, XGrpRelayInv, XInfo, XMember, XMsgFileDescr, XMsgUpdate, XMsgNew, XMsgDel), FileChunk (..), FwdSender (FwdMember, FwdMemberVia, FwdChannel), GrpMemDel (..), GrpMsgForward (GrpMsgForward), KeyRef (KRMember), LinkNotice (..), MsgContainer (..), MsgEncodingI, MsgMention (..), MsgContent (..), MsgPriority (..), MsgSigning (MsgSigning), VerifiedMsg (VMSigned, VMUnsigned), chatMsgToBody, mcSimple, msgContentText, signChatMsgBody, supportedChatVRange)
+import Simplex.Chat.Protocol (ChatBinding (CBGroup), ChatMessage (ChatMessage), ChatMsgEvent (BFileChunk, XFile, XGrpMemDel, XGrpMemFwd, XGrpMemIntro, XGrpMemNew, XGrpMemRestrict, XGrpRelayInv, XInfo, XMember, XMsgFileDescr, XMsgUpdate, XMsgNew, XMsgDel), FileChunk (..), FwdSender (FwdMember, FwdChannel), GrpMemDel (..), GrpMsgForward (GrpMsgForward), KeyRef (KRMember), LinkNotice (..), MemberRef (..), MsgContainer (..), MsgEncodingI, MsgMention (..), MsgContent (..), MsgPriority (..), MsgSigning (MsgSigning), VerifiedMsg (VMUnsigned), chatMsgToBody, mcSimple, msgContentText, signChatMsgBody, supportedChatVRange)
 import qualified Simplex.Chat.Store as Store
 import Simplex.Chat.Store.Direct (setQuotaErrCounter)
 import Simplex.Chat.Store.Groups (getGroupMembers, getGroupRelayMembers)
@@ -55,7 +55,7 @@ import Simplex.Chat.Terminal.Output (ChatTerminal (sendNotification), chatEventN
 import Simplex.Chat.Types
 import Simplex.Chat.Types.MemberRelations (MemberRelation (..), getRelation, setRelation)
 import Simplex.Chat.Types.Preferences (EditsGroupPreference (..), FullGroupPreferences (FullGroupPreferences, edits), GroupFeatureEnabled (..))
-import Simplex.Chat.Types.Shared (GroupMemberRole (..), GroupAcceptance (..), MsgSigStatus (MSSVerified))
+import Simplex.Chat.Types.Shared (GroupMemberRole (..), GroupAcceptance (..))
 import Simplex.Chat.Types.UITheme (ChatLayout (..))
 import Simplex.Messaging.Agent (createConnection, joinConnection, prepareConnectionToJoin, sendMessages, vrValue)
 import Simplex.Messaging.Agent.Client (agentClientStore)
@@ -250,7 +250,6 @@ chatGroupTests = do
   describe "group message forwarding" $ do
     it "forward messages between invitee and introduced (x.msg.new)" testGroupMsgForwardMessage
     it "reject forwarded content attributed to own membership" testGroupMsgForwardOwnMembershipRejected
-    it "reject forwarded content of unknown submember of own membership or from a forwarder that is neither host nor the member named as via" testGroupMsgForwardViaRejected
     it "forward batched messages" testGroupMsgForwardBatched
     it "forward reports to moderators, don't forward to members (x.msg.new, MCReport)" testGroupMsgForwardReport
     it "forward blocked member's messages to moderators only, without notifications" testGroupMsgForwardBlockedToModerators
@@ -371,6 +370,7 @@ chatGroupTests = do
     it "update message sent as member" testSubmemberUpdate
     it "introduce user's submember to later joiner" testSubmemberLaterJoiner
     it "joiner of previous version creates unknown member" testSubmemberPrevVersionJoiner
+    it "announce user's submember only to members of current version" testSubmemberPrevVersionMember
     it "host forwards messages and updates of another member's submember until its invitee connects to that member" testSubmemberOtherAdmin
     it "host forwards messages of another member's blocked submember to moderators only, without notifications" testSubmemberBlockedToModerators
     it "introduce another member's submember after that member" testSubmemberIntroOrder
@@ -379,12 +379,11 @@ chatGroupTests = do
     it "remove user's submember" testSubmemberRemove
     it "remove user's submember by another admin" testSubmemberRemoveByAdmin
     it "refuse role above user role, member that is not user's submember, user below admin and incognito membership" testSubmemberRefused
-    it "refuse announcement against via rules and forward with another via" testSubmemberAnnounceRefused
+    it "refuse announcement against via rules and messages as a member that is not a submember of the sender" testSubmemberAnnounceRefused
     it "refuse introduction against via rules" testSubmemberIntroRefused
     it "refuse support scope, files, quotes and broadcast delete as member; moderation names member" testSubmemberSendRefused
     it "sign messages and updates of user's submember with user key" testSubmemberSigned
-    it "deliver messages sent as member unsigned to members of previous version" testSubmemberSignedPrevVersion
-    it "deliver pending messages sent as member unsigned" testSubmemberSignedPending
+    it "deliver pending messages sent as member signed" testSubmemberSignedPending
     it "joiner records via and verifies signed history of another member's removed submember" testSubmemberSignedHistory
     it "refuse in channels" testSubmemberRefusedChannel
     it "submembers recorded for the apps" testSubmemberRecordings
@@ -6417,27 +6416,6 @@ testGroupMsgForwardOwnMembershipRejected =
       bob <## "user profile: bob (Bob)"
       bob <## "use /p <name> [<bio>] to change it"
 
-testGroupMsgForwardViaRejected :: HasCallStack => TestParams -> IO ()
-testGroupMsgForwardViaRejected =
-  testChat3 aliceProfile bobProfile cathProfile $
-    \alice bob cath -> do
-      createGroup3 "team" alice bob cath
-      threadDelay 1000000
-      bobMemId <- memberIdByName alice "bob"
-      aliceMemId <- memberIdByName bob "alice"
-      aliceConnId <- relayConnIdToMember alice "bob"
-      cathConnId <- relayConnIdToMember cath "bob"
-      ts <- getCurrentTime
-      let forged sharedId = ChatMessage chatInitialVRange (Just $ SharedMsgId sharedId) (XMsgNew $ mcSimple $ MCText "forged")
-          fwdVia memId name viaId = GrpMsgForward (FwdMemberVia (MemberId memId) name viaId) ts
-      agentSendBody alice aliceConnId $ encodeBinaryBatch [encodeFwdElement (fwdVia "unknown_1" "xavier" bobMemId) (VMUnsigned $ forged "forged_msg1")]
-      alice #> "#team hello"
-      [bob, cath] *<# "#team alice> hello"
-      agentSendBody cath cathConnId $ encodeBinaryBatch [encodeFwdElement (fwdVia "unknown_2" "yvonne" aliceMemId) (VMUnsigned $ forged "forged_msg2")]
-      cath #> "#team hey"
-      [alice, bob] *<# "#team cath> hey"
-      withCCTransaction bob (\db -> DB.query_ db "SELECT count(1) FROM group_members WHERE member_via IS NOT NULL" :: IO [[Int]]) `shouldReturn` [[0]]
-
 testGroupMsgForwardBatched :: HasCallStack => TestParams -> IO ()
 testGroupMsgForwardBatched =
   testChat3 aliceProfile bobProfile cathProfile $
@@ -7559,7 +7537,7 @@ testGroupUpdateAsNewSupportScope =
       bob #$> ("/_get chat #1(_support) count=2", chat, [(1, "help 2"), (0, "hi")])
       aliceConnId <- relayConnIdToMember bob "alice"
       agentSendBody bob aliceConnId $ chatMsgToBody $ ChatMessage supportedChatVRange Nothing $
-        XMsgUpdate helpSharedId (MCText "help 3") M.empty Nothing Nothing Nothing Nothing MPNormal (Just True)
+        XMsgUpdate helpSharedId (MCText "help 3") M.empty Nothing Nothing Nothing Nothing Nothing MPNormal (Just True)
       alice <# "#team (support: bob) bob> [edited] help 3"
       alice #$> ("/_get chat #1(_support:2) count=2", chat, [(0, "help 3"), (1, "hi")])
 
@@ -9922,7 +9900,7 @@ testBlockForAllNoRowsForMembers =
       alice <# "#team bob> hi [blocked by admin] <muted>"
       connId <- relayConnIdToMember bob "cath"
       agentSendBody bob connId $ chatMsgToBody $ ChatMessage chatInitialVRange (Just $ SharedMsgId "\1\2\3\4") $
-        XMsgUpdate (SharedMsgId "\5\6\7\8") (MCText "edit") M.empty Nothing Nothing Nothing Nothing MPNormal Nothing
+        XMsgUpdate (SharedMsgId "\5\6\7\8") (MCText "edit") M.empty Nothing Nothing Nothing Nothing Nothing MPNormal Nothing
       cath <// 1000000
 
       alice ##> "/unblock for all #team bob"
@@ -16377,7 +16355,7 @@ testChannelMemberUpdateEnforcement ps =
             connId <- relayConnIdToMember bob "dan"
             ts <- getCurrentTime
             let ChatController {smpAgent = bobAgent} = chatController bob
-                chatMsg = ChatMessage chatInitialVRange Nothing (XMsgUpdate sharedId (MCText "forged") M.empty Nothing Nothing Nothing Nothing MPNormal Nothing)
+                chatMsg = ChatMessage chatInitialVRange Nothing (XMsgUpdate sharedId (MCText "forged") M.empty Nothing Nothing Nothing Nothing Nothing MPNormal Nothing)
                 fwd = GrpMsgForward (FwdMember cathMemId "cath") ts
                 body = encodeBinaryBatch [encodeFwdElement fwd (VMUnsigned chatMsg)]
             sent <- runExceptT $ sendMessages bobAgent [(connId, PQEncOff, MsgFlags False, vrValue body)]
@@ -16940,7 +16918,7 @@ testSubmemberMessages =
              ]
       alice ##> "/_send #1(as_member=4) text hi"
       alice <# "#team hi"
-      [bob, cath] *<# "#team reviewer> hi [>>]"
+      [bob, cath] *<# "#team reviewer> hi"
 
 testSubmemberUpdate :: HasCallStack => TestParams -> IO ()
 testSubmemberUpdate =
@@ -16951,7 +16929,7 @@ testSubmemberUpdate =
       submemberAdded [bob, cath]
       alice ##> "/_send #1(as_member=4) text hi"
       alice <# "#team hi"
-      [bob, cath] *<# "#team reviewer> hi [>>]"
+      [bob, cath] *<# "#team reviewer> hi"
       ciId <- lastItemId alice
       alice ##> ("/_update item #1 " <> ciId <> " text hello")
       alice <# "#team [edited] hello"
@@ -16966,7 +16944,7 @@ testSubmemberLaterJoiner =
       submemberAdded [bob, cath]
       alice ##> "/_send #1(as_member=4) text hi"
       alice <# "#team hi"
-      [bob, cath] *<# "#team reviewer> hi [>>]"
+      [bob, cath] *<# "#team reviewer> hi"
       connectUsers alice dan
       addMember "team" alice dan GRMember
       dan ##> "/j team"
@@ -16995,7 +16973,7 @@ testSubmemberLaterJoiner =
              ]
       alice ##> "/_send #1(as_member=4) text hello"
       alice <# "#team hello"
-      [bob, cath, dan] *<# "#team reviewer> hello [>>]"
+      [bob, cath, dan] *<# "#team reviewer> hello"
 
 testSubmemberPrevVersionJoiner :: HasCallStack => TestParams -> IO ()
 testSubmemberPrevVersionJoiner ps =
@@ -17007,7 +16985,7 @@ testSubmemberPrevVersionJoiner ps =
         submemberAdded [bob]
         alice ##> "/_send #1(as_member=3) text hi"
         alice <# "#team hi"
-        bob <# "#team reviewer> hi [>>]"
+        bob <# "#team reviewer> hi"
         connectUsers alice dan
         addMember "team" alice dan GRMember
         dan ##> "/j team"
@@ -17015,14 +16993,23 @@ testSubmemberPrevVersionJoiner ps =
           [ alice <## "#team: dan joined the group",
             dan
               <### [ "#team: you joined the group",
-                     StartsWith "#team: alice forwarded a message from an unknown member, creating unknown member record",
-                     EndsWith "hi [>>]",
+                     WithTime "#team reviewer> hi [>>]",
                      "#team: member bob (Bob) is connected"
                    ],
             do
               bob <## "#team: alice added dan (Daniel) to the group (connecting...)"
               bob <## "#team: new member dan is connected"
           ]
+
+testSubmemberPrevVersionMember :: HasCallStack => TestParams -> IO ()
+testSubmemberPrevVersionMember ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatCfg ps testCfgVPrev "bob" bobProfile $ \bob -> do
+      createGroup2 "team" alice bob
+      addSubmember alice "member"
+      alice ##> "/_send #1(as_member=3) text hi"
+      alice <# "#team hi"
+      bob <# "#team reviewer> hi"
 
 testSubmemberOtherAdmin :: HasCallStack => TestParams -> IO ()
 testSubmemberOtherAdmin =
@@ -17046,7 +17033,8 @@ testSubmemberOtherAdmin =
       submemberAdded [bob, cath]
       alice ##> "/_send #1(as_member=4) text hi"
       alice <# "#team hi"
-      [bob, cath] *<# "#team reviewer> hi [>>]"
+      bob <# "#team reviewer> hi"
+      cath <# "#team reviewer> hi [>>]"
       hiId <- lastItemId alice
       alice ##> ("/_update item #1 " <> hiId <> " text hello")
       alice <# "#team [edited] hello"
@@ -17082,7 +17070,7 @@ testSubmemberBlockedToModerators =
       sent <- lastSndMsgId bob cathConnId
       alice ##> "/_send #1(as_member=4) text spam"
       alice <# "#team spam"
-      bob <# "#team reviewer> spam [blocked by admin] [>>] <muted>"
+      bob <# "#team reviewer> spam [blocked by admin] <muted>"
       cath <// 500000
       lastSndMsgId bob cathConnId `shouldReturn` sent
       bob ##> "/mr team cath moderator"
@@ -17093,7 +17081,7 @@ testSubmemberBlockedToModerators =
         ]
       alice ##> "/_send #1(as_member=4) text spam again"
       alice <# "#team spam again"
-      bob <# "#team reviewer> spam again [blocked by admin] [>>] <muted>"
+      bob <# "#team reviewer> spam again [blocked by admin] <muted>"
       cath <# "#team reviewer> spam again [blocked by admin] [>>] <muted>"
       lastSndMsgFlags bob cathConnId 1 `shouldReturn` ["F"]
 
@@ -17134,7 +17122,7 @@ testSubmemberReply =
       submemberAdded [bob, cath]
       alice ##> "/_send #1(as_member=4) text hi"
       alice <# "#team hi"
-      [bob, cath] *<# "#team reviewer> hi [>>]"
+      [bob, cath] *<# "#team reviewer> hi"
       aliceHiId <- lastItemId alice
       cathHiId <- lastItemId cath
       bob `send` "> #team @reviewer (hi) @reviewer thanks"
@@ -17178,7 +17166,7 @@ testSubmemberRoleRules =
       submemberAdded [bob]
       alice ##> "/_send #1(as_member=3) json [{\"msgContent\": {\"type\": \"text\", \"text\": \"hi\"}, \"priority\": 1}]"
       alice <# "#team hi"
-      bob <# "#team reviewer> hi [>>]"
+      bob <# "#team reviewer> hi"
       itemPriority alice "/_get chat #1 count=1" `shouldReturn` MPNormal
       hiId <- lastItemId alice
       bobHiId <- lastItemId bob
@@ -17190,12 +17178,10 @@ testSubmemberRoleRules =
       alice ##> ("/_update item #1 " <> hiId <> " text hey")
       alice <## "cannot update this item"
       reviewerId <- memberIdByName bob "reviewer"
-      aliceId <- memberIdByName bob "alice"
       connId <- relayConnIdToMember alice "bob"
-      ts <- getCurrentTime
-      let urgentMsg = ChatMessage chatInitialVRange (Just $ SharedMsgId "urgent_msg") (XMsgNew ((mcSimple (MCText "urgent") :: MsgContainer) {priority = MPHigh}))
-      agentSendBody alice connId $ encodeBinaryBatch [encodeFwdElement (GrpMsgForward (FwdMemberVia reviewerId "reviewer" aliceId) ts) (VMUnsigned urgentMsg)]
-      bob <# "#team reviewer> urgent [>>]"
+      let urgentMsg = ChatMessage chatInitialVRange (Just $ SharedMsgId "urgent_msg") (XMsgNew ((mcSimple (MCText "urgent") :: MsgContainer) {priority = MPHigh, asMember = Just MemberRef {memberId = reviewerId, memberName = "reviewer"}}))
+      agentSendBody alice connId $ chatMsgToBody urgentMsg
+      bob <# "#team reviewer> urgent"
 
 testSubmemberRemove :: HasCallStack => TestParams -> IO ()
 testSubmemberRemove =
@@ -17217,12 +17203,17 @@ testSubmemberRemoveByAdmin =
       submemberAdded [bob, cath]
       alice ##> "/_send #1(as_member=4) text hi"
       alice <# "#team hi"
-      [bob, cath] *<# "#team reviewer> hi [>>]"
+      [bob, cath] *<# "#team reviewer> hi"
       bob ##> "/rm team reviewer"
       bob <## "#team: you removed reviewer from the group (signed)"
       mapM_ (<## "#team: bob removed reviewer from the group (signed)") [alice, cath]
       alice ##> "/_send #1(as_member=4) text hey"
       alice <## "your group connection is not active yet, try later"
+      reviewerId <- memberIdByName alice "reviewer"
+      connId <- relayConnIdToMember alice "bob"
+      agentSendBody alice connId $ chatMsgToBody $ ChatMessage chatInitialVRange (Just $ SharedMsgId "removed_msg") (XMsgNew ((mcSimple (MCText "late") :: MsgContainer) {asMember = Just MemberRef {memberId = reviewerId, memberName = "reviewer"}}))
+      alice #> "#team hello"
+      [bob, cath] *<# "#team alice> hello"
 
 testSubmemberRefused :: HasCallStack => TestParams -> IO ()
 testSubmemberRefused =
@@ -17250,10 +17241,10 @@ testSubmemberAnnounceRefused =
       addSubmember alice "admin"
       submemberAdded [bob, cath]
       aliceId <- memberIdByName bob "alice"
-      cathId <- memberIdByName alice "cath"
       reviewerId <- memberIdByName alice "reviewer"
       bobConnId <- relayConnIdToMember bob "cath"
       aliceConnId <- relayConnIdToMember alice "bob"
+      cathConnId <- relayConnIdToMember cath "bob"
       ts <- getCurrentTime
       let reviewerFwd fwdHdr fwdMsgId fwdEvt =
             agentSendBody alice aliceConnId $ encodeBinaryBatch [encodeFwdElement (GrpMsgForward fwdHdr ts) (VMUnsigned $ ChatMessage chatInitialVRange (Just $ SharedMsgId fwdMsgId) fwdEvt)]
@@ -17261,7 +17252,8 @@ testSubmemberAnnounceRefused =
       cath <## "error: x.grp.mem.new: member is not a submember of the announcing member"
       reviewerFwd (FwdMember reviewerId "reviewer") "new_2" (XGrpMemNew (MemberInfo (MemberId "new_2") GRMember Nothing danProfile Nothing Nothing) Nothing Nothing)
       bob <## "error: x.grp.mem.new: submember cannot add members"
-      reviewerFwd (FwdMemberVia reviewerId "reviewer" cathId) "via_msg" (XMsgNew $ mcSimple $ MCText "forged")
+      agentSendBody cath cathConnId $ chatMsgToBody $ ChatMessage chatInitialVRange (Just $ SharedMsgId "as_msg") (XMsgNew ((mcSimple (MCText "forged") :: MsgContainer) {asMember = Just MemberRef {memberId = reviewerId, memberName = "reviewer"}}))
+      bob <## "error: member is not a submember of the sender"
       alice #> "#team hello"
       [bob, cath] *<# "#team alice> hello"
 
@@ -17308,7 +17300,7 @@ testSubmemberSendRefused =
       submemberAdded [bob, cath]
       alice ##> "/_send #1(as_member=4) text hi"
       alice <# "#team hi"
-      [bob, cath] *<# "#team reviewer> hi [>>]"
+      [bob, cath] *<# "#team reviewer> hi"
       hiId <- lastItemId alice
       alice ##> "/_send #1(_support:2)(as_member=4) text hey"
       alice <## "bad chat command: cannot send as member in support scope"
@@ -17324,7 +17316,7 @@ testSubmemberSendRefused =
       [alice, cath] *<# "#team reviewer> [marked deleted by bob] hi"
       alice ##> "/_send #1(as_member=4) text hey"
       alice <# "#team hey"
-      [bob, cath] *<# "#team reviewer> hey [>>]"
+      [bob, cath] *<# "#team reviewer> hey"
       heyId <- lastItemId alice
       alice ##> ("/_delete member item #1 " <> heyId)
       alice <## "message marked deleted by you"
@@ -17351,7 +17343,7 @@ testSubmemberSigned =
       submemberAdded [bob]
       alice ##> "/_send #1(as_member=3) text hi"
       alice <# "#team hi (signed)"
-      bob <# "#team reviewer> hi (signed) [>>]"
+      bob <# "#team reviewer> hi (signed)"
       hiId <- lastItemId alice
       alice ##> ("/_update item #1 " <> hiId <> " text hello")
       alice <# "#team [edited] hello (signed)"
@@ -17359,26 +17351,13 @@ testSubmemberSigned =
       reviewerId <- memberIdByName bob "reviewer"
       aliceId <- memberIdByName bob "alice"
       connId <- relayConnIdToMember alice "bob"
-      ts <- getCurrentTime
       g <- C.newRandom
       (_, otherKey :: C.PrivateKeyEd25519) <- atomically $ C.generateKeyPair g
-      let chatMsg = ChatMessage chatInitialVRange (Just $ SharedMsgId "forged_msg") (XMsgNew $ mcSimple $ MCText "forged")
+      let chatMsg = ChatMessage chatInitialVRange (Just $ SharedMsgId "forged_msg") (XMsgNew ((mcSimple (MCText "forged") :: MsgContainer) {asMember = Just MemberRef {memberId = reviewerId, memberName = "reviewer"}}))
           body = chatMsgToBody chatMsg
-          signedMsg = signChatMsgBody (MsgSigning CBGroup (smpEncode (reviewerId, C.publicKey otherKey)) KRMember otherKey) body
-          fwd = GrpMsgForward (FwdMemberVia reviewerId "reviewer" aliceId) ts
-      agentSendBody alice connId $ encodeBinaryBatch [encodeFwdElement fwd (VMSigned MSSVerified signedMsg chatMsg)]
+          signedMsg = signChatMsgBody (MsgSigning CBGroup (smpEncode (aliceId, C.publicKey otherKey)) KRMember otherKey) body
+      agentSendBody alice connId $ encodeBinaryBatch [encodeBatchElement (Just signedMsg) body]
       (bob ##> "/_get chat #1 count=100 search=bad signature" >> chat <$> getTermLine bob) `shouldEventuallyReturn` [(0, "message rejected: bad signature")]
-
-testSubmemberSignedPrevVersion :: HasCallStack => TestParams -> IO ()
-testSubmemberSignedPrevVersion ps =
-  withNewTestChat ps "alice" aliceProfile $ \alice ->
-    withNewTestChatCfg ps testCfgVPrev "bob" bobProfile $ \bob -> do
-      createSignedGroup alice bob
-      addSubmember alice "member"
-      submemberAdded [bob]
-      alice ##> "/_send #1(as_member=3) text hi"
-      alice <# "#team hi (signed)"
-      bob <# "#team reviewer> hi (signature missing) [>>]"
 
 testSubmemberSignedPending :: HasCallStack => TestParams -> IO ()
 testSubmemberSignedPending =
@@ -17396,7 +17375,7 @@ testSubmemberSignedPending =
       agentSendBody alice connId $ chatMsgToBody $ ChatMessage supportedChatVRange (Just $ SharedMsgId "ping_msg") (XMsgNew $ mcSimple $ MCText "ping")
       alice <## "[#team bob] inactive connection is marked as active"
       bob <# "#team alice> ping (signature missing)"
-      bob <# "#team reviewer> hi (signature missing) [>>]"
+      bob <# "#team reviewer> hi (signed)"
 
 testSubmemberSignedHistory :: HasCallStack => TestParams -> IO ()
 testSubmemberSignedHistory =
@@ -17407,7 +17386,7 @@ testSubmemberSignedHistory =
       submemberAdded [bob]
       alice ##> "/_send #1(as_member=3) text hi"
       alice <# "#team hi (signed)"
-      bob <# "#team reviewer> hi (signed) [>>]"
+      bob <# "#team reviewer> hi (signed)"
       alice ##> "/_remove #1 3"
       alice <## "#team: you removed reviewer from the group (signed)"
       bob <## "#team: alice removed reviewer from the group (signed)"
@@ -17418,8 +17397,7 @@ testSubmemberSignedHistory =
         [ alice <## "#team: dan joined the group",
           dan
             <### [ "#team: you joined the group",
-                   StartsWith "#team: alice forwarded a message from an unknown member, creating unknown member record",
-                   EndsWith "hi (signed) [>>]",
+                   WithTime "#team reviewer> hi (signed) [>>]",
                    "#team: member bob (Bob) is connected"
                  ],
           do
@@ -17451,7 +17429,7 @@ testSubmemberRecordings =
       submemberAdded [bob]
       alice ##> "/_send #1(as_member=3) text hi"
       alice <# "#team hi"
-      bob <# "#team reviewer> hi [>>]"
+      bob <# "#team reviewer> hi"
       apiFixture "submembers/members" alice [] FixtureRequests {frMarkdown = [], frUris = [], frCommands = ["/_members #1", "/_get chat #1 count=1"]}
       bob `send` "> #team @reviewer (hi) fix it"
       bob <# "#team > reviewer hi"
@@ -17469,7 +17447,7 @@ testSubmemberMigrationDown ps = do
       submemberAdded [bob]
       alice ##> "/_send #1(as_member=3) text hi"
       alice <# "#team hi"
-      bob <# "#team reviewer> hi [>>]"
+      bob <# "#team reviewer> hi"
   migrateDown "alice" `shouldReturn` (["removed"], [0])
   migrateDown "bob" `shouldReturn` (["announced"], [0])
   where

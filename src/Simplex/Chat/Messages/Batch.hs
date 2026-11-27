@@ -34,7 +34,7 @@ import Simplex.Chat.Controller (ChatError (..), ChatErrorType (..))
 import Simplex.Chat.Delivery
 import Simplex.Chat.Messages
 import Simplex.Chat.Protocol
-import Data.Maybe (fromMaybe, isJust)
+import Data.Maybe (isJust)
 import Simplex.Chat.Types (GroupMember (..), LocalProfile (..), VersionRangeChat)
 import Simplex.Messaging.Encoding (Large (..), smpEncode, smpEncodeList)
 
@@ -62,14 +62,12 @@ batchMessages mode maxLen = addBatch . foldr addToBatch ([], [], [], 0, 0)
   where
     addToBatch :: Either ChatError SndMessage -> ([Either ChatError MsgBatch], [ByteString], [SndMessage], Int, Int) -> ([Either ChatError MsgBatch], [ByteString], [SndMessage], Int, Int)
     addToBatch (Left err) acc = (Left err : addBatch acc, [], [], 0, 0) -- step over original error
-    addToBatch (Right msg@SndMessage {msgBody, signedMsg_, fwdElement_}) acc@(batches, bodies, msgs, len, n)
+    addToBatch (Right msg@SndMessage {msgBody, signedMsg_}) acc@(batches, bodies, msgs, len, n)
       | n' <= maxBatchElementCount && batchLen mode len' n' <= maxLen = (batches, body : bodies, msg : msgs, len', n')
       | msgLen <= maxLen = (addBatch acc, [body], [msg], msgLen, 1)
       | otherwise = (errLarge msg : addBatch acc, [], [], 0, 0)
       where
-        body = case mode of
-          BMBinary -> fromMaybe (encodeBatchElement signedMsg_ msgBody) fwdElement_
-          BMJson -> msgBody
+        body = encodeBatchElement (if mode == BMBinary then signedMsg_ else Nothing) msgBody
         msgLen = B.length body
         len' = len + msgLen
         n' = n + 1

@@ -118,6 +118,12 @@ infoToDeliveryContext GroupInfo {membership} scopeInfo sentAsGroup = DeliveryTas
         let supportGMId = groupMemberId' $ fromMaybe membership groupMember_
          in DJSMemberSupport {supportGMId}
 
+moderatorsContext :: DeliveryTaskContext -> Maybe DeliveryTaskContext
+moderatorsContext ctx@DeliveryTaskContext {jobScope} = case jobScope of
+  DJSGroup {jobSpec = DJRelayRemoved} -> Nothing
+  DJSGroup {} -> Just ctx {jobScope = DJSGroup {jobSpec = DJModerators}}
+  DJSMemberSupport {} -> Nothing
+
 memberEventDeliveryScope :: GroupMember -> Maybe DeliveryJobScope
 memberEventDeliveryScope m@GroupMember {memberRole, memberStatus}
   | memberStatus == GSMemPendingApproval = Nothing

@@ -842,7 +842,7 @@ processChatCommand cxt nm = \case
                   priority' = allowedPriority False priority_
               if changed || fromMaybe False itemLive || priority' /= priority
                 then do
-                  let event = XMsgUpdate itemSharedMId mc M.empty (ttl' <$> itemTimed) (justTrue . (live &&) =<< itemLive) Nothing Nothing priority' Nothing
+                  let event = XMsgUpdate itemSharedMId mc M.empty (ttl' <$> itemTimed) (justTrue . (live &&) =<< itemLive) Nothing Nothing Nothing priority' Nothing
                   (SndMessage {msgId}, _) <- sendDirectContactMessage user ct event
                   ci' <- withFastStore' $ \db -> do
                     when changed $
@@ -879,11 +879,10 @@ processChatCommand cxt nm = \case
                       ciMentions <- withFastStore $ \db -> getCIMentions db user gInfo ft_ mentions
                       let msgScope = toMsgScope gInfo <$> chatScopeInfo
                           mentions' = M.map (\CIMention {memberId} -> MsgMention {memberId}) ciMentions
-                          event = XMsgUpdate itemSharedMId mc mentions' (ttl' <$> itemTimed) (justTrue . (live &&) =<< itemLive) msgScope (Just showGroupAsSender) priority' (justTrue $ isJust newTs_)
+                          event = XMsgUpdate itemSharedMId mc mentions' (ttl' <$> itemTimed) (justTrue . (live &&) =<< itemLive) msgScope (Just showGroupAsSender) (toMemberRef <$> sentAsMember) priority' (justTrue $ isJust newTs_)
                           reuseSign = case msgVerified of Just (MVSigned _) -> True; _ -> False
                           msgFlags = MsgFlags {notification = if isJust newTs_ then priority' /= MPSilent else priority' == MPHigh && priority /= MPHigh}
-                      event' <- maybe (pure event) (fmap ($ event) . memberFwdEvent) sentAsMember
-                      SndMessage {msgId} <- sendGroupMessageFlags user g scope recipients reuseSign msgFlags event'
+                      SndMessage {msgId} <- sendGroupMessageFlags user g scope recipients reuseSign msgFlags event
                       ci' <- withFastStore' $ \db -> do
                         when changed $
                           addInitialAndNewCIVersions db itemId (chatItemTs' ci, oldMC) (currentTs, mc)
@@ -1547,7 +1546,7 @@ processChatCommand cxt nm = \case
       sendWelcomeMsg user ct ucl UserContactRequest {welcomeSharedMsgId} =
         forM_ (autoReply $ addressSettings ucl) $ \mc -> case welcomeSharedMsgId of
           Just smId ->
-            void $ sendDirectContactMessage user ct $ XMsgUpdate smId mc M.empty Nothing Nothing Nothing Nothing MPNormal Nothing
+            void $ sendDirectContactMessage user ct $ XMsgUpdate smId mc M.empty Nothing Nothing Nothing Nothing Nothing MPNormal Nothing
           Nothing -> do
             (msg, _) <- sendDirectContactMessage user ct $ XMsgNew $ mcSimple mc
             ci <- saveSndChatItem user (CDDirectSnd ct) msg (CISndMsgContent mc)
@@ -2981,7 +2980,7 @@ processChatCommand cxt nm = \case
     when (incognitoMembership gInfo) $ throwChatError CEGroupIncognitoCantInvite
     gVar <- asks random
     member <- withFastStore $ \db -> createSubmember db gVar cxt user gInfo memRole profile
-    void $ sendGroupMessage user (GIK gInfo gks) Nothing (filter memberCurrent members) False $ XGrpMemNew (memberInfo gInfo member) Nothing Nothing
+    void $ sendGroupMessage user (GIK gInfo gks) Nothing (filter (\m -> memberCurrent m && m `supportsVersion` submemberVersion) members) False $ XGrpMemNew (memberInfo gInfo member) Nothing Nothing
     pure $ CRSubmemberAdded user gInfo member
   APIJoinGroup groupId enableNtfs -> withUser $ \user@User {userId} -> do
     withGroupLock "joinGroup" groupId $ do
@@ -5180,8 +5179,7 @@ processChatCommand cxt nm = \case
           (fInvs_, ciFiles_) <- L.unzip <$> setupSndFileTransfers (length recipients)
           timed_ <- sndGroupCITimed live gInfo itemTTL
           (chatMsgEvents, quotedItems_) <- L.unzip <$> prepareMsgs (L.zip cmrs' fInvs_) timed_
-          chatMsgEvents' <- maybe (pure chatMsgEvents) (fmap (`L.map` chatMsgEvents) . memberFwdEvent) $ sendAsMember sendAs
-          (msgs_, gsr) <- sendGroupMessages user g Nothing showGroupAsSender recipients signMsgs chatMsgEvents'
+          (msgs_, gsr) <- sendGroupMessages user g Nothing showGroupAsSender recipients signMsgs chatMsgEvents
           let itemsData = prepareSndItemsData (L.toList cmrs') (L.toList ciFiles_) (L.toList quotedItems_) (L.toList msgs_)
           cis_ <- saveSndChatItems user (CDGroupSnd gInfo chatScopeInfo) sendAs itemsData timed_ live
           when (length cis_ /= length cmrs) $ logError "sendGroupContentMessages: cmrs and cis_ length mismatch"
@@ -5214,7 +5212,7 @@ processChatCommand cxt nm = \case
               forM cmsFileInvs $ \((ComposedMessage {quotedItemId, msgContent = mc, priority}, itemForwarded, _, ciMentions), fInv_) ->
                 let msgScope = toMsgScope gInfo <$> chatScopeInfo
                     mentions = M.map (\CIMention {memberId} -> MsgMention {memberId}) ciMentions
-                 in prepareGroupMsg db user gInfo msgScope showGroupAsSender mc mentions quotedItemId itemForwarded fInv_ timed_ live priority
+                 in prepareGroupMsg db user gInfo msgScope sendAs mc mentions quotedItemId itemForwarded fInv_ timed_ live priority
             createMemberSndStatuses ::
               [Either ChatError (ChatItem 'CTGroup 'MDSnd)] ->
               NonEmpty (Either ChatError SndMessage) ->

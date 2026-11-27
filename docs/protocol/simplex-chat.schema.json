@@ -123,6 +123,10 @@
           "type": "integer",
           "metadata": {"comment": "-1 or below: silent, receiving clients do not alert; 0 or absent: normal; 1 or above: high, in groups from members allowed by the preference msgPriority, otherwise received as normal"}
         },
+        "asMember": {
+          "ref": "memberRef",
+          "metadata": {"comment": "the submember of the sender that the message is sent as, in groups without chat relays"}
+        },
         "quote": {
           "properties": {
             "msgRef": {"ref": "msgRef"},
@@ -213,6 +217,12 @@
         "metadata": {
           "comment": "memberId must be present in all group message references, both for sent and received"
         }
+      }
+    },
+    "memberRef": {
+      "properties": {
+        "memberId": {"ref": "base64url"},
+        "memberName": {"type": "string"}
       }
     },
     "fileInvitation": {
@@ -504,6 +514,10 @@
             "asNew": {
               "type": "boolean",
               "metadata": {"comment": "true: the item becomes new at the time of receiving the update, in the main scope of a group; sent only as true"}
+            },
+            "asMember": {
+              "ref": "memberRef",
+              "metadata": {"comment": "as in msgContainer"}
             }
           }
         }
@@ -800,9 +814,6 @@
                 "format": "ISO8601 UTC time of the message"
               }
             }
-          },
-          "optionalProperties": {
-            "via": {"ref": "base64url"}
           }
         }
       }

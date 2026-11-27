@@ -595,7 +595,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
               case event of
                 XMsgNew mc -> newContentMessage ct'' mc msg msgMeta
                 XMsgFileDescr sharedMsgId fileDescr fileExpires fileBadge -> messageFileDescription ct'' sharedMsgId fileDescr fileExpires fileBadge
-                XMsgUpdate sharedMsgId mContent _ ttl live _msgScope _ priority_ _ -> messageUpdate ct'' sharedMsgId mContent msg msgMeta ttl live priority_
+                XMsgUpdate sharedMsgId mContent _ ttl live _msgScope _ _ priority_ _ -> messageUpdate ct'' sharedMsgId mContent msg msgMeta ttl live priority_
                 XMsgDel sharedMsgId _ _ _ -> messageDelete ct'' sharedMsgId msg msgMeta
                 XMsgReact sharedMsgId _ _ reaction add -> directMsgReaction ct'' sharedMsgId reaction add msg msgMeta
                 -- TODO discontinue XFile
@@ -777,7 +777,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
       where
         sendAutoReply ct mc = \case
           Just UserContactRequest {welcomeSharedMsgId = Just smId} ->
-            void $ sendDirectContactMessage user ct $ XMsgUpdate smId mc M.empty Nothing Nothing Nothing Nothing MPNormal Nothing
+            void $ sendDirectContactMessage user ct $ XMsgUpdate smId mc M.empty Nothing Nothing Nothing Nothing Nothing MPNormal Nothing
           _ -> do
             (msg, _) <- sendDirectContactMessage user ct $ XMsgNew $ mcSimple mc
             ci <- saveSndChatItem user (CDDirectSnd ct) msg (CISndMsgContent mc)
@@ -1091,16 +1091,18 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
             -- ! see isForwardedGroupMsg: processing functions should return DeliveryJobScope for same events
             deliveryTaskContext_ <- case event of
               XMsgNew mc ->
-                checkSendAsGroup asGroup $
-                  memberCanSend (Just m'') scope $ newGroupContentMessage gInfo' (Just m'') mc msg brokerTs False
+                checkSendAsMember gInfo' (Just m'') asMember $ \author_ ->
+                  checkSendAsGroup asGroup $
+                    memberCanSend author_ scope $ newGroupContentMessage gInfo' author_ mc msg brokerTs False
                 where
-                  MsgContainer {scope, asGroup} = mc
+                  MsgContainer {scope, asGroup, asMember} = mc
               -- file description is always allowed, to allow sending files to support scope
               XMsgFileDescr sharedMsgId fileDescr fileExpires fileBadge -> groupMessageFileDescription gInfo' (Just m'') sharedMsgId fileDescr fileExpires fileBadge msg
-              XMsgUpdate sharedMsgId mContent mentions ttl live msgScope asGroup_ priority_ asNew_ ->
-                checkSendAsGroup asGroup_ $
-                  memberCanSend (Just m'') msgScope $
-                    groupMessageUpdate gInfo' (Just m'') sharedMsgId mContent mentions msgScope msg brokerTs ttl live asGroup_ priority_ asNew_
+              XMsgUpdate sharedMsgId mContent mentions ttl live msgScope asGroup_ asMember_ priority_ asNew_ ->
+                checkSendAsMember gInfo' (Just m'') asMember_ $ \author_ ->
+                  checkSendAsGroup asGroup_ $
+                    memberCanSend author_ msgScope $
+                      groupMessageUpdate gInfo' author_ sharedMsgId mContent mentions msgScope msg brokerTs ttl live asGroup_ priority_ asNew_
               XMsgDel sharedMsgId memberId_ scope_ onlyHistory ->
                 groupMessageDelete gInfo' (Just m'') sharedMsgId memberId_ scope_ onlyHistory msg brokerTs
               XMsgReact sharedMsgId memberId scope_ reaction add -> groupMsgReaction gInfo' m'' sharedMsgId memberId scope_ reaction add msg brokerTs
@@ -1166,10 +1168,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
           relayRemovedNewTask :: NewMessageDeliveryTask -> Bool
           relayRemovedNewTask NewMessageDeliveryTask {taskContext = DeliveryTaskContext {jobScope}} = isRelayRemoved jobScope
           moderatorsTask :: NewMessageDeliveryTask -> Maybe NewMessageDeliveryTask
-          moderatorsTask t@NewMessageDeliveryTask {taskContext = ctx@DeliveryTaskContext {jobScope}} = case jobScope of
-            DJSGroup {jobSpec = DJRelayRemoved} -> Nothing
-            DJSGroup {} -> Just t {taskContext = ctx {jobScope = DJSGroup {jobSpec = DJModerators}}}
-            DJSMemberSupport {} -> Nothing
+          moderatorsTask t@NewMessageDeliveryTask {taskContext} = (\ctx -> t {taskContext = ctx}) <$> moderatorsContext taskContext
           createDeliveryTasks :: GroupInfo -> GroupMember -> [NewMessageDeliveryTask] -> CM ShouldDeleteGroupConns
           createDeliveryTasks gInfo'@GroupInfo {groupId = gId} m' newDeliveryTasks = do
             let relayRemovedTask_ = find (\NewMessageDeliveryTask {taskContext = DeliveryTaskContext {jobScope}} -> isRelayRemoved jobScope) newDeliveryTasks
@@ -1355,7 +1354,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
             _ -> pure Nothing
         sendGroupAutoReply mc = \case
           Just UserContactRequest {welcomeSharedMsgId = Just smId} ->
-            void $ sendGroupMessage' user g [m] $ XMsgUpdate smId mc M.empty Nothing Nothing Nothing Nothing MPNormal Nothing
+            void $ sendGroupMessage' user g [m] $ XMsgUpdate smId mc M.empty Nothing Nothing Nothing Nothing Nothing MPNormal Nothing
           _ -> do
             msg <- sendGroupMessage' user g [m] $ XMsgNew $ mcSimple mc
             ci <- saveSndChatItem user (CDGroupSnd gInfo Nothing) msg (CISndMsgContent mc)
@@ -1788,6 +1787,27 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
       Nothing
         | memberRole > GRObserver || memberPending m -> a
         | otherwise -> messageError "member is not allowed to send messages" $> Nothing
+
+    checkSendAsMember :: GroupInfo -> Maybe GroupMember -> Maybe MemberRef -> (Maybe GroupMember -> CM (Maybe DeliveryTaskContext)) -> CM (Maybe DeliveryTaskContext)
+    checkSendAsMember _ sender_ Nothing a = a sender_
+    checkSendAsMember gInfo sender_ (Just MemberRef {memberId, memberName}) a = case sender_ of
+      Just sender@GroupMember {memberRole, memberVia = Nothing}
+        | not (useRelays' gInfo) && memberRole >= GRAdmin -> do
+            unknownRole <- unknownMemberRole gInfo
+            withStore (\db -> getCreateUnknownGMByMemberId db cxt user gInfo memberId memberName unknownRole True) >>= \case
+              Just (author, True) -> do
+                withStore' $ \db -> setMemberVia db author (memberId' sender)
+                processAs author {memberVia = Just (memberId' sender)}
+              Just (author, False)
+                | memberVia author /= Just (memberId' sender) -> messageError "member is not a submember of the sender" $> Nothing
+                | memberRemoved author -> Nothing <$ logInfo ("ignoring content of removed submember, group " <> tshow (groupId' gInfo))
+                | otherwise -> processAs author
+              Nothing -> messageError "submember not found" $> Nothing
+      _ -> messageError "member is not allowed to send as member" $> Nothing
+      where
+        processAs author
+          | blockedByAdmin author = (moderatorsContext =<<) <$> a (Just author)
+          | otherwise = a (Just author)
 
     processConnMERR :: ConnectionEntity -> Connection -> AgentErrorType -> CM ()
     processConnMERR connEntity conn err = do
@@ -4135,62 +4155,24 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
     xGrpMsgForward g@(GIK gInfo@GroupInfo {membership} _) scopeInfo m@GroupMember {localDisplayName} GrpMsgForward {fwdSender, fwdBrokerTs = msgTs} parsedMsg@(ParsedMsg _ _ chatMsg@ChatMessage {chatMsgEvent}) brokerTs = do
       unless (isMemberGrpFwdRelay gInfo m) $ throwChatError (CEGroupContactRole localDisplayName)
       case fwdSender of
-        FwdMember memberId memberName -> forwardedFromMember memberId memberName Nothing
-        FwdMemberVia memberId memberName viaId -> forwardedFromMember memberId memberName (Just viaId)
-        FwdChannel -> processForwardedMsg (VMUnsigned chatMsg) Nothing
-      where
-        forwardedFromMember :: MemberId -> ContactName -> Maybe MemberId -> CM ()
-        forwardedFromMember memberId memberName fwdVia_ = do
+        FwdMember memberId memberName -> do
           unknownRole <- unknownMemberRole gInfo
           let allowCreate = toCMEventTag chatMsgEvent /= XGrpLeave_
           withStore (\db -> getCreateUnknownGMByMemberId db cxt user gInfo memberId memberName unknownRole allowCreate) >>= \case
-            Just (author_, unknown) -> do
-              author <- recordFwdVia author_
-              if
-                | not (useRelays' gInfo) && groupMemberId' author == groupMemberId' membership ->
-                    messageError $ "x.grp.msg.forward: content attributed to own membership, forwarder " <> tshow (groupMemberId' m) <> ", event " <> tshow (toCMEventTag chatMsgEvent)
-                | memberRemoved author ->
-                    logInfo $ "x.grp.msg.forward: ignoring content from removed member, group " <> tshow (groupId' gInfo) <> ", member " <> safeDecodeUtf8 (strEncode memberId) <> ", event " <> tshow (toCMEventTag chatMsgEvent)
-                | not (useRelays' gInfo) && not (expectedForwarder author) ->
-                    logInfo $ "x.grp.msg.forward: ignoring content from unexpected forwarder, group " <> tshow (groupId' gInfo) <> ", forwarder " <> tshow (groupMemberId' m) <> ", member " <> safeDecodeUtf8 (strEncode memberId) <> ", event " <> tshow (toCMEventTag chatMsgEvent)
-                | maybe False (\viaId -> useRelays' gInfo || memberVia author /= Just viaId) fwdVia_ ->
-                    logInfo $ "x.grp.msg.forward: ignoring content with unexpected via, group " <> tshow (groupId' gInfo) <> ", forwarder " <> tshow (groupMemberId' m) <> ", member " <> safeDecodeUtf8 (strEncode memberId) <> ", event " <> tshow (toCMEventTag chatMsgEvent)
-                | otherwise -> do
-                    when unknown $ toView $ CEvtUnknownMemberCreated user gInfo m author
-                    signerKey_ <- memberSignerKey author
-                    void $ withVerifiedMsgKey gInfo scopeInfo author signerKey_ parsedMsg msgTs $
-                      (`processForwardedMsg` Just author)
+            Just (author, unknown)
+              | not (useRelays' gInfo) && groupMemberId' author == groupMemberId' membership ->
+                  messageError $ "x.grp.msg.forward: content attributed to own membership, forwarder " <> tshow (groupMemberId' m) <> ", event " <> tshow (toCMEventTag chatMsgEvent)
+              | memberRemoved author ->
+                  logInfo $ "x.grp.msg.forward: ignoring content from removed member, group " <> tshow (groupId' gInfo) <> ", member " <> safeDecodeUtf8 (strEncode memberId) <> ", event " <> tshow (toCMEventTag chatMsgEvent)
+              | not (useRelays' gInfo) && not (expectedForwarder author) ->
+                  logInfo $ "x.grp.msg.forward: ignoring content from unexpected forwarder, group " <> tshow (groupId' gInfo) <> ", forwarder " <> tshow (groupMemberId' m) <> ", member " <> safeDecodeUtf8 (strEncode memberId) <> ", event " <> tshow (toCMEventTag chatMsgEvent)
+              | otherwise -> do
+                  when unknown $ toView $ CEvtUnknownMemberCreated user gInfo m author
+                  void $ withVerifiedMsg gInfo scopeInfo author parsedMsg msgTs $
+                    (`processForwardedMsg` Just author)
             Nothing -> pure ()
-          where
-            recordFwdVia :: GroupMember -> CM GroupMember
-            recordFwdVia author = case fwdVia_ of
-              Just viaId
-                | not (useRelays' gInfo)
-                    && memberStatus author == GSMemUnknown
-                    && isNothing (memberVia author)
-                    && not (sameMemberId viaId membership)
-                    && (viaId == memberId' m || memberCategory m == GCHostMember) ->
-                    withStore' (\db -> setMemberVia db author viaId) $> author {memberVia = Just viaId}
-              _ -> pure author
-        memberSignerKey :: GroupMember -> CM (Maybe C.PublicKeyEd25519)
-        memberSignerKey author = case memberVia author of
-          Nothing -> pure $ memberPubKey author
-          Just viaId
-            | sameMemberId viaId membership -> pure $ memberPubKey membership
-            | otherwise -> (memberPubKey =<<) . eitherToMaybe <$> withStore' (\db -> runExceptT $ getGroupMemberByMemberId db cxt user gInfo viaId)
-        forwardSubmemberMsg :: Maybe GroupMember -> VerifiedMsg 'Json -> Maybe DeliveryTaskContext -> CM ()
-        forwardSubmemberMsg author_ verifiedMsg = \case
-          Just DeliveryTaskContext {jobScope = DJSGroup {}, updateNotification}
-            | Just author <- author_, memberVia author == Just (memberId' m), not (useRelays' gInfo), isUserGrpFwdRelay gInfo -> do
-                members <- withStore $ \db -> do
-                  vec <- getMemberRelationsVector db m
-                  liftIO $ getGroupMembersByIndexes db cxt user gInfo $ getRelationsIndexes MRIntroduced vec
-                let (recipients, msgFlags)
-                      | blockedByAdmin author = (filter (\mem -> memberCurrent mem && memberRole' mem >= GRModerator) members, MsgFlags {notification = False})
-                      | otherwise = (filter memberCurrent members, MsgFlags {notification = updateNotification || msgHasNotification verifiedMsg})
-                forM_ recipients $ \member ->
-                  sendFwdMemberMessageFlags member GrpMsgForward {fwdSender = memberFwdSenderTo member author, fwdBrokerTs = msgTs} msgFlags verifiedMsg
-          _ -> pure ()
+        FwdChannel -> processForwardedMsg (VMUnsigned chatMsg) Nothing
+      where
         -- Forwards are only expected from the member that introduced us to the author: our host, or
         -- the author's inviter. Unknown members have no such record, so any admin may forward theirs.
         expectedForwarder :: GroupMember -> Bool
@@ -4204,13 +4186,15 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
           rcvMsg_ <- saveGroupFwdRcvMsg user gInfo m author_ verifiedMsg brokerTs
           forM_ rcvMsg_ $ \rcvMsg@RcvMessage {sharedMsgId_, chatMsgEvent = ACME _ event} -> case event of
             XMsgNew mc ->
-              forwardSubmemberMsg author_ verifiedMsg =<< memberCanSend author_ scope (newGroupContentMessage gInfo author_ mc rcvMsg msgTs True)
+              void $ checkSendAsMember gInfo author_ asMember $ \itemAuthor_ ->
+                memberCanSend itemAuthor_ scope $ newGroupContentMessage gInfo itemAuthor_ mc rcvMsg msgTs True
               where
-                MsgContainer {scope} = mc
+                MsgContainer {scope, asMember} = mc
             -- file description is always allowed, to allow sending files to support scope
             XMsgFileDescr sharedMsgId fileDescr fileExpires fileBadge -> void $ groupMessageFileDescription gInfo author_ sharedMsgId fileDescr fileExpires fileBadge rcvMsg
-            XMsgUpdate sharedMsgId mContent mentions ttl live msgScope asGroup_ priority_ asNew_ ->
-              forwardSubmemberMsg author_ verifiedMsg =<< memberCanSend author_ msgScope (groupMessageUpdate gInfo author_ sharedMsgId mContent mentions msgScope rcvMsg msgTs ttl live asGroup_ priority_ asNew_)
+            XMsgUpdate sharedMsgId mContent mentions ttl live msgScope asGroup_ asMember_ priority_ asNew_ ->
+              void $ checkSendAsMember gInfo author_ asMember_ $ \itemAuthor_ ->
+                memberCanSend itemAuthor_ msgScope $ groupMessageUpdate gInfo itemAuthor_ sharedMsgId mContent mentions msgScope rcvMsg msgTs ttl live asGroup_ priority_ asNew_
             XMsgDel sharedMsgId memId scope_ _ -> void $ groupMessageDelete gInfo author_ sharedMsgId memId scope_ False rcvMsg msgTs
             XMsgReact sharedMsgId memId scope_ reaction add -> withAuthor XMsgReact_ $ \author -> void $ groupMsgReaction gInfo author sharedMsgId memId scope_ reaction add rcvMsg msgTs
             XFileCancel sharedMsgId -> void $ xFileCancelGroup gInfo author_ sharedMsgId
@@ -4233,10 +4217,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
               Nothing -> messageError $ "x.grp.msg.forward: event " <> tshow tag <> " requires author"
 
     withVerifiedMsg :: GroupInfo -> Maybe GroupChatScopeInfo -> GroupMember -> ParsedMsg e -> UTCTime -> (VerifiedMsg e -> CM a) -> CM (Maybe a)
-    withVerifiedMsg gInfo scopeInfo member@GroupMember {memberPubKey} = withVerifiedMsgKey gInfo scopeInfo member memberPubKey
-
-    withVerifiedMsgKey :: GroupInfo -> Maybe GroupChatScopeInfo -> GroupMember -> Maybe C.PublicKeyEd25519 -> ParsedMsg e -> UTCTime -> (VerifiedMsg e -> CM a) -> CM (Maybe a)
-    withVerifiedMsgKey gInfo@GroupInfo {membership} scopeInfo member@GroupMember {memberId} signerKey_ (ParsedMsg _ signedMsg_ chatMsg@ChatMessage {chatMsgEvent}) ts action =
+    withVerifiedMsg gInfo@GroupInfo {membership} scopeInfo member@GroupMember {memberPubKey, memberId} (ParsedMsg _ signedMsg_ chatMsg@ChatMessage {chatMsgEvent}) ts action =
       case verified of
         Just verifiedMsg -> Just <$> action verifiedMsg
         Nothing -> do
@@ -4244,7 +4225,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
           pure Nothing
       where
         verified = case signedMsg_ of
-          Just sm@SignedMsg {chatBinding, signatures, signedBody} -> case signerKey_ of
+          Just sm@SignedMsg {chatBinding, signatures, signedBody} -> case memberPubKey of
             Just pubKey -> case chatBinding of
               CBGroup -> signed MSSVerified <$ guard (verifyGroupSig pubKey gInfo memberId signatures signedBody)
               _ -> signed MSSSignedNoKey <$ guard signatureOptional

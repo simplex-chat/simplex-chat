@@ -262,7 +262,7 @@ createNewSndMessage db gVar connOrGroupId chatMsgEvent msgSigning_ encodeMessage
           ((MDSnd, toCMEventTag chatMsgEvent, DB.Binary msgBody, (\SignedMsg {chatBinding} -> chatBinding) <$> signedMsg_, DB.Binary . smpEncode . signatures <$> signedMsg_, connId_, groupId_)
            :. (DB.Binary sharedMsgId, Just (BI True), createdAt, createdAt))
         msgId <- insertedRowId db
-        pure $ Right SndMessage {msgId, sharedMsgId = SharedMsgId sharedMsgId, msgBody, signedMsg_, fwdElement_ = Nothing}
+        pure $ Right SndMessage {msgId, sharedMsgId = SharedMsgId sharedMsgId, msgBody, signedMsg_}
   where
     (connId_, groupId_) = case connOrGroupId of
       ConnectionId connId -> (Just connId, Nothing)
@@ -391,7 +391,7 @@ getPendingGroupMessages db groupMemberId =
   where
     pendingGroupMessage (msgId, sharedMsgId, msgBody, chatBinding_ :: Maybe ChatBinding, sigs_ :: Maybe ByteString) =
       let signedMsg_ = SignedMsg <$> chatBinding_ <*> (sigs_ >>= eitherToMaybe . smpDecode) <*> pure msgBody
-       in SndMessage {msgId, sharedMsgId, msgBody, signedMsg_, fwdElement_ = Nothing}
+       in SndMessage {msgId, sharedMsgId, msgBody, signedMsg_}
 
 deletePendingGroupMessage :: DB.Connection -> Int64 -> MessageId -> IO ()
 deletePendingGroupMessage db groupMemberId messageId =

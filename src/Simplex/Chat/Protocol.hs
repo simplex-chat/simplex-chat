@@ -251,6 +251,14 @@ data MsgRef = MsgRef
 
 $(JQ.deriveJSON defaultJSON ''MsgRef)
 
+data MemberRef = MemberRef
+  { memberId :: MemberId,
+    memberName :: ContactName
+  }
+  deriving (Eq, Show)
+
+$(JQ.deriveJSON defaultJSON ''MemberRef)
+
 data LinkPreview = LinkPreview {uri :: Text, title :: Text, description :: Text, image :: ImageData, content :: Maybe LinkContent}
   deriving (Eq, Show)
 
@@ -375,7 +383,6 @@ data AParsedMsg = forall e. MsgEncodingI e => APMsg (SMsgEncoding e) (ParsedMsg 
 
 data FwdSender
   = FwdMember MemberId ContactName
-  | FwdMemberVia MemberId ContactName MemberId
   | FwdChannel
   deriving (Eq, Show)
 
@@ -419,12 +426,10 @@ instance Encoding RosterMember where
 instance Encoding FwdSender where
   smpEncode = \case
     FwdMember memberId memberName -> smpEncode ('M', memberId, memberName)
-    FwdMemberVia memberId memberName viaId -> smpEncode ('V', memberId, memberName, viaId)
     FwdChannel -> "C"
   smpP =
     A.anyChar >>= \case
       'M' -> uncurry FwdMember <$> smpP
-      'V' -> FwdMemberVia <$> smpP <*> smpP <*> smpP
       'C' -> pure FwdChannel
       c -> fail $ "invalid FwdSender tag: " <> show c
 
@@ -491,7 +496,7 @@ signChatMsgBody MsgSigning {bindingTag, bindingData, keyRef, privKey} msgBody =
 data ChatMsgEvent (e :: MsgEncoding) where
   XMsgNew :: MsgContainer -> ChatMsgEvent 'Json
   XMsgFileDescr :: {msgId :: SharedMsgId, fileDescr :: FileDescr, fileExpires :: Maybe UTCTime, fileBadge :: Maybe BadgeProof} -> ChatMsgEvent 'Json
-  XMsgUpdate :: {msgId :: SharedMsgId, content :: MsgContent, mentions :: Map MemberName MsgMention, ttl :: Maybe Int, live :: Maybe Bool, scope :: Maybe MsgScope, asGroup :: Maybe Bool, priority :: MsgPriority, asNew :: Maybe Bool} -> ChatMsgEvent 'Json
+  XMsgUpdate :: {msgId :: SharedMsgId, content :: MsgContent, mentions :: Map MemberName MsgMention, ttl :: Maybe Int, live :: Maybe Bool, scope :: Maybe MsgScope, asGroup :: Maybe Bool, asMember :: Maybe MemberRef, priority :: MsgPriority, asNew :: Maybe Bool} -> ChatMsgEvent 'Json
   XMsgDel :: {msgId :: SharedMsgId, memberId :: Maybe MemberId, scope :: Maybe MsgScope, onlyHistory :: Bool} -> ChatMsgEvent 'Json
   XMsgDeleted :: ChatMsgEvent 'Json
   XMsgReact :: {msgId :: SharedMsgId, memberId :: Maybe MemberId, scope :: Maybe MsgScope, reaction :: MsgReaction, add :: Bool} -> ChatMsgEvent 'Json
@@ -774,6 +779,7 @@ data MsgContainer = MsgContainer
     live :: Maybe Bool,
     scope :: Maybe MsgScope,
     asGroup :: Maybe Bool,
+    asMember :: Maybe MemberRef,
     priority :: MsgPriority,
     quote :: Maybe QuotedMsg,
     parent :: Maybe MsgRef,
@@ -801,6 +807,7 @@ mcSimple content =
       live = Nothing,
       scope = Nothing,
       asGroup = Nothing,
+      asMember = Nothing,
       priority = MPNormal,
       quote = Nothing,
       parent = Nothing,
@@ -1425,7 +1432,6 @@ hasNotification = \case
 
 eventHasNotification :: ChatMsgEvent e -> Bool
 eventHasNotification = \case
-  XGrpMsgForward _ ChatMessage {chatMsgEvent} -> eventHasNotification chatMsgEvent
   XMsgNew MsgContainer {priority} -> priority /= MPSilent
   ev -> hasNotification $ toCMEventTag ev
 
@@ -1514,9 +1520,10 @@ appJsonToCM fwdDepth AppMessageJson {v, msgId, event, params} = do
         live <- opt "live"
         scope <- opt "scope"
         asGroup <- opt "asGroup"
+        asMember <- opt "asMember"
         priority <- fromMaybe MPNormal <$> opt "priority"
         asNew <- opt "asNew"
-        pure XMsgUpdate {msgId = msgId', content, mentions, ttl, live, scope, asGroup, priority, asNew}
+        pure XMsgUpdate {msgId = msgId', content, mentions, ttl, live, scope, asGroup, asMember, priority, asNew}
       XMsgDel_ -> XMsgDel <$> p "msgId" <*> opt "memberId" <*> opt "scope" <*> (fromMaybe False <$> opt "onlyHistory")
       XMsgDeleted_ -> pure XMsgDeleted
       XMsgReact_ -> XMsgReact <$> p "msgId" <*> opt "memberId" <*> opt "scope" <*> p "reaction" <*> p "add"
@@ -1572,9 +1579,7 @@ appJsonToCM fwdDepth AppMessageJson {v, msgId, event, params} = do
       XGrpMsgForward_ -> do
         when (fwdDepth >= maxFwdDepth) $ Left "forward depth exceeds limit"
         fwdSender <- opt "memberId" >>= \case
-          Just memberId -> do
-            memberName <- fromMaybe "" <$> opt "memberName"
-            maybe (FwdMember memberId memberName) (FwdMemberVia memberId memberName) <$> opt "via"
+          Just memberId -> FwdMember memberId . fromMaybe "" <$> opt "memberName"
           Nothing -> pure FwdChannel
         fwdBrokerTs <- p "msgTs"
         XGrpMsgForward (GrpMsgForward {fwdSender, fwdBrokerTs}) <$> (appJsonToCM (fwdDepth + 1) =<< p "msg")
@@ -1603,7 +1608,7 @@ chatToAppMessage chatMsg@ChatMessage {chatVRange, msgId, chatMsgEvent} = case en
         J.Object obj -> obj
         _ -> JM.empty
       XMsgFileDescr msgId' fileDescr fileExpires fileBadge -> o $ ("fileExpires" .=? fileExpires) $ ("fileBadge" .=? fileBadge) ["msgId" .= msgId', "fileDescr" .= fileDescr]
-      XMsgUpdate {msgId = msgId', content, mentions, ttl, live, scope, asGroup, priority, asNew} -> o $ ("asNew" .=? asNew) $ ("priority" .=? mfilter (/= MPNormal) (Just priority)) $ ("asGroup" .=? asGroup) $ ("ttl" .=? ttl) $ ("live" .=? live) $ ("scope" .=? scope) $ ("mentions" .=? nonEmptyMap mentions) ["msgId" .= msgId', "content" .= content]
+      XMsgUpdate {msgId = msgId', content, mentions, ttl, live, scope, asGroup, asMember, priority, asNew} -> o $ ("asNew" .=? asNew) $ ("priority" .=? mfilter (/= MPNormal) (Just priority)) $ ("asMember" .=? asMember) $ ("asGroup" .=? asGroup) $ ("ttl" .=? ttl) $ ("live" .=? live) $ ("scope" .=? scope) $ ("mentions" .=? nonEmptyMap mentions) ["msgId" .= msgId', "content" .= content]
       XMsgDel msgId' memberId scope onlyHistory -> o $ ("memberId" .=? memberId) $ ("scope" .=? scope) $ ("onlyHistory" .=? justTrue onlyHistory) ["msgId" .= msgId']
       XMsgDeleted -> JM.empty
       XMsgReact msgId' memberId scope reaction add -> o $ ("memberId" .=? memberId) $ ("scope" .=? scope) ["msgId" .= msgId', "reaction" .= reaction, "add" .= add]
@@ -1651,7 +1656,6 @@ chatToAppMessage chatMsg@ChatMessage {chatVRange, msgId, chatMsgEvent} = case en
         where
           encodeFwdSender = \case
             FwdMember memberId memberName -> (["memberId" .= memberId, "memberName" .= memberName] ++)
-            FwdMemberVia memberId memberName viaId -> (["memberId" .= memberId, "memberName" .= memberName, "via" .= viaId] ++)
             FwdChannel -> id
       XInfoProbe probe -> o ["probe" .= probe]
       XInfoProbeCheck probeHash -> o ["probeHash" .= probeHash]
