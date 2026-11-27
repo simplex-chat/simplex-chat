@@ -404,7 +404,7 @@ struct ChainAddressTap {
 }
 
 func openWalletAlert(_ tap: ChainAddressTap) -> UIAlertController {
-    let link = tap.chainAddress.linkText(tap.showText, messageSigned: true)
+    let link = tap.chainAddress.linkText(tap.showText, messageSigned: tap.sender.messageSigned)
     let text = link.toAddress.map { String.localizedStringWithFormat(NSLocalizedString("%@ to %@", comment: "alert message: chain address link text, shortened address"), link.shown, $0) } ?? link.shown
     let message = tap.sender.forwarded
         ? NSLocalizedString("%@ forwarded: %@", comment: "alert message: sender name, chain address")

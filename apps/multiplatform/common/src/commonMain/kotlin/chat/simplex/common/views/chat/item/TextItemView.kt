@@ -767,7 +767,7 @@ fun chainAddressSender(ci: ChatItem, chatInfo: ChatInfo): ChainAddressSender {
 }
 
 fun showOpenWalletAlert(sender: ChainAddressSender, link: Format.ChainAddressLink, uriHandler: UriHandler, clipboard: ClipboardManager) {
-  val linkText = link.chainAddress.linkText(link.showText, messageSigned = true)
+  val linkText = link.chainAddress.linkText(link.showText, sender.messageSigned)
   val text = linkText.toAddress?.let { String.format(generalGetString(MR.strings.chain_address_to_address), linkText.shown, it) } ?: linkText.shown
   AlertManager.shared.showAlertDialogButtonsColumn(
     title = generalGetString(MR.strings.open_in_wallet_question),

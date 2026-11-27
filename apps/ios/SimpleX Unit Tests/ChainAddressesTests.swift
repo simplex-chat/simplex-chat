@@ -82,7 +82,7 @@ final class ChainAddressesTests: RecordedAPITestCase {
         let drawn = chat.chatItems.map { draw($0.formattedText, chainAddressSender($0, chat.chatInfo)).string }
         XCTAssertEqual(drawn.map(\.string), ["donate ₿\u{00A0}bc1q2g…\u{2060}5d4u", "thanks, or ⚠\u{FE0E}\u{00A0}ltc1q2…\u{2060}wfdv (not signed)"])
         XCTAssertEqual(drawn.map(linkColors), [[uiLinkColor], [.systemOrange]])
-        XCTAssertEqual(drawn.flatMap(taps).map(alertMessage), ["alice: ₿\u{00A0}bc1q2g…\u{2060}5d4u", "alice: LTC\u{00A0}ltc1q2…\u{2060}wfdv"])
+        XCTAssertEqual(drawn.flatMap(taps).map(alertMessage), ["alice: ₿\u{00A0}bc1q2g…\u{2060}5d4u", "alice: ⚠\u{FE0E}\u{00A0}ltc1q2…\u{2060}wfdv (not signed)"])
     }
 
     @MainActor

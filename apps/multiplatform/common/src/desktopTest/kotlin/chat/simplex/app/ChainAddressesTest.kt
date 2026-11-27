@@ -129,7 +129,7 @@ class ChainAddressesTest : RecordedApiTest() {
     }
     assertEquals(listOf(listOf<String>(), listOf("⚠\u00A0", "ltc1q2…\u2060wfdv (not signed)")), orangeTexts())
     assertEquals(
-      listOf("alice: ₿\u00A0bc1q2g…\u20605d4u", "alice: LTC\u00A0ltc1q2…\u2060wfdv"),
+      listOf("alice: ₿\u00A0bc1q2g…\u20605d4u", "alice: ⚠\u00A0ltc1q2…\u2060wfdv (not signed)"),
       chat.chatItems.zip(senders).flatMap { (item, sender) -> chainLinks(item.formattedText).map { alertMessage(sender, it) } }
     )
   }
