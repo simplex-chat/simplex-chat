@@ -14,16 +14,16 @@ A payment address or request in a message is plain text. A reader copies it into
 
 | # | After the change | Before |
 |---|---|---|
-| A1 | a URI of the schemes of section Syntax, `[label](URI)`, `<URI>`, and a bare address or invoice whose format has a checksum, are shown as payment links | text |
-| A2 | at a tap, the app shows the alert `Open in wallet?` with the sender, the link text and the shortened address; the wallet is opened only from Open | — |
+| A1 | a URI of the schemes of section Syntax, `[label](URI)`, `<URI>`, and a bare address or invoice whose format has a checksum, are shown as payment links in chat items and in the chat list; elsewhere, such as in descriptions, welcome messages, quotes and item info, as their text | text |
+| A2 | at a tap, the app shows the alert `Open in wallet?` with the sender and the link text, and after an amount of a ₿ or ticker link, the shortened address; the wallet is opened only from Open | — |
 | A3 | at Open, the app hands a normalised URI to the OS; when no app opens it, an alert offers Copy and the QR code | — |
 | A4 | an address with a wrong checksum, a testnet address, a wallet-restore URI (`monero-wallet:`), an EIP-681 call other than `transfer`, and a request to several recipients are shown as text | text |
 | A5 | a hyperlink whose label contains a payment address other than its target is refused: the label is shown as text, the target as a bare payment link | text |
 | A6 | the core and the apps send no request for a payment link: previews, DNS, ENS, LNURL and exchange rates are not requested | — |
 | A7 | earlier apps show the text as now; the message protocol and the database are unchanged | — |
 | A8 | a bare word is validated at most once, by the form that its prefix, case and length select; a word that no form selects is text without a checksum computed; the parse time of section Timing is reported | — |
-| A9 | a link whose chain or token is outside the tables of section Link text, and an EVM link without a chain ID, are shown in orange as ⚠, the shortened address and `(unknown chain)`, `(unknown token)` or `(unknown chain and token)`, without an amount | — |
-| A10 | in a group, a message with a chain address is signed with the sender's member key; a received group item without a verified signature shows its chain addresses as the orange link `(not signed)`, and the alert warns (Q7 c) | — |
+| A9 | a link whose chain or token is outside the tables of section Link text, and an EVM link without a chain ID, are shown in orange as the label, when present, ⚠, the shortened address and `(unknown chain)`, `(unknown token)` or `(unknown chain and token)`, without an amount | — |
+| A10 | in a group, a message with a chain address is signed with the sender's member key; a group or channel item without a verified signature shows its chain addresses as the orange link `(not signed)`, in the bubble and in the alert text (Q7 c) | — |
 
 ## Options
 
@@ -111,21 +111,17 @@ Each donation address of README.md:151-158 was checked by these rules before thi
 | Briar Android | web URLs | [S31] |
 | WhatsApp, Status | not checked | — |
 
-### Risks
+### Behaviours
 
-| Risk | Evidence | Mitigation in this plan |
-|---|---|---|
-| address substitution in the clipboard | Android/Clipper.C, found on Google Play in February 2019, replaced Bitcoin and Ethereum addresses copied by users [S32] | Open is the only action of the alert; the URI is passed to the wallet without the clipboard |
-| look-alike addresses | "approximately 270 million attack attempts targeting 17 million victims" on Ethereum and BSC, July 2022 to June 2024; wallets show "the first and last few characters" [S33] | the alert names the sender of the link |
-| a label that differs from its target | `[bc1qGOOD](bitcoin:bc1qEVIL)` is accepted by the punctuation rule of `sowLinkP` (Markdown.hs:453-454) | rule L2 of section Syntax |
-| an address changed by an edit | messages are edited after they are read (`itemEdited`, Messages.hs:532) | the edited mark of the item; the earlier versions are in the item info (Messages.hs:1388-1410) |
-| a request forwarded by a person other than the payee | `itemForwarded` (Messages.hs:530) | `<name> forwarded:` in the alert |
-| token approvals and contract calls | any function call can be encoded in EIP-681 [S9] | only `transfer` with `address` and `uint256` is parsed; other calls are text |
-| a wallet restored with the keys of another party | `monero-wallet:` with `spend_key`, `view_key` or `seed` [S12], registered by Cake Wallet [S24] | the scheme is text |
-| a payment on a wrong EVM chain | without `chain_id`, the current network of the wallet is used [S9]; one address is given for Ethereum and Arbitrum One (README.md:154) | the orange warning `(unknown chain)` without an amount, section Link text (Q6) |
-| requests by the wallet to third parties | LNURL and Solana transaction request URLs are fetched by the wallet [S6], [S11] | the wallet is opened only from Open; `solana:https…` is text |
-| injection in descriptions, labels and messages | "Payment descriptions are user-defined and provide a potential avenue for injection attacks" [S4] | the apps render them as plain attributed text; in the website renderer, they are escaped by `escapeHtml` (website/src/js/simplex-lib.jsc:225-301) |
-| invisible characters in the label or message | format characters are shown as `[U+XXXX]` in web links (CILinkView.swift:104-121) | the message of the link is not shown; in the label of the link text, the same markers |
+- The alert `Open in wallet?` has the buttons Cancel and Open; Open passes the wallet URI to the OS.
+- The alert names the sender of the link; for a forwarded item, its text starts with `<name> forwarded:`.
+- A hyperlink label with an address-like run other than the addresses of the link is shown as text, and the URI as a bare link (rule L2).
+- An edited item has the edited mark, and its earlier versions are in the item info (Messages.hs:1388-1410).
+- Of `ethereum:` function calls, only `transfer` with `address` and `uint256` is parsed; other calls are text (rule U3).
+- `monero-wallet:` URIs are text.
+- An `ethereum:` link without a chain ID, or with a chain outside the table, is the orange `(unknown chain)` link without an amount (Q6).
+- The wallet is opened only from Open; a `solana:` transaction request, `solana:https…`, is text (rule U6).
+- The label is shown as literal text, and the message of a URI is not shown.
 
 ## Syntax
 
@@ -247,7 +243,8 @@ F1    bc1                        one case  14-90        Bitcoin        bech32 v0
 F2    1, 3                       -         25-36        Bitcoin        Base58Check, version 0x00 or 0x05
 F3    lnbc                       one case  37 or more   Lightning      BOLT 11 bech32, HRP amount
 F4    lnurl1                     one case  any          Lightning      bech32 of an https or onion URL
-F5    4, 8                       -         95, 106      Monero         Keccak-256 check, network byte 18, 42 or 19
+F5    4, 8                       -         95           Monero         Keccak-256 check, network byte 18 or 42
+      4                          -         106          Monero         Keccak-256 check, network byte 19
 F6    t1, t3                     -         25-36        Zcash          Base58Check, version 0x1CB8 or 0x1CBD
 F7    zs1                        one case  78           Zcash          bech32, 43 bytes
 F8    u1                         one case  any          Zcash          bech32m
@@ -550,44 +547,50 @@ URI              as written, with
 
 ### Link text
 
-The text of a payment link in the bubble, in link style; a sign or ticker is followed by a no-break space; addresses are shortened to 6 and 4 characters. The apps compose it from `ChainCurrency`, `address` and the shown label, `showText` of the hyperlink or `label`:
+The text of a payment link in chat items, in the chat list and in the alert, by the rule `[label] [sign or ticker] [amount or address] [(chain)]` (item 12004). `linkText` of `ChainAddress` (ChatTypes.swift, ChatModel.kt) composes it from `ChainCurrency`, `address`, the shown label and the signature state of the item (section Groups):
 
 ```
-CYBitcoin     ₿ then the text
-CYLightning   ϟ then the text, with " BTC" after the amount
-CYTicker      the ticker then the text, then " · " and the chain name when present
-CYUnknown     ⚠ then the shortened address, a space and one of
-                (unknown chain)
-                (unknown token)
-                (unknown chain and token)
-              without an amount or a label; the whole link in orange
-text          the amount, then " · " and the shown label when present
-              or the shown label
-              or the shortened address
+label           showText of the hyperlink, else label; a space after it
+sign or ticker  ₿ for CYBitcoin, ϟ for CYLightning, the ticker for CYTicker; a no-break space after it
+amount          the amount, else the shortened address
+                  an address of more than 10 characters: its first 6 and last 4 characters, joined by "…"
+chain           chainName of CYTicker, in parentheses and in italic, after a space
+warning         CYUnknown, or a group or channel item without a verified signature:
+                  the label, ⚠, the shortened address and the reasons in parentheses, joined by ", ":
+                    unknown chain, unknown token or unknown chain and token, for CYUnknown
+                    not signed, for the item without a verified signature
+                  without an amount or a chain name; the whole link in orange
+style           the link colour, underlined; the sign or ⚠ in semibold;
+                  a sign or ⚠ that starts the link is outside the underline, after a label it is underlined
 ```
 
-A link with both a label and a chain name is shown as Q8 decides.
+The texts of the app tests (ChainAddressesTests.swift, ChainAddressesTest.kt):
 
 | Link | Text |
 |---|---|
-| `bitcoin:bc1qar0s…5mdq?amount=0.0012` | ₿ 0.0012 |
-| `bitcoin:bc1qar0s…5mdq` | ₿ bc1qar…5mdq |
-| `lightning:lnbc12u1p…` | ϟ 0.000012 BTC |
-| `monero:4AdUnd…mRVj?tx_amount=0.25` | XMR 0.25 |
-| `monero:4AdUnd…mRVj` | XMR 4AdUnd…mRVj |
-| `litecoin:ltc1q…?amount=0.1` | LTC 0.1 |
-| `bitcoincash:qp3w…?amount=0.01` | BCH 0.01 |
-| `flux:t1fwjQ…S5Jg?amount=5`, `zel:t1fwjQ…S5Jg?amount=5` | FLUX 5 |
-| `solana:7xKX…?amount=10&spl-token=EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v` | USDC 10 · Solana |
-| `ethereum:0xfb69…d359@1?value=1e16` | ETH 0.01 |
-| `ethereum:0xfb69…d359@42161?value=1e16` | ETH 0.01 · Arbitrum One |
-| `ethereum:0xfb69…d359@137?value=5e18` | POL 5 · Polygon |
-| `ethereum:0xc2132D05D31c914a87C6611C10748AEb04B58e8F@137/transfer?address=0xfb69…d359&uint256=10000000` | USDT 10 · Polygon |
-| `ethereum:0xfb69…d359@99999?value=1e16` | ⚠ 0xfb69…d359 (unknown chain), in orange |
-| `ethereum:0xfb69…d359?value=1e16`, and the bare `0xfb69…d359` in mixed case | ⚠ 0xfb69…d359 (unknown chain), in orange |
-| `ethereum:0x1111…1111@137/transfer?address=0xfb69…d359&uint256=10000000` | ⚠ 0xfb69…d359 (unknown token), in orange |
-| `ethereum:0xc213…8e8F@99999/transfer?address=0xfb69…d359&uint256=10000000` | ⚠ 0xfb69…d359 (unknown chain and token), in orange |
-| `solana:7JCf5m3TiHmYKZVr6jCu1KeZVtb9Y1jRMQDU69p5ARnu?amount=10&spl-token=<a mint outside the table>` | ⚠ 7JCf5m…ARnu (unknown token), in orange |
+| `bc1q2gy6…505d4u` | ₿ bc1q2g…5d4u |
+| `[bc1q2gy6…505d4u](bitcoin:bc1q2gy6…505d4u)` | ₿ bc1q2g…5d4u |
+| `bitcoin:bc1q2gy6…505d4u?amount=0.001&label=SimpleX`, also in `<…>` and with `&message=Thank%20you` | SimpleX ₿ 0.001 |
+| `lnbc2500u1pvjlue…fna3rh` | ϟ 0.0025 |
+| `lightning:LNURL1DP68…XFQ5FNS` | ϟ lnurl1…5fns |
+| `lightning:lno1pgx9…sd5xvxg` | ϟ lno1pg…xvxg |
+| `[Donate](monero:8A3ZWA…Yq1c)` | Donate XMR 8A3ZWA…Yq1c |
+| `monero:8A3ZWA…Yq1c?tx_amount=0.25&recipient_name=SimpleX` | SimpleX XMR 0.25 |
+| `t1fwjQ…S5Jg`, `ltc1q2g…wfdv`, `D99pV4…BxPf`, `qq6c8v…lqcg`, `solana:7JCf5m…ARnu` | ZEC t1fwjQ…S5Jg, LTC ltc1q2…wfdv, DOGE D99pV4…BxPf, BCH qq6c8v…lqcg, SOL 7JCf5m…ARnu |
+| `solana:7JCf5m…ARnu?amount=0.5` | SOL 0.5 |
+| `solana:7JCf5m…ARnu?amount=10&spl-token=EPjFWd…Dt1v`, the USDC mint | USDC 10 (Solana) |
+| `flux:t1fwjQ…S5Jg?amount=5&message=Thanks`, `zel:t1fwjQ…S5Jg?amount=5` | FLUX 5 |
+| `za19w5…3pj3` | FLUX za19w5…3pj3 |
+| `ethereum:0xD704…c86a@42161?value=1e16` | ETH 0.01 (Arbitrum One) |
+| `ethereum:0xdAC1…1ec7@1/transfer?address=0xD704…c86a&uint256=5000000`, USDT on chain 1 | USDT 5 |
+| `ethereum:0xc213…8e8F@137/transfer?address=0xD704…c86a&uint256=10000000`, USDT on chain 137 | USDT 10 (Polygon) |
+| `[Dinner](ethereum:0xc213…8e8F@137/transfer?address=0xD704…c86a&uint256=10000000)` | Dinner USDT 10 (Polygon) |
+| the bare `0xD704…c86a` in mixed case, `ethereum:0xd704…c86a`, `ethereum:0xD704…c86a@100?value=1e16` | ⚠ 0xD704…c86a (unknown chain), in orange |
+| `[Donate](ethereum:0xD704…c86a@99999)` | Donate ⚠ 0xD704…c86a (unknown chain), in orange |
+| `ethereum:0x1111…1111@137/transfer?address=0xD704…c86a&uint256=10000000` | ⚠ 0xD704…c86a (unknown token), in orange |
+| `ethereum:0xdAC1…1ec7@99999/transfer?address=0xD704…c86a&uint256=10000000` | ⚠ 0xD704…c86a (unknown chain and token), in orange |
+| `<bitcoin:bc1q2gy6…505d4u?amount=0.001&label=SimpleX>` in a group item without a verified signature | SimpleX ⚠ bc1q2g…5d4u (not signed), in orange |
+| `ethereum:0xD704…c86a@100?value=1e16` in a group item without a verified signature | ⚠ 0xD704…c86a (unknown chain, not signed), in orange |
 
 ```mermaid
 flowchart LR
@@ -595,16 +598,17 @@ flowchart LR
     P["link parsed and checked"] --> R["ChainCurrency and address, from the tables below"]
   end
   subgraph Apps
-    R --> K{"constructor"}
-    K -->|CYBitcoin| B["₿ text"]
-    K -->|CYLightning| N["ϟ text, BTC after the amount"]
-    K -->|CYTicker| T["ticker text, · chain name"]
-    K -->|CYUnknown| Q["⚠ address (unknown chain, token, or chain and token), all in orange"]
+    R --> W{"CYUnknown, or a group or channel item without a verified signature?"}
+    W -->|no| K{"constructor"}
+    K -->|CYBitcoin| B["label ₿ amount or address"]
+    K -->|CYLightning| N["label ϟ amount or address"]
+    K -->|CYTicker| T["label ticker amount or address (chain)"]
+    W -->|yes| Q["label ⚠ address (reasons), all in orange"]
   end
 ```
 
-- Orange: `WarningOrange` (Color.kt:30) on Android and desktop, the system orange on iOS; the sign, the address and the words, in place of the link colour (items 11664, 11667).
-- The three words are localized strings of each app; the core sends only `UnknownCurrency`.
+- Orange: `WarningOrange` (Color.kt:30) on Android and desktop, the system orange on iOS; the label, ⚠, the address and the reasons, in place of the link colour (items 11664, 11667).
+- The reasons are localized strings of each app; the core sends only `UnknownCurrency`, and the signature state is part of the item (section Groups).
 
 Tickers of the schemes, by SLIP-44 [S37]; the apps draw the signs ₿ and ϟ, and the core sends the tickers:
 
@@ -621,7 +625,7 @@ Tickers of the schemes, by SLIP-44 [S37]; the apps draw the signs ₿ and ϟ, an
 | `flux`, `zel` | FLUX |
 | `ethereum` | the chain table |
 
-Chains, by ethereum-lists/chains [S34]; the name follows ` · `, except for chain 1:
+Chains, by ethereum-lists/chains [S34]; the name is shown in parentheses, except for chain 1:
 
 | Chain ID | Name | Ticker |
 |---|---|---|
@@ -653,41 +657,45 @@ Tokens, by the Uniswap token list [S38] and the Solana token list [S39]; an ERC-
 
 ### Presentation
 
-| Element | Proposal |
+| Element | Behaviour |
 |---|---|
-| bubble, address or URI | section Link text |
-| bubble, `[label](URI)` | the hyperlink text is the shown label of section Link text: `[Donate](monero:…)` is `XMR Donate`, and with `tx_amount=0.25`, `XMR 0.25 · Donate` |
-| tap | alert `Open in wallet?`; the wallet is opened only from Open |
-| alert text | `<name>: <link text> to <address>`; ` to <address>` is left out for `CYLightning`, for `CYUnknown`, whose link text contains the address, and when the link text is the shortened address |
-| alert text, forwarded item | `<name> forwarded: <link text> to <address>` |
-| `<name>` | the display name of the item's sender: the contact, the group member, the channel for a post shown as the channel, the user's own name or incognito name for a sent item; bold on Android and desktop; plain on iOS, where the alert text is a string (ShareSheet.swift:38-55) |
+| chat item and chat list, address or URI | section Link text |
+| chat item and chat list, `[label](URI)` | the hyperlink text is the label of section Link text: `[Donate](monero:8A3ZWA…Yq1c)` is `Donate XMR 8A3ZWA…Yq1c`; a hyperlink text that contains an address of the link is not shown: `[bc1q2gy6…505d4u](bitcoin:bc1q2gy6…505d4u)` is `₿ bc1q2g…5d4u` |
+| profile and group descriptions, welcome messages, quotes, item info, the item above the message field | the text as written, as on master |
+| tap in a chat item | alert `Open in wallet?`; the wallet is opened only from Open |
+| alert text | `<name>: <link text>`, then ` to <address>` after an amount of `CYBitcoin` or `CYTicker`; the link text has the signature state of the item, so a group or channel item without a verified signature shows the warning of section Link text |
+| alert text, forwarded item | `<name> forwarded: <link text>`, then ` to <address>` as above |
+| `<name>` | the display name of: the contact, for a received direct item; the member, for a received group item; the chat, for a channel item and for an item sent as the channel; the user's member profile in the group, for another sent group item; the user's profile, for a sent direct item and for notes; bold on Android and desktop; plain on iOS, where the alert text is a string (ShareSheet.swift:38-55) |
 | `<address>` | shortened as in section Link text; the full address is shown by the wallet |
 | buttons | Cancel; Open |
 | no app | alert `No wallet app`, text `Copy the address or scan the QR code with a wallet.`, buttons Copy, QR code, Cancel |
 
-Alert texts:
+Alert texts of the app tests:
 
 | Item | Text |
 |---|---|
-| from Tom, `bitcoin:bc1q2g…5d4u?amount=0.0012` | Tom: ₿ 0.0012 to bc1q2g…5d4u |
-| from SimpleX Support, `monero:8A3ZWA…Yq1c` | SimpleX Support: XMR 8A3ZWA…Yq1c |
-| forwarded by Mum, `bitcoin:bc1qw5…f3t4?amount=0.02` | Mum forwarded: ₿ 0.02 to bc1qw5…f3t4 |
-| from Ana, the USDT `transfer` on chain 137 | Ana: USDT 10 · Polygon to 0xD704…c86a |
-| from Café Luna, `lightning:lnbc2500u1…` | Café Luna: ϟ 0.0025 BTC |
-| from Ana, `ethereum:0xD704…c86a?value=1e16`, without a chain ID | Ana: ⚠ 0xD704…c86a (unknown chain) |
+| from alice, `bc1q2gy6…505d4u` | alice: ₿ bc1q2g…5d4u |
+| from alice, `[Donate](monero:8A3ZWA…Yq1c)` | alice: Donate XMR 8A3ZWA…Yq1c |
+| from alice, `lnbc2500u1pvjlue…fna3rh` | alice: ϟ 0.0025 |
+| from alice, `<bitcoin:bc1q2gy6…505d4u?amount=0.001&label=SimpleX>` | alice: SimpleX ₿ 0.001 to bc1q2g…5d4u |
+| forwarded by alice, the same link | alice forwarded: SimpleX ₿ 0.001 to bc1q2g…5d4u |
+| from alice, the USDT `transfer` on chain 137 | alice: USDT 10 (Polygon) to 0xD704…c86a |
+| from alice, `ethereum:0xD704…c86a@100?value=1e16` | alice: ⚠ 0xD704…c86a (unknown chain) |
+| from alice, `lightning:LNURL1DP68…XFQ5FNS` | alice: ϟ lnurl1…5fns |
+| from alice in a group, `ltc1q2gy6…snwfdv` without a verified signature | alice: ⚠ ltc1q2…wfdv (not signed) |
 
 ```mermaid
 flowchart LR
   I["tapped item"] --> N{"sender"}
-  N -->|"contact, member, channel post, own item"| NM["display name"]
+  N -->|"contact, member, channel, own item"| NM["display name"]
   NM --> F{"forwarded item?"}
   F -->|yes| P1["name forwarded:"]
   F -->|no| P2["name:"]
-  P1 --> LT["link text"]
+  P1 --> LT["link text, with the signature state of the item"]
   P2 --> LT
-  LT --> A{"CYLightning, CYUnknown, or the text is the shortened address?"}
-  A -->|yes| E["end"]
-  A -->|no| TO["to the shortened address"]
+  LT --> A{"an amount of CYBitcoin or CYTicker, without a warning?"}
+  A -->|yes| TO["to the shortened address"]
+  A -->|no| E["end"]
 ```
 
 ```
@@ -726,7 +734,7 @@ sequenceDiagram
 | Part | iOS | Android and desktop |
 |---|---|---|
 | types | `Format.chainAddressLink`, `ChainAddress`, `ChainCurrency`, `UnknownCurrency` in SimpleXChat/ChatTypes.swift, in place of `PaymentRequest` and its types of this branch (ChatTypes.swift:6046, 6069-6167) | `Format.ChainAddressLink` and the same three types in ChatModel.kt, in place of ChatModel.kt:5412, 5457-5527; style `linkStyle` |
-| link text | one function of `ChainAddress` and the shown label, section Link text, used by the bubble and the alert; the chain table and the token table of this branch are removed from the app | the same |
+| link text | one function of `ChainAddress`, the shown label and the signature state of the item, section Link text, used by the bubble and the alert; the chain table and the token table of this branch are removed from the app | the same |
 | rendering | a branch in `appendSegments` with an attribute key for the chain address (MsgContentView.swift:595-722) | the annotation `CHAIN_ADDRESS` (TextItemView.kt:336-452); the same text in `segmentDisplayText` (TextItemView.kt:112-134) |
 | tap | the alert is shown from `attributedStringLink` for the key, before the URL branch in which `mailto:` and `tel:` are opened directly (MsgContentView.swift:300-344) | `CHAIN_ADDRESS` is handled in `onClick`, `onHover` and `shouldConsumeEvent` (TextItemView.kt:489-534) |
 | alert | `showAlert(title:message:buttonTitle:buttonAction:cancelButton:)` with Open and Cancel (ShareSheet.swift:38-55) | `AlertManager.shared.showAlertDialogButtonsColumn` with `text: AnnotatedString` (AlertManager.kt:105-124) and a row of Cancel and Open; the text is built by `formatWithBoldName` (Utils.kt:119-124), so the name is bold and the name and the label are shown as literal text, as AlertManager.kt:81 and :135 require for user-controlled text |
@@ -734,7 +742,7 @@ sequenceDiagram
 | previews | `linkUri` is unchanged, so a payment link is never previewed (ChatTypes.swift:5883-5889, ComposeView.swift:1929-1939) | the same (ChatModel.kt:5369-5374, ComposeView.kt:472-482) |
 
 - Remote desktop: an app of an earlier version fails to decode the new `Format`; `minRemoteCtrlVersion` and `minRemoteHostVersion` (Remote.hs:77-82) are raised to the release version by the release commit, as by `d7d180a42 core: 7.1.0.16`.
-- Website: the payment schemes are added to `SAFE_URI_SCHEME` (website/src/js/simplex-lib.jsc:26), and `chainAddressLink` is rendered as a link to `walletUri` in `renderSegments` (simplex-lib.jsc:225-301).
+- Website: unchanged; `renderSegments` of website/src/js/simplex-lib.jsc shows a `chainAddressLink` segment as its escaped text, by its default branch. Its rendering as a link is later (section Stages).
 - CLI: the text is printed as now (Styled.hs:71-79).
 - Bots API: `ChainAddressLink`, `ChainAddress`, `ChainCurrency` and `UnknownCurrency` in bots/src/API/Docs/Types.hs, in place of the six types of this branch; bots/api and the TypeScript and Python types are generated again.
 - Renamed with the types: the fixture tests/fixtures/api/payments/links.json to tests/fixtures/api/chain-addresses/links.json, the test `payment links in a received message` to `chain addresses in a received message` with its line in scripts/ci/README.md, the app tests PaymentLinksTests.swift and PaymentLinksTest.kt, the snapshots `ClassicPaymentLinks`, `TerminalPaymentLinks` and `PaymentLinks.Messages`, and the `ci-tests` block of the pull request body. The string `payment_link_chain` and the iOS string `chain %lld` are removed: a chain outside the table is shown as Q6 decides.
@@ -753,9 +761,8 @@ receive   withVerifiedMsg verifies the signature, as now (Subscriber.hs:4148-416
             the apps receive it as meta.msgVerified: absent when unsigned, signed with sigStatus
               verified or signedNoKey, or sigMissing where signing is required (Types/Shared.hs:134, 152-172)
             hasLink is unchanged: the address stays a link (Q7 c)
-show      Q7 c: a chain address of a group item whose meta.msgVerified is not signed and verified
-            is the orange link "(not signed)", and its alert has a warning; the wording is designed
-            separately, and the apps build it
+show      Q7 c: a chain address of a group or channel item whose meta.msgVerified is not signed and verified
+            is the orange link "(not signed)" of section Link text, in the bubble and in the alert text
 direct    unchanged: direct chats and local notes
 ```
 
@@ -788,7 +795,6 @@ sequenceDiagram
 - A payment link is sent as message text and parsed by each recipient's core when the item is read (Store/Messages.hs:2338-2340, 2432-2434).
 - The core and the apps send no request for a payment link; names (BIP-353, Lightning Address, ENS), LNURL and the tokens outside the token table are resolved only by the wallet.
 - At Open, the app passes the address, amount, label and message to the app that the OS chooses; on iOS, that app is undefined among several [S17].
-- At Copy, the address is placed on the clipboard, where other apps can read it [S32].
 
 ## Tests
 
@@ -796,14 +802,14 @@ Each test that expects a payment link fails on master.
 
 | File | Test |
 |---|---|
-| tests/MarkdownTests.hs | `bc1q2gy6…505d4u` and its upper-case form are parsed as `ChainAddressLink` with `CYBitcoin Nothing`, the address in lower case and `walletUri` `bitcoin:` and the address; the address with its last character changed is text |
+| tests/MarkdownTests.hs | `bc1q2gy6…505d4u` and its upper-case form are parsed as `ChainAddressLink` with `CYBitcoin Nothing`, the address in lower case and `walletUri` `bitcoin:` and the address; the address with its last character changed is text; the BIP-350 Taproot address `bc1p0xlx…zk5jj0` is a link, and the same program with a bech32 checksum, `bc1p0xlx…h2y7hd`, is text |
 | | `BITCOIN:BC1Q2GY6…?AMOUNT=0.001` is parsed with `walletUri` `bitcoin:BC1Q2GY6…?amount=0.001`; `amount=0.000000001` and `amount=1,000` are text |
 | | `37116639cErLzxER6tL3a6EH2DbdETwTxd`, a P2SH address made for the test from random bytes, which starts with 8 digits, is one `ChainAddressLink`; on master it is split by `phoneP` (Markdown.hs:363, 484-494) |
 | | the README.md:151-158 addresses, bare and as URIs: Monero byte 42 as `CYTicker "XMR"`, CashAddr with and without its prefix as `BCH`, EIP-55 as `CYUnknown UCChain`, `t1` and `u1` as `ZEC`, Dogecoin as `DOGE`; `solana:7JCf…ARnu?amount=0.5` as `CYTicker "SOL" Nothing (Just "0.5")`; with the USDC mint of the token table, `CYTicker "USDC" (Just "Solana")`; with another mint, `CYUnknown UCToken` |
 | | `flux:t1fwj…S5Jg?amount=5&message=Thanks` and `zel:t1fwj…S5Jg?amount=5` as `CYTicker "FLUX" Nothing (Just "5")`, with `walletUri` in their own schemes; `flux:za19w5…pj3?amount=1&memo=…`, a Flux Sapling address made for the test from random bytes, and the bare `za19w5…pj3` as `FLUX`; `zel:?action=pay&coin=flux&address=t1fwj…S5Jg&amount=3` as `FLUX`; the bare `t1fwj…S5Jg` as `ZEC`; text (U5, U7): `flux:` with a Zcash `zs1…` or `u1…` address or with a memo and a transparent address, `zcash:za1…`, the `sign` and `getaddress` actions, the coin `bitcoin`, and a `callback` |
 | | `strDecode (strEncode a) == Right a` for each chain address of these tests |
 | | the BOLT 11 example "Please send $3 for a cup of coffee to the same peer, within one minute" [S4]: `CYLightning (Just "0.0025")`; its example "Bech32 checksum is invalid" is text |
-| | `ethereum:0xD704…c86a@42161?value=1e16`: `CYTicker "ETH" (Just "Arbitrum One") (Just "0.01")`; `@1`: chain name `Nothing`; `@137?value=5e18`: `POL 5 · Polygon`; `@99999` and no chain ID: `CYUnknown UCChain`; the USDT `transfer` example on chain 1: `CYTicker "USDT" Nothing (Just "5")` with the payee as `address`; the same with the token contract in lower case: the same value; USDT on chain 137 and on chain 56 (18 decimals): `10 · Polygon`, `1.5 · BNB Smart Chain`; another contract on chain 137: `UCToken`; on chain 99999 and without a chain: `UCChainAndToken`; `/approve?…` and a `transfer` with `value` are text; the address with the case of one letter changed is text |
+| | `ethereum:0xD704…c86a@42161?value=1e16`: `CYTicker "ETH" (Just "Arbitrum One") (Just "0.01")`; `@1`: chain name `Nothing`; `@137?value=5e18`: `CYTicker "POL" (Just "Polygon") (Just "5")`; `@99999` and no chain ID: `CYUnknown UCChain`; the USDT `transfer` example on chain 1: `CYTicker "USDT" Nothing (Just "5")` with the payee as `address`; the same with the token contract in lower case: the same value; USDT on chain 137 and on chain 56 (18 decimals): `CYTicker "USDT" (Just "Polygon") (Just "10")`, `CYTicker "USDT" (Just "BNB Smart Chain") (Just "1.5")`; another contract on chain 137: `UCToken`; on chain 99999 and without a chain: `UCChainAndToken`; `/approve?…` and a `transfer` with `value` are text; the address with the case of one letter changed is text |
 | | `[Donate](monero:8A3Z…q1c)` is parsed as `ChainAddressLink (Just "Donate")`; `[bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4](bitcoin:bc1q2gy6…)`, a valid address of BIP-173 as the label, `[Pay 1Hk7…uKe](bitcoin:…)`, a Base58 word with a wrong checksum as the label, and a one-case EVM address as the label of another EVM address, are parsed as label text and a bare `ChainAddressLink` (L2); `[Donate](bc1q2gy6…)` is parsed as text and a bare `ChainAddressLink`, and `<bc1q2gy6…>` as text (L3); a URI with a message `Pay to 1Hk7…uKe` is text (U8) |
 | | text: `ThereAreMany32ByteKeysHereButNoneAreChecked`; `0xd7047fe3eecb2f2ff78d839dd927be27bc12c86a` bare; `tb1…`; `monero-wallet:…?spend_key=…`; `monero:A;B?tx_amount=1;2`; `zcash:t1fwj…?memo=…`; `` `bc1q2gy6…` ``; `alice@getalby.com` as e-mail |
 | | `hasLinks` of a chain address link, as proposed in Q5; linear time: 10000 words of 34 Base58 characters |
@@ -813,9 +819,9 @@ Each test that expects a payment link fails on master.
 | tests/ChatTests/Direct.hs | `filter chat by link content`: a message with a bare address is in the Links filter, as proposed in Q5 |
 | tests/ChatTests/Direct.hs | `chain addresses in a received message`: alice sends a bare address, `[Donate](monero:…)` and a bare invoice; `apiFixture` (tests/ChatTests/Utils.hs:1015-1030) records bob's `/_get chat @2 count=1`, whose item has `ChainAddressLink` in `formattedText`, and the markdown of each `ChainCurrency` constructor and `UnknownCurrency` value, to tests/fixtures/api/chain-addresses/links.json; its pattern is in "App test fixtures" (scripts/ci/README.md:51) |
 | tests/APIDocs.hs | the bots API files, generated again with the new types |
-| app tests on tests/fixtures/api/chain-addresses/links.json | `Format.chainAddressLink` is decoded; each `ChainCurrency` constructor is mapped to its link text and alert text; a mocked open failure is followed by the alert `No wallet app` |
+| app tests on tests/fixtures/api/chain-addresses/links.json | `Format.chainAddressLink` is decoded; each `ChainCurrency` constructor is mapped to its link text and alert text; a mocked open failure is followed by the alert `No wallet app`, whose Copy copies the address and whose QR code shows the QR code; an address in a profile description is its text |
 | tests/ChatTests/Groups.hs | `chain addresses in group messages are signed`: alice sends a bare address to a group without the signing preference; the item is `(signed)` for alice, bob and cath; a plain message after it is not signed, and its edit that adds a Litecoin address stays unsigned; `apiFixture` records bob's `/_get chat #1 count=2` to tests/fixtures/api/chain-addresses/group.json |
-| app tests on tests/fixtures/api/chain-addresses/group.json | the chain address of the verified item is a link; that of the unsigned item is the orange link `(not signed)` (Q7 c) |
+| app tests on tests/fixtures/api/chain-addresses/group.json | the chain address of the verified item is a link; that of the unsigned item is the orange link `(not signed)`, and its alert text has the same warning (Q7 c) |
 
 ### Timing
 
@@ -854,7 +860,7 @@ sequenceDiagram
 | core: `ChainAddress.hs` with its tables, `Format.ChainAddressLink`, parser changes, `walletUri`, tests, bots API types, fixtures | v1 |
 | iOS, Android, desktop: rendering, alerts, open, QR code, app tests | v1, in the same pull request |
 | remote versions | the release commit |
-| website renderer | v1 |
+| website renderer: `chainAddressLink` as a link to `walletUri`, with the schemes of section Syntax in `SAFE_URI_SCHEME` (website/src/js/simplex-lib.jsc) | later |
 | names: `₿user@domain`, Lightning Address, ENS, handed to the wallet | later, once wallets accept a URI form for them |
 | a group preference that prohibits payment links | later, a protocol preference (Types/Preferences.hs:206-218) |
 | a wallet selector with schemes of individual wallets [S35] | later |
@@ -863,9 +869,10 @@ sequenceDiagram
 
 ```mermaid
 flowchart LR
-  V1["v1 pull request: core, apps, website, bots API"] --> L1["later: names handed to wallets"]
+  V1["v1 pull request: core, apps, bots API"] --> L1["later: names handed to wallets"]
   V1 --> L2["later: group preference"]
   V1 --> L3["later: wallet selector, upper-case QR codes, further networks"]
+  V1 --> L4["later: website renderer"]
 ```
 
 - `Format`, `isLink`, `linkMD` and `hyperLinkFormat` are changed in the message-references plan too (branch ep/message-references, plans/2026-11-22-message-references.md). The pull request merged second is rebased; in `hyperLinkFormat`, message links are tried first, then SimpleX links, payment links and web links.
@@ -883,8 +890,8 @@ Each question is a principle with its consequences; the recommended option is in
 | Q4 | Networks in v1 | decided (items 11702, 11737, 11754): a, and Flux in `flux:` and `zel:` URIs<br>a. Bitcoin, Lightning, Ethereum with the other EVM chains, Monero, Zcash, Solana, Litecoin, Dogecoin, Bitcoin Cash: the networks of README.md:151-158, Lightning and Litecoin<br>b. Bitcoin, Lightning and Monero: a smaller parser and fewer tests; other addresses are text | — |
 | Q5 | Whether payment links are links | a. yes: new items with a payment link are in the Links filter (ChatView.swift:3410-3436, Store/Messages.hs:1551-1578); groups get no new preference in v1<br>b. no, as e-mail addresses and phone numbers (Markdown.hs:320-326)<br>c. a, and a group preference that prohibits them, a protocol change | **a** |
 | Q6 | Text of a link outside the tables: an unknown chain ID or token, or an `ethereum:` link without a chain ID, in which the wallet's current chain is used [S9] | decided (items 11664, 11667): an orange ⚠, the shortened address and `(unknown chain)`, `(unknown token)` or `(unknown chain and token)`, without an amount; the whole link in orange (section Link text) | — |
-| Q7 | What a group item shows when its message has a chain address and no verified signature: unsigned, signed by a member whose key is unknown, or from a member below version 20 (section Groups) | decided (item 11878): c, with a warning in the alert; a message with an address is signed, and the sender is warned before sending (the warnings are designed separately)<br>a. the chain address as text, as now; the rest of the message as usual<br>b. the message replaced by the event "bad signature", as for an unsigned edit of a signed item (Subscriber.hs:2431): the whole message is lost<br>c. the link drawn as for Q6, with `(not signed)`, and the alert as usual: a tap still opens the wallet | — |
-| Q8 | Text of a link with both a label and a chain name; the chain name follows ` · ` (items 11458, 11489), and the text built in this branch puts the label in its place (ChatTypes.swift:6084, ChatModel.kt:5464) | answered (item 11878): the label precedes the amount, a chain name is shown when there is no amount, and rule L2 stays; the text is designed separately. The core keeps the hyperlink text (`showText`), the URI label (`label`) and the chain name (`chainName`) as separate fields<br>a. `ETH 0.01 · Arbitrum One · Dinner`<br>b. `ETH 0.01 · Dinner · Arbitrum One`<br>c. the label is left out when a chain name is shown: `ETH 0.01 · Arbitrum One` | — |
+| Q7 | What a group item shows when its message has a chain address and no verified signature: unsigned, signed by a member whose key is unknown, or from a member below version 20 (section Groups) | decided (item 11878): c, with a warning in the alert, its text the warning link text of section Link text; a message with an address is signed, and the sender is warned before sending (the warning to the sender is designed separately)<br>a. the chain address as text, as now; the rest of the message as usual<br>b. the message replaced by the event "bad signature", as for an unsigned edit of a signed item (Subscriber.hs:2431): the whole message is lost<br>c. the link drawn as for Q6, with `(not signed)`, and the alert as usual: a tap still opens the wallet | — |
+| Q8 | Text of a link with a label, a sign or ticker, an amount or address, and a chain name | decided (items 11878, 11924, 11933, 11941, 11964, 11975, 12004, 12033): `[label] [sign or ticker] [amount or address] [(chain)]`, the chain name in italic parentheses, the sign or ticker never split from what follows it, and rule L2 stays: `Dinner USDT 10 (Polygon)`, `Donate XMR 8A3ZWA…Yq1c`, `Donate ⚠ 0xD704…c86a (unknown chain)` (section Link text). The core keeps the hyperlink text (`showText`), the URI label (`label`) and the chain name (`chainName`) as separate fields | — |
 | Q9 | Which `zel:` links are Flux links. Zelcore's specification defines `zel:` as actions with the address in a parameter, `zel:?action=pay&coin=zelcash&address=t1…&amount=3`, where an absent `coin` is Bitcoin [S41]; four RunOnFlux apps build this form, and CumulusVPN states that Zelcore registers it with the OS [S42]; none of the four builds `zel:t1…?amount=`. With ZIP-321 parsing (item 11796), the `address` parameter is read, so the pay action is a FLUX link | decided (item 11878): b<br>a. ZIP-321 only: `zel:?action=sign&address=t1…&callback=…` is a FLUX link too, and Open passes the sign action to the wallet<br>b. ZIP-321, and a URI with an action other than `pay`, a `callback`, a coin other than `flux`, `zelcash` and `zel`, or `zel:` with the address in a parameter and no coin, is text (U7) | — |
 | Q10 | Keys of `flux:` and `zel:` links | decided (items 11796, 11878): `amount`, `label` and `message`, with `address` and `memo` of ZIP-321 | — |
 
@@ -923,8 +930,6 @@ Each question is a principle with its consequences; the recommended option is in
 | S29 | Signal Android, https://github.com/signalapp/Signal-Android: app/src/main/java/org/thoughtcrime/securesms/conversation/v2/items/V2ConversationItemUtils.kt:37-59, core/util/src/main/java/org/signal/core/util/LinkifierSpannableExtensions.kt:13-28; "Help us test payments in Signal", https://signal.org/blog/help-us-test-payments-in-signal/ (April 2021) |
 | S30 | Session Android, https://github.com/session-foundation/session-android: app/src/main/java/org/thoughtcrime/securesms/conversation/v2/Util.kt:29-30, 46-68; autolink-java, https://github.com/robinst/autolink-java |
 | S31 | Briar, https://github.com/briar/briar: briar-android/src/main/java/org/briarproject/briar/android/conversation/ConversationItemViewHolder.java:63-64 |
-| S32 | ESET, "First clipper malware discovered on Google Play", https://www.welivesecurity.com/2019/02/08/first-clipper-malware-google-play/ (2019-02-08) |
-| S33 | T. Tsuchiya, J.-D. Dong, K. Soska, N. Christin, "Blockchain Address Poisoning", USENIX Security 2025, https://www.usenix.org/conference/usenixsecurity25/presentation/tsuchiya; CyLab, https://cylab.cmu.edu/news/2026/01/07-blockchain-address-poisoning.html (2026-01-07) |
 | S34 | ethereum-lists/chains, `_data/chains/eip155-<id>.json`, https://github.com/ethereum-lists/chains |
 | S35 | Bitcoin Design Guide, "Wallet selector", https://bitcoin.design/guide/how-it-works/wallet-selector/ |
 | S36 | simplexmq at d38bcf50131d59f027d170731e4ea22031650611, the commit of cabal.project:24: src/Simplex/Messaging/Eth/Address.hs:40-48, src/Simplex/Messaging/Crypto.hs:1035-1057 |
