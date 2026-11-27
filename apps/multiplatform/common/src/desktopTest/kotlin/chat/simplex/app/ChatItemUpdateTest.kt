@@ -7,6 +7,7 @@ import chat.simplex.common.platform.chatSendCmdRetry
 import chat.simplex.common.platform.ntfManager
 import chat.simplex.common.simplexWindowState
 import chat.simplex.common.views.call.RcvCallInvitation
+import chat.simplex.common.views.helpers.withBGApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
@@ -29,6 +30,7 @@ class ChatItemUpdateTest {
 
   @AfterTest
   fun tearDown() {
+    runBlocking { withBGApi {}.join() }
     ChatModel.chatsContext.chats.value.clear()
     ChatModel.chatsContext.chatItems.value.clear()
     ChatModel.chatId.value = null
