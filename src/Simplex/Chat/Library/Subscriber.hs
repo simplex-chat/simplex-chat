@@ -2028,40 +2028,39 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
         _ -> messageError "x.msg.file.descr: invalid file description part" $> Nothing
 
     processFDMessage :: Maybe ByteString -> FileTransferId -> AChatItem -> FileDescr -> Maybe UTCTime -> Maybe BadgeProof -> CM ()
-    processFDMessage binding_ fileId aci fileDescr fileExpires fileBadge = do
+    processFDMessage binding_ fileId aci fileDescr fileExpires fileBadge = withFileLock "processFDMessage" fileId $ do
       ft <- withStore $ \db -> getRcvFileTransfer db user fileId
       unless (rcvFileCompleteOrCancelled ft) $ do
-        appended_ <- withStore $ \db -> do
-          rfd_ <- appendRcvFD db userId fileId fileDescr
-          forM rfd_ $ \rfd -> do
-            forM_ fileExpires $ liftIO . setFileExpiration db user fileId
-            -- reading second time in the same transaction as appending description
-            -- to prevent race condition with accept
-            (rfd,) <$> getRcvFileTransfer db user fileId
-        forM_ appended_ $ \(rfd@RcvFileDescr {fileDescrComplete}, ft'@RcvFileTransfer {fileStatus, xftpRcvFile, cryptoArgs, fileProhibited, fileInvitation = FileInvitation {fileSize}}) -> do
-          when fileDescrComplete $ toView $ CEvtRcvFileDescrReady user aci ft' rfd
-          maxSize <- asks $ noBadge . fileSizeLimits . config
-          let descrBadgeRequired = fileDescrComplete && fileSize > maxSize && isNothing fileProhibited
-          prohibited_ <- case fileBadge of
-            _ | not descrBadgeRequired -> pure Nothing
-            Nothing -> pure $ Just FileProhibited {maxSize, badgeStatus = Nothing}
-            Just badge -> do
-              st <- descrBadgeStatus binding_ fileSize rfd fileExpires badge
-              if st == BSActive
-                then do
-                  withStore' $ \db -> createFileBadgeProof db fileId BPKDescription badge
-                  pure Nothing
-                else pure $ Just FileProhibited {maxSize, badgeStatus = Just st}
-          case prohibited_ of
-            Nothing -> case (fileStatus, xftpRcvFile) of
-              (RFSAccepted _, Just XFTPRcvFile {userApprovedRelays}) -> receiveViaCompleteFD user fileId rfd fileSize userApprovedRelays cryptoArgs
-              _ -> pure ()
-            -- the file may already be accepted, so it is reset to an invitation the apps refuse by its prohibition
-            Just prohibited -> do
-              upd_ <- withStore $ \db -> updateFileChatItem db cxt user fileId $ do
-                setFileProhibited db user fileId prohibited
-                resetRcvFile db user fileId CIFSRcvInvitation
-              forM_ upd_ $ toView . CEvtChatItemUpdated user
+        (rfd@RcvFileDescr {fileDescrComplete}, ft'@RcvFileTransfer {fileStatus, xftpRcvFile, cryptoArgs, fileProhibited, fileInvitation = FileInvitation {fileSize}}) <- withStore $ \db -> do
+          rfd <- appendRcvFD db userId fileId fileDescr
+          forM_ fileExpires $ liftIO . setFileExpiration db user fileId
+          -- reading second time in the same transaction as appending description
+          -- to prevent race condition with accept
+          ft' <- getRcvFileTransfer db user fileId
+          pure (rfd, ft')
+        when fileDescrComplete $ toView $ CEvtRcvFileDescrReady user aci ft' rfd
+        maxSize <- asks $ noBadge . fileSizeLimits . config
+        let descrBadgeRequired = fileDescrComplete && fileSize > maxSize && isNothing fileProhibited
+        prohibited_ <- case fileBadge of
+          _ | not descrBadgeRequired -> pure Nothing
+          Nothing -> pure $ Just FileProhibited {maxSize, badgeStatus = Nothing}
+          Just badge -> do
+            st <- descrBadgeStatus binding_ fileSize rfd fileExpires badge
+            if st == BSActive
+              then do
+                withStore' $ \db -> createFileBadgeProof db fileId BPKDescription badge
+                pure Nothing
+              else pure $ Just FileProhibited {maxSize, badgeStatus = Just st}
+        case prohibited_ of
+          Nothing -> case (fileStatus, xftpRcvFile) of
+            (RFSAccepted _, Just XFTPRcvFile {userApprovedRelays}) -> receiveViaCompleteFD user fileId rfd fileSize userApprovedRelays cryptoArgs
+            _ -> pure ()
+          -- the file may already be accepted, so it is reset to an invitation the apps refuse by its prohibition
+          Just prohibited -> do
+            upd_ <- withStore $ \db -> updateFileChatItem db cxt user fileId $ do
+              setFileProhibited db user fileId prohibited
+              resetRcvFile db user fileId CIFSRcvInvitation
+            forM_ upd_ $ toView . CEvtChatItemUpdated user
 
     descrBadgeStatus :: Maybe ByteString -> Integer -> RcvFileDescr -> Maybe UTCTime -> BadgeProof -> CM BadgeStatus
     descrBadgeStatus binding_ fileSize RcvFileDescr {fileDescrText} fileExpires badge = do
