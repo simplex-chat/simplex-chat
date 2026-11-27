@@ -3,21 +3,26 @@
 Status: plan only. Code references: master `dbd3fd7ca`, by file and line. Nothing of this plan is in the release of 2026-11-23. Decided by the maintainer on 2026-11-22:
 - design A only: a member is in the group only via another member, not directly; the representation is permanent, stored and shown on every member's side;
 - the MemberInfo field `via` names the member it is via; x.grp.mem.new with `via` may be forwarded;
-- receivers accept forwards of a member's messages from whoever they accept forwards today; `via` does not restrict forwarders;
 - later joiners get x.grp.mem.intro with `via`, without a "joined" or "added" item;
 - `SendAs` is parameterized; the parser accepts `(as_group=on)` as today;
 - one pull request with the three plugin stages; reactions as a member are excluded;
 - chat version 23; Q1 A and Q4 A;
 - a member via V has any role up to V's role, as the author of a commit made by its committer; introductions put each member via another member after that member;
 - a teammate ends by the existing removal: "Claude removed reviewer" (Q3 A);
-- the host of a member forwards the messages of a member via V to it until it connects to V (Q5 B);
-- with "sign messages" on, V signs the messages of its members via V with its own key, and receivers verify them with the key of the member recorded as `via` (Q6, new option D);
-- each forward of a message of a member via V has `via`, set by whoever forwards it: V, the host of the recipient, and group history;
-- how apps show `via` (Q2), from renders: variant C, "via <host>" in italics after the member's name in message headers and quotes, in place of its status in the member list, and in a row Via of member info.
+- the host of a member forwards V's messages sent as a submember to it until it connects to V (Q5 B);
+- how apps show `via` (Q2), from renders: variant C, "via <name of V>" in italics after the member's name in message headers and quotes, in place of its status in the member list, and in a row Via of member info.
+
+Decided by the maintainer on 2026-11-26 (in conversation): "Yes, switching is a no-brainer, it simplifies things which I could sense even before looking at code. [ab]using forward for it was a bad idea."
+- a message or update sent as a submember of V is V's own x.msg.new or x.msg.update with the field `asMember`, as `asGroup` of send as group; forwards of it are forwards of V's message (4.4);
+- `asMember` holds the submember's member ID and display name, as the forward header holds them (Q2 of 2026-11-26: "also probably ok");
+- V does not announce submembers to members before chat version 24, and hosts do not introduce them to such joiners: these members see V's messages (Q1 of 2026-11-26: "agreed. we will only ship it in plugin, and its users would use beta version.");
+- the messages of a submember blocked by an admin are delivered to moderators only, without notifications (Q4 of 2026-11-26: "ok");
+- with "sign messages" on, V signs its messages sent as a submember as its own messages, and receivers verify them with V's key;
+- a message of a submember is direct, so it is shown without the forward mark "[>>]" (Q3 of 2026-11-26: "I don't think we want >> mark, as it's about transport. These messages are direct.").
 
 Facts about Claude Code are those recorded in `plans/2026-11-14-mcp-teammate-profiles.md` (branch `ep/mcp-teammate-profiles`, facts 1 to 9, F1 and F2).
 
-Terms: a submember of V, "a member via V" below, is a member whose messages are sent only by V, as forwards; V is "the member it is via". In this plan V is Claude and its submember is a teammate.
+Terms: a submember of V, "a member via V" below, is a member whose messages are sent only by V, as V's own messages with `asMember`; V is "the member it is via". In this plan V is Claude and its submember is a teammate.
 
 ## 1. Goal
 
@@ -25,7 +30,7 @@ The maintainer, 2026-11-22: "claude sends "new member" message with a flag "no c
 
 Outcome:
 - Claude's core adds each named teammate of a session to the session group as a member via Claude, with its own profile; the introduction protocol ends at the announcement.
-- The teammate's messages, reports and tool steps are sent by Claude's core as forwards attributed to that member; its step lines are edited in place under its profile.
+- The teammate's messages, reports and tool steps are sent by Claude's core as Claude's messages naming that member in `asMember`; its step lines are edited in place under its profile.
 - A person replies to, mentions or reacts to a teammate's message, and the lead forwards it to that teammate.
 - The teammate leaves the group when it ends.
 
@@ -94,7 +99,7 @@ Forwarding of the announcement, unchanged: an admin that receives x.grp.mem.new 
 
 The joiner's host introduces a member via V in the batch of introductions (memberIntroEvt, Internal.hs:1291-1295, used by introduceMember, 1260-1289, for introduceToAll, introduceToRemaining and introduceToModerators):
 - joiners of version 24: x.grp.mem.intro with `via`;
-- older joiners: the member is not introduced; such a joiner creates it as an unknown member at its first forward or history item, accepted from any admin (Subscriber.hs:4040-4052 and 4064).
+- older joiners: the submember is not introduced; they show V's messages under V (4.7).
 
 The receiver of x.grp.mem.intro with `via` (xGrpMemIntro, Subscriber.hs:3337-3370):
 - checks the sender as today: the receiver's host, admin or higher;
@@ -104,85 +109,79 @@ The receiver of x.grp.mem.intro with `via` (xGrpMemIntro, Subscriber.hs:3337-337
 
 V is introduced before the member via V in the same batch: the members via another member follow all other members in the batch (introduceMember). A member via V cannot itself be V: receivers reject x.grp.mem.new from a member via another member, and x.grp.mem.intro whose `via` is a member via another member.
 
-History is sent after the introductions on the same connection (Subscriber.hs:988-992; APIAcceptMember, Commands.hs:2980-2981 and 3004-3005); items of a member via V are forwarded attributed to it (4.5).
+History is sent after the introductions on the same connection (Subscriber.hs:988-992; APIAcceptMember, Commands.hs:2980-2981 and 3004-3005); items of a submember are sent as V's messages with `asMember` (4.5).
 
 ### 4.4 Messages
 
-A message sent as a member via V is one forward from V to each member with a ready connection:
+A message or update sent as a submember of V is V's own message, with the field `asMember` naming the submember:
 ```
-x.grp.msg.forward    sent by V to members before version 24, to members of JSON batches, and as pending messages
-  memberId           the member's member ID
-  memberName         its display name, shortened (memberShortenedName, Internal.hs:1569-1570)
-  via                new, optional: the member ID of V; ignored by clients before version 24
-  msgTs              V's send time
-  msg                the member's message
-    msgId            the item's shared message ID
-    event            x.msg.new | x.msg.update
-msgId                omitted from the outer message
-
-binary forward element   sent by V to members of version 24 and binary batches
-  ">"
-  fwdSender          "V" memberId memberName viaMemberId (new tag; parsers before version 24 reject it)
-  brokerTs           V's send time
-  "/" signatures     when the message is signed (4.6)
-  msg                the member's message, as above
+x.msg.new                    sent by V to its members, as any message of V
+  container
+    asMember                 new, optional
+      memberId               the submember's member ID
+      memberName             its display name, shortened (memberShortenedName)
+    asGroup                  unchanged; absent with asMember
+    other fields             unchanged
+x.msg.update                 sent by V
+  asMember                   new, optional, as in x.msg.new
+  other fields               unchanged
 ```
 
-The JSON event is parsed by every client since chat version 4, 2023-11-18 (Protocol.hs:75, 1488-1494). The stored message (messages.msg_body) is the JSON event; the binary element is kept with the sent message (SndMessage.fwdElement_) and used for members of version 24 in binary mode (sendGroupSignedMessages_ routes other members to JSON).
+Both are encoded as the optional key `asGroup` is (MsgContainer, Protocol.hs:766-790; XMsgUpdate, Protocol.hs:494, 1516, 1606); parsers before version 24 ignore the key.
 
-Every forward of a message of a member via V has `via`:
+The receiver of x.msg.new or x.msg.update (Subscriber.hs:1093-1103), and of the same message in a forward (processForwardedMsg):
 ```
-forwarder                     when                                            header to version 24   header to older
-V                             sends or updates as the member                  via                    JSON with via
-host of the recipient (Q5 B)  receives it from V, recipient not connected to V  "V" tag                "M" tag
-any member sending history    item of a member via V                          "V" tag                "M" tag
+asMember                                    result
+absent                                      the sender's message, unchanged
+present, group with relays                  rejected
+present, M = the member with memberId:
+  M absent                                  M created as an unknown member named memberName, member_via = the sender's member ID
+  M's member_via /= the sender's member ID  rejected: "member is not a submember of the sender"
+  M not current                             rejected
+  otherwise                                 processed as M's message: M's role, block, moderation, edit window and priority
+    M blocked by an admin                   delivered to moderators only, without notifications (DJModerators, Subscriber.hs:1168-1172)
 ```
+The sender is V when the message is received from V, and the member named by the forward header when it is forwarded. The item is saved as received from M, without the forward mark.
 
-The receiver of a forward with `via` (xGrpMsgForward):
-- an unknown member created from the forward, or an unknown member without `via`, records `via` (setMemberVia) when the forwarder is the member named as `via` or the receiver's host, and `via` is not the receiver's own member ID; otherwise the forward is ignored by the next rule;
-- the recorded `via` of a known member wins: a forward with a different `via` is ignored with a log, as a forward from an unexpected forwarder;
-- the key for signature verification is the key of the member recorded as `via` (memberSignerKey, withVerifiedMsgKey).
-
-The receiver, with unchanged rules:
-- saves the outer message from V and passes the inner one to xGrpMsgForward (Subscriber.hs:1065-1069, 1083, 1136);
-- accepts V as forwarder: admin or higher (isMemberGrpFwdRelay, Subscriber.hs:3833-3836, checked at 4038);
-- accepts the author when V is the receiver's host or the author's inviter (expectedForwarder, Subscriber.hs:4060-4064); V is the inviter in every record of 4.2 and 4.3;
-- accepts the unsigned inner message: `signatureOptional = not (useRelays' gInfo) || not (requiresSignature tag)` (withVerifiedMsg, Subscriber.hs:4115-4118);
-- saves the item as received from the member, forwarded by V, at msgTs (processForwardedMsg, Subscriber.hs:4066-4078); deduplicates it by the inner msgId (saveGroupFwdRcvMsg, Internal.hs:3013-3036).
-
-Members without a ready connection to V get nothing from V, as for any x.grp.msg.forward (Internal.hs:2926). Their host, when it is an admin, forwards each x.msg.new and x.msg.update of a member via V that it receives from V and accepts to its members introduced to V and not yet connected to V (MRIntroduced in V's relation vector), one forward element per member (forwardSubmemberMsg, sendFwdMemberMessageFlags), with the notification flag of a delivery task of that message; the header is chosen by the version of each member, so delivery tasks are not used.
+Forwarding, by the rules of every message of V: an admin creates delivery tasks for V's message (Subscriber.hs:1033-1039); the delivery job sends it to its members introduced to V and not yet connected to V (MRIntroduced in V's relation vector) as a forward of V's message, with `asMember` in the inner message (Q5 B).
 
 ```mermaid
 sequenceDiagram
   participant C as Claude (V)
+  participant B as Bob (connected to Claude)
   participant X as Xavier (admin, host of Nina)
   participant N as Nina (not yet connected to Claude)
-  C->>X: forward (reviewer via Claude, x.msg.new)
-  X->>X: saves reviewer's item
-  X->>N: forward (reviewer via Claude, x.msg.new)
-  N->>N: saves reviewer's item: Xavier is Nina's host
+  C->>B: x.msg.new (asMember reviewer)
+  B->>B: reviewer's item: reviewer's via is Claude
+  C->>X: x.msg.new (asMember reviewer)
+  X->>X: reviewer's item, delivery task of Claude's message
+  X->>N: forward of Claude's message (x.msg.new, asMember reviewer)
+  N->>N: reviewer's item: reviewer's via is Claude
 ```
 
-Signing: members via V need no keys. With "sign messages" on, V signs the member's message with V's own key; the binding is the member ID of the member via V and V's key (groupMsgSigning for an x.grp.msg.forward with via), so the signature cannot be used for a message of V or of another member. The stored chat item keeps this signature, and history forwards it.
+Signing: V signs a message sent as a submember as its own message (groupMsgSigning, with V's member ID in the binding); the signed body contains `asMember`, and receivers verify it with V's key. Pending messages are stored and sent with their signature, as V's other messages.
 
-Notifications: the push notification flag of the agent message is set from the inner event (hasNotification of x.msg.new, Protocol.hs:1339-1348), as for delivery jobs (Subscriber.hs:4269). Delivery receipts are not sent for x.grp.msg.forward (hasDeliveryReceipt, Protocol.hs:1355-1360; checkSendRcpt, Subscriber.hs:1154-1164), so V's items stay "sent".
+Notifications and delivery receipts: those of x.msg.new and x.msg.update (hasNotification, hasDeliveryReceipt).
+
+Notifications on iOS: Q7.
 
 ### 4.5 Updates, history, end
 
-- Update: the same envelope with x.msg.update (Protocol.hs:464); the receiver applies it to the member's item, live flag included (Subscriber.hs:4076-4077 → groupMessageUpdate, 2334-2425).
-- History: V forwards items sent as a member via V attributed to that member, with `via` (sendHistory → memberFwdSenderTo); another admin forwards them as items received from that member, with `via`; signed items are forwarded with their signature.
-- End: `x.grp.mem.del` from V, by the existing removal (APIRemoveMembers, Commands.hs:3172-3282; xGrpMemDel, Subscriber.hs:3759-3826): "Claude removed reviewer".
-- History items of removed members via V are attributed to their member ID; a joining member creates them as unknown members, as for departed people today (testGroupHistoryUnknownMember, tests/ChatTests/Groups.hs:7235-7300), and records `via` from the forward.
+- Update: x.msg.update with `asMember`; the receiver applies it to M's item, found by M's member ID and the shared message ID (groupMessageUpdate), live flag included.
+- History: V sends items sent as a submember as its own messages with `asMember` (sendHistory); another admin forwards a received item of a submember as a forward of V's message, with `asMember`; signed items are sent with their stored bytes, signed by V.
+- End: `x.grp.mem.del` from V, by the existing removal (APIRemoveMembers; xGrpMemDel): "Claude removed reviewer".
+- History items of a removed submember: `asMember` holds its name, so a joining member creates it as an unknown member with that name and member_via = V (4.4).
 
 ### 4.6 Scope
 
 - Groups without relays only. In channels only relays forward (isMemberGrpFwdRelay, Subscriber.hs:3835), so the owner cannot post as a member; the API refuses members via the user in channels. Relays forwarding x.grp.mem.new with `via` is outside this plan.
-- Groups with "sign messages" on: V signs the messages of members via V (4.4); receivers show them as verified. Members before version 24 get them unsigned in JSON and show them as signature missing (toMsgVerified, Types/Shared.hs:169-172).
+- Groups with "sign messages" on: V signs its messages sent as a submember as its own (4.4); receivers verify them with V's key and show them as verified.
 
 ### 4.7 Older clients
 
-- Clients before version 24: from x.grp.mem.new, a member with status announced, V as inviter, shown "connecting" (ChatTypes.swift:3743 and 3763; ChatModel.kt:3306 and 3324), messages accepted; as later joiners, an unknown member with a name only.
-- An admin before version 24 introduces a member via V to its joiners with x.grp.mem.intro without `via` (shouldIntroduce, Internal.hs:1254-1258); the joiner records it without an inviter (createIntroReMember, Store/Groups.hs:2688-2701) and creates a connection that is never joined; V's forwards for it fail expectedForwarder there. Session members are invited by Claude or join by Claude's group link (hub.ts:769, 1356, 1455; control.ts:610). Q5.
+- Members before version 24 are not told of submembers: V sends x.grp.mem.new with `via` only to members of version 24 (APIAddSubmember), and hosts introduce submembers only to joiners of version 24 (4.3). These members ignore `asMember` and show V's messages under V.
+- An admin before version 24 knows no submembers, so it introduces none. Its joiners of version 24 create a submember from the first message with `asMember` (4.4).
+- A host before version 24 forwards V's messages by its delivery tasks. A signed message keeps its bytes, `asMember` included. An unsigned one is encoded again from the parsed message, without `asMember`, so its recipients show it under V.
 
 ### 4.8 Threat model
 
@@ -191,7 +190,7 @@ A host in a group without relays can today:
 2. forward to the members it invited content attributed to any member, and to every member content attributed to a member it announced or to an unknown member ID, which receivers then create (Subscriber.hs:4040-4064);
 3. send that content unsigned (Subscriber.hs:4115-4118).
 
-Members via V are a composition of 1 to 3; receivers' acceptance rules are unchanged. On the wire, no party gets a new capability: x.grp.mem.intro with `via` is accepted only from the joiner's host, as any introduction; the record it creates names V as inviter, so V's forwards for that member are accepted by the inviter rule, and the joiner's host's forwards by the host rule, as today. With the API, the user posts as members via the user through a supported command; posting as any other member is refused (6.3), so connected members cannot be posted as. Receivers store and show `via`. Q1.
+Submembers of V are a composition of 1 and the messages of V. A message with `asMember` is accepted only from the member recorded as the submember's `via` (4.4), signed with V's key when "sign messages" is on. x.grp.mem.intro with `via` is accepted only from the joiner's host, as any introduction. With the API, the user posts as its own submembers through a supported command; posting as any other member is refused (6.3), so connected members cannot be posted as. Receivers store and show `via`. Q1.
 
 ```mermaid
 sequenceDiagram
@@ -207,17 +206,17 @@ sequenceDiagram
   B->>B: reviewer: via Claude, inviter Claude
   P->>C: /_send #G(as_member=M) live=on json [...]
   C->>C: sent item, group_member_id = M
-  C->>B: x.grp.msg.forward (reviewer, x.msg.new)
-  C->>X: x.grp.msg.forward (reviewer, x.msg.new)
+  C->>B: x.msg.new (asMember reviewer)
+  C->>X: x.msg.new (asMember reviewer)
   P->>C: /_update item #G I live=off json [...]
-  C->>B: x.grp.msg.forward (reviewer, x.msg.update)
+  C->>B: x.msg.update (asMember reviewer)
   N->>X: joins by Xavier's invitation
   X->>N: x.grp.mem.intro (Claude), x.grp.mem.intro (reviewer, via Claude)
-  X->>N: history: reviewer's items forwarded by Xavier, N's host, with via Claude
-  C->>X: x.grp.msg.forward (reviewer via Claude, x.msg.new)
-  X->>N: forward (reviewer via Claude, x.msg.new): N is not yet connected to Claude
+  X->>N: history: Claude's messages with asMember reviewer, forwarded by Xavier
+  C->>X: x.msg.new (asMember reviewer)
+  X->>N: forward of Claude's message (asMember reviewer): N is not yet connected to Claude
   N->>C: connects (introduction of Claude)
-  C->>N: forward (reviewer via Claude, x.msg.new): accepted, Claude is reviewer's inviter
+  C->>N: x.msg.new (asMember reviewer): accepted, Claude is reviewer's via
   P->>C: /_remove #G M
   C->>B: x.grp.mem.del
 ```
@@ -305,17 +304,17 @@ stateDiagram-v2
 ```
 path                               file:line                       change
 memberSendAction                   Internal.hs:2899-2936           a member with memberVia -> Nothing, before the category dispatch (both sides)
-sends as a member, unready members Internal.hs:2917-2936           treated as x.grp.msg.forward (2926): Nothing
+sends as a member, unready members Internal.hs:2917-2936           as V's own messages: pending, or forwarded by the host
 recipients                         Internal.hs:1999-2008           unchanged: current members, members via V filtered by memberSendAction
 introductions                      Internal.hs:1291-1295           memberIntroEvt: x.grp.mem.intro with via to joiners of version 24, after the other members; skipped for older joiners
 memberInfo                         Internal.hs:1356-1366           via = memberVia
 x.grp.mem.new                      Subscriber.hs:3254-3335         via = announcer check; announcer not via another member; member_via; status connected
 x.grp.mem.intro                    Subscriber.hs:3337-3370         via branch of 4.3: record without connection; V not via another member
 x.grp.mem.inv, x.grp.mem.fwd       Subscriber.hs:3379-3423         rejected for a member with memberVia
-x.grp.msg.forward                  Subscriber.hs:4074-4125         via in the header: recorded for unknown members, conflict ignored, key of V; host forwards to its members not connected to V
-sends as a member                  Internal.hs:2424-2442           SndMessage.fwdElement_: binary element with "V" header and V's signature
-signing                            Internal.hs:2451-2470           groupMsgSigning: binding of the member via V for its forwards
-history                            Internal.hs:1466-1469           a sent item with sentAsMember is forwarded attributed to it, with via
+x.msg.new, x.msg.update            Subscriber.hs:1093-1103         asMember: author M when M's member_via is the sender; also for a forwarded message (4.4)
+sends as a member                  prepareGroupMsg                 asMember in x.msg.new; x.msg.update with asMember
+signing                            groupMsgSigning                 unchanged: V's binding and key
+history                            sendHistory                     items of a submember sent as V's messages with asMember (4.5)
 quote by the user                  Internal.hs:235-242             quoteData: an item sent as member M -> CIQGroupRcv M, sent = False, memberId M
 item author                        Messages.hs:374-380             chatItemMember: CIGroupSnd with sentAsMember M -> M
 forwarding by admins               Subscriber.hs:4476-4503         unchanged: readyMemberConn excludes members via V
@@ -335,7 +334,7 @@ groupSummary.currentMembers        counted: the trigger counts by status (chat_s
 delivery receipts limit            counted toward 20 current members (smallGroupsRcptsMemLimit, Subscriber.hs:114-115, 1156-1161)
 V's chat items                     sent items with sentAsMember
 unread counts                      unchanged: V's items are sent items
-V's item delivery statuses         per member: sent (4.4: receipts are not sent)
+V's item delivery statuses         per member, from the delivery receipts of x.msg.new
 apps                               memberVia decoded and shown as stated in Q2 C; the optional field is ignored by earlier app versions
 ```
 
@@ -370,7 +369,7 @@ ALTER TABLE group_members DROP COLUMN member_via;
 -- Types.hs:1123-1130, MemberInfo; proposed comment: "member via which the member is in the group"
 via :: Maybe MemberId
 
--- Types.hs, GroupMember; proposed comment: "member via which this member is in the group: its messages are forwarded by that member"
+-- Types.hs, GroupMember; proposed comment: "member via which this member is in the group: its messages are sent by that member"
 memberVia :: Maybe MemberId
 
 -- Messages.hs, replaces the ShowGroupAsSender (Bool, Messages.hs:547) parameters of the send and save chain
@@ -393,7 +392,7 @@ sentAsMember :: Maybe GroupMember
 - The command handler traverses `SendAs GroupMemberId` into `SendAs GroupMember`, checking 6.3.
 - `SendAs GroupMember` replaces the Bool parameter of sendGroupContentMessages, sendGroupContentMessages_ (Commands.hs:5044-5116), sendGroupMessages, sendGroupSignedMessages, sendGroupProfileUpdate (Internal.hs:2761-2794), prepareGroupMsg (Internal.hs:214-233, asGroup only for SAGroup), saveSndChatItems, createNewSndChatItem, createNewChatItem_ (group_member_id for SAMember), mkChatItem_ and mkCIMeta, which sets both CIMeta fields.
 - sendAsGroup' (Messages.hs:122-125) returns `SendAs a`; APIForwardChatItems keeps its Bool (Controller.hs:436).
-- createSndMessages (Internal.hs:2404-2415) encodes the event of an SAMember send inside x.grp.msg.forward (4.4), with the generated shared message ID in the inner message; XGrpMsgForward contains a `ChatMessage 'Json` (Protocol.hs:506), so only Json events are wrapped.
+- prepareGroupMsg sets `asMember` for an SAMember send and `asGroup` for SAGroup; APIUpdateChatItem sends x.msg.update with `asMember` of the item's sentAsMember (4.4).
 
 ### 6.2 Commands
 
@@ -485,7 +484,7 @@ member not created, or 20 teammates                 Claude's notes, as on master
 - protocol.ts: AgentStart gets `name`; AgentEvent gets `{message: string}`.
 - teammates.ts: one class over Claude's ChatApi: start, post, step, end, adopt; it replaces the core, the users, the contacts and the join of ep/mcp-teammate-steps.
 - profile: display name validName(name) (messages.ts), peer type agent, shortDescr the record's description, at most 160 characters.
-- message size: posts as a member add 200 bytes to messageEnvelope (tools.ts:175, fitsMessage 1730-1733) for the x.grp.msg.forward envelope.
+- message size: posts as a member add about 30 bytes to messageEnvelope (tools.ts:175, fitsMessage 1730-1733) for the `asMember` field.
 
 ### 7.2 Stage 2: step lines
 
@@ -505,6 +504,8 @@ The separate core, its folder `ROOT/_sessions/ID/agents`, the per-teammate users
 ## 8. Acceptance and tests
 
 Each core test fails on master, where the commands do not parse; each plugin test fails on master, where the teammate routes are absent.
+
+With `asMember` (4.4): `testGroupMsgForwardViaRejected` and `testSubmemberSignedPrevVersion` are removed; `testSubmemberAnnounceRefused`, `testSubmemberSigned`, `testSubmemberSignedPending` (shown signed), `testSubmemberSignedHistory`, `testSubmemberPrevVersionJoiner` and `testSubmemberRoleRules` send or expect x.msg.new and x.msg.update with `asMember`; new: `asMember` round trips in ProtocolTests, and refusals of `asMember` naming a member whose via is not the sender, a member not current, and a group with relays.
 
 Core, tests/ChatTests/Groups.hs, `describe "members via another member"`, groups of alice, bob and cath (createGroup3):
 - `testSubmemberMessages`: `/_add submember #1 member json {...reviewer...}`; bob and cath see `#team: alice added reviewer to the group (via alice)`; `/_send #1(as_member=M) text hi` → `#team reviewer> hi [>>]` for bob and cath; `/ms team` of bob lists reviewer via alice.
@@ -535,7 +536,7 @@ Plugin:
 - unit, teammates.test.ts: start, post, step (send with live=on, update), end and adopt make the commands of 7.1 and 7.2.
 - unit, hook.test.ts: SubagentStart with a named record → teammate start; without a name → card; SendMessage to team-lead → message.
 - unit, sessions.test.ts: a reply, a mention and a reaction to an item of a teammate → prompt with `to`.
-- end-to-end, service.test.ts: a teammate's message and step line are received by a second core as reviewer's forwarded items; its end is shown.
+- end-to-end, service.test.ts: a teammate's message and step line are received by a second core as reviewer's items; its end is shown.
 
 CI: scope mcp runs with the branch's libsimplex (SIMPLEX_LIBS_DIR) and the branch's simplex-chat and @simplex-chat/types packages when core sources change (scripts/ci/scope-tests.sh:17-24; scripts/ci/README.md "mcp", lines 152-162 state the published packages today).
 
@@ -571,7 +572,16 @@ Q6. Groups with "sign messages" on.
 - A, recommended: members via another member are refused there (6.3).
 - B: posted unsigned and shown as "signature missing".
 - C: V keeps a key per member and signs as it; key storage on V's side.
-- D, decided: V signs with its own key; receivers verify with the key of the member recorded as `via` (4.4).
+- D, decided, as changed on 2026-11-26: V signs its messages sent as a submember as its own messages; receivers verify them with V's key (4.4).
+
+Q7. Notifications on iOS for a message of a submember. The notification service routes a received item to the service instance that expects a message on the item's connection, named by `cItem.meta.forwardedByMember ?? cItem.chatDir.groupMemberId` (NotificationService.swift:1092-1098); an item on a connection that no instance expects is dropped (NotificationService.swift:185-201). A submember has no connection, and its message arrives on V's connection. Decided: no forward mark (2026-11-26).
+- A: the core sets forwardedByMember = V; the apps omit "[>>]" when forwardedByMember is the author's via member: a condition in the terminal view and in both apps; forwardedByMember then names the member that delivered a direct message.
+- B, recommended: the apps receive, with a submember, the local group member ID of the member it is via, and the notification service routes by it; the forward mark is unchanged.
+- C: the core reports, with each received item, the member whose connection delivered it.
+
+Q8. Names of the new field and its type.
+- A, recommended: field `asMember`, as `asGroup`; type `MemberRef {memberId :: MemberId, memberName :: ContactName}`, a reference to a member by its ID and display name.
+- B: other names.
 
 ## 10. Changes by file
 
@@ -616,12 +626,12 @@ receivers                  refuse via in channels, an x.grp.mem.intro whose via 
 restrictions               restrictions of x.grp.mem.intro are stored for a member via another member
 moderation                 deletion of an item sent as a member, by a moderator, is attributed to the member via V on V's side; V's moderation of it names that member
 adding                     no chat item on V's side, as APIAddMember creates none in the group (only the invitation item in the direct chat)
-forwarding by the host     per member (sendFwdMemberMessageFlags), without delivery tasks and a delivery_tasks column: a delivery job has one body for all its recipients, and the "V" header is sent only to recipients of version 24 (4.4)
+forwarding by the host     by the delivery tasks of V's messages (4.4), as decided on 2026-11-26
 ```
 
-## 13. State: core done, plugin next
+## 13. State: core to be changed to asMember, plugin next
 
-The core part is on `ep/members-via`; the plugin stages (section 7) use these commands.
+The core part is on `ep/omnibus` (#8314). Its messages of submembers are still forwards; the change to `asMember` (4.4, 4.5) follows the maintainer's approval of this plan. The plugin stages (section 7) use these commands.
 
 ```
 operation                  command                                                                                         response
