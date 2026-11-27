@@ -3347,9 +3347,11 @@ processChatCommand cxt nm = \case
                 else void $ deleteOrUpdateMemberRecordIO db user gInfo m
               removeSubmembers db cxt user gInfo m
               pure m {memberStatus = GSMemRemoved}
-      deleteMessages user gInfo@GroupInfo {membership} ms
-        | groupFeatureUserAllowed SGFFullDelete gInfo = deleteGroupMembersCIs user gInfo ms
-        | otherwise = markGroupMembersCIsDeleted user gInfo ms membership
+      deleteMessages user gInfo@GroupInfo {membership} ms = do
+        delMems <- (ms <>) . concat <$> withFastStore' (\db -> mapM (getSubmembers db cxt user gInfo . memberId') ms)
+        if groupFeatureUserAllowed SGFFullDelete gInfo
+          then deleteGroupMembersCIs user gInfo delMems
+          else markGroupMembersCIsDeleted user gInfo delMems membership
   APILeaveGroup groupId -> withUser $ \user@User {userId} -> do
     g@(GIK gInfo@GroupInfo {membership} _) <- withFastStore $ \db -> getGroupInfoKeys db cxt user groupId
     filesInfo <- withFastStore' $ \db -> getGroupFileInfo db user gInfo

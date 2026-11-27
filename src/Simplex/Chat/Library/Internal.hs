@@ -611,11 +611,6 @@ updateACIGroupInfo gInfo' = \case
     AChatItem SCTGroup dir (GroupChat gInfo' chatScopeInfo) ci
   aci -> aci
 
-deleteGroupMemberCIs :: User -> GroupInfo -> GroupMember -> CM ()
-deleteGroupMemberCIs user gInfo member = do
-  filesInfo <- withStore' $ \db -> deleteGroupMemberCIs_ db user gInfo member
-  deleteCIFiles user filesInfo
-
 deleteGroupMembersCIs :: User -> GroupInfo -> [GroupMember] -> CM ()
 deleteGroupMembersCIs user gInfo members = do
   filesInfo <- withStore' $ \db -> fmap concat $ forM members $ deleteGroupMemberCIs_ db user gInfo
@@ -669,12 +664,6 @@ markGroupCIsDeleted user gInfo chatScopeInfo items byGroupMember_ deletedTs = do
     markDeleted db (CChatItem md ci) = do
       ci' <- markGroupChatItemDeleted db user gInfo ci byGroupMember_ deletedTs
       pure $ groupDeletion md gInfo chatScopeInfo ci (Just ci')
-
-markGroupMemberCIsDeleted :: User -> GroupInfo -> GroupMember -> GroupMember -> CM ()
-markGroupMemberCIsDeleted user gInfo member byGroupMember = do
-  deletedTs <- liftIO getCurrentTime
-  filesInfo <- withStore' $ \db -> markGroupMemberCIsDeleted_ db user gInfo member byGroupMember deletedTs
-  cancelFilesInProgress user filesInfo
 
 markGroupMembersCIsDeleted :: User -> GroupInfo -> [GroupMember] -> GroupMember -> CM ()
 markGroupMembersCIsDeleted user gInfo members byGroupMember = do

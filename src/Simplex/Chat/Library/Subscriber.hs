@@ -3883,10 +3883,10 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
               unless (isUserGrpFwdRelay gInfo) $ deleteGroupConnections user gInfo False
               withStore' $ \db -> do
                 updateGroupMemberStatus db userId membership GSMemRemoved
-                removeSubmembers db cxt user gInfo membership
                 when (maybe False (/= RSRejected) (relayOwnStatus gInfo)) $ updateRelayOwnStatus_ db gInfo RSInactive
               let membership' = membership {memberStatus = GSMemRemoved}
               when withMessages $ deleteMessages gInfo membership'
+              withStore' $ \db -> removeSubmembers db cxt user gInfo membership
               deleteMemberItem msg gInfo RGEUserDeleted
               toView $ CEvtDeletedMemberUser user gInfo {membership = membership'} m withMessages msgSigned
               pure $ Just DJSGroup {jobSpec = DJRelayRemoved}
@@ -3937,9 +3937,11 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
           (ci, cInfo) <- saveRcvChatItemNoParse user (CDGroupRcv gi' scopeInfo m') msg' brokerTs (CIRcvGroupEvent gEvent)
           groupMsgToView cInfo ci
         deleteMessages :: GroupInfo -> GroupMember -> CM ()
-        deleteMessages gInfo' delMem
-          | groupFeatureMemberAllowed SGFFullDelete m gInfo' = deleteGroupMemberCIs user gInfo' delMem
-          | otherwise = markGroupMemberCIsDeleted user gInfo' delMem m
+        deleteMessages gInfo' delMem = do
+          delMems <- (delMem :) <$> withStore' (\db -> getSubmembers db cxt user gInfo' (memberId' delMem))
+          if groupFeatureMemberAllowed SGFFullDelete m gInfo'
+            then deleteGroupMembersCIs user gInfo' delMems
+            else markGroupMembersCIsDeleted user gInfo' delMems m
         forwardToMember :: GroupMember -> CM ()
         forwardToMember member =
           let fwd = GrpMsgForward {fwdSender = FwdMember (memberId' m) (memberShortenedName m), fwdBrokerTs = brokerTs}
