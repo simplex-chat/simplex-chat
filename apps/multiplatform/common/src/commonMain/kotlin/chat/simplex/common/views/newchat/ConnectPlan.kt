@@ -217,22 +217,18 @@ fun showNameWarningAlert(
       generalGetString(MR.strings.simplex_name_renew) to ::openNameHowTo
     )
     is NameWarning.Available -> {
-      val title = generalGetString(
-        if (own) MR.strings.simplex_name_own_expired
-        else if (openExistingChat == null) MR.strings.simplex_name_not_registered
-        else MR.strings.simplex_name_no_longer_registered
+      val beforeSale = now < simplexNameSaleStart
+      if (!own) alert(
+        generalGetString(if (openExistingChat == null) MR.strings.simplex_name_not_registered else MR.strings.simplex_name_no_longer_registered),
+        if (beforeSale) String.format(generalGetString(MR.strings.simplex_name_not_registered_link_desc), nameStr)
+        else String.format(generalGetString(MR.strings.simplex_name_available_desc), nameStr, namePrice(warning.price)),
+        generalGetString(if (beforeSale) MR.strings.open_simplex_domains else MR.strings.simplex_name_register) to ::openNameHowTo
+      ) else alert(
+        generalGetString(MR.strings.simplex_name_own_expired),
+        if (beforeSale) String.format(generalGetString(MR.strings.simplex_name_own_not_registered_link_desc), nameStr)
+        else String.format(generalGetString(MR.strings.simplex_name_own_available_desc), nameStr, namePrice(warning.price)),
+        generalGetString(if (beforeSale) MR.strings.open_simplex_domains else MR.strings.simplex_name_re_register) to ::openNameHowTo
       )
-      if (now < simplexNameSaleStart) {
-        val text = if (own) String.format(generalGetString(MR.strings.simplex_name_own_not_registered_link_desc), nameStr)
-        else String.format(generalGetString(MR.strings.simplex_name_not_registered_link_desc), nameStr)
-        alert(title, text, generalGetString(MR.strings.open_simplex_domains) to ::openNameHowTo)
-      } else if (own) {
-        val text = String.format(generalGetString(MR.strings.simplex_name_own_available_desc), nameStr, namePrice(warning.price))
-        alert(title, text, generalGetString(MR.strings.simplex_name_re_register) to ::openNameHowTo)
-      } else {
-        val text = String.format(generalGetString(MR.strings.simplex_name_available_desc), nameStr, namePrice(warning.price))
-        alert(title, text, generalGetString(MR.strings.simplex_name_register) to ::openNameHowTo)
-      }
     }
     NameWarning.ReservedForCommunity -> alert(
       generalGetString(MR.strings.simplex_name_not_registered),

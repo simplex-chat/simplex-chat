@@ -1417,28 +1417,24 @@ func nameWarningAlert(
             String.localizedStringWithFormat(NSLocalizedString("Your name %1$@ expired on %2$@.", comment: "alert message"), nameStr, badgeDateText(expiredAt))
         }
         return alert(NSLocalizedString("Your name has expired", comment: "alert title"), message, action: (NSLocalizedString("Renew", comment: "alert action"), openHowTo))
+    case let .available(price) where !own:
+        let beforeSale = now < simplexNameSaleStart
+        return alert(
+            openExistingChat == nil ? NSLocalizedString("Name not registered", comment: "alert title") : NSLocalizedString("Name no longer registered", comment: "alert title"),
+            beforeSale
+            ? String.localizedStringWithFormat(NSLocalizedString("%@ is not registered. See if it is available at simplex.domains.", comment: "alert message"), nameStr)
+            : String.localizedStringWithFormat(NSLocalizedString("%1$@ is available for registration for %2$@.", comment: "alert message"), nameStr, namePrice(price)),
+            action: (beforeSale ? NSLocalizedString("Open simplex.domains", comment: "alert action") : NSLocalizedString("Register", comment: "alert action"), openHowTo)
+        )
     case let .available(price):
-        let title = if own {
-            NSLocalizedString("Your name has expired", comment: "alert title")
-        } else if openExistingChat == nil {
-            NSLocalizedString("Name not registered", comment: "alert title")
-        } else {
-            NSLocalizedString("Name no longer registered", comment: "alert title")
-        }
-        if now < simplexNameSaleStart {
-            let message = if own {
-                String.localizedStringWithFormat(NSLocalizedString("Your name %@ is no longer registered. See if it is available at simplex.domains.", comment: "alert message"), nameStr)
-            } else {
-                String.localizedStringWithFormat(NSLocalizedString("%@ is not registered. See if it is available at simplex.domains.", comment: "alert message"), nameStr)
-            }
-            return alert(title, message, action: (NSLocalizedString("Open simplex.domains", comment: "alert action"), openHowTo))
-        } else if own {
-            let message = String.localizedStringWithFormat(NSLocalizedString("Your name %1$@ is no longer registered. It is available for registration for %2$@.", comment: "alert message"), nameStr, namePrice(price))
-            return alert(title, message, action: (NSLocalizedString("Re-register", comment: "alert action"), openHowTo))
-        } else {
-            let message = String.localizedStringWithFormat(NSLocalizedString("%1$@ is available for registration for %2$@.", comment: "alert message"), nameStr, namePrice(price))
-            return alert(title, message, action: (NSLocalizedString("Register", comment: "alert action"), openHowTo))
-        }
+        let beforeSale = now < simplexNameSaleStart
+        return alert(
+            NSLocalizedString("Your name has expired", comment: "alert title"),
+            beforeSale
+            ? String.localizedStringWithFormat(NSLocalizedString("Your name %@ is no longer registered. See if it is available at simplex.domains.", comment: "alert message"), nameStr)
+            : String.localizedStringWithFormat(NSLocalizedString("Your name %1$@ is no longer registered. It is available for registration for %2$@.", comment: "alert message"), nameStr, namePrice(price)),
+            action: (beforeSale ? NSLocalizedString("Open simplex.domains", comment: "alert action") : NSLocalizedString("Re-register", comment: "alert action"), openHowTo)
+        )
     case .reservedForCommunity:
         return alert(
             NSLocalizedString("Name not registered", comment: "alert title"),
