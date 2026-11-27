@@ -201,8 +201,10 @@
   <string name="simplex_name_error">SimpleX name error</string>
   <string name="simplex_name_no_servers_desc">None of your servers are set to resolve SimpleX names. Configure servers, or use a connection link.</string>
   <string name="simplex_name_server_no_resolver_desc">Server %1$s does not support name resolution. Configure servers, or use a connection link.</string>
-  <string name="simplex_name_not_found">Name not found</string>
+  <string name="simplex_name_not_found">Name not registered</string>
   <string name="simplex_name_not_found_desc">This SimpleX name is not registered. Please check the name.</string>
+  <string name="simplex_name_not_registered_desc">This SimpleX name is not registered. See if it is available at simplex.domains.</string>
+  <string name="open_simplex_domains">Open simplex.domains</string>
   <string name="simplex_name_resolver_error_desc">Resolver error: %1$s</string>
   <string name="simplex_name_no_valid_link">No valid link</string>
   <string name="simplex_name_no_valid_link_desc">The SimpleX name %1$s is registered, but it has no valid link.</string>
