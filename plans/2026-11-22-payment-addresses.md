@@ -468,8 +468,10 @@ URI grammar       letters and ":" at the start, checked once before the alternat
                     the query
 path              the payee grammar of the scheme
                   ethereum: the target, "@" and the chain ID, "/transfer"
-query             key or key=value, joined by "&"; a req- key is rejected
-parameter         read by its key in any case, parsed by its value grammar:
+query             key or key=value, joined by "&", of RFC 3986 query characters; a req- key is rejected;
+                    the keys read by the scheme in lower case, the values as written;
+                    the result is QueryStringParams of simplexmq without escaping (item 15005)
+parameter         read by its key with queryParamParser and queryParamStr, parsed by its value grammar:
                     amount
                     percent-encoded text
                     ZIP-321 memo
@@ -532,13 +534,16 @@ URI              as written, with
                    the scheme in lower case
                    "//" after the scheme removed
                    the keys read by the parser in lower case
-                   values and unknown keys unchanged
+                   values unchanged
+                   in other keys, characters other than letters, digits and -_.~ percent-encoded
+                   a key without a value followed by "="
 ```
 
 - The scheme in lower case: Android matches schemes case-sensitively [S21]; QR codes are often written in upper case [S2].
 - The keys in lower case: Bitcoin Core compares them as written [S14].
 - `//` removed: BOLT 11 [S4]; `dogecoin://` is rewritten by Dogecoin Core [S14].
 - `zel:` stays `zel:` and `flux:` stays `flux:`: each opens the wallets that register it.
+- The query is written by `strEncode` of `QueryStringParams` without escaping (simplexmq Agent/QueryString.hs), which encodes the keys and writes the values as they are; the module's own `strP` is not used: it splits on ";" too, so rule U4 could not see ";", and it decodes the values, so the wallet URI would be written again with other escapes.
 - The wallet URI is encoded in the QR code without the app logo (`withLogo: false`, QRCode.swift:60-108, QRCode.kt:66-72).
 
 ## Apps
