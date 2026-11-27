@@ -979,7 +979,7 @@ struct ConnectByNameRow: View {
 
 // Default top-level part used to complete a bare name typed in the search field (search field only;
 // the message parser and the wire format are unchanged).
-private let DEFAULT_NAME_TLD = "testing"
+private let DEFAULT_NAME_TLD = "simplex"
 // Shortest name that offers the button, so it is discoverable but does not flash on short prefixes.
 private let MIN_NAME_LENGTH = 5
 
