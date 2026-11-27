@@ -65,7 +65,7 @@ final class ChainAddressesTests: RecordedAPITestCase {
         let markdown = try recordedMarkdown()
         let labeled = draw(try XCTUnwrap(markdown[labeledUnknownChain])).string
         let chain = draw(try XCTUnwrap(markdown[labeledToken])).string
-        XCTAssertNotNil(labeled.attribute(.underlineStyle, at: (labeled.string as NSString).range(of: "⚠").location, effectiveRange: nil))
+        XCTAssertNotNil(labeled.attribute(.underlineStyle, at: (labeled.string as NSString).range(of: "⚠\u{FE0E}").location, effectiveRange: nil))
         let chainFont = try XCTUnwrap(chain.attribute(.font, at: (chain.string as NSString).range(of: "(Polygon)").location, effectiveRange: nil) as? UIFont)
         XCTAssertTrue(chainFont.fontDescriptor.symbolicTraits.contains(.traitItalic))
     }
