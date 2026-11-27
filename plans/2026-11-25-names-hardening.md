@@ -122,7 +122,7 @@ Downtime, `downtime` true:
 | Screen | Shown |
 |---|---|
 | search | each name's row without Register, and "You will be able to order names again soon." under the search |
-| checkout, its code check included, name selection | not reached; "You will be able to order names again soon." |
+| checkout, its code check included, name selection | not reached; the heading "You will be able to order names again soon", then "Nothing was charged." |
 | an open invoice | status; the payment details withheld, and the card form unless already mounted; "You will be able to pay again soon." |
 | a committed order | status; "You will be able to continue the registration soon."; its reveal signed after the downtime |
 | a registered order, Your names, Check your code | as outside the downtime |
@@ -258,8 +258,8 @@ The name and the name address of an order are the page's own: the name from the 
 
 | Rule not met | Function | What the buyer sees |
 |---|---|---|
-| search: terms, years or price | `api.searchName`, `flow.orderable` | the name's row with Register off and the existing line "Names can't be ordered right now. Try again later." |
-| code check: years | `api.checkCode` | "The code could not be checked" |
+| search: terms, years or price | `api.searchName`, `flow.orderable` | the name's row with Register off and the existing line "Names can't be ordered right now. Please try again later." |
+| code check: years | `api.checkCode` | "The code could not be checked now", then "Please try again in a moment." |
 | sign answer naming other held terms | `api.signFor`, `flow.orderRequest` | nothing at signing: the acceptance is signed over the ticked terms and `SITE.namePolicy`, and a terms change is answered by the service's `terms_changed`, as the next row says |
 | `terms_changed` body: terms | `api.signingTerms` | same |
 | invoice: amount, currency, method or address proof | `checkedInvoice` | the warning below; the payment details and the card form withheld |
@@ -715,7 +715,7 @@ signer       recovered from the signature; must equal the order's owner
 - Query parameters keep a `GET` a simple CORS request, with no preflight.
 - A timestamp outside the window is answered `400 bad_request` before the id is looked up, as `find` answers it (`checkTimestamp`); the page signs once more after its clock is set from that answer's `Date`.
 - An unsigned request, another signer and an unknown id all get the same answer: `404 not_found`, the same body, after the same rate limit.
-- The page signs each request, polls included, with the wallet of the record's name code. Without the name code it sends none, and an order's link shows "This order's name code is not in this browser. Enter it to see the order."
+- The page signs each request, polls included, with the wallet of the record's name code. Without the name code it sends none, and an order's link shows "The name code is not in this browser", then "Please enter the name code you saved for this order."
 - `adoptSibling`, `buildNotOnDevice` and the branch of `registeredLead` without a record, which read a view's `owner`, are removed; an order made in another browser is found by `newerOrder`, through `find` signed with the name code.
 
 ```mermaid
