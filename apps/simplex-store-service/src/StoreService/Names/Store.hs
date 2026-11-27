@@ -25,7 +25,7 @@ module StoreService.Names.Store
     OrderPayment (..),
     paymentInvoice,
     NameReveal (..),
-    NameRegistration (..),
+    NameRegistrationOrder (..),
     NewRegistration (..),
     PaidOrder (..),
     CodeInsertRefused (..),
@@ -75,6 +75,7 @@ module StoreService.Names.Store
     getLiveOrders,
     closeOverdue,
     updateRegistration,
+    queueSettled,
     selectRegistration,
     findRegistrations,
     labelHolder,
@@ -88,6 +89,7 @@ module StoreService.Names.Store
     recordAttempt,
     openInvoicesOfHeldName,
     activeRegistrations,
+    labelledOrders,
     disputableRegistrations,
     unpaidCleanupCandidates,
     deleteUnpaidRegistration,
@@ -156,6 +158,7 @@ import Simplex.Chat.Badges.Code (NameLength, nameLength, nameLengthInt)
 import Simplex.Chat.Badges.Types (BadgeCodePaymentStatus (..))
 import Simplex.Chat.PaymentService.Types (CryptoCurrency, CurrencyAmount (..), InvoiceId (..), InvoiceStatus (..), PaymentProvider, ServicePaymentMethod)
 import Simplex.Chat.Store.Shared (insertedRowId)
+import Simplex.Messaging.Agent.Store.Common (withSavepoint)
 import Simplex.Messaging.Agent.Store.DB (Binary (..), BoolInt (..), FromField (..), ToField (..), fromTextField_)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Crypto (sha256Hash)
@@ -178,10 +181,13 @@ import StoreService.Store (RevokeResult (..))
 import StoreService.Store.Invoices (StoreDecodeError (..), executeChanging, lockInvoice, mkQuery, newInvoiceId, note, prefixQuery, unfundedQuery)
 
 #if defined(dbPostgres)
+import qualified Data.ByteString as B
 import Database.PostgreSQL.Simple (Only (..), Query, ToRow, (:.) (..))
+import Database.PostgreSQL.Simple.Errors (ConstraintViolation (..), constraintViolation)
 import Database.PostgreSQL.Simple.SqlQQ (sql)
 #else
 import Database.SQLite.Simple (Only (..), Query, ToRow, (:.) (..))
+import qualified Database.SQLite.Simple as SQL
 import Database.SQLite.Simple.QQ (sql)
 #endif
 
@@ -275,7 +281,7 @@ data OrderPhase
   | ORegistered SystemSeconds (Maybe SystemSeconds) UTCTime
   | OTaken UTCTime
   | OFailed UTCTime FailReason
-  | OEnded SystemSeconds SystemSeconds
+  | OEnded
   deriving (Eq, Show)
 
 namePhase :: OrderPhase -> NamePhase
@@ -347,7 +353,7 @@ data NameReveal = NameReveal
   }
   deriving (Eq, Show)
 
-data NameRegistration = NameRegistration
+data NameRegistrationOrder = NameRegistrationOrder
   { nrId :: RegistrationId,
     nrVersion :: Int64,
     nrLabelHash :: LabelHash,
@@ -399,7 +405,7 @@ data VersionWrite = Written Int64 | VersionChanged | NotLive | LiveOrderExists
 
 -- | A live order an order request meets; overdue when its open invoice is past its expiry time.
 data LiveOrder = LiveOrder
-  { loRegistration :: NameRegistration,
+  { loRegistration :: NameRegistrationOrder,
     loOverdue :: Bool
   }
   deriving (Eq, Show)
@@ -421,9 +427,11 @@ data Balance = Balance
 data BalanceLink = BalanceLink
   { lkRegistration :: RegistrationId,
     lkOwner :: Address,
+    lkPhase :: NamePhase,
     lkPayment :: OrderPayment,
     lkProviderRef :: Maybe Text,
     lkPaid :: USDCents,
+    lkReversedCents :: USDCents,
     lkLateCredits :: [LateCredit]
   }
   deriving (Eq, Show)
@@ -571,6 +579,7 @@ data PrepaidCode = PrepaidCode
     pcPaymentStatus :: BadgeCodePaymentStatus,
     pcReservedBy :: Maybe RegistrationId,
     pcReservedAt :: Maybe UTCTime,
+    pcHolderTakenAt :: Maybe UTCTime,
     pcSpentAt :: Maybe UTCTime,
     pcRevokedAt :: Maybe UTCTime,
     pcExpiresAt :: Maybe UTCTime,
@@ -755,6 +764,7 @@ orderHash owner OrderFields {ofLabelHash = LabelHash lh, ofLength, ofDuration, o
 
 newRegistrationId :: IO RegistrationId
 newRegistrationId = (\(InvoiceId t) -> RegistrationId t) <$> newInvoiceId
+{-# INLINE newRegistrationId #-}
 
 -- | False when the registration would be a second live one. A refusal leaves its writes for the caller to roll back.
 createPaidRegistration :: DB.Connection -> NewRegistration -> PaidOrder -> UTCTime -> IO Bool
@@ -835,7 +845,7 @@ type RegistrationRow =
     :. (Maybe Int64, Maybe RecoverableSignature, UTCTime, Maybe UTCTime, Maybe UTCTime, Maybe RegistrationTx, Maybe AttemptStage, Maybe Text, Maybe UTCTime)
     :. (Int, Maybe Int64)
 
-toRegistration :: RegistrationRow -> Either Text NameRegistration
+toRegistration :: RegistrationRow -> Either Text NameRegistrationOrder
 toRegistration
   ( (rid, nrVersion, nrLabelHash, len, duration, nrOwner, nrCommitment, nrSealed, phase, nrYears)
       :. (nrPrice, method_, invoiceId_, codeId_, label_, secret_, nrContactLink, nrChannelLink, nonce_, deadline_)
@@ -872,9 +882,7 @@ toRegistration
       PFailed -> case (failedAt, failReason) of
         (Just at, Just reason) -> fitting (OFailed at reason) (noCommit && noRegistered && noTaken && noClose)
         _ -> Left $ "name_registrations failed without failed_at or fail_reason: " <> rid
-      PEnded -> case (expiresAt, disputeUntil) of
-        (Just expiry, Just disputeEnd) -> fitting (OEnded (RoundedSystemTime expiry) (RoundedSystemTime disputeEnd)) (noCommit && isNothing registeredAt && noTaken && noFailure && noClose)
-        _ -> Left $ "name_registrations ended without expires_at or dispute_until: " <> rid
+      PEnded -> fitting OEnded (noCommit && noRegistered && noTaken && noFailure && noClose)
     nrPayment <- case (method_, invoiceId_, codeId_) of
       (Just m, Just invId, Nothing) -> Right $ OPInvoice m (InvoiceId invId)
       (Nothing, Nothing, Just codeId) -> Right $ OPCode codeId
@@ -892,7 +900,7 @@ toRegistration
       (Just naTx, Just naStage, Just naReason, Just naAt) -> Right $ Just NameAttempt {naTx, naStage, naReason, naAt}
       _ -> Left $ "name_registrations last attempt: " <> rid
     pure
-      NameRegistration
+      NameRegistrationOrder
         { nrId = RegistrationId rid,
           nrVersion,
           nrLabelHash,
@@ -918,12 +926,12 @@ toRegistration
           nrLastAttempt
         }
 
-getRegistration :: DB.Connection -> RegistrationId -> IO (Maybe NameRegistration)
+getRegistration :: DB.Connection -> RegistrationId -> IO (Maybe NameRegistrationOrder)
 getRegistration db (RegistrationId rid) =
   firstDecoded toRegistration $ DB.query db (selectRegistrations <> " WHERE r.registration_id = ?") (Only rid)
 
 -- | The newest stored order, live or not, with exactly these fields.
-getRegistrationByOrderHash :: DB.Connection -> OrderHash -> IO (Maybe NameRegistration)
+getRegistrationByOrderHash :: DB.Connection -> OrderHash -> IO (Maybe NameRegistrationOrder)
 getRegistrationByOrderHash db hash =
   firstDecoded toRegistration $
     DB.query db (selectRegistrations <> " WHERE r.order_hash = ? ORDER BY r.created_at DESC, r.name_registration_id DESC LIMIT 1") (Only hash)
@@ -953,8 +961,8 @@ unfunded = unfundedQuery "i.invoice_id"
 -- | Run in the transaction that inserts the next order, so the unique constraints let it in; the registration's new version.
 -- Nothing when the order changed since it was read, or its invoice is no longer open, not past its expiry, or holds money: the caller rolls back,
 -- since the invoice is written before the registration, as settlement, cancel and the sweep write them.
-closeOverdue :: DB.Connection -> NameRegistration -> UTCTime -> IO (Maybe Int64)
-closeOverdue db r@NameRegistration {nrId = RegistrationId rid, nrVersion, nrPayment} now = do
+closeOverdue :: DB.Connection -> NameRegistrationOrder -> UTCTime -> IO (Maybe Int64)
+closeOverdue db r@NameRegistrationOrder {nrId = RegistrationId rid, nrVersion, nrPayment} now = do
   -- locked first, so the funding check below, a later statement, sees a payment a concurrent settlement committed
   mapM_ (\invId -> lockInvoice db invId now) $ paymentInvoice nrPayment
   expired <-
@@ -983,8 +991,8 @@ closeOverdue db r@NameRegistration {nrId = RegistrationId rid, nrVersion, nrPaym
 -- | Whether an order can still progress to a registration for its name. The unique live indexes allow one such order per commitment,
 -- and one per owner and label hash, so a wallet can order a name again once its registration is done.
 -- An unpaid order is live while its invoice is open; a taken order, its worth kept as a balance, is live again only by a selection of a name.
-orderLive :: NameRegistration -> Bool
-orderLive NameRegistration {nrPhase} = case nrPhase of
+orderLive :: NameRegistrationOrder -> Bool
+orderLive NameRegistrationOrder {nrPhase} = case nrPhase of
   OUnpaid _ -> True
   OClosed _ -> False
   OQueued -> True
@@ -999,7 +1007,7 @@ orderLive NameRegistration {nrPhase} = case nrPhase of
 
 -- | Writes every changeable field of a registration read at its nrVersion, unless it changed since, with live as orderLive decides.
 -- A closed order is never made live again, and a write that would make the order meet another live one changes nothing.
-updateRegistration :: DB.Connection -> NameRegistration -> UTCTime -> IO VersionWrite
+updateRegistration :: DB.Connection -> NameRegistrationOrder -> UTCTime -> IO VersionWrite
 updateRegistration db r now = do
   changed <-
     executeChanging
@@ -1026,8 +1034,8 @@ updateRegistration db r now = do
       )
   if changed > 0 then pure $ Written (nrVersion + 1) else refusal
   where
-    NameRegistration {nrId = RegistrationId rid, nrVersion, nrLabelHash, nrLength, nrDuration, nrOwner, nrCommitment, nrSealed, nrAgreedTerms, nrPhase, nrPrice, nrReveal} = r
-    NameRegistration {nrHistory = TxHistory {thCommitTx, thRegisterTx}} = r
+    NameRegistrationOrder {nrId = RegistrationId rid, nrVersion, nrLabelHash, nrLength, nrDuration, nrOwner, nrCommitment, nrSealed, nrAgreedTerms, nrPhase, nrPrice, nrReveal} = r
+    NameRegistrationOrder {nrHistory = TxHistory {thCommitTx, thRegisterTx}} = r
     (commitBlock, revealAfter, revealBefore) = case phaseCommit nrPhase of
       Just Commit {cmTx, cmRevealAfter, cmRevealBefore} -> (txBlock <$> cmTx, Just cmRevealAfter, Just cmRevealBefore)
       Nothing -> (Nothing, Nothing, Nothing)
@@ -1039,7 +1047,6 @@ updateRegistration db r now = do
       _ -> thRegisterTx
     (expiresAt, disputeUntil, registeredAt, takenAt, failedAt, failReason, closedBy) = case nrPhase of
       ORegistered expiry disputeEnd at -> (Just expiry, disputeEnd, Just at, Nothing, Nothing, Nothing, Nothing)
-      OEnded expiry disputeEnd -> (Just expiry, Just disputeEnd, Nothing, Nothing, Nothing, Nothing, Nothing)
       OTaken at -> (Nothing, Nothing, Nothing, Just at, Nothing, Nothing, Nothing)
       OFailed at reason -> (Nothing, Nothing, Nothing, Nothing, Just at, Just reason, Nothing)
       OClosed closed -> (Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Just closed)
@@ -1049,6 +1056,23 @@ updateRegistration db r now = do
       DB.query db (mkQuery "SELECT version, live, phase FROM @name_registrations WHERE registration_id = ?") (Only rid) >>= \case
         [(version, BI storedLive, storedPhase)] | version == nrVersion -> pure $ if storedLive || storedPhase == PTaken then LiveOrderExists else NotLive
         _ -> pure VersionChanged
+
+queueSettled :: DB.Connection -> NameRegistrationOrder -> UTCTime -> IO (Maybe VersionWrite)
+queueSettled db r now =
+  withSavepoint db "queue_settled" (updateRegistration db r {nrPhase = OQueued} now) >>= \case
+    Right w -> pure $ Just w
+    Left e
+      | heldLabelRefused e -> pure Nothing
+      | otherwise -> E.throwIO e
+
+heldLabelRefused :: DB.SQLError -> Bool
+#if defined(dbPostgres)
+heldLabelRefused e = case constraintViolation e of
+  Just (UniqueViolation index) -> "idx_name_registrations_held_label" `B.isSuffixOf` index
+  _ -> False
+#else
+heldLabelRefused e = SQL.sqlError e == SQL.ErrorConstraint && "name_registrations.label_hash" `T.isSuffixOf` SQL.sqlErrorDetails e
+#endif
 
 type RevealRow = (Maybe Text, Maybe Hex32, Maybe Text, Maybe Text, Maybe Int64, Maybe Int64, Maybe RecoverableSignature) :. (Maybe TermsHash, Maybe Int64, Maybe RecoverableSignature)
 
@@ -1061,8 +1085,8 @@ revealRow rv =
 
 -- | A name selected for the order, with the terms agreed for it and its reveal: queued with the transactions, reveal times and failed attempts cleared,
 -- its month and 3-hour alert counted from the selection. The order hash stays the original order's, so a resend of that order still finds it.
-selectRegistration :: DB.Connection -> NameRegistration -> OrderFields -> NameReveal -> UTCTime -> IO VersionWrite
-selectRegistration db r@NameRegistration {nrId = RegistrationId rid} OrderFields {ofLabelHash, ofLength, ofDuration, ofCommitment, ofSealed, ofAgreedTerms} reveal now =
+selectRegistration :: DB.Connection -> NameRegistrationOrder -> OrderFields -> NameReveal -> UTCTime -> IO VersionWrite
+selectRegistration db r@NameRegistrationOrder {nrId = RegistrationId rid} OrderFields {ofLabelHash, ofLength, ofDuration, ofCommitment, ofSealed, ofAgreedTerms} reveal now =
   updateRegistration
     db
     r
@@ -1082,7 +1106,7 @@ selectRegistration db r@NameRegistration {nrId = RegistrationId rid} OrderFields
       w -> pure w
 
 -- | Newest first: findLimit of them, then every older one holding a balance above 0, since a balance never expires.
-findRegistrations :: DB.Connection -> Address -> IO [NameRegistration]
+findRegistrations :: DB.Connection -> Address -> IO [NameRegistrationOrder]
 findRegistrations db owner = do
   newest <- DB.query db (selectRegistrations <> " WHERE r.owner = ?" <> newestFirst <> " LIMIT ?") (owner, findLimit) >>= decodeAll toRegistration
   holding <- DB.query db (selectRegistrations <> " WHERE r.owner = ?" <> withBalance <> newestFirst) (Only owner) >>= decodeAll toRegistration
@@ -1163,6 +1187,14 @@ activeRegistrations db =
       (mkQuery "SELECT registration_id FROM @name_registrations WHERE phase IN (?,?,?,?) ORDER BY created_at, registration_id")
       (PQueued, PCommitting, PCommitted, PRegistering)
 
+labelledOrders :: DB.Connection -> IO [(RegistrationId, Text, NamePhase, Maybe Int64)]
+labelledOrders db =
+  map (\(rid, label, phase, disputeUntil) -> (RegistrationId rid, label, phase, disputeUntil))
+    <$> DB.query
+      db
+      (mkQuery "SELECT registration_id, label, phase, dispute_until FROM @name_registrations WHERE label IS NOT NULL AND (live = 1 OR phase = ?) ORDER BY created_at, registration_id")
+      (Only PRegistered)
+
 disputableRegistrations :: DB.Connection -> SystemSeconds -> IO [RegistrationId]
 disputableRegistrations db endsAfter =
   map (RegistrationId . fromOnly)
@@ -1241,20 +1273,22 @@ balanceByReference db ref =
 balanceLink :: DB.Connection -> RegistrationId -> IO (Maybe BalanceLink)
 balanceLink db rid = getRegistration db rid >>= mapM paidBy
   where
-    paidBy NameRegistration {nrPhase, nrOwner, nrPayment} = do
-      let pastUnpaid = namePhase nrPhase `notElem` [PUnpaid, PClosed]
-      (lkPaid, lkProviderRef, lkLateCredits) <- case paymentInvoice nrPayment of
-        Just invId -> (,,) <$> (if pastUnpaid then invoiceAmount db invId else pure 0) <*> providerRef db invId <*> lateCredits db invId
-        Nothing -> pure (0, Nothing, [])
-      pure BalanceLink {lkRegistration = rid, lkOwner = nrOwner, lkPayment = nrPayment, lkProviderRef, lkPaid, lkLateCredits}
+    paidBy NameRegistrationOrder {nrPhase, nrOwner, nrPayment} = do
+      let lkPhase = namePhase nrPhase
+          pastUnpaid = lkPhase `notElem` [PUnpaid, PClosed]
+      (lkPaid, (lkProviderRef, lkReversedCents), lkLateCredits) <- case paymentInvoice nrPayment of
+        Just invId -> (,,) <$> (if pastUnpaid then invoiceAmount db invId else pure 0) <*> referenceAndReversed db invId <*> lateCredits db invId
+        Nothing -> pure (0, (Nothing, 0), [])
+      pure BalanceLink {lkRegistration = rid, lkOwner = nrOwner, lkPhase, lkPayment = nrPayment, lkProviderRef, lkPaid, lkReversedCents, lkLateCredits}
 
 invoiceAmount :: DB.Connection -> InvoiceId -> IO USDCents
 invoiceAmount db (InvoiceId invId) =
   maybeFirstRow' 0 fromOnly $ DB.query db (mkQuery "SELECT amount FROM @invoices WHERE invoice_id = ?") (Only invId)
 
-providerRef :: DB.Connection -> InvoiceId -> IO (Maybe Text)
-providerRef db (InvoiceId invId) =
-  maybeFirstRow fromOnly $ DB.query db (mkQuery "SELECT provider_ref FROM @invoices WHERE invoice_id = ?") (Only invId)
+referenceAndReversed :: DB.Connection -> InvoiceId -> IO (Maybe Text, USDCents)
+referenceAndReversed db (InvoiceId invId) =
+  maybeFirstRow' (Nothing, 0) (\(ref, reversed) -> (Just ref, reversed)) $
+    DB.query db (mkQuery "SELECT i.provider_ref, COALESCE(ni.reversed_cents, 0) FROM @invoices i LEFT JOIN @name_invoices ni ON ni.invoice_id = i.invoice_id WHERE i.invoice_id = ?") (Only invId)
 
 lateCredits :: DB.Connection -> InvoiceId -> IO [LateCredit]
 lateCredits db (InvoiceId invId) =
@@ -1338,8 +1372,8 @@ takeBackBalance db invId@(InvoiceId inv) (RegistrationId rid) cents now = do
   when (taken > 0) $ DB.execute db (mkQuery "UPDATE @name_balances SET amount = amount - ?, updated_at = ? WHERE registration_id = ?") (taken, now, rid)
   pure taken
 
-lockRegistration :: DB.Connection -> NameRegistration -> IO Bool
-lockRegistration db NameRegistration {nrId = RegistrationId rid, nrVersion} =
+lockRegistration :: DB.Connection -> NameRegistrationOrder -> IO Bool
+lockRegistration db NameRegistrationOrder {nrId = RegistrationId rid, nrVersion} =
   (> 0) <$> executeChanging db (mkQuery "UPDATE @name_registrations SET version = version WHERE registration_id = ? AND version = ?") (rid, nrVersion)
 
 reversalRecorded :: DB.Connection -> RegistrationId -> IO Bool
@@ -1586,26 +1620,28 @@ prepaidCodeColumns :: Query
 prepaidCodeColumns =
   prefixQuery
     [sql|
-    SELECT name_prepaid_code_id, code_hash, min_length, years, code_payment_status, reserved_by, reserved_at, spent_at, revoked_at, expires_at, created_at
-    FROM @name_prepaid_codes
+    SELECT c.name_prepaid_code_id, c.code_hash, c.min_length, c.years, c.code_payment_status, c.reserved_by, c.reserved_at, c.spent_at, c.revoked_at, c.expires_at, c.created_at, r.taken_at
+    FROM @name_prepaid_codes c
+    LEFT JOIN @name_registrations r ON r.registration_id = c.reserved_by
   |]
 
-type PrepaidCodeRow = (Int64, CodeHash, Int, Int, BadgeCodePaymentStatus, Maybe Text, Maybe UTCTime, Maybe UTCTime, Maybe UTCTime, Maybe UTCTime) :. Only UTCTime
+type PrepaidCodeRow = (Int64, CodeHash, Int, Int, BadgeCodePaymentStatus, Maybe Text, Maybe UTCTime, Maybe UTCTime, Maybe UTCTime, Maybe UTCTime) :. (UTCTime, Maybe UTCTime)
 
 toPrepaidCode :: PrepaidCodeRow -> PrepaidCode
-toPrepaidCode ((pcId, pcCodeHash, pcMinLength, pcYears, pcPaymentStatus, reservedBy, pcReservedAt, pcSpentAt, pcRevokedAt, pcExpiresAt) :. Only pcCreatedAt) =
-  PrepaidCode {pcId, pcCodeHash, pcMinLength, pcYears, pcPaymentStatus, pcReservedBy = RegistrationId <$> reservedBy, pcReservedAt, pcSpentAt, pcRevokedAt, pcExpiresAt, pcCreatedAt}
+toPrepaidCode ((pcId, pcCodeHash, pcMinLength, pcYears, pcPaymentStatus, reservedBy, pcReservedAt, pcSpentAt, pcRevokedAt, pcExpiresAt) :. (pcCreatedAt, pcHolderTakenAt)) =
+  PrepaidCode {pcId, pcCodeHash, pcMinLength, pcYears, pcPaymentStatus, pcReservedBy = RegistrationId <$> reservedBy, pcReservedAt, pcHolderTakenAt, pcSpentAt, pcRevokedAt, pcExpiresAt, pcCreatedAt}
+{-# INLINE toPrepaidCode #-}
 
 groupNameCodesIssuedSince :: DB.Connection -> UTCTime -> IO Int
 groupNameCodesIssuedSince db since = maybeFirstRow' 0 fromOnly (DB.query db (mkQuery "SELECT COUNT(*) FROM @name_prepaid_codes WHERE created_at >= ? AND issued_in_group = 1") (Only since))
 
 getPrepaidCode :: DB.Connection -> CodeHash -> IO (Maybe PrepaidCode)
 getPrepaidCode db codeHash =
-  maybeFirstRow toPrepaidCode $ DB.query db (prepaidCodeColumns <> " WHERE code_hash = ?") (Only codeHash)
+  maybeFirstRow toPrepaidCode $ DB.query db (prepaidCodeColumns <> " WHERE c.code_hash = ?") (Only codeHash)
 
 getPrepaidCodeById :: DB.Connection -> CodeId -> IO PrepaidCode
 getPrepaidCodeById db codeId =
-  maybeFirstRow toPrepaidCode (DB.query db (prepaidCodeColumns <> " WHERE name_prepaid_code_id = ?") (Only codeId))
+  maybeFirstRow toPrepaidCode (DB.query db (prepaidCodeColumns <> " WHERE c.name_prepaid_code_id = ?") (Only codeId))
     >>= maybe (E.throwIO $ BrokenInvariant $ "the prepaid code " <> tshow codeId <> " of an order is missing") pure
 
 -- | An unused code, paid or free and not expired, or the code the registration holds; never a spent or revoked one.
@@ -1834,6 +1870,7 @@ toRecordEdit (reId, reLabelHash, reOwner, reBodyHash, state, revert, minedTx, re
 
 firstRecordEdit :: DB.Connection -> IO [RecordEditRow] -> IO (Maybe RecordEdit)
 firstRecordEdit db rows = rows >>= mapM (readRecordEdit db) . listToMaybe
+{-# INLINE firstRecordEdit #-}
 
 getRecordEdit :: DB.Connection -> RecordEditId -> IO (Maybe RecordEdit)
 getRecordEdit db editId =
@@ -1919,15 +1956,19 @@ namesCounts db = do
 
 int64 :: Word64 -> Int64
 int64 = fromIntegral
+{-# INLINE int64 #-}
 
 word64 :: Int64 -> Word64
 word64 = fromIntegral
+{-# INLINE word64 #-}
 
 decodeAll :: (row -> Either Text a) -> [row] -> IO [a]
 decodeAll decode = either (E.throwIO . StoreDecodeError) pure . traverse decode
+{-# INLINE decodeAll #-}
 
 firstDecoded :: (row -> Either Text a) -> IO [row] -> IO (Maybe a)
 firstDecoded decode rows = rows >>= fmap listToMaybe . decodeAll decode . take 1
+{-# INLINE firstDecoded #-}
 
 $(JQ.deriveToJSON (enumJSON $ dropPrefix "P") ''NamePhase)
 

@@ -143,10 +143,12 @@ newRecords rsStore rsTurns rsContracts rsSender rsTLD rsEditsPerYear rsNow = do
 
 rsChain :: Records -> ChainClient
 rsChain = ctChain . rsContracts
+{-# INLINE rsChain #-}
 
 -- | Every relayed edit counts, a reverted one too, since its gas is paid. One refused or never sent does not.
 nameEditsLeft :: DB.Connection -> Int -> LabelHash -> UTCTime -> IO EditsLeft
 nameEditsLeft db perYear lh now = editsLeft perYear <$> relayedEditTimes db lh (addUTCTime (negate editLimitWindow) now)
+{-# INLINE nameEditsLeft #-}
 
 editsLeft :: Int -> [UTCTime] -> EditsLeft
 editsLeft perYear times =
@@ -255,6 +257,7 @@ sendEdit rs@Records {rsSender} edit@RecordEdit {reId} =
 -- | Only sent edits are stored, so one never sent leaves no row and its repeat is checked anew.
 forget :: Records -> RecordEditId -> IO ()
 forget rs editId = withStore rs (`deleteUnsentEdit` editId) >> settled rs editId
+{-# INLINE forget #-}
 
 -- | Waits until the edit settles, the chain stops answering for it, or the timer fires.
 awaitEdit :: Records -> TVar Bool -> RecordEditId -> IO EditAnswer
@@ -276,6 +279,7 @@ awaitEdit rs@Records {rsChanges, rsStalled} timer editId = loop
 
 runRecordEdits :: Records -> IO ()
 runRecordEdits rs = forever $ recordsRound rs >> threadDelay recordsInterval
+{-# INLINE runRecordEdits #-}
 
 -- | One pass over the pending edits that no request is sending. A pass or an edit that fails is logged, and the lane goes on.
 recordsRound :: Records -> IO ()
@@ -371,6 +375,7 @@ settle rs editId outcome = do
 -- | Wakes the requests waiting for the edit, which read it again.
 settled :: Records -> RecordEditId -> IO ()
 settled Records {rsStalled, rsChanges} editId = atomically $ modifyTVar' rsStalled (S.delete editId) >> modifyTVar' rsChanges (+ 1)
+{-# INLINE settled #-}
 
 -- | Logged once until the edit's next successful step.
 stall :: Show e => Records -> RecordEditId -> e -> IO ()
@@ -384,6 +389,7 @@ stall Records {rsStalled, rsChanges} editId e = do
 
 unstall :: Records -> RecordEditId -> IO ()
 unstall Records {rsStalled} editId = atomically $ modifyTVar' rsStalled $ S.delete editId
+{-# INLINE unstall #-}
 
 -- | Runs the action only when nobody else holds the edit, else answers the fallback.
 withClaim :: Records -> RecordEditId -> a -> IO a -> IO a
@@ -396,10 +402,12 @@ withClaim rs@Records {rsClaimed} editId fallback action =
 
 release :: Records -> RecordEditId -> IO ()
 release Records {rsClaimed} editId = atomically $ modifyTVar' rsClaimed $ S.delete editId
+{-# INLINE release #-}
 
 changeDigest :: Records -> LabelHash -> SignedChange -> ByteString
 changeDigest rs lh SignedChange {scChange = RCSetText key value, scNonce, scDeadline} =
   setTextDigest (domain rs) (nodeOf rs lh) key value scNonce scDeadline
+{-# INLINE changeDigest #-}
 
 -- | One change is sent as its own call, which keeps the revert's name; two go in one multicall.
 editCalldata :: Records -> RecordEdit -> ByteString
@@ -413,23 +421,30 @@ editCalldata rs RecordEdit {reLabelHash, reChanges} = case reChanges of
 
 firstNonce, lastNonce :: NonEmpty SignedChange -> Word64
 firstNonce = scNonce . L.head
+{-# INLINE firstNonce #-}
 lastNonce = scNonce . L.last
+{-# INLINE lastNonce #-}
 
 -- | Past it the edit cannot land whole, so it is SignatureExpired.
 earliestDeadline :: NonEmpty SignedChange -> SystemSeconds
 earliestDeadline = minimum . L.map scDeadline
+{-# INLINE earliestDeadline #-}
 
 nodeOf :: Records -> LabelHash -> Node
 nodeOf Records {rsTLD} = labelNode rsTLD
+{-# INLINE nodeOf #-}
 
 domain :: Records -> Eip712Domain
 domain rs = resolverDomain (cChainId $ ccConfig $ rsChain rs) (resolver rs)
+{-# INLINE domain #-}
 
 resolver :: Records -> Address
 resolver = cResolver . ccConfig . rsChain
+{-# INLINE resolver #-}
 
 signatureExpired :: Maybe RevertName
 signatureExpired = Just RNSignatureExpired
 
 withStore :: Records -> (DB.Connection -> IO a) -> IO a
 withStore Records {rsStore} = withTransaction rsStore
+{-# INLINE withStore #-}

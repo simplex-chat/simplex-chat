@@ -863,13 +863,21 @@ class ChatDeleteMode_entity(TypedDict):
 class ChatDeleteMode_messages(TypedDict):
     type: Literal["messages"]
 
-ChatDeleteMode = ChatDeleteMode_full | ChatDeleteMode_entity | ChatDeleteMode_messages
+class ChatDeleteMode_archive(TypedDict):
+    type: Literal["archive"]
 
-ChatDeleteMode_Tag = Literal["full", "entity", "messages"]
+ChatDeleteMode = (
+    ChatDeleteMode_full
+    | ChatDeleteMode_entity
+    | ChatDeleteMode_messages
+    | ChatDeleteMode_archive
+)
+
+ChatDeleteMode_Tag = Literal["full", "entity", "messages", "archive"]
 
 
 def ChatDeleteMode_cmd_string(self: ChatDeleteMode) -> str:
-    return str(self['type']) + ('' if str(self['type']) == 'messages' else (' notify=off' if not self['notify'] else ''))  # type: ignore[typeddict-item]
+    return str(self['type']) + ('' if str(self['type']) == 'messages' else '' if str(self['type']) == 'archive' else (' notify=off' if not self['notify'] else ''))  # type: ignore[typeddict-item]
 
 class ChatError_error(TypedDict):
     type: Literal["error"]
@@ -977,6 +985,10 @@ class ChatErrorType_unsupportedConnReq(TypedDict):
 
 class ChatErrorType_connReqMessageProhibited(TypedDict):
     type: Literal["connReqMessageProhibited"]
+
+class ChatErrorType_linkNotice(TypedDict):
+    type: Literal["linkNotice"]
+    expiresAt: NotRequired[str]  # ISO-8601 timestamp
 
 class ChatErrorType_contactNotReady(TypedDict):
     type: Literal["contactNotReady"]
@@ -1210,6 +1222,7 @@ ChatErrorType = (
     | ChatErrorType_notResolvedLocally
     | ChatErrorType_unsupportedConnReq
     | ChatErrorType_connReqMessageProhibited
+    | ChatErrorType_linkNotice
     | ChatErrorType_contactNotReady
     | ChatErrorType_contactNotActive
     | ChatErrorType_contactDisabled
@@ -1265,7 +1278,7 @@ ChatErrorType = (
     | ChatErrorType_exception
 )
 
-ChatErrorType_Tag = Literal["noActiveUser", "noConnectionUser", "noSndFileUser", "noRcvFileUser", "userUnknown", "userExists", "chatRelayExists", "differentActiveUser", "cantDeleteActiveUser", "cantDeleteLastUser", "cantHideLastUser", "hiddenUserAlwaysMuted", "emptyUserPassword", "userAlreadyHidden", "userNotHidden", "invalidDisplayName", "chatNotStarted", "chatNotStopped", "chatStoreChanged", "invalidConnReq", "simplexDomainNotReady", "notResolvedLocally", "unsupportedConnReq", "connReqMessageProhibited", "contactNotReady", "contactNotActive", "contactDisabled", "connectionDisabled", "groupUserRole", "groupMemberInitialRole", "contactIncognitoCantInvite", "groupIncognitoCantInvite", "groupContactRole", "groupDuplicateMember", "groupDuplicateMemberId", "groupNotJoined", "groupMemberNotActive", "cantBlockMemberForSelf", "groupMemberUserRemoved", "groupMemberNotFound", "groupCantResendInvitation", "groupInternal", "fileNotFound", "fileSize", "fileAlreadyReceiving", "fileCancelled", "fileCancel", "fileAlreadyExists", "fileWrite", "fileSend", "fileRcvChunk", "fileInternal", "fileImageType", "fileImageSize", "fileNotReceived", "fileNotApproved", "fallbackToSMPProhibited", "inlineFileProhibited", "invalidForward", "invalidChatItemUpdate", "invalidChatItemDelete", "hasCurrentCall", "noCurrentCall", "callContact", "directMessagesProhibited", "agentVersion", "agentNoSubResult", "commandError", "badgeRedeemError", "agentCommandError", "invalidFileDescription", "connectionIncognitoChangeProhibited", "connectionUserChangeProhibited", "peerChatVRangeIncompatible", "relayTestError", "internalError", "exception"]
+ChatErrorType_Tag = Literal["noActiveUser", "noConnectionUser", "noSndFileUser", "noRcvFileUser", "userUnknown", "userExists", "chatRelayExists", "differentActiveUser", "cantDeleteActiveUser", "cantDeleteLastUser", "cantHideLastUser", "hiddenUserAlwaysMuted", "emptyUserPassword", "userAlreadyHidden", "userNotHidden", "invalidDisplayName", "chatNotStarted", "chatNotStopped", "chatStoreChanged", "invalidConnReq", "simplexDomainNotReady", "notResolvedLocally", "unsupportedConnReq", "connReqMessageProhibited", "linkNotice", "contactNotReady", "contactNotActive", "contactDisabled", "connectionDisabled", "groupUserRole", "groupMemberInitialRole", "contactIncognitoCantInvite", "groupIncognitoCantInvite", "groupContactRole", "groupDuplicateMember", "groupDuplicateMemberId", "groupNotJoined", "groupMemberNotActive", "cantBlockMemberForSelf", "groupMemberUserRemoved", "groupMemberNotFound", "groupCantResendInvitation", "groupInternal", "fileNotFound", "fileSize", "fileAlreadyReceiving", "fileCancelled", "fileCancel", "fileAlreadyExists", "fileWrite", "fileSend", "fileRcvChunk", "fileInternal", "fileImageType", "fileImageSize", "fileNotReceived", "fileNotApproved", "fallbackToSMPProhibited", "inlineFileProhibited", "invalidForward", "invalidChatItemUpdate", "invalidChatItemDelete", "hasCurrentCall", "noCurrentCall", "callContact", "directMessagesProhibited", "agentVersion", "agentNoSubResult", "commandError", "badgeRedeemError", "agentCommandError", "invalidFileDescription", "connectionIncognitoChangeProhibited", "connectionUserChangeProhibited", "peerChatVRangeIncompatible", "relayTestError", "internalError", "exception"]
 
 ChatFeature = Literal["timedMessages", "fullDelete", "reactions", "voice", "files", "calls", "sessions"]
 
@@ -1711,6 +1724,11 @@ class ContactAddressPlan_contactViaAddress(TypedDict):
     type: Literal["contactViaAddress"]
     contact: "Contact"
 
+class ContactAddressPlan_linkNotice(TypedDict):
+    type: Literal["linkNotice"]
+    expiresAt: NotRequired[str]  # ISO-8601 timestamp
+    contactSLinkData_: NotRequired["ContactShortLinkData"]
+
 ContactAddressPlan = (
     ContactAddressPlan_ok
     | ContactAddressPlan_ownLink
@@ -1718,9 +1736,10 @@ ContactAddressPlan = (
     | ContactAddressPlan_connectingProhibit
     | ContactAddressPlan_known
     | ContactAddressPlan_contactViaAddress
+    | ContactAddressPlan_linkNotice
 )
 
-ContactAddressPlan_Tag = Literal["ok", "ownLink", "connectingConfirmReconnect", "connectingProhibit", "known", "contactViaAddress"]
+ContactAddressPlan_Tag = Literal["ok", "ownLink", "connectingConfirmReconnect", "connectingProhibit", "known", "contactViaAddress", "linkNotice"]
 
 class ContactShortLinkData(TypedDict):
     profile: "Profile"
@@ -2180,6 +2199,10 @@ class GroupLinkPlan_updateRequired(TypedDict):
     type: Literal["updateRequired"]
     groupSLinkData_: NotRequired["GroupShortLinkData"]
 
+class GroupLinkPlan_linkNotice(TypedDict):
+    type: Literal["linkNotice"]
+    expiresAt: NotRequired[str]  # ISO-8601 timestamp
+
 GroupLinkPlan = (
     GroupLinkPlan_ok
     | GroupLinkPlan_ownLink
@@ -2188,9 +2211,10 @@ GroupLinkPlan = (
     | GroupLinkPlan_known
     | GroupLinkPlan_noRelays
     | GroupLinkPlan_updateRequired
+    | GroupLinkPlan_linkNotice
 )
 
-GroupLinkPlan_Tag = Literal["ok", "ownLink", "connectingConfirmReconnect", "connectingProhibit", "known", "noRelays", "updateRequired"]
+GroupLinkPlan_Tag = Literal["ok", "ownLink", "connectingConfirmReconnect", "connectingProhibit", "known", "noRelays", "updateRequired", "linkNotice"]
 
 class GroupMember(TypedDict):
     groupMemberId: int  # int64
@@ -2410,6 +2434,11 @@ class LinkContent_unknown(TypedDict):
 LinkContent = LinkContent_page | LinkContent_image | LinkContent_video | LinkContent_unknown
 
 LinkContent_Tag = Literal["page", "image", "video", "unknown"]
+
+# The app of the removed member or deleted contact does not join or connect via the link for `ttl` seconds, rounded up to a whole hour; a notice without `ttl` does not expire. `ttl` must be positive.
+
+class LinkNotice(TypedDict):
+    ttl: NotRequired[int]  # int64
 
 class LinkOwnerSig(TypedDict):
     ownerId: NotRequired[str]

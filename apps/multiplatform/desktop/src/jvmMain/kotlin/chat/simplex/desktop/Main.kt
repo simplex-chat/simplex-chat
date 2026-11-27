@@ -133,9 +133,7 @@ private fun windowsLoadRequiredLibs(libsTmpDir: File, vlcDir: File) {
   }
   val vlcLibs = arrayOf(
     "libvlccore.dll",
-    "libvlc.dll",
-    "axvlc.dll",
-    "npvlc.dll"
+    "libvlc.dll"
   )
   vlcLibs.forEach {
     loadCoreLibrary(File(vlcDir, it).absolutePath)
