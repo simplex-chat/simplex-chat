@@ -131,6 +131,14 @@ final class ChainAddressesTests: RecordedAPITestCase {
     }
 
     @MainActor
+    func testAlertOfOwnGroupItemHasNoName() async throws {
+        try recorded("chain-addresses/group-sent")
+        let (chat, _) = try await apiGetChat(chatId: "#1", scope: nil, pagination: .last(count: 2))
+        let drawn = chat.chatItems.map { draw($0.formattedText, chainAddressSender($0, chat.chatInfo)).string }
+        XCTAssertEqual(drawn.flatMap(taps).map(alertMessage), ["₿\u{00A0}bc1q2g…\u{2060}5d4u", "⚠\u{FE0E}\u{00A0}ltc1q2…\u{2060}wfdv (not signed)"])
+    }
+
+    @MainActor
     func testOpenWithoutWalletOffersCopyAndQRCode() async throws {
         try recorded("chain-addresses/links")
         let (chat, _) = try await apiGetChat(chatId: "@2", scope: nil, pagination: .last(count: 1))

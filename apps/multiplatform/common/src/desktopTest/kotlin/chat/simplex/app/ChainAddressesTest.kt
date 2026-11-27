@@ -90,6 +90,15 @@ class ChainAddressesTest : RecordedApiTest() {
   }
 
   @Test
+  fun alertOfOwnGroupItemHasNoName() = recordedAlerts("chain-addresses/group-sent") {
+    val chat = recordedChat("chain-addresses/group-sent", "/_get chat #1 count=2")
+    assertEquals(
+      listOf("₿\u00A0bc1q2g…\u20605d4u", "⚠\u00A0ltc1q2…\u2060wfdv (not signed)"),
+      chat.chatItems.flatMap { item -> chainLinks(item.formattedText).map { alertMessage(chainAddressSender(item, chat.chatInfo), it) } }
+    )
+  }
+
+  @Test
   fun notSignedKeepsLabelAndUnknownReason() {
     val markdown = recordedMarkdown()
     assertEquals(

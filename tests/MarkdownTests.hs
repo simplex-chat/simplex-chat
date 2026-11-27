@@ -593,6 +593,7 @@ chainAddresses = describe "chain addresses" do
     ("BITCOIN:" <> T.toUpper btc <> "?AMOUNT=0.001") `linksTo` ChainAddress (CYBitcoin $ Just "0.001") btc ("bitcoin:" <> T.toUpper btc <> "?amount=0.001")
     ("bitcoin:" <> btc <> "?amount=0.001&Label=SimpleX%20Chat&message=Donation&pop=app%3A")
       `linksTo` ChainAddress (CYBitcoin $ Just "0.001") btc ("bitcoin:" <> btc <> "?amount=0.001&label=SimpleX%20Chat&message=Donation&pop=app%3A")
+    ("bitcoin:" <> btc <> "?amount=0.001&pop") `linksTo` ChainAddress (CYBitcoin $ Just "0.001") btc ("bitcoin:" <> btc <> "?amount=0.001&pop=")
     ("bitcoin:" <> btc <> "?lightning=" <> coffee) `linksTo` ChainAddress bitcoin btc ("bitcoin:" <> btc <> "?lightning=" <> coffee)
     ("bitcoin:" <> btc <> "?lightning=" <> coffee <> "&label=" <> coffee) `linksTo` ChainAddress bitcoin btc ("bitcoin:" <> btc <> "?lightning=" <> coffee <> "&label=" <> coffee)
     ("bitcoin:?lightning=" <> coffee) `linksTo` ChainAddress (CYLightning $ Just "0.0025") coffee ("bitcoin:?lightning=" <> coffee)
@@ -642,10 +643,13 @@ chainAddresses = describe "chain addresses" do
     isText $ "monero-wallet:" <> xmr <> "?spend_key=029c559cd7669f14e91fd835144916009f8697ab5ac5c7f7c06e1ff869c17b0b"
     isText $ "monero:" <> xmr <> ";" <> xmr <> "?tx_amount=1;2"
     isText $ "monero:" <> xmr <> "?tx_description=a;b"
+    isText $ "monero:" <> xmr <> "?recipient_name=" <> otherBtc
+    isText $ "solana:" <> sol <> "?label=" <> otherBtc
     isText $ "zcash:" <> zecT <> "?memo=" <> memo
     isText $ "zcash:?address=" <> zecT <> "&address.1=" <> zecU
     isText $ "ethereum:" <> usdt <> "/approve?address=" <> eth <> "&uint256=1"
     isText $ "ethereum:" <> usdt <> "@1/transfer?address=" <> eth <> "&uint256=1&value=1"
+    isText $ "ethereum:" <> usdt <> "@1/transfer?address=" <> eth <> "&uint256=1&VALUE=1"
     isText "ethereum:donate.simplexchat.eth"
     isText $ "bitcoin:" <> btc <> "?label=" <> otherBtc
     isText $ "<bitcoin:" <> btc <> "?label=" <> otherBtc <> ">"
@@ -663,6 +667,8 @@ chainAddresses = describe "chain addresses" do
     isText $ "zel:?action=pay&coin=bitcoin&address=" <> zecT
     isText $ "zel:?action=pay&address=" <> zecT <> "&amount=3"
     isText $ "zel:?action=pay&coin=flux&address=" <> zecT <> "&callback=https://example.com"
+    isText $ "zel:?action=pay&coin=flux&address=" <> zecT <> "&CALLBACK=https://example.com"
+    isText $ "zel:?ACTION=sign&coin=flux&address=" <> zecT
   it "hyperlinks and autolinks" do
     ("[Donate](monero:" <> xmr <> ")") <==> markdown (ChainAddressLink (Just "Donate") $ ChainAddress (coin "XMR") xmr $ "monero:" <> xmr) ("[Donate](monero:" <> xmr <> ")")
     ("[" <> btc <> "](bitcoin:" <> btc <> ")") <==> chainLink (ChainAddress bitcoin btc $ "bitcoin:" <> btc) ("[" <> btc <> "](bitcoin:" <> btc <> ")")
