@@ -162,17 +162,17 @@ textParam :: ByteString -> Q.Query -> Parser (Maybe Text)
 textParam key query = join <$> param uriTextP key query
 
 chainLink :: ChainCurrency -> NonEmpty Text -> Maybe Text -> [Maybe Text] -> Parser (Text -> ChainAddress, NonEmpty Text)
-chainLink currency addresses@(payee :| _) label texts
+chainLink currency addresses@(address :| _) label texts
   | any (hasOtherAddress addresses) (catMaybes $ label : texts) = fail "other address in label or message"
-  | otherwise = pure (ChainAddress currency payee $ mfilter (not . hasAddress addresses) label, addresses)
+  | otherwise = pure (ChainAddress currency address $ mfilter (not . hasAddress addresses) label, addresses)
 
 bitcoinLink :: Maybe Text -> Q.Query -> Parser (Text -> ChainAddress, NonEmpty Text)
 bitcoinLink address query = do
   instructions <- (<>) <$> params (addressP [invoiceP, (,Nothing) <$$> lnurlP]) "lightning" query <*> params ((,Nothing) <$> addressP [offerP]) "lno" query
   case (address, instructions) of
     (Just a, _) -> bip21Link CYBitcoin (a :| map fst instructions) [] query
-    (Nothing, (payee, invoiceAmount) : more) -> bip21Link (CYLightning . (<|> invoiceAmount)) (payee :| map fst more) [] query
-    (Nothing, []) -> fail "no payee"
+    (Nothing, (a, invoiceAmount) : more) -> bip21Link (CYLightning . (<|> invoiceAmount)) (a :| map fst more) [] query
+    (Nothing, []) -> fail "no address"
 
 coinLink :: Text -> Text -> Q.Query -> Parser (Text -> ChainAddress, NonEmpty Text)
 coinLink ticker address = bip21Link (CYTicker ticker Nothing) (address :| []) []
@@ -185,7 +185,7 @@ bip21Link currency addresses texts query = do
   chainLink (currency amount) addresses label (message : texts)
 
 lightningLink :: (Text, Maybe Text) -> Q.Query -> Parser (Text -> ChainAddress, NonEmpty Text)
-lightningLink (payee, amount) _ = chainLink (CYLightning amount) (payee :| []) Nothing []
+lightningLink (address, amount) _ = chainLink (CYLightning amount) (address :| []) Nothing []
 
 ethereumP :: Parser (Q.Query -> Parser (Text -> ChainAddress, NonEmpty Text))
 ethereumP = do
@@ -196,20 +196,20 @@ ethereumP = do
     chainIdP = mfilter (inRange (1, toInteger (maxBound :: Int64))) $ digitsInteger <$> A.takeWhile1 isDigit
 
 valueLink :: Text -> Maybe ChainInfo -> Q.Query -> Parser (Text -> ChainAddress, NonEmpty Text)
-valueLink payee chain query = do
+valueLink address chain query = do
   value <- param evmIntegerP "value" query
   let currency = maybe (CYUnknown UCChain) (\ChainInfo {chainName, coin} -> CYTicker coin chainName $ decimalText 18 <$> value) chain
-  chainLink currency (payee :| []) Nothing []
+  chainLink currency (address :| []) Nothing []
 
 transferLink :: Text -> Maybe ChainInfo -> Q.Query -> Parser (Text -> ChainAddress, NonEmpty Text)
 transferLink token chain query = do
   guard $ null $ paramValues "value" query
-  payee <- maybe (fail "no payee") pure =<< param (addressP [evmP]) "address" query
+  address <- maybe (fail "no address") pure =<< param (addressP [evmP]) "address" query
   units <- param evmIntegerP "uint256" query
   let currency = case chain of
         Just ChainInfo {chainName, tokens} -> maybe (CYUnknown UCToken) (\ChainToken {ticker, decimals} -> CYTicker ticker chainName $ decimalText decimals <$> units) $ lookup token tokens
         Nothing -> CYUnknown UCChainAndToken
-  chainLink currency (payee :| [token]) Nothing []
+  chainLink currency (address :| [token]) Nothing []
 
 moneroLink :: Text -> Q.Query -> Parser (Text -> ChainAddress, NonEmpty Text)
 moneroLink address query = do
@@ -220,12 +220,12 @@ moneroLink address query = do
   chainLink (CYTicker "XMR" Nothing amount) (address :| []) label [message]
 
 zip321Link :: Text -> Parser (Text, Bool) -> Maybe (Text, Bool) -> Q.Query -> Parser (Text -> ChainAddress, NonEmpty Text)
-zip321Link ticker payeeP path query = do
+zip321Link ticker coinAddressP path query = do
   guard $ not $ any (B.elem '.' . fst) query
-  (payee, shielded) <- oneAddress =<< param payeeP "address" query
+  (address, shielded) <- oneAddress =<< param coinAddressP "address" query
   memo <- param memoP "memo" query
   guard $ shielded || isNothing memo
-  bip21Link (CYTicker ticker Nothing) (payee :| []) [join memo] query
+  bip21Link (CYTicker ticker Nothing) (address :| []) [join memo] query
   where
     oneAddress addressParam = case (path, addressParam) of
       (Just a, Nothing) -> pure a
@@ -282,13 +282,13 @@ base58CheckP :: [ByteString] -> [ByteString] -> Parser (Maybe Text)
 base58CheckP prefixes versions = base58CheckAddress versions <$> wordP prefixes (inRange (25, 36))
 
 invoiceP :: Parser (Maybe (Text, Maybe Text))
-invoiceP = invoicePayee <$> oneCaseP ["lnbc"] (>= 37)
+invoiceP = invoiceAddress <$> oneCaseP ["lnbc"] (>= 37)
 
 lnurlP :: Parser (Maybe Text)
-lnurlP = lnurlPayee <$> oneCaseP ["lnurl1"] (>= 14)
+lnurlP = lnurlAddress <$> oneCaseP ["lnurl1"] (>= 14)
 
 offerP :: Parser (Maybe Text)
-offerP = offerPayee <$> oneCaseP ["lno1"] (>= 14)
+offerP = offerAddress <$> oneCaseP ["lno1"] (>= 14)
 
 moneroP :: Parser (Maybe Text)
 moneroP = moneroAddress <$> wordP ["4", "8"] (`elem` [95, 106])
@@ -371,8 +371,8 @@ bech32Address hrp constant validLength s = do
   bytes <- fromBase32 values
   lowerText s <$ guard (hrp' == hrp && residue == constant && validLength (B.length bytes))
 
-invoicePayee :: ByteString -> Maybe (Text, Maybe Text)
-invoicePayee s = do
+invoiceAddress :: ByteString -> Maybe (Text, Maybe Text)
+invoiceAddress s = do
   (hrp, residue, values) <- bech32 s
   invoiceAmount <- eitherToMaybe $ parseAll invoiceAmountP hrp
   (lowerText s, invoiceAmount) <$ guard (residue == bech32Const && length values >= 7 + 104)
@@ -382,15 +382,15 @@ invoiceAmountP = A.string "lnbc" *> optional (A.takeWhile1 isDigit >>= btcAmount
   where
     btcAmountP digits = (`decimalText` digitsInteger digits) <$> A.option 0 (3 <$ A.char 'm' <|> 6 <$ A.char 'u' <|> 9 <$ A.char 'n' <|> 12 <$ (guard ("0" `B.isSuffixOf` digits) *> A.char 'p'))
 
-lnurlPayee :: ByteString -> Maybe Text
-lnurlPayee s = do
+lnurlAddress :: ByteString -> Maybe Text
+lnurlAddress s = do
   (hrp, residue, values) <- bech32 s
   guard $ hrp == "lnurl" && residue == bech32Const
   U.URI {uriScheme = U.Scheme scheme, uriAuthority = Just U.Authority {authorityHost = U.Host host}} <- eitherToMaybe . U.parseURI U.laxURIParserOptions =<< fromBase32 values
   lowerText s <$ guard (B.map toLower scheme == "https" || B.map toLower scheme == "http" && ".onion" `B.isSuffixOf` B.map toLower host)
 
-offerPayee :: ByteString -> Maybe Text
-offerPayee s = lowerText s <$ guard (B.all (`B.elem` bech32Chars) $ B.drop 4 $ B.map toLower s)
+offerAddress :: ByteString -> Maybe Text
+offerAddress s = lowerText s <$ guard (B.all (`B.elem` bech32Chars) $ B.drop 4 $ B.map toLower s)
 
 cashAddress :: ByteString -> Maybe Text
 cashAddress s = do
