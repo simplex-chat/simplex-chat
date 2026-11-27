@@ -19,6 +19,8 @@ ALTER TABLE delivery_tasks ADD COLUMN update_notification INTEGER NOT NULL DEFAU
 ALTER TABLE chat_items ADD COLUMN item_original_ts TEXT;
 
 ALTER TABLE group_members ADD COLUMN member_via BLOB;
+
+CREATE INDEX idx_group_members_member_via ON group_members(user_id, group_id, member_via) WHERE member_via IS NOT NULL;
 |]
 
 down_m20261113_item_priority :: Query
@@ -32,6 +34,8 @@ WHERE member_via IS NOT NULL AND member_status = 'connected';
 
 UPDATE chat_items SET group_member_id = NULL
 WHERE item_sent = 1 AND group_member_id IS NOT NULL;
+
+DROP INDEX idx_group_members_member_via;
 
 ALTER TABLE group_members DROP COLUMN member_via;
 
