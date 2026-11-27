@@ -174,8 +174,8 @@ fun SetSimplexDomainView(
         if (editing.value) {
           SettingsActionItem(
             painterResource(MR.images.ic_open_in_new),
-            stringResource(MR.strings.register_test_name),
-            { openBrowserAlert("https://simplex.domains/#testing", uriHandler) },
+            stringResource(MR.strings.register_name_how),
+            { openBrowserAlert("https://simplex.domains", uriHandler) },
             textColor = MaterialTheme.colors.primary,
             iconColor = MaterialTheme.colors.primary
           )

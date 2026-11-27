@@ -57,7 +57,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Data.Time.Calendar (fromGregorian)
-import Data.Time.Clock (NominalDiffTime, UTCTime (..), addUTCTime, getCurrentTime)
+import Data.Time.Clock (NominalDiffTime, UTCTime (..), addUTCTime, getCurrentTime, nominalDay)
 import Data.Time.Format (defaultTimeLocale, formatTime)
 import Network.HTTP.Client (RequestBody (..), defaultManagerSettings, httpLbs, method, newManager, parseRequest, requestBody, requestHeaders, responseBody, responseHeaders)
 import Network.Socket (Family (..), SockAddr (..), SocketType (..), close, connect, defaultProtocol, socket, tupleToHostAddress)
@@ -407,7 +407,7 @@ testWorkerBoot ps = withFakeEthNode $ \node@FakeEthNode {fnUrl} -> do
 
 namesCodesChatTests :: SpecWith TestParams
 namesCodesChatTests = describe "StoreService names: prepaid codes" $ do
-  it "issues a prepaid code on /issue name for 2 years by default and for the years given, answering the usage to /bulk name" testGroupNameCodes
+  it "issues a prepaid code on /issue name for 2 years by default and for the years given, valid until the day given, answering the usage to /bulk name" testGroupNameCodes
   it "issues at most name_codes_per_day name codes a day in the group, not counting console codes" testGroupNameCodesPerDay
   it "issues prepaid codes on //issue name, checks them through the names router and revokes them on //revoke" testOperatorNameCodes
   it "revokes a prepaid code in the code's turn, after a reservation holding it" testRevokeTakesCodeTurn
@@ -424,9 +424,15 @@ testGroupNameCodes ps = do
     (expiry, issued) `shouldBe` (addMonths 3 pcCreatedAt, "Code: " <> formatNameCode one <> ". Valid until " <> fmtTime expiry <> ".")
     five <- prepaidIn . T.stripPrefix "Code: " =<< replyTo cc alice "/issue name 7 years 5"
     prepaidTerms cc five `shouldReturn` Just (7, 5, CPSFree)
+    lastDay <- utctDay . addUTCTime (40 * nominalDay) <$> getCurrentTime
+    dated <- replyTo cc alice ("/issue name 7 until " <> show lastDay)
+    datedCode <- prepaidIn $ T.stripPrefix "Code: " dated
+    dated `shouldBe` "Code: " <> formatNameCode datedCode <> ". Valid until " <> tshow lastDay <> " 23:59 UTC."
+    (pcExpiresAt =<<) <$> withTransaction (chatStore cc) (`getPrepaidCode` prepaidCodeHash datedCode) `shouldReturn` Just (UTCTime lastDay 86399)
+    replyTo cc alice "/issue name 7 until 2020-01-01" `shouldReturn` "Not issued: the date is in the past."
     replyTo cc alice "/bulk name 6 count 3" `shouldReturn` bulkUsage
     replyTo cc alice "/issue name 8 years 11" `shouldReturn` issueUsage
-    countRows cc "sx_badge_service_name_prepaid_codes" () `shouldReturn` 2
+    countRows cc "sx_badge_service_name_prepaid_codes" () `shouldReturn` 3
 
 testGroupNameCodesPerDay :: HasCallStack => TestParams -> IO ()
 testGroupNameCodesPerDay ps = do
@@ -448,7 +454,8 @@ testOperatorNameCodes ps = do
     forM_ ["name", "name 5", "name 64", "name 07", "name 7 years 1", "name 7 years 11", "name 7 gratis", "name 6 unpaid"] $ \args ->
       (args,) <$> issueRaw cc args `shouldReturn` (args, Left consoleIssueUsage)
     forM_ [1, 11] $ \years ->
-      (years,) . isLeft <$> issueNameCode cc FromConsole (fromJust $ nameLength 7) years CPSFree `shouldReturn` (years, True)
+      (years,) . isLeft <$> issueNameCode cc FromConsole (fromJust $ nameLength 7) years CPSFree Nothing `shouldReturn` (years, True)
+    issueRaw cc "name 7 until 2020-01-01" `shouldReturn` Left "Not issued: the date is in the past."
     countRows cc "sx_badge_service_name_prepaid_codes" () `shouldReturn` 0
     paid <- issueNameRaw cc "name 7 years 3 paid"
     prepaidTerms cc paid `shouldReturn` Just (7, 3, CPSPaid)
@@ -1804,7 +1811,7 @@ singleRow sql = \case
   _ -> error $ "more than one row from: " <> sql
 
 issueUsage :: Text
-issueUsage = "Usage: /issue <kind> [<length>] [years <Y> | months <M>] [uses <N>]\nname <length>: length 6–63, years 2–10\nsupporter, legend, investor: months 1–12, uses 1–1000\ne.g. /issue name 6 years 5 · /issue supporter months 12"
+issueUsage = "Usage: /issue <kind> [<length>] [years <Y> | months <M>] [uses <N>] [until <YYYY-MM-DD>]\nname <length>: length 6–63, years 2–10, until <YYYY-MM-DD>\nsupporter, legend, investor: months 1–12, uses 1–1000\ne.g. /issue name 6 years 5 · /issue supporter months 12"
 
 bulkUsage :: Text
 bulkUsage = "Usage: /bulk <kind> [months <M>] count <N>\nsupporter, legend, investor: months 1–12, count 1–100\ne.g. /bulk legend months 3 count 10"
@@ -1812,12 +1819,14 @@ bulkUsage = "Usage: /bulk <kind> [months <M>] count <N>\nsupporter, legend, inve
 -- The list is spelled out rather than taken from the service, so a change there fails here.
 expectedCommands :: [ChatBotCommand]
 expectedCommands =
-  [ CBCCommand "issue" "Generate a code" (Just "<name <length>|supporter|legend|investor> [years|months <N>] [uses <N>]"),
+  [ CBCCommand "issue" "Generate a code" (Just "<name <length>|supporter|legend|investor> [years|months <N>] [uses <N>] [until <YYYY-MM-DD>]"),
     CBCCommand "bulk" "Generate many codes" (Just "<supporter|legend|investor> [months <N>] count <N>"),
     CBCCommand "revoke" "Revoke a code" (Just "<code>"),
     CBCCommand "balance" "Show an order's balance" (Just "<reference>"),
     CBCCommand "record_refund" "Record a balance refund" (Just "<reference> <cents>"),
-    CBCCommand "close" "Close a failed order" (Just "<reference>")
+    CBCCommand "close" "Close a failed order" (Just "<reference>"),
+    CBCCommand "unavailable" "Make a name unavailable" (Just "<name>"),
+    CBCCommand "available" "Make a name available again" (Just "<name>")
   ]
 
 advertisedCommands :: HasCallStack => ChatController -> Int64 -> IO (Maybe [ChatBotCommand])

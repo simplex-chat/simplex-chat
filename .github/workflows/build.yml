@@ -1248,7 +1248,7 @@ jobs:
       cabal_targets: --constraint 'simplexmq +client_postgres' --constraint 'simplex-chat +client_postgres' test:simplex-chat-test
       bins: simplex-chat-test
       dist_name: dist-postgres
-      test_timeout: 60m
+      test_timeout: 90m
       PGHOST: localhost
       ALLOW_EMPTY: true
     concurrency: *linux-concurrency

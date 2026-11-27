@@ -6,6 +6,7 @@
 module StoreService.Group.Command
   ( GroupCmd (..),
     MoneyCmd (..),
+    NameListCmd (..),
     spelledCmd,
     CmdAction (..),
     groupCmdAction,
@@ -24,6 +25,8 @@ import Data.Maybe (fromMaybe, maybeToList)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
+import Data.Time.Clock (UTCTime (..))
+import Data.Time.Format (defaultTimeLocale, parseTimeM)
 import Simplex.Chat.Badges (BadgeType (..))
 import Simplex.Chat.Badges.Code (BadgeCode, NameLength, NamePrepaidCode, maxNameLength, minNameLength, minNameYears, nameLength, parseBadgeCode, parseNameCode)
 import Simplex.Chat.Badges.Types (BadgeCodePaymentStatus (..))
@@ -43,13 +46,17 @@ maxMonths = 12
 data GroupCmd
   = GCIssue BadgeType Int Int BadgeCodePaymentStatus
   | GCBulk BadgeType Int Int
-  | GCIssueName NameLength Int BadgeCodePaymentStatus
+  | GCIssueName NameLength Int BadgeCodePaymentStatus (Maybe UTCTime)
   | GCRevoke BadgeCode
   | GCRevokeName NamePrepaidCode
   | GCMoney MoneyCmd
+  | GCNameList NameListCmd
   deriving (Eq, Show)
 
 data MoneyCmd = MCBalance Text | MCRecordRefund Text USDCents | MCClose Text
+  deriving (Eq, Show)
+
+data NameListCmd = NLUnavailable Text | NLAvailable Text
   deriving (Eq, Show)
 
 spelledCmd :: CmdSource -> Text -> Text
@@ -93,14 +100,17 @@ cmdActionP source = A.choice (map cmdP (sourceTags source))
 cmdArgsP :: CmdSource -> CmdTag -> A.Parser GroupCmd
 cmdArgsP source = \case
   CTIssue ->
-    uncurry GCIssueName <$> nameCodeP <*> statusP (nameStatuses source)
+    uncurry GCIssueName <$> nameCodeP <*> statusP (nameStatuses source) <*> optional untilP
       <|> GCIssue <$> badgeTypeP <*> issueMonthsP source <*> maybe (pure $ optMin usesOpt) optP (issueUses source) <*> statusP (badgeStatuses source)
   CTBulk -> GCBulk <$> badgeTypeP <*> optP monthsOpt <*> countP
   CTRevoke -> GCRevoke <$> codeP <|> GCRevokeName <$> prepaidCodeP
   CTBalance -> GCMoney <$> balanceArgsP
   CTRecordRefund -> GCMoney <$> recordRefundArgsP
   CTClose -> GCMoney <$> closeArgsP
+  CTUnavailable -> GCNameList . NLUnavailable <$> nameArgP
+  CTAvailable -> GCNameList . NLAvailable <$> nameArgP
   where
+    nameArgP = safeDecodeUtf8 <$> A.takeWhile1 (const True)
     countP = A.space *> optValueP countOpt
     statusP statuses = A.option CPSFree (A.space *> mfilter (`elem` statuses) textTokenP)
 
@@ -143,6 +153,13 @@ optValueP opt = A.string (encodeUtf8 (optKey opt)) *> A.space *> boundedInt opt
 -- | "name <length> [years <Y>]", the length and years of a prepaid name code.
 nameCodeP :: A.Parser (NameLength, Int)
 nameCodeP = A.string (encodeUtf8 nameKind) *> A.char ' ' *> ((,) <$> nameLengthP <*> optP yearsOpt)
+
+untilP :: A.Parser UTCTime
+untilP = A.space *> A.string (encodeUtf8 untilKey) *> A.space *> (A.takeWhile1 (not . isSpace) >>= maybe (fail "not a date") (pure . (`UTCTime` 86399)) . parseTimeM False defaultTimeLocale "%Y-%m-%d" . T.unpack . safeDecodeUtf8)
+
+untilKey, untilArg :: Text
+untilKey = "until"
+untilArg = untilKey <> " <YYYY-MM-DD>"
 
 -- | A code's text carries the length as typed, so a leading zero is refused.
 nameLengthP :: A.Parser NameLength
@@ -192,12 +209,12 @@ textTokenP = do
   maybe (fail "invalid value") pure $ textDecode $ safeDecodeUtf8 t
 
 -- The advertised menu lists the commands in this order.
-data CmdTag = CTIssue | CTBulk | CTRevoke | CTBalance | CTRecordRefund | CTClose
+data CmdTag = CTIssue | CTBulk | CTRevoke | CTBalance | CTRecordRefund | CTClose | CTUnavailable | CTAvailable
   deriving (Bounded, Enum)
 
 sourceTags :: CmdSource -> [CmdTag]
 sourceTags = \case
-  FromConsole -> [CTIssue, CTRevoke, CTBalance, CTRecordRefund, CTClose]
+  FromConsole -> [CTIssue, CTRevoke, CTBalance, CTRecordRefund, CTClose, CTUnavailable, CTAvailable]
   FromGroup -> [minBound .. maxBound]
 
 cmdName :: CmdTag -> Text
@@ -208,6 +225,8 @@ cmdName = \case
   CTBalance -> "balance"
   CTRecordRefund -> "record_refund"
   CTClose -> "close"
+  CTUnavailable -> "unavailable"
+  CTAvailable -> "available"
 
 cmdLabel :: CmdTag -> Text
 cmdLabel = \case
@@ -217,6 +236,8 @@ cmdLabel = \case
   CTBalance -> "Show an order's balance"
   CTRecordRefund -> "Record a balance refund"
   CTClose -> "Close a failed order"
+  CTUnavailable -> "Make a name unavailable"
+  CTAvailable -> "Make a name available again"
 
 -- The menu hints and the usage replies are built from the same kinds, options and bounds, so they cannot drift apart.
 cmdParams :: CmdSource -> CmdTag -> Text
@@ -227,8 +248,11 @@ cmdParams source = \case
   CTBalance -> referenceArg
   CTRecordRefund -> referenceArg <> " " <> optVar centsOpt
   CTClose -> referenceArg
+  CTUnavailable -> nameParam
+  CTAvailable -> nameParam
   where
     referenceArg = "<reference>"
+    nameParam = "<name>"
     kindParams kinds opts = "<" <> T.intercalate "|" kinds <> "> [" <> T.intercalate "|" (map optKey opts) <> " <N>]"
 
 cmdUsage :: CmdSource -> CmdTag -> Text
@@ -238,28 +262,30 @@ cmdUsage source = \case
       source
       CTIssue
       ("[" <> optVar lengthOpt <> "] [" <> optArg yearsOpt <> " | " <> optArg monthsOpt <> "]" <> issueExtraArgs source)
-      [(nameArg, [lengthOpt, yearsOpt], nameStatuses source), (badgeKindsText, monthsOpt : maybeToList (issueUses source), badgeStatuses source)]
+      [(nameArg, [lengthOpt, yearsOpt], nameStatuses source, [untilArg]), (badgeKindsText, monthsOpt : maybeToList (issueUses source), badgeStatuses source, [])]
       ["name 6 years 5", "supporter months 12"]
-  CTBulk -> kindUsage source CTBulk ("[" <> optArg monthsOpt <> "] " <> optArg countOpt) [(badgeKindsText, [monthsOpt, countOpt], [])] ["legend months 3 count 10"]
+  CTBulk -> kindUsage source CTBulk ("[" <> optArg monthsOpt <> "] " <> optArg countOpt) [(badgeKindsText, [monthsOpt, countOpt], [], [])] ["legend months 3 count 10"]
   CTRevoke -> plainUsage CTRevoke
   CTBalance -> plainUsage CTBalance
   CTRecordRefund -> plainUsage CTRecordRefund
   CTClose -> plainUsage CTClose
+  CTUnavailable -> plainUsage CTUnavailable
+  CTAvailable -> plainUsage CTAvailable
   where
     plainUsage tag = "Usage: " <> cmdText source tag (cmdParams source tag)
     badgeKindsText = T.intercalate ", " badgeKinds
 
-kindUsage :: CmdSource -> CmdTag -> Text -> [(Text, [CmdOpt], [BadgeCodePaymentStatus])] -> [Text] -> Text
+kindUsage :: CmdSource -> CmdTag -> Text -> [(Text, [CmdOpt], [BadgeCodePaymentStatus], [Text])] -> [Text] -> Text
 kindUsage source tag kindArgs kinds examples =
   T.intercalate "\n" $
     ["Usage: " <> cmdText source tag ("<kind> " <> kindArgs)]
-      <> map (\(kind, opts, statuses) -> kind <> ": " <> T.intercalate ", " (map optBounds opts <> [statusesText statuses | not (null statuses)])) kinds
+      <> map (\(kind, opts, statuses, lastArgs) -> kind <> ": " <> T.intercalate ", " (map optBounds opts <> [statusesText statuses | not (null statuses)] <> lastArgs)) kinds
       <> ["e.g. " <> T.intercalate " · " (map (cmdText source tag) examples)]
   where
     optBounds CmdOpt {optKey, optMin, optMax} = optKey <> " " <> tshow optMin <> "–" <> tshow optMax
 
 issueExtraArgs :: CmdSource -> Text
-issueExtraArgs source = T.concat [" [" <> arg <> "]" | arg <- map optArg (maybeToList $ issueUses source) <> [statusesText statuses | not (null statuses)]]
+issueExtraArgs source = T.concat [" [" <> arg <> "]" | arg <- map optArg (maybeToList $ issueUses source) <> [statusesText statuses | not (null statuses)] <> [untilArg]]
   where
     statuses = badgeStatuses source
 
@@ -286,6 +312,8 @@ cmdMinRole = \case
   CTBalance -> GROwner
   CTRecordRefund -> GROwner
   CTClose -> GROwner
+  CTUnavailable -> GRAdmin
+  CTAvailable -> GRAdmin
 
 -- | This is the reply to a well-formed command from a sender who may not run it; Nothing means silence.
 cmdRefusal :: CmdTag -> Maybe Text
@@ -297,3 +325,5 @@ cmdRefusal = \case
   CTBalance -> Nothing
   CTRecordRefund -> Nothing
   CTClose -> Nothing
+  CTUnavailable -> Nothing
+  CTAvailable -> Nothing
