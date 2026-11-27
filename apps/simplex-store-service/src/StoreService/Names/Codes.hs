@@ -14,6 +14,7 @@ module StoreService.Names.Codes
     releaseCode,
     spendLandedCode,
     issueNameCode,
+    codeExpiry,
     revokeNameCode,
   )
 where
@@ -24,7 +25,8 @@ import Data.Functor ((<&>))
 import Data.Maybe (fromMaybe, isJust)
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Time.Clock (UTCTime)
+import Data.Time.Calendar (Day)
+import Data.Time.Clock (UTCTime (..))
 import Simplex.Chat.Badges.Code (NameLength, NamePrepaidCode, minNameYears, nameLengthInt, namePrepaidCodeHash, randomNamePrepaidCode)
 import Simplex.Chat.Badges.Ledger (addMonths)
 import Simplex.Chat.Badges.Types (BadgeCodePaymentStatus (..))
@@ -132,9 +134,13 @@ afterWrite turns st codeId change write = do
 codeValidMonths :: Integer
 codeValidMonths = 3
 
+-- | The end of the given day, UTC, or 3 calendar months from now.
+codeExpiry :: UTCTime -> Maybe Day -> UTCTime
+codeExpiry now = maybe (addMonths codeValidMonths now) (`UTCTime` 86399)
+
 -- | The code table keeps only the hash, so the caller must deliver the code.
-issueNameCode :: ChatController -> CmdSource -> NameLength -> Int -> BadgeCodePaymentStatus -> IO (Either String (NamePrepaidCode, UTCTime))
-issueNameCode cc issuer len years paymentStatus
+issueNameCode :: ChatController -> CmdSource -> NameLength -> Int -> BadgeCodePaymentStatus -> Maybe Day -> IO (Either String (NamePrepaidCode, UTCTime))
+issueNameCode cc issuer len years paymentStatus lastDay
   | years < minNameYears || years > maxNameYears = Left outside <$ logError ("names: " <> T.pack outside)
   | otherwise = issue (3 :: Int)
   where
@@ -142,7 +148,7 @@ issueNameCode cc issuer len years paymentStatus
     issue retries = do
       code <- randomNamePrepaidCode (random cc) len
       now <- currentSecond
-      let expiresAt = addMonths codeValidMonths now
+      let expiresAt = codeExpiry now lastDay
           new = NewPrepaidCode {npcCodeHash = prepaidCodeHash code, npcMinLength = nameLengthInt len, npcYears = years, npcPaymentStatus = paymentStatus, npcExpiresAt = Just expiresAt, npcIssuer = issuer}
       withDB' "issueNameCode" cc (\db -> insertPrepaidCode db new now) >>= \case
         Right (Right _) -> pure $ Right (code, expiresAt)

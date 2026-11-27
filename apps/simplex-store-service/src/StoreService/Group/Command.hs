@@ -25,6 +25,8 @@ import Data.Maybe (fromMaybe, maybeToList)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
+import Data.Time.Calendar (Day)
+import Data.Time.Format (defaultTimeLocale, parseTimeM)
 import Simplex.Chat.Badges (BadgeType (..))
 import Simplex.Chat.Badges.Code (BadgeCode, NameLength, NamePrepaidCode, maxNameLength, minNameLength, minNameYears, nameLength, parseBadgeCode, parseNameCode)
 import Simplex.Chat.Badges.Types (BadgeCodePaymentStatus (..))
@@ -44,7 +46,7 @@ maxMonths = 12
 data GroupCmd
   = GCIssue BadgeType Int Int BadgeCodePaymentStatus
   | GCBulk BadgeType Int Int
-  | GCIssueName NameLength Int BadgeCodePaymentStatus
+  | GCIssueName NameLength Int BadgeCodePaymentStatus (Maybe Day)
   | GCRevoke BadgeCode
   | GCRevokeName NamePrepaidCode
   | GCMoney MoneyCmd
@@ -98,7 +100,7 @@ cmdActionP source = A.choice (map cmdP (sourceTags source))
 cmdArgsP :: CmdSource -> CmdTag -> A.Parser GroupCmd
 cmdArgsP source = \case
   CTIssue ->
-    uncurry GCIssueName <$> nameCodeP <*> statusP (nameStatuses source)
+    uncurry GCIssueName <$> nameCodeP <*> statusP (nameStatuses source) <*> optional untilP
       <|> GCIssue <$> badgeTypeP <*> issueMonthsP source <*> maybe (pure $ optMin usesOpt) optP (issueUses source) <*> statusP (badgeStatuses source)
   CTBulk -> GCBulk <$> badgeTypeP <*> optP monthsOpt <*> countP
   CTRevoke -> GCRevoke <$> codeP <|> GCRevokeName <$> prepaidCodeP
@@ -151,6 +153,14 @@ optValueP opt = A.string (encodeUtf8 (optKey opt)) *> A.space *> boundedInt opt
 -- | "name <length> [years <Y>]", the length and years of a prepaid name code.
 nameCodeP :: A.Parser (NameLength, Int)
 nameCodeP = A.string (encodeUtf8 nameKind) *> A.char ' ' *> ((,) <$> nameLengthP <*> optP yearsOpt)
+
+-- | "until <YYYY-MM-DD>", the last day a name code is valid.
+untilP :: A.Parser Day
+untilP = A.space *> A.string (encodeUtf8 untilKey) *> A.space *> (A.takeWhile1 (not . isSpace) >>= maybe (fail "not a date") pure . parseTimeM False defaultTimeLocale "%Y-%m-%d" . T.unpack . safeDecodeUtf8)
+
+untilKey, untilArg :: Text
+untilKey = "until"
+untilArg = untilKey <> " <YYYY-MM-DD>"
 
 -- | A code's text carries the length as typed, so a leading zero is refused.
 nameLengthP :: A.Parser NameLength
@@ -253,9 +263,9 @@ cmdUsage source = \case
       source
       CTIssue
       ("[" <> optVar lengthOpt <> "] [" <> optArg yearsOpt <> " | " <> optArg monthsOpt <> "]" <> issueExtraArgs source)
-      [(nameArg, [lengthOpt, yearsOpt], nameStatuses source), (badgeKindsText, monthsOpt : maybeToList (issueUses source), badgeStatuses source)]
+      [(nameArg, [lengthOpt, yearsOpt], nameStatuses source, [untilArg]), (badgeKindsText, monthsOpt : maybeToList (issueUses source), badgeStatuses source, [])]
       ["name 6 years 5", "supporter months 12"]
-  CTBulk -> kindUsage source CTBulk ("[" <> optArg monthsOpt <> "] " <> optArg countOpt) [(badgeKindsText, [monthsOpt, countOpt], [])] ["legend months 3 count 10"]
+  CTBulk -> kindUsage source CTBulk ("[" <> optArg monthsOpt <> "] " <> optArg countOpt) [(badgeKindsText, [monthsOpt, countOpt], [], [])] ["legend months 3 count 10"]
   CTRevoke -> plainUsage CTRevoke
   CTBalance -> plainUsage CTBalance
   CTRecordRefund -> plainUsage CTRecordRefund
@@ -266,17 +276,17 @@ cmdUsage source = \case
     plainUsage tag = "Usage: " <> cmdText source tag (cmdParams source tag)
     badgeKindsText = T.intercalate ", " badgeKinds
 
-kindUsage :: CmdSource -> CmdTag -> Text -> [(Text, [CmdOpt], [BadgeCodePaymentStatus])] -> [Text] -> Text
+kindUsage :: CmdSource -> CmdTag -> Text -> [(Text, [CmdOpt], [BadgeCodePaymentStatus], [Text])] -> [Text] -> Text
 kindUsage source tag kindArgs kinds examples =
   T.intercalate "\n" $
     ["Usage: " <> cmdText source tag ("<kind> " <> kindArgs)]
-      <> map (\(kind, opts, statuses) -> kind <> ": " <> T.intercalate ", " (map optBounds opts <> [statusesText statuses | not (null statuses)])) kinds
+      <> map (\(kind, opts, statuses, lastArgs) -> kind <> ": " <> T.intercalate ", " (map optBounds opts <> [statusesText statuses | not (null statuses)] <> lastArgs)) kinds
       <> ["e.g. " <> T.intercalate " · " (map (cmdText source tag) examples)]
   where
     optBounds CmdOpt {optKey, optMin, optMax} = optKey <> " " <> tshow optMin <> "–" <> tshow optMax
 
 issueExtraArgs :: CmdSource -> Text
-issueExtraArgs source = T.concat [" [" <> arg <> "]" | arg <- map optArg (maybeToList $ issueUses source) <> [statusesText statuses | not (null statuses)]]
+issueExtraArgs source = T.concat [" [" <> arg <> "]" | arg <- map optArg (maybeToList $ issueUses source) <> [statusesText statuses | not (null statuses)] <> [untilArg]]
   where
     statuses = badgeStatuses source
 

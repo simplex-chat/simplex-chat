@@ -1741,8 +1741,9 @@ The command is sent to the running service in `--run-cli` mode, not a way to sta
 ```
 //issue <badge_type> [months <M>] [paid|unpaid|free]
 //issue supporter months 12
-//issue name <length> [years <Y>] [paid|free]
+//issue name <length> [years <Y>] [paid|free] [until <YYYY-MM-DD>]
 //issue name 7 years 5
+//issue name 7 until 2027-03-31
 ```
 
 A script passes one command with `--execute`, with the service stopped, and reads the `Code: ...`
@@ -1761,8 +1762,8 @@ code row when the invoice is created, and settlement is what marks it paid.
 `<length>` letters, 6 to 63, for `years` years, 2 to 10 (default 2), or 2 for a community name. Its status is
 `paid` or `free`: nothing marks a name code paid later, so `unpaid` is refused. Without `[names]`,
 `//issue name` is answered that names are not enabled, and issues nothing. A name code reserves a
-name until 3 calendar months after its issue, and the answer says so: `Code: SN7-…. Valid until
-<time> UTC.` An order already holding the code keeps it past that time, also at a take, so a name
+name until 3 calendar months after its issue, or with `until` to the end of the given day, UTC, and
+the answer says so: `Code: SN7-…. Valid until <time> UTC.` A day already past is refused. An order already holding the code keeps it past that time, also at a take, so a name
 selected for the order afterwards is accepted with the code until that time or a calendar month
 after the take, whichever is later, then refused `code_expired`, and refused `code_invalid` once
 the code is revoked. A code order not registered a calendar month after its name
