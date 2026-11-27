@@ -86,7 +86,7 @@
 <text x="1092.0" y="407.0" font-size="12.5" font-weight="600" fill="#2c8a4a" text-anchor="middle">✓</text>
 <text x="20" y="448.0" font-size="11.5" font-weight="normal" fill="#44546a" text-anchor="start">As for badges: Pay in App Store-served builds; in store builds, Buy in browser in the US and the code button elsewhere (BadgesSupportSimplexView); both in other builds.</text>
 <text x="20" y="466.0" font-size="11.5" font-weight="normal" fill="#44546a" text-anchor="start">One recovery key per device: 24 words, made at the first Register, with an account of them for each name (D41). Restore is offered on a device without them.</text>
-<text x="20" y="484.0" font-size="11.5" font-weight="normal" fill="#44546a" text-anchor="start">A name bought on simplex.domains stays controlled by its name code, and is shown on the profile as today (Q23).</text>
+<text x="20" y="484.0" font-size="11.5" font-weight="normal" fill="#44546a" text-anchor="start">Buy in browser: the app&#x27;s order, paid on simplex.domains (Q3). A name bought on the site: moved into the app with its name code, or shown on the profile (D44).</text>
 <text x="20" y="504.0" font-size="11.5" font-weight="600" fill="#33475f" text-anchor="start">Legend:</text>
 <rect x="80" y="493" width="14" height="14" rx="3" fill="#e2f4e6" stroke="#2c8a4a" stroke-width="1.6"/>
 <text x="100" y="504.0" font-size="11.5" font-weight="normal" fill="#1c2b3f" text-anchor="start">offered</text>

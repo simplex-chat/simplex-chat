@@ -2,7 +2,7 @@
 
 The owner's decisions that bind this plan, for the agents who implement and review it. Each entry: the decision, its date, its place, the owner's words, and the rules of part 1 it shapes. "Item" is the message number in the owner's conversation with the agents. Decisions made for the names page or the store service are entered as made; part 1 states where its rules apply them to the app. A claim about the owner's intent without the owner's words or commit is kept in the questions, not here.
 
-The earlier work is material, and none of it is entered here: spaced4ndy's and spaced4ndy-agents' pull requests, brenzi's #7530, brenzi-agent's #8026, and brenzi's wallet and in-app wallet branches (#7355, #7382 and the `ab/wallet*` branches). The owner's wallet #7684 is the base of the plan (D41). Answers that brenzi's #7530 and brenzi-agent's #8026 record without the owner's words are Q21. Where brenzi's wallet work departs from a decision below, the departure is a question: Q9, Q22 and Q25.
+The earlier work is material: spaced4ndy's and spaced4ndy-agents' pull requests, brenzi's #7530, brenzi-agent's #8026, and brenzi's wallet and in-app wallet branches (#7355, #7382 and the `ab/wallet*` branches). The owner's wallet #7684 is the base of the plan (D41). Where the pictures of that material answer a question, the answer is entered in the last section, D42 to D52, with its picture as source. brenzi's in-app wallet departs from D5, D12, D20 and D21, which stand.
 
 ## Scope
 
@@ -49,7 +49,7 @@ The earlier work is material, and none of it is entered here: spaced4ndy's and s
 - Date: 2026-11-22
 - Place: conversation, store service review, item 10088
 - Words: "fyi, we launch with $100 all. But let's keep different prices in tests just in case we want to change it"
-- Shapes: R3, Q22
+- Shapes: R3
 
 ## Codes
 
@@ -79,7 +79,7 @@ The earlier work is material, and none of it is entered here: spaced4ndy's and s
 - Date: 2026-11-21
 - Place: conversation, #8243, item 8115
 - Words: "The key is the name, as simple as that. Order can only have one name. Key can only have one name"
-- Shapes: R1, R6, Q22
+- Shapes: R1, R6
 
 ### D10. A take resets the order's name; nothing moves
 - Decision: the order is reset to "name not selected" and keeps its payment or code; selecting a name again is an ordinary order; unspent money is spent on one name or refunded.
@@ -100,14 +100,14 @@ The earlier work is material, and none of it is entered here: spaced4ndy's and s
 - Date: 2026-11-18
 - Place: conversation, store service review, item 5680
 - Words: "Service receives both commitment AND signed transaction before issuing invoice. In this case further registration no longer depends on user being online. It can happen as soon as payment completes. So the user simply: 1) sends one request (terms acceptance, commitment, signed transaction included) 2) receives invoice 3) pays 4) polls the service to monitor registration status."
-- Shapes: R5, Q22
+- Shapes: R5
 
 ### D13. The service learns the names of unpaid orders
 - Decision: accepted as the cost of D12; it may be disclosed.
 - Date: 2026-11-18
 - Place: conversation, item 5689
 - Words: "so the only threat model degradation here would be that service learns about names of unpaid orders. We may explicitely disclose it"
-- Shapes: Q4
+- Shapes: D43
 
 ### D14. Operators hear of unregistered paid orders within 3 hours; an order waiting for its owner fails after 3 days unread
 - Date: 2026-11-18
@@ -149,14 +149,14 @@ The earlier work is material, and none of it is entered here: spaced4ndy's and s
 - Date: 2026-11-10
 - Place: conversation, on the names conditions
 - Words: ""Your" implies ownership, and given that we are getting opinion that it's not value or obligation, ownership implies value. Correct word is "controls"."
-- Shapes: R12, Q22
+- Shapes: R12
 
 ### D21. The names page's texts are approved
 - Decision: the page's texts, as reviewed on 2026-11-26, are approved; part 1 uses the same text for the same situation in the app.
 - Date: 2026-11-26
 - Place: conversation, item 15910
 - Words: "ok, all approved, execute"
-- Shapes: R12, Q22
+- Shapes: R12
 
 ### D22. A title says what the person can do
 - Date: 2026-11-19
@@ -221,11 +221,11 @@ The earlier work is material, and none of it is entered here: spaced4ndy's and s
 
 ## Terms
 
-### D31. The names terms are conditions of use, apart from purchase terms
+### D31 (Q14). The names terms are conditions of use, apart from purchase terms
 - Date: 2026-11-02
 - Place: the owner's answer on the names conditions proposal, question q110, choice "at checkout"
 - Words: "Yes, the terms should be focussed on usage, they are like conditions of use, decoupled from purchase terms."
-- Shapes: Q14
+- Shapes: purchase terms linked at checkout
 
 ## Store service data
 
@@ -261,7 +261,7 @@ The earlier work is material, and none of it is entered here: spaced4ndy's and s
 - Date: 2026-11-25
 - Place: conversation on #8073, as quoted in the decision record supplied with this task
 - Words: "One stage we are missing, consistently, is spelling out user stories"
-- Shapes: part 1, Q5
+- Shapes: part 1
 
 ### D37. Recommendations from what the person sees
 - Date: 2026-11-21
@@ -277,8 +277,59 @@ The earlier work is material, and none of it is entered here: spaced4ndy's and s
 
 ## Tests
 
-### D39. App tests: views against data, and one minimal end-to-end case
+### D39 (Q17). App tests: views against data, and one minimal end-to-end case
 - Date: 2026-11-16
 - Place: conversation, item 815
 - Words: "That's why they need to be minimal and orthogonal, and we can't just adopt that PR wholesale - there are too many tests that can be better as unit tests. Even these tests - can we maybe test views against data, and have a minimal e2e test?"
-- Shapes: Q17, part 3
+- Shapes: part 3
+
+## Answers that follow from the existing pictures
+
+Each answer below follows from a picture of the existing UX design, named as its source: #7951's screens (`plans/2026-10-30-names-in-app-purchases/`, lanes 1 to 6, `names-life.svg`), the committed sketches (`plans/sketches/2026-09-18-names-lookup-flows.excalidraw`, `plans/sketches/2026-09-23-badge-in-app-checkout.excalidraw`, `plans/2026-10-13-badge-subscription-renewals-sketches/`), or an earlier decision. Where a picture conflicts with a decision, the question stays.
+- Date: 2026-11-27
+- Place: SimpleX channel, items 16434 and 16447
+- Words: "some of the things in the plan follow from UX design - is it not committed/" (item 16434); "but some of the answers follow from pictures - did you process them? or you try to avoid it?" (item 16447)
+
+### D42 (Q5, Q26). One release, with buying, signing with the account keys, and restore from the 24 words
+- Sources: `owner-decisions.md`, Process: "A staged release, a version-dependent UI, or states that members or views see differently are bad UX"; #7951 lane 6, screens 6·1 to 6·3; #7951 `names-life.svg`: "restore it on a new phone from the 24 words".
+- Shapes: R17, flows 1 and 6
+
+### D43 (Q4). Each payment is linked to its name, as on the names page, and the Privacy Policy states it
+- Sources: #7951 section 11, Q6: "Register at once, fine for v1; `PRIVACY.md` states it"; #7951 section 2, non-goals: "Blind-signed codes".
+- Shapes: Q3, part 3
+
+### D44 (Q23, Q12). A name bought on simplex.domains is brought in by its name code: moved into the app, or shown on the profile
+- Sources: #7951 lane 3: 3·0, the site's "Open in SimpleX", the code filled in; 3·1 "Bring in a name", with "Move into this app" and "Show on your profile"; 3·2 Moving; 3·3 moved. The badge sketch, screen A5: the code leaves the page by link.
+- Shapes: R19, flow 4
+
+### D45 (Q25, Q29). For a restore, the app asks what each account holds, until 20 accounts in a row hold none, and adds the names to the active profile
+- Sources: #7951 lane 6: 6·2 "Names found are added to Alice, the profile you are using now"; 6·2a "Looking for your names"; 6·3 "Stopped after 20 unused keys in a row"; #7951 section 6.10, the scan over the resolver's owned-names lookup. The badge sketch `restore.svg`: Restore moves a purchase to the active profile.
+- Shapes: R17, flow 6
+
+### D46 (Q27, Q28). SimpleX names under Advanced settings, per profile, with the device's recovery key; the 24 words shown later after the device's check
+- Sources: #7951 lane 5: 5·1 Settings, Advanced settings, SimpleX names; 5·2 the profile's names, Restore purchases, the recovery key row; 5·3 "Your recovery key", Reveal; #7951 section 6.6, 1·4a, "The check".
+- Shapes: R16, R18, flow 5
+
+### D47 (Q6, Q8). Search answers are read from the name lookup; when a name is taken first, the payment is kept for another name
+- Sources: the lookup sketch, 2c "Available" from the registry; #7951 1·5's re-check, "This name is no longer available"; #7951 lane 1b: 1·7 Taken, "What you paid is kept for another name"; 1·10 "Register with your payment"; #7951 `names-life.svg`: "if someone registers it first, the payment stays for another name".
+- Shapes: R6, R7, flow 3
+
+### D48 (Q10). A name may be registered to open nothing
+- Sources: #7951 lane 1a, "1·5 · Opens nothing": the ✕ on Opens, "Nothing", "Undo", "Nobody will find you by it."; #7951 lane 5, 5·2: "Opens nothing".
+- Shapes: R20
+
+### D49 (Q13). After Register, Renew or Re-register in a name alert, the app shows its own flow
+- Sources: the lookup sketch's footnote: "Register, Renew and Re-register open simplex.domains until the wallet (simplex-chat#7475) lands"; 4c "Renew opens the how-to until the wallet lands, then renews here"; #7951 1·1: the alerts' Register and Re-register open 1·2 with the name searched.
+- Shapes: R8
+
+### D50 (Q15). Unfinished name purchases are included in Restore purchases, as for badges
+- Sources: #7951 lane 5, 5·2 "Restore purchases"; #7951 section 6.5, "a payment without a name → the search, the payment kept; a known name → its order"; the badge sketch `restore.svg`.
+- Shapes: R4, R13
+
+### D51 (Q24, in part). The 24 words are made and shown at the first Register on the device, before Check your order; the step is skipped for later orders
+- Sources: #7951 lane 1a: 1·4 "Set up your recovery key", "Create a new key", "I already have a key"; 1·4a "Your key is created"; #7684's RFC, "Profiles and accounts": an account is created on first use.
+- Shapes: R15, flow 1
+
+### D52 (Q3, in part). One store product, $100 at the store's nearest price point, for 2 years
+- Sources: D5; #7951 section 6.2: "SimpleX name", "Registers one name for 2 years", "$100, at the nearest price point".
+- Shapes: R3

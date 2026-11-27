@@ -22,7 +22,7 @@
 <text x="46" y="416.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">The store receipt held until answered,</text>
 <text x="46" y="431.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">as a badge&#x27;s receipt is held</text>
 <text x="46" y="446.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">The name set on the address or channel</text>
-<text x="46" y="461.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">Restore: a find request for each account</text>
+<text x="46" y="461.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">Restore: the names each account holds</text>
 <text x="46" y="476.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start"></text>
 <text x="46" y="491.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">Fixed in the build: chain id, contracts,</text>
 <text x="46" y="506.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">namespace, term, dispute days</text>
@@ -63,9 +63,9 @@
 <text x="800" y="523.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">service, its registrar key paying the gas</text>
 <rect x="420" y="570" width="300" height="90" rx="10" fill="#fdeaf2" stroke="#b8487a" stroke-width="1.6"/>
 <text x="430" y="590.0" font-size="12.5" font-weight="600" fill="#b8487a" text-anchor="start">simplex.domains in a browser</text>
-<text x="430" y="608.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">A name bought there stays controlled by</text>
-<text x="430" y="623.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">its name code; the person sets it on the</text>
-<text x="430" y="638.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">address or channel, as today (Q23)</text>
+<text x="430" y="608.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">Pays the invoice of the app&#x27;s order (Q3);</text>
+<text x="430" y="623.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">a name bought there is moved into the</text>
+<text x="430" y="638.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">app, or shown on the profile (D44)</text>
 <path d="M 334 150 L 420 126" fill="none" stroke="#c77a12" stroke-width="1.5" marker-end="url(#hc77a12)"/>
 <text x="378" y="124" font-size="12" font-weight="700" fill="#c77a12" text-anchor="middle">2</text>
 <path d="M 334 300 L 420 300" fill="none" stroke="#2f6fd0" stroke-width="1.5" marker-end="url(#h2f6fd0)"/>
@@ -86,5 +86,5 @@
 <text x="170" y="622" font-size="11" font-weight="normal" fill="#b8487a" text-anchor="middle">link only where badges link</text>
 <text x="20" y="690.0" font-size="11.5" font-weight="normal" fill="#44546a" text-anchor="start">A store purchase: 1 the order is recorded in the app with its account; 2 the store&#x27;s sheet; 3 the receipt and the order signed by its account, in one request;</text>
 <text x="20" y="708.0" font-size="11.5" font-weight="normal" fill="#44546a" text-anchor="start">4 the service verifies the receipt; 5 the service registers the name, and the app reads the order&#x27;s phase. A free name code: 1, then 3 with the code, then 5.</text>
-<text x="20" y="726.0" font-size="11.5" font-weight="normal" fill="#44546a" text-anchor="start">A restore: the 24 words entered; the core asks the store service for each account&#x27;s orders, one request signed by each account (Q25).</text>
+<text x="20" y="726.0" font-size="11.5" font-weight="normal" fill="#44546a" text-anchor="start">A restore: the 24 words entered; the app asks the name lookup over SMP routers what each account holds (D45).</text>
 </svg>

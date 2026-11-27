@@ -23,8 +23,8 @@
 <text x="310" y="259.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">without them</text>
 <rect x="640" y="206" width="300" height="66" rx="10" fill="#e3eefc" stroke="#2f6fd0" stroke-width="1.6"/>
 <text x="650" y="226.0" font-size="12.5" font-weight="600" fill="#2f6fd0" text-anchor="start">Scanned</text>
-<text x="650" y="244.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">find for each account until 20 in a row</text>
-<text x="650" y="259.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">hold none (Q25); counter past them</text>
+<text x="650" y="244.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">the names of each account until 20 in a</text>
+<text x="650" y="259.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">row hold none (D45); counter past them</text>
 <path d="M 226 150 L 300 150" fill="none" stroke="#7a4fc4" stroke-width="1.5" marker-end="url(#h7a4fc4)"/>
 <text x="263" y="144.0" font-size="10.5" font-weight="normal" fill="#7a4fc4" text-anchor="middle">first Register</text>
 <path d="M 550 150 L 640 150" fill="none" stroke="#7a4fc4" stroke-width="1.5" marker-end="url(#h7a4fc4)"/>
@@ -34,14 +34,14 @@
 <path d="M 550 236 L 640 236" fill="none" stroke="#7a4fc4" stroke-width="1.5" marker-end="url(#h7a4fc4)"/>
 <text x="595" y="230.0" font-size="10.5" font-weight="normal" fill="#7a4fc4" text-anchor="middle">scan</text>
 <path d="M 790 206 L 790 186" fill="none" stroke="#7a4fc4" stroke-width="1.5" marker-end="url(#h7a4fc4)"/>
-<rect x="990" y="120" width="264" height="152" rx="10" fill="#e2f4e6" stroke="#2c8a4a" stroke-width="1.6"/>
-<text x="1000" y="140.0" font-size="12.5" font-weight="600" fill="#2c8a4a" text-anchor="start">Store service, for the wallet</text>
-<text x="1000" y="158.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">find: an account&#x27;s orders, to a</text>
-<text x="1000" y="173.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">request that account signs</text>
+<rect x="990" y="120" width="264" height="152" rx="10" fill="#e8eaef" stroke="#5b6475" stroke-width="1.6"/>
+<text x="1000" y="140.0" font-size="12.5" font-weight="600" fill="#5b6475" text-anchor="start">Name lookup, for the wallet</text>
+<text x="1000" y="158.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">the names each account holds,</text>
+<text x="1000" y="173.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">over SMP routers (D45)</text>
 <text x="1000" y="188.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start"></text>
-<text x="1000" y="203.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">Orders found rebuild the app&#x27;s</text>
-<text x="1000" y="218.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">records: Registering, Registered,</text>
-<text x="1000" y="233.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">No longer available</text>
+<text x="1000" y="203.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">Orders under way: the store</text>
+<text x="1000" y="218.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">service&#x27;s find, signed by the</text>
+<text x="1000" y="233.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">account, rebuilds their records</text>
 <path d="M 940 239 L 990 239" fill="none" stroke="#2f6fd0" stroke-width="1.5" marker-end="url(#h2f6fd0)"/>
 <rect x="20" y="308" width="230" height="34" rx="10" fill="#fff0dc" stroke="#c77a12" stroke-width="1.6"/>
 <text x="135.0" y="330.0" font-size="13.5" font-weight="700" fill="#c77a12" text-anchor="middle">Store purchase</text>
