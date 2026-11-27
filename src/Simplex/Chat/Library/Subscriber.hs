@@ -1791,6 +1791,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
     checkSendAsMember :: GroupInfo -> Maybe GroupMember -> Maybe MemberRef -> (Maybe GroupMember -> CM (Maybe DeliveryTaskContext)) -> CM (Maybe DeliveryTaskContext)
     checkSendAsMember _ sender_ Nothing a = a sender_
     checkSendAsMember gInfo sender_ (Just MemberRef {memberId, memberName}) a = case sender_ of
+      Just sender | blockedByAdmin sender -> a sender_
       Just sender@GroupMember {memberRole, memberVia = Nothing}
         | not (useRelays' gInfo) && memberRole >= GRAdmin -> do
             unknownRole <- unknownMemberRole gInfo
