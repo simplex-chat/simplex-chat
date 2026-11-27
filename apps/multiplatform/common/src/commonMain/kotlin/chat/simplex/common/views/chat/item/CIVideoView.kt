@@ -85,8 +85,10 @@ fun CIVideoView(
       }
 
       val uri = remember(filePath) { getAppFileUri(f.substringAfterLast(File.separator))  }
-      val uriDecrypted = remember(filePath) { mutableStateOf(if (file.fileSource?.cryptoArgs == null) uri.takeIf { appPlatform.isAndroid } else file.fileSource.decryptedGet()) }
-      val playableUri = { if (file.fileSource?.cryptoArgs == null) uri else file.fileSource.decryptedGetOrCreate() }
+      val (uriDecrypted, playableUri) = remember(filePath) {
+        if (file.fileSource?.cryptoArgs == null) mutableStateOf(uri.takeIf { appPlatform.isAndroid }) to { uri }
+        else mutableStateOf(file.fileSource.decryptedGet()) to { file.fileSource.decryptedGetOrCreate() }
+      }
       val decrypted = uriDecrypted.value
       if (decrypted != null && smallView) {
         SmallVideoView(decrypted, file, preview, duration * 1000L, autoPlay, blurred, sizeMultiplier, openFullscreen = openFullscreen)
