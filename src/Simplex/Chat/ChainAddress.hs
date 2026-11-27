@@ -193,7 +193,7 @@ ethereumP = do
   chain <- (>>= (`lookup` evmChains)) <$> optional (A.char '@' *> chainIdP)
   transferLink target chain <$ A.string "/transfer" <|> pure (valueLink target chain)
   where
-    chainIdP = mfilter (inRange (1, toInteger (maxBound :: Int64))) $ digitsInteger <$> A.takeWhile1 isDigit
+    chainIdP = mfilter (inRange (1, toInteger (maxBound :: Int64))) A.decimal
 
 valueLink :: Text -> Maybe ChainInfo -> Q.Query -> Parser (Text -> ChainAddress, NonEmpty Text)
 valueLink address chain query = do
