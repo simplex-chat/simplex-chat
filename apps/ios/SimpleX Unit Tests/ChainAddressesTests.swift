@@ -133,6 +133,9 @@ final class ChainAddressesTests: RecordedAPITestCase {
         try await assertTexts(["No wallet app", "Copy the address or scan the QR code with a wallet.", "Copy", "QR code", "Cancel"])
         try await press("Copy")
         XCTAssertEqual(UIPasteboard.general.string, btc)
+        getTopViewController()?.present(noWalletAlert(tap.chainAddress), animated: false)
+        try await press("QR code")
+        try await waitFor { self.presented().map { String(describing: type(of: $0)).contains("QRCode") } ?? false }
     }
 
     private func recordedMarkdown() throws -> [String: [FormattedText]?] {
