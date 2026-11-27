@@ -36,7 +36,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeUtf8', encodeUtf8)
 import Data.Word (Word64, Word8)
-import qualified Network.HTTP.Types as Q
+import Simplex.Messaging.Agent.QueryString (QSPEscaping (..), QueryStringParams (..), queryParamParser, queryParamStr)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String (StrEncoding (..))
 import Simplex.Messaging.Eth.Address (Address)
@@ -120,44 +120,40 @@ chainUriP =
   where
     bip21Keys = ["amount", "label", "message"]
     zip321Keys = bip21Keys <> ["address", "memo"]
-    fluxKeys = zip321Keys <> ["action", "coin"]
+    fluxKeys = zip321Keys <> ["action", "coin", "callback"]
 
-uriP :: ByteString -> [ByteString] -> Parser (Q.Query -> Parser (Text -> ChainAddress, NonEmpty Text)) -> Parser (ChainAddress, NonEmpty Text)
+uriP :: ByteString -> [ByteString] -> Parser (QueryStringParams -> Parser (Text -> ChainAddress, NonEmpty Text)) -> Parser (ChainAddress, NonEmpty Text)
 uriP scheme keys pathP = do
   (path, link) <- A.stringCI scheme *> A.char ':' *> optional (A.string "//") *> A.match pathP
-  query <- queryP
+  query <- queryP keys
   first ($ normalizedUri path query) <$> link query
   where
     normalizedUri path query = safeDecodeUtf8 $ scheme <> ":" <> path <> queryText query
-    queryText query
-      | null query = ""
-      | otherwise = "?" <> B.intercalate "&" (map queryItem query)
-    queryItem (k, v) = knownKey k <> maybe "" ("=" <>) v
-    knownKey k = fromMaybe k $ find (== B.map toLower k) keys
+    queryText query@(QSP _ q)
+      | null q = ""
+      | otherwise = "?" <> strEncode query
 
-queryP :: Parser Q.Query
-queryP = A.option [] $ A.char '?' *> paramP `A.sepBy` A.char '&'
+queryP :: [ByteString] -> Parser QueryStringParams
+queryP keys = QSP QNoEscaping <$> A.option [] (A.char '?' *> paramP `A.sepBy` A.char '&')
   where
-    paramP = (,) <$> keyP <*> optional (A.char '=' *> A.takeWhile valueChar)
-    keyP = mfilter (not . ("req-" `B.isPrefixOf`) . B.map toLower) $ A.takeWhile1 (\c -> valueChar c && c /= '=')
+    paramP = (,) <$> keyP <*> A.option "" (A.char '=' *> A.takeWhile valueChar)
+    keyP = knownKey <$> mfilter (not . ("req-" `B.isPrefixOf`) . B.map toLower) (A.takeWhile1 (\c -> valueChar c && c /= '='))
+    knownKey k = fromMaybe k $ find (== B.map toLower k) keys
     valueChar c = isAscii c && (isAlphaNum c || c `B.elem` "-._~:/?@!$'()*+,;=%")
 
-param :: Parser a -> ByteString -> Q.Query -> Parser (Maybe a)
+param :: Parser a -> ByteString -> QueryStringParams -> Parser (Maybe a)
 param p key query = case paramValues key query of
   [] -> pure Nothing
-  [v] -> Just <$> valueP p v
+  [_] -> Just <$> queryParamParser p key query
   _ -> fail "repeated parameter"
 
-params :: Parser a -> ByteString -> Q.Query -> Parser [a]
-params p key = traverse (valueP p) . paramValues key
+params :: Parser a -> ByteString -> QueryStringParams -> Parser [a]
+params p key = traverse (either fail pure . parseAll p) . paramValues key
 
-paramValues :: ByteString -> Q.Query -> [ByteString]
-paramValues key query = [fromMaybe "" v | (k, v) <- query, B.map toLower k == key]
+paramValues :: ByteString -> QueryStringParams -> [ByteString]
+paramValues key (QSP _ q) = [v | (k, v) <- q, k == key]
 
-valueP :: Parser a -> ByteString -> Parser a
-valueP p = either fail pure . parseAll p
-
-textParam :: ByteString -> Q.Query -> Parser (Maybe Text)
+textParam :: ByteString -> QueryStringParams -> Parser (Maybe Text)
 textParam key query = join <$> param uriTextP key query
 
 chainLink :: ChainCurrency -> NonEmpty Text -> [Maybe Text] -> Parser (Text -> ChainAddress, NonEmpty Text)
@@ -165,7 +161,7 @@ chainLink currency addresses@(address :| _) texts
   | any (hasOtherAddress addresses) (catMaybes texts) = fail "other address in label or message"
   | otherwise = pure (ChainAddress currency address, addresses)
 
-bitcoinLink :: Maybe Text -> Q.Query -> Parser (Text -> ChainAddress, NonEmpty Text)
+bitcoinLink :: Maybe Text -> QueryStringParams -> Parser (Text -> ChainAddress, NonEmpty Text)
 bitcoinLink address query = do
   instructions <- (<>) <$> params (addressP [invoiceP, (,Nothing) <$$> lnurlP]) "lightning" query <*> params ((,Nothing) <$> addressP [offerP]) "lno" query
   case (address, instructions) of
@@ -173,20 +169,20 @@ bitcoinLink address query = do
     (Nothing, (a, invoiceAmount) : more) -> bip21Link (CYLightning . (<|> invoiceAmount)) (a :| map fst more) [] query
     (Nothing, []) -> fail "no address"
 
-coinLink :: Text -> Text -> Q.Query -> Parser (Text -> ChainAddress, NonEmpty Text)
+coinLink :: Text -> Text -> QueryStringParams -> Parser (Text -> ChainAddress, NonEmpty Text)
 coinLink ticker address = bip21Link (CYTicker ticker Nothing) (address :| []) []
 
-bip21Link :: (Maybe Text -> ChainCurrency) -> NonEmpty Text -> [Maybe Text] -> Q.Query -> Parser (Text -> ChainAddress, NonEmpty Text)
+bip21Link :: (Maybe Text -> ChainCurrency) -> NonEmpty Text -> [Maybe Text] -> QueryStringParams -> Parser (Text -> ChainAddress, NonEmpty Text)
 bip21Link currency addresses texts query = do
   amount <- param (amountP 8) "amount" query
   label <- textParam "label" query
   message <- textParam "message" query
   chainLink (currency amount) addresses (label : message : texts)
 
-lightningLink :: (Text, Maybe Text) -> Q.Query -> Parser (Text -> ChainAddress, NonEmpty Text)
+lightningLink :: (Text, Maybe Text) -> QueryStringParams -> Parser (Text -> ChainAddress, NonEmpty Text)
 lightningLink (address, amount) _ = chainLink (CYLightning amount) (address :| []) []
 
-ethereumP :: Parser (Q.Query -> Parser (Text -> ChainAddress, NonEmpty Text))
+ethereumP :: Parser (QueryStringParams -> Parser (Text -> ChainAddress, NonEmpty Text))
 ethereumP = do
   target <- optional (A.string "pay-") *> addressP [evmP]
   chain <- (>>= (`lookup` evmChains)) <$> optional (A.char '@' *> chainIdP)
@@ -194,15 +190,15 @@ ethereumP = do
   where
     chainIdP = mfilter (inRange (1, toInteger (maxBound :: Int64))) A.decimal
 
-valueLink :: Text -> Maybe ChainInfo -> Q.Query -> Parser (Text -> ChainAddress, NonEmpty Text)
+valueLink :: Text -> Maybe ChainInfo -> QueryStringParams -> Parser (Text -> ChainAddress, NonEmpty Text)
 valueLink address chain query = do
   value <- param evmIntegerP "value" query
   let currency = maybe (CYUnknown UCChain) (\ChainInfo {chainName, coin} -> CYTicker coin chainName $ decimalText 18 <$> value) chain
   chainLink currency (address :| []) []
 
-transferLink :: Text -> Maybe ChainInfo -> Q.Query -> Parser (Text -> ChainAddress, NonEmpty Text)
+transferLink :: Text -> Maybe ChainInfo -> QueryStringParams -> Parser (Text -> ChainAddress, NonEmpty Text)
 transferLink token chain query = do
-  guard $ null $ paramValues "value" query
+  guard $ isNothing $ queryParamStr "value" query
   address <- maybe (fail "no address") pure =<< param (addressP [evmP]) "address" query
   units <- param evmIntegerP "uint256" query
   let currency = case chain of
@@ -210,17 +206,17 @@ transferLink token chain query = do
         Nothing -> CYUnknown UCChainAndToken
   chainLink currency (address :| [token]) []
 
-moneroLink :: Text -> Q.Query -> Parser (Text -> ChainAddress, NonEmpty Text)
-moneroLink address query = do
-  guard $ all (maybe True (B.notElem ';') . snd) query
+moneroLink :: Text -> QueryStringParams -> Parser (Text -> ChainAddress, NonEmpty Text)
+moneroLink address query@(QSP _ q) = do
+  guard $ all (B.notElem ';' . snd) q
   amount <- param (amountP 12) "tx_amount" query
   label <- textParam "recipient_name" query
   message <- textParam "tx_description" query
   chainLink (CYTicker "XMR" Nothing amount) (address :| []) [label, message]
 
-zip321Link :: Text -> Parser (Text, Bool) -> Maybe (Text, Bool) -> Q.Query -> Parser (Text -> ChainAddress, NonEmpty Text)
-zip321Link ticker coinAddressP path query = do
-  guard $ not $ any (B.elem '.' . fst) query
+zip321Link :: Text -> Parser (Text, Bool) -> Maybe (Text, Bool) -> QueryStringParams -> Parser (Text -> ChainAddress, NonEmpty Text)
+zip321Link ticker coinAddressP path query@(QSP _ q) = do
+  guard $ not $ any (B.elem '.' . fst) q
   (address, shielded) <- oneAddress =<< param coinAddressP "address" query
   memo <- param memoP "memo" query
   guard $ shielded || isNothing memo
@@ -237,19 +233,19 @@ zcashAddressP = (,False) <$> addressP [transparentP] <|> (,True) <$> addressP [s
 fluxAddressP :: Parser (Text, Bool)
 fluxAddressP = (,False) <$> addressP [transparentP] <|> (,True) <$> addressP [saplingP "za"]
 
-fluxLink :: Maybe (Text, Bool) -> Q.Query -> Parser (Text -> ChainAddress, NonEmpty Text)
+fluxLink :: Maybe (Text, Bool) -> QueryStringParams -> Parser (Text -> ChainAddress, NonEmpty Text)
 fluxLink path query = do
   _ <- param (A.stringCI "pay") "action" query
-  guard $ null $ paramValues "callback" query
+  guard $ isNothing $ queryParamStr "callback" query
   _ <- param (A.choice $ map A.stringCI ["flux", "zelcash", "zel"]) "coin" query
   zip321Link "FLUX" fluxAddressP path query
 
-zelLink :: Maybe (Text, Bool) -> Q.Query -> Parser (Text -> ChainAddress, NonEmpty Text)
+zelLink :: Maybe (Text, Bool) -> QueryStringParams -> Parser (Text -> ChainAddress, NonEmpty Text)
 zelLink path query = do
-  guard $ isJust path || not (null $ paramValues "coin" query)
+  guard $ isJust path || isJust (queryParamStr "coin" query)
   fluxLink path query
 
-solanaLink :: Text -> Q.Query -> Parser (Text -> ChainAddress, NonEmpty Text)
+solanaLink :: Text -> QueryStringParams -> Parser (Text -> ChainAddress, NonEmpty Text)
 solanaLink address query = do
   mint <- param (addressP [solanaKeyP]) "spl-token" query
   currency <- case mint of
