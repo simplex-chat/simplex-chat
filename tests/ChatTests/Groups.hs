@@ -369,6 +369,7 @@ chatGroupTests = do
     it "announce user's submember and send messages as member" testSubmemberMessages
     it "update message sent as member" testSubmemberUpdate
     it "introduce user's submember to later joiner" testSubmemberLaterJoiner
+    it "send history of another member's submember to joiner" testSubmemberOtherHostHistory
     it "joiner of previous version creates unknown member" testSubmemberPrevVersionJoiner
     it "announce user's submember only to members of current version" testSubmemberPrevVersionMember
     it "host forwards messages and updates of another member's submember until its invitee connects to that member" testSubmemberOtherAdmin
@@ -16975,6 +16976,43 @@ testSubmemberLaterJoiner =
       alice <# "#team hello"
       [bob, cath, dan] *<# "#team reviewer> hello"
 
+testSubmemberOtherHostHistory :: HasCallStack => TestParams -> IO ()
+testSubmemberOtherHostHistory =
+  testChat4 aliceProfile bobProfile cathProfile danProfile $
+    \alice bob cath dan -> do
+      createGroup3 "team" alice bob cath
+      addSubmember alice "member"
+      submemberAdded [bob, cath]
+      alice ##> "/_send #1(as_member=4) text hi"
+      alice <# "#team hi"
+      [bob, cath] *<# "#team reviewer> hi"
+      connectUsers bob dan
+      addMember "team" bob dan GRMember
+      dan ##> "/j team"
+      concurrentlyN_
+        [ bob <## "#team: dan joined the group",
+          dan
+            <### [ "#team: you joined the group",
+                   WithTime "#team reviewer> hi [>>]",
+                   "#team: member alice (Alice) is connected",
+                   "#team: member cath (Catherine) is connected"
+                 ],
+          do
+            alice <## "#team: bob added dan (Daniel) to the group (connecting...)"
+            alice <## "#team: new member dan is connected",
+          do
+            cath <## "#team: bob added dan (Daniel) to the group (connecting...)"
+            cath <## "#team: new member dan is connected"
+        ]
+      dan ##> "/ms team"
+      dan
+        <### [ "dan (Daniel): member, you, connected",
+               "alice (Alice): owner, connected",
+               "bob (Bob): admin, host, connected",
+               "cath (Catherine): admin, connected",
+               "reviewer: member, via alice, connected"
+             ]
+
 testSubmemberPrevVersionJoiner :: HasCallStack => TestParams -> IO ()
 testSubmemberPrevVersionJoiner ps =
   withNewTestChat ps "alice" aliceProfile $ \alice ->
@@ -17251,9 +17289,20 @@ testSubmemberAnnounceRefused =
       agentSendBody bob bobConnId $ chatMsgToBody $ ChatMessage supportedChatVRange Nothing (XGrpMemNew (MemberInfo (MemberId "new_1") GRMember Nothing danProfile Nothing (Just aliceId)) Nothing Nothing)
       cath <## "error: x.grp.mem.new: member is not a submember of the announcing member"
       reviewerFwd (FwdMember reviewerId "reviewer") "new_2" (XGrpMemNew (MemberInfo (MemberId "new_2") GRMember Nothing danProfile Nothing Nothing) Nothing Nothing)
-      bob <## "error: x.grp.mem.new: submember cannot add members"
-      agentSendBody cath cathConnId $ chatMsgToBody $ ChatMessage chatInitialVRange (Just $ SharedMsgId "as_msg") (XMsgNew ((mcSimple (MCText "forged") :: MsgContainer) {asMember = Just MemberRef {memberId = reviewerId, memberName = "reviewer"}}))
+      bob <##. "error: x.grp.msg.forward: content attributed to submember"
+      reviewerFwd (FwdMember reviewerId "reviewer") "fwd_msg" (XMsgNew $ mcSimple $ MCText "forged")
+      bob <##. "error: x.grp.msg.forward: content attributed to submember"
+      let sendAsReviewer msgId = agentSendBody cath cathConnId $ chatMsgToBody $ ChatMessage chatInitialVRange (Just $ SharedMsgId msgId) (XMsgNew ((mcSimple (MCText "forged") :: MsgContainer) {asMember = Just MemberRef {memberId = reviewerId, memberName = "reviewer"}}))
+      sendAsReviewer "as_msg"
       bob <## "error: member is not a submember of the sender"
+      alice ##> "/mr team cath member"
+      concurrentlyN_
+        [ alice <## "#team: you changed the role of cath to member (signed)",
+          bob <## "#team: alice changed the role of cath from admin to member (signed)",
+          cath <## "#team: alice changed your role from admin to member (signed)"
+        ]
+      sendAsReviewer "as_msg_2"
+      bob <## "error: member is not allowed to send as member"
       alice #> "#team hello"
       [bob, cath] *<# "#team alice> hello"
 

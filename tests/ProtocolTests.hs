@@ -211,7 +211,7 @@ testMemberRef :: MemberRef
 testMemberRef = MemberRef {memberId = MemberId "\1\2\3\4", memberName = "reviewer"}
 
 testProfile :: Profile
-testProfile =Profile {displayName = "alice", fullName = "Alice", shortDescr = Nothing, description = Nothing, image = Just (ImageData "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII="), peerType = Nothing, contactLink = Nothing, preferences = testChatPreferences, badge = Nothing, contactDomain = Nothing}
+testProfile = Profile {displayName = "alice", fullName = "Alice", shortDescr = Nothing, description = Nothing, image = Just (ImageData "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII="), peerType = Nothing, contactLink = Nothing, preferences = testChatPreferences, badge = Nothing, contactDomain = Nothing}
 
 testGroupProfile :: GroupProfile
 testGroupProfile = GroupProfile {displayName = "team", fullName = "Team", description = Nothing, shortDescr = Nothing, image = Nothing, publicGroup = Nothing, groupPreferences = testGroupPreferences, memberAdmission = Nothing, chatLayout = Nothing}

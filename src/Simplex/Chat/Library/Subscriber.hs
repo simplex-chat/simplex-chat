@@ -1794,17 +1794,17 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
       Just sender@GroupMember {memberRole, memberVia = Nothing}
         | not (useRelays' gInfo) && memberRole >= GRAdmin -> do
             unknownRole <- unknownMemberRole gInfo
-            withStore (\db -> getCreateUnknownGMByMemberId db cxt user gInfo memberId memberName unknownRole True) >>= \case
-              Just (author, True) -> do
-                withStore' $ \db -> setMemberVia db author (memberId' sender)
-                processAs author {memberVia = Just (memberId' sender)}
-              Just (author, False)
+            withStore (\db -> getCreateUnknownGMByMemberId db cxt user gInfo memberId memberName unknownRole True >>= traverse (viaSender db (memberId' sender))) >>= \case
+              Just author
                 | memberVia author /= Just (memberId' sender) -> messageError "member is not a submember of the sender" $> Nothing
                 | memberRemoved author -> Nothing <$ logInfo ("ignoring content of removed submember, group " <> tshow (groupId' gInfo))
                 | otherwise -> processAs author
               Nothing -> messageError "submember not found" $> Nothing
       _ -> messageError "member is not allowed to send as member" $> Nothing
       where
+        viaSender db viaId (author, created)
+          | created = author {memberVia = Just viaId} <$ liftIO (setMemberVia db author viaId)
+          | otherwise = pure author
         processAs author
           | blockedByAdmin author = (moderatorsContext =<<) <$> a (Just author)
           | otherwise = a (Just author)
@@ -3349,7 +3349,6 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
       let presHeader_ = memberInfoPresHeader gInfo memInfo
       if
         | sameMemberId memId (membership gInfo) -> pure Nothing
-        | isJust (memberVia m) -> messageError "x.grp.mem.new: submember cannot add members" $> Nothing
         | isJust via_ && (useRelays' gInfo || via_ /= Just (memberId' m)) -> messageError "x.grp.mem.new: member is not a submember of the announcing member" $> Nothing
         | otherwise ->
           withStore' (\db -> runExceptT $ getGroupMemberByMemberId db cxt user gInfo memId) >>= \case
@@ -4162,6 +4161,8 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
             Just (author, unknown)
               | not (useRelays' gInfo) && groupMemberId' author == groupMemberId' membership ->
                   messageError $ "x.grp.msg.forward: content attributed to own membership, forwarder " <> tshow (groupMemberId' m) <> ", event " <> tshow (toCMEventTag chatMsgEvent)
+              | isJust (memberVia author) ->
+                  messageError $ "x.grp.msg.forward: content attributed to submember, forwarder " <> tshow (groupMemberId' m) <> ", event " <> tshow (toCMEventTag chatMsgEvent)
               | memberRemoved author ->
                   logInfo $ "x.grp.msg.forward: ignoring content from removed member, group " <> tshow (groupId' gInfo) <> ", member " <> safeDecodeUtf8 (strEncode memberId) <> ", event " <> tshow (toCMEventTag chatMsgEvent)
               | not (useRelays' gInfo) && not (expectedForwarder author) ->
