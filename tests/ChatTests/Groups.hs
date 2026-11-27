@@ -17223,7 +17223,7 @@ testSubmemberViaBlockedMember =
       bob <# "#team spam"
       alice <# "#team bob> spam [blocked by admin] <muted>"
       cath <// 500000
-      cath #$> ("/_get chat #1 count=1", chat, [(0, "blocked bob (signed)")])
+      cath #$> ("/_get chat #1 count=1", chat, [(0, "added reviewer")])
 
 testSubmemberIntroOrder :: HasCallStack => TestParams -> IO ()
 testSubmemberIntroOrder =
