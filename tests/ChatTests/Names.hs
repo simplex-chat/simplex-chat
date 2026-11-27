@@ -1168,7 +1168,7 @@ utc :: Int64 -> UTCTime
 utc = roundedToUTCTime . RoundedSystemTime
 
 nameHowToUri :: String
-nameHowToUri = "https://simplex.domains/#testing"
+nameHowToUri = "https://simplex.domains"
 
 simplexTeamUri :: String
 simplexTeamUri = "simplex:/a#lrdvu2d8A1GumSmoKb2krQmtKhWXq-tyGpHuM7aMwsw?h=smp6.simplex.im"

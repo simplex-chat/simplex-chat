@@ -320,7 +320,7 @@
     }
   },
   "uris": {
-    "https://simplex.domains/#testing": {
+    "https://simplex.domains": {
       "parseError": "",
       "uriInfo": {
         "scheme": "https"
