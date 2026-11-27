@@ -825,7 +825,7 @@ object ChatModel {
     suspend fun removeMemberItems(rhId: Long?, removedMember: GroupMember, byMember: GroupMember, groupInfo: GroupInfo) {
       fun isRemovedMemberItem(item: ChatItem): Boolean = when {
         item.chatDir is CIDirection.GroupSnd -> removedMember.groupMemberId == groupInfo.membership.groupMemberId
-        item.chatDir is CIDirection.GroupRcv -> item.chatDir.groupMember.groupMemberId == removedMember.groupMemberId
+        item.chatDir is CIDirection.GroupRcv -> item.chatDir.groupMember.groupMemberId == removedMember.groupMemberId || item.chatDir.groupMember.memberVia == removedMember.memberId
         else -> false
       }
       fun markedUpdatedItem(item: ChatItem): ChatItem? {
@@ -1112,6 +1112,12 @@ object ChatModel {
         }
       } else {
         false
+      }
+    }
+
+    suspend fun removeSubmembers(rhId: Long?, groupInfo: GroupInfo, member: GroupMember) {
+      groupMembers.value.filter { it.memberVia == member.memberId }.forEach {
+        upsertGroupMember(rhId, groupInfo, it.copy(memberStatus = GroupMemberStatus.MemRemoved))
       }
     }
 

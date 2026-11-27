@@ -12,6 +12,7 @@ import androidx.compose.ui.test.runComposeUiTest
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.chatSendCmdRetry
+import chat.simplex.common.platform.ntfManager
 import chat.simplex.common.views.chat.group.GroupMemberInfoLayoutPreview
 import chat.simplex.common.views.chat.group.MemberRow
 import chat.simplex.common.views.chat.item.FramedItemView
@@ -19,7 +20,10 @@ import chat.simplex.common.views.chat.item.TerminalChatItemRow
 import chat.simplex.common.views.chat.item.chatItemSender
 import chat.simplex.common.views.helpers.LocalAppBarHandler
 import chat.simplex.common.views.helpers.rememberAppBarHandler
+import chat.simplex.common.views.helpers.withBGApi
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import kotlin.test.*
@@ -27,11 +31,33 @@ import kotlin.test.*
 @OptIn(ExperimentalTestApi::class)
 class SubmemberTest {
   private val sendCmd = chatSendCmdRetry
+  private val ntf = ntfManager
 
   @AfterTest
   fun tearDown() {
+    runBlocking { withBGApi {}.join() }
     ChatModel.groupMembers.value = emptyList()
+    ChatModel.groupMembersIndexes.value = emptyMap()
+    ChatModel.chatsContext.chats.value.clear()
+    ChatModel.chatsContext.chatItems.value.clear()
+    ChatModel.chatId.value = null
+    ChatModel.currentUser.value = null
+    ChatModel.users.clear()
+    ntfManager = ntf
     chatSendCmdRetry = sendCmd
+  }
+
+  @Test
+  fun itemOfSubmemberIsMarkedDeletedWithItsViaMember() {
+    receiveRemovalOfViaMember()
+    val hi = ChatModel.chatsContext.chatItems.value.single { it.text == "hi" }
+    assertEquals("cath", (hi.meta.itemDeleted as? CIDeleted.Moderated)?.byGroupMember?.displayName)
+  }
+
+  @Test
+  fun submemberIsRemovedWithItsViaMember() {
+    val reviewer = receiveRemovalOfViaMember()
+    assertEquals(GroupMemberStatus.MemRemoved, ChatModel.groupMembers.value.single { it.groupMemberId == reviewer.groupMemberId }.memberStatus)
   }
 
   @Test
@@ -89,6 +115,27 @@ class SubmemberTest {
     }
     val offered = listOf("Message", "Call", "Video", "Chat with member", "Verify security code")
     assertEquals(emptyList(), offered.filter { onAllNodesWithText(it).fetchSemanticsNodes().isNotEmpty() })
+  }
+
+  private fun receiveRemovalOfViaMember(): GroupMember {
+    lateinit var reviewer: GroupMember
+    recorded("submembers/via-removed") { (hi, _, deleted) ->
+      val aci = (hi.result as CR.NewChatItems).chatItems.single()
+      val groupInfo = (aci.chatInfo as ChatInfo.Group).groupInfo
+      reviewer = (aci.chatItem.chatDir as CIDirection.GroupRcv).groupMember
+      ntfManager = recordingNtfManager {}
+      ChatModel.currentUser.value = User.sampleData
+      ChatModel.users.add(UserInfo(User.sampleData, 0))
+      withContext(Dispatchers.Main) {
+        ChatModel.chatsContext.updateChat(null, aci.chatInfo)
+        ChatModel.chatId.value = aci.chatInfo.id
+        ChatModel.chatsContext.upsertGroupMember(null, groupInfo, reviewer)
+      }
+      ChatController.processReceivedMsg(hi)
+      assertEventually(listOf("hi")) { ChatModel.chatsContext.chatItems.value.map { it.text } }
+      ChatController.processReceivedMsg(deleted)
+    }
+    return reviewer
   }
 
   private fun receivedChat(): Chat = runBlocking {

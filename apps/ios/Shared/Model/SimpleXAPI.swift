@@ -2904,6 +2904,7 @@ func processReceivedMsg(_ res: ChatEvent) async {
         if active(user) {
             await MainActor.run {
                 m.updateGroup(groupInfo)
+                m.removeSubmembers(groupInfo, groupInfo.membership)
                 if withMessages {
                     m.removeMemberItems(groupInfo.membership, byMember: member, groupInfo)
                 }
@@ -2914,6 +2915,7 @@ func processReceivedMsg(_ res: ChatEvent) async {
             await MainActor.run {
                 m.updateGroup(groupInfo)
                 _ = m.upsertGroupMember(groupInfo, deletedMember)
+                m.removeSubmembers(groupInfo, deletedMember)
                 if withMessages {
                     m.removeMemberItems(deletedMember, byMember: byMember, groupInfo)
                 }
@@ -2924,6 +2926,7 @@ func processReceivedMsg(_ res: ChatEvent) async {
             await MainActor.run {
                 m.updateGroup(groupInfo)
                 _ = m.upsertGroupMember(groupInfo, member)
+                m.removeSubmembers(groupInfo, member)
             }
         }
     case let .groupDeleted(user, groupInfo, _): // TODO update user member

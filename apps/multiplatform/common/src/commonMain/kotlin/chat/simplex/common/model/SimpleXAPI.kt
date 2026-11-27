@@ -3298,6 +3298,7 @@ object ChatController {
         if (active(r.user)) {
           withContext(Dispatchers.Main) {
             chatModel.chatsContext.updateGroup(rhId, r.groupInfo)
+            chatModel.chatsContext.removeSubmembers(rhId, r.groupInfo, r.groupInfo.membership)
             if (r.withMessages) {
               chatModel.chatsContext.removeMemberItems(rhId, r.groupInfo.membership, byMember = r.member, r.groupInfo)
             }
@@ -3313,6 +3314,7 @@ object ChatController {
           withContext(Dispatchers.Main) {
             chatModel.chatsContext.updateGroup(rhId, r.groupInfo)
             chatModel.chatsContext.upsertGroupMember(rhId, r.groupInfo, r.deletedMember)
+            chatModel.chatsContext.removeSubmembers(rhId, r.groupInfo, r.deletedMember)
             if (r.withMessages) {
               chatModel.chatsContext.removeMemberItems(rhId, r.deletedMember, byMember = r.byMember, r.groupInfo)
             }
@@ -3329,6 +3331,7 @@ object ChatController {
           withContext(Dispatchers.Main) {
             chatModel.chatsContext.updateGroup(rhId, r.groupInfo)
             chatModel.chatsContext.upsertGroupMember(rhId, r.groupInfo, r.member)
+            chatModel.chatsContext.removeSubmembers(rhId, r.groupInfo, r.member)
           }
           withContext(Dispatchers.Main) {
             chatModel.secondaryChatsContext.value?.upsertGroupMember(rhId, r.groupInfo, r.member)

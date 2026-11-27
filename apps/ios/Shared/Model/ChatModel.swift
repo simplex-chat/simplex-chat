@@ -984,7 +984,7 @@ final class ChatModel: ObservableObject {
         func isRemovedMemberItem(_ item: ChatItem) -> Bool {
             switch item.chatDir {
             case .groupSnd: return removedMember.groupMemberId == groupInfo.membership.groupMemberId
-            case let .groupRcv(groupMember): return groupMember.groupMemberId == removedMember.groupMemberId
+            case let .groupRcv(groupMember): return groupMember.groupMemberId == removedMember.groupMemberId || groupMember.memberVia == removedMember.memberId
             default: return false
             }
         }
@@ -1443,6 +1443,14 @@ final class ChatModel: ObservableObject {
             }
         } else {
             return false
+        }
+    }
+
+    func removeSubmembers(_ groupInfo: GroupInfo, _ member: GroupMember) {
+        for gMember in groupMembers where gMember.wrapped.memberVia == member.memberId {
+            var submember = gMember.wrapped
+            submember.memberStatus = .memRemoved
+            _ = upsertGroupMember(groupInfo, submember)
         }
     }
 

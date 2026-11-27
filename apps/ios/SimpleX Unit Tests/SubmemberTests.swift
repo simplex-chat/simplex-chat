@@ -1,13 +1,23 @@
 import XCTest
+import UserNotifications
 @testable import SimpleX
 @testable import SimpleXChat
 
 final class SubmemberTests: XCTestCase {
     private let sendCmd = sendSimpleXCmdStr
+    private let ntfManager = NtfManager.shared
 
     @MainActor
     override func tearDown() async throws {
+        for chat in ChatModel.shared.chats { ChatModel.shared.removeChat(chat.id) }
+        ChatModel.shared.im.reversedChatItems = []
+        ChatModel.shared.chatId = nil
+        ChatModel.shared.currentUser = nil
+        ChatModel.shared.users = []
         ChatModel.shared.groupMembers = []
+        ChatModel.shared.groupMembersIndexes = [:]
+        NtfManager.shared = ntfManager
+        UNUserNotificationCenter.current().delegate = ntfManager
         sendSimpleXCmdStr = sendCmd
     }
 
@@ -77,6 +87,39 @@ final class SubmemberTests: XCTestCase {
         let bob = try XCTUnwrap(members.first { $0.displayName == "bob" })
         let item = try XCTUnwrap(chat.chatItems.last)
         XCTAssertEqual(itemNtfEntityId(chat.chatInfo, item, connEntities(chat.chatInfo, members)), bob.id)
+    }
+
+    @MainActor
+    func testItemOfSubmemberIsMarkedDeletedWithItsViaMember() async throws {
+        _ = try await receiveRemovalOfViaMember()
+        let hi = try XCTUnwrap(ChatModel.shared.im.reversedChatItems.first { $0.text == "hi" })
+        guard case let .moderated(_, byGroupMember)? = hi.meta.itemDeleted else { return XCTFail("not moderated: \(String(describing: hi.meta.itemDeleted))") }
+        XCTAssertEqual(byGroupMember.displayName, "cath")
+    }
+
+    @MainActor
+    func testSubmemberIsRemovedWithItsViaMember() async throws {
+        guard let reviewer = try await receiveRemovalOfViaMember() else { return }
+        XCTAssertEqual(ChatModel.shared.getGroupMember(reviewer.groupMemberId)?.wrapped.memberStatus, .memRemoved)
+    }
+
+    @MainActor
+    private func receiveRemovalOfViaMember() async throws -> GroupMember? {
+        let events = try recordedEvents("submembers/via-removed")
+        guard case let .newChatItems(_, items) = events[0], let aci = items.first,
+              case let .group(groupInfo, _) = aci.chatInfo, case let .groupRcv(reviewer) = aci.chatItem.chatDir else {
+            XCTFail("no item of a submember: \(events[0].responseType)")
+            return nil
+        }
+        NtfManager.shared = RecordingNtfManager { _ in }
+        ChatModel.shared.currentUser = User.sampleData
+        ChatModel.shared.users = [UserInfo(user: User.sampleData, unreadCount: 0)]
+        try listChat(events[0])
+        ChatModel.shared.chatId = aci.chatInfo.id
+        _ = ChatModel.shared.upsertGroupMember(groupInfo, reviewer)
+        await processReceivedMsg(events[0])
+        await processReceivedMsg(events[2])
+        return reviewer
     }
 
     private func connEntities(_ chatInfo: ChatInfo, _ members: [GroupMember]) -> [ConnectionEntity] {

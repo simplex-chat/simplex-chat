@@ -1077,6 +1077,7 @@ func removeMember(_ groupInfo: GroupInfo, _ mem: GroupMember, withMessages: Bool
                 ChatModel.shared.updateGroup(updatedGroupInfo)
                 updatedMembers.forEach { updatedMember in
                     _ = ChatModel.shared.upsertGroupMember(updatedGroupInfo, updatedMember)
+                    ChatModel.shared.removeSubmembers(updatedGroupInfo, updatedMember)
                     if withMessages {
                         ChatModel.shared.removeMemberItems(updatedMember, byMember: groupInfo.membership, groupInfo)
                     }

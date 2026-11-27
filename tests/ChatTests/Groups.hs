@@ -37,7 +37,7 @@ import Data.List (find, intercalate, isInfixOf, isSubsequenceOf, isSuffixOf)
 import qualified Data.Map.Strict as M
 import qualified Data.Text as T
 import Simplex.Chat.Badges (FileSizeLimits (..))
-import Simplex.Chat.Controller (ChatController (ChatController, chatStore, smpAgent, subscriptionMode), ChatConfig (..), ChatDatabase (..), ChatError (ChatErrorStore), ChatEvent (CEvtChatItemUpdated, CEvtDuplicateGroupMessage, CEvtNewChatItems), ChatHooks (..), ChatLogLevel (..), ChatResponse (CRApiChat, CRApiChats), defaultChatHooks, withAgent, withStore, withStore')
+import Simplex.Chat.Controller (ChatController (ChatController, chatStore, smpAgent, subscriptionMode), ChatConfig (..), ChatDatabase (..), ChatError (ChatErrorStore), ChatEvent (CEvtChatItemUpdated, CEvtDeletedMember, CEvtDuplicateGroupMessage, CEvtNewChatItems), ChatHooks (..), ChatLogLevel (..), ChatResponse (CRApiChat, CRApiChats), defaultChatHooks, withAgent, withStore, withStore')
 import Simplex.Chat.Core (sendChatCmdStr)
 import Simplex.Chat.Library.Internal (chatStoreCxt, encodeConnInfo, getShortLinkConnReq, memberInfo, sendDirectMemberMessage, sendGroupMessage', uniqueMsgMentions, updatedMentionNames)
 import Simplex.Chat.Markdown (parseMaybeMarkdownList)
@@ -17355,25 +17355,32 @@ testSubmemberViaRemoved =
     reviewerStatus cc = withCCTransaction cc $ \db -> map fromOnly <$> DB.query_ db "SELECT member_status FROM group_members WHERE local_display_name = 'reviewer'"
 
 testSubmemberViaRemovedWithMessages :: HasCallStack => TestParams -> IO ()
-testSubmemberViaRemovedWithMessages =
-  testChat3 aliceProfile bobProfile cathProfile $
-    \alice bob cath -> do
-      createGroup3 "team" alice bob cath
-      addSubmember bob "member"
-      mapM_ (<## "#team: bob added reviewer to the group (via bob)") [alice, cath]
-      GroupMember {groupMemberId = reviewerId} <- getTestMember bob "team" "reviewer"
-      bob ##> ("/_send #1(as_member=" <> show reviewerId <> ") text hi")
-      bob <# "#team hi"
-      [alice, cath] *<# "#team reviewer> hi"
-      threadDelay 1000000
-      cath ##> "/rm #team bob messages=on"
-      cath <## "#team: you removed bob from the group with all messages (signed)"
-      bob <## "#team: cath removed you from the group with all messages (signed)"
-      bob <## "use /d #team to delete the group"
-      alice <## "#team: cath removed bob from the group with all messages (signed)"
-      alice #$> ("/_get chat #1 count=2", chat, [(0, "hi [marked deleted by cath]"), (0, "removed bob (signed)")])
-      bob #$> ("/_get chat #1 count=2", chat, [(1, "hi [marked deleted by cath]"), (0, "removed you (signed)")])
-      cath #$> ("/_get chat #1 count=2", chat, [(0, "hi [marked deleted by you]"), (1, "removed bob (signed)")])
+testSubmemberViaRemovedWithMessages ps = do
+  events <- newTVarIO []
+  let hook _ evt = evt <$ case evt of
+        Right CEvtNewChatItems {} -> recordEvent events evt
+        Right CEvtDeletedMember {} -> recordEvent events evt
+        _ -> pure ()
+  withNewTestChatCfgOpts ps testCfg {chatHooks = defaultChatHooks {eventHook = Just hook}} testOpts {markRead = False} "alice" aliceProfile $ \alice ->
+    withNewTestChat ps "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath -> do
+        createGroup3 "team" alice bob cath
+        addSubmember bob "member"
+        mapM_ (<## "#team: bob added reviewer to the group (via bob)") [alice, cath]
+        GroupMember {groupMemberId = reviewerId} <- getTestMember bob "team" "reviewer"
+        eventsFixture "submembers/via-removed" events $ do
+          bob ##> ("/_send #1(as_member=" <> show reviewerId <> ") text hi")
+          bob <# "#team hi"
+          [alice, cath] *<# "#team reviewer> hi"
+          threadDelay 1000000
+          cath ##> "/rm #team bob messages=on"
+          cath <## "#team: you removed bob from the group with all messages (signed)"
+          bob <## "#team: cath removed you from the group with all messages (signed)"
+          bob <## "use /d #team to delete the group"
+          alice <## "#team: cath removed bob from the group with all messages (signed)"
+        alice #$> ("/_get chat #1 count=2", chat, [(0, "hi [marked deleted by cath]"), (0, "removed bob (signed)")])
+        bob #$> ("/_get chat #1 count=2", chat, [(1, "hi [marked deleted by cath]"), (0, "removed you (signed)")])
+        cath #$> ("/_get chat #1 count=2", chat, [(0, "hi [marked deleted by you]"), (1, "removed bob (signed)")])
 
 testSubmemberRefused :: HasCallStack => TestParams -> IO ()
 testSubmemberRefused =
