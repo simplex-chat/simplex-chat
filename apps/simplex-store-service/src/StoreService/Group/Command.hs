@@ -6,6 +6,7 @@
 module StoreService.Group.Command
   ( GroupCmd (..),
     MoneyCmd (..),
+    NameListCmd (..),
     spelledCmd,
     CmdAction (..),
     groupCmdAction,
@@ -47,9 +48,13 @@ data GroupCmd
   | GCRevoke BadgeCode
   | GCRevokeName NamePrepaidCode
   | GCMoney MoneyCmd
+  | GCNameList NameListCmd
   deriving (Eq, Show)
 
 data MoneyCmd = MCBalance Text | MCRecordRefund Text USDCents | MCClose Text
+  deriving (Eq, Show)
+
+data NameListCmd = NLUnavailable Text | NLAvailable Text
   deriving (Eq, Show)
 
 spelledCmd :: CmdSource -> Text -> Text
@@ -100,7 +105,10 @@ cmdArgsP source = \case
   CTBalance -> GCMoney <$> balanceArgsP
   CTRecordRefund -> GCMoney <$> recordRefundArgsP
   CTClose -> GCMoney <$> closeArgsP
+  CTUnavailable -> GCNameList . NLUnavailable <$> nameArgP
+  CTAvailable -> GCNameList . NLAvailable <$> nameArgP
   where
+    nameArgP = safeDecodeUtf8 <$> A.takeWhile1 (const True)
     countP = A.space *> optValueP countOpt
     statusP statuses = A.option CPSFree (A.space *> mfilter (`elem` statuses) textTokenP)
 
@@ -192,12 +200,12 @@ textTokenP = do
   maybe (fail "invalid value") pure $ textDecode $ safeDecodeUtf8 t
 
 -- The advertised menu lists the commands in this order.
-data CmdTag = CTIssue | CTBulk | CTRevoke | CTBalance | CTRecordRefund | CTClose
+data CmdTag = CTIssue | CTBulk | CTRevoke | CTBalance | CTRecordRefund | CTClose | CTUnavailable | CTAvailable
   deriving (Bounded, Enum)
 
 sourceTags :: CmdSource -> [CmdTag]
 sourceTags = \case
-  FromConsole -> [CTIssue, CTRevoke, CTBalance, CTRecordRefund, CTClose]
+  FromConsole -> [CTIssue, CTRevoke, CTBalance, CTRecordRefund, CTClose, CTUnavailable, CTAvailable]
   FromGroup -> [minBound .. maxBound]
 
 cmdName :: CmdTag -> Text
@@ -208,6 +216,8 @@ cmdName = \case
   CTBalance -> "balance"
   CTRecordRefund -> "record_refund"
   CTClose -> "close"
+  CTUnavailable -> "unavailable"
+  CTAvailable -> "available"
 
 cmdLabel :: CmdTag -> Text
 cmdLabel = \case
@@ -217,6 +227,8 @@ cmdLabel = \case
   CTBalance -> "Show an order's balance"
   CTRecordRefund -> "Record a balance refund"
   CTClose -> "Close a failed order"
+  CTUnavailable -> "Make a name unavailable"
+  CTAvailable -> "Make a name available again"
 
 -- The menu hints and the usage replies are built from the same kinds, options and bounds, so they cannot drift apart.
 cmdParams :: CmdSource -> CmdTag -> Text
@@ -227,8 +239,11 @@ cmdParams source = \case
   CTBalance -> referenceArg
   CTRecordRefund -> referenceArg <> " " <> optVar centsOpt
   CTClose -> referenceArg
+  CTUnavailable -> nameParam
+  CTAvailable -> nameParam
   where
     referenceArg = "<reference>"
+    nameParam = "<name>"
     kindParams kinds opts = "<" <> T.intercalate "|" kinds <> "> [" <> T.intercalate "|" (map optKey opts) <> " <N>]"
 
 cmdUsage :: CmdSource -> CmdTag -> Text
@@ -245,6 +260,8 @@ cmdUsage source = \case
   CTBalance -> plainUsage CTBalance
   CTRecordRefund -> plainUsage CTRecordRefund
   CTClose -> plainUsage CTClose
+  CTUnavailable -> plainUsage CTUnavailable
+  CTAvailable -> plainUsage CTAvailable
   where
     plainUsage tag = "Usage: " <> cmdText source tag (cmdParams source tag)
     badgeKindsText = T.intercalate ", " badgeKinds
@@ -286,6 +303,8 @@ cmdMinRole = \case
   CTBalance -> GROwner
   CTRecordRefund -> GROwner
   CTClose -> GROwner
+  CTUnavailable -> GRAdmin
+  CTAvailable -> GRAdmin
 
 -- | This is the reply to a well-formed command from a sender who may not run it; Nothing means silence.
 cmdRefusal :: CmdTag -> Maybe Text
@@ -297,3 +316,5 @@ cmdRefusal = \case
   CTBalance -> Nothing
   CTRecordRefund -> Nothing
   CTClose -> Nothing
+  CTUnavailable -> Nothing
+  CTAvailable -> Nothing

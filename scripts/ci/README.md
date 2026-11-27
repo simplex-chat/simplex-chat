@@ -53,7 +53,7 @@ The reduced build runs the Linux job build-linux (ubuntu-22.04 x86_64) for every
   - the Docker image and dependency cache of build-linux, and its own build directory cache `dist-postgres-<target>`;
   - simplex-chat-test built with `--constraint 'simplexmq +client_postgres' --constraint 'simplex-chat +client_postgres'` at -O0 (step "Build CLI");
   - PostgreSQL 15 in Docker, with trust authentication and `max_connections=3000`, and postgresql-client-15 for pg_dump;
-  - the selected tests with `PGHOST=localhost`, each attempt limited to 60 minutes; `ALLOW_EMPTY=true` omits `--fail-on=empty`, so a selection of SQLite-only tests runs nothing here;
+  - the selected tests with `PGHOST=localhost`, each attempt limited to 90 minutes; `ALLOW_EMPTY=true` omits `--fail-on=empty`, so a selection of SQLite-only tests runs nothing here;
   - step "Check generated files", artifact `generated-files-ubuntu-22.04-ghc<version>-postgres`.
 - Query plans: the test "verify and overwrite query plans" runs on Linux only. It explains the queries recorded in the run and the queries of the saved files (src/Simplex/Chat/Store/SQLite/Migrations/*_query_plans.txt), writes each query once, and fails when a file changed: a recorded query was missing, a plan changed, or a merge left two entries of one query. Saved queries that the run did not record are kept, except those whose plan became an error. Queries that run only on retries or other timing-dependent paths are added by the first run that records them.
 - Local:

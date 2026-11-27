@@ -719,6 +719,7 @@ namesConfigTests = describe "StoreService names: config" $ do
   it "reads codes_only on and off as a known setting, off when absent, and refuses any other value" testNamesCodesOnly
   it "reads record_edits_per_year as a known setting, 3 when absent, and refuses a value outside 1-100" testNamesRecordEdits
   it "reads min_price_cents_per_year as a known setting, 5000 when absent, and refuses a value below 1" testNamesPriceFloor
+  it "reads unavailable_file as a known setting, none when absent" testNamesUnavailable
   it "accepts [issuer] dev_keys on chain 31337 only, with [names] on" testDevKeysLocalChain
   it "refuses a malformed dev_keys entry or an index named twice, quoting no secret" testDevKeysMalformed
   it "accepts [issuer] dev_keys beside Stripe test keys and a BTCPay on loopback" testDevKeysTestPayments
@@ -989,6 +990,15 @@ testNamesPriceFloor = do
   forM_ ["0", "-5000"] $ \v ->
     namesRefusal (namesSection <> ["min_price_cents_per_year = " <> v]) chainSection `shouldReturn` "names.min_price_cents_per_year must be a whole number of at least 1"
   namesRefusal (namesSection <> ["min_price_cents_per_year = 50.00"]) chainSection `shouldReturn` "names.min_price_cents_per_year must be a whole number of at least 1"
+
+testNamesUnavailable :: IO ()
+testNamesUnavailable = do
+  NamesConfig {nUnavailableFile = absent} <- parsedNames namesSection chainSection
+  absent `shouldBe` Nothing
+  let ns = namesSection <> ["unavailable_file = /etc/simplex/unavailable.txt"]
+  unknownIn (namesIni ns chainSection) `shouldBe` []
+  NamesConfig {nUnavailableFile} <- parsedNames ns chainSection
+  nUnavailableFile `shouldBe` Just "/etc/simplex/unavailable.txt"
 
 -- | Names on the local chain with no payment provider, as a run with dev keys has.
 localNamesIni :: [T.Text] -> T.Text
