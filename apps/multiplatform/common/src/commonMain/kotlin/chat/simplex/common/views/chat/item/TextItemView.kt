@@ -324,10 +324,7 @@ fun MarkdownText (
       var hasSecrets = false
       var hasCommands = false
       var hasModals = false
-      var hasChainAddresses = false
       val clipboard = LocalClipboardManager.current
-      val openChainAddress: ((Format.ChainAddressLink) -> Unit)? =
-        if (chainAddressSender != null && uriHandler != null) ({ link -> showOpenWalletAlert(chainAddressSender, link, uriHandler, clipboard) }) else null
       val hiddenSecrets = mutableListOf<IntRange>()
       val annotatedText = buildAnnotatedString {
         inlineContent?.first?.invoke(this)
@@ -436,7 +433,7 @@ fun MarkdownText (
               if (chainAddressSender == null) {
                 append(ft.text)
               } else {
-                hasChainAddresses = true
+                hasLinks = true
                 val linkText = ft.format.chainAddress.linkText(ft.format.showText, chainAddressSender.messageSigned)
                 val ftStyle = if (linkText.warning) Format.linkStyle.copy(color = WarningOrange) else Format.linkStyle
                 withAnnotation(tag = "CHAIN_ADDRESS", annotation = i.toString()) {
@@ -498,7 +495,7 @@ fun MarkdownText (
           drawContent()
           drawSecretPattern(hiddenSecrets, layoutResult.value)
         })
-      if ((hasLinks && uriHandler != null) || hasSecrets || (hasCommands && sendCommandMsg != null) || hasModals || (hasChainAddresses && openChainAddress != null)) {
+      if ((hasLinks && uriHandler != null) || hasSecrets || (hasCommands && sendCommandMsg != null) || hasModals) {
         val icon = remember { mutableStateOf(PointerIcon.Text) }
         ClickableText(annotatedText, style = style, selectionRange = clampedRange, modifier = textModifier.pointerHoverIcon(icon.value), softWrap = softWrap, maxLines = maxLines, overflow = overflow,
           onLongClick = { offset ->
@@ -526,6 +523,10 @@ fun MarkdownText (
                 // link; planAndConnect resolves it on the core (name target).
                 if (nameText != null) uriHandler.openVerifiedSimplexUri(nameText)
               }
+              withAnnotation("CHAIN_ADDRESS") { a ->
+                val link = a.item.toIntOrNull()?.let { formattedText.getOrNull(it)?.format } as? Format.ChainAddressLink
+                if (link != null && chainAddressSender != null) showOpenWalletAlert(chainAddressSender, link, uriHandler, clipboard)
+              }
             }
             if (hasSecrets) {
               withAnnotation("SECRET") { a ->
@@ -541,15 +542,10 @@ fun MarkdownText (
                 (a.item.toIntOrNull()?.let { formattedText.getOrNull(it)?.format } as? Format.Modal)?.let { openMarkdownModal(it) }
               }
             }
-            if (hasChainAddresses && openChainAddress != null) {
-              withAnnotation("CHAIN_ADDRESS") { a ->
-                (a.item.toIntOrNull()?.let { formattedText.getOrNull(it)?.format } as? Format.ChainAddressLink)?.let(openChainAddress)
-              }
-            }
           },
           onHover = { offset ->
             val hasAnnotation: (String) -> Boolean = { tag -> annotatedText.hasStringAnnotations(tag, start = offset, end = offset) }
-            val hand = hasAnnotation("WEB_URL") || hasAnnotation("SIMPLEX_URL") || hasAnnotation("OTHER_URL") || hasAnnotation("SIMPLEX_NAME") || hasAnnotation("SECRET") || hasAnnotation("COMMAND") || hasAnnotation("MODAL") || (openChainAddress != null && hasAnnotation("CHAIN_ADDRESS"))
+            val hand = hasAnnotation("WEB_URL") || hasAnnotation("SIMPLEX_URL") || hasAnnotation("OTHER_URL") || hasAnnotation("SIMPLEX_NAME") || hasAnnotation("SECRET") || hasAnnotation("COMMAND") || hasAnnotation("MODAL") || hasAnnotation("CHAIN_ADDRESS")
             icon.value = if (hand) PointerIcon.Hand else PointerIcon.Text
           },
           onHoverExit = {
@@ -561,7 +557,7 @@ fun MarkdownText (
                 || annotatedText.hasStringAnnotations(tag = "SIMPLEX_URL", start = offset, end = offset)
                 || annotatedText.hasStringAnnotations(tag = "OTHER_URL", start = offset, end = offset)
                 || annotatedText.hasStringAnnotations(tag = "MODAL", start = offset, end = offset)
-                || (openChainAddress != null && annotatedText.hasStringAnnotations(tag = "CHAIN_ADDRESS", start = offset, end = offset))
+                || annotatedText.hasStringAnnotations(tag = "CHAIN_ADDRESS", start = offset, end = offset)
           },
           onTextLayout = onTextLayout
         )
