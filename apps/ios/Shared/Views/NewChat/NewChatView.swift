@@ -1357,8 +1357,6 @@ private func showOpenKnownGroupAlert(
     )
 }
 
-var nameSaleStart = Date(timeIntervalSince1970: 1797098400)
-
 private func namePrice(_ price: NamePrice) -> String {
     let dollars = "$\(price.amount / 100)" + (price.amount % 100 == 0 ? "" : String(format: ".%02lld", price.amount % 100))
     return String.localizedStringWithFormat(NSLocalizedString("%1$@ for %2$d years", comment: "name price"), dollars, price.years)
@@ -1396,7 +1394,7 @@ func showNameWarningAlert(
         }
         alert(NSLocalizedString("Your name has expired", comment: "alert title"), message, action: (NSLocalizedString("Renew", comment: "alert action"), openHowTo))
     case let .available(price) where !own:
-        let beforeSale = Date.now < nameSaleStart
+        let beforeSale = Date.now < simplexNameSaleStart
         alert(
             openExistingChat == nil ? NSLocalizedString("Name not registered", comment: "alert title") : NSLocalizedString("Name no longer registered", comment: "alert title"),
             beforeSale
@@ -1405,7 +1403,7 @@ func showNameWarningAlert(
             action: (beforeSale ? NSLocalizedString("Open simplex.domains", comment: "alert action") : NSLocalizedString("Register", comment: "alert action"), openHowTo)
         )
     case let .available(price):
-        let beforeSale = Date.now < nameSaleStart
+        let beforeSale = Date.now < simplexNameSaleStart
         alert(
             NSLocalizedString("Your name has expired", comment: "alert title"),
             beforeSale

@@ -21,6 +21,7 @@ import chat.simplex.common.views.chat.item.openBrowserAlert
 import chat.simplex.common.views.chat.subscriberCountStr
 import chat.simplex.common.views.chatlist.*
 import chat.simplex.common.views.helpers.*
+import chat.simplex.common.views.usersettings.simplexNameSaleStart
 import chat.simplex.common.views.usersettings.simplexTeamUri
 import chat.simplex.res.*
 import kotlinx.coroutines.*
@@ -140,8 +141,6 @@ private fun namePrice(price: NamePrice): String {
   return String.format(generalGetString(MR.strings.simplex_name_price_for_years), dollars, price.years)
 }
 
-var nameSaleStart: Instant = Instant.fromEpochSeconds(1797098400)
-
 private fun openNameHowTo(uriHandler: UriHandler) = openBrowserAlert("https://simplex.domains", uriHandler)
 
 fun showNameWarningAlert(
@@ -195,7 +194,7 @@ fun showNameWarningAlert(
       generalGetString(MR.strings.simplex_name_renew) to ::openNameHowTo
     )
     is NameWarning.Available -> {
-      val beforeSale = Clock.System.now() < nameSaleStart
+      val beforeSale = Clock.System.now() < simplexNameSaleStart
       if (!own) alert(
         generalGetString(if (openExistingChat == null) MR.strings.simplex_name_not_registered else MR.strings.simplex_name_no_longer_registered),
         if (beforeSale) String.format(generalGetString(MR.strings.simplex_name_not_registered_link_desc), nameStr)

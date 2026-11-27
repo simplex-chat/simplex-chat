@@ -815,7 +815,7 @@ private func saveAddressSettings(_ settings: AddressSettingsState, _ savedSettin
     }
 }
 
-private let simplexNameSaleStart = Calendar(identifier: .gregorian).date(from: DateComponents(timeZone: TimeZone(identifier: "UTC"), year: 2026, month: 12, day: 12, hour: 18))!
+var simplexNameSaleStart = Calendar(identifier: .gregorian).date(from: DateComponents(timeZone: TimeZone(identifier: "UTC"), year: 2026, month: 12, day: 12, hour: 18))!
 
 struct SetSimplexDomainView: View {
     let title: LocalizedStringKey
