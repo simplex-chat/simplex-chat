@@ -1182,7 +1182,6 @@ Chain address or URI in a message text. currency: what the link text names, reso
 **Record type**:
 - currency: [ChainCurrency](#chaincurrency)
 - address: string
-- label: string?
 - walletUri: string
 
 

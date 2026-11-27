@@ -367,7 +367,6 @@
                 "amount": "0.001",
                 "type": "bitcoin"
               },
-              "label": "SimpleX",
               "walletUri": "bitcoin:bc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66505d4u?amount=0.001&label=SimpleX"
             },
             "type": "chainAddressLink"
@@ -506,7 +505,6 @@
                 "ticker": "XMR",
                 "type": "ticker"
               },
-              "label": "SimpleX",
               "walletUri": "monero:8A3ZWAXrrQddvnT1fPrtbK86ZAoM4nai3Gjg1LEow3JWcryJtovMnHYZnxTJpCLmAbfWbnPMeTzPmMBjAhyd4xoM89hYq1c?tx_amount=0.25&recipient_name=SimpleX"
             },
             "type": "chainAddressLink"
@@ -617,7 +615,6 @@
                 "amount": "0.001",
                 "type": "bitcoin"
               },
-              "label": "SimpleX",
               "walletUri": "bitcoin:bc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66505d4u?amount=0.001&label=SimpleX"
             },
             "type": "chainAddressLink"
@@ -732,7 +729,6 @@
                 "amount": "0.001",
                 "type": "bitcoin"
               },
-              "label": "SimpleX",
               "walletUri": "bitcoin:bc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66505d4u?amount=0.001&label=SimpleX&message=Thank%20you"
             },
             "type": "chainAddressLink"

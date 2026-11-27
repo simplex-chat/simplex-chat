@@ -5460,16 +5460,15 @@ sealed class Format {
 }
 
 @Serializable
-class ChainAddress(val currency: ChainCurrency, val address: String, val label: String?, val walletUri: String) {
+class ChainAddress(val currency: ChainCurrency, val address: String, val walletUri: String) {
   val shortAddress: String get() = if (address.length > 10) "${address.take(6)}…\u2060${address.takeLast(4)}" else address
 
   fun linkText(showText: String?, messageSigned: Boolean): ChainLinkText {
-    val shownLabel = showText ?: label
     val notSigned = if (messageSigned) emptyList() else listOf(generalGetString(MR.strings.chain_address_not_signed))
     fun link(sign: String?, text: String, chainName: String? = null, toAddress: Boolean) =
-      ChainLinkText(shownLabel, sign, text, chainName, warning = false, toAddress = if (toAddress) shortAddress else null)
+      ChainLinkText(showText, sign, text, chainName, warning = false, toAddress = if (toAddress) shortAddress else null)
     fun warning(reasons: List<String>) =
-      ChainLinkText(shownLabel, "⚠", "$shortAddress (${reasons.joinToString(", ")})", chainName = null, warning = true, toAddress = null)
+      ChainLinkText(showText, "⚠", "$shortAddress (${reasons.joinToString(", ")})", chainName = null, warning = true, toAddress = null)
     val c = currency
     if (!messageSigned && c !is ChainCurrency.Unknown) return warning(notSigned)
     return when (c) {

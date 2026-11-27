@@ -43,7 +43,7 @@ private const val LABELED_UNKNOWN_CHAIN = "[Donate](ethereum:$ETH@99999)"
 
 private val pageMessages = listOf("Donations:", "Suggested donation:", "For the coffee:", "If you want to support the project:", "Or this exact amount:", "On Ethereum:", "Cheaper on Arbitrum:", "Other networks:")
 
-private val previewChainAddress = ChainAddress(ChainCurrency.Bitcoin("0.0012"), BTC, null, "bitcoin:$BTC?amount=0.0012")
+private val previewChainAddress = ChainAddress(ChainCurrency.Bitcoin("0.0012"), BTC, "bitcoin:$BTC?amount=0.0012")
 
 private val alice = ChainAddressSender("alice", forwarded = false, messageSigned = true)
 
@@ -54,22 +54,22 @@ class ChainAddressesTest : RecordedApiTest() {
     val shown = recordedMarkdown().mapValues { (_, parsed) -> parsed.formattedText!!.joinToString("") { segmentDisplayText(it, null, SimplexLinkMode.DESCRIPTION) } }
     assertEquals(
       mapOf(
-        "<bitcoin:$BTC?amount=0.001&label=SimpleX>" to "SimpleX ₿\u00A00.001",
+        "<bitcoin:$BTC?amount=0.001&label=SimpleX>" to "₿\u00A00.001",
         "Cheaper on Arbitrum: ethereum:$ETH@42161?value=1e16" to "Cheaper on Arbitrum: ETH\u00A00.01 (Arbitrum One)",
         "Donations: $BTC. Cheers" to "Donations: ₿\u00A0bc1q2g…\u20605d4u. Cheers",
         "For the coffee: $INVOICE thanks!" to "For the coffee: ϟ\u00A00.0025 thanks!",
         "If you want to support the project: [Donate](monero:$XMR). Cheers" to "If you want to support the project: Donate XMR\u00A08A3ZWA…\u2060Yq1c. Cheers",
         "On Ethereum: $ETH" to "On Ethereum: ⚠\u00A00xD704…\u2060c86a (unknown chain)",
-        "Or this exact amount: monero:$XMR?tx_amount=0.25&recipient_name=SimpleX" to "Or this exact amount: SimpleX XMR\u00A00.25",
+        "Or this exact amount: monero:$XMR?tx_amount=0.25&recipient_name=SimpleX" to "Or this exact amount: XMR\u00A00.25",
         "Other networks: t1fwjQW5gpFhDqXNhxqDWyF9j9WeKvVS5Jg, ltc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66snwfdv, D99pV4n9TrPxBPCkQGx4w4SMSa6QjRBxPf, qq6c8vfvxqrk6rhdysgvkhqc24sggkfsx5nqvdlqcg, solana:7JCf5m3TiHmYKZVr6jCu1KeZVtb9Y1jRMQDU69p5ARnu" to
           "Other networks: ZEC\u00A0t1fwjQ…\u2060S5Jg, LTC\u00A0ltc1q2…\u2060wfdv, DOGE\u00A0D99pV4…\u2060BxPf, BCH\u00A0qq6c8v…\u2060lqcg, SOL\u00A07JCf5m…\u2060ARnu",
-        "Suggested donation: bitcoin:$BTC?amount=0.001&label=SimpleX Thank you!" to "Suggested donation: SimpleX ₿\u00A00.001 Thank you!",
+        "Suggested donation: bitcoin:$BTC?amount=0.001&label=SimpleX Thank you!" to "Suggested donation: ₿\u00A00.001 Thank you!",
         "[Donate](monero:$XMR)" to "Donate XMR\u00A08A3ZWA…\u2060Yq1c",
         LABELED_TOKEN to "Dinner USDT\u00A010 (Polygon)",
         LABELED_UNKNOWN_CHAIN to "Donate ⚠\u00A00xD704…\u2060c86a (unknown chain)",
         "[$BTC](bitcoin:$BTC)" to "₿\u00A0bc1q2g…\u20605d4u",
         BTC to "₿\u00A0bc1q2g…\u20605d4u",
-        "bitcoin:$BTC?amount=0.001&label=SimpleX&message=Thank%20you" to "SimpleX ₿\u00A00.001",
+        "bitcoin:$BTC?amount=0.001&label=SimpleX&message=Thank%20you" to "₿\u00A00.001",
         UNKNOWN_TOKEN to "⚠\u00A00xD704…\u2060c86a (unknown token)",
         "ethereum:$ETH@100?value=1e16" to "⚠\u00A00xD704…\u2060c86a (unknown chain)",
         USDT_POLYGON to "USDT\u00A010 (Polygon)",
@@ -93,8 +93,8 @@ class ChainAddressesTest : RecordedApiTest() {
   fun notSignedKeepsLabelAndUnknownReason() {
     val markdown = recordedMarkdown()
     assertEquals(
-      listOf("SimpleX ⚠\u00A0bc1q2g…\u20605d4u (not signed)", "⚠\u00A00xD704…\u2060c86a (unknown chain, not signed)"),
-      listOf("<bitcoin:$BTC?amount=0.001&label=SimpleX>", "ethereum:$ETH@100?value=1e16").map { key ->
+      listOf("Dinner ⚠\u00A00xD704…\u2060c86a (not signed)", "⚠\u00A00xD704…\u2060c86a (unknown chain, not signed)"),
+      listOf(LABELED_TOKEN, "ethereum:$ETH@100?value=1e16").map { key ->
         markdown.getValue(key).formattedText!!.joinToString("") { segmentDisplayText(it, null, SimplexLinkMode.DESCRIPTION, messageSigned = false) }
       }
     )
@@ -112,7 +112,7 @@ class ChainAddressesTest : RecordedApiTest() {
     val markdown = recordedMarkdown()
     setContent {
       Column {
-        listOf("Donations: $BTC. Cheers", "<bitcoin:$BTC?amount=0.001&label=SimpleX>", LABELED_TOKEN).forEach { key ->
+        listOf("Donations: $BTC. Cheers", LABELED_UNKNOWN_CHAIN, LABELED_TOKEN).forEach { key ->
           MarkdownText(key, markdown.getValue(key).formattedText, chainAddressSender = alice, toggleSecrets = false, linkMode = SimplexLinkMode.DESCRIPTION)
         }
       }
@@ -171,8 +171,8 @@ class ChainAddressesTest : RecordedApiTest() {
     val forwarded = ChainAddressSender("alice", forwarded = true, messageSigned = true)
     assertEquals(
       listOf(
-        "alice: SimpleX ₿\u00A00.001 to bc1q2g…\u20605d4u",
-        "alice forwarded: SimpleX ₿\u00A00.001 to bc1q2g…\u20605d4u",
+        "alice: ₿\u00A00.001 to bc1q2g…\u20605d4u",
+        "alice forwarded: ₿\u00A00.001 to bc1q2g…\u20605d4u",
         "alice: USDT\u00A010 (Polygon) to 0xD704…\u2060c86a",
         "alice: ⚠\u00A00xD704…\u2060c86a (unknown chain)",
         "alice: ϟ\u00A0lnurl1…\u20605fns"

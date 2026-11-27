@@ -533,9 +533,6 @@ textWithSimplexNames = describe "text with SimpleX names" do
 chainLink :: ChainAddress -> Text -> Markdown
 chainLink = markdown . ChainAddressLink Nothing
 
-onChain :: ChainCurrency -> Text -> Text -> ChainAddress
-onChain c a = ChainAddress c a Nothing
-
 coin :: Text -> ChainCurrency
 coin t = CYTicker t Nothing Nothing
 
@@ -550,25 +547,25 @@ isText t = t <==> unmarked t
 chainAddresses :: Spec
 chainAddresses = describe "chain addresses" do
   it "bare addresses and invoices with a checksum" do
-    btc `linksTo` onChain bitcoin btc ("bitcoin:" <> btc)
-    T.toUpper btc `linksTo` onChain bitcoin btc ("bitcoin:" <> T.toUpper btc)
-    ("send to " <> btc <> ".") <==> "send to " <> chainLink (onChain bitcoin btc $ "bitcoin:" <> btc) btc <> "."
-    taproot `linksTo` onChain bitcoin taproot ("bitcoin:" <> taproot)
-    p2sh `linksTo` onChain bitcoin p2sh ("bitcoin:" <> p2sh)
-    (p2sh <> ".") <==> chainLink (onChain bitcoin p2sh $ "bitcoin:" <> p2sh) p2sh <> "."
-    ltc `linksTo` onChain (coin "LTC") ltc ("litecoin:" <> ltc)
-    T.toUpper ltc `linksTo` onChain (coin "LTC") ltc ("litecoin:" <> T.toUpper ltc)
-    ltcM `linksTo` onChain (coin "LTC") ltcM ("litecoin:" <> ltcM)
-    xmr `linksTo` onChain (coin "XMR") xmr ("monero:" <> xmr)
-    bch `linksTo` onChain (coin "BCH") bch ("bitcoincash:" <> bch)
-    zecT `linksTo` onChain (coin "ZEC") zecT ("zcash:" <> zecT)
-    zecZ `linksTo` onChain (coin "ZEC") zecZ ("zcash:" <> zecZ)
-    zecU `linksTo` onChain (coin "ZEC") zecU ("zcash:" <> zecU)
-    fluxZ `linksTo` onChain (coin "FLUX") fluxZ ("flux:" <> fluxZ)
-    doge `linksTo` onChain (coin "DOGE") doge ("dogecoin:" <> doge)
-    eth `linksTo` onChain (CYUnknown UCChain) eth ("ethereum:" <> eth)
-    coffee `linksTo` onChain (CYLightning $ Just "0.0025") coffee ("lightning:" <> coffee)
-    lnurlUpper `linksTo` onChain (CYLightning Nothing) (T.toLower lnurlUpper) ("lightning:" <> lnurlUpper)
+    btc `linksTo` ChainAddress bitcoin btc ("bitcoin:" <> btc)
+    T.toUpper btc `linksTo` ChainAddress bitcoin btc ("bitcoin:" <> T.toUpper btc)
+    ("send to " <> btc <> ".") <==> "send to " <> chainLink (ChainAddress bitcoin btc $ "bitcoin:" <> btc) btc <> "."
+    taproot `linksTo` ChainAddress bitcoin taproot ("bitcoin:" <> taproot)
+    p2sh `linksTo` ChainAddress bitcoin p2sh ("bitcoin:" <> p2sh)
+    (p2sh <> ".") <==> chainLink (ChainAddress bitcoin p2sh $ "bitcoin:" <> p2sh) p2sh <> "."
+    ltc `linksTo` ChainAddress (coin "LTC") ltc ("litecoin:" <> ltc)
+    T.toUpper ltc `linksTo` ChainAddress (coin "LTC") ltc ("litecoin:" <> T.toUpper ltc)
+    ltcM `linksTo` ChainAddress (coin "LTC") ltcM ("litecoin:" <> ltcM)
+    xmr `linksTo` ChainAddress (coin "XMR") xmr ("monero:" <> xmr)
+    bch `linksTo` ChainAddress (coin "BCH") bch ("bitcoincash:" <> bch)
+    zecT `linksTo` ChainAddress (coin "ZEC") zecT ("zcash:" <> zecT)
+    zecZ `linksTo` ChainAddress (coin "ZEC") zecZ ("zcash:" <> zecZ)
+    zecU `linksTo` ChainAddress (coin "ZEC") zecU ("zcash:" <> zecU)
+    fluxZ `linksTo` ChainAddress (coin "FLUX") fluxZ ("flux:" <> fluxZ)
+    doge `linksTo` ChainAddress (coin "DOGE") doge ("dogecoin:" <> doge)
+    eth `linksTo` ChainAddress (CYUnknown UCChain) eth ("ethereum:" <> eth)
+    coffee `linksTo` ChainAddress (CYLightning $ Just "0.0025") coffee ("lightning:" <> coffee)
+    lnurlUpper `linksTo` ChainAddress (CYLightning Nothing) (T.toLower lnurlUpper) ("lightning:" <> lnurlUpper)
   it "text: a wrong checksum, no checksum, a testnet, code, a Lightning Address" do
     isText "bc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66505d4v"
     isText "bc1p0xlxvlhemja6c4dqv22uapctqupfhlxm9h8z3k2e72q4k9hcz7vqh2y7hd"
@@ -593,48 +590,48 @@ chainAddresses = describe "chain addresses" do
     bareAddressForm (encodeUtf8 sol) `shouldBe` False
     bareAddressForm "ThankYouForTheHelpWithTheMove" `shouldBe` False
   it "URIs" do
-    ("BITCOIN:" <> T.toUpper btc <> "?AMOUNT=0.001") `linksTo` onChain (CYBitcoin $ Just "0.001") btc ("bitcoin:" <> T.toUpper btc <> "?amount=0.001")
+    ("BITCOIN:" <> T.toUpper btc <> "?AMOUNT=0.001") `linksTo` ChainAddress (CYBitcoin $ Just "0.001") btc ("bitcoin:" <> T.toUpper btc <> "?amount=0.001")
     ("bitcoin:" <> btc <> "?amount=0.001&Label=SimpleX%20Chat&message=Donation&pop=app%3A")
-      `linksTo` ChainAddress (CYBitcoin $ Just "0.001") btc (Just "SimpleX Chat") ("bitcoin:" <> btc <> "?amount=0.001&label=SimpleX%20Chat&message=Donation&pop=app%3A")
-    ("bitcoin:" <> btc <> "?lightning=" <> coffee) `linksTo` onChain bitcoin btc ("bitcoin:" <> btc <> "?lightning=" <> coffee)
-    ("bitcoin:" <> btc <> "?lightning=" <> coffee <> "&label=" <> coffee) `linksTo` onChain bitcoin btc ("bitcoin:" <> btc <> "?lightning=" <> coffee <> "&label=" <> coffee)
-    ("bitcoin:?lightning=" <> coffee) `linksTo` onChain (CYLightning $ Just "0.0025") coffee ("bitcoin:?lightning=" <> coffee)
-    ("lightning:" <> offerText) `linksTo` onChain (CYLightning Nothing) offerText ("lightning:" <> offerText)
-    ("dogecoin://" <> doge) `linksTo` onChain (coin "DOGE") doge ("dogecoin:" <> doge)
-    ("bitcoincash:" <> bch) `linksTo` onChain (coin "BCH") bch ("bitcoincash:" <> bch)
-    ("litecoin:" <> ltcM) `linksTo` onChain (coin "LTC") ltcM ("litecoin:" <> ltcM)
+      `linksTo` ChainAddress (CYBitcoin $ Just "0.001") btc ("bitcoin:" <> btc <> "?amount=0.001&label=SimpleX%20Chat&message=Donation&pop=app%3A")
+    ("bitcoin:" <> btc <> "?lightning=" <> coffee) `linksTo` ChainAddress bitcoin btc ("bitcoin:" <> btc <> "?lightning=" <> coffee)
+    ("bitcoin:" <> btc <> "?lightning=" <> coffee <> "&label=" <> coffee) `linksTo` ChainAddress bitcoin btc ("bitcoin:" <> btc <> "?lightning=" <> coffee <> "&label=" <> coffee)
+    ("bitcoin:?lightning=" <> coffee) `linksTo` ChainAddress (CYLightning $ Just "0.0025") coffee ("bitcoin:?lightning=" <> coffee)
+    ("lightning:" <> offerText) `linksTo` ChainAddress (CYLightning Nothing) offerText ("lightning:" <> offerText)
+    ("dogecoin://" <> doge) `linksTo` ChainAddress (coin "DOGE") doge ("dogecoin:" <> doge)
+    ("bitcoincash:" <> bch) `linksTo` ChainAddress (coin "BCH") bch ("bitcoincash:" <> bch)
+    ("litecoin:" <> ltcM) `linksTo` ChainAddress (coin "LTC") ltcM ("litecoin:" <> ltcM)
     ("monero:" <> xmr <> "?tx_amount=0.5&recipient_name=SimpleX&tx_description=Donation%20to%20SimpleX")
-      `linksTo` ChainAddress (CYTicker "XMR" Nothing $ Just "0.5") xmr (Just "SimpleX") ("monero:" <> xmr <> "?tx_amount=0.5&recipient_name=SimpleX&tx_description=Donation%20to%20SimpleX")
-    ("zcash:" <> zecU <> "?amount=0.1&memo=" <> memo) `linksTo` onChain (CYTicker "ZEC" Nothing $ Just "0.1") zecU ("zcash:" <> zecU <> "?amount=0.1&memo=" <> memo)
-    ("solana:" <> sol <> "?amount=0.5") `linksTo` onChain (CYTicker "SOL" Nothing $ Just "0.5") sol ("solana:" <> sol <> "?amount=0.5")
-    ("solana:" <> sol <> "?amount=1.5&spl-token=" <> usdc) `linksTo` onChain (CYTicker "USDC" (Just "Solana") $ Just "1.5") sol ("solana:" <> sol <> "?amount=1.5&spl-token=" <> usdc)
-    ("solana:" <> sol <> "?amount=10&spl-token=" <> sol) `linksTo` onChain (CYUnknown UCToken) sol ("solana:" <> sol <> "?amount=10&spl-token=" <> sol)
+      `linksTo` ChainAddress (CYTicker "XMR" Nothing $ Just "0.5") xmr ("monero:" <> xmr <> "?tx_amount=0.5&recipient_name=SimpleX&tx_description=Donation%20to%20SimpleX")
+    ("zcash:" <> zecU <> "?amount=0.1&memo=" <> memo) `linksTo` ChainAddress (CYTicker "ZEC" Nothing $ Just "0.1") zecU ("zcash:" <> zecU <> "?amount=0.1&memo=" <> memo)
+    ("solana:" <> sol <> "?amount=0.5") `linksTo` ChainAddress (CYTicker "SOL" Nothing $ Just "0.5") sol ("solana:" <> sol <> "?amount=0.5")
+    ("solana:" <> sol <> "?amount=1.5&spl-token=" <> usdc) `linksTo` ChainAddress (CYTicker "USDC" (Just "Solana") $ Just "1.5") sol ("solana:" <> sol <> "?amount=1.5&spl-token=" <> usdc)
+    ("solana:" <> sol <> "?amount=10&spl-token=" <> sol) `linksTo` ChainAddress (CYUnknown UCToken) sol ("solana:" <> sol <> "?amount=10&spl-token=" <> sol)
   it "EVM URIs: chains and tokens of the tables, and unknown ones" do
-    ("ethereum:" <> eth <> "@42161?value=1e16") `linksTo` onChain (CYTicker "ETH" (Just "Arbitrum One") $ Just "0.01") eth ("ethereum:" <> eth <> "@42161?value=1e16")
-    ("ethereum:" <> eth <> "@1?value=1e16") `linksTo` onChain (CYTicker "ETH" Nothing $ Just "0.01") eth ("ethereum:" <> eth <> "@1?value=1e16")
-    ("ethereum:" <> eth <> "@137?value=5e18") `linksTo` onChain (CYTicker "POL" (Just "Polygon") $ Just "5") eth ("ethereum:" <> eth <> "@137?value=5e18")
-    ("ethereum:" <> eth <> "@99999?value=1e16") `linksTo` onChain (CYUnknown UCChain) eth ("ethereum:" <> eth <> "@99999?value=1e16")
-    ("ethereum:" <> eth <> "?value=1e16") `linksTo` onChain (CYUnknown UCChain) eth ("ethereum:" <> eth <> "?value=1e16")
-    ("ethereum:" <> T.toLower eth) `linksTo` onChain (CYUnknown UCChain) eth ("ethereum:" <> T.toLower eth)
-    usdtTransfer `linksTo` onChain (CYTicker "USDT" Nothing $ Just "5") eth usdtTransfer
+    ("ethereum:" <> eth <> "@42161?value=1e16") `linksTo` ChainAddress (CYTicker "ETH" (Just "Arbitrum One") $ Just "0.01") eth ("ethereum:" <> eth <> "@42161?value=1e16")
+    ("ethereum:" <> eth <> "@1?value=1e16") `linksTo` ChainAddress (CYTicker "ETH" Nothing $ Just "0.01") eth ("ethereum:" <> eth <> "@1?value=1e16")
+    ("ethereum:" <> eth <> "@137?value=5e18") `linksTo` ChainAddress (CYTicker "POL" (Just "Polygon") $ Just "5") eth ("ethereum:" <> eth <> "@137?value=5e18")
+    ("ethereum:" <> eth <> "@99999?value=1e16") `linksTo` ChainAddress (CYUnknown UCChain) eth ("ethereum:" <> eth <> "@99999?value=1e16")
+    ("ethereum:" <> eth <> "?value=1e16") `linksTo` ChainAddress (CYUnknown UCChain) eth ("ethereum:" <> eth <> "?value=1e16")
+    ("ethereum:" <> T.toLower eth) `linksTo` ChainAddress (CYUnknown UCChain) eth ("ethereum:" <> T.toLower eth)
+    usdtTransfer `linksTo` ChainAddress (CYTicker "USDT" Nothing $ Just "5") eth usdtTransfer
     ("ethereum:" <> T.toLower usdt <> "@1/transfer?address=" <> eth <> "&uint256=5000000")
-      `linksTo` onChain (CYTicker "USDT" Nothing $ Just "5") eth ("ethereum:" <> T.toLower usdt <> "@1/transfer?address=" <> eth <> "&uint256=5000000")
+      `linksTo` ChainAddress (CYTicker "USDT" Nothing $ Just "5") eth ("ethereum:" <> T.toLower usdt <> "@1/transfer?address=" <> eth <> "&uint256=5000000")
     ("ethereum:0xc2132D05D31c914a87C6611C10748AEb04B58e8F@137/transfer?address=" <> eth <> "&uint256=10000000")
-      `linksTo` onChain (CYTicker "USDT" (Just "Polygon") $ Just "10") eth ("ethereum:0xc2132D05D31c914a87C6611C10748AEb04B58e8F@137/transfer?address=" <> eth <> "&uint256=10000000")
+      `linksTo` ChainAddress (CYTicker "USDT" (Just "Polygon") $ Just "10") eth ("ethereum:0xc2132D05D31c914a87C6611C10748AEb04B58e8F@137/transfer?address=" <> eth <> "&uint256=10000000")
     ("ethereum:0x55d398326f99059fF775485246999027B3197955@56/transfer?address=" <> eth <> "&uint256=1500000000000000000")
-      `linksTo` onChain (CYTicker "USDT" (Just "BNB Smart Chain") $ Just "1.5") eth ("ethereum:0x55d398326f99059fF775485246999027B3197955@56/transfer?address=" <> eth <> "&uint256=1500000000000000000")
+      `linksTo` ChainAddress (CYTicker "USDT" (Just "BNB Smart Chain") $ Just "1.5") eth ("ethereum:0x55d398326f99059fF775485246999027B3197955@56/transfer?address=" <> eth <> "&uint256=1500000000000000000")
     ("ethereum:0x1111111111111111111111111111111111111111@137/transfer?address=" <> eth <> "&uint256=1")
-      `linksTo` onChain (CYUnknown UCToken) eth ("ethereum:0x1111111111111111111111111111111111111111@137/transfer?address=" <> eth <> "&uint256=1")
-    ("ethereum:" <> usdt <> "@99999/transfer?address=" <> eth <> "&uint256=1") `linksTo` onChain (CYUnknown UCChainAndToken) eth ("ethereum:" <> usdt <> "@99999/transfer?address=" <> eth <> "&uint256=1")
-    ("ethereum:" <> usdt <> "/transfer?address=" <> eth <> "&uint256=1") `linksTo` onChain (CYUnknown UCChainAndToken) eth ("ethereum:" <> usdt <> "/transfer?address=" <> eth <> "&uint256=1")
+      `linksTo` ChainAddress (CYUnknown UCToken) eth ("ethereum:0x1111111111111111111111111111111111111111@137/transfer?address=" <> eth <> "&uint256=1")
+    ("ethereum:" <> usdt <> "@99999/transfer?address=" <> eth <> "&uint256=1") `linksTo` ChainAddress (CYUnknown UCChainAndToken) eth ("ethereum:" <> usdt <> "@99999/transfer?address=" <> eth <> "&uint256=1")
+    ("ethereum:" <> usdt <> "/transfer?address=" <> eth <> "&uint256=1") `linksTo` ChainAddress (CYUnknown UCChainAndToken) eth ("ethereum:" <> usdt <> "/transfer?address=" <> eth <> "&uint256=1")
   it "Flux URIs, by ZIP-321, with transparent and Sapling addresses" do
-    ("flux:" <> zecT <> "?amount=5&message=Thanks") `linksTo` onChain (CYTicker "FLUX" Nothing $ Just "5") zecT ("flux:" <> zecT <> "?amount=5&message=Thanks")
-    ("zel:" <> zecT <> "?amount=5") `linksTo` onChain (CYTicker "FLUX" Nothing $ Just "5") zecT ("zel:" <> zecT <> "?amount=5")
-    ("FLUX:" <> zecT <> "?AMOUNT=5") `linksTo` onChain (CYTicker "FLUX" Nothing $ Just "5") zecT ("flux:" <> zecT <> "?amount=5")
-    ("flux:" <> fluxZ <> "?amount=1&memo=" <> memo) `linksTo` onChain (CYTicker "FLUX" Nothing $ Just "1") fluxZ ("flux:" <> fluxZ <> "?amount=1&memo=" <> memo)
+    ("flux:" <> zecT <> "?amount=5&message=Thanks") `linksTo` ChainAddress (CYTicker "FLUX" Nothing $ Just "5") zecT ("flux:" <> zecT <> "?amount=5&message=Thanks")
+    ("zel:" <> zecT <> "?amount=5") `linksTo` ChainAddress (CYTicker "FLUX" Nothing $ Just "5") zecT ("zel:" <> zecT <> "?amount=5")
+    ("FLUX:" <> zecT <> "?AMOUNT=5") `linksTo` ChainAddress (CYTicker "FLUX" Nothing $ Just "5") zecT ("flux:" <> zecT <> "?amount=5")
+    ("flux:" <> fluxZ <> "?amount=1&memo=" <> memo) `linksTo` ChainAddress (CYTicker "FLUX" Nothing $ Just "1") fluxZ ("flux:" <> fluxZ <> "?amount=1&memo=" <> memo)
     ("zel:?action=pay&coin=flux&address=" <> zecT <> "&amount=3")
-      `linksTo` onChain (CYTicker "FLUX" Nothing $ Just "3") zecT ("zel:?action=pay&coin=flux&address=" <> zecT <> "&amount=3")
-    ("flux:?address=" <> zecT <> "&amount=3") `linksTo` onChain (CYTicker "FLUX" Nothing $ Just "3") zecT ("flux:?address=" <> zecT <> "&amount=3")
+      `linksTo` ChainAddress (CYTicker "FLUX" Nothing $ Just "3") zecT ("zel:?action=pay&coin=flux&address=" <> zecT <> "&amount=3")
+    ("flux:?address=" <> zecT <> "&amount=3") `linksTo` ChainAddress (CYTicker "FLUX" Nothing $ Just "3") zecT ("flux:?address=" <> zecT <> "&amount=3")
   it "URIs that are text" do
     isText $ "bitcoin:" <> btc <> "?amount=0.000000001"
     isText $ "bitcoin:" <> btc <> "?amount=1,000"
@@ -665,18 +662,18 @@ chainAddresses = describe "chain addresses" do
     isText $ "zel:?action=pay&address=" <> zecT <> "&amount=3"
     isText $ "zel:?action=pay&coin=flux&address=" <> zecT <> "&callback=https://example.com"
   it "hyperlinks and autolinks" do
-    ("[Donate](monero:" <> xmr <> ")") <==> markdown (ChainAddressLink (Just "Donate") $ onChain (coin "XMR") xmr $ "monero:" <> xmr) ("[Donate](monero:" <> xmr <> ")")
-    ("[" <> btc <> "](bitcoin:" <> btc <> ")") <==> chainLink (onChain bitcoin btc $ "bitcoin:" <> btc) ("[" <> btc <> "](bitcoin:" <> btc <> ")")
-    ("[" <> T.toUpper btc <> "](bitcoin:" <> btc <> ")") <==> chainLink (onChain bitcoin btc $ "bitcoin:" <> btc) ("[" <> T.toUpper btc <> "](bitcoin:" <> btc <> ")")
-    ("[" <> usdt <> "](" <> usdtTransfer <> ")") <==> chainLink (onChain (CYTicker "USDT" Nothing $ Just "5") eth usdtTransfer) ("[" <> usdt <> "](" <> usdtTransfer <> ")")
-    ("[bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4](bitcoin:" <> btc <> ")") <==> "[bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4](" <> chainLink (onChain bitcoin btc $ "bitcoin:" <> btc) ("bitcoin:" <> btc) <> ")"
-    ("[Pay 1Hk7pQz3RwXy9TbNcV2mJ4fGd8sLaE6uKe](bitcoin:" <> btc <> ")") <==> "[Pay 1Hk7pQz3RwXy9TbNcV2mJ4fGd8sLaE6uKe](" <> chainLink (onChain bitcoin btc $ "bitcoin:" <> btc) ("bitcoin:" <> btc) <> ")"
+    ("[Donate](monero:" <> xmr <> ")") <==> markdown (ChainAddressLink (Just "Donate") $ ChainAddress (coin "XMR") xmr $ "monero:" <> xmr) ("[Donate](monero:" <> xmr <> ")")
+    ("[" <> btc <> "](bitcoin:" <> btc <> ")") <==> chainLink (ChainAddress bitcoin btc $ "bitcoin:" <> btc) ("[" <> btc <> "](bitcoin:" <> btc <> ")")
+    ("[" <> T.toUpper btc <> "](bitcoin:" <> btc <> ")") <==> chainLink (ChainAddress bitcoin btc $ "bitcoin:" <> btc) ("[" <> T.toUpper btc <> "](bitcoin:" <> btc <> ")")
+    ("[" <> usdt <> "](" <> usdtTransfer <> ")") <==> chainLink (ChainAddress (CYTicker "USDT" Nothing $ Just "5") eth usdtTransfer) ("[" <> usdt <> "](" <> usdtTransfer <> ")")
+    ("[bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4](bitcoin:" <> btc <> ")") <==> "[bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4](" <> chainLink (ChainAddress bitcoin btc $ "bitcoin:" <> btc) ("bitcoin:" <> btc) <> ")"
+    ("[Pay 1Hk7pQz3RwXy9TbNcV2mJ4fGd8sLaE6uKe](bitcoin:" <> btc <> ")") <==> "[Pay 1Hk7pQz3RwXy9TbNcV2mJ4fGd8sLaE6uKe](" <> chainLink (ChainAddress bitcoin btc $ "bitcoin:" <> btc) ("bitcoin:" <> btc) <> ")"
     ("[" <> T.toLower eth <> "](ethereum:" <> usdt <> "@1?value=1e18)")
-      <==> "[" <> unmarked (T.toLower eth) <> "](" <> chainLink (onChain (CYTicker "ETH" Nothing $ Just "1") usdt $ "ethereum:" <> usdt <> "@1?value=1e18") ("ethereum:" <> usdt <> "@1?value=1e18") <> ")"
-    ("[Donate!](monero:" <> xmr <> ")") <==> "[Donate!](" <> chainLink (onChain (coin "XMR") xmr $ "monero:" <> xmr) ("monero:" <> xmr) <> ")"
-    ("[Donate](" <> btc <> ")") <==> "[Donate](" <> chainLink (onChain bitcoin btc $ "bitcoin:" <> btc) btc <> ")"
+      <==> "[" <> unmarked (T.toLower eth) <> "](" <> chainLink (ChainAddress (CYTicker "ETH" Nothing $ Just "1") usdt $ "ethereum:" <> usdt <> "@1?value=1e18") ("ethereum:" <> usdt <> "@1?value=1e18") <> ")"
+    ("[Donate!](monero:" <> xmr <> ")") <==> "[Donate!](" <> chainLink (ChainAddress (coin "XMR") xmr $ "monero:" <> xmr) ("monero:" <> xmr) <> ")"
+    ("[Donate](" <> btc <> ")") <==> "[Donate](" <> chainLink (ChainAddress bitcoin btc $ "bitcoin:" <> btc) btc <> ")"
     isText $ "<" <> btc <> ">"
-    ("<zcash:" <> zecU <> "?amount=0.1>") <==> chainLink (onChain (CYTicker "ZEC" Nothing $ Just "0.1") zecU $ "zcash:" <> zecU <> "?amount=0.1") ("<zcash:" <> zecU <> "?amount=0.1>")
+    ("<zcash:" <> zecU <> "?amount=0.1>") <==> chainLink (ChainAddress (CYTicker "ZEC" Nothing $ Just "0.1") zecU $ "zcash:" <> zecU <> "?amount=0.1") ("<zcash:" <> zecU <> "?amount=0.1>")
   it "chain addresses are links" do
     hasLinks <$> parseMaybeMarkdownList ("donate: " <> btc) `shouldBe` Just True
   it "linear time in the number of addresses" do

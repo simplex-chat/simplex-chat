@@ -6076,7 +6076,6 @@ public enum Format: Decodable, Equatable, Hashable {
 public struct ChainAddress: Decodable, Hashable {
     public var currency: ChainCurrency
     public var address: String
-    public var label: String?
     public var walletUri: String
 
     var shortAddress: String {
@@ -6084,13 +6083,12 @@ public struct ChainAddress: Decodable, Hashable {
     }
 
     public func linkText(_ showText: String?, messageSigned: Bool) -> ChainLinkText {
-        let shownLabel = showText ?? label
         let notSigned = messageSigned ? [] : [NSLocalizedString("not signed", comment: "chain address link")]
         func link(_ sign: String?, _ text: String, chainName: String? = nil, toAddress: Bool) -> ChainLinkText {
-            ChainLinkText(label: shownLabel, sign: sign, text: text, chainName: chainName, warning: false, toAddress: toAddress ? shortAddress : nil)
+            ChainLinkText(label: showText, sign: sign, text: text, chainName: chainName, warning: false, toAddress: toAddress ? shortAddress : nil)
         }
         func warning(_ reasons: [String]) -> ChainLinkText {
-            ChainLinkText(label: shownLabel, sign: "⚠\u{FE0E}", text: "\(shortAddress) (\(reasons.joined(separator: ", ")))", chainName: nil, warning: true, toAddress: nil)
+            ChainLinkText(label: showText, sign: "⚠\u{FE0E}", text: "\(shortAddress) (\(reasons.joined(separator: ", ")))", chainName: nil, warning: true, toAddress: nil)
         }
         switch currency {
         case let .unknown(unknown): return warning([unknown.text] + notSigned)

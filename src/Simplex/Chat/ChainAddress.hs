@@ -47,7 +47,6 @@ import qualified URI.ByteString as U
 data ChainAddress = ChainAddress
   { currency :: ChainCurrency,
     address :: Text,
-    label :: Maybe Text,
     walletUri :: Text
   }
   deriving (Eq, Show)
@@ -161,10 +160,10 @@ valueP p = either fail pure . parseAll p
 textParam :: ByteString -> Q.Query -> Parser (Maybe Text)
 textParam key query = join <$> param uriTextP key query
 
-chainLink :: ChainCurrency -> NonEmpty Text -> Maybe Text -> [Maybe Text] -> Parser (Text -> ChainAddress, NonEmpty Text)
-chainLink currency addresses@(address :| _) label texts
-  | any (hasOtherAddress addresses) (catMaybes $ label : texts) = fail "other address in label or message"
-  | otherwise = pure (ChainAddress currency address $ mfilter (not . hasAddress addresses) label, addresses)
+chainLink :: ChainCurrency -> NonEmpty Text -> [Maybe Text] -> Parser (Text -> ChainAddress, NonEmpty Text)
+chainLink currency addresses@(address :| _) texts
+  | any (hasOtherAddress addresses) (catMaybes texts) = fail "other address in label or message"
+  | otherwise = pure (ChainAddress currency address, addresses)
 
 bitcoinLink :: Maybe Text -> Q.Query -> Parser (Text -> ChainAddress, NonEmpty Text)
 bitcoinLink address query = do
@@ -182,10 +181,10 @@ bip21Link currency addresses texts query = do
   amount <- param (amountP 8) "amount" query
   label <- textParam "label" query
   message <- textParam "message" query
-  chainLink (currency amount) addresses label (message : texts)
+  chainLink (currency amount) addresses (label : message : texts)
 
 lightningLink :: (Text, Maybe Text) -> Q.Query -> Parser (Text -> ChainAddress, NonEmpty Text)
-lightningLink (address, amount) _ = chainLink (CYLightning amount) (address :| []) Nothing []
+lightningLink (address, amount) _ = chainLink (CYLightning amount) (address :| []) []
 
 ethereumP :: Parser (Q.Query -> Parser (Text -> ChainAddress, NonEmpty Text))
 ethereumP = do
@@ -199,7 +198,7 @@ valueLink :: Text -> Maybe ChainInfo -> Q.Query -> Parser (Text -> ChainAddress,
 valueLink address chain query = do
   value <- param evmIntegerP "value" query
   let currency = maybe (CYUnknown UCChain) (\ChainInfo {chainName, coin} -> CYTicker coin chainName $ decimalText 18 <$> value) chain
-  chainLink currency (address :| []) Nothing []
+  chainLink currency (address :| []) []
 
 transferLink :: Text -> Maybe ChainInfo -> Q.Query -> Parser (Text -> ChainAddress, NonEmpty Text)
 transferLink token chain query = do
@@ -209,7 +208,7 @@ transferLink token chain query = do
   let currency = case chain of
         Just ChainInfo {chainName, tokens} -> maybe (CYUnknown UCToken) (\ChainToken {ticker, decimals} -> CYTicker ticker chainName $ decimalText decimals <$> units) $ lookup token tokens
         Nothing -> CYUnknown UCChainAndToken
-  chainLink currency (address :| [token]) Nothing []
+  chainLink currency (address :| [token]) []
 
 moneroLink :: Text -> Q.Query -> Parser (Text -> ChainAddress, NonEmpty Text)
 moneroLink address query = do
@@ -217,7 +216,7 @@ moneroLink address query = do
   amount <- param (amountP 12) "tx_amount" query
   label <- textParam "recipient_name" query
   message <- textParam "tx_description" query
-  chainLink (CYTicker "XMR" Nothing amount) (address :| []) label [message]
+  chainLink (CYTicker "XMR" Nothing amount) (address :| []) [label, message]
 
 zip321Link :: Text -> Parser (Text, Bool) -> Maybe (Text, Bool) -> Q.Query -> Parser (Text -> ChainAddress, NonEmpty Text)
 zip321Link ticker coinAddressP path query = do
@@ -259,7 +258,7 @@ solanaLink address query = do
   label <- textParam "label" query
   message <- textParam "message" query
   memo <- textParam "memo" query
-  chainLink currency (address :| maybeToList mint) label [message, memo]
+  chainLink currency (address :| maybeToList mint) [label, message, memo]
   where
     amountWith places = param (amountP places) "amount" query
 

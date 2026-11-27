@@ -1191,7 +1191,6 @@ export interface CITimed {
 export interface ChainAddress {
   currency: ChainCurrency
   address: string
-  label?: string
   walletUri: string
 }
 // amount: in BTC for bitcoin and lightning, in units of the ticker for ticker. chainName: the EVM chain other than Ethereum, or Solana for a Solana token. unknown: the chain or token is outside the core's tables; the amount is omitted.

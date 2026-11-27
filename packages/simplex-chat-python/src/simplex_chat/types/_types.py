@@ -842,7 +842,6 @@ class CITimed(TypedDict):
 class ChainAddress(TypedDict):
     currency: "ChainCurrency"
     address: str
-    label: NotRequired[str]
     walletUri: str
 
 # amount: in BTC for bitcoin and lightning, in units of the ticker for ticker. chainName: the EVM chain other than Ethereum, or Solana for a Solana token. unknown: the chain or token is outside the core's tables; the amount is omitted.
