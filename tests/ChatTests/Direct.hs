@@ -1141,6 +1141,7 @@ testChainAddressesMessage ps =
       alice #> ("@bob " <> addressMsg)
       bob <# ("alice> " <> addressMsg)
       apiFixture "chain-addresses/links" bob [] FixtureRequests {frMarkdown = addressTexts, frUris = [], frCommands = ["/_get chat @2 count=1"]}
+      withCCTransaction alice (\db -> DB.query db "SELECT item_status FROM chat_items WHERE item_text = ?" (Only addressMsg)) `shouldEventuallyReturn` [Only ("snd_rcvd ok complete" :: String)]
       apiFixture "chain-addresses/sent" alice [] FixtureRequests {frMarkdown = [], frUris = [], frCommands = ["/_get chat @2 count=1"]}
   where
     addressMsg = "donate " <> btcAddr <> ", [Donate](monero:" <> xmrAddr <> ") or " <> lnInvoice
