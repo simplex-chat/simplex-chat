@@ -51,7 +51,7 @@ interface Deployment {
   moneroSubaddressPrefix: number
   moneroPrimaryAddresses: string[]
   apiOrigin: string
-  explorer: string
+  appOrigin: string
 }
 
 interface PriceException {
@@ -73,7 +73,7 @@ interface PriceException {
 | sponsor | `0xeC9a522C756e46FB3E44d3405FFDd9368501Eb78` | controller `sponsor()` | `RegisterName` domain |
 | resolver | `0x9BDa37F19b59Cbc58BA75932B3c598947fD88B0A` | controller `defaultResolver()` | registration's resolver, `SetText` domain |
 | namePolicy | `0x5147b65F547b766DBaf520127e8f59834475021E` | controller `namePolicy()` | acceptance domain |
-| baseRegistrar | `0x4c0589dbC22862Babb25EB72D11bBA49d84AAbE8` | deployments.mainnet.simplex.json | explorer link |
+| baseRegistrar | `0x4c0589dbC22862Babb25EB72D11bBA49d84AAbE8` | deployments.mainnet.simplex.json | none: the name address link holds the address alone (7) |
 | termStart | 1798761600 (2027-01-01 00:00 UTC) | service ini `term_start` | `durationFor` |
 | paidYears | 2 | service ini `years`; controller `MIN_REGISTRATION`, 730 days | search answer, duration |
 | communityYears | 2 | `Names/Community.hs` `communityYears` | search answer |
@@ -91,7 +91,7 @@ interface PriceException {
 | moneroSubaddressPrefix | 42 | Monero mainnet subaddress network byte | address check |
 | moneroPrimaryAddresses | the primary address of each wallet in use | the operator, from the wallet | B and A of the address check |
 | apiOrigin | `https://api.simplex.domains` | DNS | API calls, CSP, preload, service worker |
-| explorer | `https://etherscan.io` | | explorer link |
+| appOrigin | `https://app.simplex.domains` | DNS | name address link (7) |
 
 ### 3.3 Local values
 
@@ -105,7 +105,7 @@ interface PriceException {
 - cardOrigin: the card page on a second local port;
 - `bcrt` and 36 (stagenet subaddress), with the public keys of the dev keys in `dev/mock/addresses.ts`;
 - apiOrigin empty, for Vite's proxy; `VITE_API_ORIGIN` for the cross-origin test;
-- explorer as on mainnet, for the link's test.
+- appOrigin as on mainnet, for the link's test.
 
 ### 3.4 Selection
 
@@ -520,14 +520,14 @@ sequenceDiagram
 
 Tests: e2e with the card page on a second local port: a `mount` from another origin is ignored; a PaymentIntent of another amount is not mounted; `paid` from another origin is ignored by the names page; the names page's CSP reports no violation and admits no Stripe host.
 
-## 7. The name address and Etherscan
+## 7. The name address and the dApp
 
 - The name address: the checksummed address of the name code's wallet (`walletOf`, `checksumAddress`).
 - It is shown wherever the name code is shown, with "Your name address is public. Send it with any support requests."
-- The link: `${SITE.explorer}/token/${SITE.baseRegistrar}?a=${nameAddress}`, Etherscan's page of the registrar's tokens held by that address.
+- The link: `${SITE.appOrigin}/${nameAddress}`, the dApp's page of that address, served by GitHub Pages from simplex-chat/simplex-domains-app-v3. Etherscan, opened directly, stays the view of the chain independent of SimpleX (threat model).
 - The label and the address are the page's own: the label from the record or the sealed order, the address from the name code.
 - Placement: the registered order page, under "Registered until …"; each registered row of Your names.
-- Text: "Open your names on Etherscan. Check that this name is listed. If it is not, contact support.", with "Open your names on Etherscan" as the link.
+- Text: "Open your names in the SimpleX names app. Check that this name is listed. If it is not, contact support.", with "Open your names in the SimpleX names app" as the link.
 - The page reads nothing from the chain.
 - New screenshot baselines: `order-registered-*`, the `names-rows-*` screens with a registered row, `checkout-code-*`, `names-check-*` with a name code.
 
@@ -544,7 +544,7 @@ flowchart LR
   T["Stripe<br/>js.stripe.com, api.stripe.com"]
   V["BTCPay<br/>BTC, XMR"]
   E["Ethereum<br/>names contracts"]
-  X[etherscan.io]
+  X["GitHub Pages: app.simplex.domains<br/>the dApp"]
   B -->|page, scripts, fonts, sw.js| G
   B -->|card frame| Q
   B -->|/api with CORS| A
@@ -766,7 +766,7 @@ Each commit's tests are committed before its code and fail on the commit before 
 | `webapp: show payment details only with their proof from the page's keys` | 6.1, 6.2, `src/crypto/payees.ts`, the warning of 4.2; addresses and proofs derived by the mock from the dev keys; mock control `/control/mismatch` | unit: BIP-32, BIP-173 and Monero vectors; contract: the recorded fixtures verified with `deployment.json`; e2e: open BTC and XMR invoices with an address outside the keys, the address withheld and the warning drawn; an amount other than the price, the same |
 | `webapp: the card form on its own origin` | 6.4, 6.5; the card page's source in `webapp/card/`, built with `SITE` | `test/stripe.test.ts`, with a fake Stripe global: with each PaymentIntent field changed, the form stays unmounted; the e2e tests of 6.5 |
 | `webapp: sign every request for an order with its name key` | 9.7; `adoptSibling`, `buildNotOnDevice` and the branch of `registeredLead` without a record removed | e2e: every request for an order recorded by the mock with a valid signature of the order's owner; an order's link without the name code: no request sent, the line of 9.7 drawn; a device clock 20 minutes off: the order drawn after one more signature |
-| `webapp: show the name address and its names on Etherscan` | 7 | e2e: the name address beside each name code; the link's `href` from `SITE.baseRegistrar` and the name address; screenshot baselines |
+| `webapp: show the name address and its names on the dApp` | 7 | e2e: the name address beside each name code; the link's `href` from `SITE.appOrigin` and the name address; screenshot baselines |
 | `webapp: serve the page from GitHub Pages with the API on its own origin` | 8.2, 8.3, README Hosting | e2e: a production build with `VITE_API_ORIGIN` at the mock's port, the mock sending the service's CORS headers: an order placed, the clock read from `Date`, no CSP violation reported; e2e: the page in a frame, only the link drawn; `test/sw.test.ts`: the API origin's config network first; `test/build.test.ts`: the CSP meta element with the API origin, the card origin and the inline hashes |
 
 `README.md` (Layout, the checks, the mock's controls, Hosting) and `TODO.md` item 1 are updated in the commits they concern.

@@ -13,7 +13,8 @@ Buyers order names on the names page. The page signs each registration with the 
 | Card page | the Stripe publishable key; Stripe.js, on its own origin, apart from the name codes |
 | Store service host | the database of orders and codes; the registrar key, which spends the sponsor's allowance and pays gas; the Stripe restricted key (PaymentIntents write, Charges read); the BTCPay API key; the Bitcoin extended public key and the Monero private view key |
 | Contracts | the allowance, set by the guardian Safe; dispute days from 14 to 120; the guardian Safe can end a registration within its dispute period |
-| Etherscan | an independent view of the chain: the registrar's tokens and their holders |
+| The dApp | app.simplex.domains, served by GitHub Pages from simplex-chat/simplex-domains-app-v3, in the DNS zone of simplex.domains: the names a name address holds, the check the names page links a registered name's address to |
+| Etherscan, opened directly | a view of the chain independent of SimpleX: the registrar's tokens and their holders |
 
 ## Global assumptions
 
@@ -21,7 +22,7 @@ Buyers order names on the names page. The page signs each registration with the 
 - The deployed contracts are as verified, and the keys that own and guard them, those of the admin and guardian Safes included, are not compromised.
 - The spending keys of SimpleX's Bitcoin and Monero wallets, and the Stripe account's dashboard, are not on the service host.
 - The Stripe account has Connect disabled, and the service's key has only the permissions above.
-- Etherscan, or another explorer the buyer chooses, shows the chain's state.
+- Etherscan, or another explorer the buyer opens directly, shows the chain's state.
 - The cryptographic primitives in use are not broken.
 
 ## An attacker who controls the service
@@ -64,7 +65,7 @@ The host: code, database, keys and BTCPay. The pages served by GitHub are intact
 
 - keep the guardian Safe from ending, within its dispute period, a registration it made for itself.
 
-- hide from the buyer, on Etherscan, that the name is not held by the buyer's name address.
+- hide from the buyer, on the dApp, or on Etherscan opened directly, that the name is not held by the buyer's name address.
 
 - change the pages.
 
@@ -80,9 +81,11 @@ Through the simplex.domains repository, GitHub Pages or DNS. The service is inta
 
 - sign a buyer's order for a name address it controls, so the service registers the paid name to that address.
 
-- show any status, and a false Etherscan link and name address.
+- show any status, and a false dApp link and name address.
 
 - send every lookup and the buyer's IP address elsewhere.
+
+- through the DNS of simplex.domains, also control the dApp, which is in the same zone, so that only Etherscan opened directly shows that buyer the chain.
 
 *cannot:*
 
@@ -92,7 +95,7 @@ Through the simplex.domains repository, GitHub Pages or DNS. The service is inta
 
 - reach owners who do not open it.
 
-- change what Etherscan shows when the buyer opens it directly.
+- change what Etherscan shows when the buyer opens it directly, or, other than through the DNS of simplex.domains, what the dApp shows.
 
 ## An attacker who controls the card page
 
@@ -130,7 +133,7 @@ The service host and the names page.
 
 - reach owners who do not open the page.
 
-- change the contracts or what Etherscan shows.
+- change the contracts or what Etherscan shows when the buyer opens it directly.
 
 ## An attacker on the buyer's network
 
