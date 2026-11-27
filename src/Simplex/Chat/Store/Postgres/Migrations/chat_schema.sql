@@ -2820,6 +2820,10 @@ CREATE INDEX idx_group_members_member_profile_id ON test_chat_schema.group_membe
 
 
 
+CREATE INDEX idx_group_members_member_via ON test_chat_schema.group_members USING btree (user_id, group_id, member_via) WHERE (member_via IS NOT NULL);
+
+
+
 CREATE INDEX idx_group_members_user_id ON test_chat_schema.group_members USING btree (user_id);
 
 
