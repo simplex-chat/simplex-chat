@@ -130,9 +130,9 @@ final class ChainAddressesTests: RecordedAPITestCase {
         getTopViewController()?.present(openWalletAlert(tap), animated: false)
         try await assertTexts(["Open in wallet?", "alice: ₿\u{00A0}bc1q2g…\u{2060}5d4u", "Cancel", "Open"])
         try await press("Open")
-        try await assertTexts(["No wallet app", "Copy the address or scan the QR code with a wallet.", "Copy", "QR code", "Cancel"])
+        try await assertTexts(["No wallet app", "Copy the link or scan the QR code with a wallet.", "Copy", "QR code", "Cancel"])
         try await press("Copy")
-        XCTAssertEqual(UIPasteboard.general.string, btc)
+        XCTAssertEqual(UIPasteboard.general.string, "bitcoin:\(btc)")
         getTopViewController()?.present(noWalletAlert(tap.chainAddress), animated: false)
         try await press("QR code")
         try await waitFor { self.presented().map { String(describing: type(of: $0)).contains("QRCode") } ?? false }

@@ -432,10 +432,10 @@ private func openWallet(_ chainAddress: ChainAddress) {
 func noWalletAlert(_ chainAddress: ChainAddress) -> UIAlertController {
     alertController(
         NSLocalizedString("No wallet app", comment: "alert title"),
-        message: NSLocalizedString("Copy the address or scan the QR code with a wallet.", comment: "alert message"),
+        message: NSLocalizedString("Copy the link or scan the QR code with a wallet.", comment: "alert message"),
         actions: [
             UIAlertAction(title: NSLocalizedString("Copy", comment: "alert button"), style: .default) { _ in
-                UIPasteboard.general.string = chainAddress.address
+                UIPasteboard.general.string = chainAddress.walletUri
             },
             UIAlertAction(title: NSLocalizedString("QR code", comment: "alert button"), style: .default) { _ in
                 getTopViewController()?.present(UIHostingController(rootView: QRCode(uri: chainAddress.walletUri, withLogo: false).padding()), animated: true)

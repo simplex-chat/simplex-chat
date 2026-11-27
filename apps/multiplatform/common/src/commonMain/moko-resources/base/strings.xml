@@ -124,7 +124,7 @@
   <string name="chain_address_alert_text_forwarded">%1$s forwarded: %2$s</string>
   <string name="chain_address_to_address">%1$s to %2$s</string>
   <string name="no_wallet_app">No wallet app</string>
-  <string name="no_wallet_app_desc">Copy the address or scan the QR code with a wallet.</string>
+  <string name="no_wallet_app_desc">Copy the link or scan the QR code with a wallet.</string>
   <string name="qr_code">QR code</string>
   <string name="simplex_link_mode">SimpleX links</string>
   <string name="simplex_link_mode_description">Description</string>

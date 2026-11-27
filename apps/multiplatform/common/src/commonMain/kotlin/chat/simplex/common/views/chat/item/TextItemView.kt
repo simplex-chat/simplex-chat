@@ -795,7 +795,7 @@ fun showNoWalletAlert(chainAddress: ChainAddress, clipboard: ClipboardManager) {
       Column {
         SectionItemView({
           AlertManager.shared.hideAlert()
-          clipboard.setText(AnnotatedString(chainAddress.address))
+          clipboard.setText(AnnotatedString(chainAddress.walletUri))
           showToast(generalGetString(MR.strings.copied))
         }) {
           Text(generalGetString(MR.strings.copy_verb), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
