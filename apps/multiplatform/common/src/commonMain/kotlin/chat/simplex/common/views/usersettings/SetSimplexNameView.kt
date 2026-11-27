@@ -30,7 +30,7 @@ import kotlinx.datetime.*
 // Each dot-separated label is ASCII letters/digits with single internal hyphens (mirrors simplexmq SimplexName.hs nameLabelP).
 private val simplexNameLabelRegex = Regex("[A-Za-z0-9]+(-[A-Za-z0-9]+)*")
 
-private val simplexNameSaleStart = LocalDateTime(2026, 12, 12, 18, 0).toInstant(TimeZone.UTC)
+var simplexNameSaleStart = LocalDateTime(2026, 12, 12, 18, 0).toInstant(TimeZone.UTC)
 private const val SIMPLEX_DOMAINS_URL = "https://simplex.domains/"
 
 // Set the user's own (prefix "@") or a channel's (prefix "#") SimpleX name.

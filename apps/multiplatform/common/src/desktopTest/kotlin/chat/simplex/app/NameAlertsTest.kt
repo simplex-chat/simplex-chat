@@ -38,10 +38,12 @@ import chat.simplex.common.views.helpers.rememberAppBarHandler
 import chat.simplex.common.views.newchat.ConnectTarget
 import chat.simplex.common.views.newchat.planAndConnect
 import chat.simplex.common.views.newchat.strConnectTarget
+import chat.simplex.common.views.usersettings.simplexNameSaleStart
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
+import kotlinx.datetime.Instant
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonObject
@@ -57,6 +59,7 @@ abstract class RecordedApiTest {
   private val parseUri = chatParseUri
   private val locale = Locale.getDefault()
   private val timeZone = TimeZone.getDefault()
+  private val saleStart = simplexNameSaleStart
   protected val unrecorded = mutableListOf<String>()
   protected val shownLocalChats = mutableListOf<String>()
   private var commands: JsonObject? = null
@@ -93,6 +96,7 @@ abstract class RecordedApiTest {
     chatSendCmdRetry = sendCmd
     chatParseMarkdown = parseMarkdown
     chatParseUri = parseUri
+    simplexNameSaleStart = saleStart
     TimeZone.setDefault(timeZone)
     Locale.setDefault(locale)
     assertEquals(listOf(), unrecorded.toList(), "requests without recorded responses")
@@ -187,24 +191,45 @@ class NameAlertsTest : RecordedApiTest() {
     assertTexts("Your name has expired", "Your name alice.simplex expired on January 1, 2026. Renew it before January 1, 2099.", "Renew", "OK")
     assertLocalChats()
     press("Renew")
-    assertTexts("Open web link?", "https://simplex.domains/#testing", "Cancel", "Open")
+    assertTexts("Open web link?", "https://simplex.domains", "Cancel", "Open")
   }
 
   @Test
   fun knownNameAvailable() = recordedAlerts("names/plan-known-available") {
+    simplexNameSaleStart = Instant.DISTANT_PAST
     connect("@alice.simplex")
     assertTexts("Name no longer registered", "alice.simplex is available for registration for \$20 for 2 years.", "Register", "Open chat", "OK")
     assertLocalChats("@2")
     press("Register")
-    assertTexts("Open web link?", "https://simplex.domains/#testing", "Cancel", "Open")
+    assertTexts("Open web link?", "https://simplex.domains", "Cancel", "Open")
+  }
+
+  @Test
+  fun knownNameAvailableBeforeSale() = recordedAlerts("names/plan-known-available") {
+    simplexNameSaleStart = Instant.DISTANT_FUTURE
+    connect("@alice.simplex")
+    assertTexts("Name no longer registered", "alice.simplex is not registered. See if it is available at simplex.domains.", "Open simplex.domains", "Open chat", "OK")
+    assertLocalChats("@2")
+    press("Open simplex.domains")
+    assertTexts("Open web link?", "https://simplex.domains", "Cancel", "Open")
   }
 
   @Test
   fun ownNameAvailable() = recordedAlerts("names/plan-own-available") {
+    simplexNameSaleStart = Instant.DISTANT_PAST
     connect("@alice.simplex")
     assertTexts("Your name has expired", "Your name alice.simplex is no longer registered. It is available for registration for \$20 for 2 years.", "Re-register", "OK")
     press("Re-register")
-    assertTexts("Open web link?", "https://simplex.domains/#testing", "Cancel", "Open")
+    assertTexts("Open web link?", "https://simplex.domains", "Cancel", "Open")
+  }
+
+  @Test
+  fun ownNameAvailableBeforeSale() = recordedAlerts("names/plan-own-available") {
+    simplexNameSaleStart = Instant.DISTANT_FUTURE
+    connect("@alice.simplex")
+    assertTexts("Your name has expired", "Your name alice.simplex is no longer registered. See if it is available at simplex.domains.", "Open simplex.domains", "OK")
+    press("Open simplex.domains")
+    assertTexts("Open web link?", "https://simplex.domains", "Cancel", "Open")
   }
 
   @Test
@@ -236,8 +261,16 @@ class NameAlertsTest : RecordedApiTest() {
 
   @Test
   fun nameAvailable() = recordedAlerts("names/error-available") {
+    simplexNameSaleStart = Instant.DISTANT_PAST
     connect("@nobody.simplex")
     assertTexts("Name not registered", "nobody.simplex is available for registration for \$20 for 2 years.", "Register", "OK")
+  }
+
+  @Test
+  fun nameAvailableBeforeSale() = recordedAlerts("names/error-available") {
+    simplexNameSaleStart = Instant.DISTANT_FUTURE
+    connect("@nobody.simplex")
+    assertTexts("Name not registered", "nobody.simplex is not registered. See if it is available at simplex.domains.", "Open simplex.domains", "OK")
   }
 
   @Test

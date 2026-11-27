@@ -21,9 +21,11 @@ import chat.simplex.common.views.chat.item.openBrowserAlert
 import chat.simplex.common.views.chat.subscriberCountStr
 import chat.simplex.common.views.chatlist.*
 import chat.simplex.common.views.helpers.*
+import chat.simplex.common.views.usersettings.simplexNameSaleStart
 import chat.simplex.common.views.usersettings.simplexTeamUri
 import chat.simplex.res.*
 import kotlinx.coroutines.*
+import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import java.time.format.FormatStyle
 
@@ -139,7 +141,7 @@ private fun namePrice(price: NamePrice): String {
   return String.format(generalGetString(MR.strings.simplex_name_price_for_years), dollars, price.years)
 }
 
-private fun openNameHowTo(uriHandler: UriHandler) = openBrowserAlert("https://simplex.domains/#testing", uriHandler)
+private fun openNameHowTo(uriHandler: UriHandler) = openBrowserAlert("https://simplex.domains", uriHandler)
 
 fun showNameWarningAlert(
   rhId: Long?,
@@ -191,15 +193,20 @@ fun showNameWarningAlert(
       else String.format(generalGetString(MR.strings.simplex_name_own_expired_no_date_desc), nameStr, badgeDateText(warning.expiredAt)),
       generalGetString(MR.strings.simplex_name_renew) to ::openNameHowTo
     )
-    is NameWarning.Available -> if (!own) alert(
-      generalGetString(if (openExistingChat == null) MR.strings.simplex_name_not_registered else MR.strings.simplex_name_no_longer_registered),
-      String.format(generalGetString(MR.strings.simplex_name_available_desc), nameStr, namePrice(warning.price)),
-      generalGetString(MR.strings.simplex_name_register) to ::openNameHowTo
-    ) else alert(
-      generalGetString(MR.strings.simplex_name_own_expired),
-      String.format(generalGetString(MR.strings.simplex_name_own_available_desc), nameStr, namePrice(warning.price)),
-      generalGetString(MR.strings.simplex_name_re_register) to ::openNameHowTo
-    )
+    is NameWarning.Available -> {
+      val beforeSale = Clock.System.now() < simplexNameSaleStart
+      if (!own) alert(
+        generalGetString(if (openExistingChat == null) MR.strings.simplex_name_not_registered else MR.strings.simplex_name_no_longer_registered),
+        if (beforeSale) String.format(generalGetString(MR.strings.simplex_name_not_registered_link_desc), nameStr)
+        else String.format(generalGetString(MR.strings.simplex_name_available_desc), nameStr, namePrice(warning.price)),
+        generalGetString(if (beforeSale) MR.strings.open_simplex_domains else MR.strings.simplex_name_register) to ::openNameHowTo
+      ) else alert(
+        generalGetString(MR.strings.simplex_name_own_expired),
+        if (beforeSale) String.format(generalGetString(MR.strings.simplex_name_own_not_registered_link_desc), nameStr)
+        else String.format(generalGetString(MR.strings.simplex_name_own_available_desc), nameStr, namePrice(warning.price)),
+        generalGetString(if (beforeSale) MR.strings.open_simplex_domains else MR.strings.simplex_name_re_register) to ::openNameHowTo
+      )
+    }
     NameWarning.ReservedForCommunity -> alert(
       generalGetString(MR.strings.simplex_name_not_registered),
       String.format(generalGetString(MR.strings.simplex_name_reserved_community_desc), nameStr),
@@ -995,3 +1002,26 @@ fun PreviewLinkNoticeAlertGroup() = AlertPreview(AlertManager.privacySensitive) 
 @Preview
 @Composable
 fun PreviewLinkNoticeAlertContact() = AlertPreview(AlertManager.privacySensitive) { showLinkNoticeAlert(LinkNoticeTarget.Contact, expiresAt = null) }
+
+private fun showNameAvailableAlert(own: Boolean, saleStart: Instant) {
+  val start = simplexNameSaleStart
+  simplexNameSaleStart = saleStart
+  showNameWarningAlert(null, SimplexDomain(SimplexTLD.simplex, "alice", listOf()), NameWarning.Available(NamePrice(amount = 10000, years = 2)), own, openExistingChat = null, cleanup = null)
+  simplexNameSaleStart = start
+}
+
+@Preview
+@Composable
+fun PreviewNameAvailableAlertBeforeSale() = AlertPreview(AlertManager.privacySensitive) { showNameAvailableAlert(own = false, Instant.DISTANT_FUTURE) }
+
+@Preview
+@Composable
+fun PreviewNameAvailableAlert() = AlertPreview(AlertManager.privacySensitive) { showNameAvailableAlert(own = false, Instant.DISTANT_PAST) }
+
+@Preview
+@Composable
+fun PreviewOwnNameAvailableAlertBeforeSale() = AlertPreview(AlertManager.privacySensitive) { showNameAvailableAlert(own = true, Instant.DISTANT_FUTURE) }
+
+@Preview
+@Composable
+fun PreviewOwnNameAvailableAlert() = AlertPreview(AlertManager.privacySensitive) { showNameAvailableAlert(own = true, Instant.DISTANT_PAST) }

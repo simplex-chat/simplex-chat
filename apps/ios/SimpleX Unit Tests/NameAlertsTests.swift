@@ -8,6 +8,7 @@ class RecordedAPITestCase: XCTestCase {
     private let sendCmd = sendSimpleXCmdStr
     private let parseMarkdown = parseSimpleXMarkdownText
     private let parseUri = parseSanitizeUri
+    private let saleStart = simplexNameSaleStart
     private let lock = NSLock()
     private var unrecorded: [String] = []
     private var commands: [String: Any] = [:]
@@ -31,6 +32,7 @@ class RecordedAPITestCase: XCTestCase {
         sendSimpleXCmdStr = sendCmd
         parseSimpleXMarkdownText = parseMarkdown
         parseSanitizeUri = parseUri
+        simplexNameSaleStart = saleStart
         XCTAssertEqual(requests(), [], "requests without recorded responses")
     }
 }
@@ -55,26 +57,49 @@ final class NameAlertsTests: RecordedAPITestCase {
         try await assertTexts(["Your name has expired", "Your name alice.simplex expired on January 1, 2026. Renew it before January 1, 2099.", "Renew", "Ok"])
         XCTAssertEqual(shownLocalChats, [])
         try await press("Renew")
-        try await assertTexts(["Open link?", "https://simplex.domains/#testing", "Cancel", "Open"])
+        try await assertTexts(["Open link?", "https://simplex.domains", "Cancel", "Open"])
     }
 
     @MainActor
     func testKnownNameAvailable() async throws {
+        simplexNameSaleStart = .distantPast
         try recorded("names/plan-known-available")
         connect("@alice.simplex")
         try await assertTexts(["Name no longer registered", "alice.simplex is available for registration for $20 for 2 years.", "Register", "Open chat", "Ok"])
         XCTAssertEqual(shownLocalChats, ["@2"])
         try await press("Register")
-        try await assertTexts(["Open link?", "https://simplex.domains/#testing", "Cancel", "Open"])
+        try await assertTexts(["Open link?", "https://simplex.domains", "Cancel", "Open"])
+    }
+
+    @MainActor
+    func testKnownNameAvailableBeforeSale() async throws {
+        simplexNameSaleStart = .distantFuture
+        try recorded("names/plan-known-available")
+        connect("@alice.simplex")
+        try await assertTexts(["Name no longer registered", "alice.simplex is not registered. See if it is available at simplex.domains.", "Open simplex.domains", "Open chat", "Ok"])
+        XCTAssertEqual(shownLocalChats, ["@2"])
+        try await press("Open simplex.domains")
+        try await assertTexts(["Open link?", "https://simplex.domains", "Cancel", "Open"])
     }
 
     @MainActor
     func testOwnNameAvailable() async throws {
+        simplexNameSaleStart = .distantPast
         try recorded("names/plan-own-available")
         connect("@alice.simplex")
         try await assertTexts(["Your name has expired", "Your name alice.simplex is no longer registered. It is available for registration for $20 for 2 years.", "Re-register", "Ok"])
         try await press("Re-register")
-        try await assertTexts(["Open link?", "https://simplex.domains/#testing", "Cancel", "Open"])
+        try await assertTexts(["Open link?", "https://simplex.domains", "Cancel", "Open"])
+    }
+
+    @MainActor
+    func testOwnNameAvailableBeforeSale() async throws {
+        simplexNameSaleStart = .distantFuture
+        try recorded("names/plan-own-available")
+        connect("@alice.simplex")
+        try await assertTexts(["Your name has expired", "Your name alice.simplex is no longer registered. See if it is available at simplex.domains.", "Open simplex.domains", "Ok"])
+        try await press("Open simplex.domains")
+        try await assertTexts(["Open link?", "https://simplex.domains", "Cancel", "Open"])
     }
 
     @MainActor
@@ -100,9 +125,18 @@ final class NameAlertsTests: RecordedAPITestCase {
 
     @MainActor
     func testNameAvailable() async throws {
+        simplexNameSaleStart = .distantPast
         try recorded("names/error-available")
         connect("@nobody.simplex")
         try await assertTexts(["Name not registered", "nobody.simplex is available for registration for $20 for 2 years.", "Register", "Ok"])
+    }
+
+    @MainActor
+    func testNameAvailableBeforeSale() async throws {
+        simplexNameSaleStart = .distantFuture
+        try recorded("names/error-available")
+        connect("@nobody.simplex")
+        try await assertTexts(["Name not registered", "nobody.simplex is not registered. See if it is available at simplex.domains.", "Open simplex.domains", "Ok"])
     }
 
     @MainActor
