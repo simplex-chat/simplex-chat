@@ -3886,7 +3886,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                 when (maybe False (/= RSRejected) (relayOwnStatus gInfo)) $ updateRelayOwnStatus_ db gInfo RSInactive
               let membership' = membership {memberStatus = GSMemRemoved}
               when withMessages $ deleteMessages gInfo membership'
-              withStore' $ \db -> removeSubmembers db cxt user gInfo membership
+              void $ withStore' $ \db -> removeSubmembers db cxt user gInfo membership
               deleteMemberItem msg gInfo RGEUserDeleted
               toView $ CEvtDeletedMemberUser user gInfo {membership = membership'} m withMessages msgSigned
               pure $ Just DJSGroup {jobSpec = DJRelayRemoved}
@@ -3916,8 +3916,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                         fullyDeleteMemberRecord user gInfo deletedMember
                     -- Undeleted "member connected" chat item will prevent deletion of member record.
                     | otherwise -> deleteOrUpdateMemberRecord user gInfo deletedMember
-                withStore' $ \db -> removeSubmembers db cxt user gInfo' deletedMember
-                gInfo'' <- updatePublicGroupData user gInfo' gks
+                gInfo'' <- withStore' (\db -> removeSubmembers db cxt user gInfo' deletedMember) >>= \gi -> updatePublicGroupData user gi gks
                 let wasDeleted = memberStatus == GSMemRemoved || memberStatus == GSMemLeft
                 -- Clear forwardedByMember if it references the deleted member,
                 -- as the member record was already deleted above.
@@ -3966,8 +3965,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
     xGrpLeave (GIK gInfo gks) m msg@RcvMessage {msgSigned} brokerTs = do
       deleteMemberConnection m
       -- member record is not deleted to allow creation of "member left" chat item
-      gInfo' <- updateMemberRecordDeleted user gInfo m GSMemLeft
-      withStore' $ \db -> removeSubmembers db cxt user gInfo' m
+      gInfo' <- updateMemberRecordDeleted user gInfo m GSMemLeft >>= \gi -> withStore' $ \db -> removeSubmembers db cxt user gi m
       gInfo'' <- updatePublicGroupData user gInfo' gks
       unless (muteEventInChannel gInfo'' m) $ do
         (gInfo''', m', scopeInfo) <- mkGroupChatScope gInfo'' m
