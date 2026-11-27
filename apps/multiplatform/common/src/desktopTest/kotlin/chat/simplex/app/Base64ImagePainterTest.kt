@@ -64,6 +64,7 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.zip.CRC32
 import javax.imageio.ImageIO
+import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -73,6 +74,11 @@ import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
 class Base64ImagePainterTest {
+  @AfterTest
+  fun clearVideoPlayers() {
+    VideoPlayerHolder.players.clear()
+  }
+
   @Test
   fun testCachedPictureIsShownWithoutWaitingForTheDecoder() {
     val picture = base64Png(41, 31)
