@@ -291,7 +291,7 @@ offerP :: Parser (Maybe Text)
 offerP = offerAddress <$> oneCaseP ["lno1"] (>= 14)
 
 moneroP :: Parser (Maybe Text)
-moneroP = moneroAddress <$> wordP ["4", "8"] (`elem` [95, 106])
+moneroP = moneroAddress ["\18", "\42"] <$> wordP ["4", "8"] (== 95) <|> moneroAddress ["\19"] <$> wordP ["4"] (== 106)
 
 saplingP :: ByteString -> Parser (Maybe Text)
 saplingP hrp = bech32Address hrp bech32Const (== 43) <$> oneCaseP [hrp <> "1"] (== 78)
@@ -452,9 +452,8 @@ base58CheckAddress versions s = do
   let (payload, check) = B.splitAt (B.length bytes - 4) bytes
   safeDecodeUtf8 s <$ guard (check == B.take 4 (C.sha256Hash $ C.sha256Hash payload) && any (\v -> B.length payload == B.length v + 20 && v `B.isPrefixOf` payload) versions)
 
-moneroAddress :: ByteString -> Maybe Text
-moneroAddress s = do
-  networks <- lookup (B.length s) [(95, ["\18", "\42"]), (106, ["\19"])]
+moneroAddress :: [ByteString] -> ByteString -> Maybe Text
+moneroAddress networks s = do
   bytes <- mconcat <$> traverse moneroBlock (unfoldr (\b -> B.splitAt 11 b <$ guard (not $ B.null b)) s)
   let (payload, check) = B.splitAt (B.length bytes - 4) bytes
   safeDecodeUtf8 s <$ guard (check == B.take 4 (C.keccak256 payload) && B.take 1 payload `elem` networks)
