@@ -17080,6 +17080,9 @@ testSubmemberOtherAdmin =
       alice ##> ("/_update item #1 " <> hiId <> " text hello")
       alice <# "#team [edited] hello"
       [bob, cath] *<# "#team reviewer> [edited] hello"
+      bob #> "#team ok"
+      [alice, cath] *<# "#team bob> ok"
+      apiFixture "submembers/forwarded" cath [] FixtureRequests {frMarkdown = [], frUris = [], frCommands = ["/_members #1", "/_get chat #1 count=2"]}
 
 testSubmemberBlockedToModerators :: HasCallStack => TestParams -> IO ()
 testSubmemberBlockedToModerators =

@@ -246,6 +246,11 @@ class NSEThreads {
     var noThreads: Bool {
         allThreads.isEmpty
     }
+
+    @inline(__always)
+    var connEntities: [ConnectionEntity] {
+        queue.sync { activeThreads.flatMap { $0.nse.notificationEntities.values.map(\.ntfConn.connEntity) } }
+    }
 }
 
 // NotificationEntity is a processing state for notifications from a single connection entity (message queue).
@@ -1052,7 +1057,7 @@ func receivedMsgNtf(_ res: NSEChatEvent) async -> (String, NSENotificationData)?
             } else {
                 .noNtf
             }
-            return (itemNtfEntityId(cInfo, cItem), ntf)
+            return (itemNtfEntityId(cInfo, cItem, NSEThreads.shared.connEntities), ntf)
         } else {
             return nil
         }
@@ -1064,7 +1069,7 @@ func receivedMsgNtf(_ res: NSEChatEvent) async -> (String, NSENotificationData)?
         } else {
             .noNtf
         }
-        return (itemNtfEntityId(cInfo, cItem), ntf)
+        return (itemNtfEntityId(cInfo, cItem, NSEThreads.shared.connEntities), ntf)
     case let .duplicateGroupMessage(_, member):
         return (member.id, .noNtf)
     case let .rcvFileSndCancelled(_, aChatItem, _):
@@ -1089,12 +1094,21 @@ func receivedMsgNtf(_ res: NSEChatEvent) async -> (String, NSENotificationData)?
     }
 }
 
-private func itemNtfEntityId(_ cInfo: ChatInfo, _ cItem: ChatItem) -> String {
-    if case let .group(groupInfo, _) = cInfo, let memberId = cItem.meta.forwardedByMember ?? cItem.chatDir.groupMemberId {
+func itemNtfEntityId(_ cInfo: ChatInfo, _ cItem: ChatItem, _ connEntities: @autoclosure () -> [ConnectionEntity]) -> String {
+    if case let .group(groupInfo, _) = cInfo,
+       let memberId = cItem.meta.forwardedByMember
+        ?? cItem.chatDir.memberVia.flatMap({ connGroupMemberId(connEntities(), groupInfo.groupId, $0) })
+        ?? cItem.chatDir.groupMemberId {
         groupMemberEntityId(groupInfo.groupId, memberId)
     } else {
         cInfo.id
     }
+}
+
+private func connGroupMemberId(_ connEntities: [ConnectionEntity], _ groupId: Int64, _ memberId: String) -> Int64? {
+    connEntities.lazy.compactMap { connEntity -> GroupMember? in
+        if case let .rcvGroupMsgConnection(_, _, member) = connEntity { member } else { nil }
+    }.first { $0.groupId == groupId && $0.memberId == memberId }?.groupMemberId
 }
 
 @inline(__always)

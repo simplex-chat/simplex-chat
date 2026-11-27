@@ -50,6 +50,43 @@ final class SubmemberTests: XCTestCase {
     }
 
     @MainActor
+    func testSubmemberItemIsMatchedToViaMemberConnection() async throws {
+        try replay("submembers/received")
+        let members = await apiListMembers(1) ?? []
+        let (chat, _) = try await apiGetChat(chatId: "#1", scope: nil, pagination: .last(count: 2))
+        let alice = try XCTUnwrap(members.first { $0.displayName == "alice" })
+        let item = try XCTUnwrap(chat.chatItems.first)
+        XCTAssertEqual(itemNtfEntityId(chat.chatInfo, item, connEntities(chat.chatInfo, members)), alice.id)
+    }
+
+    @MainActor
+    func testForwardedItemIsMatchedToForwarderConnection() async throws {
+        try replay("submembers/forwarded")
+        let members = await apiListMembers(1) ?? []
+        let (chat, _) = try await apiGetChat(chatId: "#1", scope: nil, pagination: .last(count: 2))
+        let bob = try XCTUnwrap(members.first { $0.displayName == "bob" })
+        let item = try XCTUnwrap(chat.chatItems.first)
+        XCTAssertEqual(itemNtfEntityId(chat.chatInfo, item, connEntities(chat.chatInfo, members)), bob.id)
+    }
+
+    @MainActor
+    func testMemberItemIsMatchedToMemberConnection() async throws {
+        try replay("submembers/forwarded")
+        let members = await apiListMembers(1) ?? []
+        let (chat, _) = try await apiGetChat(chatId: "#1", scope: nil, pagination: .last(count: 2))
+        let bob = try XCTUnwrap(members.first { $0.displayName == "bob" })
+        let item = try XCTUnwrap(chat.chatItems.last)
+        XCTAssertEqual(itemNtfEntityId(chat.chatInfo, item, connEntities(chat.chatInfo, members)), bob.id)
+    }
+
+    private func connEntities(_ chatInfo: ChatInfo, _ members: [GroupMember]) -> [ConnectionEntity] {
+        guard case let .group(groupInfo, _) = chatInfo else { return [] }
+        return members.compactMap { member in
+            member.activeConn.map { ConnectionEntity.rcvGroupMsgConnection(entityConnection: $0, groupInfo: groupInfo, groupMember: member) }
+        }
+    }
+
+    @MainActor
     private func replay(_ fixture: String) throws {
         let commands = try XCTUnwrap((try fixtureJSON(fixture) as? [String: [String: Any]])?["commands"])
         sendSimpleXCmdStr = { cmd, _, _ in
