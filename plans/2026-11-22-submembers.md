@@ -142,7 +142,7 @@ present, M = the member with memberId:
   otherwise                                 processed as M's message: M's role, block, moderation, edit window and priority
     M blocked by an admin                   delivered to moderators only, without notifications (moderatorsContext, Delivery.hs)
 ```
-The sender is V when the message is received from V, and the member named by the forward header when it is forwarded. The item is saved as received from M; the forward mark is shown only when another member forwards V's message (checkSendAsMember, Subscriber.hs).
+The sender is V when the message is received from V, and the member named by the forward header when it is forwarded. The item is saved as received from M; it has the forward mark only when V's message arrives in a forward, from a host or in history. A forward attributed to M itself is rejected: M's content is only V's messages.
 
 Forwarding, by the rules of every message of V: an admin creates delivery tasks for V's message (Subscriber.hs:1033-1039); the delivery job sends it to its members introduced to V and not yet connected to V (MRIntroduced in V's relation vector) as a forward of V's message, with `asMember` in the inner message (Q5 B).
 
@@ -180,7 +180,7 @@ Notifications on iOS: Q7.
 
 ### 4.7 Older clients
 
-- Members before version 24 are not told of submembers: V sends x.grp.mem.new with `via` only to members of version 24 (APIAddSubmember), and hosts introduce submembers only to joiners of version 24 (4.3). These members ignore `asMember` and show V's messages under V.
+- V sends x.grp.mem.new with `via` only to members of version 24 (APIAddSubmember), and hosts introduce submembers only to joiners of version 24 (4.3). A host forwards V's x.grp.mem.new to the members it introduced and that are not yet connected to V, of any version, as V's other messages (4.2); members before version 24 ignore `via` and list the submember as connecting. Members before version 24 ignore `asMember` and show V's messages under V.
 - An admin before version 24 knows no submembers, so it introduces none. Its joiners of version 24 create a submember from the first message with `asMember` (4.4).
 - A host before version 24 forwards V's messages by its delivery tasks. A signed message keeps its bytes, `asMember` included. An unsigned one is encoded again from the parsed message, without `asMember`, so its recipients show it under V.
 
@@ -415,11 +415,11 @@ sendAsP = ("(as_group=" *> (bool SAUser SAGroup <$> onOffP) <* A.char ')') <|> (
 
 ```
 command               condition                                        error
-APIAddSubmember       group with relays                                 "members via another member are not supported in channels"
+APIAddSubmember       group with relays                                 "submembers are not supported in channels"
 APIAddSubmember       user role below admin or below the member's role  CEGroupUserRole (assertUserGroupRole gInfo (max GRAdmin role), as APIAddMember, Commands.hs:2887)
 APIAddSubmember       incognito membership                              CEGroupIncognitoCantInvite (as Commands.hs:2873)
 send as member        member of another group or unknown                SEGroupMemberNotFound
-send as member        memberVia other than the user's member ID         "member is not via you"
+send as member        memberVia other than the user's member ID         "member is not your submember"
 send as member        member not current                                CEGroupMemberNotActive
 send as member        member role observer                              "member is not allowed to send messages" (receivers' memberCanSend, Subscriber.hs:1771-1773)
 send as member        chat scope set                                    "cannot send as member in support scope" (as as_group, Commands.hs:782)
@@ -521,15 +521,15 @@ Core, tests/ChatTests/Groups.hs, `describe "submembers"`, groups of alice, bob a
 - `testSubmemberRoleRules`: reviewer is a member, owners are exempt from the edit window → alice's priority 1 as reviewer is stored normal; bob drops alice's edit of the item aged 79 hours on bob ("edit too late"); alice cannot edit the item aged 100 hours on alice; a priority 1 that alice sends as reviewer arrives normal at bob.
 - `testSubmemberRemove`: `/_remove #1 M` → bob and cath see "alice removed reviewer".
 - `testSubmemberRemoveByAdmin`: bob removes reviewer → alice and cath see "bob removed reviewer"; alice's send as reviewer → "not active yet"; a message that alice sends as reviewer after that is ignored by bob and cath.
-- `testSubmemberRefused`: bob (admin) adds an owner via bob → refused; send as bob's group member ID → "member is not via you"; cath (member) adds → refused; alice adds in an incognito group → refused.
+- `testSubmemberRefused`: bob (admin) adds an owner via bob → refused; send as bob's group member ID → "member is not your submember"; cath (member) adds → refused; alice adds in an incognito group → refused.
 - `testSubmemberRefusedChannel`: in a channel → refused.
-- `testSubmemberAnnounceRefused`: x.grp.mem.new with via of another member, x.grp.mem.new from reviewer → refused; cath's message as reviewer → bob refuses it, "member is not a submember of the sender".
+- `testSubmemberAnnounceRefused`: x.grp.mem.new with via of another member → refused; forwards of x.grp.mem.new and x.msg.new attributed to reviewer → refused; cath's message as reviewer → bob refuses it, "member is not a submember of the sender"; after cath is made a member, the same → "member is not allowed to send as member".
+- `testSubmemberOtherHostHistory`: dan joins by bob's invitation after reviewer's message → bob's history sends it as alice's message with `asMember`, and dan shows it from reviewer.
 - `testSubmemberIntroRefused`: x.grp.mem.intro with via naming the user, reviewer, an owner role above cath's, an unknown member, and from a host demoted to member → refused.
 - `testSubmemberSendRefused`: send as reviewer in a support scope, with a file, with a quote, and its broadcast delete → refused; bob's moderation → alice sees "[marked deleted by bob]"; alice's moderation → bob and cath see "[marked deleted by alice]".
 - `testSubmemberSigned`: "sign messages" on → bob shows reviewer's message and its update signed; a message as reviewer signed by another key → bad signature.
 - `testSubmemberSignedPending`: bob's connection inactive → reviewer's message is sent as pending and arrives signed.
 - `testSubmemberSignedHistory`: reviewer removed; dan joins → dan creates reviewer from history with via alice and shows the item signed.
-- `testSubmemberRestart`: alice restarts → reviewer listed via alice; send as member works.
 - Migrations: tests/MigrationTests up and down with the schema dump; down of a database with members via the user and via another member.
 - API docs: tests/APIDocs.hs regenerates the files of 6.5.
 
@@ -653,7 +653,7 @@ updatedMessage     {"msgContent": {...}, "mentions": {...}, "priority": <n>}
 ```
 
 - Errors: section 6.3.
-- With "sign messages" on, the core signs each message as the member with the user's key; `sign=on` is not needed.
+- With "sign messages" on, the core signs each message sent as the member as the user's own message, with the user's key; `sign=on` is not needed.
 - Priority and the edit window of a message sent as the member follow the member's role, as at the receivers.
 - Excluded: deletes as the member (broadcast delete of its item: CEInvalidChatItemDelete) and reactions as the member (APIChatItemReaction reacts as the user).
 - Replies to and mentions of a teammate (stage 3): a received item's quotedItem has the item ID of the item sent as M and direction groupRcv of M; mentions have M's group member ID (5.2; testSubmemberReply).
