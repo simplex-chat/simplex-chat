@@ -553,6 +553,7 @@ chainAddresses = describe "chain addresses" do
     btc `linksTo` onChain bitcoin btc ("bitcoin:" <> btc)
     T.toUpper btc `linksTo` onChain bitcoin btc ("bitcoin:" <> T.toUpper btc)
     ("send to " <> btc <> ".") <==> "send to " <> chainLink (onChain bitcoin btc $ "bitcoin:" <> btc) btc <> "."
+    taproot `linksTo` onChain bitcoin taproot ("bitcoin:" <> taproot)
     p2sh `linksTo` onChain bitcoin p2sh ("bitcoin:" <> p2sh)
     ltc `linksTo` onChain (coin "LTC") ltc ("litecoin:" <> ltc)
     T.toUpper ltc `linksTo` onChain (coin "LTC") ltc ("litecoin:" <> T.toUpper ltc)
@@ -569,6 +570,7 @@ chainAddresses = describe "chain addresses" do
     lnurlUpper `linksTo` onChain (CYLightning Nothing) (T.toLower lnurlUpper) ("lightning:" <> lnurlUpper)
   it "text: a wrong checksum, no checksum, a testnet, code, a Lightning Address" do
     isText "bc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66505d4v"
+    isText "bc1p0xlxvlhemja6c4dqv22uapctqupfhlxm9h8z3k2e72q4k9hcz7vqh2y7hd"
     isText "0xD7047fe3Eecb2f2FF78d839dD927Be27Bc12c86a"
     isText $ T.toLower eth
     isText sol
@@ -688,6 +690,7 @@ chainAddresses = describe "chain addresses" do
     bitcoin = CYBitcoin Nothing
     btc = "bc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66505d4u"
     otherBtc = "bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4"
+    taproot = "bc1p0xlxvlhemja6c4dqv22uapctqupfhlxm9h8z3k2e72q4k9hcz7vqzk5jj0"
     p2sh = "37116639cErLzxER6tL3a6EH2DbdETwTxd"
     ltc = "ltc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66snwfdv"
     ltcM = "MFNwCCkQTusV1FN9aWcN6jNfoLu53NkfUg"
