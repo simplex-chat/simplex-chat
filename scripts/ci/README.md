@@ -251,7 +251,7 @@ Pushes start none of the app workflows: a run is started by hand, on any branch,
 | `claude` | scripted test, then Claude | scripted test, then Claude | scripted test, then Claude |
 | `backend` | also the test backend | also the test backend | also the test backend |
 | `release` | — | also the latest release's onboarding, to tell a branch's failure from the runner's | also the latest release's onboarding, to tell a branch's failure from the runner's |
-| `armv7a` | — | — | also the core library for 32-bit Arm (armeabi-v7a), built only |
+| `armv7a` | — | — | also the core library and the app for 32-bit Arm (armeabi-v7a), uploaded without a test |
 
 In the Actions tab: `ios-sim`, `desktop-linux` or `android-emu` → Run workflow, choose the branch and tick the inputs. With the GitHub CLI, each input is a field:
 
@@ -264,7 +264,7 @@ gh workflow run android-emu.yml --ref <branch> -f claude=true
 
 A newer run of a workflow on the same branch cancels the older one.
 
-Each run uploads the app it built, for manual tests, as an artifact kept 14 days: `ios-sim-app` (SimpleX.app.tar.gz, for the iOS simulator on an Apple-silicon Mac), `desktop-app` (desktop-app.tar.gz, for Linux x86-64) and `android-app` (the debug APK, arm64-v8a only). The run's page lists it under Artifacts; `gh run download <run id> -n <artifact>` downloads it.
+Each run uploads the app it built, for manual tests, as an artifact kept 14 days: `ios-sim-app` (SimpleX.app.tar.gz, for the iOS simulator on an Apple-silicon Mac), `desktop-app` (desktop-app.tar.gz, for Linux x86-64) and `android-app` (the debug APK, arm64-v8a only), with `armv7a` also `android-app-armeabi-v7a` (the debug APK, armeabi-v7a only, installed beside the released app as SimpleX Debug). The run's page lists it under Artifacts; `gh run download <run id> -n <artifact>` downloads it.
 
 An agent that runs these workflows in a fork follows [app-tests-agent.md](app-tests-agent.md).
 
@@ -280,3 +280,104 @@ An agent that runs these workflows in a fork follows [app-tests-agent.md](app-te
 ## The Claude job
 
 It needs the GitHub environment `app-sim-claude` with the secret `CLAUDE_CODE_OAUTH_TOKEN`, a Claude subscription token. The environment's branch rule alone decides which branches may use it: on a branch it doesn't allow, a run that asks for Claude fails at the Claude job's environment check, and the scripted test runs as usual. Each run spends the subscription's usage limits; the job summary gives its tokens and cost estimated at API prices.
+
+## Internal releases
+
+`internal-release.yml` releases a master commit to the testers: TestFlight's internal group, Google Play's internal track, and a release of simplex-chat/simplex-chat-test with the desktop apps and the test APKs. `daily-bump.yml` raises the build numbers each day and starts it.
+
+```mermaid
+flowchart LR
+  D[daily-bump.yml] -->|commit: build numbers + 1| M[master]
+  D -->|workflow_dispatch| R
+  P[Person] -->|push: build numbers + 1| M
+  M -->|push: every build number raised,<br>version names kept| R[internal-release.yml:<br>build.yml passed<br>on the commit or the one before]
+  R --> B[desktop, Android and iOS builds,<br>macOS apps signed and notarized on master]
+  R --> S[android-emu, desktop-linux and ios-sim<br>on the commit]
+  S -->|approval| I
+  S -->|approval| A
+  S -->|approval| T
+  B -->|approval| I[TestFlight internal testing]
+  B -->|approval| A[Play internal track]
+  B -->|approval| T[simplex-chat-test release]
+```
+
+### Start
+
+| Workflow | Starts on | Does |
+|---|---|---|
+| `daily-bump.yml` | 04:17 UTC<br>a manual run, input `branch`, default master | when the branch has commits after the last change of a build number: commits + 1 to `android.version_code` and `desktop.version_code` (apps/multiplatform/gradle.properties) and to every `CURRENT_PROJECT_VERSION` (apps/ios/SimpleX.xcodeproj/project.pbxproj), pushes with GITHUB_TOKEN, then starts `internal-release.yml` on the branch, as GitHub starts no workflow for that push |
+| `internal-release.yml` | a push to master that raises the three build numbers and keeps `android.version_name`, `desktop.version_name` and `MARKETING_VERSION`<br>a manual run | builds the commit with the release scripts of build.yml and runs the app workflows on it, then signs and uploads the apps |
+
+A release starts only when build.yml passed in its push run on the commit, or on the parent of a commit that changes only the build numbers and has no push run of its own, as a commit of `daily-bump.yml`. The job `start` waits up to 3 hours for that run to complete.
+
+GitHub runs a scheduled workflow only from the default branch, master.
+
+`scripts/ci/internal-release/build-numbers.sh` reads, compares and raises the build numbers. A run waits while an earlier run of the branch is unfinished (`queue: max`).
+
+### Jobs
+
+The builds use the scripts of build.yml's tag builds. Each core library is an artifact named after a hash of its sources and toolchain, which a later run reuses, found by `earlier-run.sh` as the app workflows find theirs (30 days); the Android cores are those of android-emu. The jobs `ios`, `android` and `publish` run in the environment `internal-release`, and start after a reviewer approves them, all three at once, when every build and the app workflows have passed.
+
+| Job | Builds or does | Core library artifact | Secrets |
+|---|---|---|---|
+| `test-android`, `test-desktop`, `test-ios` | android-emu (with `armv7a`), desktop-linux and ios-sim on the commit, as a manual run of each does | their own | |
+| `desktop-linux` | the desktop deb of Ubuntu 22.04 and 24.04, x86_64 and aarch64, and the AppImage of 22.04: scripts/desktop/make-deb-linux.sh and make-appimage-linux.sh in the Dockerfile.build container | `desktop-linux-core-ubuntu-<version>-<arch>-<hash>`: scripts/ci/desktop-linux/build-core.sh in the container, then install-core.sh | |
+| `desktop-macos` | the dmg of aarch64 and x86_64: scripts/ci/build-desktop-mac.sh, signed with the Developer ID and notarized on master; unsigned elsewhere | `desktop-macos-core-<arch>-<toolchain>-<hash>`: scripts/desktop/build-lib-mac.sh | `APPLE_SIMPLEX_*`, the repository secrets of build.yml |
+| `desktop-windows` | the msi: `packageMsi` | `desktop-windows-core-<toolchain>-<hash>`: scripts/desktop/build-lib-windows.sh | |
+| `android-build` | the foss APKs (`assembleFossRelease`) and the Play bundle (`bundleGoogleRelease`), unsigned | android-emu's `android-core-<hash>` and `android-core-armeabi-v7a-<hash>` | |
+| `ios-build` | the iOS archive: scripts/ci/internal-release/ios-archive.sh, with the brand assets of simplex-chat-art, and each bundle signed ad hoc with its entitlements | `ios-core-<hash>`: the Nix job `aarch64-darwin-ios:lib:simplex-chat` | `SIMPLEX_ART_SSH_KEY`, a repository secret: a read-only deploy key of simplex-chat-art; without it, the archive has the default icons |
+| `ios` | the archive exported with the Apple Distribution certificate and uploaded for internal testing only (`testFlightInternalTestingOnly`) | | `IOS_*`, `APP_STORE_CONNECT_*` |
+| `android` | the Play bundle signed with the upload key and released to the internal track; while a Play update is in review, the upload fails and the review continues (`changesInReviewBehavior=ERROR_IF_IN_REVIEW`) | | `ANDROID_UPLOAD_*`, `GOOGLE_PLAY_SERVICE_ACCOUNT` |
+| `publish` | the `ui.json` of each `simplex-desktop-ui-<base>.zip` signed; the test APKs signed as `simplex.apk` and `simplex-armv7a.apk`; in simplex-chat-test, a commit of `release.json` with the version names, the build numbers and the commit, and the release `<desktop.version_name>-<desktop.version_code>` with the desktop apps, their UI updates and the APKs | | `DESKTOP_UI_UPDATE_KEY`, `ANDROID_TEST_*`, `SIMPLEX_CHAT_TEST_TOKEN` |
+
+A step without its secrets skips with a notice, so that the workflow runs in a fork without keys. The `ios` job is skipped with a notice while `MARKETING_VERSION` is not above the version in the App Store, whose TestFlight train is closed.
+
+Each desktop job writes `core-hash` into the app's resources: a hash of the core's sources, of its JNI library and of the app's fixed part (job `start`). After the package, scripts/ci/internal-release/ui-zip.py saves `simplex-desktop-ui-<base>.zip`: the app's own jars and `ui.json`, with the base of the package's app as scripts/ci/desktop-linux/ui-update.py computes it. An app on the Internal channel with the same base downloads the zip in place of the package.
+
+The msi version of an internal release is `<major>.<minor>.<desktop.version_code>` (`SIMPLEX_INTERNAL_RELEASE` in apps/multiplatform/desktop/build.gradle.kts); public releases keep `<major>.<minor>.<patch>`. jpackage derives the msi's product code from its version, and Windows Installer refuses an msi whose product is installed from another msi. jpackage's msi removes an installed build of any other version, higher or lower, so a public msi replaces an internal one.
+
+### Setup
+
+1. The environment, with a reviewer, for master only:
+   ```sh
+   gh api -X PUT repos/simplex-chat/simplex-chat/environments/internal-release --input - << EOF
+   {"reviewers": [{"type": "User", "id": $(gh api users/<reviewer> --jq .id)}],
+    "deployment_branch_policy": {"protected_branches": false, "custom_branch_policies": true}}
+   EOF
+   gh api -X POST repos/simplex-chat/simplex-chat/environments/internal-release/deployment-branch-policies -f name=master -f type=branch
+   ```
+2. The secrets of the environment. `gh secret set` reads the value from its standard input, or asks for it:
+
+   | Secret | Value | Command |
+   |---|---|---|
+   | `IOS_DISTRIBUTION_CERTIFICATE` | the Apple Distribution certificate with its private key, a .p12 file, in base64 | `base64 < distribution.p12 \| gh secret set IOS_DISTRIBUTION_CERTIFICATE --env internal-release` |
+   | `IOS_DISTRIBUTION_CERTIFICATE_PASSWORD` | the password of the .p12 file | `gh secret set IOS_DISTRIBUTION_CERTIFICATE_PASSWORD --env internal-release` |
+   | `IOS_PROFILE_APP` | the App Store profile of chat.simplex.app, in base64 | `base64 < app.mobileprovision \| gh secret set IOS_PROFILE_APP --env internal-release` |
+   | `IOS_PROFILE_NSE` | the App Store profile of chat.simplex.app.SimpleX-NSE, in base64 | `base64 < nse.mobileprovision \| gh secret set IOS_PROFILE_NSE --env internal-release` |
+   | `IOS_PROFILE_SE` | the App Store profile of chat.simplex.app.SimpleX-SE, in base64 | `base64 < se.mobileprovision \| gh secret set IOS_PROFILE_SE --env internal-release` |
+   | `APP_STORE_CONNECT_KEY` | a team key of App Store Connect with the role Developer, the .p8 file | `gh secret set APP_STORE_CONNECT_KEY --env internal-release < AuthKey_<key id>.p8` |
+   | `APP_STORE_CONNECT_KEY_ID` | its key ID | `gh secret set APP_STORE_CONNECT_KEY_ID --env internal-release --body <key id>` |
+   | `APP_STORE_CONNECT_ISSUER_ID` | the issuer ID of the team keys | `gh secret set APP_STORE_CONNECT_ISSUER_ID --env internal-release --body <issuer id>` |
+   | `ANDROID_UPLOAD_KEYSTORE` | the keystore of the Play upload key, in base64 | `base64 < upload.jks \| gh secret set ANDROID_UPLOAD_KEYSTORE --env internal-release` |
+   | `ANDROID_UPLOAD_KEYSTORE_PASSWORD` | its password | `gh secret set ANDROID_UPLOAD_KEYSTORE_PASSWORD --env internal-release` |
+   | `ANDROID_UPLOAD_KEY_ALIAS` | the alias of the upload key | `gh secret set ANDROID_UPLOAD_KEY_ALIAS --env internal-release --body <alias>` |
+   | `ANDROID_UPLOAD_KEY_PASSWORD` | the password of the upload key | `gh secret set ANDROID_UPLOAD_KEY_PASSWORD --env internal-release` |
+   | `GOOGLE_PLAY_SERVICE_ACCOUNT` | the JSON key of a service account with the permission "Release apps to testing tracks" for chat.simplex.app | `gh secret set GOOGLE_PLAY_SERVICE_ACCOUNT --env internal-release < service-account.json` |
+   | `ANDROID_TEST_KEYSTORE` | the keystore of the test key, in base64 | `base64 < test.jks \| gh secret set ANDROID_TEST_KEYSTORE --env internal-release` |
+   | `ANDROID_TEST_KEYSTORE_PASSWORD` | its password | `gh secret set ANDROID_TEST_KEYSTORE_PASSWORD --env internal-release` |
+   | `ANDROID_TEST_KEY_ALIAS` | the alias of the test key | `gh secret set ANDROID_TEST_KEY_ALIAS --env internal-release --body <alias>` |
+   | `ANDROID_TEST_KEY_PASSWORD` | the password of the test key | `gh secret set ANDROID_TEST_KEY_PASSWORD --env internal-release` |
+   | `SIMPLEX_CHAT_TEST_TOKEN` | a fine-grained token, resource owner simplex-chat, repository simplex-chat-test only, permission Contents read and write | `gh secret set SIMPLEX_CHAT_TEST_TOKEN --env internal-release` |
+   | `DESKTOP_UI_UPDATE_KEY` | the Ed25519 key that signs the UI updates, PEM; its public key, `openssl pkey -in ui-update.pem -pubout -outform DER \| base64`, is `desktop.ui_update_key` in apps/multiplatform/gradle.properties | `openssl genpkey -algorithm ed25519 -out ui-update.pem`, then `gh secret set DESKTOP_UI_UPDATE_KEY --env internal-release < ui-update.pem` |
+
+   The macOS jobs use the repository secrets `APPLE_SIMPLEX_SIGNING_KEYCHAIN`, `APPLE_SIMPLEX_NOTARIZATION_APPLE_ID` and `APPLE_SIMPLEX_NOTARIZATION_PASSWORD` of build.yml, and the iOS job the repository secret `SIMPLEX_ART_SSH_KEY`.
+3. In App Store Connect, a TestFlight internal group that receives new builds automatically.
+4. In Google Cloud, the Google Play Developer API enabled in the project of the service account; in Play Console, Users and permissions, the service account invited with "Release apps to testing tracks" for chat.simplex.app, and the internal testers list.
+5. In simplex-chat/simplex-chat-test, the rules of master and of tags allow the token's owner to push and to create tags.
+
+### Running by hand
+
+- `gh workflow run daily-bump.yml`: raises the build numbers of master and releases it.
+- `gh workflow run internal-release.yml --ref master`: releases master with its current build numbers.
+- A failed run: "Re-run failed jobs" on its page, which uses the run's builds; a new run builds again, and Google Play, TestFlight and simplex-chat-test refuse the build numbers and the tag of the uploads that succeeded.
+- In a fork, after a push run of each workflow on a branch, `gh workflow run daily-bump.yml --ref <branch> -f branch=<branch>` raises the build numbers of the branch and runs the release up to the signing steps, which print their notices; the job `start` requires a push run of build.yml on the branch, which a fork runs on master and stable.

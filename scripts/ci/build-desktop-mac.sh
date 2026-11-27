@@ -14,7 +14,7 @@ security unlock-keychain -p "" /tmp/simplex.keychain
 # Adding keychain to the list of keychains.
 # Otherwise, it can find cert but exits while signing with "error: The specified item could not be found in the keychain."
 security list-keychains -s `security list-keychains | xargs` /tmp/simplex.keychain
-scripts/desktop/build-lib-mac.sh
+[ -n "${SKIP_LIB:-}" ] || scripts/desktop/build-lib-mac.sh
 cd apps/multiplatform
 if [ -n "${ASSETS_DIR:-}" ]; then
   set -- -Psimplex.assets.dir="$ASSETS_DIR"

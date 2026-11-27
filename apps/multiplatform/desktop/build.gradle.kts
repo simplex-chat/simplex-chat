@@ -132,6 +132,9 @@ compose {
         val split = adjustedVersion.split(".")
         adjustedVersion = split[0] + "." + (split.getOrNull(1) ?: "0") + "." + (split.getOrNull(2) ?: "0")
         version = adjustedVersion
+        if (System.getenv("SIMPLEX_INTERNAL_RELEASE") == "true") {
+          windows.msiPackageVersion = split[0] + "." + (split.getOrNull(1) ?: "0") + "." + rootProject.extra["desktop.version_code"]
+        }
       }
     }
   }

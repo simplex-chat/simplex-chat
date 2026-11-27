@@ -2,7 +2,7 @@ name: desktop-linux
 
 on:
   workflow_dispatch:
-    inputs:
+    inputs: &inputs
       claude:
         description: Also run the Claude job, which spends the Claude subscription's usage limits
         type: boolean
@@ -15,13 +15,15 @@ on:
         description: Also test the latest released app, to tell a branch's failure from the runner's
         type: boolean
         default: false
+  workflow_call:
+    inputs: *inputs
 
 permissions:
   contents: read
   actions: read
 
 concurrency:
-  group: desktop-linux-${{ github.ref }}
+  group: desktop-linux-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 env:

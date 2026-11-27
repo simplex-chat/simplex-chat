@@ -2,7 +2,7 @@
 
 ARCH="$(uname -m)"
 
-scripts/desktop/build-lib-linux.sh
+[ -n "${SKIP_LIB:-}" ] || scripts/desktop/build-lib-linux.sh
 cd apps/multiplatform
 if [ -n "${ASSETS_DIR:-}" ]; then
   set -- -Psimplex.assets.dir="$ASSETS_DIR"
