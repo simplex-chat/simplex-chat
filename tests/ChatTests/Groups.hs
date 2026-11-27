@@ -374,7 +374,7 @@ chatGroupTests = do
     it "announce user's submember only to members of current version" testSubmemberPrevVersionMember
     it "host forwards messages and updates of another member's submember until its invitee connects to that member" testSubmemberOtherAdmin
     it "host forwards messages of another member's blocked submember to moderators only, without notifications" testSubmemberBlockedToModerators
-    it "messages of blocked member sent as its submember are its own blocked messages" testSubmemberViaBlocked
+    it "messages and edits of blocked member sent as its submember are its own blocked messages" testSubmemberViaBlocked
     it "joiner gets no history of submembers of blocked member" testSubmemberViaBlockedHistory
     it "introduce another member's submember after that member" testSubmemberIntroOrder
     it "reply to and mention of user's submember resolve to that submember" testSubmemberReply
@@ -17143,6 +17143,11 @@ testSubmemberViaBlocked =
       addSubmember bob "member"
       mapM_ (<## "#team: bob added reviewer to the group (via bob)") [alice, cath]
       GroupMember {groupMemberId = reviewerId} <- getTestMember bob "team" "reviewer"
+      bob ##> ("/_send #1(as_member=" <> show reviewerId <> ") text hi")
+      bob <# "#team hi"
+      alice <# "#team reviewer> hi"
+      cath <# "#team reviewer> hi [>>]"
+      hiId <- lastItemId bob
       alice ##> "/block for all #team bob"
       alice <## "#team: you blocked bob (signed)"
       cath <## "#team: alice blocked bob (signed)"
@@ -17162,6 +17167,10 @@ testSubmemberViaBlocked =
       bob <# "#team spam again"
       alice <# "#team bob> spam again [blocked by admin] <muted>"
       cath <# "#team bob> spam again [blocked by admin] [>>] <muted>"
+      bob ##> ("/_update item #1 " <> hiId <> " text hello")
+      bob <# "#team [edited] hello"
+      alice <# "#team bob> hello [blocked by admin] <muted>"
+      cath <# "#team bob> hello [blocked by admin] [>>] <muted>"
 
 testSubmemberViaBlockedHistory :: HasCallStack => TestParams -> IO ()
 testSubmemberViaBlockedHistory =
