@@ -180,6 +180,11 @@ member info             row "Via" with the host's name, after the role; the mess
                         with member" hidden; the security code not requested (GroupMember.canVerifyCode)
 loading                 ChatView loads the members when an item or its quote is from a submember and the members are not
                         loaded (viaHostsNotLoaded)
+removal with the host   ChatModel.upsertGroupMember records the loaded submembers of a member it records as left or
+                        removed as removed, the user's membership included
+removal alerts          "2 submembers will be removed too." after the message of "Remove member?", of the removal of a
+                        blocked member and of "Remove forever?", with the count of the host's current submembers
+                        (removedSubmembersText)
 ```
 
 ---

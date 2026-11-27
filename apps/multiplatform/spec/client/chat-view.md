@@ -148,6 +148,11 @@ member info             row "Via" (info_row_via) with the host's name, after the
                         buttons and "Chat with member" hidden; the security code not requested (GroupMember.canVerifyCode)
 loading                 ChatItemsList loads the members when an item or its quote is from a submember and the members
                         are not loaded
+removal with the host   ChatsContext.upsertGroupMember records the loaded submembers of a member it records as left or
+                        removed as removed, the user's membership included
+removal alerts          "2 submembers will be removed too." after the message of "Remove member?", "Remove members?",
+                        the removal of blocked members and "Remove forever?", with the count of the current submembers
+                        of the members removed (removedSubmembersText)
 ```
 
 ---
