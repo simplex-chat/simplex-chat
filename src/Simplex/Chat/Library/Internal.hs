@@ -1459,7 +1459,7 @@ sendHistory user gInfo@GroupInfo {membership} m@GroupMember {activeConn = Just c
               Just author@GroupMember {memberVia = Just viaId} -> do
                 cxt <- chatStoreCxt
                 withStore' (\db -> runExceptT $ getGroupMemberByMemberId db cxt user gInfo viaId) >>= \case
-                  Right viaMem | memberCurrent viaMem -> processContentItem (Just viaMem) (SAMember author) ci mc fInvDescr_
+                  Right viaMem | memberCurrent viaMem && not (blockedByAdmin viaMem) -> processContentItem (Just viaMem) (SAMember author) ci mc fInvDescr_
                   _ -> pure []
               _ -> processContentItem member_ (sendAsGroupIf showGroupAsSender) ci mc fInvDescr_
         | otherwise -> pure []

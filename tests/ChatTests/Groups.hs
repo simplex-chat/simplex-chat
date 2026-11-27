@@ -375,6 +375,7 @@ chatGroupTests = do
     it "host forwards messages and updates of another member's submember until its invitee connects to that member" testSubmemberOtherAdmin
     it "host forwards messages of another member's blocked submember to moderators only, without notifications" testSubmemberBlockedToModerators
     it "messages of blocked member sent as its submember are its own blocked messages" testSubmemberViaBlocked
+    it "joiner gets no history of submembers of blocked member" testSubmemberViaBlockedHistory
     it "introduce another member's submember after that member" testSubmemberIntroOrder
     it "reply to and mention of user's submember resolve to that submember" testSubmemberReply
     it "priority and edit window of messages sent as member follow member role at sender and receivers" testSubmemberRoleRules
@@ -17161,6 +17162,37 @@ testSubmemberViaBlocked =
       bob <# "#team spam again"
       alice <# "#team bob> spam again [blocked by admin] <muted>"
       cath <# "#team bob> spam again [blocked by admin] [>>] <muted>"
+
+testSubmemberViaBlockedHistory :: HasCallStack => TestParams -> IO ()
+testSubmemberViaBlockedHistory =
+  testChat3 aliceProfile bobProfile danProfile $
+    \alice bob dan -> do
+      createGroup2 "team" alice bob
+      addSubmember bob "member"
+      alice <## "#team: bob added reviewer to the group (via bob)"
+      GroupMember {groupMemberId = reviewerId} <- getTestMember bob "team" "reviewer"
+      bob ##> ("/_send #1(as_member=" <> show reviewerId <> ") text hi")
+      bob <# "#team hi"
+      alice <# "#team reviewer> hi"
+      alice ##> "/block for all #team bob"
+      alice <## "#team: you blocked bob (signed)"
+      connectUsers alice dan
+      addMember "team" alice dan GRModerator
+      dan ##> "/j team"
+      concurrentlyN_
+        [ alice <## "#team: dan joined the group",
+          dan
+            <### [ "#team: you joined the group",
+                   "#team: member bob (Bob) is connected"
+                 ],
+          do
+            bob <## "#team: alice added dan (Daniel) to the group (connecting...)"
+            bob <## "#team: new member dan is connected"
+        ]
+      dan ##> "/_get chat #1 count=100"
+      r <- chat <$> getTermLine dan
+      r `shouldNotContain` [(0, "hi")]
+      r `shouldNotContain` [(0, "hi [blocked by admin]")]
 
 testSubmemberIntroOrder :: HasCallStack => TestParams -> IO ()
 testSubmemberIntroOrder =
