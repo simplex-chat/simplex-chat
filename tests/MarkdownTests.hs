@@ -555,6 +555,7 @@ chainAddresses = describe "chain addresses" do
     ("send to " <> btc <> ".") <==> "send to " <> chainLink (onChain bitcoin btc $ "bitcoin:" <> btc) btc <> "."
     taproot `linksTo` onChain bitcoin taproot ("bitcoin:" <> taproot)
     p2sh `linksTo` onChain bitcoin p2sh ("bitcoin:" <> p2sh)
+    (p2sh <> ".") <==> chainLink (onChain bitcoin p2sh $ "bitcoin:" <> p2sh) p2sh <> "."
     ltc `linksTo` onChain (coin "LTC") ltc ("litecoin:" <> ltc)
     T.toUpper ltc `linksTo` onChain (coin "LTC") ltc ("litecoin:" <> T.toUpper ltc)
     ltcM `linksTo` onChain (coin "LTC") ltcM ("litecoin:" <> ltcM)
@@ -581,7 +582,7 @@ chainAddresses = describe "chain addresses" do
     ("`" <> btc <> "`") <==> markdown Snippet btc
     "alice@getalby.com" <==> email "alice@getalby.com"
   it "guards select at most one form for a word" do
-    forM_ ([btc, p2sh, coffee, xmr, zecT, zecZ, zecU, ltc, ltcM, doge, bch, fluxZ] :: [Text]) $ \w -> do
+    forM_ ([btc, p2sh, coffee, lnurlUpper, xmr, zecT, zecZ, zecU, ltc, ltcM, doge, bch, fluxZ] :: [Text]) $ \w -> do
       bareAddressForm (encodeUtf8 w) `shouldBe` True
       isText $ T.init w <> if T.last w == 'q' then "p" else "q"
     forM_ ("13LMD9A" :: String) $ \c -> do
@@ -641,6 +642,7 @@ chainAddresses = describe "chain addresses" do
     isText $ "bitcoin:" <> btc <> "?req-pop=callback"
     isText $ "monero-wallet:" <> xmr <> "?spend_key=029c559cd7669f14e91fd835144916009f8697ab5ac5c7f7c06e1ff869c17b0b"
     isText $ "monero:" <> xmr <> ";" <> xmr <> "?tx_amount=1;2"
+    isText $ "monero:" <> xmr <> "?tx_description=a;b"
     isText $ "zcash:" <> zecT <> "?memo=" <> memo
     isText $ "zcash:?address=" <> zecT <> "&address.1=" <> zecU
     isText $ "ethereum:" <> usdt <> "/approve?address=" <> eth <> "&uint256=1"
