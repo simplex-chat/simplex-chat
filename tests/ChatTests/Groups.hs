@@ -380,6 +380,8 @@ chatGroupTests = do
     it "priority and edit window of messages sent as member follow member role at sender and receivers" testSubmemberRoleRules
     it "remove user's submember" testSubmemberRemove
     it "remove user's submember by another admin" testSubmemberRemoveByAdmin
+    it "remove submembers of member that leaves; joiner gets no introduction of them" testSubmemberViaLeft
+    it "remove submembers of member removed by admin, on every member's side" testSubmemberViaRemoved
     it "refuse role above user role, member that is not user's submember, user below admin and incognito membership" testSubmemberRefused
     it "refuse announcement against via rules and messages as a member that is not a submember of the sender" testSubmemberAnnounceRefused
     it "refuse introduction against via rules" testSubmemberIntroRefused
@@ -17285,6 +17287,64 @@ testSubmemberRemoveByAdmin =
       agentSendBody alice connId $ chatMsgToBody $ ChatMessage chatInitialVRange (Just $ SharedMsgId "removed_msg") (XMsgNew ((mcSimple (MCText "late") :: MsgContainer) {asMember = Just MemberRef {memberId = reviewerId, memberName = "reviewer"}}))
       alice #> "#team hello"
       [bob, cath] *<# "#team alice> hello"
+
+testSubmemberViaLeft :: HasCallStack => TestParams -> IO ()
+testSubmemberViaLeft =
+  testChat4 aliceProfile bobProfile cathProfile danProfile $
+    \alice bob cath dan -> do
+      createGroup3 "team" alice bob cath
+      addSubmember bob "member"
+      mapM_ (<## "#team: bob added reviewer to the group (via bob)") [alice, cath]
+      bob ##> "/l team"
+      concurrentlyN_
+        [ do
+            bob <## "#team: you left the group"
+            bob <## "use /d #team to delete the group",
+          alice <## "#team: bob left the group (signed)",
+          cath <## "#team: bob left the group (signed)"
+        ]
+      bob ##> "/ms team"
+      bob <### ["alice (Alice): owner, host, connected", "cath (Catherine): admin, connected"]
+      alice ##> "/ms team"
+      alice <### ["alice (Alice): owner, you, created group", "cath (Catherine): admin, invited, connected"]
+      connectUsers alice dan
+      addMember "team" alice dan GRMember
+      dan ##> "/j team"
+      concurrentlyN_
+        [ alice <## "#team: dan joined the group",
+          do
+            dan <## "#team: you joined the group"
+            dan <## "#team: member cath (Catherine) is connected",
+          do
+            cath <## "#team: alice added dan (Daniel) to the group (connecting...)"
+            cath <## "#team: new member dan is connected"
+        ]
+      dan ##> "/ms team"
+      dan <### ["dan (Daniel): member, you, connected", "alice (Alice): owner, host, connected", "cath (Catherine): admin, connected"]
+
+testSubmemberViaRemoved :: HasCallStack => TestParams -> IO ()
+testSubmemberViaRemoved =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+      addSubmember bob "member"
+      mapM_ (<## "#team: bob added reviewer to the group (via bob)") [alice, cath]
+      GroupMember {groupMemberId = reviewerId} <- getTestMember bob "team" "reviewer"
+      bob ##> ("/_send #1(as_member=" <> show reviewerId <> ") text hi")
+      bob <# "#team hi"
+      [alice, cath] *<# "#team reviewer> hi"
+      cath ##> "/rm team bob"
+      concurrentlyN_
+        [ cath <## "#team: you removed bob from the group (signed)",
+          alice <## "#team: cath removed bob from the group (signed)",
+          do
+            bob <## "#team: cath removed you from the group (signed)"
+            bob <## "use /d #team to delete the group"
+        ]
+      forM_ [alice, bob, cath] $ \cc -> reviewerStatus cc `shouldReturn` ["removed"]
+  where
+    reviewerStatus :: TestCC -> IO [T.Text]
+    reviewerStatus cc = withCCTransaction cc $ \db -> map fromOnly <$> DB.query_ db "SELECT member_status FROM group_members WHERE local_display_name = 'reviewer'"
 
 testSubmemberRefused :: HasCallStack => TestParams -> IO ()
 testSubmemberRefused =

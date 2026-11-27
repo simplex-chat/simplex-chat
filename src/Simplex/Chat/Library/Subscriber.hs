@@ -3883,6 +3883,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
               unless (isUserGrpFwdRelay gInfo) $ deleteGroupConnections user gInfo False
               withStore' $ \db -> do
                 updateGroupMemberStatus db userId membership GSMemRemoved
+                removeSubmembers db cxt user gInfo membership
                 when (maybe False (/= RSRejected) (relayOwnStatus gInfo)) $ updateRelayOwnStatus_ db gInfo RSInactive
               let membership' = membership {memberStatus = GSMemRemoved}
               when withMessages $ deleteMessages gInfo membership'
@@ -3915,6 +3916,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                         fullyDeleteMemberRecord user gInfo deletedMember
                     -- Undeleted "member connected" chat item will prevent deletion of member record.
                     | otherwise -> deleteOrUpdateMemberRecord user gInfo deletedMember
+                withStore' $ \db -> removeSubmembers db cxt user gInfo' deletedMember
                 gInfo'' <- updatePublicGroupData user gInfo' gks
                 let wasDeleted = memberStatus == GSMemRemoved || memberStatus == GSMemLeft
                 -- Clear forwardedByMember if it references the deleted member,
@@ -3963,6 +3965,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
       deleteMemberConnection m
       -- member record is not deleted to allow creation of "member left" chat item
       gInfo' <- updateMemberRecordDeleted user gInfo m GSMemLeft
+      withStore' $ \db -> removeSubmembers db cxt user gInfo' m
       gInfo'' <- updatePublicGroupData user gInfo' gks
       unless (muteEventInChannel gInfo'' m) $ do
         (gInfo''', m', scopeInfo) <- mkGroupChatScope gInfo'' m

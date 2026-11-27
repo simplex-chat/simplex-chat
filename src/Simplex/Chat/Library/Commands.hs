@@ -3345,6 +3345,7 @@ processChatCommand cxt nm = \case
               if fullDelete
                 then void $ fullyDeleteMemberRecordIO db user gInfo m
                 else void $ deleteOrUpdateMemberRecordIO db user gInfo m
+              removeSubmembers db cxt user gInfo m
               pure m {memberStatus = GSMemRemoved}
       deleteMessages user gInfo@GroupInfo {membership} ms
         | groupFeatureUserAllowed SGFFullDelete gInfo = deleteGroupMembersCIs user gInfo ms
@@ -3367,6 +3368,7 @@ processChatCommand cxt nm = \case
       -- member records are not deleted to keep history
       withFastStore' $ \db -> do
         updateGroupMemberStatus db userId membership GSMemLeft
+        removeSubmembers db cxt user gInfo membership
         when relayRejected $ updateRelayOwnStatus_ db gInfo RSRejected
       let relayOwnStatus' = if relayRejected then Just RSRejected else relayOwnStatus gInfo
       pure $ CRLeftMemberUser user gInfo' {membership = membership {memberStatus = GSMemLeft}, relayOwnStatus = relayOwnStatus'}

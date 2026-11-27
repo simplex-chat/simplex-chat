@@ -78,6 +78,7 @@ module Simplex.Chat.Store.Groups
     getGroupOnlyMembers,
     getGroupOwners,
     getGroupRelayMembers,
+    getSubmembers,
     getGroupMembersForExpiration,
     getRemovedMembersToCleanup,
     setGroupSilentlyRemoved,
@@ -1365,6 +1366,15 @@ getGroupRelayMembers db cxt user@User {userId, userContactId} GroupInfo {groupId
       db
       (groupMemberQuery <> " WHERE m.user_id = ? AND m.group_id = ? AND m.contact_id IS DISTINCT FROM ? AND m.member_role = ?")
       (userId, groupId, userContactId, GRRelay)
+
+getSubmembers :: DB.Connection -> StoreCxt -> User -> GroupInfo -> MemberId -> IO [GroupMember]
+getSubmembers db cxt user@User {userId} GroupInfo {groupId} viaId = do
+  currentTs <- getCurrentTime
+  map (toContactMember currentTs cxt user)
+    <$> DB.query
+      db
+      (groupMemberQuery <> " WHERE m.user_id = ? AND m.group_id = ? AND m.member_via = ?")
+      (userId, groupId, viaId)
 
 getGroupMembersForExpiration :: DB.Connection -> StoreCxt -> User -> GroupInfo -> IO [GroupMember]
 getGroupMembersForExpiration db cxt user@User {userId, userContactId} GroupInfo {groupId} = do

@@ -2278,6 +2278,10 @@ deleteOrUpdateMemberRecordIO db user@User {userId} gInfo m = do
           | otherwise -> deleteGroupMember db user m'
   pure gInfo'
 
+removeSubmembers :: DB.Connection -> StoreCxt -> User -> GroupInfo -> GroupMember -> IO ()
+removeSubmembers db cxt user gInfo m =
+  getSubmembers db cxt user gInfo (memberId' m) >>= mapM_ (deleteOrUpdateMemberRecordIO db user gInfo)
+
 -- Unlike deleteOrUpdateMemberRecord, skips checkGroupMemberHasItems.
 fullyDeleteMemberRecord :: User -> GroupInfo -> GroupMember -> CM GroupInfo
 fullyDeleteMemberRecord user gInfo m =
