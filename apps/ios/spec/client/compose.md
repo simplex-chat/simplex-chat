@@ -329,8 +329,8 @@ An edit opens with `ComposeState(editingItem:previewsOn:)`: the links of the edi
 | [`linksBeforePreview()`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L352) | L352 | The links of an edited message before the link of its card |
 | [`getMessageLinks()`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L359) | L359 | Returns the first URL outside `cancelledLinks` and SimpleX links |
 | [`checkLinkPreview()`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L374) | L374 | Content of the sent message: `.link` when the shown card is of the selected URL of the text |
-| [`cancelLinkPreview()`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L1978) | L1978 | Cancels the card |
-| [`loadLinkPreview()`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L1983) | L1983 | Requests the preview of the loading link from the core after 1.5 s |
+| [`cancelLinkPreview()`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L1979) | L1979 | Cancels the card |
+| [`loadLinkPreview()`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L1984) | L1984 | Requests the preview of the loading link from the core after 1.5 s |
 | [`apiGetLinkPreview()`](../../Shared/Model/SimpleXAPI.swift#L527) | L527 | Sends `/_link preview <uri>`; on failure returns no preview |
 
 ### Behavior
