@@ -3908,15 +3908,17 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                 let deliveryScope = memberEventDeliveryScope deletedMember
                     deletedMember' = deletedMember {memberStatus = GSMemRemoved}
                 when withMessages $ deleteMessages gInfo deletedMember'
-                gInfo' <- case deliveryScope of
-                  -- Keep member record if it's support scope - it will be required for forwarding inside that scope.
-                  Just (DJSMemberSupport _) | shouldForward -> updateMemberRecordDeleted user gInfo deletedMember GSMemRemoved
-                  _
-                    | withMessages && groupFeatureMemberAllowed SGFFullDelete m gInfo ->
-                        fullyDeleteMemberRecord user gInfo deletedMember
-                    -- Undeleted "member connected" chat item will prevent deletion of member record.
-                    | otherwise -> deleteOrUpdateMemberRecord user gInfo deletedMember
-                gInfo'' <- withStore' (\db -> removeSubmembers db cxt user gInfo' deletedMember) >>= \gi -> updatePublicGroupData user gi gks
+                gInfo' <- withStore' $ \db -> do
+                  gi <- case deliveryScope of
+                    -- Keep member record if it's support scope - it will be required for forwarding inside that scope.
+                    Just (DJSMemberSupport _) | shouldForward -> updateMemberRecordDeletedIO db user gInfo deletedMember GSMemRemoved
+                    _
+                      | withMessages && groupFeatureMemberAllowed SGFFullDelete m gInfo ->
+                          fullyDeleteMemberRecordIO db user gInfo deletedMember
+                      -- Undeleted "member connected" chat item will prevent deletion of member record.
+                      | otherwise -> deleteOrUpdateMemberRecordIO db user gInfo deletedMember
+                  removeSubmembers db cxt user gi deletedMember
+                gInfo'' <- updatePublicGroupData user gInfo' gks
                 let wasDeleted = memberStatus == GSMemRemoved || memberStatus == GSMemLeft
                 -- Clear forwardedByMember if it references the deleted member,
                 -- as the member record was already deleted above.
@@ -3965,7 +3967,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
     xGrpLeave (GIK gInfo gks) m msg@RcvMessage {msgSigned} brokerTs = do
       deleteMemberConnection m
       -- member record is not deleted to allow creation of "member left" chat item
-      gInfo' <- updateMemberRecordDeleted user gInfo m GSMemLeft >>= \gi -> withStore' $ \db -> removeSubmembers db cxt user gi m
+      gInfo' <- withStore' $ \db -> updateMemberRecordDeletedIO db user gInfo m GSMemLeft >>= \gi -> removeSubmembers db cxt user gi m
       gInfo'' <- updatePublicGroupData user gInfo' gks
       unless (muteEventInChannel gInfo'' m) $ do
         (gInfo''', m', scopeInfo) <- mkGroupChatScope gInfo'' m
