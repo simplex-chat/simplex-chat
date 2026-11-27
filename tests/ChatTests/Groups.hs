@@ -380,7 +380,7 @@ chatGroupTests = do
     it "priority and edit window of messages sent as member follow member role at sender and receivers" testSubmemberRoleRules
     it "remove user's submember" testSubmemberRemove
     it "remove user's submember by another admin" testSubmemberRemoveByAdmin
-    it "remove submembers of member that leaves; joiner gets no introduction of them" testSubmemberViaLeft
+    it "remove submembers of member that leaves; joiner gets no introduction and no history of them" testSubmemberViaLeft
     it "remove submembers of member removed by admin, on every member's side" testSubmemberViaRemoved
     it "refuse role above user role, member that is not user's submember, user below admin and incognito membership" testSubmemberRefused
     it "refuse announcement against via rules and messages as a member that is not a submember of the sender" testSubmemberAnnounceRefused
@@ -17298,6 +17298,10 @@ testSubmemberViaLeft =
       createGroup3 "team" alice bob cath
       addSubmember bob "member"
       mapM_ (<## "#team: bob added reviewer to the group (via bob)") [alice, cath]
+      GroupMember {groupMemberId = reviewerId} <- getTestMember bob "team" "reviewer"
+      bob ##> ("/_send #1(as_member=" <> show reviewerId <> ") text hi")
+      bob <# "#team hi"
+      [alice, cath] *<# "#team reviewer> hi"
       bob ##> "/l team"
       concurrentlyN_
         [ do

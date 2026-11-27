@@ -1470,8 +1470,8 @@ sendHistory user gInfo@GroupInfo {membership} m@GroupMember {activeConn = Just c
               Just author@GroupMember {memberVia = Just viaId} -> do
                 cxt <- chatStoreCxt
                 withStore' (\db -> runExceptT $ getGroupMemberByMemberId db cxt user gInfo viaId) >>= \case
-                  Right viaMem -> processContentItem (Just viaMem) (SAMember author) ci mc fInvDescr_
-                  Left _ -> pure []
+                  Right viaMem | memberCurrent viaMem -> processContentItem (Just viaMem) (SAMember author) ci mc fInvDescr_
+                  _ -> pure []
               _ -> processContentItem member_ (sendAsGroupIf showGroupAsSender) ci mc fInvDescr_
         | otherwise -> pure []
       (CChatItem SMDSnd ci@ChatItem {content = CISndMsgContent mc, file, meta = CIMeta {showGroupAsSender, sentAsMember}}) -> do
