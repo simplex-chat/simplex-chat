@@ -2,7 +2,8 @@
 
 # Starts the desktop app on a virtual display and runs the scripted UI cases with the ui helper: onboarding to the
 # chat list, a local group, then the chat list with the toolbar at the bottom (the default) and at the top, then
-# tests/fixtures/test.jpg and logo-large-rgba.png picked in the file dialog and sent in the group.
+# tests/fixtures/test.jpg and logo-large-rgba.png picked in the file dialog and sent in the group, then a restart,
+# after which the window has the same size.
 # Usage: scripts/ci/desktop-linux/smoke-test.sh <app dir> <output dir> [start|onboarding|layouts|setup|backend]
 # With "start" it stops at the first screen, for an agent to go on from; with "onboarding", at the chat list.
 # "setup" creates the group, makes the test SMP server (backend.sh) the one that resolves SimpleX names, and stops;
@@ -399,6 +400,17 @@ send_images() {
   send_image logo-large-rgba.png png
 }
 
+# the app stores its window's size and restores it at the next start
+check_window_size_after_restart() {
+  local before after
+  before=$("$ui" size)
+  "$ui" stop
+  "$ui" start "$app_dir"
+  "$ui" wait "Search or paste SimpleX link" 60
+  after=$("$ui" size)
+  check "the window keeps its size after a restart: $before, then $after" [ "$before" = "$after" ]
+}
+
 # private routing to unknown servers only: the preset servers that would proxy name lookups can't reach the test SMP
 # server on 127.0.0.1; developer tools at the debug level put the app's debug log in app.log
 "$ui" start "$app_dir" NetworkSMPProxyMode=Unknown DeveloperTools=true LogLevel=DEBUG
@@ -457,6 +469,7 @@ check_layout bottom
 use_top_toolbar
 check_layout top
 send_images
+check_window_size_after_restart
 
 if grep -q '^FAIL' "$checks"; then
   fail "the smoke test failed checks: $(grep -c '^FAIL' "$checks") of $(grep -cE '^(PASS|FAIL)' "$checks")"

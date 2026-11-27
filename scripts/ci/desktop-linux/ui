@@ -21,6 +21,7 @@
 #   ui avatar <text> [colour]     print how many pixels of the profile image left of a list row's name (the text) stand out
 #                                 from the background, and their mean colour, saving the area as UI_OUT/NN-avatar-<text>.png;
 #                                 with red, green or blue, fail unless that colour dominates
+#   ui size                       print the app window's size, <width>x<height>
 #   ui type <text>                type into the focused field
 #   ui key <key>...               press keys named as in xdotool (Return, Escape, ctrl+a)
 #   ui do <command> [args] -- <command> [args] ...
@@ -268,6 +269,7 @@ case "${1:-}" in
     log "scroll $4 at $2,$3, ${5:-3} clicks"
     ;;
   avatar) avatar "$2" "${3:-}" ;;
+  size) xdotool getwindowgeometry "$(head -n 1 "$state/window")" | sed -n 's/^ *Geometry: //p' ;;
   type)
     xdotool type --delay 50 -- "$2"
     log "type \"$2\""
