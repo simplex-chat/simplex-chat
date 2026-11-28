@@ -17048,6 +17048,13 @@ testSubmemberPrevVersionJoiner ps =
               bob <## "#team: alice added dan (Daniel) to the group (connecting...)"
               bob <## "#team: new member dan is connected"
           ]
+        dan ##> "/ms team"
+        dan
+          <### [ "dan (Daniel): member, you, connected",
+                 "alice (Alice): owner, host, connected",
+                 "bob (Bob): admin, connected",
+                 "reviewer: author, via alice, status unknown"
+               ]
 
 testSubmemberPrevVersionMember :: HasCallStack => TestParams -> IO ()
 testSubmemberPrevVersionMember ps =
