@@ -192,7 +192,6 @@
                     "profileId": 2,
                     "shortDescr": "Alice"
                   },
-                  "memberPubKey": "memberPubKey",
                   "memberRole": "owner",
                   "memberSettings": {
                     "showMessages": true
@@ -302,7 +301,6 @@
                     "profileId": 2,
                     "shortDescr": "Alice"
                   },
-                  "memberPubKey": "memberPubKey",
                   "memberRole": "owner",
                   "memberSettings": {
                     "showMessages": true
@@ -352,6 +350,10 @@
                 },
                 "itemText": "thanks, or ltc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66snwfdv",
                 "itemTs": "1970-01-01T00:00:00Z",
+                "msgVerified": {
+                  "sigStatus": "signedNoKey",
+                  "type": "signed"
+                },
                 "showGroupAsSender": false,
                 "updatedAt": "1970-01-01T00:00:00Z",
                 "userMention": false
