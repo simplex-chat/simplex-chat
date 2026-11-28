@@ -426,7 +426,7 @@ data ChatCommand
   | APICreateChatItems {noteFolderId :: NoteFolderId, composedMessages :: NonEmpty ComposedMessage}
   | APIReportMessage {groupId :: GroupId, chatItemId :: ChatItemId, reportReason :: ReportReason, reportText :: Text}
   | ReportMessage {groupName :: GroupName, contactName_ :: Maybe ContactName, reportReason :: ReportReason, reportedMessage :: Text}
-  | APIUpdateChatItem {chatRef :: ChatRef, chatItemId :: ChatItemId, liveMessage :: Bool, updatedMessage :: UpdatedMessage}
+  | APIUpdateChatItem {chatRef :: ChatRef, chatItemId :: ChatItemId, liveMessage :: Bool, asNew :: Bool, updatedMessage :: UpdatedMessage}
   | APIDeleteChatItem {chatRef :: ChatRef, chatItemIds :: NonEmpty ChatItemId, deleteMode :: CIDeleteMode}
   | APIDeleteMemberChatItem {groupId :: GroupId, chatItemIds :: NonEmpty ChatItemId}
   | APIArchiveReceivedReports GroupId
@@ -476,6 +476,7 @@ data ChatCommand
   | APIGetConnNtfMessages (NonEmpty ConnMsgReq)
   | APIAddMember {groupId :: GroupId, contactId :: ContactId, memberRole :: GroupMemberRole}
   | APIAddMemberViaGroup {groupId :: GroupId, viaGroupId :: GroupId, groupMemberId :: GroupMemberId, memberRole :: GroupMemberRole}
+  | APIAddSubmember {groupId :: GroupId, memberRole :: GroupMemberRole, profile :: Profile}
   | APIJoinGroup {groupId :: GroupId, enableNtfs :: MsgFilter}
   | APIAcceptMember {groupId :: GroupId, groupMemberId :: GroupMemberId, memberRole :: GroupMemberRole}
   | APIDeleteMemberSupportChat GroupId GroupMemberId
@@ -897,6 +898,7 @@ data ChatResponse
   | CRGroupsList {user :: User, groups :: [GroupInfo]}
   | CRSentGroupInvitation {user :: User, groupInfo :: GroupInfo, contact :: Contact, member :: GroupMember}
   | CRSentGroupInvitationViaGroup {user :: User, groupInfo :: GroupInfo, member :: GroupMember, viaGroupInfo :: GroupInfo, viaMember :: GroupMember}
+  | CRSubmemberAdded {user :: User, groupInfo :: GroupInfo, member :: GroupMember}
   | CRFileTransferStatus User (FileTransfer, [Integer]) -- TODO refactor this type to FileTransferStatus
   | CRFileTransferStatusXFTP User AChatItem
   | CRUserProfile {user :: User, profile :: Profile}
@@ -1145,7 +1147,7 @@ logEventToFile = \case
 
 data SendRef
   = SRDirect ContactId
-  | SRGroup GroupId (Maybe GroupChatScope) ShowGroupAsSender
+  | SRGroup GroupId (Maybe GroupChatScope) (SendAs GroupMemberId)
   deriving (Eq, Show)
 
 data ChatPagination
@@ -1384,13 +1386,15 @@ data ComposedMessage = ComposedMessage
   { fileSource :: Maybe CryptoFile,
     quotedItemId :: Maybe ChatItemId,
     msgContent :: MsgContent,
-    mentions :: Map MemberName GroupMemberId
+    mentions :: Map MemberName GroupMemberId,
+    priority :: MsgPriority
   }
   deriving (Show)
 
 data UpdatedMessage = UpdatedMessage
   { msgContent :: MsgContent,
-    mentions :: Map MemberName GroupMemberId
+    mentions :: Map MemberName GroupMemberId,
+    priority :: MsgPriority
   }
   deriving (Show)
 
@@ -2004,7 +2008,8 @@ instance FromJSON ComposedMessage where
     quotedItemId <- v .:? "quotedItemId"
     msgContent <- v .: "msgContent"
     mentions <- fromMaybe M.empty <$> v .:? "mentions"
-    pure ComposedMessage {fileSource, quotedItemId, msgContent, mentions}
+    priority <- fromMaybe MPNormal <$> v .:? "priority"
+    pure ComposedMessage {fileSource, quotedItemId, msgContent, mentions, priority}
   parseJSON invalid =
     JT.prependFailure "bad ComposedMessage, " (JT.typeMismatch "Object" invalid)
 

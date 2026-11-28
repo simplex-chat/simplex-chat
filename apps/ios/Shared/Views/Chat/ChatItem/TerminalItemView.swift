@@ -397,6 +397,7 @@ func terminalColumn(_ avatarSize: CGFloat) -> CGFloat {
 struct ChatItemSender {
     var name: Text
     var badge: LocalBadge?
+    var via: String?
     var role: String?
     var own: Bool
     var image: AnyView?
@@ -415,6 +416,7 @@ struct TerminalChatItemRow<Content: View>: View {
             if let sender {
                 senderNameAndRole(sender)
                     .padding(.leading, terminalColumn(avatarSize) + chatItemTextPadding)
+                    .padding(.trailing, chatItemTextPadding)
                     .overlay(alignment: .leading) {
                         if avatarSize > 0, let image = sender.image {
                             image.padding(.leading, chatItemTextPadding - terminalAvatarOvershoot)
@@ -431,7 +433,8 @@ struct TerminalChatItemRow<Content: View>: View {
 
     private func senderNameAndRole(_ sender: ChatItemSender) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: 0) {
-            NameWithBadge(sender.name.font(.body.weight(.semibold)).foregroundColor(sender.own ? theme.colors.primary : theme.colors.secondary), sender.badge)
+            NameWithBadge(filledWhenTruncated(sender.name.font(.body.weight(.semibold))), sender.badge, via: sender.via)
+                .foregroundColor(sender.own ? theme.colors.primary : theme.colors.secondary)
                 .lineLimit(1)
             if let role = sender.role {
                 Text(role)
@@ -443,6 +446,17 @@ struct TerminalChatItemRow<Content: View>: View {
             }
         }
         .modifier(terminalLineBox(UIFont.preferredFont(forTextStyle: .body), nil, theme))
+    }
+
+    @ViewBuilder private func filledWhenTruncated(_ name: Text) -> some View {
+        if #available(iOS 16, *) {
+            ViewThatFits(in: .horizontal) {
+                name
+                name.frame(maxWidth: .infinity, alignment: .leading)
+            }
+        } else {
+            name
+        }
     }
 }
 

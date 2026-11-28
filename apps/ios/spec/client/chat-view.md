@@ -166,6 +166,30 @@ Key differences from `.groupRcv`:
 - [`showMemberImage()`](../../Shared/Views/Chat/ChatView.swift#L2116) returns `true` when previous item is `.channelRcv` (different sender type)
 - [`memberToModerate()`](../../SimpleXChat/ChatTypes.swift#L3297) returns `nil` for `.channelRcv` (no per-member moderation)
 
+### Submembers
+
+A submember, a member with `memberVia`, is shown with the name of the member it is via: the member whose `memberId` is `memberVia`, from the loaded `groupMembers` ([`ChatModel.memberViaName`](../../Shared/Model/ChatModel.swift#L610)).
+
+```
+place                   shown
+Flat and Classic names  "via <name>" after the name and badge of a single member: regular, italic, 0.84 of the name size,
+                        the name's colour, on one line with the name shortened before it (MemberVia, NameWithBadge via:)
+quotes                  "via <name>" after the quoted member's name (FramedItemView)
+member list             "via <name>" in place of the status (MemberRowView.memberConnStatus)
+member info             row "Via" with the name, after the role; the message, call and video buttons and "Chat
+                        with member" hidden; the security code not requested (GroupMember.canVerifyCode)
+loading                 ChatView loads the members when an item or its quote is from a submember and the members are not
+                        loaded (viaNamesNotLoaded); showRemoveMemberAlert and showDeleteMemberMessagesAlert load them
+                        before the alert when they are not loaded and the member is an admin or an owner
+removal of submembers   ChatModel.upsertGroupMember records the loaded submembers of a member it records as left or
+                        removed as removed, the user's membership included
+removal alerts          "Also 2 members via this member." after the message of "Remove member?", of the
+                        removal of a blocked member and of "Remove forever?", with the count of the member's
+                        submembers that are not removed, left or deleted with the group (removedSubmembersText)
+deletion of messages    "Also the messages of 2 members via this member." after the message of "Delete member
+                        messages?", with the count of all the member's submembers (deletedSubmemberMessagesText)
+```
+
 ---
 
 ## 4. Message Renderers
@@ -373,6 +397,9 @@ sender row         the name, as tall as its line; the avatar is its overlay
                    role label in the body text style, medium, secondary, 15pt after the name; line box of the body font
                    start padding terminalColumn(avatarSize) + chatItemTextPadding: terminalAvatarGap (10pt) after the
                    avatar, at the text start (50pt); without an avatar chatItemTextPadding
+                   end padding chatItemTextPadding, so that the name line ends where the time ends; a shortened name
+                   fills the width that the badge, "via <name>" and the role leave (filledWhenTruncated: ViewThatFits,
+                   iOS 16 and later)
   below            terminalParagraphGap when the content starts with a card (contentStartsWithCard:
                    terminalItemStartsWithCard), otherwise 0, as the bottom padding
 content            below the name line, after terminalColumn(avatarSize): avatarSize + terminalAvatarGap −
@@ -397,7 +424,7 @@ bottom padding     newest row: 8pt; above a date separator: terminalLevelStep; o
 | [`terminalCardBottomGap(item)`](../../Shared/Views/Chat/ChatItem/TerminalItemView.swift#L154) | `terminalParagraphGap` below a card that ends the item when reactions follow, otherwise 0 |
 | [`terminalTextTopGap(item)`](../../Shared/Views/Chat/ChatItem/TerminalItemView.swift#L158) | Above the text of `FramedItemView`: 0 at the item top; `terminalParagraphGap` below a quote or media, or when the text starts with a code block, table or rule (0 when the text starts with empty lines, which are at least as high: `startsWithEmptyLine`; block markdown: `leadingEmptyLines`; other text: a line break at its start, except in reports, whose reason is drawn first); `terminalLevelStep` below a header when the text starts with a heading; otherwise 0 |
 | [`terminalRowsSeparated(olderRow)`](../../Shared/Views/Chat/ChatView.swift#L2186) | The newest item of the older row is the chat banner, or its `getItemSeparation` has a date (against its newer item only for single and revealed rows) |
-| [`chatItemSender(ci, range)`](../../Shared/Views/Chat/ChatView.swift#L2193) | Images of the flat avatar size, `terminalImageSize`. Channel as sender: group name, role "channel", group image. Received direct: contact name and badge. Group member: `memberNames`, badge and role of a single member, member image (tap: member info). Own group items: membership name, badge, role, image. Other own items: user name and badge, or "Incognito" |
+| [`chatItemSender(ci, range)`](../../Shared/Views/Chat/ChatView.swift#L2193) | Images of the flat avatar size, `terminalImageSize`. Channel as sender: group name, role "channel", group image. Received direct: contact name and badge. Group member: `memberNames`, badge, "via <name>" (`memberViaName`) and role of a single member, member image (tap: member info). Own group items: membership name, badge, role, image. Other own items: user name and badge, or "Incognito" |
 | `CIContent.hasTerminalSender` | Sent messages, deleted and moderated items, calls and group invitations; received content with `showMemberName` |
 
 `ChatView` passes `olderRow`, the row of the nearest shown older item (`MergedItems.olderShownRow`). `MergedItem.revealed`: true for `.single`, the flag of `.grouped`.

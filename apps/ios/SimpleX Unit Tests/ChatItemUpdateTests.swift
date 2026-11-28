@@ -147,28 +147,87 @@ final class ChatItemUpdateTests: XCTestCase {
         XCTAssertEqual(item.text, "hello there")
     }
 
-    private func recordedEvents(_ fixture: String) throws -> [ChatEvent] {
-        try XCTUnwrap(try fixtureJSON(fixture) as? [Any]).map { json in
-            let decoded: APIResult<ChatEvent> = decodeAPIResult(try JSONSerialization.data(withJSONObject: singleFieldJSON(json)))
-            let event: ChatEvent? = if case let .result(r) = decoded { r } else { nil }
-            return try XCTUnwrap(event, "event not decoded: \(decoded.responseType)")
-        }
-    }
-
-    private func otherUser() -> User {
-        var user = User.sampleData
-        user.userId = 2
-        return user
-    }
-
-    private func chatInfo(_ event: ChatEvent) throws -> ChatInfo {
-        let chatItems: [AChatItem]? = if case let .newChatItems(_, items) = event { items } else { nil }
-        return try XCTUnwrap(chatItems?.first?.chatInfo, "not a new item: \(event.responseType)")
+    @MainActor
+    func testItemUpdatedAsNewIsLast() async throws {
+        let events = try recordedEvents("updates/group-as-new")
+        try listChat(events[0])
+        try openChat(events[0])
+        await processReceivedMsg(events[0])
+        await processReceivedMsg(events[1])
+        XCTAssertEqual(loadedTexts(), ["status", "hi"])
+        await processReceivedMsg(events[2])
+        XCTAssertEqual(loadedTexts(), ["hi", "status 2"])
+        XCTAssertEqual(previewText(), "status 2")
     }
 
     @MainActor
-    private func listChat(_ event: ChatEvent) throws {
-        ChatModel.shared.addChat(Chat(chatInfo: try chatInfo(event), chatItems: []))
+    func testItemNotLoadedIsInsertedLast() async throws {
+        let events = try recordedEvents("updates/group-as-new")
+        try listChat(events[0])
+        await processReceivedMsg(events[0])
+        try openChat(events[0])
+        await processReceivedMsg(events[1])
+        XCTAssertEqual(loadedTexts(), ["hi"])
+        await processReceivedMsg(events[2])
+        XCTAssertEqual(loadedTexts(), ["hi", "status 2"])
+    }
+
+    @MainActor
+    func testUpdateAsNewAlertsAsNewMessage() async throws {
+        try await assertReadItemUpdatedAsNew("updates/group-as-new", userUnread: 2)
+        XCTAssertEqual(notified, ["status", "hi", "status 2"])
+    }
+
+    @MainActor
+    func testSilentUpdateAsNewAlertsNobody() async throws {
+        try await assertReadItemUpdatedAsNew("updates/group-as-new-silent", userUnread: 1)
+        XCTAssertEqual(notified, ["status", "hi"])
+    }
+
+    @MainActor
+    func testUpdateAsNewInAnotherProfileAlertsAndCounts() async throws {
+        let events = try recordedEvents("updates/group-as-new")
+        ChatModel.shared.currentUser = otherUser()
+        for event in events { await processReceivedMsg(event) }
+        XCTAssertEqual(ChatModel.shared.users.first?.unreadCount, 3)
+        XCTAssertEqual(notified, ["status", "hi", "status 2"])
+    }
+
+    func testExtensionShowsUpdateAsNewNotEdit() throws {
+        XCTAssertEqual(try updates("updates/group-as-new").map(\.showNotification), [true])
+        XCTAssertEqual(try updates("updates/group-as-new-silent").map(\.showNotification), [false])
+        XCTAssertEqual(try updates("updates/direct-edit").map(\.showNotification), [false, false])
+    }
+
+    func testExtensionBadgeFollowsUnreadChangeOfRaise() throws {
+        XCTAssertEqual(try updates("priority/raise").map(\.userUnreadChange), [0, 1])
+    }
+
+    @MainActor
+    private func assertReadItemUpdatedAsNew(_ fixture: String, userUnread: Int) async throws {
+        let events = try recordedEvents(fixture)
+        let cInfo = try chatInfo(events[0])
+        let statusId = try XCTUnwrap(newItem(events[0])).id
+        try listChat(events[0])
+        try openChat(events[0])
+        await processReceivedMsg(events[0])
+        await processReceivedMsg(events[1])
+        try await assertCounts(2, 0, 2)
+        ChatModel.shared.markChatItemsRead(ChatModel.shared.im, cInfo, [statusId], 0, 0, 0)
+        try await assertCounts(1, 0, 1)
+        await processReceivedMsg(events[2])
+        try await assertCounts(2, 0, userUnread)
+    }
+
+    private func newItem(_ event: ChatEvent) -> ChatItem? {
+        if case let .newChatItems(_, items) = event { items.first?.chatItem } else { nil }
+    }
+
+    private func updates(_ fixture: String) throws -> [AChatItemUpdate] {
+        try recordedEvents(fixture).compactMap { event -> AChatItemUpdate? in
+            if case let .chatItemUpdated(_, update) = event { return update }
+            return nil
+        }
     }
 
     @MainActor
@@ -197,7 +256,31 @@ final class ChatItemUpdateTests: XCTestCase {
     }
 }
 
-private final class RecordingNtfManager: NtfManager {
+func recordedEvents(_ fixture: String) throws -> [ChatEvent] {
+    try XCTUnwrap(try fixtureJSON(fixture) as? [Any]).map { json in
+        let decoded: APIResult<ChatEvent> = decodeAPIResult(try JSONSerialization.data(withJSONObject: singleFieldJSON(json)))
+        let event: ChatEvent? = if case let .result(r) = decoded { r } else { nil }
+        return try XCTUnwrap(event, "event not decoded: \(decoded.responseType)")
+    }
+}
+
+func otherUser() -> User {
+    var user = User.sampleData
+    user.userId = 2
+    return user
+}
+
+func chatInfo(_ event: ChatEvent) throws -> ChatInfo {
+    let chatItems: [AChatItem]? = if case let .newChatItems(_, items) = event { items } else { nil }
+    return try XCTUnwrap(chatItems?.first?.chatInfo, "not a new item: \(event.responseType)")
+}
+
+@MainActor
+func listChat(_ event: ChatEvent) throws {
+    ChatModel.shared.addChat(Chat(chatInfo: try chatInfo(event), chatItems: []))
+}
+
+final class RecordingNtfManager: NtfManager {
     private let record: (String) -> Void
 
     init(record: @escaping (String) -> Void) {

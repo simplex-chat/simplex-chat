@@ -337,12 +337,14 @@ final class SnapshotTests: XCTestCase {
         let callUUID = UUID()
         let handled = await receiveCallPush(callUUID: callUUID, callTs: Date.now)
         setAppState(.activating)
-        let answered = await answerCall(callUUID)
-        let suspended = await waitUntil(50) { appStateGroupDefault.get().inactive }
+        let answer = RecordingAnswerCallAction(call: callUUID)
+        CallController.shared.provider(provider, perform: answer)
+        let answerFailed = await waitUntil(40) { answer.failed }
+        let suspended = await waitUntil(20) { appStateGroupDefault.get().inactive }
         provider.reportCall(with: callUUID, endedAt: nil, reason: .remoteEnded)
         await activateChatAfterCallPush()
         XCTAssertTrue(handled)
-        XCTAssertTrue(answered)
+        XCTAssertTrue(answerFailed)
         XCTAssertTrue(suspended)
     }
 
@@ -355,12 +357,14 @@ final class SnapshotTests: XCTestCase {
         defer { callKit.restore() }
         let callUUID = UUID()
         let handled = await receiveCallPush(callUUID: callUUID, callTs: Date.now)
-        let answered = await answerCall(callUUID)
+        let answer = RecordingAnswerCallAction(call: callUUID)
+        CallController.shared.provider(provider, perform: answer)
+        let answerFailed = await waitUntil(40) { answer.failed }
         let suspended = await waitUntil(20) { appStateGroupDefault.get().inactive }
         provider.reportCall(with: callUUID, endedAt: nil, reason: .remoteEnded)
         await activateChatAfterCallPush()
         XCTAssertTrue(handled)
-        XCTAssertTrue(answered)
+        XCTAssertTrue(answerFailed)
         XCTAssertTrue(suspended)
     }
 
@@ -566,12 +570,17 @@ private final class CallKitFailingEndCallActions: NSObject, CXProviderDelegate {
 
     func providerDidReset(_ provider: CXProvider) {}
 
-    func provider(_ provider: CXProvider, perform action: CXAnswerCallAction) {
-        CallController.shared.provider(provider, perform: action)
-    }
-
     func provider(_ provider: CXProvider, perform action: CXEndCallAction) {
         action.fail()
+    }
+}
+
+private final class RecordingAnswerCallAction: CXAnswerCallAction {
+    private(set) var failed = false
+
+    override func fail() {
+        super.fail()
+        DispatchQueue.main.async { self.failed = true }
     }
 }
 
@@ -591,13 +600,6 @@ private func receiveCallPush(callUUID: UUID = UUID(), callTs: Date) async -> Boo
         handled = true
     }
     return await waitUntil(10) { handled }
-}
-
-@MainActor
-private func answerCall(_ callUUID: UUID) async -> Bool {
-    let controller = CXCallController()
-    let answered: Void? = try? await controller.request(CXTransaction(action: CXAnswerCallAction(call: callUUID)))
-    return answered != nil
 }
 
 @MainActor
@@ -677,6 +679,7 @@ private func previewScenes() -> [SnapshotScene] {
         SnapshotScene(ChatInfoView_DeleteAndBan_Previews.self),
         SnapshotScene(ChatInfoView_Previews.self, device: true),
         SnapshotScene(ChatItemForwardingView_Previews.self),
+        SnapshotScene(ChatItemInfoView_HighPriority_Previews.self),
         SnapshotScene(ChatItemInfoView_Previews.self),
         SnapshotScene(ChatItemView_NonMsgContentDeleted_Previews.self, allSizes: true),
         SnapshotScene(ChatItemView_Previews.self, allSizes: true),
@@ -686,7 +689,9 @@ private func previewScenes() -> [SnapshotScene] {
         SnapshotScene(ChatListNavLink_Previews.self),
         SnapshotScene(ChatListView_Previews.self),
         SnapshotScene(ChatPreviewView_Previews.self),
+        SnapshotScene(ChatPreviewView_Priority_Previews.self),
         SnapshotScene(ChatView_Previews.self, device: true),
+        SnapshotScene(ChatViewFloatingButtons_Previews.self),
         SnapshotScene(CIChatFeatureView_Previews.self, allSizes: true),
         SnapshotScene(CIEventView_Previews.self, allSizes: true),
         SnapshotScene(CIFeaturePreferenceView_Previews.self, allSizes: true),
@@ -702,6 +707,8 @@ private func previewScenes() -> [SnapshotScene] {
         SnapshotScene(ClassicOverviewDirect_Previews.self),
         SnapshotScene(ClassicOverviewGroup_Previews.self),
         SnapshotScene(ClassicParagraphs_Previews.self, allSizes: true),
+        SnapshotScene(ClassicPriority_Previews.self, allSizes: true),
+        SnapshotScene(ClassicSubmember_Previews.self, allSizes: true),
         SnapshotScene(ComposeVoiceView_Previews.self),
         SnapshotScene(ConnectDesktopView_Previews.self, device: true),
         SnapshotScene(ContactArchivedAlert_Previews.self, alert: true),
@@ -732,6 +739,7 @@ private func previewScenes() -> [SnapshotScene] {
         SnapshotScene(DeleteContactKeepDialog_Previews.self),
         SnapshotScene(DeletedItemView_Previews.self, allSizes: true),
         SnapshotScene(DeleteGroupKeepDialog_Previews.self),
+        SnapshotScene(DeleteMemberMessagesWithSubmembersAlert_Previews.self, alert: true),
         SnapshotScene(DetermineWidth_Previews.self),
         SnapshotScene(DeveloperView_Previews.self),
         SnapshotScene(EmojiItemView_Previews.self, allSizes: true),
@@ -743,8 +751,10 @@ private func previewScenes() -> [SnapshotScene] {
         SnapshotScene(GroupChatInfoView_DeleteAndBan_Previews.self),
         SnapshotScene(GroupChatInfoView_Members_Previews.self),
         SnapshotScene(GroupChatInfoView_Previews.self, device: true),
+        SnapshotScene(GroupChatInfoView_Submember_Previews.self),
         SnapshotScene(GroupLinkView_Previews.self),
         SnapshotScene(GroupMemberInfoView_Previews.self, device: true),
+        SnapshotScene(GroupMemberInfoView_Submember_Previews.self, device: true),
         SnapshotScene(GroupPreferencesView_Previews.self, device: true),
         SnapshotScene(GroupProfileView_Previews.self, device: true),
         SnapshotScene(GroupWelcomeView_Previews.self),
@@ -790,6 +800,7 @@ private func previewScenes() -> [SnapshotScene] {
         SnapshotScene(RemoveBannedMemberDialog_Previews.self),
         SnapshotScene(RemoveBannedSubscriberDialog_Previews.self),
         SnapshotScene(RemoveForeverAlert_Previews.self, alert: true),
+        SnapshotScene(RemoveMemberWithSubmembersAlert_Previews.self, alert: true),
         SnapshotScene(RemoveSubscriberForeverAlert_Previews.self, alert: true),
         SnapshotScene(RTCServers_Previews.self),
         SnapshotScene(ScanCodeView_Previews.self),
@@ -804,6 +815,7 @@ private func previewScenes() -> [SnapshotScene] {
         SnapshotScene(SmallLinkPreview_Previews.self),
         SnapshotScene(SupportSimpleXBanner_Previews.self),
         SnapshotScene(TagListView_Previews.self),
+        SnapshotScene(TagsView_Previews.self),
         SnapshotScene(TerminalAvatars_Previews.self, allSizes: true),
         SnapshotScene(TerminalDeleted_Previews.self),
         SnapshotScene(TerminalDeletedRoundness_Previews.self),
@@ -812,11 +824,13 @@ private func previewScenes() -> [SnapshotScene] {
         SnapshotScene(TerminalOverviewChannel_Previews.self),
         SnapshotScene(TerminalOverviewDirect_Previews.self),
         SnapshotScene(TerminalOverviewGroup_Previews.self),
+        SnapshotScene(TerminalPriority_Previews.self, allSizes: true),
         SnapshotScene(TerminalQuoteThumbnail_Previews.self, allSizes: true),
         SnapshotScene(TerminalRightToLeft_Previews.self),
         SnapshotScene(TerminalRuleOnly_Previews.self, allSizes: true),
         SnapshotScene(TerminalSession_Previews.self),
         SnapshotScene(TerminalSpacing_Previews.self, allSizes: true),
+        SnapshotScene(TerminalSubmember_Previews.self, allSizes: true),
         SnapshotScene(UserAddressLearnMore_Previews.self),
         SnapshotScene(UserAddressView_Previews.self),
         SnapshotScene(UserPicker_Previews.self, fitting: true),
@@ -1030,6 +1044,30 @@ struct ClassicParagraphs_Previews: PreviewProvider {
     }
 }
 
+struct ClassicPriority_Previews: PreviewProvider {
+    static var previews: some View {
+        SnapshotFixtures().priority(terminal: false)
+    }
+}
+
+struct TerminalPriority_Previews: PreviewProvider {
+    static var previews: some View {
+        SnapshotFixtures().priority(terminal: true)
+    }
+}
+
+struct TerminalSubmember_Previews: PreviewProvider {
+    static var previews: some View {
+        SnapshotFixtures().submember(terminal: true)
+    }
+}
+
+struct ClassicSubmember_Previews: PreviewProvider {
+    static var previews: some View {
+        SnapshotFixtures().submember(terminal: false)
+    }
+}
+
 struct LinkNoticeGroupAlert_Previews: PreviewProvider {
     static var previews: some View {
         Color.clear.background(AlertControllerPreview {
@@ -1050,6 +1088,46 @@ struct RemoveForeverAlert_Previews: PreviewProvider {
     static var previews: some View {
         Color.clear.background(AlertControllerPreview(typedText: foreverConfirmationWord) {
             removeForeverAlert(previewGroup(.owner), previewBannableMember(), withMessages: false, dismiss: nil)
+        })
+    }
+}
+
+struct RemoveMemberWithSubmembersAlert_Previews: PreviewProvider {
+    static var previews: some View {
+        var claude = GroupMember.sampleData
+        claude.memberId = "Claude"
+        claude.memberProfile = LocalProfile(profileId: 2, displayName: "Claude", fullName: "", localAlias: "")
+        let submembers = [Int64(3), 4].map { id -> GMember in
+            var submember = GroupMember.sampleData
+            submember.groupMemberId = id
+            submember.memberVia = claude.memberId
+            return GMember(submember)
+        }
+        return Color.clear.background(AlertControllerPreview {
+            let members = ChatModel.shared.groupMembers
+            ChatModel.shared.groupMembers = submembers
+            defer { ChatModel.shared.groupMembers = members }
+            return removeMemberAlert(previewGroup(.owner), claude, dismiss: nil)
+        })
+    }
+}
+
+struct DeleteMemberMessagesWithSubmembersAlert_Previews: PreviewProvider {
+    static var previews: some View {
+        var claude = GroupMember.sampleData
+        claude.memberId = "Claude"
+        claude.memberProfile = LocalProfile(profileId: 2, displayName: "Claude", fullName: "", localAlias: "")
+        let submembers = [Int64(3), 4].map { id -> GMember in
+            var submember = GroupMember.sampleData
+            submember.groupMemberId = id
+            submember.memberVia = claude.memberId
+            return GMember(submember)
+        }
+        return Color.clear.background(AlertControllerPreview {
+            let members = ChatModel.shared.groupMembers
+            ChatModel.shared.groupMembers = submembers
+            defer { ChatModel.shared.groupMembers = members }
+            return deleteMemberMessagesAlert(previewGroup(.owner), claude, dismiss: nil)
         })
     }
 }
@@ -1507,12 +1585,12 @@ private final class SnapshotFixtures {
         previewDate.addingTimeInterval(minutes * 60)
     }
 
-    private func msg(_ dir: CIDirection, _ text: String, _ minutes: Double, quote: CIQuote? = nil, reactions: [CIReactionCount] = [], content: MsgContent? = nil, file: CIFile? = nil) -> ChatItem {
+    private func msg(_ dir: CIDirection, _ text: String, _ minutes: Double, quote: CIQuote? = nil, reactions: [CIReactionCount] = [], content: MsgContent? = nil, file: CIFile? = nil, priority: Int? = nil) -> ChatItem {
         let parsed = markdown[text]
         let mc = content ?? .text(text)
         return ChatItem(
             chatDir: dir,
-            meta: CIMeta.getSample(id(), ts(minutes), text, dir.sent ? .sndSent(sndProgress: .complete) : .rcvRead),
+            meta: CIMeta.getSample(id(), ts(minutes), text, dir.sent ? .sndSent(sndProgress: .complete) : .rcvRead, priority: priority),
             content: dir.sent ? .sndMsgContent(msgContent: mc) : .rcvMsgContent(msgContent: mc),
             formattedText: parsed?.formattedText,
             markdownBlocks: parsed?.markdownBlocks,
@@ -1608,6 +1686,13 @@ private final class SnapshotFixtures {
         ], terminal: terminal)
     }
 
+    func priority(terminal: Bool) -> some View {
+        chatRows(direct, [
+            msg(.directRcv, "Tests passed: 211", -10, priority: 1),
+            msg(.directSnd, "Deployed to staging", -9, priority: 1)
+        ], terminal: terminal)
+    }
+
     func rightToLeft() -> some View {
         chatRows(direct, [
             msg(.directRcv, "# מה חדש\nגרסה חדשה של האפליקציה\n## תכונות\n| שינוי |\n|---|", -10)
@@ -1676,6 +1761,31 @@ private final class SnapshotFixtures {
             msg(.groupRcv(groupMember: claude), "Done: the answer now quotes its own prompt.\n544 of 544 pass.\nCommitted as 1f3c2a9.", -2 + 10.0 / 60),
             msg(.groupRcv(groupMember: claude), "Coverage after the fix", -2 + 30.0 / 60, content: .image(text: "Coverage after the fix", image: landscape), file: imageFile("coverage.jpg"))
         ], terminal: true)
+    }
+
+    func submember(terminal: Bool) -> some View {
+        var claude = Self.member(5, "Claude", .owner)
+        claude.memberProfile.peerType = .agent
+        var reviewer = Self.member(6, "reviewer", .member)
+        reviewer.memberProfile.peerType = .agent
+        reviewer.memberVia = claude.memberId
+        reviewer.activeConn = nil
+        var investigator = Self.member(7, "postgres-integration-test-investigator", .member)
+        investigator.memberProfile.peerType = .agent
+        investigator.memberVia = claude.memberId
+        investigator.activeConn = nil
+        let m = ChatModel()
+        m.groupMembers = [GMember(claude)]
+        let question = "Shall I fix them?"
+        return chatRows(teamChat, [
+            msg(.groupRcv(groupMember: claude), "reviewer is running the tests.", -9),
+            msg(.groupRcv(groupMember: reviewer), "Two tests fail on Postgres.", -6),
+            msg(.groupRcv(groupMember: reviewer), question, -6 + 10.0 / 60),
+            msg(.groupRcv(groupMember: bob), "Yes, please.", -4),
+            msg(.groupSnd, "Fix and push.", -3, quote: quote(.groupRcv(groupMember: reviewer), question)),
+            msg(.groupRcv(groupMember: investigator), "Both fail on a missing index.", -1)
+        ], terminal: terminal)
+        .environmentObject(m)
     }
 
     func paragraphs() -> some View {

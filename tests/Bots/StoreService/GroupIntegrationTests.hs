@@ -1900,16 +1900,16 @@ backdateTracker cc uses = do
   setTrackedCodeTime cc uses "group_item_sent_at" past
   pure past
 
--- This is an hour past the core's 24-hour edit window.
+-- This is an hour past the core's 30-hour edit limit.
 pastEditWindow :: NominalDiffTime
-pastEditWindow = -25 * 3600
+pastEditWindow = -31 * 3600
 
 -- The code row keeps its sent time, so the service still tries an edit the core refuses.
 backdateTrackerItem :: ChatController -> Int64 -> IO ()
 backdateTrackerItem cc citemId = do
   past <- addUTCTime pastEditWindow <$> getCurrentTime
   withTransaction (chatStore cc) $ \db ->
-    DB.execute db "UPDATE chat_items SET item_ts = ? WHERE chat_item_id = ?" (past, citemId)
+    DB.execute db "UPDATE chat_items SET item_ts = ?, created_at = ? WHERE chat_item_id = ?" (past, past, citemId)
 
 -- Below author the core refuses every send from the bot.
 setBotRole :: ChatController -> Text -> IO ()

@@ -112,7 +112,7 @@ struct GroupMemberInfoView: View {
                     .listRowSeparator(.hidden)
                     .padding(.bottom, 18)
 
-                if !groupInfo.useRelays {
+                if !groupInfo.useRelays && member.memberVia == nil {
                     infoActionButtons(member)
                         .padding(.horizontal)
                         .frame(maxWidth: .infinity)
@@ -126,6 +126,7 @@ struct GroupMemberInfoView: View {
                     let showMemberSupportChat = !openedFromSupportChat
                         && groupInfo.membership.memberRole >= .moderator
                         && member.memberRole != .relay
+                        && member.memberVia == nil
                         && ((groupInfo.fullGroupPreferences.support.on && member.memberRole < .moderator)
                             || member.supportChat != nil)
                     let canVerifyCode = connectionCode != nil && member.memberRole != .relay
@@ -186,6 +187,9 @@ struct GroupMemberInfoView: View {
                             .frame(height: 36)
                         } else {
                             infoRow("Role", member.memberRole.text(isChannel: groupInfo.isChannel))
+                        }
+                        if let via = chatModel.memberViaName(member) {
+                            infoRow("Via", via)
                         }
                         if let link = member.relayLink {
                             infoRow("Relay link", String.localizedStringWithFormat(NSLocalizedString("via %@", comment: "relay hostname"), hostFromRelayLink(link)))
@@ -299,7 +303,7 @@ struct GroupMemberInfoView: View {
                 newRole = member.memberRole
                 do {
                     let (_, stats) = try await apiGroupMemberInfo(groupInfo.apiId, member.groupMemberId)
-                    let getCode = (member.memberActive || (groupInfo.useRelays && member.memberCurrent)) && member.memberRole != .relay
+                    let getCode = member.canVerifyCode(groupInfo: groupInfo)
                     let (mem, code) = getCode ? try await apiGetGroupMemberCode(groupInfo.apiId, member.groupMemberId) : (member, nil)
                     await MainActor.run {
                         _ = chatModel.upsertGroupMember(groupInfo, mem)
@@ -715,24 +719,11 @@ struct GroupMemberInfoView: View {
 
     private func deleteMemberMessagesButton(_ mem: GroupMember) -> some View {
         Button(role: .destructive) {
-            showDeleteMemberMessagesAlert(mem)
+            showDeleteMemberMessagesAlert(groupInfo, mem, dismiss: dismiss)
         } label: {
             Label("Delete member messages", systemImage: "trash")
                 .foregroundColor(.red)
         }
-    }
-
-    func showDeleteMemberMessagesAlert(_ mem: GroupMember) {
-        showAlert(
-            NSLocalizedString("Delete member messages?", comment: "alert title"),
-            message: NSLocalizedString("Member messages will be deleted - this cannot be undone!", comment: "alert message"),
-            actions: {[
-                UIAlertAction(title: NSLocalizedString("Delete messages", comment: "alert action"), style: .destructive) { _ in
-                    removeMember(groupInfo, mem, withMessages: true, dismiss: dismiss)
-                },
-                cancelAlertAction
-            ]}
-        )
     }
 
     private func changeMemberRoleAlert(_ mem: GroupMember) -> Alert {
@@ -1005,7 +996,7 @@ private func removeBannedMemberDialog(_ gInfo: GroupInfo, _ mem: GroupMember, di
                 removeBannedMember(gInfo, mem, duration, withMessages: true, dismiss: dismiss)
             }
         ],
-        footer: Text("**\(mem.displayName)** won't be notified, and can't rejoin while blocked."),
+        footer: Text("**\(mem.displayName)** won't be notified, and can't rejoin while blocked.") + Text(removedSubmembersText(mem)),
         close: close,
         duration: duration
     )
@@ -1025,7 +1016,7 @@ func removeForeverAlert(_ gInfo: GroupInfo, _ mem: GroupMember, withMessages: Bo
     let format = gInfo.useRelays
         ? NSLocalizedString("%@ can't rejoin via the channel link again, except from another app.", comment: "remove forever alert")
         : NSLocalizedString("%@ can't rejoin via the group link again, except from another app.", comment: "remove forever alert")
-    let alert = UIAlertController(title: NSLocalizedString("Remove forever?", comment: "alert title"), message: String.localizedStringWithFormat(format, mem.displayName), preferredStyle: .alert)
+    let alert = UIAlertController(title: NSLocalizedString("Remove forever?", comment: "alert title"), message: String.localizedStringWithFormat(format, mem.displayName) + removedSubmembersText(mem), preferredStyle: .alert)
     let remove = UIAlertAction(title: NSLocalizedString("Remove", comment: "alert action"), style: .destructive) { _ in
         removeMember(gInfo, mem, withMessages: withMessages, notice: BanDuration.forever.notice, dismiss: dismiss)
     }
@@ -1041,6 +1032,28 @@ func removeForeverAlert(_ gInfo: GroupInfo, _ mem: GroupMember, withMessages: Bo
     alert.addAction(cancelAlertAction)
     alert.addAction(remove)
     return alert
+}
+
+func showDeleteMemberMessagesAlert(_ groupInfo: GroupInfo, _ mem: GroupMember, dismiss: DismissAction? = nil) {
+    Task { @MainActor in
+        if !ChatModel.shared.membersLoaded && mem.memberRole >= .admin {
+            await ChatModel.shared.loadGroupMembers(groupInfo)
+        }
+        getTopViewController()?.present(deleteMemberMessagesAlert(groupInfo, mem, dismiss: dismiss), animated: true)
+    }
+}
+
+func deleteMemberMessagesAlert(_ groupInfo: GroupInfo, _ mem: GroupMember, dismiss: DismissAction?) -> UIAlertController {
+    alertController(
+        NSLocalizedString("Delete member messages?", comment: "alert title"),
+        message: NSLocalizedString("Member messages will be deleted - this cannot be undone!", comment: "alert message") + deletedSubmemberMessagesText(mem),
+        actions: [
+            UIAlertAction(title: NSLocalizedString("Delete messages", comment: "alert action"), style: .destructive) { _ in
+                removeMember(groupInfo, mem, withMessages: true, dismiss: dismiss)
+            },
+            cancelAlertAction
+        ]
+    )
 }
 
 func blockMemberForAll(_ gInfo: GroupInfo, _ member: GroupMember, _ blocked: Bool, onSuccess: @escaping () -> Void = {}) {
@@ -1074,6 +1087,33 @@ struct GroupMemberInfoView_Previews: PreviewProvider {
             scrollToItemId: Binding.constant(nil),
             connectionLoaded: true
         )
+    }
+}
+
+struct GroupMemberInfoView_Submember_Previews: PreviewProvider {
+    static var previews: some View {
+        var claude = GroupMember.sampleData
+        claude.groupMemberId = 2
+        claude.memberId = "Claude"
+        claude.memberRole = .owner
+        claude.memberProfile = LocalProfile(profileId: 2, displayName: "Claude", fullName: "", localAlias: "")
+        var reviewer = GroupMember.sampleData
+        reviewer.memberRole = .member
+        reviewer.memberProfile = LocalProfile(profileId: 3, displayName: "reviewer", fullName: "", localAlias: "")
+        reviewer.memberProfile.peerType = .agent
+        reviewer.memberContactId = nil
+        reviewer.memberContactProfileId = 3
+        reviewer.memberVia = claude.memberId
+        reviewer.activeConn = nil
+        let m = ChatModel()
+        m.groupMembers = [GMember(claude)]
+        return GroupMemberInfoView(
+            groupInfo: GroupInfo.sampleData,
+            chat: Chat.sampleData,
+            groupMember: GMember(reviewer),
+            scrollToItemId: Binding.constant(nil)
+        )
+        .environmentObject(m)
     }
 }
 

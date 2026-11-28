@@ -504,11 +504,12 @@ struct GroupChatInfoView: View {
             }
     }
 
-    private struct MemberRowView: View {
+    struct MemberRowView: View {
         var chat: Chat
         var groupInfo: GroupInfo
         @ObservedObject var groupMember: GMember
         @Binding var scrollToItemId: ChatItem.ID?
+        @EnvironmentObject var chatModel: ChatModel
         @EnvironmentObject var theme: AppTheme
         var user: Bool = false
         @Binding var alert: GroupChatInfoViewAlert?
@@ -582,6 +583,8 @@ struct GroupChatInfoView: View {
                 return "disabled"
             } else if member.activeConn?.connInactive ?? false {
                 return "inactive"
+            } else if let via = chatModel.memberViaName(member) {
+                return "via \(via)"
             } else {
                 return member.memberStatus.shortText
             }
@@ -1042,28 +1045,53 @@ func showRemoveMemberAlert(_ groupInfo: GroupInfo, _ mem: GroupMember, dismiss: 
             ]}
         )
     } else {
-        showAlert(
-            NSLocalizedString("Remove member?", comment: "alert title"),
-            message: (groupInfo.businessChat == nil
-                ? NSLocalizedString("Member will be removed from group - this cannot be undone!", comment: "alert message")
-                : NSLocalizedString("Member will be removed from chat - this cannot be undone!", comment: "alert message")) + cannotBlockWarning(mem),
-            actions: {[
-                UIAlertAction(title: NSLocalizedString("Remove", comment: "alert action"), style: .destructive) { _ in
-                    removeMember(groupInfo, mem, withMessages: false, dismiss: dismiss)
-                },
-                UIAlertAction(title: NSLocalizedString("Remove and delete messages", comment: "alert action"), style: .destructive) { _ in
-                    removeMember(groupInfo, mem, withMessages: true, dismiss: dismiss)
-                },
-                cancelAlertAction
-            ]}
-        )
+        Task { @MainActor in
+            if !ChatModel.shared.membersLoaded && mem.memberRole >= .admin {
+                await ChatModel.shared.loadGroupMembers(groupInfo)
+            }
+            getTopViewController()?.present(removeMemberAlert(groupInfo, mem, dismiss: dismiss), animated: true)
+        }
     }
+}
+
+func removeMemberAlert(_ groupInfo: GroupInfo, _ mem: GroupMember, dismiss: DismissAction?) -> UIAlertController {
+    alertController(
+        NSLocalizedString("Remove member?", comment: "alert title"),
+        message: (groupInfo.businessChat == nil
+            ? NSLocalizedString("Member will be removed from group - this cannot be undone!", comment: "alert message")
+            : NSLocalizedString("Member will be removed from chat - this cannot be undone!", comment: "alert message")) + cannotBlockWarning(mem) + removedSubmembersText(mem),
+        actions: [
+            UIAlertAction(title: NSLocalizedString("Remove", comment: "alert action"), style: .destructive) { _ in
+                removeMember(groupInfo, mem, withMessages: false, dismiss: dismiss)
+            },
+            UIAlertAction(title: NSLocalizedString("Remove and delete messages", comment: "alert action"), style: .destructive) { _ in
+                removeMember(groupInfo, mem, withMessages: true, dismiss: dismiss)
+            },
+            cancelAlertAction
+        ]
+    )
 }
 
 func cannotBlockWarning(_ mem: GroupMember) -> String {
     mem.blockedByAdmin && mem.versionRange.maxVersion < LINK_NOTICE_VERSION
         ? "\n\n" + NSLocalizedString("1 member with the previous version: cannot block", comment: "alert message")
         : ""
+}
+
+func removedSubmembersText(_ mem: GroupMember) -> String {
+    switch ChatModel.shared.groupMembers.filter({ ![.memLeft, .memRemoved, .memGroupDeleted].contains($0.wrapped.memberStatus) && $0.wrapped.memberVia == mem.memberId }).count {
+    case 0: ""
+    case 1: "\n" + NSLocalizedString("Also 1 member via this member.", comment: "alert message")
+    case let count: "\n" + String.localizedStringWithFormat(NSLocalizedString("Also %d members via this member.", comment: "alert message"), count)
+    }
+}
+
+func deletedSubmemberMessagesText(_ mem: GroupMember) -> String {
+    switch ChatModel.shared.groupMembers.filter({ $0.wrapped.memberVia == mem.memberId }).count {
+    case 0: ""
+    case 1: "\n" + NSLocalizedString("Also the messages of 1 member via this member.", comment: "alert message")
+    case let count: "\n" + String.localizedStringWithFormat(NSLocalizedString("Also the messages of %d members via this member.", comment: "alert message"), count)
+    }
 }
 
 func removeMember(_ groupInfo: GroupInfo, _ mem: GroupMember, withMessages: Bool, notice: LinkNotice? = nil, dismiss: DismissAction?) {
@@ -1283,6 +1311,38 @@ struct GroupChatInfoView_Previews: PreviewProvider {
             onSearch: {},
             localAlias: ""
         )
+    }
+}
+
+struct GroupChatInfoView_Submember_Previews: PreviewProvider {
+    static var previews: some View {
+        let groupInfo = GroupInfo.sampleData
+        let chat = Chat(chatInfo: ChatInfo.sampleData.group, chatItems: [])
+        let claude = member(2, "Claude", .owner, .agent)
+        var reviewer = member(4, "reviewer", .member, .agent)
+        reviewer.memberVia = claude.memberId
+        reviewer.activeConn = nil
+        let m = ChatModel()
+        m.groupMembers = [GMember(claude)]
+        return List {
+            GroupChatInfoView.MemberRowView(chat: chat, groupInfo: groupInfo, groupMember: GMember(groupInfo.membership), scrollToItemId: .constant(nil), user: true, alert: .constant(nil))
+            ForEach([claude, member(3, "bob", .member, nil), reviewer].map(GMember.init)) { mem in
+                GroupChatInfoView.MemberRowView(chat: chat, groupInfo: groupInfo, groupMember: mem, scrollToItemId: .constant(nil), alert: .constant(nil))
+            }
+        }
+        .environmentObject(m)
+    }
+
+    private static func member(_ id: Int64, _ name: String, _ role: GroupMemberRole, _ peerType: ChatPeerType?) -> GroupMember {
+        var m = GroupMember.sampleData
+        m.groupMemberId = id
+        m.memberId = name
+        m.memberRole = role
+        m.localDisplayName = name
+        m.memberProfile = LocalProfile(profileId: id, displayName: name, fullName: "", localAlias: "")
+        m.memberProfile.peerType = peerType
+        m.memberContactProfileId = id
+        return m
     }
 }
 

@@ -165,8 +165,9 @@ Stable recordings:
 
   | Fields | Replaced by |
   |---|---|
-  | `createdAt`<br>`updatedAt`<br>`chatTs`<br>`userMemberProfileSentAt`<br>`itemTs` | `1970-01-01T00:00:00Z` |
-  | `agentConnId`<br>`xContactId`<br>`connFullLink`<br>`connShortLink`<br>`contactLink`<br>`groupLink`<br>`viaGroupLinkUri`<br>`simplexUri`<br>`memberId`<br>`memberPubKey`<br>`publicGroupId`<br>`businessId`<br>`customerId`<br>`itemSharedMsgId`<br>`agentSndFileId`<br>`privateSndFileDescr`<br>`errorMessage` | the field name |
+  | `createdAt`<br>`updatedAt`<br>`chatTs`<br>`userMemberProfileSentAt`<br>`sentAt`<br>`itemTs` | `1970-01-01T00:00:00Z` |
+  | `memberId` equal to a `memberVia` of the recording | `memberVia` |
+  | `agentConnId`<br>`xContactId`<br>`connFullLink`<br>`connShortLink`<br>`contactLink`<br>`groupLink`<br>`viaGroupLinkUri`<br>`simplexUri`<br>`memberId`<br>`memberVia`<br>`memberPubKey`<br>`publicGroupId`<br>`businessId`<br>`customerId`<br>`itemSharedMsgId`<br>`sharedMsgId`<br>`agentSndFileId`<br>`privateSndFileDescr`<br>`errorMessage` | the field name |
   | `groupRelays` | `"groupRelay"` per element |
   | `authErrCounter` | `0` |
 
@@ -216,7 +217,7 @@ In apps/multiplatform:
 ### Desktop snapshots
 
 - Checked: each `@Preview` of commonMain and desktopMain, rendered in the light and dark themes by `SnapshotTest` ([SnapshotTest.kt](../../apps/multiplatform/common/src/desktopTest/kotlin/chat/simplex/app/SnapshotTest.kt)), equals its reference in [common/src/desktopTest/snapshots](../../apps/multiplatform/common/src/desktopTest/snapshots), within 8 of 255 per colour channel ([snapshots-compare.py](../../scripts/ci/snapshots-compare.py)).
-- Write: a new `@Preview` is added to `previewScenes`, with `chatItemFontScales` for a chat item, or to `previewsCallingCore` when its layout calls the core library; `everyPreviewIsRendered` fails otherwise. A preview uses `previewDate` in place of the current time.
+- Write: a new `@Preview` is added to `previewScenes`, with `chatItemFontScales` for a chat item, or to `previewsCallingCore` when its layout calls the core library; `everyPreviewIsRendered` fails otherwise. A preview uses `previewDate` in place of the current time. While previews render, `chatSendCmdRetry` and `chatParseMarkdown` return `{}`; otherwise an exception in an effect of a preview is reported as a failure of the next `runComposeUiTest` in the test JVM.
 - Record and check: with `scripts/ci/snapshots-remote.py desktop record`, desktop-linux renders the previews of the pushed branch, and the renders replace the references, for review and commit; with `check`, the renders that differ are listed.
 - Run, from apps/multiplatform, then from the repository root:
 
@@ -242,7 +243,7 @@ A new test file is added to its target in project.pbxproj: a PBXBuildFile, a PBX
 
 ### SimpleX Unit Tests
 
-- Checked: app code on [app fixtures](#app-fixtures) and other logic of the app.
+- Checked: app code on [app fixtures](#app-fixtures) and other logic of the app; the notification service flow on the same recordings, as NotificationService.swift and NSEAPITypes.swift of SimpleX NSE are also compiled into this target.
 - Write: an `XCTestCase` in [apps/ios/SimpleX Unit Tests](../../apps/ios/SimpleX%20Unit%20Tests); `fixtureJSON`, `singleFieldJSON` and `waitFor` are at file scope of NameAlertsTests.swift.
 - Run, on macOS: `scripts/ci/ios-stub-libs.sh`, then the `xcodebuild test` command of the step "Run iOS unit tests" of build-ios in build.yml; or Product > Test with the scheme SimpleX Unit Tests.
 - Pitfalls:

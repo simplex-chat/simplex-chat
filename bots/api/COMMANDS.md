@@ -26,6 +26,7 @@ This file is generated automatically.
 [Group commands](#group-commands)
 - [APIAddMember](#apiaddmember)
 - [APIAddMemberViaGroup](#apiaddmemberviagroup)
+- [APIAddSubmember](#apiaddsubmember)
 - [APIJoinGroup](#apijoingroup)
 - [APIAcceptMember](#apiacceptmember)
 - [APIMembersRole](#apimembersrole)
@@ -396,7 +397,7 @@ ChatCmdError: Command error (only used in WebSockets API).
 
 ### APIUpdateChatItem
 
-Update message.
+Update message. In groups, as_new=on makes the message new: last in the chat, unread and notified by its priority, with the time of the update set by each member; ignored in other chats.
 
 *Network usage*: background.
 
@@ -404,20 +405,21 @@ Update message.
 - chatRef: [ChatRef](./TYPES.md#chatref)
 - chatItemId: int64
 - liveMessage: bool
+- asNew: bool
 - updatedMessage: [UpdatedMessage](./TYPES.md#updatedmessage)
 
 **Syntax**:
 
 ```
-/_update item <str(chatRef)> <chatItemId>[ live=on] json <json(updatedMessage)>
+/_update item <str(chatRef)> <chatItemId>[ live=on][ as_new=on] json <json(updatedMessage)>
 ```
 
 ```javascript
-'/_update item ' + ChatRef.cmdString(chatRef) + ' ' + chatItemId + (liveMessage ? ' live=on' : '') + ' json ' + JSON.stringify(updatedMessage) // JavaScript
+'/_update item ' + ChatRef.cmdString(chatRef) + ' ' + chatItemId + (liveMessage ? ' live=on' : '') + (asNew ? ' as_new=on' : '') + ' json ' + JSON.stringify(updatedMessage) // JavaScript
 ```
 
 ```python
-'/_update item ' + ChatRef_cmd_string(chatRef) + ' ' + str(chatItemId) + (' live=on' if liveMessage else '') + ' json ' + json.dumps(updatedMessage) # Python
+'/_update item ' + ChatRef_cmd_string(chatRef) + ' ' + str(chatItemId) + (' live=on' if liveMessage else '') + (' as_new=on' if asNew else '') + ' json ' + json.dumps(updatedMessage) # Python
 ```
 
 **Responses**:
@@ -818,6 +820,46 @@ ChatCmdError: Command error (only used in WebSockets API).
 
 **Errors**:
 - PeerChatVRangeIncompatible: Member's client version is older than required.
+
+---
+
+
+### APIAddSubmember
+
+Add submember of bot, without a connection: bot sends submember's messages with /_send #<groupId>(as_member=<groupMemberId>). Requires bot to have Admin role and a role not lower than submember role, not supported in channels.
+
+*Network usage*: background.
+
+**Parameters**:
+- groupId: int64
+- memberRole: [GroupMemberRole](./TYPES.md#groupmemberrole)
+- profile: [Profile](./TYPES.md#profile)
+
+**Syntax**:
+
+```
+/_add submember #<groupId> relay|observer|author|member|moderator|admin|owner json <json(profile)>
+```
+
+```javascript
+'/_add submember #' + groupId + ' ' + memberRole + ' json ' + JSON.stringify(profile) // JavaScript
+```
+
+```python
+'/_add submember #' + str(groupId) + ' ' + str(memberRole) + ' json ' + json.dumps(profile) # Python
+```
+
+**Responses**:
+
+SubmemberAdded: Submember of bot added.
+- type: "submemberAdded"
+- user: [User](./TYPES.md#user)
+- groupInfo: [GroupInfo](./TYPES.md#groupinfo)
+- member: [GroupMember](./TYPES.md#groupmember)
+
+ChatCmdError: Command error (only used in WebSockets API).
+- type: "chatCmdError"
+- chatError: [ChatError](./TYPES.md#chaterror)
 
 ---
 

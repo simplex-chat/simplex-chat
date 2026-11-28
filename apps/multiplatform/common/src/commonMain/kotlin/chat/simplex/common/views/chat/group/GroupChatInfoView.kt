@@ -138,7 +138,7 @@ fun ModalData.GroupChatInfoView(
         withBGApi {
           val r = chatModel.controller.apiGroupMemberInfo(rhId, groupInfo.groupId, member.groupMemberId)
           val stats = r?.second
-          val (_, code) = if ((member.memberActive || (groupInfo.useRelays && member.memberCurrent)) && member.memberRole != GroupMemberRole.Relay) {
+          val (_, code) = if (member.canVerifyCode(groupInfo)) {
             val memCode = chatModel.controller.apiGetGroupMemberCode(rhId, groupInfo.apiId, member.groupMemberId)
             member to memCode?.second
           } else {
@@ -421,7 +421,7 @@ fun removeMemberAlert(rhId: Long?, groupInfo: GroupInfo, mem: GroupMember) {
       MR.strings.member_will_be_removed_from_chat_cannot_be_undone
     AlertManager.shared.showAlertDialogButtonsColumn(
       generalGetString(titleId),
-      generalGetString(messageId),
+      generalGetString(messageId) + removedSubmembersText(listOf(mem)),
       belowTextContent = { CannotBlockWarning(listOf(mem)) },
       buttons = {
         Column {
@@ -459,7 +459,7 @@ internal fun removeMembersAlert(rhId: Long?, groupInfo: GroupInfo, members: List
     MR.strings.members_will_be_removed_from_chat_cannot_be_undone
   AlertManager.shared.showAlertDialogButtonsColumn(
     generalGetString(MR.strings.button_remove_members_question),
-    generalGetString(messageId),
+    generalGetString(messageId) + removedSubmembersText(members),
     belowTextContent = { CannotBlockWarning(members) },
     buttons = {
       Column {
@@ -1223,7 +1223,7 @@ fun MemberRow(member: GroupMember, user: Boolean = false, infoPage: Boolean = tr
     } else if (member.activeConn?.connInactive == true) {
       generalGetString(MR.strings.member_info_member_inactive)
     } else {
-      member.memberStatus.shortText
+      chatModel.memberViaName(member)?.let { String.format(generalGetString(MR.strings.member_via), it) } ?: member.memberStatus.shortText
     }
   }
 
@@ -1564,6 +1564,19 @@ fun PreviewGroupChatInfoLayout() {
 
 @Preview
 @Composable
+fun PreviewMemberRowsSubmember() = GroupMembersPreview(listOf(previewClaude)) {
+  SimpleXTheme {
+    Column(Modifier.padding(horizontal = DEFAULT_PADDING)) {
+      MemberRow(GroupInfo.sampleData.membership, user = true)
+      MemberRow(previewClaude)
+      MemberRow(GroupMember.sampleData.copy(groupMemberId = 2, memberId = "bob", localDisplayName = "bob", memberProfile = LocalProfile.sampleData.copy(profileId = 2, displayName = "bob", fullName = ""), memberContactProfileId = 2))
+      MemberRow(previewClaudeSubmember(6, "reviewer"))
+    }
+  }
+}
+
+@Preview
+@Composable
 fun PreviewBusinessChatInfoLayout() {
   val customer = GroupMember.sampleData.copy(groupMemberId = 2, memberId = "customer", activeConn = Connection.sampleData.copy(peerChatVRange = VersionRange(1, LINK_NOTICE_VERSION)))
   val modalData = remember { ModalData().apply { appBarHandler.listState = LazyListState(Int.MAX_VALUE) } }
@@ -1666,6 +1679,12 @@ fun PreviewCantBanCustomerAlert() = AlertPreview { showCantBanCustomerAlert(prev
 @Preview
 @Composable
 fun PreviewRemoveMembersPreviousVersion() = AlertPreview { removeMembersAlert(null, previewOwnerGroupInfo, (listOf(previewBanMember) + previewPreviousVersionMembers).map { it.copy(blockedByAdmin = true) }) }
+
+@Preview
+@Composable
+fun PreviewRemoveMemberWithSubmembers() = GroupMembersPreview(listOf(previewClaude, previewClaudeSubmember(6, "reviewer"), previewClaudeSubmember(7, "tester"))) {
+  AlertPreview { removeMemberAlert(null, previewOwnerGroupInfo, previewClaude) }
+}
 
 @Composable
 private fun MemberMenuPreview(groupInfo: GroupInfo, member: GroupMember) {

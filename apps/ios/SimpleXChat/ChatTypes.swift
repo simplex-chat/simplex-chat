@@ -1783,6 +1783,7 @@ public struct FullGroupPreferences: Decodable, Equatable, Hashable {
     public var history: GroupPreference
     public var support: GroupPreference
     public var signMessages: GroupPreference
+    public var msgPriority: RoleGroupPreference?
     public var commands: [ChatBotCommand]
 
     public init(
@@ -1797,6 +1798,7 @@ public struct FullGroupPreferences: Decodable, Equatable, Hashable {
         history: GroupPreference,
         support: GroupPreference,
         signMessages: GroupPreference,
+        msgPriority: RoleGroupPreference? = nil,
         commands: [ChatBotCommand]
     ) {
         self.timedMessages = timedMessages
@@ -1810,6 +1812,7 @@ public struct FullGroupPreferences: Decodable, Equatable, Hashable {
         self.history = history
         self.support = support
         self.signMessages = signMessages
+        self.msgPriority = msgPriority
         self.commands = commands
     }
 
@@ -1841,6 +1844,7 @@ public struct GroupPreferences: Codable, Hashable {
     public var history: GroupPreference?
     public var support: GroupPreference?
     public var signMessages: GroupPreference?
+    public var msgPriority: RoleGroupPreference?
     public var commands: [ChatBotCommand]?
 
     public init(
@@ -1855,6 +1859,7 @@ public struct GroupPreferences: Codable, Hashable {
         history: GroupPreference? = nil,
         support: GroupPreference? = nil,
         signMessages: GroupPreference? = nil,
+        msgPriority: RoleGroupPreference? = nil,
         commands: [ChatBotCommand]? = nil
     ) {
         self.timedMessages = timedMessages
@@ -1868,6 +1873,7 @@ public struct GroupPreferences: Codable, Hashable {
         self.history = history
         self.support = support
         self.signMessages = signMessages
+        self.msgPriority = msgPriority
         self.commands = commands
     }
 
@@ -1899,6 +1905,7 @@ public func toGroupPreferences(_ fullPreferences: FullGroupPreferences) -> Group
         history: fullPreferences.history,
         support: fullPreferences.support,
         signMessages: fullPreferences.signMessages,
+        msgPriority: fullPreferences.msgPriority,
         commands: fullPreferences.commands
     )
 }
@@ -2416,6 +2423,18 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable {
         }
     }
 
+    private var silentNotCounted: Bool {
+        chatSettings?.enableNtfs == .all
+    }
+
+    public func countedForUser(_ chatItem: ChatItem) -> Bool {
+        chatItem.isRcvNew && !(chatItem.meta.silent && silentNotCounted)
+    }
+
+    public func countedForUser(unreadCount: Int, unreadSilent: Int) -> Int {
+        silentNotCounted ? unreadCount - unreadSilent : unreadCount
+    }
+
     public var chatSettings: ChatSettings? {
         switch self {
         case let .direct(contact): return contact.chatSettings
@@ -2553,12 +2572,16 @@ public struct ChatStats: Decodable, Hashable {
     public init(
         unreadCount: Int = 0,
         unreadMentions: Int = 0,
+        unreadSilent: Int = 0,
+        unreadHighPriority: Int = 0,
         reportsCount: Int = 0,
         minUnreadItemId: Int64 = 0,
         unreadChat: Bool = false
     ) {
         self.unreadCount = unreadCount
         self.unreadMentions = unreadMentions
+        self.unreadSilent = unreadSilent
+        self.unreadHighPriority = unreadHighPriority
         self.reportsCount = reportsCount
         self.minUnreadItemId = minUnreadItemId
         self.unreadChat = unreadChat
@@ -2566,11 +2589,15 @@ public struct ChatStats: Decodable, Hashable {
 
     public var unreadCount: Int = 0
     public var unreadMentions: Int = 0
+    public var unreadSilent: Int = 0
+    public var unreadHighPriority: Int = 0
     // actual only via getChats() and getChat(.initial), otherwise, zero
     public var reportsCount: Int = 0
     public var minUnreadItemId: Int64 = 0
     // actual only via getChats(), otherwise, false
     public var unreadChat: Bool = false
+
+    public var allUnreadSilent: Bool { unreadCount > 0 && unreadCount == unreadSilent }
 }
 
 public enum GroupChatScope: Decodable {
@@ -3466,6 +3493,7 @@ public struct GroupMember: Identifiable, Decodable, Hashable {
     public var memberChatVRange: VersionRange
     public var relayLink: String?
     public var memberVerifiedCode: SecurityCode?
+    public var memberVia: String?
 
     public var id: String { groupMemberEntityId(groupId, groupMemberId) }
     public var ready: Bool { get { activeConn?.connStatus == .ready } }
@@ -3611,6 +3639,10 @@ public struct GroupMember: Identifiable, Decodable, Hashable {
 
     public func canBanAndRemove(groupInfo: GroupInfo) -> Bool {
         canBeRemoved(groupInfo: groupInfo) && memberCurrentOrPending && memberRole < .moderator && versionRange.maxVersion >= LINK_NOTICE_VERSION
+    }
+
+    public func canVerifyCode(groupInfo: GroupInfo) -> Bool {
+        memberVia == nil && (memberActive || (groupInfo.useRelays && memberCurrent)) && memberRole != .relay
     }
 
     public var canReceiveReports: Bool {
@@ -3941,6 +3973,14 @@ public struct AChatItemUpdate: Decodable, Hashable {
     public var chatInfo: ChatInfo
     public var chatItem: ChatItem
     public var prevChatItem: ChatItem
+
+    public var showNotification: Bool {
+        (chatItem.isRaised(from: prevChatItem) || chatItem.isAsNew(from: prevChatItem)) && chatInfo.ntfsEnabled(chatItem: chatItem) && chatItem.showNotification
+    }
+
+    public var userUnreadChange: Int {
+        unreadCountChange(prevChatItem, chatItem) { chatInfo.ntfsEnabled(chatItem: $0) && chatInfo.countedForUser($0) }
+    }
 }
 
 public struct CIMentionMember: Decodable, Hashable {
@@ -4087,7 +4127,7 @@ public struct ChatItem: Identifiable, Decodable, Hashable {
     public var showNotification: Bool {
         switch content {
         case .sndMsgContent: return false
-        case .rcvMsgContent: return meta.itemDeleted == nil
+        case .rcvMsgContent: return meta.itemDeleted == nil && !meta.silent
         case .sndDeleted: return false
         case .rcvDeleted: return false
         case .sndCall: return false
@@ -4268,10 +4308,10 @@ public struct ChatItem: Identifiable, Decodable, Hashable {
         textAtItemTop && markdownBlocks == nil && !content.text.contains(where: \.isNewline)
     }
 
-    public static func getSample (_ id: Int64, _ dir: CIDirection, _ ts: Date, _ text: String, _ status: CIStatus = .sndNew, quotedItem: CIQuote? = nil, file: CIFile? = nil, itemDeleted: CIDeleted? = nil, itemEdited: Bool = false, itemLive: Bool = false, deletable: Bool = true, editable: Bool = true) -> ChatItem {
+    public static func getSample (_ id: Int64, _ dir: CIDirection, _ ts: Date, _ text: String, _ status: CIStatus = .sndNew, quotedItem: CIQuote? = nil, file: CIFile? = nil, itemDeleted: CIDeleted? = nil, itemEdited: Bool = false, itemLive: Bool = false, deletable: Bool = true, editable: Bool = true, priority: Int? = nil) -> ChatItem {
         ChatItem(
             chatDir: dir,
-            meta: CIMeta.getSample(id, ts, text, status, itemDeleted: itemDeleted, itemEdited: itemEdited, itemLive: itemLive, deletable: deletable, editable: editable),
+            meta: CIMeta.getSample(id, ts, text, status, itemDeleted: itemDeleted, itemEdited: itemEdited, itemLive: itemLive, deletable: deletable, editable: editable, priority: priority),
             content: .sndMsgContent(msgContent: .text(text)),
             quotedItem: quotedItem,
             file: file
@@ -4479,6 +4519,10 @@ public enum CIDirection: Decodable, Hashable {
         if case let .groupRcv(groupMember) = self { groupMember.groupMemberId } else { nil }
     }
 
+    public var memberVia: String? {
+        if case let .groupRcv(groupMember) = self { groupMember.memberVia } else { nil }
+    }
+
     public func sameDirection(_ dir: CIDirection) -> Bool {
         switch (self, dir) {
         case let (.groupRcv(m1), .groupRcv(m2)): m1.groupMemberId == m2.groupMemberId
@@ -4507,10 +4551,14 @@ public struct CIMeta: Decodable, Hashable {
     public var forwardedByMember: Int64?
     public var showGroupAsSender: Bool
     public var msgVerified: MsgVerified?
+    public var priority: Int?
+    public var sentAsMember: GroupMember?
 
     public var timestampText: Text { Text(formatTimestampMeta(itemTs)) }
     public var recent: Bool { updatedAt + 10 > .now }
     public var isLive: Bool { itemLive == true }
+    public var silent: Bool { (priority ?? 0) < 0 }
+    public var highPriority: Bool { (priority ?? 0) > 0 }
     public var disappearing: Bool { !isRcvNew && itemTimed?.deleteAt != nil }
 
     public var isRcvNew: Bool {
@@ -4518,7 +4566,7 @@ public struct CIMeta: Decodable, Hashable {
         return false
     }
 
-    public static func getSample(_ id: Int64, _ ts: Date, _ text: String, _ status: CIStatus = .sndNew, itemDeleted: CIDeleted? = nil, itemEdited: Bool = false, itemLive: Bool = false, deletable: Bool = true, editable: Bool = true) -> CIMeta {
+    public static func getSample(_ id: Int64, _ ts: Date, _ text: String, _ status: CIStatus = .sndNew, itemDeleted: CIDeleted? = nil, itemEdited: Bool = false, itemLive: Bool = false, deletable: Bool = true, editable: Bool = true, priority: Int? = nil) -> CIMeta {
         CIMeta(
             itemId: id,
             itemTs: ts,
@@ -4533,7 +4581,8 @@ public struct CIMeta: Decodable, Hashable {
             deletable: deletable,
             editable: editable,
             showGroupAsSender: false,
-            msgVerified: nil
+            msgVerified: nil,
+            priority: priority
         )
     }
 
@@ -4704,6 +4753,16 @@ public enum CIStatus: Decodable, Hashable {
 
 public func unreadCountChange(_ prevItem: ChatItem, _ cItem: ChatItem, _ counted: (ChatItem) -> Bool) -> Int {
     (counted(cItem) ? 1 : 0) - (counted(prevItem) ? 1 : 0)
+}
+
+extension ChatItem {
+    public func isRaised(from prevItem: ChatItem) -> Bool {
+        meta.highPriority && !prevItem.meta.highPriority
+    }
+
+    public func isAsNew(from prevItem: ChatItem) -> Bool {
+        meta.itemTs != prevItem.meta.itemTs
+    }
 }
 
 public func shouldKeepOldSndCIStatus(oldStatus: CIStatus, newStatus: CIStatus) -> Bool {

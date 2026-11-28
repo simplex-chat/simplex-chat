@@ -534,7 +534,7 @@ fun ChatView(
               groupMembersJob = scope.launch(Dispatchers.Default) {
                 val r = chatModel.controller.apiGroupMemberInfo(chatRh, groupInfo.groupId, member.groupMemberId)
                 val stats = r?.second
-                val (updatedMember, code) = if ((member.memberActive || (groupInfo.useRelays && member.memberCurrent)) && member.memberRole != GroupMemberRole.Relay) {
+                val (updatedMember, code) = if (member.canVerifyCode(groupInfo)) {
                   val memCode = chatModel.controller.apiGetGroupMemberCode(chatRh, groupInfo.apiId, member.groupMemberId)
                   (memCode?.first ?: r?.first) to memCode?.second
                 } else {
@@ -1833,6 +1833,13 @@ fun BoxScope.ChatItemsList(
     }
   }
   val reversedChatItems = remember { derivedStateOf { chatsCtx.chatItems.value.asReversed() } }
+  if (chatInfo is ChatInfo.Group) {
+    LaunchedEffect(chatInfo.id) {
+      snapshotFlow { !chatModel.membersLoaded.value && reversedChatItems.value.any { it.chatDir.memberVia != null || it.quotedItem?.chatDir?.memberVia != null } }
+        .filter { it }
+        .collect { setGroupMembers(remoteHostId, chatInfo.groupInfo, chatModel) }
+    }
+  }
   val reportsCount = reportsCount(chatInfo.id)
   val supportUnreadCount = supportUnreadCount(chatInfo.id)
   val topPaddingToContent = topPaddingToContent(
@@ -2097,7 +2104,8 @@ fun BoxScope.ChatItemsList(
                         fontSize = 13.5.sp,
                         color = MaterialTheme.colors.secondary,
                         overflow = TextOverflow.Ellipsis,
-                        maxLines = 1
+                        maxLines = 1,
+                        via = if (memCount == 1) chatModel.memberViaName(member) else null
                       )
                       if (memCount == 1 && member.memberRole > GroupMemberRole.Member) {
                         val tailRendered = chatItemTailRendered(cItem, itemSeparation.largeGap, revealed = true)
@@ -2702,9 +2710,13 @@ fun BoxScope.FloatingButtons(
 
   val requestedTopScroll = remember { mutableStateOf(false) }
   val requestedBottomScroll = remember { mutableStateOf(false) }
+  val onlySilentUnread = remember { derivedStateOf {
+    chatsCtx.chats.value.firstOrNull { it.chatInfo.id == chatInfo.value.id }?.chatStats?.allUnreadSilent == true
+  } }
 
   BottomEndFloatingButton(
     bottomUnreadCount,
+    onlySilentUnread,
     showBottomButtonWithCounter,
     showBottomButtonWithArrow,
     requestedBottomScroll,
@@ -2752,6 +2764,7 @@ fun BoxScope.FloatingButtons(
   TopEndFloatingButton(
     Modifier.padding(end = DEFAULT_PADDING, top = 24.dp + topPaddingToContent).align(Alignment.TopEnd),
     topUnreadCount,
+    onlySilentUnread,
     requestedTopScroll,
     animatedScrollingInProgress,
     onClick = {
@@ -2889,6 +2902,7 @@ fun MemberImage(member: GroupMember, size: Dp, modifier: Modifier = Modifier) {
 private fun TopEndFloatingButton(
   modifier: Modifier = Modifier,
   unreadCount: State<Int>,
+  onlySilentUnread: State<Boolean>,
   requestedTopScroll: State<Boolean>,
   animatedScrollingInProgress: State<Boolean>,
   onClick: () -> Unit,
@@ -2908,7 +2922,7 @@ private fun TopEndFloatingButton(
       } else {
         Text(
           unreadCountStr(unreadCount.value),
-          color = MaterialTheme.colors.primary,
+          color = if (onlySilentUnread.value) MaterialTheme.colors.secondary else MaterialTheme.colors.primary,
           fontSize = 14.sp,
         )
       }
@@ -3303,6 +3317,7 @@ fun openGroupLink(groupInfo: GroupInfo, rhId: Long?, view: Any? = null, close: (
 @Composable
 private fun BoxScope.BottomEndFloatingButton(
   unreadCount: State<Int>,
+  onlySilentUnread: State<Boolean>,
   showButtonWithCounter: State<Boolean>,
   showButtonWithArrow: State<Boolean>,
   requestedBottomScroll: State<Boolean>,
@@ -3323,7 +3338,7 @@ private fun BoxScope.BottomEndFloatingButton(
         } else {
           Text(
             unreadCountStr(unreadCount.value),
-            color = MaterialTheme.colors.primary,
+            color = if (onlySilentUnread.value) MaterialTheme.colors.secondary else MaterialTheme.colors.primary,
             fontSize = 14.sp,
           )
         }
@@ -4102,6 +4117,18 @@ fun PreviewGroupChatLayoutTerminalSession() = CompositionLocalProvider(LocalTerm
   GroupChatLayoutPreview(sessionPreview())
 }
 
+@Preview
+@Composable
+fun PreviewGroupChatLayoutSubmember() = GroupMembersPreview(listOf(previewClaude)) {
+  GroupChatLayoutPreview(submemberPreview())
+}
+
+@Preview
+@Composable
+fun PreviewGroupChatLayoutTerminalSubmember() = CompositionLocalProvider(LocalTerminalLayout provides true) {
+  PreviewGroupChatLayoutSubmember()
+}
+
 private fun previewMember(id: Long, name: String) =
   GroupMember.sampleData.copy(groupMemberId = id, memberId = name, localDisplayName = name, memberProfile = LocalProfile.sampleData.copy(profileId = id, displayName = name, fullName = ""))
 
@@ -4188,6 +4215,43 @@ private fun sessionPreview(): List<ChatItem> {
     previewRcv(11, claude, 305, previewText("Running the tests.")),
     previewRcv(12, claude, 310, previewText("Done: the answer now quotes its own prompt.\n544 of 544 pass.\nCommitted as 1f3c2a9.")),
     previewRcv(13, claude, 330, CIContent.RcvMsgContent(MsgContent.MCImage("Coverage after the fix", image)))
+  )
+}
+
+@Preview
+@Composable
+fun PreviewUnreadScrollButtons() {
+  SimpleXTheme {
+    Row(Modifier.padding(DEFAULT_PADDING), horizontalArrangement = Arrangement.spacedBy(DEFAULT_PADDING * 2)) {
+      listOf("Normal unread" to false, "Silent only" to true).forEach { (label, silent) ->
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(DEFAULT_PADDING)) {
+          Text(label)
+          TopEndFloatingButton(
+            unreadCount = remember { mutableStateOf(5) },
+            onlySilentUnread = remember { mutableStateOf(silent) },
+            requestedTopScroll = remember { mutableStateOf(false) },
+            animatedScrollingInProgress = remember { mutableStateOf(false) },
+            onClick = {},
+            onLongClick = {}
+          )
+        }
+      }
+    }
+  }
+}
+
+private fun submemberPreview(): List<ChatItem> {
+  val reviewer = previewClaudeSubmember(6, "reviewer")
+  val question = "Shall I fix them?"
+  return listOf(
+    previewRcv(1, previewClaude, 0, previewText("reviewer is running the tests.")),
+    previewRcv(2, reviewer, 180, previewText("Two tests fail on Postgres.")),
+    previewRcv(3, reviewer, 190, previewText(question)),
+    previewRcv(4, previewMember(2, "bob"), 300, previewText("Yes, please.")),
+    previewSnd(5, 360, "Fix and push.", CIStatus.SndSent(SndCIStatusProgress.Complete)).copy(
+      quotedItem = CIQuote(CIDirection.GroupRcv(reviewer), 3, sentAt = previewDate.plus(190, DateTimeUnit.SECOND), content = MsgContent.MCText(question))
+    ),
+    previewRcv(6, previewClaudeSubmember(7, "postgres-integration-test-investigator"), 480, previewText("Both fail on a missing index."))
   )
 }
 

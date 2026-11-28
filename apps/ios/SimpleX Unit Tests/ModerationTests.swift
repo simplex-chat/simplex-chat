@@ -19,6 +19,7 @@ final class ModerationTests: RecordedAPITestCase {
         groupDefaults.set(oneHandUI, forKey: GROUP_DEFAULT_ONE_HAND_UI)
         ChatModel.shared.groupMembers = []
         ChatModel.shared.groupMembersIndexes = [:]
+        ChatModel.shared.membersLoaded = false
         ChatModel.shared.userAddress = nil
         AlertManager.shared.presentAlert = false
         try await super.tearDown()
@@ -246,6 +247,53 @@ final class ModerationTests: RecordedAPITestCase {
             "Member will be removed from group - this cannot be undone!\n\n1 member with the previous version: cannot block",
             "Remove", "Remove and delete messages", "Cancel"
         ])
+    }
+
+    @MainActor
+    func testRemoveMemberWithSubmembers() async throws {
+        try recorded("submembers/member-with-two-submembers")
+        let (groupInfo, members) = try openGroup()
+        var tester = try member(members, "tester")
+        tester.memberStatus = .memUnknown
+        replaceMembers([tester])
+        ChatModel.shared.membersLoaded = true
+        showRemoveMemberAlert(groupInfo, try member(members, "bob"))
+        try await assertTexts(["Remove member?", "Member will be removed from group - this cannot be undone!\nAlso 2 members via this member.", "Remove", "Remove and delete messages", "Cancel"])
+    }
+
+    @MainActor
+    func testRemoveMemberWithSubmemberFromMemberInfo() async throws {
+        try recorded("submembers/member-with-one-submember")
+        let (groupInfo, members) = try openGroup()
+        let bob = try member(members, "bob")
+        ChatModel.shared.groupMembers = [GMember(bob)]
+        ChatModel.shared.populateGroupMembersIndexes()
+        ChatModel.shared.membersLoaded = false
+        showRemoveMemberAlert(groupInfo, bob)
+        try await assertTexts(["Remove member?", "Member will be removed from group - this cannot be undone!\nAlso 1 member via this member.", "Remove", "Remove and delete messages", "Cancel"])
+    }
+
+    @MainActor
+    func testRemoveBlockedMemberWithSubmembersForever() async throws {
+        try recorded("submembers/member-with-two-submembers")
+        let (groupInfo, members) = try openGroup()
+        var bob = try member(members, "bob")
+        bob.memberRole = .member
+        bob.blockedByAdmin = true
+        replaceMembers([bob])
+        showRemoveMemberAlert(groupInfo, bob)
+        let dialog = try await sheet(BanDialog.self)
+        XCTAssertEqual(shownText(dialog.footer), "bob won't be notified, and can't rejoin while blocked.\nAlso 2 members via this member.")
+        dialog.close { dialog.actions[0].action(.forever) }
+        try await assertTexts(["Remove forever?", "bob can't rejoin via the group link again, except from another app.\nAlso 2 members via this member.", "Cancel", "Remove"])
+    }
+
+    @MainActor
+    func testDeleteMessagesOfRemovedMemberWithSubmembers() async throws {
+        try recorded("submembers/removed-member-with-submembers")
+        let (groupInfo, members) = try openGroup()
+        showDeleteMemberMessagesAlert(groupInfo, try member(members, "bob"))
+        try await assertTexts(["Delete member messages?", "Member messages will be deleted - this cannot be undone!\nAlso the messages of 2 members via this member.", "Delete messages", "Cancel"])
     }
 
     @MainActor
@@ -1095,6 +1143,11 @@ final class ModerationTests: RecordedAPITestCase {
 
     private func shownText(_ text: Text?) -> String? {
         guard let text else { return nil }
+        if let storage = Mirror(reflecting: text).descendant("storage"), let payload = Mirror(reflecting: storage).children.first?.value {
+            if let verbatim = payload as? String { return verbatim }
+            let parts = Mirror(reflecting: payload).children.compactMap { $0.value as? Text }
+            if !parts.isEmpty { return parts.compactMap(shownText).joined() }
+        }
         let description = String(describing: text)
         guard let start = description.range(of: ">: \""), let end = description.range(of: "\"), modifiers", options: .backwards) else { return description }
         return String(description[start.upperBound..<end.lowerBound])

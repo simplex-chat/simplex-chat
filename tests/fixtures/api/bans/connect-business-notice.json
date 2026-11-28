@@ -34,6 +34,9 @@
                 "directMessages": {
                   "enable": "off"
                 },
+                "edits": {
+                  "enable": "off"
+                },
                 "files": {
                   "enable": "on"
                 },
@@ -42,6 +45,10 @@
                 },
                 "history": {
                   "enable": "on"
+                },
+                "msgPriority": {
+                  "enable": "on",
+                  "role": "admin"
                 },
                 "reactions": {
                   "enable": "on"
@@ -135,7 +142,7 @@
                 "localDisplayName": "bob",
                 "memberCategory": "user",
                 "memberChatVRange": {
-                  "maxVersion": 23,
+                  "maxVersion": 24,
                   "minVersion": 9
                 },
                 "memberContactId": 1,
@@ -201,7 +208,9 @@
             "reportsCount": 0,
             "unreadChat": false,
             "unreadCount": 0,
-            "unreadMentions": 0
+            "unreadHighPriority": 0,
+            "unreadMentions": 0,
+            "unreadSilent": 0
           }
         },
         "type": "apiChat",

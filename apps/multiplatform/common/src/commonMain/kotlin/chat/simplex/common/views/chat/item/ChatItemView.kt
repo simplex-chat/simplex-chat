@@ -1508,6 +1508,41 @@ fun BubblePreview(content: @Composable () -> Unit) {
   CompositionLocalProvider(LocalBubbleLayout provides !LocalTerminalLayout.current, content = content)
 }
 
+val previewClaude: GroupMember get() = GroupMember.sampleData.copy(
+  groupMemberId = 5,
+  memberId = "Claude",
+  memberRole = GroupMemberRole.Owner,
+  localDisplayName = "Claude",
+  memberProfile = LocalProfile.sampleData.copy(profileId = 5, displayName = "Claude", fullName = "", peerType = ChatPeerType.Agent),
+  memberContactProfileId = 5
+)
+
+fun previewClaudeSubmember(id: Long, name: String): GroupMember = GroupMember.sampleData.copy(
+  groupMemberId = id,
+  memberId = name,
+  localDisplayName = name,
+  memberProfile = LocalProfile.sampleData.copy(profileId = id, displayName = name, fullName = "", peerType = ChatPeerType.Agent),
+  memberContactId = null,
+  memberContactProfileId = id,
+  activeConn = null,
+  memberVia = previewClaude.memberId
+)
+
+@Composable
+fun GroupMembersPreview(members: List<GroupMember>, content: @Composable () -> Unit) {
+  remember {
+    chatModel.groupMembers.value = members
+    chatModel.membersLoaded.value = true
+  }
+  DisposableEffect(Unit) {
+    onDispose {
+      chatModel.groupMembers.value = emptyList()
+      chatModel.membersLoaded.value = false
+    }
+  }
+  content()
+}
+
 @Preview
 @Composable
 fun PreviewChatItemView(
@@ -1595,6 +1630,22 @@ fun PreviewChatItemViewEmptyLines() = PreviewChatItemView(
 @Composable
 fun PreviewChatItemViewEmptyLinesTerminal() = CompositionLocalProvider(LocalTerminalLayout provides true) {
   PreviewChatItemViewEmptyLines()
+}
+
+@Preview
+@Composable
+fun PreviewChatItemViewHighPriority() {
+  val rcvItem = ChatItem.getSampleData(1, CIDirection.DirectRcv(), previewDate, "Tests passed: 211", CIStatus.RcvRead(), priority = 1)
+  val sndItem = ChatItem.getSampleData(2, CIDirection.DirectSnd(), previewDate, "Deployed to staging", CIStatus.SndSent(SndCIStatusProgress.Complete), priority = 1)
+  Column {
+    listOf("Classic layout" to false, "Terminal layout" to true).forEach { (layout, terminal) ->
+      Text(layout, Modifier.padding(start = 20.dp, top = 8.dp), color = MaterialTheme.colors.secondary, fontSize = 13.sp)
+      CompositionLocalProvider(LocalTerminalLayout provides terminal) {
+        PreviewChatItemView(rcvItem)
+        PreviewChatItemView(sndItem)
+      }
+    }
+  }
 }
 
 @Preview

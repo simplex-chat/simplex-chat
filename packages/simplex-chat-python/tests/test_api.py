@@ -187,6 +187,24 @@ def test_update_chat_item_accepts_not_changed():
     assert asyncio.run(api.api_update_chat_item("direct", 1, 2, msg_content)) == chat_item
 
 
+def test_update_chat_item_as_new():
+    chat_item = {"meta": {"itemId": 2}}
+    api = FakeCtrl({"type": "chatItemUpdated", "chatItem": {"chatItem": chat_item}})
+    msg_content = {"type": "text", "text": "status"}
+    assert asyncio.run(api.api_update_chat_item("group", 1, 2, msg_content, priority=-1, as_new=True)) == chat_item
+    assert api.sent == ['/_update item #1 2 as_new=on json {"msgContent": {"type": "text", "text": "status"}, "mentions": {}, "priority": -1}']
+
+
+def test_send_text_message_with_priority():
+    api = FakeCtrl({"type": "newChatItems", "chatItems": []})
+    assert asyncio.run(api.api_send_text_message(["group", 1], "hi", priority=1)) == []
+    asyncio.run(api.api_send_text_message(["group", 1], "hi"))
+    assert api.sent == [
+        '/_send #1 json [{"msgContent": {"type": "text", "text": "hi"}, "mentions": {}, "priority": 1}]',
+        '/_send #1 json [{"msgContent": {"type": "text", "text": "hi"}, "mentions": {}}]',
+    ]
+
+
 def test_set_profile_address_accepts_no_change():
     api = FakeCtrl({"type": "userProfileNoChange"})
     summary = asyncio.run(api.api_set_profile_address(1, True))

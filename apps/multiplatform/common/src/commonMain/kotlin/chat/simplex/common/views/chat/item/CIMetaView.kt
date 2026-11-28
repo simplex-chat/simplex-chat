@@ -95,6 +95,9 @@ private fun CIMetaText(
 ) {
   val showSignature = appPreferences.privacyShowSignature.state.value
   val showEncryption = appPreferences.privacyShowEncryption.state.value
+  if (meta.highPriority) {
+    Icon(painterResource(MR.images.ic_notifications_filled), null, Modifier.width(10.dp).requiredSize(15.dp), tint = MaterialTheme.colors.primary)
+  }
   if (showEdited && meta.itemEdited) {
     StatusIconText(painterResource(MR.images.ic_edit), color)
   }
@@ -110,7 +113,8 @@ private fun CIMetaText(
     Icon(painterResource(MR.images.ic_arrow_forward), null, Modifier.height(17.dp), tint = MaterialTheme.colors.secondary)
   }
   if (showStatus) {
-    Spacer(Modifier.width(4.dp))
+    val afterBell = meta.highPriority && !(showEdited && meta.itemEdited) && !meta.disappearing && !(showViaProxy && meta.sentViaProxy == true)
+    if (!afterBell) Spacer(Modifier.width(4.dp))
     val statusIcon = meta.statusIcon(MaterialTheme.colors.primary, color, paleColor)
     if (statusIcon != null) {
       val (icon, statusColor) = statusIcon
@@ -152,7 +156,7 @@ fun reserveSpaceForMeta(
   showTimestamp: Boolean,
   signedFileVerified: Boolean? = null
 ): String = buildString {
-  reserveSpaceForMeta(meta, chatTTL, encrypted, secondaryColor, showStatus, showEdited, showViaProxy, showTimestamp, signedFileVerified, tallIconSpace = "", spaces = { append(it) }, text = { append(it) })
+  reserveSpaceForMeta(meta, chatTTL, encrypted, secondaryColor, showStatus, showEdited, showViaProxy, showTimestamp, signedFileVerified, tallIconSpace = "", spaces = { append(it) }, bellSpace = { append(it) }, text = { append(it) })
 }
 
 // the conditions in this function should match CIMetaText
@@ -168,6 +172,7 @@ private fun reserveSpaceForMeta(
   signedFileVerified: Boolean?,
   tallIconSpace: String,
   spaces: (String) -> Unit,
+  bellSpace: (String) -> Unit,
   text: (String) -> Unit
 ) {
   val showSignature = appPreferences.privacyShowSignature.state.value
@@ -182,6 +187,9 @@ private fun reserveSpaceForMeta(
     space = null
   }
 
+  if (meta.highPriority) {
+    bellSpace(iconSpace)
+  }
   if (showEdited && meta.itemEdited) {
     spaces(iconSpace)
   }
@@ -260,12 +268,14 @@ fun metaReserveCopy(
   breakBefore: Boolean = false
 ): AnnotatedString {
   val spaceStyle = SpanStyle(fontSize = with(density) { bodyFontSize.value.dp.toSp() }, fontWeight = FontWeight.Normal)
+  val bellStyle = SpanStyle(fontSize = with(density) { 12.dp.toSp() }, fontWeight = FontWeight.Normal)
   val textStyle = SpanStyle(fontSize = 12.sp, fontWeight = FontWeight.Normal)
   return buildAnnotatedString {
     append((if (breakBefore) " " else "\u2060") + if (direction == LayoutDirection.Ltr) "\u200E" else "\u200F")
     reserveSpaceForMeta(
       meta, chatTTL, encrypted, secondaryColor, showStatus, showEdited, showViaProxy, showTimestamp, signedFileVerified, tallIconSpace = "\u00A0",
       spaces = { withStyle(spaceStyle) { append(it.replace(' ', '\u00A0')) } },
+      bellSpace = { withStyle(bellStyle) { append(it.replace(' ', '\u00A0')) } },
       text = { withStyle(textStyle) { append(it.replace(' ', '\u00A0')) } }
     )
   }

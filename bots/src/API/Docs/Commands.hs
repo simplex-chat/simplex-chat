@@ -97,11 +97,11 @@ chatCommandsDocsData =
       [ ("APISendMessages", [], "Send messages.", ["CRNewChatItems", "CRChatCmdError"], [], Just UNBackground, "/_send " <> Param "sendRef" <> OnOffParam "live" "liveMessage" (Just False) <> Optional "" (" ttl=" <> Param "$0") "ttl" <> OnOffParam "sign" "signMessages" (Just False) <> " json " <> Json "composedMessages"),
         ( "APIUpdateChatItem",
           [],
-          "Update message.",
+          "Update message. In groups, as_new=on makes the message new: last in the chat, unread and notified by its priority, with the time of the update set by each member; ignored in other chats.",
           ["CRChatItemUpdated", "CRChatItemNotChanged", "CRChatCmdError"],
           [TD "CEInvalidChatItemUpdate" "Not user's message or cannot be edited"],
           Just UNBackground,
-          "/_update item " <> Param "chatRef" <> " " <> Param "chatItemId" <> OnOffParam "live" "liveMessage" (Just False) <> " json " <> Json "updatedMessage"
+          "/_update item " <> Param "chatRef" <> " " <> Param "chatItemId" <> OnOffParam "live" "liveMessage" (Just False) <> OnOffParam "as_new" "asNew" (Just False) <> " json " <> Json "updatedMessage"
         ),
         ("APIDeleteChatItem", [], "Delete message.", ["CRChatItemsDeleted", "CRChatCmdError"], [], Just UNBackground, "/_delete item " <> Param "chatRef" <> " " <> Join ',' "chatItemIds" <> " " <> Param "deleteMode"),
         ("APIDeleteMemberChatItem", [], "Moderate message. Requires Moderator role (and higher than message author's).", ["CRChatItemsDeleted", "CRChatCmdError"], [], Just UNBackground, "/_delete member item #" <> Param "groupId" <> " " <> Join ',' "chatItemIds"),
@@ -120,6 +120,7 @@ chatCommandsDocsData =
       "Commands to manage and moderate groups. These commands can be used with business chats as well - they are groups. E.g., a common scenario would be to add human agents to business chat with the customer who connected via business address.",
       [ ("APIAddMember", [], "Add contact to group. Requires bot to have Admin role.", ["CRSentGroupInvitation", "CRChatCmdError"], [], Just UNInteractive, "/_add #" <> Param "groupId" <> " " <> Param "contactId" <> " " <> Param "memberRole"),
         ("APIAddMemberViaGroup", [], "Add member of another group to group. Requires bot to have Admin role in the group, and direct messages allowed for its role in another group.", ["CRSentGroupInvitationViaGroup", "CRChatCmdError"], [TD "CEPeerChatVRangeIncompatible" "Member's client version is older than required"], Just UNInteractive, "/_add #" <> Param "groupId" <> " #" <> Param "viaGroupId" <> " " <> Param "groupMemberId" <> " " <> Param "memberRole"),
+        ("APIAddSubmember", [], "Add submember of bot, without a connection: bot sends submember's messages with /_send #<groupId>(as_member=<groupMemberId>). Requires bot to have Admin role and a role not lower than submember role, not supported in channels.", ["CRSubmemberAdded", "CRChatCmdError"], [], Just UNBackground, "/_add submember #" <> Param "groupId" <> " " <> Param "memberRole" <> " json " <> Json "profile"),
         ("APIJoinGroup", ["enableNtfs"], "Join group.", ["CRUserAcceptedGroupSent", "CRChatCmdError"], [], Just UNInteractive, "/_join #" <> Param "groupId"),
         ("APIAcceptMember", [], "Accept group member. Requires Admin role.", ["CRMemberAccepted", "CRChatCmdError"], [TD "CEGroupMemberNotActive" "Member is not connected yet"], Just UNBackground, "/_accept member #" <> Param "groupId" <> " " <> Param "groupMemberId" <> " " <> Param "memberRole"),
         ("APIMembersRole", [], "Set members role. Requires Admin role.", ["CRMembersRoleUser", "CRChatCmdError"], [], Just UNBackground, "/_member role #" <> Param "groupId" <> " " <> Join ',' "groupMemberIds" <> " " <> Param "memberRole"),

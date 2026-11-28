@@ -1124,7 +1124,8 @@ data MemberInfo = MemberInfo
     memberRole :: GroupMemberRole,
     v :: Maybe ChatVersionRange,
     profile :: Profile,
-    memberKey :: Maybe MemberKey
+    memberKey :: Maybe MemberKey,
+    via :: Maybe MemberId
   }
   deriving (Eq, Show)
 
@@ -1203,6 +1204,7 @@ data GroupMember = GroupMember
     blockedByAdmin :: Bool,
     invitedBy :: InvitedBy,
     invitedByGroupMemberId :: Maybe GroupMemberId,
+    memberVia :: Maybe MemberId,
     localDisplayName :: ContactName,
     -- for membership, memberProfile can be either user's profile or incognito profile, based on memberIncognito test.
     -- for other members it's whatever profile the local user can see (there is no info about whether it's main or incognito profile for remote users).
@@ -1310,6 +1312,9 @@ memberSecurityCode GroupMember {activeConn, memberVerifiedCode} = memberVerified
 
 memberBlocked :: GroupMember -> Bool
 memberBlocked m = blockedByAdmin m || not (showMessages $ memberSettings m)
+
+memberViaUser :: GroupInfo -> GroupMember -> Bool
+memberViaUser GroupInfo {membership} GroupMember {memberVia} = memberVia == Just (memberId' membership)
 
 data NewGroupMember = NewGroupMember
   { memInfo :: MemberInfo,
@@ -2321,6 +2326,13 @@ newtype BoolDef = BoolDef {isTrue :: Bool}
 instance FromJSON BoolDef where
   parseJSON v = BoolDef <$> parseJSON v
   omittedField = Just (BoolDef False)
+
+newtype IntDef = IntDef Int
+  deriving newtype (Eq, Show, ToJSON)
+
+instance FromJSON IntDef where
+  parseJSON v = IntDef <$> parseJSON v
+  omittedField = Just (IntDef 0)
 
 $(JQ.deriveJSON defaultJSON ''UserContact)
 

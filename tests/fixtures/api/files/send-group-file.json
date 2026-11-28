@@ -21,6 +21,9 @@
                   "directMessages": {
                     "enable": "on"
                   },
+                  "edits": {
+                    "enable": "off"
+                  },
                   "files": {
                     "enable": "on"
                   },
@@ -29,6 +32,10 @@
                   },
                   "history": {
                     "enable": "on"
+                  },
+                  "msgPriority": {
+                    "enable": "on",
+                    "role": "admin"
                   },
                   "reactions": {
                     "enable": "on"
@@ -87,7 +94,7 @@
                   "localDisplayName": "alice",
                   "memberCategory": "user",
                   "memberChatVRange": {
-                    "maxVersion": 23,
+                    "maxVersion": 24,
                     "minVersion": 9
                   },
                   "memberContactId": 1,

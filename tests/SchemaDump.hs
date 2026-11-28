@@ -157,8 +157,9 @@ skipComparisonForDownMigrations =
 getSchema :: FilePath -> FilePath -> IO String
 getSchema dbPath schemaPath = do
   void $ readCreateProcess (shell $ "sqlite3 " <> dbPath <> " '.schema --indent' > " <> schemaPath) ""
-  sch <- readFile schemaPath
-  sch `deepseq` pure sch
+  sch <- T.replace " \n    AND " " AND " <$> T.readFile schemaPath
+  T.writeFile schemaPath sch
+  pure $ T.unpack sch
 
 getLintFKeyIndexes :: FilePath -> FilePath -> IO String
 getLintFKeyIndexes dbPath lintPath = do

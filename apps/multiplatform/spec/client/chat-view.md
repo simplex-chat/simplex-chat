@@ -134,6 +134,31 @@ The message list is a `LazyColumnWithScrollBar` with `reverseLayout = true`, mea
 - **Direct messages:** Symmetric padding (76dp opposite side).
 - **Terminal layout:** When `LocalTerminalLayout.current` is true, all chat types render through `TerminalChatItemRow`, which wraps `ChatItemView`, instead of the branches above (see section 10). The selection offset applies to sent items too.
 
+### Submembers
+
+A submember, a member with `memberVia`, is shown with the name of the member it is via: the member whose `memberId` is `memberVia`, from the loaded `groupMembers` ([`ChatModel.memberViaName`](../../common/src/commonMain/kotlin/chat/simplex/common/model/ChatModel.kt#L430-L431)).
+
+```
+place                   shown
+Flat and Classic names  "via <name>" after the name and badge of a single member: regular, italic, 0.84 of the name size,
+                        the name's colour, on one line with the name shortened before it (NameWithBadge via)
+quotes                  "via <name>" after the quoted member's name (FramedItemView)
+member list             "via <name>" in place of the status (MemberRow.memberConnStatus, member_via)
+member info             row "Via" (info_row_via) with the name, after the role; the message, call and video
+                        buttons and "Chat with member" hidden; the security code not requested (GroupMember.canVerifyCode)
+loading                 ChatItemsList loads the members when an item or its quote is from a submember and the members
+                        are not loaded; removeMemberDialog and deleteMemberMessagesDialog of member info load them
+                        before the alert when they are not loaded and the member is an admin or an owner
+removal of submembers   ChatsContext.upsertGroupMember records the loaded submembers of a member it records as left or
+                        removed as removed, the user's membership included
+removal alerts          "Also 2 members via this member." ("via these members" for several members) after
+                        the message of "Remove member?", "Remove members?", the removal of blocked members and "Remove
+                        forever?", with the count of the submembers of the members removed that are not selected and
+                        not removed, left or deleted with the group (removedSubmembersText)
+deletion of messages    "Also the messages of 2 members via this member." after the message of "Delete member
+                        messages?", with the count of all the member's submembers (deletedSubmemberMessagesText)
+```
+
 ---
 
 <a id="ChatItemView"></a>
@@ -474,7 +499,8 @@ sender row         the name line topGap (terminalRowGap) below the row top, as o
                    at CHAT_ITEM_TEXT_PADDING − TERMINAL_AVATAR_OVERSHOOT (10dp), 2dp into the screen padding, as round
                    glyphs pass flat ones (user)
   name             name and badge (body1 size, semibold; primary for own messages, secondary otherwise), role label (the
-                   same size); start padding CHAT_ITEM_TEXT_PADDING; text style chatTextStyle(body1 size); at the
+                   same size); start and end padding CHAT_ITEM_TEXT_PADDING, so that the name line ends where the time
+                   ends; text style chatTextStyle(body1 size); at the
                    message column, terminalGutter(chatInfo), so in groups it starts TERMINAL_AVATAR_GAP (10dp) after the
                    avatar, at 47dp; in the width less the column
 one padding        12dp (user, I26): screen edge to the text in chats without avatars, time to the screen edge
@@ -506,7 +532,7 @@ A date change does not repeat the sender row.
 |---|---|---|---|---|---|
 | `ChannelRcv`, `GroupSnd` with `showGroupAsSender` | Channel name | "channel" (`channel_role_label`) | `ProfileImage` of the group, `toEdge` | `showChatInfo` | For `GroupSnd` |
 | `DirectRcv` | Contact display name and badge | None | None | None | No |
-| `GroupRcv` | `memberNames` of the merged members; badge for one member | Member role when above `Member`, for one member | `MemberImage`, `toEdge` | `showMemberInfo` | No |
+| `GroupRcv` | `memberNames` of the merged members; badge and "via <name>" (`memberViaName`) for one member | Member role when above `Member`, for one member | `MemberImage`, `toEdge` | `showMemberInfo` | No |
 | `GroupSnd` | `groupInfo.membership` display name and badge | Membership role when above `Member` | `MemberImage(membership)`, `toEdge` | None | Yes |
 | Other, incognito chat | "Incognito" | None | None | None | Yes |
 | Other (`DirectSnd`, `LocalSnd`, `LocalRcv`) | Current user display name and badge | None | None | None | Yes |

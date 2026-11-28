@@ -105,17 +105,18 @@ def APISendMessages_cmd_string(self: APISendMessages) -> str:
 APISendMessages_Response = CR.NewChatItems | CR.ChatCmdError
 
 
-# Update message.
+# Update message. In groups, as_new=on makes the message new: last in the chat, unread and notified by its priority, with the time of the update set by each member; ignored in other chats.
 # Network usage: background.
 class APIUpdateChatItem(TypedDict):
     chatRef: "T.ChatRef"
     chatItemId: int  # int64
     liveMessage: bool
+    asNew: bool
     updatedMessage: "T.UpdatedMessage"
 
 
 def APIUpdateChatItem_cmd_string(self: APIUpdateChatItem) -> str:
-    return '/_update item ' + T.ChatRef_cmd_string(self['chatRef']) + ' ' + str(self['chatItemId']) + (' live=on' if self['liveMessage'] else '') + ' json ' + json.dumps(self['updatedMessage'])
+    return '/_update item ' + T.ChatRef_cmd_string(self['chatRef']) + ' ' + str(self['chatItemId']) + (' live=on' if self['liveMessage'] else '') + (' as_new=on' if self['asNew'] else '') + ' json ' + json.dumps(self['updatedMessage'])
 
 APIUpdateChatItem_Response = CR.ChatItemUpdated | CR.ChatItemNotChanged | CR.ChatCmdError
 
@@ -248,6 +249,20 @@ def APIAddMemberViaGroup_cmd_string(self: APIAddMemberViaGroup) -> str:
     return '/_add #' + str(self['groupId']) + ' #' + str(self['viaGroupId']) + ' ' + str(self['groupMemberId']) + ' ' + str(self['memberRole'])
 
 APIAddMemberViaGroup_Response = CR.SentGroupInvitationViaGroup | CR.ChatCmdError
+
+
+# Add submember of bot, without a connection: bot sends submember's messages with /_send #<groupId>(as_member=<groupMemberId>). Requires bot to have Admin role and a role not lower than submember role, not supported in channels.
+# Network usage: background.
+class APIAddSubmember(TypedDict):
+    groupId: int  # int64
+    memberRole: "T.GroupMemberRole"
+    profile: "T.Profile"
+
+
+def APIAddSubmember_cmd_string(self: APIAddSubmember) -> str:
+    return '/_add submember #' + str(self['groupId']) + ' ' + str(self['memberRole']) + ' json ' + json.dumps(self['profile'])
+
+APIAddSubmember_Response = CR.SubmemberAdded | CR.ChatCmdError
 
 
 # Join group.

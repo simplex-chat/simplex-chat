@@ -106,6 +106,10 @@ struct ChatView: View {
         chat.chatInfo.activeChatLayout(profileChatLayout(ChatModel.shared.currentUser)) == .terminal
     }
 
+    private var viaNamesNotLoaded: Bool {
+        !chatModel.membersLoaded && im.reversedChatItems.contains { $0.chatDir.memberVia != nil || $0.quotedItem?.chatDir?.memberVia != nil }
+    }
+
     // Spec: spec/client/chat-view.md#body
     var body: some View {
         if #available(iOS 16.0, *) {
@@ -356,6 +360,11 @@ struct ChatView: View {
                     showUserSupportChatSheet = true
                     chatModel.secondaryPendingInviteeChatOpened = true
                 }
+            }
+        }
+        .task(id: viaNamesNotLoaded) {
+            if viaNamesNotLoaded, case let .group(groupInfo, _) = chat.chatInfo {
+                await chatModel.loadGroupMembers(groupInfo)
             }
         }
         .onChange(of: chatModel.secondaryPendingInviteeChatOpened) { secondaryChatOpened in
@@ -1258,7 +1267,7 @@ struct ChatView: View {
                             circleButton {
                                 unreadCountText(model.unreadAbove)
                                     .font(.callout)
-                                    .foregroundColor(theme.colors.primary)
+                                    .foregroundColor(onlySilentUnread ? theme.colors.secondary : theme.colors.primary)
                             }
                             .onTapGesture {
                                 if loadingTopItems {
@@ -1289,7 +1298,7 @@ struct ChatView: View {
                                     if model.unreadBelow > 0 {
                                         unreadCountText(model.unreadBelow)
                                             .font(.callout)
-                                            .foregroundColor(theme.colors.primary)
+                                            .foregroundColor(onlySilentUnread ? theme.colors.secondary : theme.colors.primary)
                                     } else {
                                         Image(systemName: "chevron.down").foregroundColor(theme.colors.primary)
                                     }
@@ -1353,6 +1362,10 @@ struct ChatView: View {
                 await scrollView.scrollToItemAnimated(0, top: false)
                 await MainActor.run { animatedScrollingInProgress = false }
             }
+        }
+
+        private var onlySilentUnread: Bool {
+            chat.chatStats.allUnreadSilent
         }
 
         private func circleButton<Content: View>(_ content: @escaping () -> Content) -> some View {
@@ -1848,15 +1861,15 @@ struct ChatView: View {
                     markedRead = true
                 }
                 if let range {
-                    let (itemIds, unreadMentions) = unreadItemIds(range)
+                    let (itemIds, unreadMentions, unreadSilent, unreadHighPriority) = unreadItemIds(range)
                     if !itemIds.isEmpty {
                         waitToMarkRead {
-                            await apiMarkChatItemsRead(im, chat.chatInfo, itemIds, mentionsRead: unreadMentions)
+                            await apiMarkChatItemsRead(im, chat.chatInfo, itemIds, mentionsRead: unreadMentions, silentRead: unreadSilent, highPriorityRead: unreadHighPriority)
                         }
                     }
                 } else if chatItem.isRcvNew  {
                     waitToMarkRead {
-                        await apiMarkChatItemsRead(im, chat.chatInfo, [chatItem.id], mentionsRead: chatItem.meta.userMention ? 1 : 0)
+                        await apiMarkChatItemsRead(im, chat.chatInfo, [chatItem.id], mentionsRead: chatItem.meta.userMention ? 1 : 0, silentRead: chatItem.meta.silent ? 1 : 0, highPriorityRead: chatItem.meta.highPriority ? 1 : 0)
                     }
                 }
             }
@@ -1877,9 +1890,11 @@ struct ChatView: View {
             }
         }
 
-        private func unreadItemIds(_ range: ClosedRange<Int>) -> ([ChatItem.ID], Int) {
+        private func unreadItemIds(_ range: ClosedRange<Int>) -> ([ChatItem.ID], Int, Int, Int) {
             var unreadItems: [ChatItem.ID] = []
             var unreadMentions: Int = 0
+            var unreadSilent: Int = 0
+            var unreadHighPriority: Int = 0
 
             for i in range {
                 if i < 0 || i >= im.reversedChatItems.count {
@@ -1891,10 +1906,16 @@ struct ChatView: View {
                     if ci.meta.userMention {
                         unreadMentions += 1
                     }
+                    if ci.meta.silent {
+                        unreadSilent += 1
+                    }
+                    if ci.meta.highPriority {
+                        unreadHighPriority += 1
+                    }
                 }
             }
 
-            return (unreadItems, unreadMentions)
+            return (unreadItems, unreadMentions, unreadSilent, unreadHighPriority)
         }
 
         private func waitToMarkRead(_ op: @Sendable @escaping () async -> Void) {
@@ -2048,6 +2069,7 @@ struct ChatView: View {
                                 } else {
                                     (nil, 1)
                                 }
+                                let via = memCount == 1 && !ci.meta.showGroupAsSender ? m.memberViaName(member) : nil
                                 if memCount == 1 && (member.memberRole > .member || ci.meta.showGroupAsSender) {
                                     let (name, role) = if ci.meta.showGroupAsSender {
                                         (groupInfo.chatViewName, NSLocalizedString("group", comment: "shown on group welcome message"))
@@ -2057,7 +2079,7 @@ struct ChatView: View {
                                     Group {
                                         if #available(iOS 16.0, *) {
                                             MemberLayout(spacing: 16, msgWidth: msgWidth) {
-                                                NameWithBadge(Text(name), ci.meta.showGroupAsSender ? nil : member.nameBadge, .caption1)
+                                                NameWithBadge(Text(name), ci.meta.showGroupAsSender ? nil : member.nameBadge, .caption1, via: via)
                                                     .lineLimit(1)
                                                 Text(role)
                                                     .fontWeight(.semibold)
@@ -2066,7 +2088,7 @@ struct ChatView: View {
                                             }
                                         } else {
                                             HStack(spacing: 16) {
-                                                NameWithBadge(Text(name), ci.meta.showGroupAsSender ? nil : member.nameBadge, .caption1)
+                                                NameWithBadge(Text(name), ci.meta.showGroupAsSender ? nil : member.nameBadge, .caption1, via: via)
                                                     .lineLimit(1)
                                                 Text(role)
                                                     .fontWeight(.semibold)
@@ -2080,8 +2102,8 @@ struct ChatView: View {
                                         alignment: chatItem.chatDir.sent ? .trailing : .leading
                                     )
                                 } else {
-                                    NameWithBadge(Text(memberNames(member, prevMember, memCount)), memCount == 1 ? member.nameBadge : nil, .caption1)
-                                        .lineLimit(2)
+                                    NameWithBadge(Text(memberNames(member, prevMember, memCount)), memCount == 1 ? member.nameBadge : nil, .caption1, via: via)
+                                        .lineLimit(via == nil ? 2 : 1)
                                 }
                             }
                                 .font(.caption)
@@ -2216,6 +2238,7 @@ struct ChatView: View {
                 return ChatItemSender(
                     name: Text(memberNames(member, prevMember, memCount)),
                     badge: prevMember == nil && memCount == 1 ? member.nameBadge : nil,
+                    via: memCount == 1 ? m.memberViaName(member) : nil,
                     role: memCount == 1 ? senderRole(member, groupInfo) : nil,
                     own: false,
                     image: AnyView(
@@ -3492,5 +3515,34 @@ struct ChatView_Previews: PreviewProvider {
             scrollToItemId: Binding.constant(nil)
         )
         .environmentObject(chatModel)
+    }
+}
+
+extension ChatView {
+    struct FloatingButtonsPreview: View {
+        @EnvironmentObject var theme: AppTheme
+        let label: String
+        let chatStats: ChatStats
+
+        var body: some View {
+            let im = ItemsModel(secondaryIMFilter: nil)
+            let scrollView = EndlessScrollView<MergedItem>(frame: .zero)
+            let model = FloatingButtonModel(im: im)
+            model.unreadAbove = chatStats.unreadCount
+            return ZStack(alignment: .topLeading) {
+                FloatingButtons(im: im, theme: theme, scrollView: scrollView, chat: Chat(chatInfo: ChatInfo.sampleData.direct, chatItems: [], chatStats: chatStats), loadingMoreItems: .constant(false), loadingTopItems: .constant(false), requestedTopScroll: .constant(false), loadingBottomItems: .constant(false), requestedBottomScroll: .constant(false), animatedScrollingInProgress: .constant(false), listState: scrollView.listState, model: model, reloadItems: {})
+                Text(verbatim: label).padding()
+            }
+            .frame(height: 76)
+        }
+    }
+}
+
+struct ChatViewFloatingButtons_Previews: PreviewProvider {
+    static var previews: some View {
+        VStack(spacing: 0) {
+            ChatView.FloatingButtonsPreview(label: "Normal unread", chatStats: ChatStats(unreadCount: 5))
+            ChatView.FloatingButtonsPreview(label: "Silent only", chatStats: ChatStats(unreadCount: 5, unreadSilent: 5))
+        }
     }
 }

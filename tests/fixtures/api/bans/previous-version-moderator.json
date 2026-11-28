@@ -19,6 +19,9 @@
               "directMessages": {
                 "enable": "on"
               },
+              "edits": {
+                "enable": "off"
+              },
               "files": {
                 "enable": "on"
               },
@@ -27,6 +30,10 @@
               },
               "history": {
                 "enable": "on"
+              },
+              "msgPriority": {
+                "enable": "on",
+                "role": "admin"
               },
               "reactions": {
                 "enable": "on"
@@ -87,7 +94,7 @@
               "localDisplayName": "bob",
               "memberCategory": "user",
               "memberChatVRange": {
-                "maxVersion": 23,
+                "maxVersion": 24,
                 "minVersion": 9
               },
               "memberContactId": 1,
@@ -142,7 +149,7 @@
               "activeConn": {
                 "agentConnId": "agentConnId",
                 "authErrCounter": 0,
-                "connChatVersion": 23,
+                "connChatVersion": 24,
                 "connId": 2,
                 "connLevel": 0,
                 "connStatus": {
@@ -154,7 +161,7 @@
                 "entityId": 1,
                 "localAlias": "",
                 "peerChatVRange": {
-                  "maxVersion": 23,
+                  "maxVersion": 24,
                   "minVersion": 9
                 },
                 "pqEncryption": false,
@@ -173,7 +180,7 @@
               "localDisplayName": "alice",
               "memberCategory": "host",
               "memberChatVRange": {
-                "maxVersion": 23,
+                "maxVersion": 24,
                 "minVersion": 9
               },
               "memberContactId": 2,
@@ -279,7 +286,7 @@
               "activeConn": {
                 "agentConnId": "agentConnId",
                 "authErrCounter": 0,
-                "connChatVersion": 23,
+                "connChatVersion": 24,
                 "connId": 4,
                 "connLevel": 1,
                 "connStatus": {
@@ -291,7 +298,7 @@
                 "entityId": 4,
                 "localAlias": "",
                 "peerChatVRange": {
-                  "maxVersion": 23,
+                  "maxVersion": 24,
                   "minVersion": 9
                 },
                 "pqEncryption": false,
@@ -312,7 +319,7 @@
               "localDisplayName": "dan",
               "memberCategory": "post",
               "memberChatVRange": {
-                "maxVersion": 23,
+                "maxVersion": 24,
                 "minVersion": 9
               },
               "memberContactProfileId": 4,

@@ -99,10 +99,12 @@ fun FramedItemView(
         Column(
           horizontalAlignment = Alignment.Start
         ) {
-          Text(
+          NameWithBadge(
             sender,
+            null,
             style = quoteBaseStyle.copy(fontSize = 13.5.sp, color = if (qi.chatDir is CIDirection.GroupSnd) CurrentColors.value.colors.primary else CurrentColors.value.colors.secondary).merge(chatTextStyle(13.5.sp)),
-            maxLines = 1
+            maxLines = 1,
+            via = (qi.chatDir as? CIDirection.GroupRcv)?.groupMember?.let { chatModel.memberViaName(it) }
           )
           ciQuotedMsgTextView(qi, lines = 2, showTimestamp = showTimestamp, stripLink = stripLink, prefix = prefix)
         }

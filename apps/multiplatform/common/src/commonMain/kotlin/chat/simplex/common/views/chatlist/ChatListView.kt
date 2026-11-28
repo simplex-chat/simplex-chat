@@ -1,6 +1,7 @@
 package chat.simplex.common.views.chatlist
 
 import LocalCardScreen
+import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.*
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
@@ -8,6 +9,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.InlineTextContent
+import androidx.compose.foundation.text.appendInlineContent
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -1321,6 +1324,7 @@ private fun TagsView(searchText: MutableState<TextFieldValue>) {
   val alwaysShownPresetTags = presetTags.filter { !presetCanBeCollapsed(it.key) && it.value > 0 }
   val activeFilter = remember { chatModel.activeChatTagFilter }
   val unreadTags = remember { chatModel.unreadTags }
+  val priorityTags = remember { chatModel.priorityTags }
   val rhId = chatModel.remoteHostId()
 
   val rowSizeModifier = Modifier.sizeIn(minHeight = TAG_MIN_HEIGHT * fontSizeSqrtMultiplier)
@@ -1381,11 +1385,18 @@ private fun TagsView(searchText: MutableState<TextFieldValue>) {
           }
           Spacer(Modifier.width(4.dp))
           Box {
-            val badgeText = if ((unreadTags[tag.chatTagId] ?: 0) > 0) " ●" else ""
+            val priorityTag = (priorityTags[tag.chatTagId] ?: 0) > 0
+            val badgeText = when {
+              priorityTag -> " "
+              (unreadTags[tag.chatTagId] ?: 0) > 0 -> " ●"
+              else -> ""
+            }
+            val bellPlaceholder = Placeholder(12.5.sp, 16.sp, PlaceholderVerticalAlign.TextCenter)
             val invisibleText = buildAnnotatedString {
               append(tag.chatTagText)
               withStyle(SpanStyle(fontSize = 12.sp, fontWeight = FontWeight.SemiBold)) {
                 append(badgeText)
+                if (priorityTag) appendInlineContent("bell")
               }
             }
             Text(
@@ -1394,13 +1405,15 @@ private fun TagsView(searchText: MutableState<TextFieldValue>) {
               fontSize = 15.sp,
               color = Color.Transparent,
               maxLines = 1,
-              overflow = TextOverflow.Ellipsis
+              overflow = TextOverflow.Ellipsis,
+              inlineContent = mapOf("bell" to InlineTextContent(bellPlaceholder) {})
             )
             // Visible text with styles
             val visibleText = buildAnnotatedString {
               append(tag.chatTagText)
               withStyle(SpanStyle(fontSize = 12.5.sp, color = MaterialTheme.colors.primary)) {
                 append(badgeText)
+                if (priorityTag) appendInlineContent("bell")
               }
             }
             Text(
@@ -1409,7 +1422,10 @@ private fun TagsView(searchText: MutableState<TextFieldValue>) {
               fontSize = 15.sp,
               color = if (current) MaterialTheme.colors.primary else MaterialTheme.colors.secondary,
               maxLines = 1,
-              overflow = TextOverflow.Ellipsis
+              overflow = TextOverflow.Ellipsis,
+              inlineContent = mapOf("bell" to InlineTextContent(bellPlaceholder) {
+                Icon(painterResource(MR.images.ic_notifications_filled), null, Modifier.requiredSize(16.sp.toDp()), tint = MaterialTheme.colors.primary)
+              })
             )
           }
         }
@@ -1608,7 +1624,7 @@ private fun filtered(chat: Chat, activeFilter: ActiveFilter?): Boolean =
   when (activeFilter) {
     is ActiveFilter.PresetTag -> presetTagMatchesChat(activeFilter.tag, chat.chatInfo, chat.chatStats)
     is ActiveFilter.UserTag -> chat.chatInfo.chatTags?.contains(activeFilter.tag.chatTagId) ?: false
-    is ActiveFilter.Unread -> chat.unreadTag
+    is ActiveFilter.Unread -> chat.unreadTag != UnreadTag.Read
     else -> true
   }
 
@@ -1659,4 +1675,22 @@ private fun presetCanBeCollapsed(tag: PresetTagKind): Boolean = when (tag) {
 
 fun scrollToBottom(scope: CoroutineScope, listState: LazyListState) {
   scope.launch { try { listState.animateScrollToItem(0) } catch (e: Exception) { Log.e(TAG, e.stackTraceToString()) } }
+}
+
+@Preview
+@Composable
+fun PreviewTagsView() {
+  DisposableEffect(Unit) {
+    chatModel.userTags.value = listOf(ChatTag(1, "Work", null), ChatTag(2, "Friends", null), ChatTag(4, "Family", null))
+    chatModel.unreadTags.putAll(mapOf(1L to 1, 2L to 1))
+    chatModel.priorityTags[1L] = 1
+    onDispose {
+      chatModel.userTags.value = emptyList()
+      chatModel.unreadTags.clear()
+      chatModel.priorityTags.clear()
+    }
+  }
+  SimpleXTheme {
+    TagsView(remember { mutableStateOf(TextFieldValue()) })
+  }
 }

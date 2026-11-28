@@ -316,7 +316,7 @@ private fun TerminalMetaLayout(metaReserved: Boolean, hasOverlay: Boolean, gapBe
 fun Density.metaBaseline(meta: Measured): Int =
   meta[FirstBaseline].takeIf { it != AlignmentLine.Unspecified } ?: ((meta.measuredHeight + 12.sp.toPx() * INTER_CAP_HEIGHT) / 2).roundToInt()
 
-class ChatItemSender(val name: String, val badge: LocalBadge?, val role: String?, val own: Boolean, val image: (@Composable () -> Unit)?)
+class ChatItemSender(val name: String, val badge: LocalBadge?, val role: String?, val own: Boolean, val via: String? = null, val image: (@Composable () -> Unit)?)
 
 @Composable
 fun chatItemSender(
@@ -338,7 +338,7 @@ fun chatItemSender(
         }
       }
     dir is CIDirection.DirectRcv ->
-      ChatItemSender(chatInfo.displayName, chatInfo.nameBadge, null, false, null)
+      ChatItemSender(chatInfo.displayName, chatInfo.nameBadge, null, false, image = null)
     dir is CIDirection.GroupRcv && chatInfo is ChatInfo.Group -> {
       val member = dir.groupMember
       val rangeValue = range.value
@@ -347,7 +347,8 @@ fun chatItemSender(
         memberNames(member, prevMember, memCount),
         if (prevMember == null && memCount == 1) member.nameBadge else null,
         if (memCount == 1) memberRole(member, chatInfo.isChannel) else null,
-        false
+        false,
+        if (memCount == 1) chatModel.memberViaName(member) else null
       ) {
         Box {
           MemberImage(member, imageSize)
@@ -362,10 +363,10 @@ fun chatItemSender(
       }
     }
     chatInfo.incognito ->
-      ChatItemSender(stringResource(MR.strings.incognito), null, null, true, null)
+      ChatItemSender(stringResource(MR.strings.incognito), null, null, true, image = null)
     else -> {
       val user = chatModel.currentUser.value
-      ChatItemSender(user?.displayName ?: "", user?.profile?.localBadge, null, true, null)
+      ChatItemSender(user?.displayName ?: "", user?.profile?.localBadge, null, true, image = null)
     }
   }
 }
@@ -384,7 +385,8 @@ private fun SenderNameAndRole(sender: ChatItemSender, modifier: Modifier) {
       fontWeight = FontWeight.SemiBold,
       color = if (sender.own) MaterialTheme.colors.primary else MaterialTheme.colors.secondary,
       overflow = TextOverflow.Ellipsis,
-      maxLines = 1
+      maxLines = 1,
+      via = sender.via
     )
     if (sender.role != null) {
       Text(
@@ -424,7 +426,7 @@ fun TerminalChatItemRow(
       Box {
         if (sender != null) {
           ProvideTextStyle(LocalTextStyle.current.merge(chatTextStyle(MaterialTheme.typography.body1.fontSize))) {
-            SenderNameAndRole(sender, Modifier.padding(start = CHAT_ITEM_TEXT_PADDING))
+            SenderNameAndRole(sender, Modifier.padding(horizontal = CHAT_ITEM_TEXT_PADDING))
           }
         }
       }

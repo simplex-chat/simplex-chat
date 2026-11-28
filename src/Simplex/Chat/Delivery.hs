@@ -47,7 +47,8 @@ instance TextEncoding DeliveryWorkerScope where
 -- so jobs don't need this flag.
 data DeliveryTaskContext = DeliveryTaskContext
   { jobScope :: DeliveryJobScope,
-    sentAsGroup :: ShowGroupAsSender
+    sentAsGroup :: ShowGroupAsSender,
+    updateNotification :: Bool
   }
   deriving (Show)
 
@@ -109,13 +110,19 @@ jobSpecImpliedPending = \case
   DJModerators -> False
 
 infoToDeliveryContext :: GroupInfo -> Maybe GroupChatScopeInfo -> ShowGroupAsSender -> DeliveryTaskContext
-infoToDeliveryContext GroupInfo {membership} scopeInfo sentAsGroup = DeliveryTaskContext {jobScope, sentAsGroup}
+infoToDeliveryContext GroupInfo {membership} scopeInfo sentAsGroup = DeliveryTaskContext {jobScope, sentAsGroup, updateNotification = False}
   where
     jobScope = case scopeInfo of
       Nothing -> DJSGroup {jobSpec = DJDeliveryJob {includePending = False}}
       Just GCSIMemberSupport {groupMember_} ->
         let supportGMId = groupMemberId' $ fromMaybe membership groupMember_
          in DJSMemberSupport {supportGMId}
+
+moderatorsContext :: DeliveryTaskContext -> Maybe DeliveryTaskContext
+moderatorsContext ctx@DeliveryTaskContext {jobScope} = case jobScope of
+  DJSGroup {jobSpec = DJRelayRemoved} -> Nothing
+  DJSGroup {} -> Just (ctx :: DeliveryTaskContext) {jobScope = DJSGroup {jobSpec = DJModerators}}
+  DJSMemberSupport {} -> Nothing
 
 memberEventDeliveryScope :: GroupMember -> Maybe DeliveryJobScope
 memberEventDeliveryScope m@GroupMember {memberRole, memberStatus}
@@ -136,11 +143,15 @@ data MessageDeliveryTask = MessageDeliveryTask
     senderGMId :: GroupMemberId,
     fwdSender :: FwdSender,
     brokerTs :: UTCTime,
-    verifiedMsg :: VerifiedMsg 'Json
+    verifiedMsg :: VerifiedMsg 'Json,
+    updateNotification :: Bool
   }
 
 deliveryTaskId :: MessageDeliveryTask -> Int64
 deliveryTaskId = taskId
+
+taskHasNotification :: MessageDeliveryTask -> Bool
+taskHasNotification MessageDeliveryTask {verifiedMsg, updateNotification} = updateNotification || msgHasNotification verifiedMsg
 
 data DeliveryTaskStatus
   = DTSNew -- created for delivery task worker to pick up and convert into a delivery job

@@ -33,12 +33,16 @@ import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.*
+import chat.simplex.common.views.chat.item.GroupMembersPreview
+import chat.simplex.common.views.chat.item.previewClaude
+import chat.simplex.common.views.chat.item.previewClaudeSubmember
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.newchat.*
 import chat.simplex.common.views.usersettings.SettingsActionItem
 import chat.simplex.common.model.GroupInfo
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.chatlist.openDirectChat
+import chat.simplex.common.views.chatlist.setGroupMembers
 import chat.simplex.res.*
 import dev.icerock.moko.resources.StringResource
 import kotlinx.datetime.Clock
@@ -311,14 +315,17 @@ fun removeMemberDialog(rhId: Long?, groupInfo: GroupInfo, member: GroupMember, c
           }
         }
       })
-  } else {
+  } else withBGApi {
+    if (!chatModel.membersLoaded.value && member.memberRole >= GroupMemberRole.Admin) {
+      setGroupMembers(rhId, groupInfo, chatModel)
+    }
     val messageId = if (groupInfo.businessChat == null)
       MR.strings.member_will_be_removed_from_group_cannot_be_undone
     else
       MR.strings.member_will_be_removed_from_chat_cannot_be_undone
     AlertManager.shared.showAlertDialogButtonsColumn(
       generalGetString(MR.strings.button_remove_member_question),
-      generalGetString(messageId),
+      generalGetString(messageId) + removedSubmembersText(listOf(member)),
       belowTextContent = { CannotBlockWarning(listOf(member)) },
       buttons = {
         Column {
@@ -344,10 +351,17 @@ fun removeMemberDialog(rhId: Long?, groupInfo: GroupInfo, member: GroupMember, c
   }
 }
 
-fun deleteMemberMessagesDialog(rhId: Long?, groupInfo: GroupInfo, member: GroupMember, chatModel: ChatModel, close: (() -> Unit)? = null) {
+fun deleteMemberMessagesDialog(rhId: Long?, groupInfo: GroupInfo, member: GroupMember, chatModel: ChatModel, close: (() -> Unit)? = null) = withBGApi {
+  if (!chatModel.membersLoaded.value && member.memberRole >= GroupMemberRole.Admin) {
+    setGroupMembers(rhId, groupInfo, chatModel)
+  }
+  deleteMemberMessagesAlert(rhId, groupInfo, member, chatModel, close)
+}
+
+fun deleteMemberMessagesAlert(rhId: Long?, groupInfo: GroupInfo, member: GroupMember, chatModel: ChatModel, close: (() -> Unit)? = null) {
   AlertManager.shared.showAlertDialog(
     title = generalGetString(MR.strings.button_delete_member_messages_question),
-    text = generalGetString(MR.strings.member_messages_will_be_deleted_cannot_be_undone),
+    text = generalGetString(MR.strings.member_messages_will_be_deleted_cannot_be_undone) + deletedSubmemberMessagesText(member),
     confirmText = generalGetString(MR.strings.delete_member_messages_confirmation),
     onConfirm = {
       removeMember(rhId, groupInfo, member, withMessages = true, chatModel, close)
@@ -493,7 +507,7 @@ fun GroupMemberInfoLayout(
 
     val contactId = member.memberContactId
 
-    if (!groupInfo.useRelays) {
+    if (!groupInfo.useRelays && member.memberVia == null) {
       Box(
         Modifier.fillMaxWidth(),
         contentAlignment = Alignment.Center
@@ -560,10 +574,11 @@ fun GroupMemberInfoLayout(
     val showMemberSupportChat = !openedFromSupportChat &&
       groupInfo.membership.memberRole >= GroupMemberRole.Moderator &&
       member.memberRole != GroupMemberRole.Relay &&
+      member.memberVia == null &&
       ((groupInfo.fullGroupPreferences.support.on && member.memberRole < GroupMemberRole.Moderator)
         || member.supportChat != null)
     // the same condition decides whether the code is requested, so the row is shown disabled until it arrives
-    val canVerifyCode = member.memberRole != GroupMemberRole.Relay && (connectionCode != null || !connectionLoaded)
+    val canVerifyCode = member.canVerifyCode(groupInfo) && (connectionCode != null || !connectionLoaded)
     val canSyncConn = cStats != null && cStats.ratchetSyncAllowed
 
     if (memberConnected && (showMemberSupportChat || canVerifyCode || canSyncConn)) {
@@ -622,6 +637,10 @@ fun GroupMemberInfoLayout(
         RoleSelectionRow(roles, newRole, onRoleSelected, groupInfo.isChannel)
       } else {
         InfoRow(stringResource(MR.strings.role_in_group), member.memberRole.text(isChannel = groupInfo.isChannel))
+      }
+      val via = chatModel.memberViaName(member)
+      if (via != null) {
+        InfoRow(stringResource(MR.strings.info_row_via), via)
       }
       val relayLink = member.relayLink
       if (relayLink != null) {
@@ -1171,6 +1190,29 @@ fun previousVersionWarningText(members: List<GroupMember>, one: StringResource, 
     else -> String.format(generalGetString(many), count)
   }
 
+fun removedSubmembersText(members: List<GroupMember>): String {
+  val (one, many) =
+    if (members.size == 1) MR.strings.also_member_via_this_member to MR.strings.also_members_via_this_member
+    else MR.strings.also_member_via_these_members to MR.strings.also_members_via_these_members
+  val count = ChatModel.groupMembers.value.count { m ->
+    m.memberStatus !in listOf(GroupMemberStatus.MemLeft, GroupMemberStatus.MemRemoved, GroupMemberStatus.MemGroupDeleted)
+        && members.any { it.memberId == m.memberVia }
+        && members.none { it.groupMemberId == m.groupMemberId }
+  }
+  return when (count) {
+    0 -> ""
+    1 -> "\n" + generalGetString(one)
+    else -> "\n" + String.format(generalGetString(many), count)
+  }
+}
+
+fun deletedSubmemberMessagesText(member: GroupMember): String =
+  when (val count = ChatModel.groupMembers.value.count { it.memberVia == member.memberId }) {
+    0 -> ""
+    1 -> "\n" + generalGetString(MR.strings.also_messages_of_member_via_this_member)
+    else -> "\n" + String.format(generalGetString(MR.strings.also_messages_of_members_via_this_member), count)
+  }
+
 @Composable
 fun CannotBlockWarning(members: List<GroupMember>) {
   val warning = if (members.any { it.blockedByAdmin }) previousVersionWarningText(members, MR.strings.member_previous_version_cannot_ban, MR.strings.members_previous_version_cannot_ban) else null
@@ -1228,7 +1270,7 @@ fun removeBannedMembersDialog(rhId: Long?, gInfo: GroupInfo, members: List<Group
   }
   showBanDialog(
     title,
-    text,
+    text + AnnotatedString(removedSubmembersText(members)),
     listOf(
       BanDialogAction(generalGetString(MR.strings.remove_member_confirmation)) { removeBannedMembers(rhId, gInfo, members, it, withMessages = false, onSuccess) },
       BanDialogAction(generalGetString(MR.strings.remove_member_delete_messages_confirmation)) { removeBannedMembers(rhId, gInfo, members, it, withMessages = true, onSuccess) }
@@ -1249,7 +1291,7 @@ fun removeBannedMembers(rhId: Long?, gInfo: GroupInfo, members: List<GroupMember
     }
     showTypedConfirmationDialog(
       title = generalGetString(MR.strings.remove_forever_question),
-      text = desc,
+      text = desc + AnnotatedString(removedSubmembersText(members)),
       word = FOREVER_CONFIRMATION_WORD,
       confirmText = generalGetString(MR.strings.remove_member_confirmation)
     ) {
@@ -1332,18 +1374,28 @@ fun blockMemberForAll(rhId: Long?, gInfo: GroupInfo, memberIds: List<Long>, bloc
 
 @Preview
 @Composable
-fun PreviewGroupMemberInfoLayout() {
+fun PreviewGroupMemberInfoLayout() = GroupMemberInfoLayoutPreview(GroupMember.sampleData, connectionCode = "123")
+
+@Preview
+@Composable
+fun PreviewGroupMemberInfoLayoutSubmember() = GroupMembersPreview(listOf(previewClaude)) {
+  val admin = GroupMember.sampleData.copy(memberRole = GroupMemberRole.Admin)
+  GroupMemberInfoLayoutPreview(previewClaudeSubmember(6, "reviewer"), connectionCode = null, groupInfo = GroupInfo.sampleData.copy(membership = admin))
+}
+
+@Composable
+internal fun GroupMemberInfoLayoutPreview(member: GroupMember, connectionCode: String?, groupInfo: GroupInfo = GroupInfo.sampleData, connectionLoaded: Boolean = true) {
   SimpleXTheme {
     GroupMemberInfoLayout(
       rhId = null,
-      groupInfo = GroupInfo.sampleData,
-      member = GroupMember.sampleData,
+      groupInfo = groupInfo,
+      member = member,
       scrollToItemId = remember { mutableStateOf(null) },
       connStats = remember { mutableStateOf(null) },
       newRole = remember { mutableStateOf(GroupMemberRole.Member) },
       developerTools = false,
-      connectionCode = "123",
-      connectionLoaded = true,
+      connectionCode = connectionCode,
+      connectionLoaded = connectionLoaded,
       getContactChat = { Chat.sampleData },
       openDirectChat = {},
       createMemberContact = {},
@@ -1398,6 +1450,12 @@ fun PreviewRemoveBannedMembersDialog() = AlertPreview { removeBannedMembersDialo
 @Preview
 @Composable
 fun PreviewRemoveForeverDialog() = AlertPreview { removeBannedMembers(null, previewOwnerGroupInfo, previewBannedMembers.take(1), BanDuration.Forever, withMessages = false) }
+
+@Preview
+@Composable
+fun PreviewDeleteMemberMessagesWithSubmembers() = GroupMembersPreview(listOf(previewClaude, previewClaudeSubmember(6, "reviewer"), previewClaudeSubmember(7, "tester"))) {
+  AlertPreview { deleteMemberMessagesAlert(null, previewOwnerGroupInfo, previewClaude, ChatModel) }
+}
 
 @Preview
 @Composable

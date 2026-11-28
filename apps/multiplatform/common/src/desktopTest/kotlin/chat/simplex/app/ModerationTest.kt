@@ -85,6 +85,7 @@ class ModerationTest : RecordedApiTest() {
     ChatModel.localUserCreated.value = localUserCreated
     ChatModel.groupMembers.value = emptyList()
     ChatModel.groupMembersIndexes.value = emptyMap()
+    ChatModel.membersLoaded.value = false
     ChatModel.userAddress.value = null
   }
 
@@ -355,6 +356,56 @@ class ModerationTest : RecordedApiTest() {
       "Remove member?", "Member will be removed from group - this cannot be undone!",
       "� 1 member with the previous version: cannot block", "Remove", "Remove and delete messages", "Cancel"
     )
+  }
+
+  @Test
+  fun removeMemberWithSubmembers() = recordedAlerts("submembers/member-with-two-submembers") {
+    val (groupInfo, members) = openGroup()
+    replaceMembers(listOf(member(members, "tester").copy(memberStatus = GroupMemberStatus.MemUnknown)))
+    removeMemberAlert(null, groupInfo, member(members, "bob"))
+    assertTexts("Remove member?", "Member will be removed from group - this cannot be undone!\nAlso 2 members via this member.", "Remove", "Remove and delete messages", "Cancel")
+  }
+
+  @Test
+  fun removeMemberWithSubmemberFromMemberInfo() = recordedAlerts("submembers/member-with-one-submember") {
+    val (groupInfo, members) = openGroup()
+    val bob = member(members, "bob")
+    ChatModel.groupMembers.value = listOf(bob)
+    ChatModel.groupMembersIndexes.value = mapOf(bob.groupMemberId to 0)
+    ChatModel.membersLoaded.value = false
+    removeMemberDialog(null, groupInfo, bob, ChatModel)
+    assertTexts("Remove member?", "Member will be removed from group - this cannot be undone!\nAlso 1 member via this member.", "Remove", "Remove and delete messages", "Cancel")
+  }
+
+  @Test
+  fun removeMembersWithSubmembers() = recordedAlerts("submembers/member-with-two-submembers") {
+    val (groupInfo, members) = openGroup()
+    val bob = member(members, "bob").copy(memberRole = GroupMemberRole.Member)
+    replaceMembers(listOf(bob))
+    removeMembersAlert(null, groupInfo, listOf(bob, member(members, "reviewer")))
+    assertTexts("Remove members?", "Members will be removed from group - this cannot be undone!\nAlso 1 member via these members.", "Remove", "Remove and delete messages", "Cancel")
+  }
+
+  @Test
+  fun removeBlockedMemberWithSubmembersForever() = recordedAlerts("submembers/member-with-two-submembers") {
+    val (groupInfo, members) = openGroup()
+    val bob = member(members, "bob").copy(memberRole = GroupMemberRole.Member, blockedByAdmin = true)
+    replaceMembers(listOf(bob))
+    removeMemberAlert(null, groupInfo, bob)
+    assertTexts(
+      "Remove member?", "bob won't be notified, and can't rejoin while blocked.\nAlso 2 members via this member.",
+      "Block for", "1 day", "Remove", "Remove and delete messages", "Cancel"
+    )
+    selectDuration("Forever")
+    press("Remove")
+    assertTexts("Remove forever?", "bob can't rejoin via the group link again, except from another app.\nAlso 2 members via this member.", "Type yes", "Remove", "Cancel")
+  }
+
+  @Test
+  fun deleteMessagesOfRemovedMemberWithSubmembers() = recordedAlerts("submembers/removed-member-with-submembers") {
+    val (groupInfo, members) = openGroup()
+    deleteMemberMessagesDialog(null, groupInfo, member(members, "bob"), ChatModel)
+    assertTexts("Delete member messages?", "Member messages will be deleted - this cannot be undone!\nAlso the messages of 2 members via this member.", "Cancel", "Delete messages")
   }
 
   @Test
