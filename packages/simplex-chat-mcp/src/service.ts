@@ -24,6 +24,7 @@ const refusalWait = 60_000
 const exitCheckWait = 1_000
 const psWait = 2_000
 const powershellWait = 10_000
+const powershellNoProcess = 3
 const logCheck = 3_600_000
 const lockChecks = 150
 const lockCheckWait = 100
@@ -601,9 +602,9 @@ export async function processStart(pid: number, command: (file: string, args: st
       const boot = await readFile("/proc/sys/kernel/random/boot_id", "utf8").then(text => `${text.trim()} `, () => "")
       start = ticks === undefined ? undefined : `${boot}${ticks}`
     } else if (process.platform === "darwin") start = (await command("/bin/ps", ["-o", "lstart=", "-p", String(pid)], {timeout: psWait, env: {...process.env, LC_ALL: "C", TZ: "UTC"}})).stdout.trim() || undefined
-    else if (process.platform === "win32") start = /^\d+$/.exec((await command("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", `(Get-Process -Id ${pid} -ErrorAction Stop).StartTime.ToFileTimeUtc()`], {timeout: powershellWait, windowsHide: true})).stdout.trim())?.[0]
+    else if (process.platform === "win32") start = /^\d+$/.exec((await command("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", `$p = Get-Process -Id ${pid} -ErrorAction SilentlyContinue; if (-not $p) { exit ${powershellNoProcess} }; $p.StartTime.ToFileTimeUtc()`], {timeout: powershellWait, windowsHide: true})).stdout.trim())?.[0]
   } catch (error) {
-    if ((error as {code?: unknown}).code === (process.platform === "linux" ? "ENOENT" : 1)) return undefined
+    if ((error as {code?: unknown}).code === (process.platform === "linux" ? "ENOENT" : process.platform === "win32" ? powershellNoProcess : 1)) return undefined
     throw error
   }
   if (start === undefined) throw new Error(`The start time of process ${pid} can't be read.`)

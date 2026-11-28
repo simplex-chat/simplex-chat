@@ -105,7 +105,7 @@ sequenceDiagram
   - the `/turn` route
 - `src/service.ts`: `refusals`, read by `processSession`.
 - `src/service.ts`: `claudeProcess` written by `onSession` and read by `entry`.
-- `src/service.ts`: `processStart` adds the boot ID on Linux, runs `ps` with `LC_ALL=C` and `TZ=UTC` on macOS, and PowerShell's `Get-Process` on Windows, with its command runner as a parameter.
+- `src/service.ts`: `processStart` adds the boot ID on Linux, runs `ps` with `LC_ALL=C` and `TZ=UTC` on macOS, and PowerShell's `Get-Process` on Windows, which exits with 3 for a missing process, with its command runner as a parameter, the test seam of the Windows path.
 - `src/files.ts`: `SessionFile.claudeProcess`.
 - `src/service.ts`: the started and ended lines in `onSession`, and `noteExit` after the last detach; `src/hub.ts`: `Session.postNote`.
 - `src/status-line.ts`: `limitParts` with `highUsagePercent`.
