@@ -759,6 +759,11 @@ describe("service", () => {
     for (const pid of [0, -1, 1.5, "self"]) expect(await processStart(pid as number)).toBeUndefined()
   })
 
+  it("reads the start time of a process on Linux with the boot ID, so a process after a reboot never has the start time of a process before it", async () => {
+    const boot = process.platform === "linux" ? readFileSync("/proc/sys/kernel/random/boot_id", "utf8").trim() : undefined
+    expect(boot === undefined || (await processStart(process.pid))?.startsWith(`${boot} `)).toBe(true)
+  })
+
   it("does not delay the idle close of an open session with a title", async () => {
     jest.useFakeTimers(fakeTimers)
     const {d, agents} = deps(root)
