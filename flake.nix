@@ -72,6 +72,7 @@
 
           ({ lib, ... }: {
             packages.JuicyPixels-spng.package.license = lib.mkForce "BSD-3-Clause AND BSD-2-Clause AND MIT";
+            packages.JuicyPixels-sandbox.package.license = lib.mkForce "BSD-3-Clause AND Apache-2.0 AND MIT AND IJG AND Zlib AND BSD-2-Clause";
           })] ++ extra-modules;
       }; in
       # by defualt we don't need to pass extra-modules.
@@ -563,6 +564,7 @@
                   packages.direct-sqlcipher.flags.commoncrypto = true;
                   packages.simplexmq.flags.commoncrypto = true;
                   packages.entropy.flags.DoNotGetEntropy = true;
+                  packages.JuicyPixels-sandbox.flags.grow-memory = true;
                   packages.simplex-chat.flags.client_library = true;
                   packages.simplexmq.flags.client_library = true;
                   packages.simplexmq.components.library.libs = pkgs.lib.mkForce [
@@ -580,6 +582,7 @@
                   packages.direct-sqlcipher.flags.commoncrypto = true;
                   packages.simplexmq.flags.commoncrypto = true;
                   packages.entropy.flags.DoNotGetEntropy = true;
+                  packages.JuicyPixels-sandbox.flags.grow-memory = true;
                   packages.simplex-chat.flags.client_library = true;
                   packages.simplexmq.flags.client_library = true;
                   packages.simplexmq.components.library.libs = pkgs.lib.mkForce [
@@ -600,6 +603,7 @@
                   packages.direct-sqlcipher.flags.commoncrypto = true;
                   packages.simplexmq.flags.commoncrypto = true;
                   packages.entropy.flags.DoNotGetEntropy = true;
+                  packages.JuicyPixels-sandbox.flags.grow-memory = true;
                   packages.simplex-chat.flags.client_library = true;
                   packages.simplexmq.flags.client_library = true;
                   packages.simplexmq.components.library.libs = pkgs.lib.mkForce [
@@ -616,6 +620,7 @@
                   packages.direct-sqlcipher.flags.commoncrypto = true;
                   packages.simplexmq.flags.commoncrypto = true;
                   packages.entropy.flags.DoNotGetEntropy = true;
+                  packages.JuicyPixels-sandbox.flags.grow-memory = true;
                   packages.simplex-chat.flags.client_library = true;
                   packages.simplexmq.flags.client_library = true;
                   packages.simplexmq.components.library.libs = pkgs.lib.mkForce [

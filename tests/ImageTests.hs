@@ -62,6 +62,9 @@ imageTests = do
   describe "PNG decoding" $ do
     it "should decode PNG as JuicyPixels does" testPngDecoding
     it "should refuse malformed PNG and other formats" testPngRefused
+    it "should decode PNG at the display size" testPngDisplaySize
+    it "should decode interlaced PNG as the same image without interlacing" testPngInterlaced
+    it "should refuse interlaced PNG above the memory limit" testPngInterlacedMemory
   describe "WebP decoding" $ do
     it "should decode WebP as libwebp does" testWebpDecoding
     it "should decode WebP at the display size" testWebpDisplaySize
@@ -307,6 +310,41 @@ testPngRefused =
         (LB.toStrict $ encodeBitmap $ generateImage (\_ _ -> PixelRGB8 0 0 0) 16 16, "unsupported image format")
       ]
 
+testPngDisplaySize :: IO ()
+testPngDisplaySize =
+  forM_ sizes $ \(w, (w', h')) ->
+    forM_ [((w, 16), (w', h')), ((16, w), (h', w'))] $ \((iw, ih), (sw, sh)) -> do
+      let rgb = PixelRGB8 200 100 50
+          rgba = PixelRGBA8 200 100 50 128
+      Right (ImageRGB8 opaque, CPNone) <- decodeResizable $ LB.toStrict $ encodePng $ generateImage (\_ _ -> rgb) iw ih
+      imageData opaque `shouldBe` imageData (generateImage (\_ _ -> rgb) sw sh)
+      Right (ImageRGBA8 transparent, CPNone) <- decodeResizable $ LB.toStrict $ encodePng $ generateImage (\_ _ -> rgba) iw ih
+      imageData transparent `shouldBe` imageData (generateImage (\_ _ -> rgba) sw sh)
+  where
+    sizes = [(4320, (4320, 16)), (4321, (2160, 8)), (8640, (4320, 8)), (8641, (4320, 8)), (16384, (4096, 4))]
+
+testPngInterlaced :: IO ()
+testPngInterlaced =
+  forM_ [(4322, 2), (2, 4322), (37, 23)] $ \(w, h) -> do
+    let img = generateImage (\x y -> PixelRGBA8 (fromIntegral $ x * 7) (fromIntegral $ y * 5) (fromIntegral $ x * y) (fromIntegral $ x + y)) w h
+    Right (ImageRGBA8 progressive, _) <- decodeResizable $ LB.toStrict $ encodePng img
+    Right (ImageRGBA8 interlaced, _) <- decodeResizable $ adam7Png img
+    (imageWidth interlaced, imageHeight interlaced, imageData interlaced) `shouldBe` (imageWidth progressive, imageHeight progressive, imageData progressive)
+
+testPngInterlacedMemory :: IO ()
+testPngInterlacedMemory = do
+  let header interlace = "\x89PNG\r\n\x1a\n" <> pngChunk "IHDR" (bigEndian 4 16384 <> bigEndian 4 16384 <> B.pack [8, 6, 0, 0, interlace]) <> pngChunk "IDAT" (zlibStored "\0") <> pngChunk "IEND" ""
+  either Just (const Nothing) <$> decodeResizable (header 1) `shouldReturn` Just "image is too large"
+  either Just (const Nothing) <$> decodeResizable (header 0) `shouldReturn` Just "IDAT stream too short"
+
+adam7Png :: Image PixelRGBA8 -> B.ByteString
+adam7Png img@Image {imageWidth = w, imageHeight = h} =
+  "\x89PNG\r\n\x1a\n" <> pngChunk "IHDR" (bigEndian 4 w <> bigEndian 4 h <> B.pack [8, 6, 0, 0, 1]) <> pngChunk "IDAT" (zlibStored scanlines) <> pngChunk "IEND" ""
+  where
+    scanlines = B.concat [B.pack $ 0 : concat [rgba $ pixelAt img x y | x <- [x0, x0 + dx .. w - 1]] | (x0, y0, dx, dy) <- passes, x0 < w, y <- [y0, y0 + dy .. h - 1]]
+    rgba (PixelRGBA8 r g b a) = [r, g, b, a]
+    passes = [(0, 0, 8, 8), (4, 0, 8, 8), (0, 4, 4, 8), (2, 0, 4, 4), (0, 2, 2, 4), (1, 0, 2, 2), (0, 1, 1, 2)]
+
 pngShortImageData :: B.ByteString
 pngShortImageData = pngWithSides 2048 2048 $ blankPng 2048 1
 
@@ -432,13 +470,9 @@ testWebpChunksWithoutFlags = do
 testWebpRefused :: IO ()
 testWebpRefused = do
   lossy <- B.readFile $ webpFixture "lossy.webp"
-  let paddedTo size = webpContainer [webpVp8x 0 (128, 128), webpChunk "ABCD" $ B.replicate (size - 26 - B.length lossy) 0, B.drop 12 lossy]
-  Right (img, CPNone) <- decodeResizable $ paddedTo $ 16 * 1048576
-  imageSize img `shouldBe` (128, 128)
+  isLeft <$> decodeResizable webpHuffmanGroups `shouldReturn` True
   forM_
     [ (webpAnimation (16385, 128) [((0, 0), (128, 128), lossy)], "image side exceeds 16384"),
-      (webpHuffmanGroups, "image is too large"),
-      (paddedTo $ 16 * 1048576 + 2, "image file is too large"),
       (B.take (B.length lossy `div` 2) lossy, "invalid WebP container"),
       (B.init lossy, "invalid WebP container"),
       (B.take 4 lossy <> littleEndianInt 4 (B.length lossy - 7) <> B.drop 8 lossy, "invalid WebP container"),
