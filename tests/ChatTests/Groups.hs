@@ -17416,6 +17416,7 @@ testSubmemberViaRemoved ps = do
         createGroup3 "team" alice bob cath
         addSubmember bob "member"
         mapM_ (<## "#team: bob added reviewer to the group (via bob)") [alice, cath]
+        apiFixture "submembers/member-with-one-submember" cath [] FixtureRequests {frMarkdown = [], frUris = [], frCommands = ["/_members #1"]}
         bob ##> "/_add submember #1 member json {\"displayName\": \"tester\", \"fullName\": \"\"}"
         bob <## "#team: you added tester to the group"
         mapM_ (<## "#team: bob added tester to the group (via bob)") [alice, cath]
@@ -17423,6 +17424,10 @@ testSubmemberViaRemoved ps = do
         bob ##> ("/_send #1(as_member=" <> show reviewerId <> ") text hi")
         bob <# "#team hi"
         [alice, cath] *<# "#team reviewer> hi"
+        GroupMember {groupMemberId = testerId} <- getTestMember bob "team" "tester"
+        bob ##> ("/_send #1(as_member=" <> show testerId <> ") text hey")
+        bob <# "#team hey"
+        [alice, cath] *<# "#team tester> hey"
         apiFixture "submembers/member-with-two-submembers" cath [] FixtureRequests {frMarkdown = [], frUris = [], frCommands = ["/_members #1"]}
         eventsFixture "submembers/user-removed" events $ do
           cath ##> "+1 #team hi"
@@ -17439,6 +17444,7 @@ testSubmemberViaRemoved ps = do
                 bob <## "#team: cath removed you from the group (signed)"
                 bob <## "use /d #team to delete the group"
             ]
+        apiFixture "submembers/removed-member-with-submembers" cath [] FixtureRequests {frMarkdown = [], frUris = [], frCommands = ["/_members #1"]}
         forM_ [alice, bob, cath] $ \cc -> reviewerStatus cc `shouldReturn` ["removed"]
 
 testSubmemberViaRemovedWithMessages :: HasCallStack => TestParams -> IO ()
