@@ -175,7 +175,9 @@ export class Service {
       }),
       "POST /turn": this.expiring(async (body, res) => {
         const request = body as TurnRequest
-        await (await this.entry(await this.resolve(request.id, request.pid)).opening).turn(request)
+        const id = await this.resolve(request.id, request.pid)
+        await this.refuseOtherProcess(id, request.pid)
+        await (await this.entry(id).opening).turn(request)
         sendJson(res, 200, {})
       }),
       "GET /status": this.expiring(async (_body, res) => sendJson(res, 200, this.status())),
@@ -236,6 +238,7 @@ export class Service {
     const started = request.pid === undefined ? undefined : await this.deps.processStart(request.pid)
     const id = await this.resolve(request.id, request.pid, true)
     this.refuseUnattended(request.pid)
+    await this.refuseOtherProcess(id, request.pid)
     const title = request.pid === undefined ? undefined : this.titles.get(request.pid)
     const entry = this.entry(id, {...request, id, name: request.name ?? (title?.id === id ? title.name : undefined)})
     const previous = {pid: entry.pid, started: entry.started}
@@ -288,6 +291,13 @@ export class Service {
     if (marked !== undefined && marked > Date.now() - processWait) throw new SocketError("The SessionStart hook of this process marked its run unattended.", unattendedStatus)
   }
 
+  // spec: spec/architecture.md#service-service-onsession
+  private async refuseOtherProcess(id: string, requester: number | undefined): Promise<void> {
+    const {pid, started} = this.entries.get(id) ?? {}
+    if (requester === undefined || pid === undefined || pid === requester || started === undefined) return
+    if ((await this.deps.processStart(pid)) === started) throw new SocketError(`This conversation is already open in Claude Code process ${pid}. Exit that process, or exit this one and start a new conversation.`, 423)
+  }
+
   // spec: spec/api.md#socket-protocol
   private async applyTitle({id: given, pid, at, name, project, model, transcript, config}: TitleRequest): Promise<void> {
     const id = await this.resolve(given, pid)
@@ -297,6 +307,7 @@ export class Service {
       this.titles.set(pid, {id, at: Date.now()})
       this.titled.emit(String(pid))
     }
+    await this.refuseOtherProcess(id, pid)
     const agent = await entry.opening
     if (transcript !== undefined) agent.transcript = transcript
     await this.hub.configure(config)
@@ -381,7 +392,9 @@ export class Service {
 
   // spec: spec/api.md#socket-protocol
   private async onAsk(request: AskRequest, res: ServerResponse): Promise<void> {
-    await this.streamed(await this.resolve(request.id, request.pid), res, async (agent, signal) => {
+    const id = await this.resolve(request.id, request.pid)
+    await this.refuseOtherProcess(id, request.pid)
+    await this.streamed(id, res, async (agent, signal) => {
       const decision = await agent.ask(request, signal)
       return decision === undefined ? {} : {decision}
     })
