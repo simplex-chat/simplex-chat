@@ -240,7 +240,8 @@ export class Service {
   private async onSession(request: SessionRequest): Promise<SessionReply> {
     validConfig(request.config)
     this.refuseUnattended(request.pid)
-    const started = request.pid === undefined ? undefined : await this.deps.processStart(request.pid).catch(() => undefined)
+    const recorded = request.record === undefined || existsSync(request.record)
+    const started = request.pid === undefined || !recorded ? undefined : await this.deps.processStart(request.pid).catch(() => undefined)
     const id = await this.resolve(request.id, request.pid, true)
     this.refuseUnattended(request.pid)
     const title = request.pid === undefined ? undefined : this.titles.get(request.pid)
