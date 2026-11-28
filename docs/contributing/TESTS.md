@@ -168,6 +168,7 @@ Stable recordings:
   | `createdAt`<br>`updatedAt`<br>`chatTs`<br>`userMemberProfileSentAt`<br>`itemTs` | `1970-01-01T00:00:00Z` |
   | `agentConnId`<br>`xContactId`<br>`connFullLink`<br>`connShortLink`<br>`contactLink`<br>`groupLink`<br>`viaGroupLinkUri`<br>`simplexUri`<br>`memberId`<br>`memberPubKey`<br>`publicGroupId`<br>`businessId`<br>`customerId`<br>`itemSharedMsgId`<br>`agentSndFileId`<br>`privateSndFileDescr`<br>`errorMessage` | the field name |
   | `groupRelays` | `"groupRelay"` per element |
+  | `authErrCounter` | `0` |
 
   A field with a new value in each run is added to this list.
 - Strings of the test, such as links, are replaced by the `placeholders` of `apiFixture`, in keys and values: `[(cLink, "CONTACT_LINK")]` in `testPlanAddressContactViaAddress`, so that the app test connects to `CONTACT_LINK`.
@@ -273,7 +274,7 @@ The app built from a branch, its core included, driven on a device by scripts an
 | `android-emu` | debug APK in an Android emulator | onboarding<br>a local group<br>both layouts<br>images sent | claude-test.md, claude-scope | [android](../../scripts/ci/android/README.md) |
 
 - Write: a scripted case in the workflow's `smoke-test.sh`, with its `ui` driver; a Claude plan in the files of the table, with `backend: yes` in claude-scope when the cases use the test backend.
-- Run: by hand only, on any branch: [CI guide, Starting a run](../../scripts/ci/README.md#starting-a-run). Each run uploads the app for manual tests.
+- Run: by hand, on any branch: [CI guide, Starting a run](../../scripts/ci/README.md#starting-a-run); build.yml runs a workflow for a pull request that changes its CI files: [CI guide, app workflows](../../scripts/ci/README.md#app-workflows). Each run uploads the app for manual tests.
 - Pitfalls:
   - A run with `claude` and `backend: yes` in claude-scope also requires the input `backend`, or its plan job fails.
   - A Claude run requires the branch rule of the GitHub environment `app-sim-claude` to include the branch.

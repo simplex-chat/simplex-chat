@@ -19,6 +19,11 @@ on:
         description: Also build the core library for 32-bit Arm (armeabi-v7a)
         type: boolean
         default: false
+  workflow_call:
+    inputs:
+      armv7a:
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -33,8 +38,10 @@ env:
   CABAL_VER: 3.10.2.0
   JAVA_VER: 17
   CORE_PKG: android-core-arm64-v8a.tar.gz
+  CORE32_PKG: android-core-armeabi-v7a.tar.gz
   BACKEND_PKG: desktop-linux-backend.tar.gz
   APK: android-foss-arm64-v8a-debug.apk
+  APK32: android-foss-armeabi-v7a-debug.apk
 
 jobs:
   plan:
@@ -49,6 +56,8 @@ jobs:
       claude-backend: ${{ steps.scope.outputs.backend }}
       core: ${{ steps.names.outputs.core }}
       core-run: ${{ steps.core.outputs.run-id }}
+      core32: ${{ steps.names.outputs.core32 }}
+      core32-run: ${{ steps.core32.outputs.run-id }}
       backend: ${{ steps.names.outputs.backend }}
       backend-run: ${{ steps.backend.outputs.run-id }}
     steps:
@@ -92,7 +101,9 @@ jobs:
       - name: Artifact names
         id: names
         run: |
-          echo "core=android-core-${{ hashFiles('src/**', 'cabal.project', 'simplex-chat.cabal', 'PRIVACY.md', 'flake.nix', 'flake.lock', 'scripts/nix/**', 'scripts/ci/android/build-core.sh') }}" >> "$GITHUB_OUTPUT"
+          core_hash=${{ hashFiles('src/**', 'cabal.project', 'simplex-chat.cabal', 'PRIVACY.md', 'flake.nix', 'flake.lock', 'scripts/nix/**', 'scripts/ci/android/build-core.sh') }}
+          echo "core=android-core-$core_hash" >> "$GITHUB_OUTPUT"
+          echo "core32=android-core-armeabi-v7a-$core_hash" >> "$GITHUB_OUTPUT"
           echo "backend=desktop-linux-backend-${{ hashFiles('src/**', 'apps/simplex-chat/**', 'apps/simplex-directory-service/Main.hs', 'apps/simplex-directory-service/src/**', 'cabal.project', 'simplex-chat.cabal', 'scripts/ci/desktop-linux/build-backend.sh') }}" >> "$GITHUB_OUTPUT"
 
       - name: Find core library
@@ -100,6 +111,13 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: scripts/ci/desktop-linux/earlier-run.sh "${{ steps.names.outputs.core }}"
+
+      - name: Find core library for armv7a
+        id: core32
+        if: steps.jobs.outputs.armv7a == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: scripts/ci/desktop-linux/earlier-run.sh "${{ steps.names.outputs.core32 }}"
 
       - name: Find backend
         id: backend
@@ -183,7 +201,7 @@ jobs:
   core-armv7a:
     name: core library for Android armv7a
     needs: plan
-    if: needs.plan.outputs.run-armv7a == 'true'
+    if: needs.plan.outputs.run-armv7a == 'true' && needs.plan.outputs.core32-run == ''
     runs-on: ubuntu-24.04
     timeout-minutes: 150
     steps:
@@ -201,7 +219,64 @@ jobs:
           df -h /
 
       - name: Build core library
-        run: scripts/ci/android/build-core.sh ~/core/android-core-armeabi-v7a.tar.gz armv7a
+        run: scripts/ci/android/build-core.sh ~/core/${{ env.CORE32_PKG }} armv7a
+
+      - name: Upload core library
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ needs.plan.outputs.core32 }}
+          path: ~/core/${{ env.CORE32_PKG }}
+          compression-level: 0
+          retention-days: 30
+          if-no-files-found: error
+
+  app-armv7a:
+    name: Android app for armv7a
+    needs: [plan, core-armv7a]
+    if: ${{ !cancelled() && !failure() && needs.plan.outputs.run-armv7a == 'true' && needs.core-armv7a.result != 'cancelled' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          submodules: recursive
+
+      - name: Download core library
+        uses: actions/download-artifact@v8
+        with:
+          name: ${{ needs.plan.outputs.core32 }}
+          path: ~/core
+          run-id: ${{ needs.plan.outputs.core32-run || github.run_id }}
+          github-token: ${{ github.token }}
+
+      - name: Install core library
+        run: scripts/ci/android/install-core.sh ~/core/${{ env.CORE32_PKG }} armeabi-v7a
+
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: corretto
+          java-version: ${{ env.JAVA_VER }}
+
+      - name: Build app
+        working-directory: apps/multiplatform
+        run: |
+          printf 'application_id.suffix=.debug\napp.name=SimpleX Debug\n' > local.properties
+          ./gradlew --no-daemon --console=plain -Psimplex.assets.dir=../../assets -Pandroid.injected.build.abi=armeabi-v7a :android:assembleFossDebug
+          mkdir -p "$RUNNER_TEMP/apk"
+          ls -la android/build/intermediates/apk/foss/debug
+          cp "android/build/intermediates/apk/foss/debug/$APK32" "$RUNNER_TEMP/apk"
+          unzip -l "$RUNNER_TEMP/apk/$APK32" | grep -E ' lib/'
+
+      - name: Upload app
+        uses: actions/upload-artifact@v7
+        with:
+          name: android-app-armeabi-v7a
+          path: ${{ runner.temp }}/apk/${{ env.APK32 }}
+          compression-level: 0
+          retention-days: 14
+          if-no-files-found: error
 
   app:
     name: Android app in the emulator

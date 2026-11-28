@@ -11,6 +11,7 @@ on:
         description: Start the test backend
         type: boolean
         default: false
+  workflow_call:
 
 permissions:
   contents: read

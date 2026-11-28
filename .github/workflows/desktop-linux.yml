@@ -15,6 +15,7 @@ on:
         description: Also test the latest released app, to tell a branch's failure from the runner's
         type: boolean
         default: false
+  workflow_call:
 
 permissions:
   contents: read

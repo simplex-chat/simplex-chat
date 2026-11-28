@@ -1,6 +1,6 @@
 # CI on GitHub's runners
 
-Three workflows build the apps from a branch's own code and test them, only when asked: `ios-sim` (the iOS app in a simulator on a macOS runner), `desktop-linux` (the desktop app on a Linux runner) and `android-emu` (the Android app in an emulator on a Linux runner). Each runs a scripted smoke test and, on request, a Claude session that follows a test plan, and a test backend (relay, directory, names server, peers). Details: [iOS](ios-sim/README.md), [desktop](desktop-linux/README.md), [Android](android/README.md).
+Three workflows build the apps from a branch's own code and test them, when asked and for a pull request that changes their CI files ([app workflows](#app-workflows)): `ios-sim` (the iOS app in a simulator on a macOS runner), `desktop-linux` (the desktop app on a Linux runner) and `android-emu` (the Android app in an emulator on a Linux runner). Each runs a scripted smoke test and, on request, a Claude session that follows a test plan, and a test backend (relay, directory, names server, peers). Details: [iOS](ios-sim/README.md), [desktop](desktop-linux/README.md), [Android](android/README.md).
 
 ## Reduced build
 
@@ -36,7 +36,7 @@ Results:
 
 ### Scopes
 
-The reduced build runs the Linux job build-linux (ubuntu-22.04 x86_64) for every scope except ios, the Linux job test-postgres (ubuntu-22.04 x86_64) for core, and the macOS job build-ios (macos-latest) for ios.
+The reduced build runs the Linux job build-linux (ubuntu-22.04 x86_64) for every scope except ios, the Linux job test-postgres (ubuntu-22.04 x86_64) for core, and the macOS job build-ios (macos-latest) for ios. The reduced build and the full matrix run an app workflow for its scope: android-emu for android, desktop-linux for desktop-linux and ios-sim for ios-sim.
 
 #### core
 
@@ -95,6 +95,12 @@ The reduced build runs the Linux job build-linux (ubuntu-22.04 x86_64) for every
   - scripts/ci/ios-stub-libs.sh
 - CI: build-ios: stub libraries, then xcodebuild for the iOS Simulator without signing (step "Build iOS app"), then the target SimpleX Unit Tests, hosted by the app, in a new simulator (step "Run iOS unit tests"). The stubs of `chat_migrate_init` and `chat_migrate_init_key` return an empty string, so the app opens its database error screen and calls the core no more.
 - Local, on macOS: `scripts/ci/ios-stub-libs.sh`, then the commands of the steps "Build iOS app" and "Run iOS unit tests" of build-ios.
+
+#### app workflows
+
+- Globs: `BUILD_CHANGES["android"]`, `["desktop-linux"]` and `["ios-sim"]` in packages_release.py: each workflow file and its scripts in scripts/ci, without their README; for android also `scripts/ci/desktop-linux/earlier-run.sh`, which android-emu runs, the Nix files (flake.nix, flake.lock, scripts/nix/**) and cabal.project, which change the Android core.
+- CI: the jobs android-emu, desktop-linux and ios-sim of build.yml run the workflow of their scope as a reusable workflow, with the inputs off; android-emu also builds the 32-bit core and app (`armv7a`). Each reuses the cores and backends that earlier runs of the pull request's branch built, also for a pull request from a fork.
+- Local: [Starting a run](#starting-a-run), on the pushed branch.
 
 #### packages
 
@@ -243,7 +249,7 @@ The scope commands run in build-linux after the core tests, with Node 22 and Pyt
 
 ## Starting a run
 
-Pushes start none of the app workflows: a run is started by hand, on any branch, with inputs that are off by default and combine.
+Pushes start none of the app workflows. build.yml runs each for a pull request that changes its CI files ([app workflows](#app-workflows)); otherwise a run is started by hand, on any branch, with inputs that are off by default and combine.
 
 | Input | iOS | Desktop | Android |
 |---|---|---|---|
@@ -251,7 +257,7 @@ Pushes start none of the app workflows: a run is started by hand, on any branch,
 | `claude` | scripted test, then Claude | scripted test, then Claude | scripted test, then Claude |
 | `backend` | also the test backend | also the test backend | also the test backend |
 | `release` | — | also the latest release's onboarding, to tell a branch's failure from the runner's | also the latest release's onboarding, to tell a branch's failure from the runner's |
-| `armv7a` | — | — | also the core library for 32-bit Arm (armeabi-v7a), built only |
+| `armv7a` | — | — | also the core library and the app for 32-bit Arm (armeabi-v7a), uploaded without a test |
 
 In the Actions tab: `ios-sim`, `desktop-linux` or `android-emu` → Run workflow, choose the branch and tick the inputs. With the GitHub CLI, each input is a field:
 
@@ -264,7 +270,7 @@ gh workflow run android-emu.yml --ref <branch> -f claude=true
 
 A newer run of a workflow on the same branch cancels the older one.
 
-Each run uploads the app it built, for manual tests, as an artifact kept 14 days: `ios-sim-app` (SimpleX.app.tar.gz, for the iOS simulator on an Apple-silicon Mac), `desktop-app` (desktop-app.tar.gz, for Linux x86-64) and `android-app` (the debug APK, arm64-v8a only). The run's page lists it under Artifacts; `gh run download <run id> -n <artifact>` downloads it.
+Each run uploads the app it built, for manual tests, as an artifact kept 14 days: `ios-sim-app` (SimpleX.app.tar.gz, for the iOS simulator on an Apple-silicon Mac), `desktop-app` (desktop-app.tar.gz, for Linux x86-64) and `android-app` (the debug APK, arm64-v8a only), with `armv7a` also `android-app-armeabi-v7a` (the debug APK, armeabi-v7a only, installed beside the released app as SimpleX Debug). The run's page lists it under Artifacts; `gh run download <run id> -n <artifact>` downloads it.
 
 `scripts/ci/wait-runs.py [<commit>]` waits until every run for a commit, HEAD by default, has completed, then prints each run and the jobs that did not succeed. If the commit has no runs, it waits for the first one, without a time limit.
 

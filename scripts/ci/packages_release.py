@@ -82,6 +82,18 @@ BUILD_CHANGES = {
         "packages/simplex-chat-python/**",
         "scripts/ci/package-tests.sh",
     ],
+    "android": [
+        ".github/workflows/android-emu.yml",
+        "scripts/ci/android/**",
+        ":!scripts/ci/android/README.md",
+        "scripts/ci/desktop-linux/earlier-run.sh",
+        "flake.nix",
+        "flake.lock",
+        "scripts/nix/**",
+        "cabal.project",
+    ],
+    "desktop-linux": [".github/workflows/desktop-linux.yml", "scripts/ci/desktop-linux/**", ":!scripts/ci/desktop-linux/README.md"],
+    "ios-sim": [".github/workflows/ios-sim.yml", "scripts/ci/ios-sim/**", ":!scripts/ci/ios-sim/README.md"],
 }
 SCOPE_CHANGES = {
     "badge-web": ["apps/simplex-store-service/web/**", "tests/fixtures/store-service/rest-api/**"],

@@ -35,6 +35,8 @@ class ChatItemUpdateTest {
       override fun androidCreateNtfChannelsMaybeShowAlert() {}
     }
     simplexWindowState.windowFocused.value = false
+    ChatModel.chatsContext.chats.value.clear()
+    ChatModel.chatsContext.chatItems.value.clear()
     ChatModel.currentUser.value = User.sampleData
     ChatModel.users.add(UserInfo(User.sampleData, 0))
   }
@@ -134,7 +136,7 @@ class ChatItemUpdateTest {
     receive(invited)
     assertEventually(Triple(1, 0, 1)) { counts() }
     receive(missed)
-    assertEquals(CICallStatus.Missed, (ChatModel.chatsContext.chats.value.single().chatItems.last().content as CIContent.RcvCall).status)
+    assertEquals(CICallStatus.Missed, (chat().chatItems.last().content as CIContent.RcvCall).status)
     assertNotified()
   }
 
@@ -181,10 +183,12 @@ class ChatItemUpdateTest {
 
   private fun loadedTexts(): List<String> = ChatModel.chatsContext.chatItems.value.map { it.text }
 
-  private fun previewText(): String? = ChatModel.chatsContext.chats.value.single().chatItems.lastOrNull()?.text
+  private fun chat(): Chat = ChatModel.chatsContext.chats.value.toList().let { chats -> chats.singleOrNull() ?: fail("one chat expected, found ${chats.map { it.id }}") }
+
+  private fun previewText(): String? = chat().chatItems.lastOrNull()?.text
 
   private fun counts(): Triple<Int, Int, Int> {
-    val stats = ChatModel.chatsContext.chats.value.single().chatStats
+    val stats = chat().chatStats
     return Triple(stats.unreadCount, stats.unreadMentions, ChatModel.users[0].unreadCount)
   }
 
