@@ -26,6 +26,7 @@ import chat.simplex.common.views.helpers.DatabaseUtils
 import chat.simplex.common.views.helpers.generalGetString
 import chat.simplex.common.views.helpers.installedUiJars
 import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
@@ -46,6 +47,7 @@ import java.util.Locale
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicInteger
 import kotlin.test.*
 
 private const val CTRL: ChatCtrl = 1001
@@ -56,12 +58,21 @@ private const val NO_REMOTE_HOSTS = """{"result":{"type":"remoteHostList","remot
 private const val NO_ADDRESS = """{"error":{"type":"errorStore","storeError":{"type":"userContactLinkNotFound"}}}"""
 
 @OptIn(ExperimentalTestApi::class)
+internal fun takeEarlierUncaughtExceptions() {
+  runCatching { runComposeUiTest {} }.exceptionOrNull()?.let { e ->
+    println("uncaught exceptions of earlier tests:\n${e.stackTraceToString()}")
+  }
+}
+
+@OptIn(ExperimentalTestApi::class)
 class UiReloadTest {
   private val testRoot = Files.createTempDirectory("ui-reload").toFile()
   private val commands = CopyOnWriteArrayList<Pair<ChatCtrl, String>>()
   private val sent = LinkedBlockingQueue<String>()
   private val events = LinkedBlockingQueue<String>()
   private val reads = LinkedBlockingQueue<ChatCtrl>()
+  private val readCalls = AtomicInteger()
+  private val taken = AtomicInteger()
   private val nameMoved = fixtureText("names/event-name-moved")
   private val user = Json.parseToJsonElement(nameMoved).jsonObject.getValue("result").jsonObject.getValue("user")
   private var respond: (String) -> String = this::response
@@ -95,6 +106,7 @@ class UiReloadTest {
 
   @BeforeTest
   fun setUp() {
+    takeEarlierUncaughtExceptions()
     Locale.setDefault(Locale.US)
     chatSendCmdRetry = { ctrl, cmd, _ ->
       commands += ctrl to cmd
@@ -103,7 +115,10 @@ class UiReloadTest {
     }
     chatRecvMsgWait = { ctrl, _ ->
       reads.put(ctrl)
-      events.take()
+      val reader = Thread.currentThread()
+      val read = readCalls.incrementAndGet()
+      println("UiReloadTest: read $read on ${reader.name}#${reader.id}, controller $ctrl")
+      events.take().also { println("UiReloadTest: read $read took event ${taken.incrementAndGet()}") }
     }
     installedUiJars = { listOf(testRoot.resolve("common.jar")) }
     DatabaseUtils.ksSelfDestructPassword.remove()
@@ -264,7 +279,16 @@ class UiReloadTest {
   private fun receivedEvent(steps: suspend () -> Unit): API = runBlocking {
     val event = async(start = CoroutineStart.UNDISPATCHED) { withTimeout(5_000) { ChatController.messagesChannel.receive() } }
     steps()
-    event.await()
+    try {
+      event.await()
+    } catch (e: TimeoutCancellationException) {
+      println("UiReloadTest: no event received; controller ${ChatController.getChatCtrl()}, chatRunning ${ChatModel.chatRunning.value}, messagesChannel ${ChatController.messagesChannel}")
+      println("UiReloadTest: last terminal items ${ChatModel.terminalItems.value.takeLast(12).map { it.label }}")
+      Thread.getAllStackTraces().filterKeys { it.name == "simplex-core-events" }.forEach { (thread, stack) ->
+        println("UiReloadTest: ${thread.name}#${thread.id} ${thread.state}\n  ${stack.take(8).joinToString("\n  ")}")
+      }
+      throw e
+    }
   }
 
   private fun awaitSent(cmd: String, times: Int) {

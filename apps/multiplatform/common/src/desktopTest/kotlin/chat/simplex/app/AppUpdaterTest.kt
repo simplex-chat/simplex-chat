@@ -266,6 +266,7 @@ class AppUpdaterTest {
 
   @BeforeTest
   fun setUp() {
+    takeEarlierUncaughtExceptions()
     Locale.setDefault(Locale.US)
     simplexWindowState.windowState = WindowState(size = DpSize(1200.dp, 800.dp))
     server.createContext("/") { exchange ->
