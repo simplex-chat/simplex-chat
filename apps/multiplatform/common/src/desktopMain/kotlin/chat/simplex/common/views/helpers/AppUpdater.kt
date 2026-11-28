@@ -207,21 +207,14 @@ fun checkForUpdate() {
       Log.d(TAG, "Skipping update because of the same version or skipped version")
       return
     }
-    if (channel == AppUpdatesChannel.INTERNAL && uiUpdateStaged(release)) {
-      if (appPrefs.appUpdateChannel.get() == channel) {
-        AlertManager.shared.showAlertDialog(
-          title = generalGetString(MR.strings.app_check_for_updates_installed_successfully_title),
-          text = generalGetString(MR.strings.app_check_for_updates_installed_successfully_desc),
-          confirmText = generalGetString(MR.strings.app_check_for_updates_button_reload),
-          onConfirm = { withApi { reloadUiOrAlert() } },
-          dismissText = generalGetString(MR.strings.ok)
-        )
-      }
+    val uiUpdate = if (channel == AppUpdatesChannel.INTERNAL) uiUpdateOffer(release) else null
+    if (uiUpdate is UiUpdateOffer.Staged) {
+      if (appPrefs.appUpdateChannel.get() == channel) showUiUpdateStagedAlert()
       return
     }
     val assets = chooseGitHubReleaseAssets(release)
     // No need to show an alert if no suitable packages were found. But for Flatpak users it's useful to see release notes anyway
-    if (assets.isEmpty() && !isRunningFromFlatpak()) {
+    if (assets.isEmpty() && uiUpdate == null && !isRunningFromFlatpak()) {
       Log.d(TAG, "No assets to download for current system")
       return
     }
@@ -232,51 +225,72 @@ fun checkForUpdate() {
     }
     val text = lines.joinToString("\n")
     if (appPrefs.appUpdateChannel.get() != channel) return
-    AlertManager.shared.showAlertDialogButtonsColumn(
-      generalGetString(MR.strings.app_check_for_updates_update_available).format(release.name),
-      text = text,
-      textAlign = TextAlign.Start,
-      dismissible = false,
-      belowTextContent = {
-        ReadMoreButton(release.htmlUrl)
-      },
-      buttons = {
-        Column {
-          for (asset in assets) {
+    fun showUpdateAlert(uiDownload: UiUpdateOffer.Download?) {
+      AlertManager.shared.showAlertDialogButtonsColumn(
+        generalGetString(MR.strings.app_check_for_updates_update_available).format(release.name),
+        text = text,
+        textAlign = TextAlign.Start,
+        dismissible = false,
+        belowTextContent = {
+          ReadMoreButton(release.htmlUrl)
+        },
+        buttons = {
+          Column {
+            if (uiDownload != null) {
+              SectionItemView({
+                AlertManager.shared.hideAlert()
+                withLongRunningApi {
+                  withContext(Dispatchers.Main) {
+                    showToast(generalGetString(MR.strings.app_check_for_updates_download_started))
+                  }
+                  val staged = uiDownload.downloadAndStage()
+                  if (appPrefs.appUpdateChannel.get() != channel) return@withLongRunningApi
+                  if (staged) showUiUpdateStagedAlert() else showUpdateAlert(null)
+                }
+              }) {
+                Text(
+                  generalGetString(MR.strings.app_check_for_updates_button_download_ui).format(formatBytes(uiDownload.asset.size)),
+                  Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary
+                )
+              }
+            }
+            for (asset in assets) {
+              SectionItemView({
+                AlertManager.shared.hideAlert()
+                chatModel.updatingProgress.value = 0f
+                withLongRunningApi {
+                  try {
+                    downloadAsset(asset)
+                  } finally {
+                    chatModel.updatingProgress.value = null
+                  }
+                }
+              }) {
+                Text(
+                  generalGetString(MR.strings.app_check_for_updates_button_download).format(
+                    if (asset.name.length > 34) "…" + asset.name.substringAfter("simplex-desktop-") else asset.name,
+                    formatBytes(asset.size)), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary
+                )
+              }
+            }
+
             SectionItemView({
               AlertManager.shared.hideAlert()
-              chatModel.updatingProgress.value = 0f
-              withLongRunningApi {
-                try {
-                  downloadAsset(asset)
-                } finally {
-                  chatModel.updatingProgress.value = null
-                }
-              }
+              skipRelease(release)
             }) {
-              Text(
-                generalGetString(MR.strings.app_check_for_updates_button_download).format(
-                  if (asset.name.length > 34) "…" + asset.name.substringAfter("simplex-desktop-") else asset.name,
-                  formatBytes(asset.size)), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary
-              )
+              Text(generalGetString(MR.strings.app_check_for_updates_button_skip), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = WarningOrange)
+            }
+
+            SectionItemView({
+              AlertManager.shared.hideAlert()
+            }) {
+              Text(generalGetString(MR.strings.app_check_for_updates_button_remind_later), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
             }
           }
-
-          SectionItemView({
-            AlertManager.shared.hideAlert()
-            skipRelease(release)
-          }) {
-            Text(generalGetString(MR.strings.app_check_for_updates_button_skip), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = WarningOrange)
-          }
-
-          SectionItemView({
-            AlertManager.shared.hideAlert()
-          }) {
-            Text(generalGetString(MR.strings.app_check_for_updates_button_remind_later), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
-          }
         }
-      }
-    )
+      )
+    }
+    showUpdateAlert(uiUpdate as? UiUpdateOffer.Download)
   } catch (e: Exception) {
     Log.e(TAG, "Failed to get the latest release: ${e.stackTraceToString()}")
   }
@@ -548,12 +562,26 @@ private suspend fun installAppUpdate(file: File) = withContext(Dispatchers.IO) {
 
 private const val UI_UPDATE_ASSET_PREFIX = "simplex-desktop-ui-"
 
-private fun uiUpdateStaged(release: GitHubRelease): Boolean {
+private sealed class UiUpdateOffer {
+  object Staged : UiUpdateOffer()
+  class Download(val asset: GitHubAsset, val base: String) : UiUpdateOffer()
+}
+
+private fun uiUpdateOffer(release: GitHubRelease): UiUpdateOffer? {
   try {
-    val base = installedUiUpdateBase() ?: return false
-    val asset = release.assets.firstOrNull { it.name == "$UI_UPDATE_ASSET_PREFIX$base.zip" && it.size <= UI_UPDATE_MAX_SIZE } ?: return false
-    val dir = uiUpdateDir(release.buildNumber ?: return false)
-    if (dir.exists()) return uiUpdateState(dir) == UiUpdateState.STAGED
+    val base = installedUiUpdateBase() ?: return null
+    val asset = release.assets.firstOrNull { it.name == "$UI_UPDATE_ASSET_PREFIX$base.zip" && it.size <= UI_UPDATE_MAX_SIZE } ?: return null
+    val dir = uiUpdateDir(release.buildNumber ?: return null)
+    if (dir.exists()) return if (uiUpdateState(dir) == UiUpdateState.STAGED) UiUpdateOffer.Staged else null
+    return UiUpdateOffer.Download(asset, base)
+  } catch (e: Exception) {
+    Log.e(TAG, "UI update not offered: ${e.stackTraceToString()}")
+    return null
+  }
+}
+
+private fun UiUpdateOffer.Download.downloadAndStage(): Boolean {
+  try {
     tmpDir.mkdirs()
     val zip = File(tmpDir, asset.name)
     try {
@@ -570,4 +598,14 @@ private fun uiUpdateStaged(release: GitHubRelease): Boolean {
     Log.e(TAG, "UI update not staged: ${e.stackTraceToString()}")
     return false
   }
+}
+
+private fun showUiUpdateStagedAlert() {
+  AlertManager.shared.showAlertDialog(
+    title = generalGetString(MR.strings.app_check_for_updates_installed_successfully_title),
+    text = generalGetString(MR.strings.app_check_for_updates_installed_successfully_desc),
+    confirmText = generalGetString(MR.strings.app_check_for_updates_button_reload),
+    onConfirm = { withApi { reloadUiOrAlert() } },
+    dismissText = generalGetString(MR.strings.ok)
+  )
 }

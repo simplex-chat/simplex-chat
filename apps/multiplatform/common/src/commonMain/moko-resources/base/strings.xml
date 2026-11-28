@@ -1203,6 +1203,7 @@
   <string name="app_check_for_updates_internal">Internal</string>
   <string name="app_check_for_updates_update_available">Update available: %s</string>
   <string name="app_check_for_updates_button_download">Download %s (%s)</string>
+  <string name="app_check_for_updates_button_download_ui">Download UI update (%s)</string>
   <string name="app_check_for_updates_button_skip">Skip this version</string>
   <string name="app_check_for_updates_download_started">Downloading app update, don\'t close the app</string>
   <string name="app_check_for_updates_download_completed_title">App update is downloaded</string>

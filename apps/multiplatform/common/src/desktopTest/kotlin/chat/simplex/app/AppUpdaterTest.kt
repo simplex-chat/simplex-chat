@@ -10,6 +10,7 @@ import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.filter
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isToggleable
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onFirst
@@ -254,6 +255,7 @@ class AppUpdaterTest {
   private val resourcesDir: String? = System.getProperty(RESOURCES_DIR)
   private val runningUiUpdate: String? = System.getProperty(RUNNING_UI_UPDATE)
   private val savedPlatform = platform
+  private val toasts = simplexWindowState.toasts.toList()
   private val chatCtrl = ChatController.getChatCtrl()
   private val chatRunning = ChatModel.chatRunning.value
   private val appBarHeight = AppBarHandler.appBarMaxHeightPx
@@ -302,6 +304,8 @@ class AppUpdaterTest {
     restoreProperty(RESOURCES_DIR, resourcesDir)
     restoreProperty(RUNNING_UI_UPDATE, runningUiUpdate)
     platform = savedPlatform
+    simplexWindowState.toasts.clear()
+    simplexWindowState.toasts.addAll(toasts)
     ChatController.setChatCtrl(chatCtrl)
     ChatModel.chatRunning.value = chatRunning
     ChatModel.activeCall.value = null
@@ -364,20 +368,53 @@ class AppUpdaterTest {
   }
 
   @Test
-  fun matchingUiUpdateIsStagedAndReloadOffered() {
-    serveUiUpdate(uiZip(bundle(nextCode, installedBase)))
+  fun uiUpdateIsOfferedBeforeItIsDownloaded() {
+    val zip = uiZip(bundle(nextCode, installedBase))
+    serveUiUpdate(zip)
     updateCheck(AppUpdatesChannel.INTERNAL) {
+      onNodeWithText("Update available: $internalTag").assertExists()
+      onNodeWithText(uiDownloadButton(zip.size.toLong())).assertExists()
+      onAllNodesWithText("Reload now").assertCountEquals(0)
+      assertEquals(listOf(TEST_RELEASES), requests.toList())
+      assertEquals(listOf(), uiUpdatesDir.list().orEmpty().toList())
+    }
+  }
+
+  @Test
+  fun uiUpdateIsOfferedWithoutAPackage() {
+    val zip = uiZip(bundle(nextCode, installedBase))
+    served[TEST_RELEASES] = { releases(releaseJson(internalTag, assets = listOf(uiZipName(installedBase) to zip.size.toLong()))) }
+    updateCheck(AppUpdatesChannel.INTERNAL) {
+      onNodeWithText("Update available: $internalTag").assertExists()
+      onNodeWithText(uiDownloadButton(zip.size.toLong())).assertExists()
+    }
+  }
+
+  @Test
+  fun downloadedUiUpdateIsStagedAndReloadOffered() {
+    val zip = uiZip(bundle(nextCode, installedBase))
+    serveUiUpdate(zip)
+    updateCheck(AppUpdatesChannel.INTERNAL) {
+      press(uiDownloadButton(zip.size.toLong()))
+      awaitText("Reload now")
       val staged = uiUpdatesDir.resolve("$nextCode")
       assertEquals(listOf("$nextCode"), uiUpdatesDir.list()!!.toList())
       assertEquals(setOf("ui.json", "ui.json.sig", "ui-1.jar"), staged.list()!!.toSet())
       assertEquals(UiUpdateState.STAGED, uiUpdateState(staged))
       assertFalse(tmpDir.resolve(uiZipName(installedBase)).exists())
       assertReloadOffered()
-      AlertManager.shared.hideAllAlerts()
-      checkForUpdate()
-      waitForIdle()
+      assertEquals(listOf(TEST_RELEASES, "/${uiZipName(installedBase)}"), requests.toList())
+      assertEquals(toasts.map { it.first } + "Downloading app update, don't close the app", simplexWindowState.toasts.map { it.first })
+    }
+  }
+
+  @Test
+  fun stagedUiUpdateOffersReloadWithoutAsking() {
+    bundleDir(nextCode, installedBase, root = uiUpdatesDir)
+    serveUiUpdate(uiZip(bundle(nextCode, installedBase)))
+    updateCheck(AppUpdatesChannel.INTERNAL) {
       assertReloadOffered()
-      assertEquals(listOf(TEST_RELEASES, "/${uiZipName(installedBase)}", TEST_RELEASES), requests.toList())
+      assertEquals(listOf(TEST_RELEASES), requests.toList())
     }
   }
 
@@ -386,10 +423,13 @@ class AppUpdaterTest {
     ChatController.setChatCtrl(1003)
     ChatModel.chatRunning.value = true
     ChatModel.activeCall.value = call(Contact.sampleData)
-    serveUiUpdate(uiZip(bundle(nextCode, installedBase)))
+    val zip = uiZip(bundle(nextCode, installedBase))
+    serveUiUpdate(zip)
     updateCheck(AppUpdatesChannel.INTERNAL) {
+      press(uiDownloadButton(zip.size.toLong()))
+      awaitText("Reload now")
       press("Reload now")
-      waitUntil(timeoutMillis = 5_000) { onAllNodesWithText("Reload the UI after the call ends.").fetchSemanticsNodes().isNotEmpty() }
+      awaitText("Reload the UI after the call ends.")
       onNodeWithText("UI not reloaded").assertExists()
       onAllNodesWithText("Reload now").assertCountEquals(0)
       assertEquals(1003L, ChatController.getChatCtrl())
@@ -403,7 +443,7 @@ class AppUpdaterTest {
     val zip = uiZip(bundle(nextCode, installedBase))
     serveUiUpdate(zip, size = zip.size - 1L)
     updateCheck(AppUpdatesChannel.INTERNAL) {
-      assertPackageOffered()
+      assertUiDownloadRefused(zip.size - 1L)
       assertEquals(listOf(TEST_RELEASES, "/${uiZipName(installedBase)}"), requests.toList())
     }
   }
@@ -419,20 +459,23 @@ class AppUpdaterTest {
 
   @Test
   fun uiUpdateWithAChangedJarIsNotStaged() {
-    serveUiUpdate(uiZip(bundle(nextCode, installedBase) + ("ui-1.jar" to byteArrayOf(4))))
-    updateCheck(AppUpdatesChannel.INTERNAL) { assertPackageOffered() }
+    val zip = uiZip(bundle(nextCode, installedBase) + ("ui-1.jar" to byteArrayOf(4)))
+    serveUiUpdate(zip)
+    updateCheck(AppUpdatesChannel.INTERNAL) { assertUiDownloadRefused(zip.size.toLong()) }
   }
 
   @Test
   fun uiUpdateSignedByAnotherKeyIsNotStaged() {
-    serveUiUpdate(uiZip(bundle(nextCode, installedBase, key = otherKeys.private)))
-    updateCheck(AppUpdatesChannel.INTERNAL) { assertPackageOffered() }
+    val zip = uiZip(bundle(nextCode, installedBase, key = otherKeys.private))
+    serveUiUpdate(zip)
+    updateCheck(AppUpdatesChannel.INTERNAL) { assertUiDownloadRefused(zip.size.toLong()) }
   }
 
   @Test
   fun uiUpdateSignedForAnotherBaseIsNotStaged() {
-    serveUiUpdate(uiZip(bundle(nextCode, otherBase)))
-    updateCheck(AppUpdatesChannel.INTERNAL) { assertPackageOffered() }
+    val zip = uiZip(bundle(nextCode, otherBase))
+    serveUiUpdate(zip)
+    updateCheck(AppUpdatesChannel.INTERNAL) { assertUiDownloadRefused(zip.size.toLong()) }
   }
 
   @Test
@@ -453,6 +496,9 @@ class AppUpdaterTest {
       zip
     }
     updateCheck(AppUpdatesChannel.INTERNAL) {
+      press(uiDownloadButton(zip.size.toLong()))
+      waitUntil(timeoutMillis = 5_000) { uiUpdatesDir.resolve("$nextCode").exists() }
+      waitForIdle()
       assertEquals(UiUpdateState.STAGED, uiUpdateState(uiUpdatesDir.resolve("$nextCode")))
       assertFalse(AlertManager.shared.hasAlertsShown())
     }
@@ -653,9 +699,21 @@ class AppUpdaterTest {
 
   private fun ComposeUiTest.assertPackageOffered() {
     onNodeWithText("Update available: $internalTag").assertExists()
+    onAllNodes(hasText("Download UI update", substring = true)).assertCountEquals(0)
     onAllNodesWithText("Reload now").assertCountEquals(0)
     assertEquals(listOf(), uiUpdatesDir.list().orEmpty().toList())
   }
+
+  private fun ComposeUiTest.assertUiDownloadRefused(size: Long) {
+    press(uiDownloadButton(size))
+    awaitText("Update available: $internalTag")
+    assertPackageOffered()
+  }
+
+  private fun uiDownloadButton(size: Long) = "Download UI update (${formatBytes(size)})"
+
+  private fun ComposeUiTest.awaitText(text: String) =
+    waitUntil(timeoutMillis = 5_000) { onAllNodesWithText(text).fetchSemanticsNodes().isNotEmpty() }
 
   private fun ComposeUiTest.showSettings(content: @Composable () -> Unit) = setContent {
     SimpleXTheme {

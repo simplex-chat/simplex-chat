@@ -7,7 +7,7 @@ Testers on the Internal update channel download and install a full package for e
 ## Behaviour
 
 - An internal release has, for each desktop package, `simplex-desktop-ui-<base>.zip`: the app's own jars and `ui.json`, signed.
-- An app on the Internal channel downloads the zip whose base equals its own, verifies it into its data folder and shows "Installed successfully" with "Please restart the app."
+- An app on the Internal channel offers the zip whose base equals its own as the first button of the update alert, "Download UI update (<size>)"; after the tester's tap it downloads the zip, verifies it into its data folder and shows "Installed successfully" with "Reload now".
 - Without such a zip, or when its download or verification fails, the app offers the packages, as before.
 - At each start, the installed app verifies the staged UI updates again and runs the newest valid one.
 - A UI update that fails to start, or crashes twice in one session, is marked failed: the next valid one runs, else the installed UI.
