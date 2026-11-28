@@ -2791,13 +2791,16 @@ updateGroupChatItem db user groupId ci newContent edited live msgId_ = do
   pure ci'
 
 -- overwrite the stored signed bytes and author when a signed edit is applied, so sendHistory forwards the latest signed content
-updateChatItemSignedMsg :: DB.Connection -> ChatItemId -> Maybe SignedMsg -> Maybe GroupMemberId -> IO ()
-updateChatItemSignedMsg db itemId signedMsg_ signedByGMId_ =
+updateChatItemSignedMsg :: DB.Connection -> Maybe MsgVerified -> Maybe SignedMsg -> Maybe GroupMemberId -> ChatItem 'CTGroup d -> IO (ChatItem 'CTGroup d)
+updateChatItemSignedMsg db msgVerified signedMsg_ signedByGMId_ ci = do
+  DB.execute db "UPDATE chat_items SET msg_signed = ? WHERE chat_item_id = ?" (msgVerified, itemId)
   DB.execute
     db
     "UPDATE chat_items SET item_msg_body = ?, item_chat_binding = ?, item_signatures = ?, item_signed_by_group_member_id = ? WHERE chat_item_id = ? AND include_in_history = 1"
     (body_, cb_, sigs_, author_, itemId)
+  pure ci {meta = (meta ci) {msgVerified}}
   where
+    itemId = chatItemId' ci
     (body_, cb_, sigs_, author_) = case signedMsg_ of
       Just SignedMsg {chatBinding, signatures, signedBody} ->
         (Just (DB.Binary signedBody), Just chatBinding, Just (DB.Binary (smpEncode signatures)), signedByGMId_)

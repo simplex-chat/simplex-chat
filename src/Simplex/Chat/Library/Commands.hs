@@ -870,13 +870,15 @@ processChatCommand cxt nm = \case
                           mentions' = M.map (\CIMention {memberId} -> MsgMention {memberId}) ciMentions
                           event = XMsgUpdate itemSharedMId mc mentions' (ttl' <$> itemTimed) (justTrue . (live &&) =<< itemLive) msgScope (Just showGroupAsSender)
                           reuseSign = case msgVerified of Just (MVSigned _) -> True; _ -> False
-                      SndMessage {msgId} <- sendGroupMessage user g scope recipients reuseSign event
+                      SndMessage {msgId, signedMsg_} <- sendGroupMessage user g scope recipients (reuseSign || maybe False hasChainAddress ft_) event
                       ci' <- withFastStore' $ \db -> do
                         currentTs <- liftIO getCurrentTime
                         when changed $
                           addInitialAndNewCIVersions db itemId (chatItemTs' ci, oldMC) (currentTs, mc)
                         let edited = itemLive /= Just True
-                        ci' <- updateGroupChatItem db user groupId ci (CISndMsgContent mc) edited live $ Just msgId
+                        ci' <-
+                          updateGroupChatItem db user groupId ci (CISndMsgContent mc) edited live (Just msgId)
+                            >>= updateChatItemSignedMsg db (toMsgVerified (groupFeatureAllowed SGFSignMessages gInfo) (MSSVerified <$ signedMsg_)) signedMsg_ Nothing
                         updateGroupCIMentions db gInfo ci' ciMentions
                       startUpdatedTimedItemThread user (ChatRef CTGroup groupId scope) ci ci'
                       pure $ CRChatItemUpdated user (AChatItem SCTGroup SMDSnd (GroupChat gInfo chatScopeInfo) ci')
