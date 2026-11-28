@@ -649,7 +649,7 @@ Q9. History of a removed submember after V left or was removed. V's record is ke
 - B: these items are sent; the joiner shows the error and no item.
 
 Q10. Removal of V with messages: V's own items are deleted or marked deleted (deleteMessages in xGrpMemDel and APIRemoveMembers).
-- A, built on 2026-11-27 from the decision on blocked via members, to be confirmed: the items of V's submembers are deleted or marked deleted with V's, as V's messages.
+- A, decided on 2026-11-27 ("ok, which means submembers should be deleted too, and the alert should say that"): the items of V's submembers are deleted or marked deleted with V's, as V's messages.
 - B: the items of V's submembers are kept.
 
 Q11. At each leave and removal, the member rows of the group are read in getSubmembers, also in channels.
