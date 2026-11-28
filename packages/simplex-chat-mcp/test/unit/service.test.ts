@@ -1,4 +1,4 @@
-import {execFile, spawn} from "child_process"
+import {ExecFileOptions, execFile, spawn} from "child_process"
 import {once} from "events"
 import * as fs from "fs"
 import {closeSync, existsSync, mkdirSync, mkdtempSync, openSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync} from "fs"
@@ -762,6 +762,20 @@ describe("service", () => {
   it("reads the start time of a process on Linux with the boot ID, so a process after a reboot never has the start time of a process before it", async () => {
     const boot = process.platform === "linux" ? readFileSync("/proc/sys/kernel/random/boot_id", "utf8").trim() : undefined
     expect(boot === undefined || (await processStart(process.pid))?.startsWith(`${boot} `)).toBe(true)
+  })
+
+  it("reads the start time of a process on Windows from PowerShell as its creation time in UTC file time, without a window, within 2 s, and nothing for an output that is not a number", async () => {
+    const platform = Object.getOwnPropertyDescriptor(process, "platform")!
+    Object.defineProperty(process, "platform", {value: "win32"})
+    const calls: [string, string[], ExecFileOptions][] = []
+    const powershell = (stdout: string) => async (...call: [string, string[], ExecFileOptions]) => (calls.push(call), {stdout})
+    try {
+      expect(await processStart(4242, powershell("134088624000000000\r\n"))).toBe("134088624000000000")
+      expect(await processStart(4242, powershell("Get-Process : Cannot find a process with the process identifier 4242.\r\n"))).toBeUndefined()
+      expect(calls[0]).toEqual(["powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", "(Get-Process -Id 4242 -ErrorAction Stop).StartTime.ToFileTimeUtc()"], {timeout: 2_000, windowsHide: true}])
+    } finally {
+      Object.defineProperty(process, "platform", platform)
+    }
   })
 
   it("reads the start time of a process on Linux without the boot ID when the boot ID can't be read", async () => {

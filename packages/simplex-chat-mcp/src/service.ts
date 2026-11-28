@@ -1,4 +1,4 @@
-import {execFile} from "child_process"
+import {ExecFileOptions, execFile} from "child_process"
 import {EventEmitter} from "events"
 import {existsSync, writeSync} from "fs"
 import {readFile} from "fs/promises"
@@ -564,7 +564,7 @@ export function productionDeps(root: string): ServiceDeps {
 }
 
 // spec: spec/architecture.md#service-processstart
-export async function processStart(pid: number): Promise<string | undefined> {
+export async function processStart(pid: number, command: (file: string, args: string[], options: ExecFileOptions) => Promise<{stdout: string}> = run): Promise<string | undefined> {
   if (!Number.isSafeInteger(pid) || pid <= 0) return undefined
   try {
     if (process.platform === "linux") {
@@ -572,7 +572,7 @@ export async function processStart(pid: number): Promise<string | undefined> {
       const boot = await readFile("/proc/sys/kernel/random/boot_id", "utf8").then(text => `${text.trim()} `, () => "")
       return ticks === undefined ? undefined : `${boot}${ticks}`
     }
-    if (process.platform === "darwin") return (await run("/bin/ps", ["-o", "lstart=", "-p", String(pid)], {timeout: psWait, env: {...process.env, LC_ALL: "C", TZ: "UTC"}})).stdout.trim() || undefined
+    if (process.platform === "darwin") return (await command("/bin/ps", ["-o", "lstart=", "-p", String(pid)], {timeout: psWait, env: {...process.env, LC_ALL: "C", TZ: "UTC"}})).stdout.trim() || undefined
     return undefined
   } catch {
     return undefined
