@@ -21,6 +21,7 @@ curl --tlsv1.2 "${vlc_url}" -L -o vlc
 echo "${vlc_sha256}  vlc" | sha256sum -c -
 $WINDIR\\System32\\tar.exe -xf vlc
 cd vlc-*
+"$root_dir/scripts/desktop/keep-vlc-plugins.sh" plugins
 # Setting the same date as the date that will be on the file after extraction from JAR to make VLC cache checker happy
 find plugins | grep ".dll" | xargs touch -m -d "1970-01-01T00:00:00Z"
 ./vlc-cache-gen plugins

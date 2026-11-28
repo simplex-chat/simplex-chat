@@ -94,6 +94,11 @@ BUILD_CHANGES = {
     ],
     "desktop-linux": [".github/workflows/desktop-linux.yml", "scripts/ci/desktop-linux/**", ":!scripts/ci/desktop-linux/README.md"],
     "ios-sim": [".github/workflows/ios-sim.yml", "scripts/ci/ios-sim/**", ":!scripts/ci/ios-sim/README.md"],
+    "vlc": [
+        "scripts/desktop/*vlc*",
+        "scripts/ci/vlc-test.py",
+        "apps/multiplatform/common/src/desktopMain/kotlin/chat/simplex/common/platform/RecAndPlay.desktop.kt",
+    ],
 }
 SCOPE_CHANGES = {
     "badge-web": ["apps/simplex-store-service/web/**", "tests/fixtures/store-service/rest-api/**"],
