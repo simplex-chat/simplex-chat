@@ -202,7 +202,7 @@ chatGroupTests = do
     it "notice with ttl below 0 forwarded by host is not stored" $ testPlanGroupLinkForwardedRemovalNotice (-1) 0
     it "silent removal forwarded by a host below the removed member's role is shown" testPlanGroupLinkForwardedRemovalBelowRole
     it "removal with notice of a member on previous version is prohibited" $
-      runTestCfg2 testCfg testCfgVPrevLinkNotice testRemoveMemberNoticePrevVersion
+      runTestCfg2 testCfg testCfgVPrev testRemoveMemberNoticePrevVersion
     it "group deleted with kept conversation" testGroupDeleteKeepConversation
     it "app fixtures: group deletion" testGroupDeletionFixtures
 #if !defined(dbPostgres)
@@ -10110,7 +10110,7 @@ testBlockPreviousVersionFixtures :: HasCallStack => TestParams -> IO ()
 testBlockPreviousVersionFixtures ps =
   withNewTestChat ps "alice" aliceProfile $ \alice ->
     withNewTestChat ps "bob" bobProfile $ \bob ->
-      withNewTestChatCfg ps testCfgVPrevLinkNotice "cath" cathProfile $ \cath ->
+      withNewTestChatCfg ps testCfgVPrev "cath" cathProfile $ \cath ->
         withNewTestChat ps "dan" danProfile $ \dan -> do
           createGroup4 "team" alice (bob, GRModerator) (cath, GRMember) (dan, GRMember)
           bansFixture "previous-version-moderator" bob ["/_members #1"]

@@ -137,7 +137,7 @@ chatProfileTests = do
     it "contact via short address" testPlanAddressContactViaShortAddress
     it "contact deleted silently with notice can't re-connect" testPlanAddressContactDeletedNoticeSilent
     it "silent notice is not sent to previous version" $
-      runTestCfg2 testCfg testCfgVPrevLinkNotice testPlanAddressContactDeletedNoticePrevVersion
+      runTestCfg2 testCfg testCfgVPrev testPlanAddressContactDeletedNoticePrevVersion
     it "app fixtures: contact link notices" testContactNoticeFixtures
     it "app fixtures: contact deletion" testContactDeletionFixtures
   describe "incognito" $ do
