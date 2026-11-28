@@ -142,7 +142,7 @@ queryP keys = QSP QNoEscaping <$> A.option [] (A.char '?' *> paramP `A.sepBy` A.
     valueChar c = isAscii c && (isAlphaNum c || c `B.elem` "-._~:/?@!$'()*+,;=%")
 
 param :: Parser a -> ByteString -> QueryStringParams -> Parser (Maybe a)
-param p key query = params p key query >>= oneValue
+param p key query = oneValue (paramValues key query) >>= traverse (either fail pure . parseAll p)
   where
     oneValue [] = pure Nothing
     oneValue [a] = pure (Just a)
