@@ -11,10 +11,10 @@ module ChatTests.Utils where
 import APIDocs (testGenerate)
 import ChatClient
 import ChatTests.DBUtils
-import Control.Concurrent (newEmptyMVar, putMVar, takeMVar, threadDelay)
+import Control.Concurrent (MVar, newEmptyMVar, putMVar, takeMVar, threadDelay, tryPutMVar)
 import Control.Concurrent.Async (concurrently_, mapConcurrently_, race_, wait, withAsync)
 import Control.Concurrent.STM
-import Control.Monad (join, unless, when)
+import Control.Monad (forever, join, unless, when)
 import Control.Monad.Except (runExceptT)
 import qualified Data.Aeson as J
 import qualified Data.Aeson.Key as JK
@@ -30,9 +30,10 @@ import Data.Maybe (fromMaybe)
 import Data.String
 import qualified Data.Text as T
 import Simplex.Chat.Badges (BadgeProof (..), BadgeStatus, LocalBadge (..), ProofPresHeader (..))
-import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), ChatError, ChatEvent (CEvtChatItemUpdated, CEvtNameMoved, CEvtNewChatItems, CEvtSndFileCompleteXFTP, CEvtSndFileError), storeCxt)
+import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), ChatError, ChatEvent (CEvtChatItemUpdated, CEvtNameMoved, CEvtNewChatItems, CEvtSndFileCompleteXFTP, CEvtSndFileError), ChatHooks (..), defaultChatHooks, storeCxt)
 import Simplex.Chat.Library.Commands (maxProfileImageSize)
 import Simplex.Chat.Markdown (viewName)
+import Simplex.Chat.Messages (AChatItem (..), CIMeta (CIMeta, itemText), ChatItem (ChatItem, meta))
 import Simplex.Chat.Mobile (chatParseMarkdown, chatParseUri, chatSendCmd, eitherToResult)
 import Simplex.Chat.Messages.CIContent (e2eInfoNoPQText, e2eInfoPQText)
 import Simplex.Chat.Protocol
@@ -1003,6 +1004,21 @@ setRelativePaths cc filesFolder tempFolder = do
   cc #$> ("/_temp_folder " <> tempFolder, id, "ok")
   cc ##> "/_start"
   cc <## "chat started"
+
+blockFirstEventCfg :: (ChatEvent -> Bool) -> IO (MVar (), ChatConfig)
+blockFirstEventCfg blocks = do
+  blocked <- newEmptyMVar
+  let hook _ ev = case ev of
+        Right e | blocks e -> do
+          isFirst <- tryPutMVar blocked ()
+          when isFirst $ forever $ threadDelay 1000000
+          pure ev
+        _ -> pure ev
+  pure (blocked, testCfg {chatHooks = defaultChatHooks {eventHook = Just hook}})
+
+newItemText :: (T.Text -> Bool) -> ChatEvent -> Bool
+newItemText p (CEvtNewChatItems _ [AChatItem _ _ _ ChatItem {meta = CIMeta {itemText}}]) = p itemText
+newItemText _ _ = False
 
 data FixtureRequests = FixtureRequests {frMarkdown :: [String], frUris :: [String], frCommands :: [String]}
 
