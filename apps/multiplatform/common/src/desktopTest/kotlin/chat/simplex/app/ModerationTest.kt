@@ -358,7 +358,7 @@ class ModerationTest : RecordedApiTest() {
   }
 
   @Test
-  fun removeMemberWithSubmembers() = recordedAlerts("submembers/remove-via") {
+  fun removeMemberWithSubmembers() = recordedAlerts("submembers/member-with-two-submembers") {
     val (groupInfo, members) = openGroup()
     removeMemberAlert(null, groupInfo, member(members, "bob"))
     assertTexts("Remove member?", "Member will be removed from group - this cannot be undone!\nAlso 2 members via this member.", "Remove", "Remove and delete messages", "Cancel")
@@ -372,14 +372,14 @@ class ModerationTest : RecordedApiTest() {
   }
 
   @Test
-  fun removeMembersWithSubmembers() = recordedAlerts("submembers/remove-via") {
+  fun removeMembersWithSubmembers() = recordedAlerts("submembers/member-with-two-submembers") {
     val (groupInfo, members) = openGroup()
     removeMembersAlert(null, groupInfo, listOf(member(members, "alice"), member(members, "bob")))
     assertTexts("Remove members?", "Members will be removed from group - this cannot be undone!\nAlso 2 members via these members.", "Remove", "Remove and delete messages", "Cancel")
   }
 
   @Test
-  fun removeBlockedMemberWithSubmembersForever() = recordedAlerts("submembers/remove-via") {
+  fun removeBlockedMemberWithSubmembersForever() = recordedAlerts("submembers/member-with-two-submembers") {
     val (groupInfo, members) = openGroup()
     val bob = member(members, "bob").copy(memberRole = GroupMemberRole.Member, blockedByAdmin = true)
     replaceMembers(listOf(bob))

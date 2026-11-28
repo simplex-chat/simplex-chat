@@ -250,7 +250,7 @@ final class ModerationTests: RecordedAPITestCase {
 
     @MainActor
     func testRemoveMemberWithSubmembers() async throws {
-        try recorded("submembers/remove-via")
+        try recorded("submembers/member-with-two-submembers")
         let (groupInfo, members) = try openGroup()
         showRemoveMemberAlert(groupInfo, try member(members, "bob"))
         try await assertTexts(["Remove member?", "Member will be removed from group - this cannot be undone!\nAlso 2 members via this member.", "Remove", "Remove and delete messages", "Cancel"])
@@ -266,7 +266,7 @@ final class ModerationTests: RecordedAPITestCase {
 
     @MainActor
     func testRemoveBlockedMemberWithSubmembersForever() async throws {
-        try recorded("submembers/remove-via")
+        try recorded("submembers/member-with-two-submembers")
         let (groupInfo, members) = try openGroup()
         var bob = try member(members, "bob")
         bob.memberRole = .member

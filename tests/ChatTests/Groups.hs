@@ -17423,8 +17423,8 @@ testSubmemberViaRemoved ps = do
         bob ##> ("/_send #1(as_member=" <> show reviewerId <> ") text hi")
         bob <# "#team hi"
         [alice, cath] *<# "#team reviewer> hi"
-        apiFixture "submembers/remove-via" cath [] FixtureRequests {frMarkdown = [], frUris = [], frCommands = ["/_members #1"]}
-        eventsFixture "submembers/removed" events $ do
+        apiFixture "submembers/member-with-two-submembers" cath [] FixtureRequests {frMarkdown = [], frUris = [], frCommands = ["/_members #1"]}
+        eventsFixture "submembers/user-removed" events $ do
           cath ##> "+1 #team hi"
           cath <## "added 👍"
           alice <# "#team cath> > reviewer hi"
@@ -17455,7 +17455,7 @@ testSubmemberViaRemovedWithMessages ps = do
         addSubmember bob "member"
         mapM_ (<## "#team: bob added reviewer to the group (via bob)") [alice, cath]
         GroupMember {groupMemberId = reviewerId} <- getTestMember bob "team" "reviewer"
-        eventsFixture "submembers/via-removed" events $ do
+        eventsFixture "submembers/member-removed-with-messages" events $ do
           bob ##> ("/_send #1(as_member=" <> show reviewerId <> ") text hi")
           bob <# "#team hi"
           [alice, cath] *<# "#team reviewer> hi"

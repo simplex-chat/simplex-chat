@@ -72,7 +72,7 @@ class SubmemberTest {
   }
 
   @Test
-  fun submemberIsRemovedWhenUserIsRemoved() = recorded("submembers/removed") { events ->
+  fun submemberIsRemovedWhenUserIsRemoved() = recorded("submembers/user-removed") { events ->
     val reaction = (events.first().result as CR.ChatItemReaction).reaction
     val groupInfo = (reaction.chatInfo as ChatInfo.Group).groupInfo
     val reviewer = assertNotNull(reaction.chatReaction.chatItem.meta.sentAsMember)
@@ -145,7 +145,7 @@ class SubmemberTest {
 
   private fun receiveRemovalOfViaMember(): GroupMember {
     lateinit var reviewer: GroupMember
-    recorded("submembers/via-removed") { (hi, _, deleted) ->
+    recorded("submembers/member-removed-with-messages") { (hi, _, deleted) ->
       val aci = (hi.result as CR.NewChatItems).chatItems.single()
       val groupInfo = (aci.chatInfo as ChatInfo.Group).groupInfo
       reviewer = (aci.chatItem.chatDir as CIDirection.GroupRcv).groupMember

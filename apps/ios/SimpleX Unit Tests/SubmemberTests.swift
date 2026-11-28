@@ -117,7 +117,7 @@ final class SubmemberTests: XCTestCase {
 
     @MainActor
     func testSubmemberIsRemovedWhenUserIsRemoved() async throws {
-        let events = try recordedEvents("submembers/removed")
+        let events = try recordedEvents("submembers/user-removed")
         guard case let .chatItemReaction(_, _, reaction) = events[0], case let .group(groupInfo, _) = reaction.chatInfo,
               let reviewer = reaction.chatReaction.chatItem.meta.sentAsMember else {
             return XCTFail("no item sent as a submember: \(events[0].responseType)")
@@ -132,7 +132,7 @@ final class SubmemberTests: XCTestCase {
 
     @MainActor
     private func receiveRemovalOfViaMember() async throws -> GroupMember? {
-        let events = try recordedEvents("submembers/via-removed")
+        let events = try recordedEvents("submembers/member-removed-with-messages")
         guard case let .newChatItems(_, items) = events[0], let aci = items.first,
               case let .group(groupInfo, _) = aci.chatInfo, case let .groupRcv(reviewer) = aci.chatItem.chatDir else {
             XCTFail("no item of a submember: \(events[0].responseType)")
