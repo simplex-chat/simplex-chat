@@ -189,7 +189,7 @@ The earlier work is material: spaced4ndy's and spaced4ndy-agents' pull requests,
 - Date: 2026-11-24
 - Place: conversation, names page hardening, item 13651
 - Words: "yes, link to visible nft on etherscan, with request to check that they can see it there, and contact support otherwise"
-- Shapes: Q11
+- Shapes: the names page only; the app follows D53
 
 ## Values the client holds, and signed requests
 
@@ -198,7 +198,7 @@ The earlier work is material: spaced4ndy's and spaced4ndy-agents' pull requests,
 - Date: 2026-11-24
 - Place: conversation, names page hardening, item 13105; `plans/2026-11-25-names-hardening.md` on `names-2` (#8343)
 - Words: "yes. It also means that updating any of these would require a small maintenance window."
-- Shapes: R9, Q2
+- Shapes: the names page; the app follows D62
 
 ### D29. Every request about an order is signed with its name key
 - Date: 2026-11-24
@@ -296,7 +296,7 @@ Each answer below follows from a picture of the existing UX design, named as its
 
 ### D43 (Q4). Each payment is linked to its name, as on the names page, and the Privacy Policy states it
 - Sources: #7951 section 11, Q6: "Register at once, fine for v1; `PRIVACY.md` states it"; #7951 section 2, non-goals: "Blind-signed codes".
-- Shapes: Q3, part 3
+- Shapes: D63, part 3
 
 ### D44 (Q23, Q12). A name bought on simplex.domains is brought in by its name code: moved into the app, or shown on the profile
 - Sources: #7951 lane 3: 3·0, the site's "Open in SimpleX", the code filled in; 3·1 "Bring in a name", with "Move into this app" and "Show on your profile"; 3·2 Moving; 3·3 moved. The badge sketch, screen A5: the code leaves the page by link.
@@ -333,3 +333,108 @@ Each answer below follows from a picture of the existing UX design, named as its
 ### D52 (Q3, in part). One store product, $100 at the store's nearest price point, for 2 years
 - Sources: D5; #7951 section 6.2: "SimpleX name", "Registers one name for 2 years", "$100, at the nearest price point".
 - Shapes: R3
+
+## The purchase flow, decided on the mockups
+
+### D56. The screens are #7951's
+- Decision: part 1's screens are #7951's images, with their numbers and words, changed only by the decisions below.
+- Date: 2026-11-27 and 2026-11-28
+- Place: SimpleX channel, items 17553, 17556 and 17647
+- Words: "I am looking at your questions, but they look as if you completely ignored the existing plan and design." (item 17553); "\"3.product surface\" seems correct, it's consistent with designs and badges" (item 17556); "1-4 this design is your invention - we have an image for this screen, find it and replace." (item 17647)
+- Shapes: part 1, section 4
+
+### D66 (Q24). Saving the 24 words is optional, with a reminder
+- Decision: as #7951 D12 and its 1·4a: Show and Copy on the sheet, Continue goes on, a reminder until Copy or Show.
+- Date: 2026-11-28
+- Place: SimpleX channel, items 17553 and 17647, on the mockup that draws it
+- Words: "but in general yes, it is correct." (item 17647)
+- Shapes: R15
+
+### D67 (Q9). A hidden profile can't register a name
+- Decision: as #7951 1·2: "A hidden profile can't register a name. Unhide it, or switch to another profile."
+- Date: 2026-11-27
+- Place: SimpleX channel, item 17553
+- Words: "I am looking at your questions, but they look as if you completely ignored the existing plan and design."
+- Shapes: R18
+
+### D57. A code is entered on the search screen only
+- Decision: I have a code on 1·2 is the only place to enter a code; 1·5, 4·1 and 4·2 offer no code.
+- Date: 2026-11-28
+- Place: SimpleX channel, items 17647 and 17765
+- Words: "1-5 - we should not accept code here, it's enough to offer on screen 1. we must not get to pay $100 and they accept code in its place." (item 17647); "yes, and 4.1 too. I'd keep code only on screen 1-2." (item 17765)
+- Shapes: R2
+
+### D58. Pay in browser: under the store's Pay in the US, the main button where the app can't pay
+- Decision: store builds in the US offer Pay in browser on 1·5, under Pay, for card, Bitcoin and Monero; builds that can't pay in the app pay on 4·2 in the browser; 1·2 is the same in every build.
+- Date: 2026-11-28
+- Place: SimpleX channel, items 17658, 17765 and 17782
+- Words: "or maybe ok, let's keep \"Buy in browser\" as alternative, as they can pay BTC/XMR" (item 17658); "But if your proposal is that we sign transactions in the app, then we cannot have \"buy in browser\" in 1.2, and it will only be on 1.5, right? Which is better for names." (item 17765); "But these methods won't be offered in store-apps though, they can only send to the browser" (item 17782)
+- Shapes: R8
+
+### D59. The registration stages
+- Decision: Ordering → Ordered, Waiting, Registering → Registered; a stage's label changes when its circle turns green.
+- Date: 2026-11-28
+- Place: SimpleX channel, item 17647
+- Words: "Registration steps are unclear. \"Registering\" becomes \"Registered\" when it's circle becomes green. Does the design you see has these steps?"
+- Shapes: R22
+
+### D53 (Q11). The app validates a name over SMP, with no explorer link
+- Date: 2026-11-27
+- Place: SimpleX channel, items 17591 and 17597
+- Words: "no it does not yet, it's a proposal and pr is not merged. We cannot do that. And I answered in artefact - app must resolve via SMP to validate" (item 17591); "no" (item 17597, to the proposal that the app shows the page's explorer link)
+- Shapes: R23
+
+### D60. The two-way check before a name shows as registered
+- Decision: the app resolves the name and checks both directions: the name points to the address or channel, and the address or channel points to the name; 1·8 confirms the address.
+- Date: 2026-11-28
+- Place: SimpleX channel, item 17738
+- Words: "it actually was a nice touch to reconfirm it. And the app should resolve it to see that it correctly updated both ways - name points to address, address points to name - so that anybody can now resolve it in the app. This validation via SMP resolver removes the need to send people to etherscan."
+- Shapes: R23
+
+### D61. The name address on screen with Developer tools only
+- Date: 2026-11-28
+- Place: SimpleX channel, item 17760
+- Words: "yes, it's not needed, we can keep it with dev tools enabled though"
+- Shapes: R11
+
+### D54 (Q7). A store refund is followed by hand
+- Decision: SimpleX tracks a disputed store payment and ends the name's registration; nothing ends it automatically.
+- Date: 2026-11-27
+- Place: SimpleX channel, item 17582
+- Words: "no, we can track the dispute and end, but it can't be automatic"
+- Shapes: R25
+
+### D55. App users and page users differ
+- Decision: the page opened from the app is adjusted to app users.
+- Date: 2026-11-27
+- Place: SimpleX channel, item 17600
+- Words: "what you fail to understand is that page users and app users are different, and even when page is opened from the app it will have to adjust and change"
+- Shapes: R26
+
+### D62 (Q2). What the app pins, and what it reads
+- Decision: the contracts and the chain are pinned in the app build; the terms and the prices come from the name lookup's answer (`nameTerms`, `pricing`); the term, a code's years included, and the dispute days come from the store service; the contract bounds the dispute days.
+- Date: 2026-11-28
+- Place: SimpleX channel, items 17765, 17782 and 17797
+- Words: "contracts - yes, but terms can change - how can app pin them? and app has no chain access of its own, and we cannot do coordinated releases as we can do with the page." (item 17765); "what about investor codes? they can have longer terms"; "contract already restricts it, no need to duplicate in the app." (item 17782); "ah, you mean name record includes it already? then we can use it" (item 17797)
+- Shapes: R9
+
+### D63 (Q3). The browser pays the app's own order
+- Decision: the app signs the order and one registration for each dispute period (card; Bitcoin and Monero) and puts them in the fragment of the link it opens; the page requests the invoice with the existing `POST /api/invoice` for the method picked; the app sends nothing before the page does; every request of the app goes to the store service over SMP, as badge requests go.
+- Date: 2026-11-28
+- Place: SimpleX channel, items 17815, 17819, 17821 and 17826
+- Words: "unless the app signs all 3 payment methods and the page uses the one that is appropriate." (item 17815); "so invoice will be requested by the page, not by the app?" (item 17819); "why does the app needs to send anything to the service at this stage?" (item 17821); "even better" (item 17826, to two registrations in place of three orders); "app shouldn't be using POST, it should be using service RPC for everything. At least that we shouldn't simiplify. Look at badges." (item 17826)
+- Shapes: R21, R24
+
+### D64. In-app invoices later
+- Decision: invoices requested by the app over SMP, for the privacy of the requests, come later, for badges too.
+- Date: 2026-11-28
+- Place: SimpleX channel, item 17826
+- Words: "The argument for doing it all in-app is privacy of requests, but we can add it later, and for badges too. Web payment is useful anyway, and we have it."
+- Shapes: R21
+
+### D65. The page keeps nothing of an app order
+- Decision: the page receives no key and lists the app's order nowhere in Your names.
+- Date: 2026-11-28
+- Place: SimpleX channel, item 17826
+- Words: "You mean it'll show in browser's your names? I think it shouldn't, and browser shouldn't have private key in this case"
+- Shapes: R21

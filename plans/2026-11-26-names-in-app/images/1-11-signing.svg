@@ -16,13 +16,13 @@
 <text x="300" y="152.0" font-size="11.5" font-weight="normal" fill="#1c2b3f" text-anchor="start">The order: the name&#x27;s hash and length, the term, the commitment,</text>
 <text x="300" y="167.5" font-size="11.5" font-weight="normal" fill="#1c2b3f" text-anchor="start">the sealed name and links, and the terms agreed for it</text>
 <rect x="920" y="130" width="300" height="54" rx="10" fill="#e2f4e6" stroke="#2c8a4a" stroke-width="1.6"/>
-<text x="930" y="152.0" font-size="11.5" font-weight="normal" fill="#1c2b3f" text-anchor="start">With the receipt or the code (R5),</text>
-<text x="930" y="167.5" font-size="11.5" font-weight="normal" fill="#1c2b3f" text-anchor="start">or for an invoice (R21)</text>
+<text x="930" y="152.0" font-size="11.5" font-weight="normal" fill="#1c2b3f" text-anchor="start">With the receipt or the code (R5);</text>
+<text x="930" y="167.5" font-size="11.5" font-weight="normal" fill="#1c2b3f" text-anchor="start">for the browser, in the link (R21)</text>
 <rect x="20" y="192" width="260" height="54" rx="10" fill="#e3eefc" stroke="#2f6fd0" stroke-width="1.6"/>
 <text x="30" y="214" font-size="12" font-weight="600" fill="#1c2b3f" text-anchor="start">The same tap</text>
 <rect x="290" y="192" width="620" height="54" rx="10" fill="#efe6fb" stroke="#7a4fc4" stroke-width="1.6"/>
-<text x="300" y="214.0" font-size="11.5" font-weight="normal" fill="#1c2b3f" text-anchor="start">The registration and the terms acceptance, which the service</text>
-<text x="300" y="229.5" font-size="11.5" font-weight="normal" fill="#1c2b3f" text-anchor="start">sends to the chain once the commitment has waited</text>
+<text x="300" y="214.0" font-size="11.5" font-weight="normal" fill="#1c2b3f" text-anchor="start">The registration and the terms acceptance; for the browser, one registration</text>
+<text x="300" y="229.5" font-size="11.5" font-weight="normal" fill="#1c2b3f" text-anchor="start">per dispute period (card; Bitcoin and Monero); the service sends one to the chain</text>
 <rect x="920" y="192" width="300" height="54" rx="10" fill="#e2f4e6" stroke="#2c8a4a" stroke-width="1.6"/>
 <text x="930" y="214.0" font-size="11.5" font-weight="normal" fill="#1c2b3f" text-anchor="start">In the same request</text>
 <rect x="20" y="254" width="260" height="54" rx="10" fill="#e3eefc" stroke="#2f6fd0" stroke-width="1.6"/>
@@ -57,6 +57,6 @@
 <text x="930" y="462.0" font-size="11.5" font-weight="normal" fill="#1c2b3f" text-anchor="start">Three chain transactions,</text>
 <text x="930" y="477.5" font-size="11.5" font-weight="normal" fill="#1c2b3f" text-anchor="start">sent by SimpleX (D44)</text>
 <rect x="20" y="516" width="1200" height="48" rx="10" fill="#fff7d6" stroke="#b38a00" stroke-width="1.6"/>
-<text x="36" y="536.0" font-size="11.5" font-weight="normal" fill="#1c2b3f" text-anchor="start">Account keys are derived in the core when it signs, and never stored (#7684). The core signs only for the chain, contracts, namespace, term and dispute days fixed in</text>
-<text x="36" y="554.0" font-size="11.5" font-weight="normal" fill="#1c2b3f" text-anchor="start">its build, and for terms whose hash it checked (R9). The 24 words are shown only on the recovery key screens (R15, R16).</text>
+<text x="36" y="536.0" font-size="11.5" font-weight="normal" fill="#1c2b3f" text-anchor="start">Account keys are derived in the core when it signs, and never stored (#7684). The core signs only for the chain and contracts fixed in</text>
+<text x="36" y="554.0" font-size="11.5" font-weight="normal" fill="#1c2b3f" text-anchor="start">its build, and for the terms file of the name lookup, by its hash (R9). The 24 words are shown only on the recovery key screens (R15, R16).</text>
 </svg>

@@ -12,7 +12,7 @@
 <rect x="300" y="120" width="250" height="66" rx="10" fill="#e3eefc" stroke="#2f6fd0" stroke-width="1.6"/>
 <text x="310" y="140.0" font-size="12.5" font-weight="600" fill="#2f6fd0" text-anchor="start">Recovery key created</text>
 <text x="310" y="158.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">the 24 words shown at the first</text>
-<text x="310" y="173.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">Register (Q24)</text>
+<text x="310" y="173.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">Register; saving optional (D66)</text>
 <rect x="640" y="120" width="300" height="66" rx="10" fill="#e3eefc" stroke="#2f6fd0" stroke-width="1.6"/>
 <text x="650" y="140.0" font-size="12.5" font-weight="600" fill="#2f6fd0" text-anchor="start">In use</text>
 <text x="650" y="158.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">accounts 1, 2, …: one for each order,</text>

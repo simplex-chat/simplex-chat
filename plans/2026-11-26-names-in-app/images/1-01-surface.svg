@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1180" height="580" viewBox="0 0 1180 580" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"><defs></defs>
 <rect x="0" y="0" width="1180" height="580" fill="#ffffff"/>
 <text x="20" y="32" font-size="18" font-weight="700" fill="#0b2a55" text-anchor="start">Product surface: where a person starts, and what each build offers</text>
-<text x="20" y="54" font-size="12" font-weight="normal" fill="#44546a" text-anchor="start">Drawn on the recommended answers of the questions. Every row and cell traces to stories U1 to U10.</text>
+<text x="20" y="54" font-size="12" font-weight="normal" fill="#44546a" text-anchor="start">Drawn on the decisions of part 2. Every row and cell traces to stories U1 to U10.</text>
 <text x="20" y="86" font-size="13" font-weight="600" fill="#33475f" text-anchor="start">Entry points</text>
 <rect x="20" y="96" width="270" height="56" rx="10" fill="#e3eefc" stroke="#2f6fd0" stroke-width="1.6"/>
 <text x="30" y="116.0" font-size="12.5" font-weight="600" fill="#2f6fd0" text-anchor="start">Address</text>
@@ -84,9 +84,9 @@
 <text x="942.0" y="407.0" font-size="12.5" font-weight="600" fill="#2c8a4a" text-anchor="middle">✓</text>
 <rect x="1020" y="380" width="144" height="44" rx="10" fill="#e2f4e6" stroke="#2c8a4a" stroke-width="1.6"/>
 <text x="1092.0" y="407.0" font-size="12.5" font-weight="600" fill="#2c8a4a" text-anchor="middle">✓</text>
-<text x="20" y="448.0" font-size="11.5" font-weight="normal" fill="#44546a" text-anchor="start">As for badges: Pay in App Store-served builds; in store builds, Buy in browser in the US and the code button elsewhere (BadgesSupportSimplexView); both in other builds.</text>
+<text x="20" y="448.0" font-size="11.5" font-weight="normal" fill="#44546a" text-anchor="start">As for badges: Pay in Google Play builds and builds the App Store serves; Pay in browser on 1·5 in US store builds, on 4·2 in other builds. I have a code on 1·2 in every build.</text>
 <text x="20" y="466.0" font-size="11.5" font-weight="normal" fill="#44546a" text-anchor="start">One recovery key per device: 24 words, made at the first Register, with an account of them for each name (D41). Restore is offered on a device without them.</text>
-<text x="20" y="484.0" font-size="11.5" font-weight="normal" fill="#44546a" text-anchor="start">Buy in browser: the app&#x27;s order, paid on simplex.domains (Q3). A name bought on the site: moved into the app with its name code, or shown on the profile (D44).</text>
+<text x="20" y="484.0" font-size="11.5" font-weight="normal" fill="#44546a" text-anchor="start">Pay in browser: the app&#x27;s signed order, paid on simplex.domains (D63). A name bought on the site: moved into the app with its name code, or shown on the profile (D44).</text>
 <text x="20" y="504.0" font-size="11.5" font-weight="600" fill="#33475f" text-anchor="start">Legend:</text>
 <rect x="80" y="493" width="14" height="14" rx="3" fill="#e2f4e6" stroke="#2c8a4a" stroke-width="1.6"/>
 <text x="100" y="504.0" font-size="11.5" font-weight="normal" fill="#1c2b3f" text-anchor="start">offered</text>

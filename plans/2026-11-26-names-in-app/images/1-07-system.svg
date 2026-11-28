@@ -24,8 +24,8 @@
 <text x="46" y="446.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">The name set on the address or channel</text>
 <text x="46" y="461.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">Restore: the names each account holds</text>
 <text x="46" y="476.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start"></text>
-<text x="46" y="491.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">Fixed in the build: chain id, contracts,</text>
-<text x="46" y="506.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">namespace, term, dispute days</text>
+<text x="46" y="491.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">Fixed in the build: chain id, contracts;</text>
+<text x="46" y="506.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">terms and prices from the name lookup</text>
 <rect x="420" y="80" width="300" height="92" rx="10" fill="#fff0dc" stroke="#c77a12" stroke-width="1.6"/>
 <text x="430" y="100.0" font-size="12.5" font-weight="600" fill="#c77a12" text-anchor="start">App Store · Google Play</text>
 <text x="430" y="118.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">One product: a SimpleX name, 2 years</text>
@@ -63,7 +63,7 @@
 <text x="800" y="523.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">service, its registrar key paying the gas</text>
 <rect x="420" y="570" width="300" height="90" rx="10" fill="#fdeaf2" stroke="#b8487a" stroke-width="1.6"/>
 <text x="430" y="590.0" font-size="12.5" font-weight="600" fill="#b8487a" text-anchor="start">simplex.domains in a browser</text>
-<text x="430" y="608.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">Pays the invoice of the app&#x27;s order (Q3);</text>
+<text x="430" y="608.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">Pays the app&#x27;s signed order from its link (D63);</text>
 <text x="430" y="623.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">a name bought there is moved into the</text>
 <text x="430" y="638.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">app, or shown on the profile (D44)</text>
 <path d="M 334 150 L 420 126" fill="none" stroke="#c77a12" stroke-width="1.5" marker-end="url(#hc77a12)"/>
