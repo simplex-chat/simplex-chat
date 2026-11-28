@@ -22,6 +22,8 @@ While the Claude Code process of a session's last `/session` runs, the service r
 - A request without a PID is served, and so is a request while the recorded process has no start time.
 - The session server sends `/attach`, `/call` and `/permission` only after a `/session` that succeeded.
 - The title of the other process is recorded before the refusal, so its session server resolves to the same session.
+- A refused process is mapped to the session for 10 s, as by a title, so a held title of a forked ID, as with `--fork-session`, resolves to that session and is refused; no session is opened for the forked ID.
+- A registration that changes the recorded process writes its PID and start time into `session.json` as `claudeProcess`; a new entry starts with them, so the recorded process keeps the session across a service restart.
 - The session server registers again at most 30 s apart; its first registration after the first process ended is served.
 
 ```mermaid
@@ -52,6 +54,8 @@ sequenceDiagram
   - `applyTitle`
   - `onAsk`
   - the `/turn` route
+- `src/service.ts`: `claudeProcess` written by `onSession` and read by `entry`.
+- `src/files.ts`: `SessionFile.claudeProcess`.
 - The refusal in:
   - `spec/api.md`, socket protocol
   - `spec/architecture.md`, `onSession`
@@ -63,4 +67,6 @@ sequenceDiagram
 `test/unit/service.test.ts`:
 - A second process: `/title`, `/session` with a startup ID, `/turn` and `/ask` refused with the PID of the first; the hooks of the first process with a new session ID served.
 - A second process served after the first ended, and after the PID of the first passed to a later process.
+- A forked ID's held title from a second process refused after its session server's refusal, with no session for that ID.
+- A second process refused after a service restart, and served once the first ended.
 - The tests of a second registration of a session: the first process ended before it.

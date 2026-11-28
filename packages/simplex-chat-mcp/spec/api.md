@@ -1092,7 +1092,7 @@ The prompts of a session, from the members of [4.3](#43-session-groups), are del
 | 403 | `The SessionStart hook of this process marked its run unattended.` | `/session` from a process marked unattended in the last 10 s |
 | 409 | `Unknown session; restart the Claude Code session.` | `/attach`, `/call`, `/permission`, `/ask` or `/turn` for an ID without a folder |
 | 413 | `Body too large` | body over 1 MiB |
-| 423 | `This conversation is already open in Claude Code process PID. Exit that process, or exit this one and start a new conversation.` | `/session`, `/title`, `/ask` or `/turn` with a `pid` other than PID, the `pid` of the session's last `/session`, while process PID has the start time read at that `/session` |
+| 423 | `This conversation is already open in Claude Code process PID. Exit that process, or exit this one and start a new conversation.` | `/session`, `/title`, `/ask` or `/turn` with a `pid` other than PID, the `pid` of the session's last `/session`, also of one before a service restart, while process PID has the start time read at that `/session` |
 | 503 | `The SimpleX service is stopping.` | a session route while the service stops |
 | 500 | the error message | any other error, a refused `permission` action included |
 
@@ -1109,7 +1109,7 @@ on /session, /title, /ask or /turn with id, pid:
   /session, session of pid unknown: wait up to 10 s for a /title with that pid
   session of pid = attached(pid)
                 ?? an entry whose session server sent that pid, seen in the last 10 s
-                ?? the session of the /title with that pid in the last 10 s
+                ?? the session of the /title or of the 423 reply with that pid in the last 10 s
   session of pid ?? id; a session other than id records id as an alias, in aliases of its session.json
 on /attach, /call or /permission with id:        alias of id ?? id
 on /title with id, pid: no alias, no session.json for id, session of pid unknown or a held title of pid:

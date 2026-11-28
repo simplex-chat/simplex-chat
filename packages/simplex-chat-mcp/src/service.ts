@@ -238,9 +238,9 @@ export class Service {
     const started = request.pid === undefined ? undefined : await this.deps.processStart(request.pid)
     const id = await this.resolve(request.id, request.pid, true)
     this.refuseUnattended(request.pid)
-    await this.refuseOtherProcess(id, request.pid)
     const title = request.pid === undefined ? undefined : this.titles.get(request.pid)
     const entry = this.entry(id, {...request, id, name: request.name ?? (title?.id === id ? title.name : undefined)})
+    await this.refuseOtherProcess(id, request.pid)
     const previous = {pid: entry.pid, started: entry.started}
     entry.pid = request.pid
     entry.started = started
@@ -250,6 +250,8 @@ export class Service {
     agent.record = request.record
     agent.globalConfig = request.globalConfig
     if (previous.pid !== undefined && (previous.pid !== request.pid || started === undefined || previous.started !== started)) agent.endToolApprovals()
+    const folder = this.folder(id)
+    if (previous.pid !== request.pid || previous.started !== started) writeSessionFile(folder, {...readSessionFile(folder)!, claudeProcess: request.pid === undefined || started === undefined ? undefined : {pid: request.pid, started}})
     if (entry.attached === 0) this.scheduleIdle(id, entry)
     await this.hub.configure(request.config)
     agent.requestMode(request.config.approve)
@@ -293,9 +295,10 @@ export class Service {
 
   // spec: spec/architecture.md#service-service-onsession
   private async refuseOtherProcess(id: string, requester: number | undefined): Promise<void> {
-    const {pid, started} = this.entries.get(id) ?? {}
-    if (requester === undefined || pid === undefined || pid === requester || started === undefined) return
-    if ((await this.deps.processStart(pid)) === started) throw new SocketError(`This conversation is already open in Claude Code process ${pid}. Exit that process, or exit this one and start a new conversation.`, 423)
+    const {pid, started} = this.entry(id)
+    if (requester === undefined || pid === undefined || pid === requester || started === undefined || (await this.deps.processStart(pid)) !== started) return
+    this.titles.set(requester, {id, at: Date.now()})
+    throw new SocketError(`This conversation is already open in Claude Code process ${pid}. Exit that process, or exit this one and start a new conversation.`, 423)
   }
 
   // spec: spec/api.md#socket-protocol
@@ -438,7 +441,7 @@ export class Service {
     const existing = this.entries.get(id)
     if (existing !== undefined) return existing
     clearTimeout(this.stopTimer)
-    const entry: Entry = {attached: 0, calls: 0, writers: new Map(), opening: this.openAgent(id, folder, request)}
+    const entry: Entry = {attached: 0, calls: 0, writers: new Map(), opening: this.openAgent(id, folder, request), ...readSessionFile(folder)?.claudeProcess}
     this.entries.set(id, entry)
     this.scheduleIdle(id, entry)
     entry.opening.then(

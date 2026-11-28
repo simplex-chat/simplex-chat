@@ -864,7 +864,7 @@ In mode `host`, a session asks in its group to run in that mode: `I want to run 
 | `status-line.js` | The status line command of the running service's version, written at each service start, see [Status line](#status-line). |
 | `_hub/` | The databases of the profile `Claude`: the Main group, the session groups and the chats with peers. |
 | `_user/` | The databases of the profile `User`. |
-| `_sessions/<session ID>/` | `session.json` with the session's number, name, project folder, group, a rejected mode `host`, model, effort level and other session IDs. `files/` holds the files of its chats and of its group. |
+| `_sessions/<session ID>/` | `session.json` with the session's number, name, project folder, group, a rejected mode `host`, model, effort level, other session IDs and the Claude Code process that opened it last. `files/` holds the files of its chats and of its group. |
 
 The folders, and the files the service writes, are readable only by the user, except on Windows. One service runs per data folder. These names contain a dot or start with `_`, which agent names of `serve` can't, so the folders of agents in `~/.simplex-mcp` never collide with them.
 
@@ -877,7 +877,7 @@ The folders, and the files the service writes, are readable only by the user, ex
 | Claude Code ends before the session start shows the link | The service runs apart from Claude Code and keeps starting. The next session start shows the link. |
 | The service stopped during a call | The call returns `The SimpleX service stopped; repeat the call.`, and the next call starts the service again. The actions of the stopped service are lost, and a repeated call creates a new action. |
 | The service stopped between calls, or its start failed | The session starts it again and attaches after 1 second. While that fails, it retries at intervals that double up to 30 seconds. |
-| Another Claude Code process has the session open, as after a second `claude --continue` | The session start shows `SimpleX MCP: This conversation is already open in Claude Code process PID. Exit that process, or exit this one and start a new conversation.` The SimpleX tools return that text, and nothing of this process is posted in the session's group. Within 30 seconds after the other process ends, this one gets the group's prompts. |
+| Another Claude Code process has the session open, as after a second `claude --continue` or a `--fork-session` of it, also after a service restart | The SimpleX tools return `This conversation is already open in Claude Code process PID. Exit that process, or exit this one and start a new conversation.`, and after `--continue` the session start shows it after `SimpleX MCP:`. Nothing of this process is posted in the session's group, and a fork gets no group of its own. Within 30 seconds after the other process ends, this one gets the group's prompts. |
 | A session starts while the service stops | The new service waits up to 15 seconds for the stopping one to release its lock, and then starts. |
 | `service.lock` names a running process that is not the service | After 15 seconds, the session start shows `SimpleX MCP: Another service uses FOLDER (PID N). If no service runs, remove FOLDER/service.lock.` |
 | A newer plugin version starts | It stops the older service and starts its own. When the two versions can't talk to each other, tool calls return `Restart Claude Code to update the SimpleX plugin.` |
