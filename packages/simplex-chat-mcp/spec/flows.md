@@ -1918,9 +1918,9 @@ sequenceDiagram
   K->>D: POST /turn agent.stop
   N->>G: edit, liveMessage false: ✅ M:SS · N steps · X tokens, result
   L->>K: UserPromptSubmit task notification, or PostToolUse Agent
-  K->>D: POST /turn task {toolUse, status, tokens, steps, ms, usageLimit?}, with its note
-  alt usageLimit: the summary has an API error of type rate_limit
-    N->>G: edit with ❌; the note !- ⛔ WHAT stopped: REASON!, priority -1
+  K->>D: POST /turn task {toolUse, status, tokens, steps, ms}, with its note, and alert for a stop line
+  alt alert: the summary has an API error of type rate_limit
+    N->>G: edit with ❌; the note !- ⛔ WHAT stopped: REASON!, priority 1
   else
     N->>G: edit with the figures; the note not posted
   end

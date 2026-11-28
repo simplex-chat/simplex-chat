@@ -62,9 +62,10 @@ sequenceDiagram
 
 ## Stops at a usage limit
 
-- A task notification whose summary is `WHAT failed: …API error: REASON (error type rate_limit…` gets the note `⛔ WHAT stopped: REASON`, and its `task` gets `usageLimit: true`. WHAT ends at the last `failed: ` before `API error`.
-- The hub posts that note, silent, also for an agent or a workflow whose message shows the end with ❌.
+- A task notification whose summary is `WHAT failed: …API error: REASON (error type rate_limit…` gets the note `⛔ WHAT stopped: REASON`. WHAT ends at the last `failed: ` before `API error`.
 - A teammate's idle notification with `idleReason` `failed`, for any failure, gets the note `⛔ Teammate "NAME" stopped: REASON` from its `failureReason`, with the line of a message of the same prompt on the next line.
+- The hook sends `alert: true` with a note that starts with `⛔`.
+- The hub posts a note with `alert` with priority 1, as the session's own stop line, in small print, also for an agent or a workflow whose message shows the end with ❌.
 - A failure line with the text of the last one is posted again when another item follows that line in the group.
 - Failures are handled one at a time.
 - `service.log` lines:
@@ -78,9 +79,12 @@ sequenceDiagram
   participant N as Session N
   participant G as Session group
   L->>K: UserPromptSubmit, task notification: Agent "X" failed: …API error: REASON (error type rate_limit…
-  K->>N: POST /turn task {toolUse, status: failed, usageLimit: true}, note !- ⛔ Agent "X" stopped: REASON!
+  K->>N: POST /turn task {toolUse, status: failed}, note !- ⛔ Agent "X" stopped: REASON!, alert: true
   N->>G: the agent's message edited with ❌
-  N->>G: the note, priority -1
+  N->>G: the note, priority 1
+  L->>K: UserPromptSubmit, teammate's idle notification {idleReason: failed, failureReason: REASON}
+  K->>N: POST /turn note !- ⛔ Teammate "NAME" stopped: REASON!, alert: true
+  N->>G: the note, priority 1
   L->>K: StopFailure {error, text}
   K->>N: POST /turn failure
   alt another text than the last failure line's
@@ -109,8 +113,8 @@ sequenceDiagram
 - `src/files.ts`: `SessionFile.claudeProcess`.
 - `src/service.ts`: the started and ended lines in `onSession`, and `noteExit` after the last detach; `src/hub.ts`: `Session.postNote`.
 - `src/status-line.ts`: `limitParts` with `highUsagePercent`.
-- `src/hook.ts`: `limitStop`, read by `taskNote` and `taskOf`; `teammateStop`, called by `teammateNote`; `src/protocol.ts`: `TaskEnd.usageLimit`.
-- `src/hub.ts`: `Session.onAgents` counts a task with `usageLimit` as not shown; `fail` runs `postFailure` on the `failureItem` chain, with `lineFollowed`; `postFailure` and `waits` log their lines.
+- `src/hook.ts`: `limitStop`, read by `taskNote`; `teammateStop`, called by `teammateNote`; `stopMark`, read by `recordKind` for `alert`; `src/protocol.ts`: `TurnRequest.alert`.
+- `src/hub.ts`: `Session.turn` posts a note with `alert` with priority 1, also when `onAgents` ended its agent; `fail` runs `postFailure` on the `failureItem` chain, with `lineFollowed`; `postFailure` and `waits` log their lines.
 - The refusal in:
   - `spec/api.md`, socket protocol
   - `spec/architecture.md`, `onSession`, `processStart`, `SessionFile`
@@ -136,12 +140,12 @@ sequenceDiagram
 
 `test/unit/sessions.test.ts`:
 - A note of the service in small print with priority -1.
-- The note of a subagent's stop at a usage limit, posted although its message shows the end.
+- The stop lines of a subagent and of a teammate, posted with priority 1, the subagent's although its message shows the end.
 - A failure line with the text of the last one, posted again once another item follows that line, with the log lines.
 
 `test/unit/hook.test.ts`:
-- The note and `usageLimit` of a task notification at a usage limit, also with `failed: ` in the description, and another failure as before.
-- The note of a teammate's failed idle notification, also beside its message, and none for one that did not fail.
+- The note and `alert` of a task notification at a usage limit, also with `failed: ` in the description, and another failure as before.
+- The note and `alert` of a teammate's failed idle notification, with its message's line below, and none for one that did not fail.
 
 `test/unit/status-line.test.ts`:
 - The usage parts with `❗️` at 95% or more.

@@ -397,7 +397,7 @@ export class Session {
     const ended = task === undefined ? undefined : this.agents.task(task, now)
     if (ended?.kind === "workflow") void this.readWorkflow(ended).then(() => this.showCard(ended, Date.now()))
     else if (ended !== undefined) void this.showCard(ended, now)
-    return ended !== undefined && task?.usageLimit !== true
+    return ended !== undefined
   }
 
   // spec: spec/architecture.md#hub-session-readagents
@@ -646,7 +646,7 @@ export class Session {
   }
 
   // spec: spec/architecture.md#hub-session-turn
-  async turn({at, prompt, typed, note, midTurn, answer, model, switched, effort, step, text, usage, limits, statusLine, agent, task, workflow, failure, waiting}: TurnRequest): Promise<void> {
+  async turn({at, prompt, typed, note, alert, midTurn, answer, model, switched, effort, step, text, usage, limits, statusLine, agent, task, workflow, failure, waiting}: TurnRequest): Promise<void> {
     const owned = this.onAgents(agent, task, workflow)
     const startsTurn = prompt !== undefined && midTurn !== true
     if (answer !== undefined) this.failedText = undefined
@@ -681,7 +681,7 @@ export class Session {
       if (switches.length > 0) await this.post(switches).catch(error => this.postRefusal(error, noteRefused, featureOff))
       if (text !== undefined) this.text(text, at ?? Date.now())
       if (step !== undefined) await this.step(step, at ?? Date.now())
-      if (note !== undefined && !owned) await this.post([{text: note, priority: -1}]).catch(error => this.postRefusal(error, noteRefused, featureOff))
+      if (note !== undefined && (!owned || alert === true)) await this.post([{text: note, priority: alert === true ? 1 : -1}]).catch(error => this.postRefusal(error, noteRefused, featureOff))
       const typedPrompt = prompt !== undefined && typed !== false && prompt.replace(channelPrompt, "").trim() !== "" && matched.length === 0 && parseCommand(prompt) === undefined
       const userPost = typedPrompt ? this.hub.user?.post(this.number, textParts(prompt)).catch(error => this.postRefusal(error, "User's prompt was not posted", notAllowedForUser)) : undefined
       if (startsTurn && (typedPrompt || matched.length > 0) && (at ?? Date.now()) >= this.answeredAt) {
