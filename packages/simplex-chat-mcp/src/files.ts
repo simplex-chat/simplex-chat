@@ -27,7 +27,7 @@ export interface SessionFile {
   goal?: GoalState
   recap?: string
   title?: string
-  claudeProcess?: {pid: number; started: string}
+  claudeProcess?: {pid: number; started?: string}
 }
 
 export interface ServerFile {

@@ -257,7 +257,7 @@ export class Service {
     const changed = previous.pid !== request.pid || previous.started !== started
     if (previous.pid !== undefined && (changed || started === undefined)) agent.endToolApprovals()
     const folder = this.folder(id)
-    if (changed) writeSessionFile(folder, {...readSessionFile(folder)!, claudeProcess: request.pid === undefined || started === undefined ? undefined : {pid: request.pid, started}})
+    if (changed) writeSessionFile(folder, {...readSessionFile(folder)!, claudeProcess: request.pid === undefined ? undefined : {pid: request.pid, started}})
     const another = previous.pid !== request.pid || (previous.started !== undefined && started !== undefined && previous.started !== started)
     if (started !== undefined && another) {
       if (previous.pid !== undefined && previous.started !== undefined) await agent.postNote(`⏹️ Claude Code ended (process ${previous.pid}).`).catch(error => logError(`session ${agent.number}`, error))
