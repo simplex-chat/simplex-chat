@@ -777,6 +777,7 @@ Claude: ⛔ Claude Code stopped: You've hit your weekly limit · resets Nov 18, 
 | A turn ends at a refused login | `⛔ Claude Code stopped: TEXT` with how to sign in again: `/login` in Claude Code or `claude auth login` in a terminal on that computer. Claude Code takes the new login at its next request. |
 | A turn ends at another API error | `⛔ Claude Code stopped: TEXT` with `Send a message here to try again.` |
 | A subagent or a workflow stops at a usage limit | `⛔ Agent "Plan the switch" stopped: You've hit your weekly limit · resets Nov 28, 1am (UTC)`, in small print and silent, also when the agent's own message shows its end with ❌. |
+| A teammate of an agent team stops at an error | `⛔ Teammate "wasm-sandbox" stopped: You've hit your weekly limit · resets Nov 28, 1am (UTC)`, in small print and silent, with Claude Code's reason. |
 | The limit has reset, and Claude Code waits for a key | `🔄 The usage limit has reset. Send a message here to continue.` |
 | The automatic continue is turned off | `⛔ Claude Code will not continue by itself after the usage limit. Send a message here when the limit has reset.` |
 | A dialog without a card waits in the terminal, such as a prompt for you only, a form of an MCP server, a sandboxed command's network access or `Session paused` | `⏸️ Claude Code waits in its terminal: MESSAGE`, with Claude Code's notification text. It comes about 6 seconds after the dialog, and not when a card was posted in the 30 seconds before. |

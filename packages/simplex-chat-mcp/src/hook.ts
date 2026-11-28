@@ -63,7 +63,7 @@ const agentRecordReads = 20
 // spec: spec/architecture.md#hook-agentstart
 const taskStatuses: TaskStatus[] = ["completed", "failed", "killed", "stopped"]
 // spec: spec/architecture.md#hook-limitstop
-const limitStop = /^(.+?) failed: .*?API error: (.+?) \(error type rate_limit\b/
+const limitStop = /^(.+) failed: .*?API error: (.+?) \(error type rate_limit\b/
 
 // spec: spec/architecture.md#hook-agentstart
 interface AgentRecord {
@@ -579,7 +579,10 @@ function taskNote(text: string): string {
 // spec: spec/architecture.md#hook-noteof
 function teammateNote(text: string): string | undefined {
   if (!teammatePrompt.test(text)) return undefined
-  const match = [...text.matchAll(teammateMessage)].find(([, , , body]) => !idleNotification(body))
+  const tags = [...text.matchAll(teammateMessage)]
+  const stop = tags.map(teammateStop).find(line => line !== undefined)
+  if (stop !== undefined) return stop
+  const match = tags.find(([, , , body]) => !idleNotification(body))
   if (match === undefined) return undefined
   const [, sender, attributes, body] = match
   const summary = /\ssummary="([^"]*)"/.exec(attributes)?.[1]
@@ -592,6 +595,18 @@ function idleNotification(body: string): boolean {
     return (JSON.parse(body) as {type?: unknown} | null)?.type === "idle_notification"
   } catch {
     return false
+  }
+}
+
+// spec: spec/architecture.md#hook-limitstop
+function teammateStop([, sender, , body]: RegExpMatchArray): string | undefined {
+  try {
+    const {type, idleReason, failureReason} = (JSON.parse(body) ?? {}) as {type?: unknown; idleReason?: unknown; failureReason?: unknown}
+    if (type !== "idle_notification" || idleReason !== "failed") return undefined
+    const reason = firstLine(stringOf(failureReason) ?? "")
+    return `⛔ Teammate "${oneLine(decoded(sender))}" stopped${reason === "" ? "" : `: ${reason}`}`
+  } catch {
+    return undefined
   }
 }
 
