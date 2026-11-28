@@ -20,6 +20,7 @@ import {version} from "./version"
 const idleClose = 10 * 60_000
 const idleStop = 10 * 60_000
 const processWait = 10_000
+const refusalWait = 60_000
 const psWait = 2_000
 const logCheck = 3_600_000
 const lockChecks = 150
@@ -90,6 +91,7 @@ export class Service {
   private readonly stored: StoredSession[]
   private readonly aliases = new Map<string, string>()
   private readonly titles = new Map<number, {id: string; at: number; name?: string}>()
+  private readonly refusals = new Map<number, {id: string; at: number}>()
   private readonly titled = new EventEmitter()
   private readonly registered = new EventEmitter()
   private readonly held = new Map<number, TitleRequest>()
@@ -297,7 +299,7 @@ export class Service {
   private async refuseOtherProcess(id: string, requester: number | undefined): Promise<void> {
     const {pid, started} = this.entry(id)
     if (requester === undefined || pid === undefined || pid === requester || started === undefined || (await this.deps.processStart(pid)) !== started) return
-    this.titles.set(requester, {id, at: Date.now()})
+    this.refusals.set(requester, {id, at: Date.now()})
     throw new SocketError(`This conversation is already open in Claude Code process ${pid}. Exit that process, or exit this one and start a new conversation.`, 423)
   }
 
@@ -345,7 +347,8 @@ export class Service {
     const recent = Date.now() - processWait
     const detached = [...this.entries].find(([, entry]) => entry.pid === pid && (entry.seen ?? 0) > recent)?.[0]
     const title = this.titles.get(pid)
-    return this.attachedSession(pid) ?? detached ?? (title !== undefined && title.at > recent ? title.id : undefined)
+    const refusal = this.refusals.get(pid)
+    return this.attachedSession(pid) ?? detached ?? (title !== undefined && title.at > recent ? title.id : undefined) ?? (refusal !== undefined && refusal.at > Date.now() - refusalWait ? refusal.id : undefined)
   }
 
   // spec: spec/architecture.md#service-service-canonical
