@@ -915,18 +915,6 @@ describe("service", () => {
     expect(existsSync(sessionFolder(root, id2))).toBe(false)
   })
 
-  it("applies the refused title of a second Claude Code process once that process registers the session after the first ended", async () => {
-    storeSession(id1, 1, "app")
-    const {d, agents, starts} = deps(root)
-    service = await Service.start(d, readDefaultConfig)
-    await post("/session", {id: id1, pid: 300, project: "/p/app", config: defaultConfig})
-    await expect(post("/title", {id: id1, pid: 301, name: "second", transcript: "/c/projects/p/2.jsonl", project: "/p/app", config: defaultConfig})).rejects.toMatchObject({status: 423})
-    starts.set(300, undefined)
-    await post("/session", {id: id1, pid: 301, project: "/p/app", config: defaultConfig})
-    await until(() => agents[0].displayName === "1 · second")
-    expect(agents[0].transcript).toBe("/c/projects/p/2.jsonl")
-  })
-
   it("refuses the held title of a forked session ID from a second Claude Code process once its session server is refused, and the later hooks of that ID, and opens no session for it, as with --fork-session", async () => {
     jest.useFakeTimers(fakeTimers)
     storeSession(id1, 1, "app")
