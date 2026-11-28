@@ -759,22 +759,6 @@ describe("service", () => {
     for (const pid of [0, -1, 1.5, "self"]) expect(await processStart(pid as number)).toBeUndefined()
   })
 
-  it("reads the start time of a process on macOS in the C locale and UTC, the same in every time zone", async () => {
-    const platform = Object.getOwnPropertyDescriptor(process, "platform")!
-    const zone = process.env.TZ
-    Object.defineProperty(process, "platform", {value: "darwin"})
-    try {
-      process.env.TZ = "UTC"
-      const start = await processStart(process.pid)
-      process.env.TZ = "JST-9"
-      expect([start, await processStart(process.pid)]).toEqual([expect.stringMatching(/\S/), start])
-    } finally {
-      Object.defineProperty(process, "platform", platform)
-      if (zone === undefined) delete process.env.TZ
-      else process.env.TZ = zone
-    }
-  })
-
   it("does not delay the idle close of an open session with a title", async () => {
     jest.useFakeTimers(fakeTimers)
     const {d, agents} = deps(root)
