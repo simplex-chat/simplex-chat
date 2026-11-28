@@ -260,8 +260,8 @@ export class Service {
     if (changed) writeSessionFile(folder, {...readSessionFile(folder)!, claudeProcess: request.pid === undefined || started === undefined ? undefined : {pid: request.pid, started}})
     const another = previous.pid !== request.pid || (previous.started !== undefined && started !== undefined && previous.started !== started)
     if (request.pid !== undefined && another) {
-      if (previous.pid !== undefined && previous.started !== undefined) await agent.postNote(`⏹️ Claude Code ended (process ${previous.pid}).`)
-      await agent.postNote(`▶️ Claude Code started (process ${request.pid}).`)
+      if (previous.pid !== undefined && previous.started !== undefined) await agent.postNote(`⏹️ Claude Code ended (process ${previous.pid}).`).catch(error => logError(`session ${agent.number}`, error))
+      await agent.postNote(`▶️ Claude Code started (process ${request.pid}).`).catch(error => logError(`session ${agent.number}`, error))
     }
     if (entry.attached === 0) this.scheduleIdle(id, entry)
     await this.hub.configure(request.config)
