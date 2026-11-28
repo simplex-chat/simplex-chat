@@ -30,7 +30,11 @@ class ChatItemUpdateTest {
 
   @AfterTest
   fun tearDown() {
-    runBlocking { withBGApi {}.join() }
+    runBlocking {
+      withBGApi {}.join()
+      withContext(Dispatchers.Main) {}
+      withBGApi {}.join()
+    }
     ChatModel.chatsContext.chats.value.clear()
     ChatModel.chatsContext.chatItems.value.clear()
     ChatModel.chatId.value = null
