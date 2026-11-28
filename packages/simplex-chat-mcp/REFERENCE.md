@@ -776,11 +776,12 @@ Claude: ⛔ Claude Code stopped: You've hit your weekly limit · resets Nov 18, 
 | A turn ends at a usage limit | `⛔ Claude Code stopped: TEXT` with `Send a message here when the limit is lifted.` When Claude Code continues by itself at a reset within 24 hours, the line says so. When Claude Code opens its usage menu, the line says that the menu holds the group's messages until someone closes it in the terminal. |
 | A turn ends at a refused login | `⛔ Claude Code stopped: TEXT` with how to sign in again: `/login` in Claude Code or `claude auth login` in a terminal on that computer. Claude Code takes the new login at its next request. |
 | A turn ends at another API error | `⛔ Claude Code stopped: TEXT` with `Send a message here to try again.` |
+| A subagent or a workflow stops at a usage limit | `⛔ Agent "Plan the switch" stopped: You've hit your weekly limit · resets Nov 28, 1am (UTC)`, in small print and silent, also when the agent's own message shows its end with ❌. |
 | The limit has reset, and Claude Code waits for a key | `🔄 The usage limit has reset. Send a message here to continue.` |
 | The automatic continue is turned off | `⛔ Claude Code will not continue by itself after the usage limit. Send a message here when the limit has reset.` |
 | A dialog without a card waits in the terminal, such as a prompt for you only, a form of an MCP server, a sandboxed command's network access or `Session paused` | `⏸️ Claude Code waits in its terminal: MESSAGE`, with Claude Code's notification text. It comes about 6 seconds after the dialog, and not when a card was posted in the 30 seconds before. |
 
-The same stop line is posted once until an answer or your next prompt. Dialogs at the start, such as the workspace trust, and menus opened in the terminal, such as `/model`, post nothing.
+The same stop line is posted once until an answer or your next prompt, and again when other messages came after it, such as a scheduled prompt's line. The service log, `service.log`, has a line for each stop and each wait of Claude Code, with the time and whether its line was posted. Dialogs at the start, such as the workspace trust, and menus opened in the terminal, such as `/model`, post nothing.
 
 To keep tool prompts from waiting in the terminal at all, set `permissions.denyInsteadOfPrompting` to `true` in your user settings, `~/.claude/settings.json`; a repository's settings can't set it. Claude Code 2.1.319 or later then denies a tool use that would wait for a prompt, unless a card in the group allows it first: the plugin's hook holds the prompt for its card. The cost: Claude Code leaves out Claude's questions and plan mode, denies prompts that only you can answer, and denies a tool use whose card ends without a decision.
 

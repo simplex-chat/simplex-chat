@@ -21,6 +21,7 @@ While the Claude Code process of a session's last `/session` runs, the service r
 
 - A process runs while its PID has the start time read at its `/session`; a reused PID has another start time. On Linux the start time includes the boot ID, so a process after a reboot never matches a stored one; without a readable boot ID, it is the ticks alone. On macOS the start time is read in the C locale and UTC. On Windows it is the creation time in UTC file time from PowerShell, within 10 s: its first start took 4.9 s on a GitHub Windows runner, later ones 0.3 s.
 - A request without a PID is served, and so is a request while the recorded process has no start time.
+- A start time is unknown when its read fails other than by a missing process, as at a timeout of `ps` or PowerShell: the refusal check serves the request, and the exit watch counts the process as running.
 - When the recorded process changes during the read of its start time, the check runs again, so of two registrations at once only one is served.
 - The session server sends `/attach`, `/call` and `/permission` only after a `/session` that succeeded.
 - The title of the other process is recorded before the refusal, so its session server resolves to the same session.
@@ -55,6 +56,45 @@ sequenceDiagram
   D-->>Q: the session
 ```
 
+## Usage mark
+
+`5 h: N%` and `week: N%` end with `❗️` at 95% or more, in the status line and in the end line of an answer.
+
+## Stops at a usage limit
+
+- A task notification whose summary is `WHAT failed: …API error: REASON (error type rate_limit…` gets the note `⛔ WHAT stopped: REASON`, and its `task` gets `usageLimit: true`.
+- The hub posts that note, silent, also for an agent or a workflow whose message shows the end with ❌.
+- A failure line with the text of the last one is posted again when another item follows that line in the group.
+- Failures are handled one at a time.
+- `service.log` lines:
+  - `TIME session N stop ERROR: TEXT (posted)`, or `(repeated)`
+  - `TIME session N waiting TYPE: TEXT (posted)`, or `(skipped)`
+
+```mermaid
+sequenceDiagram
+  participant L as Claude Code
+  participant K as turn hook
+  participant N as Session N
+  participant G as Session group
+  L->>K: UserPromptSubmit, task notification: Agent "X" failed: …API error: REASON (error type rate_limit…
+  K->>N: POST /turn task {toolUse, status: failed, usageLimit: true}, note !- ⛔ Agent "X" stopped: REASON!
+  N->>G: the agent's message edited with ❌
+  N->>G: the note, priority -1
+  L->>K: StopFailure {error, text}
+  K->>N: POST /turn failure
+  alt another text than the last failure line's
+    N->>G: ⛔ Claude Code stopped: TEXT, its item kept
+  else the same text
+    N->>G: getChat of the last item
+    alt another item than the last failure line
+      N->>G: ⛔ Claude Code stopped: TEXT, its item kept
+    else that line, a failed read or no item
+      N->>N: nothing posted
+    end
+  end
+  N->>N: log TIME session N stop ERROR: TEXT (posted or repeated)
+```
+
 ## Changes
 
 - `src/service.ts`: `Service.refuseOtherProcess`, called by:
@@ -67,6 +107,9 @@ sequenceDiagram
 - `src/service.ts`: `processStart` adds the boot ID on Linux, runs `ps` with `LC_ALL=C` and `TZ=UTC` on macOS, and PowerShell's `Get-Process` on Windows, with its command runner as a parameter.
 - `src/files.ts`: `SessionFile.claudeProcess`.
 - `src/service.ts`: the started and ended lines in `onSession`, and `noteExit` after the last detach; `src/hub.ts`: `Session.postNote`.
+- `src/status-line.ts`: `limitParts` with `highUsagePercent`.
+- `src/hook.ts`: `limitStop`, read by `taskNote` and `taskOf`; `src/protocol.ts`: `TaskEnd.usageLimit`.
+- `src/hub.ts`: `Session.onAgents` counts a task with `usageLimit` as not shown; `fail` runs `postFailure` on the `failureItem` chain, with `lineFollowed`; `postFailure` and `waits` log their lines.
 - The refusal in:
   - `spec/api.md`, socket protocol
   - `spec/architecture.md`, `onSession`, `processStart`, `SessionFile`

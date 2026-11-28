@@ -201,6 +201,7 @@ export class Session {
   private readonly linked = new WeakSet<Action>()
   private cardAt = -Infinity
   private failedText?: string
+  private failureItem: Promise<number | undefined> = Promise.resolve(undefined)
   private claude: ClaudeState
   private readonly accountReader: AccountReader
   private readonly transcriptReader: TranscriptReader
@@ -396,7 +397,7 @@ export class Session {
     const ended = task === undefined ? undefined : this.agents.task(task, now)
     if (ended?.kind === "workflow") void this.readWorkflow(ended).then(() => this.showCard(ended, Date.now()))
     else if (ended !== undefined) void this.showCard(ended, now)
-    return ended !== undefined
+    return ended !== undefined && task?.usageLimit !== true
   }
 
   // spec: spec/architecture.md#hub-session-readagents
@@ -700,14 +701,36 @@ export class Session {
   private async fail(failure: Failure, at: number): Promise<void> {
     await this.endTexts(at)
     this.closeOpenings(({at: start, until}) => (until ?? start) <= at)
-    if (failure.text === this.failedText) return
+    const posted = this.failureItem.then(item => this.postFailure(failure, item))
+    this.failureItem = posted.catch(() => undefined)
+    await posted
+  }
+
+  // spec: spec/architecture.md#hub-session-fail
+  private async postFailure(failure: Failure, item: number | undefined): Promise<number | undefined> {
+    const repeated = failure.text === this.failedText && !(await this.lineFollowed(item))
+    log(`${new Date().toISOString()} session ${this.number} stop ${failure.error}: ${failure.text} (${repeated ? "repeated" : "posted"})`)
+    if (repeated) return item
     this.failedText = failure.text
-    await this.post([{text: failureLine(failure), priority: 1}]).catch(error => this.postRefusal(error, noteRefused, featureOff))
+    return this.post([{text: failureLine(failure), priority: 1}]).then(
+      ([sent]) => sent?.chatItem.meta.itemId,
+      error => this.postRefusal(error, noteRefused, featureOff).then(() => undefined),
+    )
+  }
+
+  // spec: spec/architecture.md#hub-session-fail
+  private async lineFollowed(item: number | undefined): Promise<boolean> {
+    if (item === undefined) return false
+    return getChat(this.hub.chat, `#${this.control.groupId}`, {type: "last", count: 1}).then(
+      ({chatItems}) => chatItems.some(({meta}) => meta.itemId !== item),
+      error => (logError(`failure of session ${this.number}`, error), false),
+    )
   }
 
   // spec: spec/architecture.md#hub-session-fail
   private async waits({kind, text}: Waiting, at: number): Promise<void> {
     const line = kind === "quota_auto_resume_stale" ? limitResetLine : kind === "quota_auto_resume_disabled" ? noContinueLine : waitingKinds.includes(kind) && this.cardAt < at - cardQuietMs ? `⏸️ Claude Code waits in its terminal: ${text}` : undefined
+    log(`${new Date().toISOString()} session ${this.number} waiting ${kind}: ${text} (${line === undefined ? "skipped" : "posted"})`)
     if (line !== undefined) await this.post([{text: line, priority: 1}]).catch(error => this.postRefusal(error, noteRefused, featureOff))
   }
 

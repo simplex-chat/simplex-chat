@@ -62,6 +62,8 @@ const handbackTool = "SubagentHandback"
 const agentRecordReads = 20
 // spec: spec/architecture.md#hook-agentstart
 const taskStatuses: TaskStatus[] = ["completed", "failed", "killed", "stopped"]
+// spec: spec/architecture.md#hook-limitstop
+const limitStop = /^(.+?) failed: .*?API error: (.+?) \(error type rate_limit\b/
 
 // spec: spec/architecture.md#hook-agentstart
 interface AgentRecord {
@@ -567,6 +569,8 @@ function taskNote(text: string): string {
   if (block === undefined) return `🔔 ${firstLine(text)}`
   const field = (name: string): string => firstLine(decoded(new RegExp(`<${name}>([\\s\\S]*?)</${name}>`).exec(block)?.[1] ?? ""))
   const summary = field("summary") || "Task notification"
+  const limit = limitStop.exec(summary)
+  if (limit !== null) return `⛔ ${limit[1]} stopped: ${limit[2]}`
   const event = field("event")
   const emoji = statusEmoji.get(field("status")) ?? (event === "" ? "🔔" : "📡")
   return `${emoji} ${summary}${event === "" ? "" : `: ${event}`}`
@@ -649,7 +653,7 @@ function taskOf(prompt: string | undefined): TaskEnd | undefined {
   const toolUse = field("tool-use-id")
   const status = taskStatuses.find(known => known === field("status"))
   if (toolUse === undefined || status === undefined) return undefined
-  return {toolUse, status, ...figures(Number(field("subagent_tokens")), Number(field("tool_uses")), Number(field("duration_ms")))}
+  return {toolUse, status, ...figures(Number(field("subagent_tokens")), Number(field("tool_uses")), Number(field("duration_ms"))), ...(limitStop.test(field("summary") ?? "") ? {usageLimit: true} : {})}
 }
 
 // spec: spec/architecture.md#hook-agentstart

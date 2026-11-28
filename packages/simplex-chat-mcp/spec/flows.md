@@ -1918,8 +1918,12 @@ sequenceDiagram
   K->>D: POST /turn agent.stop
   N->>G: edit, liveMessage false: ✅ M:SS · N steps · X tokens, result
   L->>K: UserPromptSubmit task notification, or PostToolUse Agent
-  K->>D: POST /turn task {toolUse, status, tokens, steps, ms}, with its note
-  N->>G: edit with the figures; the note not posted
+  K->>D: POST /turn task {toolUse, status, tokens, steps, ms, usageLimit?}, with its note
+  alt usageLimit: the summary has an API error of type rate_limit
+    N->>G: edit with ❌; the note !- ⛔ WHAT stopped: REASON!, priority -1
+  else
+    N->>G: edit with the figures; the note not posted
+  end
   L->>K: PostToolUse Workflow {runId, workflowName, transcriptDir}
   K->>D: POST /turn workflow
   N->>G: live !- ⚙️ NAME!
@@ -2036,11 +2040,16 @@ sequenceDiagram
   HK->>D: POST /turn {failure: {error, text, autoContinue, menu}}
   D->>N: turn
   N->>N: end the steps, cards and texts; the opening message gets ⏹️ Stopped
-  N->>O: ⛔ Claude Code stopped: TEXT, and what to do, unless the text is that of the last failure line
+  opt the text is that of the last failure line
+    N->>N: getChat of the group's last item, after the earlier failures
+  end
+  N->>O: ⛔ Claude Code stopped: TEXT, and what to do, unless the text is that of the last failure line and that line is the last item
+  N->>N: log TIME session N stop ERROR: TEXT (posted or repeated)
   CC->>HK: Notification {notification_type, message}
   HK->>D: POST /turn {waiting: {kind, text}}
   D->>N: turn
   N->>O: 🔄 or ⛔ line of the automatic continue, or ⏸️ Claude Code waits in its terminal: MESSAGE, without a card in the 30 s before
+  N->>N: log TIME session N waiting TYPE: TEXT (posted or skipped)
 ```
 
 Source: [`eventFields`, `failureOf`, `continued`, `menuOpen`](../src/hook.ts), [`Session.turn`, `fail`, `waits`, `failureLine`](../src/hub.ts).

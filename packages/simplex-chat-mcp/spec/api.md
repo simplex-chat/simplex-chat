@@ -887,7 +887,7 @@ The last line of an answered question or plan is `Answered by NAME: LABEL.` for 
 | `/approve N` or `/approve N all` | action N is a question | `Action N is a question; reply to its card to answer it.` |
 | a reply to a pending question or plan card | the sender is an admin or owner | none: the text answers the card, and is not a prompt ([`Session.pass`, `repliedCard`](../src/hub.ts), [`Control.reply`](../src/control.ts)) |
 
-<a id="waiting-lines"></a>Lines that Claude posts when Claude Code waits, each with priority 1 ([`Session.fail`, `waits`, `failureLine`, `cardQuietMs`, `waitingKinds`, `limitResetLine`, `noContinueLine`](../src/hub.ts)):
+<a id="waiting-lines"></a>Lines that Claude posts when Claude Code waits, each with priority 1 ([`Session.fail`, `postFailure`, `lineFollowed`, `waits`, `failureLine`, `cardQuietMs`, `waitingKinds`, `limitResetLine`, `noContinueLine`](../src/hub.ts)):
 
 | Event | Line |
 |---|---|
@@ -899,7 +899,7 @@ The last line of an answered question or plan is `Answered by NAME: LABEL.` for 
 | Notification `quota_auto_resume_disabled` | `⛔ Claude Code will not continue by itself after the usage limit. Send a message here when the limit has reset.` |
 | Notification `permission_prompt`, `worker_permission_prompt`, `elicitation_dialog`, `elicitation_url_dialog` or `agent_needs_input`, without a card created in the 30 s before the hook started | `⏸️ Claude Code waits in its terminal: MESSAGE` |
 
-TEXT is the first line of Claude Code's text, cut at 200 characters with `…`, or the error type when it is empty. A failure line with the text of the last one is not posted again until an answer or a prompt that gets an opening message. A failure also ends the turn's steps and cards, and its opening message gets `⏹️ Stopped`.
+TEXT is the first line of Claude Code's text, cut at 200 characters with `…`, or the error type when it is empty. A failure line with the text of the last one is not posted again until an answer or a prompt that gets an opening message, unless another item follows that line in the group, read by `apiGetChat` of the group's last item; after a failed read, and after a line whose post was refused, it is not posted. Failures are handled one at a time, so of two at once with one text one line is posted. A failure also ends the turn's steps and cards, and its opening message gets `⏹️ Stopped`.
 
 `mode`, `permission`, `question`, `plan` and `link` are exempt from the card size check ([`Control.refusal`, `requestLines`, `questionLines`, `commandsLine`](../src/control.ts)). In `/pending`, their WHAT is `run in mode MODE`, `use TOOL`, `answer a question`, `approve a plan` and `open a link of SERVER` ([`summary`](../src/actions.ts)). `/approve N` and `/approve N all` of a `terminalOnly` card get `Action N is approved only in Claude Code's terminal.` ([`Control.ownerCommand`](../src/control.ts)). A `permission` card comes from the channel ([4.5](#45-channel)) or from the PermissionRequest hook ([4.6](#46-socket-protocol), [flow 41](flows.md#41-a-tool-prompt-of-the-permissionrequest-hook)). The last line of a `mode` or `permission` card is `Ended.` when the hub ends the card, and `Expired.` when it expires. The hub ends a `permission` card at an answer, or at a prompt that is not mid-turn, whose hook started after the card was created, and at the last detach, except the card of a subagent's prompt; it ends a card of the PermissionRequest hook when the hook's request closes, and a `mode` card at the option `requests` ([`Session.requestMode`, `turn`, `endPermissions`](../src/hub.ts), [`Service.onAttach`](../src/service.ts), [`Actions.end`](../src/actions.ts), [`cardText`](../src/control.ts)).
 
@@ -1185,10 +1185,12 @@ The service's stdout and stderr are written to `service.log` ([`spawnService`](.
 | Main group lost | `The Main group is lost. Run npx -y @simplex-chat/mcp@VERSION reset-owners in a terminal.` | [`MainGroup.lose`](../src/main-group.ts) |
 | session group created | `Group "N · NAME" of session N created.` | [`Hub.createSessionGroup`](../src/hub.ts) |
 | session group lost | `The group "N · NAME" is lost.` | [`Control.lose`](../src/control.ts) |
+| a failure of a session's turn | `TIME session N stop ERROR: TEXT (posted)`, or `(repeated)` for a line not posted again, TIME the ISO 8601 time in UTC | [`Session.postFailure`](../src/hub.ts) |
+| a notification of a session's Claude Code | `TIME session N waiting TYPE: TEXT (posted)`, or `(skipped)` for a type without a line or a waiting line after a card | [`Session.waits`](../src/hub.ts) |
 | actions | as in [3.4](#34-terminal-lines), with ` of session N` after `Action N`, and `allowed.` for a tool use | [`Actions.create`, `performedText`](../src/actions.ts) |
 | stop | `Cancelled K action(s).`, `Stopping: sending K cancelled card(s), up to 10 s. Ctrl-C to stop now.`, `Stopped.` | [`Service.shutdown`](../src/service.ts), [`waitForCancelledCards`](../src/serve.ts) |
 
-stderr: `CONTEXT: ERROR` from `logError`, with CONTEXT among `Main group command`, `EVENT in the Main group`, `EVENT in the group of session N`, `prompt of session N`, `invitation to session N`, `User`, `User in session N`, `group of session N`, `session N`, `owner of CHAT`, `mode host of session N`, `title`, `ROOT/_sessions/ID/session.json`, `ROOT/titles.json`, `ROOT/service.log`, `METHOD PATH` and those of [3.4](#34-terminal-lines). Session processes and hooks write to their own stderr ([`startSession`, `ServiceLink.start`](../src/session.ts), [`markUnattended`, `turn`](../src/hook.ts)):
+stderr: `CONTEXT: ERROR` from `logError`, with CONTEXT among `Main group command`, `EVENT in the Main group`, `EVENT in the group of session N`, `prompt of session N`, `failure of session N`, `invitation to session N`, `User`, `User in session N`, `group of session N`, `session N`, `owner of CHAT`, `mode host of session N`, `title`, `ROOT/_sessions/ID/session.json`, `ROOT/titles.json`, `ROOT/service.log`, `METHOD PATH` and those of [3.4](#34-terminal-lines). Session processes and hooks write to their own stderr ([`startSession`, `ServiceLink.start`](../src/session.ts), [`markUnattended`, `turn`](../src/hook.ts)):
 - A session process writes `SimpleX service: ERROR`, `SimpleX channel: ERROR` and `permission relay: ERROR`.
 - The SessionStart hook of an unattended run writes `SimpleX MCP session start: ERROR`, the turn hook `SimpleX MCP turn: ERROR`, and the PermissionRequest hook `SimpleX MCP ask: ERROR`.
 
@@ -1263,6 +1265,8 @@ The UserPromptSubmit hook's `note` is a line of at most 200 characters; a longer
 | another kind | another origin | `⚙️ Claude Code: ` and the first line of the prompt |
 
 A first line is the first line with other than blank characters. In a first line and in NAME, control and format characters become spaces, so a note is one line.
+
+A task notification whose `<summary>` is `WHAT failed: …API error: REASON (error type rate_limit…`, the stop of an agent or a workflow at a usage limit, gets the note `⛔ WHAT stopped: REASON` in place of the line above, as `⛔ Agent "Plan the switch" stopped: You've hit your weekly limit · resets Nov 28, 1am (UTC)`, and its `task` gets `usageLimit: true`. The hub posts that note also for an agent or a workflow with a message, whose end shows ❌ without the reason ([`limitStop`, `taskNote`, `taskOf`](../src/hook.ts), [`Session.onAgents`](../src/hub.ts)).
 
 A tool hook sends `step` with `tool_use_id` as `id` ([`turn`, `stepOf`, `stepText`, `displayPath`](../src/hook.ts), [`duration`](../src/messages.ts)). Its text, cut as a note, from the first lines of the fields of `tool_input`:
 
