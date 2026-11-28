@@ -138,8 +138,8 @@ fun AvatarRows() = SimpleXTheme {
 @Composable
 fun AvatarLinksAndBadge() = SimpleXTheme {
   Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-    CIChatLinkHeader(MsgChatLink.Contact("https://simplex.chat/contact", Profile.sampleData.copy(image = PHOTO_ORANGE), business = false), null, hasText = false)
-    CIChatLinkHeader(MsgChatLink.Group("https://simplex.chat/contact", GroupProfile.sampleData), null, hasText = false)
+    CIChatLinkHeader(MsgChatLink.Contact("https://simplex.chat/contact", Profile.sampleData.copy(image = PHOTO_ORANGE), business = false), false, hasText = false)
+    CIChatLinkHeader(MsgChatLink.Group("https://simplex.chat/contact", GroupProfile.sampleData), false, hasText = false)
     ComposeChatLinkView(MsgChatLink.Contact("https://simplex.chat/contact", Profile.sampleData, business = false), cancelEnabled = true) {}
     BadgeUserPreview(BadgeLevel.Supporter)
   }

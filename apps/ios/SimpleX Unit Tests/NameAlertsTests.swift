@@ -468,7 +468,7 @@ func fixtureJSON(_ fixture: String) throws -> Any {
 
 func singleFieldJSON(_ value: Any) -> Any {
     if let object = value as? [String: Any] {
-        var fields = object.mapValues(singleFieldJSON)
+        var fields = jsonFields(object)
         guard let tag = object["type"] as? String, !msgContentTypes.contains(tag) else { return fields }
         fields["type"] = nil
         return ["_owsf": true, tag: fields]
@@ -480,6 +480,18 @@ func singleFieldJSON(_ value: Any) -> Any {
 }
 
 private let msgContentTypes: Set<String> = ["text", "link", "image", "video", "voice", "file", "report", "chat"]
+
+private let taggedObjectKeys: Set = ["msgContent", "chatLink"]
+
+private func jsonFields(_ object: [String: Any]) -> [String: Any] {
+    object.reduce(into: [:]) { fields, field in
+        if taggedObjectKeys.contains(field.key), let tagged = field.value as? [String: Any] {
+            fields[field.key] = jsonFields(tagged)
+        } else {
+            fields[field.key] = singleFieldJSON(field.value)
+        }
+    }
+}
 
 @MainActor
 func waitFor(_ condition: @escaping () -> Bool) async throws {

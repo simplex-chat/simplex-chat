@@ -8008,6 +8008,10 @@ Query: SELECT count(1) FROM calls
 Plan:
 SCAN calls USING COVERING INDEX idx_calls_contact_id
 
+Query: SELECT count(1) FROM chat_item_mentions
+Plan:
+SCAN chat_item_mentions USING COVERING INDEX idx_chat_item_mentions_chat_item_id
+
 Query: SELECT count(1) FROM chat_items WHERE chat_item_id > ?
 Plan:
 SEARCH chat_items USING INTEGER PRIMARY KEY (rowid>?)
@@ -8166,6 +8170,10 @@ SCAN badge_purchases
 Query: SELECT issue_failed_since, issue_error FROM badge_purchases
 Plan:
 SCAN badge_purchases
+
+Query: SELECT item_content FROM chat_items ORDER BY chat_item_id DESC LIMIT 1
+Plan:
+SCAN chat_items
 
 Query: SELECT item_content FROM chat_items WHERE group_id = 1 ORDER BY chat_item_id DESC LIMIT 1
 Plan:
@@ -8943,6 +8951,10 @@ SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
 Query: UPDATE groups SET public_member_count = ?, updated_at = ? WHERE group_id = ?
 Plan:
 SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: UPDATE groups SET relay_own_status = 'invited'
+Plan:
+SCAN groups
 
 Query: UPDATE groups SET relay_own_status = ?, relay_inactive_at = ?, updated_at = ? WHERE group_id = ?
 Plan:
