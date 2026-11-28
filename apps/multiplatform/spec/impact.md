@@ -214,7 +214,7 @@ Path prefix: `common/src/commonMain/kotlin/chat/simplex/common/`
 |-------------|--------------------------|------------|-------|
 | `views/usersettings/SettingsView.kt` | PC18, PC22, PC23, PC24, PC25, PC29 | Medium | Settings navigation hub |
 | `views/usersettings/Appearance.kt` | PC24, PC32 | Low | Theme and appearance customization |
-| `views/usersettings/PrivacySettings.kt` | PC20, PC22, PC34 | Medium | Privacy and lock settings; contact deletion setting |
+| `views/usersettings/PrivacySettings.kt` | PC11, PC20, PC22, PC34 | Medium | Privacy and lock settings; contact deletion setting |
 | `views/usersettings/UserProfileView.kt` | PC19 | Medium | Profile display name and image editing |
 | `views/usersettings/UserProfilesView.kt` | PC19, PC21 | Medium | Multi-profile management |
 | `views/usersettings/HiddenProfileView.kt` | PC21 | Medium | Hidden profile access |
@@ -226,7 +226,7 @@ Path prefix: `common/src/commonMain/kotlin/chat/simplex/common/`
 | `views/usersettings/Preferences.kt` | PC2, PC3, PC8 | Medium | Chat feature preferences UI |
 | `views/usersettings/SetDeliveryReceiptsView.kt` | PC2 | Low | Delivery receipts toggle |
 | `views/usersettings/RTCServers.kt` | PC17, PC25 | Medium | WebRTC ICE server configuration |
-| `views/usersettings/DeveloperView.kt` | — | Low | Developer/debug settings |
+| `views/usersettings/DeveloperView.kt` | PC11 | Low | Developer/debug settings |
 | `views/usersettings/StorageView.kt` | — | Low | Storage breakdown (developer options) |
 | `views/usersettings/HelpView.kt` | — | Low | Help and support links |
 | `views/usersettings/MarkdownHelpView.kt` | PC4 | Low | Markdown formatting guide |
@@ -281,7 +281,7 @@ Path prefix: `common/src/commonMain/kotlin/chat/simplex/common/`
 | `views/helpers/ModalView.kt` | PC1 through PC32 | Medium | Modal navigation stack |
 | `views/helpers/Utils.kt` | PC1 through PC32 | Low | Shared formatting, clipboard, and utility functions |
 | `views/helpers/DatabaseUtils.kt` | PC23 | Medium | Keystore passphrase and database helpers |
-| `views/helpers/LinkPreviews.kt` | PC11 | Medium | Link preview fetching and rendering |
+| `views/helpers/LinkPreviews.kt` | PC11 | Medium | Link preview rendering |
 | `views/helpers/LocalAuthentication.kt` | PC22 | Medium | Biometric/passcode authentication expect |
 | `views/helpers/ChatWallpaper.kt` | PC24 | Low | Chat wallpaper rendering |
 | `views/helpers/ChatInfoImage.kt` | PC19 | Low | Profile image composable |

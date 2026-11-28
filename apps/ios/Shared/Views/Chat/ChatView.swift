@@ -2693,7 +2693,7 @@ struct ChatView: View {
         private func editButton(_ ci: ChatItem) -> Button<some View> {
             Button {
                 withAnimation {
-                    composeState = ComposeState(editingItem: ci)
+                    composeState = ComposeState(editingItem: ci, previewsOn: privacyLinkPreviewsGroupDefault.get())
                 }
             } label: {
                 Label(

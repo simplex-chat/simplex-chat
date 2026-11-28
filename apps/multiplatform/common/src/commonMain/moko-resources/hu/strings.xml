@@ -2593,12 +2593,8 @@
     <string name="share_via_chat">Megosztás egy csevegésen keresztül</string>
     <string name="owner_verification_failed">⚠️ Nem sikerült ellenőrizni az aláírást: %s.</string>
     <string name="tap_to_open">Koppintson ide a megnyitáshoz</string>
-    <string name="link_previews_alert_disable">Letiltás</string>
-    <string name="link_previews_alert_enable">Engedélyezés</string>
-    <string name="link_previews_alert_title">Engedélyezi a hivatkozások előnézetét?</string>
     <string name="error_prefix">Hiba</string>
     <string name="network_error">Hálózati hiba</string>
-    <string name="link_previews_alert_desc">A hivatkozáselőnézet küldése felfedheti az Ön IP-címét a weboldal számára. Ezt később módosíthatja az adatvédelmi beállításokban.</string>
     <string name="connection_reached_limit_of_undelivered_messages">A kapcsolat elérte a kézbesítetlen üzenetek korlátját</string>
     <string name="relay_results">Átjátszóeredmények:</string>
     <string name="channel_preferences">Csatornabeállítások</string>
@@ -2684,7 +2680,6 @@
     <string name="onboarding_your_profile">Saját profil létrehozása</string>
     <string name="onboarding_first_network">Az első hálózat, ahol Ön birtokolja\na saját kapcsolatait és csoportjait.</string>
     <string name="one_hand_ui_bottom_bar">Alsó sáv</string>
-    <string name="link_previews_alert_desc_socks">A hivatkozások előnézetét SOCKS proxyn keresztül kéri le a kliens. A DNS-lekérdezés viszont továbbra is történhet helyi szinten, a saját DNS-kiszolgálón keresztül.</string>
     <string name="one_hand_ui_top_bar">Felső sáv</string>
     <string name="cancel_channel_alert_msg">Az új %1$s nevű csatornája %3$d átjátszóból %2$d átjátszóhoz kapcsolódott.\nHa visszavonja, akkor a csatorna törlődni fog – de később újra létrehozhatja.</string>
     <string name="button_cancel_and_delete_channel">Visszavonás és a csatorna törlése</string>

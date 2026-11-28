@@ -712,11 +712,12 @@ limit bucket. Point Caddy's badges root at
 folder, so the new `store-service` project does not see the old `badge-service` container, which
 would keep running on the same port and database: stop it first, from `scripts/badge-service/` or
 anywhere with `-p`. The image builds the names site from the `apps/simplex-domains` submodule, a
-badge-only service included, so fetch it before the build:
+badge-only service included, and the core with the root certificates of the
+`src/Simplex/Chat/LinkPreview/certifi` submodule, so fetch both before the build:
 
 ```
 docker compose -p badge-service down
-git submodule update --init ../../apps/simplex-domains
+git submodule update --init ../../apps/simplex-domains ../../src/Simplex/Chat/LinkPreview/certifi
 docker compose up -d --build
 ```
 
@@ -755,11 +756,11 @@ Both images carry the badges build at `/srv/badges` and the names build at `/srv
 `webapps` image to copy them out for Caddy, and the service's for `serve_webapp = on`, where they
 are the defaults of `badges_static_dir` and `names_static_dir`; a run outside the image sets both. The names
 site (simplex.domains) comes from the `apps/simplex-domains` submodule, the simplex.domains
-repository, and is configured beside the badges site in `[listener]`. Fetch the submodule before
-building the image:
+repository, and is configured beside the badges site in `[listener]`. Fetch the submodule, with the
+submodule of the core's root certificates, before building the image:
 
 ```
-git submodule update --init apps/simplex-domains
+git submodule update --init apps/simplex-domains src/Simplex/Chat/LinkPreview/certifi
 ```
 
 A new names site ships by moving the submodule to its commit and committing that here:
@@ -806,7 +807,7 @@ From a fresh clone:
 
 ```
 git clone https://github.com/simplex-chat/simplex-chat && cd simplex-chat
-git submodule update --init apps/simplex-domains
+git submodule update --init apps/simplex-domains src/Simplex/Chat/LinkPreview/certifi
 cd scripts/store-service
 printf '%s\n' COMPOSE_FILE=compose.yml:compose.dev.yml BADGE_DB_CONN=postgresql://simplex@127.0.0.1:5433/store_service > .env
 install -d webapps

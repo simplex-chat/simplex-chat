@@ -733,6 +733,7 @@ private func previewScenes() -> [SnapshotScene] {
         SnapshotScene(DeletedItemView_Previews.self, allSizes: true),
         SnapshotScene(DeleteGroupKeepDialog_Previews.self),
         SnapshotScene(DetermineWidth_Previews.self),
+        SnapshotScene(DeveloperOptions_Previews.self),
         SnapshotScene(DeveloperView_Previews.self),
         SnapshotScene(EmojiItemView_Previews.self, allSizes: true),
         SnapshotScene(FramedCIVoiceView_Previews.self, allSizes: true),
@@ -1116,6 +1117,15 @@ struct UserPickerUnread_Previews: PreviewProvider {
         u.activeOrder = id
         u.profile = LocalProfile(profileId: id, displayName: name, fullName: "", image: image, localAlias: "")
         return u
+    }
+}
+
+struct DeveloperOptions_Previews: PreviewProvider {
+    static var previews: some View {
+        let defaults = UserDefaults(suiteName: "snapshots.developer")!
+        defaults.register(defaults: appDefaults)
+        defaults.set(true, forKey: DEFAULT_DEVELOPER_TOOLS)
+        return DeveloperView().defaultAppStorage(defaults)
     }
 }
 

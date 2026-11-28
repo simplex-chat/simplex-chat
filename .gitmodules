@@ -5,3 +5,6 @@
 	path = apps/simplex-domains
 	url = https://github.com/simplex-chat/simplex.domains
 	branch = names
+[submodule "src/Simplex/Chat/LinkPreview/certifi"]
+	path = src/Simplex/Chat/LinkPreview/certifi
+	url = https://github.com/certifi/python-certifi

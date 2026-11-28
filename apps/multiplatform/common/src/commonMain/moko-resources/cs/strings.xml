@@ -2518,15 +2518,12 @@
     <string name="rcv_channel_event_channel_deleted">smazaný kanál</string>
     <string name="delete_relay">Smazat relé</string>
     <string name="direct_messages_are_prohibited_channel">Přímé zprávy mezi odběrateli jsou zakázány.</string>
-    <string name="link_previews_alert_disable">Zakázat</string>
     <string name="disable_sending_recent_history_channel">Neposílat historii novým odběratelům.</string>
     <string name="v6_5_invite_friends">Snadněji pozvěte své přátele 👋</string>
     <string name="button_edit_channel_profile">Upravit profil kanálu</string>
-    <string name="link_previews_alert_enable">Povolit</string>
     <string name="enable_chats_with_admins">Povolit</string>
     <string name="enable_at_least_one_chat_relay">Povolte alespoň jedno chat relé pro vytvoření kanálu.</string>
     <string name="enable_chats_with_admins_question">Povolit chat se správci?</string>
-    <string name="link_previews_alert_title">Povolit náhledy odkazů?</string>
     <string name="enter_profile_name">Zadejte název profilu…</string>
     <string name="enter_relay_name">Zadejte jméno relé…</string>
     <string name="error_prefix">Chyba</string>
@@ -2577,7 +2574,6 @@
     <string name="appearance_minimize_to_tray_desc">Nechat SimpleX běžet na pozadí pro přijímání zpráv.</string>
     <string name="let_someone_connect_to_you">Umožněte ostatním se s vámi spojit</string>
     <string name="action_button_channel_link">Odkaz</string>
-    <string name="link_previews_alert_desc_socks">Náhled odkazu bude vyžádán prostřednictvím SOCKS proxy. DNS vyhledávání se stále může uskutečnit lokálně pomocí vašeho DNS resolveru.</string>
     <string name="owner_verification_passed">Podpis odkazu ověřen.</string>
     <string name="members_can_chat_with_admins">Členové mohou chatovat se správci.</string>
     <string name="alert_title_msg_error">Chyba zprávy</string>

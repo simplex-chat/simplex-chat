@@ -469,7 +469,7 @@ fun ChatItemView(
                     }
                     if (cItem.meta.editable && cItem.content.msgContent !is MsgContent.MCVoice && !live) {
                       ItemAction(stringResource(MR.strings.edit_verb), painterResource(MR.images.ic_edit_filled), onClick = {
-                        composeState.value = ComposeState(editingItem = cItem, useLinkPreviews = useLinkPreviews)
+                        composeState.value = ComposeState.edit(cItem, useLinkPreviews, controller.appPrefs.privacyLinkPreviews.get())
                         showMenu.value = false
                       })
                     }

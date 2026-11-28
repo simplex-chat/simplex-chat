@@ -85,6 +85,7 @@ chatResponsesDocsData =
     ("CRInvitation", "One-time invitation"),
     ("CRItemsReadForChat", "Messages marked as read"),
     ("CRLeftMemberUser", "User left group"),
+    ("CRLinkPreview", "Link preview of a web page"),
     ("CRMemberAccepted", "Member accepted to group"),
     ("CRMembersBlockedForAllUser", "Members blocked for all by admin"),
     ("CRMembersRoleUser", "Members role changed by user"),

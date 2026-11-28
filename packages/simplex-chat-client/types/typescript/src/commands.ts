@@ -212,6 +212,20 @@ export namespace APIShareChatMsgContent {
   }
 }
 
+// Get link preview of a web page.
+// Network usage: interactive.
+export interface APIGetLinkPreview {
+  uri: string
+}
+
+export namespace APIGetLinkPreview {
+  export type Response = CR.LinkPreview | CR.ChatCmdError
+
+  export function cmdString(self: APIGetLinkPreview): string {
+    return '/_link preview ' + self.uri
+  }
+}
+
 // File commands
 // Commands to receive and to cancel files. Files are sent as part of the message, there are no separate commands to send files.
 

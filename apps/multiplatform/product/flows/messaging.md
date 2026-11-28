@@ -41,8 +41,8 @@ All message operations flow through the Haskell core via `ChatController.apiSend
 ### 1.2 Link Preview
 
 1. As the user types, the text is parsed for URLs.
-2. If `privacyLinkPreviews` preference is enabled and a URL is detected, a `LinkPreview` is fetched asynchronously.
-3. The compose preview is set to `ComposePreview.CLinkPreview(linkPreview)`.
+2. If `privacyLinkPreviews` preference is enabled and a URL is detected, the core makes a `LinkPreview` asynchronously (`apiGetLinkPreview`), fetching the page through its network settings.
+3. The compose preview is set to `ComposePreview.CLinkPreview(LinkPreviewStatus.Loading(uri))` when the link is selected, and to `CLinkPreview(LinkPreviewStatus.Shown(linkPreview))` with the result.
 4. When sent, the `msgContent` is `MsgContent.MCLink(text, preview)`.
 
 ---

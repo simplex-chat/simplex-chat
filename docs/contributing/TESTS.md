@@ -33,7 +33,7 @@ The hspec suite `simplex-chat-test` of simplex-chat.cabal, with the entry point 
 
 | Pattern | Module | Checked |
 |---|---|---|
-| `/SimpleX chat client/` | [ChatTests.hs](../../tests/ChatTests.hs) | [chat scenarios](#chat-scenario-tests): direct, forward, group, chat relay, local, file, profile and chat list tests |
+| `/SimpleX chat client/` | [ChatTests.hs](../../tests/ChatTests.hs) | [chat scenarios](#chat-scenario-tests): direct, forward, group, chat relay, local, file, profile, chat list and link preview tests; link previews are fetched from a local HTTPS server, directly and through a local SOCKS5 server, and onion pages from a local HTTP server through the SOCKS5 server |
 | `/names tests/` | ChatTests/Names.hs | SimpleX names, resolved by a local resolver ([NameResolver.hs](../../tests/NameResolver.hs)); SQLite only |
 | `/SimpleX chat protocol/` | ProtocolTests.hs | chat protocol messages, short link data, batch limits, preferences JSON |
 | `/JSON Tests/` | JSONTests.hs, JSONFixtures.hs | conversion of the Swift JSON form to the tagged form, with QuickCheck; JSON of markdown |
@@ -46,6 +46,7 @@ The hspec suite `simplex-chat-test` of simplex-chat.cabal, with the entry point 
 | `/Operators/` | OperatorTests.hs | server operators, usage conditions, validation of user servers |
 | `/Member relations/` | MemberRelationsTests.hs | member relation vectors |
 | `/Image resize/` | ImageTests.hs | image resizing |
+| `/Link preview/` | LinkPreviewTests.hs | link previews: the head scanner, the page and image limits, URIs, the address policy, the keys of certificate chains, HTTP framing and interim responses, charsets and the embedded root certificates |
 | `/Supporter badges/` | BadgeTests.hs | badge credentials and proofs |
 | `/WebRTC encryption/` | WebRTCTests.hs | encryption of call media frames; SQLite only |
 | `/Remote session/` | RemoteTests.hs | a desktop controlling a mobile: handshake, messages, files |
@@ -243,11 +244,13 @@ A new test file is added to its target in project.pbxproj: a PBXBuildFile, a PBX
 
 - Checked: app code on [app fixtures](#app-fixtures) and other logic of the app.
 - Write: an `XCTestCase` in [apps/ios/SimpleX Unit Tests](../../apps/ios/SimpleX%20Unit%20Tests); `fixtureJSON`, `singleFieldJSON` and `waitFor` are at file scope of NameAlertsTests.swift.
+- The share extension's ShareAPI.swift and SEChatState.swift are also compiled into the target, so that its commands are tested on app fixtures (LinkPreviewTests.swift).
 - Run, on macOS: `scripts/ci/ios-stub-libs.sh`, then the `xcodebuild test` command of the step "Run iOS unit tests" of build-ios in build.yml; or Product > Test with the scheme SimpleX Unit Tests.
 - Pitfalls:
   - The stubs replace the libraries in apps/ios/Libraries/sim, where scripts/ios/prepare.sh puts the core built for the simulator.
   - With the stubs, the app opens its database error screen and calls the core no more.
   - The tests run with `-testLanguage en -testRegion US`; a test of dates sets `NSTimeZone.default` to UTC.
+  - The share extension's `logger` and its functions `apiGetActiveUser`, `apiStartChat`, `apiSetAppFilePaths`, `apiSetEncryptLocalFiles`, `apiGetChats`, `apiSendMessages`, `apiGetLinkPreview`, `apiActivateChat` and `apiSuspendChat` are declared in the test module beside the app's: a call that both accept, such as `apiGetActiveUser()`, is written `SimpleX.apiGetActiveUser()` to call the app's function, and `logger` is the extension's.
 
 ### SimpleX Snapshots
 

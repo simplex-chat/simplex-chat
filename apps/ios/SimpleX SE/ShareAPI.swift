@@ -84,6 +84,16 @@ func apiSendMessages(
     }
 }
 
+func apiGetLinkPreview(uri: String) async throws -> LinkPreview {
+    let r: APIResult<SEChatResponse> = await withCheckedContinuation { cont in
+        DispatchQueue.global().async {
+            cont.resume(returning: sendSimpleXCmd(SEChatCommand.apiGetLinkPreview(uri: uri)))
+        }
+    }
+    if case let .result(.linkPreview(linkPreview)) = r { return linkPreview }
+    throw r.unexpected
+}
+
 func apiActivateChat() throws {
     chatReopenStore()
     let r: APIResult<SEChatResponse> = sendSimpleXCmd(SEChatCommand.apiActivateChat(restoreChat: false))
@@ -126,7 +136,8 @@ enum SEChatCommand: ChatCmdProtocol {
     case apiGetChats(userId: Int64)
     case apiCreateChatItems(noteFolderId: Int64, composedMessages: [ComposedMessage])
     case apiSendMessages(type: ChatType, id: Int64, scope: GroupChatScope?, sendAsGroup: Bool, live: Bool, ttl: Int?, composedMessages: [ComposedMessage])
-    
+    case apiGetLinkPreview(uri: String)
+
     var cmdString: String {
         switch self {
         case .showActiveUser: return "/u"
@@ -146,6 +157,7 @@ enum SEChatCommand: ChatCmdProtocol {
             let ttlStr = ttl != nil ? "\(ttl!)" : "default"
             let asGroup = sendAsGroup ? "(as_group=on)" : ""
             return "/_send \(ref(type, id, scope: scope))\(asGroup) live=\(onOff(live)) ttl=\(ttlStr) json \(msgs)"
+        case let .apiGetLinkPreview(uri): return "/_link preview \(uri)"
         }
     }
     
@@ -175,7 +187,8 @@ enum SEChatResponse: Decodable, ChatAPIResult {
     case apiChats(user: UserRef, chats: [SEChatData])
     case newChatItems(user: UserRef, chatItems: [AChatItem])
     case cmdOk(user_: UserRef?)
-    
+    case linkPreview(linkPreview: LinkPreview)
+
     var responseType: String {
         switch self {
         case .activeUser: "activeUser"
@@ -184,6 +197,7 @@ enum SEChatResponse: Decodable, ChatAPIResult {
         case .apiChats: "apiChats"
         case .newChatItems: "newChatItems"
         case .cmdOk: "cmdOk"
+        case .linkPreview: "linkPreview"
         }
     }
     
@@ -197,6 +211,7 @@ enum SEChatResponse: Decodable, ChatAPIResult {
             let itemsString = chatItems.map { chatItem in String(describing: chatItem) }.joined(separator: "\n")
             return withUser(u, itemsString)
         case .cmdOk: return noDetails
+        case let .linkPreview(linkPreview): return String(describing: linkPreview)
         }
     }
 

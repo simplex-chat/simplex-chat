@@ -94,6 +94,7 @@ The `ChatCommand` enum ([`AppAPITypes.swift` L15](../Shared/Model/AppAPITypes.sw
 | `apiPlanForwardChatItems` | `fromChatType, fromChatId, fromScope, itemIds` | Plan message forwarding | [L63](../Shared/Model/AppAPITypes.swift#L63) |
 | `apiForwardChatItems` | `toChatType, toChatId, toScope, sendAsGroup, from..., itemIds, ttl` | Forward messages; `sendAsGroup` forwards as channel owner | [L64](../Shared/Model/AppAPITypes.swift#L64) |
 | `apiReportMessage` | `groupId, chatItemId, reportReason, reportText` | Report group message | [L55](../Shared/Model/AppAPITypes.swift#L55) |
+| `apiGetLinkPreview` | `uri: String` | Get the preview of a web page, loaded by the core through the network settings | [L68](../Shared/Model/AppAPITypes.swift#L68) |
 | `apiChatRead` | `type, id, scope` | Mark entire chat as read | [L166](../Shared/Model/AppAPITypes.swift#L166) |
 | `apiChatItemsRead` | `type, id, scope, itemIds` | Mark specific items as read | [L167](../Shared/Model/AppAPITypes.swift#L167) |
 | `apiChatUnread` | `type, id, unreadChat` | Toggle unread badge | [L168](../Shared/Model/AppAPITypes.swift#L168) |
@@ -362,6 +363,7 @@ Group, file, call, notification, and misc responses ([`AppAPITypes.swift` L919](
 | `archiveExported` | `archiveErrors: [ArchiveError]` | Export result | [L967](../Shared/Model/AppAPITypes.swift#L967) |
 | `archiveImported` | `archiveErrors: [ArchiveError]` | Import result | [L968](../Shared/Model/AppAPITypes.swift#L968) |
 | `appSettings` | `appSettings: AppSettings` | Retrieved settings | [L969](../Shared/Model/AppAPITypes.swift#L969) |
+| `linkPreview` | `linkPreview: LinkPreview` | Preview of a web page | [L1109](../Shared/Model/AppAPITypes.swift#L1109) |
 
 ---
 

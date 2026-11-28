@@ -56,6 +56,7 @@ import qualified Paths_simplex_chat as SC
 import Simplex.Chat.AppSettings
 import Simplex.Chat.Call
 import Simplex.Chat.Delivery
+import Simplex.Chat.LinkPreview (LinkPreviewConfig)
 import Simplex.Chat.Messages
 import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Operators
@@ -188,6 +189,7 @@ data ChatConfig = ChatConfig
     deliveryWorkerDelay :: Int64, -- microseconds
     deliveryBucketSize :: Int,
     webPreviewConfig :: Maybe WebPreviewConfig,
+    linkPreviewConfig :: LinkPreviewConfig,
     channelSubscriberRole :: GroupMemberRole, -- TODO [relays] starting role should be communicated in protocol from owner to relays
     relayChecksInterval :: NominalDiffTime,
     relayInactiveTTL :: NominalDiffTime,
@@ -437,6 +439,7 @@ data ChatCommand
   | APIForwardChatItems {toChatRef :: ChatRef, sendAsGroup :: ShowGroupAsSender, fromChatRef :: ChatRef, chatItemIds :: NonEmpty ChatItemId, ttl :: Maybe Int}
   | APIShareChatMsgContent {shareChatRef :: ChatRef, toSendRef :: SendRef}
   | APIShareMyAddress {toSendRef :: SendRef}
+  | APIGetLinkPreview {uri :: Text}
   | APIUserRead UserId
   | UserRead
   | APIChatRead {chatRef :: ChatRef}
@@ -768,6 +771,7 @@ allowRemoteCommand = \case
 #endif
   APISetNetworkConfig _ -> False
   APIGetNetworkConfig -> False
+  APIGetLinkPreview _ -> False
   SetLocalDeviceName _ -> False
   ListRemoteHosts -> False
   StartRemoteHost {} -> False
@@ -926,6 +930,7 @@ data ChatResponse
   | CRGroupDeletedUser {user :: User, groupInfo :: GroupInfo, msgSigned :: Bool, localDeletion :: Bool}
   | CRForwardPlan {user :: User, itemsCount :: Int, chatItemIds :: [ChatItemId], forwardConfirmation :: Maybe ForwardConfirmation}
   | CRChatMsgContent {user :: User, msgContent :: MsgContent}
+  | CRLinkPreview {linkPreview :: LinkPreview}
   | CRRcvFileAccepted {user :: User, chatItem :: AChatItem}
   -- TODO add chatItem :: AChatItem
   | CRRcvFileAcceptedSndCancelled {user :: User, rcvFileTransfer :: RcvFileTransfer}
@@ -1627,6 +1632,7 @@ data ChatErrorType
   | CEConnectionUserChangeProhibited
   | CEPeerChatVRangeIncompatible
   | CERelayTestError {message :: String}
+  | CELinkPreview {message :: String}
   | CEInternalError {message :: String}
   | CEException {message :: String}
   deriving (Show, Exception)

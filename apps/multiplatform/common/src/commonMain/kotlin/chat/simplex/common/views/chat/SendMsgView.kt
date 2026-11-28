@@ -118,7 +118,7 @@ fun SendMsgView(
       }
     }
     if (showDeleteTextButton.value) {
-      DeleteTextButton(composeState)
+      DeleteTextButton(onMessageChange)
     }
     Box(Modifier.align(Alignment.BottomEnd).padding(bottom = if (appPlatform.isAndroid) 0.dp else 5.sp.toDp() * fontSizeSqrtMultiplier)) {
       val sendButtonSize = remember { Animatable(36f) }
@@ -312,9 +312,9 @@ private fun CustomDisappearingMessageDialog(
 }
 
 @Composable
-private fun BoxScope.DeleteTextButton(composeState: MutableState<ComposeState>) {
+private fun BoxScope.DeleteTextButton(onMessageChange: (ComposeMessage) -> Unit) {
   IconButton(
-    { composeState.value = composeState.value.copy(message = ComposeMessage()) },
+    { onMessageChange(ComposeMessage()) },
     Modifier.align(Alignment.TopEnd).size(36.dp)
   ) {
     Icon(painterResource(MR.images.ic_close), null, Modifier.padding(7.dp).size(36.dp), tint = MaterialTheme.colors.secondary)
@@ -637,7 +637,7 @@ fun PreviewSendMsgView() {
 fun PreviewSendMsgViewEditing() {
   val smallFont = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onBackground)
   val textStyle = remember { mutableStateOf(smallFont) }
-  val composeStateEditing = ComposeState(editingItem = ChatItem.getSampleData(), useLinkPreviews = true)
+  val composeStateEditing = ComposeState.edit(ChatItem.getSampleData(), useLinkPreviews = true, previewsOn = true)
   SimpleXTheme {
     SendMsgView(
       composeState = remember { mutableStateOf(composeStateEditing) },

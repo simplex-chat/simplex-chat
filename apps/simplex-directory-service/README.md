@@ -14,7 +14,7 @@ Chat bot for registering and searching groups. Superusers and admins are configu
 ## Building
 
 ```sh
-git clone https://github.com/simplex-chat/simplex-chat
+git clone --recurse-submodules https://github.com/simplex-chat/simplex-chat
 cd simplex-chat
 # OpenSSL build configuration (required) — copy the file for your OS:
 cp scripts/cabal.project.local.linux cabal.project.local   # on macOS: scripts/cabal.project.local.mac

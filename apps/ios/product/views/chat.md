@@ -54,7 +54,7 @@ Each type has a dedicated view in `Shared/Views/Chat/ChatItem/`:
 | Video | `CIVideoView` | Video thumbnail with play button; inline playback |
 | Voice | `CIVoiceView` / `FramedCIVoiceView` | Waveform visualization with playback controls and duration |
 | File | `CIFileView` | File icon, name, size; download/open actions |
-| Link preview | `CILinkView` | URL preview card with title, description, image |
+| Link preview | `CILinkView` | URL preview card with title, description of at most 2 lines, image |
 | Emoji-only | `EmojiItemView` | Large emoji rendering without message bubble |
 | Call event | `CICallItemView` | Call status (missed, ended, duration) |
 | Group event | `CIEventView` | Member joined/left, role changes, group updates |

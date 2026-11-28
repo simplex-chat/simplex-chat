@@ -2857,11 +2857,6 @@
     <string name="connect_plan_this_is_your_link_for_channel">O seu canal</string>
     <string name="connect_plan_this_is_your_link_for_channel_vName"><![CDATA[Este é o seu link para o canal <b>%1$s</b>!]]></string>
     <string name="unblock_subscriber_for_all_question">Desbloquear subscritor para todos?</string>
-    <string name="link_previews_alert_title">Ativar pré-visualizações de links?</string>
-    <string name="link_previews_alert_desc">O envio de uma pré-visualização de link pode revelar o seu endereço IP ao sítio Web. Pode alterar isto mais tarde nas definições de Privacidade.</string>
-    <string name="link_previews_alert_desc_socks">A pré-visualização do link será pedida através do proxy SOCKS. A resolução DNS ainda pode ocorrer localmente através do seu resolvedor de DNS.</string>
-    <string name="link_previews_alert_enable">Ativar</string>
-    <string name="link_previews_alert_disable">Desativar</string>
     <string name="close_behavior_dialog_text">Se escolher Fechar, as mensagens não serão recebidas.\nPode alterar isto mais tarde nas definições de Aspeto.</string>
     <string name="close_behavior_dialog_close">Fechar a aplicação</string>
     <string name="tray_show">Mostrar o SimpleX</string>

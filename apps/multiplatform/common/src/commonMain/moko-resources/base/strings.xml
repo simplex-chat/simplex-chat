@@ -1224,6 +1224,8 @@
   <string name="deprecated_options_section">Deprecated options</string>
   <string name="show_internal_errors">Show internal errors</string>
   <string name="show_slow_api_calls">Show slow API calls</string>
+  <string name="show_link_preview_errors">Show link preview errors</string>
+  <string name="link_preview_error">Link preview error</string>
   <string name="storage">Storage</string>
   <string name="storage_total">Total</string>
   <string name="shutdown_alert_question">Shutdown?</string>
@@ -1538,6 +1540,7 @@
   <string name="app_will_ask_to_confirm_unknown_file_servers">The app will ask to confirm downloads from unknown file servers (except .onion or when SOCKS proxy is enabled).</string>
   <string name="without_tor_or_vpn_ip_address_will_be_visible_to_file_servers">Without Tor or VPN, your IP address will be visible to file servers.</string>
   <string name="send_link_previews">Send link previews</string>
+  <string name="without_socks_proxy_website_sees_ip_address">Without a SOCKS proxy, the website sees your IP address.</string>
   <string name="sanitize_links_toggle">Remove link tracking</string>
   <string name="privacy_contact_deletion">Contact deletion</string>
   <string name="privacy_contact_deletion_notify">Notify</string>
@@ -3250,13 +3253,6 @@
 
   <!-- ChatListNavLinkView.kt channel-related -->
   <string name="unblock_subscriber_for_all_question">Unblock subscriber for all?</string>
-
-  <!-- ComposeView.kt link previews opt-in alert -->
-  <string name="link_previews_alert_title">Enable link previews?</string>
-  <string name="link_previews_alert_desc">Sending a link preview may reveal your IP address to the website. You can change this in Privacy settings later.</string>
-  <string name="link_previews_alert_desc_socks">Link preview will be requested via SOCKS proxy. DNS lookup may still happen locally via your DNS resolver.</string>
-  <string name="link_previews_alert_enable">Enable</string>
-  <string name="link_previews_alert_disable">Disable</string>
 
   <!-- Desktop tray / minimize-to-tray -->
   <string name="close_behavior_dialog_title">Minimize to tray?</string>

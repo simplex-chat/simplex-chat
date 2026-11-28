@@ -290,7 +290,7 @@ Users can report messages in groups via `ApiReportMessage(groupId, chatItemId, r
 In-message mentions of group members. Stored as `mentions: Map<String, CIMention>` on `ChatItem` and `mentions: MentionedMembers` on `ComposeState`.
 
 ### Link Previews
-Automatic preview generation for URLs in messages. Controlled by `AppPreferences.privacyLinkPreviews`. An alert is shown on first use (`privacyLinkPreviewsShowAlert`).
+Automatic preview generation for URLs in messages, by the core through its network settings (`apiGetLinkPreview`). Controlled by `AppPreferences.privacyLinkPreviews`, on by default.
 
 ### Local File Encryption
 Files stored on device can be encrypted. Controlled by `AppPreferences.privacyEncryptLocalFiles` and toggled via `CC.ApiSetEncryptLocalFiles(enable)`.

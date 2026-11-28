@@ -822,6 +822,7 @@ public enum ChatErrorType: Decodable, Hashable {
     case connectionUserChangeProhibited
     case peerChatVRangeIncompatible
     case relayTestError(message: String)
+    case linkPreview(message: String)
     case internalError(message: String)
     case exception(message: String)
 }

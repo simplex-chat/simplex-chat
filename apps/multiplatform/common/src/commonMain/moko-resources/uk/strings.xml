@@ -2538,17 +2538,14 @@
     <string name="error_saving_channel_profile">Помилка збереження профілю каналу</string>
     <string name="delete_relay">Видалити реле</string>
     <string name="direct_messages_are_prohibited_channel">Прямі повідомлення між підписниками заборонені.</string>
-    <string name="link_previews_alert_disable">Вимкнути</string>
     <string name="disable_sending_recent_history_channel">Не надсилати історію новим підписникам.</string>
     <string name="num_relays_selected">%d реле обрано</string>
     <string name="rcv_msg_error_dropped">не доставлено (після %1$d спроб)</string>
     <string name="v6_5_invite_friends">Простіше запросити друзів 👋</string>
     <string name="button_edit_channel_profile">Редагувати профіль каналу</string>
-    <string name="link_previews_alert_enable">Увімкнути</string>
     <string name="enable_chats_with_admins">Увімкнути</string>
     <string name="enable_at_least_one_chat_relay">Увімкніть хоча б одне реле чату для створення каналу.</string>
     <string name="enable_chats_with_admins_question">Увімкнути чати з адміністраторами?</string>
-    <string name="link_previews_alert_title">Увімкнути попередній перегляд посилань?</string>
     <string name="enter_profile_name">Введіть назву профілю…</string>
     <string name="enter_relay_name">Введіть назву реле…</string>
     <string name="error_adding_relay">Помилка додавання реле</string>

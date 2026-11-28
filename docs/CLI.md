@@ -95,6 +95,7 @@ On Linux, you can build the chat executable using [docker build with custom outp
 git clone git@github.com:simplex-chat/simplex-chat.git
 cd simplex-chat
 git checkout stable
+git submodule update --init --recursive
 DOCKER_BUILDKIT=1 docker build --output ~/.local/bin .
 ```
 
@@ -118,6 +119,7 @@ cd simplex-chat
 git checkout stable
 # or to build a specific version:
 # git checkout v5.3.0-beta.8
+git submodule update --init --recursive
 ```
 
 `master` is a development branch, it may contain unstable code.

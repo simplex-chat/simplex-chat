@@ -1,7 +1,6 @@
 @file:UseSerializers(UriSerializer::class, ComposeMessageSerializer::class)
 package chat.simplex.common.views.chat
 
-import SectionItemView
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -19,8 +18,6 @@ import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontStyle
-import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
@@ -53,6 +50,7 @@ import kotlinx.serialization.encoding.Encoder
 import java.io.File
 import java.net.URI
 import java.nio.file.Files
+import java.util.concurrent.atomic.AtomicLong
 import kotlin.math.min
 
 const val MAX_NUMBER_OF_MENTIONS = 3
@@ -61,11 +59,26 @@ const val MAX_NUMBER_OF_MENTIONS = 3
 @Serializable
 sealed class ComposePreview {
   @Serializable object NoPreview: ComposePreview()
-  @Serializable class CLinkPreview(val linkPreview: LinkPreview?): ComposePreview()
+  @Serializable class CLinkPreview(val status: LinkPreviewStatus): ComposePreview()
   @Serializable class ChatLinkPreview(val chatLink: MsgChatLink, val ownerSig: LinkOwnerSig? = null): ComposePreview()
   @Serializable class MediaPreview(val images: List<String>, val content: List<UploadContent>): ComposePreview()
   @Serializable data class VoicePreview(val voice: String, val durationMs: Int, val finished: Boolean): ComposePreview()
   @Serializable class FilePreview(val fileName: String, val uri: URI): ComposePreview()
+}
+
+@Serializable
+sealed class LinkPreviewStatus {
+  @Serializable class Loading(val uri: String): LinkPreviewStatus() {
+    @Transient val request: Long = ComposeState.nextLinkRequest()
+  }
+  @Serializable class Shown(val linkPreview: LinkPreview): LinkPreviewStatus()
+}
+
+sealed class LinkPreviewEvent {
+  object TextChanged: LinkPreviewEvent()
+  class Fetched(val request: Long, val linkPreview: LinkPreview?): LinkPreviewEvent()
+  object Cancelled: LinkPreviewEvent()
+  object ChatChanged: LinkPreviewEvent()
 }
 
 @Serializable
@@ -118,9 +131,10 @@ data class ComposeState(
   val mentions: MentionedMembers = emptyMap(),
   // the max file size the user may attach, raised by their active badge unless the chat is incognito; kept in sync on chat switch
   val maxFileSize: Long = getMaxFileSize(FileProtocol.XFTP),
-  val sendIncognito: Boolean = false
+  val sendIncognito: Boolean = false,
+  val cancelledLinks: Set<String> = emptySet()
 ) {
-  constructor(editingItem: ChatItem, liveMessage: LiveMessage? = null, useLinkPreviews: Boolean): this(
+  private constructor(editingItem: ChatItem, liveMessage: LiveMessage? = null, useLinkPreviews: Boolean): this(
     ComposeMessage(
       when (val mc = editingItem.content.msgContent) {
         is MsgContent.MCChat -> stripTextLink(mc.text, mc.chatLink.connLinkStr)
@@ -195,9 +209,63 @@ data class ComposeState(
   val linkPreview: LinkPreview?
     get() =
       when (preview) {
-        is ComposePreview.CLinkPreview -> preview.linkPreview
+        is ComposePreview.CLinkPreview -> (preview.status as? LinkPreviewStatus.Shown)?.linkPreview
         else -> null
       }
+  val loadingLink: LinkPreviewStatus.Loading?
+    get() = (preview as? ComposePreview.CLinkPreview)?.status as? LinkPreviewStatus.Loading
+  private val previewLink: String?
+    get() =
+      when (val status = (preview as? ComposePreview.CLinkPreview)?.status) {
+        is LinkPreviewStatus.Loading -> status.uri
+        is LinkPreviewStatus.Shown -> status.linkPreview.uri
+        null -> null
+      }
+
+  fun updateLinkPreview(event: LinkPreviewEvent, previewsOn: Boolean): ComposeState =
+    when {
+      event is LinkPreviewEvent.Fetched && loadingLink?.request != event.request -> this
+      event is LinkPreviewEvent.Fetched && event.linkPreview != null -> copy(preview = ComposePreview.CLinkPreview(LinkPreviewStatus.Shown(event.linkPreview)))
+      else -> copy(cancelledLinks = cancelledAfter(event)).let { it.copy(preview = it.selectedPreview(previewsOn)) }
+    }
+
+  private fun cancelledAfter(event: LinkPreviewEvent): Set<String> =
+    when (event) {
+      LinkPreviewEvent.TextChanged -> if (message.text.isEmpty()) emptySet() else cancelledLinks
+      LinkPreviewEvent.ChatChanged -> if (contextItem is ComposeContextItem.EditingItem) linksBeforePreview(contextItem.chatItem) else emptySet()
+      LinkPreviewEvent.Cancelled, is LinkPreviewEvent.Fetched -> cancelledLinks + listOfNotNull(previewLink)
+    }
+
+  private fun linksBeforePreview(item: ChatItem): Set<String> {
+    val uri = (item.content.msgContent as? MsgContent.MCLink)?.preview?.uri ?: return emptySet()
+    val links = item.formattedText.orEmpty().mapNotNull { it.linkUri }.filterNot(::isSimplexLink)
+    return if (uri in links) links.takeWhile { it != uri }.toSet() else emptySet()
+  }
+
+  private fun selectedPreview(previewsOn: Boolean): ComposePreview {
+    val link = getMessageLinks(parsedMessage).first
+    return when {
+      preview !is ComposePreview.NoPreview && preview !is ComposePreview.CLinkPreview -> preview
+      link == null || !linkPreviewAllowed || !previewsOn -> ComposePreview.NoPreview
+      link == previewLink -> preview
+      else -> ComposePreview.CLinkPreview(LinkPreviewStatus.Loading(link))
+    }
+  }
+
+  fun getMessageLinks(parsedMsg: List<FormattedText>?): Pair<String?, Boolean> {
+    if (parsedMsg == null) return null to false
+    val simplexLink = parsedMsg.any { ft -> ft.format is Format.SimplexLink }
+    for (ft in parsedMsg) {
+      val link = ft.linkUri
+      if (link != null && !cancelledLinks.contains(link) && !isSimplexLink(link)) {
+        return link to simplexLink
+      }
+    }
+    return null to simplexLink
+  }
+
+  private fun isSimplexLink(link: String): Boolean =
+    link.startsWith("https://simplex.chat", true) || link.startsWith("http://simplex.chat", true)
 
   val attachmentDisabled: Boolean
     get() {
@@ -238,6 +306,15 @@ data class ComposeState(
         mutableStateOf(json.decodeFromString(it))
       }
     )
+
+    private val linkRequests = AtomicLong()
+    fun nextLinkRequest(): Long = linkRequests.incrementAndGet()
+
+    fun edit(editingItem: ChatItem, useLinkPreviews: Boolean, previewsOn: Boolean): ComposeState {
+      val s = ComposeState(editingItem, useLinkPreviews = useLinkPreviews)
+      if (s.linkPreview == null) return s
+      return s.copy(cancelledLinks = s.linksBeforePreview(editingItem)).updateLinkPreview(LinkPreviewEvent.TextChanged, previewsOn)
+    }
   }
 
   fun mentionMemberName(name: String): String {
@@ -266,7 +343,7 @@ fun chatItemPreview(chatItem: ChatItem): ComposePreview {
   val fileName = chatItem.file?.fileName ?: ""
   return when (val mc = chatItem.content.msgContent) {
     is MsgContent.MCText -> ComposePreview.NoPreview
-    is MsgContent.MCLink -> ComposePreview.CLinkPreview(linkPreview = mc.preview)
+    is MsgContent.MCLink -> ComposePreview.CLinkPreview(LinkPreviewStatus.Shown(mc.preview))
     // TODO: include correct type
     is MsgContent.MCImage -> ComposePreview.MediaPreview(images = listOf(mc.image), listOf(UploadContent.SimpleImage(getAppFileUri(fileName))))
     is MsgContent.MCVideo -> ComposePreview.MediaPreview(images = listOf(mc.image), listOf(UploadContent.SimpleImage(getAppFileUri(fileName))))
@@ -464,29 +541,10 @@ fun ComposeView(
   showChooseAttachment: () -> Unit,
   focusRequester: FocusRequester?,
 ) {
-  val cancelledLinks = rememberSaveable { mutableSetOf<String>() }
   val chatScope = remember(chatsCtx) { chatsCtx.groupScopeInfo?.toChatScope() }
   val scopeChatId = remember { chat.id }
-  fun isSimplexLink(link: String): Boolean =
-    link.startsWith("https://simplex.chat", true) || link.startsWith("http://simplex.chat", true)
-
-  fun getMessageLinks(parsedMsg: List<FormattedText>?): Pair<String?, Boolean> {
-    if (parsedMsg == null) return null to false
-    val simplexLink = parsedMsg.any { ft -> ft.format is Format.SimplexLink }
-    for (ft in parsedMsg) {
-      val link = ft.linkUri
-      if (link != null && !cancelledLinks.contains(link) && !isSimplexLink(link)) {
-        return link to simplexLink
-      }
-    }
-    return null to simplexLink
-  }
-
-  val linkUrl = rememberSaveable { mutableStateOf<String?>(null) }
   // default value parsed because of draft
-  val hasSimplexLink = rememberSaveable { mutableStateOf(getMessageLinks(parseToMarkdown(composeState.value.message.text)).second) }
-  val prevLinkUrl = rememberSaveable { mutableStateOf<String?>(null) }
-  val pendingLinkUrl = rememberSaveable { mutableStateOf<String?>(null) }
+  val hasSimplexLink = rememberSaveable { mutableStateOf(composeState.value.getMessageLinks(parseToMarkdown(composeState.value.message.text)).second) }
   val useLinkPreviews = true
   val saveLastDraft = chatModel.controller.appPrefs.privacySaveLastDraft.get()
   val smallFont = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onBackground)
@@ -495,71 +553,14 @@ fun ComposeView(
   val emojiPickerShown = rememberSaveable { mutableStateOf(false) }
   AttachmentSelection(composeState, attachmentOption, composeState::processPickedFile) { uris, text -> CoroutineScope(Dispatchers.IO).launch { composeState.processPickedMedia(uris, text) } }
 
-  suspend fun fetchAndUpdateLinkPreview(url: String) {
-    composeState.value = composeState.value.copy(preview = ComposePreview.CLinkPreview(null))
-    val lp = getLinkPreview(url)
-    if (lp != null && pendingLinkUrl.value == url) {
-      composeState.value = composeState.value.copy(preview = ComposePreview.CLinkPreview(lp))
-      pendingLinkUrl.value = null
-    } else if (pendingLinkUrl.value == url) {
-      composeState.value = composeState.value.copy(preview = ComposePreview.NoPreview)
-      pendingLinkUrl.value = null
-    }
-  }
+  fun previewsOn(): Boolean = chatModel.controller.appPrefs.privacyLinkPreviews.get()
 
-  fun loadLinkPreview(url: String, wait: Long? = null) {
-    if (pendingLinkUrl.value == url) {
-      withLongRunningApi(slow = 60_000) {
-        if (wait != null) delay(wait)
-        if (pendingLinkUrl.value != url) return@withLongRunningApi
-        if (chatModel.controller.appPrefs.privacyLinkPreviewsShowAlert.get()) {
-          val socksEnabled = chatModel.controller.appPrefs.networkUseSocksProxy.get()
-          showLinkPreviewsConfirmAlert(socksEnabled) { enable ->
-            if (enable != null) {
-              chatModel.controller.appPrefs.privacyLinkPreviewsShowAlert.set(false)
-              chatModel.controller.appPrefs.privacyLinkPreviews.set(enable)
-              if (enable) {
-                withLongRunningApi(slow = 60_000) { fetchAndUpdateLinkPreview(url) }
-              } else if (pendingLinkUrl.value == url) {
-                composeState.value = composeState.value.copy(preview = ComposePreview.NoPreview)
-                pendingLinkUrl.value = null
-              }
-            } else {
-              cancelledLinks.add(url)
-              if (pendingLinkUrl.value == url) {
-                composeState.value = composeState.value.copy(preview = ComposePreview.NoPreview)
-                pendingLinkUrl.value = null
-              }
-            }
-          }
-          return@withLongRunningApi
-        }
-        fetchAndUpdateLinkPreview(url)
-      }
-    }
-  }
-
-  fun showLinkPreview(parsedMessage: List<FormattedText>?) {
-    prevLinkUrl.value = linkUrl.value
-    val linkParsed = getMessageLinks(parsedMessage)
-    linkUrl.value = linkParsed.first
-    hasSimplexLink.value = linkParsed.second
-    val url = linkUrl.value
-    if (url != null) {
-      if (url != composeState.value.linkPreview?.uri && url != pendingLinkUrl.value) {
-        pendingLinkUrl.value = url
-        loadLinkPreview(url, wait = if (prevLinkUrl.value == url) null else 1500L)
-      }
-    } else {
-      composeState.value = composeState.value.copy(preview = ComposePreview.NoPreview)
-    }
-  }
-
-  fun resetLinkPreview() {
-    linkUrl.value = null
-    prevLinkUrl.value = null
-    pendingLinkUrl.value = null
-    cancelledLinks.clear()
+  val loadingLink = composeState.value.loadingLink
+  LaunchedEffect(loadingLink?.request) {
+    if (loadingLink == null) return@LaunchedEffect
+    delay(1500)
+    val linkPreview = chatModel.controller.apiGetLinkPreview(loadingLink.uri)
+    composeState.value = composeState.value.updateLinkPreview(LinkPreviewEvent.Fetched(loadingLink.request, linkPreview), previewsOn())
   }
 
   fun clearPrevDraft(prevChatId: String?) {
@@ -581,7 +582,6 @@ fun ComposeView(
       composeState.value = composeState.value.copy(inProgress = false, progressByTimeout = false)
     } else {
       composeState.value = ComposeState(useLinkPreviews = useLinkPreviews, maxFileSize = composeState.value.maxFileSize)
-      resetLinkPreview()
     }
     recState.value = RecordingState.NotStarted
     textStyle.value = smallFont
@@ -650,11 +650,11 @@ fun ComposeView(
   // the state is passed in by a send that must not read the current one - see sendMessageAsync
   fun checkLinkPreview(cs: ComposeState = composeState.value): MsgContent {
     val msgText = cs.message.text
-    return when (val composePreview = cs.preview) {
+    return when (cs.preview) {
       is ComposePreview.CLinkPreview -> {
         val parsedMsg = parseToMarkdown(msgText)
-        val url = getMessageLinks(parsedMsg).first
-        val lp = composePreview.linkPreview
+        val url = cs.getMessageLinks(parsedMsg).first
+        val lp = cs.linkPreview
         if (lp != null && url == lp.uri) {
           MsgContent.MCLink(msgText, preview = lp)
         } else {
@@ -1043,7 +1043,7 @@ fun ComposeView(
           if (chatIsOpen && composeState.value.empty) {
             composeState.value = lastFailed
           } else if (saveLastDraft) {
-            chatModel.draft.value = lastFailed
+            chatModel.draft.value = lastFailed.updateLinkPreview(LinkPreviewEvent.ChatChanged, previewsOn())
             chatModel.draftChatId.value = draftChatId(chat.id, chatScope)
           }
         }
@@ -1075,23 +1075,12 @@ fun ComposeView(
     } else {
       composeState.value = composeState.value.copy(message = s, parsedMessage = parsedMessage ?: FormattedText.plain(s.text))
     }
+    composeState.value = composeState.value.updateLinkPreview(LinkPreviewEvent.TextChanged, previewsOn())
     if (isShortEmoji(s.text)) {
       textStyle.value = if (s.text.codePoints().count() < 4) largeEmojiFont else mediumEmojiFont
     } else {
       textStyle.value = smallFont
-      if (composeState.value.linkPreviewAllowed && chatModel.controller.appPrefs.privacyLinkPreviews.get()) {
-        if (s.text.isNotEmpty()) {
-          showLinkPreview(parsedMessage)
-        } else {
-          resetLinkPreview()
-          hasSimplexLink.value = false
-          composeState.value = composeState.value.copy(preview = ComposePreview.NoPreview)
-        }
-      } else {
-        resetLinkPreview()
-        hasSimplexLink.value = s.text.isNotEmpty() && !chat.groupFeatureEnabled(GroupFeature.SimplexLinks) && getMessageLinks(parsedMessage).second
-        if (composeState.value.linkPreviewAllowed) composeState.value = composeState.value.copy(preview = ComposePreview.NoPreview)
-      }
+      hasSimplexLink.value = composeState.value.getMessageLinks(parsedMessage).second
     }
   }
 
@@ -1109,16 +1098,7 @@ fun ComposeView(
   }
 
   fun cancelLinkPreview() {
-    val pendingLink = pendingLinkUrl.value
-    if (pendingLink != null) {
-      cancelledLinks.add(pendingLink)
-    }
-    val uri = composeState.value.linkPreview?.uri
-    if (uri != null) {
-      cancelledLinks.add(uri)
-    }
-    pendingLinkUrl.value = null
-    composeState.value = composeState.value.copy(preview = ComposePreview.NoPreview)
+    composeState.value = composeState.value.updateLinkPreview(LinkPreviewEvent.Cancelled, previewsOn())
   }
 
   fun cancelImages() {
@@ -1193,7 +1173,7 @@ fun ComposeView(
     if (composeState.value.contextItem != ComposeContextItem.NoContextItem || composeState.value.preview != ComposePreview.NoPreview) return
     val lastEditable = chatsCtx.chatItems.value.findLast { it.meta.editable }
     if (lastEditable != null) {
-      composeState.value = ComposeState(editingItem = lastEditable, useLinkPreviews = useLinkPreviews).copy(maxFileSize = composeState.value.maxFileSize)
+      composeState.value = ComposeState.edit(lastEditable, useLinkPreviews, previewsOn()).copy(maxFileSize = composeState.value.maxFileSize)
     }
   }
 
@@ -1202,7 +1182,7 @@ fun ComposeView(
     when (val preview = composeState.value.preview) {
       ComposePreview.NoPreview -> {}
       is ComposePreview.CLinkPreview -> ComposeLinkView(
-        preview.linkPreview,
+        composeState.value.linkPreview,
         ::cancelLinkPreview,
         cancelEnabled = !composeState.value.inProgress
       )
@@ -1405,7 +1385,6 @@ fun ComposeView(
       // if that chat is gone there is nowhere to send it, and it must not be sent to the chat opened instead
       // cs is captured on this thread, before the compose state is replaced below
       if (liveMessageChat != null) sendMessage(null, toChat = liveMessageChat, composed = cs) else clearState()
-      resetLinkPreview()
       clearPrevDraft(prevChatId)
       deleteUnusedFiles()
       // the sent message belongs to the chat it was composed in; the chat opened next shows its own draft
@@ -1430,7 +1409,7 @@ fun ComposeView(
         composeState.value = cs.copy(preview = cs.preview.copy(finished = true))
       }
       if (saveLastDraft) {
-        chatModel.draft.value = composeState.value
+        chatModel.draft.value = composeState.value.updateLinkPreview(LinkPreviewEvent.ChatChanged, previewsOn())
         chatModel.draftChatId.value = draftChatId(prevChatId, chatScope)
       }
       composeState.value = ComposeState(useLinkPreviews = useLinkPreviews)
@@ -1440,6 +1419,7 @@ fun ComposeView(
       clearPrevDraft(prevChatId)
       deleteUnusedFiles()
     }
+    composeState.value = composeState.value.updateLinkPreview(LinkPreviewEvent.ChatChanged, previewsOn())
     chatModel.removeLiveDummy()
     CIFile.cachedRemoteFileRequests.clear()
   }
@@ -1466,7 +1446,7 @@ fun ComposeView(
     DisposableEffect(Unit) {
       onDispose {
         if (chatModel.sharedContent.value is SharedContent.Forward && saveLastDraft && !composeState.value.empty) {
-          chatModel.draft.value = composeState.value
+          chatModel.draft.value = composeState.value.updateLinkPreview(LinkPreviewEvent.ChatChanged, previewsOn())
           chatModel.draftChatId.value = draftChatId(currentChatId.value, chatScope)
         }
       }
@@ -1479,7 +1459,7 @@ fun ComposeView(
       // chat change is handled by KeyChangeEffect, unfinished voice recording should not replace the saved draft
       if (chatScope == null || chatModel.chatId.value != scopeChatId || (cs.preview is ComposePreview.VoicePreview && !cs.preview.finished)) return@onDispose
       if (saveLastDraft && !cs.empty) {
-        chatModel.draft.value = cs
+        chatModel.draft.value = cs.updateLinkPreview(LinkPreviewEvent.ChatChanged, previewsOn())
         chatModel.draftChatId.value = draftChatId(scopeChatId, chatScope)
       } else clearPrevDraft(scopeChatId)
     }
@@ -1519,11 +1499,9 @@ fun ComposeView(
       placeholder = if (userCantSendReason.value != null) "" else placeholder ?: composeState.value.placeholder,
       sendMessage = { ttl ->
         sendMessage(ttl)
-        resetLinkPreview()
       },
       sendSignedMessage = {
         sendMessage(null, sign = true)
-        resetLinkPreview()
       },
       sendLiveMessage = if (chat.chatInfo.chatType != ChatType.Local) ::sendLiveMessage else null,
       updateLiveMessage = ::updateLiveMessage,
@@ -1868,41 +1846,6 @@ fun ComposeView(
       }
     }
   }
-}
-
-private fun showLinkPreviewsConfirmAlert(socksEnabled: Boolean, onChoice: (Boolean?) -> Unit) {
-  AlertManager.shared.showAlertDialogButtonsColumn(
-    title = generalGetString(MR.strings.link_previews_alert_title),
-    text = AnnotatedString(
-      if (socksEnabled)
-        generalGetString(MR.strings.link_previews_alert_desc) + "\n\n" + generalGetString(MR.strings.link_previews_alert_desc_socks)
-      else
-        generalGetString(MR.strings.link_previews_alert_desc)
-    ),
-    onDismissRequest = { onChoice(null) },
-    buttons = {
-      Column {
-        SectionItemView({
-          AlertManager.shared.hideAlert()
-          onChoice(false)
-        }) {
-          Text(stringResource(MR.strings.link_previews_alert_disable), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
-        }
-        SectionItemView({
-          AlertManager.shared.hideAlert()
-          onChoice(true)
-        }) {
-          Text(stringResource(MR.strings.link_previews_alert_enable), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = if (socksEnabled) MaterialTheme.colors.primary else Color.Red)
-        }
-//        SectionItemView({
-//          AlertManager.shared.hideAlert()
-//          onChoice(null)
-//        }) {
-//          Text(stringResource(MR.strings.cancel_verb), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.onBackground)
-//        }
-      }
-    }
-  )
 }
 
 @Composable

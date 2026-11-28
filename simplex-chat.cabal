@@ -19,6 +19,7 @@ extra-source-files:
     PRIVACY.md
     cabal.project
     src/Simplex/Chat/Image/DisplayP3-v4.icc
+    src/Simplex/Chat/LinkPreview/certifi/certifi/cacert.pem
 
 flag swift
   description: Enable swift JSON format
@@ -54,6 +55,7 @@ library
       Simplex.Chat.Library.Commands
       Simplex.Chat.Library.Internal
       Simplex.Chat.Library.Subscriber
+      Simplex.Chat.LinkPreview
       Simplex.Chat.Markdown
       Simplex.Chat.Messages
       Simplex.Chat.Messages.Batch
@@ -382,6 +384,8 @@ library
     , containers ==0.6.*
     , crypton ==0.34.*
     , crypton-x509 ==1.7.*
+    , crypton-x509-store ==1.6.*
+    , crypton-x509-validation ==1.6.*
     , data-default ==0.7.*
     , directory ==1.3.*
     , email-validate ==2.3.*
@@ -390,6 +394,7 @@ library
     , filepath ==1.4.*
     , http-types ==0.12.*
     , http2 >=4.2.2 && <4.3
+    , iproute ==1.7.*
     , JuicyPixels ==3.3.*
     , JuicyPixels-jpeg-turbo ==0.1.*
     , JuicyPixels-spng ==0.1.*
@@ -758,6 +763,7 @@ test-suite simplex-chat-test
       ChatTests.Files
       ChatTests.Forward
       ChatTests.Groups
+      ChatTests.LinkPreviews
       ChatTests.Local
       ChatTests.Names
       ChatTests.Profiles
@@ -765,6 +771,7 @@ test-suite simplex-chat-test
       ImageTests
       JSONFixtures
       JSONTests
+      LinkPreviewTests
       MarkdownTests
       MemberRelationsTests
       NameResolver
@@ -928,6 +935,7 @@ test-suite simplex-chat-test
     , crypton-x509 ==1.7.*
     , crypton-x509-store ==1.6.*
     , crypton-x509-validation ==1.6.*
+    , data-default ==0.7.*
     , deepseq ==1.4.*
     , directory ==1.3.*
     , filepath ==1.4.*
@@ -949,11 +957,13 @@ test-suite simplex-chat-test
     , stm ==2.5.*
     , terminal ==0.2.*
     , time ==1.12.*
+    , tls >=1.9.0 && <1.10
     , unicode-transforms ==0.4.*
     , unliftio ==0.2.*
     , uri-bytestring >=0.3.3.1 && <0.4
     , wai ==3.2.*
     , warp ==3.3.*
+    , warp-tls ==3.4.*
   default-language: Haskell2010
   if flag(client_postgres)
     other-modules:

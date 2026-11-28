@@ -14,7 +14,7 @@ Production, with PostgreSQL at `BADGE_DB_CONN` (by default
 `postgresql://simplex@127.0.0.1:5432/badge_service`), and the ini filled in before the last command:
 
 ```
-git submodule update --init ../../apps/simplex-domains
+git submodule update --init ../../apps/simplex-domains ../../src/Simplex/Chat/LinkPreview/certifi
 install -d -m 700 config
 install -d webapps
 install -m 600 store_service.ini.example config/store_service.ini
@@ -25,7 +25,7 @@ Development, from a fresh clone:
 
 ```
 git clone https://github.com/simplex-chat/simplex-chat && cd simplex-chat
-git submodule update --init apps/simplex-domains
+git submodule update --init apps/simplex-domains src/Simplex/Chat/LinkPreview/certifi
 cd scripts/store-service
 printf '%s\n' COMPOSE_FILE=compose.yml:compose.dev.yml BADGE_DB_CONN=postgresql://simplex@127.0.0.1:5433/store_service > .env
 install -d webapps

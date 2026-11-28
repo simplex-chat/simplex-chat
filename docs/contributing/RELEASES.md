@@ -44,12 +44,17 @@ pypi.<package>.<version>    commit of the publication
 1. On master or stable, after `git pull`:
 
    ```
+   certifi=src/Simplex/Chat/LinkPreview/certifi
+   git submodule update --init "$certifi"
+   git -C "$certifi" fetch --tags origin
+   git -C "$certifi" checkout "$(git -C "$certifi" describe --tags --abbrev=0 origin/master)"
    python3 scripts/ci/packages_release.py core-release <version>
    ```
 
    Checked: version higher than the highest version recorded for the branch.
 
    Written:
+   - submodule `src/Simplex/Chat/LinkPreview/certifi`: moved to the latest tag of [certifi](https://github.com/certifi/python-certifi), whose `certifi/cacert.pem` contains the Mozilla root certificates of link previews
    - `version` of `simplex-chat.cabal`
    - with types changed since the previous library release of the branch: types `version` (bumped), `simplexChatCore`, line `SimpleX Chat core:` of the types README
 

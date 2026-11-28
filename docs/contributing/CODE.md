@@ -80,6 +80,14 @@ Some files that use CPP language extension cannot be formatted as a whole, so in
 
 ## Build Commands
 
+The root certificates of link previews are embedded from the submodule src/Simplex/Chat/LinkPreview/certifi, so a clone is built with its submodules:
+
+```bash
+git clone --recurse-submodules https://github.com/simplex-chat/simplex-chat
+# or, in an existing clone, after each checkout that moves a submodule
+git submodule update --init --recursive
+```
+
 ```bash
 # Standard build
 cabal build

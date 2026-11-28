@@ -59,7 +59,7 @@ Core message composition, delivery, and interaction features.
 | Video | Video message recording and playback | `common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/CIVideoView.kt` |
 | Voice messages | Audio recording and playback (5min / 510KB limit) | `common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/CIVoiceView.kt` |
 | File sharing | Files up to 1GB via XFTP protocol | `common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/CIFileView.kt` |
-| Link previews | OpenGraph metadata extraction and display | `common/src/commonMain/kotlin/chat/simplex/common/views/helpers/LinkPreviews.kt` |
+| Link previews | Previews made by the core from the page's metadata, and their display | `common/src/commonMain/kotlin/chat/simplex/common/views/helpers/LinkPreviews.kt` |
 | Message reactions | Emoji reactions on sent/received messages | `common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/EmojiItemView.kt` |
 | Message editing | Edit previously sent messages | `common/src/commonMain/kotlin/chat/simplex/common/views/chat/ComposeView.kt` |
 | Message deletion | Broadcast delete (for recipient) or internal-only delete | `common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/MarkedDeletedItemView.kt` |

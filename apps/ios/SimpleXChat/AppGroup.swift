@@ -27,7 +27,6 @@ let GROUP_DEFAULT_APP_LOCAL_AUTH_ENABLED = "appLocalAuthEnabled"
 public let GROUP_DEFAULT_ALLOW_SHARE_EXTENSION = "allowShareExtension"
 // replaces DEFAULT_PRIVACY_LINK_PREVIEWS
 public let GROUP_DEFAULT_PRIVACY_LINK_PREVIEWS = "privacyLinkPreviews"
-public let GROUP_DEFAULT_PRIVACY_LINK_PREVIEWS_SHOW_ALERT = "privacyLinkPreviewsShowAlert"
 public let GROUP_DEFAULT_PRIVACY_SANITIZE_LINKS = "privacySanitizeLinks"
 // This setting is a main one, while having an unused duplicate from the past: DEFAULT_PRIVACY_ACCEPT_IMAGES
 let GROUP_DEFAULT_PRIVACY_ACCEPT_IMAGES = "privacyAcceptImages"
@@ -96,7 +95,6 @@ public let groupAppDefaults: [String: Any] = [
     GROUP_DEFAULT_APP_LOCAL_AUTH_ENABLED: true,
     GROUP_DEFAULT_ALLOW_SHARE_EXTENSION: false,
     GROUP_DEFAULT_PRIVACY_LINK_PREVIEWS: true,
-    GROUP_DEFAULT_PRIVACY_LINK_PREVIEWS_SHOW_ALERT: true,
     GROUP_DEFAULT_PRIVACY_SANITIZE_LINKS: false,
     GROUP_DEFAULT_PRIVACY_ACCEPT_IMAGES: true,
     GROUP_DEFAULT_PRIVACY_TRANSFER_IMAGES_INLINE: false,
@@ -227,8 +225,6 @@ public let appLocalAuthEnabledGroupDefault = BoolDefault(defaults: groupDefaults
 public let allowShareExtensionGroupDefault = BoolDefault(defaults: groupDefaults, forKey: GROUP_DEFAULT_ALLOW_SHARE_EXTENSION)
 
 public let privacyLinkPreviewsGroupDefault =  BoolDefault(defaults: groupDefaults, forKey: GROUP_DEFAULT_PRIVACY_LINK_PREVIEWS)
-
-public let privacyLinkPreviewsShowAlertGroupDefault =  BoolDefault(defaults: groupDefaults, forKey: GROUP_DEFAULT_PRIVACY_LINK_PREVIEWS_SHOW_ALERT)
 
 // This setting is a main one, while having an unused duplicate from the past: DEFAULT_PRIVACY_ACCEPT_IMAGES
 public let privacyAcceptImagesGroupDefault = BoolDefault(defaults: groupDefaults, forKey: GROUP_DEFAULT_PRIVACY_ACCEPT_IMAGES)

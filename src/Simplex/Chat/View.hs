@@ -254,6 +254,7 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, showFullLinks, te
   CRGroupDeletedUser u g signed local -> ttyUser u [ttyGroup' g <> (if local then ": you deleted your local copy of the group" else ": you deleted the group" <> signedStr signed)]
   CRForwardPlan u count itemIds fc -> ttyUser u $ viewForwardPlan count itemIds fc
   CRChatMsgContent u mc -> ttyUser u $ ttyMsgContent mc <> viewMsgTestInfo testView mc
+  CRLinkPreview LinkPreview {title} -> ["link preview: " <> plain title]
   CRRcvFileAccepted u ci -> ttyUser u $ savingFile' ci
   CRRcvFileAcceptedSndCancelled u ft -> ttyUser u $ viewRcvFileSndCancelled ft
   CRSndFileCancelled u _ ftm fts -> ttyUser u $ viewSndFileCancelled ftm fts
@@ -2950,6 +2951,7 @@ viewChatError isCmd logLevel testView = \case
     CEConnectionUserChangeProhibited -> ["incognito mode change prohibited for user"]
     CEPeerChatVRangeIncompatible -> ["peer chat protocol version range incompatible"]
     CERelayTestError e -> ["relay test error: " <> plain e]
+    CELinkPreview e -> ["link preview error: " <> plain e]
     CEInternalError e -> ["internal chat error: " <> plain e]
     CEException e -> ["exception: " <> plain e]
   -- e -> ["chat error: " <> sShow e]
