@@ -824,7 +824,7 @@ describe("turn hooks", () => {
     }
   })
 
-  it("send the stop of a teammate from its failed idle notification as the note of who stopped and why, also beside its message, and none for an idle notification that did not fail", async () => {
+  it("send the stop of a teammate from its failed idle notification as the note of who stopped and why, followed by the line of its message on the next line, and none for an idle notification that did not fail", async () => {
     const folder = mkdtempSync(join(tmpdir(), "simplex-mcp-transcript-"))
     try {
       const transcript = join(folder, "session.jsonl")
@@ -840,8 +840,8 @@ describe("turn hooks", () => {
       writeFileSync(transcript, prompts.map(([promptId, content]) => userEntry(promptId, content)).join(""))
       const {client, requests} = turnClient()
       for (const [promptId, content] of prompts) await turn(JSON.stringify({session_id: id, hook_event_name: "UserPromptSubmit", transcript_path: transcript, prompt_id: promptId, prompt: content}), {}, client, 0, 1, 1)
-      const stopped = "!- ⛔ Teammate \"wasm-sandbox\" stopped: You've hit your weekly limit · resets Nov 28, 1am (UTC)!"
-      expect(notes(requests).map(({note}) => note)).toEqual([stopped, stopped, undefined])
+      const stopped = "⛔ Teammate \"wasm-sandbox\" stopped: You've hit your weekly limit · resets Nov 28, 1am (UTC)"
+      expect(notes(requests).map(({note}) => note)).toEqual([`!- ${stopped}!`, `!- ${stopped}\n✉️ Message from wasm-sandbox: The build passes.!`, undefined])
     } finally {
       rmSync(folder, {recursive: true, force: true})
     }

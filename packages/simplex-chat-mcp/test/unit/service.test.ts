@@ -769,7 +769,7 @@ describe("service", () => {
     expect(boot === undefined || (await processStart(process.pid))?.startsWith(`${boot} `)).toBe(true)
   })
 
-  it("reads the start time of a process on Windows from PowerShell as its creation time in UTC file time, without a window, within 10 s, nothing for a process that PowerShell does not find, and fails for a timeout or an output that is not a number", async () => {
+  it("reads the start time of a process on Windows from PowerShell as its creation time in UTC file time, without a window, within 10 s, nothing for a process that PowerShell does not find, which exits with 3, and fails for another error of PowerShell, a timeout or an output that is not a number", async () => {
     const platform = Object.getOwnPropertyDescriptor(process, "platform")!
     Object.defineProperty(process, "platform", {value: "win32"})
     const calls: [string, string[], ExecFileOptions][] = []
@@ -777,10 +777,11 @@ describe("service", () => {
     const failed = (error: object) => async () => Promise.reject(Object.assign(new Error("Command failed"), error))
     try {
       expect(await processStart(4242, powershell("134088624000000000\r\n"))).toBe("134088624000000000")
-      expect(await processStart(4242, failed({code: 1, killed: false}))).toBeUndefined()
+      expect(await processStart(4242, failed({code: 3, killed: false}))).toBeUndefined()
+      await expect(processStart(4242, failed({code: 1, killed: false}))).rejects.toThrow()
       await expect(processStart(4242, failed({code: null, killed: true}))).rejects.toThrow()
       await expect(processStart(4242, powershell("WARNING: profile not loaded\r\n"))).rejects.toThrow()
-      expect(calls[0]).toEqual(["powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", "(Get-Process -Id 4242 -ErrorAction Stop).StartTime.ToFileTimeUtc()"], {timeout: 10_000, windowsHide: true}])
+      expect(calls[0]).toEqual(["powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", "$p = Get-Process -Id 4242 -ErrorAction SilentlyContinue; if (-not $p) { exit 3 }; $p.StartTime.ToFileTimeUtc()"], {timeout: 10_000, windowsHide: true}])
     } finally {
       Object.defineProperty(process, "platform", platform)
     }
@@ -1018,6 +1019,63 @@ describe("service", () => {
     await jest.advanceTimersByTimeAsync(1_000)
     await turnsUntil(() => agents[0].notes.length === 2)
     expect(agents[0].notes.at(-1)).toBe("⏹️ Claude Code ended (process 300).")
+  })
+
+  it("refuses a second Claude Code process while the start time of the process that registered the session can't be read, and posts no line of its end", async () => {
+    storeSession(id1, 1, "app")
+    const {d, agents} = deps(root)
+    let readStart = d.processStart
+    service = await Service.start({...d, processStart: pid => readStart(pid)}, readDefaultConfig)
+    const registerFrom = (pid: number) => post("/session", {id: id1, pid, project: "/p/app", config: defaultConfig})
+    await registerFrom(300)
+    readStart = pid => (pid === 300 ? Promise.reject(new Error("timed out")) : d.processStart(pid))
+    await expect(registerFrom(301)).rejects.toMatchObject({status: 423})
+    expect(agents[0].notes).toEqual(["▶️ Claude Code started (process 300)."])
+  })
+
+  it("serves a registration whose started line can't be posted, and logs the failure", async () => {
+    storeSession(id1, 1, "app")
+    const {d, agents} = deps(root)
+    const errors: string[] = []
+    jest.spyOn(process.stderr, "write").mockImplementation(text => (errors.push(String(text)), true))
+    service = await Service.start(d, readDefaultConfig)
+    await register(id1)
+    agents[0].postNote = async () => Promise.reject(new Error("The group is lost."))
+    expect(await post("/session", {id: id1, pid: 300, project: "/p/app", config: defaultConfig})).toMatchObject({number: 1})
+    expect(errors).toEqual(["session 1: The group is lost.\n"])
+  })
+
+  it("posts no started or ended line at a registration whose start time can't be read", async () => {
+    storeSession(id1, 1, "app")
+    const {d, agents} = deps(root)
+    let readStart = d.processStart
+    service = await Service.start({...d, processStart: pid => readStart(pid)}, readDefaultConfig)
+    const registerFrom = (pid: number) => post("/session", {id: id1, pid, project: "/p/app", config: defaultConfig})
+    await registerFrom(300)
+    readStart = pid => (pid === 301 ? Promise.reject(new Error("timed out")) : Promise.resolve(undefined))
+    await registerFrom(301)
+    expect(agents[0].notes).toEqual(["▶️ Claude Code started (process 300)."])
+  })
+
+  it("keeps the process of a registration whose start time can't be read across a service restart, so its reconnection posts no started line", async () => {
+    storeSession(id1, 1, "app")
+    const {d, agents} = deps(root)
+    service = await Service.start({...d, processStart: () => Promise.reject(new Error("timed out"))}, readDefaultConfig)
+    const registerFrom = (pid: number) => post("/session", {id: id1, pid, project: "/p/app", config: defaultConfig})
+    await registerFrom(300)
+    await service.stop()
+    const restarted = deps(root)
+    service = await Service.start(restarted.d, readDefaultConfig)
+    await registerFrom(300)
+    expect([agents[0].notes, restarted.agents[0].notes]).toEqual([[], []])
+  })
+
+  it("counts the start time of a registration as unknown when Claude Code's record of its process does not exist, as when the server's parent is not Claude Code, so the process's hooks are served and no line is posted", async () => {
+    storeSession(id1, 1, "app")
+    const {d, agents} = deps(root)
+    service = await Service.start(d, readDefaultConfig)
+    await post("/session", {id: id1, pid: 300, project: "/p/app", config: defaultConfig, record: join(root, "sessions", "300.json")})
+    expect([await post("/turn", {id: id1, pid: 301, prompt: "Fix the build"}), agents[0].notes]).toEqual([{}, []])
   })
 
   it("keeps the Claude Code process of a session across a service restart, and serves a second process once that process has ended", async () => {
