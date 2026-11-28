@@ -1,6 +1,7 @@
 #!/bin/bash
 
 set -euo pipefail
+shopt -s inherit_errexit
 
 if [ -z "${IOS_DISTRIBUTION_CERTIFICATE:-}" ] || [ -z "${APP_STORE_CONNECT_KEY:-}" ]; then
   echo "::notice title=TestFlight::IOS_DISTRIBUTION_CERTIFICATE or APP_STORE_CONNECT_KEY is not set: the archive is not uploaded"

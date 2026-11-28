@@ -45,35 +45,11 @@ jobs:
         if: github.event_name == 'workflow_dispatch' || steps.raised.outputs.release == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
-        run: |
-          commit=HEAD
-          if [ -z "$(git diff --name-only HEAD^ HEAD -- . ':!apps/multiplatform/gradle.properties' ':!apps/ios/SimpleX.xcodeproj/project.pbxproj')" ] &&
-            [ "$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/build.yml/runs?head_sha=$(git rev-parse HEAD)&event=push" --jq .total_count)" = 0 ]; then
-            commit=HEAD^
-          fi
-          sha=$(git rev-parse "$commit")
-          for _ in $(seq 180); do
-            read -r status conclusion url < <(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/build.yml/runs?head_sha=$sha&event=push" \
-              --jq '.workflow_runs[0] | "\(.status) \(.conclusion) \(.html_url)"')
-            [ "$status" = completed ] || [ "$status" = null ] && break
-            sleep 60
-          done
-          if [ "$conclusion" != success ]; then
-            echo "::error title=No internal release::build.yml of $sha: ${status} ${conclusion} ${url}"
-            exit 1
-          fi
-          echo "build.yml passed on $sha: $url"
+        run: scripts/ci/internal-release/build-passed.sh
 
       - name: TestFlight train of the marketing version
         id: testflight
-        run: |
-          version=$(scripts/ci/internal-release/build-numbers.sh show HEAD | jq -r .ios.version_name)
-          released=$(curl -fsS --retry 3 "https://itunes.apple.com/lookup?bundleId=chat.simplex.app" | jq -r '.results[0].version // ""')
-          if [ "$version" != "$released" ] && [ "$(printf '%s\n' "$released" "$version" | sort -V | tail -n 1)" = "$version" ]; then
-            echo "open=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "::notice title=TestFlight::the App Store has $released, so the TestFlight train of $version is closed: the iOS upload is skipped until MARKETING_VERSION is above $released"
-          fi
+        run: scripts/ci/internal-release/testflight-train.sh
 
       - name: Hash of the core and the app's fixed part, for the UI updates
         id: core-hash
@@ -167,25 +143,13 @@ jobs:
 
       - name: Build the deb and the AppImage
         shell: docker exec -t builder sh -eu {0}
-        run: |
-          scripts/ci/desktop-linux/install-core.sh core/desktop-core.tar.gz
-          scripts/desktop/prepare-vlc-linux.sh
-          echo "${{ needs.start.outputs.core-hash }}" > apps/multiplatform/common/src/commonMain/cpp/desktop/libs/linux-${{ matrix.arch }}/core-hash
-          SKIP_LIB=1 ASSETS_DIR=../../assets scripts/desktop/make-deb-linux.sh
-          [ "${{ matrix.os }}" != 22.04 ] || ASSETS_DIR=../../assets scripts/desktop/make-appimage-linux.sh
+        run: scripts/ci/internal-release/build-linux-packages.sh "${{ matrix.os }}" "${{ matrix.arch }}" "${{ needs.start.outputs.core-hash }}"
 
       - name: Name the packages and make the UI update
         env:
           OS: ${{ matrix.os }}
           ARCH: ${{ matrix.arch }}
-        run: |
-          mkdir out
-          cp "apps/multiplatform/release/main/deb/simplex_$ARCH.deb" "out/simplex-desktop-ubuntu-${OS//./_}-$ARCH.deb"
-          if [ "$OS" = 22.04 ]; then
-            cp apps/multiplatform/release/main/*imple*.AppImage "out/simplex-desktop-$ARCH.AppImage"
-          fi
-          app=apps/multiplatform/extracted/opt/simplex
-          python3 scripts/ci/internal-release/ui-zip.py "$app/lib/app" "$app/lib/runtime/release" out
+        run: scripts/ci/internal-release/name-linux-packages.sh
 
       - name: Upload the packages
         uses: actions/upload-artifact@v7
@@ -277,23 +241,7 @@ jobs:
           APPLE_SIMPLEX_NOTARIZATION_PASSWORD: ${{ github.ref == 'refs/heads/master' && secrets.APPLE_SIMPLEX_NOTARIZATION_PASSWORD || '' }}
           ASSETS_DIR: ../../assets
           SKIP_LIB: 1
-        run: |
-          libs=apps/multiplatform/common/src/commonMain/cpp/desktop/libs/mac-${{ matrix.arch }}
-          mkdir -p "$libs" apps/multiplatform/build/links
-          tar -C "$libs" -xzf core/desktop-core.tar.gz
-          ln -sfn "../../common/src/commonMain/cpp/desktop/libs/mac-${{ matrix.arch }}/" apps/multiplatform/build/links/macos-${{ matrix.compose }}
-          scripts/desktop/prepare-vlc-mac.sh
-          echo "${{ needs.start.outputs.core-hash }}" > "$libs/core-hash"
-          if [ -n "$APPLE_SIMPLEX_SIGNING_KEYCHAIN" ]; then
-            scripts/ci/build-desktop-mac.sh
-          else
-            echo "::notice title=macOS::APPLE_SIMPLEX_* are not set: the dmg is not signed"
-            (cd apps/multiplatform && ./gradlew -Psimplex.assets.dir="$ASSETS_DIR" packageDmg)
-          fi
-          mkdir out
-          cp apps/multiplatform/release/main/dmg/SimpleX-*.dmg "out/simplex-desktop-macos-${{ matrix.arch }}.dmg"
-          app=apps/multiplatform/release/main/app/SimpleX.app/Contents
-          python3 scripts/ci/internal-release/ui-zip.py "$app/app" "$app/runtime/Contents/Home/release" out
+        run: scripts/ci/internal-release/build-macos-dmg.sh "${{ matrix.arch }}" "${{ matrix.compose }}" "${{ needs.start.outputs.core-hash }}"
 
       - name: Upload the dmg
         uses: actions/upload-artifact@v7

@@ -58,8 +58,11 @@ case "${1:-}" in
     ulimit -c 0
     ENS_CONTRACTS_DIR="$tools/ens-contracts" ANVIL="$tools/anvil" scripts/store-service/dev/contract-run.sh
     ;;
+  internal-release)
+    python3 scripts/ci/internal-release/test_internal_release.py
+    ;;
   *)
-    echo "usage: $0 badge-web | ci-scripts | website | mcp | support-bot | support-bot-light | names-page | names-e2e" >&2
+    echo "usage: $0 badge-web | ci-scripts | website | mcp | support-bot | support-bot-light | names-page | names-e2e | internal-release" >&2
     exit 1
     ;;
 esac

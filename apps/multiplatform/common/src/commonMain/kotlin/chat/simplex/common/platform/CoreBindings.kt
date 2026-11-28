@@ -21,7 +21,7 @@ external fun chatCloseStore(ctrl: ChatCtrl): String
 @JvmName("chatSendCmdRetry") external fun nativeChatSendCmdRetry(ctrl: ChatCtrl, msg: String, retryNum: Int): String
 external fun chatSendRemoteCmdRetry(ctrl: ChatCtrl, rhId: Int, msg: String, retryNum: Int): String
 external fun chatRecvMsg(ctrl: ChatCtrl): String
-external fun chatRecvMsgWait(ctrl: ChatCtrl, timeout: Int): String
+@JvmName("chatRecvMsgWait") external fun nativeChatRecvMsgWait(ctrl: ChatCtrl, timeout: Int): String
 @JvmName("chatParseMarkdown") external fun nativeChatParseMarkdown(str: String): String
 external fun chatParseServer(str: String): String
 @JvmName("chatParseUri") external fun nativeChatParseUri(str: String, safe: Int): String
@@ -43,6 +43,7 @@ external fun chatResizeImageFd(fd: Int, maxSize: Int, png: Int): String
 @Suppress("UnsafeDynamicallyLoadedCode")
 fun loadCoreLibrary(path: String) = System.load(path)
 
+var chatRecvMsgWait: (ChatCtrl, Int) -> String = ::nativeChatRecvMsgWait
 var reloadedChatCtrl: ChatCtrl? = null
 var reloadedChatDbEncrypted: Boolean? = null
 var reloadedInstanceLock: FileLock? = null

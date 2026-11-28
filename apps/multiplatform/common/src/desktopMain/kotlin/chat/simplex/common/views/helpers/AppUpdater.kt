@@ -13,7 +13,7 @@ import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatController.getNetCfg
 import chat.simplex.common.model.json
 import chat.simplex.common.platform.*
-import chat.simplex.common.reloadUi
+import chat.simplex.common.reloadUiOrAlert
 import chat.simplex.common.ui.theme.WarningOrange
 import chat.simplex.common.views.onboarding.ReadMoreButton
 import chat.simplex.res.*
@@ -190,6 +190,7 @@ private fun createUpdateJob() {
 
 private const val RELEASES_REPO = "simplex-chat/simplex-chat"
 private const val INTERNAL_BUILDS_REPO = "simplex-chat/simplex-chat-test"
+internal var gitHubApiUrl = "https://api.github.com"
 
 fun checkForUpdate() {
   Log.d(TAG, "Checking for update")
@@ -212,7 +213,7 @@ fun checkForUpdate() {
           title = generalGetString(MR.strings.app_check_for_updates_installed_successfully_title),
           text = generalGetString(MR.strings.app_check_for_updates_installed_successfully_desc),
           confirmText = generalGetString(MR.strings.app_check_for_updates_button_reload),
-          onConfirm = { reloadUi() },
+          onConfirm = { withApi { reloadUiOrAlert() } },
           dismissText = generalGetString(MR.strings.ok)
         )
       }
@@ -303,7 +304,7 @@ internal fun chooseInternalRelease(installedCode: Int, releases: List<GitHubRele
     ?.first
 
 private fun getGitHubReleases(repo: String): List<GitHubRelease> {
-  val request = Request.Builder().url("https://api.github.com/repos/$repo/releases").addHeader("User-agent", "curl").build()
+  val request = Request.Builder().url("$gitHubApiUrl/repos/$repo/releases").addHeader("User-agent", "curl").build()
   val releases = setupHttpClient().newCall(request).execute().use { response -> json.decodeFromString<List<GitHubRelease>>(response.body!!.string()) }
   return releases.filter { r -> !r.draft }
 }

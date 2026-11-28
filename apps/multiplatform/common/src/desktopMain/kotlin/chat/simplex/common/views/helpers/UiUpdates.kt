@@ -51,7 +51,9 @@ private val UI_JAR_CLASSES = listOf(
 private val UI_UPDATE_JAR = Regex("[A-Za-z0-9_][A-Za-z0-9._-]*\\.jar")
 private val JAR_CONTENT_HASH = Regex("(-[0-9a-f]{16,32})?\\.jar$")
 private val uiUpdateJson = Json { ignoreUnknownKeys = true }
-private val uiUpdatesDir = File(dataDir, "ui_updates")
+internal var uiUpdatesDir = File(dataDir, "ui_updates")
+internal var uiUpdateKeyBase64 = BuildConfigCommon.DESKTOP_UI_UPDATE_KEY
+internal var installedUiJars: () -> List<File>? = ::classPathUiJars
 
 @Serializable
 private class UiUpdateManifest(
@@ -284,7 +286,7 @@ private fun uiUpdateDirs(): List<File> =
   uiUpdatesDir.listFiles { f -> f.isDirectory && f.name.toIntOrNull() != null }.orEmpty().sortedByDescending { it.name.toInt() }
 
 private fun uiUpdateKey(): PublicKey? =
-  BuildConfigCommon.DESKTOP_UI_UPDATE_KEY.takeIf { it.isNotEmpty() }?.let { key ->
+  uiUpdateKeyBase64.takeIf { it.isNotEmpty() }?.let { key ->
     try {
       KeyFactory.getInstance("Ed25519").generatePublic(X509EncodedKeySpec(Base64.getDecoder().decode(key)))
     } catch (e: Exception) {
@@ -293,7 +295,7 @@ private fun uiUpdateKey(): PublicKey? =
     }
   }
 
-private fun installedUiJars(): List<File>? =
+private fun classPathUiJars(): List<File>? =
   UI_JAR_CLASSES.map { name ->
     (ClassLoader.getSystemResource(name)?.openConnection() as? JarURLConnection)?.jarFileURL?.toURI()?.let(::File) ?: return null
   }

@@ -222,6 +222,17 @@ The reduced build runs the Linux job build-linux (ubuntu-22.04 x86_64) for every
   - on a failure, the run's folder (logs, the service's database, Playwright's results and traces) uploaded as the artifact `names-e2e`, kept 14 days (step "Names page cases' results").
 - Local: `scripts/ci/scope-tests.sh names-e2e`, with Docker; or contract-run.sh with anvil and the compiled contracts, as the README states.
 
+#### internal-release
+
+- Globs:
+  - .github/workflows/internal-release.yml
+  - .github/workflows/daily-bump.yml
+  - scripts/ci/internal-release/**
+  - scripts/ci/desktop-linux/ui-update.py
+  - apps/multiplatform/common/src/desktopTest/kotlin/chat/simplex/app/AppUpdaterTest.kt: the base of `testUiBase` is also the expected base of ui-update.py for the same inputs.
+- CI, in build-linux: `scope-tests.sh internal-release` (step "Test changed scopes"): scripts/ci/internal-release/test_internal_release.py runs the scripts of [Internal releases](#internal-releases) in temporary git repositories, with openssl, and with fake gh, curl, sleep, apksigner, jarsigner, xcodebuild, security and plutil that record their arguments.
+- Local: `scripts/ci/scope-tests.sh internal-release`, with git, jq, openssl 3, zip, unzip and perl.
+
 #### Scopes lacking CI tests
 
 | Scope | Paths | CI |
@@ -313,10 +324,10 @@ flowchart LR
 
 | Workflow | Starts on | Does |
 |---|---|---|
-| `daily-bump.yml` | 04:17 UTC<br>a manual run, input `branch`, default master | when the branch has commits after the last change of a build number: commits + 1 to `android.version_code` and `desktop.version_code` (apps/multiplatform/gradle.properties) and to every `CURRENT_PROJECT_VERSION` (apps/ios/SimpleX.xcodeproj/project.pbxproj), pushes with GITHUB_TOKEN, then starts `internal-release.yml` on the branch, as GitHub starts no workflow for that push |
+| `daily-bump.yml` | 04:20 UTC<br>a manual run, input `branch`, default master | when the branch has commits after the last change of a build number: commits + 1 to `android.version_code` and `desktop.version_code` (apps/multiplatform/gradle.properties) and to every `CURRENT_PROJECT_VERSION` (apps/ios/SimpleX.xcodeproj/project.pbxproj), pushes with GITHUB_TOKEN, then starts `internal-release.yml` on the branch, as GitHub starts no workflow for that push |
 | `internal-release.yml` | a push to master that raises the three build numbers and keeps `android.version_name`, `desktop.version_name` and `MARKETING_VERSION`<br>a manual run | builds the commit with the release scripts of build.yml and runs the app workflows on it, then signs and uploads the apps |
 
-A release starts only when build.yml passed in its push run on the commit, or on the parent of a commit that changes only the build numbers and has no push run of its own, as a commit of `daily-bump.yml`. The job `start` waits up to 3 hours for that run to complete.
+A release starts only when build.yml passed in its push run on the commit, or on the parent of a commit that changes only the build numbers and has no push run of its own, as a commit of `daily-bump.yml`. The job `start` waits up to 3 hours for that run to complete (scripts/ci/internal-release/build-passed.sh).
 
 GitHub runs a scheduled workflow only from the default branch, master.
 
@@ -329,8 +340,8 @@ The builds use the scripts of build.yml's tag builds. Each core library is an ar
 | Job | Builds or does | Core library artifact | Secrets |
 |---|---|---|---|
 | `test-android`, `test-desktop`, `test-ios` | android-emu (with `armv7a`), desktop-linux and ios-sim on the commit, as a manual run of each does | their own | |
-| `desktop-linux` | the desktop deb of Ubuntu 22.04 and 24.04, x86_64 and aarch64, and the AppImage of 22.04: scripts/desktop/make-deb-linux.sh and make-appimage-linux.sh in the Dockerfile.build container | `desktop-linux-core-ubuntu-<version>-<arch>-<hash>`: scripts/ci/desktop-linux/build-core.sh in the container, then install-core.sh | |
-| `desktop-macos` | the dmg of aarch64 and x86_64: scripts/ci/build-desktop-mac.sh, signed with the Developer ID and notarized on master; unsigned elsewhere | `desktop-macos-core-<arch>-<toolchain>-<hash>`: scripts/desktop/build-lib-mac.sh | `APPLE_SIMPLEX_*`, the repository secrets of build.yml |
+| `desktop-linux` | the desktop deb of Ubuntu 22.04 and 24.04, x86_64 and aarch64, and the AppImage of 22.04: scripts/desktop/make-deb-linux.sh and make-appimage-linux.sh in the Dockerfile.build container (scripts/ci/internal-release/build-linux-packages.sh), named by scripts/ci/internal-release/name-linux-packages.sh | `desktop-linux-core-ubuntu-<version>-<arch>-<hash>`: scripts/ci/desktop-linux/build-core.sh in the container, then install-core.sh | |
+| `desktop-macos` | the dmg of aarch64 and x86_64: scripts/ci/build-desktop-mac.sh, signed with the Developer ID and notarized on master; unsigned elsewhere (scripts/ci/internal-release/build-macos-dmg.sh) | `desktop-macos-core-<arch>-<toolchain>-<hash>`: scripts/desktop/build-lib-mac.sh | `APPLE_SIMPLEX_*`, the repository secrets of build.yml |
 | `desktop-windows` | the msi: `packageMsi` | `desktop-windows-core-<toolchain>-<hash>`: scripts/desktop/build-lib-windows.sh | |
 | `android-build` | the foss APKs (`assembleFossRelease`) and the Play bundle (`bundleGoogleRelease`), unsigned | android-emu's `android-core-<hash>` and `android-core-armeabi-v7a-<hash>` | |
 | `ios-build` | the iOS archive: scripts/ci/internal-release/ios-archive.sh, with the brand assets of simplex-chat-art, and each bundle signed ad hoc with its entitlements | `ios-core-<hash>`: the Nix job `aarch64-darwin-ios:lib:simplex-chat` | `SIMPLEX_ART_SSH_KEY`, a repository secret: a read-only deploy key of simplex-chat-art; without it, the archive has the default icons |
@@ -338,7 +349,7 @@ The builds use the scripts of build.yml's tag builds. Each core library is an ar
 | `android` | the Play bundle signed with the upload key and released to the internal track; while a Play update is in review, the upload fails and the review continues (`changesInReviewBehavior=ERROR_IF_IN_REVIEW`) | | `ANDROID_UPLOAD_*`, `GOOGLE_PLAY_SERVICE_ACCOUNT` |
 | `publish` | the `ui.json` of each `simplex-desktop-ui-<base>.zip` signed; the test APKs signed as `simplex.apk` and `simplex-armv7a.apk`; in simplex-chat-test, a commit of `release.json` with the version names, the build numbers and the commit, and the release `<desktop.version_name>-<desktop.version_code>` with the desktop apps, their UI updates and the APKs | | `DESKTOP_UI_UPDATE_KEY`, `ANDROID_TEST_*`, `SIMPLEX_CHAT_TEST_TOKEN` |
 
-A step without its secrets skips with a notice, so that the workflow runs in a fork without keys. The `ios` job is skipped with a notice while `MARKETING_VERSION` is not above the version in the App Store, whose TestFlight train is closed.
+A step without its secrets skips with a notice, so that the workflow runs in a fork without keys. The `ios` job is skipped with a notice while `MARKETING_VERSION` is not above the version in the App Store, whose TestFlight train is closed (scripts/ci/internal-release/testflight-train.sh).
 
 Each desktop job writes `core-hash` into the app's resources: a hash of the core's sources, of its JNI library and of the app's fixed part (job `start`). After the package, scripts/ci/internal-release/ui-zip.py saves `simplex-desktop-ui-<base>.zip`: the app's own jars and `ui.json`, with the base of the package's app as scripts/ci/desktop-linux/ui-update.py computes it. An app on the Internal channel with the same base downloads the zip in place of the package.
 

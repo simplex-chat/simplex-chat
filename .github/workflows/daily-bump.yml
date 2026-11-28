@@ -2,7 +2,7 @@ name: daily-bump
 
 on:
   schedule:
-    - cron: "17 4 * * *"
+    - cron: "20 4 * * *"
   workflow_dispatch:
     inputs:
       branch:

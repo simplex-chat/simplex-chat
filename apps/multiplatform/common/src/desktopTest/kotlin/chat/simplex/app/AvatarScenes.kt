@@ -68,7 +68,7 @@ private fun user(id: Long, name: String, image: String?, active: Boolean) =
 private fun chat(info: ChatInfo, items: List<ChatItem> = listOf()) =
   Chat(remoteHostId = null, chatInfo = info, chatItems = items, chatStats = Chat.ChatStats())
 
-private fun call(contact: Contact) =
+internal fun call(contact: Contact) =
   Call(remoteHostId = null, userProfile = Profile.sampleData, contact = contact, callUUID = null, callState = CallState.Connected, initialCallType = CallMediaType.Audio, androidCallState = Closeable {})
 
 private val rowPadding = Modifier.padding(start = 8.dp, top = 8.dp, end = 12.dp, bottom = 8.dp)
