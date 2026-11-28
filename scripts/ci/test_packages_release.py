@@ -494,6 +494,9 @@ class ChangesTest(GitRepoTest):
     def test_app_workflow_change_runs_only_that_workflow(self):
         self.assertEqual(self.builds(".github/workflows/android-emu.yml"), {"android"})
 
+    def test_app_workflow_changes_run_their_workflows(self):
+        self.assertEqual(self.builds(".github/workflows/desktop-linux.yml", ".github/workflows/ios-sim.yml"), {"desktop-linux", "ios-sim"})
+
     def test_shared_earlier_run_script_runs_desktop_and_android_workflows(self):
         self.assertEqual(self.builds("scripts/ci/desktop-linux/earlier-run.sh"), {"desktop-linux", "android"})
 
@@ -516,7 +519,7 @@ class ChangesTest(GitRepoTest):
         self.assertEqual(self.builds(".github/actions/prepare-build/action.yml"), {"haskell", "kotlin"})
 
     def test_other_workflow_change_builds_nothing(self):
-        self.assertEqual(self.builds(".github/workflows/ios-sim.yml", ".github/workflows/desktop-linux.yml", ".github/ISSUE_TEMPLATE/bug.md"), set())
+        self.assertEqual(self.builds(".github/workflows/web.yml", ".github/ISSUE_TEMPLATE/bug.md"), set())
 
     def test_unrelated_change_builds_nothing(self):
         self.assertEqual(self.builds("docs/guide.md", "packages/pkg/src.txt"), set())
