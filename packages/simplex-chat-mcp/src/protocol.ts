@@ -140,6 +140,7 @@ export interface TaskEnd {
   tokens?: number
   steps?: number
   ms?: number
+  usageLimit?: boolean
 }
 
 // spec: spec/architecture.md#protocol-agentevent

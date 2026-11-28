@@ -800,6 +800,27 @@ describe("turn hooks", () => {
     ])
   })
 
+  it("send the stop of an agent at a usage limit as the note of what stopped and why, with its task end at the usage limit, and another failure as before", async () => {
+    const folder = mkdtempSync(join(tmpdir(), "simplex-mcp-transcript-"))
+    try {
+      const transcript = join(folder, "session.jsonl")
+      const failed = (summary: string) => notification(`<task-id>a2</task-id>\n<tool-use-id>toolu_7</tool-use-id>\n<status>failed</status>\n<summary>${summary}</summary>`)
+      const prompts: [string, string][] = [
+        ["p1", failed("Agent \"Plan the asMember switch\" failed: Agent terminated early due to an API error: You've hit your weekly limit · resets Nov 28, 1am (UTC) (error type rate_limit, HTTP 429, request id req_1, model sent to the API: claude-opus-5-5)")],
+        ["p2", failed("Agent \"Map\" failed: Agent terminated early due to an API error: Overloaded (error type overloaded_error, HTTP 529)")],
+      ]
+      writeFileSync(transcript, prompts.map(([promptId, content]) => userEntry(promptId, content, {origin: {kind: "task-notification"}})).join(""))
+      const {client, requests} = turnClient()
+      for (const [promptId, content] of prompts) await turn(JSON.stringify({session_id: id, hook_event_name: "UserPromptSubmit", transcript_path: transcript, prompt_id: promptId, prompt: content}), {}, client, 0, 1, 1)
+      expect(requests.map(request => (request as {body: {note?: string; task?: unknown}}).body).map(({note, task}) => [note, task])).toEqual([
+        ["!- ⛔ Agent \"Plan the asMember switch\" stopped: You've hit your weekly limit · resets Nov 28, 1am (UTC)!", {toolUse: "toolu_7", status: "failed", usageLimit: true}],
+        ["!- ❌ Agent \"Map\" failed: Agent terminated early due to an API error: Overloaded (error type overloaded_error, HTTP 529)!", {toolUse: "toolu_7", status: "failed"}],
+      ])
+    } finally {
+      rmSync(folder, {recursive: true, force: true})
+    }
+  })
+
   it("cut a prompt or an answer over 250,000 characters, so that the request fits the socket's 1 MiB", async () => {
     const {client, requests} = turnClient()
     await turn(JSON.stringify({session_id: id, last_assistant_message: `${"a".repeat(249_999)}😀${"b".repeat(1_000_000)}`}), {}, client)
