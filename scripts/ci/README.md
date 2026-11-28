@@ -35,7 +35,7 @@ Results:
 
 ### Scopes
 
-The reduced build runs one Linux job, build-linux (ubuntu-22.04 x86_64), for every scope except ios, and one macOS job, build-ios (macos-latest), for ios.
+The reduced build runs one Linux job, build-linux (ubuntu-22.04 x86_64), for every scope except ios and vlc, one macOS job, build-ios (macos-latest), for ios, and the jobs vlc-media and vlc for vlc.
 
 #### core
 
@@ -93,6 +93,23 @@ The reduced build runs one Linux job, build-linux (ubuntu-22.04 x86_64), for eve
   ```sh
   scripts/ci/package-tests.sh build linux-x86_64
   scripts/ci/package-tests.sh test
+  ```
+
+#### vlc
+
+- Globs: `BUILD_CHANGES["vlc"]` in packages_release.py: the VLC scripts of scripts/desktop, among them the plugin allowlist vlc-plugins.txt, scripts/ci/vlc-test.py, and RecAndPlay.desktop.kt, whose `VLC_DEMUX` the test reads. The scripts of scripts/desktop are also in the core globs, and RecAndPlay.desktop.kt in the kotlin globs.
+- CI:
+  - vlc-media (ubuntu-22.04): FFmpeg from apt, then `vlc-test.py media`, the test files of the formats the apps send and an FLV file, uploaded as the artifact vlc-media;
+  - vlc, on ubuntu-24.04, ubuntu-24.04-arm, ubuntu-22.04, macos-latest, macos-15-intel and windows-latest: the bundle made by prepare-vlc-linux.sh, prepare-vlc-mac.sh or prepare-vlc-windows.sh (in MSYS2, as build-windows makes it), then the commands of the matrix field `checks`:
+    - `vlc-test.py check`, except on ubuntu-22.04: it fails on a plugin outside the allowlist and on other files in the plugins directory; it checks, with the bundled libVLC and the arguments of `vlcPreviewFactory`, that each test file and each call sound of the desktop app is parsed, that its video is shown in frame callbacks as the previews show it, upright for a rotated video, and that its audio is recorded into an AAC M4A file by the voice message chain of RecAndPlay.desktop.kt; it fails when a libVLC log message comes from a container module outside `VLC_DEMUX` or from a stream module other than these containers, filesystem, cache_read and skiptags;
+    - `vlc-test.py audio`, on Linux, where the job starts PulseAudio: the plugin checks, then the voice message test file and the call sounds played with the arguments of `vlcFactory`, with decoded and played audio.
+  - On Ubuntu 22.04 the avcodec plugin of the Linux bundle does not load: the bundled libpango-1.0.so.0 requires a HarfBuzz newer than that of Ubuntu 22.04, which the bundle takes from the system. There the job runs only `vlc-test.py audio`.
+- Local, with FFmpeg and Python 3.10 or newer:
+  ```sh
+  python3 scripts/ci/vlc-test.py media /tmp/vlc-media
+  scripts/desktop/prepare-vlc-linux.sh
+  python3 scripts/ci/vlc-test.py check apps/multiplatform/common/src/commonMain/cpp/desktop/libs/linux-x86_64/vlc /tmp/vlc-media
+  python3 scripts/ci/vlc-test.py audio apps/multiplatform/common/src/commonMain/cpp/desktop/libs/linux-x86_64/vlc /tmp/vlc-media
   ```
 
 #### badge-web
@@ -185,7 +202,7 @@ For a scope lacking CI tests, in the pull request that changes it:
 5. This file, "Scopes": a subsection for the scope, in place of its row in "Scopes lacking CI tests".
 6. Checks: `python3 scripts/ci/test_packages_release.py`, the new case of scope-tests.sh locally, then a dispatch of the reduced build.
 
-The scope commands run in build-linux after the core tests, with Node 22 and Python 3.12 (steps "Setup Node.js" and "Setup Python"). For a scope that needs other versions, a setup step is added before "Test changed scopes", conditioned on the scope name in `needs.maybe-release.outputs.scopes`. A scope that needs macOS is a BUILD_CHANGES entry with a separate maybe-release output, as ios is, and a step in build-ios; the `if` of build-ios includes that output.
+The scope commands run in build-linux after the core tests, with Node 22 and Python 3.12 (steps "Setup Node.js" and "Setup Python"). For a scope that needs other versions, a setup step is added before "Test changed scopes", conditioned on the scope name in `needs.maybe-release.outputs.scopes`. A scope that needs macOS is a BUILD_CHANGES entry with a separate maybe-release output, as ios is, and a step in build-ios; the `if` of build-ios includes that output. A scope that needs Windows or several runners is a BUILD_CHANGES entry with its own output and jobs, as vlc is.
 
 ## Starting a run
 

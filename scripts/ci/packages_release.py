@@ -80,6 +80,11 @@ BUILD_CHANGES = {
         "packages/simplex-chat-python/**",
         "scripts/ci/package-tests.sh",
     ],
+    "vlc": [
+        "scripts/desktop/*vlc*",
+        "scripts/ci/vlc-test.py",
+        "apps/multiplatform/common/src/desktopMain/kotlin/chat/simplex/common/platform/RecAndPlay.desktop.kt",
+    ],
 }
 SCOPE_CHANGES = {
     "badge-web": ["apps/simplex-badge-service/web/**"],

@@ -32,6 +32,7 @@ cd tmp
 curl --tlsv1.2 "${vlc_url}" -L -o vlc
 echo "${vlc_sha256}  vlc" | shasum -a 256 -c -
 unzip -oqq vlc
+"$root_dir/scripts/desktop/keep-vlc-plugins.sh" VLC.app/Contents/MacOS/plugins
 install_name_tool -add_rpath "@loader_path/VLC.app/Contents/MacOS/lib" vlc-cache-gen
 cd VLC.app/Contents/MacOS/lib
 for lib in $(ls *.dylib); do install_name_tool -add_rpath "@loader_path" $lib 2> /dev/null || true; done

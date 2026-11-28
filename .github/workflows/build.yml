@@ -35,6 +35,9 @@ on:
       - "packages/simplex-chat-client/types/typescript/**"
       - "packages/simplex-chat-python/**"
       - "scripts/ci/package-tests.sh"
+      - "scripts/desktop/*vlc*"
+      - "scripts/ci/vlc-test.py"
+      - "apps/multiplatform/common/src/desktopMain/kotlin/chat/simplex/common/platform/RecAndPlay.desktop.kt"
       - "apps/simplex-badge-service/web/**"
       - "scripts/ci/packages_release.py"
       - "scripts/ci/test_packages_release.py"
@@ -123,6 +126,7 @@ jobs:
       haskell: ${{ steps.changes.outputs.haskell }}
       kotlin: ${{ steps.changes.outputs.kotlin }}
       ios: ${{ steps.changes.outputs.ios }}
+      vlc: ${{ steps.changes.outputs.vlc }}
       addon_tag: ${{ steps.addon.outputs.tag }}
       addon_draft: ${{ steps.addon.outputs.draft }}
       libs_latest: ${{ steps.latest_libs.outputs.tag }}
@@ -167,6 +171,7 @@ jobs:
               if [ -n "$release_branch" ]; then
                 echo "kotlin=true"
                 echo "ios=true"
+                echo "vlc=true"
                 python3 scripts/ci/packages_release.py scopes
               fi
               ;;
@@ -1403,6 +1408,119 @@ jobs:
             -skipMacroValidation \
             ARCHS=arm64 \
             CODE_SIGNING_ALLOWED=NO
+
+# =========================
+#    Desktop VLC bundles
+# =========================
+
+  vlc-media:
+    name: "ubuntu-22.04 (VLC test media)"
+    needs: maybe-release
+    if: needs.maybe-release.outputs.vlc == 'true'
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Install FFmpeg
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+
+      - name: Make test media
+        run: python3 scripts/ci/vlc-test.py media "$RUNNER_TEMP/vlc-media"
+
+      - name: Upload test media
+        uses: actions/upload-artifact@v7
+        with:
+          name: vlc-media
+          path: ${{ runner.temp }}/vlc-media
+          retention-days: 3
+          if-no-files-found: error
+
+  vlc:
+    name: "${{ matrix.os }} (VLC)"
+    needs: [maybe-release, vlc-media]
+    runs-on: ${{ matrix.os }}
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}-vlc-${{ matrix.os }}
+      cancel-in-progress: ${{ github.event_name != 'push' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            libs: linux-x86_64
+            prepare: scripts/desktop/prepare-vlc-linux.sh
+            checks: check audio
+          - os: ubuntu-24.04-arm
+            libs: linux-aarch64
+            prepare: scripts/desktop/prepare-vlc-linux.sh
+            checks: check audio
+          - os: ubuntu-22.04
+            libs: linux-x86_64
+            prepare: scripts/desktop/prepare-vlc-linux.sh
+            checks: audio
+          - os: macos-latest
+            libs: mac-aarch64
+            prepare: scripts/desktop/prepare-vlc-mac.sh
+            checks: check
+          - os: macos-15-intel
+            libs: mac-x86_64
+            prepare: scripts/desktop/prepare-vlc-mac.sh
+            checks: check
+          - os: windows-latest
+            libs: windows-x86_64
+            prepare: scripts/desktop/prepare-vlc-windows.sh
+            checks: check
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Setup MSYS2
+        if: runner.os == 'Windows'
+        uses: simplex-chat/setup-msys2@v2
+        with:
+          msystem: ucrt64
+          update: true
+          install: curl
+
+      - name: Prepare VLC (Windows)
+        if: runner.os == 'Windows'
+        shell: msys2 {0}
+        run: ${{ matrix.prepare }}
+
+      - name: Prepare VLC
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          mkdir -p apps/multiplatform/common/src/commonMain/cpp/desktop/libs/${{ matrix.libs }}
+          ${{ matrix.prepare }}
+
+      - name: Install the desktop libraries that VLC takes from the system and start PulseAudio
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libdrm2 libx11-6 libx11-xcb1 libxcb1 libxcb-dri3-0 libfontconfig1 libfreetype6 libfribidi0 libharfbuzz0b libegl1 libgl1 pulseaudio
+          pulseaudio --start --exit-idle-time=-1
+
+      - name: Setup Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      - name: Download test media
+        uses: actions/download-artifact@v8
+        with:
+          name: vlc-media
+          path: ${{ runner.temp }}/vlc-media
+
+      - name: Test VLC
+        shell: bash
+        run: |
+          for command in ${{ matrix.checks }}; do
+            python scripts/ci/vlc-test.py "$command" apps/multiplatform/common/src/commonMain/cpp/desktop/libs/${{ matrix.libs }}/vlc "$RUNNER_TEMP/vlc-media"
+          done
 
 # =========================
 #      Windows Build

@@ -87,7 +87,7 @@ For some complex features we create feature branches that will be merged once re
 
 ## Pull requests and CI
 
-1. Open a pull request to `master` as a draft. On a draft, CI runs the reduced build: one Linux job that builds and tests the changed scopes, and one macOS job only when iOS code changed (CI guide: scripts/ci/README.md).
+1. Open a pull request to `master` as a draft. On a draft, CI runs the reduced build: one Linux job that builds and tests the changed scopes, one macOS job only when iOS code changed, and the VLC jobs on Linux, macOS and Windows only when the desktop VLC bundle or its libVLC arguments changed (CI guide: scripts/ci/README.md).
 2. Select the core tests in a `ci-tests` block in the description, one hspec match pattern per line. `/` runs all tests; without a block, the reduced build runs no core tests.
 3. Push further changes to the same branch; on a draft, each push runs the reduced build.
 4. Mark the pull request ready for review once it is ready. CI then runs the full matrix on each push, and the code owners are requested for review.
