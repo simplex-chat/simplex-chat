@@ -106,7 +106,7 @@ struct ChatView: View {
         chat.chatInfo.activeChatLayout(profileChatLayout(ChatModel.shared.currentUser)) == .terminal
     }
 
-    private var viaHostsNotLoaded: Bool {
+    private var viaNamesNotLoaded: Bool {
         !chatModel.membersLoaded && im.reversedChatItems.contains { $0.chatDir.memberVia != nil || $0.quotedItem?.chatDir?.memberVia != nil }
     }
 
@@ -362,8 +362,8 @@ struct ChatView: View {
                 }
             }
         }
-        .task(id: viaHostsNotLoaded) {
-            if viaHostsNotLoaded, case let .group(groupInfo, _) = chat.chatInfo {
+        .task(id: viaNamesNotLoaded) {
+            if viaNamesNotLoaded, case let .group(groupInfo, _) = chat.chatInfo {
                 await chatModel.loadGroupMembers(groupInfo)
             }
         }

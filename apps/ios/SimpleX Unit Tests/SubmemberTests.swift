@@ -37,7 +37,7 @@ final class SubmemberTests: XCTestCase {
     }
 
     @MainActor
-    func testHeaderQuoteAndMemberRowsNameHost() async throws {
+    func testHeaderQuoteAndMemberRowsNameMemberItIsVia() async throws {
         try replay("submembers/received")
         ChatModel.shared.groupMembers = (await apiListMembers(1) ?? []).map(GMember.init)
         let (chat, _) = try await apiGetChat(chatId: "#1", scope: nil, pagination: .last(count: 2))

@@ -1090,7 +1090,7 @@ writeFixture fixture = testGenerate ("tests/fixtures/" <> fixture <> ".json") . 
 stableJSON :: J.Value -> J.Value
 stableJSON value = stable value
   where
-    hostIds = memberViaValues value
+    memberViaIds = memberViaValues value
     stable = \case
       J.Object o -> J.Object $ JM.mapWithKey stableField o
       J.Array a -> J.Array $ fmap stable a
@@ -1099,7 +1099,7 @@ stableJSON value = stable value
       | k == "itemTs", J.String ts <- v = J.String $ "1970-01-01T00:00:00" <> secondFraction ts
       | k `elem` ["createdAt", "updatedAt", "chatTs", "userMemberProfileSentAt", "deletedTs", "fileExpires", "sentAt"] = J.String "1970-01-01T00:00:00Z"
       | k == "expiresAt", J.String _ <- v = J.String "2099-01-01T12:00:00Z"
-      | k == "memberId", v `elem` hostIds = J.String "memberVia"
+      | k == "memberId", v `elem` memberViaIds = J.String "memberVia"
       | k `elem` memberIdKeys, J.String s <- v = J.String $ maybe (JK.toText k) (\i -> "memberId" <> T.pack (show i)) (elemIndex s memberIds)
       | k `elem` ["agentConnId", "xContactId", "connFullLink", "connShortLink", "contactLink", "groupLink", "viaGroupLinkUri", "simplexUri", "memberVia", "memberPubKey", "publicGroupId", "groupLinkId", "relayLink", "itemSharedMsgId", "sharedMsgId", "fileDescrText"], J.String _ <- v = J.String $ JK.toText k
       | k `elem` ["agentSndFileId", "privateSndFileDescr", "errorMessage"] = J.String $ JK.toText k

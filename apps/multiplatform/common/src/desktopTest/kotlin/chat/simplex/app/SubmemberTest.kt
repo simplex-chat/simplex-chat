@@ -101,7 +101,7 @@ class SubmemberTest {
   }
 
   @Test
-  fun headerAndQuoteOfSubmemberNameHost() = runComposeUiTest {
+  fun headerAndQuoteOfSubmemberNameMemberItIsVia() = runComposeUiTest {
     val chat = receivedChat()
     val (hi, reply) = chat.chatItems
     setContent {
@@ -114,7 +114,7 @@ class SubmemberTest {
   }
 
   @Test
-  fun memberListAndMemberInfoNameHost() = runComposeUiTest {
+  fun memberListAndMemberInfoNameMemberItIsVia() = runComposeUiTest {
     receivedChat()
     val reviewer = ChatModel.groupMembers.value.single { it.displayName == "reviewer" }
     setContent {
