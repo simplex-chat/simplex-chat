@@ -800,6 +800,57 @@ describe("turn hooks", () => {
     ])
   })
 
+  it("send the stop of an agent at a usage limit as the note of what stopped and why, marked to alert, and another failure as before", async () => {
+    const folder = mkdtempSync(join(tmpdir(), "simplex-mcp-transcript-"))
+    try {
+      const transcript = join(folder, "session.jsonl")
+      const failed = (summary: string) => notification(`<task-id>a2</task-id>\n<tool-use-id>toolu_7</tool-use-id>\n<status>failed</status>\n<summary>${summary}</summary>`)
+      const limit = "Agent terminated early due to an API error: You've hit your weekly limit · resets Nov 28, 1am (UTC) (error type rate_limit, HTTP 429, request id req_1, model sent to the API: claude-opus-5-5)"
+      const prompts: [string, string][] = [
+        ["p1", failed(`Agent "Plan the asMember switch" failed: ${limit}`)],
+        ["p2", failed("Agent \"Map\" failed: Agent terminated early due to an API error: Overloaded (error type overloaded_error, HTTP 529)")],
+        ["p3", failed(`Agent "Retry what failed: the build" failed: ${limit}`)],
+      ]
+      writeFileSync(transcript, prompts.map(([promptId, content]) => userEntry(promptId, content, {origin: {kind: "task-notification"}})).join(""))
+      const {client, requests} = turnClient()
+      for (const [promptId, content] of prompts) await turn(JSON.stringify({session_id: id, hook_event_name: "UserPromptSubmit", transcript_path: transcript, prompt_id: promptId, prompt: content}), {}, client, 0, 1, 1)
+      expect(requests.map(request => (request as {body: {note?: string; alert?: boolean; task?: unknown}}).body).map(({note, alert, task}) => [note, alert, task])).toEqual([
+        ["!- ⛔ Agent \"Plan the asMember switch\" stopped: You've hit your weekly limit · resets Nov 28, 1am (UTC)!", true, {toolUse: "toolu_7", status: "failed"}],
+        ["!- ❌ Agent \"Map\" failed: Agent terminated early due to an API error: Overloaded (error type overloaded_error, HTTP 529)!", undefined, {toolUse: "toolu_7", status: "failed"}],
+        ["!- ⛔ Agent \"Retry what failed: the build\" stopped: You've hit your weekly limit · resets Nov 28, 1am (UTC)!", true, {toolUse: "toolu_7", status: "failed"}],
+      ])
+    } finally {
+      rmSync(folder, {recursive: true, force: true})
+    }
+  })
+
+  it("send the stop of a teammate from its failed idle notification as the note of who stopped and why, marked to alert, followed by the line of its message on the next line, and none for an idle notification that did not fail", async () => {
+    const folder = mkdtempSync(join(tmpdir(), "simplex-mcp-transcript-"))
+    try {
+      const transcript = join(folder, "session.jsonl")
+      const tag = (body: string) => `<teammate-message teammate_id="wasm-sandbox" color="yellow">\n${body}\n</teammate-message>`
+      const idle = (fields: object) => tag(JSON.stringify({type: "idle_notification", from: "wasm-sandbox", timestamp: "2026-11-26T23:43:26.750Z", ...fields}))
+      const teammate = (...tags: string[]) => `Another Claude session sent a message:\n${tags.join("\n\n")}\n\nThis came from another Claude session — not typed by your user.`
+      const failed = idle({idleReason: "failed", failureReason: "You've hit your weekly limit · resets Nov 28, 1am (UTC)", result: "Now copy the licence files."})
+      const prompts: [string, string][] = [
+        ["p1", teammate(failed)],
+        ["p2", teammate(tag("The build passes."), failed)],
+        ["p3", teammate(idle({idleReason: "available"}))],
+      ]
+      writeFileSync(transcript, prompts.map(([promptId, content]) => userEntry(promptId, content)).join(""))
+      const {client, requests} = turnClient()
+      for (const [promptId, content] of prompts) await turn(JSON.stringify({session_id: id, hook_event_name: "UserPromptSubmit", transcript_path: transcript, prompt_id: promptId, prompt: content}), {}, client, 0, 1, 1)
+      const stopped = "⛔ Teammate \"wasm-sandbox\" stopped: You've hit your weekly limit · resets Nov 28, 1am (UTC)"
+      expect(requests.map(request => (request as {body: {note?: string; alert?: boolean}}).body).map(({note, alert}) => [note, alert])).toEqual([
+        [`!- ${stopped}!`, true],
+        [`!- ${stopped}\n✉️ Message from wasm-sandbox: The build passes.!`, true],
+        [undefined, undefined],
+      ])
+    } finally {
+      rmSync(folder, {recursive: true, force: true})
+    }
+  })
+
   it("cut a prompt or an answer over 250,000 characters, so that the request fits the socket's 1 MiB", async () => {
     const {client, requests} = turnClient()
     await turn(JSON.stringify({session_id: id, last_assistant_message: `${"a".repeat(249_999)}😀${"b".repeat(1_000_000)}`}), {}, client)

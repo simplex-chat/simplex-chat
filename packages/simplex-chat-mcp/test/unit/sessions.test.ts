@@ -755,6 +755,30 @@ describe("session channel", () => {
     ])
   })
 
+  it("posts the line of a failure with the text of the last line again once another message follows that line, and logs each failure and notification with the time and whether its line was posted", async () => {
+    const chat = new FakeChat()
+    const {session} = await channel(chat)
+    const logged: string[] = []
+    jest.spyOn(process.stdout, "write").mockImplementation(text => (logged.push(String(text).trimEnd()), true))
+    const failure = {error: "rate_limit", text: "You've hit your weekly limit · resets Nov 28, 1am (UTC)", autoContinue: false, menu: false}
+    const items = chat.chats.get("#20")!.items
+    const line = chat.nextItemId
+    await session.turn({id: id1, at: Date.now(), failure})
+    items.push(item(line, "⛔ Claude Code stopped", {type: "groupSnd"}))
+    await session.turn({id: id1, at: Date.now(), failure})
+    items.push(item(900, "!- ⏰ Scheduled prompt: Poll!", {type: "groupSnd"}))
+    await session.turn({id: id1, at: Date.now(), failure})
+    await session.turn({id: id1, at: Date.now(), waiting: {kind: "idle_prompt", text: "Claude is waiting for your input"}})
+    const stopped = "⛔ Claude Code stopped: You've hit your weekly limit · resets Nov 28, 1am (UTC)\nSend a message here when the limit is lifted."
+    expect(sentTo(chat, 20)).toEqual([stopped, stopped])
+    expect(logged.map(text => text.replace(/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z /, "TIME "))).toEqual([
+      `TIME session 1 stop rate_limit: ${failure.text} (posted)`,
+      `TIME session 1 stop rate_limit: ${failure.text} (repeated)`,
+      `TIME session 1 stop rate_limit: ${failure.text} (posted)`,
+      "TIME session 1 waiting idle_prompt: Claude is waiting for your input (skipped)",
+    ])
+  })
+
   it("leaves the tool-use and mode cards out of the actions that list returns to the session", async () => {
     const chat = new FakeChat()
     const {session} = await channel(chat)
@@ -1445,6 +1469,14 @@ describe("session channel", () => {
     expect(sentTo(chat, 20)).toEqual(["Done.\n!- Done!", "!- Model changed to claude-sonnet-5!", "Done.\n!- Done!", "!- Effort changed to max!", "!- Effort changed to low!", "Done.\n!- Done!"])
     expect(priorities(chat)).toEqual([[1], [-1], [1], [-1], [-1], [1]])
     expect(chat.profiles.filter(({groupId}) => groupId === 20).at(-1)!.groupProfile.shortDescr).toBe("claude-haiku-5 · effort low")
+  })
+
+  it("posts a note of the service in small print with priority -1", async () => {
+    const chat = new FakeChat()
+    const {session} = await channel(chat)
+    await session.postNote("▶️ Claude Code started (process 300).")
+    expect(sentTo(chat, 20)).toEqual(["!- ▶️ Claude Code started (process 300).!"])
+    expect(priorities(chat)).toEqual([[-1]])
   })
 
   it("takes the effort level only from the status line once it reports, so the level of one turn in a hook, as after ultrathink, posts no line, and a change in the status line posts one", async () => {
@@ -3019,6 +3051,18 @@ describe("Main group", () => {
     expect(sentTo(chat, 10).at(-2)).toBe("▶️ 1 · one: running\n🤖 1 agent working")
     await session.endLive()
     expect(chat.updates.at(-1)).toMatchObject({chatId: 20, text: "!- 🤖 Explore · find callers · ⏹️ 0:00 · 0 steps!"})
+  })
+
+  it("posts a stop line with priority 1, as the session's own stop line, also for a subagent whose message shows its end", async () => {
+    const chat = new FakeChat()
+    const hub = await hubWith(chat)
+    const session = await openSession(hub, id1, stored(1, "one"))
+    await session.turn({id: id1, agent: {id: "a1", start: {type: "Plan", description: "Plan the asMember switch", toolUse: "toolu_1", transcript: join(root, "agent-a1.jsonl")}}})
+    const agent = "!- ⛔ Agent \"Plan the asMember switch\" stopped: You've hit your weekly limit · resets Nov 28, 1am (UTC)!"
+    const teammate = "!- ⛔ Teammate \"wasm-sandbox\" stopped: You've hit your weekly limit · resets Nov 28, 1am (UTC)!"
+    await session.turn({id: id1, prompt: "<task-notification>…</task-notification>", typed: false, note: agent, alert: true, task: {toolUse: "toolu_1", status: "failed"}})
+    await session.turn({id: id1, prompt: "Another Claude session sent a message: …", typed: false, note: teammate, alert: true})
+    expect(chat.sent.slice(-2).map(({messages}) => messages)).toEqual([agent, teammate].map(text => [{msgContent: {type: "text", text}, mentions: {}, priority: 1}]))
   })
 
   it("updates the descriptions of a session's group at most once a minute, with the latest values", async () => {

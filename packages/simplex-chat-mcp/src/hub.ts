@@ -201,6 +201,7 @@ export class Session {
   private readonly linked = new WeakSet<Action>()
   private cardAt = -Infinity
   private failedText?: string
+  private failureItem: Promise<number | undefined> = Promise.resolve(undefined)
   private claude: ClaudeState
   private readonly accountReader: AccountReader
   private readonly transcriptReader: TranscriptReader
@@ -645,7 +646,7 @@ export class Session {
   }
 
   // spec: spec/architecture.md#hub-session-turn
-  async turn({at, prompt, typed, note, midTurn, answer, model, switched, effort, step, text, usage, limits, statusLine, agent, task, workflow, failure, waiting}: TurnRequest): Promise<void> {
+  async turn({at, prompt, typed, note, alert, midTurn, answer, model, switched, effort, step, text, usage, limits, statusLine, agent, task, workflow, failure, waiting}: TurnRequest): Promise<void> {
     const owned = this.onAgents(agent, task, workflow)
     const startsTurn = prompt !== undefined && midTurn !== true
     if (answer !== undefined) this.failedText = undefined
@@ -680,7 +681,7 @@ export class Session {
       if (switches.length > 0) await this.post(switches).catch(error => this.postRefusal(error, noteRefused, featureOff))
       if (text !== undefined) this.text(text, at ?? Date.now())
       if (step !== undefined) await this.step(step, at ?? Date.now())
-      if (note !== undefined && !owned) await this.post([{text: note, priority: -1}]).catch(error => this.postRefusal(error, noteRefused, featureOff))
+      if (note !== undefined && (!owned || alert === true)) await this.post([{text: note, priority: alert === true ? 1 : -1}]).catch(error => this.postRefusal(error, noteRefused, featureOff))
       const typedPrompt = prompt !== undefined && typed !== false && prompt.replace(channelPrompt, "").trim() !== "" && matched.length === 0 && parseCommand(prompt) === undefined
       const userPost = typedPrompt ? this.hub.user?.post(this.number, textParts(prompt)).catch(error => this.postRefusal(error, "User's prompt was not posted", notAllowedForUser)) : undefined
       if (startsTurn && (typedPrompt || matched.length > 0) && (at ?? Date.now()) >= this.answeredAt) {
@@ -700,15 +701,42 @@ export class Session {
   private async fail(failure: Failure, at: number): Promise<void> {
     await this.endTexts(at)
     this.closeOpenings(({at: start, until}) => (until ?? start) <= at)
-    if (failure.text === this.failedText) return
+    const posted = this.failureItem.then(item => this.postFailure(failure, item))
+    this.failureItem = posted.catch(() => undefined)
+    await posted
+  }
+
+  // spec: spec/architecture.md#hub-session-fail
+  private async postFailure(failure: Failure, item: number | undefined): Promise<number | undefined> {
+    const repeated = failure.text === this.failedText && !(await this.lineFollowed(item))
+    log(`${new Date().toISOString()} session ${this.number} stop ${failure.error}: ${failure.text} (${repeated ? "repeated" : "posted"})`)
+    if (repeated) return item
     this.failedText = failure.text
-    await this.post([{text: failureLine(failure), priority: 1}]).catch(error => this.postRefusal(error, noteRefused, featureOff))
+    return this.post([{text: failureLine(failure), priority: 1}]).then(
+      ([sent]) => sent?.chatItem.meta.itemId,
+      error => this.postRefusal(error, noteRefused, featureOff).then(() => undefined),
+    )
+  }
+
+  // spec: spec/architecture.md#hub-session-fail
+  private async lineFollowed(item: number | undefined): Promise<boolean> {
+    if (item === undefined) return false
+    return getChat(this.hub.chat, `#${this.control.groupId}`, {type: "last", count: 1}).then(
+      ({chatItems}) => chatItems.some(({meta}) => meta.itemId !== item),
+      error => (logError(`failure of session ${this.number}`, error), false),
+    )
   }
 
   // spec: spec/architecture.md#hub-session-fail
   private async waits({kind, text}: Waiting, at: number): Promise<void> {
     const line = kind === "quota_auto_resume_stale" ? limitResetLine : kind === "quota_auto_resume_disabled" ? noContinueLine : waitingKinds.includes(kind) && this.cardAt < at - cardQuietMs ? `⏸️ Claude Code waits in its terminal: ${text}` : undefined
+    log(`${new Date().toISOString()} session ${this.number} waiting ${kind}: ${text} (${line === undefined ? "skipped" : "posted"})`)
     if (line !== undefined) await this.post([{text: line, priority: 1}]).catch(error => this.postRefusal(error, noteRefused, featureOff))
+  }
+
+  // spec: spec/architecture.md#hub-session-postnote
+  async postNote(text: string): Promise<void> {
+    await this.post([{text: small(text), priority: -1}]).catch(error => this.postRefusal(error, noteRefused, featureOff))
   }
 
   // spec: spec/architecture.md#hub-session-endpermissions

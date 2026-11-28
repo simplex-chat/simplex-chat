@@ -1,4 +1,4 @@
-import {execFile} from "child_process"
+import {ExecFileOptions, execFile} from "child_process"
 import {EventEmitter} from "events"
 import {existsSync, writeSync} from "fs"
 import {readFile} from "fs/promises"
@@ -20,7 +20,11 @@ import {version} from "./version"
 const idleClose = 10 * 60_000
 const idleStop = 10 * 60_000
 const processWait = 10_000
+const refusalWait = 60_000
+const exitCheckWait = 1_000
 const psWait = 2_000
+const powershellWait = 10_000
+const powershellNoProcess = 3
 const logCheck = 3_600_000
 const lockChecks = 150
 const lockCheckWait = 100
@@ -55,6 +59,7 @@ export interface SessionLike {
   permission(request: PermissionRequest): void
   ask(request: AskRequest, signal: AbortSignal): Promise<Decision | undefined>
   turn(request: TurnRequest): Promise<void>
+  postNote(text: string): Promise<void>
   endPermissions(): void
   endLive(): Promise<void>
   endToolApprovals(): void
@@ -90,6 +95,7 @@ export class Service {
   private readonly stored: StoredSession[]
   private readonly aliases = new Map<string, string>()
   private readonly titles = new Map<number, {id: string; at: number; name?: string}>()
+  private readonly refusals = new Map<number, {id: string; at: number}>()
   private readonly titled = new EventEmitter()
   private readonly registered = new EventEmitter()
   private readonly held = new Map<number, TitleRequest>()
@@ -175,7 +181,9 @@ export class Service {
       }),
       "POST /turn": this.expiring(async (body, res) => {
         const request = body as TurnRequest
-        await (await this.entry(await this.resolve(request.id, request.pid)).opening).turn(request)
+        const id = await this.resolve(request.id, request.pid)
+        await this.refuseOtherProcess(id, request.pid)
+        await (await this.entry(id).opening).turn(request)
         sendJson(res, 200, {})
       }),
       "GET /status": this.expiring(async (_body, res) => sendJson(res, 200, this.status())),
@@ -233,11 +241,13 @@ export class Service {
   private async onSession(request: SessionRequest): Promise<SessionReply> {
     validConfig(request.config)
     this.refuseUnattended(request.pid)
-    const started = request.pid === undefined ? undefined : await this.deps.processStart(request.pid)
+    const recorded = request.record === undefined || existsSync(request.record)
+    const started = request.pid === undefined || !recorded ? undefined : await this.deps.processStart(request.pid).catch(() => undefined)
     const id = await this.resolve(request.id, request.pid, true)
     this.refuseUnattended(request.pid)
     const title = request.pid === undefined ? undefined : this.titles.get(request.pid)
     const entry = this.entry(id, {...request, id, name: request.name ?? (title?.id === id ? title.name : undefined)})
+    await this.refuseOtherProcess(id, request.pid)
     const previous = {pid: entry.pid, started: entry.started}
     entry.pid = request.pid
     entry.started = started
@@ -246,7 +256,15 @@ export class Service {
     const agent = await entry.opening
     agent.record = request.record
     agent.globalConfig = request.globalConfig
-    if (previous.pid !== undefined && (previous.pid !== request.pid || started === undefined || previous.started !== started)) agent.endToolApprovals()
+    const changed = previous.pid !== request.pid || previous.started !== started
+    if (previous.pid !== undefined && (changed || started === undefined)) agent.endToolApprovals()
+    const folder = this.folder(id)
+    if (changed) writeSessionFile(folder, {...readSessionFile(folder)!, claudeProcess: request.pid === undefined ? undefined : {pid: request.pid, started}})
+    const another = previous.pid !== request.pid || (previous.started !== undefined && started !== undefined && previous.started !== started)
+    if (started !== undefined && another) {
+      if (previous.pid !== undefined && previous.started !== undefined) await agent.postNote(`⏹️ Claude Code ended (process ${previous.pid}).`).catch(error => logError(`session ${agent.number}`, error))
+      await agent.postNote(`▶️ Claude Code started (process ${request.pid}).`).catch(error => logError(`session ${agent.number}`, error))
+    }
     if (entry.attached === 0) this.scheduleIdle(id, entry)
     await this.hub.configure(request.config)
     agent.requestMode(request.config.approve)
@@ -288,6 +306,18 @@ export class Service {
     if (marked !== undefined && marked > Date.now() - processWait) throw new SocketError("The SessionStart hook of this process marked its run unattended.", unattendedStatus)
   }
 
+  // spec: spec/architecture.md#service-service-onsession
+  private async refuseOtherProcess(id: string, requester: number | undefined): Promise<void> {
+    const entry = this.entry(id)
+    const {pid, started} = entry
+    if (requester === undefined || pid === undefined || pid === requester || started === undefined) return
+    const running = await this.deps.processStart(pid).then(start => start === started, () => true)
+    if (entry.pid !== pid || entry.started !== started) return this.refuseOtherProcess(id, requester)
+    if (!running) return
+    this.refusals.set(requester, {id, at: Date.now()})
+    throw new SocketError(`Claude Code process ${pid} already uses the SimpleX group of this conversation. Exit that process, or exit this one and start a new conversation.`, 423)
+  }
+
   // spec: spec/api.md#socket-protocol
   private async applyTitle({id: given, pid, at, name, project, model, transcript, config}: TitleRequest): Promise<void> {
     const id = await this.resolve(given, pid)
@@ -297,6 +327,7 @@ export class Service {
       this.titles.set(pid, {id, at: Date.now()})
       this.titled.emit(String(pid))
     }
+    await this.refuseOtherProcess(id, pid)
     const agent = await entry.opening
     if (transcript !== undefined) agent.transcript = transcript
     await this.hub.configure(config)
@@ -331,7 +362,8 @@ export class Service {
     const recent = Date.now() - processWait
     const detached = [...this.entries].find(([, entry]) => entry.pid === pid && (entry.seen ?? 0) > recent)?.[0]
     const title = this.titles.get(pid)
-    return this.attachedSession(pid) ?? detached ?? (title !== undefined && title.at > recent ? title.id : undefined)
+    const refusal = this.refusals.get(pid)
+    return this.attachedSession(pid) ?? detached ?? (title !== undefined && title.at > recent ? title.id : undefined) ?? (refusal !== undefined && refusal.at > Date.now() - refusalWait ? refusal.id : undefined)
   }
 
   // spec: spec/architecture.md#service-service-canonical
@@ -371,7 +403,26 @@ export class Service {
       agent.endPermissions()
       agent.endLive()
       this.scheduleIdle(id, entry)
+      this.noteExit(id, entry, agent).catch(error => logError(`session ${agent.number}`, error))
     })
+  }
+
+  // spec: spec/architecture.md#service-service-onattach
+  private async noteExit(id: string, entry: Entry, agent: SessionLike): Promise<void> {
+    const {pid, started} = entry
+    if (pid === undefined || started === undefined) return
+    const watched = (): boolean => this.stopping === undefined && entry.attached === 0 && entry.pid === pid && entry.started === started
+    const until = Date.now() + processWait
+    while (watched() && Date.now() < until) {
+      const running = await this.deps.processStart(pid).then(start => start === started, () => true)
+      if (!running && watched()) {
+        entry.started = undefined
+        const folder = this.folder(id)
+        writeSessionFile(folder, {...readSessionFile(folder)!, claudeProcess: undefined})
+        return agent.postNote(`⏹️ Claude Code ended (process ${pid}).`)
+      }
+      await new Promise(resolve => setTimeout(resolve, exitCheckWait).unref())
+    }
   }
 
   // spec: spec/api.md#socket-protocol
@@ -381,7 +432,9 @@ export class Service {
 
   // spec: spec/api.md#socket-protocol
   private async onAsk(request: AskRequest, res: ServerResponse): Promise<void> {
-    await this.streamed(await this.resolve(request.id, request.pid), res, async (agent, signal) => {
+    const id = await this.resolve(request.id, request.pid)
+    await this.refuseOtherProcess(id, request.pid)
+    await this.streamed(id, res, async (agent, signal) => {
       const decision = await agent.ask(request, signal)
       return decision === undefined ? {} : {decision}
     })
@@ -425,7 +478,7 @@ export class Service {
     const existing = this.entries.get(id)
     if (existing !== undefined) return existing
     clearTimeout(this.stopTimer)
-    const entry: Entry = {attached: 0, calls: 0, writers: new Map(), opening: this.openAgent(id, folder, request)}
+    const entry: Entry = {attached: 0, calls: 0, writers: new Map(), opening: this.openAgent(id, folder, request), ...readSessionFile(folder)?.claudeProcess}
     this.entries.set(id, entry)
     this.scheduleIdle(id, entry)
     entry.opening.then(
@@ -540,15 +593,22 @@ export function productionDeps(root: string): ServiceDeps {
 }
 
 // spec: spec/architecture.md#service-processstart
-export async function processStart(pid: number): Promise<string | undefined> {
+export async function processStart(pid: number, command: (file: string, args: string[], options: ExecFileOptions) => Promise<{stdout: string}> = run): Promise<string | undefined> {
   if (!Number.isSafeInteger(pid) || pid <= 0) return undefined
+  let start: string | undefined
   try {
-    if (process.platform === "linux") return (await readFile(`/proc/${pid}/stat`, "utf8")).split(") ").at(-1)?.split(" ")[19]
-    if (process.platform === "darwin") return (await run("/bin/ps", ["-o", "lstart=", "-p", String(pid)], {timeout: psWait})).stdout.trim() || undefined
-    return undefined
-  } catch {
-    return undefined
+    if (process.platform === "linux") {
+      const ticks = (await readFile(`/proc/${pid}/stat`, "utf8")).split(") ").at(-1)?.split(" ")[19]
+      const boot = await readFile("/proc/sys/kernel/random/boot_id", "utf8").then(text => `${text.trim()} `, () => "")
+      start = ticks === undefined ? undefined : `${boot}${ticks}`
+    } else if (process.platform === "darwin") start = (await command("/bin/ps", ["-o", "lstart=", "-p", String(pid)], {timeout: psWait, env: {...process.env, LC_ALL: "C", TZ: "UTC"}})).stdout.trim() || undefined
+    else if (process.platform === "win32") start = /^\d+$/.exec((await command("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", `$p = Get-Process -Id ${pid} -ErrorAction SilentlyContinue; if (-not $p) { exit ${powershellNoProcess} }; $p.StartTime.ToFileTimeUtc()`], {timeout: powershellWait, windowsHide: true})).stdout.trim())?.[0]
+  } catch (error) {
+    if ((error as {code?: unknown}).code === (process.platform === "linux" ? "ENOENT" : process.platform === "win32" ? powershellNoProcess : 1)) return undefined
+    throw error
   }
+  if (start === undefined) throw new Error(`The start time of process ${pid} can't be read.`)
+  return start
 }
 
 // spec: spec/architecture.md#service-processevent

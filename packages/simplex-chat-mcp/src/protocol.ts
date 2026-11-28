@@ -88,6 +88,7 @@ export interface TurnRequest {
   prompt?: string
   typed?: boolean
   note?: string
+  alert?: boolean
   midTurn?: boolean
   answer?: string
   model?: string

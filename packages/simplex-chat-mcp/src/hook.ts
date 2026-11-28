@@ -62,6 +62,10 @@ const handbackTool = "SubagentHandback"
 const agentRecordReads = 20
 // spec: spec/architecture.md#hook-agentstart
 const taskStatuses: TaskStatus[] = ["completed", "failed", "killed", "stopped"]
+// spec: spec/architecture.md#hook-limitstop
+const limitStop = /^(.+) failed: .*?API error: (.+?) \(error type rate_limit\b/
+// spec: spec/architecture.md#hook-limitstop
+const stopMark = "⛔"
 
 // spec: spec/architecture.md#hook-agentstart
 interface AgentRecord {
@@ -167,6 +171,7 @@ interface AnswerUsage {
 
 interface PromptKind {
   typed: boolean
+  alert?: boolean
   note?: string
   midTurn?: boolean
 }
@@ -537,7 +542,7 @@ function recordKind(record: TranscriptEntry, id: string | undefined, text: strin
   const origin = record.type === "attachment" ? (record.attachment?.origin ?? (record.attachment?.commandMode === "task-notification" ? {kind: "task-notification"} : undefined)) : record.origin
   const note = noteOf(origin, record.turnOrigin, text)
   const midTurn = record.type !== "user" || (id !== undefined && record.promptId !== id)
-  return {typed: origin?.kind === "human", ...(note === undefined ? {} : {note: small(shortened(note))}), ...(midTurn ? {midTurn} : {})}
+  return {typed: origin?.kind === "human", ...(note === undefined ? {} : {note: small(shortened(note))}), ...(note?.startsWith(stopMark) ? {alert: true} : {}), ...(midTurn ? {midTurn} : {})}
 }
 
 // spec: spec/architecture.md#hook-noteof
@@ -567,6 +572,8 @@ function taskNote(text: string): string {
   if (block === undefined) return `🔔 ${firstLine(text)}`
   const field = (name: string): string => firstLine(decoded(new RegExp(`<${name}>([\\s\\S]*?)</${name}>`).exec(block)?.[1] ?? ""))
   const summary = field("summary") || "Task notification"
+  const limit = limitStop.exec(summary)
+  if (limit !== null) return `${stopMark} ${limit[1]} stopped: ${limit[2]}`
   const event = field("event")
   const emoji = statusEmoji.get(field("status")) ?? (event === "" ? "🔔" : "📡")
   return `${emoji} ${summary}${event === "" ? "" : `: ${event}`}`
@@ -575,11 +582,14 @@ function taskNote(text: string): string {
 // spec: spec/architecture.md#hook-noteof
 function teammateNote(text: string): string | undefined {
   if (!teammatePrompt.test(text)) return undefined
-  const match = [...text.matchAll(teammateMessage)].find(([, , , body]) => !idleNotification(body))
-  if (match === undefined) return undefined
+  const tags = [...text.matchAll(teammateMessage)]
+  const stop = tags.map(teammateStop).find(line => line !== undefined)
+  const match = tags.find(([, , , body]) => !idleNotification(body))
+  if (match === undefined) return stop
   const [, sender, attributes, body] = match
   const summary = /\ssummary="([^"]*)"/.exec(attributes)?.[1]
-  return `✉️ Message from ${oneLine(decoded(sender))}: ${firstLine(summary === undefined ? body : decoded(summary))}`
+  const message = `✉️ Message from ${oneLine(decoded(sender))}: ${firstLine(summary === undefined ? body : decoded(summary))}`
+  return stop === undefined ? message : `${stop}\n${message}`
 }
 
 // spec: spec/architecture.md#hook-noteof
@@ -588,6 +598,18 @@ function idleNotification(body: string): boolean {
     return (JSON.parse(body) as {type?: unknown} | null)?.type === "idle_notification"
   } catch {
     return false
+  }
+}
+
+// spec: spec/architecture.md#hook-limitstop
+function teammateStop([, sender, , body]: RegExpMatchArray): string | undefined {
+  try {
+    const {type, idleReason, failureReason} = (JSON.parse(body) ?? {}) as {type?: unknown; idleReason?: unknown; failureReason?: unknown}
+    if (type !== "idle_notification" || idleReason !== "failed") return undefined
+    const reason = firstLine(stringOf(failureReason) ?? "")
+    return `${stopMark} Teammate "${oneLine(decoded(sender))}" stopped${reason === "" ? "" : `: ${reason}`}`
+  } catch {
+    return undefined
   }
 }
 
