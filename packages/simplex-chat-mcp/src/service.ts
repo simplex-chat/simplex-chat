@@ -91,7 +91,7 @@ export class Service {
   private readonly stored: StoredSession[]
   private readonly aliases = new Map<string, string>()
   private readonly titles = new Map<number, {id: string; at: number; name?: string}>()
-  private readonly refusals = new Map<number, {id: string; at: number}>()
+  private readonly refusals = new Map<number, {id: string; at: number; title?: TitleRequest}>()
   private readonly titled = new EventEmitter()
   private readonly registered = new EventEmitter()
   private readonly held = new Map<number, TitleRequest>()
@@ -247,7 +247,12 @@ export class Service {
     entry.pid = request.pid
     entry.started = started
     entry.seen = Date.now()
-    if (request.pid !== undefined) this.registered.emit(String(request.pid))
+    if (request.pid !== undefined) {
+      this.registered.emit(String(request.pid))
+      const refused = this.refusals.get(request.pid)?.title
+      this.refusals.delete(request.pid)
+      if (refused !== undefined) this.applyTitle(refused).catch(error => logError("title", error))
+    }
     const agent = await entry.opening
     agent.record = request.record
     agent.globalConfig = request.globalConfig
@@ -296,19 +301,20 @@ export class Service {
   }
 
   // spec: spec/architecture.md#service-service-onsession
-  private async refuseOtherProcess(id: string, requester: number | undefined): Promise<void> {
+  private async refuseOtherProcess(id: string, requester: number | undefined, title?: TitleRequest): Promise<void> {
     const entry = this.entry(id)
     const {pid, started} = entry
     if (requester === undefined || pid === undefined || pid === requester || started === undefined) return
     const running = (await this.deps.processStart(pid)) === started
-    if (entry.pid !== pid || entry.started !== started) return this.refuseOtherProcess(id, requester)
+    if (entry.pid !== pid || entry.started !== started) return this.refuseOtherProcess(id, requester, title)
     if (!running) return
-    this.refusals.set(requester, {id, at: Date.now()})
+    this.refusals.set(requester, {id, at: Date.now(), title: title ?? this.refusals.get(requester)?.title})
     throw new SocketError(`This conversation is already open in Claude Code process ${pid}. Exit that process, or exit this one and start a new conversation.`, 423)
   }
 
   // spec: spec/api.md#socket-protocol
-  private async applyTitle({id: given, pid, at, name, project, model, transcript, config}: TitleRequest): Promise<void> {
+  private async applyTitle(request: TitleRequest): Promise<void> {
+    const {id: given, pid, at, name, project, model, transcript, config} = request
     const id = await this.resolve(given, pid)
     const title = name?.trim() || undefined
     const entry = this.entry(id, {id, project, name: title, config})
@@ -316,7 +322,7 @@ export class Service {
       this.titles.set(pid, {id, at: Date.now()})
       this.titled.emit(String(pid))
     }
-    await this.refuseOtherProcess(id, pid)
+    await this.refuseOtherProcess(id, pid, request)
     const agent = await entry.opening
     if (transcript !== undefined) agent.transcript = transcript
     await this.hub.configure(config)
