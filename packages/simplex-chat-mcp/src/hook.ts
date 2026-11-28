@@ -581,12 +581,12 @@ function teammateNote(text: string): string | undefined {
   if (!teammatePrompt.test(text)) return undefined
   const tags = [...text.matchAll(teammateMessage)]
   const stop = tags.map(teammateStop).find(line => line !== undefined)
-  if (stop !== undefined) return stop
   const match = tags.find(([, , , body]) => !idleNotification(body))
-  if (match === undefined) return undefined
+  if (match === undefined) return stop
   const [, sender, attributes, body] = match
   const summary = /\ssummary="([^"]*)"/.exec(attributes)?.[1]
-  return `✉️ Message from ${oneLine(decoded(sender))}: ${firstLine(summary === undefined ? body : decoded(summary))}`
+  const message = `✉️ Message from ${oneLine(decoded(sender))}: ${firstLine(summary === undefined ? body : decoded(summary))}`
+  return stop === undefined ? message : `${stop}\n${message}`
 }
 
 // spec: spec/architecture.md#hook-noteof

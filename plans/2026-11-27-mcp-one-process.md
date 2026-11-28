@@ -64,7 +64,7 @@ sequenceDiagram
 
 - A task notification whose summary is `WHAT failed: …API error: REASON (error type rate_limit…` gets the note `⛔ WHAT stopped: REASON`, and its `task` gets `usageLimit: true`. WHAT ends at the last `failed: ` before `API error`.
 - The hub posts that note, silent, also for an agent or a workflow whose message shows the end with ❌.
-- A teammate's idle notification with `idleReason` `failed`, for any failure, gets the note `⛔ Teammate "NAME" stopped: REASON` from its `failureReason`, before the line of a message in the same prompt.
+- A teammate's idle notification with `idleReason` `failed`, for any failure, gets the note `⛔ Teammate "NAME" stopped: REASON` from its `failureReason`, with the line of a message of the same prompt on the next line.
 - A failure line with the text of the last one is posted again when another item follows that line in the group.
 - Failures are handled one at a time.
 - `service.log` lines:
