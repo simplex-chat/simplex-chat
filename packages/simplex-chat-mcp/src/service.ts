@@ -240,7 +240,7 @@ export class Service {
   private async onSession(request: SessionRequest): Promise<SessionReply> {
     validConfig(request.config)
     this.refuseUnattended(request.pid)
-    const started = request.pid === undefined ? undefined : await this.deps.processStart(request.pid)
+    const started = request.pid === undefined ? undefined : await this.deps.processStart(request.pid).catch(() => undefined)
     const id = await this.resolve(request.id, request.pid, true)
     this.refuseUnattended(request.pid)
     const title = request.pid === undefined ? undefined : this.titles.get(request.pid)
@@ -309,7 +309,7 @@ export class Service {
     const entry = this.entry(id)
     const {pid, started} = entry
     if (requester === undefined || pid === undefined || pid === requester || started === undefined) return
-    const running = (await this.deps.processStart(pid)) === started
+    const running = (await this.deps.processStart(pid).catch(() => undefined)) === started
     if (entry.pid !== pid || entry.started !== started) return this.refuseOtherProcess(id, requester)
     if (!running) return
     this.refusals.set(requester, {id, at: Date.now()})
@@ -412,7 +412,7 @@ export class Service {
     const watched = (): boolean => this.stopping === undefined && entry.attached === 0 && entry.pid === pid && entry.started === started
     const until = Date.now() + processWait
     while (watched() && Date.now() < until) {
-      const running = (await this.deps.processStart(pid)) === started
+      const running = await this.deps.processStart(pid).then(start => start === started, () => true)
       if (!running && watched()) {
         entry.started = undefined
         const folder = this.folder(id)
@@ -593,18 +593,20 @@ export function productionDeps(root: string): ServiceDeps {
 // spec: spec/architecture.md#service-processstart
 export async function processStart(pid: number, command: (file: string, args: string[], options: ExecFileOptions) => Promise<{stdout: string}> = run): Promise<string | undefined> {
   if (!Number.isSafeInteger(pid) || pid <= 0) return undefined
+  let start: string | undefined
   try {
     if (process.platform === "linux") {
       const ticks = (await readFile(`/proc/${pid}/stat`, "utf8")).split(") ").at(-1)?.split(" ")[19]
       const boot = await readFile("/proc/sys/kernel/random/boot_id", "utf8").then(text => `${text.trim()} `, () => "")
-      return ticks === undefined ? undefined : `${boot}${ticks}`
-    }
-    if (process.platform === "darwin") return (await command("/bin/ps", ["-o", "lstart=", "-p", String(pid)], {timeout: psWait, env: {...process.env, LC_ALL: "C", TZ: "UTC"}})).stdout.trim() || undefined
-    if (process.platform === "win32") return /^\d+$/.exec((await command("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", `(Get-Process -Id ${pid} -ErrorAction Stop).StartTime.ToFileTimeUtc()`], {timeout: powershellWait, windowsHide: true})).stdout.trim())?.[0]
-    return undefined
-  } catch {
-    return undefined
+      start = ticks === undefined ? undefined : `${boot}${ticks}`
+    } else if (process.platform === "darwin") start = (await command("/bin/ps", ["-o", "lstart=", "-p", String(pid)], {timeout: psWait, env: {...process.env, LC_ALL: "C", TZ: "UTC"}})).stdout.trim() || undefined
+    else if (process.platform === "win32") start = /^\d+$/.exec((await command("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", `(Get-Process -Id ${pid} -ErrorAction Stop).StartTime.ToFileTimeUtc()`], {timeout: powershellWait, windowsHide: true})).stdout.trim())?.[0]
+  } catch (error) {
+    if ((error as {code?: unknown}).code === (process.platform === "linux" ? "ENOENT" : 1)) return undefined
+    throw error
   }
+  if (start === undefined) throw new Error(`The start time of process ${pid} can't be read.`)
+  return start
 }
 
 // spec: spec/architecture.md#service-processevent
