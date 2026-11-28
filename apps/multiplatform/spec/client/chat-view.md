@@ -150,7 +150,7 @@ loading                 ChatItemsList loads the members when an item or its quot
                         are not loaded
 removal with the host   ChatsContext.upsertGroupMember records the loaded submembers of a member it records as left or
                         removed as removed, the user's membership included
-removal alerts          "2 members via this member will be removed too." ("via these members" for several members) after
+removal alerts          "Also 2 members via this member." ("via these members" for several members) after
                         the message of "Remove member?", "Remove members?", the removal of blocked members and "Remove
                         forever?", with the count of the current submembers of the members removed (removedSubmembersText)
 ```

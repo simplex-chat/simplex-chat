@@ -1181,8 +1181,8 @@ fun previousVersionWarningText(members: List<GroupMember>, one: StringResource, 
 
 fun removedSubmembersText(members: List<GroupMember>): String {
   val (one, many) =
-    if (members.size == 1) MR.strings.member_via_this_member_will_be_removed_too to MR.strings.members_via_this_member_will_be_removed_too
-    else MR.strings.member_via_these_members_will_be_removed_too to MR.strings.members_via_these_members_will_be_removed_too
+    if (members.size == 1) MR.strings.also_member_via_this_member to MR.strings.also_members_via_this_member
+    else MR.strings.also_member_via_these_members to MR.strings.also_members_via_these_members
   return when (val count = ChatModel.groupMembers.value.count { m -> m.memberCurrent && members.any { it.memberId == m.memberVia } }) {
     0 -> ""
     1 -> "\n" + generalGetString(one)

@@ -253,7 +253,7 @@ final class ModerationTests: RecordedAPITestCase {
         try recorded("submembers/remove-via")
         let (groupInfo, members) = try openGroup()
         showRemoveMemberAlert(groupInfo, try member(members, "bob"))
-        try await assertTexts(["Remove member?", "Member will be removed from group - this cannot be undone!\n2 members via this member will be removed too.", "Remove", "Remove and delete messages", "Cancel"])
+        try await assertTexts(["Remove member?", "Member will be removed from group - this cannot be undone!\nAlso 2 members via this member.", "Remove", "Remove and delete messages", "Cancel"])
     }
 
     @MainActor
@@ -261,7 +261,7 @@ final class ModerationTests: RecordedAPITestCase {
         try recorded("submembers/forwarded")
         let (groupInfo, members) = try openGroup()
         showRemoveMemberAlert(groupInfo, try member(members, "alice"))
-        try await assertTexts(["Remove member?", "Member will be removed from group - this cannot be undone!\n1 member via this member will be removed too.", "Remove", "Remove and delete messages", "Cancel"])
+        try await assertTexts(["Remove member?", "Member will be removed from group - this cannot be undone!\nAlso 1 member via this member.", "Remove", "Remove and delete messages", "Cancel"])
     }
 
     @MainActor
@@ -274,9 +274,9 @@ final class ModerationTests: RecordedAPITestCase {
         replaceMembers([bob])
         showRemoveMemberAlert(groupInfo, bob)
         let dialog = try await sheet(BanDialog.self)
-        XCTAssertEqual(shownText(dialog.footer), "bob won't be notified, and can't rejoin while blocked.\n2 members via this member will be removed too.")
+        XCTAssertEqual(shownText(dialog.footer), "bob won't be notified, and can't rejoin while blocked.\nAlso 2 members via this member.")
         dialog.close { dialog.actions[0].action(.forever) }
-        try await assertTexts(["Remove forever?", "bob can't rejoin via the group link again, except from another app.\n2 members via this member will be removed too.", "Cancel", "Remove"])
+        try await assertTexts(["Remove forever?", "bob can't rejoin via the group link again, except from another app.\nAlso 2 members via this member.", "Cancel", "Remove"])
     }
 
     @MainActor

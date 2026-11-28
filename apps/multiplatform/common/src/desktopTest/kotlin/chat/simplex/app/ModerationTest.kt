@@ -361,21 +361,21 @@ class ModerationTest : RecordedApiTest() {
   fun removeMemberWithSubmembers() = recordedAlerts("submembers/remove-via") {
     val (groupInfo, members) = openGroup()
     removeMemberAlert(null, groupInfo, member(members, "bob"))
-    assertTexts("Remove member?", "Member will be removed from group - this cannot be undone!\n2 members via this member will be removed too.", "Remove", "Remove and delete messages", "Cancel")
+    assertTexts("Remove member?", "Member will be removed from group - this cannot be undone!\nAlso 2 members via this member.", "Remove", "Remove and delete messages", "Cancel")
   }
 
   @Test
   fun removeMemberWithSubmemberFromMemberInfo() = recordedAlerts("submembers/forwarded") {
     val (groupInfo, members) = openGroup()
     removeMemberDialog(null, groupInfo, member(members, "alice"), ChatModel)
-    assertTexts("Remove member?", "Member will be removed from group - this cannot be undone!\n1 member via this member will be removed too.", "Remove", "Remove and delete messages", "Cancel")
+    assertTexts("Remove member?", "Member will be removed from group - this cannot be undone!\nAlso 1 member via this member.", "Remove", "Remove and delete messages", "Cancel")
   }
 
   @Test
   fun removeMembersWithSubmembers() = recordedAlerts("submembers/remove-via") {
     val (groupInfo, members) = openGroup()
     removeMembersAlert(null, groupInfo, listOf(member(members, "alice"), member(members, "bob")))
-    assertTexts("Remove members?", "Members will be removed from group - this cannot be undone!\n2 members via these members will be removed too.", "Remove", "Remove and delete messages", "Cancel")
+    assertTexts("Remove members?", "Members will be removed from group - this cannot be undone!\nAlso 2 members via these members.", "Remove", "Remove and delete messages", "Cancel")
   }
 
   @Test
@@ -385,12 +385,12 @@ class ModerationTest : RecordedApiTest() {
     replaceMembers(listOf(bob))
     removeMemberAlert(null, groupInfo, bob)
     assertTexts(
-      "Remove member?", "bob won't be notified, and can't rejoin while blocked.\n2 members via this member will be removed too.",
+      "Remove member?", "bob won't be notified, and can't rejoin while blocked.\nAlso 2 members via this member.",
       "Block for", "1 day", "Remove", "Remove and delete messages", "Cancel"
     )
     selectDuration("Forever")
     press("Remove")
-    assertTexts("Remove forever?", "bob can't rejoin via the group link again, except from another app.\n2 members via this member will be removed too.", "Type yes", "Remove", "Cancel")
+    assertTexts("Remove forever?", "bob can't rejoin via the group link again, except from another app.\nAlso 2 members via this member.", "Type yes", "Remove", "Cancel")
   }
 
   @Test
