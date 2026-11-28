@@ -10,6 +10,8 @@ const lowMemoryShare = 0.05
 // spec: spec/architecture.md#status-line-statusline
 const lowDiskBytes = 5_000_000_000
 // spec: spec/architecture.md#status-line-statusline
+const highUsagePercent = 95
+// spec: spec/architecture.md#status-line-statusline
 const lowMark = "❗️"
 const sizeUnits: [string, number][] = [
   ["TB", 1e12],
@@ -55,7 +57,8 @@ export async function statusLine(stdin: string, write: (line: string) => void, e
 
 // spec: spec/architecture.md#status-line-statusline
 export function limitParts({fiveHour, week}: {fiveHour?: Usage; week?: Usage}): string[] {
-  return [fiveHour === undefined ? [] : [`5 h: ${Math.floor(fiveHour.percent)}%`], week === undefined ? [] : [`week: ${Math.floor(week.percent)}%`]].flat()
+  const part = (name: string, {percent}: Usage): string => `${name}: ${Math.floor(percent)}%${percent >= highUsagePercent ? lowMark : ""}`
+  return [fiveHour === undefined ? [] : [part("5 h", fiveHour)], week === undefined ? [] : [part("week", week)]].flat()
 }
 
 // spec: spec/architecture.md#status-line-statusline

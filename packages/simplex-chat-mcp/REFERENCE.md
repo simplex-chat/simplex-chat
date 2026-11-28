@@ -813,7 +813,7 @@ Done in 2 min 51 s · 16K output tokens · 673K tokens in context · 5 h: 34% ·
 - `5 h` and `week` are the plan's 5-hour and weekly usage, with the [status line](#status-line) only. A window whose reset time has passed is left out.
 - Token counts are shortened as in the line of a summary of the context: `861`, `1.6K`, `16K`, `673K`, `1.2M`.
 - `RAM` is the memory available to processes on the machine of the SimpleX service, within the limit of its container. `disk` is the free space of the volume with the plugin's data folder, `~/.simplex-mcp` or `SIMPLEX_MCP_HOME`. The service reads them when the answer ends, without the status line.
-- Sizes are in decimal units, rounded down: `850 MB`, `7.3 GB`, `12 GB`, `1.2 TB`. A part ends with ❗️ when less than 5% of the memory or less than 5 GB of disk is free, such as `disk 3.4 GB free❗️`.
+- Sizes are in decimal units, rounded down: `850 MB`, `7.3 GB`, `12 GB`, `1.2 TB`. A part ends with ❗️ when less than 5% of the memory or less than 5 GB of disk is free, such as `disk 3.4 GB free❗️`, and when 95% or more of the 5-hour or weekly limit is used, such as `week: 96%❗️`.
 - When the transcript has no usage of the turn, as for a turn over 64 MB or a Claude Code version without prompt IDs, the line shows the time from the turn's prompt to its end, such as `Done in 2 min 14 s`, or only `Done` when the start of the turn is not known.
 
 #### Status line
