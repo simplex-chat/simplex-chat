@@ -450,6 +450,7 @@ chatGroupTests = do
         it "should sign member message and reuse signature on edit" testChannelMemberMessageSign
         it "should reject unsigned update of a signed item" testChannelMemberUpdateEnforcement
         it "should sign as-channel post and keep it displayed as the channel" testChannelAsGroupSign
+        it "should sign as-channel post with a chain address" testChannelChainAddressSign
         it "should reject a non-owner posting as the channel" testChannelAsGroupSpoof
         it "should sign self-delete of a signed item" testChannelMemberSelfDeleteSign
         it "should reject unsigned delete of a signed item" testChannelMemberDeleteEnforcement
@@ -15163,6 +15164,19 @@ testChannelAsGroupSign ps =
             [cath, dan, eve] *<# "#team> plain channel post [>>]"
             alice #$> ("/_get chat #1 count=100 search=plain channel post", chat, [(1, "plain channel post")])
             cath #$> ("/_get chat #1 count=100 search=plain channel post", chat, [(0, "plain channel post")])
+
+testChannelChainAddressSign :: HasCallStack => TestParams -> IO ()
+testChannelChainAddressSign ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChatOpts ps testOpts {markRead = False} "cath" cathProfile $ \cath -> do
+        (shortLink, fullLink) <- prepareChannel1Relay "team" alice bob
+        memberJoinChannel "team" [bob] [alice] shortLink fullLink cath
+        alice ##> "/_send #1(as_group=on) text donate bc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66505d4u"
+        alice <# "#team donate bc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66505d4u (signed)"
+        bob <# "#team> donate bc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66505d4u (signed)"
+        cath <# "#team> donate bc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66505d4u (signed) [>>]"
+        apiFixture "chain-addresses/channel" cath [] FixtureRequests {frMarkdown = [], frUris = [], frCommands = ["/_get chat #1 count=1"]}
 
 testChannelSignMessagesRequired :: HasCallStack => TestParams -> IO ()
 testChannelSignMessagesRequired ps =
