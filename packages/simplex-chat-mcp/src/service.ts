@@ -57,6 +57,7 @@ export interface SessionLike {
   permission(request: PermissionRequest): void
   ask(request: AskRequest, signal: AbortSignal): Promise<Decision | undefined>
   turn(request: TurnRequest): Promise<void>
+  postNote(text: string): Promise<void>
   endPermissions(): void
   endLive(): Promise<void>
   endToolApprovals(): void

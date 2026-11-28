@@ -1447,6 +1447,14 @@ describe("session channel", () => {
     expect(chat.profiles.filter(({groupId}) => groupId === 20).at(-1)!.groupProfile.shortDescr).toBe("claude-haiku-5 · effort low")
   })
 
+  it("posts a note of the service in small print with priority -1", async () => {
+    const chat = new FakeChat()
+    const {session} = await channel(chat)
+    await session.postNote("▶️ Claude Code started (process 300).")
+    expect(sentTo(chat, 20)).toEqual(["!- ▶️ Claude Code started (process 300).!"])
+    expect(priorities(chat)).toEqual([[-1]])
+  })
+
   it("takes the effort level only from the status line once it reports, so the level of one turn in a hook, as after ultrathink, posts no line, and a change in the status line posts one", async () => {
     const chat = new FakeChat()
     const {session} = await channel(chat)

@@ -711,6 +711,11 @@ export class Session {
     if (line !== undefined) await this.post([{text: line, priority: 1}]).catch(error => this.postRefusal(error, noteRefused, featureOff))
   }
 
+  // spec: spec/architecture.md#hub-session-postnote
+  async postNote(text: string): Promise<void> {
+    await this.post([{text: small(text), priority: -1}]).catch(error => this.postRefusal(error, noteRefused, featureOff))
+  }
+
   // spec: spec/architecture.md#hub-session-endpermissions
   endPermissions(before = Infinity): void {
     for (const action of this.actions.pending()) {

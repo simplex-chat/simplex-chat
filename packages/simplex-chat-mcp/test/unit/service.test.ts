@@ -31,6 +31,7 @@ interface FakeSession extends SessionLike {
   modes: Mode[]
   calls: string[]
   turns: unknown[]
+  notes: string[]
 }
 
 function deferred<T = void>() {
@@ -73,6 +74,7 @@ function deps(root: string) {
         modes: [],
         calls: [],
         turns: [],
+        notes: [],
         busy: () => busy.has(number),
         rename: async (newName: string) => {
           agent.displayName = `${number} · ${newName}`
@@ -87,6 +89,9 @@ function deps(root: string) {
         },
         turn: async request => {
           agent.turns.push(request)
+        },
+        postNote: async text => {
+          agent.notes.push(text)
         },
         endPermissions: () => {
           agent.turns.push("ended")
@@ -952,6 +957,43 @@ describe("service", () => {
     await expect(post("/turn", {id: id2, pid: 301, prompt: "Fix the build"})).rejects.toMatchObject({status: 423})
     expect(existsSync(sessionFolder(root, id2))).toBe(false)
     expect(agents).toMatchObject([{displayName: "1 · app", turns: []}])
+  })
+
+  it("posts a line when a Claude Code process starts to be served for a session, the first and each later one, after a line of the end of the one before it, and none for a reconnection of the same process or after a service restart", async () => {
+    storeSession(id1, 1, "app")
+    const {d, agents} = deps(root)
+    service = await Service.start(d, readDefaultConfig)
+    const registerFrom = (pid: number) => post("/session", {id: id1, pid, project: "/p/app", config: defaultConfig})
+    await registerFrom(300)
+    await registerFrom(300)
+    await service.stop()
+    const restarted = deps(root)
+    service = await Service.start(restarted.d, readDefaultConfig)
+    await registerFrom(300)
+    restarted.starts.set(300, undefined)
+    await registerFrom(301)
+    expect([agents[0].notes, restarted.agents[0].notes]).toEqual([["▶️ Claude Code started (process 300)."], ["⏹️ Claude Code ended (process 300).", "▶️ Claude Code started (process 301)."]])
+  })
+
+  it("posts a line once when the Claude Code process of a session has ended after its attachment closed, and none when the process attaches again", async () => {
+    storeSession(id1, 1, "app")
+    const {d, agents, starts} = deps(root)
+    service = await Service.start(d, readDefaultConfig)
+    const registerFrom = (pid: number) => post("/session", {id: id1, pid, project: "/p/app", config: defaultConfig})
+    const attachFrom = async (pid: number) => {
+      await registerFrom(pid)
+      const controller = new AbortController()
+      const attachment = attach(id1, controller.signal, pid)
+      await attachment.firstLine
+      return () => (controller.abort(), attachment.attached)
+    }
+    await (await attachFrom(300))()
+    const detach = await attachFrom(300)
+    starts.set(300, undefined)
+    await detach()
+    await until(() => agents[0].notes.length === 2)
+    await registerFrom(301)
+    expect(agents[0].notes).toEqual(["▶️ Claude Code started (process 300).", "⏹️ Claude Code ended (process 300).", "▶️ Claude Code started (process 301)."])
   })
 
   it("keeps the Claude Code process of a session across a service restart, and serves a second process once that process has ended", async () => {
