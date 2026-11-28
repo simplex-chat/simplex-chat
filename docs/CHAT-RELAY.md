@@ -107,7 +107,7 @@ https://smp4.simplex.im/r#73iEnnvCqPTVGArCAWUcRaj5hxRb7TbPCSZ2JY2VjCQ
 | `--relay` | Run as a chat relay. Required. |
 | `--headless` | Don't ask interactive questions; create the profile and address automatically. On first start it also needs `--user-display-name`. |
 | `--user-display-name NAME` | The relay's display name. Creates the profile on first start; on later starts it must match the existing profile. |
-| `--user-image-file FILE` | The relay's picture, from a `.png`, `.jpg` or `.jpeg` file, cropped to a square and resized to the profile image limit. Applied **only when the profile is created**; ignored afterwards. |
+| `--user-image-file FILE` | The relay's picture, from a `.png`, `.jpg`, `.jpeg` or `.webp` file, cropped to a square and resized to the profile image limit. Applied **only when the profile is created**; ignored afterwards. |
 | `--relay-address-server SERVER` | Create the relay address on a specific SMP server, e.g. `smp://<fingerprint>@smp.example.com`. By default a preset server is used. Requires `--relay`. |
 
 ### Get the relay address
@@ -169,7 +169,7 @@ The relay can also be built and run with Docker Compose, using PostgreSQL for st
    cat out/relay-address.txt
    ```
 
-To give the relay a picture, put a small `.png`/`.jpg`/`.jpeg` file (large images are rejected) next to the compose file and add a `docker-compose.override.yml`:
+To give the relay a picture, put a small `.png`/`.jpg`/`.jpeg`/`.webp` file (large images are rejected) next to the compose file and add a `docker-compose.override.yml`:
 
 ```yaml
 services:

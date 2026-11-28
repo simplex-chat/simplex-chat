@@ -174,8 +174,13 @@ actual fun isImage(uri: URI): Boolean {
 
 actual fun isAnimImage(uri: URI, drawable: Any?): Boolean {
   val path = uri.toFile().path.lowercase()
-  return path.endsWith(".gif") || path.endsWith(".webp")
+  return path.endsWith(".gif") || (path.endsWith(".webp") && isAnimatedWebp(uri))
 }
+
+private fun isAnimatedWebp(uri: URI): Boolean =
+  readFileHeader(uri, 21)?.let { header ->
+    ImageFileType.WEBP.matches(header) && String(header, 12, 4, Charsets.US_ASCII) == "VP8X" && (header[20].toInt() and 0x02) != 0
+  } ?: false
 
 actual fun loadImageBitmap(inputStream: InputStream): ImageBitmap =
   Image.makeFromEncoded(inputStream.readBytes()).toComposeImageBitmap()

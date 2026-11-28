@@ -6,17 +6,19 @@ import Codec.Picture (DynamicImage (..), Image (..), Pixel8, PixelCMYK8, PixelRG
 import Codec.Picture.JPEGTurbo (encodeRGB)
 import Codec.Picture.Jpg (encodeDirectJpegAtQualityWithMetadata, encodeJpegAtQuality)
 import Codec.Picture.Png (encodePng)
-import Codec.Picture.Types (convertImage, extractLumaPlane, pixelFold)
+import Codec.Picture.Types (convertImage, extractLumaPlane, pixelFold, pixelFoldMap)
 import Control.Exception (bracket)
 import Control.Monad (forM_, when)
 import Control.Monad.Except (runExceptT)
-import Data.Bits (complement, shiftR, testBit, xor)
+import Crypto.Hash (Digest, MD5, hashlazy)
+import Data.Bits (complement, shiftL, shiftR, testBit, xor, (.&.), (.|.))
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Base64.Lazy as LB64
+import qualified Data.ByteString.Builder as BB
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Either (isLeft, isRight)
 import qualified Data.Text as T
-import Data.Word (Word32)
+import Data.Word (Word32, Word64, Word8)
 import Simplex.Chat.Image
 import Simplex.Chat.Library.Commands (fixedImagePreview, imagePreview)
 import Simplex.Chat.Types (ImageData (..))
@@ -60,6 +62,17 @@ imageTests = do
   describe "PNG decoding" $ do
     it "should decode PNG as JuicyPixels does" testPngDecoding
     it "should refuse malformed PNG and other formats" testPngRefused
+    it "should decode PNG at the display size" testPngDisplaySize
+    it "should decode interlaced PNG as the same image without interlacing" testPngInterlaced
+    it "should refuse interlaced PNG above the memory limit" testPngInterlacedMemory
+  describe "WebP decoding" $ do
+    it "should decode WebP as libwebp does" testWebpDecoding
+    it "should decode WebP at the display size" testWebpDisplaySize
+    it "should decode the first frame of animated WebP" testWebpAnimation
+    it "should write the Display P3 profile for Display P3 WebP" testWebpProfile
+    it "should apply EXIF orientation of WebP" testWebpOrientation
+    it "should ignore ICCP and EXIF chunks without their VP8X flags" testWebpChunksWithoutFlags
+    it "should refuse malformed and oversized WebP" testWebpRefused
   describe "scaling" $ do
     it "should scale and sharpen as the research code" testScaleResearch
     it "should keep an image of the same size" testScaleSameSize
@@ -266,8 +279,12 @@ testJpegOrientation = do
     withExif :: Bool -> Int -> Int -> B.ByteString -> B.ByteString
     withExif littleEndian ifdOffset orientation jpeg = B.take 2 jpeg <> "\xFF\xE1" <> bigEndian 2 (8 + B.length tiff) <> "Exif\0\0" <> tiff <> B.drop 2 jpeg
       where
-        tiff = B.concat [if littleEndian then "II" else "MM", word 2 42, word 4 ifdOffset, word 2 1, word 2 0x0112, word 2 3, word 4 1, word 2 orientation, word 2 0, word 4 0]
-        word n = (if littleEndian then B.reverse else id) . bigEndian n
+        tiff = orientationTiff littleEndian ifdOffset orientation
+
+orientationTiff :: Bool -> Int -> Int -> B.ByteString
+orientationTiff littleEndian ifdOffset orientation = B.concat [if littleEndian then "II" else "MM", word 2 42, word 4 ifdOffset, word 2 1, word 2 0x0112, word 2 3, word 4 1, word 2 orientation, word 2 0, word 4 0]
+  where
+    word n = (if littleEndian then B.reverse else id) . bigEndian n
 
 testPngDecoding :: IO ()
 testPngDecoding = do
@@ -292,6 +309,41 @@ testPngRefused =
         (LB.toStrict $ encodeGifImage $ generateImage (\_ _ -> 0) 16 16, "unsupported image format"),
         (LB.toStrict $ encodeBitmap $ generateImage (\_ _ -> PixelRGB8 0 0 0) 16 16, "unsupported image format")
       ]
+
+testPngDisplaySize :: IO ()
+testPngDisplaySize =
+  forM_ sizes $ \(w, (w', h')) ->
+    forM_ [((w, 16), (w', h')), ((16, w), (h', w'))] $ \((iw, ih), (sw, sh)) -> do
+      let rgb = PixelRGB8 200 100 50
+          rgba = PixelRGBA8 200 100 50 128
+      Right (ImageRGB8 opaque, CPNone) <- decodeResizable $ LB.toStrict $ encodePng $ generateImage (\_ _ -> rgb) iw ih
+      imageData opaque `shouldBe` imageData (generateImage (\_ _ -> rgb) sw sh)
+      Right (ImageRGBA8 transparent, CPNone) <- decodeResizable $ LB.toStrict $ encodePng $ generateImage (\_ _ -> rgba) iw ih
+      imageData transparent `shouldBe` imageData (generateImage (\_ _ -> rgba) sw sh)
+  where
+    sizes = [(4320, (4320, 16)), (4321, (2160, 8)), (8640, (4320, 8)), (8641, (4320, 8)), (16384, (4096, 4))]
+
+testPngInterlaced :: IO ()
+testPngInterlaced =
+  forM_ [(4322, 2), (2, 4322), (37, 23)] $ \(w, h) -> do
+    let img = generateImage (\x y -> PixelRGBA8 (fromIntegral $ x * 7) (fromIntegral $ y * 5) (fromIntegral $ x * y) (fromIntegral $ x + y)) w h
+    Right (ImageRGBA8 progressive, _) <- decodeResizable $ LB.toStrict $ encodePng img
+    Right (ImageRGBA8 interlaced, _) <- decodeResizable $ adam7Png img
+    (imageWidth interlaced, imageHeight interlaced, imageData interlaced) `shouldBe` (imageWidth progressive, imageHeight progressive, imageData progressive)
+
+testPngInterlacedMemory :: IO ()
+testPngInterlacedMemory = do
+  let header interlace = "\x89PNG\r\n\x1a\n" <> pngChunk "IHDR" (bigEndian 4 16384 <> bigEndian 4 16384 <> B.pack [8, 6, 0, 0, interlace]) <> pngChunk "IDAT" (zlibStored "\0") <> pngChunk "IEND" ""
+  either Just (const Nothing) <$> decodeResizable (header 1) `shouldReturn` Just "image is too large"
+  either Just (const Nothing) <$> decodeResizable (header 0) `shouldReturn` Just "IDAT stream too short"
+
+adam7Png :: Image PixelRGBA8 -> B.ByteString
+adam7Png img@Image {imageWidth = w, imageHeight = h} =
+  "\x89PNG\r\n\x1a\n" <> pngChunk "IHDR" (bigEndian 4 w <> bigEndian 4 h <> B.pack [8, 6, 0, 0, 1]) <> pngChunk "IDAT" (zlibStored scanlines) <> pngChunk "IEND" ""
+  where
+    scanlines = B.concat [B.pack $ 0 : concat [rgba $ pixelAt img x y | x <- [x0, x0 + dx .. w - 1]] | (x0, y0, dx, dy) <- passes, x0 < w, y <- [y0, y0 + dy .. h - 1]]
+    rgba (PixelRGBA8 r g b a) = [r, g, b, a]
+    passes = [(0, 0, 8, 8), (4, 0, 8, 8), (0, 4, 4, 8), (2, 0, 4, 4), (0, 2, 2, 4), (1, 0, 2, 2), (0, 1, 1, 2)]
 
 pngShortImageData :: B.ByteString
 pngShortImageData = pngWithSides 2048 2048 $ blankPng 2048 1
@@ -330,6 +382,168 @@ iccChunk n count profile = B.pack [fromIntegral n, fromIntegral count] <> profil
 
 bigEndian :: Int -> Int -> B.ByteString
 bigEndian n v = B.pack [fromIntegral (v `shiftR` (8 * i)) | i <- [n - 1, n - 2 .. 0]]
+
+testWebpDecoding :: IO ()
+testWebpDecoding =
+  forM_ images $ \(file, size, md5, prefix) -> do
+    Right (img, CPNone) <- decodeResizable =<< B.readFile (webpFixture file)
+    imageSize img `shouldBe` size
+    netpbmMd5 img `shouldBe` Just md5
+    Right uri <- resizeImageDataUri 14000 img CPNone
+    uri `shouldSatisfy` (prefix `LB.isPrefixOf`)
+  where
+    images =
+      [ ("lossy.webp", (128, 128), "338174980391426283f635d6dc502bed", "data:image/jpg;base64,"),
+        ("lossless-alpha.webp", (1000, 307), "16ddf5905ba09736fb76b8387d46f2f5", "data:image/png;base64,"),
+        ("lossy-alpha.webp", (1000, 307), "ea2f149f390aa765e11cb01d29ca3836", "data:image/png;base64,")
+      ]
+
+testWebpDisplaySize :: IO ()
+testWebpDisplaySize = do
+  forM_ images $ \(file, size, colour) -> do
+    Right (img, CPNone) <- decodeResizable =<< B.readFile (webpFixture file)
+    imageSize img `shouldBe` size
+    pixelFold (\near _ _ p -> near && closeTo colour p) True (convertRGBA8 img) `shouldBe` True
+  lossy <- B.readFile $ webpFixture "lossy.webp"
+  Right (canvas, CPNone) <- decodeResizable $ webpAnimation (16384, 16384) [((0, 0), (128, 128), lossy)]
+  imageSize canvas `shouldBe` (4096, 4096)
+  where
+    images =
+      [ ("lossy-8641x16.webp", (4320, 8), PixelRGBA8 200 100 50 255),
+        ("lossless-alpha-16383x16.webp", (4096, 4), PixelRGBA8 200 100 50 128),
+        ("lossy-alpha-4321x16.webp", (2160, 8), PixelRGBA8 200 100 50 128),
+        ("lossless-alpha-9000x9000.webp", (2250, 2250), PixelRGBA8 200 100 50 128)
+      ]
+    closeTo (PixelRGBA8 r g b a) (PixelRGBA8 r' g' b' a') = and $ zipWith (\x y -> abs (fromIntegral x - fromIntegral y :: Int) <= 2) [r, g, b, a] [r', g', b', a']
+
+testWebpAnimation :: IO ()
+testWebpAnimation = do
+  lossy <- B.readFile $ webpFixture "lossy.webp"
+  lossless <- B.readFile $ webpFixture "lossless-alpha.webp"
+  animated <- B.readFile $ webpFixture "animated.webp"
+  animated `shouldBe` webpAnimation (160, 128) [((0, 0), (128, 128), lossy), ((32, 0), (128, 128), lossy)]
+  Right (lossyFrame, _) <- decodeResizable lossy
+  Right (losslessFrame, _) <- decodeResizable lossless
+  forM_
+    [ (animated, placed (160, 128) (0, 0) lossyFrame),
+      (webpAnimation (1034, 323) [((34, 16), (1000, 307), lossless), ((0, 0), (128, 128), lossy)], placed (1034, 323) (34, 16) losslessFrame)
+    ]
+    $ \(webp, expected) -> do
+      Right (ImageRGBA8 canvas, CPNone) <- decodeResizable webp
+      (imageWidth canvas, imageHeight canvas, imageData canvas) `shouldBe` (imageWidth expected, imageHeight expected, imageData expected)
+  where
+    placed (w, h) (x0, y0) frame = generateImage (\x y -> if x >= x0 && y >= y0 && x < x0 + imageWidth rgba && y < y0 + imageHeight rgba then pixelAt rgba (x - x0) (y - y0) else PixelRGBA8 0 0 0 0) w h
+      where
+        rgba = convertRGBA8 frame
+
+testWebpProfile :: IO ()
+testWebpProfile = do
+  lossy <- B.readFile $ webpFixture "lossy.webp"
+  let withProfile profile = webpContainer [webpVp8x 0x20 (128, 128), webpChunk "ICCP" profile, B.drop 12 lossy]
+  Right (img, profile) <- decodeResizable $ withProfile p3Profile
+  profile `shouldBe` CPDisplayP3
+  forM_ [IFJpeg, IFPng] $ \format -> do
+    Right resized <- resizeImage format 261120 img profile
+    resizedProfile resized `shouldReturn` profile
+  Right (_, profile') <- decodeResizable $ withProfile $ iccProfile "RGB " $ 33759 + 3 : drop 1 p3Primaries
+  profile' `shouldBe` CPNone
+
+testWebpOrientation :: IO ()
+testWebpOrientation = do
+  lossless <- B.readFile $ webpFixture "lossless-alpha.webp"
+  Right (ImageRGBA8 upright, CPNone) <- decodeResizable lossless
+  let (w, h) = (imageWidth upright, imageHeight upright)
+      rotated = generateImage (\x y -> pixelAt upright y (h - 1 - x)) h w
+      withExif = webpContainer [webpVp8x 0x18 (w, h), B.drop 12 lossless, webpChunk "EXIF" $ orientationTiff True 8 6]
+  Right (ImageRGBA8 img, CPNone) <- decodeResizable withExif
+  (imageWidth img, imageHeight img, imageData img) `shouldBe` (h, w, imageData rotated)
+
+testWebpChunksWithoutFlags :: IO ()
+testWebpChunksWithoutFlags = do
+  lossless <- B.readFile $ webpFixture "lossless-alpha.webp"
+  Right (ImageRGBA8 upright, CPNone) <- decodeResizable lossless
+  let (w, h) = (imageWidth upright, imageHeight upright)
+      withChunks = webpContainer [webpVp8x 0x10 (w, h), webpChunk "ICCP" p3Profile, B.drop 12 lossless, webpChunk "EXIF" $ orientationTiff True 8 6]
+  Right (ImageRGBA8 img, CPNone) <- decodeResizable withChunks
+  (imageWidth img, imageHeight img, imageData img) `shouldBe` (w, h, imageData upright)
+
+testWebpRefused :: IO ()
+testWebpRefused = do
+  lossy <- B.readFile $ webpFixture "lossy.webp"
+  isLeft <$> decodeResizable webpHuffmanGroups `shouldReturn` True
+  forM_
+    [ (webpAnimation (16385, 128) [((0, 0), (128, 128), lossy)], "image side exceeds 16384"),
+      (B.take (B.length lossy `div` 2) lossy, "invalid WebP container"),
+      (B.init lossy, "invalid WebP container"),
+      (B.take 4 lossy <> littleEndianInt 4 (B.length lossy - 7) <> B.drop 8 lossy, "invalid WebP container"),
+      ("RIFF" <> littleEndianInt 4 24 <> "WAVEfmt " <> B.replicate 16 0, "unsupported image format")
+    ]
+    $ \(input, err) -> either Just (const Nothing) <$> decodeResizable input `shouldReturn` Just err
+
+webpFixture :: FilePath -> FilePath
+webpFixture file = "tests/fixtures/webp" </> file
+
+netpbmMd5 :: DynamicImage -> Maybe String
+netpbmMd5 img = show . (hashlazy :: LB.ByteString -> Digest MD5) . BB.toLazyByteString <$> netpbm
+  where
+    netpbm = case img of
+      ImageRGB8 rgb@(Image w h _) -> Just $ BB.string7 ("P6\n" <> show w <> " " <> show h <> "\n255\n") <> pixelFoldMap (\(PixelRGB8 r g b) -> foldMap BB.word8 [r, g, b]) rgb
+      ImageRGBA8 rgba@(Image w h _) -> Just $ BB.string7 ("P7\nWIDTH " <> show w <> "\nHEIGHT " <> show h <> "\nDEPTH 4\nMAXVAL 255\nTUPLTYPE RGB_ALPHA\nENDHDR\n") <> pixelFoldMap (\(PixelRGBA8 r g b a) -> foldMap BB.word8 [r, g, b, a]) rgba
+      _ -> Nothing
+
+webpAnimation :: (Int, Int) -> [((Int, Int), (Int, Int), B.ByteString)] -> B.ByteString
+webpAnimation size frames = webpContainer $ [webpVp8x 0x12 size, webpChunk "ANIM" $ B.replicate 6 0] <> map frame frames
+  where
+    frame ((x, y), (fw, fh), still) = webpChunk "ANMF" $ B.concat (map (littleEndianInt 3) [x `div` 2, y `div` 2, fw - 1, fh - 1, 100]) <> "\0" <> B.drop 12 still
+
+webpVp8x :: Word8 -> (Int, Int) -> B.ByteString
+webpVp8x flags (w, h) = webpChunk "VP8X" $ B.pack [flags, 0, 0, 0] <> littleEndianInt 3 (w - 1) <> littleEndianInt 3 (h - 1)
+
+webpContainer :: [B.ByteString] -> B.ByteString
+webpContainer chunks = "RIFF" <> littleEndianInt 4 (4 + B.length body) <> "WEBP" <> body
+  where
+    body = B.concat chunks
+
+webpChunk :: B.ByteString -> B.ByteString -> B.ByteString
+webpChunk fourcc payload = fourcc <> littleEndianInt 4 (B.length payload) <> payload <> B.replicate (B.length payload `mod` 2) 0
+
+webpHuffmanGroups :: B.ByteString
+webpHuffmanGroups = webpContainer [webpChunk "VP8L" $ vp8lBits fields <> B.replicate 8 0]
+  where
+    fields =
+      [(0x2f, 8), (16383, 14), (16383, 14), (1, 1), (0, 3)]
+        <> transform 0
+        <> transform 1
+        <> [(0, 1), (0, 1), (1, 1), (4, 3), (0, 1)]
+        <> byteCode
+        <> byteCode
+        <> concatMap simpleCode [0, 0, 0]
+        <> concat [[(reversed $ g .&. 0xff, 8), (reversed $ g `shiftR` 8, 8)] | g <- groups]
+        <> concatMap (oneSymbolGroup . (.&. 0xff)) groups
+    groups = [0 .. 65535]
+    transform t = [(1, 1), (t, 2), (0, 3), (0, 1)] <> oneSymbolGroup 0
+    oneSymbolGroup green = concatMap simpleCode [green, 64, 32, 255, 0]
+    simpleCode symbol = [(1, 1), (0, 1), (1, 1), (symbol, 8)]
+    byteCode =
+      [(0, 1), (8, 4)]
+        <> [(if s == 8 || s == 16 then 1 else 0, 3) | s <- [17, 18, 0, 1, 2, 3, 4, 5, 16, 6, 7, 8 :: Int]]
+        <> [(1, 1), (2, 3), (42, 6), (0, 1)]
+        <> concat (replicate 42 [(1, 1), (3, 2)])
+        <> [(1, 1), (0, 2)]
+    reversed v = foldl (\r i -> r .|. (((v `shiftR` i) .&. 1) `shiftL` (7 - i))) 0 [0 .. 7]
+
+vp8lBits :: [(Int, Int)] -> B.ByteString
+vp8lBits = B.pack . go 0 0
+  where
+    go :: Word64 -> Int -> [(Int, Int)] -> [Word8]
+    go acc n fs
+      | n >= 8 = fromIntegral acc : go (acc `shiftR` 8) (n - 8) fs
+      | otherwise = case fs of
+          (v, k) : rest -> go (acc .|. (fromIntegral v `shiftL` n)) (n + k) rest
+          [] -> [fromIntegral acc | n > 0]
+
+littleEndianInt :: Int -> Int -> B.ByteString
+littleEndianInt n = B.reverse . bigEndian n
 
 testScaleResearch :: IO ()
 testScaleResearch = do

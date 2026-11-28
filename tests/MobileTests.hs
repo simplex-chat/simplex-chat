@@ -371,6 +371,10 @@ testResizeImageUriCApi _ = do
   uri <- peekCAString =<< cChatResizeImageUri ptr len 14000
   uri `shouldStartWith` "data:image/jpg;base64,"
   length uri `shouldSatisfy` (<= 14000)
+  (webpPtr, webpLen) <- cBuffer =<< B.readFile "./tests/fixtures/webp/lossy.webp"
+  webpUri <- peekCAString =<< cChatResizeImageUri webpPtr webpLen 14000
+  webpUri `shouldStartWith` "data:image/jpg;base64,"
+  length webpUri `shouldSatisfy` (<= 14000)
   (ptr', len') <- cBuffer "not an image"
   (peekCAString =<< cChatResizeImageUri ptr' len' 14000) `shouldReturn` ""
 
@@ -407,6 +411,12 @@ testResizeImageFileCApi ps = do
   length uri `shouldSatisfy` (<= 14000)
   Right bytes <- B64.decode . BS.pack <$> (peekCAString =<< withCString "./tests/fixtures/logo-large-rgba.png" (\path -> cChatResizeImageFile path 100000 (-1)))
   B.take 8 bytes `shouldBe` "\x89PNG\r\n\x1a\n"
+  Right webpBytes <- B64.decode . BS.pack <$> (peekCAString =<< withCString "./tests/fixtures/webp/lossless-alpha.webp" (\path -> cChatResizeImageFile path 100000 (-1)))
+  B.take 8 webpBytes `shouldBe` "\x89PNG\r\n\x1a\n"
+  animatedUri <- peekCAString =<< withCString "./tests/fixtures/webp/animated.webp" (`cChatResizeImageFileUri` 14000)
+  animatedUri `shouldStartWith` "data:image/png;base64,"
+  length animatedUri `shouldSatisfy` (<= 14000)
+  writeFixture "api/images/resize-file-uri" $ J.object ["webp/animated.webp" J..= animatedUri]
   (peekCAString =<< withCString "./tests/fixtures/missing.jpg" (`cChatResizeImageFileUri` 14000)) `shouldReturn` ""
   oversized <- oversizedJpegFile ps
   (peekCAString =<< withCString oversized (`cChatResizeImageFileUri` 14000)) `shouldReturn` ""

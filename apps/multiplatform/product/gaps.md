@@ -225,10 +225,10 @@ Desktop users cannot send voice messages. The record button either does nothing 
 
 Several other Desktop features are also marked with `LALAL` placeholders:
 - **QR Code Scanner** (`QRCodeScanner.desktop.kt:12`) -- scanning QR codes is not implemented on Desktop
-- **Animated Drawables** (`Utils.desktop.kt:236`) -- `getDrawableFromUri` returns null, so `isAnimImage` falls back to the file extension
+- **Animated Drawables** (`Utils.desktop.kt:236`) -- `getDrawableFromUri` returns null, so `isAnimImage` falls back to the file extension, and for `.webp` to the animation flag of its `VP8X` header
 - **isImage detection** (`Images.desktop.kt:189`) -- image type detection (implemented but marked as incomplete)
 
-Desktop cannot decode WebP in chat: `decodeBoundedBufferedImage` (`Utils.desktop.kt:191`) reads through ImageIO, which has no WebP reader, so a received `.webp` renders only as the sender's preview and never opens full screen, and a picked one is skipped. Wallpapers and link previews decode WebP, as they read through Skia instead (`Images.desktop.kt:204`). Received GIFs do animate in chat items and full screen; the animated image decoder accepts WebP but is never reached for it.
+Desktop cannot decode WebP in chat: `decodeBoundedBufferedImage` (`Utils.desktop.kt:191`) reads through ImageIO, which has no WebP reader, so a received `.webp` renders only as the sender's preview and never opens full screen. A picked still `.webp` is sent as the JPEG or PNG image made by core, and a picked animated one as its file, with the preview of its first frame made by core. Wallpapers and link previews decode WebP, as they read through Skia instead (`Images.desktop.kt:204`). Received GIFs do animate in chat items and full screen; the animated image decoder accepts WebP but is never reached for it.
 
 ---
 

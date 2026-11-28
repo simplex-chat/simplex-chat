@@ -2,7 +2,8 @@
 
 # Starts the desktop app on a virtual display and runs the scripted UI cases with the ui helper: onboarding to the
 # chat list, a local group, then the chat list with the toolbar at the bottom (the default) and at the top, then
-# tests/fixtures/test.jpg and logo-large-rgba.png picked in the file dialog and sent in the group.
+# tests/fixtures/test.jpg, logo-large-rgba.png, webp/lossy.webp and webp/animated.webp picked in the file dialog and
+# sent in the group.
 # Usage: scripts/ci/desktop-linux/smoke-test.sh <app dir> <output dir> [start|onboarding|layouts|setup|backend]
 # With "start" it stops at the first screen, for an agent to go on from; with "onboarding", at the chat list.
 # "setup" creates the group, makes the test SMP server (backend.sh) the one that resolves SimpleX names, and stops;
@@ -369,34 +370,36 @@ core_returned_no_image() {
 }
 
 send_image() {
-  local file=$1 ext=$2 sent no_image x y
+  local file=$1 ext=$2 label=$3 sent no_image x y
   sent=$(sent_files "$ext")
   no_image=$(core_returned_no_image)
-  "$ui" shot "before-$ext"
+  "$ui" shot "before-$label"
   "$ui" click "$paperclip_x" "$compose_y"
   "$ui" click-text Image 10
   "$ui" wait "File Name" 20
-  "$ui" shot "file-dialog-$ext"
+  "$ui" shot "file-dialog-$label"
   read -r x y _ < <("$ui" find "File Name")
   "$ui" click $((x + 250)) "$y"
   "$ui" type "$fixtures/$file"
   "$ui" key Return
   sleep 3
-  "$ui" shot "preview-$ext"
-  check "$ext: the compose area shows the picked image" compose_changed "before-$ext" "preview-$ext"
+  "$ui" shot "preview-$label"
+  check "$label: the compose area shows the picked image" compose_changed "before-$label" "preview-$label"
   "$ui" click "$message_x" "$compose_y"
   "$ui" key Return
-  check "$ext: the image is sent as a .$ext file" sent_file "$ext" "$sent"
-  "$ui" shot "sent-$ext"
-  check "$ext: the core resized the image" [ "$(core_returned_no_image)" -eq "$no_image" ]
+  check "$label: the image is sent as a .$ext file" sent_file "$ext" "$sent"
+  "$ui" shot "sent-$label"
+  check "$label: the core resized the image" [ "$(core_returned_no_image)" -eq "$no_image" ]
 }
 
 send_images() {
   local x y
   read -r x y < <(left_pane_position "$local_chat") || fail "no \"$local_chat\" in the chat list"
   "$ui" click "$x" "$y"
-  send_image test.jpg jpg
-  send_image logo-large-rgba.png png
+  send_image test.jpg jpg jpg
+  send_image logo-large-rgba.png png png
+  send_image webp/lossy.webp jpg webp-still
+  send_image webp/animated.webp webp webp-animated
 }
 
 # private routing to unknown servers only: the preset servers that would proxy name lookups can't reach the test SMP

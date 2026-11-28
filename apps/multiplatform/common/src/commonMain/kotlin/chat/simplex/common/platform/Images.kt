@@ -11,6 +11,7 @@ import boofcv.struct.image.GrayU8
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.ByteArrayOutputStream
+import java.io.DataInputStream
 import java.io.InputStream
 import java.net.URI
 import java.util.Base64
@@ -41,6 +42,15 @@ enum class ImageFileType(val signatures: List<List<Int?>>) {
 }
 
 fun isImageFile(data: ByteArray): Boolean = ImageFileType.entries.any { it.matches(data) }
+
+fun isWebpFile(uri: URI): Boolean = readFileHeader(uri, 12)?.let(ImageFileType.WEBP::matches) ?: false
+
+fun readFileHeader(uri: URI, size: Int): ByteArray? =
+  try {
+    uri.inputStream()?.use { stream -> ByteArray(size).also { DataInputStream(stream).readFully(it) } }
+  } catch (e: Exception) {
+    null
+  }
 
 private fun ascii(s: String): List<Int?> = s.map { it.code }
 

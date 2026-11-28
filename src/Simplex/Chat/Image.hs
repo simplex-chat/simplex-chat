@@ -22,18 +22,19 @@ module Simplex.Chat.Image
 where
 
 import Codec.Picture (DynamicImage (..), Image (..), Pixel (..), PixelRGB8, PixelRGBA8 (..), convertRGB8, convertRGBA8, dynamicMap, dynamicPixelMap, generateImage, pixelMap)
-import Codec.Picture.JPEGTurbo (DecodeOptions (DecodeOptions), JpegHeader (..), Scale (..), decodeJpeg, encodeRGB, readJpegHeader)
+import Codec.Picture.JPEGTurbo (encodeRGB)
 import qualified Codec.Picture.STBIR as STBIR
+import qualified Codec.Picture.Sandbox as Sandbox
 import qualified Codec.Picture.Spng as Spng
 import Control.Monad (guard, when, (<=<))
-import Control.Monad.Except (ExceptT (..), runExceptT, throwError)
+import Control.Monad.Except (ExceptT (..), liftEither, runExceptT)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Base64.Lazy as LB64
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.FileEmbed (embedFile)
 import Data.Int (Int32, Int64)
-import Data.List (maximumBy, minimumBy, sortOn)
+import Data.List (maximumBy, minimumBy)
 import Data.Maybe (fromMaybe, listToMaybe)
 import Data.Ord (comparing)
 import qualified Data.Vector.Storable as VS
@@ -68,21 +69,25 @@ imageFormat = \case
 
 decodeResizable :: ByteString -> IO (Either String (DynamicImage, ColourProfile))
 decodeResizable s = runExceptT $ do
-  (img, profile) <- decode
-  pure . (img,) $! maybe CPNone colourProfile profile
+  (header, img, Sandbox.Metadata {Sandbox.iccProfile, Sandbox.exif}) <- ExceptT $ Sandbox.decodeImage options s
+  (_, size) <- liftEither $ decodeSizes header
+  pure . (orientImage (exifOrientation exif) $ resizeToSize size img,) $! maybe CPNone colourProfile iccProfile
   where
-    decode
-      | "\xFF\xD8" `B.isPrefixOf` s = decodeDisplayJpeg s
-      | "\x89PNG\r\n\x1a\n" `B.isPrefixOf` s = ExceptT $ Spng.decodePng (Spng.DecodeOptions $ maxDecodeMemoryMB `div` 2) s
-      | otherwise = throwError "unsupported image format"
+    options =
+      Sandbox.DecodeOptions
+        { Sandbox.limits = Sandbox.defaultLimits {Sandbox.memoryLimitMB = maxDecodeMemoryMB},
+          Sandbox.maxPixels = maxImagePixels,
+          Sandbox.outputSize = fmap fst . decodeSizes
+        }
 
-decodeDisplayJpeg :: ByteString -> ExceptT String IO (DynamicImage, Maybe ByteString)
-decodeDisplayJpeg s = do
-  JpegHeader {jpegWidth, jpegHeight} <- ExceptT $ readJpegHeader s
-  (halvings, size) <- maybe (throwError "image does not fit") pure $ displaySize jpegWidth jpegHeight
-  (,jpegIccProfile segments) . orientImage (exifOrientation segments) . resizeToSize size <$> ExceptT (decodeJpeg (DecodeOptions (jpegScale halvings) maxJpegPixels maxDecodeMemoryMB) s)
+decodeSizes :: Sandbox.ImageHeader -> Either String ((Int, Int), (Int, Int))
+decodeSizes Sandbox.ImageHeader {Sandbox.format, Sandbox.width, Sandbox.height} =
+  maybe imageDoesNotFit (\(halvings, size) -> Right (decoded halvings size, size)) $ displaySize width height
   where
-    segments = jpegSegments $ B.drop 2 s
+    decoded halvings size = case format of
+      Sandbox.JPEG -> let scale = 2 ^ min 3 halvings in (dctScaled scale width, dctScaled scale height)
+      _ -> size
+    dctScaled scale side = (side + scale - 1) `div` scale
 
 displaySize :: Int -> Int -> Maybe (Int, (Int, Int))
 displaySize = go 0
@@ -92,21 +97,14 @@ displaySize = go 0
       | w < 2 || h < 2 = Nothing
       | otherwise = go (n + 1) (scaledSide 2 w) (scaledSide 2 h)
 
-jpegScale :: Int -> Scale
-jpegScale = \case
-  0 -> Full
-  1 -> Half
-  2 -> Quarter
-  _ -> Eighth
-
 resizeToSize :: (Int, Int) -> DynamicImage -> DynamicImage
 resizeToSize size@(w, h) img
   | dynamicMap (hasSize size) img = img
   | otherwise = ImageRGB8 $ STBIR.resize STBIR.defaultOptions w h $ convertRGB8 img
 
-exifOrientation :: [(Word8, ByteString)] -> Int
-exifOrientation segments = fromMaybe 1 $ do
-  tiff <- exifTiff segments
+exifOrientation :: Maybe ByteString -> Int
+exifOrientation exif = fromMaybe 1 $ do
+  tiff <- exif
   order <- case B.take 2 tiff of
     "II" -> Just B.reverse
     "MM" -> Just id
@@ -127,29 +125,6 @@ exifOrientation segments = fromMaybe 1 $ do
         Just v <- [u16 (e + 8)],
         v >= 1 && v <= 8
     ]
-
-exifTiff :: [(Word8, ByteString)] -> Maybe ByteString
-exifTiff segments = listToMaybe [B.drop 6 segment | (0xE1, segment) <- segments, "Exif\0\0" `B.isPrefixOf` segment]
-
-jpegIccProfile :: [(Word8, ByteString)] -> Maybe ByteString
-jpegIccProfile segments = do
-  chunks <- sortOn (\(n, _, _) -> n) <$> mapM iccChunk iccSegments
-  let profile = B.concat [chunk | (_, _, chunk) <- chunks]
-  guard $ [n | (n, _, _) <- chunks] == [1 .. length chunks] && all (\(_, count, _) -> count == length chunks) chunks && not (B.null profile)
-  pure profile
-  where
-    iccSegments = [segment | (0xE2, segment) <- segments, "ICC_PROFILE\0" `B.isPrefixOf` segment]
-    iccChunk segment
-      | B.length segment < 14 = Nothing
-      | otherwise = Just (fromIntegral $ B.index segment 12, fromIntegral $ B.index segment 13, B.drop 14 segment)
-
-jpegSegments :: ByteString -> [(Word8, ByteString)]
-jpegSegments s
-  | B.length s < 4 || B.index s 0 /= 0xFF || marker == 0xDA = []
-  | otherwise = (marker, B.take (len - 2) $ B.drop 4 s) : jpegSegments (B.drop (2 + len) s)
-  where
-    marker = B.index s 1
-    len = fromIntegral (B.index s 2) * 256 + fromIntegral (B.index s 3)
 
 orientImage :: Int -> DynamicImage -> DynamicImage
 orientImage orientation = dynamicPixelMap orient
@@ -312,8 +287,8 @@ maxImageSide = 16384
 maxDisplaySide :: Int
 maxDisplaySide = 4320
 
-maxJpegPixels :: Int
-maxJpegPixels = 2 ^ (28 :: Int)
+maxImagePixels :: Int
+maxImagePixels = 2 ^ (28 :: Int)
 
 maxDecodeMemoryMB :: Int
 #if defined(mobileBuild)
