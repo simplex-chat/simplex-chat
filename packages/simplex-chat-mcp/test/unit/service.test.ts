@@ -759,6 +759,22 @@ describe("service", () => {
     for (const pid of [0, -1, 1.5, "self"]) expect(await processStart(pid as number)).toBeUndefined()
   })
 
+  it("reads the start time of a process on macOS in the C locale and UTC, the same in every time zone", async () => {
+    const platform = Object.getOwnPropertyDescriptor(process, "platform")!
+    const zone = process.env.TZ
+    Object.defineProperty(process, "platform", {value: "darwin"})
+    try {
+      process.env.TZ = "UTC"
+      const start = await processStart(process.pid)
+      process.env.TZ = "JST-9"
+      expect([start, await processStart(process.pid)]).toEqual([expect.stringMatching(/\S/), start])
+    } finally {
+      Object.defineProperty(process, "platform", platform)
+      if (zone === undefined) delete process.env.TZ
+      else process.env.TZ = zone
+    }
+  })
+
   it("does not delay the idle close of an open session with a title", async () => {
     jest.useFakeTimers(fakeTimers)
     const {d, agents} = deps(root)
@@ -880,6 +896,46 @@ describe("service", () => {
     await expect(registerFrom(302)).rejects.toMatchObject({status: 423})
     starts.set(301, undefined)
     expect(await registerFrom(302)).toMatchObject({number: 1})
+  })
+
+  it("refuses one of two Claude Code processes that register a session at once after the process that registered it last has ended", async () => {
+    storeSession(id1, 1, "app")
+    const {d} = deps(root)
+    let readStart = d.processStart
+    service = await Service.start({...d, processStart: pid => readStart(pid)}, readDefaultConfig)
+    const registerFrom = (pid: number) => post("/session", {id: id1, pid, project: "/p/app", config: defaultConfig})
+    await registerFrom(300)
+    const reads: ((start: string | undefined) => void)[] = []
+    readStart = pid => (pid === 300 ? new Promise<string | undefined>(resolve => reads.push(resolve)) : d.processStart(pid))
+    const registered = Promise.allSettled([registerFrom(301), registerFrom(302)])
+    await until(() => reads.length === 2)
+    reads[0](undefined)
+    await new Promise(resolve => setImmediate(resolve))
+    reads[1](undefined)
+    expect((await registered).map(({status}) => status).sort()).toEqual(["fulfilled", "rejected"])
+  })
+
+  it("refuses a title of a new session ID from a second Claude Code process 20 s after its session server was refused, as after /clear there, and opens no session for that ID", async () => {
+    jest.useFakeTimers(fakeTimers)
+    storeSession(id1, 1, "app")
+    service = await Service.start(deps(root).d, readDefaultConfig)
+    await post("/session", {id: id1, pid: 300, project: "/p/app", config: defaultConfig})
+    await expect(post("/session", {id: id1, pid: 301, project: "/p/app", config: defaultConfig})).rejects.toMatchObject({status: 423})
+    await jest.advanceTimersByTimeAsync(20_000)
+    await expect(post("/title", {id: id2, pid: 301, project: "/p/app", config: defaultConfig})).rejects.toMatchObject({status: 423})
+    expect(existsSync(sessionFolder(root, id2))).toBe(false)
+  })
+
+  it("applies the refused title of a second Claude Code process once that process registers the session after the first ended", async () => {
+    storeSession(id1, 1, "app")
+    const {d, agents, starts} = deps(root)
+    service = await Service.start(d, readDefaultConfig)
+    await post("/session", {id: id1, pid: 300, project: "/p/app", config: defaultConfig})
+    await expect(post("/title", {id: id1, pid: 301, name: "second", transcript: "/c/projects/p/2.jsonl", project: "/p/app", config: defaultConfig})).rejects.toMatchObject({status: 423})
+    starts.set(300, undefined)
+    await post("/session", {id: id1, pid: 301, project: "/p/app", config: defaultConfig})
+    await until(() => agents[0].displayName === "1 · second")
+    expect(agents[0].transcript).toBe("/c/projects/p/2.jsonl")
   })
 
   it("refuses the held title of a forked session ID from a second Claude Code process once its session server is refused, and the later hooks of that ID, and opens no session for it, as with --fork-session", async () => {
