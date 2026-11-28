@@ -27,14 +27,17 @@ While the Claude Code process of a session's last `/session` runs, the service r
 - A refused process is mapped to the session for 60 s, longer than the 30 s between registrations of its server, so a held title of a forked ID, as with `--fork-session`, and a title after `/clear` in the refused process resolve to that session and are refused; no session is opened for those IDs.
 - A registration that changes the recorded process writes its PID and start time into `session.json` as `claudeProcess`, or removes them when the start time is unknown; a new entry starts with them, so the recorded process keeps the session across a service restart.
 - The session server registers again at most 30 s apart; its first registration after the first process ended is served.
+- Claude posts in the group, in small print: `▶️ Claude Code started (process PID).` at a registration of another process than the recorded one, the first included, after `⏹️ Claude Code ended (process PID).` of the recorded one when it had a start time; and the ended line when the start time of the recorded process changes within 10 s after the last detach, read once a second, which then removes that start time from the entry and the process from `session.json`. A reconnection of the same process and a service restart post neither.
 
 ```mermaid
 sequenceDiagram
   participant P as Claude Code process P
   participant Q as Claude Code process Q
   participant D as Service
+  participant G as Session group
   P->>D: POST /session {id: R, pid: P}
   D->>D: entry R and session.json: pid P, start time of P
+  D->>G: ▶️ Claude Code started (process P).
   Q->>D: POST /title {id: R, pid: Q}
   D->>D: P has its start time: refusal of Q for R, 60 s
   D-->>Q: 423 TEXT, shown at the session start
@@ -43,9 +46,12 @@ sequenceDiagram
   D-->>Q: 423 TEXT, returned by each SimpleX tool
   Q->>D: POST /turn or /ask {id: R, pid: Q}
   D-->>Q: 423
-  Note over P,D: P ends
+  Note over P,D: P ends, its attachment closes
+  D->>D: the start time of P differs, read within 10 s: removed from entry R, P from session.json
+  D->>G: ⏹️ Claude Code ended (process P).
   Q->>D: POST /session {id: X, pid: Q}, at most 30 s later
-  D->>D: the start time of P differs: entry R and session.json: pid Q
+  D->>D: entry R and session.json: pid Q
+  D->>G: ▶️ Claude Code started (process Q).
   D-->>Q: the session
 ```
 
@@ -60,6 +66,7 @@ sequenceDiagram
 - `src/service.ts`: `claudeProcess` written by `onSession` and read by `entry`.
 - `src/service.ts`: `processStart` adds the boot ID on Linux, runs `ps` with `LC_ALL=C` and `TZ=UTC` on macOS, and PowerShell's `Get-Process` on Windows, with its command runner as a parameter.
 - `src/files.ts`: `SessionFile.claudeProcess`.
+- `src/service.ts`: the started and ended lines in `onSession`, and `noteExit` after the last detach; `src/hub.ts`: `Session.postNote`.
 - The refusal in:
   - `spec/api.md`, socket protocol
   - `spec/architecture.md`, `onSession`, `processStart`, `SessionFile`
@@ -78,4 +85,9 @@ sequenceDiagram
 - A second process refused after a service restart, and served once the first ended.
 - The start time of a process on Linux begins with the boot ID, and is the ticks alone when the boot ID can't be read.
 - The start time of a process on Windows from a stubbed PowerShell: its output when it is a number, with the command, the timeout and no window.
+- The started line for the first process and a later one, after the ended line of the one before, and none for a reconnection or after a restart.
+- The ended line once, after the last detach of a process that ended, and none for a reattachment.
 - The tests of a second registration of a session: the first process ended before it.
+
+`test/unit/sessions.test.ts`:
+- A note of the service in small print with priority -1.

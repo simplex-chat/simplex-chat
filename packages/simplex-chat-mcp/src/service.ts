@@ -21,6 +21,7 @@ const idleClose = 10 * 60_000
 const idleStop = 10 * 60_000
 const processWait = 10_000
 const refusalWait = 60_000
+const exitCheckWait = 1_000
 const psWait = 2_000
 const powershellWait = 10_000
 const logCheck = 3_600_000
@@ -257,6 +258,11 @@ export class Service {
     if (previous.pid !== undefined && (changed || started === undefined)) agent.endToolApprovals()
     const folder = this.folder(id)
     if (changed) writeSessionFile(folder, {...readSessionFile(folder)!, claudeProcess: request.pid === undefined || started === undefined ? undefined : {pid: request.pid, started}})
+    const another = previous.pid !== request.pid || (previous.started !== undefined && started !== undefined && previous.started !== started)
+    if (request.pid !== undefined && another) {
+      if (previous.pid !== undefined && previous.started !== undefined) await agent.postNote(`⏹️ Claude Code ended (process ${previous.pid}).`)
+      await agent.postNote(`▶️ Claude Code started (process ${request.pid}).`)
+    }
     if (entry.attached === 0) this.scheduleIdle(id, entry)
     await this.hub.configure(request.config)
     agent.requestMode(request.config.approve)
@@ -395,7 +401,26 @@ export class Service {
       agent.endPermissions()
       agent.endLive()
       this.scheduleIdle(id, entry)
+      this.noteExit(id, entry, agent).catch(error => logError(`session ${agent.number}`, error))
     })
+  }
+
+  // spec: spec/architecture.md#service-service-onattach
+  private async noteExit(id: string, entry: Entry, agent: SessionLike): Promise<void> {
+    const {pid, started} = entry
+    if (pid === undefined || started === undefined) return
+    const watched = (): boolean => this.stopping === undefined && entry.attached === 0 && entry.pid === pid && entry.started === started
+    const until = Date.now() + processWait
+    while (watched() && Date.now() < until) {
+      const running = (await this.deps.processStart(pid)) === started
+      if (!running && watched()) {
+        entry.started = undefined
+        const folder = this.folder(id)
+        writeSessionFile(folder, {...readSessionFile(folder)!, claudeProcess: undefined})
+        return agent.postNote(`⏹️ Claude Code ended (process ${pid}).`)
+      }
+      await new Promise(resolve => setTimeout(resolve, exitCheckWait).unref())
+    }
   }
 
   // spec: spec/api.md#socket-protocol
