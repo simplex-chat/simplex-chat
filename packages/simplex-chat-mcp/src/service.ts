@@ -256,9 +256,10 @@ export class Service {
     const agent = await entry.opening
     agent.record = request.record
     agent.globalConfig = request.globalConfig
-    if (previous.pid !== undefined && (previous.pid !== request.pid || started === undefined || previous.started !== started)) agent.endToolApprovals()
+    const changed = previous.pid !== request.pid || previous.started !== started
+    if (previous.pid !== undefined && (changed || started === undefined)) agent.endToolApprovals()
     const folder = this.folder(id)
-    if (previous.pid !== request.pid || previous.started !== started) writeSessionFile(folder, {...readSessionFile(folder)!, claudeProcess: request.pid === undefined || started === undefined ? undefined : {pid: request.pid, started}})
+    if (changed) writeSessionFile(folder, {...readSessionFile(folder)!, claudeProcess: request.pid === undefined || started === undefined ? undefined : {pid: request.pid, started}})
     if (entry.attached === 0) this.scheduleIdle(id, entry)
     await this.hub.configure(request.config)
     agent.requestMode(request.config.approve)
