@@ -719,24 +719,11 @@ struct GroupMemberInfoView: View {
 
     private func deleteMemberMessagesButton(_ mem: GroupMember) -> some View {
         Button(role: .destructive) {
-            showDeleteMemberMessagesAlert(mem)
+            showDeleteMemberMessagesAlert(groupInfo, mem, dismiss: dismiss)
         } label: {
             Label("Delete member messages", systemImage: "trash")
                 .foregroundColor(.red)
         }
-    }
-
-    func showDeleteMemberMessagesAlert(_ mem: GroupMember) {
-        showAlert(
-            NSLocalizedString("Delete member messages?", comment: "alert title"),
-            message: NSLocalizedString("Member messages will be deleted - this cannot be undone!", comment: "alert message"),
-            actions: {[
-                UIAlertAction(title: NSLocalizedString("Delete messages", comment: "alert action"), style: .destructive) { _ in
-                    removeMember(groupInfo, mem, withMessages: true, dismiss: dismiss)
-                },
-                cancelAlertAction
-            ]}
-        )
     }
 
     private func changeMemberRoleAlert(_ mem: GroupMember) -> Alert {
@@ -1045,6 +1032,28 @@ func removeForeverAlert(_ gInfo: GroupInfo, _ mem: GroupMember, withMessages: Bo
     alert.addAction(cancelAlertAction)
     alert.addAction(remove)
     return alert
+}
+
+func showDeleteMemberMessagesAlert(_ groupInfo: GroupInfo, _ mem: GroupMember, dismiss: DismissAction? = nil) {
+    Task { @MainActor in
+        if !ChatModel.shared.membersLoaded && mem.memberRole >= .admin {
+            await ChatModel.shared.loadGroupMembers(groupInfo)
+        }
+        getTopViewController()?.present(deleteMemberMessagesAlert(groupInfo, mem, dismiss: dismiss), animated: true)
+    }
+}
+
+func deleteMemberMessagesAlert(_ groupInfo: GroupInfo, _ mem: GroupMember, dismiss: DismissAction?) -> UIAlertController {
+    alertController(
+        NSLocalizedString("Delete member messages?", comment: "alert title"),
+        message: NSLocalizedString("Member messages will be deleted - this cannot be undone!", comment: "alert message") + deletedSubmemberMessagesText(mem),
+        actions: [
+            UIAlertAction(title: NSLocalizedString("Delete messages", comment: "alert action"), style: .destructive) { _ in
+                removeMember(groupInfo, mem, withMessages: true, dismiss: dismiss)
+            },
+            cancelAlertAction
+        ]
+    )
 }
 
 func blockMemberForAll(_ gInfo: GroupInfo, _ member: GroupMember, _ blocked: Bool, onSuccess: @escaping () -> Void = {}) {

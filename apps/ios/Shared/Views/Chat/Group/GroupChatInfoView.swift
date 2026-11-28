@@ -1086,6 +1086,14 @@ func removedSubmembersText(_ mem: GroupMember) -> String {
     }
 }
 
+func deletedSubmemberMessagesText(_ mem: GroupMember) -> String {
+    switch ChatModel.shared.groupMembers.filter({ $0.wrapped.memberVia == mem.memberId }).count {
+    case 0: ""
+    case 1: "\n" + NSLocalizedString("Also the messages of 1 member via this member.", comment: "alert message")
+    case let count: "\n" + String.localizedStringWithFormat(NSLocalizedString("Also the messages of %d members via this member.", comment: "alert message"), count)
+    }
+}
+
 func removeMember(_ groupInfo: GroupInfo, _ mem: GroupMember, withMessages: Bool, notice: LinkNotice? = nil, dismiss: DismissAction?) {
     Task {
         do {

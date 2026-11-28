@@ -739,6 +739,7 @@ private func previewScenes() -> [SnapshotScene] {
         SnapshotScene(DeleteContactKeepDialog_Previews.self),
         SnapshotScene(DeletedItemView_Previews.self, allSizes: true),
         SnapshotScene(DeleteGroupKeepDialog_Previews.self),
+        SnapshotScene(DeleteMemberMessagesWithSubmembersAlert_Previews.self, alert: true),
         SnapshotScene(DetermineWidth_Previews.self),
         SnapshotScene(DeveloperView_Previews.self),
         SnapshotScene(EmojiItemView_Previews.self, allSizes: true),
@@ -1107,6 +1108,26 @@ struct RemoveMemberWithSubmembersAlert_Previews: PreviewProvider {
             ChatModel.shared.groupMembers = submembers
             defer { ChatModel.shared.groupMembers = members }
             return removeMemberAlert(previewGroup(.owner), claude, dismiss: nil)
+        })
+    }
+}
+
+struct DeleteMemberMessagesWithSubmembersAlert_Previews: PreviewProvider {
+    static var previews: some View {
+        var claude = GroupMember.sampleData
+        claude.memberId = "Claude"
+        claude.memberProfile = LocalProfile(profileId: 2, displayName: "Claude", fullName: "", localAlias: "")
+        let submembers = [Int64(3), 4].map { id -> GMember in
+            var submember = GroupMember.sampleData
+            submember.groupMemberId = id
+            submember.memberVia = claude.memberId
+            return GMember(submember)
+        }
+        return Color.clear.background(AlertControllerPreview {
+            let members = ChatModel.shared.groupMembers
+            ChatModel.shared.groupMembers = submembers
+            defer { ChatModel.shared.groupMembers = members }
+            return deleteMemberMessagesAlert(previewGroup(.owner), claude, dismiss: nil)
         })
     }
 }

@@ -351,10 +351,17 @@ fun removeMemberDialog(rhId: Long?, groupInfo: GroupInfo, member: GroupMember, c
   }
 }
 
-fun deleteMemberMessagesDialog(rhId: Long?, groupInfo: GroupInfo, member: GroupMember, chatModel: ChatModel, close: (() -> Unit)? = null) {
+fun deleteMemberMessagesDialog(rhId: Long?, groupInfo: GroupInfo, member: GroupMember, chatModel: ChatModel, close: (() -> Unit)? = null) = withBGApi {
+  if (!chatModel.membersLoaded.value && member.memberRole >= GroupMemberRole.Admin) {
+    setGroupMembers(rhId, groupInfo, chatModel)
+  }
+  deleteMemberMessagesAlert(rhId, groupInfo, member, chatModel, close)
+}
+
+fun deleteMemberMessagesAlert(rhId: Long?, groupInfo: GroupInfo, member: GroupMember, chatModel: ChatModel, close: (() -> Unit)? = null) {
   AlertManager.shared.showAlertDialog(
     title = generalGetString(MR.strings.button_delete_member_messages_question),
-    text = generalGetString(MR.strings.member_messages_will_be_deleted_cannot_be_undone),
+    text = generalGetString(MR.strings.member_messages_will_be_deleted_cannot_be_undone) + deletedSubmemberMessagesText(member),
     confirmText = generalGetString(MR.strings.delete_member_messages_confirmation),
     onConfirm = {
       removeMember(rhId, groupInfo, member, withMessages = true, chatModel, close)
@@ -1199,6 +1206,13 @@ fun removedSubmembersText(members: List<GroupMember>): String {
   }
 }
 
+fun deletedSubmemberMessagesText(member: GroupMember): String =
+  when (val count = ChatModel.groupMembers.value.count { it.memberVia == member.memberId }) {
+    0 -> ""
+    1 -> "\n" + generalGetString(MR.strings.also_messages_of_member_via_this_member)
+    else -> "\n" + String.format(generalGetString(MR.strings.also_messages_of_members_via_this_member), count)
+  }
+
 @Composable
 fun CannotBlockWarning(members: List<GroupMember>) {
   val warning = if (members.any { it.blockedByAdmin }) previousVersionWarningText(members, MR.strings.member_previous_version_cannot_ban, MR.strings.members_previous_version_cannot_ban) else null
@@ -1436,6 +1450,12 @@ fun PreviewRemoveBannedMembersDialog() = AlertPreview { removeBannedMembersDialo
 @Preview
 @Composable
 fun PreviewRemoveForeverDialog() = AlertPreview { removeBannedMembers(null, previewOwnerGroupInfo, previewBannedMembers.take(1), BanDuration.Forever, withMessages = false) }
+
+@Preview
+@Composable
+fun PreviewDeleteMemberMessagesWithSubmembers() = GroupMembersPreview(listOf(previewClaude, previewClaudeSubmember(6, "reviewer"), previewClaudeSubmember(7, "tester"))) {
+  AlertPreview { deleteMemberMessagesAlert(null, previewOwnerGroupInfo, previewClaude, ChatModel) }
+}
 
 @Preview
 @Composable

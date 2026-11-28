@@ -402,6 +402,13 @@ class ModerationTest : RecordedApiTest() {
   }
 
   @Test
+  fun deleteMessagesOfRemovedMemberWithSubmembers() = recordedAlerts("submembers/removed-member-with-submembers") {
+    val (groupInfo, members) = openGroup()
+    deleteMemberMessagesDialog(null, groupInfo, member(members, "bob"), ChatModel)
+    assertTexts("Delete member messages?", "Member messages will be deleted - this cannot be undone!\nAlso the messages of 2 members via this member.", "Cancel", "Delete messages")
+  }
+
+  @Test
   fun blockPendingMember() = recordedAlerts("bans/pending-member") {
     val (groupInfo, members) = openGroup()
     val bob = member(members, "bob")

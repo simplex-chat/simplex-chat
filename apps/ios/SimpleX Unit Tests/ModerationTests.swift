@@ -289,6 +289,14 @@ final class ModerationTests: RecordedAPITestCase {
     }
 
     @MainActor
+    func testDeleteMessagesOfRemovedMemberWithSubmembers() async throws {
+        try recorded("submembers/removed-member-with-submembers")
+        let (groupInfo, members) = try openGroup()
+        showDeleteMemberMessagesAlert(groupInfo, try member(members, "bob"))
+        try await assertTexts(["Delete member messages?", "Member messages will be deleted - this cannot be undone!\nAlso the messages of 2 members via this member.", "Delete messages", "Cancel"])
+    }
+
+    @MainActor
     func testBlockPendingMember() async throws {
         try recorded("bans/pending-member")
         let (groupInfo, members) = try openGroup()

@@ -118,6 +118,7 @@ private val previewScenes = listOf(
   SnapshotScene("GroupMemberInfoView.PreviewRemoveBannedMemberDialog") { PreviewRemoveBannedMemberDialog() },
   SnapshotScene("GroupMemberInfoView.PreviewRemoveBannedMembersDialog") { PreviewRemoveBannedMembersDialog() },
   SnapshotScene("GroupMemberInfoView.PreviewRemoveForeverDialog") { PreviewRemoveForeverDialog() },
+  SnapshotScene("GroupMemberInfoView.PreviewDeleteMemberMessagesWithSubmembers") { PreviewDeleteMemberMessagesWithSubmembers() },
   SnapshotScene("GroupMemberInfoView.PreviewLiftBanAlert") { PreviewLiftBanAlert() },
   SnapshotScene("GroupMemberInfoView.PreviewLiftBanMembersAlert") { PreviewLiftBanMembersAlert() },
   SnapshotScene("GroupMemberInfoView.PreviewHideMessagesAlert") { PreviewHideMessagesAlert() },
