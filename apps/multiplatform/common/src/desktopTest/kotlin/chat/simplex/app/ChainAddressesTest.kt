@@ -47,9 +47,9 @@ private val previewChainAddress = ChainAddress(ChainCurrency.Bitcoin("0.0012"), 
 
 private val alice = ChainAddressSender("alice", forwarded = false, messageSigned = true)
 
-private val nbsp = Char(0xA0)
+private val noBreakSpace = Char(0xA0)
 
-private val wj = Char(0x2060)
+private val wordJoiner = Char(0x2060)
 
 @OptIn(ExperimentalTestApi::class)
 class ChainAddressesTest : RecordedApiTest() {
@@ -196,7 +196,7 @@ class ChainAddressesTest : RecordedApiTest() {
     val chat = recordedChat("chain-addresses/sent", "/_get chat @2 count=1")
     val item = chat.chatItems.single()
     assertEquals(
-      listOf("₿${nbsp}bc1q2g…${wj}5d4u", "Donate XMR${nbsp}8A3ZWA…${wj}Yq1c", "ϟ${nbsp}0.0025"),
+      listOf("₿${noBreakSpace}bc1q2g…${wordJoiner}5d4u", "Donate XMR${noBreakSpace}8A3ZWA…${wordJoiner}Yq1c", "ϟ${noBreakSpace}0.0025"),
       chainLinks(item.formattedText).map { alertMessage(chainAddressSender(item, chat.chatInfo), it) }
     )
   }
@@ -205,7 +205,7 @@ class ChainAddressesTest : RecordedApiTest() {
   fun alertOfOwnGroupItemHasNoName() = recordedAlerts("chain-addresses/group-sent") {
     val chat = recordedChat("chain-addresses/group-sent", "/_get chat #1 count=2")
     assertEquals(
-      listOf("₿${nbsp}bc1q2g…${wj}5d4u", "⚠${nbsp}ltc1q2…${wj}wfdv (not signed)"),
+      listOf("₿${noBreakSpace}bc1q2g…${wordJoiner}5d4u", "⚠${noBreakSpace}ltc1q2…${wordJoiner}wfdv (not signed)"),
       chat.chatItems.flatMap { item -> chainLinks(item.formattedText).map { alertMessage(chainAddressSender(item, chat.chatInfo), it) } }
     )
   }
