@@ -5,7 +5,7 @@ import {tmpdir, totalmem} from "os"
 import {join} from "path"
 import {serviceToken, socketPath} from "../../src/files"
 import {listen, sendJson} from "../../src/socket"
-import {Machine, machineParts, machineState, statusLine} from "../../src/status-line"
+import {Machine, limitParts, machineParts, machineState, statusLine} from "../../src/status-line"
 import {closeServer} from "./fixtures"
 
 let root: string
@@ -74,6 +74,11 @@ describe("status line command", () => {
     expect(machineParts({memoryFree: 790_700_000, memoryTotal: 16_000_000_000, diskFree: 45_600_000_000_000})).toEqual(["RAM 790 MB free❗️", "disk 45 TB free"])
     expect(machineParts({memoryFree: 9_900_000_000, memoryTotal: 16_000_000_000})).toEqual(["RAM 9.9 GB free"])
     expect(machineParts(undefined)).toEqual([])
+  })
+
+  it("shows the plan's usage rounded down, with ❗️ after a part at 95% or more", () => {
+    expect(limitParts({fiveHour: {percent: 94.9}, week: {percent: 95}})).toEqual(["5 h: 94%", "week: 95%❗️"])
+    expect(limitParts({fiveHour: {percent: 100}})).toEqual(["5 h: 100%❗️"])
   })
 
   it("reads the available memory of the process's limits and the free disk of the data folder, or of its nearest existing parent", () => {
