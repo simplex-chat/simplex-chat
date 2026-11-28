@@ -769,14 +769,17 @@ describe("service", () => {
     expect(boot === undefined || (await processStart(process.pid))?.startsWith(`${boot} `)).toBe(true)
   })
 
-  it("reads the start time of a process on Windows from PowerShell as its creation time in UTC file time, without a window, within 10 s, and nothing for an output that is not a number", async () => {
+  it("reads the start time of a process on Windows from PowerShell as its creation time in UTC file time, without a window, within 10 s, nothing for a process that PowerShell does not find, and fails for a timeout or an output that is not a number", async () => {
     const platform = Object.getOwnPropertyDescriptor(process, "platform")!
     Object.defineProperty(process, "platform", {value: "win32"})
     const calls: [string, string[], ExecFileOptions][] = []
     const powershell = (stdout: string) => async (...call: [string, string[], ExecFileOptions]) => (calls.push(call), {stdout})
+    const failed = (error: object) => async () => Promise.reject(Object.assign(new Error("Command failed"), error))
     try {
       expect(await processStart(4242, powershell("134088624000000000\r\n"))).toBe("134088624000000000")
-      expect(await processStart(4242, powershell("Get-Process : Cannot find a process with the process identifier 4242.\r\n"))).toBeUndefined()
+      expect(await processStart(4242, failed({code: 1, killed: false}))).toBeUndefined()
+      await expect(processStart(4242, failed({code: null, killed: true}))).rejects.toThrow()
+      await expect(processStart(4242, powershell("WARNING: profile not loaded\r\n"))).rejects.toThrow()
       expect(calls[0]).toEqual(["powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", "(Get-Process -Id 4242 -ErrorAction Stop).StartTime.ToFileTimeUtc()"], {timeout: 10_000, windowsHide: true}])
     } finally {
       Object.defineProperty(process, "platform", platform)
@@ -994,6 +997,27 @@ describe("service", () => {
     await until(() => agents[0].notes.length === 2)
     await registerFrom(301)
     expect(agents[0].notes).toEqual(["▶️ Claude Code started (process 300).", "⏹️ Claude Code ended (process 300).", "▶️ Claude Code started (process 301)."])
+  })
+
+  it("posts no ended line while the start time of the process of a session can't be read after its attachment closed, and posts it once the process is gone", async () => {
+    jest.useFakeTimers(fakeTimers)
+    storeSession(id1, 1, "app")
+    const {d, agents} = deps(root)
+    let readStart = d.processStart
+    service = await Service.start({...d, processStart: pid => readStart(pid)}, readDefaultConfig)
+    await post("/session", {id: id1, pid: 300, project: "/p/app", config: defaultConfig})
+    const controller = new AbortController()
+    const attachment = attach(id1, controller.signal, 300)
+    await attachment.firstLine
+    let reads = 0
+    readStart = async () => (++reads === 1 ? Promise.reject(new Error("timed out")) : undefined)
+    controller.abort()
+    await attachment.attached
+    await turnsUntil(() => reads === 1)
+    expect(agents[0].notes).toEqual(["▶️ Claude Code started (process 300)."])
+    await jest.advanceTimersByTimeAsync(1_000)
+    await turnsUntil(() => agents[0].notes.length === 2)
+    expect(agents[0].notes.at(-1)).toBe("⏹️ Claude Code ended (process 300).")
   })
 
   it("keeps the Claude Code process of a session across a service restart, and serves a second process once that process has ended", async () => {
