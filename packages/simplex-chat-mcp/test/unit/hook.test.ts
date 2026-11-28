@@ -800,7 +800,7 @@ describe("turn hooks", () => {
     ])
   })
 
-  it("send the stop of an agent at a usage limit as the note of what stopped and why, with its task end at the usage limit, and another failure as before", async () => {
+  it("send the stop of an agent at a usage limit as the note of what stopped and why, marked to alert, and another failure as before", async () => {
     const folder = mkdtempSync(join(tmpdir(), "simplex-mcp-transcript-"))
     try {
       const transcript = join(folder, "session.jsonl")
@@ -814,17 +814,17 @@ describe("turn hooks", () => {
       writeFileSync(transcript, prompts.map(([promptId, content]) => userEntry(promptId, content, {origin: {kind: "task-notification"}})).join(""))
       const {client, requests} = turnClient()
       for (const [promptId, content] of prompts) await turn(JSON.stringify({session_id: id, hook_event_name: "UserPromptSubmit", transcript_path: transcript, prompt_id: promptId, prompt: content}), {}, client, 0, 1, 1)
-      expect(requests.map(request => (request as {body: {note?: string; task?: unknown}}).body).map(({note, task}) => [note, task])).toEqual([
-        ["!- ⛔ Agent \"Plan the asMember switch\" stopped: You've hit your weekly limit · resets Nov 28, 1am (UTC)!", {toolUse: "toolu_7", status: "failed", usageLimit: true}],
-        ["!- ❌ Agent \"Map\" failed: Agent terminated early due to an API error: Overloaded (error type overloaded_error, HTTP 529)!", {toolUse: "toolu_7", status: "failed"}],
-        ["!- ⛔ Agent \"Retry what failed: the build\" stopped: You've hit your weekly limit · resets Nov 28, 1am (UTC)!", {toolUse: "toolu_7", status: "failed", usageLimit: true}],
+      expect(requests.map(request => (request as {body: {note?: string; alert?: boolean; task?: unknown}}).body).map(({note, alert, task}) => [note, alert, task])).toEqual([
+        ["!- ⛔ Agent \"Plan the asMember switch\" stopped: You've hit your weekly limit · resets Nov 28, 1am (UTC)!", true, {toolUse: "toolu_7", status: "failed"}],
+        ["!- ❌ Agent \"Map\" failed: Agent terminated early due to an API error: Overloaded (error type overloaded_error, HTTP 529)!", undefined, {toolUse: "toolu_7", status: "failed"}],
+        ["!- ⛔ Agent \"Retry what failed: the build\" stopped: You've hit your weekly limit · resets Nov 28, 1am (UTC)!", true, {toolUse: "toolu_7", status: "failed"}],
       ])
     } finally {
       rmSync(folder, {recursive: true, force: true})
     }
   })
 
-  it("send the stop of a teammate from its failed idle notification as the note of who stopped and why, followed by the line of its message on the next line, and none for an idle notification that did not fail", async () => {
+  it("send the stop of a teammate from its failed idle notification as the note of who stopped and why, marked to alert, followed by the line of its message on the next line, and none for an idle notification that did not fail", async () => {
     const folder = mkdtempSync(join(tmpdir(), "simplex-mcp-transcript-"))
     try {
       const transcript = join(folder, "session.jsonl")
@@ -841,7 +841,11 @@ describe("turn hooks", () => {
       const {client, requests} = turnClient()
       for (const [promptId, content] of prompts) await turn(JSON.stringify({session_id: id, hook_event_name: "UserPromptSubmit", transcript_path: transcript, prompt_id: promptId, prompt: content}), {}, client, 0, 1, 1)
       const stopped = "⛔ Teammate \"wasm-sandbox\" stopped: You've hit your weekly limit · resets Nov 28, 1am (UTC)"
-      expect(notes(requests).map(({note}) => note)).toEqual([`!- ${stopped}!`, `!- ${stopped}\n✉️ Message from wasm-sandbox: The build passes.!`, undefined])
+      expect(requests.map(request => (request as {body: {note?: string; alert?: boolean}}).body).map(({note, alert}) => [note, alert])).toEqual([
+        [`!- ${stopped}!`, true],
+        [`!- ${stopped}\n✉️ Message from wasm-sandbox: The build passes.!`, true],
+        [undefined, undefined],
+      ])
     } finally {
       rmSync(folder, {recursive: true, force: true})
     }

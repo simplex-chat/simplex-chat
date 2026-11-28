@@ -3053,14 +3053,16 @@ describe("Main group", () => {
     expect(chat.updates.at(-1)).toMatchObject({chatId: 20, text: "!- 🤖 Explore · find callers · ⏹️ 0:00 · 0 steps!"})
   })
 
-  it("posts the note of a subagent's stop at a usage limit, silent, which its message does not show", async () => {
+  it("posts a stop line with priority 1, as the session's own stop line, also for a subagent whose message shows its end", async () => {
     const chat = new FakeChat()
     const hub = await hubWith(chat)
     const session = await openSession(hub, id1, stored(1, "one"))
     await session.turn({id: id1, agent: {id: "a1", start: {type: "Plan", description: "Plan the asMember switch", toolUse: "toolu_1", transcript: join(root, "agent-a1.jsonl")}}})
-    const note = "!- ⛔ Agent \"Plan the asMember switch\" stopped: You've hit your weekly limit · resets Nov 28, 1am (UTC)!"
-    await session.turn({id: id1, prompt: "<task-notification>…</task-notification>", typed: false, note, task: {toolUse: "toolu_1", status: "failed", usageLimit: true}})
-    expect(chat.sent.at(-1)?.messages).toEqual([{msgContent: {type: "text", text: note}, mentions: {}, priority: -1}])
+    const agent = "!- ⛔ Agent \"Plan the asMember switch\" stopped: You've hit your weekly limit · resets Nov 28, 1am (UTC)!"
+    const teammate = "!- ⛔ Teammate \"wasm-sandbox\" stopped: You've hit your weekly limit · resets Nov 28, 1am (UTC)!"
+    await session.turn({id: id1, prompt: "<task-notification>…</task-notification>", typed: false, note: agent, alert: true, task: {toolUse: "toolu_1", status: "failed"}})
+    await session.turn({id: id1, prompt: "Another Claude session sent a message: …", typed: false, note: teammate, alert: true})
+    expect(chat.sent.slice(-2).map(({messages}) => messages)).toEqual([agent, teammate].map(text => [{msgContent: {type: "text", text}, mentions: {}, priority: 1}]))
   })
 
   it("updates the descriptions of a session's group at most once a minute, with the latest values", async () => {
