@@ -3939,7 +3939,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
           groupMsgToView cInfo ci
         deleteMessages :: GroupInfo -> GroupMember -> CM ()
         deleteMessages gInfo' delMem = do
-          delMems <- (delMem :) <$> withStore' (\db -> getSubmembers db cxt user gInfo' delMem)
+          delMems <- (delMem :) <$> withStore' (\db -> getSubmembers db cxt user delMem)
           if groupFeatureMemberAllowed SGFFullDelete m gInfo'
             then deleteGroupMembersCIs user gInfo' delMems
             else markGroupMembersCIsDeleted user gInfo' delMems m
