@@ -297,8 +297,12 @@ export class Service {
 
   // spec: spec/architecture.md#service-service-onsession
   private async refuseOtherProcess(id: string, requester: number | undefined): Promise<void> {
-    const {pid, started} = this.entry(id)
-    if (requester === undefined || pid === undefined || pid === requester || started === undefined || (await this.deps.processStart(pid)) !== started) return
+    const entry = this.entry(id)
+    const {pid, started} = entry
+    if (requester === undefined || pid === undefined || pid === requester || started === undefined) return
+    const running = (await this.deps.processStart(pid)) === started
+    if (entry.pid !== pid || entry.started !== started) return this.refuseOtherProcess(id, requester)
+    if (!running) return
     this.refusals.set(requester, {id, at: Date.now()})
     throw new SocketError(`This conversation is already open in Claude Code process ${pid}. Exit that process, or exit this one and start a new conversation.`, 423)
   }
