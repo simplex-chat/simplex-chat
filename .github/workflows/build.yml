@@ -1530,6 +1530,14 @@ jobs:
           diskutil erasevolume APFS tests "$disk"
           ln -s /Volumes/tests tests/tmp
 
+      - name: Put /usr/bin/sqlite3 first on PATH
+        if: matrix.should_run == true && matrix.arch == 'aarch64'
+        shell: bash
+        run: |
+          mkdir "$RUNNER_TEMP/sqlite3"
+          ln -s /usr/bin/sqlite3 "$RUNNER_TEMP/sqlite3/sqlite3"
+          echo "$RUNNER_TEMP/sqlite3" >> "$GITHUB_PATH"
+
       - name: Run tests
         id: tests
         if: matrix.should_run == true && matrix.arch == 'aarch64'
