@@ -1186,6 +1186,50 @@ export interface CITimed {
   ttl: number // int
   deleteAt?: string // ISO-8601 timestamp
 }
+// Chain address or URI in a message text. currency: what the link text names, resolved from the core's tables of chains and tokens. walletUri: the URI to open in a wallet.
+
+export interface ChainAddress {
+  currency: ChainCurrency
+  address: string
+  walletUri: string
+}
+// amount: in BTC for bitcoin and lightning, in units of the ticker for ticker. chainName: the EVM chain other than Ethereum, or Solana for a Solana token. unknown: the chain or token is outside the core's tables; the amount is omitted.
+
+export type ChainCurrency = 
+  | ChainCurrency.Bitcoin
+  | ChainCurrency.Lightning
+  | ChainCurrency.Ticker
+  | ChainCurrency.Unknown
+
+export namespace ChainCurrency {
+  export type Tag = "bitcoin" | "lightning" | "ticker" | "unknown"
+
+  interface Interface {
+    type: Tag
+  }
+
+  export interface Bitcoin extends Interface {
+    type: "bitcoin"
+    amount?: string
+  }
+
+  export interface Lightning extends Interface {
+    type: "lightning"
+    amount?: string
+  }
+
+  export interface Ticker extends Interface {
+    type: "ticker"
+    ticker: string
+    chainName?: string
+    amount?: string
+  }
+
+  export interface Unknown extends Interface {
+    type: "unknown"
+    unknown: UnknownCurrency
+  }
+}
 
 export type ChatBotCommand = ChatBotCommand.Command | ChatBotCommand.Menu
 
@@ -2814,6 +2858,7 @@ export type Format =
   | Format.HyperLink
   | Format.SimplexLink
   | Format.SimplexName
+  | Format.ChainAddressLink
   | Format.Command
   | Format.Mention
   | Format.Email
@@ -2834,6 +2879,7 @@ export namespace Format {
     | "hyperLink"
     | "simplexLink"
     | "simplexName"
+    | "chainAddressLink"
     | "command"
     | "mention"
     | "email"
@@ -2896,6 +2942,12 @@ export namespace Format {
   export interface SimplexName extends Interface {
     type: "simplexName"
     nameInfo: SimplexNameInfo
+  }
+
+  export interface ChainAddressLink extends Interface {
+    type: "chainAddressLink"
+    showText?: string
+    chainAddress: ChainAddress
   }
 
   export interface Command extends Interface {
@@ -5868,6 +5920,12 @@ export interface UIThemeEntityOverrides {
   light?: UIThemeEntityOverride
   dark?: UIThemeEntityOverride
   chatLayout?: ChatLayout
+}
+
+export enum UnknownCurrency {
+  Chain = "chain",
+  Token = "token",
+  ChainAndToken = "chainAndToken",
 }
 
 export interface UpdatedMessage {

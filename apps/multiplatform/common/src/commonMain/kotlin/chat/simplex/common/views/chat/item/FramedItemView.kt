@@ -521,6 +521,7 @@ fun CIMarkdownText(
         chatInfo is ChatInfo.Group -> chatInfo.groupInfo.membership.memberId
         else -> null
       },
+      chainAddressSender = chainAddressSender(ci, chatInfo),
       uriHandler = uriHandler, senderBold = true, onLinkLongClick = onLinkLongClick, showViaProxy = showViaProxy, showTimestamp = showTimestamp, prefix = prefix,
       stripLink = stripLink,
       selection = selection,

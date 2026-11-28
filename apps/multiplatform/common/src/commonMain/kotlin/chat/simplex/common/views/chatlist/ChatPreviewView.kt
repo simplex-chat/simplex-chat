@@ -287,6 +287,7 @@ fun ChatPreviewView(
           cInfo is ChatInfo.Group -> cInfo.groupInfo.membership.memberId
           else -> null
         },
+        chainAddressSender = chainAddressSender(ci, cInfo),
         toggleSecrets = false,
         linkMode = linkMode,
         senderBold = true,

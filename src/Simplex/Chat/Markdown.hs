@@ -37,6 +37,7 @@ import Data.String
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
+import Simplex.Chat.ChainAddress (ChainAddress, bareAddressForm, hyperlinkAddress)
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent.Protocol (AConnectionLink (..), ConnReqUriData (..), ConnShortLink (..), ConnectionLink (..), ConnectionRequestUri (..), ContactConnType (..), SMPQueue (..), SimplexNameInfo (..), simplexConnReqUri, simplexShortLink)
 import Simplex.Messaging.Encoding.String
@@ -63,6 +64,7 @@ data Format
   | HyperLink {showText :: Maybe Text, linkUri :: Text}
   | SimplexLink {showText :: Maybe Text, linkType :: SimplexLinkType, simplexUri :: AConnectionLink, smpHosts :: NonEmpty Text}
   | SimplexName {nameInfo :: SimplexNameInfo}
+  | ChainAddressLink {showText :: Maybe Text, chainAddress :: ChainAddress}
   | Command {commandStr :: Text}
   | Mention {memberName :: Text}
   | Email
@@ -328,6 +330,11 @@ isLink = \case
 hasLinks :: MarkdownList -> Bool
 hasLinks = any $ \(FormattedText f _) -> maybe False isLink f
 
+hasChainAddress :: MarkdownList -> Bool
+hasChainAddress = any $ \case
+  FormattedText (Just ChainAddressLink {}) _ -> True
+  _ -> False
+
 hasObfuscatedSimplexLink :: Text -> Bool
 hasObfuscatedSimplexLink t =
   fromRight False $ AB.parseOnly findLinkP $ encodeUtf8 $ T.filter (not . isSpace) t
@@ -360,7 +367,7 @@ markdownP = joinMarkdown <$> A.many' fragmentP
           '<' -> autolinkP <|> wordP
           '\\' -> escapeP <|> wordP
           _
-            | isDigit c -> phoneP <|> wordP
+            | isDigit c -> addressWordP <|> phoneP <|> wordP
             | otherwise -> wordP
         Nothing -> fail ""
     formattedP :: Char -> Format -> Parser Markdown
@@ -462,9 +469,11 @@ markdownP = joinMarkdown <$> A.many' fragmentP
       Right lnk@(ACL _ cLink) -> case cLink of
         CLShort _ -> pure $ simplexUriFormat (Just t) lnk
         CLFull _ -> fail "full SimpleX link in hyperlink"
-      Left _ -> case parseUri $ encodeUtf8 l of
-        Right _ -> pure $ HyperLink (Just t) l
-        Left e -> fail $ "not uri: " <> T.unpack e
+      Left _ -> case hyperlinkAddress t l of
+        Right r -> pure $ uncurry ChainAddressLink r
+        Left _ -> case parseUri $ encodeUtf8 l of
+          Right _ -> pure $ HyperLink (Just t) l
+          Left e -> fail $ "not uri: " <> T.unpack e
     enclosedP open close stop = A.char open *> A.takeWhile1 (\c -> c /= close && not (stop c)) <* A.char close
     colorP =
       A.anyChar >>= \case
@@ -492,8 +501,12 @@ markdownP = joinMarkdown <$> A.many' fragmentP
       | otherwise = optional ((<>) <$> phoneSep <*> A.takeWhile1 isDigit) >>= maybe (pure s) (segmentsP . (s <>))
     conc4 s1 s2 s3 s4 = s1 <> s2 <> s3 <> s4
     phoneSep = " " <|> "-" <|> "." <|> ""
+    addressWordP :: Parser Markdown
+    addressWordP = wordMD <$> mfilter (\s -> bareAddressForm $ encodeUtf8 $ T.dropEnd (linkEndLength s) s) wordTextP
     wordP :: Parser Markdown
-    wordP = wordMD . T.concat <$> A.many' (A.takeWhile1 (\c -> c /= ' ' && c /= '\n' && c /= '\\') <|> (notP escapeP *> A.string "\\"))
+    wordP = wordMD <$> wordTextP
+    wordTextP :: Parser Text
+    wordTextP = T.concat <$> A.many' (A.takeWhile1 (\c -> c /= ' ' && c /= '\n' && c /= '\\') <|> (notP escapeP *> A.string "\\"))
     wordMD :: Text -> Markdown
     wordMD s = fromMaybe (unmarked s) $ linkMD s <|> linkAfterParen
       where
@@ -515,6 +528,7 @@ markdownP = joinMarkdown <$> A.many' fragmentP
           Left _ -> case parseUri $ encodeUtf8 s' of
             Right _ -> Just $ res $ markdown Uri s'
             Left _ -> Nothing
+      | Right a <- strDecode (encodeUtf8 s') = Just $ res $ markdown (ChainAddressLink Nothing a) s'
       | isDomain s' = Just $ res $ markdown Uri s'
       | isEmail s' = Just $ res $ markdown Email s'
       | otherwise = Nothing
@@ -982,6 +996,7 @@ markdownText (FormattedText f_ t) = case f_ of
     HyperLink {} -> t
     SimplexLink {} -> t
     SimplexName {} -> t
+    ChainAddressLink {} -> t
     Mention _ -> t
     Command _ -> t
     Email -> t

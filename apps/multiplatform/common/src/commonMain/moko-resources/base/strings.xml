@@ -115,6 +115,17 @@
   <string name="simplex_link_channel">SimpleX channel link</string>
   <string name="simplex_link_relay">SimpleX relay address</string>
   <string name="simplex_link_connection">via %1$s</string>
+  <string name="chain_address_unknown_chain">unknown chain</string>
+  <string name="chain_address_unknown_token">unknown token</string>
+  <string name="chain_address_unknown_chain_and_token">unknown chain and token</string>
+  <string name="chain_address_not_signed">not signed</string>
+  <string name="open_in_wallet_question">Open in wallet?</string>
+  <string name="chain_address_alert_text">%1$s: %2$s</string>
+  <string name="chain_address_alert_text_forwarded">%1$s forwarded: %2$s</string>
+  <string name="chain_address_to_address">%1$s to %2$s</string>
+  <string name="no_wallet_app">No wallet app</string>
+  <string name="no_wallet_app_desc">Copy the link or scan the QR code with a wallet.</string>
+  <string name="qr_code">QR code</string>
   <string name="simplex_link_mode">SimpleX links</string>
   <string name="simplex_link_mode_description">Description</string>
   <string name="simplex_link_mode_full">Full link</string>

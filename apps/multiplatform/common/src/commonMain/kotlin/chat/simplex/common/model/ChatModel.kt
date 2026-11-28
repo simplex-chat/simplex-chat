@@ -3671,6 +3671,12 @@ data class ChatItem (
 
   val localNote: Boolean = chatDir is CIDirection.LocalSnd || chatDir is CIDirection.LocalRcv
 
+  val messageSigned: Boolean get() =
+    when (chatDir) {
+      is CIDirection.GroupSnd, is CIDirection.GroupRcv, is CIDirection.ChannelRcv -> meta.msgVerified?.verified == true
+      else -> true
+    }
+
   val isDeletedContent: Boolean get() =
     when (content) {
       is CIContent.SndDeleted -> true
@@ -5409,6 +5415,7 @@ sealed class Format {
       "(${String.format(generalGetString(MR.strings.simplex_link_connection), smpHosts.firstOrNull() ?: "?")})"
   }
   @Serializable @SerialName("simplexName") class SimplexName(val nameInfo: SimplexNameInfo): Format()
+  @Serializable @SerialName("chainAddressLink") class ChainAddressLink(val showText: String?, val chainAddress: ChainAddress): Format()
   @Serializable @SerialName("command") class Command(val commandStr: String): Format()
   @Serializable @SerialName("mention") class Mention(val memberName: String): Format()
   @Serializable @SerialName("modal") class Modal(val modalName: String, val text: String): Format() {
@@ -5434,6 +5441,7 @@ sealed class Format {
     is HyperLink -> linkStyle
     is SimplexLink -> linkStyle
     is SimplexName -> linkStyle
+    is ChainAddressLink -> linkStyle
     is Command -> SpanStyle(color = MaterialTheme.colors.primary, fontFamily = FontFamily.Monospace)
     is Mention -> SpanStyle(fontWeight = FontWeight.Medium)
     is Email -> linkStyle
@@ -5449,6 +5457,54 @@ sealed class Format {
   companion object {
     val linkStyle @Composable get() = SpanStyle(color = MaterialTheme.colors.primary, textDecoration = TextDecoration.Underline)
   }
+}
+
+@Serializable
+class ChainAddress(val currency: ChainCurrency, val address: String, val walletUri: String) {
+  val shortAddress: String get() = if (address.length > 10) "${address.take(6)}…\u2060${address.takeLast(4)}" else address
+
+  fun linkText(showText: String?, messageSigned: Boolean): ChainLinkText {
+    val notSigned = if (messageSigned) emptyList() else listOf(generalGetString(MR.strings.chain_address_not_signed))
+    fun link(sign: String?, text: String, chainName: String? = null, toAddress: Boolean) =
+      ChainLinkText(showText, sign, text, chainName, warning = false, toAddress = if (toAddress) shortAddress else null)
+    fun warning(reasons: List<String>) =
+      ChainLinkText(showText, "⚠", "$shortAddress (${reasons.joinToString(", ")})", chainName = null, warning = true, toAddress = null)
+    val c = currency
+    if (!messageSigned && c !is ChainCurrency.Unknown) return warning(notSigned)
+    return when (c) {
+      is ChainCurrency.Bitcoin -> link("₿", c.amount ?: shortAddress, toAddress = c.amount != null)
+      is ChainCurrency.Lightning -> link("ϟ", c.amount ?: shortAddress, toAddress = false)
+      is ChainCurrency.Ticker -> link(null, "${c.ticker}\u00A0${c.amount ?: shortAddress}", c.chainName, toAddress = c.amount != null)
+      is ChainCurrency.Unknown -> warning(listOf(c.unknown.text) + notSigned)
+    }
+  }
+}
+
+@Serializable
+sealed class ChainCurrency {
+  @Serializable @SerialName("bitcoin") class Bitcoin(val amount: String?): ChainCurrency()
+  @Serializable @SerialName("lightning") class Lightning(val amount: String?): ChainCurrency()
+  @Serializable @SerialName("ticker") class Ticker(val ticker: String, val chainName: String?, val amount: String?): ChainCurrency()
+  @Serializable @SerialName("unknown") class Unknown(val unknown: UnknownCurrency): ChainCurrency()
+}
+
+@Serializable
+enum class UnknownCurrency {
+  @SerialName("chain") Chain,
+  @SerialName("token") Token,
+  @SerialName("chainAndToken") ChainAndToken;
+
+  val text: String get() = generalGetString(
+    when (this) {
+      Chain -> MR.strings.chain_address_unknown_chain
+      Token -> MR.strings.chain_address_unknown_token
+      ChainAndToken -> MR.strings.chain_address_unknown_chain_and_token
+    }
+  )
+}
+
+class ChainLinkText(val label: String?, val sign: String?, val text: String, val chainName: String?, val warning: Boolean, val toAddress: String?) {
+  val shown: String get() = listOfNotNull(label, if (sign == null) text else "$sign\u00A0$text", chainName?.let { "($it)" }).joinToString(" ")
 }
 
 @Serializable

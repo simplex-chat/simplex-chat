@@ -87,6 +87,7 @@ chatDirectTests = do
     it "repeat AUTH errors disable contact" testRepeatAuthErrorsDisableContact
     it "should send multiline message" testMultilineMessage
     it "send large message" testLargeMessage
+    it "chain addresses in a received message" testChainAddressesMessage
     it "initial chat pagination" testChatPaginationInitial
   describe "batch send messages" $ do
     it "send multiple messages api" testSendMulti
@@ -1131,6 +1132,57 @@ testLargeMessage =
       alice <## "user profile is changed to alice2 (your 1 contacts are notified)"
       bob <## "contact alice changed to alice2"
       bob <## "use @alice2 <message> to send messages"
+
+testChainAddressesMessage :: HasCallStack => TestParams -> IO ()
+testChainAddressesMessage ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps testOpts {markRead = False} "bob" bobProfile $ \bob -> do
+      connectUsers alice bob
+      alice #> ("@bob " <> addressMsg)
+      bob <# ("alice> " <> addressMsg)
+      apiFixture "chain-addresses/links" bob [] FixtureRequests {frMarkdown = addressTexts, frUris = [], frCommands = ["/_get chat @2 count=1"]}
+      withCCTransaction alice (\db -> DB.query db "SELECT item_status FROM chat_items WHERE item_text = ?" (Only addressMsg)) `shouldEventuallyReturn` [Only ("snd_rcvd ok complete" :: String)]
+      apiFixture "chain-addresses/sent" alice [] FixtureRequests {frMarkdown = [], frUris = [], frCommands = ["/_get chat @2 count=1"]}
+      createCCNoteFolder alice
+      alice >* ("donate " <> btcAddr)
+      apiFixture "chain-addresses/note" alice [] FixtureRequests {frMarkdown = [], frUris = [], frCommands = ["/_get chat *1 count=1"]}
+  where
+    addressMsg = "donate " <> btcAddr <> ", [Donate](monero:" <> xmrAddr <> ") or " <> lnInvoice
+    addressTexts =
+      [ btcAddr,
+        "bitcoin:" <> btcAddr <> "?amount=0.001&label=SimpleX&message=Thank%20you",
+        "[Donate](monero:" <> xmrAddr <> ")",
+        "[Dinner](ethereum:0xc2132D05D31c914a87C6611C10748AEb04B58e8F@137/transfer?address=" <> ethAddr <> "&uint256=10000000)",
+        "[Donate](ethereum:" <> ethAddr <> "@99999)",
+        lnInvoice,
+        "lightning:lno1pgx9getnwss8vetrw3hhyuckyypwa3eyt44h6txtxquqh7lz5djge4afgfjn7k4rgrkuag0jsd5xvxg",
+        "lightning:LNURL1DP68GURN8GHJ7UM9WFMXJCM99E3K7MF0V9CXJ0M385EKVCENXC6R2C35XVUKXEFCV5MKVV34X5EKZD3EV56NYD3HXQURZEPEXEJXXEPNXSCRVWFNV9NXZCN9XQ6XYEFHVGCXXCMYXYMNSERXFQ5FNS",
+        "ethereum:0xd7047fe3eecb2f2ff78d839dd927be27bc12c86a",
+        "ethereum:0xdAC17F958D2ee523a2206206994597C13D831ec7@1/transfer?address=0xD7047Fe3Eecb2f2FF78d839dD927Be27Bc12c86a&uint256=5000000",
+        "ethereum:0xc2132D05D31c914a87C6611C10748AEb04B58e8F@137/transfer?address=" <> ethAddr <> "&uint256=10000000",
+        "ethereum:0x1111111111111111111111111111111111111111@137/transfer?address=" <> ethAddr <> "&uint256=10000000",
+        "ethereum:0xdAC17F958D2ee523a2206206994597C13D831ec7@99999/transfer?address=" <> ethAddr <> "&uint256=10000000",
+        "ethereum:" <> ethAddr <> "@100?value=1e16",
+        "solana:7JCf5m3TiHmYKZVr6jCu1KeZVtb9Y1jRMQDU69p5ARnu?amount=0.5",
+        "solana:7JCf5m3TiHmYKZVr6jCu1KeZVtb9Y1jRMQDU69p5ARnu?amount=10&spl-token=EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+        "flux:t1fwjQW5gpFhDqXNhxqDWyF9j9WeKvVS5Jg?amount=5&message=Thanks",
+        "zel:t1fwjQW5gpFhDqXNhxqDWyF9j9WeKvVS5Jg?amount=5",
+        "za19w5tpzrsd8x250l6h8qdxv70kg4an9ywljf4cqs5qk2hkw5ej5jw0zc0htg7qxws8vgm6xs3pj3",
+        "Donations: " <> btcAddr <> ". Cheers",
+        "Suggested donation: bitcoin:" <> btcAddr <> "?amount=0.001&label=SimpleX Thank you!",
+        "For the coffee: " <> lnInvoice <> " thanks!",
+        "If you want to support the project: [Donate](monero:" <> xmrAddr <> "). Cheers",
+        "Or this exact amount: monero:" <> xmrAddr <> "?tx_amount=0.25&recipient_name=SimpleX",
+        "On Ethereum: " <> ethAddr,
+        "Cheaper on Arbitrum: ethereum:" <> ethAddr <> "@42161?value=1e16",
+        "Other networks: t1fwjQW5gpFhDqXNhxqDWyF9j9WeKvVS5Jg, ltc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66snwfdv, D99pV4n9TrPxBPCkQGx4w4SMSa6QjRBxPf, qq6c8vfvxqrk6rhdysgvkhqc24sggkfsx5nqvdlqcg, solana:7JCf5m3TiHmYKZVr6jCu1KeZVtb9Y1jRMQDU69p5ARnu",
+        "[" <> btcAddr <> "](bitcoin:" <> btcAddr <> ")",
+        "<bitcoin:" <> btcAddr <> "?amount=0.001&label=SimpleX>"
+      ]
+    btcAddr = "bc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66505d4u"
+    ethAddr = "0xD7047Fe3Eecb2f2FF78d839dD927Be27Bc12c86a"
+    xmrAddr = "8A3ZWAXrrQddvnT1fPrtbK86ZAoM4nai3Gjg1LEow3JWcryJtovMnHYZnxTJpCLmAbfWbnPMeTzPmMBjAhyd4xoM89hYq1c"
+    lnInvoice = "lnbc2500u1pvjluezsp5zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zygspp5qqqsyqcyq5rqwzqfqqqsyqcyq5rqwzqfqqqsyqcyq5rqwzqfqypqdq5xysxxatsyp3k7enxv4jsxqzpu9qrsgquk0rl77nj30yxdy8j9vdx85fkpmdla2087ne0xh8nhedh8w27kyke0lp53ut353s06fv3qfegext0eh0ymjpf39tuven09sam30g4vgpfna3rh"
 
 testSendMulti :: HasCallStack => TestParams -> IO ()
 testSendMulti =
@@ -3718,6 +3770,9 @@ testLinkContentFilter =
 
       alice #> "@bob visit example.com for info"
       bob <# "alice> visit example.com for info"
+
+      bob #> "@alice donate bc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66505d4u"
+      alice <# "bob> donate bc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66505d4u"
 
       alice #> "@bob hello, no links here"
       bob <# "alice> hello, no links here"

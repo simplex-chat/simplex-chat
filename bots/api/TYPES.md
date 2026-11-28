@@ -42,6 +42,8 @@ This file is generated automatically.
 - [CIReactionCount](#cireactioncount)
 - [CIStatus](#cistatus)
 - [CITimed](#citimed)
+- [ChainAddress](#chainaddress)
+- [ChainCurrency](#chaincurrency)
 - [ChatBotCommand](#chatbotcommand)
 - [ChatDeleteMode](#chatdeletemode)
 - [ChatError](#chaterror)
@@ -248,6 +250,7 @@ This file is generated automatically.
 - [UIColors](#uicolors)
 - [UIThemeEntityOverride](#uithemeentityoverride)
 - [UIThemeEntityOverrides](#uithemeentityoverrides)
+- [UnknownCurrency](#unknowncurrency)
 - [UpdatedMessage](#updatedmessage)
 - [User](#user)
 - [UserChatRelay](#userchatrelay)
@@ -1168,6 +1171,45 @@ Invalid:
 **Record type**:
 - ttl: int
 - deleteAt: UTCTime?
+
+
+---
+
+## ChainAddress
+
+Chain address or URI in a message text. currency: what the link text names, resolved from the core's tables of chains and tokens. walletUri: the URI to open in a wallet.
+
+**Record type**:
+- currency: [ChainCurrency](#chaincurrency)
+- address: string
+- walletUri: string
+
+
+---
+
+## ChainCurrency
+
+amount: in BTC for bitcoin and lightning, in units of the ticker for ticker. chainName: the EVM chain other than Ethereum, or Solana for a Solana token. unknown: the chain or token is outside the core's tables; the amount is omitted.
+
+**Discriminated union type**:
+
+Bitcoin:
+- type: "bitcoin"
+- amount: string?
+
+Lightning:
+- type: "lightning"
+- amount: string?
+
+Ticker:
+- type: "ticker"
+- ticker: string
+- chainName: string?
+- amount: string?
+
+Unknown:
+- type: "unknown"
+- unknown: [UnknownCurrency](#unknowncurrency)
 
 
 ---
@@ -2552,6 +2594,11 @@ SimplexLink:
 SimplexName:
 - type: "simplexName"
 - nameInfo: [SimplexNameInfo](#simplexnameinfo)
+
+ChainAddressLink:
+- type: "chainAddressLink"
+- showText: string?
+- chainAddress: [ChainAddress](#chainaddress)
 
 Command:
 - type: "command"
@@ -5204,6 +5251,16 @@ Handshake:
 - light: [UIThemeEntityOverride](#uithemeentityoverride)?
 - dark: [UIThemeEntityOverride](#uithemeentityoverride)?
 - chatLayout: [ChatLayout](#chatlayout)?
+
+
+---
+
+## UnknownCurrency
+
+**Enum type**:
+- "chain"
+- "token"
+- "chainAndToken"
 
 
 ---

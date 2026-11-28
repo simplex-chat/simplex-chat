@@ -192,6 +192,13 @@ private val roundnessScenes = listOf(
   SnapshotScene("Roundness.TerminalDefects", roundness = 0.3f) { PreviewGroupChatLayoutTerminalDefects() },
 )
 
+private val chainAddressScenes = listOf(
+  SnapshotScene("ChainAddresses.Messages", chatItemFontScales) { ChainAddressMessages() },
+  SnapshotScene("ChainAddresses.MessagesTerminal", chatItemFontScales) { CompositionLocalProvider(LocalTerminalLayout provides true) { ChainAddressMessages() } },
+  SnapshotScene("ChainAddresses.OpenInWalletAlert") { OpenInWalletAlertPreview() },
+  SnapshotScene("ChainAddresses.NoWalletAlert") { NoWalletAlertPreview() },
+)
+
 private val previewsCallingCore = listOf(
   "AddChannelView.PreviewAddChannelView",
   "AddGroupView.PreviewAddGroupLayout",
@@ -242,7 +249,7 @@ class SnapshotTest {
       for (base in listOf(DefaultTheme.LIGHT, DefaultTheme.DARK)) {
         ThemeManager.applyTheme(base.themeName)
         val themeName = base.name.lowercase()
-        for (scene in previewScenes + avatarScenes + roundnessScenes) {
+        for (scene in previewScenes + avatarScenes + roundnessScenes + chainAddressScenes) {
           appPrefs.chatItemRoundness.set(scene.roundness)
           for (scale in scene.fontScales) {
             appPrefs.fontScale.set(scale)

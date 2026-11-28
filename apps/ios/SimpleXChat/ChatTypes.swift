@@ -4189,6 +4189,13 @@ public struct ChatItem: Identifiable, Decodable, Hashable {
         }
     }
 
+    public var messageSigned: Bool {
+        switch chatDir {
+        case .groupSnd, .groupRcv, .channelRcv: meta.msgVerified?.verified == true
+        default: true
+        }
+    }
+
     public func memberToModerate(_ chatInfo: ChatInfo) -> (GroupInfo, GroupMember?)? {
         switch (chatInfo, chatDir) {
         case let (.group(groupInfo, _), .groupRcv(groupMember)):
@@ -6043,6 +6050,7 @@ public enum Format: Decodable, Equatable, Hashable {
     case hyperLink(showText: String?, linkUri: String)
     case simplexLink(showText: String?, linkType: SimplexLinkType, simplexUri: String, smpHosts: [String])
     case simplexName(nameInfo: SimplexNameInfo)
+    case chainAddressLink(showText: String?, chainAddress: ChainAddress)
     case command(commandStr: String)
     case mention(memberName: String)
     case modal(modalName: String, text: String)
@@ -6062,6 +6070,67 @@ public enum Format: Decodable, Equatable, Hashable {
             default: return false
             }
         }
+    }
+}
+
+public struct ChainAddress: Decodable, Hashable {
+    public var currency: ChainCurrency
+    public var address: String
+    public var walletUri: String
+
+    var shortAddress: String {
+        address.count > 10 ? "\(address.prefix(6))…\u{2060}\(address.suffix(4))" : address
+    }
+
+    public func linkText(_ showText: String?, messageSigned: Bool) -> ChainLinkText {
+        let notSigned = messageSigned ? [] : [NSLocalizedString("not signed", comment: "chain address link")]
+        func link(_ sign: String?, _ text: String, chainName: String? = nil, toAddress: Bool) -> ChainLinkText {
+            ChainLinkText(label: showText, sign: sign, text: text, chainName: chainName, warning: false, toAddress: toAddress ? shortAddress : nil)
+        }
+        func warning(_ reasons: [String]) -> ChainLinkText {
+            ChainLinkText(label: showText, sign: "⚠\u{FE0E}", text: "\(shortAddress) (\(reasons.joined(separator: ", ")))", chainName: nil, warning: true, toAddress: nil)
+        }
+        switch currency {
+        case let .unknown(unknown): return warning([unknown.text] + notSigned)
+        case _ where !messageSigned: return warning(notSigned)
+        case let .bitcoin(amount): return link("₿", amount ?? shortAddress, toAddress: amount != nil)
+        case let .lightning(amount): return link("ϟ", amount ?? shortAddress, toAddress: false)
+        case let .ticker(ticker, chainName, amount): return link(nil, "\(ticker)\u{00A0}\(amount ?? shortAddress)", chainName: chainName, toAddress: amount != nil)
+        }
+    }
+}
+
+public enum ChainCurrency: Decodable, Hashable {
+    case bitcoin(amount: String?)
+    case lightning(amount: String?)
+    case ticker(ticker: String, chainName: String?, amount: String?)
+    case unknown(unknown: UnknownCurrency)
+}
+
+public enum UnknownCurrency: String, Decodable, Hashable {
+    case chain
+    case token
+    case chainAndToken
+
+    var text: String {
+        switch self {
+        case .chain: NSLocalizedString("unknown chain", comment: "chain address link")
+        case .token: NSLocalizedString("unknown token", comment: "chain address link")
+        case .chainAndToken: NSLocalizedString("unknown chain and token", comment: "chain address link")
+        }
+    }
+}
+
+public struct ChainLinkText {
+    public var label: String?
+    public var sign: String?
+    public var text: String
+    public var chainName: String?
+    public var warning: Bool
+    public var toAddress: String?
+
+    public var shown: String {
+        [label, (sign.map { "\($0)\u{00A0}" } ?? "") + text, chainName.map { "(\($0))" }].compactMap { $0 }.joined(separator: " ")
     }
 }
 

@@ -39,6 +39,7 @@ struct MsgContentView: View {
     var meta: CIMeta? = nil
     var mentions: [String: CIMention]? = nil
     var userMemberId: String? = nil
+    var chainAddressSender: ChainAddressSender? = nil
     var rightToLeft = false
     var prefix: NSAttributedString? = nil
     var stripLink: String? = nil
@@ -136,6 +137,7 @@ struct MsgContentView: View {
             sender: index == 0 ? sender : nil,
             mentions: mentions,
             userMemberId: userMemberId,
+            chainAddressSender: chainAddressSender,
             showSecrets: showSecrets,
             commands: chat.chatInfo.useCommands && chat.chatInfo.sndReady,
             backgroundColor: containerBackground,
@@ -177,6 +179,7 @@ struct MsgContentView: View {
             sender: sender,
             mentions: mentions,
             userMemberId: userMemberId,
+            chainAddressSender: chainAddressSender,
             showSecrets: showSecrets,
             commands: chat.chatInfo.useCommands && chat.chatInfo.sndReady,
             backgroundColor: containerBackground,
@@ -322,6 +325,8 @@ private func handleTextTaps(
             if index >= range.location && index < range.location + range.length {
                 if attrs[nameAttrKey] is SimplexNameInfo {
                     planAndConnect(s.attributedSubstring(from: range).string, theme: AppTheme.shared, dismiss: false)
+                } else if let tap = attrs[chainAddressAttrKey] as? ChainAddressTap {
+                    getTopViewController()?.present(openWalletAlert(tap), animated: true)
                 } else if let url = attrs[linkAttrKey] as? String {
                     linkURL = url
                     browser = attrs[webLinkAttrKey] != nil
@@ -372,8 +377,80 @@ private let secretAttrKey = NSAttributedString.Key("chat.simplex.app.secret")
 private let commandAttrKey = NSAttributedString.Key("chat.simplex.app.command")
 private let nameAttrKey = NSAttributedString.Key("chat.simplex.app.name")
 private let modalAttrKey = NSAttributedString.Key("chat.simplex.app.modal")
+let chainAddressAttrKey = NSAttributedString.Key("chat.simplex.app.chainAddress")
 
 typealias MsgTextResult = (string: NSMutableAttributedString, hasSecrets: Bool, handleTaps: Bool)
+
+struct ChainAddressSender {
+    var name: String?
+    var forwarded: Bool
+    var messageSigned: Bool
+}
+
+func chainAddressSender(_ ci: ChatItem, _ chatInfo: ChatInfo) -> ChainAddressSender {
+    let name: String? = switch ci.chatDir {
+    case .directRcv, .channelRcv: chatInfo.displayName
+    case let .groupRcv(groupMember): groupMember.displayName
+    case .directSnd, .groupSnd, .localSnd, .localRcv: nil
+    }
+    return ChainAddressSender(name: name, forwarded: ci.meta.itemForwarded != nil, messageSigned: ci.messageSigned)
+}
+
+struct ChainAddressTap {
+    var sender: ChainAddressSender
+    var showText: String?
+    var chainAddress: ChainAddress
+}
+
+func openWalletAlert(_ tap: ChainAddressTap) -> UIAlertController {
+    let link = tap.chainAddress.linkText(tap.showText, messageSigned: tap.sender.messageSigned)
+    let text = link.toAddress.map { String.localizedStringWithFormat(NSLocalizedString("%@ to %@", comment: "alert message: chain address link text, shortened address"), link.shown, $0) } ?? link.shown
+    let message = if let name = tap.sender.name {
+        String.localizedStringWithFormat(
+            tap.sender.forwarded
+                ? NSLocalizedString("%@ forwarded: %@", comment: "alert message: sender name, chain address")
+                : NSLocalizedString("%@: %@", comment: "alert message: sender name, chain address"),
+            name,
+            text
+        )
+    } else {
+        text
+    }
+    return alertController(
+        NSLocalizedString("Open in wallet?", comment: "alert title"),
+        message: message,
+        actions: [
+            cancelAlertAction,
+            UIAlertAction(title: NSLocalizedString("Open", comment: "alert button"), style: .default) { _ in openWallet(tap.chainAddress) }
+        ]
+    )
+}
+
+private func openWallet(_ chainAddress: ChainAddress) {
+    guard let url = URL(string: chainAddress.walletUri) else {
+        getTopViewController()?.present(noWalletAlert(chainAddress), animated: true)
+        return
+    }
+    UIApplication.shared.open(url) { opened in
+        if !opened { getTopViewController()?.present(noWalletAlert(chainAddress), animated: true) }
+    }
+}
+
+func noWalletAlert(_ chainAddress: ChainAddress) -> UIAlertController {
+    alertController(
+        NSLocalizedString("No wallet app", comment: "alert title"),
+        message: NSLocalizedString("Copy the link or scan the QR code with a wallet.", comment: "alert message"),
+        actions: [
+            UIAlertAction(title: NSLocalizedString("Copy", comment: "alert button"), style: .default) { _ in
+                UIPasteboard.general.string = chainAddress.walletUri
+            },
+            UIAlertAction(title: NSLocalizedString("QR code", comment: "alert button"), style: .default) { _ in
+                getTopViewController()?.present(UIHostingController(rootView: QRCode(uri: chainAddress.walletUri, withLogo: false).padding()), animated: true)
+            },
+            cancelAlertAction
+        ]
+    )
+}
 
 // Reusable profile bio/description header: renders the teaser and opens the full
 // description in a sheet when the "Read more" (Format.modal) link is tapped.
@@ -510,6 +587,7 @@ func messageText(
     preview: Bool = false,
     mentions: [String: CIMention]?,
     userMemberId: String?,
+    chainAddressSender: ChainAddressSender? = nil,
     showSecrets: Set<Int>?,
     commands: Bool = false,
     backgroundColor: UIColor,
@@ -589,6 +667,7 @@ func messageText(
         var snippet: UIFont?
         var small: UIFont?
         var mention: UIFont?
+        var sign: UIFont?
         for ft in fts {
             var t = ft.text
             var attrs = plain
@@ -695,6 +774,37 @@ func messageText(
                 if !preview {
                     attrs[nameAttrKey] = nameInfo
                     handleTaps = true
+                }
+            case let .chainAddressLink(showText, chainAddress):
+                if let chainAddressSender {
+                    let linkText = chainAddress.linkText(showText, messageSigned: chainAddressSender.messageSigned)
+                    attrs = linkAttrs()
+                    if linkText.warning {
+                        attrs[.foregroundColor] = UIColor.systemOrange
+                    }
+                    if !preview {
+                        attrs[chainAddressAttrKey] = ChainAddressTap(sender: chainAddressSender, showText: showText, chainAddress: chainAddress)
+                        handleTaps = true
+                    }
+                    if let label = linkText.label {
+                        res.append(NSAttributedString(string: label + " ", attributes: attrs))
+                    }
+                    if let s = linkText.sign {
+                        sign = sign ?? UIFont(descriptor: descr.addingAttributes([.traits: [UIFontDescriptor.TraitKey.weight: UIFont.Weight.semibold]]), size: descr.pointSize)
+                        var signAttrs = attrs
+                        signAttrs[.font] = sign
+                        if linkText.label == nil {
+                            signAttrs[.underlineStyle] = nil
+                        }
+                        res.append(NSAttributedString(string: s + "\u{00A0}", attributes: signAttrs))
+                    }
+                    t = linkText.text
+                    if let chainName = linkText.chainName {
+                        res.append(NSAttributedString(string: t, attributes: attrs))
+                        italic = italic ?? UIFont(descriptor: descr.withSymbolicTraits(.traitItalic) ?? descr, size: descr.pointSize)
+                        attrs[.font] = italic
+                        t = " (\(chainName))"
+                    }
                 }
             case .email:
                 attrs = linkAttrs()

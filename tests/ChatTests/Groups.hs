@@ -88,6 +88,7 @@ chatGroupTests = do
     it "mark multiple messages as read" testMarkReadGroup
     it "initial chat pagination" testChatPaginationInitial
     it "send large message" testGroupLargeMessage
+    it "chain addresses in group messages are signed" testGroupChainAddressSigned
     it "create group with incognito membership" testNewGroupIncognito
     it "create and join group with 4 members" testGroup2
     it "create and delete group" testGroupDelete
@@ -449,6 +450,7 @@ chatGroupTests = do
         it "should sign member message and reuse signature on edit" testChannelMemberMessageSign
         it "should reject unsigned update of a signed item" testChannelMemberUpdateEnforcement
         it "should sign as-channel post and keep it displayed as the channel" testChannelAsGroupSign
+        it "should sign as-channel post with a chain address" testChannelChainAddressSign
         it "should reject a non-owner posting as the channel" testChannelAsGroupSpoof
         it "should sign self-delete of a signed item" testChannelMemberSelfDeleteSign
         it "should reject unsigned delete of a signed item" testChannelMemberDeleteEnforcement
@@ -660,6 +662,29 @@ testGroupLargeMessage =
       alice <## "profile image updated"
       bob <## "alice updated group #team: (signed)"
       bob <## "profile image updated"
+
+testGroupChainAddressSigned :: HasCallStack => TestParams -> IO ()
+testGroupChainAddressSigned ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps testOpts {markRead = False} "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath -> do
+        createGroup3 "team" alice bob cath
+        alice `send` "#team donate bc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66505d4u"
+        alice <# "#team donate bc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66505d4u (signed)"
+        [bob, cath] *<# "#team alice> donate bc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66505d4u (signed)"
+        alice #> "#team thanks"
+        [bob, cath] *<# "#team alice> thanks"
+        withCCTransaction alice (\db -> DB.query_ db "SELECT item_status FROM chat_items WHERE item_text LIKE '%donate%' OR item_text LIKE '%thanks%' ORDER BY chat_item_id") `shouldEventuallyReturn` [Only ("snd_rcvd ok complete" :: String), Only "snd_rcvd ok complete"]
+        thanksId <- lastItemId alice
+        void $ withCCTransaction bob $ \db -> DB.execute_ db "UPDATE group_members SET member_pub_key = NULL WHERE local_display_name = 'alice'"
+        alice ##> ("/_update item #1 " <> thanksId <> " text thanks, or ltc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66snwfdv")
+        alice <# "#team [edited] thanks, or ltc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66snwfdv (signed)"
+        bob <# "#team alice> [edited] thanks, or ltc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66snwfdv (signed, no key to verify)"
+        cath <# "#team alice> [edited] thanks, or ltc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66snwfdv (signed)"
+        alice #$> ("/_get chat #1 count=1", chat, [(1, "thanks, or ltc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66snwfdv (signed)")])
+        cath #$> ("/_get chat #1 count=1", chat, [(0, "thanks, or ltc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66snwfdv (signed)")])
+        apiFixture "chain-addresses/group" bob [] FixtureRequests {frMarkdown = [], frUris = [], frCommands = ["/_get chat #1 count=2"]}
+        apiFixture "chain-addresses/group-sent" alice [] FixtureRequests {frMarkdown = [], frUris = [], frCommands = ["/_get chat #1 count=2"]}
 
 testNewGroupIncognito :: HasCallStack => TestParams -> IO ()
 testNewGroupIncognito =
@@ -15143,6 +15168,19 @@ testChannelAsGroupSign ps =
             [cath, dan, eve] *<# "#team> plain channel post [>>]"
             alice #$> ("/_get chat #1 count=100 search=plain channel post", chat, [(1, "plain channel post")])
             cath #$> ("/_get chat #1 count=100 search=plain channel post", chat, [(0, "plain channel post")])
+
+testChannelChainAddressSign :: HasCallStack => TestParams -> IO ()
+testChannelChainAddressSign ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChatOpts ps testOpts {markRead = False} "cath" cathProfile $ \cath -> do
+        (shortLink, fullLink) <- prepareChannel1Relay "team" alice bob
+        memberJoinChannel "team" [bob] [alice] shortLink fullLink cath
+        alice ##> "/_send #1(as_group=on) text donate bc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66505d4u"
+        alice <# "#team donate bc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66505d4u (signed)"
+        bob <# "#team> donate bc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66505d4u (signed)"
+        cath <# "#team> donate bc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66505d4u (signed) [>>]"
+        apiFixture "chain-addresses/channel" cath [] FixtureRequests {frMarkdown = [], frUris = [], frCommands = ["/_get chat #1 count=1"]}
 
 testChannelSignMessagesRequired :: HasCallStack => TestParams -> IO ()
 testChannelSignMessagesRequired ps =

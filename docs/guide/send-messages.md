@@ -31,6 +31,14 @@ You can format messages with markdown. The formats are listed in the [app
 settings](./app-settings.md#opening-the-app-settings), in "Help & support" >
 "How to use it".
 
+Payment addresses and links in messages are shown as links, such as "Dinner
+USDT 10 (Polygon)": the text of a `[text](link)` link, when it has one, then ₿
+for Bitcoin, ϟ for Lightning, or the ticker of other networks and tokens, such
+as XMR or USDT, then the amount or a shortened address, and for some chains the
+chain name in parentheses. A link to an unknown chain or token, and in groups an
+address in a message without a verified signature, is shown in orange with ⚠.
+Tap a link, then "Open", to open it in a wallet app.
+
 ### Sending images and files
 
 - Tap 📎 (paperclip) button on the left of the message entry box.

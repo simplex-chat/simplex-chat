@@ -697,6 +697,7 @@ private func previewScenes() -> [SnapshotScene] {
         SnapshotScene(CIMetaView_Previews.self, allSizes: true),
         SnapshotScene(CIVoiceView_Previews.self, allSizes: true),
         SnapshotScene(ClassicAvatars_Previews.self, allSizes: true),
+        SnapshotScene(ClassicChainAddresses_Previews.self, allSizes: true),
         SnapshotScene(ClassicDeleted_Previews.self),
         SnapshotScene(ClassicOverviewChannel_Previews.self),
         SnapshotScene(ClassicOverviewDirect_Previews.self),
@@ -772,11 +773,13 @@ private func previewScenes() -> [SnapshotScene] {
         SnapshotScene(NewChatMenuButton_Previews.self),
         SnapshotScene(NewFeaturesView_Previews.self),
         SnapshotScene(NewServerView_Previews.self),
+        SnapshotScene(NoWalletAlert_Previews.self, alert: true),
         SnapshotScene(NotificationsModeView_Previews.self, device: true),
         SnapshotScene(NotificationsView_Previews.self),
         SnapshotScene(OnboardingConditionsView_Previews.self),
         SnapshotScene(OnboardingStepsView_Previews.self),
         SnapshotScene(OneHandUICard_Previews.self),
+        SnapshotScene(OpenInWalletAlert_Previews.self, alert: true),
         SnapshotScene(OperatorView_Previews.self),
         SnapshotScene(PasscodeEntry_Previews.self),
         SnapshotScene(PasscodeViewView_Previews.self),
@@ -805,6 +808,7 @@ private func previewScenes() -> [SnapshotScene] {
         SnapshotScene(SupportSimpleXBanner_Previews.self),
         SnapshotScene(TagListView_Previews.self),
         SnapshotScene(TerminalAvatars_Previews.self, allSizes: true),
+        SnapshotScene(TerminalChainAddresses_Previews.self, allSizes: true),
         SnapshotScene(TerminalDeleted_Previews.self),
         SnapshotScene(TerminalDeletedRoundness_Previews.self),
         SnapshotScene(TerminalMedia_Previews.self),
@@ -1027,6 +1031,40 @@ struct ClassicOverviewChannel_Previews: PreviewProvider {
 struct ClassicParagraphs_Previews: PreviewProvider {
     static var previews: some View {
         SnapshotFixtures().paragraphs()
+    }
+}
+
+struct ClassicChainAddresses_Previews: PreviewProvider {
+    static var previews: some View {
+        SnapshotFixtures().chainAddresses(terminal: false)
+    }
+}
+
+struct TerminalChainAddresses_Previews: PreviewProvider {
+    static var previews: some View {
+        SnapshotFixtures().chainAddresses(terminal: true)
+    }
+}
+
+private let previewChainAddress = ChainAddress(
+    currency: .bitcoin(amount: "0.0012"),
+    address: "bc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66505d4u",
+    walletUri: "bitcoin:bc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66505d4u?amount=0.0012"
+)
+
+struct OpenInWalletAlert_Previews: PreviewProvider {
+    static var previews: some View {
+        Color.clear.background(AlertControllerPreview {
+            openWalletAlert(ChainAddressTap(sender: ChainAddressSender(name: "Tom", forwarded: false, messageSigned: true), showText: "Dinner", chainAddress: previewChainAddress))
+        })
+    }
+}
+
+struct NoWalletAlert_Previews: PreviewProvider {
+    static var previews: some View {
+        Color.clear.background(AlertControllerPreview {
+            noWalletAlert(previewChainAddress)
+        })
     }
 }
 
@@ -1684,6 +1722,36 @@ private final class SnapshotFixtures {
         oneText.formattedText = nil
         oneText.markdownBlocks = nil
         return chatRows(direct, [msg(.directRcv, text, -10), oneText], terminal: false)
+    }
+
+    func chainAddresses(terminal: Bool) -> some View {
+        let btc = "bc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66505d4u"
+        let xmr = "8A3ZWAXrrQddvnT1fPrtbK86ZAoM4nai3Gjg1LEow3JWcryJtovMnHYZnxTJpCLmAbfWbnPMeTzPmMBjAhyd4xoM89hYq1c"
+        let eth = "0xD7047Fe3Eecb2f2FF78d839dD927Be27Bc12c86a"
+        let texts = [
+            "Donations: \(btc). Cheers",
+            "Suggested donation: bitcoin:\(btc)?amount=0.001&label=SimpleX Thank you!",
+            "For the coffee: lnbc2500u1pvjluezsp5zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zygspp5qqqsyqcyq5rqwzqfqqqsyqcyq5rqwzqfqqqsyqcyq5rqwzqfqypqdq5xysxxatsyp3k7enxv4jsxqzpu9qrsgquk0rl77nj30yxdy8j9vdx85fkpmdla2087ne0xh8nhedh8w27kyke0lp53ut353s06fv3qfegext0eh0ymjpf39tuven09sam30g4vgpfna3rh thanks!",
+            "If you want to support the project: [Donate](monero:\(xmr)). Cheers",
+            "Or this exact amount: monero:\(xmr)?tx_amount=0.25&recipient_name=SimpleX",
+            "Cheaper on Arbitrum: ethereum:\(eth)@42161?value=1e16",
+            "Stablecoins: ethereum:0xc2132D05D31c914a87C6611C10748AEb04B58e8F@137/transfer?address=\(eth)&uint256=10000000",
+            "Other networks: t1fwjQW5gpFhDqXNhxqDWyF9j9WeKvVS5Jg, ltc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66snwfdv, D99pV4n9TrPxBPCkQGx4w4SMSa6QjRBxPf, qq6c8vfvxqrk6rhdysgvkhqc24sggkfsx5nqvdlqcg, solana:7JCf5m3TiHmYKZVr6jCu1KeZVtb9Y1jRMQDU69p5ARnu",
+            "Unknown: \(eth), ethereum:0x1111111111111111111111111111111111111111@137/transfer?address=\(eth)&uint256=10000000, ethereum:0xdAC17F958D2ee523a2206206994597C13D831ec7@99999/transfer?address=\(eth)&uint256=10000000",
+            "[Dinner](ethereum:0xc2132D05D31c914a87C6611C10748AEb04B58e8F@137/transfer?address=\(eth)&uint256=10000000)",
+            "[Donate](ethereum:\(eth)@99999)"
+        ]
+        func parsed(_ item: ChatItem) -> ChatItem {
+            var item = item
+            item.formattedText = parseSimpleXMarkdown(item.text)
+            return item
+        }
+        var signed = msg(.groupRcv(groupMember: alice), "donate \(btc)", -2)
+        signed.meta.msgVerified = .signed(sigStatus: .verified)
+        return VStack(spacing: 0) {
+            chatRows(direct, texts.enumerated().map { i, text in parsed(msg(.directRcv, text, Double(i - texts.count - 2))) }, terminal: terminal)
+            chatRows(teamChat, [parsed(signed), parsed(msg(.groupRcv(groupMember: alice), "thanks, or ltc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66snwfdv", -1))], terminal: terminal)
+        }
     }
 
     func spacingEdgeItems() -> [ChatItem] {

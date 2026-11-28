@@ -837,6 +837,42 @@ class CITimed(TypedDict):
     ttl: int  # int
     deleteAt: NotRequired[str]  # ISO-8601 timestamp
 
+# Chain address or URI in a message text. currency: what the link text names, resolved from the core's tables of chains and tokens. walletUri: the URI to open in a wallet.
+
+class ChainAddress(TypedDict):
+    currency: "ChainCurrency"
+    address: str
+    walletUri: str
+
+# amount: in BTC for bitcoin and lightning, in units of the ticker for ticker. chainName: the EVM chain other than Ethereum, or Solana for a Solana token. unknown: the chain or token is outside the core's tables; the amount is omitted.
+
+class ChainCurrency_bitcoin(TypedDict):
+    type: Literal["bitcoin"]
+    amount: NotRequired[str]
+
+class ChainCurrency_lightning(TypedDict):
+    type: Literal["lightning"]
+    amount: NotRequired[str]
+
+class ChainCurrency_ticker(TypedDict):
+    type: Literal["ticker"]
+    ticker: str
+    chainName: NotRequired[str]
+    amount: NotRequired[str]
+
+class ChainCurrency_unknown(TypedDict):
+    type: Literal["unknown"]
+    unknown: "UnknownCurrency"
+
+ChainCurrency = (
+    ChainCurrency_bitcoin
+    | ChainCurrency_lightning
+    | ChainCurrency_ticker
+    | ChainCurrency_unknown
+)
+
+ChainCurrency_Tag = Literal["bitcoin", "lightning", "ticker", "unknown"]
+
 class ChatBotCommand_command(TypedDict):
     type: Literal["command"]
     keyword: str
@@ -2021,6 +2057,11 @@ class Format_simplexName(TypedDict):
     type: Literal["simplexName"]
     nameInfo: "SimplexNameInfo"
 
+class Format_chainAddressLink(TypedDict):
+    type: Literal["chainAddressLink"]
+    showText: NotRequired[str]
+    chainAddress: "ChainAddress"
+
 class Format_command(TypedDict):
     type: Literal["command"]
     commandStr: str
@@ -2054,6 +2095,7 @@ Format = (
     | Format_hyperLink
     | Format_simplexLink
     | Format_simplexName
+    | Format_chainAddressLink
     | Format_command
     | Format_mention
     | Format_email
@@ -2062,7 +2104,7 @@ Format = (
     | Format_markup
 )
 
-Format_Tag = Literal["bold", "italic", "strikeThrough", "snippet", "secret", "small", "colored", "uri", "hyperLink", "simplexLink", "simplexName", "command", "mention", "email", "phone", "escape", "markup"]
+Format_Tag = Literal["bold", "italic", "strikeThrough", "snippet", "secret", "small", "colored", "uri", "hyperLink", "simplexLink", "simplexName", "chainAddressLink", "command", "mention", "email", "phone", "escape", "markup"]
 
 class FormattedText(TypedDict):
     format: NotRequired["Format"]
@@ -4091,6 +4133,8 @@ class UIThemeEntityOverrides(TypedDict):
     light: NotRequired["UIThemeEntityOverride"]
     dark: NotRequired["UIThemeEntityOverride"]
     chatLayout: NotRequired["ChatLayout"]
+
+UnknownCurrency = Literal["chain", "token", "chainAndToken"]
 
 class UpdatedMessage(TypedDict):
     msgContent: "MsgContent"

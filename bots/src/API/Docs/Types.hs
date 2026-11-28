@@ -33,6 +33,7 @@ import Simplex.Chat.Protocol
 import Simplex.Chat.Store.Profiles
 import Simplex.Chat.Store.Shared
 import Simplex.Chat.Operators
+import Simplex.Chat.ChainAddress
 import Simplex.Messaging.Agent.Store.Entity (DBStored (..))
 import Simplex.Chat.Badges
 import Simplex.Chat.StoreService
@@ -233,6 +234,8 @@ chatTypesDocsData =
     (sti @BrokerErrorType, STUnion, "", [], "", ""),
     (sti @BusinessChatInfo, STRecord, "", [], "", ""),
     (sti @BusinessChatType, STEnum, "BC", [], "", ""),
+    (sti @ChainAddress, STRecord, "", [], "", "Chain address or URI in a message text. currency: what the link text names, resolved from the core's tables of chains and tokens. walletUri: the URI to open in a wallet."),
+    (sti @ChainCurrency, STUnion, "CY", [], "", "amount: in BTC for bitcoin and lightning, in units of the ticker for ticker. chainName: the EVM chain other than Ethereum, or Solana for a Solana token. unknown: the chain or token is outside the core's tables; the amount is omitted."),
     (sti @ChatBotCommand, STUnion, "CBC", [], "", ""),
     (sti @ChatDeleteMode, STUnion, "CDM", [], Param "type" <> Choice "self" [("messages", ""), ("archive", "")] (OnOffParam "notify" "notify" (Just True)), ""),
     (sti @ChatError, STUnion, "Chat", ["ChatErrorDatabase", "ChatErrorRemoteHost", "ChatErrorRemoteCtrl"], "", ""),
@@ -431,6 +434,7 @@ chatTypesDocsData =
     (sti @UIColors, STRecord, "", [], "", ""),
     (sti @UIThemeEntityOverride, STRecord, "", [], "", ""),
     (sti @UIThemeEntityOverrides, STRecord, "", [], "", ""),
+    (sti @UnknownCurrency, STEnum, "UC", [], "", ""),
     (sti @UpdatedMessage, STRecord, "", [], "", ""),
     (sti @User, STRecord, "", [], "", ""),
     ((sti @UserChatRelay) {typeName = "UserChatRelay"}, STRecord, "", [], "", ""),
@@ -497,6 +501,8 @@ deriving instance Generic BusinessChatInfo
 deriving instance Generic BusinessChatType
 deriving instance Generic BadgeStatus
 deriving instance Generic BadgeType
+deriving instance Generic ChainAddress
+deriving instance Generic ChainCurrency
 deriving instance Generic ChatBotCommand
 deriving instance Generic ChatDeleteMode
 deriving instance Generic ChatError
@@ -698,6 +704,7 @@ deriving instance Generic UIColorMode
 deriving instance Generic UIColors
 deriving instance Generic UIThemeEntityOverride
 deriving instance Generic UIThemeEntityOverrides
+deriving instance Generic UnknownCurrency
 deriving instance Generic UpdatedMessage
 deriving instance Generic User
 deriving instance Generic (UserChatRelay' 'DBStored)
