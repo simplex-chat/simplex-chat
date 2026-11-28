@@ -12,7 +12,7 @@ const lowDiskBytes = 5_000_000_000
 // spec: spec/architecture.md#status-line-statusline
 const highUsagePercent = 95
 // spec: spec/architecture.md#status-line-statusline
-const lowMark = "❗️"
+const warningMark = "❗️"
 const sizeUnits: [string, number][] = [
   ["TB", 1e12],
   ["GB", 1e9],
@@ -57,7 +57,7 @@ export async function statusLine(stdin: string, write: (line: string) => void, e
 
 // spec: spec/architecture.md#status-line-statusline
 export function limitParts({fiveHour, week}: {fiveHour?: Usage; week?: Usage}): string[] {
-  const part = (name: string, {percent}: Usage): string => `${name}: ${Math.floor(percent)}%${percent >= highUsagePercent ? lowMark : ""}`
+  const part = (name: string, {percent}: Usage): string => `${name}: ${Math.floor(percent)}%${percent >= highUsagePercent ? warningMark : ""}`
   return [fiveHour === undefined ? [] : [part("5 h", fiveHour)], week === undefined ? [] : [part("week", week)]].flat()
 }
 
@@ -71,8 +71,8 @@ export function machineState(root: string): Machine {
 export function machineParts(machine: Machine | undefined): string[] {
   if (machine === undefined) return []
   const {memoryFree, memoryTotal, diskFree} = machine
-  const memory = `RAM ${size(memoryFree)} free${memoryFree < memoryTotal * lowMemoryShare ? lowMark : ""}`
-  return diskFree === undefined ? [memory] : [memory, `disk ${size(diskFree)} free${diskFree < lowDiskBytes ? lowMark : ""}`]
+  const memory = `RAM ${size(memoryFree)} free${memoryFree < memoryTotal * lowMemoryShare ? warningMark : ""}`
+  return diskFree === undefined ? [memory] : [memory, `disk ${size(diskFree)} free${diskFree < lowDiskBytes ? warningMark : ""}`]
 }
 
 // spec: spec/architecture.md#status-line-statusline
