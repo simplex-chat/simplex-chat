@@ -607,6 +607,11 @@ chainAddresses = describe "chain addresses" do
     ("solana:" <> sol <> "?amount=0.5") `linksTo` ChainAddress (CYTicker "SOL" Nothing $ Just "0.5") sol ("solana:" <> sol <> "?amount=0.5")
     ("solana:" <> sol <> "?amount=1.5&spl-token=" <> usdc) `linksTo` ChainAddress (CYTicker "USDC" (Just "Solana") $ Just "1.5") sol ("solana:" <> sol <> "?amount=1.5&spl-token=" <> usdc)
     ("solana:" <> sol <> "?amount=10&spl-token=" <> sol) `linksTo` ChainAddress (CYUnknown UCToken) sol ("solana:" <> sol <> "?amount=10&spl-token=" <> sol)
+    ("bitcoin:?LIGHTNING=" <> coffee) `linksTo` ChainAddress (CYLightning $ Just "0.0025") coffee ("bitcoin:?lightning=" <> coffee)
+    ("bitcoin:?LNO=" <> offerText) `linksTo` ChainAddress (CYLightning Nothing) offerText ("bitcoin:?lno=" <> offerText)
+    ("monero:" <> xmr <> "?TX_AMOUNT=0.5") `linksTo` ChainAddress (CYTicker "XMR" Nothing $ Just "0.5") xmr ("monero:" <> xmr <> "?tx_amount=0.5")
+    ("zcash:?ADDRESS=" <> zecT <> "&amount=1") `linksTo` ChainAddress (CYTicker "ZEC" Nothing $ Just "1") zecT ("zcash:?address=" <> zecT <> "&amount=1")
+    ("solana:" <> sol <> "?AMOUNT=1.5&SPL-TOKEN=" <> usdc) `linksTo` ChainAddress (CYTicker "USDC" (Just "Solana") $ Just "1.5") sol ("solana:" <> sol <> "?amount=1.5&spl-token=" <> usdc)
   it "EVM URIs: chains and tokens of the tables, and unknown ones" do
     ("ethereum:" <> eth <> "@42161?value=1e16") `linksTo` ChainAddress (CYTicker "ETH" (Just "Arbitrum One") $ Just "0.01") eth ("ethereum:" <> eth <> "@42161?value=1e16")
     ("ethereum:" <> eth <> "@1?value=1e16") `linksTo` ChainAddress (CYTicker "ETH" Nothing $ Just "0.01") eth ("ethereum:" <> eth <> "@1?value=1e16")
@@ -615,6 +620,7 @@ chainAddresses = describe "chain addresses" do
     ("ethereum:" <> eth <> "?value=1e16") `linksTo` ChainAddress (CYUnknown UCChain) eth ("ethereum:" <> eth <> "?value=1e16")
     ("ethereum:" <> T.toLower eth) `linksTo` ChainAddress (CYUnknown UCChain) eth ("ethereum:" <> T.toLower eth)
     usdtTransfer `linksTo` ChainAddress (CYTicker "USDT" Nothing $ Just "5") eth usdtTransfer
+    ("ethereum:" <> usdt <> "@1/transfer?ADDRESS=" <> eth <> "&UINT256=5000000") `linksTo` ChainAddress (CYTicker "USDT" Nothing $ Just "5") eth usdtTransfer
     ("ethereum:" <> T.toLower usdt <> "@1/transfer?address=" <> eth <> "&uint256=5000000")
       `linksTo` ChainAddress (CYTicker "USDT" Nothing $ Just "5") eth ("ethereum:" <> T.toLower usdt <> "@1/transfer?address=" <> eth <> "&uint256=5000000")
     ("ethereum:0xc2132D05D31c914a87C6611C10748AEb04B58e8F@137/transfer?address=" <> eth <> "&uint256=10000000")
@@ -669,6 +675,14 @@ chainAddresses = describe "chain addresses" do
     isText $ "zel:?action=pay&coin=flux&address=" <> zecT <> "&callback=https://example.com"
     isText $ "zel:?action=pay&coin=flux&address=" <> zecT <> "&CALLBACK=https://example.com"
     isText $ "zel:?ACTION=sign&coin=flux&address=" <> zecT
+    isText $ "flux:" <> zecT <> "?COIN=bitcoin"
+    isText $ "bitcoin:" <> btc <> "?MESSAGE=" <> otherBtc
+    isText $ "monero:" <> xmr <> "?RECIPIENT_NAME=" <> otherBtc
+    isText $ "monero:" <> xmr <> "?TX_DESCRIPTION=" <> otherBtc
+    isText $ "zcash:" <> zecT <> "?MEMO=" <> memo
+    isText $ "solana:" <> sol <> "?LABEL=" <> otherBtc
+    isText $ "solana:" <> sol <> "?MESSAGE=" <> otherBtc
+    isText $ "solana:" <> sol <> "?MEMO=" <> otherBtc
   it "hyperlinks and autolinks" do
     ("[Donate](monero:" <> xmr <> ")") <==> markdown (ChainAddressLink (Just "Donate") $ ChainAddress (coin "XMR") xmr $ "monero:" <> xmr) ("[Donate](monero:" <> xmr <> ")")
     ("[" <> btc <> "](bitcoin:" <> btc <> ")") <==> chainLink (ChainAddress bitcoin btc $ "bitcoin:" <> btc) ("[" <> btc <> "](bitcoin:" <> btc <> ")")
