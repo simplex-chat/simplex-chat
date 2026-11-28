@@ -1183,7 +1183,12 @@ fun removedSubmembersText(members: List<GroupMember>): String {
   val (one, many) =
     if (members.size == 1) MR.strings.also_member_via_this_member to MR.strings.also_members_via_this_member
     else MR.strings.also_member_via_these_members to MR.strings.also_members_via_these_members
-  return when (val count = ChatModel.groupMembers.value.count { m -> m.memberStatus !in listOf(GroupMemberStatus.MemLeft, GroupMemberStatus.MemRemoved, GroupMemberStatus.MemGroupDeleted) && members.any { it.memberId == m.memberVia } }) {
+  val count = ChatModel.groupMembers.value.count { m ->
+    m.memberStatus !in listOf(GroupMemberStatus.MemLeft, GroupMemberStatus.MemRemoved, GroupMemberStatus.MemGroupDeleted)
+        && members.any { it.memberId == m.memberVia }
+        && members.none { it.groupMemberId == m.groupMemberId }
+  }
+  return when (count) {
     0 -> ""
     1 -> "\n" + generalGetString(one)
     else -> "\n" + String.format(generalGetString(many), count)
