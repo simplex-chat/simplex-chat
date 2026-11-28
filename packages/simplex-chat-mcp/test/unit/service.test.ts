@@ -745,7 +745,7 @@ describe("service", () => {
   })
 
   it("reads the start time of a running process, the same at each read and another for a later process, and nothing for a process that does not run or an ID that is not a positive integer", async () => {
-    const reads = process.platform === "linux" || process.platform === "darwin"
+    const reads = ["linux", "darwin", "win32"].includes(process.platform)
     const start = await processStart(process.pid)
     expect(start).toEqual(reads ? expect.stringMatching(/\S/) : undefined)
     expect(await processStart(process.pid)).toBe(start)
@@ -757,14 +757,14 @@ describe("service", () => {
     expect(reads && childStart === start).toBe(false)
     expect(await processStart(2 ** 22 + 1)).toBeUndefined()
     for (const pid of [0, -1, 1.5, "self"]) expect(await processStart(pid as number)).toBeUndefined()
-  })
+  }, 30_000)
 
   it("reads the start time of a process on Linux with the boot ID, so a process after a reboot never has the start time of a process before it", async () => {
     const boot = process.platform === "linux" ? readFileSync("/proc/sys/kernel/random/boot_id", "utf8").trim() : undefined
     expect(boot === undefined || (await processStart(process.pid))?.startsWith(`${boot} `)).toBe(true)
   })
 
-  it("reads the start time of a process on Windows from PowerShell as its creation time in UTC file time, without a window, within 2 s, and nothing for an output that is not a number", async () => {
+  it("reads the start time of a process on Windows from PowerShell as its creation time in UTC file time, without a window, within 10 s, and nothing for an output that is not a number", async () => {
     const platform = Object.getOwnPropertyDescriptor(process, "platform")!
     Object.defineProperty(process, "platform", {value: "win32"})
     const calls: [string, string[], ExecFileOptions][] = []
@@ -772,7 +772,7 @@ describe("service", () => {
     try {
       expect(await processStart(4242, powershell("134088624000000000\r\n"))).toBe("134088624000000000")
       expect(await processStart(4242, powershell("Get-Process : Cannot find a process with the process identifier 4242.\r\n"))).toBeUndefined()
-      expect(calls[0]).toEqual(["powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", "(Get-Process -Id 4242 -ErrorAction Stop).StartTime.ToFileTimeUtc()"], {timeout: 2_000, windowsHide: true}])
+      expect(calls[0]).toEqual(["powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", "(Get-Process -Id 4242 -ErrorAction Stop).StartTime.ToFileTimeUtc()"], {timeout: 10_000, windowsHide: true}])
     } finally {
       Object.defineProperty(process, "platform", platform)
     }

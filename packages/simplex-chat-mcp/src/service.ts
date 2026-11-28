@@ -22,6 +22,7 @@ const idleStop = 10 * 60_000
 const processWait = 10_000
 const refusalWait = 60_000
 const psWait = 2_000
+const powershellWait = 10_000
 const logCheck = 3_600_000
 const lockChecks = 150
 const lockCheckWait = 100
@@ -573,6 +574,7 @@ export async function processStart(pid: number, command: (file: string, args: st
       return ticks === undefined ? undefined : `${boot}${ticks}`
     }
     if (process.platform === "darwin") return (await command("/bin/ps", ["-o", "lstart=", "-p", String(pid)], {timeout: psWait, env: {...process.env, LC_ALL: "C", TZ: "UTC"}})).stdout.trim() || undefined
+    if (process.platform === "win32") return /^\d+$/.exec((await command("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", `(Get-Process -Id ${pid} -ErrorAction Stop).StartTime.ToFileTimeUtc()`], {timeout: powershellWait, windowsHide: true})).stdout.trim())?.[0]
     return undefined
   } catch {
     return undefined

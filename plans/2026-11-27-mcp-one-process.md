@@ -6,7 +6,7 @@ Two Claude Code processes on one conversation, as after a second `claude --conti
 
 ## Rule
 
-On Linux and macOS, while the Claude Code process of a session's last `/session` runs, the service refuses the requests of another process for that session with status 423 and TEXT:
+While the Claude Code process of a session's last `/session` runs, the service refuses the requests of another process for that session with status 423 and TEXT:
 
 `Claude Code process PID already uses the SimpleX group of this conversation. Exit that process, or exit this one and start a new conversation.`
 
@@ -19,8 +19,8 @@ On Linux and macOS, while the Claude Code process of a session's last `/session`
 | `POST /turn` | display hook and status line command | the reply is dropped |
 | `POST /ask` | PermissionRequest and Elicitation hooks | the hook's stderr; Claude Code shows its own dialog |
 
-- A process runs while its PID has the start time read at its `/session`; a reused PID has another start time. On Linux the start time includes the boot ID, so a process after a reboot never matches a stored one; without a readable boot ID, it is the ticks alone. On macOS the start time is read in the C locale and UTC.
-- A request without a PID is served, and so is a request while the recorded process has no start time, as on other systems.
+- A process runs while its PID has the start time read at its `/session`; a reused PID has another start time. On Linux the start time includes the boot ID, so a process after a reboot never matches a stored one; without a readable boot ID, it is the ticks alone. On macOS the start time is read in the C locale and UTC. On Windows it is the creation time in UTC file time from PowerShell, within 10 s: its first start took 4.9 s on a GitHub Windows runner, later ones 0.3 s.
+- A request without a PID is served, and so is a request while the recorded process has no start time.
 - When the recorded process changes during the read of its start time, the check runs again, so of two registrations at once only one is served.
 - The session server sends `/attach`, `/call` and `/permission` only after a `/session` that succeeded.
 - The title of the other process is recorded before the refusal, so its session server resolves to the same session.
@@ -58,7 +58,7 @@ sequenceDiagram
   - the `/turn` route
 - `src/service.ts`: `refusals`, read by `processSession`.
 - `src/service.ts`: `claudeProcess` written by `onSession` and read by `entry`.
-- `src/service.ts`: `processStart` adds the boot ID on Linux, and runs `ps` with `LC_ALL=C` and `TZ=UTC` on macOS.
+- `src/service.ts`: `processStart` adds the boot ID on Linux, runs `ps` with `LC_ALL=C` and `TZ=UTC` on macOS, and PowerShell's `Get-Process` on Windows, with its command runner as a parameter.
 - `src/files.ts`: `SessionFile.claudeProcess`.
 - The refusal in:
   - `spec/api.md`, socket protocol
@@ -77,4 +77,5 @@ sequenceDiagram
 - A title of a new ID from a refused process 20 s after its server's refusal: refused, with no session for that ID.
 - A second process refused after a service restart, and served once the first ended.
 - The start time of a process on Linux begins with the boot ID, and is the ticks alone when the boot ID can't be read.
+- The start time of a process on Windows from a stubbed PowerShell: its output when it is a number, with the command, the timeout and no window.
 - The tests of a second registration of a session: the first process ended before it.
