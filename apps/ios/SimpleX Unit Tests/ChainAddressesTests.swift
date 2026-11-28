@@ -139,6 +139,25 @@ final class ChainAddressesTests: RecordedAPITestCase {
     }
 
     @MainActor
+    func testAlertOfNoteHasNoName() async throws {
+        try recorded("chain-addresses/note")
+        let (chat, _) = try await apiGetChat(chatId: "*1", scope: nil, pagination: .last(count: 1))
+        let note = try XCTUnwrap(chat.chatItems.first)
+        var received = note
+        received.chatDir = .localRcv
+        let drawn = [note, received].map { draw($0.formattedText, chainAddressSender($0, chat.chatInfo)).string }
+        XCTAssertEqual(drawn.flatMap(taps).map(alertMessage), ["₿\u{00A0}bc1q2g…\u{2060}5d4u", "₿\u{00A0}bc1q2g…\u{2060}5d4u"])
+    }
+
+    @MainActor
+    func testAlertOfChannelPostNamesChannel() async throws {
+        try recorded("chain-addresses/channel")
+        let (chat, _) = try await apiGetChat(chatId: "#1", scope: nil, pagination: .last(count: 1))
+        let post = try XCTUnwrap(chat.chatItems.first)
+        XCTAssertEqual(taps(draw(post.formattedText, chainAddressSender(post, chat.chatInfo)).string).map(alertMessage), ["team: ₿\u{00A0}bc1q2g…\u{2060}5d4u"])
+    }
+
+    @MainActor
     func testOpenWithoutWalletOffersCopyAndQRCode() async throws {
         try recorded("chain-addresses/links")
         let (chat, _) = try await apiGetChat(chatId: "@2", scope: nil, pagination: .last(count: 1))

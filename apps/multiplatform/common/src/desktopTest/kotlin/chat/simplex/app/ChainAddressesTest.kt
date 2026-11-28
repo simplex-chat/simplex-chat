@@ -211,6 +211,26 @@ class ChainAddressesTest : RecordedApiTest() {
   }
 
   @Test
+  fun alertOfNoteHasNoName() = recordedAlerts("chain-addresses/note") {
+    val chat = recordedChat("chain-addresses/note", "/_get chat *1 count=1")
+    val note = chat.chatItems.single()
+    assertEquals(
+      listOf("₿${noBreakSpace}bc1q2g…${wordJoiner}5d4u", "₿${noBreakSpace}bc1q2g…${wordJoiner}5d4u"),
+      listOf(note, note.copy(chatDir = CIDirection.LocalRcv())).flatMap { item -> chainLinks(item.formattedText).map { alertMessage(chainAddressSender(item, chat.chatInfo), it) } }
+    )
+  }
+
+  @Test
+  fun alertOfChannelPostNamesChannel() = recordedAlerts("chain-addresses/channel") {
+    val chat = recordedChat("chain-addresses/channel", "/_get chat #1 count=1")
+    val post = chat.chatItems.single()
+    assertEquals(
+      listOf("team: ₿${noBreakSpace}bc1q2g…${wordJoiner}5d4u"),
+      chainLinks(post.formattedText).map { alertMessage(chainAddressSender(post, chat.chatInfo), it) }
+    )
+  }
+
+  @Test
   fun openWithoutWalletOffersCopyAndQRCode() = recorded("chain-addresses/links") {
     val clipboard = TestClipboard()
     val wallet = NoWalletApp()
