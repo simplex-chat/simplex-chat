@@ -309,7 +309,7 @@ export class Service {
     if (entry.pid !== pid || entry.started !== started) return this.refuseOtherProcess(id, requester, title)
     if (!running) return
     this.refusals.set(requester, {id, at: Date.now(), title: title ?? this.refusals.get(requester)?.title})
-    throw new SocketError(`This conversation is already open in Claude Code process ${pid}. Exit that process, or exit this one and start a new conversation.`, 423)
+    throw new SocketError(`Claude Code process ${pid} already uses the SimpleX group of this conversation. Exit that process, or exit this one and start a new conversation.`, 423)
   }
 
   // spec: spec/api.md#socket-protocol

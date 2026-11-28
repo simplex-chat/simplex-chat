@@ -8,7 +8,7 @@ Two Claude Code processes on one conversation, as after a second `claude --conti
 
 While the Claude Code process of a session's last `/session` runs, the service refuses the requests of another process for that session with status 423 and TEXT:
 
-`This conversation is already open in Claude Code process PID. Exit that process, or exit this one and start a new conversation.`
+`Claude Code process PID already uses the SimpleX group of this conversation. Exit that process, or exit this one and start a new conversation.`
 
 | Request of the other process | Sender | Where TEXT is shown |
 |---|---|---|

@@ -873,7 +873,7 @@ describe("service", () => {
     storeSession(id1, 1, "app")
     const {d, agents} = deps(root)
     service = await Service.start(d, readDefaultConfig)
-    const refusal = {message: "This conversation is already open in Claude Code process 300. Exit that process, or exit this one and start a new conversation.", status: 423}
+    const refusal = {message: "Claude Code process 300 already uses the SimpleX group of this conversation. Exit that process, or exit this one and start a new conversation.", status: 423}
     await post("/session", {id: id1, pid: 300, project: "/p/app", config: defaultConfig})
     await expect(post("/title", {id: id1, pid: 301, name: "other", model: "claude-opus-5", project: "/p/app", config: defaultConfig})).rejects.toMatchObject(refusal)
     await expect(post("/session", {id: id2, pid: 301, project: "/p/app", config: defaultConfig})).rejects.toMatchObject(refusal)
@@ -951,7 +951,7 @@ describe("service", () => {
     await expect(post("/session", {id: id1, pid: 301, project: "/p/app", config: defaultConfig})).rejects.toMatchObject({status: 423})
     await jest.advanceTimersByTimeAsync(9_000)
     await turnsUntil(() => errors.length > 0)
-    expect(errors).toEqual(["title: This conversation is already open in Claude Code process 300. Exit that process, or exit this one and start a new conversation.\n"])
+    expect(errors).toEqual(["title: Claude Code process 300 already uses the SimpleX group of this conversation. Exit that process, or exit this one and start a new conversation.\n"])
     await expect(post("/turn", {id: id2, pid: 301, prompt: "Fix the build"})).rejects.toMatchObject({status: 423})
     expect(existsSync(sessionFolder(root, id2))).toBe(false)
     expect(agents).toMatchObject([{displayName: "1 · app", turns: []}])
