@@ -8,6 +8,8 @@
 
 [miniz](https://github.com/richgel999/miniz): zlib compression and decompression for libspng ([MIT](./licences/apps/miniz/LICENSE))
 
+[SIMDe](https://github.com/simd-everywhere/simde): WebAssembly SIMD of the sandboxed image decoders, translated to the SIMD of the device ([MIT](./licences/apps/simde/COPYING))
+
 [mozjpeg](https://github.com/mozilla/mozjpeg): JPEG decoding and encoding of resized images ([IJG and BSD-3-clause](./licences/apps/mozjpeg/LICENSE.md)). This software is based in part on the work of the Independent JPEG Group.
 
 [SQLCipher](https://github.com/sqlcipher/sqlcipher): Extension of [SQLite](https://sqlite.org) with encryption ([BSD-style](./licences/apps/sqlcipher/LICENSE.md))
@@ -15,6 +17,8 @@
 [stb_image_resize](https://github.com/nothings/stb): image scaling ([MIT or public domain](./licences/apps/stb_image_resize/LICENSE))
 
 [vlc](https://github.com/videolan/vlc): VLC media player library ([LGPLv2](./licences/apps/vlc/COPYING.LIB))
+
+[wasm2c](https://github.com/WebAssembly/wabt): the runtime of the image decoders compiled to WebAssembly and translated to C, which decode JPEG, PNG and WebP images in a sandbox ([Apache-2.0](./licences/apps/wasm2c/LICENSE))
 
 [WebRTC](https://webrtc.googlesource.com/src/): RTC for calls ([BSD-3-clause](./licences/apps/webrtc/LICENSE))
 
