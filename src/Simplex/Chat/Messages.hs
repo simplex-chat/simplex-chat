@@ -722,6 +722,9 @@ data CIFile (d :: MsgDirection) = CIFile
   }
   deriving (Show)
 
+allowedContentUpdate :: MsgContent -> MsgContent -> Maybe (CIFile d) -> Bool
+allowedContentUpdate oldMC mc file_ = msgContentTag oldMC == msgContentTag mc || isNothing file_ || isNothing (mediaFileExtensions mc)
+
 data FileProtocol = FPSMP | FPXFTP | FPLocal
   deriving (Eq, Show, Ord)
 

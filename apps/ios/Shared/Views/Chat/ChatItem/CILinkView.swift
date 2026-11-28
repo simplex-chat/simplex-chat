@@ -55,7 +55,7 @@ func openBrowserAlert(uri: String) {
         let uriStr = displayedUri(url.uri.absoluteString)
         showAlert(
             NSLocalizedString("Open link?", comment: "alert title"),
-            message: uriStr.count > 160 ? "\(uriStr.prefix(160))…" : uriStr,
+            message: shortenedUri(uriStr),
             actions: {
                 if let sanitizedUri = url.sanitizedUri {
                     [
@@ -118,6 +118,13 @@ func displayedUri(_ uri: String) -> String {
         }
     }
     return shown
+}
+
+func shortenedUri(_ uri: String) -> String {
+    let authorityStart = uri.range(of: "://")?.upperBound ?? uri.startIndex
+    let authorityEnd = uri[authorityStart...].firstIndex(where: { "/?#".contains($0) }) ?? uri.endIndex
+    let shownLength = max(160, uri.distance(from: uri.startIndex, to: authorityEnd))
+    return uri.count > shownLength ? "\(uri.prefix(shownLength))…" : uri
 }
 
 func sanitizeUri(_ s: String) -> (url: (uri: URL, sanitizedUri: URL?)?, error: String?) {

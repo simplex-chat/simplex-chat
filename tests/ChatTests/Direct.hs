@@ -188,6 +188,8 @@ chatDirectTests = do
     it "should send delivery receipts depending on configuration" testConfigureDeliveryReceipts
   describe "link content filter" $ do
     it "filter chat by link content" testLinkContentFilter
+  describe "received links" $ do
+    it "should parse received links to open them" testReceivedLinks
   describe "negotiate connection peer chat protocol version range" $ do
     describe "peer version range correctly set for new connection via invitation" $ do
       testInvVRange supportedChatVRange supportedChatVRange
@@ -1692,10 +1694,11 @@ testMaintenanceModeWithFiles ps = withXFTPServer ps $ do
 
       let backupDBs = [tmpPath ps <> "/alice_chat.db.bak", tmpPath ps <> "/alice_agent.db.bak"]
       forM_ backupDBs $ \f -> B.writeFile f ""
+      B.writeFile (aliceFiles </> "c:test.jpg") ""
       alice ##> "/_stop"
       alice <## "chat stopped"
       alice ##> ("/_db export {\"archivePath\": \"" <> archive <> "\"}")
-      alice <## "ok"
+      alice <## "archive export errors: [AEFileError {file = \"c:test.jpg\", fileError = \"Cannot build selector from \\\"simplex_v1_files/c:test.jpg\\\"\"}]"
       let exportedDBs = [tmpPath ps <> "/alice_chat.db.exported", tmpPath ps <> "/alice_agent.db.exported"]
       forM_ exportedDBs $ \f -> B.writeFile f ""
       alice ##> "/_db delete"
@@ -3729,3 +3732,22 @@ testLinkContentFilter =
       bob ##> "/_get content types @2"
       bob <## "Chat content types: link, text"
       bob #$> ("/_get chat @2 content=link count=100", chat, [(0, "https://simplex.chat"), (0, "check out https://example.com"), (1, "visit http://test.org"), (0, simplexLink), (1, "[click here](https://link.example.com)"), (0, "visit example.com for info")])
+
+testReceivedLinks :: HasCallStack => TestParams -> IO ()
+testReceivedLinks =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      connectUsers alice bob
+      forM_ links $ \link -> do
+        bob #> ("@alice " <> link)
+        alice <# ("bob> " <> link)
+      apiFixture "links/received-links" alice [] FixtureRequests {frMarkdown = [], frUris = links, frCommands = []}
+  where
+    links =
+      [ "https://example.com/page?q=1",
+        "https://example.com/" <> replicate 200 'b',
+        "https://" <> intercalate "." (replicate 3 $ replicate 60 'a') <> ".example.com/" <> replicate 200 'b',
+        "https://" <> replicate 180 'a' <> "@example.com?q=" <> replicate 200 'b',
+        "https://user%40name@example.com/page?ref=123",
+        "ftp://example.com/file"
+      ]

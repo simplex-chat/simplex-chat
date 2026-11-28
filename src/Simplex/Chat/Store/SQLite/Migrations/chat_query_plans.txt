@@ -7870,6 +7870,11 @@ Query: SELECT balance_checked FROM badge_ledger ORDER BY entry_id
 Plan:
 SCAN badge_ledger
 
+Query: SELECT c.agent_conn_id FROM connections c JOIN contacts ct ON ct.contact_id = c.contact_id WHERE ct.local_display_name = ?
+Plan:
+SCAN ct USING COVERING INDEX sqlite_autoindex_contacts_1
+SEARCH c USING INDEX idx_connections_contact_id (contact_id=?)
+
 Query: SELECT c.agent_conn_id FROM connections c JOIN group_members m ON m.group_member_id = c.group_member_id WHERE m.local_display_name = ?
 Plan:
 SCAN m USING COVERING INDEX idx_group_members_user_id_local_display_name

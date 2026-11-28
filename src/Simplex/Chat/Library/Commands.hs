@@ -828,9 +828,9 @@ processChatCommand cxt nm = \case
       assertDirectAllowed user MDSnd ct XMsgUpdate_
       cci <- withFastStore $ \db -> getDirectCIWithReactions db user ct itemId
       case cci of
-        CChatItem SMDSnd ci@ChatItem {meta = CIMeta {itemSharedMsgId, itemTimed, itemLive, editable}, content = ciContent} -> do
+        CChatItem SMDSnd ci@ChatItem {meta = CIMeta {itemSharedMsgId, itemTimed, itemLive, editable}, content = ciContent, file} -> do
           case (ciContent, itemSharedMsgId, editable) of
-            (CISndMsgContent oldMC, Just itemSharedMId, True) -> do
+            (CISndMsgContent oldMC, Just itemSharedMId, True) | allowedContentUpdate oldMC mc file -> do
               let changed = mc /= oldMC
               if changed || fromMaybe False itemLive
                 then do
@@ -857,9 +857,9 @@ processChatCommand cxt nm = \case
           -- TODO [knocking] check chat item scope?
           cci <- withFastStore $ \db -> getGroupCIWithReactions db user gInfo itemId
           case cci of
-            CChatItem SMDSnd ci@ChatItem {meta = CIMeta {itemSharedMsgId, itemTimed, itemLive, editable, showGroupAsSender, msgVerified}, content = ciContent} -> do
+            CChatItem SMDSnd ci@ChatItem {meta = CIMeta {itemSharedMsgId, itemTimed, itemLive, editable, showGroupAsSender, msgVerified}, content = ciContent, file} -> do
               case (ciContent, itemSharedMsgId, editable) of
-                (CISndMsgContent oldMC, Just itemSharedMId, True) -> do
+                (CISndMsgContent oldMC, Just itemSharedMId, True) | allowedContentUpdate oldMC mc file -> do
                   chatScopeInfo <- mapM (getChatScopeInfo cxt user) scope
                   recipients <- getGroupRecipients cxt user gInfo chatScopeInfo groupKnockingVersion
                   let changed = mc /= oldMC
