@@ -764,6 +764,12 @@ describe("service", () => {
     expect(boot === undefined || (await processStart(process.pid))?.startsWith(`${boot} `)).toBe(true)
   })
 
+  it("reads the start time of a process on Linux without the boot ID when the boot ID can't be read", async () => {
+    const readFile = fs.promises.readFile.bind(fs.promises)
+    jest.spyOn(fs.promises, "readFile").mockImplementation(((path: string, options: BufferEncoding) => (path === "/proc/sys/kernel/random/boot_id" ? Promise.reject(new Error("EACCES")) : readFile(path, options))) as never)
+    expect(await processStart(process.pid)).toEqual(process.platform === "linux" ? expect.stringMatching(/^\d+$/) : expect.anything())
+  })
+
   it("does not delay the idle close of an open session with a title", async () => {
     jest.useFakeTimers(fakeTimers)
     const {d, agents} = deps(root)
