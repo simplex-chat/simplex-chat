@@ -17197,6 +17197,8 @@ testSubmemberViaBlockedHistory =
       alice <# "#team reviewer> hi"
       alice ##> "/block for all #team bob"
       alice <## "#team: you blocked bob (signed)"
+      alice #> "#team hey"
+      bob <# "#team alice> hey"
       connectUsers alice dan
       addMember "team" alice dan GRModerator
       dan ##> "/j team"
@@ -17204,6 +17206,7 @@ testSubmemberViaBlockedHistory =
         [ alice <## "#team: dan joined the group",
           dan
             <### [ "#team: you joined the group",
+                   WithTime "#team alice> hey [>>]",
                    "#team: member bob (Bob) is connected"
                  ],
           do
