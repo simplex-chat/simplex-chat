@@ -22,7 +22,9 @@ import chat.simplex.common.views.helpers.getBitmapFromByteArray
 import chat.simplex.res.*
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.withContext
 import org.jetbrains.compose.videoplayer.SkiaBitmapVideoSurface
 import java.lang.reflect.Proxy
 import javax.swing.JComponent
@@ -39,8 +41,11 @@ internal val pinchZooms = MutableSharedFlow<Float>(extraBufferCapacity = Int.MAX
 @Composable
 actual fun FullScreenImageView(modifier: Modifier, data: ByteArray, imageBitmap: ImageBitmap) {
   // Decoded once, as an animation recomposes this on every frame
-  val still = remember(data) { getBitmapFromByteArray(data, false) ?: MR.images.decentralized.image.toComposeImageBitmap() }
-  val image = rememberAnimatedImage(data, still)
+  val still by produceState(imageBitmap, data) {
+    value = withContext(Dispatchers.IO) { getBitmapFromByteArray(data, false) ?: MR.images.decentralized.image.toComposeImageBitmap() }
+  }
+  val frame = rememberAnimatedImage(data, imageBitmap)
+  val image = if (frame === imageBitmap) still else frame
   Image(
     image,
     contentDescription = stringResource(MR.strings.image_descr),

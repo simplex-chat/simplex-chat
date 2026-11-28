@@ -317,13 +317,13 @@ fun ChatPreviewView(
     LaunchedEffect(noMenu.value) { noMenu.value = false }
     when (mc) {
       is MsgContent.MCLink -> SmallContentPreview {
-        val image = remember(mc.preview.image) { base64ToBitmap(mc.preview.image) }
+        val image = rememberBase64ImagePainter(mc.preview.image)
         val blurred = remember { mutableStateOf(appPrefs.privacyMediaBlurRadius.get() > 0) }
         IconButton(
           { openBrowserAlert(mc.preview.uri, uriHandler) },
           Modifier.desktopPointerHoverIconHand(),
         ) {
-          Image(image, null, Modifier.desktopModifyBlurredState(blurred, noMenu).privacyBlur(fullSize = false, image, blurred, chatViewScrollState.collectAsState()), contentScale = ContentScale.Crop)
+          Image(image, null, Modifier.desktopModifyBlurredState(blurred, noMenu).privacyBlur(fullSize = false, image.bitmap, blurred, chatViewScrollState.collectAsState()), contentScale = ContentScale.Crop)
         }
         Box(Modifier.align(Alignment.TopEnd).size(15.sp.toDp()).background(Color.Black.copy(0.25f), CircleShape), contentAlignment = Alignment.Center) {
           Icon(painterResource(MR.images.ic_arrow_outward), null, Modifier.size(13.sp.toDp()), tint = Color.White)
@@ -360,7 +360,7 @@ fun ChatPreviewView(
         ) {
           val image = mc.chatLink.image
           if (image != null) {
-            Image(base64ToBitmap(image), null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+            Base64AsyncImage(image, null, ContentScale.Crop, Modifier.fillMaxSize())
           } else {
             ProfileImage(36.5.sp.toDp(), icon = mc.chatLink.iconRes, color = if (isInDarkTheme()) FileDark else FileLight, modifier = Modifier.centeredIn(44.sp.toDp()))
           }

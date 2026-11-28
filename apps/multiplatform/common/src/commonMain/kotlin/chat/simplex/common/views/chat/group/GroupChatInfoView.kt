@@ -1237,7 +1237,7 @@ fun MemberRow(member: GroupMember, user: Boolean = false, infoPage: Boolean = tr
       verticalAlignment = Alignment.CenterVertically,
       horizontalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-      MemberProfileImage(size = 35.dp, member, async = true, modifier = Modifier.centeredIn(MEMBER_ROW_AVATAR_SIZE))
+      MemberProfileImage(size = 35.dp, member, modifier = Modifier.centeredIn(MEMBER_ROW_AVATAR_SIZE))
       Spacer(Modifier.width(DEFAULT_PADDING_HALF))
       Column {
         Row(verticalAlignment = Alignment.CenterVertically) {

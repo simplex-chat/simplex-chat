@@ -164,6 +164,28 @@ expect fun getBitmapFromByteArray(data: ByteArray, withAlertOnException: Boolean
 
 expect fun getDrawableFromUri(uri: URI, withAlertOnException: Boolean = true): Any?
 
+// Hard ceiling on the decoded raster in pixels, independent of aspect ratio, so an extreme-aspect image within the
+// source cap can't blow up memory. Sized to the full-screen target's area (~18.7 MP -> ~75 MB at 4 bytes/px).
+internal const val MAX_DECODED_PIXELS = 4320 * 4320
+
+// Power-of-two subsampling factor for bounded decoding. First keeps the smaller side at or above maxDimension
+// (mirroring Android's calculateInSampleSize) so portrait images stay sharp instead of being over-subsampled by a
+// larger-side cap; then bounds the total decoded pixels so an extreme aspect ratio can't exceed the memory ceiling.
+internal fun imageSampleSize(width: Int, height: Int, maxDimension: Int): Int {
+  var sampleSize = 1
+  if (height > maxDimension || width > maxDimension) {
+    val halfHeight = height / 2
+    val halfWidth = width / 2
+    while (halfHeight / sampleSize >= maxDimension && halfWidth / sampleSize >= maxDimension) {
+      sampleSize *= 2
+    }
+  }
+  while ((width / sampleSize) * (height / sampleSize) > minOf(MAX_DECODED_PIXELS, 4 * maxDimension * maxDimension)) {
+    sampleSize *= 2
+  }
+  return sampleSize
+}
+
 fun getThemeFromUri(uri: URI, withAlertOnException: Boolean = true): ThemeOverrides? {
   uri.inputStream().use {
     runCatching {

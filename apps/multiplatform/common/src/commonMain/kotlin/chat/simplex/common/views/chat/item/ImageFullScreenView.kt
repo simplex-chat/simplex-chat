@@ -17,8 +17,10 @@ import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.CurrentColors
 import chat.simplex.common.views.chat.ProviderMedia
 import chat.simplex.common.views.helpers.*
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.net.URI
 import kotlin.math.absoluteValue
 
@@ -46,7 +48,7 @@ fun ImageFullScreenView(imageProvider: () -> ImageGalleryProvider, close: () -> 
   // Pager doesn't ask previous page at initialization step who knows why. By not doing this, prev page is not checked and can be blank,
   // which makes this blank page visible for a moment. Prevent it by doing the check ourselves
   LaunchedEffect(Unit) {
-    if (provider.getMedia(provider.initialIndex - 1) == null) {
+    if (withContext(Dispatchers.IO) { provider.getMedia(provider.initialIndex - 1) } == null) {
       firstValidPageBeforeScrollingToStart.value = provider.initialIndex
       provider.scrollToStart()
       pagerState.scrollToPage(0)
@@ -94,10 +96,14 @@ fun ImageFullScreenView(imageProvider: () -> ImageGalleryProvider, close: () -> 
         if (settledCurrentPage != provider.initialIndex)
           provider.currentPageChanged(index)
       }
-      val media = provider.getMedia(index)
+      var page by remember { mutableStateOf<Pair<Int, ProviderMedia?>?>(null) }
+      LaunchedEffect(index) {
+        page = index to withContext(Dispatchers.IO) { provider.getMedia(index) }
+      }
+      val (pageIndex, media) = page ?: return@Column
       if (media == null) {
         // No such image. Let's shrink total pages size or scroll to start of the list of pages to remove blank page automatically
-        SideEffect {
+        if (pageIndex == index) SideEffect {
           scope.launch {
             when (settledCurrentPage) {
               index - 1 -> provider.totalMediaSize.value = settledCurrentPage + 1
@@ -152,7 +158,7 @@ fun ImageFullScreenView(imageProvider: () -> ImageGalleryProvider, close: () -> 
           val (data: ByteArray, imageBitmap: ImageBitmap) = media
           FullScreenImageView(modifier, data, imageBitmap)
         } else if (media is ProviderMedia.Video) {
-          val preview = remember(media.uri.path) { base64ToBitmap(media.preview) }
+          val preview = rememberBase64ImagePainter(media.preview).bitmap ?: return@Column
           val uriDecrypted = remember(media.uri.path) { mutableStateOf(if (media.fileSource?.cryptoArgs == null) media.uri else media.fileSource.decryptedGet()) }
           val decrypted = uriDecrypted.value
           if (decrypted != null) {

@@ -156,7 +156,7 @@ object NtfManager {
     tmpDir.mkdir()
     val newFile = File(tmpDir.absolutePath + File.separator + generateNewFileName("IMG", "png", tmpDir))
     try {
-      ImageIO.write(icon.toAwtImage(), "PNG", newFile.outputStream())
+      ImageIO.write(icon.toAwtImage(), "PNG", newFile)
       newFile.absolutePath
     } catch (e: Exception) {
       Log.e(TAG, "Failed to write an icon to tmpDir: ${e.stackTraceToString()}")

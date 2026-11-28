@@ -44,7 +44,7 @@ Defined in [`Utils.kt`](../../common/src/commonMain/kotlin/chat/simplex/common/v
 | `MAX_FILE_SIZE_XFTP` | 1,073,741,824 | 1 GB | [L127](../../common/src/commonMain/kotlin/chat/simplex/common/views/helpers/Utils.kt#L127) | Maximum XFTP transfer size |
 | `MAX_FILE_SIZE_LOCAL` | `Long.MAX_VALUE` | Unlimited | [L129](../../common/src/commonMain/kotlin/chat/simplex/common/views/helpers/Utils.kt#L129) | Local file protocol (no size limit) |
 
-The `getMaxFileSize()` function ([`Utils.kt`](../../common/src/commonMain/kotlin/chat/simplex/common/views/helpers/Utils.kt#L442)) selects the limit based on `FileProtocol`:
+The `getMaxFileSize()` function ([`Utils.kt`](../../common/src/commonMain/kotlin/chat/simplex/common/views/helpers/Utils.kt#L539)) selects the limit based on `FileProtocol`:
 
 ```kotlin
 FileProtocol.XFTP -> MAX_FILE_SIZE_XFTP

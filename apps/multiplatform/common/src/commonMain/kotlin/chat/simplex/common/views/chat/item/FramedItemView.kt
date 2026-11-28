@@ -185,22 +185,22 @@ fun FramedItemView(
       when (qi.content) {
         is MsgContent.MCImage -> {
           QuotedMsgOrGap(qi)
-          val imageBitmap = remember(qi.content.image) { base64ToBitmap(qi.content.image) }
+          val image = rememberBase64ImagePainter(qi.content.image)
           Image(
-            imageBitmap,
+            image,
             contentDescription = stringResource(MR.strings.image_descr),
             contentScale = ContentScale.Crop,
-            modifier = thumbnailInset.size(68.dp).then(thumbnailClip).clipToBounds().desktopModifyBlurredState(blurred, showMenu).privacyBlur(fullSize = false, imageBitmap, blurred, chatViewScrollState.collectAsState(), onLongClick = { showMenu.value = true })
+            modifier = thumbnailInset.size(68.dp).then(thumbnailClip).clipToBounds().desktopModifyBlurredState(blurred, showMenu).privacyBlur(fullSize = false, image.bitmap, blurred, chatViewScrollState.collectAsState(), onLongClick = { showMenu.value = true })
           )
         }
         is MsgContent.MCVideo -> {
           QuotedMsgOrGap(qi)
-          val imageBitmap = remember(qi.content.image) { base64ToBitmap(qi.content.image) }
+          val image = rememberBase64ImagePainter(qi.content.image)
           Image(
-            imageBitmap,
+            image,
             contentDescription = stringResource(MR.strings.video_descr),
             contentScale = ContentScale.Crop,
-            modifier = thumbnailInset.size(68.dp).then(thumbnailClip).clipToBounds().desktopModifyBlurredState(blurred, showMenu).privacyBlur(fullSize = false, imageBitmap, blurred, chatViewScrollState.collectAsState(), onLongClick = { showMenu.value = true })
+            modifier = thumbnailInset.size(68.dp).then(thumbnailClip).clipToBounds().desktopModifyBlurredState(blurred, showMenu).privacyBlur(fullSize = false, image.bitmap, blurred, chatViewScrollState.collectAsState(), onLongClick = { showMenu.value = true })
           )
         }
         is MsgContent.MCFile, is MsgContent.MCVoice -> {

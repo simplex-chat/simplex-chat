@@ -256,7 +256,8 @@ Both layouts: `MarkdownText` draws message text in [`messageTextColor()`](../../
 ### Animated Images
 
 `SimpleAndAnimatedImageView` is `expect`/`actual`. Android delegates to coil, which drives the animation
-itself. Desktop decodes frames with Skia's `Codec` in `platform/AnimatedImage.desktop.kt`, where
+itself: from Android 11 it decodes GIF and animated WebP with `ImageDecoderDecoder`; on earlier versions it decodes GIF
+with `GifDecoder` and shows an animated WebP as a still image. Desktop decodes frames with Skia's `Codec` in `platform/AnimatedImage.desktop.kt`, where
 `rememberAnimatedImage(data, still, hidden)` returns the frame to draw and falls back to the still image when
 the data is not an animation, exceeds the decode bounds, or fails before showing a frame. Decoding runs off the UI thread
 on two threads of the shared pool, and pauses while the window is minimized or hidden, while the image is behind the
@@ -264,6 +265,30 @@ privacy blur, and while a full screen modal covers the chat. An animation whose 
 decode stops on the frame it reached rather than falling back to the still. The chat list preview (`smallView`) stays a
 still image. Only GIF reaches this path: desktop decodes stills with ImageIO, which has no WebP reader, so a
 received `.webp` renders only as the sender's preview and never opens full screen.
+
+### Pictures in Messages
+
+The pictures that messages contain as base64 are drawn by `rememberBase64ImagePainter` in `platform/Images.kt`:
+previews of images, videos and links, quoted pictures, profile pictures and the pictures of chat links. A picture in
+the cache of decoded pictures is drawn at once, and so is the error picture of a picture that is not a JPEG or PNG
+(`isJpegOrPng`) or whose header cannot be read or exceeds the size limits. For any other picture, the size of the decoded picture is read from its header
+(`base64BitmapSize`), the picture's area has that size and is blank, and the picture is decoded on one background
+thread (`base64ImageDecoder`); the other parts of the item, such as file status icons, are drawn meanwhile. A picture
+whose view leaves the composition before its decoding starts is not decoded. A picture whose header is readable keeps
+the header's size: when its decoding fails, the error picture is drawn at that size. Pictures are decoded with the
+subsampling of `imageSampleSize(width, height, 512)`, at most about one megapixel. The cache holds up to 1000 entries
+and 64 MB of bitmap memory and keys, and keeps the error picture of a picture that cannot be decoded. Android clears
+the cache when the app's UI is hidden or memory is low (`onTrimMemory` at `TRIM_MEMORY_UI_HIDDEN` or above).
+
+Notifications of contact requests and incoming calls decode the contact's picture with `base64ToBitmap` where they are
+created. The Android call service shows the app icon until the picture is decoded on the background thread. The
+compose area decodes the user's own pictures on the UI thread (`ComposeImageView`, `ComposeLinkView`).
+
+### Videos
+
+On desktop, the player (`VideoPlayer`) of a video item whose file is not encrypted is created when the video is played;
+until then, the item shows the sender's preview (`CIVideoView`). On Android, the player of such an item is created with
+its view and reads the file when the video is played.
 
 ---
 
