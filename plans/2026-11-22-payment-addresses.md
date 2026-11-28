@@ -1,6 +1,6 @@
 # Payment addresses in messages
 
-Date: 2026-11-22, revised 2026-11-26. References are to master at 8f5dfa3d4; those of sections Bare forms and Groups and of the alert rows of sections Presentation and Parts are to master at 94e9d08f5. Haskell paths without a directory are in `src/Simplex/Chat/`. Sources are listed at the end as [S1]–[S43], read on 2026-11-22 and 2026-11-26.
+Date: 2026-11-22, revised 2026-11-28. References are to master at 8f5dfa3d4; those of sections Bare forms and Groups and of the alert rows of sections Presentation and Parts are to master at 94e9d08f5. Haskell paths without a directory are in `src/Simplex/Chat/`. Sources are listed at the end as [S1]–[S43], read on 2026-11-22 and 2026-11-26.
 
 ## Problem
 
@@ -545,7 +545,7 @@ URI              as written, with
 - The keys in lower case: Bitcoin Core compares them as written [S14].
 - `//` removed: BOLT 11 [S4]; `dogecoin://` is rewritten by Dogecoin Core [S14].
 - `zel:` stays `zel:` and `flux:` stays `flux:`: each opens the wallets that register it.
-- The query is written by `strEncode` of `QueryStringParams` without escaping (simplexmq Agent/QueryString.hs), which writes the keys and the values as they are; the module's own `strP` is not used: it splits on ";" too, so rule U4 could not see ";", and it decodes the values, so the wallet URI would be written again with other escapes.
+- The query is written by `strEncode` of `QueryStringParams` without escaping (simplexmq Agent/QueryString.hs), which writes the values as they are, and the keys, of letters, digits and -._~, unchanged; the module's own `strP` is not used: it splits on ";" too, so rule U4 could not see ";", and it decodes the values, so the wallet URI would be written again with other escapes.
 - The wallet URI is encoded in the QR code without the app logo (`withLogo: false`, QRCode.swift:60-108, QRCode.kt:66-72).
 
 ## Apps
@@ -690,6 +690,9 @@ Alert texts of the app tests:
 | from alice, `lightning:LNURL1DP68…XFQ5FNS` | alice: ϟ lnurl1…5fns |
 | from alice in a group, `ltc1q2gy6…snwfdv` without a verified signature | alice: ⚠ ltc1q2…wfdv (not signed) |
 | sent by the user, `bc1q2gy6…505d4u` | ₿ bc1q2g…5d4u |
+| sent by the user in a group, `ltc1q2gy6…snwfdv` without a verified signature | ⚠ ltc1q2…wfdv (not signed) |
+| a note of the user, `bc1q2gy6…505d4u` | ₿ bc1q2g…5d4u |
+| a post of the channel team, `bc1q2gy6…505d4u` | team: ₿ bc1q2g…5d4u |
 
 ```mermaid
 flowchart LR
@@ -811,7 +814,7 @@ Each test that expects a payment link fails on master.
 | File | Test |
 |---|---|
 | tests/MarkdownTests.hs | `bc1q2gy6…505d4u` and its upper-case form are parsed as `ChainAddressLink` with `CYBitcoin Nothing`, the address in lower case and `walletUri` `bitcoin:` and the address; the address with its last character changed is text; the BIP-350 Taproot address `bc1p0xlx…zk5jj0` is a link, and the same program with a bech32 checksum, `bc1p0xlx…h2y7hd`, is text |
-| | `BITCOIN:BC1Q2GY6…?AMOUNT=0.001` is parsed with `walletUri` `bitcoin:BC1Q2GY6…?amount=0.001`; `?amount=0.001&pop` with `walletUri` ending `&pop=`; `amount=0.000000001` and `amount=1,000` are text; so are the keys `x%41` and `a:b` |
+| | `BITCOIN:BC1Q2GY6…?AMOUNT=0.001` is parsed with `walletUri` `bitcoin:BC1Q2GY6…?amount=0.001`; `?amount=0.001&pop` with `walletUri` ending `&pop=`; `amount=0.000000001` and `amount=1,000` are text; so are the keys `x%41` and `a:b`; every key that a scheme reads is matched in upper case |
 | | `37116639cErLzxER6tL3a6EH2DbdETwTxd`, a P2SH address made for the test from random bytes, which starts with 8 digits, is one `ChainAddressLink`, also before a final dot; on master it is split by `phoneP` (Markdown.hs:363, 484-494) |
 | | the README.md:151-158 addresses, bare and as URIs: Monero byte 42 as `CYTicker "XMR"`, CashAddr with and without its prefix as `BCH`, EIP-55 as `CYUnknown UCChain`, `t1` and `u1` as `ZEC`, Dogecoin as `DOGE`; `solana:7JCf…ARnu?amount=0.5` as `CYTicker "SOL" Nothing (Just "0.5")`; with the USDC mint of the token table, `CYTicker "USDC" (Just "Solana")`; with another mint, `CYUnknown UCToken` |
 | | `flux:t1fwj…S5Jg?amount=5&message=Thanks` and `zel:t1fwj…S5Jg?amount=5` as `CYTicker "FLUX" Nothing (Just "5")`, with `walletUri` in their own schemes; `flux:za19w5…pj3?amount=1&memo=…`, a Flux Sapling address made for the test from random bytes, and the bare `za19w5…pj3` as `FLUX`; `zel:?action=pay&coin=flux&address=t1fwj…S5Jg&amount=3` as `FLUX`; the bare `t1fwj…S5Jg` as `ZEC`; text (U5, U7): `flux:` with a Zcash `zs1…` or `u1…` address or with a memo and a transparent address, `zcash:za1…`, the `sign` and `getaddress` actions, the coin `bitcoin`, and a `callback`, also as `ACTION` and `CALLBACK` |
@@ -825,11 +828,13 @@ Each test that expects a payment link fails on master.
 | | `parse time`, section Timing |
 | tests/JSONTests.hs | the JSON of a `bitcoin:` URI with `lightning=`, an `ethereum:` URI with a chain, a token transfer, a transfer on an unknown chain and a hyperlink is decoded to the same value |
 | tests/ChatTests/Direct.hs | `filter chat by link content`: a message with a bare address is not in the Links filter (Q5 b) |
-| tests/ChatTests/Direct.hs | `chain addresses in a received message`: alice sends a bare address, `[Donate](monero:…)` and a bare invoice; `apiFixture` (tests/ChatTests/Utils.hs:1015-1030) records bob's `/_get chat @2 count=1`, whose item has `ChainAddressLink` in `formattedText`, and the markdown of each `ChainCurrency` constructor and `UnknownCurrency` value, to tests/fixtures/api/chain-addresses/links.json, and alice's `/_get chat @2 count=1`, the sent item after its receipt, to tests/fixtures/api/chain-addresses/sent.json; its pattern is in "App test fixtures" (scripts/ci/README.md:51) |
+| tests/ChatTests/Direct.hs | `chain addresses in a received message`: alice sends a bare address, `[Donate](monero:…)` and a bare invoice; `apiFixture` (tests/ChatTests/Utils.hs:1015-1030) records bob's `/_get chat @2 count=1`, whose item has `ChainAddressLink` in `formattedText`, and the markdown of each `ChainCurrency` constructor and `UnknownCurrency` value, to tests/fixtures/api/chain-addresses/links.json, and alice's `/_get chat @2 count=1`, the sent item after its receipt, to tests/fixtures/api/chain-addresses/sent.json, and alice's `/_get chat *1 count=1`, a note with a bare address, to tests/fixtures/api/chain-addresses/note.json; its pattern is in "App test fixtures" (scripts/ci/README.md:51) |
 | tests/APIDocs.hs | the bots API files, generated again with the new types |
 | app tests on tests/fixtures/api/chain-addresses/links.json | `Format.chainAddressLink` is decoded; each `ChainCurrency` constructor is mapped to its link text and alert text; a mocked open failure is followed by the alert `No wallet app`, whose Copy copies the link and whose QR code shows the QR code; an address in a profile description is its text |
-| app tests on tests/fixtures/api/chain-addresses/sent.json and group-sent.json | the alert of the user's own item, in a direct chat and in a group, has no name |
+| app tests on tests/fixtures/api/chain-addresses/sent.json, group-sent.json and note.json | the alert of the user's own item, in a direct chat, in a group and in notes, has no name; so has the recorded note read as a received note, a direction that the core does not create |
+| app tests on tests/fixtures/api/chain-addresses/channel.json | the alert of a channel post names the channel |
 | tests/ChatTests/Groups.hs | `chain addresses in group messages are signed`: alice sends a bare address to a group without the signing preference; the item is `(signed)` for alice, bob and cath; a plain message after it is not signed, and its edit that adds a Litecoin address stays unsigned; `apiFixture` records bob's `/_get chat #1 count=2` to tests/fixtures/api/chain-addresses/group.json, and alice's, after the receipts of both items, to tests/fixtures/api/chain-addresses/group-sent.json |
+| tests/ChatTests/Groups.hs | `should sign as-channel post with a chain address`: the owner alice posts a bare address as the channel without `sign=on`; the post is `(signed)` for alice, the relay bob and the subscriber cath; `apiFixture` records cath's `/_get chat #1 count=1` to tests/fixtures/api/chain-addresses/channel.json |
 | app tests on tests/fixtures/api/chain-addresses/group.json | the chain address of the verified item is a link; that of the unsigned item is the orange link `(not signed)`, and its alert text has the same warning (Q7 c) |
 
 ### Timing
