@@ -13,6 +13,7 @@ import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatController.getNetCfg
 import chat.simplex.common.model.json
 import chat.simplex.common.platform.*
+import chat.simplex.common.reloadUiOrAlert
 import chat.simplex.common.ui.theme.WarningOrange
 import chat.simplex.common.views.onboarding.ReadMoreButton
 import chat.simplex.res.*
@@ -111,6 +112,9 @@ data class GitHubRelease(
   @Transient
   val semVer: SemVer? = SemVer.from(tagName)
 
+  @Transient
+  val buildNumber: Int? = tagName.substringAfterLast('-', "").toIntOrNull()
+
   val isConsideredBeta: Boolean = preRelease || semVer == null || semVer.isNotStable
 }
 
@@ -158,8 +162,16 @@ fun showAppUpdateNotice() {
 }
 
 private var updateCheckerJob: Job = Job()
+fun stopUpdateChecker() = updateCheckerJob.cancel()
 fun setupUpdateChecker() = withLongRunningApi {
   updateCheckerJob.cancel()
+  if (appPrefs.appUpdateChannel.get() != AppUpdatesChannel.INTERNAL) {
+    try {
+      removeUiUpdates()
+    } catch (e: Exception) {
+      Log.e(TAG, "UI updates not removed: ${e.stackTraceToString()}")
+    }
+  }
   if (appPrefs.appUpdateChannel.get() == AppUpdatesChannel.DISABLED) {
     return@withLongRunningApi
   }
@@ -176,92 +188,139 @@ private fun createUpdateJob() {
 }
 
 
+private const val RELEASES_REPO = "simplex-chat/simplex-chat"
+private const val INTERNAL_BUILDS_REPO = "simplex-chat/simplex-chat-test"
+internal var gitHubApiUrl = "https://api.github.com"
+
 fun checkForUpdate() {
   Log.d(TAG, "Checking for update")
-  val currentSemVer = SemVer.fromCurrentVersionName()
-  if (currentSemVer == null) {
-    Log.e(TAG, "Current SemVer cannot be parsed")
-    return
-  }
-  val client = setupHttpClient()
   try {
-    val request = Request.Builder().url("https://api.github.com/repos/simplex-chat/simplex-chat/releases").addHeader("User-agent", "curl").build()
-    client.newCall(request).execute().use { response ->
-      response.body?.use {
-        val body = it.string()
-        val releases = json.decodeFromString<List<GitHubRelease>>(body)
-        val release = when (appPrefs.appUpdateChannel.get()) {
-          AppUpdatesChannel.STABLE -> releases.firstOrNull { r -> !r.draft && !r.isConsideredBeta && currentSemVer < r.semVer }
-          AppUpdatesChannel.BETA -> releases.firstOrNull { r -> !r.draft && currentSemVer < r.semVer }
-          AppUpdatesChannel.DISABLED -> return
-        }
+    val channel = appPrefs.appUpdateChannel.get()
+    val release = when (channel) {
+      AppUpdatesChannel.STABLE -> chooseStableRelease(installedSemVer() ?: return, getGitHubReleases(RELEASES_REPO))
+      AppUpdatesChannel.BETA -> chooseBetaRelease(installedSemVer() ?: return, getGitHubReleases(RELEASES_REPO))
+      AppUpdatesChannel.INTERNAL -> chooseInternalRelease(BuildConfigCommon.DESKTOP_VERSION_CODE, getGitHubReleases(INTERNAL_BUILDS_REPO))
+      AppUpdatesChannel.DISABLED -> return
+    }
 
-        if (release == null || release.tagName == appPrefs.appSkippedUpdate.get()) {
-          Log.d(TAG, "Skipping update because of the same version or skipped version")
-          return
-        }
-        val assets = chooseGitHubReleaseAssets(release)
-        // No need to show an alert if no suitable packages were found. But for Flatpak users it's useful to see release notes anyway
-        if (assets.isEmpty() && !isRunningFromFlatpak()) {
-          Log.d(TAG, "No assets to download for current system")
-          return
-        }
-        val lines = ArrayList<String>()
-        for (line in release.body.lines()) {
-          if (line == "Commits:") break
-          lines.add(line)
-        }
-        val text = lines.joinToString("\n")
-        AlertManager.shared.showAlertDialogButtonsColumn(
-          generalGetString(MR.strings.app_check_for_updates_update_available).format(release.name),
-          text = text,
-          textAlign = TextAlign.Start,
-          dismissible = false,
-          belowTextContent = {
-            ReadMoreButton(release.htmlUrl)
-          },
-          buttons = {
-            Column {
-              for (asset in assets) {
-                SectionItemView({
-                  AlertManager.shared.hideAlert()
-                  chatModel.updatingProgress.value = 0f
-                  withLongRunningApi {
-                    try {
-                      downloadAsset(asset)
-                    } finally {
-                      chatModel.updatingProgress.value = null
-                    }
+    if (release == null || release.tagName == appPrefs.appSkippedUpdate.get()) {
+      Log.d(TAG, "Skipping update because of the same version or skipped version")
+      return
+    }
+    val uiUpdate = if (channel == AppUpdatesChannel.INTERNAL) uiUpdateOffer(release) else null
+    if (uiUpdate is UiUpdateOffer.Staged) {
+      if (appPrefs.appUpdateChannel.get() == channel) showUiUpdateStagedAlert()
+      return
+    }
+    val assets = chooseGitHubReleaseAssets(release)
+    // No need to show an alert if no suitable packages were found. But for Flatpak users it's useful to see release notes anyway
+    if (assets.isEmpty() && uiUpdate == null && !isRunningFromFlatpak()) {
+      Log.d(TAG, "No assets to download for current system")
+      return
+    }
+    val lines = ArrayList<String>()
+    for (line in release.body.lines()) {
+      if (line == "Commits:") break
+      lines.add(line)
+    }
+    val text = lines.joinToString("\n")
+    if (appPrefs.appUpdateChannel.get() != channel) return
+    fun showUpdateAlert(uiDownload: UiUpdateOffer.Download?) {
+      AlertManager.shared.showAlertDialogButtonsColumn(
+        generalGetString(MR.strings.app_check_for_updates_update_available).format(release.name),
+        text = text,
+        textAlign = TextAlign.Start,
+        dismissible = false,
+        belowTextContent = {
+          ReadMoreButton(release.htmlUrl)
+        },
+        buttons = {
+          Column {
+            if (uiDownload != null) {
+              SectionItemView({
+                AlertManager.shared.hideAlert()
+                withLongRunningApi {
+                  withContext(Dispatchers.Main) {
+                    showToast(generalGetString(MR.strings.app_check_for_updates_download_started))
                   }
-                }) {
-                  Text(
-                    generalGetString(MR.strings.app_check_for_updates_button_download).format(
-                      if (asset.name.length > 34) "…" + asset.name.substringAfter("simplex-desktop-") else asset.name,
-                      formatBytes(asset.size)), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary
-                  )
+                  val staged = uiDownload.downloadAndStage()
+                  if (appPrefs.appUpdateChannel.get() != channel) return@withLongRunningApi
+                  if (staged) showUiUpdateStagedAlert() else showUpdateAlert(null)
                 }
-              }
-
-              SectionItemView({
-                AlertManager.shared.hideAlert()
-                skipRelease(release)
               }) {
-                Text(generalGetString(MR.strings.app_check_for_updates_button_skip), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = WarningOrange)
-              }
-
-              SectionItemView({
-                AlertManager.shared.hideAlert()
-              }) {
-                Text(generalGetString(MR.strings.app_check_for_updates_button_remind_later), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+                Text(
+                  generalGetString(MR.strings.app_check_for_updates_button_download_ui).format(formatBytes(uiDownload.asset.size)),
+                  Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary
+                )
               }
             }
+            for (asset in assets) {
+              SectionItemView({
+                AlertManager.shared.hideAlert()
+                chatModel.updatingProgress.value = 0f
+                withLongRunningApi {
+                  try {
+                    downloadAsset(asset)
+                  } finally {
+                    chatModel.updatingProgress.value = null
+                  }
+                }
+              }) {
+                Text(
+                  generalGetString(MR.strings.app_check_for_updates_button_download).format(
+                    if (asset.name.length > 34) "…" + asset.name.substringAfter("simplex-desktop-") else asset.name,
+                    formatBytes(asset.size)), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary
+                )
+              }
+            }
+
+            SectionItemView({
+              AlertManager.shared.hideAlert()
+              skipRelease(release)
+            }) {
+              Text(generalGetString(MR.strings.app_check_for_updates_button_skip), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = WarningOrange)
+            }
+
+            SectionItemView({
+              AlertManager.shared.hideAlert()
+            }) {
+              Text(generalGetString(MR.strings.app_check_for_updates_button_remind_later), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+            }
           }
-        )
-      }
+        }
+      )
     }
+    showUpdateAlert(uiUpdate as? UiUpdateOffer.Download)
   } catch (e: Exception) {
     Log.e(TAG, "Failed to get the latest release: ${e.stackTraceToString()}")
   }
+}
+
+private fun installedSemVer(): SemVer? {
+  val currentSemVer = SemVer.fromCurrentVersionName()
+  if (currentSemVer == null) {
+    Log.e(TAG, "Current SemVer cannot be parsed")
+  }
+  return currentSemVer
+}
+
+internal fun chooseStableRelease(installed: SemVer, releases: List<GitHubRelease>): GitHubRelease? =
+  releases.firstOrNull { r -> !r.isConsideredBeta && installed < r.semVer }
+
+internal fun chooseBetaRelease(installed: SemVer, releases: List<GitHubRelease>): GitHubRelease? =
+  releases.firstOrNull { r -> installed < r.semVer }
+
+internal fun chooseInternalRelease(installedCode: Int, releases: List<GitHubRelease>): GitHubRelease? =
+  releases
+    .mapNotNull { r -> r.buildNumber?.let { code -> r to code } }
+    .filter { (_, code) -> code > installedCode }
+    .maxByOrNull { (_, code) -> code }
+    ?.first
+
+private fun getGitHubReleases(repo: String): List<GitHubRelease> {
+  val request = Request.Builder().url("$gitHubApiUrl/repos/$repo/releases").addHeader("User-agent", "curl").build()
+  val releases = setupHttpClient().newCall(request).execute().use { response -> json.decodeFromString<List<GitHubRelease>>(response.body!!.string()) }
+  return releases.filter { r -> !r.draft }
 }
 
 private fun setupHttpClient(): OkHttpClient {
@@ -499,4 +558,54 @@ private suspend fun installAppUpdate(file: File) = withContext(Dispatchers.IO) {
     }
   }
   Unit
+}
+
+private const val UI_UPDATE_ASSET_PREFIX = "simplex-desktop-ui-"
+
+private sealed class UiUpdateOffer {
+  object Staged : UiUpdateOffer()
+  class Download(val asset: GitHubAsset, val base: String) : UiUpdateOffer()
+}
+
+private fun uiUpdateOffer(release: GitHubRelease): UiUpdateOffer? {
+  try {
+    val base = installedUiUpdateBase() ?: return null
+    val asset = release.assets.firstOrNull { it.name == "$UI_UPDATE_ASSET_PREFIX$base.zip" && it.size <= UI_UPDATE_MAX_SIZE } ?: return null
+    val dir = uiUpdateDir(release.buildNumber ?: return null)
+    if (dir.exists()) return if (uiUpdateState(dir) == UiUpdateState.STAGED) UiUpdateOffer.Staged else null
+    return UiUpdateOffer.Download(asset, base)
+  } catch (e: Exception) {
+    Log.e(TAG, "UI update not offered: ${e.stackTraceToString()}")
+    return null
+  }
+}
+
+private fun UiUpdateOffer.Download.downloadAndStage(): Boolean {
+  try {
+    tmpDir.mkdirs()
+    val zip = File(tmpDir, asset.name)
+    try {
+      val request = Request.Builder().url(asset.browserDownloadUrl).addHeader("User-agent", "curl").build()
+      val downloaded = setupHttpClient().newCall(request).execute().use { response ->
+        val body = response.body
+        response.isSuccessful && body != null && zip.outputStream().use { copyLimited(body.byteStream(), it, asset.size) } != null
+      }
+      return downloaded && stageDownloadedUiUpdate(zip, base)
+    } finally {
+      zip.delete()
+    }
+  } catch (e: Exception) {
+    Log.e(TAG, "UI update not staged: ${e.stackTraceToString()}")
+    return false
+  }
+}
+
+private fun showUiUpdateStagedAlert() {
+  AlertManager.shared.showAlertDialog(
+    title = generalGetString(MR.strings.app_check_for_updates_installed_successfully_title),
+    text = generalGetString(MR.strings.app_check_for_updates_installed_successfully_desc),
+    confirmText = generalGetString(MR.strings.app_check_for_updates_button_reload),
+    onConfirm = { withApi { reloadUiOrAlert() } },
+    dismissText = generalGetString(MR.strings.ok)
+  )
 }

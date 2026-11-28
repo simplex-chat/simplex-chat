@@ -575,6 +575,18 @@ class ChangesTest(GitRepoTest):
         self.assertEqual(self.builds("tests/Bots/StoreService/FakeStripe.hs", "scripts/store-service/dev/contract-run.sh"), {"haskell"})
         self.assertEqual(self.values["scopes"], "names-e2e")
 
+    def test_internal_release_change_tests_its_scope(self):
+        self.assertEqual(self.builds(".github/workflows/internal-release.yml", ".github/workflows/daily-bump.yml", "scripts/ci/internal-release/publish.sh"), set())
+        self.assertEqual(self.values["scopes"], "internal-release")
+
+    def test_ui_update_script_change_runs_the_desktop_workflow_and_tests_the_internal_release_scope(self):
+        self.assertEqual(self.builds("scripts/ci/desktop-linux/ui-update.py"), {"desktop-linux"})
+        self.assertEqual(self.values["scopes"], "internal-release")
+
+    def test_app_updater_test_change_builds_kotlin_and_tests_the_internal_release_scope(self):
+        self.assertEqual(self.builds("apps/multiplatform/common/src/desktopTest/kotlin/chat/simplex/app/AppUpdaterTest.kt"), {"kotlin"})
+        self.assertEqual(self.values["scopes"], "internal-release")
+
 
 class PackageStateTest(GitRepoTest):
     def setUp(self):

@@ -1,8 +1,11 @@
 #!/bin/bash
 
 # Starts the desktop app on a virtual display and runs the scripted UI cases with the ui helper: onboarding to the
-# chat list, a local group, then the chat list with the toolbar at the bottom (the default) and at the top, then
-# tests/fixtures/test.jpg and logo-large-rgba.png picked in the file dialog and sent in the group.
+# chat list, a local group, then the chat list with the toolbar at the bottom (the default), the update channels in
+# Settings with "Allow internal builds" off and on, Internal selected and reset to Stable by the toggle turned off,
+# the chat list with the toolbar at the top, then
+# tests/fixtures/test.jpg and logo-large-rgba.png picked in the file dialog and sent in the group, then, with
+# UI_UPDATE_JARS and UI_UPDATE_KEY_FILE, UI updates of the next build numbers run, failed and removed at restarts.
 # Usage: scripts/ci/desktop-linux/smoke-test.sh <app dir> <output dir> [start|onboarding|layouts|setup|backend]
 # With "start" it stops at the first screen, for an agent to go on from; with "onboarding", at the chat list.
 # "setup" creates the group, makes the test SMP server (backend.sh) the one that resolves SimpleX names, and stops;
@@ -34,6 +37,10 @@ checks=$UI_OUT/checks.txt
 switch_x=335
 fixtures=$(cd "$(dirname "$0")/../../../tests/fixtures" && pwd)
 state=${UI_STATE:-${RUNNER_TEMP:-/tmp}/ui}
+settings=$state/config/simplex/settings.properties
+ui_updates=$state/data/simplex/ui_updates
+gradle_properties=$(dirname "$0")/../../../apps/multiplatform/gradle.properties
+version=$(sed -n 's/^desktop.version_name=//p' "$gradle_properties")
 compose_y=730
 paperclip_x=415
 message_x=700
@@ -118,11 +125,11 @@ left_pane_position() {
 }
 
 on_screen() {
-  left_pane_position "$1" > /dev/null
+  left_pane_position "$1" "${2:-}" > /dev/null
 }
 
 not_on_screen() {
-  ! left_pane_position "$1" > /dev/null
+  ! left_pane_position "$1" "${2:-}" > /dev/null
 }
 
 y_of() {
@@ -172,9 +179,11 @@ on_chat_list() {
   not_on_screen "Settings" && not_on_screen "Chat preferences" && not_on_screen "Network" && not_on_screen "New chat" && on_screen "Search or paste SimpleX link"
 }
 
-# Opens Settings from the user menu, behind the profile picture at the left of the bottom toolbar.
+# Opens Settings from the user menu, behind the profile picture at the left of the toolbar, in the line of its title "Chats".
 open_settings() {
-  "$ui" click 27 730
+  local y
+  y=$(y_of Chats) || y=730
+  "$ui" click 27 "$y"
   "$ui" click-text "Settings" 10
 }
 
@@ -399,6 +408,252 @@ send_images() {
   send_image logo-large-rgba.png png
 }
 
+open_update_channels() {
+  local x y
+  read -r x y < <(left_pane_position "$1" exact) || fail "no update channel $1 in Settings > app version"
+  "$ui" click "$x" "$y"
+  "$ui" wait Beta 10 || fail "no update channel menu"
+}
+
+switch_internal_builds() {
+  local y
+  "$ui" click-text "Developer tools" 10
+  "$ui" wait "Show developer options" 10
+  scroll_to "Allow internal builds" || fail "no \"Allow internal builds\" in Developer tools"
+  "$ui" shot "internal-builds-before-$1"
+  y=$(y_of "Allow internal builds")
+  "$ui" click "$switch_x" "$y"
+  "$ui" shot "internal-builds-$1"
+}
+
+update_check_lines() {
+  grep -cE "Failed to get the latest release|Skipping update|No assets to download" "$UI_OUT/app.log" || true
+}
+
+end_update_check() {
+  for _ in $(seq 30); do
+    if "$ui" find "Remind later" > /dev/null 2>&1; then
+      "$ui" click-text "Remind later" 10
+      return 0
+    fi
+    [ "$(update_check_lines)" -gt "$1" ] && return 0
+    sleep 1
+  done
+  return 1
+}
+
+open_app_version() {
+  local x y
+  open_settings
+  scroll_to "$version" || fail "no app version $version in Settings"
+  read -r x y < <(left_pane_position "$version") || fail "no app version $version in Settings"
+  "$ui" click "$x" "$y"
+  "$ui" wait "Check for updates" 10
+}
+
+check_internal_builds() {
+  local lines
+  open_app_version
+  open_update_channels Disabled
+  "$ui" shot update-channels
+  check "the update channels lack Internal while internal builds are not allowed" not_on_screen Internal exact
+  "$ui" click-text "App version" 10
+  switch_internal_builds on
+  check "\"Allow internal builds\" is saved on" grep -qx AllowInternalBuilds=true "$settings"
+  "$ui" key Escape
+  "$ui" wait "Check for updates" 10
+  open_update_channels Disabled
+  "$ui" shot update-channels-internal
+  check "the update channels list Internal while internal builds are allowed" on_screen Internal exact
+  lines=$(update_check_lines)
+  "$ui" click-text Internal 10
+  check "the update check started by selecting Internal logs its end or offers an update, closed with Remind later" end_update_check "$lines"
+  "$ui" shot update-channel-internal
+  check "Internal is saved as the update channel" grep -qx AppUpdateChannel=INTERNAL "$settings"
+  check "Internal is shown as the update channel" in_line_with Internal "Check for updates"
+  lines=$(update_check_lines)
+  switch_internal_builds off
+  check "the update check started by the reset to Stable logs its end or offers an update, closed with Remind later" end_update_check "$lines"
+  check "\"Allow internal builds\" is saved off" grep -qx AllowInternalBuilds=false "$settings"
+  check "the update channel is saved as Stable after internal builds are not allowed" grep -qx AppUpdateChannel=STABLE "$settings"
+  "$ui" key Escape
+  "$ui" wait "Check for updates" 10
+  "$ui" shot update-channel-stable
+  check "Stable is shown as the update channel after internal builds are not allowed" in_line_with Stable "Check for updates"
+  open_update_channels Stable
+  "$ui" shot update-channels-reset
+  check "the update channels lack Internal after internal builds are not allowed" not_on_screen Internal exact
+  "$ui" click-text "App version" 10
+  back_to_chat_list || fail "no chat list after the update channels"
+}
+
+stage_ui_update() {
+  python3 "$(dirname "$0")/ui-update.py" "$app_dir" "$UI_UPDATE_JARS" "$UI_UPDATE_KEY_FILE" "$1" "$ui_updates/$1" "${@:2}"
+}
+
+ui_update_state() {
+  [ "$(cat "$ui_updates/$1/state" 2> /dev/null)" = "$2" ]
+}
+
+ui_update_confirmed() {
+  for _ in $(seq 30); do
+    ui_update_state "$1" CONFIRMED && return 0
+    sleep 1
+  done
+  return 1
+}
+
+ui_update_removed() {
+  for _ in $(seq 30); do
+    [ -e "$ui_updates/$1" ] || return 0
+    sleep 1
+  done
+  return 1
+}
+
+start_app() {
+  local lines
+  lines=$(update_check_lines)
+  "$ui" start "$app_dir"
+  "$ui" wait "Search or paste SimpleX link" 60 || fail "no chat list after the app started"
+  end_update_check "$lines" || true
+}
+
+use_installed_ui() {
+  open_app_version
+  "$ui" click-text "Developer tools" 10
+  "$ui" wait "Show developer options" 10
+  scroll_to "Use the installed UI" || fail "no \"Use the installed UI\" in Developer tools"
+  "$ui" shot use-installed-ui
+  "$ui" click-text "Use the installed UI" 10
+  "$ui" wait "Search or paste SimpleX link" 60 || fail "no chat list after \"Use the installed UI\" reloaded the UI"
+}
+
+app_build() {
+  local shown=0
+  open_app_version
+  "$ui" shot "app-build-$1"
+  on_screen "App build: $1" || shown=1
+  back_to_chat_list || fail "no chat list after the app version"
+  return $shown
+}
+
+check_ui_updates() {
+  local code lines
+  code=$(sed -n 's/^desktop.version_code=//p' "$gradle_properties")
+  "$ui" stop
+  sed -i -e 's/^AppUpdateChannel=.*/AppUpdateChannel=INTERNAL/' -e 's/^AllowInternalBuilds=.*/AllowInternalBuilds=true/' "$settings"
+  stage_ui_update $((code + 1))
+  start_app
+  check "the UI update of build $((code + 1)) runs after a restart" app_build $((code + 1))
+  check "the UI update $((code + 1)) is confirmed after the chat started" ui_update_confirmed $((code + 1))
+  "$ui" stop
+  stage_ui_update $((code + 2)) --without chat/simplex/desktop/MainKt.class
+  start_app
+  check "the UI update $((code + 2)) without its main class is marked failed" ui_update_state $((code + 2)) FAILED
+  check "the UI update $((code + 1)) runs after $((code + 2)) failed to load" app_build $((code + 1))
+  check "the restarted UI update $((code + 1)) is confirmed again" ui_update_confirmed $((code + 1))
+  "$ui" stop
+  stage_ui_update $((code + 3))
+  "$ui" start "$app_dir"
+  "$ui" stop
+  check "the UI update $((code + 3)) stays started when the app stops before the confirmation" ui_update_state $((code + 3)) STARTED
+  start_app
+  check "the UI update $((code + 3)) is marked failed at the next start" ui_update_state $((code + 3)) FAILED
+  check "the UI update $((code + 1)) runs after $((code + 3)) failed to start" app_build $((code + 1))
+  check "the restarted UI update $((code + 1)) is confirmed again" ui_update_confirmed $((code + 1))
+  "$ui" stop
+  printf x >> "$(ls "$ui_updates/$((code + 1))"/common-desktop-*.jar)"
+  start_app
+  check "the UI update $((code + 1)) with a changed jar is removed" [ ! -e "$ui_updates/$((code + 1))" ]
+  check "the installed UI of build $code runs after the UI updates failed" app_build "$code"
+  "$ui" stop
+  stage_ui_update $((code + 4))
+  start_app
+  check "the UI update $((code + 4)) is confirmed after the chat started" ui_update_confirmed $((code + 4))
+  check "the older UI update $((code + 2)) stays until $((code + 4)) is confirmed at a second start" [ -e "$ui_updates/$((code + 2))" ]
+  "$ui" stop
+  start_app
+  check "the older UI updates are removed once $((code + 4)) is confirmed at a second start" ui_update_removed $((code + 2))
+  use_installed_ui
+  check "\"Use the installed UI\" marks the running UI update $((code + 4)) failed" ui_update_state $((code + 4)) FAILED
+  "$ui" stop
+  start_app
+  check "the installed UI of build $code runs after \"Use the installed UI\"" app_build "$code"
+  "$ui" stop
+  stage_ui_update $((code + 5))
+  start_app
+  check "the UI update $((code + 5)) is confirmed after the chat started" ui_update_confirmed $((code + 5))
+  "$ui" stop
+  "$ui" start "$app_dir"
+  "$ui" stop
+  check "the confirmed UI update $((code + 5)) is on trial when the app stops before its confirmation" ui_update_state $((code + 5)) RESTARTED
+  start_app
+  check "the confirmed UI update $((code + 5)) is marked failed at the next start" ui_update_state $((code + 5)) FAILED
+  check "the installed UI of build $code runs after $((code + 5)) failed to start" app_build "$code"
+  "$ui" stop
+  stage_ui_update $((code + 6))
+  start_app
+  check "the UI update $((code + 6)) is confirmed after the chat started" ui_update_confirmed $((code + 6))
+  open_app_version
+  lines=$(update_check_lines)
+  switch_internal_builds off
+  check "the update check started by leaving Internal logs its end or offers an update, closed with Remind later" end_update_check "$lines"
+  check "leaving Internal marks the running UI update $((code + 6)) removed" ui_update_state $((code + 6)) REMOVED
+  check "leaving Internal deletes the UI update $((code + 5))" [ ! -e "$ui_updates/$((code + 5))" ]
+  back_to_chat_list || fail "no chat list after leaving Internal"
+  "$ui" stop
+  start_app
+  check "the removed UI update $((code + 6)) is deleted at the next start" [ ! -e "$ui_updates/$((code + 6))" ]
+  check "the installed UI of build $code runs after leaving Internal" app_build "$code"
+}
+
+reload_ui() {
+  local x y
+  open_app_version
+  "$ui" click-text "Developer tools" 10
+  "$ui" wait "Show developer options" 10
+  scroll_to "Reload UI" || fail "no \"Reload UI\" in Developer tools"
+  read -r x y < <(left_pane_position "Reload UI") || fail "no \"Reload UI\" in Developer tools"
+  "$ui" shot "reload-ui-$1"
+  "$ui" click "$x" "$y"
+  "$ui" wait "Search or paste SimpleX link" 60 || fail "no chat list after the UI reload"
+}
+
+ui_reloads() {
+  grep -c "I: UI reload" "$UI_OUT/app.log" || true
+}
+
+chat_running_responses() {
+  grep -c "response type chatRunning" "$UI_OUT/app.log" || true
+}
+
+check_ui_reload() {
+  local code next reloads running
+  code=$(sed -n 's/^desktop.version_code=//p' "$gradle_properties")
+  next=$((code + 7))
+  "$ui" stop
+  sed -i -e 's/^AppUpdateChannel=.*/AppUpdateChannel=INTERNAL/' -e 's/^AllowInternalBuilds=.*/AllowInternalBuilds=true/' "$settings"
+  start_app
+  reloads=$(ui_reloads)
+  running=$(chat_running_responses)
+  stage_ui_update $next
+  reload_ui first
+  check "the UI reloads from the UI update $next, with the jars of build $((code + 1)), without a restart" app_build $((code + 1))
+  check "the reloaded UI finds the chat running" [ "$(chat_running_responses)" -gt "$running" ]
+  check "the reloaded UI lists \"$local_chat\"" on_screen "$local_chat"
+  check "the UI update $next is confirmed after the reload" ui_update_confirmed $next
+  reload_ui second
+  check "the UI reloads again from the UI update $next" app_build $((code + 1))
+  use_installed_ui
+  check "\"Use the installed UI\" marks the UI update $next failed" ui_update_state $next FAILED
+  check "\"Use the installed UI\" reloads the installed UI of build $code" app_build "$code"
+  sleep 15
+  check "the installed UI in a class loader of its own writes no state file into the app" [ ! -e "$app_dir/lib/app/state" ]
+  check "the app logs the three reloads" [ "$(ui_reloads)" -eq $((reloads + 3)) ]
+  grep "I: UI reload" "$UI_OUT/app.log"
+}
+
 # private routing to unknown servers only: the preset servers that would proxy name lookups can't reach the test SMP
 # server on 127.0.0.1; developer tools at the debug level put the app's debug log in app.log
 "$ui" start "$app_dir" NetworkSMPProxyMode=Unknown DeveloperTools=true LogLevel=DEBUG
@@ -454,9 +709,14 @@ if [ "$cases" = setup ] || [ "$cases" = backend ]; then
 fi
 
 check_layout bottom
+check_internal_builds
 use_top_toolbar
 check_layout top
 send_images
+if [ -n "${UI_UPDATE_JARS:-}" ]; then
+  check_ui_updates
+  check_ui_reload
+fi
 
 if grep -q '^FAIL' "$checks"; then
   fail "the smoke test failed checks: $(grep -c '^FAIL' "$checks") of $(grep -cE '^(PASS|FAIL)' "$checks")"

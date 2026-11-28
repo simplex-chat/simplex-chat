@@ -215,6 +215,7 @@ class AppPreferences {
   val appUpdateChannel = mkEnumPreference(SHARED_PREFS_APP_UPDATE_CHANNEL, AppUpdatesChannel.DISABLED) { AppUpdatesChannel.entries.firstOrNull { it.name == this } }
   val appSkippedUpdate = mkStrPreference(SHARED_PREFS_APP_SKIPPED_UPDATE, "")
   val appUpdateNoticeShown = mkBoolPreference(SHARED_PREFS_APP_UPDATE_NOTICE_SHOWN, false)
+  val allowInternalBuilds = mkBoolPreference(SHARED_PREFS_ALLOW_INTERNAL_BUILDS, false)
 
   val onboardingStage = mkEnumPreference(SHARED_PREFS_ONBOARDING_STAGE, OnboardingStage.OnboardingComplete) { OnboardingStage.values().firstOrNull { it.name == this } }
   val migrationToStage = mkStrPreference(SHARED_PREFS_MIGRATION_TO_STAGE, null)
@@ -453,6 +454,7 @@ class AppPreferences {
     private const val SHARED_PREFS_APP_UPDATE_CHANNEL = "AppUpdateChannel"
     private const val SHARED_PREFS_APP_SKIPPED_UPDATE = "AppSkippedUpdate"
     private const val SHARED_PREFS_APP_UPDATE_NOTICE_SHOWN = "AppUpdateNoticeShown"
+    private const val SHARED_PREFS_ALLOW_INTERNAL_BUILDS = "AllowInternalBuilds"
     private const val SHARED_PREFS_ONBOARDING_STAGE = "OnboardingStage"
     const val SHARED_PREFS_MIGRATION_TO_STAGE = "MigrationToStage"
     const val SHARED_PREFS_MIGRATION_FROM_STAGE = "MigrationFromStage"
@@ -571,6 +573,12 @@ object ChatController {
     stopReceiver()
     chatCtrl = ctrl
     if (wasRunning && ctrl != null) startReceiver()
+  }
+
+  fun handOffForReload() {
+    reloadedChatCtrl = chatCtrl
+    reloadedChatDbEncrypted = chatModel.chatDbEncrypted.value
+    setChatCtrl(null)
   }
 
   suspend fun getAgentSubsTotal(rh: Long?): Pair<SMPServerSubs, Boolean>? {
@@ -726,7 +734,7 @@ object ChatController {
       val users = listUsers(null)
       chatModel.users.clear()
       chatModel.users.addAll(users)
-      if (!chatRunning) {
+      if (!chatRunning || chatModel.chatRunning.value != true) {
         chatModel.currentUser.value = user
         chatModel.localUserCreated.value = true
         getUserChatData(null)
@@ -862,7 +870,7 @@ object ChatController {
             delay(30000)
             release()
           }
-          val msg = recvMsg(ctrl)
+          val msg = if (appPlatform.isDesktop) parseRecvMsg(runInterruptible { takeChatEvent(ctrl, MESSAGE_TIMEOUT) }) else recvMsg(ctrl)
           releaseLock = getWakeLock(timeout = 60000)
           if (msg != null) {
             val finishedWithoutTimeout = withTimeoutOrNull(60_000L) {
@@ -1018,8 +1026,9 @@ object ChatController {
   }
 
   // Spec: spec/api.md#recvMsg
-  fun recvMsg(ctrl: ChatCtrl): API? {
-    val rStr = chatRecvMsgWait(ctrl, MESSAGE_TIMEOUT)
+  fun recvMsg(ctrl: ChatCtrl): API? = parseRecvMsg(chatRecvMsgWait(ctrl, MESSAGE_TIMEOUT))
+
+  private fun parseRecvMsg(rStr: String): API? {
     return if (rStr == "") {
       null
     } else {

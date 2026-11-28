@@ -104,6 +104,13 @@ SCOPE_CHANGES = {
     "support-bot-light": ["apps/simplex-support-bot-light/**", "packages/simplex-chat-python/**"],
     "names-page": ["apps/simplex-domains", "tests/fixtures/store-service/rest-api/**"],
     "names-e2e": ["apps/simplex-store-service/**", "tests/Bots/StoreService/**", "tests/fixtures/store-service/rest-api/**", "apps/simplex-domains", "scripts/store-service/**"],
+    "internal-release": [
+        ".github/workflows/internal-release.yml",
+        ".github/workflows/daily-bump.yml",
+        "scripts/ci/internal-release/**",
+        "scripts/ci/desktop-linux/ui-update.py",
+        "apps/multiplatform/common/src/desktopTest/kotlin/chat/simplex/app/AppUpdaterTest.kt",
+    ],
 }
 CABAL_FILE = "simplex-chat.cabal"
 CABAL_VERSION = re.compile(r"^(version:\s*)(\S+)", re.M)

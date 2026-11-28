@@ -2,7 +2,7 @@ name: ios-sim
 
 on:
   workflow_dispatch:
-    inputs:
+    inputs: &inputs
       claude:
         description: Also run the Claude session
         type: boolean
@@ -12,13 +12,14 @@ on:
         type: boolean
         default: false
   workflow_call:
+    inputs: *inputs
 
 permissions:
   contents: read
   actions: read
 
 concurrency:
-  group: ios-sim-${{ github.ref }}
+  group: ios-sim-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 env:

@@ -57,6 +57,20 @@ fun DeveloperView(withAuth: (title: String, desc: String, block: () -> Unit) -> 
               m.controller.appPrefs.terminalAlwaysVisible.set(false)
             }
           }
+          SettingsPreferenceItem(painterResource(MR.images.ic_download), stringResource(MR.strings.allow_internal_builds), appPrefs.allowInternalBuilds) { allowed ->
+            if (!allowed && appPrefs.appUpdateChannel.get() == AppUpdatesChannel.INTERNAL) {
+              appPrefs.appUpdateChannel.set(AppUpdatesChannel.STABLE)
+              platform.desktopSetupUpdateChecker()
+            }
+          }
+          if (remember { platform.desktopRunningUiUpdate() }) {
+            SettingsActionItem(painterResource(MR.images.ic_history), stringResource(MR.strings.use_installed_ui), {
+              if (!platform.desktopUseInstalledUi()) {
+                AlertManager.shared.showAlertMsg(generalGetString(MR.strings.use_installed_ui), generalGetString(MR.strings.app_check_for_updates_installed_successfully_desc))
+              }
+            })
+          }
+          SettingsActionItem(painterResource(MR.images.ic_refresh), stringResource(MR.strings.reload_ui), { platform.desktopReloadUi() })
         }
         SettingsPreferenceItem(painterResource(MR.images.ic_report), stringResource(MR.strings.show_internal_errors), appPreferences.showInternalErrors)
         SettingsPreferenceItem(painterResource(MR.images.ic_avg_pace), stringResource(MR.strings.show_slow_api_calls), appPreferences.showSlowApiCalls)

@@ -20,9 +20,11 @@ import chat.simplex.common.views.TerminalView
 import chat.simplex.common.views.chat.item.addPinchListener
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.*
+import dev.icerock.moko.resources.StringResource
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.first
 import java.awt.Frame
 import java.awt.event.WindowEvent
 import java.awt.event.WindowFocusListener
@@ -35,6 +37,7 @@ fun showApp() {
   // Probe SystemTray off the EDT — the lazy's first read would otherwise block the
   // EDT during composition; JDK-8322750's GNOME detection forks a subprocess.
   trayIsAvailable
+  var crashes = 0
   while (true) {
     val closedByError = mutableStateOf(false)
     application(exitProcessOnExit = false) {
@@ -47,6 +50,7 @@ fun showApp() {
               shareText = true
             )
             Log.e(TAG, "App crashed, thread name: " + Thread.currentThread().name + ", exception: " + e.stackTraceToString())
+            if (++crashes > 1) failRunningUiUpdate()
             // Must precede dispatchEvent — handleCloseRequest reads this flag.
             closedByError.value = true
             window.dispatchEvent(WindowEvent(window, WindowEvent.WINDOW_CLOSING))
@@ -81,10 +85,39 @@ fun showApp() {
         SimplexTray()
         AppWindow(closedByError)
       }
+      val reloading = simplexWindowState.reloading.value
+      LaunchedEffect(reloading) {
+        if (reloading) exitApplication()
+      }
     }
     if (!closedByError.value) break
   }
-  exitProcess(0)
+  if (!simplexWindowState.reloading.value) exitProcess(0)
+}
+
+fun uiReloadRefusal(): StringResource? = when {
+  chatModel.activeCall.value != null -> MR.strings.reload_ui_refused_call
+  !chatModel.controller.hasChatCtrl() || chatModel.chatRunning.value != true -> MR.strings.reload_ui_refused_chat_stopped
+  DatabaseUtils.ksSelfDestructPassword.get() != null -> MR.strings.reload_ui_refused_self_destruct
+  !uiReloadable() -> MR.strings.reload_ui_refused_no_installed_ui
+  else -> null
+}
+
+fun reloadUiOrAlert() {
+  val refusal = uiReloadRefusal()
+  if (refusal != null) AlertManager.shared.showAlertMsg(MR.strings.reload_ui_refused_title, refusal) else reloadUi()
+}
+
+fun reloadUi(): Boolean {
+  if (uiReloadRefusal() != null) return false
+  stopUpdateChecker()
+  AudioPlayer.stop()
+  VideoPlayerHolder.stopAll()
+  chatModel.controller.handOffForReload()
+  handOffSingleInstance()
+  uiReloadRequested = true
+  simplexWindowState.reloading.value = true
+  return true
 }
 
 @Composable
@@ -205,6 +238,11 @@ private fun ApplicationScope.AppWindow(closedByError: MutableState<Boolean>) {
         })
         if (desktopPlatform.isMac()) addPinchListener(window.rootPane)
       }
+      LaunchedEffect(Unit) {
+        snapshotFlow { chatModel.chatRunning.value }.first { it == true }
+        delay(UI_UPDATE_CONFIRM_DELAY)
+        confirmUiUpdate()
+      }
     }
   }
   // Reload all strings in all @Composable's after language change at runtime
@@ -283,6 +321,7 @@ class SimplexWindowState {
   var windowFocused = mutableStateOf(true)
   val windowVisible = mutableStateOf(true)
   var window: ComposeWindow? = null
+  val reloading = mutableStateOf(false)
 }
 
 data class DialogParams(
