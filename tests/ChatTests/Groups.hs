@@ -676,9 +676,13 @@ testGroupChainAddressSigned ps =
         [bob, cath] *<# "#team alice> thanks"
         withCCTransaction alice (\db -> DB.query_ db "SELECT item_status FROM chat_items WHERE item_text LIKE '%donate%' OR item_text LIKE '%thanks%' ORDER BY chat_item_id") `shouldEventuallyReturn` [Only ("snd_rcvd ok complete" :: String), Only "snd_rcvd ok complete"]
         thanksId <- lastItemId alice
+        void $ withCCTransaction bob $ \db -> DB.execute_ db "UPDATE group_members SET member_pub_key = NULL WHERE local_display_name = 'alice'"
         alice ##> ("/_update item #1 " <> thanksId <> " text thanks, or ltc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66snwfdv")
-        alice <# "#team [edited] thanks, or ltc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66snwfdv"
-        [bob, cath] *<# "#team alice> [edited] thanks, or ltc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66snwfdv"
+        alice <# "#team [edited] thanks, or ltc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66snwfdv (signed)"
+        bob <# "#team alice> [edited] thanks, or ltc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66snwfdv (signed, no key to verify)"
+        cath <# "#team alice> [edited] thanks, or ltc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66snwfdv (signed)"
+        alice #$> ("/_get chat #1 count=1", chat, [(1, "thanks, or ltc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66snwfdv (signed)")])
+        cath #$> ("/_get chat #1 count=1", chat, [(0, "thanks, or ltc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66snwfdv (signed)")])
         apiFixture "chain-addresses/group" bob [] FixtureRequests {frMarkdown = [], frUris = [], frCommands = ["/_get chat #1 count=2"]}
         apiFixture "chain-addresses/group-sent" alice [] FixtureRequests {frMarkdown = [], frUris = [], frCommands = ["/_get chat #1 count=2"]}
 

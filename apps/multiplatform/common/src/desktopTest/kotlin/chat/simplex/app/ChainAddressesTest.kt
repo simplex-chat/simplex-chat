@@ -205,7 +205,7 @@ class ChainAddressesTest : RecordedApiTest() {
   fun alertOfOwnGroupItemHasNoName() = recordedAlerts("chain-addresses/group-sent") {
     val chat = recordedChat("chain-addresses/group-sent", "/_get chat #1 count=2")
     assertEquals(
-      listOf("₿${noBreakSpace}bc1q2g…${wordJoiner}5d4u", "⚠${noBreakSpace}ltc1q2…${wordJoiner}wfdv (not signed)"),
+      listOf("₿${noBreakSpace}bc1q2g…${wordJoiner}5d4u", "LTC${noBreakSpace}ltc1q2…${wordJoiner}wfdv"),
       chat.chatItems.flatMap { item -> chainLinks(item.formattedText).map { alertMessage(chainAddressSender(item, chat.chatInfo), it) } }
     )
   }
