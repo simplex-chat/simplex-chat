@@ -2267,10 +2267,6 @@ deleteOrUpdateMemberRecordIO db user@User {userId} gInfo m = do
           | otherwise -> deleteGroupMember db user m'
   pure gInfo'
 
-removeSubmembers :: DB.Connection -> StoreCxt -> User -> GroupInfo -> GroupMember -> IO GroupInfo
-removeSubmembers db cxt user gInfo m =
-  getSubmembers db cxt user m >>= foldM (deleteOrUpdateMemberRecordIO db user) gInfo
-
 -- Unlike deleteOrUpdateMemberRecord, skips checkGroupMemberHasItems.
 fullyDeleteMemberRecordIO :: DB.Connection -> User -> GroupInfo -> GroupMember -> IO GroupInfo
 fullyDeleteMemberRecordIO db user gInfo m = do
@@ -2286,6 +2282,10 @@ updateMemberRecordDeletedIO db user@User {userId} gInfo m newStatus = do
   updateGroupMemberStatus db userId m' newStatus
   deactivateRelay_ db m
   pure gInfo'
+
+removeSubmembers :: DB.Connection -> StoreCxt -> User -> GroupInfo -> GroupMember -> IO GroupInfo
+removeSubmembers db cxt user gInfo m =
+  getSubmembers db cxt user m >>= foldM (deleteOrUpdateMemberRecordIO db user) gInfo
 
 deactivateRelay_ :: DB.Connection -> GroupMember -> IO ()
 deactivateRelay_ db m =
