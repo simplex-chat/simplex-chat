@@ -42,6 +42,7 @@ import chat.simplex.common.views.usersettings.SettingsActionItem
 import chat.simplex.common.model.GroupInfo
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.chatlist.openDirectChat
+import chat.simplex.common.views.chatlist.setGroupMembers
 import chat.simplex.res.*
 import dev.icerock.moko.resources.StringResource
 import kotlinx.datetime.Clock
@@ -314,7 +315,10 @@ fun removeMemberDialog(rhId: Long?, groupInfo: GroupInfo, member: GroupMember, c
           }
         }
       })
-  } else {
+  } else withBGApi {
+    if (!chatModel.membersLoaded.value && member.memberRole >= GroupMemberRole.Admin) {
+      setGroupMembers(rhId, groupInfo, chatModel)
+    }
     val messageId = if (groupInfo.businessChat == null)
       MR.strings.member_will_be_removed_from_group_cannot_be_undone
     else

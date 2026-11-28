@@ -85,6 +85,7 @@ class ModerationTest : RecordedApiTest() {
     ChatModel.localUserCreated.value = localUserCreated
     ChatModel.groupMembers.value = emptyList()
     ChatModel.groupMembersIndexes.value = emptyMap()
+    ChatModel.membersLoaded.value = false
     ChatModel.userAddress.value = null
   }
 
@@ -366,9 +367,13 @@ class ModerationTest : RecordedApiTest() {
   }
 
   @Test
-  fun removeMemberWithSubmemberFromMemberInfo() = recordedAlerts("submembers/forwarded") {
+  fun removeMemberWithSubmemberFromMemberInfo() = recordedAlerts("submembers/member-with-one-submember") {
     val (groupInfo, members) = openGroup()
-    removeMemberDialog(null, groupInfo, member(members, "alice"), ChatModel)
+    val bob = member(members, "bob")
+    ChatModel.groupMembers.value = listOf(bob)
+    ChatModel.groupMembersIndexes.value = mapOf(bob.groupMemberId to 0)
+    ChatModel.membersLoaded.value = false
+    removeMemberDialog(null, groupInfo, bob, ChatModel)
     assertTexts("Remove member?", "Member will be removed from group - this cannot be undone!\nAlso 1 member via this member.", "Remove", "Remove and delete messages", "Cancel")
   }
 

@@ -19,6 +19,7 @@ final class ModerationTests: RecordedAPITestCase {
         groupDefaults.set(oneHandUI, forKey: GROUP_DEFAULT_ONE_HAND_UI)
         ChatModel.shared.groupMembers = []
         ChatModel.shared.groupMembersIndexes = [:]
+        ChatModel.shared.membersLoaded = false
         ChatModel.shared.userAddress = nil
         AlertManager.shared.presentAlert = false
         try await super.tearDown()
@@ -255,15 +256,20 @@ final class ModerationTests: RecordedAPITestCase {
         var tester = try member(members, "tester")
         tester.memberStatus = .memUnknown
         replaceMembers([tester])
+        ChatModel.shared.membersLoaded = true
         showRemoveMemberAlert(groupInfo, try member(members, "bob"))
         try await assertTexts(["Remove member?", "Member will be removed from group - this cannot be undone!\nAlso 2 members via this member.", "Remove", "Remove and delete messages", "Cancel"])
     }
 
     @MainActor
-    func testRemoveMemberWithSubmember() async throws {
-        try recorded("submembers/forwarded")
+    func testRemoveMemberWithSubmemberFromMemberInfo() async throws {
+        try recorded("submembers/member-with-one-submember")
         let (groupInfo, members) = try openGroup()
-        showRemoveMemberAlert(groupInfo, try member(members, "alice"))
+        let bob = try member(members, "bob")
+        ChatModel.shared.groupMembers = [GMember(bob)]
+        ChatModel.shared.populateGroupMembersIndexes()
+        ChatModel.shared.membersLoaded = false
+        showRemoveMemberAlert(groupInfo, bob)
         try await assertTexts(["Remove member?", "Member will be removed from group - this cannot be undone!\nAlso 1 member via this member.", "Remove", "Remove and delete messages", "Cancel"])
     }
 

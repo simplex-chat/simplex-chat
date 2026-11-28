@@ -1045,7 +1045,12 @@ func showRemoveMemberAlert(_ groupInfo: GroupInfo, _ mem: GroupMember, dismiss: 
             ]}
         )
     } else {
-        getTopViewController()?.present(removeMemberAlert(groupInfo, mem, dismiss: dismiss), animated: true)
+        Task { @MainActor in
+            if !ChatModel.shared.membersLoaded && mem.memberRole >= .admin {
+                await ChatModel.shared.loadGroupMembers(groupInfo)
+            }
+            getTopViewController()?.present(removeMemberAlert(groupInfo, mem, dismiss: dismiss), animated: true)
+        }
     }
 }
 
