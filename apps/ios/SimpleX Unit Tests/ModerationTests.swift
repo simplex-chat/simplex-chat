@@ -252,6 +252,9 @@ final class ModerationTests: RecordedAPITestCase {
     func testRemoveMemberWithSubmembers() async throws {
         try recorded("submembers/member-with-two-submembers")
         let (groupInfo, members) = try openGroup()
+        var tester = try member(members, "tester")
+        tester.memberStatus = .memUnknown
+        replaceMembers([tester])
         showRemoveMemberAlert(groupInfo, try member(members, "bob"))
         try await assertTexts(["Remove member?", "Member will be removed from group - this cannot be undone!\nAlso 2 members via this member.", "Remove", "Remove and delete messages", "Cancel"])
     }

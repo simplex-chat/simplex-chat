@@ -360,6 +360,7 @@ class ModerationTest : RecordedApiTest() {
   @Test
   fun removeMemberWithSubmembers() = recordedAlerts("submembers/member-with-two-submembers") {
     val (groupInfo, members) = openGroup()
+    replaceMembers(listOf(member(members, "tester").copy(memberStatus = GroupMemberStatus.MemUnknown)))
     removeMemberAlert(null, groupInfo, member(members, "bob"))
     assertTexts("Remove member?", "Member will be removed from group - this cannot be undone!\nAlso 2 members via this member.", "Remove", "Remove and delete messages", "Cancel")
   }
