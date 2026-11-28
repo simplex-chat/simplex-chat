@@ -19,7 +19,7 @@ On Linux and macOS, while the Claude Code process of a session's last `/session`
 | `POST /turn` | display hook and status line command | the reply is dropped |
 | `POST /ask` | PermissionRequest and Elicitation hooks | the hook's stderr; Claude Code shows its own dialog |
 
-- A process runs while its PID has the start time read at its `/session`; a reused PID has another start time. On Linux the start time includes the boot ID, so a process after a reboot never matches a stored one. On macOS the start time is read in the C locale and UTC.
+- A process runs while its PID has the start time read at its `/session`; a reused PID has another start time. On Linux the start time includes the boot ID, so a process after a reboot never matches a stored one; without a readable boot ID, it is the ticks alone. On macOS the start time is read in the C locale and UTC.
 - A request without a PID is served, and so is a request while the recorded process has no start time, as on other systems.
 - When the recorded process changes during the read of its start time, the check runs again, so of two registrations at once only one is served.
 - The session server sends `/attach`, `/call` and `/permission` only after a `/session` that succeeded.
@@ -76,5 +76,5 @@ sequenceDiagram
 - A forked ID's held title from a second process refused after its session server's refusal, with no session for that ID.
 - A title of a new ID from a refused process 20 s after its server's refusal: refused, with no session for that ID.
 - A second process refused after a service restart, and served once the first ended.
-- The start time of a process on Linux begins with the boot ID.
+- The start time of a process on Linux begins with the boot ID, and is the ticks alone when the boot ID can't be read.
 - The tests of a second registration of a session: the first process ended before it.
