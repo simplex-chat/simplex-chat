@@ -31,6 +31,7 @@ import chat.simplex.common.views.badges.BadgeStore
 import chat.simplex.common.views.badges.BadgeStoreError
 import chat.simplex.common.views.call.*
 import chat.simplex.common.views.chat.item.contentModerationPostLink
+import chat.simplex.common.views.chat.item.openBrowserAlert
 import chat.simplex.common.views.chat.item.showContentBlockedAlert
 import chat.simplex.common.views.chat.item.showQuotedItemDoesNotExistAlert
 import chat.simplex.common.views.chatlist.openGroupChat
@@ -1770,9 +1771,25 @@ object ChatController {
           && r.err.agentError is AgentErrorType.SMP
           && r.err.agentError.smpErr is SMPErrorType.NAME -> {
         when (val nameErr = r.err.agentError.smpErr.nameErr) {
-          is NameErrorType.NOT_FOUND -> AlertManager.shared.showAlertMsg(
-            generalGetString(MR.strings.simplex_name_not_found),
-            generalGetString(MR.strings.simplex_name_not_found_desc)
+          is NameErrorType.NOT_FOUND -> AlertManager.shared.showAlertDialogButtonsColumn(
+            title = generalGetString(MR.strings.simplex_name_not_found),
+            text = generalGetString(MR.strings.simplex_name_not_registered_desc),
+            buttons = {
+              Column {
+                val uriHandler = LocalUriHandler.current
+                SectionItemView({
+                  AlertManager.shared.hideAlert()
+                  openBrowserAlert("https://simplex.domains", uriHandler)
+                }) {
+                  Text(stringResource(MR.strings.open_simplex_domains), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+                }
+                SectionItemView({
+                  AlertManager.shared.hideAlert()
+                }) {
+                  Text(stringResource(MR.strings.ok), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+                }
+              }
+            }
           )
           is NameErrorType.NO_RESOLVER -> AlertManager.shared.showAlertMsg(
             generalGetString(MR.strings.simplex_name_error),

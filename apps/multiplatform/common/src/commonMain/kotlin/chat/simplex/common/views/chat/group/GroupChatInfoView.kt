@@ -192,7 +192,7 @@ fun ModalData.GroupChatInfoView(
             SetSimplexDomainView(
               title = generalGetString(MR.strings.set_simplex_name),
               footer = generalGetString(MR.strings.set_channel_simplex_name_footer),
-              placeholder = "#channelname.testing",
+              placeholder = "#channelname.simplex",
               simplexName = if (domain == null) "" else "#$domain",
               save = { domain ->
                 val access = groupInfo.groupProfile.publicGroup?.publicGroupAccess ?: PublicGroupAccess()

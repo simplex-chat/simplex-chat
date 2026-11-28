@@ -696,7 +696,7 @@ struct GroupChatInfoView: View {
             SetSimplexDomainView(
                 title: "SimpleX name",
                 footer: "Let people join via name registered with this channel link.",
-                prompt: "#channelname.testing",
+                prompt: "#channelname.simplex",
                 simplexName: domain,
                 save: { domain in
                     do {
