@@ -16,6 +16,13 @@ class AChatItem(TypedDict):
     chatInfo: "ChatInfo"
     chatItem: "ChatItem"
 
+# Updated message, with the message before the update.
+
+class AChatItemUpdate(TypedDict):
+    chatInfo: "ChatInfo"
+    chatItem: "ChatItem"
+    prevChatItem: "ChatItem"
+
 class AddRelayResult(TypedDict):
     relay: "UserChatRelay"
     relayError: NotRequired["ChatError"]
@@ -203,7 +210,7 @@ class BadgeRedeemError_storePurchaseOpen(TypedDict):
 
 class BadgeRedeemError_serviceError(TypedDict):
     type: Literal["serviceError"]
-    serviceError: "BadgeServiceErrorCode"
+    serviceError: "StoreServiceErrorCode"
 
 class BadgeRedeemError_invalidResponse(TypedDict):
     type: Literal["invalidResponse"]
@@ -228,8 +235,6 @@ BadgeRedeemError = (
 )
 
 BadgeRedeemError_Tag = Literal["invalidCode", "invalidReceipt", "serviceNotConfigured", "badgeActive", "storePurchaseOpen", "serviceError", "invalidResponse", "unknownKeyIndex", "credentialNotVerified"]
-
-BadgeServiceErrorCode = Literal["bad_request", "unsupported_version", "unknown_purchase_key", "unknown_offer_id", "offer_disabled", "offer_mismatch", "product_unavailable", "payment_not_entitled", "payment_pending", "provider_unavailable", "provider_not_configured", "rate_limited", "code_invalid", "code_used", "code_expired", "receipt_invalid", "receipt_used", "transfer_limited", "test_purchase", "internal"]
 
 BadgeStatus = Literal["active", "expired", "expiredOld", "failed", "unknownKey"]
 
@@ -858,13 +863,21 @@ class ChatDeleteMode_entity(TypedDict):
 class ChatDeleteMode_messages(TypedDict):
     type: Literal["messages"]
 
-ChatDeleteMode = ChatDeleteMode_full | ChatDeleteMode_entity | ChatDeleteMode_messages
+class ChatDeleteMode_archive(TypedDict):
+    type: Literal["archive"]
 
-ChatDeleteMode_Tag = Literal["full", "entity", "messages"]
+ChatDeleteMode = (
+    ChatDeleteMode_full
+    | ChatDeleteMode_entity
+    | ChatDeleteMode_messages
+    | ChatDeleteMode_archive
+)
+
+ChatDeleteMode_Tag = Literal["full", "entity", "messages", "archive"]
 
 
 def ChatDeleteMode_cmd_string(self: ChatDeleteMode) -> str:
-    return str(self['type']) + ('' if str(self['type']) == 'messages' else (' notify=off' if not self['notify'] else ''))  # type: ignore[typeddict-item]
+    return str(self['type']) + ('' if str(self['type']) == 'messages' else '' if str(self['type']) == 'archive' else (' notify=off' if not self['notify'] else ''))  # type: ignore[typeddict-item]
 
 class ChatError_error(TypedDict):
     type: Literal["error"]
@@ -972,6 +985,10 @@ class ChatErrorType_unsupportedConnReq(TypedDict):
 
 class ChatErrorType_connReqMessageProhibited(TypedDict):
     type: Literal["connReqMessageProhibited"]
+
+class ChatErrorType_linkNotice(TypedDict):
+    type: Literal["linkNotice"]
+    expiresAt: NotRequired[str]  # ISO-8601 timestamp
 
 class ChatErrorType_contactNotReady(TypedDict):
     type: Literal["contactNotReady"]
@@ -1205,6 +1222,7 @@ ChatErrorType = (
     | ChatErrorType_notResolvedLocally
     | ChatErrorType_unsupportedConnReq
     | ChatErrorType_connReqMessageProhibited
+    | ChatErrorType_linkNotice
     | ChatErrorType_contactNotReady
     | ChatErrorType_contactNotActive
     | ChatErrorType_contactDisabled
@@ -1260,7 +1278,7 @@ ChatErrorType = (
     | ChatErrorType_exception
 )
 
-ChatErrorType_Tag = Literal["noActiveUser", "noConnectionUser", "noSndFileUser", "noRcvFileUser", "userUnknown", "userExists", "chatRelayExists", "differentActiveUser", "cantDeleteActiveUser", "cantDeleteLastUser", "cantHideLastUser", "hiddenUserAlwaysMuted", "emptyUserPassword", "userAlreadyHidden", "userNotHidden", "invalidDisplayName", "chatNotStarted", "chatNotStopped", "chatStoreChanged", "invalidConnReq", "simplexDomainNotReady", "notResolvedLocally", "unsupportedConnReq", "connReqMessageProhibited", "contactNotReady", "contactNotActive", "contactDisabled", "connectionDisabled", "groupUserRole", "groupMemberInitialRole", "contactIncognitoCantInvite", "groupIncognitoCantInvite", "groupContactRole", "groupDuplicateMember", "groupDuplicateMemberId", "groupNotJoined", "groupMemberNotActive", "cantBlockMemberForSelf", "groupMemberUserRemoved", "groupMemberNotFound", "groupCantResendInvitation", "groupInternal", "fileNotFound", "fileSize", "fileAlreadyReceiving", "fileCancelled", "fileCancel", "fileAlreadyExists", "fileWrite", "fileSend", "fileRcvChunk", "fileInternal", "fileImageType", "fileImageSize", "fileNotReceived", "fileNotApproved", "fallbackToSMPProhibited", "inlineFileProhibited", "invalidForward", "invalidChatItemUpdate", "invalidChatItemDelete", "hasCurrentCall", "noCurrentCall", "callContact", "directMessagesProhibited", "agentVersion", "agentNoSubResult", "commandError", "badgeRedeemError", "agentCommandError", "invalidFileDescription", "connectionIncognitoChangeProhibited", "connectionUserChangeProhibited", "peerChatVRangeIncompatible", "relayTestError", "internalError", "exception"]
+ChatErrorType_Tag = Literal["noActiveUser", "noConnectionUser", "noSndFileUser", "noRcvFileUser", "userUnknown", "userExists", "chatRelayExists", "differentActiveUser", "cantDeleteActiveUser", "cantDeleteLastUser", "cantHideLastUser", "hiddenUserAlwaysMuted", "emptyUserPassword", "userAlreadyHidden", "userNotHidden", "invalidDisplayName", "chatNotStarted", "chatNotStopped", "chatStoreChanged", "invalidConnReq", "simplexDomainNotReady", "notResolvedLocally", "unsupportedConnReq", "connReqMessageProhibited", "linkNotice", "contactNotReady", "contactNotActive", "contactDisabled", "connectionDisabled", "groupUserRole", "groupMemberInitialRole", "contactIncognitoCantInvite", "groupIncognitoCantInvite", "groupContactRole", "groupDuplicateMember", "groupDuplicateMemberId", "groupNotJoined", "groupMemberNotActive", "cantBlockMemberForSelf", "groupMemberUserRemoved", "groupMemberNotFound", "groupCantResendInvitation", "groupInternal", "fileNotFound", "fileSize", "fileAlreadyReceiving", "fileCancelled", "fileCancel", "fileAlreadyExists", "fileWrite", "fileSend", "fileRcvChunk", "fileInternal", "fileImageType", "fileImageSize", "fileNotReceived", "fileNotApproved", "fallbackToSMPProhibited", "inlineFileProhibited", "invalidForward", "invalidChatItemUpdate", "invalidChatItemDelete", "hasCurrentCall", "noCurrentCall", "callContact", "directMessagesProhibited", "agentVersion", "agentNoSubResult", "commandError", "badgeRedeemError", "agentCommandError", "invalidFileDescription", "connectionIncognitoChangeProhibited", "connectionUserChangeProhibited", "peerChatVRangeIncompatible", "relayTestError", "internalError", "exception"]
 
 ChatFeature = Literal["timedMessages", "fullDelete", "reactions", "voice", "files", "calls", "sessions"]
 
@@ -1629,10 +1647,12 @@ class ConnectionPlan_invitationLink(TypedDict):
 class ConnectionPlan_contactAddress(TypedDict):
     type: Literal["contactAddress"]
     contactAddressPlan: "ContactAddressPlan"
+    nameChange: NotRequired["NameChange"]
 
 class ConnectionPlan_groupLink(TypedDict):
     type: Literal["groupLink"]
     groupLinkPlan: "GroupLinkPlan"
+    nameChange: NotRequired["NameChange"]
 
 class ConnectionPlan_error(TypedDict):
     type: Literal["error"]
@@ -1704,6 +1724,11 @@ class ContactAddressPlan_contactViaAddress(TypedDict):
     type: Literal["contactViaAddress"]
     contact: "Contact"
 
+class ContactAddressPlan_linkNotice(TypedDict):
+    type: Literal["linkNotice"]
+    expiresAt: NotRequired[str]  # ISO-8601 timestamp
+    contactSLinkData_: NotRequired["ContactShortLinkData"]
+
 ContactAddressPlan = (
     ContactAddressPlan_ok
     | ContactAddressPlan_ownLink
@@ -1711,9 +1736,10 @@ ContactAddressPlan = (
     | ContactAddressPlan_connectingProhibit
     | ContactAddressPlan_known
     | ContactAddressPlan_contactViaAddress
+    | ContactAddressPlan_linkNotice
 )
 
-ContactAddressPlan_Tag = Literal["ok", "ownLink", "connectingConfirmReconnect", "connectingProhibit", "known", "contactViaAddress"]
+ContactAddressPlan_Tag = Literal["ok", "ownLink", "connectingConfirmReconnect", "connectingProhibit", "known", "contactViaAddress", "linkNotice"]
 
 class ContactShortLinkData(TypedDict):
     profile: "Profile"
@@ -1773,6 +1799,8 @@ class CtrlAppInfo(TypedDict):
     appVersionRange: "AppVersionRange"
     deviceName: str
     compression: bool
+
+DomainVerification = Literal["failed", "verified", "moved"]
 
 class DroppedMsg(TypedDict):
     brokerTs: str  # ISO-8601 timestamp
@@ -2125,7 +2153,7 @@ class GroupInfo(TypedDict):
     rosterVersion: NotRequired[int]  # int64
     membersRequireAttention: int  # int
     viaGroupLinkUri: NotRequired[str]
-    groupDomainVerified: NotRequired[bool]
+    groupDomainVerified: NotRequired["DomainVerification"]
 
 class GroupLink(TypedDict):
     userContactLinkId: int  # int64
@@ -2171,6 +2199,10 @@ class GroupLinkPlan_updateRequired(TypedDict):
     type: Literal["updateRequired"]
     groupSLinkData_: NotRequired["GroupShortLinkData"]
 
+class GroupLinkPlan_linkNotice(TypedDict):
+    type: Literal["linkNotice"]
+    expiresAt: NotRequired[str]  # ISO-8601 timestamp
+
 GroupLinkPlan = (
     GroupLinkPlan_ok
     | GroupLinkPlan_ownLink
@@ -2179,9 +2211,10 @@ GroupLinkPlan = (
     | GroupLinkPlan_known
     | GroupLinkPlan_noRelays
     | GroupLinkPlan_updateRequired
+    | GroupLinkPlan_linkNotice
 )
 
-GroupLinkPlan_Tag = Literal["ok", "ownLink", "connectingConfirmReconnect", "connectingProhibit", "known", "noRelays", "updateRequired"]
+GroupLinkPlan_Tag = Literal["ok", "ownLink", "connectingConfirmReconnect", "connectingProhibit", "known", "noRelays", "updateRequired", "linkNotice"]
 
 class GroupMember(TypedDict):
     groupMemberId: int  # int64
@@ -2402,6 +2435,11 @@ LinkContent = LinkContent_page | LinkContent_image | LinkContent_video | LinkCon
 
 LinkContent_Tag = Literal["page", "image", "video", "unknown"]
 
+# The app of the removed member or deleted contact does not join or connect via the link for `ttl` seconds, rounded up to a whole hour; a notice without `ttl` does not expire. `ttl` must be positive.
+
+class LinkNotice(TypedDict):
+    ttl: NotRequired[int]  # int64
+
 class LinkOwnerSig(TypedDict):
     ownerId: NotRequired[str]
     chatBinding: str
@@ -2436,7 +2474,7 @@ class LocalProfile(TypedDict):
     localBadge: NotRequired["LocalBadge"]
     localAlias: str
     contactDomain: NotRequired["SimplexDomainClaim"]
-    contactDomainVerified: NotRequired[bool]
+    contactDomainVerified: NotRequired["DomainVerification"]
 
 class MarkdownBlock_paragraph(TypedDict):
     type: Literal["paragraph"]
@@ -2631,6 +2669,18 @@ MsgVerified = MsgVerified_signed | MsgVerified_sigMissing
 
 MsgVerified_Tag = Literal["signed", "sigMissing"]
 
+class NameChange_lapsed(TypedDict):
+    type: Literal["lapsed"]
+    nameWarning: "NameWarning"
+
+class NameChange_moved(TypedDict):
+    type: Literal["moved"]
+    knownChat: "ChatInfo"
+
+NameChange = NameChange_lapsed | NameChange_moved
+
+NameChange_Tag = Literal["lapsed", "moved"]
+
 class NameErrorType_NO_RESOLVER(TypedDict):
     type: Literal["NO_RESOLVER"]
 
@@ -2644,6 +2694,34 @@ class NameErrorType_RESOLVER(TypedDict):
 NameErrorType = NameErrorType_NO_RESOLVER | NameErrorType_NOT_FOUND | NameErrorType_RESOLVER
 
 NameErrorType_Tag = Literal["NO_RESOLVER", "NOT_FOUND", "RESOLVER"]
+
+class NamePrice(TypedDict):
+    amount: int  # int64
+    years: int  # int
+
+class NameWarning_expired(TypedDict):
+    type: Literal["expired"]
+    expiredAt: str  # ISO-8601 timestamp
+    graceUntil: NotRequired[str]  # ISO-8601 timestamp
+
+class NameWarning_available(TypedDict):
+    type: Literal["available"]
+    price: "NamePrice"
+
+class NameWarning_reservedForCommunity(TypedDict):
+    type: Literal["reservedForCommunity"]
+
+class NameWarning_notRegistered(TypedDict):
+    type: Literal["notRegistered"]
+
+NameWarning = (
+    NameWarning_expired
+    | NameWarning_available
+    | NameWarning_reservedForCommunity
+    | NameWarning_notRegistered
+)
+
+NameWarning_Tag = Literal["expired", "available", "reservedForCommunity", "notRegistered"]
 
 class NavigationInfo(TypedDict):
     afterUnread: int  # int
@@ -3309,9 +3387,17 @@ class SimplexDomainError_noValidLink(TypedDict):
 class SimplexDomainError_unknownDomain(TypedDict):
     type: Literal["unknownDomain"]
 
-SimplexDomainError = SimplexDomainError_noValidLink | SimplexDomainError_unknownDomain
+class SimplexDomainError_nameWarning(TypedDict):
+    type: Literal["nameWarning"]
+    nameWarning: "NameWarning"
 
-SimplexDomainError_Tag = Literal["noValidLink", "unknownDomain"]
+SimplexDomainError = (
+    SimplexDomainError_noValidLink
+    | SimplexDomainError_unknownDomain
+    | SimplexDomainError_nameWarning
+)
+
+SimplexDomainError_Tag = Literal["noValidLink", "unknownDomain", "nameWarning"]
 
 class SimplexDomainProof(TypedDict):
     linkOwnerId: NotRequired[str]
@@ -3908,6 +3994,8 @@ StoreError = (
 )
 
 StoreError_Tag = Literal["duplicateName", "userNotFound", "relayUserNotFound", "userNotFoundByName", "userNotFoundByContactId", "userNotFoundByGroupId", "userNotFoundByFileId", "userNotFoundByContactRequestId", "contactNotFound", "contactNotFoundByName", "contactNotFoundByMemberId", "contactNotReady", "duplicateContactLink", "userContactLinkNotFound", "contactRequestNotFound", "contactRequestNotFoundByName", "invalidContactRequestEntity", "invalidBusinessChatContactRequest", "groupNotFound", "groupNotFoundByName", "groupMemberNameNotFound", "groupMemberNotFound", "groupMemberNotFoundByIndex", "memberRelationsVectorNotFound", "groupHostMemberNotFound", "groupMemberNotFoundByMemberId", "memberContactGroupMemberNotFound", "invalidMemberRelationUpdate", "groupWithoutUser", "duplicateGroupMember", "duplicateMemberId", "groupAlreadyJoined", "groupInvitationNotFound", "noteFolderAlreadyExists", "noteFolderNotFound", "userNoteFolderNotFound", "sndFileNotFound", "sndFileInvalid", "rcvFileNotFound", "rcvFileDescrNotFound", "fileNotFound", "rcvFileInvalid", "rcvFileInvalidDescrPart", "localFileNoTransfer", "sharedMsgIdNotFoundByFileId", "fileIdNotFoundBySharedMsgId", "sndFileNotFoundXFTP", "rcvFileNotFoundXFTP", "connectionNotFound", "connectionNotFoundById", "connectionNotFoundByMemberId", "pendingConnectionNotFound", "uniqueID", "largeMsg", "internalError", "dBException", "dBBusyError", "badChatItem", "chatItemNotFound", "chatItemNotFoundByText", "chatItemSharedMsgIdNotFound", "chatItemNotFoundByFileId", "chatItemNotFoundByContactId", "chatItemNotFoundByGroupId", "profileNotFound", "duplicateGroupLink", "groupLinkNotFound", "hostMemberIdNotFound", "contactNotFoundByFileId", "noGroupSndStatus", "duplicateGroupMessage", "remoteHostNotFound", "remoteHostUnknown", "remoteHostDuplicateCA", "remoteCtrlNotFound", "remoteCtrlDuplicateCA", "prohibitedDeleteUser", "operatorNotFound", "usageConditionsNotFound", "userChatRelayNotFound", "groupRelayNotFound", "groupRelayNotFoundByMemberId", "invalidQuote", "invalidMention", "invalidDeliveryTask", "deliveryTaskNotFound", "invalidDeliveryJob", "deliveryJobNotFound", "workItemError"]
+
+StoreServiceErrorCode = Literal["bad_request", "unsupported_version", "unknown_purchase_key", "unknown_offer_id", "offer_disabled", "offer_mismatch", "product_unavailable", "payment_not_entitled", "payment_pending", "provider_unavailable", "provider_not_configured", "rate_limited", "code_invalid", "code_used", "code_expired", "receipt_invalid", "receipt_used", "transfer_limited", "test_purchase", "internal"]
 
 class SubscriptionStatus_active(TypedDict):
     type: Literal["active"]

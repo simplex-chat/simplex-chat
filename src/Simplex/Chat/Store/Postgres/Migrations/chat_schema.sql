@@ -1,5 +1,6 @@
 
 
+
 SET statement_timeout = 0;
 SET lock_timeout = 0;
 SET idle_in_transaction_session_timeout = 0;
@@ -1212,7 +1213,7 @@ CREATE TABLE test_chat_schema.groups (
     public_member_count bigint,
     relay_request_retries bigint DEFAULT 0 NOT NULL,
     relay_request_delay bigint DEFAULT 0 NOT NULL,
-    relay_request_execute_at timestamp with time zone DEFAULT '1970-01-01 04:00:00+04'::timestamp with time zone NOT NULL,
+    relay_request_execute_at timestamp with time zone DEFAULT '1970-01-01 00:00:00+00'::timestamp with time zone NOT NULL,
     relay_inactive_at timestamp with time zone,
     relay_sent_web_domain text,
     roster_version bigint,
@@ -1225,7 +1226,8 @@ CREATE TABLE test_chat_schema.groups (
     group_domain_verified smallint,
     stored_roster_version bigint,
     applied_complete_roster_version bigint,
-    relay_request_public_group_id bytea
+    relay_request_public_group_id bytea,
+    silently_removed smallint DEFAULT 0 NOT NULL
 );
 
 
@@ -1275,6 +1277,27 @@ CREATE TABLE test_chat_schema.known_servers (
 
 ALTER TABLE test_chat_schema.known_servers ALTER COLUMN server_id ADD GENERATED ALWAYS AS IDENTITY (
     SEQUENCE NAME test_chat_schema.known_servers_server_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
+
+
+
+CREATE TABLE test_chat_schema.link_notices (
+    link_notice_id bigint NOT NULL,
+    link_hash bytea NOT NULL,
+    expires_at timestamp with time zone,
+    created_at timestamp with time zone NOT NULL,
+    updated_at timestamp with time zone NOT NULL
+);
+
+
+
+ALTER TABLE test_chat_schema.link_notices ALTER COLUMN link_notice_id ADD GENERATED ALWAYS AS IDENTITY (
+    SEQUENCE NAME test_chat_schema.link_notices_link_notice_id_seq
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -2079,6 +2102,11 @@ ALTER TABLE ONLY test_chat_schema.known_servers
 
 
 
+ALTER TABLE ONLY test_chat_schema.link_notices
+    ADD CONSTRAINT link_notices_pkey PRIMARY KEY (link_notice_id);
+
+
+
 ALTER TABLE ONLY test_chat_schema.messages
     ADD CONSTRAINT messages_pkey PRIMARY KEY (message_id);
 
@@ -2845,6 +2873,10 @@ CREATE INDEX idx_groups_summary_current_members_count ON test_chat_schema.groups
 
 
 CREATE INDEX idx_groups_via_group_link_uri_hash ON test_chat_schema.groups USING btree (user_id, via_group_link_uri_hash);
+
+
+
+CREATE UNIQUE INDEX idx_link_notices_link_hash ON test_chat_schema.link_notices USING btree (link_hash);
 
 
 
@@ -3779,6 +3811,7 @@ ALTER TABLE ONLY test_chat_schema.users
 
 ALTER TABLE ONLY test_chat_schema.xftp_file_descriptions
     ADD CONSTRAINT xftp_file_descriptions_user_id_fkey FOREIGN KEY (user_id) REFERENCES test_chat_schema.users(user_id) ON DELETE CASCADE;
+
 
 
 

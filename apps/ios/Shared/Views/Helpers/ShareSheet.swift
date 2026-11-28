@@ -64,10 +64,22 @@ func showAlert(
     actions: () -> [UIAlertAction] = { [okAlertAction] }
 ) {
     if let topController = getTopViewController() {
-        let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
-        for action in actions() { alert.addAction(action) }
-        topController.present(alert, animated: true)
+        topController.present(alertController(title, message: message, actions: actions()), animated: true)
     }
+}
+
+func alertController(_ title: String, message: String?, actions: [UIAlertAction]) -> UIAlertController {
+    let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
+    for action in actions { alert.addAction(action) }
+    return alert
+}
+
+func typeToConfirmPlaceholder(_ word: String) -> String {
+    String.localizedStringWithFormat(NSLocalizedString("Type %@", comment: "confirmation field placeholder"), word)
+}
+
+func typedWordConfirms(_ typed: String?, _ word: String) -> Bool {
+    typed?.trimmingCharacters(in: .whitespaces).lowercased() == word
 }
 
 func showSheet(
@@ -140,6 +152,7 @@ class OpenChatAlertViewController: UIViewController {
     private let profileFullName: String
     private let profileImage: UIView
     private let profileBadge: LocalBadge?
+    private let nameCaption: String?
     private let subtitle: String?
     private let information: String?
     private let secondaryInformation: Bool
@@ -155,6 +168,7 @@ class OpenChatAlertViewController: UIViewController {
         profileFullName: String,
         profileImage: UIView,
         profileBadge: LocalBadge? = nil,
+        nameCaption: String? = nil,
         subtitle: String? = nil,
         information: String? = nil,
         secondaryInformation: Bool = false,
@@ -169,6 +183,7 @@ class OpenChatAlertViewController: UIViewController {
         self.profileFullName = profileFullName
         self.profileImage = profileImage
         self.profileBadge = profileBadge
+        self.nameCaption = nameCaption
         self.subtitle = subtitle
         self.information = information
         self.secondaryInformation = secondaryInformation
@@ -221,6 +236,17 @@ class OpenChatAlertViewController: UIViewController {
         }
 
         var profileViews = [profileImage, nameLabel]
+
+        if let nameCaption {
+            let nameCaptionLabel = UILabel()
+            nameCaptionLabel.text = nameCaption
+            nameCaptionLabel.font = UIFont.preferredFont(forTextStyle: .subheadline)
+            nameCaptionLabel.textColor = .secondaryLabel
+            nameCaptionLabel.numberOfLines = 1
+            nameCaptionLabel.textAlignment = .center
+            nameCaptionLabel.translatesAutoresizingMaskIntoConstraints = false
+            profileViews.append(nameCaptionLabel)
+        }
 
         // Full name label
         if !profileFullName.isEmpty && profileFullName != profileName {
@@ -426,6 +452,7 @@ func showOpenChatAlert<Content: View>(
     profileFullName: String,
     profileImage: Content,
     profileBadge: LocalBadge? = nil,
+    nameCaption: String? = nil,
     theme: AppTheme,
     subtitle: String? = nil,
     information: String? = nil,
@@ -448,6 +475,7 @@ func showOpenChatAlert<Content: View>(
             profileFullName: profileFullName,
             profileImage: hostedView,
             profileBadge: profileBadge,
+            nameCaption: nameCaption,
             subtitle: subtitle,
             information: information,
             secondaryInformation: secondaryInformation,

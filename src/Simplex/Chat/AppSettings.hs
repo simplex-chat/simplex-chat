@@ -16,7 +16,7 @@ import Data.Text (Text)
 import Simplex.Chat.Types.UITheme
 import Simplex.Messaging.Client (NetworkConfig, defaultNetworkConfig)
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON)
-import Simplex.Messaging.Util (catchAll_)
+import Simplex.Messaging.Util (catchOwn')
 
 data AppPlatform = APIOS | APAndroid | APDesktop deriving (Show)
 
@@ -25,6 +25,8 @@ data NotificationMode = NMOff | NMPeriodic | NMInstant deriving (Show)
 data NotificationPreviewMode = NPMHidden | NPMContact | NPMMessage deriving (Show)
 
 data LockScreenCalls = LSCDisable | LSCShow | LSCAccept deriving (Show)
+
+data ContactDeletion = CDNotify | CDAsk deriving (Show)
 
 data AppSettings = AppSettings
   { appPlatform :: Maybe AppPlatform,
@@ -39,6 +41,7 @@ data AppSettings = AppSettings
     privacySaveLastDraft :: Maybe Bool,
     privacyProtectScreen :: Maybe Bool,
     privacyMediaBlurRadius :: Maybe Int,
+    privacyContactDeletion :: Maybe ContactDeletion,
     notificationMode :: Maybe NotificationMode,
     notificationPreviewMode :: Maybe NotificationPreviewMode,
     webrtcPolicyRelay :: Maybe Bool,
@@ -91,6 +94,7 @@ defaultAppSettings =
       privacySaveLastDraft = Just True,
       privacyProtectScreen = Just False,
       privacyMediaBlurRadius = Just 0,
+      privacyContactDeletion = Just CDAsk,
       notificationMode = Just NMInstant,
       notificationPreviewMode = Just NPMMessage,
       webrtcPolicyRelay = Just True,
@@ -130,6 +134,7 @@ defaultParseAppSettings =
       privacySaveLastDraft = Nothing,
       privacyProtectScreen = Nothing,
       privacyMediaBlurRadius = Nothing,
+      privacyContactDeletion = Nothing,
       notificationMode = Nothing,
       notificationPreviewMode = Nothing,
       webrtcPolicyRelay = Nothing,
@@ -169,6 +174,7 @@ combineAppSettings platformDefaults storedSettings =
       privacySaveLastDraft = p privacySaveLastDraft,
       privacyProtectScreen = p privacyProtectScreen,
       privacyMediaBlurRadius = p privacyMediaBlurRadius,
+      privacyContactDeletion = p privacyContactDeletion,
       notificationMode = p notificationMode,
       notificationPreviewMode = p notificationPreviewMode,
       webrtcPolicyRelay = p webrtcPolicyRelay,
@@ -204,6 +210,8 @@ $(JQ.deriveJSON (enumJSON $ dropPrefix "NPM") ''NotificationPreviewMode)
 
 $(JQ.deriveJSON (enumJSON $ dropPrefix "LSC") ''LockScreenCalls)
 
+$(JQ.deriveJSON (enumJSON $ dropPrefix "CD") ''ContactDeletion)
+
 $(JQ.deriveJSON (enumJSON $ dropPrefix "NPA") ''NetworkProxyAuth)
 
 $(JQ.deriveJSON defaultJSON ''NetworkProxy)
@@ -224,6 +232,7 @@ instance FromJSON AppSettings where
     privacySaveLastDraft <- p "privacySaveLastDraft"
     privacyProtectScreen <- p "privacyProtectScreen"
     privacyMediaBlurRadius <- p "privacyMediaBlurRadius"
+    privacyContactDeletion <- p "privacyContactDeletion"
     notificationMode <- p "notificationMode"
     notificationPreviewMode <- p "notificationPreviewMode"
     webrtcPolicyRelay <- p "webrtcPolicyRelay"
@@ -260,6 +269,7 @@ instance FromJSON AppSettings where
           privacySaveLastDraft,
           privacyProtectScreen,
           privacyMediaBlurRadius,
+          privacyContactDeletion,
           notificationMode,
           notificationPreviewMode,
           webrtcPolicyRelay,
@@ -290,4 +300,4 @@ instance FromJSON AppSettings where
 readAppSettings :: FilePath -> Maybe AppSettings -> IO AppSettings
 readAppSettings f platformDefaults =
   combineAppSettings (fromMaybe defaultAppSettings platformDefaults) . fromMaybe defaultParseAppSettings
-    <$> (J.decodeFileStrict f `catchAll_` pure Nothing)
+    <$> (J.decodeFileStrict f `catchOwn'` \_ -> pure Nothing)

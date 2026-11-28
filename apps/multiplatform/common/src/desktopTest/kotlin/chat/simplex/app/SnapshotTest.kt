@@ -24,6 +24,7 @@ import chat.simplex.common.views.chat.*
 import chat.simplex.common.views.chat.group.*
 import chat.simplex.common.views.chat.item.*
 import chat.simplex.common.views.chatlist.*
+import chat.simplex.common.views.contacts.PreviewArchivedContactMenu
 import chat.simplex.common.views.database.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.newchat.*
@@ -49,7 +50,7 @@ private const val PREVIEW_QR_LINK = "https://smp6.simplex.im/a#lrdvu2d8A1GumSmoK
 
 private val chatItemFontScales = listOf(1f, 1.4f, 1.5f)
 
-private class SnapshotScene(val name: String, val fontScales: List<Float> = listOf(1f), val content: @Composable () -> Unit)
+private class SnapshotScene(val name: String, val fontScales: List<Float> = listOf(1f), val roundness: Float = 0.75f, val content: @Composable () -> Unit)
 
 @Serializable
 private class Snapshot(val scene: String, val theme: String, val fontScale: Float, val file: String, val width: Int, val height: Int)
@@ -60,9 +61,25 @@ private val previewScenes = listOf(
   SnapshotScene("TerminalView.PreviewTerminalLayout") { PreviewTerminalLayout() },
   SnapshotScene("IncomingCallAlertView.PreviewIncomingCallAlertLayout") { PreviewIncomingCallAlertLayout() },
   SnapshotScene("ChatInfoView.PreviewChatInfoLayout") { chat.simplex.common.views.chat.PreviewChatInfoLayout() },
+  SnapshotScene("ChatInfoView.PreviewDeleteContactDialogNotify") { PreviewDeleteContactDialogNotify() },
+  SnapshotScene("ChatInfoView.PreviewDeleteContactDialogAsk") { PreviewDeleteContactDialogAsk() },
+  SnapshotScene("ChatInfoView.PreviewDeleteContactKeepConversationDialog") { PreviewDeleteContactKeepConversationDialog() },
+  SnapshotScene("ChatInfoView.PreviewContactArchivedAlert") { PreviewContactArchivedAlert() },
+  SnapshotScene("ChatInfoView.PreviewDeletedContactArchivedAlert") { PreviewDeletedContactArchivedAlert() },
+  SnapshotScene("ChatInfoView.PreviewContactDeletedFromArchiveAlert") { PreviewContactDeletedFromArchiveAlert() },
+  SnapshotScene("ChatInfoView.PreviewChatInfoLayoutDeleteAndBan") { PreviewChatInfoLayoutDeleteAndBan() },
+  SnapshotScene("ChatInfoView.PreviewDeleteAndBanContactDialog") { PreviewDeleteAndBanContactDialog() },
+  SnapshotScene("ChatInfoView.PreviewDeleteAndBanKeepConversationDialog") { PreviewDeleteAndBanKeepConversationDialog() },
+  SnapshotScene("ChatInfoView.PreviewDeleteAndBanContactForeverDialog") { PreviewDeleteAndBanContactForeverDialog() },
   SnapshotScene("ChatView.PreviewChatLayout") { PreviewChatLayout() },
   SnapshotScene("ChatView.PreviewGroupChatLayout") { PreviewGroupChatLayout() },
   SnapshotScene("ChatView.PreviewGroupChatLayoutTerminal", chatItemFontScales) { PreviewGroupChatLayoutTerminal() },
+  SnapshotScene("ChatView.PreviewGroupChatLayoutTerminalMedia", chatItemFontScales) { PreviewGroupChatLayoutTerminalMedia() },
+  SnapshotScene("ChatView.PreviewGroupChatLayoutHiddenItems") { PreviewGroupChatLayoutHiddenItems() },
+  SnapshotScene("ChatView.PreviewGroupChatLayoutTerminalHiddenItems") { PreviewGroupChatLayoutTerminalHiddenItems() },
+  SnapshotScene("ChatView.PreviewGroupChatLayoutTerminalDefects", chatItemFontScales) { PreviewGroupChatLayoutTerminalDefects() },
+  SnapshotScene("ChatView.PreviewGroupChatLayoutBanner") { PreviewGroupChatLayoutBanner() },
+  SnapshotScene("ChatView.PreviewGroupChatLayoutTerminalSession") { PreviewGroupChatLayoutTerminalSession() },
   SnapshotScene("ComposeFileView.PreviewComposeFileView") { PreviewComposeFileView() },
   SnapshotScene("ComposeVoiceView.PreviewComposeAudioView") { PreviewComposeAudioView() },
   SnapshotScene("ContextItemView.PreviewContextItemView") { PreviewContextItemView() },
@@ -71,7 +88,36 @@ private val previewScenes = listOf(
   SnapshotScene("SendMsgView.PreviewSendMsgViewInProgress") { PreviewSendMsgViewInProgress() },
   SnapshotScene("AddGroupMembersView.PreviewAddGroupMembersLayout") { PreviewAddGroupMembersLayout() },
   SnapshotScene("GroupChatInfoView.PreviewGroupChatInfoLayout") { PreviewGroupChatInfoLayout() },
+  SnapshotScene("GroupChatInfoView.PreviewDeleteGroupDialog") { PreviewDeleteGroupDialog() },
+  SnapshotScene("GroupChatInfoView.PreviewDeleteGroupKeepConversationDialog") { PreviewDeleteGroupKeepConversationDialog() },
+  SnapshotScene("GroupChatInfoView.PreviewDeleteChannelDialog") { PreviewDeleteChannelDialog() },
+  SnapshotScene("GroupChatInfoView.PreviewDeleteChannelKeepConversationDialog") { PreviewDeleteChannelKeepConversationDialog() },
+  SnapshotScene("GroupChatInfoView.PreviewDeleteBusinessChatDialog") { PreviewDeleteBusinessChatDialog() },
+  SnapshotScene("GroupChatInfoView.PreviewDeleteBusinessChatKeepConversationDialog") { PreviewDeleteBusinessChatKeepConversationDialog() },
+  SnapshotScene("GroupChatInfoView.PreviewBusinessChatInfoLayout") { PreviewBusinessChatInfoLayout() },
+  SnapshotScene("GroupChatInfoView.PreviewDeleteAndBanCustomerDialog") { PreviewDeleteAndBanCustomerDialog() },
+  SnapshotScene("GroupChatInfoView.PreviewCantBanCustomerAlert") { PreviewCantBanCustomerAlert() },
+  SnapshotScene("GroupChatInfoView.PreviewRemoveMembersPreviousVersion") { PreviewRemoveMembersPreviousVersion() },
+  SnapshotScene("GroupChatInfoView.PreviewMemberMenuOwner") { PreviewMemberMenuOwner() },
+  SnapshotScene("GroupChatInfoView.PreviewBannedMemberMenuOwner") { PreviewBannedMemberMenuOwner() },
+  SnapshotScene("GroupChatInfoView.PreviewMemberMenuMember") { PreviewMemberMenuMember() },
   SnapshotScene("GroupMemberInfoView.PreviewGroupMemberInfoLayout") { PreviewGroupMemberInfoLayout() },
+  SnapshotScene("GroupMemberInfoView.PreviewBanMemberDialog") { PreviewBanMemberDialog() },
+  SnapshotScene("GroupMemberInfoView.PreviewBanMemberDialogModerator") { PreviewBanMemberDialogModerator() },
+  SnapshotScene("GroupMemberInfoView.PreviewBanMembersDialog") { PreviewBanMembersDialog() },
+  SnapshotScene("GroupMemberInfoView.PreviewBanMembersDialogPreviousVersion") { PreviewBanMembersDialogPreviousVersion() },
+  SnapshotScene("GroupMemberInfoView.PreviewRemoveBannedMemberDialog") { PreviewRemoveBannedMemberDialog() },
+  SnapshotScene("GroupMemberInfoView.PreviewRemoveBannedMembersDialog") { PreviewRemoveBannedMembersDialog() },
+  SnapshotScene("GroupMemberInfoView.PreviewRemoveForeverDialog") { PreviewRemoveForeverDialog() },
+  SnapshotScene("GroupMemberInfoView.PreviewLiftBanAlert") { PreviewLiftBanAlert() },
+  SnapshotScene("GroupMemberInfoView.PreviewLiftBanMembersAlert") { PreviewLiftBanMembersAlert() },
+  SnapshotScene("GroupMemberInfoView.PreviewHideMessagesAlert") { PreviewHideMessagesAlert() },
+  SnapshotScene("GroupMemberInfoView.PreviewShowMessagesAlert") { PreviewShowMessagesAlert() },
+  SnapshotScene("GroupMemberInfoView.PreviewBanSubscriberDialog") { PreviewBanSubscriberDialog() },
+  SnapshotScene("GroupMemberInfoView.PreviewBanSubscriberDialogModerator") { PreviewBanSubscriberDialogModerator() },
+  SnapshotScene("GroupMemberInfoView.PreviewRemoveBannedSubscriberDialog") { PreviewRemoveBannedSubscriberDialog() },
+  SnapshotScene("GroupMemberInfoView.PreviewRemoveSubscriberForeverDialog") { PreviewRemoveSubscriberForeverDialog() },
+  SnapshotScene("GroupMemberInfoView.PreviewLiftBanSubscriberAlert") { PreviewLiftBanSubscriberAlert() },
   SnapshotScene("GroupMemberInfoView.PreviewPeerTypePlaceholders") { PreviewPeerTypePlaceholders() },
   SnapshotScene("CIEventView.CIEventViewPreview", chatItemFontScales) { CIEventViewPreview() },
   SnapshotScene("CIGroupInvitationView.PendingCIGroupInvitationViewPreview", chatItemFontScales) { PendingCIGroupInvitationViewPreview() },
@@ -93,11 +139,17 @@ private val previewScenes = listOf(
   SnapshotScene("DeletedItemView.PreviewDeletedItemView", chatItemFontScales) { PreviewDeletedItemView() },
   SnapshotScene("IntegrityErrorItemView.IntegrityErrorItemViewPreview", chatItemFontScales) { IntegrityErrorItemViewPreview() },
   SnapshotScene("MarkedDeletedItemView.PreviewMarkedDeletedItemView", chatItemFontScales) { PreviewMarkedDeletedItemView() },
+  SnapshotScene("MarkdownFileView.PreviewMarkdownFileView") { PreviewMarkdownFileView() },
   SnapshotScene("ChatHelpView.PreviewChatHelpLayout") { PreviewChatHelpLayout() },
   SnapshotScene("ChatListNavLinkView.PreviewChatListNavLinkDirect") { PreviewChatListNavLinkDirect() },
   SnapshotScene("ChatListNavLinkView.PreviewChatListNavLinkGroup") { PreviewChatListNavLinkGroup() },
   SnapshotScene("ChatListNavLinkView.PreviewChatListNavLinkContactRequest") { PreviewChatListNavLinkContactRequest() },
+  SnapshotScene("ChatListNavLinkView.PreviewContactMenu") { PreviewContactMenu() },
+  SnapshotScene("ChatListNavLinkView.PreviewGroupMenu") { PreviewGroupMenu() },
+  SnapshotScene("ChatListNavLinkView.PreviewBusinessChatMenu") { PreviewBusinessChatMenu() },
+  SnapshotScene("ContactListNavView.PreviewArchivedContactMenu") { PreviewArchivedContactMenu() },
   SnapshotScene("ChatPreviewView.PreviewChatPreviewView") { PreviewChatPreviewView() },
+  SnapshotScene("TagListView.PreviewTagListView") { PreviewTagListView() },
   SnapshotScene("DatabaseEncryptionView.PreviewDatabaseEncryptionLayout") { PreviewDatabaseEncryptionLayout() },
   SnapshotScene("DatabaseErrorView.PreviewChatInfoLayout") { chat.simplex.common.views.database.PreviewChatInfoLayout() },
   SnapshotScene("DatabaseView.PreviewDatabaseLayout") { PreviewDatabaseLayout() },
@@ -106,6 +158,8 @@ private val previewScenes = listOf(
   SnapshotScene("LinkPreviews.PreviewComposeLinkView") { PreviewComposeLinkView() },
   SnapshotScene("LinkPreviews.PreviewComposeLinkViewLoading") { PreviewComposeLinkViewLoading() },
   SnapshotScene("SimpleButton.PreviewShareButton") { PreviewShareButton() },
+  SnapshotScene("ConnectPlan.PreviewLinkNoticeAlertGroup") { PreviewLinkNoticeAlertGroup() },
+  SnapshotScene("ConnectPlan.PreviewLinkNoticeAlertContact") { PreviewLinkNoticeAlertContact() },
   SnapshotScene("ContactConnectionInfoView.PreviewContactConnectionInfoView") { PreviewContactConnectionInfoView() },
   SnapshotScene("NewChatSheet.PreviewNewChatSheet") { PreviewNewChatSheet() },
   SnapshotScene("QRCode.PreviewQRCode") { PreviewQRCode() },
@@ -117,10 +171,25 @@ private val previewScenes = listOf(
   SnapshotScene("HelpView.PreviewHelpView") { PreviewHelpView() },
   SnapshotScene("MarkdownHelpView.PreviewMarkdownHelpView") { PreviewMarkdownHelpView() },
   SnapshotScene("SettingsView.PreviewSettingsLayout") { PreviewSettingsLayout() },
+  SnapshotScene("PrivacySettings.PreviewPrivacySettingsView") { PreviewPrivacySettingsView() },
   SnapshotScene("UserAddressView.PreviewUserAddressLayoutNoAddress") { PreviewUserAddressLayoutNoAddress() },
   SnapshotScene("UserAddressView.PreviewUserAddressLayoutAddressCreated") { PreviewUserAddressLayoutAddressCreated() },
   SnapshotScene("AdvancedNetworkSettings.PreviewAdvancedNetworkSettingsLayout") { PreviewAdvancedNetworkSettingsLayout() },
   SnapshotScene("NetworkAndServers.PreviewNetworkAndServersLayout") { PreviewNetworkAndServersLayout() },
+)
+
+private val avatarScenes = listOf(
+  SnapshotScene("Avatars.ChatListPeople", chatItemFontScales) { AvatarChatListPeople() },
+  SnapshotScene("Avatars.ChatListGroups", chatItemFontScales) { AvatarChatListGroups() },
+  SnapshotScene("Avatars.Toolbars", chatItemFontScales) { AvatarToolbars() },
+  SnapshotScene("Avatars.Rows") { AvatarRows() },
+  SnapshotScene("Avatars.LinksAndBadge") { AvatarLinksAndBadge() },
+  SnapshotScene("Avatars.Lists") { AvatarLists() },
+  SnapshotScene("Avatars.ChannelMembers") { AvatarChannelMembers() },
+)
+
+private val roundnessScenes = listOf(
+  SnapshotScene("Roundness.TerminalDefects", roundness = 0.3f) { PreviewGroupChatLayoutTerminalDefects() },
 )
 
 private val previewsCallingCore = listOf(
@@ -165,7 +234,6 @@ class SnapshotTest {
       appPrefs.densityScale.set(1f)
       appPrefs.oneHandUI.set(true)
       appPrefs.chatBottomBar.set(true)
-      appPrefs.chatItemRoundness.set(0.75f)
       appPrefs.chatItemTail.set(true)
       appPrefs.privacyMediaBlurRadius.set(0)
       appPrefs.appearanceBarsBlurRadius.set(if (appPrefs.deviceSupportsBlur) 50 else 0)
@@ -174,7 +242,8 @@ class SnapshotTest {
       for (base in listOf(DefaultTheme.LIGHT, DefaultTheme.DARK)) {
         ThemeManager.applyTheme(base.themeName)
         val themeName = base.name.lowercase()
-        for (scene in previewScenes) {
+        for (scene in previewScenes + avatarScenes + roundnessScenes) {
+          appPrefs.chatItemRoundness.set(scene.roundness)
           for (scale in scene.fontScales) {
             appPrefs.fontScale.set(scale)
             ChatModel.terminalItems.value = listOf()

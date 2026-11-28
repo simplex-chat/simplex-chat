@@ -30,11 +30,14 @@ import Data.Int (Int64)
 import Data.Maybe (fromMaybe, isJust, listToMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Time.Clock (UTCTime (..), getCurrentTime)
+import Data.Time.Calendar (fromGregorian)
+import Data.Time.Clock (NominalDiffTime, UTCTime (..), addUTCTime, getCurrentTime)
+import Data.Time.Clock.POSIX (posixSecondsToUTCTime, utcTimeToPOSIXSeconds)
 import Data.Type.Equality
 import Simplex.Chat.Badges (BadgeRow, MaybeBadgeProofRow, ProofPresHeader, badgeToRow, maybeRowToBadgeProof, rowToBadge)
 import Simplex.Chat.Names (SimplexDomainProof, SimplexDomainClaim (..), claimDomain)
 import Simplex.Chat.Messages
+import Simplex.Chat.Protocol (LinkNotice (..), invalidNotice)
 import Simplex.Chat.Remote.Types
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
@@ -494,7 +497,7 @@ type ContactRow' = (ProfileId, ContactName, ContactName, Text, Maybe Text, Maybe
 
 type ContactRow = Only ContactId :. ContactRow'
 
-type ContactDomainRow = (Maybe SimplexDomain, Maybe SimplexDomainProof, Maybe BoolInt)
+type ContactDomainRow = (Maybe SimplexDomain, Maybe SimplexDomainProof, Maybe DomainVerification)
 
 toContact :: UTCTime -> StoreCxt -> User -> [ChatTagId] -> ContactRow :. MaybeConnectionRow -> Contact
 toContact now cxt user chatTags ((Only contactId :. (profileId, localDisplayName, displayName, fullName, shortDescr, description, image, contactLink, peerType, localAlias, BI contactUsed, contactStatus) :. (enableNtfs_, sendRcpts, BI favorite, encodedPrefs, receivedPrefs, userPreferences, createdAt, updatedAt, chatTs) :. preparedContactRow :. (contactRequestId, rejectionSupported_, contactGroupMemberId, BI contactGrpInvSent) :. groupDirectInvRow :. (uiThemes, BI chatDeleted, customData, chatItemTTL, chatLayout) :. badgeRow :. domainRow) :. connRow) =
@@ -512,8 +515,8 @@ toContact now cxt user chatTags ((Only contactId :. (profileId, localDisplayName
 rowToContactDomain :: ContactDomainRow -> Maybe SimplexDomainClaim
 rowToContactDomain (domain_, domainProof_, _) = (`SimplexDomainClaim` domainProof_) . StrJSON <$> domain_
 
-rowToDomainVerified :: ContactDomainRow -> Maybe Bool
-rowToDomainVerified (_, _, domainVerification_) = unBI <$> domainVerification_
+rowToDomainVerified :: ContactDomainRow -> Maybe DomainVerification
+rowToDomainVerified (_, _, domainVerification_) = domainVerification_
 
 contactDomainToRow :: Maybe SimplexDomainClaim -> (Maybe SimplexDomain, Maybe SimplexDomainProof)
 contactDomainToRow d = (claimDomain <$> d, proof =<< d)
@@ -696,7 +699,7 @@ type BusinessChatInfoRow = (Maybe BusinessChatType, Maybe MemberId, Maybe Member
 
 type GroupKeysRow = (Maybe C.PrivateKeyEd25519, Maybe C.PublicKeyEd25519, Maybe C.PrivateKeyEd25519)
 
-type GroupInfoRow = (Int64, GroupName, GroupName, Text, Maybe Text, Text, Maybe Text, Maybe ImageData, Maybe GroupType, Maybe ShortLinkContact, Maybe B64UrlByteString) :. PublicGroupAccessRow :. (Maybe MsgFilter, Maybe BoolInt, BoolInt, Maybe Text, Maybe Text, Maybe GroupMemberAdmission, Maybe ChatLayout) :. (UTCTime, UTCTime, Maybe UTCTime, Maybe UTCTime) :. PreparedGroupRow :. BusinessChatInfoRow :. (BoolInt, Maybe RelayStatus, Maybe UIThemeEntityOverrides, Int64, Maybe Int64, Maybe VersionRoster, Maybe CustomData, Maybe Int64, Int, Maybe ConnReqContact, Maybe BoolInt) :. GroupKeysRow :. GroupMemberRow
+type GroupInfoRow = (Int64, GroupName, GroupName, Text, Maybe Text, Text, Maybe Text, Maybe ImageData, Maybe GroupType, Maybe ShortLinkContact, Maybe B64UrlByteString) :. PublicGroupAccessRow :. (Maybe MsgFilter, Maybe BoolInt, BoolInt, Maybe Text, Maybe Text, Maybe GroupMemberAdmission, Maybe ChatLayout) :. (UTCTime, UTCTime, Maybe UTCTime, Maybe UTCTime) :. PreparedGroupRow :. BusinessChatInfoRow :. (BoolInt, Maybe RelayStatus, Maybe UIThemeEntityOverrides, Int64, Maybe Int64, Maybe VersionRoster, Maybe CustomData, Maybe Int64, Int, Maybe ConnReqContact, Maybe DomainVerification) :. GroupKeysRow :. GroupMemberRow
 
 type PublicGroupAccessRow = (Maybe Text, Maybe SimplexDomain, Maybe BoolInt, Maybe BoolInt, Maybe SimplexDomainProof)
 
@@ -715,7 +718,7 @@ toGroupInfo now cxt userContactId chatTags ((groupId, localDisplayName, displayN
       businessChat = toBusinessChatInfo (toPublicGroupAccess accessRow >>= groupDomainClaim) businessRow
       preparedGroup = toPreparedGroup preparedGroupRow
       groupSummary = GroupSummary {currentMembers, publicMemberCount}
-      gInfo = GroupInfo {groupId, useRelays = BoolDef useRelays, relayOwnStatus, localDisplayName, groupProfile, localAlias, businessChat, fullGroupPreferences, membership, chatSettings, createdAt, updatedAt, chatTs, userMemberProfileSentAt, preparedGroup, chatTags, chatItemTTL, uiThemes, groupSummary, rosterVersion, customData, membersRequireAttention, viaGroupLinkUri, groupDomainVerified = unBI <$> groupDomainVerified}
+      gInfo = GroupInfo {groupId, useRelays = BoolDef useRelays, relayOwnStatus, localDisplayName, groupProfile, localAlias, businessChat, fullGroupPreferences, membership, chatSettings, createdAt, updatedAt, chatTs, userMemberProfileSentAt, preparedGroup, chatTags, chatItemTTL, uiThemes, groupSummary, rosterVersion, customData, membersRequireAttention, viaGroupLinkUri, groupDomainVerified}
    in (gInfo, groupKeysRow)
 
 toGroupInfo_ :: UTCTime -> StoreCxt -> Int64 -> [ChatTagId] -> GroupInfoRow -> GroupInfo
@@ -987,6 +990,61 @@ setViaGroupLinkUri db groupId connId = do
         WHERE group_id = ?
       |]
       (viaContactUri, viaContactUriHash, groupId)
+
+setGroupLinkNotice :: DB.Connection -> GroupInfo -> NominalDiffTime -> UTCTime -> LinkNotice -> IO ()
+setGroupLinkNotice db GroupInfo {groupId} rounding brokerTs notice =
+  maybeFirstRow fromOnly (DB.query db "SELECT via_group_link_uri_hash FROM groups WHERE group_id = ? AND via_group_link_uri_hash IS NOT NULL" (Only groupId))
+    >>= mapM_ (\linkHash -> upsertLinkNotice db linkHash rounding brokerTs notice)
+
+setContactLinkNotice :: DB.Connection -> Contact -> NominalDiffTime -> UTCTime -> LinkNotice -> IO ()
+setContactLinkNotice db ct rounding brokerTs notice =
+  forM_ (contactConn ct) $ \Connection {connId} ->
+    maybeFirstRow fromOnly (DB.query db "SELECT via_contact_uri_hash FROM connections WHERE connection_id = ? AND via_contact_uri_hash IS NOT NULL" (Only connId))
+      >>= mapM_ (\linkHash -> upsertLinkNotice db linkHash rounding brokerTs notice)
+
+upsertLinkNotice :: DB.Connection -> ConnReqUriHash -> NominalDiffTime -> UTCTime -> LinkNotice -> IO ()
+upsertLinkNotice db linkHash rounding brokerTs notice@LinkNotice {ttl} = unless (invalidNotice notice) $ do
+  currentTs <- getCurrentTime
+  let expiresAt = capExpiry $ ttlEndTime rounding (min brokerTs currentTs) <$> ttl
+  DB.execute
+    db
+    [sql|
+      INSERT INTO link_notices (link_hash, expires_at, created_at, updated_at)
+      VALUES (?,?,?,?)
+      ON CONFLICT (link_hash) DO UPDATE SET
+        expires_at = EXCLUDED.expires_at,
+        updated_at = EXCLUDED.updated_at
+    |]
+    (linkHash, expiresAt, currentTs, currentTs)
+
+capExpiry :: Maybe UTCTime -> Maybe UTCTime
+capExpiry = fmap (max minExpiry) . mfilter (< maxExpiry)
+  where
+    minExpiry = UTCTime (fromGregorian 1970 1 1) 0
+    maxExpiry = UTCTime (fromGregorian 10000 1 1) 0
+
+ttlEndTime :: NominalDiffTime -> UTCTime -> Int64 -> UTCTime
+ttlEndTime rounding base ttl =
+  let t = utcTimeToPOSIXSeconds $ addUTCTime (fromIntegral ttl) base
+   in posixSecondsToUTCTime $ fromIntegral (ceiling (t / rounding) :: Integer) * rounding
+
+getLinkNotice :: DB.Connection -> UTCTime -> (ConnReqUriHash, ConnReqUriHash) -> IO (Maybe (Maybe UTCTime))
+getLinkNotice db currentTs (linkHash1, linkHash2) =
+  maybeFirstRow fromOnly $
+    DB.query
+      db
+      [sql|
+        SELECT expires_at
+        FROM link_notices
+        WHERE link_hash IN (?,?) AND (expires_at IS NULL OR expires_at > ?)
+        ORDER BY expires_at IS NULL DESC, expires_at DESC
+        LIMIT 1
+      |]
+      (linkHash1, linkHash2, currentTs)
+
+deleteExpiredLinkNotices :: DB.Connection -> UTCTime -> IO ()
+deleteExpiredLinkNotices db currentTs =
+  DB.execute db "DELETE FROM link_notices WHERE expires_at <= ?" (Only currentTs)
 
 deleteConnectionRecord :: DB.Connection -> User -> Int64 -> IO ()
 deleteConnectionRecord db User {userId} cId = do

@@ -71,7 +71,7 @@ defaultChatConfig =
       chatVRange = supportedChatVRange,
       callVRange = supportedCallVRange,
       badgePublicKeys = M.mapKeys fromIntegral entitlementIssuerKeys,
-      badgeServiceAddress = Just $ either error id $ strDecode "https://smp5.simplex.im/a#ooSNWlEZTO2RPE0Ff5ZoybAs5zEhWLMlQrXesnhaZHM",
+      storeServiceAddress = Just $ either error id $ strDecode "https://smp5.simplex.im/a#ooSNWlEZTO2RPE0Ff5ZoybAs5zEhWLMlQrXesnhaZHM",
       badgeCurrentTime = getCurrentTime,
       badgeRetryInterval = RetryInterval {initialInterval = 30_000000, increaseAfter = 0, maxInterval = 3600_000000},
       badgeConsecutiveRetries = 3,
@@ -127,6 +127,7 @@ defaultChatConfig =
       initialCleanupManagerDelay = 30 * 1000000, -- 30 seconds
       cleanupManagerInterval = 30 * 60, -- 30 minutes
       cleanupManagerStepDelay = 3 * 1000000, -- 3 seconds
+      linkNoticeEndTimeRounding = 60 * 60, -- 1 hour
       ciExpirationInterval = 30 * 60 * 1000000, -- 30 minutes
       callInvitationTTL = 180, -- 3 minutes, the apps stop ringing for older invitations
       highlyAvailable = False,

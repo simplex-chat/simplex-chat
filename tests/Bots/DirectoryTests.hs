@@ -23,6 +23,7 @@ import Directory.Options
 import Directory.Service
 import System.Directory (emptyPermissions, setOwnerExecutable, setOwnerReadable, setOwnerWritable, setPermissions)
 import Simplex.Chat.Bot.KnownContacts
+import Simplex.Chat.Bot.Store (withDB')
 import Simplex.Chat.Controller (ChatConfig (..), ChatController (smpAgent))
 import qualified Simplex.Chat.Markdown as MD
 import Simplex.Chat.Options (ChatOpts (..), CoreChatOpts (..))
@@ -93,6 +94,8 @@ directoryServiceTests = do
     it "should respond to unknown command during captcha" testCaptchaUnknownCommand
   describe "store log" $ do
     it "should restore directory service state" testRestoreDirectory
+  describe "database" $ do
+    it "should stop a database action at its time limit" testDBActionTimeLimit
   describe "captcha" $ do
     it "should accept some incorrect spellings" testCaptcha
     it "should generate captcha of correct length" testGetCaptchaStr
@@ -1411,9 +1414,7 @@ testCapthaScreening ps =
         (bob </)
         cath ##> "/ms privacy"
         cath <## "cath (Catherine): observer, you, connected"
-        cath <## "'SimpleX Directory': admin, host, connected"
-        cath <## "bob (Bob): owner, connected"
-        cath <## (pastMember <> ": author, status unknown")
+        cath <### ["'SimpleX Directory': admin, host, connected", "bob (Bob): owner, connected", ConsoleString (pastMember <> ": author, status unknown")]
   where
     join cath groupLink = do
       cath ##> ("/c " <> groupLink)
@@ -1687,6 +1688,11 @@ testRestoreDirectory ps = do
         groupFoundN 3 cath "privacy"
         cath #> "@'SimpleX Directory' security"
         groupFoundN' 2 cath "security"
+
+testDBActionTimeLimit :: HasCallStack => TestParams -> IO ()
+testDBActionTimeLimit ps =
+  withNewTestChat ps "bob" bobProfile $ \TestCC {chatController = cc} ->
+    timeout 100000 (withDB' "testDBActionTimeLimit" cc $ \_ -> threadDelay 1000000) `shouldReturn` Nothing
 
 testCaptcha :: HasCallStack => TestParams -> IO ()
 testCaptcha _ps = do

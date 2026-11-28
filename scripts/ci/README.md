@@ -1,6 +1,6 @@
 # CI on GitHub's runners
 
-Three workflows build the apps from a branch's own code and test them, only when asked: `ios-sim` (the iOS app in a simulator on a macOS runner), `desktop-linux` (the desktop app on a Linux runner) and `android-emu` (the Android app in an emulator on a Linux runner). Each runs a scripted smoke test and, on request, a Claude session that follows a test plan, and a test backend (relay, directory, names server, peers). Details: [iOS](ios-sim/README.md), [desktop](desktop-linux/README.md), [Android](android/README.md).
+Three workflows build the apps from a branch's own code and test them, when asked and for a pull request that changes their CI files ([app workflows](#app-workflows)): `ios-sim` (the iOS app in a simulator on a macOS runner), `desktop-linux` (the desktop app on a Linux runner) and `android-emu` (the Android app in an emulator on a Linux runner). Each runs a scripted smoke test and, on request, a Claude session that follows a test plan, and a test backend (relay, directory, names server, peers). Details: [iOS](ios-sim/README.md), [desktop](desktop-linux/README.md), [Android](android/README.md).
 
 ## Reduced build
 
@@ -27,15 +27,16 @@ Endpoint: https://docs.github.com/en/rest/actions/workflows#create-a-workflow-di
 | `tests` | empty | hspec match patterns, one per line (`\n` in JSON); `/` runs the whole suite, and an empty value builds without tests |
 | `base` | `master` | the branch that the changes are compared with:<br>`stable` for a branch cut from stable<br>the parent branch for a stacked branch |
 
-When a newer dispatch on the same branch starts build-linux or build-ios, GitHub cancels the unfinished job of the older one (`cancel-in-progress`).
+When a newer dispatch on the same branch starts build-linux, test-postgres or build-ios, GitHub cancels the unfinished job of the older one (`cancel-in-progress`).
 
 Results:
 - Run and jobs: `GET /repos/<owner>/simplex-chat/actions/runs?head_sha=<commit>&event=workflow_dispatch` returns the run id; `GET /repos/<owner>/simplex-chat/actions/runs/<run id>/jobs` returns each step with its start, end and conclusion.
 - Job log: `GET /repos/<owner>/simplex-chat/actions/jobs/<job id>/logs` returns a redirect to a text file, valid for 1 minute (https://docs.github.com/en/rest/actions/workflow-jobs#download-job-logs-for-a-workflow-run). The test summary is printed as "Finished in N seconds" and "N examples, N failures".
+- Generated files: `GET /repos/<owner>/simplex-chat/actions/runs/<run id>/artifacts` lists an artifact `generated-files-<job>` for each job in which a test changed a tracked file (step "Check generated files"). It holds generated-files.patch, which `git apply` applies to the tested commit.
 
 ### Scopes
 
-The reduced build runs one Linux job, build-linux (ubuntu-22.04 x86_64), for every scope except ios, and one macOS job, build-ios (macos-latest), for ios.
+The reduced build runs the Linux job build-linux (ubuntu-22.04 x86_64) for every scope except ios, the Linux job test-postgres (ubuntu-22.04 x86_64) for core, and the macOS job build-ios (macos-latest) for ios. The reduced build and the full matrix run an app workflow for its scope: android-emu for android, desktop-linux for desktop-linux and ios-sim for ios-sim.
 
 #### core
 
@@ -44,7 +45,17 @@ The reduced build runs one Linux job, build-linux (ubuntu-22.04 x86_64), for eve
   - Docker image (step "Build and cache Docker image");
   - caches (the steps "Restore ... from cache");
   - `cabal build -j --enable-tests --ghc-options=-O0` (step "Build CLI");
-  - simplex-chat-test with the selected tests (step "Run tests"), each attempt limited to 35 minutes by `timeout`; an attempt that reaches the limit fails, and "Attempt <n> timed out." is printed.
+  - the store service web app, `npm ci` and `npm run build` in apps/simplex-store-service/web with Node.js 22, for the test "serves the built web app" (step "Build badge web app for tests");
+  - simplex-chat-test with the selected tests (step "Run tests"), each attempt limited to 35 minutes by `timeout`; an attempt that reaches the limit fails, and "Attempt <n> timed out." is printed;
+  - step "Check generated files": it fails if a test changed a tracked file, and uploads the change as artifact `generated-files-<job>`. The tests "verify and overwrite schema dump", "verify and overwrite query plans" and the "generate ..." tests of the API docs overwrite their files, so a stale file fails here even when the test passes on retry.
+- App test fixtures: core tests write the core's responses and events that the app tests use to tests/fixtures/api (`/names tests/` to tests/fixtures/api/names; `/contact via address/`, `/should validate link type/` and `/reject contact and notify the sender/` to tests/fixtures/api/connect; `/updated item event has the previous item/`, `/should send updated item with mentions added and removed by edit/` and `/mark call invitation missed when the caller ends the call/` to tests/fixtures/api/updates; `/record upload/` and `/send and receive small standalone file with extra information/` to tests/fixtures/api/files; `/app fixtures/`, `/should prevent removed member with notice from re-joining/` and `/blocked pending member can't be accepted/` to tests/fixtures/api/bans), and fail when a recording differs from the committed file; the rewritten files are committed, and the kotlin and ios scopes run for them.
+- CI, in test-postgres, except on stable and v* tags: the steps of build-linux with the matrix parameter `postgres` and these job settings:
+  - the Docker image and dependency cache of build-linux, and its own build directory cache `dist-postgres-<target>`;
+  - simplex-chat-test built with `--constraint 'simplexmq +client_postgres' --constraint 'simplex-chat +client_postgres'` at -O0 (step "Build CLI");
+  - PostgreSQL 15 in Docker, with trust authentication and `max_connections=3000`, and postgresql-client-15 for pg_dump;
+  - the selected tests with `PGHOST=localhost`, each attempt limited to 90 minutes; `ALLOW_EMPTY=true` omits `--fail-on=empty`, so a selection of SQLite-only tests runs nothing here;
+  - step "Check generated files", artifact `generated-files-ubuntu-22.04-ghc<version>-postgres`.
+- Query plans: the test "verify and overwrite query plans" runs on Linux only. It explains the queries recorded in the run and the queries of the saved files (src/Simplex/Chat/Store/SQLite/Migrations/*_query_plans.txt), writes each query once, and fails when a file changed: a recorded query was missing, a plan changed, or a merge left two entries of one query. Saved queries that the run did not record are kept, except those whose plan became an error. Queries that run only on retries or other timing-dependent paths are added by the first run that records them.
 - Local:
   ```sh
   cp scripts/cabal.project.local.linux cabal.project.local
@@ -58,6 +69,13 @@ The reduced build runs one Linux job, build-linux (ubuntu-22.04 x86_64), for eve
   ```
   `--ghc-options=-O0` matches the reduced build; the library and test-suite stanzas of simplex-chat.cabal set -O2. Test directories are created under tests/tmp (`tmpBracket` in tests/Test.hs).
 
+  On PostgreSQL, with pg_dump 15 or newer on PATH:
+  ```sh
+  docker run -d -p 5432:5432 -e POSTGRES_HOST_AUTH_METHOD=trust postgres:15 -c max_connections=3000
+  cabal build --enable-tests --ghc-options=-O0 --constraint 'simplexmq +client_postgres' --constraint 'simplex-chat +client_postgres' test:simplex-chat-test
+  PGHOST=localhost ALLOW_EMPTY=true TESTS='/SimpleX chat client/group tests/' scripts/ci/run-tests.sh "$(cabal list-bin --enable-tests --ghc-options=-O0 --constraint 'simplexmq +client_postgres' --constraint 'simplex-chat +client_postgres' test:simplex-chat-test)"
+  ```
+
 #### kotlin
 
 - Globs: `BUILD_CHANGES["kotlin"]` in packages_release.py.
@@ -67,15 +85,22 @@ The reduced build runs one Linux job, build-linux (ubuntu-22.04 x86_64), for eve
   cd apps/multiplatform
   ./gradlew --no-daemon --max-workers=1 :common:desktopTest :desktop:compileKotlinJvm -x :desktop:cmakeBuildAndCopy :android:compileGoogleDebugKotlin :android:testFossDebugUnitTest
   ```
-  JDK 17 and an Android SDK in ANDROID_HOME are required, as installed by Dockerfile.build.
+  JDK 17 and an Android SDK in ANDROID_HOME are required, and on Linux fontconfig's `fc-cache` for `FallbackFontTest`, as installed by Dockerfile.build.
 
 #### ios
 
 - Globs:
   - apps/ios/**
+  - tests/fixtures/api/**
   - scripts/ci/ios-stub-libs.sh
-- CI: build-ios: stub libraries, then xcodebuild for the iOS Simulator without signing.
-- Local, on macOS: `scripts/ci/ios-stub-libs.sh`, then the xcodebuild command of the step "Build iOS app" of build-ios.
+- CI: build-ios: stub libraries, then xcodebuild for the iOS Simulator without signing (step "Build iOS app"), then the target SimpleX Unit Tests, hosted by the app, in a new simulator (step "Run iOS unit tests"). The stubs of `chat_migrate_init` and `chat_migrate_init_key` return an empty string, so the app opens its database error screen and calls the core no more.
+- Local, on macOS: `scripts/ci/ios-stub-libs.sh`, then the commands of the steps "Build iOS app" and "Run iOS unit tests" of build-ios.
+
+#### app workflows
+
+- Globs: `BUILD_CHANGES["android"]`, `["desktop-linux"]` and `["ios-sim"]` in packages_release.py: each workflow file and its scripts in scripts/ci, without their README; for android also `scripts/ci/desktop-linux/earlier-run.sh`, which android-emu runs, the Nix files (flake.nix, flake.lock, scripts/nix/**) and cabal.project, which change the Android core.
+- CI: the jobs android-emu, desktop-linux and ios-sim of build.yml run the workflow of their scope as a reusable workflow, with the inputs off; android-emu also builds the 32-bit core and app (`armv7a`). Each reuses the cores and backends that earlier runs of the pull request's branch built, also for a pull request from a fork.
+- Local: [Starting a run](#starting-a-run), on the pushed branch.
 
 #### packages
 
@@ -97,12 +122,14 @@ The reduced build runs one Linux job, build-linux (ubuntu-22.04 x86_64), for eve
 
 #### badge-web
 
-- Globs: apps/simplex-badge-service/web/**. These paths are also in the core globs (apps/simplex-badge-service/**), and web/src/catalog.ts is read by core tests (tests/Bots/BadgeService/CatalogTests.hs, WebTests.hs).
+- Globs:
+  - apps/simplex-store-service/web/**, also in the core globs (apps/simplex-store-service/**); web/src/catalog.ts is read by core tests (tests/Bots/StoreService/CatalogTests.hs, WebTests.hs);
+  - tests/fixtures/store-service/rest-api/**: the badge page's test/service-refusals.test.ts reads the refusals that WebTests.hs records there.
 - CI, in build-linux: core build and tests, then `scope-tests.sh badge-web` (step "Test changed scopes").
-- Selected core tests: `/SimpleX badge service/` and `/SimpleX badge service e2e/`.
+- Selected core tests: `/SimpleX store service/`, which includes `/SimpleX store service e2e/`.
 - Local:
   ```sh
-  cd apps/simplex-badge-service/web
+  cd apps/simplex-store-service/web
   npm ci
   npm test
   ```
@@ -114,6 +141,17 @@ The reduced build runs one Linux job, build-linux (ubuntu-22.04 x86_64), for eve
   - scripts/ci/test_packages_release.py
 - CI, in build-linux: `scope-tests.sh ci-scripts` (step "Test changed scopes").
 - Local: `python3 scripts/ci/test_packages_release.py`; Python 3.11 or newer is required for tomllib (packages_release.py).
+
+#### store service on Postgres
+
+- Job: test-store-postgres (ubuntu-22.04 x86_64), on a pull request that changes the store service, its tests, `tests/Test.hs`, `src/Simplex/Chat/PaymentService`, `src/Simplex/Chat/Badges`, `cabal.project`, `simplex-chat.cabal` or build.yml, and on every dispatch. Production runs the store service on Postgres only, and the SQLite jobs do not cover it.
+- CI: the build-linux Docker image, a `postgres:17` container on the host network, `cabal build` with `+client_postgres`, then simplex-chat-test with `--fail-on=empty -m "Supporter badges" -m "SimpleX store service" -m "StoreService names"`.
+- Local, with a Postgres 17 on 127.0.0.1 that trusts the `postgres` user and allows 1500 connections:
+  ```sh
+  cabal build --builddir dist-postgres --constraint 'simplexmq +client_postgres' --constraint 'simplex-chat +client_postgres' simplex-chat-test
+  mkdir -p tests/tmp
+  PGHOST=127.0.0.1 LANG=C.UTF-8 "$(cabal list-bin --builddir dist-postgres --constraint 'simplexmq +client_postgres' --constraint 'simplex-chat +client_postgres' simplex-chat-test)" -m "Supporter badges" -m "SimpleX store service" -m "StoreService names"
+  ```
 
 #### website
 
@@ -132,17 +170,13 @@ The reduced build runs one Linux job, build-linux (ubuntu-22.04 x86_64), for eve
 
 #### mcp
 
-- Globs:
-  - packages/simplex-chat-mcp/**
-  - packages/simplex-chat-nodejs/**
-  - packages/simplex-chat-client/types/typescript/**
+- Globs: packages/simplex-chat-mcp/**.
 - CI:
-  - in build-linux: `scope-tests.sh mcp` (step "Test changed scopes"):
-    - the types package and the Node.js library built from the branch without the add-on, as package-tests.sh builds them;
-    - `npm ci`, then both installed into the MCP package with `npm install --no-save`;
+  - in build-linux: `scope-tests.sh mcp` (step "Test changed scopes"), with the published `simplex-chat` and `@simplex-chat/types` of package-lock.json:
+    - `npm ci`;
     - `npx tsc` and `npx tsc -p test/tsconfig.json --noEmit`;
     - `npm test`, the unit tests;
-    - `npm run test:e2e`, the end-to-end tests. They download libsimplex and the add-on pinned in packages/simplex-chat-nodejs/src/release.ts, and smp-server and xftp-server of the simplexmq release in test/e2e/smpServer.ts;
+    - `npm run test:e2e`, the end-to-end tests. They download libsimplex and the add-on pinned by the installed `simplex-chat`, and smp-server and xftp-server of the simplexmq release in test/e2e/smpServer.ts;
   - before a publication: the package with its published dependencies, type-checked and unit tested in job `publish` of build.yml (docs/contributing/RELEASES.md, "MCP server release").
 - Local: `scripts/ci/scope-tests.sh mcp`.
 
@@ -161,11 +195,37 @@ The reduced build runs one Linux job, build-linux (ubuntu-22.04 x86_64), for eve
 - CI, in build-linux: `scope-tests.sh support-bot-light` (step "Test changed scopes"): the Python library of the branch and the bot installed in a virtual environment, then ruff, pyright and pytest. The tests use a fake API, without libsimplex.
 - Local: `scripts/ci/scope-tests.sh support-bot-light`.
 
+#### names-page
+
+- Globs:
+  - apps/simplex-domains
+  - tests/fixtures/store-service/rest-api/**
+- CI, in build-linux: `scope-tests.sh names-page` (step "Test changed scopes"): `npm ci` in apps/simplex-domains/webapp, at the commit the submodule pins, which build-linux checks out with the submodules, then `npx vitest run test/contract test/terms-vectors.test.ts` with STORE_FIXTURES set to tests/fixtures/store-service/rest-api. These are the page's only tests that read STORE_FIXTURES: they read the answers and vectors the store service's tests record there, and without it they are skipped.
+- Store fixtures: the store service's tests write their answers to tests/fixtures/store-service/rest-api and fail when an answer differs from the committed file; the rewritten files are committed.
+- The page's other unit tests, its build and its browser tests run in the CI of its own repository (simplex-chat/simplex.domains, webapp.yml); its cases run against the store service in names-e2e.
+- Local: `scripts/ci/scope-tests.sh names-page`.
+
+#### names-e2e
+
+- Globs:
+  - apps/simplex-store-service/**
+  - tests/Bots/StoreService/**
+  - tests/fixtures/store-service/rest-api/**
+  - apps/simplex-domains
+  - scripts/store-service/**
+
+  These paths are also in the core globs, as the cases run against the service of the core build.
+- CI, in build-linux: core build, then `scope-tests.sh names-e2e` (step "Test changed scopes"):
+  - anvil and the compiled contracts from the `anvil` and `contracts` stages of the page's webapp/dev/Dockerfile, at the versions it pins;
+  - `npm ci` and Playwright's Chromium with its system packages, in apps/simplex-domains/webapp;
+  - scripts/store-service/dev/contract-run.sh with the job's simplex-chat-test: the page's end-to-end cases in Chromium against the service, with the fake BTCPay and Stripe of its tests (apps/simplex-store-service/README.md, "Running the webapp's cases against the service");
+  - on a failure, the run's folder (logs, the service's database, Playwright's results and traces) uploaded as the artifact `names-e2e`, kept 14 days (step "Names page cases' results").
+- Local: `scripts/ci/scope-tests.sh names-e2e`, with Docker; or contract-run.sh with anvil and the compiled contracts, as the README states.
+
 #### Scopes lacking CI tests
 
 | Scope | Paths | CI |
 |---|---|---|
-| ios | apps/ios/** | compile only |
 | types package | packages/simplex-chat-client/types/typescript/** | compile only |
 | ts-client | packages/simplex-chat-client/typescript/** | - |
 | webrtc | packages/simplex-chat-webrtc/** | - |
@@ -189,7 +249,7 @@ The scope commands run in build-linux after the core tests, with Node 22 and Pyt
 
 ## Starting a run
 
-Pushes start none of the app workflows: a run is started by hand, on any branch, with inputs that are off by default and combine.
+Pushes start none of the app workflows. build.yml runs each for a pull request that changes its CI files ([app workflows](#app-workflows)); otherwise a run is started by hand, on any branch, with inputs that are off by default and combine.
 
 | Input | iOS | Desktop | Android |
 |---|---|---|---|
@@ -197,7 +257,7 @@ Pushes start none of the app workflows: a run is started by hand, on any branch,
 | `claude` | scripted test, then Claude | scripted test, then Claude | scripted test, then Claude |
 | `backend` | also the test backend | also the test backend | also the test backend |
 | `release` | — | also the latest release's onboarding, to tell a branch's failure from the runner's | also the latest release's onboarding, to tell a branch's failure from the runner's |
-| `armv7a` | — | — | also the core library for 32-bit Arm (armeabi-v7a), built only |
+| `armv7a` | — | — | also the core library and the app for 32-bit Arm (armeabi-v7a), uploaded without a test |
 
 In the Actions tab: `ios-sim`, `desktop-linux` or `android-emu` → Run workflow, choose the branch and tick the inputs. With the GitHub CLI, each input is a field:
 
@@ -210,7 +270,11 @@ gh workflow run android-emu.yml --ref <branch> -f claude=true
 
 A newer run of a workflow on the same branch cancels the older one.
 
-Each run uploads the app it built, for manual tests, as an artifact kept 14 days: `ios-sim-app` (SimpleX.app.tar.gz, for the iOS simulator on an Apple-silicon Mac), `desktop-app` (desktop-app.tar.gz, for Linux x86-64) and `android-app` (the debug APK, arm64-v8a only). The run's page lists it under Artifacts; `gh run download <run id> -n <artifact>` downloads it.
+Each run uploads the app it built, for manual tests, as an artifact kept 14 days: `ios-sim-app` (SimpleX.app.tar.gz, for the iOS simulator on an Apple-silicon Mac), `desktop-app` (desktop-app.tar.gz, for Linux x86-64) and `android-app` (the debug APK, arm64-v8a only), with `armv7a` also `android-app-armeabi-v7a` (the debug APK, armeabi-v7a only, installed beside the released app as SimpleX Debug). The run's page lists it under Artifacts; `gh run download <run id> -n <artifact>` downloads it.
+
+`scripts/ci/wait-runs.py [<commit>]` waits until every run for a commit, HEAD by default, has completed, then prints each run and the jobs that did not succeed. If the commit has no runs, it waits for the first one, without a time limit.
+
+An agent that runs these workflows in a fork follows [app-tests-agent.md](app-tests-agent.md).
 
 ## How long a run takes
 

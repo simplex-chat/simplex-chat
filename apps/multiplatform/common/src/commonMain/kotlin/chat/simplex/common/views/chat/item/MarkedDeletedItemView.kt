@@ -61,7 +61,7 @@ private fun MergedMarkedDeletedText(chatsCtx: ChatModel.ChatsContext, chatItem: 
     else if (total == blockedByAdmin)
       stringResource(MR.strings.blocked_by_admin_items_description).format(total)
     else if (total == blocked + blockedByAdmin)
-      stringResource(MR.strings.blocked_items_description).format(total)
+      stringResource(MR.strings.hidden_items_description).format(total)
     else
       stringResource(MR.strings.marked_deleted_items_description).format(total)
   } else {
@@ -91,7 +91,7 @@ fun markedDeletedText(cItem: ChatItem, chatInfo: ChatInfo): String =
     is CIDeleted.Moderated ->
       String.format(generalGetString(MR.strings.moderated_item_description), cItem.meta.itemDeleted.byGroupMember.displayName)
     is CIDeleted.Blocked ->
-      generalGetString(MR.strings.blocked_item_description)
+      generalGetString(MR.strings.hidden_item_description)
     is CIDeleted.BlockedByAdmin ->
       generalGetString(MR.strings.blocked_by_admin_item_description)
     is CIDeleted.Deleted, null ->

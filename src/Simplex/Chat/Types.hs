@@ -38,7 +38,6 @@ import qualified Data.Aeson as J
 import qualified Data.Aeson.Encoding as JE
 import qualified Data.Aeson.TH as JQ
 import qualified Data.Attoparsec.ByteString.Char8 as A
-import Data.Attoparsec.Combinator (lookAhead)
 import qualified Data.ByteString.Base64 as B64
 import Data.ByteString.Char8 (ByteString, pack, unpack)
 import qualified Data.ByteString.Char8 as B
@@ -538,7 +537,7 @@ data GroupInfo = GroupInfo
     rosterVersion :: Maybe VersionRoster,
     membersRequireAttention :: Int,
     viaGroupLinkUri :: Maybe ConnReqContact,
-    groupDomainVerified :: Maybe Bool
+    groupDomainVerified :: Maybe DomainVerification
   }
   deriving (Eq, Show)
 
@@ -834,14 +833,17 @@ data LocalProfile = LocalProfile
     localBadge :: Maybe LocalBadge,
     localAlias :: LocalAlias,
     contactDomain :: Maybe SimplexDomainClaim,
-    contactDomainVerified :: Maybe Bool
+    contactDomainVerified :: Maybe DomainVerification
   }
+  deriving (Eq, Show)
+
+data DomainVerification = DVFailed | DVVerified | DVMoved
   deriving (Eq, Show)
 
 localProfileId :: LocalProfile -> ProfileId
 localProfileId LocalProfile {profileId} = profileId
 
-toLocalProfile :: ProfileId -> Profile -> LocalAlias -> UTCTime -> Maybe Bool -> Maybe Bool -> LocalProfile
+toLocalProfile :: ProfileId -> Profile -> LocalAlias -> UTCTime -> Maybe Bool -> Maybe DomainVerification -> LocalProfile
 toLocalProfile profileId Profile {displayName, fullName, shortDescr, description, image, contactLink, preferences, peerType, badge, contactDomain} localAlias now badgeVerified contactDomainVerified =
   LocalProfile {profileId, displayName, fullName, shortDescr, description, image, contactLink, preferences, peerType, localBadge, localAlias, contactDomain, contactDomainVerified}
   where
@@ -1910,11 +1912,9 @@ instance StrEncoding AConnectTarget where
     CTDomain d -> strEncode d
     CTInv l -> strEncode l
   strP =
-    (ACTarget SCMContact . CTShortContact . CTName <$> (lookAhead nameStart *> strP))
+    (ACTarget SCMContact . CTShortContact . CTName <$> strP)
       <|> (aConnectTarget <$> strP)
       <|> (ACTarget SCMContact . CTDomain <$> strP)
-    where
-      nameStart = "@" <|> "#" <|> "simplex:/name"
 
 instance ConnectionModeI m => StrEncoding (ConnectTarget m) where
   strEncode t = strEncode $ ACTarget sConnectionMode t
@@ -2326,6 +2326,8 @@ $(JQ.deriveJSON defaultJSON ''UserContact)
 
 $(JQ.deriveJSON defaultJSON ''Profile)
 
+$(JQ.deriveJSON (enumJSON $ dropPrefix "DV") ''DomainVerification)
+
 $(JQ.deriveJSON defaultJSON ''LocalProfile)
 
 $(JQ.deriveJSON defaultJSON ''UserContactRequest)
@@ -2394,6 +2396,13 @@ $(JQ.deriveJSON defaultJSON ''GroupLink)
 instance FromField MsgFilter where fromField = fromIntField_ msgFilterIntP
 
 instance ToField MsgFilter where toField = toField . msgFilterInt
+
+instance FromField DomainVerification where
+  fromField = fromIntField_ $ \case
+    0 -> Just DVFailed
+    1 -> Just DVVerified
+    2 -> Just DVMoved
+    _ -> Nothing
 
 $(JQ.deriveJSON defaultJSON ''CReqClientData)
 

@@ -84,7 +84,7 @@ test("the status line setting runs the status line command of the unpacked plugi
     let output = ""
     line.stdout.on("data", chunk => (output += chunk))
     expect(await new Promise(resolve => line.on("close", resolve))).toBe(0)
-    expect(output).toBe("Opus 5.5 · effort high · 5 h: 34%\n")
+    expect(output).toMatch(/^Opus 5\.5 · effort high · 5 h: 34% · RAM [\d.]+ [TGM]B free(❗️)? · disk [\d.]+ [TGM]B free(❗️)?\n$/)
   }
 }, 60_000)
 

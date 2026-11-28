@@ -4,9 +4,9 @@
 
 ## Running it
 
-The workflow runs only when started by hand, on any branch: in the Actions tab, `android-emu` → Run workflow, or `gh workflow run android-emu.yml --ref <branch>` with `-f claude=true`, `-f backend=true`, `-f release=true` or `-f armv7a=true`. [CI on GitHub's runners](../README.md) lists the inputs. A newer run on the same branch cancels the older one.
+build.yml runs the workflow, with `armv7a`, for a pull request that changes it, its scripts, the Nix files or cabal.project ([app workflows](../README.md#app-workflows)). Otherwise it runs when started by hand, on any branch: in the Actions tab, `android-emu` → Run workflow, or `gh workflow run android-emu.yml --ref <branch>` with `-f claude=true`, `-f backend=true`, `-f release=true` or `-f armv7a=true`. [CI on GitHub's runners](../README.md) lists the inputs. A newer run on the same branch cancels the older one.
 
-Every run builds the core library, and the backend when it's asked for, from the branch's own Haskell code. It reuses an earlier build only when the sources are unchanged, as an artifact of the same branch named after a hash of its sources (30 days): for the core `src/**`, `cabal.project`, `simplex-chat.cabal`, `PRIVACY.md`, the Nix files (`flake.nix`, `flake.lock`, `scripts/nix/**`) and `build-core.sh`; the backend is desktop-linux's, under its name and hash, so a backend either workflow built is reused by both. The workflow saves no Actions caches, which this repository evicts within hours and shares with `build.yml`.
+Every run builds the core library, and the backend when it's asked for, from the branch's own Haskell code. It reuses an earlier build only when the sources are unchanged, as an artifact of the same branch named after a hash of its sources (30 days): for the arm64 and armv7a cores `src/**`, `cabal.project`, `simplex-chat.cabal`, `PRIVACY.md`, the Nix files (`flake.nix`, `flake.lock`, `scripts/nix/**`) and `build-core.sh`; the backend is desktop-linux's, under its name and hash, so a backend either workflow built is reused by both. The workflow saves no Actions caches, which this repository evicts within hours and shares with `build.yml`.
 
 ## Jobs
 
@@ -14,13 +14,14 @@ Every run builds the core library, and the backend when it's asked for, from the
 |---|---|---|
 | `plan` | reads the inputs, finds earlier core and backend builds | 10 s |
 | `core` | `build-core.sh`: `lib:simplex-chat` and `lib:support` for aarch64-android with Nix, as `scripts/android/build-android.sh` builds them | skipped when reused, about 27 min not |
-| `app` | the debug APK (`:android:assembleFossDebug` for arm64-v8a only), the emulator, `smoke-test.sh` | about 13 min: APK 7–8, emulator 1.5, smoke test 3.5 (4 with the backend case, after 2.5 to start the backend) |
+| `app` | the debug APK (`:android:assembleFossDebug` for arm64-v8a only), `check-imports.py`, the emulator, `smoke-test.sh` | about 13 min: APK 7–8, emulator 1.5, smoke test 3.5 (4 with the backend case, after 2.5 to start the backend) |
 | `claude` (opt-in) | after `app` passed: its APK in a new emulator at the first screen, then Claude Code drives it | about 5 min, Claude 2.5 |
 | `backend` (opt-in) | desktop-linux's `build-backend.sh` | about 30 min, skipped when reused |
 | `release` (opt-in) | the latest release's arm64 APK, its signer checked against SimpleX's key, onboarding only | about 4 min |
-| `core-armv7a` (opt-in) | `build-core.sh` with `armv7a`: `lib:simplex-chat` and `lib:support` for armv7a-android, with GHC 8.10.7; the app and the emulator use only arm64 | not measured yet |
+| `core-armv7a` (opt-in) | `build-core.sh` with `armv7a`: `lib:simplex-chat` and `lib:support` for armv7a-android, with GHC 8.10.7; the emulator uses only arm64 | skipped when reused, about 75–85 min not |
+| `app-armv7a` (opt-in) | after `core-armv7a`: the debug APK for armeabi-v7a only, as `chat.simplex.app.debug` named SimpleX Debug, so that it installs beside the released app; uploaded without a test | about 7 min |
 
-Results are artifacts: `android-smoke-test` (numbered screenshots, the accessibility tree and the text of each, `steps.log`, `checks.txt`, logcat as `app.log`, `emulator.log`), `android-release-smoke-test`, `android-claude-test`, and the backend's logs; `android-app`, the APK for manual tests and the Claude job, is kept 14 days. The job summaries list the checks and the Claude usage.
+Results are artifacts: `android-smoke-test` (numbered screenshots, the accessibility tree and the text of each, `steps.log`, `checks.txt`, logcat as `app.log`, `emulator.log`, and after a failed test the emulator's crash reports in `emulator-crashes/`), `android-release-smoke-test`, `android-claude-test`, and the backend's logs; `android-app`, the APK for manual tests and the Claude job, and `android-app-armeabi-v7a`, the 32-bit APK for manual tests, are kept 14 days. The job summaries list the checks and the Claude usage.
 
 ## The emulator
 
@@ -32,6 +33,7 @@ A Google APIs x86_64 system image of API 34 (revision 14) with KVM, on the x86_6
 - `smoke-test.sh <apk> <out dir> [start|onboarding|layouts|backend]`: the scripted cases; the default is onboarding, a local group, both layouts, and `tests/fixtures/test.jpg` and `logo-large-rgba.png` pushed to Pictures, picked in the system's picker, resized by the core, previewed and sent in the group. Onboarding on Android includes the app's instant notifications alert and the system's battery dialog. `backend` also adds the test SMP server under Your servers and checks that it passes Test servers.
 - `install-sdk.sh`, `emulator.sh`: the emulator, above.
 - `build-core.sh`, `install-core.sh`, `release-apk.sh`: builds and the release.
+- `check-imports.py <apk> <abi> <stubs dir>`: fails when `libsimplex.so` or `libsupport.so` of the APK imports a global symbol that neither the NDK's API 26 (Android 8.0) stubs of `libc.so`, `libm.so` and `libdl.so` nor a library of the APK defines, as the Android linker requires every such import at load; weak imports pass. The `app` job passes the stubs of `$ANDROID_NDK_LATEST_HOME`, the runner's NDK.
 - `claude-test.md` (the prompt) and `claude-scope` (whether it uses the test backend): the Claude job, which runs desktop-linux's `claude-test.sh`, `claude-guard.py` and `claude-usage.py`.
 
 ## The test backend

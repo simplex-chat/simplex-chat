@@ -581,6 +581,7 @@ private func processSendMessageCmd(toChatType: ChatType, cmd: ChatCommand) async
                 cItem = cItemLast
                 chatModel.messageDelivery[cItemLast.id] = endTask
             }
+            await beginFileUploadTasks(cItems)
             return cItems
         }
         if let networkErrorAlert = networkErrorAlert(r) {
@@ -593,10 +594,35 @@ private func processSendMessageCmd(toChatType: ChatType, cmd: ChatCommand) async
     } else {
         r = await chatApiSendCmd(cmd, bgDelay: msgDelay)
         if case let .result(.newChatItems(_, aChatItems)) = r {
-            return aChatItems.map { $0.chatItem }
+            let cItems = aChatItems.map { $0.chatItem }
+            await beginFileUploadTasks(cItems)
+            return cItems
         }
         sendMessageErrorAlert(r.unexpected)
         return nil
+    }
+}
+
+@MainActor
+func beginFileUploadTasks(_ items: [ChatItem]) {
+    let m = ChatModel.shared
+    for case let file? in items.map(\.file) where file.fileProtocol == .xftp {
+        let fileId = file.fileId
+        m.fileUploads[fileId] = beginBGTask {
+            m.fileUploads.removeValue(forKey: fileId)
+        }
+    }
+}
+
+@MainActor
+private func endFileUploadTask(_ fileId: Int64) {
+    ChatModel.shared.fileUploads[fileId]?()
+}
+
+@MainActor
+private func endFileUploadTasks(_ deletions: [ChatItemDeletion]) {
+    for case let file? in deletions.map(\.deletedChatItem.chatItem.file) {
+        endFileUploadTask(file.fileId)
     }
 }
 
@@ -659,13 +685,19 @@ func apiGetReactionMembers(groupId: Int64, itemId: Int64, reaction: MsgReaction)
 
 func apiDeleteChatItems(type: ChatType, id: Int64, scope: GroupChatScope?, itemIds: [Int64], mode: CIDeleteMode) async throws -> [ChatItemDeletion] {
     let r: ChatResponse1 = try await chatSendCmd(.apiDeleteChatItem(type: type, id: id, scope: scope, itemIds: itemIds, mode: mode), bgDelay: msgDelay)
-    if case let .chatItemsDeleted(_, items, _) = r { return items }
+    if case let .chatItemsDeleted(_, items, _) = r {
+        await endFileUploadTasks(items)
+        return items
+    }
     throw r.unexpected
 }
 
 func apiDeleteMemberChatItems(groupId: Int64, itemIds: [Int64]) async throws -> [ChatItemDeletion] {
     let r: ChatResponse1 = try await chatSendCmd(.apiDeleteMemberChatItem(groupId: groupId, itemIds: itemIds), bgDelay: msgDelay)
-    if case let .chatItemsDeleted(_, items, _) = r { return items }
+    if case let .chatItemsDeleted(_, items, _) = r {
+        await endFileUploadTasks(items)
+        return items
+    }
     throw r.unexpected
 }
 
@@ -1076,13 +1108,15 @@ func apiConnect(incognito: Bool, connLink: CreatedConnLink) async -> (ConnReqTyp
         return nil
     default: ()
     }
-    if let r { await apiConnectResponseAlert(r) }
+    if let r { await apiConnectResponseAlert(r, noticeTarget: LinkNoticeTarget(connLink)) }
     return nil
 }
 
-private func apiConnectResponseAlert<R>(_ r: APIResult<R>) async {
+private func apiConnectResponseAlert<R>(_ r: APIResult<R>, noticeTarget: LinkNoticeTarget = .contact) async {
     await MainActor.run {
         switch r.unexpected {
+        case let .error(.linkNotice(expiresAt)):
+            showLinkNoticeAlert(noticeTarget, expiresAt: expiresAt)
         case .error(.invalidConnReq):
             showAlert(
                 NSLocalizedString("Invalid connection link", comment: ""),
@@ -1105,6 +1139,8 @@ private func apiConnectResponseAlert<R>(_ r: APIResult<R>) async {
                     NSLocalizedString("Unconfirmed name", comment: ""),
                     message: String.localizedStringWithFormat(NSLocalizedString("The SimpleX name %@ is registered, but not added to profile. Please add it to your address or channel profile, if you are the owner.", comment: ""), domain.fullDomainName)
                 )
+            case let .nameWarning(warning):
+                showNameWarningAlert(domain: domain, warning: warning, own: false, openExistingChat: nil, cleanup: nil)
             }
         case .errorAgent(.NO_NAME_SERVERS):
             showAlert(
@@ -1152,8 +1188,14 @@ private func apiConnectResponseAlert<R>(_ r: APIResult<R>) async {
             switch nameErr {
             case .NOT_FOUND:
                 showAlert(
-                    NSLocalizedString("Name not found", comment: ""),
-                    message: NSLocalizedString("This SimpleX name is not registered. Please check the name.", comment: "")
+                    NSLocalizedString("Name not registered", comment: "alert title"),
+                    message: NSLocalizedString("This SimpleX name is not registered. See if it is available at simplex.domains.", comment: "alert message"),
+                    actions: {[
+                        UIAlertAction(title: NSLocalizedString("Open simplex.domains", comment: "alert action"), style: .default) { _ in
+                            openBrowserAlert(uri: "https://simplex.domains")
+                        },
+                        okAlertAction
+                    ]}
                 )
             case .NO_RESOLVER:
                 showAlert(
@@ -1241,10 +1283,10 @@ func apiConnectPreparedContact(contactId: Int64, incognito: Bool, msg: MsgConten
     return nil
 }
 
-func apiConnectPreparedGroup(groupId: Int64, incognito: Bool, msg: MsgContent?) async -> (GroupInfo, [RelayConnectionResult])? {
+func apiConnectPreparedGroup(groupId: Int64, noticeTarget: LinkNoticeTarget, incognito: Bool, msg: MsgContent?) async -> (GroupInfo, [RelayConnectionResult])? {
     let r: APIResult<ChatResponse1>? = await chatApiSendCmdWithRetry(.apiConnectPreparedGroup(groupId: groupId, incognito: incognito, msg: msg))
     if case let .result(.startedConnectionToGroup(_, groupInfo, relayResults)) = r { return (groupInfo, relayResults) }
-    if let r { await apiConnectResponseAlert(r) }
+    if let r { await apiConnectResponseAlert(r, noticeTarget: noticeTarget) }
     return nil
 }
 
@@ -1257,23 +1299,30 @@ func apiConnectContactViaAddress(incognito: Bool, contactId: Int64) async -> Con
     if case let .result(.sentInvitationToContact(_, contact, _)) = r { return contact }
     if let r {
         logger.error("apiConnectContactViaAddress error: \(responseError(r.unexpected))")
-        await MainActor.run { showAlert(connectionErrorAlert(r)) }
+        await MainActor.run {
+            if case let .error(.linkNotice(expiresAt)) = r.unexpected {
+                showLinkNoticeAlert(.contact, expiresAt: expiresAt)
+            } else {
+                showAlert(connectionErrorAlert(r))
+            }
+        }
     }
     return nil
 }
 
-func apiDeleteChat(type: ChatType, id: Int64, chatDeleteMode: ChatDeleteMode = .full(notify: true)) async throws {
+@discardableResult
+func apiDeleteChat(type: ChatType, id: Int64, chatDeleteMode: ChatDeleteMode = .full(notify: true), notice: LinkNotice? = nil) async throws -> GroupInfo? {
     let chatId = type.rawValue + id.description
     DispatchQueue.main.async { ChatModel.shared.deletedChats.insert(chatId) }
     defer { DispatchQueue.main.async { ChatModel.shared.deletedChats.remove(chatId) } }
-    let r: ChatResponse1 = try await chatSendCmd(.apiDeleteChat(type: type, id: id, chatDeleteMode: chatDeleteMode), bgTask: false)
-    if case .direct = type, case .contactDeleted = r { return }
-    if case .contactConnection = type, case .contactConnectionDeleted = r { return }
-    if case .group = type, case .groupDeletedUser = r { return }
+    let r: ChatResponse1 = try await chatSendCmd(.apiDeleteChat(type: type, id: id, chatDeleteMode: chatDeleteMode, notice: notice), bgTask: false)
+    if case .direct = type, case .contactDeleted = r { return nil }
+    if case .contactConnection = type, case .contactConnectionDeleted = r { return nil }
+    if case .group = type, case let .groupDeletedUser(_, groupInfo) = r { return groupInfo }
     throw r.unexpected
 }
 
-func apiDeleteContact(id: Int64, chatDeleteMode: ChatDeleteMode = .full(notify: true)) async throws -> Contact {
+func apiDeleteContact(id: Int64, chatDeleteMode: ChatDeleteMode = .full(notify: true), notice: LinkNotice? = nil) async throws -> Contact {
     let type: ChatType = .direct
     let chatId = type.rawValue + id.description
     if case .full = chatDeleteMode {
@@ -1284,51 +1333,53 @@ func apiDeleteContact(id: Int64, chatDeleteMode: ChatDeleteMode = .full(notify: 
             DispatchQueue.main.async { ChatModel.shared.deletedChats.remove(chatId) }
         }
     }
-    let r: ChatResponse1 = try await chatSendCmd(.apiDeleteChat(type: type, id: id, chatDeleteMode: chatDeleteMode), bgTask: false)
+    let r: ChatResponse1 = try await chatSendCmd(.apiDeleteChat(type: type, id: id, chatDeleteMode: chatDeleteMode, notice: notice), bgTask: false)
     if case let .contactDeleted(_, contact) = r { return contact }
     throw r.unexpected
 }
 
-func deleteChat(_ chat: Chat, chatDeleteMode: ChatDeleteMode = .full(notify: true)) async {
+@discardableResult
+func deleteChat(_ chat: Chat, chatDeleteMode: ChatDeleteMode = .full(notify: true), notice: LinkNotice? = nil) async -> Bool {
     do {
         let cInfo = chat.chatInfo
-        try await apiDeleteChat(type: cInfo.chatType, id: cInfo.apiId, chatDeleteMode: chatDeleteMode)
-        await MainActor.run { ChatModel.shared.removeChat(cInfo.id) }
+        let groupInfo = try await apiDeleteChat(type: cInfo.chatType, id: cInfo.apiId, chatDeleteMode: chatDeleteMode, notice: notice)
+        await MainActor.run {
+            if chatDeleteMode.isEntity, let groupInfo {
+                ChatModel.shared.updateGroup(groupInfo)
+            } else {
+                ChatModel.shared.removeChat(cInfo.id)
+            }
+        }
+        return true
     } catch let error {
         logger.error("deleteChat apiDeleteChat error: \(responseError(error))")
         AlertManager.shared.showAlertMsg(
             title: "Error deleting chat!",
             message: "Error: \(responseError(error))"
         )
+        return false
     }
 }
 
-func deleteContactChat(_ chat: Chat, chatDeleteMode: ChatDeleteMode = .full(notify: true)) async -> Alert? {
+func deleteContactChat(_ chat: Chat, chatDeleteMode: ChatDeleteMode = .full(notify: true), notice: LinkNotice? = nil) async -> Alert? {
     do {
         let cInfo = chat.chatInfo
-        let ct = try await apiDeleteContact(id: cInfo.apiId, chatDeleteMode: chatDeleteMode)
+        let ct = try await apiDeleteContact(id: cInfo.apiId, chatDeleteMode: chatDeleteMode, notice: notice)
         await MainActor.run {
             switch chatDeleteMode {
             case .full:
                 ChatModel.shared.removeChat(cInfo.id)
-            case .entity:
-                ChatModel.shared.removeChat(cInfo.id)
-                ChatModel.shared.addChat(Chat(
-                    chatInfo: .direct(contact: ct),
-                    chatItems: chat.chatItems
-                ))
-            case .messages:
-                ChatModel.shared.removeChat(cInfo.id)
-                ChatModel.shared.addChat(Chat(
-                    chatInfo: .direct(contact: ct),
-                    chatItems: []
-                ))
+            case .entity, .archive:
+                ChatModel.shared.updateContact(ct)
+                ChatTagsModel.shared.addPresetChatTags(.direct(contact: ct), chat.chatStats)
+                ChatTagsModel.shared.removePresetChatTags(cInfo, chat.chatStats)
             }
         }
     } catch let error {
         logger.error("deleteContactChat apiDeleteContact error: \(responseError(error))")
+        let title: LocalizedStringKey = if case .archive = chatDeleteMode { "Error archiving contact" } else { "Error deleting chat!" }
         return mkAlert(
-            title: "Error deleting chat!",
+            title: title,
             message: "Error: \(responseError(error))"
         )
     }
@@ -1730,7 +1781,9 @@ func cancelFile(user: User, fileId: Int64) async {
 func apiCancelFile(fileId: Int64, ctrl: chat_ctrl? = nil) async -> AChatItem? {
     let r: APIResult<ChatResponse2> = await chatApiSendCmd(.cancelFile(fileId: fileId), ctrl: ctrl)
     switch r {
-    case let .result(.sndFileCancelled(_, chatItem, _, _)) : return chatItem
+    case let .result(.sndFileCancelled(_, chatItem, fileTransferMeta, _)) :
+        await endFileUploadTask(fileTransferMeta.fileId)
+        return chatItem
     case let .result(.rcvFileCancelled(_, chatItem, _)) : return chatItem
     default:
         logger.error("apiCancelFile error: \(responseError(r.unexpected))")
@@ -2032,8 +2085,8 @@ func apiDeleteMemberSupportChat(_ groupId: Int64, _ groupMemberId: Int64) async 
     throw r.unexpected
 }
 
-func apiRemoveMembers(_ groupId: Int64, _ memberIds: [Int64], _ withMessages: Bool) async throws -> (GroupInfo, [GroupMember]) {
-    let r: ChatResponse2 = try await chatSendCmd(.apiRemoveMembers(groupId: groupId, memberIds: memberIds, withMessages: withMessages), bgTask: false)
+func apiRemoveMembers(_ groupId: Int64, _ memberIds: [Int64], _ withMessages: Bool, notice: LinkNotice? = nil) async throws -> (GroupInfo, [GroupMember]) {
+    let r: ChatResponse2 = try await chatSendCmd(.apiRemoveMembers(groupId: groupId, memberIds: memberIds, withMessages: withMessages, notice: notice), bgTask: false)
     if case let .userDeletedMembers(_, updatedGroupInfo, members, _withMessages) = r { return (updatedGroupInfo, members) }
     throw r.unexpected
 }
@@ -2066,10 +2119,10 @@ func apiLeaveGroup(_ groupId: Int64) async throws -> GroupInfo {
 }
 
 // use ChatModel's loadGroupMembers from views
-func apiListMembers(_ groupId: Int64) async -> [GroupMember] {
+func apiListMembers(_ groupId: Int64) async -> [GroupMember]? {
     let r: APIResult<ChatResponse2> = await chatApiSendCmd(.apiListMembers(groupId: groupId))
     if case let .result(.groupMembers(_, group)) = r { return group.members }
-    return []
+    return nil
 }
 
 func filterMembersToAdd(_ ms: [GMember]) -> [Contact] {
@@ -2682,6 +2735,23 @@ func processReceivedMsg(_ res: ChatEvent) async {
                 m.updateChatInfo(cInfo)
             }
         }
+    case let .nameMoved(user, contactIds, groupIds):
+        if active(user) {
+            await MainActor.run {
+                for contactId in contactIds {
+                    if case var .direct(contact)? = m.getContactChat(contactId)?.chatInfo {
+                        contact.profile.contactDomainVerified = .moved
+                        m.updateChatInfo(.direct(contact: contact))
+                    }
+                }
+                for groupId in groupIds {
+                    if case var .group(groupInfo, _)? = m.getGroupChat(groupId)?.chatInfo {
+                        groupInfo.groupDomainVerified = .moved
+                        m.updateChatInfo(.group(groupInfo: groupInfo, groupChatScope: nil))
+                    }
+                }
+            }
+        }
     case let .groupMemberUpdated(user, groupInfo, _, toMember):
         if active(user) {
             await MainActor.run {
@@ -2744,8 +2814,8 @@ func processReceivedMsg(_ res: ChatEvent) async {
                 }
             }
         }
-    case let .chatItemUpdated(user, aChatItem):
-        await chatItemSimpleUpdate(user, aChatItem)
+    case let .chatItemUpdated(user, update):
+        await chatItemUpdate(user, update)
     case let .chatItemReaction(user, _, r):
         if active(user) {
             await MainActor.run {
@@ -2753,6 +2823,7 @@ func processReceivedMsg(_ res: ChatEvent) async {
             }
         }
     case let .chatItemsDeleted(user, items, _):
+        await endFileUploadTasks(items)
         if !active(user) {
             for item in items {
                 let d = item.deletedChatItem
@@ -2983,13 +3054,15 @@ func processReceivedMsg(_ res: ChatEvent) async {
         if let aChatItem = aChatItem {
             await chatItemSimpleUpdate(user, aChatItem)
         }
-    case let .sndFileCompleteXFTP(user, aChatItem, _):
+    case let .sndFileCompleteXFTP(user, aChatItem, fileTransferMeta):
         await chatItemSimpleUpdate(user, aChatItem)
-    case let .sndFileError(user, aChatItem, _, _):
+        await endFileUploadTask(fileTransferMeta.fileId)
+    case let .sndFileError(user, aChatItem, fileTransferMeta, _):
         if let aChatItem = aChatItem {
             await chatItemSimpleUpdate(user, aChatItem)
             Task { cleanupFile(aChatItem) }
         }
+        await endFileUploadTask(fileTransferMeta.fileId)
     case let .sndFileWarning(user, aChatItem, _, _):
         if let aChatItem = aChatItem {
             await chatItemSimpleUpdate(user, aChatItem)
@@ -3215,6 +3288,27 @@ func chatItemSimpleUpdate(_ user: any UserLike, _ aChatItem: AChatItem) async {
             if cItem.showNotification {
                 NtfManager.shared.notifyMessageReceived(user, cInfo, cItem)
             }
+        }
+    }
+}
+
+func chatItemUpdate(_ user: any UserLike, _ update: AChatItemUpdate) async {
+    let m = ChatModel.shared
+    let cInfo = update.chatInfo
+    let cItem = update.chatItem
+    let prevItem = update.prevChatItem
+    if active(user) {
+        if await MainActor.run(body: { m.applyChatItemUpdate(cInfo, cItem, prevItem) }) {
+            if cItem.showNotification {
+                NtfManager.shared.notifyMessageReceived(user, cInfo, cItem)
+            }
+        }
+    } else {
+        let change = unreadCountChange(prevItem, cItem) { $0.isRcvNew && cInfo.ntfsEnabled(chatItem: $0) }
+        if change > 0 {
+            await MainActor.run { m.increaseUnreadCounter(user: user) }
+        } else if change < 0 {
+            await MainActor.run { m.decreaseUnreadCounter(user: user) }
         }
     }
 }

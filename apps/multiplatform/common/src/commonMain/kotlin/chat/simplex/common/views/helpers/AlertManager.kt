@@ -320,7 +320,9 @@ class AlertManager {
                 Modifier.fillMaxWidth().padding(horizontal = DEFAULT_PADDING),
                 horizontalAlignment = Alignment.CenterHorizontally
               ) {
-                profileImage()
+                Box(Modifier.centeredIn(138.dp)) {
+                  profileImage()
+                }
                 Spacer(Modifier.height(DEFAULT_PADDING_HALF))
                 val nameFontSize = MaterialTheme.typography.h4.fontSize
                 Text(
@@ -547,5 +549,16 @@ private fun HostDeviceTitle(hostDevice: Pair<Long?, String>?, extraPadding: Bool
     }
   } else {
     Spacer(Modifier.height(if (extraPadding) DEFAULT_PADDING * 2 else 0.dp))
+  }
+}
+
+@Composable
+fun AlertPreview(alertManager: AlertManager = AlertManager.shared, show: () -> Unit) = SimpleXTheme {
+  remember { show() }
+  DisposableEffect(Unit) {
+    onDispose { alertManager.hideAllAlerts() }
+  }
+  Box(Modifier.fillMaxSize()) {
+    alertManager.showInView()
   }
 }

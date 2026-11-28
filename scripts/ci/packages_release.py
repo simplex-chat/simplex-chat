@@ -57,7 +57,9 @@ BUILD_CHANGES = {
         "apps/simplex-chat/**",
         "apps/simplex-bot/**",
         "apps/simplex-bot-advanced/**",
-        "apps/simplex-badge-service/**",
+        "apps/simplex-store-service/**",
+        "apps/simplex-domains",
+        "scripts/store-service/**",
         "apps/simplex-broadcast-bot/**",
         "apps/simplex-directory-service/**",
         "tests/**",
@@ -72,26 +74,36 @@ BUILD_CHANGES = {
         ".github/actions/**",
         ".github/changelog_conf.json",
     ],
-    "kotlin": ["apps/multiplatform/**", "Dockerfile*", ".github/workflows/build.yml", ".github/actions/**"],
-    "ios": ["apps/ios/**", "scripts/ci/ios-stub-libs.sh"],
+    "kotlin": ["apps/multiplatform/**", "tests/fixtures/api/**", "Dockerfile*", ".github/workflows/build.yml", ".github/actions/**"],
+    "ios": ["apps/ios/**", "tests/fixtures/api/**", "scripts/ci/ios-stub-libs.sh"],
     "packages": [
         "packages/simplex-chat-nodejs/**",
         "packages/simplex-chat-client/types/typescript/**",
         "packages/simplex-chat-python/**",
         "scripts/ci/package-tests.sh",
     ],
+    "android": [
+        ".github/workflows/android-emu.yml",
+        "scripts/ci/android/**",
+        ":!scripts/ci/android/README.md",
+        "scripts/ci/desktop-linux/earlier-run.sh",
+        "flake.nix",
+        "flake.lock",
+        "scripts/nix/**",
+        "cabal.project",
+    ],
+    "desktop-linux": [".github/workflows/desktop-linux.yml", "scripts/ci/desktop-linux/**", ":!scripts/ci/desktop-linux/README.md"],
+    "ios-sim": [".github/workflows/ios-sim.yml", "scripts/ci/ios-sim/**", ":!scripts/ci/ios-sim/README.md"],
 }
 SCOPE_CHANGES = {
-    "badge-web": ["apps/simplex-badge-service/web/**"],
+    "badge-web": ["apps/simplex-store-service/web/**", "tests/fixtures/store-service/rest-api/**"],
     "ci-scripts": ["scripts/ci/packages_release.py", "scripts/ci/test_packages_release.py"],
     "website": ["website/src/js/simplex-lib.jsc", "website/test/**", "website/package.json"],
-    "mcp": [
-        "packages/simplex-chat-mcp/**",
-        "packages/simplex-chat-nodejs/**",
-        "packages/simplex-chat-client/types/typescript/**",
-    ],
+    "mcp": ["packages/simplex-chat-mcp/**"],
     "support-bot": ["apps/simplex-support-bot/**"],
     "support-bot-light": ["apps/simplex-support-bot-light/**", "packages/simplex-chat-python/**"],
+    "names-page": ["apps/simplex-domains", "tests/fixtures/store-service/rest-api/**"],
+    "names-e2e": ["apps/simplex-store-service/**", "tests/Bots/StoreService/**", "tests/fixtures/store-service/rest-api/**", "apps/simplex-domains", "scripts/store-service/**"],
 }
 CABAL_FILE = "simplex-chat.cabal"
 CABAL_VERSION = re.compile(r"^(version:\s*)(\S+)", re.M)
@@ -655,15 +667,15 @@ def read_releases() -> tuple[dict, str | None]:
     return tomllib.loads(base64.b64decode(file["content"]).decode()), file["sha"]
 
 
-def record_releases(entries: list[tuple[str, str]], commit: str) -> str:
-    """Adds the entries in one commit of simplex-chat-libs and returns that commit."""
+def record_releases(entries: list[tuple[str, str]], commit: str) -> tuple[dict, str]:
+    """Adds the entries in one commit of simplex-chat-libs and returns the releases of that commit with its sha."""
     message = ", ".join(f"{key} {version}" for key, version in entries)
     attempt = 1
     while True:
         releases, blob = read_releases()
         updated = add_releases(releases, entries, commit)
         if blob and updated == releases:
-            return libs_api(f"commits?path={RELEASES_FILE}&per_page=1")[0]["sha"]
+            return updated, libs_api(f"commits?path={RELEASES_FILE}&per_page=1")[0]["sha"]
         body = {
             "message": message,
             "content": base64.b64encode(render_releases(updated).encode()).decode(),
@@ -671,7 +683,7 @@ def record_releases(entries: list[tuple[str, str]], commit: str) -> str:
             **({"sha": blob} if blob else {}),
         }
         try:
-            return libs_api(f"contents/{RELEASES_FILE}", "PUT", body)["commit"]["sha"]
+            return updated, libs_api(f"contents/{RELEASES_FILE}", "PUT", body)["commit"]["sha"]
         except urllib.error.HTTPError as e:
             # 409 and 422: another writer changed or created the file since it was read
             if e.code not in (409, 422) or attempt == RECORD_ATTEMPTS:
@@ -750,8 +762,7 @@ def claim_core(version: str, commit: str, branch: str) -> None:
         return
     if problem := types_problem(version, releases, branch):
         sys.exit(problem)
-    libs_commit = record_releases([(core_key(branch), version)], commit)
-    releases, _ = read_releases()
+    releases, libs_commit = record_releases([(core_key(branch), version)], commit)
     if recorded_core_commit(releases, version) == commit:
         print("claim=new")
         print(f"commit={libs_commit}")
@@ -898,7 +909,8 @@ def record(args: argparse.Namespace) -> None:
     entries = [(key, version) for key, version in versions if version]
     if not entries:
         sys.exit("nothing to record")
-    print(record_releases(entries, args.commit))
+    _, libs_commit = record_releases(entries, args.commit)
+    print(libs_commit)
 
 
 def test_names() -> None:

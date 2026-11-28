@@ -1,4 +1,4 @@
-import {execFile, spawn} from "child_process"
+import {ExecFileOptions, execFile, spawn} from "child_process"
 import {once} from "events"
 import * as fs from "fs"
 import {closeSync, existsSync, mkdirSync, mkdtempSync, openSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync} from "fs"
@@ -31,6 +31,7 @@ interface FakeSession extends SessionLike {
   modes: Mode[]
   calls: string[]
   turns: unknown[]
+  notes: string[]
 }
 
 function deferred<T = void>() {
@@ -73,6 +74,7 @@ function deps(root: string) {
         modes: [],
         calls: [],
         turns: [],
+        notes: [],
         busy: () => busy.has(number),
         rename: async (newName: string) => {
           agent.displayName = `${number} · ${newName}`
@@ -81,8 +83,15 @@ function deps(root: string) {
           agent.modes.push(mode)
         },
         permission: request => agent.turns.push(request),
+        ask: async request => {
+          agent.turns.push(request)
+          return {behavior: "allow"}
+        },
         turn: async request => {
           agent.turns.push(request)
+        },
+        postNote: async text => {
+          agent.notes.push(text)
         },
         endPermissions: () => {
           agent.turns.push("ended")
@@ -228,6 +237,14 @@ describe("service", () => {
     await register(id1)
     expect(agents.map(({modes}) => modes)).toEqual([["host", "requests"], ["requests"]])
     expect(agents.map(({record}) => record)).toEqual([undefined, undefined])
+  })
+
+  it("passes the global config of a registration and the transcript of a title to the session", async () => {
+    const {d, agents} = deps(root)
+    service = await Service.start(d, readDefaultConfig)
+    await post("/session", {id: id1, project: "/p/app", config: defaultConfig, globalConfig: "/h/.claude.json"})
+    await post("/title", {id: id1, project: "/p/app", transcript: "/c/projects/p/1.jsonl", config: defaultConfig})
+    expect(agents[0]).toMatchObject({globalConfig: "/h/.claude.json", transcript: "/c/projects/p/1.jsonl"})
   })
 
   it("expires due actions at each request that touches sessions", async () => {
@@ -647,10 +664,21 @@ describe("service", () => {
     await expect(post("/turn", {id: id2, answer: "x"})).rejects.toMatchObject({status: 409})
   })
 
+  it("streams the session's decision of a prompt of the PermissionRequest hook", async () => {
+    const {d, agents} = deps(root)
+    service = await Service.start(d, readDefaultConfig)
+    await register(id1)
+    const prompt = {id: id1, kind: "tool" as const, tool: "Bash", description: "", preview: "ls", agent: "reviewer"}
+    const lines: unknown[] = []
+    await streamLines(socketPath(root), token, "/ask", prompt, line => lines.push(line))
+    expect(lines).toEqual([{decision: {behavior: "allow"}}])
+    expect(agents[0].turns).toEqual([prompt])
+  })
+
   it("keeps the tool approvals of a session when its process attaches again, and ends them when another process registers the session and when the session closes", async () => {
     jest.useFakeTimers(fakeTimers)
     storeSession(id1, 1, "app")
-    const {d, agents} = deps(root)
+    const {d, agents, starts} = deps(root)
     service = await Service.start(d, readDefaultConfig)
     const registerFrom = (pid: number) => post("/session", {id: id1, pid, project: "/p/app", config: defaultConfig})
     const approvalsEnded = () => agents[0].turns.filter(turn => turn === "tool approvals ended").length
@@ -666,6 +694,7 @@ describe("service", () => {
     const again = attach(id1, second.signal)
     await again.firstLine
     expect(approvalsEnded()).toBe(0)
+    starts.set(300, undefined)
     await registerFrom(301)
     expect(approvalsEnded()).toBe(1)
     second.abort()
@@ -697,13 +726,14 @@ describe("service", () => {
 
   it("sends the approved tools only to the attachments of the process that registered the session last, and an empty list to the others", async () => {
     storeSession(id1, 1, "app")
-    const {d, agents} = deps(root)
+    const {d, agents, starts} = deps(root)
     service = await Service.start(d, readDefaultConfig)
     const registerFrom = (pid: number) => post("/session", {id: id1, pid, project: "/p/app", config: defaultConfig})
     const controller = new AbortController()
     await registerFrom(300)
     const first = attach(id1, controller.signal, 300)
     await first.firstLine
+    starts.set(300, undefined)
     await registerFrom(301)
     const second = attach(id1, controller.signal, 301)
     await second.firstLine
@@ -720,7 +750,7 @@ describe("service", () => {
   })
 
   it("reads the start time of a running process, the same at each read and another for a later process, and nothing for a process that does not run or an ID that is not a positive integer", async () => {
-    const reads = process.platform === "linux" || process.platform === "darwin"
+    const reads = ["linux", "darwin", "win32"].includes(process.platform)
     const start = await processStart(process.pid)
     expect(start).toEqual(reads ? expect.stringMatching(/\S/) : undefined)
     expect(await processStart(process.pid)).toBe(start)
@@ -732,6 +762,35 @@ describe("service", () => {
     expect(reads && childStart === start).toBe(false)
     expect(await processStart(2 ** 22 + 1)).toBeUndefined()
     for (const pid of [0, -1, 1.5, "self"]) expect(await processStart(pid as number)).toBeUndefined()
+  }, 30_000)
+
+  it("reads the start time of a process on Linux with the boot ID, so a process after a reboot never has the start time of a process before it", async () => {
+    const boot = process.platform === "linux" ? readFileSync("/proc/sys/kernel/random/boot_id", "utf8").trim() : undefined
+    expect(boot === undefined || (await processStart(process.pid))?.startsWith(`${boot} `)).toBe(true)
+  })
+
+  it("reads the start time of a process on Windows from PowerShell as its creation time in UTC file time, without a window, within 10 s, nothing for a process that PowerShell does not find, which exits with 3, and fails for another error of PowerShell, a timeout or an output that is not a number", async () => {
+    const platform = Object.getOwnPropertyDescriptor(process, "platform")!
+    Object.defineProperty(process, "platform", {value: "win32"})
+    const calls: [string, string[], ExecFileOptions][] = []
+    const powershell = (stdout: string) => async (...call: [string, string[], ExecFileOptions]) => (calls.push(call), {stdout})
+    const failed = (error: object) => async () => Promise.reject(Object.assign(new Error("Command failed"), error))
+    try {
+      expect(await processStart(4242, powershell("134088624000000000\r\n"))).toBe("134088624000000000")
+      expect(await processStart(4242, failed({code: 3, killed: false}))).toBeUndefined()
+      await expect(processStart(4242, failed({code: 1, killed: false}))).rejects.toThrow()
+      await expect(processStart(4242, failed({code: null, killed: true}))).rejects.toThrow()
+      await expect(processStart(4242, powershell("WARNING: profile not loaded\r\n"))).rejects.toThrow()
+      expect(calls[0]).toEqual(["powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", "$p = Get-Process -Id 4242 -ErrorAction SilentlyContinue; if (-not $p) { exit 3 }; $p.StartTime.ToFileTimeUtc()"], {timeout: 10_000, windowsHide: true}])
+    } finally {
+      Object.defineProperty(process, "platform", platform)
+    }
+  })
+
+  it("reads the start time of a process on Linux without the boot ID when the boot ID can't be read", async () => {
+    const readFile = fs.promises.readFile.bind(fs.promises)
+    jest.spyOn(fs.promises, "readFile").mockImplementation(((path: string, options: BufferEncoding) => (path === "/proc/sys/kernel/random/boot_id" ? Promise.reject(new Error("EACCES")) : readFile(path, options))) as never)
+    expect(await processStart(process.pid)).toEqual(process.platform === "linux" ? expect.stringMatching(/^\d+$/) : expect.anything())
   })
 
   it("does not delay the idle close of an open session with a title", async () => {
@@ -815,7 +874,7 @@ describe("service", () => {
   })
 
   it("joins the startup ID of a session server to the session of the title from its process, as with --continue", async () => {
-    const {d, agents} = deps(root)
+    const {d, agents, starts} = deps(root)
     service = await Service.start(d, readDefaultConfig)
     const registered = post("/session", {id: id2, pid: 200, project: "/p/app", config: defaultConfig})
     await new Promise(resolve => setTimeout(resolve, 50))
@@ -824,7 +883,212 @@ describe("service", () => {
     await streamLines(socketPath(root), token, "/call", {id: id2, tool: "list", input: {}}, () => undefined)
     expect(agents).toMatchObject([{number: 1, calls: ["list"]}])
     expect(readSessionFile(sessionFolder(root, id1))).toMatchObject({aliases: [id2]})
+    starts.set(200, undefined)
     expect(await post("/session", {id: id2, pid: 201, project: "/p/app", config: defaultConfig})).toMatchObject({number: 1})
+  })
+
+  it("refuses the session server and the hooks of a second Claude Code process of a session, with the PID of the process that registered the session last, while that process runs, and passes the hooks of that process with a new session ID, as after /clear", async () => {
+    storeSession(id1, 1, "app")
+    const {d, agents} = deps(root)
+    service = await Service.start(d, readDefaultConfig)
+    const refusal = {message: "Claude Code process 300 already uses the SimpleX group of this conversation. Exit that process, or exit this one and start a new conversation.", status: 423}
+    await post("/session", {id: id1, pid: 300, project: "/p/app", config: defaultConfig})
+    await expect(post("/title", {id: id1, pid: 301, name: "other", model: "claude-opus-5", project: "/p/app", config: defaultConfig})).rejects.toMatchObject(refusal)
+    await expect(post("/session", {id: id2, pid: 301, project: "/p/app", config: defaultConfig})).rejects.toMatchObject(refusal)
+    await expect(post("/turn", {id: id1, pid: 301, prompt: "Fix the build"})).rejects.toMatchObject(refusal)
+    await expect(streamLines(socketPath(root), token, "/ask", {id: id1, pid: 301, kind: "tool", tool: "Bash", description: "", preview: "ls"}, () => undefined)).rejects.toMatchObject(refusal)
+    await post("/title", {id: id3, pid: 300, project: "/p/app", config: defaultConfig})
+    await post("/turn", {id: id3, pid: 300, prompt: "Run the tests"})
+    expect(agents).toMatchObject([{displayName: "1 · app", turns: [{id: id3, pid: 300, prompt: "Run the tests"}]}])
+  })
+
+  it("serves a second Claude Code process of a session once the process that registered the session last has ended, also when the PID of that process belongs to a later process", async () => {
+    storeSession(id1, 1, "app")
+    const {d, starts} = deps(root)
+    service = await Service.start(d, readDefaultConfig)
+    const registerFrom = (pid: number) => post("/session", {id: id1, pid, project: "/p/app", config: defaultConfig})
+    await registerFrom(300)
+    await expect(registerFrom(301)).rejects.toMatchObject({status: 423})
+    starts.set(300, "200")
+    expect(await registerFrom(301)).toMatchObject({number: 1})
+    await expect(registerFrom(302)).rejects.toMatchObject({status: 423})
+    starts.set(301, undefined)
+    expect(await registerFrom(302)).toMatchObject({number: 1})
+  })
+
+  it("refuses one of two Claude Code processes that register a session at once after the process that registered it last has ended", async () => {
+    storeSession(id1, 1, "app")
+    const {d} = deps(root)
+    let readStart = d.processStart
+    service = await Service.start({...d, processStart: pid => readStart(pid)}, readDefaultConfig)
+    const registerFrom = (pid: number) => post("/session", {id: id1, pid, project: "/p/app", config: defaultConfig})
+    await registerFrom(300)
+    const reads: ((start: string | undefined) => void)[] = []
+    readStart = pid => (pid === 300 ? new Promise<string | undefined>(resolve => reads.push(resolve)) : d.processStart(pid))
+    const registered = Promise.allSettled([registerFrom(301), registerFrom(302)])
+    await until(() => reads.length === 2)
+    reads[0](undefined)
+    await new Promise(resolve => setImmediate(resolve))
+    reads[1](undefined)
+    expect((await registered).map(({status}) => status).sort()).toEqual(["fulfilled", "rejected"])
+  })
+
+  it("refuses a title of a new session ID from a second Claude Code process 20 s after its session server was refused, as after /clear there, and opens no session for that ID", async () => {
+    jest.useFakeTimers(fakeTimers)
+    storeSession(id1, 1, "app")
+    service = await Service.start(deps(root).d, readDefaultConfig)
+    await post("/session", {id: id1, pid: 300, project: "/p/app", config: defaultConfig})
+    await expect(post("/session", {id: id1, pid: 301, project: "/p/app", config: defaultConfig})).rejects.toMatchObject({status: 423})
+    await jest.advanceTimersByTimeAsync(20_000)
+    await expect(post("/title", {id: id2, pid: 301, project: "/p/app", config: defaultConfig})).rejects.toMatchObject({status: 423})
+    expect(existsSync(sessionFolder(root, id2))).toBe(false)
+  })
+
+  it("refuses the held title of a forked session ID from a second Claude Code process once its session server is refused, and the later hooks of that ID, and opens no session for it, as with --fork-session", async () => {
+    jest.useFakeTimers(fakeTimers)
+    storeSession(id1, 1, "app")
+    const {d, agents} = deps(root)
+    const errors: string[] = []
+    jest.spyOn(process.stderr, "write").mockImplementation(text => (errors.push(String(text)), true))
+    service = await Service.start(d, readDefaultConfig)
+    await post("/session", {id: id1, pid: 300, project: "/p/app", config: defaultConfig})
+    expect(await post("/title", {id: id2, pid: 301, name: "fork", project: "/p/app", config: defaultConfig})).toEqual(titleReply)
+    await jest.advanceTimersByTimeAsync(1_000)
+    await expect(post("/session", {id: id1, pid: 301, project: "/p/app", config: defaultConfig})).rejects.toMatchObject({status: 423})
+    await jest.advanceTimersByTimeAsync(9_000)
+    await turnsUntil(() => errors.length > 0)
+    expect(errors).toEqual(["title: Claude Code process 300 already uses the SimpleX group of this conversation. Exit that process, or exit this one and start a new conversation.\n"])
+    await expect(post("/turn", {id: id2, pid: 301, prompt: "Fix the build"})).rejects.toMatchObject({status: 423})
+    expect(existsSync(sessionFolder(root, id2))).toBe(false)
+    expect(agents).toMatchObject([{displayName: "1 · app", turns: []}])
+  })
+
+  it("posts a line when a Claude Code process starts to be served for a session, the first and each later one, after a line of the end of the one before it, and none for a reconnection of the same process or after a service restart", async () => {
+    storeSession(id1, 1, "app")
+    const {d, agents} = deps(root)
+    service = await Service.start(d, readDefaultConfig)
+    const registerFrom = (pid: number) => post("/session", {id: id1, pid, project: "/p/app", config: defaultConfig})
+    await registerFrom(300)
+    await registerFrom(300)
+    await service.stop()
+    const restarted = deps(root)
+    service = await Service.start(restarted.d, readDefaultConfig)
+    await registerFrom(300)
+    restarted.starts.set(300, undefined)
+    await registerFrom(301)
+    expect([agents[0].notes, restarted.agents[0].notes]).toEqual([["▶️ Claude Code started (process 300)."], ["⏹️ Claude Code ended (process 300).", "▶️ Claude Code started (process 301)."]])
+  })
+
+  it("posts a line once when the Claude Code process of a session has ended after its attachment closed, and none when the process attaches again", async () => {
+    storeSession(id1, 1, "app")
+    const {d, agents, starts} = deps(root)
+    service = await Service.start(d, readDefaultConfig)
+    const registerFrom = (pid: number) => post("/session", {id: id1, pid, project: "/p/app", config: defaultConfig})
+    const attachFrom = async (pid: number) => {
+      await registerFrom(pid)
+      const controller = new AbortController()
+      const attachment = attach(id1, controller.signal, pid)
+      await attachment.firstLine
+      return () => (controller.abort(), attachment.attached)
+    }
+    await (await attachFrom(300))()
+    const detach = await attachFrom(300)
+    starts.set(300, undefined)
+    await detach()
+    await until(() => agents[0].notes.length === 2)
+    await registerFrom(301)
+    expect(agents[0].notes).toEqual(["▶️ Claude Code started (process 300).", "⏹️ Claude Code ended (process 300).", "▶️ Claude Code started (process 301)."])
+  })
+
+  it("posts no ended line while the start time of the process of a session can't be read after its attachment closed, and posts it once the process is gone", async () => {
+    jest.useFakeTimers(fakeTimers)
+    storeSession(id1, 1, "app")
+    const {d, agents} = deps(root)
+    let readStart = d.processStart
+    service = await Service.start({...d, processStart: pid => readStart(pid)}, readDefaultConfig)
+    await post("/session", {id: id1, pid: 300, project: "/p/app", config: defaultConfig})
+    const controller = new AbortController()
+    const attachment = attach(id1, controller.signal, 300)
+    await attachment.firstLine
+    let reads = 0
+    readStart = async () => (++reads === 1 ? Promise.reject(new Error("timed out")) : undefined)
+    controller.abort()
+    await attachment.attached
+    await turnsUntil(() => reads === 1)
+    expect(agents[0].notes).toEqual(["▶️ Claude Code started (process 300)."])
+    await jest.advanceTimersByTimeAsync(1_000)
+    await turnsUntil(() => agents[0].notes.length === 2)
+    expect(agents[0].notes.at(-1)).toBe("⏹️ Claude Code ended (process 300).")
+  })
+
+  it("refuses a second Claude Code process while the start time of the process that registered the session can't be read, and posts no line of its end", async () => {
+    storeSession(id1, 1, "app")
+    const {d, agents} = deps(root)
+    let readStart = d.processStart
+    service = await Service.start({...d, processStart: pid => readStart(pid)}, readDefaultConfig)
+    const registerFrom = (pid: number) => post("/session", {id: id1, pid, project: "/p/app", config: defaultConfig})
+    await registerFrom(300)
+    readStart = pid => (pid === 300 ? Promise.reject(new Error("timed out")) : d.processStart(pid))
+    await expect(registerFrom(301)).rejects.toMatchObject({status: 423})
+    expect(agents[0].notes).toEqual(["▶️ Claude Code started (process 300)."])
+  })
+
+  it("serves a registration whose started line can't be posted, and logs the failure", async () => {
+    storeSession(id1, 1, "app")
+    const {d, agents} = deps(root)
+    const errors: string[] = []
+    jest.spyOn(process.stderr, "write").mockImplementation(text => (errors.push(String(text)), true))
+    service = await Service.start(d, readDefaultConfig)
+    await register(id1)
+    agents[0].postNote = async () => Promise.reject(new Error("The group is lost."))
+    expect(await post("/session", {id: id1, pid: 300, project: "/p/app", config: defaultConfig})).toMatchObject({number: 1})
+    expect(errors).toEqual(["session 1: The group is lost.\n"])
+  })
+
+  it("posts no started or ended line at a registration whose start time can't be read", async () => {
+    storeSession(id1, 1, "app")
+    const {d, agents} = deps(root)
+    let readStart = d.processStart
+    service = await Service.start({...d, processStart: pid => readStart(pid)}, readDefaultConfig)
+    const registerFrom = (pid: number) => post("/session", {id: id1, pid, project: "/p/app", config: defaultConfig})
+    await registerFrom(300)
+    readStart = pid => (pid === 301 ? Promise.reject(new Error("timed out")) : Promise.resolve(undefined))
+    await registerFrom(301)
+    expect(agents[0].notes).toEqual(["▶️ Claude Code started (process 300)."])
+  })
+
+  it("keeps the process of a registration whose start time can't be read across a service restart, so its reconnection posts no started line", async () => {
+    storeSession(id1, 1, "app")
+    const {d, agents} = deps(root)
+    service = await Service.start({...d, processStart: () => Promise.reject(new Error("timed out"))}, readDefaultConfig)
+    const registerFrom = (pid: number) => post("/session", {id: id1, pid, project: "/p/app", config: defaultConfig})
+    await registerFrom(300)
+    await service.stop()
+    const restarted = deps(root)
+    service = await Service.start(restarted.d, readDefaultConfig)
+    await registerFrom(300)
+    expect([agents[0].notes, restarted.agents[0].notes]).toEqual([[], []])
+  })
+
+  it("counts the start time of a registration as unknown when Claude Code's record of its process does not exist, as when the server's parent is not Claude Code, so the process's hooks are served and no line is posted", async () => {
+    storeSession(id1, 1, "app")
+    const {d, agents} = deps(root)
+    service = await Service.start(d, readDefaultConfig)
+    await post("/session", {id: id1, pid: 300, project: "/p/app", config: defaultConfig, record: join(root, "sessions", "300.json")})
+    expect([await post("/turn", {id: id1, pid: 301, prompt: "Fix the build"}), agents[0].notes]).toEqual([{}, []])
+  })
+
+  it("keeps the Claude Code process of a session across a service restart, and serves a second process once that process has ended", async () => {
+    storeSession(id1, 1, "app")
+    service = await Service.start(deps(root).d, readDefaultConfig)
+    const registerFrom = (pid: number) => post("/session", {id: id1, pid, project: "/p/app", config: defaultConfig})
+    await registerFrom(300)
+    await service.stop()
+    const restarted = deps(root)
+    service = await Service.start(restarted.d, readDefaultConfig)
+    await expect(registerFrom(301)).rejects.toMatchObject({status: 423})
+    restarted.starts.set(300, undefined)
+    expect(await registerFrom(301)).toMatchObject({number: 1})
   })
 
   it("passes the hooks of a stored session ID to the session attached from their process without joining the IDs, as after an in-session /resume", async () => {
@@ -864,7 +1128,9 @@ describe("service", () => {
     controller.abort()
     await attached
     await service.stop()
-    service = await Service.start(deps(root).d, readDefaultConfig)
+    const restarted = deps(root)
+    restarted.starts.set(100, undefined)
+    service = await Service.start(restarted.d, readDefaultConfig)
     expect(await post("/session", {id: id2, pid: 200, project: "/p/app", config: defaultConfig})).toMatchObject({number: 1})
   })
 

@@ -768,6 +768,7 @@ public enum ChatErrorType: Decodable, Hashable {
     case unsupportedConnReq
     case invalidChatMessage(connection: Connection, message: String)
     case connReqMessageProhibited
+    case linkNotice(expiresAt: Date?)
     case contactNotReady(contact: Contact)
     case contactNotActive(contact: Contact)
     case contactDisabled(contact: Contact)
@@ -831,14 +832,14 @@ public enum BadgeRedeemError: Decodable, Hashable {
     case serviceNotConfigured
     case badgeActive
     case storePurchaseOpen
-    case serviceError(serviceError: BadgeServiceErrorCode)
+    case serviceError(serviceError: StoreServiceErrorCode)
     case invalidResponse(message: String)
     case unknownKeyIndex
     case credentialNotVerified
 }
 
 // the service is deployed ahead of clients, so a code this version does not know keeps its tag
-public enum BadgeServiceErrorCode: Decodable, Hashable {
+public enum StoreServiceErrorCode: Decodable, Hashable {
     case badRequest
     case unsupportedVersion
     case unknownPurchaseKey
@@ -914,7 +915,7 @@ public enum BadgeServiceErrorCode: Decodable, Hashable {
     }
 }
 
-public func badgeServiceErrorText(_ code: BadgeServiceErrorCode) -> String? {
+public func badgeServiceErrorText(_ code: StoreServiceErrorCode) -> String? {
     switch code {
     case .codeInvalid: NSLocalizedString("This code was not recognized.", comment: "alert message")
     case .codeUsed: NSLocalizedString("This code has already been used.", comment: "alert message")

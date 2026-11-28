@@ -280,7 +280,7 @@ fun FramedItemView(
         val tailRendered = chatItemTailRendered(ci, tailVisible, revealed = true)
         Column(
           Modifier
-            .width(IntrinsicSize.Max)
+            .then(if (terminal && captionlessMedia) Modifier else Modifier.width(IntrinsicSize.Max))
             .padding(start = if (!sent && tailRendered) msgTailWidthDp else 0.dp, end = if (sent && tailRendered) msgTailWidthDp else 0.dp)
         ) {
           PriorityLayout(Modifier, CHAT_IMAGE_LAYOUT_ID, limitToPriorityWidth = !terminal || captionlessMedia) {
@@ -308,7 +308,7 @@ fun FramedItemView(
                     FramedItemHeader(String.format(stringResource(MR.strings.moderated_item_description), ci.meta.itemDeleted.byGroupMember.chatViewName), true, painterResource(MR.images.ic_flag))
                   }
                   is CIDeleted.Blocked -> {
-                    FramedItemHeader(stringResource(MR.strings.blocked_item_description), true, painterResource(MR.images.ic_back_hand))
+                    FramedItemHeader(stringResource(MR.strings.hidden_item_description), true, painterResource(MR.images.ic_back_hand))
                   }
                   is CIDeleted.BlockedByAdmin -> {
                     FramedItemHeader(stringResource(MR.strings.blocked_by_admin_item_description), true, painterResource(MR.images.ic_back_hand))

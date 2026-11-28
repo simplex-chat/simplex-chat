@@ -31,11 +31,15 @@ import chat.simplex.common.views.badges.BadgeStore
 import chat.simplex.common.views.badges.BadgeStoreError
 import chat.simplex.common.views.call.*
 import chat.simplex.common.views.chat.item.contentModerationPostLink
+import chat.simplex.common.views.chat.item.openBrowserAlert
 import chat.simplex.common.views.chat.item.showContentBlockedAlert
 import chat.simplex.common.views.chat.item.showQuotedItemDoesNotExistAlert
 import chat.simplex.common.views.chatlist.openGroupChat
 import chat.simplex.common.views.database.deleteDatabaseBackups
 import chat.simplex.common.views.migration.MigrationFileLinkData
+import chat.simplex.common.views.newchat.LinkNoticeTarget
+import chat.simplex.common.views.newchat.showLinkNoticeAlert
+import chat.simplex.common.views.newchat.showNameWarningAlert
 import chat.simplex.common.views.onboarding.OnboardingStage
 import chat.simplex.common.views.usersettings.*
 import chat.simplex.common.views.usersettings.networkAndServers.defaultConditionsLink
@@ -75,6 +79,8 @@ val CREATE_MEMBER_CONTACT_VERSION = 2
 val GROUP_KNOCKING_VERSION = 15
 
 val CALL_RECONNECT_VERSION = 22
+
+val LINK_NOTICE_VERSION = 23
 
 enum class CallOnLockScreen {
   DISABLE,
@@ -136,6 +142,7 @@ class AppPreferences {
   val privacyShowChatPreviews = mkBoolPreference(SHARED_PREFS_PRIVACY_SHOW_CHAT_PREVIEWS, true)
   val privacyShowSignature = mkBoolPreference(SHARED_PREFS_PRIVACY_SHOW_SIGNATURE, true)
   val privacyShowEncryption = mkBoolPreference(SHARED_PREFS_PRIVACY_SHOW_FILE_ENCRYPTION, true)
+  val privacyContactDeletion: SharedPreference<ContactDeletion> = mkSafeEnumPreference(SHARED_PREFS_PRIVACY_CONTACT_DELETION, ContactDeletion.Ask)
   val privacySaveLastDraft = mkBoolPreference(SHARED_PREFS_PRIVACY_SAVE_LAST_DRAFT, true)
   val privacyDeliveryReceiptsSet = mkBoolPreference(SHARED_PREFS_PRIVACY_DELIVERY_RECEIPTS_SET, false)
   val privacyEncryptLocalFiles = mkBoolPreference(SHARED_PREFS_PRIVACY_ENCRYPT_LOCAL_FILES, true)
@@ -429,6 +436,7 @@ class AppPreferences {
     private const val SHARED_PREFS_PRIVACY_SHOW_CHAT_PREVIEWS = "PrivacyShowChatPreviews"
     private const val SHARED_PREFS_PRIVACY_SHOW_SIGNATURE = "PrivacyShowSignature"
     private const val SHARED_PREFS_PRIVACY_SHOW_FILE_ENCRYPTION = "PrivacyShowEncryption"
+    private const val SHARED_PREFS_PRIVACY_CONTACT_DELETION = "PrivacyContactDeletion"
     private const val SHARED_PREFS_PRIVACY_SAVE_LAST_DRAFT = "PrivacySaveLastDraft"
     private const val SHARED_PREFS_PRIVACY_DELIVERY_RECEIPTS_SET = "PrivacyDeliveryReceiptsSet"
     private const val SHARED_PREFS_PRIVACY_ENCRYPT_LOCAL_FILES = "PrivacyEncryptLocalFiles"
@@ -1349,7 +1357,7 @@ object ChatController {
   suspend fun apiUpdateChatItem(rh: Long?, type: ChatType, id: Long, scope: GroupChatScope?, itemId: Long, updatedMessage: UpdatedMessage, live: Boolean = false): AChatItem? {
     val r = sendCmd(rh, CC.ApiUpdateChatItem(type, id, scope, itemId, updatedMessage, live))
     when {
-      r is API.Result && r.res is CR.ChatItemUpdated -> return r.res.chatItem
+      r is API.Result && r.res is CR.ChatItemUpdated && r.res.chatItem != null -> return r.res.chatItem
       r is API.Result && r.res is CR.ChatItemNotChanged -> return r.res.chatItem
       r is API.Error && r.err is ChatError.ChatErrorStore && r.err.storeError is StoreError.LargeMsg -> {
         val mc = updatedMessage.msgContent
@@ -1710,13 +1718,17 @@ object ChatController {
           generalGetString(MR.strings.contact_already_exists),
           String.format(generalGetString(MR.strings.you_are_already_connected_to_vName_via_this_link), r.res.contact.displayName)
         )
-      r != null -> apiConnectResponseAlert(r)
+      r != null -> apiConnectResponseAlert(r, LinkNoticeTarget.fromConnLink(connLink))
     }
     return null
   }
 
-  private fun apiConnectResponseAlert(r: API) {
+  private fun apiConnectResponseAlert(r: API, noticeTarget: LinkNoticeTarget = LinkNoticeTarget.Contact) {
     when {
+      r is API.Error && r.err is ChatError.ChatErrorChat
+          && r.err.errorType is ChatErrorType.LinkNotice -> {
+        showLinkNoticeAlert(noticeTarget, r.err.errorType.expiresAt)
+      }
       r is API.Error && r.err is ChatError.ChatErrorChat
           && r.err.errorType is ChatErrorType.InvalidConnReq -> {
         AlertManager.shared.showAlertMsg(
@@ -1739,6 +1751,8 @@ object ChatController {
             generalGetString(MR.strings.simplex_name_no_valid_link),
             generalGetString(MR.strings.simplex_name_no_valid_link_desc).format(domain)
           )
+        } else if (r.err.errorType.simplexDomainError is SimplexDomainError.NameWarning) {
+          showNameWarningAlert(r.rhId, r.err.errorType.simplexDomain, r.err.errorType.simplexDomainError.nameWarning, own = false, openExistingChat = null, cleanup = null)
         } else {
           AlertManager.shared.showAlertMsg(
             generalGetString(MR.strings.simplex_name_unconfirmed),
@@ -1757,9 +1771,25 @@ object ChatController {
           && r.err.agentError is AgentErrorType.SMP
           && r.err.agentError.smpErr is SMPErrorType.NAME -> {
         when (val nameErr = r.err.agentError.smpErr.nameErr) {
-          is NameErrorType.NOT_FOUND -> AlertManager.shared.showAlertMsg(
-            generalGetString(MR.strings.simplex_name_not_found),
-            generalGetString(MR.strings.simplex_name_not_found_desc)
+          is NameErrorType.NOT_FOUND -> AlertManager.shared.showAlertDialogButtonsColumn(
+            title = generalGetString(MR.strings.simplex_name_not_found),
+            text = generalGetString(MR.strings.simplex_name_not_registered_desc),
+            buttons = {
+              Column {
+                val uriHandler = LocalUriHandler.current
+                SectionItemView({
+                  AlertManager.shared.hideAlert()
+                  openBrowserAlert("https://simplex.domains", uriHandler)
+                }) {
+                  Text(stringResource(MR.strings.open_simplex_domains), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+                }
+                SectionItemView({
+                  AlertManager.shared.hideAlert()
+                }) {
+                  Text(stringResource(MR.strings.ok), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+                }
+              }
+            }
           )
           is NameErrorType.NO_RESOLVER -> AlertManager.shared.showAlertMsg(
             generalGetString(MR.strings.simplex_name_error),
@@ -1885,17 +1915,17 @@ object ChatController {
     if (r is API.Result && r.res is CR.StartedConnectionToContact) return r.res.contact
     if (r != null) {
       Log.e(TAG, "apiConnectPreparedContact bad response: ${r.responseType} ${r.details}")
-      apiConnectResponseAlert(r)
+      apiConnectResponseAlert(r, LinkNoticeTarget.Contact)
     }
     return null
   }
 
-  suspend fun apiConnectPreparedGroup(rh: Long?, groupId: Long, incognito: Boolean, msg: MsgContent?): Pair<GroupInfo, List<RelayConnectionResult>>? {
+  suspend fun apiConnectPreparedGroup(rh: Long?, groupId: Long, noticeTarget: LinkNoticeTarget, incognito: Boolean, msg: MsgContent?): Pair<GroupInfo, List<RelayConnectionResult>>? {
     val r = sendCmdWithRetry(rh, CC.APIConnectPreparedGroup(groupId, incognito, msg))
     if (r is API.Result && r.res is CR.StartedConnectionToGroup) return Pair(r.res.groupInfo, r.res.relayResults)
     if (r != null) {
       Log.e(TAG, "apiConnectPreparedGroup bad response: ${r.responseType} ${r.details}")
-      apiConnectResponseAlert(r)
+      apiConnectResponseAlert(r, noticeTarget)
     }
     return null
   }
@@ -1905,7 +1935,9 @@ object ChatController {
     val r = sendCmdWithRetry(rh, CC.ApiConnectContactViaAddress(userId, incognito, contactId))
     if (r is API.Result && r.res is CR.SentInvitationToContact) return r.res.contact
     if (r == null) return null
-    if (!(networkErrorAlert(r))) {
+    if (r is API.Error && r.err is ChatError.ChatErrorChat && r.err.errorType is ChatErrorType.LinkNotice) {
+      showLinkNoticeAlert(LinkNoticeTarget.Contact, r.err.errorType.expiresAt)
+    } else if (!(networkErrorAlert(r))) {
       apiErrorAlert("apiConnectContactViaAddress", generalGetString(MR.strings.connection_error), r)
     }
     return null
@@ -1922,7 +1954,7 @@ object ChatController {
 
   suspend fun apiDeleteChat(rh: Long?, type: ChatType, id: Long, chatDeleteMode: ChatDeleteMode = ChatDeleteMode.Full(notify = true)): Boolean {
     chatModel.deletedChats.value += rh to type.type + id
-    val r = sendCmd(rh, CC.ApiDeleteChat(type, id, chatDeleteMode))
+    val r = sendCmd(rh, CC.ApiDeleteChat(type, id, chatDeleteMode, notice = null))
     val res = r.result
     val success = when {
       res is CR.ContactDeleted && type == ChatType.Direct -> true
@@ -1944,19 +1976,33 @@ object ChatController {
     return success
   }
 
-  suspend fun apiDeleteContact(rh: Long?, id: Long, chatDeleteMode: ChatDeleteMode = ChatDeleteMode.Full(notify = true)): Contact? {
+  suspend fun apiDeleteContact(rh: Long?, id: Long, chatDeleteMode: ChatDeleteMode = ChatDeleteMode.Full(notify = true), notice: LinkNotice? = null): Contact? {
     val type = ChatType.Direct
     chatModel.deletedChats.value += rh to type.type + id
-    val r = sendCmd(rh, CC.ApiDeleteChat(type, id, chatDeleteMode))
+    val r = sendCmd(rh, CC.ApiDeleteChat(type, id, chatDeleteMode, notice))
     val contact = if (r is API.Result && r.res is CR.ContactDeleted) {
       r.res.contact
     } else {
-      val titleId = MR.strings.error_deleting_contact
+      val titleId = if (chatDeleteMode is ChatDeleteMode.Archive) MR.strings.error_archiving_contact else MR.strings.error_deleting_contact
       apiErrorAlert("apiDeleteChat", generalGetString(titleId), r)
       null
     }
     chatModel.deletedChats.value -= rh to type.type + id
     return contact
+  }
+
+  suspend fun apiDeleteGroup(rh: Long?, id: Long, chatDeleteMode: ChatDeleteMode, notice: LinkNotice?): GroupInfo? {
+    val type = ChatType.Group
+    chatModel.deletedChats.value += rh to type.type + id
+    val r = sendCmd(rh, CC.ApiDeleteChat(type, id, chatDeleteMode, notice))
+    val groupInfo = if (r is API.Result && r.res is CR.GroupDeletedUser) {
+      r.res.groupInfo
+    } else {
+      apiErrorAlert("apiDeleteChat", generalGetString(MR.strings.error_deleting_group), r)
+      null
+    }
+    chatModel.deletedChats.value -= rh to type.type + id
+    return groupInfo
   }
 
   fun clearChat(chat: Chat, close: (() -> Unit)? = null) {
@@ -2523,8 +2569,8 @@ object ChatController {
     return null
   }
 
-  suspend fun apiRemoveMembers(rh: Long?, groupId: Long, memberIds: List<Long>, withMessages: Boolean): Pair<GroupInfo, List<GroupMember>>? {
-    val r = sendCmd(rh, CC.ApiRemoveMembers(groupId, memberIds, withMessages))
+  suspend fun apiRemoveMembers(rh: Long?, groupId: Long, memberIds: List<Long>, withMessages: Boolean, notice: LinkNotice? = null): Pair<GroupInfo, List<GroupMember>>? {
+    val r = sendCmd(rh, CC.ApiRemoveMembers(groupId, memberIds, withMessages, notice))
     if (r is API.Result && r.res is CR.UserDeletedMembers) return r.res.groupInfo to r.res.members
     if (!(networkErrorAlert(r))) {
       apiErrorAlert("apiRemoveMembers", generalGetString(MR.strings.error_removing_member), r)
@@ -2557,11 +2603,11 @@ object ChatController {
     return null
   }
 
-  suspend fun apiListMembers(rh: Long?, groupId: Long): List<GroupMember> {
+  suspend fun apiListMembers(rh: Long?, groupId: Long): List<GroupMember>? {
     val r = sendCmd(rh, CC.ApiListMembers(groupId))
     if (r is API.Result && r.res is CR.GroupMembers) return r.res.group.members
     Log.e(TAG, "apiListMembers bad response: ${r.responseType} ${r.details}")
-    return emptyList()
+    return null
   }
 
   suspend fun apiUpdateGroup(rh: Long?, groupId: Long, groupProfile: GroupProfile, isChannel: Boolean): GroupInfo? {
@@ -2958,7 +3004,7 @@ object ChatController {
   }
 
   // Spec: spec/api.md#processReceivedMsg
-  private suspend fun processReceivedMsg(msg: API) {
+  internal suspend fun processReceivedMsg(msg: API) {
     lastMsgReceivedTimestamp = System.currentTimeMillis()
     val rhId = msg.rhId
     fun active(user: UserLike): Boolean = activeUser(rhId, user)
@@ -3045,6 +3091,25 @@ object ChatController {
           }
         }
       }
+      is CR.NameMoved -> {
+        if (active(r.user)) {
+          withContext(Dispatchers.Main) {
+            fun chatInfo(id: String) = chatModel.chatsContext.chats.value.firstOrNull { it.remoteHostId == rhId && it.id == id }?.chatInfo
+            r.contactIds.forEach { contactId ->
+              val cInfo = chatInfo("@$contactId")
+              if (cInfo is ChatInfo.Direct) {
+                chatModel.chatsContext.updateChatInfo(rhId, ChatInfo.Direct(cInfo.contact.copy(profile = cInfo.contact.profile.copy(contactDomainVerified = DomainVerification.Moved))))
+              }
+            }
+            r.groupIds.forEach { groupId ->
+              val cInfo = chatInfo("#$groupId")
+              if (cInfo is ChatInfo.Group) {
+                chatModel.chatsContext.updateChatInfo(rhId, ChatInfo.Group(cInfo.groupInfo.copy(groupDomainVerified = DomainVerification.Moved), groupChatScope = null))
+              }
+            }
+          }
+        }
+      }
       is CR.GroupMemberUpdated -> {
         if (active(r.user)) {
           withContext(Dispatchers.Main) {
@@ -3113,7 +3178,7 @@ object ChatController {
           }
         }
       is CR.ChatItemUpdated ->
-        chatItemUpdateNotify(rhId, r.user, r.chatItem)
+        if (r.chatItemUpdate != null) chatItemUpdateNotify(rhId, r.user, r.chatItemUpdate)
       is CR.ChatItemReaction -> {
         if (active(r.user)) {
           withContext(Dispatchers.Main) {
@@ -3822,24 +3887,25 @@ object ChatController {
     }
   }
 
-  private suspend fun chatItemUpdateNotify(rh: Long?, user: UserLike, aChatItem: AChatItem) {
-    val cInfo = aChatItem.chatInfo
-    val cItem = aChatItem.chatItem
-    val notify = { ntfManager.notifyMessageReceived(rh, user, cInfo, cItem) }
+  private suspend fun chatItemUpdateNotify(rh: Long?, user: UserLike, update: AChatItemUpdate) {
+    val cInfo = update.chatInfo
+    val cItem = update.chatItem
+    val prevItem = update.prevChatItem
     if (!activeUser(rh, user)) {
-      notify()
+      val unreadChange = unreadCountChange(prevItem, cItem) { it.isRcvNew && cInfo.ntfsEnabled(it) }
+      if (unreadChange > 0) {
+        withContext(Dispatchers.Main) { chatModel.chatsContext.increaseUnreadCounter(rh, user) }
+      } else if (unreadChange < 0) {
+        withContext(Dispatchers.Main) { chatModel.chatsContext.decreaseUnreadCounter(rh, user) }
+      }
     } else {
       val createdChat = withContext(Dispatchers.Main) {
-        chatModel.chatsContext.upsertChatItem(rh, cInfo, cItem)
+        chatModel.chatsContext.applyChatItemUpdate(rh, cInfo, cItem, prevItem)
       }
       withContext(Dispatchers.Main) {
-        chatModel.secondaryChatsContext.value?.upsertChatItem(rh, cInfo, cItem)
+        chatModel.secondaryChatsContext.value?.applyChatItemUpdate(rh, cInfo, cItem, prevItem)
       }
-      if (createdChat) {
-        notify()
-      } else if (cItem.content is CIContent.RcvCall && cItem.content.status == CICallStatus.Missed) {
-        notify()
-      }
+      if (createdChat) ntfManager.notifyMessageReceived(rh, user, cInfo, cItem)
     }
   }
 
@@ -4073,7 +4139,7 @@ sealed class CC {
   class ApiDeleteMemberSupportChat(val groupId: Long, val groupMemberId: Long): CC()
   class ApiMembersRole(val groupId: Long, val memberIds: List<Long>, val memberRole: GroupMemberRole): CC()
   class ApiBlockMembersForAll(val groupId: Long, val memberIds: List<Long>, val blocked: Boolean): CC()
-  class ApiRemoveMembers(val groupId: Long, val memberIds: List<Long>, val withMessages: Boolean): CC()
+  class ApiRemoveMembers(val groupId: Long, val memberIds: List<Long>, val withMessages: Boolean, val notice: LinkNotice?): CC()
   class ApiLeaveGroup(val groupId: Long): CC()
   class ApiListMembers(val groupId: Long): CC()
   class ApiUpdateGroupProfile(val groupId: Long, val groupProfile: GroupProfile): CC()
@@ -4133,7 +4199,7 @@ sealed class CC {
   class APIConnectPreparedGroup(val groupId: Long, val incognito: Boolean, val msg: MsgContent?): CC()
   class APIConnect(val userId: Long, val incognito: Boolean, val connLink: CreatedConnLink): CC()
   class ApiConnectContactViaAddress(val userId: Long, val incognito: Boolean, val contactId: Long): CC()
-  class ApiDeleteChat(val type: ChatType, val id: Long, val chatDeleteMode: ChatDeleteMode): CC()
+  class ApiDeleteChat(val type: ChatType, val id: Long, val chatDeleteMode: ChatDeleteMode, val notice: LinkNotice?): CC()
   class ApiClearChat(val type: ChatType, val id: Long): CC()
   class ApiListContacts(val userId: Long): CC()
   class ApiUpdateProfile(val userId: Long, val profile: Profile): CC()
@@ -4292,7 +4358,7 @@ sealed class CC {
     is ApiDeleteMemberSupportChat -> "/_delete member chat #$groupId $groupMemberId"
     is ApiMembersRole -> "/_member role #$groupId ${memberIds.joinToString(",")} ${memberRole.memberRole}"
     is ApiBlockMembersForAll -> "/_block #$groupId ${memberIds.joinToString(",")} blocked=${onOff(blocked)}"
-    is ApiRemoveMembers -> "/_remove #$groupId ${memberIds.joinToString(",")} messages=${onOff(withMessages)}"
+    is ApiRemoveMembers -> "/_remove #$groupId ${memberIds.joinToString(",")} messages=${onOff(withMessages)}" + (if (notice != null) " notice=${jsonShort.encodeToString(notice)}" else "")
     is ApiLeaveGroup -> "/_leave #$groupId"
     is ApiListMembers -> "/_members #$groupId"
     is ApiUpdateGroupProfile -> "/_group_profile #$groupId ${json.encodeToString(groupProfile)}"
@@ -4355,7 +4421,7 @@ sealed class CC {
     is APIConnectPreparedGroup -> "/_connect group #$groupId incognito=${onOff(incognito)}${maybeContent(msg)}"
     is APIConnect -> "/_connect $userId incognito=${onOff(incognito)} ${connLink.connFullLink} ${connLink.connShortLink ?: ""}"
     is ApiConnectContactViaAddress -> "/_connect contact $userId incognito=${onOff(incognito)} $contactId"
-    is ApiDeleteChat -> "/_delete ${chatRef(type, id, scope = null)} ${chatDeleteMode.cmdString}"
+    is ApiDeleteChat -> "/_delete ${chatRef(type, id, scope = null)} ${chatDeleteMode.cmdString}" + (if (notice != null) " notice=${jsonShort.encodeToString(notice)}" else "")
     is ApiClearChat -> "/_clear chat ${chatRef(type, id, scope = null)}"
     is ApiListContacts -> "/_contacts $userId"
     is ApiUpdateProfile -> "/_profile $userId ${json.encodeToString(profile)}"
@@ -6899,13 +6965,14 @@ sealed class CR {
   @Serializable @SerialName("acceptingContactRequest") class AcceptingContactRequest(val user: UserRef, val contact: Contact): CR()
   @Serializable @SerialName("contactRequestRejected") class ContactRequestRejected(val user: UserRef, val contactRequest: UserContactRequest, val contact_: Contact?): CR()
   @Serializable @SerialName("contactUpdated") class ContactUpdated(val user: UserRef, val toContact: Contact): CR()
+  @Serializable @SerialName("nameMoved") class NameMoved(val user: UserRef, val contactIds: List<Long>, val groupIds: List<Long>): CR()
   @Serializable @SerialName("groupMemberUpdated") class GroupMemberUpdated(val user: UserRef, val groupInfo: GroupInfo, val fromMember: GroupMember, val toMember: GroupMember): CR()
   @Serializable @SerialName("subscriptionStatus") class SubscriptionStatusEvt(val subscriptionStatus: SubscriptionStatus, val connections: List<String>): CR()
   @Serializable @SerialName("chatInfoUpdated") class ChatInfoUpdated(val user: UserRef, val chatInfo: ChatInfo): CR()
   @Serializable @SerialName("newChatItems") class NewChatItems(val user: UserRef, val chatItems: List<AChatItem>): CR()
   @Serializable @SerialName("chatMsgContent") class ChatMsgContent(val user: UserRef, val msgContent: MsgContent): CR()
   @Serializable @SerialName("chatItemsStatusesUpdated") class ChatItemsStatusesUpdated(val user: UserRef, val chatItems: List<AChatItem>): CR()
-  @Serializable @SerialName("chatItemUpdated") class ChatItemUpdated(val user: UserRef, val chatItem: AChatItem): CR()
+  @Serializable @SerialName("chatItemUpdated") class ChatItemUpdated(val user: UserRef, val chatItem: AChatItem? = null, val chatItemUpdate: AChatItemUpdate? = null): CR()
   @Serializable @SerialName("chatItemNotChanged") class ChatItemNotChanged(val user: UserRef, val chatItem: AChatItem): CR()
   @Serializable @SerialName("chatItemReaction") class ChatItemReaction(val user: UserRef, val added: Boolean, val reaction: ACIReaction): CR()
   @Serializable @SerialName("reactionMembers") class ReactionMembers(val user: UserRef, val memberReactions: List<MemberReaction>): CR()
@@ -7105,6 +7172,7 @@ sealed class CR {
     is AcceptingContactRequest -> "acceptingContactRequest"
     is ContactRequestRejected -> "contactRequestRejected"
     is ContactUpdated -> "contactUpdated"
+    is NameMoved -> "nameMoved"
     is GroupMemberUpdated -> "groupMemberUpdated"
     is SubscriptionStatusEvt -> "subscriptionStatus"
     is ChatInfoUpdated -> "chatInfoUpdated"
@@ -7301,13 +7369,14 @@ sealed class CR {
     is AcceptingContactRequest -> withUser(user, json.encodeToString(contact))
     is ContactRequestRejected -> withUser(user, "contactRequest: ${json.encodeToString(contactRequest)}\ncontact_: ${json.encodeToString(contact_)}")
     is ContactUpdated -> withUser(user, json.encodeToString(toContact))
+    is NameMoved -> withUser(user, "contactIds: $contactIds\ngroupIds: $groupIds")
     is GroupMemberUpdated -> withUser(user, "groupInfo: $groupInfo\nfromMember: $fromMember\ntoMember: $toMember")
     is SubscriptionStatusEvt -> "subscriptionStatus $subscriptionStatus\nconnections: $connections"
     is ChatInfoUpdated -> withUser(user, json.encodeToString(chatInfo))
     is NewChatItems -> withUser(user, chatItems.joinToString("\n") { json.encodeToString(it) })
     is ChatMsgContent -> withUser(user, msgContent.toString())
     is ChatItemsStatusesUpdated -> withUser(user, chatItems.joinToString("\n") { json.encodeToString(it) })
-    is ChatItemUpdated -> withUser(user, json.encodeToString(chatItem))
+    is ChatItemUpdated -> withUser(user, "chatItem: ${json.encodeToString(chatItem)}\nchatItemUpdate: ${json.encodeToString(chatItemUpdate)}")
     is ChatItemNotChanged -> withUser(user, json.encodeToString(chatItem))
     is ChatItemReaction -> withUser(user, "added: $added\n${json.encodeToString(reaction)}")
     is ReactionMembers -> withUser(user, "memberReactions: ${json.encodeToString(memberReactions)}")
@@ -7452,15 +7521,32 @@ fun apiChatErrorType(r: API): ChatErrorType? =
   else null
 
 @Serializable
+data class LinkNotice(val ttl: Long? = null)
+
+enum class BanDuration(val ttl: Long?) {
+  Day(86400),
+  Week(604800),
+  Forever(null);
+
+  val notice: LinkNotice get() = LinkNotice(ttl)
+
+  val text: String get() = when (this) {
+    Day -> generalGetString(MR.strings.chat_item_ttl_day)
+    Week -> generalGetString(MR.strings.chat_item_ttl_week)
+    Forever -> generalGetString(MR.strings.ban_duration_forever)
+  }
+}
+
+@Serializable
 sealed class ChatDeleteMode {
   @Serializable @SerialName("full") class Full(val notify: Boolean): ChatDeleteMode()
   @Serializable @SerialName("entity") class Entity(val notify: Boolean): ChatDeleteMode()
-  @Serializable @SerialName("messages") class Messages: ChatDeleteMode()
+  @Serializable @SerialName("archive") class Archive: ChatDeleteMode()
 
   val cmdString: String get() = when (this) {
     is ChatDeleteMode.Full -> "full notify=${onOff(notify)}"
     is ChatDeleteMode.Entity -> "entity notify=${onOff(notify)}"
-    is ChatDeleteMode.Messages -> "messages"
+    is ChatDeleteMode.Archive -> "archive"
   }
 }
 
@@ -7487,6 +7573,7 @@ sealed class OwnerVerification {
 sealed class SimplexDomainError {
   @Serializable @SerialName("noValidLink") object NoValidLink : SimplexDomainError()
   @Serializable @SerialName("unknownDomain") object UnknownDomain : SimplexDomainError()
+  @Serializable @SerialName("nameWarning") class NameWarning(val nameWarning: chat.simplex.common.model.NameWarning) : SimplexDomainError()
 }
 
 @Serializable
@@ -7507,36 +7594,36 @@ sealed class BadgeRedeemError {
   @Serializable @SerialName("serviceNotConfigured") object ServiceNotConfigured : BadgeRedeemError()
   @Serializable @SerialName("badgeActive") object BadgeActive : BadgeRedeemError()
   @Serializable @SerialName("storePurchaseOpen") object StorePurchaseOpen : BadgeRedeemError()
-  @Serializable @SerialName("serviceError") class ServiceError(val serviceError: BadgeServiceErrorCode) : BadgeRedeemError()
+  @Serializable @SerialName("serviceError") class ServiceError(val serviceError: StoreServiceErrorCode) : BadgeRedeemError()
   @Serializable @SerialName("invalidResponse") class InvalidResponse(val message: String) : BadgeRedeemError()
   @Serializable @SerialName("unknownKeyIndex") object UnknownKeyIndex : BadgeRedeemError()
   @Serializable @SerialName("credentialNotVerified") object CredentialNotVerified : BadgeRedeemError()
 }
 
 // the service is deployed ahead of clients, so a code this version does not know keeps its tag
-@Serializable(with = BadgeServiceErrorCodeSerializer::class)
-sealed class BadgeServiceErrorCode {
-  object BadRequest: BadgeServiceErrorCode()
-  object UnsupportedVersion: BadgeServiceErrorCode()
-  object UnknownPurchaseKey: BadgeServiceErrorCode()
-  object UnknownOfferId: BadgeServiceErrorCode()
-  object OfferDisabled: BadgeServiceErrorCode()
-  object OfferMismatch: BadgeServiceErrorCode()
-  object ProductUnavailable: BadgeServiceErrorCode()
-  object PaymentNotEntitled: BadgeServiceErrorCode()
-  object PaymentPending: BadgeServiceErrorCode()
-  object ProviderUnavailable: BadgeServiceErrorCode()
-  object ProviderNotConfigured: BadgeServiceErrorCode()
-  object RateLimited: BadgeServiceErrorCode()
-  object CodeInvalid: BadgeServiceErrorCode()
-  object CodeUsed: BadgeServiceErrorCode()
-  object CodeExpired: BadgeServiceErrorCode()
-  object ReceiptInvalid: BadgeServiceErrorCode()
-  object ReceiptUsed: BadgeServiceErrorCode()
-  object TestPurchase: BadgeServiceErrorCode()
-  object TransferLimited: BadgeServiceErrorCode()
-  object Internal: BadgeServiceErrorCode()
-  data class Unknown(val code: String): BadgeServiceErrorCode()
+@Serializable(with = StoreServiceErrorCodeSerializer::class)
+sealed class StoreServiceErrorCode {
+  object BadRequest: StoreServiceErrorCode()
+  object UnsupportedVersion: StoreServiceErrorCode()
+  object UnknownPurchaseKey: StoreServiceErrorCode()
+  object UnknownOfferId: StoreServiceErrorCode()
+  object OfferDisabled: StoreServiceErrorCode()
+  object OfferMismatch: StoreServiceErrorCode()
+  object ProductUnavailable: StoreServiceErrorCode()
+  object PaymentNotEntitled: StoreServiceErrorCode()
+  object PaymentPending: StoreServiceErrorCode()
+  object ProviderUnavailable: StoreServiceErrorCode()
+  object ProviderNotConfigured: StoreServiceErrorCode()
+  object RateLimited: StoreServiceErrorCode()
+  object CodeInvalid: StoreServiceErrorCode()
+  object CodeUsed: StoreServiceErrorCode()
+  object CodeExpired: StoreServiceErrorCode()
+  object ReceiptInvalid: StoreServiceErrorCode()
+  object ReceiptUsed: StoreServiceErrorCode()
+  object TestPurchase: StoreServiceErrorCode()
+  object TransferLimited: StoreServiceErrorCode()
+  object Internal: StoreServiceErrorCode()
+  data class Unknown(val code: String): StoreServiceErrorCode()
 
   val text: String
     get() = when (this) {
@@ -7564,52 +7651,52 @@ sealed class BadgeServiceErrorCode {
     }
 }
 
-fun badgeServiceErrorText(code: BadgeServiceErrorCode): String? = when (code) {
-  is BadgeServiceErrorCode.CodeInvalid -> generalGetString(MR.strings.badges_error_code_invalid)
-  is BadgeServiceErrorCode.CodeUsed -> generalGetString(MR.strings.badges_error_code_used)
-  is BadgeServiceErrorCode.CodeExpired -> generalGetString(MR.strings.badges_error_code_expired)
-  is BadgeServiceErrorCode.RateLimited -> generalGetString(MR.strings.badges_error_rate_limited)
-  is BadgeServiceErrorCode.UnsupportedVersion -> generalGetString(MR.strings.badges_error_unsupported_version)
-  is BadgeServiceErrorCode.UnknownPurchaseKey -> generalGetString(MR.strings.badges_error_unknown_purchase)
-  is BadgeServiceErrorCode.Internal -> generalGetString(MR.strings.badges_error_service_internal)
-  is BadgeServiceErrorCode.ReceiptInvalid -> generalGetString(MR.strings.badges_error_receipt_invalid)
-  is BadgeServiceErrorCode.TestPurchase -> generalGetString(MR.strings.badges_error_test_purchase)
-  is BadgeServiceErrorCode.ReceiptUsed -> generalGetString(MR.strings.badges_error_receipt_used)
-  is BadgeServiceErrorCode.TransferLimited -> generalGetString(MR.strings.badges_error_transfer_limited)
-  is BadgeServiceErrorCode.PaymentPending -> generalGetString(MR.strings.badges_error_payment_pending)
-  is BadgeServiceErrorCode.ProviderUnavailable -> generalGetString(MR.strings.badges_error_provider_unavailable)
-  is BadgeServiceErrorCode.ProviderNotConfigured -> generalGetString(MR.strings.badges_error_provider_not_configured)
-  is BadgeServiceErrorCode.ProductUnavailable -> generalGetString(MR.strings.badges_error_product_unavailable)
+fun badgeServiceErrorText(code: StoreServiceErrorCode): String? = when (code) {
+  is StoreServiceErrorCode.CodeInvalid -> generalGetString(MR.strings.badges_error_code_invalid)
+  is StoreServiceErrorCode.CodeUsed -> generalGetString(MR.strings.badges_error_code_used)
+  is StoreServiceErrorCode.CodeExpired -> generalGetString(MR.strings.badges_error_code_expired)
+  is StoreServiceErrorCode.RateLimited -> generalGetString(MR.strings.badges_error_rate_limited)
+  is StoreServiceErrorCode.UnsupportedVersion -> generalGetString(MR.strings.badges_error_unsupported_version)
+  is StoreServiceErrorCode.UnknownPurchaseKey -> generalGetString(MR.strings.badges_error_unknown_purchase)
+  is StoreServiceErrorCode.Internal -> generalGetString(MR.strings.badges_error_service_internal)
+  is StoreServiceErrorCode.ReceiptInvalid -> generalGetString(MR.strings.badges_error_receipt_invalid)
+  is StoreServiceErrorCode.TestPurchase -> generalGetString(MR.strings.badges_error_test_purchase)
+  is StoreServiceErrorCode.ReceiptUsed -> generalGetString(MR.strings.badges_error_receipt_used)
+  is StoreServiceErrorCode.TransferLimited -> generalGetString(MR.strings.badges_error_transfer_limited)
+  is StoreServiceErrorCode.PaymentPending -> generalGetString(MR.strings.badges_error_payment_pending)
+  is StoreServiceErrorCode.ProviderUnavailable -> generalGetString(MR.strings.badges_error_provider_unavailable)
+  is StoreServiceErrorCode.ProviderNotConfigured -> generalGetString(MR.strings.badges_error_provider_not_configured)
+  is StoreServiceErrorCode.ProductUnavailable -> generalGetString(MR.strings.badges_error_product_unavailable)
   else -> null
 }
 
-object BadgeServiceErrorCodeSerializer : KSerializer<BadgeServiceErrorCode> {
-  override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("BadgeServiceErrorCode", PrimitiveKind.STRING)
-  override fun deserialize(decoder: Decoder): BadgeServiceErrorCode =
+object StoreServiceErrorCodeSerializer : KSerializer<StoreServiceErrorCode> {
+  override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("StoreServiceErrorCode", PrimitiveKind.STRING)
+  override fun deserialize(decoder: Decoder): StoreServiceErrorCode =
     when (val v = decoder.decodeString()) {
-      "bad_request" -> BadgeServiceErrorCode.BadRequest
-      "unsupported_version" -> BadgeServiceErrorCode.UnsupportedVersion
-      "unknown_purchase_key" -> BadgeServiceErrorCode.UnknownPurchaseKey
-      "unknown_offer_id" -> BadgeServiceErrorCode.UnknownOfferId
-      "offer_disabled" -> BadgeServiceErrorCode.OfferDisabled
-      "offer_mismatch" -> BadgeServiceErrorCode.OfferMismatch
-      "product_unavailable" -> BadgeServiceErrorCode.ProductUnavailable
-      "payment_not_entitled" -> BadgeServiceErrorCode.PaymentNotEntitled
-      "payment_pending" -> BadgeServiceErrorCode.PaymentPending
-      "provider_unavailable" -> BadgeServiceErrorCode.ProviderUnavailable
-      "provider_not_configured" -> BadgeServiceErrorCode.ProviderNotConfigured
-      "rate_limited" -> BadgeServiceErrorCode.RateLimited
-      "code_invalid" -> BadgeServiceErrorCode.CodeInvalid
-      "code_used" -> BadgeServiceErrorCode.CodeUsed
-      "code_expired" -> BadgeServiceErrorCode.CodeExpired
-      "receipt_invalid" -> BadgeServiceErrorCode.ReceiptInvalid
-      "receipt_used" -> BadgeServiceErrorCode.ReceiptUsed
-      "test_purchase" -> BadgeServiceErrorCode.TestPurchase
-      "transfer_limited" -> BadgeServiceErrorCode.TransferLimited
-      "internal" -> BadgeServiceErrorCode.Internal
-      else -> BadgeServiceErrorCode.Unknown(v)
+      "bad_request" -> StoreServiceErrorCode.BadRequest
+      "unsupported_version" -> StoreServiceErrorCode.UnsupportedVersion
+      "unknown_purchase_key" -> StoreServiceErrorCode.UnknownPurchaseKey
+      "unknown_offer_id" -> StoreServiceErrorCode.UnknownOfferId
+      "offer_disabled" -> StoreServiceErrorCode.OfferDisabled
+      "offer_mismatch" -> StoreServiceErrorCode.OfferMismatch
+      "product_unavailable" -> StoreServiceErrorCode.ProductUnavailable
+      "payment_not_entitled" -> StoreServiceErrorCode.PaymentNotEntitled
+      "payment_pending" -> StoreServiceErrorCode.PaymentPending
+      "provider_unavailable" -> StoreServiceErrorCode.ProviderUnavailable
+      "provider_not_configured" -> StoreServiceErrorCode.ProviderNotConfigured
+      "rate_limited" -> StoreServiceErrorCode.RateLimited
+      "code_invalid" -> StoreServiceErrorCode.CodeInvalid
+      "code_used" -> StoreServiceErrorCode.CodeUsed
+      "code_expired" -> StoreServiceErrorCode.CodeExpired
+      "receipt_invalid" -> StoreServiceErrorCode.ReceiptInvalid
+      "receipt_used" -> StoreServiceErrorCode.ReceiptUsed
+      "test_purchase" -> StoreServiceErrorCode.TestPurchase
+      "transfer_limited" -> StoreServiceErrorCode.TransferLimited
+      "internal" -> StoreServiceErrorCode.Internal
+      else -> StoreServiceErrorCode.Unknown(v)
     }
-  override fun serialize(encoder: Encoder, value: BadgeServiceErrorCode) = encoder.encodeString(value.text)
+  override fun serialize(encoder: Encoder, value: StoreServiceErrorCode) = encoder.encodeString(value.text)
 }
 
 data class ConnectionPlanResult(
@@ -7631,11 +7718,51 @@ enum class PlanResolveMode {
 
 @Serializable
 sealed class ConnectionPlan {
+  open val nameChange: NameChange? get() = null
+  val localChats: List<ChatInfo> get() = listOfNotNull(planChat, knownChat)
+  val planChat: ChatInfo? get() = when (this) {
+    is ContactAddress -> when (val p = contactAddressPlan) {
+      is ContactAddressPlan.ConnectingProhibit -> ChatInfo.Direct(p.contact)
+      is ContactAddressPlan.Known -> ChatInfo.Direct(p.contact)
+      is ContactAddressPlan.ContactViaAddress -> ChatInfo.Direct(p.contact)
+      else -> null
+    }
+    is GroupLink -> when (val p = groupLinkPlan) {
+      is GroupLinkPlan.OwnLink -> p.groupInfo
+      is GroupLinkPlan.Known -> p.groupInfo
+      is GroupLinkPlan.ConnectingProhibit -> p.groupInfo_
+      else -> null
+    }?.let { ChatInfo.Group(it, groupChatScope = null) }
+    else -> null
+  }
+  val knownChat: ChatInfo? get() = (nameChange as? NameChange.Moved)?.knownChat
+  val isOwnLink: Boolean get() = when (this) {
+    is ContactAddress -> contactAddressPlan is ContactAddressPlan.OwnLink
+    is GroupLink -> groupLinkPlan is GroupLinkPlan.OwnLink
+    else -> false
+  }
   @Serializable @SerialName("invitationLink") class InvitationLink(val invitationLinkPlan: InvitationLinkPlan): ConnectionPlan()
-  @Serializable @SerialName("contactAddress") class ContactAddress(val contactAddressPlan: ContactAddressPlan): ConnectionPlan()
-  @Serializable @SerialName("groupLink") class GroupLink(val groupLinkPlan: GroupLinkPlan): ConnectionPlan()
+  @Serializable @SerialName("contactAddress") class ContactAddress(val contactAddressPlan: ContactAddressPlan, override val nameChange: NameChange? = null): ConnectionPlan()
+  @Serializable @SerialName("groupLink") class GroupLink(val groupLinkPlan: GroupLinkPlan, override val nameChange: NameChange? = null): ConnectionPlan()
   @Serializable @SerialName("error") class Error(val chatError: ChatError): ConnectionPlan()
 }
+
+@Serializable
+sealed class NameChange {
+  @Serializable @SerialName("lapsed") class Lapsed(val nameWarning: NameWarning): NameChange()
+  @Serializable @SerialName("moved") class Moved(val knownChat: ChatInfo): NameChange()
+}
+
+@Serializable
+sealed class NameWarning {
+  @Serializable @SerialName("expired") class Expired(val expiredAt: Instant, val graceUntil: Instant? = null): NameWarning()
+  @Serializable @SerialName("available") class Available(val price: NamePrice): NameWarning()
+  @Serializable @SerialName("reservedForCommunity") object ReservedForCommunity: NameWarning()
+  @Serializable @SerialName("notRegistered") object NotRegistered: NameWarning()
+}
+
+@Serializable
+data class NamePrice(val amount: Long, val years: Int)
 
 @Serializable
 sealed class InvitationLinkPlan {
@@ -7653,6 +7780,7 @@ sealed class ContactAddressPlan {
   @Serializable @SerialName("connectingProhibit") class ConnectingProhibit(val contact: Contact): ContactAddressPlan()
   @Serializable @SerialName("known") class Known(val contact: Contact): ContactAddressPlan()
   @Serializable @SerialName("contactViaAddress") class ContactViaAddress(val contact: Contact): ContactAddressPlan()
+  @Serializable @SerialName("linkNotice") class LinkNotice(val expiresAt: Instant? = null, val contactSLinkData_: ContactShortLinkData? = null): ContactAddressPlan()
 }
 
 @Serializable
@@ -7664,6 +7792,7 @@ sealed class GroupLinkPlan {
   @Serializable @SerialName("known") class Known(val groupInfo: GroupInfo): GroupLinkPlan()
   @Serializable @SerialName("noRelays") class NoRelays(val groupSLinkData_: GroupShortLinkData? = null): GroupLinkPlan()
   @Serializable @SerialName("updateRequired") class UpdateRequired(val groupSLinkData_: GroupShortLinkData? = null): GroupLinkPlan()
+  @Serializable @SerialName("linkNotice") class LinkNotice(val expiresAt: Instant? = null): GroupLinkPlan()
 }
 
 abstract class TerminalItem {
@@ -7973,6 +8102,7 @@ sealed class ChatErrorType {
       is UnsupportedConnReq -> "unsupportedConnReq"
       is InvalidChatMessage -> "invalidChatMessage"
       is ConnReqMessageProhibited -> "connReqMessageProhibited"
+      is LinkNotice -> "linkNotice"
       is ContactNotReady -> "contactNotReady"
       is ContactNotActive -> "contactNotActive"
       is ContactDisabled -> "contactDisabled"
@@ -8058,6 +8188,7 @@ sealed class ChatErrorType {
   @Serializable @SerialName("unsupportedConnReq") object UnsupportedConnReq: ChatErrorType()
   @Serializable @SerialName("invalidChatMessage") class InvalidChatMessage(val connection: Connection, val message: String): ChatErrorType()
   @Serializable @SerialName("connReqMessageProhibited") object ConnReqMessageProhibited: ChatErrorType()
+  @Serializable @SerialName("linkNotice") class LinkNotice(val expiresAt: Instant? = null): ChatErrorType()
   @Serializable @SerialName("contactNotReady") class ContactNotReady(val contact: Contact): ChatErrorType()
   @Serializable @SerialName("contactNotActive") class ContactNotActive(val contact: Contact): ChatErrorType()
   @Serializable @SerialName("contactDisabled") class ContactDisabled(val contact: Contact): ChatErrorType()
@@ -8750,6 +8881,17 @@ enum class PrivacyChatListOpenLinksMode {
 }
 
 @Serializable
+enum class ContactDeletion {
+  @SerialName("notify") Notify,
+  @SerialName("ask") Ask;
+
+  val text: String get() = when (this) {
+    Notify -> generalGetString(MR.strings.privacy_contact_deletion_notify)
+    Ask -> generalGetString(MR.strings.privacy_contact_deletion_ask)
+  }
+}
+
+@Serializable
 data class AppSettings(
   var networkConfig: NetCfg? = null,
   var networkProxy: NetworkProxy? = null,
@@ -8763,6 +8905,7 @@ data class AppSettings(
   var privacySaveLastDraft: Boolean? = null,
   var privacyProtectScreen: Boolean? = null,
   var privacyMediaBlurRadius: Int? = null,
+  var privacyContactDeletion: ContactDeletion? = null,
   var notificationMode: AppSettingsNotificationMode? = null,
   var notificationPreviewMode: AppSettingsNotificationPreviewMode? = null,
   var webrtcPolicyRelay: Boolean? = null,
@@ -8801,6 +8944,7 @@ data class AppSettings(
     if (privacySaveLastDraft != def.privacySaveLastDraft) { empty.privacySaveLastDraft = privacySaveLastDraft }
     if (privacyProtectScreen != def.privacyProtectScreen) { empty.privacyProtectScreen = privacyProtectScreen }
     if (privacyMediaBlurRadius != def.privacyMediaBlurRadius) { empty.privacyMediaBlurRadius = privacyMediaBlurRadius }
+    if (privacyContactDeletion != def.privacyContactDeletion) { empty.privacyContactDeletion = privacyContactDeletion }
     if (notificationMode != def.notificationMode) { empty.notificationMode = notificationMode }
     if (notificationPreviewMode != def.notificationPreviewMode) { empty.notificationPreviewMode = notificationPreviewMode }
     if (webrtcPolicyRelay != def.webrtcPolicyRelay) { empty.webrtcPolicyRelay = webrtcPolicyRelay }
@@ -8850,6 +8994,7 @@ data class AppSettings(
     privacySaveLastDraft?.let { def.privacySaveLastDraft.set(it) }
     privacyProtectScreen?.let { def.privacyProtectScreen.set(it) }
     privacyMediaBlurRadius?.let { def.privacyMediaBlurRadius.set(it) }
+    privacyContactDeletion?.let { def.privacyContactDeletion.set(it) }
     notificationMode?.let { def.notificationsMode.set(it.toNotificationsMode()) }
     notificationPreviewMode?.let { def.notificationPreviewMode.set(it.toNotificationPreviewMode().name) }
     webrtcPolicyRelay?.let { def.webrtcPolicyRelay.set(it) }
@@ -8889,6 +9034,7 @@ data class AppSettings(
         privacySaveLastDraft = true,
         privacyProtectScreen = false,
         privacyMediaBlurRadius = 0,
+        privacyContactDeletion = ContactDeletion.Ask,
         notificationMode = AppSettingsNotificationMode.INSTANT,
         notificationPreviewMode = AppSettingsNotificationPreviewMode.MESSAGE,
         webrtcPolicyRelay = true,
@@ -8929,6 +9075,7 @@ data class AppSettings(
           privacySaveLastDraft = def.privacySaveLastDraft.get(),
           privacyProtectScreen = def.privacyProtectScreen.get(),
           privacyMediaBlurRadius = def.privacyMediaBlurRadius.get(),
+          privacyContactDeletion = def.privacyContactDeletion.get(),
           notificationMode = AppSettingsNotificationMode.from(def.notificationsMode.get()),
           notificationPreviewMode = AppSettingsNotificationPreviewMode.from(NotificationPreviewMode.valueOf(def.notificationPreviewMode.get()!!)),
           webrtcPolicyRelay = def.webrtcPolicyRelay.get(),

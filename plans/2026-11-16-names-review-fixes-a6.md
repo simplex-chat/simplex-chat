@@ -1,0 +1,104 @@
+# Names service: fixes of the reviewed findings, area A6 and the A1 leftovers
+
+Superseded where it differs: plans/2026-11-18-names-order-rules.md and apps/simplex-store-service/docs/names.md state the current rules and code.
+
+Branch `ep/names-fixes-a6`, from `ep/names-review-fixes` at 16114b784. Decisions: the user's, 2026-11-16, on the review of https://github.com/simplex-chat/simplex-chat/pull/7703; the A6 lows take the proposed decisions. Line references are at b13968b61. Type rule and commit form: plans/2026-11-16-names-review-fixes.md.
+
+## A1 leftovers
+
+simplexmq: cabal.project pins simplex-chat/simplexmq b7339d94b. It includes simplex-chat/simplexmq#2080, with:
+- USDCents: Num, Enum, Real, Integral, FromField and ToField;
+- FromField and ToField for Address, LabelHash and RecoverableSignature;
+- Ord LabelHash;
+
+and simplex-chat/simplexmq#2083, with ToJSON and FromJSON for RecoverableSignature.
+
+scripts/nix/sha256map.nix holds the hash of b7339d94b; the reduced build reads no Nix map.
+
+A1-21: the registration, record edit and change rows of Names/Store.hs hold Address, LabelHash and RecoverableSignature; decodeAddress and decodeSignature go.
+
+A1-17: label turns keyed by LabelHash, code turns by CodeHash; withLabelTurns compares the hashes.
+
+A4-22: `nCommunity :: Map LabelHash Text`, filled by labelHash; communityFor and logNamePolicy look it up by the LabelHash.
+
+A1-14: USDCents for every cent amount of an order, a balance and a refund.
+
+| Where | Cents as USDCents |
+|---|---|
+| Names/Store.hs | nrPrice, poPrice, OTInvoice, blAmount, blCredited, blRefunded, lkPaid, CACard, caCents, lsReceivedCents, lsInvoiceAmount, lsCreditedCents, lfConfirmedCents, the balance writes |
+| requests | the invoice order's price, the refund command's cents |
+| checks | chainPriceCents, checkPrice, ORCatalogChanged, ORPriceTooHigh |
+| refunds | rdCents, RefundAmount |
+
+- Parsed once from the request, within an invoice amount's range; the invoice asks `CurrencyAmount` of the order's amount, the one conversion.
+- Kept as numbers: the price floor of the configuration, the held-cents metric, the sponsor allowance.
+- One formatter of minor units, in Providers: BTCPay's decimal and the console's dollars are thin wrappers.
+- Logs and texts print the number of cents, as before.
+
+```mermaid
+flowchart LR
+  R[request JSON] -->|price, balance: USDCents| O[order checks]
+  C[rentPriceUSD] -->|chainPriceCents: USDCents| O
+  O --> S[(name_registrations, name_balances, name_late_credits)]
+  O -->|CurrencyAmount| I[(invoices) / provider]
+  I -->|amount: USDCents| S
+  S --> V[view, console, logs]
+```
+
+The view of a failed, a taken and a requeued order: a test asserts each JSON object in full, as 16114b784 left it unchanged.
+
+## A6. Tests
+
+A6-1, A6-2, A6-3: done in 543dd1d4e.
+
+A6-4, waits on the queue a test assumes:
+- testMovesCross: after each move starts, the low hash's turn count reaches the moves started.
+- testRevokeTakesCodeTurn: `codeTurnCount` beside balanceTurnCount; the revoke waits until the code turn has two requests.
+- testSlotFreesInTime keeps its sleep.
+
+```mermaid
+sequenceDiagram
+  participant T as test
+  participant H as holder
+  participant M1 as first move
+  participant M2 as second move
+  T->>H: hold high
+  T->>M1: start
+  M1->>M1: take low, wait high
+  T->>T: low count = 1
+  T->>M2: start
+  M2->>M2: wait low
+  T->>T: low count = 2
+  T->>H: release high
+```
+
+A6-5, wider margins:
+- testLongQuantity: the call's timeout 2 s, the bound 3 s.
+- testSharedHostLookup: "at once" is below fetchTimeout.
+- testConcurrentReads: the deadline 4 s.
+
+A6-6: NamesPhasesTests' held, woken and prompt stay; NamesOwnerTests' held, woken and within, NamesRecordsTests' within, and the spend tests' heldPoll and pollSeconds go; their bounded waits use WebTests' bounded.
+
+A6-7, each fixture once:
+- FakeEthNode: unhex and address.
+- WebTests: agreed and lengthOf, BadgeTests' lengthOf included.
+- NamesOrdersTests' exports: seconds, orderSeconds, keyA.
+- NamesContractsTests' exports: alice, gracePeriod, otherResolver, registry.
+
+A6-8, each JSON answer helper once, in WebTests:
+- fieldOf: NamesOrdersTests' field, NamesRevealTests' field and NamesPhasesTests' key go; curried uses are sections of fieldOf.
+- answerOf, decoding to the type the test reads.
+- refusedWith, errorOnly inlined; the refused copies go.
+- NamesSearchTests' answers are objects.
+
+A6-9: credit from NamesBalancesTests; stubRate from WebTests; invoice status by WebTests' invoiceStatus, as InvoiceStatus.
+
+A6-10: dropped, as proposed.
+
+A6-12:
+- `RegistrationView`, a record of the view's 31 fields, its ToJSON derived with `dropPrefix "vw"` and omitNothingFields off; balance, latePayment, acceptance and community stay JSON values.
+- registrationView returns it, built by the pure toRegistrationView; its consumers encode it.
+- LateWait's ToJSON by textToJSON of its TextEncoding.
+- testViewFields compares the view with an expected record; the invoice view keeps its key test.
+- The other records of the page's requests and answers have selectors named as their JSON keys, derived by `defaultJSON`, with DuplicateRecordFields where a module repeats a name: AcceptanceAsked, AgreedTerms, CodeOrder, EditsLeft, FindAnswer, FoundOrder, NameRefusal's fields, RevealLinks, RevealRequest, SentEdit, SentRequest, SignedFields and TermsAcceptance. RegistrationView and SentFields keep `dropPrefix`, as selectors named by their keys `id` and `length` would shadow Prelude's `id` and `length`.
+- Nothing fields are sent as null in BalanceView, RegistrationView, NameRefusal and FoundOrder (omitNothingFields off), and in SiteConfig (`J.defaultOptions`). The page (simplex.domains webapp/src) rejects a missing key: `nullable` (api.ts) for RegistrationView's label, balance, latePayment, commitTx and registerTx, and FoundOrder's invoiceId; `isCommunity` for RegistrationView's and NameRefusal's community; and configOf (config.ts) for both SiteConfig keys.

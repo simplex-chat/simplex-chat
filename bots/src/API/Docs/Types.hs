@@ -35,7 +35,7 @@ import Simplex.Chat.Store.Shared
 import Simplex.Chat.Operators
 import Simplex.Messaging.Agent.Store.Entity (DBStored (..))
 import Simplex.Chat.Badges
-import Simplex.Chat.Badges.Service
+import Simplex.Chat.StoreService
 import Simplex.Chat.Names
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
@@ -205,6 +205,7 @@ chatTypesDocsData =
     ((sti @JSONCIStatus) {typeName = "CIStatus"}, STUnion, "JCIS", [], "", ""),
     (ciQuoteType, STRecord, "", [], "", ""),
     (STI "AChatItem" [RecordTypeInfo "AChatItem" [FieldInfo "chatInfo" (ti "ChatInfo"), FieldInfo "chatItem" (ti "ChatItem")]], STRecord, "", [], "", ""),
+    (STI "AChatItemUpdate" [RecordTypeInfo "AChatItemUpdate" [FieldInfo "chatInfo" (ti "ChatInfo"), FieldInfo "chatItem" (ti "ChatItem"), FieldInfo "prevChatItem" (ti "ChatItem")]], STRecord, "", [], "", "Updated message, with the message before the update."),
     (STI "ACIReaction" [RecordTypeInfo "ACIReaction" [FieldInfo "chatInfo" (ti "ChatInfo"), FieldInfo "chatReaction" (ti "CIReaction")]], STRecord, "", [], "", ""),
     -- (STI "JSONObject" [], STRecord, "", [], "Arbitrary JSON object."),
     -- (STI "UTCTime" [], STRecord, "", [], "Timestampe in ISO8601 format as string."),
@@ -226,7 +227,6 @@ chatTypesDocsData =
     (sti @AutoAccept, STRecord, "", [], "", ""),
     (sti @BadgeProof, STRecord, "", [], "", ""),
     (sti @BadgeRedeemError, STUnion, "BRE", [], "", ""),
-    (sti @BadgeServiceErrorCode, STEnum' (consSep "BSE" '_'), "", ["BSEUnknown"], "", ""),
     (sti @BlockingInfo, STRecord, "", [], "", ""),
     (sti @BlockingReason, STEnum, "BR", [], "", ""),
     (sti @BlockToken, STUnion, "", [], "", ""),
@@ -234,7 +234,7 @@ chatTypesDocsData =
     (sti @BusinessChatInfo, STRecord, "", [], "", ""),
     (sti @BusinessChatType, STEnum, "BC", [], "", ""),
     (sti @ChatBotCommand, STUnion, "CBC", [], "", ""),
-    (sti @ChatDeleteMode, STUnion, "CDM", [], Param "type" <> Choice "self" [("messages", "")] (OnOffParam "notify" "notify" (Just True)), ""),
+    (sti @ChatDeleteMode, STUnion, "CDM", [], Param "type" <> Choice "self" [("messages", ""), ("archive", "")] (OnOffParam "notify" "notify" (Just True)), ""),
     (sti @ChatError, STUnion, "Chat", ["ChatErrorDatabase", "ChatErrorRemoteHost", "ChatErrorRemoteCtrl"], "", ""),
     (sti @ChatErrorType, STUnion, "CE", ["CEContactNotFound", "CEServerProtocol", "CECallState", "CEInvalidChatMessage"], "", ""),
     (sti @BadgeStatus, STEnum, "BS", [], "", ""),
@@ -280,6 +280,7 @@ chatTypesDocsData =
     (sti @ContactUserPreferences, STRecord, "", [], "", ""),
     (sti @CryptoFile, STRecord, "", [], "", ""),
     (sti @CryptoFileArgs, STRecord, "", [], "", ""),
+    (sti @DomainVerification, STEnum, "DV", [], "", ""),
     (sti @DroppedMsg, STRecord, "", [], "", ""),
     (sti @E2EInfo, STRecord, "", [], "", ""),
     (sti @ErrorType, STUnion, "", [], "", ""),
@@ -330,6 +331,7 @@ chatTypesDocsData =
     (sti @InvitedBy, STUnion, "IB", [], "", ""),
     (sti @KeepAliveOpts, STRecord, "", [], "", ""),
     (sti @LinkContent, STUnion, "LC", [], "", ""),
+    (sti @LinkNotice, STRecord, "", [], "", "The app of the removed member or deleted contact does not join or connect via the link for `ttl` seconds, rounded up to a whole hour; a notice without `ttl` does not expire. `ttl` must be positive."),
     (sti @LinkOwnerSig, STRecord, "", [], "", ""),
     (sti @LinkPreview, STRecord, "", [], "", ""),
     (sti @ListEntry, STRecord, "", [], "", ""),
@@ -347,7 +349,10 @@ chatTypesDocsData =
     (sti @MsgReceiptStatus, STEnum, "MR", [], "", ""),
     (sti @MsgSigStatus, STEnum, "MSS", [], "", ""),
     (sti @MsgVerified, STUnion, "MV", [], "", ""),
+    (sti @NameChange, STUnion, "NC", [], "", ""),
     (sti @NameErrorType, STUnion, "", [], "", ""),
+    (sti @NamePrice, STRecord, "", [], "", ""),
+    (sti @NameWarning, STUnion, "NW", [], "", ""),
     (sti @NetworkConfig, STRecord, "", [], "", ""),
     (sti @NetworkError, STUnion, "NE", [], "", ""),
     (sti @NetworkTimeout, STRecord, "", [], "", ""),
@@ -413,6 +418,7 @@ chatTypesDocsData =
     (sti @SocksMode, STEnum, "SM", [], "", ""),
     (sti @SrvError, STUnion, "SrvErr", [], "", ""),
     (sti @StoreError, STUnion, "SE", [], "", ""),
+    (sti @StoreServiceErrorCode, STEnum' (consSep "STE" '_'), "", ["STEUnknown"], "", ""),
     (sti @SubscriptionStatus, STUnion, "SS", [], "", ""),
     (sti @SupportGroupPreference, STRecord, "", [], "", ""),
     (sti @SwitchPhase, STEnum, "SP", [], "", ""),
@@ -483,7 +489,6 @@ deriving instance Generic AgentServiceError
 deriving instance Generic AutoAccept
 deriving instance Generic BadgeProof
 deriving instance Generic BadgeRedeemError
-deriving instance Generic BadgeServiceErrorCode
 deriving instance Generic BlockingInfo
 deriving instance Generic BlockingReason
 deriving instance Generic BlockToken
@@ -537,6 +542,7 @@ deriving instance Generic ContactStatus
 deriving instance Generic ContactUserPreferences
 deriving instance Generic CryptoFile
 deriving instance Generic CryptoFileArgs
+deriving instance Generic DomainVerification
 deriving instance Generic DroppedMsg
 deriving instance Generic E2EInfo
 deriving instance Generic ErrorType
@@ -594,6 +600,7 @@ deriving instance Generic JSONCIFileStatus
 deriving instance Generic JSONCIStatus
 deriving instance Generic KeepAliveOpts
 deriving instance Generic LinkContent
+deriving instance Generic LinkNotice
 deriving instance Generic LinkOwnerSig
 deriving instance Generic LinkPreview
 deriving instance Generic ListEntry
@@ -611,7 +618,10 @@ deriving instance Generic MsgReaction
 deriving instance Generic MsgReceiptStatus
 deriving instance Generic MsgSigStatus
 deriving instance Generic MsgVerified
+deriving instance Generic NameChange
 deriving instance Generic NameErrorType
+deriving instance Generic NamePrice
+deriving instance Generic NameWarning
 deriving instance Generic NetworkConfig
 deriving instance Generic NetworkError
 deriving instance Generic NetworkTimeout
@@ -675,6 +685,7 @@ deriving instance Generic SndGroupEvent
 deriving instance Generic SocksMode
 deriving instance Generic SrvError
 deriving instance Generic StoreError
+deriving instance Generic StoreServiceErrorCode
 deriving instance Generic SubscriptionStatus
 deriving instance Generic SupportGroupPreference
 deriving instance Generic SwitchPhase

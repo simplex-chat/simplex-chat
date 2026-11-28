@@ -19,6 +19,7 @@ import Control.Concurrent.Async (concurrently, concurrently_)
 import Control.Monad
 import Control.Monad.Except
 import Control.Monad.Reader (runReaderT)
+import qualified Data.Aeson as J
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import qualified Data.ByteString.Char8 as B
 import qualified Data.Text as T
@@ -26,14 +27,15 @@ import Data.Time.Clock (UTCTime, addUTCTime, getCurrentTime, nominalDay)
 import Data.Time.Clock.POSIX (posixSecondsToUTCTime, utcTimeToPOSIXSeconds)
 import Data.Time.Format (defaultTimeLocale, formatTime)
 import qualified Data.Map.Strict as M
+import ProtocolTests (testGroupProfile)
 import Simplex.Chat.Badges (BadgeCredential, BadgeInfo (..), BadgeProof, BadgePurchase (..), BadgeRequest (..), BadgeStatus (..), BadgeType (..), LocalBadge (..), ProofPresHeader (..), badgeProof, generateMasterKey, issueBadge, verifyPayment)
 import Simplex.Chat.Controller (CM, ChatConfig (..), ChatController (ChatController, smpAgent), ChatHooks (..), defaultChatHooks, storeCxt, withAgent)
 import Simplex.Chat.Library.Internal (encodeConnInfo, encodeShortLinkData, getShortLinkConnReq, groupMemberKey, redactedMemberProfile, sendDirectContactMessage, sendGroupMessage')
 import Simplex.Chat.Options (ChatOpts (..), CoreChatOpts (..))
-import Simplex.Chat.Protocol (ChatBinding (..), ChatMsgEvent (XContact, XInfo, XOk), ContactShortLinkData (ContactShortLinkData), LinkOwnerSig, MsgChatLink (..), MsgContent (..), encodeChatBinding)
+import Simplex.Chat.Protocol (ChatBinding (..), ChatMsgEvent (XContact, XInfo, XOk), ContactShortLinkData (ContactShortLinkData), GroupShortLinkData (GroupShortLinkData), LinkOwnerSig, MsgChatLink (..), MsgContent (..), encodeChatBinding)
 import Simplex.Chat.Store.Groups (getGroupMembers)
 import Simplex.Chat.Store.Shared (createContact, getGroupInfoKeys)
-import Simplex.Chat.Types (AgentConnId (..), ChatPeerType (..), ConnStatus (..), GroupId, GroupInfo (..), GroupInfoKeys (..), GroupMember (..), ImageData (..), Profile (..), GroupRejectionReason (..), ShortLinkContact, User (..), aUserId, fromLocalProfile, profileFromName, userProfileDirect, pattern VersionChat)
+import Simplex.Chat.Types (AgentConnId (..), B64UrlByteString (..), ChatPeerType (..), ConnStatus (..), GroupId, GroupInfo (..), GroupInfoKeys (..), GroupMember (..), GroupProfile (publicGroup), GroupType (..), ImageData (..), Profile (..), PublicGroupProfile (PublicGroupProfile), GroupRejectionReason (..), ShortLinkContact, User (..), aUserId, fromLocalProfile, profileFromName, userProfileDirect, pattern VersionChat)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.BBS (BBSPublicKey, BBSSecretKey, bbsKeyGen)
 import Simplex.Messaging.Crypto.Ratchet (pattern PQSupportOff)
@@ -41,7 +43,7 @@ import Simplex.Chat.Types.Shared (GroupMemberRole (..))
 import Simplex.Chat.Types.UITheme
 import Simplex.Messaging.Agent (joinConnection, prepareConnectionToJoin, setConnShortLink)
 import Simplex.Messaging.Agent.Env.SQLite
-import Simplex.Messaging.Agent.Protocol (SConnectionMode (..), UserConnLinkData (..))
+import Simplex.Messaging.Agent.Protocol (SConnectionMode (..), UserConnLinkData (..), UserContactData (..), UserLinkData (..))
 import Simplex.Messaging.Agent.RetryInterval
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Client (pattern NRMInteractive)
@@ -116,12 +118,15 @@ chatProfileTests = do
     it "duplicate contact request from connected contact" testDuplicateContactRequestConnected
     it "contact requests with invalid or unsupported messages" testContactRequestsInvalidMessages
     it "reject contact and delete contact link" testRejectContactAndDeleteUserContact
+    it "reject contact and notify the sender" testRejectContactNotifySender
     it "keep connection requests when contact link deleted" testKeepConnectionRequests
     it "connected contact works when contact link deleted" testContactLinkDeletedConnectedContactWorks
     it "auto-reply message" testAutoReplyMessage
     describe "business address" $ do
       it "create and connect via business address" testBusinessAddress
       it "update profiles with business address" testBusinessUpdateProfiles
+      it "customer removed or chat deleted with notice can't re-connect" testBusinessAddressNotice
+      it "app fixtures: business chat deletion and notice" testBusinessFixtures
   describe "contact address connection plan" $ do
     it "contact address ok to connect; known contact" testPlanAddressOkKnown
     it "own contact address" testPlanAddressOwn
@@ -129,6 +134,11 @@ chatProfileTests = do
     it "re-connect with deleted contact" testPlanAddressContactDeletedReconnected
     it "contact via address" testPlanAddressContactViaAddress
     it "contact via short address" testPlanAddressContactViaShortAddress
+    it "contact deleted silently with notice can't re-connect" testPlanAddressContactDeletedNoticeSilent
+    it "silent notice is not sent to previous version" $
+      runTestCfg2 testCfg testCfgVPrev testPlanAddressContactDeletedNoticePrevVersion
+    it "app fixtures: contact link notices" testContactNoticeFixtures
+    it "app fixtures: contact deletion" testContactDeletionFixtures
   describe "incognito" $ do
     it "connect incognito via invitation link" testConnectIncognitoInvitationLink
     it "connect incognito via contact address" testConnectIncognitoContactAddress
@@ -161,9 +171,9 @@ chatProfileTests = do
     it "allow full deletion to contact" testAllowFullDeletionContact
     it "allow full deletion to group" testAllowFullDeletionGroup
     it "prohibit direct messages to group members" testProhibitDirectMessages
-    xit'' "enable timed messages with contact" testEnableTimedMessagesContact
+    it "enable timed messages with contact" testEnableTimedMessagesContact
     it "enable timed messages in group" testEnableTimedMessagesGroup
-    xit'' "timed messages enabled globally, contact turns on" testTimedMessagesEnabledGlobally
+    it "timed messages enabled globally, contact turns on" testTimedMessagesEnabledGlobally
     it "update multiple user preferences for multiple contacts" testUpdateMultipleUserPrefs
     describe "group preferences for specific member role" $ do
       it "direct messages" testGroupPrefsDirectForRole
@@ -182,6 +192,17 @@ chatProfileTests = do
     it "should connect via contact address" testShortLinkContactAddress
     it "should share contact address via chat" testShareAddressViaChat
     it "should join group" testShortLinkJoinGroup
+    describe "should validate link type" $ do
+      it "group link as address" $ testGroupLinkAsType "/a#" "connect/group-link-as-address"
+      it "group link as channel" $ testGroupLinkAsType "/c#" "connect/group-link-as-channel"
+      it "group link as relay address" testGroupLinkAsRelay
+      it "relay address as address, address as relay address" testRelayAddressLinkTypes
+      it "address as group link and channel" testAddressAsGroupLink
+      it "group link as address in contact profile" testGroupLinkInContactProfile
+      it "contact data in group link" testContactDataInGroupLink
+      it "channel data in invitation" testChannelDataInInvitation
+      it "invitation, address and group link with their data" testLinksWithTheirData
+      it "invitation and channel link without data" testLinksWithoutData
   describe "short links with attached data" shortLinkTests
   describe "client services" $ do
     it "should create user as a service, disable and re-enable" testClientService
@@ -919,11 +940,14 @@ testUserBadgeGroupLinkJoiner ps = do
       alice <## "to add members use /a team <name> or /create link #team"
       alice ##> "/create link #team"
       gLink <- getGroupLink alice "team" GRMember True
+      alice ##> "/_stop"
+      alice <## "chat stopped"
       bob ##> ("/c " <> gLink)
       bob <## "connection request sent!"
       bob ##> "/_stop"
       bob <## "chat stopped"
-      alice <## "bob (Bob): accepting request to join group #team..."
+      alice ##> "/_start"
+      alice <### ["chat started", "subscribed 1 connections on server localhost", "bob (Bob): accepting request to join group #team..."]
       memberBadgeHeader alice "team" "bob" `shouldReturn` Just ("R", BSActive)
       bob ##> "/_start"
       concurrentlyN_
@@ -1167,11 +1191,20 @@ sendTestMemberProof cc groupId proof =
     runExceptT (sendGroupMessage' user g members (XInfo p (Just $ groupMemberKey gks))) `runReaderT` chatController cc
       >>= either (fail . show) (\_ -> pure ())
 
-setTestInvLinkData :: TestCC -> ContactShortLinkData -> IO ()
+setTestInvLinkData :: J.ToJSON a => TestCC -> a -> IO ()
 setTestInvLinkData cc linkData = do
   [Only (AgentConnId connId)] <- withCCTransaction cc $ \db -> DB.query_ db "SELECT agent_conn_id FROM connections"
   let ChatController {smpAgent} = chatController cc
   runExceptT (setConnShortLink smpAgent NRMInteractive connId SCMInvitation (UserInvLinkData $ encodeShortLinkData linkData) Nothing False Nothing)
+    >>= either (fail . show) (\_ -> pure ())
+
+setTestGroupLinkData :: TestCC -> UserLinkData -> IO ()
+setTestGroupLinkData cc linkData = do
+  [Only (AgentConnId connId)] <- withCCTransaction cc $ \db ->
+    DB.query_ db "SELECT c.agent_conn_id FROM connections c JOIN user_contact_links l ON l.user_contact_link_id = c.user_contact_link_id WHERE l.group_id IS NOT NULL"
+  let ChatController {smpAgent} = chatController cc
+      contactData = UserContactData {direct = True, owners = [], relays = [], userData = linkData, ratchetKeys = Nothing}
+  runExceptT (setConnShortLink smpAgent NRMInteractive connId SCMContact (UserContactLinkData contactData) Nothing False Nothing)
     >>= either (fail . show) (\_ -> pure ())
 
 testUpdateProfileImage :: HasCallStack => TestParams -> IO ()
@@ -1871,7 +1904,7 @@ sendAddressRequest cc address encodeInfo =
   withCCUser cc $ \user -> do
     sLink <- either fail pure $ strDecode @ShortLinkContact (B.pack address)
     let sendRequest = do
-          (_, _, cReq) <- getShortLinkConnReq NRMInteractive user sLink
+          (_, _, cReq, _) <- getShortLinkConnReq NRMInteractive user sLink
           (connId, _) <- withAgent $ \a -> prepareConnectionToJoin a (aUserId user) True cReq PQSupportOff
           connInfo <- encodeInfo
           withAgent $ \a -> joinConnection a NRMInteractive (aUserId user) connId True cReq connInfo PQSupportOff SMSubscribe
@@ -1899,9 +1932,30 @@ testRejectContactAndDeleteUserContact = testChat3 aliceProfile bobProfile cathPr
     alice ##> "/_delete_address 1"
     alice <## "Your chat address is deleted - accepted contacts will remain connected."
     alice <## "To create a new chat address use /ad"
+    (withCCAgentTransaction alice $ \db -> DB.query_ db "SELECT count(1) FROM connections" :: IO [[Int]]) `shouldEventuallyReturn` [[0]]
 
     cath ##> ("/c " <> cLink)
     cath <## "error: connection authorization failed - this could happen if connection was deleted, secured with different credentials, or due to a bug - please re-create the connection"
+
+testRejectContactNotifySender :: HasCallStack => TestParams -> IO ()
+testRejectContactNotifySender =
+  testChat2 aliceProfile bobProfile $ \alice bob -> do
+    alice ##> "/ad pq_ratchet=on"
+    (shortLink, fullLink) <- getContactLinks alice True
+    bob ##> ("/_connect plan 1 " <> shortLink)
+    bob <## "contact address: ok to connect"
+    contactSLinkData <- getTermLine bob
+    bob ##> ("/_prepare contact 1 " <> fullLink <> " " <> shortLink <> " " <> contactSLinkData)
+    bob <## "alice: contact is prepared"
+    bob ##> "/_connect contact @2"
+    bob <## "alice: connection started"
+    alice <## "bob (Bob) wants to connect to you!"
+    alice <## "to accept: /ac bob"
+    alice <## "to reject: /rc bob (the sender will NOT be notified)"
+    alice ##> "/rc bob notify"
+    alice <## "bob: contact request rejected"
+    bob <## "alice: contact request rejected"
+    apiFixture "connect/request-rejected" bob [] FixtureRequests {frMarkdown = [""], frUris = [], frCommands = ["/_get chats 1 pcc=on"]}
 
 testKeepConnectionRequests :: HasCallStack => TestParams -> IO ()
 testKeepConnectionRequests = testChat3 aliceProfile bobProfile cathProfile $
@@ -2207,6 +2261,57 @@ testBusinessUpdateProfiles = testChat4 businessProfile aliceProfile bobProfile c
     bob #$> ("/_get chat #1 count=1", chat, [(0, "Full deletion: on")])
     cath #$> ("/_get chat #1 count=1", chat, [(0, "Full deletion: on")])
 
+testBusinessAddressNotice :: HasCallStack => TestParams -> IO ()
+testBusinessAddressNotice = testChat3 businessProfile bobProfile cathProfile $
+  \biz bob cath -> do
+    biz ##> "/ad"
+    cLink <- getContactLink biz True
+    biz ##> "/auto_accept on business"
+    biz <## "auto_accept on, business"
+
+    connectBusinessCustomer biz bob cLink "bob" "Bob"
+    biz ##> "/rm #bob bob_1 notice={\"ttl\":86400}"
+    biz <## "#bob: you removed bob_1 from the group (signed)"
+    linkNoticesCount bob `shouldEventuallyReturn` 1
+    bob <// 50000
+    bob ##> ("/_connect plan 1 " <> cLink)
+    bob <## "business address: known business #biz"
+    bob <## "use #biz <message> to send messages"
+    leaveDeleteGroup bob "biz"
+    bob ##> ("/_connect plan 1 " <> cLink)
+    bob <##. "contact address: blocked until "
+    bob ##> ("/_connect 1 " <> cLink)
+    bob <##. "connection link: blocked until "
+
+    connectBusinessCustomer biz cath cLink "cath" "Catherine"
+    biz ##> "/_delete #2 full notice={}"
+    biz <## "#cath: you deleted the group (signed)"
+    linkNoticesCount cath `shouldEventuallyReturn` 1
+    cath <// 50000
+    cath ##> ("/_connect plan 1 " <> cLink)
+    cath <## "business address: known business #biz"
+    cath <## "use #biz <message> to send messages"
+    leaveDeleteGroup cath "biz"
+    cath ##> ("/_connect plan 1 " <> cLink)
+    cath <## "contact address: blocked permanently"
+    cath ##> ("/c " <> cLink)
+    cath <## "contact address: blocked permanently"
+    cath ##> ("/_connect 1 " <> cLink)
+    cath <## "connection link: blocked permanently"
+
+connectBusinessCustomer :: HasCallStack => TestCC -> TestCC -> String -> String -> String -> IO ()
+connectBusinessCustomer biz customer cLink name fullName = do
+  customer ##> ("/c " <> cLink)
+  customer <## "connection request sent!"
+  biz <## ("#" <> name <> " (" <> fullName <> "): accepting business address request...")
+  concurrentlyN_
+    [ biz <## ("#" <> name <> ": " <> name <> "_1 joined the group"),
+      customer
+        <### [ "#biz: joining the group...",
+               "#biz: you joined the group"
+             ]
+    ]
+
 testPlanAddressOkKnown :: HasCallStack => TestParams -> IO ()
 testPlanAddressOkKnown =
   testChat2 aliceProfile bobProfile $
@@ -2401,6 +2506,176 @@ testPlanAddressContactDeletedReconnected =
       bob <## "contact address: known contact alice_1"
       bob <## "use @alice_1 <message> to send messages"
 
+testPlanAddressContactDeletedNoticeSilent :: HasCallStack => TestParams -> IO ()
+testPlanAddressContactDeletedNoticeSilent =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      cLink <- connectViaAddress alice bob
+
+      alice ##> "/_delete @2 full notice={\"ttl\":86400}"
+      alice <## "bob: contact is deleted"
+      linkNoticesCount bob `shouldEventuallyReturn` 1
+      bob <// 50000
+
+      bob ##> ("/_connect plan 1 " <> cLink)
+      bob <## "contact address: known contact alice"
+      bob <## "use @alice <message> to send messages"
+      bob @@@ [("@alice", "hey")]
+
+      bob ##> "/d alice"
+      bob <## "alice: contact is deleted"
+      bob ##> ("/_connect plan 1 " <> cLink)
+      bob <##. "contact address: blocked until "
+      bob ##> ("/_connect plan 1 " <> linkAnotherSchema cLink)
+      bob <##. "contact address: blocked until "
+      bob ##> ("/c " <> cLink)
+      bob <##. "contact address: blocked until "
+      bob ##> ("/_connect 1 " <> cLink)
+      bob <##. "connection link: blocked until "
+      connectUsers alice bob
+      alice <##> bob
+
+testPlanAddressContactDeletedNoticePrevVersion :: HasCallStack => TestCC -> TestCC -> IO ()
+testPlanAddressContactDeletedNoticePrevVersion alice bob = do
+  cLink <- connectViaAddress alice bob
+
+  alice ##> "/_delete @2 full notify=off notice={\"ttl\":86400}"
+  alice <## "bad chat command: contact does not support notice"
+
+  bob ##> ("/_connect plan 1 " <> cLink)
+  bob <## "contact address: known contact alice"
+  bob <## "use @alice <message> to send messages"
+  linkNoticesCount bob `shouldReturn` 0
+
+connectViaAddress :: HasCallStack => TestCC -> TestCC -> IO String
+connectViaAddress alice bob = do
+  alice ##> "/ad"
+  cLink <- getContactLink alice True
+  connectViaLink alice bob cLink
+  alice <##> bob
+  pure cLink
+
+connectViaLink :: HasCallStack => TestCC -> TestCC -> String -> IO ()
+connectViaLink owner cc link = do
+  cc ##> ("/c " <> link)
+  owner <#? cc
+  ownerName <- showName owner
+  ccName <- userName cc
+  ccFullName <- showName cc
+  owner ##> ("/ac " <> ccName)
+  owner <## (ccFullName <> ": accepting contact request, you can send messages to contact")
+  concurrently_
+    (cc <## (ownerName <> ": contact is connected"))
+    (owner <## (ccFullName <> ": contact is connected"))
+
+testContactNoticeFixtures :: HasCallStack => TestParams -> IO ()
+testContactNoticeFixtures =
+  testChat4 aliceProfile bobProfile cathProfile danProfile $
+    \alice bob cath dan -> do
+      alice ##> "/ad"
+      (aliceLink, aliceFullLink) <- getContactLinks alice True
+      bob ##> ("/_connect plan 1 " <> aliceLink)
+      bob <## "contact address: ok to connect"
+      aliceLinkData <- getTermLine bob
+      connectViaLink alice bob aliceLink
+      cath ##> "/ad"
+      (cathLink, _) <- getContactLinks cath True
+      connectViaLink cath bob cathLink
+      connectUsers bob dan
+      alice ##> "/_delete @2 full notify=off notice={\"ttl\":86400}"
+      alice <## "bob: contact is deleted"
+      cath ##> "/_delete @2 full notify=off notice={}"
+      cath <## "bob: contact is deleted"
+      dan ##> "/_delete @2 full notify=on"
+      dan <## "bob: contact is deleted"
+      bob <## "dan (Daniel) deleted contact with you"
+      linkNoticesCount bob `shouldEventuallyReturn` 2
+      apiFixture
+        "bans/contact-notices"
+        bob
+        [(aliceFullLink, "ALICE_FULL_LINK"), (aliceLink, "ALICE_LINK"), (cathLink, "CATH_LINK")]
+        FixtureRequests
+          { frMarkdown = [aliceLink, cathLink],
+            frUris = [],
+            frCommands =
+              [ "/_get chat @2 count=0",
+                "/_get chat @4 count=0",
+                "/_delete @2 full notify=off",
+                "/_delete @3 full notify=off",
+                "/_delete @4 full notify=off",
+                "/_connect plan 1 " <> aliceLink,
+                "/_connect plan 1 " <> cathLink,
+                "/_connect 1 incognito=off " <> aliceFullLink <> " " <> aliceLink
+              ]
+          }
+      bob ##> ("/_prepare contact 1 " <> aliceFullLink <> " " <> aliceLink <> " " <> aliceLinkData)
+      bob <## "alice: contact is prepared"
+      case A.parseOnly strP (B.pack aliceLink) of
+        Left _ -> error "error parsing contact link"
+        Right shortLink -> void $ withCCUser bob $ \user -> withCCTransaction bob $ \db -> runExceptT $ createContact db (storeCxt $ chatController bob) user aliceProfile {contactLink = Just shortLink}
+      bansFixture "connect-contact-notice" bob ["/_connect contact @5 incognito=off", "/_connect contact 1 incognito=off 6"]
+
+testContactDeletionFixtures :: HasCallStack => TestParams -> IO ()
+testContactDeletionFixtures =
+  testChat5 aliceProfile bobProfile cathProfile danProfile eveProfile $
+    \alice bob cath dan eve -> do
+      alice ##> "/ad"
+      (aliceLink, _) <- getContactLinks alice True
+      mapM_ (\cc -> connectViaLink alice cc aliceLink) [bob, cath, dan]
+      connectUsers alice eve
+      bansFixture
+        "contact-deletion"
+        alice
+        [ "/_show_address 1",
+          "/_get chat @2 count=0",
+          "/_get chat @3 count=0",
+          "/_get chat @4 count=0",
+          "/_get chat @5 count=0",
+          "/_settings @2 {\n    \"enableNtfs\": \"all\",\n    \"favorite\": true\n}",
+          "/_delete @2 archive",
+          "/_delete @2 entity notify=on",
+          "/_delete @3 entity notify=off notice={\"ttl\":86400}",
+          "/_delete @4 full notify=off notice={}",
+          "/_delete @5 full notify=on",
+          "/_create user {\n    \"profile\": {\n        \"displayName\": \"frank\",\n        \"fullName\": \"\",\n        \"localAlias\": \"\"\n    },\n    \"pastTimestamp\": false,\n    \"userChatRelay\": false\n}"
+        ]
+      dropOutputs [alice, bob, cath, dan, eve]
+
+testBusinessFixtures :: HasCallStack => TestParams -> IO ()
+testBusinessFixtures = testChat4 businessProfile bobProfile cathProfile danProfile $
+  \biz bob cath dan -> do
+    biz ##> "/ad"
+    (bizLink, bizFullLink) <- getContactLinks biz True
+    biz ##> "/auto_accept on business"
+    biz <## "auto_accept on, business"
+    bob ##> ("/_connect plan 1 " <> bizLink)
+    bob <## "business address: ok to connect"
+    bizLinkData <- getTermLine bob
+    connectBusinessCustomer biz bob bizLink "bob" "Bob"
+    connectBusinessCustomer biz cath bizLink "cath" "Catherine"
+    connectBusinessCustomer biz dan bizLink "dan" "Daniel"
+    dan ##> "/l #biz"
+    dan <## "#biz: you left the group"
+    dan <## "use /d #biz to delete the group"
+    biz <##. "#dan: dan_1 left the group"
+    bansFixture
+      "business"
+      biz
+      [ "/_show_address 1",
+        "/_members #1",
+        "/_members #2",
+        "/_members #3",
+        "/_delete #1 full notify=off notice={\"ttl\":86400}",
+        "/_delete #2 entity notify=on"
+      ]
+    linkNoticesCount bob `shouldEventuallyReturn` 1
+    leaveDeleteGroup bob "biz"
+    apiFixture "bans/plan-business-notice" bob [(bizLink, "BUSINESS_LINK")] FixtureRequests {frMarkdown = [bizLink], frUris = [], frCommands = ["/_connect plan 1 " <> bizLink]}
+    bob ##> ("/_prepare contact 1 " <> bizFullLink <> " " <> bizLink <> " " <> bizLinkData)
+    bob <## "#biz: group is prepared"
+    bansFixture "connect-business-notice" bob ["/_get chat #2 count=0", "/_connect group #2 incognito=off"]
+    dropOutputs [biz, bob, cath, dan]
+
 testPlanAddressContactViaAddress :: HasCallStack => TestParams -> IO ()
 testPlanAddressContactViaAddress =
   testChat2 aliceProfile bobProfile $
@@ -2426,6 +2701,7 @@ testPlanAddressContactViaAddress =
 
           bob ##> ("/_connect plan 1 " <> cLink)
           bob <## "contact address: known contact without connection alice"
+          apiFixture "connect/contact-via-address" bob [(cLink, "CONTACT_LINK")] FixtureRequests {frMarkdown = [cLink], frUris = [], frCommands = ["/_connect plan 1 " <> cLink]}
 
           -- terminal api
           bob ##> ("/c " <> cLink)
@@ -4267,6 +4543,133 @@ testShortLinkJoinGroup =
             cc <## "#team: you joined the group"
         ]
 
+testGroupLinkAsType :: HasCallStack => T.Text -> String -> TestParams -> IO ()
+testGroupLinkAsType linkType fixture =
+  testChat2 aliceProfile bobProfile $ \alice bob -> do
+    link <- setLinkType "/g#" linkType <$> createGroupWithLink alice
+    bob ##> ("/_connect plan 1 " <> link)
+    invalidLink bob
+    apiFixture fixture bob [(link, "GROUP_LINK")] FixtureRequests {frMarkdown = [link], frUris = [], frCommands = ["/_connect plan 1 " <> link]}
+    bob ##> ("/c " <> link)
+    invalidLink bob
+
+testGroupLinkAsRelay :: HasCallStack => TestParams -> IO ()
+testGroupLinkAsRelay =
+  testChat2 aliceProfile bobProfile $ \alice bob -> do
+    link <- setLinkType "/g#" "/r#" <$> createGroupWithLink alice
+    bob ##> ("/relay test " <> link)
+    bob <## "relay test failed at RTSGetLink, error: ChatError {errorType = CEInvalidConnReq}"
+
+testRelayAddressLinkTypes :: HasCallStack => TestParams -> IO ()
+testRelayAddressLinkTypes ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath -> do
+        bob ##> "/ad"
+        (relayAddress, _) <- getContactLinks bob True
+        cath ##> "/ad"
+        (address, _) <- getContactLinks cath True
+        alice ##> ("/relay test " <> setLinkType "/r#" "/a#" relayAddress)
+        alice <## "relay test passed, profile: bob (Bob)"
+        alice ##> ("/relay test " <> setLinkType "/a#" "/r#" address)
+        alice <##. "relay test failed at RTSDecodeLink, error: "
+
+testAddressAsGroupLink :: HasCallStack => TestParams -> IO ()
+testAddressAsGroupLink =
+  testChat2 aliceProfile bobProfile $ \alice bob -> do
+    alice ##> "/ad"
+    (address, _) <- getContactLinks alice True
+    forM_ ["/g#", "/c#"] $ \linkType -> do
+      let link = setLinkType "/a#" linkType address
+      bob ##> ("/_connect plan 1 " <> link)
+      invalidLink bob
+      bob ##> ("/c " <> link)
+      invalidLink bob
+
+testGroupLinkInContactProfile :: HasCallStack => TestParams -> IO ()
+testGroupLinkInContactProfile =
+  testChat2 aliceProfile bobProfile $ \alice bob -> do
+    link <- createGroupWithLink alice
+    void $ withCCUser bob $ \user -> withCCTransaction bob $ \db ->
+      runExceptT $ createContact db (storeCxt $ chatController bob) user aliceProfile {contactLink = either error Just $ strDecode $ B.pack link}
+    bob ##> "/_connect contact 1 2"
+    invalidLink bob
+
+testContactDataInGroupLink :: HasCallStack => TestParams -> IO ()
+testContactDataInGroupLink =
+  testChat2 aliceProfile bobProfile $ \alice bob -> do
+    link <- createGroupWithLink alice
+    setTestGroupLinkData alice $ encodeShortLinkData $ ContactShortLinkData aliceProfile Nothing False Nothing Nothing
+    bob ##> ("/_connect plan 1 " <> link)
+    invalidLink bob
+
+testChannelDataInInvitation :: HasCallStack => TestParams -> IO ()
+testChannelDataInInvitation =
+  testChat2 aliceProfile bobProfile $ \alice bob -> do
+    alice ##> "/_connect 1"
+    (link, _) <- getInvitations alice
+    setTestInvLinkData alice $ GroupShortLinkData testGroupProfile {publicGroup = Just channel} Nothing
+    bob ##> ("/_connect plan 1 " <> link)
+    invalidLink bob
+  where
+    channel = PublicGroupProfile GTChannel channelLink (B64UrlByteString "channel") Nothing
+    channelLink = either error id $ strDecode "https://localhost/c#Pz9qz7ZVljMofoRxiDDpL_w2DZSazK8IgafxqnWKv6Y"
+
+testLinksWithTheirData :: HasCallStack => TestParams -> IO ()
+testLinksWithTheirData =
+  testChat2 aliceProfile bobProfile $ \alice bob -> do
+    alice ##> "/_connect 1"
+    (invitation, _) <- getInvitations alice
+    setTestInvLinkData alice $ GroupShortLinkData testGroupProfile Nothing
+    bob ##> ("/_connect plan 1 " <> invitation)
+    bob <## "invitation link: ok to connect"
+    _ <- getTermLine bob
+    alice ##> "/ad"
+    (address, _) <- getContactLinks alice True
+    bob ##> ("/_connect plan 1 " <> address)
+    bob <## "contact address: ok to connect"
+    _ <- getTermLine bob
+    link <- createGroupWithLink alice
+    bob ##> ("/_connect plan 1 " <> link)
+    bob <## "group link: ok to connect directly"
+    _ <- getTermLine bob
+    setTestGroupLinkData alice $ UserLinkData ""
+    bob ##> ("/_connect plan 1 " <> link)
+    bob <## "group link: ok to connect directly"
+    void $ getTermLine bob
+
+testLinksWithoutData :: HasCallStack => TestParams -> IO ()
+testLinksWithoutData =
+  testChat2 aliceProfile bobProfile $ \alice bob -> do
+    alice ##> "/_connect 1"
+    (invitation, _) <- getInvitations alice
+    setTestInvLinkData alice J.Null
+    bob ##> ("/_connect plan 1 " <> invitation)
+    bob <## "invitation link: ok to connect"
+    _ <- getTermLine bob
+    link <- createGroupWithLink alice
+    setTestGroupLinkData alice $ UserLinkData ""
+    bob ##> ("/_connect plan 1 " <> setLinkType "/g#" "/c#" link)
+    invalidLink bob
+
+createGroupWithLink :: HasCallStack => TestCC -> IO String
+createGroupWithLink cc = do
+  cc ##> "/g team"
+  cc <## "group #team is created"
+  cc <## "to add members use /a team <name> or /create link #team"
+  cc ##> "/create link #team"
+  fst <$> getGroupLinks cc "team" GRMember True
+
+setLinkType :: T.Text -> T.Text -> String -> String
+setLinkType from to = T.unpack . T.replace from to . T.pack
+
+invalidLink :: HasCallStack => TestCC -> IO ()
+invalidLink cc = do
+  cc <## ""
+  cc <## "Connection link is invalid, possibly it was created in a previous version."
+  cc <## "Please ask your contact to check /version and update if needed."
+  cc <##. "To update run: "
+
 testShortLinkInvitationPrepareContact :: HasCallStack => TestParams -> IO ()
 testShortLinkInvitationPrepareContact = testChat2 aliceProfile bobProfile test
   where
@@ -4472,6 +4875,7 @@ testShortLinkDeletedInvitation = testChat2 aliceProfile bobProfile test
       alice @@@ [(":1","")]
       alice ##> "/_delete :1"
       alice <## "connection :1 deleted"
+      (withCCAgentTransaction alice $ \db -> DB.query_ db "SELECT count(1) FROM connections" :: IO [[Int]]) `shouldEventuallyReturn` [[0]]
       bob ##> "/_connect contact @2"
       bob <##. "error: connection authorization failed"
       bob ##> "/_connect contact @2"
@@ -4491,6 +4895,7 @@ testShortLinkDeletedAddress = testChat2 aliceProfile bobProfile test
       alice ##> "/da"
       alice <## "Your chat address is deleted - accepted contacts will remain connected."
       alice <## "To create a new chat address use /ad"
+      (withCCAgentTransaction alice $ \db -> DB.query_ db "SELECT count(1) FROM connections" :: IO [[Int]]) `shouldEventuallyReturn` [[0]]
       bob ##> "/_connect contact @2"
       bob <##. "error: connection authorization failed"
       bob ##> "/_connect contact @2"

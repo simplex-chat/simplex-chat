@@ -1,6 +1,6 @@
 # SimpleX MCP server: flows
 
-> Sequence diagrams of the main flows of `@simplex-chat/mcp` 0.3.0, each with notes and source locations. `serve` is shown in flows 1-16, and the Claude Code plugin in flows 17-38.
+> Sequence diagrams of the main flows of `@simplex-chat/mcp` 0.3.0, each with notes and source locations. `serve` is shown in flows 1-16, and the Claude Code plugin in flows 17-43.
 >
 > Related specs: [README](README.md) | [Architecture](architecture.md) | [API](api.md)
 
@@ -62,9 +62,14 @@ Claude Code plugin ([participants](#claude-code-plugin-flows)):
 33. [A reaction in the session group](#33-a-reaction-in-the-session-group)
 34. [A tool approved for the rest of a session](#34-a-tool-approved-for-the-rest-of-a-session)
 35. [A summary of the session's context](#35-a-summary-of-the-sessions-context)
-36. [The list of sessions](#36-the-list-of-sessions)
+36. [The board of sessions](#36-the-board-of-sessions)
 37. [The texts of a turn](#37-the-texts-of-a-turn)
 38. [The status line command](#38-the-status-line-command)
+39. [An edit and a live message in the session group](#39-an-edit-and-a-live-message-in-the-session-group)
+40. [A subagent and a workflow in the session group](#40-a-subagent-and-a-workflow-in-the-session-group)
+41. [A tool prompt of the PermissionRequest hook](#41-a-tool-prompt-of-the-permissionrequest-hook)
+42. [Claude's question, a plan and an MCP server's link](#42-claudes-question-a-plan-and-an-mcp-servers-link)
+43. [A failed turn and a waiting Claude Code](#43-a-failed-turn-and-a-waiting-claude-code)
 
 ---
 
@@ -222,7 +227,7 @@ Notes:
 - The connection is matched by `contactConnected` or `userJoinedGroup`: by contact or group ID, or by the pending connection ID ([`AgentTools.onContactConnected`, `onUserJoinedGroup`, `completeConnect`](../src/tools.ts)). In the plugin, the pending connection ID is also recorded in the session group's custom data. When the connection completes after the call returned, within a day of the record, its chat becomes the session's ([`AgentTools.performConnect`](../src/tools.ts), [`Session.claimPending`, `Hub.onEvent`](../src/hub.ts)).
 - In the perform step the server waits for the other side until `startedAt + wait`, at most until `created + 23 h 50 min`, and then reports `connected: false` ([`editWindow`, `AgentTools.performConnect`](../src/tools.ts)).
 - Without `message`, the idle time is counted from the connection; with `message`, from the first reply ([`AgentTools.markConnected`](../src/tools.ts), [`awaitResponses`](../src/messages.ts)).
-- For a target the agent is connected to, the result is `status: known` with its chat fields, and no action is created ([`AgentTools.connect`](../src/tools.ts)). In the plugin, the chat becomes the session's when it has no owner ([`AgentTools.ownChat`](../src/tools.ts)).
+- For a target the agent is connected to, the result is `status: known` with its chat fields, and no action is created ([`AgentTools.connect`](../src/tools.ts)). In the plugin, the chat becomes the session's when it has no owner, and the Main group and the session groups are refused ([`AgentTools.ownChat`](../src/tools.ts)).
 - Exact progress texts: `Action N waits for an approver until TIME.`, then `Action N waits for the connection until TIME.`, then `K messages in CHAT; waiting until TIME.` ([`progressText`](../src/actions.ts), [`AgentTools.connectedChat`](../src/tools.ts)).
 
 Source: [`AgentTools.connect`, `action`, `ownChat`, `connectResult`, `actionResult`, `connectedChat`, `plan`, `performConnect`, `join`, `connectPrepared`, `completeConnect`, `markConnected`](../src/tools.ts), [`Actions.create`, `decided`, `approve`](../src/actions.ts), [`Control.postCard`, `outcome`](../src/control.ts).
@@ -286,16 +291,17 @@ sequenceDiagram
   participant W as ChatItemsWatch
   participant C as Core
   participant D as Peer
-  A->>T: receive {chat: #35;12, wait: 3600, limit: 50}
+  A->>T: receive {chat: #35;12, wait: 3600, limit: 50, history: 20}
   T->>W: collect #35;12 into arrived
   T->>C: apiGetChat #35;12 initial 1
   C-->>T: chatStats.unreadCount 0
   T-->>A: progress: No new messages in #35;12, waiting until TIME.
   D->>C: post, item 40
   C->>W: newChatItems: arrived
+  T->>C: apiGetChat #35;12 before 40 count 100
   T->>C: apiChatItemsRead #35;12 [40]
   T->>W: stop collecting
-  T-->>A: {chat: #35;12, messages: [40], more: 0}
+  T-->>A: {chat: #35;12, messages: [40], more: 0, history}
 ```
 
 Notes:
@@ -305,8 +311,9 @@ Notes:
 - `more`: the arrived messages not returned, the overflow and the unread items not read ([`AgentTools.receive`](../src/tools.ts)).
 - Items received while the pages are read are returned once ([`AgentTools.receive`](../src/tools.ts)).
 - Exact progress text: `No new messages in CHAT; waiting until TIME.` ([`AgentTools.receive`](../src/tools.ts)).
+- With `history`, after the wait the server reads pages of 100 items: `before` the first returned message, or `last` when none is returned, then `before` the first item of the previous page, until it holds `history` message items that are not new or live and have no `itemDeleted`, or a page is short; the agent's own items are named as in `connect` ([`AgentTools.receive`, `historyMessages`](../src/tools.ts), [`historyItems`](../src/messages.ts)).
 
-Source: [`AgentTools.receive`](../src/tools.ts), [`unreadItems`, `isNewMessage`, `reportProgress`, `nextChange`, `awaitResponses`](../src/messages.ts).
+Source: [`AgentTools.receive`, `historyMessages`](../src/tools.ts), [`unreadItems`, `isNewMessage`, `historyItems`, `reportProgress`, `nextChange`, `awaitResponses`](../src/messages.ts).
 
 ---
 
@@ -820,7 +827,7 @@ sequenceDiagram
   O->>C: joins #35;G from the invitation in #35;M
   C->>N: joinedGroupMember
   N->>O: Alice is an owner and can send prompts to Claude and the group's commands, and approve tool use.
-  M->>O: within 2 s, the list of sessions, silent, as in flow 36
+  M->>O: within 2 s, the board of sessions, silent, as in flow 36
 ```
 
 Notes:
@@ -1017,7 +1024,8 @@ sequenceDiagram
     N->>C: apiSendMessages #35;G [{text: "!- Effort changed to LEVEL!", priority: -1}]
   end
   N->>N: claim: no text of Claude streamed the answer, as without the display hook (flow 37)
-  N->>N: parts = withLine(parts(answer), "!- Done in USAGE · 5 h: N% · week: N%!")
+  N->>N: available memory, and statfsSync of ROOT or its nearest existing parent
+  N->>N: parts = withLine(parts(answer), "!- Done in USAGE · 5 h: N% · week: N% · RAM SIZE free · disk SIZE free!")
   alt the opening message of the turn was posted
     N->>C: /_update item #35;G the opening message, the first part, live off, priority 1 when it is the only part
     N->>C: apiSendMessages #35;G the other parts, priority -1, the last priority 1
@@ -1042,17 +1050,17 @@ Notes:
 - For an answer without an earlier turn record, the hub quotes the oldest pushed prompt not quoted yet that was pushed at or after the latest answer's hook start, and marks it quoted. An older prompt that no prompt request matched belongs to an earlier turn and is not quoted. The quoted prompt stays pushed, so the hub still matches it to a prompt request handled after the Stop request, and `User` does not post it ([`Session.turnQuote`](../src/hub.ts)).
 - For an empty answer, the hub removes the turn record as for any other answer. It posts nothing, and fills the turn's opening message, when one is open, with the end line, live off and silent ([`Session.turn`, `answer`](../src/hub.ts)).
 - At a prompt that starts a turn, Claude posts the opening message: empty, live and silent. The hub keeps it before `User`'s post and sends it after that post, so a text or a step that arrives meanwhile waits for it. It replies to the member's prompt that the terminal prompt matched, when the quote fits. It is not posted for a prompt added to the running turn, a `/` command, a prompt that `User` does not post and that matched no pushed prompt, as Claude Code's own prompts, or a prompt whose hook started before the latest answer's hook. The turn's first post fills it: a text of Claude, a step's line, the answer's first part, or the end line of an empty answer, of a hook that started no earlier than the prompt's hook and before the next prompt's hook that starts a turn. When a group preference refuses that post, the text in its place fills the opening message. When the update fails for another reason, as after an admin deleted the opening message, the hub drops the opening message, logs the failure, updates it with `⏹️ Stopped`, and sends that post as a new message. That update fails without harm for a deleted message, and after a transient failure it ends the message's live state. An opening message that no post fills gets `⏹️ Stopped` at the first answer of a hook that started no earlier than the next prompt's hook that starts a turn, or than its own prompt's hook while no such prompt came, at the last detach, at the hub's stop, or 23 hours after its send by the wall clock ([`Session.openTurn`, `takeOpening`, `fill`, `closeOpenings`](../src/hub.ts)).
-- The last part of a non-empty answer ends with the end line `!- Done in USAGE!` after a line break. When the line does not fit in the last part, the last part's last N + 1 characters, N the line's length, move into a new last part before the line. A posted last part has priority 1, the turn's alert, and the other parts priority -1. A last part that fills the opening message, or completes a streamed text, is sent with `/_update item` and `priority: 1` in its `UpdatedMessage`, because `apiUpdateChatItem` takes no priority; a core without update priority ignores the key and keeps priority -1. The chat list shows the answer, not the end line. USAGE is the Stop hook's usage text, such as `2 min 51 s · 16K output tokens · 673K tokens in context`. Without it, the line has DURATION, the time from the newest turn record not added mid-turn to the Stop hook's start, as `duration` formats it, and the line is `!- Done!` without such a record. The plan's usage of the newest status line report follows, as ` · 5 h: N% · week: N%`, without a window whose reset time has passed ([flow 38](#38-the-status-line-command)) ([`Session.turn`, `answer`, `postAnswer`, `endLine`, `withLine`, `small`](../src/hub.ts), [`duration`](../src/messages.ts)).
+- The last part of a non-empty answer ends with the end line `!- Done in USAGE!` after a line break. When the line does not fit in the last part, the last part's last N + 1 characters, N the line's length, move into a new last part before the line. A posted last part has priority 1, the turn's alert, and the other parts priority -1. A last part that fills the opening message, or completes a streamed text, is sent with `/_update item` and `priority: 1` in its `UpdatedMessage`, because `apiUpdateChatItem` takes no priority; a core without update priority ignores the key and keeps priority -1. The chat list shows the answer, not the end line. USAGE is the Stop hook's usage text, such as `2 min 51 s · 16K output tokens · 673K tokens in context`. Without it, the line has DURATION, the time from the newest turn record not added mid-turn to the Stop hook's start, as `duration` formats it, and the line is `!- Done!` without such a record. The plan's usage of the newest status line report follows, as ` · 5 h: N% · week: N%`, without a window whose reset time has passed ([flow 38](#38-the-status-line-command)). Last come the free memory and the free disk of the data folder's volume on the service's machine, read when the Stop request is handled, as ` · RAM 12 GB free · disk 3.4 GB free❗️`, each followed by `❗️` below 5% of the memory or 5 GB of disk, inside the small-print span ([`Session.turn`, `answer`, `postAnswer`, `endLine`, `withLine`, `small`, `Hub.machine`](../src/hub.ts), [`machineState`, `machineParts`](../src/status-line.ts), [`duration`](../src/messages.ts)).
 - No turn record is made for a prompt request whose hook started before an answer that was already handled. So that prompt is not quoted in a later answer ([`Session.turn`](../src/hub.ts)).
 - The UserPromptSubmit hook runs for every prompt of the session that queries the model, also for Claude Code's own prompts. It marks a prompt as typed only when the prompt's record in the transcript has the origin `human`. Task notifications, messages of other sessions and channel prompts have other origins. The record is the newest one whose text is the prompt: a user entry, or a `queued_command` attachment of a prompt that Claude Code added to a running turn. It is the entry with `prompt_id` as `promptId`, or a record after the first entry with that ID, tool results included, so a long turn whose first entry is out of the tail is found by its tool results. While a `queue-operation` `enqueue` entry with the prompt's text follows the record, the hook waits: the prompt is a later one with that text, still queued. Claude Code writes the entry only after the synchronous UserPromptSubmit hooks end, such as a slow hook in the user's settings, and it creates the transcript file with the session's first entry. So the hook reads the transcript up to 600 times, 100 ms apart, and it treats a missing file as empty. Until the entry with `prompt_id` is in the tail, the hook waits for it; at the last read it takes any record with the prompt's text, and without `prompt_id` it does so at once. Claude Code runs the hook of a person's prompt when it is submitted, and of its own prompts only when they are taken. So at the last read, the hook classifies a record still followed by such an `enqueue` entry by the record, and marks a typed one mid-turn: the queued prompt is the typed prompt itself, or a later prompt with the text of Claude Code's own prompt, as a repeated monitor event. When no record is written within the reads, an `enqueue` entry with the prompt's text after the entry with `prompt_id`, or anywhere without that entry, makes the prompt typed and mid-turn. Otherwise the prompt is typed when an entry with `prompt_id` has the origin `human` ([`promptReads`, `transcriptReadMs`, `turn`, `promptKind`, `findInTranscript`, `promptRecord`, `isPrompt`, `recordText`, `recordKind`](../src/hook.ts)).
 - Claude Code adds a prompt that arrives during a turn to that turn, and gives its hook the running turn's prompt ID. The hook sends `midTurn: true` for a prompt whose record is not the entry with `prompt_id`. A mid-turn prompt ends no tool-use card. A prompt adds a turn record only when its hook started no earlier than the hook of the last answer handled (`answeredAt`), and a mid-turn prompt only when it also matched a pushed prompt. So the answer of the turn quotes the turn's prompt, or an owner's prompt added to the turn ([`Session.turn`](../src/hub.ts)).
-- The hook sends `note`, a line about one of Claude Code's own prompts, and Claude posts it without a quote, silent ([`recordKind`, `noteOf`, `taskNote`, `teammateNote`, `idleNotification`, `peerName`, `shortened`](../src/hook.ts), [`Session.turn`](../src/hub.ts)). A typed prompt, a channel prompt and a teammate's prompt of idle notifications only have no note, nor has another record without origin that is not scheduled. The line is cut to 200 characters and ends with `…`. A note that a group preference refuses is replaced by `Claude's note was not posted: ` and the preference's text.
+- The hook sends `note`, a line about one of Claude Code's own prompts, and Claude posts it without a quote, silent ([`recordKind`, `noteOf`, `taskNote`, `limitStop`, `teammateNote`, `idleNotification`, `teammateStop`, `peerName`, `shortened`](../src/hook.ts), [`Session.turn`](../src/hub.ts)). A typed prompt, a channel prompt and a teammate's prompt of idle notifications only, none of them failed, have no note, nor has another record without origin that is not scheduled. The line is cut to 200 characters and ends with `…`. A note that a group preference refuses is replaced by `Claude's note was not posted: ` and the preference's text.
 
   | Kind | Record | Line |
   |---|---|---|
-  | task notification | origin `task-notification`, or a `queued_command` attachment without origin whose `commandMode` is `task-notification` | an emoji, the first line of `<summary>`, and `: ` with the first line of `<event>` when there is one, with entities decoded. The emoji is ✅ for `<status>` completed, ❌ for failed, ⏹️ for stopped or killed, and without a status 📡 with an event or 🔔 without. Without a `<task-notification>` block: 🔔 and the first line |
+  | task notification | origin `task-notification`, or a `queued_command` attachment without origin whose `commandMode` is `task-notification` | an emoji, the first line of `<summary>`, and `: ` with the first line of `<event>` when there is one, with entities decoded. The emoji is ✅ for `<status>` completed, ❌ for failed, ⏹️ for stopped or killed, and without a status 📡 with an event or 🔔 without. Without a `<task-notification>` block: 🔔 and the first line. A summary `WHAT failed: …API error: REASON (error type rate_limit…` gets `⛔ WHAT stopped: REASON` |
   | message of another session | origin `peer` | `✉️ Message from NAME: ` and the first line of `body` |
-  | message of a teammate | no origin, a `<teammate-message teammate_id="NAME" ...>` tag after `Another Claude session sent a message` | `✉️ Message from NAME: ` and the tag's `summary`, or the first line of the message, from the first tag that is not an idle notification; nothing for idle notifications only |
+  | message of a teammate | no origin, a `<teammate-message teammate_id="NAME" ...>` tag after `Another Claude session sent a message` | `✉️ Message from NAME: ` and the tag's `summary`, or the first line of the message, from the first tag that is not an idle notification; nothing for idle notifications only. An idle notification with `idleReason` `failed` gets `⛔ Teammate "NAME" stopped: ` and the first line of its `failureReason`, with the line of a message on the next line |
   | subagent report | origin `peer` with `handback` | `📋 Report from subagent NAME: ` and the first line of `handbackReportText`, or of `body` |
   | scheduled prompt | no origin, `turnOrigin` `scheduled` | `⏰ Scheduled prompt: ` and the first line |
   | automatic prompt | origin `auto-continuation` | `🔄 Automatic prompt: ` and the first line |
@@ -1291,6 +1299,7 @@ Notes:
 - The service maps a process to the session of its session server while the server is attached, and for 10 s after it detached. It maps a process to the session of its title for 10 s. So a new Claude Code process with a reused PID later starts its own session ([`Service.processSession`](../src/service.ts)).
 - The service gives an alias only to an ID without `session.json`. A hook of an ID with `session.json` goes to the session attached from its process, without an alias, or else to its own session. A session server with such an ID registers its own session ([`Service.resolve`](../src/service.ts)).
 - The service answers a title of a new ID from a process without a known session at once, and holds the title. It applies the title when the session server of that process registers, or after 10 s without one. In the second case, the service opens a session of its own for the title's ID. So after `/clear` during the re-attach of a session server after a service start, and after `--fork-session` in either order, the new ID is joined to the session that the server registers ([`Service.onSession`, `onTitle`, `markUnattended`, `refuseUnattended`, `applyTitle`, `processEvent`](../src/service.ts)).
+- While the Claude Code process of a session's last `/session` runs, by its start time, the service refuses `/session`, `/title`, `/ask` and `/turn` of another process for that session with 423 and the PID of the running process. So the session start of a second `claude --continue` or `claude --resume` of the session shows the refusal, its tools return it, and its hooks post nothing. Of two processes that register at once, one is refused. The refused process is mapped to the session for 60 s, longer than the 30 s between registrations of its server, so after `--fork-session` of the session, the held title of the fork's ID, and a title after `/clear` in the refused process, are joined to the session and refused, and no session is opened for those IDs. Its session server registers again at most 30 s apart, and its first registration after the first process ended is served. The recorded process and its start time are kept in `session.json`, so it keeps the session across a service restart. Claude posts `!- ▶️ Claude Code started (process PID).!` when another process than the recorded one registers with a start time read, and `!- ⏹️ Claude Code ended (process PID).!` when the recorded process ends, read for 10 s after its last detach, or at the registration of the next process ([`Service.refuseOtherProcess`, `onSession`, `noteExit`, `entry`](../src/service.ts), [`ServiceLink.start`, `reconnect`](../src/session.ts), [`Session.postNote`](../src/hub.ts)).
 - When a session is created for an ID, the existing aliases of that ID are written to its first `session.json` ([`Service.openAgent`](../src/service.ts)).
 - Turn hooks of an ID whose title is held get 409, and repeat the turn as in [flow 21](#21-a-terminal-prompt-and-the-answer) ([`turnAttempts`](../src/hook.ts)).
 - A second title of a process whose title is held is held too. So after two `/clear` within the wait, both new IDs are joined to the session that the server registers. At a stop, the service saves the held title requests in `ROOT/titles.json`, each with its `at`, and at its next start it takes them as new titles ([`Service.start`, `shutdown`, `onTitle`](../src/service.ts)).
@@ -1631,7 +1640,7 @@ Notes:
 - One tap approves its own card only. Other pending cards of the tool stay pending.
 - An approval counts while its approver is an admin or owner of the group. After a membership event, the hub sends the approved tools before the rights post; after `/observer`, `Control` sends them after it reads the members again.
 - `/revoke TOOL` removes an approval, and the session gets the new list. `/list` shows the approved tools after the chats.
-- The approvals belong to the Claude Code process of the session. A session server answers from the list of its current attachment only. When it drops the attachment after a failed call and attaches again, the hub sends it the approved tools, which it keeps. The approvals are dropped when `/session` comes from another process and when the session closes. The service tells processes apart by their ID and their start time, read on Linux and macOS; a `/session` whose start time is unknown counts as another process. While two processes have the session attached, only the attachments of the process of the last `/session` get the approved tools; the others get `{tools: []}`. The approvals also end when the session's group is lost, found at an event or at a load, and the session server gets `{tools: []}`.
+- The approvals belong to the Claude Code process of the session. A session server answers from the list of its current attachment only. When it drops the attachment after a failed call and attaches again, the hub sends it the approved tools, which it keeps. The approvals are dropped when `/session` comes from another process and when the session closes. The service tells processes apart by their ID and their start time, read on Linux, macOS and Windows; a `/session` whose start time is unknown counts as another process. While two processes have the session attached, only the attachments of the process of the last `/session` get the approved tools; the others get `{tools: []}`. The approvals also end when the session's group is lost, found at an event or at a load, and the session server gets `{tools: []}`.
 - The approvals are kept in memory, so a service restart drops them.
 - The terminal shows nothing at the approval, and Claude Code's `/permissions` doesn't list it.
 - While the plugin's MCP server is not connected, Claude Code reports `MCP server 'plugin:simplex:simplex' not connected` as a non-blocking PreToolUse hook error at each tool use, and the tool use goes on.
@@ -1672,51 +1681,54 @@ Source: [`sessionStart`, `turn`, `eventFields`, `compactionNote`, `recentBoundar
 
 ---
 
-## 36. The list of sessions
+## 36. The board of sessions
 
 ```mermaid
 sequenceDiagram
   participant CC as Claude Code
-  participant R as Claude Code's record
+  participant R as record, global config, transcript
   participant S as Session process
+  participant K as SessionStart hook
   participant D as Service
   participant N as Session N
+  participant G as Session group
   participant M as MainGroup
   participant C as Core _hub
   participant O as Owner
-  S->>D: POST /session {id, pid, project, config, record: CONFIG/sessions/PID.json}
-  D->>N: record
-  CC->>R: status busy
+  S->>D: POST /session {id, pid, project, config, record, globalConfig}
+  K->>D: POST /title {..., transcript}
+  D->>N: record, globalConfig, transcript
+  CC->>R: status busy; oauthAccount; goal_status, away_summary, ai-title
   D->>N: every 2 s: readRecord, the session attached
-  N->>R: read status
-  D->>M: showList: 🟠 N · NAME: working, then the not running line
-  M->>C: no list yet, an owner in the group: apiSendMessages #35;M, priority -1
-  M->>C: apiSetGroupCustomData #35;M {simplexMcpMain: true, simplexMcpList: {item, at}}
-  C->>O: the list
+  N->>R: read status; the config when it changed; the transcript's new lines
+  N->>G: account, goal or recap changed: short description and description
+  D->>M: showBoard: each session's message, by number
+  M->>C: no message of N, an owner in the group: apiSendMessages #35;M, priority -1
+  M->>C: no summary: apiSendMessages #35;M "1 session 🟢", priority -1
+  M->>C: apiSetGroupCustomData #35;M {simplexMcpMain: true, simplexMcpBoard}
   CC->>R: status waiting, a permission dialog
   CC->>S: permission_request
   S->>D: POST /permission
-  D->>M: showList: 🔵 N · NAME: waiting for you, 1 approval
-  M->>C: apiUpdateChatItem #35;M item
-  C->>O: the list edited, no alert
-  CC->>R: status idle
-  D->>M: showList: 🟢 N · NAME: idle
-  M->>C: apiUpdateChatItem #35;M item
-  Note over D,M: the list 23 hours old, or its edit refused
-  M->>C: apiSendMessages #35;M the new list, priority -1, and its item saved
+  D->>M: showBoard: 🟠 N · NAME: waiting for you, 1 approval
+  M->>C: apiUpdateChatItem #35;M the message of N, and the summary
+  C->>O: edited, no alert
+  Note over D,M: an edit refused, as 24 hours after the post
   M->>C: apiDeleteChatItems #35;M the old item, broadcast
+  M->>C: apiSendMessages #35;M the message again, priority -1, and the items saved
+  Note over D,M: Claude Code ends; 23 hours after the message's post
+  M->>C: apiDeleteChatItems #35;M the message of the stopped session, broadcast
 ```
 
 Notes:
 
-- The session process sends the absolute path of Claude Code's record of its parent process, `CLAUDE_CONFIG_DIR` or `~/.claude`, then `sessions/PID.json`, and the service keeps it in the session ([`startSession`](../src/session.ts), [`Service.onSession`](../src/service.ts)).
+- The session process sends the absolute paths of Claude Code's record of its parent process, `CLAUDE_CONFIG_DIR` or `~/.claude`, then `sessions/PID.json`, and of Claude Code's global config, `CLAUDE_CONFIG_DIR` or `~`, then `.claude.json`. The SessionStart hook sends the transcript's path. The service keeps them in the session ([`startSession`](../src/session.ts), [`sessionStart`](../src/hook.ts), [`Service.onSession`, `applyTitle`](../src/service.ts)).
+- The summary is only edited, so later posts, such as a new session's message, an invitation or a reply, follow it ([`MainGroup.renderSummary`](../src/main-group.ts)).
 - Claude Code writes `status` in its record at each change of its state: `busy` while a query runs or delegated work is active, `waiting` while a dialog or another request waits for the person, `idle` otherwise, and `shell` in place of `idle` while a background Bash task runs. It writes the file in place, so a read can find it half written; the hub then keeps the last status. The hub opens the record without blocking and reads only a regular file, and a render waits at most 1 s for a read; a slower read keeps the last status ([`Session.readRecord`, `recordStatus`](../src/hub.ts)).
-- A tool-use card counts while the status is `waiting` or unknown. When someone answers the dialog in the terminal, the status leaves `waiting`, and the card, which stays until the turn ends, no longer counts ([`Session.stateLine`](../src/hub.ts)).
-- When the session process detaches, the session's permissions end and the session moves into the last line. At the service's stop, the hub renders the list once more, with every session there, before it waits for the cancelled cards ([`Hub.stop`](../src/hub.ts)).
-- The text fits one message: the last line keeps the newest names that fit and counts the others ([`Hub.sessionsText`](../src/hub.ts)).
-- The first list waits for an owner, so it follows the greeting. The item and its time are kept in the Main group's custom data, so a new service edits the same list. A reset of the owners creates a new Main group, which gets its own list once an owner joins ([`MainGroup.showList`, `postList`, `replace`](../src/main-group.ts)).
-- SimpleX allows edits of a message for 24 hours and deletions for everyone for 30 hours. The hub replaces a list 23 hours old, by the wall clock, at its next render, and deletes the old one; a refused deletion is logged ([`MainGroup.replaceList`](../src/main-group.ts)).
-- An edit sends no SMP notification, and the apps alert for an edit only when it creates the item. The list's posts carry `priority: -1`; an app without silent messages alerts for them.
+- Every pending card counts, whatever the status: a subagent's tool-use card has no dialog in the terminal, so the status stays `busy` while it waits. A card answered in the terminal stays, and counts, until the turn ends ([`Session.state`](../src/hub.ts)).
+- When the session process detaches, the session's permissions end and its message shows `⚪ N · NAME: stopped`. At the service's stop, the hub renders the board once more, with every session stopped, before it waits for the cancelled cards ([`Hub.stop`](../src/hub.ts)).
+- The first messages wait for an owner, so they follow the greeting. The items and their times are kept in the Main group's custom data, so a new service edits the same messages. A reset of the owners creates a new Main group, which gets its own board once an owner joins ([`MainGroup.showBoard`, `saveBoard`, `replace`](../src/main-group.ts)).
+- SimpleX allows edits of a message for 24 hours and deletions for everyone for 30 hours. A message whose edit is refused is posted again, and a stopped session's message is deleted 23 hours after its post, by the wall clock; a refused deletion is logged ([`MainGroup.renderEntry`](../src/main-group.ts)).
+- An edit sends no SMP notification, and the apps alert for an edit only when it creates the item. The board's posts carry `priority: -1`; an app without silent messages alerts for them.
 
 Source: [`Hub.showSessions`, `Hub.sessionsText`, `Session.readRecord`, `Session.stateLine`](../src/hub.ts), [`MainGroup.showList`](../src/main-group.ts).
 
@@ -1794,8 +1806,9 @@ sequenceDiagram
   S->>F: at each start: import of its own dist/status-line.js, through status-line.js.tmp
   Note over CC: statusLine: node "${SIMPLEX_MCP_HOME:-$HOME/.simplex-mcp}/status-line.js"
   CC->>SL: the input on stdin, after a response, a change of the effort level or the reset of a window
-  SL->>CC: Opus 5.5 · effort high · 67% context · 5 h: 34% · week: 61%
-  SL->>S: POST /turn {id, pid, at, effort, limits, statusLine: true}, waiting at most 1 s
+  SL->>SL: available memory, and statfs of ROOT or its nearest existing parent
+  SL->>CC: Opus 5.5 · effort high · 67% context · 5 h: 34% · week: 61% · RAM 12 GB free · disk 7.3 GB free
+  SL->>S: POST /turn {id, pid, at, effort, limits, statusLine: true}, waiting at most 1 s, without the memory and disk
   S->>N: turn
   N->>N: statusLineReports = true, and limits kept when at is not older than that of the limits kept
   opt a known effort level changed
@@ -1809,8 +1822,234 @@ Notes:
 
 - Claude Code passes the plan's usage only to the status line command of the person's settings, which a plugin can't set, and it refuses `${CLAUDE_PLUGIN_ROOT}` in a command that belongs to no plugin. The shell expands `${SIMPLEX_MCP_HOME:-$HOME/.simplex-mcp}` to the data folder of the machine or container, and the service of each version writes `status-line.js` there at its start, so one setting serves every container and every version ([`writeStatusLine`](../src/files.ts), [`Service.start`, `productionDeps`](../src/service.ts)).
 - The command loads only Node modules, `paths.ts` and `service-request.ts`. It prints its line first, sends nothing without an effort level and a window, starts no service and makes no retry ([`statusLine`, `runStatusLine`](../src/status-line.ts), [`postToService`](../src/service-request.ts)).
+- The line ends with the machine's available memory and the free disk of the data folder's volume, each followed by ❗️ when low: memory below 5% of the total, which a container's limit caps, or disk below 5 GB. The command does not send them: the service reads its own for the end line ([flow 21](#21-a-terminal-prompt-and-the-answer)) ([`machineState`, `machineParts`](../src/status-line.ts)).
 - The hub keeps the limits in memory. A window whose `resetsAt` has passed is left out of the end line, as Claude Code leaves it out of the input. Without the setting, the end line has no plan's usage, and an effort change shows at the next tool step or the end of the next turn ([`Session.turn`, `endLine`](../src/hub.ts), [`limitParts`](../src/status-line.ts)).
 - The hooks send the level of the turn, which is `xhigh` after `ultrathink` and can be a skill's or the prompt's own level, while the command sends the session's level. After the first request of the command, the hub takes the effort level only from the command, so the level of one turn posts no line ([`Session.turn`](../src/hub.ts)).
 - Claude Code runs `status-line.js` also when no service could start in the data folder, so that folder must be writable only by the user.
 
 Source: [`statusLine`, `limitParts`, `runStatusLine`](../src/status-line.ts), [`writeStatusLine`](../src/files.ts), [`Session.turn`, `endLine`](../src/hub.ts).
+
+---
+
+## 39. An edit and a live message in the session group
+
+```mermaid
+sequenceDiagram
+  participant O as Member
+  participant C as Core _hub
+  participant N as Session N
+  participant D as Service
+  participant S as Session process
+  participant CC as Claude Code
+  O->>C: a message typed in live mode, first fragment
+  C->>N: newChatItems, itemLive: Session.onMessage
+  N->>N: liveItems[item] = the message, nothing passed
+  O->>C: more fragments
+  C->>N: chatItemUpdated, itemLive: Session.onUpdate
+  N->>N: liveItems[item] = the message with its current text, nothing passed
+  alt the message sent
+    O->>C: the message sent
+    C->>N: chatItemUpdated, live off: Session.onUpdate
+    N->>N: liveItems -= item, pass: a new message
+  else no final version, and the member's next message
+    O->>C: the next message
+    C->>N: newChatItems: Session.onMessage
+    N->>N: passLive: liveItems -= item, pass at its current text, then the next message
+  end
+  N->>D: onLine {prompt: {text, from, item}}
+  D->>S: the line on /attach
+  S->>CC: notifications/claude/channel {content, meta: {from, item}}
+  N->>N: prompted[item] = text, the newest 100
+  O->>C: edits the message, or its final version arrives late
+  C->>N: chatItemUpdated: Session.onUpdate
+  alt a / command, the item not in prompted, or the same text
+    N->>N: nothing
+  else another text
+    N->>N: delivery = delivery then prompt: after the earlier messages of the session
+    N->>D: onLine {prompt: {text, from, item, replyTo?, edited: true}}
+    D->>S: the line on /attach
+    S->>CC: notifications/claude/channel {content, meta: {from, item, edited: "true"}}
+    N->>N: prompted[item] = new text
+  end
+  CC->>D: UserPromptSubmit hook: POST /turn {prompt}, the channel tag matched
+  N->>O: Claude: the opening message, quoting the edited message
+```
+
+Notes:
+
+- Claude gets an edit as a new prompt with the same item, `edited="true"` in the channel tag, and the new text, after the quote line of a reply. The earlier version is in Claude's context ([`Session.onUpdate`, `deliver`](../src/hub.ts), [`channelNotification`, `channelInstructions`](../src/session.ts)).
+- Only the edit of a message passed to Claude since the service started, among the newest 100, is passed, so an edit of `User`'s message or of a command passes nothing. An edit to a `/` command passes nothing, and gets no reply ([`maxPrompted`, `Session.prompted`, `onUpdate`, `bounded`](../src/hub.ts)).
+- An update with the same text, such as a file's status, passes nothing. The core marks no update of a live message as an edit, and the hub tells its final version by `liveItems` ([`Session.liveItems`, `onMessage`, `onUpdate`](../src/hub.ts)).
+- A live message that never gets its final version, as when the sender's app closes while they type, reaches Claude at its last text before that member's next message, and not before another member's. Its final version, when it arrives later, reaches Claude as an edit. The hub uses no timer ([`Session.passLive`, `keepLive`, `pass`](../src/hub.ts)).
+- A live message deleted before it is sent passes nothing, unless the member sends another message first.
+
+Source: [`Session.onMessage`, `onUpdate`, `pass`, `keepLive`, `passLive`, `replyTo`, `prompt`, `deliver`, `bounded`, `Hub.onEvent`](../src/hub.ts), [`channelNotification`](../src/session.ts).
+
+---
+
+## 40. A subagent and a workflow in the session group
+
+```mermaid
+sequenceDiagram
+  participant L as lead
+  participant A as subagent
+  participant K as hook turn
+  participant F as session folder
+  participant D as Service
+  participant N as Session N
+  participant G as session group
+  participant M as Main group
+  L->>K: PreToolUse Agent: no step line
+  A->>K: SubagentStart agent_id, agent_type
+  K->>F: read subagents/agent-ID.meta.json
+  K->>D: POST /turn agent.start {type, description, toolUse, transcript}
+  D->>N: turn
+  N->>G: live !- 🤖 TYPE · DESCRIPTION!, priority -1
+  loop each tool use of A
+    A->>K: PreToolUse, PostToolUse with agent_id
+    K->>D: POST /turn agent.step
+  end
+  loop every 2 s, attached
+    N->>F: last 256 KiB of agent-ID.jsonl: tokens
+    N->>G: edit when the text changed, at most every 5 s
+    N->>M: the session's board message: 🤖 N agents working
+  end
+  A->>K: SubagentStop last_assistant_message
+  K->>D: POST /turn agent.stop
+  N->>G: edit, liveMessage false: ✅ M:SS · N steps · X tokens, result
+  L->>K: UserPromptSubmit task notification, or PostToolUse Agent
+  K->>D: POST /turn task {toolUse, status, tokens, steps, ms}, with its note, and alert for a stop line
+  alt alert: the summary has an API error of type rate_limit
+    N->>G: edit with ❌; the note !- ⛔ WHAT stopped: REASON!, priority 1
+  else
+    N->>G: edit with the figures; the note not posted
+  end
+  L->>K: PostToolUse Workflow {runId, workflowName, transcriptDir}
+  K->>D: POST /turn workflow
+  N->>G: live !- ⚙️ NAME!
+  loop every 2 s
+    N->>F: journal.jsonl appended lines; tokens of its working agents
+    N->>G: edit phases, working agents, tokens, time
+  end
+  L->>K: the workflow's task notification
+  N->>G: edit final, liveMessage false
+```
+
+Notes:
+
+- Workflow agents, teammates and Claude Code's internal agents get no message: their SubagentStart finds no record beside the transcript, a record with `taskKind`, or none, so the service drops their steps ([`agentStart`](../src/hook.ts), [`Agents.step`](../src/agents.ts)).
+- The state is in memory: after a service restart, the messages keep their last edit. The last detach and the hub's stop end the live ones with ⏹️ ([`Session.endLive`](../src/hub.ts)).
+- Edits leave the messages where they were posted.
+
+Source: [`agentStart`, `agentStep`, `leadTask`, `taskOf`](../src/hook.ts), [`Agents`, `cardText`, `agentsLine`, `applyJournal`](../src/agents.ts), [`lastUsage`, `AppendedLines`](../src/claude-code.ts), [`Session.onAgents`, `readAgents`, `showCard`](../src/hub.ts).
+
+---
+
+## 41. A tool prompt of the PermissionRequest hook
+
+```mermaid
+sequenceDiagram
+  participant CC as Claude Code
+  participant HK as PermissionRequest hook
+  participant D as Service
+  participant N as Session N
+  participant O as Owner
+  alt a subagent's prompt
+    CC->>HK: tool_name, tool_input, agent_id, agent_type, before the dialog
+  else a prompt of the main conversation
+    CC->>D: the channel's POST /permission, when the channel relays it (flow 22)
+    CC->>HK: tool_name, tool_input, beside the dialog
+  end
+  HK->>D: POST /ask {id, pid, at, tool, description, preview, agent?, terminalOnly?}, stream held
+  D->>N: ask
+  alt main conversation, a channel request of the tool from 5 s before the hook's start, waited for up to 3 s
+    N->>D: no decision
+    D->>HK: {}
+    HK->>CC: nothing; the channel's card answers
+  else
+    N->>O: card in #35;G
+    O->>N: /approve N, or /reject N
+    N->>D: allow, or deny: NAME rejected this in the SimpleX group.
+    D->>HK: {decision}
+    HK->>CC: hookSpecificOutput {hookEventName: PermissionRequest, decision}
+    N->>O: card edited: ... Approved by NAME. or Rejected by NAME.
+  end
+```
+
+Notes:
+
+- A subagent's card starts ``Subagent `TYPE` asks to use `TOOL`: `DESCRIPTION` ``, and the main conversation's ``I want to use `TOOL`: `DESCRIPTION` ``; the line ends with `:` for an input without `description`. The preview follows: the command, the file path, or a line `FIELD: VALUE` per field ([`inputPreview`](../src/hook.ts), [`requestLines`](../src/control.ts)).
+- A prompt of `Artifact`, or of `WebFetch` for a claude.ai artifact, in the main conversation gets a card ``I want to use `Artifact`, and Claude Code takes its approval only in its terminal:``, the preview and `Approve it there, or /'reject N' here.` Another request for it gets `Action N is approved only in Claude Code's terminal.` In a subagent, the hook returns at once, and Claude Code shows its dialog ([`askRequest`](../src/hook.ts), [`commandsLine`, `Control.ownerCommand`](../src/control.ts)).
+- A card of the main conversation ends as a channel's card does, at an answer, at a prompt that is not mid-turn and at the last detach; the hook then exits without a decision, and the terminal's answer applies. A subagent's card ends only at its decision, its expiry, the end of the hook's stream or a stop of the service ([`Session.endPermissions`, `ask`](../src/hub.ts)).
+- The hook prints nothing for the plugin's own tools. AskUserQuestion and ExitPlanMode get the cards of [flow 42](#42-claudes-question-a-plan-and-an-mcp-servers-link).
+
+Source: [`ask`, `promptOf`, `inputPreview`](../src/hook.ts), [`Service.onAsk`, `streamed`](../src/service.ts), [`Session.ask`, `relayed`, `endPermissions`](../src/hub.ts), [`requestLines`, `commandsLine`](../src/control.ts).
+
+---
+
+## 42. Claude's question, a plan and an MCP server's link
+
+```mermaid
+sequenceDiagram
+  participant CC as Claude Code
+  participant HK as PermissionRequest or Elicitation hook
+  participant D as Service
+  participant N as Session N
+  participant O as Owner
+  CC->>HK: AskUserQuestion, ExitPlanMode with the plan, or an Elicitation of mode url
+  HK->>D: POST /ask {kind: question, plan or link}
+  D->>N: ask
+  opt a plan
+    N->>O: the plan's text in parts, silent
+  end
+  N->>O: card in #35;G, a plan's card as a reply to the plan's first part
+  alt /answer N K, or a reply of an approver to the card
+    O->>N: the option's label, or the reply's text
+    N->>D: allow with answers, or for a plan's reply deny: Keep planning. NAME wrote in the SimpleX group: TEXT
+  else /approve N of a plan or a link
+    N->>D: allow
+  else /reject N
+    N->>D: deny
+  end
+  D->>HK: {decision}
+  HK->>CC: a question: allow with the input and answers; a plan: allow with the input, or deny; a link: accept or decline
+  N->>O: card edited: Answered by NAME: LABEL., Answered by NAME in a reply., Approved by NAME. or Rejected by NAME.
+```
+
+Notes:
+
+- Claude Code shows the question and the plan in its terminal while the hook runs, and the first answer applies. It runs the Elicitation hook before its dialog, so the terminal shows the link only after the card ends without a decision; an accept from the card skips the dialog, and the person opens the link from the card ([`promptOf`, `askOutput`](../src/hook.ts)).
+- A form of an MCP server and the question or plan of a subagent get no card; the hook returns at once.
+- These cards end as the cards of the main conversation do ([`Session.endPermissions`](../src/hub.ts)).
+
+Source: [`ask`, `promptOf`, `userPrompt`, `questionOf`, `askOutput`](../src/hook.ts), [`Session.ask`, `promptAction`, `decisionOf`, `pass`, `repliedCard`](../src/hub.ts), [`Control.answer`, `reply`, `questionLines`, `answeredLine`, `commandsLine`](../src/control.ts).
+
+---
+
+## 43. A failed turn and a waiting Claude Code
+
+```mermaid
+sequenceDiagram
+  participant CC as Claude Code
+  participant HK as StopFailure or Notification hook
+  participant D as Service
+  participant N as Session N
+  participant O as Owner
+  CC->>HK: StopFailure {error, last_assistant_message}
+  HK->>HK: rate_limit: the continue notice after the error entry, read 20 times 100 ms apart; without it, Claude Code's record 1 s later
+  HK->>D: POST /turn {failure: {error, text, autoContinue, menu}}
+  D->>N: turn
+  N->>N: end the steps, cards and texts; the opening message gets ⏹️ Stopped
+  opt the text is that of the last failure line
+    N->>N: getChat of the group's last item, after the earlier failures
+  end
+  N->>O: ⛔ Claude Code stopped: TEXT, and what to do, unless the text is that of the last failure line and that line is the last item
+  N->>N: log TIME session N stop ERROR: TEXT (posted or repeated)
+  CC->>HK: Notification {notification_type, message}
+  HK->>D: POST /turn {waiting: {kind, text}}
+  D->>N: turn
+  N->>O: 🔄 or ⛔ line of the automatic continue, or ⏸️ Claude Code waits in its terminal: MESSAGE, without a card in the 30 s before
+  N->>N: log TIME session N waiting TYPE: TEXT (posted or skipped)
+```
+
+Source: [`eventFields`, `failureOf`, `continued`, `menuOpen`](../src/hook.ts), [`Session.turn`, `fail`, `waits`, `failureLine`](../src/hub.ts).

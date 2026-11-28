@@ -223,9 +223,10 @@ fun CIFileView(
     if (!smallView) {
       val secondaryColor = MaterialTheme.colors.secondary
       val encrypted = if (file?.fileSource == null) null else file.fileSource.cryptoArgs != null
+      val showStatus = shownStatus(true, meta, showTimestamp)
       val metaReserve = buildAnnotatedString {
         withStyle(reserveTimestampStyle) {
-          append(reserveSpaceForMeta(meta, chatTTL, encrypted, secondaryColor = secondaryColor, showViaProxy = showViaProxy, showTimestamp = showTimestamp, signedFileVerified = file?.loaded))
+          append(reserveSpaceForMeta(meta, chatTTL, encrypted, secondaryColor = secondaryColor, showStatus = showStatus, showViaProxy = showViaProxy, showTimestamp = showTimestamp, signedFileVerified = file?.loaded))
         }
       }
       if (file != null) {
@@ -300,6 +301,8 @@ fun showFileErrorAlert(err: FileError, file: CIFile? = null, temporary: Boolean 
     AlertManager.shared.showAlertMsg(title, err.errorInfo)
   }
 }
+
+val bansGuideLink = "https://simplex.chat/docs/guide/secret-groups.html#blocking-members"
 
 val contentModerationPostLink = "https://simplex.chat/blog/20250114-simplex-network-large-groups-privacy-preserving-content-moderation.html#preventing-server-abuse-without-compromising-e2e-encryption"
 

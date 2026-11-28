@@ -8,26 +8,33 @@
 
 module ChatTests.Utils where
 
+import APIDocs (testGenerate)
 import ChatClient
 import ChatTests.DBUtils
-import Control.Concurrent (MVar, newEmptyMVar, threadDelay, tryPutMVar)
-import Control.Concurrent.Async (concurrently_, mapConcurrently_)
+import Control.Concurrent (MVar, newEmptyMVar, putMVar, takeMVar, threadDelay, tryPutMVar)
+import Control.Concurrent.Async (concurrently_, mapConcurrently_, race_, wait, withAsync)
 import Control.Concurrent.STM
 import Control.Monad (forever, join, unless, when)
 import Control.Monad.Except (runExceptT)
+import qualified Data.Aeson as J
+import qualified Data.Aeson.Key as JK
+import qualified Data.Aeson.KeyMap as JM
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Base64 as B64
 import qualified Data.ByteString.Char8 as B
+import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Char (isDigit)
-import Data.List (isPrefixOf, isSuffixOf)
+import Data.Foldable (toList)
+import Data.List (elemIndex, foldl', isPrefixOf, isSuffixOf, nub)
 import Data.Maybe (fromMaybe)
 import Data.String
 import qualified Data.Text as T
 import Simplex.Chat.Badges (BadgeProof (..), BadgeStatus, LocalBadge (..), ProofPresHeader (..))
-import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), ChatEvent (CEvtNewChatItems), ChatHooks (..), defaultChatHooks, storeCxt)
+import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), ChatError, ChatEvent (CEvtChatItemUpdated, CEvtNameMoved, CEvtNewChatItems, CEvtSndFileCompleteXFTP, CEvtSndFileError), ChatHooks (..), defaultChatHooks, storeCxt)
 import Simplex.Chat.Library.Commands (maxProfileImageSize)
 import Simplex.Chat.Markdown (viewName)
 import Simplex.Chat.Messages (AChatItem (..), CIMeta (CIMeta, itemText), ChatItem (ChatItem, meta))
+import Simplex.Chat.Mobile (chatParseMarkdown, chatParseUri, chatSendCmd, eitherToResult)
 import Simplex.Chat.Messages.CIContent (e2eInfoNoPQText, e2eInfoPQText)
 import Simplex.Chat.Protocol
 import Simplex.Chat.Store.Direct (getContact, getContactIdByName, getContactRequest, getContactRequestIdByName)
@@ -47,6 +54,7 @@ import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.BBS (BBSPresHeader (..))
 import Simplex.Messaging.Crypto.Ratchet (PQEncryption (..), PQSupport, pattern PQEncOff, pattern PQEncOn, pattern PQSupportOff)
 import Simplex.Messaging.Encoding.String
+import Simplex.Messaging.Util (safeDecodeUtf8)
 import Simplex.Messaging.Version
 import System.Directory (doesFileExist)
 import System.Environment (lookupEnv)
@@ -102,25 +110,13 @@ it name test =
   where
     t = 180 * 1000000
 
-xit' :: HasCallStack => String -> (ps -> Expectation) -> SpecWith (Arg (ps -> Expectation))
-xit' = if os == "linux" then xit else it
-
-xit'' :: (HasCallStack, Example a) => String -> a -> SpecWith (Arg a)
-xit'' = ifCI xit Hspec.it
-
 xitMacCI :: HasCallStack => String -> (ps -> Expectation) -> SpecWith (Arg (ps -> Expectation))
 xitMacCI = ifCI (if os == "darwin" then xit else it) it
-
-xdescribe'' :: HasCallStack => String -> SpecWith a -> SpecWith a
-xdescribe'' = ifCI xdescribe describe
 
 ifCI :: HasCallStack => (HasCallStack => String -> a -> SpecWith b) -> (HasCallStack => String -> a -> SpecWith b) -> String -> a -> SpecWith b
 ifCI xrun run d t = do
   ci <- runIO $ lookupEnv "CI"
   (if ci == Just "true" then xrun else run) d t
-
-envCI :: IO Bool
-envCI = (Just "true" ==) <$> lookupEnv "CI"
 
 skip :: String -> SpecWith a -> SpecWith a
 skip = before_ . pendingWith
@@ -679,6 +675,14 @@ withCCAgentTransaction :: TestCC -> (DB.Connection -> IO a) -> IO a
 withCCAgentTransaction TestCC {chatController = ChatController {smpAgent}} action =
   withTransaction (agentClientStore smpAgent) $ \db -> action db
 
+holdDuring :: (IO () -> IO ()) -> IO a -> IO a
+holdDuring hold action = do
+  held <- newEmptyMVar
+  release <- newEmptyMVar
+  withAsync (hold $ putMVar held () >> takeMVar release) $ \holder -> do
+    timeout 30000000 (race_ (takeMVar held) (wait holder)) `shouldReturn` Just ()
+    action <* (putMVar release () >> wait holder)
+
 checkPendingInvitations :: HasCallStack => TestCC -> Int -> IO ()
 checkPendingInvitations cc n =
   withCCAgentTransaction cc (\db -> DB.query_ db "SELECT count(1) FROM conn_invitations WHERE accepted = 0") `shouldReturn` [[n]]
@@ -688,6 +692,11 @@ createCCNoteFolder cc =
   withCCTransaction cc $ \db ->
     withCCUser cc $ \user ->
       runExceptT (createNoteFolder db user) >>= either (fail . show) pure
+
+linkNoticesCount :: TestCC -> IO Int
+linkNoticesCount cc =
+  withCCTransaction cc $ \db ->
+    fromMaybe 0 <$> maybeFirstRow fromOnly (DB.query_ db "SELECT count(1) FROM link_notices")
 
 shouldEventuallyReturn :: (HasCallStack, Eq a, Show a) => IO a -> a -> Expectation
 shouldEventuallyReturn action expected = go (200 :: Int)
@@ -844,6 +853,14 @@ createGroup2' gName cc1 (cc2, role2) doConnectUsers = do
   concurrently_
     (cc1 <## ("#" <> gName <> ": " <> name2 <> " joined the group"))
     (cc2 <## ("#" <> gName <> ": you joined the group"))
+
+leaveDeleteGroup :: HasCallStack => TestCC -> String -> IO ()
+leaveDeleteGroup cc gName = do
+  cc ##> ("/l #" <> gName)
+  cc <## ("#" <> gName <> ": you left the group")
+  cc <## ("use /d #" <> gName <> " to delete the group")
+  cc ##> ("/d #" <> gName)
+  cc <## ("#" <> gName <> ": you deleted your local copy of the group")
 
 disableFullDeletion2 :: HasCallStack => String -> TestCC -> TestCC -> IO ()
 disableFullDeletion2 gName cc1 cc2 = do
@@ -1002,3 +1019,107 @@ blockFirstEventCfg blocks = do
 newItemText :: (T.Text -> Bool) -> ChatEvent -> Bool
 newItemText p (CEvtNewChatItems _ [AChatItem _ _ _ ChatItem {meta = CIMeta {itemText}}]) = p itemText
 newItemText _ _ = False
+
+data FixtureRequests = FixtureRequests {frMarkdown :: [String], frUris :: [String], frCommands :: [String]}
+
+nameFixture :: String -> TestCC -> String -> IO ()
+nameFixture fixture cc name = apiFixture ("names/" <> fixture) cc [] FixtureRequests {frMarkdown = [name], frUris = [], frCommands = ["/_connect plan 1 " <> name]}
+
+bansFixture :: String -> TestCC -> [String] -> IO ()
+bansFixture fixture cc cmds = apiFixture ("bans/" <> fixture) cc [] FixtureRequests {frMarkdown = [], frUris = [], frCommands = cmds}
+
+apiFixture :: String -> TestCC -> [(String, String)] -> FixtureRequests -> IO ()
+apiFixture fixture tc@TestCC {chatController = cc} placeholders FixtureRequests {frMarkdown, frUris, frCommands} = do
+  waitSettled tc
+  responses <- mapM (\cmd -> (JK.fromString cmd J..=) <$> (decodeJSON =<< chatSendCmd cc (B.pack cmd))) frCommands
+  parses <- mapM (\text -> (JK.fromString text J..=) <$> decodeJSON (chatParseMarkdown $ B.pack text)) frMarkdown
+  uris <- mapM (\uri -> (JK.fromString uri J..=) <$> decodeJSON (chatParseUri False $ B.pack uri)) frUris
+  writeFixture ("api/" <> fixture) . withPlaceholders . stableJSON $ J.object ["commands" J..= J.object responses, "markdown" J..= J.object parses, "uris" J..= J.object uris]
+  where
+    decodeJSON :: LB.ByteString -> IO J.Value
+    decodeJSON = either fail pure . J.eitherDecode
+    withPlaceholders = \case
+      J.Object o -> J.Object $ JM.fromList [(JK.fromText $ replaced $ JK.toText k, withPlaceholders v) | (k, v) <- JM.toList o]
+      J.Array a -> J.Array $ fmap withPlaceholders a
+      J.String s -> J.String $ replaced s
+      v -> v
+    replaced s = foldl' (\t (actual, placeholder) -> T.replace (T.pack actual) (T.pack placeholder) t) s placeholders
+
+dropOutputs :: [TestCC] -> IO ()
+dropOutputs = mapConcurrently_ dropOutput
+  where
+    dropOutput cc = timeout 2000000 (getTermLine cc) >>= mapM_ (\_ -> dropOutput cc)
+
+waitSettled :: HasCallStack => TestCC -> IO ()
+waitSettled cc =
+  withCCTransaction cc (\db -> (,) <$> DB.query_ db connecting <*> DB.query_ db rosterPending :: IO ([[Int]], [[Int]]))
+    `shouldEventuallyReturn` ([[0]], [[0]])
+  where
+    connecting = "SELECT COUNT(1) FROM connections WHERE conn_type = 'contact' AND conn_status = 'ready' AND contact_conn_initiated = 1"
+    rosterPending = "SELECT COUNT(1) FROM groups g WHERE g.use_relays = 1 AND g.roster_version IS NULL AND EXISTS (SELECT 1 FROM group_members r WHERE r.group_id = g.group_id AND r.member_role = 'relay' AND r.member_status = 'connected')"
+
+nameMovedFixture :: String -> TestCC -> [ContactName] -> [GroupName] -> IO ()
+nameMovedFixture fixture cc contacts groups = withCCUser cc $ \user -> do
+  ids <- withCCTransaction cc $ \db -> runExceptT $ (,) <$> mapM (getContactIdByName db user) contacts <*> mapM (getGroupIdByName db user) groups
+  case ids of
+    Right (contactIds, groupIds) -> writeFixture ("api/names/" <> fixture) $ stableJSON $ J.toJSON (eitherToResult Nothing (Right $ CEvtNameMoved user contactIds groupIds :: Either ChatError ChatEvent))
+    Left e -> error $ show e
+
+recordItemEvent :: TVar [J.Value] -> Either ChatError ChatEvent -> IO ()
+recordItemEvent events evt = case evt of
+  Right CEvtNewChatItems {} -> recordEvent events evt
+  Right CEvtChatItemUpdated {} -> recordEvent events evt
+  _ -> pure ()
+
+recordSndFileEvent :: TVar [J.Value] -> Either ChatError ChatEvent -> IO ()
+recordSndFileEvent events evt = case evt of
+  Right CEvtSndFileCompleteXFTP {} -> recordEvent events evt
+  Right CEvtSndFileError {} -> recordEvent events evt
+  _ -> pure ()
+
+recordEvent :: TVar [J.Value] -> Either ChatError ChatEvent -> IO ()
+recordEvent events evt = atomically $ modifyTVar' events (<> [J.toJSON $ eitherToResult Nothing evt])
+
+eventsFixture :: String -> TVar [J.Value] -> IO () -> IO ()
+eventsFixture fixture events steps = do
+  atomically $ writeTVar events []
+  steps
+  readTVarIO events >>= writeFixture ("api/" <> fixture) . stableJSON . J.toJSON
+
+writeFixture :: String -> J.Value -> IO ()
+#if defined(dbPostgres)
+writeFixture _ _ = pure ()
+#else
+writeFixture fixture = testGenerate ("tests/fixtures/" <> fixture <> ".json") . prettyJSON
+  where
+    prettyJSON = (<> "\n") . pretty ""
+    pretty indent = \case
+      J.Object o | not (JM.null o) -> block indent "{" "}" [jsonText (J.String $ JK.toText k) <> ": " <> pretty (indent <> "  ") v | (k, v) <- JM.toList o]
+      J.Array a | not (null a) -> block indent "[" "]" (map (pretty $ indent <> "  ") $ toList a)
+      v -> jsonText v
+    block indent open close items = open <> "\n" <> T.intercalate ",\n" (map ((indent <> "  ") <>) items) <> "\n" <> indent <> close
+    jsonText = safeDecodeUtf8 . LB.toStrict . J.encode
+#endif
+
+stableJSON :: J.Value -> J.Value
+stableJSON value = stable value
+  where
+    stable = \case
+      J.Object o -> J.Object $ JM.mapWithKey stableField o
+      J.Array a -> J.Array $ fmap stable a
+      v -> v
+    stableField k v
+      | k `elem` ["createdAt", "updatedAt", "chatTs", "userMemberProfileSentAt", "itemTs", "deletedTs", "fileExpires"] = J.String "1970-01-01T00:00:00Z"
+      | k == "expiresAt", J.String _ <- v = J.String "2099-01-01T12:00:00Z"
+      | k `elem` memberIdKeys, J.String s <- v = J.String $ maybe (JK.toText k) (\i -> "memberId" <> T.pack (show i)) (elemIndex s memberIds)
+      | k `elem` ["agentConnId", "xContactId", "connFullLink", "connShortLink", "contactLink", "groupLink", "viaGroupLinkUri", "simplexUri", "memberPubKey", "publicGroupId", "groupLinkId", "relayLink", "itemSharedMsgId", "fileDescrText"], J.String _ <- v = J.String $ JK.toText k
+      | k `elem` ["agentSndFileId", "privateSndFileDescr", "errorMessage"] = J.String $ JK.toText k
+      | k == "groupRelays", J.Array a <- v = J.Array $ J.String "groupRelay" <$ a
+      | k == "authErrCounter", J.Number _ <- v = J.Number 0
+      | otherwise = stable v
+    memberIdKeys = ["memberId", "businessId", "customerId"]
+    memberIds = nub $ memberIdValues value
+    memberIdValues = \case
+      J.Object o -> concat [if k `elem` memberIdKeys then [s | J.String s <- [v]] else memberIdValues v | (k, v) <- JM.toList o]
+      J.Array a -> concatMap memberIdValues $ toList a
+      _ -> []

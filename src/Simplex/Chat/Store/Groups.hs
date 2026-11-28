@@ -47,6 +47,8 @@ module Simplex.Chat.Store.Groups
     getGroupInfoByGroupLinkHash,
     updateGroupProfile,
     setGroupDomainVerified,
+    setNameGroupsMoved,
+    setPreparedGroupDomain,
     updateGroupPreferences,
     updateGroupProfileFromMember,
     getGroupIdByName,
@@ -77,6 +79,8 @@ module Simplex.Chat.Store.Groups
     getGroupRelayMembers,
     getGroupMembersForExpiration,
     getRemovedMembersToCleanup,
+    setGroupSilentlyRemoved,
+    getGroupSilentlyRemoved,
     deleteGroupChatItems,
     deleteGroupMembers,
     cleanupHostGroupLinkConn,
@@ -234,7 +238,7 @@ import qualified Data.Text as T
 import Data.Time.Clock (NominalDiffTime, UTCTime (..), addUTCTime, getCurrentTime)
 import Data.Text.Encoding (encodeUtf8)
 import Simplex.Chat.Badges (BadgeProof, BadgeRow, ProofPresHeader, acceptedBadge, badgeProofToRow, badgeToRow, sameBadgeProof, verifyBadge)
-import Simplex.Chat.Names (SimplexDomainClaim (..))
+import Simplex.Chat.Names (SimplexDomainClaim (..), mkDomainClaim)
 import Simplex.Chat.Messages
 import Simplex.Chat.Operators
 import Simplex.Chat.Protocol hiding (Binary)
@@ -1381,6 +1385,15 @@ getRemovedMembersToCleanup db cxt user@User {userId} cutoffTs = do
       (groupMemberQuery <> " WHERE m.user_id = ? AND m.removed_at < ?")
       (userId, cutoffTs)
 
+setGroupSilentlyRemoved :: DB.Connection -> GroupInfo -> IO ()
+setGroupSilentlyRemoved db GroupInfo {groupId} = do
+  currentTs <- getCurrentTime
+  DB.execute db "UPDATE groups SET silently_removed = 1, updated_at = ? WHERE group_id = ?" (currentTs, groupId)
+
+getGroupSilentlyRemoved :: DB.Connection -> GroupInfo -> IO Bool
+getGroupSilentlyRemoved db GroupInfo {groupId} =
+  fromMaybe False <$> maybeFirstRow fromOnlyBI (DB.query db "SELECT silently_removed FROM groups WHERE group_id = ?" (Only groupId))
+
 getGroupInvitation :: DB.Connection -> StoreCxt -> User -> GroupId -> ExceptT StoreError IO ReceivedGroupInvitation
 getGroupInvitation db cxt user groupId =
   getConnRec_ user >>= \case
@@ -2482,8 +2495,8 @@ increaseGroupMembersRequireAttention db User {userId} g@GroupInfo {groupId, memb
   pure g {membersRequireAttention = membersRequireAttention + 1}
 
 -- | add new member with profile
-createNewGroupMember :: DB.Connection -> StoreCxt -> User -> GroupInfo -> GroupMember -> MemberInfo -> Maybe ProofPresHeader -> GroupMemberCategory -> GroupMemberStatus -> ExceptT StoreError IO GroupMember
-createNewGroupMember db cxt user gInfo invitingMember memInfo@MemberInfo {profile} presHeader_ memCategory memStatus = do
+createNewGroupMember :: DB.Connection -> StoreCxt -> User -> GroupInfo -> GroupMember -> MemberInfo -> Maybe ProofPresHeader -> GroupMemberCategory -> GroupMemberStatus -> Maybe MemberRestrictions -> ExceptT StoreError IO GroupMember
+createNewGroupMember db cxt user gInfo invitingMember memInfo@MemberInfo {profile} presHeader_ memCategory memStatus memRestrictions_ = do
   currentTs <- liftIO getCurrentTime
   (localDisplayName, memProfileId, memProfile, badgeVerified) <- createNewMemberProfile_ db cxt user profile presHeader_ currentTs
   let newMember =
@@ -2491,7 +2504,7 @@ createNewGroupMember db cxt user gInfo invitingMember memInfo@MemberInfo {profil
           { memInfo = (memInfo :: MemberInfo) {profile = memProfile},
             memCategory,
             memStatus,
-            memRestriction = Nothing,
+            memRestriction = restriction <$> memRestrictions_,
             memInvitedBy = IBUnknown,
             memInvitedByGroupMemberId = Just $ groupMemberId' invitingMember,
             localDisplayName,
@@ -2788,12 +2801,30 @@ setGroupDomainVerified db User {userId} g@GroupInfo {groupId} verified = do
     db
     "UPDATE groups SET group_domain_verified = ? WHERE user_id = ? AND group_id = ?"
     (BI verified, userId, groupId)
-  pure g {groupDomainVerified = Just verified}
+  pure g {groupDomainVerified = Just $ if verified then DVVerified else DVFailed}
+
+setNameGroupsMoved :: DB.Connection -> User -> SimplexNameInfo -> Maybe GroupId -> IO [GroupId]
+setNameGroupsMoved db User {userId} SimplexNameInfo {nameType, nameDomain} exceptGroupId_ =
+  map fromOnly <$> DB.query
+    db
+    ( [sql|
+        UPDATE groups SET group_domain_verified = 2
+        WHERE user_id = ? AND group_domain_verified = 1 AND group_id IS DISTINCT FROM ?
+          AND group_profile_id IN (SELECT group_profile_id FROM group_profiles WHERE user_id = ? AND group_domain = ?)
+      |]
+        <> businessCond
+        <> " RETURNING group_id"
+    )
+    (userId, exceptGroupId_, userId, nameDomain)
+  where
+    businessCond = case nameType of
+      NTContact -> " AND business_chat IS NOT NULL"
+      NTPublicGroup -> " AND business_chat IS NULL"
 
 -- A business group has no publicGroup claim, so the domain it was connected by (from its address) is written
 -- directly to group_domain and marked verified, so it is found by the local name search (getGroupToConnect).
 setPreparedGroupDomain :: DB.Connection -> User -> GroupInfo -> SimplexDomain -> IO GroupInfo
-setPreparedGroupDomain db user@User {userId} g@GroupInfo {groupId} domain = do
+setPreparedGroupDomain db user@User {userId} g@GroupInfo {groupId, businessChat} domain = do
   DB.execute
     db
     [sql|
@@ -2801,7 +2832,7 @@ setPreparedGroupDomain db user@User {userId} g@GroupInfo {groupId} domain = do
       WHERE group_profile_id IN (SELECT group_profile_id FROM groups WHERE user_id = ? AND group_id = ?)
     |]
     (domain, userId, groupId)
-  setGroupDomainVerified db user g True
+  setGroupDomainVerified db user g {businessChat = (\bc -> bc {businessDomain = Just $ mkDomainClaim domain}) <$> businessChat} True
 
 updateGroupPreferences :: DB.Connection -> User -> GroupInfo -> GroupPreferences -> IO GroupInfo
 updateGroupPreferences db User {userId} g@GroupInfo {groupId, groupProfile = p} ps = do
@@ -2888,7 +2919,7 @@ getGroupInfoViaUserTarget db cxt user@User {userId} target = fmap eitherToMaybe 
               FROM user_contact_links ucl
               JOIN groups g ON g.group_id = ucl.group_id
               JOIN group_profiles gp ON gp.group_profile_id = g.group_profile_id
-              WHERE ucl.user_id = ? AND gp.group_domain = ?
+              WHERE ucl.user_id = ? AND gp.group_domain = ? AND g.group_domain_verified IS DISTINCT FROM 2
             |]
             (userId, nameDomain ni)
     toConnReqGroupId = \case

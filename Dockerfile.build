@@ -54,6 +54,7 @@ RUN apt-get update --error-on=any && \
                        wget \
                        fuse3 \
                        file \
+                       fontconfig \
                        appstream \
                        gpg \
                        zipalign \
@@ -98,6 +99,7 @@ WORKDIR /home/${USER_NAME}
 
 # Setup basic env variables (required)
 ENV HOME="/home/${USER_NAME}" USER="${USER_NAME}"
+ENV CABAL_DIR="$HOME/.cabal"
 # Adjust PATH
 ENV PATH="$HOME/.cabal/bin:$HOME/.ghcup/bin:$PATH"
 
