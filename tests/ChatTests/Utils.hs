@@ -1099,6 +1099,7 @@ stableJSON value = stable value
       | k `elem` ["agentConnId", "xContactId", "connFullLink", "connShortLink", "contactLink", "groupLink", "viaGroupLinkUri", "simplexUri", "memberPubKey", "publicGroupId", "groupLinkId", "relayLink", "itemSharedMsgId", "fileDescrText"], J.String _ <- v = J.String $ JK.toText k
       | k `elem` ["agentSndFileId", "privateSndFileDescr", "errorMessage"] = J.String $ JK.toText k
       | k == "groupRelays", J.Array a <- v = J.Array $ J.String "groupRelay" <$ a
+      | k == "authErrCounter", J.Number _ <- v = J.Number 0
       | otherwise = stable v
     memberIdKeys = ["memberId", "businessId", "customerId"]
     memberIds = nub $ memberIdValues value
