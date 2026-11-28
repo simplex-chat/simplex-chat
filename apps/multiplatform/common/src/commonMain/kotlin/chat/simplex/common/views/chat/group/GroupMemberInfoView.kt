@@ -1179,12 +1179,16 @@ fun previousVersionWarningText(members: List<GroupMember>, one: StringResource, 
     else -> String.format(generalGetString(many), count)
   }
 
-fun removedSubmembersText(members: List<GroupMember>): String =
-  when (val count = ChatModel.groupMembers.value.count { m -> m.memberCurrent && members.any { it.memberId == m.memberVia } }) {
+fun removedSubmembersText(members: List<GroupMember>): String {
+  val (one, many) =
+    if (members.size == 1) MR.strings.member_via_this_member_will_be_removed_too to MR.strings.members_via_this_member_will_be_removed_too
+    else MR.strings.member_via_these_members_will_be_removed_too to MR.strings.members_via_these_members_will_be_removed_too
+  return when (val count = ChatModel.groupMembers.value.count { m -> m.memberCurrent && members.any { it.memberId == m.memberVia } }) {
     0 -> ""
-    1 -> "\n" + generalGetString(MR.strings.submember_will_be_removed_too)
-    else -> "\n" + String.format(generalGetString(MR.strings.submembers_will_be_removed_too), count)
+    1 -> "\n" + generalGetString(one)
+    else -> "\n" + String.format(generalGetString(many), count)
   }
+}
 
 @Composable
 fun CannotBlockWarning(members: List<GroupMember>) {

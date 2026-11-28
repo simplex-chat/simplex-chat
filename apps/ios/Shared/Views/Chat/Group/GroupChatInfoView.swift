@@ -1076,8 +1076,8 @@ func cannotBlockWarning(_ mem: GroupMember) -> String {
 func removedSubmembersText(_ mem: GroupMember) -> String {
     switch ChatModel.shared.groupMembers.filter({ $0.wrapped.memberCurrent && $0.wrapped.memberVia == mem.memberId }).count {
     case 0: ""
-    case 1: "\n" + NSLocalizedString("1 submember will be removed too.", comment: "alert message")
-    case let count: "\n" + String.localizedStringWithFormat(NSLocalizedString("%d submembers will be removed too.", comment: "alert message"), count)
+    case 1: "\n" + NSLocalizedString("1 member via this member will be removed too.", comment: "alert message")
+    case let count: "\n" + String.localizedStringWithFormat(NSLocalizedString("%d members via this member will be removed too.", comment: "alert message"), count)
     }
 }
 

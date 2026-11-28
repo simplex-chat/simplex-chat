@@ -24,7 +24,7 @@ Decided by the maintainer on 2026-11-27 (in conversation):
 - the iOS notification service matches an item of a submember to the connection of the member it is via, found by group and member ID among the connections it was woken for; a forward is matched to the forwarder first (Q7 D);
 - while V is blocked by an admin, V's messages sent as a submember are V's own blocked messages ("yes, it makes sense");
 - when V leaves or is removed, its submembers are removed with it ("ok");
-- the alerts that remove members with current submembers add the line "2 submembers will be removed too.", with the total count, "1 submember will be removed too." for one (Q14 A).
+- the alerts that remove members with current submembers add the line "2 members via this member will be removed too." ("1 member via this member will be removed too." for one), and "2 members via these members will be removed too." with the total count when several members are removed (Q14 A, wording of 2026-11-28).
 
 Facts about Claude Code are those recorded in `plans/2026-11-14-mcp-teammate-profiles.md` (branch `ep/mcp-teammate-profiles`, facts 1 to 9, F1 and F2).
 
@@ -586,10 +586,10 @@ Apps, with reviewer loaded in the member list and the chat open, each test → r
 - `testSubmemberIsRemovedWhenUserIsRemoved`, `submemberIsRemovedWhenUserIsRemoved`: bob's recorded events `submembers/removed`; reviewer is loaded from bob's item in the reaction event.
 
 Apps, removal alerts on the recorded members of cath, `submembers/remove-via` (bob with reviewer and tester) and `submembers/forwarded` (alice with reviewer); iOS ModerationTests.swift, desktop ModerationTest.kt:
-- `testRemoveMemberWithSubmembers`, `removeMemberWithSubmembers`: "Remove member?" of bob → "Member will be removed from group - this cannot be undone!\n2 submembers will be removed too."
-- `testRemoveMemberWithSubmember`, `removeMemberWithSubmemberFromMemberInfo`: alice → "…\n1 submember will be removed too."
-- `removeMembersWithSubmembers`: "Remove members?" of alice and bob → "…\n2 submembers will be removed too."
-- `testRemoveBlockedMemberWithSubmembersForever`, `removeBlockedMemberWithSubmembersForever`: bob as a blocked member → the removal of a blocked member and "Remove forever?" end with "\n2 submembers will be removed too."
+- `testRemoveMemberWithSubmembers`, `removeMemberWithSubmembers`: "Remove member?" of bob → "Member will be removed from group - this cannot be undone!\n2 members via this member will be removed too."
+- `testRemoveMemberWithSubmember`, `removeMemberWithSubmemberFromMemberInfo`: alice → "…\n1 member via this member will be removed too."
+- `removeMembersWithSubmembers`: "Remove members?" of alice and bob → "…\n2 members via these members will be removed too."
+- `testRemoveBlockedMemberWithSubmembersForever`, `removeBlockedMemberWithSubmembersForever`: bob as a blocked member → the removal of a blocked member and "Remove forever?" end with "\n2 members via this member will be removed too."
 - Snapshot references: desktop `GroupChatInfoView.PreviewRemoveMemberWithSubmembers`, iOS `RemoveMemberWithSubmembersAlert_Previews`.
 
 Plugin:

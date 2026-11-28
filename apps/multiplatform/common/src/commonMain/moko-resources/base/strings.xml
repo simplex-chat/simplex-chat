@@ -2086,8 +2086,10 @@
   <string name="members_will_be_removed_from_group_cannot_be_undone">Members will be removed from group - this cannot be undone!</string>
   <string name="member_will_be_removed_from_chat_cannot_be_undone">Member will be removed from chat - this cannot be undone!</string>
   <string name="members_will_be_removed_from_chat_cannot_be_undone">Members will be removed from chat - this cannot be undone!</string>
-  <string name="submember_will_be_removed_too">1 submember will be removed too.</string>
-  <string name="submembers_will_be_removed_too">%d submembers will be removed too.</string>
+  <string name="member_via_this_member_will_be_removed_too">1 member via this member will be removed too.</string>
+  <string name="members_via_this_member_will_be_removed_too">%d members via this member will be removed too.</string>
+  <string name="member_via_these_members_will_be_removed_too">1 member via these members will be removed too.</string>
+  <string name="members_via_these_members_will_be_removed_too">%d members via these members will be removed too.</string>
   <string name="member_messages_will_be_deleted_cannot_be_undone">Member messages will be deleted - this cannot be undone!</string>
   <string name="remove_member_confirmation">Remove</string>
   <string name="remove_member_delete_messages_confirmation">Remove and delete messages</string>
