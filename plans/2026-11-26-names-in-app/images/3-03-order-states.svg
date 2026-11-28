@@ -1,0 +1,166 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1290" height="1230" viewBox="0 0 1290 1230" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"><defs><marker id="h2c8a4a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#2c8a4a"/></marker><marker id="h2f6fd0" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#2f6fd0"/></marker><marker id="h5b6475" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#5b6475"/></marker><marker id="h7a4fc4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#7a4fc4"/></marker><marker id="hc77a12" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#c77a12"/></marker></defs>
+<rect x="0" y="0" width="1290" height="1230" fill="#ffffff"/>
+<text x="20" y="32" font-size="18" font-weight="700" fill="#0b2a55" text-anchor="start">Co-dependent state machines: the device wallet, the app&#x27;s order and the store service&#x27;s order</text>
+<text x="20" y="54" font-size="12" font-weight="normal" fill="#44546a" text-anchor="start">The wallet gives each order its account; a restore rebuilds the app&#x27;s orders from the service&#x27;s. Blue: the app&#x27;s requests. Green dashed: phases the app reads. Orange: the store purchase, as for badges.</text>
+<text x="20" y="72" font-size="12" font-weight="normal" fill="#44546a" text-anchor="start">Yellow: states on one side only. Service phases are those of apps/simplex-store-service/docs/names.md, section 4; new: an order placed with a verified store receipt.</text>
+<rect x="20" y="86" width="1250" height="200" rx="10" fill="#f1f2f5" stroke="#9aa1ad" stroke-width="1.6"/>
+<text x="36" y="108.0" font-size="13.5" font-weight="700" fill="#7a4fc4" text-anchor="start">Device wallet (#7684, D41)</text>
+<rect x="36" y="120" width="190" height="66" rx="10" fill="#fff7d6" stroke="#b38a00" stroke-width="1.6"/>
+<text x="46" y="140.0" font-size="12.5" font-weight="600" fill="#b38a00" text-anchor="start">No recovery key</text>
+<text x="46" y="158.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">a new device, or none</text>
+<text x="46" y="173.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">ordered yet</text>
+<rect x="300" y="120" width="250" height="66" rx="10" fill="#e3eefc" stroke="#2f6fd0" stroke-width="1.6"/>
+<text x="310" y="140.0" font-size="12.5" font-weight="600" fill="#2f6fd0" text-anchor="start">Recovery key created</text>
+<text x="310" y="158.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">the 24 words shown at the first</text>
+<text x="310" y="173.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">Register; saving optional (D66)</text>
+<rect x="640" y="120" width="300" height="66" rx="10" fill="#e3eefc" stroke="#2f6fd0" stroke-width="1.6"/>
+<text x="650" y="140.0" font-size="12.5" font-weight="600" fill="#2f6fd0" text-anchor="start">In use</text>
+<text x="650" y="158.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">accounts 1, 2, …: one for each order,</text>
+<text x="650" y="173.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">never reused; each with its profile</text>
+<rect x="300" y="206" width="250" height="66" rx="10" fill="#e3eefc" stroke="#2f6fd0" stroke-width="1.6"/>
+<text x="310" y="226.0" font-size="12.5" font-weight="600" fill="#2f6fd0" text-anchor="start">Restored</text>
+<text x="310" y="244.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">the 24 words entered on a device</text>
+<text x="310" y="259.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">without them</text>
+<rect x="640" y="206" width="300" height="66" rx="10" fill="#e3eefc" stroke="#2f6fd0" stroke-width="1.6"/>
+<text x="650" y="226.0" font-size="12.5" font-weight="600" fill="#2f6fd0" text-anchor="start">Scanned</text>
+<text x="650" y="244.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">the names of each account until 20 in a</text>
+<text x="650" y="259.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">row hold none (D45); counter past them</text>
+<path d="M 226 150 L 300 150" fill="none" stroke="#7a4fc4" stroke-width="1.5" marker-end="url(#h7a4fc4)"/>
+<text x="263" y="144.0" font-size="10.5" font-weight="normal" fill="#7a4fc4" text-anchor="middle">first Register</text>
+<path d="M 550 150 L 640 150" fill="none" stroke="#7a4fc4" stroke-width="1.5" marker-end="url(#h7a4fc4)"/>
+<text x="595" y="144.0" font-size="10.5" font-weight="normal" fill="#7a4fc4" text-anchor="middle">Continue</text>
+<path d="M 130 186 L 130 236 L 300 236" fill="none" stroke="#7a4fc4" stroke-width="1.5" marker-end="url(#h7a4fc4)"/>
+<text x="200" y="230.0" font-size="10.5" font-weight="normal" fill="#7a4fc4" text-anchor="middle">Restore</text>
+<path d="M 550 236 L 640 236" fill="none" stroke="#7a4fc4" stroke-width="1.5" marker-end="url(#h7a4fc4)"/>
+<text x="595" y="230.0" font-size="10.5" font-weight="normal" fill="#7a4fc4" text-anchor="middle">scan</text>
+<path d="M 790 206 L 790 186" fill="none" stroke="#7a4fc4" stroke-width="1.5" marker-end="url(#h7a4fc4)"/>
+<rect x="990" y="120" width="264" height="152" rx="10" fill="#e8eaef" stroke="#5b6475" stroke-width="1.6"/>
+<text x="1000" y="140.0" font-size="12.5" font-weight="600" fill="#5b6475" text-anchor="start">Name lookup, for the wallet</text>
+<text x="1000" y="158.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">the names each account holds,</text>
+<text x="1000" y="173.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">over SMP routers (D45)</text>
+<text x="1000" y="188.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start"></text>
+<text x="1000" y="203.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">Orders under way: the store</text>
+<text x="1000" y="218.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">service&#x27;s find, signed by the</text>
+<text x="1000" y="233.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">account, rebuilds their records</text>
+<path d="M 940 239 L 990 239" fill="none" stroke="#2f6fd0" stroke-width="1.5" marker-end="url(#h2f6fd0)"/>
+<rect x="20" y="308" width="230" height="34" rx="10" fill="#fff0dc" stroke="#c77a12" stroke-width="1.6"/>
+<text x="135.0" y="330.0" font-size="13.5" font-weight="700" fill="#c77a12" text-anchor="middle">Store purchase</text>
+<rect x="290" y="308" width="330" height="34" rx="10" fill="#e3eefc" stroke="#2f6fd0" stroke-width="1.6"/>
+<text x="455.0" y="330.0" font-size="13.5" font-weight="700" fill="#2f6fd0" text-anchor="middle">App: the order record</text>
+<rect x="940" y="308" width="330" height="34" rx="10" fill="#e2f4e6" stroke="#2c8a4a" stroke-width="1.6"/>
+<text x="1105.0" y="330.0" font-size="13.5" font-weight="700" fill="#2c8a4a" text-anchor="middle">Store service: the order&#x27;s phase</text>
+<rect x="290" y="360" width="330" height="66" rx="10" fill="#fff7d6" stroke="#b38a00" stroke-width="1.6"/>
+<text x="300" y="380.0" font-size="12.5" font-weight="600" fill="#b38a00" text-anchor="start">Name chosen, account made</text>
+<text x="300" y="398.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">Register tapped: the record and its</text>
+<text x="300" y="413.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">account are made together</text>
+<rect x="290" y="442" width="330" height="66" rx="10" fill="#fff7d6" stroke="#b38a00" stroke-width="1.6"/>
+<text x="300" y="462.0" font-size="12.5" font-weight="600" fill="#b38a00" text-anchor="start">Terms ticked, order signed</text>
+<text x="300" y="480.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">The order and its registration signed by</text>
+<text x="300" y="495.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">the account. Next: Pay, or Register with a code</text>
+<rect x="290" y="524" width="330" height="66" rx="10" fill="#fff7d6" stroke="#b38a00" stroke-width="1.6"/>
+<text x="300" y="544.0" font-size="12.5" font-weight="600" fill="#b38a00" text-anchor="start">Waiting for the store</text>
+<text x="300" y="562.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">The store&#x27;s sheet, Ask to Buy or Play&#x27;s</text>
+<text x="300" y="577.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">pending purchase: nothing charged</text>
+<rect x="290" y="606" width="330" height="66" rx="10" fill="#fff7d6" stroke="#b38a00" stroke-width="1.6"/>
+<text x="300" y="626.0" font-size="12.5" font-weight="600" fill="#b38a00" text-anchor="start">Receipt held</text>
+<text x="300" y="644.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">Sent with the signed order until the</text>
+<text x="300" y="659.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">service answers, as a badge&#x27;s receipt</text>
+<rect x="290" y="688" width="330" height="66" rx="10" fill="#e3eefc" stroke="#2f6fd0" stroke-width="1.6"/>
+<text x="300" y="708.0" font-size="12.5" font-weight="600" fill="#2f6fd0" text-anchor="start">Registering</text>
+<text x="300" y="726.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">Paid, or ordered with a free name code;</text>
+<text x="300" y="741.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">continues without the app</text>
+<rect x="940" y="688" width="330" height="66" rx="10" fill="#e2f4e6" stroke="#2c8a4a" stroke-width="1.6"/>
+<text x="950" y="708.0" font-size="12.5" font-weight="600" fill="#2c8a4a" text-anchor="start">queued, committing, committed (signed),</text>
+<text x="950" y="724.5" font-size="12.5" font-weight="600" fill="#2c8a4a" text-anchor="start">registering</text>
+<text x="950" y="743.0" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">Commit, terms acceptance, register</text>
+<rect x="290" y="770" width="330" height="66" rx="10" fill="#e3eefc" stroke="#2f6fd0" stroke-width="1.6"/>
+<text x="300" y="790.0" font-size="12.5" font-weight="600" fill="#2f6fd0" text-anchor="start">Conditions changed</text>
+<text x="300" y="808.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">The person accepts them again; the</text>
+<text x="300" y="823.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">account signs the registration again</text>
+<rect x="940" y="770" width="330" height="66" rx="10" fill="#e2f4e6" stroke="#2c8a4a" stroke-width="1.6"/>
+<text x="950" y="790.0" font-size="12.5" font-weight="600" fill="#2c8a4a" text-anchor="start">committed (awaiting)</text>
+<text x="950" y="808.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">The stored registration was cleared</text>
+<rect x="290" y="852" width="330" height="66" rx="10" fill="#e3eefc" stroke="#2f6fd0" stroke-width="1.6"/>
+<text x="300" y="872.0" font-size="12.5" font-weight="600" fill="#2f6fd0" text-anchor="start">Registered, shown on the profile</text>
+<text x="300" y="890.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">The app sets the name on the address or</text>
+<text x="300" y="905.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">channel it opens</text>
+<rect x="940" y="852" width="330" height="66" rx="10" fill="#e2f4e6" stroke="#2c8a4a" stroke-width="1.6"/>
+<text x="950" y="872.0" font-size="12.5" font-weight="600" fill="#2c8a4a" text-anchor="start">registered</text>
+<text x="950" y="890.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">Expiry and dispute end read from chain</text>
+<rect x="290" y="934" width="330" height="66" rx="10" fill="#e3eefc" stroke="#2f6fd0" stroke-width="1.6"/>
+<text x="300" y="954.0" font-size="12.5" font-weight="600" fill="#2f6fd0" text-anchor="start">No longer available</text>
+<text x="300" y="972.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">Payment or code and account kept.</text>
+<text x="300" y="987.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">Choose another name → Registering</text>
+<rect x="940" y="934" width="330" height="66" rx="10" fill="#e2f4e6" stroke="#2c8a4a" stroke-width="1.6"/>
+<text x="950" y="954.0" font-size="12.5" font-weight="600" fill="#2c8a4a" text-anchor="start">taken: name not selected</text>
+<text x="950" y="972.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">Payment or code kept. T24: a selection,</text>
+<text x="950" y="987.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">with a new order&#x27;s checks → queued</text>
+<rect x="290" y="1016" width="330" height="52" rx="10" fill="#e3eefc" stroke="#2f6fd0" stroke-width="1.6"/>
+<text x="300" y="1036.0" font-size="12.5" font-weight="600" fill="#2f6fd0" text-anchor="start">Not registered</text>
+<text x="300" y="1054.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">Contact support with the name address</text>
+<rect x="940" y="1016" width="330" height="52" rx="10" fill="#e2f4e6" stroke="#2c8a4a" stroke-width="1.6"/>
+<text x="950" y="1036.0" font-size="12.5" font-weight="600" fill="#2c8a4a" text-anchor="start">failed</text>
+<text x="950" y="1054.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">registryRefused, signatureRefused, …</text>
+<rect x="290" y="1078" width="330" height="52" rx="10" fill="#e3eefc" stroke="#2f6fd0" stroke-width="1.6"/>
+<text x="300" y="1098.0" font-size="12.5" font-weight="600" fill="#2f6fd0" text-anchor="start">Cancelled</text>
+<text x="300" y="1116.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">The payment was disputed or refunded</text>
+<rect x="940" y="1078" width="330" height="52" rx="10" fill="#e2f4e6" stroke="#2c8a4a" stroke-width="1.6"/>
+<text x="950" y="1098.0" font-size="12.5" font-weight="600" fill="#2c8a4a" text-anchor="start">ended, or closed (reversed)</text>
+<rect x="940" y="360" width="330" height="312" rx="10" fill="#f1f2f5" stroke="#9aa1ad" stroke-width="1.6"/>
+<text x="950" y="380.0" font-size="12.5" font-weight="600" fill="#9aa1ad" text-anchor="start">No order at the service</text>
+<text x="950" y="398.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">The order is kept in the app until the</text>
+<text x="950" y="413.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">request: with the receipt after the</text>
+<text x="950" y="428.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">store&#x27;s payment, or with a free name</text>
+<text x="950" y="443.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">code at once.</text>
+<text x="950" y="458.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start"></text>
+<text x="950" y="473.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">A receipt refused (not valid, used, a</text>
+<text x="950" y="488.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">test purchase) places no order: the app</text>
+<text x="950" y="503.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">shows Purchase error, as for badges.</text>
+<path d="M 640 165 L 595 165 L 595 297 L 455 297 L 455 308" fill="none" stroke="#7a4fc4" stroke-width="1.5" marker-end="url(#h7a4fc4)"/>
+<text x="605" y="304.0" font-size="10.5" font-weight="normal" fill="#7a4fc4" text-anchor="start">an account for each order</text>
+<path d="M 330 426 L 330 442" fill="none" stroke="#5b6475" stroke-width="1.5" marker-end="url(#h5b6475)"/>
+<path d="M 330 508 L 330 524" fill="none" stroke="#2f6fd0" stroke-width="1.5" marker-end="url(#h2f6fd0)"/>
+<path d="M 330 590 L 330 606" fill="none" stroke="#c77a12" stroke-width="1.5" marker-end="url(#hc77a12)"/>
+<path d="M 330 672 L 330 688" fill="none" stroke="#2c8a4a" stroke-width="1.5" marker-end="url(#h2c8a4a)"/>
+<text x="338" y="520.0" font-size="10.5" font-weight="normal" fill="#2f6fd0" text-anchor="start">Pay</text>
+<text x="338" y="602.0" font-size="10.5" font-weight="normal" fill="#c77a12" text-anchor="start">paid</text>
+<text x="338" y="684.0" font-size="10.5" font-weight="normal" fill="#2c8a4a" text-anchor="start">placed</text>
+<path d="M 620 632 L 900 632 L 900 706 L 940 706" fill="none" stroke="#2f6fd0" stroke-width="1.5" marker-end="url(#h2f6fd0)"/>
+<text x="760" y="626" font-size="11" font-weight="normal" fill="#2f6fd0" text-anchor="middle">receipt and signed order: one request</text>
+<path d="M 620 466 L 900 466 L 900 720 L 940 720" fill="none" stroke="#2f6fd0" stroke-width="1.5" marker-end="url(#h2f6fd0)"/>
+<text x="760" y="460" font-size="11" font-weight="normal" fill="#2f6fd0" text-anchor="middle">free name code and signed order (T2)</text>
+<path d="M 620 786 L 940 786" fill="none" stroke="#2f6fd0" stroke-width="1.5" marker-end="url(#h2f6fd0)"/>
+<text x="780" y="780" font-size="11" font-weight="normal" fill="#2f6fd0" text-anchor="middle">registration signed again</text>
+<path d="M 620 950 L 940 950" fill="none" stroke="#2f6fd0" stroke-width="1.5" marker-end="url(#h2f6fd0)"/>
+<text x="780" y="944" font-size="11" font-weight="normal" fill="#2f6fd0" text-anchor="middle">selection signed by the account</text>
+<path d="M 940 744 L 620 744" fill="none" stroke="#2c8a4a" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#h2c8a4a)"/>
+<text x="780" y="739" font-size="11" font-weight="normal" fill="#2c8a4a" text-anchor="middle">registering phases</text>
+<path d="M 940 824 L 620 824" fill="none" stroke="#2c8a4a" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#h2c8a4a)"/>
+<text x="780" y="819" font-size="11" font-weight="normal" fill="#2c8a4a" text-anchor="middle">awaiting</text>
+<path d="M 940 906 L 620 906" fill="none" stroke="#2c8a4a" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#h2c8a4a)"/>
+<text x="780" y="901" font-size="11" font-weight="normal" fill="#2c8a4a" text-anchor="middle">registered</text>
+<path d="M 940 986 L 620 986" fill="none" stroke="#2c8a4a" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#h2c8a4a)"/>
+<text x="780" y="981" font-size="11" font-weight="normal" fill="#2c8a4a" text-anchor="middle">taken (at the order, or T18 on chain)</text>
+<path d="M 940 1056 L 620 1056" fill="none" stroke="#2c8a4a" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#h2c8a4a)"/>
+<text x="780" y="1051" font-size="11" font-weight="normal" fill="#2c8a4a" text-anchor="middle">failed</text>
+<path d="M 940 1118 L 620 1118" fill="none" stroke="#2c8a4a" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#h2c8a4a)"/>
+<text x="780" y="1113" font-size="11" font-weight="normal" fill="#2c8a4a" text-anchor="middle">ended, reversed</text>
+<rect x="20" y="524" width="230" height="66" rx="10" fill="#fff0dc" stroke="#c77a12" stroke-width="1.6"/>
+<text x="30" y="544.0" font-size="12.5" font-weight="600" fill="#c77a12" text-anchor="start">Sheet shown</text>
+<text x="30" y="562.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">with the order&#x27;s reference in the</text>
+<text x="30" y="577.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">purchase&#x27;s account field</text>
+<rect x="20" y="606" width="230" height="66" rx="10" fill="#fff0dc" stroke="#c77a12" stroke-width="1.6"/>
+<text x="30" y="626.0" font-size="12.5" font-weight="600" fill="#c77a12" text-anchor="start">Paid, unfinished</text>
+<text x="30" y="644.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">kept unfinished until the service</text>
+<text x="30" y="659.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">answers credited or refused</text>
+<rect x="20" y="688" width="230" height="52" rx="10" fill="#fff0dc" stroke="#c77a12" stroke-width="1.6"/>
+<text x="30" y="708.0" font-size="12.5" font-weight="600" fill="#c77a12" text-anchor="start">Finished or consumed</text>
+<path d="M 290 542 L 250 542" fill="none" stroke="#c77a12" stroke-width="1.5" marker-end="url(#hc77a12)"/>
+<path d="M 250 624 L 290 624" fill="none" stroke="#c77a12" stroke-width="1.5" marker-end="url(#hc77a12)"/>
+<path d="M 60 590 L 60 606" fill="none" stroke="#c77a12" stroke-width="1.5" marker-end="url(#hc77a12)"/>
+<path d="M 60 672 L 60 688" fill="none" stroke="#c77a12" stroke-width="1.5" marker-end="url(#hc77a12)"/>
+<text x="68" y="684.0" font-size="10.5" font-weight="normal" fill="#c77a12" text-anchor="start">answered by the service</text>
+<rect x="20" y="1156" width="1250" height="62" rx="10" fill="#fff7d6" stroke="#b38a00" stroke-width="1.6"/>
+<text x="36" y="1178" font-size="12" font-weight="normal" fill="#1c2b3f" text-anchor="start">App side only: the wallet, the record before the request, the order&#x27;s account, the ticked terms, the store&#x27;s sheet and pending states, the held receipt, the name set on the profile.</text>
+<text x="36" y="1198" font-size="12" font-weight="normal" fill="#1c2b3f" text-anchor="start">Service side only: committing, the commitment&#x27;s window, a commitment sent again, the registrar&#x27;s transactions; the app shows all of them as Registering.</text>
+</svg>

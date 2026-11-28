@@ -69,6 +69,7 @@ import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
 import Simplex.Chat.Types.UITheme
 import Simplex.Chat.Util (liftIOEither)
+import Simplex.Chat.Wallet (WalletAddress, WalletInfo)
 import Simplex.FileTransfer.Description (FileDescriptionURI)
 import Simplex.Messaging.Server.Information (ServerPublicInfo)
 import Simplex.Messaging.Agent (AgentClient, DatabaseDiff, SubscriptionsInfo)
@@ -448,6 +449,11 @@ data ChatCommand
   | APIRejectContact {contactReqId :: Int64, notify :: Bool}
   | APISendServiceRequest {userId :: UserId, sendTarget :: ConnectTarget 'CMContact, requestTimeout :: Maybe NominalDiffTime, signKey :: Maybe (C.StoredPrivateKey 'C.Ed25519), request :: J.Object}
   | APISendServiceResponse {userId :: UserId, requestId :: AgentInvId, responseData :: J.Object}
+  | APIGetWallet {userId :: UserId}
+  | APICreateWallet
+  | APICreateWalletAccount {userId :: UserId}
+  | APIExportWalletMnemonic
+  | APIDeleteWallet
   | APISendCallInvitation ContactId CallType
   | SendCallInvitation ContactName CallType
   | APIRejectCall ContactId
@@ -758,6 +764,9 @@ allowRemoteCommand = \case
   SetFilesFolder _ -> False
   SetRemoteHostsFolder _ -> False
   APISetEncryptLocalFiles _ -> False
+  APICreateWallet -> False
+  APIExportWalletMnemonic -> False
+  APIDeleteWallet -> False
 #if !defined(dbPostgres)
   APIExportArchive _ -> False
   APIImportArchive _ -> False
@@ -892,6 +901,9 @@ data ChatResponse
   | CRStoreReceiptNotRecorded {user :: User}
   | CRBadgeState {user :: User, badgeState :: Maybe BadgeState, storePurchases :: [OpenStorePurchase]}
   | CRBadgeLedger {user :: User, badgeLedger :: [StatementEntry]}
+  | CRWallet {user :: User, walletInfo :: WalletInfo}
+  | CRWalletMnemonic {user :: User, mnemonic :: Text}
+  | CRWalletAddress {user :: User, walletAddress :: WalletAddress}
   | CRUserAcceptedGroupSent {user :: User, groupInfo :: GroupInfo, hostContact :: Maybe Contact}
   | CRUserDeletedMembers {user :: User, groupInfo :: GroupInfo, members :: [GroupMember], withMessages :: Bool, msgSigned :: Bool}
   | CRGroupsList {user :: User, groups :: [GroupInfo]}

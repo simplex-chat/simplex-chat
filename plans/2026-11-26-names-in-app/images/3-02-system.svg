@@ -1,0 +1,90 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="740" viewBox="0 0 1200 740" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"><defs><marker id="h2c8a4a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#2c8a4a"/></marker><marker id="h2f6fd0" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#2f6fd0"/></marker><marker id="h5b6475" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#5b6475"/></marker><marker id="h7a4fc4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#7a4fc4"/></marker><marker id="hb8487a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#b8487a"/></marker><marker id="hc77a12" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#c77a12"/></marker></defs>
+<rect x="0" y="0" width="1200" height="740" fill="#ffffff"/>
+<text x="20" y="32" font-size="18" font-weight="700" fill="#0b2a55" text-anchor="start">System design: the badge purchase, with an order signed by its account in place of a badge&#x27;s keys</text>
+<text x="20" y="54" font-size="12" font-weight="normal" fill="#44546a" text-anchor="start">The app reaches the store service over SMP, as badge requests do; the device&#x27;s IP address reaches SMP routers only. One names order implementation serves the names page and the app.</text>
+<rect x="20" y="80" width="330" height="520" rx="10" fill="#e3eefc" stroke="#2f6fd0" stroke-width="1.6"/>
+<text x="30" y="100" font-size="13" font-weight="600" fill="#2f6fd0" text-anchor="start">SimpleX app: iOS, Android, desktop</text>
+<rect x="36" y="116" width="298" height="128" rx="10" fill="#e3eefc" stroke="#2f6fd0" stroke-width="1.6"/>
+<text x="46" y="136.0" font-size="12.5" font-weight="600" fill="#2f6fd0" text-anchor="start">Screens</text>
+<text x="46" y="154.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">Search · Your recovery key · Check your order ·</text>
+<text x="46" y="169.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">Registering · SimpleX names · a name ·</text>
+<text x="46" y="184.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">Enter your recovery key · Your names are back</text>
+<rect x="36" y="258" width="298" height="330" rx="10" fill="#e3eefc" stroke="#2f6fd0" stroke-width="1.6"/>
+<text x="46" y="278.0" font-size="12.5" font-weight="600" fill="#2f6fd0" text-anchor="start">Core: wallet and names</text>
+<text x="46" y="296.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">The device wallet of #7684: the 24 words,</text>
+<text x="46" y="311.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">stored as entropy; an account for each name,</text>
+<text x="46" y="326.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">with the profile it belongs to</text>
+<text x="46" y="341.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start"></text>
+<text x="46" y="356.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">The order&#x27;s record, made before the store</text>
+<text x="46" y="371.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">charges: its account, name, links, the order,</text>
+<text x="46" y="386.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">registration and terms acceptance signed by</text>
+<text x="46" y="401.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">the account&#x27;s key</text>
+<text x="46" y="416.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">The store receipt held until answered,</text>
+<text x="46" y="431.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">as a badge&#x27;s receipt is held</text>
+<text x="46" y="446.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">The name set on the address or channel</text>
+<text x="46" y="461.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">Restore: the names each account holds</text>
+<text x="46" y="476.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start"></text>
+<text x="46" y="491.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">Fixed in the build: chain id, contracts;</text>
+<text x="46" y="506.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">terms and prices from the name lookup</text>
+<rect x="420" y="80" width="300" height="92" rx="10" fill="#fff0dc" stroke="#c77a12" stroke-width="1.6"/>
+<text x="430" y="100.0" font-size="12.5" font-weight="600" fill="#c77a12" text-anchor="start">App Store · Google Play</text>
+<text x="430" y="118.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">One product: a SimpleX name, 2 years</text>
+<text x="430" y="133.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">The purchase contains the order&#x27;s reference</text>
+<rect x="420" y="230" width="300" height="150" rx="10" fill="#e8eaef" stroke="#5b6475" stroke-width="1.6"/>
+<text x="430" y="250.0" font-size="12.5" font-weight="600" fill="#5b6475" text-anchor="start">SMP routers</text>
+<text x="430" y="268.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">Service requests to the store service,</text>
+<text x="430" y="283.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">end-to-end encrypted, through</text>
+<text x="430" y="298.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">private routing</text>
+<text x="430" y="313.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start"></text>
+<text x="430" y="328.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">Name lookup (RSLV): the name&#x27;s hash</text>
+<rect x="420" y="430" width="300" height="60" rx="10" fill="#efe6fb" stroke="#7a4fc4" stroke-width="1.6"/>
+<text x="430" y="450.0" font-size="12.5" font-weight="600" fill="#7a4fc4" text-anchor="start">Resolver</text>
+<text x="430" y="468.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">Reads the names contracts</text>
+<rect x="790" y="80" width="390" height="330" rx="10" fill="#e2f4e6" stroke="#2c8a4a" stroke-width="1.6"/>
+<text x="800" y="100" font-size="13" font-weight="600" fill="#2c8a4a" text-anchor="start">Store service</text>
+<rect x="806" y="116" width="358" height="118" rx="10" fill="#e2f4e6" stroke="#2c8a4a" stroke-width="1.6"/>
+<text x="816" y="136.0" font-size="12.5" font-weight="600" fill="#2c8a4a" text-anchor="start">A purchase, as for badges</text>
+<text x="816" y="154.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">The receipt verified with Apple or Google, as</text>
+<text x="816" y="169.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">for badges; the payment recorded; the order</text>
+<text x="816" y="184.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">placed with its registration, as on the page</text>
+<rect x="806" y="248" width="172" height="146" rx="10" fill="#e2f4e6" stroke="#2c8a4a" stroke-width="1.6"/>
+<text x="816" y="268.0" font-size="12.5" font-weight="600" fill="#2c8a4a" text-anchor="start">Over SMP</text>
+<text x="816" y="286.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">for the app:</text>
+<text x="816" y="301.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">name requests beside</text>
+<text x="816" y="316.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">the badge requests;</text>
+<text x="816" y="331.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">find for a restore</text>
+<rect x="992" y="248" width="172" height="146" rx="10" fill="#e2f4e6" stroke="#2c8a4a" stroke-width="1.6"/>
+<text x="1002" y="268.0" font-size="12.5" font-weight="600" fill="#2c8a4a" text-anchor="start">Over HTTPS</text>
+<text x="1002" y="286.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">for the names page,</text>
+<text x="1002" y="301.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">as today</text>
+<rect x="790" y="470" width="390" height="80" rx="10" fill="#efe6fb" stroke="#7a4fc4" stroke-width="1.6"/>
+<text x="800" y="490.0" font-size="12.5" font-weight="600" fill="#7a4fc4" text-anchor="start">Names contracts</text>
+<text x="800" y="508.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">Commit, terms acceptance, register: sent by the</text>
+<text x="800" y="523.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">service, its registrar key paying the gas</text>
+<rect x="420" y="570" width="300" height="90" rx="10" fill="#fdeaf2" stroke="#b8487a" stroke-width="1.6"/>
+<text x="430" y="590.0" font-size="12.5" font-weight="600" fill="#b8487a" text-anchor="start">simplex.domains in a browser</text>
+<text x="430" y="608.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">Pays the app&#x27;s signed order from its link (D63);</text>
+<text x="430" y="623.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">a name bought there is moved into the</text>
+<text x="430" y="638.5" font-size="11" font-weight="normal" fill="#1c2b3f" text-anchor="start">app, or shown on the profile (D44)</text>
+<path d="M 334 150 L 420 126" fill="none" stroke="#c77a12" stroke-width="1.5" marker-end="url(#hc77a12)"/>
+<text x="378" y="124" font-size="12" font-weight="700" fill="#c77a12" text-anchor="middle">2</text>
+<path d="M 334 300 L 420 300" fill="none" stroke="#2f6fd0" stroke-width="1.5" marker-end="url(#h2f6fd0)"/>
+<path d="M 720 300 L 806 300" fill="none" stroke="#2f6fd0" stroke-width="1.5" marker-end="url(#h2f6fd0)"/>
+<text x="763" y="292" font-size="12" font-weight="700" fill="#2f6fd0" text-anchor="middle">3</text>
+<text x="377" y="292" font-size="12" font-weight="700" fill="#2f6fd0" text-anchor="middle">3</text>
+<path d="M 334 440 L 420 360" fill="none" stroke="#5b6475" stroke-width="1.5" marker-end="url(#h5b6475)"/>
+<text x="370" y="418" font-size="11" font-weight="normal" fill="#5b6475" text-anchor="middle">search</text>
+<path d="M 570 380 L 570 430" fill="none" stroke="#7a4fc4" stroke-width="1.5" marker-end="url(#h7a4fc4)"/>
+<path d="M 720 466 L 790 500" fill="none" stroke="#7a4fc4" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#h7a4fc4)"/>
+<path d="M 985 410 L 985 470" fill="none" stroke="#2c8a4a" stroke-width="1.5" marker-end="url(#h2c8a4a)"/>
+<text x="1000" y="446" font-size="12" font-weight="700" fill="#2c8a4a" text-anchor="start">5</text>
+<path d="M 806 160 L 720 140" fill="none" stroke="#c77a12" stroke-width="1.5" marker-end="url(#hc77a12)"/>
+<text x="763" y="140" font-size="12" font-weight="700" fill="#c77a12" text-anchor="middle">4</text>
+<path d="M 720 640 L 1078 640 L 1078 394" fill="none" stroke="#b8487a" stroke-width="1.5" marker-end="url(#hb8487a)"/>
+<text x="900" y="632" font-size="11" font-weight="normal" fill="#b8487a" text-anchor="middle">the same orders, over HTTPS</text>
+<path d="M 334 560 L 420 610" fill="none" stroke="#b8487a" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#hb8487a)"/>
+<text x="170" y="622" font-size="11" font-weight="normal" fill="#b8487a" text-anchor="middle">link only where badges link</text>
+<text x="20" y="690.0" font-size="11.5" font-weight="normal" fill="#44546a" text-anchor="start">A store purchase: 1 the order is recorded in the app with its account; 2 the store&#x27;s sheet; 3 the receipt and the order signed by its account, in one request;</text>
+<text x="20" y="708.0" font-size="11.5" font-weight="normal" fill="#44546a" text-anchor="start">4 the service verifies the receipt; 5 the service registers the name, and the app reads the order&#x27;s phase. A free name code: 1, then 3 with the code, then 5.</text>
+<text x="20" y="726.0" font-size="11.5" font-weight="normal" fill="#44546a" text-anchor="start">A restore: the 24 words entered; the app asks the name lookup over SMP routers what each account holds (D45).</text>
+</svg>

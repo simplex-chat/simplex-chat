@@ -1,0 +1,101 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1240" height="760" viewBox="0 0 1240 760" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"><defs></defs>
+<rect x="0" y="0" width="1240" height="760" fill="#ffffff"/>
+<text x="20" y="32" font-size="18" font-weight="700" fill="#0b2a55" text-anchor="start">The precedent: each step of a name purchase is a step of the badge purchase</text>
+<text x="20" y="54" font-size="12" font-weight="normal" fill="#44546a" text-anchor="start">Orange: as badges are sold in the apps today. Green: what names add, from the names page, the store service&#x27;s names orders and the device wallet of #7684.</text>
+<rect x="20" y="72" width="230" height="34" rx="10" fill="#f1f2f5" stroke="#9aa1ad" stroke-width="1.6"/>
+<text x="135" y="94" font-size="13" font-weight="700" fill="#33475f" text-anchor="middle">Step</text>
+<rect x="260" y="72" width="470" height="34" rx="10" fill="#fff0dc" stroke="#c77a12" stroke-width="1.6"/>
+<text x="495" y="94" font-size="13" font-weight="700" fill="#c77a12" text-anchor="middle">Badge purchase (code on master)</text>
+<rect x="740" y="72" width="480" height="34" rx="10" fill="#e2f4e6" stroke="#2c8a4a" stroke-width="1.6"/>
+<text x="980" y="94" font-size="13" font-weight="700" fill="#2c8a4a" text-anchor="middle">Name purchase (this plan)</text>
+<rect x="20" y="114" width="230" height="34" rx="10" fill="#f1f2f5" stroke="#9aa1ad" stroke-width="1.6"/>
+<text x="30" y="136" font-size="12" font-weight="600" fill="#1c2b3f" text-anchor="start">Entry</text>
+<rect x="260" y="114" width="470" height="34" rx="10" fill="#fff0dc" stroke="#c77a12" stroke-width="1.6"/>
+<text x="270" y="136.0" font-size="11.5" font-weight="normal" fill="#1c2b3f" text-anchor="start">Settings, Support SimpleX</text>
+<rect x="740" y="114" width="480" height="34" rx="10" fill="#e2f4e6" stroke="#2c8a4a" stroke-width="1.6"/>
+<text x="750" y="136.0" font-size="11.5" font-weight="normal" fill="#1c2b3f" text-anchor="start">Address and channel: Get SimpleX name; Settings: SimpleX names</text>
+<rect x="20" y="154" width="230" height="34" rx="10" fill="#f1f2f5" stroke="#9aa1ad" stroke-width="1.6"/>
+<text x="30" y="176" font-size="12" font-weight="600" fill="#1c2b3f" text-anchor="start">Choose</text>
+<rect x="260" y="154" width="470" height="34" rx="10" fill="#fff0dc" stroke="#c77a12" stroke-width="1.6"/>
+<text x="270" y="176.0" font-size="11.5" font-weight="normal" fill="#1c2b3f" text-anchor="start">Choose your badge, How long</text>
+<rect x="740" y="154" width="480" height="34" rx="10" fill="#e2f4e6" stroke="#2c8a4a" stroke-width="1.6"/>
+<text x="750" y="176.0" font-size="11.5" font-weight="normal" fill="#1c2b3f" text-anchor="start">Search: the name lookup over SMP routers</text>
+<rect x="20" y="194" width="230" height="34" rx="10" fill="#f1f2f5" stroke="#9aa1ad" stroke-width="1.6"/>
+<text x="30" y="216" font-size="12" font-weight="600" fill="#1c2b3f" text-anchor="start">Keys</text>
+<rect x="260" y="194" width="470" height="34" rx="10" fill="#fff0dc" stroke="#c77a12" stroke-width="1.6"/>
+<text x="270" y="216.0" font-size="11.5" font-weight="normal" fill="#1c2b3f" text-anchor="start">A fresh key pair for each purchase, kept in the core</text>
+<rect x="740" y="194" width="480" height="34" rx="10" fill="#e2f4e6" stroke="#2c8a4a" stroke-width="1.6"/>
+<text x="750" y="216.0" font-size="11.5" font-weight="normal" fill="#1c2b3f" text-anchor="start">An account for each order, from the device&#x27;s 24 words, kept in the core</text>
+<rect x="20" y="234" width="230" height="34" rx="10" fill="#f1f2f5" stroke="#9aa1ad" stroke-width="1.6"/>
+<text x="30" y="256" font-size="12" font-weight="600" fill="#1c2b3f" text-anchor="start">Record before the store charges</text>
+<rect x="260" y="234" width="470" height="34" rx="10" fill="#fff0dc" stroke="#c77a12" stroke-width="1.6"/>
+<text x="270" y="256.0" font-size="11.5" font-weight="normal" fill="#1c2b3f" text-anchor="start">The purchase&#x27;s record and invoice id in the core</text>
+<rect x="740" y="234" width="480" height="34" rx="10" fill="#e2f4e6" stroke="#2c8a4a" stroke-width="1.6"/>
+<text x="750" y="256.0" font-size="11.5" font-weight="normal" fill="#1c2b3f" text-anchor="start">The order&#x27;s record: its account, signed order, invoice id</text>
+<rect x="20" y="274" width="230" height="34" rx="10" fill="#f1f2f5" stroke="#9aa1ad" stroke-width="1.6"/>
+<text x="30" y="296" font-size="12" font-weight="600" fill="#1c2b3f" text-anchor="start">Check your order</text>
+<rect x="260" y="274" width="470" height="34" rx="10" fill="#fff0dc" stroke="#c77a12" stroke-width="1.6"/>
+<text x="270" y="296.0" font-size="11.5" font-weight="normal" fill="#1c2b3f" text-anchor="start">Your badge, Duration, Total, Pay</text>
+<rect x="740" y="274" width="480" height="34" rx="10" fill="#e2f4e6" stroke="#2c8a4a" stroke-width="1.6"/>
+<text x="750" y="296.0" font-size="11.5" font-weight="normal" fill="#1c2b3f" text-anchor="start">Name, Opens, Until, Total, terms tick, Pay</text>
+<rect x="20" y="314" width="230" height="34" rx="10" fill="#f1f2f5" stroke="#9aa1ad" stroke-width="1.6"/>
+<text x="30" y="336" font-size="12" font-weight="600" fill="#1c2b3f" text-anchor="start">Store sheet</text>
+<rect x="260" y="314" width="470" height="34" rx="10" fill="#fff0dc" stroke="#c77a12" stroke-width="1.6"/>
+<text x="270" y="336.0" font-size="11.5" font-weight="normal" fill="#1c2b3f" text-anchor="start">Purchase with the invoice id in the account field</text>
+<rect x="740" y="314" width="480" height="34" rx="10" fill="#fff0dc" stroke="#c77a12" stroke-width="1.6"/>
+<text x="750" y="336.0" font-size="11.5" font-weight="normal" fill="#1c2b3f" text-anchor="start">The same, with the name product</text>
+<rect x="20" y="354" width="230" height="34" rx="10" fill="#f1f2f5" stroke="#9aa1ad" stroke-width="1.6"/>
+<text x="30" y="376" font-size="12" font-weight="600" fill="#1c2b3f" text-anchor="start">Pending</text>
+<rect x="260" y="354" width="470" height="34" rx="10" fill="#fff0dc" stroke="#c77a12" stroke-width="1.6"/>
+<text x="270" y="376.0" font-size="11.5" font-weight="normal" fill="#1c2b3f" text-anchor="start">Waiting for approval: nothing has been charged</text>
+<rect x="740" y="354" width="480" height="34" rx="10" fill="#fff0dc" stroke="#c77a12" stroke-width="1.6"/>
+<text x="750" y="376.0" font-size="11.5" font-weight="normal" fill="#1c2b3f" text-anchor="start">The same</text>
+<rect x="20" y="394" width="230" height="34" rx="10" fill="#f1f2f5" stroke="#9aa1ad" stroke-width="1.6"/>
+<text x="30" y="416" font-size="12" font-weight="600" fill="#1c2b3f" text-anchor="start">Hand-over</text>
+<rect x="260" y="394" width="470" height="34" rx="10" fill="#fff0dc" stroke="#c77a12" stroke-width="1.6"/>
+<text x="270" y="416.0" font-size="11.5" font-weight="normal" fill="#1c2b3f" text-anchor="start">Receipt held, sent until answered</text>
+<rect x="740" y="394" width="480" height="34" rx="10" fill="#fff0dc" stroke="#c77a12" stroke-width="1.6"/>
+<text x="750" y="416.0" font-size="11.5" font-weight="normal" fill="#1c2b3f" text-anchor="start">The same</text>
+<rect x="20" y="434" width="230" height="34" rx="10" fill="#f1f2f5" stroke="#9aa1ad" stroke-width="1.6"/>
+<text x="30" y="456" font-size="12" font-weight="600" fill="#1c2b3f" text-anchor="start">Request</text>
+<rect x="260" y="434" width="470" height="34" rx="10" fill="#fff0dc" stroke="#c77a12" stroke-width="1.6"/>
+<text x="270" y="456.0" font-size="11.5" font-weight="normal" fill="#1c2b3f" text-anchor="start">Receipt and the badge&#x27;s keys, in one request</text>
+<rect x="740" y="434" width="480" height="34" rx="10" fill="#e2f4e6" stroke="#2c8a4a" stroke-width="1.6"/>
+<text x="750" y="456.0" font-size="11.5" font-weight="normal" fill="#1c2b3f" text-anchor="start">Receipt and the order signed by its account, in one request</text>
+<rect x="20" y="474" width="230" height="34" rx="10" fill="#f1f2f5" stroke="#9aa1ad" stroke-width="1.6"/>
+<text x="30" y="496" font-size="12" font-weight="600" fill="#1c2b3f" text-anchor="start">Verification</text>
+<rect x="260" y="474" width="470" height="34" rx="10" fill="#fff0dc" stroke="#c77a12" stroke-width="1.6"/>
+<text x="270" y="496.0" font-size="11.5" font-weight="normal" fill="#1c2b3f" text-anchor="start">Apple&#x27;s signed transaction, Google&#x27;s purchase read</text>
+<rect x="740" y="474" width="480" height="34" rx="10" fill="#fff0dc" stroke="#c77a12" stroke-width="1.6"/>
+<text x="750" y="496.0" font-size="11.5" font-weight="normal" fill="#1c2b3f" text-anchor="start">The same verifiers</text>
+<rect x="20" y="514" width="230" height="34" rx="10" fill="#f1f2f5" stroke="#9aa1ad" stroke-width="1.6"/>
+<text x="30" y="536" font-size="12" font-weight="600" fill="#1c2b3f" text-anchor="start">Delivery</text>
+<rect x="260" y="514" width="470" height="34" rx="10" fill="#fff0dc" stroke="#c77a12" stroke-width="1.6"/>
+<text x="270" y="536.0" font-size="11.5" font-weight="normal" fill="#1c2b3f" text-anchor="start">Badge credential issued: Issuing your badge, then Your badge</text>
+<rect x="740" y="514" width="480" height="34" rx="10" fill="#e2f4e6" stroke="#2c8a4a" stroke-width="1.6"/>
+<text x="750" y="536.0" font-size="11.5" font-weight="normal" fill="#1c2b3f" text-anchor="start">Order placed and registered: Registering, then the name</text>
+<rect x="20" y="554" width="230" height="34" rx="10" fill="#f1f2f5" stroke="#9aa1ad" stroke-width="1.6"/>
+<text x="30" y="576" font-size="12" font-weight="600" fill="#1c2b3f" text-anchor="start">Refusal</text>
+<rect x="260" y="554" width="470" height="34" rx="10" fill="#fff0dc" stroke="#c77a12" stroke-width="1.6"/>
+<text x="270" y="576.0" font-size="11.5" font-weight="normal" fill="#1c2b3f" text-anchor="start">Purchase error; transaction finished</text>
+<rect x="740" y="554" width="480" height="34" rx="10" fill="#e2f4e6" stroke="#2c8a4a" stroke-width="1.6"/>
+<text x="750" y="576.0" font-size="11.5" font-weight="normal" fill="#1c2b3f" text-anchor="start">The same; a taken name keeps the payment</text>
+<rect x="20" y="594" width="230" height="34" rx="10" fill="#f1f2f5" stroke="#9aa1ad" stroke-width="1.6"/>
+<text x="30" y="616" font-size="12" font-weight="600" fill="#1c2b3f" text-anchor="start">Sweep, Restore</text>
+<rect x="260" y="594" width="470" height="34" rx="10" fill="#fff0dc" stroke="#c77a12" stroke-width="1.6"/>
+<text x="270" y="616.0" font-size="11.5" font-weight="normal" fill="#1c2b3f" text-anchor="start">At start, foreground, profile switch; Restore purchases</text>
+<rect x="740" y="594" width="480" height="34" rx="10" fill="#e2f4e6" stroke="#2c8a4a" stroke-width="1.6"/>
+<text x="750" y="616.0" font-size="11.5" font-weight="normal" fill="#1c2b3f" text-anchor="start">The same, for name products; the 24 words restore registered names</text>
+<rect x="20" y="634" width="230" height="34" rx="10" fill="#f1f2f5" stroke="#9aa1ad" stroke-width="1.6"/>
+<text x="30" y="656" font-size="12" font-weight="600" fill="#1c2b3f" text-anchor="start">Code</text>
+<rect x="260" y="634" width="470" height="34" rx="10" fill="#fff0dc" stroke="#c77a12" stroke-width="1.6"/>
+<text x="270" y="656.0" font-size="11.5" font-weight="normal" fill="#1c2b3f" text-anchor="start">Redeem badge code</text>
+<rect x="740" y="634" width="480" height="34" rx="10" fill="#e2f4e6" stroke="#2c8a4a" stroke-width="1.6"/>
+<text x="750" y="656.0" font-size="11.5" font-weight="normal" fill="#1c2b3f" text-anchor="start">I have a code: a free name code</text>
+<rect x="20" y="674" width="230" height="34" rx="10" fill="#f1f2f5" stroke="#9aa1ad" stroke-width="1.6"/>
+<text x="30" y="696" font-size="12" font-weight="600" fill="#1c2b3f" text-anchor="start">Browser</text>
+<rect x="260" y="674" width="470" height="34" rx="10" fill="#fff0dc" stroke="#c77a12" stroke-width="1.6"/>
+<text x="270" y="696.0" font-size="11.5" font-weight="normal" fill="#1c2b3f" text-anchor="start">Buy in browser, code back by link</text>
+<rect x="740" y="674" width="480" height="34" rx="10" fill="#e2f4e6" stroke="#2c8a4a" stroke-width="1.6"/>
+<text x="750" y="696.0" font-size="11.5" font-weight="normal" fill="#1c2b3f" text-anchor="start">Pay in browser for the app&#x27;s order (D63); a site name brought in (D44)</text>
+</svg>
