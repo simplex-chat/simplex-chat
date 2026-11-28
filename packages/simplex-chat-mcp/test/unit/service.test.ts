@@ -882,6 +882,38 @@ describe("service", () => {
     expect(await registerFrom(302)).toMatchObject({number: 1})
   })
 
+  it("refuses the held title of a forked session ID from a second Claude Code process once its session server is refused, and the later hooks of that ID, and opens no session for it, as with --fork-session", async () => {
+    jest.useFakeTimers(fakeTimers)
+    storeSession(id1, 1, "app")
+    const {d, agents} = deps(root)
+    const errors: string[] = []
+    jest.spyOn(process.stderr, "write").mockImplementation(text => (errors.push(String(text)), true))
+    service = await Service.start(d, readDefaultConfig)
+    await post("/session", {id: id1, pid: 300, project: "/p/app", config: defaultConfig})
+    expect(await post("/title", {id: id2, pid: 301, name: "fork", project: "/p/app", config: defaultConfig})).toEqual(titleReply)
+    await jest.advanceTimersByTimeAsync(1_000)
+    await expect(post("/session", {id: id1, pid: 301, project: "/p/app", config: defaultConfig})).rejects.toMatchObject({status: 423})
+    await jest.advanceTimersByTimeAsync(9_000)
+    await turnsUntil(() => errors.length > 0)
+    expect(errors).toEqual(["title: This conversation is already open in Claude Code process 300. Exit that process, or exit this one and start a new conversation.\n"])
+    await expect(post("/turn", {id: id2, pid: 301, prompt: "Fix the build"})).rejects.toMatchObject({status: 423})
+    expect(existsSync(sessionFolder(root, id2))).toBe(false)
+    expect(agents).toMatchObject([{displayName: "1 · app", turns: []}])
+  })
+
+  it("keeps the Claude Code process of a session across a service restart, and serves a second process once that process has ended", async () => {
+    storeSession(id1, 1, "app")
+    service = await Service.start(deps(root).d, readDefaultConfig)
+    const registerFrom = (pid: number) => post("/session", {id: id1, pid, project: "/p/app", config: defaultConfig})
+    await registerFrom(300)
+    await service.stop()
+    const restarted = deps(root)
+    service = await Service.start(restarted.d, readDefaultConfig)
+    await expect(registerFrom(301)).rejects.toMatchObject({status: 423})
+    restarted.starts.set(300, undefined)
+    expect(await registerFrom(301)).toMatchObject({number: 1})
+  })
+
   it("passes the hooks of a stored session ID to the session attached from their process without joining the IDs, as after an in-session /resume", async () => {
     storeSession(id2, 7, "older")
     const {d, agents} = deps(root)
@@ -919,7 +951,9 @@ describe("service", () => {
     controller.abort()
     await attached
     await service.stop()
-    service = await Service.start(deps(root).d, readDefaultConfig)
+    const restarted = deps(root)
+    restarted.starts.set(100, undefined)
+    service = await Service.start(restarted.d, readDefaultConfig)
     expect(await post("/session", {id: id2, pid: 200, project: "/p/app", config: defaultConfig})).toMatchObject({number: 1})
   })
 
