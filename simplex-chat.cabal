@@ -5,7 +5,7 @@ cabal-version: 1.12
 -- see: https://github.com/sol/hpack
 
 name:           simplex-chat
-version:        7.1.4.0
+version:        7.1.5.0
 category:       Web, System, Services, Cryptography
 homepage:       https://github.com/simplex-chat/simplex-chat#readme
 author:         simplex.chat
@@ -480,6 +480,7 @@ executable simplex-store-service
       StoreService.Names.Signatures
       StoreService.Names.Store
       StoreService.Names.Turns
+      StoreService.Names.Unavailable
       StoreService.Names.View
       StoreService.Names.Worker
       StoreService.Options
@@ -863,6 +864,7 @@ test-suite simplex-chat-test
       StoreService.Names.Signatures
       StoreService.Names.Store
       StoreService.Names.Turns
+      StoreService.Names.Unavailable
       StoreService.Names.View
       StoreService.Names.Worker
       StoreService.Options

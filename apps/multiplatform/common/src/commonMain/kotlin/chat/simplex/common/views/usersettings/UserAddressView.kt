@@ -382,7 +382,7 @@ private fun UserAddressLayout(
                   SetSimplexDomainView(
                     title = generalGetString(MR.strings.set_simplex_name),
                     footer = generalGetString(MR.strings.set_user_simplex_name_footer),
-                    placeholder = "@yourname.testing",
+                    placeholder = "@yourname.simplex",
                     simplexName = if (domain == null) "" else "@$domain",
                     registerBackgroundClose = true,
                     broadcastWarning = generalGetString(MR.strings.profile_update_will_be_sent_to_contacts),

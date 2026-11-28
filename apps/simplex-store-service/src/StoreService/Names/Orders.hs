@@ -83,6 +83,7 @@ import StoreService.Names.Registration (Commitment, LinkKind, disputeSeconds)
 import StoreService.Names.Signatures (AgreedTerms (..), OrderFields (..), parseChecksumAddress, personalDigest)
 import StoreService.Names.Store (CodeInsertRefused (..), LiveOrder (..), NameRegistrationOrder (..), NameReveal, NewRegistration (..), OrderHash, OrderPayment (..), OrderPhase (..), PrepaidCode (..), TxHistory (..), NameTransaction (..), RegistrationTx (..), TxFor (..), TxSettlement (..), TxState (..), VersionWrite (..), closeOverdue, createCodeRegistration, getLiveOrders, getPrepaidCode, getPrepaidCodeById, getRegistrationByOrderHash, labelHolder, markRead, registrationTransactions, reservePrepaidCode, selectRegistration, spendBalance, updateRegistration)
 import StoreService.Names.Turns (Turns, withBalanceTurn, withCodeTurn)
+import StoreService.Names.Unavailable (Unavailable)
 import StoreService.Orders (RegistrationChanged (..))
 import StoreService.Store.Invoices (currentSecond)
 
@@ -93,12 +94,13 @@ data OrdersEnv = OrdersEnv
     oeTurns :: Turns,
     oePhases :: Phases,
     oeNow :: IO UTCTime,
-    oeReport :: Text -> IO ()
+    oeReport :: Text -> IO (),
+    oeUnavailable :: Unavailable
   }
 
 ordersEnv :: NamesEnv -> OrdersEnv
-ordersEnv NamesEnv {neStore, neConfig, neContracts, neTurns, nePhases, neReport} =
-  OrdersEnv {oeStore = neStore, oeConfig = neConfig, oeContracts = neContracts, oeTurns = neTurns, oePhases = nePhases, oeNow = currentSecond, oeReport = neReport}
+ordersEnv NamesEnv {neStore, neConfig, neContracts, neTurns, nePhases, neReport, neUnavailable} =
+  OrdersEnv {oeStore = neStore, oeConfig = neConfig, oeContracts = neContracts, oeTurns = neTurns, oePhases = nePhases, oeNow = currentSecond, oeReport = neReport, oeUnavailable = neUnavailable}
 {-# INLINE ordersEnv #-}
 
 -- | The fields both kinds of order carry, with the owner's signature over them.

@@ -99,6 +99,7 @@ workerTests = describe "StoreService names: worker" $ do
   describe "register" $ do
     it "ends taken on a revert that names no error of the contracts while the name is not available, keeping a code reserved and no balance" testRevertTaken
     it "logs and reports an order taken on chain once, and none taken at settlement, alerting neither 3 hours after payment" testTakeReported
+    it "reports a registered name once, with its code or its payment" testRegisteredReported
     it "waits while the name reads taken only above the confirmation depth, and ends taken once it reads so at the depth" testTakenAtDepth
     it "keeps the phase on NameNotAvailable while the name still reads available, as for a pending competitor" testPendingCompetitor
     it "stores each failed dry run, fails an order at the fifth for a permanent reason, keeping a code, and retries one without data past the lapse, storing it once" testRevertFailed
@@ -736,6 +737,25 @@ testTakeReported = withWorker $ \w@W {wCtx = ctx@Ctx {cOrders}, wSender} -> do
   advance ctx $ 3 * 3600 + 1
   alertUnregisteredSelected worker
   readTVarIO reports `shouldReturn` [lost]
+
+testRegisteredReported :: IO ()
+testRegisteredReported = do
+  withWorker $ \w@W {wCtx = ctx} -> do
+    (text, _) <- issueCode ctx 8 2 id
+    r <- registrationById ctx =<< registered ctx text aliceOrder
+    reportsOf w r `shouldReturn` [registeredReport r "with a code"]
+  withWorker $ \w@W {wCtx = ctx} -> do
+    (invId, _) <- placed ctx aliceOrder
+    settleNow ctx invId settled `shouldReturn` ISPaid
+    r <- invoiceRegistration ctx invId
+    reportsOf w r `shouldReturn` [registeredReport r "$100.00 paid by btc"]
+  where
+    reportsOf w@W {wCtx = Ctx {cOrders}, wSender} r = do
+      reports <- newTVarIO []
+      worker <- newWorker cOrders {oeReport = \t -> atomically $ modifyTVar' reports (t :)} wSender
+      commitWaitRegister w {wWorker = worker} r
+      readTVarIO reports
+    registeredReport NameRegistrationOrder {nrId = RegistrationId rid} how = "names worker: registration " <> rid <> " completed: alicebakery.simplex, " <> how
 
 testTakenAtDepth :: IO ()
 testTakenAtDepth = withWorker $ \w@W {wCtx = ctx@Ctx {cNode}} -> do

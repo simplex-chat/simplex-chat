@@ -1078,7 +1078,8 @@ settlement, its code's placement or a selection after a reset, and still `queued
 hours later`. An order whose name is not selected is not alerted, and the 3 hours are counted again from each later selection. When its name is no longer available on chain, the service logs an
 error and posts in the group once: `names worker: registration <id> was taken: its name is no longer
 available on chain`. An order taken at settlement, as someone has taken its name, is logged
-as a note. The alert rule fires for any phase. Below 0.01 ETH the node refuses a register with links (see [Fund the key](#fund-the-key)),
+as a note. When its register is confirmed, the service posts in the group once: `names worker: registration <id>
+completed: <label>.<tld>, with a code` for a code order, or `…, $100.00 paid by <method>` with the order's price. The alert rule fires for any phase. Below 0.01 ETH the node refuses a register with links (see [Fund the key](#fund-the-key)),
 and while the base fee is above the cap no transaction is signed; size a warning on the balance and the
 allowance to the orders expected before a top-up, with the figures there.
 
@@ -1241,6 +1242,30 @@ No price is read for a code order or for a name selected for one, so the floor d
 launch price of a name of 8 letters or more, $100 for 2 years. One floor bounds every length, so a
 node answering the floor price for a 6- or 7-letter name passes the check even when those names
 cost more on chain. To lower prices on chain below the floor, lower the setting and restart first.
+
+### Unavailable names
+
+`[names] unavailable_file` (none by default) is a file of entries, one per line, which the service reads
+at startup and keeps in memory. A name and an entry are compared in one form: lower case, letters and
+digits only, each digit read as a letter (0 o, 1 l, 2 z, 3 e, 4 a, 5 s, 6 b, 7 t, 8 b, 9 g). An entry of 5
+letters or more matches a name that contains it, a shorter one only a name equal to it. An order of a
+matching name answers `409 name_taken` before any payment: a paid order, a code order and a selection of
+a name after a reset. A search answers such a name as any other, as it receives only the name's hash. A
+line without letters or digits stops the start, naming its line number and not its text.
+
+The group's admins and owners change the list while the service runs, and the console's operator with
+two slashes:
+
+```
+/unavailable <name>
+/available <name>
+```
+
+`/unavailable` appends the entry to the file and answers the sold names that match it: each name, its
+order, its phase and its `disputeUntil`, for an unregister within the dispute period. `/available`
+rewrites the file without the entry. Both refuse an entry without letters or digits, and answer that
+nothing changed while `unavailable_file` is not set. Without `[names]`, both answer that names are not
+enabled.
 
 ### Dispute days
 
@@ -1716,8 +1741,9 @@ The command is sent to the running service in `--run-cli` mode, not a way to sta
 ```
 //issue <badge_type> [months <M>] [paid|unpaid|free]
 //issue supporter months 12
-//issue name <length> [years <Y>] [paid|free]
+//issue name <length> [years <Y>] [paid|free] [until <YYYY-MM-DD>]
 //issue name 7 years 5
+//issue name 7 until 2027-03-31
 ```
 
 A script passes one command with `--execute`, with the service stopped, and reads the `Code: ...`
@@ -1736,8 +1762,8 @@ code row when the invoice is created, and settlement is what marks it paid.
 `<length>` letters, 6 to 63, for `years` years, 2 to 10 (default 2), or 2 for a community name. Its status is
 `paid` or `free`: nothing marks a name code paid later, so `unpaid` is refused. Without `[names]`,
 `//issue name` is answered that names are not enabled, and issues nothing. A name code reserves a
-name until 3 calendar months after its issue, and the answer says so: `Code: SN7-…. Valid until
-<time> UTC.` An order already holding the code keeps it past that time, also at a take, so a name
+name until 3 calendar months after its issue, or with `until` to the end of the given day, UTC, and
+the answer says so: `Code: SN7-…. Valid until <time> UTC.` A day already past is refused. An order already holding the code keeps it past that time, also at a take, so a name
 selected for the order afterwards is accepted with the code until that time or a calendar month
 after the take, whichever is later, then refused `code_expired`, and refused `code_invalid` once
 the code is revoked. A code order not registered a calendar month after its name
@@ -2061,10 +2087,9 @@ It needs bash 5.1 or later (for `wait -n -p`), `cabal` (for the default `STORE_T
 Foundry's anvil, Node.js 22.18 or later (which runs the webapp's `dev/deploy.ts` as TypeScript, as its
 `dev/start.sh` does), and `curl`; the webapp with its packages and
 Playwright's Chromium (`npm install`, `npx playwright install chromium`); and the compiled
-`ens-contracts` submodule (simplex-network/ens-contracts#51, ebf7698) of a simplex-namespace-contract checkout
-(simplex-chat/simplex-namespace-contract main, since #10), whose `test/fixtures/terms/` the deploy links
-as the terms, as the webapp's `dev/start.sh` needs; the webapp's `dev/Dockerfile` builds both at the
-versions it pins. `RPC_PORT`, `SERVICE_PORT`, `BADGES_PORT`, `RUNNER_PORT`, 8099, 5173 and 8098 must be
+`ens-contracts` (simplex-network/ens-contracts#51, ebf7698), as the webapp's `dev/start.sh` needs; the
+webapp's `dev/Dockerfile` builds it at the version it pins, and the deploy links the webapp's
+`dev/fixtures/terms/` as the terms. `RPC_PORT`, `SERVICE_PORT`, `BADGES_PORT`, `RUNNER_PORT`, 8099, 5173 and 8098 must be
 free: the script stops before starting anything when one of them answers, and stops at once when anvil,
 the terms server, the service or the mock exits before it answers.
 

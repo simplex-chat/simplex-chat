@@ -7,7 +7,7 @@ set -euo pipefail
 shopt -s inherit_errexit
 
 WEBAPP_DIR="${WEBAPP_DIR:-$(cd "$(dirname "$0")/../../.." && pwd)/apps/simplex-domains/webapp}"
-: "${ENS_CONTRACTS_DIR:?set ENS_CONTRACTS_DIR to the compiled ens-contracts submodule of a simplex-namespace-contract checkout, as for the webapp dev/start.sh}"
+: "${ENS_CONTRACTS_DIR:?set ENS_CONTRACTS_DIR to a compiled ens-contracts checkout, as for the webapp dev/start.sh}"
 ANVIL="${ANVIL:-anvil}"
 RPC_PORT="${RPC_PORT:-8545}"
 SERVICE_PORT="${SERVICE_PORT:-8180}"
@@ -123,6 +123,7 @@ EXCLUDED=(
   "a browser restored before another browser made a new invoice carries on with that invoice" "$STATE"
   "a forgotten order whose code's lookup is rate limited waits as asked, then answers" "$SEARCH"
   "a code order's selection refused for its code says why in that refusal's words" "$CODE_STATE"
+  "a code applied to the tab is taken off once Your names or Check your code reads it as one that cannot be used" "$CODE_STATE"
   "money paid after the close that the service cannot credit by itself sends the buyer to support, and the page stops reading it" "$LATE"
   "an order left before its wait ends asks for this browser in Your names" "$STATE"
   "Find the order shows a wait met elsewhere in the tab" "$SEARCH"

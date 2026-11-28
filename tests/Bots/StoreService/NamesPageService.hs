@@ -125,7 +125,7 @@ codeControl PageControls {pcService} o = case JT.parseEither fields o of
   Right (minLength, years, state) -> case nameLength minLength of
     Nothing -> pure $ Left (badRequest400, "no names of " <> T.pack (show minLength) <> " letters")
     Just len ->
-      issueNameCode pcService FromConsole len (fromMaybe 2 years) CPSFree >>= \case
+      issueNameCode pcService FromConsole len (fromMaybe 2 years) CPSFree Nothing >>= \case
         Left e -> pure $ Left (internalServerError500, T.pack e)
         Right (code, _) -> case fromMaybe "unused" state of
           "unused" -> pure $ answered code

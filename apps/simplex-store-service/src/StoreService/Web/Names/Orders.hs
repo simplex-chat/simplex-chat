@@ -53,8 +53,9 @@ import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Registration (DisputeDays, codeDisputeDays, methodDisputeDays)
 import StoreService.Names.Reveal (RevealRequest, orderReveal)
 import StoreService.Names.Signatures (OrderFields (..), orderMessage)
-import StoreService.Names.Store (BrokenInvariant (..), NameRegistrationOrder (..), NameReveal, NewRegistration (..), OrderHash, OrderPayment (..), OrderTerms (..), PaidOrder (..), PrepaidCode (..), createPaidRegistration, getRegistration, newRegistrationId, orderHash, paymentInvoice)
+import StoreService.Names.Store (BrokenInvariant (..), NameRegistrationOrder (..), NameReveal (..), NewRegistration (..), OrderHash, OrderPayment (..), OrderTerms (..), PaidOrder (..), PrepaidCode (..), createPaidRegistration, getRegistration, newRegistrationId, orderHash, paymentInvoice)
 import StoreService.Names.Turns (withLabelTurn)
+import StoreService.Names.Unavailable (unavailableName)
 import StoreService.Names.View (NameRefusal (..), registrationView)
 import StoreService.Orders (cancelNameInvoices, publishRegistration)
 import StoreService.Providers (OrderDraft (..), Provider (..), ProviderInvoice (..), expiresItself, providerErrorText, providerNamed)
@@ -263,7 +264,7 @@ codeOrderHandler env@OrdersEnv {oeStore} providers waiters req respond =
             Right closed -> pure Answer {aResponse = Right $ registrationAnswer rid, aAfter = announceHeld env providers waiters closed rid}
 
 orderChecked :: OrdersEnv -> UTCTime -> OrderRequest -> Int -> Maybe USDCents -> DisputeDays -> Maybe NameReveal -> RevealRequest -> IO (Either OrderRefusal NameReveal)
-orderChecked OrdersEnv {oeStore, oeConfig, oeContracts} now OrderRequest {orOwner, orFields = fields@OrderFields {ofLabelHash, ofLength, ofDuration}, orTimestamp} years price days accepted reveal =
+orderChecked OrdersEnv {oeStore, oeConfig, oeContracts, oeUnavailable} now OrderRequest {orOwner, orFields = fields@OrderFields {ofLabelHash, ofLength, ofDuration}, orTimestamp} years price days accepted reveal =
   runExceptT $ do
     mapM_ ExceptT $
       [ pure $ checkTimestamp now orTimestamp,
@@ -272,7 +273,8 @@ orderChecked OrdersEnv {oeStore, oeConfig, oeContracts} now OrderRequest {orOwne
         checkNameFree oeContracts oeStore ofLabelHash
       ]
         <> map (checkPrice oeContracts ofLength years) (toList price)
-    ExceptT $ orderReveal oeConfig oeContracts now orOwner fields days accepted reveal
+    rv@NameReveal {rvLabel} <- ExceptT $ orderReveal oeConfig oeContracts now orOwner fields days accepted reveal
+    ExceptT $ (\unavailable -> if unavailable then Left ORNameTaken else Right rv) <$> unavailableName oeUnavailable rvLabel
 
 -- | After the commit, the closed orders' invoices and versions are published, and their invoices cancelled at the provider,
 -- best effort, as the poller's sweep would cancel them.

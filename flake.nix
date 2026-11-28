@@ -435,6 +435,8 @@
                   packages.simplexmq.components.library.libs = pkgs.lib.mkForce [
                     (androidPkgs.openssl.override { static = true; })
                   ];
+                  packages.process.configureFlags = [ "--configure-option=ac_cv_func_posix_spawnp=no" ];
+                  packages.entropy.package.buildType = pkgs.lib.mkForce "Simple";
                 }];
               }).simplex-chat.components.library.override (p: {
                 smallAddressSpace = true;

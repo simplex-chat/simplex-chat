@@ -133,8 +133,8 @@ codeValidMonths :: Integer
 codeValidMonths = 3
 
 -- | The code table keeps only the hash, so the caller must deliver the code.
-issueNameCode :: ChatController -> CmdSource -> NameLength -> Int -> BadgeCodePaymentStatus -> IO (Either String (NamePrepaidCode, UTCTime))
-issueNameCode cc issuer len years paymentStatus
+issueNameCode :: ChatController -> CmdSource -> NameLength -> Int -> BadgeCodePaymentStatus -> Maybe UTCTime -> IO (Either String (NamePrepaidCode, UTCTime))
+issueNameCode cc issuer len years paymentStatus expiresAt_
   | years < minNameYears || years > maxNameYears = Left outside <$ logError ("names: " <> T.pack outside)
   | otherwise = issue (3 :: Int)
   where
@@ -142,7 +142,7 @@ issueNameCode cc issuer len years paymentStatus
     issue retries = do
       code <- randomNamePrepaidCode (random cc) len
       now <- currentSecond
-      let expiresAt = addMonths codeValidMonths now
+      let expiresAt = fromMaybe (addMonths codeValidMonths now) expiresAt_
           new = NewPrepaidCode {npcCodeHash = prepaidCodeHash code, npcMinLength = nameLengthInt len, npcYears = years, npcPaymentStatus = paymentStatus, npcExpiresAt = Just expiresAt, npcIssuer = issuer}
       withDB' "issueNameCode" cc (\db -> insertPrepaidCode db new now) >>= \case
         Right (Right _) -> pure $ Right (code, expiresAt)
