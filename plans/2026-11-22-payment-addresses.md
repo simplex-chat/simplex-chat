@@ -690,7 +690,7 @@ Alert texts of the app tests:
 | from alice, `lightning:LNURL1DP68…XFQ5FNS` | alice: ϟ lnurl1…5fns |
 | from alice in a group, `ltc1q2gy6…snwfdv` without a verified signature | alice: ⚠ ltc1q2…wfdv (not signed) |
 | sent by the user, `bc1q2gy6…505d4u` | ₿ bc1q2g…5d4u |
-| sent by the user in a group, `ltc1q2gy6…snwfdv` without a verified signature | ⚠ ltc1q2…wfdv (not signed) |
+| sent by the user in a group, `ltc1q2gy6…snwfdv` added by an edit | LTC ltc1q2…wfdv |
 | a note of the user, `bc1q2gy6…505d4u` | ₿ bc1q2g…5d4u |
 | a post of the channel team, `bc1q2gy6…505d4u` | team: ₿ bc1q2g…5d4u |
 
@@ -766,9 +766,11 @@ In groups, a message with a chain address is signed with the member key, and the
 send      sendGroupContentMessages_ sets signMsgs also when a composed message has a ChainAddressLink,
             by hasChainAddress (Commands.hs:5120); the batch of the command is signed
             groupMsgSigning then signs its XMsgNew with the member key (Internal.hs:2417-2429)
-            edits keep reuseSign (Commands.hs:872): an edit of an unsigned item stays unsigned
+            an edit is signed when its item is signed or its text has a ChainAddressLink (Commands.hs:872-873)
+            the sent item stores the edit's signature and msgVerified (updateChatItemSignedMsg)
 receive   withVerifiedMsg verifies the signature, as now (Subscriber.hs:4148-4167)
             the item stores msgVerified (Internal.hs:3120, Store/Messages.hs:576)
+            an applied edit stores its signature and msgVerified (updateChatItemSignedMsg, Subscriber.hs:2444-2446)
             the apps receive it as meta.msgVerified: absent when unsigned, signed with sigStatus
               verified or signedNoKey, or sigMissing where signing is required (Types/Shared.hs:134, 152-172)
             a chain address does not set hasLink (Q5 b)
@@ -777,7 +779,7 @@ show      Q7 c: a chain address of a group or channel item whose meta.msgVerifie
 direct    unchanged: direct chats and local notes
 ```
 
-- Built in the core stage: send, and the recorded state. Test `chain addresses in group messages are signed` (tests/ChatTests/Groups.hs): in a group without the signing preference, the item with a bare address is shown as `(signed)` to the sender and both members; a plain message is not signed; its edit that adds an address stays unsigned (`reuseSign`); bob's two items are recorded to tests/fixtures/api/chain-addresses/group.json, one with `msgVerified` verified and one without it, and alice's two items, after their receipts, to tests/fixtures/api/chain-addresses/group-sent.json.
+- Built in the core stage: send, and the recorded state. Test `chain addresses in group messages are signed` (tests/ChatTests/Groups.hs): in a group without the signing preference, the item with a bare address is shown as `(signed)` to the sender and both members; a plain message is not signed; its edit that adds an address is signed, verified by alice and cath and, as bob has no key of alice, unverified by bob; bob's two items are recorded to tests/fixtures/api/chain-addresses/group.json, one with `msgVerified` verified and one signed without a key, and alice's two items, after their receipts, to tests/fixtures/api/chain-addresses/group-sent.json.
 
 - XMsgNew is a content event that a member may sign (`signableContent`, Protocol.hs:1403-1408); `requiresSignature` lists events by tag in relay groups (Protocol.hs:1386-1400, Subscriber.hs:4167) and is not changed, as a requirement on the content of XMsgNew is a rule of the receiving app.
 - A sent item is verified when it is signed (Internal.hs:3085), so the sender sees the link.
@@ -833,7 +835,7 @@ Each test that expects a payment link fails on master.
 | app tests on tests/fixtures/api/chain-addresses/links.json | `Format.chainAddressLink` is decoded; each `ChainCurrency` constructor is mapped to its link text and alert text; a mocked open failure is followed by the alert `No wallet app`, whose Copy copies the link and whose QR code shows the QR code; an address in a profile description is its text |
 | app tests on tests/fixtures/api/chain-addresses/sent.json, group-sent.json and note.json | the alert of the user's own item, in a direct chat, in a group and in notes, has no name; so has the recorded note read as a received note, a direction that the core does not create |
 | app tests on tests/fixtures/api/chain-addresses/channel.json | the alert of a channel post names the channel |
-| tests/ChatTests/Groups.hs | `chain addresses in group messages are signed`: alice sends a bare address to a group without the signing preference; the item is `(signed)` for alice, bob and cath; a plain message after it is not signed, and its edit that adds a Litecoin address stays unsigned; `apiFixture` records bob's `/_get chat #1 count=2` to tests/fixtures/api/chain-addresses/group.json, and alice's, after the receipts of both items, to tests/fixtures/api/chain-addresses/group-sent.json |
+| tests/ChatTests/Groups.hs | `chain addresses in group messages are signed`: alice sends a bare address to a group without the signing preference; the item is `(signed)` for alice, bob and cath; a plain message after it is not signed; bob's key of alice is removed, and alice's edit that adds a Litecoin address is `(signed)` for alice and cath, in the event and in the stored item, and `(signed, no key to verify)` for bob; `apiFixture` records bob's `/_get chat #1 count=2` to tests/fixtures/api/chain-addresses/group.json, and alice's, after the receipts of both items, to tests/fixtures/api/chain-addresses/group-sent.json |
 | tests/ChatTests/Groups.hs | `should sign as-channel post with a chain address`: the owner alice posts a bare address as the channel without `sign=on`; the post is `(signed)` for alice, the relay bob and the subscriber cath; `apiFixture` records cath's `/_get chat #1 count=1` to tests/fixtures/api/chain-addresses/channel.json |
 | app tests on tests/fixtures/api/chain-addresses/group.json | the chain address of the verified item is a link; that of the unsigned item is the orange link `(not signed)`, and its alert text has the same warning (Q7 c) |
 
