@@ -1,6 +1,35 @@
 # SimpleX names in the apps: open questions
 
-No principle is open. One detail waits for a check, and six details have defaults that apply unless the owner objects. Each entry ends with its sources, for the agents.
+Two questions are open: how a restored key finds its names, and the phases of the work. One detail waits for a check, and five details have defaults that apply unless the owner objects. Each entry ends with its sources, for the agents.
+
+```mermaid
+flowchart TD
+  Q32["Q32. In what phases is the work merged?"] -->|"four phases into a feature branch, recommended"| Q31["Q31. How does a restored key find its names?"]
+  Q31 -->|"the store service's find, signed by each account, recommended"| P["Part 3"]
+```
+
+## Open
+
+### Q32. In what phases is the work merged?
+
+- Problem: the feature is too large for one pull request; a feature merged in one go did not land before.
+- Proposal: a feature branch from master; the wallet of #7684 comes back as its first commit (`ep/names-wallet`: master and a revert of c194aefb9); master is merged into it as master moves; it merges into master once phase 4 passes (D42, one release).
+  1. Core and service: the wallet, orders signed by accounts, the store service's names commands over SMP, a name registered with a code from the command line, core tests against the service.
+  2. Apps and store payments: the welcome screen, search, the recovery key, the checkout, registering and the name on the address or channel, codes, a taken name, Google Play and App Store purchases verified by the service, the two-way check; app tests on the core's recorded responses.
+  3. The browser and the site: Pay in browser with the page's route for app orders (simplex.domains), a site name moved into the app.
+  4. SimpleX names and restore: the names list, the recovery key shown later, a restore from the 24 words (Q31).
+- Each phase is one pull request into the feature branch, tested on its own.
+- Recommendation: these four phases.
+- Sources: D3, D42; #7951 section 8.
+
+### Q31. How does a restored key find its names?
+
+- Problem: a restore asks which names each account of the key holds. The SMP name lookup answers by name or by label hash only (`NameQuery`: `NQDomain`, `NQHash`, simplexmq `Protocol.hs`), not by owner.
+- Options:
+  - a. The store service's find, signed by each account, as the names page finds orders (`POST /api/registration/find`): no protocol change; the service learns that the accounts asked belong to one device.
+  - b. A new lookup by owner over SMP routers, answered from the chain: changes to simplexmq and the resolver; the routers and the resolver see the addresses asked.
+- Recommendation: a; the service already holds each account's orders.
+- Sources: D45; #7951 section 6.10.
 
 ## Details
 
@@ -62,7 +91,7 @@ For the agents: each closed question and the decision that records its answer.
 | Q12 The way back from simplex.domains | D44 | #7951 3·0 "Open in SimpleX"; the badge sketch, A5 |
 | Q13 Today's name links | D49 | the lookup sketch's footnote; 4c, 4d; #7951 1·1 |
 | Q14 Purchase terms | D31 | D31 |
-| Q15 Restore purchases | D50 | #7951 5·2; section 6.5; `restore.svg` |
+| Q15 Restore purchases | D69 | item 17954 |
 | Q17 Tests | D39 | D39 |
 | Q23 A name bought on simplex.domains | D44 | #7951 3·1 to 3·3 |
 | Q24 Saving the 24 words | D66 | #7951 1·4a and its D12 |
