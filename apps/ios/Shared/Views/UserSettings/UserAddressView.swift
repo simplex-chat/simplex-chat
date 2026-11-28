@@ -199,7 +199,7 @@ struct UserAddressView: View {
                 SetSimplexDomainView(
                     title: "Your SimpleX name",
                     footer: "Let people connect to you via name registered with your SimpleX address.",
-                    prompt: "@yourname.testing",
+                    prompt: "@yourname.simplex",
                     simplexName: simplexName,
                     broadcastWarning: NSLocalizedString("Profile update will be sent to your SimpleX contacts.", comment: "alert title"),
                     save: { simplexDomain in
@@ -890,10 +890,10 @@ struct SetSimplexDomainView: View {
             Section {
                 if editing {
                     Button {
-                        openBrowserAlert(uri: "https://simplex.domains/#testing")
+                        openBrowserAlert(uri: "https://simplex.domains")
                     } label: {
                         HStack {
-                            Text("How to register a test name")
+                            Text("How to register a name")
                             Image(systemName: "arrow.up.right.circle")
                         }
                     }

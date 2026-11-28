@@ -368,8 +368,8 @@ startFilesToReceive users = do
 startReceiveUserFiles :: User -> CM ()
 startReceiveUserFiles user = do
   filesToReceive <- withStore' (`getRcvFilesToReceive` user)
-  forM_ filesToReceive $ \ft ->
-    flip catchAllErrors eToView $
+  forM_ filesToReceive $ \ft@RcvFileTransfer {fileId} ->
+    flip catchAllErrors eToView $ withFileLock "startReceiveUserFiles" fileId $
       toView =<< receiveFileEvt' user ft False Nothing Nothing
 
 restoreCalls :: CM' ()

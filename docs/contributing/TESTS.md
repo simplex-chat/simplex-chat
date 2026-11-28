@@ -116,6 +116,7 @@ Each of these tests writes its file, then compares the new text with the previou
 
 - Bot API docs also fail on a command, response or event of the API that is neither documented in bots/src/API/Docs nor listed in `cliCommands`, `undocumentedCommands`, `undocumentedResponses` or `undocumentedEvents`, on a type of a documented one missing from Docs/Types.hs, and on a documented command without responses. They run with GHC 9.6 and later (`MIN_VERSION_base(4,18,0)`), in SQLite builds.
 - Schema dump also checks down migrations (exceptions in `skipComparisonForDownMigrations`), STRICT tables, and the output of `.lint fkey-indexes` against chat_lint.sql, an empty file, so that the test fails for a foreign key without an index.
+- The text of Schema dump depends on the version of the `sqlite3` on PATH. In CI, it is `/usr/bin/sqlite3` of the runner: build-macos puts it before the `sqlite3` of the Android SDK, whose `.schema --indent` differs in platform-tools 37.0.3 (SQLite 3.53.4).
 - Save query plans is skipped when `CI=true`. The plans are of the queries of that run only, so the files are committed from a local run of the whole suite.
 
 ### PostgreSQL

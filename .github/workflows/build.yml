@@ -1251,7 +1251,7 @@ jobs:
       cabal_targets: --constraint 'simplexmq +client_postgres' --constraint 'simplex-chat +client_postgres' test:simplex-chat-test
       bins: simplex-chat-test
       dist_name: dist-postgres
-      test_timeout: 60m
+      test_timeout: 90m
       PGHOST: localhost
       ALLOW_EMPTY: true
     concurrency: *linux-concurrency
@@ -1519,6 +1519,14 @@ jobs:
           disk=$(hdiutil attach -nomount ram://4194304 | tr -d '[:space:]')
           diskutil erasevolume APFS tests "$disk"
           ln -s /Volumes/tests tests/tmp
+
+      - name: Put /usr/bin/sqlite3 first on PATH
+        if: matrix.should_run == true && matrix.arch == 'aarch64'
+        shell: bash
+        run: |
+          mkdir "$RUNNER_TEMP/sqlite3"
+          ln -s /usr/bin/sqlite3 "$RUNNER_TEMP/sqlite3/sqlite3"
+          echo "$RUNNER_TEMP/sqlite3" >> "$GITHUB_PATH"
 
       - name: Run tests
         id: tests

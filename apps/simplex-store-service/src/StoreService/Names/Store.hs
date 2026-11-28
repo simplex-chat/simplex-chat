@@ -89,6 +89,7 @@ module StoreService.Names.Store
     recordAttempt,
     openInvoicesOfHeldName,
     activeRegistrations,
+    labelledOrders,
     disputableRegistrations,
     unpaidCleanupCandidates,
     deleteUnpaidRegistration,
@@ -1185,6 +1186,14 @@ activeRegistrations db =
       db
       (mkQuery "SELECT registration_id FROM @name_registrations WHERE phase IN (?,?,?,?) ORDER BY created_at, registration_id")
       (PQueued, PCommitting, PCommitted, PRegistering)
+
+labelledOrders :: DB.Connection -> IO [(RegistrationId, Text, NamePhase, Maybe Int64)]
+labelledOrders db =
+  map (\(rid, label, phase, disputeUntil) -> (RegistrationId rid, label, phase, disputeUntil))
+    <$> DB.query
+      db
+      (mkQuery "SELECT registration_id, label, phase, dispute_until FROM @name_registrations WHERE label IS NOT NULL AND (live = 1 OR phase = ?) ORDER BY created_at, registration_id")
+      (Only PRegistered)
 
 disputableRegistrations :: DB.Connection -> SystemSeconds -> IO [RegistrationId]
 disputableRegistrations db endsAfter =

@@ -43,13 +43,12 @@ case "${1:-}" in
   names-e2e)
     export TMPDIR="${RUNNER_TEMP:-${TMPDIR:-/tmp}}"
     tools="$(mktemp -d)"
-    mkdir -p "$tools/ens-contracts" "$tools/test/fixtures"
+    mkdir -p "$tools/ens-contracts"
     for stage in contracts anvil; do
       docker build -q --target "$stage" -t "names-$stage" -f apps/simplex-domains/webapp/dev/Dockerfile apps/simplex-domains
     done
     contracts="$(docker create names-contracts)"
     docker cp "$contracts:/src/ens-contracts/artifacts" "$tools/ens-contracts/artifacts"
-    docker cp "$contracts:/src/test/fixtures/terms" "$tools/test/fixtures/terms"
     docker rm "$contracts"
     anvil="$(docker create names-anvil)"
     docker cp "$anvil:/usr/local/bin/anvil" "$tools/anvil"
