@@ -309,7 +309,7 @@ export class Service {
     const entry = this.entry(id)
     const {pid, started} = entry
     if (requester === undefined || pid === undefined || pid === requester || started === undefined) return
-    const running = (await this.deps.processStart(pid).catch(() => undefined)) === started
+    const running = await this.deps.processStart(pid).then(start => start === started, () => true)
     if (entry.pid !== pid || entry.started !== started) return this.refuseOtherProcess(id, requester)
     if (!running) return
     this.refusals.set(requester, {id, at: Date.now()})
