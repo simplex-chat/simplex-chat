@@ -23,8 +23,8 @@ import chat.simplex.common.uiReloadRefusal
 import chat.simplex.common.views.helpers.AlertManager
 import chat.simplex.common.views.helpers.DBMigrationResult
 import chat.simplex.common.views.helpers.DatabaseUtils
+import chat.simplex.common.views.helpers.generalGetString
 import chat.simplex.common.views.helpers.installedUiJars
-import chat.simplex.res.MR
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.async
 import kotlinx.coroutines.runBlocking
@@ -159,19 +159,19 @@ class UiReloadTest {
     runningChat()
     assertNull(uiReloadRefusal())
     ChatModel.activeCall.value = call(Contact.sampleData)
-    assertEquals(MR.strings.reload_ui_refused_call, uiReloadRefusal())
+    assertEquals("Reload the UI after the call ends.", uiReloadRefusal()?.let(::generalGetString))
     ChatModel.activeCall.value = null
     ChatController.setChatCtrl(null)
-    assertEquals(MR.strings.reload_ui_refused_chat_stopped, uiReloadRefusal())
+    assertEquals("Reload the UI while the chat is running.", uiReloadRefusal()?.let(::generalGetString))
     ChatController.setChatCtrl(CTRL)
     ChatModel.chatRunning.value = false
-    assertEquals(MR.strings.reload_ui_refused_chat_stopped, uiReloadRefusal())
+    assertEquals("Reload the UI while the chat is running.", uiReloadRefusal()?.let(::generalGetString))
     ChatModel.chatRunning.value = true
     DatabaseUtils.ksSelfDestructPassword.set("passcode")
-    assertEquals(MR.strings.reload_ui_refused_self_destruct, uiReloadRefusal())
+    assertEquals("The UI is not reloaded while a self-destruct passcode is set. Restart the app instead.", uiReloadRefusal()?.let(::generalGetString))
     DatabaseUtils.ksSelfDestructPassword.remove()
     installedUiJars = { null }
-    assertEquals(MR.strings.reload_ui_refused_no_installed_ui, uiReloadRefusal())
+    assertEquals("The app's own files are not found. Restart the app instead.", uiReloadRefusal()?.let(::generalGetString))
   }
 
   @Test
