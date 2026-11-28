@@ -115,6 +115,7 @@ Each of these tests writes its file, then compares the new text with the previou
 
 - Bot API docs also fail on a command, response or event of the API that is neither documented in bots/src/API/Docs nor listed in `cliCommands`, `undocumentedCommands`, `undocumentedResponses` or `undocumentedEvents`, on a type of a documented one missing from Docs/Types.hs, and on a documented command without responses. They run with GHC 9.6 and later (`MIN_VERSION_base(4,18,0)`), in SQLite builds.
 - Schema dump also checks down migrations (exceptions in `skipComparisonForDownMigrations`), STRICT tables, and the output of `.lint fkey-indexes` against chat_lint.sql, an empty file, so that the test fails for a foreign key without an index.
+- The text of Schema dump depends on the version of the `sqlite3` on PATH. In CI, it is `/usr/bin/sqlite3` of the runner: build-macos puts it before the `sqlite3` of the Android SDK, whose `.schema --indent` differs in platform-tools 37.0.3 (SQLite 3.53.4).
 - Save query plans is skipped when `CI=true`. The plans are of the queries of that run only, so the files are committed from a local run of the whole suite.
 
 ### PostgreSQL
@@ -272,7 +273,7 @@ The app built from a branch, its core included, driven on a device by scripts an
 | `android-emu` | debug APK in an Android emulator | onboarding<br>a local group<br>both layouts<br>images sent | claude-test.md, claude-scope | [android](../../scripts/ci/android/README.md) |
 
 - Write: a scripted case in the workflow's `smoke-test.sh`, with its `ui` driver; a Claude plan in the files of the table, with `backend: yes` in claude-scope when the cases use the test backend.
-- Run: by hand only, on any branch: [CI guide, Starting a run](../../scripts/ci/README.md#starting-a-run). Each run uploads the app for manual tests.
+- Run: by hand, on any branch: [CI guide, Starting a run](../../scripts/ci/README.md#starting-a-run); build.yml runs a workflow for a pull request that changes its CI files: [CI guide, app workflows](../../scripts/ci/README.md#app-workflows). Each run uploads the app for manual tests.
 - Pitfalls:
   - A run with `claude` and `backend: yes` in claude-scope also requires the input `backend`, or its plan job fails.
   - A Claude run requires the branch rule of the GitHub environment `app-sim-claude` to include the branch.

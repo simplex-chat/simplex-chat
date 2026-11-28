@@ -4,7 +4,7 @@
 
 ## Running it
 
-The workflow runs only when started by hand, on any branch, from the Actions tab or with `gh workflow run`: [CI on GitHub's runners](../README.md) says how and lists the inputs.
+build.yml runs the workflow for a pull request that changes it or its scripts ([app workflows](../README.md#app-workflows)). Otherwise it runs when started by hand, on any branch, from the Actions tab or with `gh workflow run`: [CI on GitHub's runners](../README.md) says how and lists the inputs.
 
 Results: the job logs, the Claude job's summary (Claude's usage) and the artifacts `ios-sim-smoke-test` (a screenshot, a 1000-px view and an accessibility tree per step, the app log, the snapshots in `snapshots/`), `ios-sim-backend-logs` and `ios-sim-claude-test` (the Claude job's smoke test in `smoke-test/`, and per session: `prompt.md`, `report.md`, `shots/`, `transcript.jsonl`, `usage.json`). Read them with `gh run view <id> --log` and `gh run download <id> -n <artifact>`.
 
@@ -68,4 +68,4 @@ It writes what it seeded to `<work dir>/seed.md` (the Claude sessions get it) an
 ## Other files
 
 - `use-macos26-sdk.sh`: runner images from 20261013 add Command Line Tools with a macOS 27 SDK that Xcode 26.6's linker can't read; every macOS job points the default SDK back at macOS 26.5. The pinned `macos-26` label runs such an image.
-- `earlier-run.sh <artifact name>`: finds the newest run of this branch in this repository with that artifact; artifacts from forks and other branches are never used.
+- `earlier-run.sh <artifact name>`: finds the newest run of this branch with that artifact, of the pull request's head repository or else of this repository; artifacts of other branches and repositories are never used.

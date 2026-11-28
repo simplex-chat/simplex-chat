@@ -594,6 +594,8 @@ appendRcvFD db userId fileId fd@FileDescr {fileDescrText, fileDescrPartNo, fileD
           "UPDATE rcv_files SET file_descr_id = ?, updated_at = ? WHERE file_id = ?"
           (fileDescrId, currentTs, fileId)
       pure rfd
+    Just rfd@RcvFileDescr {fileDescrText = rfdText, fileDescrPartNo = rfdPNo}
+      | fileDescrPartNo == rfdPNo && fileDescrText `T.isSuffixOf` rfdText -> pure rfd
     Just
       RcvFileDescr
         { fileDescrId,
