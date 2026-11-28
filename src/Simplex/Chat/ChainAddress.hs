@@ -137,9 +137,10 @@ queryP :: [ByteString] -> Parser QueryStringParams
 queryP keys = QSP QNoEscaping <$> A.option [] (A.char '?' *> paramP `A.sepBy` A.char '&')
   where
     paramP = (,) <$> keyP <*> A.option "" (A.char '=' *> A.takeWhile valueChar)
-    keyP = knownKey <$> mfilter (not . ("req-" `B.isPrefixOf`) . B.map toLower) (A.takeWhile1 (\c -> isAscii c && (isAlphaNum c || c `B.elem` "-._~")))
+    keyP = knownKey <$> mfilter (not . ("req-" `B.isPrefixOf`) . B.map toLower) (A.takeWhile1 keyChar)
     knownKey k = fromMaybe k $ find (== B.map toLower k) keys
-    valueChar c = isAscii c && (isAlphaNum c || c `B.elem` "-._~:/?@!$'()*+,;=%")
+    keyChar c = isAsciiAlphaNum c || c `B.elem` "-._~"
+    valueChar c = keyChar c || c `B.elem` ":/?@!$'()*+,;=%"
 
 param :: Parser a -> ByteString -> QueryStringParams -> Parser (Maybe a)
 param p key query = oneValue (paramValues key query) >>= traverse (either fail pure . parseAll p)
