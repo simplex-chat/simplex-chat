@@ -573,7 +573,10 @@ export function productionDeps(root: string): ServiceDeps {
 export async function processStart(pid: number): Promise<string | undefined> {
   if (!Number.isSafeInteger(pid) || pid <= 0) return undefined
   try {
-    if (process.platform === "linux") return (await readFile(`/proc/${pid}/stat`, "utf8")).split(") ").at(-1)?.split(" ")[19]
+    if (process.platform === "linux") {
+      const ticks = (await readFile(`/proc/${pid}/stat`, "utf8")).split(") ").at(-1)?.split(" ")[19]
+      return ticks === undefined ? undefined : `${(await readFile("/proc/sys/kernel/random/boot_id", "utf8")).trim()} ${ticks}`
+    }
     if (process.platform === "darwin") return (await run("/bin/ps", ["-o", "lstart=", "-p", String(pid)], {timeout: psWait, env: {...process.env, LC_ALL: "C", TZ: "UTC"}})).stdout.trim() || undefined
     return undefined
   } catch {

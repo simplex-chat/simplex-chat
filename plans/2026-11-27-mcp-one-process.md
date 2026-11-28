@@ -19,7 +19,7 @@ On Linux and macOS, while the Claude Code process of a session's last `/session`
 | `POST /turn` | display hook and status line command | the reply is dropped |
 | `POST /ask` | PermissionRequest and Elicitation hooks | the hook's stderr; Claude Code shows its own dialog |
 
-- A process runs while its PID has the start time read at its `/session`; a reused PID has another start time. On macOS the start time is read in the C locale and UTC.
+- A process runs while its PID has the start time read at its `/session`; a reused PID has another start time. On Linux the start time includes the boot ID, so a process after a reboot never matches a stored one. On macOS the start time is read in the C locale and UTC.
 - A request without a PID is served, and so is a request while the recorded process has no start time, as on other systems.
 - When the recorded process changes during the read of its start time, the check runs again, so of two registrations at once only one is served.
 - The session server sends `/attach`, `/call` and `/permission` only after a `/session` that succeeded.
@@ -60,7 +60,7 @@ sequenceDiagram
   - the `/turn` route
 - `src/service.ts`: `refusals`, read by `processSession`; the refused title applied by `onSession`.
 - `src/service.ts`: `claudeProcess` written by `onSession` and read by `entry`.
-- `src/service.ts`: `processStart` runs `ps` with `LC_ALL=C` and `TZ=UTC`.
+- `src/service.ts`: `processStart` adds the boot ID on Linux, and runs `ps` with `LC_ALL=C` and `TZ=UTC` on macOS.
 - `src/files.ts`: `SessionFile.claudeProcess`.
 - The refusal in:
   - `spec/api.md`, socket protocol
@@ -79,4 +79,5 @@ sequenceDiagram
 - A title of a new ID from a refused process 20 s after its server's refusal: refused, with no session for that ID.
 - The refused title of a second process applied when it registers after the first ended.
 - A second process refused after a service restart, and served once the first ended.
+- The start time of a process on Linux begins with the boot ID.
 - The tests of a second registration of a session: the first process ended before it.
